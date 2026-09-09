@@ -61,3 +61,26 @@ docker compose run --rm -i demo python server.py
 이 코드는 개념 검증용 stdio 서버입니다. 사용자·에이전트 인증, 도구 스키마/설명 변경 검증, 원격 MCP 프록시, 감사 로그, 네트워크 차단은 포함하지 않았습니다. 실제 Gateway에서는 승인된 도구 목록뿐 아니라 호출자 권한, 입력값, 변경 이력, 감사 증적까지 같은 강제 경로에서 확인해야 합니다.
 
 가장 작은 확장 실험은 `server.py`의 `ALLOWED_TOOLS`를 `{"read_document", "delete_document"}`로 바꾼 뒤 다시 실행하는 것입니다. 차단 결과가 허용으로 바뀌는 것을 통해, 정책 설정 한 줄이 실행 권한을 결정한다는 점을 확인할 수 있습니다.
+
+## 3. 두 VM 원격 Gateway 데모
+
+계획서의 P1 실행 전 차단 흐름을 두 VM에서 재현합니다.
+
+- `pj1 (192.168.85.129)`: Gateway와 demo client
+- `pj2 (192.168.85.130)`: mock MCP server
+- 허용: `safe_echo`
+- 차단: 외부 sink, 미등록 Tool, MCP 헤더/본문 불일치
+
+WSL에서 저장소를 clone한 뒤 다음 한 번만 실행합니다. SSH 키가 없으면 SSH/SCP가 비밀번호를 요청합니다.
+
+```bash
+bash setup-two-vm.sh
+```
+
+호스트를 바꾸려면 환경변수로 지정합니다.
+
+```bash
+PJ1_SSH=user@10.0.0.11 PJ2_SSH=user@10.0.0.12 bash setup-two-vm.sh
+```
+
+Gateway 감사 로그는 `pj1:/tmp/mcp-demo/gateway.jsonl`, 실제 upstream 효과는 `pj2:/tmp/mcp-demo/effects.jsonl`에 기록됩니다. 이 스크립트는 Python 표준 라이브러리만 사용하며, OPA/PostgreSQL/React/P2 네트워크 강제는 포함하지 않습니다.
