@@ -1,0 +1,3 @@
+# mcp-server-time currently requires MCP SDK v1. Keep this runner isolated.
+mcp>=1.29,<2
+mcp-server-time==2026.8.18

@@ -131,3 +131,7 @@ http://192.168.85.129:8080/
 `pj1`은 client·Gateway·감사 로그, `pj2`는 mock MCP server와 실제 효과 로그 역할을 맡습니다. 이 두 증적을 비교하면 “차단된 호출은 upstream 효과가 없다”를 확인할 수 있으므로, 현재 학습 목표에는 세 번째 VM이 필요하지 않습니다.
 
 실무에서는 정책 저장소/감사 수집기 분리, Gateway 우회 방지를 위한 네트워크 정책, 스키마 변경 감지, 중앙 인증을 추가합니다. 다음 학습 단계에서 정책이 많아지면 이 코드의 `ROLE_PERMISSIONS`만 OPA/Rego 또는 Casbin 같은 정책 엔진으로 교체하는 편이 좋습니다. P2 수준의 직접 egress 차단을 실제로 입증하려면 그때 별도 네트워크 격리 VM 또는 컨테이너 네임스페이스를 고려하면 됩니다.
+
+## 4. 라이브러리·공개 MCP 통합 실습 브랜치
+
+`library_lab/`은 별도 브랜치에서 FastAPI, Pydantic, PyCasbin, OpenTelemetry와 공개 `mcp-server-time`을 실제로 연결한 확장판입니다. 자세한 설치·호환성·GUI 주소는 [library_lab/README.md](library_lab/README.md)를 참고합니다.
