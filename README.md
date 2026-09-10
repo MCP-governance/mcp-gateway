@@ -135,3 +135,7 @@ http://192.168.85.129:8080/
 ## 4. 라이브러리·공개 MCP 통합 실습 브랜치
 
 `library_lab/`은 별도 브랜치에서 FastAPI, Pydantic, PyCasbin, OpenTelemetry와 공개 `mcp-server-time`을 실제로 연결한 확장판입니다. 자세한 설치·호환성·GUI 주소는 [library_lab/README.md](library_lab/README.md)를 참고합니다.
+
+## 5. 컨테이너·LiteLLM·OPA 통합 실습 브랜치
+
+`container_lab/`은 팀원의 Agent → Gateway → Mock MCP Docker 네트워크 구조와 이 저장소의 역할·자료등급 정책, 실행 증적 방식을 합친 확장판입니다. LiteLLM은 도구 호출을 **제안**하는 모델 경로만 담당하고, Gateway와 OPA가 실제 허용·차단을 결정합니다. 실행법과 검증 명령은 [container_lab/README.md](container_lab/README.md)를 참고합니다.

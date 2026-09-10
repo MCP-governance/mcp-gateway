@@ -1,0 +1,11 @@
+model_list:
+  - model_name: lab-tool-model
+    litellm_params:
+      # gpt-4o is used only as a tool-capable OpenAI-compatible protocol label.
+      # The request is routed to the local mock endpoint, never to OpenAI.
+      model: openai/gpt-4o
+      api_base: http://agent-service:8000/mock-llm/v1
+      api_key: local-only
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
