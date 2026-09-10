@@ -85,6 +85,31 @@ PJ1_SSH=user@10.0.0.11 PJ2_SSH=user@10.0.0.12 bash setup-two-vm.sh
 
 Gateway 감사 로그는 `pj1:/tmp/mcp-demo/gateway.jsonl`, 실제 upstream 효과는 `pj2:/tmp/mcp-demo/effects.jsonl`에 기록됩니다.
 
+### 브라우저 GUI로 실습하기
+
+`bash setup-two-vm.sh`가 끝난 뒤 브라우저에서 아래 주소를 엽니다.
+
+```text
+http://192.168.85.129:8080/
+```
+
+화면에서 역할·도구·자료를 고르고 요청을 보내면, 즉시 통과/차단 결과가 표시됩니다. 아래 두 로그도 3초마다 새로고침됩니다.
+
+- `pj1 Gateway 감사 로그`: 역할, 자료 등급, 필요한 `rwx`, `upstream_called` 확인
+- `pj2 upstream 실제 효과`: 허용된 쓰기·외부 전송만 기록되는지 확인
+
+### 현재 쓰는 도구와 라이브러리
+
+| 구분 | 사용 중 | 쓰는 이유 |
+| --- | --- | --- |
+| Gateway·mock MCP·GUI | Python 3 표준 라이브러리 (`http.server`, `json`, `urllib`, `hashlib`, `argparse`) | 설치 없이 동일한 코드를 두 VM에서 실행 |
+| 화면 | 순수 HTML·CSS·JavaScript | Gateway가 `/`에서 직접 제공, 별도 Node.js/React 없음 |
+| VM 배포 | WSL의 `ssh`, `scp`, `curl`, Bash | 코드 복사·기동·상태 확인 |
+| 기본 실습 | Docker Compose + Python 3.12 Alpine | 기존 stdio 예제를 한 번에 실행 |
+| 형상관리 | Git·GitHub | 실습 단계별 브랜치 보존 |
+
+이번 단계에는 MCP SDK, OPA/Rego, Casbin, 데이터베이스, OpenTelemetry를 **설치하지 않았습니다**. 정책이 늘어나거나 여러 Gateway를 관리할 때 각각 MCP 프로토콜 구현, 중앙 정책, 권한 모델, 감사 추적 용도로 추가하는 다음 단계 후보입니다.
+
 ### 이번에 추가한 룰셋
 
 `two_vm_demo.py` 안의 `ROLE_PERMISSIONS`가 이번 실습의 읽기 쉬운 정책 원본입니다. 이 단계에서는 외부 정책 엔진을 붙이지 않고 한 곳에서만 판정합니다.

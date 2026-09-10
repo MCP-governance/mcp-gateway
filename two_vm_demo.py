@@ -87,6 +87,63 @@ def send_json(handler: BaseHTTPRequestHandler, payload: dict, status: int = 200)
     handler.wfile.write(raw)
 
 
+def send_html(handler: BaseHTTPRequestHandler, html: str) -> None:
+    raw = html.encode()
+    handler.send_response(200)
+    handler.send_header("Content-Type", "text/html; charset=utf-8")
+    handler.send_header("Content-Length", str(len(raw)))
+    handler.send_header("Cache-Control", "no-store")
+    handler.end_headers()
+    handler.wfile.write(raw)
+
+
+def gui_html() -> str:
+    return """<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCP Gateway 실습 화면</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#192235;font:15px system-ui,sans-serif}main{max-width:1180px;margin:auto;padding:28px 18px}h1{margin:0 0 6px}h2{font-size:17px;margin:0 0 14px}.sub{color:#586174;margin:0 0 22px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.card{background:#fff;border:1px solid #dce2ed;border-radius:12px;padding:18px;box-shadow:0 2px 8px #18233b0b}.full{grid-column:1/-1}label{display:block;font-weight:650;margin:9px 0 4px}select,input,textarea,button{font:inherit;border-radius:7px;border:1px solid #b8c3d5;padding:9px;width:100%}textarea{min-height:64px;resize:vertical}button{cursor:pointer;background:#1f5eff;color:#fff;border:0;font-weight:700;margin-top:14px}button.alt{background:#e8eefb;color:#173e94;margin:5px 6px 0 0;width:auto}.examples{display:flex;flex-wrap:wrap}.badge{display:inline-block;padding:4px 8px;border-radius:99px;font-weight:700;font-size:12px}.allow{background:#dff7e8;color:#076332}.deny{background:#ffe1e3;color:#9b1c27}.neutral{background:#e9edf5;color:#3c4960}pre{margin:0;white-space:pre-wrap;word-break:break-word;background:#101827;color:#d7e1f5;border-radius:8px;padding:13px;min-height:94px;max-height:310px;overflow:auto}.log{border-left:4px solid #8795aa;padding:7px 10px;margin:6px 0;background:#f7f9fc}.log.allow{border-left-color:#12a35b}.log.deny{border-left-color:#dd3545}@media(max-width:760px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+</style>
+<main>
+<h1>MCP Gateway 눈으로 보는 실습</h1>
+<p class="sub">요청 생성 → Gateway 판정 → pj2 실제 효과 로그를 같은 화면에서 봅니다. 모든 데이터는 합성 데이터입니다.</p>
+<section class="grid">
+<article class="card"><h2>1. 요청 생성기</h2>
+<label>사용자 역할</label><select id="role"><option value="customer">고객 (customer)</option><option value="employee" selected>직원 (employee)</option><option value="admin">관리자 (admin)</option></select>
+<label>도구</label><select id="tool" onchange="fields()"><option value="read_document">읽기 (r)</option><option value="write_document">쓰기 (w)</option><option value="send_external">외부 전송 (x)</option></select>
+<label>자료</label><select id="document"><option value="public-announcement">공개: public-announcement</option><option value="team-notes">비중요: team-notes</option><option value="customer-record">중요: customer-record</option></select>
+<div id="write-box" hidden><label>새 내용</label><textarea id="content">synthetic update from GUI</textarea></div>
+<div id="send-box" hidden><label>전송 대상</label><input id="destination" value="partner.example"></div>
+<button onclick="runForm()">Gateway로 요청 보내기</button></article>
+<article class="card"><h2>2. 빠른 비교</h2><p class="sub">아래 버튼은 대표적인 허용·차단 사례를 자동으로 넣어 호출합니다.</p><div class="examples">
+<button class="alt" onclick="sample('allow-read')">고객 → 공개 읽기</button>
+<button class="alt" onclick="sample('allow-write')">직원 → 비중요 쓰기</button>
+<button class="alt" onclick="sample('deny-export')">직원 → 중요 전송</button>
+<button class="alt" onclick="sample('allow-export')">관리자 → 중요 전송</button>
+<button class="alt" onclick="sample('mismatch')">헤더 위변조</button>
+</div><button onclick="runAll()">대표 사례 5개 순서대로 실행</button></article>
+<article class="card full"><h2>3. 이번 Gateway 판정 결과 <span id="badge" class="badge neutral">대기</span></h2><pre id="result">버튼을 눌러 요청을 보내세요.</pre></article>
+<article class="card"><h2>4. pj1 Gateway 감사 로그</h2><div id="audit">불러오는 중...</div></article>
+<article class="card"><h2>5. pj2 upstream 실제 효과</h2><div id="effects">불러오는 중...</div></article>
+</section></main>
+<script>
+const $=id=>document.getElementById(id); const value=id=>$(id).value;
+function fields(){const tool=value('tool');$('write-box').hidden=tool!=='write_document';$('send-box').hidden=tool!=='send_external'}
+function setForm(role,tool,document){$('role').value=role;$('tool').value=tool;$('document').value=document;fields()}
+async function call(role,tool,document,extra={},headerTool=tool){
+ const args={document_id:document,...extra}; const payload={jsonrpc:'2.0',id:`gui-${Date.now()}-${Math.random().toString(16).slice(2)}`,method:'tools/call',params:{name:tool,arguments:args}};
+ const response=await fetch('/mcp',{method:'POST',headers:{'Content-Type':'application/json','MCP-Protocol-Version':'2026-07-28','Mcp-Method':'tools/call','Mcp-Name':headerTool,'X-User-Role':role},body:JSON.stringify(payload)});
+ const body=await response.json(); const denied=Boolean(body.error); $('result').textContent=JSON.stringify(body,null,2); $('badge').textContent=denied?'차단됨':'통과'; $('badge').className='badge '+(denied?'deny':'allow'); await refresh(); return body;
+}
+function runForm(){const tool=value('tool'), extra=tool==='write_document'?{content:value('content')}:tool==='send_external'?{destination:value('destination')}:{ };return call(value('role'),tool,value('document'),extra)}
+function sample(kind){if(kind==='allow-read'){setForm('customer','read_document','public-announcement');return runForm()}if(kind==='allow-write'){setForm('employee','write_document','team-notes');return runForm()}if(kind==='deny-export'){setForm('employee','send_external','customer-record');return runForm()}if(kind==='allow-export'){setForm('admin','send_external','customer-record');return runForm()}return call('customer','read_document','public-announcement',{},'send_external')}
+async function runAll(){for(const kind of ['allow-read','allow-write','deny-export','allow-export','mismatch'])await sample(kind)}
+function render(id,events,decision){const box=$(id);box.replaceChildren();if(!events.length){box.textContent='기록 없음';return}for(const event of events.slice(-8).reverse()){const row=document.createElement('div');row.className='log '+(event.decision===undefined?'neutral':event.decision.toLowerCase());row.textContent=event.decision?`${event.decision} | ${event.role} | ${event.data_class||'-'} | ${event.tool} | upstream_called=${event.upstream_called}`:`${event.effect} | ${event.document_id} | ${event.data_class}`;box.append(row)}}
+async function refresh(){try{const [audit,effects]=await Promise.all([fetch('/audit').then(r=>r.json()),fetch('/effects').then(r=>r.json())]);render('audit',audit.events);render('effects',effects.events)}catch(error){$('audit').textContent='로그 연결 실패: '+error.message}}
+fields();refresh();setInterval(refresh,3000);
+</script>"""
+
+
 def rpc_error(request_id: object, policy_id: str, reason: str) -> dict:
     return {
         "jsonrpc": "2.0",
@@ -204,6 +261,9 @@ class Gateway(BaseHTTPRequestHandler):
         return
 
     def do_GET(self) -> None:
+        if self.path == "/":
+            send_html(self, gui_html())
+            return
         if self.path == "/health":
             send_json(self, {"ok": True, "role": "mcp-security-gateway", "upstream": self.upstream})
             return
@@ -211,6 +271,14 @@ class Gateway(BaseHTTPRequestHandler):
             path = Path(self.audit_path)
             events = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line] if path.exists() else []
             send_json(self, {"count": len(events), "events": events})
+            return
+        if self.path == "/effects":
+            effects_url = self.upstream.rsplit("/", 1)[0] + "/effects"
+            try:
+                with urlopen(Request(effects_url, headers={"X-Gateway-Token": UPSTREAM_TOKEN}), timeout=5) as result:
+                    send_json(self, json.loads(result.read()))
+            except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
+                send_json(self, {"error": f"upstream effects unavailable: {exc}"}, 502)
             return
         send_json(self, {"error": "not found"}, 404)
 
