@@ -97,10 +97,10 @@ def principal(authorization: str | None) -> dict[str, str]:
 
 def select_fixture(message: str) -> str:
     lowered = message.lower()
-    if any(word in lowered for word in ("중요", "비밀", "sensitive", "secret")):
-        return "/data/sensitive/secret.txt"
     if any(word in lowered for word in ("비중요", "팀", "nonimportant", "team")):
         return "/data/nonimportant/team-note.txt"
+    if any(word in lowered for word in ("중요", "비밀", "sensitive", "secret")):
+        return "/data/sensitive/secret.txt"
     return "/data/public/notice.txt"
 
 

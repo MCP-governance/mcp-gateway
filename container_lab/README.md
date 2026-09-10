@@ -77,6 +77,7 @@ MCP_SCHEMA_MODE=drift docker compose up --force-recreate -d mock-mcp
 ```bash
 docker compose build gateway
 docker compose run --rm --no-deps gateway python -m app.test_policy
+docker compose run --rm --no-deps agent-service python -m app.test_selection
 docker compose exec gateway tail -n 50 /runtime/gateway.jsonl
 ```
 
