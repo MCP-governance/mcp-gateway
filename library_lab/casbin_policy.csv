@@ -1,0 +1,4 @@
+# role, data classification, rwx action
+p, customer, public, r
+p, employee, public, r
+p, admin, public, r
