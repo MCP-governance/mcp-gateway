@@ -12,6 +12,16 @@
 
 LiteLLM은 모델 요청을 중계하고 도구 호출 제안을 관측하는 E0 역할이다. 허용/차단은 Gateway의 사전 실행 검사와 OPA 정책이 맡는다. `verifier`는 Gateway의 주장과 Mock MCP 효과 파일을 읽기 전용으로 비교한다.
 
+## VM 대신 WSL Docker를 쓰는 이유
+
+이 실습은 VM 두 대가 아니라 WSL 안의 컨테이너 5개(Agent, LiteLLM, Gateway, OPA, Mock MCP)로 구성된다. 2026-09-10 실제 기동 측정에서는 합계가 약 607 MiB였고, 그중 LiteLLM이 약 476 MiB로 가장 컸다. 따라서 현재 단계에는 VM 추가가 필요하지 않다.
+
+```bash
+docker stats --no-stream
+```
+
+수치는 PC와 이미지 버전에 따라 달라진다. 메모리가 부족하면 우선 `docker compose stop`으로 이 실습 스택만 멈추고, LiteLLM이 붙은 상태에서 더 많은 서비스를 추가하기 전에 이 명령으로 다시 측정한다.
+
 ## 시작하기
 
 WSL 또는 Docker가 가능한 쉘에서 저장소 루트로 이동한 뒤 실행한다.
