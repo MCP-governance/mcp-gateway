@@ -19,7 +19,6 @@ WSL 또는 Docker가 가능한 쉘에서 저장소 루트로 이동한 뒤 실�
 ```bash
 git switch feat/container-litellm-policy-lab
 cd container_lab
-mkdir -p runtime/audit runtime/effects
 docker compose up --build -d
 docker compose ps
 ```
@@ -78,7 +77,7 @@ MCP_SCHEMA_MODE=drift docker compose up --force-recreate -d mock-mcp
 ```bash
 docker compose build gateway
 docker compose run --rm --no-deps gateway python -m app.test_policy
-docker compose logs gateway --tail 50
+docker compose exec gateway tail -n 50 /runtime/gateway.jsonl
 ```
 
 이 self-check는 경로 등급화와 HMAC 역할 위·변조 방지를 검사한다. Docker가 실행되지 않는 경우에는 먼저 WSL/VM 메모리 문제를 해결해야 실제 컨테이너 검증을 주장할 수 있다.

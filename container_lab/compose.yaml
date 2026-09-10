@@ -35,7 +35,7 @@ services:
       AGENT_ASSERTION_SECRET: ${AGENT_ASSERTION_SECRET:-lab-assertion-only}
       AUDIT_FILE: /runtime/gateway.jsonl
     volumes:
-      - ./runtime/audit:/runtime
+      - audit_data:/runtime
     networks:
       - control_net
       - policy_net
@@ -63,7 +63,7 @@ services:
       MCP_SCHEMA_MODE: ${MCP_SCHEMA_MODE:-approved}
     volumes:
       - ./fixtures:/data:ro
-      - ./runtime/effects:/runtime
+      - effects_data:/runtime
     networks:
       - mcp_net
     security_opt:
@@ -112,8 +112,8 @@ services:
     build: ./verifier
     profiles: ["verify"]
     volumes:
-      - ./runtime/audit:/audit:ro
-      - ./runtime/effects:/effects:ro
+      - audit_data:/audit:ro
+      - effects_data:/effects:ro
     network_mode: none
     security_opt:
       - no-new-privileges:true
@@ -132,3 +132,7 @@ networks:
   mcp_net:
     driver: bridge
     internal: true
+
+volumes:
+  audit_data:
+  effects_data:
