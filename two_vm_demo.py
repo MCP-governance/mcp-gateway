@@ -17,28 +17,50 @@ from urllib.request import Request, urlopen
 PROTOCOL = "2026-07-28"
 SERVER_ID = "demo-mcp"
 UPSTREAM_TOKEN = os.environ.get("MCP_DEMO_UPSTREAM_TOKEN", "demo-upstream-only")
+POLICY_VERSION = "demo-rbac-v1"
+DOCUMENTS = {
+    "public-announcement": {"data_class": "public", "text": "Synthetic public announcement."},
+    "team-notes": {"data_class": "nonimportant", "text": "Synthetic internal team note."},
+    "customer-record": {"data_class": "important", "text": "Synthetic customer record."},
+}
+ROLE_PERMISSIONS = {
+    "customer": {"public": "r"},
+    "employee": {"public": "r", "nonimportant": "rw", "important": "r"},
+    "admin": {"public": "rwx", "nonimportant": "rwx", "important": "rwx"},
+}
 TOOLS = {
-    "safe_echo": {
-        "name": "safe_echo",
-        "description": "Return non-sensitive demo text.",
+    "read_document": {
+        "name": "read_document",
+        "description": "Read a synthetic document selected by document_id.",
         "inputSchema": {
             "type": "object",
-            "properties": {"text": {"type": "string", "maxLength": 200}},
-            "required": ["text"],
+            "properties": {"document_id": {"type": "string"}},
+            "required": ["document_id"],
+            "additionalProperties": False,
+        },
+    },
+    "write_document": {
+        "name": "write_document",
+        "description": "Write synthetic content to a document. Records an upstream effect.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"document_id": {"type": "string"}, "content": {"type": "string", "maxLength": 300}},
+            "required": ["document_id", "content"],
             "additionalProperties": False,
         },
     },
     "send_external": {
         "name": "send_external",
-        "description": "Send data to an external destination. Demo-only high-risk sink.",
+        "description": "Send a synthetic document to an external destination. Demo-only high-risk sink.",
         "inputSchema": {
             "type": "object",
-            "properties": {"destination": {"type": "string"}, "data": {"type": "string"}},
-            "required": ["destination", "data"],
+            "properties": {"document_id": {"type": "string"}, "destination": {"type": "string", "maxLength": 200}},
+            "required": ["document_id", "destination"],
             "additionalProperties": False,
         },
     },
 }
+TOOL_PERMISSIONS = {"read_document": "r", "write_document": "w", "send_external": "x"}
 
 
 def canonical(value: object) -> str:
@@ -73,6 +95,29 @@ def rpc_error(request_id: object, policy_id: str, reason: str) -> dict:
             "decision": "DENY", "policy_id": policy_id, "reason": reason
         }},
     }
+
+
+def policy_decision(name: object, arguments: object, role: str) -> tuple[str, str, str | None, str | None]:
+    """Return policy id, reason, data class, and required rwx permission."""
+    if name not in TOOLS:
+        return "MCP-ACCESS-001", "unregistered MCP tool", None, None
+    if role not in ROLE_PERMISSIONS:
+        return "P-ROLE-001", "unknown user role", None, None
+    if not isinstance(arguments, dict):
+        return "P-INPUT-001", "tool arguments must be an object", None, None
+    document_id = arguments.get("document_id")
+    document = DOCUMENTS.get(document_id)
+    if not document:
+        return "P-DATA-001", "unknown document classification", None, None
+    if name == "write_document" and (not isinstance(arguments.get("content"), str) or not 0 < len(arguments["content"]) <= 300):
+        return "P-INPUT-001", "write_document requires 1-300 characters of content", document["data_class"], "w"
+    if name == "send_external" and (not isinstance(arguments.get("destination"), str) or not arguments["destination"]):
+        return "P-INPUT-001", "send_external requires a destination", document["data_class"], "x"
+    permission = TOOL_PERMISSIONS[name]
+    data_class = document["data_class"]
+    if permission not in ROLE_PERMISSIONS[role].get(data_class, ""):
+        return "P-RBAC-001", f"{role} lacks {permission} permission for {data_class} data", data_class, permission
+    return "P-ALLOW-001", "role, data class, and permission approved", data_class, permission
 
 
 def read_json(handler: BaseHTTPRequestHandler) -> dict:
@@ -125,14 +170,23 @@ class MCPServer(BaseHTTPRequestHandler):
         params = request.get("params") or {}
         name = params.get("name")
         args = params.get("arguments") or {}
-        if name == "safe_echo":
-            append_jsonl(self.effects_path, {"event": "upstream_effect", "effect": "safe_echo", "at": now()})
-            result = {"content": [{"type": "text", "text": str(args.get("text", ""))}]}
+        document = DOCUMENTS.get(args.get("document_id"))
+        if not document:
+            send_json(self, rpc_error(request_id, "P-DATA-001", "unknown document"))
+            return
+        if name == "read_document":
+            result = {"content": [{"type": "text", "text": document["text"]}]}
+        elif name == "write_document":
+            append_jsonl(self.effects_path, {
+                "event": "upstream_effect", "effect": "document_write", "document_id": args.get("document_id"),
+                "data_class": document["data_class"], "content_sha256": hashlib.sha256(str(args.get("content", "")).encode()).hexdigest(), "at": now(),
+            })
+            result = {"content": [{"type": "text", "text": "simulated document write"}]}
         elif name == "send_external":
             append_jsonl(self.effects_path, {
                 "event": "upstream_effect", "effect": "external_send",
-                "destination": args.get("destination"),
-                "data_sha256": hashlib.sha256(str(args.get("data", "")).encode()).hexdigest(),
+                "document_id": args.get("document_id"), "data_class": document["data_class"],
+                "destination": args.get("destination"), "data_sha256": hashlib.sha256(document["text"].encode()).hexdigest(),
                 "at": now(),
             })
             result = {"content": [{"type": "text", "text": "simulated external send"}]}
@@ -176,7 +230,10 @@ class Gateway(BaseHTTPRequestHandler):
         method = request.get("method")
         params = request.get("params") or {}
         name = params.get("name") if isinstance(params, dict) else None
-        event = {"trace_id": trace_id, "request_id": request_id, "method": method, "tool": name, "agent_id": self.headers.get("X-Agent-Id", "demo-agent"), "at": now()}
+        role = self.headers.get("X-User-Role", "customer")
+        arguments = params.get("arguments") if isinstance(params, dict) else None
+        policy_id, reason, data_class, permission = policy_decision(name, arguments, role) if method == "tools/call" else ("P-ALLOW-001", "tool discovery", None, None)
+        event = {"trace_id": trace_id, "request_id": request_id, "method": method, "tool": name, "agent_id": self.headers.get("X-Agent-Id", "demo-agent"), "role": role, "data_class": data_class, "required_permission": permission, "policy_version": POLICY_VERSION, "at": now()}
         deny = None
         if self.headers.get("MCP-Protocol-Version") != PROTOCOL:
             deny = ("P-PROTO-001", "unsupported MCP protocol version")
@@ -184,12 +241,10 @@ class Gateway(BaseHTTPRequestHandler):
             deny = ("P-PROTO-001", "Mcp-Method does not match JSON-RPC method")
         elif method == "tools/call" and self.headers.get("Mcp-Name") != name:
             deny = ("P-PROTO-001", "Mcp-Name does not match tool name")
-        elif method == "tools/call" and name not in TOOLS:
-            deny = ("MCP-ACCESS-001", "unregistered MCP tool")
-        elif method == "tools/call" and name != "safe_echo":
-            deny = ("P-EXFIL-001", "external sink requires explicit approval")
         elif method not in {"tools/list", "tools/call"}:
             deny = ("P-PROTO-001", "unsupported MCP method")
+        elif method == "tools/call" and policy_id != "P-ALLOW-001":
+            deny = (policy_id, reason)
 
         if deny:
             policy_id, reason = deny
@@ -210,7 +265,7 @@ class Gateway(BaseHTTPRequestHandler):
             append_jsonl(self.audit_path, event)
             send_json(self, rpc_error(request_id, "P-UPSTREAM-001", "upstream unavailable"), 502)
             return
-        event.update({"decision": "ALLOW", "policy_id": "P-ALLOW-001", "reason": "approved tool and protocol", "upstream_called": True})
+        event.update({"decision": "ALLOW", "policy_id": policy_id, "reason": reason, "upstream_called": True})
         append_jsonl(self.audit_path, event)
         send_json(self, upstream_result)
 
@@ -223,15 +278,18 @@ def post(url: str, payload: dict, headers: dict[str, str]) -> dict:
 
 def run_client(gateway: str) -> None:
     cases = [
-        ("allowed safe_echo", "safe_echo", {"text": "demo message"}, "safe_echo"),
-        ("blocked external sink", "send_external", {"destination": "partner.example", "data": "synthetic PII"}, "send_external"),
-        ("blocked unregistered tool", "not_registered", {}, "not_registered"),
+        ("customer reads public", "customer", "read_document", {"document_id": "public-announcement"}, "read_document"),
+        ("employee writes nonimportant", "employee", "write_document", {"document_id": "team-notes", "content": "synthetic update"}, "write_document"),
+        ("employee cannot export important", "employee", "send_external", {"document_id": "customer-record", "destination": "partner.example"}, "send_external"),
+        ("customer cannot read important", "customer", "read_document", {"document_id": "customer-record"}, "read_document"),
+        ("admin exports important", "admin", "send_external", {"document_id": "customer-record", "destination": "audit.example"}, "send_external"),
+        ("blocked unregistered tool", "admin", "not_registered", {}, "not_registered"),
     ]
-    for label, tool, arguments, header_name in cases:
+    for label, role, tool, arguments, header_name in cases:
         payload = {"jsonrpc": "2.0", "id": uuid.uuid4().hex, "method": "tools/call", "params": {"name": tool, "arguments": arguments}}
-        print(json.dumps({"case": label, "result": post(gateway, payload, {"MCP-Protocol-Version": PROTOCOL, "Mcp-Method": "tools/call", "Mcp-Name": header_name})}, ensure_ascii=False))
-    mismatch = {"jsonrpc": "2.0", "id": "header-mismatch", "method": "tools/call", "params": {"name": "safe_echo", "arguments": {"text": "x"}}}
-    print(json.dumps({"case": "blocked header/body mismatch", "result": post(gateway, mismatch, {"MCP-Protocol-Version": PROTOCOL, "Mcp-Method": "tools/call", "Mcp-Name": "send_external"})}, ensure_ascii=False))
+        print(json.dumps({"case": label, "result": post(gateway, payload, {"MCP-Protocol-Version": PROTOCOL, "Mcp-Method": "tools/call", "Mcp-Name": header_name, "X-User-Role": role})}, ensure_ascii=False))
+    mismatch = {"jsonrpc": "2.0", "id": "header-mismatch", "method": "tools/call", "params": {"name": "read_document", "arguments": {"document_id": "public-announcement"}}}
+    print(json.dumps({"case": "blocked header/body mismatch", "result": post(gateway, mismatch, {"MCP-Protocol-Version": PROTOCOL, "Mcp-Method": "tools/call", "Mcp-Name": "send_external", "X-User-Role": "customer"})}, ensure_ascii=False))
 
 
 def main() -> None:
@@ -251,7 +309,10 @@ def main() -> None:
     sub.add_parser("self-test")
     args = parser.parse_args()
     if args.command == "self-test":
-        assert "safe_echo" in TOOLS and "send_external" in TOOLS
+        assert policy_decision("read_document", {"document_id": "public-announcement"}, "customer")[0] == "P-ALLOW-001"
+        assert policy_decision("write_document", {"document_id": "team-notes", "content": "x"}, "employee")[0] == "P-ALLOW-001"
+        assert policy_decision("send_external", {"document_id": "customer-record", "destination": "x"}, "employee")[0] == "P-RBAC-001"
+        assert policy_decision("send_external", {"document_id": "customer-record", "destination": "x"}, "admin")[0] == "P-ALLOW-001"
         print("self-test: PASS")
     elif args.command == "server":
         MCPServer.effects_path = args.effects

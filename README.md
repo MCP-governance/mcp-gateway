@@ -1,6 +1,6 @@
 # Tiny MCP policy-gateway demo
 
-MCP 도구 호출 직전에 단 하나의 읽기 전용 룰셋을 적용하는 최소 실습입니다. `read_document`는 통과하고, 쓰기 성격의 `delete_document`는 실행 전에 차단됩니다.
+MCP 도구 호출 직전에 정책을 적용하는 최소 실습입니다. 기본 stdio 실습과, 역할·자료등급·권한을 적용한 두 VM Gateway 실습을 함께 제공합니다.
 
 ## 1. 자동 실습
 
@@ -68,8 +68,8 @@ docker compose run --rm -i demo python server.py
 
 - `pj1 (192.168.85.129)`: Gateway와 demo client
 - `pj2 (192.168.85.130)`: mock MCP server
-- 허용: `safe_echo`
-- 차단: 외부 sink, 미등록 Tool, MCP 헤더/본문 불일치
+- 판정: 사용자 역할 × 자료 등급 × `rwx` 권한
+- 차단: 권한 없는 외부 전송, 미등록 Tool, MCP 헤더/본문 불일치
 
 WSL에서 저장소를 clone한 뒤 다음 한 번만 실행합니다. SSH 키가 없으면 SSH/SCP가 비밀번호를 요청합니다.
 
@@ -83,4 +83,26 @@ bash setup-two-vm.sh
 PJ1_SSH=user@10.0.0.11 PJ2_SSH=user@10.0.0.12 bash setup-two-vm.sh
 ```
 
-Gateway 감사 로그는 `pj1:/tmp/mcp-demo/gateway.jsonl`, 실제 upstream 효과는 `pj2:/tmp/mcp-demo/effects.jsonl`에 기록됩니다. 이 스크립트는 Python 표준 라이브러리만 사용하며, OPA/PostgreSQL/React/P2 네트워크 강제는 포함하지 않습니다.
+Gateway 감사 로그는 `pj1:/tmp/mcp-demo/gateway.jsonl`, 실제 upstream 효과는 `pj2:/tmp/mcp-demo/effects.jsonl`에 기록됩니다.
+
+### 이번에 추가한 룰셋
+
+`two_vm_demo.py` 안의 `ROLE_PERMISSIONS`가 이번 실습의 읽기 쉬운 정책 원본입니다. 이 단계에서는 외부 정책 엔진을 붙이지 않고 한 곳에서만 판정합니다.
+
+| 역할 | 공개 (`public`) | 비중요 (`nonimportant`) | 중요 (`important`) |
+| --- | --- | --- | --- |
+| 고객 (`customer`) | `r` | - | - |
+| 직원 (`employee`) | `r` | `rw` | `r` |
+| 관리자 (`admin`) | `rwx` | `rwx` | `rwx` |
+
+- `r`: `read_document`
+- `w`: `write_document`
+- `x`: `send_external` (외부 전송이라는 실행 권한)
+
+자료 등급은 요청자가 보내는 값이 아니라 `document_id`에 대해 Gateway가 가진 분류표로 결정합니다. 따라서 직원이 중요 자료를 읽을 수 있어도 `x`가 없으면 외부 전송은 upstream에 닿기 전에 차단됩니다. 클라이언트는 아래 7개 사례를 자동 실행합니다: 고객의 공개 읽기 허용, 직원의 비중요 쓰기 허용, 직원의 중요자료 전송 차단, 고객의 중요자료 읽기 차단, 관리자의 중요자료 전송 허용, 미등록 도구 차단, 헤더/본문 불일치 차단.
+
+### 이 단계에서 VM을 더 늘리지 않은 이유
+
+`pj1`은 client·Gateway·감사 로그, `pj2`는 mock MCP server와 실제 효과 로그 역할을 맡습니다. 이 두 증적을 비교하면 “차단된 호출은 upstream 효과가 없다”를 확인할 수 있으므로, 현재 학습 목표에는 세 번째 VM이 필요하지 않습니다.
+
+실무에서는 정책 저장소/감사 수집기 분리, Gateway 우회 방지를 위한 네트워크 정책, 스키마 변경 감지, 중앙 인증을 추가합니다. 다음 학습 단계에서 정책이 많아지면 이 코드의 `ROLE_PERMISSIONS`만 OPA/Rego 또는 Casbin 같은 정책 엔진으로 교체하는 편이 좋습니다. P2 수준의 직접 egress 차단을 실제로 입증하려면 그때 별도 네트워크 격리 VM 또는 컨테이너 네임스페이스를 고려하면 됩니다.
