@@ -82,6 +82,42 @@ MCP_SCHEMA_MODE=drift docker compose up --force-recreate -d mock-mcp
 
 그 뒤 어떤 사용자로 요청해도 Gateway가 업스트림 카탈로그 해시와 승인 해시가 다르다고 보고 `MCP-CHANGE-001`로 차단한다. 실습이 끝나면 `MCP_SCHEMA_MODE=approved`로 같은 명령을 다시 실행한다.
 
+## AI-Infra-Guard식 MCP 카탈로그 사전 점검
+
+Tencent AI-Infra-Guard의 MCP-Scan은 MCP 전용 위험 분류와 정적·동적 점검을 제공한다. 이 실습은 그 전체 스캐너를 포함하지 않고, 실행 전 필수인 작은 부분만 적용한다.
+
+1. Gateway가 upstream의 `tools/list`를 읽는다.
+2. 승인된 `file-mcp/read_file` 하나만 있는지, 입력 스키마와 도구 설명의 SHA-256이 승인본과 같은지, 설명에 단순 고위험 키워드가 없는지 점검한다.
+3. 그 결과를 OPA/Rego 입력으로 보내고, 통과한 호출만 Mock MCP로 전달한다.
+
+Rego 테스트부터 실행한다.
+
+```bash
+docker compose run --rm --no-deps opa test -v /policy
+```
+
+컨테이너 간 실제 호출까지 포함한 검증은 다음처럼 실행한다.
+
+```bash
+docker compose up --build -d opa mock-mcp gateway
+docker compose exec gateway python -m app.test_integration
+```
+
+도구 설명이 승인 뒤 바뀌는 Tool Poisoning/Rug Pull 상황은 아래처럼 재현한다.
+
+```bash
+MCP_CATALOG_MODE=description-drift docker compose up --force-recreate -d mock-mcp
+docker compose exec gateway python -m app.test_integration --expect-deny
+```
+
+브라우저에서 아무 허용 사례나 다시 실행하면 Gateway가 `MCP-TOOL-POISON-001`로 차단하고 `upstream_called: false`를 반환한다. 승인되지 않은 추가 도구를 재현하려면 `MCP_CATALOG_MODE=shadow-tool`을 사용하면 `MCP-SCAN-001`로 차단된다. 마친 뒤에는 다음으로 원복한다.
+
+```bash
+MCP_CATALOG_MODE=approved docker compose up --force-recreate -d mock-mcp
+```
+
+이 키워드 점검은 실습용 tripwire일 뿐 완전한 악성행위 탐지가 아니다. 실제 도입에서는 AI-Infra-Guard MCP-Scan 같은 정적/동적 스캔을 CI에 두고, Gateway에는 승인된 스캔 결과와 도구 메타데이터 해시를 전달해야 한다.
+
 ## 최소 검증과 관찰
 
 ```bash

@@ -18,10 +18,28 @@ has_permission if {
 
 decision := {
   "decision": "DENY",
+  "policy_id": "MCP-SCAN-001",
+  "reason": "upstream catalog contains an unapproved MCP tool",
+} if {
+  not input.catalog.known_tools_only
+} else := {
+  "decision": "DENY",
   "policy_id": "MCP-CHANGE-001",
   "reason": "approved tool schema does not match the upstream catalog",
 } if {
   not input.contract.schema_hash_match
+} else := {
+  "decision": "DENY",
+  "policy_id": "MCP-TOOL-POISON-001",
+  "reason": "approved tool description changed after review",
+} if {
+  not input.catalog.description_hash_match
+} else := {
+  "decision": "DENY",
+  "policy_id": "MCP-TOOL-POISON-002",
+  "reason": "tool metadata matches a high-risk preflight pattern",
+} if {
+  not input.catalog.metadata_safe
 } else := {
   "decision": "DENY",
   "policy_id": "MCP-CONTRACT-001",

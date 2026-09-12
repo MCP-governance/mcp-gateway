@@ -15,7 +15,7 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from pydantic import BaseModel, Field
 
-from app.policy_core import PATH_CLASSES, classify_path, sha256, verify_assertion
+from app.policy_core import APPROVED_TOOL, PATH_CLASSES, classify_path, scan_catalog, sha256, verify_assertion
 
 
 if not isinstance(trace.get_tracer_provider(), TracerProvider):
@@ -27,12 +27,7 @@ OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/mcp/authz/decision")
 MCP_GATEWAY_TOKEN = os.getenv("MCP_GATEWAY_TOKEN", "lab-upstream-only")
 ASSERTION_SECRET = os.getenv("AGENT_ASSERTION_SECRET", "lab-assertion-only")
 AUDIT_FILE = Path(os.getenv("AUDIT_FILE", "/runtime/gateway.jsonl"))
-APPROVED_SCHEMA = {
-    "type": "object",
-    "properties": {"path": {"type": "string", "enum": sorted(PATH_CLASSES)}},
-    "required": ["path"],
-    "additionalProperties": False,
-}
+APPROVED_SCHEMA = APPROVED_TOOL["input_schema"]
 APPROVED_SCHEMA_HASH = sha256(APPROVED_SCHEMA)
 
 
@@ -83,17 +78,16 @@ def result(
     }
 
 
-async def upstream_schema() -> dict[str, Any]:
+async def upstream_catalog() -> list[dict[str, Any]]:
     async with httpx.AsyncClient(timeout=4) as client:
         response = await client.get(
             f"{MOCK_MCP_URL}/tools/list", headers={"X-Gateway-Token": MCP_GATEWAY_TOKEN}
         )
         response.raise_for_status()
         tools = response.json()["tools"]
-    for tool in tools:
-        if tool["server_id"] == "file-mcp" and tool["name"] == "read_file":
-            return tool["input_schema"]
-    raise ValueError("read_file tool is absent from upstream catalog")
+    if not isinstance(tools, list):
+        raise ValueError("upstream catalog is not a tool list")
+    return tools
 
 
 async def opa_decision(input_document: dict[str, Any]) -> dict[str, str]:
@@ -162,15 +156,16 @@ async def tool_call(
             )
         else:
             try:
-                catalog_schema = await upstream_schema()
+                catalog = scan_catalog(await upstream_catalog())
                 policy_input = {
                     "principal": {"role": x_agent_role},
                     "resource": {"data_class": data_class},
                     "tool": {"action": "r"},
                     "contract": {
                         "valid": True,
-                        "schema_hash_match": sha256(catalog_schema) == APPROVED_SCHEMA_HASH,
+                        "schema_hash_match": catalog["schema_hash_match"],
                     },
+                    "catalog": catalog,
                 }
                 decision = await opa_decision(policy_input)
                 output = result(

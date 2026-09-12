@@ -61,6 +61,7 @@ services:
       MCP_GATEWAY_TOKEN: ${MCP_GATEWAY_TOKEN:-lab-upstream-only}
       EFFECT_FILE: /runtime/effects.jsonl
       MCP_SCHEMA_MODE: ${MCP_SCHEMA_MODE:-approved}
+      MCP_CATALOG_MODE: ${MCP_CATALOG_MODE:-approved}
     volumes:
       - ./fixtures:/data:ro
       - effects_data:/runtime
@@ -77,10 +78,10 @@ services:
       retries: 12
 
   opa:
-    image: ${OPA_IMAGE:-openpolicyagent/opa:0.70.0-static}
-    command: ["run", "--server", "--addr=0.0.0.0:8181", "/policy/policy.rego"]
+    image: ${OPA_IMAGE:-openpolicyagent/opa:1.20.2}
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "--set=decision_logs.console=true", "/policy"]
     volumes:
-      - ./opa/policy.rego:/policy/policy.rego:ro
+      - ./opa:/policy:ro
     networks:
       - policy_net
     security_opt:

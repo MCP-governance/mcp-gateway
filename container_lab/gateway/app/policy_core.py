@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import re
 from typing import Any
 
 
@@ -13,6 +14,19 @@ PATH_CLASSES = {
     "/data/nonimportant/team-note.txt": "nonimportant",
     "/data/sensitive/secret.txt": "important",
 }
+
+APPROVED_TOOL = {
+    "server_id": "file-mcp",
+    "name": "read_file",
+    "description": "Read one approved synthetic lab file.",
+    "input_schema": {
+        "type": "object",
+        "properties": {"path": {"type": "string", "enum": sorted(PATH_CLASSES)}},
+        "required": ["path"],
+        "additionalProperties": False,
+    },
+}
+METADATA_RISK = re.compile(r"\\b(bypass|curl|exfiltrat|ignore|secret|upload)\\b", re.IGNORECASE)
 
 
 def canonical(value: Any) -> str:
@@ -25,6 +39,22 @@ def sha256(value: Any) -> str:
 
 def classify_path(path: str) -> str | None:
     return PATH_CLASSES.get(path)
+
+
+def scan_catalog(tools: object) -> dict[str, bool]:
+    """Tiny AIG-inspired MCP catalog preflight before the Rego decision."""
+    if not isinstance(tools, list):
+        return {"known_tools_only": False, "schema_hash_match": False, "description_hash_match": False, "metadata_safe": False}
+    matching = [tool for tool in tools if isinstance(tool, dict) and tool.get("server_id") == APPROVED_TOOL["server_id"] and tool.get("name") == APPROVED_TOOL["name"]]
+    tool = matching[0] if len(matching) == 1 else {}
+    description = tool.get("description") if isinstance(tool, dict) else None
+    # ponytail: metadata keywords are a lab-only tripwire; use a maintained scanner for production coverage.
+    return {
+        "known_tools_only": len(tools) == 1 and len(matching) == 1,
+        "schema_hash_match": sha256(tool.get("input_schema")) == sha256(APPROVED_TOOL["input_schema"]),
+        "description_hash_match": sha256(description) == sha256(APPROVED_TOOL["description"]),
+        "metadata_safe": isinstance(description, str) and not METADATA_RISK.search(description),
+    }
 
 
 def assertion_payload(call: dict[str, Any], role: str) -> dict[str, str]:
