@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BoB Enterprise 로그인</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/integration.css" />
+  </head>
+  <body class="login-page">
+    <main class="login-shell">
+      <section class="brand-panel" aria-label="서비스 소개">
+        <div class="brand-mark" aria-hidden="true">B</div>
+        <div class="brand-copy">
+          <p class="eyebrow">BoB Enterprise AI</p>
+          <h1>업무용 AI를<br />안전하게 연결합니다</h1>
+          <p>
+            기업 계정으로 로그인하면 사용자 권한을 확인한 뒤
+            Agent Service와 MCP Security Gateway를 통해 요청을 처리합니다.
+          </p>
+        </div>
+        <div class="trust-note">
+          <span class="status-dot" aria-hidden="true"></span>
+          테스트베드 보호 연결
+        </div>
+      </section>
+
+      <section class="login-panel">
+        <div class="login-card">
+          <div class="mobile-brand">
+            <span class="brand-mark small" aria-hidden="true">B</span>
+            <span>BoB Enterprise AI</span>
+          </div>
+          <p class="eyebrow blue">합성 사용자 인증 · v1.1</p>
+          <h2>로그인</h2>
+          <p class="form-description">
+            실습 역할을 고르세요. 실제 계정은 사용하지 않습니다.
+          </p>
+
+          <form id="login-form" novalidate>
+            <label for="demo-role">실습 역할</label>
+            <select id="demo-role">
+              <option value="miso@bob.local">직원 김미소 · 중요 문서 열람은 경보</option>
+              <option value="customer@bob.local">고객 김민수 · 공개 문서만 허용</option>
+              <option value="admin@bob.local">관리자 박지훈 · 외부 전송 승인·제한</option>
+            </select>
+            <label for="email">회사 이메일</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="username"
+              value="miso@bob.local"
+              required
+            />
+
+            <div class="label-row">
+              <label for="password">비밀번호</label>
+              <span>테스트 계정</span>
+            </div>
+            <div class="password-field">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                value="test-password"
+                required
+              />
+              <button
+                id="toggle-password"
+                class="text-button"
+                type="button"
+                aria-label="비밀번호 표시"
+              >표시</button>
+            </div>
+
+            <p id="login-error" class="error-message" role="alert"></p>
+
+            <button id="login-button" class="primary-button" type="submit">
+              <span>합성 계정으로 계속</span>
+              <span aria-hidden="true">›</span>
+            </button>
+          </form>
+
+          <div class="test-account">
+            <strong>모의 SSO 안내</strong>
+            <p>
+              실제 기업 인증정보를 사용하지 않습니다. 현재 화면은 SSO Token 발급과
+              사용자 식별 흐름을 시험하기 위한 테스트 페이지입니다.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="/static/login.js" defer></script>
+  </body>
+</html>

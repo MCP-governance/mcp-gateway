@@ -38,6 +38,7 @@ function App() {
   const [health, setHealth] = useState(null)
   const [state, setState] = useState(null)
   const [matrix, setMatrix] = useState(null)
+  const [integration, setIntegration] = useState(null)
   const [user, setUser] = useState('cust-demo')
   const [message, setMessage] = useState('공개 공지를 읽어줘')
   const [result, setResult] = useState(null)
@@ -46,12 +47,13 @@ function App() {
 
   const load = async () => {
     try {
-      const [nextHealth, nextState, nextMatrix] = await Promise.all([
-        api('/api/health'), api('/api/state'), api('/api/policy/matrix'),
+      const [nextHealth, nextState, nextMatrix, nextIntegration] = await Promise.all([
+        api('/api/health'), api('/api/state'), api('/api/policy/matrix'), api('/api/integration'),
       ])
       setHealth(nextHealth)
       setState(nextState)
       setMatrix(nextMatrix)
+      setIntegration(nextIntegration)
       setError('')
     } catch (err) {
       setError(err.message)
@@ -140,13 +142,20 @@ function App() {
         <div className="hero-summary" aria-label="현재 핵심 상태">
           <div><span>정책 결과</span><strong>5종</strong><small>Allow · Alert · Approval · Restrict · Block</small></div>
           <div><span>권한 조합</span><strong>27칸</strong><small>3 역할 × 3 등급 × r/w/x</small></div>
-          <div><span>데이터</span><strong>100% 합성</strong><small>실제 계정·기밀·LLM API 없음</small></div>
+          <div><span>모델 연결</span><strong>{integration?.readiness?.model?.mode === 'provider' ? 'API 모드' : '모의 모드'}</strong><small>합성 계정 · 모델 제안과 정책 집행 분리</small></div>
         </div>
       </div>
     </header>
 
     <main>
       {error && <div className="error-banner" role="alert"><b>확인 필요</b><span>{error}</span><button onClick={() => setError('')} aria-label="오류 닫기">×</button></div>}
+
+      <section className="section" aria-labelledby="agent-title">
+        <div className="section-heading"><div><p className="kicker">AGENT SERVICE · MISO 통합</p><h2 id="agent-title">로그인부터 실제 실행까지 이어집니다</h2><p>합성 로그인 → 세션 → 모델 Tool Call → 사용자·인자 검증 → 333 정책 → MCP 실행·감사</p></div><a className="secondary-link" href="http://localhost:8000" target="_blank" rel="noreferrer">사용자 업무 공간 열기 ↗</a></div>
+        <div className="audit-summary"><div><span>시나리오 준비</span><b>{integration?.readiness?.status === 'ready' ? '준비됨' : '확인 필요'}</b></div><div><span>모델 실행 방식</span><b>{integration?.readiness?.model?.mode || '확인 중'}</b></div><div><span>인증</span><b>합성 JWT · 30분</b></div><div><span>중복 실행 통제</span><b>요청·도구 ID별 1회</b></div></div>
+        <p>실제 API 연결 전에는 모의 모델을 사용합니다. 아래 실습기는 멘토용 정책 시뮬레이터이며, 로그인·세션 시나리오는 사용자 업무 공간에서 실행합니다.</p>
+        <details><summary>최근 Agent 요청과 세션 ID</summary><pre>{JSON.stringify(integration?.runs || [], null, 2)}</pre></details>
+      </section>
 
       <section className="section system-section" aria-labelledby="system-title">
         <div className="section-heading">
@@ -171,7 +180,7 @@ function App() {
 
       <section className="section" id="practice" aria-labelledby="practice-title">
         <div className="section-heading">
-          <div><p className="kicker">직접 실습</p><h2 id="practice-title">다섯 판정을 시험하세요</h2></div>
+          <div><p className="kicker">멘토용 정책 시뮬레이터</p><h2 id="practice-title">다섯 판정을 시험하세요</h2></div>
           <span className="note-pill">LLM 대신 결정론적 모의 모델</span>
         </div>
         <div className="practice-grid">
@@ -262,7 +271,7 @@ function App() {
 
       <section className="section boundary">
         <div><p className="kicker">정확한 해석</p><h2>이 데모가 증명하는 범위</h2></div>
-        <ul><li><b>증명:</b> Gateway를 통과한 호출의 계약·정책 판정과 upstream 실행 여부</li><li><b>구조적 통제:</b> MCP 서버는 내부 Docker 네트워크에 두고 호스트에는 Gateway만 공개</li><li><b>아직 아님:</b> 조직 전체 우회 경로 차단, 실사용자 인증, 실제 GitHub 권한 위임, 운영 HA</li></ul>
+        <ul><li><b>증명:</b> 로그인·세션·모델 인자 검증부터 Gateway 판정과 upstream 실행까지</li><li><b>구조적 통제:</b> MCP 서버는 내부망, 로컬 호스트에는 업무 공간·멘토 Dashboard·Jaeger 공개</li><li><b>아직 아님:</b> 조직 전체 우회 경로 차단, 실제 SSO, 외부 모델 실호출, 실제 GitHub 권한 위임, 운영 HA</li></ul>
       </section>
     </main>
     <footer><span>MCP Governance Security Gateway · Synthetic Lab</span><span>데모 데이터만 사용 · 기본 DENY · 인증 연계 전</span></footer>

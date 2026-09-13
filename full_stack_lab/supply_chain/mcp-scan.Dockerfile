@@ -8,6 +8,10 @@ RUN apt-get update \
     && pip install --no-cache-dir /opt/ai-infra-guard/mcp-scan \
     && apt-get purge -y --auto-remove build-essential git \
     && rm -rf /var/lib/apt/lists/*
+RUN useradd --uid 1000 --create-home scanner \
+    && mkdir -p /opt/ai-infra-guard/mcp-scan/logs \
+    && chown scanner:scanner /opt/ai-infra-guard/mcp-scan/logs
 
 WORKDIR /opt/ai-infra-guard/mcp-scan
+USER scanner
 ENTRYPOINT ["aig-mcp-scan"]
