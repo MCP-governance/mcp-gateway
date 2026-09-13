@@ -1,1 +1,4 @@
 __pycache__/
+full_stack_lab/.env
+full_stack_lab/gateway/ui/node_modules/
+full_stack_lab/gateway/ui/dist/

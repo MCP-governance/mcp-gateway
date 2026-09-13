@@ -1,0 +1,184 @@
+name: mcp-governance-full
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: mcp_governance
+      POSTGRES_USER: mcp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-demo-only-change-me}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mcp -d mcp_governance"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - db_data:/var/lib/postgresql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+    networks: [data]
+
+  opa:
+    image: openpolicyagent/opa:1.20.2-static
+    command:
+      - run
+      - --server
+      - --addr=0.0.0.0:8181
+      - --set=decision_logs.console=true
+      - --log-level=info
+      - /policy
+    healthcheck:
+      test: ["CMD", "/opa", "eval", "1"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - ./opa:/policy:ro
+    networks: [policy]
+
+  mock-http-mcp:
+    build: ./mock_server
+    environment:
+      MCP_TRANSPORT: streamable-http
+      MCP_PORT: "9000"
+      MCP_CATALOG_MODE: ${MCP_CATALOG_MODE:-normal}
+      EFFECT_LOG: /runtime/upstream-effects.jsonl
+    volumes:
+      - effects:/runtime
+    networks: [tools]
+
+  gateway:
+    build: ./gateway
+    environment: &gateway-env
+      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
+      OPA_URL: http://opa:8181/v1/data/mcp/authz/decision
+      HTTP_MCP_URL: http://mock-http-mcp:9000/mcp/
+      EFFECT_LOG: /runtime/upstream-effects.jsonl
+      REPORT_DIR: /reports
+      GITHUB_MCP_URL: https://api.githubcopilot.com/mcp/
+      GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN:-}
+      OTEL_SERVICE_NAME: mcp-security-gateway
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+    depends_on:
+      db:
+        condition: service_healthy
+      opa:
+        condition: service_healthy
+      mock-http-mcp:
+        condition: service_started
+      jaeger:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - effects:/runtime:ro
+      - ./reports:/reports:ro
+      - ./opa:/policy:ro
+    networks: [edge, policy, tools, data, telemetry]
+
+  gateway-sse:
+    build: ./gateway
+    command: ["python", "-m", "app.sse_entry"]
+    environment: *gateway-env
+    depends_on:
+      db:
+        condition: service_healthy
+      opa:
+        condition: service_healthy
+      mock-http-mcp:
+        condition: service_started
+    volumes:
+      - effects:/runtime:ro
+      - ./reports:/reports:ro
+      - ./opa:/policy:ro
+    networks: [policy, tools, data, telemetry]
+
+  jaeger:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.20.0
+    command:
+      - --set=receivers.otlp.protocols.grpc.endpoint=0.0.0.0:4317
+      - --set=receivers.otlp.protocols.http.endpoint=0.0.0.0:4318
+      - --set=extensions.jaeger_query.http.endpoint=0.0.0.0:16686
+    ports:
+      - "127.0.0.1:16686:16686"
+    networks: [telemetry]
+
+  syft:
+    image: anchore/syft:v1.51.1
+    profiles: [supply-chain]
+    environment:
+      SYFT_CHECK_FOR_APP_UPDATE: "false"
+    command:
+      - dir:/workspace
+      - --source-name
+      - mcp-gateway
+      - --source-version
+      - local-workspace
+      - -o
+      - cyclonedx-json=/reports/sbom.cdx.json
+    volumes:
+      - ..:/workspace:ro
+      - ./reports:/reports
+    network_mode: none
+
+  trivy:
+    image: aquasec/trivy:0.74.0
+    profiles: [supply-chain]
+    command:
+      - fs
+      - --scanners
+      - vuln,misconfig,secret,license
+      - --format
+      - json
+      - --output
+      - /reports/trivy.json
+      - --skip-dirs
+      - /workspace/.git
+      - /workspace
+    volumes:
+      - ..:/workspace:ro
+      - ./reports:/reports
+      - trivy_cache:/root/.cache/trivy
+    networks: [scanner]
+
+  mcp-scan:
+    build:
+      context: ./supply_chain
+      dockerfile: mcp-scan.Dockerfile
+      args:
+        AIG_REF: 036c39bd03b39ce4a811f7f125bc3b8f47e39b7c
+    profiles: [mcp-scan]
+    command:
+      - --repo
+      - /workspace/full_stack_lab/mock_server
+      - --output
+      - /reports/mcp-scan.sarif.json
+      - --api_key
+      - ${MCP_SCAN_API_KEY:-}
+      - --model
+      - ${MCP_SCAN_MODEL:-local-mock}
+      - --base_url
+      - ${MCP_SCAN_BASE_URL:-http://host.docker.internal:11434/v1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ..:/workspace:ro
+      - ./reports:/reports
+    networks: [scanner]
+
+networks:
+  edge: {}
+  policy:
+    internal: true
+  tools:
+    internal: true
+  data:
+    internal: true
+  telemetry:
+    internal: true
+  scanner: {}
+
+volumes:
+  db_data: {}
+  effects: {}
+  trivy_cache: {}

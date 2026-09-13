@@ -108,7 +108,7 @@ http://192.168.85.129:8080/
 | 기본 실습 | Docker Compose + Python 3.12 Alpine | 기존 stdio 예제를 한 번에 실행 |
 | 형상관리 | Git·GitHub | 실습 단계별 브랜치 보존 |
 
-이번 단계에는 MCP SDK, OPA/Rego, Casbin, 데이터베이스, OpenTelemetry를 **설치하지 않았습니다**. 정책이 늘어나거나 여러 Gateway를 관리할 때 각각 MCP 프로토콜 구현, 중앙 정책, 권한 모델, 감사 추적 용도로 추가하는 다음 단계 후보입니다.
+기본 stdio·두 VM 단계에는 MCP SDK, OPA/Rego, Casbin, 데이터베이스, OpenTelemetry를 **설치하지 않았습니다**. 반면 `container_lab/` 확장 단계는 OPA/Rego를 실제 정책 결정점으로 사용합니다.
 
 ### 이번에 추가한 룰셋
 
@@ -135,3 +135,18 @@ http://192.168.85.129:8080/
 ## 4. 라이브러리·공개 MCP 통합 실습 브랜치
 
 `library_lab/`은 별도 브랜치에서 FastAPI, Pydantic, PyCasbin, OpenTelemetry와 공개 `mcp-server-time`을 실제로 연결한 확장판입니다. 자세한 설치·호환성·GUI 주소는 [library_lab/README.md](library_lab/README.md)를 참고합니다.
+
+## 5. 컨테이너·LiteLLM·OPA 통합 실습 브랜치
+
+`container_lab/`은 팀원의 Agent → Gateway → Mock MCP Docker 네트워크 구조와 이 저장소의 역할·자료등급 정책, 실행 증적 방식을 합친 확장판입니다. LiteLLM은 도구 호출을 **제안**하는 모델 경로만 담당하고, Gateway와 OPA가 실제 허용·차단을 결정합니다. AI-Infra-Guard의 MCP-Scan 접근을 축소 적용해 승인된 도구 목록·입력 스키마·도구 설명 변조를 사전 확인한 뒤 Rego에 전달합니다. 실행법과 검증 명령은 [container_lab/README.md](container_lab/README.md)를 참고합니다.
+
+## 6. 전체 MCP Security Gateway 실습
+
+`full_stack_lab/`은 확정한 333 `rwx` Rego 정책, 다섯 판정, Registry/catalog drift 차단, 승인 재검증, PostgreSQL 감사, OpenTelemetry/Jaeger, 공급망 SBOM·취약점 증적을 한 Compose에 묶은 현재 통합판입니다. Streamable HTTP·stdio·legacy SSE를 실제 MCP 호출로 검증하며, GitHub MCP는 인증 및 catalog 승인 전까지 의도적으로 비활성화합니다.
+
+```bash
+cd full_stack_lab
+./demo.sh
+```
+
+Dashboard는 <http://localhost:8080>에서 열립니다. 실습 순서, 예상 결과, 공급망 스캔과 정확한 증명 범위는 [full_stack_lab/README.md](full_stack_lab/README.md)를 참고합니다.

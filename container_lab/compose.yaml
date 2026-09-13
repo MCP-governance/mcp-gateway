@@ -1,0 +1,139 @@
+services:
+  agent-service:
+    build: ./agent-service
+    environment:
+      GATEWAY_URL: http://gateway:8080
+      LITELLM_URL: http://litellm:4000
+      LITELLM_API_KEY: ${LITELLM_MASTER_KEY:-sk-local-testbed}
+      AGENT_ASSERTION_SECRET: ${AGENT_ASSERTION_SECRET:-lab-assertion-only}
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks:
+      - entry_net
+      - control_net
+    depends_on:
+      gateway:
+        condition: service_healthy
+      litellm:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  gateway:
+    build: ./gateway
+    environment:
+      MOCK_MCP_URL: http://mock-mcp:9000
+      OPA_URL: http://opa:8181/v1/data/mcp/authz/decision
+      MCP_GATEWAY_TOKEN: ${MCP_GATEWAY_TOKEN:-lab-upstream-only}
+      AGENT_ASSERTION_SECRET: ${AGENT_ASSERTION_SECRET:-lab-assertion-only}
+      AUDIT_FILE: /runtime/gateway.jsonl
+    volumes:
+      - audit_data:/runtime
+    networks:
+      - control_net
+      - policy_net
+      - mcp_net
+    depends_on:
+      mock-mcp:
+        condition: service_healthy
+      opa:
+        condition: service_started
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  mock-mcp:
+    build: ./mock-mcp
+    environment:
+      MCP_GATEWAY_TOKEN: ${MCP_GATEWAY_TOKEN:-lab-upstream-only}
+      EFFECT_FILE: /runtime/effects.jsonl
+      MCP_SCHEMA_MODE: ${MCP_SCHEMA_MODE:-approved}
+      MCP_CATALOG_MODE: ${MCP_CATALOG_MODE:-approved}
+    volumes:
+      - ./fixtures:/data:ro
+      - effects_data:/runtime
+    networks:
+      - mcp_net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  opa:
+    image: ${OPA_IMAGE:-openpolicyagent/opa:1.20.2}
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "--set=decision_logs.console=true", "/policy"]
+    volumes:
+      - ./opa:/policy:ro
+    networks:
+      - policy_net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  litellm:
+    # Demo default follows LiteLLM's official container path. Replace with a digest before a long-lived deployment.
+    image: ${LITELLM_IMAGE:-docker.litellm.ai/berriai/litellm:main-latest}
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-local-testbed}
+    volumes:
+      - ./litellm-config.yaml:/app/config.yaml:ro
+    networks:
+      - control_net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  verifier:
+    build: ./verifier
+    profiles: ["verify"]
+    volumes:
+      - audit_data:/audit:ro
+      - effects_data:/effects:ro
+    network_mode: none
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+networks:
+  entry_net:
+    driver: bridge
+  control_net:
+    driver: bridge
+    internal: true
+  policy_net:
+    driver: bridge
+    internal: true
+  mcp_net:
+    driver: bridge
+    internal: true
+
+volumes:
+  audit_data:
+  effects_data:
