@@ -1,6 +1,31 @@
-# Tiny MCP policy-gateway demo
+# MCP Security Gateway 실습 저장소
 
-MCP 도구 호출 직전에 정책을 적용하는 최소 실습입니다. 기본 stdio 실습과, 역할·자료등급·권한을 적용한 두 VM Gateway 실습을 함께 제공합니다.
+MCP 도구 호출 직전에 정책을 적용하는 최소 실습부터 OPA/Rego, Registry, 승인, 감사, 공급망 검증을 포함한 통합판까지 단계별로 제공합니다. 처음 실행한다면 아래의 **2026-09 v1.0 통합판**부터 시작하고, 각 통제가 발전한 과정이 필요할 때만 이전 실습을 참고하면 됩니다.
+
+## 현재 권장판: 2026-09 v1.0
+
+WSL Kali에서 다음 한 줄로 전체 실습을 시작합니다.
+
+```bash
+cd ~/mcp-gateway/full_stack_lab && ./demo.sh
+```
+
+- Dashboard: <http://localhost:8080>
+- 전체 검증: `./demo.sh test`
+- 공급망 증적: `./demo.sh scan`
+- 상세 실습 안내: [full_stack_lab/README.md](full_stack_lab/README.md)
+
+현재 개발 결과는 모두 `main`에 병합되어 있습니다. 완료된 과거 브랜치는 삭제했고, 아래 annotated tag로 시점별 코드를 보존합니다.
+
+| 버전 태그 | 단계 | 용도 |
+| --- | --- | --- |
+| [`2026-09-v0.1-two-vm-gateway`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v0.1-two-vm-gateway) | 2-VM Gateway | Gateway 판정과 독립 upstream 효과 증명 |
+| [`2026-09-v0.2-rbac-data-policy`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v0.2-rbac-data-policy) | RBAC·자료등급 | `customer / employee / admin`과 `public / nonimportant / important` 정책 |
+| [`2026-09-v0.3-library-mcp`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v0.3-library-mcp) | 라이브러리 MCP | FastAPI·Pydantic·PyCasbin·공개 Time MCP 연동 |
+| [`2026-09-v0.4-litellm-opa-container`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v0.4-litellm-opa-container) | 컨테이너 정책 | LiteLLM 제안 경로와 OPA/Rego 집행 경로 분리 |
+| [`2026-09-v1.0-full-security-gateway`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v1.0-full-security-gateway) | 전체 통합판 | 333 정책, 다섯 판정, Registry drift, 승인, 감사, 공급망, 세 transport |
+
+앞으로 작업 브랜치는 `feat/YYYY-MM-vX.Y-내용`, 릴리스 후보는 `release/YYYY-MM-vX.Y-내용` 형식을 사용합니다. 완료 후에는 `main`에 병합하고 같은 형식의 버전 태그를 남긴 뒤 브랜치를 삭제합니다. 커밋 제목은 `기능:`, `수정:`, `문서:`, `병합:`처럼 한국어 접두어로 목적을 표시합니다.
 
 ## 1. 자동 실습
 
@@ -106,7 +131,7 @@ http://192.168.85.129:8080/
 | 화면 | 순수 HTML·CSS·JavaScript | Gateway가 `/`에서 직접 제공, 별도 Node.js/React 없음 |
 | VM 배포 | WSL의 `ssh`, `scp`, `curl`, Bash | 코드 복사·기동·상태 확인 |
 | 기본 실습 | Docker Compose + Python 3.12 Alpine | 기존 stdio 예제를 한 번에 실행 |
-| 형상관리 | Git·GitHub | 실습 단계별 브랜치 보존 |
+| 형상관리 | Git·GitHub | 완료 코드는 `main`, 단계별 시점은 버전 태그로 보존 |
 
 기본 stdio·두 VM 단계에는 MCP SDK, OPA/Rego, Casbin, 데이터베이스, OpenTelemetry를 **설치하지 않았습니다**. 반면 `container_lab/` 확장 단계는 OPA/Rego를 실제 정책 결정점으로 사용합니다.
 
@@ -132,11 +157,11 @@ http://192.168.85.129:8080/
 
 실무에서는 정책 저장소/감사 수집기 분리, Gateway 우회 방지를 위한 네트워크 정책, 스키마 변경 감지, 중앙 인증을 추가합니다. 다음 학습 단계에서 정책이 많아지면 이 코드의 `ROLE_PERMISSIONS`만 OPA/Rego 또는 Casbin 같은 정책 엔진으로 교체하는 편이 좋습니다. P2 수준의 직접 egress 차단을 실제로 입증하려면 그때 별도 네트워크 격리 VM 또는 컨테이너 네임스페이스를 고려하면 됩니다.
 
-## 4. 라이브러리·공개 MCP 통합 실습 브랜치
+## 4. 라이브러리·공개 MCP 통합 실습
 
-`library_lab/`은 별도 브랜치에서 FastAPI, Pydantic, PyCasbin, OpenTelemetry와 공개 `mcp-server-time`을 실제로 연결한 확장판입니다. 자세한 설치·호환성·GUI 주소는 [library_lab/README.md](library_lab/README.md)를 참고합니다.
+`library_lab/`은 v0.3 단계에서 FastAPI, Pydantic, PyCasbin, OpenTelemetry와 공개 `mcp-server-time`을 실제로 연결한 확장판입니다. 자세한 설치·호환성·GUI 주소는 [library_lab/README.md](library_lab/README.md)를 참고합니다.
 
-## 5. 컨테이너·LiteLLM·OPA 통합 실습 브랜치
+## 5. 컨테이너·LiteLLM·OPA 통합 실습
 
 `container_lab/`은 팀원의 Agent → Gateway → Mock MCP Docker 네트워크 구조와 이 저장소의 역할·자료등급 정책, 실행 증적 방식을 합친 확장판입니다. LiteLLM은 도구 호출을 **제안**하는 모델 경로만 담당하고, Gateway와 OPA가 실제 허용·차단을 결정합니다. AI-Infra-Guard의 MCP-Scan 접근을 축소 적용해 승인된 도구 목록·입력 스키마·도구 설명 변조를 사전 확인한 뒤 Rego에 전달합니다. 실행법과 검증 명령은 [container_lab/README.md](container_lab/README.md)를 참고합니다.
 
