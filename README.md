@@ -1,8 +1,8 @@
 # MCP Security Gateway 실습 저장소
 
-MCP 도구 호출 직전에 정책을 적용하는 최소 실습부터 OPA/Rego, Registry, 승인, 감사, 공급망 검증을 포함한 통합판까지 단계별로 제공합니다. 처음 실행한다면 아래의 **2026-09 v1.0 통합판**부터 시작하고, 각 통제가 발전한 과정이 필요할 때만 이전 실습을 참고하면 됩니다.
+MCP 도구 호출 직전에 정책을 적용하는 최소 실습부터 OPA/Rego, Registry, 승인, 감사, 공급망 검증과 Agent Service를 포함한 통합판까지 단계별로 제공합니다. 처음 실행한다면 아래의 **2026-09 v1.1 통합판**부터 시작하고, 각 통제가 발전한 과정이 필요할 때만 이전 실습을 참고하면 됩니다.
 
-## 현재 권장판: 2026-09 v1.0
+## 현재 권장판: 2026-09 v1.1
 
 WSL Kali에서 다음 한 줄로 전체 실습을 시작합니다.
 
@@ -10,7 +10,8 @@ WSL Kali에서 다음 한 줄로 전체 실습을 시작합니다.
 cd ~/mcp-gateway/full_stack_lab && ./demo.sh
 ```
 
-- Dashboard: <http://localhost:8080>
+- 합성 사용자 업무 공간: <http://localhost:8000>
+- 거버넌스 Dashboard: <http://localhost:8080>
 - 전체 검증: `./demo.sh test`
 - 공급망 증적: `./demo.sh scan`
 - 상세 실습 안내: [full_stack_lab/README.md](full_stack_lab/README.md)
@@ -24,6 +25,7 @@ cd ~/mcp-gateway/full_stack_lab && ./demo.sh
 | [`2026-09-v0.3-library-mcp`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v0.3-library-mcp) | 라이브러리 MCP | FastAPI·Pydantic·PyCasbin·공개 Time MCP 연동 |
 | [`2026-09-v0.4-litellm-opa-container`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v0.4-litellm-opa-container) | 컨테이너 정책 | LiteLLM 제안 경로와 OPA/Rego 집행 경로 분리 |
 | [`2026-09-v1.0-full-security-gateway`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v1.0-full-security-gateway) | 전체 통합판 | 333 정책, 다섯 판정, Registry drift, 승인, 감사, 공급망, 세 transport |
+| [`2026-09-v1.1-agent-service-integration`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v1.1-agent-service-integration) | Agent 통합판 | 팀원 Agent UI, 합성 JWT, 세션·멱등성, 모델 API 경계, GitHub MCP 활성화 절차 |
 
 앞으로 작업 브랜치는 `feat/YYYY-MM-vX.Y-내용`, 릴리스 후보는 `release/YYYY-MM-vX.Y-내용` 형식을 사용합니다. 완료 후에는 `main`에 병합하고 같은 형식의 버전 태그를 남긴 뒤 브랜치를 삭제합니다. 커밋 제목은 `기능:`, `수정:`, `문서:`, `병합:`처럼 한국어 접두어로 목적을 표시합니다.
 
@@ -167,11 +169,11 @@ http://192.168.85.129:8080/
 
 ## 6. 전체 MCP Security Gateway 실습
 
-`full_stack_lab/`은 확정한 333 `rwx` Rego 정책, 다섯 판정, Registry/catalog drift 차단, 승인 재검증, PostgreSQL 감사, OpenTelemetry/Jaeger, 공급망 SBOM·취약점 증적을 한 Compose에 묶은 현재 통합판입니다. Streamable HTTP·stdio·legacy SSE를 실제 MCP 호출로 검증하며, GitHub MCP는 인증 및 catalog 승인 전까지 의도적으로 비활성화합니다.
+`full_stack_lab/`은 확정한 333 `rwx` Rego 정책, 다섯 판정, Registry/catalog drift 차단, 승인 재검증, PostgreSQL 감사, OpenTelemetry/Jaeger, 공급망 SBOM·취약점 증적과 팀원의 Agent Service를 한 Compose에 묶은 현재 통합판입니다. Streamable HTTP·stdio·legacy SSE를 실제 MCP 호출로 검증하고, 실제 LLM 대신 결정론적 모의 모델을 기본 사용합니다. GitHub MCP는 인증 및 catalog 승인 전까지 의도적으로 비활성화합니다.
 
 ```bash
 cd full_stack_lab
 ./demo.sh
 ```
 
-Dashboard는 <http://localhost:8080>에서 열립니다. 실습 순서, 예상 결과, 공급망 스캔과 정확한 증명 범위는 [full_stack_lab/README.md](full_stack_lab/README.md)를 참고합니다.
+먼저 <http://localhost:8000>에서 합성 사용자 요청을 실행한 뒤 <http://localhost:8080>에서 같은 요청의 정책·감사·upstream 증적을 확인합니다. 실습 계정, API 연결 준비, GitHub MCP 활성화 절차와 정확한 증명 범위는 [full_stack_lab/README.md](full_stack_lab/README.md)를 참고합니다.

@@ -1,0 +1,10 @@
+.hidden {display:none !important}
+select {width:100%;padding:12px;border:1px solid #b6c6da;border-radius:8px;margin-bottom:18px;background:white;color:#17334f;font:inherit}
+.prompt-examples {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.history-item {display:block;width:100%;text-align:left;background:#f3f7fc;border:1px solid #c9d7e6;border-radius:8px;padding:12px;margin:8px 0;color:#18394f;cursor:pointer;overflow-wrap:anywhere}
+.result-metadata dd {overflow-wrap:anywhere;min-width:0}
+.composer-footer {flex-wrap:wrap;gap:12px}
+button:focus-visible,a:focus-visible,select:focus-visible {outline:3px solid #1376d2;outline-offset:3px}
+#approval-queue {margin-top:24px}
+@media(max-width:800px) {.prompt-examples{grid-template-columns:1fr 1fr}.user-area{flex-wrap:wrap}.result-metadata{grid-template-columns:1fr}}
+@media(max-width:500px) {.prompt-examples{grid-template-columns:1fr}.app-header{padding:14px;gap:12px;flex-wrap:wrap}.workspace-shell{padding:20px 14px}}

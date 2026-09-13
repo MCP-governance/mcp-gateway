@@ -56,6 +56,8 @@ services:
       REPORT_DIR: /reports
       GITHUB_MCP_URL: https://api.githubcopilot.com/mcp/
       GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN:-}
+      GITHUB_ALLOWED_REPOS: ${GITHUB_ALLOWED_REPOS:-MCP-governance/mcp-gateway}
+      AGENT_JWT_SECRET: ${AGENT_JWT_SECRET:?Run ./demo.sh to initialize the local secret}
       OTEL_SERVICE_NAME: mcp-security-gateway
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -75,6 +77,31 @@ services:
       - ./reports:/reports:ro
       - ./opa:/policy:ro
     networks: [edge, policy, tools, data, telemetry]
+
+  agent-service:
+    build: ./gateway
+    command: ["uvicorn", "app.agent_service:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
+      GATEWAY_URL: http://gateway:8080
+      AGENT_JWT_SECRET: ${AGENT_JWT_SECRET:?Run ./demo.sh}
+      MOCK_SSO_PASSWORD: ${MOCK_SSO_PASSWORD:-test-password}
+      MODEL_MODE: ${MODEL_MODE:-mock}
+      MODEL_BASE_URL: ${MODEL_BASE_URL:-}
+      MODEL_API_KEY: ${MODEL_API_KEY:-}
+      MODEL_NAME: ${MODEL_NAME:-}
+      MODEL_TIMEOUT_SECONDS: ${MODEL_TIMEOUT_SECONDS:-20}
+      OTEL_SERVICE_NAME: agent-service
+    ports:
+      - "127.0.0.1:8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      gateway:
+        condition: service_started
+    networks: [edge, agent, data, telemetry]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
 
   gateway-sse:
     build: ./gateway
@@ -109,7 +136,7 @@ services:
     environment:
       SYFT_CHECK_FOR_APP_UPDATE: "false"
     command:
-      - dir:/workspace
+      - dir:/workspace/full_stack_lab
       - --source-name
       - mcp-gateway
       - --source-version
@@ -134,7 +161,7 @@ services:
       - /reports/trivy.json
       - --skip-dirs
       - /workspace/.git
-      - /workspace
+      - /workspace/full_stack_lab
     volumes:
       - ..:/workspace:ro
       - ./reports:/reports
@@ -168,6 +195,8 @@ services:
 
 networks:
   edge: {}
+  agent:
+    internal: true
   policy:
     internal: true
   tools:

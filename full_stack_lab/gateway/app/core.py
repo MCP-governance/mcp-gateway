@@ -6,18 +6,22 @@ import json
 import os
 import re
 import uuid
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 import httpx
+import httpx2
 from mcp import Client, StdioServerParameters
+from mcp.client.streamable_http import streamable_http_client
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
+from jsonschema import Draft202012Validator
 
 from . import db
 
@@ -78,7 +82,16 @@ def _tool_view(tool: Any) -> dict:
     }
 
 
-async def _discover(server_id: str) -> dict:
+@asynccontextmanager
+async def _client(server_id: str):
+    if server_id == "github":
+        if not GITHUB_TOKEN:
+            raise RuntimeError("GitHub token is not configured")
+        headers = {"Authorization": "Bearer " + GITHUB_TOKEN, "X-MCP-Tools": "get_file_contents", "X-MCP-Readonly": "true"}
+        async with httpx2.AsyncClient(headers=headers, timeout=20, trust_env=False) as http_client:
+            async with Client(streamable_http_client(GITHUB_MCP_URL, http_client=http_client)) as client:
+                yield client
+        return
     if server_id == "mock-http":
         client_source: Any = HTTP_MCP_URL
     elif server_id == "mock-stdio":
@@ -90,6 +103,11 @@ async def _discover(server_id: str) -> dict:
         raise RuntimeError(f"discovery is disabled for {server_id}")
 
     async with Client(client_source) as client:
+        yield client
+
+
+async def _discover(server_id: str) -> dict:
+    async with _client(server_id) as client:
         listed = await client.list_tools()
         info = client.server_info
         return {
@@ -176,6 +194,7 @@ async def refresh_catalog(server_id: str) -> dict:
 
 async def bootstrap() -> None:
     await db.wait_until_ready()
+    await db.execute((Path(__file__).parent / "agent_tables.sql").read_text())
     if POLICY_PATH.exists():
         digest = hashlib.sha256(POLICY_PATH.read_bytes()).hexdigest()
         await db.execute("UPDATE policy_versions SET status='SUPERSEDED' WHERE status='ACTIVE' AND source_sha256<>%s", (digest,))
@@ -221,7 +240,9 @@ async def _contract(server_id: str, tool_name: str) -> dict:
         "SELECT * FROM catalog_snapshots WHERE server_id=%s ORDER BY id DESC LIMIT 1", (server_id,)
     )
     critical = await db.fetch_one(
-        "SELECT critical_count FROM supply_chain_reports WHERE source_ref=%s ORDER BY id DESC LIMIT 1",
+        """SELECT COALESCE(sum(critical_count),0) AS critical_count FROM
+           (SELECT DISTINCT ON (scanner) critical_count FROM supply_chain_reports
+            WHERE source_ref=%s ORDER BY scanner,id DESC) latest_per_scanner""",
         (server["source_ref"],),
     )
     return {
@@ -248,16 +269,20 @@ async def _policy(input_document: dict) -> dict:
 
 
 async def _call_upstream(spec: dict, arguments: dict) -> dict:
-    if spec["server_id"] == "mock-http":
-        source: Any = HTTP_MCP_URL
-    elif spec["server_id"] == "mock-stdio":
-        source = StdioServerParameters(command=TIME_MCP_PYTHON, args=["-m", "mcp_server_time"])
-    elif spec["server_id"] == "github":
-        raise RuntimeError("GitHub MCP authentication is not configured")
-    else:
-        raise RuntimeError("unknown upstream MCP server")
-
-    async with Client(source) as client:
+    async with _client(spec["server_id"]) as client:
+        # Recheck the approved contract on the SAME connection that will execute.
+        listed = await client.list_tools()
+        registered = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s", (spec["server_id"],))
+        observed = {t.name: _tool_view(t) for t in listed.tools}
+        if set(observed) != {t["name"] for t in registered}:
+            raise RuntimeError("MCP catalog changed before execution")
+        for row in registered:
+            tool = observed[row["name"]]
+            if (canonical_hash(tool["description"]) != row["approved_description_hash"]
+                    or canonical_hash(tool["input_schema"]) != row["approved_schema_hash"]
+                    or client.server_info.version != row["approved_server_version"]):
+                raise RuntimeError("MCP contract changed before execution")
+        Draft202012Validator(observed[spec["registry_name"]]["input_schema"]).validate(arguments)
         result = await client.call_tool(spec["registry_name"], arguments)
         if result.is_error:
             messages = [getattr(item, "text", str(item)) for item in result.content]
@@ -309,7 +334,7 @@ async def _record_decision(event: dict) -> int:
 
 
 async def execute_call(payload: dict, approval_granted: bool = False, approval_id: str | None = None) -> dict:
-    request_id = str(uuid.uuid4())
+    request_id = str(payload.get("_agent_context", {}).get("request_id") or uuid.uuid4())
     before = effect_count()
     with tracer.start_as_current_span("mcp.gateway.call") as span:
         trace_id = f"{span.get_span_context().trace_id:032x}"
@@ -317,8 +342,11 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         spec = TOOL_SPECS.get(tool_name, {"server_id": "mock-http", "registry_name": tool_name, "action": "x"})
         principal = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (payload.get("user_token", ""),))
         document = None
-        if tool_name in {"get_current_time", "github_get_file"}:
+        if tool_name == "get_current_time":
             data_class = "public"
+        elif tool_name == "github_get_file":
+            # An external repository is important unless an operator classifies it otherwise.
+            data_class = "important"
         else:
             document = await db.fetch_one("SELECT * FROM documents WHERE id=%s", (payload.get("document_id", ""),))
             data_class = document["data_class"] if document else "important"
@@ -352,13 +380,33 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             decision_id = await _record_decision(base_event)
             return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
 
-        if spec["server_id"] != "github":
+        from .agent_contract import SCHEMAS
+        if tool_name in SCHEMAS:
+            try:
+                Draft202012Validator(SCHEMAS[tool_name]).validate(_upstream_arguments(tool_name, payload, {}))
+            except Exception:
+                base_event.update(decision="Block", policy_id="P-INPUT-SCHEMA-001", reason="도구 인자가 승인된 입력 형식과 다릅니다.", restrictions={})
+                decision_id = await _record_decision(base_event)
+                return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
+
+        if tool_name == "github_get_file":
+            allowed_repos = {item.strip().lower() for item in os.getenv("GITHUB_ALLOWED_REPOS", "MCP-governance/mcp-gateway").split(",") if item.strip()}
+            if f"{payload.get('owner', '')}/{payload.get('repo', '')}".lower() not in allowed_repos:
+                base_event.update(decision="Block", policy_id="MCP-REPOSITORY-001", reason="허용 목록에 없는 GitHub 저장소입니다.", restrictions={})
+                decision_id = await _record_decision(base_event)
+                return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
+
+        catalog_fresh = True
+        if spec["server_id"] != "github" or GITHUB_TOKEN:
             try:
                 await refresh_catalog(spec["server_id"])
             except Exception as exc:
                 span.record_exception(exc)
+                catalog_fresh = False
 
         contract = await _contract(spec["server_id"], spec["registry_name"])
+        if not catalog_fresh:
+            contract["known_tools_only"] = False
         policy_input = {
             "principal": {"role": role, "synthetic": bool(principal["synthetic"])},
             "resource": {"id": payload.get("document_id", "time"), "data_class": data_class},
@@ -395,6 +443,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             base_event["approval_id"] = new_approval_id
         elif result["decision"] in {"Allow", "Alert", "Restrict"}:
             effective = _upstream_arguments(tool_name, payload, result.get("restrictions") or {})
+            base_event["upstream_attempted"] = True
             try:
                 with tracer.start_as_current_span("mcp.upstream.call") as upstream_span:
                     upstream_span.set_attribute("mcp.server", spec["server_id"])
@@ -406,7 +455,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 base_event.update({
                     "decision": "Block",
                     "policy_id": "MCP-UPSTREAM-001",
-                    "reason": "허용 후 upstream MCP 실행이 실패했습니다.",
+                    "reason": "허용 후 MCP 통신이 실패했습니다. 실제 실행 여부는 독립 증적을 확인하세요.",
                     "error": str(exc)[:500],
                 })
                 span.record_exception(exc)
@@ -466,12 +515,17 @@ async def import_supply_chain_reports() -> list[dict]:
     if trivy.exists():
         data = json.loads(trivy.read_text(encoding="utf-8"))
         counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0}
+        categories = {key: {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0} for key in ("Vulnerabilities", "Misconfigurations", "Secrets")}
         for result in data.get("Results") or []:
-            for vulnerability in result.get("Vulnerabilities") or []:
-                severity = vulnerability.get("Severity", "")
-                if severity in counts:
-                    counts[severity] += 1
-        summary = {"targets": len(data.get("Results") or []), "counts": counts}
+            for category in categories:
+                for finding in result.get(category) or []:
+                    if category == "Misconfigurations" and finding.get("Status") == "PASS":
+                        continue
+                    severity = finding.get("Severity", "")
+                    if severity in counts:
+                        counts[severity] += 1
+                        categories[category][severity] += 1
+        summary = {"targets": len(data.get("Results") or []), "counts": counts, "categories": categories}
         await db.execute("DELETE FROM supply_chain_reports WHERE scanner='Trivy' AND report_path=%s", (str(trivy),))
         await db.execute(
             """INSERT INTO supply_chain_reports(scanner, scanner_version, source_ref, report_path, status,

@@ -1,8 +1,8 @@
 # MCP Security Gateway 전체 실습
 
-멘토가 화면만 보고도 **요청 → 정책 판단 → MCP 실행 → 증적**을 따라갈 수 있도록 만든 WSL2 + Docker Compose 실습입니다. 실제 LLM과 실제 개인정보는 쓰지 않습니다. 합성 사용자와 결정론적 모의 모델로 Tool Call을 만들고, Gateway가 Registry 계약·공급망 증적·OPA/Rego 정책을 검사한 뒤에만 upstream MCP를 호출합니다.
+멘토가 화면만 보고도 **로그인 → 업무 요청 → Tool Call 제안 → 정책 판단 → MCP 실행 → 증적**을 따라갈 수 있도록 만든 WSL2 + Docker Compose 실습입니다. 팀원의 Agent Service UI를 기존 보안 Gateway에 합쳤고, 기본 실행은 실제 LLM·실제 개인정보·실제 GitHub 자격증명을 쓰지 않습니다. 합성 사용자와 결정론적 모의 모델로 Tool Call을 만들고, Gateway가 서명된 사용자·입력 Schema·Registry 계약·공급망 증적·OPA/Rego 정책을 검사한 뒤에만 upstream MCP를 호출합니다.
 
-> 가장 빠른 시작: `./demo.sh` → <http://localhost:8080>
+> 가장 빠른 시작: `./demo.sh` → 업무 공간 <http://localhost:8000> → 증적 Dashboard <http://localhost:8080>
 
 ## 1. 무엇을 확인하는 실습인가
 
@@ -16,19 +16,21 @@
 
 ```mermaid
 flowchart LR
-    U[합성 사용자 요청] --> M[결정론적 모의 모델]
-    M -->|Tool Call| G[MCP Security Gateway]
+    U[합성 사용자] -->|JWT 로그인·업무 요청| AS[Agent Service]
+    AS --> M[모의 모델 또는 OpenAI 호환 API]
+    M -->|검증된 Tool Call 1개| AS
+    AS -->|서명 사용자와 요청 ID| G[MCP Security Gateway]
     G <--> R[(Registry / PostgreSQL)]
     G <--> O[OPA / Rego]
     G -->|허용된 호출만| H[Streamable HTTP MCP]
     G -->|허용된 호출만| S[stdio Time MCP]
-    G -. 인증 후 활성화 .-> GH[GitHub MCP]
+    G -. 토큰·catalog 승인 후 .-> GH[GitHub MCP]
     G --> A[(감사 로그 / 승인)]
     G --> J[OpenTelemetry / Jaeger]
     SC[Syft · Trivy · mcp-scan] --> R
 ```
 
-MCP 서버는 Docker 내부망에 있고 호스트에는 Gateway(`127.0.0.1:8080`)와 Jaeger UI(`127.0.0.1:16686`)만 공개됩니다. 따라서 이 Compose 실습 안에서는 합성 문서 MCP를 직접 호출하지 않고 Gateway 강제 경로를 사용합니다.
+MCP 서버는 Docker 내부망에 있고 호스트에는 Agent Service(`127.0.0.1:8000`), Gateway(`127.0.0.1:8080`), Jaeger UI(`127.0.0.1:16686`)만 공개됩니다. 따라서 이 Compose 실습 안에서는 합성 문서 MCP를 직접 호출하지 않고 Gateway 강제 경로를 사용합니다.
 
 ## 2. WSL에서 원클릭 실행
 
@@ -42,8 +44,11 @@ cd ~/mcp-gateway/full_stack_lab
 
 스크립트가 이미지를 빌드하고 서비스 준비까지 기다립니다. 다음 주소를 엽니다.
 
-- Dashboard: <http://localhost:8080>
+- 업무 공간: <http://localhost:8000>
+- 거버넌스 Dashboard: <http://localhost:8080>
 - Jaeger: <http://localhost:16686>
+
+첫 실행 때 `demo.sh`가 커밋하지 않는 `.env`에 합성 JWT 서명 키를 무작위 생성합니다. 별도 복사·설정 단계는 없습니다.
 
 상태만 다시 확인하려면 다음을 실행합니다.
 
@@ -57,26 +62,42 @@ cd ~/mcp-gateway/full_stack_lab
 ./demo.sh reset
 ```
 
-## 3. 대시보드에서 3분 실습
+## 3. 화면에서 5분 실습
 
-`직접 실습` 영역에는 다섯 개의 빠른 시나리오가 있습니다.
+### 3.1 합성 사용자로 요청하기
 
-| 빠른 시나리오 | 합성 요청자 | 예상 판정 | upstream 효과 | 관찰할 통제 |
+업무 공간 <http://localhost:8000>에서 다음 합성 계정 중 하나를 고릅니다. 공통 비밀번호는 `test-password`이며 `.env`의 `MOCK_SSO_PASSWORD`로 바꿀 수 있습니다.
+
+| 화면의 역할 | 이메일 | 333 역할 | 대표 관찰 |
+| --- | --- | --- | --- |
+| 고객 | `customer@bob.local` | `customer` | 공개 읽기는 Allow, 중요 읽기는 Block |
+| 직원 | `miso@bob.local` | `employee` | 중요 읽기는 Alert, 비중요 쓰기는 Allow |
+| 관리자 | `admin@bob.local` | `admin` | 공개 외부 전송은 Restrict, 중요 외부 전송은 Approval |
+
+로그인 뒤 빠른 시나리오 버튼을 한 번씩 실행합니다.
+
+| 빠른 시나리오 | 사용할 계정 | 예상 판정 | upstream 효과 | 관찰할 통제 |
 | --- | --- | --- | --- | --- |
-| 공개 문서 허용 | customer | `Allow` | 1 증가 | 일반적인 최소권한 허용 |
-| 중요 열람 경보 | employee | `Alert` | 1 증가 | 업무상 허용하되 추적 강화 |
-| 외부 전송 제한 | admin | `Restrict` | 1 증가 | 목적지를 `mentor-demo.invalid`, 본문을 80자로 강제 |
-| 중요 전송 승인 | admin | `Approval` | 승인 전 0 | 10분 승인, 요청 지문 확인, 정책 재평가 후 실행 |
-| 권한 부족 차단 | customer | `Block` | 0 | 중요자료 읽기 권한 없음 |
+| 공개 문서 읽기 | 고객 | `Allow` | 1 증가 | 일반적인 최소권한 허용 |
+| 중요 문서 읽기 | 고객 | `Block` | 0 | 권한 없는 호출의 실행 전 차단 |
+| 중요 문서 열람 | 직원 | `Alert` | 1 증가 | 업무상 허용하되 추적 강화 |
+| 내부 메모 수정 | 직원 | `Allow` | 1 증가 | 비중요 자료 쓰기 권한 |
+| 공개 자료 외부 전송 | 관리자 | `Restrict` | 1 증가 | 목적지를 `mentor-demo.invalid`, 본문을 80자로 강제 |
+| 중요 자료 외부 전송 | 관리자 | `Approval` | 승인 전 0 | 10분 승인, 요청 지문 확인, 정책 재평가 후 실행 |
 
-결과 카드에서 정책 ID, 판단 이유, 등급/행위, 실제 upstream 실행 여부와 효과 로그의 전후 개수를 함께 봅니다. `Approval`은 화면의 `관리자로 승인 후 재검증` 버튼까지 눌러야 실행됩니다. 모든 계정과 문서는 합성 데이터입니다.
+결과에서 `request_id`, `session_id`, `tool_call_id`, 정책 ID, 판단 이유, Trace ID와 실제 upstream 실행 여부를 확인합니다. 같은 `request_id`나 `tool_call_id`가 다시 들어오면 저장된 응답을 반환하여 중복 실행을 막습니다. 관리자로 로그인했을 때만 승인 대기 목록과 승인 버튼이 보입니다.
 
-화면 아래쪽에서는 다음을 확인할 수 있습니다.
+### 3.2 거버넌스 증적 확인하기
 
+거버넌스 Dashboard <http://localhost:8080>에서 방금 실행한 요청을 다시 찾습니다.
+
+- `Agent Service 연결`: 모의 모델/API 모드, 인증 경계, 최근 Agent 실행
 - `333 정책`: 27개 조합과 기본 DENY
 - `Registry + Supply Chain`: 서버 출처·고정 ref·transport·catalog 상태·스캔 결과
 - `감사`: 최근 판정, 승인 대기, 효과 개수, Trace ID
 - `정확한 해석`: 현재 PoC가 증명하는 범위와 아직 증명하지 않는 범위
+
+두 화면의 같은 요청 ID·세션 ID·Trace ID를 따라가면 “Agent가 무엇을 제안했고, Gateway가 왜 판정했으며, upstream 효과가 실제로 생겼는지”를 분리해서 설명할 수 있습니다. 모든 계정과 문서는 합성 데이터입니다.
 
 ## 4. 확정한 333 Rego 정책
 
@@ -102,7 +123,24 @@ cd ~/mcp-gateway/full_stack_lab
 
 ## 5. curl로 직접 확인
 
-모의 모델은 키워드를 고정 JSON Tool Call로 바꿀 뿐 외부 LLM을 호출하지 않습니다.
+브라우저 없이도 `합성 로그인 → Agent → Gateway → OPA → MCP` 전체 경로를 호출할 수 있습니다.
+
+```bash
+TOKEN="$(curl -sS http://localhost:8000/auth/mock-login \
+  -H 'content-type: application/json' \
+  -d '{"email":"miso@bob.local","password":"test-password"}' \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')"
+
+curl -sS http://localhost:8000/chat \
+  -H "authorization: Bearer $TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"message":"중요 계약 초안을 읽어줘"}' \
+  | python3 -m json.tool
+```
+
+`Alert`, `upstream_executed: true`, 서로 연결된 요청·세션·Tool Call ID가 나오면 전체 경로가 동작한 것입니다. 토큰은 30분짜리 합성 JWT이며 모델이 만드는 Tool Call에는 사용자 역할이나 Gateway용 토큰을 넣을 수 없습니다.
+
+Gateway의 짧은 모의 모델 API를 직접 비교할 수도 있습니다. 이 경로는 로그인 UI가 아니라 정책 동작만 빠르게 시연하기 위한 기존 호환 API입니다.
 
 ```bash
 curl -sS http://localhost:8080/api/mock-model \
@@ -122,7 +160,27 @@ curl -sS http://localhost:8080/api/calls \
 
 두 번째 결과는 `Block`, `P-333-DENY-001`, `upstream_executed: false`, 동일한 `effect_before/effect_after`가 되어야 합니다.
 
-## 6. 자동 완료 조건 검증
+## 6. 실제 모델 API를 연결할 준비
+
+기본값 `MODEL_MODE=mock`은 외부 호출 없이 결정론적으로 동작합니다. OpenAI 호환 `/chat/completions` endpoint를 사용할 준비가 되면 `full_stack_lab/.env`에 다음 네 값을 추가하고 `./demo.sh`를 다시 실행합니다.
+
+```dotenv
+MODEL_MODE=provider
+MODEL_BASE_URL=https://provider.example/v1
+MODEL_API_KEY=replace-me
+MODEL_NAME=replace-me
+```
+
+```bash
+./demo.sh
+curl -sS http://localhost:8000/api/readiness | python3 -m json.tool
+```
+
+외부 endpoint는 HTTPS만 허용합니다. 로컬 호환 서버만 `localhost`, `127.0.0.1`, `host.docker.internal`, Compose의 `model-stub`에 HTTP로 연결할 수 있습니다. Agent는 사용자 요청에서 이메일·휴대전화·일반적인 API 키 패턴을 치환하고, 응답은 128 KB·Tool Call 1개·등록된 서버/도구·JSON Schema로 제한합니다. 모델 결과를 신뢰해 권한을 부여하지 않으며, 도구 실행 결과도 모델에 재전송하지 않습니다.
+
+현재 자동 시험은 실제 LLM이 아닌 로컬 HTTP wire stub으로 정상·차단·잘못된 Schema·알 수 없는 도구·복수 호출·401·429·500·timeout·과대 응답을 검증합니다. 따라서 API 형식과 실패 경계는 준비됐지만 특정 상용 모델의 실제 응답 정확도·비용·rate limit은 자격증명을 연결한 뒤 별도 시나리오 시험이 필요합니다.
+
+## 7. 자동 완료 조건 검증
 
 아래 한 줄이 빌드, Rego 단위 테스트, 정책/승인/효과 검증, 세 transport 실호출, catalog 변조와 OPA 장애 회귀 테스트를 실행합니다.
 
@@ -134,6 +192,7 @@ curl -sS http://localhost:8080/api/calls \
 
 - Rego 단위 테스트 `7/7 PASS`
 - acceptance `25 passed, 0 failed`
+- Agent/API 경계 acceptance `56 passed, 0 failed`
 - Streamable HTTP, stdio, legacy SSE에서 실제 `tools/call` 성공
 - 설명·스키마·도구 목록·서버 버전 변조가 각각 `MCP-CATALOG-001`로 차단
 - 서버에 귀속된 치명적 공급망 finding이 `MCP-SUPPLY-001`로 차단
@@ -141,9 +200,9 @@ curl -sS http://localhost:8080/api/calls \
 - 모든 차단 사례에서 독립 upstream 효과 수가 증가하지 않음
 - 합성 upstream MCP에 host port가 없음
 
-생성 결과는 `reports/acceptance.json`, `reports/security-regression.txt`에 남고 Git에는 포함되지 않습니다.
+생성 결과는 `reports/acceptance.json`, `reports/agent-acceptance.json`, `reports/security-regression.txt`에 남고 Git에는 포함되지 않습니다.
 
-## 7. transport 호환 범위
+## 8. transport 호환 범위
 
 | 구간 | 방식 | 검증 방법 |
 | --- | --- | --- |
@@ -155,7 +214,7 @@ curl -sS http://localhost:8080/api/calls \
 
 SSE는 신규 기본값이 아니라 구형 client 호환성 시험용입니다. 세 ingress는 모두 같은 `execute_call()` 정책 경로를 사용합니다.
 
-## 8. Registry와 공급망 통제
+## 9. Registry와 공급망 통제
 
 ### 런타임 계약
 
@@ -183,7 +242,7 @@ Gateway는 매 호출 직전에 `tools/list`를 다시 읽고 다음 승인 기�
 | Trivy `0.74.0` | vuln, misconfig, secret, license | `reports/trivy.json` |
 | AI-Infra-Guard `mcp-scan` | 선택적 MCP 전용 코드/동적 감사 | `reports/mcp-scan.sarif.json` |
 
-Syft/Trivy의 저장소 전체 결과는 우선 `workspace` 증적으로 보관합니다. 특정 MCP 서버를 자동 차단하려면 검토 후 그 서버의 고정 `source_ref`에 귀속시켜야 합니다. 잘못된 전역 스캔 한 건이 모든 서버를 자동 격리하지 않게 한 경계입니다. 서버에 귀속된 `CRITICAL > 0`이 실제 호출을 막는지는 acceptance test가 별도 증명합니다.
+Syft/Trivy는 현재 권장판인 `full_stack_lab/`을 스캔하고 결과를 우선 `workspace` 증적으로 보관합니다. 이전 단계의 교육용 Dockerfile은 현재 릴리스 수치에 섞지 않습니다. 특정 MCP 서버를 자동 차단하려면 검토 후 그 서버의 고정 `source_ref`에 귀속시켜야 합니다. 잘못된 전역 스캔 한 건이 모든 서버를 자동 격리하지 않게 한 경계입니다. 서버에 귀속된 `CRITICAL > 0`이 실제 호출을 막는지는 acceptance test가 별도 증명합니다.
 
 AI-Infra-Guard는 요청대로 전체 플랫폼이 아니라 **`mcp-scan` CLI만**, 커밋 `036c39bd03b39ce4a811f7f125bc3b8f47e39b7c`에 고정해 별도 profile로 빌드합니다.
 
@@ -203,19 +262,57 @@ MCP_SCAN_MODEL=local-mock \
 
 This project integrates AI-Infra-Guard, open-sourced by Tencent Zhuque Lab. 참고: [AI-Infra-Guard mcp-scan](https://github.com/Tencent/AI-Infra-Guard/tree/main/mcp-scan), [Syft](https://github.com/anchore/syft), [Trivy](https://github.com/aquasecurity/trivy).
 
-## 9. GitHub MCP 상태
+## 10. GitHub MCP 연결 절차
 
-[GitHub MCP Server](https://github.com/github/github-mcp-server)는 Registry에 `v1.12.1`, Streamable HTTP, 개별 읽기 도구 후보로 등록했습니다. Gateway에도 `github_get_file` 진입점과 공식 remote endpoint를 준비했습니다.
+[GitHub MCP Server](https://github.com/github/github-mcp-server)는 Registry에 Streamable HTTP 읽기 도구 후보로 등록했습니다. Gateway의 `github_get_file`은 공식 remote endpoint에 Bearer token을 보내고 `X-MCP-Readonly: true`, `X-MCP-Tools: get_file_contents`로 노출 범위를 줄입니다. 저장소도 `GITHUB_ALLOWED_REPOS` 목록으로 한 번 더 제한합니다.
 
-다만 현재는 인증을 나중에 하기로 했으므로 서버와 도구를 `DISABLED`로 두고, 호출하면 `MCP-REGISTRY-002`로 차단되는 것을 자동 시험합니다. 토큰만 넣었다고 자동 활성화하지 않습니다. 다음 단계에서는 최소 scope 토큰 연결 → remote catalog 관찰 → 설명/스키마/버전 검토 및 승인 해시 커밋 → Registry 활성화 순서로 진행해야 합니다.
+현재는 인증을 나중에 하기로 했으므로 서버와 도구가 `DISABLED`이며 호출하면 `MCP-REGISTRY-002`로 차단됩니다. 토큰을 넣어도 자동 승인하지 않습니다. 자격증명이 준비되면 다음 순서를 그대로 실행합니다.
 
-## 10. 구성요소와 파일 안내
+1. `full_stack_lab/.env`에 최소 권한 토큰과 허용 저장소를 넣습니다. `.env`는 Git에서 제외됩니다.
+
+   ```dotenv
+   GITHUB_PERSONAL_ACCESS_TOKEN=replace-me
+   GITHUB_ALLOWED_REPOS=MCP-governance/mcp-gateway
+   ```
+
+2. 컨테이너에 새 환경값을 적용하고, 제한된 remote catalog를 관찰 파일로 저장합니다.
+
+   ```bash
+   ./demo.sh
+   docker compose exec -T gateway python -m app.github_setup observe \
+     > reports/github-reviewed.json
+   python3 -m json.tool reports/github-reviewed.json
+   ```
+
+3. 운영자가 endpoint·서버 버전·도구 이름이 정확히 `get_file_contents` 하나인지, 설명과 입력 Schema에 과도한 권한이나 정책 우회 문구가 없는지 검토합니다. 검토 중 remote catalog가 바뀌면 다음 단계가 실패합니다.
+
+4. 같은 catalog인지 다시 확인하면서 승인하고 실제 읽기 시나리오를 실행합니다.
+
+   ```bash
+   docker compose exec -T gateway python -m app.github_setup \
+     activate-reviewed /reports/github-reviewed.json
+
+   curl -sS http://localhost:8080/api/calls \
+     -H 'content-type: application/json' \
+     -d '{"user_token":"admin-demo","tool_name":"github_get_file","owner":"MCP-governance","repo":"mcp-gateway","path":"README.md"}' \
+     | python3 -m json.tool
+   ```
+
+정상 결과는 `Allow`와 파일 내용이며, 허용 목록 밖 저장소는 `MCP-REPOSITORY-001`, catalog 변경은 `MCP-CATALOG-001`, 인증·통신 실패는 `MCP-UPSTREAM-001`입니다. 마지막 경우 remote가 요청을 받았을 수 있으므로 자동 재시도하지 않고 GitHub 감사 증적을 함께 확인해야 합니다. 이 절차의 remote catalog 관찰과 실제 GitHub 호출은 토큰이 없는 현재 상태에서는 실행하지 않았습니다.
+
+## 11. 구성요소와 파일 안내
 
 | 경로 | 역할 |
 | --- | --- |
 | `compose.yaml` | 네트워크·서비스·scanner profile |
 | `demo.sh` | `up/test/scan/mcp-scan/status/logs/down/reset` 단일 진입점 |
 | `gateway/app/core.py` | 계약 확인, Rego 질의, 승인, upstream 실행, 증적 |
+| `gateway/app/agent_service.py` | 합성 로그인, 세션, 요청 멱등성, 모델 제안 경로 |
+| `gateway/app/agent_gateway.py` | 서명 사용자와 Tool Call envelope를 기존 정책 경로에 연결 |
+| `gateway/app/agent_contract.py` | JWT·서버/도구 조합·공유 JSON Schema 경계 |
+| `gateway/app/model_client.py` | 결정론적 모의 모델과 제한된 OpenAI 호환 client |
+| `gateway/app/github_setup.py` | GitHub remote catalog 관찰·명시 승인 |
+| `gateway/app/agent_static/` | 합성 사용자 로그인·업무 공간 UI |
 | `gateway/app/mcp_facade.py` | 공통 정책 경로를 노출하는 MCP facade |
 | `gateway/ui/` | 멘토용 React Dashboard |
 | `mock_server/server.py` | 실제 SDK 기반 합성 문서 MCP와 catalog 변조 모드 |
@@ -226,20 +323,25 @@ This project integrates AI-Infra-Guard, open-sourced by Tencent Zhuque Lab. 참�
 
 Python과 프런트엔드 의존성은 버전을 고정하고 UI는 lockfile로 재현합니다. `mcp-server-time`은 구형 MCP SDK 의존성을 요구하므로 Gateway의 최신 SDK 환경과 별도 venv로 격리했습니다.
 
-## 11. 여기서 발견해야 할 의의
+Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance/Agent-Service`의 `miso` 브랜치, commit `81177a4`](https://github.com/MCP-governance/Agent-Service/tree/81177a41d917a2c1382485cc8f5ae115637aff89)에서 가져와 이 Gateway의 단일 정책 경로에 맞게 확장했습니다. 팀원 구현의 `read_file` 요청은 승인된 합성 경로만 `read_document`로 변환합니다. 별도로 있던 Gateway·OPA·mock 서버는 정책 원본이 둘로 갈라지는 것을 피하려고 중복 이식하지 않았습니다.
+
+## 12. 여기서 발견해야 할 의의
 
 - **LLM은 집행자가 아니다.** 모의 모델은 Tool Call만 제안하고, 결정론적 정책과 계약 검증이 실행 권한을 정합니다.
 - **정책 응답과 실제 효과는 다른 증적이다.** Gateway DB의 판정과 upstream JSONL 효과를 함께 봐야 “차단 전에 멈췄다”를 주장할 수 있습니다.
 - **권한표만으로 공급망 문제를 막을 수 없다.** 허용된 `read_document`라도 설명·스키마·버전·도구 목록이 바뀌거나 서버 귀속 치명점이 생기면 차단됩니다.
 - **승인은 단순 버튼이 아니다.** 원 요청 지문, 만료, 관리자 역할을 확인하고 현재 정책으로 재평가한 뒤 한 번 실행합니다.
 - **transport가 달라도 통제점은 하나여야 한다.** Streamable HTTP, stdio, legacy SSE 모두 같은 정책 함수로 모입니다.
+- **Agent 인증과 모델 제안은 별도 신뢰 경계다.** 모델이 사용자·역할·승인을 주장할 수 없고, 서명된 합성 사용자와 서버가 만든 context만 Gateway가 사용합니다.
+- **API 실패는 재시도 정책까지 포함해 다뤄야 한다.** timeout이나 연결 단절 뒤에는 upstream 실행 여부가 불확실할 수 있어 요청·Tool Call ID와 receipt를 먼저 확인합니다.
 - **Gateway는 경로 통제와 함께 설계해야 한다.** 이 Compose는 upstream port를 숨기지만 조직 전체의 로컬 프로세스·별도 네트워크까지 막는 것은 아닙니다.
 
-## 12. 의도적으로 남긴 경계
+## 13. 의도적으로 남긴 경계
 
 - 실제 사용자 SSO/OIDC, RBAC 관리 화면, 실제 GitHub 토큰 위임은 미구현입니다.
-- 실제 LLM API는 호출하지 않습니다. 자연어 변환은 데모용 키워드 규칙입니다.
+- 실제 상용 LLM API는 호출하지 않았습니다. 기본 자연어 변환은 데모용 키워드 규칙이고, OpenAI 호환 HTTP 경계는 로컬 stub으로만 검증했습니다.
 - GitHub MCP는 인증·catalog 승인 전이라 실제 upstream 호출을 하지 않습니다.
+- GitHub catalog 승인은 현재 데모 DB 상태입니다. 운영 반영 전에는 검토 파일의 해시를 코드 리뷰와 정책 버전에 남겨야 합니다.
 - image tag는 버전 고정이지만 digest/서명 검증과 admission controller까지는 포함하지 않았습니다.
 - 운영용 HA, TLS 종료, 비밀관리, SIEM 알림, 조직 전체 egress 강제는 별도 운영 설계가 필요합니다.
 - Dashboard의 승인자는 합성 관리자이며 실인증 승인이 아닙니다.

@@ -25,6 +25,7 @@ from .core import (
     refresh_catalog,
 )
 from .mcp_facade import build_mcp, transport_security
+from .agent_gateway import router as agent_router
 
 UI_DIR = Path("/app/ui")
 EFFECT_LOG = Path(os.getenv("EFFECT_LOG", "/runtime/upstream-effects.jsonl"))
@@ -67,7 +68,8 @@ async def lifespan(_: FastAPI):
         yield
 
 
-app = FastAPI(title="MCP Governance Security Gateway", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="MCP Governance Security Gateway", version="1.1.0", lifespan=lifespan)
+app.include_router(agent_router)
 
 
 async def _probe(url: str) -> bool:
@@ -128,6 +130,19 @@ async def state() -> dict:
         "upstream_effect_count": effect_count(),
         "github_auth_configured": bool(os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")),
     }
+
+
+@app.get("/api/integration")
+async def integration() -> dict:
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            response = await client.get("http://agent-service:8000/api/readiness")
+            response.raise_for_status()
+            readiness = response.json()
+    except (httpx.HTTPError, ValueError):
+        readiness = {"status": "not_ready", "model": {"mode": "unknown"}}
+    runs = await db.fetch_all("SELECT id,session_id,status,user_id,created_at,response->>'status' AS outcome FROM agent_runs ORDER BY created_at DESC LIMIT 10")
+    return {"readiness": readiness, "runs": runs}
 
 
 @app.get("/api/policy/matrix")
@@ -242,5 +257,7 @@ if UI_DIR.exists():
 
     @app.get("/{path:path}", response_class=FileResponse)
     async def ui(path: str) -> FileResponse:
-        candidate = UI_DIR / path
+        candidate = (UI_DIR / path).resolve()
+        if not candidate.is_relative_to(UI_DIR.resolve()):
+            raise HTTPException(404, "Not found")
         return FileResponse(candidate if candidate.is_file() else UI_DIR / "index.html")

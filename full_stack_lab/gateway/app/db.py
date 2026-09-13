@@ -23,41 +23,6 @@ def _fetch_one(query: str, params: Iterable | None = None) -> dict | None:
         return connection.execute(query, params or ()).fetchone()
 
 
-def _execute(query: str, params: Iterable | None = None) -> None:
-    with psycopg.connect(DATABASE_URL) as connection:
-        connection.execute(query, params or ())
-
-
-async def fetch_all(query: str, params: Iterable | None = None) -> list[dict]:
-    return await asyncio.to_thread(_fetch_all, query, params)
-
-
-async def fetch_one(query: str, params: Iterable | None = None) -> dict | None:
-    return await asyncio.to_thread(_fetch_one, query, params)
-
-
-async def execute(query: str, params: Iterable | None = None) -> None:
-    await asyncio.to_thread(_execute, query, params)
-
-
-async def wait_until_ready(timeout: int = 45) -> None:
-    deadline = time.monotonic() + timeout
-    last_error: Exception | None = None
-    while time.monotonic() < deadline:
-        try:
-            await fetch_one("SELECT 1 AS ready")
-            return
-        except Exception as exc:
-            last_error = exc
-            await asyncio.sleep(1)
-    raise RuntimeError(f"PostgreSQL did not become ready: {last_error}")
-
-
-def _fetch_one(query: str, params: Iterable | None = None) -> dict | None:
-    with psycopg.connect(DATABASE_URL, row_factory=dict_row) as connection:
-        return connection.execute(query, params or ()).fetchone()
-
-
 def _execute(query: str, params: Iterable | None = None) -> int:
     with psycopg.connect(DATABASE_URL) as connection:
         cursor = connection.execute(query, params or ())
