@@ -322,6 +322,7 @@ This project integrates AI-Infra-Guard, open-sourced by Tencent Zhuque Lab. 참�
 | `gateway/app/github_setup.py` | GitHub remote catalog 관찰·명시 승인 |
 | `gateway/app/agent_static/` | 합성 사용자 로그인·업무 공간 UI |
 | `gateway/app/mcp_facade.py` | 공통 정책 경로를 노출하는 MCP facade |
+| `gateway/app/db.py` | 프로세스당 하나인 PostgreSQL 커넥션 풀 |
 | `gateway/ui/` | 멘토용 React Dashboard |
 | `mock_server/server.py` | 실제 SDK 기반 합성 문서 MCP와 catalog 변조 모드 |
 | `opa/` | 333 Rego 정책과 단위 테스트 |

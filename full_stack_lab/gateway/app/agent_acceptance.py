@@ -20,7 +20,7 @@ import jwt
 
 from . import db
 from .agent_contract import AUDIENCE, ISSUER, signing_key
-from .core import effect_count, execute_call, _discover, HTTP_MCP_URL
+from .core import canonical_hash, effect_count, execute_call, _discover, HTTP_MCP_URL
 
 AGENT = "http://agent-service:8000"
 GATEWAY = "http://gateway:8080"
@@ -147,6 +147,17 @@ async def main():
         before = effect_count()
         replay = (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=req)).json()
         check("gateway-idempotency", replay.get("replayed") and effect_count() == before)
+        stuck = envelope()
+        await db.execute(
+            "INSERT INTO agent_gateway_receipts(id,user_id,fingerprint,created_at) VALUES (%s,%s,%s, now() - interval '1 hour')",
+            (stuck["tool_call_id"], "user-test-001", canonical_hash(stuck)),
+        )
+        before = effect_count()
+        settled = (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=stuck)).json()
+        check("stuck-receipt-settled",
+              settled.get("policy_id") == "MCP-RECEIPT-001" and settled.get("execution_status") == "unknown"
+              and effect_count() == before,
+              "응답 없이 중단된 receipt는 재실행 없이 unknown으로 확정")
         before = effect_count()
         with patch("app.core.refresh_catalog", side_effect=RuntimeError("catalog offline")):
             outcome = await execute_call({"user_token": "cust-demo", "tool_name": "read_document", "document_id": "notice-001"})

@@ -32,7 +32,10 @@ async def lifespan(_: FastAPI):
     signing_key()
     await db.wait_until_ready()
     await db.execute((Path(__file__).parent / "agent_tables.sql").read_text())
-    yield
+    try:
+        yield
+    finally:
+        await db.close()
 
 
 app = FastAPI(title="Agent Service · miso integration", version="1.1.0", lifespan=lifespan)

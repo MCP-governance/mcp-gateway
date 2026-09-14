@@ -81,8 +81,11 @@ async def admin_caller(user: dict = Depends(caller)) -> dict:
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await bootstrap()
-    async with gateway_mcp.session_manager.run():
-        yield
+    try:
+        async with gateway_mcp.session_manager.run():
+            yield
+    finally:
+        await db.close()
 
 
 app = FastAPI(title="MCP Governance Security Gateway", version="1.1.0", lifespan=lifespan)
