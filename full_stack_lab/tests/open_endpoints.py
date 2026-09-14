@@ -19,9 +19,10 @@ import sys
 LAB = pathlib.Path(__file__).resolve().parent.parent
 ROUTER = LAB / "gateway" / "app" / "main.py"
 README = LAB / "README.md"
-DOC_MARKER = "Dashboard의 읽기 API는 인증 없이 열려 있습니다:"
+DOC_MARKER = "Gateway의 읽기 API는 인증 없이 열려 있습니다:"
+CONSOLE_REDIRECT = 'RedirectResponse("http://localhost:8000/workspace")'
 # Login has to be reachable without a token or nobody could ever get one; the
-# catch-all serves the dashboard's static bundle and is not an API.
+# browser console is served by the Agent service and is not an API.
 EXEMPT = {"/api/session"}
 
 
@@ -73,7 +74,10 @@ def documented() -> set[str]:
 
 
 def main() -> None:
-    routes = route_auth(ast.parse(ROUTER.read_text(encoding="utf-8")))
+    source = ROUTER.read_text(encoding="utf-8")
+    if CONSOLE_REDIRECT not in source:
+        raise SystemExit("FAIL Gateway 루트가 8000 Console로 이동하지 않습니다.")
+    routes = route_auth(ast.parse(source))
     if not routes:
         raise SystemExit("FAIL main.py에서 route를 하나도 읽지 못했습니다.")
     # A path counts as open when any method on it is reachable without a token.

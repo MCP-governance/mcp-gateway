@@ -12,8 +12,8 @@
       <section class="brand-panel" aria-label="서비스 소개">
         <div class="brand-mark" aria-hidden="true">M</div>
         <div class="brand-copy">
-          <p class="eyebrow">MCP Governance · Security Gateway Lab</p>
-          <h1>업무용 AI를<br />안전하게 연결합니다</h1>
+          <p class="eyebrow">MCP Governance · Control Plane</p>
+          <h1>MCP 연결을<br />통제합니다</h1>
           <p>
             기업 계정으로 로그인하면 사용자 권한을 확인한 뒤
             Agent Service와 MCP Security Gateway를 통해 요청을 처리합니다.
@@ -21,7 +21,7 @@
         </div>
         <div class="trust-note">
           <span class="status-dot" aria-hidden="true"></span>
-          테스트베드 보호 연결
+          보호된 개발 환경
         </div>
       </section>
 
@@ -31,15 +31,15 @@
             <span class="brand-mark small" aria-hidden="true">M</span>
             <span>MCP Governance</span>
           </div>
-          <p class="eyebrow blue">합성 사용자 인증 · v1.3</p>
+          <p class="eyebrow blue">개발 계정 인증 · v1.4</p>
           <h2>로그인</h2>
           <p class="form-description">
-            실습 역할을 고르세요. 실제 계정은 사용하지 않습니다.
+            접근 역할을 선택하세요.
           </p>
 
           <form id="login-form" novalidate>
-            <label for="demo-role">실습 역할</label>
-            <select id="demo-role">
+            <label for="access-role">접근 역할</label>
+            <select id="access-role">
               <option value="miso@bob.local">직원 김미소 · 중요 문서 열람은 경보</option>
               <option value="customer@bob.local">고객 김민수 · 공개 문서만 허용</option>
               <option value="admin@bob.local">관리자 박지훈 · 외부 전송 승인·제한</option>
@@ -56,7 +56,7 @@
 
             <div class="label-row">
               <label for="password">비밀번호</label>
-              <span>테스트 계정</span>
+              <span>개발 계정</span>
             </div>
             <div class="password-field">
               <input
@@ -78,16 +78,16 @@
             <p id="login-error" class="error-message" role="alert"></p>
 
             <button id="login-button" class="primary-button" type="submit">
-              <span>합성 계정으로 계속</span>
+              <span>계속</span>
               <span aria-hidden="true">›</span>
             </button>
           </form>
 
           <div class="test-account">
-            <strong>모의 SSO 안내</strong>
+            <strong>개발 환경 안내</strong>
             <p>
-              실제 기업 인증정보를 사용하지 않습니다. 현재 화면은 SSO Token 발급과
-              사용자 식별 흐름을 시험하기 위한 테스트 페이지입니다.
+              현재 환경은 외부 SSO 대신 개발 계정으로 인증 흐름을 검증합니다.
+              운영 환경에서는 기업 IdP로 이 경계를 교체합니다.
             </p>
           </div>
         </div>

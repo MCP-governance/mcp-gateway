@@ -15,6 +15,27 @@ CREATE TABLE IF NOT EXISTS agent_revoked_tokens (
   jti uuid PRIMARY KEY, expires_at timestamptz NOT NULL
 );
 
+-- A repository URL is an intake record, never an instruction to fetch or run
+-- somebody else's code. It stays outside the active MCP registry until a
+-- reviewer attaches evidence from an isolated checkout.
+CREATE TABLE IF NOT EXISTS mcp_intake_requests (
+  id uuid PRIMARY KEY,
+  submitted_by text NOT NULL,
+  display_name text NOT NULL,
+  repository_url text NOT NULL,
+  requested_transport text NOT NULL CHECK (requested_transport IN ('streamable-http', 'stdio', 'sse')),
+  purpose text NOT NULL,
+  status text NOT NULL DEFAULT 'HOLD' CHECK (status IN ('HOLD', 'VALIDATION_QUEUED', 'REJECTED')),
+  risk_level text NOT NULL DEFAULT 'UNASSESSED' CHECK (risk_level IN ('UNASSESSED', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL')),
+  review_note text,
+  reviewed_by text,
+  reviewed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS mcp_intake_requests_created_idx ON mcp_intake_requests(created_at DESC);
+CREATE INDEX IF NOT EXISTS mcp_intake_requests_submitter_idx ON mcp_intake_requests(submitted_by, created_at DESC);
+
 -- Tamper-evident audit. Each decision carries the hash of the previous one, so an
 -- edited or deleted row breaks the chain at a point anyone can find. The single
 -- chain row is what serialises appends.

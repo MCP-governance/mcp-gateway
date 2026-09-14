@@ -9,8 +9,7 @@ from typing import Literal
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import db
@@ -35,7 +34,6 @@ from .agent_gateway import router as agent_router
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 
-UI_DIR = Path("/app/ui")
 EFFECT_LOG = Path(os.getenv("EFFECT_LOG", "/runtime/upstream-effects.jsonl"))
 gateway_mcp = build_mcp()
 mcp_http = gateway_mcp.streamable_http_app(
@@ -346,12 +344,8 @@ async def effects() -> dict:
 
 app.mount("/mcp", mcp_http)
 
-if UI_DIR.exists():
-    app.mount("/assets", StaticFiles(directory=UI_DIR / "assets"), name="assets")
 
-    @app.get("/{path:path}", response_class=FileResponse)
-    async def ui(path: str) -> FileResponse:
-        candidate = (UI_DIR / path).resolve()
-        if not candidate.is_relative_to(UI_DIR.resolve()):
-            raise HTTPException(404, "Not found")
-        return FileResponse(candidate if candidate.is_file() else UI_DIR / "index.html")
+@app.get("/", include_in_schema=False)
+async def console() -> RedirectResponse:
+    """The browser console lives with the Agent service; this port remains the API boundary."""
+    return RedirectResponse("http://localhost:8000/workspace")

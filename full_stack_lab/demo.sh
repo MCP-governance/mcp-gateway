@@ -2,6 +2,7 @@
 set -euo pipefail
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENTRYPOINT_NAME="${MCP_CONSOLE_ENTRY:-demo.sh}"
 cd "$LAB_DIR"
 mkdir -p reports
 
@@ -69,6 +70,14 @@ import_reports() {
     -H "authorization: Bearer $(gateway_token)" | python3 -m json.tool
 }
 
+agent_test() {
+  # The gateway service has no private key. The acceptance run is handed one here
+  # on purpose, so it can forge expired/wrong-audience/wrong-issuer claim variants.
+  docker compose exec -T \
+    -e AGENT_JWT_PRIVATE_KEY="$(sed -n 's/^AGENT_JWT_PRIVATE_KEY=//p' .env | tail -1)" \
+    gateway python -m app.agent_acceptance | tee reports/agent-acceptance.json
+}
+
 wait_ready() {
   for _ in {1..60}; do
     if curl -fsS http://127.0.0.1:8000/api/readiness | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["status"] == "ready" else 1)' >/dev/null 2>&1; then
@@ -76,7 +85,7 @@ wait_ready() {
     fi
     sleep 1
   done
-  echo "Agent와 Gateway가 60초 안에 준비되지 않았습니다. ./demo.sh logs 로 확인하세요." >&2
+  echo "Agent와 Gateway가 60초 안에 준비되지 않았습니다. ./${ENTRYPOINT_NAME} logs 로 확인하세요." >&2
   exit 1
 }
 
@@ -84,12 +93,11 @@ up() {
   docker compose up -d --build gateway gateway-sse agent-service
   wait_ready
   echo
-  echo "MCP Governance 데모가 준비되었습니다."
-  echo "  Dashboard : http://localhost:8080"
-  echo "  업무 공간  : http://localhost:8000 (합성 로그인)"
+  echo "MCP Governance Console이 준비되었습니다."
+  echo "  운영 콘솔  : http://localhost:8000"
   echo "  Jaeger    : http://localhost:16686"
-  echo "  상태       : ./demo.sh status"
-  echo "  전체 검증  : ./demo.sh test"
+  echo "  상태       : ./${ENTRYPOINT_NAME} status"
+  echo "  전체 검증  : ./${ENTRYPOINT_NAME} test"
 }
 
 case "${1:-up}" in
@@ -101,20 +109,21 @@ case "${1:-up}" in
     docker run --rm -v "$LAB_DIR/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v
     docker compose exec -T gateway python -m app.acceptance | tee reports/acceptance.json
     tests/drift_and_fail_closed.sh | tee reports/security-regression.txt
-    # The gateway service has no private key. The acceptance run is handed one here
-    # on purpose, so it can forge expired/wrong-audience/wrong-issuer claim variants.
-    docker compose exec -T \
-      -e AGENT_JWT_PRIVATE_KEY="$(sed -n 's/^AGENT_JWT_PRIVATE_KEY=//p' .env | tail -1)" \
-      gateway python -m app.agent_acceptance | tee reports/agent-acceptance.json
+    agent_test
     echo "모든 필수 검증이 통과했습니다."
+    ;;
+  agent-test)
+    up
+    agent_test
     ;;
   scan)
     up
     docker compose --profile supply-chain run --rm syft
     docker compose --profile supply-chain run --rm trivy
+    docker compose --profile supply-chain run --rm semgrep
     scan_registered_servers
     import_reports
-    echo "SBOM과 서버별 취약점 결과를 reports/ 및 Dashboard에 반영했습니다."
+    echo "SBOM·SCA·SAST 결과를 reports/ 및 운영 콘솔에 반영했습니다."
     ;;
   mcp-scan)
     if [[ -z "${MCP_SCAN_API_KEY:-}" || -z "${MCP_SCAN_BASE_URL:-}" || -z "${MCP_SCAN_MODEL:-}" ]]; then
@@ -142,12 +151,14 @@ case "${1:-up}" in
     # Leaving them behind meant a reset did not reset supply-chain evidence: the
     # next import re-attributed stale findings to a freshly created database.
     rm -f reports/acceptance.json reports/agent-acceptance.json reports/security-regression.txt \
-      reports/full-test.log reports/sbom.cdx.json reports/trivy.json reports/trivy-*.json \
+      reports/mcp-scan.sarif.json
+      reports/full-test.log reports/sbom.cdx.json reports/trivy.json reports/trivy-*.json reports/semgrep.json \
+      reports/mcp-scan.sarif.json
       reports/mcp-scan.sarif.json
     echo "이 실습 전용 DB·효과 로그·생성 보고서를 초기화했습니다."
     ;;
   *)
-    echo "usage: ./demo.sh [up|test|scan|mcp-scan|status|logs|down|reset]" >&2
+    echo "usage: ./${ENTRYPOINT_NAME} [up|test|agent-test|scan|mcp-scan|status|logs|down|reset]" >&2
     exit 2
     ;;
 esac

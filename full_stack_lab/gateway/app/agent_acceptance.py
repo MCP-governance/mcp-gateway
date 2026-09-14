@@ -108,6 +108,25 @@ async def main():
         check("unauthenticated-chat", (await client.post(AGENT + "/chat", json={"message": "공개 문서를 읽어줘"})).status_code == 401)
         check("invalid-login", (await client.post(AGENT + "/auth/mock-login", json={"email": "miso@bob.local", "password": "wrong"})).status_code == 401)
         users = {role: await login(client, email) for role, email in [("customer", "customer@bob.local"), ("employee", "miso@bob.local"), ("admin", "admin@bob.local")]}
+        check("console-identity-required", (await client.get(AGENT + "/api/console")).status_code == 401)
+        check("console-live-state", (await client.get(AGENT + "/api/console", headers=users["employee"])).json().get("model", {}).get("mode") == "mock")
+        intake_name = "검증 요청 " + str(uuid4())[:8]
+        invalid_intake = await client.post(AGENT + "/api/mcp-requests", headers=users["employee"], json={
+            "display_name": intake_name, "repository_url": "https://untrusted.invalid/repo", "requested_transport": "streamable-http", "purpose": "권한 검증용 외부 MCP 연동 요청입니다.",
+        })
+        check("intake-github-only", invalid_intake.status_code == 422)
+        submitted = await client.post(AGENT + "/api/mcp-requests", headers=users["employee"], json={
+            "display_name": intake_name, "repository_url": "https://github.com/MCP-governance/mcp-gateway.git", "requested_transport": "streamable-http", "purpose": "권한 검증용 외부 MCP 연동 요청입니다.",
+        })
+        submitted.raise_for_status()
+        intake_id = submitted.json()["request"]["id"]
+        try:
+            check("intake-held-before-scan", submitted.json()["request"]["status"] == "HOLD")
+            check("intake-admin-only-queue", (await client.post(AGENT + f"/api/mcp-requests/{intake_id}/queue-validation", headers=users["employee"], json={})).status_code == 403)
+            queued = await client.post(AGENT + f"/api/mcp-requests/{intake_id}/queue-validation", headers=users["admin"], json={})
+            check("intake-validation-queue", queued.status_code == 200 and queued.json()["request"]["status"] == "VALIDATION_QUEUED")
+        finally:
+            await db.execute("DELETE FROM mcp_intake_requests WHERE id=%s", (intake_id,))
         cases = [("customer", "공개 문서를 읽어줘", "Allow", 1), ("customer", "비밀 인증정보를 읽어줘", "Block", 0),
                  ("employee", "비밀 인증정보를 읽어줘", "Alert", 1), ("employee", "내부 업무 메모를 수정해줘", "Allow", 1),
                  ("admin", "공개 공지를 외부에 전송해줘", "Restrict", 1), ("admin", "중요 계약을 외부에 전송해줘", "Approval", 0)]

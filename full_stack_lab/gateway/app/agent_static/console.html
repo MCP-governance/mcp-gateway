@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MCP Governance Console</title>
+    <link rel="stylesheet" href="/static/console.css" />
+  </head>
+  <body class="console-page">
+    <header class="console-header">
+      <a class="console-brand" href="#/overview" aria-label="MCP Governance Console 홈">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span><b>MCP Governance</b><small>Control Plane</small></span>
+      </a>
+      <div class="header-actions">
+        <span id="connection-state" class="connection-state"><i></i> 상태 확인 중</span>
+        <div class="viewer"><span id="viewer-name">사용자</span><small id="viewer-role">권한 확인 중</small></div>
+        <button id="logout-button" class="quiet-button" type="button">로그아웃</button>
+      </div>
+    </header>
+
+    <div class="console-layout">
+      <aside class="side-nav" aria-label="운영 메뉴">
+        <p>GOVERNANCE</p>
+        <button data-page="overview" type="button"><span>▦</span>운영 현황</button>
+        <button data-page="intake" type="button"><span>＋</span>MCP 도입</button>
+        <button data-page="verification" type="button"><span>✓</span>검증 파이프라인</button>
+        <button data-page="risks" type="button"><span>!</span>위험 분석</button>
+        <p>OPERATIONS</p>
+        <button data-page="execution" type="button"><span>↗</span>MCP 실행</button>
+        <button data-page="audit" type="button"><span>≡</span>감사 기록</button>
+        <div class="side-note">
+          <strong>기본 DENY</strong>
+          <span>승인된 Registry·정책·증적이 모두 일치할 때만 실행합니다.</span>
+        </div>
+      </aside>
+
+      <main class="console-main">
+        <p id="notice" class="notice hidden" role="status"></p>
+
+        <section class="view" data-view="overview">
+          <div class="page-heading">
+            <div><p class="section-label">OPERATIONS OVERVIEW</p><h1>운영 현황</h1><p>연결된 MCP, 정책 집행, 공급망 위험을 한 화면에서 관리합니다.</p></div>
+            <button id="refresh-console" class="secondary-button" type="button">새로고침</button>
+          </div>
+          <div id="overview-cards" class="metric-grid" aria-live="polite"></div>
+          <div class="content-grid split-wide">
+            <article class="panel"><div class="panel-heading"><div><p class="section-label">REGISTERED MCP</p><h2>운영 중인 MCP</h2></div><button id="refresh-registry" class="text-action" type="button">Catalog 비교</button></div><div id="registry-summary" class="server-list"></div></article>
+            <article class="panel"><div class="panel-heading"><div><p class="section-label">POLICY DECISIONS</p><h2>최근 정책 판정</h2></div><span id="decision-total" class="soft-badge">0건</span></div><div id="decision-chart" class="bar-chart" aria-label="정책 판정 분포"></div><p class="panel-footnote">최근 감사 증적 40건 기준</p></article>
+          </div>
+          <div class="content-grid three-up">
+            <article class="panel compact-panel"><p class="section-label">MODEL ROUTING</p><h2>LiteLLM 경계</h2><p id="model-summary">상태를 확인 중입니다.</p><ul class="plain-list"><li>도구 호출 제안만 생성</li><li>사용자 권한·정책 판정 권한 없음</li><li>OpenAI 호환 엔드포인트로 선택 연결</li></ul></article>
+            <article class="panel compact-panel"><p class="section-label">RUNTIME PROTECTION</p><h2>AI-Infra-Guard</h2><p id="guard-summary">mcp-scan 결과를 확인 중입니다.</p><button class="link-button" data-page="risks" type="button">위험 분석 보기 →</button></article>
+            <article class="panel compact-panel"><p class="section-label">ENFORCEMENT</p><h2>OPA / Rego</h2><p id="policy-summary">활성 정책을 확인 중입니다.</p><ul class="plain-list"><li>333 권한</li><li>Registry·Catalog 일치</li><li>공급망 위험 차단</li></ul></article>
+          </div>
+        </section>
+
+        <section class="view hidden" data-view="intake">
+          <div class="page-heading"><div><p class="section-label">MCP INTAKE</p><h1>MCP 도입 요청</h1><p>저장소를 등록하면 보류 상태로 관리됩니다. URL만으로 코드를 내려받거나 실행하지 않습니다.</p></div></div>
+          <div class="content-grid intake-layout">
+            <form id="intake-form" class="panel intake-form">
+              <h2>새 요청</h2>
+              <label>표시 이름<input name="display_name" maxlength="80" placeholder="예: 고객지원 MCP" required /></label>
+              <label>GitHub 저장소 URL<input name="repository_url" type="url" maxlength="300" placeholder="https://github.com/organization/repository" required /></label>
+              <label>예정 전송 방식<select name="requested_transport"><option value="streamable-http">Streamable HTTP</option><option value="stdio">stdio</option><option value="sse">Legacy SSE</option></select></label>
+              <label>도입 목적<textarea name="purpose" rows="5" maxlength="1000" placeholder="사용 목적, 접근 데이터, 예상 도구를 작성하세요." required></textarea></label>
+              <button class="primary-button" type="submit">검토 요청 제출</button>
+              <p class="form-note">제출 후 상태는 HOLD입니다. 검증 증적이 없는 요청은 Registry에 등록되지 않습니다.</p>
+            </form>
+            <article class="panel"><div class="panel-heading"><div><p class="section-label">REVIEW QUEUE</p><h2>보류·검증 관리</h2></div><span id="intake-total" class="soft-badge">0건</span></div><div id="intake-list" class="request-list"></div></article>
+          </div>
+        </section>
+
+        <section class="view hidden" data-view="verification">
+          <div class="page-heading"><div><p class="section-label">VALIDATION PIPELINE</p><h1>검증 파이프라인</h1><p>제출된 저장소는 격리된 체크아웃에서 증적을 만들고, 승인된 결과만 Registry에 연결합니다.</p></div><button id="import-evidence" class="secondary-button" type="button">검증 결과 반영</button></div>
+          <div class="pipeline" aria-label="MCP 도입 검증 단계">
+            <article><span>01</span><h2>보류</h2><p>저장소 링크·전송 방식·도입 목적 등록</p></article><i>→</i>
+            <article><span>02</span><h2>SCA · SAST</h2><p>Syft SBOM, Trivy, Semgrep 정적 분석</p></article><i>→</i>
+            <article><span>03</span><h2>계약 검증</h2><p>도구 Schema·설명·버전·OPA 정책 비교</p></article><i>→</i>
+            <article><span>04</span><h2>첫 실행 점검</h2><p>AI-Infra-Guard mcp-scan 위험 분석</p></article><i>→</i>
+            <article><span>05</span><h2>Registry 승인</h2><p>증적과 승인본이 모두 일치할 때만 활성화</p></article>
+          </div>
+          <div class="content-grid split-wide"><article class="panel"><p class="section-label">EVIDENCE COVERAGE</p><h2>운영 MCP별 공급망 연결</h2><div id="coverage-list" class="coverage-list"></div></article><article class="panel"><p class="section-label">CONTROL BOUNDARY</p><h2>자동화가 하지 않는 일</h2><ul class="check-list"><li>제출 URL을 즉시 실행하지 않습니다.</li><li>검증 결과 없이 Registry에 설치하지 않습니다.</li><li>첫 실행은 Gateway 정책·감사 경로에서만 허용합니다.</li></ul></article></div>
+          <article class="panel command-panel"><p class="section-label">ISOLATED SCAN</p><h2>증적 생성 명령</h2><code>./console.sh scan</code><p>로컬 격리 Compose에서 SBOM·SCA·SAST를 생성한 뒤, 위 “검증 결과 반영”으로 Console에 가져옵니다. AI-Infra-Guard mcp-scan은 OpenAI 호환 로컬 분석 엔드포인트가 준비됐을 때 별도로 실행합니다.</p></article>
+        </section>
+
+        <section class="view hidden" data-view="risks">
+          <div class="page-heading"><div><p class="section-label">RISK INTELLIGENCE</p><h1>위험 분석</h1><p>현재 Registry에 연결된 공급망 증적과 MCP 전용 위험 분석 결과를 확인합니다.</p></div></div>
+          <div id="risk-cards" class="metric-grid"></div>
+          <div class="content-grid split-wide"><article class="panel"><div class="panel-heading"><div><p class="section-label">FINDINGS</p><h2>발견 항목</h2></div><span id="findings-total" class="soft-badge">0건</span></div><div id="finding-list" class="finding-list"></div></article><article class="panel"><p class="section-label">AI-INFRA-GUARD</p><h2>첫 실행 위험 점검</h2><div id="guard-detail" class="guard-detail"></div></article></div>
+        </section>
+
+        <section class="view hidden" data-view="execution">
+          <div class="page-heading"><div><p class="section-label">MCP EXECUTION</p><h1>MCP 실행</h1><p>Agent는 하나의 등록 도구 호출만 제안하고, Gateway가 정책·계약·증적을 검증합니다.</p></div></div>
+          <div class="content-grid execution-layout"><article class="panel"><div class="execution-examples"><button data-prompt="공개 문서를 읽어줘" type="button">공개 문서 읽기</button><button data-prompt="비밀 인증정보를 읽어줘" type="button">중요 문서 읽기</button><button data-prompt="공개 공지를 외부에 전송해줘" type="button">외부 전송</button><button data-prompt="현재 시간을 알려줘" type="button">stdio 도구 호출</button></div><label for="prompt">업무 요청</label><textarea id="prompt" rows="8" maxlength="2000" placeholder="예: 공개 문서를 읽어줘"></textarea><div class="button-row"><button id="send-button" class="primary-button" type="button">정책 검증 후 실행</button><button id="new-session" class="secondary-button" type="button">새 세션</button></div><p id="execution-note" class="form-note">모델이 권한이나 실행 여부를 결정하지 않습니다.</p></article><article id="result-panel" class="panel result-panel"><p class="section-label">EXECUTION RESULT</p><h2 id="result-title">실행 결과</h2><p id="result-message">요청을 입력하면 정책 판정과 실행 증적을 표시합니다.</p><dl id="result-facts" class="result-facts"></dl><button id="approve-button" class="primary-button hidden" type="button">승인 후 재검증</button></article></div>
+        </section>
+
+        <section class="view hidden" data-view="audit">
+          <div class="page-heading"><div><p class="section-label">AUDIT TRAIL</p><h1>감사 기록</h1><p>정책 판정과 실제 upstream 실행을 같은 Trace 기준으로 확인합니다.</p></div></div>
+          <article class="panel"><div class="panel-heading"><div><p class="section-label">LATEST DECISIONS</p><h2>최근 정책 판정</h2></div><span id="audit-total" class="soft-badge">0건</span></div><div class="table-wrap"><table><thead><tr><th>시간</th><th>요청자</th><th>도구</th><th>등급 / 행위</th><th>판정</th><th>실행</th><th>Trace</th></tr></thead><tbody id="audit-list"></tbody></table></div></article>
+        </section>
+      </main>
+    </div>
+    <script src="/static/console.js" defer></script>
+  </body>
+</html>

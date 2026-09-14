@@ -177,6 +177,26 @@ services:
       - trivy_cache:/root/.cache/trivy
     networks: [scanner]
 
+  semgrep:
+    image: semgrep/semgrep:1.172.0
+    profiles: [supply-chain]
+    environment:
+      SEMGREP_SEND_METRICS: "off"
+    command:
+      - semgrep
+      - scan
+      - --config
+      - /rules/semgrep-mcp.yml
+      - --json
+      - --output
+      - /reports/semgrep.json
+      - /workspace/full_stack_lab
+    volumes:
+      - ..:/workspace:ro
+      - ./reports:/reports
+      - ./supply_chain/semgrep-mcp.yml:/rules/semgrep-mcp.yml:ro
+    network_mode: none
+
   mcp-scan:
     build:
       context: ./supply_chain
