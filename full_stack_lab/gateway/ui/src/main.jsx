@@ -10,8 +10,6 @@ const decisionMeta = {
   Block: { icon: '×', label: '차단', tone: 'block' },
 }
 
-const compactFlowNodeStyle = { minWidth: 125, maxWidth: 150 }
-
 // The dashboard no longer holds a list of principal tokens. It signs in as a
 // synthetic account and sends that account's token, exactly like every other client.
 const accounts = [
@@ -46,6 +44,130 @@ function DecisionBadge({ decision }) {
   return <span className={`decision-badge ${meta.tone}`}><b>{meta.icon}</b>{meta.label}</span>
 }
 
+const processSteps = [
+  ['01', '사용자 요청', '역할 · 업무 문장'],
+  ['02', 'Agent 위임', 'JWT · 짧은 위임 증명'],
+  ['03', 'Gateway 검증', '신원 · 계약 · 입력'],
+  ['04', 'OPA 정책', '333 권한 판정'],
+  ['05', '승인 · 제한', '고위험 실행 조건'],
+  ['06', 'MCP 실행 · 증적', 'Effect · Trace 기록'],
+]
+
+function processStepState(index, current) {
+  if (!current) return 'ready'
+  if (index < 3) return 'passed'
+  if (current.decision === 'Block') return index === 3 ? 'blocked' : 'not-reached'
+  if (current.decision === 'Approval') return index < 5 ? 'pending' : 'not-reached'
+  if (index === 4 && current.decision === 'Restrict') return 'restricted'
+  return 'passed'
+}
+
+function ProcessMap({ current }) {
+  const labels = {
+    ready: '준비',
+    passed: '통과',
+    blocked: '차단',
+    pending: '승인 대기',
+    restricted: '제한 실행',
+    'not-reached': '미진입',
+  }
+  const summary = !current
+    ? '요청을 실행하면 이 경로에서 멈춘 지점과 실제 MCP 전달 여부를 강조합니다.'
+    : current.decision === 'Block'
+      ? '"' + current.policy_id + '"에서 차단됐습니다. MCP 서버에는 전달되지 않았습니다.'
+      : current.decision === 'Approval'
+        ? '승인 재검증 전까지 MCP 실행을 보류합니다.'
+        : current.upstream_executed
+          ? '정책을 통과했고, 독립 효과 로그에서 MCP 실행을 대조합니다.'
+          : '실행 결과를 확인 중입니다.'
+
+  return <div className="process-map">
+    <ol className="process-track" aria-label="요청 처리와 차단 지점">
+      {processSteps.map(([number, title, detail], index) => {
+        const state = processStepState(index, current)
+        return <li className={'process-step ' + state} key={title}>
+          <div className="process-card">
+            <span className="process-number">{number}</span>
+            <b>{title}</b>
+            <small>{detail}</small>
+            <span className="process-state">{labels[state]}</span>
+          </div>
+          {index < processSteps.length - 1 && <span className="process-connector" aria-hidden="true">→</span>}
+        </li>
+      })}
+    </ol>
+    <p className={'process-summary ' + (current?.decision || 'ready')} role="status">{summary}</p>
+  </div>
+}
+
+function ProjectGuide() {
+  return <>
+    <header className="guide-header">
+      <div className="topbar">
+        <a className="brand" href="#top" aria-label="대시보드로 돌아가기">
+          <span className="brand-mark">M</span>
+          <span><b>MCP Governance</b><small>Security Gateway Lab</small></span>
+        </a>
+        <nav aria-label="프로젝트 안내 탐색">
+          <a href="#top">대시보드</a>
+          <a href="#guide" aria-current="page">프로젝트 안내</a>
+          <a href="http://localhost:8000" target="_blank" rel="noreferrer">업무 공간 ↗</a>
+        </nav>
+      </div>
+    </header>
+
+    <main className="guide-main" id="guide">
+      <section className="guide-hero">
+        <p className="kicker">PROJECT GUIDE</p>
+        <h1>모델의 제안과 실제 실행을<br />서로 다른 경계로 분리합니다.</h1>
+        <p>이 페이지는 실습의 구조와 도입 이유를 설명합니다. 실시간 상태, 정책 시험과 증적 조회는 <a href="#top">대시보드</a>에서 확인합니다.</p>
+        <a className="primary-link" href="#top">대시보드로 돌아가기 <span>→</span></a>
+      </section>
+
+      <section className="guide-section" aria-labelledby="guide-flow-title">
+        <div className="section-heading">
+          <div><p className="kicker">CONTROL PATH</p><h2 id="guide-flow-title">누가 실행 권한을 결정하는가</h2><p>Agent와 모델은 요청을 제안하고, Gateway와 OPA/Rego가 실행 여부를 결정합니다.</p></div>
+        </div>
+        <ol className="guide-path">
+          <li><span>01</span><div><b>사용자 · Agent Service</b><small>사용자 JWT와 짧은 Agent 위임 증명을 요청에 결속합니다.</small></div></li>
+          <li><span>02</span><div><b>Security Gateway</b><small>actor, agent, 요청 봉투와 승인된 계약을 검증합니다.</small></div></li>
+          <li><span>03</span><div><b>OPA / Rego</b><small>역할·자료등급·행위를 정책으로 판정하고 기본값은 거부합니다.</small></div></li>
+          <li><span>04</span><div><b>MCP Server · Evidence</b><small>허용된 호출만 전달하고, 실행 효과와 Trace를 별도로 대조합니다.</small></div></li>
+        </ol>
+      </section>
+
+      <section className="guide-section" aria-labelledby="guide-tools-title">
+        <div className="section-heading">
+          <div><p className="kicker">WHY THESE TOOLS</p><h2 id="guide-tools-title">도입한 도구가 맡는 일</h2><p>도구마다 책임을 좁혀, 모델 또는 스캐너 결과가 실행 권한을 직접 갖지 않게 했습니다.</p></div>
+        </div>
+        <div className="tool-guide-grid">
+          <article className="tool-guide">
+            <p className="tool-label">MODEL PROPOSAL · container_lab</p>
+            <h3>LiteLLM</h3>
+            <p>서로 다른 모델 endpoint를 OpenAI 호환 호출로 중계해 도구 호출 제안을 한 경로에서 관찰합니다.</p>
+            <ul><li>모델은 최대 한 개의 등록된 도구 호출만 제안합니다.</li><li>허용·차단은 LiteLLM이 아니라 Gateway와 OPA/Rego가 결정합니다.</li><li>원문 프롬프트·응답 대신 필요한 증적만 남기는 경계를 유지합니다.</li></ul>
+          </article>
+          <article className="tool-guide">
+            <p className="tool-label">SUPPLY-CHAIN EVIDENCE · full_stack_lab</p>
+            <h3>AI-Infra-Guard</h3>
+            <p>전체 플랫폼을 이식하지 않고, 고정된 mcp-scan CLI의 SARIF 결과만 공급망 증적으로 연결합니다.</p>
+            <ul><li>도구 메타데이터와 스캔 결과를 Registry 승인 상태와 함께 비교합니다.</li><li>기본 모의 모델 모드에는 외부 키가 필요 없고, mcp-scan은 provider 설정이 있을 때만 선택적으로 실행합니다.</li><li>스캔 결과는 실행 권한이 아니라 호출 전 검토에 쓰이는 증적입니다.</li></ul>
+          </article>
+        </div>
+      </section>
+
+      <section className="guide-section guide-boundary" aria-labelledby="guide-boundary-title">
+        <div><p className="kicker">EVIDENCE BOUNDARY</p><h2 id="guide-boundary-title">이 실습이 보이는 것과 보이지 않는 것</h2></div>
+        <ul>
+          <li><b>보임</b><span>로그인, 위임 신원, 정책 판정, 실제 MCP 전달 여부, Trace와 독립 효과 로그</span></li>
+          <li><b>별도 검증 필요</b><span>운영 SSO, 키 회전, SPIFFE, 외부 모델 실호출, 고가용성, egress 격리</span></li>
+        </ul>
+      </section>
+    </main>
+    <footer><span>MCP Governance Security Gateway · Synthetic Lab</span><span>대시보드와 프로젝트 안내를 분리해 제공합니다.</span></footer>
+  </>
+}
+
 function App() {
   const [health, setHealth] = useState(null)
   const [state, setState] = useState(null)
@@ -58,6 +180,17 @@ function App() {
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [view, setView] = useState(() => window.location.hash === '#guide' ? 'guide' : 'dashboard')
+
+  useEffect(() => {
+    const syncView = () => setView(window.location.hash === '#guide' ? 'guide' : 'dashboard')
+    window.addEventListener('hashchange', syncView)
+    return () => window.removeEventListener('hashchange', syncView)
+  }, [])
+
+  useEffect(() => {
+    document.title = view === 'guide' ? '프로젝트 안내 | MCP Governance' : 'MCP Governance Dashboard'
+  }, [view])
 
   const load = async () => {
     try {
@@ -193,6 +326,8 @@ function App() {
     return index
   }, [matrix])
 
+  if (view === 'guide') return <ProjectGuide />
+
   return <>
     <header className="hero">
       <div className="topbar">
@@ -201,19 +336,19 @@ function App() {
           <span><b>MCP Governance</b><small>Security Gateway Lab</small></span>
         </a>
         <nav aria-label="주요 화면">
-          <a href="#practice">실습</a><a href="#policy">333 정책</a><a href="#supply">공급망</a><a href="#audit">감사</a>
+          <a href="#top" aria-current="page">대시보드</a><a href="#practice">실습</a><a href="#audit">증적</a><a href="#guide">프로젝트 안내</a>
         </nav>
       </div>
       <div className="hero-copy" id="top">
         <div>
-          <p className="eyebrow">MENTOR-FRIENDLY DEMONSTRATION</p>
-          <h1>MCP 실행 전에<br /><em>누가·무엇을·왜</em><br />확인합니다.</h1>
-          <p className="lede">모델의 판단을 믿는 대신 Registry 계약과 OPA/Rego 정책으로 MCP 호출을 결정하고, 실제 실행 여부를 별도 증적으로 대조하는 로컬 실습입니다.</p>
+          <p className="eyebrow">GOVERNANCE DASHBOARD · LIVE DEMO</p>
+          <h1>요청은 어디에서<br /><em>멈추고, 왜</em><br />실행되는가</h1>
+          <p className="lede">사용자 요청부터 MCP 실행 증적까지 한 경로로 읽습니다. 차단·승인·제한은 아래 흐름에서 즉시 강조됩니다.</p>
         </div>
         <div className="hero-summary" aria-label="현재 핵심 상태">
           <div><span>정책 결과</span><strong>5종</strong><small>Allow · Alert · Approval · Restrict · Block</small></div>
           <div><span>권한 조합</span><strong>27칸</strong><small>3 역할 × 3 등급 × r/w/x</small></div>
-          <div><span>호출 신원</span><strong>이중 증명</strong><small>사용자 JWT · 60초 Agent Assertion</small></div>
+          <div><span>실행 증적</span><strong>Trace + Effect</strong><small>판정과 실제 전달 여부를 대조</small></div>
         </div>
       </div>
     </header>
@@ -221,26 +356,12 @@ function App() {
     <main>
       {error && <div className="error-banner" role="alert"><b>확인 필요</b><span>{error}</span><button onClick={() => setError('')} aria-label="오류 닫기">×</button></div>}
 
-      <section className="section" aria-labelledby="agent-title">
-        <div className="section-heading"><div><p className="kicker">AGENT SERVICE · MISO 통합</p><h2 id="agent-title">로그인부터 실제 실행까지 이어집니다</h2><p>합성 로그인 → 사용자 JWT → 60초 Agent 위임 → 요청 바인딩 → 333 정책 → MCP 실행·감사</p></div><a className="secondary-link" href="http://localhost:8000" target="_blank" rel="noreferrer">사용자 업무 공간 열기 ↗</a></div>
-        <div className="audit-summary"><div><span>시나리오 준비</span><b>{integration?.readiness?.status === 'ready' ? '준비됨' : '확인 필요'}</b></div><div><span>사용자 인증</span><b>합성 JWT · 30분</b></div><div><span>Agent 위임</span><b>별도 Assertion · 60초</b></div><div><span>요청 바인딩</span><b>actor · agent · SHA-256</b></div></div>
-        <p>실제 API 연결 전에는 모의 모델을 사용합니다. 사용자 JWT만으로 내부 <code>/tool-call</code>을 실행할 수 없으며, 토큰·요청 해시 원문은 화면과 감사 로그에 표시하지 않습니다.</p>
-        <details><summary>최근 Agent 요청과 세션 ID</summary><pre>{JSON.stringify(integration?.runs || [], null, 2)}</pre></details>
-      </section>
-
       <section className="section system-section" aria-labelledby="system-title">
         <div className="section-heading">
           <div><p className="kicker">한눈에 보는 구조</p><h2 id="system-title">요청에서 증적까지 한 방향으로 흐릅니다</h2></div>
           <span className={`overall ${health?.status || 'loading'}`}><StatusDot ok={health?.status === 'ok'} pending={!health} />{health ? (health.status === 'ok' ? '핵심 구성요소 정상' : '일부 구성요소 확인 필요') : '상태 확인 중'}</span>
         </div>
-        <div className="flow" aria-label="MCP 보안 Gateway 처리 흐름">
-          <div className="flow-node" style={compactFlowNodeStyle}><span>01</span><b>합성 사용자</b><small>업무 요청 · 역할</small></div><i>→</i>
-          <div className="flow-node" style={compactFlowNodeStyle}><span>02</span><b>Agent Service</b><small>JWT · 60초 위임 증명</small></div><i>→</i>
-          <div className="flow-node primary" style={compactFlowNodeStyle}><span>03</span><b>Security Gateway</b><small>이중 신원 · 계약 · 입력 검증</small></div><i>→</i>
-          <div className="flow-node" style={compactFlowNodeStyle}><span>04</span><b>OPA / Rego</b><small>333 정책 결정</small></div><i>→</i>
-          <div className="flow-node" style={compactFlowNodeStyle}><span>05</span><b>MCP Server</b><small>HTTP · stdio · SSE</small></div><i>→</i>
-          <div className="flow-node" style={compactFlowNodeStyle}><span>06</span><b>증적</b><small>PostgreSQL · Trace · Effect</small></div>
-        </div>
+        <ProcessMap current={current} />
         <div className="health-grid">
           {[
             ['Gateway', health?.components?.gateway], ['OPA 정책', health?.components?.opa],
@@ -248,6 +369,13 @@ function App() {
             ['Jaeger', health?.components?.jaeger], ['GitHub MCP', health?.components?.github_mcp, true],
           ].map(([label, ok, optional]) => <div className="health-item" key={label}><StatusDot ok={ok} pending={optional && !ok} /><span><b>{label}</b><small>{optional && !ok ? '인증 대기 · 의도적 비활성' : ok ? '연결됨' : '확인 중'}</small></span></div>)}
         </div>
+      </section>
+
+      <section className="section" aria-labelledby="agent-title">
+        <div className="section-heading"><div><p className="kicker">AGENT SERVICE · MISO 통합</p><h2 id="agent-title">로그인부터 실제 실행까지 이어집니다</h2><p>합성 로그인 → 사용자 JWT → 60초 Agent 위임 → 요청 바인딩 → 333 정책 → MCP 실행·감사</p></div><a className="secondary-link" href="http://localhost:8000" target="_blank" rel="noreferrer">사용자 업무 공간 열기 ↗</a></div>
+        <div className="audit-summary"><div><span>시나리오 준비</span><b>{integration?.readiness?.status === 'ready' ? '준비됨' : '확인 필요'}</b></div><div><span>사용자 인증</span><b>합성 JWT · 30분</b></div><div><span>Agent 위임</span><b>별도 Assertion · 60초</b></div><div><span>요청 바인딩</span><b>actor · agent · SHA-256</b></div></div>
+        <p>실제 API 연결 전에는 모의 모델을 사용합니다. 사용자 JWT만으로 내부 <code>/tool-call</code>을 실행할 수 없으며, 토큰·요청 해시 원문은 화면과 감사 로그에 표시하지 않습니다.</p>
+        <details><summary>최근 Agent 요청과 세션 ID</summary><pre>{JSON.stringify(integration?.runs || [], null, 2)}</pre></details>
       </section>
 
       <section className="section" id="enforcement" aria-labelledby="enforcement-title">
