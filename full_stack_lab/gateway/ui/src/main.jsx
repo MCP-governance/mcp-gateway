@@ -49,6 +49,7 @@ function App() {
   const [state, setState] = useState(null)
   const [matrix, setMatrix] = useState(null)
   const [integration, setIntegration] = useState(null)
+  const [monitor, setMonitor] = useState(null)
   const [email, setEmail] = useState('customer@bob.local')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('공개 공지를 읽어줘')
@@ -58,13 +59,15 @@ function App() {
 
   const load = async () => {
     try {
-      const [nextHealth, nextState, nextMatrix, nextIntegration] = await Promise.all([
+      const [nextHealth, nextState, nextMatrix, nextIntegration, nextMonitor] = await Promise.all([
         api('/api/health'), api('/api/state'), api('/api/policy/matrix'), api('/api/integration'),
+        api('/api/monitor/summary?hours=168'),
       ])
       setHealth(nextHealth)
       setState(nextState)
       setMatrix(nextMatrix)
       setIntegration(nextIntegration)
+      setMonitor(nextMonitor)
       setError('')
     } catch (err) {
       setError(err.message)
@@ -141,6 +144,20 @@ function App() {
     finally { setBusy(false) }
   }
 
+  // Turning enforcement on is the decision this panel exists to support, so it is
+  // signed by the admin account rather than by whoever has the dashboard open.
+  const setEnforcement = async (mode) => {
+    setBusy(true)
+    try {
+      await withToken('admin@bob.local', token => api('/api/enforcement', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      }, token))
+      await load()
+    } catch (err) { setError(err.message) }
+    finally { setBusy(false) }
+  }
+
   const importReports = async () => {
     setBusy(true)
     try { await withToken('admin@bob.local', token => api('/api/supply-chain/import', { method: 'POST' }, token)); await load() }
@@ -210,6 +227,41 @@ function App() {
             ['PostgreSQL', health?.components?.postgresql], ['합성 MCP', health?.components?.mock_http_mcp],
             ['Jaeger', health?.components?.jaeger], ['GitHub MCP', health?.components?.github_mcp, true],
           ].map(([label, ok, optional]) => <div className="health-item" key={label}><StatusDot ok={ok} pending={optional && !ok} /><span><b>{label}</b><small>{optional && !ok ? '인증 대기 · 의도적 비활성' : ok ? '연결됨' : '확인 중'}</small></span></div>)}
+        </div>
+      </section>
+
+      <section className="section" id="enforcement" aria-labelledby="enforcement-title">
+        <div className="section-heading">
+          <div>
+            <p className="kicker">집행 단계</p>
+            <h2 id="enforcement-title">관찰부터 시작하고, 숫자를 보고 켜세요</h2>
+          </div>
+          <span className="note-pill">{monitor?.enforcement === 'monitor' ? '관찰 모드' : '집행 모드'}</span>
+        </div>
+        <div className="panel">
+          <p>
+            {monitor?.enforcement === 'monitor'
+              ? '권한 판정은 기록만 하고 실행합니다. Registry·catalog·공급망·정책엔진 장애는 관찰 모드에서도 그대로 차단합니다.'
+              : '모든 판정을 그대로 집행합니다. 도입 초기에는 관찰 모드로 영향 범위를 먼저 측정할 수 있습니다.'}
+          </p>
+          <div className="result-facts">
+            <div><span>최근 7일 차단됐을 호출</span><b>{monitor?.would_have_stopped ?? 0}건</b></div>
+            <div><span>영향 받는 주체</span><b>{monitor?.affected_principals ?? 0}명</b></div>
+          </div>
+          {(monitor?.breakdown || []).length > 0 && <div className="audit-table-wrap" style={{ marginTop: 14 }}>
+            <table className="audit-table">
+              <thead><tr><th>집행 시 판정</th><th>정책</th><th>역할</th><th>도구</th><th>등급</th><th>건수</th></tr></thead>
+              <tbody>{monitor.breakdown.slice(0, 8).map((row, index) => <tr key={index}>
+                <td>{row.would_decision}</td><td><code>{row.would_policy_id}</code></td>
+                <td>{row.role}</td><td>{row.tool_name}</td><td>{row.data_class}</td><td>{row.calls}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>}
+          <button type="button" className="primary-button" style={{ marginTop: 16 }} disabled={busy || !password}
+                  onClick={() => setEnforcement(monitor?.enforcement === 'monitor' ? 'enforce' : 'monitor')}>
+            {monitor?.enforcement === 'monitor' ? '집행 모드로 전환' : '관찰 모드로 전환'} <span>→</span>
+          </button>
+          {!password && <p className="form-help">전환은 관리자 계정으로 서명합니다. 아래에서 합성 계정 비밀번호를 먼저 입력하세요.</p>}
         </div>
       </section>
 

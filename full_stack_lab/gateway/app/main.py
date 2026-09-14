@@ -20,8 +20,11 @@ from .core import (
     bootstrap,
     effect_count,
     execute_call,
+    enforcement_mode,
     import_supply_chain_reports,
+    monitor_summary,
     refresh_catalog,
+    set_enforcement_mode,
     verify_audit_chain,
 )
 from .mcp_facade import build_mcp, transport_security
@@ -56,6 +59,10 @@ class CallRequest(StrictModel):
 
 class MockModelRequest(StrictModel):
     message: str = Field(min_length=1, max_length=500)
+
+
+class EnforcementRequest(StrictModel):
+    mode: Literal["enforce", "monitor"]
 
 
 class SessionRequest(StrictModel):
@@ -273,6 +280,26 @@ async def supply_chain_import(user: dict = Depends(admin_caller)) -> dict:
         return {"imported": await import_supply_chain_reports()}
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         raise HTTPException(422, f"보고서 파싱 실패: {exc}") from exc
+
+
+@app.get("/api/enforcement")
+async def enforcement() -> dict:
+    return {"enforcement": await enforcement_mode()}
+
+
+@app.put("/api/enforcement")
+async def enforcement_update(request: EnforcementRequest, user: dict = Depends(admin_caller)) -> dict:
+    """Turning enforcement on is an operator decision, so it is authenticated and logged."""
+    try:
+        return await set_enforcement_mode(request.mode, user["principal"])
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@app.get("/api/monitor/summary")
+async def monitor(hours: int = 168) -> dict:
+    """What enforcement would have stopped, so a team can turn it on with numbers."""
+    return await monitor_summary(min(max(hours, 1), 8760))
 
 
 @app.get("/api/audit/verify")

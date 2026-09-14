@@ -14,7 +14,7 @@ from mcp.client.sse import sse_client
 from mcp.client.streamable_http import streamable_http_client
 
 from . import db
-from .core import approve_request, execute_call, verify_audit_chain
+from .core import approve_request, execute_call, set_enforcement_mode, verify_audit_chain
 
 API = "http://gateway:8080"
 EMAILS = {"cust-demo": "customer@bob.local", "emp-demo": "miso@bob.local", "admin-demo": "admin@bob.local"}
@@ -195,6 +195,38 @@ async def run() -> dict:
         except Exception:
             unbound_refused = True
     checks.append(check(unbound_refused, "stdio-ingress-identity-required", "unbound stdio ingress refused"))
+
+    # Observation mode: permission opinions are recorded instead of applied, while
+    # integrity controls keep enforcing. Both halves matter, so both are checked.
+    async with httpx.AsyncClient(timeout=30) as client:
+        flipped = await client.put(API + "/api/enforcement", headers=bearer("admin-demo"), json={"mode": "monitor"})
+        checks.append(check(flipped.status_code == 200, "monitor-switch", flipped.text[:120]))
+        denied = await client.put(API + "/api/enforcement", headers=bearer("emp-demo"), json={"mode": "enforce"})
+        checks.append(check(denied.status_code == 403, "monitor-switch-admin-only", str(denied.status_code)))
+    try:
+        observed = await post("/api/calls", {"tool_name": "read_document", "document_id": "secret-001"}, "cust-demo")
+        checks.append(check(
+            observed["decision"] == "Allow" and observed["policy_id"] == "P-MONITOR-001"
+            and observed["would_decision"] == "Block" and observed["would_policy_id"] == "P-333-DENY-001"
+            and observed["upstream_executed"] and observed["effect_after"] == observed["effect_before"] + 1,
+            "monitor-observes-permission",
+            f"{observed['policy_id']} would={observed['would_policy_id']}"))
+        integrity = await execute_call({"user_token": "admin-demo", "tool_name": "shadow_export", "document_id": "notice-001"})
+        checks.append(check(
+            integrity["decision"] == "Block" and integrity["policy_id"] == "MCP-REGISTRY-001"
+            and integrity["would_decision"] is None
+            and integrity["effect_after"] == integrity["effect_before"],
+            "monitor-still-enforces-integrity", integrity["policy_id"]))
+        async with httpx.AsyncClient(timeout=30) as client:
+            summary = (await client.get(API + "/api/monitor/summary?hours=1")).json()
+        checks.append(check(
+            summary["enforcement"] == "monitor" and summary["would_have_stopped"] >= 1
+            and summary["affected_principals"] >= 1,
+            "monitor-summary", f"{summary['would_have_stopped']} calls would have been stopped"))
+    finally:
+        await set_enforcement_mode("enforce", "admin-demo")
+    checks.append(check((await post("/api/calls", {"tool_name": "read_document", "document_id": "secret-001"}, "cust-demo"))["decision"] == "Block",
+                        "enforce-restored", "관찰 모드를 끄면 즉시 다시 차단"))
 
     chain = await verify_audit_chain()
     checks.append(check(chain["intact"], "audit-chain-intact", json.dumps(chain, ensure_ascii=False)))

@@ -36,6 +36,22 @@ EXCEPTION WHEN OTHERS THEN
   RAISE NOTICE 'decisions append-only grant not applied: %', SQLERRM;
 END $$;
 
+-- Observation mode. A decision records what was enforced and, when the gateway is
+-- only observing, what enforcement would have done instead.
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS enforcement text NOT NULL DEFAULT 'enforce';
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS would_decision text;
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS would_policy_id text;
+-- Rows hashed before a column existed were hashed over a smaller column set, so the
+-- chain records which set it used instead of retroactively invalidating itself.
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS chain_version integer NOT NULL DEFAULT 1;
+
+CREATE TABLE IF NOT EXISTS gateway_settings (
+  key text PRIMARY KEY,
+  value text NOT NULL,
+  updated_by text,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- Applied on every boot so existing volumes get them too. Audit lookups are by
 -- request id or by user over a time window; without these both are seq scans.
 CREATE INDEX IF NOT EXISTS decisions_request_idx ON decisions(request_id);

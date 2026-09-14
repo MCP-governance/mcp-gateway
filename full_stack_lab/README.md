@@ -106,6 +106,39 @@ cd ~/mcp-gateway/full_stack_lab
 
 두 화면의 같은 요청 ID·세션 ID·Trace ID를 따라가면 “Agent가 무엇을 제안했고, Gateway가 왜 판정했으며, upstream 효과가 실제로 생겼는지”를 분리해서 설명할 수 있습니다. 모든 계정과 문서는 합성 데이터입니다.
 
+## 3.3 관찰 모드로 먼저 재보기
+
+조직에 처음 붙일 때 첫날부터 차단을 켜는 곳은 없습니다. **"우리한테 붙이면 뭐가 막히나"**를 숫자로 보여주지 못하면 도입 논의가 진도가 나가지 않습니다.
+
+Gateway는 두 단계로 동작합니다.
+
+| 모드 | 권한 판정(333, 승인, 제한) | 무결성 판정(Registry, catalog, 공급망, 정책엔진 장애) |
+| --- | --- | --- |
+| `enforce` (기본) | 그대로 집행 | 그대로 집행 |
+| `monitor` | **기록만 하고 실행** | **그대로 집행** |
+
+관찰 모드에서도 무결성 통제는 절대 풀리지 않습니다. 드리프트가 감지된 catalog나 치명적 공급망 이슈가 있는 서버를 "관찰 중이니까" 호출하는 것은 관찰이 아니라 사고입니다. 관찰 대상은 **권한 모델에 대한 의견**뿐입니다.
+
+전환은 관리자만 할 수 있고, 재시작이 필요 없으며, 전환 자체가 기록됩니다.
+
+```bash
+curl -sS -X PUT http://localhost:8080/api/enforcement   -H "authorization: Bearer $GW_TOKEN"   -H 'content-type: application/json'   -d '{"mode":"monitor"}'
+```
+
+관찰 모드에서 원래 막혔을 호출은 `decision: Allow`, `policy_id: P-MONITOR-001`로 실행되고, `would_decision`과 `would_policy_id`에 **집행 모드였다면 어떻게 됐을지**가 함께 남습니다.
+
+```bash
+curl -sS 'http://localhost:8080/api/monitor/summary?hours=168' | python3 -m json.tool
+```
+
+```json
+{"enforcement": "monitor", "would_have_stopped": 37, "affected_principals": 3,
+ "breakdown": [{"would_decision": "Block", "would_policy_id": "P-333-DENY-001",
+                "role": "customer", "tool_name": "read_document", "calls": 21}]}
+```
+
+Dashboard의 **집행 단계** 패널에 같은 숫자와 정책별 내역이 나오고, 거기서 바로 전환할 수 있습니다. 도입 순서는 `monitor`로 한 주 측정 → 내역 검토 → 예외 정리 → `enforce`입니다.
+
 ## 4. 확정한 333 Rego 정책
 
 `x`는 **외부 전송 또는 고위험 실행**입니다. 표에 없는 권한은 기본 차단입니다.
@@ -368,6 +401,7 @@ Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance
 ## 12. 여기서 발견해야 할 의의
 
 - **LLM은 집행자가 아니다.** 모의 모델은 Tool Call만 제안하고, 결정론적 정책과 계약 검증이 실행 권한을 정합니다.
+- **집행은 스위치가 아니라 단계다.** 통제를 켜는 비용을 모르면 아무도 켜지 않습니다. 관찰 모드는 권한 판정을 기록만 하고 실행해 영향 범위를 먼저 숫자로 만들고, 무결성 판정은 그 동안에도 집행합니다.
 - **정책 응답과 실제 효과는 다른 증적이다.** Gateway DB의 판정과 upstream JSONL 효과를 함께 봐야 “차단 전에 멈췄다”를 주장할 수 있습니다.
 - **권한표만으로 공급망 문제를 막을 수 없다.** 허용된 `read_document`라도 설명·스키마·버전·도구 목록이 바뀌거나 서버 귀속 치명점이 생기면 차단됩니다.
 - **승인은 단순 버튼이 아니다.** 원 요청 지문, 만료, 관리자 역할을 확인하고 현재 정책으로 재평가한 뒤 한 번 실행합니다.

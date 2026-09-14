@@ -47,6 +47,12 @@ UNSAFE_METADATA = re.compile(
     re.IGNORECASE,
 )
 MAX_RESULT_BYTES = int(os.getenv("MAX_RESULT_BYTES", "262144"))
+DEFAULT_ENFORCEMENT = os.getenv("GATEWAY_ENFORCEMENT", "enforce")
+# Integrity failures are not opinions. A drifted catalog, an unregistered tool, a
+# critical supply-chain finding or an unavailable policy engine stay enforced even
+# while the gateway is only observing the permission model, because "observe" cannot
+# mean "call a server we can no longer vouch for".
+ALWAYS_ENFORCED = ("MCP-", "P-CONTROL-", "P-INPUT-")
 
 
 class ResultRejected(RuntimeError):
@@ -272,6 +278,51 @@ async def _contract(server_id: str, tool_name: str) -> dict:
     }
 
 
+async def enforcement_mode() -> str:
+    """'enforce' applies decisions; 'monitor' records what enforcement would have done.
+
+    Stored in the database rather than the environment so an operator can turn
+    enforcement on without a restart - and so the switch itself is auditable.
+    """
+    row = await db.fetch_one("SELECT value FROM gateway_settings WHERE key='enforcement'")
+    value = row["value"] if row else DEFAULT_ENFORCEMENT
+    return value if value in {"enforce", "monitor"} else "enforce"
+
+
+async def set_enforcement_mode(mode: str, actor: str) -> dict:
+    if mode not in {"enforce", "monitor"}:
+        raise ValueError("enforce 또는 monitor만 사용할 수 있습니다.")
+    await db.execute(
+        """INSERT INTO gateway_settings(key, value, updated_by) VALUES ('enforcement',%s,%s)
+           ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, updated_by=EXCLUDED.updated_by, updated_at=now()""",
+        (mode, actor),
+    )
+    return {"enforcement": mode, "updated_by": actor}
+
+
+async def monitor_summary(hours: int = 168) -> dict:
+    """What enforcement would have stopped, so a team can turn it on with numbers."""
+    rows = await db.fetch_all(
+        """SELECT would_decision, would_policy_id, role, tool_name, data_class, count(*) AS calls
+           FROM decisions
+           WHERE would_decision IS NOT NULL AND created_at > now() - make_interval(hours => %s)
+           GROUP BY 1,2,3,4,5 ORDER BY calls DESC LIMIT 50""",
+        (hours,),
+    )
+    users = await db.fetch_one(
+        """SELECT count(DISTINCT user_token) AS affected FROM decisions
+           WHERE would_decision IS NOT NULL AND created_at > now() - make_interval(hours => %s)""",
+        (hours,),
+    )
+    return {
+        "enforcement": await enforcement_mode(),
+        "window_hours": hours,
+        "would_have_stopped": sum(int(row["calls"]) for row in rows),
+        "affected_principals": int(users["affected"]) if users else 0,
+        "breakdown": rows,
+    }
+
+
 async def _policy(input_document: dict) -> dict:
     async with httpx.AsyncClient(timeout=5) as client:
         response = await client.post(OPA_URL, json={"input": input_document})
@@ -356,22 +407,32 @@ def _audit_result(result: Any) -> dict:
     return {"sha256": canonical_hash(result), "chars": len(body), "head": body[:200]}
 
 
-AUDIT_COLUMNS = (
-    "request_id", "trace_id", "user_token", "role", "tool_name", "data_class", "action",
-    "decision", "policy_id", "reason", "upstream_executed", "restrictions", "approval_id",
-    "request_payload", "result_preview", "error",
-)
+AUDIT_COLUMN_SETS = {
+    1: (
+        "request_id", "trace_id", "user_token", "role", "tool_name", "data_class", "action",
+        "decision", "policy_id", "reason", "upstream_executed", "restrictions", "approval_id",
+        "request_payload", "result_preview", "error",
+    ),
+    2: (
+        "request_id", "trace_id", "user_token", "role", "tool_name", "data_class", "action",
+        "decision", "policy_id", "reason", "upstream_executed", "restrictions", "approval_id",
+        "request_payload", "result_preview", "error",
+        "enforcement", "would_decision", "would_policy_id",
+    ),
+}
+CHAIN_VERSION = 2
+AUDIT_COLUMNS = AUDIT_COLUMN_SETS[CHAIN_VERSION]
 GENESIS = "0" * 64
 
 
-def _audit_fingerprint(record: dict) -> str:
+def _audit_fingerprint(record: dict, version: int = CHAIN_VERSION) -> str:
     """One canonical form for both the append and the later verification.
 
     Values are normalised to str / bool / None / JSON documents so that the hash of a
     row read back from PostgreSQL matches the hash computed when it was written.
     """
     normalised = {}
-    for column in AUDIT_COLUMNS:
+    for column in AUDIT_COLUMN_SETS[version]:
         value = record.get(column)
         if column == "upstream_executed":
             normalised[column] = bool(value)
@@ -398,6 +459,9 @@ async def _record_decision(event: dict) -> int:
         "request_payload": _audit_payload(event.get("request_payload") or {}),
         "result_preview": _audit_result(event["result"]) if event.get("result") is not None else None,
         "error": event.get("error"),
+        "enforcement": event.get("enforcement") or "enforce",
+        "would_decision": event.get("would_decision"),
+        "would_policy_id": event.get("would_policy_id"),
     }
     async with db.transaction() as connection:
         cursor = await connection.execute("SELECT head_sha256 FROM audit_chain WHERE id=1 FOR UPDATE")
@@ -409,8 +473,9 @@ async def _record_decision(event: dict) -> int:
                  request_id, trace_id, user_token, role, tool_name, data_class, action,
                  decision, policy_id, reason, upstream_executed, restrictions,
                  approval_id, request_payload, result_preview, error,
-                 prev_sha256, entry_sha256)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                 enforcement, would_decision, would_policy_id,
+                 prev_sha256, entry_sha256, chain_version)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                RETURNING id""",
             (
                 record["request_id"], record["trace_id"], record["user_token"], record["role"],
@@ -419,7 +484,8 @@ async def _record_decision(event: dict) -> int:
                 Jsonb(record["restrictions"]), record["approval_id"],
                 Jsonb(record["request_payload"]),
                 Jsonb(record["result_preview"]) if record["result_preview"] is not None else None,
-                record["error"], previous, entry,
+                record["error"], record["enforcement"], record["would_decision"],
+                record["would_policy_id"], previous, entry, CHAIN_VERSION,
             ),
         )
         row = await cursor.fetchone()
@@ -438,7 +504,8 @@ async def verify_audit_chain() -> dict:
     than with an assurance.
     """
     rows = await db.fetch_all(
-        "SELECT id, " + ", ".join(AUDIT_COLUMNS) + ", prev_sha256, entry_sha256 FROM decisions ORDER BY id"
+        "SELECT id, " + ", ".join(AUDIT_COLUMNS) + ", prev_sha256, entry_sha256, chain_version"
+        " FROM decisions ORDER BY id"
     )
     previous = GENESIS
     chained = 0
@@ -446,7 +513,11 @@ async def verify_audit_chain() -> dict:
         if row["entry_sha256"] is None:
             # Written before the chain existed. It anchors nothing and claims nothing.
             continue
-        expected = hashlib.sha256((previous + _audit_fingerprint(row)).encode()).hexdigest()
+        version = int(row["chain_version"] or 1)
+        if version not in AUDIT_COLUMN_SETS:
+            return {"intact": False, "checked": chained, "broken_at": row["id"],
+                    "reason": f"알 수 없는 체인 버전 {version}입니다."}
+        expected = hashlib.sha256((previous + _audit_fingerprint(row, version)).encode()).hexdigest()
         if row["prev_sha256"] != previous:
             return {"intact": False, "checked": chained, "broken_at": row["id"],
                     "reason": "이전 항목과 연결되지 않습니다. 앞의 행이 지워졌을 수 있습니다."}
@@ -494,6 +565,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "data_class": data_class,
             "action": spec["action"],
             "upstream_executed": False,
+            "enforcement": "enforce",
+            "would_decision": None,
+            "would_policy_id": None,
             "approval_id": approval_id,
             "request_payload": payload,
             "result": None,
@@ -555,7 +629,22 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             }
             base_event["error"] = str(exc)[:500]
 
+        mode = await enforcement_mode()
+        base_event["enforcement"] = mode
+        if (mode == "monitor" and result["decision"] != "Allow"
+                and not result["policy_id"].startswith(ALWAYS_ENFORCED)):
+            base_event["would_decision"] = result["decision"]
+            base_event["would_policy_id"] = result["policy_id"]
+            span.set_attribute("mcp.would_decision", result["decision"])
+            result = {
+                "decision": "Allow",
+                "policy_id": "P-MONITOR-001",
+                "reason": f"관찰 모드입니다. 집행 모드였다면 {base_event['would_decision']}"
+                          f"({base_event['would_policy_id']})로 처리됐습니다.",
+                "restrictions": {},
+            }
         base_event.update(result)
+        span.set_attribute("mcp.enforcement", mode)
         span.set_attribute("mcp.decision", result["decision"])
         span.set_attribute("mcp.policy_id", result["policy_id"])
 
