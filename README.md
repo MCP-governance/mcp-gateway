@@ -21,6 +21,12 @@ cd mcp-gateway/full_stack_lab
 
 현재 기준의 성공 조건은 Rego 12/12, core acceptance 52/52, Agent/API acceptance 61/61입니다.
 
+### Dashboard와 안내 페이지
+
+- 기본 경로 <http://localhost:8080>는 흰색 대시보드로 열립니다. 요청의 각 단계와 현재 차단·승인·제한·미진입 상태, upstream 실행 증적을 한 화면에서 확인합니다.
+- 상단의 `프로젝트 안내`는 별도 안내 화면으로 전환합니다. LiteLLM은 모델 호출을 OpenAI 호환 경로로 중계하고, AI-Infra-Guard의 `mcp-scan` 증적은 Gateway가 실행 전 공급망 상태를 판정하는 데 사용합니다.
+- Workspace(<http://localhost:8000>)는 대시보드 바로가기와 반응형 사용자 헤더를 제공하며, 좁은 화면에서도 사용자 정보와 이동 링크가 겹치지 않습니다.
+
 ## 통제 흐름
 
 ~~~mermaid
