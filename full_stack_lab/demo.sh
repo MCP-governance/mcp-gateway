@@ -4,7 +4,30 @@ set -euo pipefail
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$LAB_DIR"
 mkdir -p reports
-python3 init_config.py
+
+# The synthetic IdP signs with Ed25519: Agent Service holds the private key, every
+# verifier holds only the public key. Generated inside the gateway image so the host
+# needs no crypto library. The placeholders only satisfy compose interpolation.
+ensure_keys() {
+  touch .env && chmod 600 .env
+  if grep -qE '^AGENT_JWT_PRIVATE_KEY=.+' .env && grep -qE '^AGENT_JWT_PUBLIC_KEY=.+' .env; then
+    return
+  fi
+  echo "합성 인증용 Ed25519 키쌍을 생성합니다. (최초 1회, gateway 이미지 빌드 필요)"
+  docker compose build --quiet gateway
+  local generated
+  generated="$(AGENT_JWT_PRIVATE_KEY=placeholder AGENT_JWT_PUBLIC_KEY=placeholder \
+    docker compose run --rm --no-deps -T --entrypoint python gateway -m app.keygen | tr -d '\r')"
+  if ! grep -q '^AGENT_JWT_PRIVATE_KEY=' <<<"$generated"; then
+    echo "키 생성에 실패했습니다. docker compose build gateway 를 먼저 확인하세요." >&2
+    exit 1
+  fi
+  sed -i -E '/^AGENT_JWT_(PRIVATE|PUBLIC)_KEY=/d' .env
+  printf '%s\n' "$generated" >> .env
+  chmod 600 .env
+}
+
+ensure_keys
 
 # The gateway API is authenticated now, so scripted maintenance calls log in the
 # same way a person does. The password lives in the uncommitted .env.
@@ -54,7 +77,11 @@ case "${1:-up}" in
     docker run --rm -v "$LAB_DIR/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v
     docker compose exec -T gateway python -m app.acceptance | tee reports/acceptance.json
     tests/drift_and_fail_closed.sh | tee reports/security-regression.txt
-    docker compose exec -T gateway python -m app.agent_acceptance | tee reports/agent-acceptance.json
+    # The gateway service has no private key. The acceptance run is handed one here
+    # on purpose, so it can forge expired/wrong-audience/wrong-issuer claim variants.
+    docker compose exec -T \
+      -e AGENT_JWT_PRIVATE_KEY="$(sed -n 's/^AGENT_JWT_PRIVATE_KEY=//p' .env | tail -1)" \
+      gateway python -m app.agent_acceptance | tee reports/agent-acceptance.json
     echo "모든 필수 검증이 통과했습니다."
     ;;
   scan)

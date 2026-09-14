@@ -19,7 +19,7 @@ import httpx
 import jwt
 
 from . import db
-from .agent_contract import AUDIENCE, ISSUER, signing_key
+from .agent_contract import ALGORITHM, AUDIENCE, ISSUER, private_key
 from .core import canonical_hash, effect_count, execute_call, _discover, HTTP_MCP_URL
 
 AGENT = "http://agent-service:8000"
@@ -139,7 +139,9 @@ async def main():
         check("unknown-server", (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=envelope(server_id="evil"))).status_code == 422)
         for name, updates in [("expired", {"exp": datetime.now(UTC) - timedelta(seconds=5)}), ("wrong-audience", {"aud": "other"}), ("wrong-issuer", {"iss": "other"})]:
             claims = {"sub": "user-test-001", "iss": ISSUER, "aud": AUDIENCE, "iat": datetime.now(UTC) - timedelta(minutes=1), "nbf": datetime.now(UTC) - timedelta(minutes=1), "exp": datetime.now(UTC) + timedelta(minutes=1), "jti": str(uuid4()), **updates}
-            token = jwt.encode(claims, signing_key(), algorithm="HS256")
+            # The gateway service itself has no private key. The acceptance run is
+            # handed one on the exec line precisely so it can forge claim variants.
+            token = jwt.encode(claims, private_key(), algorithm=ALGORITHM)
             check("jwt-" + name, (await client.post(GATEWAY + "/tool-call", headers={"Authorization": "Bearer " + token}, json=envelope())).status_code == 401)
         check("jwt-invalid-signature", (await client.post(GATEWAY + "/tool-call", headers={"Authorization": users["employee"]["Authorization"] + "tampered"}, json=envelope())).status_code == 401)
         req = envelope()

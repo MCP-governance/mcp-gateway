@@ -1,12 +1,14 @@
 """Shared Agent-Service/Gateway boundary. Model output never supplies identity."""
 from __future__ import annotations
 
+import base64
 import os
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 from uuid import UUID, uuid4
 
 import jwt
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 from fastapi import HTTPException
 from jsonschema import Draft202012Validator
 from pydantic import BaseModel, ConfigDict, Field
@@ -15,6 +17,7 @@ from . import db
 
 ISSUER = "mcp-governance-synthetic-agent"
 AUDIENCE = "mcp-governance-gateway"
+ALGORITHM = "EdDSA"
 IDENTITIES = {
     "customer@bob.local": {"user_id": "user-customer-001", "principal": "cust-demo", "name": "고객 김민수", "department": "고객", "roles": ["customer"]},
     "miso@bob.local": {"user_id": "user-test-001", "principal": "emp-demo", "name": "김미소", "department": "보안기술팀", "roles": ["employee"]},
@@ -44,24 +47,45 @@ class Envelope(StrictModel):
     arguments: dict
 
 
-def signing_key() -> str:
-    key = os.getenv("AGENT_JWT_SECRET", "")
-    if len(key) < 32:
-        raise RuntimeError("AGENT_JWT_SECRET must contain at least 32 characters; run ./demo.sh")
-    return key
+def _key_material(name: str) -> bytes:
+    """Ed25519 keys travel as 32 raw base64url bytes so they fit one .env line."""
+    try:
+        material = base64.urlsafe_b64decode(os.getenv(name, ""))
+    except ValueError:
+        material = b""
+    if len(material) != 32:
+        raise RuntimeError(f"{name} must be 32 base64url-encoded bytes; run ./demo.sh")
+    return material
+
+
+def private_key() -> Ed25519PrivateKey:
+    """Held only by the synthetic identity provider (Agent Service)."""
+    return Ed25519PrivateKey.from_private_bytes(_key_material("AGENT_JWT_PRIVATE_KEY"))
+
+
+def public_key() -> Ed25519PublicKey:
+    """Held by every verifier.
+
+    With a shared HS256 secret each verifier could also mint tokens, so the Gateway
+    could forge an admin session for itself and "Agent 인증과 Gateway는 별도 신뢰
+    경계" was a claim the key material contradicted. A verifier that holds only this
+    cannot sign anything.
+    """
+    return Ed25519PublicKey.from_public_bytes(_key_material("AGENT_JWT_PUBLIC_KEY"))
 
 
 def issue_token(user: dict) -> str:
     now = datetime.now(UTC)
     return jwt.encode({"sub": user["user_id"], "iss": ISSUER, "aud": AUDIENCE,
-                       "iat": now, "nbf": now, "exp": now + timedelta(minutes=30), "jti": str(uuid4())}, signing_key(), algorithm="HS256")
+                       "iat": now, "nbf": now, "exp": now + timedelta(minutes=30), "jti": str(uuid4())},
+                      private_key(), algorithm=ALGORITHM)
 
 
 def authenticate(authorization: str | None) -> tuple[dict, dict]:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(401, "로그인이 필요합니다.")
     try:
-        claims = jwt.decode(authorization[7:], signing_key(), algorithms=["HS256"], audience=AUDIENCE,
+        claims = jwt.decode(authorization[7:], public_key(), algorithms=[ALGORITHM], audience=AUDIENCE,
                             issuer=ISSUER, options={"require": ["sub", "iss", "aud", "exp", "iat", "nbf", "jti"]})
         user = next(({**u, "email": email} for email, u in IDENTITIES.items() if u["user_id"] == claims["sub"]), None)
         if not user:

@@ -48,7 +48,14 @@ cd ~/mcp-gateway/full_stack_lab
 - 거버넌스 Dashboard: <http://localhost:8080>
 - Jaeger: <http://localhost:16686>
 
-첫 실행 때 `demo.sh`가 커밋하지 않는 `.env`에 합성 JWT 서명 키를 무작위 생성합니다. 별도 복사·설정 단계는 없습니다.
+첫 실행 때 `demo.sh`가 커밋하지 않는 `.env`에 합성 JWT용 Ed25519 키쌍을 생성합니다. 별도 복사·설정 단계는 없습니다. 키는 gateway 이미지 안에서 만들기 때문에 host에는 추가 의존성이 필요 없습니다.
+
+| 값 | 받는 서비스 | 이유 |
+| --- | --- | --- |
+| `AGENT_JWT_PRIVATE_KEY` | `agent-service` | 합성 신원의 유일한 발급자 |
+| `AGENT_JWT_PUBLIC_KEY` | `gateway`, `gateway-sse`, `agent-service` | 검증만 가능. 검증자는 토큰을 만들 수 없음 |
+
+대칭키를 공유하면 검증자도 발급자가 되므로 Gateway가 스스로 admin 세션을 위조할 수 있습니다. "Agent 인증과 Gateway는 별도 신뢰 경계"라는 주장이 코드가 아니라 **키 자체로** 참이 되게 하는 것이 이 분리의 목적입니다.
 
 상태만 다시 확인하려면 다음을 실행합니다.
 
@@ -319,7 +326,8 @@ This project integrates AI-Infra-Guard, open-sourced by Tencent Zhuque Lab. 참�
 | `gateway/app/core.py` | 계약 확인, Rego 질의, 승인, upstream 실행, 증적 |
 | `gateway/app/agent_service.py` | 합성 로그인, 세션, 요청 멱등성, 모델 제안 경로 |
 | `gateway/app/agent_gateway.py` | 서명 사용자와 Tool Call envelope를 기존 정책 경로에 연결 |
-| `gateway/app/agent_contract.py` | JWT·서버/도구 조합·공유 JSON Schema 경계 |
+| `gateway/app/agent_contract.py` | Ed25519 JWT·서버/도구 조합·공유 JSON Schema 경계 |
+| `gateway/app/keygen.py` | 이미지 안에서 Ed25519 키쌍 생성 (host에 crypto 의존성 없음) |
 | `gateway/app/model_client.py` | 결정론적 모의 모델과 제한된 OpenAI 호환 client |
 | `gateway/app/github_setup.py` | GitHub remote catalog 관찰·명시 승인 |
 | `gateway/app/agent_static/` | 합성 사용자 로그인·업무 공간 UI |
@@ -352,7 +360,7 @@ Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance
 
 ## 13. 의도적으로 남긴 경계
 
-- 실제 사용자 SSO/OIDC, RBAC 관리 화면, 실제 GitHub 토큰 위임은 미구현입니다. 합성 JWT는 `AGENT_JWT_SECRET` 하나를 Gateway와 Agent Service가 공유하는 HS256이므로, 두 서비스는 암호학적으로 서로를 위조할 수 있습니다. 발급자만 개인키를 갖는 비대칭 서명은 아직 적용하지 않았습니다.
+- 실제 사용자 SSO/OIDC, RBAC 관리 화면, 실제 GitHub 토큰 위임은 미구현입니다. 합성 JWT는 Ed25519로 서명하고 발급자(Agent Service)만 개인키를 갖지만, 키 회전·폐기 절차와 JWKS 배포는 아직 없습니다.
 - Dashboard의 읽기 API(`/api/state`, `/api/effects`, `/api/policy/matrix`)는 인증 없이 열려 있습니다. 상태를 바꾸는 API는 모두 서명된 토큰을 요구하지만, 증적 조회는 `127.0.0.1` 바인딩에만 의존합니다.
 - Gateway API에는 호출량 제한이나 사용자별 쿼터가 없습니다. Agent Service의 동시 실행 제한은 프로세스 단위라 복제본이 늘면 함께 늘어납니다.
 - 감사 로그에는 해시 체인이나 append-only 권한 분리가 없습니다. Gateway의 DB 계정이 `decisions`를 수정할 수 있습니다.

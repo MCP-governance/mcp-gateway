@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sys
 from datetime import UTC, datetime
 
@@ -12,16 +13,28 @@ from mcp.client.sse import sse_client
 from mcp.client.streamable_http import streamable_http_client
 
 from . import db
-from .agent_contract import IDENTITIES, issue_token
 from .core import approve_request, execute_call
 
 API = "http://gateway:8080"
 EMAILS = {"cust-demo": "customer@bob.local", "emp-demo": "miso@bob.local", "admin-demo": "admin@bob.local"}
 
 
+TOKENS: dict[str, str] = {}
+
+
+async def sign_in() -> None:
+    """The gateway holds only the public key, so the test logs in like any client."""
+    password = os.getenv("MOCK_SSO_PASSWORD", "test-password")
+    async with httpx.AsyncClient(timeout=15) as client:
+        for principal, email in EMAILS.items():
+            response = await client.post(API + "/api/session", json={"email": email, "password": password})
+            response.raise_for_status()
+            TOKENS[principal] = response.json()["access_token"]
+
+
 def bearer(principal: str) -> dict:
     """A synthetic signed identity, the only thing any ingress now accepts."""
-    return {"Authorization": "Bearer " + issue_token(IDENTITIES[EMAILS[principal]])}
+    return {"Authorization": "Bearer " + TOKENS[principal]}
 
 
 def check(condition: bool, name: str, details: str = "") -> dict:
@@ -53,6 +66,8 @@ async def post(path: str, body: dict, principal: str = "cust-demo") -> dict:
 
 async def run() -> dict:
     checks: list[dict] = []
+    await sign_in()
+    checks.append(check(len(TOKENS) == 3, "synthetic-login", "gateway는 공개키만 보유하므로 IdP에 로그인"))
 
     async with httpx.AsyncClient(timeout=30) as client:
         health = (await client.get(API + "/api/health")).json()

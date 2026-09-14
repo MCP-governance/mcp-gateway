@@ -17,7 +17,7 @@ from pydantic import Field
 from psycopg.types.json import Jsonb
 
 from . import db
-from .agent_contract import IDENTITIES, StrictModel, authenticate, authenticated_user, issue_token, signing_key
+from .agent_contract import IDENTITIES, StrictModel, authenticate, authenticated_user, issue_token, private_key
 from .core import canonical_hash
 from .model_client import propose, readiness, redact
 
@@ -29,7 +29,7 @@ slots = asyncio.Semaphore(4)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    signing_key()
+    private_key()  # fail fast if this process is not actually the token issuer
     await db.wait_until_ready()
     await db.execute((Path(__file__).parent / "agent_tables.sql").read_text())
     try:

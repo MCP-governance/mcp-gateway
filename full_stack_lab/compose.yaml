@@ -59,7 +59,8 @@ services:
       GITHUB_MCP_URL: https://api.githubcopilot.com/mcp/
       GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN:-}
       GITHUB_ALLOWED_REPOS: ${GITHUB_ALLOWED_REPOS:-MCP-governance/mcp-gateway}
-      AGENT_JWT_SECRET: ${AGENT_JWT_SECRET:?Run ./demo.sh to initialize the local secret}
+      # Verifiers get the public key only; they cannot mint a token.
+      AGENT_JWT_PUBLIC_KEY: ${AGENT_JWT_PUBLIC_KEY:?Run ./demo.sh to initialize the local signing keys}
       OTEL_SERVICE_NAME: mcp-security-gateway
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -88,7 +89,9 @@ services:
     environment:
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
       GATEWAY_URL: http://gateway:8080
-      AGENT_JWT_SECRET: ${AGENT_JWT_SECRET:?Run ./demo.sh}
+      # The only service that holds the signing key, because it is the issuer.
+      AGENT_JWT_PRIVATE_KEY: ${AGENT_JWT_PRIVATE_KEY:?Run ./demo.sh}
+      AGENT_JWT_PUBLIC_KEY: ${AGENT_JWT_PUBLIC_KEY:?Run ./demo.sh}
       MOCK_SSO_PASSWORD: ${MOCK_SSO_PASSWORD:-test-password}
       MODEL_MODE: ${MODEL_MODE:-mock}
       MODEL_BASE_URL: ${MODEL_BASE_URL:-}
