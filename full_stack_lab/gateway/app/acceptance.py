@@ -15,7 +15,7 @@ from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.exceptions import MCPError
 
 from . import db
-from .core import (RATE_LIMIT_CALLS, IMPORTANT_BURST_LIMIT, _policy, _recent_activity, effect_count,
+from .core import (RATE_LIMIT_CALLS, IMPORTANT_BURST_LIMIT, _policy, _recent_activity, _tool_spec, effect_count,
                    approve_request, execute_call, set_enforcement_mode, supply_chain_coverage,
                    verify_audit_chain)
 
@@ -72,6 +72,9 @@ async def run() -> dict:
     checks: list[dict] = []
     await sign_in()
     checks.append(check(len(TOKENS) == 3, "synthetic-login", "gateway는 공개키만 보유하므로 IdP에 로그인"))
+    send_spec = await _tool_spec("send_external")
+    checks.append(check(send_spec == {"server_id": "mock-http", "registry_name": "send_external", "action": "x"},
+                        "registry-is-action-source", json.dumps(send_spec, ensure_ascii=False)))
 
     async with httpx.AsyncClient(timeout=30) as client:
         health = (await client.get(API + "/api/health")).json()
@@ -297,11 +300,14 @@ async def run() -> dict:
     # The department axis is inert until an operator enables it, but the input has to
     # carry real values or turning it on later finds nothing to compare.
     departments = {row["role"]: row["department"] for row in await db.fetch_all("SELECT role, department FROM principals")}
-    owners = {row["id"]: row["owner_department"] for row in await db.fetch_all("SELECT id, owner_department FROM documents")}
+    documents = await db.fetch_all("SELECT id, owner_department, classification_source, classification_version FROM documents")
+    owners = {row["id"]: row["owner_department"] for row in documents}
     checks.append(check(all(departments.get(role) for role in ("customer", "employee", "admin"))
                         and owners.get("secret-001") and owners.get("work-001"),
                         "policy-input-organisational-axis",
                         json.dumps({"principals": departments, "documents": owners}, ensure_ascii=False)))
+    checks.append(check(all(row["classification_source"] == "manual-registry" and row["classification_version"] for row in documents),
+                        "classification-registry-provenance", "모든 합성 문서에 관리대장 출처와 버전이 있음"))
     unchanged = await post("/api/calls", {"tool_name": "read_document", "document_id": "secret-001"}, "emp-demo")
     checks.append(check(unchanged["decision"] == "Alert" and unchanged["policy_id"] == "P-IMPORTANT-ALERT-001",
                         "department-scope-disabled-by-default",

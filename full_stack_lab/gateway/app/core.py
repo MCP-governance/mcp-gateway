@@ -35,13 +35,9 @@ POLICY_PATH = Path(os.getenv("POLICY_PATH", "/policy/policy.rego"))
 TIME_MCP_PYTHON = os.getenv("TIME_MCP_PYTHON", "/opt/time-mcp/bin/python")
 APPROVAL_TTL_MINUTES = 10
 
-TOOL_SPECS = {
-    "read_document": {"server_id": "mock-http", "registry_name": "read_document", "action": "r"},
-    "write_document": {"server_id": "mock-http", "registry_name": "write_document", "action": "w"},
-    "send_external": {"server_id": "mock-http", "registry_name": "send_external", "action": "x"},
-    "get_current_time": {"server_id": "mock-stdio", "registry_name": "get_current_time", "action": "r"},
-    "github_get_file": {"server_id": "github", "registry_name": "get_file_contents", "action": "r"},
-}
+# External names normally match the registered MCP tool. Only this user-facing
+# GitHub name differs; r/w/x always comes from mcp_tools, the Registry source of truth.
+TOOL_ALIASES = {"github_get_file": ("github", "get_file_contents")}
 UNSAFE_METADATA = re.compile(
     r"ignore\s+(all\s+)?previous|system\s+prompt|credential|secret\s+key|bypass\s+policy",
     re.IGNORECASE,
@@ -90,6 +86,22 @@ def effect_count() -> int:
         return 0
     with EFFECT_LOG.open(encoding="utf-8") as handle:
         return sum(1 for line in handle if line.strip())
+
+
+async def _tool_spec(tool_name: str) -> dict:
+    """Resolve action from the approved Registry, not a duplicate Python table."""
+    alias = TOOL_ALIASES.get(tool_name)
+    if alias:
+        row = await db.fetch_one(
+            "SELECT server_id,name,action FROM mcp_tools WHERE server_id=%s AND name=%s", alias,
+        )
+    else:
+        rows = await db.fetch_all("SELECT server_id,name,action FROM mcp_tools WHERE name=%s", (tool_name,))
+        row = rows[0] if len(rows) == 1 else None
+    if not row:
+        # Keep unknown requests on the existing fail-closed MCP-REGISTRY path.
+        return {"server_id": "mock-http", "registry_name": tool_name, "action": "x"}
+    return {"server_id": row["server_id"], "registry_name": row["name"], "action": row["action"]}
 
 
 def _tool_view(tool: Any) -> dict:
@@ -572,17 +584,25 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
     with tracer.start_as_current_span("mcp.gateway.call") as span:
         trace_id = f"{span.get_span_context().trace_id:032x}"
         tool_name = str(payload.get("tool_name", "unknown"))
-        spec = TOOL_SPECS.get(tool_name, {"server_id": "mock-http", "registry_name": tool_name, "action": "x"})
+        spec = await _tool_spec(tool_name)
         principal = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (payload.get("user_token", ""),))
         document = None
+        classification = {"required": False}
         if tool_name == "get_current_time":
             data_class = "public"
         elif tool_name == "github_get_file":
             # An external repository is important unless an operator classifies it otherwise.
             data_class = "important"
+            classification = {"required": True, "source": "github-allowlist", "version": "v1"}
         else:
             document = await db.fetch_one("SELECT * FROM documents WHERE id=%s", (payload.get("document_id", ""),))
             data_class = document["data_class"] if document else "important"
+            if document:
+                classification = {
+                    "required": True,
+                    "source": document.get("classification_source"),
+                    "version": document.get("classification_version"),
+                }
         role = principal["role"] if principal else "unknown"
         span.set_attribute("mcp.tool", tool_name)
         span.set_attribute("mcp.role", role)
@@ -647,7 +667,8 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "principal": {"role": role, "synthetic": bool(principal["synthetic"]),
                           "department": principal.get("department")},
             "resource": {"id": payload.get("document_id", "time"), "data_class": data_class,
-                         "owner_department": document.get("owner_department") if document else None},
+                         "owner_department": document.get("owner_department") if document else None,
+                         "classification": classification},
             "tool": {"name": spec["registry_name"], "action": spec["action"]},
             "approval": {"granted": approval_granted, "id": approval_id},
             "contract": contract,
