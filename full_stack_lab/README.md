@@ -209,6 +209,8 @@ curl -sS http://localhost:8000/api/readiness | python3 -m json.tool
 
 생성 결과는 `reports/acceptance.json`, `reports/agent-acceptance.json`, `reports/security-regression.txt`에 남고 Git에는 포함되지 않습니다.
 
+같은 명령을 [`.github/workflows/verify.yml`](../.github/workflows/verify.yml)이 `main`과 모든 `feat/**` 푸시, `main`으로 가는 PR마다 실행합니다. 완료 조건은 사람이 기억할 때가 아니라 매 변경마다 확인됩니다. 실행 결과는 workflow artifact로 보관합니다.
+
 ## 8. transport 호환 범위
 
 | 구간 | 방식 | 신원 출처 | 검증 방법 |
