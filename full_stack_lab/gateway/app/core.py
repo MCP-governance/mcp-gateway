@@ -787,6 +787,7 @@ async def approve_request(approval_id: str, reviewer_token: str) -> dict:
 def _trivy_summary(data: dict) -> tuple[dict, dict]:
     counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0}
     categories = {key: {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0} for key in ("Vulnerabilities", "Misconfigurations", "Secrets")}
+    findings: list[dict] = []
     for result in data.get("Results") or []:
         for category in categories:
             for finding in result.get(category) or []:
@@ -796,7 +797,15 @@ def _trivy_summary(data: dict) -> tuple[dict, dict]:
                 if severity in counts:
                     counts[severity] += 1
                     categories[category][severity] += 1
-    return {"targets": len(data.get("Results") or []), "counts": counts, "categories": categories}, counts
+                    if len(findings) < 50:
+                        findings.append({
+                            "kind": category,
+                            "severity": severity,
+                            "id": finding.get("VulnerabilityID") or finding.get("ID") or "unclassified",
+                            "title": finding.get("Title") or finding.get("RuleID") or "세부 정보 없음",
+                            "target": result.get("Target", ""),
+                        })
+    return {"targets": len(data.get("Results") or []), "counts": counts, "categories": categories, "findings": findings}, counts
 
 
 async def _store_trivy(report: Path, source_ref: str, summary: dict, counts: dict) -> None:
@@ -868,6 +877,33 @@ async def import_supply_chain_reports() -> list[dict]:
         await _store_trivy(trivy, "workspace", summary, counts)
         imported.append({"scanner": "Trivy", "source_ref": "workspace", **summary})
 
+    semgrep = REPORT_DIR / "semgrep.json"
+    if semgrep.exists():
+        data = json.loads(semgrep.read_text(encoding="utf-8"))
+        levels = {"ERROR": 0, "WARNING": 0, "INFO": 0}
+        findings = []
+        for item in data.get("results") or []:
+            severity = str(item.get("extra", {}).get("severity", "INFO")).upper()
+            severity = severity if severity in levels else "INFO"
+            levels[severity] += 1
+            if len(findings) < 50:
+                findings.append({
+                    "rule": item.get("check_id", "unclassified"),
+                    "severity": severity,
+                    "message": item.get("extra", {}).get("message", "세부 정보 없음"),
+                    "path": item.get("path", ""),
+                    "line": item.get("start", {}).get("line"),
+                })
+        summary = {"findings": findings, "total": len(data.get("results") or []), "levels": levels}
+        await db.execute("DELETE FROM supply_chain_reports WHERE scanner='Semgrep' AND report_path=%s", (str(semgrep),))
+        await db.execute(
+            """INSERT INTO supply_chain_reports(scanner, scanner_version, source_ref, report_path, status,
+               critical_count, high_count, medium_count, summary)
+               VALUES ('Semgrep',%s,'workspace',%s,'IMPORTED',%s,%s,%s,%s)""",
+            (str(data.get("version", "1.172.0")), str(semgrep), levels["ERROR"], levels["WARNING"], levels["INFO"], Jsonb(summary)),
+        )
+        imported.append({"scanner": "Semgrep", **summary})
+
     # A report named for a server is attributed to that server's pinned source_ref,
     # which is the value _contract() counts criticals against. Without this the
     # dashboard's scan numbers and the MCP-SUPPLY-001 gate never referred to the same
@@ -889,10 +925,20 @@ async def import_supply_chain_reports() -> list[dict]:
         data = json.loads(sarif.read_text(encoding="utf-8"))
         results = [item for run in data.get("runs", []) for item in run.get("results", [])]
         levels = {"error": 0, "warning": 0, "note": 0}
+        findings = []
         for item in results:
             level = item.get("level", "warning")
             levels[level] = levels.get(level, 0) + 1
-        summary = {"findings": len(results), "levels": levels}
+            location = (item.get("locations") or [{}])[0].get("physicalLocation", {})
+            if len(findings) < 50:
+                findings.append({
+                    "rule": item.get("ruleId", "unclassified"),
+                    "severity": level,
+                    "message": item.get("message", {}).get("text", "세부 정보 없음"),
+                    "path": location.get("artifactLocation", {}).get("uri", ""),
+                    "line": location.get("region", {}).get("startLine"),
+                })
+        summary = {"findings": findings, "total": len(results), "levels": levels}
         await db.execute("DELETE FROM supply_chain_reports WHERE scanner='AI-Infra-Guard mcp-scan' AND report_path=%s", (str(sarif),))
         await db.execute(
             """INSERT INTO supply_chain_reports(scanner, scanner_version, source_ref, report_path, status,

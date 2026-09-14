@@ -6,7 +6,7 @@ const passwordInput = document.querySelector("#password");
 const loginButton = document.querySelector("#login-button");
 const errorMessage = document.querySelector("#login-error");
 const togglePassword = document.querySelector("#toggle-password");
-document.querySelector("#demo-role").addEventListener("change", event => { emailInput.value = event.target.value; });
+document.querySelector("#access-role").addEventListener("change", event => { emailInput.value = event.target.value; });
 
 if (sessionStorage.getItem(TOKEN_KEY)) {
   window.location.replace("/workspace");
@@ -56,6 +56,6 @@ form.addEventListener("submit", async (event) => {
     errorMessage.textContent = error.message;
   } finally {
     loginButton.disabled = false;
-    loginButton.firstElementChild.textContent = "합성 계정으로 계속";
+    loginButton.firstElementChild.textContent = "계속";
   }
 });

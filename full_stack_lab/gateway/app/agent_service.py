@@ -9,6 +9,8 @@ from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal
+from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 import httpx
@@ -91,7 +93,7 @@ async def login_page():
 
 @app.get("/workspace", include_in_schema=False)
 async def workspace_page():
-    return FileResponse(STATIC_DIR / "workspace.html")
+    return FileResponse(STATIC_DIR / "console.html")
 
 
 class Login(StrictModel):
@@ -103,6 +105,39 @@ class ChatRequest(StrictModel):
     message: str = Field(min_length=1, max_length=2000)
     session_id: UUID | None = None
     request_id: UUID = Field(default_factory=uuid4)
+
+
+class McpIntake(StrictModel):
+    display_name: str = Field(min_length=2, max_length=80)
+    repository_url: str = Field(min_length=12, max_length=300)
+    requested_transport: Literal["streamable-http", "stdio", "sse"]
+    purpose: str = Field(min_length=10, max_length=1000)
+
+
+class IntakeRejection(StrictModel):
+    note: str = Field(min_length=2, max_length=500)
+
+
+def github_repository_url(value: str) -> str:
+    """Accept a repository identity, not an arbitrary URL the service might fetch."""
+    parsed = urlsplit(value.strip())
+    pieces = [piece for piece in parsed.path.split("/") if piece]
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname not in {"github.com", "www.github.com"}
+        or parsed.username
+        or parsed.password
+        or parsed.port
+        or parsed.query
+        or parsed.fragment
+        or len(pieces) != 2
+    ):
+        raise ValueError("https://github.com/조직/저장소 형식의 URL만 제출할 수 있습니다.")
+    owner, repository = pieces
+    repository = repository.removesuffix(".git")
+    if not owner or not repository or any(part in {".", ".."} for part in (owner, repository)):
+        raise ValueError("유효한 GitHub 조직과 저장소 이름을 입력하세요.")
+    return f"https://github.com/{owner}/{repository}"
 
 
 async def current_identity(authorization: str | None) -> dict:
@@ -162,6 +197,133 @@ async def ready():
     return {"status": "ready" if gateway_ok and config["configured"] else "not_ready", "gateway": gateway_ok, "model": config,
             "identity": "synthetic-jwt", "github_mcp": "catalog-and-auth-pending",
             "source": "MCP-governance/Agent-Service miso@81177a41d917a2c1382485cc8f5ae115637aff89"}
+
+
+async def gateway_json(path: str, authorization: str | None = None, method: str = "GET") -> dict:
+    try:
+        async with httpx.AsyncClient(timeout=8, follow_redirects=False) as client:
+            response = await client.request(method, GATEWAY_URL + path, headers={"Authorization": authorization or ""})
+            response.raise_for_status()
+            return response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(503, "거버넌스 상태를 불러올 수 없습니다.") from exc
+
+
+def console_user(user: dict) -> dict:
+    return {key: user[key] for key in ("name", "department", "roles", "email")}
+
+
+async def intake_rows(user: dict) -> list[dict]:
+    query = """SELECT id, submitted_by, display_name, repository_url, requested_transport, purpose,
+                      status, risk_level, review_note, reviewed_by, reviewed_at, created_at, updated_at
+               FROM mcp_intake_requests"""
+    if "admin" in user["roles"]:
+        return await db.fetch_all(query + " ORDER BY created_at DESC LIMIT 100")
+    return await db.fetch_all(query + " WHERE submitted_by=%s ORDER BY created_at DESC LIMIT 100", (user["principal"],))
+
+
+@app.get("/api/console")
+async def console(authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    health, state, coverage, monitor = await asyncio.gather(
+        gateway_json("/api/health"),
+        gateway_json("/api/state"),
+        gateway_json("/api/supply-chain/coverage"),
+        gateway_json("/api/monitor/summary?hours=168"),
+    )
+    reports = state["supply_chain"]
+    severity = {
+        "critical": sum(int(report.get("critical_count") or 0) for report in reports),
+        "high": sum(int(report.get("high_count") or 0) for report in reports),
+        "medium": sum(int(report.get("medium_count") or 0) for report in reports),
+    }
+    return {
+        "viewer": console_user(user),
+        "model": readiness(),
+        "health": health,
+        "registry": state["servers"],
+        "decisions": state["decisions"],
+        "approvals": state["approvals"],
+        "supply_chain": reports,
+        "coverage": coverage,
+        "monitor": monitor,
+        "policy": state["policy"],
+        "upstream_effect_count": state["upstream_effect_count"],
+        "intake": await intake_rows(user),
+        "severity": severity,
+    }
+
+
+@app.post("/api/mcp-requests")
+async def create_mcp_request(request: McpIntake, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    try:
+        repository_url = github_repository_url(request.repository_url)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    existing = await db.fetch_one(
+        "SELECT id FROM mcp_intake_requests WHERE repository_url=%s AND status<>%s",
+        (repository_url, "REJECTED"),
+    )
+    if existing:
+        raise HTTPException(409, "같은 저장소가 이미 검토 대기 또는 검증 중입니다.")
+    row = await db.fetch_one(
+        """INSERT INTO mcp_intake_requests(
+                 id, submitted_by, display_name, repository_url, requested_transport, purpose
+             ) VALUES (%s,%s,%s,%s,%s,%s)
+             RETURNING id, display_name, repository_url, requested_transport, purpose, status, risk_level, created_at""",
+        (uuid4(), user["principal"], request.display_name.strip(), repository_url,
+         request.requested_transport, request.purpose.strip()),
+    )
+    return {"request": row, "message": "제출 완료. 격리된 체크아웃과 검증 증적이 연결되기 전까지 보류됩니다."}
+
+
+@app.post("/api/mcp-requests/{request_id}/queue-validation")
+async def queue_validation(request_id: UUID, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "검증 대기열은 관리자만 변경할 수 있습니다.")
+    row = await db.fetch_one(
+        """UPDATE mcp_intake_requests
+           SET status='VALIDATION_QUEUED', reviewed_by=%s, reviewed_at=now(), updated_at=now()
+           WHERE id=%s AND status='HOLD'
+           RETURNING id, status, reviewed_by, reviewed_at""",
+        (user["principal"], request_id),
+    )
+    if not row:
+        raise HTTPException(409, "보류 상태의 요청만 검증 대기열로 이동할 수 있습니다.")
+    return {"request": row, "message": "검증 대기열에 넣었습니다. 스캐너는 격리된 체크아웃에서 실행해야 합니다."}
+
+
+@app.post("/api/mcp-requests/{request_id}/reject")
+async def reject_mcp_request(request_id: UUID, request: IntakeRejection, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "요청 거부는 관리자만 할 수 있습니다.")
+    row = await db.fetch_one(
+        """UPDATE mcp_intake_requests
+           SET status='REJECTED', review_note=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now()
+           WHERE id=%s AND status IN ('HOLD','VALIDATION_QUEUED')
+           RETURNING id, status, review_note, reviewed_by, reviewed_at""",
+        (request.note.strip(), user["principal"], request_id),
+    )
+    if not row:
+        raise HTTPException(409, "보류 또는 검증 대기 상태의 요청만 거부할 수 있습니다.")
+    return {"request": row}
+
+
+@app.post("/api/supply-chain/import")
+async def import_supply_chain(authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "검증 결과 반영은 관리자만 할 수 있습니다.")
+    return await gateway_json("/api/supply-chain/import", authorization, method="POST")
+
+
+@app.post("/api/registry/refresh")
+async def refresh_registry(authorization: str | None = Header(default=None)):
+    await current_identity(authorization)
+    return await gateway_json("/api/catalog/refresh", authorization, method="POST")
 
 
 @app.get("/sessions")

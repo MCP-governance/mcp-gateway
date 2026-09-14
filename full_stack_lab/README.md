@@ -1,10 +1,10 @@
-# MCP Security Gateway 전체 실습
+# MCP Governance Console
 
-멘토가 화면만 보고도 **로그인 → 업무 요청 → Tool Call 제안 → 정책 판단 → MCP 실행 → 증적**을 따라갈 수 있도록 만든 WSL2 + Docker Compose 실습입니다. 팀원의 Agent Service UI를 기존 보안 Gateway에 합쳤고, 기본 실행은 실제 LLM·실제 개인정보·실제 GitHub 자격증명을 쓰지 않습니다. 합성 사용자와 결정론적 모의 모델로 Tool Call을 만들고, Gateway가 서명된 사용자·입력 Schema·Registry 계약·공급망 증적·OPA/Rego 정책을 검사한 뒤에만 upstream MCP를 호출합니다.
+MCP 도입 요청, 공급망 검증, 정책 집행, 실행·감사 증적을 하나의 운영 콘솔에서 관리하는 WSL2 + Docker Compose 구성입니다. 기본 실행은 외부 LLM·실제 개인정보·GitHub 자격증명을 사용하지 않습니다. Agent가 Tool Call 후보를 만들면 Gateway가 서명된 사용자·입력 Schema·Registry 계약·공급망 증적·OPA/Rego 정책을 검사한 뒤에만 upstream MCP를 호출합니다.
 
-> 가장 빠른 시작: `./demo.sh` → 업무 공간 <http://localhost:8000> → 증적 Dashboard <http://localhost:8080>
+> 가장 빠른 시작: `./console.sh` → <http://localhost:8000>
 
-## 1. 무엇을 확인하는 실습인가
+## 1. 어떤 통제를 제공하는가
 
 이 실습의 핵심 질문은 “정책 응답이 Allow였는가?”에서 끝나지 않습니다.
 
@@ -30,7 +30,7 @@ flowchart LR
     SC[Syft · Trivy · mcp-scan] --> R
 ```
 
-MCP 서버는 Docker 내부망에 있고 호스트에는 Agent Service(`127.0.0.1:8000`), Gateway(`127.0.0.1:8080`), Jaeger UI(`127.0.0.1:16686`)만 공개됩니다. 따라서 이 Compose 실습 안에서는 합성 문서 MCP를 직접 호출하지 않고 Gateway 강제 경로를 사용합니다.
+MCP 서버는 Docker 내부망에 있고 호스트에는 Agent Service(`127.0.0.1:8000`), Gateway API(`127.0.0.1:8080`), Jaeger UI(`127.0.0.1:16686`)만 공개됩니다. 브라우저 UI는 `8000` Console 하나이며, `8080/`에 접속하면 Console로 이동합니다. 이 Compose 구성에서는 합성 문서 MCP를 직접 호출하지 않고 Gateway 강제 경로를 사용합니다.
 
 ## 2. WSL에서 원클릭 실행
 
@@ -39,16 +39,15 @@ MCP 서버는 Docker 내부망에 있고 호스트에는 Agent Service(`127.0.0.
 ```bash
 wsl -d kali-linux
 cd ~/mcp-gateway/full_stack_lab
-./demo.sh
+./console.sh
 ```
 
 스크립트가 이미지를 빌드하고 서비스 준비까지 기다립니다. 다음 주소를 엽니다.
 
-- 업무 공간: <http://localhost:8000>
-- 거버넌스 Dashboard: <http://localhost:8080>
+- MCP Governance Console: <http://localhost:8000>
 - Jaeger: <http://localhost:16686>
 
-첫 실행 때 `demo.sh`가 커밋하지 않는 `.env`에 합성 JWT용 Ed25519 키쌍을 생성합니다. 별도 복사·설정 단계는 없습니다. 키는 gateway 이미지 안에서 만들기 때문에 host에는 추가 의존성이 필요 없습니다.
+첫 실행 때 `console.sh`가 커밋하지 않는 `.env`에 합성 JWT용 Ed25519 키쌍을 생성합니다. 별도 복사·설정 단계는 없습니다. 키는 gateway 이미지 안에서 만들기 때문에 host에는 추가 의존성이 필요 없습니다.
 
 | 값 | 받는 서비스 | 이유 |
 | --- | --- | --- |
@@ -62,20 +61,20 @@ cd ~/mcp-gateway/full_stack_lab
 상태만 다시 확인하려면 다음을 실행합니다.
 
 ```bash
-./demo.sh status
+./console.sh status
 ```
 
 초기화가 필요하면 아래 명령을 사용합니다. 이 실습의 Compose 볼륨과 `reports/` 생성물만 지웁니다.
 
 ```bash
-./demo.sh reset
+./console.sh reset
 ```
 
-## 3. 화면에서 5분 실습
+## 3. Console에서 운영 흐름 확인
 
-### 3.1 합성 사용자로 요청하기
+### 3.1 개발 계정으로 요청하기
 
-업무 공간 <http://localhost:8000>에서 다음 합성 계정 중 하나를 고릅니다. 공통 비밀번호는 `test-password`이며 `.env`의 `MOCK_SSO_PASSWORD`로 바꿀 수 있습니다.
+Console <http://localhost:8000>에서 다음 개발 계정 중 하나를 고릅니다. 공통 비밀번호는 `test-password`이며 `.env`의 `MOCK_SSO_PASSWORD`로 바꿀 수 있습니다.
 
 | 화면의 역할 | 이메일 | 333 역할 | 대표 관찰 |
 | --- | --- | --- | --- |
@@ -83,7 +82,7 @@ cd ~/mcp-gateway/full_stack_lab
 | 직원 | `miso@bob.local` | `employee` | 중요 읽기는 Alert, 비중요 쓰기는 Allow |
 | 관리자 | `admin@bob.local` | `admin` | 공개 외부 전송은 Restrict, 중요 외부 전송은 Approval |
 
-로그인 뒤 빠른 시나리오 버튼을 한 번씩 실행합니다.
+로그인 뒤 `MCP 실행` 화면에서 다음 업무 요청을 실행합니다.
 
 | 빠른 시나리오 | 사용할 계정 | 예상 판정 | upstream 효과 | 관찰할 통제 |
 | --- | --- | --- | --- | --- |
@@ -96,17 +95,17 @@ cd ~/mcp-gateway/full_stack_lab
 
 결과에서 `request_id`, `session_id`, `tool_call_id`, 정책 ID, 판단 이유, Trace ID와 실제 upstream 실행 여부를 확인합니다. 같은 `request_id`나 `tool_call_id`가 다시 들어오면 저장된 응답을 반환하여 중복 실행을 막습니다. 관리자로 로그인했을 때만 승인 대기 목록과 승인·거부 버튼이 보입니다. 거부에는 사유가 필수이며 증적에 남습니다. 거부 없이 만료만 가능한 승인 화면은 "검토 후 거절"과 "아무도 보지 않음"을 감사 로그에서 구분할 수 없게 만듭니다.
 
-### 3.2 거버넌스 증적 확인하기
+### 3.2 공급망·증적 확인하기
 
-거버넌스 Dashboard <http://localhost:8080>에서 방금 실행한 요청을 다시 찾습니다. 판정 시뮬레이터로 호출을 만들려면 화면에서 합성 계정과 비밀번호(`.env`의 `MOCK_SSO_PASSWORD`, 기본 `test-password`)를 입력합니다. Dashboard도 다른 client와 똑같이 서명된 토큰으로만 Gateway API를 호출합니다.
+Console은 브라우저 기준 `8000` 하나에서 다음 페이지를 제공합니다.
 
-- `Agent Service 연결`: 모의 모델/API 모드, 인증 경계, 최근 Agent 실행
-- `333 정책`: 27개 조합과 기본 DENY
-- `Registry + Supply Chain`: 서버 출처·고정 ref·transport·catalog 상태·스캔 결과
-- `감사`: 최근 판정, 승인 대기, 효과 개수, Trace ID
-- `정확한 해석`: 현재 PoC가 증명하는 범위와 아직 증명하지 않는 범위
+- `운영 현황`: Registry, 정책 판정 분포, LiteLLM 경계, AI-Infra-Guard 상태
+- `MCP 도입`: GitHub 저장소 URL 제출과 HOLD/검증 대기 관리
+- `검증 파이프라인`: SBOM·SCA·SAST·Catalog·첫 실행 위험 분석의 증적 연결 상태
+- `위험 분석`: Trivy, Semgrep, AI-Infra-Guard의 발견 항목과 심각도
+- `MCP 실행`과 `감사 기록`: Tool Call 제안, Gateway 판정, 실제 upstream 효과, Trace ID
 
-두 화면의 같은 요청 ID·세션 ID·Trace ID를 따라가면 “Agent가 무엇을 제안했고, Gateway가 왜 판정했으며, upstream 효과가 실제로 생겼는지”를 분리해서 설명할 수 있습니다. 모든 계정과 문서는 합성 데이터입니다.
+저장소 URL은 즉시 복제·실행하지 않습니다. 격리된 체크아웃에서 생성한 검증 증적이 연결되기 전에는 활성 Registry에 들어갈 수 없습니다. 이 경계가 있어야 URL 제출 기능이 또 다른 공급망 실행 경로가 되지 않습니다.
 
 ## 3.3 관찰 모드로 먼저 재보기
 
@@ -139,7 +138,7 @@ curl -sS 'http://localhost:8080/api/monitor/summary?hours=168' | python3 -m json
                 "role": "customer", "tool_name": "read_document", "calls": 21}]}
 ```
 
-Dashboard의 **집행 단계** 패널에 같은 숫자와 정책별 내역이 나오고, 거기서 바로 전환할 수 있습니다. 도입 순서는 `monitor`로 한 주 측정 → 내역 검토 → 예외 정리 → `enforce`입니다.
+Console의 **운영 현황**과 **감사 기록**에서 같은 숫자와 정책별 내역을 확인합니다. 도입 순서는 `monitor`로 한 주 측정 → 내역 검토 → 예외 정리 → `enforce`입니다.
 
 ## 4. 확정한 333 Rego 정책
 
@@ -180,7 +179,7 @@ Dashboard의 **집행 단계** 패널에 같은 숫자와 정책별 내역이 �
 
 ### 데이터 등급 관리대장 (결정 완료)
 
-`data_class`의 정본은 추정 모델이 아니라 PostgreSQL `documents` 관리대장입니다. 각 문서는 `classification_source`, `classification_version`, `classified_at`을 함께 보유하며, 이 데모의 값은 검토자가 적는 `manual-registry` / `demo-v1`입니다. Gateway는 이 출처를 OPA 입력에 실어 보내고, **출처가 없는 관리대장 문서는 `P-CLASSIFICATION-001`로 기본 차단**합니다. 따라서 새 문서를 넣을 때는 등급만 넣는 것이 아니라 분류 근거·버전도 함께 검토해야 합니다.
+`data_class`의 정본은 추정 모델이 아니라 PostgreSQL `documents` 관리대장입니다. 각 문서는 `classification_source`, `classification_version`, `classified_at`을 함께 보유하며, 현재 개발 환경의 값은 검토자가 적는 `manual-registry` / `dev-v1`입니다. Gateway는 이 출처를 OPA 입력에 실어 보내고, **출처가 없는 관리대장 문서는 `P-CLASSIFICATION-001`로 기본 차단**합니다. 따라서 새 문서를 넣을 때는 등급만 넣는 것이 아니라 분류 근거·버전도 함께 검토해야 합니다.
 
 이것은 LLM 분류 정확도를 흉내 내는 기능이 아닙니다. 근거 없는 자동 분류는 중요한 문서를 낮은 등급으로 만들 수 있으므로, 실제 분류 자동화가 필요해지면 별도 검토 워크플로에서 관리대장을 갱신한 뒤 이 Gateway가 그 결과만 집행합니다.
 
@@ -249,7 +248,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' http://localhost:8080/api/calls \
 
 ## 6. 실제 모델 API를 연결할 준비
 
-기본값 `MODEL_MODE=mock`은 외부 호출 없이 결정론적으로 동작합니다. OpenAI 호환 `/chat/completions` endpoint를 사용할 준비가 되면 `full_stack_lab/.env`에 다음 네 값을 추가하고 `./demo.sh`를 다시 실행합니다.
+기본값 `MODEL_MODE=mock`은 외부 호출 없이 결정론적으로 동작합니다. OpenAI 호환 `/chat/completions` endpoint를 사용할 준비가 되면 `full_stack_lab/.env`에 다음 네 값을 추가하고 `./console.sh`를 다시 실행합니다.
 
 ```dotenv
 MODEL_MODE=provider
@@ -259,7 +258,7 @@ MODEL_NAME=replace-me
 ```
 
 ```bash
-./demo.sh
+./console.sh
 curl -sS http://localhost:8000/api/readiness | python3 -m json.tool
 ```
 
@@ -272,12 +271,18 @@ curl -sS http://localhost:8000/api/readiness | python3 -m json.tool
 아래 한 줄이 빌드, Rego 단위 테스트, 정책/승인/효과 검증, 세 transport 실호출, catalog 변조와 OPA 장애 회귀 테스트를 실행합니다.
 
 ```bash
-./demo.sh test
+./console.sh test
+```
+
+Agent Console·인증·도입 요청 경계만 빠르게 확인할 때는 다음 명령을 사용합니다.
+
+```bash
+./console.sh agent-test
 ```
 
 정상 기준은 다음과 같습니다.
 
-- Rego 단위 테스트 `15/15 PASS`
+- Rego 단위 테스트 `17/17 PASS`
 - acceptance, Agent/API 경계 acceptance 모두 `0 failed`
 - 익명·위조 토큰의 Gateway API 호출이 `401`, 고객 계정의 승인 시도가 `403`
 - `/tool-call`은 사용자 JWT와 Agent Assertion을 함께 요구하며, 사용자 JWT 재사용·다른 actor·변조된 envelope는 `401`
@@ -328,18 +333,19 @@ Gateway는 매 호출 직전에 `tools/list`를 다시 읽고 다음 승인 기�
 ### 오픈소스 스캐너
 
 ```bash
-./demo.sh scan
+./console.sh scan
 ```
 
-이 명령은 다음 도구를 일회성 컨테이너로 실행하고 결과를 Dashboard에 가져옵니다.
+이 명령은 다음 도구를 일회성 컨테이너로 실행하고 결과를 Console에 가져옵니다.
 
 | 도구 | 사용 범위 | 결과 |
 | --- | --- | --- |
 | Syft `v1.51.1` | 저장소 구성요소 inventory | CycloneDX `reports/sbom.cdx.json` |
 | Trivy `0.74.0` | vuln, misconfig, secret, license | `reports/trivy.json` |
+| Semgrep `1.172.0` | MCP 구성요소 SAST (TLS·shell 경계 규칙) | `reports/semgrep.json` |
 | AI-Infra-Guard `mcp-scan` | 선택적 MCP 전용 코드/동적 감사 | `reports/mcp-scan.sarif.json` |
 
-`./demo.sh scan`은 두 가지를 합니다.
+`./console.sh scan`은 두 가지를 합니다.
 
 1. `full_stack_lab/` 전체에 대한 SBOM과 취약점 목록을 `workspace` 증적으로 보관합니다. **인벤토리용이며 아무 호출도 막지 않습니다.**
 2. Registry에 `scan_path`가 등록된 서버를 **서버별로 따로** 스캔하고, 결과를 `reports/trivy-<server_id>.json`으로 남깁니다. 가져오기 단계에서 파일 이름의 서버를 찾아 **그 서버의 고정 `source_ref`로 귀속**시킵니다. `_contract()`가 치명점을 세는 키가 바로 그 `source_ref`이므로, 이 경로로 들어온 `CRITICAL > 0`은 실제로 `MCP-SUPPLY-001` 차단이 됩니다.
@@ -358,7 +364,7 @@ Gateway는 매 호출 직전에 `tools/list`를 다시 읽고 다음 승인 기�
 curl -sS http://localhost:8080/api/supply-chain/coverage | python3 -m json.tool
 ```
 
-`unwired`에 들어 있는 서버는 `scan_path`는 있지만 아직 스캔 결과가 없어 **차단에 연결되지 않은 상태**입니다. Dashboard의 숫자만 보고 "스캔이 막아준다"고 결론내지 않으려면 이 값을 같이 봐야 합니다.
+`unwired`에 들어 있는 서버는 `scan_path`는 있지만 아직 스캔 결과가 없어 **차단에 연결되지 않은 상태**입니다. Console의 숫자만 보고 "스캔이 막아준다"고 결론내지 않으려면 이 값을 같이 봐야 합니다.
 
 AI-Infra-Guard는 요청대로 전체 플랫폼이 아니라 **`mcp-scan` CLI만**, 커밋 `036c39bd03b39ce4a811f7f125bc3b8f47e39b7c`에 고정해 별도 profile로 빌드합니다.
 
@@ -367,13 +373,13 @@ docker compose --profile mcp-scan build mcp-scan
 docker run --rm mcp-governance-full-mcp-scan --help
 ```
 
-`mcp-scan`의 실제 코드 감사 단계는 OpenAI 호환 LLM endpoint를 요구합니다. 현재 합의한 무-LLM 기본 모드에서는 `./demo.sh mcp-scan`이 키·URL·모델이 없으면 의도적으로 종료합니다. 나중에 로컬 모의 endpoint가 준비됐을 때만 아래처럼 실행합니다.
+`mcp-scan`의 실제 코드 감사 단계는 OpenAI 호환 LLM endpoint를 요구합니다. 현재 합의한 무-LLM 기본 모드에서는 `./console.sh mcp-scan`이 키·URL·모델이 없으면 의도적으로 종료합니다. 나중에 로컬 모의 endpoint가 준비됐을 때만 아래처럼 실행합니다.
 
 ```bash
 MCP_SCAN_API_KEY=dummy \
 MCP_SCAN_BASE_URL=http://host.docker.internal:11434/v1 \
 MCP_SCAN_MODEL=local-mock \
-./demo.sh mcp-scan
+./console.sh mcp-scan
 ```
 
 This project integrates AI-Infra-Guard, open-sourced by Tencent Zhuque Lab. 참고: [AI-Infra-Guard mcp-scan](https://github.com/Tencent/AI-Infra-Guard/tree/main/mcp-scan), [Syft](https://github.com/anchore/syft), [Trivy](https://github.com/aquasecurity/trivy).
@@ -401,7 +407,7 @@ docker compose exec -T db psql -U mcp -d mcp_governance -c \
 curl -sS http://localhost:8080/api/audit/verify -H "authorization: Bearer $GW_TOKEN" | python3 -m json.tool
 ```
 
-`{"intact": false, "broken_at": <행 번호>, "reason": "항목 내용이 기록된 해시와 다릅니다."}`가 나옵니다. 이후 체인은 끊긴 상태로 남으므로 시연 뒤에는 `./demo.sh reset`으로 초기화하세요.
+`{"intact": false, "broken_at": <행 번호>, "reason": "항목 내용이 기록된 해시와 다릅니다."}`가 나옵니다. 이후 체인은 끊긴 상태로 남으므로 시연 뒤에는 `./console.sh reset`으로 초기화하세요.
 
 ## 10. GitHub MCP 연결 절차
 
@@ -419,7 +425,7 @@ curl -sS http://localhost:8080/api/audit/verify -H "authorization: Bearer $GW_TO
 2. 컨테이너에 새 환경값을 적용하고, 제한된 remote catalog를 관찰 파일로 저장합니다.
 
    ```bash
-   ./demo.sh
+   ./console.sh
    docker compose exec -T gateway python -m app.github_setup observe \
      > reports/github-reviewed.json
    python3 -m json.tool reports/github-reviewed.json
@@ -447,7 +453,7 @@ curl -sS http://localhost:8080/api/audit/verify -H "authorization: Bearer $GW_TO
 | 경로 | 역할 |
 | --- | --- |
 | `compose.yaml` | 네트워크·서비스·scanner profile |
-| `demo.sh` | `up/test/scan/mcp-scan/status/logs/down/reset` 단일 진입점 |
+| `console.sh` | `up/test/agent-test/scan/mcp-scan/status/logs/down/reset` 단일 진입점 |
 | `gateway/app/core.py` | 계약 확인, Rego 질의, 승인, upstream 실행, 증적 |
 | `gateway/app/agent_service.py` | 합성 로그인, 세션, 요청 멱등성, 모델 제안 경로 |
 | `gateway/app/agent_gateway.py` | 서명 사용자와 Tool Call envelope를 기존 정책 경로에 연결 |
@@ -455,17 +461,17 @@ curl -sS http://localhost:8080/api/audit/verify -H "authorization: Bearer $GW_TO
 | `gateway/app/keygen.py` | 이미지 안에서 Ed25519 키쌍 생성 (host에 crypto 의존성 없음) |
 | `gateway/app/model_client.py` | 결정론적 모의 모델과 제한된 OpenAI 호환 client |
 | `gateway/app/github_setup.py` | GitHub remote catalog 관찰·명시 승인 |
-| `gateway/app/agent_static/` | 합성 사용자 로그인·업무 공간 UI |
+| `gateway/app/agent_static/` | 개발 계정 로그인·단일 MCP Governance Console UI |
 | `gateway/app/mcp_facade.py` | 공통 정책 경로를 노출하는 MCP facade |
 | `gateway/app/method_scope.py` | 중개하지 않는 MCP 메서드 기본 거부 |
 | `gateway/app/db.py` | 프로세스당 하나인 PostgreSQL 커넥션 풀 |
-| `gateway/ui/` | 멘토용 React Dashboard |
+| `gateway/ui/` | Gateway API 검증용 기존 React UI (운영 Console은 8000) |
 | `mock_server/server.py` | 실제 SDK 기반 합성 문서 MCP와 catalog 변조 모드 |
 | `opa/` | 333 Rego 정책과 단위 테스트 |
 | `db/init.sql` | 합성 사용자·부서·Registry·감사/승인/공급망 schema |
 | `tests/open_endpoints.py` | 무인증으로 열린 API 목록이 문서와 같은지 대조 |
 | `tests/` | acceptance 외 보안 회귀 검사 |
-| `supply_chain/` | 고정 커밋의 선택적 mcp-scan 이미지 |
+| `supply_chain/` | 고정 버전 Semgrep 규칙과 선택적 mcp-scan 이미지 |
 
 Python과 프런트엔드 의존성은 버전을 고정하고 UI는 lockfile로 재현합니다. `mcp-server-time`은 구형 MCP SDK 의존성을 요구하므로 Gateway의 최신 SDK 환경과 별도 venv로 격리했습니다.
 
@@ -493,14 +499,14 @@ Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance
 ## 13. 의도적으로 남긴 경계
 
 - 실제 사용자 SSO/OIDC, RBAC 관리 화면, 실제 GitHub 토큰 위임은 미구현입니다. 합성 JWT와 Agent Assertion은 Ed25519로 서명하고 Agent Service만 개인키를 갖지만, assertion은 workload attestation이 아니며 키 회전·폐기 절차·JWKS 배포·SPIFFE SVID는 아직 없습니다.
-- Dashboard의 읽기 API는 인증 없이 열려 있습니다: `/api/health`, `/api/state`, `/api/effects`, `/api/policy/matrix`, `/api/integration`, `/api/monitor/summary`, `/api/enforcement`, `/api/supply-chain/coverage`. 상태를 바꾸는 API는 모두 서명된 토큰을 요구하고 승인·거부·집행 전환·공급망 가져오기·감사 검증은 관리자까지 확인하지만, 증적 조회는 `127.0.0.1` 바인딩에만 의존합니다. 이 목록은 `tests/open_endpoints.py`가 코드와 대조합니다. **결정:** 운영에서는 새 로컬 토큰을 덧붙이지 않고, 조직 OIDC를 연결한 reverse proxy에서 이 읽기 경로도 보호합니다.
+- Gateway의 읽기 API는 인증 없이 열려 있습니다: `/api/health`, `/api/state`, `/api/effects`, `/api/policy/matrix`, `/api/integration`, `/api/monitor/summary`, `/api/enforcement`, `/api/supply-chain/coverage`. 상태를 바꾸는 API는 모두 서명된 토큰을 요구하고 승인·거부·집행 전환·공급망 가져오기·감사 검증은 관리자까지 확인하지만, 증적 조회는 `127.0.0.1` 바인딩에만 의존합니다. 이 목록은 `tests/open_endpoints.py`가 코드와 대조합니다. **결정:** 운영에서는 새 로컬 토큰을 덧붙이지 않고, 조직 OIDC를 연결한 reverse proxy에서 이 읽기 경로도 보호합니다.
 - 호출량 상한(`P-RATE-001`)과 중요정보 누적 승격(`P-VOLUME-001`)은 감사 테이블 기준이라 Gateway 복제본이 늘어도 유지되지만, 비용·토큰 쿼터는 없습니다. Agent Service의 동시 실행 제한과 로그인 시도 상한은 프로세스 단위라 복제본이 늘면 함께 늘어납니다. **결정:** 현재 배포 단위는 Gateway 1개입니다. 다중 복제본은 Postgres 감사 체인의 전역 잠금이 정확성은 지키지만 처리량을 직렬화하므로, ingress 공용 rate limit·OIDC·SIEM을 함께 설계한 뒤 별도 부하 시험으로 전환합니다.
-- 실제 상용 LLM API는 호출하지 않았습니다. 기본 자연어 변환은 데모용 키워드 규칙이고, OpenAI 호환 HTTP 경계는 로컬 stub으로만 검증했습니다.
+- 실제 상용 LLM API는 호출하지 않았습니다. 기본 자연어 변환은 규칙 기반 키워드 변환이고, OpenAI 호환 HTTP 경계는 로컬 stub으로만 검증했습니다.
 - GitHub MCP는 인증·catalog 승인 전이라 실제 upstream 호출을 하지 않습니다.
-- GitHub catalog 승인은 현재 데모 DB 상태입니다. 운영 반영 전에는 검토 파일의 해시를 코드 리뷰와 정책 버전에 남겨야 합니다.
+- GitHub catalog 승인은 현재 개발 DB 상태입니다. 운영 반영 전에는 검토 파일의 해시를 코드 리뷰와 정책 버전에 남겨야 합니다.
 - image tag는 버전 고정이지만 digest/서명 검증과 admission controller까지는 포함하지 않았습니다.
 - 전역(`workspace`) 스캔 결과는 인벤토리이며 호출을 막지 않습니다. 차단은 `scan_path`가 등록된 서버의 개별 스캔 결과로만 이어집니다. `github`는 원격이라 국소 스캔 대상이 아닙니다.
 - 운영용 HA, TLS 종료, 비밀관리, SIEM 알림, 조직 전체 egress 강제는 별도 운영 설계가 필요합니다. **결정:** 현재 증적 정본은 PostgreSQL 감사 체인과 OpenTelemetry trace이며, 보존 기간·수신 인증·민감정보 마스킹 요구가 확정되기 전 외부 SIEM으로 원문을 내보내지는 않습니다.
-- Dashboard의 승인자는 합성 관리자이며 실인증 승인이 아닙니다. 승인자 그룹, 위임, 4-eyes, 알림 채널(Slack/메일)은 미구현입니다.
+- Console의 승인자는 합성 관리자이며 실인증 승인이 아닙니다. 승인자 그룹, 위임, 4-eyes, 알림 채널(Slack/메일)은 미구현입니다.
 
-이 경계 안에서 완료 조건은 자동화되어 있습니다. 기능을 더 붙이기 전에 `./demo.sh test`의 정책·효과·변조·장애 검증을 계속 통과시키는 것이 다음 확장의 기준선입니다.
+이 경계 안에서 완료 조건은 자동화되어 있습니다. 기능을 더 붙이기 전에 `./console.sh test`의 정책·효과·변조·장애 검증을 계속 통과시키는 것이 다음 확장의 기준선입니다.
