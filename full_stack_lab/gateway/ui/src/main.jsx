@@ -10,6 +10,8 @@ const decisionMeta = {
   Block: { icon: '×', label: '차단', tone: 'block' },
 }
 
+const compactFlowNodeStyle = { minWidth: 125, maxWidth: 150 }
+
 // The dashboard no longer holds a list of principal tokens. It signs in as a
 // synthetic account and sends that account's token, exactly like every other client.
 const accounts = [
@@ -211,7 +213,7 @@ function App() {
         <div className="hero-summary" aria-label="현재 핵심 상태">
           <div><span>정책 결과</span><strong>5종</strong><small>Allow · Alert · Approval · Restrict · Block</small></div>
           <div><span>권한 조합</span><strong>27칸</strong><small>3 역할 × 3 등급 × r/w/x</small></div>
-          <div><span>모델 연결</span><strong>{integration?.readiness?.model?.mode === 'provider' ? 'API 모드' : '모의 모드'}</strong><small>합성 계정 · 모델 제안과 정책 집행 분리</small></div>
+          <div><span>호출 신원</span><strong>이중 증명</strong><small>사용자 JWT · 60초 Agent Assertion</small></div>
         </div>
       </div>
     </header>
@@ -220,9 +222,9 @@ function App() {
       {error && <div className="error-banner" role="alert"><b>확인 필요</b><span>{error}</span><button onClick={() => setError('')} aria-label="오류 닫기">×</button></div>}
 
       <section className="section" aria-labelledby="agent-title">
-        <div className="section-heading"><div><p className="kicker">AGENT SERVICE · MISO 통합</p><h2 id="agent-title">로그인부터 실제 실행까지 이어집니다</h2><p>합성 로그인 → 세션 → 모델 Tool Call → 사용자·인자 검증 → 333 정책 → MCP 실행·감사</p></div><a className="secondary-link" href="http://localhost:8000" target="_blank" rel="noreferrer">사용자 업무 공간 열기 ↗</a></div>
-        <div className="audit-summary"><div><span>시나리오 준비</span><b>{integration?.readiness?.status === 'ready' ? '준비됨' : '확인 필요'}</b></div><div><span>모델 실행 방식</span><b>{integration?.readiness?.model?.mode || '확인 중'}</b></div><div><span>인증</span><b>합성 JWT · 30분</b></div><div><span>중복 실행 통제</span><b>요청·도구 ID별 1회</b></div></div>
-        <p>실제 API 연결 전에는 모의 모델을 사용합니다. 아래 실습기는 멘토용 정책 시뮬레이터이며, 로그인·세션 시나리오는 사용자 업무 공간에서 실행합니다.</p>
+        <div className="section-heading"><div><p className="kicker">AGENT SERVICE · MISO 통합</p><h2 id="agent-title">로그인부터 실제 실행까지 이어집니다</h2><p>합성 로그인 → 사용자 JWT → 60초 Agent 위임 → 요청 바인딩 → 333 정책 → MCP 실행·감사</p></div><a className="secondary-link" href="http://localhost:8000" target="_blank" rel="noreferrer">사용자 업무 공간 열기 ↗</a></div>
+        <div className="audit-summary"><div><span>시나리오 준비</span><b>{integration?.readiness?.status === 'ready' ? '준비됨' : '확인 필요'}</b></div><div><span>사용자 인증</span><b>합성 JWT · 30분</b></div><div><span>Agent 위임</span><b>별도 Assertion · 60초</b></div><div><span>요청 바인딩</span><b>actor · agent · SHA-256</b></div></div>
+        <p>실제 API 연결 전에는 모의 모델을 사용합니다. 사용자 JWT만으로 내부 <code>/tool-call</code>을 실행할 수 없으며, 토큰·요청 해시 원문은 화면과 감사 로그에 표시하지 않습니다.</p>
         <details><summary>최근 Agent 요청과 세션 ID</summary><pre>{JSON.stringify(integration?.runs || [], null, 2)}</pre></details>
       </section>
 
@@ -232,11 +234,12 @@ function App() {
           <span className={`overall ${health?.status || 'loading'}`}><StatusDot ok={health?.status === 'ok'} pending={!health} />{health ? (health.status === 'ok' ? '핵심 구성요소 정상' : '일부 구성요소 확인 필요') : '상태 확인 중'}</span>
         </div>
         <div className="flow" aria-label="MCP 보안 Gateway 처리 흐름">
-          <div className="flow-node"><span>01</span><b>합성 사용자</b><small>업무 요청 · 역할</small></div><i>→</i>
-          <div className="flow-node primary"><span>02</span><b>Security Gateway</b><small>신원 · 계약 · 입력 검증</small></div><i>→</i>
-          <div className="flow-node"><span>03</span><b>OPA / Rego</b><small>333 정책 결정</small></div><i>→</i>
-          <div className="flow-node"><span>04</span><b>MCP Server</b><small>HTTP · stdio · SSE</small></div><i>→</i>
-          <div className="flow-node"><span>05</span><b>증적</b><small>PostgreSQL · Trace · Effect</small></div>
+          <div className="flow-node" style={compactFlowNodeStyle}><span>01</span><b>합성 사용자</b><small>업무 요청 · 역할</small></div><i>→</i>
+          <div className="flow-node" style={compactFlowNodeStyle}><span>02</span><b>Agent Service</b><small>JWT · 60초 위임 증명</small></div><i>→</i>
+          <div className="flow-node primary" style={compactFlowNodeStyle}><span>03</span><b>Security Gateway</b><small>이중 신원 · 계약 · 입력 검증</small></div><i>→</i>
+          <div className="flow-node" style={compactFlowNodeStyle}><span>04</span><b>OPA / Rego</b><small>333 정책 결정</small></div><i>→</i>
+          <div className="flow-node" style={compactFlowNodeStyle}><span>05</span><b>MCP Server</b><small>HTTP · stdio · SSE</small></div><i>→</i>
+          <div className="flow-node" style={compactFlowNodeStyle}><span>06</span><b>증적</b><small>PostgreSQL · Trace · Effect</small></div>
         </div>
         <div className="health-grid">
           {[
@@ -386,7 +389,7 @@ function App() {
 
       <section className="section boundary">
         <div><p className="kicker">정확한 해석</p><h2>이 데모가 증명하는 범위</h2></div>
-        <ul><li><b>증명:</b> 로그인·세션·모델 인자 검증부터 Gateway 판정과 upstream 실행까지</li><li><b>구조적 통제:</b> MCP 서버는 내부망, 로컬 호스트에는 업무 공간·멘토 Dashboard·Jaeger 공개</li><li><b>아직 아님:</b> 조직 전체 우회 경로 차단, 실제 SSO, 외부 모델 실호출, 실제 GitHub 권한 위임, 운영 HA</li></ul>
+        <ul><li><b>증명:</b> 로그인·세션·모델 인자 검증과 60초 Agent 위임, Gateway 판정·upstream 실행까지</li><li><b>구조적 통제:</b> MCP 서버는 내부망, Gateway는 actor·agent·정규화한 요청 SHA-256을 함께 검증</li><li><b>아직 아님:</b> 실제 SSO, workload attestation(SPIFFE), 키 회전/JWKS, 외부 모델 실호출, 운영 HA</li></ul>
       </section>
     </main>
     <footer><span>MCP Governance Security Gateway · Synthetic Lab</span><span>데모 데이터만 사용 · 기본 DENY · 인증 연계 전</span></footer>

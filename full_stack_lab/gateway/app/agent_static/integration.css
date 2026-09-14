@@ -1,4 +1,8 @@
 .hidden {display:none !important}
+.identity-boundary {margin-top:32px}
+.identity-boundary .result-metadata dd {font-family:inherit;white-space:normal;overflow:visible;text-overflow:clip}
+.result-metadata .identity-fact {grid-column:1/-1}
+.identity-note {margin:12px 2px 0;line-height:1.55}
 select {width:100%;padding:12px;border:1px solid #b6c6da;border-radius:8px;margin-bottom:18px;background:white;color:#17334f;font:inherit}
 .prompt-examples {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .history-item {display:block;width:100%;text-align:left;background:#f3f7fc;border:1px solid #c9d7e6;border-radius:8px;padding:12px;margin:8px 0;color:#18394f;cursor:pointer;overflow-wrap:anywhere}
