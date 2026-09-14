@@ -250,7 +250,7 @@ curl -sS http://localhost:8000/api/readiness | python3 -m json.tool
 
 정상 기준은 다음과 같습니다.
 
-- Rego 단위 테스트 `7/7 PASS`
+- Rego 단위 테스트 `12/12 PASS`
 - acceptance, Agent/API 경계 acceptance 모두 `0 failed`
 - 익명·위조 토큰의 Gateway API 호출이 `401`, 고객 계정의 승인 시도가 `403`
 - `/tool-call`은 사용자 JWT와 Agent Assertion을 함께 요구하며, 사용자 JWT 재사용·다른 actor·변조된 envelope는 `401`
