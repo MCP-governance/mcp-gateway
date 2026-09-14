@@ -135,7 +135,7 @@ async function init() {
   setText("#user-department", currentUser.department + " · " + currentUser.roles.join(", "));
   setText("#user-avatar", currentUser.name.slice(0, 1));
   const ready = await api("/api/readiness");
-  setText("#readiness", `${ready.status === "ready" ? "시나리오 준비됨" : "설정 확인 필요"} · ${ready.model.mode === "mock" ? "모의 모델 (외부 API 호출 없음)" : "설정한 모델 API"} · 사용자 역할은 서버에서 확인합니다`);
+  setText("#readiness", `${ready.status === "ready" ? "시나리오 준비됨" : "설정 확인 필요"} · ${ready.model.mode === "mock" ? "모의 모델 (외부 API 호출 없음)" : "설정한 모델 API"} · 사용자 JWT(30분) + Agent 위임 증명(60초) · Gateway가 actor·요청 무결성을 검증합니다`);
   await refreshHistory(); await refreshApprovals();
 }
 init().catch(error => setText("#readiness", error.message));

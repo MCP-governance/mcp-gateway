@@ -46,6 +46,24 @@ UNSAFE_METADATA = re.compile(
     r"ignore\s+(all\s+)?previous|system\s+prompt|credential|secret\s+key|bypass\s+policy",
     re.IGNORECASE,
 )
+MAX_RESULT_BYTES = int(os.getenv("MAX_RESULT_BYTES", "262144"))
+DEFAULT_ENFORCEMENT = os.getenv("GATEWAY_ENFORCEMENT", "enforce")
+# Integrity failures are not opinions. A drifted catalog, an unregistered tool, a
+# critical supply-chain finding or an unavailable policy engine stay enforced even
+# while the gateway is only observing the permission model, because "observe" cannot
+# mean "call a server we can no longer vouch for".
+# P-RATE- is here because a call-rate ceiling protects the gateway and the upstream,
+# not a permission opinion about who may read what. Observing it would mean having no
+# ceiling at all for as long as observation lasts.
+ALWAYS_ENFORCED = ("MCP-", "P-CONTROL-", "P-INPUT-", "P-RATE-")
+RATE_LIMIT_CALLS = int(os.getenv("RATE_LIMIT_CALLS", "60"))
+RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
+IMPORTANT_BURST_LIMIT = int(os.getenv("IMPORTANT_BURST_LIMIT", "10"))
+IMPORTANT_BURST_MINUTES = int(os.getenv("IMPORTANT_BURST_MINUTES", "5"))
+
+
+class ResultRejected(RuntimeError):
+    """Upstream answered, but its output failed the gateway's output control."""
 
 
 def _configure_tracing() -> Any:
@@ -169,11 +187,20 @@ async def refresh_catalog(server_id: str) -> dict:
             findings.append({"type": "contract-drift", "tool": name, "fields": mismatches})
 
     exact_match = names_match and metadata_safe and hashes_match
-    await db.fetch_one(
-        """INSERT INTO catalog_snapshots(server_id, server_version, catalog_hash, tool_count, exact_match, findings)
-           VALUES (%s,%s,%s,%s,%s,%s) RETURNING id""",
-        (server_id, discovered["version"], canonical_hash(discovered["tools"]), len(observed), exact_match, Jsonb(findings)),
+    catalog_hash = canonical_hash(discovered["tools"])
+    previous = await db.fetch_one(
+        "SELECT catalog_hash, exact_match FROM catalog_snapshots WHERE server_id=%s ORDER BY id DESC LIMIT 1",
+        (server_id,),
     )
+    # The snapshot table is change evidence, not a call counter: the catalog is
+    # re-read before every call, so writing a row per call grows it without adding
+    # anything a reviewer can read.
+    if not previous or previous["catalog_hash"] != catalog_hash or previous["exact_match"] != exact_match:
+        await db.fetch_one(
+            """INSERT INTO catalog_snapshots(server_id, server_version, catalog_hash, tool_count, exact_match, findings)
+               VALUES (%s,%s,%s,%s,%s,%s) RETURNING id""",
+            (server_id, discovered["version"], catalog_hash, len(observed), exact_match, Jsonb(findings)),
+        )
     await db.execute(
         "UPDATE mcp_servers SET status=%s, status_reason=%s, last_seen_at=now() WHERE id=%s",
         (
@@ -258,6 +285,76 @@ async def _contract(server_id: str, tool_name: str) -> dict:
     }
 
 
+async def enforcement_mode() -> str:
+    """'enforce' applies decisions; 'monitor' records what enforcement would have done.
+
+    Stored in the database rather than the environment so an operator can turn
+    enforcement on without a restart - and so the switch itself is auditable.
+    """
+    row = await db.fetch_one("SELECT value FROM gateway_settings WHERE key='enforcement'")
+    value = row["value"] if row else DEFAULT_ENFORCEMENT
+    return value if value in {"enforce", "monitor"} else "enforce"
+
+
+async def set_enforcement_mode(mode: str, actor: str) -> dict:
+    if mode not in {"enforce", "monitor"}:
+        raise ValueError("enforce 또는 monitor만 사용할 수 있습니다.")
+    await db.execute(
+        """INSERT INTO gateway_settings(key, value, updated_by) VALUES ('enforcement',%s,%s)
+           ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, updated_by=EXCLUDED.updated_by, updated_at=now()""",
+        (mode, actor),
+    )
+    return {"enforcement": mode, "updated_by": actor}
+
+
+async def monitor_summary(hours: int = 168) -> dict:
+    """What enforcement would have stopped, so a team can turn it on with numbers."""
+    rows = await db.fetch_all(
+        """SELECT would_decision, would_policy_id, role, tool_name, data_class, count(*) AS calls
+           FROM decisions
+           WHERE would_decision IS NOT NULL AND created_at > now() - make_interval(hours => %s)
+           GROUP BY 1,2,3,4,5 ORDER BY calls DESC LIMIT 50""",
+        (hours,),
+    )
+    users = await db.fetch_one(
+        """SELECT count(DISTINCT user_token) AS affected FROM decisions
+           WHERE would_decision IS NOT NULL AND created_at > now() - make_interval(hours => %s)""",
+        (hours,),
+    )
+    return {
+        "enforcement": await enforcement_mode(),
+        "window_hours": hours,
+        "would_have_stopped": sum(int(row["calls"]) for row in rows),
+        "affected_principals": int(users["affected"]) if users else 0,
+        "breakdown": rows,
+    }
+
+
+async def _recent_activity(user_token: str) -> dict:
+    """Both volume signals in one query.
+
+    Counted from the audit table rather than from in-process state, so the ceilings
+    still hold when more than one gateway replica is serving. Blocked calls count
+    too: a flood of denied calls is still a flood.
+
+    The gateway measures and the policy decides, so the limits travel as part of the
+    input rather than as a branch in this function.
+    """
+    row = await db.fetch_one(
+        """SELECT count(*) FILTER (WHERE created_at > now() - make_interval(secs => %s)) AS recent_calls,
+                  count(*) FILTER (WHERE data_class = 'important'
+                                     AND created_at > now() - make_interval(mins => %s)) AS recent_important
+           FROM decisions WHERE user_token = %s AND created_at > now() - interval '1 hour'""",
+        (RATE_LIMIT_WINDOW_SECONDS, IMPORTANT_BURST_MINUTES, user_token),
+    )
+    return {
+        "recent_calls": int(row["recent_calls"]) if row else 0,
+        "call_limit": RATE_LIMIT_CALLS,
+        "recent_important": int(row["recent_important"]) if row else 0,
+        "important_limit": IMPORTANT_BURST_LIMIT,
+    }
+
+
 async def _policy(input_document: dict) -> dict:
     async with httpx.AsyncClient(timeout=5) as client:
         response = await client.post(OPA_URL, json={"input": input_document})
@@ -288,8 +385,22 @@ async def _call_upstream(spec: dict, arguments: dict) -> dict:
             messages = [getattr(item, "text", str(item)) for item in result.content]
             raise RuntimeError("; ".join(messages))
         if result.structured_content is not None:
-            return result.structured_content
-        return {"content": [getattr(item, "text", str(item)) for item in result.content]}
+            return _guarded_result(result.structured_content)
+        return _guarded_result({"content": [getattr(item, "text", str(item)) for item in result.content]})
+
+
+def _guarded_result(payload: dict) -> dict:
+    """Upstream output is untrusted input too.
+
+    A pinned description and schema say nothing about what a server returns at
+    runtime, and that is where an injected instruction or an oversized blob arrives.
+    """
+    body = json.dumps(payload, ensure_ascii=False)
+    if len(body.encode()) > MAX_RESULT_BYTES:
+        raise ResultRejected(f"도구 결과가 {MAX_RESULT_BYTES} byte 상한을 넘었습니다.")
+    if UNSAFE_METADATA.search(body):
+        raise ResultRejected("도구 결과에 정책 우회 지시 패턴이 포함되어 있습니다.")
+    return payload
 
 
 def _upstream_arguments(tool_name: str, payload: dict, restrictions: dict) -> dict:
@@ -313,24 +424,146 @@ def _upstream_arguments(tool_name: str, payload: dict, restrictions: dict) -> di
     return {}
 
 
+def _audit_payload(payload: dict) -> dict:
+    """Structural evidence stays readable; the document body becomes a digest."""
+    if "content" not in payload:
+        return payload
+    content = str(payload.get("content") or "")
+    return {**{k: v for k, v in payload.items() if k != "content"},
+            "content_sha256": canonical_hash(content), "content_chars": len(content)}
+
+
+def _audit_result(result: Any) -> dict:
+    """Enough to prove what came back and to compare it later, not a copy of it."""
+    body = json.dumps(result, ensure_ascii=False)
+    return {"sha256": canonical_hash(result), "chars": len(body), "head": body[:200]}
+
+
+AUDIT_COLUMN_SETS = {
+    1: (
+        "request_id", "trace_id", "user_token", "role", "tool_name", "data_class", "action",
+        "decision", "policy_id", "reason", "upstream_executed", "restrictions", "approval_id",
+        "request_payload", "result_preview", "error",
+    ),
+    2: (
+        "request_id", "trace_id", "user_token", "role", "tool_name", "data_class", "action",
+        "decision", "policy_id", "reason", "upstream_executed", "restrictions", "approval_id",
+        "request_payload", "result_preview", "error",
+        "enforcement", "would_decision", "would_policy_id",
+    ),
+}
+CHAIN_VERSION = 2
+AUDIT_COLUMNS = AUDIT_COLUMN_SETS[CHAIN_VERSION]
+GENESIS = "0" * 64
+
+
+def _audit_fingerprint(record: dict, version: int = CHAIN_VERSION) -> str:
+    """One canonical form for both the append and the later verification.
+
+    Values are normalised to str / bool / None / JSON documents so that the hash of a
+    row read back from PostgreSQL matches the hash computed when it was written.
+    """
+    normalised = {}
+    for column in AUDIT_COLUMN_SETS[version]:
+        value = record.get(column)
+        if column == "upstream_executed":
+            normalised[column] = bool(value)
+        elif isinstance(value, (dict, list)) or value is None:
+            normalised[column] = value
+        else:
+            normalised[column] = str(value)
+    return canonical_hash(normalised)
+
+
+# The chain is appended under a row lock, so decision writes serialise on one row.
+# That is the right trade for a single gateway; a multi-replica deployment wants one
+# chain per instance, anchored together.
 async def _record_decision(event: dict) -> int:
-    row = await db.fetch_one(
-        """INSERT INTO decisions(
-             request_id, trace_id, user_token, role, tool_name, data_class, action,
-             decision, policy_id, reason, upstream_executed, restrictions,
-             approval_id, request_payload, result_preview, error)
-           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-           RETURNING id""",
-        (
-            event["request_id"], event["trace_id"], event["user_token"], event["role"],
-            event["tool_name"], event["data_class"], event["action"], event["decision"],
-            event["policy_id"], event["reason"], event["upstream_executed"],
-            Jsonb(event.get("restrictions") or {}), event.get("approval_id"),
-            Jsonb(event.get("request_payload") or {}), Jsonb(event["result"]) if event.get("result") is not None else None,
-            event.get("error"),
-        ),
-    )
+    record = {
+        "request_id": event["request_id"], "trace_id": event["trace_id"],
+        "user_token": event["user_token"], "role": event["role"],
+        "tool_name": event["tool_name"], "data_class": event["data_class"],
+        "action": event["action"], "decision": event["decision"],
+        "policy_id": event["policy_id"], "reason": event["reason"],
+        "upstream_executed": bool(event["upstream_executed"]),
+        "restrictions": event.get("restrictions") or {},
+        "approval_id": event.get("approval_id"),
+        "request_payload": _audit_payload(event.get("request_payload") or {}),
+        "result_preview": _audit_result(event["result"]) if event.get("result") is not None else None,
+        "error": event.get("error"),
+        "enforcement": event.get("enforcement") or "enforce",
+        "would_decision": event.get("would_decision"),
+        "would_policy_id": event.get("would_policy_id"),
+    }
+    async with db.transaction() as connection:
+        cursor = await connection.execute("SELECT head_sha256 FROM audit_chain WHERE id=1 FOR UPDATE")
+        head = await cursor.fetchone()
+        previous = head["head_sha256"] if head else GENESIS
+        entry = hashlib.sha256((previous + _audit_fingerprint(record)).encode()).hexdigest()
+        cursor = await connection.execute(
+            """INSERT INTO decisions(
+                 request_id, trace_id, user_token, role, tool_name, data_class, action,
+                 decision, policy_id, reason, upstream_executed, restrictions,
+                 approval_id, request_payload, result_preview, error,
+                 enforcement, would_decision, would_policy_id,
+                 prev_sha256, entry_sha256, chain_version)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+               RETURNING id""",
+            (
+                record["request_id"], record["trace_id"], record["user_token"], record["role"],
+                record["tool_name"], record["data_class"], record["action"], record["decision"],
+                record["policy_id"], record["reason"], record["upstream_executed"],
+                Jsonb(record["restrictions"]), record["approval_id"],
+                Jsonb(record["request_payload"]),
+                Jsonb(record["result_preview"]) if record["result_preview"] is not None else None,
+                record["error"], record["enforcement"], record["would_decision"],
+                record["would_policy_id"], previous, entry, CHAIN_VERSION,
+            ),
+        )
+        row = await cursor.fetchone()
+        await connection.execute(
+            "UPDATE audit_chain SET head_sha256=%s, entries=entries+1, updated_at=now() WHERE id=1",
+            (entry,),
+        )
     return int(row["id"])
+
+
+async def verify_audit_chain() -> dict:
+    """Walk the chain and name the first row that does not follow from the previous.
+
+    An edited or deleted row cannot be made to fit again without rewriting every row
+    after it, so this answers "was the audit log tampered with" with a row id rather
+    than with an assurance.
+    """
+    rows = await db.fetch_all(
+        "SELECT id, " + ", ".join(AUDIT_COLUMNS) + ", prev_sha256, entry_sha256, chain_version"
+        " FROM decisions ORDER BY id"
+    )
+    previous = GENESIS
+    chained = 0
+    for row in rows:
+        if row["entry_sha256"] is None:
+            # Written before the chain existed. It anchors nothing and claims nothing.
+            continue
+        version = int(row["chain_version"] or 1)
+        if version not in AUDIT_COLUMN_SETS:
+            return {"intact": False, "checked": chained, "broken_at": row["id"],
+                    "reason": f"알 수 없는 체인 버전 {version}입니다."}
+        expected = hashlib.sha256((previous + _audit_fingerprint(row, version)).encode()).hexdigest()
+        if row["prev_sha256"] != previous:
+            return {"intact": False, "checked": chained, "broken_at": row["id"],
+                    "reason": "이전 항목과 연결되지 않습니다. 앞의 행이 지워졌을 수 있습니다."}
+        if row["entry_sha256"] != expected:
+            return {"intact": False, "checked": chained, "broken_at": row["id"],
+                    "reason": "항목 내용이 기록된 해시와 다릅니다."}
+        previous = row["entry_sha256"]
+        chained += 1
+    head = await db.fetch_one("SELECT head_sha256, entries FROM audit_chain WHERE id=1")
+    if head and head["head_sha256"] != previous:
+        return {"intact": False, "checked": chained, "broken_at": None,
+                "reason": "마지막 항목이 체인 head와 다릅니다. 끝부분이 잘렸을 수 있습니다."}
+    return {"intact": True, "checked": chained, "head": previous,
+            "entries_recorded": int(head["entries"]) if head else None}
 
 
 async def execute_call(payload: dict, approval_granted: bool = False, approval_id: str | None = None) -> dict:
@@ -364,6 +597,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "data_class": data_class,
             "action": spec["action"],
             "upstream_executed": False,
+            "enforcement": "enforce",
+            "would_decision": None,
+            "would_policy_id": None,
             "approval_id": approval_id,
             "request_payload": payload,
             "result": None,
@@ -413,6 +649,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "tool": {"name": spec["registry_name"], "action": spec["action"]},
             "approval": {"granted": approval_granted, "id": approval_id},
             "contract": contract,
+            "context": await _recent_activity(str(payload.get("user_token", ""))),
         }
         try:
             result = await _policy(policy_input)
@@ -425,7 +662,22 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             }
             base_event["error"] = str(exc)[:500]
 
+        mode = await enforcement_mode()
+        base_event["enforcement"] = mode
+        if (mode == "monitor" and result["decision"] != "Allow"
+                and not result["policy_id"].startswith(ALWAYS_ENFORCED)):
+            base_event["would_decision"] = result["decision"]
+            base_event["would_policy_id"] = result["policy_id"]
+            span.set_attribute("mcp.would_decision", result["decision"])
+            result = {
+                "decision": "Allow",
+                "policy_id": "P-MONITOR-001",
+                "reason": f"관찰 모드입니다. 집행 모드였다면 {base_event['would_decision']}"
+                          f"({base_event['would_policy_id']})로 처리됐습니다.",
+                "restrictions": {},
+            }
         base_event.update(result)
+        span.set_attribute("mcp.enforcement", mode)
         span.set_attribute("mcp.decision", result["decision"])
         span.set_attribute("mcp.policy_id", result["policy_id"])
 
@@ -451,6 +703,18 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     base_event["result"] = await _call_upstream(spec, effective)
                 base_event["upstream_executed"] = True
                 base_event["effective_arguments"] = effective
+            except ResultRejected as exc:
+                # The call did run upstream; only the answer is withheld. Recording it
+                # as "not executed" would make the effect log and the audit disagree.
+                base_event.update({
+                    "decision": "Block",
+                    "policy_id": "MCP-OUTPUT-001",
+                    "reason": "upstream 결과가 출력 통제에 걸려 반환하지 않았습니다. 호출 자체는 실행됐습니다.",
+                    "upstream_executed": True,
+                    "result": None,
+                    "error": str(exc)[:500],
+                })
+                span.record_exception(exc)
             except Exception as exc:
                 base_event.update({
                     "decision": "Block",
@@ -497,6 +761,70 @@ async def approve_request(approval_id: str, reviewer_token: str) -> dict:
     return result
 
 
+def _trivy_summary(data: dict) -> tuple[dict, dict]:
+    counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0}
+    categories = {key: {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0} for key in ("Vulnerabilities", "Misconfigurations", "Secrets")}
+    for result in data.get("Results") or []:
+        for category in categories:
+            for finding in result.get(category) or []:
+                if category == "Misconfigurations" and finding.get("Status") == "PASS":
+                    continue
+                severity = finding.get("Severity", "")
+                if severity in counts:
+                    counts[severity] += 1
+                    categories[category][severity] += 1
+    return {"targets": len(data.get("Results") or []), "counts": counts, "categories": categories}, counts
+
+
+async def _store_trivy(report: Path, source_ref: str, summary: dict, counts: dict) -> None:
+    await db.execute("DELETE FROM supply_chain_reports WHERE scanner='Trivy' AND report_path=%s", (str(report),))
+    await db.execute(
+        """INSERT INTO supply_chain_reports(scanner, scanner_version, source_ref, report_path, status,
+           critical_count, high_count, medium_count, summary)
+           VALUES ('Trivy','0.74.0',%s,%s,'IMPORTED',%s,%s,%s,%s)""",
+        (source_ref, str(report), counts["CRITICAL"], counts["HIGH"], counts["MEDIUM"], Jsonb(summary)),
+    )
+
+
+async def supply_chain_coverage() -> list[dict]:
+    """Which servers actually have scan output wired to the MCP-SUPPLY-001 gate.
+
+    A dashboard that shows scan numbers without saying whether they gate anything
+    invites exactly the wrong conclusion in a review.
+    """
+    return await db.fetch_all(
+        """SELECT s.id AS server_id, s.source_ref, s.scan_path,
+                  count(r.id) AS reports,
+                  COALESCE(sum(r.critical_count), 0) AS critical_count,
+                  max(r.imported_at) AS last_scanned_at
+           FROM mcp_servers s
+           LEFT JOIN supply_chain_reports r ON r.source_ref = s.source_ref
+           GROUP BY s.id, s.source_ref, s.scan_path ORDER BY s.id"""
+    )
+
+
+async def reject_request(approval_id: str, reviewer_token: str, note: str) -> dict:
+    """The other half of an approval.
+
+    Without it a reviewer's only options are "approve" or "let it expire", and the
+    audit cannot tell a considered refusal apart from someone going to lunch.
+    """
+    reviewer = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (reviewer_token,))
+    if not reviewer or reviewer["role"] != "admin":
+        raise ValueError("합성 관리자만 승인 요청을 처리할 수 있습니다.")
+    if not note.strip():
+        raise ValueError("거부 사유는 비워둘 수 없습니다.")
+    claimed = await db.fetch_one(
+        """UPDATE approvals SET status='REJECTED', reviewed_by=%s, reviewed_at=now(), review_note=%s
+           WHERE id=%s AND status='PENDING' RETURNING id, requested_by, review_note""",
+        (reviewer_token, note.strip(), approval_id),
+    )
+    if not claimed:
+        raise ValueError("대기 중인 승인 요청이 아닙니다.")
+    return {"approval_id": approval_id, "status": "REJECTED", "reviewed_by": reviewer_token,
+            "review_note": claimed["review_note"], "upstream_executed": False}
+
+
 async def import_supply_chain_reports() -> list[dict]:
     imported: list[dict] = []
     sbom = REPORT_DIR / "sbom.cdx.json"
@@ -513,27 +841,25 @@ async def import_supply_chain_reports() -> list[dict]:
 
     trivy = REPORT_DIR / "trivy.json"
     if trivy.exists():
-        data = json.loads(trivy.read_text(encoding="utf-8"))
-        counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0}
-        categories = {key: {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0} for key in ("Vulnerabilities", "Misconfigurations", "Secrets")}
-        for result in data.get("Results") or []:
-            for category in categories:
-                for finding in result.get(category) or []:
-                    if category == "Misconfigurations" and finding.get("Status") == "PASS":
-                        continue
-                    severity = finding.get("Severity", "")
-                    if severity in counts:
-                        counts[severity] += 1
-                        categories[category][severity] += 1
-        summary = {"targets": len(data.get("Results") or []), "counts": counts, "categories": categories}
-        await db.execute("DELETE FROM supply_chain_reports WHERE scanner='Trivy' AND report_path=%s", (str(trivy),))
-        await db.execute(
-            """INSERT INTO supply_chain_reports(scanner, scanner_version, source_ref, report_path, status,
-               critical_count, high_count, medium_count, summary)
-               VALUES ('Trivy','0.74.0','workspace',%s,'IMPORTED',%s,%s,%s,%s)""",
-            (str(trivy), counts["CRITICAL"], counts["HIGH"], counts["MEDIUM"], Jsonb(summary)),
-        )
-        imported.append({"scanner": "Trivy", **summary})
+        summary, counts = _trivy_summary(json.loads(trivy.read_text(encoding="utf-8")))
+        await _store_trivy(trivy, "workspace", summary, counts)
+        imported.append({"scanner": "Trivy", "source_ref": "workspace", **summary})
+
+    # A report named for a server is attributed to that server's pinned source_ref,
+    # which is the value _contract() counts criticals against. Without this the
+    # dashboard's scan numbers and the MCP-SUPPLY-001 gate never referred to the same
+    # thing: one scanned the workspace, the other looked up a server.
+    servers = {row["id"]: row["source_ref"] for row in await db.fetch_all("SELECT id, source_ref FROM mcp_servers")}
+    for report in sorted(REPORT_DIR.glob("trivy-*.json")):
+        server_id = report.stem[len("trivy-"):]
+        source_ref = servers.get(server_id)
+        if not source_ref:
+            imported.append({"scanner": "Trivy", "report": report.name, "status": "SKIPPED",
+                             "reason": f"등록되지 않은 서버 {server_id}"})
+            continue
+        summary, counts = _trivy_summary(json.loads(report.read_text(encoding="utf-8")))
+        await _store_trivy(report, source_ref, summary, counts)
+        imported.append({"scanner": "Trivy", "server_id": server_id, "source_ref": source_ref, **summary})
 
     sarif = REPORT_DIR / "mcp-scan.sarif.json"
     if sarif.exists():

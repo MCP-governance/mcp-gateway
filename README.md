@@ -1,179 +1,74 @@
-# MCP Security Gateway 실습 저장소
+# MCP Governance Security Gateway
 
-MCP 도구 호출 직전에 정책을 적용하는 최소 실습부터 OPA/Rego, Registry, 승인, 감사, 공급망 검증과 Agent Service를 포함한 통합판까지 단계별로 제공합니다. 처음 실행한다면 아래의 **2026-09 v1.1 통합판**부터 시작하고, 각 통제가 발전한 과정이 필요할 때만 이전 실습을 참고하면 됩니다.
+MCP와 AI Agent의 도구 호출을 실행 전에 하나의 강제 경로에서 인증·정책·승인·카탈로그·감사로 검증하는 보안 실습 저장소입니다. 현재 통합 개발 기준은 v1.2이며, 실제 실행과 세부 증적은 [full_stack_lab/README.md](full_stack_lab/README.md)에 정리되어 있습니다.
 
-## 현재 권장판: 2026-09 v1.1
+> 학습·검증용 레퍼런스입니다. 운영 환경에는 조직의 SSO, 키 관리, 네트워크 격리와 별도 관제 체계를 추가해야 합니다.
 
-WSL Kali에서 다음 한 줄로 전체 실습을 시작합니다.
+## 가장 빠른 시작
 
-```bash
-cd ~/mcp-gateway/full_stack_lab && ./demo.sh
-```
+Docker Compose가 가능한 WSL/Linux 환경에서 실행합니다.
 
-- 합성 사용자 업무 공간: <http://localhost:8000>
-- 거버넌스 Dashboard: <http://localhost:8080>
-- 전체 검증: `./demo.sh test`
-- 공급망 증적: `./demo.sh scan`
-- 상세 실습 안내: [full_stack_lab/README.md](full_stack_lab/README.md)
-
-현재 개발 결과는 모두 `main`에 병합되어 있습니다. 완료된 과거 브랜치는 삭제했고, 아래 annotated tag로 시점별 코드를 보존합니다.
-
-| 버전 태그 | 단계 | 용도 |
-| --- | --- | --- |
-| [`2026-09-v0.1-two-vm-gateway`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v0.1-two-vm-gateway) | 2-VM Gateway | Gateway 판정과 독립 upstream 효과 증명 |
-| [`2026-09-v0.2-rbac-data-policy`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v0.2-rbac-data-policy) | RBAC·자료등급 | `customer / employee / admin`과 `public / nonimportant / important` 정책 |
-| [`2026-09-v0.3-library-mcp`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v0.3-library-mcp) | 라이브러리 MCP | FastAPI·Pydantic·PyCasbin·공개 Time MCP 연동 |
-| [`2026-09-v0.4-litellm-opa-container`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v0.4-litellm-opa-container) | 컨테이너 정책 | LiteLLM 제안 경로와 OPA/Rego 집행 경로 분리 |
-| [`2026-09-v1.0-full-security-gateway`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v1.0-full-security-gateway) | 전체 통합판 | 333 정책, 다섯 판정, Registry drift, 승인, 감사, 공급망, 세 transport |
-| [`2026-09-v1.1-agent-service-integration`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v1.1-agent-service-integration) | Agent 통합판 | 팀원 Agent UI, 합성 JWT, 세션·멱등성, 모델 API 경계, GitHub MCP 활성화 절차 |
-
-앞으로 작업 브랜치는 `feat/YYYY-MM-vX.Y-내용`, 릴리스 후보는 `release/YYYY-MM-vX.Y-내용` 형식을 사용합니다. 완료 후에는 `main`에 병합하고 같은 형식의 버전 태그를 남긴 뒤 브랜치를 삭제합니다. 커밋 제목은 `기능:`, `수정:`, `문서:`, `병합:`처럼 한국어 접두어로 목적을 표시합니다.
-
-## 1. 자동 실습
-
-WSL Kali 터미널에서 실행합니다.
-
-```bash
-cd ~/mcp-gateway
-docker compose run --build --rm demo
-```
-
-다음 문구가 나오면 성공입니다.
-
-```text
-PASS: read_document allowed; delete_document blocked
-```
-
-컨테이너 안의 `demo.py`는 MCP 흐름인 `initialize` → `tools/list` → `tools/call`을 실제로 보냅니다. 마지막 두 호출의 결과는 다음과 같습니다.
-
-| 호출 | 룰셋 판단 | 결과 |
-| --- | --- | --- |
-| `read_document(id=demo-1)` | 허용 목록에 있음 | `ALLOWED: document demo-1` |
-| `delete_document(id=demo-1)` | 허용 목록에 없음 | `BLOCKED by read-only ruleset` |
-
-## 2. 직접 호출해 보기
-
-아래 명령으로 서버를 연 뒤, JSON 한 줄씩 붙여 넣습니다.
-
-```bash
-docker compose run --rm -i demo python server.py
-```
-
-먼저 초기화합니다.
-
-```json
-{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26"}}
-```
-
-허용되는 읽기 호출입니다.
-
-```json
-{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"read_document","arguments":{"id":"demo-1"}}}
-```
-
-차단되는 쓰기 호출입니다.
-
-```json
-{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"delete_document","arguments":{"id":"demo-1"}}}
-```
-
-## 이 실습에서 확인할 의의
-
-1. **통제 시점**: 모델이 도구를 고른 뒤라도, 실제 작업이 시작되기 전 `tools/call` 지점에서 정책으로 중단할 수 있습니다. 차단은 단순 경고가 아니라 호출 결과 `isError: true`로 귀결됩니다.
-2. **최소 권한**: 기본 허용 목록을 읽기 도구 하나로 좁히면, 프롬프트 인젝션이나 모델의 실수로 쓰기 도구가 선택돼도 그 호출은 통과하지 못합니다.
-3. **Gateway의 조건**: 이 효과는 모든 도구 호출이 이 검사 지점을 반드시 거칠 때만 성립합니다. MCP 클라이언트가 다른 서버·로컬 도구를 직접 호출할 수 있으면 이 룰셋은 그것을 막지 못합니다.
-
-## 일부러 넣지 않은 것
-
-이 코드는 개념 검증용 stdio 서버입니다. 사용자·에이전트 인증, 도구 스키마/설명 변경 검증, 원격 MCP 프록시, 감사 로그, 네트워크 차단은 포함하지 않았습니다. 실제 Gateway에서는 승인된 도구 목록뿐 아니라 호출자 권한, 입력값, 변경 이력, 감사 증적까지 같은 강제 경로에서 확인해야 합니다.
-
-가장 작은 확장 실험은 `server.py`의 `ALLOWED_TOOLS`를 `{"read_document", "delete_document"}`로 바꾼 뒤 다시 실행하는 것입니다. 차단 결과가 허용으로 바뀌는 것을 통해, 정책 설정 한 줄이 실행 권한을 결정한다는 점을 확인할 수 있습니다.
-
-## 3. 두 VM 원격 Gateway 데모
-
-계획서의 P1 실행 전 차단 흐름을 두 VM에서 재현합니다.
-
-- `pj1 (192.168.85.129)`: Gateway와 demo client
-- `pj2 (192.168.85.130)`: mock MCP server
-- 판정: 사용자 역할 × 자료 등급 × `rwx` 권한
-- 차단: 권한 없는 외부 전송, 미등록 Tool, MCP 헤더/본문 불일치
-
-WSL에서 저장소를 clone한 뒤 다음 한 번만 실행합니다. SSH 키가 없으면 SSH/SCP가 비밀번호를 요청합니다.
-
-```bash
-bash setup-two-vm.sh
-```
-
-호스트를 바꾸려면 환경변수로 지정합니다.
-
-```bash
-PJ1_SSH=user@10.0.0.11 PJ2_SSH=user@10.0.0.12 bash setup-two-vm.sh
-```
-
-Gateway 감사 로그는 `pj1:/tmp/mcp-demo/gateway.jsonl`, 실제 upstream 효과는 `pj2:/tmp/mcp-demo/effects.jsonl`에 기록됩니다.
-
-### 브라우저 GUI로 실습하기
-
-`bash setup-two-vm.sh`가 끝난 뒤 브라우저에서 아래 주소를 엽니다.
-
-```text
-http://192.168.85.129:8080/
-```
-
-화면에서 역할·도구·자료를 고르고 요청을 보내면, 즉시 통과/차단 결과가 표시됩니다. 아래 두 로그도 3초마다 새로고침됩니다.
-
-- `pj1 Gateway 감사 로그`: 역할, 자료 등급, 필요한 `rwx`, `upstream_called` 확인
-- `pj2 upstream 실제 효과`: 허용된 쓰기·외부 전송만 기록되는지 확인
-
-### 현재 쓰는 도구와 라이브러리
-
-| 구분 | 사용 중 | 쓰는 이유 |
-| --- | --- | --- |
-| Gateway·mock MCP·GUI | Python 3 표준 라이브러리 (`http.server`, `json`, `urllib`, `hashlib`, `argparse`) | 설치 없이 동일한 코드를 두 VM에서 실행 |
-| 화면 | 순수 HTML·CSS·JavaScript | Gateway가 `/`에서 직접 제공, 별도 Node.js/React 없음 |
-| VM 배포 | WSL의 `ssh`, `scp`, `curl`, Bash | 코드 복사·기동·상태 확인 |
-| 기본 실습 | Docker Compose + Python 3.12 Alpine | 기존 stdio 예제를 한 번에 실행 |
-| 형상관리 | Git·GitHub | 완료 코드는 `main`, 단계별 시점은 버전 태그로 보존 |
-
-기본 stdio·두 VM 단계에는 MCP SDK, OPA/Rego, Casbin, 데이터베이스, OpenTelemetry를 **설치하지 않았습니다**. 반면 `container_lab/` 확장 단계는 OPA/Rego를 실제 정책 결정점으로 사용합니다.
-
-### 이번에 추가한 룰셋
-
-`two_vm_demo.py` 안의 `ROLE_PERMISSIONS`가 이번 실습의 읽기 쉬운 정책 원본입니다. 이 단계에서는 외부 정책 엔진을 붙이지 않고 한 곳에서만 판정합니다.
-
-| 역할 | 공개 (`public`) | 비중요 (`nonimportant`) | 중요 (`important`) |
-| --- | --- | --- | --- |
-| 고객 (`customer`) | `r` | - | - |
-| 직원 (`employee`) | `r` | `rw` | `r` |
-| 관리자 (`admin`) | `rwx` | `rwx` | `rwx` |
-
-- `r`: `read_document`
-- `w`: `write_document`
-- `x`: `send_external` (외부 전송이라는 실행 권한)
-
-자료 등급은 요청자가 보내는 값이 아니라 `document_id`에 대해 Gateway가 가진 분류표로 결정합니다. 따라서 직원이 중요 자료를 읽을 수 있어도 `x`가 없으면 외부 전송은 upstream에 닿기 전에 차단됩니다. 클라이언트는 아래 7개 사례를 자동 실행합니다: 고객의 공개 읽기 허용, 직원의 비중요 쓰기 허용, 직원의 중요자료 전송 차단, 고객의 중요자료 읽기 차단, 관리자의 중요자료 전송 허용, 미등록 도구 차단, 헤더/본문 불일치 차단.
-
-### 이 단계에서 VM을 더 늘리지 않은 이유
-
-`pj1`은 client·Gateway·감사 로그, `pj2`는 mock MCP server와 실제 효과 로그 역할을 맡습니다. 이 두 증적을 비교하면 “차단된 호출은 upstream 효과가 없다”를 확인할 수 있으므로, 현재 학습 목표에는 세 번째 VM이 필요하지 않습니다.
-
-실무에서는 정책 저장소/감사 수집기 분리, Gateway 우회 방지를 위한 네트워크 정책, 스키마 변경 감지, 중앙 인증을 추가합니다. 다음 학습 단계에서 정책이 많아지면 이 코드의 `ROLE_PERMISSIONS`만 OPA/Rego 또는 Casbin 같은 정책 엔진으로 교체하는 편이 좋습니다. P2 수준의 직접 egress 차단을 실제로 입증하려면 그때 별도 네트워크 격리 VM 또는 컨테이너 네임스페이스를 고려하면 됩니다.
-
-## 4. 라이브러리·공개 MCP 통합 실습
-
-`library_lab/`은 v0.3 단계에서 FastAPI, Pydantic, PyCasbin, OpenTelemetry와 공개 `mcp-server-time`을 실제로 연결한 확장판입니다. 자세한 설치·호환성·GUI 주소는 [library_lab/README.md](library_lab/README.md)를 참고합니다.
-
-## 5. 컨테이너·LiteLLM·OPA 통합 실습
-
-`container_lab/`은 팀원의 Agent → Gateway → Mock MCP Docker 네트워크 구조와 이 저장소의 역할·자료등급 정책, 실행 증적 방식을 합친 확장판입니다. LiteLLM은 도구 호출을 **제안**하는 모델 경로만 담당하고, Gateway와 OPA가 실제 허용·차단을 결정합니다. AI-Infra-Guard의 MCP-Scan 접근을 축소 적용해 승인된 도구 목록·입력 스키마·도구 설명 변조를 사전 확인한 뒤 Rego에 전달합니다. 실행법과 검증 명령은 [container_lab/README.md](container_lab/README.md)를 참고합니다.
-
-## 6. 전체 MCP Security Gateway 실습
-
-`full_stack_lab/`은 확정한 333 `rwx` Rego 정책, 다섯 판정, Registry/catalog drift 차단, 승인 재검증, PostgreSQL 감사, OpenTelemetry/Jaeger, 공급망 SBOM·취약점 증적과 팀원의 Agent Service를 한 Compose에 묶은 현재 통합판입니다. Streamable HTTP·stdio·legacy SSE를 실제 MCP 호출로 검증하고, 실제 LLM 대신 결정론적 모의 모델을 기본 사용합니다. GitHub MCP는 인증 및 catalog 승인 전까지 의도적으로 비활성화합니다.
-
-```bash
-cd full_stack_lab
+~~~bash
+git clone https://github.com/MCP-governance/mcp-gateway.git
+cd mcp-gateway/full_stack_lab
 ./demo.sh
-```
+~~~
 
-먼저 <http://localhost:8000>에서 합성 사용자 요청을 실행한 뒤 <http://localhost:8080>에서 같은 요청의 정책·감사·upstream 증적을 확인합니다. 실습 계정, API 연결 준비, GitHub MCP 활성화 절차와 정확한 증명 범위는 [full_stack_lab/README.md](full_stack_lab/README.md)를 참고합니다.
+- 합성 사용자 Workspace: <http://localhost:8000>
+- 거버넌스 Dashboard: <http://localhost:8080>
+- 전체 검증: <code>./demo.sh test</code>
+- 공급망 증적 생성: <code>./demo.sh scan</code>
+
+현재 기준의 성공 조건은 Rego 12/12, core acceptance 52/52, Agent/API acceptance 61/61입니다.
+
+## 통제 흐름
+
+~~~mermaid
+flowchart LR
+    U[사용자] --> A[Agent Service]
+    A -->|JWT + 짧은 수명의 Agent Assertion| G[Security Gateway]
+    G --> R[Registry / Catalog]
+    G --> P[OPA / Rego]
+    G --> M[승인·감사·증적]
+    P -->|허용된 호출만| T[Mock MCP / Upstream]
+~~~
+
+Gateway는 사용자 신원, 에이전트 위임 신원, 도구·메서드·인자, 카탈로그와 공급망 상태, 승인 및 용량 조건을 확인한 뒤에만 upstream 호출을 수행합니다.
+
+## 현재 통합판에서 검증하는 통제
+
+| 영역 | 적용 원리 | 확인 방법 |
+| --- | --- | --- |
+| 사용자·에이전트 신원 | 짧은 수명의 서명된 Agent Assertion을 사용자·에이전트·도구 호출 봉투에 결속 | 위조, 재사용, actor 또는 요청 변경을 401로 차단 |
+| 정책 집행 | OPA/Rego가 역할·자료등급·도구·메서드·입력을 결정론적으로 판정 | 허용/차단과 실제 upstream 호출 여부를 함께 확인 |
+| Registry·공급망 | 승인된 카탈로그·스키마·설명·SBOM/취약점 증적을 호출 전에 대조 | drift 또는 정책 위반 시 실행 전 거부 |
+| 승인·감사 | 승인 재검증, 영수증 복구, 변조 탐지 가능한 감사 연쇄 | 요청·판정·upstream 증적을 Dashboard와 DB에서 추적 |
+| 운영 안전장치 | monitor mode, 요청량 제한, idempotency·세션 경계 | enforce 전환과 과부하·중복 요청 사례 검증 |
+| 전송 호환성 | Streamable HTTP, stdio, legacy SSE 경로를 동일 정책 경로로 수렴 | 각 transport의 MCP 호출 acceptance test |
+
+## 저장소 안내
+
+| 경로 | 용도 |
+| --- | --- |
+| [full_stack_lab/](full_stack_lab/README.md) | 현재 권장 통합판: Agent Service, Gateway, OPA, PostgreSQL 감사, Jaeger, 공급망 검증 |
+| [container_lab/](container_lab/README.md) | LiteLLM 제안 경로와 OPA 집행 경로를 분리한 컨테이너 실습 |
+| [library_lab/](library_lab/README.md) | FastAPI, Pydantic, PyCasbin, 공개 MCP 연동 학습판 |
+| <code>two_vm_demo.py</code>, <code>setup-two-vm.sh</code> | Gateway와 mock MCP를 두 VM으로 분리해 upstream 효과를 대조하는 실습 |
+| <code>compose.yaml</code>, <code>server.py</code>, <code>demo.py</code> | 최소 stdio MCP 정책 차단 예제 |
+| [research/](research/README.md) | 레퍼런스 조사와 설계 자료 |
+
+## 검토·브랜치 원칙
+
+- 하나의 릴리스 후보는 main 대상의 통합 PR 하나로 검토합니다. 직렬 스택 PR은 개별 병합하지 않습니다.
+- 독립 작업은 feat/YYYY-MM-vX.Y-내용, 통합 후보는 release/YYYY-MM-vX.Y-내용 또는 검토용 브랜치를 사용합니다.
+- 통합 PR이 기존 작업을 대체하면 기존 PR을 닫고, 포함 관계를 확인한 뒤 해당 원격 작업 브랜치만 삭제합니다.
+- 병합된 기준점은 annotated tag로 남깁니다. 현행 태그는 [v0.1부터 v1.1까지](https://github.com/MCP-governance/mcp-gateway/tags) 보존됩니다.
+
+## 증명 범위와 한계
+
+- 기본 모델은 결정론적 모의 모델이며, 실제 상용 LLM의 안전성을 입증하지 않습니다.
+- GitHub MCP와 외부 제공자 호출은 인증·카탈로그 승인 전까지 의도적으로 비활성화합니다.
+- 이 Gateway의 효과는 모든 MCP 도구 호출이 이 강제 경로를 통과할 때만 성립합니다. 우회 경로는 별도 네트워크·플랫폼 통제가 필요합니다.
+- 로컬 성공은 운영 배포 검증이 아닙니다. 실제 환경에서는 IdP 연동, 비밀 관리, TLS/mTLS, egress 제어, 독립 로그 보존을 검증해야 합니다.
+
+상세 실행 절차, 테스트 시나리오, 구성값과 한계는 [full_stack_lab/README.md](full_stack_lab/README.md)를 기준 문서로 사용합니다.

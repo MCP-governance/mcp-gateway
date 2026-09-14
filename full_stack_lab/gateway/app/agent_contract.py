@@ -1,18 +1,28 @@
 """Shared Agent-Service/Gateway boundary. Model output never supplies identity."""
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
+import json
 import os
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 from uuid import UUID, uuid4
 
 import jwt
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 from fastapi import HTTPException
 from jsonschema import Draft202012Validator
 from pydantic import BaseModel, ConfigDict, Field
 
+from . import db
+
 ISSUER = "mcp-governance-synthetic-agent"
 AUDIENCE = "mcp-governance-gateway"
+TOOL_CALL_AUDIENCE = "mcp-governance-gateway-tool-call"
+TOOL_CALL_SCOPE = "mcp:tools/call"
+ALGORITHM = "EdDSA"
 IDENTITIES = {
     "customer@bob.local": {"user_id": "user-customer-001", "principal": "cust-demo", "name": "고객 김민수", "department": "고객", "roles": ["customer"]},
     "miso@bob.local": {"user_id": "user-test-001", "principal": "emp-demo", "name": "김미소", "department": "보안기술팀", "roles": ["employee"]},
@@ -42,24 +52,84 @@ class Envelope(StrictModel):
     arguments: dict
 
 
-def signing_key() -> str:
-    key = os.getenv("AGENT_JWT_SECRET", "")
-    if len(key) < 32:
-        raise RuntimeError("AGENT_JWT_SECRET must contain at least 32 characters; run ./demo.sh")
-    return key
+def envelope_sha256(envelope: Envelope) -> str:
+    """Hash the exact agent-to-gateway envelope, not a model-provided subset."""
+    encoded = json.dumps(envelope.model_dump(mode="json"), ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _key_material(name: str) -> bytes:
+    """Ed25519 keys travel as 32 raw base64url bytes so they fit one .env line."""
+    try:
+        material = base64.urlsafe_b64decode(os.getenv(name, ""))
+    except ValueError:
+        material = b""
+    if len(material) != 32:
+        raise RuntimeError(f"{name} must be 32 base64url-encoded bytes; run ./demo.sh")
+    return material
+
+
+def private_key() -> Ed25519PrivateKey:
+    """Held only by the synthetic identity provider (Agent Service)."""
+    return Ed25519PrivateKey.from_private_bytes(_key_material("AGENT_JWT_PRIVATE_KEY"))
+
+
+def public_key() -> Ed25519PublicKey:
+    """Held by every verifier.
+
+    With a shared HS256 secret each verifier could also mint tokens, so the Gateway
+    could forge an admin session for itself and "Agent 인증과 Gateway는 별도 신뢰
+    경계" was a claim the key material contradicted. A verifier that holds only this
+    cannot sign anything.
+    """
+    return Ed25519PublicKey.from_public_bytes(_key_material("AGENT_JWT_PUBLIC_KEY"))
 
 
 def issue_token(user: dict) -> str:
     now = datetime.now(UTC)
     return jwt.encode({"sub": user["user_id"], "iss": ISSUER, "aud": AUDIENCE,
-                       "iat": now, "nbf": now, "exp": now + timedelta(minutes=30), "jti": str(uuid4())}, signing_key(), algorithm="HS256")
+                       "iat": now, "nbf": now, "exp": now + timedelta(minutes=30), "jti": str(uuid4())},
+                      private_key(), algorithm=ALGORITHM)
+
+
+def issue_agent_assertion(user: dict, envelope: Envelope) -> str:
+    """Short-lived proof that Agent Service delegated this exact call for the user."""
+    now = datetime.now(UTC)
+    return jwt.encode({
+        "sub": f"agent:{envelope.agent_id}", "act": {"sub": user["user_id"]},
+        "scope": TOOL_CALL_SCOPE, "call_sha256": envelope_sha256(envelope),
+        "iss": ISSUER, "aud": TOOL_CALL_AUDIENCE, "iat": now, "nbf": now,
+        "exp": now + timedelta(seconds=60), "jti": str(uuid4()),
+    }, private_key(), algorithm=ALGORITHM)
+
+
+def validate_agent_assertion(authorization: str | None, user: dict, envelope: Envelope) -> None:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(401, "에이전트 위임 증명이 필요합니다.")
+    try:
+        claims = jwt.decode(
+            authorization[7:], public_key(), algorithms=[ALGORITHM], audience=TOOL_CALL_AUDIENCE,
+            issuer=ISSUER, options={"require": ["sub", "act", "scope", "call_sha256", "iss", "aud", "exp", "iat", "nbf", "jti"]},
+        )
+        actor = claims["act"]
+        if (
+            claims["sub"] != f"agent:{envelope.agent_id}"
+            or not isinstance(actor, dict)
+            or actor.get("sub") != user["user_id"]
+            or claims["scope"] != TOOL_CALL_SCOPE
+            or not isinstance(claims["call_sha256"], str)
+            or not hmac.compare_digest(claims["call_sha256"], envelope_sha256(envelope))
+        ):
+            raise ValueError("agent assertion is not bound to this call")
+    except (jwt.PyJWTError, ValueError, TypeError) as exc:
+        raise HTTPException(401, "에이전트 위임 증명이 유효하지 않습니다.") from exc
 
 
 def authenticate(authorization: str | None) -> tuple[dict, dict]:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(401, "로그인이 필요합니다.")
     try:
-        claims = jwt.decode(authorization[7:], signing_key(), algorithms=["HS256"], audience=AUDIENCE,
+        claims = jwt.decode(authorization[7:], public_key(), algorithms=[ALGORITHM], audience=AUDIENCE,
                             issuer=ISSUER, options={"require": ["sub", "iss", "aud", "exp", "iat", "nbf", "jti"]})
         user = next(({**u, "email": email} for email, u in IDENTITIES.items() if u["user_id"] == claims["sub"]), None)
         if not user:
@@ -67,6 +137,18 @@ def authenticate(authorization: str | None) -> tuple[dict, dict]:
         return user, claims
     except (jwt.PyJWTError, ValueError) as exc:
         raise HTTPException(401, "인증이 만료되었거나 유효하지 않습니다.") from exc
+
+
+async def authenticated_user(authorization: str | None) -> dict:
+    """The one verified-caller helper every ingress uses.
+
+    `authenticate` proves the token was minted by the synthetic IdP; this adds the
+    revocation check so a logout invalidates HTTP, SSE and Agent ingresses alike.
+    """
+    user, claims = authenticate(authorization)
+    if await db.fetch_one("SELECT jti FROM agent_revoked_tokens WHERE jti=%s", (claims["jti"],)):
+        raise HTTPException(401, "로그아웃된 인증입니다.")
+    return user
 
 
 def schema(properties: dict, required: list[str]) -> dict:

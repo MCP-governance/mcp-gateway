@@ -29,9 +29,18 @@
         <p class="eyebrow blue">Secure Agent Workspace</p>
         <h1>어떤 업무를 도와드릴까요?</h1>
         <p>
-          요청은 Agent Service에서 사용자 정보를 확인한 뒤 MCP Security Gateway의
+          요청은 사용자 JWT와 짧은 Agent 위임 증명을 함께 확인한 뒤 MCP Security Gateway의
           정책 판단을 거칩니다.
         </p>
+      </section>
+
+      <section class="identity-boundary" aria-label="Agent 호출 신원 경계">
+        <dl class="result-metadata">
+          <div><dt>사용자 확인</dt><dd>합성 JWT · 최대 30분</dd></div>
+          <div><dt>Agent 위임</dt><dd>별도 Assertion · 최대 60초</dd></div>
+          <div class="identity-fact"><dt>Gateway 검증</dt><dd>actor · agent · 정규화한 요청 SHA-256 일치</dd></div>
+        </dl>
+        <p class="identity-note security-label"><span class="status-dot" aria-hidden="true"></span>위임 토큰과 요청 해시 원문은 화면과 감사 로그에 표시하지 않습니다.</p>
       </section>
 
       <section class="prompt-examples" aria-label="요청 예시">
@@ -62,7 +71,7 @@
         <div class="composer-footer">
           <div class="security-label">
             <span class="status-dot" aria-hidden="true"></span>
-            합성 로그인 · 모델 출력 검증 · Gateway 정책 집행
+            합성 로그인 · Agent 위임 증명 · 요청 무결성 검증 · Gateway 정책 집행
           </div>
           <button id="send-button" class="primary-button compact" type="button">
             요청 보내기
@@ -87,6 +96,7 @@
           <div><dt>경로</dt><dd id="result-path">-</dd></div>
           <div><dt>정책 ID</dt><dd id="result-policy">-</dd></div>
           <div><dt>실제 MCP 실행</dt><dd id="result-effect">-</dd></div>
+          <div class="identity-fact"><dt>호출 신원</dt><dd>사용자 JWT + Agent 위임 증명</dd></div>
           <div><dt>세션 ID</dt><dd id="result-session">-</dd></div>
           <div><dt>Trace ID</dt><dd id="result-trace">-</dd></div>
         </dl>

@@ -19,8 +19,8 @@ import httpx
 import jwt
 
 from . import db
-from .agent_contract import AUDIENCE, ISSUER, signing_key
-from .core import effect_count, execute_call, _discover, HTTP_MCP_URL
+from .agent_contract import ALGORITHM, AUDIENCE, IDENTITIES, ISSUER, Envelope, issue_agent_assertion, private_key
+from .core import canonical_hash, effect_count, execute_call, _discover, HTTP_MCP_URL
 
 AGENT = "http://agent-service:8000"
 GATEWAY = "http://gateway:8080"
@@ -41,6 +41,10 @@ async def login(client, email, base=AGENT):
 
 def envelope(**changes):
     return {"request_id": str(uuid4()), "session_id": str(uuid4()), "user_id": "user-test-001", "agent_id": "document-agent-test", "tool_call_id": str(uuid4()), "server_id": "file-mcp", "tool_name": "read_file", "arguments": {"path": "/data/public/notice.txt"}, **changes}
+
+
+def agent_headers(user_headers: dict[str, str], request: dict, email: str = "miso@bob.local") -> dict[str, str]:
+    return {**user_headers, "X-Agent-Assertion": "Bearer " + issue_agent_assertion(IDENTITIES[email], Envelope(**request))}
 
 
 class ModelStub(BaseHTTPRequestHandler):
@@ -118,7 +122,7 @@ async def main():
             if expected == "Approval":
                 approval_id = outcome["approval_id"]
             if expected == "Restrict":
-                check("agent-restrictions", outcome["effective_arguments"]["destination"] == "mentor-demo.invalid" and len(outcome["effective_arguments"]["content"]) <= 80)
+                check("agent-restrictions", outcome["effective_arguments"]["destination"] == "restricted.invalid" and len(outcome["effective_arguments"]["content"]) <= 80)
         check("approval-non-admin", (await client.post(AGENT + f"/approvals/{approval_id}/approve", headers=users["employee"], json={})).status_code == 403)
         before = effect_count()
         approved = await asyncio.gather(*(client.post(AGENT + f"/approvals/{approval_id}/approve", headers=users["admin"], json={}) for _ in range(2)))
@@ -133,20 +137,44 @@ async def main():
         check("session-isolation", (await client.get(AGENT + "/sessions/" + session_id, headers=users["customer"])).status_code == 404)
         check("session-history", len((await client.get(AGENT + "/sessions/" + session_id, headers=users["employee"])).json()["runs"]) >= 1)
         check("cross-origin-request", (await client.post(AGENT + "/chat", headers={**users["employee"], "Origin": "https://untrusted.invalid"}, json={"message": "공開"})).status_code == 403)
-        check("identity-spoof", (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=envelope(user_id="user-admin-001"))).status_code == 403)
-        check("path-traversal", (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=envelope(arguments={"path": "/data/public/../sensitive/secret.txt"}))).status_code == 422)
-        check("argument-identity-injection", (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=envelope(arguments={"path": "/data/public/notice.txt", "user_token": "admin-demo"}))).status_code == 422)
-        check("unknown-server", (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=envelope(server_id="evil"))).status_code == 422)
+        spoof = envelope(user_id="user-admin-001")
+        check("identity-spoof", (await client.post(GATEWAY + "/tool-call", headers=agent_headers(users["employee"], spoof), json=spoof)).status_code == 403)
+        traversal = envelope(arguments={"path": "/data/public/../sensitive/secret.txt"})
+        check("path-traversal", (await client.post(GATEWAY + "/tool-call", headers=agent_headers(users["employee"], traversal), json=traversal)).status_code == 422)
+        injection = envelope(arguments={"path": "/data/public/notice.txt", "user_token": "admin-demo"})
+        check("argument-identity-injection", (await client.post(GATEWAY + "/tool-call", headers=agent_headers(users["employee"], injection), json=injection)).status_code == 422)
+        unknown_server = envelope(server_id="evil")
+        check("unknown-server", (await client.post(GATEWAY + "/tool-call", headers=agent_headers(users["employee"], unknown_server), json=unknown_server)).status_code == 422)
         for name, updates in [("expired", {"exp": datetime.now(UTC) - timedelta(seconds=5)}), ("wrong-audience", {"aud": "other"}), ("wrong-issuer", {"iss": "other"})]:
             claims = {"sub": "user-test-001", "iss": ISSUER, "aud": AUDIENCE, "iat": datetime.now(UTC) - timedelta(minutes=1), "nbf": datetime.now(UTC) - timedelta(minutes=1), "exp": datetime.now(UTC) + timedelta(minutes=1), "jti": str(uuid4()), **updates}
-            token = jwt.encode(claims, signing_key(), algorithm="HS256")
+            # The gateway service itself has no private key. The acceptance run is
+            # handed one on the exec line precisely so it can forge claim variants.
+            token = jwt.encode(claims, private_key(), algorithm=ALGORITHM)
             check("jwt-" + name, (await client.post(GATEWAY + "/tool-call", headers={"Authorization": "Bearer " + token}, json=envelope())).status_code == 401)
         check("jwt-invalid-signature", (await client.post(GATEWAY + "/tool-call", headers={"Authorization": users["employee"]["Authorization"] + "tampered"}, json=envelope())).status_code == 401)
+        delegated = envelope()
+        check("agent-assertion-required", (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=delegated)).status_code == 401)
+        check("human-token-is-not-agent-assertion", (await client.post(GATEWAY + "/tool-call", headers={**users["employee"], "X-Agent-Assertion": users["employee"]["Authorization"]}, json=delegated)).status_code == 401)
+        changed = {**delegated, "tool_call_id": str(uuid4())}
+        check("agent-assertion-envelope-bound", (await client.post(GATEWAY + "/tool-call", headers=agent_headers(users["employee"], delegated), json=changed)).status_code == 401)
+        check("agent-assertion-actor-bound", (await client.post(GATEWAY + "/tool-call", headers=agent_headers(users["employee"], delegated, "admin@bob.local"), json=delegated)).status_code == 401)
         req = envelope()
-        first = (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=req)).json()
+        req_headers = agent_headers(users["employee"], req)
+        first = (await client.post(GATEWAY + "/tool-call", headers=req_headers, json=req)).json()
         before = effect_count()
-        replay = (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=req)).json()
+        replay = (await client.post(GATEWAY + "/tool-call", headers=req_headers, json=req)).json()
         check("gateway-idempotency", replay.get("replayed") and effect_count() == before)
+        stuck = envelope()
+        await db.execute(
+            "INSERT INTO agent_gateway_receipts(id,user_id,fingerprint,created_at) VALUES (%s,%s,%s, now() - interval '1 hour')",
+            (stuck["tool_call_id"], "user-test-001", canonical_hash(stuck)),
+        )
+        before = effect_count()
+        settled = (await client.post(GATEWAY + "/tool-call", headers=agent_headers(users["employee"], stuck), json=stuck)).json()
+        check("stuck-receipt-settled",
+              settled.get("policy_id") == "MCP-RECEIPT-001" and settled.get("execution_status") == "unknown"
+              and effect_count() == before,
+              "응답 없이 중단된 receipt는 재실행 없이 unknown으로 확정")
         before = effect_count()
         with patch("app.core.refresh_catalog", side_effect=RuntimeError("catalog offline")):
             outcome = await execute_call({"user_token": "cust-demo", "tool_name": "read_document", "document_id": "notice-001"})

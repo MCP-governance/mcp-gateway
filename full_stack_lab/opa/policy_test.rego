@@ -55,9 +55,47 @@ test_restrict_admin_public_x if {
   result.decision == "Restrict"
 }
 
+test_rate_limit_blocks if {
+  input2 := object.union(base, {"context": {"recent_calls": 60, "call_limit": 60}})
+  result := decision with input as input2
+  result.policy_id == "P-RATE-001"
+}
+
+test_rate_limit_inert_without_context if {
+  result := decision with input as base
+  result.decision == "Allow"
+}
+
+test_volume_escalates_important_read if {
+  input2 := object.union(base, {
+    "principal": {"role": "employee"},
+    "resource": {"data_class": "important"},
+    "context": {"recent_important": 10, "important_limit": 10},
+  })
+  result := decision with input as input2
+  result.policy_id == "P-VOLUME-001"
+}
+
+test_volume_under_limit_still_alerts if {
+  input2 := object.union(base, {
+    "principal": {"role": "employee"},
+    "resource": {"data_class": "important"},
+    "context": {"recent_important": 3, "important_limit": 10},
+  })
+  result := decision with input as input2
+  result.decision == "Alert"
+}
+
 test_block_description_drift if {
   bad_contract := object.union(base.contract, {"description_hash_match": false})
   input2 := object.union(base, {"contract": bad_contract})
   result := decision with input as input2
   result.policy_id == "MCP-CATALOG-001"
+}
+
+test_restrict_values_come_from_policy_data if {
+  input2 := object.union(base, {"principal": {"role": "admin"}, "tool": {"action": "x"}})
+  result := decision with input as input2
+  result.restrictions.destination == data.restrictions.external_destination
+  result.restrictions.max_chars == data.restrictions.max_chars
 }

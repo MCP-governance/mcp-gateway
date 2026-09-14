@@ -1,0 +1,106 @@
+# The completion criteria in full_stack_lab/README.md are only real if something
+# runs them. Until now only CodeQL ran in CI and ./demo.sh test was manual, so a
+# regression in the policy, the drift detection or the fail-closed path could sit
+# on main unnoticed until someone remembered to run it.
+name: full_stack_lab 검증
+
+on:
+  push:
+    branches: ["main", "feat/**", "release/**"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: 정적 검사
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Python lint
+        run: |
+          python -m pip install --quiet pyflakes
+          python -m pyflakes full_stack_lab/gateway/app/*.py full_stack_lab/tests/*.py full_stack_lab/mock_server/*.py
+
+      - name: Shell 문법
+        run: bash -n full_stack_lab/demo.sh full_stack_lab/tests/drift_and_fail_closed.sh
+
+      - name: Compose 구성 검증
+        working-directory: full_stack_lab
+        env:
+          AGENT_JWT_PRIVATE_KEY: ci-placeholder
+          AGENT_JWT_PUBLIC_KEY: ci-placeholder
+        run: docker compose config --quiet
+
+      # The trust boundary is only real if the key material says so. A verifier that
+      # receives the signing key can mint an admin session for itself.
+      - name: 검증자는 서명 개인키를 받지 않는지 확인
+        working-directory: full_stack_lab
+        env:
+          AGENT_JWT_PRIVATE_KEY: ci-placeholder
+          AGENT_JWT_PUBLIC_KEY: ci-placeholder
+        run: |
+          docker compose config --format json > /tmp/compose.json
+          python3 - <<'PY'
+          import json, sys
+          services = json.load(open("/tmp/compose.json"))["services"]
+          issuers, leaked = [], []
+          for name, service in services.items():
+              env = service.get("environment") or {}
+              names = set(env) if isinstance(env, dict) else {item.split("=", 1)[0] for item in env}
+              if "AGENT_JWT_PRIVATE_KEY" in names:
+                  (issuers if name == "agent-service" else leaked).append(name)
+          if leaked:
+              sys.exit(f"FAIL 검증자가 서명 개인키를 받습니다: {leaked}")
+          if not issuers:
+              sys.exit("FAIL 발급자(agent-service)가 서명 개인키를 받지 않습니다")
+          print("PASS 발급자만 개인키를 보유합니다")
+          PY
+
+      - name: Rego 단위 테스트
+        run: docker run --rm -v "$PWD/full_stack_lab/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v
+
+  verify:
+    name: 완료 조건 전체 검증
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      # Builds the images, waits for readiness, then runs the Rego unit tests,
+      # acceptance, the Agent/API boundary acceptance and the drift + fail-closed
+      # regression - the same single entry point a person uses locally.
+      - name: ./demo.sh test
+        working-directory: full_stack_lab
+        run: ./demo.sh test
+
+      - name: 실패 시 컨테이너 로그
+        if: failure()
+        working-directory: full_stack_lab
+        run: docker compose logs --tail=300 --no-color
+
+      - name: 증적 업로드
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: verification-reports
+          path: full_stack_lab/reports/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: 정리
+        if: always()
+        working-directory: full_stack_lab
+        run: docker compose down -v

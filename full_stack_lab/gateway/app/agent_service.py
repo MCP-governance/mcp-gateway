@@ -4,6 +4,8 @@ from __future__ import annotations
 import asyncio
 import os
 import secrets
+import time
+from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -17,7 +19,8 @@ from pydantic import Field
 from psycopg.types.json import Jsonb
 
 from . import db
-from .agent_contract import IDENTITIES, StrictModel, authenticate, issue_token, signing_key
+from .agent_contract import (Envelope, IDENTITIES, StrictModel, authenticate, authenticated_user,
+                             issue_agent_assertion, issue_token, private_key)
 from .core import canonical_hash
 from .model_client import propose, readiness, redact
 
@@ -26,13 +29,37 @@ GATEWAY_URL = os.getenv("GATEWAY_URL", "http://gateway:8080")
 # ponytail: four active requests per process; distributed quotas belong at ingress for multi-replica deployment.
 slots = asyncio.Semaphore(4)
 
+LOGIN_ATTEMPT_LIMIT = int(os.getenv("LOGIN_ATTEMPT_LIMIT", "10"))
+LOGIN_ATTEMPT_WINDOW = int(os.getenv("LOGIN_ATTEMPT_WINDOW_SECONDS", "300"))
+# Per process, like `slots` above: a deployment with replicas rate-limits at ingress.
+# It still turns an unlimited password oracle into a bounded one.
+_login_attempts: dict[str, list[float]] = defaultdict(list)
+
+
+def login_allowed(key: str) -> bool:
+    now = time.monotonic()
+    for attempted, stamps in list(_login_attempts.items()):
+        recent = [stamp for stamp in stamps if now - stamp < LOGIN_ATTEMPT_WINDOW]
+        if recent:
+            _login_attempts[attempted] = recent
+        else:
+            del _login_attempts[attempted]
+    return len(_login_attempts.get(key, ())) < LOGIN_ATTEMPT_LIMIT
+
+
+def record_failed_login(key: str) -> None:
+    _login_attempts[key].append(time.monotonic())
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    signing_key()
+    private_key()  # fail fast if this process is not actually the token issuer
     await db.wait_until_ready()
     await db.execute((Path(__file__).parent / "agent_tables.sql").read_text())
-    yield
+    try:
+        yield
+    finally:
+        await db.close()
 
 
 app = FastAPI(title="Agent Service · miso integration", version="1.1.0", lifespan=lifespan)
@@ -79,19 +106,21 @@ class ChatRequest(StrictModel):
 
 
 async def current_identity(authorization: str | None) -> dict:
-    user, claims = authenticate(authorization)
-    revoked = await db.fetch_one("SELECT jti FROM agent_revoked_tokens WHERE jti=%s", (claims["jti"],))
-    if revoked:
-        raise HTTPException(401, "로그아웃된 인증입니다.")
-    return user
+    return await authenticated_user(authorization)
 
 
 @app.post("/auth/mock-login")
-async def login(request: Login):
+async def login(request: Login, http_request: Request):
     email = request.email.strip().lower()
+    # Checked before the identity lookup so an unknown address is throttled too;
+    # otherwise the limit itself tells an attacker which addresses exist.
+    caller = http_request.client.host if http_request.client else "unknown"
+    if not login_allowed(f"{caller}|{email}"):
+        raise HTTPException(429, "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.")
     user = IDENTITIES.get(email)
     expected = os.getenv("MOCK_SSO_PASSWORD", "test-password")
     if not secrets.compare_digest(request.password.encode(), expected.encode()) or not user:
+        record_failed_login(f"{caller}|{email}")
         raise HTTPException(401, "합성 계정과 비밀번호를 확인해주세요.")
     return {"access_token": issue_token(user), "token_type": "bearer", "expires_in": 1800,
             "user": {k: v for k, v in {**user, "email": email, "synthetic": True}.items() if k != "principal"}}
@@ -107,6 +136,10 @@ async def me(authorization: str | None = Header(default=None)):
 async def logout(authorization: str | None = Header(default=None)):
     _, claims = authenticate(authorization)
     await db.execute("INSERT INTO agent_revoked_tokens(jti,expires_at) VALUES (%s,%s) ON CONFLICT DO NOTHING", (claims["jti"], datetime.fromtimestamp(claims["exp"], UTC)))
+    # Rows are only ever added here, so purging here bounds the table by the number
+    # of logouts inside one token lifetime. A revoked token past its own expiry is
+    # already rejected by the signature check.
+    await db.execute("DELETE FROM agent_revoked_tokens WHERE expires_at < now()")
     return {"status": "logged_out"}
 
 
@@ -183,10 +216,16 @@ async def chat(request: ChatRequest, authorization: str | None = Header(default=
                 result.update(status="no_tool", message="등록된 업무 도구로 변환할 수 없는 요청입니다. 실행하지 않았습니다.")
             else:
                 call_id = uuid4()
-                envelope = {"request_id": str(request.request_id), "session_id": str(session_id), "user_id": user["user_id"], "agent_id": "document-agent-test", "tool_call_id": str(call_id), **proposal.model_dump()}
+                envelope = Envelope(request_id=request.request_id, session_id=session_id,
+                                    user_id=user["user_id"], tool_call_id=call_id,
+                                    **proposal.model_dump())
                 result["tool_call"] = {"tool_call_id": str(call_id), **proposal.model_dump()}
                 async with httpx.AsyncClient(timeout=30, follow_redirects=False) as client:
-                    response = await client.post(GATEWAY_URL + "/tool-call", headers={"Authorization": authorization}, json=envelope)
+                    response = await client.post(
+                        GATEWAY_URL + "/tool-call",
+                        headers={"Authorization": authorization or "", "X-Agent-Assertion": "Bearer " + issue_agent_assertion(user, envelope)},
+                        json=envelope.model_dump(mode="json"),
+                    )
                     response.raise_for_status()
                     outcome = response.json()
                 result.update(gateway_result=outcome, status=outcome["decision"].lower(), message=outcome["reason"])
@@ -204,6 +243,23 @@ async def approvals(authorization: str | None = Header(default=None)):
     if "admin" not in user["roles"]:
         raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
     return {"approvals": await db.fetch_all("SELECT id,requested_by,created_at,expires_at,request_payload->>'tool_name' AS tool_name FROM approvals WHERE status='PENDING' AND expires_at>now() ORDER BY created_at DESC LIMIT 30")}
+
+
+class Rejection(StrictModel):
+    note: str = Field(min_length=1, max_length=500)
+
+
+@app.post("/approvals/{approval_id}/reject")
+async def reject(approval_id: UUID, request: Rejection, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.post(f"{GATEWAY_URL}/agent/approvals/{approval_id}/reject",
+                                     headers={"Authorization": authorization}, json={"note": request.note})
+    if response.status_code >= 400:
+        raise HTTPException(response.status_code, "거부할 수 없습니다. 이미 처리됐거나 만료된 요청인지 확인하세요.")
+    return response.json()
 
 
 @app.post("/approvals/{approval_id}/approve")
