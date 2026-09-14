@@ -8,6 +8,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 
 from .agent_contract import authenticated_user
 from .core import execute_call
+from .method_scope import MethodScope
 
 # stdio has no request headers, so the identity of a stdio ingress is bound once, at
 # process start, by whoever is allowed to spawn it. Unset means no identity, which
@@ -36,6 +37,7 @@ def build_mcp() -> MCPServer:
         "mcp-governance-security-gateway",
         version="1.1.0",
         instructions="합성 사용자·데이터만 사용하는 정책 강제 실습용 Gateway입니다. 신원은 transport 인증에서만 옵니다.",
+        middleware=[MethodScope()],
     )
 
     @mcp.tool(description="등록된 합성 문서를 정책 확인 후 읽습니다.")

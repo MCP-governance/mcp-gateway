@@ -12,6 +12,7 @@ import psycopg
 from mcp import Client, StdioServerParameters
 from mcp.client.sse import sse_client
 from mcp.client.streamable_http import streamable_http_client
+from mcp.shared.exceptions import MCPError
 
 from . import db
 from .core import (RATE_LIMIT_CALLS, IMPORTANT_BURST_LIMIT, _policy, _recent_activity,
@@ -165,6 +166,18 @@ async def run() -> dict:
             protocol_version = str(client.protocol_version)
             result = await client.call_tool("read_document", {"document_id": "notice-001"})
             structured = tool_payload(result)
+            # Methods this gateway does not mediate are refused, not left undefined.
+            refusals = {}
+            for label, call in (("resources/list", client.list_resources), ("prompts/list", client.list_prompts)):
+                try:
+                    await call()
+                    refusals[label] = "not refused"
+                except MCPError as error:
+                    refusals[label] = error.message[:60]
+                except Exception as error:
+                    refusals[label] = type(error).__name__
+    checks.append(check(all("MCP-METHOD-001" in value for value in refusals.values()),
+                        "mcp-method-scope", json.dumps(refusals, ensure_ascii=False)))
     checks.append(check({"read_document", "write_document", "send_external", "get_current_time", "github_get_file"} == {tool.name for tool in tools.tools}, "streamable-http-ingress", protocol_version))
     checks.append(check(not result.is_error and structured["decision"] == "Allow", "streamable-http-call", "actual MCP tools/call"))
     checks.append(check(all("user_token" not in (tool.input_schema.get("properties") or {}) for tool in tools.tools),

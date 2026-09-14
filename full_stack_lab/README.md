@@ -274,6 +274,10 @@ curl -sS http://localhost:8000/api/readiness | python3 -m json.tool
 | Gateway → 문서 MCP | Streamable HTTP | — | 내부 `mock-http-mcp:9000/mcp/` |
 | Gateway → Time MCP | stdio | — | 고정한 `mcp-server-time` subprocess |
 
+Gateway가 중개하는 MCP 메서드는 `initialize`, `server/discover`, `ping`, `tools/list`, `tools/call` 뿐입니다. `resources/*`, `prompts/*`, `sampling/*`, `elicitation/*`, `completion/*`, `logging/*`, `roots/*`는 등록 여부와 무관하게 `MCP-METHOD-001`로 거부합니다.
+
+"등록한 게 없으니 빈 목록이 나간다"는 정책이 아니라 우연입니다. 누군가 resource 하나를 등록하는 날 정책이 생깁니다. 게다가 prompt와 resource 본문은 에이전트로 들어가는 주요 인젝션 경로이므로, Gateway는 그것을 **나르지 않는다**고 분명히 말합니다.
+
 SSE는 신규 기본값이 아니라 구형 client 호환성 시험용입니다. 세 ingress는 모두 같은 `execute_call()` 정책 경로를 사용하고, **모두 같은 신원 경계를 거칩니다.** 도구 인자에는 사용자나 역할을 넣을 자리가 없으므로 client는 자기 신원을 주장할 수 없습니다. stdio는 header가 없는 transport이므로 신원을 spawn 시점에 한 번 고정하고, 고정되지 않은 stdio ingress는 기본 principal로 넘어가지 않고 거부합니다.
 
 ## 9. Registry와 공급망 통제
@@ -399,6 +403,7 @@ curl -sS http://localhost:8080/api/audit/verify -H "authorization: Bearer $GW_TO
 | `gateway/app/github_setup.py` | GitHub remote catalog 관찰·명시 승인 |
 | `gateway/app/agent_static/` | 합성 사용자 로그인·업무 공간 UI |
 | `gateway/app/mcp_facade.py` | 공통 정책 경로를 노출하는 MCP facade |
+| `gateway/app/method_scope.py` | 중개하지 않는 MCP 메서드 기본 거부 |
 | `gateway/app/db.py` | 프로세스당 하나인 PostgreSQL 커넥션 풀 |
 | `gateway/ui/` | 멘토용 React Dashboard |
 | `mock_server/server.py` | 실제 SDK 기반 합성 문서 MCP와 catalog 변조 모드 |
@@ -421,6 +426,7 @@ Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance
 - **승인은 단순 버튼이 아니다.** 원 요청 지문, 만료, 관리자 역할을 확인하고 현재 정책으로 재평가한 뒤 한 번 실행합니다.
 - **transport가 달라도 통제점은 하나여야 한다.** Streamable HTTP, stdio, legacy SSE 모두 같은 정책 함수로 모입니다.
 - **통제점의 신원은 호출자가 정할 수 없다.** 정책 함수가 하나여도 principal을 도구 인자나 요청 본문에서 받으면 통제가 아니라 요청서입니다. 신원은 transport 인증에서만 오고, 없으면 기본값으로 떨어지지 않고 거부합니다.
+- **통제하지 않는 표면은 열어두지 않는다.** MCP는 tools 말고도 resources, prompts, sampling을 실어 나릅니다. 그중 하나라도 정책 없이 통과하면 통제점이 아니라 통로입니다.
 - **입력만 보는 통제는 절반이다.** 설명과 스키마를 고정해도 서버가 런타임에 무엇을 돌려주는지는 말해주지 않습니다. Gateway는 결과의 크기와 정책 우회 지시 패턴도 검사하고, 걸리면 `MCP-OUTPUT-001`로 결과를 반환하지 않습니다. 이때 호출 자체는 이미 실행됐으므로 `upstream_executed`는 참으로 남깁니다. 판정과 효과를 일치시키는 것보다 증적을 정직하게 두는 쪽이 중요합니다.
 - **감사는 위변조 가능하면 증적이 아니다.** 각 판정은 직전 판정의 해시를 안고 기록되고, Gateway 계정은 `decisions`를 수정할 수 없습니다. "우리 로그는 정확합니다"가 아니라 "몇 번 행에서 끊겼습니다"로 답할 수 있어야 합니다.
 - **감사는 사본 보관소가 아니다.** `decisions`에는 문서 본문 대신 해시와 길이, 결과의 앞부분만 남깁니다. 감사 테이블이 조직에서 가장 큰 민감정보 더미가 되면 통제가 아니라 위험입니다.
