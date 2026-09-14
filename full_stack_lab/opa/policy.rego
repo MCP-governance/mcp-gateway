@@ -31,6 +31,23 @@ call_limit := object.get(input, ["context", "call_limit"], 1000000000)
 recent_important := object.get(input, ["context", "recent_important"], 0)
 important_limit := object.get(input, ["context", "important_limit"], 1000000000)
 
+# The organisational axis. Ships disabled in opa/data.json: widening the input is what
+# avoids a rewrite later, turning it on is a tenant's decision.
+# Reference the concrete path, never the root `data` document: object.get(data, ...)
+# pulls every package into the rule's dependency graph, including the test package,
+# and OPA rejects the whole policy as recursive.
+default department_scope_enabled := false
+
+department_scope_enabled if {
+  data.department_scope.enabled == true
+}
+
+cross_department if {
+  owner := object.get(input, ["resource", "owner_department"], null)
+  owner != null
+  object.get(input, ["principal", "department"], null) != owner
+}
+
 contract_ok if {
   input.contract.registered
   input.contract.enabled
@@ -109,6 +126,16 @@ decision := {
 } if {
   input.resource.data_class == "important"
   recent_important >= important_limit
+  not input.approval.granted
+} else := {
+  "decision": "Approval",
+  "policy_id": "P-DEPT-001",
+  "reason": "소관 부서가 아닌 중요정보 접근이라 승인이 필요합니다.",
+  "restrictions": {},
+} if {
+  department_scope_enabled
+  input.resource.data_class == "important"
+  cross_department
   not input.approval.granted
 } else := {
   "decision": "Restrict",

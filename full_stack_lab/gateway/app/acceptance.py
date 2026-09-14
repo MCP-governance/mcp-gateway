@@ -294,6 +294,19 @@ async def run() -> dict:
     checks.append(check(after_reject.status_code == 409, "approval-reject-is-final", str(after_reject.status_code)))
     checks.append(check(effect_count() == before, "approval-reject-no-effect", f"{before}->{effect_count()}"))
 
+    # The department axis is inert until an operator enables it, but the input has to
+    # carry real values or turning it on later finds nothing to compare.
+    departments = {row["role"]: row["department"] for row in await db.fetch_all("SELECT role, department FROM principals")}
+    owners = {row["id"]: row["owner_department"] for row in await db.fetch_all("SELECT id, owner_department FROM documents")}
+    checks.append(check(all(departments.get(role) for role in ("customer", "employee", "admin"))
+                        and owners.get("secret-001") and owners.get("work-001"),
+                        "policy-input-organisational-axis",
+                        json.dumps({"principals": departments, "documents": owners}, ensure_ascii=False)))
+    unchanged = await post("/api/calls", {"tool_name": "read_document", "document_id": "secret-001"}, "emp-demo")
+    checks.append(check(unchanged["decision"] == "Alert" and unchanged["policy_id"] == "P-IMPORTANT-ALERT-001",
+                        "department-scope-disabled-by-default",
+                        f"{unchanged['decision']}/{unchanged['policy_id']}"))
+
     coverage = {row["server_id"]: row for row in await supply_chain_coverage()}
     checks.append(check(
         coverage["mock-http"]["scan_path"] == "full_stack_lab/mock_server"
