@@ -19,7 +19,8 @@ from pydantic import Field
 from psycopg.types.json import Jsonb
 
 from . import db
-from .agent_contract import IDENTITIES, StrictModel, authenticate, authenticated_user, issue_token, private_key
+from .agent_contract import (Envelope, IDENTITIES, StrictModel, authenticate, authenticated_user,
+                             issue_agent_assertion, issue_token, private_key)
 from .core import canonical_hash
 from .model_client import propose, readiness, redact
 
@@ -37,12 +38,17 @@ _login_attempts: dict[str, list[float]] = defaultdict(list)
 
 def login_allowed(key: str) -> bool:
     now = time.monotonic()
-    recent = [stamp for stamp in _login_attempts[key] if now - stamp < LOGIN_ATTEMPT_WINDOW]
-    recent.append(now)
-    _login_attempts[key] = recent
-    for stale in [k for k, v in list(_login_attempts.items()) if not v]:
-        del _login_attempts[stale]
-    return len(recent) <= LOGIN_ATTEMPT_LIMIT
+    for attempted, stamps in list(_login_attempts.items()):
+        recent = [stamp for stamp in stamps if now - stamp < LOGIN_ATTEMPT_WINDOW]
+        if recent:
+            _login_attempts[attempted] = recent
+        else:
+            del _login_attempts[attempted]
+    return len(_login_attempts.get(key, ())) < LOGIN_ATTEMPT_LIMIT
+
+
+def record_failed_login(key: str) -> None:
+    _login_attempts[key].append(time.monotonic())
 
 
 @asynccontextmanager
@@ -114,6 +120,7 @@ async def login(request: Login, http_request: Request):
     user = IDENTITIES.get(email)
     expected = os.getenv("MOCK_SSO_PASSWORD", "test-password")
     if not secrets.compare_digest(request.password.encode(), expected.encode()) or not user:
+        record_failed_login(f"{caller}|{email}")
         raise HTTPException(401, "합성 계정과 비밀번호를 확인해주세요.")
     return {"access_token": issue_token(user), "token_type": "bearer", "expires_in": 1800,
             "user": {k: v for k, v in {**user, "email": email, "synthetic": True}.items() if k != "principal"}}
@@ -209,10 +216,16 @@ async def chat(request: ChatRequest, authorization: str | None = Header(default=
                 result.update(status="no_tool", message="등록된 업무 도구로 변환할 수 없는 요청입니다. 실행하지 않았습니다.")
             else:
                 call_id = uuid4()
-                envelope = {"request_id": str(request.request_id), "session_id": str(session_id), "user_id": user["user_id"], "agent_id": "document-agent-test", "tool_call_id": str(call_id), **proposal.model_dump()}
+                envelope = Envelope(request_id=request.request_id, session_id=session_id,
+                                    user_id=user["user_id"], tool_call_id=call_id,
+                                    **proposal.model_dump())
                 result["tool_call"] = {"tool_call_id": str(call_id), **proposal.model_dump()}
                 async with httpx.AsyncClient(timeout=30, follow_redirects=False) as client:
-                    response = await client.post(GATEWAY_URL + "/tool-call", headers={"Authorization": authorization}, json=envelope)
+                    response = await client.post(
+                        GATEWAY_URL + "/tool-call",
+                        headers={"Authorization": authorization or "", "X-Agent-Assertion": "Bearer " + issue_agent_assertion(user, envelope)},
+                        json=envelope.model_dump(mode="json"),
+                    )
                     response.raise_for_status()
                     outcome = response.json()
                 result.update(gateway_result=outcome, status=outcome["decision"].lower(), message=outcome["reason"])

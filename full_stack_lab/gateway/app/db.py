@@ -59,21 +59,27 @@ async def transaction():
             yield connection
 
 
+async def _run(connection, query: str, params: Iterable | None = None):
+    if params is None:
+        return await connection.execute(query)
+    return await connection.execute(query, params)
+
+
 async def fetch_all(query: str, params: Iterable | None = None) -> list[dict]:
     async with (await pool()).connection() as connection:
-        cursor = await connection.execute(query, params or ())
+        cursor = await _run(connection, query, params)
         return list(await cursor.fetchall())
 
 
 async def fetch_one(query: str, params: Iterable | None = None) -> dict | None:
     async with (await pool()).connection() as connection:
-        cursor = await connection.execute(query, params or ())
+        cursor = await _run(connection, query, params)
         return await cursor.fetchone()
 
 
 async def execute(query: str, params: Iterable | None = None) -> int:
     async with (await pool()).connection() as connection:
-        cursor = await connection.execute(query, params or ())
+        cursor = await _run(connection, query, params)
         return cursor.rowcount
 
 

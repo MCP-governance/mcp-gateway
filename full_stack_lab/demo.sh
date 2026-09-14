@@ -14,7 +14,7 @@ ensure_keys() {
     return
   fi
   echo "합성 인증용 Ed25519 키쌍을 생성합니다. (최초 1회, gateway 이미지 빌드 필요)"
-  docker compose build --quiet gateway
+  AGENT_JWT_PRIVATE_KEY=placeholder AGENT_JWT_PUBLIC_KEY=placeholder docker compose build --quiet gateway
   local generated
   generated="$(AGENT_JWT_PRIVATE_KEY=placeholder AGENT_JWT_PUBLIC_KEY=placeholder \
     docker compose run --rm --no-deps -T --entrypoint python gateway -m app.keygen | tr -d '\r')"

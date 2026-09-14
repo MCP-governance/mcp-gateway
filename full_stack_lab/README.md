@@ -19,7 +19,7 @@ flowchart LR
     U[합성 사용자] -->|JWT 로그인·업무 요청| AS[Agent Service]
     AS --> M[모의 모델 또는 OpenAI 호환 API]
     M -->|검증된 Tool Call 1개| AS
-    AS -->|서명 사용자와 요청 ID| G[MCP Security Gateway]
+    AS -->|사용자 JWT + 60초 Agent Assertion| G[MCP Security Gateway]
     G <--> R[(Registry / PostgreSQL)]
     G <--> O[OPA / Rego]
     G -->|허용된 호출만| H[Streamable HTTP MCP]
@@ -52,10 +52,12 @@ cd ~/mcp-gateway/full_stack_lab
 
 | 값 | 받는 서비스 | 이유 |
 | --- | --- | --- |
-| `AGENT_JWT_PRIVATE_KEY` | `agent-service` | 합성 신원의 유일한 발급자 |
+| `AGENT_JWT_PRIVATE_KEY` | `agent-service` | 합성 사용자 JWT와 60초 Agent Assertion의 유일한 발급자 |
 | `AGENT_JWT_PUBLIC_KEY` | `gateway`, `gateway-sse`, `agent-service` | 검증만 가능. 검증자는 토큰을 만들 수 없음 |
 
 대칭키를 공유하면 검증자도 발급자가 되므로 Gateway가 스스로 admin 세션을 위조할 수 있습니다. "Agent 인증과 Gateway는 별도 신뢰 경계"라는 주장이 코드가 아니라 **키 자체로** 참이 되게 하는 것이 이 분리의 목적입니다.
+
+`/tool-call`에는 사용자 JWT 외에 `X-Agent-Assertion`도 필요합니다. Agent Service가 `agent:document-agent-test`, 사용자 actor, `mcp:tools/call`, 그리고 정확한 Tool Call envelope의 SHA-256을 다른 audience로 60초 동안 서명합니다. 따라서 사용자 JWT만으로는 이 내부 호출을 만들 수 없고, 다른 actor·agent·envelope에 쓴 assertion도 Gateway에서 `401`입니다. 같은 `tool_call_id`의 안전한 재시도만 기존 receipt가 처리합니다.
 
 상태만 다시 확인하려면 다음을 실행합니다.
 
@@ -170,7 +172,7 @@ Dashboard의 **집행 단계** 패널에 같은 숫자와 정책별 내역이 �
 
 호출 수는 프로세스 메모리가 아니라 감사 테이블에서 세므로 Gateway 복제본이 늘어도 상한이 유지됩니다. `P-RATE-001`은 관찰 모드에서도 집행합니다. 호출량 상한은 "누가 무엇을 읽어도 되는가"에 대한 의견이 아니라 Gateway와 upstream을 보호하는 장치이고, 관찰하는 동안 상한이 없어지면 안 됩니다.
 
-합성 로그인은 `LOGIN_ATTEMPT_LIMIT` 회를 넘으면 `429`입니다. 존재하지 않는 주소도 같이 제한합니다. 그러지 않으면 제한 자체가 "이 주소는 있다"를 알려줍니다.
+합성 로그인은 같은 출처·주소의 **실패**가 `LOGIN_ATTEMPT_LIMIT` 회를 넘으면 `429`입니다. 존재하지 않는 주소도 같이 제한합니다. 그러지 않으면 제한 자체가 "이 주소는 있다"를 알려줍니다. 정상 로그인은 실패 한도를 소진하지 않습니다.
 
 정책 **규칙**은 [`opa/policy.rego`](opa/policy.rego), 정책이 쓰는 **값**은 [`opa/data.json`](opa/data.json), 단위 테스트는 [`opa/policy_test.rego`](opa/policy_test.rego)입니다. 조직은 정책의 모양보다 허용 목적지 같은 값을 훨씬 자주 바꾸므로, `Restrict`의 목적지와 길이 제한은 규칙 본문이 아니라 데이터 문서에 둡니다. 사용자 입력이 주장하는 등급을 믿지 않고 `document_id`에 연결된 PostgreSQL 분류를 사용합니다.
 
@@ -251,6 +253,7 @@ curl -sS http://localhost:8000/api/readiness | python3 -m json.tool
 - Rego 단위 테스트 `7/7 PASS`
 - acceptance, Agent/API 경계 acceptance 모두 `0 failed`
 - 익명·위조 토큰의 Gateway API 호출이 `401`, 고객 계정의 승인 시도가 `403`
+- `/tool-call`은 사용자 JWT와 Agent Assertion을 함께 요구하며, 사용자 JWT 재사용·다른 actor·변조된 envelope는 `401`
 - Streamable HTTP, stdio, legacy SSE에서 실제 `tools/call` 성공
 - 토큰 없는 Streamable HTTP 호출과 신원이 바인딩되지 않은 stdio 호출이 각각 거부
 - Gateway가 노출하는 도구 입력 스키마에 `user_token` 같은 신원 인자가 없음
@@ -271,6 +274,7 @@ curl -sS http://localhost:8000/api/readiness | python3 -m json.tool
 | Client → Gateway | Streamable HTTP | `Authorization` header의 서명된 합성 JWT | `/mcp/`에 실제 MCP SDK `initialize / tools/list / tools/call` |
 | Client → Gateway | stdio | 프로세스 기동 시 고정한 `GATEWAY_STDIO_PRINCIPAL` | `python -m app.stdio_entry` subprocess에 실제 호출 |
 | Client → Gateway | legacy SSE | `Authorization` header의 서명된 합성 JWT | 내부 `gateway-sse:8081/sse` compatibility adapter에 실제 호출 |
+| Agent Service → Gateway | 내부 HTTP `/tool-call` | 사용자 JWT + 60초 `X-Agent-Assertion` | actor·agent ID·정규화한 envelope SHA-256을 Gateway에서 검증 |
 | Gateway → 문서 MCP | Streamable HTTP | — | 내부 `mock-http-mcp:9000/mcp/` |
 | Gateway → Time MCP | stdio | — | 고정한 `mcp-server-time` subprocess |
 
@@ -357,7 +361,7 @@ curl -sS http://localhost:8080/api/audit/verify   -H "authorization: Bearer $GW_
 
 정상이면 `{"intact": true, "checked": N, "head": "..."}`입니다. 관리자 계정만 호출할 수 있습니다.
 
-`decisions`에는 Gateway 계정의 `UPDATE`·`DELETE` 권한도 회수되어 있습니다. 소유자가 다시 부여할 수 있으므로 경계가 아니라 심층 방어이지만, "그냥 저 행만 고치자"는 평범한 편집을 막고 의도를 스키마에 남깁니다.
+`decisions`에는 `UPDATE`·`DELETE`를 거부하는 DB trigger가 있습니다. 이 실습의 애플리케이션 역할은 schema owner라 `REVOKE`만으로는 소유자의 암묵 권한을 없앨 수 없습니다. trigger는 평상 애플리케이션 경로의 수정을 fail-closed로 막고, 운영에서는 migration owner와 append-only writer를 분리해야 합니다.
 
 체인이 실제로 변조를 잡는지 보여주려면 superuser로 한 행을 고친 뒤 다시 확인합니다.
 
@@ -445,18 +449,18 @@ Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance
 - **승인은 단순 버튼이 아니다.** 원 요청 지문, 만료, 관리자 역할을 확인하고 현재 정책으로 재평가한 뒤 한 번 실행합니다. 거부도 같은 자격으로, 사유와 함께 기록합니다.
 - **정책의 규칙과 값은 수명이 다르다.** 허용 목적지와 길이 제한은 규칙 본문이 아니라 데이터 문서에 둡니다. 값 하나 바꾸자고 정책 코드를 고치고 재검토하는 조직은 값을 안 바꿉니다.
 - **transport가 달라도 통제점은 하나여야 한다.** Streamable HTTP, stdio, legacy SSE 모두 같은 정책 함수로 모입니다.
-- **통제점의 신원은 호출자가 정할 수 없다.** 정책 함수가 하나여도 principal을 도구 인자나 요청 본문에서 받으면 통제가 아니라 요청서입니다. 신원은 transport 인증에서만 오고, 없으면 기본값으로 떨어지지 않고 거부합니다.
+- **통제점의 신원은 호출자가 정할 수 없다.** 정책 함수가 하나여도 principal을 도구 인자나 요청 본문에서 받으면 통제가 아니라 요청서입니다. 신원은 transport 인증에서만 오고, `/tool-call`은 그 사용자 JWT에 더해 Agent가 서명한 actor·agent·정확한 envelope assertion까지 확인합니다.
 - **통제하지 않는 표면은 열어두지 않는다.** MCP는 tools 말고도 resources, prompts, sampling을 실어 나릅니다. 그중 하나라도 정책 없이 통과하면 통제점이 아니라 통로입니다.
 - **입력만 보는 통제는 절반이다.** 설명과 스키마를 고정해도 서버가 런타임에 무엇을 돌려주는지는 말해주지 않습니다. Gateway는 결과의 크기와 정책 우회 지시 패턴도 검사하고, 걸리면 `MCP-OUTPUT-001`로 결과를 반환하지 않습니다. 이때 호출 자체는 이미 실행됐으므로 `upstream_executed`는 참으로 남깁니다. 판정과 효과를 일치시키는 것보다 증적을 정직하게 두는 쪽이 중요합니다.
 - **감사는 위변조 가능하면 증적이 아니다.** 각 판정은 직전 판정의 해시를 안고 기록되고, Gateway 계정은 `decisions`를 수정할 수 없습니다. "우리 로그는 정확합니다"가 아니라 "몇 번 행에서 끊겼습니다"로 답할 수 있어야 합니다.
 - **감사는 사본 보관소가 아니다.** `decisions`에는 문서 본문 대신 해시와 길이, 결과의 앞부분만 남깁니다. 감사 테이블이 조직에서 가장 큰 민감정보 더미가 되면 통제가 아니라 위험입니다.
-- **Agent 인증과 모델 제안은 별도 신뢰 경계다.** 모델이 사용자·역할·승인을 주장할 수 없고, 서명된 합성 사용자와 서버가 만든 context만 Gateway가 사용합니다.
+- **Agent 인증과 모델 제안은 별도 신뢰 경계다.** 모델이 사용자·역할·승인을 주장할 수 없고, 서명된 합성 사용자와 Agent Service가 만든 60초 위임 assertion만 Gateway가 사용합니다.
 - **API 실패는 재시도 정책까지 포함해 다뤄야 한다.** timeout이나 연결 단절 뒤에는 upstream 실행 여부가 불확실할 수 있어 요청·Tool Call ID와 receipt를 먼저 확인합니다.
 - **Gateway는 경로 통제와 함께 설계해야 한다.** 이 Compose는 upstream port를 숨기지만 조직 전체의 로컬 프로세스·별도 네트워크까지 막는 것은 아닙니다.
 
 ## 13. 의도적으로 남긴 경계
 
-- 실제 사용자 SSO/OIDC, RBAC 관리 화면, 실제 GitHub 토큰 위임은 미구현입니다. 합성 JWT는 Ed25519로 서명하고 발급자(Agent Service)만 개인키를 갖지만, 키 회전·폐기 절차와 JWKS 배포는 아직 없습니다.
+- 실제 사용자 SSO/OIDC, RBAC 관리 화면, 실제 GitHub 토큰 위임은 미구현입니다. 합성 JWT와 Agent Assertion은 Ed25519로 서명하고 Agent Service만 개인키를 갖지만, assertion은 workload attestation이 아니며 키 회전·폐기 절차·JWKS 배포·SPIFFE SVID는 아직 없습니다.
 - Dashboard의 읽기 API(`/api/state`, `/api/effects`, `/api/policy/matrix`)는 인증 없이 열려 있습니다. 상태를 바꾸는 API는 모두 서명된 토큰을 요구하지만, 증적 조회는 `127.0.0.1` 바인딩에만 의존합니다.
 - Gateway API에는 호출량 제한이나 사용자별 쿼터가 없습니다. Agent Service의 동시 실행 제한은 프로세스 단위라 복제본이 늘면 함께 늘어납니다.
 - 실제 상용 LLM API는 호출하지 않았습니다. 기본 자연어 변환은 데모용 키워드 규칙이고, OpenAI 호환 HTTP 경계는 로컬 stub으로만 검증했습니다.

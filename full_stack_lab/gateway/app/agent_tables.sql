@@ -28,13 +28,19 @@ CREATE TABLE IF NOT EXISTS audit_chain (
 );
 INSERT INTO audit_chain(id, head_sha256) VALUES (1, repeat('0', 64)) ON CONFLICT (id) DO NOTHING;
 
--- Defence in depth, not a boundary: the owner can re-grant. It stops the ordinary
--- "just fix that row" edit and states the intent in the schema itself.
-DO $$ BEGIN
-  EXECUTE 'REVOKE UPDATE, DELETE ON decisions FROM ' || quote_ident(current_user);
-EXCEPTION WHEN OTHERS THEN
-  RAISE NOTICE 'decisions append-only grant not applied: %', SQLERRM;
-END $$;
+-- The application role owns this PoC schema, so REVOKE alone cannot take away the
+-- owner's implicit UPDATE/DELETE privilege. A trigger makes ordinary application
+-- writes fail closed; a production deployment should additionally use a separate
+-- migration owner and an append-only writer role.
+CREATE OR REPLACE FUNCTION reject_decision_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION 'decisions is append-only';
+END;
+$$;
+DROP TRIGGER IF EXISTS decisions_append_only ON decisions;
+CREATE TRIGGER decisions_append_only
+  BEFORE UPDATE OR DELETE ON decisions
+  FOR EACH ROW EXECUTE FUNCTION reject_decision_mutation();
 
 -- Observation mode. A decision records what was enforced and, when the gateway is
 -- only observing, what enforcement would have done instead.

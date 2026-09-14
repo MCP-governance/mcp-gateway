@@ -270,7 +270,10 @@ async def run() -> dict:
         # An address that does not exist, so a real account is not locked out by the test.
         statuses = [(await client.post(API + "/api/session", json={
             "email": "nobody@bob.local", "password": "wrong"})).status_code for _ in range(12)]
+        successful = [(await client.post(API + "/api/session", json={
+            "email": "customer@bob.local", "password": os.getenv("MOCK_SSO_PASSWORD", "test-password")})).status_code for _ in range(12)]
     checks.append(check(429 in statuses, "login-attempt-ceiling", f"statuses={sorted(set(statuses))}"))
+    checks.append(check(all(status == 200 for status in successful), "successful-login-not-throttled", f"statuses={sorted(set(successful))}"))
 
     # Rejecting is the other half of approving. Without it a reviewer can only approve
     # or let the request expire, and the audit cannot tell refusal from inattention.
@@ -308,7 +311,7 @@ async def run() -> dict:
     try:
         await db.execute("UPDATE decisions SET reason='tampered' WHERE id=(SELECT max(id) FROM decisions)")
         append_only = False
-    except psycopg.errors.InsufficientPrivilege:
+    except psycopg.Error:
         append_only = True
     checks.append(check(append_only, "audit-append-only", "gateway 계정은 decisions를 수정할 수 없음"))
 

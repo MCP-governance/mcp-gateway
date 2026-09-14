@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import base64
+import hashlib
+import hmac
+import json
 import os
 from datetime import UTC, datetime, timedelta
 from typing import Literal
@@ -17,6 +20,8 @@ from . import db
 
 ISSUER = "mcp-governance-synthetic-agent"
 AUDIENCE = "mcp-governance-gateway"
+TOOL_CALL_AUDIENCE = "mcp-governance-gateway-tool-call"
+TOOL_CALL_SCOPE = "mcp:tools/call"
 ALGORITHM = "EdDSA"
 IDENTITIES = {
     "customer@bob.local": {"user_id": "user-customer-001", "principal": "cust-demo", "name": "고객 김민수", "department": "고객", "roles": ["customer"]},
@@ -45,6 +50,12 @@ class Envelope(StrictModel):
     server_id: str
     tool_name: str
     arguments: dict
+
+
+def envelope_sha256(envelope: Envelope) -> str:
+    """Hash the exact agent-to-gateway envelope, not a model-provided subset."""
+    encoded = json.dumps(envelope.model_dump(mode="json"), ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _key_material(name: str) -> bytes:
@@ -79,6 +90,39 @@ def issue_token(user: dict) -> str:
     return jwt.encode({"sub": user["user_id"], "iss": ISSUER, "aud": AUDIENCE,
                        "iat": now, "nbf": now, "exp": now + timedelta(minutes=30), "jti": str(uuid4())},
                       private_key(), algorithm=ALGORITHM)
+
+
+def issue_agent_assertion(user: dict, envelope: Envelope) -> str:
+    """Short-lived proof that Agent Service delegated this exact call for the user."""
+    now = datetime.now(UTC)
+    return jwt.encode({
+        "sub": f"agent:{envelope.agent_id}", "act": {"sub": user["user_id"]},
+        "scope": TOOL_CALL_SCOPE, "call_sha256": envelope_sha256(envelope),
+        "iss": ISSUER, "aud": TOOL_CALL_AUDIENCE, "iat": now, "nbf": now,
+        "exp": now + timedelta(seconds=60), "jti": str(uuid4()),
+    }, private_key(), algorithm=ALGORITHM)
+
+
+def validate_agent_assertion(authorization: str | None, user: dict, envelope: Envelope) -> None:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(401, "에이전트 위임 증명이 필요합니다.")
+    try:
+        claims = jwt.decode(
+            authorization[7:], public_key(), algorithms=[ALGORITHM], audience=TOOL_CALL_AUDIENCE,
+            issuer=ISSUER, options={"require": ["sub", "act", "scope", "call_sha256", "iss", "aud", "exp", "iat", "nbf", "jti"]},
+        )
+        actor = claims["act"]
+        if (
+            claims["sub"] != f"agent:{envelope.agent_id}"
+            or not isinstance(actor, dict)
+            or actor.get("sub") != user["user_id"]
+            or claims["scope"] != TOOL_CALL_SCOPE
+            or not isinstance(claims["call_sha256"], str)
+            or not hmac.compare_digest(claims["call_sha256"], envelope_sha256(envelope))
+        ):
+            raise ValueError("agent assertion is not bound to this call")
+    except (jwt.PyJWTError, ValueError, TypeError) as exc:
+        raise HTTPException(401, "에이전트 위임 증명이 유효하지 않습니다.") from exc
 
 
 def authenticate(authorization: str | None) -> tuple[dict, dict]:

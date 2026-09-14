@@ -19,7 +19,7 @@ import httpx
 import jwt
 
 from . import db
-from .agent_contract import ALGORITHM, AUDIENCE, ISSUER, private_key
+from .agent_contract import ALGORITHM, AUDIENCE, IDENTITIES, ISSUER, Envelope, issue_agent_assertion, private_key
 from .core import canonical_hash, effect_count, execute_call, _discover, HTTP_MCP_URL
 
 AGENT = "http://agent-service:8000"
@@ -41,6 +41,10 @@ async def login(client, email, base=AGENT):
 
 def envelope(**changes):
     return {"request_id": str(uuid4()), "session_id": str(uuid4()), "user_id": "user-test-001", "agent_id": "document-agent-test", "tool_call_id": str(uuid4()), "server_id": "file-mcp", "tool_name": "read_file", "arguments": {"path": "/data/public/notice.txt"}, **changes}
+
+
+def agent_headers(user_headers: dict[str, str], request: dict, email: str = "miso@bob.local") -> dict[str, str]:
+    return {**user_headers, "X-Agent-Assertion": "Bearer " + issue_agent_assertion(IDENTITIES[email], Envelope(**request))}
 
 
 class ModelStub(BaseHTTPRequestHandler):
@@ -133,10 +137,14 @@ async def main():
         check("session-isolation", (await client.get(AGENT + "/sessions/" + session_id, headers=users["customer"])).status_code == 404)
         check("session-history", len((await client.get(AGENT + "/sessions/" + session_id, headers=users["employee"])).json()["runs"]) >= 1)
         check("cross-origin-request", (await client.post(AGENT + "/chat", headers={**users["employee"], "Origin": "https://untrusted.invalid"}, json={"message": "공開"})).status_code == 403)
-        check("identity-spoof", (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=envelope(user_id="user-admin-001"))).status_code == 403)
-        check("path-traversal", (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=envelope(arguments={"path": "/data/public/../sensitive/secret.txt"}))).status_code == 422)
-        check("argument-identity-injection", (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=envelope(arguments={"path": "/data/public/notice.txt", "user_token": "admin-demo"}))).status_code == 422)
-        check("unknown-server", (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=envelope(server_id="evil"))).status_code == 422)
+        spoof = envelope(user_id="user-admin-001")
+        check("identity-spoof", (await client.post(GATEWAY + "/tool-call", headers=agent_headers(users["employee"], spoof), json=spoof)).status_code == 403)
+        traversal = envelope(arguments={"path": "/data/public/../sensitive/secret.txt"})
+        check("path-traversal", (await client.post(GATEWAY + "/tool-call", headers=agent_headers(users["employee"], traversal), json=traversal)).status_code == 422)
+        injection = envelope(arguments={"path": "/data/public/notice.txt", "user_token": "admin-demo"})
+        check("argument-identity-injection", (await client.post(GATEWAY + "/tool-call", headers=agent_headers(users["employee"], injection), json=injection)).status_code == 422)
+        unknown_server = envelope(server_id="evil")
+        check("unknown-server", (await client.post(GATEWAY + "/tool-call", headers=agent_headers(users["employee"], unknown_server), json=unknown_server)).status_code == 422)
         for name, updates in [("expired", {"exp": datetime.now(UTC) - timedelta(seconds=5)}), ("wrong-audience", {"aud": "other"}), ("wrong-issuer", {"iss": "other"})]:
             claims = {"sub": "user-test-001", "iss": ISSUER, "aud": AUDIENCE, "iat": datetime.now(UTC) - timedelta(minutes=1), "nbf": datetime.now(UTC) - timedelta(minutes=1), "exp": datetime.now(UTC) + timedelta(minutes=1), "jti": str(uuid4()), **updates}
             # The gateway service itself has no private key. The acceptance run is
@@ -144,10 +152,17 @@ async def main():
             token = jwt.encode(claims, private_key(), algorithm=ALGORITHM)
             check("jwt-" + name, (await client.post(GATEWAY + "/tool-call", headers={"Authorization": "Bearer " + token}, json=envelope())).status_code == 401)
         check("jwt-invalid-signature", (await client.post(GATEWAY + "/tool-call", headers={"Authorization": users["employee"]["Authorization"] + "tampered"}, json=envelope())).status_code == 401)
+        delegated = envelope()
+        check("agent-assertion-required", (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=delegated)).status_code == 401)
+        check("human-token-is-not-agent-assertion", (await client.post(GATEWAY + "/tool-call", headers={**users["employee"], "X-Agent-Assertion": users["employee"]["Authorization"]}, json=delegated)).status_code == 401)
+        changed = {**delegated, "tool_call_id": str(uuid4())}
+        check("agent-assertion-envelope-bound", (await client.post(GATEWAY + "/tool-call", headers=agent_headers(users["employee"], delegated), json=changed)).status_code == 401)
+        check("agent-assertion-actor-bound", (await client.post(GATEWAY + "/tool-call", headers=agent_headers(users["employee"], delegated, "admin@bob.local"), json=delegated)).status_code == 401)
         req = envelope()
-        first = (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=req)).json()
+        req_headers = agent_headers(users["employee"], req)
+        first = (await client.post(GATEWAY + "/tool-call", headers=req_headers, json=req)).json()
         before = effect_count()
-        replay = (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=req)).json()
+        replay = (await client.post(GATEWAY + "/tool-call", headers=req_headers, json=req)).json()
         check("gateway-idempotency", replay.get("replayed") and effect_count() == before)
         stuck = envelope()
         await db.execute(
@@ -155,7 +170,7 @@ async def main():
             (stuck["tool_call_id"], "user-test-001", canonical_hash(stuck)),
         )
         before = effect_count()
-        settled = (await client.post(GATEWAY + "/tool-call", headers=users["employee"], json=stuck)).json()
+        settled = (await client.post(GATEWAY + "/tool-call", headers=agent_headers(users["employee"], stuck), json=stuck)).json()
         check("stuck-receipt-settled",
               settled.get("policy_id") == "MCP-RECEIPT-001" and settled.get("execution_status") == "unknown"
               and effect_count() == before,

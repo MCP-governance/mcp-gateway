@@ -7,7 +7,7 @@ from fastapi import APIRouter, Header, HTTPException
 from psycopg.types.json import Jsonb
 
 from . import db
-from .agent_contract import Envelope, Proposal, authenticated_user, validate_proposal
+from .agent_contract import Envelope, Proposal, authenticated_user, validate_agent_assertion, validate_proposal
 from .agent_contract import StrictModel
 from .core import approve_request, canonical_hash, execute_call, reject_request
 
@@ -21,10 +21,12 @@ RECEIPT_TIMEOUT = timedelta(minutes=int(os.getenv("RECEIPT_TIMEOUT_MINUTES", "5"
 
 
 @router.post("/tool-call")
-async def tool_call(request: Envelope, authorization: str | None = Header(default=None)):
+async def tool_call(request: Envelope, authorization: str | None = Header(default=None),
+                    agent_assertion: str | None = Header(default=None, alias="X-Agent-Assertion")):
     user = await authenticated_user(authorization)
     if request.user_id != user["user_id"]:
         raise HTTPException(403, "요청자와 서명된 사용자 정보가 다릅니다.")
+    validate_agent_assertion(agent_assertion, user, request)
     try:
         payload = validate_proposal(Proposal(server_id=request.server_id, tool_name=request.tool_name, arguments=request.arguments))
     except ValueError as exc:
