@@ -89,7 +89,7 @@ cd ~/mcp-gateway/full_stack_lab
 
 ### 3.2 거버넌스 증적 확인하기
 
-거버넌스 Dashboard <http://localhost:8080>에서 방금 실행한 요청을 다시 찾습니다.
+거버넌스 Dashboard <http://localhost:8080>에서 방금 실행한 요청을 다시 찾습니다. 판정 시뮬레이터로 호출을 만들려면 화면에서 합성 계정과 비밀번호(`.env`의 `MOCK_SSO_PASSWORD`, 기본 `test-password`)를 입력합니다. Dashboard도 다른 client와 똑같이 서명된 토큰으로만 Gateway API를 호출합니다.
 
 - `Agent Service 연결`: 모의 모델/API 모드, 인증 경계, 최근 Agent 실행
 - `333 정책`: 27개 조합과 기본 DENY
@@ -140,25 +140,30 @@ curl -sS http://localhost:8000/chat \
 
 `Alert`, `upstream_executed: true`, 서로 연결된 요청·세션·Tool Call ID가 나오면 전체 경로가 동작한 것입니다. 토큰은 30분짜리 합성 JWT이며 모델이 만드는 Tool Call에는 사용자 역할이나 Gateway용 토큰을 넣을 수 없습니다.
 
-Gateway의 짧은 모의 모델 API를 직접 비교할 수도 있습니다. 이 경로는 로그인 UI가 아니라 정책 동작만 빠르게 시연하기 위한 기존 호환 API입니다.
+Gateway의 짧은 모의 모델 API도 같은 방식으로 비교할 수 있습니다. 이 경로는 로그인 UI가 아니라 정책 동작만 빠르게 시연하기 위한 기존 호환 API이며, **요청자는 서명된 토큰에서만 옵니다.** 본문에 역할이나 principal을 적어 넣을 수 있는 자리는 없습니다.
 
 ```bash
-curl -sS http://localhost:8080/api/mock-model \
+GW_TOKEN="$(curl -sS http://localhost:8080/api/session \
   -H 'content-type: application/json' \
-  -d '{"user_token":"emp-demo","message":"중요 계약 초안을 읽어줘"}' \
-  | python3 -m json.tool
-```
+  -d '{"email":"customer@bob.local","password":"test-password"}' \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')"
 
-Tool Call을 바로 제출할 수도 있습니다.
-
-```bash
 curl -sS http://localhost:8080/api/calls \
+  -H "authorization: Bearer $GW_TOKEN" \
   -H 'content-type: application/json' \
-  -d '{"user_token":"cust-demo","tool_name":"read_document","document_id":"secret-001"}' \
+  -d '{"tool_name":"read_document","document_id":"secret-001"}' \
   | python3 -m json.tool
 ```
 
-두 번째 결과는 `Block`, `P-333-DENY-001`, `upstream_executed: false`, 동일한 `effect_before/effect_after`가 되어야 합니다.
+결과는 `Block`, `P-333-DENY-001`, `upstream_executed: false`, 동일한 `effect_before/effect_after`가 되어야 합니다.
+
+토큰 없이, 또는 위조한 토큰으로 같은 호출을 보내면 정책 판정까지 가지 않고 `401`입니다.
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' http://localhost:8080/api/calls \
+  -H 'content-type: application/json' \
+  -d '{"tool_name":"read_document","document_id":"notice-001"}'
+```
 
 ## 6. 실제 모델 API를 연결할 준비
 
@@ -191,9 +196,11 @@ curl -sS http://localhost:8000/api/readiness | python3 -m json.tool
 정상 기준은 다음과 같습니다.
 
 - Rego 단위 테스트 `7/7 PASS`
-- acceptance `25 passed, 0 failed`
-- Agent/API 경계 acceptance `56 passed, 0 failed`
+- acceptance, Agent/API 경계 acceptance 모두 `0 failed`
+- 익명·위조 토큰의 Gateway API 호출이 `401`, 고객 계정의 승인 시도가 `403`
 - Streamable HTTP, stdio, legacy SSE에서 실제 `tools/call` 성공
+- 토큰 없는 Streamable HTTP 호출과 신원이 바인딩되지 않은 stdio 호출이 각각 거부
+- Gateway가 노출하는 도구 입력 스키마에 `user_token` 같은 신원 인자가 없음
 - 설명·스키마·도구 목록·서버 버전 변조가 각각 `MCP-CATALOG-001`로 차단
 - 서버에 귀속된 치명적 공급망 finding이 `MCP-SUPPLY-001`로 차단
 - OPA 중단 시 `P-CONTROL-FAIL-CLOSED`로 차단
@@ -204,15 +211,15 @@ curl -sS http://localhost:8000/api/readiness | python3 -m json.tool
 
 ## 8. transport 호환 범위
 
-| 구간 | 방식 | 검증 방법 |
-| --- | --- | --- |
-| Client → Gateway | Streamable HTTP | `/mcp/`에 실제 MCP SDK `initialize / tools/list / tools/call` |
-| Client → Gateway | stdio | `python -m app.stdio_entry` subprocess에 실제 호출 |
-| Client → Gateway | legacy SSE | 내부 `gateway-sse:8081/sse` compatibility adapter에 실제 호출 |
-| Gateway → 문서 MCP | Streamable HTTP | 내부 `mock-http-mcp:9000/mcp/` |
-| Gateway → Time MCP | stdio | 고정한 `mcp-server-time` subprocess |
+| 구간 | 방식 | 신원 출처 | 검증 방법 |
+| --- | --- | --- | --- |
+| Client → Gateway | Streamable HTTP | `Authorization` header의 서명된 합성 JWT | `/mcp/`에 실제 MCP SDK `initialize / tools/list / tools/call` |
+| Client → Gateway | stdio | 프로세스 기동 시 고정한 `GATEWAY_STDIO_PRINCIPAL` | `python -m app.stdio_entry` subprocess에 실제 호출 |
+| Client → Gateway | legacy SSE | `Authorization` header의 서명된 합성 JWT | 내부 `gateway-sse:8081/sse` compatibility adapter에 실제 호출 |
+| Gateway → 문서 MCP | Streamable HTTP | — | 내부 `mock-http-mcp:9000/mcp/` |
+| Gateway → Time MCP | stdio | — | 고정한 `mcp-server-time` subprocess |
 
-SSE는 신규 기본값이 아니라 구형 client 호환성 시험용입니다. 세 ingress는 모두 같은 `execute_call()` 정책 경로를 사용합니다.
+SSE는 신규 기본값이 아니라 구형 client 호환성 시험용입니다. 세 ingress는 모두 같은 `execute_call()` 정책 경로를 사용하고, **모두 같은 신원 경계를 거칩니다.** 도구 인자에는 사용자나 역할을 넣을 자리가 없으므로 client는 자기 신원을 주장할 수 없습니다. stdio는 header가 없는 transport이므로 신원을 spawn 시점에 한 번 고정하고, 고정되지 않은 stdio ingress는 기본 principal로 넘어가지 않고 거부합니다.
 
 ## 9. Registry와 공급망 통제
 
@@ -293,8 +300,9 @@ This project integrates AI-Infra-Guard, open-sourced by Tencent Zhuque Lab. 참�
      activate-reviewed /reports/github-reviewed.json
 
    curl -sS http://localhost:8080/api/calls \
+     -H "authorization: Bearer $GW_TOKEN" \
      -H 'content-type: application/json' \
-     -d '{"user_token":"admin-demo","tool_name":"github_get_file","owner":"MCP-governance","repo":"mcp-gateway","path":"README.md"}' \
+     -d '{"tool_name":"github_get_file","owner":"MCP-governance","repo":"mcp-gateway","path":"README.md"}' \
      | python3 -m json.tool
    ```
 
@@ -332,17 +340,24 @@ Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance
 - **권한표만으로 공급망 문제를 막을 수 없다.** 허용된 `read_document`라도 설명·스키마·버전·도구 목록이 바뀌거나 서버 귀속 치명점이 생기면 차단됩니다.
 - **승인은 단순 버튼이 아니다.** 원 요청 지문, 만료, 관리자 역할을 확인하고 현재 정책으로 재평가한 뒤 한 번 실행합니다.
 - **transport가 달라도 통제점은 하나여야 한다.** Streamable HTTP, stdio, legacy SSE 모두 같은 정책 함수로 모입니다.
+- **통제점의 신원은 호출자가 정할 수 없다.** 정책 함수가 하나여도 principal을 도구 인자나 요청 본문에서 받으면 통제가 아니라 요청서입니다. 신원은 transport 인증에서만 오고, 없으면 기본값으로 떨어지지 않고 거부합니다.
+- **입력만 보는 통제는 절반이다.** 설명과 스키마를 고정해도 서버가 런타임에 무엇을 돌려주는지는 말해주지 않습니다. Gateway는 결과의 크기와 정책 우회 지시 패턴도 검사하고, 걸리면 `MCP-OUTPUT-001`로 결과를 반환하지 않습니다. 이때 호출 자체는 이미 실행됐으므로 `upstream_executed`는 참으로 남깁니다. 판정과 효과를 일치시키는 것보다 증적을 정직하게 두는 쪽이 중요합니다.
+- **감사는 사본 보관소가 아니다.** `decisions`에는 문서 본문 대신 해시와 길이, 결과의 앞부분만 남깁니다. 감사 테이블이 조직에서 가장 큰 민감정보 더미가 되면 통제가 아니라 위험입니다.
 - **Agent 인증과 모델 제안은 별도 신뢰 경계다.** 모델이 사용자·역할·승인을 주장할 수 없고, 서명된 합성 사용자와 서버가 만든 context만 Gateway가 사용합니다.
 - **API 실패는 재시도 정책까지 포함해 다뤄야 한다.** timeout이나 연결 단절 뒤에는 upstream 실행 여부가 불확실할 수 있어 요청·Tool Call ID와 receipt를 먼저 확인합니다.
 - **Gateway는 경로 통제와 함께 설계해야 한다.** 이 Compose는 upstream port를 숨기지만 조직 전체의 로컬 프로세스·별도 네트워크까지 막는 것은 아닙니다.
 
 ## 13. 의도적으로 남긴 경계
 
-- 실제 사용자 SSO/OIDC, RBAC 관리 화면, 실제 GitHub 토큰 위임은 미구현입니다.
+- 실제 사용자 SSO/OIDC, RBAC 관리 화면, 실제 GitHub 토큰 위임은 미구현입니다. 합성 JWT는 `AGENT_JWT_SECRET` 하나를 Gateway와 Agent Service가 공유하는 HS256이므로, 두 서비스는 암호학적으로 서로를 위조할 수 있습니다. 발급자만 개인키를 갖는 비대칭 서명은 아직 적용하지 않았습니다.
+- Dashboard의 읽기 API(`/api/state`, `/api/effects`, `/api/policy/matrix`)는 인증 없이 열려 있습니다. 상태를 바꾸는 API는 모두 서명된 토큰을 요구하지만, 증적 조회는 `127.0.0.1` 바인딩에만 의존합니다.
+- Gateway API에는 호출량 제한이나 사용자별 쿼터가 없습니다. Agent Service의 동시 실행 제한은 프로세스 단위라 복제본이 늘면 함께 늘어납니다.
+- 감사 로그에는 해시 체인이나 append-only 권한 분리가 없습니다. Gateway의 DB 계정이 `decisions`를 수정할 수 있습니다.
 - 실제 상용 LLM API는 호출하지 않았습니다. 기본 자연어 변환은 데모용 키워드 규칙이고, OpenAI 호환 HTTP 경계는 로컬 stub으로만 검증했습니다.
 - GitHub MCP는 인증·catalog 승인 전이라 실제 upstream 호출을 하지 않습니다.
 - GitHub catalog 승인은 현재 데모 DB 상태입니다. 운영 반영 전에는 검토 파일의 해시를 코드 리뷰와 정책 버전에 남겨야 합니다.
 - image tag는 버전 고정이지만 digest/서명 검증과 admission controller까지는 포함하지 않았습니다.
+- 공급망 스캔 결과는 `source_ref='workspace'`로 저장되므로, 서버에 귀속시키기 전에는 실제 호출을 막지 않습니다. 차단으로 이어지는 경로는 acceptance test가 fixture로만 증명합니다.
 - 운영용 HA, TLS 종료, 비밀관리, SIEM 알림, 조직 전체 egress 강제는 별도 운영 설계가 필요합니다.
 - Dashboard의 승인자는 합성 관리자이며 실인증 승인이 아닙니다.
 

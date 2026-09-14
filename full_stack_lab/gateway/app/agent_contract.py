@@ -11,6 +11,8 @@ from fastapi import HTTPException
 from jsonschema import Draft202012Validator
 from pydantic import BaseModel, ConfigDict, Field
 
+from . import db
+
 ISSUER = "mcp-governance-synthetic-agent"
 AUDIENCE = "mcp-governance-gateway"
 IDENTITIES = {
@@ -67,6 +69,18 @@ def authenticate(authorization: str | None) -> tuple[dict, dict]:
         return user, claims
     except (jwt.PyJWTError, ValueError) as exc:
         raise HTTPException(401, "인증이 만료되었거나 유효하지 않습니다.") from exc
+
+
+async def authenticated_user(authorization: str | None) -> dict:
+    """The one verified-caller helper every ingress uses.
+
+    `authenticate` proves the token was minted by the synthetic IdP; this adds the
+    revocation check so a logout invalidates HTTP, SSE and Agent ingresses alike.
+    """
+    user, claims = authenticate(authorization)
+    if await db.fetch_one("SELECT jti FROM agent_revoked_tokens WHERE jti=%s", (claims["jti"],)):
+        raise HTTPException(401, "로그아웃된 인증입니다.")
+    return user
 
 
 def schema(properties: dict, required: list[str]) -> dict:

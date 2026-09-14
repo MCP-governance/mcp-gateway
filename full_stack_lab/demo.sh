@@ -6,6 +6,22 @@ cd "$LAB_DIR"
 mkdir -p reports
 python3 init_config.py
 
+# The gateway API is authenticated now, so scripted maintenance calls log in the
+# same way a person does. The password lives in the uncommitted .env.
+gateway_token() {
+  local password
+  password="$(sed -n 's/^MOCK_SSO_PASSWORD=//p' .env 2>/dev/null | tail -1)"
+  curl -fsS -X POST http://127.0.0.1:8080/api/session \
+    -H 'content-type: application/json' \
+    -d "{\"email\":\"admin@bob.local\",\"password\":\"${password:-test-password}\"}" \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])'
+}
+
+import_reports() {
+  curl -fsS -X POST http://127.0.0.1:8080/api/supply-chain/import \
+    -H "authorization: Bearer $(gateway_token)" | python3 -m json.tool
+}
+
 wait_ready() {
   for _ in {1..60}; do
     if curl -fsS http://127.0.0.1:8000/api/readiness | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["status"] == "ready" else 1)' >/dev/null 2>&1; then
@@ -45,7 +61,7 @@ case "${1:-up}" in
     up
     docker compose --profile supply-chain run --rm syft
     docker compose --profile supply-chain run --rm trivy
-    curl -fsS -X POST http://127.0.0.1:8080/api/supply-chain/import | python3 -m json.tool
+    import_reports
     echo "SBOM과 취약점 결과를 reports/ 및 Dashboard에 반영했습니다."
     ;;
   mcp-scan)
@@ -55,7 +71,7 @@ case "${1:-up}" in
       exit 2
     fi
     docker compose --profile mcp-scan run --rm mcp-scan
-    curl -fsS -X POST http://127.0.0.1:8080/api/supply-chain/import | python3 -m json.tool
+    import_reports
     ;;
   status)
     docker compose ps

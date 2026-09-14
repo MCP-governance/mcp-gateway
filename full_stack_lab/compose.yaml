@@ -45,6 +45,8 @@ services:
     volumes:
       - effects:/runtime
     networks: [tools]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
 
   gateway:
     build: ./gateway
@@ -77,6 +79,8 @@ services:
       - ./reports:/reports:ro
       - ./opa:/policy:ro
     networks: [edge, policy, tools, data, telemetry]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
 
   agent-service:
     build: ./gateway
@@ -119,6 +123,8 @@ services:
       - ./reports:/reports:ro
       - ./opa:/policy:ro
     networks: [policy, tools, data, telemetry]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
 
   jaeger:
     image: cr.jaegertracing.io/jaegertracing/jaeger:2.20.0

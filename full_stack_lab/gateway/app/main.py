@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,7 +16,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from . import db
 from .core import (
     OPA_URL,
-    TOOL_SPECS,
     approve_request,
     bootstrap,
     effect_count,
@@ -25,7 +24,10 @@ from .core import (
     refresh_catalog,
 )
 from .mcp_facade import build_mcp, transport_security
+from .agent_contract import authenticated_user
 from .agent_gateway import router as agent_router
+
+AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 
 UI_DIR = Path("/app/ui")
 EFFECT_LOG = Path(os.getenv("EFFECT_LOG", "/runtime/upstream-effects.jsonl"))
@@ -41,7 +43,6 @@ class StrictModel(BaseModel):
 
 
 class CallRequest(StrictModel):
-    user_token: Literal["cust-demo", "emp-demo", "admin-demo"]
     tool_name: Literal["read_document", "write_document", "send_external", "get_current_time", "github_get_file"]
     document_id: Literal["notice-001", "work-001", "secret-001"] | None = None
     content: str = Field(default="합성 데모 내용", max_length=2000)
@@ -53,12 +54,28 @@ class CallRequest(StrictModel):
 
 
 class MockModelRequest(StrictModel):
-    user_token: Literal["cust-demo", "emp-demo", "admin-demo"]
     message: str = Field(min_length=1, max_length=500)
 
 
-class ApprovalRequest(StrictModel):
-    reviewer_token: Literal["admin-demo"] = "admin-demo"
+class SessionRequest(StrictModel):
+    email: str = Field(max_length=150)
+    password: str = Field(max_length=150)
+
+
+async def caller(authorization: str | None = Header(default=None)) -> dict:
+    """Every state-changing gateway API runs as a verified synthetic user.
+
+    The principal used for the policy decision comes from this signed token, never
+    from the request body, so the dashboard, curl and the MCP ingresses all sit on
+    the same identity boundary.
+    """
+    return await authenticated_user(authorization)
+
+
+async def admin_caller(user: dict = Depends(caller)) -> dict:
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
+    return user
 
 
 @asynccontextmanager
@@ -83,8 +100,7 @@ async def _probe(url: str) -> bool:
 
 @app.get("/api/health")
 async def health() -> dict:
-    db_ok, opa_ok, upstream_ok, jaeger_ok = await asyncio.gather(
-        _probe("http://db:5432"),
+    opa_ok, upstream_ok, jaeger_ok = await asyncio.gather(
         _probe(OPA_URL.rsplit("/v1/", 1)[0] + "/health?bundles=true"),
         _probe("http://mock-http-mcp:9000/health"),
         _probe("http://jaeger:16686/api/services"),
@@ -114,7 +130,7 @@ async def state() -> dict:
         db.fetch_all("SELECT * FROM decisions ORDER BY id DESC LIMIT 40"),
         db.fetch_all("SELECT * FROM approvals WHERE status='PENDING' ORDER BY created_at DESC"),
         db.fetch_all("SELECT * FROM supply_chain_reports ORDER BY id DESC LIMIT 20"),
-        db.fetch_all("SELECT token,display_name,role,synthetic FROM principals ORDER BY role"),
+        db.fetch_all("SELECT display_name,role,synthetic FROM principals ORDER BY role"),
         db.fetch_all("SELECT * FROM documents ORDER BY id"),
         db.fetch_one("SELECT * FROM policy_versions WHERE status='ACTIVE' ORDER BY activated_at DESC LIMIT 1"),
     )
@@ -173,16 +189,33 @@ async def policy_matrix() -> dict:
     return {"roles": roles, "data_classes": classes, "actions": actions, "cells": cells}
 
 
+@app.post("/api/session")
+async def session(request: SessionRequest) -> dict:
+    """Dashboard and CLI login.
+
+    The gateway does not mint tokens itself; it forwards to the single synthetic
+    identity provider so there stays exactly one issuer to harden later.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            response = await client.post(AGENT_SERVICE_URL + "/auth/mock-login", json=request.model_dump())
+    except httpx.HTTPError as exc:
+        raise HTTPException(503, "합성 인증 서비스에 연결할 수 없습니다.") from exc
+    if response.status_code != 200:
+        raise HTTPException(401, "합성 계정과 비밀번호를 확인하세요.")
+    return response.json()
+
+
 @app.post("/api/calls")
-async def call_tool(request: CallRequest) -> dict:
-    payload = request.model_dump(exclude_none=True)
+async def call_tool(request: CallRequest, user: dict = Depends(caller)) -> dict:
+    payload = {**request.model_dump(exclude_none=True), "user_token": user["principal"]}
     if request.tool_name in {"read_document", "write_document", "send_external"} and not request.document_id:
         raise HTTPException(422, "문서 도구에는 document_id가 필요합니다.")
     return await execute_call(payload)
 
 
 @app.post("/api/mock-model")
-async def mock_model(request: MockModelRequest) -> dict:
+async def mock_model(request: MockModelRequest, user: dict = Depends(caller)) -> dict:
     message = request.message
     if "시간" in message:
         tool = "get_current_time"
@@ -200,7 +233,7 @@ async def mock_model(request: MockModelRequest) -> dict:
     else:
         document_id = "notice-001"
     payload = {
-        "user_token": request.user_token,
+        "user_token": user["principal"],
         "tool_name": tool,
         "document_id": document_id,
         "content": message,
@@ -212,15 +245,15 @@ async def mock_model(request: MockModelRequest) -> dict:
 
 
 @app.post("/api/approvals/{approval_id}/approve")
-async def approve(approval_id: str, request: ApprovalRequest) -> dict:
+async def approve(approval_id: str, user: dict = Depends(admin_caller)) -> dict:
     try:
-        return await approve_request(approval_id, request.reviewer_token)
+        return await approve_request(approval_id, user["principal"])
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 
 
 @app.post("/api/catalog/refresh")
-async def catalog_refresh() -> dict:
+async def catalog_refresh(user: dict = Depends(caller)) -> dict:
     results = []
     for server_id in ("mock-http", "mock-stdio"):
         try:
@@ -231,7 +264,7 @@ async def catalog_refresh() -> dict:
 
 
 @app.post("/api/supply-chain/import")
-async def supply_chain_import() -> dict:
+async def supply_chain_import(user: dict = Depends(admin_caller)) -> dict:
     try:
         return {"imported": await import_supply_chain_reports()}
     except (OSError, ValueError, json.JSONDecodeError) as exc:

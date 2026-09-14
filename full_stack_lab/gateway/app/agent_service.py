@@ -17,7 +17,7 @@ from pydantic import Field
 from psycopg.types.json import Jsonb
 
 from . import db
-from .agent_contract import IDENTITIES, StrictModel, authenticate, issue_token, signing_key
+from .agent_contract import IDENTITIES, StrictModel, authenticate, authenticated_user, issue_token, signing_key
 from .core import canonical_hash
 from .model_client import propose, readiness, redact
 
@@ -79,11 +79,7 @@ class ChatRequest(StrictModel):
 
 
 async def current_identity(authorization: str | None) -> dict:
-    user, claims = authenticate(authorization)
-    revoked = await db.fetch_one("SELECT jti FROM agent_revoked_tokens WHERE jti=%s", (claims["jti"],))
-    if revoked:
-        raise HTTPException(401, "로그아웃된 인증입니다.")
-    return user
+    return await authenticated_user(authorization)
 
 
 @app.post("/auth/mock-login")
@@ -107,6 +103,10 @@ async def me(authorization: str | None = Header(default=None)):
 async def logout(authorization: str | None = Header(default=None)):
     _, claims = authenticate(authorization)
     await db.execute("INSERT INTO agent_revoked_tokens(jti,expires_at) VALUES (%s,%s) ON CONFLICT DO NOTHING", (claims["jti"], datetime.fromtimestamp(claims["exp"], UTC)))
+    # Rows are only ever added here, so purging here bounds the table by the number
+    # of logouts inside one token lifetime. A revoked token past its own expiry is
+    # already rejected by the signature check.
+    await db.execute("DELETE FROM agent_revoked_tokens WHERE expires_at < now()")
     return {"status": "logged_out"}
 
 

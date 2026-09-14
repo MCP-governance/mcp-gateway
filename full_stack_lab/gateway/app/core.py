@@ -46,6 +46,11 @@ UNSAFE_METADATA = re.compile(
     r"ignore\s+(all\s+)?previous|system\s+prompt|credential|secret\s+key|bypass\s+policy",
     re.IGNORECASE,
 )
+MAX_RESULT_BYTES = int(os.getenv("MAX_RESULT_BYTES", "262144"))
+
+
+class ResultRejected(RuntimeError):
+    """Upstream answered, but its output failed the gateway's output control."""
 
 
 def _configure_tracing() -> Any:
@@ -169,11 +174,20 @@ async def refresh_catalog(server_id: str) -> dict:
             findings.append({"type": "contract-drift", "tool": name, "fields": mismatches})
 
     exact_match = names_match and metadata_safe and hashes_match
-    await db.fetch_one(
-        """INSERT INTO catalog_snapshots(server_id, server_version, catalog_hash, tool_count, exact_match, findings)
-           VALUES (%s,%s,%s,%s,%s,%s) RETURNING id""",
-        (server_id, discovered["version"], canonical_hash(discovered["tools"]), len(observed), exact_match, Jsonb(findings)),
+    catalog_hash = canonical_hash(discovered["tools"])
+    previous = await db.fetch_one(
+        "SELECT catalog_hash, exact_match FROM catalog_snapshots WHERE server_id=%s ORDER BY id DESC LIMIT 1",
+        (server_id,),
     )
+    # The snapshot table is change evidence, not a call counter: the catalog is
+    # re-read before every call, so writing a row per call grows it without adding
+    # anything a reviewer can read.
+    if not previous or previous["catalog_hash"] != catalog_hash or previous["exact_match"] != exact_match:
+        await db.fetch_one(
+            """INSERT INTO catalog_snapshots(server_id, server_version, catalog_hash, tool_count, exact_match, findings)
+               VALUES (%s,%s,%s,%s,%s,%s) RETURNING id""",
+            (server_id, discovered["version"], catalog_hash, len(observed), exact_match, Jsonb(findings)),
+        )
     await db.execute(
         "UPDATE mcp_servers SET status=%s, status_reason=%s, last_seen_at=now() WHERE id=%s",
         (
@@ -288,8 +302,22 @@ async def _call_upstream(spec: dict, arguments: dict) -> dict:
             messages = [getattr(item, "text", str(item)) for item in result.content]
             raise RuntimeError("; ".join(messages))
         if result.structured_content is not None:
-            return result.structured_content
-        return {"content": [getattr(item, "text", str(item)) for item in result.content]}
+            return _guarded_result(result.structured_content)
+        return _guarded_result({"content": [getattr(item, "text", str(item)) for item in result.content]})
+
+
+def _guarded_result(payload: dict) -> dict:
+    """Upstream output is untrusted input too.
+
+    A pinned description and schema say nothing about what a server returns at
+    runtime, and that is where an injected instruction or an oversized blob arrives.
+    """
+    body = json.dumps(payload, ensure_ascii=False)
+    if len(body.encode()) > MAX_RESULT_BYTES:
+        raise ResultRejected(f"도구 결과가 {MAX_RESULT_BYTES} byte 상한을 넘었습니다.")
+    if UNSAFE_METADATA.search(body):
+        raise ResultRejected("도구 결과에 정책 우회 지시 패턴이 포함되어 있습니다.")
+    return payload
 
 
 def _upstream_arguments(tool_name: str, payload: dict, restrictions: dict) -> dict:
@@ -313,6 +341,21 @@ def _upstream_arguments(tool_name: str, payload: dict, restrictions: dict) -> di
     return {}
 
 
+def _audit_payload(payload: dict) -> dict:
+    """Structural evidence stays readable; the document body becomes a digest."""
+    if "content" not in payload:
+        return payload
+    content = str(payload.get("content") or "")
+    return {**{k: v for k, v in payload.items() if k != "content"},
+            "content_sha256": canonical_hash(content), "content_chars": len(content)}
+
+
+def _audit_result(result: Any) -> dict:
+    """Enough to prove what came back and to compare it later, not a copy of it."""
+    body = json.dumps(result, ensure_ascii=False)
+    return {"sha256": canonical_hash(result), "chars": len(body), "head": body[:200]}
+
+
 async def _record_decision(event: dict) -> int:
     row = await db.fetch_one(
         """INSERT INTO decisions(
@@ -326,7 +369,8 @@ async def _record_decision(event: dict) -> int:
             event["tool_name"], event["data_class"], event["action"], event["decision"],
             event["policy_id"], event["reason"], event["upstream_executed"],
             Jsonb(event.get("restrictions") or {}), event.get("approval_id"),
-            Jsonb(event.get("request_payload") or {}), Jsonb(event["result"]) if event.get("result") is not None else None,
+            Jsonb(_audit_payload(event.get("request_payload") or {})),
+            Jsonb(_audit_result(event["result"])) if event.get("result") is not None else None,
             event.get("error"),
         ),
     )
@@ -451,6 +495,18 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     base_event["result"] = await _call_upstream(spec, effective)
                 base_event["upstream_executed"] = True
                 base_event["effective_arguments"] = effective
+            except ResultRejected as exc:
+                # The call did run upstream; only the answer is withheld. Recording it
+                # as "not executed" would make the effect log and the audit disagree.
+                base_event.update({
+                    "decision": "Block",
+                    "policy_id": "MCP-OUTPUT-001",
+                    "reason": "upstream 결과가 출력 통제에 걸려 반환하지 않았습니다. 호출 자체는 실행됐습니다.",
+                    "upstream_executed": True,
+                    "result": None,
+                    "error": str(exc)[:500],
+                })
+                span.record_exception(exc)
             except Exception as exc:
                 base_event.update({
                     "decision": "Block",

@@ -6,13 +6,22 @@ import sys
 from datetime import UTC, datetime
 
 import httpx
+import httpx2
 from mcp import Client, StdioServerParameters
 from mcp.client.sse import sse_client
+from mcp.client.streamable_http import streamable_http_client
 
 from . import db
+from .agent_contract import IDENTITIES, issue_token
 from .core import approve_request, execute_call
 
 API = "http://gateway:8080"
+EMAILS = {"cust-demo": "customer@bob.local", "emp-demo": "miso@bob.local", "admin-demo": "admin@bob.local"}
+
+
+def bearer(principal: str) -> dict:
+    """A synthetic signed identity, the only thing any ingress now accepts."""
+    return {"Authorization": "Bearer " + issue_token(IDENTITIES[EMAILS[principal]])}
 
 
 def check(condition: bool, name: str, details: str = "") -> dict:
@@ -35,9 +44,9 @@ def tool_payload(result) -> dict:
     raise AssertionError("MCP tool returned no JSON object")
 
 
-async def post(path: str, body: dict) -> dict:
+async def post(path: str, body: dict, principal: str = "cust-demo") -> dict:
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.post(API + path, json=body)
+        response = await client.post(API + path, json=body, headers=bearer(principal))
         response.raise_for_status()
         return response.json()
 
@@ -60,15 +69,15 @@ async def run() -> dict:
     checks.append(check(True, "rego-333-exact", "14 permitted or controlled, 13 blocked"))
 
     scenarios = [
-        ("Allow", {"user_token": "cust-demo", "tool_name": "read_document", "document_id": "notice-001"}, True),
-        ("Alert", {"user_token": "emp-demo", "tool_name": "read_document", "document_id": "secret-001"}, True),
-        ("Restrict", {"user_token": "admin-demo", "tool_name": "send_external", "document_id": "notice-001", "destination": "not-approved.example", "content": "A" * 120}, True),
-        ("Approval", {"user_token": "admin-demo", "tool_name": "send_external", "document_id": "secret-001", "destination": "not-approved.example", "content": "synthetic important"}, False),
-        ("Block", {"user_token": "cust-demo", "tool_name": "read_document", "document_id": "secret-001"}, False),
+        ("Allow", "cust-demo", {"tool_name": "read_document", "document_id": "notice-001"}, True),
+        ("Alert", "emp-demo", {"tool_name": "read_document", "document_id": "secret-001"}, True),
+        ("Restrict", "admin-demo", {"tool_name": "send_external", "document_id": "notice-001", "destination": "not-approved.example", "content": "A" * 120}, True),
+        ("Approval", "admin-demo", {"tool_name": "send_external", "document_id": "secret-001", "destination": "not-approved.example", "content": "synthetic important"}, False),
+        ("Block", "cust-demo", {"tool_name": "read_document", "document_id": "secret-001"}, False),
     ]
     approval_id = None
-    for expected_decision, body, should_execute in scenarios:
-        result = await post("/api/calls", body)
+    for expected_decision, principal, body, should_execute in scenarios:
+        result = await post("/api/calls", body, principal)
         checks.append(check(result["decision"] == expected_decision, f"decision-{expected_decision.lower()}", result["policy_id"]))
         checks.append(check(result["upstream_executed"] is should_execute, f"effect-{expected_decision.lower()}", f"{result['effect_before']}->{result['effect_after']}"))
         if should_execute and body["tool_name"] != "get_current_time":
@@ -79,6 +88,19 @@ async def run() -> dict:
             checks.append(check(result["effective_arguments"]["destination"] == "mentor-demo.invalid" and len(result["effective_arguments"]["content"]) == 80, "restriction-applied", "destination + 80 chars"))
         if expected_decision == "Approval":
             approval_id = result["approval_id"]
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        anonymous = await client.post(API + "/api/calls", json={"tool_name": "read_document", "document_id": "notice-001"})
+        forged = await client.post(API + "/api/calls", headers={"Authorization": "Bearer not-a-real-token"},
+                                   json={"tool_name": "read_document", "document_id": "notice-001"})
+        anonymous_approval = await client.post(API + "/api/approvals/" + approval_id + "/approve", json={})
+        customer_approval = await client.post(API + "/api/approvals/" + approval_id + "/approve",
+                                              headers=bearer("cust-demo"), json={})
+    checks.append(check(anonymous.status_code == 401 and forged.status_code == 401, "api-identity-required",
+                        "anonymous=%s forged=%s" % (anonymous.status_code, forged.status_code)))
+    checks.append(check(anonymous_approval.status_code == 401 and customer_approval.status_code == 403,
+                        "approval-identity-required",
+                        "anonymous=%s customer=%s" % (anonymous_approval.status_code, customer_approval.status_code)))
 
     approved = await approve_request(approval_id, "admin-demo")
     checks.append(check(approved["decision"] == "Allow" and approved["upstream_executed"], "approval-revalidation", approved["policy_id"]))
@@ -93,10 +115,10 @@ async def run() -> dict:
         expired_blocked = True
     checks.append(check(expired_blocked, "approval-expiry", "expired request rejected"))
 
-    stdio_upstream = await post("/api/calls", {"user_token": "cust-demo", "tool_name": "get_current_time", "timezone": "Asia/Seoul"})
+    stdio_upstream = await post("/api/calls", {"tool_name": "get_current_time", "timezone": "Asia/Seoul"})
     checks.append(check(stdio_upstream["decision"] == "Allow" and stdio_upstream["upstream_executed"], "stdio-upstream", "mcp-server-time"))
 
-    github = await post("/api/calls", {"user_token": "cust-demo", "tool_name": "github_get_file", "owner": "MCP-governance", "repo": "mcp-gateway", "path": "README.md"})
+    github = await post("/api/calls", {"tool_name": "github_get_file", "owner": "MCP-governance", "repo": "mcp-gateway", "path": "README.md"})
     checks.append(check(github["decision"] == "Block" and github["policy_id"] == "MCP-REGISTRY-002", "github-auth-deferred", "registered but disabled"))
 
     unknown = await execute_call({"user_token": "admin-demo", "tool_name": "shadow_export", "document_id": "notice-001"})
@@ -120,22 +142,46 @@ async def run() -> dict:
     finally:
         await db.execute("DELETE FROM supply_chain_reports WHERE scanner='acceptance-fixture'")
 
-    async with Client("http://gateway:8080/mcp/") as client:
-        tools = await client.list_tools()
-        protocol_version = str(client.protocol_version)
-        result = await client.call_tool("read_document", {"user_token": "cust-demo", "document_id": "notice-001"})
-        structured = tool_payload(result)
+    async with httpx2.AsyncClient(headers=bearer("cust-demo"), timeout=30) as http_client:
+        async with Client(streamable_http_client("http://gateway:8080/mcp/", http_client=http_client)) as client:
+            tools = await client.list_tools()
+            protocol_version = str(client.protocol_version)
+            result = await client.call_tool("read_document", {"document_id": "notice-001"})
+            structured = tool_payload(result)
     checks.append(check({"read_document", "write_document", "send_external", "get_current_time", "github_get_file"} == {tool.name for tool in tools.tools}, "streamable-http-ingress", protocol_version))
     checks.append(check(not result.is_error and structured["decision"] == "Allow", "streamable-http-call", "actual MCP tools/call"))
+    checks.append(check(all("user_token" not in (tool.input_schema.get("properties") or {}) for tool in tools.tools),
+                        "ingress-schema-has-no-identity", "identity is not a tool argument"))
 
-    parameters = StdioServerParameters(command=sys.executable, args=["-m", "app.stdio_entry"])
+    # No Authorization header at all: the ingress must refuse rather than fall back
+    # to a default principal.
+    async with httpx2.AsyncClient(timeout=30) as http_client:
+        async with Client(streamable_http_client("http://gateway:8080/mcp/", http_client=http_client)) as client:
+            try:
+                anonymous_call = await client.call_tool("read_document", {"document_id": "notice-001"})
+                anonymous_refused = bool(anonymous_call.is_error)
+            except Exception:
+                anonymous_refused = True
+    checks.append(check(anonymous_refused, "mcp-ingress-identity-required", "unauthenticated tools/call refused"))
+
+    parameters = StdioServerParameters(command=sys.executable, args=["-m", "app.stdio_entry"],
+                                       env={"GATEWAY_STDIO_PRINCIPAL": "cust-demo"})
     async with Client(parameters) as client:
-        result = await client.call_tool("read_document", {"user_token": "cust-demo", "document_id": "notice-001"})
+        result = await client.call_tool("read_document", {"document_id": "notice-001"})
         structured = tool_payload(result)
-    checks.append(check(not result.is_error and structured["decision"] == "Allow", "stdio-ingress", "actual MCP tools/call"))
+    checks.append(check(not result.is_error and structured["decision"] == "Allow", "stdio-ingress", "identity bound at spawn time"))
 
-    async with Client(sse_client("http://gateway-sse:8081/sse")) as client:
-        result = await client.call_tool("read_document", {"user_token": "cust-demo", "document_id": "notice-001"})
+    unbound = StdioServerParameters(command=sys.executable, args=["-m", "app.stdio_entry"])
+    async with Client(unbound) as client:
+        try:
+            unbound_call = await client.call_tool("read_document", {"document_id": "notice-001"})
+            unbound_refused = bool(unbound_call.is_error)
+        except Exception:
+            unbound_refused = True
+    checks.append(check(unbound_refused, "stdio-ingress-identity-required", "unbound stdio ingress refused"))
+
+    async with Client(sse_client("http://gateway-sse:8081/sse", headers=bearer("cust-demo"))) as client:
+        result = await client.call_tool("read_document", {"document_id": "notice-001"})
         structured = tool_payload(result)
     checks.append(check(not result.is_error and structured["decision"] == "Allow", "legacy-sse-ingress", "compatibility adapter"))
 

@@ -5,22 +5,15 @@ from fastapi import APIRouter, Header, HTTPException
 from psycopg.types.json import Jsonb
 
 from . import db
-from .agent_contract import Envelope, Proposal, authenticate, validate_proposal
+from .agent_contract import Envelope, Proposal, authenticated_user, validate_proposal
 from .core import approve_request, canonical_hash, execute_call
 
 router = APIRouter()
 
 
-async def identity(authorization):
-    user, claims = authenticate(authorization)
-    if await db.fetch_one("SELECT jti FROM agent_revoked_tokens WHERE jti=%s", (claims["jti"],)):
-        raise HTTPException(401, "로그아웃된 인증입니다.")
-    return user
-
-
 @router.post("/tool-call")
 async def tool_call(request: Envelope, authorization: str | None = Header(default=None)):
-    user = await identity(authorization)
+    user = await authenticated_user(authorization)
     if request.user_id != user["user_id"]:
         raise HTTPException(403, "요청자와 서명된 사용자 정보가 다릅니다.")
     try:
@@ -47,7 +40,7 @@ async def tool_call(request: Envelope, authorization: str | None = Header(defaul
 
 @router.post("/agent/approvals/{approval_id}/approve")
 async def approve(approval_id: UUID, authorization: str | None = Header(default=None)):
-    user = await identity(authorization)
+    user = await authenticated_user(authorization)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "관리자 계정이 필요합니다.")
     try:

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
 
@@ -10,16 +10,26 @@ const decisionMeta = {
   Block: { icon: '×', label: '차단', tone: 'block' },
 }
 
-const scenarios = [
-  { name: '공개 문서 허용', user: 'cust-demo', message: '공개 공지를 읽어줘' },
-  { name: '중요 열람 경보', user: 'emp-demo', message: '중요 계약 초안을 읽어줘' },
-  { name: '외부 전송 제한', user: 'admin-demo', message: '공개 공지를 외부로 보내줘' },
-  { name: '중요 전송 승인', user: 'admin-demo', message: '중요 계약을 외부로 전송해줘' },
-  { name: '권한 부족 차단', user: 'cust-demo', message: '중요 계약을 읽어줘' },
+// The dashboard no longer holds a list of principal tokens. It signs in as a
+// synthetic account and sends that account's token, exactly like every other client.
+const accounts = [
+  { email: 'customer@bob.local', role: 'customer', name: '고객 김민수', mark: '고' },
+  { email: 'miso@bob.local', role: 'employee', name: '김미소', mark: '직' },
+  { email: 'admin@bob.local', role: 'admin', name: '관리자 박지훈', mark: '관' },
 ]
 
-async function api(path, options) {
-  const response = await fetch(path, options)
+const scenarios = [
+  { name: '공개 문서 허용', email: 'customer@bob.local', message: '공개 공지를 읽어줘' },
+  { name: '중요 열람 경보', email: 'miso@bob.local', message: '중요 계약 초안을 읽어줘' },
+  { name: '외부 전송 제한', email: 'admin@bob.local', message: '공개 공지를 외부로 보내줘' },
+  { name: '중요 전송 승인', email: 'admin@bob.local', message: '중요 계약을 외부로 전송해줘' },
+  { name: '권한 부족 차단', email: 'customer@bob.local', message: '중요 계약을 읽어줘' },
+]
+
+async function api(path, options = {}, token) {
+  const headers = { ...(options.headers || {}) }
+  if (token) headers.Authorization = `Bearer ${token}`
+  const response = await fetch(path, { ...options, headers })
   const body = await response.json()
   if (!response.ok) throw new Error(body.detail || `HTTP ${response.status}`)
   return body
@@ -39,7 +49,8 @@ function App() {
   const [state, setState] = useState(null)
   const [matrix, setMatrix] = useState(null)
   const [integration, setIntegration] = useState(null)
-  const [user, setUser] = useState('cust-demo')
+  const [email, setEmail] = useState('customer@bob.local')
+  const [password, setPassword] = useState('')
   const [message, setMessage] = useState('공개 공지를 읽어줘')
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -66,15 +77,37 @@ function App() {
     return () => clearInterval(timer)
   }, [])
 
+  // One short-lived token per synthetic account, minted on demand. An expired token
+  // is dropped and re-minted rather than retried, so a stale tab cannot half-work.
+  const tokens = useRef({})
+  const tokenFor = async (account) => {
+    if (!tokens.current[account]) {
+      const body = await api('/api/session', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: account, password }),
+      })
+      tokens.current[account] = body.access_token
+    }
+    return tokens.current[account]
+  }
+  const withToken = async (account, call) => {
+    try {
+      return await call(await tokenFor(account))
+    } catch (err) {
+      if (String(err.message).includes('401') || String(err.message).includes('인증')) tokens.current[account] = null
+      throw err
+    }
+  }
+
   const run = async (event) => {
     event?.preventDefault()
     setBusy(true)
     setError('')
     try {
-      const response = await api('/api/mock-model', {
+      const response = await withToken(email, token => api('/api/mock-model', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_token: user, message }),
-      })
+        body: JSON.stringify({ message }),
+      }, token))
       setResult(response)
       await load()
     } catch (err) {
@@ -87,10 +120,11 @@ function App() {
   const approve = async (id) => {
     setBusy(true)
     try {
-      const response = await api(`/api/approvals/${id}/approve`, {
+      // Approval is an admin action, so it is signed by the admin account, not by
+      // whoever happens to have the dashboard open.
+      const response = await withToken('admin@bob.local', token => api(`/api/approvals/${id}/approve`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reviewer_token: 'admin-demo' }),
-      })
+      }, token))
       setResult({ generator: 'approval-revalidation', generated_call: null, result: response })
       await load()
     } catch (err) {
@@ -102,20 +136,21 @@ function App() {
 
   const refreshCatalog = async () => {
     setBusy(true)
-    try { await api('/api/catalog/refresh', { method: 'POST' }); await load() }
+    try { await withToken(email, token => api('/api/catalog/refresh', { method: 'POST' }, token)); await load() }
     catch (err) { setError(err.message) }
     finally { setBusy(false) }
   }
 
   const importReports = async () => {
     setBusy(true)
-    try { await api('/api/supply-chain/import', { method: 'POST' }); await load() }
+    try { await withToken('admin@bob.local', token => api('/api/supply-chain/import', { method: 'POST' }, token)); await load() }
     catch (err) { setError(err.message) }
     finally { setBusy(false) }
   }
 
   const current = result?.result
-  const activeUser = state?.principals?.find(item => item.token === (current?.user_token || user))
+  const activeAccount = accounts.find(item => item.email === email)
+  const activeUser = state?.principals?.find(item => item.role === (current?.role || activeAccount?.role))
   const cells = useMemo(() => {
     const index = {}
     for (const cell of matrix?.cells || []) index[`${cell.role}.${cell.data_class}.${cell.action}`] = cell
@@ -187,20 +222,25 @@ function App() {
           <form className="panel simulator" onSubmit={run}>
             <div className="step-label"><b>1</b><span>요청자 선택</span></div>
             <div className="role-options">
-              {(state?.principals || []).map(item => <label className={user === item.token ? 'selected' : ''} key={item.token}>
-                <input type="radio" name="user" value={item.token} checked={user === item.token} onChange={e => setUser(e.target.value)} />
-                <span className={`avatar ${item.role}`}>{item.role === 'customer' ? '고' : item.role === 'employee' ? '직' : '관'}</span>
-                <span><b>{item.display_name}</b><small>{item.role} · 합성 계정</small></span>
+              {accounts.map(item => <label className={email === item.email ? 'selected' : ''} key={item.email}>
+                <input type="radio" name="user" value={item.email} checked={email === item.email} onChange={e => setEmail(e.target.value)} />
+                <span className={`avatar ${item.role}`}>{item.mark}</span>
+                <span><b>{item.name}</b><small>{item.role} · 합성 계정</small></span>
               </label>)}
             </div>
-            <div className="step-label"><b>2</b><span>업무 요청 입력</span></div>
+            <div className="step-label"><b>2</b><span>합성 계정 비밀번호</span></div>
+            <label className="sr-only" htmlFor="password">합성 계정 비밀번호</label>
+            <input id="password" type="password" value={password} autoComplete="off"
+                   onChange={e => { setPassword(e.target.value); tokens.current = {} }}
+                   placeholder=".env의 MOCK_SSO_PASSWORD (기본 test-password)" />
+            <div className="step-label"><b>3</b><span>업무 요청 입력</span></div>
             <label className="sr-only" htmlFor="message">업무 요청</label>
             <textarea id="message" value={message} onChange={e => setMessage(e.target.value)} rows="4" maxLength="500" />
             <div className="scenario-list" aria-label="빠른 실습 시나리오">
-              {scenarios.map(scenario => <button type="button" key={scenario.name} onClick={() => { setUser(scenario.user); setMessage(scenario.message) }}>{scenario.name}</button>)}
+              {scenarios.map(scenario => <button type="button" key={scenario.name} onClick={() => { setEmail(scenario.email); setMessage(scenario.message) }}>{scenario.name}</button>)}
             </div>
-            <button className="primary-button" disabled={busy || !message.trim()}>{busy ? '정책 확인 중…' : '정책을 거쳐 MCP 호출하기'} <span>→</span></button>
-            <p className="form-help">입력 문장은 규칙으로 Tool Call JSON으로 변환됩니다. 외부 LLM API는 호출하지 않습니다.</p>
+            <button className="primary-button" disabled={busy || !message.trim() || !password}>{busy ? '정책 확인 중…' : '정책을 거쳐 MCP 호출하기'} <span>→</span></button>
+            <p className="form-help">입력 문장은 규칙으로 Tool Call JSON으로 변환됩니다. 외부 LLM API는 호출하지 않습니다. 요청자는 서명된 합성 토큰에서만 오고, 본문으로는 주장할 수 없습니다.</p>
           </form>
 
           <div className={`panel result-panel ${current ? decisionMeta[current.decision]?.tone : ''}`} aria-live="polite">
