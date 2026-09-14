@@ -99,3 +99,30 @@ test_restrict_values_come_from_policy_data if {
   result.restrictions.destination == data.restrictions.external_destination
   result.restrictions.max_chars == data.restrictions.max_chars
 }
+
+test_department_scope_inert_by_default if {
+  input2 := object.union(base, {
+    "principal": {"role": "employee", "department": "보안기술팀"},
+    "resource": {"data_class": "important", "owner_department": "거버넌스팀"},
+  })
+  result := decision with input as input2
+  result.decision == "Alert"
+}
+
+test_department_scope_escalates_when_enabled if {
+  input2 := object.union(base, {
+    "principal": {"role": "employee", "department": "보안기술팀"},
+    "resource": {"data_class": "important", "owner_department": "거버넌스팀"},
+  })
+  result := decision with input as input2 with data.department_scope as {"enabled": true}
+  result.policy_id == "P-DEPT-001"
+}
+
+test_department_scope_allows_own_department if {
+  input2 := object.union(base, {
+    "principal": {"role": "employee", "department": "거버넌스팀"},
+    "resource": {"data_class": "important", "owner_department": "거버넌스팀"},
+  })
+  result := decision with input as input2 with data.department_scope as {"enabled": true}
+  result.decision == "Alert"
+}

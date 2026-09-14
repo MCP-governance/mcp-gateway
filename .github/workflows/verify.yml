@@ -37,6 +37,12 @@ jobs:
       - name: Shell 문법
         run: bash -n full_stack_lab/demo.sh full_stack_lab/tests/drift_and_fail_closed.sh
 
+      # README 13절은 "무엇을 의도적으로 열어두었는가"라는 진술입니다. 엔드포인트를
+      # 추가하면서 그 문장을 건드리지 않는 순간 목록이 어긋나고, 불완전한 목록은
+      # 없는 것보다 나쁩니다. 검토자는 그 목록을 전부라고 읽습니다.
+      - name: 무인증 API 목록과 문서 대조
+        run: python3 full_stack_lab/tests/open_endpoints.py
+
       - name: Compose 구성 검증
         working-directory: full_stack_lab
         env:

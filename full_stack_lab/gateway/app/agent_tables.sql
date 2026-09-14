@@ -70,6 +70,18 @@ UPDATE mcp_servers SET scan_path = 'full_stack_lab/gateway' WHERE id = 'mock-std
 -- A reviewer who can only approve has one button and no way to say why not.
 ALTER TABLE approvals ADD COLUMN IF NOT EXISTS review_note text;
 
+-- The organisational axis. 3 roles x 3 classes is the whole policy vocabulary today,
+-- but a real tenant decides by department, project and customer as well. Widening the
+-- policy *input* now costs nothing and is what keeps the rule set from having to be
+-- rewritten later; the rule that uses it ships disabled (see opa/data.json).
+ALTER TABLE principals ADD COLUMN IF NOT EXISTS department text;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS owner_department text;
+UPDATE principals SET department='고객' WHERE token='cust-demo' AND department IS NULL;
+UPDATE principals SET department='보안기술팀' WHERE token='emp-demo' AND department IS NULL;
+UPDATE principals SET department='거버넌스팀' WHERE token='admin-demo' AND department IS NULL;
+UPDATE documents SET owner_department='보안기술팀' WHERE id='work-001' AND owner_department IS NULL;
+UPDATE documents SET owner_department='거버넌스팀' WHERE id='secret-001' AND owner_department IS NULL;
+
 -- Applied on every boot so existing volumes get them too. Audit lookups are by
 -- request id or by user over a time window; without these both are seq scans.
 CREATE INDEX IF NOT EXISTS decisions_request_idx ON decisions(request_id);

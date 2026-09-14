@@ -2,13 +2,15 @@ CREATE TABLE IF NOT EXISTS principals (
   token text PRIMARY KEY,
   display_name text NOT NULL,
   role text NOT NULL CHECK (role IN ('customer', 'employee', 'admin')),
+  department text,
   synthetic boolean NOT NULL DEFAULT true
 );
 
 CREATE TABLE IF NOT EXISTS documents (
   id text PRIMARY KEY,
   title text NOT NULL,
-  data_class text NOT NULL CHECK (data_class IN ('public', 'nonimportant', 'important'))
+  data_class text NOT NULL CHECK (data_class IN ('public', 'nonimportant', 'important')),
+  owner_department text
 );
 
 CREATE TABLE IF NOT EXISTS mcp_servers (
@@ -110,16 +112,16 @@ CREATE TABLE IF NOT EXISTS supply_chain_reports (
   imported_at timestamptz NOT NULL DEFAULT now()
 );
 
-INSERT INTO principals(token, display_name, role) VALUES
-  ('cust-demo', '고객 김민수', 'customer'),
-  ('emp-demo', '직원 이서연', 'employee'),
-  ('admin-demo', '관리자 박지훈', 'admin')
+INSERT INTO principals(token, display_name, role, department) VALUES
+  ('cust-demo', '고객 김민수', 'customer', '고객'),
+  ('emp-demo', '직원 이서연', 'employee', '보안기술팀'),
+  ('admin-demo', '관리자 박지훈', 'admin', '거버넌스팀')
 ON CONFLICT (token) DO NOTHING;
 
-INSERT INTO documents(id, title, data_class) VALUES
-  ('notice-001', '서비스 공개 공지', 'public'),
-  ('work-001', '내부 업무 메모', 'nonimportant'),
-  ('secret-001', '중요 계약 초안', 'important')
+INSERT INTO documents(id, title, data_class, owner_department) VALUES
+  ('notice-001', '서비스 공개 공지', 'public', NULL),
+  ('work-001', '내부 업무 메모', 'nonimportant', '보안기술팀'),
+  ('secret-001', '중요 계약 초안', 'important', '거버넌스팀')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO mcp_servers(id, display_name, transport, endpoint, source_url, source_ref, supplier, license, status, status_reason) VALUES

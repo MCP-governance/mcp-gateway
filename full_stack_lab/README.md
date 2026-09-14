@@ -161,6 +161,23 @@ Dashboard의 **집행 단계** 패널에 같은 숫자와 정책별 내역이 �
 | `Restrict` | 비중요 `x`의 목적지와 길이를 축소한 뒤 실행 | `P-X-RESTRICT-001` |
 | `Block` | 권한·Registry·catalog·공급망·OPA 가용성 문제로 미실행 | `P-333-DENY-001` 등 |
 
+`P-DEPT-001`(부서 축)은 기본 비활성입니다. 아래 "조직 축"을 참고하세요.
+
+### 조직 축 (기본 비활성)
+
+역할 3 × 등급 3은 이 실습의 정책 어휘 전부이지만, 실제 조직은 부서·프로젝트·고객사로도 판단합니다. 그래서 **정책 입력에는 부서 축이 이미 들어갑니다.**
+
+| 입력 | 출처 |
+| --- | --- |
+| `principal.department` | `principals.department` |
+| `resource.owner_department` | `documents.owner_department` |
+
+이 입력을 쓰는 규칙 `P-DEPT-001`(소관 부서가 아닌 중요정보 접근 → 승인)은 [`opa/data.json`](opa/data.json)의 `department_scope.enabled`가 `false`라 **꺼진 채로 배포됩니다.** 27칸 매트릭스와 기존 판정은 그대로입니다. 켜는 것은 조직의 결정이지만, 입력을 미리 넓혀두지 않으면 그때 규칙 전체를 다시 써야 합니다.
+
+```json
+{"department_scope": {"enabled": true}}
+```
+
 단건으로 보면 정상인 호출도 쌓이면 다른 이야기가 됩니다. Gateway는 감사 테이블에서 두 신호를 세어 정책 입력으로 넘깁니다. 세는 일은 Gateway가, 판단은 정책이 합니다.
 
 | 신호 | 기본 임계값 | 결과 |
@@ -250,7 +267,7 @@ curl -sS http://localhost:8000/api/readiness | python3 -m json.tool
 
 정상 기준은 다음과 같습니다.
 
-- Rego 단위 테스트 `12/12 PASS`
+- Rego 단위 테스트 `15/15 PASS`
 - acceptance, Agent/API 경계 acceptance 모두 `0 failed`
 - 익명·위조 토큰의 Gateway API 호출이 `401`, 고객 계정의 승인 시도가 `403`
 - `/tool-call`은 사용자 JWT와 Agent Assertion을 함께 요구하며, 사용자 JWT 재사용·다른 actor·변조된 envelope는 `401`
@@ -363,10 +380,14 @@ curl -sS http://localhost:8080/api/audit/verify   -H "authorization: Bearer $GW_
 
 `decisions`에는 `UPDATE`·`DELETE`를 거부하는 DB trigger가 있습니다. 이 실습의 애플리케이션 역할은 schema owner라 `REVOKE`만으로는 소유자의 암묵 권한을 없앨 수 없습니다. trigger는 평상 애플리케이션 경로의 수정을 fail-closed로 막고, 운영에서는 migration owner와 append-only writer를 분리해야 합니다.
 
-체인이 실제로 변조를 잡는지 보여주려면 superuser로 한 행을 고친 뒤 다시 확인합니다.
+체인이 실제로 변조를 잡는지 보여주려면 **먼저 trigger를 끄고** 한 행을 고칩니다. trigger가 살아 있는 동안에는 소유자의 `UPDATE`도 `decisions is append-only`로 실패하므로, 이 순서가 곧 "통제를 하나 무력화해도 다음 통제가 잡는다"는 시연이 됩니다.
 
 ```bash
-docker compose exec -T db psql -U mcp -d mcp_governance -c   "UPDATE decisions SET reason='조작된 사유' WHERE id=(SELECT max(id) FROM decisions)"
+docker compose exec -T db psql -U mcp -d mcp_governance -c \
+  "ALTER TABLE decisions DISABLE TRIGGER decisions_append_only;
+   UPDATE decisions SET reason='조작된 사유' WHERE id=(SELECT max(id) FROM decisions);
+   ALTER TABLE decisions ENABLE TRIGGER decisions_append_only;"
+
 curl -sS http://localhost:8080/api/audit/verify -H "authorization: Bearer $GW_TOKEN" | python3 -m json.tool
 ```
 
@@ -431,7 +452,8 @@ curl -sS http://localhost:8080/api/audit/verify -H "authorization: Bearer $GW_TO
 | `gateway/ui/` | 멘토용 React Dashboard |
 | `mock_server/server.py` | 실제 SDK 기반 합성 문서 MCP와 catalog 변조 모드 |
 | `opa/` | 333 Rego 정책과 단위 테스트 |
-| `db/init.sql` | 합성 사용자·Registry·감사/승인/공급망 schema |
+| `db/init.sql` | 합성 사용자·부서·Registry·감사/승인/공급망 schema |
+| `tests/open_endpoints.py` | 무인증으로 열린 API 목록이 문서와 같은지 대조 |
 | `tests/` | acceptance 외 보안 회귀 검사 |
 | `supply_chain/` | 고정 커밋의 선택적 mcp-scan 이미지 |
 
@@ -461,8 +483,8 @@ Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance
 ## 13. 의도적으로 남긴 경계
 
 - 실제 사용자 SSO/OIDC, RBAC 관리 화면, 실제 GitHub 토큰 위임은 미구현입니다. 합성 JWT와 Agent Assertion은 Ed25519로 서명하고 Agent Service만 개인키를 갖지만, assertion은 workload attestation이 아니며 키 회전·폐기 절차·JWKS 배포·SPIFFE SVID는 아직 없습니다.
-- Dashboard의 읽기 API(`/api/state`, `/api/effects`, `/api/policy/matrix`)는 인증 없이 열려 있습니다. 상태를 바꾸는 API는 모두 서명된 토큰을 요구하지만, 증적 조회는 `127.0.0.1` 바인딩에만 의존합니다.
-- Gateway API에는 호출량 제한이나 사용자별 쿼터가 없습니다. Agent Service의 동시 실행 제한은 프로세스 단위라 복제본이 늘면 함께 늘어납니다.
+- Dashboard의 읽기 API는 인증 없이 열려 있습니다: `/api/health`, `/api/state`, `/api/effects`, `/api/policy/matrix`, `/api/integration`, `/api/monitor/summary`, `/api/enforcement`, `/api/supply-chain/coverage`. 상태를 바꾸는 API는 모두 서명된 토큰을 요구하고 승인·거부·집행 전환·공급망 가져오기·감사 검증은 관리자까지 확인하지만, 증적 조회는 `127.0.0.1` 바인딩에만 의존합니다. 이 목록은 `tests/open_endpoints.py`가 코드와 대조합니다.
+- 호출량 상한(`P-RATE-001`)과 중요정보 누적 승격(`P-VOLUME-001`)은 감사 테이블 기준이라 Gateway 복제본이 늘어도 유지되지만, 비용·토큰 쿼터는 없습니다. Agent Service의 동시 실행 제한과 로그인 시도 상한은 프로세스 단위라 복제본이 늘면 함께 늘어납니다.
 - 실제 상용 LLM API는 호출하지 않았습니다. 기본 자연어 변환은 데모용 키워드 규칙이고, OpenAI 호환 HTTP 경계는 로컬 stub으로만 검증했습니다.
 - GitHub MCP는 인증·catalog 승인 전이라 실제 upstream 호출을 하지 않습니다.
 - GitHub catalog 승인은 현재 데모 DB 상태입니다. 운영 반영 전에는 검토 파일의 해시를 코드 리뷰와 정책 버전에 남겨야 합니다.

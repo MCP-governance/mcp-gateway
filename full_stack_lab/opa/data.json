@@ -2,5 +2,9 @@
   "restrictions": {
     "external_destination": "restricted.invalid",
     "max_chars": 80
+  },
+  "department_scope": {
+    "_comment": "Ships disabled. Set enabled to true to require approval for important data outside the principal's own department.",
+    "enabled": false
   }
 }

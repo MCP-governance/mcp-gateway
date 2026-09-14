@@ -138,7 +138,12 @@ case "${1:-up}" in
     ;;
   reset)
     docker compose down -v
-    rm -f reports/acceptance.json reports/agent-acceptance.json reports/security-regression.txt reports/full-test.log reports/sbom.cdx.json reports/trivy.json reports/mcp-scan.sarif.json
+    # trivy-*.json are the per-server reports that actually feed MCP-SUPPLY-001.
+    # Leaving them behind meant a reset did not reset supply-chain evidence: the
+    # next import re-attributed stale findings to a freshly created database.
+    rm -f reports/acceptance.json reports/agent-acceptance.json reports/security-regression.txt \
+      reports/full-test.log reports/sbom.cdx.json reports/trivy.json reports/trivy-*.json \
+      reports/mcp-scan.sarif.json
     echo "이 실습 전용 DB·효과 로그·생성 보고서를 초기화했습니다."
     ;;
   *)

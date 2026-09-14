@@ -644,8 +644,10 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         if not catalog_fresh:
             contract["known_tools_only"] = False
         policy_input = {
-            "principal": {"role": role, "synthetic": bool(principal["synthetic"])},
-            "resource": {"id": payload.get("document_id", "time"), "data_class": data_class},
+            "principal": {"role": role, "synthetic": bool(principal["synthetic"]),
+                          "department": principal.get("department")},
+            "resource": {"id": payload.get("document_id", "time"), "data_class": data_class,
+                         "owner_department": document.get("owner_department") if document else None},
             "tool": {"name": spec["registry_name"], "action": spec["action"]},
             "approval": {"granted": approval_granted, "id": approval_id},
             "contract": contract,
