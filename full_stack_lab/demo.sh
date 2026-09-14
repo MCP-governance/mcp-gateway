@@ -40,6 +40,30 @@ gateway_token() {
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])'
 }
 
+# A workspace-wide scan tells you nothing about which MCP server is affected, and the
+# MCP-SUPPLY-001 gate counts criticals against a server's pinned source_ref. So each
+# registered server with a scan_path is scanned on its own and the report is named
+# after it; core.import_supply_chain_reports attributes it from that name.
+scan_registered_servers() {
+  local targets
+  targets="$(curl -fsS http://127.0.0.1:8080/api/supply-chain/coverage \
+    | python3 -c 'import json,sys
+for row in json.load(sys.stdin)["servers"]:
+    if row["scan_path"]:
+        print(row["server_id"], row["scan_path"])')"
+  if [[ -z "$targets" ]]; then
+    echo "스캔 대상으로 등록된 서버가 없습니다." >&2
+    return
+  fi
+  while read -r server_id scan_path; do
+    [[ -z "$server_id" ]] && continue
+    echo "[supply-chain] $server_id <- $scan_path"
+    docker compose --profile supply-chain run --rm trivy \
+      fs --scanners vuln,misconfig,secret --format json \
+      --output "/reports/trivy-${server_id}.json" "/workspace/${scan_path}"
+  done <<< "$targets"
+}
+
 import_reports() {
   curl -fsS -X POST http://127.0.0.1:8080/api/supply-chain/import \
     -H "authorization: Bearer $(gateway_token)" | python3 -m json.tool
@@ -88,8 +112,9 @@ case "${1:-up}" in
     up
     docker compose --profile supply-chain run --rm syft
     docker compose --profile supply-chain run --rm trivy
+    scan_registered_servers
     import_reports
-    echo "SBOM과 취약점 결과를 reports/ 및 Dashboard에 반영했습니다."
+    echo "SBOM과 서버별 취약점 결과를 reports/ 및 Dashboard에 반영했습니다."
     ;;
   mcp-scan)
     if [[ -z "${MCP_SCAN_API_KEY:-}" || -z "${MCP_SCAN_BASE_URL:-}" || -z "${MCP_SCAN_MODEL:-}" ]]; then

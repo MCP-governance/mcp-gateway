@@ -16,7 +16,8 @@ from mcp.shared.exceptions import MCPError
 
 from . import db
 from .core import (RATE_LIMIT_CALLS, IMPORTANT_BURST_LIMIT, _policy, _recent_activity,
-                   approve_request, execute_call, set_enforcement_mode, verify_audit_chain)
+                   approve_request, execute_call, set_enforcement_mode, supply_chain_coverage,
+                   verify_audit_chain)
 
 API = "http://gateway:8080"
 EMAILS = {"cust-demo": "customer@bob.local", "emp-demo": "miso@bob.local", "admin-demo": "admin@bob.local"}
@@ -270,6 +271,17 @@ async def run() -> dict:
         statuses = [(await client.post(API + "/api/session", json={
             "email": "nobody@bob.local", "password": "wrong"})).status_code for _ in range(12)]
     checks.append(check(429 in statuses, "login-attempt-ceiling", f"statuses={sorted(set(statuses))}"))
+
+    coverage = {row["server_id"]: row for row in await supply_chain_coverage()}
+    checks.append(check(
+        coverage["mock-http"]["scan_path"] == "full_stack_lab/mock_server"
+        and coverage["mock-stdio"]["scan_path"] == "full_stack_lab/gateway"
+        and coverage["github"]["scan_path"] is None,
+        "supply-chain-scan-targets",
+        json.dumps({k: v["scan_path"] for k, v in coverage.items()}, ensure_ascii=False)))
+    checks.append(check(
+        all(row["source_ref"] for row in coverage.values()),
+        "supply-chain-attribution-key", "모든 서버가 고정된 source_ref를 가짐"))
 
     chain = await verify_audit_chain()
     checks.append(check(chain["intact"], "audit-chain-intact", json.dumps(chain, ensure_ascii=False)))

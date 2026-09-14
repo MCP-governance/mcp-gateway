@@ -22,6 +22,7 @@ from .core import (
     execute_call,
     enforcement_mode,
     import_supply_chain_reports,
+    supply_chain_coverage,
     monitor_summary,
     refresh_catalog,
     set_enforcement_mode,
@@ -282,6 +283,14 @@ async def supply_chain_import(user: dict = Depends(admin_caller)) -> dict:
         return {"imported": await import_supply_chain_reports()}
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         raise HTTPException(422, f"보고서 파싱 실패: {exc}") from exc
+
+
+@app.get("/api/supply-chain/coverage")
+async def supply_chain_cover() -> dict:
+    """Says, per server, whether its scan output actually gates calls."""
+    rows = await supply_chain_coverage()
+    return {"servers": rows,
+            "unwired": [row["server_id"] for row in rows if row["scan_path"] and not row["reports"]]}
 
 
 @app.get("/api/enforcement")

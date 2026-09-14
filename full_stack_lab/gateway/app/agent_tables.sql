@@ -52,6 +52,15 @@ CREATE TABLE IF NOT EXISTS gateway_settings (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Which workspace path a scanner covers for this server. Scan output imported under
+-- a server's own source_ref is what _contract() counts, so without this the Trivy
+-- numbers on the dashboard and the MCP-SUPPLY-001 gate were two unrelated things.
+ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS scan_path text;
+UPDATE mcp_servers SET scan_path = 'full_stack_lab/mock_server' WHERE id = 'mock-http' AND scan_path IS NULL;
+-- mcp-server-time is pinned and installed in the gateway image, so the gateway's own
+-- dependency set is the closest local proxy for that server's supply chain.
+UPDATE mcp_servers SET scan_path = 'full_stack_lab/gateway' WHERE id = 'mock-stdio' AND scan_path IS NULL;
+
 -- Applied on every boot so existing volumes get them too. Audit lookups are by
 -- request id or by user over a time window; without these both are seq scans.
 CREATE INDEX IF NOT EXISTS decisions_request_idx ON decisions(request_id);

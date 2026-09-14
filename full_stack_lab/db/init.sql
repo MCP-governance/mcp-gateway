@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS mcp_servers (
   status text NOT NULL,
   status_reason text NOT NULL,
   sbom_path text,
+  scan_path text,
   last_seen_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now()
 );

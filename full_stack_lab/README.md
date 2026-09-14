@@ -308,7 +308,26 @@ Gateway는 매 호출 직전에 `tools/list`를 다시 읽고 다음 승인 기�
 | Trivy `0.74.0` | vuln, misconfig, secret, license | `reports/trivy.json` |
 | AI-Infra-Guard `mcp-scan` | 선택적 MCP 전용 코드/동적 감사 | `reports/mcp-scan.sarif.json` |
 
-Syft/Trivy는 현재 권장판인 `full_stack_lab/`을 스캔하고 결과를 우선 `workspace` 증적으로 보관합니다. 이전 단계의 교육용 Dockerfile은 현재 릴리스 수치에 섞지 않습니다. 특정 MCP 서버를 자동 차단하려면 검토 후 그 서버의 고정 `source_ref`에 귀속시켜야 합니다. 잘못된 전역 스캔 한 건이 모든 서버를 자동 격리하지 않게 한 경계입니다. 서버에 귀속된 `CRITICAL > 0`이 실제 호출을 막는지는 acceptance test가 별도 증명합니다.
+`./demo.sh scan`은 두 가지를 합니다.
+
+1. `full_stack_lab/` 전체에 대한 SBOM과 취약점 목록을 `workspace` 증적으로 보관합니다. **인벤토리용이며 아무 호출도 막지 않습니다.**
+2. Registry에 `scan_path`가 등록된 서버를 **서버별로 따로** 스캔하고, 결과를 `reports/trivy-<server_id>.json`으로 남깁니다. 가져오기 단계에서 파일 이름의 서버를 찾아 **그 서버의 고정 `source_ref`로 귀속**시킵니다. `_contract()`가 치명점을 세는 키가 바로 그 `source_ref`이므로, 이 경로로 들어온 `CRITICAL > 0`은 실제로 `MCP-SUPPLY-001` 차단이 됩니다.
+
+| 서버 | `scan_path` | 차단 연결 |
+| --- | --- | --- |
+| `mock-http` | `full_stack_lab/mock_server` | 연결됨 |
+| `mock-stdio` | `full_stack_lab/gateway` | 연결됨 (`mcp-server-time`이 gateway 이미지에 고정 설치되므로 gateway의 의존성 집합이 가장 가까운 국소 대리값입니다) |
+| `github` | 없음 | 원격이라 국소 스캔 불가 |
+
+전역 스캔 결과를 서버에 귀속시키지 않는 것은 의도된 경계입니다. 잘못된 전역 스캔 한 건이 모든 서버를 자동 격리하면 안 됩니다.
+
+어떤 서버의 스캔이 실제로 차단에 연결돼 있는지는 언제든 확인할 수 있습니다.
+
+```bash
+curl -sS http://localhost:8080/api/supply-chain/coverage | python3 -m json.tool
+```
+
+`unwired`에 들어 있는 서버는 `scan_path`는 있지만 아직 스캔 결과가 없어 **차단에 연결되지 않은 상태**입니다. Dashboard의 숫자만 보고 "스캔이 막아준다"고 결론내지 않으려면 이 값을 같이 봐야 합니다.
 
 AI-Infra-Guard는 요청대로 전체 플랫폼이 아니라 **`mcp-scan` CLI만**, 커밋 `036c39bd03b39ce4a811f7f125bc3b8f47e39b7c`에 고정해 별도 profile로 빌드합니다.
 
@@ -443,7 +462,7 @@ Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance
 - GitHub MCP는 인증·catalog 승인 전이라 실제 upstream 호출을 하지 않습니다.
 - GitHub catalog 승인은 현재 데모 DB 상태입니다. 운영 반영 전에는 검토 파일의 해시를 코드 리뷰와 정책 버전에 남겨야 합니다.
 - image tag는 버전 고정이지만 digest/서명 검증과 admission controller까지는 포함하지 않았습니다.
-- 공급망 스캔 결과는 `source_ref='workspace'`로 저장되므로, 서버에 귀속시키기 전에는 실제 호출을 막지 않습니다. 차단으로 이어지는 경로는 acceptance test가 fixture로만 증명합니다.
+- 전역(`workspace`) 스캔 결과는 인벤토리이며 호출을 막지 않습니다. 차단은 `scan_path`가 등록된 서버의 개별 스캔 결과로만 이어집니다. `github`는 원격이라 국소 스캔 대상이 아닙니다.
 - 운영용 HA, TLS 종료, 비밀관리, SIEM 알림, 조직 전체 egress 강제는 별도 운영 설계가 필요합니다.
 - Dashboard의 승인자는 합성 관리자이며 실인증 승인이 아닙니다.
 

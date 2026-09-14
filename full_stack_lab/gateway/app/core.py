@@ -761,6 +761,48 @@ async def approve_request(approval_id: str, reviewer_token: str) -> dict:
     return result
 
 
+def _trivy_summary(data: dict) -> tuple[dict, dict]:
+    counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0}
+    categories = {key: {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0} for key in ("Vulnerabilities", "Misconfigurations", "Secrets")}
+    for result in data.get("Results") or []:
+        for category in categories:
+            for finding in result.get(category) or []:
+                if category == "Misconfigurations" and finding.get("Status") == "PASS":
+                    continue
+                severity = finding.get("Severity", "")
+                if severity in counts:
+                    counts[severity] += 1
+                    categories[category][severity] += 1
+    return {"targets": len(data.get("Results") or []), "counts": counts, "categories": categories}, counts
+
+
+async def _store_trivy(report: Path, source_ref: str, summary: dict, counts: dict) -> None:
+    await db.execute("DELETE FROM supply_chain_reports WHERE scanner='Trivy' AND report_path=%s", (str(report),))
+    await db.execute(
+        """INSERT INTO supply_chain_reports(scanner, scanner_version, source_ref, report_path, status,
+           critical_count, high_count, medium_count, summary)
+           VALUES ('Trivy','0.74.0',%s,%s,'IMPORTED',%s,%s,%s,%s)""",
+        (source_ref, str(report), counts["CRITICAL"], counts["HIGH"], counts["MEDIUM"], Jsonb(summary)),
+    )
+
+
+async def supply_chain_coverage() -> list[dict]:
+    """Which servers actually have scan output wired to the MCP-SUPPLY-001 gate.
+
+    A dashboard that shows scan numbers without saying whether they gate anything
+    invites exactly the wrong conclusion in a review.
+    """
+    return await db.fetch_all(
+        """SELECT s.id AS server_id, s.source_ref, s.scan_path,
+                  count(r.id) AS reports,
+                  COALESCE(sum(r.critical_count), 0) AS critical_count,
+                  max(r.imported_at) AS last_scanned_at
+           FROM mcp_servers s
+           LEFT JOIN supply_chain_reports r ON r.source_ref = s.source_ref
+           GROUP BY s.id, s.source_ref, s.scan_path ORDER BY s.id"""
+    )
+
+
 async def import_supply_chain_reports() -> list[dict]:
     imported: list[dict] = []
     sbom = REPORT_DIR / "sbom.cdx.json"
@@ -777,27 +819,25 @@ async def import_supply_chain_reports() -> list[dict]:
 
     trivy = REPORT_DIR / "trivy.json"
     if trivy.exists():
-        data = json.loads(trivy.read_text(encoding="utf-8"))
-        counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0}
-        categories = {key: {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0} for key in ("Vulnerabilities", "Misconfigurations", "Secrets")}
-        for result in data.get("Results") or []:
-            for category in categories:
-                for finding in result.get(category) or []:
-                    if category == "Misconfigurations" and finding.get("Status") == "PASS":
-                        continue
-                    severity = finding.get("Severity", "")
-                    if severity in counts:
-                        counts[severity] += 1
-                        categories[category][severity] += 1
-        summary = {"targets": len(data.get("Results") or []), "counts": counts, "categories": categories}
-        await db.execute("DELETE FROM supply_chain_reports WHERE scanner='Trivy' AND report_path=%s", (str(trivy),))
-        await db.execute(
-            """INSERT INTO supply_chain_reports(scanner, scanner_version, source_ref, report_path, status,
-               critical_count, high_count, medium_count, summary)
-               VALUES ('Trivy','0.74.0','workspace',%s,'IMPORTED',%s,%s,%s,%s)""",
-            (str(trivy), counts["CRITICAL"], counts["HIGH"], counts["MEDIUM"], Jsonb(summary)),
-        )
-        imported.append({"scanner": "Trivy", **summary})
+        summary, counts = _trivy_summary(json.loads(trivy.read_text(encoding="utf-8")))
+        await _store_trivy(trivy, "workspace", summary, counts)
+        imported.append({"scanner": "Trivy", "source_ref": "workspace", **summary})
+
+    # A report named for a server is attributed to that server's pinned source_ref,
+    # which is the value _contract() counts criticals against. Without this the
+    # dashboard's scan numbers and the MCP-SUPPLY-001 gate never referred to the same
+    # thing: one scanned the workspace, the other looked up a server.
+    servers = {row["id"]: row["source_ref"] for row in await db.fetch_all("SELECT id, source_ref FROM mcp_servers")}
+    for report in sorted(REPORT_DIR.glob("trivy-*.json")):
+        server_id = report.stem[len("trivy-"):]
+        source_ref = servers.get(server_id)
+        if not source_ref:
+            imported.append({"scanner": "Trivy", "report": report.name, "status": "SKIPPED",
+                             "reason": f"등록되지 않은 서버 {server_id}"})
+            continue
+        summary, counts = _trivy_summary(json.loads(report.read_text(encoding="utf-8")))
+        await _store_trivy(report, source_ref, summary, counts)
+        imported.append({"scanner": "Trivy", "server_id": server_id, "source_ref": source_ref, **summary})
 
     sarif = REPORT_DIR / "mcp-scan.sarif.json"
     if sarif.exists():
