@@ -8,7 +8,8 @@ from psycopg.types.json import Jsonb
 
 from . import db
 from .agent_contract import Envelope, Proposal, authenticated_user, validate_proposal
-from .core import approve_request, canonical_hash, execute_call
+from .agent_contract import StrictModel
+from .core import approve_request, canonical_hash, execute_call, reject_request
 
 router = APIRouter()
 
@@ -60,6 +61,21 @@ async def tool_call(request: Envelope, authorization: str | None = Header(defaul
     outcome.update(tool_call_id=str(request.tool_call_id), session_id=str(request.session_id), execution_status="success" if outcome["upstream_executed"] else "unknown" if outcome.get("upstream_attempted") else "blocked")
     await db.execute("UPDATE agent_gateway_receipts SET response=%s WHERE id=%s", (Jsonb(outcome), request.tool_call_id))
     return outcome
+
+
+class Rejection(StrictModel):
+    note: str
+
+
+@router.post("/agent/approvals/{approval_id}/reject")
+async def reject(approval_id: UUID, request: Rejection, authorization: str | None = Header(default=None)):
+    user = await authenticated_user(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "관리자 계정이 필요합니다.")
+    try:
+        return await reject_request(str(approval_id), user["principal"], request.note)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
 
 
 @router.post("/agent/approvals/{approval_id}/approve")

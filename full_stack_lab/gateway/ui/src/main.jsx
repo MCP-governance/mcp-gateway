@@ -144,6 +144,23 @@ function App() {
     finally { setBusy(false) }
   }
 
+  // A reviewer needs a way to say no with a reason. "Let it expire" looks identical
+  // to inattention in the audit log.
+  const reject = async (id) => {
+    const note = window.prompt('거부 사유를 입력하세요. 증적에 남습니다.')
+    if (!note || !note.trim()) return
+    setBusy(true)
+    try {
+      const response = await withToken('admin@bob.local', token => api(`/api/approvals/${id}/reject`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note }),
+      }, token))
+      setResult({ generator: 'approval-rejected', generated_call: null, result: { ...current, ...response, decision: 'Block', policy_id: 'P-X-APPROVAL-001', reason: `승인이 거부되었습니다: ${response.review_note}` } })
+      await load()
+    } catch (err) { setError(err.message) }
+    finally { setBusy(false) }
+  }
+
   // Turning enforcement on is the decision this panel exists to support, so it is
   // signed by the admin account rather than by whoever has the dashboard open.
   const setEnforcement = async (mode) => {
@@ -306,7 +323,13 @@ function App() {
                 <div><span>Upstream 실행</span><b className={current.upstream_executed ? 'yes' : 'no'}>{current.upstream_executed ? '실행됨' : '실행 안 됨'}</b></div>
               </div>
               {current.restrictions && Object.keys(current.restrictions).length > 0 && <div className="restriction"><b>적용 제한</b><span>목적지 {current.restrictions.destination}, 최대 {current.restrictions.max_chars}자</span></div>}
-              {current.decision === 'Approval' && current.approval_id && <div className="approval-callout"><span>승인 요청이 생성되었습니다.</span><button disabled={busy} onClick={() => approve(current.approval_id)}>관리자로 승인 후 재검증</button></div>}
+              {current.decision === 'Approval' && current.approval_id && <div className="approval-callout">
+                <span>승인 요청이 생성되었습니다.</span>
+                <span className="button-row">
+                  <button disabled={busy} onClick={() => approve(current.approval_id)}>승인 후 재검증</button>
+                  <button disabled={busy} onClick={() => reject(current.approval_id)}>사유와 함께 거부</button>
+                </span>
+              </div>}
               <div className="evidence-line"><span>독립 효과 로그</span><b>{current.effect_before} → {current.effect_after}</b><small>{current.upstream_executed ? '호출 후 증가 확인' : '차단 시 증가하지 않아야 함'}</small></div>
               <details><summary>개발자용 원본 JSON</summary><pre>{JSON.stringify(result, null, 2)}</pre></details>
             </>}

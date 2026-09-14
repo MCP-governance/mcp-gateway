@@ -118,7 +118,7 @@ async def main():
             if expected == "Approval":
                 approval_id = outcome["approval_id"]
             if expected == "Restrict":
-                check("agent-restrictions", outcome["effective_arguments"]["destination"] == "mentor-demo.invalid" and len(outcome["effective_arguments"]["content"]) <= 80)
+                check("agent-restrictions", outcome["effective_arguments"]["destination"] == "restricted.invalid" and len(outcome["effective_arguments"]["content"]) <= 80)
         check("approval-non-admin", (await client.post(AGENT + f"/approvals/{approval_id}/approve", headers=users["employee"], json={})).status_code == 403)
         before = effect_count()
         approved = await asyncio.gather(*(client.post(AGENT + f"/approvals/{approval_id}/approve", headers=users["admin"], json={}) for _ in range(2)))

@@ -113,8 +113,13 @@ decision := {
 } else := {
   "decision": "Restrict",
   "policy_id": "P-X-RESTRICT-001",
-  "reason": "외부 전송은 데모 허용 목적지와 80자 제한을 적용한 뒤 실행합니다.",
-  "restrictions": {"destination": "mentor-demo.invalid", "max_chars": 80},
+  "reason": "외부 전송은 승인된 목적지와 길이 제한을 적용한 뒤 실행합니다.",
+  # Values, not rules: an organisation changes its allowed destination far more often
+  # than it changes the shape of the policy. They live in opa/data.json.
+  "restrictions": {
+    "destination": data.restrictions.external_destination,
+    "max_chars": data.restrictions.max_chars,
+  },
 } if {
   input.tool.action == "x"
   input.resource.data_class != "important"

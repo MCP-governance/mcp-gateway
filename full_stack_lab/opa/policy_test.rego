@@ -92,3 +92,10 @@ test_block_description_drift if {
   result := decision with input as input2
   result.policy_id == "MCP-CATALOG-001"
 }
+
+test_restrict_values_come_from_policy_data if {
+  input2 := object.union(base, {"principal": {"role": "admin"}, "tool": {"action": "x"}})
+  result := decision with input as input2
+  result.restrictions.destination == data.restrictions.external_destination
+  result.restrictions.max_chars == data.restrictions.max_chars
+}

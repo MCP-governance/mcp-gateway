@@ -803,6 +803,28 @@ async def supply_chain_coverage() -> list[dict]:
     )
 
 
+async def reject_request(approval_id: str, reviewer_token: str, note: str) -> dict:
+    """The other half of an approval.
+
+    Without it a reviewer's only options are "approve" or "let it expire", and the
+    audit cannot tell a considered refusal apart from someone going to lunch.
+    """
+    reviewer = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (reviewer_token,))
+    if not reviewer or reviewer["role"] != "admin":
+        raise ValueError("합성 관리자만 승인 요청을 처리할 수 있습니다.")
+    if not note.strip():
+        raise ValueError("거부 사유는 비워둘 수 없습니다.")
+    claimed = await db.fetch_one(
+        """UPDATE approvals SET status='REJECTED', reviewed_by=%s, reviewed_at=now(), review_note=%s
+           WHERE id=%s AND status='PENDING' RETURNING id, requested_by, review_note""",
+        (reviewer_token, note.strip(), approval_id),
+    )
+    if not claimed:
+        raise ValueError("대기 중인 승인 요청이 아닙니다.")
+    return {"approval_id": approval_id, "status": "REJECTED", "reviewed_by": reviewer_token,
+            "review_note": claimed["review_note"], "upstream_executed": False}
+
+
 async def import_supply_chain_reports() -> list[dict]:
     imported: list[dict] = []
     sbom = REPORT_DIR / "sbom.cdx.json"

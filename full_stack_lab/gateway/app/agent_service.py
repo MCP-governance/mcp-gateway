@@ -232,6 +232,23 @@ async def approvals(authorization: str | None = Header(default=None)):
     return {"approvals": await db.fetch_all("SELECT id,requested_by,created_at,expires_at,request_payload->>'tool_name' AS tool_name FROM approvals WHERE status='PENDING' AND expires_at>now() ORDER BY created_at DESC LIMIT 30")}
 
 
+class Rejection(StrictModel):
+    note: str = Field(min_length=1, max_length=500)
+
+
+@app.post("/approvals/{approval_id}/reject")
+async def reject(approval_id: UUID, request: Rejection, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.post(f"{GATEWAY_URL}/agent/approvals/{approval_id}/reject",
+                                     headers={"Authorization": authorization}, json={"note": request.note})
+    if response.status_code >= 400:
+        raise HTTPException(response.status_code, "거부할 수 없습니다. 이미 처리됐거나 만료된 요청인지 확인하세요.")
+    return response.json()
+
+
 @app.post("/approvals/{approval_id}/approve")
 async def approve(approval_id: UUID, authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)

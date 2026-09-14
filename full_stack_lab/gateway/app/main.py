@@ -25,6 +25,7 @@ from .core import (
     supply_chain_coverage,
     monitor_summary,
     refresh_catalog,
+    reject_request,
     set_enforcement_mode,
     verify_audit_chain,
 )
@@ -60,6 +61,10 @@ class CallRequest(StrictModel):
 
 class MockModelRequest(StrictModel):
     message: str = Field(min_length=1, max_length=500)
+
+
+class RejectRequest(StrictModel):
+    note: str = Field(min_length=1, max_length=500)
 
 
 class EnforcementRequest(StrictModel):
@@ -262,6 +267,14 @@ async def mock_model(request: MockModelRequest, user: dict = Depends(caller)) ->
 async def approve(approval_id: str, user: dict = Depends(admin_caller)) -> dict:
     try:
         return await approve_request(approval_id, user["principal"])
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@app.post("/api/approvals/{approval_id}/reject")
+async def reject(approval_id: str, request: RejectRequest, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await reject_request(approval_id, user["principal"], request.note)
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 

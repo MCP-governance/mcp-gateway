@@ -1,0 +1,6 @@
+{
+  "restrictions": {
+    "external_destination": "restricted.invalid",
+    "max_chars": 80
+  }
+}

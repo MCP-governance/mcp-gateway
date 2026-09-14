@@ -61,6 +61,9 @@ UPDATE mcp_servers SET scan_path = 'full_stack_lab/mock_server' WHERE id = 'mock
 -- dependency set is the closest local proxy for that server's supply chain.
 UPDATE mcp_servers SET scan_path = 'full_stack_lab/gateway' WHERE id = 'mock-stdio' AND scan_path IS NULL;
 
+-- A reviewer who can only approve has one button and no way to say why not.
+ALTER TABLE approvals ADD COLUMN IF NOT EXISTS review_note text;
+
 -- Applied on every boot so existing volumes get them too. Audit lookups are by
 -- request id or by user over a time window; without these both are seq scans.
 CREATE INDEX IF NOT EXISTS decisions_request_idx ON decisions(request_id);

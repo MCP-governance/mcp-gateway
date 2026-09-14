@@ -15,7 +15,7 @@ from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.exceptions import MCPError
 
 from . import db
-from .core import (RATE_LIMIT_CALLS, IMPORTANT_BURST_LIMIT, _policy, _recent_activity,
+from .core import (RATE_LIMIT_CALLS, IMPORTANT_BURST_LIMIT, _policy, _recent_activity, effect_count,
                    approve_request, execute_call, set_enforcement_mode, supply_chain_coverage,
                    verify_audit_chain)
 
@@ -104,7 +104,7 @@ async def run() -> dict:
         if not should_execute:
             check(result["effect_after"] == result["effect_before"], "effect-blocked")
         if expected_decision == "Restrict":
-            checks.append(check(result["effective_arguments"]["destination"] == "mentor-demo.invalid" and len(result["effective_arguments"]["content"]) == 80, "restriction-applied", "destination + 80 chars"))
+            checks.append(check(result["effective_arguments"]["destination"] == "restricted.invalid" and len(result["effective_arguments"]["content"]) == 80, "restriction-applied", "destination + 80 chars"))
         if expected_decision == "Approval":
             approval_id = result["approval_id"]
 
@@ -271,6 +271,25 @@ async def run() -> dict:
         statuses = [(await client.post(API + "/api/session", json={
             "email": "nobody@bob.local", "password": "wrong"})).status_code for _ in range(12)]
     checks.append(check(429 in statuses, "login-attempt-ceiling", f"statuses={sorted(set(statuses))}"))
+
+    # Rejecting is the other half of approving. Without it a reviewer can only approve
+    # or let the request expire, and the audit cannot tell refusal from inattention.
+    pending = await post("/api/calls", {"tool_name": "send_external", "document_id": "secret-001",
+                                        "destination": "not-approved.example", "content": "거부 대상"}, "admin-demo")
+    before = effect_count()
+    approval = pending["approval_id"]
+    async with httpx.AsyncClient(timeout=30) as client:
+        empty_note = await client.post(API + f"/api/approvals/{approval}/reject", headers=bearer("admin-demo"), json={"note": ""})
+        as_employee = await client.post(API + f"/api/approvals/{approval}/reject", headers=bearer("emp-demo"), json={"note": "안 됩니다"})
+        rejected = await client.post(API + f"/api/approvals/{approval}/reject", headers=bearer("admin-demo"),
+                                     json={"note": "외부 전송 근거가 부족합니다."})
+        after_reject = await client.post(API + f"/api/approvals/{approval}/approve", headers=bearer("admin-demo"), json={})
+    checks.append(check(empty_note.status_code == 422 and as_employee.status_code == 403,
+                        "approval-reject-guards", f"empty={empty_note.status_code} employee={as_employee.status_code}"))
+    checks.append(check(rejected.status_code == 200 and rejected.json()["status"] == "REJECTED"
+                        and rejected.json()["review_note"], "approval-reject", rejected.text[:100]))
+    checks.append(check(after_reject.status_code == 409, "approval-reject-is-final", str(after_reject.status_code)))
+    checks.append(check(effect_count() == before, "approval-reject-no-effect", f"{before}->{effect_count()}"))
 
     coverage = {row["server_id"]: row for row in await supply_chain_coverage()}
     checks.append(check(
