@@ -14,7 +14,8 @@ from mcp.client.sse import sse_client
 from mcp.client.streamable_http import streamable_http_client
 
 from . import db
-from .core import approve_request, execute_call, set_enforcement_mode, verify_audit_chain
+from .core import (RATE_LIMIT_CALLS, IMPORTANT_BURST_LIMIT, _policy, _recent_activity,
+                   approve_request, execute_call, set_enforcement_mode, verify_audit_chain)
 
 API = "http://gateway:8080"
 EMAILS = {"cust-demo": "customer@bob.local", "emp-demo": "miso@bob.local", "admin-demo": "admin@bob.local"}
@@ -227,6 +228,35 @@ async def run() -> dict:
         await set_enforcement_mode("enforce", "admin-demo")
     checks.append(check((await post("/api/calls", {"tool_name": "read_document", "document_id": "secret-001"}, "cust-demo"))["decision"] == "Block",
                         "enforce-restored", "관찰 모드를 끄면 즉시 다시 차단"))
+
+    # Volume controls. Flooding the gateway with real calls to trip the ceiling would
+    # add a minute to every run and pollute the effect log, so the two halves are
+    # checked separately: that the gateway measures, and that OPA decides on it.
+    activity = await _recent_activity("cust-demo")
+    checks.append(check(
+        activity["recent_calls"] >= 1 and activity["call_limit"] == RATE_LIMIT_CALLS
+        and activity["important_limit"] == IMPORTANT_BURST_LIMIT,
+        "volume-signal-measured", json.dumps(activity, ensure_ascii=False)))
+    contract = {"registered": True, "enabled": True, "schema_hash_match": True,
+                "description_hash_match": True, "version_match": True, "known_tools_only": True,
+                "metadata_safe": True, "supplier_approved": True, "critical_vulnerabilities": 0}
+    over_rate = await _policy({
+        "principal": {"role": "admin"}, "resource": {"data_class": "public"},
+        "tool": {"action": "r"}, "approval": {"granted": False}, "contract": contract,
+        "context": {**activity, "recent_calls": activity["call_limit"]}})
+    checks.append(check(over_rate["policy_id"] == "P-RATE-001", "rate-limit-decision", over_rate["policy_id"]))
+    burst = await _policy({
+        "principal": {"role": "employee"}, "resource": {"data_class": "important"},
+        "tool": {"action": "r"}, "approval": {"granted": False}, "contract": contract,
+        "context": {**activity, "recent_important": activity["important_limit"]}})
+    checks.append(check(burst["policy_id"] == "P-VOLUME-001" and burst["decision"] == "Approval",
+                        "important-burst-escalates", burst["policy_id"]))
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        # An address that does not exist, so a real account is not locked out by the test.
+        statuses = [(await client.post(API + "/api/session", json={
+            "email": "nobody@bob.local", "password": "wrong"})).status_code for _ in range(12)]
+    checks.append(check(429 in statuses, "login-attempt-ceiling", f"statuses={sorted(set(statuses))}"))
 
     chain = await verify_audit_chain()
     checks.append(check(chain["intact"], "audit-chain-intact", json.dumps(chain, ensure_ascii=False)))

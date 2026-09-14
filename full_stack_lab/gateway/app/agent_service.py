@@ -4,6 +4,8 @@ from __future__ import annotations
 import asyncio
 import os
 import secrets
+import time
+from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -25,6 +27,22 @@ STATIC_DIR = Path(__file__).parent / "agent_static"
 GATEWAY_URL = os.getenv("GATEWAY_URL", "http://gateway:8080")
 # ponytail: four active requests per process; distributed quotas belong at ingress for multi-replica deployment.
 slots = asyncio.Semaphore(4)
+
+LOGIN_ATTEMPT_LIMIT = int(os.getenv("LOGIN_ATTEMPT_LIMIT", "10"))
+LOGIN_ATTEMPT_WINDOW = int(os.getenv("LOGIN_ATTEMPT_WINDOW_SECONDS", "300"))
+# Per process, like `slots` above: a deployment with replicas rate-limits at ingress.
+# It still turns an unlimited password oracle into a bounded one.
+_login_attempts: dict[str, list[float]] = defaultdict(list)
+
+
+def login_allowed(key: str) -> bool:
+    now = time.monotonic()
+    recent = [stamp for stamp in _login_attempts[key] if now - stamp < LOGIN_ATTEMPT_WINDOW]
+    recent.append(now)
+    _login_attempts[key] = recent
+    for stale in [k for k, v in list(_login_attempts.items()) if not v]:
+        del _login_attempts[stale]
+    return len(recent) <= LOGIN_ATTEMPT_LIMIT
 
 
 @asynccontextmanager
@@ -86,8 +104,13 @@ async def current_identity(authorization: str | None) -> dict:
 
 
 @app.post("/auth/mock-login")
-async def login(request: Login):
+async def login(request: Login, http_request: Request):
     email = request.email.strip().lower()
+    # Checked before the identity lookup so an unknown address is throttled too;
+    # otherwise the limit itself tells an attacker which addresses exist.
+    caller = http_request.client.host if http_request.client else "unknown"
+    if not login_allowed(f"{caller}|{email}"):
+        raise HTTPException(429, "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.")
     user = IDENTITIES.get(email)
     expected = os.getenv("MOCK_SSO_PASSWORD", "test-password")
     if not secrets.compare_digest(request.password.encode(), expected.encode()) or not user:

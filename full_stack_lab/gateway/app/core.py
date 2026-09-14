@@ -52,7 +52,14 @@ DEFAULT_ENFORCEMENT = os.getenv("GATEWAY_ENFORCEMENT", "enforce")
 # critical supply-chain finding or an unavailable policy engine stay enforced even
 # while the gateway is only observing the permission model, because "observe" cannot
 # mean "call a server we can no longer vouch for".
-ALWAYS_ENFORCED = ("MCP-", "P-CONTROL-", "P-INPUT-")
+# P-RATE- is here because a call-rate ceiling protects the gateway and the upstream,
+# not a permission opinion about who may read what. Observing it would mean having no
+# ceiling at all for as long as observation lasts.
+ALWAYS_ENFORCED = ("MCP-", "P-CONTROL-", "P-INPUT-", "P-RATE-")
+RATE_LIMIT_CALLS = int(os.getenv("RATE_LIMIT_CALLS", "60"))
+RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
+IMPORTANT_BURST_LIMIT = int(os.getenv("IMPORTANT_BURST_LIMIT", "10"))
+IMPORTANT_BURST_MINUTES = int(os.getenv("IMPORTANT_BURST_MINUTES", "5"))
 
 
 class ResultRejected(RuntimeError):
@@ -320,6 +327,31 @@ async def monitor_summary(hours: int = 168) -> dict:
         "would_have_stopped": sum(int(row["calls"]) for row in rows),
         "affected_principals": int(users["affected"]) if users else 0,
         "breakdown": rows,
+    }
+
+
+async def _recent_activity(user_token: str) -> dict:
+    """Both volume signals in one query.
+
+    Counted from the audit table rather than from in-process state, so the ceilings
+    still hold when more than one gateway replica is serving. Blocked calls count
+    too: a flood of denied calls is still a flood.
+
+    The gateway measures and the policy decides, so the limits travel as part of the
+    input rather than as a branch in this function.
+    """
+    row = await db.fetch_one(
+        """SELECT count(*) FILTER (WHERE created_at > now() - make_interval(secs => %s)) AS recent_calls,
+                  count(*) FILTER (WHERE data_class = 'important'
+                                     AND created_at > now() - make_interval(mins => %s)) AS recent_important
+           FROM decisions WHERE user_token = %s AND created_at > now() - interval '1 hour'""",
+        (RATE_LIMIT_WINDOW_SECONDS, IMPORTANT_BURST_MINUTES, user_token),
+    )
+    return {
+        "recent_calls": int(row["recent_calls"]) if row else 0,
+        "call_limit": RATE_LIMIT_CALLS,
+        "recent_important": int(row["recent_important"]) if row else 0,
+        "important_limit": IMPORTANT_BURST_LIMIT,
     }
 
 
@@ -617,6 +649,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "tool": {"name": spec["registry_name"], "action": spec["action"]},
             "approval": {"granted": approval_granted, "id": approval_id},
             "contract": contract,
+            "context": await _recent_activity(str(payload.get("user_token", ""))),
         }
         try:
             result = await _policy(policy_input)

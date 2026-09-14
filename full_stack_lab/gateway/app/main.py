@@ -212,6 +212,8 @@ async def session(request: SessionRequest) -> dict:
             response = await client.post(AGENT_SERVICE_URL + "/auth/mock-login", json=request.model_dump())
     except httpx.HTTPError as exc:
         raise HTTPException(503, "합성 인증 서비스에 연결할 수 없습니다.") from exc
+    if response.status_code == 429:
+        raise HTTPException(429, "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.")
     if response.status_code != 200:
         raise HTTPException(401, "합성 계정과 비밀번호를 확인하세요.")
     return response.json()

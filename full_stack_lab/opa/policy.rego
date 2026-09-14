@@ -23,6 +23,14 @@ has_permission if {
   permissions[input.principal.role][input.resource.data_class][input.tool.action]
 }
 
+# The gateway measures, the policy decides. Defaults are deliberately unreachable so
+# an input without context (the 27-cell matrix preview, a unit test) behaves exactly
+# as before rather than silently gaining a new control.
+recent_calls := object.get(input, ["context", "recent_calls"], 0)
+call_limit := object.get(input, ["context", "call_limit"], 1000000000)
+recent_important := object.get(input, ["context", "recent_important"], 0)
+important_limit := object.get(input, ["context", "important_limit"], 1000000000)
+
 contract_ok if {
   input.contract.registered
   input.contract.enabled
@@ -72,6 +80,13 @@ decision := {
   not contract_ok
 } else := {
   "decision": "Block",
+  "policy_id": "P-RATE-001",
+  "reason": "짧은 시간 동안의 호출 수가 상한을 넘었습니다.",
+  "restrictions": {},
+} if {
+  recent_calls >= call_limit
+} else := {
+  "decision": "Block",
   "policy_id": "P-333-DENY-001",
   "reason": "역할·데이터 등급·행위 조합에 권한이 없습니다.",
   "restrictions": {},
@@ -85,6 +100,15 @@ decision := {
 } if {
   input.tool.action == "x"
   input.resource.data_class == "important"
+  not input.approval.granted
+} else := {
+  "decision": "Approval",
+  "policy_id": "P-VOLUME-001",
+  "reason": "짧은 시간에 중요정보 접근이 몰려 승인이 필요합니다. 단건으로는 정상인 열람도 누적되면 유출 패턴입니다.",
+  "restrictions": {},
+} if {
+  input.resource.data_class == "important"
+  recent_important >= important_limit
   not input.approval.granted
 } else := {
   "decision": "Restrict",
