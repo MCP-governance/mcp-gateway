@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
+import './charts.css'
 
 const decisionMeta = {
   Allow: { icon: '✓', label: '허용', tone: 'allow' },
@@ -8,6 +9,10 @@ const decisionMeta = {
   Approval: { icon: '⌛', label: '승인 대기', tone: 'approval' },
   Restrict: { icon: '↘', label: '제한 후 실행', tone: 'restrict' },
   Block: { icon: '×', label: '차단', tone: 'block' },
+}
+
+const chartColors = {
+  Allow: '#0a7650', Alert: '#a15c00', Approval: '#6b4bb8', Restrict: '#087e8b', Block: '#b42332',
 }
 
 const compactFlowNodeStyle = { minWidth: 125, maxWidth: 150 }
@@ -44,6 +49,27 @@ function StatusDot({ ok, pending = false }) {
 function DecisionBadge({ decision }) {
   const meta = decisionMeta[decision] || decisionMeta.Block
   return <span className={`decision-badge ${meta.tone}`}><b>{meta.icon}</b>{meta.label}</span>
+}
+
+function DecisionChart({ decisions }) {
+  const counts = decisions.reduce((all, item) => ({ ...all, [item.decision]: (all[item.decision] || 0) + 1 }), {})
+  const items = Object.keys(decisionMeta).map(key => ({ key, label: decisionMeta[key].label, count: counts[key] || 0 }))
+  const max = Math.max(1, ...items.map(item => item.count))
+  return <div className="decision-chart" role="img" aria-label={`최근 ${decisions.length}건 정책 판정 분포`}>
+    <svg viewBox="0 0 600 210" aria-hidden="true">
+      <line className="chart-axis" x1="32" y1="160" x2="580" y2="160" />
+      {items.map((item, index) => {
+        const height = item.count / max * 108
+        const x = 48 + index * 108
+        return <g key={item.key}>
+          <text className="chart-count" x={x + 32} y={42} textAnchor="middle">{item.count}</text>
+          <rect x={x} y={160 - height} width="64" height={height} rx="8" fill={chartColors[item.key]} />
+          <text className="chart-label" x={x + 32} y="185" textAnchor="middle">{item.label}</text>
+        </g>
+      })}
+    </svg>
+    <p>최근 {decisions.length}건의 Gateway 최종 판정입니다. 각 막대는 감사 테이블의 결정 증적에서 계산됩니다.</p>
+  </div>
 }
 
 function App() {
@@ -381,6 +407,10 @@ function App() {
       <section className="section" id="audit" aria-labelledby="audit-title">
         <div className="section-heading"><div><p className="kicker">EVIDENCE</p><h2 id="audit-title">판정과 실제 실행을 같은 Trace로 추적합니다</h2></div><a className="secondary-link" href="http://localhost:16686" target="_blank" rel="noreferrer">Jaeger 열기 ↗</a></div>
         <div className="audit-summary"><div><span>저장된 최근 판정</span><b>{state?.decisions?.length || 0}</b></div><div><span>독립 upstream 효과</span><b>{state?.upstream_effect_count || 0}</b></div><div><span>승인 대기</span><b>{state?.approvals?.length || 0}</b></div><div><span>활성 정책</span><b>{state?.policy?.id || '확인 중'}</b></div></div>
+        <article className="decision-chart-card">
+          <div><p className="kicker">정책 판정 분포</p><h3>최근 감사 증적을 그래프로 봅니다</h3></div>
+          <DecisionChart decisions={state?.decisions || []} />
+        </article>
         <div className="audit-table-wrap"><table className="audit-table"><thead><tr><th>시간</th><th>요청자</th><th>도구</th><th>등급/행위</th><th>판정</th><th>실행</th><th>Trace ID</th></tr></thead><tbody>
           {(state?.decisions || []).map(item => <tr key={item.id}><td>{new Date(item.created_at).toLocaleTimeString('ko-KR')}</td><td>{item.role}</td><td><code>{item.tool_name}</code></td><td>{item.data_class} / {item.action}</td><td><DecisionBadge decision={item.decision} /></td><td>{item.upstream_executed ? '예' : '아니오'}</td><td><code title={item.trace_id}>{item.trace_id.slice(0, 10)}…</code></td></tr>)}
           {(state?.decisions || []).length === 0 && <tr><td colSpan="7" className="empty-cell">실습 요청을 실행하면 판정 증적이 쌓입니다.</td></tr>}
