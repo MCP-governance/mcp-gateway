@@ -4,6 +4,7 @@ import asyncio
 import os
 import time
 from collections.abc import Iterable
+from contextlib import asynccontextmanager
 
 import psycopg
 from psycopg.rows import dict_row
@@ -44,6 +45,18 @@ async def close() -> None:
     if _pool is not None:
         await _pool.close()
         _pool = None
+
+
+@asynccontextmanager
+async def transaction():
+    """A connection whose statements commit or roll back together.
+
+    The per-statement helpers each run in their own transaction, which is fine for
+    reads and single writes but not for the read-then-write of an audit chain append.
+    """
+    async with (await pool()).connection() as connection:
+        async with connection.transaction():
+            yield connection
 
 
 async def fetch_all(query: str, params: Iterable | None = None) -> list[dict]:

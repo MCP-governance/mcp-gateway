@@ -356,25 +356,111 @@ def _audit_result(result: Any) -> dict:
     return {"sha256": canonical_hash(result), "chars": len(body), "head": body[:200]}
 
 
+AUDIT_COLUMNS = (
+    "request_id", "trace_id", "user_token", "role", "tool_name", "data_class", "action",
+    "decision", "policy_id", "reason", "upstream_executed", "restrictions", "approval_id",
+    "request_payload", "result_preview", "error",
+)
+GENESIS = "0" * 64
+
+
+def _audit_fingerprint(record: dict) -> str:
+    """One canonical form for both the append and the later verification.
+
+    Values are normalised to str / bool / None / JSON documents so that the hash of a
+    row read back from PostgreSQL matches the hash computed when it was written.
+    """
+    normalised = {}
+    for column in AUDIT_COLUMNS:
+        value = record.get(column)
+        if column == "upstream_executed":
+            normalised[column] = bool(value)
+        elif isinstance(value, (dict, list)) or value is None:
+            normalised[column] = value
+        else:
+            normalised[column] = str(value)
+    return canonical_hash(normalised)
+
+
+# The chain is appended under a row lock, so decision writes serialise on one row.
+# That is the right trade for a single gateway; a multi-replica deployment wants one
+# chain per instance, anchored together.
 async def _record_decision(event: dict) -> int:
-    row = await db.fetch_one(
-        """INSERT INTO decisions(
-             request_id, trace_id, user_token, role, tool_name, data_class, action,
-             decision, policy_id, reason, upstream_executed, restrictions,
-             approval_id, request_payload, result_preview, error)
-           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-           RETURNING id""",
-        (
-            event["request_id"], event["trace_id"], event["user_token"], event["role"],
-            event["tool_name"], event["data_class"], event["action"], event["decision"],
-            event["policy_id"], event["reason"], event["upstream_executed"],
-            Jsonb(event.get("restrictions") or {}), event.get("approval_id"),
-            Jsonb(_audit_payload(event.get("request_payload") or {})),
-            Jsonb(_audit_result(event["result"])) if event.get("result") is not None else None,
-            event.get("error"),
-        ),
-    )
+    record = {
+        "request_id": event["request_id"], "trace_id": event["trace_id"],
+        "user_token": event["user_token"], "role": event["role"],
+        "tool_name": event["tool_name"], "data_class": event["data_class"],
+        "action": event["action"], "decision": event["decision"],
+        "policy_id": event["policy_id"], "reason": event["reason"],
+        "upstream_executed": bool(event["upstream_executed"]),
+        "restrictions": event.get("restrictions") or {},
+        "approval_id": event.get("approval_id"),
+        "request_payload": _audit_payload(event.get("request_payload") or {}),
+        "result_preview": _audit_result(event["result"]) if event.get("result") is not None else None,
+        "error": event.get("error"),
+    }
+    async with db.transaction() as connection:
+        cursor = await connection.execute("SELECT head_sha256 FROM audit_chain WHERE id=1 FOR UPDATE")
+        head = await cursor.fetchone()
+        previous = head["head_sha256"] if head else GENESIS
+        entry = hashlib.sha256((previous + _audit_fingerprint(record)).encode()).hexdigest()
+        cursor = await connection.execute(
+            """INSERT INTO decisions(
+                 request_id, trace_id, user_token, role, tool_name, data_class, action,
+                 decision, policy_id, reason, upstream_executed, restrictions,
+                 approval_id, request_payload, result_preview, error,
+                 prev_sha256, entry_sha256)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+               RETURNING id""",
+            (
+                record["request_id"], record["trace_id"], record["user_token"], record["role"],
+                record["tool_name"], record["data_class"], record["action"], record["decision"],
+                record["policy_id"], record["reason"], record["upstream_executed"],
+                Jsonb(record["restrictions"]), record["approval_id"],
+                Jsonb(record["request_payload"]),
+                Jsonb(record["result_preview"]) if record["result_preview"] is not None else None,
+                record["error"], previous, entry,
+            ),
+        )
+        row = await cursor.fetchone()
+        await connection.execute(
+            "UPDATE audit_chain SET head_sha256=%s, entries=entries+1, updated_at=now() WHERE id=1",
+            (entry,),
+        )
     return int(row["id"])
+
+
+async def verify_audit_chain() -> dict:
+    """Walk the chain and name the first row that does not follow from the previous.
+
+    An edited or deleted row cannot be made to fit again without rewriting every row
+    after it, so this answers "was the audit log tampered with" with a row id rather
+    than with an assurance.
+    """
+    rows = await db.fetch_all(
+        "SELECT id, " + ", ".join(AUDIT_COLUMNS) + ", prev_sha256, entry_sha256 FROM decisions ORDER BY id"
+    )
+    previous = GENESIS
+    chained = 0
+    for row in rows:
+        if row["entry_sha256"] is None:
+            # Written before the chain existed. It anchors nothing and claims nothing.
+            continue
+        expected = hashlib.sha256((previous + _audit_fingerprint(row)).encode()).hexdigest()
+        if row["prev_sha256"] != previous:
+            return {"intact": False, "checked": chained, "broken_at": row["id"],
+                    "reason": "이전 항목과 연결되지 않습니다. 앞의 행이 지워졌을 수 있습니다."}
+        if row["entry_sha256"] != expected:
+            return {"intact": False, "checked": chained, "broken_at": row["id"],
+                    "reason": "항목 내용이 기록된 해시와 다릅니다."}
+        previous = row["entry_sha256"]
+        chained += 1
+    head = await db.fetch_one("SELECT head_sha256, entries FROM audit_chain WHERE id=1")
+    if head and head["head_sha256"] != previous:
+        return {"intact": False, "checked": chained, "broken_at": None,
+                "reason": "마지막 항목이 체인 head와 다릅니다. 끝부분이 잘렸을 수 있습니다."}
+    return {"intact": True, "checked": chained, "head": previous,
+            "entries_recorded": int(head["entries"]) if head else None}
 
 
 async def execute_call(payload: dict, approval_granted: bool = False, approval_id: str | None = None) -> dict:

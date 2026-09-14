@@ -15,6 +15,27 @@ CREATE TABLE IF NOT EXISTS agent_revoked_tokens (
   jti uuid PRIMARY KEY, expires_at timestamptz NOT NULL
 );
 
+-- Tamper-evident audit. Each decision carries the hash of the previous one, so an
+-- edited or deleted row breaks the chain at a point anyone can find. The single
+-- chain row is what serialises appends.
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS prev_sha256 text;
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS entry_sha256 text;
+CREATE TABLE IF NOT EXISTS audit_chain (
+  id integer PRIMARY KEY CHECK (id = 1),
+  head_sha256 text NOT NULL,
+  entries bigint NOT NULL DEFAULT 0,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+INSERT INTO audit_chain(id, head_sha256) VALUES (1, repeat('0', 64)) ON CONFLICT (id) DO NOTHING;
+
+-- Defence in depth, not a boundary: the owner can re-grant. It stops the ordinary
+-- "just fix that row" edit and states the intent in the schema itself.
+DO $$ BEGIN
+  EXECUTE 'REVOKE UPDATE, DELETE ON decisions FROM ' || quote_ident(current_user);
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'decisions append-only grant not applied: %', SQLERRM;
+END $$;
+
 -- Applied on every boot so existing volumes get them too. Audit lookups are by
 -- request id or by user over a time window; without these both are seq scans.
 CREATE INDEX IF NOT EXISTS decisions_request_idx ON decisions(request_id);

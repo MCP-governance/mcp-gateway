@@ -8,12 +8,13 @@ from datetime import UTC, datetime
 
 import httpx
 import httpx2
+import psycopg
 from mcp import Client, StdioServerParameters
 from mcp.client.sse import sse_client
 from mcp.client.streamable_http import streamable_http_client
 
 from . import db
-from .core import approve_request, execute_call
+from .core import approve_request, execute_call, verify_audit_chain
 
 API = "http://gateway:8080"
 EMAILS = {"cust-demo": "customer@bob.local", "emp-demo": "miso@bob.local", "admin-demo": "admin@bob.local"}
@@ -194,6 +195,16 @@ async def run() -> dict:
         except Exception:
             unbound_refused = True
     checks.append(check(unbound_refused, "stdio-ingress-identity-required", "unbound stdio ingress refused"))
+
+    chain = await verify_audit_chain()
+    checks.append(check(chain["intact"], "audit-chain-intact", json.dumps(chain, ensure_ascii=False)))
+    checks.append(check(chain["checked"] > 0, "audit-chain-populated", f"{chain['checked']} chained entries"))
+    try:
+        await db.execute("UPDATE decisions SET reason='tampered' WHERE id=(SELECT max(id) FROM decisions)")
+        append_only = False
+    except psycopg.errors.InsufficientPrivilege:
+        append_only = True
+    checks.append(check(append_only, "audit-append-only", "gateway 계정은 decisions를 수정할 수 없음"))
 
     async with Client(sse_client("http://gateway-sse:8081/sse", headers=bearer("cust-demo"))) as client:
         result = await client.call_tool("read_document", {"document_id": "notice-001"})

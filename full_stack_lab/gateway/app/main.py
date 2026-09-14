@@ -22,6 +22,7 @@ from .core import (
     execute_call,
     import_supply_chain_reports,
     refresh_catalog,
+    verify_audit_chain,
 )
 from .mcp_facade import build_mcp, transport_security
 from .agent_contract import authenticated_user
@@ -272,6 +273,12 @@ async def supply_chain_import(user: dict = Depends(admin_caller)) -> dict:
         return {"imported": await import_supply_chain_reports()}
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         raise HTTPException(422, f"보고서 파싱 실패: {exc}") from exc
+
+
+@app.get("/api/audit/verify")
+async def audit_verify(user: dict = Depends(admin_caller)) -> dict:
+    """Answers "감사 로그가 위변조됐나요?" with a row id instead of an assurance."""
+    return await verify_audit_chain()
 
 
 @app.get("/api/effects")
