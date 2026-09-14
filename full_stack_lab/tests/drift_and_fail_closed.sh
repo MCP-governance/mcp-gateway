@@ -10,23 +10,33 @@ cd "$LAB_DIR"
 restore() {
   status=$?
   echo "[cleanup] restore approved contract and policy engine"
-  MCP_CATALOG_MODE=normal docker compose up -d --force-recreate mock-http-mcp >/dev/null 2>&1 || true
+  restart_mock normal >/dev/null 2>&1 || true
   docker compose start opa >/dev/null 2>&1 || true
   exit "$status"
 }
 trap restore EXIT
 
+# `up --force-recreate` returns before Docker has always released the previous
+# fixed container name. Stop/remove first so the next drift case cannot race its
+# predecessor and turn a security regression into a Docker-name failure.
+restart_mock() {
+  local mode="$1"
+  MCP_CATALOG_MODE="$mode" docker compose stop mock-http-mcp >/dev/null 2>&1 || true
+  docker compose rm -f mock-http-mcp >/dev/null 2>&1 || true
+  MCP_CATALOG_MODE="$mode" docker compose up -d --no-deps mock-http-mcp >/dev/null
+}
+
 python3 tests/regression.py unauthenticated
 
 for mode in description-drift schema-drift shadow version-drift; do
   echo "[catalog] $mode"
-  MCP_CATALOG_MODE="$mode" docker compose up -d --force-recreate mock-http-mcp >/dev/null
+  restart_mock "$mode"
   python3 tests/regression.py refresh DRIFT
   python3 tests/regression.py block MCP-CATALOG-001
 done
 
 echo "[catalog] restore approved contract"
-MCP_CATALOG_MODE=normal docker compose up -d --force-recreate mock-http-mcp >/dev/null
+restart_mock normal
 python3 tests/regression.py refresh READY
 
 echo "[availability] stop OPA and verify fail-closed"

@@ -30,6 +30,16 @@ recent_calls := object.get(input, ["context", "recent_calls"], 0)
 call_limit := object.get(input, ["context", "call_limit"], 1000000000)
 recent_important := object.get(input, ["context", "recent_important"], 0)
 important_limit := object.get(input, ["context", "important_limit"], 1000000000)
+classification_required := object.get(input, ["resource", "classification", "required"], false)
+classification_source := object.get(input, ["resource", "classification", "source"], null)
+
+classification_missing if {
+  classification_source == null
+}
+
+classification_missing if {
+  classification_source == ""
+}
 
 # The organisational axis. Ships disabled in opa/data.json: widening the input is what
 # avoids a rewrite later, turning it on is a tenant's decision.
@@ -95,6 +105,14 @@ decision := {
   "restrictions": {},
 } if {
   not contract_ok
+} else := {
+  "decision": "Block",
+  "policy_id": "P-CLASSIFICATION-001",
+  "reason": "데이터 등급의 관리대장 출처가 없어 기본 차단했습니다.",
+  "restrictions": {},
+} if {
+  classification_required
+  classification_missing
 } else := {
   "decision": "Block",
   "policy_id": "P-RATE-001",

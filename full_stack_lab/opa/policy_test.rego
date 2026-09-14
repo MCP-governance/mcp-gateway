@@ -126,3 +126,19 @@ test_department_scope_allows_own_department if {
   result := decision with input as input2 with data.department_scope as {"enabled": true}
   result.decision == "Alert"
 }
+
+test_block_required_classification_without_source if {
+  input2 := object.union(base, {
+    "resource": {"data_class": "public", "classification": {"required": true}},
+  })
+  result := decision with input as input2
+  result.policy_id == "P-CLASSIFICATION-001"
+}
+
+test_allow_required_manual_classification if {
+  input2 := object.union(base, {
+    "resource": {"data_class": "public", "classification": {"required": true, "source": "manual-registry", "version": "demo-v1"}},
+  })
+  result := decision with input as input2
+  result.decision == "Allow"
+}

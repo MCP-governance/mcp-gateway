@@ -76,6 +76,20 @@ ALTER TABLE approvals ADD COLUMN IF NOT EXISTS review_note text;
 -- rewritten later; the rule that uses it ships disabled (see opa/data.json).
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS department text;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS owner_department text;
+-- Classification is an operator-owned registry value, not an LLM guess. Existing
+-- demo rows receive the same explicit source during the idempotent migration.
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS classification_source text;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS classification_version text;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS classified_at timestamptz;
+UPDATE documents SET classification_source='manual-registry' WHERE classification_source IS NULL;
+UPDATE documents SET classification_version='demo-v1' WHERE classification_version IS NULL;
+UPDATE documents SET classified_at=now() WHERE classified_at IS NULL;
+ALTER TABLE documents ALTER COLUMN classification_source SET DEFAULT 'manual-registry';
+ALTER TABLE documents ALTER COLUMN classification_version SET DEFAULT 'demo-v1';
+ALTER TABLE documents ALTER COLUMN classified_at SET DEFAULT now();
+ALTER TABLE documents ALTER COLUMN classification_source SET NOT NULL;
+ALTER TABLE documents ALTER COLUMN classification_version SET NOT NULL;
+ALTER TABLE documents ALTER COLUMN classified_at SET NOT NULL;
 UPDATE principals SET department='고객' WHERE token='cust-demo' AND department IS NULL;
 UPDATE principals SET department='보안기술팀' WHERE token='emp-demo' AND department IS NULL;
 UPDATE principals SET department='거버넌스팀' WHERE token='admin-demo' AND department IS NULL;

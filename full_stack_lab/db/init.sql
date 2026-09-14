@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS documents (
   id text PRIMARY KEY,
   title text NOT NULL,
   data_class text NOT NULL CHECK (data_class IN ('public', 'nonimportant', 'important')),
+  classification_source text NOT NULL DEFAULT 'manual-registry',
+  classification_version text NOT NULL DEFAULT 'demo-v1',
+  classified_at timestamptz NOT NULL DEFAULT now(),
   owner_department text
 );
 
@@ -118,10 +121,10 @@ INSERT INTO principals(token, display_name, role, department) VALUES
   ('admin-demo', '관리자 박지훈', 'admin', '거버넌스팀')
 ON CONFLICT (token) DO NOTHING;
 
-INSERT INTO documents(id, title, data_class, owner_department) VALUES
-  ('notice-001', '서비스 공개 공지', 'public', NULL),
-  ('work-001', '내부 업무 메모', 'nonimportant', '보안기술팀'),
-  ('secret-001', '중요 계약 초안', 'important', '거버넌스팀')
+INSERT INTO documents(id, title, data_class, classification_source, classification_version, owner_department) VALUES
+  ('notice-001', '서비스 공개 공지', 'public', 'manual-registry', 'demo-v1', NULL),
+  ('work-001', '내부 업무 메모', 'nonimportant', 'manual-registry', 'demo-v1', '보안기술팀'),
+  ('secret-001', '중요 계약 초안', 'important', 'manual-registry', 'demo-v1', '거버넌스팀')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO mcp_servers(id, display_name, transport, endpoint, source_url, source_ref, supplier, license, status, status_reason) VALUES
