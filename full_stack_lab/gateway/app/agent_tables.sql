@@ -170,3 +170,27 @@ ALTER TABLE mcp_intake_requests DROP CONSTRAINT IF EXISTS mcp_intake_requests_st
 ALTER TABLE mcp_intake_requests ADD CONSTRAINT mcp_intake_requests_status_check
   CHECK (status IN ('HOLD', 'VALIDATION_QUEUED', 'VALIDATING', 'VALIDATED', 'APPROVED', 'FAILED', 'REJECTED'));
 CREATE INDEX IF NOT EXISTS mcp_intake_requests_status_idx ON mcp_intake_requests(status, created_at);
+
+-- AI-Infra-Guard mcp-scan은 LLM endpoint를 요구하는 코드 감사라 도입 검증과 같은
+-- 트랜잭션에 넣을 수 없다. 운영자가 필요할 때 돌리는 별도 작업으로 큐에 넣고,
+-- 어떤 모델·endpoint로 돌렸는지까지 결과와 함께 남긴다. 어떤 모델이 판단했는지
+-- 모르는 보안 결과는 증적이 아니다.
+CREATE TABLE IF NOT EXISTS scan_jobs (
+  id uuid PRIMARY KEY,
+  kind text NOT NULL CHECK (kind IN ('mcp-scan')),
+  target_kind text NOT NULL CHECK (target_kind IN ('intake')),
+  target_id uuid NOT NULL,
+  target_label text NOT NULL DEFAULT '',
+  status text NOT NULL DEFAULT 'QUEUED' CHECK (status IN ('QUEUED', 'RUNNING', 'DONE', 'FAILED')),
+  requested_by text NOT NULL,
+  model text,
+  base_url text,
+  report_path text,
+  summary jsonb NOT NULL DEFAULT '{}',
+  error text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  started_at timestamptz,
+  finished_at timestamptz
+);
+CREATE INDEX IF NOT EXISTS scan_jobs_status_idx ON scan_jobs(status, created_at);
+CREATE INDEX IF NOT EXISTS scan_jobs_target_idx ON scan_jobs(target_id, created_at DESC);

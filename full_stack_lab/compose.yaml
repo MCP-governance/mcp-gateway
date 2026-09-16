@@ -98,6 +98,11 @@ services:
       MODEL_API_KEY: ${MODEL_API_KEY:-}
       MODEL_NAME: ${MODEL_NAME:-}
       MODEL_TIMEOUT_SECONDS: ${MODEL_TIMEOUT_SECONDS:-20}
+      # Console이 "AI 코드 감사를 지금 돌릴 수 있는가"를 답하려면 워커와 같은
+      # 설정을 봐야 한다. 키는 연결 확인 요청에만 쓰고 화면으로 내보내지 않는다.
+      MCP_SCAN_BASE_URL: ${MCP_SCAN_BASE_URL:-}
+      MCP_SCAN_MODEL: ${MCP_SCAN_MODEL:-}
+      MCP_SCAN_API_KEY: ${MCP_SCAN_API_KEY:-}
       OTEL_SERVICE_NAME: agent-service
     ports:
       - "127.0.0.1:8000:8000"
@@ -106,7 +111,7 @@ services:
     depends_on:
       gateway:
         condition: service_started
-    networks: [edge, agent, data, telemetry]
+    networks: [edge, agent, data, telemetry, scanner]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 
@@ -142,6 +147,13 @@ services:
       INTAKE_WORK_DIR: /work
       SEMGREP_RULES: /rules/semgrep-mcp.yml
       INTAKE_POLL_SECONDS: ${INTAKE_POLL_SECONDS:-5}
+      # AI-Infra-Guard mcp-scan은 OpenAI 호환 endpoint가 있을 때만 돌아간다.
+      # 비어 있으면 Console이 "실행할 수 없음"과 필요한 값을 그대로 보여준다.
+      MCP_SCAN_API_KEY: ${MCP_SCAN_API_KEY:-}
+      MCP_SCAN_BASE_URL: ${MCP_SCAN_BASE_URL:-}
+      MCP_SCAN_MODEL: ${MCP_SCAN_MODEL:-}
+      MCP_SCAN_LANGUAGE: ${MCP_SCAN_LANGUAGE:-en}
+      MCP_SCAN_TIMEOUT: ${MCP_SCAN_TIMEOUT:-900}
     depends_on:
       db:
         condition: service_healthy
@@ -155,7 +167,22 @@ services:
       # 워크스페이스 스캔용 trivy_cache는 root 소유로 만들어져 있어 비특권 워커가
       # 쓸 수 없다. DB 캐시는 워커 전용 볼륨에 둔다.
       - intake_trivy_cache:/trivy-cache
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks: [data, scanner]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  # 배선 확인 전용 OpenAI 호환 stub. 보안 판단을 하지 않으며 기본 기동에 없다.
+  llm-stub:
+    image: python:3.12-slim
+    profiles: [llm-stub]
+    command: ["python", "/app/llm_stub.py"]
+    environment:
+      LLM_STUB_PORT: "4010"
+    volumes:
+      - ./supply_chain/llm_stub.py:/app/llm_stub.py:ro
+    networks: [scanner]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 

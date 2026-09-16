@@ -19,6 +19,7 @@ import sys
 import time
 import uuid
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import psycopg
 from psycopg.rows import dict_row
@@ -34,6 +35,15 @@ SCAN_TIMEOUT = int(os.getenv("INTAKE_SCAN_TIMEOUT", "600"))
 MAX_CHECKOUT_MB = int(os.getenv("INTAKE_MAX_CHECKOUT_MB", "512"))
 
 SEVERITY_ORDER = ("CRITICAL", "HIGH", "MEDIUM", "LOW")
+
+# AI-Infra-Guard mcp-scan은 OpenAI 호환 endpoint를 요구한다. 값이 없으면 작업을
+# 만들 수도 없고, 있으면 그 모델·endpoint가 결과와 함께 기록된다.
+MCP_SCAN_API_KEY = os.getenv("MCP_SCAN_API_KEY", "")
+MCP_SCAN_BASE_URL = os.getenv("MCP_SCAN_BASE_URL", "")
+MCP_SCAN_MODEL = os.getenv("MCP_SCAN_MODEL", "")
+MCP_SCAN_TIMEOUT = int(os.getenv("MCP_SCAN_TIMEOUT", "900"))
+MCP_SCAN_LANGUAGE = os.getenv("MCP_SCAN_LANGUAGE", "en")  # CLI가 지원하는 값은 zh/en
+SARIF_LEVELS = {"error": "HIGH", "warning": "MEDIUM", "note": "LOW", "none": "LOW"}
 
 
 def log(message: str) -> None:
@@ -59,22 +69,43 @@ def run(command: list[str], timeout: int, cwd: Path | None = None) -> subprocess
                           capture_output=True, text=True, check=False)
 
 
-def clone(repository_url: str, target: Path) -> str:
-    """얕은 복제 + hook·submodule 비활성. 체크아웃 후 .git을 지운다."""
+SAFE_GIT = [
+    "git",
+    "-c", "core.hooksPath=/dev/null",
+    "-c", "protocol.file.allow=never",
+    "-c", "submodule.recurse=false",
+    "-c", "core.symlinks=false",
+]
+
+
+def clone(repository_url: str, target: Path, commit: str | None = None) -> str:
+    """얕은 복제 + hook·submodule 비활성. 체크아웃 후 .git을 지운다.
+
+    commit을 주면 그 커밋만 가져온다. 재검사가 "그때 검증한 코드"가 아니라
+    "지금의 기본 브랜치"를 보면 두 결과를 나란히 둘 수 없다.
+    """
     target.parent.mkdir(parents=True, exist_ok=True)
-    result = run([
-        "git",
-        "-c", "core.hooksPath=/dev/null",
-        "-c", "protocol.file.allow=never",
-        "-c", "submodule.recurse=false",
-        "clone", "--depth", "1", "--single-branch", "--no-tags",
-        "--config", "core.symlinks=false",
-        repository_url, str(target),
-    ], timeout=CLONE_TIMEOUT)
-    if result.returncode != 0:
-        raise RuntimeError(f"git clone 실패: {result.stderr.strip()[:300]}")
+    if commit:
+        target.mkdir(parents=True, exist_ok=True)
+        steps = [
+            (SAFE_GIT + ["init", "--quiet"], target),
+            (SAFE_GIT + ["remote", "add", "origin", repository_url], target),
+            (SAFE_GIT + ["fetch", "--depth", "1", "--no-tags", "origin", commit], target),
+            (SAFE_GIT + ["checkout", "--quiet", "FETCH_HEAD"], target),
+        ]
+        for command, cwd in steps:
+            result = run(command, timeout=CLONE_TIMEOUT, cwd=cwd)
+            if result.returncode != 0:
+                raise RuntimeError(f"git {command[len(SAFE_GIT)]} 실패: {result.stderr.strip()[:300]}")
+    else:
+        result = run(SAFE_GIT + [
+            "clone", "--depth", "1", "--single-branch", "--no-tags",
+            repository_url, str(target),
+        ], timeout=CLONE_TIMEOUT)
+        if result.returncode != 0:
+            raise RuntimeError(f"git clone 실패: {result.stderr.strip()[:300]}")
     head = run(["git", "rev-parse", "HEAD"], timeout=30, cwd=target)
-    commit = head.stdout.strip() if head.returncode == 0 else "unknown"
+    commit = head.stdout.strip() if head.returncode == 0 else (commit or "unknown")
     shutil.rmtree(target / ".git", ignore_errors=True)
     size_mb = sum(f.stat().st_size for f in target.rglob("*") if f.is_file()) / 1_048_576
     if size_mb > MAX_CHECKOUT_MB:
@@ -222,6 +253,106 @@ def validate(connection, request: dict) -> None:
     log(f"{request_id} -> {status} ({risk})")
 
 
+def sarif_findings(report: Path, root: Path) -> tuple[dict[str, int], list[dict], str]:
+    """mcp-scan은 SARIF 2.1.0으로 결과를 낸다. scanNote는 모델이 아무 말도 하지
+    않고 끝난 경우를 도구 스스로 표시한 값이라 그대로 보존한다."""
+    counts = {level: 0 for level in SEVERITY_ORDER}
+    findings: list[dict] = []
+    if not report.exists():
+        return counts, findings, "no-output"
+    document = json.loads(report.read_text(encoding="utf-8") or "{}")
+    runs = document.get("runs") or []
+    note = "unknown"
+    for run in runs:
+        note = ((run.get("properties") or {}).get("scanNote")
+                or (run.get("properties") or {}).get("scannote") or note)
+        for item in run.get("results") or []:
+            severity = SARIF_LEVELS.get(str(item.get("level", "note")).lower(), "LOW")
+            counts[severity] += 1
+            location = ""
+            for entry in item.get("locations") or []:
+                uri = (((entry.get("physicalLocation") or {}).get("artifactLocation") or {}).get("uri") or "")
+                if uri:
+                    location = relative(uri, root)
+                    break
+            findings.append({
+                "severity": severity,
+                "id": item.get("ruleId") or "mcp-scan",
+                "title": ((item.get("message") or {}).get("text") or "")[:400],
+                "target": location,
+            })
+    return counts, findings[:200], note
+
+
+def run_mcp_scan(connection, job: dict) -> None:
+    """도입 요청의 고정 커밋을 다시 복제해 mcp-scan을 돌린다.
+
+    검증 때 쓴 체크아웃을 남겨두지 않는 이유는 외부 저장소 사본을 계속 들고 있을
+    이유가 없어서다. 커밋이 고정돼 있으므로 다시 복제해도 같은 코드다.
+    """
+    request = connection.execute(
+        "SELECT id, display_name, repository_url, commit_sha, source_ref FROM mcp_intake_requests WHERE id=%s",
+        (job["target_id"],),
+    ).fetchone()
+    if not request:
+        raise RuntimeError("도입 요청을 찾을 수 없습니다.")
+    if not request["commit_sha"]:
+        raise RuntimeError("격리 검증을 먼저 통과해야 합니다. 고정된 commit이 없습니다.")
+
+    job_id = str(job["id"])
+    checkout = WORK_DIR / f"scan-{job_id}"
+    shutil.rmtree(checkout, ignore_errors=True)
+    log(f"mcp-scan {job_id} 시작: {request['repository_url']} @ {request['commit_sha'][:12]}")
+    clone(request["repository_url"], checkout, commit=request["commit_sha"])
+
+    report = REPORT_DIR / f"mcp-scan-{job_id}.sarif.json"
+    result = run([
+        "aig-mcp-scan", "--repo", str(checkout), "--output", str(report),
+        "--api_key", MCP_SCAN_API_KEY, "--model", MCP_SCAN_MODEL,
+        "--base_url", MCP_SCAN_BASE_URL, "--language", MCP_SCAN_LANGUAGE,
+    ], timeout=MCP_SCAN_TIMEOUT)
+    if result.returncode != 0 or not report.exists():
+        output = (result.stderr or result.stdout).strip().splitlines()
+        raise RuntimeError(f"aig-mcp-scan(exit {result.returncode}): " + " | ".join(output[-3:])[:400])
+
+    counts, findings, note = sarif_findings(report, checkout)
+    # 배선 stub으로 돌린 결과가 "발견 0건"으로 보이면 그게 곧 깨끗하다는 뜻이
+    # 된다. 어떤 종류의 endpoint였는지를 결과에 박아 둔다.
+    endpoint_kind = "wire-stub" if urlsplit(MCP_SCAN_BASE_URL).hostname == "llm-stub" else "model"
+    summary = {
+        "endpoint_kind": endpoint_kind,
+        "findings": findings,
+        "total": sum(counts.values()),
+        "levels": counts,
+        "scan_note": note,
+        "repository": request["repository_url"],
+        "commit": request["commit_sha"],
+    }
+    source_ref = request["source_ref"] or f"intake:{request['id']}"
+    connection.execute(
+        "DELETE FROM supply_chain_reports WHERE scanner='AI-Infra-Guard mcp-scan' AND source_ref=%s",
+        (source_ref,),
+    )
+    store_report(connection, "AI-Infra-Guard mcp-scan", MCP_SCAN_MODEL, source_ref, report, counts, summary)
+    connection.execute(
+        """UPDATE scan_jobs SET status='DONE', report_path=%s, summary=%s, finished_at=now() WHERE id=%s""",
+        (str(report), Jsonb(summary), job["id"]),
+    )
+    shutil.rmtree(checkout, ignore_errors=True)
+    log(f"mcp-scan {job_id} 완료 · 발견 {summary['total']}건 · note {note}")
+
+
+def claim_scan_job(connection) -> dict | None:
+    cursor = connection.execute(
+        """UPDATE scan_jobs SET status='RUNNING', started_at=now(), model=%s, base_url=%s
+           WHERE id = (SELECT id FROM scan_jobs WHERE status='QUEUED'
+                       ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
+           RETURNING id, kind, target_kind, target_id""",
+        (MCP_SCAN_MODEL, MCP_SCAN_BASE_URL),
+    )
+    return cursor.fetchone()
+
+
 def claim(connection) -> dict | None:
     cursor = connection.execute(
         """UPDATE mcp_intake_requests SET status='VALIDATING', updated_at=now()
@@ -258,6 +389,25 @@ def main() -> int:
                         )
                         connection.commit()
                         shutil.rmtree(WORK_DIR / str(request["id"]), ignore_errors=True)
+
+                while True:
+                    job = claim_scan_job(connection)
+                    if not job:
+                        connection.commit()
+                        break
+                    connection.commit()
+                    try:
+                        run_mcp_scan(connection, job)
+                        connection.commit()
+                    except Exception as exc:
+                        connection.rollback()
+                        log(f"mcp-scan {job['id']} 실패: {exc}")
+                        connection.execute(
+                            "UPDATE scan_jobs SET status='FAILED', error=%s, finished_at=now() WHERE id=%s",
+                            (str(exc)[:600], job["id"]),
+                        )
+                        connection.commit()
+                        shutil.rmtree(WORK_DIR / f"scan-{job['id']}", ignore_errors=True)
         except psycopg.Error as exc:
             log(f"데이터베이스 재연결 대기: {exc}")
         time.sleep(POLL_SECONDS)

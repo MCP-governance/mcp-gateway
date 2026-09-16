@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import secrets
 import time
@@ -15,7 +16,7 @@ from uuid import UUID, uuid4
 
 import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from psycopg.types.json import Jsonb
@@ -212,9 +213,12 @@ async def gateway_json(path: str, authorization: str | None = None, method: str 
 # 역할이 볼 수 있는 화면. 숨기기만 하는 메뉴는 통제가 아니라 장식이므로
 # /api/console이 이 목록을 기준으로 데이터 자체를 빼고 응답한다.
 PAGES_BY_ROLE = {
+    # 내부 직원도 최소권한이다. 직원에게 필요한 것은 "내가 쓸 MCP가 이미 승인돼
+    # 있는가"와 "내 호출이 어떻게 판정됐는가"이지 조직 전체의 정책 관리대장이나
+    # 공급망 증적이 아니다.
     "partner": ("execution", "intake"),
-    "employee": ("overview", "intake", "policy", "execution", "audit"),
-    "admin": ("overview", "intake", "verification", "risks", "policy", "execution", "audit"),
+    "employee": ("execution", "intake", "audit"),
+    "admin": ("overview", "intake", "verification", "risks", "mcpscan", "policy", "execution", "audit"),
 }
 ROLE_LABELS = {"partner": "협력업체 직원", "employee": "직원", "admin": "관리자"}
 
@@ -290,6 +294,37 @@ async def console(authorization: str | None = Header(default=None)):
         },
     }
     return payload
+
+
+@app.get("/api/mcp-catalog/search")
+async def search_catalog(q: str = "", authorization: str | None = Header(default=None)):
+    """이미 누가 신청했거나 승인받은 MCP인지 누구나 조회할 수 있다.
+
+    이것이 없으면 같은 저장소를 여러 사람이 반복해서 신청하고, 이미 거부된
+    서버를 모르고 다시 올린다. 대신 신청자 신원과 도입 목적 본문은 돌려주지
+    않는다. 필요한 답은 "이미 있는가 / 어떤 상태인가"이지 "누가 왜 냈는가"가
+    아니다.
+    """
+    await current_identity(authorization)
+    term = q.strip()
+    like = f"%{term}%"
+    request_query = """SELECT display_name, repository_url, requested_transport, status, risk_level,
+                              commit_sha, source_ref, validated_at, reviewed_at, created_at
+                       FROM mcp_intake_requests"""
+    server_query = """SELECT id, display_name, transport, source_url, source_ref, supplier,
+                             status, status_reason
+                      FROM mcp_servers"""
+    if term:
+        requests = await db.fetch_all(
+            request_query + " WHERE repository_url ILIKE %s OR display_name ILIKE %s"
+            " ORDER BY created_at DESC LIMIT 50", (like, like))
+        servers = await db.fetch_all(
+            server_query + " WHERE source_url ILIKE %s OR display_name ILIKE %s OR id ILIKE %s"
+            " ORDER BY id LIMIT 50", (like, like, like))
+    else:
+        requests = await db.fetch_all(request_query + " ORDER BY created_at DESC LIMIT 50")
+        servers = await db.fetch_all(server_query + " ORDER BY id LIMIT 50")
+    return {"query": term, "requests": requests, "registry": servers}
 
 
 @app.post("/api/mcp-requests")
@@ -409,6 +444,143 @@ async def switch_enforcement(request: EnforcementSwitch, authorization: str | No
     if response.status_code >= 400:
         raise HTTPException(response.status_code, "집행 모드를 바꾸지 못했습니다.")
     return response.json()
+
+
+MCP_SCAN_CONFIG = {
+    "MCP_SCAN_BASE_URL": os.getenv("MCP_SCAN_BASE_URL", ""),
+    "MCP_SCAN_MODEL": os.getenv("MCP_SCAN_MODEL", ""),
+    "MCP_SCAN_API_KEY": os.getenv("MCP_SCAN_API_KEY", ""),
+}
+
+
+def mcp_scan_status() -> dict:
+    missing = [key for key, value in MCP_SCAN_CONFIG.items() if not value]
+    return {
+        "configured": not missing,
+        "missing": missing,
+        "base_url": MCP_SCAN_CONFIG["MCP_SCAN_BASE_URL"],
+        "model": MCP_SCAN_CONFIG["MCP_SCAN_MODEL"],
+        "pinned_commit": "036c39bd03b39ce4a811f7f125bc3b8f47e39b7c",
+    }
+
+
+@app.get("/api/mcp-scan")
+async def mcp_scan_overview(authorization: str | None = Header(default=None)):
+    """AI 코드 감사 화면의 전부: 설정 상태, 작업 이력, 저장된 결과."""
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "AI 코드 감사는 관리자만 볼 수 있습니다.")
+    jobs, reports, targets = await asyncio.gather(
+        db.fetch_all("""SELECT j.*, r.display_name, r.repository_url
+                        FROM scan_jobs j LEFT JOIN mcp_intake_requests r ON r.id = j.target_id
+                        ORDER BY j.created_at DESC LIMIT 30"""),
+        db.fetch_all("""SELECT * FROM supply_chain_reports
+                        WHERE scanner='AI-Infra-Guard mcp-scan' ORDER BY id DESC LIMIT 20"""),
+        db.fetch_all("""SELECT id, display_name, repository_url, commit_sha, status
+                        FROM mcp_intake_requests
+                        WHERE commit_sha IS NOT NULL AND status IN ('VALIDATED','APPROVED','REJECTED')
+                        ORDER BY created_at DESC LIMIT 30"""),
+    )
+    return {"config": mcp_scan_status(), "jobs": jobs, "reports": reports, "targets": targets}
+
+
+@app.post("/api/mcp-scan/connection-test")
+async def mcp_scan_connection_test(authorization: str | None = Header(default=None)):
+    """설정한 endpoint가 실제로 OpenAI 호환 API를 말하는지만 확인한다.
+
+    이것은 감사가 아니다. "돌려보니 발견 0건"과 "엔드포인트가 죽어 있었다"를
+    구분하지 못하면 감사 결과를 믿을 수 없어서 따로 둔다.
+    """
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "관리자만 확인할 수 있습니다.")
+    status = mcp_scan_status()
+    if not status["configured"]:
+        raise HTTPException(409, f"설정이 없습니다: {', '.join(status['missing'])}")
+    url = status["base_url"].rstrip("/") + "/chat/completions"
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.post(url, headers={
+                "Authorization": "Bearer " + MCP_SCAN_CONFIG["MCP_SCAN_API_KEY"],
+            }, json={"model": status["model"], "max_tokens": 1,
+                     "messages": [{"role": "user", "content": "ping"}]})
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, f"endpoint에 연결하지 못했습니다: {type(exc).__name__}") from exc
+    ok = response.status_code < 400
+    return {"ok": ok, "http_status": response.status_code, "base_url": status["base_url"],
+            "model": status["model"],
+            "message": "endpoint가 응답했습니다. 이것은 연결 확인이며 보안 판단이 아닙니다."
+                       if ok else response.text[:200]}
+
+
+class ScanRequest(StrictModel):
+    intake_id: UUID
+
+
+@app.post("/api/mcp-scan/run")
+async def run_mcp_scan_job(request: ScanRequest, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "AI 코드 감사 실행은 관리자만 할 수 있습니다.")
+    status = mcp_scan_status()
+    if not status["configured"]:
+        raise HTTPException(409, f"OpenAI 호환 endpoint 설정이 필요합니다: {', '.join(status['missing'])}")
+    target = await db.fetch_one(
+        "SELECT id, display_name, commit_sha FROM mcp_intake_requests WHERE id=%s", (request.intake_id,))
+    if not target:
+        raise HTTPException(404, "도입 요청을 찾을 수 없습니다.")
+    if not target["commit_sha"]:
+        raise HTTPException(409, "격리 검증을 먼저 통과해야 합니다. 고정된 commit이 없습니다.")
+    running = await db.fetch_one(
+        "SELECT id FROM scan_jobs WHERE target_id=%s AND status IN ('QUEUED','RUNNING')", (request.intake_id,))
+    if running:
+        raise HTTPException(409, "이 요청에 대한 감사가 이미 진행 중입니다.")
+    job_id = uuid4()
+    await db.execute(
+        """INSERT INTO scan_jobs(id, kind, target_kind, target_id, target_label, requested_by)
+           VALUES (%s,'mcp-scan','intake',%s,%s,%s)""",
+        (job_id, request.intake_id, target["display_name"], user["principal"]),
+    )
+    return {"job_id": str(job_id), "message": "AI 코드 감사를 큐에 넣었습니다. 고정된 commit을 다시 복제해 실행합니다."}
+
+
+@app.get("/api/stream/decisions")
+async def stream_decisions(after: int = 0, authorization: str | None = Header(default=None)):
+    """정책 판정 실시간 흐름.
+
+    숫자만 있는 대시보드는 "지금 무슨 일이 일어나는가"에 답하지 못한다. 역할
+    범위는 여기서도 그대로다. 관리자가 아니면 자기 호출만 흘러나온다.
+    """
+    user = await current_identity(authorization)
+    is_admin = "admin" in user["roles"]
+
+    async def events():
+        cursor = after
+        if cursor <= 0:
+            row = await db.fetch_one("SELECT COALESCE(max(id), 0) AS id FROM decisions")
+            cursor = int(row["id"]) if row else 0
+        idle = 0
+        while idle < 300:  # 10분 뒤에는 브라우저가 다시 붙게 둔다
+            query = """SELECT id, created_at, user_token, role, tool_name, data_class, action,
+                              decision, policy_id, policy_version, exception_id, upstream_executed, trace_id
+                       FROM decisions WHERE id > %s"""
+            params: tuple = (cursor,)
+            if not is_admin:
+                query += " AND user_token = %s"
+                params = (cursor, user["principal"])
+            rows = await db.fetch_all(query + " ORDER BY id LIMIT 25", params)
+            if rows:
+                idle = 0
+                cursor = max(int(row["id"]) for row in rows)
+                yield "event: decisions\ndata: " + json.dumps(
+                    {"rows": rows, "cursor": cursor}, ensure_ascii=False, default=str) + "\n\n"
+            else:
+                idle += 1
+                yield ": keep-alive\n\n"
+            await asyncio.sleep(2)
+
+    return StreamingResponse(events(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
 
 
 @app.get("/api/audit/verify")

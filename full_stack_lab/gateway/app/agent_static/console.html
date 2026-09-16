@@ -22,7 +22,7 @@
       </aside>
 
       <main class="console-main">
-        <p id="notice" class="notice hidden" role="status"></p>
+        <div id="toasts" class="toasts" aria-live="polite"></div>
 
         <section class="view hidden" data-view="overview">
           <div class="page-heading">
@@ -30,35 +30,53 @@
             <button id="refresh-console" class="ghost-button" type="button">새로고침</button>
           </div>
           <div id="overview-cards" class="metric-grid" aria-live="polite"></div>
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>실시간 정책 판정</h2>
+              <span id="live-state" class="live-state"><i></i>대기</span>
+            </div>
+            <div id="live-sparkline" class="sparkline" aria-hidden="true"></div>
+            <ol id="live-feed" class="live-feed"></ol>
+          </article>
           <div class="content-grid split-wide">
             <article class="panel">
               <div class="panel-heading"><h2>등록 MCP</h2><button id="refresh-registry" class="text-action" type="button">Catalog 비교</button></div>
               <div id="registry-summary" class="server-list"></div>
             </article>
             <article class="panel">
-              <div class="panel-heading"><h2>정책 판정 분포</h2><span id="decision-total" class="count">0</span></div>
+              <div class="panel-heading"><h2>판정 분포</h2><span id="decision-total" class="count">0</span></div>
               <div id="decision-chart" class="bar-chart" aria-label="정책 판정 분포"></div>
             </article>
           </div>
-          <article class="panel" id="enforcement-panel">
+          <article class="panel">
             <div class="panel-heading"><h2>집행 모드</h2><span id="enforcement-badge" class="tag">-</span></div>
             <div id="enforcement-body" class="enforcement-body"></div>
           </article>
         </section>
 
         <section class="view hidden" data-view="intake">
-          <div class="page-heading"><div><p class="eyebrow">Intake</p><h1>MCP 도입 요청</h1></div></div>
+          <div class="page-heading"><div><p class="eyebrow">Intake</p><h1>MCP 도입</h1></div></div>
+
+          <article class="panel">
+            <div class="panel-heading"><h2>먼저 찾아보기</h2><span class="hint">같은 저장소를 다시 신청하기 전에 확인합니다</span></div>
+            <div class="search-row">
+              <input id="catalog-search" type="search" placeholder="저장소 URL 또는 이름 (예: ida-pro-mcp)" maxlength="120" />
+              <button id="catalog-search-button" class="ghost-button" type="button">검색</button>
+            </div>
+            <div id="catalog-results" class="catalog-results"></div>
+          </article>
+
           <div class="content-grid intake-layout">
-            <form id="intake-form" class="panel intake-form">
+            <form id="intake-form" class="panel intake-form" novalidate>
               <h2>새 요청</h2>
-              <label>표시 이름<input name="display_name" minlength="2" maxlength="80" placeholder="예: 사내 검색 MCP" required /></label>
-              <label>GitHub 저장소 URL<input name="repository_url" type="url" maxlength="300" placeholder="https://github.com/organization/repository" required /></label>
+              <label>표시 이름<input name="display_name" minlength="2" maxlength="80" placeholder="예: 사내 검색 MCP" required /><small class="field-error" data-error="display_name"></small></label>
+              <label>GitHub 저장소 URL<input name="repository_url" type="url" maxlength="300" placeholder="https://github.com/organization/repository" required /><small class="field-error" data-error="repository_url"></small></label>
               <label>예정 전송 방식<select name="requested_transport"><option value="streamable-http">Streamable HTTP</option><option value="stdio">stdio</option><option value="sse">Legacy SSE</option></select></label>
-              <label>도입 목적 <em>(10자 이상)</em><textarea name="purpose" rows="5" minlength="10" maxlength="1000" placeholder="사용 목적, 접근 데이터, 예상 도구" required></textarea></label>
+              <label>도입 목적<textarea name="purpose" rows="5" minlength="10" maxlength="1000" placeholder="사용 목적, 접근 데이터, 예상 도구" required></textarea><small class="field-hint"><span id="purpose-count">0</span> / 1000 · 최소 10자<span class="field-error" data-error="purpose"></span></small></label>
               <button class="solid-button" type="submit">제출</button>
             </form>
             <article class="panel">
-              <div class="panel-heading"><h2>요청 목록</h2><span id="intake-total" class="count">0</span></div>
+              <div class="panel-heading"><h2>내 요청</h2><span id="intake-total" class="count">0</span></div>
               <div id="intake-list" class="request-list"></div>
             </article>
           </div>
@@ -70,7 +88,7 @@
             <li><span>01</span><b>보류</b><small>URL 등록, 복제 없음</small></li>
             <li><span>02</span><b>격리 복제</b><small>shallow clone, 실행 없음</small></li>
             <li><span>03</span><b>SBOM · SCA · SAST</b><small>Syft · Trivy · Semgrep</small></li>
-            <li><span>04</span><b>판정</b><small>Critical 발견 시 자동 거부</small></li>
+            <li><span>04</span><b>AI 코드 감사</b><small>선택 · mcp-scan</small></li>
             <li><span>05</span><b>승인</b><small>Registry 등록 대상 확정</small></li>
           </ol>
           <div class="content-grid split-wide">
@@ -85,7 +103,28 @@
           <article class="panel">
             <div class="panel-heading"><h2>발견 항목</h2><span id="findings-total" class="count">0</span></div>
             <div id="finding-filter" class="chip-row"></div>
+            <div class="search-row"><input id="finding-search" type="search" placeholder="내용·파일·규칙으로 거르기" maxlength="80" /></div>
             <div id="finding-list" class="finding-list"></div>
+          </article>
+        </section>
+
+        <section class="view hidden" data-view="mcpscan">
+          <div class="page-heading"><div><p class="eyebrow">AI Code Audit</p><h1>AI 코드 감사</h1></div><span id="mcpscan-state" class="tag">-</span></div>
+          <article class="panel" id="mcpscan-config">
+            <div class="panel-heading"><h2>실행 조건</h2><button id="mcpscan-test" class="ghost-button" type="button">연결 확인</button></div>
+            <div id="mcpscan-config-body" class="config-body"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><h2>감사 실행</h2><span class="hint">격리 검증을 통과한 고정 commit을 다시 복제해 실행합니다</span></div>
+            <div id="mcpscan-targets" class="request-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><h2>작업 이력</h2><span id="mcpscan-job-total" class="count">0</span></div>
+            <div id="mcpscan-jobs" class="request-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><h2>감사 결과</h2><span id="mcpscan-finding-total" class="count">0</span></div>
+            <div id="mcpscan-findings" class="finding-list"></div>
           </article>
         </section>
 
@@ -109,7 +148,7 @@
               <div id="execution-examples" class="chip-row"></div>
               <label class="field-label" for="prompt">업무 요청</label>
               <textarea id="prompt" rows="7" maxlength="2000" placeholder="예: 공개 문서를 읽어줘"></textarea>
-              <div class="button-row"><button id="send-button" class="solid-button" type="button">정책 검증 후 실행</button><button id="new-session" class="ghost-button" type="button">새 세션</button></div>
+              <div class="button-row"><button id="send-button" class="solid-button" type="button">정책 검증 후 실행</button><button id="new-session" class="ghost-button" type="button">새 세션</button><span class="hint">Ctrl/⌘ + Enter</span></div>
             </article>
             <article id="result-panel" class="panel">
               <div class="panel-heading"><h2 id="result-title">실행 결과</h2><span id="result-decision" class="tag">-</span></div>
@@ -127,11 +166,15 @@
         <section class="view hidden" data-view="audit">
           <div class="page-heading"><div><p class="eyebrow">Audit</p><h1>감사 기록</h1></div><span id="audit-total" class="count">0</span></div>
           <article class="panel">
+            <div class="search-row">
+              <input id="audit-search" type="search" placeholder="도구·정책·판정으로 거르기" maxlength="80" />
+              <span id="audit-live" class="live-state"><i></i>대기</span>
+            </div>
             <div class="table-wrap"><table><thead><tr><th>시간</th><th>요청자</th><th>도구</th><th>등급 / 행위</th><th>판정</th><th>적용 정책 · 버전 · 예외 · 경합</th><th>실행</th><th>Trace</th></tr></thead><tbody id="audit-list"></tbody></table></div>
           </article>
-          <article class="panel" id="audit-chain-panel">
+          <article class="panel hidden" id="audit-chain-panel">
             <div class="panel-heading"><h2>감사 체인 무결성</h2><button id="verify-chain" class="ghost-button" type="button">검증</button></div>
-            <div id="chain-result" class="chain-result">관리자만 실행할 수 있습니다.</div>
+            <div id="chain-result" class="chain-result">아직 확인하지 않았습니다.</div>
           </article>
         </section>
       </main>

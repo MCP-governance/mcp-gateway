@@ -115,11 +115,43 @@ async def main():
         # 메뉴를 감추기만 하면 개발자 도구를 여는 순간 통제가 사라진다. 역할이 볼 수
         # 없는 화면은 응답 자체에 데이터가 없어야 한다.
         check("console-pages-partner", consoles["partner"]["viewer"]["pages"] == ["execution", "intake"])
-        check("console-pages-admin", "risks" in consoles["admin"]["viewer"]["pages"])
+        check("console-pages-employee", consoles["employee"]["viewer"]["pages"] == ["execution", "intake", "audit"])
+        check("console-pages-admin", {"risks", "mcpscan", "policy"} <= set(consoles["admin"]["viewer"]["pages"]))
         check("console-supply-chain-admin-only",
               consoles["partner"]["supply_chain"] == [] and consoles["employee"]["supply_chain"] == []
               and isinstance(consoles["admin"]["supply_chain"], list))
-        check("console-ledger-hidden-from-partner", not consoles["partner"]["ledger"])
+        check("console-ledger-hidden-from-partner",
+              not consoles["partner"]["ledger"] and not consoles["employee"]["ledger"])
+
+        # 검색은 모든 역할이 쓴다. 같은 저장소를 다시 신청하기 전에 확인하는 것이
+        # 중복 신청과 이미 거부된 서버의 재제출을 막는 유일한 수단이다.
+        for role in ("partner", "employee", "admin"):
+            found = (await client.get(AGENT + "/api/mcp-catalog/search?q=github", headers=users[role])).json()
+            check(f"catalog-search-{role}", any(row["id"] == "github" for row in found["registry"]),
+                  json.dumps([row["id"] for row in found["registry"]]))
+        leak = (await client.get(AGENT + "/api/mcp-catalog/search?q=", headers=users["partner"])).json()
+        check("catalog-search-no-purpose-leak",
+              all("purpose" not in row and "submitted_by" not in row for row in leak["requests"]))
+        check("catalog-search-identity-required",
+              (await client.get(AGENT + "/api/mcp-catalog/search?q=x")).status_code == 401)
+
+        # AI 코드 감사는 관리자 전용이고, endpoint 설정이 없으면 실행을 만들 수 없다.
+        check("mcp-scan-admin-only",
+              (await client.get(AGENT + "/api/mcp-scan", headers=users["employee"])).status_code == 403)
+        scan_view = (await client.get(AGENT + "/api/mcp-scan", headers=users["admin"])).json()
+        check("mcp-scan-config-visible",
+              "configured" in scan_view["config"] and isinstance(scan_view["jobs"], list),
+              json.dumps(scan_view["config"], ensure_ascii=False))
+        if not scan_view["config"]["configured"]:
+            blocked = await client.post(AGENT + "/api/mcp-scan/run", headers=users["admin"],
+                                        json={"intake_id": "00000000-0000-0000-0000-000000000000"})
+            check("mcp-scan-refuses-without-endpoint", blocked.status_code == 409, blocked.text[:120])
+
+        # 실시간 흐름도 역할 범위를 그대로 따른다.
+        async with client.stream("GET", AGENT + "/api/stream/decisions", headers=users["employee"]) as response:
+            check("live-stream-opens", response.status_code == 200 and "text/event-stream" in response.headers["content-type"])
+        check("live-stream-identity-required",
+              (await client.get(AGENT + "/api/stream/decisions")).status_code == 401)
         check("console-approvals-admin-only",
               consoles["partner"]["approvals"] == [] and consoles["employee"]["approvals"] == [])
         # 감사 화면이 있는 직원도 자기 호출만 본다. 전체 판정은 관리자만 본다.
