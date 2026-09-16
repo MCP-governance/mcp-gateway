@@ -107,9 +107,57 @@ async def main():
         check("agent-ready-mock", ready["status"] == "ready" and ready["model"]["mode"] == "mock")
         check("unauthenticated-chat", (await client.post(AGENT + "/chat", json={"message": "공개 문서를 읽어줘"})).status_code == 401)
         check("invalid-login", (await client.post(AGENT + "/auth/mock-login", json={"email": "miso@bob.local", "password": "wrong"})).status_code == 401)
-        users = {role: await login(client, email) for role, email in [("customer", "customer@bob.local"), ("employee", "miso@bob.local"), ("admin", "admin@bob.local")]}
+        users = {role: await login(client, email) for role, email in [("partner", "partner@bob.local"), ("employee", "miso@bob.local"), ("admin", "admin@bob.local")]}
         check("console-identity-required", (await client.get(AGENT + "/api/console")).status_code == 401)
-        check("console-live-state", (await client.get(AGENT + "/api/console", headers=users["employee"])).json().get("model", {}).get("mode") == "mock")
+        consoles = {role: (await client.get(AGENT + "/api/console", headers=header)).json()
+                    for role, header in users.items()}
+        check("console-live-state", bool(consoles["employee"]["health"]["components"]["opa"]))
+        # 메뉴를 감추기만 하면 개발자 도구를 여는 순간 통제가 사라진다. 역할이 볼 수
+        # 없는 화면은 응답 자체에 데이터가 없어야 한다.
+        check("console-pages-partner", consoles["partner"]["viewer"]["pages"] == ["execution", "intake"])
+        check("console-pages-employee", consoles["employee"]["viewer"]["pages"] == ["execution", "intake", "audit"])
+        check("console-pages-admin", {"risks", "mcpscan", "policy"} <= set(consoles["admin"]["viewer"]["pages"]))
+        check("console-supply-chain-admin-only",
+              consoles["partner"]["supply_chain"] == [] and consoles["employee"]["supply_chain"] == []
+              and isinstance(consoles["admin"]["supply_chain"], list))
+        check("console-ledger-hidden-from-partner",
+              not consoles["partner"]["ledger"] and not consoles["employee"]["ledger"])
+
+        # 검색은 모든 역할이 쓴다. 같은 저장소를 다시 신청하기 전에 확인하는 것이
+        # 중복 신청과 이미 거부된 서버의 재제출을 막는 유일한 수단이다.
+        for role in ("partner", "employee", "admin"):
+            found = (await client.get(AGENT + "/api/mcp-catalog/search?q=github", headers=users[role])).json()
+            check(f"catalog-search-{role}", any(row["id"] == "github" for row in found["registry"]),
+                  json.dumps([row["id"] for row in found["registry"]]))
+        leak = (await client.get(AGENT + "/api/mcp-catalog/search?q=", headers=users["partner"])).json()
+        check("catalog-search-no-purpose-leak",
+              all("purpose" not in row and "submitted_by" not in row for row in leak["requests"]))
+        check("catalog-search-identity-required",
+              (await client.get(AGENT + "/api/mcp-catalog/search?q=x")).status_code == 401)
+
+        # AI 코드 감사는 관리자 전용이고, endpoint 설정이 없으면 실행을 만들 수 없다.
+        check("mcp-scan-admin-only",
+              (await client.get(AGENT + "/api/mcp-scan", headers=users["employee"])).status_code == 403)
+        scan_view = (await client.get(AGENT + "/api/mcp-scan", headers=users["admin"])).json()
+        check("mcp-scan-config-visible",
+              "configured" in scan_view["config"] and isinstance(scan_view["jobs"], list),
+              json.dumps(scan_view["config"], ensure_ascii=False))
+        if not scan_view["config"]["configured"]:
+            blocked = await client.post(AGENT + "/api/mcp-scan/run", headers=users["admin"],
+                                        json={"intake_id": "00000000-0000-0000-0000-000000000000"})
+            check("mcp-scan-refuses-without-endpoint", blocked.status_code == 409, blocked.text[:120])
+
+        # 실시간 흐름도 역할 범위를 그대로 따른다.
+        async with client.stream("GET", AGENT + "/api/stream/decisions", headers=users["employee"]) as response:
+            check("live-stream-opens", response.status_code == 200 and "text/event-stream" in response.headers["content-type"])
+        check("live-stream-identity-required",
+              (await client.get(AGENT + "/api/stream/decisions")).status_code == 401)
+        check("console-approvals-admin-only",
+              consoles["partner"]["approvals"] == [] and consoles["employee"]["approvals"] == [])
+        # 감사 화면이 있는 직원도 자기 호출만 본다. 전체 판정은 관리자만 본다.
+        check("console-decisions-scoped",
+              consoles["partner"]["decisions"] == []
+              and all(row["user_token"] == "emp-demo" for row in consoles["employee"]["decisions"]))
         intake_name = "검증 요청 " + str(uuid4())[:8]
         invalid_intake = await client.post(AGENT + "/api/mcp-requests", headers=users["employee"], json={
             "display_name": intake_name, "repository_url": "https://untrusted.invalid/repo", "requested_transport": "streamable-http", "purpose": "권한 검증용 외부 MCP 연동 요청입니다.",
@@ -127,7 +175,7 @@ async def main():
             check("intake-validation-queue", queued.status_code == 200 and queued.json()["request"]["status"] == "VALIDATION_QUEUED")
         finally:
             await db.execute("DELETE FROM mcp_intake_requests WHERE id=%s", (intake_id,))
-        cases = [("customer", "공개 문서를 읽어줘", "Allow", 1), ("customer", "비밀 인증정보를 읽어줘", "Block", 0),
+        cases = [("partner", "공개 문서를 읽어줘", "Allow", 1), ("partner", "비밀 인증정보를 읽어줘", "Block", 0),
                  ("employee", "비밀 인증정보를 읽어줘", "Alert", 1), ("employee", "내부 업무 메모를 수정해줘", "Allow", 1),
                  ("admin", "공개 공지를 외부에 전송해줘", "Restrict", 1), ("admin", "중요 계약을 외부에 전송해줘", "Approval", 0)]
         for role, message, expected, delta in cases:
@@ -153,7 +201,7 @@ async def main():
         check("chat-idempotency", again.get("replayed") and again["request_id"] == first["request_id"] and effect_count() == before)
         check("request-id-conflict", (await client.post(AGENT + "/chat", headers=users["employee"], json={**request, "message": "다른 요청"})).status_code == 409)
         session_id = first["session_id"]
-        check("session-isolation", (await client.get(AGENT + "/sessions/" + session_id, headers=users["customer"])).status_code == 404)
+        check("session-isolation", (await client.get(AGENT + "/sessions/" + session_id, headers=users["partner"])).status_code == 404)
         check("session-history", len((await client.get(AGENT + "/sessions/" + session_id, headers=users["employee"])).json()["runs"]) >= 1)
         check("cross-origin-request", (await client.post(AGENT + "/chat", headers={**users["employee"], "Origin": "https://untrusted.invalid"}, json={"message": "공開"})).status_code == 403)
         spoof = envelope(user_id="user-admin-001")
@@ -196,7 +244,7 @@ async def main():
               "응답 없이 중단된 receipt는 재실행 없이 unknown으로 확정")
         before = effect_count()
         with patch("app.core.refresh_catalog", side_effect=RuntimeError("catalog offline")):
-            outcome = await execute_call({"user_token": "cust-demo", "tool_name": "read_document", "document_id": "notice-001"})
+            outcome = await execute_call({"user_token": "partner-demo", "tool_name": "read_document", "document_id": "notice-001"})
         check("stale-catalog-fail-closed", outcome["policy_id"] == "MCP-CATALOG-001" and effect_count() == before)
         outcome = await execute_call({"user_token": "admin-demo", "tool_name": "write_document", "document_id": "work-001", "content": 42})
         check("shared-input-schema", outcome["policy_id"] == "P-INPUT-SCHEMA-001" and effect_count() == before)
@@ -209,7 +257,7 @@ async def main():
         try:
             for scanner, critical in [(fixture + "-vuln", 1), (fixture + "-sbom", 0)]:
                 await db.execute("INSERT INTO supply_chain_reports(scanner,source_ref,report_path,status,critical_count) VALUES (%s,'demo-v1','synthetic','IMPORTED',%s)", (scanner, critical))
-            outcome = await execute_call({"user_token": "cust-demo", "tool_name": "read_document", "document_id": "notice-001"})
+            outcome = await execute_call({"user_token": "partner-demo", "tool_name": "read_document", "document_id": "notice-001"})
             check("sbom-cannot-clear-vulnerability", outcome["policy_id"] == "MCP-SUPPLY-001" and effect_count() == before)
         finally:
             await db.execute("DELETE FROM supply_chain_reports WHERE scanner IN (%s,%s)", (fixture + "-vuln", fixture + "-sbom"))
@@ -230,7 +278,7 @@ async def main():
                 except httpx.HTTPError:
                     pass
                 await asyncio.sleep(.2)
-            headers = await login(client, "customer@bob.local", provider_base)
+            headers = await login(client, "partner@bob.local", provider_base)
             for message in ["public", "important", "no-tool", "identity-injection", "unknown-tool", "wrong-type", "multi-tool", "invalid-json", "invalid-arguments-json", "missing-choices", "bad-shape", "oversize", "unauthorized", "rate-limit", "provider-error", "timeout"]:
                 before = effect_count()
                 response = await client.post(provider_base + "/chat", headers=headers, json={"message": message})

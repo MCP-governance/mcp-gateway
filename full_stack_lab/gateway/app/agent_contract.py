@@ -24,7 +24,7 @@ TOOL_CALL_AUDIENCE = "mcp-governance-gateway-tool-call"
 TOOL_CALL_SCOPE = "mcp:tools/call"
 ALGORITHM = "EdDSA"
 IDENTITIES = {
-    "customer@bob.local": {"user_id": "user-customer-001", "principal": "cust-demo", "name": "고객 김민수", "department": "고객", "roles": ["customer"]},
+    "partner@bob.local": {"user_id": "user-partner-001", "principal": "partner-demo", "name": "협력업체 김민수", "department": "협력사 A", "roles": ["partner"]},
     "miso@bob.local": {"user_id": "user-test-001", "principal": "emp-demo", "name": "김미소", "department": "보안기술팀", "roles": ["employee"]},
     "admin@bob.local": {"user_id": "user-admin-001", "principal": "admin-demo", "name": "관리자 박지훈", "department": "거버넌스팀", "roles": ["admin"]},
 }
@@ -155,7 +155,10 @@ def schema(properties: dict, required: list[str]) -> dict:
     return {"type": "object", "properties": properties, "required": required, "additionalProperties": False}
 
 
-DOC = {"type": "string", "enum": ["notice-001", "work-001", "secret-001"]}
+# 승인된 문서 ID의 단일 정본. ingress 스키마와 API 모델이 각자 목록을 들면 하나만
+# 늘어난 날 조용히 갈라진다. main.py가 import 시점에 이 값과 대조한다.
+DOCUMENT_IDS = ("notice-001", "work-001", "secret-001", "audit-001")
+DOC = {"type": "string", "enum": list(DOCUMENT_IDS)}
 TEXT = {"type": "string", "maxLength": 2000}
 SCHEMAS = {
     "read_file": schema({"path": {"type": "string", "enum": list(FILE_IDS)}}, ["path"]),

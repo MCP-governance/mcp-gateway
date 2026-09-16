@@ -1,3 +1,8 @@
+-- gateway와 agent-service가 기동할 때마다 같은 파일을 동시에 적용한다. 서로 다른
+-- 순서로 ALTER의 AccessExclusiveLock을 잡으면 교착이 나고 한쪽 서비스가 기동에
+-- 실패한다. 마이그레이션은 한 번에 하나만 돌게 잠금을 먼저 잡는다.
+SELECT pg_advisory_xact_lock(hashtext('mcp_governance_schema_migration'));
+
 CREATE TABLE IF NOT EXISTS agent_sessions (
   id uuid PRIMARY KEY, user_id text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
 );
@@ -123,3 +128,69 @@ CREATE INDEX IF NOT EXISTS decisions_request_idx ON decisions(request_id);
 CREATE INDEX IF NOT EXISTS decisions_user_time_idx ON decisions(user_token, created_at DESC);
 CREATE INDEX IF NOT EXISTS catalog_snapshots_server_idx ON catalog_snapshots(server_id, id DESC);
 CREATE INDEX IF NOT EXISTS supply_chain_source_idx ON supply_chain_reports(source_ref, scanner, id DESC);
+
+-- §11.17 정책 판단 및 집행 증적. 판정만 남기면 "어느 정책의 어느 버전이, 어떤
+-- 의무와 예외를 달고, 어떤 경쟁 정책을 제치고 최종 판단이 됐는지"를 나중에
+-- 재구성할 수 없다. 기존 행은 chain_version으로 구분되므로 해시 체인은 그대로다.
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS policy_version text;
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS obligations jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS exception_id text;
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS conflicts jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS environment text;
+
+-- §11.4.1 승인 유효기간 만료 확인. 승인은 영구가 아니므로 Registry가 기한을
+-- 들고 있어야 정책이 그것을 판단할 수 있다.
+ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS approval_valid_until timestamptz;
+UPDATE mcp_tools SET approval_valid_until = timestamptz '2027-06-30 23:59:59+00'
+  WHERE approval_valid_until IS NULL;
+
+-- EXC-001(감사 대응 한시 열람) 예외의 유일한 적용 대상. 기존 볼륨에도 들어가야
+-- 예외 시연이 secret-001의 차단 시나리오를 덮어쓰지 않는다.
+INSERT INTO documents(id, title, data_class, classification_source, classification_version, owner_department)
+VALUES ('audit-001', '외부 감사 대응 계약 사본', 'important', 'manual-registry', 'demo-v1', '거버넌스팀')
+ON CONFLICT (id) DO NOTHING;
+
+-- 협력업체 직원(partner)으로 역할 이름을 바꾼다. 내부망 테스트베드에 "고객"이
+-- 있는 것이 이상하고, 이 역할이 실제로 대리하는 것은 신뢰경계 밖에서 들어오는
+-- 외부 인력이다. 기존 볼륨에도 적용해야 로그인 신원과 DB 역할이 갈라지지 않는다.
+ALTER TABLE principals DROP CONSTRAINT IF EXISTS principals_role_check;
+UPDATE principals SET role='partner' WHERE role='customer';
+UPDATE principals SET token='partner-demo', display_name='협력업체 김민수', department='협력사 A'
+  WHERE token='cust-demo';
+ALTER TABLE principals ADD CONSTRAINT principals_role_check
+  CHECK (role IN ('partner', 'employee', 'admin'));
+
+-- 도입 요청의 실제 검증 결과. 상태만 바꾸고 증적이 없으면 "검증했다"가 아니라
+-- "검증했다고 적었다"이다. 격리 워커가 만든 commit·source_ref·요약을 함께 둔다.
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS commit_sha text;
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS source_ref text;
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS evidence jsonb NOT NULL DEFAULT '{}';
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS validated_at timestamptz;
+ALTER TABLE mcp_intake_requests DROP CONSTRAINT IF EXISTS mcp_intake_requests_status_check;
+ALTER TABLE mcp_intake_requests ADD CONSTRAINT mcp_intake_requests_status_check
+  CHECK (status IN ('HOLD', 'VALIDATION_QUEUED', 'VALIDATING', 'VALIDATED', 'APPROVED', 'FAILED', 'REJECTED'));
+CREATE INDEX IF NOT EXISTS mcp_intake_requests_status_idx ON mcp_intake_requests(status, created_at);
+
+-- AI-Infra-Guard mcp-scan은 LLM endpoint를 요구하는 코드 감사라 도입 검증과 같은
+-- 트랜잭션에 넣을 수 없다. 운영자가 필요할 때 돌리는 별도 작업으로 큐에 넣고,
+-- 어떤 모델·endpoint로 돌렸는지까지 결과와 함께 남긴다. 어떤 모델이 판단했는지
+-- 모르는 보안 결과는 증적이 아니다.
+CREATE TABLE IF NOT EXISTS scan_jobs (
+  id uuid PRIMARY KEY,
+  kind text NOT NULL CHECK (kind IN ('mcp-scan')),
+  target_kind text NOT NULL CHECK (target_kind IN ('intake')),
+  target_id uuid NOT NULL,
+  target_label text NOT NULL DEFAULT '',
+  status text NOT NULL DEFAULT 'QUEUED' CHECK (status IN ('QUEUED', 'RUNNING', 'DONE', 'FAILED')),
+  requested_by text NOT NULL,
+  model text,
+  base_url text,
+  report_path text,
+  summary jsonb NOT NULL DEFAULT '{}',
+  error text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  started_at timestamptz,
+  finished_at timestamptz
+);
+CREATE INDEX IF NOT EXISTS scan_jobs_status_idx ON scan_jobs(status, created_at);
+CREATE INDEX IF NOT EXISTS scan_jobs_target_idx ON scan_jobs(target_id, created_at DESC);

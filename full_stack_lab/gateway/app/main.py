@@ -12,7 +12,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from . import db
+from . import core, db
 from .core import (
     OPA_URL,
     approve_request,
@@ -29,7 +29,7 @@ from .core import (
     verify_audit_chain,
 )
 from .mcp_facade import build_mcp, transport_security
-from .agent_contract import authenticated_user
+from .agent_contract import DOCUMENT_IDS, authenticated_user
 from .agent_gateway import router as agent_router
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
@@ -48,13 +48,19 @@ class StrictModel(BaseModel):
 
 class CallRequest(StrictModel):
     tool_name: Literal["read_document", "write_document", "send_external", "get_current_time", "github_get_file"]
-    document_id: Literal["notice-001", "work-001", "secret-001"] | None = None
+    document_id: Literal["notice-001", "work-001", "secret-001", "audit-001"] | None = None
     content: str = Field(default="합성 데모 내용", max_length=2000)
     destination: str = Field(default="outside.example", max_length=200)
     timezone: str = Field(default="Asia/Seoul", max_length=64)
     owner: str = Field(default="MCP-governance", max_length=100)
     repo: str = Field(default="mcp-gateway", max_length=100)
     path: str = Field(default="README.md", max_length=300)
+
+
+# Literal은 정적이어야 해서 목록을 한 번 더 적는다. 갈라지는 순간 기동이 실패하게
+# 둔다. 두 목록이 다른 채로 뜨면 한쪽 ingress만 새 문서를 받는다.
+assert set(CallRequest.model_fields["document_id"].annotation.__args__[0].__args__) == set(DOCUMENT_IDS), \
+    "CallRequest.document_id와 agent_contract.DOCUMENT_IDS가 다릅니다."
 
 
 class MockModelRequest(StrictModel):
@@ -178,7 +184,7 @@ async def integration() -> dict:
 
 @app.get("/api/policy/matrix")
 async def policy_matrix() -> dict:
-    roles = ("customer", "employee", "admin")
+    roles = ("partner", "employee", "admin")
     classes = ("public", "nonimportant", "important")
     actions = ("r", "w", "x")
     contract = {
@@ -197,11 +203,35 @@ async def policy_matrix() -> dict:
                 response.raise_for_status()
                 result = response.json()["result"]
         except Exception:
-            result = {"decision": "Block", "policy_id": "P-CONTROL-FAIL-CLOSED"}
+            result = core.local_verdict("P-CONTROL-FAIL-CLOSED", "Block", "정책 엔진에 질의하지 못했습니다.")
         return {"role": role, "data_class": data_class, "action": action, **result}
 
     cells = await asyncio.gather(*(evaluate(role, data_class, action) for role in roles for data_class in classes for action in actions))
     return {"roles": roles, "data_classes": classes, "actions": actions, "cells": cells}
+
+
+@app.get("/api/policy/ledger")
+async def policy_ledger_view() -> dict:
+    """§12.5 PaC 정책 관리대장.
+
+    정책 코드만으로는 정책의 목적과 근거를 대신할 수 없다(§11.8). 어떤 위험과 통제를
+    구현하는 정책인지, 지금 어떤 상태와 버전으로 어느 환경에 적용 중인지, 어떤 예외가
+    붙어 있는지를 집행 중인 정본에서 그대로 읽어 보여준다.
+    """
+    ledger, exceptions, policy_set, active = await asyncio.gather(
+        core.policy_ledger(refresh=True),
+        core.opa_document("exceptions"),
+        core.opa_document("policy_set"),
+        db.fetch_one("SELECT * FROM policy_versions WHERE status='ACTIVE' ORDER BY activated_at DESC LIMIT 1"),
+    )
+    entries = [{"policy_id": pid, **entry} for pid, entry in sorted(ledger.items(), key=lambda item: item[1].get("priority", 9999))]
+    return {
+        "policy_set": policy_set or {},
+        "deployed_rego": active,
+        "environment": core.GATEWAY_ENVIRONMENT,
+        "policies": entries,
+        "exceptions": exceptions if isinstance(exceptions, list) else [],
+    }
 
 
 @app.post("/api/session")

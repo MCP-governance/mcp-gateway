@@ -41,9 +41,13 @@ def mock_proposal(message: str) -> Proposal | None:
         return Proposal(server_id="mock-stdio", tool_name="get_current_time", arguments={"timezone": "Asia/Seoul"})
     if "github" in message.lower() or "깃허브" in message:
         return Proposal(server_id="github", tool_name="github_get_file", arguments={"owner": "MCP-governance", "repo": "mcp-gateway", "path": "README.md"})
-    if not any(word in message for word in ("문서", "공지", "메모", "계약", "비밀", "중요", "내부")):
+    if not any(word in message for word in ("문서", "공지", "메모", "계약", "비밀", "중요", "내부", "감사")):
         return None
-    document = "work-001" if any(w in message for w in ("비중요", "내부", "업무")) else "secret-001" if any(w in message for w in ("중요", "계약", "비밀")) else "notice-001"
+    # 감사 사본은 EXC-001 예외의 유일한 대상이라 다른 중요문서보다 먼저 가른다.
+    document = ("audit-001" if "감사" in message
+                else "work-001" if any(w in message for w in ("비중요", "내부", "업무"))
+                else "secret-001" if any(w in message for w in ("중요", "계약", "비밀"))
+                else "notice-001")
     tool = "send_external" if any(w in message for w in ("외부", "전송", "보내")) else "write_document" if any(w in message for w in ("수정", "작성", "써")) else "read_document"
     args = {"document_id": document}
     if tool != "read_document":

@@ -98,6 +98,11 @@ services:
       MODEL_API_KEY: ${MODEL_API_KEY:-}
       MODEL_NAME: ${MODEL_NAME:-}
       MODEL_TIMEOUT_SECONDS: ${MODEL_TIMEOUT_SECONDS:-20}
+      # Console이 "AI 코드 감사를 지금 돌릴 수 있는가"를 답하려면 워커와 같은
+      # 설정을 봐야 한다. 키는 연결 확인 요청에만 쓰고 화면으로 내보내지 않는다.
+      MCP_SCAN_BASE_URL: ${MCP_SCAN_BASE_URL:-}
+      MCP_SCAN_MODEL: ${MCP_SCAN_MODEL:-}
+      MCP_SCAN_API_KEY: ${MCP_SCAN_API_KEY:-}
       OTEL_SERVICE_NAME: agent-service
     ports:
       - "127.0.0.1:8000:8000"
@@ -106,7 +111,7 @@ services:
     depends_on:
       gateway:
         condition: service_started
-    networks: [edge, agent, data, telemetry]
+    networks: [edge, agent, data, telemetry, scanner]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 
@@ -126,6 +131,58 @@ services:
       - ./reports:/reports:ro
       - ./opa:/policy:ro
     networks: [policy, tools, data, telemetry]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  # 제출된 저장소를 격리해서 복제·검사만 하는 워커. 저장소 코드는 실행하지 않고
+  # Gateway와 파일시스템·네트워크를 공유하지 않는다. tools/policy 망에 붙이지
+  # 않으므로 여기서 무엇이 실행돼도 MCP 실행 경로에는 닿지 않는다.
+  intake-worker:
+    build:
+      context: ./supply_chain
+      dockerfile: intake-worker.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
+      REPORT_DIR: /reports
+      INTAKE_WORK_DIR: /work
+      SEMGREP_RULES: /rules/semgrep-mcp.yml
+      INTAKE_POLL_SECONDS: ${INTAKE_POLL_SECONDS:-5}
+      # AI-Infra-Guard mcp-scan은 OpenAI 호환 endpoint가 있을 때만 돌아간다.
+      # 비어 있으면 Console이 "실행할 수 없음"과 필요한 값을 그대로 보여준다.
+      MCP_SCAN_API_KEY: ${MCP_SCAN_API_KEY:-}
+      MCP_SCAN_BASE_URL: ${MCP_SCAN_BASE_URL:-}
+      MCP_SCAN_MODEL: ${MCP_SCAN_MODEL:-}
+      MCP_SCAN_LANGUAGE: ${MCP_SCAN_LANGUAGE:-en}
+      MCP_SCAN_TIMEOUT: ${MCP_SCAN_TIMEOUT:-900}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # 호스트 bind가 아니라 named volume을 쓴다. 워커는 비특권 uid로 돌고 호스트
+      # reports/는 사용자 소유라 쓰기가 막히는데, 스캐너 출력이 조용히 사라지면
+      # "증적 없는 검증 통과"가 만들어진다.
+      - intake_reports:/reports
+      - ./supply_chain/semgrep-mcp.yml:/rules/semgrep-mcp.yml:ro
+      - intake_work:/work
+      # 워크스페이스 스캔용 trivy_cache는 root 소유로 만들어져 있어 비특권 워커가
+      # 쓸 수 없다. DB 캐시는 워커 전용 볼륨에 둔다.
+      - intake_trivy_cache:/trivy-cache
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks: [data, scanner]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  # 배선 확인 전용 OpenAI 호환 stub. 보안 판단을 하지 않으며 기본 기동에 없다.
+  llm-stub:
+    image: python:3.12-slim
+    profiles: [llm-stub]
+    command: ["python", "/app/llm_stub.py"]
+    environment:
+      LLM_STUB_PORT: "4010"
+    volumes:
+      - ./supply_chain/llm_stub.py:/app/llm_stub.py:ro
+    networks: [scanner]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 
@@ -197,30 +254,6 @@ services:
       - ./supply_chain/semgrep-mcp.yml:/rules/semgrep-mcp.yml:ro
     network_mode: none
 
-  mcp-scan:
-    build:
-      context: ./supply_chain
-      dockerfile: mcp-scan.Dockerfile
-      args:
-        AIG_REF: 036c39bd03b39ce4a811f7f125bc3b8f47e39b7c
-    profiles: [mcp-scan]
-    command:
-      - --repo
-      - /workspace/full_stack_lab/mock_server
-      - --output
-      - /reports/mcp-scan.sarif.json
-      - --api_key
-      - ${MCP_SCAN_API_KEY:-}
-      - --model
-      - ${MCP_SCAN_MODEL:-local-mock}
-      - --base_url
-      - ${MCP_SCAN_BASE_URL:-http://host.docker.internal:11434/v1}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - ..:/workspace:ro
-      - ./reports:/reports
-    networks: [scanner]
 
 networks:
   edge: {}
@@ -240,3 +273,6 @@ volumes:
   db_data: {}
   effects: {}
   trivy_cache: {}
+  intake_work: {}
+  intake_reports: {}
+  intake_trivy_cache: {}

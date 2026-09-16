@@ -4,93 +4,41 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>MCP Governance 로그인</title>
-    <link rel="stylesheet" href="/static/styles.css" />
-    <link rel="stylesheet" href="/static/integration.css" />
+    <link rel="stylesheet" href="/static/console.css" />
+    <link rel="stylesheet" href="/static/login.css" />
   </head>
   <body class="login-page">
     <main class="login-shell">
-      <section class="brand-panel" aria-label="서비스 소개">
-        <div class="brand-mark" aria-hidden="true">M</div>
-        <div class="brand-copy">
-          <p class="eyebrow">MCP Governance · Control Plane</p>
-          <h1>MCP 연결을<br />통제합니다</h1>
-          <p>
-            기업 계정으로 로그인하면 사용자 권한을 확인한 뒤
-            Agent Service와 MCP Security Gateway를 통해 요청을 처리합니다.
-          </p>
-        </div>
-        <div class="trust-note">
-          <span class="status-dot" aria-hidden="true"></span>
-          보호된 개발 환경
-        </div>
+      <section class="login-hero">
+        <p class="eyebrow">MCP Governance · Control Plane</p>
+        <h1>등록되고<br />승인된 것만<br />실행합니다</h1>
       </section>
 
       <section class="login-panel">
-        <div class="login-card">
-          <div class="mobile-brand">
-            <span class="brand-mark small" aria-hidden="true">M</span>
-            <span>MCP Governance</span>
-          </div>
-          <p class="eyebrow blue">개발 계정 인증 · v1.4</p>
+        <form id="login-form" novalidate>
+          <p class="eyebrow">Sign in</p>
           <h2>로그인</h2>
-          <p class="form-description">
-            접근 역할을 선택하세요.
-          </p>
 
-          <form id="login-form" novalidate>
-            <label for="access-role">접근 역할</label>
-            <select id="access-role">
-              <option value="miso@bob.local">직원 김미소 · 중요 문서 열람은 경보</option>
-              <option value="customer@bob.local">고객 김민수 · 공개 문서만 허용</option>
-              <option value="admin@bob.local">관리자 박지훈 · 외부 전송 승인·제한</option>
-            </select>
-            <label for="email">회사 이메일</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autocomplete="username"
-              value="miso@bob.local"
-              required
-            />
+          <label for="access-role">접근 역할</label>
+          <select id="access-role">
+            <option value="miso@bob.local">직원 · 김미소</option>
+            <option value="partner@bob.local">협력업체 직원 · 김민수</option>
+            <option value="admin@bob.local">관리자 · 박지훈</option>
+          </select>
 
-            <div class="label-row">
-              <label for="password">비밀번호</label>
-              <span>개발 계정</span>
-            </div>
-            <div class="password-field">
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autocomplete="current-password"
-                value="test-password"
-                required
-              />
-              <button
-                id="toggle-password"
-                class="text-button"
-                type="button"
-                aria-label="비밀번호 표시"
-              >표시</button>
-            </div>
+          <label for="email">회사 이메일</label>
+          <input id="email" name="email" type="email" autocomplete="username" value="miso@bob.local" required />
 
-            <p id="login-error" class="error-message" role="alert"></p>
-
-            <button id="login-button" class="primary-button" type="submit">
-              <span>계속</span>
-              <span aria-hidden="true">›</span>
-            </button>
-          </form>
-
-          <div class="test-account">
-            <strong>개발 환경 안내</strong>
-            <p>
-              현재 환경은 외부 SSO 대신 개발 계정으로 인증 흐름을 검증합니다.
-              운영 환경에서는 기업 IdP로 이 경계를 교체합니다.
-            </p>
+          <label for="password">비밀번호</label>
+          <div class="password-field">
+            <input id="password" name="password" type="password" autocomplete="current-password" value="test-password" required />
+            <button id="toggle-password" class="text-action" type="button" aria-label="비밀번호 표시">표시</button>
           </div>
-        </div>
+
+          <p id="login-error" class="login-error" role="alert"></p>
+          <button id="login-button" class="solid-button" type="submit">계속</button>
+          <p class="login-note">개발 계정으로 인증 흐름을 검증합니다. 운영에서는 기업 IdP가 이 경계를 대신합니다.</p>
+        </form>
       </section>
     </main>
     <script src="/static/login.js" defer></script>
