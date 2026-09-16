@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import pathlib
+import re
 import sys
 from datetime import UTC, datetime
 
@@ -323,6 +325,72 @@ async def run() -> dict:
     checks.append(check(
         all(row["source_ref"] for row in coverage.values()),
         "supply-chain-attribution-key", "모든 서버가 고정된 source_ref를 가짐"))
+
+    # ── PaC 프레임워크 §11 연계 ────────────────────────────────────────────
+    # 정책이 관리대장과 예외 대장을 실제로 읽고 집행하는지, 그리고 그 근거가 증적에
+    # 남는지 확인한다. Rego 단위 시험은 정책 파일 안에서만 참이므로 여기서 한 번 더
+    # 실제 DB·Registry 값으로 확인한다.
+    async with httpx.AsyncClient(timeout=30) as client:
+        ledger_view = (await client.get(API + "/api/policy/ledger")).json()
+    ledger = {entry["policy_id"]: entry for entry in ledger_view["policies"]}
+    checks.append(check(
+        ledger_view["policy_set"].get("version") and len(ledger) >= 20
+        and ledger_view["deployed_rego"]["status"] == "ACTIVE",
+        "pac-ledger-published",
+        f"{len(ledger)} policies, set {ledger_view['policy_set'].get('version')}"))
+
+    # §11.8 정책 코드만으로 목적과 근거를 대신할 수 없다. Gateway가 직접 내는
+    # policy_id도 관리대장에 있어야 한다.
+    declared = set()
+    for source in (pathlib.Path(__file__).parent).glob("*.py"):
+        declared |= {pid for pid in re.findall(r'"((?:P|MCP)-[A-Z0-9][A-Z0-9-]*[A-Z0-9])"', source.read_text(encoding="utf-8"))}
+    missing = sorted(declared - set(ledger))
+    checks.append(check(not missing, "pac-every-policy-id-has-ledger-entry",
+                        f"{len(declared)}개 정책 ID 모두 관리대장에 있음" if not missing else str(missing)))
+
+    # §8 예외: 범위 안에서는 완화되고, 범위 밖 같은 등급 문서는 그대로 차단된다.
+    excepted = await post("/api/calls", {"tool_name": "read_document", "document_id": "audit-001"}, "cust-demo")
+    checks.append(check(
+        excepted["decision"] == "Alert" and excepted["policy_id"] == "P-333-DENY-001"
+        and excepted["exception"]["id"] == "EXC-001"
+        and "사후 수동 검토 적용" in excepted["obligations"],
+        "pac-exception-applies", json.dumps(excepted.get("exception"), ensure_ascii=False)))
+    outside = await post("/api/calls", {"tool_name": "read_document", "document_id": "secret-001"}, "cust-demo")
+    checks.append(check(
+        outside["decision"] == "Block" and outside["policy_id"] == "P-333-DENY-001"
+        and outside["exception"] is None,
+        "pac-exception-stays-in-scope", f"{outside['decision']}/{outside['policy_id']}"))
+
+    # §11.14 진 정책도 증적에 남는다. 최종 판단만 남기면 충돌 자체를 볼 수 없다.
+    conflicting = await post("/api/calls", {"tool_name": "read_document", "document_id": "secret-001"}, "emp-demo")
+    checks.append(check(
+        conflicting["policy_id"] == "P-IMPORTANT-ALERT-001"
+        and {item["policy_id"] for item in conflicting["conflicts"]} == {"P-333-ALLOW-001"}
+        and all(item["priority"] > conflicting["priority"] for item in conflicting["conflicts"]),
+        "pac-conflicts-recorded", json.dumps(conflicting["conflicts"], ensure_ascii=False)))
+
+    # §11.4.1 승인 유효기간 만료 확인. Registry의 기한만 바꾸고 정책 코드는 건드리지 않는다.
+    await db.execute("UPDATE mcp_tools SET approval_valid_until=now()-interval '1 day' WHERE server_id='mock-http' AND name='read_document'")
+    try:
+        stale = await post("/api/calls", {"tool_name": "read_document", "document_id": "notice-001"}, "cust-demo")
+        checks.append(check(
+            stale["decision"] == "Block" and stale["policy_id"] == "P-APPROVAL-EXPIRY-001"
+            and stale["effect_after"] == stale["effect_before"],
+            "pac-expired-approval-blocks", f"{stale['policy_id']} {stale['effect_before']}->{stale['effect_after']}"))
+    finally:
+        await db.execute("UPDATE mcp_tools SET approval_valid_until=timestamptz '2027-06-30 23:59:59+00' WHERE server_id='mock-http' AND name='read_document'")
+    restored = await post("/api/calls", {"tool_name": "read_document", "document_id": "notice-001"}, "cust-demo")
+    checks.append(check(restored["decision"] == "Allow", "pac-reapproval-restores", restored["policy_id"]))
+
+    # §11.17 판단 증적: 정책 버전·의무·환경이 감사 테이블에 실제로 들어갔는가.
+    recorded = await db.fetch_one(
+        "SELECT policy_id, policy_version, obligations, exception_id, conflicts, environment, chain_version"
+        " FROM decisions WHERE policy_id='P-333-DENY-001' AND exception_id IS NOT NULL ORDER BY id DESC LIMIT 1")
+    checks.append(check(
+        bool(recorded) and recorded["policy_version"] == ledger["P-333-DENY-001"]["version"]
+        and recorded["exception_id"] == "EXC-001" and recorded["environment"]
+        and recorded["chain_version"] == 3 and recorded["obligations"],
+        "pac-decision-evidence-recorded", json.dumps(recorded, ensure_ascii=False, default=str)))
 
     chain = await verify_audit_chain()
     checks.append(check(chain["intact"], "audit-chain-intact", json.dumps(chain, ensure_ascii=False)))

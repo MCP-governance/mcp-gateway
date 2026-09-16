@@ -1,0 +1,59 @@
+{
+  "exception_register": {
+    "owner": "거버넌스팀",
+    "note": "프레임워크 8장 예외 관리. 여기 등록되지 않은 완화는 집행되지 않고, 8.6의 금지조건을 하나라도 어기면 정책이 예외를 적용하지 않는다(무효 예외는 조용히 통과하지 않고 evidence에 남는다)."
+  },
+
+  "exceptions": [
+    {
+      "id": "EXC-001",
+      "policy_id": "P-333-DENY-001",
+      "title": "감사 대응 기간 중 고객 역할의 감사 사본 열람",
+      "reason": "외부 감사 대응을 위해 고객 창구 담당자가 감사 사본 1건을 확인해야 한다.",
+      "scope": {
+        "principal_role": "customer",
+        "resource_id": "audit-001",
+        "tool": "read_document"
+      },
+      "effect": "Alert",
+      "compensating_controls": [
+        "조회 기능만 허용하고 생성·변경·삭제는 제한",
+        "대상 문서 1건으로 범위 축소",
+        "강화된 로그와 보안팀 실시간 경보 적용",
+        "사후 수동 검토 적용"
+      ],
+      "residual_risk": "중간",
+      "requested_by": "서비스 소유자 (고객지원팀)",
+      "approved_by": "승인권자 (거버넌스팀장)",
+      "valid_from": "2026-09-01T00:00:00Z",
+      "valid_until": "2026-12-31T23:59:59Z",
+      "exit_plan": "감사 종료 시 즉시 종료하고 정상 권한으로 복귀한다.",
+      "status": "적용",
+      "review_due": "2026-11-01T00:00:00Z"
+    },
+
+    {
+      "id": "EXC-002",
+      "policy_id": "P-APPROVAL-EXPIRY-001",
+      "title": "Time MCP 재승인 지연에 따른 한시 사용",
+      "reason": "재승인 결재가 지연되는 동안 시간 조회 도구의 업무 연속성을 유지한다.",
+      "scope": {
+        "tool": "get_current_time"
+      },
+      "effect": "Alert",
+      "compensating_controls": [
+        "조회 기능만 허용",
+        "public 등급 자료로 처리 범위 제한",
+        "강화된 로그 적용"
+      ],
+      "residual_risk": "낮음",
+      "requested_by": "운영 담당자",
+      "approved_by": "승인권자 (보안 담당자)",
+      "valid_from": "2026-06-01T00:00:00Z",
+      "valid_until": "2026-08-31T23:59:59Z",
+      "exit_plan": "재승인 완료 시 종료.",
+      "status": "종료",
+      "review_due": "2026-08-01T00:00:00Z"
+    }
+  ]
+}

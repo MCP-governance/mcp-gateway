@@ -124,7 +124,10 @@ ON CONFLICT (token) DO NOTHING;
 INSERT INTO documents(id, title, data_class, classification_source, classification_version, owner_department) VALUES
   ('notice-001', '서비스 공개 공지', 'public', 'manual-registry', 'demo-v1', NULL),
   ('work-001', '내부 업무 메모', 'nonimportant', 'manual-registry', 'demo-v1', '보안기술팀'),
-  ('secret-001', '중요 계약 초안', 'important', 'manual-registry', 'demo-v1', '거버넌스팀')
+  ('secret-001', '중요 계약 초안', 'important', 'manual-registry', 'demo-v1', '거버넌스팀'),
+  -- EXC-001 예외의 유일한 적용 대상. 예외를 시연하려고 기존 통제 시나리오의
+  -- 문서를 재사용하면 '고객의 중요문서 열람은 차단'이 조용히 사라진다.
+  ('audit-001', '외부 감사 대응 계약 사본', 'important', 'manual-registry', 'demo-v1', '거버넌스팀')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO mcp_servers(id, display_name, transport, endpoint, source_url, source_ref, supplier, license, status, status_reason) VALUES

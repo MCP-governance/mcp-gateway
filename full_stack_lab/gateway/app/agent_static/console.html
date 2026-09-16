@@ -26,6 +26,7 @@
         <button data-page="intake" type="button"><span>＋</span>MCP 도입</button>
         <button data-page="verification" type="button"><span>✓</span>검증 파이프라인</button>
         <button data-page="risks" type="button"><span>!</span>위험 분석</button>
+        <button data-page="policy" type="button"><span>§</span>정책 관리대장</button>
         <p>OPERATIONS</p>
         <button data-page="execution" type="button"><span>↗</span>MCP 실행</button>
         <button data-page="audit" type="button"><span>≡</span>감사 기록</button>
@@ -90,14 +91,21 @@
           <div class="content-grid split-wide"><article class="panel"><div class="panel-heading"><div><p class="section-label">FINDINGS</p><h2>발견 항목</h2></div><span id="findings-total" class="soft-badge">0건</span></div><div id="finding-list" class="finding-list"></div></article><article class="panel"><p class="section-label">AI-INFRA-GUARD</p><h2>첫 실행 위험 점검</h2><div id="guard-detail" class="guard-detail"></div></article></div>
         </section>
 
+        <section class="view hidden" data-view="policy">
+          <div class="page-heading"><div><p class="section-label">POLICY AS CODE LEDGER</p><h1>정책 관리대장</h1><p>집행 중인 정책집의 목적·근거·버전·상태와 등록된 예외를 정책 엔진의 정본에서 그대로 읽어옵니다. 정책 코드만으로는 목적과 근거를 대신할 수 없습니다.</p></div><span id="ledger-total" class="soft-badge">0건</span></div>
+          <div id="ledger-cards" class="metric-grid"></div>
+          <article class="panel"><div class="panel-heading"><div><p class="section-label">POLICY REGISTER</p><h2>정책 목록</h2></div><span class="soft-badge">우선순위 오름차순</span></div><div class="table-wrap"><table><thead><tr><th>우선</th><th>Policy ID</th><th>정책명</th><th>버전</th><th>상태</th><th>집행</th><th>판단</th><th>Risk / Control</th><th>예외</th></tr></thead><tbody id="ledger-list"></tbody></table></div><p class="panel-footnote">우선순위 숫자가 작을수록 더 제한적인 정책입니다. 같은 요청에 여러 정책이 성립하면 이 순서로 최종 판단이 정해지고 나머지는 감사 기록의 충돌 항목에 남습니다.</p></article>
+          <article class="panel"><div class="panel-heading"><div><p class="section-label">EXCEPTION REGISTER</p><h2>예외 관리대장</h2></div><span id="exception-total" class="soft-badge">0건</span></div><div id="exception-list" class="request-list"></div><p class="panel-footnote">종료일 없는 예외, 범위가 불명확한 예외, 보완통제가 없는 예외, 요청자가 스스로 승인한 예외는 등록돼 있어도 집행되지 않습니다.</p></article>
+        </section>
+
         <section class="view hidden" data-view="execution">
           <div class="page-heading"><div><p class="section-label">MCP EXECUTION</p><h1>MCP 실행</h1><p>Agent는 하나의 등록 도구 호출만 제안하고, Gateway가 정책·계약·증적을 검증합니다.</p></div></div>
-          <div class="content-grid execution-layout"><article class="panel"><div class="execution-examples"><button data-prompt="공개 문서를 읽어줘" type="button">공개 문서 읽기</button><button data-prompt="비밀 인증정보를 읽어줘" type="button">중요 문서 읽기</button><button data-prompt="공개 공지를 외부에 전송해줘" type="button">외부 전송</button><button data-prompt="현재 시간을 알려줘" type="button">stdio 도구 호출</button></div><label for="prompt">업무 요청</label><textarea id="prompt" rows="8" maxlength="2000" placeholder="예: 공개 문서를 읽어줘"></textarea><div class="button-row"><button id="send-button" class="primary-button" type="button">정책 검증 후 실행</button><button id="new-session" class="secondary-button" type="button">새 세션</button></div><p id="execution-note" class="form-note">모델이 권한이나 실행 여부를 결정하지 않습니다.</p></article><article id="result-panel" class="panel result-panel"><p class="section-label">EXECUTION RESULT</p><h2 id="result-title">실행 결과</h2><p id="result-message">요청을 입력하면 정책 판정과 실행 증적을 표시합니다.</p><dl id="result-facts" class="result-facts"></dl><button id="approve-button" class="primary-button hidden" type="button">승인 후 재검증</button></article></div>
+          <div class="content-grid execution-layout"><article class="panel"><div class="execution-examples"><button data-prompt="공개 문서를 읽어줘" type="button">공개 문서 읽기</button><button data-prompt="비밀 인증정보를 읽어줘" type="button">중요 문서 읽기</button><button data-prompt="감사 대응 사본을 읽어줘" type="button">예외 적용 열람</button><button data-prompt="공개 공지를 외부에 전송해줘" type="button">외부 전송</button><button data-prompt="현재 시간을 알려줘" type="button">stdio 도구 호출</button></div><label for="prompt">업무 요청</label><textarea id="prompt" rows="8" maxlength="2000" placeholder="예: 공개 문서를 읽어줘"></textarea><div class="button-row"><button id="send-button" class="primary-button" type="button">정책 검증 후 실행</button><button id="new-session" class="secondary-button" type="button">새 세션</button></div><p id="execution-note" class="form-note">모델이 권한이나 실행 여부를 결정하지 않습니다.</p></article><article id="result-panel" class="panel result-panel"><p class="section-label">EXECUTION RESULT</p><h2 id="result-title">실행 결과</h2><p id="result-message">요청을 입력하면 정책 판정과 실행 증적을 표시합니다.</p><dl id="result-facts" class="result-facts"></dl><button id="approve-button" class="primary-button hidden" type="button">승인 후 재검증</button></article></div>
         </section>
 
         <section class="view hidden" data-view="audit">
           <div class="page-heading"><div><p class="section-label">AUDIT TRAIL</p><h1>감사 기록</h1><p>정책 판정과 실제 upstream 실행을 같은 Trace 기준으로 확인합니다.</p></div></div>
-          <article class="panel"><div class="panel-heading"><div><p class="section-label">LATEST DECISIONS</p><h2>최근 정책 판정</h2></div><span id="audit-total" class="soft-badge">0건</span></div><div class="table-wrap"><table><thead><tr><th>시간</th><th>요청자</th><th>도구</th><th>등급 / 행위</th><th>판정</th><th>실행</th><th>Trace</th></tr></thead><tbody id="audit-list"></tbody></table></div></article>
+          <article class="panel"><div class="panel-heading"><div><p class="section-label">LATEST DECISIONS</p><h2>최근 정책 판정</h2></div><span id="audit-total" class="soft-badge">0건</span></div><div class="table-wrap"><table><thead><tr><th>시간</th><th>요청자</th><th>도구</th><th>등급 / 행위</th><th>판정</th><th>적용 정책 · 버전 · 예외 · 경합</th><th>실행</th><th>Trace</th></tr></thead><tbody id="audit-list"></tbody></table></div><p class="panel-footnote">판정만으로는 통제를 재구성할 수 없습니다. 어떤 정책의 어느 버전이, 어떤 예외를 달고, 어떤 경쟁 정책을 제치고 최종 판단이 됐는지 함께 기록합니다.</p></article>
         </section>
       </main>
     </div>

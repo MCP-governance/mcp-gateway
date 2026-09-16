@@ -225,11 +225,12 @@ async def intake_rows(user: dict) -> list[dict]:
 @app.get("/api/console")
 async def console(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
-    health, state, coverage, monitor = await asyncio.gather(
+    health, state, coverage, monitor, ledger = await asyncio.gather(
         gateway_json("/api/health"),
         gateway_json("/api/state"),
         gateway_json("/api/supply-chain/coverage"),
         gateway_json("/api/monitor/summary?hours=168"),
+        gateway_json("/api/policy/ledger"),
     )
     reports = state["supply_chain"]
     severity = {
@@ -248,6 +249,9 @@ async def console(authorization: str | None = Header(default=None)):
         "coverage": coverage,
         "monitor": monitor,
         "policy": state["policy"],
+        # §12.5 PaC 정책 관리대장. 운영자가 정책 코드를 읽지 않고도 어떤 위험·통제를
+        # 구현한 정책이 지금 어떤 버전·상태로 적용 중인지 확인할 수 있어야 한다.
+        "ledger": ledger,
         "upstream_effect_count": state["upstream_effect_count"],
         "intake": await intake_rows(user),
         "severity": severity,

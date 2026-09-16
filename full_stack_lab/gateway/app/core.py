@@ -26,6 +26,10 @@ from jsonschema import Draft202012Validator
 from . import db
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/mcp/authz/decision")
+# 정책 관리대장(§11.8 / §12.5)은 정책 코드와 함께 배포되고 OPA가 그 정본이다.
+# Gateway가 별도 사본을 들면 "승인된 정책"이 둘이 된다.
+POLICY_LEDGER_URL = os.getenv("POLICY_LEDGER_URL", "http://opa:8181/v1/data/policy_ledger")
+GATEWAY_ENVIRONMENT = os.getenv("GATEWAY_ENVIRONMENT", "prod")
 HTTP_MCP_URL = os.getenv("HTTP_MCP_URL", "http://mock-http-mcp:9000/mcp/")
 GITHUB_MCP_URL = os.getenv("GITHUB_MCP_URL", "https://api.githubcopilot.com/mcp/")
 GITHUB_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN", "")
@@ -234,6 +238,7 @@ async def refresh_catalog(server_id: str) -> dict:
 async def bootstrap() -> None:
     await db.wait_until_ready()
     await db.execute((Path(__file__).parent / "agent_tables.sql").read_text())
+    await policy_ledger(refresh=True)
     if POLICY_PATH.exists():
         digest = hashlib.sha256(POLICY_PATH.read_bytes()).hexdigest()
         await db.execute("UPDATE policy_versions SET status='SUPERSEDED' WHERE status='ACTIVE' AND source_sha256<>%s", (digest,))
@@ -273,6 +278,7 @@ async def _contract(server_id: str, tool_name: str) -> dict:
             "metadata_safe": False,
             "supplier_approved": False,
             "critical_vulnerabilities": 0,
+            "approval_valid_until": None,
         }
 
     latest = await db.fetch_one(
@@ -294,6 +300,10 @@ async def _contract(server_id: str, tool_name: str) -> dict:
         "metadata_safe": not bool(latest and any(item.get("type") == "unsafe-description" for item in latest["findings"])),
         "supplier_approved": server["status"] != "BLOCKED_SUPPLY_CHAIN",
         "critical_vulnerabilities": int(critical["critical_count"]) if critical else 0,
+        # 승인은 영구가 아니다(§11.4.1). 기한은 Registry가 들고, 만료 판단은 정책이 한다.
+        "approval_valid_until": tool["approval_valid_until"].isoformat()
+        if tool.get("approval_valid_until")
+        else None,
     }
 
 
@@ -364,6 +374,71 @@ async def _recent_activity(user_token: str) -> dict:
         "call_limit": RATE_LIMIT_CALLS,
         "recent_important": int(row["recent_important"]) if row else 0,
         "important_limit": IMPORTANT_BURST_LIMIT,
+    }
+
+
+_ledger_cache: dict[str, dict] = {}
+OPA_DATA_ROOT = OPA_URL.split("/v1/data/")[0] + "/v1/data"
+
+
+async def opa_document(name: str) -> Any:
+    """읽기 전용 data 문서 조회. 정책이 실제로 들고 있는 값을 화면에 그대로 보인다."""
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            response = await client.get(f"{OPA_DATA_ROOT}/{name}")
+            response.raise_for_status()
+            return response.json().get("result")
+    except (httpx.HTTPError, ValueError):
+        return None
+
+
+async def policy_ledger(refresh: bool = False) -> dict:
+    """§12.5 PaC 정책 관리대장. 없으면 판정이 관리정보 없이 나가지만 차단하지는 않는다.
+
+    관리정보를 못 읽은 것과 정책을 못 읽은 것은 다른 사건이다. 후자는 이미
+    P-CONTROL-FAIL-CLOSED가 차단하고, 전자까지 차단하면 대시보드 장애가 업무
+    중단이 된다.
+    """
+    if _ledger_cache and not refresh:
+        return _ledger_cache
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            response = await client.get(POLICY_LEDGER_URL)
+            response.raise_for_status()
+            entries = response.json().get("result")
+    except (httpx.HTTPError, ValueError):
+        return _ledger_cache
+    if isinstance(entries, dict):
+        _ledger_cache.clear()
+        _ledger_cache.update(entries)
+    return _ledger_cache
+
+
+def local_verdict(policy_id: str, decision: str, reason: str, **extra: Any) -> dict:
+    """Gateway가 직접 내리는 판정도 OPA 판정과 같은 관리정보를 달고 나가야 한다.
+
+    §11.7은 판단 결과에 적용 정책과 정책 버전을 포함하라고 하지, 그 판단을 누가
+    내렸는지로 예외를 두지 않는다. PEP가 PDP보다 앞에서 거부한 요청만 증적 형식이
+    다르면 감사에서 두 종류의 기록을 대조해야 한다.
+    """
+    entry = _ledger_cache.get(policy_id, {})
+    return {
+        "decision": decision,
+        "policy_id": policy_id,
+        "reason": reason,
+        "restrictions": {},
+        "policy_name": entry.get("name", ""),
+        "policy_version": entry.get("version", "unknown"),
+        "policy_status": entry.get("status", "unknown"),
+        "priority": entry.get("priority"),
+        "risk_ids": entry.get("risk_ids", []),
+        "control_ids": entry.get("control_ids", []),
+        "requirement_ids": entry.get("requirement_ids", []),
+        "obligations": entry.get("obligations", []),
+        "exception": None,
+        "conflicts": [],
+        "environment": GATEWAY_ENVIRONMENT,
+        **extra,
     }
 
 
@@ -463,8 +538,16 @@ AUDIT_COLUMN_SETS = {
         "request_payload", "result_preview", "error",
         "enforcement", "would_decision", "would_policy_id",
     ),
+    3: (
+        "request_id", "trace_id", "user_token", "role", "tool_name", "data_class", "action",
+        "decision", "policy_id", "reason", "upstream_executed", "restrictions", "approval_id",
+        "request_payload", "result_preview", "error",
+        "enforcement", "would_decision", "would_policy_id",
+        # §11.17 정책 판단 및 집행 증적
+        "policy_version", "obligations", "exception_id", "conflicts", "environment",
+    ),
 }
-CHAIN_VERSION = 2
+CHAIN_VERSION = 3
 AUDIT_COLUMNS = AUDIT_COLUMN_SETS[CHAIN_VERSION]
 GENESIS = "0" * 64
 
@@ -506,6 +589,11 @@ async def _record_decision(event: dict) -> int:
         "enforcement": event.get("enforcement") or "enforce",
         "would_decision": event.get("would_decision"),
         "would_policy_id": event.get("would_policy_id"),
+        "policy_version": event.get("policy_version") or "unknown",
+        "obligations": event.get("obligations") or [],
+        "exception_id": (event.get("exception") or {}).get("id"),
+        "conflicts": event.get("conflicts") or [],
+        "environment": event.get("environment") or GATEWAY_ENVIRONMENT,
     }
     async with db.transaction() as connection:
         cursor = await connection.execute("SELECT head_sha256 FROM audit_chain WHERE id=1 FOR UPDATE")
@@ -518,8 +606,9 @@ async def _record_decision(event: dict) -> int:
                  decision, policy_id, reason, upstream_executed, restrictions,
                  approval_id, request_payload, result_preview, error,
                  enforcement, would_decision, would_policy_id,
+                 policy_version, obligations, exception_id, conflicts, environment,
                  prev_sha256, entry_sha256, chain_version)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                RETURNING id""",
             (
                 record["request_id"], record["trace_id"], record["user_token"], record["role"],
@@ -529,7 +618,10 @@ async def _record_decision(event: dict) -> int:
                 Jsonb(record["request_payload"]),
                 Jsonb(record["result_preview"]) if record["result_preview"] is not None else None,
                 record["error"], record["enforcement"], record["would_decision"],
-                record["would_policy_id"], previous, entry, CHAIN_VERSION,
+                record["would_policy_id"],
+                record["policy_version"], Jsonb(record["obligations"]), record["exception_id"],
+                Jsonb(record["conflicts"]), record["environment"],
+                previous, entry, CHAIN_VERSION,
             ),
         )
         row = await cursor.fetchone()
@@ -626,13 +718,11 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "error": None,
         }
 
+        await policy_ledger()
         if not principal or (spec["server_id"] == "mock-http" and not document):
-            base_event.update({
-                "decision": "Block",
-                "policy_id": "P-INPUT-001",
-                "reason": "합성 사용자 토큰 또는 문서 ID가 유효하지 않습니다.",
-                "restrictions": {},
-            })
+            base_event.update(local_verdict(
+                "P-INPUT-001", "Block", "합성 사용자 토큰 또는 문서 ID가 유효하지 않습니다.",
+            ))
             decision_id = await _record_decision(base_event)
             return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
 
@@ -641,14 +731,18 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             try:
                 Draft202012Validator(SCHEMAS[tool_name]).validate(_upstream_arguments(tool_name, payload, {}))
             except Exception:
-                base_event.update(decision="Block", policy_id="P-INPUT-SCHEMA-001", reason="도구 인자가 승인된 입력 형식과 다릅니다.", restrictions={})
+                base_event.update(local_verdict(
+                    "P-INPUT-SCHEMA-001", "Block", "도구 인자가 승인된 입력 형식과 다릅니다.",
+                ))
                 decision_id = await _record_decision(base_event)
                 return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
 
         if tool_name == "github_get_file":
             allowed_repos = {item.strip().lower() for item in os.getenv("GITHUB_ALLOWED_REPOS", "MCP-governance/mcp-gateway").split(",") if item.strip()}
             if f"{payload.get('owner', '')}/{payload.get('repo', '')}".lower() not in allowed_repos:
-                base_event.update(decision="Block", policy_id="MCP-REPOSITORY-001", reason="허용 목록에 없는 GitHub 저장소입니다.", restrictions={})
+                base_event.update(local_verdict(
+                    "MCP-REPOSITORY-001", "Block", "허용 목록에 없는 GitHub 저장소입니다.",
+                ))
                 decision_id = await _record_decision(base_event)
                 return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
 
@@ -664,6 +758,10 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         if not catalog_fresh:
             contract["known_tools_only"] = False
         policy_input = {
+            # §11.6 환경정보와 상황정보. 시각을 정책이 스스로 읽으면 만료 판단이
+            # 판단 시점마다 달라지고 시험으로 재현할 수 없다. Gateway가 재고, 정책이 판단한다.
+            "environment": GATEWAY_ENVIRONMENT,
+            "now": datetime.now(UTC).isoformat(),
             "principal": {"role": role, "synthetic": bool(principal["synthetic"]),
                           "department": principal.get("department")},
             "resource": {"id": payload.get("document_id", "time"), "data_class": data_class,
@@ -677,12 +775,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         try:
             result = await _policy(policy_input)
         except Exception as exc:
-            result = {
-                "decision": "Block",
-                "policy_id": "P-CONTROL-FAIL-CLOSED",
-                "reason": "OPA 정책 결정에 실패하여 기본 차단했습니다.",
-                "restrictions": {},
-            }
+            result = local_verdict(
+                "P-CONTROL-FAIL-CLOSED", "Block", "OPA 정책 결정에 실패하여 기본 차단했습니다.",
+            )
             base_event["error"] = str(exc)[:500]
 
         mode = await enforcement_mode()
@@ -692,13 +787,12 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             base_event["would_decision"] = result["decision"]
             base_event["would_policy_id"] = result["policy_id"]
             span.set_attribute("mcp.would_decision", result["decision"])
-            result = {
-                "decision": "Allow",
-                "policy_id": "P-MONITOR-001",
-                "reason": f"관찰 모드입니다. 집행 모드였다면 {base_event['would_decision']}"
-                          f"({base_event['would_policy_id']})로 처리됐습니다.",
-                "restrictions": {},
-            }
+            result = local_verdict(
+                "P-MONITOR-001", "Allow",
+                f"관찰 모드입니다. 집행 모드였다면 {base_event['would_decision']}"
+                f"({base_event['would_policy_id']})로 처리됐습니다.",
+                conflicts=result.get("conflicts") or [],
+            )
         base_event.update(result)
         span.set_attribute("mcp.enforcement", mode)
         span.set_attribute("mcp.decision", result["decision"])
@@ -729,22 +823,24 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             except ResultRejected as exc:
                 # The call did run upstream; only the answer is withheld. Recording it
                 # as "not executed" would make the effect log and the audit disagree.
-                base_event.update({
-                    "decision": "Block",
-                    "policy_id": "MCP-OUTPUT-001",
-                    "reason": "upstream 결과가 출력 통제에 걸려 반환하지 않았습니다. 호출 자체는 실행됐습니다.",
-                    "upstream_executed": True,
-                    "result": None,
-                    "error": str(exc)[:500],
-                })
+                # 이 호출을 통과시킨 제한조건과 예외는 남긴다. 나중에 "무엇을 허용한
+                # 판정이 결국 결과를 반환하지 않았는가"를 재구성해야 한다.
+                base_event.update(local_verdict(
+                    "MCP-OUTPUT-001", "Block",
+                    "upstream 결과가 출력 통제에 걸려 반환하지 않았습니다. 호출 자체는 실행됐습니다.",
+                    restrictions=base_event.get("restrictions") or {},
+                    exception=base_event.get("exception"),
+                    upstream_executed=True, result=None, error=str(exc)[:500],
+                ))
                 span.record_exception(exc)
             except Exception as exc:
-                base_event.update({
-                    "decision": "Block",
-                    "policy_id": "MCP-UPSTREAM-001",
-                    "reason": "허용 후 MCP 통신이 실패했습니다. 실제 실행 여부는 독립 증적을 확인하세요.",
-                    "error": str(exc)[:500],
-                })
+                base_event.update(local_verdict(
+                    "MCP-UPSTREAM-001", "Block",
+                    "허용 후 MCP 통신이 실패했습니다. 실제 실행 여부는 독립 증적을 확인하세요.",
+                    restrictions=base_event.get("restrictions") or {},
+                    exception=base_event.get("exception"),
+                    error=str(exc)[:500],
+                ))
                 span.record_exception(exc)
 
         decision_id = await _record_decision(base_event)

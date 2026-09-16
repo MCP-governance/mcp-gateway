@@ -1,7 +1,7 @@
 const TOKEN_KEY = "bob_mock_sso_token";
 const SESSION_KEY = "bob_agent_session";
 const token = sessionStorage.getItem(TOKEN_KEY);
-const pages = new Set(["overview", "intake", "verification", "risks", "execution", "audit"]);
+const pages = new Set(["overview", "intake", "verification", "risks", "policy", "execution", "audit"]);
 let state = null;
 let sessionId = sessionStorage.getItem(SESSION_KEY);
 let pendingRequest = null;
@@ -68,7 +68,10 @@ function renderOverview() {
   document.querySelector("#guard-summary").textContent = guard
     ? `mcp-scan 결과 ${count(guard.summary?.total || guard.summary?.findings?.length)}건을 공급망 증적으로 연결했습니다.`
     : "mcp-scan은 첫 실행 위험 분석 단계에 연결돼 있습니다. 현재 결과는 아직 반영되지 않았습니다.";
-  document.querySelector("#policy-summary").textContent = `${state.policy?.version || state.policy?.policy_id || "활성 정책"} · ${components.opa ? "정상" : "확인 필요"} · 기본 DENY`;
+  const set = state.ledger?.policy_set || {};
+  const enforcing = (state.ledger?.policies || []).filter(policy => policy.status === "운영" || policy.status === "제한").length;
+  document.querySelector("#policy-summary").textContent =
+    `정책집 ${set.version || state.policy?.id || "확인 중"} · 집행 ${enforcing}건 · ${components.opa ? "정상" : "확인 필요"} · 기본 DENY`;
 }
 
 function renderIntake() {
@@ -108,7 +111,37 @@ function renderRisks() {
 
 function renderAudit() {
   document.querySelector("#audit-total").textContent = `${state.decisions.length}건`;
-  document.querySelector("#audit-list").innerHTML = state.decisions.map(item => `<tr><td>${formatDate(item.created_at)}</td><td>${escapeHtml(item.user_token || "-")}</td><td>${escapeHtml(item.tool_name || "-")}</td><td>${escapeHtml(item.data_class || "-")} / ${escapeHtml(item.action || "-")}</td><td><span class="decision-text ${escapeHtml(String(item.decision || "").toLowerCase())}">${escapeHtml(item.decision || "-")}</span></td><td>${item.upstream_executed ? "실행" : "미실행"}</td><td>${escapeHtml((item.trace_id || "-").slice(0, 12))}</td></tr>`).join("") || '<tr><td colspan="7" class="empty-state">감사 기록이 없습니다.</td></tr>';
+  document.querySelector("#audit-list").innerHTML = state.decisions.map(item => {
+    const conflicts = Array.isArray(item.conflicts) ? item.conflicts : [];
+    const trace = [`v${item.policy_version || "?"}`];
+    if (item.exception_id) trace.push(`예외 ${item.exception_id}`);
+    if (item.would_policy_id) trace.push(`관찰: 집행 시 ${item.would_decision}/${item.would_policy_id}`);
+    if (conflicts.length) trace.push(`경합 ${conflicts.map(entry => entry.policy_id).join(", ")}`);
+    return `<tr><td>${formatDate(item.created_at)}</td><td>${escapeHtml(item.user_token || "-")}</td><td>${escapeHtml(item.tool_name || "-")}</td><td>${escapeHtml(item.data_class || "-")} / ${escapeHtml(item.action || "-")}</td><td><span class="decision-text ${escapeHtml(String(item.decision || "").toLowerCase())}">${escapeHtml(item.decision || "-")}</span></td><td><code>${escapeHtml(item.policy_id || "-")}</code><small class="muted-inline">${escapeHtml(trace.join(" · "))}</small></td><td>${item.upstream_executed ? "실행" : "미실행"}</td><td>${escapeHtml((item.trace_id || "-").slice(0, 12))}</td></tr>`;
+  }).join("") || '<tr><td colspan="8" class="empty-state">감사 기록이 없습니다.</td></tr>';
+}
+
+function renderPolicyLedger() {
+  const ledger = state.ledger || {};
+  const policies = ledger.policies || [];
+  const exceptions = ledger.exceptions || [];
+  const set = ledger.policy_set || {};
+  const enforcing = policies.filter(policy => policy.status === "운영").length;
+  const suspended = policies.filter(policy => policy.status === "중지" || policy.status === "폐기").length;
+  const active = exceptions.filter(item => item.status === "적용").length;
+  document.querySelector("#ledger-total").textContent = `${policies.length}건`;
+  document.querySelector("#ledger-cards").innerHTML = [
+    ["정책집", set.version || "-", `${escapeHtml(set.id || "")} · 상태 ${escapeHtml(set.status || "-")}`, ""],
+    ["집행 중", enforcing, `중지·폐기 ${suspended}건`, enforcing ? "good" : "warning"],
+    ["적용 중 예외", active, `등록 예외 ${exceptions.length}건`, active ? "warning" : "good"],
+    ["배포 Rego", (ledger.deployed_rego?.id || "-"), `적용환경 ${escapeHtml(ledger.environment || "-")}`, ledger.deployed_rego?.status === "ACTIVE" ? "good" : "critical"],
+  ].map(([label, value, note, tone]) => `<article class="metric-card ${tone}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${note}</small></article>`).join("");
+  document.querySelector("#ledger-list").innerHTML = policies.map(policy => {
+    const suspendedRow = policy.status !== "운영" && policy.status !== "제한";
+    return `<tr class="${suspendedRow ? "row-muted" : ""}"><td>${escapeHtml(policy.priority)}</td><td><code>${escapeHtml(policy.policy_id)}</code></td><td>${escapeHtml(policy.name)}<small class="muted-inline"> ${escapeHtml(policy.purpose || "")}</small></td><td>${escapeHtml(policy.version)}</td><td><span class="status-pill ${suspendedRow ? "disabled" : ""}">${escapeHtml(policy.status)}</span></td><td>${escapeHtml(policy.enforced_by || "-")}</td><td>${escapeHtml(policy.outcome || "-")}</td><td>${escapeHtml((policy.risk_ids || []).join(", "))} / ${escapeHtml((policy.control_ids || []).join(", "))}</td><td>${policy.exceptionable ? "가능" : "불가"}</td></tr>`;
+  }).join("") || '<tr><td colspan="9" class="empty-state">정책 관리대장을 읽지 못했습니다.</td></tr>';
+  document.querySelector("#exception-total").textContent = `${exceptions.length}건`;
+  document.querySelector("#exception-list").innerHTML = exceptions.map(item => `<article class="request-row"><div class="request-top"><div><h3>${escapeHtml(item.id)} · ${escapeHtml(item.title)}</h3><small>${escapeHtml(item.policy_id)} → ${escapeHtml(item.effect)}</small></div><span class="status-pill ${item.status === "적용" ? "queue" : "disabled"}">${escapeHtml(item.status)}</span></div><p>${escapeHtml(item.reason)}</p><div class="request-meta"><span>범위 ${escapeHtml(JSON.stringify(item.scope))}</span><span>${formatDate(item.valid_from)} ~ ${formatDate(item.valid_until)}</span><span>승인 ${escapeHtml(item.approved_by)}</span><span>잔여위험 ${escapeHtml(item.residual_risk)}</span></div><ul class="check-list">${(item.compensating_controls || []).map(control => `<li>${escapeHtml(control)}</li>`).join("")}</ul><p class="form-note">종료계획: ${escapeHtml(item.exit_plan)}</p></article>`).join("") || '<p class="empty-state">등록된 예외가 없습니다.</p>';
 }
 
 function render() {
@@ -117,7 +150,7 @@ function render() {
   const connection = document.querySelector("#connection-state");
   connection.classList.toggle("ready", state.health.status === "ok");
   connection.lastChild.textContent = state.health.status === "ok" ? " 연결 정상" : " 연결 확인 필요";
-  renderOverview(); renderIntake(); renderVerification(); renderRisks(); renderAudit();
+  renderOverview(); renderIntake(); renderVerification(); renderRisks(); renderPolicyLedger(); renderAudit();
 }
 
 async function loadConsole() {
@@ -132,7 +165,18 @@ function renderResult(body) {
   const titles = {Allow:"실행 완료", Alert:"실행 완료 · 경보 기록", Restrict:"제한 적용 후 실행", Approval:"승인 대기", Block:"실행 차단", "No Tool":"실행 대상 없음", Error:"처리 확인 필요"};
   document.querySelector("#result-title").textContent = titles[decision] || "실행 결과";
   document.querySelector("#result-message").textContent = body.message || outcome.reason || "처리 결과를 확인하세요.";
-  const facts = [["정책", outcome.policy_id || body.error_code || "-"],["판정", decision],["도구", body.tool_call?.tool_name || outcome.tool_name || "-"],["실행", outcome.upstream_executed ? "upstream 실행 확인" : "실행되지 않음"],["Trace", outcome.trace_id || "-"],["세션", body.session_id || "-"]];
+  const facts = [
+    ["정책", outcome.policy_id || body.error_code || "-"],
+    ["정책 버전", outcome.policy_version || "-"],
+    ["판정", decision],
+    ["적용 예외", outcome.exception?.id ? `${outcome.exception.id} (~${String(outcome.exception.valid_until || "").slice(0, 10)})` : "없음"],
+    ["증적·의무", (outcome.obligations || []).join(", ") || "-"],
+    ["경합 정책", (outcome.conflicts || []).map(entry => entry.policy_id).join(", ") || "없음"],
+    ["도구", body.tool_call?.tool_name || outcome.tool_name || "-"],
+    ["실행", outcome.upstream_executed ? "upstream 실행 확인" : "실행되지 않음"],
+    ["Trace", outcome.trace_id || "-"],
+    ["세션", body.session_id || "-"],
+  ];
   document.querySelector("#result-facts").innerHTML = facts.map(([key, value]) => `<div><dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("");
   const approval = document.querySelector("#approve-button");
   approval.classList.toggle("hidden", !(decision === "Approval" && state.viewer.roles.includes("admin")));

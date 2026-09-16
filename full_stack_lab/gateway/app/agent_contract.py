@@ -155,7 +155,10 @@ def schema(properties: dict, required: list[str]) -> dict:
     return {"type": "object", "properties": properties, "required": required, "additionalProperties": False}
 
 
-DOC = {"type": "string", "enum": ["notice-001", "work-001", "secret-001"]}
+# 승인된 문서 ID의 단일 정본. ingress 스키마와 API 모델이 각자 목록을 들면 하나만
+# 늘어난 날 조용히 갈라진다. main.py가 import 시점에 이 값과 대조한다.
+DOCUMENT_IDS = ("notice-001", "work-001", "secret-001", "audit-001")
+DOC = {"type": "string", "enum": list(DOCUMENT_IDS)}
 TEXT = {"type": "string", "maxLength": 2000}
 SCHEMAS = {
     "read_file": schema({"path": {"type": "string", "enum": list(FILE_IDS)}}, ["path"]),
