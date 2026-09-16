@@ -16,7 +16,7 @@ import rego.v1
 base := {
 	"environment": "prod",
 	"now": "2026-09-16T10:00:00Z",
-	"principal": {"role": "customer", "department": "고객"},
+	"principal": {"role": "partner", "department": "협력사 A"},
 	"resource": {"id": "notice-001", "data_class": "public"},
 	"tool": {"name": "read_document", "action": "r"},
 	"approval": {"granted": false},
@@ -58,13 +58,13 @@ test_decision_carries_policy_management_information if {
 
 # ── T-RBAC-001/002 비인가 요청과 권한 초과 ──────────────────────────────────
 
-test_block_customer_write if {
+test_block_partner_write if {
 	result := decision with input as with_input({"tool": {"action": "w"}})
 	result.decision == "Block"
 	result.policy_id == "P-333-DENY-001"
 }
 
-test_block_customer_important_read if {
+test_block_partner_important_read if {
 	result := decision with input as with_input({"resource": {"data_class": "important"}})
 	result.decision == "Block"
 	result.policy_id == "P-333-DENY-001"
@@ -422,7 +422,7 @@ test_open_ended_exception_is_rejected if {
 test_exception_cannot_relax_integrity_control if {
 	bad := [object.union(data.exceptions[0], {
 		"policy_id": "MCP-REGISTRY-001",
-		"scope": {"principal_role": "customer"},
+		"scope": {"principal_role": "partner"},
 	})]
 	result := decision with input as with_input({"contract": {"registered": false}})
 		with data.exceptions as bad
@@ -434,7 +434,7 @@ test_exception_cannot_relax_integrity_control if {
 test_exception_cannot_tighten_a_decision if {
 	bad := [object.union(data.exceptions[0], {
 		"policy_id": "P-333-ALLOW-001",
-		"scope": {"principal_role": "customer"},
+		"scope": {"principal_role": "partner"},
 		"effect": "Block",
 	})]
 	result := decision with input as base with data.exceptions as bad
@@ -447,7 +447,7 @@ test_exception_cannot_tighten_a_decision if {
 # 조용히 달라진 칸이 없는지 여기서 대조한다.
 
 baseline := {
-	"customer": {
+	"partner": {
 		"public": {"r": "Allow", "w": "Block", "x": "Block"},
 		"nonimportant": {"r": "Block", "w": "Block", "x": "Block"},
 		"important": {"r": "Block", "w": "Block", "x": "Block"},

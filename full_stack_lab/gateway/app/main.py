@@ -184,7 +184,7 @@ async def integration() -> dict:
 
 @app.get("/api/policy/matrix")
 async def policy_matrix() -> dict:
-    roles = ("customer", "employee", "admin")
+    roles = ("partner", "employee", "admin")
     classes = ("public", "nonimportant", "important")
     actions = ("r", "w", "x")
     contract = {

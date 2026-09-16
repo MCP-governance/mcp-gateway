@@ -43,7 +43,7 @@ approval_valid_until := object.get(input, ["contract", "approval_valid_until"], 
 # ── 권한표: 3 역할 x 3 등급 x r/w/x ─────────────────────────────────────────
 
 permissions := {
-	"customer": {"public": {"r": true}},
+	"partner": {"public": {"r": true}},
 	"employee": {
 		"public": {"r": true},
 		"nonimportant": {"r": true, "w": true},

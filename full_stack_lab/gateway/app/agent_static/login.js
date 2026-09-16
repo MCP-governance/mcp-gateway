@@ -32,7 +32,7 @@ form.addEventListener("submit", async (event) => {
   }
 
   loginButton.disabled = true;
-  loginButton.firstElementChild.textContent = "인증 확인 중";
+  loginButton.textContent = "인증 확인 중";
 
   try {
     const response = await fetch("/auth/mock-login", {
@@ -47,7 +47,11 @@ form.addEventListener("submit", async (event) => {
     const body = await response.json();
 
     if (!response.ok) {
-      throw new Error(body.detail || "로그인에 실패했습니다.");
+      // 422의 detail은 객체 배열이다. 그대로 넣으면 [object Object]가 보인다.
+      const detail = Array.isArray(body.detail)
+        ? body.detail.map(item => item.msg).join(" / ")
+        : body.detail;
+      throw new Error(detail || "로그인에 실패했습니다.");
     }
 
     sessionStorage.setItem(TOKEN_KEY, body.access_token);
@@ -56,6 +60,6 @@ form.addEventListener("submit", async (event) => {
     errorMessage.textContent = error.message;
   } finally {
     loginButton.disabled = false;
-    loginButton.firstElementChild.textContent = "계속";
+    loginButton.textContent = "계속";
   }
 });

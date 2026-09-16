@@ -24,7 +24,7 @@ TOOL_CALL_AUDIENCE = "mcp-governance-gateway-tool-call"
 TOOL_CALL_SCOPE = "mcp:tools/call"
 ALGORITHM = "EdDSA"
 IDENTITIES = {
-    "customer@bob.local": {"user_id": "user-customer-001", "principal": "cust-demo", "name": "고객 김민수", "department": "고객", "roles": ["customer"]},
+    "partner@bob.local": {"user_id": "user-partner-001", "principal": "partner-demo", "name": "협력업체 김민수", "department": "협력사 A", "roles": ["partner"]},
     "miso@bob.local": {"user_id": "user-test-001", "principal": "emp-demo", "name": "김미소", "department": "보안기술팀", "roles": ["employee"]},
     "admin@bob.local": {"user_id": "user-admin-001", "principal": "admin-demo", "name": "관리자 박지훈", "department": "거버넌스팀", "roles": ["admin"]},
 }

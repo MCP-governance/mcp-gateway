@@ -209,13 +209,37 @@ async def gateway_json(path: str, authorization: str | None = None, method: str 
         raise HTTPException(503, "거버넌스 상태를 불러올 수 없습니다.") from exc
 
 
+# 역할이 볼 수 있는 화면. 숨기기만 하는 메뉴는 통제가 아니라 장식이므로
+# /api/console이 이 목록을 기준으로 데이터 자체를 빼고 응답한다.
+PAGES_BY_ROLE = {
+    "partner": ("execution", "intake"),
+    "employee": ("overview", "intake", "policy", "execution", "audit"),
+    "admin": ("overview", "intake", "verification", "risks", "policy", "execution", "audit"),
+}
+ROLE_LABELS = {"partner": "협력업체 직원", "employee": "직원", "admin": "관리자"}
+
+
+def allowed_pages(user: dict) -> list[str]:
+    pages: list[str] = []
+    for role in user["roles"]:
+        for page in PAGES_BY_ROLE.get(role, ()):
+            if page not in pages:
+                pages.append(page)
+    return pages
+
+
 def console_user(user: dict) -> dict:
-    return {key: user[key] for key in ("name", "department", "roles", "email")}
+    return {
+        **{key: user[key] for key in ("name", "department", "roles", "email")},
+        "role_label": ", ".join(ROLE_LABELS.get(role, role) for role in user["roles"]),
+        "pages": allowed_pages(user),
+    }
 
 
 async def intake_rows(user: dict) -> list[dict]:
     query = """SELECT id, submitted_by, display_name, repository_url, requested_transport, purpose,
-                      status, risk_level, review_note, reviewed_by, reviewed_at, created_at, updated_at
+                      status, risk_level, review_note, reviewed_by, reviewed_at, created_at, updated_at,
+                      commit_sha, source_ref, evidence, validated_at
                FROM mcp_intake_requests"""
     if "admin" in user["roles"]:
         return await db.fetch_all(query + " ORDER BY created_at DESC LIMIT 100")
@@ -225,37 +249,47 @@ async def intake_rows(user: dict) -> list[dict]:
 @app.get("/api/console")
 async def console(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
-    health, state, coverage, monitor, ledger = await asyncio.gather(
-        gateway_json("/api/health"),
-        gateway_json("/api/state"),
-        gateway_json("/api/supply-chain/coverage"),
-        gateway_json("/api/monitor/summary?hours=168"),
-        gateway_json("/api/policy/ledger"),
-    )
-    reports = state["supply_chain"]
-    severity = {
-        "critical": sum(int(report.get("critical_count") or 0) for report in reports),
-        "high": sum(int(report.get("high_count") or 0) for report in reports),
-        "medium": sum(int(report.get("medium_count") or 0) for report in reports),
-    }
-    return {
+    pages = allowed_pages(user)
+    is_admin = "admin" in user["roles"]
+
+    wanted = {"health": gateway_json("/api/health"), "state": gateway_json("/api/state")}
+    if "verification" in pages or "risks" in pages:
+        wanted["coverage"] = gateway_json("/api/supply-chain/coverage")
+    if "overview" in pages:
+        wanted["monitor"] = gateway_json("/api/monitor/summary?hours=168")
+    if "policy" in pages:
+        wanted["ledger"] = gateway_json("/api/policy/ledger")
+    results = dict(zip(wanted, await asyncio.gather(*wanted.values())))
+    state = results["state"]
+
+    # 공급망 증적과 정책 판정은 역할에 따라 아예 실어 보내지 않는다. 화면에서만
+    # 숨기면 개발자 도구를 여는 순간 통제가 사라진다.
+    reports = state["supply_chain"] if "risks" in pages or "verification" in pages else []
+    decisions = state["decisions"] if is_admin else [
+        row for row in state["decisions"] if row.get("user_token") == user["principal"]
+    ]
+    payload = {
         "viewer": console_user(user),
-        "model": readiness(),
-        "health": health,
-        "registry": state["servers"],
-        "decisions": state["decisions"],
-        "approvals": state["approvals"],
+        "health": results["health"],
+        "registry": state["servers"] if "overview" in pages else [],
+        "decisions": decisions if "overview" in pages or "audit" in pages else [],
+        "approvals": state["approvals"] if is_admin else [],
         "supply_chain": reports,
-        "coverage": coverage,
-        "monitor": monitor,
-        "policy": state["policy"],
+        "coverage": results.get("coverage", {"servers": []}),
+        "monitor": results.get("monitor", {}),
+        "policy": state["policy"] if "policy" in pages else None,
         # §12.5 PaC 정책 관리대장. 운영자가 정책 코드를 읽지 않고도 어떤 위험·통제를
         # 구현한 정책이 지금 어떤 버전·상태로 적용 중인지 확인할 수 있어야 한다.
-        "ledger": ledger,
+        "ledger": results.get("ledger", {}),
         "upstream_effect_count": state["upstream_effect_count"],
         "intake": await intake_rows(user),
-        "severity": severity,
+        "severity": {
+            "critical": sum(int(report.get("critical_count") or 0) for report in reports),
+            "high": sum(int(report.get("high_count") or 0) for report in reports),
+            "medium": sum(int(report.get("medium_count") or 0) for report in reports),
+        },
     }
+    return payload
 
 
 @app.post("/api/mcp-requests")
@@ -296,7 +330,30 @@ async def queue_validation(request_id: UUID, authorization: str | None = Header(
     )
     if not row:
         raise HTTPException(409, "보류 상태의 요청만 검증 대기열로 이동할 수 있습니다.")
-    return {"request": row, "message": "검증 대기열에 넣었습니다. 스캐너는 격리된 체크아웃에서 실행해야 합니다."}
+    return {"request": row, "message": "격리 워커가 복제 없이 대기 중인 요청을 가져가 SBOM·SCA·SAST를 만듭니다."}
+
+
+@app.post("/api/mcp-requests/{request_id}/approve")
+async def approve_mcp_request(request_id: UUID, authorization: str | None = Header(default=None)):
+    """검증을 통과한 요청만 Registry 등록 대상이 된다.
+
+    승인이 곧 연결은 아니다. 승인은 "이 저장소를 Registry에 올려도 된다"까지이고,
+    실제 활성화는 endpoint와 catalog 해시를 고정하는 별도 단계다. 승인 버튼 하나로
+    외부 저장소가 실행 경로에 들어오면 도입 심사가 형식이 된다.
+    """
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "도입 승인은 관리자만 할 수 있습니다.")
+    row = await db.fetch_one(
+        """UPDATE mcp_intake_requests
+           SET status='APPROVED', reviewed_by=%s, reviewed_at=now(), updated_at=now()
+           WHERE id=%s AND status='VALIDATED'
+           RETURNING id, status, reviewed_by, reviewed_at, source_ref""",
+        (user["principal"], request_id),
+    )
+    if not row:
+        raise HTTPException(409, "격리 검증을 통과한 요청만 승인할 수 있습니다.")
+    return {"request": row, "message": "Registry 등록 대상으로 승인했습니다. 실제 활성화는 endpoint와 catalog 해시 고정 후입니다."}
 
 
 @app.post("/api/mcp-requests/{request_id}/reject")
@@ -328,6 +385,38 @@ async def import_supply_chain(authorization: str | None = Header(default=None)):
 async def refresh_registry(authorization: str | None = Header(default=None)):
     await current_identity(authorization)
     return await gateway_json("/api/catalog/refresh", authorization, method="POST")
+
+
+@app.get("/api/enforcement")
+async def read_enforcement(authorization: str | None = Header(default=None)):
+    await current_identity(authorization)
+    return await gateway_json("/api/enforcement", authorization)
+
+
+class EnforcementSwitch(StrictModel):
+    mode: Literal["enforce", "monitor"]
+
+
+@app.put("/api/enforcement")
+async def switch_enforcement(request: EnforcementSwitch, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "집행 모드 전환은 관리자만 할 수 있습니다.")
+    async with httpx.AsyncClient(timeout=8) as client:
+        response = await client.put(GATEWAY_URL + "/api/enforcement",
+                                    headers={"Authorization": authorization or ""},
+                                    json={"mode": request.mode})
+    if response.status_code >= 400:
+        raise HTTPException(response.status_code, "집행 모드를 바꾸지 못했습니다.")
+    return response.json()
+
+
+@app.get("/api/audit/verify")
+async def verify_audit(authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "감사 체인 검증은 관리자만 할 수 있습니다.")
+    return await gateway_json("/api/audit/verify", authorization)
 
 
 @app.get("/sessions")

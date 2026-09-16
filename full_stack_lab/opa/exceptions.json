@@ -8,10 +8,10 @@
     {
       "id": "EXC-001",
       "policy_id": "P-333-DENY-001",
-      "title": "감사 대응 기간 중 고객 역할의 감사 사본 열람",
-      "reason": "외부 감사 대응을 위해 고객 창구 담당자가 감사 사본 1건을 확인해야 한다.",
+      "title": "감사 대응 기간 중 협력업체 직원의 감사 사본 열람",
+      "reason": "외부 감사 대응을 위해 협력사 A의 담당자가 감사 사본 1건을 확인해야 한다.",
       "scope": {
-        "principal_role": "customer",
+        "principal_role": "partner",
         "resource_id": "audit-001",
         "tool": "read_document"
       },
@@ -23,7 +23,7 @@
         "사후 수동 검토 적용"
       ],
       "residual_risk": "중간",
-      "requested_by": "서비스 소유자 (고객지원팀)",
+      "requested_by": "서비스 소유자 (협력사관리팀)",
       "approved_by": "승인권자 (거버넌스팀장)",
       "valid_from": "2026-09-01T00:00:00Z",
       "valid_until": "2026-12-31T23:59:59Z",

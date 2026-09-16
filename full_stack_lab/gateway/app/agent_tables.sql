@@ -1,3 +1,8 @@
+-- gateway와 agent-service가 기동할 때마다 같은 파일을 동시에 적용한다. 서로 다른
+-- 순서로 ALTER의 AccessExclusiveLock을 잡으면 교착이 나고 한쪽 서비스가 기동에
+-- 실패한다. 마이그레이션은 한 번에 하나만 돌게 잠금을 먼저 잡는다.
+SELECT pg_advisory_xact_lock(hashtext('mcp_governance_schema_migration'));
+
 CREATE TABLE IF NOT EXISTS agent_sessions (
   id uuid PRIMARY KEY, user_id text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
 );
@@ -144,3 +149,24 @@ UPDATE mcp_tools SET approval_valid_until = timestamptz '2027-06-30 23:59:59+00'
 INSERT INTO documents(id, title, data_class, classification_source, classification_version, owner_department)
 VALUES ('audit-001', '외부 감사 대응 계약 사본', 'important', 'manual-registry', 'demo-v1', '거버넌스팀')
 ON CONFLICT (id) DO NOTHING;
+
+-- 협력업체 직원(partner)으로 역할 이름을 바꾼다. 내부망 테스트베드에 "고객"이
+-- 있는 것이 이상하고, 이 역할이 실제로 대리하는 것은 신뢰경계 밖에서 들어오는
+-- 외부 인력이다. 기존 볼륨에도 적용해야 로그인 신원과 DB 역할이 갈라지지 않는다.
+ALTER TABLE principals DROP CONSTRAINT IF EXISTS principals_role_check;
+UPDATE principals SET role='partner' WHERE role='customer';
+UPDATE principals SET token='partner-demo', display_name='협력업체 김민수', department='협력사 A'
+  WHERE token='cust-demo';
+ALTER TABLE principals ADD CONSTRAINT principals_role_check
+  CHECK (role IN ('partner', 'employee', 'admin'));
+
+-- 도입 요청의 실제 검증 결과. 상태만 바꾸고 증적이 없으면 "검증했다"가 아니라
+-- "검증했다고 적었다"이다. 격리 워커가 만든 commit·source_ref·요약을 함께 둔다.
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS commit_sha text;
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS source_ref text;
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS evidence jsonb NOT NULL DEFAULT '{}';
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS validated_at timestamptz;
+ALTER TABLE mcp_intake_requests DROP CONSTRAINT IF EXISTS mcp_intake_requests_status_check;
+ALTER TABLE mcp_intake_requests ADD CONSTRAINT mcp_intake_requests_status_check
+  CHECK (status IN ('HOLD', 'VALIDATION_QUEUED', 'VALIDATING', 'VALIDATED', 'APPROVED', 'FAILED', 'REJECTED'));
+CREATE INDEX IF NOT EXISTS mcp_intake_requests_status_idx ON mcp_intake_requests(status, created_at);

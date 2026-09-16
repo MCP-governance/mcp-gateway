@@ -9,7 +9,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 BASE = "http://127.0.0.1:8080"
-EMAIL = "customer@bob.local"
+EMAIL = "partner@bob.local"
 _token: str | None = None
 
 

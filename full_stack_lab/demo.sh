@@ -90,7 +90,7 @@ wait_ready() {
 }
 
 up() {
-  docker compose up -d --build gateway gateway-sse agent-service
+  docker compose up -d --build gateway gateway-sse agent-service intake-worker
   wait_ready
   echo
   echo "MCP Governance Console이 준비되었습니다."
@@ -125,22 +125,13 @@ case "${1:-up}" in
     import_reports
     echo "SBOM·SCA·SAST 결과를 reports/ 및 운영 콘솔에 반영했습니다."
     ;;
-  mcp-scan)
-    if [[ -z "${MCP_SCAN_API_KEY:-}" || -z "${MCP_SCAN_BASE_URL:-}" || -z "${MCP_SCAN_MODEL:-}" ]]; then
-      echo "mcp-scan은 LLM 기반 CLI라 현재 합의한 무-LLM 모드에서는 자동 실행하지 않습니다." >&2
-      echo "로컬 OpenAI 호환 모의 모델이 준비되면 MCP_SCAN_API_KEY, MCP_SCAN_BASE_URL, MCP_SCAN_MODEL을 지정하세요." >&2
-      exit 2
-    fi
-    docker compose --profile mcp-scan run --rm mcp-scan
-    import_reports
-    ;;
   status)
     docker compose ps
     curl -fsS http://127.0.0.1:8080/api/health | python3 -m json.tool
     curl -fsS http://127.0.0.1:8000/api/readiness | python3 -m json.tool
     ;;
   logs)
-    docker compose logs -f --tail=120 agent-service gateway opa mock-http-mcp
+    docker compose logs -f --tail=120 agent-service gateway opa mock-http-mcp intake-worker
     ;;
   down)
     docker compose down
@@ -150,15 +141,22 @@ case "${1:-up}" in
     # trivy-*.json are the per-server reports that actually feed MCP-SUPPLY-001.
     # Leaving them behind meant a reset did not reset supply-chain evidence: the
     # next import re-attributed stale findings to a freshly created database.
-    rm -f reports/acceptance.json reports/agent-acceptance.json reports/security-regression.txt \
-      reports/mcp-scan.sarif.json
-      reports/full-test.log reports/sbom.cdx.json reports/trivy.json reports/trivy-*.json reports/semgrep.json \
-      reports/mcp-scan.sarif.json
-      reports/mcp-scan.sarif.json
+    # 이전 판은 줄바꿈 이어쓰기가 끊겨서 두 번째 줄부터가 삭제 대상이 아니라
+    # 실행할 명령으로 해석됐다. reset이 보고서를 한 번도 지우지 못했다는 뜻이다.
+    rm -f \
+      reports/acceptance.json \
+      reports/agent-acceptance.json \
+      reports/security-regression.txt \
+      reports/full-test.log \
+      reports/sbom.cdx.json \
+      reports/trivy.json \
+      reports/trivy-*.json \
+      reports/semgrep.json \
+      reports/intake-*.json
     echo "이 실습 전용 DB·효과 로그·생성 보고서를 초기화했습니다."
     ;;
   *)
-    echo "usage: ./${ENTRYPOINT_NAME} [up|test|agent-test|scan|mcp-scan|status|logs|down|reset]" >&2
+    echo "usage: ./${ENTRYPOINT_NAME} [up|test|agent-test|scan|status|logs|down|reset]" >&2
     exit 2
     ;;
 esac
