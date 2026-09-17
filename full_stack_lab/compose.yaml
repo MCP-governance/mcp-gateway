@@ -60,7 +60,7 @@ services:
       GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN:-}
       GITHUB_ALLOWED_REPOS: ${GITHUB_ALLOWED_REPOS:-MCP-governance/mcp-gateway}
       # Verifiers get the public key only; they cannot mint a token.
-      AGENT_JWT_PUBLIC_KEY: ${AGENT_JWT_PUBLIC_KEY:?Run ./demo.sh to initialize the local signing keys}
+      AGENT_JWT_PUBLIC_KEY: ${AGENT_JWT_PUBLIC_KEY:?Run ./console.sh to initialize the local signing keys}
       OTEL_SERVICE_NAME: mcp-security-gateway
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -74,7 +74,10 @@ services:
       jaeger:
         condition: service_started
     ports:
-      - "127.0.0.1:8080:8080"
+      # 기본은 그대로 loopback이다. tailnet에서만 보이게 하려면 BIND_ADDR에 이
+      # 호스트의 tailscale0 주소(100.x)를 넣는다. 0.0.0.0은 넣지 않는다 - 그
+      # 순간 이 실습의 유일한 경로 통제가 사라진다. NETWORK.md 참고.
+      - "${BIND_ADDR:-127.0.0.1}:8080:8080"
     volumes:
       - effects:/runtime:ro
       - ./reports:/reports:ro
@@ -90,8 +93,8 @@ services:
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
       GATEWAY_URL: http://gateway:8080
       # The only service that holds the signing key, because it is the issuer.
-      AGENT_JWT_PRIVATE_KEY: ${AGENT_JWT_PRIVATE_KEY:?Run ./demo.sh}
-      AGENT_JWT_PUBLIC_KEY: ${AGENT_JWT_PUBLIC_KEY:?Run ./demo.sh}
+      AGENT_JWT_PRIVATE_KEY: ${AGENT_JWT_PRIVATE_KEY:?Run ./console.sh}
+      AGENT_JWT_PUBLIC_KEY: ${AGENT_JWT_PUBLIC_KEY:?Run ./console.sh}
       MOCK_SSO_PASSWORD: ${MOCK_SSO_PASSWORD:-test-password}
       MODEL_MODE: ${MODEL_MODE:-mock}
       MODEL_BASE_URL: ${MODEL_BASE_URL:-}
@@ -103,9 +106,13 @@ services:
       MCP_SCAN_BASE_URL: ${MCP_SCAN_BASE_URL:-}
       MCP_SCAN_MODEL: ${MCP_SCAN_MODEL:-}
       MCP_SCAN_API_KEY: ${MCP_SCAN_API_KEY:-}
+      # 워커가 lease를 갱신하는 주기보다 넉넉하게. 이 시간을 넘도록 소식이 없으면
+      # Console이 "설정됨"이 아니라 "실행할 워커 없음"이라고 말해야 한다.
+      INTAKE_WORKER_STALE_SECONDS: ${INTAKE_WORKER_STALE_SECONDS:-60}
+      MCP_SCAN_REQUIRED_FOR_APPROVAL: ${MCP_SCAN_REQUIRED_FOR_APPROVAL:-0}
       OTEL_SERVICE_NAME: agent-service
     ports:
-      - "127.0.0.1:8000:8000"
+      - "${BIND_ADDR:-127.0.0.1}:8000:8000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -154,6 +161,14 @@ services:
       MCP_SCAN_MODEL: ${MCP_SCAN_MODEL:-}
       MCP_SCAN_LANGUAGE: ${MCP_SCAN_LANGUAGE:-en}
       MCP_SCAN_TIMEOUT: ${MCP_SCAN_TIMEOUT:-900}
+      # 구조적 트리거와 lease. 감사가 "관리자가 기억날 때"가 아니라 정해진
+      # 시점에 걸리게 하고, 워커가 죽어도 작업이 영구 RUNNING으로 남지 않게 한다.
+      INTAKE_WORKER_ID: ${INTAKE_WORKER_ID:-intake-worker-1}
+      MCP_SCAN_LEASE_SECONDS: ${MCP_SCAN_LEASE_SECONDS:-1200}
+      MCP_SCAN_MAX_ATTEMPTS: ${MCP_SCAN_MAX_ATTEMPTS:-3}
+      MCP_SCAN_AUTO_ON_VALIDATED: ${MCP_SCAN_AUTO_ON_VALIDATED:-1}
+      MCP_SCAN_RESCAN_DAYS: ${MCP_SCAN_RESCAN_DAYS:-30}
+      MCP_SCAN_RESCAN_SWEEP_SECONDS: ${MCP_SCAN_RESCAN_SWEEP_SECONDS:-900}
     depends_on:
       db:
         condition: service_healthy
@@ -193,7 +208,7 @@ services:
       - --set=receivers.otlp.protocols.http.endpoint=0.0.0.0:4318
       - --set=extensions.jaeger_query.http.endpoint=0.0.0.0:16686
     ports:
-      - "127.0.0.1:16686:16686"
+      - "${BIND_ADDR:-127.0.0.1}:16686:16686"
     networks: [telemetry]
 
   syft:

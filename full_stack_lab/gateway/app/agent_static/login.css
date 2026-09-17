@@ -1,10 +1,15 @@
-/* console.css의 토큰을 그대로 쓰는 로그인 화면. */
-.login-page { min-height: 100vh; }
+/* console.css의 토큰을 그대로 쓰는 로그인 화면.
+   hero는 다크 테마에서 --ink가 밝아지므로 흰 글씨를 얹을 수 없다. 배경만 별도
+   토큰으로 분리해 두 테마에서 같은 대비를 유지한다. */
+:root { --hero: #14161a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --hero: #0a0c0f; } }
+:root[data-theme="dark"] { --hero: #0a0c0f; }
+.login-page { min-height: 100vh; background: var(--canvas); }
 .login-shell { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr); min-height: 100vh; }
 
 .login-hero {
   display: flex; flex-direction: column; justify-content: center; gap: 18px;
-  padding: 72px 64px; background: var(--ink); color: #fff;
+  padding: 72px 64px; background: var(--hero); color: #fff;
 }
 .login-hero .eyebrow { color: rgba(255, 255, 255, 0.55); margin: 0; }
 .login-hero h1 { margin: 0; font-size: clamp(40px, 5.2vw, 76px); font-weight: 800; letter-spacing: -0.05em; line-height: 0.98; }

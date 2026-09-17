@@ -142,10 +142,67 @@ async def main():
         check("mcp-scan-config-visible",
               "configured" in scan_view["config"] and isinstance(scan_view["jobs"], list),
               json.dumps(scan_view["config"], ensure_ascii=False))
+        # "설정이 있다"와 "실행할 워커가 살아 있다"를 화면이 구분하지 못하면, 큐에
+        # 쌓이기만 하는 상태가 진행 중으로 읽힌다.
+        check("mcp-scan-worker-liveness-visible",
+              isinstance(scan_view.get("worker"), dict)
+              and {"alive", "queued", "running", "stale"} <= set(scan_view["worker"]),
+              json.dumps(scan_view.get("worker"), ensure_ascii=False, default=str)[:200])
+        # 등록된 서버도 감사 대상이어야 한다. 도입 요청만 대상이면 심사한 코드와
+        # 지금 도는 코드가 갈라져도 확인할 방법이 없다.
+        check("mcp-scan-server-targets-listed",
+              isinstance(scan_view.get("servers"), list)
+              and any(row["id"] == "mock-stdio" and row["scannable"] for row in scan_view["servers"]),
+              json.dumps([(row["id"], row["scannable"]) for row in scan_view.get("servers", [])]))
         if not scan_view["config"]["configured"]:
             blocked = await client.post(AGENT + "/api/mcp-scan/run", headers=users["admin"],
-                                        json={"intake_id": "00000000-0000-0000-0000-000000000000"})
+                                        json={"target_kind": "intake",
+                                              "target_id": "00000000-0000-0000-0000-000000000000"})
             check("mcp-scan-refuses-without-endpoint", blocked.status_code == 409, blocked.text[:120])
+        # 원격 전용 서버는 국소 감사 대상이 아니라는 사실이 409로 드러나야 한다.
+        # 조용히 큐에 들어가면 영원히 실패만 반복한다.
+        remote = await client.post(AGENT + "/api/mcp-scan/run", headers=users["admin"],
+                                   json={"target_kind": "server", "target_id": "mock-http"})
+        check("mcp-scan-rejects-unscannable-server", remote.status_code == 409, remote.text[:160])
+        check("mcp-scan-cancel-admin-only",
+              (await client.post(AGENT + "/api/mcp-scan/jobs/00000000-0000-0000-0000-000000000000/cancel",
+                                 headers=users["employee"])).status_code == 403)
+
+        # 신원 관리대장(Agent-Service miso 이식): 계정 상태가 애플리케이션 상수가
+        # 아니라 DB에 있고, 이미 발급된 토큰도 다음 요청에서 막혀야 한다. 토큰
+        # 만료를 기다리는 계정 정지는 정지가 아니다.
+        check("accounts-admin-only",
+              (await client.get(AGENT + "/api/accounts", headers=users["employee"])).status_code == 403)
+        accounts = (await client.get(AGENT + "/api/accounts", headers=users["admin"])).json()["accounts"]
+        check("accounts-no-password-hash",
+              all("password_hash" not in row and row["has_password"] for row in accounts),
+              json.dumps([row["email"] for row in accounts], ensure_ascii=False))
+        check("account-self-lock-refused",
+              (await client.put(AGENT + "/api/accounts/user-admin-001/status", headers=users["admin"],
+                                json={"status": "disabled"})).status_code == 409)
+        check("account-status-admin-only",
+              (await client.put(AGENT + "/api/accounts/user-partner-001/status", headers=users["employee"],
+                                json={"status": "disabled"})).status_code == 403)
+        disabled = await client.put(AGENT + "/api/accounts/user-partner-001/status", headers=users["admin"],
+                                    json={"status": "disabled"})
+        try:
+            check("account-disable", disabled.status_code == 200, disabled.text[:160])
+            # 이미 들고 있던 토큰
+            check("account-disabled-existing-token-blocked",
+                  (await client.get(AGENT + "/api/console", headers=users["partner"])).status_code == 403)
+            # 새 로그인
+            relogin = await client.post(AGENT + "/auth/mock-login", json={
+                "email": "partner@bob.local", "password": os.getenv("MOCK_SSO_PASSWORD", "test-password")})
+            check("account-disabled-login-blocked", relogin.status_code == 403, relogin.text[:160])
+        finally:
+            await client.put(AGENT + "/api/accounts/user-partner-001/status", headers=users["admin"],
+                             json={"status": "active"})
+        check("account-restored",
+              (await client.get(AGENT + "/api/console", headers=users["partner"])).status_code == 200)
+        # 계정별 해시이므로 다른 비밀번호는 통과하지 못한다.
+        check("account-wrong-password",
+              (await client.post(AGENT + "/auth/mock-login", json={
+                  "email": "partner@bob.local", "password": "not-the-password"})).status_code == 401)
 
         # 실시간 흐름도 역할 범위를 그대로 따른다.
         async with client.stream("GET", AGENT + "/api/stream/decisions", headers=users["employee"]) as response:

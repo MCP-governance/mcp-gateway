@@ -1,5 +1,5 @@
 # The completion criteria in full_stack_lab/README.md are only real if something
-# runs them. Until now only CodeQL ran in CI and ./demo.sh test was manual, so a
+# runs them. Until now only CodeQL ran in CI and ./console.sh test was manual, so a
 # regression in the policy, the drift detection or the fail-closed path could sit
 # on main unnoticed until someone remembered to run it.
 name: full_stack_lab 검증
@@ -35,7 +35,7 @@ jobs:
           python -m pyflakes full_stack_lab/gateway/app/*.py full_stack_lab/tests/*.py full_stack_lab/mock_server/*.py
 
       - name: Shell 문법
-        run: bash -n full_stack_lab/demo.sh full_stack_lab/tests/drift_and_fail_closed.sh
+        run: bash -n full_stack_lab/console.sh full_stack_lab/tests/drift_and_fail_closed.sh
 
       # README 13절은 "무엇을 의도적으로 열어두었는가"라는 진술입니다. 엔드포인트를
       # 추가하면서 그 문장을 건드리지 않는 순간 목록이 어긋나고, 불완전한 목록은
@@ -88,9 +88,9 @@ jobs:
       # Builds the images, waits for readiness, then runs the Rego unit tests,
       # acceptance, the Agent/API boundary acceptance and the drift + fail-closed
       # regression - the same single entry point a person uses locally.
-      - name: ./demo.sh test
+      - name: ./console.sh test
         working-directory: full_stack_lab
-        run: ./demo.sh test
+        run: ./console.sh test
 
       - name: 실패 시 컨테이너 로그
         if: failure()

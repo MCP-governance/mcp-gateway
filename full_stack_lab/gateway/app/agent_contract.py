@@ -65,7 +65,7 @@ def _key_material(name: str) -> bytes:
     except ValueError:
         material = b""
     if len(material) != 32:
-        raise RuntimeError(f"{name} must be 32 base64url-encoded bytes; run ./demo.sh")
+        raise RuntimeError(f"{name} must be 32 base64url-encoded bytes; run ./console.sh")
     return material
 
 
@@ -139,16 +139,38 @@ def authenticate(authorization: str | None) -> tuple[dict, dict]:
         raise HTTPException(401, "인증이 만료되었거나 유효하지 않습니다.") from exc
 
 
+ACCOUNT_STATUS_REASON = {
+    "disabled": "사용 중지된 계정입니다.",
+    "locked": "잠긴 계정입니다. 관리자에게 문의하세요.",
+}
+
+
 async def authenticated_user(authorization: str | None) -> dict:
     """The one verified-caller helper every ingress uses.
 
     `authenticate` proves the token was minted by the synthetic IdP; this adds the
     revocation check so a logout invalidates HTTP, SSE and Agent ingresses alike.
+
+    역할과 계정 상태는 서명된 토큰이 아니라 신원 관리대장에서 읽는다. 토큰 안의
+    역할을 믿으면 "관리자 권한을 내렸다"가 그 사람의 토큰이 만료될 때까지 적용되지
+    않고, 계정을 끄는 일이 30분짜리 예약 작업이 된다. 정지된 계정은 이미 발급된
+    토큰으로도 통과하지 못한다.
     """
     user, claims = authenticate(authorization)
     if await db.fetch_one("SELECT jti FROM agent_revoked_tokens WHERE jti=%s", (claims["jti"],)):
         raise HTTPException(401, "로그아웃된 인증입니다.")
-    return user
+    row = await db.fetch_one(
+        """SELECT token, user_id, email, display_name, role, department, job_title, status
+           FROM principals WHERE user_id=%s""", (claims["sub"],))
+    if not row:
+        # 관리대장에서 사라진 신원은 토큰이 유효해도 신원이 아니다.
+        raise HTTPException(401, "신원 관리대장에 없는 계정입니다.")
+    if row["status"] != "active":
+        raise HTTPException(403, ACCOUNT_STATUS_REASON.get(row["status"], "사용할 수 없는 계정입니다."))
+    return {**user, "principal": row["token"], "name": row["display_name"],
+            "department": row["department"] or "미지정", "job_title": row["job_title"],
+            "roles": [row["role"]], "status": row["status"],
+            "email": row["email"] or user.get("email")}
 
 
 def schema(properties: dict, required: list[str]) -> dict:

@@ -12,6 +12,7 @@
       <div class="header-actions">
         <span id="connection-state" class="connection-state"><i></i><b>확인 중</b></span>
         <div class="viewer"><span id="viewer-name">사용자</span><small id="viewer-role">권한 확인 중</small></div>
+        <button id="theme-toggle" class="icon-button" type="button" aria-label="화면 테마 전환" title="화면 테마 전환">◐</button>
         <button id="logout-button" class="ghost-button" type="button">로그아웃</button>
       </div>
     </header>
@@ -29,6 +30,9 @@
             <div><p class="eyebrow">Overview</p><h1>운영 현황</h1></div>
             <button id="refresh-console" class="ghost-button" type="button">새로고침</button>
           </div>
+          <!-- 숫자만 있는 대시보드는 "지금 무엇을 해야 하는가"에 답하지 못한다.
+               카드보다 위에 둔다. -->
+          <div id="action-banner" class="action-banner" aria-live="polite"></div>
           <div id="overview-cards" class="metric-grid" aria-live="polite"></div>
           <article class="panel">
             <div class="panel-heading">
@@ -112,11 +116,18 @@
           <div class="page-heading"><div><p class="eyebrow">AI Code Audit</p><h1>AI 코드 감사</h1></div><span id="mcpscan-state" class="tag">-</span></div>
           <article class="panel" id="mcpscan-config">
             <div class="panel-heading"><h2>실행 조건</h2><button id="mcpscan-test" class="ghost-button" type="button">연결 확인</button></div>
+            <!-- "설정이 있다"와 "실행할 워커가 살아 있다"는 다른 사실이다.
+                 구분하지 못하면 큐에 쌓이기만 하는 상태가 진행 중으로 읽힌다. -->
+            <div id="mcpscan-worker" class="worker-state"></div>
             <div id="mcpscan-config-body" class="config-body"></div>
           </article>
           <article class="panel">
-            <div class="panel-heading"><h2>감사 실행</h2><span class="hint">격리 검증을 통과한 고정 commit을 다시 복제해 실행합니다</span></div>
+            <div class="panel-heading"><h2>도입 요청 감사</h2><span class="hint">격리 검증을 통과한 고정 commit을 다시 복제해 실행합니다</span></div>
             <div id="mcpscan-targets" class="request-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><h2>등록 서버 재감사</h2><span class="hint">심사한 코드와 지금 도는 코드가 갈라졌는지 확인합니다</span></div>
+            <div id="mcpscan-servers" class="request-list"></div>
           </article>
           <article class="panel">
             <div class="panel-heading"><h2>작업 이력</h2><span id="mcpscan-job-total" class="count">0</span></div>
@@ -138,6 +149,17 @@
           <article class="panel">
             <div class="panel-heading"><h2>예외 관리대장</h2><span id="exception-total" class="count">0</span></div>
             <div id="exception-list" class="request-list"></div>
+          </article>
+        </section>
+
+        <section class="view hidden" data-view="accounts">
+          <div class="page-heading"><div><p class="eyebrow">Identity</p><h1>신원 관리대장</h1></div><span id="accounts-total" class="count">0</span></div>
+          <article class="panel">
+            <p>역할과 계정 상태는 애플리케이션 상수가 아니라 이 관리대장에 있습니다. 여기서 <b>중지</b>하면 그 사람이 이미 들고 있는 인증도 다음 요청부터 막힙니다. 토큰 만료를 기다리는 정지는 정지가 아닙니다.</p>
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><h2>계정</h2><span class="hint">비밀번호 해시는 응답에 포함되지 않습니다</span></div>
+            <div class="table-wrap"><table><thead><tr><th>이메일</th><th>이름</th><th>역할</th><th>부서 / 직책</th><th>사번</th><th>상태</th><th>변경</th><th>조치</th></tr></thead><tbody id="accounts-list"></tbody></table></div>
           </article>
         </section>
 
@@ -170,7 +192,8 @@
               <input id="audit-search" type="search" placeholder="도구·정책·판정으로 거르기" maxlength="80" />
               <span id="audit-live" class="live-state"><i></i>대기</span>
             </div>
-            <div class="table-wrap"><table><thead><tr><th>시간</th><th>요청자</th><th>도구</th><th>등급 / 행위</th><th>판정</th><th>적용 정책 · 버전 · 예외 · 경합</th><th>실행</th><th>Trace</th></tr></thead><tbody id="audit-list"></tbody></table></div>
+            <div class="table-wrap"><table><thead><tr><th class="sortable desc" data-sort="created_at">시간</th><th class="sortable" data-sort="user_token">요청자</th><th class="sortable" data-sort="tool_name">도구</th><th class="sortable" data-sort="data_class">등급 / 행위</th><th class="sortable" data-sort="decision">판정</th><th>적용 정책 · 버전 · 예외 · 경합</th><th class="sortable" data-sort="upstream_executed">실행</th><th>Trace</th></tr></thead><tbody id="audit-list"></tbody></table></div>
+            <div class="table-more"><button id="audit-more" class="ghost-button hidden" type="button">더 보기</button></div>
           </article>
           <article class="panel hidden" id="audit-chain-panel">
             <div class="panel-heading"><h2>감사 체인 무결성</h2><button id="verify-chain" class="ghost-button" type="button">검증</button></div>

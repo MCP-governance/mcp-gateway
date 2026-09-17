@@ -1,10 +1,30 @@
+-- 신원 관리대장. 이전 판은 이메일·역할 매핑이 Python 상수(IDENTITIES)에 있었고
+-- 비밀번호는 모든 계정이 공유하는 환경변수 하나였다. 그래서 (1) 계정을 잠그거나
+-- 끄는 방법이 없었고 (2) 한 계정의 비밀번호만 바꾸는 것이 불가능했다. 팀원 저장소
+-- MCP-governance/Agent-Service의 miso 브랜치가 쓰던 users 테이블 모양을 가져와
+-- 사용자별 bcrypt 해시와 계정 상태를 이 관리대장에 둔다.
+--
+-- status가 애플리케이션 상수가 아니라 이 테이블에 있는 것이 핵심이다. 상수였다면
+-- 계정을 끄는 일이 배포가 된다.
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE IF NOT EXISTS principals (
   token text PRIMARY KEY,
   display_name text NOT NULL,
   role text NOT NULL CHECK (role IN ('partner', 'employee', 'admin')),
   department text,
-  synthetic boolean NOT NULL DEFAULT true
+  synthetic boolean NOT NULL DEFAULT true,
+  user_id text UNIQUE,
+  email text UNIQUE,
+  employee_no text,
+  job_title text,
+  password_hash text,
+  status text NOT NULL DEFAULT 'active'
+    CHECK (status IN ('active', 'disabled', 'locked')),
+  status_changed_by text,
+  status_changed_at timestamptz
 );
+CREATE INDEX IF NOT EXISTS principals_email_idx ON principals(lower(email));
 
 CREATE TABLE IF NOT EXISTS documents (
   id text PRIMARY KEY,
@@ -115,10 +135,12 @@ CREATE TABLE IF NOT EXISTS supply_chain_reports (
   imported_at timestamptz NOT NULL DEFAULT now()
 );
 
-INSERT INTO principals(token, display_name, role, department) VALUES
-  ('partner-demo', '협력업체 김민수', 'partner', '협력사 A'),
-  ('emp-demo', '직원 이서연', 'employee', '보안기술팀'),
-  ('admin-demo', '관리자 박지훈', 'admin', '거버넌스팀')
+-- 합성 계정. 비밀번호는 기동할 때 agent-service가 MOCK_SSO_PASSWORD로 채운다
+-- (agent_tables.sql의 bootstrap). 해시를 SQL에 박아두면 .env로 바꿀 수 없다.
+INSERT INTO principals(token, user_id, email, display_name, role, department, employee_no, job_title) VALUES
+  ('partner-demo', 'user-partner-001', 'partner@bob.local', '협력업체 김민수', 'partner', '협력사 A', 'EXT-001', '협력업체 담당'),
+  ('emp-demo',     'user-test-001',    'miso@bob.local',    '김미소',           'employee', '보안기술팀', 'EMP-001', '보안기술팀 사원'),
+  ('admin-demo',   'user-admin-001',   'admin@bob.local',   '관리자 박지훈',    'admin', '거버넌스팀', 'EMP-002', '거버넌스팀 관리자')
 ON CONFLICT (token) DO NOTHING;
 
 INSERT INTO documents(id, title, data_class, classification_source, classification_version, owner_department) VALUES

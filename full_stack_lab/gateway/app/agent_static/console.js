@@ -9,6 +9,7 @@ const NAV = [
   {page: "risks", group: "GOVERNANCE", label: "위험 분석"},
   {page: "mcpscan", group: "GOVERNANCE", label: "AI 코드 감사"},
   {page: "policy", group: "GOVERNANCE", label: "정책 관리대장"},
+  {page: "accounts", group: "GOVERNANCE", label: "신원 관리대장"},
   {page: "execution", group: "OPERATIONS", label: "MCP 실행"},
   {page: "audit", group: "OPERATIONS", label: "감사 기록"},
 ];
@@ -23,7 +24,10 @@ const INTAKE_STATUS = {
 };
 const INTAKE_TONE = {VALIDATED: "ok", APPROVED: "ok", REJECTED: "bad", FAILED: "bad", VALIDATING: "warn", VALIDATION_QUEUED: "warn"};
 const SERVER_STATUS = {READY: "운영", DISABLED: "비활성", BLOCKED_SUPPLY_CHAIN: "공급망 차단", ERROR: "오류"};
-const JOB_STATUS = {QUEUED: "대기", RUNNING: "실행 중", DONE: "완료", FAILED: "실패"};
+const JOB_STATUS = {QUEUED: "대기", RUNNING: "실행 중", DONE: "완료", FAILED: "실패", CANCELLED: "취소"};
+const ACCOUNT_STATUS = {active: "사용 중", disabled: "중지", locked: "잠김"};
+const ACCOUNT_TONE = {active: "ok", disabled: "bad", locked: "warn"};
+const JOB_TRIGGER = {manual: "수동 실행", validated: "검증 통과 자동", rescan: "재감사 주기", drift: "드리프트 감지"};
 const DECISIONS = ["Allow", "Alert", "Approval", "Restrict", "Block"];
 const SEVERITY_ALIAS = {ERROR: "HIGH", WARNING: "MEDIUM", INFO: "LOW", UNKNOWN: "LOW", NONE: "LOW", NOTE: "LOW"};
 
@@ -39,6 +43,35 @@ let findingTerm = "";
 let auditTerm = "";
 let liveRows = [];
 let stream = null;
+// 감사 기록은 한 번에 다 그리면 스크롤 끝까지 가야 오래된 행이 보이고, 정렬이
+// 없으면 "누가 제일 많이 막혔나"를 표에서 답할 수 없다.
+let accounts = null;
+let auditSort = {key: "created_at", dir: "desc"};
+let auditLimit = 25;
+const AUDIT_PAGE = 25;
+const THEME_KEY = "bob_console_theme";
+
+/* ── theme ────────────────────────────────────────────────── */
+// 판정을 오래 들여다보는 화면이라 야간 사용이 실제로 많다. 시스템 설정을 기본으로
+// 두고, 사용자가 고른 값이 있으면 그것이 이긴다.
+function applyTheme(value) {
+  if (value === "light" || value === "dark") document.documentElement.dataset.theme = value;
+  else delete document.documentElement.dataset.theme;
+  const button = document.querySelector("#theme-toggle");
+  if (button) button.textContent = value === "dark" ? "☾" : value === "light" ? "☀" : "◐";
+}
+function initTheme() {
+  let stored = null;
+  try { stored = localStorage.getItem(THEME_KEY); } catch { stored = null; }
+  applyTheme(stored);
+}
+function cycleTheme() {
+  let stored = null;
+  try { stored = localStorage.getItem(THEME_KEY); } catch { stored = null; }
+  const next = stored === "light" ? "dark" : stored === "dark" ? null : "light";
+  try { next ? localStorage.setItem(THEME_KEY, next) : localStorage.removeItem(THEME_KEY); } catch { /* 저장 못 해도 화면은 바뀐다 */ }
+  applyTheme(next);
+}
 
 /* ── helpers ──────────────────────────────────────────────── */
 
@@ -125,14 +158,36 @@ async function act(button, label, run, fallback) {
 
 /* ── navigation ───────────────────────────────────────────── */
 
+// 화면 8개를 평평하게 나열하면 어디부터 봐야 하는지 메뉴가 답하지 못한다.
+// 처리 대기 수를 메뉴에 붙이면 이동 전에 알 수 있다.
+function navBadges() {
+  if (!state) return {};
+  const badges = {};
+  const pendingIntake = state.intake.filter(row => ["HOLD", "VALIDATION_QUEUED", "VALIDATING"].includes(row.status)).length;
+  if (pendingIntake) badges.intake = [pendingIntake, "warn"];
+  const approvals = (state.approvals || []).length;
+  if (approvals) badges.execution = [approvals, "warn"];
+  const criticals = count(state.severity?.critical);
+  if (criticals) badges.risks = [criticals, "bad"];
+  const unwired = (state.coverage?.unwired || []).length;
+  if (unwired) badges.verification = [unwired, "warn"];
+  if (scan && !scan.worker?.alive && (scan.worker?.queued || scan.worker?.running)) badges.mcpscan = ["!", "bad"];
+  return badges;
+}
+
 function renderNav() {
   const visible = NAV.filter(item => allowed.includes(item.page));
+  const badges = navBadges();
   let group = null;
   document.querySelector("#side-nav-list").innerHTML = visible.map(item => {
     const heading = item.group !== group ? `<p class="nav-group">${item.group}</p>` : "";
     group = item.group;
-    return `${heading}<button data-page="${item.page}" type="button">${escapeHtml(item.label)}</button>`;
+    const badge = badges[item.page];
+    return `${heading}<button data-page="${item.page}" type="button"><span>${escapeHtml(item.label)}</span>` +
+      `${badge ? `<span class="nav-badge ${badge[1]}">${escapeHtml(badge[0])}</span>` : ""}</button>`;
   }).join("");
+  document.querySelectorAll(".side-nav [data-page]").forEach(button =>
+    button.classList.toggle("active", button.dataset.page === currentPage()));
 }
 
 function navigate(page, replace = false) {
@@ -150,8 +205,39 @@ function cards(target, rows) {
     `<article class="metric-card ${tone || ""}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(note)}</small></article>`).join("");
 }
 
-function emptyState(message, hint) {
-  return `<p class="empty-state">${escapeHtml(message)}${hint ? `<small>${escapeHtml(hint)}</small>` : ""}</p>`;
+function emptyState(message, hint, action) {
+  // "없습니다"로 끝나는 빈 상태는 다음에 뭘 해야 할지 알려주지 않는다.
+  return `<p class="empty-state">${escapeHtml(message)}${hint ? `<small>${escapeHtml(hint)}</small>` : ""}` +
+    `${action ? `<button class="ghost-button" data-page="${escapeHtml(action[1])}" type="button">${escapeHtml(action[0])}</button>` : ""}</p>`;
+}
+
+function skeleton(rows = 3) {
+  return `<div class="skeleton" aria-hidden="true">${"<i></i>".repeat(rows)}</div>`;
+}
+
+// 첫 로딩에서 빈 화면과 "불러오는 중"이 같아 보이면 사용자는 고장으로 읽는다.
+function showSkeletons() {
+  [["#overview-cards", 4], ["#registry-summary", 3], ["#intake-list", 3],
+   ["#validation-list", 3], ["#finding-list", 4], ["#ledger-list", 0],
+   ["#coverage-list", 2], ["#approvals-list", 2]].forEach(([selector, rows]) => {
+    const node = document.querySelector(selector);
+    if (node && !node.children.length && rows) node.innerHTML = skeleton(rows);
+  });
+}
+
+function showLoadError(message) {
+  const main = document.querySelector(".console-main");
+  document.querySelector("#load-error")?.remove();
+  const box = document.createElement("div");
+  box.id = "load-error";
+  box.className = "load-error";
+  box.innerHTML = `<span>${escapeHtml(message)}</span><button class="ghost-button" id="load-retry" type="button">다시 시도</button>`;
+  main.prepend(box);
+  document.querySelector("#load-retry").addEventListener("click", event =>
+    withButton(event.currentTarget, "다시 읽는 중", async () => {
+      await loadConsole();
+      document.querySelector("#load-error")?.remove();
+    }).catch(error => toast(error.message, "bad")));
 }
 
 /* ── live stream ──────────────────────────────────────────── */
@@ -235,8 +321,45 @@ function openStream() {
 
 /* ── overview ─────────────────────────────────────────────── */
 
+// 대시보드의 첫 줄은 상태가 아니라 "지금 누가 무엇을 해야 하는가"여야 한다.
+// 승인 대기와 죽은 워커는 숫자 카드 사이에 섞여 있으면 눈에 띄지 않는다.
+function renderActionBanner() {
+  const box = document.querySelector("#action-banner");
+  if (!box) return;
+  const items = [];
+  const approvals = (state.approvals || []).length;
+  if (approvals) items.push(["warn", `승인 대기 <b>${approvals}건</b>`,
+    "10분 안에 승인하거나 사유와 함께 거부해야 합니다.", "확인", "execution"]);
+  const holds = state.intake.filter(row => row.status === "HOLD").length;
+  if (holds) items.push(["warn", `격리 검증 대기 <b>${holds}건</b>`,
+    "제출만 되어 있고 아직 증적이 없습니다.", "도입 화면", "intake"]);
+  const validated = state.intake.filter(row => row.status === "VALIDATED").length;
+  if (validated) items.push(["", `검증 통과 <b>${validated}건</b>`,
+    "Registry 등록 대상으로 올릴지 결정이 남았습니다.", "검토", "verification"]);
+  const criticals = count(state.severity?.critical);
+  if (criticals) items.push(["bad", `치명 공급망 발견 <b>${criticals}건</b>`,
+    "서버에 귀속된 치명점은 호출을 차단합니다.", "위험 분석", "risks"]);
+  const unwired = (state.coverage?.unwired || []).length;
+  if (unwired) items.push(["warn", `차단에 연결되지 않은 스캔 대상 <b>${unwired}건</b>`,
+    "scan_path는 있지만 결과가 없어 MCP-SUPPLY-001이 세지 못합니다.", "검증 파이프라인", "verification"]);
+  if (scan && scan.worker && !scan.worker.alive && (scan.worker.queued || scan.worker.running))
+    items.push(["bad", "AI 코드 감사 워커 응답 없음",
+      `대기 ${count(scan.worker.queued)}건 · 실행 중 ${count(scan.worker.running)}건이 진행되지 않습니다.`,
+      "감사 화면", "mcpscan"]);
+  if ((state.enforcement?.enforcement || "") === "monitor")
+    items.push(["warn", "관찰 모드",
+      "권한 판정은 기록만 하고 실행됩니다. 무결성 통제는 그대로 집행됩니다.", "집행 전환", "overview"]);
+
+  box.innerHTML = items.length
+    ? items.map(([tone, title, note, label, page]) =>
+        `<div class="action-item ${tone}"><span>${title}</span><small>${escapeHtml(note)}</small>` +
+        `<span class="spacer"></span><button class="ghost-button" data-page="${escapeHtml(page)}" type="button">${escapeHtml(label)}</button></div>`).join("")
+    : `<div class="action-item good"><span><b>지금 처리할 것이 없습니다.</b></span><small>승인 대기, 검증 대기, 치명 발견, 워커 이상이 모두 없습니다.</small></div>`;
+}
+
 function renderOverview() {
   if (!allowed.includes("overview")) return;
+  renderActionBanner();
   const active = state.registry.filter(server => server.status === "READY").length;
   const waiting = state.intake.filter(request => ["HOLD", "VALIDATION_QUEUED", "VALIDATING"].includes(request.status)).length;
   const blocked = state.decisions.filter(item => item.decision === "Block").length;
@@ -394,51 +517,141 @@ function renderRisks() {
 
 /* ── mcp-scan ─────────────────────────────────────────────── */
 
+function scanJobCard(job) {
+  const tone = {DONE: "ok", FAILED: "bad", CANCELLED: "muted", RUNNING: "warn", QUEUED: "warn"}[job.status] || "muted";
+  const summary = job.summary || {};
+  const meta = [ago(job.created_at), JOB_TRIGGER[job.trigger] || job.trigger || "수동 실행",
+                `요청 ${escapeHtml(job.requested_by)}`];
+  if (job.attempts > 1) meta.push(`시도 ${count(job.attempts)}회`);
+  if (job.model) meta.push(`model ${escapeHtml(job.model)}`);
+  if (job.base_url) meta.push(escapeHtml(job.base_url));
+  if (summary.scan_note) meta.push(`scanNote ${escapeHtml(summary.scan_note)}`);
+  if (summary.total !== undefined) meta.push(`발견 ${count(summary.total)}건`);
+  if (summary.blocks_calls !== undefined)
+    meta.push(summary.blocks_calls ? "차단에 연결됨" : "차단에 연결 안 됨");
+  const actions = [];
+  if (["QUEUED", "RUNNING"].includes(job.status))
+    actions.push(`<button class="mini-button danger" data-scan-cancel="${escapeHtml(job.id)}" type="button">취소</button>`);
+  if (["FAILED", "CANCELLED"].includes(job.status))
+    actions.push(`<button class="mini-button" data-scan-retry="${escapeHtml(job.id)}" type="button">다시 실행</button>`);
+  const stubRun = summary.endpoint_kind === "wire-stub";
+  return `<article class="request-row${["QUEUED", "RUNNING"].includes(job.status) ? " working" : ""}">
+    <div class="request-top"><div><h3>${escapeHtml(job.display_name || job.target_label || "대상 미상")}</h3>
+      <small>${escapeHtml(job.repository_url || job.intake_repository_url || "")}</small></div>
+      <span class="tag ${tone}">${escapeHtml(JOB_STATUS[job.status] || job.status)}</span></div>
+    <div class="request-meta">${meta.map(item => `<span>${item}</span>`).join("")}</div>
+    ${stubRun ? `<p class="note-line bad">배선 확인용 stub으로 실행한 결과입니다. 보안 판단이 아니며 발견 0건이 안전을 뜻하지 않습니다.</p>` : ""}
+    ${job.error ? `<p class="note-line bad">${escapeHtml(job.error)}</p>` : ""}
+    ${actions.length ? `<div class="button-row">${actions.join("")}</div>` : ""}</article>`;
+}
+
+function renderScanWorker() {
+  const box = document.querySelector("#mcpscan-worker");
+  if (!box) return;
+  const worker = scan.worker || {};
+  box.classList.toggle("alive", Boolean(worker.alive));
+  const parts = [];
+  if (worker.alive) {
+    parts.push(`<b>격리 워커 정상</b>`, `${escapeHtml(worker.worker || "worker")} · 신호 ${escapeHtml(ago(worker.seen_at))}`);
+  } else if (worker.seen_at) {
+    parts.push(`<b>격리 워커 응답 없음</b>`,
+      `마지막 신호 ${escapeHtml(ago(worker.seen_at))} · ${count(worker.stale_after_seconds)}초 넘게 소식이 없습니다.`);
+  } else {
+    parts.push(`<b>격리 워커 신호 없음</b>`, "워커가 한 번도 붙지 않았습니다. <code>docker compose up -d intake-worker</code>");
+  }
+  parts.push(`대기 ${count(worker.queued)} · 실행 중 ${count(worker.running)}${count(worker.stale) ? ` · lease 만료 ${count(worker.stale)}` : ""}`);
+  if (!worker.alive && (count(worker.queued) || count(worker.running)))
+    parts.push("큐에 들어간 감사는 워커가 뜨기 전까지 실행되지 않습니다.");
+  box.innerHTML = `<i></i>${parts.map(item => `<span>${item}</span>`).join("")}`;
+}
+
 function renderScan() {
   if (!scan) return;
   const config = scan.config;
+  const worker = scan.worker || {};
+  const runnable = config.configured && worker.alive;
   const badge = document.querySelector("#mcpscan-state");
-  badge.textContent = config.configured ? "실행 가능" : "설정 필요";
-  badge.className = `tag ${config.configured ? "ok" : "warn"}`;
+  badge.textContent = !config.configured ? "설정 필요" : worker.alive ? "실행 가능" : "워커 없음";
+  badge.className = `tag ${runnable ? "ok" : config.configured ? "bad" : "warn"}`;
+  renderScanWorker();
+
   document.querySelector("#mcpscan-config-body").innerHTML = config.configured
-    ? `<dl class="result-facts"><div><dt>Endpoint</dt><dd>${escapeHtml(config.base_url)}</dd></div><div><dt>Model</dt><dd>${escapeHtml(config.model)}</dd></div><div><dt>mcp-scan 커밋</dt><dd>${escapeHtml(config.pinned_commit.slice(0, 12))}</dd></div><div><dt>결과 형식</dt><dd>SARIF 2.1.0</dd></div></dl>
+    ? `<dl class="result-facts"><div><dt>Endpoint</dt><dd>${escapeHtml(config.base_url)}</dd></div><div><dt>Model</dt><dd>${escapeHtml(config.model)}</dd></div><div><dt>mcp-scan 커밋</dt><dd>${escapeHtml(config.pinned_commit.slice(0, 12))}</dd></div><div><dt>승인 게이트</dt><dd>${config.required_for_approval ? "감사 결과 없이는 승인 불가" : "감사는 승인의 필수 조건이 아님"}</dd></div></dl>
        <p class="note-line">어떤 모델이 판단했는지는 결과와 함께 기록됩니다. 모델을 모르는 보안 결과는 증적이 아닙니다.</p>`
     : `<p>AI 코드 감사는 OpenAI 호환 endpoint를 요구합니다. <code>full_stack_lab/.env</code>에 다음 값을 넣고 <code>./console.sh up</code>을 다시 실행하세요.</p>
        <pre class="code-block">${config.missing.map(key => escapeHtml(key) + "=...").join("\n")}</pre>
        <p class="note-line">로컬 모델(Ollama, LM Studio)이라면 <code>MCP_SCAN_BASE_URL=http://host.docker.internal:11434/v1</code> 형태로 넣습니다. 배선만 확인하려면 <code>docker compose --profile llm-stub up -d llm-stub</code> 후 <code>http://llm-stub:4010/v1</code>을 쓰세요. stub은 취약점을 찾지 않습니다.</p>`;
 
-  document.querySelector("#mcpscan-targets").innerHTML = scan.targets.map(target => `
-    <article class="request-row"><div class="request-top"><div><h3>${escapeHtml(target.display_name)}</h3><small>${escapeHtml(target.repository_url)} · commit ${escapeHtml(String(target.commit_sha).slice(0, 12))}</small></div><span class="tag ${INTAKE_TONE[target.status] || "muted"}">${escapeHtml(INTAKE_STATUS[target.status] || target.status)}</span></div>
-      <div class="button-row"><button class="mini-button" data-scan-run="${escapeHtml(target.id)}" type="button" ${config.configured ? "" : "disabled"}>AI 코드 감사 실행</button></div></article>`).join("")
-    || emptyState("감사할 대상이 없습니다.", "격리 검증을 통과해 commit이 고정된 요청만 감사할 수 있습니다.");
+  document.querySelector("#mcpscan-targets").innerHTML = scan.targets.map(target => {
+    const stale = target.last_status === "DONE" && target.last_commit_sha !== target.commit_sha;
+    const note = !target.last_status ? "감사한 적 없음"
+      : stale ? "지금 commit과 다른 코드에 대한 결과입니다"
+      : `마지막 감사 ${JOB_STATUS[target.last_status] || target.last_status} · ${ago(target.last_finished_at)}`;
+    return `<article class="request-row"><div class="request-top"><div><h3>${escapeHtml(target.display_name)}</h3>
+      <small>${escapeHtml(target.repository_url)} · commit ${escapeHtml(String(target.commit_sha).slice(0, 12))}</small></div>
+      <span class="tag ${INTAKE_TONE[target.status] || "muted"}">${escapeHtml(INTAKE_STATUS[target.status] || target.status)}</span></div>
+      <div class="request-meta"><span>${escapeHtml(note)}</span></div>
+      <div class="button-row"><button class="mini-button" data-scan-run="${escapeHtml(target.id)}" data-scan-kind="intake" type="button" ${runnable ? "" : "disabled"}>AI 코드 감사 실행</button></div></article>`;
+  }).join("") || emptyState("감사할 도입 요청이 없습니다.", "격리 검증을 통과해 commit이 고정된 요청만 감사할 수 있습니다.", ["도입 화면으로", "intake"]);
+
+  // 등록된 서버도 대상이다. 이미 호출되고 있는 코드를 빼두면 "심사한 코드"와
+  // "지금 도는 코드"가 갈라져도 확인할 방법이 없다.
+  document.querySelector("#mcpscan-servers").innerHTML = (scan.servers || []).map(server => {
+    const note = !server.scannable ? "원격 전용이라 국소 감사 대상이 아닙니다. 공급자 증적으로 대신합니다."
+      : !server.last_status ? "감사한 적 없음"
+      : `마지막 감사 ${JOB_STATUS[server.last_status] || server.last_status} · ${ago(server.last_finished_at)}`;
+    return `<article class="request-row"><div class="request-top"><div><h3>${escapeHtml(server.display_name)}</h3>
+      <small>${escapeHtml(server.source_url)} · ref ${escapeHtml(server.source_ref || "-")}</small></div>
+      <span class="tag ${server.status === "READY" ? "ok" : "muted"}">${escapeHtml(SERVER_STATUS[server.status] || server.status)}</span></div>
+      <div class="request-meta"><span>${escapeHtml(note)}</span></div>
+      ${server.scannable ? `<div class="button-row"><button class="mini-button" data-scan-run="${escapeHtml(server.id)}" data-scan-kind="server" type="button" ${runnable ? "" : "disabled"}>재감사 실행</button></div>` : ""}</article>`;
+  }).join("") || emptyState("등록된 서버가 없습니다.");
 
   document.querySelector("#mcpscan-job-total").textContent = scan.jobs.length;
-  document.querySelector("#mcpscan-jobs").innerHTML = scan.jobs.map(job => {
-    const tone = {DONE: "ok", FAILED: "bad", RUNNING: "warn", QUEUED: "warn"}[job.status] || "muted";
-    const summary = job.summary || {};
-    const meta = [ago(job.created_at), `요청 ${escapeHtml(job.requested_by)}`];
-    if (job.model) meta.push(`model ${escapeHtml(job.model)}`);
-    if (job.base_url) meta.push(escapeHtml(job.base_url));
-    if (summary.scan_note) meta.push(`scanNote ${escapeHtml(summary.scan_note)}`);
-    const stubRun = summary.endpoint_kind === "wire-stub";
-    if (summary.total !== undefined) meta.push(`발견 ${count(summary.total)}건`);
-    return `<article class="request-row${["QUEUED", "RUNNING"].includes(job.status) ? " working" : ""}">
-      <div class="request-top"><div><h3>${escapeHtml(job.display_name || job.target_label || "대상 미상")}</h3><small>${escapeHtml(job.repository_url || "")}</small></div><span class="tag ${tone}">${escapeHtml(JOB_STATUS[job.status] || job.status)}</span></div>
-      <div class="request-meta">${meta.map(item => `<span>${item}</span>`).join("")}</div>
-      ${stubRun ? `<p class="note-line bad">배선 확인용 stub으로 실행한 결과입니다. 보안 판단이 아니며 발견 0건이 안전을 뜻하지 않습니다.</p>` : ""}
-      ${job.error ? `<p class="note-line bad">${escapeHtml(job.error)}</p>` : ""}</article>`;
-  }).join("") || emptyState("실행한 감사가 없습니다.");
+  document.querySelector("#mcpscan-jobs").innerHTML = scan.jobs.map(scanJobCard).join("")
+    || emptyState("실행한 감사가 없습니다.");
 
   const findings = findingRows(scan.reports);
   document.querySelector("#mcpscan-finding-total").textContent = findings.length;
   document.querySelector("#mcpscan-findings").innerHTML = findingMarkup(findings)
-    || emptyState("저장된 감사 결과가 없습니다.", config.configured ? "위에서 대상을 골라 실행하세요." : "먼저 endpoint를 설정하세요.");
+    || emptyState("저장된 감사 결과가 없습니다.", runnable ? "위에서 대상을 골라 실행하세요." : "먼저 endpoint 설정과 워커 상태를 확인하세요.");
 }
 
 async function loadScan() {
   if (!allowed.includes("mcpscan")) return;
   scan = await api("/api/mcp-scan");
   renderScan();
+  // 워커 이상은 감사 화면에 들어가야만 보이면 늦는다. 메뉴와 첫 화면에도 알린다.
+  renderNav();
+  if (state && allowed.includes("overview")) renderActionBanner();
+}
+
+/* ── accounts ─────────────────────────────────────────────── */
+
+function renderAccounts() {
+  if (!allowed.includes("accounts") || !accounts) return;
+  document.querySelector("#accounts-total").textContent = accounts.length;
+  document.querySelector("#accounts-list").innerHTML = accounts.map(row => {
+    const self = row.user_id === state?.viewer?.user_id;
+    const actions = self
+      ? `<span class="hint">본인 계정</span>`
+      : ["active", "disabled", "locked"].filter(value => value !== row.status)
+          .map(value => `<button class="mini-button${value === "active" ? "" : " danger"}" data-account="${escapeHtml(row.user_id)}" data-account-status="${value}" type="button">${escapeHtml(ACCOUNT_STATUS[value])}</button>`).join(" ");
+    const changed = row.status_changed_at
+      ? `${escapeHtml(ago(row.status_changed_at))}<small class="sub">${escapeHtml(row.status_changed_by || "")}</small>`
+      : "-";
+    return `<tr><td>${escapeHtml(row.email || "-")}</td><td>${escapeHtml(row.display_name)}</td>` +
+      `<td>${escapeHtml(row.role)}</td><td>${escapeHtml(row.department || "-")}<small class="sub">${escapeHtml(row.job_title || "")}</small></td>` +
+      `<td>${escapeHtml(row.employee_no || "-")}</td>` +
+      `<td><span class="tag ${ACCOUNT_TONE[row.status] || "muted"}">${escapeHtml(ACCOUNT_STATUS[row.status] || row.status)}</span></td>` +
+      `<td>${changed}</td><td>${actions}</td></tr>`;
+  }).join("") || `<tr><td colspan="8">${emptyState("관리대장이 비어 있습니다.")}</td></tr>`;
+}
+
+async function loadAccounts() {
+  if (!allowed.includes("accounts")) return;
+  accounts = (await api("/api/accounts")).accounts;
+  renderAccounts();
 }
 
 /* ── policy · execution · audit ───────────────────────────── */
@@ -499,11 +712,34 @@ function auditRow(item) {
   return `<tr data-decision-id="${escapeHtml(item.id ?? "")}" class="${hidden ? "hidden" : ""}"><td title="${escapeHtml(formatDate(item.created_at))}">${escapeHtml(ago(item.created_at))}</td><td>${escapeHtml(item.user_token || "-")}</td><td>${escapeHtml(item.tool_name || "-")}</td><td>${escapeHtml(item.data_class || "-")} / ${escapeHtml(item.action || "-")}</td><td><span class="decision ${escapeHtml(String(item.decision || "").toLowerCase())}">${escapeHtml(item.decision || "-")}</span></td><td><code>${escapeHtml(item.policy_id || "-")}</code><small class="sub">${escapeHtml(trail.join(" · "))}</small></td><td>${item.upstream_executed ? "실행" : "미실행"}</td><td>${escapeHtml((item.trace_id || "-").slice(0, 12))}</td></tr>`;
 }
 
+function sortedDecisions() {
+  const {key, dir} = auditSort;
+  const sign = dir === "asc" ? 1 : -1;
+  return state.decisions.slice().sort((a, b) => {
+    const left = a[key] ?? "";
+    const right = b[key] ?? "";
+    if (key === "created_at") return sign * (new Date(left) - new Date(right));
+    if (typeof left === "boolean" || typeof right === "boolean") return sign * ((left ? 1 : 0) - (right ? 1 : 0));
+    return sign * String(left).localeCompare(String(right), "ko");
+  });
+}
+
 function renderAudit() {
   if (!allowed.includes("audit")) return;
-  document.querySelector("#audit-total").textContent = state.decisions.length;
-  document.querySelector("#audit-list").innerHTML = state.decisions.map(auditRow).join("")
-    || `<tr><td colspan="8">${emptyState("감사 기록이 없습니다.", "MCP 실행에서 요청을 보내면 여기에 남습니다.")}</td></tr>`;
+  const rows = sortedDecisions();
+  document.querySelector("#audit-total").textContent = rows.length;
+  const page = rows.slice(0, auditLimit);
+  document.querySelector("#audit-list").innerHTML = page.map(auditRow).join("")
+    || `<tr><td colspan="8">${emptyState("감사 기록이 없습니다.", "MCP 실행에서 요청을 보내면 여기에 남습니다.", ["MCP 실행으로", "execution"])}</td></tr>`;
+  const more = document.querySelector("#audit-more");
+  if (more) {
+    more.classList.toggle("hidden", rows.length <= auditLimit);
+    more.textContent = `더 보기 (${Math.max(0, rows.length - auditLimit)}건 남음)`;
+  }
+  document.querySelectorAll("#audit-list th.sortable, .view[data-view=audit] th.sortable").forEach(header => {
+    header.classList.toggle("asc", header.dataset.sort === auditSort.key && auditSort.dir === "asc");
+    header.classList.toggle("desc", header.dataset.sort === auditSort.key && auditSort.dir === "desc");
+  });
   document.querySelector("#audit-chain-panel").classList.toggle("hidden", !isAdmin());
 }
 
@@ -531,16 +767,22 @@ function render() {
   connection.classList.toggle("ready", state.health.status === "ok");
   connection.querySelector("b").textContent = state.health.status === "ok" ? "연결 정상" : "연결 확인";
   renderOverview(); renderIntake(); renderVerification(); renderRisks();
-  renderPolicyLedger(); renderExecution(); renderAudit(); renderLive();
+  renderPolicyLedger(); renderAccounts(); renderExecution(); renderAudit(); renderLive();
 }
 
 async function loadConsole() {
+  showSkeletons();
   state = await api("/api/console");
   allowed = state.viewer.pages || ["execution"];
   if (allowed.includes("overview")) state.enforcement = await api("/api/enforcement").catch(() => ({}));
+  // 워커 상태는 감사 화면 전용이 아니다. 관리자는 첫 화면에서 알아야 한다.
+  if (allowed.includes("mcpscan")) scan = await api("/api/mcp-scan").catch(() => scan);
+  if (allowed.includes("accounts")) accounts = (await api("/api/accounts").catch(() => ({accounts})))?.accounts ?? accounts;
+  document.querySelector("#load-error")?.remove();
   renderNav();
   navigate(currentPage(), true);
   render();
+  if (scan) renderScan();
   openStream();
 }
 
@@ -626,12 +868,24 @@ document.addEventListener("click", async event => {
   if (data.approve) return act(target, "승인 중", () => api(`/approvals/${data.approve}/approve`, {method: "POST", body: {}}), "승인 후 재검증했습니다.");
   if (data.reject) return askReason(data.reject, "거부 사유 (2자 이상)",
     note => api(`/approvals/${data.reject}/reject`, {method: "POST", body: {note}}));
+  if (data.account) {
+    const label = ACCOUNT_STATUS[data.accountStatus] || data.accountStatus;
+    return act(target, "바꾸는 중",
+      () => api(`/api/accounts/${data.account}/status`, {method: "PUT", body: {status: data.accountStatus}})
+              .then(async body => { await loadAccounts(); return body; }),
+      `계정을 ${label}으로 바꿨습니다.`);
+  }
+  if (data.scanCancel) return act(target, "취소 중",
+    () => api(`/api/mcp-scan/jobs/${data.scanCancel}/cancel`, {method: "POST", body: {}}), "취소했습니다.");
+  if (data.scanRetry) return act(target, "다시 넣는 중",
+    () => api(`/api/mcp-scan/jobs/${data.scanRetry}/retry`, {method: "POST", body: {}}), "대기열에 다시 넣었습니다.");
   if (data.scanRun) {
     if (busy) return;
     busy = true;
     try {
-      const body = await withButton(target, "큐에 넣는 중", () => api("/api/mcp-scan/run", {method: "POST", body: {intake_id: data.scanRun}}));
-      toast(body.message);
+      const body = await withButton(target, "큐에 넣는 중", () => api("/api/mcp-scan/run",
+        {method: "POST", body: {target_kind: data.scanKind || "intake", target_id: data.scanRun}}));
+      toast(body.message, body.worker_alive === false ? "bad" : "ok");
       await loadScan();
       // 작업이 끝나면 화면이 스스로 최신이 되게 몇 번 다시 읽는다.
       let polls = 0;
@@ -732,6 +986,18 @@ document.querySelector("#approve-button").addEventListener("click", async event 
   } catch (error) { toast(error.message, "bad"); }
   finally { busy = false; }
 });
+document.querySelector("#theme-toggle").addEventListener("click", cycleTheme);
+document.querySelector("#audit-more").addEventListener("click", () => { auditLimit += AUDIT_PAGE; renderAudit(); });
+document.querySelectorAll('.view[data-view="audit"] th.sortable').forEach(header => {
+  header.addEventListener("click", () => {
+    const key = header.dataset.sort;
+    auditSort = auditSort.key === key
+      ? {key, dir: auditSort.dir === "asc" ? "desc" : "asc"}
+      : {key, dir: key === "created_at" ? "desc" : "asc"};
+    auditLimit = AUDIT_PAGE;
+    renderAudit();
+  });
+});
 document.querySelector("#logout-button").addEventListener("click", async () => {
   try { await api("/auth/logout", {method: "POST", body: {}}); } finally { redirectToLogin(); }
 });
@@ -740,7 +1006,12 @@ window.addEventListener("hashchange", () => navigate(currentPage(), true));
 setInterval(() => { if (liveRows.length) renderLive(); }, 20000);
 
 async function init() {
+  initTheme();
   if (!token) return redirectToLogin();
   await loadConsole();
 }
-init().catch(error => toast(error.message, "bad"));
+init().catch(error => {
+  // 첫 로딩 실패를 토스트로만 알리면 4초 뒤 빈 화면만 남는다.
+  toast(error.message, "bad");
+  showLoadError(error.message);
+});

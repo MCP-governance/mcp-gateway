@@ -94,6 +94,7 @@ Console <http://localhost:8000>에서 다음 개발 계정 중 하나를 고릅�
 | 위험 분석 | - | - | ○ |
 | AI 코드 감사 | - | - | ○ |
 | 정책 관리대장 | - | - | ○ |
+| 신원 관리대장 | - | - | ○ |
 
 내부 직원도 최소권한입니다. 직원에게 필요한 것은 "내가 쓸 MCP가 이미 승인돼 있는가"와 "내 호출이 어떻게 판정됐는가"이지 조직 전체의 정책 관리대장이나 공급망 증적이 아닙니다. 그래서 직원 화면은 셋으로 줄이고, 대신 **MCP 도입 화면 맨 위에 카탈로그 검색**을 뒀습니다. 같은 저장소를 여러 사람이 반복해서 신청하거나 이미 거부된 서버를 모르고 다시 올리는 일을 막는 것은 이 검색뿐입니다.
 
@@ -129,6 +130,7 @@ Console은 브라우저 기준 `8000` 하나에서 다음 페이지를 제공합
 - `위험 분석`: Trivy·Semgrep 발견 항목을 심각도로 거르기
 - `AI 코드 감사`: mcp-scan 실행 조건·연결 확인·작업 이력·SARIF 결과
 - `정책 관리대장`: 집행 중인 정책의 Risk·Control·버전·상태·우선순위와 등록된 예외
+- `신원 관리대장`: 계정의 역할·부서·상태와 중지·잠금 조치
 - `MCP 실행`과 `감사 기록`: Tool Call 제안, Gateway 판정, 실제 upstream 효과, Trace ID, 감사 체인 검증
 
 저장소 URL은 즉시 복제·실행하지 않습니다. 격리된 체크아웃에서 생성한 검증 증적이 연결되기 전에는 활성 Registry에 들어갈 수 없습니다. 이 경계가 있어야 URL 제출 기능이 또 다른 공급망 실행 경로가 되지 않습니다.
@@ -175,6 +177,51 @@ curl -sS 'http://localhost:8080/api/monitor/summary?hours=168' | python3 -m json
 ```
 
 Console의 **운영 현황**과 **감사 기록**에서 같은 숫자와 정책별 내역을 확인합니다. 도입 순서는 `monitor`로 한 주 측정 → 내역 검토 → 예외 정리 → `enforce`입니다.
+
+## 3.4.1 화면이 먼저 말하는 것 (v1.5)
+
+숫자 카드가 여덟 개 있어도 "지금 누가 무엇을 해야 하는가"에는 답하지 못합니다. 운영 현황의 **맨 위**는 카드가 아니라 조치가 필요한 항목입니다.
+
+| 배너 항목 | 왜 여기 있는가 |
+| --- | --- |
+| 승인 대기 N건 | 10분 안에 승인 또는 사유와 함께 거부해야 합니다 |
+| 격리 검증 대기 N건 | 제출만 되어 있고 증적이 없습니다 |
+| 검증 통과 N건 | Registry 등록 대상으로 올릴지 결정이 남았습니다 |
+| 치명 공급망 발견 N건 | 서버에 귀속된 치명점은 호출을 차단합니다 |
+| 차단에 연결되지 않은 스캔 대상 N건 | `scan_path`는 있는데 결과가 없어 `MCP-SUPPLY-001`이 세지 못합니다 |
+| AI 코드 감사 워커 응답 없음 | 큐에 들어간 감사가 진행되지 않습니다 |
+| 관찰 모드 | 권한 판정이 기록만 되고 실행되고 있습니다 |
+
+같은 수가 왼쪽 메뉴에도 배지로 붙습니다. 어느 화면에 처리할 것이 있는지는 그 화면에 들어가기 **전에** 알 수 있어야 합니다.
+
+나머지 변경은 셋입니다.
+
+- **판정을 색으로만 구분하지 않습니다.** `Allow ✓` `Alert !` `Approval ⏸` `Restrict ◑` `Block ✕`로 글머리 기호가 함께 붙어 색각 이상에서도 읽힙니다.
+- **다크 테마**를 시스템 설정에 맞춰 따르고, 헤더의 토글이 그것을 덮어씁니다. 선택은 로그인 화면까지 이어집니다.
+- **감사 기록 표**에 정렬(시간·요청자·도구·등급·판정·실행)과 더 보기를 넣었습니다. 첫 로딩에는 스켈레톤이, 실패에는 다시 시도 버튼이 나옵니다. 빈 화면과 "불러오는 중"과 "고장"이 같아 보이면 안 됩니다.
+
+## 3.5 신원 관리대장
+
+역할과 계정 상태가 애플리케이션 상수에 있으면 **계정을 끄는 일이 배포가 됩니다.** 배포가 필요한 조치는 필요한 순간에 실행되지 않습니다. v1.5부터 신원은 PostgreSQL `principals` 관리대장이 정본입니다.
+
+| 항목 | 이전 (v1.4) | 지금 (v1.5) |
+| --- | --- | --- |
+| 이메일·역할 매핑 | Python 상수 `IDENTITIES` | `principals` 테이블 |
+| 비밀번호 | 모든 계정이 공유하는 `MOCK_SSO_PASSWORD` 하나 | 계정별 bcrypt 해시(`pgcrypto`). `MOCK_SSO_PASSWORD`는 비어 있는 계정을 처음 채울 때만 씁니다 |
+| 계정 정지 | 없음 | `active` / `disabled` / `locked` |
+| 정지 반영 시점 | — | **다음 요청.** 토큰 만료를 기다리지 않습니다 |
+
+비밀번호 비교는 애플리케이션이 아니라 DB의 `crypt()`에서 합니다. 해시를 꺼내와 비교하면 "찾았지만 틀림"과 "그런 주소 없음"이 서로 다른 코드 경로가 되어 응답 시간이 주소의 존재 여부를 알려줍니다.
+
+`authenticated_user()`는 매 요청마다 관리대장에서 역할과 상태를 읽습니다. 토큰 안의 역할을 믿으면 "관리자 권한을 내렸다"가 그 사람의 토큰이 만료될 때까지 적용되지 않습니다. 관리대장에서 사라진 신원은 토큰이 유효해도 `401`입니다.
+
+```bash
+curl -sS -X PUT http://localhost:8000/api/accounts/user-partner-001/status   -H "authorization: Bearer $TOKEN" -H 'content-type: application/json'   -d '{"status":"disabled"}'
+```
+
+관리자는 **자기 계정을 스스로 중지하거나 잠글 수 없습니다.** 마지막 관리자가 자신을 잠그면 되돌릴 사람이 남지 않습니다.
+
+이 구조는 팀원 저장소 [`MCP-governance/Agent-Service`의 `miso` 브랜치](https://github.com/MCP-governance/Agent-Service/tree/miso)가 쓰던 `users` / `sessions` 테이블 모양에서 가져왔습니다. 세션 테이블(불투명 토큰 + `token_hash` + `revoked_at`)은 가져오지 않았습니다. 이 Gateway는 서명된 JWT와 `agent_revoked_tokens` 무효화 목록을 이미 쓰고 있고, 세션 조회를 매 요청에 더하면 stdio·SSE ingress에도 같은 조회가 붙습니다. 신원 경계를 둘로 나누지 않는 편이 낫습니다.
 
 ## 4. 확정한 333 Rego 정책
 
@@ -345,7 +392,11 @@ curl -sS http://localhost:8000/api/readiness | python3 -m json.tool
 
 외부 endpoint는 HTTPS만 허용합니다. 로컬 호환 서버만 `localhost`, `127.0.0.1`, `host.docker.internal`, Compose의 `model-stub`에 HTTP로 연결할 수 있습니다. Agent는 사용자 요청에서 이메일·휴대전화·일반적인 API 키 패턴을 치환하고, 응답은 128 KB·Tool Call 1개·등록된 서버/도구·JSON Schema로 제한합니다. 모델 결과를 신뢰해 권한을 부여하지 않으며, 도구 실행 결과도 모델에 재전송하지 않습니다.
 
-현재 자동 시험은 실제 LLM이 아닌 로컬 HTTP wire stub으로 정상·차단·잘못된 Schema·알 수 없는 도구·복수 호출·401·429·500·timeout·과대 응답을 검증합니다. 따라서 API 형식과 실패 경계는 준비됐지만 특정 상용 모델의 실제 응답 정확도·비용·rate limit은 자격증명을 연결한 뒤 별도 시나리오 시험이 필요합니다.
+현재 자동 시험은 실제 LLM이 아닌 로컬 HTTP wire stub으로 정상·차단·잘못된 Schema·알 수 없는 도구·복수 호출·401·429·500·timeout·과대 응답을 검증합니다. 자동 시험에 실제 모델을 넣지 않는 이유는 CI가 모델의 그날 컨디션에 따라 빨강·초록을 오가면 그 신호가 무엇을 뜻하는지 아무도 신뢰하지 않게 되기 때문입니다.
+
+별도로 로컬 LLM(Ollama `qwen3:8b`, `MODEL_BASE_URL=http://127.0.0.1:11434/v1`)에 직접 붙여 provider 경로를 확인했습니다. `readiness()`가 로컬 http endpoint를 provider로 인정하고, 실제 모델이 "공개 문서를 읽어줘" → `read_document{document_id: notice-001}`, "중요 계약 초안을 읽어줘" → `read_document{document_id: secret-001}`을 제안하며, "오늘 점심 메뉴 추천해줘"에는 도구를 만들어내지 않았습니다. 세 제안 모두 `validate_proposal()`의 등록 계약을 통과했고, Gateway가 모델에 노출하는 도구 스키마에는 신원 인자가 하나도 없습니다.
+
+특정 상용 모델의 실제 응답 정확도·비용·rate limit은 여전히 자격증명을 연결한 뒤 별도 시나리오 시험이 필요합니다.
 
 ## 7. 자동 완료 조건 검증
 
@@ -381,6 +432,11 @@ Agent Console·인증·도입 요청 경계만 빠르게 확인할 때는 다음
 - 역할별 화면 목록이 협력업체·직원·관리자에 맞게 나오고, 볼 수 없는 화면의 데이터가 응답에 없음
 - 카탈로그 검색이 세 역할 모두에게 동작하고 신청자 신원·도입 목적은 응답에 없음
 - AI 코드 감사 API가 관리자 전용이고, endpoint 설정이 없으면 실행을 만들지 못함
+- AI 코드 감사 화면이 워커 생존 신호와 대기·실행·lease 만료 수를 함께 보여줌
+- 등록 서버가 감사 대상 목록에 나오고, 국소 감사 불가한 서버는 실행이 409로 거절됨
+- 계정 상태가 신원 관리대장에 있고, `disabled`로 바꾸면 **이미 발급된 토큰도** 다음 요청에서 403
+- 사용자별 bcrypt 해시로 검증하므로 다른 비밀번호는 401이고, 관리대장 응답에 해시가 없음
+- 관리자가 자기 계정을 스스로 중지·잠금할 수 없음
 - 실시간 판정 스트림이 인증을 요구하고 `text/event-stream`으로 열림
 - 모든 차단 사례에서 독립 upstream 효과 수가 증가하지 않음
 - 합성 upstream MCP에 host port가 없음
@@ -475,25 +531,59 @@ curl -sS http://localhost:8080/api/supply-chain/coverage | python3 -m json.tool
 
 ### AI 코드 감사 (AI-Infra-Guard mcp-scan)
 
-[AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard)의 `mcp-scan` CLI만 커밋 `036c39bd03b39ce4a811f7f125bc3b8f47e39b7c`에 고정해 격리 워커 이미지에 넣었습니다. SBOM·SCA·SAST와 달리 이 검사는 **OpenAI 호환 LLM endpoint를 요구**하므로 도입 검증에 섞지 않고 운영자가 필요할 때 돌리는 별도 작업입니다.
+[AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard)의 `mcp-scan` CLI만 커밋 `036c39bd03b39ce4a811f7f125bc3b8f47e39b7c`에 고정해 격리 워커 이미지에 넣었습니다. SBOM·SCA·SAST와 달리 이 검사는 **OpenAI 호환 LLM endpoint를 요구**하므로 도입 검증과 같은 트랜잭션에 넣을 수 없습니다.
 
-`full_stack_lab/.env`에 세 값을 넣고 `./console.sh up`을 다시 실행하면 Console의 `AI 코드 감사` 화면이 "실행 가능"으로 바뀝니다.
+다만 "그래서 관리자가 기억날 때 버튼을 누른다"는 결론이 아닙니다. v1.4까지의 구현이 정확히 그랬고, 세 가지가 동시에 깨져 있었습니다.
+
+| 증상 | 원인 | v1.5에서 |
+| --- | --- | --- |
+| 한 번 실패한 대상을 **다시는 감사할 수 없음** | 워커가 스캔 중 죽으면 그 행이 영원히 `RUNNING`으로 남고, 실행 API는 `QUEUED`·`RUNNING`을 409로 막았습니다. 통제가 한 번 실패하면 영구히 꺼지는 구조 | `lease_expires_at`·`attempts`로 만료 작업을 회수하고, 한도를 넘기면 `FAILED`로 끝냅니다. 관리자가 실행을 누를 때도 만료된 `RUNNING`을 먼저 회수합니다 |
+| 큐에 쌓이기만 하는데 화면은 "설정됨" | 워커 생존 신호가 없어 **"설정이 있다"와 "실행할 사람이 있다"를 구분할 수 없었습니다** | `worker_heartbeats`에 매 회전 신호를 남기고, Console 배지가 `실행 가능`/`워커 없음`/`설정 필요`를 구분합니다 |
+| mcp-scan 결과가 아무것도 막지 못함 | 워커가 SARIF `level`만 봤는데, mcp-scan의 변환기는 `critical`과 `high`를 **둘 다 `error`로 접습니다**. 원래 등급은 `properties.severity`에 남습니다. 즉 CRITICAL이 구조적으로 나올 수 없었고 `MCP-SUPPLY-001`의 치명점 집계에 영원히 0을 기여했습니다 | `properties.severity`(자유 문자열, 영문·중문) → SARIF 표준 `security-severity`(수치) → `level` 순으로 읽습니다 |
+
+#### 감사가 도는 시점
+
+관리자가 누르는 것 말고도 구조가 정한 시점이 있습니다.
+
+| 시점 | 트리거 | 설정 | 왜 여기여야 하는가 |
+| --- | --- | --- | --- |
+| T1 격리 검증 통과 직후 | 자동 큐잉 | `MCP_SCAN_AUTO_ON_VALIDATED=1` | 승인을 **판단하기 전에** 증적이 있어야 합니다. 승인한 뒤에야 돌릴 수 있으면 감사는 근거가 아니라 사후 기록입니다 |
+| T2 승인 시도 | 게이트 | `MCP_SCAN_REQUIRED_FOR_APPROVAL=1` | 그 commit에 대한 `DONE` 감사가 없으면 `APPROVED`로 올리지 않습니다 |
+| T3 재감사 주기 | 자동 큐잉 | `MCP_SCAN_RESCAN_DAYS=30` | 심사한 코드와 지금 도는 코드는 시간이 지나면 갈라집니다. 승인에는 기한이 있는데 그 근거에는 없다면, 먼저 낡는 것은 승인이 아니라 근거입니다 |
+| T4 catalog drift | **미구현** | — | 계약이 바뀌면 코드 감사도 다시 해야 합니다. `scan_jobs.trigger`에 `drift` 값만 예약해 두었습니다 |
+
+#### 감사 대상
+
+`target_kind`는 둘입니다.
+
+| 대상 | 무엇 | 차단 연결 |
+| --- | --- | --- |
+| `intake` | 도입 요청의 고정 commit | **연결 안 됨.** `source_ref`가 `intake:<owner>/<repo>@<commit>`이라 Registry 어느 서버에도 귀속되지 않습니다 |
+| `server` | Registry에 등록된 서버의 승인 `source_ref` | **연결됨.** 그 서버의 `source_ref`로 귀속되므로 `CRITICAL > 0`이면 `MCP-SUPPLY-001`로 실제 호출이 막힙니다 |
+
+v1.4까지는 `intake`만 가능했습니다. 이미 호출되고 있는 서버를 감사 대상에서 빼두면 "심사한 코드"와 "지금 도는 코드"가 갈라져도 확인할 방법이 없습니다. `source_url`이 `https://github.com/`로 시작하지 않는 서버(`mock-http`의 `local://`, 원격 전용 서버)는 국소 감사 대상이 아니며 실행 API가 409로 그 사실을 말합니다. 조용히 큐에 넣으면 실패만 반복합니다.
+
+배선 확인용 stub(`llm-stub`)으로 돌린 결과는 **어떤 경우에도 치명점 집계에 들어가지 않습니다.** 배선 확인이 통제처럼 보이기 시작하면 그 순간부터 통제가 아니라 착시입니다.
+
+#### 설정과 화면
+
+`full_stack_lab/.env`에 세 값을 넣고 `./console.sh up`을 다시 실행하면 Console의 `AI 코드 감사` 화면이 "실행 가능"으로 바뀝니다. 로컬 모델을 쓸 수 있습니다.
 
 ```dotenv
 MCP_SCAN_BASE_URL=http://host.docker.internal:11434/v1
-MCP_SCAN_MODEL=qwen2.5-coder
+MCP_SCAN_MODEL=qwen3:8b
 MCP_SCAN_API_KEY=local
 ```
 
-화면에서 할 수 있는 것은 셋입니다.
+화면에서 할 수 있는 것은 다섯입니다.
 
-1. **연결 확인**: endpoint가 실제로 OpenAI 호환 API를 말하는지만 봅니다. "돌려보니 발견 0건"과 "엔드포인트가 죽어 있었다"를 구분하지 못하면 감사 결과를 믿을 수 없어서 따로 뒀습니다.
-2. **감사 실행**: 격리 검증을 통과해 commit이 고정된 요청을 고르면 워커가 **그 커밋을 다시 복제해** `aig-mcp-scan`을 돌립니다. 재검사가 "그때 검증한 코드"가 아니라 "지금의 기본 브랜치"를 보면 두 결과를 나란히 둘 수 없습니다.
-3. **결과 확인**: SARIF 2.1.0 결과를 심각도별로 보여주고, 같은 `source_ref`로 `위험 분석` 화면에도 합류합니다.
+1. **연결 확인**: endpoint가 실제로 OpenAI 호환 API를 말하는지, 그리고 **워커가 살아 있는지**를 함께 봅니다. "돌려보니 발견 0건"과 "엔드포인트가 죽어 있었다"와 "워커가 없었다"는 서로 다른 사실입니다.
+2. **도입 요청 감사**: 격리 검증을 통과해 commit이 고정된 요청을 고르면 워커가 **그 커밋을 다시 복제해** 실행합니다. 마지막 감사가 지금 commit과 다른 코드에 대한 것이면 화면이 그렇게 말합니다.
+3. **등록 서버 재감사**: 승인된 `source_ref`로 다시 복제해 실행합니다.
+4. **취소·재시도**: 대기 중인 작업은 즉시 취소되고, 실행 중인 작업은 취소 표시 후 현재 회차가 끝나면 반영됩니다. 실패·취소된 작업은 다시 큐에 넣을 수 있습니다.
+5. **결과 확인**: SARIF 2.1.0 결과를 심각도별로 보여주고, 같은 `source_ref`로 `위험 분석` 화면에도 합류합니다.
 
-결과에는 **어떤 모델이 어느 endpoint로 판단했는지**와 mcp-scan 자신이 붙인 `scanNote`가 항상 함께 남습니다. 모델을 모르는 보안 결과는 증적이 아닙니다.
-
-LLM 없이 배선만 확인하려면 profile로만 뜨는 stub을 씁니다. stub은 취약점을 찾지 않으며, 이 stub으로 만든 결과는 목록에서 **"배선 확인용 stub으로 실행한 결과입니다"**로 표시되어 발견 0건이 안전으로 읽히지 않습니다.
+결과에는 **어떤 모델이 어느 endpoint로 판단했는지**, **무엇이 이 작업을 만들었는지**(`trigger`), **이 결과가 차단에 연결되는지**(`blocks_calls`)가 항상 함께 남습니다. 모델을 모르는 보안 결과는 증적이 아닙니다.
 
 ```bash
 docker compose --profile llm-stub up -d llm-stub
@@ -572,6 +662,7 @@ curl -sS http://localhost:8080/api/audit/verify -H "authorization: Bearer $GW_TO
 | --- | --- |
 | `compose.yaml` | 네트워크·서비스·scanner profile |
 | `console.sh` | `up/test/agent-test/scan/status/logs/down/reset` 단일 진입점 |
+| [`NETWORK.md`](NETWORK.md) | 망 경계 설계와 Tailscale 적용 기준. `BIND_ADDR`의 의미와 금지 값 |
 | `gateway/app/core.py` | 계약 확인, Rego 질의, 승인, upstream 실행, 증적 |
 | `gateway/app/agent_service.py` | 합성 로그인, 세션, 요청 멱등성, 모델 제안 경로 |
 | `gateway/app/agent_gateway.py` | 서명 사용자와 Tool Call envelope를 기존 정책 경로에 연결 |
@@ -622,7 +713,7 @@ Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance
 
 ## 13. 의도적으로 남긴 경계
 
-- 역할은 `partner`(협력업체 직원)·`employee`·`admin` 셋이고 볼 수 있는 화면과 응답 데이터가 다릅니다. 다만 역할 매핑은 합성 IdP의 고정 목록이며, 실제 사용자 SSO/OIDC와 RBAC 관리 화면, 실제 GitHub 토큰 위임은 미구현입니다. 합성 JWT와 Agent Assertion은 Ed25519로 서명하고 Agent Service만 개인키를 갖지만, assertion은 workload attestation이 아니며 키 회전·폐기 절차·JWKS 배포·SPIFFE SVID는 아직 없습니다.
+- 역할은 `partner`(협력업체 직원)·`employee`·`admin` 셋이고 볼 수 있는 화면과 응답 데이터가 다릅니다. 역할·계정 상태·비밀번호 해시는 v1.5부터 Python 상수가 아니라 PostgreSQL `principals` 관리대장에 있고 매 요청마다 확인됩니다(계정을 끄는 일이 배포가 되면 아무도 제때 끄지 않습니다). 다만 실제 사용자 SSO/OIDC와 RBAC 관리 화면, 실제 GitHub 토큰 위임은 여전히 미구현입니다. 합성 JWT와 Agent Assertion은 Ed25519로 서명하고 Agent Service만 개인키를 갖지만, assertion은 workload attestation이 아니며 키 회전·폐기 절차·JWKS 배포·SPIFFE SVID는 아직 없습니다.
 - Gateway의 읽기 API는 인증 없이 열려 있습니다: `/api/health`, `/api/state`, `/api/effects`, `/api/policy/matrix`, `/api/policy/ledger`, `/api/integration`, `/api/monitor/summary`, `/api/enforcement`, `/api/supply-chain/coverage`. 상태를 바꾸는 API는 모두 서명된 토큰을 요구하고 승인·거부·집행 전환·공급망 가져오기·감사 검증은 관리자까지 확인하지만, 증적 조회는 `127.0.0.1` 바인딩에만 의존합니다. 이 목록은 `tests/open_endpoints.py`가 코드와 대조합니다. **결정:** 운영에서는 새 로컬 토큰을 덧붙이지 않고, 조직 OIDC를 연결한 reverse proxy에서 이 읽기 경로도 보호합니다.
 - 호출량 상한(`P-RATE-001`)과 중요정보 누적 승격(`P-VOLUME-001`)은 감사 테이블 기준이라 Gateway 복제본이 늘어도 유지되지만, 비용·토큰 쿼터는 없습니다. Agent Service의 동시 실행 제한과 로그인 시도 상한은 프로세스 단위라 복제본이 늘면 함께 늘어납니다. **결정:** 현재 배포 단위는 Gateway 1개입니다. 다중 복제본은 Postgres 감사 체인의 전역 잠금이 정확성은 지키지만 처리량을 직렬화하므로, ingress 공용 rate limit·OIDC·SIEM을 함께 설계한 뒤 별도 부하 시험으로 전환합니다.
 - 실제 상용 LLM API는 호출하지 않았습니다. 기본 자연어 변환은 규칙 기반 키워드 변환이고, OpenAI 호환 HTTP 경계는 로컬 stub으로만 검증했습니다.
@@ -633,6 +724,9 @@ Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance
 - 운영용 HA, TLS 종료, 비밀관리, SIEM 알림, 조직 전체 egress 강제는 별도 운영 설계가 필요합니다. **결정:** 현재 증적 정본은 PostgreSQL 감사 체인과 OpenTelemetry trace이며, 보존 기간·수신 인증·민감정보 마스킹 요구가 확정되기 전 외부 SIEM으로 원문을 내보내지는 않습니다.
 - AI 코드 감사는 외부 LLM에 **저장소 코드를 보냅니다.** 어떤 endpoint를 쓸지는 조직의 결정이고, 사내 정책상 코드 반출이 불가하면 로컬 모델만 연결해야 합니다. 현재 구현은 endpoint를 검증하지 않고 설정한 곳으로 보냅니다.
 - mcp-scan의 동적 스캔(`--server_url`)은 연결하지 않았습니다. 실행 중인 MCP 서버에 붙는 검사라 도입 심사 단계의 격리 원칙과 맞지 않습니다.
+- AI 코드 감사의 T4(catalog drift 감지 시 재감사)는 미구현입니다. `scan_jobs.trigger`에 값만 예약해 두었습니다.
+- 감사 작업의 lease 회수는 시각 기반입니다. 워커가 살아 있는데 시계가 크게 어긋나면 진행 중인 작업이 회수될 수 있습니다. **결정:** 배포 단위가 워커 1개이고 lease가 스캔 상한보다 5분 길어 현재 구성에서는 발생하지 않습니다. 다중 워커로 갈 때 advisory lock으로 바꿉니다.
+- 망 경계는 `127.0.0.1` 바인딩과 "upstream MCP에 host port 없음" 두 가지에만 의존합니다. 여러 호스트로 나누거나 원격에서 보려면 [NETWORK.md](NETWORK.md)의 tailnet 설계가 선행되어야 하고, 그 대부분은 아직 미구현입니다.
 - 도입 요청 격리 검증은 **정적 분석까지만** 합니다. 저장소 코드를 실행하지 않으므로 런타임에만 드러나는 행위는 보지 못합니다. 워커는 GitHub HTTPS와 Trivy DB로 나가는 egress가 필요하고, 체크아웃은 512MB로 제한합니다.
 - 자동 판정은 `Critical > 0 → REJECTED`와 `실패 → FAILED`뿐입니다. **자동으로 승인하지는 않습니다.** `VALIDATED`를 `APPROVED`로 올리는 것은 사람의 결정이고, `APPROVED`도 Registry 등록 대상 확정까지입니다. endpoint와 catalog 해시를 고정하는 활성화 단계는 별도입니다.
 - 검증 증적 파일은 워커 전용 named volume(`intake_reports`)에 있습니다. 요약은 DB와 Console에 있지만 파일 다운로드 경로는 아직 없습니다.

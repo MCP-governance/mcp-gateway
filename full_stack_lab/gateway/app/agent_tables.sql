@@ -194,3 +194,98 @@ CREATE TABLE IF NOT EXISTS scan_jobs (
 );
 CREATE INDEX IF NOT EXISTS scan_jobs_status_idx ON scan_jobs(status, created_at);
 CREATE INDEX IF NOT EXISTS scan_jobs_target_idx ON scan_jobs(target_id, created_at DESC);
+
+-- ── AI 코드 감사 실행 구조 (v1.5) ──────────────────────────────────────────
+-- 이전 판의 mcp-scan은 "관리자가 버튼을 누르면 QUEUED 한 줄을 넣는다"가 전부였다.
+-- 그래서 세 가지가 동시에 깨져 있었다.
+--
+--  1) 워커가 RUNNING 중에 죽으면 그 행은 영원히 RUNNING으로 남고, 재실행 API는
+--     QUEUED·RUNNING이면 409로 막으므로 그 대상은 다시는 감사할 수 없었다.
+--  2) 워커가 아예 떠 있지 않아도 Console은 "설정됨"만 보여줬다. 큐에 쌓이는 것과
+--     실행되는 것을 화면에서 구분할 수 없었다.
+--  3) 대상이 도입 요청뿐이라, 이미 Registry에 올라가 실제로 호출되는 서버는
+--     감사 대상이 될 수 없었다. 심사받은 코드와 운영 중인 코드가 갈라진다.
+--
+-- lease는 "이 작업을 이 시각까지 들고 있겠다"는 선언이다. 만료되면 다른 워커가
+-- 회수한다. 작업이 실패해도 대기열에 조용히 남지 않는 것이 이 설계의 목적이다.
+-- uuid -> text. 이미 text면 건드리지 않는다. 조건 없이 쓰면 매 기동마다 테이블을
+-- 다시 쓴다.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name='scan_jobs' AND column_name='target_id' AND data_type='uuid') THEN
+    ALTER TABLE scan_jobs ALTER COLUMN target_id TYPE text USING target_id::text;
+  END IF;
+END $$;
+ALTER TABLE scan_jobs DROP CONSTRAINT IF EXISTS scan_jobs_target_kind_check;
+ALTER TABLE scan_jobs ADD CONSTRAINT scan_jobs_target_kind_check
+  CHECK (target_kind IN ('intake', 'server'));
+ALTER TABLE scan_jobs DROP CONSTRAINT IF EXISTS scan_jobs_status_check;
+ALTER TABLE scan_jobs ADD CONSTRAINT scan_jobs_status_check
+  CHECK (status IN ('QUEUED', 'RUNNING', 'DONE', 'FAILED', 'CANCELLED'));
+
+-- 어떤 시점이 이 작업을 만들었는지 남긴다. "관리자가 기억나서 눌렀다"와
+-- "검증 통과가 자동으로 걸었다"는 증적으로서 값이 다르다.
+ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS trigger text NOT NULL DEFAULT 'manual';
+ALTER TABLE scan_jobs DROP CONSTRAINT IF EXISTS scan_jobs_trigger_check;
+ALTER TABLE scan_jobs ADD CONSTRAINT scan_jobs_trigger_check
+  CHECK (trigger IN ('manual', 'validated', 'rescan', 'drift'));
+ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS commit_sha text;
+ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS repository_url text;
+ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS source_ref text;
+ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS attempts integer NOT NULL DEFAULT 0;
+ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS lease_expires_at timestamptz;
+ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS cancel_requested boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS scan_jobs_lease_idx ON scan_jobs(status, lease_expires_at);
+
+-- 같은 대상에 대해 살아 있는 작업은 하나뿐이다. 이전에는 애플리케이션 조회 한
+-- 번으로만 막았으므로 동시에 두 번 누르면 두 개가 들어갔다.
+-- 이전 판이 남긴 중복 대기 행이 있으면 인덱스 생성이 실패하고, 그러면 이 파일을
+-- 실행하는 서비스가 뜨지 않는다. 마이그레이션이 기동을 막는 것이 가장 나쁘다.
+-- 같은 대상의 오래된 대기 행을 먼저 정리하고 만든다.
+UPDATE scan_jobs old SET status='CANCELLED', finished_at=now(),
+       error=COALESCE(old.error,'') || ' · 같은 대상의 최신 작업만 남깁니다.'
+ WHERE old.status IN ('QUEUED','RUNNING')
+   AND EXISTS (SELECT 1 FROM scan_jobs newer
+               WHERE newer.target_kind=old.target_kind AND newer.target_id=old.target_id
+                 AND newer.status IN ('QUEUED','RUNNING') AND newer.created_at > old.created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS scan_jobs_one_live_per_target
+  ON scan_jobs(target_kind, target_id) WHERE status IN ('QUEUED', 'RUNNING');
+
+-- 워커 생존 신호. "설정이 있다"와 "실행할 사람이 있다"는 다른 질문이고,
+-- 둘을 구분하지 못하면 큐에 쌓인 작업을 진행 중으로 읽게 된다.
+CREATE TABLE IF NOT EXISTS worker_heartbeats (
+  worker text PRIMARY KEY,
+  role text NOT NULL,
+  seen_at timestamptz NOT NULL DEFAULT now(),
+  detail jsonb NOT NULL DEFAULT '{}'
+);
+
+-- ── 신원 관리대장 이관 (v1.5) ────────────────────────────────────────────────
+-- 이미 만들어진 DB에도 같은 모양을 적용한다. db/init.sql은 최초 생성 때만 돌고,
+-- 이 파일은 gateway와 agent-service가 뜰 때마다 돈다.
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+ALTER TABLE principals ADD COLUMN IF NOT EXISTS user_id text;
+ALTER TABLE principals ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE principals ADD COLUMN IF NOT EXISTS employee_no text;
+ALTER TABLE principals ADD COLUMN IF NOT EXISTS job_title text;
+ALTER TABLE principals ADD COLUMN IF NOT EXISTS password_hash text;
+ALTER TABLE principals ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
+ALTER TABLE principals ADD COLUMN IF NOT EXISTS status_changed_by text;
+ALTER TABLE principals ADD COLUMN IF NOT EXISTS status_changed_at timestamptz;
+ALTER TABLE principals DROP CONSTRAINT IF EXISTS principals_status_check;
+ALTER TABLE principals ADD CONSTRAINT principals_status_check
+  CHECK (status IN ('active', 'disabled', 'locked'));
+CREATE UNIQUE INDEX IF NOT EXISTS principals_user_id_key ON principals(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS principals_email_key ON principals(email);
+CREATE INDEX IF NOT EXISTS principals_email_idx ON principals(lower(email));
+
+UPDATE principals SET user_id='user-partner-001', email='partner@bob.local',
+       employee_no=COALESCE(employee_no,'EXT-001'), job_title=COALESCE(job_title,'협력업체 담당')
+ WHERE token='partner-demo' AND user_id IS NULL;
+UPDATE principals SET user_id='user-test-001', email='miso@bob.local',
+       employee_no=COALESCE(employee_no,'EMP-001'), job_title=COALESCE(job_title,'보안기술팀 사원')
+ WHERE token='emp-demo' AND user_id IS NULL;
+UPDATE principals SET user_id='user-admin-001', email='admin@bob.local',
+       employee_no=COALESCE(employee_no,'EMP-002'), job_title=COALESCE(job_title,'거버넌스팀 관리자')
+ WHERE token='admin-demo' AND user_id IS NULL;

@@ -6,7 +6,7 @@ cd "$LAB_DIR"
 
 # This script deliberately tampers with the upstream catalog and stops OPA. Without
 # a restore on exit, a failure in the middle leaves the demo blocking every call and
-# the next `./demo.sh` looks broken for reasons unrelated to the change under test.
+# the next `./console.sh` looks broken for reasons unrelated to the change under test.
 restore() {
   status=$?
   echo "[cleanup] restore approved contract and policy engine"

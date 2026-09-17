@@ -4,7 +4,6 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import secrets
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -22,8 +21,8 @@ from pydantic import Field
 from psycopg.types.json import Jsonb
 
 from . import db
-from .agent_contract import (Envelope, IDENTITIES, StrictModel, authenticate, authenticated_user,
-                             issue_agent_assertion, issue_token, private_key)
+from .agent_contract import (ACCOUNT_STATUS_REASON, Envelope, StrictModel, authenticate,
+                             authenticated_user, issue_agent_assertion, issue_token, private_key)
 from .core import canonical_hash
 from .model_client import propose, readiness, redact
 
@@ -54,11 +53,25 @@ def record_failed_login(key: str) -> None:
     _login_attempts[key].append(time.monotonic())
 
 
+async def bootstrap_passwords() -> None:
+    """합성 계정의 초기 비밀번호를 한 번만 채운다.
+
+    해시를 SQL 파일에 박아두면 `.env`의 `MOCK_SSO_PASSWORD`로 바꿀 수 없고, 매
+    기동마다 덮어쓰면 관리대장이 아니라 환경변수가 정본이 된다. 그래서 비어 있는
+    계정만 채운다. 바꾸고 싶으면 `./console.sh reset`으로 다시 심는다.
+    """
+    await db.execute(
+        """UPDATE principals SET password_hash = crypt(%s, gen_salt('bf', 12))
+           WHERE password_hash IS NULL AND email IS NOT NULL""",
+        (os.getenv("MOCK_SSO_PASSWORD", "test-password"),))
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     private_key()  # fail fast if this process is not actually the token issuer
     await db.wait_until_ready()
     await db.execute((Path(__file__).parent / "agent_tables.sql").read_text())
+    await bootstrap_passwords()
     try:
         yield
     finally:
@@ -147,19 +160,37 @@ async def current_identity(authorization: str | None) -> dict:
 
 @app.post("/auth/mock-login")
 async def login(request: Login, http_request: Request):
+    """합성 로그인. 비밀번호 검증은 신원 관리대장의 사용자별 bcrypt 해시로 한다.
+
+    이전 판은 모든 계정이 같은 환경변수 하나(`MOCK_SSO_PASSWORD`)를 비밀번호로
+    썼다. 그러면 한 계정만 잠그거나 한 계정의 비밀번호만 바꾸는 일이 불가능하고,
+    "계정을 끈다"는 조치가 배포가 된다. 팀원 저장소 Agent-Service의 `miso` 브랜치가
+    쓰던 `crypt()` 검증 방식을 이 관리대장에 맞춰 가져왔다.
+    """
     email = request.email.strip().lower()
     # Checked before the identity lookup so an unknown address is throttled too;
     # otherwise the limit itself tells an attacker which addresses exist.
     caller = http_request.client.host if http_request.client else "unknown"
     if not login_allowed(f"{caller}|{email}"):
         raise HTTPException(429, "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.")
-    user = IDENTITIES.get(email)
-    expected = os.getenv("MOCK_SSO_PASSWORD", "test-password")
-    if not secrets.compare_digest(request.password.encode(), expected.encode()) or not user:
+    # 비밀번호 비교는 DB에서 한다. 애플리케이션으로 해시를 꺼내오면 "찾았지만 틀림"과
+    # "없음"이 코드 경로로 갈라져 응답 시간이 주소 존재 여부를 알려준다.
+    row = await db.fetch_one(
+        """SELECT token, user_id, email, display_name, role, department, job_title, status,
+                  (password_hash IS NOT NULL AND password_hash = crypt(%s, password_hash)) AS password_ok
+           FROM principals WHERE lower(email)=%s""",
+        (request.password, email))
+    if not row or not row["password_ok"]:
         record_failed_login(f"{caller}|{email}")
         raise HTTPException(401, "합성 계정과 비밀번호를 확인해주세요.")
+    if row["status"] != "active":
+        # 실패 한도를 소진시키지 않는다. 비밀번호는 맞았고 계정 상태가 문제다.
+        raise HTTPException(403, ACCOUNT_STATUS_REASON.get(row["status"], "사용할 수 없는 계정입니다."))
+    user = {"user_id": row["user_id"], "principal": row["token"], "name": row["display_name"],
+            "department": row["department"] or "미지정", "roles": [row["role"]], "email": row["email"]}
     return {"access_token": issue_token(user), "token_type": "bearer", "expires_in": 1800,
-            "user": {k: v for k, v in {**user, "email": email, "synthetic": True}.items() if k != "principal"}}
+            "user": {k: v for k, v in {**user, "job_title": row["job_title"], "synthetic": True}.items()
+                     if k != "principal"}}
 
 
 @app.get("/auth/me")
@@ -177,6 +208,49 @@ async def logout(authorization: str | None = Header(default=None)):
     # already rejected by the signature check.
     await db.execute("DELETE FROM agent_revoked_tokens WHERE expires_at < now()")
     return {"status": "logged_out"}
+
+
+class AccountStatus(StrictModel):
+    status: Literal["active", "disabled", "locked"]
+    note: str = Field(default="", max_length=300)
+
+
+@app.get("/api/accounts")
+async def list_accounts(authorization: str | None = Header(default=None)):
+    """신원 관리대장. 관리자만 본다. 비밀번호 해시는 응답에 넣지 않는다."""
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "신원 관리대장은 관리자만 볼 수 있습니다.")
+    return {"accounts": await db.fetch_all(
+        """SELECT token, user_id, email, display_name, role, department, employee_no, job_title,
+                  status, status_changed_by, status_changed_at,
+                  (password_hash IS NOT NULL) AS has_password
+           FROM principals ORDER BY role, email""")}
+
+
+@app.put("/api/accounts/{user_id}/status")
+async def set_account_status(user_id: str, request: AccountStatus,
+                             authorization: str | None = Header(default=None)):
+    """계정을 끄고 켜는 일이 배포가 되면 아무도 제때 끄지 않는다.
+
+    상태는 신원 관리대장에 있고 매 요청마다 확인되므로, 여기서 `disabled`로 바꾸면
+    이미 발급된 토큰도 다음 요청에서 막힌다. 토큰 만료를 기다리지 않는다.
+    """
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "계정 상태 변경은 관리자만 할 수 있습니다.")
+    if user["user_id"] == user_id and request.status != "active":
+        # 마지막 관리자가 스스로를 잠그면 되돌릴 사람이 남지 않는다.
+        raise HTTPException(409, "자기 계정은 스스로 중지하거나 잠글 수 없습니다.")
+    row = await db.fetch_one(
+        """UPDATE principals SET status=%s, status_changed_by=%s, status_changed_at=now()
+           WHERE user_id=%s
+           RETURNING token, user_id, email, display_name, role, status, status_changed_by, status_changed_at""",
+        (request.status, user["principal"], user_id))
+    if not row:
+        raise HTTPException(404, "관리대장에 없는 계정입니다.")
+    return {"account": row,
+            "message": f"{row['email']} 계정을 {request.status}로 바꿨습니다. 이미 발급된 인증도 다음 요청부터 적용됩니다."}
 
 
 @app.get("/health")
@@ -218,7 +292,7 @@ PAGES_BY_ROLE = {
     # 공급망 증적이 아니다.
     "partner": ("execution", "intake"),
     "employee": ("execution", "intake", "audit"),
-    "admin": ("overview", "intake", "verification", "risks", "mcpscan", "policy", "execution", "audit"),
+    "admin": ("overview", "intake", "verification", "risks", "mcpscan", "policy", "accounts", "execution", "audit"),
 }
 ROLE_LABELS = {"partner": "협력업체 직원", "employee": "직원", "admin": "관리자"}
 
@@ -235,6 +309,9 @@ def allowed_pages(user: dict) -> list[str]:
 def console_user(user: dict) -> dict:
     return {
         **{key: user[key] for key in ("name", "department", "roles", "email")},
+        # 신원 관리대장 화면이 "본인 계정"을 가려내려면 필요하다. 관리자가 자기
+        # 계정을 잠그는 버튼을 누를 수 있게 두면, 되돌릴 사람이 남지 않는다.
+        "user_id": user.get("user_id"),
         "role_label": ", ".join(ROLE_LABELS.get(role, role) for role in user["roles"]),
         "pages": allowed_pages(user),
     }
@@ -379,6 +456,20 @@ async def approve_mcp_request(request_id: UUID, authorization: str | None = Head
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "도입 승인은 관리자만 할 수 있습니다.")
+    # T2 · 승인 게이트. AI 코드 감사를 요구하도록 설정했다면, 승인 시점에 "지금
+    # 이 commit에 대한" 감사 결과가 있어야 한다. 감사가 승인 뒤에만 가능하면
+    # 그것은 승인의 근거가 아니라 승인 뒤의 기록이다.
+    if SCAN_REQUIRED_FOR_APPROVAL:
+        evidence = await db.fetch_one(
+            """SELECT j.id FROM scan_jobs j
+               JOIN mcp_intake_requests r ON r.id::text = j.target_id
+               WHERE j.target_kind='intake' AND r.id=%s
+                 AND j.status='DONE' AND j.commit_sha = r.commit_sha""",
+            (request_id,))
+        if not evidence:
+            raise HTTPException(
+                409, "이 commit에 대한 AI 코드 감사 결과가 없습니다. "
+                     "감사를 실행해 완료된 뒤에 승인할 수 있습니다.")
     row = await db.fetch_one(
         """UPDATE mcp_intake_requests
            SET status='APPROVED', reviewed_by=%s, reviewed_at=now(), updated_at=now()
@@ -451,6 +542,12 @@ MCP_SCAN_CONFIG = {
     "MCP_SCAN_MODEL": os.getenv("MCP_SCAN_MODEL", ""),
     "MCP_SCAN_API_KEY": os.getenv("MCP_SCAN_API_KEY", ""),
 }
+# 워커가 lease를 갱신하는 주기보다 넉넉하게 잡는다. 이 값을 넘도록 소식이 없으면
+# "큐에 넣었다"와 "누군가 실행한다"가 더는 같은 말이 아니다.
+WORKER_STALE_SECONDS = int(os.getenv("INTAKE_WORKER_STALE_SECONDS", "60"))
+# §11.4.1의 승인 유효기간과 같은 생각이다. 승인에 기한이 있는데 그 승인의 근거인
+# 감사에 기한이 없으면, 먼저 낡는 것은 승인이 아니라 근거다.
+SCAN_REQUIRED_FOR_APPROVAL = os.getenv("MCP_SCAN_REQUIRED_FOR_APPROVAL", "0") not in ("0", "false", "")
 
 
 def mcp_scan_status() -> dict:
@@ -461,27 +558,79 @@ def mcp_scan_status() -> dict:
         "base_url": MCP_SCAN_CONFIG["MCP_SCAN_BASE_URL"],
         "model": MCP_SCAN_CONFIG["MCP_SCAN_MODEL"],
         "pinned_commit": "036c39bd03b39ce4a811f7f125bc3b8f47e39b7c",
+        "required_for_approval": SCAN_REQUIRED_FOR_APPROVAL,
+    }
+
+
+async def scan_worker_status() -> dict:
+    """감사를 실제로 돌릴 주체가 살아 있는지.
+
+    설정이 채워져 있다는 것과 실행할 워커가 있다는 것은 다른 사실이다. 둘을
+    구분하지 못하면 큐에 쌓이기만 하는 상태가 화면에서 "진행 중"으로 읽힌다.
+    """
+    row = await db.fetch_one(
+        """SELECT worker, seen_at, detail,
+                  EXTRACT(EPOCH FROM (now() - seen_at))::int AS age_seconds
+           FROM worker_heartbeats WHERE role='intake' ORDER BY seen_at DESC LIMIT 1""")
+    queued = await db.fetch_one(
+        """SELECT count(*) FILTER (WHERE status='QUEUED') AS queued,
+                  count(*) FILTER (WHERE status='RUNNING') AS running,
+                  count(*) FILTER (WHERE status='RUNNING' AND lease_expires_at < now()) AS stale
+           FROM scan_jobs""")
+    alive = bool(row) and int(row["age_seconds"] or 0) <= WORKER_STALE_SECONDS
+    return {
+        "alive": alive,
+        "worker": row["worker"] if row else None,
+        "seen_at": row["seen_at"] if row else None,
+        "age_seconds": int(row["age_seconds"]) if row else None,
+        "detail": row["detail"] if row else {},
+        "queued": int(queued["queued"]) if queued else 0,
+        "running": int(queued["running"]) if queued else 0,
+        "stale": int(queued["stale"]) if queued else 0,
+        "stale_after_seconds": WORKER_STALE_SECONDS,
     }
 
 
 @app.get("/api/mcp-scan")
 async def mcp_scan_overview(authorization: str | None = Header(default=None)):
-    """AI 코드 감사 화면의 전부: 설정 상태, 작업 이력, 저장된 결과."""
+    """AI 코드 감사 화면의 전부: 설정과 워커 상태, 실행 가능한 대상, 작업, 결과."""
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "AI 코드 감사는 관리자만 볼 수 있습니다.")
-    jobs, reports, targets = await asyncio.gather(
-        db.fetch_all("""SELECT j.*, r.display_name, r.repository_url
-                        FROM scan_jobs j LEFT JOIN mcp_intake_requests r ON r.id = j.target_id
+    jobs, reports, intake_targets, server_targets, worker = await asyncio.gather(
+        db.fetch_all("""SELECT j.*, r.display_name, r.repository_url AS intake_repository_url
+                        FROM scan_jobs j
+                        LEFT JOIN mcp_intake_requests r
+                          ON j.target_kind='intake' AND r.id::text = j.target_id
                         ORDER BY j.created_at DESC LIMIT 30"""),
         db.fetch_all("""SELECT * FROM supply_chain_reports
                         WHERE scanner='AI-Infra-Guard mcp-scan' ORDER BY id DESC LIMIT 20"""),
-        db.fetch_all("""SELECT id, display_name, repository_url, commit_sha, status
-                        FROM mcp_intake_requests
-                        WHERE commit_sha IS NOT NULL AND status IN ('VALIDATED','APPROVED','REJECTED')
-                        ORDER BY created_at DESC LIMIT 30"""),
+        db.fetch_all("""SELECT r.id::text AS id, r.display_name, r.repository_url, r.commit_sha, r.status,
+                               j.status AS last_status, j.finished_at AS last_finished_at,
+                               j.commit_sha AS last_commit_sha
+                        FROM mcp_intake_requests r
+                        LEFT JOIN LATERAL (
+                            SELECT status, finished_at, commit_sha FROM scan_jobs
+                            WHERE target_kind='intake' AND target_id = r.id::text
+                            ORDER BY created_at DESC LIMIT 1) j ON true
+                        WHERE r.commit_sha IS NOT NULL
+                          AND r.status IN ('VALIDATED','APPROVED','REJECTED')
+                        ORDER BY r.created_at DESC LIMIT 30"""),
+        # 등록된 서버도 대상이다. 이미 호출되고 있는 코드를 감사 대상에서 빼두면
+        # "심사한 코드"와 "지금 도는 코드"가 갈라져도 아무도 모른다.
+        db.fetch_all("""SELECT s.id, s.display_name, s.source_url, s.source_ref, s.status,
+                               (s.source_url LIKE 'https://github.com/%%') AS scannable,
+                               j.status AS last_status, j.finished_at AS last_finished_at
+                        FROM mcp_servers s
+                        LEFT JOIN LATERAL (
+                            SELECT status, finished_at FROM scan_jobs
+                            WHERE target_kind='server' AND target_id = s.id
+                            ORDER BY created_at DESC LIMIT 1) j ON true
+                        ORDER BY s.id"""),
+        scan_worker_status(),
     )
-    return {"config": mcp_scan_status(), "jobs": jobs, "reports": reports, "targets": targets}
+    return {"config": mcp_scan_status(), "worker": worker, "jobs": jobs, "reports": reports,
+            "targets": intake_targets, "servers": server_targets}
 
 
 @app.post("/api/mcp-scan/connection-test")
@@ -507,14 +656,42 @@ async def mcp_scan_connection_test(authorization: str | None = Header(default=No
     except httpx.HTTPError as exc:
         raise HTTPException(502, f"endpoint에 연결하지 못했습니다: {type(exc).__name__}") from exc
     ok = response.status_code < 400
+    worker = await scan_worker_status()
     return {"ok": ok, "http_status": response.status_code, "base_url": status["base_url"],
-            "model": status["model"],
+            "model": status["model"], "worker_alive": worker["alive"],
             "message": "endpoint가 응답했습니다. 이것은 연결 확인이며 보안 판단이 아닙니다."
                        if ok else response.text[:200]}
 
 
 class ScanRequest(StrictModel):
-    intake_id: UUID
+    # 이전 판은 intake_id 하나만 받아 도입 요청만 감사할 수 있었다. 대상 종류를
+    # 받아야 등록된 서버의 재감사가 가능해진다.
+    target_kind: Literal["intake", "server"] = "intake"
+    target_id: str = Field(min_length=1, max_length=200)
+
+
+async def resolve_scan_target(target_kind: str, target_id: str) -> str:
+    """대상이 실제로 감사 가능한지 확인하고 표시 이름을 돌려준다."""
+    if target_kind == "intake":
+        try:
+            key = str(UUID(target_id))
+        except ValueError as exc:
+            raise HTTPException(422, "도입 요청 ID 형식이 아닙니다.") from exc
+        row = await db.fetch_one(
+            "SELECT display_name, commit_sha FROM mcp_intake_requests WHERE id=%s", (key,))
+        if not row:
+            raise HTTPException(404, "도입 요청을 찾을 수 없습니다.")
+        if not row["commit_sha"]:
+            raise HTTPException(409, "격리 검증을 먼저 통과해야 합니다. 고정된 commit이 없습니다.")
+        return row["display_name"]
+    row = await db.fetch_one(
+        "SELECT display_name, source_url FROM mcp_servers WHERE id=%s", (target_id,))
+    if not row:
+        raise HTTPException(404, "등록 서버를 찾을 수 없습니다.")
+    if not str(row["source_url"] or "").startswith("https://github.com/"):
+        raise HTTPException(409, "원격 전용 서버라 국소 코드 감사 대상이 아닙니다. "
+                                 "공급자의 증적으로 대신해야 합니다.")
+    return row["display_name"]
 
 
 @app.post("/api/mcp-scan/run")
@@ -525,23 +702,80 @@ async def run_mcp_scan_job(request: ScanRequest, authorization: str | None = Hea
     status = mcp_scan_status()
     if not status["configured"]:
         raise HTTPException(409, f"OpenAI 호환 endpoint 설정이 필요합니다: {', '.join(status['missing'])}")
-    target = await db.fetch_one(
-        "SELECT id, display_name, commit_sha FROM mcp_intake_requests WHERE id=%s", (request.intake_id,))
-    if not target:
-        raise HTTPException(404, "도입 요청을 찾을 수 없습니다.")
-    if not target["commit_sha"]:
-        raise HTTPException(409, "격리 검증을 먼저 통과해야 합니다. 고정된 commit이 없습니다.")
-    running = await db.fetch_one(
-        "SELECT id FROM scan_jobs WHERE target_id=%s AND status IN ('QUEUED','RUNNING')", (request.intake_id,))
-    if running:
-        raise HTTPException(409, "이 요청에 대한 감사가 이미 진행 중입니다.")
+    target_id = str(UUID(request.target_id)) if request.target_kind == "intake" else request.target_id
+    label = await resolve_scan_target(request.target_kind, target_id)
+
+    # lease가 만료된 RUNNING은 워커가 죽은 흔적이다. 여기서 먼저 회수하지 않으면
+    # 관리자는 "이미 진행 중입니다"라는 409만 영원히 보게 된다.
+    await db.execute(
+        """UPDATE scan_jobs SET status='QUEUED', lease_expires_at=NULL,
+                  error='워커 lease 만료로 관리자가 회수했습니다.'
+           WHERE target_kind=%s AND target_id=%s AND status='RUNNING'
+             AND (lease_expires_at IS NULL OR lease_expires_at < now())""",
+        (request.target_kind, target_id))
+    live = await db.fetch_one(
+        """SELECT id, status, lease_expires_at FROM scan_jobs
+           WHERE target_kind=%s AND target_id=%s AND status IN ('QUEUED','RUNNING')""",
+        (request.target_kind, target_id))
+    if live:
+        raise HTTPException(409, f"이 대상의 감사가 이미 {live['status']} 상태입니다. "
+                                 "취소한 뒤 다시 실행하세요.")
+
+    worker = await scan_worker_status()
     job_id = uuid4()
     await db.execute(
-        """INSERT INTO scan_jobs(id, kind, target_kind, target_id, target_label, requested_by)
-           VALUES (%s,'mcp-scan','intake',%s,%s,%s)""",
-        (job_id, request.intake_id, target["display_name"], user["principal"]),
+        """INSERT INTO scan_jobs(id, kind, target_kind, target_id, target_label, requested_by, trigger)
+           VALUES (%s,'mcp-scan',%s,%s,%s,%s,'manual')""",
+        (job_id, request.target_kind, target_id, label, user["principal"]),
     )
-    return {"job_id": str(job_id), "message": "AI 코드 감사를 큐에 넣었습니다. 고정된 commit을 다시 복제해 실행합니다."}
+    message = "AI 코드 감사를 큐에 넣었습니다. 고정된 commit을 다시 복제해 실행합니다."
+    if not worker["alive"]:
+        message += " 다만 격리 워커의 생존 신호가 없습니다. 워커가 뜨기 전에는 실행되지 않습니다."
+    return {"job_id": str(job_id), "worker_alive": worker["alive"], "message": message}
+
+
+@app.post("/api/mcp-scan/jobs/{job_id}/cancel")
+async def cancel_mcp_scan_job(job_id: UUID, authorization: str | None = Header(default=None)):
+    """잘못 건 감사를 되돌릴 방법이 재시작밖에 없으면 그건 실행 통제가 아니다."""
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "AI 코드 감사 취소는 관리자만 할 수 있습니다.")
+    row = await db.fetch_one(
+        """UPDATE scan_jobs
+           SET cancel_requested=true,
+               status = CASE WHEN status='QUEUED' THEN 'CANCELLED' ELSE status END,
+               finished_at = CASE WHEN status='QUEUED' THEN now() ELSE finished_at END,
+               error = COALESCE(error, '') || %s
+           WHERE id=%s AND status IN ('QUEUED','RUNNING')
+           RETURNING id, status""",
+        (f" · {user['principal']}가 취소를 요청했습니다.", job_id))
+    if not row:
+        raise HTTPException(409, "대기 또는 실행 중인 작업만 취소할 수 있습니다.")
+    return {"job": row, "message": "취소했습니다." if row["status"] == "CANCELLED"
+            else "실행 중인 작업에 취소를 표시했습니다. 현재 회차가 끝나면 반영됩니다."}
+
+
+@app.post("/api/mcp-scan/jobs/{job_id}/retry")
+async def retry_mcp_scan_job(job_id: UUID, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "AI 코드 감사 재시도는 관리자만 할 수 있습니다.")
+    job = await db.fetch_one("SELECT target_kind, target_id FROM scan_jobs WHERE id=%s", (job_id,))
+    if not job:
+        raise HTTPException(404, "작업을 찾을 수 없습니다.")
+    live = await db.fetch_one(
+        """SELECT id FROM scan_jobs WHERE target_kind=%s AND target_id=%s
+           AND status IN ('QUEUED','RUNNING')""", (job["target_kind"], job["target_id"]))
+    if live:
+        raise HTTPException(409, "이 대상의 감사가 이미 대기 또는 실행 중입니다.")
+    row = await db.fetch_one(
+        """UPDATE scan_jobs SET status='QUEUED', attempts=0, cancel_requested=false,
+                  error=NULL, finished_at=NULL, lease_expires_at=NULL
+           WHERE id=%s AND status IN ('FAILED','CANCELLED')
+           RETURNING id, status""", (job_id,))
+    if not row:
+        raise HTTPException(409, "실패했거나 취소된 작업만 다시 돌릴 수 있습니다.")
+    return {"job": row, "message": "대기열에 다시 넣었습니다."}
 
 
 @app.get("/api/stream/decisions")

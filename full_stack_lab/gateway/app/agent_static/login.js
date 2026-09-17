@@ -1,3 +1,10 @@
+// 콘솔에서 고른 테마가 로그인 화면에도 이어져야 한다. 로그인할 때만 밝아지면
+// 매번 눈이 한 번 튄다.
+try {
+  const stored = localStorage.getItem("bob_console_theme");
+  if (stored === "light" || stored === "dark") document.documentElement.dataset.theme = stored;
+} catch { /* 저장소를 못 읽어도 시스템 설정으로 동작한다 */ }
+
 const TOKEN_KEY = "bob_mock_sso_token";
 
 const form = document.querySelector("#login-form");
