@@ -702,7 +702,15 @@ async def run_mcp_scan_job(request: ScanRequest, authorization: str | None = Hea
     status = mcp_scan_status()
     if not status["configured"]:
         raise HTTPException(409, f"OpenAI 호환 endpoint 설정이 필요합니다: {', '.join(status['missing'])}")
-    target_id = str(UUID(request.target_id)) if request.target_kind == "intake" else request.target_id
+    # 형식 오류는 500이 아니라 422다. resolve_scan_target이 같은 검사를 하지만
+    # 여기서 정규화한 값이 아래의 조회·삽입에 그대로 쓰이므로 먼저 거른다.
+    if request.target_kind == "intake":
+        try:
+            target_id = str(UUID(request.target_id))
+        except ValueError as exc:
+            raise HTTPException(422, "도입 요청 ID 형식이 아닙니다.") from exc
+    else:
+        target_id = request.target_id
     label = await resolve_scan_target(request.target_kind, target_id)
 
     # lease가 만료된 RUNNING은 워커가 죽은 흔적이다. 여기서 먼저 회수하지 않으면

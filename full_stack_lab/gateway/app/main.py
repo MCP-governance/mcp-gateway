@@ -248,6 +248,15 @@ async def session(request: SessionRequest) -> dict:
         raise HTTPException(503, "합성 인증 서비스에 연결할 수 없습니다.") from exc
     if response.status_code == 429:
         raise HTTPException(429, "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.")
+    if response.status_code == 403:
+        # 계정 상태 때문에 막힌 것을 "비밀번호를 확인하세요"로 접으면, 계정을 끈
+        # 관리자조차 자기 조치가 먹혔는지 알 수 없다.
+        detail = "사용할 수 없는 계정입니다."
+        try:
+            detail = response.json().get("detail") or detail
+        except ValueError:
+            pass
+        raise HTTPException(403, detail)
     if response.status_code != 200:
         raise HTTPException(401, "합성 계정과 비밀번호를 확인하세요.")
     return response.json()

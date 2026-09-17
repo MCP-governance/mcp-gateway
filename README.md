@@ -19,7 +19,7 @@ cd mcp-gateway/full_stack_lab
 - 전체 검증: `./console.sh test`
 - 공급망 증적 생성: `./console.sh scan`
 
-현재 기준의 성공 조건은 **Rego 54/54**, core acceptance `0 failed`, Agent/API acceptance `0 failed`입니다. 같은 명령을 [`.github/workflows/verify.yml`](.github/workflows/verify.yml)이 `main`과 모든 `feat/**` 푸시, `main`으로 가는 PR마다 실행합니다.
+현재 기준의 성공 조건은 **Rego 54/54**, core acceptance **64/0**, Agent/API acceptance **97/0**입니다(`passed/failed`). 같은 명령을 [`.github/workflows/verify.yml`](.github/workflows/verify.yml)이 `main`과 모든 `feat/**` 푸시, `main`으로 가는 PR마다 실행합니다.
 
 ## 통제 흐름
 
