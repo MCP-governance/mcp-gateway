@@ -15,6 +15,10 @@
   --surface: #ffffff;  /* 카드 */
   --sunken: #f1f2f5;   /* 카드 안의 눌린 영역 */
   --overlay: rgba(20, 22, 26, 0.06);
+  /* --ink이나 판정 색을 배경으로 쓸 때 그 위에 얹는 글자색. 이 두 토큰이 없으면
+     다크 테마에서 --ink이 밝아지는 순간 흰 배경에 흰 글씨가 된다. */
+  --on-ink: #ffffff;
+  --on-accent: #ffffff;
 
   --allow: #1a7f4b;
   --alert: #9a6100;
@@ -55,6 +59,8 @@
     --surface: #171a1f;
     --sunken: #1d2127;
     --overlay: rgba(255, 255, 255, .06);
+  --on-ink: #101215;
+  --on-accent: #101215;
     --allow: #4ec07f;
     --alert: #e0a44a;
     --approval: #9a8ef0;
@@ -79,6 +85,8 @@
   --surface: #171a1f;
   --sunken: #1d2127;
   --overlay: rgba(255, 255, 255, .06);
+  --on-ink: #101215;
+  --on-accent: #101215;
   --allow: #4ec07f;
   --alert: #e0a44a;
   --approval: #9a8ef0;
@@ -170,9 +178,9 @@ button { cursor: pointer; }
 }
 .solid-button {
   min-height: 46px; padding: 0 24px; border: 0;
-  background: var(--ink); color: #fff; font-size: 13px;
+  background: var(--ink); color: var(--on-ink); font-size: 13px;
 }
-.solid-button:hover { filter: brightness(1.35); }
+.solid-button:hover { opacity: .85; }
 .solid-button[disabled], .ghost-button[disabled], .mini-button[disabled] { opacity: .45; cursor: not-allowed; }
 .ghost-button {
   min-height: 38px; padding: 0 18px;
@@ -183,9 +191,9 @@ button { cursor: pointer; }
   min-height: 32px; padding: 0 14px;
   border: 1px solid var(--ink); background: var(--surface); font-size: 12px;
 }
-.mini-button:hover { background: var(--ink); color: #fff; }
+.mini-button:hover { background: var(--ink); color: var(--on-ink); }
 .mini-button.danger { border-color: var(--block); color: var(--block); }
-.mini-button.danger:hover { background: var(--block); color: #fff; }
+.mini-button.danger:hover { background: var(--block); color: var(--on-accent); }
 .text-action { border: 0; background: none; font-size: 12px; font-weight: 700; text-decoration: underline; }
 .button-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
 
@@ -195,7 +203,7 @@ button { cursor: pointer; }
   padding: 7px 14px; font-size: 12px; font-weight: 600; color: var(--ink-2);
 }
 .chip:hover { border-color: var(--ink); color: var(--ink); }
-.chip.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+.chip.active { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
 
 /* ── metrics ────────────────────────────────────────────── */
 .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px; }
@@ -429,7 +437,7 @@ tbody tr.fresh td:first-child { box-shadow: inset 2px 0 var(--ink); }
 .config-body dl { margin-top: 0; }
 .config-body p { font-size: 13px; line-height: 1.7; color: var(--ink-2); }
 .code-block {
-  margin: 12px 0; padding: 14px 16px; background: var(--ink); color: #fff;
+  margin: 12px 0; padding: 14px 16px; background: var(--ink); color: var(--on-ink);
   font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; font-size: 12px; overflow: auto;
 }
 code { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; font-size: 0.92em; }
@@ -481,8 +489,8 @@ code { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; font-si
   font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums;
   background: var(--ink-3); color: var(--surface);
 }
-.nav-badge.warn { background: var(--alert); color: #fff; }
-.nav-badge.bad { background: var(--block); color: #fff; }
+.nav-badge.warn { background: var(--alert); color: var(--on-accent); }
+.nav-badge.bad { background: var(--block); color: var(--on-accent); }
 
 /* 판정을 색으로만 구분하지 않는다 */
 .decision::before, .sev::before { margin-right: 5px; font-weight: 800; }
