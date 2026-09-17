@@ -411,12 +411,17 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
         repository_url = github_repository_url(request.repository_url)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
+    # 거부(REJECTED)는 사람의 판단이고 실패(FAILED)는 검증이 끝나지 못한 오류다.
+    # 둘을 같이 막으면, 스캐너 장애 한 번이 그 저장소를 영구히 신청 불가로 만든다.
+    # 실제로 워커의 semgrep이 깨져 있던 동안 들어온 요청이 전부 그렇게 됐다.
+    # 실패한 시도의 행과 사유는 그대로 남으므로 증적이 사라지지는 않는다.
     existing = await db.fetch_one(
-        "SELECT id FROM mcp_intake_requests WHERE repository_url=%s AND status<>%s",
-        (repository_url, "REJECTED"),
+        "SELECT id, status FROM mcp_intake_requests"
+        " WHERE repository_url=%s AND status NOT IN ('REJECTED', 'FAILED')",
+        (repository_url,),
     )
     if existing:
-        raise HTTPException(409, "같은 저장소가 이미 검토 대기 또는 검증 중입니다.")
+        raise HTTPException(409, f"같은 저장소가 이미 {existing['status']} 상태로 등록돼 있습니다.")
     row = await db.fetch_one(
         """INSERT INTO mcp_intake_requests(
                  id, submitted_by, display_name, repository_url, requested_transport, purpose

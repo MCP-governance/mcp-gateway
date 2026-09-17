@@ -230,6 +230,22 @@ async def main():
             check("intake-admin-only-queue", (await client.post(AGENT + f"/api/mcp-requests/{intake_id}/queue-validation", headers=users["employee"], json={})).status_code == 403)
             queued = await client.post(AGENT + f"/api/mcp-requests/{intake_id}/queue-validation", headers=users["admin"], json={})
             check("intake-validation-queue", queued.status_code == 200 and queued.json()["request"]["status"] == "VALIDATION_QUEUED")
+            # 검증 중인 저장소는 다시 신청할 수 없다.
+            dup = await client.post(AGENT + "/api/mcp-requests", headers=users["employee"], json={
+                "display_name": intake_name + " dup", "repository_url": "https://github.com/MCP-governance/mcp-gateway",
+                "requested_transport": "streamable-http", "purpose": "중복 제출이 막히는지 확인하는 요청입니다.",
+            })
+            check("intake-duplicate-blocked", dup.status_code == 409, dup.text[:120])
+            # 다만 FAILED는 사람의 판단이 아니라 검증이 끝나지 못한 오류다. 스캐너
+            # 장애 한 번이 그 저장소를 영구히 신청 불가로 만들면 안 된다.
+            await db.execute("UPDATE mcp_intake_requests SET status='FAILED' WHERE id=%s", (intake_id,))
+            retry = await client.post(AGENT + "/api/mcp-requests", headers=users["employee"], json={
+                "display_name": intake_name + " retry", "repository_url": "https://github.com/MCP-governance/mcp-gateway",
+                "requested_transport": "streamable-http", "purpose": "검증 실패 뒤 재신청이 되는지 확인하는 요청입니다.",
+            })
+            check("intake-resubmit-after-failure", retry.status_code == 200, retry.text[:160])
+            if retry.status_code == 200:
+                await db.execute("DELETE FROM mcp_intake_requests WHERE id=%s", (retry.json()["request"]["id"],))
         finally:
             await db.execute("DELETE FROM mcp_intake_requests WHERE id=%s", (intake_id,))
         cases = [("partner", "공개 문서를 읽어줘", "Allow", 1), ("partner", "비밀 인증정보를 읽어줘", "Block", 0),
