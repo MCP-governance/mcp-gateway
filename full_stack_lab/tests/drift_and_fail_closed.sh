@@ -71,4 +71,20 @@ if [[ -n "$published" || -n "$bindings" ]]; then
   exit 1
 fi
 echo "PASS upstream MCP has no host port"
+
+# 격리 워커의 스캐너가 실제로 실행되는지.
+#
+# acceptance는 도입 요청을 VALIDATION_QUEUED까지만 확인하고 행을 지운다. 그래서
+# 검증 스캔 경로 자체는 어떤 자동 검사도 타지 않았고, aig-mcp-scan이 끌어온
+# mcp 2.x가 semgrep을 import 시점에 죽인 것을 아무도 몰랐다. 전체 검증을 돌리는
+# 것은 네트워크와 시간을 쓰지만, 도구가 뜨는지 보는 것은 몇 초면 된다.
+echo "[worker] scanner toolchain"
+for probe in "semgrep --version" "syft version" "trivy --version" "aig-mcp-scan --help"; do
+  if ! docker compose exec -T intake-worker sh -lc "$probe" >/dev/null 2>&1; then
+    echo "FAIL intake worker cannot run: $probe" >&2
+    docker compose exec -T intake-worker sh -lc "$probe" 2>&1 | tail -5 >&2
+    exit 1
+  fi
+done
+echo "PASS intake worker scanners run"
 echo "PASS security regression"

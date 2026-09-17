@@ -433,6 +433,7 @@ Agent Console·인증·도입 요청 경계만 빠르게 확인할 때는 다음
 - 카탈로그 검색이 세 역할 모두에게 동작하고 신청자 신원·도입 목적은 응답에 없음
 - AI 코드 감사 API가 관리자 전용이고, endpoint 설정이 없으면 실행을 만들지 못함
 - AI 코드 감사 화면이 워커 생존 신호와 대기·실행·lease 만료 수를 함께 보여줌
+- 격리 워커 안에서 Syft·Trivy·Semgrep·mcp-scan이 **실제로 실행됨** (의존성 하나가 다른 스캐너를 죽이는 일을 빌드와 회귀 검사 양쪽에서 잡음)
 - 등록 서버가 감사 대상 목록에 나오고, 국소 감사 불가한 서버는 실행이 409로 거절됨
 - 계정 상태가 신원 관리대장에 있고, `disabled`로 바꾸면 **이미 발급된 토큰도** 다음 요청에서 403
 - 사용자별 bcrypt 해시로 검증하므로 다른 비밀번호는 401이고, 관리대장 응답에 해시가 없음
@@ -493,6 +494,26 @@ Gateway는 매 호출 직전에 `tools/list`를 다시 읽고 다음 승인 기�
 승인은 연결이 아닙니다. `APPROVED`는 "Registry에 올려도 된다"까지이고, 실제 활성화는 endpoint와 catalog 해시를 고정하는 별도 단계입니다. 승인 버튼 하나로 외부 저장소가 실행 경로에 들어오면 도입 심사가 형식이 됩니다.
 
 검증 증적은 `commit_sha`와 `intake:<owner>/<repo>@<commit>` 형태의 `source_ref`로 요청에 묶여 `검증 파이프라인`·`위험 분석` 화면에 나타납니다. 스캐너 종료코드를 확인하므로 **증적 없이 통과하는 일은 없습니다.** 하나라도 실패하면 요청은 `FAILED`가 되고 실패 사유가 남습니다.
+
+### 워커 안의 도구 격리 (v1.5)
+
+격리 워커 이미지에는 Syft·Trivy·Semgrep·mcp-scan이 함께 들어갑니다. 그런데 이 중 둘이 같은 Python 환경을 쓸 수 없습니다.
+
+| 도구 | 요구 |
+| --- | --- |
+| `semgrep 1.172.0` | `semgrep mcp` 서브커맨드 때문에 `cli.py`가 import 시점에 `from mcp.server.fastmcp import FastMCP` → **`mcp<2`** |
+| `aig-mcp-scan` | **`mcp 2.x`** |
+
+v1.4는 둘을 같은 site-packages에 넣었습니다. pip이 `dependency conflicts` 경고를 출력했지만 설치는 성공했고, 나중에 설치된 mcp-scan이 `mcp`를 2.x로 올렸습니다. 그 결과 **`semgrep --version`조차 `ModuleNotFoundError`로 죽었고, 모든 도입 검증이 `FAILED`가 되었습니다.**
+
+이 실패가 오래 보이지 않은 이유는 자동 검사가 그 경로를 타지 않았기 때문입니다. acceptance는 도입 요청을 `VALIDATION_QUEUED`까지만 확인하고 행을 지웁니다. 실제 복제·스캔은 사람이 Console에서 눌러야만 일어났습니다.
+
+두 군데에서 막습니다.
+
+1. **이미지 빌드**: mcp-scan을 `/opt/mcp-scan-venv`에 따로 설치하고 CLI만 PATH로 노출합니다. 빌드 마지막에 네 도구를 전부 실행해 보고, 하나라도 실패하면 **빌드가 실패합니다.**
+2. **회귀 검사**: [`tests/drift_and_fail_closed.sh`](tests/drift_and_fail_closed.sh)가 워커 컨테이너 안에서 네 도구를 실행해 봅니다. 전체 검증을 돌리는 것은 네트워크와 시간을 쓰지만, 도구가 뜨는지 보는 것은 몇 초입니다.
+
+이것은 이 저장소가 이미 내렸던 결론과 같습니다 — 패키지 충돌은 숨기지 않고 환경을 나눕니다. `mcp-server-time`을 Gateway 이미지 안에서 별도 venv로 격리한 것과 같은 이유입니다.
 
 ### 오픈소스 스캐너
 
