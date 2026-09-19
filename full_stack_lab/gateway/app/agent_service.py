@@ -545,7 +545,8 @@ async def approve_mcp_request(request_id: UUID, authorization: str | None = Head
             "SELECT requested_transport, exit_terms FROM mcp_intake_requests WHERE id=%s",
             (request_id,))
         terms = (pending or {}).get("exit_terms") or {}
-        if pending and pending["requested_transport"] != "stdio"                 and not terms.get("provider_credential_disclosure"):
+        remote_intake = pending and pending["requested_transport"] != "stdio"
+        if remote_intake and not terms.get("provider_credential_disclosure"):
             raise HTTPException(
                 409, "원격 MCP는 제공자의 하위 자격 고지 조항 없이 승인할 수 없습니다. "
                      "고지 없이는 종료 시 회수 대상의 모집단을 열거할 수 없습니다.")
@@ -833,7 +834,8 @@ async def run_mcp_scan_job(request: ScanRequest, authorization: str | None = Hea
     # 동적 점검은 서버가 돌려주는 내용을 모델로 보낸다. 폐기 중인 서버의 응답에
     # 잔존 데이터가 들어 있을 수 있으므로, 외부 endpoint를 쓸 때는 관리자가 그
     # 사실을 확인한 기록이 남아야 한다. 로컬 모델은 확인 없이 진행한다.
-    if request.mode == "dynamic" and not local_model_endpoint()             and not request.acknowledge_external_model:
+    external_model = request.mode == "dynamic" and not local_model_endpoint()
+    if external_model and not request.acknowledge_external_model:
         raise HTTPException(
             409,
             "동적 점검은 대상 서버의 응답을 설정한 모델 endpoint로 보냅니다. "
