@@ -40,6 +40,14 @@ classification_source := object.get(input, ["resource", "classification", "sourc
 
 approval_valid_until := object.get(input, ["contract", "approval_valid_until"], null)
 
+# 이용 관계의 전주기 단계. 값이 없는 배포(구버전 Gateway)는 운영 중으로 본다.
+# 기본값을 TERMINATING으로 두면 스키마가 아직 안 올라간 순간에 전부 막힌다.
+lifecycle_state := object.get(input, ["contract", "lifecycle"], "OPERATING")
+
+# 요청자의 엔드포인트에 보고된 미등록 MCP 설정 수. 게이트웨이를 통과하지 않는
+# 경로의 존재를 정책 입력으로 넘긴다. 세는 일은 엔드포인트 평면이, 판단은 정책이.
+shadow_endpoints := object.get(input, ["principal", "shadow_endpoints"], 0)
+
 # ── 권한표: 3 역할 x 3 등급 x r/w/x ─────────────────────────────────────────
 
 permissions := {
@@ -144,6 +152,23 @@ candidate["MCP-REGISTRY-002"] := {
 } if {
 	input.contract.registered
 	not input.contract.enabled
+}
+
+# 전주기의 마지막 통제. 종료 절차에 들어갔거나 폐기된 이용 관계의 호출은 권한을
+# 따지기 전에 끊는다. 이 판정이 Registry 비활성(MCP-REGISTRY-002)보다 우선순위가
+# 앞선 이유는, 둘이 동시에 성립할 때 감사에 남아야 하는 사실이 "비활성이라 막혔다"가
+# 아니라 "폐기된 관계라 막혔다"이기 때문이다. 되돌리는 절차가 서로 다르다.
+#
+# 그리고 이 차단은 종료 판정의 C3(연속성)을 조직이 자체 증명하는 수단이기도 하다.
+# 차단 시각 이후 실행된 호출이 0건이라는 사실은 제공자가 아니라 이 강제 경로가
+# 만든다. 그래서 관찰 모드에서도 풀리지 않는다(MCP- 접두사는 항상 집행).
+candidate["MCP-DECOMM-001"] := {
+	"decision": "Block",
+	"reason": "종료·폐기 절차에 들어간 이용 관계입니다. 실행하지 않습니다.",
+	"restrictions": {},
+	"conditions": {"matched": [], "violated": ["contract.lifecycle"]},
+} if {
+	lifecycle_state in {"TERMINATING", "RETIRED"}
 }
 
 candidate["MCP-SUPPLY-001"] := {
@@ -279,6 +304,21 @@ candidate["P-IMPORTANT-ALERT-001"] := {
 	input.principal.role == "employee"
 	input.resource.data_class == "important"
 	input.tool.action == "r"
+}
+
+# 엔드포인트 평면이 이 요청자의 PC에서 등록되지 않은 MCP 설정을 발견한 상태.
+# 호출 자체는 정상이고 막을 근거가 없다 — 막으면 통제가 아니라 연좌다. 다만 이
+# 사람에게는 강제 경로를 통과하지 않는 경로가 따로 있으므로, 같은 권한의 같은
+# 호출이어도 남겨야 할 증적의 양이 다르다.
+candidate["MCP-SHADOW-001"] := {
+	"decision": "Alert",
+	"reason": "요청자의 엔드포인트에 등록되지 않은 MCP 설정이 보고되어 증적을 강화합니다.",
+	"restrictions": {},
+	"conditions": {"matched": ["principal.shadow_endpoints"], "violated": []},
+} if {
+	shadow_endpoints > 0
+	has_permission
+	contract_ok
 }
 
 candidate["P-333-ALLOW-001"] := {

@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "합성 문서 MCP": {
+      "url": "http://mock-http-mcp:9000/mcp/",
+      "type": "streamable-http"
+    },
+    "local-notes": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@example/notes-mcp",
+        "--vault",
+        "/home/dev/notes"
+      ]
+    }
+  }
+}

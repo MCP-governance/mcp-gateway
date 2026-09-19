@@ -315,6 +315,51 @@ def sarif_severity(item: dict, rules: dict) -> str:
     return SARIF_LEVELS.get(str(item.get("level", "note")).lower(), "LOW")
 
 
+# AI-Infra-Guard가 분류하는 위험 범주. 스캐너는 규칙 ID와 메시지에 범주를 담아
+# 보내지만 형태가 일정하지 않아(영문 코드, 한/중/영 제목) 그대로 집계할 수 없다.
+# 범주로 접지 못하면 발견 목록은 "뭔가 13건"이 되고, 그 13건이 이 조직의 어느
+# 통제에 해당하는지 아무도 대조하지 않는다.
+#
+# 대조표의 정본은 DB의 aig_risk_catalog이고, 여기 있는 것은 문자열에서 범주를
+# 추출하는 규칙뿐이다. 둘을 한곳에 두면 매핑을 바꿀 때 워커 이미지를 다시 빌드해야 한다.
+RISK_PATTERNS = (
+    ("MCP01", ("mcp01", "token exposure", "secret exposure", "credential leak", "hardcoded")),
+    ("MCP02", ("mcp02", "privilege escalation", "scope creep", "excessive permission")),
+    ("MCP03", ("mcp03", "tool poisoning", "poisoned tool", "malicious description")),
+    ("MCP04", ("mcp04", "supply chain", "dependency confusion", "typosquat")),
+    ("MCP05", ("mcp05", "command injection", "rce", "arbitrary execution", "code execution")),
+    ("MCP06", ("mcp06", "prompt injection", "indirect injection", "instruction hijack")),
+    ("MCP07", ("mcp07", "auth", "authorization", "authentication bypass")),
+    ("MCP08", ("mcp08", "audit", "telemetry", "logging")),
+    ("MCP09", ("mcp09", "shadow mcp", "unregistered server")),
+    ("MCP10", ("mcp10", "context injection", "over-sharing", "oversharing", "data leak")),
+    ("NAME-CONFUSION", ("name confusion", "namespace confusion", "impersonat")),
+    ("RUG-PULL", ("rug pull", "rugpull", "silent update")),
+    ("TOOL-SHADOWING", ("tool shadowing", "shadowing attack", "override tool")),
+)
+
+
+def risk_category(item: dict, rules: dict) -> str:
+    """발견 하나를 13개 범주 중 하나로 접는다. 모르면 'UNMAPPED'로 남긴다.
+
+    모르는 것을 임의의 범주에 넣으면 그 범주의 통제가 실제보다 많은 것을 막는
+    것처럼 보인다. 매핑되지 않은 발견이 몇 건인지가 매핑 규칙의 품질 지표다.
+    """
+    rule = rules.get(str(item.get("ruleId") or "")) or {}
+    haystack = " ".join([
+        str(item.get("ruleId") or ""),
+        str(((item.get("message") or {}).get("text") or "")),
+        str(rule.get("name") or ""),
+        str(((rule.get("shortDescription") or {}).get("text") or "")),
+        str(((rule.get("properties") or {}).get("category") or "")),
+        " ".join(str(tag) for tag in ((rule.get("properties") or {}).get("tags") or [])),
+    ]).lower()
+    for category, needles in RISK_PATTERNS:
+        if any(needle in haystack for needle in needles):
+            return category
+    return "UNMAPPED"
+
+
 def sarif_findings(report: Path, root: Path) -> tuple[dict[str, int], list[dict], str]:
     """mcp-scan은 SARIF 2.1.0으로 결과를 낸다. scanNote는 모델이 아무 말도 하지
     않고 끝난 경우를 도구 스스로 표시한 값이라 그대로 보존한다."""
@@ -344,8 +389,22 @@ def sarif_findings(report: Path, root: Path) -> tuple[dict[str, int], list[dict]
                 "id": item.get("ruleId") or "mcp-scan",
                 "title": ((item.get("message") or {}).get("text") or "")[:400],
                 "target": location,
+                "risk_category": risk_category(item, rules),
             })
     return counts, findings[:200], note
+
+
+def risk_breakdown(findings: list[dict]) -> dict:
+    """범주별 건수와 최고 심각도. 화면이 "무엇이 몇 건"을 바로 말할 수 있어야 한다."""
+    order = {level: index for index, level in enumerate(SEVERITY_ORDER)}
+    table: dict[str, dict] = {}
+    for finding in findings:
+        category = finding.get("risk_category") or "UNMAPPED"
+        entry = table.setdefault(category, {"count": 0, "worst": "LOW"})
+        entry["count"] += 1
+        if order.get(finding["severity"], 9) < order.get(entry["worst"], 9):
+            entry["worst"] = finding["severity"]
+    return table
 
 
 def scan_target(connection, job: dict) -> dict:
@@ -398,44 +457,135 @@ def scan_target(connection, job: dict) -> dict:
     }
 
 
+_CLI_HELP: str | None = None
+
+
+def cli_supports(flag: str) -> bool:
+    """고정한 커밋의 CLI가 이 플래그를 실제로 갖고 있는가.
+
+    문서에 있는 플래그와 설치된 버전의 플래그는 다를 수 있다. 없는 플래그를 붙여
+    실행하면 argparse가 사용법을 출력하고 exit 2로 끝나는데, 그 실패는 "스캔했는데
+    발견이 없었다"와 화면에서 구분되지 않는다. 먼저 물어보고 없으면 그 사실을
+    오류로 말한다.
+    """
+    global _CLI_HELP
+    if _CLI_HELP is None:
+        try:
+            probe = run(["aig-mcp-scan", "--help"], timeout=60)
+            _CLI_HELP = (probe.stdout or "") + (probe.stderr or "")
+        except Exception:
+            _CLI_HELP = ""
+    return flag in _CLI_HELP
+
+
+# 모델에게 이 조직의 판단 기준을 함께 준다. AI-Infra-Guard의 -p/--prompt는 검사
+# 지시를 덧붙이는 자리이고, 비워 두면 도구의 일반 기준으로만 판단한다. 조직이
+# "무엇을 위험으로 보는가"를 스캐너에 전달하지 않으면, 그 스캐너의 결과를 조직의
+# 판단 근거로 쓰는 것이 어렵다.
+SCAN_PROMPT = os.getenv("MCP_SCAN_PROMPT", "").strip()
+
+
+def scan_command(job: dict, report: Path, checkout: Path | None, server_url: str | None) -> list[str]:
+    command = [
+        "aig-mcp-scan", "--output", str(report),
+        "--api_key", MCP_SCAN_API_KEY, "--model", MCP_SCAN_MODEL,
+        "--base_url", MCP_SCAN_BASE_URL, "--language", MCP_SCAN_LANGUAGE,
+    ]
+    if checkout is not None:
+        command += ["--repo", str(checkout)]
+    if server_url:
+        if not cli_supports("--server_url"):
+            raise RuntimeError(
+                "설치된 aig-mcp-scan에 --server_url이 없습니다. 동적 점검을 쓸 수 없습니다.")
+        command += ["--server_url", server_url]
+        for header in [h for h in os.getenv("MCP_SCAN_HEADERS", "").split("\n") if h.strip()]:
+            if cli_supports("--header"):
+                command += ["--header", header.strip()]
+    if SCAN_PROMPT and cli_supports("--prompt"):
+        command += ["--prompt", SCAN_PROMPT]
+    return command
+
+
+def dynamic_target(connection, job: dict) -> dict:
+    """동적 점검의 대상. 실행 중인 MCP 서버의 endpoint다.
+
+    정적 감사가 "이 코드가 무엇을 할 수 있는가"를 묻는다면 동적 점검은 "지금 이
+    주소에 있는 것이 무엇인가"를 묻는다. 도입 심사 단계에서는 후자를 하지 않는다.
+    아직 들이지 않기로 한 코드를 실행해 붙어보는 것은 격리 원칙과 반대다. 이미
+    운영 중이거나 종료를 확인하는 서버에만 쓴다.
+    """
+    row = connection.execute(
+        "SELECT id, display_name, endpoint, source_ref, transport, lifecycle"
+        " FROM mcp_servers WHERE id=%s", (job["target_id"],)).fetchone()
+    if not row:
+        raise RuntimeError("등록 서버를 찾을 수 없습니다.")
+    endpoint = job.get("server_url") or row["endpoint"]
+    if not endpoint or not str(endpoint).startswith(("http://", "https://")):
+        raise RuntimeError(
+            "동적 점검은 HTTP endpoint가 있는 서버에만 적용됩니다: " + repr(endpoint))
+    return {
+        "label": row["display_name"],
+        "repository_url": endpoint,
+        "commit": None,
+        "ref": None,
+        "source_ref": row["source_ref"],
+        # 동적 점검 결과는 그 서버에 귀속되고 치명점은 실제 차단으로 이어진다.
+        # 지금 그 주소에 있는 것이 위험하다면 그것이 바로 호출되는 대상이다.
+        "blocks": True,
+        "endpoint": endpoint,
+    }
+
+
 def run_mcp_scan(connection, job: dict) -> None:
-    """대상의 고정 커밋(또는 승인된 ref)을 다시 복제해 mcp-scan을 돌린다.
+    """정적 감사는 고정 커밋을 다시 복제해서, 동적 점검은 실행 중인 endpoint에 붙어서.
 
     검증 때 쓴 체크아웃을 남겨두지 않는 이유는 외부 저장소 사본을 계속 들고 있을
     이유가 없어서다. 커밋이 고정돼 있으므로 다시 복제해도 같은 코드다.
     """
-    target = scan_target(connection, job)
+    dynamic = (job.get("mode") or "static") == "dynamic"
     job_id = str(job["id"])
-    checkout = WORK_DIR / ("scan-" + job_id)
-    shutil.rmtree(checkout, ignore_errors=True)
-    pinned = target.get("commit") or target.get("ref")
-    log("mcp-scan " + job_id + " 시작: " + target["repository_url"] + " @ " + str(pinned)[:12])
-    commit = clone(target["repository_url"], checkout, commit=pinned)
-
     report = REPORT_DIR / ("mcp-scan-" + job_id + ".sarif.json")
-    result = run([
-        "aig-mcp-scan", "--repo", str(checkout), "--output", str(report),
-        "--api_key", MCP_SCAN_API_KEY, "--model", MCP_SCAN_MODEL,
-        "--base_url", MCP_SCAN_BASE_URL, "--language", MCP_SCAN_LANGUAGE,
-    ], timeout=MCP_SCAN_TIMEOUT)
+
+    if dynamic:
+        target = dynamic_target(connection, job)
+        checkout = None
+        commit = None
+        log("mcp-scan(dynamic) " + job_id + " 시작: " + target["endpoint"])
+        command = scan_command(job, report, None, target["endpoint"])
+    else:
+        target = scan_target(connection, job)
+        checkout = WORK_DIR / ("scan-" + job_id)
+        shutil.rmtree(checkout, ignore_errors=True)
+        pinned = target.get("commit") or target.get("ref")
+        log("mcp-scan " + job_id + " 시작: " + target["repository_url"] + " @ " + str(pinned)[:12])
+        commit = clone(target["repository_url"], checkout, commit=pinned)
+        command = scan_command(job, report, checkout, None)
+
+    result = run(command, timeout=MCP_SCAN_TIMEOUT)
     if result.returncode != 0 or not report.exists():
         output = (result.stderr or result.stdout).strip().splitlines()
         raise RuntimeError("aig-mcp-scan(exit %s): " % result.returncode + " | ".join(output[-3:])[:400])
 
-    counts, findings, note = sarif_findings(report, checkout)
+    counts, findings, note = sarif_findings(report, checkout or WORK_DIR)
     # 배선 stub으로 돌린 결과가 "발견 0건"으로 보이면 그게 곧 깨끗하다는 뜻이
     # 된다. 어떤 종류의 endpoint였는지를 결과에 박아 둔다.
     endpoint_kind = "wire-stub" if urlsplit(MCP_SCAN_BASE_URL).hostname == "llm-stub" else "model"
     # stub 결과는 어떤 경우에도 차단 집계에 들어가지 않는다. 배선 확인이 통제처럼
     # 보이기 시작하면 그 순간부터 통제가 아니라 착시다.
     blocks = bool(target["blocks"]) and endpoint_kind == "model"
+    breakdown = risk_breakdown(findings)
     summary = {
         "endpoint_kind": endpoint_kind,
         "target_kind": job["target_kind"],
+        "mode": "dynamic" if dynamic else "static",
         "blocks_calls": blocks,
         "findings": findings,
         "total": sum(counts.values()),
         "levels": counts,
+        # 범주별 집계. 13개 범주 중 무엇이 나왔고 무엇이 나오지 않았는지가
+        # "발견 0건"보다 훨씬 많은 것을 말한다.
+        "risk_breakdown": breakdown,
+        "unmapped": breakdown.get("UNMAPPED", {}).get("count", 0),
         "scan_note": note,
         "repository": target["repository_url"],
         "commit": commit,
@@ -454,14 +604,17 @@ def run_mcp_scan(connection, job: dict) -> None:
     store_report(connection, "AI-Infra-Guard mcp-scan", MCP_SCAN_MODEL, source_ref, report, stored, summary)
     connection.execute(
         """UPDATE scan_jobs SET status='DONE', report_path=%s, summary=%s, commit_sha=%s,
-                  repository_url=%s, source_ref=%s, lease_expires_at=NULL, error=NULL,
-                  finished_at=now()
+                  repository_url=%s, source_ref=%s, risk_breakdown=%s, lease_expires_at=NULL,
+                  error=NULL, finished_at=now()
            WHERE id=%s""",
-        (str(report), Jsonb(summary), commit, target["repository_url"], source_ref, job["id"]),
+        (str(report), Jsonb(summary), commit, target["repository_url"], source_ref,
+         Jsonb(breakdown), job["id"]),
     )
-    shutil.rmtree(checkout, ignore_errors=True)
-    log("mcp-scan " + job_id + " 완료 · 발견 %d건 · 치명 %d건 · 차단연결 %s · note %s"
-        % (summary["total"], counts["CRITICAL"], blocks, note))
+    if checkout is not None:
+        shutil.rmtree(checkout, ignore_errors=True)
+    log("mcp-scan %s(%s) 완료 · 발견 %d건 · 치명 %d건 · 차단연결 %s · 범주 %s · note %s"
+        % (job_id, summary["mode"], summary["total"], counts["CRITICAL"], blocks,
+           ",".join(sorted(breakdown)) or "-", note))
 
 
 def scan_configured() -> bool:
@@ -525,22 +678,24 @@ def drop_cancelled(connection) -> None:
         log("취소 요청 반영: " + str(row["id"]))
 
 
-def enqueue(connection, target_kind, target_id, label, trigger, requested_by):
-    """같은 대상에 살아 있는 작업이 없을 때만 큐에 넣는다.
+def enqueue(connection, target_kind, target_id, label, trigger, requested_by, mode="static"):
+    """같은 대상·방식에 살아 있는 작업이 없을 때만 큐에 넣는다.
 
-    유일 인덱스가 정본이고 이 조회는 흔한 경우의 잡음을 줄일 뿐이다.
+    유일 인덱스가 정본이고 이 조회는 흔한 경우의 잡음을 줄일 뿐이다. 정적 감사와
+    동적 점검은 서로 다른 질문이라 한쪽이 대기 중이어도 다른 쪽은 걸려야 한다.
     """
     live = connection.execute(
-        "SELECT id FROM scan_jobs WHERE target_kind=%s AND target_id=%s"
+        "SELECT id FROM scan_jobs WHERE target_kind=%s AND target_id=%s AND mode=%s"
         " AND status IN ('QUEUED','RUNNING')",
-        (target_kind, target_id)).fetchone()
+        (target_kind, target_id, mode)).fetchone()
     if live:
         return False
     connection.execute(
-        """INSERT INTO scan_jobs(id, kind, target_kind, target_id, target_label, requested_by, trigger)
-           VALUES (%s,'mcp-scan',%s,%s,%s,%s,%s)
+        """INSERT INTO scan_jobs(id, kind, target_kind, target_id, target_label,
+                                 requested_by, trigger, mode)
+           VALUES (%s,'mcp-scan',%s,%s,%s,%s,%s,%s)
            ON CONFLICT DO NOTHING""",
-        (uuid.uuid4(), target_kind, target_id, str(label)[:200], requested_by, trigger))
+        (uuid.uuid4(), target_kind, target_id, str(label)[:200], requested_by, trigger, mode))
     return True
 
 
@@ -593,6 +748,66 @@ def sweep_rescans(connection) -> None:
             log("재감사 주기 도래 큐잉: " + row["id"])
 
 
+def sweep_drift(connection) -> None:
+    """T4 · catalog 드리프트가 관측된 서버의 재감사.
+
+    v1.5는 scan_jobs.trigger에 'drift' 값만 예약해 두고 구현하지 않았다. 예약된
+    값은 통제가 아니다. 계약이 바뀌었다는 것은 승인 당시 심사한 코드와 지금 도는
+    코드가 갈라졌다는 뜻이고, 그 순간이야말로 코드 감사를 다시 해야 하는 시점이다.
+
+    드리프트 시각이 마지막 감사보다 뒤일 때만 건다. 그러지 않으면 드리프트 상태가
+    해소되기 전까지 매 회전마다 같은 작업이 큐에 들어간다.
+    """
+    if not scan_configured():
+        return
+    rows = connection.execute(
+        """SELECT s.id, s.display_name
+           FROM mcp_servers s
+           WHERE s.drift_observed_at IS NOT NULL
+             AND s.lifecycle='OPERATING'
+             AND s.source_url LIKE 'https://github.com/%%'
+             AND NOT EXISTS (
+                   SELECT 1 FROM scan_jobs j
+                   WHERE j.target_kind='server' AND j.target_id = s.id AND j.mode='static'
+                     AND (j.status IN ('QUEUED','RUNNING')
+                          OR (j.status='DONE' AND j.finished_at > s.drift_observed_at)))
+           ORDER BY s.drift_observed_at LIMIT 5""").fetchall()
+    for row in rows:
+        if enqueue(connection, "server", row["id"], row["display_name"],
+                   "drift", "system:drift"):
+            log("catalog 드리프트 감지 재감사 큐잉: " + row["id"])
+
+
+def sweep_termination(connection) -> None:
+    """종료 케이스가 열린 원격 서버에 동적 점검을 건다.
+
+    폐기를 선언한 뒤에 물어야 하는 것은 "그 주소에 아직 무엇이 있는가"다. 조직이
+    자기 쪽 경로를 끊었다는 사실과 제공자 쪽이 회수했다는 사실은 다르고, 후자는
+    조직이 확인할 방법이 별로 없다. 동적 점검은 그 몇 안 되는 수단 중 하나다.
+
+    결과는 종료 케이스의 증거가 되지만 판정을 자동으로 바꾸지는 않는다. 무엇을
+    증거로 인정할지는 사람이 정한다.
+    """
+    if not scan_configured():
+        return
+    rows = connection.execute(
+        """SELECT s.id, s.display_name
+           FROM mcp_servers s
+           JOIN termination_cases c ON c.server_id = s.id
+           WHERE c.status IN ('OPEN','REVOKING','REOPENED')
+             AND s.endpoint LIKE 'http%%'
+             AND NOT EXISTS (
+                   SELECT 1 FROM scan_jobs j
+                   WHERE j.target_kind='server' AND j.target_id = s.id AND j.mode='dynamic'
+                     AND (j.status IN ('QUEUED','RUNNING')
+                          OR (j.status='DONE' AND j.finished_at > c.cutover_at)))
+           ORDER BY c.opened_at LIMIT 3""").fetchall()
+    for row in rows:
+        if enqueue(connection, "server", row["id"], row["display_name"],
+                   "termination", "system:termination", mode="dynamic"):
+            log("종료 확인 동적 점검 큐잉: " + row["id"])
+
+
 def claim_scan_job(connection) -> dict | None:
     """대기 중인 감사 작업을 lease와 함께 가져온다.
 
@@ -609,7 +824,8 @@ def claim_scan_job(connection) -> dict | None:
            WHERE id = (SELECT id FROM scan_jobs
                        WHERE status='QUEUED' AND NOT cancel_requested
                        ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
-           RETURNING id, kind, target_kind, target_id, trigger, commit_sha, attempts""",
+           RETURNING id, kind, target_kind, target_id, trigger, commit_sha, attempts,
+                     mode, server_url""",
         (SCAN_LEASE_SECONDS, MCP_SCAN_MODEL, MCP_SCAN_BASE_URL),
     )
     return cursor.fetchone()
@@ -644,6 +860,10 @@ def main() -> int:
                     if now - last_sweep >= RESCAN_SWEEP_SECONDS:
                         sweep_rescans(connection)
                         last_sweep = now
+                    # 드리프트와 종료 확인은 주기가 아니라 사건에 반응한다. 다음
+                    # 재감사 스윕까지 기다리면 계약이 바뀐 채로 최대 15분이 지난다.
+                    sweep_drift(connection)
+                    sweep_termination(connection)
                     connection.commit()
 
                     while True:

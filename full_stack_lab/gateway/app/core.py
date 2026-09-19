@@ -23,7 +23,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import db
+from . import db, endpoint_plane
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/mcp/authz/decision")
 # 정책 관리대장(§11.8 / §12.5)은 정책 코드와 함께 배포되고 OPA가 그 정본이다.
@@ -157,6 +157,12 @@ async def refresh_catalog(server_id: str) -> dict:
         raise RuntimeError(f"unregistered server: {server_id}")
     if server["status"] == "DISABLED":
         return {"server_id": server_id, "status": "DISABLED", "reason": server["status_reason"]}
+    if server["lifecycle"] in {"TERMINATING", "RETIRED"}:
+        # 폐기 절차에 들어간 서버에 다시 붙어 catalog를 읽는 것은 종료 조치와
+        # 반대 방향의 행동이다. 계약을 갱신할 이유가 없고, 연결 자체가 "아직
+        # 연결되어 있다"는 사실을 만든다.
+        return {"server_id": server_id, "status": server["status"],
+                "lifecycle": server["lifecycle"], "reason": "폐기 절차 중이므로 catalog를 다시 읽지 않습니다."}
 
     discovered = await _discover(server_id)
     observed = {tool["name"]: tool for tool in discovered["tools"]}
@@ -225,6 +231,14 @@ async def refresh_catalog(server_id: str) -> dict:
             server_id,
         ),
     )
+    # T4. 계약이 바뀌면 심사한 코드와 지금 도는 코드가 갈라졌다는 뜻이므로 AI 코드
+    # 감사도 다시 돌아야 한다. v1.5는 scan_jobs.trigger에 'drift' 값만 예약해 두고
+    # 이 시각을 남기지 않아서, 워커가 "마지막 감사 이후 드리프트가 있었는가"를
+    # 물어볼 수 없었다. 큐잉은 워커가 하고, 여기서는 사실만 기록한다.
+    if not exact_match:
+        await db.execute(
+            "UPDATE mcp_servers SET drift_observed_at=now() WHERE id=%s", (server_id,)
+        )
     return {
         "server_id": server_id,
         "status": "READY" if exact_match else "DRIFT",
@@ -238,6 +252,7 @@ async def refresh_catalog(server_id: str) -> dict:
 async def bootstrap() -> None:
     await db.wait_until_ready()
     await db.execute((Path(__file__).parent / "agent_tables.sql").read_text())
+    await db.execute((Path(__file__).parent / "lifecycle_tables.sql").read_text())
     await policy_ledger(refresh=True)
     if POLICY_PATH.exists():
         digest = hashlib.sha256(POLICY_PATH.read_bytes()).hexdigest()
@@ -279,6 +294,7 @@ async def _contract(server_id: str, tool_name: str) -> dict:
             "supplier_approved": False,
             "critical_vulnerabilities": 0,
             "approval_valid_until": None,
+            "lifecycle": "UNKNOWN",
         }
 
     latest = await db.fetch_one(
@@ -304,6 +320,9 @@ async def _contract(server_id: str, tool_name: str) -> dict:
         "approval_valid_until": tool["approval_valid_until"].isoformat()
         if tool.get("approval_valid_until")
         else None,
+        # 전주기의 마지막 단계. status와 따로 두는 이유는 "공급망 문제로 잠깐 막힘"과
+        # "이 이용 관계를 끝내는 중"이 되돌리는 절차가 전혀 다르기 때문이다.
+        "lifecycle": server.get("lifecycle") or "OPERATING",
     }
 
 
@@ -763,7 +782,13 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "environment": GATEWAY_ENVIRONMENT,
             "now": datetime.now(UTC).isoformat(),
             "principal": {"role": role, "synthetic": bool(principal["synthetic"]),
-                          "department": principal.get("department")},
+                          "department": principal.get("department"),
+                          # 이 사람의 엔드포인트에 게이트웨이를 통과하지 않는 MCP
+                          # 설정이 몇 건 보고됐는가. 강제 경로 밖의 경로를 가진
+                          # 사람의 호출은 같은 권한이어도 같은 위험이 아니다.
+                          "shadow_endpoints": await endpoint_plane.shadow_count_for(
+                              str(payload.get("user_token", ""))),
+                          },
             "resource": {"id": payload.get("document_id", "time"), "data_class": data_class,
                          "owner_department": document.get("owner_department") if document else None,
                          "classification": classification},

@@ -223,6 +223,93 @@ curl -sS -X PUT http://localhost:8000/api/accounts/user-partner-001/status   -H 
 
 이 구조는 팀원 저장소 [`MCP-governance/Agent-Service`의 `miso` 브랜치](https://github.com/MCP-governance/Agent-Service/tree/miso)가 쓰던 `users` / `sessions` 테이블 모양에서 가져왔습니다. 세션 테이블(불투명 토큰 + `token_hash` + `revoked_at`)은 가져오지 않았습니다. 이 Gateway는 서명된 JWT와 `agent_revoked_tokens` 무효화 목록을 이미 쓰고 있고, 세션 조회를 매 요청에 더하면 stdio·SSE ingress에도 같은 조회가 붙습니다. 신원 경계를 둘로 나누지 않는 편이 낫습니다.
 
+## 3.6 종료·폐기 (전주기의 마지막)
+
+도입은 촘촘한데 폐기가 없으면, 조직이 가진 MCP 목록은 늘기만 합니다. v1.5까지
+이 저장소가 나가는 쪽에 가진 것은 `status='DISABLED'` 한 칸이었습니다. **그 한
+칸은 "호출을 막았다"만 말하고 "회수했다"는 말하지 못합니다.**
+
+`종료·폐기` 화면(관리자 전용)과 `/api/termination/*`가 그 구간을 담당합니다.
+절차와 판정 기준의 정본은 [TERMINATION.md](TERMINATION.md)입니다.
+
+| 단계 | 무슨 일이 일어나는가 |
+| --- | --- |
+| 종료 개시 | `lifecycle='TERMINATING'` · **즉시 차단**(`MCP-DECOMM-001`) · `cutover_at` 고정 |
+| 모집단 수집 | 게이트웨이 원장의 호출 주체 + 엔드포인트 설정 잔존 + 제공자 고지 자리 |
+| 회수·증거 | 대상별 회수 상태와, 대상·시점을 특정하는 증거 |
+| 판정 | C1~C4 계산 → **T1 종료 / T2 부분 종료 / T3 판단 불가** |
+| 종결 | `lifecycle='RETIRED'`. T3는 위험 수용 근거 없이 닫히지 않음 |
+
+차단이 **먼저**입니다. 회수를 먼저 하고 차단을 나중에 하면 그 사이에 호출이
+성립하는 구간이 생기고, 그 구간이 바로 연속성(C3)이 세는 대상입니다.
+
+시작하기 전에 **폐기 드릴**로 "끄면 무엇이 남는가"를 먼저 계산합니다. 드릴이
+답하는 것은 현재 등급이 아니라 **도달 가능한 최선 등급**입니다 — 증거를 전부 모으고
+회수를 전부 마쳐도 T1에 닿지 못하는 서버가 있고, 그 사실은 종료를 시작한 뒤에 알면
+늦습니다. 드릴은 케이스를 만들지도 `lifecycle`을 건드리지도 않습니다.
+
+그리고 T3를 줄이는 자리는 종료 단계가 아니라 **도입 단계**입니다. `MCP 도입`
+요청 양식의 종료 조건 세 개(제공자 자격 고지·폐기 기록 제출·감사 기록 접근)가
+그 서버의 최선 등급을 미리 정합니다. 논문 5.2가 "소급 확보가 어렵다"고 한 증거를
+들일 때 약속받는 것이 유일한 완화입니다. `INTAKE_EXIT_TERMS_REQUIRED=1`로 승인
+게이트를 켤 수 있습니다.
+
+케이스가 열린 채 `TERMINATION_SLA_DAYS`(기본 14일)를 넘기면 배너와 배지에
+올라옵니다. 차단만 하고 회수가 멈춘 상태는 T2도 T3도 아니라 **판정 자체가 없어**
+위험 보고에 잡히지 않기 때문입니다.
+
+T3의 원인이 제공자 미고지일 때 조직이 할 수 있는 일은 요청하는 것뿐이고, 그 요청
+문서는 판정서에서 자동 생성됩니다(`제공자 고지 요청서`).
+
+```bash
+curl -sS -X POST http://localhost:8000/api/termination/cases \
+  -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' \
+  -d '{"server_id":"github","reason":"계약 종료에 따른 이용 중단"}'
+```
+
+판정의 네 기준은 CISC-W'26 투고 논문「원격 MCP 서비스 종료 시 권한 회수의 구조적
+한계 및 종료 판정 기준 제안」의 5장을 그대로 옮긴 것입니다.
+
+| 기준 | 누가 답할 수 있는가 |
+| --- | --- |
+| C1 모집단 | 관리대장 + 엔드포인트 평면 + **제공자 고지** |
+| C2 수행 권한 | 관리대장 + 제공자 증명 |
+| C3 연속성 | **이 게이트웨이**. 차단 이후 실행된 호출 수는 강제 경로만 셀 수 있다 |
+| C4 증거 접근 | 관리대장 |
+
+원격 제공자가 하위 위임 자격을 고지하지 않으면 C1을 충족할 수 없고 판정은 T3입니다.
+이 엔진은 그 경우 T1을 주지 않습니다. **모르는 것을 모른다고 말하는 것이 판정입니다.**
+
+## 3.7 엔드포인트 평면
+
+Gateway는 자기를 통과한 호출만 압니다. 사람들의 PC에 있는 MCP 클라이언트 설정은
+게이트웨이 기록에 존재하지 않으므로, "우리 조직에서 실제로 쓰이는 MCP"의 모집단을
+게이트웨이 혼자서는 열거할 수 없습니다.
+
+```bash
+./console.sh endpoint
+```
+
+에이전트가 클라이언트 설정 파일을 읽어 Registry와 대조하고 보고합니다.
+
+| 분류 | 의미 | 이어지는 통제 |
+| --- | --- | --- |
+| `registered` | 운영 중인 등록 서버 | — |
+| `shadow` | 어느 등록 서버와도 대조되지 않음 | `MCP-SHADOW-001`(Alert)로 그 사람의 호출 증적 강화 |
+| `retired-residue` | 폐기했는데 설정에 남아 있음 | 종료 케이스의 회수 대상으로 자동 추가 → C1 미충족 |
+
+**이 평면은 아무것도 막지 않습니다.** 설정을 고치거나 프로세스를 죽일 권한을 주면
+에이전트가 침해당했을 때 조직의 모든 개발 환경을 조작할 수 있는 경로가 됩니다.
+관측만 하는 프로세스는 침해당해도 거짓 인벤토리를 올리는 것이 최대치이고, 그 거짓은
+판정을 보수적인 쪽으로만 밉니다.
+
+보내는 것은 서버 이름·전송·주소뿐입니다. `env`와 `headers`는 읽는 즉시 버립니다.
+사람들의 API 키가 인벤토리 테이블에 쌓이면 그 테이블이 조직에서 가장 위험한 표가
+됩니다.
+
+어느 통제가 엔드포인트단에 깔리고 어느 것이 네트워크단에 깔리는지는
+[CONTROL_PLANES.md](CONTROL_PLANES.md)가 정리합니다.
+
 ## 4. 확정한 333 Rego 정책
 
 `x`는 **외부 전송 또는 고위험 실행**입니다. 표에 없는 권한은 기본 차단입니다.
@@ -414,7 +501,7 @@ Agent Console·인증·도입 요청 경계만 빠르게 확인할 때는 다음
 
 정상 기준은 다음과 같습니다.
 
-- Rego 단위 테스트 `54/54 PASS` (프레임워크 §11.11이 요구하는 시험 조건: 정상 허용, 비인가 차단, 경계값·누락 입력, 권한·Scope 초과, 미등록 구성요소, 민감정보 접근·외부 전송, 고위험 추가 승인, 예외 적용과 유효기간 만료, 다중 정책 동시 적용, 정책 충돌과 우선순위, 연쇄호출 누적, 27칸 판정 기준선 대조)
+- Rego 단위 테스트 `62/62 PASS` (프레임워크 §11.11이 요구하는 시험 조건: 정상 허용, 비인가 차단, 경계값·누락 입력, 권한·Scope 초과, 미등록 구성요소, 민감정보 접근·외부 전송, 고위험 추가 승인, 예외 적용과 유효기간 만료, 다중 정책 동시 적용, 정책 충돌과 우선순위, 연쇄호출 누적, 27칸 판정 기준선 대조)
 - core acceptance `64 passed / 0 failed`, Agent/API 경계 acceptance `97 passed / 0 failed`
 - 익명·위조 토큰의 Gateway API 호출이 `401`, 협력업체 계정의 승인 시도가 `403`
 - `/tool-call`은 사용자 JWT와 Agent Assertion을 함께 요구하며, 사용자 JWT 재사용·다른 actor·변조된 envelope는 `401`
@@ -440,6 +527,18 @@ Agent Console·인증·도입 요청 경계만 빠르게 확인할 때는 다음
 - 관리자가 자기 계정을 스스로 중지·잠금할 수 없음
 - 실시간 판정 스트림이 인증을 요구하고 `text/event-stream`으로 열림
 - 모든 차단 사례에서 독립 upstream 효과 수가 증가하지 않음
+- 종료 절차를 시작하면 그 서버의 호출이 `MCP-DECOMM-001`로 차단되고, **관찰 모드에서도 풀리지 않음**
+- 제공자가 하위 위임 자격을 고지하지 않은 원격 서버의 종료 판정이 **T3**이고, C1·C4가 성립 요건으로 동작
+- 차단 시각 이후 실행된 호출 수를 게이트웨이가 실측해 C3에 반영 (`post_cutover_executed`)
+- T3 케이스가 위험 수용 근거 없이 종결되지 않고, 근거를 갖추면 등급이 올라감
+- 종결한 케이스는 다시 판정되지 않고, 종결 시 서버가 `RETIRED`로 내려감
+- 종료 API가 관리자 전용이고 직원 토큰은 목록 조회도 `403`
+- 엔드포인트 보고가 `registered`/`shadow`를 구분하고, 섀도가 그 사람의 호출을 `MCP-SHADOW-001`로 승격하되 **차단하지는 않음**
+- 엔드포인트 보고가 누적이 아니라 교체라, 설정에서 사라진 항목이 인벤토리에서도 사라짐
+- AI-Infra-Guard 위험 범주 13개가 모두 실재하는 정책 ID를 가리킴
+- 폐기 드릴이 원격·종료조건 미확인 서버의 최선 등급을 T3로, 로컬 stdio를 T1로 계산
+- 폐기 드릴이 계약 조건 변화에 반응하고, **케이스나 lifecycle을 바꾸지 않음**
+- 제공자 고지 요청서가 계약 근거 유무를 구분해 생성됨
 - 합성 upstream MCP에 host port가 없음
 
 생성 결과는 `reports/acceptance.json`, `reports/agent-acceptance.json`, `reports/security-regression.txt`에 남고 Git에는 포함되지 않습니다.
@@ -571,7 +670,8 @@ curl -sS http://localhost:8080/api/supply-chain/coverage | python3 -m json.tool
 | T1 격리 검증 통과 직후 | 자동 큐잉 | `MCP_SCAN_AUTO_ON_VALIDATED=1` | 승인을 **판단하기 전에** 증적이 있어야 합니다. 승인한 뒤에야 돌릴 수 있으면 감사는 근거가 아니라 사후 기록입니다 |
 | T2 승인 시도 | 게이트 | `MCP_SCAN_REQUIRED_FOR_APPROVAL=1` | 그 commit에 대한 `DONE` 감사가 없으면 `APPROVED`로 올리지 않습니다 |
 | T3 재감사 주기 | 자동 큐잉 | `MCP_SCAN_RESCAN_DAYS=30` | 심사한 코드와 지금 도는 코드는 시간이 지나면 갈라집니다. 승인에는 기한이 있는데 그 근거에는 없다면, 먼저 낡는 것은 승인이 아니라 근거입니다 |
-| T4 catalog drift | **미구현** | — | 계약이 바뀌면 코드 감사도 다시 해야 합니다. `scan_jobs.trigger`에 `drift` 값만 예약해 두었습니다 |
+| T4 catalog drift | 자동 큐잉 | `drift_observed_at` 기록 시 | 계약이 바뀌면 심사한 코드와 지금 도는 코드가 갈라진 것입니다. v1.6에서 구현했습니다 |
+| T5 종료 확인 | 자동 큐잉(동적) | 종료 케이스 개시 시 | 차단 이후 그 주소에 무엇이 남았는지가 연속성(C3)의 반증입니다 |
 
 #### 감사 대상
 
@@ -612,6 +712,85 @@ docker compose --profile llm-stub up -d llm-stub
 ```
 
 참고: [Syft](https://github.com/anchore/syft), [Trivy](https://github.com/aquasecurity/trivy), [Semgrep](https://semgrep.dev).
+
+#### 발견을 통제로 잇기 — 위험 범주 매핑
+
+스캐너가 "발견 13건"이라고 말했을 때, 그것이 이 조직의 어느 통제로 이어지는지
+저장소가 답할 수 있어야 합니다. 답하지 못하면 발견 목록은 읽을거리입니다.
+
+AI-Infra-Guard가 분류하는 13개 범주(MCP01~MCP10과 이름 혼동·러그풀·도구 가리기)를
+`aig_risk_catalog` 관리대장에 두고, 각 범주가 **어느 정책으로 집행되는지**와
+**치명 등급이 실제 차단으로 이어지는지**(`gate`)를 함께 기록합니다.
+
+```bash
+curl -sS http://localhost:8000/api/risk-catalog -H "authorization: Bearer $TOKEN" \
+  | python3 -m json.tool
+```
+
+| 범주 | 이 저장소의 대응 정책 | 차단 |
+| --- | --- | --- |
+| MCP03 도구 중독 | `MCP-CATALOG-001` (설명·스키마 해시 고정) | ○ |
+| MCP04 공급망 | `MCP-SUPPLY-001` | ○ |
+| MCP06 프롬프트 인젝션 | `MCP-OUTPUT-001`, `MCP-METHOD-001` | ○ |
+| MCP09 섀도 MCP | `MCP-REGISTRY-001` + 엔드포인트 평면 | 증적 |
+| 러그풀 | `MCP-CATALOG-001`, `P-APPROVAL-EXPIRY-001` | ○ |
+
+매핑되지 않은 발견은 `UNMAPPED`로 남습니다. 모르는 것을 임의의 범주에 넣으면 그
+범주의 통제가 실제보다 많은 것을 막는 것처럼 보이고, **매핑되지 않은 발견이 몇
+건인지가 매핑 규칙의 품질 지표**입니다. `./console.sh test`가 이 표의 모든
+`policy_id`가 정책 관리대장에 실재하는지 대조합니다.
+
+#### 동적 점검 (`--server_url`)
+
+정적 감사가 "이 코드가 무엇을 할 수 있는가"를 묻는다면, 동적 점검은 **"지금 이
+주소에 있는 것이 무엇인가"**를 묻습니다.
+
+| 시점 | 방식 | 왜 |
+| --- | --- | --- |
+| 도입 심사 | 정적만 | 아직 들이지 않기로 한 코드를 실행해 붙어보는 것은 격리 원칙과 반대입니다 |
+| 운영 중 서버 | 정적 + 동적 | 심사한 코드와 지금 그 주소에 있는 것은 다를 수 있습니다 |
+| 종료 확인 | 동적 | 차단 이후 그 주소에 무엇이 남았는지가 C3의 반증입니다 |
+
+종료 케이스가 열린 원격 서버에는 동적 점검이 **자동으로 큐잉**됩니다
+(`trigger='termination'`). 결과는 증거가 되지만 판정을 자동으로 바꾸지는 않습니다.
+무엇을 증거로 인정할지는 사람이 정합니다.
+
+설치된 CLI가 `--server_url`을 갖고 있는지 먼저 확인하고, 없으면 그 사실을 오류로
+말합니다. 없는 플래그를 붙여 실행하면 도구가 사용법을 출력하고 종료하는데, 그
+실패는 "스캔했는데 발견이 없었다"와 화면에서 구분되지 않습니다.
+
+#### T4 · catalog 드리프트 재감사 (v1.6에서 구현)
+
+v1.5는 `scan_jobs.trigger`에 `drift` 값만 예약해 두고 구현하지 않았습니다.
+**예약된 값은 통제가 아닙니다.** 이제 `refresh_catalog()`가 드리프트를 관측하면
+`mcp_servers.drift_observed_at`을 남기고, 워커가 "마지막 감사보다 뒤에 드리프트가
+있었는가"를 보고 재감사를 겁니다. 계약이 바뀌었다는 것은 승인 당시 심사한 코드와
+지금 도는 코드가 갈라졌다는 뜻이고, 그 순간이 바로 코드 감사를 다시 해야 하는
+시점입니다.
+
+| 시점 | 트리거 | v1.5 | v1.6 |
+| --- | --- | --- | --- |
+| T1 격리 검증 통과 | 자동 큐잉 | 구현 | 구현 |
+| T2 승인 게이트 | 게이트 | 구현 | 구현 |
+| T3 재감사 주기 | 자동 큐잉 | 구현 | 구현 |
+| T4 catalog drift | 자동 큐잉 | **미구현** | **구현** |
+| T5 종료 확인 | 자동 큐잉(동적) | — | **구현** |
+
+#### 조직의 판단 기준 주입 (`--prompt`)
+
+`MCP_SCAN_PROMPT`를 주면 검사 지시에 덧붙습니다. 비워 두면 도구의 일반 기준으로만
+판단하고, 그 결과를 조직의 판단 근거로 쓰기는 어렵습니다.
+
+#### 쓰지 않기로 한 것
+
+AI-Infra-Guard의 **인프라 지문·CVE 스캐너**(100여 개 AI 프레임워크, Ollama·vLLM·
+ComfyUI 등)와 **Jailbreak 평가**는 연결하지 않았습니다. 공식 배포가 소스
+아카이브뿐이라 격리 워커 이미지에 Go 툴체인을 넣어야 하고, 그러면 스캐너 워커가
+빌드 환경이 됩니다. 이 저장소가 `mcp-server-time`과 `mcp-scan`에서 이미 내린
+결론과 같습니다 — **패키지 충돌은 숨기지 않고 환경을 나눕니다.**
+
+값만 예약해 두지도 않았습니다. `scan_jobs.kind`는 `mcp-scan` 하나입니다. v1.5가
+`trigger='drift'`로 겪은 일을 되풀이하지 않기 위해서입니다.
 
 ## 9.1 감사 로그 무결성
 
@@ -682,9 +861,17 @@ curl -sS http://localhost:8080/api/audit/verify -H "authorization: Bearer $GW_TO
 | 경로 | 역할 |
 | --- | --- |
 | `compose.yaml` | 네트워크·서비스·scanner profile |
-| `console.sh` | `up/test/agent-test/scan/status/logs/down/reset` 단일 진입점 |
+| `console.sh` | `up/test/agent-test/endpoint/scan/openapi/status/logs/down/reset` 단일 진입점 |
 | [`NETWORK.md`](NETWORK.md) | 망 경계 설계와 Tailscale 적용 기준. `BIND_ADDR`의 의미와 금지 값 |
+| [`CONTROL_PLANES.md`](CONTROL_PLANES.md) | **무엇이 엔드포인트에 깔리고 무엇이 네트워크에 깔리는가.** 평면별 책임과 배치 결정표 |
+| [`TERMINATION.md`](TERMINATION.md) | **전주기의 마지막.** 종료 절차, C1~C4 기준, T1~T3 등급, 판정서 |
+| [`../docs/API.md`](../docs/API.md) | 통합용 API 명세. 경계·인증 주체·실패의 의미 |
 | `gateway/app/core.py` | 계약 확인, Rego 질의, 승인, upstream 실행, 증적 |
+| `gateway/app/decommission.py` | 종료 케이스, 회수 대상, 증거, C1~C4 판정 엔진 |
+| `gateway/app/endpoint_plane.py` | 엔드포인트 인벤토리 수신과 Registry 대조 |
+| `gateway/app/lifecycle_tables.sql` | 종료·엔드포인트·위험범주 스키마 (매 기동 적용) |
+| `endpoint/endpoint_agent.py` | 엔드포인트 평면 에이전트. 표준 라이브러리만 사용 |
+| `endpoint/sample-configs/` | 합성 클라이언트 설정. 섀도·잔존 분류 시연용 |
 | `gateway/app/agent_service.py` | 합성 로그인, 세션, 요청 멱등성, 모델 제안 경로 |
 | `gateway/app/agent_gateway.py` | 서명 사용자와 Tool Call envelope를 기존 정책 경로에 연결 |
 | `gateway/app/agent_contract.py` | Ed25519 JWT·서버/도구 조합·공유 JSON Schema 경계 |
@@ -735,7 +922,7 @@ Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance
 ## 13. 의도적으로 남긴 경계
 
 - 역할은 `partner`(협력업체 직원)·`employee`·`admin` 셋이고 볼 수 있는 화면과 응답 데이터가 다릅니다. 역할·계정 상태·비밀번호 해시는 v1.5부터 Python 상수가 아니라 PostgreSQL `principals` 관리대장에 있고 매 요청마다 확인됩니다(계정을 끄는 일이 배포가 되면 아무도 제때 끄지 않습니다). 다만 실제 사용자 SSO/OIDC와 RBAC 관리 화면, 실제 GitHub 토큰 위임은 여전히 미구현입니다. 합성 JWT와 Agent Assertion은 Ed25519로 서명하고 Agent Service만 개인키를 갖지만, assertion은 workload attestation이 아니며 키 회전·폐기 절차·JWKS 배포·SPIFFE SVID는 아직 없습니다.
-- Gateway의 읽기 API는 인증 없이 열려 있습니다: `/api/health`, `/api/state`, `/api/effects`, `/api/policy/matrix`, `/api/policy/ledger`, `/api/integration`, `/api/monitor/summary`, `/api/enforcement`, `/api/supply-chain/coverage`. 상태를 바꾸는 API는 모두 서명된 토큰을 요구하고 승인·거부·집행 전환·공급망 가져오기·감사 검증은 관리자까지 확인하지만, 증적 조회는 `127.0.0.1` 바인딩에만 의존합니다. 이 목록은 `tests/open_endpoints.py`가 코드와 대조합니다. **결정:** 운영에서는 새 로컬 토큰을 덧붙이지 않고, 조직 OIDC를 연결한 reverse proxy에서 이 읽기 경로도 보호합니다.
+- Gateway의 읽기 API는 인증 없이 열려 있습니다: `/api/health`, `/api/state`, `/api/effects`, `/api/policy/matrix`, `/api/policy/ledger`, `/api/integration`, `/api/monitor/summary`, `/api/enforcement`, `/api/supply-chain/coverage`, `/api/risk-catalog`. 상태를 바꾸는 API는 모두 서명된 토큰을 요구하고 승인·거부·집행 전환·공급망 가져오기·감사 검증은 관리자까지 확인하지만, 증적 조회는 `127.0.0.1` 바인딩에만 의존합니다. 이 목록은 `tests/open_endpoints.py`가 코드와 대조합니다. **결정:** 운영에서는 새 로컬 토큰을 덧붙이지 않고, 조직 OIDC를 연결한 reverse proxy에서 이 읽기 경로도 보호합니다.
 - 호출량 상한(`P-RATE-001`)과 중요정보 누적 승격(`P-VOLUME-001`)은 감사 테이블 기준이라 Gateway 복제본이 늘어도 유지되지만, 비용·토큰 쿼터는 없습니다. Agent Service의 동시 실행 제한과 로그인 시도 상한은 프로세스 단위라 복제본이 늘면 함께 늘어납니다. **결정:** 현재 배포 단위는 Gateway 1개입니다. 다중 복제본은 Postgres 감사 체인의 전역 잠금이 정확성은 지키지만 처리량을 직렬화하므로, ingress 공용 rate limit·OIDC·SIEM을 함께 설계한 뒤 별도 부하 시험으로 전환합니다.
 - 실제 상용 LLM API는 호출하지 않았습니다. 기본 자연어 변환은 규칙 기반 키워드 변환이고, OpenAI 호환 HTTP 경계는 로컬 stub으로만 검증했습니다.
 - GitHub MCP는 인증·catalog 승인 전이라 실제 upstream 호출을 하지 않습니다.
@@ -744,10 +931,18 @@ Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance
 - 전역(`workspace`) 스캔 결과는 인벤토리이며 호출을 막지 않습니다. 차단은 `scan_path`가 등록된 서버의 개별 스캔 결과로만 이어집니다. `github`는 원격이라 국소 스캔 대상이 아닙니다.
 - 운영용 HA, TLS 종료, 비밀관리, SIEM 알림, 조직 전체 egress 강제는 별도 운영 설계가 필요합니다. **결정:** 현재 증적 정본은 PostgreSQL 감사 체인과 OpenTelemetry trace이며, 보존 기간·수신 인증·민감정보 마스킹 요구가 확정되기 전 외부 SIEM으로 원문을 내보내지는 않습니다.
 - AI 코드 감사는 외부 LLM에 **저장소 코드를 보냅니다.** 어떤 endpoint를 쓸지는 조직의 결정이고, 사내 정책상 코드 반출이 불가하면 로컬 모델만 연결해야 합니다. 현재 구현은 endpoint를 검증하지 않고 설정한 곳으로 보냅니다.
-- mcp-scan의 동적 스캔(`--server_url`)은 연결하지 않았습니다. 실행 중인 MCP 서버에 붙는 검사라 도입 심사 단계의 격리 원칙과 맞지 않습니다.
-- AI 코드 감사의 T4(catalog drift 감지 시 재감사)는 미구현입니다. `scan_jobs.trigger`에 값만 예약해 두었습니다.
+- mcp-scan의 동적 점검(`--server_url`)은 **도입 심사 단계에서는** 쓰지 않습니다. 아직 들이지 않기로 한 코드에 붙어보는 것은 격리 원칙과 반대입니다. 운영 중 서버와 종료 확인에만 씁니다.
 - 감사 작업의 lease 회수는 시각 기반입니다. 워커가 살아 있는데 시계가 크게 어긋나면 진행 중인 작업이 회수될 수 있습니다. **결정:** 배포 단위가 워커 1개이고 lease가 스캔 상한보다 5분 길어 현재 구성에서는 발생하지 않습니다. 다중 워커로 갈 때 advisory lock으로 바꿉니다.
 - 망 경계는 `127.0.0.1` 바인딩과 "upstream MCP에 host port 없음" 두 가지에만 의존합니다. 여러 호스트로 나누거나 원격에서 보려면 [NETWORK.md](NETWORK.md)의 tailnet 설계가 선행되어야 하고, 그 대부분은 아직 미구현입니다.
+- 회수 조치 자체는 이 저장소가 수행하지 않습니다. 인가 서버의 `/revoke` 호출과 제공자 콘솔에서의 자격 삭제는 운영자가 하고, 여기에는 그 결과를 기록합니다. **결정:** 게이트웨이가 남의 인가 서버에 폐기를 요청할 수 있는 자격을 갖는 것은 별개의 위험이므로 채택하지 않았습니다.
+- 종료 판정의 C1은 제공자 고지에 의존합니다. 고지가 없으면 T3이고, 이 엔진은 그 경우 T1을 주지 않습니다. 이것은 구현의 한계가 아니라 [논문이 규격 조항으로 특정한 구조적 한계](TERMINATION.md)입니다. 조달 문서에 하위 자격 고지·폐기 기록 제출·감사 기록 접근권 존속 기간을 명시하는 것이 유일한 완화입니다.
+- `liveness-probe`는 HTTP 도달만 봅니다. 응답이 온다고 회수 실패는 아닙니다 — 그 주소는 다른 고객에게 계속 서비스합니다. 그래서 판정에서는 C3의 반증으로만 씁니다.
+- 이용 관계의 식별자는 Registry 서버 하나입니다. 한 서버를 여러 목적으로 쓰는 조직에서는 이용 관계가 서버보다 잘게 쪼개집니다.
+- 엔드포인트 에이전트는 **관리자 계정으로 로그인**합니다. 운영에서는 엔드포인트별 자격이어야 하고 그 자격은 인벤토리 보고 외에 아무것도 할 수 없어야 합니다. **결정:** 실습에서만 허용하는 절충이며, 조직 배치 전 반드시 바꿔야 합니다.
+- 엔드포인트 커버리지의 **분모를 모릅니다.** 조직 전체 자산 목록이 없으므로 `known_endpoints`로만 말하고 백분율을 산출하지 않습니다.
+- 설정 대조는 이름과 주소 기준이라 같은 서버를 다른 주소로 적으면 섀도로 분류됩니다. 오탐이 미탐보다 낫다는 선택이지만, 오탐이 많으면 아무도 목록을 보지 않게 됩니다.
+- 섀도 MCP의 **차단**(egress 허용목록·DNS)은 미구현입니다. 발견과 증적 강화까지가 이 저장소이고, 차단은 네트워크 장비 몫입니다 → [CONTROL_PLANES.md](CONTROL_PLANES.md).
+- AI-Infra-Guard의 인프라 지문·CVE 스캐너와 Jailbreak 평가는 연결하지 않았습니다. 공식 배포가 소스 아카이브뿐이라 격리 워커에 Go 툴체인이 들어가야 합니다. **결정:** 쓰지 않을 값을 스키마에 예약해 두지도 않았습니다.
 - 도입 요청 격리 검증은 **정적 분석까지만** 합니다. 저장소 코드를 실행하지 않으므로 런타임에만 드러나는 행위는 보지 못합니다. 워커는 GitHub HTTPS와 Trivy DB로 나가는 egress가 필요하고, 체크아웃은 512MB로 제한합니다.
 - 자동 판정은 `Critical > 0 → REJECTED`와 `실패 → FAILED`뿐입니다. **자동으로 승인하지는 않습니다.** `VALIDATED`를 `APPROVED`로 올리는 것은 사람의 결정이고, `APPROVED`도 Registry 등록 대상 확정까지입니다. endpoint와 catalog 해시를 고정하는 활성화 단계는 별도입니다.
 - 검증 증적 파일은 워커 전용 named volume(`intake_reports`)에 있습니다. 요약은 DB와 Console에 있지만 파일 다운로드 경로는 아직 없습니다.

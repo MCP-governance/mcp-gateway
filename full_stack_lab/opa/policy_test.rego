@@ -525,3 +525,79 @@ test_every_registered_exception_survives_section_8_6 if {
 		data.policy_ledger[exc.policy_id].exceptionable == true
 	}
 }
+
+# ── T-DECOMM 전주기 종료 (§11.11 미등록·비인가 구성요소 + 전주기 종료 단계) ──
+#
+# 이 시험들이 지키는 것은 "폐기했다"가 판정이 아니라 집행이 되게 하는 것이다.
+# 관리대장에서 상태만 바꾸고 호출은 계속 되는 구성은 종료가 아니라 표기다.
+
+test_terminating_engagement_is_blocked if {
+	result := decision with input as with_input({"contract": object.union(
+		base.contract, {"lifecycle": "TERMINATING"},
+	)})
+	result.decision == "Block"
+	result.policy_id == "MCP-DECOMM-001"
+}
+
+test_retired_engagement_is_blocked if {
+	result := decision with input as with_input({"contract": object.union(
+		base.contract, {"lifecycle": "RETIRED"},
+	)})
+	result.decision == "Block"
+	result.policy_id == "MCP-DECOMM-001"
+}
+
+# 폐기된 서버는 Registry에서도 비활성이 된다. 둘 다 성립할 때 감사에 남아야 하는
+# 사실은 "폐기된 관계였다"이고, 비활성 판정은 경합 후보로만 남아야 한다.
+test_decommission_outranks_disabled_registry if {
+	result := decision with input as with_input({"contract": object.union(
+		base.contract, {"lifecycle": "RETIRED", "enabled": false},
+	)})
+	result.policy_id == "MCP-DECOMM-001"
+	some conflict in result.conflicts
+	conflict.policy_id == "MCP-REGISTRY-002"
+}
+
+# lifecycle 입력이 없는 배포(구버전 Gateway)는 운영 중으로 본다. 기본값을 종료로
+# 두면 스키마가 아직 올라가지 않은 몇 초 동안 전부 차단된다.
+test_absent_lifecycle_defaults_to_operating if {
+	result := decision with input as base
+	result.decision == "Allow"
+	result.policy_id == "P-333-ALLOW-001"
+}
+
+# 폐기 차단은 예외로 완화할 수 없다. 완화되면 종료 판정의 연속성 근거가 사라진다.
+test_decommission_is_not_exceptionable if {
+	data.policy_ledger["MCP-DECOMM-001"].exceptionable == false
+}
+
+# ── T-SHADOW 강제 경로 밖 설정 (§11.11 다중 정책 동시 적용) ─────────────────
+
+test_shadow_endpoint_upgrades_allow_to_alert if {
+	result := decision with input as with_input({
+		"principal": {"role": "partner", "department": "협력사 A", "shadow_endpoints": 2},
+	})
+	result.decision == "Alert"
+	result.policy_id == "MCP-SHADOW-001"
+	some conflict in result.conflicts
+	conflict.policy_id == "P-333-ALLOW-001"
+}
+
+# 섀도 설정을 가진 사람이라고 해서 원래 막혔을 호출이 경고로 바뀌지는 않는다.
+# 더 제한적인 판정이 이긴다.
+test_shadow_endpoint_does_not_weaken_a_block if {
+	result := decision with input as with_input({
+		"principal": {"role": "partner", "department": "협력사 A", "shadow_endpoints": 5},
+		"resource": {"id": "secret-001", "data_class": "important"},
+	})
+	result.decision == "Block"
+	result.policy_id == "P-333-DENY-001"
+}
+
+test_no_shadow_report_leaves_allow_unchanged if {
+	result := decision with input as with_input({
+		"principal": {"role": "partner", "department": "협력사 A", "shadow_endpoints": 0},
+	})
+	result.decision == "Allow"
+	result.policy_id == "P-333-ALLOW-001"
+}

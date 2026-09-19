@@ -71,6 +71,7 @@ async def lifespan(_: FastAPI):
     private_key()  # fail fast if this process is not actually the token issuer
     await db.wait_until_ready()
     await db.execute((Path(__file__).parent / "agent_tables.sql").read_text())
+    await db.execute((Path(__file__).parent / "lifecycle_tables.sql").read_text())
     await bootstrap_passwords()
     try:
         yield
@@ -126,6 +127,12 @@ class McpIntake(StrictModel):
     repository_url: str = Field(min_length=12, max_length=300)
     requested_transport: Literal["streamable-http", "stdio", "sse"]
     purpose: str = Field(min_length=10, max_length=1000)
+    # 종료 조건을 도입 시점에 확인한다. 논문 5.2는 이들 증거가 "개시 시점의 기록
+    # 체계와 계약 설계에 의존하므로 소급 확보가 어렵다"고 적는다. 종료 단계에서
+    # 제공자에게 뒤늦게 요청하는 것보다, 들일 때 약속받는 편이 유일한 완화다.
+    provider_credential_disclosure: bool = False
+    revocation_evidence: bool = False
+    audit_access_retained: bool = False
 
 
 class IntakeRejection(StrictModel):
@@ -284,6 +291,37 @@ async def gateway_json(path: str, authorization: str | None = None, method: str 
         raise HTTPException(503, "거버넌스 상태를 불러올 수 없습니다.") from exc
 
 
+async def gateway_proxy(path: str, authorization: str | None, method: str = "GET",
+                        body: dict | None = None) -> dict:
+    """Gateway가 정본인 조작을 Console 포트에서 대신 부른다.
+
+    상태 코드를 그대로 넘기는 것이 gateway_json과 다른 점이다. "판정하지 않은
+    케이스는 종결할 수 없습니다"가 화면에서 503 '상태를 불러올 수 없습니다'로
+    보이면, 운영자는 시스템 장애로 읽고 같은 버튼을 다시 누른다.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=15, follow_redirects=False) as client:
+            response = await client.request(
+                method, GATEWAY_URL + path,
+                headers={"Authorization": authorization or "", "content-type": "application/json"},
+                json=body,
+            )
+    except httpx.HTTPError as exc:
+        raise HTTPException(503, "Gateway에 연결할 수 없습니다.") from exc
+    if response.status_code >= 400:
+        try:
+            detail = response.json().get("detail")
+        except ValueError:
+            detail = None
+        raise HTTPException(response.status_code, detail or "Gateway가 요청을 거절했습니다.")
+    if not response.content:
+        return {}
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise HTTPException(502, "Gateway 응답을 해석할 수 없습니다.") from exc
+
+
 # 역할이 볼 수 있는 화면. 숨기기만 하는 메뉴는 통제가 아니라 장식이므로
 # /api/console이 이 목록을 기준으로 데이터 자체를 빼고 응답한다.
 PAGES_BY_ROLE = {
@@ -292,7 +330,8 @@ PAGES_BY_ROLE = {
     # 공급망 증적이 아니다.
     "partner": ("execution", "intake"),
     "employee": ("execution", "intake", "audit"),
-    "admin": ("overview", "intake", "verification", "risks", "mcpscan", "policy", "accounts", "execution", "audit"),
+    "admin": ("overview", "intake", "verification", "risks", "mcpscan", "termination",
+              "endpoints", "policy", "accounts", "execution", "audit"),
 }
 ROLE_LABELS = {"partner": "협력업체 직원", "employee": "직원", "admin": "관리자"}
 
@@ -320,7 +359,7 @@ def console_user(user: dict) -> dict:
 async def intake_rows(user: dict) -> list[dict]:
     query = """SELECT id, submitted_by, display_name, repository_url, requested_transport, purpose,
                       status, risk_level, review_note, reviewed_by, reviewed_at, created_at, updated_at,
-                      commit_sha, source_ref, evidence, validated_at
+                      commit_sha, source_ref, evidence, validated_at, exit_terms
                FROM mcp_intake_requests"""
     if "admin" in user["roles"]:
         return await db.fetch_all(query + " ORDER BY created_at DESC LIMIT 100")
@@ -340,6 +379,10 @@ async def console(authorization: str | None = Header(default=None)):
         wanted["monitor"] = gateway_json("/api/monitor/summary?hours=168")
     if "policy" in pages:
         wanted["ledger"] = gateway_json("/api/policy/ledger")
+    if "termination" in pages:
+        wanted["termination"] = gateway_json("/api/termination/cases", authorization)
+    if "endpoints" in pages:
+        wanted["endpoints"] = gateway_json("/api/endpoint/inventory", authorization)
     results = dict(zip(wanted, await asyncio.gather(*wanted.values())))
     state = results["state"]
 
@@ -352,7 +395,9 @@ async def console(authorization: str | None = Header(default=None)):
     payload = {
         "viewer": console_user(user),
         "health": results["health"],
-        "registry": state["servers"] if "overview" in pages else [],
+        # 종료·폐기 화면도 Registry를 본다. 폐기할 서버를 고르는 목록이
+        # 없으면 그 화면에서 할 수 있는 것이 없다.
+        "registry": state["servers"] if {"overview", "termination"} & set(pages) else [],
         "decisions": decisions if "overview" in pages or "audit" in pages else [],
         "approvals": state["approvals"] if is_admin else [],
         "supply_chain": reports,
@@ -362,6 +407,11 @@ async def console(authorization: str | None = Header(default=None)):
         # §12.5 PaC 정책 관리대장. 운영자가 정책 코드를 읽지 않고도 어떤 위험·통제를
         # 구현한 정책이 지금 어떤 버전·상태로 적용 중인지 확인할 수 있어야 한다.
         "ledger": results.get("ledger", {}),
+        # 전주기의 마지막 구간. 요약만 싣고 케이스 상세는 화면이 따로 부른다.
+        # 케이스 하나에 회수 대상과 증거가 수십 건씩 붙으므로, 첫 화면 응답에
+        # 전부 실으면 목록을 보기만 해도 모든 증거를 내려받게 된다.
+        "termination": results.get("termination", {}),
+        "endpoints": results.get("endpoints", {}),
         "upstream_effect_count": state["upstream_effect_count"],
         "intake": await intake_rows(user),
         "severity": {
@@ -422,15 +472,27 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
     )
     if existing:
         raise HTTPException(409, f"같은 저장소가 이미 {existing['status']} 상태로 등록돼 있습니다.")
+    exit_terms = {
+        "provider_credential_disclosure": request.provider_credential_disclosure,
+        "revocation_evidence": request.revocation_evidence,
+        "audit_access_retained": request.audit_access_retained,
+    }
     row = await db.fetch_one(
         """INSERT INTO mcp_intake_requests(
-                 id, submitted_by, display_name, repository_url, requested_transport, purpose
-             ) VALUES (%s,%s,%s,%s,%s,%s)
-             RETURNING id, display_name, repository_url, requested_transport, purpose, status, risk_level, created_at""",
+                 id, submitted_by, display_name, repository_url, requested_transport,
+                 purpose, exit_terms
+             ) VALUES (%s,%s,%s,%s,%s,%s,%s)
+             RETURNING id, display_name, repository_url, requested_transport, purpose,
+                       status, risk_level, exit_terms, created_at""",
         (uuid4(), user["principal"], request.display_name.strip(), repository_url,
-         request.requested_transport, request.purpose.strip()),
+         request.requested_transport, request.purpose.strip(), Jsonb(exit_terms)),
     )
-    return {"request": row, "message": "제출 완료. 격리된 체크아웃과 검증 증적이 연결되기 전까지 보류됩니다."}
+    message = "제출 완료. 격리된 체크아웃과 검증 증적이 연결되기 전까지 보류됩니다."
+    if request.requested_transport != "stdio" and not request.provider_credential_disclosure:
+        # 경고이지 거절이 아니다. 신청 단계에서 막으면 신청자가 계약 조항을 임의로
+        # 체크하게 된다. 판단은 승인자가 하고, 여기서는 그 결과를 미리 말해 준다.
+        message += " 제공자 자격 고지 조항이 없어 이 서버는 종료 시 최선 등급이 T3입니다."
+    return {"request": row, "message": message}
 
 
 @app.post("/api/mcp-requests/{request_id}/queue-validation")
@@ -475,11 +537,23 @@ async def approve_mcp_request(request_id: UUID, authorization: str | None = Head
             raise HTTPException(
                 409, "이 commit에 대한 AI 코드 감사 결과가 없습니다. "
                      "감사를 실행해 완료된 뒤에 승인할 수 있습니다.")
+    # 종료 준비 게이트. 원격 서버를 제공자 자격 고지 없이 들이면 그 이용 관계는
+    # 끝낼 때 반드시 T3(판단 불가)가 된다. 그 사실을 종료 단계에서 알면 이미 늦다.
+    # 기본값은 경고이고, 조직이 이 조건을 필수로 만들려면 환경변수로 켠다.
+    if EXIT_TERMS_REQUIRED:
+        pending = await db.fetch_one(
+            "SELECT requested_transport, exit_terms FROM mcp_intake_requests WHERE id=%s",
+            (request_id,))
+        terms = (pending or {}).get("exit_terms") or {}
+        if pending and pending["requested_transport"] != "stdio"                 and not terms.get("provider_credential_disclosure"):
+            raise HTTPException(
+                409, "원격 MCP는 제공자의 하위 자격 고지 조항 없이 승인할 수 없습니다. "
+                     "고지 없이는 종료 시 회수 대상의 모집단을 열거할 수 없습니다.")
     row = await db.fetch_one(
         """UPDATE mcp_intake_requests
            SET status='APPROVED', reviewed_by=%s, reviewed_at=now(), updated_at=now()
            WHERE id=%s AND status='VALIDATED'
-           RETURNING id, status, reviewed_by, reviewed_at, source_ref""",
+           RETURNING id, status, reviewed_by, reviewed_at, source_ref, exit_terms""",
         (user["principal"], request_id),
     )
     if not row:
@@ -553,6 +627,10 @@ WORKER_STALE_SECONDS = int(os.getenv("INTAKE_WORKER_STALE_SECONDS", "60"))
 # §11.4.1의 승인 유효기간과 같은 생각이다. 승인에 기한이 있는데 그 승인의 근거인
 # 감사에 기한이 없으면, 먼저 낡는 것은 승인이 아니라 근거다.
 SCAN_REQUIRED_FOR_APPROVAL = os.getenv("MCP_SCAN_REQUIRED_FOR_APPROVAL", "0") not in ("0", "false", "")
+# 종료 준비 게이트. 기본값은 꺼짐 — 기존 등록 서버들이 도입 심사 이전에 들어온
+# 것이라 켜 둔 채로는 이 실습의 승인 시나리오가 통과하지 않는다. 조직이 이 조건을
+# 필수로 만들 준비가 되면 켠다.
+EXIT_TERMS_REQUIRED = os.getenv("INTAKE_EXIT_TERMS_REQUIRED", "0") not in ("0", "false", "")
 
 
 def mcp_scan_status() -> dict:
@@ -624,12 +702,18 @@ async def mcp_scan_overview(authorization: str | None = Header(default=None)):
         # 등록된 서버도 대상이다. 이미 호출되고 있는 코드를 감사 대상에서 빼두면
         # "심사한 코드"와 "지금 도는 코드"가 갈라져도 아무도 모른다.
         db.fetch_all("""SELECT s.id, s.display_name, s.source_url, s.source_ref, s.status,
+                               s.lifecycle, s.endpoint,
                                (s.source_url LIKE 'https://github.com/%%') AS scannable,
+                               -- 동적 점검은 코드 출처가 아니라 지금 붙을 주소가
+                               -- 있는지를 본다. 둘은 다른 조건이고, 원격 전용이라
+                               -- 정적 감사를 못 하는 서버가 오히려 동적 점검의
+                               -- 주 대상이다.
+                               (s.endpoint LIKE 'http%%') AS probeable,
                                j.status AS last_status, j.finished_at AS last_finished_at
                         FROM mcp_servers s
                         LEFT JOIN LATERAL (
                             SELECT status, finished_at FROM scan_jobs
-                            WHERE target_kind='server' AND target_id = s.id
+                            WHERE target_kind='server' AND target_id = s.id AND mode='static'
                             ORDER BY created_at DESC LIMIT 1) j ON true
                         ORDER BY s.id"""),
         scan_worker_status(),
@@ -673,10 +757,38 @@ class ScanRequest(StrictModel):
     # 받아야 등록된 서버의 재감사가 가능해진다.
     target_kind: Literal["intake", "server"] = "intake"
     target_id: str = Field(min_length=1, max_length=200)
+    # 정적 감사는 코드를 복제해 읽고, 동적 점검은 실행 중인 endpoint에 붙는다.
+    # 후자는 그 서버의 응답이 설정한 LLM endpoint로 나간다.
+    mode: Literal["static", "dynamic"] = "static"
+    # 동적 점검을 외부 모델로 돌릴 때의 확인. 기본값이 False인 것이 핵심이다.
+    # "돌렸더니 코드가 나갔다"를 사후에 알게 되면 그때는 이미 나간 뒤다.
+    acknowledge_external_model: bool = False
 
 
-async def resolve_scan_target(target_kind: str, target_id: str) -> str:
+# 로컬로 볼 수 있는 모델 endpoint. core의 provider 검증과 같은 기준을 쓴다.
+LOCAL_MODEL_HOSTS = {"localhost", "127.0.0.1", "::1", "host.docker.internal",
+                     "model-stub", "llm-stub", "ollama"}
+
+
+def local_model_endpoint() -> bool:
+    host = urlsplit(MCP_SCAN_CONFIG["base_url"] or "").hostname or ""
+    return host in LOCAL_MODEL_HOSTS
+
+
+async def resolve_scan_target(target_kind: str, target_id: str, mode: str = "static") -> str:
     """대상이 실제로 감사 가능한지 확인하고 표시 이름을 돌려준다."""
+    if mode == "dynamic":
+        # 동적 점검은 "지금 이 주소에 있는 것"을 보는 검사다. 아직 들이지 않기로
+        # 한 도입 요청에는 붙일 주소가 없고, 붙인다면 그것은 격리 원칙과 반대다.
+        if target_kind != "server":
+            raise HTTPException(409, "동적 점검은 등록된 서버에만 할 수 있습니다.")
+        row = await db.fetch_one(
+            "SELECT display_name, endpoint FROM mcp_servers WHERE id=%s", (target_id,))
+        if not row:
+            raise HTTPException(404, "등록 서버를 찾을 수 없습니다.")
+        if not str(row["endpoint"] or "").startswith(("http://", "https://")):
+            raise HTTPException(409, "HTTP endpoint가 있는 서버에만 동적 점검을 할 수 있습니다.")
+        return row["display_name"]
     if target_kind == "intake":
         try:
             key = str(UUID(target_id))
@@ -716,20 +828,31 @@ async def run_mcp_scan_job(request: ScanRequest, authorization: str | None = Hea
             raise HTTPException(422, "도입 요청 ID 형식이 아닙니다.") from exc
     else:
         target_id = request.target_id
-    label = await resolve_scan_target(request.target_kind, target_id)
+    label = await resolve_scan_target(request.target_kind, target_id, request.mode)
+
+    # 동적 점검은 서버가 돌려주는 내용을 모델로 보낸다. 폐기 중인 서버의 응답에
+    # 잔존 데이터가 들어 있을 수 있으므로, 외부 endpoint를 쓸 때는 관리자가 그
+    # 사실을 확인한 기록이 남아야 한다. 로컬 모델은 확인 없이 진행한다.
+    if request.mode == "dynamic" and not local_model_endpoint()             and not request.acknowledge_external_model:
+        raise HTTPException(
+            409,
+            "동적 점검은 대상 서버의 응답을 설정한 모델 endpoint로 보냅니다. "
+            f"지금 endpoint는 외부({MCP_SCAN_CONFIG['base_url'] or '미설정'})입니다. "
+            "확인 후 다시 실행하세요.")
 
     # lease가 만료된 RUNNING은 워커가 죽은 흔적이다. 여기서 먼저 회수하지 않으면
     # 관리자는 "이미 진행 중입니다"라는 409만 영원히 보게 된다.
     await db.execute(
         """UPDATE scan_jobs SET status='QUEUED', lease_expires_at=NULL,
                   error='워커 lease 만료로 관리자가 회수했습니다.'
-           WHERE target_kind=%s AND target_id=%s AND status='RUNNING'
+           WHERE target_kind=%s AND target_id=%s AND mode=%s AND status='RUNNING'
              AND (lease_expires_at IS NULL OR lease_expires_at < now())""",
-        (request.target_kind, target_id))
+        (request.target_kind, target_id, request.mode))
     live = await db.fetch_one(
         """SELECT id, status, lease_expires_at FROM scan_jobs
-           WHERE target_kind=%s AND target_id=%s AND status IN ('QUEUED','RUNNING')""",
-        (request.target_kind, target_id))
+           WHERE target_kind=%s AND target_id=%s AND mode=%s
+             AND status IN ('QUEUED','RUNNING')""",
+        (request.target_kind, target_id, request.mode))
     if live:
         raise HTTPException(409, f"이 대상의 감사가 이미 {live['status']} 상태입니다. "
                                  "취소한 뒤 다시 실행하세요.")
@@ -737,11 +860,14 @@ async def run_mcp_scan_job(request: ScanRequest, authorization: str | None = Hea
     worker = await scan_worker_status()
     job_id = uuid4()
     await db.execute(
-        """INSERT INTO scan_jobs(id, kind, target_kind, target_id, target_label, requested_by, trigger)
-           VALUES (%s,'mcp-scan',%s,%s,%s,%s,'manual')""",
-        (job_id, request.target_kind, target_id, label, user["principal"]),
+        """INSERT INTO scan_jobs(id, kind, target_kind, target_id, target_label,
+                                 requested_by, trigger, mode)
+           VALUES (%s,'mcp-scan',%s,%s,%s,%s,'manual',%s)""",
+        (job_id, request.target_kind, target_id, label, user["principal"], request.mode),
     )
-    message = "AI 코드 감사를 큐에 넣었습니다. 고정된 commit을 다시 복제해 실행합니다."
+    message = ("실행 중인 endpoint에 대한 동적 점검을 큐에 넣었습니다."
+               if request.mode == "dynamic"
+               else "AI 코드 감사를 큐에 넣었습니다. 고정된 commit을 다시 복제해 실행합니다.")
     if not worker["alive"]:
         message += " 다만 격리 워커의 생존 신호가 없습니다. 워커가 뜨기 전에는 실행되지 않습니다."
     return {"job_id": str(job_id), "worker_alive": worker["alive"], "message": message}
@@ -789,6 +915,167 @@ async def retry_mcp_scan_job(job_id: UUID, authorization: str | None = Header(de
     if not row:
         raise HTTPException(409, "실패했거나 취소된 작업만 다시 돌릴 수 있습니다.")
     return {"job": row, "message": "대기열에 다시 넣었습니다."}
+
+
+# ── 전주기 종료·폐기 (Gateway가 정본, Console은 대리 호출) ──────────────────
+#
+# 조작 논리를 여기에 복제하지 않는다. 판정 규칙이 두 서비스에 나뉘면 어느 쪽이
+# 정본인지 저장소가 답하지 못한다. 이 저장소가 정책 원본을 한 곳에 모은 것과
+# 같은 이유다. 여기서는 역할만 확인하고 그대로 넘긴다.
+
+
+class TerminationOpen(StrictModel):
+    server_id: str = Field(min_length=1, max_length=120)
+    reason: str = Field(min_length=10, max_length=1000)
+    engagement_label: str | None = Field(default=None, max_length=300)
+
+
+class TerminationTarget(StrictModel):
+    kind: str = Field(min_length=1, max_length=40)
+    label: str = Field(min_length=1, max_length=300)
+    holder: str = Field(min_length=1, max_length=20)
+    discovered_by: str = Field(min_length=1, max_length=40)
+    status: str = Field(default="OUTSTANDING", max_length=20)
+    note: str | None = Field(default=None, max_length=1000)
+
+
+class TerminationTargetUpdate(StrictModel):
+    status: str = Field(min_length=1, max_length=20)
+    note: str | None = Field(default=None, max_length=1000)
+
+
+class TerminationEvidence(StrictModel):
+    kind: str = Field(min_length=1, max_length=40)
+    subject: str = Field(min_length=1, max_length=300)
+    source: str = Field(min_length=1, max_length=300)
+    detail: dict = Field(default_factory=dict)
+    target_id: str | None = None
+    observed_at: str | None = None
+
+
+class TerminationClose(StrictModel):
+    note: str = Field(min_length=1, max_length=1000)
+    risk_acceptance: str | None = Field(default=None, max_length=1000)
+
+
+class TerminationReopen(StrictModel):
+    reason: str = Field(min_length=1, max_length=1000)
+
+
+async def admin_only(authorization: str | None) -> dict:
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "관리자만 사용할 수 있습니다.")
+    return user
+
+
+@app.get("/api/termination/cases")
+async def termination_cases(authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy("/api/termination/cases", authorization)
+
+
+@app.post("/api/termination/cases", status_code=201)
+async def termination_open(request: TerminationOpen, authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy("/api/termination/cases", authorization, "POST",
+                               request.model_dump(exclude_none=True))
+
+
+@app.get("/api/termination/cases/{case_id}")
+async def termination_detail(case_id: UUID, authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy(f"/api/termination/cases/{case_id}", authorization)
+
+
+@app.get("/api/termination/cases/{case_id}/report")
+async def termination_report(case_id: UUID, authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy(f"/api/termination/cases/{case_id}/report", authorization)
+
+
+@app.get("/api/termination/cases/{case_id}/disclosure-request")
+async def termination_disclosure(case_id: UUID, authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy(f"/api/termination/cases/{case_id}/disclosure-request", authorization)
+
+
+@app.get("/api/termination/drill/{server_id}")
+async def termination_drill(server_id: str, authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy(f"/api/termination/drill/{server_id}", authorization)
+
+
+@app.post("/api/termination/cases/{case_id}/targets", status_code=201)
+async def termination_add_target(case_id: UUID, request: TerminationTarget,
+                                 authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy(f"/api/termination/cases/{case_id}/targets", authorization,
+                               "POST", request.model_dump(exclude_none=True))
+
+
+@app.put("/api/termination/targets/{target_id}")
+async def termination_update_target(target_id: UUID, request: TerminationTargetUpdate,
+                                    authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy(f"/api/termination/targets/{target_id}", authorization,
+                               "PUT", request.model_dump(exclude_none=True))
+
+
+@app.post("/api/termination/cases/{case_id}/evidence", status_code=201)
+async def termination_add_evidence(case_id: UUID, request: TerminationEvidence,
+                                   authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy(f"/api/termination/cases/{case_id}/evidence", authorization,
+                               "POST", request.model_dump(exclude_none=True))
+
+
+@app.post("/api/termination/cases/{case_id}/probe")
+async def termination_probe(case_id: UUID, authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy(f"/api/termination/cases/{case_id}/probe", authorization, "POST", {})
+
+
+@app.post("/api/termination/cases/{case_id}/assess")
+async def termination_assess(case_id: UUID, authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy(f"/api/termination/cases/{case_id}/assess", authorization, "POST", {})
+
+
+@app.post("/api/termination/cases/{case_id}/close")
+async def termination_close(case_id: UUID, request: TerminationClose,
+                            authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy(f"/api/termination/cases/{case_id}/close", authorization,
+                               "POST", request.model_dump(exclude_none=True))
+
+
+@app.post("/api/termination/cases/{case_id}/reopen")
+async def termination_reopen(case_id: UUID, request: TerminationReopen,
+                             authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy(f"/api/termination/cases/{case_id}/reopen", authorization,
+                               "POST", request.model_dump(exclude_none=True))
+
+
+@app.get("/api/endpoint/inventory")
+async def endpoint_inventory(classification: str | None = None,
+                             authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    suffix = f"?classification={classification}" if classification else ""
+    return await gateway_proxy("/api/endpoint/inventory" + suffix, authorization)
+
+
+@app.get("/api/risk-catalog")
+async def risk_catalog(authorization: str | None = Header(default=None)):
+    """AI-Infra-Guard 위험 범주와 이 조직 통제의 매핑표.
+
+    로그인한 사람이면 누구나 본다. 발견 내역이 아니라 분류 기준이고, 직원이
+    "내가 신청한 서버가 어떤 기준으로 검사되는가"를 알 수 없으면 도입 요청서의
+    '도입 목적'은 형식이 된다.
+    """
+    await current_identity(authorization)
+    return await gateway_proxy("/api/risk-catalog", authorization)
 
 
 @app.get("/api/stream/decisions")

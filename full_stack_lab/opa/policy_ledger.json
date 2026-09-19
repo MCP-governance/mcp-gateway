@@ -1304,6 +1304,107 @@
       "status": "운영",
       "approval_status": "승인",
       "effective_from": "2026-09-16T00:00:00Z"
+    },
+    "MCP-DECOMM-001": {
+      "name": "종료·폐기 이용 관계 차단",
+      "purpose": "종료 절차에 들어갔거나 폐기된 이용 관계의 도구 호출을 실행 전에 차단하고, 차단 시각 이후의 실행 0건을 조직이 자체 증명할 수 있게 한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-012"
+      ],
+      "requirement_ids": [
+        "SR-015"
+      ],
+      "control_ids": [
+        "CTL-018"
+      ],
+      "principle_ids": [
+        "PRN-02",
+        "PRN-06"
+      ],
+      "owner": "거버넌스팀",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "종료 요청된 모든 MCP Server 및 Tool",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "contract.lifecycle"
+      ],
+      "condition": "이용 관계의 전주기 단계가 TERMINATING 또는 RETIRED",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 15,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "종료 판정의 연속성(C3) 근거 자체를 무너뜨리므로 예외 대상이 아니다. 종료를 되돌려야 한다면 예외가 아니라 케이스 재개 절차를 쓴다.",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-19T00:00:00Z",
+      "obligations": [
+        "evidence.enhanced",
+        "alert.security"
+      ],
+      "test_ids": [
+        "T-DECOMM-001",
+        "T-DECOMM-002",
+        "T-DECOMM-003"
+      ]
+    },
+    "MCP-SHADOW-001": {
+      "name": "강제 경로 밖 설정 보유자 증적 강화",
+      "purpose": "엔드포인트 평면이 요청자의 단말에서 미등록 MCP 설정을 발견한 경우, 허용은 유지하되 증적과 경보를 강화한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-013"
+      ],
+      "requirement_ids": [
+        "SR-016"
+      ],
+      "control_ids": [
+        "CTL-019"
+      ],
+      "principle_ids": [
+        "PRN-06",
+        "PRN-09"
+      ],
+      "owner": "거버넌스팀",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "엔드포인트 에이전트가 보고한 신원의 모든 호출",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "principal.shadow_endpoints"
+      ],
+      "condition": "요청자 소유 엔드포인트에 미등록 MCP 설정이 1건 이상 보고됨",
+      "outcome": "경고",
+      "enforcement": "실행 후 증적 강화",
+      "priority": 135,
+      "automation": "자동화",
+      "exceptionable": true,
+      "exception_note": "보완통제(설정 제거 기한과 재보고)를 붙인 한시 예외만 허용한다.",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-19T00:00:00Z",
+      "obligations": [
+        "evidence.enhanced",
+        "alert.owner"
+      ],
+      "test_ids": [
+        "T-SHADOW-001",
+        "T-SHADOW-002"
+      ]
     }
   }
 }

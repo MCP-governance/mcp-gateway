@@ -127,6 +127,31 @@ case "${1:-up}" in
     up
     agent_test
     ;;
+  endpoint)
+    # 엔드포인트 평면. 기본 기동에 넣지 않는 이유는 남의 PC 설정을 읽는 기능이
+    # 기본값으로 켜져 있으면 안 되기 때문이다. 켤 때는 무엇을 읽는지 화면에 적는다.
+    up
+    echo "관측 경로: ${ENDPOINT_CONFIG_SOURCE:-./endpoint/sample-configs} (읽기 전용)"
+    docker compose --profile endpoint up -d --build endpoint-agent
+    echo "엔드포인트 에이전트를 올렸습니다. Console의 '엔드포인트' 화면에서 확인하세요."
+    echo "  로그: docker compose logs -f endpoint-agent"
+    ;;
+  openapi)
+    # 개발용 API 명세. FastAPI가 코드에서 만들어 주므로 손으로 쓴 문서가 코드와
+    # 갈라질 일이 없다. 통합 단계에서 다른 팀이 보는 것은 이 파일이다.
+    up
+    mkdir -p ../docs/openapi
+    for service in gateway agent-service; do
+      docker compose exec -T "$service" python -c "
+import json, sys
+from importlib import import_module
+module = import_module('app.main' if '$service' == 'gateway' else 'app.agent_service')
+json.dump(module.app.openapi(), sys.stdout, ensure_ascii=False, indent=2, sort_keys=True)
+" > "../docs/openapi/${service}.json"
+      echo "docs/openapi/${service}.json"
+    done
+    echo "OpenAPI 명세를 생성했습니다. 사람이 읽는 명세는 docs/API.md 입니다."
+    ;;
   scan)
     up
     docker compose --profile supply-chain run --rm syft
@@ -145,10 +170,12 @@ case "${1:-up}" in
     docker compose logs -f --tail=120 agent-service gateway opa mock-http-mcp intake-worker
     ;;
   down)
-    docker compose down
+    # 프로필로 띄운 서비스는 profile을 함께 줘야 내려간다. 그러지 않으면
+    # down 뒤에도 엔드포인트 에이전트가 남아 계속 보고한다.
+    docker compose --profile endpoint --profile llm-stub down
     ;;
   reset)
-    docker compose down -v
+    docker compose --profile endpoint --profile llm-stub down -v
     # trivy-*.json are the per-server reports that actually feed MCP-SUPPLY-001.
     # Leaving them behind meant a reset did not reset supply-chain evidence: the
     # next import re-attributed stale findings to a freshly created database.
@@ -167,7 +194,7 @@ case "${1:-up}" in
     echo "이 실습 전용 DB·효과 로그·생성 보고서를 초기화했습니다."
     ;;
   *)
-    echo "usage: ./console.sh [up|test|agent-test|scan|status|logs|down|reset]" >&2
+    echo "usage: ./console.sh [up|test|agent-test|endpoint|scan|openapi|status|logs|down|reset]" >&2
     exit 2
     ;;
 esac

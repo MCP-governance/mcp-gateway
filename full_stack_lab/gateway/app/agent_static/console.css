@@ -343,6 +343,64 @@ td .sub { display: block; margin-top: 4px; font-size: 11px; color: var(--ink-3);
 .tag.decision { border-color: currentColor; }
 
 /* ── responsive ─────────────────────────────────────────── */
+/* ── 종료·폐기와 엔드포인트 평면 ───────────────────────────────────────────── */
+/* 판정 화면은 숫자보다 "무엇이 왜 미충족인가"를 읽는 화면이다. 네 기준을 나란히
+   두고 충족 여부를 색이 아니라 글자로도 말한다(색각 이상). */
+.panel-note { margin: 0 0 16px; font-size: 12px; line-height: 1.7; color: var(--ink-2); }
+.panel-note code { font-size: 11px; }
+.tag-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-start; }
+
+.criteria-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 20px 0 8px; }
+.criterion { padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.criterion.bad { border-color: var(--block); }
+.criterion.ok { border-color: var(--allow); }
+.criterion-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.criterion-head b { font-size: 13px; font-weight: 800; }
+.criterion ul { margin: 10px 0 0; padding-left: 18px; }
+.criterion li { font-size: 12px; line-height: 1.6; color: var(--ink-2); margin-top: 4px; }
+.criterion .request-meta { margin-top: 10px; }
+
+.result-facts dd.bad { color: var(--block); }
+.result-facts dd.warn { color: var(--alert); }
+.result-facts dd.ok { color: var(--allow); }
+.request-meta.bad { color: var(--block); }
+
+/* 조작마다 필요한 값이 다르다. 상세 패널 아래에서 같은 자리에 폼을 편다. */
+.inline-form:empty { display: none; }
+.inline-form-body { display: grid; gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
+.inline-form-body label { display: grid; gap: 6px; font-size: 12px; font-weight: 700; color: var(--ink-2); }
+.inline-form-body input, .inline-form-body select {
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; font-weight: 500;
+}
+.inline-form-body input:focus, .inline-form-body select:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+@media (max-width: 820px) {
+  .criteria-grid { grid-template-columns: 1fr; }
+}
+
+/* 도입 시점의 종료 조건 체크리스트. 소급 확보가 어려운 증거를 들일 때 약속받는
+   자리이고, 켜고 끌 때마다 "이 서버는 끊을 수 있는가"를 그 자리에서 답한다. */
+.exit-terms { margin: 4px 0 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius); }
+.exit-terms legend { padding: 0 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.exit-terms .check { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; font-size: 13px; font-weight: 500; color: var(--ink); cursor: pointer; }
+.exit-terms .check input { margin-top: 2px; accent-color: var(--ink); }
+.exit-terms .check span { line-height: 1.5; }
+.field-hint.ok { color: var(--allow); }
+.field-hint.warn { color: var(--alert); }
+.field-hint.bad { color: var(--block); }
+#exit-terms-verdict { margin-top: 14px; font-weight: 600; }
+
+/* 스캐너 발견의 범주별 집계. "발견 13건"보다 "무엇이 13건인지"가 조치를 부른다. */
+.risk-row { margin: 12px 0 0; }
+.risk-row .chip { cursor: default; font-size: 11px; padding: 4px 10px; }
+.risk-row .chip.bad { border-color: var(--block); color: var(--block); }
+.risk-row .chip.warn { border-color: var(--alert); color: var(--alert); }
+.risk-row .chip:hover { border-color: inherit; color: inherit; }
+
+#termination-drill-result:empty { display: none; }
+#termination-drill-result { margin-top: 4px; }
+
 @media (max-width: 1180px) {
   .metric-grid { grid-template-columns: repeat(2, 1fr); }
   .metric-card:nth-child(4n) { border-right: 1px solid var(--line); }

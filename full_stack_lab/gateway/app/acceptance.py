@@ -70,6 +70,232 @@ async def post(path: str, body: dict, principal: str = "partner-demo") -> dict:
         return response.json()
 
 
+async def termination_checks() -> list[dict]:
+    """전주기의 마지막 구간을 실제 동작으로 검증한다.
+
+    대상은 `github`이다. 인증 전이라 의도적으로 DISABLED이고 어떤 시나리오도 이
+    서버를 쓰지 않으므로, 폐기했다가 되돌려도 다른 검증에 영향이 없다. 운영 중인
+    `mock-http`를 쓰면 이 검증이 나머지 전부를 깨뜨린다.
+
+    끝나면 반드시 되돌린다. 검증이 환경을 바꿔 놓고 끝나면 두 번째 실행의 결과가
+    첫 번째와 달라지고, 그때부터 이 파일의 통과는 아무것도 뜻하지 않는다.
+    """
+    from . import decommission
+    from .core import enforcement_mode, set_enforcement_mode
+
+    checks: list[dict] = []
+    target = "github"
+    case_id = None
+    try:
+        opened = await decommission.open_case(
+            target, "acceptance: 전주기 종료 검증", "admin-demo", "GitHub MCP · 합성 종료 검증")
+        case_id = opened["case"]["id"]
+        checks.append(check(opened["case"]["status"] == "OPEN" and opened["case"]["cutover_at"],
+                            "termination-opens-with-cutover", "차단 시작 시각이 케이스와 함께 고정됨"))
+
+        server = await db.fetch_one("SELECT lifecycle FROM mcp_servers WHERE id=%s", (target,))
+        checks.append(check(server["lifecycle"] == "TERMINATING",
+                            "termination-marks-lifecycle", server["lifecycle"]))
+
+        # 종료 절차에 들어간 서버의 호출은 권한을 따지기 전에 끊긴다.
+        blocked = await execute_call({"tool_name": "github_get_file", "user_token": "admin-demo",
+                                      "owner": "MCP-governance", "repo": "mcp-gateway", "path": "README.md"})
+        checks.append(check(blocked["decision"] == "Block" and blocked["policy_id"] == "MCP-DECOMM-001",
+                            "termination-blocks-calls", blocked["policy_id"]))
+        checks.append(check(blocked["upstream_executed"] is False,
+                            "termination-no-upstream-effect", "차단된 호출은 upstream에 닿지 않음"))
+
+        # 관찰 모드는 권한 판정에 대한 의견일 뿐이다. 폐기는 무결성 통제이므로
+        # 관찰 중에도 풀리면 안 된다. 풀리면 C3의 근거 자체가 사라진다.
+        previous = await enforcement_mode()
+        await set_enforcement_mode("monitor", "admin-demo")
+        under_monitor = await execute_call({"tool_name": "github_get_file", "user_token": "admin-demo",
+                                            "owner": "MCP-governance", "repo": "mcp-gateway", "path": "README.md"})
+        await set_enforcement_mode(previous, "admin-demo")
+        checks.append(check(under_monitor["decision"] == "Block"
+                            and under_monitor["policy_id"] == "MCP-DECOMM-001",
+                            "termination-enforced-under-monitor", under_monitor["policy_id"]))
+
+        # 원격 제공자가 하위 위임 자격을 고지하지 않으면 모집단을 열거할 수 없다.
+        # 논문 E3과 같은 상황이고, 판정은 T3여야 한다.
+        assessed = await decommission.assess(case_id, "admin-demo")
+        criteria = assessed["case"]["criteria"]
+        checks.append(check(assessed["case"]["grade"] == "T3",
+                            "termination-undisclosed-provider-is-T3",
+                            json.dumps(criteria["C1"]["gaps"], ensure_ascii=False)[:200]))
+        checks.append(check(criteria["C1"]["met"] is False and criteria["C4"]["met"] is False,
+                            "termination-c1-c4-are-gating", "모집단과 증거 접근은 성립 요건"))
+
+        # 차단 이후 실행된 호출이 0건이라는 사실은 제공자가 아니라 이 강제 경로가
+        # 만든다. 방금 두 번 막혔으므로 시도 수는 늘고 실행 수는 그대로다.
+        checks.append(check(criteria["C3"]["post_cutover_executed"] == 0
+                            and criteria["C3"]["post_cutover_blocked"] >= 2,
+                            "termination-c3-measured-by-gateway",
+                            f"executed={criteria['C3']['post_cutover_executed']} "
+                            f"blocked={criteria['C3']['post_cutover_blocked']}"))
+
+        # T3는 잔존 범위를 산정할 수 없으므로 위험 수용 없이 닫히지 않는다.
+        refused = None
+        try:
+            await decommission.close_case(case_id, "admin-demo", "acceptance 종결 시도")
+        except ValueError as exc:
+            refused = str(exc)
+        checks.append(check(refused is not None, "termination-t3-needs-risk-acceptance", refused or ""))
+
+        # 제공자 고지와 대상별 증거가 갖춰지면 등급이 올라간다. 판정이 근거에
+        # 반응하지 않으면 그것은 판정이 아니라 표기다.
+        targets = await db.fetch_all(
+            "SELECT id, holder FROM revocation_targets WHERE case_id=%s", (case_id,))
+        for row in targets:
+            await decommission.revoke_target(str(row["id"]), "admin-demo", "REVOKED",
+                                             "acceptance: 회수 확인")
+            await decommission.add_evidence(
+                case_id, "provider-attestation" if row["holder"] == "provider" else "revocation-response",
+                f"target:{row['id']}", "acceptance", {"note": "합성 증거"}, "admin-demo",
+                target_id=str(row["id"]))
+        await decommission.add_evidence(
+            case_id, "liveness-probe", "github endpoint 도달 가능성", "acceptance",
+            {"reachable": False}, "admin-demo")
+        upgraded = await decommission.assess(case_id, "admin-demo")
+        checks.append(check(upgraded["case"]["grade"] == "T1",
+                            "termination-evidence-upgrades-grade",
+                            json.dumps(upgraded["case"]["criteria"]["rationale"], ensure_ascii=False)))
+
+        closed = await decommission.close_case(case_id, "admin-demo", "acceptance 종결")
+        checks.append(check(closed["case"]["status"] == "CLOSED"
+                            and closed["case"]["lifecycle"] == "RETIRED",
+                            "termination-close-retires-server", closed["case"]["lifecycle"]))
+
+        # 종결된 케이스는 다시 판정하지 않는다. 재개가 기록되는 조작이어야 한다.
+        reassess_refused = None
+        try:
+            await decommission.assess(case_id, "admin-demo")
+        except ValueError as exc:
+            reassess_refused = str(exc)
+        checks.append(check(reassess_refused is not None,
+                            "termination-closed-case-is-final", reassess_refused or ""))
+
+        # 관리자 전용. 직원 토큰으로는 케이스 목록조차 볼 수 없어야 한다.
+        async with httpx.AsyncClient(timeout=10) as client:
+            forbidden = await client.get(API + "/api/termination/cases", headers=bearer("emp-demo"))
+        checks.append(check(forbidden.status_code == 403,
+                            "termination-admin-only", str(forbidden.status_code)))
+
+        # 제공자 고지 요청서. T3의 원인에 대해 조직이 할 수 있는 유일한 조치다.
+        disclosure = await decommission.disclosure_request(case_id)
+        checks.append(check("자격 회수 확인 요청" in disclosure["markdown"]
+                            and disclosure["has_contract_basis"] is False,
+                            "termination-disclosure-request",
+                            f"contract_basis={disclosure['has_contract_basis']}"))
+    finally:
+        # 되돌리기. 케이스를 지우면 회수 대상과 증거는 ON DELETE CASCADE로 함께 간다.
+        if case_id:
+            await db.execute("DELETE FROM termination_cases WHERE id=%s", (case_id,))
+        await db.execute(
+            """UPDATE mcp_servers SET lifecycle='OPERATING', termination_case_id=NULL,
+                 status='DISABLED', status_reason='인증정보를 저장하지 않아 의도적으로 비활성'
+               WHERE id=%s""", (target,))
+    return checks
+
+
+async def drill_checks() -> list[dict]:
+    """폐기 드릴. 실제로 끊지 않고 도달 가능한 최선 등급을 계산하는지 본다.
+
+    드릴이 케이스를 만들거나 lifecycle을 바꾸면 그것은 드릴이 아니라 종료다.
+    "계산해 봤더니 실행됐다"는 가장 나쁜 종류의 부작용이다.
+    """
+    from . import decommission
+
+    checks: list[dict] = []
+    before = await db.fetch_one("SELECT lifecycle FROM mcp_servers WHERE id='github'")
+    cases_before = await db.fetch_one("SELECT count(*) AS n FROM termination_cases")
+
+    # 원격 + 종료 조건 미확인 → 천장이 T3. 이 사실은 종료를 시작한 뒤에 알면 늦다.
+    remote = await decommission.drill("github")
+    checks.append(check(remote["best_attainable_grade"] == "T3" and remote["blockers"],
+                        "drill-remote-without-terms-is-capped-at-T3",
+                        json.dumps(remote["blockers"], ensure_ascii=False)[:200]))
+
+    # 로컬 stdio는 이중 위임 계층이 없어 제공자 고지를 요구하지 않는다. 요구하면
+    # 로컬 서버가 영원히 T3가 되고 아무도 이 판정을 쓰지 않는다.
+    local = await decommission.drill("mock-stdio")
+    checks.append(check(local["best_attainable_grade"] == "T1" and not local["blockers"],
+                        "drill-local-stdio-can-reach-T1", local["best_attainable_grade"]))
+
+    # 계약 조건이 있으면 천장이 올라간다. 드릴이 조건에 반응하지 않으면 그것은
+    # 계산이 아니라 전송 방식으로 정해진 상수다.
+    await db.execute(
+        """UPDATE mcp_servers SET exit_terms='{"provider_credential_disclosure": true}'::jsonb
+           WHERE id='github'""")
+    with_terms = await decommission.drill("github")
+    await db.execute("UPDATE mcp_servers SET exit_terms='{}'::jsonb WHERE id='github'")
+    checks.append(check(with_terms["best_attainable_grade"] == "T2",
+                        "drill-reacts-to-contract-terms", with_terms["best_attainable_grade"]))
+
+    after = await db.fetch_one("SELECT lifecycle FROM mcp_servers WHERE id='github'")
+    cases_after = await db.fetch_one("SELECT count(*) AS n FROM termination_cases")
+    checks.append(check(after["lifecycle"] == before["lifecycle"]
+                        and cases_after["n"] == cases_before["n"],
+                        "drill-has-no-side-effects",
+                        f"lifecycle={after['lifecycle']} cases={cases_after['n']}"))
+    return checks
+
+
+async def endpoint_plane_checks() -> list[dict]:
+    """엔드포인트 평면이 강제 경로 밖의 것을 실제로 분류하는지 본다."""
+    from . import endpoint_plane
+
+    checks: list[dict] = []
+    endpoint = "acceptance-endpoint-001"
+    try:
+        await endpoint_plane.enroll(endpoint, "acceptance-host", "linux", "1.0.0", "emp-demo")
+        result = await endpoint_plane.ingest(endpoint, [
+            {"config_path": "/tmp/claude_desktop_config.json", "server_label": "합성 문서 MCP",
+             "transport": "streamable-http", "endpoint_ref": "http://mock-http-mcp:9000/mcp/"},
+            {"config_path": "/tmp/claude_desktop_config.json", "server_label": "local-notes",
+             "transport": "stdio", "endpoint_ref": "npx -y @example/notes-mcp"},
+        ])
+        checks.append(check(result["counts"]["registered"] == 1 and result["counts"]["shadow"] == 1,
+                            "endpoint-classifies-registered-and-shadow",
+                            json.dumps(result["counts"], ensure_ascii=False)))
+
+        # 섀도 설정은 그 사람의 호출 판정에 반영된다. 막지는 않고 증적을 강화한다.
+        shadow_count = await endpoint_plane.shadow_count_for("emp-demo")
+        checks.append(check(shadow_count == 1, "endpoint-shadow-reaches-policy-input", str(shadow_count)))
+        alerted = await execute_call({"tool_name": "read_document", "user_token": "emp-demo",
+                                      "document_id": "work-001"})
+        checks.append(check(alerted["decision"] == "Alert" and alerted["policy_id"] == "MCP-SHADOW-001",
+                            "endpoint-shadow-upgrades-to-alert", alerted["policy_id"]))
+        checks.append(check(alerted["upstream_executed"] is True,
+                            "endpoint-shadow-does-not-block", "경고이지 차단이 아님"))
+
+        # 보고는 누적이 아니라 교체다. 설정에서 지워진 항목이 남아 있으면 잔존이
+        # 해소돼도 모집단이 영원히 확정되지 않는다.
+        replaced = await endpoint_plane.ingest(endpoint, [
+            {"config_path": "/tmp/claude_desktop_config.json", "server_label": "합성 문서 MCP",
+             "transport": "streamable-http", "endpoint_ref": "http://mock-http-mcp:9000/mcp/"},
+        ])
+        checks.append(check(replaced["removed"] == 1 and replaced["counts"]["shadow"] == 0,
+                            "endpoint-report-replaces-previous", f"removed={replaced['removed']}"))
+        cleared = await execute_call({"tool_name": "read_document", "user_token": "emp-demo",
+                                      "document_id": "work-001"})
+        checks.append(check(cleared["policy_id"] == "P-333-ALLOW-001",
+                            "endpoint-cleared-shadow-restores-allow", cleared["policy_id"]))
+
+        # 위험 범주 매핑표가 실재하지 않는 정책을 가리키면, 화면은 있는데 통제는
+        # 없는 연결이 된다. 정책 관리대장과 대조한다.
+        from .core import policy_ledger
+        ledger = await policy_ledger(refresh=True)
+        rows = await db.fetch_all("SELECT id, mapped_policy_ids FROM aig_risk_catalog")
+        missing = sorted({pid for row in rows for pid in row["mapped_policy_ids"] if pid not in ledger})
+        checks.append(check(not missing and len(rows) == 13,
+                            "aig-risk-catalog-maps-to-real-policies",
+                            f"categories={len(rows)} missing={missing}"))
+    finally:
+        await db.execute("DELETE FROM endpoint_agents WHERE endpoint_id=%s", (endpoint,))
+    return checks
+
+
 async def run() -> dict:
     checks: list[dict] = []
     await sign_in()
@@ -406,6 +632,10 @@ async def run() -> dict:
         result = await client.call_tool("read_document", {"document_id": "notice-001"})
         structured = tool_payload(result)
     checks.append(check(not result.is_error and structured["decision"] == "Allow", "legacy-sse-ingress", "compatibility adapter"))
+
+    checks.extend(await termination_checks())
+    checks.extend(await drill_checks())
+    checks.extend(await endpoint_plane_checks())
 
     return {
         "status": "PASS",

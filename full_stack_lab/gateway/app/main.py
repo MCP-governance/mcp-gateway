@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
@@ -12,7 +13,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from . import core, db
+from . import core, db, decommission, endpoint_plane
 from .core import (
     OPA_URL,
     approve_request,
@@ -379,6 +380,265 @@ async def effects() -> dict:
             except json.JSONDecodeError:
                 continue
     return {"count": len(events), "events": list(reversed(events))}
+
+
+# ── 전주기 종료·폐기 ────────────────────────────────────────────────────────
+#
+# 이 API가 하는 일은 "끄기"가 아니라 "끈 것을 증명할 수 있게 하기"다. 그래서
+# 케이스를 여는 것과 닫는 것이 따로 있고, 그 사이에 회수 대상·증거·판정이 있다.
+# 한 번의 호출로 서버를 끄고 끝낼 수 있게 만들면 아무도 나머지를 하지 않는다.
+
+
+class TerminationOpen(StrictModel):
+    server_id: str = Field(min_length=1, max_length=120)
+    reason: str = Field(min_length=10, max_length=1000)
+    engagement_label: str | None = Field(default=None, max_length=300)
+
+
+class TargetCreate(StrictModel):
+    kind: Literal["client-token", "refresh-token", "dynamic-registration", "session",
+                  "server-held-credential", "endpoint-config", "api-key", "webhook",
+                  "cached-artifact"]
+    label: str = Field(min_length=1, max_length=300)
+    holder: Literal["org", "provider", "endpoint"]
+    discovered_by: Literal["gateway-ledger", "endpoint-agent", "provider-disclosure",
+                           "operator-manual", "liveness-probe"]
+    status: Literal["OUTSTANDING", "REVOKED", "EXPIRED", "UNVERIFIABLE"] = "OUTSTANDING"
+    note: str | None = Field(default=None, max_length=1000)
+
+
+class TargetUpdate(StrictModel):
+    status: Literal["OUTSTANDING", "REVOKED", "EXPIRED", "UNVERIFIABLE"]
+    note: str | None = Field(default=None, max_length=1000)
+
+
+class EvidenceCreate(StrictModel):
+    kind: Literal["revocation-response", "introspection", "provider-attestation",
+                  "gateway-denial", "liveness-probe", "endpoint-inventory",
+                  "operator-statement"]
+    subject: str = Field(min_length=1, max_length=300)
+    source: str = Field(min_length=1, max_length=300)
+    detail: dict = Field(default_factory=dict)
+    target_id: str | None = None
+    observed_at: str | None = None
+
+
+class CaseClose(StrictModel):
+    note: str = Field(min_length=1, max_length=1000)
+    risk_acceptance: str | None = Field(default=None, max_length=1000)
+
+
+class CaseReopen(StrictModel):
+    reason: str = Field(min_length=1, max_length=1000)
+
+
+@app.get("/api/termination/cases")
+async def termination_cases(user: dict = Depends(admin_caller)) -> dict:
+    return {"cases": await decommission.list_cases(), "summary": await decommission.summary()}
+
+
+@app.post("/api/termination/cases", status_code=201)
+async def termination_open(request: TerminationOpen, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await decommission.open_case(
+            request.server_id, request.reason, user["principal"], request.engagement_label)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+
+
+@app.get("/api/termination/cases/{case_id}")
+async def termination_detail(case_id: str, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await decommission.case_detail(case_id)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc))
+
+
+@app.post("/api/termination/cases/{case_id}/targets", status_code=201)
+async def termination_add_target(case_id: str, request: TargetCreate,
+                                 user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await decommission.add_target(
+            case_id, request.kind, request.label, request.holder,
+            request.discovered_by, user["principal"], request.status, request.note)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+
+
+@app.put("/api/termination/targets/{target_id}")
+async def termination_update_target(target_id: str, request: TargetUpdate,
+                                    user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await decommission.revoke_target(
+            target_id, user["principal"], request.status, request.note)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc))
+
+
+@app.post("/api/termination/cases/{case_id}/evidence", status_code=201)
+async def termination_add_evidence(case_id: str, request: EvidenceCreate,
+                                   user: dict = Depends(admin_caller)) -> dict:
+    observed = None
+    if request.observed_at:
+        try:
+            observed = datetime.fromisoformat(request.observed_at.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(422, "observed_at은 ISO 8601 시각이어야 합니다.")
+    try:
+        return await decommission.add_evidence(
+            case_id, request.kind, request.subject, request.source,
+            request.detail, user["principal"], observed, request.target_id)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+
+
+@app.post("/api/termination/cases/{case_id}/probe")
+async def termination_probe(case_id: str, user: dict = Depends(admin_caller)) -> dict:
+    """차단 이후 endpoint 도달 확인. 결과는 그대로 증거가 된다."""
+    try:
+        return await decommission.probe(case_id, user["principal"])
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+
+
+@app.post("/api/termination/cases/{case_id}/assess")
+async def termination_assess(case_id: str, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await decommission.assess(case_id, user["principal"])
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+
+
+@app.post("/api/termination/cases/{case_id}/close")
+async def termination_close(case_id: str, request: CaseClose,
+                            user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await decommission.close_case(
+            case_id, user["principal"], request.note, request.risk_acceptance)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+
+
+@app.post("/api/termination/cases/{case_id}/reopen")
+async def termination_reopen(case_id: str, request: CaseReopen,
+                             user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await decommission.reopen_case(case_id, user["principal"], request.reason)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+
+
+@app.get("/api/termination/cases/{case_id}/report")
+async def termination_report(case_id: str, user: dict = Depends(admin_caller)) -> dict:
+    """감사에 그대로 낼 수 있는 종료 판정서."""
+    try:
+        return await decommission.report(case_id)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc))
+
+
+@app.get("/api/termination/cases/{case_id}/disclosure-request")
+async def termination_disclosure(case_id: str, user: dict = Depends(admin_caller)) -> dict:
+    """제공자에게 보낼 고지 요청서.
+
+    T3의 가장 흔한 원인은 제공자가 보유 자격을 고지하지 않는 것이고, 그 상태에서
+    조직이 할 수 있는 일은 요청하는 것뿐입니다. 매번 사람이 새로 쓰게 두면 하지
+    않게 됩니다.
+    """
+    try:
+        return await decommission.disclosure_request(case_id)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc))
+
+
+@app.get("/api/termination/drill/{server_id}")
+async def termination_drill(server_id: str, user: dict = Depends(admin_caller)) -> dict:
+    """폐기 드릴. 실제로 끊지 않고 도달 가능한 최선 등급을 계산합니다.
+
+    도입 심사에서 묻는 질문을 하나 늘립니다 — "들일 수 있는가"가 아니라
+    "끊을 수 있는가".
+    """
+    try:
+        return await decommission.drill(server_id)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc))
+
+
+# ── 엔드포인트 평면 ─────────────────────────────────────────────────────────
+
+
+class EndpointEnroll(StrictModel):
+    endpoint_id: str = Field(min_length=3, max_length=120)
+    hostname: str = Field(min_length=1, max_length=200)
+    platform: str = Field(min_length=1, max_length=80)
+    agent_version: str = Field(min_length=1, max_length=40)
+    owner_token: str | None = Field(default=None, max_length=120)
+    detail: dict = Field(default_factory=dict)
+
+
+class EndpointEntry(StrictModel):
+    config_path: str = Field(min_length=1, max_length=400)
+    server_label: str = Field(min_length=1, max_length=200)
+    transport: str = Field(min_length=1, max_length=40)
+    endpoint_ref: str = Field(default="", max_length=600)
+
+
+class EndpointReport(StrictModel):
+    endpoint_id: str = Field(min_length=3, max_length=120)
+    entries: list[EndpointEntry] = Field(default_factory=list, max_length=500)
+
+
+@app.post("/api/endpoint/enroll", status_code=201)
+async def endpoint_enroll(request: EndpointEnroll, user: dict = Depends(admin_caller)) -> dict:
+    """엔드포인트 등록. 관리자 자격을 요구한다.
+
+    에이전트가 스스로 등록할 수 있게 열어두면 아무나 엔드포인트를 만들어 임의의
+    인벤토리를 올릴 수 있고, 그 인벤토리가 종료 판정의 입력이 된다. 보고는 자동,
+    등록은 사람이다.
+    """
+    row = await endpoint_plane.enroll(
+        request.endpoint_id, request.hostname, request.platform,
+        request.agent_version, request.owner_token, request.detail)
+    return {key: (value.isoformat() if hasattr(value, "isoformat") else value)
+            for key, value in dict(row).items()}
+
+
+@app.post("/api/endpoint/inventory")
+async def endpoint_report(request: EndpointReport, user: dict = Depends(caller)) -> dict:
+    """관측 보고를 받는다. 이 본문은 데이터이지 지시가 아니다.
+
+    보고 내용으로 Registry를 바꾸거나 서버를 활성화하는 경로는 없다. 조작된
+    엔드포인트가 할 수 있는 최악은 없는 잔존을 보고하는 것이고, 그것은 판정을
+    보수적인 쪽으로만 민다.
+    """
+    try:
+        return await endpoint_plane.ingest(
+            request.endpoint_id, [entry.model_dump() for entry in request.entries])
+    except ValueError as exc:
+        raise HTTPException(404, str(exc))
+
+
+@app.get("/api/endpoint/inventory")
+async def endpoint_inventory(classification: str | None = None,
+                             user: dict = Depends(admin_caller)) -> dict:
+    if classification and classification not in {"registered", "shadow", "retired-residue"}:
+        raise HTTPException(422, "알 수 없는 분류입니다.")
+    return {
+        "coverage": await endpoint_plane.coverage(),
+        "agents": await endpoint_plane.agents(),
+        "entries": await endpoint_plane.inventory(classification),
+    }
+
+
+@app.get("/api/risk-catalog")
+async def risk_catalog() -> dict:
+    """AI-Infra-Guard의 위험 범주와 이 조직의 통제를 연결한 표.
+
+    발견 목록을 읽을거리가 아니라 통제로 잇는 것은 이 매핑뿐이다. 인증 없이 여는
+    이유는 조직 자산이 아니라 참조 분류표이기 때문이다(13절의 열린 읽기 목록).
+    """
+    rows = await db.fetch_all("SELECT * FROM aig_risk_catalog ORDER BY ordinal")
+    return {"categories": [dict(row) for row in rows]}
 
 
 app.mount("/mcp", mcp_http)
