@@ -8,6 +8,8 @@ const NAV = [
   {page: "verification", group: "GOVERNANCE", label: "검증 파이프라인"},
   {page: "risks", group: "GOVERNANCE", label: "위험 분석"},
   {page: "mcpscan", group: "GOVERNANCE", label: "AI 코드 감사"},
+  {page: "termination", group: "GOVERNANCE", label: "종료·폐기"},
+  {page: "endpoints", group: "GOVERNANCE", label: "엔드포인트"},
   {page: "policy", group: "GOVERNANCE", label: "정책 관리대장"},
   {page: "accounts", group: "GOVERNANCE", label: "신원 관리대장"},
   {page: "execution", group: "OPERATIONS", label: "MCP 실행"},
@@ -27,7 +29,49 @@ const SERVER_STATUS = {READY: "운영", DISABLED: "비활성", BLOCKED_SUPPLY_CH
 const JOB_STATUS = {QUEUED: "대기", RUNNING: "실행 중", DONE: "완료", FAILED: "실패", CANCELLED: "취소"};
 const ACCOUNT_STATUS = {active: "사용 중", disabled: "중지", locked: "잠김"};
 const ACCOUNT_TONE = {active: "ok", disabled: "bad", locked: "warn"};
-const JOB_TRIGGER = {manual: "수동 실행", validated: "검증 통과 자동", rescan: "재감사 주기", drift: "드리프트 감지"};
+const JOB_TRIGGER = {manual: "수동 실행", validated: "검증 통과 자동", rescan: "재감사 주기",
+  drift: "드리프트 감지", termination: "종료 확인"};
+
+// 종료 판정. 이름만 보여주면 T2와 T3의 차이가 "조금 덜 됐다"로 읽힌다. 실무에서
+// 갈리는 지점은 잔존 범위를 산정할 수 있는가이므로 그 문장을 함께 붙인다.
+const GRADE = {
+  T1: ["ok", "종료", "네 기준을 모두 충족해 이 이용 관계의 종료를 진술할 수 있습니다."],
+  T2: ["warn", "부분 종료", "잔존 범위를 특정할 수 있어 위험의 상한을 설정할 수 있습니다."],
+  T3: ["bad", "판단 불가", "잔존 범위를 산정할 수 없습니다. 추가 증거나 별도 승인이 필요합니다."],
+};
+const CRITERIA = {C1: "모집단", C2: "수행 권한", C3: "연속성", C4: "증거 접근"};
+const CASE_STATUS = {OPEN: "개시", REVOKING: "회수 중", ASSESSED: "판정 완료", CLOSED: "종결", REOPENED: "재개"};
+const CASE_TONE = {OPEN: "warn", REVOKING: "warn", ASSESSED: "", CLOSED: "ok", REOPENED: "warn"};
+const TARGET_KIND = {
+  "client-token": "클라이언트 토큰", "refresh-token": "갱신 토큰",
+  "dynamic-registration": "동적 등록", "session": "세션",
+  "server-held-credential": "서버 보유 위임 자격", "endpoint-config": "엔드포인트 설정",
+  "api-key": "API 키", "webhook": "웹훅", "cached-artifact": "캐시 산출물",
+};
+const HOLDER = {org: "조직", provider: "제공자", endpoint: "엔드포인트"};
+const TARGET_STATUS = {OUTSTANDING: "미회수", REVOKED: "회수", EXPIRED: "만료", UNVERIFIABLE: "확인 불가"};
+const TARGET_TONE = {OUTSTANDING: "warn", REVOKED: "ok", EXPIRED: "ok", UNVERIFIABLE: "bad"};
+const EVIDENCE_KIND = {
+  "revocation-response": "폐기 응답", "introspection": "토큰 조사 응답",
+  "provider-attestation": "제공자 증명", "gateway-denial": "게이트웨이 차단 기록",
+  "liveness-probe": "도달 확인", "endpoint-inventory": "엔드포인트 인벤토리",
+  "operator-statement": "운영자 진술",
+};
+const DISCOVERED_BY = {
+  "gateway-ledger": "게이트웨이 원장", "endpoint-agent": "엔드포인트 보고",
+  "provider-disclosure": "제공자 고지", "operator-manual": "운영자 입력",
+  "liveness-probe": "도달 확인",
+};
+const RISK_LABEL = {
+  MCP01: "토큰 노출", MCP02: "권한 상승", MCP03: "도구 중독", MCP04: "공급망",
+  MCP05: "명령 주입", MCP06: "프롬프트 인젝션", MCP07: "인증 미흡", MCP08: "감사 부재",
+  MCP09: "섀도 MCP", MCP10: "과다 공유", "NAME-CONFUSION": "이름 혼동",
+  "RUG-PULL": "러그풀", "TOOL-SHADOWING": "도구 가리기", UNMAPPED: "미분류",
+};
+const ENDPOINT_CLASS = {
+  registered: ["ok", "등록됨"], shadow: ["bad", "섀도"], "retired-residue": ["warn", "폐기 잔존"],
+};
+const LIFECYCLE = {OPERATING: "운영", TERMINATING: "종료 중", RETIRED: "폐기"};
 const DECISIONS = ["Allow", "Alert", "Approval", "Restrict", "Block"];
 const SEVERITY_ALIAS = {ERROR: "HIGH", WARNING: "MEDIUM", INFO: "LOW", UNKNOWN: "LOW", NONE: "LOW", NOTE: "LOW"};
 
@@ -46,6 +90,8 @@ let stream = null;
 // 감사 기록은 한 번에 다 그리면 스크롤 끝까지 가야 오래된 행이 보이고, 정렬이
 // 없으면 "누가 제일 많이 막혔나"를 표에서 답할 수 없다.
 let accounts = null;
+let openCase = null;
+let endpointFilter = "ALL";
 let auditSort = {key: "created_at", dir: "desc"};
 let auditLimit = 25;
 const AUDIT_PAGE = 25;
@@ -172,6 +218,12 @@ function navBadges() {
   const unwired = (state.coverage?.unwired || []).length;
   if (unwired) badges.verification = [unwired, "warn"];
   if (scan && !scan.worker?.alive && (scan.worker?.queued || scan.worker?.running)) badges.mcpscan = ["!", "bad"];
+  const termination = state.termination?.summary || {};
+  const pendingCases = count(termination.open_cases) + count(termination.awaiting_close);
+  if (pendingCases) badges.termination = [pendingCases, count(termination.overdue) ? "bad" : "warn"];
+  const shadow = count(state.endpoints?.coverage?.shadow);
+  const residue = count(state.endpoints?.coverage?.retired_residue);
+  if (shadow || residue) badges.endpoints = [shadow + residue, residue ? "bad" : "warn"];
   return badges;
 }
 
@@ -346,6 +398,23 @@ function renderActionBanner() {
     items.push(["bad", "AI 코드 감사 워커 응답 없음",
       `대기 ${count(scan.worker.queued)}건 · 실행 중 ${count(scan.worker.running)}건이 진행되지 않습니다.`,
       "감사 화면", "mcpscan"]);
+  const termination = state.termination?.summary || {};
+  if (count(termination.overdue)) items.push(["bad",
+    `종료 기한 초과 <b>${count(termination.overdue)}건</b>`,
+    `${count(termination.sla_days)}일이 지나도록 종결되지 않았습니다. 차단만 하고 회수가 멈춘 상태입니다.`,
+    "종료·폐기", "termination"]);
+  if (count(termination.awaiting_close)) items.push(["warn",
+    `판정 후 종결 대기 <b>${count(termination.awaiting_close)}건</b>`,
+    "판정은 끝났고 종결 결정이 남았습니다.", "종료·폐기", "termination"]);
+  if (count(termination.unresolved_grades)) items.push(["bad",
+    `T2·T3 미해결 <b>${count(termination.unresolved_grades)}건</b>`,
+    "잔존이 남았거나 잔존 범위를 산정할 수 없는 종료 케이스입니다.", "종료·폐기", "termination"]);
+  const residue = count(state.endpoints?.coverage?.retired_residue);
+  if (residue) items.push(["bad", `폐기 서버 설정 잔존 <b>${residue}건</b>`,
+    "폐기한 서버가 엔드포인트 설정에 남아 있어 모집단(C1)이 확정되지 않습니다.", "엔드포인트", "endpoints"]);
+  const shadow = count(state.endpoints?.coverage?.shadow);
+  if (shadow) items.push(["warn", `섀도 MCP <b>${shadow}건</b>`,
+    "등록되지 않은 MCP가 엔드포인트에서 쓰이고 있습니다. 강제 경로를 통과하지 않습니다.", "엔드포인트", "endpoints"]);
   if ((state.enforcement?.enforcement || "") === "monitor")
     items.push(["warn", "관찰 모드",
       "권한 판정은 기록만 하고 실행됩니다. 무결성 통제는 그대로 집행됩니다.", "집행 전환", "overview"]);
@@ -521,6 +590,7 @@ function scanJobCard(job) {
   const tone = {DONE: "ok", FAILED: "bad", CANCELLED: "muted", RUNNING: "warn", QUEUED: "warn"}[job.status] || "muted";
   const summary = job.summary || {};
   const meta = [ago(job.created_at), JOB_TRIGGER[job.trigger] || job.trigger || "수동 실행",
+                job.mode === "dynamic" ? "동적 점검" : "정적 감사",
                 `요청 ${escapeHtml(job.requested_by)}`];
   if (job.attempts > 1) meta.push(`시도 ${count(job.attempts)}회`);
   if (job.model) meta.push(`model ${escapeHtml(job.model)}`);
@@ -529,6 +599,10 @@ function scanJobCard(job) {
   if (summary.total !== undefined) meta.push(`발견 ${count(summary.total)}건`);
   if (summary.blocks_calls !== undefined)
     meta.push(summary.blocks_calls ? "차단에 연결됨" : "차단에 연결 안 됨");
+  const breakdown = summary.risk_breakdown || {};
+  const categories = Object.entries(breakdown)
+    .sort((left, right) => count(right[1].count) - count(left[1].count));
+  if (count(summary.unmapped)) meta.push(`미분류 ${count(summary.unmapped)}건`);
   const actions = [];
   if (["QUEUED", "RUNNING"].includes(job.status))
     actions.push(`<button class="mini-button danger" data-scan-cancel="${escapeHtml(job.id)}" type="button">취소</button>`);
@@ -540,6 +614,9 @@ function scanJobCard(job) {
       <small>${escapeHtml(job.repository_url || job.intake_repository_url || "")}</small></div>
       <span class="tag ${tone}">${escapeHtml(JOB_STATUS[job.status] || job.status)}</span></div>
     <div class="request-meta">${meta.map(item => `<span>${item}</span>`).join("")}</div>
+    ${categories.length ? `<div class="chip-row risk-row">${categories.map(([id, item]) =>
+      `<span class="chip ${{CRITICAL: "bad", HIGH: "bad", MEDIUM: "warn"}[item.worst] || ""}">${
+        escapeHtml(RISK_LABEL[id] || id)} ${count(item.count)}</span>`).join("")}</div>` : ""}
     ${stubRun ? `<p class="note-line bad">배선 확인용 stub으로 실행한 결과입니다. 보안 판단이 아니며 발견 0건이 안전을 뜻하지 않습니다.</p>` : ""}
     ${job.error ? `<p class="note-line bad">${escapeHtml(job.error)}</p>` : ""}
     ${actions.length ? `<div class="button-row">${actions.join("")}</div>` : ""}</article>`;
@@ -604,7 +681,9 @@ function renderScan() {
       <small>${escapeHtml(server.source_url)} · ref ${escapeHtml(server.source_ref || "-")}</small></div>
       <span class="tag ${server.status === "READY" ? "ok" : "muted"}">${escapeHtml(SERVER_STATUS[server.status] || server.status)}</span></div>
       <div class="request-meta"><span>${escapeHtml(note)}</span></div>
-      ${server.scannable ? `<div class="button-row"><button class="mini-button" data-scan-run="${escapeHtml(server.id)}" data-scan-kind="server" type="button" ${runnable ? "" : "disabled"}>재감사 실행</button></div>` : ""}</article>`;
+      ${server.scannable || server.probeable ? `<div class="button-row">${
+        server.scannable ? `<button class="mini-button" data-scan-run="${escapeHtml(server.id)}" data-scan-kind="server" data-scan-mode="static" type="button" ${runnable ? "" : "disabled"}>재감사 실행</button>` : ""}${
+        server.probeable ? `<button class="mini-button" data-scan-run="${escapeHtml(server.id)}" data-scan-kind="server" data-scan-mode="dynamic" type="button" ${runnable ? "" : "disabled"}>동적 점검</button>` : ""}</div>` : ""}</article>`;
   }).join("") || emptyState("등록된 서버가 없습니다.");
 
   document.querySelector("#mcpscan-job-total").textContent = scan.jobs.length;
@@ -655,6 +734,241 @@ async function loadAccounts() {
 }
 
 /* ── policy · execution · audit ───────────────────────────── */
+
+/* ── 종료·폐기 ────────────────────────────────────────────── */
+
+function gradeBadge(grade) {
+  if (!grade) return `<span class="tag">미판정</span>`;
+  const [tone, label] = GRADE[grade] || ["", grade];
+  return `<span class="tag ${tone}">${escapeHtml(grade)} ${escapeHtml(label)}</span>`;
+}
+
+function renderTermination() {
+  if (!allowed.includes("termination")) return;
+  const data = state.termination || {};
+  const cases = data.cases || [];
+  const summary = data.summary || {};
+  document.querySelector("#termination-total").textContent = cases.length;
+
+  document.querySelector("#termination-cards").innerHTML = [
+    ["진행 중 케이스", count(summary.open_cases), "회수와 증거 수집이 남아 있습니다."],
+    ["판정 후 종결 대기", count(summary.awaiting_close), "판정은 끝났고 종결 결정이 남았습니다."],
+    ["T2·T3 미해결", count(summary.unresolved_grades), "잔존이 남았거나 산정할 수 없는 케이스입니다.",
+     count(summary.unresolved_grades) ? "warn" : ""],
+    [`${count(summary.sla_days)}일 기한 초과`, count(summary.overdue),
+     "차단만 하고 회수가 멈춘 상태입니다. 판정이 없어 위험 보고에도 잡히지 않습니다.",
+     count(summary.overdue) ? "bad" : ""],
+  ].map(([label, value, note, tone = ""]) =>
+    `<article class="metric-card ${tone}"><span>${escapeHtml(label)}</span><strong>${value}</strong><small>${escapeHtml(note)}</small></article>`).join("");
+
+  // 폐기 대상 후보는 운영 중인 서버뿐이다. 이미 종료 절차에 들어간 서버를 다시
+  // 고를 수 있게 두면 409를 누른 뒤에야 그 사실을 알게 된다.
+  const select = document.querySelector("#termination-form select[name=server_id]");
+  const options = (state.registry || []).filter(server => (server.lifecycle || "OPERATING") === "OPERATING");
+  select.innerHTML = options.length
+    ? options.map(server => `<option value="${escapeHtml(server.id)}">${escapeHtml(server.display_name)} · ${escapeHtml(server.supplier || "")}</option>`).join("")
+    : `<option value="">종료할 수 있는 운영 중 서버가 없습니다</option>`;
+  select.disabled = options.length === 0;
+
+  document.querySelector("#termination-list").innerHTML = cases.length ? cases.map(row => {
+    const tone = CASE_TONE[row.status] ?? "";
+    const criteria = row.criteria || {};
+    const gaps = ["C1", "C2", "C3", "C4"].filter(key => criteria[key] && criteria[key].met === false);
+    return `<article class="request-row">
+      <div class="request-top">
+        <div><h3>${escapeHtml(row.display_name || row.server_id)}</h3></div>
+        <span class="tag-row"><span class="tag ${tone}">${escapeHtml(CASE_STATUS[row.status] || row.status)}</span>${gradeBadge(row.grade)}</span>
+      </div>
+      <p class="request-meta">${escapeHtml(row.engagement_label)} · 제공자 ${escapeHtml(row.provider)}</p>
+      <p class="request-meta">회수 대상 ${count(row.targets)}건(미회수 ${count(row.outstanding)}) · 증거 ${count(row.evidence)}건 · 차단 시작 ${formatDate(row.cutover_at)}</p>
+      ${row.overdue ? `<p class="request-meta bad">기한 초과 · ${escapeHtml(ago(row.due_at))} 지났습니다</p>` : ""}
+      ${gaps.length ? `<p class="request-meta bad">미충족: ${gaps.map(key => escapeHtml(`${key} ${CRITERIA[key]}`)).join(", ")}</p>` : ""}
+      <div class="button-row">
+        <button class="mini-button" data-case="${escapeHtml(row.id)}" type="button">상세</button>
+      </div>
+    </article>`;
+  }).join("") : emptyState("종료 케이스가 없습니다.", "위 양식에서 종료할 서버를 고르면 케이스가 열립니다.");
+
+  if (openCase) renderCaseDetail();
+}
+
+function renderDrill(data) {
+  const box = document.querySelector("#termination-drill-result");
+  if (!data) { box.innerHTML = ""; return; }
+  const [tone, label, note] = GRADE[data.best_attainable_grade] || ["", "-", ""];
+  const would = data.would_revoke || {};
+  box.innerHTML = `
+    <div class="request-top">
+      <div><h3>${escapeHtml(data.display_name)}</h3></div>
+      <span class="tag-row"><span class="tag ${tone}">최선 등급 ${escapeHtml(data.best_attainable_grade)} ${escapeHtml(label)}</span></span>
+    </div>
+    <p class="panel-note">${escapeHtml(note)}</p>
+    <dl class="result-facts">
+      <div><dt>회수할 클라이언트 자격</dt><dd>${count(would.client_tokens)}건</dd></div>
+      <div><dt>엔드포인트 설정</dt><dd>${count(would.endpoint_configs)}건</dd></div>
+      <div><dt>제공자 보유 자격</dt><dd>${count(would.provider_held)}건</dd></div>
+      <div><dt>전송 방식</dt><dd>${escapeHtml(data.transport)}${data.remote_provider ? " · 원격" : " · 로컬"}</dd></div>
+    </dl>
+    ${(data.blockers || []).length
+      ? `<div class="criterion bad"><div class="criterion-head"><b>지금 상태로는 T1에 닿지 못합니다</b></div>
+         <ul>${data.blockers.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div>`
+      : `<div class="criterion ok"><div class="criterion-head"><b>필요한 계약 조건이 갖춰져 있습니다</b></div>
+         <p class="request-meta">증거를 모으고 회수를 마치면 T1까지 갈 수 있습니다.</p></div>`}
+    ${(data.active_users || []).length
+      ? `<p class="request-meta">최근 이 서버를 실제로 호출한 주체: ${
+          data.active_users.map(user => `${escapeHtml(user.display_name || user.user_token)}(${count(user.calls)}회)`).join(" · ")}</p>`
+      : `<p class="request-meta">실행된 호출 기록이 없습니다. 끊어도 즉시 영향을 받는 사용자가 없습니다.</p>`}
+    <p class="request-meta">${escapeHtml(data.note || "")}</p>`;
+}
+
+function criteriaBlock(criteria) {
+  return ["C1", "C2", "C3", "C4"].map(key => {
+    const item = criteria[key] || {};
+    const met = item.met === true;
+    const gaps = item.gaps || [];
+    return `<div class="criterion ${met ? "ok" : "bad"}">
+      <div class="criterion-head"><b>${key} ${escapeHtml(CRITERIA[key])}</b>
+        <span class="tag ${met ? "ok" : "bad"}">${met ? "충족 ✓" : "미충족 ✕"}</span></div>
+      ${gaps.length ? `<ul>${gaps.map(gap => `<li>${escapeHtml(gap)}</li>`).join("")}</ul>` : `<p class="request-meta">지적 사항 없음</p>`}
+    </div>`;
+  }).join("");
+}
+
+function renderCaseDetail() {
+  const box = document.querySelector("#termination-detail");
+  const body = document.querySelector("#termination-detail-body");
+  if (!openCase) { box.classList.add("hidden"); return; }
+  box.classList.remove("hidden");
+  const info = openCase.case || {};
+  const criteria = info.criteria || {};
+  const activity = openCase.activity || {};
+  const grade = info.grade;
+  const gradeNote = grade ? (GRADE[grade] || [])[2] : "판정을 실행하면 네 기준의 충족 여부가 계산됩니다.";
+
+  body.innerHTML = `
+    <div class="request-top">
+      <div><h3>${escapeHtml(info.display_name || info.server_id)}</h3></div>
+      <span class="tag-row"><span class="tag ${CASE_TONE[info.status] ?? ""}">${escapeHtml(CASE_STATUS[info.status] || info.status)}</span>${gradeBadge(grade)}</span>
+    </div>
+    <p class="request-meta">${escapeHtml(info.engagement_label || "")} · 사유 ${escapeHtml(info.reason || "")}</p>
+    <p class="panel-note">${escapeHtml(criteria.rationale || gradeNote)}</p>
+
+    <div class="result-facts">
+      <div><dt>차단 시작</dt><dd>${escapeHtml(formatDate(info.cutover_at))}</dd></div>
+      <div><dt>차단 후 실행된 호출</p><dd class="${count(activity.executed) ? "bad" : "ok"}">${count(activity.executed)}건</dd></div>
+      <div><dt>차단 후 막힌 시도</dt><dd>${count(activity.blocked)}건</dd></div>
+      <div><dt>엔드포인트 잔존</p><dd class="${count(openCase.endpoint_residue) ? "warn" : "ok"}">${count(openCase.endpoint_residue)}건</dd></div>
+    </div>
+
+    ${grade ? `<div class="criteria-grid">${criteriaBlock(criteria)}</div>` : ""}
+
+    <div class="panel-heading"><h2>회수 대상 (C1 모집단)</h2><span class="count">${(openCase.targets || []).length}</span></div>
+    <div class="table-wrap"><table><thead><tr><th>종류</th><th>대상</th><th>보유</th><th>출처</th><th>상태</th><th>조치</th></tr></thead><tbody>
+      ${(openCase.targets || []).map(target => `<tr>
+        <td>${escapeHtml(TARGET_KIND[target.kind] || target.kind)}</td>
+        <td>${escapeHtml(target.label)}${target.note ? `<br><small>${escapeHtml(target.note)}</small>` : ""}</td>
+        <td>${escapeHtml(HOLDER[target.holder] || target.holder)}</td>
+        <td>${escapeHtml(DISCOVERED_BY[target.discovered_by] || target.discovered_by)}</td>
+        <td><span class="tag ${TARGET_TONE[target.status] ?? ""}">${escapeHtml(TARGET_STATUS[target.status] || target.status)}</span></td>
+        <td>${info.status === "CLOSED" ? "-" : `
+          <button class="text-action" data-target-id="${escapeHtml(target.id)}" data-target-status="REVOKED" type="button">회수 기록</button>
+          <button class="text-action" data-target-id="${escapeHtml(target.id)}" data-target-status="UNVERIFIABLE" type="button">확인 불가</button>`}</td>
+      </tr>`).join("") || `<tr><td colspan="6" class="empty-state">열거된 회수 대상이 없습니다.</td></tr>`}
+    </tbody></table></div>
+
+    <div class="panel-heading"><h2>증거 (C4)</h2><span class="count">${(openCase.evidence || []).length}</span></div>
+    <div class="table-wrap"><table><thead><tr><th>종류</th><th>대상</th><th>관측 시점</th><th>출처</th><th>내용 해시</th></tr></thead><tbody>
+      ${(openCase.evidence || []).map(item => `<tr>
+        <td>${escapeHtml(EVIDENCE_KIND[item.kind] || item.kind)}</td>
+        <td>${escapeHtml(item.subject)}</td>
+        <td>${escapeHtml(formatDate(item.observed_at))}</td>
+        <td>${escapeHtml(item.source)}</td>
+        <td><code>${escapeHtml(String(item.sha256).slice(0, 12))}</code></td>
+      </tr>`).join("") || `<tr><td colspan="5" class="empty-state">첨부된 증거가 없습니다.</td></tr>`}
+    </tbody></table></div>
+
+    ${info.status === "CLOSED" ? `
+      <p class="panel-note">종결 · ${escapeHtml(formatDate(info.closed_at))} · ${escapeHtml(info.close_note || "")}
+      ${info.risk_accepted_by ? `<br>위험 수용: ${escapeHtml(info.risk_accepted_by)} · ${escapeHtml(info.risk_acceptance_note || "")}` : ""}</p>
+      <div class="button-row">
+        <button class="ghost-button" data-case-reopen="${escapeHtml(info.id)}" type="button">재개</button>
+        <button class="ghost-button" data-case-report="${escapeHtml(info.id)}" type="button">판정서 내려받기</button>
+      </div>` : `
+      <div class="button-row">
+        <button class="ghost-button" data-case-target="${escapeHtml(info.id)}" type="button">회수 대상 추가</button>
+        <button class="ghost-button" data-case-evidence="${escapeHtml(info.id)}" type="button">증거 추가</button>
+        <button class="ghost-button" data-case-probe="${escapeHtml(info.id)}" type="button">도달 확인</button>
+        <button class="primary-button" data-case-assess="${escapeHtml(info.id)}" type="button">판정 실행</button>
+        <button class="ghost-button" data-case-close="${escapeHtml(info.id)}" data-case-grade="${escapeHtml(grade || "")}" type="button">종결</button>
+        <button class="ghost-button" data-case-report="${escapeHtml(info.id)}" type="button">판정서 내려받기</button>
+        <button class="ghost-button" data-case-disclosure="${escapeHtml(info.id)}" type="button">제공자 고지 요청서</button>
+      </div>`}
+  `;
+}
+
+async function loadCase(caseId) {
+  openCase = await api(`/api/termination/cases/${caseId}`);
+  renderCaseDetail();
+  document.querySelector("#termination-detail").scrollIntoView({behavior: "smooth", block: "nearest"});
+}
+
+/* ── 엔드포인트 평면 ──────────────────────────────────────── */
+
+function renderEndpoints() {
+  if (!allowed.includes("endpoints")) return;
+  const data = state.endpoints || {};
+  const coverage = data.coverage || {};
+  const entries = data.entries || [];
+  const agents = data.agents || [];
+  document.querySelector("#endpoint-total").textContent = entries.length;
+
+  document.querySelector("#endpoint-cards").innerHTML = [
+    ["보고 중인 엔드포인트", count(coverage.known_endpoints), `최근 15분 내 보고 ${count(coverage.reporting_recently)}곳`],
+    ["등록된 설정", count(coverage.registered), "Registry의 운영 중 서버와 대조됨"],
+    ["섀도 MCP", count(coverage.shadow), "강제 경로를 통과하지 않는 경로입니다."],
+    ["폐기 잔존", count(coverage.retired_residue), "폐기한 서버가 설정에 남아 있습니다."],
+  ].map(([label, value, note, tone = ""]) =>
+    `<article class="metric-card ${tone}"><span>${escapeHtml(label)}</span><strong>${value}</strong><small>${escapeHtml(note)}</small></article>`).join("");
+
+  document.querySelector("#endpoint-agents").innerHTML = agents.length ? agents.map(agent => `
+    <article class="request-row">
+      <div class="request-top">
+        <div><h3>${escapeHtml(agent.hostname)}</h3></div>
+        <span class="tag-row"><span class="tag">${escapeHtml(agent.platform)}</span>${
+          count(agent.shadow) ? `<span class="tag bad">섀도 ${count(agent.shadow)}</span>` : ""}${
+          count(agent.residue) ? `<span class="tag warn">폐기 잔존 ${count(agent.residue)}</span>` : ""}</span>
+      </div>
+      <p class="request-meta">${escapeHtml(agent.endpoint_id)} · 에이전트 ${escapeHtml(agent.agent_version)} · 설정 ${count(agent.entries)}건</p>
+      <p class="request-meta">소유 신원 ${escapeHtml(agent.owner_token || "미지정")} · 마지막 보고 ${escapeHtml(ago(agent.last_seen_at))}</p>
+    </article>`).join("")
+    : emptyState("보고 중인 엔드포인트가 없습니다.", "./console.sh endpoint 로 에이전트를 올리면 여기에 나타납니다.");
+
+  const counts = {
+    ALL: entries.length,
+    shadow: entries.filter(row => row.classification === "shadow").length,
+    "retired-residue": entries.filter(row => row.classification === "retired-residue").length,
+    registered: entries.filter(row => row.classification === "registered").length,
+  };
+  document.querySelector("#endpoint-filter").innerHTML = [
+    ["ALL", "전체"], ["shadow", "섀도"], ["retired-residue", "폐기 잔존"], ["registered", "등록됨"],
+  ].map(([key, label]) =>
+    `<button class="chip ${endpointFilter === key ? "active" : ""}" data-endpoint-filter="${key}" type="button">${escapeHtml(label)} ${counts[key] ?? 0}</button>`).join("");
+
+  const visible = endpointFilter === "ALL" ? entries : entries.filter(row => row.classification === endpointFilter);
+  document.querySelector("#endpoint-list").innerHTML = visible.length ? visible.map(row => {
+    const [tone, label] = ENDPOINT_CLASS[row.classification] || ["", row.classification];
+    return `<tr>
+      <td><span class="tag ${tone}">${escapeHtml(label)}</span></td>
+      <td>${escapeHtml(row.hostname)}</td>
+      <td><code>${escapeHtml(row.config_path)}</code></td>
+      <td>${escapeHtml(row.server_label)}</td>
+      <td>${escapeHtml(row.transport)}</td>
+      <td><code>${escapeHtml(String(row.endpoint_ref).slice(0, 80))}</code></td>
+      <td>${row.registry_match ? escapeHtml(`${row.registry_name || row.registry_match} · ${LIFECYCLE[row.lifecycle] || row.lifecycle}`) : "-"}</td>
+      <td>${escapeHtml(ago(row.reported_at))}</td>
+    </tr>`;
+  }).join("") : `<tr><td colspan="8" class="empty-state">해당 분류의 설정이 없습니다.</td></tr>`;
+}
 
 function renderPolicyLedger() {
   if (!allowed.includes("policy")) return;
@@ -767,6 +1081,7 @@ function render() {
   connection.classList.toggle("ready", state.health.status === "ok");
   connection.querySelector("b").textContent = state.health.status === "ok" ? "연결 정상" : "연결 확인";
   renderOverview(); renderIntake(); renderVerification(); renderRisks();
+  renderTermination(); renderEndpoints();
   renderPolicyLedger(); renderAccounts(); renderExecution(); renderAudit(); renderLive();
 }
 
@@ -853,10 +1168,155 @@ function askReason(id, label, submit) {
 
 /* ── events ───────────────────────────────────────────────── */
 
+function download(filename, content, type) {
+  const url = URL.createObjectURL(new Blob([content], {type}));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/* 종료 케이스의 조작은 값이 여러 개다. 회수 대상 하나를 추가하는 데에도 종류·
+   보유 주체·출처가 필요하고, 그 셋이 판정에 직접 들어간다. 한 줄짜리 사유
+   입력(askReason)으로는 담을 수 없어 같은 자리에 작은 폼을 편다. */
+function inlineForm(title, note, fields, onSubmit) {
+  const slot = document.querySelector("#termination-inline-form");
+  if (slot.dataset.open === title) { slot.dataset.open = ""; slot.innerHTML = ""; return; }
+  slot.dataset.open = title;
+  slot.innerHTML = `<form class="inline-form-body" novalidate>
+    <div class="panel-heading"><h2>${escapeHtml(title)}</h2></div>
+    ${note ? `<p class="panel-note">${escapeHtml(note)}</p>` : ""}
+    ${fields.map(field => field.options
+      ? `<label>${escapeHtml(field.label)}<select name="${field.name}">${
+          field.options.map(([value, text]) => `<option value="${escapeHtml(value)}">${escapeHtml(text)}</option>`).join("")
+        }</select></label>`
+      : `<label>${escapeHtml(field.label)}<input name="${field.name}" type="${field.type || "text"}" maxlength="${field.max || 300}" placeholder="${escapeHtml(field.placeholder || "")}" ${field.required ? "required" : ""} /></label>`
+    ).join("")}
+    <div class="request-actions">
+      <button class="primary-button" type="submit">확인</button>
+      <button class="ghost-button" type="button" data-inline-cancel="1">취소</button>
+    </div>
+  </form>`;
+  const form = slot.querySelector("form");
+  form.querySelector("input, select")?.focus();
+  form.addEventListener("submit", async submitEvent => {
+    submitEvent.preventDefault();
+    const values = Object.fromEntries(new FormData(form));
+    const button = form.querySelector("button[type=submit]");
+    try {
+      await withButton(button, "보내는 중", () => onSubmit(values));
+      slot.dataset.open = ""; slot.innerHTML = "";
+      await loadCase(openCase.case.id);
+      await loadConsole();
+      toast("반영했습니다.");
+    } catch (error) { toast(error.message, "bad"); }
+  });
+}
+
 document.addEventListener("click", async event => {
   const target = event.target.closest("button");
   if (!target) return;
   const data = target.dataset;
+  if (data.inlineCancel) {
+    const slot = document.querySelector("#termination-inline-form");
+    slot.dataset.open = ""; slot.innerHTML = "";
+    return;
+  }
+  if (data.endpointFilter) { endpointFilter = data.endpointFilter; renderEndpoints(); return; }
+  if (data.case) return loadCase(data.case).catch(error => toast(error.message, "bad"));
+  if (data.caseTarget) return inlineForm("회수 대상 추가",
+    "제공자만 회수할 수 있는 자격은 holder를 '제공자'로 둡니다. 그 구분이 C2(수행 권한)를 가릅니다.",
+    [
+      {label: "종류", name: "kind", options: Object.entries(TARGET_KIND)},
+      {label: "대상", name: "label", required: true, placeholder: "무엇을 회수해야 하는가"},
+      {label: "보유 주체", name: "holder", options: Object.entries(HOLDER)},
+      {label: "출처", name: "discovered_by", options: Object.entries(DISCOVERED_BY)},
+      {label: "비고", name: "note", max: 1000},
+    ],
+    values => api(`/api/termination/cases/${data.caseTarget}/targets`, {method: "POST", body: values}));
+  if (data.caseEvidence) return inlineForm("증거 추가",
+    "대상과 시점을 특정하지 않는 기록은 C4를 충족하지 못합니다. '폐기 요청을 보냈다'는 조치의 기록이지 대상 상태의 증거가 아닙니다.",
+    [
+      {label: "종류", name: "kind", options: Object.entries(EVIDENCE_KIND)},
+      {label: "증거가 특정하는 대상", name: "subject", required: true},
+      {label: "출처", name: "source", required: true, placeholder: "제공자 콘솔, 인가 서버 응답 등"},
+      {label: "관측 시점", name: "observed_at", type: "datetime-local", placeholder: "비우면 지금"},
+    ],
+    values => api(`/api/termination/cases/${data.caseEvidence}/evidence`, {
+      method: "POST",
+      body: {
+        kind: values.kind, subject: values.subject, source: values.source,
+        observed_at: values.observed_at ? new Date(values.observed_at).toISOString() : null,
+        detail: {recorded_from: "console"},
+      },
+    }));
+  if (data.caseProbe) {
+    try {
+      const body = await withButton(target, "확인 중",
+        () => api(`/api/termination/cases/${data.caseProbe}/probe`, {method: "POST", body: {}}));
+      toast(body.reachable
+        ? "endpoint가 아직 응답합니다. 전파가 끝나지 않았다는 증거로 기록했습니다."
+        : "endpoint에 도달하지 못했습니다. 증거로 기록했습니다.", body.reachable ? "warn" : "ok");
+      await loadCase(data.caseProbe); await loadConsole();
+    } catch (error) { toast(error.message, "bad"); }
+    return;
+  }
+  if (data.caseAssess) {
+    try {
+      const body = await withButton(target, "판정 중",
+        () => api(`/api/termination/cases/${data.caseAssess}/assess`, {method: "POST", body: {}}));
+      openCase = body;
+      renderCaseDetail();
+      const grade = body.case?.grade;
+      toast(`판정 ${grade} · ${(GRADE[grade] || [])[1] || ""}`, grade === "T1" ? "ok" : grade === "T2" ? "warn" : "bad");
+      await loadConsole();
+    } catch (error) { toast(error.message, "bad"); }
+    return;
+  }
+  if (data.caseClose) return inlineForm("케이스 종결",
+    data.caseGrade === "T3"
+      ? "T3는 잔존 범위를 산정할 수 없습니다. 위험 수용 근거 없이는 종결되지 않습니다."
+      : "종결하면 이 서버는 폐기 상태가 되고 Registry에서 비활성으로 내려갑니다.",
+    [
+      {label: "종결 사유", name: "note", required: true, max: 1000},
+      ...(data.caseGrade === "T3"
+        ? [{label: "위험 수용 근거와 승인자", name: "risk_acceptance", required: true, max: 1000}]
+        : []),
+    ],
+    values => api(`/api/termination/cases/${data.caseClose}/close`, {method: "POST", body: values}));
+  if (data.caseReopen) return inlineForm("케이스 재개",
+    "새 증거나 잔존 발견으로 판정을 다시 엽니다. 폐기했던 서버가 다시 살아나지는 않습니다.",
+    [{label: "재개 사유", name: "reason", required: true, max: 1000}],
+    values => api(`/api/termination/cases/${data.caseReopen}/reopen`, {method: "POST", body: values}));
+  if (data.caseReport) {
+    try {
+      const body = await withButton(target, "만드는 중", () => api(`/api/termination/cases/${data.caseReport}/report`));
+      download(`termination-${String(data.caseReport).slice(0, 8)}.json`,
+               JSON.stringify(body, null, 2), "application/json");
+      toast("종료 판정서를 내려받았습니다.");
+    } catch (error) { toast(error.message, "bad"); }
+    return;
+  }
+  if (data.caseDisclosure) {
+    try {
+      const body = await withButton(target, "만드는 중",
+        () => api(`/api/termination/cases/${data.caseDisclosure}/disclosure-request`));
+      download(`disclosure-request-${String(data.caseDisclosure).slice(0, 8)}.md`,
+               body.markdown, "text/markdown");
+      toast(body.has_contract_basis
+        ? "도입 시 합의한 종료 조건을 근거로 인용했습니다."
+        : "도입 시 합의한 종료 조건이 없어 점검 절차를 근거로 적었습니다.",
+        body.has_contract_basis ? "ok" : "warn");
+    } catch (error) { toast(error.message, "bad"); }
+    return;
+  }
+  if (data.targetId) {
+    return act(target, "기록 중",
+      () => api(`/api/termination/targets/${data.targetId}`, {method: "PUT", body: {status: data.targetStatus}})
+              .then(async body => { await loadCase(openCase.case.id); return body; }),
+      data.targetStatus === "REVOKED" ? "회수로 기록했습니다." : "확인 불가로 기록했습니다.");
+  }
   if (data.page) return navigate(data.page);
   if (data.prompt) { const box = document.querySelector("#prompt"); box.value = data.prompt; box.focus(); return; }
   if (data.severity) { severityFilter = data.severity; renderRisks(); return; }
@@ -883,8 +1343,23 @@ document.addEventListener("click", async event => {
     if (busy) return;
     busy = true;
     try {
-      const body = await withButton(target, "큐에 넣는 중", () => api("/api/mcp-scan/run",
-        {method: "POST", body: {target_kind: data.scanKind || "intake", target_id: data.scanRun}}));
+      const mode = data.scanMode || "static";
+      const payload = {target_kind: data.scanKind || "intake", target_id: data.scanRun, mode};
+      let body;
+      try {
+        body = await withButton(target, "큐에 넣는 중",
+          () => api("/api/mcp-scan/run", {method: "POST", body: payload}));
+      } catch (error) {
+        // 동적 점검을 외부 모델로 돌릴 때만 나오는 409다. 그 사실을 그대로 보여주고
+        // 사람이 한 번 더 누르게 한다. 조용히 다시 보내면 확인이 통제가 아니다.
+        if (mode === "dynamic" && /외부/.test(error.message || "")) {
+          if (!window.confirm(`${error.message}
+
+계속 진행할까요?`)) { busy = false; return; }
+          body = await withButton(target, "큐에 넣는 중", () => api("/api/mcp-scan/run",
+            {method: "POST", body: {...payload, acknowledge_external_model: true}}));
+        } else { throw error; }
+      }
       toast(body.message, body.worker_alive === false ? "bad" : "ok");
       await loadScan();
       // 작업이 끝나면 화면이 스스로 최신이 되게 몇 번 다시 읽는다.
@@ -903,6 +1378,37 @@ document.addEventListener("click", async event => {
 
 document.querySelector("#refresh-console").addEventListener("click", event =>
   act(event.currentTarget, "읽는 중", async () => ({}), "최신 상태를 읽었습니다."));
+document.querySelector("#termination-drill").addEventListener("click", async event => {
+  const serverId = document.querySelector("#termination-form select[name=server_id]")?.value;
+  if (!serverId) { toast("계산할 서버를 고르세요.", "bad"); return; }
+  try {
+    renderDrill(await withButton(event.currentTarget, "계산 중",
+      () => api(`/api/termination/drill/${encodeURIComponent(serverId)}`)));
+  } catch (error) { toast(error.message, "bad"); }
+});
+document.querySelector("#termination-close-detail").addEventListener("click", () => {
+  openCase = null;
+  const slot = document.querySelector("#termination-inline-form");
+  slot.dataset.open = ""; slot.innerHTML = "";
+  document.querySelector("#termination-detail").classList.add("hidden");
+});
+document.querySelector("#termination-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const values = Object.fromEntries(new FormData(form));
+  if (!values.server_id) { toast("종료할 서버를 고르세요.", "bad"); return; }
+  if ((values.reason || "").trim().length < 10) { toast("종료 사유를 10자 이상 적으세요.", "bad"); return; }
+  if (!values.engagement_label) delete values.engagement_label;
+  try {
+    const body = await withButton(form.querySelector("button[type=submit]"), "시작 중",
+      () => api("/api/termination/cases", {method: "POST", body: values}));
+    form.reset();
+    openCase = body;
+    toast("종료 절차를 시작했습니다. 이 서버의 호출은 지금부터 차단됩니다.", "warn");
+    await loadConsole();
+    renderCaseDetail();
+  } catch (error) { toast(error.message, "bad"); }
+});
 document.querySelector("#refresh-registry").addEventListener("click", event =>
   act(event.currentTarget, "비교 중", () => api("/api/registry/refresh", {method: "POST", body: {}}), "현재 Catalog를 Registry 계약과 다시 비교했습니다."));
 document.querySelector("#import-evidence").addEventListener("click", event =>
@@ -953,17 +1459,49 @@ function validateIntake(form) {
   document.querySelectorAll("[data-error]").forEach(node => { node.textContent = problems[node.dataset.error] || ""; });
   return Object.keys(problems).length === 0;
 }
+// 체크박스를 켜고 끌 때마다 "이 서버는 끊을 수 있는가"를 그 자리에서 말한다.
+// 제출한 뒤에 알려주면 이미 고른 전송 방식과 계약 조건을 다시 볼 이유가 없다.
+function renderExitTermsVerdict() {
+  const box = document.querySelector("#exit-terms-verdict");
+  if (!box) return;
+  const remote = intakeForm.requested_transport.value !== "stdio";
+  const disclosure = intakeForm.provider_credential_disclosure.checked;
+  const evidence = intakeForm.revocation_evidence.checked;
+  if (!remote) {
+    box.textContent = "로컬 stdio 서버는 이중 위임 계층이 없어 제공자 고지가 필요 없습니다. 최선 등급 T1.";
+    box.className = "field-hint ok";
+  } else if (!disclosure) {
+    box.textContent = "제공자 자격 고지가 없으면 종료 시 회수 대상을 열거할 수 없습니다. 최선 등급 T3(판단 불가).";
+    box.className = "field-hint bad";
+  } else if (!evidence) {
+    box.textContent = "폐기 기록 제출이 없으면 제공자 보유 자격의 회수를 확인할 수 없습니다. 최선 등급 T2(부분 종료).";
+    box.className = "field-hint warn";
+  } else {
+    box.textContent = "종료 시 T1(종료)까지 도달할 수 있는 조건입니다.";
+    box.className = "field-hint ok";
+  }
+}
+["change", "input"].forEach(kind => intakeForm.addEventListener(kind, renderExitTermsVerdict));
+renderExitTermsVerdict();
+
 intakeForm.addEventListener("submit", async event => {
   event.preventDefault();
   const form = event.currentTarget;
   if (!validateIntake(form)) { toast("입력을 확인하세요.", "bad"); return; }
   const button = form.querySelector("button[type=submit]");
+  const values = Object.fromEntries(new FormData(form));
+  // FormData는 체크되지 않은 상자를 빼고, 체크된 것은 "on"으로 넘긴다. 서버는
+  // boolean을 받으므로 세 값 모두 명시적으로 만든다.
+  for (const key of ["provider_credential_disclosure", "revocation_evidence", "audit_access_retained"]) {
+    values[key] = form[key].checked;
+  }
   try {
     const body = await withButton(button, "제출 중", () =>
-      api("/api/mcp-requests", {method: "POST", body: Object.fromEntries(new FormData(form))}));
+      api("/api/mcp-requests", {method: "POST", body: values}));
     form.reset();
     document.querySelector("#purpose-count").textContent = "0";
-    toast(body.message);
+    renderExitTermsVerdict();
+    toast(body.message, body.message.includes("T3") ? "warn" : "ok");
     await loadConsole();
   } catch (error) { toast(error.message, "bad"); }
 });

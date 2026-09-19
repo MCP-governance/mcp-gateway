@@ -32,7 +32,7 @@ jobs:
       - name: Python lint
         run: |
           python -m pip install --quiet pyflakes
-          python -m pyflakes full_stack_lab/gateway/app/*.py full_stack_lab/tests/*.py full_stack_lab/mock_server/*.py
+          python -m pyflakes full_stack_lab/gateway/app/*.py full_stack_lab/tests/*.py full_stack_lab/mock_server/*.py full_stack_lab/supply_chain/*.py full_stack_lab/endpoint/*.py
 
       - name: Shell 문법
         run: bash -n full_stack_lab/console.sh full_stack_lab/tests/drift_and_fail_closed.sh
@@ -109,4 +109,4 @@ jobs:
       - name: 정리
         if: always()
         working-directory: full_stack_lab
-        run: docker compose down -v
+        run: docker compose --profile endpoint --profile llm-stub down -v
