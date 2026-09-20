@@ -283,7 +283,10 @@ async def _post_cutover(case: dict) -> dict:
     names = await _tool_names(case["server_id"])
     row = await db.fetch_one(
         """SELECT count(*) FILTER (WHERE upstream_executed) AS executed,
-                  count(*) FILTER (WHERE NOT upstream_executed) AS blocked,
+                  count(*) FILTER (WHERE NOT upstream_executed AND NOT
+                    COALESCE(upstream_attempted, policy_id='MCP-UPSTREAM-001')) AS blocked,
+                  count(*) FILTER (WHERE NOT upstream_executed AND
+                    COALESCE(upstream_attempted, policy_id='MCP-UPSTREAM-001')) AS unknown,
                   max(created_at) AS last_attempt
              FROM decisions WHERE tool_name = ANY(%s::text[]) AND created_at >= %s""",
         (names, case["cutover_at"]),
@@ -291,6 +294,7 @@ async def _post_cutover(case: dict) -> dict:
     return {
         "executed": int(row["executed"] or 0),
         "blocked": int(row["blocked"] or 0),
+        "unknown": int(row["unknown"] or 0),
         "last_attempt": row["last_attempt"].isoformat() if row["last_attempt"] else None,
     }
 
@@ -375,6 +379,8 @@ async def assess(case_id: str, actor: str) -> dict:
         c3_gaps.append(
             f"차단 시작 이후에도 실제 실행된 호출이 {activity['executed']}건 있습니다."
         )
+    if activity["unknown"]:
+        c3_gaps.append(f"실행 여부가 확인되지 않은 호출이 {activity['unknown']}건 있어 차단을 증명할 수 없습니다.")
     lags = [
         (t["revoked_at"] - case["cutover_at"]).total_seconds()
         for t in targets if t["revoked_at"] and case["cutover_at"]
@@ -391,6 +397,7 @@ async def assess(case_id: str, actor: str) -> dict:
     c3 = {"met": not c3_gaps, "gaps": c3_gaps,
           "post_cutover_executed": activity["executed"],
           "post_cutover_blocked": activity["blocked"],
+          "post_cutover_unknown": activity["unknown"],
           "last_attempt": activity["last_attempt"],
           "max_propagation_seconds": max(lags) if lags else None}
 
@@ -407,7 +414,10 @@ async def assess(case_id: str, actor: str) -> dict:
 
     # ── 등급 ────────────────────────────────────────────────────────────────
     # C1과 C4는 판정의 성립 요건, C2와 C3은 충족 정도를 가른다(논문 5.1).
-    if not c1["met"] or not c4["met"]:
+    if activity["unknown"]:
+        grade = "T3"
+        rationale = "차단 시작 이후 실행 여부가 미확인인 호출이 있어 종료를 입증할 수 없습니다."
+    elif not c1["met"] or not c4["met"]:
         grade = "T3"
         rationale = "모집단 또는 증거 접근이 성립하지 않아 잔존 범위를 산정할 수 없습니다."
     elif not c2["met"] or not c3["met"]:

@@ -1098,7 +1098,7 @@ async def stream_decisions(after: int = 0, authorization: str | None = Header(de
         idle = 0
         while idle < 300:  # 10분 뒤에는 브라우저가 다시 붙게 둔다
             query = """SELECT id, created_at, user_token, role, tool_name, data_class, action,
-                              decision, policy_id, policy_version, exception_id, upstream_executed, trace_id
+                              decision, policy_id, policy_version, exception_id, upstream_executed, upstream_attempted, trace_id
                        FROM decisions WHERE id > %s"""
             params: tuple = (cursor,)
             if not is_admin:

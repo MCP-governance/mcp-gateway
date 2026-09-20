@@ -121,6 +121,7 @@ case "${1:-up}" in
     docker compose exec -T gateway python -m app.acceptance | tee reports/acceptance.json
     tests/drift_and_fail_closed.sh | tee reports/security-regression.txt
     agent_test
+    docker compose exec -T gateway python -m app.runtime_acceptance | tee reports/runtime-acceptance.json
     echo "모든 필수 검증이 통과했습니다."
     ;;
   agent-test)
@@ -184,6 +185,7 @@ json.dump(module.app.openapi(), sys.stdout, ensure_ascii=False, indent=2, sort_k
     rm -f \
       reports/acceptance.json \
       reports/agent-acceptance.json \
+      reports/runtime-acceptance.json \
       reports/security-regression.txt \
       reports/full-test.log \
       reports/sbom.cdx.json \

@@ -21,6 +21,13 @@ cd mcp-gateway/full_stack_lab
 
 현재 기준의 성공 조건은 **Rego 62/62**, core acceptance와 Agent/API acceptance 모두 실패 0입니다. 같은 명령을 [`.github/workflows/verify.yml`](.github/workflows/verify.yml)이 `main`과 모든 `feat/**` 푸시, `main`으로 가는 PR마다 실행합니다.
 
+### 실행 경계 보강
+
+- OPA 응답의 결정값·필수 필드·제한조건을 검증합니다. 미정의 결정이나 실행할 수 없는 제한은 관찰 모드에서도 차단합니다.
+- 정지·잠금 계정은 stdio와 대기 승인에서도 실행할 수 없습니다. 승인 유효기간은 실제 `tools/call` 전달 직전에 다시 확인합니다.
+- 감사 기록과 Console은 **실행 확인 / 미실행 / 실행 여부 미확인**을 구분합니다. 응답 유실을 차단 성공으로 세지 않으며, 종료 이후 미확인 호출이 있으면 T3로 판정합니다.
+- `./console.sh test`가 위 경계를 검증하는 `runtime_acceptance`도 실행합니다. 재현 방법과 검증 범위는 [실행 경계 검증 기록](docs/runtime-hardening.md)에 정리했습니다.
+
 ## 통제 흐름
 
 ~~~mermaid
