@@ -149,6 +149,7 @@ timeout이나 연결 단절 뒤에는 upstream 실행 여부가 불확실할 수
   "enforcement": "enforce",
   "would_decision": null, "would_policy_id": null,
   "upstream_executed": true,
+  "upstream_attempted": true,
   "effect_before": 17, "effect_after": 18,
   "result": {"…": "…"}
 }
@@ -160,11 +161,18 @@ timeout이나 연결 단절 뒤에는 upstream 실행 여부가 불확실할 수
 | `conflicts` | 동시에 성립했으나 우선순위에서 진 정책. 없으면 정책 충돌을 관측할 수 없다 |
 | `would_decision` | 관찰 모드에서 "집행 모드였다면" |
 | `upstream_executed` | 판정과 **실제 효과**는 다른 증적이다 |
+| `upstream_attempted` | 실행을 시도했는지 기록. `true`인데 `upstream_executed=false`이면 실행 여부 미확인이므로 자동 재실행 금지 |
 | `effect_before/after` | upstream의 독립 효과 카운터. 차단이 정말 멈췄는지 대조 |
 
 `upstream_executed: true`인데 `decision: Block`인 경우가 있습니다
 (`MCP-OUTPUT-001`). 호출은 실행됐고 결과만 반환하지 않은 상태입니다. 판정과 효과를
 억지로 일치시키는 것보다 증적을 정직하게 두는 쪽을 택했습니다.
+
+`upstream_executed: false`만으로 차단 성공을 판단하면 안 됩니다. 응답 유실·통신 실패는
+`upstream_attempted: true`로 남으며 독립 효과 증적을 확인해야 합니다. 실행 직전 계약·승인
+검증에서 거부했다면 두 필드 모두 `false`입니다. 구버전 DB 행의 `upstream_attempted=null`은
+새 필드가 기록되지 않았다는 뜻이며, 기존 `MCP-UPSTREAM-001` 오류는 보수적으로 미확인으로
+표시합니다. 새 감사 체인 v4는 시도 여부도 보호하고 기존 v1~v3 해시를 그대로 검증합니다.
 
 ---
 

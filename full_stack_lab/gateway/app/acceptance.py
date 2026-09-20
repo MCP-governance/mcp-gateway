@@ -7,6 +7,7 @@ import pathlib
 import re
 import sys
 from datetime import UTC, datetime
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import httpx2
@@ -160,6 +161,14 @@ async def termination_checks() -> list[dict]:
         checks.append(check(upgraded["case"]["grade"] == "T1",
                             "termination-evidence-upgrades-grade",
                             json.dumps(upgraded["case"]["criteria"]["rationale"], ensure_ascii=False)))
+
+        activity = await decommission._post_cutover(upgraded["case"])
+        with patch.object(decommission, "_post_cutover", AsyncMock(return_value={**activity, "unknown": 1})):
+            uncertain = await decommission.assess(case_id, "admin-demo")
+        checks.append(check(uncertain["case"]["grade"] == "T3"
+                            and not uncertain["case"]["criteria"]["C3"]["met"],
+                            "termination-unknown-execution-prevents-T1"))
+        await decommission.assess(case_id, "admin-demo")
 
         closed = await decommission.close_case(case_id, "admin-demo", "acceptance 종결")
         checks.append(check(closed["case"]["status"] == "CLOSED"
@@ -615,7 +624,7 @@ async def run() -> dict:
     checks.append(check(
         bool(recorded) and recorded["policy_version"] == ledger["P-333-DENY-001"]["version"]
         and recorded["exception_id"] == "EXC-001" and recorded["environment"]
-        and recorded["chain_version"] == 3 and recorded["obligations"],
+        and recorded["chain_version"] == 4 and recorded["obligations"],
         "pac-decision-evidence-recorded", json.dumps(recorded, ensure_ascii=False, default=str)))
 
     chain = await verify_audit_chain()

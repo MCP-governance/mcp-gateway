@@ -61,9 +61,39 @@ RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
 IMPORTANT_BURST_LIMIT = int(os.getenv("IMPORTANT_BURST_LIMIT", "10"))
 IMPORTANT_BURST_MINUTES = int(os.getenv("IMPORTANT_BURST_MINUTES", "5"))
 
+# OPA is a trust boundary too. Only policy fields may enter the execution event;
+# a malformed result must never become Allow through monitor mode.
+POLICY_RESULT = Draft202012Validator({
+    "type": "object", "additionalProperties": False,
+    "required": ["decision", "policy_id", "reason", "restrictions"],
+    "properties": {
+        "decision": {"enum": ["Allow", "Alert", "Restrict", "Approval", "Block"]},
+        "policy_id": {"type": "string", "minLength": 1},
+        "reason": {"type": "string", "minLength": 1},
+        "restrictions": {
+            "type": "object", "additionalProperties": False,
+            "properties": {"destination": {"type": "string", "minLength": 1, "maxLength": 200},
+                           "max_chars": {"type": "integer", "minimum": 0, "maximum": 2000}},
+        },
+        **{key: {"type": "string"} for key in (
+            "policy_name", "policy_version", "policy_status", "policy_set_version", "environment")},
+        **{key: {"type": "array", "items": {"type": "string"}} for key in (
+            "risk_ids", "control_ids", "requirement_ids", "obligations")},
+        "priority": {"type": ["integer", "null"]},
+        "conditions": {"type": "object"},
+        "exception": {"type": ["object", "null"], "required": ["id"],
+                      "properties": {"id": {"type": "string", "minLength": 1}}},
+        "conflicts": {"type": "array", "items": {"type": "object"}},
+    },
+})
+
 
 class ResultRejected(RuntimeError):
     """Upstream answered, but its output failed the gateway's output control."""
+
+
+class DispatchRejected(RuntimeError):
+    """The final checks failed before tools/call was sent."""
 
 
 def _configure_tracing() -> Any:
@@ -466,33 +496,54 @@ async def _policy(input_document: dict) -> dict:
         response = await client.post(OPA_URL, json={"input": input_document})
         response.raise_for_status()
         result = response.json().get("result")
-        if not isinstance(result, dict) or "decision" not in result:
-            raise RuntimeError("OPA returned no decision")
+        # Do not include an invalid policy response in the audit error verbatim.
+        if not POLICY_RESULT.is_valid(result):
+            raise RuntimeError("OPA returned an invalid decision contract")
+        restrictions = result["restrictions"]
+        if ((result["decision"] == "Restrict" or restrictions)
+                and (input_document.get("tool", {}).get("name") != "send_external"
+                     or set(restrictions) != {"destination", "max_chars"})):
+            raise RuntimeError("OPA returned unenforceable restrictions")
         return result
 
 
-async def _call_upstream(spec: dict, arguments: dict) -> dict:
-    async with _client(spec["server_id"]) as client:
-        # Recheck the approved contract on the SAME connection that will execute.
-        listed = await client.list_tools()
-        registered = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s", (spec["server_id"],))
-        observed = {t.name: _tool_view(t) for t in listed.tools}
-        if set(observed) != {t["name"] for t in registered}:
-            raise RuntimeError("MCP catalog changed before execution")
-        for row in registered:
-            tool = observed[row["name"]]
-            if (canonical_hash(tool["description"]) != row["approved_description_hash"]
-                    or canonical_hash(tool["input_schema"]) != row["approved_schema_hash"]
-                    or client.server_info.version != row["approved_server_version"]):
-                raise RuntimeError("MCP contract changed before execution")
-        Draft202012Validator(observed[spec["registry_name"]]["input_schema"]).validate(arguments)
-        result = await client.call_tool(spec["registry_name"], arguments)
-        if result.is_error:
-            messages = [getattr(item, "text", str(item)) for item in result.content]
-            raise RuntimeError("; ".join(messages))
-        if result.structured_content is not None:
-            return _guarded_result(result.structured_content)
-        return _guarded_result({"content": [getattr(item, "text", str(item)) for item in result.content]})
+async def _call_upstream(spec: dict, arguments: dict, approval_id: str | None = None) -> dict:
+    try:
+        async with _client(spec["server_id"]) as client:
+            # Recheck the approved contract on the SAME connection that will execute.
+            listed = await client.list_tools()
+            registered = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s", (spec["server_id"],))
+            observed = {t.name: _tool_view(t) for t in listed.tools}
+            if set(observed) != {t["name"] for t in registered}:
+                raise DispatchRejected("MCP catalog changed before execution")
+            for row in registered:
+                tool = observed[row["name"]]
+                if (canonical_hash(tool["description"]) != row["approved_description_hash"]
+                        or canonical_hash(tool["input_schema"]) != row["approved_schema_hash"]
+                        or client.server_info.version != row["approved_server_version"]):
+                    raise DispatchRejected("MCP contract changed before execution")
+            if not Draft202012Validator(observed[spec["registry_name"]]["input_schema"]).is_valid(arguments):
+                raise DispatchRejected("Arguments do not match the approved input schema")
+            if approval_id is not None:
+                # Discovery may take longer than the remaining approval lifetime.
+                approval = await db.fetch_one(
+                    "SELECT status, expires_at FROM approvals WHERE id=%s", (approval_id,),
+                )
+                if (not approval or approval["status"] != "APPROVED"
+                        or approval["expires_at"] <= datetime.now(UTC)):
+                    raise DispatchRejected("Approval expired or was withdrawn before execution")
+            result = await client.call_tool(spec["registry_name"], arguments)
+            if result.is_error:
+                messages = [getattr(item, "text", str(item)) for item in result.content]
+                raise RuntimeError("; ".join(messages))
+            if result.structured_content is not None:
+                return _guarded_result(result.structured_content)
+            return _guarded_result({"content": [getattr(item, "text", str(item)) for item in result.content]})
+    except* DispatchRejected as exc:
+        # MCP Client task groups wrap exceptions raised inside their context.
+        raise DispatchRejected("Pre-execution contract or approval check failed") from exc
+    except* ResultRejected as exc:
+        raise ResultRejected("Upstream result failed output controls") from exc
 
 
 def _guarded_result(payload: dict) -> dict:
@@ -516,7 +567,7 @@ def _upstream_arguments(tool_name: str, payload: dict, restrictions: dict) -> di
         return {"document_id": payload["document_id"], "content": payload.get("content", "")}
     if tool_name == "send_external":
         content = payload.get("content", "")
-        if restrictions.get("max_chars"):
+        if "max_chars" in restrictions:
             content = content[: int(restrictions["max_chars"])]
         return {
             "document_id": payload["document_id"],
@@ -566,7 +617,8 @@ AUDIT_COLUMN_SETS = {
         "policy_version", "obligations", "exception_id", "conflicts", "environment",
     ),
 }
-CHAIN_VERSION = 3
+AUDIT_COLUMN_SETS[4] = (*AUDIT_COLUMN_SETS[3], "upstream_attempted")
+CHAIN_VERSION = 4
 AUDIT_COLUMNS = AUDIT_COLUMN_SETS[CHAIN_VERSION]
 GENESIS = "0" * 64
 
@@ -580,7 +632,7 @@ def _audit_fingerprint(record: dict, version: int = CHAIN_VERSION) -> str:
     normalised = {}
     for column in AUDIT_COLUMN_SETS[version]:
         value = record.get(column)
-        if column == "upstream_executed":
+        if column in {"upstream_executed", "upstream_attempted"}:
             normalised[column] = bool(value)
         elif isinstance(value, (dict, list)) or value is None:
             normalised[column] = value
@@ -600,6 +652,7 @@ async def _record_decision(event: dict) -> int:
         "action": event["action"], "decision": event["decision"],
         "policy_id": event["policy_id"], "reason": event["reason"],
         "upstream_executed": bool(event["upstream_executed"]),
+        "upstream_attempted": bool(event.get("upstream_attempted", event["upstream_executed"])),
         "restrictions": event.get("restrictions") or {},
         "approval_id": event.get("approval_id"),
         "request_payload": _audit_payload(event.get("request_payload") or {}),
@@ -626,8 +679,8 @@ async def _record_decision(event: dict) -> int:
                  approval_id, request_payload, result_preview, error,
                  enforcement, would_decision, would_policy_id,
                  policy_version, obligations, exception_id, conflicts, environment,
-                 prev_sha256, entry_sha256, chain_version)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                 prev_sha256, entry_sha256, chain_version, upstream_attempted)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                RETURNING id""",
             (
                 record["request_id"], record["trace_id"], record["user_token"], record["role"],
@@ -640,7 +693,7 @@ async def _record_decision(event: dict) -> int:
                 record["would_policy_id"],
                 record["policy_version"], Jsonb(record["obligations"]), record["exception_id"],
                 Jsonb(record["conflicts"]), record["environment"],
-                previous, entry, CHAIN_VERSION,
+                previous, entry, CHAIN_VERSION, record["upstream_attempted"],
             ),
         )
         row = await cursor.fetchone()
@@ -728,6 +781,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "data_class": data_class,
             "action": spec["action"],
             "upstream_executed": False,
+            "upstream_attempted": False,
             "enforcement": "enforce",
             "would_decision": None,
             "would_policy_id": None,
@@ -738,9 +792,10 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         }
 
         await policy_ledger()
-        if not principal or (spec["server_id"] == "mock-http" and not document):
+        if (not principal or principal["status"] != "active"
+                or (spec["server_id"] == "mock-http" and not document)):
             base_event.update(local_verdict(
-                "P-INPUT-001", "Block", "합성 사용자 토큰 또는 문서 ID가 유효하지 않습니다.",
+                "P-INPUT-001", "Block", "활성 상태의 등록 계정과 유효한 문서 ID가 필요합니다.",
             ))
             decision_id = await _record_decision(base_event)
             return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
@@ -842,9 +897,16 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 with tracer.start_as_current_span("mcp.upstream.call") as upstream_span:
                     upstream_span.set_attribute("mcp.server", spec["server_id"])
                     upstream_span.set_attribute("mcp.transport", "stdio" if spec["server_id"] == "mock-stdio" else "streamable-http")
-                    base_event["result"] = await _call_upstream(spec, effective)
+                    base_event["result"] = await _call_upstream(spec, effective, approval_id)
                 base_event["upstream_executed"] = True
                 base_event["effective_arguments"] = effective
+            except DispatchRejected as exc:
+                base_event.update(local_verdict(
+                    "P-CONTROL-FAIL-CLOSED", "Block",
+                    "실행 직전 계약 또는 승인 재검증에 실패하여 도구 호출을 전달하지 않았습니다.",
+                    upstream_attempted=False, error=str(exc),
+                ))
+                span.record_exception(exc)
             except ResultRejected as exc:
                 # The call did run upstream; only the answer is withheld. Recording it
                 # as "not executed" would make the effect log and the audit disagree.
@@ -875,13 +937,13 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
 
 async def approve_request(approval_id: str, reviewer_token: str) -> dict:
     reviewer = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (reviewer_token,))
-    if not reviewer or reviewer["role"] != "admin":
+    if not reviewer or reviewer["role"] != "admin" or reviewer["status"] != "active":
         raise ValueError("합성 관리자만 승인할 수 있습니다.")
     row = await db.fetch_one("SELECT * FROM approvals WHERE id=%s", (approval_id,))
     if not row or row["status"] != "PENDING":
         raise ValueError("대기 중인 승인 요청이 아닙니다.")
     if row["expires_at"] <= datetime.now(UTC):
-        await db.execute("UPDATE approvals SET status='EXPIRED' WHERE id=%s", (approval_id,))
+        await db.execute("UPDATE approvals SET status='EXPIRED' WHERE id=%s AND status='PENDING'", (approval_id,))
         raise ValueError("승인 요청의 10분 유효시간이 지났습니다.")
 
     claimed = await db.fetch_one(
@@ -963,7 +1025,7 @@ async def reject_request(approval_id: str, reviewer_token: str, note: str) -> di
     audit cannot tell a considered refusal apart from someone going to lunch.
     """
     reviewer = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (reviewer_token,))
-    if not reviewer or reviewer["role"] != "admin":
+    if not reviewer or reviewer["role"] != "admin" or reviewer["status"] != "active":
         raise ValueError("합성 관리자만 승인 요청을 처리할 수 있습니다.")
     if not note.strip():
         raise ValueError("거부 사유는 비워둘 수 없습니다.")

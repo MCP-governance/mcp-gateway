@@ -919,7 +919,7 @@
     },
     "P-INPUT-001": {
       "name": "요청 신원·자원 식별 검증",
-      "purpose": "서명된 사용자 토큰과 관리대장에 있는 자원 식별자가 아니면 정책 판단까지 가지 않는다.",
+      "purpose": "활성 계정과 등록된 자원만 실행한다. stdio와 승인 재실행도 공통 실행부에서 계정 상태를 재검증한다.",
       "enforced_by": "gateway",
       "risk_ids": [
         "RSK-005",
@@ -941,7 +941,7 @@
         "user_token",
         "document_id"
       ],
-      "condition": "principal 미확인 또는 문서 ID 미등록",
+      "condition": "principal 미확인·정지·잠금 또는 문서 ID 미등록",
       "outcome": "차단",
       "enforcement": "정책 질의 전 거부",
       "priority": 2002,
@@ -961,7 +961,7 @@
         "prod"
       ],
       "automation": "자동화",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "status": "운영",
       "approval_status": "승인",
       "effective_from": "2026-09-16T00:00:00Z"
@@ -1114,7 +1114,7 @@
     },
     "P-CONTROL-FAIL-CLOSED": {
       "name": "정책 엔진 장애 시 기본 차단",
-      "purpose": "정책 판단 실패·시간초과·응답 형식 오류 시 요청을 차단한다(§11.16).",
+      "purpose": "정책 판단 실패·시간초과·미정의 결정·강제할 수 없는 제한조건 또는 실행 직전 계약·승인 검증 실패 시 차단한다. 관찰 모드에서도 집행한다.",
       "enforced_by": "gateway",
       "risk_ids": [
         "RSK-009"
@@ -1154,7 +1154,7 @@
         "prod"
       ],
       "automation": "자동화",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "status": "운영",
       "approval_status": "승인",
       "effective_from": "2026-09-16T00:00:00Z"

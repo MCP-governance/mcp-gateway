@@ -502,7 +502,7 @@ Agent Console·인증·도입 요청 경계만 빠르게 확인할 때는 다음
 정상 기준은 다음과 같습니다.
 
 - Rego 단위 테스트 `62/62 PASS` (프레임워크 §11.11이 요구하는 시험 조건: 정상 허용, 비인가 차단, 경계값·누락 입력, 권한·Scope 초과, 미등록 구성요소, 민감정보 접근·외부 전송, 고위험 추가 승인, 예외 적용과 유효기간 만료, 다중 정책 동시 적용, 정책 충돌과 우선순위, 연쇄호출 누적, 27칸 판정 기준선 대조)
-- core acceptance `64 passed / 0 failed`, Agent/API 경계 acceptance `97 passed / 0 failed`
+- core acceptance와 Agent/API 경계 acceptance 실패 0, 실행 경계 회귀(`runtime_acceptance`) 실패 0. 현재 검증 수치와 범위는 [실행 경계 검증 기록](../docs/runtime-hardening.md) 참고
 - 익명·위조 토큰의 Gateway API 호출이 `401`, 협력업체 계정의 승인 시도가 `403`
 - `/tool-call`은 사용자 JWT와 Agent Assertion을 함께 요구하며, 사용자 JWT 재사용·다른 actor·변조된 envelope는 `401`
 - Streamable HTTP, stdio, legacy SSE에서 실제 `tools/call` 성공
@@ -541,7 +541,7 @@ Agent Console·인증·도입 요청 경계만 빠르게 확인할 때는 다음
 - 제공자 고지 요청서가 계약 근거 유무를 구분해 생성됨
 - 합성 upstream MCP에 host port가 없음
 
-생성 결과는 `reports/acceptance.json`, `reports/agent-acceptance.json`, `reports/security-regression.txt`에 남고 Git에는 포함되지 않습니다.
+생성 결과는 `reports/acceptance.json`, `reports/agent-acceptance.json`, `reports/runtime-acceptance.json`, `reports/security-regression.txt`에 남고 Git에는 포함되지 않습니다.
 
 같은 명령을 [`.github/workflows/verify.yml`](../.github/workflows/verify.yml)이 `main`과 모든 `feat/**` 푸시, `main`으로 가는 PR마다 실행합니다. 완료 조건은 사람이 기억할 때가 아니라 매 변경마다 확인됩니다. 실행 결과는 workflow artifact로 보관합니다.
 

@@ -1015,6 +1015,13 @@ function renderExecution() {
     || emptyState("승인 대기 중인 요청이 없습니다.");
 }
 
+function executionLabel(item) {
+  if (item.upstream_executed) return "실행 확인";
+  if (item.execution_status === "unknown" || item.upstream_attempted
+      || (item.upstream_attempted == null && item.policy_id === "MCP-UPSTREAM-001")) return "실행 여부 미확인";
+  return "미실행";
+}
+
 function auditRow(item) {
   const conflicts = Array.isArray(item.conflicts) ? item.conflicts : [];
   const trail = [`v${item.policy_version || "?"}`];
@@ -1023,7 +1030,7 @@ function auditRow(item) {
   if (conflicts.length) trail.push(`경합 ${conflicts.map(entry => entry.policy_id).join(", ")}`);
   const haystack = `${item.tool_name} ${item.policy_id} ${item.decision} ${item.user_token} ${item.data_class}`.toLowerCase();
   const hidden = auditTerm && !haystack.includes(auditTerm.toLowerCase());
-  return `<tr data-decision-id="${escapeHtml(item.id ?? "")}" class="${hidden ? "hidden" : ""}"><td title="${escapeHtml(formatDate(item.created_at))}">${escapeHtml(ago(item.created_at))}</td><td>${escapeHtml(item.user_token || "-")}</td><td>${escapeHtml(item.tool_name || "-")}</td><td>${escapeHtml(item.data_class || "-")} / ${escapeHtml(item.action || "-")}</td><td><span class="decision ${escapeHtml(String(item.decision || "").toLowerCase())}">${escapeHtml(item.decision || "-")}</span></td><td><code>${escapeHtml(item.policy_id || "-")}</code><small class="sub">${escapeHtml(trail.join(" · "))}</small></td><td>${item.upstream_executed ? "실행" : "미실행"}</td><td>${escapeHtml((item.trace_id || "-").slice(0, 12))}</td></tr>`;
+  return `<tr data-decision-id="${escapeHtml(item.id ?? "")}" class="${hidden ? "hidden" : ""}"><td title="${escapeHtml(formatDate(item.created_at))}">${escapeHtml(ago(item.created_at))}</td><td>${escapeHtml(item.user_token || "-")}</td><td>${escapeHtml(item.tool_name || "-")}</td><td>${escapeHtml(item.data_class || "-")} / ${escapeHtml(item.action || "-")}</td><td><span class="decision ${escapeHtml(String(item.decision || "").toLowerCase())}">${escapeHtml(item.decision || "-")}</span></td><td><code>${escapeHtml(item.policy_id || "-")}</code><small class="sub">${escapeHtml(trail.join(" · "))}</small></td><td>${executionLabel(item)}</td><td>${escapeHtml((item.trace_id || "-").slice(0, 12))}</td></tr>`;
 }
 
 function sortedDecisions() {
@@ -1106,7 +1113,7 @@ function renderResult(body) {
   const outcome = body.gateway_result || {};
   const decision = outcome.decision || (body.status === "no_tool" ? "No Tool" : "Error");
   const titles = {Allow: "실행 완료", Alert: "실행 완료 · 경보", Restrict: "제한 적용 후 실행", Approval: "승인 대기", Block: "실행 차단", "No Tool": "실행 대상 없음", Error: "처리 확인 필요"};
-  document.querySelector("#result-title").textContent = titles[decision] || "실행 결과";
+  document.querySelector("#result-title").textContent = outcome.upstream_executed && decision === "Block" ? "실행 완료 · 결과 반환 차단" : executionLabel(outcome) === "실행 여부 미확인" ? "실행 여부 확인 필요" : titles[decision] || "실행 결과";
   const badge = document.querySelector("#result-decision");
   badge.textContent = decision;
   badge.className = `tag decision ${String(decision).toLowerCase()}`;
@@ -1118,7 +1125,7 @@ function renderResult(body) {
     ["증적·의무", (outcome.obligations || []).join(", ") || "-"],
     ["경합 정책", (outcome.conflicts || []).map(entry => entry.policy_id).join(", ") || "없음"],
     ["도구", body.tool_call?.tool_name || outcome.tool_name || "-"],
-    ["실행", outcome.upstream_executed ? "upstream 실행 확인" : "실행되지 않음"],
+    ["실행", executionLabel(outcome)],
     ["Trace", outcome.trace_id || "-"],
   ];
   document.querySelector("#result-facts").innerHTML = facts.map(([key, value]) =>

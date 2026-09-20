@@ -137,6 +137,8 @@ ALTER TABLE decisions ADD COLUMN IF NOT EXISTS obligations jsonb NOT NULL DEFAUL
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS exception_id text;
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS conflicts jsonb NOT NULL DEFAULT '[]';
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS environment text;
+-- NULL은 구버전 기록이다. 기존 해시는 고치지 않고 체인 v4부터 시도 여부를 보호한다.
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS upstream_attempted boolean;
 
 -- §11.4.1 승인 유효기간 만료 확인. 승인은 영구가 아니므로 Registry가 기한을
 -- 들고 있어야 정책이 그것을 판단할 수 있다.
