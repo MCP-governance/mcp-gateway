@@ -1,0 +1,8 @@
+{
+  "name": "mcp-governance-lab-filesystem-candidate",
+  "private": true,
+  "description": "Metadata-only lab manifest. It never starts the vulnerable package.",
+  "dependencies": {
+    "@modelcontextprotocol/server-filesystem": "0.6.2"
+  }
+}

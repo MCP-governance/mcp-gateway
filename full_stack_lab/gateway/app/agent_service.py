@@ -622,6 +622,8 @@ MCP_SCAN_CONFIG = {
     "MCP_SCAN_MODEL": os.getenv("MCP_SCAN_MODEL", ""),
     "MCP_SCAN_API_KEY": os.getenv("MCP_SCAN_API_KEY", ""),
 }
+MCP_SCAN_EVIDENCE_MODE = os.getenv("MCP_SCAN_EVIDENCE_MODE", "live").strip().lower()
+MCP_SCAN_EVIDENCE_MODES = {"live", "test-double"}
 # 워커가 lease를 갱신하는 주기보다 넉넉하게 잡는다. 이 값을 넘도록 소식이 없으면
 # "큐에 넣었다"와 "누군가 실행한다"가 더는 같은 말이 아니다.
 WORKER_STALE_SECONDS = int(os.getenv("INTAKE_WORKER_STALE_SECONDS", "60"))
@@ -636,11 +638,14 @@ EXIT_TERMS_REQUIRED = os.getenv("INTAKE_EXIT_TERMS_REQUIRED", "0") not in ("0", 
 
 def mcp_scan_status() -> dict:
     missing = [key for key, value in MCP_SCAN_CONFIG.items() if not value]
+    if MCP_SCAN_EVIDENCE_MODE not in MCP_SCAN_EVIDENCE_MODES:
+        missing.append("MCP_SCAN_EVIDENCE_MODE(live|test-double)")
     return {
         "configured": not missing,
         "missing": missing,
         "base_url": MCP_SCAN_CONFIG["MCP_SCAN_BASE_URL"],
         "model": MCP_SCAN_CONFIG["MCP_SCAN_MODEL"],
+        "evidence_mode": MCP_SCAN_EVIDENCE_MODE,
         "pinned_commit": "036c39bd03b39ce4a811f7f125bc3b8f47e39b7c",
         "required_for_approval": SCAN_REQUIRED_FOR_APPROVAL,
     }
@@ -768,11 +773,11 @@ class ScanRequest(StrictModel):
 
 # 로컬로 볼 수 있는 모델 endpoint. core의 provider 검증과 같은 기준을 쓴다.
 LOCAL_MODEL_HOSTS = {"localhost", "127.0.0.1", "::1", "host.docker.internal",
-                     "model-stub", "llm-stub", "ollama"}
+                     "model-stub", "llm-stub", "aig-lab-model", "ollama"}
 
 
 def local_model_endpoint() -> bool:
-    host = urlsplit(MCP_SCAN_CONFIG["base_url"] or "").hostname or ""
+    host = urlsplit(MCP_SCAN_CONFIG["MCP_SCAN_BASE_URL"] or "").hostname or ""
     return host in LOCAL_MODEL_HOSTS
 
 

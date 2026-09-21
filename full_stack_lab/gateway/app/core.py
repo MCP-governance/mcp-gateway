@@ -185,8 +185,10 @@ async def refresh_catalog(server_id: str) -> dict:
     server = await db.fetch_one("SELECT * FROM mcp_servers WHERE id=%s", (server_id,))
     if not server:
         raise RuntimeError(f"unregistered server: {server_id}")
-    if server["status"] == "DISABLED":
-        return {"server_id": server_id, "status": "DISABLED", "reason": server["status_reason"]}
+    if server["status"] in {"DISABLED", "BLOCKED_SUPPLY_CHAIN"}:
+        # Catalog discovery proves only that a service answers; it must never undo
+        # an operator's supply-chain containment or reconnect to the blocked target.
+        return {"server_id": server_id, "status": server["status"], "reason": server["status_reason"]}
     if server["lifecycle"] in {"TERMINATING", "RETIRED"}:
         # 폐기 절차에 들어간 서버에 다시 붙어 catalog를 읽는 것은 종료 조치와
         # 반대 방향의 행동이다. 계약을 갱신할 이유가 없고, 연결 자체가 "아직

@@ -43,6 +43,10 @@ MCP_SCAN_BASE_URL = os.getenv("MCP_SCAN_BASE_URL", "")
 MCP_SCAN_MODEL = os.getenv("MCP_SCAN_MODEL", "")
 MCP_SCAN_TIMEOUT = int(os.getenv("MCP_SCAN_TIMEOUT", "900"))
 MCP_SCAN_LANGUAGE = os.getenv("MCP_SCAN_LANGUAGE", "en")  # CLI가 지원하는 값은 zh/en
+# A.I.G 결과가 실제 모델 판단인지, 배선 검증용 test double인지 구분한다. 후자를
+# 통제 증적으로 세면 "연결됐다"가 "안전하다/차단했다"로 바뀌는 착시가 생긴다.
+MCP_SCAN_EVIDENCE_MODE = os.getenv("MCP_SCAN_EVIDENCE_MODE", "live").strip().lower()
+MCP_SCAN_EVIDENCE_MODES = {"live", "test-double"}
 SARIF_LEVELS = {"error": "HIGH", "warning": "MEDIUM", "note": "LOW", "none": "LOW"}
 
 WORKER_ID = os.getenv("INTAKE_WORKER_ID", "intake-worker-1")
@@ -361,13 +365,34 @@ def risk_category(item: dict, rules: dict) -> str:
 
 
 def sarif_findings(report: Path, root: Path) -> tuple[dict[str, int], list[dict], str]:
-    """mcp-scan은 SARIF 2.1.0으로 결과를 낸다. scanNote는 모델이 아무 말도 하지
-    않고 끝난 경우를 도구 스스로 표시한 값이라 그대로 보존한다."""
+    """mcp-scan의 SARIF와 현재 CLI의 native JSON 결과를 모두 읽는다."""
     counts = {level: 0 for level in SEVERITY_ORDER}
     findings: list[dict] = []
     if not report.exists():
         return counts, findings, "no-output"
     document = json.loads(report.read_text(encoding="utf-8") or "{}")
+    # Pinned A.I.G CLI는 --output에 native JSON(results/level/risk_type)을 쓰고,
+    # 일부 배포판은 SARIF를 쓴다. 확장자가 .sarif.json이라고 해서 결과를 버리면
+    # 실제 검사가 0건으로 보이는 위험한 거짓 음성이 된다.
+    native_results = document.get("results")
+    if isinstance(native_results, list):
+        for item in native_results:
+            severity = SARIF_SEVERITY_TEXT.get(str(item.get("level") or "").strip().lower(), "LOW")
+            counts[severity] += 1
+            title = str(item.get("title") or item.get("description") or "mcp-scan")[:400]
+            evidence = {
+                "ruleId": item.get("risk_type") or "mcp-scan",
+                "message": {"text": title + " " + str(item.get("description") or "")},
+            }
+            findings.append({
+                "severity": severity,
+                "id": item.get("risk_type") or "mcp-scan",
+                "title": title,
+                "target": relative(str(item.get("file") or ""), root),
+                "risk_category": risk_category(evidence, {}),
+            })
+        return counts, findings[:200], "native-json"
+
     runs = document.get("runs") or []
     note = "unknown"
     for run in runs:
@@ -567,15 +592,18 @@ def run_mcp_scan(connection, job: dict) -> None:
         raise RuntimeError("aig-mcp-scan(exit %s): " % result.returncode + " | ".join(output[-3:])[:400])
 
     counts, findings, note = sarif_findings(report, checkout or WORK_DIR)
+    if MCP_SCAN_EVIDENCE_MODE not in MCP_SCAN_EVIDENCE_MODES:
+        raise RuntimeError("MCP_SCAN_EVIDENCE_MODE must be live or test-double")
     # 배선 stub으로 돌린 결과가 "발견 0건"으로 보이면 그게 곧 깨끗하다는 뜻이
     # 된다. 어떤 종류의 endpoint였는지를 결과에 박아 둔다.
-    endpoint_kind = "wire-stub" if urlsplit(MCP_SCAN_BASE_URL).hostname == "llm-stub" else "model"
-    # stub 결과는 어떤 경우에도 차단 집계에 들어가지 않는다. 배선 확인이 통제처럼
-    # 보이기 시작하면 그 순간부터 통제가 아니라 착시다.
-    blocks = bool(target["blocks"]) and endpoint_kind == "model"
+    endpoint_kind = "wire-stub" if urlsplit(MCP_SCAN_BASE_URL).hostname == "llm-stub" else MCP_SCAN_EVIDENCE_MODE
+    # test double 결과는 어떤 경우에도 차단 집계에 들어가지 않는다. 배선 확인이
+    # 통제처럼 보이기 시작하면 그 순간부터 통제가 아니라 착시다.
+    blocks = bool(target["blocks"]) and MCP_SCAN_EVIDENCE_MODE == "live" and endpoint_kind != "wire-stub"
     breakdown = risk_breakdown(findings)
     summary = {
         "endpoint_kind": endpoint_kind,
+        "evidence_mode": MCP_SCAN_EVIDENCE_MODE,
         "target_kind": job["target_kind"],
         "mode": "dynamic" if dynamic else "static",
         "blocks_calls": blocks,
@@ -618,7 +646,8 @@ def run_mcp_scan(connection, job: dict) -> None:
 
 
 def scan_configured() -> bool:
-    return bool(MCP_SCAN_API_KEY and MCP_SCAN_BASE_URL and MCP_SCAN_MODEL)
+    return bool(MCP_SCAN_API_KEY and MCP_SCAN_BASE_URL and MCP_SCAN_MODEL
+                and MCP_SCAN_EVIDENCE_MODE in MCP_SCAN_EVIDENCE_MODES)
 
 
 def heartbeat(connection) -> None:
@@ -635,6 +664,7 @@ def heartbeat(connection) -> None:
             "mcp_scan_configured": scan_configured(),
             "model": MCP_SCAN_MODEL,
             "base_url": MCP_SCAN_BASE_URL,
+            "evidence_mode": MCP_SCAN_EVIDENCE_MODE,
             "poll_seconds": POLL_SECONDS,
             "lease_seconds": SCAN_LEASE_SECONDS,
             "auto_on_validated": AUTO_ON_VALIDATED,

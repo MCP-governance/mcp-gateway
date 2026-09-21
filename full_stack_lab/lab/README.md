@@ -1,0 +1,42 @@
+# 기업 내부망 공급망 실습
+
+`compose.corporate-lab.yaml`은 기존 Gateway와 Tencent Zhuque Lab의 A.I.G를 세 망으로 분리합니다.
+
+```text
+브라우저(127.0.0.1) → Gateway Console / A.I.G UI
+                                  │
+                         aig-control (internal)
+                                  │
+                  aig-agent ─── aig-targets (internal) ─── MCP target
+                                  │
+                         scanner (격리 검사·모델 egress)
+```
+
+`aig-agent`은 Tencent 원본 동적 점검 이미지가 요구하는 Chromium sandbox 권한을 사용합니다. 따라서 host mount와 host port를 주지 않았고, 테스트가 끝나면 `./console.sh lab-down`으로 관련 볼륨을 함께 제거합니다.
+
+## 실제 취약 버전 후보
+
+| 후보 | 근거 | 이 실습의 사용 방식 |
+| --- | --- | --- |
+| `@modelcontextprotocol/server-filesystem@0.6.2` | [GHSA-q66q-fx2p-7w4m](https://github.com/advisories/GHSA-q66q-fx2p-7w4m), CVE-2025-53109 — `0.6.3` / `2025.7.01` 이전 경로 검증 우회 | `package-lock.json` 메타데이터만 Trivy로 검사; 패키지를 설치·실행하지 않음 |
+| `mcp-server-git==2025.11.25` | [GHSA-9xwc-hfwc-8w59](https://github.com/advisories/GHSA-9xwc-hfwc-8w59) — `2025.12.18` 이전 인자 주입 | `requirements.txt` 메타데이터만 SCA 대상으로 사용 |
+
+`aig-lab-model`은 A.I.G의 큐·CLI·native JSON/SARIF 결과 경로를 검증하는 test double입니다. 결과에 `evidence_mode: test-double`이 남고 Gateway 차단 근거에는 들어가지 않습니다. A.I.G가 실제로 독립 발견한 결과를 차단에 쓰려면 A.I.G UI에서 조직의 검증된 모델 endpoint를 등록하고 `MCP_SCAN_EVIDENCE_MODE=live`로 실행해야 합니다.
+
+## 실행
+
+WSL/Linux의 `full_stack_lab`에서 다음을 실행합니다.
+
+```bash
+./console.sh corporate-lab
+```
+
+명령은 초기화된 DB에서 다음을 수행합니다.
+
+1. 실제 GitHub MCP 도입 요청을 제출하고 격리 검증 대기열에 넣습니다.
+2. 명시적 `LAB EXCEPTION`으로 취약 후보를 제한된 mock MCP 경로에만 도입합니다.
+3. Trivy SCA와 A.I.G mcp-scan test-double 결과를 각각 저장합니다.
+4. 공급망 차단 후 upstream 효과가 증가하지 않는지 확인합니다.
+5. 해당 서버의 회수 대상·증거·도달 확인을 남기고 MCP 컨테이너를 제거해 `RETIRED`로 종결합니다.
+
+검사 과정에서 실제 외부 저장소 코드는 격리 워커가 shallow clone하여 읽기만 합니다. 취약 패키지 버전은 실행하지 않습니다.

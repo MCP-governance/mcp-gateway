@@ -18,6 +18,7 @@ cd mcp-gateway/full_stack_lab
 - Jaeger: <http://localhost:16686>
 - 전체 검증: `./console.sh test`
 - 공급망 증적 생성: `./console.sh scan`
+- 기업 내부망 + Tencent A.I.G 시나리오: `./console.sh reset && ./console.sh corporate-lab`
 
 현재 기준의 성공 조건은 **Rego 62/62**, core acceptance와 Agent/API acceptance 모두 실패 0입니다. 같은 명령을 [`.github/workflows/verify.yml`](.github/workflows/verify.yml)이 `main`과 모든 `feat/**` 푸시, `main`으로 가는 PR마다 실행합니다.
 
@@ -27,6 +28,10 @@ cd mcp-gateway/full_stack_lab
 - 정지·잠금 계정은 stdio와 대기 승인에서도 실행할 수 없습니다. 승인 유효기간은 실제 `tools/call` 전달 직전에 다시 확인합니다.
 - 감사 기록과 Console은 **실행 확인 / 미실행 / 실행 여부 미확인**을 구분합니다. 응답 유실을 차단 성공으로 세지 않으며, 종료 이후 미확인 호출이 있으면 T3로 판정합니다.
 - `./console.sh test`가 위 경계를 검증하는 `runtime_acceptance`도 실행합니다. 재현 방법과 검증 범위는 [실행 경계 검증 기록](docs/runtime-hardening.md)에 정리했습니다.
+
+### 기업 내부망 A.I.G 실습
+
+`full_stack_lab/compose.corporate-lab.yaml`은 Tencent Zhuque Lab의 원본 A.I.G Web/Agent를 별도 서비스로 올리고, Gateway·검사·A.I.G 대상 망을 분리합니다. A.I.G UI는 `127.0.0.1:8088`에만 열며, 취약 버전은 패키지 설치 없이 메타데이터 SCA 대상으로만 사용합니다. 실제 실행 절차, test-double과 실제 모델 검사의 구분, 도입·차단·컨테이너 삭제·T1 종료 증적은 [기업 내부망 실습 문서](full_stack_lab/lab/README.md)를 따릅니다.
 
 ## 통제 흐름
 

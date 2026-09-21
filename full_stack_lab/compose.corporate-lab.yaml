@@ -1,0 +1,99 @@
+# `docker compose -f compose.yaml -f compose.corporate-lab.yaml`로만 쓰는
+# 내부망 실습 확장이다. A.I.G는 인증 기능이 없으므로 host 공개는 loopback 하나로
+# 제한하고, 스캔 대상은 별도 internal network에서만 보이게 둔다.
+services:
+  gateway:
+    environment:
+      LAB_MODE: "1"
+
+  agent-service:
+    environment:
+      MCP_SCAN_API_KEY: lab-only-test-double
+      MCP_SCAN_BASE_URL: http://aig-lab-model:4010/v1
+      MCP_SCAN_MODEL: lab-test-double
+      MCP_SCAN_EVIDENCE_MODE: test-double
+      MCP_SCAN_AUTO_ON_VALIDATED: "0"
+
+  intake-worker:
+    environment:
+      MCP_SCAN_API_KEY: lab-only-test-double
+      MCP_SCAN_BASE_URL: http://aig-lab-model:4010/v1
+      MCP_SCAN_MODEL: lab-test-double
+      MCP_SCAN_EVIDENCE_MODE: test-double
+      MCP_SCAN_AUTO_ON_VALIDATED: "0"
+    # The worker normally never reaches tools. This lab-only attachment is the
+    # narrow dynamic-scan path to the isolated target, not Gateway execution.
+    networks: [data, scanner, aig-targets]
+
+  # A.I.G가 실제 MCP target을 볼 수 있는 유일한 서비스다. 원본 이미지가
+  # Chromium 동적 점검에 요구하는 설정은 유지하되 host mount와 host port는 주지 않는다.
+  aig-agent:
+    image: zhuquelab/aig-agent@sha256:7699c4004cd04c7b9c95766f07eb28d19b11d8d91ee4a38602acd74872734f7a
+    environment:
+      TZ: Asia/Seoul
+      AIG_SERVER: aig-webserver:8088
+    cap_add: [SYS_ADMIN]
+    security_opt: [seccomp:unconfined]
+    shm_size: 2gb
+    depends_on:
+      aig-webserver:
+        condition: service_healthy
+    networks: [aig-control, aig-targets, scanner]
+    restart: unless-stopped
+
+  # Tencent Zhuque Lab의 원본 A.I.G Web/Task API. digest를 고정해 `latest` drift를
+  # 피하고, UI/API는 이 PC의 loopback에서만 연다.
+  aig-webserver:
+    image: zhuquelab/aig-server@sha256:0c2560d64ee48f3110a035c9ca385668fcb0723592db51a41b89687f1af7810a
+    environment:
+      APP_ENV: production
+      UPLOAD_DIR: /app/uploads
+      DB_PATH: /app/db/tasks.db
+      TZ: Asia/Seoul
+    ports:
+      - "${AIG_BIND_ADDR:-127.0.0.1}:8088:8088"
+    volumes:
+      - aig_data:/app/data
+      - aig_db:/app/db
+      - aig_logs:/app/logs
+      - aig_uploads:/app/uploads
+    networks: [aig-control]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, curl, -fsS, http://localhost:8088/]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+
+  # API/worker/SARIF 배선 검증용 명시적 test double. 이 결과는 `test-double`로
+  # 저장되고 Gateway 차단 근거로 사용되지 않는다.
+  aig-lab-model:
+    image: python:3.12-slim
+    command: [python, /app/llm_stub.py]
+    environment:
+      LLM_STUB_PORT: "4010"
+      LLM_STUB_REPLY_FILE: /lab/aig-test-double.xml
+    volumes:
+      - ./supply_chain/llm_stub.py:/app/llm_stub.py:ro
+      - ./lab/aig-test-double.xml:/lab/aig-test-double.xml:ro
+    networks: [scanner]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
+
+  # 실제 호출 대상은 A.I.G target network에도 붙지만 host port는 없다.
+  mock-http-mcp:
+    networks: [tools, aig-targets]
+
+networks:
+  aig-control:
+    internal: true
+  aig-targets:
+    internal: true
+
+volumes:
+  aig_data: {}
+  aig_db: {}
+  aig_logs: {}
+  aig_uploads: {}

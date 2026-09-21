@@ -70,6 +70,38 @@ cd ~/mcp-gateway/full_stack_lab
 ./console.sh reset
 ```
 
+### 2.1 기업 내부망 + Tencent A.I.G 시나리오
+
+초기화 직후에는 아래 명령 하나로 Gateway, OPA, 격리 공급망 워커, Tencent Zhuque Lab의 원본 A.I.G Web/Agent를 함께 올립니다.
+
+```bash
+./console.sh corporate-lab
+```
+
+이 오버레이는 다음 경계를 만듭니다.
+
+```text
+host loopback ── Console :8000 / Gateway :8080 / A.I.G UI :8088
+                       │
+  edge · policy · tools · data · telemetry · scanner (기존 통제 평면)
+                       │
+            aig-control (internal) ─ A.I.G Web ↔ A.I.G Agent
+                       │
+            aig-targets (internal) ─ 검사 대상 MCP
+```
+
+처음에는 실제 GitHub MCP 저장소 요청을 직원 계정으로 격리 검증 대기열에 넣습니다. 이어서 공식 GHSA 근거가 있는 `@modelcontextprotocol/server-filesystem@0.6.2`을 **메타데이터 전용** controlled exception으로 기록하고 Trivy를 실행합니다. 취약 패키지는 설치하거나 실행하지 않습니다. A.I.G의 mcp-scan 큐와 native JSON/SARIF 결과 경로는 내부 test double로 검증하며, 결과에는 반드시 `evidence_mode: test-double`이 남습니다. 이 결과는 Gateway 차단 근거가 아닙니다. 차단은 별도로 기록한 공식 advisory와 관리자의 containment 조치로 일어나며, 그 뒤 실제 upstream 효과가 0인지 확인합니다.
+
+차단 뒤 Catalog 재확인은 대상에 다시 연결하거나 `READY`로 되돌리지 않으며, 마지막으로 대상 MCP 컨테이너만 제거하고 Gateway의 종료 케이스에서 회수 대상·증거·도달 불가를 확인해 T1로 종결합니다. 생성된 요약은 `reports/corporate-lab-summary.json`입니다. A.I.G 원본 UI의 ClawScan, Agent Scan, AI 인프라 CVE, MCP/Skill scan, Jailbreak 등 모델 의존 기능은 <http://localhost:8088>에서 내부 모델 endpoint를 등록해 사용할 수 있습니다. test double은 배선 검증일 뿐 실제 모델 보안 판단이 아닙니다.
+
+실습 환경과 A.I.G 데이터를 함께 내리려면 다음을 사용합니다.
+
+```bash
+./console.sh lab-down
+```
+
+세부 후보·증적 구분·제약은 [lab/README.md](lab/README.md)에 기록합니다.
+
 ## 3. Console에서 운영 흐름 확인
 
 ### 3.1 개발 계정으로 요청하기
@@ -128,7 +160,7 @@ Console은 브라우저 기준 `8000` 하나에서 다음 페이지를 제공합
 - `MCP 도입`: GitHub 저장소 URL 제출과 격리 검증 실행·승인·거부
 - `검증 파이프라인`: 도입 요청별 SBOM·SCA·SAST 결과와 운영 MCP의 공급망 연결 상태
 - `위험 분석`: Trivy·Semgrep 발견 항목을 심각도로 거르기
-- `AI 코드 감사`: mcp-scan 실행 조건·연결 확인·작업 이력·SARIF 결과
+- `AI 코드 감사`: mcp-scan 실행 조건·연결 확인·작업 이력·native JSON/SARIF 결과
 - `정책 관리대장`: 집행 중인 정책의 Risk·Control·버전·상태·우선순위와 등록된 예외
 - `신원 관리대장`: 계정의 역할·부서·상태와 중지·잠금 조치
 - `MCP 실행`과 `감사 기록`: Tool Call 제안, Gateway 판정, 실제 upstream 효과, Trace ID, 감사 체인 검증
@@ -659,7 +691,7 @@ curl -sS http://localhost:8080/api/supply-chain/coverage | python3 -m json.tool
 | --- | --- | --- |
 | 한 번 실패한 대상을 **다시는 감사할 수 없음** | 워커가 스캔 중 죽으면 그 행이 영원히 `RUNNING`으로 남고, 실행 API는 `QUEUED`·`RUNNING`을 409로 막았습니다. 통제가 한 번 실패하면 영구히 꺼지는 구조 | `lease_expires_at`·`attempts`로 만료 작업을 회수하고, 한도를 넘기면 `FAILED`로 끝냅니다. 관리자가 실행을 누를 때도 만료된 `RUNNING`을 먼저 회수합니다 |
 | 큐에 쌓이기만 하는데 화면은 "설정됨" | 워커 생존 신호가 없어 **"설정이 있다"와 "실행할 사람이 있다"를 구분할 수 없었습니다** | `worker_heartbeats`에 매 회전 신호를 남기고, Console 배지가 `실행 가능`/`워커 없음`/`설정 필요`를 구분합니다 |
-| mcp-scan 결과가 아무것도 막지 못함 | 워커가 SARIF `level`만 봤는데, mcp-scan의 변환기는 `critical`과 `high`를 **둘 다 `error`로 접습니다**. 원래 등급은 `properties.severity`에 남습니다. 즉 CRITICAL이 구조적으로 나올 수 없었고 `MCP-SUPPLY-001`의 치명점 집계에 영원히 0을 기여했습니다 | `properties.severity`(자유 문자열, 영문·중문) → SARIF 표준 `security-severity`(수치) → `level` 순으로 읽습니다 |
+| mcp-scan 결과가 0건으로 보임 | 고정한 A.I.G CLI는 `--output`에 native JSON(`results`/`level`/`risk_type`)을 쓰지만, 일부 배포판은 SARIF를 씁니다. 확장자만 보고 SARIF로 간주하면 native JSON 결과를 버려 거짓 음성이 됩니다 | top-level `results`가 있으면 native JSON을, 없으면 SARIF의 `properties.severity` → `security-severity` → `level` 순으로 읽습니다 |
 
 #### 감사가 도는 시점
 
@@ -702,7 +734,7 @@ MCP_SCAN_API_KEY=local
 2. **도입 요청 감사**: 격리 검증을 통과해 commit이 고정된 요청을 고르면 워커가 **그 커밋을 다시 복제해** 실행합니다. 마지막 감사가 지금 commit과 다른 코드에 대한 것이면 화면이 그렇게 말합니다.
 3. **등록 서버 재감사**: 승인된 `source_ref`로 다시 복제해 실행합니다.
 4. **취소·재시도**: 대기 중인 작업은 즉시 취소되고, 실행 중인 작업은 취소 표시 후 현재 회차가 끝나면 반영됩니다. 실패·취소된 작업은 다시 큐에 넣을 수 있습니다.
-5. **결과 확인**: SARIF 2.1.0 결과를 심각도별로 보여주고, 같은 `source_ref`로 `위험 분석` 화면에도 합류합니다.
+5. **결과 확인**: 현재 CLI의 native JSON 또는 SARIF 2.1.0 결과를 심각도별로 보여주고, 같은 `source_ref`로 `위험 분석` 화면에도 합류합니다.
 
 결과에는 **어떤 모델이 어느 endpoint로 판단했는지**, **무엇이 이 작업을 만들었는지**(`trigger`), **이 결과가 차단에 연결되는지**(`blocks_calls`)가 항상 함께 남습니다. 모델을 모르는 보안 결과는 증적이 아닙니다.
 
