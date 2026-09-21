@@ -92,6 +92,8 @@ host loopback ── Console :8000 / Gateway :8080 / A.I.G UI :8088
 
 처음에는 실제 GitHub MCP 저장소 요청을 직원 계정으로 격리 검증 대기열에 넣습니다. 이어서 공식 GHSA 근거가 있는 `@modelcontextprotocol/server-filesystem@0.6.2`을 **메타데이터 전용** controlled exception으로 기록하고 Trivy를 실행합니다. 취약 패키지는 설치하거나 실행하지 않습니다. A.I.G의 mcp-scan 큐와 native JSON/SARIF 결과 경로는 내부 test double로 검증하며, 결과에는 반드시 `evidence_mode: test-double`이 남습니다. 이 결과는 Gateway 차단 근거가 아닙니다. 차단은 별도로 기록한 공식 advisory와 관리자의 containment 조치로 일어나며, 그 뒤 실제 upstream 효과가 0인지 확인합니다.
 
+시나리오 시작 시 `aig-network-probe`가 현재 Compose가 할당한 **모든 컨테이너 IP**의 허용 포트만 TCP connect로 자산화합니다. Docker CIDR의 비할당 주소, 호스트, 외부망은 범위 밖이며 probe는 HTTP/MCP payload를 보내지 않습니다. 발견된 `9000/tcp` MCP 엔드포인트가 있어야 다음 A.I.G 동적 검사가 진행됩니다.
+
 차단 뒤 Catalog 재확인은 대상에 다시 연결하거나 `READY`로 되돌리지 않으며, 마지막으로 대상 MCP 컨테이너만 제거하고 Gateway의 종료 케이스에서 회수 대상·증거·도달 불가를 확인해 T1로 종결합니다. 생성된 요약은 `reports/corporate-lab-summary.json`입니다. A.I.G 원본 UI의 ClawScan, Agent Scan, AI 인프라 CVE, MCP/Skill scan, Jailbreak 등 모델 의존 기능은 <http://localhost:8088>에서 내부 모델 endpoint를 등록해 사용할 수 있습니다. test double은 배선 검증일 뿐 실제 모델 보안 판단이 아닙니다.
 
 실습 환경과 A.I.G 데이터를 함께 내리려면 다음을 사용합니다.

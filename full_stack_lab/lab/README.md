@@ -14,6 +14,10 @@
 
 `aig-agent`은 Tencent 원본 동적 점검 이미지가 요구하는 Chromium sandbox 권한을 사용합니다. 따라서 host mount와 host port를 주지 않았고, 테스트가 끝나면 `./console.sh lab-down`으로 관련 볼륨을 함께 제거합니다.
 
+## 내부망 자산 탐색 범위
+
+`aig-network-probe`는 전용 one-shot Docker 컨테이너입니다. `console.sh`가 Compose 라벨에서 수집한 현재 컨테이너 IP만 전달하고, `5432, 8000, 8080, 8088, 8181, 9000, 4010, 4317, 4318, 16686/tcp`에 TCP connect만 수행합니다. 따라서 Docker `/16` 대역을 무차별 훑거나 host·외부망을 스캔하지 않습니다. 결과는 `reports/aig-network-inventory.json`에 남으며, `9000/tcp` MCP 엔드포인트의 발견은 A.I.G 동적 검사의 사전 조건입니다.
+
 ## 실제 취약 버전 후보
 
 | 후보 | 근거 | 이 실습의 사용 방식 |
@@ -35,8 +39,9 @@ WSL/Linux의 `full_stack_lab`에서 다음을 실행합니다.
 
 1. 실제 GitHub MCP 도입 요청을 제출하고 격리 검증 대기열에 넣습니다.
 2. 명시적 `LAB EXCEPTION`으로 취약 후보를 제한된 mock MCP 경로에만 도입합니다.
-3. Trivy SCA와 A.I.G mcp-scan test-double 결과를 각각 저장합니다.
-4. 공급망 차단 후 upstream 효과가 증가하지 않는지 확인합니다.
-5. 해당 서버의 회수 대상·증거·도달 확인을 남기고 MCP 컨테이너를 제거해 `RETIRED`로 종결합니다.
+3. 전용 probe가 현재 Compose 내부망의 컨테이너 IP·허용 포트를 자산화하고 MCP endpoint를 확인합니다.
+4. Trivy SCA와 A.I.G mcp-scan test-double 결과를 각각 저장합니다.
+5. 공급망 차단 후 upstream 효과가 증가하지 않는지 확인합니다.
+6. 해당 서버의 회수 대상·증거·도달 확인을 남기고 MCP 컨테이너를 제거해 `RETIRED`로 종결합니다.
 
 검사 과정에서 실제 외부 저장소 코드는 격리 워커가 shallow clone하여 읽기만 합니다. 취약 패키지 버전은 실행하지 않습니다.

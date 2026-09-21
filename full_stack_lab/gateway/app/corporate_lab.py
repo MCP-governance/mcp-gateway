@@ -10,6 +10,7 @@ import argparse
 import asyncio
 import json
 import os
+from pathlib import Path
 from typing import Any
 
 from psycopg.types.json import Jsonb
@@ -34,6 +35,7 @@ EXIT_TERMS = {
     "revocation_evidence": True,
     "audit_access_retained": True,
 }
+NETWORK_INVENTORY = Path("/reports/aig-network-inventory.json")
 
 
 def require_lab() -> None:
@@ -113,6 +115,29 @@ async def verify_supply() -> dict:
     return {"phase": "supply-chain", "trivy": trivy, "verified_advisory": advisory,
             "trivy_caught": bool(sum(int(trivy[key] or 0) for key in
                                       ("critical_count", "high_count", "medium_count")))}
+
+
+def network_inventory() -> dict:
+    if not NETWORK_INVENTORY.exists():
+        raise RuntimeError("Run the lab network inventory before the A.I.G scan.")
+    try:
+        inventory = json.loads(NETWORK_INVENTORY.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("The lab network inventory is not valid JSON.") from exc
+    if inventory.get("scope") != "compose-managed-container-addresses":
+        raise RuntimeError("The network inventory escaped the Compose asset scope.")
+    if not inventory.get("target_count"):
+        raise RuntimeError("The network inventory contains no live container address.")
+    if not any(item.get("port") == 9000 for item in inventory.get("open") or []):
+        raise RuntimeError("The registered MCP TCP endpoint was not discovered.")
+    return inventory
+
+
+async def verify_network() -> dict:
+    require_lab()
+    inventory = network_inventory()
+    return {"phase": "network-inventory", "scope": inventory["scope"],
+            "target_count": inventory["target_count"], "open": inventory["open"]}
 
 
 async def verify_aig() -> dict:
@@ -213,7 +238,7 @@ async def summary() -> dict:
     decisions = await db.fetch_all(
         """SELECT decision, policy_id, upstream_executed, upstream_attempted, created_at
              FROM decisions WHERE tool_name='read_document' ORDER BY id DESC LIMIT 6""")
-    return {"lab_mode": True, "package_installed": False, "server": server,
+    return {"lab_mode": True, "package_installed": False, "network_inventory": network_inventory(), "server": server,
             "controlled_exception": request, "reports": reports, "retirement": case,
             "recent_gateway_decisions": decisions}
 
@@ -230,6 +255,8 @@ async def run(command: str) -> dict:
         return await seed()
     if command == "verify-supply":
         return await verify_supply()
+    if command == "verify-network":
+        return await verify_network()
     if command == "verify-aig":
         return await verify_aig()
     if command == "contain":
@@ -255,7 +282,7 @@ async def run_and_close(command: str) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("self-check", "seed", "verify-supply", "verify-aig",
+    parser.add_argument("command", choices=("self-check", "seed", "verify-network", "verify-supply", "verify-aig",
                                                "contain", "open-retirement", "finish-retirement", "summary"))
     args = parser.parse_args()
     emit(asyncio.run(run_and_close(args.command)))

@@ -177,6 +177,27 @@ queue_aig_dynamic_scan() {
   return 1
 }
 
+lab_network_targets() {
+  local network
+  while read -r network; do
+    [[ -z "$network" ]] && continue
+    docker network inspect "$network" --format '{{range $id, $container := .Containers}}{{$container.IPv4Address}}{{"\\n"}}{{end}}'
+  done < <(docker network ls --filter 'label=com.docker.compose.project=mcp-governance-full' --format '{{.Name}}') \
+    | sed 's:/.*::' | sort -u | paste -sd, -
+}
+
+scan_internal_network() {
+  local targets
+  targets="$(lab_network_targets)"
+  if [[ -z "$targets" ]]; then
+    echo "Compose 내부망 자산 IP를 찾지 못했습니다." >&2
+    return 1
+  fi
+  LAB_NET_TARGETS="$targets" LAB_NET_PORTS='5432,8000,8080,8088,8181,9000,4010,4317,4318,16686' \
+    lab_compose --profile lab-network-probe run --rm --no-deps aig-network-probe \
+    | tee reports/aig-network-inventory.json
+}
+
 up() {
   docker compose up -d --build gateway gateway-sse agent-service intake-worker
   wait_ready
@@ -217,6 +238,8 @@ case "${1:-up}" in
   corporate-lab)
     lab_up
     lab_gateway self-check
+    scan_internal_network
+    lab_gateway verify-network
     submit_normal_intake
     lab_gateway seed
     run_candidate_trivy

@@ -82,6 +82,25 @@ services:
     read_only: true
     tmpfs: [/tmp]
 
+  # One-shot asset inventory only.  It receives the live Compose container IP
+  # list from console.sh, connects only to this lab's allowlisted ports, and
+  # never sends an MCP/HTTP payload or reaches the host.
+  aig-network-probe:
+    image: python:3.12-slim
+    profiles: [lab-network-probe]
+    command: [python, /app/network_probe.py]
+    environment:
+      LAB_NET_TARGETS: ${LAB_NET_TARGETS:-}
+      LAB_NET_PORTS: ${LAB_NET_PORTS:-}
+      LAB_NET_TIMEOUT_SECONDS: ${LAB_NET_TIMEOUT_SECONDS:-0.25}
+    volumes:
+      - ./lab/network_probe.py:/app/network_probe.py:ro
+    networks: [edge, policy, tools, data, agent, telemetry, scanner, aig-control, aig-targets]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
+
   # 실제 호출 대상은 A.I.G target network에도 붙지만 host port는 없다.
   mock-http-mcp:
     networks: [tools, aig-targets]
