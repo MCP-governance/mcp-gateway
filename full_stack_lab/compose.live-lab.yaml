@@ -20,16 +20,11 @@ services:
       MCP_SCAN_EVIDENCE_MODE: live
       MCP_SCAN_AUTO_ON_VALIDATED: "1"
 
-  aig-agent:
+  gateway:
     environment:
       AIG_API_CHECKER_ROOT_PATH: /api-checker
       AIG_API_CHECKER_DATA_DIR: /api-checker-data
       AIG_API_CHECKER_ALLOW_HTTP: "1"
       AIG_API_CHECKER_ALLOW_PRIVATE_TARGETS: "1"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-  aig-webserver:
-    environment:
-      AIG_API_CHECKER_URL: http://aig-agent:8000
     extra_hosts:
       - "host.docker.internal:host-gateway"

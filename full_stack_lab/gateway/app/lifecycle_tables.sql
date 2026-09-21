@@ -220,10 +220,9 @@ ON CONFLICT (id) DO UPDATE SET
 -- 실행 중인 서버를 대상으로 하는 동적 점검과 AI 인프라 지문·취약점 점검을 함께
 -- 제공한다. 셋을 한 표에 두되 mode와 kind로 구분한다. 무엇을 돌렸는지 모르는
 -- 결과는 증적이 아니다.
--- kind는 'mcp-scan' 하나로 둔다. AI-Infra-Guard의 인프라 지문·CVE 스캐너는
--- 공식 배포가 소스 아카이브뿐이라 워커 이미지에 Go 툴체인을 넣어야 하고, 그러면
--- 격리 워커가 빌드 환경이 된다. v1.5가 trigger='drift' 값만 예약해 두고 구현하지
--- 않아 통제가 꺼져 있던 일을 되풀이하지 않기 위해, 쓰지 않을 값은 넣지 않는다.
+-- kind는 'mcp-scan' 하나로 둔다. 원본 A.I.G UI의 인프라 지문·CVE 점검은
+-- Gateway 컨테이너에서 수동 실행할 수 있으나 이 자동 작업 표에 연결되지 않는다.
+-- 구현하지 않은 종류를 예약해 두면 실제로 검사한 것처럼 오인될 수 있다.
 ALTER TABLE scan_jobs DROP CONSTRAINT IF EXISTS scan_jobs_kind_check;
 ALTER TABLE scan_jobs ADD CONSTRAINT scan_jobs_kind_check
   CHECK (kind IN ('mcp-scan'));

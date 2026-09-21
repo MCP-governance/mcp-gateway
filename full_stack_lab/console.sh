@@ -103,8 +103,8 @@ wait_ready() {
   exit 1
 }
 
-# Corporate-lab is a separate Compose overlay: it adds Tencent A.I.G and two
-# internal-only networks, without widening the normal lab's exposed surface.
+# Corporate-lab puts Tencent A.I.G in the Gateway container, while keeping
+# the normal lab image unchanged.
 lab_compose() {
   LAB_MODE=1 docker compose -f compose.yaml -f compose.corporate-lab.yaml "$@"
 }
@@ -113,11 +113,25 @@ live_compose() {
   LAB_MODE=1 docker compose -f compose.yaml -f compose.corporate-lab.yaml -f compose.live-lab.yaml "$@"
 }
 
+retire_legacy_aig_containers() {
+  local service id
+  for service in aig-agent aig-webserver; do
+    while read -r id; do
+      [[ -z "$id" ]] && continue
+      # Only remove this Compose project's former A.I.G services. Named data
+      # volumes stay intact and are remounted into the combined Gateway image.
+      docker rm -f "$id" >/dev/null
+    done < <(docker ps -aq \
+      --filter 'label=com.docker.compose.project=mcp-governance-full' \
+      --filter "label=com.docker.compose.service=$service")
+  done
+}
+
 wait_aig_ready() {
   for _ in {1..60}; do
     # Docker Desktop/WSL port forwarding can lag even after the container's own
     # listener is ready. Verify the service from its network namespace first.
-    if lab_compose exec -T aig-webserver curl -fsS http://localhost:8088/ >/dev/null 2>&1; then
+    if lab_compose exec -T gateway curl -fsS http://localhost:8088/ >/dev/null 2>&1; then
       return
     fi
     sleep 1
@@ -127,8 +141,9 @@ wait_aig_ready() {
 }
 
 lab_up() {
+  retire_legacy_aig_containers
   lab_compose up -d --build gateway gateway-sse agent-service intake-worker \
-    aig-lab-model aig-webserver aig-agent
+    aig-lab-model
   wait_ready
   wait_aig_ready
   echo "기업 내부망 실습과 Tencent A.I.G가 준비되었습니다."
@@ -140,13 +155,13 @@ live_up() {
   # First run asks for the real endpoint, model and hidden API key. Later runs
   # reuse the ignored, mode-600 .env file without another prompt.
   python3 lab/live_setup.py init
-  live_compose up -d --build gateway gateway-sse agent-service intake-worker \
-    aig-webserver aig-agent
+  retire_legacy_aig_containers
+  live_compose up -d --build gateway gateway-sse agent-service intake-worker
   wait_ready
   wait_aig_ready
   local checker_ready=0
   for _ in {1..30}; do
-    if live_compose exec -T aig-webserver curl -fsS http://localhost:8088/api-checker/healthz \
+    if live_compose exec -T gateway curl -fsS http://localhost:8088/api-checker/healthz \
       | python3 -c 'import json,sys
 try:
     health=json.load(sys.stdin)
@@ -186,7 +201,7 @@ sys.exit(0 if result.get("ok") and result.get("worker_alive") else 1)'
 }
 
 lab_gateway() {
-  lab_compose exec -T gateway python -m app.corporate_lab "$@"
+  lab_compose exec -T gateway /opt/gateway-venv/bin/python -m app.corporate_lab "$@"
 }
 
 submit_normal_intake() {
@@ -321,7 +336,7 @@ case "${1:-up}" in
     lab_compose --profile endpoint --profile llm-stub down -v
     ;;
   lab-logs)
-    lab_compose logs -f --tail=120 aig-webserver aig-agent aig-lab-model intake-worker gateway agent-service
+    lab_compose logs -f --tail=120 aig-lab-model intake-worker gateway agent-service
     ;;
   openapi)
     # 개발용 API 명세. FastAPI가 코드에서 만들어 주므로 손으로 쓴 문서가 코드와

@@ -1,10 +1,37 @@
 # `docker compose -f compose.yaml -f compose.corporate-lab.yaml`로만 쓰는
-# 내부망 실습 확장이다. A.I.G는 인증 기능이 없으므로 host 공개는 loopback 하나로
-# 제한하고, 스캔 대상은 별도 internal network에서만 보이게 둔다.
+# 내부망 실습 확장이다. 원본 A.I.G Web/Agent는 Gateway 컨테이너 안에서
+# 실행한다. 인증 없는 A.I.G UI는 host loopback에만 열어 둔다.
 services:
   gateway:
+    build:
+      context: ./gateway
+      dockerfile: aig.Dockerfile
     environment:
       LAB_MODE: "1"
+      APP_ENV: production
+      UPLOAD_DIR: /aig-web/uploads
+      DB_PATH: /aig-web/db/tasks.db
+      TZ: Asia/Seoul
+      AIG_SERVER: 127.0.0.1:8088
+      AIG_API_CHECKER_URL: http://127.0.0.1:8000
+    ports:
+      - "${AIG_BIND_ADDR:-127.0.0.1}:8088:8088"
+    volumes:
+      - aig_data:/aig-web/data
+      - aig_db:/aig-web/db
+      - aig_logs:/aig-web/logs
+      - aig_uploads:/aig-web/uploads
+      - aig_api_checker_data:/api-checker-data
+    networks: [edge, policy, tools, data, telemetry, scanner, aig-targets]
+    cap_add: [SYS_ADMIN, SETUID, SETGID, CHOWN]
+    security_opt: [seccomp:unconfined]
+    shm_size: 2gb
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, "curl -fsS http://127.0.0.1:8080/api/health >/dev/null && curl -fsS http://127.0.0.1:8088/ >/dev/null && curl -fsS http://127.0.0.1:8000/healthz >/dev/null && pgrep -f '^/app/agent$' >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
 
   agent-service:
     environment:
@@ -24,49 +51,6 @@ services:
     # The worker normally never reaches tools. This lab-only attachment is the
     # narrow dynamic-scan path to the isolated target, not Gateway execution.
     networks: [data, scanner, aig-targets]
-
-  # A.I.G가 실제 MCP target을 볼 수 있는 유일한 서비스다. 원본 이미지가
-  # Chromium 동적 점검에 요구하는 설정은 유지하되 host mount와 host port는 주지 않는다.
-  aig-agent:
-    image: zhuquelab/aig-agent@sha256:7699c4004cd04c7b9c95766f07eb28d19b11d8d91ee4a38602acd74872734f7a
-    environment:
-      TZ: Asia/Seoul
-      AIG_SERVER: aig-webserver:8088
-    cap_add: [SYS_ADMIN]
-    security_opt: [seccomp:unconfined]
-    shm_size: 2gb
-    depends_on:
-      aig-webserver:
-        condition: service_healthy
-    volumes:
-      - aig_api_checker_data:/api-checker-data
-    networks: [aig-control, aig-targets, scanner]
-    restart: unless-stopped
-
-  # Tencent Zhuque Lab의 원본 A.I.G Web/Task API. digest를 고정해 `latest` drift를
-  # 피하고, UI/API는 이 PC의 loopback에서만 연다.
-  aig-webserver:
-    image: zhuquelab/aig-server@sha256:0c2560d64ee48f3110a035c9ca385668fcb0723592db51a41b89687f1af7810a
-    environment:
-      APP_ENV: production
-      UPLOAD_DIR: /app/uploads
-      DB_PATH: /app/db/tasks.db
-      TZ: Asia/Seoul
-    ports:
-      - "${AIG_BIND_ADDR:-127.0.0.1}:8088:8088"
-    volumes:
-      - aig_data:/app/data
-      - aig_db:/app/db
-      - aig_logs:/app/logs
-      - aig_uploads:/app/uploads
-    # The UI also needs a non-internal bridge for its loopback-published port.
-    networks: [aig-control, edge]
-    restart: unless-stopped
-    healthcheck:
-      test: [CMD, curl, -fsS, http://localhost:8088/]
-      interval: 15s
-      timeout: 5s
-      retries: 12
 
   # API/worker/SARIF 배선 검증용 명시적 test double. 이 결과는 `test-double`로
   # 저장되고 Gateway 차단 근거로 사용되지 않는다.
@@ -98,7 +82,7 @@ services:
       LAB_NET_TIMEOUT_SECONDS: ${LAB_NET_TIMEOUT_SECONDS:-0.25}
     volumes:
       - ./lab/network_probe.py:/app/network_probe.py:ro
-    networks: [edge, policy, tools, data, agent, telemetry, scanner, aig-control, aig-targets]
+    networks: [edge, policy, tools, data, agent, telemetry, scanner, aig-targets]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     read_only: true
@@ -109,8 +93,6 @@ services:
     networks: [tools, aig-targets]
 
 networks:
-  aig-control:
-    internal: true
   aig-targets:
     internal: true
 

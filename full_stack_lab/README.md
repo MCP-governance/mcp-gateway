@@ -72,7 +72,7 @@ cd ~/mcp-gateway/full_stack_lab
 
 ### 2.1 기업 내부망 + Tencent A.I.G 시나리오
 
-초기화 직후에는 아래 명령 하나로 Gateway, OPA, 격리 공급망 워커, Tencent Zhuque Lab의 원본 A.I.G Web/Agent를 함께 올립니다.
+초기화 직후에는 아래 명령 하나로 Gateway, OPA, 격리 공급망 워커를 올립니다. Tencent Zhuque Lab의 원본 A.I.G Web·Agent·API Checker는 별도 컨테이너가 아니라 **Gateway 컨테이너 안**에서 실행합니다.
 
 ```bash
 ./console.sh corporate-lab
@@ -81,14 +81,17 @@ cd ~/mcp-gateway/full_stack_lab
 이 오버레이는 다음 경계를 만듭니다.
 
 ```text
-host loopback ── Console :8000 / Gateway :8080 / A.I.G UI :8088
-                       │
-  edge · policy · tools · data · telemetry · scanner (기존 통제 평면)
-                       │
-            aig-control (internal) ─ A.I.G Web ↔ A.I.G Agent
-                       │
-            aig-targets (internal) ─ 검사 대상 MCP
+host loopback ── Console :8000 / Gateway 컨테이너 :8080, A.I.G UI :8088
+                                      │
+               Gateway API + A.I.G Web·Agent·API Checker
+                                      │
+          edge · policy · tools · data · telemetry · scanner
+                                      │
+                aig-targets (internal) ─ 검사 대상 MCP
+격리 공급망 워커 ─ scanner / aig-targets (A.I.G mcp-scan CLI)
 ```
+
+통합 이미지에는 원본 A.I.G Agent의 Chromium 점검을 위해 `SYS_ADMIN`과 `seccomp:unconfined`가 적용됩니다. Gateway API 프로세스는 비특권 사용자로 실행하지만 같은 컨테이너와 네트워크를 공유하므로 기존의 Gateway–A.I.G 컨테이너 격리는 사라집니다. 로컬 실습 전용이며 운영 배포에는 적합하지 않습니다. 이전 A.I.G Web/Agent 컨테이너만 자동 제거하고 이름 있는 A.I.G 데이터 볼륨은 유지합니다.
 
 처음에는 실제 GitHub MCP 저장소 요청을 직원 계정으로 격리 검증 대기열에 넣습니다. 이어서 공식 GHSA 근거가 있는 `@modelcontextprotocol/server-filesystem@0.6.2`을 **메타데이터 전용** controlled exception으로 기록하고 Trivy를 실행합니다. 취약 패키지는 설치하거나 실행하지 않습니다. A.I.G의 mcp-scan 큐와 native JSON/SARIF 결과 경로는 내부 test double로 검증하며, 결과에는 반드시 `evidence_mode: test-double`이 남습니다. 이 결과는 Gateway 차단 근거가 아닙니다. 차단은 별도로 기록한 공식 advisory와 관리자의 containment 조치로 일어나며, 그 뒤 실제 upstream 효과가 0인지 확인합니다.
 
@@ -114,7 +117,7 @@ Base URL 예: https://api.openai.com/v1
 API 키: 해당 모델을 호출할 수 있는 실제 키
 ```
 
-이 명령은 Gateway·공급망 워커·Tencent A.I.G Web/Agent를 올리고, 실제 모델에 작은 연결 요청을 한 번 보낸 뒤, A.I.G Web에 `mcp-gateway-live` 모델을 등록합니다. A.I.G의 내장 API Checker도 Web UI에 연결하고, 격리망의 HTTP·사설 주소 검사를 허용합니다. 내부 Compose 자산 IP와 허용 포트도 조사합니다. 운영 콘솔은 <http://localhost:8000>, A.I.G 원본 UI는 <http://localhost:8088>입니다. A.I.G UI에서 `mcp-gateway-live`를 선택하고 대상·데이터셋 등 검사별 입력을 지정할 수 있습니다. Governance Console의 `AI 코드 감사`는 같은 모델로 실제 `mcp-scan` 작업을 실행합니다. 모델 연결 확인은 실제 취약점 발견 증거가 아니며, 검사 결과는 작업을 실행한 뒤 확인합니다.
+이 명령은 A.I.G가 포함된 Gateway와 공급망 워커를 올리고, 실제 모델에 작은 연결 요청을 한 번 보낸 뒤, A.I.G Web에 `mcp-gateway-live` 모델을 등록합니다. A.I.G의 내장 API Checker도 Web UI에 연결하고, 격리망의 HTTP·사설 주소 검사를 허용합니다. 내부 Compose 자산 IP와 허용 포트도 조사합니다. 운영 콘솔은 <http://localhost:8000>, A.I.G 원본 UI는 <http://localhost:8088>입니다. A.I.G UI에서 `mcp-gateway-live`를 선택하고 대상·데이터셋 등 검사별 입력을 지정할 수 있습니다. Governance Console의 `AI 코드 감사`는 같은 모델로 기존 격리 워커에서 실제 `mcp-scan` 작업을 실행합니다. 모델 연결 확인은 실제 취약점 발견 증거가 아니며, 검사 결과는 작업을 실행한 뒤 확인합니다.
 
 `live-lab`은 DB·A.I.G 데이터를 초기화하거나 MCP 서버를 폐기하지 않습니다. 중지는 `./console.sh live-stop`이며 데이터는 남습니다. API 키를 바꾸려면 `.env`의 `MCP_SCAN_API_KEY`를 수정한 뒤 `live-lab`을 다시 실행합니다. 키는 `.env`뿐 아니라 Docker 컨테이너 환경과 A.I.G의 모델 저장소에도 전달되므로 이 PC와 Docker 접근 권한을 제한해야 합니다. 외부 모델을 쓰면 스캔한 코드나 MCP 응답이 모델 공급자에게 전송됩니다.
 
@@ -829,16 +832,9 @@ v1.5는 `scan_jobs.trigger`에 `drift` 값만 예약해 두고 구현하지 않�
 `MCP_SCAN_PROMPT`를 주면 검사 지시에 덧붙습니다. 비워 두면 도구의 일반 기준으로만
 판단하고, 그 결과를 조직의 판단 근거로 쓰기는 어렵습니다.
 
-#### 쓰지 않기로 한 것
+#### 별도 운영으로 남은 것
 
-AI-Infra-Guard의 **인프라 지문·CVE 스캐너**(100여 개 AI 프레임워크, Ollama·vLLM·
-ComfyUI 등)와 **Jailbreak 평가**는 연결하지 않았습니다. 공식 배포가 소스
-아카이브뿐이라 격리 워커 이미지에 Go 툴체인을 넣어야 하고, 그러면 스캐너 워커가
-빌드 환경이 됩니다. 이 저장소가 `mcp-server-time`과 `mcp-scan`에서 이미 내린
-결론과 같습니다 — **패키지 충돌은 숨기지 않고 환경을 나눕니다.**
-
-값만 예약해 두지도 않았습니다. `scan_jobs.kind`는 `mcp-scan` 하나입니다. v1.5가
-`trigger='drift'`로 겪은 일을 되풀이하지 않기 위해서입니다.
+원본 A.I.G UI의 인프라 지문·CVE 스캐너와 Jailbreak 평가는 Gateway 컨테이너 안에서 사용할 수 있습니다. 다만 Governance Console의 자동 큐·승인/차단 증적으로 가져오는 연결은 `mcp-scan` CLI만 구현했습니다. UI에서 수동 실행한 다른 A.I.G 결과를 Gateway 정책 차단 근거라고 주장하지 않습니다. `scan_jobs.kind`도 실제 자동화된 `mcp-scan` 하나만 허용합니다.
 
 ## 9.1 감사 로그 무결성
 
@@ -990,7 +986,7 @@ Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance
 - 엔드포인트 커버리지의 **분모를 모릅니다.** 조직 전체 자산 목록이 없으므로 `known_endpoints`로만 말하고 백분율을 산출하지 않습니다.
 - 설정 대조는 이름과 주소 기준이라 같은 서버를 다른 주소로 적으면 섀도로 분류됩니다. 오탐이 미탐보다 낫다는 선택이지만, 오탐이 많으면 아무도 목록을 보지 않게 됩니다.
 - 섀도 MCP의 **차단**(egress 허용목록·DNS)은 미구현입니다. 발견과 증적 강화까지가 이 저장소이고, 차단은 네트워크 장비 몫입니다 → [CONTROL_PLANES.md](CONTROL_PLANES.md).
-- AI-Infra-Guard의 인프라 지문·CVE 스캐너와 Jailbreak 평가는 연결하지 않았습니다. 공식 배포가 소스 아카이브뿐이라 격리 워커에 Go 툴체인이 들어가야 합니다. **결정:** 쓰지 않을 값을 스키마에 예약해 두지도 않았습니다.
+- AI-Infra-Guard 원본 UI의 인프라 지문·CVE 스캐너와 Jailbreak 평가는 수동 사용 가능합니다. Governance Console의 자동 작업·차단 근거로 이어지는 것은 `mcp-scan` CLI뿐입니다. 통합 Gateway는 `SYS_ADMIN`·완화된 seccomp·스캔 망을 공유하므로 로컬 실습 전용입니다.
 - 도입 요청 격리 검증은 **정적 분석까지만** 합니다. 저장소 코드를 실행하지 않으므로 런타임에만 드러나는 행위는 보지 못합니다. 워커는 GitHub HTTPS와 Trivy DB로 나가는 egress가 필요하고, 체크아웃은 512MB로 제한합니다.
 - 자동 판정은 `Critical > 0 → REJECTED`와 `실패 → FAILED`뿐입니다. **자동으로 승인하지는 않습니다.** `VALIDATED`를 `APPROVED`로 올리는 것은 사람의 결정이고, `APPROVED`도 Registry 등록 대상 확정까지입니다. endpoint와 catalog 해시를 고정하는 활성화 단계는 별도입니다.
 - 검증 증적 파일은 워커 전용 named volume(`intake_reports`)에 있습니다. 요약은 DB와 Console에 있지만 파일 다운로드 경로는 아직 없습니다.

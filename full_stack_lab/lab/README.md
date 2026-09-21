@@ -1,18 +1,17 @@
 # 기업 내부망 공급망 실습
 
-`compose.corporate-lab.yaml`은 기존 Gateway와 Tencent Zhuque Lab의 A.I.G를 세 망으로 분리합니다.
+`compose.corporate-lab.yaml`은 Tencent Zhuque Lab의 원본 A.I.G Web·Agent·API Checker를 Gateway 컨테이너 하나에서 실행합니다. 별도 A.I.G 전용 컨테이너는 없습니다.
 
 ```text
-브라우저(127.0.0.1) → Gateway Console / A.I.G UI
+브라우저(127.0.0.1) → Gateway API :8080 / A.I.G UI :8088
                                   │
-                         aig-control (internal)
+              Gateway + A.I.G Web·Agent·API Checker (같은 컨테이너)
                                   │
-                  aig-agent ─── aig-targets (internal) ─── MCP target
-                                  │
-                         scanner (격리 검사·모델 egress)
+                  scanner / aig-targets (internal) ─── MCP target
+격리 공급망 워커 ───────┘  (A.I.G mcp-scan CLI·SCA·SAST)
 ```
 
-`aig-agent`은 Tencent 원본 동적 점검 이미지가 요구하는 Chromium sandbox 권한을 사용합니다. 따라서 host mount와 host port를 주지 않았고, 테스트가 끝나면 `./console.sh lab-down`으로 관련 볼륨을 함께 제거합니다.
+원본 Agent의 Chromium 점검 때문에 통합 Gateway에는 `SYS_ADMIN`과 `seccomp:unconfined`가 적용됩니다. Gateway API는 비특권 사용자이지만 A.I.G와 컨테이너·스캔 네트워크를 공유합니다. 이는 기존 컨테이너 격리를 포기한 로컬 실습 구성이지 운영용 보안 경계가 아닙니다. A.I.G UI에는 인증 기능이 없으므로 host loopback에만 공개합니다. 기존 A.I.G 데이터 볼륨은 재사용하며, `./console.sh lab-down`은 실습 볼륨까지 제거합니다.
 
 ## 내부망 자산 탐색 범위
 
