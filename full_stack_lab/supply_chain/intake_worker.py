@@ -70,7 +70,8 @@ def log(message: str) -> None:
     print(f"[intake-worker] {message}", flush=True)
 
 
-def run(command: list[str], timeout: int, cwd: Path | None = None) -> subprocess.CompletedProcess:
+def run(command: list[str], timeout: int, cwd: Path | None = None,
+        extra_env: dict[str, str] | None = None) -> subprocess.CompletedProcess:
     """저장소의 코드가 아니라 스캐너만 실행한다.
 
     환경을 비워 넘기는 이유: 복제 대상 저장소가 심어둔 git 설정이나 자격증명이
@@ -85,6 +86,8 @@ def run(command: list[str], timeout: int, cwd: Path | None = None) -> subprocess
         "SEMGREP_SEND_METRICS": "off",
         "TRIVY_CACHE_DIR": os.environ.get("TRIVY_CACHE_DIR", "/trivy-cache"),
     }
+    if extra_env:
+        env.update(extra_env)
     return subprocess.run(command, cwd=cwd, env=env, timeout=timeout,
                           capture_output=True, text=True, check=False)
 
@@ -513,7 +516,7 @@ SCAN_PROMPT = os.getenv("MCP_SCAN_PROMPT", "").strip()
 def scan_command(job: dict, report: Path, checkout: Path | None, server_url: str | None) -> list[str]:
     command = [
         "aig-mcp-scan", "--output", str(report),
-        "--api_key", MCP_SCAN_API_KEY, "--model", MCP_SCAN_MODEL,
+        "--model", MCP_SCAN_MODEL,
         "--base_url", MCP_SCAN_BASE_URL, "--language", MCP_SCAN_LANGUAGE,
     ]
     if checkout is not None:
@@ -586,7 +589,9 @@ def run_mcp_scan(connection, job: dict) -> None:
         commit = clone(target["repository_url"], checkout, commit=pinned)
         command = scan_command(job, report, checkout, None)
 
-    result = run(command, timeout=MCP_SCAN_TIMEOUT)
+    # The pinned CLI reads LLM_API_KEY. Keep the live key out of process arguments.
+    result = run(command, timeout=MCP_SCAN_TIMEOUT,
+                 extra_env={"LLM_API_KEY": MCP_SCAN_API_KEY})
     if result.returncode != 0 or not report.exists():
         output = (result.stderr or result.stdout).strip().splitlines()
         raise RuntimeError("aig-mcp-scan(exit %s): " % result.returncode + " | ".join(output[-3:])[:400])

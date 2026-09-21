@@ -104,6 +104,20 @@ host loopback ── Console :8000 / Gateway :8080 / A.I.G UI :8088
 
 세부 후보·증적 구분·제약은 [lab/README.md](lab/README.md)에 기록합니다.
 
+### 2.2 실제 모델 API로 계속 쓰는 테스트베드
+
+Windows에서는 `start-live-lab.cmd`를 더블클릭하고 열린 창을 유지합니다. 이 PC의 Kali WSL은 유휴 상태가 되면 Docker도 내려가므로 창이 WSL을 실행 상태로 유지합니다. WSL/Linux에서는 `full_stack_lab`에서 `./console.sh live-lab`을 실행하고 터미널 세션을 유지합니다. 처음 한 번 OpenAI 호환 Base URL, 모델 이름, API 키를 묻습니다. 키 입력은 화면에 나타나지 않고 Git에서 제외된 `.env`에 저장됩니다. 다음 실행부터는 같은 명령 하나로 재기동합니다.
+
+```text
+Base URL 예: https://api.openai.com/v1
+모델 이름: 사용 중인 공급자의 정확한 모델 ID
+API 키: 해당 모델을 호출할 수 있는 실제 키
+```
+
+이 명령은 Gateway·공급망 워커·Tencent A.I.G Web/Agent를 올리고, 실제 모델에 작은 연결 요청을 한 번 보낸 뒤, A.I.G Web에 `mcp-gateway-live` 모델을 등록합니다. A.I.G의 내장 API Checker도 Web UI에 연결하고, 격리망의 HTTP·사설 주소 검사를 허용합니다. 내부 Compose 자산 IP와 허용 포트도 조사합니다. 운영 콘솔은 <http://localhost:8000>, A.I.G 원본 UI는 <http://localhost:8088>입니다. A.I.G UI에서 `mcp-gateway-live`를 선택하고 대상·데이터셋 등 검사별 입력을 지정할 수 있습니다. Governance Console의 `AI 코드 감사`는 같은 모델로 실제 `mcp-scan` 작업을 실행합니다. 모델 연결 확인은 실제 취약점 발견 증거가 아니며, 검사 결과는 작업을 실행한 뒤 확인합니다.
+
+`live-lab`은 DB·A.I.G 데이터를 초기화하거나 MCP 서버를 폐기하지 않습니다. 중지는 `./console.sh live-stop`이며 데이터는 남습니다. API 키를 바꾸려면 `.env`의 `MCP_SCAN_API_KEY`를 수정한 뒤 `live-lab`을 다시 실행합니다. 키는 `.env`뿐 아니라 Docker 컨테이너 환경과 A.I.G의 모델 저장소에도 전달되므로 이 PC와 Docker 접근 권한을 제한해야 합니다. 외부 모델을 쓰면 스캔한 코드나 MCP 응답이 모델 공급자에게 전송됩니다.
+
 ## 3. Console에서 운영 흐름 확인
 
 ### 3.1 개발 계정으로 요청하기

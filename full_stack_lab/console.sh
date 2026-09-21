@@ -109,6 +109,10 @@ lab_compose() {
   LAB_MODE=1 docker compose -f compose.yaml -f compose.corporate-lab.yaml "$@"
 }
 
+live_compose() {
+  LAB_MODE=1 docker compose -f compose.yaml -f compose.corporate-lab.yaml -f compose.live-lab.yaml "$@"
+}
+
 wait_aig_ready() {
   for _ in {1..60}; do
     # Docker Desktop/WSL port forwarding can lag even after the container's own
@@ -130,6 +134,55 @@ lab_up() {
   echo "기업 내부망 실습과 Tencent A.I.G가 준비되었습니다."
   echo "  Governance Console: http://localhost:8000"
   echo "  A.I.G Web UI       : http://localhost:8088"
+}
+
+live_up() {
+  # First run asks for the real endpoint, model and hidden API key. Later runs
+  # reuse the ignored, mode-600 .env file without another prompt.
+  python3 lab/live_setup.py init
+  live_compose up -d --build gateway gateway-sse agent-service intake-worker \
+    aig-webserver aig-agent
+  wait_ready
+  wait_aig_ready
+  local checker_ready=0
+  for _ in {1..30}; do
+    if live_compose exec -T aig-webserver curl -fsS http://localhost:8088/api-checker/healthz \
+      | python3 -c 'import json,sys
+try:
+    health=json.load(sys.stdin)
+    assert health["status"] == "ok"
+    assert health["allow_http_targets"] and health["allow_private_targets"]
+except (ValueError, TypeError, KeyError, AssertionError):
+    sys.exit(1)' >/dev/null 2>&1; then
+      checker_ready=1
+      break
+    fi
+    sleep 1
+  done
+  if [[ "$checker_ready" != 1 ]]; then
+    echo "A.I.G API Checker가 Web 경로에서 준비되지 않았습니다." >&2
+    return 1
+  fi
+  local admin
+  admin="$(gateway_token)"
+  for _ in {1..30}; do
+    if curl -fsS http://127.0.0.1:8000/api/mcp-scan -H "authorization: Bearer $admin" \
+      | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["worker"]["alive"] else 1)' >/dev/null 2>&1; then
+      break
+    fi
+    sleep 1
+  done
+  curl -fsS -X POST http://127.0.0.1:8000/api/mcp-scan/connection-test \
+    -H "authorization: Bearer $admin" \
+    | python3 -c 'import json,sys
+result=json.load(sys.stdin)
+print("실모델 연결: HTTP %s · 워커 %s" % (result.get("http_status"), "정상" if result.get("worker_alive") else "대기"))
+sys.exit(0 if result.get("ok") and result.get("worker_alive") else 1)'
+  python3 lab/live_setup.py register
+  scan_internal_network
+  lab_gateway verify-network
+  echo "실모델 테스트베드 준비 완료: http://localhost:8000 / http://localhost:8088"
+  echo "A.I.G Web에서는 mcp-gateway-live 모델을 선택해 검사할 수 있습니다."
 }
 
 lab_gateway() {
@@ -255,6 +308,13 @@ case "${1:-up}" in
     lab_gateway summary | tee reports/corporate-lab-summary.json
     echo "기업 내부망 시나리오를 완료했습니다. 증적: reports/corporate-lab-summary.json"
     ;;
+  live-lab)
+    live_up
+    ;;
+  live-stop)
+    lab_compose down
+    echo "실모델 테스트베드를 중지했습니다. DB와 A.I.G 데이터는 유지됩니다."
+    ;;
   lab-down)
     # This overlay owns only lab services/volumes. It also removes the test
     # double and Tencent A.I.G data; normal `down` remains non-destructive.
@@ -322,7 +382,7 @@ json.dump(module.app.openapi(), sys.stdout, ensure_ascii=False, indent=2, sort_k
     echo "이 실습 전용 DB·효과 로그·생성 보고서를 초기화했습니다."
     ;;
   *)
-    echo "usage: ./console.sh [up|test|agent-test|endpoint|scan|openapi|status|logs|down|reset|corporate-lab|lab-down|lab-logs]" >&2
+    echo "usage: ./console.sh [up|test|agent-test|endpoint|scan|openapi|status|logs|down|reset|corporate-lab|live-lab|live-stop|lab-down|lab-logs]" >&2
     exit 2
     ;;
 esac

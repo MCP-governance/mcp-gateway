@@ -19,6 +19,7 @@ cd mcp-gateway/full_stack_lab
 - 전체 검증: `./console.sh test`
 - 공급망 증적 생성: `./console.sh scan`
 - 기업 내부망 + Tencent A.I.G 시나리오: `./console.sh reset && ./console.sh corporate-lab`
+- 실제 모델 API 테스트베드: Windows에서 `full_stack_lab/start-live-lab.cmd` 더블클릭 또는 WSL에서 `./console.sh live-lab`
 
 현재 기준의 성공 조건은 **Rego 62/62**, core acceptance와 Agent/API acceptance 모두 실패 0입니다. 같은 명령을 [`.github/workflows/verify.yml`](.github/workflows/verify.yml)이 `main`과 모든 `feat/**` 푸시, `main`으로 가는 PR마다 실행합니다.
 

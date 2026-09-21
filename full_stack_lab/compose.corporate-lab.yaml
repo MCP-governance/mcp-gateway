@@ -38,6 +38,8 @@ services:
     depends_on:
       aig-webserver:
         condition: service_healthy
+    volumes:
+      - aig_api_checker_data:/api-checker-data
     networks: [aig-control, aig-targets, scanner]
     restart: unless-stopped
 
@@ -57,7 +59,8 @@ services:
       - aig_db:/app/db
       - aig_logs:/app/logs
       - aig_uploads:/app/uploads
-    networks: [aig-control]
+    # The UI also needs a non-internal bridge for its loopback-published port.
+    networks: [aig-control, edge]
     restart: unless-stopped
     healthcheck:
       test: [CMD, curl, -fsS, http://localhost:8088/]
@@ -116,3 +119,4 @@ volumes:
   aig_db: {}
   aig_logs: {}
   aig_uploads: {}
+  aig_api_checker_data: {}

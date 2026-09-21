@@ -750,12 +750,17 @@ async def mcp_scan_connection_test(authorization: str | None = Header(default=No
                      "messages": [{"role": "user", "content": "ping"}]})
     except httpx.HTTPError as exc:
         raise HTTPException(502, f"endpoint에 연결하지 못했습니다: {type(exc).__name__}") from exc
-    ok = response.status_code < 400
+    try:
+        body = response.json()
+    except ValueError:
+        body = {}
+    ok = (response.status_code < 400 and isinstance(body, dict)
+          and isinstance(body.get("choices"), list) and bool(body["choices"]))
     worker = await scan_worker_status()
     return {"ok": ok, "http_status": response.status_code, "base_url": status["base_url"],
             "model": status["model"], "worker_alive": worker["alive"],
             "message": "endpoint가 응답했습니다. 이것은 연결 확인이며 보안 판단이 아닙니다."
-                       if ok else response.text[:200]}
+                       if ok else f"모델 응답을 확인하지 못했습니다 (HTTP {response.status_code})."}
 
 
 class ScanRequest(StrictModel):
@@ -844,7 +849,7 @@ async def run_mcp_scan_job(request: ScanRequest, authorization: str | None = Hea
         raise HTTPException(
             409,
             "동적 점검은 대상 서버의 응답을 설정한 모델 endpoint로 보냅니다. "
-            f"지금 endpoint는 외부({MCP_SCAN_CONFIG['base_url'] or '미설정'})입니다. "
+            f"지금 endpoint는 외부({MCP_SCAN_CONFIG['MCP_SCAN_BASE_URL'] or '미설정'})입니다. "
             "확인 후 다시 실행하세요.")
 
     # lease가 만료된 RUNNING은 워커가 죽은 흔적이다. 여기서 먼저 회수하지 않으면
