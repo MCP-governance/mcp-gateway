@@ -622,6 +622,8 @@ MCP_SCAN_CONFIG = {
     "MCP_SCAN_MODEL": os.getenv("MCP_SCAN_MODEL", ""),
     "MCP_SCAN_API_KEY": os.getenv("MCP_SCAN_API_KEY", ""),
 }
+MCP_SCAN_EVIDENCE_MODE = os.getenv("MCP_SCAN_EVIDENCE_MODE", "live").strip().lower()
+MCP_SCAN_EVIDENCE_MODES = {"live", "test-double"}
 # 워커가 lease를 갱신하는 주기보다 넉넉하게 잡는다. 이 값을 넘도록 소식이 없으면
 # "큐에 넣었다"와 "누군가 실행한다"가 더는 같은 말이 아니다.
 WORKER_STALE_SECONDS = int(os.getenv("INTAKE_WORKER_STALE_SECONDS", "60"))
@@ -636,11 +638,14 @@ EXIT_TERMS_REQUIRED = os.getenv("INTAKE_EXIT_TERMS_REQUIRED", "0") not in ("0", 
 
 def mcp_scan_status() -> dict:
     missing = [key for key, value in MCP_SCAN_CONFIG.items() if not value]
+    if MCP_SCAN_EVIDENCE_MODE not in MCP_SCAN_EVIDENCE_MODES:
+        missing.append("MCP_SCAN_EVIDENCE_MODE(live|test-double)")
     return {
         "configured": not missing,
         "missing": missing,
         "base_url": MCP_SCAN_CONFIG["MCP_SCAN_BASE_URL"],
         "model": MCP_SCAN_CONFIG["MCP_SCAN_MODEL"],
+        "evidence_mode": MCP_SCAN_EVIDENCE_MODE,
         "pinned_commit": "036c39bd03b39ce4a811f7f125bc3b8f47e39b7c",
         "required_for_approval": SCAN_REQUIRED_FOR_APPROVAL,
     }
@@ -745,12 +750,17 @@ async def mcp_scan_connection_test(authorization: str | None = Header(default=No
                      "messages": [{"role": "user", "content": "ping"}]})
     except httpx.HTTPError as exc:
         raise HTTPException(502, f"endpoint에 연결하지 못했습니다: {type(exc).__name__}") from exc
-    ok = response.status_code < 400
+    try:
+        body = response.json()
+    except ValueError:
+        body = {}
+    ok = (response.status_code < 400 and isinstance(body, dict)
+          and isinstance(body.get("choices"), list) and bool(body["choices"]))
     worker = await scan_worker_status()
     return {"ok": ok, "http_status": response.status_code, "base_url": status["base_url"],
             "model": status["model"], "worker_alive": worker["alive"],
             "message": "endpoint가 응답했습니다. 이것은 연결 확인이며 보안 판단이 아닙니다."
-                       if ok else response.text[:200]}
+                       if ok else f"모델 응답을 확인하지 못했습니다 (HTTP {response.status_code})."}
 
 
 class ScanRequest(StrictModel):
@@ -772,7 +782,7 @@ LOCAL_MODEL_HOSTS = {"localhost", "127.0.0.1", "::1", "host.docker.internal",
 
 
 def local_model_endpoint() -> bool:
-    host = urlsplit(MCP_SCAN_CONFIG["base_url"] or "").hostname or ""
+    host = urlsplit(MCP_SCAN_CONFIG["MCP_SCAN_BASE_URL"] or "").hostname or ""
     return host in LOCAL_MODEL_HOSTS
 
 
@@ -839,7 +849,7 @@ async def run_mcp_scan_job(request: ScanRequest, authorization: str | None = Hea
         raise HTTPException(
             409,
             "동적 점검은 대상 서버의 응답을 설정한 모델 endpoint로 보냅니다. "
-            f"지금 endpoint는 외부({MCP_SCAN_CONFIG['base_url'] or '미설정'})입니다. "
+            f"지금 endpoint는 외부({MCP_SCAN_CONFIG['MCP_SCAN_BASE_URL'] or '미설정'})입니다. "
             "확인 후 다시 실행하세요.")
 
     # lease가 만료된 RUNNING은 워커가 죽은 흔적이다. 여기서 먼저 회수하지 않으면

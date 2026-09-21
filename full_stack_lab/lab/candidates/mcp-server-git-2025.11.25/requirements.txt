@@ -1,0 +1,3 @@
+# Metadata-only lab manifest. The package is scanned as an artifact reference;
+# it is never installed or executed by this lab.
+mcp-server-git==2025.11.25

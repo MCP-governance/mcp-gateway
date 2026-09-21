@@ -1,0 +1,30 @@
+# Real model overlay. Apply after compose.corporate-lab.yaml only.
+services:
+  agent-service:
+    environment:
+      MCP_SCAN_API_KEY: ${MCP_SCAN_API_KEY:?Run ./console.sh live-lab}
+      MCP_SCAN_BASE_URL: ${MCP_SCAN_BASE_URL:?Run ./console.sh live-lab}
+      MCP_SCAN_MODEL: ${MCP_SCAN_MODEL:?Run ./console.sh live-lab}
+      MCP_SCAN_EVIDENCE_MODE: live
+      MCP_SCAN_AUTO_ON_VALIDATED: "1"
+      MODEL_MODE: provider
+      MODEL_API_KEY: ${MCP_SCAN_API_KEY}
+      MODEL_BASE_URL: ${MCP_SCAN_BASE_URL}
+      MODEL_NAME: ${MCP_SCAN_MODEL}
+
+  intake-worker:
+    environment:
+      MCP_SCAN_API_KEY: ${MCP_SCAN_API_KEY}
+      MCP_SCAN_BASE_URL: ${MCP_SCAN_BASE_URL}
+      MCP_SCAN_MODEL: ${MCP_SCAN_MODEL}
+      MCP_SCAN_EVIDENCE_MODE: live
+      MCP_SCAN_AUTO_ON_VALIDATED: "1"
+
+  gateway:
+    environment:
+      AIG_API_CHECKER_ROOT_PATH: /api-checker
+      AIG_API_CHECKER_DATA_DIR: /api-checker-data
+      AIG_API_CHECKER_ALLOW_HTTP: "1"
+      AIG_API_CHECKER_ALLOW_PRIVATE_TARGETS: "1"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

@@ -1,0 +1,97 @@
+# `docker compose -f compose.yaml -f compose.corporate-lab.yaml`로만 쓰는
+# 내부망 실습 확장이다. 원본 A.I.G Web/Agent는 Gateway 컨테이너 안에서
+# 실행한다. 인증 없는 A.I.G UI는 host loopback에만 열어 둔다.
+services:
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: aig.Dockerfile
+    environment:
+      LAB_MODE: "1"
+      APP_ENV: production
+      UPLOAD_DIR: /aig-web/uploads
+      DB_PATH: /aig-web/db/tasks.db
+      TZ: Asia/Seoul
+      AIG_SERVER: 127.0.0.1:8088
+      AIG_API_CHECKER_URL: http://127.0.0.1:8000
+    ports:
+      - "${AIG_BIND_ADDR:-127.0.0.1}:8088:8088"
+    volumes:
+      - aig_data:/aig-web/data
+      - aig_db:/aig-web/db
+      - aig_logs:/aig-web/logs
+      - aig_uploads:/aig-web/uploads
+      - aig_api_checker_data:/api-checker-data
+    networks: [edge, policy, tools, data, telemetry, scanner, aig-targets]
+    cap_add: [SYS_ADMIN, SETUID, SETGID, CHOWN]
+    security_opt: [seccomp:unconfined]
+    shm_size: 2gb
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, "curl -fsS http://127.0.0.1:8080/api/health >/dev/null && curl -fsS http://127.0.0.1:8088/ >/dev/null && curl -fsS http://127.0.0.1:8000/healthz >/dev/null && pgrep -f '^/app/agent$' >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+
+  agent-service:
+    environment:
+      MCP_SCAN_API_KEY: lab-only-test-double
+      MCP_SCAN_BASE_URL: http://llm-stub:4010/v1
+      MCP_SCAN_MODEL: lab-test-double
+      MCP_SCAN_EVIDENCE_MODE: test-double
+      MCP_SCAN_AUTO_ON_VALIDATED: "0"
+
+  intake-worker:
+    environment:
+      MCP_SCAN_API_KEY: lab-only-test-double
+      MCP_SCAN_BASE_URL: http://llm-stub:4010/v1
+      MCP_SCAN_MODEL: lab-test-double
+      MCP_SCAN_EVIDENCE_MODE: test-double
+      MCP_SCAN_AUTO_ON_VALIDATED: "0"
+    # The worker normally never reaches tools. This lab-only attachment is the
+    # narrow dynamic-scan path to the isolated target, not Gateway execution.
+    networks: [data, scanner, aig-targets]
+
+  # 기존 공용 모델 stub을 재사용한다. A.I.G 전용 컨테이너는 만들지 않는다.
+  # 결과는 `test-double`로 저장되고 Gateway 차단 근거로 사용되지 않는다.
+  llm-stub:
+    environment:
+      LLM_STUB_REPLY_FILE: /lab/aig-test-double.xml
+    volumes:
+      - ./lab/aig-test-double.xml:/lab/aig-test-double.xml:ro
+    read_only: true
+    tmpfs: [/tmp]
+
+  # One-shot asset inventory only.  It receives the live Compose container IP
+  # list from console.sh, connects only to this lab's allowlisted ports, and
+  # never sends an MCP/HTTP payload or reaches the host.
+  aig-network-probe:
+    image: python:3.12-slim
+    profiles: [lab-network-probe]
+    command: [python, /app/network_probe.py]
+    environment:
+      LAB_NET_TARGETS: ${LAB_NET_TARGETS:-}
+      LAB_NET_PORTS: ${LAB_NET_PORTS:-}
+      LAB_NET_TIMEOUT_SECONDS: ${LAB_NET_TIMEOUT_SECONDS:-0.25}
+    volumes:
+      - ./lab/network_probe.py:/app/network_probe.py:ro
+    networks: [edge, policy, tools, data, agent, telemetry, scanner, aig-targets]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
+
+  # 실제 호출 대상은 A.I.G target network에도 붙지만 host port는 없다.
+  mock-http-mcp:
+    networks: [tools, aig-targets]
+
+networks:
+  aig-targets:
+    internal: true
+
+volumes:
+  aig_data: {}
+  aig_db: {}
+  aig_logs: {}
+  aig_uploads: {}
+  aig_api_checker_data: {}

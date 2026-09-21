@@ -12,12 +12,17 @@ import json
 import os
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 PORT = int(os.getenv("LLM_STUB_PORT", "4010"))
-REPLY = os.getenv(
-    "LLM_STUB_REPLY",
-    "This is a wiring stub, not a security review. No findings were produced.",
-)
+def reply() -> str:
+    path = os.getenv("LLM_STUB_REPLY_FILE", "").strip()
+    if path:
+        return Path(path).read_text(encoding="utf-8")
+    return os.getenv(
+        "LLM_STUB_REPLY",
+        "This is a wiring stub, not a security review. No findings were produced.",
+    )
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -53,7 +58,7 @@ class Handler(BaseHTTPRequestHandler):
         if not request.get("stream"):
             self._json({
                 "id": "stub", "object": "chat.completion", "created": int(time.time()), "model": model,
-                "choices": [{"index": 0, "message": {"role": "assistant", "content": REPLY}, "finish_reason": "stop"}],
+                "choices": [{"index": 0, "message": {"role": "assistant", "content": reply()}, "finish_reason": "stop"}],
                 "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
             })
             return
@@ -75,7 +80,7 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.flush()
 
         chunk({"role": "assistant"})
-        chunk({"content": REPLY})
+        chunk({"content": reply()})
         chunk({}, finish="stop", usage={"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
         self.wfile.write(b"data: [DONE]\n\n")
         self.wfile.flush()
