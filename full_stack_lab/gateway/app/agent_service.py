@@ -778,7 +778,7 @@ class ScanRequest(StrictModel):
 
 # 로컬로 볼 수 있는 모델 endpoint. core의 provider 검증과 같은 기준을 쓴다.
 LOCAL_MODEL_HOSTS = {"localhost", "127.0.0.1", "::1", "host.docker.internal",
-                     "model-stub", "llm-stub", "aig-lab-model", "ollama"}
+                     "model-stub", "llm-stub", "ollama"}
 
 
 def local_model_endpoint() -> bool:

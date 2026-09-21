@@ -36,7 +36,7 @@ services:
   agent-service:
     environment:
       MCP_SCAN_API_KEY: lab-only-test-double
-      MCP_SCAN_BASE_URL: http://aig-lab-model:4010/v1
+      MCP_SCAN_BASE_URL: http://llm-stub:4010/v1
       MCP_SCAN_MODEL: lab-test-double
       MCP_SCAN_EVIDENCE_MODE: test-double
       MCP_SCAN_AUTO_ON_VALIDATED: "0"
@@ -44,7 +44,7 @@ services:
   intake-worker:
     environment:
       MCP_SCAN_API_KEY: lab-only-test-double
-      MCP_SCAN_BASE_URL: http://aig-lab-model:4010/v1
+      MCP_SCAN_BASE_URL: http://llm-stub:4010/v1
       MCP_SCAN_MODEL: lab-test-double
       MCP_SCAN_EVIDENCE_MODE: test-double
       MCP_SCAN_AUTO_ON_VALIDATED: "0"
@@ -52,20 +52,13 @@ services:
     # narrow dynamic-scan path to the isolated target, not Gateway execution.
     networks: [data, scanner, aig-targets]
 
-  # API/worker/SARIF 배선 검증용 명시적 test double. 이 결과는 `test-double`로
-  # 저장되고 Gateway 차단 근거로 사용되지 않는다.
-  aig-lab-model:
-    image: python:3.12-slim
-    command: [python, /app/llm_stub.py]
+  # 기존 공용 모델 stub을 재사용한다. A.I.G 전용 컨테이너는 만들지 않는다.
+  # 결과는 `test-double`로 저장되고 Gateway 차단 근거로 사용되지 않는다.
+  llm-stub:
     environment:
-      LLM_STUB_PORT: "4010"
       LLM_STUB_REPLY_FILE: /lab/aig-test-double.xml
     volumes:
-      - ./supply_chain/llm_stub.py:/app/llm_stub.py:ro
       - ./lab/aig-test-double.xml:/lab/aig-test-double.xml:ro
-    networks: [scanner]
-    security_opt: [no-new-privileges:true]
-    cap_drop: [ALL]
     read_only: true
     tmpfs: [/tmp]
 

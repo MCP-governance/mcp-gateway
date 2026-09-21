@@ -32,7 +32,7 @@ cd mcp-gateway/full_stack_lab
 
 ### 기업 내부망 A.I.G 실습
 
-`full_stack_lab/compose.corporate-lab.yaml`은 Tencent Zhuque Lab의 원본 A.I.G Web·Agent·API Checker를 **Gateway 컨테이너 하나에서** 실행합니다. 별도 A.I.G Web/Agent 컨테이너는 만들지 않으며 기존 데이터 볼륨은 이어 씁니다. A.I.G UI는 `127.0.0.1:8088`에만 열고, 취약 버전은 패키지 설치 없이 메타데이터 SCA 대상으로만 사용합니다. 통합으로 Gateway가 A.I.G의 스캔 망과 Chromium 권한을 공유하므로 운영망 격리 모델은 아닙니다. 실제 절차와 증적 경계는 [기업 내부망 실습 문서](full_stack_lab/lab/README.md)를 따릅니다.
+`full_stack_lab/compose.corporate-lab.yaml`은 Tencent Zhuque Lab의 원본 A.I.G Web·Agent·API Checker를 **Gateway 컨테이너 하나에서** 실행합니다. 별도 A.I.G 전용 컨테이너는 만들지 않으며 기존 데이터 볼륨은 이어 씁니다. 배선 검증용 모의 모델은 기존 공용 `llm-stub`을 재사용합니다. A.I.G UI는 `127.0.0.1:8088`에만 열고, 취약 버전은 패키지 설치 없이 메타데이터 SCA 대상으로만 사용합니다. 통합으로 Gateway가 A.I.G의 스캔 망과 Chromium 권한을 공유하므로 운영망 격리 모델은 아닙니다. 실제 절차와 증적 경계는 [기업 내부망 실습 문서](full_stack_lab/lab/README.md)를 따릅니다.
 
 ## 통제 흐름
 

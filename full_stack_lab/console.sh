@@ -115,7 +115,7 @@ live_compose() {
 
 retire_legacy_aig_containers() {
   local service id
-  for service in aig-agent aig-webserver; do
+  for service in aig-agent aig-webserver aig-lab-model; do
     while read -r id; do
       [[ -z "$id" ]] && continue
       # Only remove this Compose project's former A.I.G services. Named data
@@ -142,8 +142,8 @@ wait_aig_ready() {
 
 lab_up() {
   retire_legacy_aig_containers
-  lab_compose up -d --build gateway gateway-sse agent-service intake-worker \
-    aig-lab-model
+  lab_compose --profile llm-stub up -d --build gateway gateway-sse agent-service intake-worker \
+    llm-stub
   wait_ready
   wait_aig_ready
   echo "기업 내부망 실습과 Tencent A.I.G가 준비되었습니다."
@@ -336,7 +336,7 @@ case "${1:-up}" in
     lab_compose --profile endpoint --profile llm-stub down -v
     ;;
   lab-logs)
-    lab_compose logs -f --tail=120 aig-lab-model intake-worker gateway agent-service
+    lab_compose --profile llm-stub logs -f --tail=120 llm-stub intake-worker gateway agent-service
     ;;
   openapi)
     # 개발용 API 명세. FastAPI가 코드에서 만들어 주므로 손으로 쓴 문서가 코드와

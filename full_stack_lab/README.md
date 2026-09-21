@@ -93,7 +93,7 @@ host loopback ── Console :8000 / Gateway 컨테이너 :8080, A.I.G UI :8088
 
 통합 이미지에는 원본 A.I.G Agent의 Chromium 점검을 위해 `SYS_ADMIN`과 `seccomp:unconfined`가 적용됩니다. Gateway API 프로세스는 비특권 사용자로 실행하지만 같은 컨테이너와 네트워크를 공유하므로 기존의 Gateway–A.I.G 컨테이너 격리는 사라집니다. 로컬 실습 전용이며 운영 배포에는 적합하지 않습니다. 이전 A.I.G Web/Agent 컨테이너만 자동 제거하고 이름 있는 A.I.G 데이터 볼륨은 유지합니다.
 
-처음에는 실제 GitHub MCP 저장소 요청을 직원 계정으로 격리 검증 대기열에 넣습니다. 이어서 공식 GHSA 근거가 있는 `@modelcontextprotocol/server-filesystem@0.6.2`을 **메타데이터 전용** controlled exception으로 기록하고 Trivy를 실행합니다. 취약 패키지는 설치하거나 실행하지 않습니다. A.I.G의 mcp-scan 큐와 native JSON/SARIF 결과 경로는 내부 test double로 검증하며, 결과에는 반드시 `evidence_mode: test-double`이 남습니다. 이 결과는 Gateway 차단 근거가 아닙니다. 차단은 별도로 기록한 공식 advisory와 관리자의 containment 조치로 일어나며, 그 뒤 실제 upstream 효과가 0인지 확인합니다.
+처음에는 실제 GitHub MCP 저장소 요청을 직원 계정으로 격리 검증 대기열에 넣습니다. 이어서 공식 GHSA 근거가 있는 `@modelcontextprotocol/server-filesystem@0.6.2`을 **메타데이터 전용** controlled exception으로 기록하고 Trivy를 실행합니다. 취약 패키지는 설치하거나 실행하지 않습니다. A.I.G의 mcp-scan 큐와 native JSON/SARIF 결과 경로는 기존 공용 `llm-stub` test double로 검증하며, 결과에는 반드시 `evidence_mode: test-double`이 남습니다. 이 결과는 Gateway 차단 근거가 아닙니다. 차단은 별도로 기록한 공식 advisory와 관리자의 containment 조치로 일어나며, 그 뒤 실제 upstream 효과가 0인지 확인합니다.
 
 시나리오 시작 시 `aig-network-probe`가 현재 Compose가 할당한 **모든 컨테이너 IP**의 허용 포트만 TCP connect로 자산화합니다. Docker CIDR의 비할당 주소, 호스트, 외부망은 범위 밖이며 probe는 HTTP/MCP payload를 보내지 않습니다. 발견된 `9000/tcp` MCP 엔드포인트가 있어야 다음 A.I.G 동적 검사가 진행됩니다.
 

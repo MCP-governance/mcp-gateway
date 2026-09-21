@@ -24,7 +24,7 @@
 | `@modelcontextprotocol/server-filesystem@0.6.2` | [GHSA-q66q-fx2p-7w4m](https://github.com/advisories/GHSA-q66q-fx2p-7w4m), CVE-2025-53109 — `0.6.3` / `2025.7.01` 이전 경로 검증 우회 | `package-lock.json` 메타데이터만 Trivy로 검사; 패키지를 설치·실행하지 않음 |
 | `mcp-server-git==2025.11.25` | [GHSA-9xwc-hfwc-8w59](https://github.com/advisories/GHSA-9xwc-hfwc-8w59) — `2025.12.18` 이전 인자 주입 | `requirements.txt` 메타데이터만 SCA 대상으로 사용 |
 
-`aig-lab-model`은 A.I.G의 큐·CLI·native JSON/SARIF 결과 경로를 검증하는 test double입니다. 결과에 `evidence_mode: test-double`이 남고 Gateway 차단 근거에는 들어가지 않습니다. A.I.G가 실제로 독립 발견한 결과를 차단에 쓰려면 A.I.G UI에서 조직의 검증된 모델 endpoint를 등록하고 `MCP_SCAN_EVIDENCE_MODE=live`로 실행해야 합니다.
+기존 공용 `llm-stub`은 A.I.G의 큐·CLI·native JSON/SARIF 결과 경로를 검증하는 test double입니다. 별도 A.I.G 엔진이 아니며 결과에 `evidence_mode: test-double`이 남고 Gateway 차단 근거에는 들어가지 않습니다. A.I.G가 실제로 독립 발견한 결과를 차단에 쓰려면 A.I.G UI에서 조직의 검증된 모델 endpoint를 등록하고 `MCP_SCAN_EVIDENCE_MODE=live`로 실행해야 합니다.
 
 실제 API 키를 쓰는 경로는 `../start-live-lab.cmd`(Windows 더블클릭) 또는 `./console.sh live-lab`(WSL/Linux)입니다. 이 명령은 `compose.live-lab.yaml`을 마지막 오버레이로 적용해 test double 설정을 실제 모델 설정으로 바꾸고, A.I.G Web에 `mcp-gateway-live` 모델을 등록합니다. 첫 실행에서만 키를 숨겨 입력받으며 이후에는 같은 명령으로 재기동합니다. 이 경로는 기존 DB와 A.I.G 이력을 지우지 않습니다. 연결 확인은 실제 API 응답과 워커 생존까지 확인하고, 실제 보안 판단은 이후 실행한 검사 결과에서 확인합니다.
 

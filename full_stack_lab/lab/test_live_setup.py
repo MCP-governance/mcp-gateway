@@ -20,6 +20,8 @@ class LiveSetupTest(unittest.TestCase):
             self.assertEqual(live_setup.read_env(path)["MCP_SCAN_API_KEY"], "test-secret-123")
             with self.assertRaises(ValueError):
                 live_setup.validate({**config, "MCP_SCAN_BASE_URL": "http://aig-lab-model:4010/v1"})
+            with self.assertRaises(ValueError):
+                live_setup.validate({**config, "MCP_SCAN_BASE_URL": "http://llm-stub:4010/v1"})
 
     def test_aig_registration_creates_then_updates_one_model(self):
         with tempfile.TemporaryDirectory() as directory:
