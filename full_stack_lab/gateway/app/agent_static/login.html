@@ -1,46 +1,67 @@
 <!doctype html>
-<html lang="ko">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MCP Governance 로그인</title>
-    <link rel="stylesheet" href="/static/console.css" />
-    <link rel="stylesheet" href="/static/login.css" />
-  </head>
-  <body class="login-page">
-    <main class="login-shell">
-      <section class="login-hero">
-        <p class="eyebrow">MCP Governance · Control Plane</p>
-        <h1>등록되고<br />승인된 것만<br />실행합니다</h1>
-      </section>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <title>로그인 · MCP Governance</title>
+  <link rel="stylesheet" href="/static/console.css" />
+  <link rel="stylesheet" href="/static/login.css" />
+</head>
+<body class="gate">
+  <main class="gate-card">
+    <header class="gate-head">
+      <b>MCP Governance</b>
+      <span>판정 기록부</span>
+    </header>
 
-      <section class="login-panel">
-        <form id="login-form" novalidate>
-          <p class="eyebrow">Sign in</p>
-          <h2>로그인</h2>
+    <p class="gate-lede">
+      MCP 도구 호출을 <b>실행 전에</b> 인증·정책·승인·카탈로그·공급망·감사로 검증하는
+      강제 경로입니다. 이 화면의 모든 계정과 데이터는 합성입니다.
+    </p>
 
-          <label for="access-role">접근 역할</label>
-          <select id="access-role">
-            <option value="miso@bob.local">직원 · 김미소</option>
-            <option value="partner@bob.local">협력업체 직원 · 김민수</option>
-            <option value="admin@bob.local">관리자 · 박지훈</option>
-          </select>
+    <form id="gate-form" novalidate>
+      <label class="field"><span>합성 계정</span>
+        <select id="pick">
+          <optgroup label="관리자">
+            <option value="kkg@bob.local">김경곤 · 거버넌스팀</option>
+            <option value="mks@bob.local">문광석 · 보안운영팀</option>
+          </optgroup>
+          <optgroup label="직원">
+            <option value="pse@bob.local">박소은 · 보안기술팀</option>
+            <option value="miso@bob.local" selected>김미소 · 보안기술팀</option>
+            <option value="ysg@bob.local">양승권 · 플랫폼개발팀</option>
+            <option value="jwj@bob.local">정원재 · 데이터분석팀</option>
+          </optgroup>
+          <optgroup label="협력사 직원">
+            <option value="nkk@bob.local">권노경 · 협력사 A</option>
+          </optgroup>
+        </select>
+      </label>
 
-          <label for="email">회사 이메일</label>
-          <input id="email" name="email" type="email" autocomplete="username" value="miso@bob.local" required />
+      <label class="field"><span>이메일</span>
+        <input id="email" name="email" type="email" autocomplete="username"
+               value="miso@bob.local" required />
+      </label>
 
-          <label for="password">비밀번호</label>
-          <div class="password-field">
-            <input id="password" name="password" type="password" autocomplete="current-password" value="test-password" required />
-            <button id="toggle-password" class="text-action" type="button" aria-label="비밀번호 표시">표시</button>
-          </div>
+      <label class="field"><span>비밀번호</span>
+        <input id="password" name="password" type="password" autocomplete="current-password"
+               value="test-password" required />
+      </label>
 
-          <p id="login-error" class="login-error" role="alert"></p>
-          <button id="login-button" class="solid-button" type="submit">계속</button>
-          <p class="login-note">개발 계정으로 인증 흐름을 검증합니다. 운영에서는 기업 IdP가 이 경계를 대신합니다.</p>
-        </form>
-      </section>
-    </main>
-    <script src="/static/login.js" defer></script>
-  </body>
+      <p class="err" id="gate-error" role="alert"></p>
+      <button class="btn" data-tone="primary" id="gate-go" type="submit">로그인</button>
+    </form>
+
+    <footer class="gate-foot">
+      <p>역할에 따라 보이는 화면이 다릅니다. 숨기는 것이 아니라 서버가 데이터를 실어 보내지 않습니다.</p>
+      <ul>
+        <li><b>관리자</b> 전체 · 정책 관리대장 · 신원 · 종료 판정</li>
+        <li><b>직원</b> 도구 실행 · 도입 신청 · 본인 호출 기록</li>
+        <li><b>협력사 직원</b> 도구 실행 · 도입 신청</li>
+      </ul>
+    </footer>
+  </main>
+  <script src="/static/login.js"></script>
+</body>
 </html>

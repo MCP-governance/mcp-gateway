@@ -48,6 +48,24 @@ lifecycle_state := object.get(input, ["contract", "lifecycle"], "OPERATING")
 # 경로의 존재를 정책 입력으로 넘긴다. 세는 일은 엔드포인트 평면이, 판단은 정책이.
 shadow_endpoints := object.get(input, ["principal", "shadow_endpoints"], 0)
 
+# 엔드포인트 평면이 망에서 직접 찾은 미등록 MCP 리스너 수. 설정 파일 기반 발견과
+# 다른 증거다 - 설정에 없어도 프로세스가 떠 있으면 경로는 존재한다.
+shadow_listeners := object.get(input, ["principal", "shadow_listeners"], 0)
+
+# CTL-13 / RSK-12. 이번 호출의 인자에서 발견된 비신뢰 지시 표지.
+untrusted_markers := object.get(input, ["request", "untrusted_markers"], [])
+
+# CTL-28 / RSK-27. 최근 창 안에서 이 주체가 받은 차단 수.
+recent_blocks := object.get(input, ["context", "recent_blocks"], 0)
+
+block_limit := object.get(input, ["context", "block_limit"], 1000000000)
+
+# CTL-24 / CTL-25. 등록 서버의 전송 보호와 목적지 허용 여부. 값이 없는 배포에서
+# 전부 막히지 않도록 기본값은 참이고, 그 사실은 관리대장이 드러낸다.
+transport_secure := object.get(input, ["contract", "transport_secure"], true)
+
+endpoint_allowed := object.get(input, ["contract", "endpoint_allowed"], true)
+
 # ── 권한표: 3 역할 x 3 등급 x r/w/x ─────────────────────────────────────────
 
 permissions := {
@@ -317,6 +335,75 @@ candidate["MCP-SHADOW-001"] := {
 	"conditions": {"matched": ["principal.shadow_endpoints"], "violated": []},
 } if {
 	shadow_endpoints > 0
+	has_permission
+	contract_ok
+}
+
+# CTL-24 / RSK-24. 평문 원격 endpoint는 권한을 따지기 전에 끊는다. 이 통제가
+# 등록·권한 판단보다 뒤에 있으면 "권한은 있으니 평문으로 보냈다"가 만들어진다.
+candidate["MCP-TRANSPORT-001"] := {
+	"decision": "Block",
+	"reason": "원격 MCP endpoint가 전송 보호 없이 구성되어 있습니다.",
+	"restrictions": {},
+	"conditions": {"matched": [], "violated": ["contract.transport_secure"]},
+} if {
+	not transport_secure
+}
+
+# CTL-25 / RSK-25. 허용 목록 밖 목적지. SSRF와 내부망 탐색이 여기서 갈린다.
+candidate["MCP-EGRESS-001"] := {
+	"decision": "Block",
+	"reason": "등록 서버의 목적지가 허용된 egress 목록에 없습니다.",
+	"restrictions": {},
+	"conditions": {"matched": [], "violated": ["contract.endpoint_allowed"]},
+} if {
+	not endpoint_allowed
+}
+
+# CTL-13 / RSK-12. 인자 안의 비신뢰 지시. 고위험 행위에서는 사람이 본다.
+candidate["P-UNTRUSTED-CONTENT-001"] := {
+	"decision": "Approval",
+	"reason": "도구 인자에서 비신뢰 지시 표지가 발견되어 승인이 필요합니다. 도구 결과나 외부 문서에서 온 내용이 실행을 바꾸지 못하게 합니다.",
+	"restrictions": {},
+	"conditions": {"matched": ["request.untrusted_markers"], "violated": ["approval.granted"]},
+} if {
+	count(untrusted_markers) > 0
+	input.tool.action in {"w", "x"}
+	not input.approval.granted
+}
+
+# 같은 표지라도 읽기에서는 막을 근거가 아니다. 증적만 강화한다.
+candidate["P-UNTRUSTED-CONTENT-002"] := {
+	"decision": "Alert",
+	"reason": "도구 인자에서 비신뢰 지시 표지가 발견되어 증적을 강화합니다.",
+	"restrictions": {},
+	"conditions": {"matched": ["request.untrusted_markers"], "violated": []},
+} if {
+	count(untrusted_markers) > 0
+	input.tool.action == "r"
+}
+
+# CTL-28 / RSK-27. 반복 차단. 한 건은 오조작이고 누적은 탐색이다.
+candidate["P-ANOMALY-001"] := {
+	"decision": "Alert",
+	"reason": "짧은 시간에 차단이 반복되어 이상행위로 증적을 강화합니다.",
+	"restrictions": {},
+	"conditions": {"matched": ["context.recent_blocks"], "violated": []},
+} if {
+	recent_blocks >= block_limit
+	has_permission
+}
+
+# 망에서 직접 발견된 미등록 MCP 리스너. 설정 파일 기반 MCP-SHADOW-001보다 강한
+# 증거라 더 높은 우선순위를 갖는다 - 설정은 지울 수 있지만 떠 있는 리스너는
+# 지금 이 순간 열려 있는 경로다.
+candidate["MCP-SHADOW-002"] := {
+	"decision": "Alert",
+	"reason": "요청자의 엔드포인트 망에서 등록되지 않은 MCP 리스너가 발견되어 증적을 강화합니다.",
+	"restrictions": {},
+	"conditions": {"matched": ["principal.shadow_listeners"], "violated": []},
+} if {
+	shadow_listeners > 0
 	has_permission
 	contract_ok
 }

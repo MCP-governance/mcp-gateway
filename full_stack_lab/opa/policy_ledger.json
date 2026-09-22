@@ -2,13 +2,13 @@
   "policy_set": {
     "id": "POLSET-MCP-001",
     "name": "MCP Tool Call 집행 정책집",
-    "framework": "MCP 보안 관리 프레임워크 V1.0",
-    "version": "1.0.0-draft",
-    "status": "시험",
+    "framework": "MCP 보안 관리 프레임워크 V2.0",
+    "version": "2.0.0",
+    "status": "운영",
     "owner": "거버넌스팀",
     "approver": "보안 의사결정기구",
-    "effective_from": "2026-09-16T00:00:00Z",
-    "review_due": "2026-12-16T00:00:00Z",
+    "effective_from": "2026-09-22T00:00:00Z",
+    "review_due": "2026-12-22T00:00:00Z",
     "environments": [
       "dev",
       "stage",
@@ -16,7 +16,9 @@
     ],
     "conflict_strategy": "priority-ascending",
     "conflict_note": "동일 요청에 여러 정책이 성립하면 priority 숫자가 작은(더 제한적인) 정책이 최종 판단이 되고 나머지는 conflicts에 기록한다. 최종 판단을 확정할 수 없으면 P-CONTROL-DEFAULT-001로 차단한다.",
-    "evidence": "PostgreSQL decisions 테이블(해시 체인) + OpenTelemetry trace"
+    "evidence": "PostgreSQL decisions 테이블(해시 체인) + OpenTelemetry trace",
+    "register": "MCP 보안 통합관리대장 V1.0",
+    "traceability_note": "risk_ids·requirement_ids·control_ids는 MCP 보안 통합관리대장 V1.0의 위험 목록(RSK-01~32), 보안요구사항(REQ-01~35), 보안통제(CTL-01~35) 행 식별자다. pac_candidate_id는 같은 대장의 PaC 연계 시트 행이다."
   },
   "policy_ledger": {
     "MCP-REGISTRY-001": {
@@ -24,13 +26,16 @@
       "purpose": "자산대장에 등록되지 않은 MCP Server 또는 Tool의 실행을 차단한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-001"
+        "RSK-01",
+        "RSK-14"
       ],
       "requirement_ids": [
-        "SR-001"
+        "REQ-03",
+        "REQ-15"
       ],
       "control_ids": [
-        "CTL-001"
+        "CTL-03",
+        "CTL-15"
       ],
       "principle_ids": [
         "PRN-02",
@@ -66,20 +71,21 @@
       ],
       "test_ids": [
         "T-REGISTRY-001"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-01"
     },
     "MCP-REGISTRY-002": {
       "name": "비활성 MCP 도구 실행 차단",
       "purpose": "Registry에서 비활성(DISABLED)으로 관리되는 도구의 실행을 차단한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-001"
+        "RSK-01"
       ],
       "requirement_ids": [
-        "SR-001"
+        "REQ-03"
       ],
       "control_ids": [
-        "CTL-001"
+        "CTL-03"
       ],
       "principle_ids": [
         "PRN-02"
@@ -113,20 +119,24 @@
       ],
       "test_ids": [
         "T-REGISTRY-002"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-01"
     },
     "MCP-SUPPLY-001": {
       "name": "공급망 위험 서버 차단",
       "purpose": "승인되지 않은 공급자이거나 서버에 귀속된 치명적 공급망 취약점이 있는 경우 실행을 차단한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-002"
+        "RSK-02",
+        "RSK-31"
       ],
       "requirement_ids": [
-        "SR-002"
+        "REQ-04",
+        "REQ-32"
       ],
       "control_ids": [
-        "CTL-002"
+        "CTL-04",
+        "CTL-32"
       ],
       "principle_ids": [
         "PRN-08"
@@ -163,20 +173,25 @@
       "test_ids": [
         "T-SUPPLY-001",
         "T-SUPPLY-002"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-02"
     },
     "MCP-CATALOG-001": {
       "name": "승인 계약 불일치 차단",
       "purpose": "도구 목록, 설명, 입력 Schema, 서버 버전이 승인본과 다르면 실행을 차단한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-003"
+        "RSK-03",
+        "RSK-11",
+        "RSK-14"
       ],
       "requirement_ids": [
-        "SR-003"
+        "REQ-12",
+        "REQ-30"
       ],
       "control_ids": [
-        "CTL-003"
+        "CTL-12",
+        "CTL-30"
       ],
       "principle_ids": [
         "PRN-03",
@@ -215,20 +230,24 @@
       ],
       "test_ids": [
         "T-CATALOG-001"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-10"
     },
     "P-APPROVAL-EXPIRY-001": {
       "name": "승인 유효기간 만료 자산 차단",
       "purpose": "도입·사용 승인의 유효기간이 지난 MCP 도구의 실행을 차단한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-008"
+        "RSK-30",
+        "RSK-04"
       ],
       "requirement_ids": [
-        "SR-004"
+        "REQ-05",
+        "REQ-30"
       ],
       "control_ids": [
-        "CTL-010"
+        "CTL-05",
+        "CTL-30"
       ],
       "principle_ids": [
         "PRN-02",
@@ -266,20 +285,21 @@
       "test_ids": [
         "T-APPROVAL-001",
         "T-APPROVAL-002"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-03"
     },
     "P-CLASSIFICATION-001": {
       "name": "분류 근거 없는 데이터 차단",
       "purpose": "데이터 등급의 관리대장 출처가 없으면 기본 차단한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-004"
+        "RSK-20"
       ],
       "requirement_ids": [
-        "SR-005"
+        "REQ-21"
       ],
       "control_ids": [
-        "CTL-004"
+        "CTL-21"
       ],
       "principle_ids": [
         "PRN-07",
@@ -316,21 +336,21 @@
       "test_ids": [
         "T-CLASS-001",
         "T-CLASS-002"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-19"
     },
     "P-RATE-001": {
       "name": "호출량 상한",
       "purpose": "짧은 시간 동안의 호출 수가 상한을 넘으면 Gateway와 upstream 보호를 위해 차단한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-007",
-        "RSK-009"
+        "RSK-28"
       ],
       "requirement_ids": [
-        "SR-006"
+        "REQ-29"
       ],
       "control_ids": [
-        "CTL-009"
+        "CTL-29"
       ],
       "principle_ids": [
         "PRN-04",
@@ -367,20 +387,24 @@
       "test_ids": [
         "T-RATE-001",
         "T-RATE-002"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-26"
     },
     "P-333-DENY-001": {
       "name": "최소권한 미충족 차단",
       "purpose": "역할·데이터 등급·행위 조합에 권한이 없으면 차단한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-005"
+        "RSK-08",
+        "RSK-20"
       ],
       "requirement_ids": [
-        "SR-007"
+        "REQ-09",
+        "REQ-21"
       ],
       "control_ids": [
-        "CTL-005"
+        "CTL-09",
+        "CTL-21"
       ],
       "principle_ids": [
         "PRN-04"
@@ -417,20 +441,24 @@
       "test_ids": [
         "T-RBAC-001",
         "T-RBAC-002"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-07"
     },
     "P-X-APPROVAL-001": {
       "name": "중요정보 외부 전송 추가 승인",
       "purpose": "중요정보의 외부 전송 또는 고위험 실행은 승인권자의 명시적 승인 전까지 보류한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-006"
+        "RSK-16",
+        "RSK-21"
       ],
       "requirement_ids": [
-        "SR-008"
+        "REQ-17",
+        "REQ-22"
       ],
       "control_ids": [
-        "CTL-006"
+        "CTL-17",
+        "CTL-22"
       ],
       "principle_ids": [
         "PRN-05",
@@ -469,21 +497,24 @@
       "test_ids": [
         "T-APPROVAL-X-001",
         "T-APPROVAL-X-002"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-15"
     },
     "P-VOLUME-001": {
       "name": "중요정보 누적 접근 승격",
       "purpose": "단건으로는 정상인 열람도 짧은 시간에 누적되면 유출 패턴이므로 승인을 요구한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-007"
+        "RSK-17",
+        "RSK-21"
       ],
       "requirement_ids": [
-        "SR-006"
+        "REQ-18",
+        "REQ-28"
       ],
       "control_ids": [
-        "CTL-006",
-        "CTL-009"
+        "CTL-18",
+        "CTL-28"
       ],
       "principle_ids": [
         "PRN-05",
@@ -523,20 +554,21 @@
       "test_ids": [
         "T-VOLUME-001",
         "T-VOLUME-002"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-16"
     },
     "P-DEPT-001": {
       "name": "소관 부서 외 중요정보 접근 승인",
       "purpose": "자신의 소관 부서가 아닌 중요정보 접근은 승인을 요구한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-010"
+        "RSK-20"
       ],
       "requirement_ids": [
-        "SR-007"
+        "REQ-21"
       ],
       "control_ids": [
-        "CTL-012"
+        "CTL-21"
       ],
       "principle_ids": [
         "PRN-04",
@@ -575,20 +607,24 @@
       "test_ids": [
         "T-DEPT-001",
         "T-DEPT-002"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-19"
     },
     "P-X-RESTRICT-001": {
       "name": "외부 전송 제한 실행",
       "purpose": "중요정보가 아닌 자료의 외부 전송은 승인된 목적지와 길이 제한을 적용한 뒤 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-006"
+        "RSK-21",
+        "RSK-25"
       ],
       "requirement_ids": [
-        "SR-008"
+        "REQ-22",
+        "REQ-25"
       ],
       "control_ids": [
-        "CTL-007"
+        "CTL-22",
+        "CTL-25"
       ],
       "principle_ids": [
         "PRN-07"
@@ -624,20 +660,24 @@
       "test_ids": [
         "T-RESTRICT-001",
         "T-RESTRICT-002"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-20"
     },
     "P-IMPORTANT-ALERT-001": {
       "name": "중요정보 열람 경고",
       "purpose": "직원의 중요정보 열람은 업무상 허용하되 경보와 증적을 강화한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-007"
+        "RSK-20",
+        "RSK-27"
       ],
       "requirement_ids": [
-        "SR-009"
+        "REQ-26",
+        "REQ-28"
       ],
       "control_ids": [
-        "CTL-008"
+        "CTL-26",
+        "CTL-28"
       ],
       "principle_ids": [
         "PRN-10"
@@ -673,20 +713,21 @@
       ],
       "test_ids": [
         "T-ALERT-001"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-23"
     },
     "P-333-ALLOW-001": {
       "name": "최소권한 충족 허용",
       "purpose": "권한표와 등록 계약을 모두 충족한 요청을 승인된 조건으로 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-005"
+        "RSK-08"
       ],
       "requirement_ids": [
-        "SR-007"
+        "REQ-09"
       ],
       "control_ids": [
-        "CTL-005"
+        "CTL-09"
       ],
       "principle_ids": [
         "PRN-04",
@@ -724,20 +765,24 @@
       ],
       "test_ids": [
         "T-ALLOW-001"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-07"
     },
     "P-CONTROL-INPUT-001": {
       "name": "정책 입력 누락 차단",
       "purpose": "판단에 필요한 입력이 없거나 신뢰할 수 없으면 안전한 상태로 처리한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-009"
+        "RSK-15",
+        "RSK-26"
       ],
       "requirement_ids": [
-        "SR-010"
+        "REQ-16",
+        "REQ-26"
       ],
       "control_ids": [
-        "CTL-011"
+        "CTL-16",
+        "CTL-26"
       ],
       "principle_ids": [
         "PRN-11"
@@ -776,20 +821,21 @@
       "test_ids": [
         "T-INPUT-001",
         "T-INPUT-002"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-14"
     },
     "P-CONTROL-DEFAULT-001": {
       "name": "기본 차단",
       "purpose": "어떤 정책도 성립하지 않아 최종 판단을 확정할 수 없는 요청을 차단한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-009"
+        "RSK-26"
       ],
       "requirement_ids": [
-        "SR-010"
+        "REQ-26"
       ],
       "control_ids": [
-        "CTL-011"
+        "CTL-26"
       ],
       "principle_ids": [
         "PRN-11"
@@ -821,20 +867,24 @@
       ],
       "test_ids": [
         "T-DEFAULT-001"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-30"
     },
     "P-CONTROL-LEDGER-001": {
       "name": "관리대장 누락 정책 차단",
       "purpose": "관리정보가 없는 정책이 집행되지 않도록 한다. 정책 코드만으로는 목적과 근거를 대신할 수 없다(11.8).",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-009"
+        "RSK-26",
+        "RSK-30"
       ],
       "requirement_ids": [
-        "SR-010"
+        "REQ-26",
+        "REQ-31"
       ],
       "control_ids": [
-        "CTL-011"
+        "CTL-26",
+        "CTL-31"
       ],
       "principle_ids": [
         "PRN-10",
@@ -867,21 +917,24 @@
       ],
       "test_ids": [
         "T-LEDGER-001"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-23"
     },
     "MCP-METHOD-001": {
       "name": "중개하지 않는 MCP 메서드 거부",
       "purpose": "tools 이외의 resources/prompts/sampling 등은 등록 여부와 무관하게 중개하지 않는다. 통제하지 않는 표면을 열어두지 않기 위한 기본 거부다.",
       "enforced_by": "gateway",
       "risk_ids": [
-        "RSK-001",
-        "RSK-011"
+        "RSK-12",
+        "RSK-13"
       ],
       "requirement_ids": [
-        "SR-011"
+        "REQ-13",
+        "REQ-14"
       ],
       "control_ids": [
-        "CTL-014"
+        "CTL-13",
+        "CTL-14"
       ],
       "principle_ids": [
         "PRN-06",
@@ -915,21 +968,24 @@
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
-      "effective_from": "2026-09-16T00:00:00Z"
+      "effective_from": "2026-09-16T00:00:00Z",
+      "pac_candidate_id": "PAC-CAND-12"
     },
     "P-INPUT-001": {
       "name": "요청 신원·자원 식별 검증",
       "purpose": "활성 계정과 등록된 자원만 실행한다. stdio와 승인 재실행도 공통 실행부에서 계정 상태를 재검증한다.",
       "enforced_by": "gateway",
       "risk_ids": [
-        "RSK-005",
-        "RSK-009"
+        "RSK-06",
+        "RSK-09"
       ],
       "requirement_ids": [
-        "SR-010"
+        "REQ-07",
+        "REQ-10"
       ],
       "control_ids": [
-        "CTL-011"
+        "CTL-07",
+        "CTL-10"
       ],
       "principle_ids": [
         "PRN-03",
@@ -964,20 +1020,21 @@
       "version": "1.1.0",
       "status": "운영",
       "approval_status": "승인",
-      "effective_from": "2026-09-16T00:00:00Z"
+      "effective_from": "2026-09-16T00:00:00Z",
+      "pac_candidate_id": "PAC-CAND-05"
     },
     "P-INPUT-SCHEMA-001": {
       "name": "도구 인자 형식 검증",
       "purpose": "승인된 입력 Schema와 다른 인자를 upstream으로 넘기지 않는다.",
       "enforced_by": "gateway",
       "risk_ids": [
-        "RSK-003"
+        "RSK-15"
       ],
       "requirement_ids": [
-        "SR-003"
+        "REQ-16"
       ],
       "control_ids": [
-        "CTL-003"
+        "CTL-16"
       ],
       "principle_ids": [
         "PRN-03"
@@ -1010,21 +1067,22 @@
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
-      "effective_from": "2026-09-16T00:00:00Z"
+      "effective_from": "2026-09-16T00:00:00Z",
+      "pac_candidate_id": "PAC-CAND-14"
     },
     "MCP-REPOSITORY-001": {
       "name": "외부 저장소 허용목록",
       "purpose": "허용 목록 밖의 GitHub 저장소 접근을 차단한다.",
       "enforced_by": "gateway",
       "risk_ids": [
-        "RSK-002",
-        "RSK-006"
+        "RSK-25",
+        "RSK-02"
       ],
       "requirement_ids": [
-        "SR-002"
+        "REQ-25"
       ],
       "control_ids": [
-        "CTL-007"
+        "CTL-25"
       ],
       "principle_ids": [
         "PRN-04",
@@ -1060,21 +1118,21 @@
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
-      "effective_from": "2026-09-16T00:00:00Z"
+      "effective_from": "2026-09-16T00:00:00Z",
+      "pac_candidate_id": "PAC-CAND-22"
     },
     "MCP-RECEIPT-001": {
       "name": "중복 실행 방지",
       "purpose": "같은 request_id 또는 tool_call_id의 재시도는 저장된 응답을 돌려주고 upstream을 다시 실행하지 않는다.",
       "enforced_by": "gateway",
       "risk_ids": [
-        "RSK-006",
-        "RSK-009"
+        "RSK-28"
       ],
       "requirement_ids": [
-        "SR-012"
+        "REQ-29"
       ],
       "control_ids": [
-        "CTL-015"
+        "CTL-29"
       ],
       "principle_ids": [
         "PRN-06",
@@ -1110,20 +1168,21 @@
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
-      "effective_from": "2026-09-16T00:00:00Z"
+      "effective_from": "2026-09-16T00:00:00Z",
+      "pac_candidate_id": "PAC-CAND-26"
     },
     "P-CONTROL-FAIL-CLOSED": {
       "name": "정책 엔진 장애 시 기본 차단",
       "purpose": "정책 판단 실패·시간초과·미정의 결정·강제할 수 없는 제한조건 또는 실행 직전 계약·승인 검증 실패 시 차단한다. 관찰 모드에서도 집행한다.",
       "enforced_by": "gateway",
       "risk_ids": [
-        "RSK-009"
+        "RSK-26"
       ],
       "requirement_ids": [
-        "SR-010"
+        "REQ-26"
       ],
       "control_ids": [
-        "CTL-011"
+        "CTL-26"
       ],
       "principle_ids": [
         "PRN-11"
@@ -1157,20 +1216,21 @@
       "version": "1.1.0",
       "status": "운영",
       "approval_status": "승인",
-      "effective_from": "2026-09-16T00:00:00Z"
+      "effective_from": "2026-09-16T00:00:00Z",
+      "pac_candidate_id": "PAC-CAND-30"
     },
     "P-MONITOR-001": {
       "name": "관찰 모드 기록 후 실행",
       "purpose": "권한 판정을 집행하지 않고 기록만 하여 도입 영향 범위를 숫자로 만든다. 무결성 판정과 호출량 상한은 관찰 모드에서도 집행한다.",
       "enforced_by": "gateway",
       "risk_ids": [
-        "RSK-005"
+        "RSK-27"
       ],
       "requirement_ids": [
-        "SR-013"
+        "REQ-28"
       ],
       "control_ids": [
-        "CTL-016"
+        "CTL-28"
       ],
       "principle_ids": [
         "PRN-01",
@@ -1205,20 +1265,24 @@
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
-      "effective_from": "2026-09-16T00:00:00Z"
+      "effective_from": "2026-09-16T00:00:00Z",
+      "pac_candidate_id": "PAC-CAND-30"
     },
     "MCP-UPSTREAM-001": {
       "name": "upstream 통신 실패",
       "purpose": "허용 후 MCP 통신이 실패한 경우를 실행 성공으로 기록하지 않는다. 실제 실행 여부는 독립 증적으로 확인한다.",
       "enforced_by": "gateway",
       "risk_ids": [
-        "RSK-009"
+        "RSK-24",
+        "RSK-28"
       ],
       "requirement_ids": [
-        "SR-012"
+        "REQ-24",
+        "REQ-29"
       ],
       "control_ids": [
-        "CTL-011"
+        "CTL-24",
+        "CTL-29"
       ],
       "principle_ids": [
         "PRN-10",
@@ -1253,21 +1317,24 @@
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
-      "effective_from": "2026-09-16T00:00:00Z"
+      "effective_from": "2026-09-16T00:00:00Z",
+      "pac_candidate_id": "PAC-CAND-26"
     },
     "MCP-OUTPUT-001": {
       "name": "결과 출력 통제",
       "purpose": "upstream 결과의 크기와 정책 우회 지시 패턴을 검사하고 걸리면 결과를 반환하지 않는다. 호출 자체는 이미 실행됐으므로 upstream_executed는 참으로 남긴다.",
       "enforced_by": "gateway",
       "risk_ids": [
-        "RSK-006",
-        "RSK-011"
+        "RSK-18",
+        "RSK-19"
       ],
       "requirement_ids": [
-        "SR-014"
+        "REQ-19",
+        "REQ-20"
       ],
       "control_ids": [
-        "CTL-017"
+        "CTL-19",
+        "CTL-20"
       ],
       "principle_ids": [
         "PRN-07",
@@ -1303,20 +1370,22 @@
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
-      "effective_from": "2026-09-16T00:00:00Z"
+      "effective_from": "2026-09-16T00:00:00Z",
+      "pac_candidate_id": "PAC-CAND-17"
     },
     "MCP-DECOMM-001": {
       "name": "종료·폐기 이용 관계 차단",
       "purpose": "종료 절차에 들어갔거나 폐기된 이용 관계의 도구 호출을 실행 전에 차단하고, 차단 시각 이후의 실행 0건을 조직이 자체 증명할 수 있게 한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-012"
+        "RSK-29",
+        "RSK-32"
       ],
       "requirement_ids": [
-        "SR-015"
+        "REQ-34"
       ],
       "control_ids": [
-        "CTL-018"
+        "CTL-34"
       ],
       "principle_ids": [
         "PRN-02",
@@ -1354,20 +1423,24 @@
         "T-DECOMM-001",
         "T-DECOMM-002",
         "T-DECOMM-003"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-29"
     },
     "MCP-SHADOW-001": {
       "name": "강제 경로 밖 설정 보유자 증적 강화",
       "purpose": "엔드포인트 평면이 요청자의 단말에서 미등록 MCP 설정을 발견한 경우, 허용은 유지하되 증적과 경보를 강화한다.",
       "enforced_by": "opa",
       "risk_ids": [
-        "RSK-013"
+        "RSK-01",
+        "RSK-27"
       ],
       "requirement_ids": [
-        "SR-016"
+        "REQ-03",
+        "REQ-28"
       ],
       "control_ids": [
-        "CTL-019"
+        "CTL-03",
+        "CTL-28"
       ],
       "principle_ids": [
         "PRN-06",
@@ -1404,7 +1477,304 @@
       "test_ids": [
         "T-SHADOW-001",
         "T-SHADOW-002"
-      ]
+      ],
+      "pac_candidate_id": "PAC-CAND-13"
+    },
+    "MCP-TRANSPORT-001": {
+      "name": "평문 원격 MCP 연결 차단",
+      "purpose": "원격 MCP endpoint가 전송 보호 없이 구성된 경우 권한 판단 이전에 실행을 차단한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-24",
+        "RSK-06"
+      ],
+      "requirement_ids": [
+        "REQ-24"
+      ],
+      "control_ids": [
+        "CTL-24"
+      ],
+      "principle_ids": [],
+      "owner": "거버넌스팀",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "모든 MCP Tool Call",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "contract.transport_secure"
+      ],
+      "condition": "원격 endpoint가 http이고 루프백·내부 서비스 이름이 아님",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 35,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "전송 보호 없는 원격 연결은 완화 대상이 아니다. 구성을 고쳐야 한다.",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-22T00:00:00Z",
+      "obligations": [
+        "evidence.enhanced",
+        "alert.security"
+      ],
+      "test_ids": [
+        "T-TRANSPORT-001"
+      ],
+      "pac_candidate_id": "PAC-CAND-21"
+    },
+    "MCP-EGRESS-001": {
+      "name": "허용 목록 밖 목적지 차단",
+      "purpose": "등록 서버의 목적지가 조직이 허용한 egress 목록 밖이면 실행을 차단한다. SSRF와 내부망 탐색이 실행으로 이어지는 경로를 끊는다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-25",
+        "RSK-21"
+      ],
+      "requirement_ids": [
+        "REQ-25"
+      ],
+      "control_ids": [
+        "CTL-25"
+      ],
+      "principle_ids": [],
+      "owner": "거버넌스팀",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "모든 MCP Tool Call",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "contract.endpoint_allowed"
+      ],
+      "condition": "서버 endpoint의 host가 egress 허용 목록에 없음",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 40,
+      "automation": "자동화",
+      "exceptionable": true,
+      "exception_note": "일시 허용은 예외 관리대장에 기간·보완통제와 함께 등록한다.",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-22T00:00:00Z",
+      "obligations": [
+        "evidence.enhanced",
+        "alert.security"
+      ],
+      "test_ids": [
+        "T-EGRESS-001"
+      ],
+      "pac_candidate_id": "PAC-CAND-22"
+    },
+    "P-UNTRUSTED-CONTENT-001": {
+      "name": "비신뢰 콘텐츠 기반 고위험 실행 승인",
+      "purpose": "도구 인자에 비신뢰 지시 표지가 있고 행위가 쓰기·외부전송이면 사람의 승인을 요구한다. 간접 프롬프트 인젝션이 실행으로 이어지는 경로를 끊는다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-12",
+        "RSK-13"
+      ],
+      "requirement_ids": [
+        "REQ-13"
+      ],
+      "control_ids": [
+        "CTL-13"
+      ],
+      "principle_ids": [],
+      "owner": "거버넌스팀",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "모든 MCP Tool Call",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "request.untrusted_markers",
+        "tool.action",
+        "approval.granted"
+      ],
+      "condition": "인자에서 비신뢰 지시 표지 1건 이상 + 행위가 w 또는 x + 승인 없음",
+      "outcome": "추가 승인",
+      "enforcement": "승인 전 보류",
+      "priority": 95,
+      "automation": "부분 자동화",
+      "exceptionable": true,
+      "exception_note": "업무 특성상 반복되는 경우 범위·기간을 특정해 예외로 등록한다.",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-22T00:00:00Z",
+      "obligations": [
+        "evidence.enhanced",
+        "alert.security"
+      ],
+      "test_ids": [
+        "T-UNTRUSTED-001"
+      ],
+      "pac_candidate_id": "PAC-CAND-11"
+    },
+    "P-UNTRUSTED-CONTENT-002": {
+      "name": "비신뢰 콘텐츠 열람 증적 강화",
+      "purpose": "같은 표지가 읽기 행위에서 발견되면 차단하지 않고 증적을 강화한다. 읽기를 막으면 통제가 아니라 업무 중단이 된다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-12",
+        "RSK-18"
+      ],
+      "requirement_ids": [
+        "REQ-13",
+        "REQ-19"
+      ],
+      "control_ids": [
+        "CTL-13",
+        "CTL-19"
+      ],
+      "principle_ids": [],
+      "owner": "거버넌스팀",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "모든 MCP Tool Call",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "request.untrusted_markers",
+        "tool.action"
+      ],
+      "condition": "인자에서 비신뢰 지시 표지 1건 이상 + 행위가 r",
+      "outcome": "경고",
+      "enforcement": "기록 후 실행",
+      "priority": 128,
+      "automation": "자동화",
+      "exceptionable": true,
+      "exception_note": "",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-22T00:00:00Z",
+      "obligations": [
+        "evidence.enhanced",
+        "alert.security"
+      ],
+      "test_ids": [
+        "T-UNTRUSTED-002"
+      ],
+      "pac_candidate_id": "PAC-CAND-11"
+    },
+    "P-ANOMALY-001": {
+      "name": "반복 차단 이상행위 증적 강화",
+      "purpose": "짧은 시간에 차단이 반복되면 권한 경계를 탐색하는 신호로 보고 증적을 강화한다. 차단하지 않는 이유는 정상 사용자의 오조작이 계정 정지가 되면 안 되기 때문이다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-27",
+        "RSK-08"
+      ],
+      "requirement_ids": [
+        "REQ-28"
+      ],
+      "control_ids": [
+        "CTL-28"
+      ],
+      "principle_ids": [],
+      "owner": "거버넌스팀",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "모든 MCP Tool Call",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "context.recent_blocks",
+        "context.block_limit"
+      ],
+      "condition": "창 안의 차단 수가 상한 이상 + 권한 있음",
+      "outcome": "경고",
+      "enforcement": "기록 후 실행",
+      "priority": 132,
+      "automation": "자동화",
+      "exceptionable": true,
+      "exception_note": "",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-22T00:00:00Z",
+      "obligations": [
+        "evidence.enhanced",
+        "alert.security"
+      ],
+      "test_ids": [
+        "T-ANOMALY-001"
+      ],
+      "pac_candidate_id": "PAC-CAND-25"
+    },
+    "MCP-SHADOW-002": {
+      "name": "망에서 발견된 미등록 MCP 리스너 증적 강화",
+      "purpose": "요청자의 엔드포인트 망에서 등록되지 않은 MCP 리스너가 관측되면 증적을 강화한다. 설정 파일은 지울 수 있지만 떠 있는 리스너는 지금 열려 있는 경로다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-01",
+        "RSK-25"
+      ],
+      "requirement_ids": [
+        "REQ-03",
+        "REQ-28"
+      ],
+      "control_ids": [
+        "CTL-03",
+        "CTL-28"
+      ],
+      "principle_ids": [],
+      "owner": "거버넌스팀",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "모든 MCP Tool Call",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "principal.shadow_listeners"
+      ],
+      "condition": "요청자 엔드포인트 망에서 미등록 MCP 리스너 1건 이상 + 권한 있음 + 계약 충족",
+      "outcome": "경고",
+      "enforcement": "기록 후 실행",
+      "priority": 134,
+      "automation": "자동화",
+      "exceptionable": true,
+      "exception_note": "발견이 해소될 때까지의 한시 완화만 예외로 허용한다.",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-22T00:00:00Z",
+      "obligations": [
+        "evidence.enhanced",
+        "alert.security"
+      ],
+      "test_ids": [
+        "T-SHADOW-002"
+      ],
+      "pac_candidate_id": "PAC-CAND-13"
     }
   }
 }

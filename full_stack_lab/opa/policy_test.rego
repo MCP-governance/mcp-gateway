@@ -49,7 +49,7 @@ test_decision_carries_policy_management_information if {
 	result := decision with input as base
 	result.policy_version == "1.0.0"
 	result.policy_status == "운영"
-	result.policy_set_version == "1.0.0-draft"
+	result.policy_set_version == "2.0.0"
 	count(result.risk_ids) > 0
 	count(result.control_ids) > 0
 	count(result.obligations) > 0
@@ -600,4 +600,138 @@ test_no_shadow_report_leaves_allow_unchanged if {
 	})
 	result.decision == "Allow"
 	result.policy_id == "P-333-ALLOW-001"
+}
+
+# ── 통합관리대장 V1.0 PaC 후보에서 새로 정책화한 통제 ───────────────────────
+#
+# 추가된 후보마다 "성립하는 경우"와 "성립하지 않아야 하는 경우"를 함께 둔다.
+# 성립 시험만 있으면 조건을 넓게 잡은 규칙이 시험을 통과한 채로 정상 업무를
+# 막는다(§11.11 정상 업무 오탐).
+
+# T-TRANSPORT-001 CTL-24 평문 원격 연결
+test_block_plaintext_remote_endpoint if {
+	result := decision with input as with_input({"contract": object.union(base.contract, {"transport_secure": false})})
+	result.decision == "Block"
+	result.policy_id == "MCP-TRANSPORT-001"
+}
+
+test_secure_transport_is_not_blocked if {
+	result := decision with input as with_input({"contract": object.union(base.contract, {"transport_secure": true})})
+	result.policy_id == "P-333-ALLOW-001"
+}
+
+# 입력이 아예 없는 구버전 Gateway에서 전부 막히면 안 된다.
+test_missing_transport_field_defaults_open if {
+	result := decision with input as base
+	result.policy_id == "P-333-ALLOW-001"
+}
+
+# T-EGRESS-001 CTL-25 허용 목록 밖 목적지
+test_block_endpoint_outside_egress_allowlist if {
+	result := decision with input as with_input({"contract": object.union(base.contract, {"endpoint_allowed": false})})
+	result.decision == "Block"
+	result.policy_id == "MCP-EGRESS-001"
+}
+
+# 전송 보호가 더 근본적인 실패라 목적지보다 앞선다.
+test_transport_outranks_egress if {
+	patch := {"contract": object.union(base.contract, {"transport_secure": false, "endpoint_allowed": false})}
+	result := decision with input as with_input(patch)
+	result.policy_id == "MCP-TRANSPORT-001"
+}
+
+# T-UNTRUSTED-001 CTL-13 비신뢰 콘텐츠 기반 고위험 실행
+test_untrusted_marker_on_write_requires_approval if {
+	patch := {
+		"principal": {"role": "employee"},
+		"resource": {"id": "work-001", "data_class": "nonimportant"},
+		"tool": {"name": "write_document", "action": "w"},
+		"request": {"untrusted_markers": ["content"]},
+	}
+	result := decision with input as with_input(patch)
+	result.decision == "Approval"
+	result.policy_id == "P-UNTRUSTED-CONTENT-001"
+}
+
+# T-UNTRUSTED-002 같은 표지라도 읽기는 막지 않는다.
+test_untrusted_marker_on_read_only_alerts if {
+	patch := {
+		"principal": {"role": "employee"},
+		"resource": {"id": "work-001", "data_class": "nonimportant"},
+		"request": {"untrusted_markers": ["content"]},
+	}
+	result := decision with input as with_input(patch)
+	result.decision == "Alert"
+	result.policy_id == "P-UNTRUSTED-CONTENT-002"
+}
+
+# 표지가 없으면 같은 쓰기가 그냥 허용이어야 한다(오탐 방지).
+test_clean_write_is_not_escalated if {
+	patch := {
+		"principal": {"role": "employee"},
+		"resource": {"id": "work-001", "data_class": "nonimportant"},
+		"tool": {"name": "write_document", "action": "w"},
+		"request": {"untrusted_markers": []},
+	}
+	result := decision with input as with_input(patch)
+	result.policy_id == "P-333-ALLOW-001"
+}
+
+# 승인을 받은 뒤에는 같은 호출이 통과해야 한다.
+test_untrusted_marker_clears_after_approval if {
+	patch := {
+		"principal": {"role": "employee"},
+		"resource": {"id": "work-001", "data_class": "nonimportant"},
+		"tool": {"name": "write_document", "action": "w"},
+		"request": {"untrusted_markers": ["content"]},
+		"approval": {"granted": true},
+	}
+	result := decision with input as with_input(patch)
+	result.policy_id == "P-333-ALLOW-001"
+}
+
+# T-ANOMALY-001 CTL-28 반복 차단
+test_repeated_blocks_raise_alert if {
+	patch := {
+		"principal": {"role": "employee"},
+		"resource": {"id": "work-001", "data_class": "nonimportant"},
+		"context": {"recent_blocks": 5, "block_limit": 5},
+	}
+	result := decision with input as with_input(patch)
+	result.decision == "Alert"
+	result.policy_id == "P-ANOMALY-001"
+}
+
+test_blocks_below_limit_do_not_alert if {
+	patch := {
+		"principal": {"role": "employee"},
+		"resource": {"id": "work-001", "data_class": "nonimportant"},
+		"context": {"recent_blocks": 4, "block_limit": 5},
+	}
+	result := decision with input as with_input(patch)
+	result.policy_id == "P-333-ALLOW-001"
+}
+
+# T-SHADOW-002 망에서 발견된 리스너는 설정 기반 발견보다 앞선다.
+test_network_shadow_outranks_config_shadow if {
+	patch := {"principal": {"role": "employee", "shadow_endpoints": 1, "shadow_listeners": 2}}
+	result := decision with input as with_input(patch)
+	result.decision == "Alert"
+	result.policy_id == "MCP-SHADOW-002"
+}
+
+test_no_listener_falls_back_to_config_shadow if {
+	patch := {"principal": {"role": "employee", "shadow_endpoints": 1, "shadow_listeners": 0}}
+	result := decision with input as with_input(patch)
+	result.policy_id == "MCP-SHADOW-001"
+}
+
+# 관리대장 추적성: 새 정책도 통합관리대장 V1.0의 실제 행을 가리켜야 한다.
+test_new_policies_carry_register_ids if {
+	some pid in ["MCP-TRANSPORT-001", "MCP-EGRESS-001", "P-UNTRUSTED-CONTENT-001", "P-ANOMALY-001", "MCP-SHADOW-002"]
+	entry := data.policy_ledger[pid]
+	count(entry.risk_ids) > 0
+	count(entry.control_ids) > 0
+	startswith(entry.control_ids[0], "CTL-")
+	entry.pac_candidate_id != ""
 }

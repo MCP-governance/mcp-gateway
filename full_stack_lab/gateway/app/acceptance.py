@@ -22,8 +22,12 @@ from .core import (RATE_LIMIT_CALLS, IMPORTANT_BURST_LIMIT, _policy, _recent_act
                    approve_request, execute_call, set_enforcement_mode, supply_chain_coverage,
                    verify_audit_chain)
 
-API = "http://gateway:8080"
-EMAILS = {"partner-demo": "partner@bob.local", "emp-demo": "miso@bob.local", "admin-demo": "admin@bob.local"}
+# 주소를 코드에 박아두면 compose 바깥(네이티브 실행, CI 러너)에서 acceptance가
+# "정책 실패"가 아니라 DNS 실패로 끝난다. 기본값은 compose 서비스 이름 그대로다.
+API = os.getenv("GATEWAY_URL", "http://gateway:8080").rstrip("/")
+SSE_URL = os.getenv("GATEWAY_SSE_URL", "http://gateway-sse:8081/sse")
+UPSTREAM_ENDPOINT_REF = os.getenv("HTTP_MCP_URL", "http://mock-http-mcp:9000/mcp/")
+EMAILS = {"partner-demo": "nkk@bob.local", "emp-demo": "miso@bob.local", "admin-demo": "kkg@bob.local"}
 
 
 TOKENS: dict[str, str] = {}
@@ -260,7 +264,7 @@ async def endpoint_plane_checks() -> list[dict]:
         await endpoint_plane.enroll(endpoint, "acceptance-host", "linux", "1.0.0", "emp-demo")
         result = await endpoint_plane.ingest(endpoint, [
             {"config_path": "/tmp/claude_desktop_config.json", "server_label": "합성 문서 MCP",
-             "transport": "streamable-http", "endpoint_ref": "http://mock-http-mcp:9000/mcp/"},
+             "transport": "streamable-http", "endpoint_ref": UPSTREAM_ENDPOINT_REF},
             {"config_path": "/tmp/claude_desktop_config.json", "server_label": "local-notes",
              "transport": "stdio", "endpoint_ref": "npx -y @example/notes-mcp"},
         ])
@@ -282,7 +286,7 @@ async def endpoint_plane_checks() -> list[dict]:
         # 해소돼도 모집단이 영원히 확정되지 않는다.
         replaced = await endpoint_plane.ingest(endpoint, [
             {"config_path": "/tmp/claude_desktop_config.json", "server_label": "합성 문서 MCP",
-             "transport": "streamable-http", "endpoint_ref": "http://mock-http-mcp:9000/mcp/"},
+             "transport": "streamable-http", "endpoint_ref": UPSTREAM_ENDPOINT_REF},
         ])
         checks.append(check(replaced["removed"] == 1 and replaced["counts"]["shadow"] == 0,
                             "endpoint-report-replaces-previous", f"removed={replaced['removed']}"))
@@ -402,7 +406,7 @@ async def run() -> dict:
         await db.execute("DELETE FROM supply_chain_reports WHERE scanner='acceptance-fixture'")
 
     async with httpx2.AsyncClient(headers=bearer("partner-demo"), timeout=30) as http_client:
-        async with Client(streamable_http_client("http://gateway:8080/mcp/", http_client=http_client)) as client:
+        async with Client(streamable_http_client(API + "/mcp/", http_client=http_client)) as client:
             tools = await client.list_tools()
             protocol_version = str(client.protocol_version)
             result = await client.call_tool("read_document", {"document_id": "notice-001"})
@@ -427,7 +431,7 @@ async def run() -> dict:
     # No Authorization header at all: the ingress must refuse rather than fall back
     # to a default principal.
     async with httpx2.AsyncClient(timeout=30) as http_client:
-        async with Client(streamable_http_client("http://gateway:8080/mcp/", http_client=http_client)) as client:
+        async with Client(streamable_http_client(API + "/mcp/", http_client=http_client)) as client:
             try:
                 anonymous_call = await client.call_tool("read_document", {"document_id": "notice-001"})
                 anonymous_refused = bool(anonymous_call.is_error)
@@ -435,14 +439,21 @@ async def run() -> dict:
                 anonymous_refused = True
     checks.append(check(anonymous_refused, "mcp-ingress-identity-required", "unauthenticated tools/call refused"))
 
+    # 부모 환경을 물려준다. env를 통째로 갈아끼우면 자식이 DATABASE_URL·OPA_URL을
+    # 잃고 기본값으로 떨어져, 이 시험이 stdio ingress가 아니라 환경변수가 컨테이너
+    # 기본값과 같은지를 재게 된다.
     parameters = StdioServerParameters(command=sys.executable, args=["-m", "app.stdio_entry"],
-                                       env={"GATEWAY_STDIO_PRINCIPAL": "partner-demo"})
+                                       env={**os.environ, "GATEWAY_STDIO_PRINCIPAL": "partner-demo"})
     async with Client(parameters) as client:
         result = await client.call_tool("read_document", {"document_id": "notice-001"})
         structured = tool_payload(result)
     checks.append(check(not result.is_error and structured["decision"] == "Allow", "stdio-ingress", "identity bound at spawn time"))
 
-    unbound = StdioServerParameters(command=sys.executable, args=["-m", "app.stdio_entry"])
+    # 신원만 빼고 나머지는 같은 환경이다. 그래야 "신원이 없어서 거부됐다"와
+    # "DB에 못 붙어서 죽었다"가 구분된다.
+    unbound_env = {key: value for key, value in os.environ.items() if key != "GATEWAY_STDIO_PRINCIPAL"}
+    unbound = StdioServerParameters(command=sys.executable, args=["-m", "app.stdio_entry"],
+                                    env=unbound_env)
     async with Client(unbound) as client:
         try:
             unbound_call = await client.call_tool("read_document", {"document_id": "notice-001"})
@@ -511,7 +522,7 @@ async def run() -> dict:
         statuses = [(await client.post(API + "/api/session", json={
             "email": "nobody@bob.local", "password": "wrong"})).status_code for _ in range(12)]
         successful = [(await client.post(API + "/api/session", json={
-            "email": "partner@bob.local", "password": os.getenv("MOCK_SSO_PASSWORD", "test-password")})).status_code for _ in range(12)]
+            "email": "nkk@bob.local", "password": os.getenv("MOCK_SSO_PASSWORD", "test-password")})).status_code for _ in range(12)]
     checks.append(check(429 in statuses, "login-attempt-ceiling", f"statuses={sorted(set(statuses))}"))
     checks.append(check(all(status == 200 for status in successful), "successful-login-not-throttled", f"statuses={sorted(set(successful))}"))
 
@@ -637,7 +648,7 @@ async def run() -> dict:
         append_only = True
     checks.append(check(append_only, "audit-append-only", "gateway 계정은 decisions를 수정할 수 없음"))
 
-    async with Client(sse_client("http://gateway-sse:8081/sse", headers=bearer("partner-demo"))) as client:
+    async with Client(sse_client(SSE_URL, headers=bearer("partner-demo"))) as client:
         result = await client.call_tool("read_document", {"document_id": "notice-001"})
         structured = tool_payload(result)
     checks.append(check(not result.is_error and structured["decision"] == "Allow", "legacy-sse-ingress", "compatibility adapter"))
@@ -645,6 +656,19 @@ async def run() -> dict:
     checks.extend(await termination_checks())
     checks.extend(await drill_checks())
     checks.extend(await endpoint_plane_checks())
+
+    # CTL-28. 인가 거부가 창 안에서 상한을 넘으면 같은 권한의 같은 호출이어도
+    # 증적이 올라가야 한다. 이 시험이 없으면 정책을 좁히다가 조용히 죽일 수 있다.
+    # 막지 않는다는 것도 함께 확인한다 - 막으면 오조작이 계정 정지가 된다.
+    #
+    # 맨 끝에 두는 이유: decisions는 append-only라 이 시험이 만든 이력을 되돌릴 수
+    # 없고, 그 이력이 같은 주체의 뒤 시험 판정을 바꾼다.
+    for _ in range(6):
+        await post("/api/calls", {"tool_name": "read_document", "document_id": "secret-001"}, "partner-demo")
+    anomalous = await post("/api/calls", {"tool_name": "read_document", "document_id": "notice-001"}, "partner-demo")
+    checks.append(check(anomalous["policy_id"] == "P-ANOMALY-001" and anomalous["decision"] == "Alert"
+                        and anomalous["upstream_executed"] is True,
+                        "anomaly-streak-raises-evidence", anomalous["policy_id"]))
 
     return {
         "status": "PASS",

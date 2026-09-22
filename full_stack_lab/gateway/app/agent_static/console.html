@@ -1,265 +1,451 @@
 <!doctype html>
-<html lang="ko">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MCP Governance Console</title>
-    <link rel="stylesheet" href="/static/console.css" />
-  </head>
-  <body class="console-page">
-    <header class="console-header">
-      <a class="console-brand" href="#/execution" aria-label="MCP Governance Console 홈">MCP<span>GOVERNANCE</span></a>
-      <div class="header-actions">
-        <span id="connection-state" class="connection-state"><i></i><b>확인 중</b></span>
-        <div class="viewer"><span id="viewer-name">사용자</span><small id="viewer-role">권한 확인 중</small></div>
-        <button id="theme-toggle" class="icon-button" type="button" aria-label="화면 테마 전환" title="화면 테마 전환">◐</button>
-        <button id="logout-button" class="ghost-button" type="button">로그아웃</button>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <title>MCP Governance Console</title>
+  <link rel="stylesheet" href="/static/console.css" />
+</head>
+<body>
+  <div class="shell">
+    <div class="brand">
+      <b>MCP Governance</b>
+      <span>판정 기록부</span>
+    </div>
+
+    <header class="topbar">
+      <span class="wire" id="wire" data-state=""><i></i><b>확인 중</b></span>
+      <span class="tag" id="mode-tag" hidden></span>
+      <div class="who">
+        <b id="who-name">사용자</b>
+        <span id="who-role">권한 확인 중</span>
       </div>
+      <button class="icon-btn" id="theme" type="button" aria-label="화면 테마 전환" title="화면 테마 전환">◐</button>
+      <button class="btn" id="logout" type="button">로그아웃</button>
     </header>
 
-    <div class="console-layout">
-      <aside class="side-nav" aria-label="메뉴">
-        <nav id="side-nav-list"></nav>
-      </aside>
+    <nav class="rail" id="rail" aria-label="주 메뉴"></nav>
 
-      <main class="console-main">
-        <div id="toasts" class="toasts" aria-live="polite"></div>
+    <main class="main">
+      <div class="toasts" id="toasts" aria-live="polite"></div>
 
-        <section class="view hidden" data-view="overview">
-          <div class="page-heading">
-            <div><p class="eyebrow">Overview</p><h1>운영 현황</h1></div>
-            <button id="refresh-console" class="ghost-button" type="button">새로고침</button>
+      <!-- ── 운영 현황 ─────────────────────────────────────────────────── -->
+      <section class="view" data-view="overview" aria-labelledby="h-overview">
+        <div class="head">
+          <div>
+            <h1 id="h-overview">운영 현황</h1>
+            <p>지금 이 강제 경로를 지나간 호출과 그 판정입니다. 이 목록에 없는 호출은 게이트웨이를 지나지 않은 것입니다.</p>
           </div>
-          <!-- 숫자만 있는 대시보드는 "지금 무엇을 해야 하는가"에 답하지 못한다.
-               카드보다 위에 둔다. -->
-          <div id="action-banner" class="action-banner" aria-live="polite"></div>
-          <div id="overview-cards" class="metric-grid" aria-live="polite"></div>
-          <article class="panel">
-            <div class="panel-heading">
-              <h2>실시간 정책 판정</h2>
-              <span id="live-state" class="live-state"><i></i>대기</span>
-            </div>
-            <div id="live-sparkline" class="sparkline" aria-hidden="true"></div>
-            <ol id="live-feed" class="live-feed"></ol>
-          </article>
-          <div class="content-grid split-wide">
-            <article class="panel">
-              <div class="panel-heading"><h2>등록 MCP</h2><button id="refresh-registry" class="text-action" type="button">Catalog 비교</button></div>
-              <div id="registry-summary" class="server-list"></div>
-            </article>
-            <article class="panel">
-              <div class="panel-heading"><h2>판정 분포</h2><span id="decision-total" class="count">0</span></div>
-              <div id="decision-chart" class="bar-chart" aria-label="정책 판정 분포"></div>
-            </article>
+          <div class="head-actions">
+            <button class="btn" id="refresh" type="button">새로고침</button>
           </div>
-          <article class="panel">
-            <div class="panel-heading"><h2>집행 모드</h2><span id="enforcement-badge" class="tag">-</span></div>
-            <div id="enforcement-body" class="enforcement-body"></div>
-          </article>
+        </div>
+
+        <div class="notice" id="banner" role="status"></div>
+
+        <section class="stream" aria-label="실시간 판정">
+          <div class="stream-head">
+            <h2>실시간 판정</h2>
+            <span class="count" id="stream-count">0</span>
+            <span class="wire" id="stream-wire" data-state=""><i></i><b>대기</b></span>
+          </div>
+          <div class="strip" id="strip" aria-hidden="true"></div>
+          <ol class="feed" id="feed"></ol>
         </section>
 
-        <section class="view hidden" data-view="intake">
-          <div class="page-heading"><div><p class="eyebrow">Intake</p><h1>MCP 도입</h1></div></div>
+        <dl class="figures" id="figures" style="margin-top:20px"></dl>
 
-          <article class="panel">
-            <div class="panel-heading"><h2>먼저 찾아보기</h2><span class="hint">같은 저장소를 다시 신청하기 전에 확인합니다</span></div>
-            <div class="search-row">
-              <input id="catalog-search" type="search" placeholder="저장소 URL 또는 이름 (예: ida-pro-mcp)" maxlength="120" />
-              <button id="catalog-search-button" class="ghost-button" type="button">검색</button>
-            </div>
-            <div id="catalog-results" class="catalog-results"></div>
+        <div class="grid" data-cols="2">
+          <article class="block">
+            <header>
+              <h2>판정 분포</h2>
+              <span class="spacer"></span>
+              <span class="count" id="dist-total">0</span>
+            </header>
+            <div class="body"><div class="bars" id="dist"></div></div>
           </article>
 
-          <div class="content-grid intake-layout">
-            <form id="intake-form" class="panel intake-form" novalidate>
-              <h2>새 요청</h2>
-              <label>표시 이름<input name="display_name" minlength="2" maxlength="80" placeholder="예: 사내 검색 MCP" required /><small class="field-error" data-error="display_name"></small></label>
-              <label>GitHub 저장소 URL<input name="repository_url" type="url" maxlength="300" placeholder="https://github.com/organization/repository" required /><small class="field-error" data-error="repository_url"></small></label>
-              <label>예정 전송 방식<select name="requested_transport"><option value="streamable-http">Streamable HTTP</option><option value="stdio">stdio</option><option value="sse">Legacy SSE</option></select></label>
-              <label>도입 목적<textarea name="purpose" rows="5" minlength="10" maxlength="1000" placeholder="사용 목적, 접근 데이터, 예상 도구" required></textarea><small class="field-hint"><span id="purpose-count">0</span> / 1000 · 최소 10자<span class="field-error" data-error="purpose"></span></small></label>
-              <fieldset class="exit-terms">
-                <legend>종료 조건 (계약·조달에서 확인한 것)</legend>
-                <p class="field-hint">이 증거들은 <b>소급 확보가 어렵습니다.</b> 들일 때 약속받지 못하면 끊을 때 잔존 범위를 산정할 수 없습니다.</p>
-                <label class="check"><input type="checkbox" name="provider_credential_disclosure" /><span>제공자가 <b>하위 시스템에 보유한 위임 자격</b>을 고지한다</span></label>
-                <label class="check"><input type="checkbox" name="revocation_evidence" /><span>폐기 처리 결과를 <b>대상·시점이 특정된 기록</b>으로 제출한다</span></label>
-                <label class="check"><input type="checkbox" name="audit_access_retained" /><span>이용 종료 후에도 합의 기간 동안 <b>감사 기록에 접근</b>할 수 있다</span></label>
-                <p id="exit-terms-verdict" class="field-hint"></p>
+          <article class="block">
+            <header>
+              <h2>등록 MCP</h2>
+              <span class="spacer"></span>
+              <button class="link-btn" id="catalog-refresh" type="button">Catalog 대조</button>
+            </header>
+            <div class="body flush"><ul class="items" id="registry"></ul></div>
+          </article>
+        </div>
+
+        <article class="block">
+          <header>
+            <h2>집행 모드</h2>
+            <span class="spacer"></span>
+            <span class="tag" id="enforce-tag">-</span>
+          </header>
+          <div class="body" id="enforce"></div>
+        </article>
+      </section>
+
+      <!-- ── 도입 ──────────────────────────────────────────────────────── -->
+      <section class="view" data-view="intake" aria-labelledby="h-intake">
+        <div class="head">
+          <div>
+            <h1 id="h-intake">MCP 도입</h1>
+            <p>같은 저장소를 두 사람이 따로 신청하지 않도록, 신청 전에 이미 심사된 것이 있는지 먼저 찾습니다.</p>
+          </div>
+        </div>
+
+        <article class="block">
+          <header><h2>먼저 찾아보기</h2><span class="hint">저장소 URL 또는 이름</span></header>
+          <div class="body">
+            <div class="row">
+              <input class="grow" id="q" type="search" placeholder="예: github.com/org/some-mcp" maxlength="120" />
+              <button class="btn" id="q-go" type="button">검색</button>
+            </div>
+            <div id="q-out" style="margin-top:12px"></div>
+          </div>
+        </article>
+
+        <div class="grid" data-cols="2">
+          <form class="block" id="intake-form" novalidate>
+            <header><h2>새 요청</h2></header>
+            <div class="body">
+              <label class="field"><span>표시 이름</span>
+                <input name="display_name" maxlength="200" required placeholder="예: Notes MCP" />
+              </label>
+              <label class="field"><span>저장소 URL</span>
+                <input name="repository_url" type="url" maxlength="300" required placeholder="https://github.com/org/repo" />
+                <em class="err" data-err="repository_url"></em>
+              </label>
+              <label class="field"><span>전송 방식</span>
+                <select name="requested_transport">
+                  <option value="streamable-http">streamable-http</option>
+                  <option value="sse">sse</option>
+                  <option value="stdio">stdio</option>
+                </select>
+              </label>
+              <label class="field"><span>도입 목적</span>
+                <textarea name="purpose" rows="5" minlength="10" maxlength="1000"
+                  placeholder="사용 목적, 접근할 데이터, 예상 도구"></textarea>
+                <em class="hintline"><b id="purpose-n">0</b> / 1000 · 최소 10자</em>
+                <em class="err" data-err="purpose"></em>
+              </label>
+              <fieldset>
+                <legend>종료 조건 (제공자 고지)</legend>
+                <label class="check"><input type="checkbox" name="provider_credential_disclosure" /> 하위 위임 자격 고지</label><br />
+                <label class="check"><input type="checkbox" name="revocation_evidence" /> 회수 증적 제공</label><br />
+                <label class="check"><input type="checkbox" name="audit_access_retained" /> 종료 후 감사 접근 유지</label>
+                <p class="hintline" id="exit-verdict"></p>
               </fieldset>
-              <button class="solid-button" type="submit">제출</button>
-            </form>
-            <article class="panel">
-              <div class="panel-heading"><h2>내 요청</h2><span id="intake-total" class="count">0</span></div>
-              <div id="intake-list" class="request-list"></div>
-            </article>
-          </div>
-        </section>
-
-        <section class="view hidden" data-view="verification">
-          <div class="page-heading"><div><p class="eyebrow">Validation</p><h1>검증 파이프라인</h1></div><button id="import-evidence" class="ghost-button" type="button">워크스페이스 증적 반영</button></div>
-          <ol class="pipeline" aria-label="도입 검증 단계">
-            <li><span>01</span><b>보류</b><small>URL 등록, 복제 없음</small></li>
-            <li><span>02</span><b>격리 복제</b><small>shallow clone, 실행 없음</small></li>
-            <li><span>03</span><b>SBOM · SCA · SAST</b><small>Syft · Trivy · Semgrep</small></li>
-            <li><span>04</span><b>AI 코드 감사</b><small>선택 · mcp-scan</small></li>
-            <li><span>05</span><b>승인</b><small>Registry 등록 대상 확정</small></li>
-          </ol>
-          <div class="content-grid split-wide">
-            <article class="panel"><div class="panel-heading"><h2>도입 요청 검증 결과</h2><span id="validation-total" class="count">0</span></div><div id="validation-list" class="request-list"></div></article>
-            <article class="panel"><div class="panel-heading"><h2>운영 MCP 공급망 연결</h2></div><div id="coverage-list" class="coverage-list"></div></article>
-          </div>
-        </section>
-
-        <section class="view hidden" data-view="risks">
-          <div class="page-heading"><div><p class="eyebrow">Risk</p><h1>위험 분석</h1></div></div>
-          <div id="risk-cards" class="metric-grid"></div>
-          <article class="panel">
-            <div class="panel-heading"><h2>발견 항목</h2><span id="findings-total" class="count">0</span></div>
-            <div id="finding-filter" class="chip-row"></div>
-            <div class="search-row"><input id="finding-search" type="search" placeholder="내용·파일·규칙으로 거르기" maxlength="80" /></div>
-            <div id="finding-list" class="finding-list"></div>
-          </article>
-        </section>
-
-        <section class="view hidden" data-view="mcpscan">
-          <div class="page-heading"><div><p class="eyebrow">AI Code Audit</p><h1>AI 코드 감사</h1></div><span id="mcpscan-state" class="tag">-</span></div>
-          <article class="panel" id="mcpscan-config">
-            <div class="panel-heading"><h2>실행 조건</h2><button id="mcpscan-test" class="ghost-button" type="button">연결 확인</button></div>
-            <!-- "설정이 있다"와 "실행할 워커가 살아 있다"는 다른 사실이다.
-                 구분하지 못하면 큐에 쌓이기만 하는 상태가 진행 중으로 읽힌다. -->
-            <div id="mcpscan-worker" class="worker-state"></div>
-            <div id="mcpscan-config-body" class="config-body"></div>
-          </article>
-          <article class="panel">
-            <div class="panel-heading"><h2>도입 요청 감사</h2><span class="hint">격리 검증을 통과한 고정 commit을 다시 복제해 실행합니다</span></div>
-            <div id="mcpscan-targets" class="request-list"></div>
-          </article>
-          <article class="panel">
-            <div class="panel-heading"><h2>등록 서버 재감사</h2><span class="hint">심사한 코드와 지금 도는 코드가 갈라졌는지 확인합니다</span></div>
-            <div id="mcpscan-servers" class="request-list"></div>
-          </article>
-          <article class="panel">
-            <div class="panel-heading"><h2>작업 이력</h2><span id="mcpscan-job-total" class="count">0</span></div>
-            <div id="mcpscan-jobs" class="request-list"></div>
-          </article>
-          <article class="panel">
-            <div class="panel-heading"><h2>감사 결과</h2><span id="mcpscan-finding-total" class="count">0</span></div>
-            <div id="mcpscan-findings" class="finding-list"></div>
-          </article>
-        </section>
-
-        <section class="view hidden" data-view="termination">
-          <div class="page-heading">
-            <div><p class="eyebrow">Lifecycle · Termination</p><h1>종료·폐기</h1></div>
-            <span id="termination-total" class="count">0</span>
-          </div>
-          <div id="termination-cards" class="metric-grid"></div>
-          <article class="panel">
-            <div class="panel-heading"><h2>종료 절차 시작</h2></div>
-            <p class="panel-note">시작하는 즉시 이 이용 관계의 호출이 끊깁니다(<code>MCP-DECOMM-001</code>). 회수와 판정은 그다음입니다. 차단을 나중에 하면 회수와 차단 사이에 호출이 성립하는 구간이 생기고, 그 구간이 바로 연속성(C3)이 세는 대상입니다.</p>
-            <form id="termination-form" class="intake-form" novalidate>
-              <label>대상 서버<select name="server_id" required></select></label>
-              <label>이용 관계 표기<input name="engagement_label" type="text" maxlength="300" placeholder="비우면 서버명 · 공급자로 채웁니다" /></label>
-              <label>종료 사유<textarea name="reason" rows="3" minlength="10" maxlength="1000" placeholder="계약 종료, 대체 도입, 위험 판단 등" required></textarea></label>
-              <button class="primary-button" type="submit">종료 절차 시작</button>
-            </form>
-          </article>
-          <article class="panel">
-            <div class="panel-heading"><h2>폐기 드릴</h2><button id="termination-drill" class="ghost-button" type="button">선택한 서버로 계산</button></div>
-            <p class="panel-note">실제로 끊지 않고 <b>도달 가능한 최선 등급</b>을 계산합니다. 증거를 전부 모으고 회수를 전부 마쳐도 T1에 닿지 못하는 서버가 있습니다. 그 사실은 종료를 시작한 뒤에 알면 늦습니다.</p>
-            <div id="termination-drill-result"></div>
-          </article>
-          <article class="panel">
-            <div class="panel-heading"><h2>종료 케이스</h2></div>
-            <div id="termination-list" class="request-list"></div>
-          </article>
-          <article class="panel hidden" id="termination-detail">
-            <div class="panel-heading"><h2>케이스 상세</h2><button id="termination-close-detail" class="text-action" type="button">닫기</button></div>
-            <div id="termination-detail-body"></div>
-            <div id="termination-inline-form" class="inline-form"></div>
-          </article>
-        </section>
-
-        <section class="view hidden" data-view="endpoints">
-          <div class="page-heading">
-            <div><p class="eyebrow">Endpoint Plane</p><h1>엔드포인트</h1></div>
-            <span id="endpoint-total" class="count">0</span>
-          </div>
-          <div id="endpoint-cards" class="metric-grid"></div>
-          <article class="panel">
-            <div class="panel-heading"><h2>보고 중인 엔드포인트</h2></div>
-            <p class="panel-note">이 평면은 아무 호출도 막지 않습니다. 클라이언트 설정에 적힌 MCP 서버 목록을 Registry와 대조해 보고만 합니다. 게이트웨이는 자기를 통과한 호출만 알기 때문에, 강제 경로 밖의 경로는 여기서만 보입니다.</p>
-            <div id="endpoint-agents" class="request-list"></div>
-          </article>
-          <article class="panel">
-            <div class="panel-heading"><h2>설정 인벤토리</h2></div>
-            <div id="endpoint-filter" class="chip-row"></div>
-            <div class="table-wrap"><table><thead><tr><th>분류</th><th>엔드포인트</th><th>설정 파일</th><th>서버 이름</th><th>전송</th><th>주소 / 명령</th><th>대조</th><th>보고</th></tr></thead><tbody id="endpoint-list"></tbody></table></div>
-          </article>
-        </section>
-
-        <section class="view hidden" data-view="policy">
-          <div class="page-heading"><div><p class="eyebrow">Policy as Code</p><h1>정책 관리대장</h1></div><span id="ledger-total" class="count">0</span></div>
-          <div id="ledger-cards" class="metric-grid"></div>
-          <article class="panel">
-            <div class="panel-heading"><h2>정책 목록</h2></div>
-            <div class="table-wrap"><table><thead><tr><th>우선</th><th>Policy ID</th><th>정책명</th><th>버전</th><th>상태</th><th>집행</th><th>판단</th><th>Risk / Control</th><th>예외</th></tr></thead><tbody id="ledger-list"></tbody></table></div>
-          </article>
-          <article class="panel">
-            <div class="panel-heading"><h2>예외 관리대장</h2><span id="exception-total" class="count">0</span></div>
-            <div id="exception-list" class="request-list"></div>
-          </article>
-        </section>
-
-        <section class="view hidden" data-view="accounts">
-          <div class="page-heading"><div><p class="eyebrow">Identity</p><h1>신원 관리대장</h1></div><span id="accounts-total" class="count">0</span></div>
-          <article class="panel">
-            <p>역할과 계정 상태는 애플리케이션 상수가 아니라 이 관리대장에 있습니다. 여기서 <b>중지</b>하면 그 사람이 이미 들고 있는 인증도 다음 요청부터 막힙니다. 토큰 만료를 기다리는 정지는 정지가 아닙니다.</p>
-          </article>
-          <article class="panel">
-            <div class="panel-heading"><h2>계정</h2><span class="hint">비밀번호 해시는 응답에 포함되지 않습니다</span></div>
-            <div class="table-wrap"><table><thead><tr><th>이메일</th><th>이름</th><th>역할</th><th>부서 / 직책</th><th>사번</th><th>상태</th><th>변경</th><th>조치</th></tr></thead><tbody id="accounts-list"></tbody></table></div>
-          </article>
-        </section>
-
-        <section class="view hidden" data-view="execution">
-          <div class="page-heading"><div><p class="eyebrow">Execution</p><h1>MCP 실행</h1></div></div>
-          <div class="content-grid execution-layout">
-            <article class="panel">
-              <div id="execution-examples" class="chip-row"></div>
-              <label class="field-label" for="prompt">업무 요청</label>
-              <textarea id="prompt" rows="7" maxlength="2000" placeholder="예: 공개 문서를 읽어줘"></textarea>
-              <div class="button-row"><button id="send-button" class="solid-button" type="button">정책 검증 후 실행</button><button id="new-session" class="ghost-button" type="button">새 세션</button><span class="hint">Ctrl/⌘ + Enter</span></div>
-            </article>
-            <article id="result-panel" class="panel">
-              <div class="panel-heading"><h2 id="result-title">실행 결과</h2><span id="result-decision" class="tag">-</span></div>
-              <p id="result-message">요청을 입력하면 정책 판정과 실행 증적이 표시됩니다.</p>
-              <dl id="result-facts" class="result-facts"></dl>
-              <button id="approve-button" class="solid-button hidden" type="button">승인 후 재검증</button>
-            </article>
-          </div>
-          <article class="panel hidden" id="approvals-panel">
-            <div class="panel-heading"><h2>승인 대기</h2><span id="approvals-total" class="count">0</span></div>
-            <div id="approvals-list" class="request-list"></div>
-          </article>
-        </section>
-
-        <section class="view hidden" data-view="audit">
-          <div class="page-heading"><div><p class="eyebrow">Audit</p><h1>감사 기록</h1></div><span id="audit-total" class="count">0</span></div>
-          <article class="panel">
-            <div class="search-row">
-              <input id="audit-search" type="search" placeholder="도구·정책·판정으로 거르기" maxlength="80" />
-              <span id="audit-live" class="live-state"><i></i>대기</span>
+              <button class="btn" data-tone="primary" type="submit">요청 제출</button>
             </div>
-            <div class="table-wrap"><table><thead><tr><th class="sortable desc" data-sort="created_at">시간</th><th class="sortable" data-sort="user_token">요청자</th><th class="sortable" data-sort="tool_name">도구</th><th class="sortable" data-sort="data_class">등급 / 행위</th><th class="sortable" data-sort="decision">판정</th><th>적용 정책 · 버전 · 예외 · 경합</th><th class="sortable" data-sort="upstream_executed">실행</th><th>Trace</th></tr></thead><tbody id="audit-list"></tbody></table></div>
-            <div class="table-more"><button id="audit-more" class="ghost-button hidden" type="button">더 보기</button></div>
+          </form>
+
+          <article class="block">
+            <header><h2>내 요청</h2><span class="spacer"></span><span class="count" id="intake-n">0</span></header>
+            <div class="body flush"><ul class="items" id="intake-list"></ul></div>
           </article>
-          <article class="panel hidden" id="audit-chain-panel">
-            <div class="panel-heading"><h2>감사 체인 무결성</h2><button id="verify-chain" class="ghost-button" type="button">검증</button></div>
-            <div id="chain-result" class="chain-result">아직 확인하지 않았습니다.</div>
+        </div>
+      </section>
+
+      <!-- ── 검증 ──────────────────────────────────────────────────────── -->
+      <section class="view" data-view="verification" aria-labelledby="h-verification">
+        <div class="head">
+          <div>
+            <h1 id="h-verification">검증 파이프라인</h1>
+            <p>격리 워커가 고정 commit을 다시 복제해 검사합니다. 검사하지 않은 것은 승인할 수 없습니다.</p>
+          </div>
+          <div class="head-actions">
+            <button class="btn" id="import-evidence" type="button">워크스페이스 증적 반영</button>
+          </div>
+        </div>
+        <dl class="figures" id="verify-figures"></dl>
+        <div class="grid" data-cols="2">
+          <article class="block">
+            <header><h2>도입 요청 검증</h2><span class="spacer"></span><span class="count" id="verify-n">0</span></header>
+            <div class="body flush"><ul class="items" id="verify-list"></ul></div>
           </article>
-        </section>
-      </main>
-    </div>
-    <script src="/static/console.js" defer></script>
-  </body>
+          <article class="block">
+            <header><h2>운영 MCP 공급망 연결</h2></header>
+            <div class="body flush"><ul class="items" id="coverage-list"></ul></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ── 위험 ──────────────────────────────────────────────────────── -->
+      <section class="view" data-view="risks" aria-labelledby="h-risks">
+        <div class="head">
+          <div>
+            <h1 id="h-risks">위험 분석</h1>
+            <p>스캐너가 찾은 것과 그것이 어느 통제로 이어지는지입니다.</p>
+          </div>
+        </div>
+        <dl class="figures" id="risk-figures"></dl>
+        <article class="block">
+          <header>
+            <h2>발견 항목</h2>
+            <span class="spacer"></span>
+            <span class="count" id="find-n">0</span>
+          </header>
+          <div class="body">
+            <div class="row" style="margin-bottom:12px">
+              <div class="tags grow" id="find-filter"></div>
+              <input style="max-width:240px" id="find-q" type="search" placeholder="내용·파일·규칙" maxlength="80" />
+            </div>
+          </div>
+          <div class="body flush scroll"><ul class="items" id="find-list"></ul></div>
+        </article>
+        <article class="block">
+          <header><h2>A.I.G 위험 범주 ↔ 조직 통제</h2><span class="hint">발견을 통제로 잇는 대조표</span></header>
+          <div class="body flush scroll"><table id="aig-table"></table></div>
+        </article>
+      </section>
+
+      <!-- ── AI 코드 감사 ──────────────────────────────────────────────── -->
+      <section class="view" data-view="mcpscan" aria-labelledby="h-mcpscan">
+        <div class="head">
+          <div>
+            <h1 id="h-mcpscan">AI 코드 감사</h1>
+            <p>AI-Infra-Guard mcp-scan. 정적 감사는 고정 commit을, 동적 점검은 지금 그 주소에 있는 것을 봅니다.</p>
+          </div>
+          <div class="head-actions">
+            <span class="tag" id="scan-state">-</span>
+            <button class="btn" id="scan-test" type="button">연결 확인</button>
+          </div>
+        </div>
+        <div class="grid" data-cols="2">
+          <article class="block">
+            <header><h2>실행 조건</h2></header>
+            <div class="body" id="scan-config"></div>
+          </article>
+          <article class="block">
+            <header><h2>격리 워커</h2></header>
+            <div class="body" id="scan-worker"></div>
+          </article>
+        </div>
+        <article class="block">
+          <header><h2>감사 대상</h2><span class="hint">도입 요청과 등록 서버</span></header>
+          <div class="body flush"><ul class="items" id="scan-targets"></ul></div>
+        </article>
+        <article class="block">
+          <header><h2>작업 이력</h2><span class="spacer"></span><span class="count" id="scan-job-n">0</span></header>
+          <div class="body flush scroll"><ul class="items" id="scan-jobs"></ul></div>
+        </article>
+        <article class="block">
+          <header><h2>감사 결과</h2><span class="spacer"></span><span class="count" id="scan-find-n">0</span></header>
+          <div class="body flush scroll"><ul class="items" id="scan-finds"></ul></div>
+        </article>
+      </section>
+
+      <!-- ── 엔드포인트 평면 ───────────────────────────────────────────── -->
+      <section class="view" data-view="endpoints" aria-labelledby="h-endpoints">
+        <div class="head">
+          <div>
+            <h1 id="h-endpoints">엔드포인트 평면</h1>
+            <p>게이트웨이는 자기를 지난 호출만 압니다. 지나지 않는 경로는 단말에서만 보이고, 그것을 여기서 셉니다.</p>
+          </div>
+        </div>
+        <dl class="figures" id="ep-figures"></dl>
+
+        <article class="block">
+          <header>
+            <h2>내부망 탐색 범위</h2>
+            <span class="hint">에이전트가 아니라 여기서 정합니다</span>
+          </header>
+          <div class="body">
+            <form id="scan-policy-form">
+              <div class="row">
+                <label class="check"><input type="checkbox" name="enabled" /> 탐색 켜기</label>
+                <label class="check"><input type="checkbox" name="probe_mcp" /> MCP 확인(initialize 1회)</label>
+              </div>
+              <label class="field" style="margin-top:12px"><span>허용 대역 (쉼표 구분, 사설 대역만, 최대 /20)</span>
+                <input name="allowed_cidrs" placeholder="10.10.0.0/24, 192.168.1.0/24" maxlength="300" />
+                <em class="hintline">비우면 루프백만 봅니다. 공인 대역은 게이트웨이와 에이전트 양쪽에서 거절합니다.</em>
+              </label>
+              <div class="row">
+                <label class="field grow"><span>포트</span>
+                  <input name="ports" placeholder="3000, 8000, 8080, 9000" maxlength="300" />
+                </label>
+                <label class="field" style="max-width:150px"><span>최대 호스트</span>
+                  <input name="max_hosts" type="number" min="1" max="4096" />
+                </label>
+                <label class="field" style="max-width:150px"><span>연결 대기(ms)</span>
+                  <input name="connect_timeout_ms" type="number" min="50" max="5000" />
+                </label>
+                <label class="field" style="max-width:150px"><span>주기(초)</span>
+                  <input name="interval_seconds" type="number" min="60" max="86400" />
+                </label>
+              </div>
+              <em class="err" data-err="scan-policy"></em>
+              <button class="btn" data-tone="primary" type="submit">범위 저장</button>
+            </form>
+          </div>
+        </article>
+
+        <article class="block">
+          <header>
+            <h2>장치 자격</h2>
+            <span class="hint">에이전트는 관리자 계정으로 로그인하지 않습니다</span>
+            <span class="spacer"></span>
+            <button class="link-btn" id="device-new" type="button">+ 장치 발급</button>
+          </header>
+          <div class="body" id="device-form-wrap" hidden>
+            <form id="device-form">
+              <div class="row">
+                <label class="field grow"><span>엔드포인트 ID</span>
+                  <input name="endpoint_id" required maxlength="120" placeholder="endpoint-ysg-laptop" />
+                </label>
+                <label class="field grow"><span>호스트명</span>
+                  <input name="hostname" required maxlength="200" placeholder="ysg-laptop" />
+                </label>
+                <label class="field grow"><span>소유자</span>
+                  <select name="owner_token" id="device-owner"></select>
+                </label>
+              </div>
+              <div class="row">
+                <label class="check"><input type="checkbox" name="inventory" checked /> 설정 인벤토리 보고</label>
+                <label class="check"><input type="checkbox" name="netscan" /> 내부망 탐색 보고</label>
+              </div>
+              <em class="err" data-err="device"></em>
+              <div class="row" style="margin-top:12px">
+                <button class="btn" data-tone="primary" type="submit">발급</button>
+                <button class="btn" type="button" id="device-cancel">취소</button>
+              </div>
+              <div class="secret" id="device-secret" hidden></div>
+            </form>
+          </div>
+          <div class="body flush"><ul class="items" id="device-list"></ul></div>
+        </article>
+
+        <article class="block">
+          <header>
+            <h2>망에서 관측된 MCP 리스너</h2>
+            <span class="hint">설정 파일에 없어도 떠 있으면 경로입니다</span>
+            <span class="spacer"></span>
+            <span class="count" id="listener-n">0</span>
+          </header>
+          <div class="body flush scroll"><table id="listener-table"></table></div>
+        </article>
+
+        <article class="block">
+          <header>
+            <h2>클라이언트 설정 인벤토리</h2>
+            <span class="spacer"></span>
+            <span class="count" id="inv-n">0</span>
+          </header>
+          <div class="body flush scroll"><table id="inv-table"></table></div>
+        </article>
+      </section>
+
+      <!-- ── 종료·폐기 ─────────────────────────────────────────────────── -->
+      <section class="view" data-view="termination" aria-labelledby="h-termination">
+        <div class="head">
+          <div>
+            <h1 id="h-termination">종료·폐기</h1>
+            <p>종료 개시가 곧 차단입니다. C1~C4를 채워야 T1이 되고, 채우지 못한 것은 T3로 남습니다.</p>
+          </div>
+        </div>
+        <div class="notice" id="term-banner"></div>
+        <div class="grid" data-cols="2">
+          <article class="block">
+            <header><h2>케이스</h2><span class="spacer"></span><span class="count" id="term-n">0</span></header>
+            <div class="body flush"><ul class="items" id="term-list"></ul></div>
+          </article>
+          <article class="block">
+            <header><h2>케이스 상세</h2></header>
+            <div class="body" id="term-detail"><p class="empty">케이스를 고르세요.</p></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ── 정책 ──────────────────────────────────────────────────────── -->
+      <section class="view" data-view="policy" aria-labelledby="h-policy">
+        <div class="head">
+          <div>
+            <h1 id="h-policy">정책 관리대장</h1>
+            <p>지금 집행 중인 정책과 그것이 구현하는 위험·요구사항·통제입니다. 대장에 없는 정책은 판단에 관여할 수 없습니다.</p>
+          </div>
+        </div>
+        <dl class="figures" id="policy-figures"></dl>
+        <article class="block">
+          <header><h2>333 권한 격자</h2><span class="hint">역할 3 × 등급 3 × 행위 3</span></header>
+          <div class="body" id="matrix"></div>
+        </article>
+        <article class="block">
+          <header>
+            <h2>정책</h2>
+            <span class="spacer"></span>
+            <input style="max-width:260px" id="policy-q" type="search" placeholder="정책·통제·위험 ID" maxlength="60" />
+          </header>
+          <div class="body flush scroll"><table id="policy-table"></table></div>
+        </article>
+        <article class="block">
+          <header><h2>예외 관리대장</h2><span class="spacer"></span><span class="count" id="exc-n">0</span></header>
+          <div class="body flush"><ul class="items" id="exc-list"></ul></div>
+        </article>
+      </section>
+
+      <!-- ── 신원 ──────────────────────────────────────────────────────── -->
+      <section class="view" data-view="accounts" aria-labelledby="h-accounts">
+        <div class="head">
+          <div>
+            <h1 id="h-accounts">신원 관리대장</h1>
+            <p>계정 상태는 매 요청마다 확인됩니다. 여기서 끄면 이미 발급된 인증도 다음 요청에서 막힙니다.</p>
+          </div>
+        </div>
+        <div class="block">
+          <div class="body flush"><table id="account-table"></table></div>
+        </div>
+      </section>
+
+      <!-- ── 실행 ──────────────────────────────────────────────────────── -->
+      <section class="view" data-view="execution" aria-labelledby="h-execution">
+        <div class="head">
+          <div>
+            <h1 id="h-execution">도구 실행</h1>
+            <p>모델이 제안하고 게이트웨이가 판정합니다. 모델이 무엇을 제안하든 판정은 정책이 합니다.</p>
+          </div>
+        </div>
+        <article class="block">
+          <header><h2>요청</h2><span class="spacer"></span><span class="tag" id="model-tag">-</span></header>
+          <div class="body">
+            <div class="row">
+              <input class="grow" id="ask" placeholder="예: 공개 공지 문서 notice-001 을 읽어줘" maxlength="500" />
+              <button class="btn" data-tone="primary" id="ask-go" type="button">보내기</button>
+            </div>
+            <p class="hintline">합성 데이터만 사용합니다. 실제 개인정보를 입력하지 마세요.</p>
+          </div>
+        </article>
+        <article class="block">
+          <header><h2>기록</h2></header>
+          <div class="talk" id="talk"><p class="empty">아직 요청이 없습니다.</p></div>
+        </article>
+      </section>
+
+      <!-- ── 감사 ──────────────────────────────────────────────────────── -->
+      <section class="view" data-view="audit" aria-labelledby="h-audit">
+        <div class="head">
+          <div>
+            <h1 id="h-audit">감사 기록</h1>
+            <p>요청·판정·실행 여부가 해시 연쇄로 묶입니다. 실행 확인 / 미실행 / 실행 여부 미확인은 서로 다른 상태입니다.</p>
+          </div>
+          <div class="head-actions">
+            <button class="btn" id="verify-chain" type="button">연쇄 검증</button>
+          </div>
+        </div>
+        <div class="notice" id="chain-out"></div>
+        <article class="block">
+          <header>
+            <h2>판정 기록</h2>
+            <span class="spacer"></span>
+            <input style="max-width:240px" id="audit-q" type="search" placeholder="도구·정책·주체" maxlength="60" />
+          </header>
+          <div class="body flush scroll"><table id="audit-table"></table></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/console.js" type="module"></script>
+</body>
 </html>

@@ -138,10 +138,17 @@ CREATE TABLE IF NOT EXISTS supply_chain_reports (
 -- 합성 계정. 비밀번호는 기동할 때 agent-service가 MOCK_SSO_PASSWORD로 채운다
 -- (agent_tables.sql의 bootstrap). 해시를 SQL에 박아두면 .env로 바꿀 수 없다.
 INSERT INTO principals(token, user_id, email, display_name, role, department, employee_no, job_title) VALUES
-  ('partner-demo', 'user-partner-001', 'partner@bob.local', '협력업체 김민수', 'partner', '협력사 A', 'EXT-001', '협력업체 담당'),
-  ('emp-demo',     'user-test-001',    'miso@bob.local',    '김미소',           'employee', '보안기술팀', 'EMP-001', '보안기술팀 사원'),
-  ('admin-demo',   'user-admin-001',   'admin@bob.local',   '관리자 박지훈',    'admin', '거버넌스팀', 'EMP-002', '거버넌스팀 관리자')
-ON CONFLICT (token) DO NOTHING;
+  ('admin-demo',   'user-admin-001',   'kkg@bob.local',  '김경곤', 'admin',    '거버넌스팀',   'EMP-001', '거버넌스팀 관리자'),
+  ('admin-mks',    'user-admin-002',   'mks@bob.local',  '문광석', 'admin',    '보안운영팀',   'EMP-002', '보안운영팀 관리자'),
+  ('emp-pse',      'user-emp-001',     'pse@bob.local',  '박소은', 'employee', '보안기술팀',   'EMP-101', '보안기술팀 사원'),
+  ('emp-demo',     'user-test-001',    'miso@bob.local', '김미소', 'employee', '보안기술팀',   'EMP-102', '보안기술팀 사원'),
+  ('emp-ysg',      'user-emp-003',     'ysg@bob.local',  '양승권', 'employee', '플랫폼개발팀', 'EMP-103', '플랫폼개발팀 사원'),
+  ('emp-jwj',      'user-emp-004',     'jwj@bob.local',  '정원재', 'employee', '데이터분석팀', 'EMP-104', '데이터분석팀 사원'),
+  ('partner-demo', 'user-partner-001', 'nkk@bob.local',  '권노경', 'partner',  '협력사 A',     'EXT-001', '협력사 직원')
+ON CONFLICT (token) DO UPDATE SET
+  user_id=EXCLUDED.user_id, email=EXCLUDED.email, display_name=EXCLUDED.display_name,
+  role=EXCLUDED.role, department=EXCLUDED.department, employee_no=EXCLUDED.employee_no,
+  job_title=EXCLUDED.job_title;
 
 INSERT INTO documents(id, title, data_class, classification_source, classification_version, owner_department) VALUES
   ('notice-001', '서비스 공개 공지', 'public', 'manual-registry', 'demo-v1', NULL),
@@ -154,7 +161,7 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO mcp_servers(id, display_name, transport, endpoint, source_url, source_ref, supplier, license, status, status_reason) VALUES
   ('mock-http', '합성 문서 MCP', 'Streamable HTTP', 'http://mock-http-mcp:9000/mcp/', 'local://full_stack_lab/mock_server', 'demo-v1', 'MCP Governance Demo', 'MIT', 'READY', 'Git에 고정한 승인 계약과 비교'),
-  ('mock-stdio', 'Time MCP', 'stdio', 'python -m mcp_server_time', 'https://github.com/modelcontextprotocol/servers', 'mcp-server-time', 'Model Context Protocol', 'MIT', 'READY', '허용 명령과 인자를 고정'),
+  ('mock-stdio', 'Time MCP', 'stdio', 'python -m mcp_server_time --local-timezone UTC', 'https://github.com/modelcontextprotocol/servers', 'mcp-server-time', 'Model Context Protocol', 'MIT', 'READY', '허용 명령과 인자를 고정'),
   ('github', 'GitHub MCP Server', 'Streamable HTTP', 'https://api.githubcopilot.com/mcp/', 'https://github.com/github/github-mcp-server', 'v1.12.1', 'GitHub', 'MIT', 'DISABLED', '인증정보를 저장하지 않아 의도적으로 비활성')
 ON CONFLICT (id) DO NOTHING;
 

@@ -27,7 +27,7 @@ EXEMPT = {"/api/session"}
 
 
 def route_auth(tree: ast.Module) -> dict[tuple[str, str], str]:
-    """Map each (method, path) route to 'open', 'user' or 'admin'.
+    """Map each (method, path) route to 'open', 'device', 'user' or 'admin'.
 
     Keyed by method as well as path because one path can carry both an open read and
     a guarded write - /api/enforcement does exactly that - and collapsing them hides
@@ -51,16 +51,27 @@ def route_auth(tree: ast.Module) -> dict[tuple[str, str], str]:
         ]
         if not endpoints:
             continue
-        dependencies = {
-            argument.args[0].id
-            for argument in node.args.defaults + node.args.kw_defaults
-            if isinstance(argument, ast.Call)
-            and isinstance(argument.func, ast.Name)
-            and argument.func.id == "Depends"
-            and argument.args
-            and isinstance(argument.args[0], ast.Name)
-        }
-        level = "admin" if "admin_caller" in dependencies else "user" if "caller" in dependencies else "open"
+        # Depends(caller) 같은 이름 참조와 Depends(endpoint_device("netscan")) 같은
+        # 의존성 팩토리를 함께 읽는다. 후자를 모르면 장치 자격이 걸린 경로가
+        # "무인증"으로 분류되고, 그 목록은 전부라고 읽히므로 틀린 목록이 된다.
+        dependencies = set()
+        for argument in node.args.defaults + node.args.kw_defaults:
+            if not (isinstance(argument, ast.Call)
+                    and isinstance(argument.func, ast.Name)
+                    and argument.func.id == "Depends"
+                    and argument.args):
+                continue
+            inner = argument.args[0]
+            if isinstance(inner, ast.Name):
+                dependencies.add(inner.id)
+            elif isinstance(inner, ast.Call) and isinstance(inner.func, ast.Name):
+                dependencies.add(inner.func.id)
+        level = ("admin" if "admin_caller" in dependencies
+                 else "user" if "caller" in dependencies
+                 # 장치 자격은 사람 자격이 아니지만 무인증도 아니다. 범위가
+                 # scopes로 제한된 별도 자격이라 따로 센다.
+                 else "device" if "endpoint_device" in dependencies
+                 else "open")
         for method, path in endpoints:
             routes[(method, path)] = level
     return routes
@@ -95,7 +106,9 @@ def main() -> None:
         raise SystemExit(1)
 
     guarded = sorted(f"{method.upper()} {path}" for (method, path), level in routes.items() if level != "open")
-    print(f"PASS 무인증 {len(actual)}개가 문서와 일치, 인증 필요 {len(guarded)}개")
+    device = sorted(f"{method.upper()} {path}" for (method, path), level in routes.items() if level == "device")
+    print(f"PASS 무인증 {len(actual)}개가 문서와 일치, 인증 필요 {len(guarded)}개 "
+          f"(그중 장치 자격 {len(device)}개: {', '.join(device)})")
 
 
 if __name__ == "__main__":

@@ -37,6 +37,8 @@ EFFECT_LOG = Path(os.getenv("EFFECT_LOG", "/runtime/upstream-effects.jsonl"))
 REPORT_DIR = Path(os.getenv("REPORT_DIR", "/reports"))
 POLICY_PATH = Path(os.getenv("POLICY_PATH", "/policy/policy.rego"))
 TIME_MCP_PYTHON = os.getenv("TIME_MCP_PYTHON", "/opt/time-mcp/bin/python")
+# 승인 계약 기준선을 재현 가능하게 만드는 고정값. 아래 _client() 주석 참고.
+STDIO_TIME_TZ = os.getenv("STDIO_TIME_TZ", "UTC")
 APPROVAL_TTL_MINUTES = 10
 
 # External names normally match the registered MCP tool. Only this user-facing
@@ -60,6 +62,14 @@ RATE_LIMIT_CALLS = int(os.getenv("RATE_LIMIT_CALLS", "60"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
 IMPORTANT_BURST_LIMIT = int(os.getenv("IMPORTANT_BURST_LIMIT", "10"))
 IMPORTANT_BURST_MINUTES = int(os.getenv("IMPORTANT_BURST_MINUTES", "5"))
+BLOCK_STREAK_LIMIT = int(os.getenv("BLOCK_STREAK_LIMIT", "5"))
+BLOCK_STREAK_MINUTES = int(os.getenv("BLOCK_STREAK_MINUTES", "10"))
+# CTL-28이 보라는 "반복 실패"는 이 사람이 권한 경계를 더듬고 있다는 신호다.
+# 모든 차단을 세면 그 신호가 환경 상태에 묻힌다 - 서버 하나가 드리프트 상태면
+# MCP-CATALOG-001이 모든 사용자에게 걸리고, 그러면 아무 잘못 없는 사람들의 다음
+# 호출이 전부 경보가 된다. 주체에게 귀속되는 인가 거부만 센다.
+DENIAL_POLICIES = ("P-333-DENY-001", "MCP-REPOSITORY-001", "MCP-EGRESS-001",
+                   "P-CLASSIFICATION-001", "P-APPROVAL-EXPIRY-001")
 
 # OPA is a trust boundary too. Only policy fields may enter the execution event;
 # a malformed result must never become Allow through monitor mode.
@@ -97,6 +107,10 @@ class DispatchRejected(RuntimeError):
 
 
 def _configure_tracing() -> Any:
+    # 수집기가 없는 배치(네이티브 실행, 단일 호스트 검증)에서는 매 스팬마다 연결
+    # 실패가 쌓여 실제 오류를 덮는다. OTEL 표준 스위치를 그대로 따른다.
+    if os.getenv("OTEL_SDK_DISABLED", "").strip().lower() in {"1", "true", "yes"}:
+        return trace.get_tracer("mcp-governance.gateway")
     provider = TracerProvider(resource=Resource.create({"service.name": os.getenv("OTEL_SERVICE_NAME", "mcp-security-gateway")}))
     endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://jaeger:4318").rstrip("/") + "/v1/traces"
     provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))
@@ -159,9 +173,14 @@ async def _client(server_id: str):
     if server_id == "mock-http":
         client_source: Any = HTTP_MCP_URL
     elif server_id == "mock-stdio":
+        # --local-timezone을 고정한다. mcp-server-time은 도구 설명·Schema 안에
+        # 호스트의 지역 시간대를 문자열로 박아 넣는다. 고정하지 않으면 같은 버전의
+        # 같은 서버가 호스트마다 다른 schema_hash를 내고, MCP-CATALOG-001이 실제
+        # 변조가 아니라 "이 컨테이너가 어느 시간대에서 돌았는가"를 탐지하게 된다.
+        # 승인 계약의 기준선은 재현 가능해야 한다.
         client_source = StdioServerParameters(
             command=TIME_MCP_PYTHON,
-            args=["-m", "mcp_server_time"],
+            args=["-m", "mcp_server_time", "--local-timezone", STDIO_TIME_TZ],
         )
     else:
         raise RuntimeError(f"discovery is disabled for {server_id}")
@@ -175,6 +194,10 @@ async def _discover(server_id: str) -> dict:
         listed = await client.list_tools()
         info = client.server_info
         return {
+            # 서버가 initialize에서 스스로 말하는 이름. 망 관측이 손에 넣는 것은
+            # 사람이 적은 라벨이 아니라 이 값이라, Registry가 이것을 알고 있어야
+            # 등록된 서버가 섀도로 분류되지 않는다.
+            "advertised_name": (info.name if info else "") or "",
             "version": info.version if info else "unknown",
             "protocol_version": str(client.protocol_version),
             "tools": [_tool_view(tool) for tool in listed.tools],
@@ -256,10 +279,12 @@ async def refresh_catalog(server_id: str) -> dict:
             (server_id, discovered["version"], catalog_hash, len(observed), exact_match, Jsonb(findings)),
         )
     await db.execute(
-        "UPDATE mcp_servers SET status=%s, status_reason=%s, last_seen_at=now() WHERE id=%s",
+        """UPDATE mcp_servers SET status=%s, status_reason=%s, last_seen_at=now(),
+               advertised_name=%s WHERE id=%s""",
         (
             "READY" if exact_match else "DRIFT",
             "승인 계약과 일치" if exact_match else "도구 계약 변화가 탐지됨",
+            discovered.get("advertised_name") or None,
             server_id,
         ),
     )
@@ -279,6 +304,83 @@ async def refresh_catalog(server_id: str) -> dict:
         "tool_count": len(observed),
         "findings": findings,
     }
+
+
+
+
+async def approve_contract(server_id: str, actor: str, note: str) -> dict:
+    """관측된 도구 계약을 승인본으로 올린다 (CTL-30 변경 식별과 재평가).
+
+    이 기능이 없던 v1.5까지, 정당한 변경 뒤에 계약을 다시 승인하는 방법은 SQL을
+    직접 고치는 것뿐이었다. 그러면 재승인이 기록되지 않고, "누가 언제 무엇을
+    승인했는가"가 남지 않는다. 승인 절차가 없는 통제는 우회로 유지된다.
+
+    승인 대상은 **지금 관측된 값**이다. 그래서 호출 순서가 중요하다 - 먼저
+    catalog를 다시 읽고, 그 결과를 승인한다. 관리자가 보고 있던 화면의 값이
+    아니라 이 순간 서버가 말하는 값을 승인해야, 화면과 실제가 갈라진 사이에
+    끼어든 변경이 함께 승인되지 않는다.
+
+    막는 것: 공급망 차단·비활성·폐기 절차 중인 서버는 재승인하지 않는다. 그
+    상태들은 "계약이 바뀌었다"가 아니라 "이 서버를 쓰지 않기로 했다"이고,
+    되돌리는 절차가 다르다.
+    """
+    server = await db.fetch_one("SELECT * FROM mcp_servers WHERE id=%s", (server_id,))
+    if not server:
+        raise ValueError(f"등록되지 않은 서버입니다: {server_id}")
+    if server["status"] in {"DISABLED", "BLOCKED_SUPPLY_CHAIN"}:
+        raise ValueError("비활성 또는 공급망 차단 상태의 서버는 재승인할 수 없습니다.")
+    if (server.get("lifecycle") or "OPERATING") in {"TERMINATING", "RETIRED"}:
+        raise ValueError("종료 절차에 들어간 서버는 재승인할 수 없습니다.")
+
+    await refresh_catalog(server_id)
+    rows = await db.fetch_all(
+        "SELECT * FROM mcp_tools WHERE server_id=%s ORDER BY name", (server_id,))
+    changes = []
+    for row in rows:
+        fields = []
+        if row["approved_description_hash"] != row["observed_description_hash"]:
+            fields.append("description")
+        if row["approved_schema_hash"] != row["observed_schema_hash"]:
+            fields.append("schema")
+        if row["approved_server_version"] != row["observed_server_version"]:
+            fields.append("version")
+        if not fields:
+            continue
+        changes.append({
+            "tool": row["name"], "fields": fields,
+            "from": {"description": row["approved_description_hash"],
+                     "schema": row["approved_schema_hash"],
+                     "version": row["approved_server_version"]},
+            "to": {"description": row["observed_description_hash"],
+                   "schema": row["observed_schema_hash"],
+                   "version": row["observed_server_version"]},
+        })
+    if not changes:
+        return {"server_id": server_id, "changed": [], "status": server["status"],
+                "note": "승인본과 관측값이 이미 같습니다."}
+
+    await db.execute(
+        """UPDATE mcp_tools SET
+             approved_description_hash = COALESCE(observed_description_hash, approved_description_hash),
+             approved_schema_hash = COALESCE(observed_schema_hash, approved_schema_hash),
+             approved_server_version = COALESCE(observed_server_version, approved_server_version)
+           WHERE server_id=%s""", (server_id,))
+    # 재승인 자체가 기록이다. 무엇을 무엇으로 바꿨는지가 없으면 나중에 "그때
+    # 승인한 것이 지금 도는 것과 같은가"에 답할 수 없다.
+    await db.execute(
+        """INSERT INTO catalog_snapshots(server_id, server_version, catalog_hash, tool_count,
+                                         exact_match, findings)
+           VALUES (%s,%s,%s,%s,true,%s)""",
+        (server_id, rows[0]["observed_server_version"] if rows else None,
+         canonical_hash(changes), len(rows),
+         Jsonb([{"type": "contract-reapproved", "actor": actor, "note": note,
+                 "changes": changes}])),
+    )
+    # 재대조해서 상태를 READY로 되돌린다. 승인만 하고 status가 DRIFT로 남으면
+    # 화면은 여전히 변조를 말하고 정책은 통과시킨다 - 둘 중 하나가 거짓말이다.
+    refreshed = await refresh_catalog(server_id)
+    return {"server_id": server_id, "changed": changes, "status": refreshed["status"],
+            "actor": actor, "note": note}
 
 
 async def bootstrap() -> None:
@@ -355,6 +457,10 @@ async def _contract(server_id: str, tool_name: str) -> dict:
         # 전주기의 마지막 단계. status와 따로 두는 이유는 "공급망 문제로 잠깐 막힘"과
         # "이 이용 관계를 끝내는 중"이 되돌리는 절차가 전혀 다르기 때문이다.
         "lifecycle": server.get("lifecycle") or "OPERATING",
+        # CTL-24·CTL-25. 등록되어 있다는 사실이 "안전한 경로로 붙는다"를 뜻하지는
+        # 않는다. 전송 보호와 목적지 허용 여부는 계약의 일부이지 배포 설정이 아니다.
+        "transport_secure": transport_secure(server.get("endpoint")),
+        "endpoint_allowed": await egress_allowed(server.get("endpoint")),
     }
 
 
@@ -403,6 +509,73 @@ async def monitor_summary(hours: int = 168) -> dict:
     }
 
 
+# CTL-13 / RSK-12. 도구 설명만 검사하면 "설명은 깨끗한데 인자로 들어온 문서 본문에
+# 지시가 박혀 있는" 경로가 그대로 남는다. 간접 프롬프트 인젝션은 대부분 그 경로다.
+# 여기서는 세기만 하고 판단은 정책이 한다.
+def untrusted_markers(payload: dict) -> list[str]:
+    found: list[str] = []
+    for key in ("content", "destination", "path", "timezone", "owner", "repo"):
+        value = payload.get(key)
+        if not isinstance(value, str):
+            continue
+        for match in UNSAFE_METADATA.findall(value):
+            found.append(key)
+            break
+    return sorted(set(found))
+
+
+# CTL-24 / RSK-24. 원격 endpoint가 평문이면 요청·응답이 경로 위에서 읽히고 바뀐다.
+# 루프백과 컨테이너 내부 망은 이 판단에서 제외한다 - 거기까지 TLS를 요구하면
+# 아무도 지키지 않는 규칙이 하나 더 생긴다.
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
+def _endpoint_host(endpoint: str | None) -> str:
+    from urllib.parse import urlsplit
+    value = (endpoint or "").strip()
+    if not value:
+        return ""
+    if not value.startswith(("http://", "https://")):
+        return ""
+    return (urlsplit(value).hostname or "").lower()
+
+
+def transport_secure(endpoint: str | None) -> bool:
+    value = (endpoint or "").strip().lower()
+    if not value.startswith(("http://", "https://")):
+        return True  # stdio 등 네트워크를 타지 않는 전송
+    if value.startswith("https://"):
+        return True
+    host = _endpoint_host(value)
+    # 도커 내부 서비스 이름과 루프백은 이 호스트 밖으로 나가지 않는다.
+    return host in LOCAL_HOSTS or "." not in host
+
+
+async def egress_allowed(endpoint: str | None) -> bool:
+    """CTL-25 / RSK-25. 등록 서버의 목적지가 허용 목록 안인가.
+
+    허용 목록이 비어 있으면 통제가 없는 것이지 전부 허용인 것이 아니다. 그래서
+    비어 있을 때는 참을 돌려주고, 그 사실을 관리대장(data.json)이 드러낸다.
+    """
+    host = _endpoint_host(endpoint)
+    if not host:
+        return True  # stdio: 네트워크 목적지가 없다
+    allowed = await opa_document("egress")
+    entries = (allowed or {}).get("allowed_hosts") if isinstance(allowed, dict) else None
+    if not entries:
+        return True
+    for item in entries:
+        item = str(item).strip().lower()
+        if not item:
+            continue
+        if item.startswith("*."):
+            if host == item[2:] or host.endswith(item[1:]):
+                return True
+        elif host == item:
+            return True
+    return False
+
+
 async def _recent_activity(user_token: str) -> dict:
     """Both volume signals in one query.
 
@@ -416,15 +589,24 @@ async def _recent_activity(user_token: str) -> dict:
     row = await db.fetch_one(
         """SELECT count(*) FILTER (WHERE created_at > now() - make_interval(secs => %s)) AS recent_calls,
                   count(*) FILTER (WHERE data_class = 'important'
-                                     AND created_at > now() - make_interval(mins => %s)) AS recent_important
+                                     AND created_at > now() - make_interval(mins => %s)) AS recent_important,
+                  count(*) FILTER (WHERE decision = 'Block'
+                                     AND policy_id = ANY(%s::text[])
+                                     AND created_at > now() - make_interval(mins => %s)) AS recent_blocks
            FROM decisions WHERE user_token = %s AND created_at > now() - interval '1 hour'""",
-        (RATE_LIMIT_WINDOW_SECONDS, IMPORTANT_BURST_MINUTES, user_token),
+        (RATE_LIMIT_WINDOW_SECONDS, IMPORTANT_BURST_MINUTES,
+         list(DENIAL_POLICIES), BLOCK_STREAK_MINUTES, user_token),
     )
     return {
         "recent_calls": int(row["recent_calls"]) if row else 0,
         "call_limit": RATE_LIMIT_CALLS,
         "recent_important": int(row["recent_important"]) if row else 0,
         "important_limit": IMPORTANT_BURST_LIMIT,
+        # CTL-28 / RSK-27. 한 건의 인가 거부는 오조작이지만 짧은 시간에 쌓인 거부는
+        # 권한 경계를 더듬고 있다는 뜻이다. 막지는 않는다 - 막으면 정상 사용자의
+        # 오타가 계정 정지가 된다. 증적을 올리고 사람이 본다.
+        "recent_blocks": int(row["recent_blocks"]) if row else 0,
+        "block_limit": BLOCK_STREAK_LIMIT,
     }
 
 
@@ -845,11 +1027,18 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                           # 사람의 호출은 같은 권한이어도 같은 위험이 아니다.
                           "shadow_endpoints": await endpoint_plane.shadow_count_for(
                               str(payload.get("user_token", ""))),
+                          # 설정 파일과 다른 증거. 설정에 적지 않고 띄운 서버는
+                          # 설정 대조로는 보이지 않고, 망 관측만 답할 수 있다.
+                          "shadow_listeners": await endpoint_plane.shadow_listener_count_for(
+                              str(payload.get("user_token", ""))),
                           },
             "resource": {"id": payload.get("document_id", "time"), "data_class": data_class,
                          "owner_department": document.get("owner_department") if document else None,
                          "classification": classification},
             "tool": {"name": spec["registry_name"], "action": spec["action"]},
+            # 이 호출의 인자 자체가 신뢰할 수 없는 콘텐츠인가. 도구 설명 검사(계약)와
+            # 다른 축이라 따로 싣는다 - 같은 서버의 같은 도구라도 인자는 매 호출 다르다.
+            "request": {"untrusted_markers": untrusted_markers(payload)},
             "approval": {"granted": approval_granted, "id": approval_id},
             "contract": contract,
             "context": await _recent_activity(str(payload.get("user_token", ""))),

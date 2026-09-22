@@ -23,11 +23,10 @@ AUDIENCE = "mcp-governance-gateway"
 TOOL_CALL_AUDIENCE = "mcp-governance-gateway-tool-call"
 TOOL_CALL_SCOPE = "mcp:tools/call"
 ALGORITHM = "EdDSA"
-IDENTITIES = {
-    "partner@bob.local": {"user_id": "user-partner-001", "principal": "partner-demo", "name": "협력업체 김민수", "department": "협력사 A", "roles": ["partner"]},
-    "miso@bob.local": {"user_id": "user-test-001", "principal": "emp-demo", "name": "김미소", "department": "보안기술팀", "roles": ["employee"]},
-    "admin@bob.local": {"user_id": "user-admin-001", "principal": "admin-demo", "name": "관리자 박지훈", "department": "거버넌스팀", "roles": ["admin"]},
-}
+# 신원의 정본은 principals 관리대장 하나다. 이전 판은 여기 Python 상수에도
+# 같은 목록이 있어서, 사람이 늘거나 부서가 바뀔 때마다 배포가 필요했고 둘이
+# 갈라지면 "관리대장에는 있는데 로그인은 안 되는 계정"이 생겼다. 서명 검증은
+# 토큰이 이 IdP가 발급한 것인지만 보고, 그 주체가 누구인지는 관리대장이 답한다.
 FILE_IDS = {"/data/public/notice.txt": "notice-001", "/data/nonimportant/team-note.txt": "work-001", "/data/sensitive/secret.txt": "secret-001"}
 
 
@@ -131,10 +130,12 @@ def authenticate(authorization: str | None) -> tuple[dict, dict]:
     try:
         claims = jwt.decode(authorization[7:], public_key(), algorithms=[ALGORITHM], audience=AUDIENCE,
                             issuer=ISSUER, options={"require": ["sub", "iss", "aud", "exp", "iat", "nbf", "jti"]})
-        user = next(({**u, "email": email} for email, u in IDENTITIES.items() if u["user_id"] == claims["sub"]), None)
-        if not user:
+        subject = claims["sub"]
+        if not isinstance(subject, str) or not subject:
             raise ValueError("unknown subject")
-        return user, claims
+        # 여기서는 "이 토큰을 이 IdP가 발급했다"까지만 말한다. 역할·부서·계정
+        # 상태는 authenticated_user()가 관리대장에서 읽는다.
+        return {"user_id": subject}, claims
     except (jwt.PyJWTError, ValueError) as exc:
         raise HTTPException(401, "인증이 만료되었거나 유효하지 않습니다.") from exc
 
@@ -170,7 +171,7 @@ async def authenticated_user(authorization: str | None) -> dict:
     return {**user, "principal": row["token"], "name": row["display_name"],
             "department": row["department"] or "미지정", "job_title": row["job_title"],
             "roles": [row["role"]], "status": row["status"],
-            "email": row["email"] or user.get("email")}
+            "email": row["email"]}
 
 
 def schema(properties: dict, required: list[str]) -> dict:

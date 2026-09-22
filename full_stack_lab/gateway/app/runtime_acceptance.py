@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sys
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
@@ -86,8 +87,13 @@ async def run() -> dict:
             checks.append(check(result["policy_id"] == "P-INPUT-001" and not result["upstream_executed"]
                                 and result["effect_before"] == result["effect_after"], f"inactive-core-{status}"))
         before = core.effect_count()
-        parameters = StdioServerParameters(command=sys.executable, args=["-m", "app.stdio_entry"],
-                                           env={"GATEWAY_STDIO_PRINCIPAL": "partner-demo"})
+        # 부모의 환경을 물려준다. env를 통째로 갈아끼우면 자식 프로세스가
+        # DATABASE_URL·OPA_URL을 잃고 컨테이너 기본값으로 떨어져, 이 시험이
+        # "stdio ingress가 정지 계정을 막는가"가 아니라 "환경변수가 컨테이너
+        # 기본값과 같은가"를 재게 된다.
+        parameters = StdioServerParameters(
+            command=sys.executable, args=["-m", "app.stdio_entry"],
+            env={**os.environ, "GATEWAY_STDIO_PRINCIPAL": "partner-demo"})
         async with Client(parameters) as client:
             result = tool_payload(await client.call_tool("read_document", {"document_id": "notice-001"}))
         checks.append(check(result["policy_id"] == "P-INPUT-001" and core.effect_count() == before,

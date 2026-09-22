@@ -1,37 +1,58 @@
-/* console.css의 토큰을 그대로 쓰는 로그인 화면.
-   hero는 다크 테마에서 --ink가 밝아지므로 흰 글씨를 얹을 수 없다. 배경만 별도
-   토큰으로 분리해 두 테마에서 같은 대비를 유지한다. */
-:root { --hero: #14161a; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --hero: #0a0c0f; } }
-:root[data-theme="dark"] { --hero: #0a0c0f; }
-.login-page { min-height: 100vh; background: var(--canvas); }
-.login-shell { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr); min-height: 100vh; }
+/* 로그인. console.css의 토큰을 그대로 쓴다 — 같은 시스템의 첫 화면이지
+ * 다른 제품의 표지가 아니다. */
 
-.login-hero {
-  display: flex; flex-direction: column; justify-content: center; gap: 18px;
-  padding: 72px 64px; background: var(--hero); color: #fff;
+.gate {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 32px 16px;
+  /* 판정 다섯 색을 아주 옅은 세로 띠로 깐다. 이 화면이 무엇을 다루는지가
+   * 로그인 전에 한 번 보인다. 장식이 아니라 같은 어휘의 반복이다. */
+  background:
+    linear-gradient(180deg, transparent 0 46%, var(--allow) 46% 100%) 0 0 / 1px 100% no-repeat,
+    linear-gradient(180deg, transparent 0 52%, var(--alert) 52% 100%) 4px 0 / 1px 100% no-repeat,
+    linear-gradient(180deg, transparent 0 58%, var(--restrict) 58% 100%) 8px 0 / 1px 100% no-repeat,
+    linear-gradient(180deg, transparent 0 64%, var(--approval) 64% 100%) 12px 0 / 1px 100% no-repeat,
+    linear-gradient(180deg, transparent 0 70%, var(--block) 70% 100%) 16px 0 / 1px 100% no-repeat,
+    var(--ink-0);
 }
-.login-hero .eyebrow { color: rgba(255, 255, 255, 0.55); margin: 0; }
-.login-hero h1 { margin: 0; font-size: clamp(40px, 5.2vw, 76px); font-weight: 800; letter-spacing: -0.05em; line-height: 0.98; }
 
-.login-panel { display: flex; align-items: center; justify-content: center; padding: 56px 40px; }
-#login-form { display: grid; gap: 14px; width: min(400px, 100%); }
-#login-form .eyebrow { margin: 0; }
-#login-form h2 { margin: 0 0 12px; font-size: 34px; font-weight: 800; letter-spacing: -0.045em; }
-#login-form label { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); }
-#login-form input, #login-form select {
-  width: 100%; border: 1px solid var(--line-2); border-radius: 0;
-  padding: 12px 14px; font-size: 14px; background: var(--surface);
+.gate-card {
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--ink-1);
+  padding: 26px;
 }
-#login-form input:focus, #login-form select:focus { border-color: var(--ink); outline: none; }
-.password-field { position: relative; }
-.password-field .text-action { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); }
-.login-error { min-height: 18px; margin: 0; font-size: 12px; font-weight: 600; color: var(--block); }
-#login-form .solid-button { width: 100%; }
-.login-note { margin: 6px 0 0; font-size: 12px; line-height: 1.6; color: var(--ink-3); }
 
-@media (max-width: 860px) {
-  .login-shell { grid-template-columns: 1fr; }
-  .login-hero { padding: 48px 24px; }
-  .login-panel { padding: 40px 24px 64px; }
+.gate-head { margin-bottom: 18px; }
+.gate-head b { display: block; font-size: 17px; letter-spacing: -0.015em; }
+.gate-head span { font-size: 11.5px; color: var(--text-3); font-family: var(--mono); }
+
+.gate-lede {
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.6;
+  margin: 0 0 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--rule);
+}
+.gate-lede b { color: var(--text-1); }
+
+.gate-card button[type="submit"] { width: 100%; padding: 9px; margin-top: 4px; }
+
+.gate-foot {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.gate-foot p { margin: 0 0 8px; }
+.gate-foot ul { margin: 0; padding-left: 16px; display: grid; gap: 3px; }
+.gate-foot b { color: var(--text-2); font-weight: 600; }
+
+@media (max-width: 480px) {
+  .gate-card { padding: 20px; border-radius: 0; border-left: 0; border-right: 0; }
 }

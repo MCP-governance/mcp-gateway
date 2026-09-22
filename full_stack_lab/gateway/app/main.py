@@ -36,6 +36,10 @@ from .agent_gateway import router as agent_router
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 
 EFFECT_LOG = Path(os.getenv("EFFECT_LOG", "/runtime/upstream-effects.jsonl"))
+# 배선 주소를 코드에 박아두면 compose 바깥(네이티브 실행)에서 항상 degraded가 된다.
+# 실제로 무엇이 죽었는지와 "이 배치에는 그 구성요소가 없다"가 구분되지 않는다.
+MOCK_MCP_HEALTH_URL = os.getenv("MOCK_MCP_HEALTH_URL", "http://mock-http-mcp:9000/health")
+JAEGER_QUERY_URL = os.getenv("JAEGER_QUERY_URL", "http://jaeger:16686/api/services")
 gateway_mcp = build_mcp()
 mcp_http = gateway_mcp.streamable_http_app(
     streamable_http_path="/", json_response=True, host="0.0.0.0",
@@ -111,6 +115,11 @@ app = FastAPI(title="MCP Governance Security Gateway", version="1.1.0", lifespan
 app.include_router(agent_router)
 
 
+async def _absent() -> None:
+    """이 배치에 없는 구성요소. False(장애)가 아니라 None(대상 아님)으로 구분한다."""
+    return None
+
+
 async def _probe(url: str) -> bool:
     try:
         async with httpx.AsyncClient(timeout=2) as client:
@@ -124,8 +133,8 @@ async def _probe(url: str) -> bool:
 async def health() -> dict:
     opa_ok, upstream_ok, jaeger_ok = await asyncio.gather(
         _probe(OPA_URL.rsplit("/v1/", 1)[0] + "/health?bundles=true"),
-        _probe("http://mock-http-mcp:9000/health"),
-        _probe("http://jaeger:16686/api/services"),
+        _probe(MOCK_MCP_HEALTH_URL),
+        _probe(JAEGER_QUERY_URL) if JAEGER_QUERY_URL else _absent(),
     )
     try:
         await db.fetch_one("SELECT 1")
@@ -141,7 +150,11 @@ async def health() -> dict:
         "jaeger": jaeger_ok,
         "github_mcp": bool(os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN") and github and github["status"] == "READY"),
     }
-    return {"status": "ok" if all(value for key, value in components.items() if key != "github_mcp") else "degraded", "components": components}
+    # None은 "이 배치에 없음"이라 판정에서 제외한다. github_mcp는 자격 미설정이
+    # 기본값이라 원래부터 제외 대상이다.
+    required = [value for key, value in components.items()
+                if key != "github_mcp" and value is not None]
+    return {"status": "ok" if all(required) else "degraded", "components": components}
 
 
 @app.get("/api/state")
@@ -174,7 +187,7 @@ async def state() -> dict:
 async def integration() -> dict:
     try:
         async with httpx.AsyncClient(timeout=5) as client:
-            response = await client.get("http://agent-service:8000/api/readiness")
+            response = await client.get(AGENT_SERVICE_URL.rstrip("/") + "/api/readiness")
             response.raise_for_status()
             readiness = response.json()
     except (httpx.HTTPError, ValueError):
@@ -326,6 +339,28 @@ async def catalog_refresh(user: dict = Depends(caller)) -> dict:
         except Exception as exc:
             results.append({"server_id": server_id, "status": "ERROR", "reason": str(exc)})
     return {"results": results}
+
+
+
+
+class ContractApproval(StrictModel):
+    note: str = Field(min_length=5, max_length=500)
+
+
+@app.post("/api/registry/{server_id}/approve-contract")
+async def registry_approve_contract(server_id: str, request: ContractApproval,
+                                    user: dict = Depends(admin_caller)) -> dict:
+    """검토를 마친 계약 변경을 승인본으로 올린다 (CTL-30).
+
+    이 경로가 없으면 정당한 변경 뒤에 남는 선택지가 "SQL을 직접 고친다"와
+    "MCP-CATALOG-001 차단을 계속 본다" 둘뿐이고, 현장은 늘 앞쪽을 고른다.
+    """
+    try:
+        return await core.approve_contract(server_id, user["principal"], request.note)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(502, f"catalog를 다시 읽지 못했습니다: {exc}") from exc
 
 
 @app.post("/api/supply-chain/import")
@@ -565,6 +600,19 @@ async def termination_drill(server_id: str, user: dict = Depends(admin_caller)) 
 
 
 # ── 엔드포인트 평면 ─────────────────────────────────────────────────────────
+#
+# 이 구간의 자격은 사람 계정이 아니라 **장치 자격**이다. v1.5까지 에이전트는
+# 관리자 계정으로 로그인했고, 그래서 사람들의 PC에 깔린 프로세스가 침해되면
+# 관리자 API 전체가 노출됐다. 지금은 장치 키로만 들어오고, 그 키로 할 수 있는
+# 일은 scopes에 적힌 보고 두 가지뿐이다. 발급·조회·폐기는 관리자만 한다.
+
+
+class EndpointDeviceCreate(StrictModel):
+    endpoint_id: str = Field(min_length=3, max_length=120)
+    hostname: str = Field(min_length=1, max_length=200)
+    platform: str = Field(default="unknown", max_length=80)
+    owner_token: str | None = Field(default=None, max_length=120)
+    scopes: list[Literal["inventory", "netscan"]] = Field(default=["inventory"], max_length=2)
 
 
 class EndpointEnroll(StrictModel):
@@ -588,32 +636,148 @@ class EndpointReport(StrictModel):
     entries: list[EndpointEntry] = Field(default_factory=list, max_length=500)
 
 
-@app.post("/api/endpoint/enroll", status_code=201)
-async def endpoint_enroll(request: EndpointEnroll, user: dict = Depends(admin_caller)) -> dict:
-    """엔드포인트 등록. 관리자 자격을 요구한다.
+class ListenerFinding(StrictModel):
+    source: Literal["local-socket", "network", "stdio-process"]
+    address: str = Field(min_length=1, max_length=200)
+    port: int | None = Field(default=None, ge=1, le=65535)
+    process_name: str = Field(default="", max_length=120)
+    command_line: str = Field(default="", max_length=600)
+    mcp_evidence: Literal["confirmed", "suspected", "unknown"] = "unknown"
+    server_name: str = Field(default="", max_length=200)
+    server_version: str = Field(default="", max_length=80)
+    protocol_version: str = Field(default="", max_length=40)
+
+
+class ListenerReport(StrictModel):
+    endpoint_id: str = Field(min_length=3, max_length=120)
+    findings: list[ListenerFinding] = Field(default_factory=list, max_length=500)
+
+
+class ScanPolicyUpdate(StrictModel):
+    enabled: bool | None = None
+    allowed_cidrs: list[str] | None = Field(default=None, max_length=16)
+    ports: list[int] | None = Field(default=None, max_length=64)
+    max_hosts: int | None = Field(default=None, ge=1, le=4096)
+    connect_timeout_ms: int | None = Field(default=None, ge=50, le=5000)
+    probe_mcp: bool | None = None
+    interval_seconds: int | None = Field(default=None, ge=60, le=86400)
+
+
+def endpoint_device(scope: str):
+    """장치 자격 의존성. 사람 토큰으로는 통과하지 못하고 그 반대도 마찬가지다."""
+    async def dependency(x_endpoint_key: str | None = Header(default=None)) -> dict:
+        try:
+            return await endpoint_plane.authenticate_device(x_endpoint_key, scope)
+        except PermissionError as exc:
+            raise HTTPException(401, str(exc)) from exc
+    return dependency
+
+
+@app.post("/api/endpoint/devices", status_code=201)
+async def endpoint_device_create(request: EndpointDeviceCreate,
+                                 user: dict = Depends(admin_caller)) -> dict:
+    """장치를 등록하고 자격을 한 번만 돌려준다.
 
     에이전트가 스스로 등록할 수 있게 열어두면 아무나 엔드포인트를 만들어 임의의
     인벤토리를 올릴 수 있고, 그 인벤토리가 종료 판정의 입력이 된다. 보고는 자동,
-    등록은 사람이다.
+    발급은 사람이다.
     """
+    try:
+        return await endpoint_plane.issue_device(
+            request.endpoint_id, request.hostname, request.platform,
+            request.owner_token, list(request.scopes), user["principal"])
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@app.delete("/api/endpoint/devices/{endpoint_id}")
+async def endpoint_device_revoke(endpoint_id: str, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await endpoint_plane.revoke_device(endpoint_id, user["principal"])
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@app.get("/api/endpoint/devices")
+async def endpoint_device_list(user: dict = Depends(admin_caller)) -> dict:
+    return {"devices": await endpoint_plane.devices()}
+
+
+@app.post("/api/endpoint/enroll", status_code=201)
+async def endpoint_enroll(request: EndpointEnroll,
+                          device: dict = Depends(endpoint_device("inventory"))) -> dict:
+    """에이전트가 자기 버전과 관측 경로를 신고한다.
+
+    장치 키가 가리키는 엔드포인트 외에는 등록할 수 없다. 키 하나로 남의
+    엔드포인트를 덮어쓸 수 있으면 그 키는 장치 자격이 아니라 관리자 자격이다.
+    """
+    if request.endpoint_id != device["endpoint_id"]:
+        raise HTTPException(403, "장치 자격과 다른 엔드포인트는 등록할 수 없습니다.")
     row = await endpoint_plane.enroll(
         request.endpoint_id, request.hostname, request.platform,
-        request.agent_version, request.owner_token, request.detail)
+        request.agent_version, device["owner_token"], request.detail)
     return {key: (value.isoformat() if hasattr(value, "isoformat") else value)
-            for key, value in dict(row).items()}
+            for key, value in dict(row).items()
+            if key not in {"key_hash", "key_prefix"}}
+
+
+@app.get("/api/endpoint/scan-policy")
+async def endpoint_scan_policy_read(device: dict = Depends(endpoint_device("netscan"))) -> dict:
+    """에이전트가 탐색 범위를 받아 간다.
+
+    범위를 에이전트가 정하면 그것은 조직이 통제하지 못하는 스캐너다. 여기서
+    내려주는 대역·포트·주기 밖으로 나가는 에이전트는 구현 오류다.
+    """
+    return await endpoint_plane.scan_policy()
+
+
+@app.get("/api/endpoint/scan-policy/admin")
+async def endpoint_scan_policy_admin(user: dict = Depends(admin_caller)) -> dict:
+    return await endpoint_plane.scan_policy()
+
+
+@app.put("/api/endpoint/scan-policy")
+async def endpoint_scan_policy_update(request: ScanPolicyUpdate,
+                                      user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await endpoint_plane.set_scan_policy(
+            user["principal"], **request.model_dump(exclude_none=True))
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
 
 
 @app.post("/api/endpoint/inventory")
-async def endpoint_report(request: EndpointReport, user: dict = Depends(caller)) -> dict:
+async def endpoint_report(request: EndpointReport,
+                          device: dict = Depends(endpoint_device("inventory"))) -> dict:
     """관측 보고를 받는다. 이 본문은 데이터이지 지시가 아니다.
 
     보고 내용으로 Registry를 바꾸거나 서버를 활성화하는 경로는 없다. 조작된
     엔드포인트가 할 수 있는 최악은 없는 잔존을 보고하는 것이고, 그것은 판정을
     보수적인 쪽으로만 민다.
     """
+    if request.endpoint_id != device["endpoint_id"]:
+        raise HTTPException(403, "장치 자격과 다른 엔드포인트의 보고는 받지 않습니다.")
     try:
         return await endpoint_plane.ingest(
             request.endpoint_id, [entry.model_dump() for entry in request.entries])
+    except ValueError as exc:
+        raise HTTPException(404, str(exc))
+
+
+@app.post("/api/endpoint/listeners")
+async def endpoint_listener_report(request: ListenerReport,
+                                   device: dict = Depends(endpoint_device("netscan"))) -> dict:
+    """내부망에서 관측된 MCP 리스너 보고.
+
+    게이트웨이 장비는 사원 PC의 루프백과 세그먼트 너머를 볼 수 없다. 그 관측은
+    엔드포인트 프로그램의 권한으로 그 단말에서 수행하고 결과만 여기로 온다.
+    여기서도 받는 것은 관측이지 지시가 아니다.
+    """
+    if request.endpoint_id != device["endpoint_id"]:
+        raise HTTPException(403, "장치 자격과 다른 엔드포인트의 보고는 받지 않습니다.")
+    try:
+        return await endpoint_plane.ingest_listeners(
+            request.endpoint_id, [item.model_dump() for item in request.findings])
     except ValueError as exc:
         raise HTTPException(404, str(exc))
 
@@ -626,7 +790,10 @@ async def endpoint_inventory(classification: str | None = None,
     return {
         "coverage": await endpoint_plane.coverage(),
         "agents": await endpoint_plane.agents(),
+        "devices": await endpoint_plane.devices(),
         "entries": await endpoint_plane.inventory(classification),
+        "listeners": await endpoint_plane.listeners(classification),
+        "scan_policy": await endpoint_plane.scan_policy(),
     }
 
 

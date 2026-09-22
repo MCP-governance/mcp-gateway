@@ -173,43 +173,43 @@ CREATE TABLE IF NOT EXISTS aig_risk_catalog (
 INSERT INTO aig_risk_catalog(id, title_ko, title_en, description, mapped_policy_ids, mapped_control_ids, gate, ordinal) VALUES
   ('MCP01', '토큰·비밀 노출', 'Token & Secret Exposure',
    '저장소나 도구 응답에 자격증명이 드러난다. 폐기 단계에서는 회수 대상 모집단(C1)에 추가해야 하는 항목이 된다.',
-   '["MCP-SUPPLY-001", "MCP-DECOMM-001"]', '["CTL-002", "CTL-018"]', 'blocking', 1),
+   '["MCP-SUPPLY-001", "MCP-DECOMM-001"]', '["CTL-04", "CTL-34"]', 'blocking', 1),
   ('MCP02', '권한 상승·범위 확장', 'Privilege Escalation & Scope Creep',
    '승인된 범위보다 넓은 권한을 요구하거나 획득한다. 333 권한표와 Registry 계약이 판단 근거다.',
-   '["MCP-CATALOG-001", "P-333-DENY-001"]', '["CTL-003", "CTL-004"]', 'blocking', 2),
+   '["MCP-CATALOG-001", "P-333-DENY-001"]', '["CTL-12", "CTL-09"]', 'blocking', 2),
   ('MCP03', '도구 중독', 'Tool Poisoning Attack',
    '도구 설명이나 스키마에 정책 우회 지시를 심는다. 설명·스키마 해시 고정이 직접 대응한다.',
-   '["MCP-CATALOG-001"]', '["CTL-003"]', 'blocking', 3),
+   '["MCP-CATALOG-001"]', '["CTL-12"]', 'blocking', 3),
   ('MCP04', '공급망 공격', 'Supply Chain Attack',
    '의존성이나 빌드 경로를 통해 악성 코드가 들어온다. 격리 검증의 SBOM·SCA 증적이 대응한다.',
-   '["MCP-SUPPLY-001"]', '["CTL-002"]', 'blocking', 4),
+   '["MCP-SUPPLY-001"]', '["CTL-04"]', 'blocking', 4),
   ('MCP05', '명령 주입·실행', 'Command Injection & Execution',
    '도구 인자가 셸이나 인터프리터로 흘러 임의 실행이 된다. 입력 스키마 검증과 SAST 규칙이 대응한다.',
-   '["P-INPUT-SCHEMA-001", "MCP-SUPPLY-001"]', '["CTL-002", "CTL-009"]', 'blocking', 5),
+   '["P-INPUT-SCHEMA-001", "MCP-SUPPLY-001"]', '["CTL-04", "CTL-16"]', 'blocking', 5),
   ('MCP06', '프롬프트 인젝션', 'Prompt Injection Attack',
    '도구 결과나 설명이 모델의 지시를 바꾼다. Gateway는 결과를 검사하고 prompts/resources를 중개하지 않는다.',
-   '["MCP-OUTPUT-001", "MCP-METHOD-001"]', '["CTL-010", "CTL-011"]', 'blocking', 6),
+   '["MCP-OUTPUT-001", "MCP-METHOD-001"]', '["CTL-13", "CTL-19"]', 'blocking', 6),
   ('MCP07', '인증·인가 미흡', 'Insufficient Auth & Authorization',
    '서버가 신원을 확인하지 않거나 범위를 강제하지 않는다. 단일 강제 경로와 서명 신원이 대응한다.',
-   '["MCP-REGISTRY-002", "P-333-DENY-001"]', '["CTL-001", "CTL-004"]', 'evidence-only', 7),
+   '["MCP-REGISTRY-002", "P-333-DENY-001"]', '["CTL-03", "CTL-09"]', 'evidence-only', 7),
   ('MCP08', '감사·원격측정 부재', 'Missing Audit & Telemetry',
    '호출 기록이 남지 않아 사후 재구성이 불가능하다. 종료 판정의 C4가 정확히 이 문제를 본다.',
-   '["MCP-DECOMM-001"]', '["CTL-012", "CTL-018"]', 'evidence-only', 8),
+   '["MCP-DECOMM-001"]', '["CTL-26", "CTL-34"]', 'evidence-only', 8),
   ('MCP09', '섀도 MCP 서버', 'Shadow MCP Server',
    '등록되지 않은 MCP 서버가 엔드포인트에서 직접 쓰인다. 게이트웨이를 통과하지 않으므로 네트워크 평면 혼자서는 보이지 않는다.',
-   '["MCP-REGISTRY-001"]', '["CTL-001", "CTL-019"]', 'evidence-only', 9),
+   '["MCP-REGISTRY-001"]', '["CTL-03", "CTL-28"]', 'evidence-only', 9),
   ('MCP10', '컨텍스트 주입·과다 공유', 'Context Injection & Over-sharing',
    '필요 이상의 맥락이 외부로 나간다. 데이터 등급과 외부 전송 제한이 대응한다.',
-   '["P-X-RESTRICT-001", "P-X-APPROVAL-001"]', '["CTL-005", "CTL-006"]', 'evidence-only', 10),
+   '["P-X-RESTRICT-001", "P-X-APPROVAL-001"]', '["CTL-21", "CTL-22"]', 'evidence-only', 10),
   ('NAME-CONFUSION', '이름 혼동', 'Name Confusion Attack',
    '정상 서버와 비슷한 이름으로 오인을 유도한다. 카탈로그 검색과 등록 대조가 대응한다.',
-   '["MCP-REGISTRY-001"]', '["CTL-001"]', 'evidence-only', 11),
+   '["MCP-REGISTRY-001"]', '["CTL-03"]', 'evidence-only', 11),
   ('RUG-PULL', '러그풀', 'Rug Pull Attack',
    '승인 이후 서버가 조용히 동작을 바꾼다. 매 호출 전 catalog 재대조와 재감사 주기가 대응한다.',
-   '["MCP-CATALOG-001", "P-APPROVAL-EXPIRY-001"]', '["CTL-003", "CTL-007"]', 'blocking', 12),
+   '["MCP-CATALOG-001", "P-APPROVAL-EXPIRY-001"]', '["CTL-12", "CTL-30"]', 'blocking', 12),
   ('TOOL-SHADOWING', '도구 가리기', 'Tool Shadowing Attack',
    '다른 서버의 도구를 가려 호출을 가로챈다. 도구 집합 고정(known_tools_only)이 대응한다.',
-   '["MCP-CATALOG-001"]', '["CTL-003"]', 'blocking', 13)
+   '["MCP-CATALOG-001"]', '["CTL-12"]', 'blocking', 13)
 ON CONFLICT (id) DO UPDATE SET
   title_ko = EXCLUDED.title_ko, title_en = EXCLUDED.title_en, description = EXCLUDED.description,
   mapped_policy_ids = EXCLUDED.mapped_policy_ids, mapped_control_ids = EXCLUDED.mapped_control_ids,
@@ -276,3 +276,86 @@ ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS exit_terms jsonb NOT NULL DEFAU
 
 -- 기존 등록 서버는 도입 심사 이전에 들어온 것들이라 약속받은 것이 없다. 빈 값이
 -- 곧 "확인되지 않음"이고, 드릴이 그 사실을 최선 등급 T3로 보여준다.
+
+-- ── 8. 엔드포인트 평면의 자격 분리 ──────────────────────────────────────────
+--
+-- v1.5까지 엔드포인트 에이전트는 관리자 계정으로 로그인했다. 그 구성에서는
+-- 사람들의 PC에 깔린 프로세스 하나가 침해되면 관리자 API 전체가 노출된다.
+-- CONTROL_PLANES.md 6절이 그 사실을 한계로 적어 두고 있었고, 여기서 고친다.
+--
+-- 장치 자격은 사람 계정과 완전히 다른 축이다. 로그인하지 않고, 토큰을 발급받지
+-- 않으며, 할 수 있는 일이 scopes에 적힌 것뿐이다. 침해되어도 최대치는 "거짓
+-- 인벤토리를 올리는 것"이고 그 거짓은 판정을 보수적인 쪽으로만 민다.
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS key_hash text;
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS key_prefix text;
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS scopes jsonb NOT NULL DEFAULT '["inventory"]';
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
+ALTER TABLE endpoint_agents DROP CONSTRAINT IF EXISTS endpoint_agents_status_check;
+ALTER TABLE endpoint_agents ADD CONSTRAINT endpoint_agents_status_check
+  CHECK (status IN ('active', 'revoked'));
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS issued_by text;
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS issued_at timestamptz;
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS last_scan_at timestamptz;
+
+-- Registry가 서버의 자기 신고 이름을 기억한다. 망 관측이 손에 넣는 것은 사람이
+-- 적은 라벨이 아니라 그 서버가 initialize에서 말한 이름이고, Registry가 그것을
+-- 모르면 등록된 서버가 매번 섀도로 분류된다.
+ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS advertised_name text;
+
+-- ── 9. 내부망 MCP 탐색 ──────────────────────────────────────────────────────
+--
+-- 설정 파일 대조는 "이 사람이 쓰겠다고 적어 둔 것"을 본다. 적지 않고 띄운 것은
+-- 보지 못한다. 로컬에서 `npx some-mcp-server`를 직접 실행하거나, 팀 서버에
+-- MCP를 하나 올려놓고 주소만 공유하면 설정 파일에는 아무것도 남지 않는다.
+--
+-- 그래서 두 번째 관측 축이 필요하다. 게이트웨이 장비는 사원 PC의 루프백과
+-- 내부 대역을 볼 수 없으므로(NAT·방화벽·세그먼트), 이 관측은 엔드포인트
+-- 프로그램의 권한으로 그 단말에서 수행하고 결과만 올린다.
+--
+-- 탐색 범위는 에이전트가 정하지 않는다. 게이트웨이가 내려주는 이 정책이 정한다.
+-- 에이전트가 스스로 대역을 고르면 그것은 조직이 통제하지 못하는 스캐너다.
+CREATE TABLE IF NOT EXISTS endpoint_scan_policy (
+  id integer PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  enabled boolean NOT NULL DEFAULT false,
+  -- 비워 두면 루프백만 본다. 루프백은 그 단말 자신이므로 언제나 범위 안이다.
+  allowed_cidrs jsonb NOT NULL DEFAULT '[]',
+  ports jsonb NOT NULL DEFAULT '[3000,3001,5173,6274,6277,7860,8000,8080,8081,8181,8787,9000,11434]',
+  max_hosts integer NOT NULL DEFAULT 256,
+  connect_timeout_ms integer NOT NULL DEFAULT 300,
+  -- MCP인지 확인할 때 initialize 한 번만 보낸다. 끄면 열린 포트 사실만 올라오고
+  -- "MCP인지 아닌지 모르는 포트" 목록이 되어 아무도 보지 않게 된다.
+  probe_mcp boolean NOT NULL DEFAULT true,
+  interval_seconds integer NOT NULL DEFAULT 900,
+  updated_by text,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+INSERT INTO endpoint_scan_policy(id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS endpoint_listeners (
+  id bigserial PRIMARY KEY,
+  endpoint_id text NOT NULL REFERENCES endpoint_agents(endpoint_id) ON DELETE CASCADE,
+  observed_at timestamptz NOT NULL DEFAULT now(),
+  -- local-socket : 그 단말에서 듣고 있는 소켓 (엔드포인트 권한이라야 프로세스까지 보인다)
+  -- network      : 허용된 대역에서 TCP로 닿은 주소
+  -- stdio-process: 부모 프로세스가 띄운 stdio MCP 서버
+  source text NOT NULL CHECK (source IN ('local-socket', 'network', 'stdio-process')),
+  address text NOT NULL,
+  port integer,
+  process_name text,
+  command_line text,
+  -- confirmed : MCP initialize에 MCP로 응답함
+  -- suspected : 포트·프로세스 표지로 추정
+  -- unknown   : 열려 있으나 MCP 여부 미확인
+  mcp_evidence text NOT NULL CHECK (mcp_evidence IN ('confirmed', 'suspected', 'unknown')),
+  server_name text,
+  server_version text,
+  protocol_version text,
+  fingerprint text NOT NULL,
+  registry_match text REFERENCES mcp_servers(id),
+  classification text NOT NULL CHECK (classification IN ('registered', 'shadow', 'retired-residue')),
+  raw jsonb NOT NULL DEFAULT '{}'
+);
+CREATE UNIQUE INDEX IF NOT EXISTS endpoint_listeners_unique
+  ON endpoint_listeners(endpoint_id, fingerprint);
+CREATE INDEX IF NOT EXISTS endpoint_listeners_class_idx
+  ON endpoint_listeners(classification, observed_at DESC);

@@ -534,6 +534,35 @@ def scan_command(job: dict, report: Path, checkout: Path | None, server_url: str
     return command
 
 
+def listener_target(connection, job: dict) -> dict:
+    """엔드포인트 평면이 망에서 찾아낸 미등록 MCP 리스너.
+
+    Registry에 없는 서버라 복제할 코드도 승인된 source_ref도 없다. 있는 것은
+    주소뿐이고, 그래서 동적 점검만 가능하다. 결과는 그 관측에 귀속되며 호출을
+    막지 않는다 - 게이트웨이를 통과하지 않는 서버의 호출은 게이트웨이가 막을 수
+    있는 대상이 아니다. 막는 것은 네트워크 평면의 몫이고 여기서는 증적을 만든다.
+    """
+    row = connection.execute(
+        "SELECT id, address, port, server_name, classification, mcp_evidence, fingerprint"
+        " FROM endpoint_listeners WHERE id=%s", (int(job["target_id"]),)).fetchone()
+    if not row:
+        raise RuntimeError("관측된 리스너를 찾을 수 없습니다.")
+    if row["mcp_evidence"] != "confirmed" or not row["port"]:
+        raise RuntimeError("MCP로 확인되고 포트가 있는 리스너만 점검할 수 있습니다.")
+    address = row["address"]
+    host = "[" + address + "]" if ":" in address else address
+    endpoint = "http://%s:%s/mcp/" % (host, row["port"])
+    return {
+        "label": row["server_name"] or ("미등록 MCP " + endpoint),
+        "repository_url": endpoint,
+        "commit": None,
+        "ref": None,
+        "source_ref": "listener:" + row["fingerprint"][:32],
+        "blocks": False,
+        "endpoint": endpoint,
+    }
+
+
 def dynamic_target(connection, job: dict) -> dict:
     """동적 점검의 대상. 실행 중인 MCP 서버의 endpoint다.
 
@@ -575,7 +604,8 @@ def run_mcp_scan(connection, job: dict) -> None:
     report = REPORT_DIR / ("mcp-scan-" + job_id + ".sarif.json")
 
     if dynamic:
-        target = dynamic_target(connection, job)
+        target = (listener_target(connection, job) if job["target_kind"] == "endpoint"
+                  else dynamic_target(connection, job))
         checkout = None
         commit = None
         log("mcp-scan(dynamic) " + job_id + " 시작: " + target["endpoint"])

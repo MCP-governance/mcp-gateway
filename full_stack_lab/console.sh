@@ -53,7 +53,7 @@ session_token() {
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])'
 }
 
-gateway_token() { session_token admin@bob.local; }
+gateway_token() { session_token kkg@bob.local; }
 
 # A workspace-wide scan tells you nothing about which MCP server is affected, and the
 # MCP-SUPPLY-001 gate counts criticals against a server's pinned source_ref. So each
@@ -294,11 +294,36 @@ case "${1:-up}" in
     up
     agent_test
     ;;
+  endpoint-key)
+    # 장치 자격 발급. 에이전트는 관리자 계정으로 로그인하지 않는다 - 사람들의 PC에
+    # 깔린 프로세스가 침해됐을 때 최악이 "거짓 인벤토리"여야지 "관리자 API 전체"여서는
+    # 안 된다. 이 키로 할 수 있는 일은 scopes에 적힌 보고뿐이다.
+    endpoint_id="${2:-endpoint-dev-001}"
+    owner="${3:-emp-demo}"
+    scopes="${4:-inventory,netscan}"
+    scope_json="$(python3 -c 'import json,sys; print(json.dumps([s for s in sys.argv[1].split(",") if s]))' "$scopes")"
+    curl -fsS -X POST http://127.0.0.1:8080/api/endpoint/devices \
+      -H "authorization: Bearer $(gateway_token)" -H 'content-type: application/json' \
+      -d "{\"endpoint_id\":\"${endpoint_id}\",\"hostname\":\"${endpoint_id}\",\"platform\":\"linux\",\"owner_token\":\"${owner}\",\"scopes\":${scope_json}}" \
+      | python3 -m json.tool
+    echo "이 키는 다시 표시되지 않습니다. .env의 ENDPOINT_DEVICE_KEY에 넣으세요." >&2
+    ;;
   endpoint)
     # 엔드포인트 평면. 기본 기동에 넣지 않는 이유는 남의 PC 설정을 읽는 기능이
     # 기본값으로 켜져 있으면 안 되기 때문이다. 켤 때는 무엇을 읽는지 화면에 적는다.
     up
+    if ! grep -qE '^ENDPOINT_DEVICE_KEY=.+' .env; then
+      echo "장치 자격을 발급합니다 (최초 1회)."
+      key="$(curl -fsS -X POST http://127.0.0.1:8080/api/endpoint/devices \
+        -H "authorization: Bearer $(gateway_token)" -H 'content-type: application/json' \
+        -d "{\"endpoint_id\":\"${ENDPOINT_ID:-endpoint-dev-001}\",\"hostname\":\"${ENDPOINT_ID:-endpoint-dev-001}\",\"platform\":\"linux\",\"owner_token\":\"${ENDPOINT_OWNER_TOKEN:-emp-demo}\",\"scopes\":[\"inventory\",\"netscan\"]}" \
+        | python3 -c 'import json,sys; print(json.load(sys.stdin)["enrollment_key"])')"
+      sed -i -E '/^ENDPOINT_DEVICE_KEY=/d' .env
+      printf 'ENDPOINT_DEVICE_KEY=%s\n' "$key" >> .env
+      chmod 600 .env
+    fi
     echo "관측 경로: ${ENDPOINT_CONFIG_SOURCE:-./endpoint/sample-configs} (읽기 전용)"
+    echo "망 탐색 범위: Console의 '엔드포인트' 화면에서 정합니다. 기본값은 꺼짐입니다."
     docker compose --profile endpoint up -d --build endpoint-agent
     echo "엔드포인트 에이전트를 올렸습니다. Console의 '엔드포인트' 화면에서 확인하세요."
     echo "  로그: docker compose logs -f endpoint-agent"
@@ -397,7 +422,7 @@ json.dump(module.app.openapi(), sys.stdout, ensure_ascii=False, indent=2, sort_k
     echo "이 실습 전용 DB·효과 로그·생성 보고서를 초기화했습니다."
     ;;
   *)
-    echo "usage: ./console.sh [up|test|agent-test|endpoint|scan|openapi|status|logs|down|reset|corporate-lab|live-lab|live-stop|lab-down|lab-logs]" >&2
+    echo "usage: ./console.sh [up|test|agent-test|endpoint|endpoint-key|scan|openapi|status|logs|down|reset|corporate-lab|live-lab|live-stop|lab-down|lab-logs]" >&2
     exit 2
     ;;
 esac

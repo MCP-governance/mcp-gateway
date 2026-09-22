@@ -14,6 +14,25 @@ cd mcp-gateway/full_stack_lab
 ./console.sh
 ~~~
 
+### Docker가 없는 장비에서
+
+Docker Desktop이 없는 노트북이나 WSL2 한 대에서도 같은 스택을 띄울 수 있습니다.
+"환경이 없어서 검증을 못 했다"가 나오지 않게 하는 경로입니다.
+
+~~~bash
+cd mcp-gateway/full_stack_lab
+./run-native.sh setup    # PostgreSQL 접속 확인 + OPA 바이너리 + venv 2개
+./run-native.sh up       # OPA · mock MCP · Gateway · SSE ingress · Agent Service
+./run-native.sh baseline # 이 호스트에 설치된 stdio 서버의 계약을 기준선으로 승인
+./run-native.sh test     # Rego + core/agent/runtime acceptance
+~~~
+
+필요한 것은 PostgreSQL 16+ 한 대와 Python 3.12+뿐입니다. 컨테이너가 주던 격리는
+여기 없으므로 **개발·검증용이고 운영 배치 모델이 아닙니다.** 바인딩은 전부
+127.0.0.1이고 와일드카드는 기동 자체를 거부합니다.
+
+`baseline`이 따로 있는 이유는 3절에 적었습니다. 자동으로 돌리지 않는 것이 요점입니다.
+
 - MCP Governance Console: <http://localhost:8000>
 - Jaeger: <http://localhost:16686>
 - 전체 검증: `./console.sh test`
@@ -21,7 +40,8 @@ cd mcp-gateway/full_stack_lab
 - 기업 내부망 + Tencent A.I.G 시나리오: `./console.sh reset && ./console.sh corporate-lab`
 - 실제 모델 API 테스트베드: Windows에서 `full_stack_lab/start-live-lab.cmd` 더블클릭 또는 WSL에서 `./console.sh live-lab`
 
-현재 기준의 성공 조건은 **Rego 62/62**, core acceptance와 Agent/API acceptance 모두 실패 0입니다. 같은 명령을 [`.github/workflows/verify.yml`](.github/workflows/verify.yml)이 `main`과 모든 `feat/**` 푸시, `main`으로 가는 PR마다 실행합니다.
+현재 기준의 성공 조건은 **Rego 76/76**, core acceptance 91, Agent/API acceptance 99,
+runtime acceptance 44 — 모두 실패 0입니다. 같은 명령을 [`.github/workflows/verify.yml`](.github/workflows/verify.yml)이 `main`과 모든 `feat/**` 푸시, `main`으로 가는 PR마다 실행합니다.
 
 ### 실행 경계 보강
 
@@ -61,9 +81,49 @@ Gateway는 사용자 신원, 에이전트 위임 신원, 도구·메서드·인�
 | AI 코드 감사 | 격리 워커가 고정 commit을 다시 복제해 mcp-scan 실행. 검증 통과·재감사 주기에 자동 큐잉 | 워커 lease·생존 신호·취소·재시도를 Console에서 확인 |
 | 승인·감사 | 승인 재검증, 영수증 복구, 변조 탐지 가능한 감사 연쇄 | 요청·판정·upstream 증적을 Console과 DB에서 추적 |
 | 전주기 종료·폐기 | 종료 개시가 곧 차단이고, 회수 대상·증거·판정이 관리대장 행으로 남음 | C1~C4를 계산해 T1/T2/T3 등급을 내고, T3는 위험 수용 없이 종결 불가 |
-| 엔드포인트 평면 | 클라이언트 설정을 Registry와 대조해 섀도·폐기 잔존을 보고 | 강제 경로 밖의 경로를 발견하고 그 사람의 호출 증적을 강화 |
+| 엔드포인트 평면 | 클라이언트 설정과 **내부망 MCP 리스너**를 Registry와 대조 | 강제 경로 밖의 경로를 발견하고 그 사람의 호출 증적을 강화 |
+| 장치 자격 분리 | 엔드포인트 에이전트는 사람 계정이 아니라 범위 제한 장치 키로 보고 | 그 키로는 관리자 API가 열리지 않고 남의 엔드포인트도 덮어쓸 수 없음 |
+| 목적지·전송 통제 | 등록 서버의 endpoint를 egress 허용목록·전송 보호와 대조 | 허용 목록 밖 목적지와 평문 원격 연결을 실행 전 거부 |
+| 계약 재승인 | 검토를 마친 계약 변경을 사유와 함께 승인본으로 승격 | 무엇이 무엇으로 바뀌었는지가 재승인 기록으로 남음 |
 | 운영 안전장치 | monitor mode, 요청량 제한, idempotency·세션 경계 | enforce 전환과 과부하·중복 요청 사례 검증 |
 | 전송 호환성 | Streamable HTTP, stdio, legacy SSE 경로를 동일 정책 경로로 수렴 | 각 transport의 MCP 호출 acceptance test |
+
+### 합성 계정
+
+| 역할 | 계정 |
+| --- | --- |
+| 관리자 | 김경곤 `kkg@bob.local` (거버넌스팀) · 문광석 `mks@bob.local` (보안운영팀) |
+| 직원 | 박소은 `pse@bob.local` · 김미소 `miso@bob.local` (보안기술팀) · 양승권 `ysg@bob.local` (플랫폼개발팀) · 정원재 `jwj@bob.local` (데이터분석팀) |
+| 협력사 직원 | 권노경 `nkk@bob.local` (협력사 A) |
+
+비밀번호는 모두 `.env`의 `MOCK_SSO_PASSWORD`이고 기본값은 `test-password`입니다.
+계정의 정본은 `principals` 관리대장 한 곳이며, 애플리케이션 상수에는 없습니다 —
+있었을 때 사람이 늘 때마다 배포가 필요했습니다.
+
+### 정책 추적성
+
+정책 하나하나가 **MCP 보안 통합관리대장 V1.0**의 실제 행을 가리킵니다.
+
+| 필드 | 가리키는 곳 |
+| --- | --- |
+| `risk_ids` | 위험 목록 `RSK-01` ~ `RSK-32` |
+| `requirement_ids` | 보안요구사항 `REQ-01` ~ `REQ-35` |
+| `control_ids` | 보안통제 `CTL-01` ~ `CTL-35` |
+| `pac_candidate_id` | PaC 연계 시트 `PAC-CAND-01` ~ `PAC-CAND-30` |
+
+v1.6까지의 `RSK-001`/`SR-001`/`CTL-001`은 이 저장소가 임의로 만든 번호였고,
+관리대장을 열어도 대응하는 행이 없었습니다. 추적성은 "ID가 적혀 있다"가 아니라
+"그 ID가 관리대장에 있다"입니다.
+
+v1.7에서 PaC 후보 5개를 정책으로 구현했습니다.
+
+| 정책 | 통제 | 무엇을 막는가 |
+| --- | --- | --- |
+| `MCP-TRANSPORT-001` | CTL-24 | 평문 원격 MCP endpoint (RSK-24 중간자) |
+| `MCP-EGRESS-001` | CTL-25 | 허용 목록 밖 목적지 (RSK-25 SSRF·내부망 탐색) |
+| `P-UNTRUSTED-CONTENT-001/002` | CTL-13 | 인자 안의 비신뢰 지시 (RSK-12 간접 인젝션) |
+| `P-ANOMALY-001` | CTL-28 | 반복 인가 거부 (RSK-27 탐색 행위) |
+| `MCP-SHADOW-002` | CTL-03·CTL-28 | 망에서 발견된 미등록 리스너 (RSK-01) |
 
 ### 333 권한 모델
 
@@ -101,10 +161,26 @@ v1.5에서 구버전 실습(`container_lab/`, `library_lab/`, 루트의 two-VM·
 
 ## 증명 범위와 한계
 
-- 기본 모델은 결정론적 모의 모델입니다. provider 경로는 로컬 HTTP wire stub과 **로컬 LLM(Ollama)** 으로 검증했고, 특정 상용 모델의 정확도·비용·rate limit은 별도 시나리오 시험이 필요합니다.
+- 기본 모델은 결정론적 모의 모델입니다. provider 경로는 로컬 HTTP wire stub과
+  **로컬 LLM(Ollama · `qwen2.5:0.5b`, 397MB)** 으로 검증했습니다. 0.5B 모델은 전체
+  도구 스키마를 받으면 CPU에서 첫 응답까지 1분을 넘기는 경우가 있어 상한을 120초로
+  두었고, 도구 선택이 틀리는 경우도 있습니다. **그래도 판정은 정책이 합니다** —
+  모델이 무엇을 제안하든 게이트웨이가 막을 것은 막는 것이 이 구조의 요점입니다.
+  특정 상용 모델의 정확도·비용·rate limit은 별도 시나리오 시험이 필요합니다.
 - GitHub MCP와 외부 제공자 호출은 인증·카탈로그 승인 전까지 의도적으로 비활성입니다.
 - AI 코드 감사(mcp-scan)는 저장소 코드를 외부 LLM endpoint로 보냅니다. 코드 반출이 불가한 조직은 로컬 모델만 연결해야 합니다.
-- 이 Gateway의 효과는 모든 MCP 도구 호출이 이 강제 경로를 통과할 때만 성립합니다. 우회 경로를 **발견**하는 것은 엔드포인트 평면이고(→ [CONTROL_PLANES.md](full_stack_lab/CONTROL_PLANES.md)), **차단**하는 것은 네트워크 평면입니다(→ [NETWORK.md](full_stack_lab/NETWORK.md)). 후자는 아직 미구현입니다.
+- 이 Gateway의 효과는 모든 MCP 도구 호출이 이 강제 경로를 통과할 때만 성립합니다.
+  우회 경로를 **발견**하는 것은 엔드포인트 평면이고(→ [CONTROL_PLANES.md](full_stack_lab/CONTROL_PLANES.md)),
+  **차단**하는 것은 네트워크 평면입니다(→ [NETWORK.md](full_stack_lab/NETWORK.md)).
+  v1.7에서 발견의 범위가 설정 파일에서 내부망 리스너까지 넓어졌고 egress 판단이
+  정책으로 들어왔지만, 게이트웨이를 지나지 않는 호출의 실제 차단은 여전히 조직의
+  네트워크 장비 몫입니다.
+- pip·npm으로 설치하는 stdio 서버는 도구 Schema가 그 서버의 의존성 버전에 따라
+  달라집니다. `db/init.sql`에 박힌 승인 해시는 어느 한 빌드의 값이라 다른 호스트에서는
+  정당한 설치도 드리프트로 잡힙니다. 그래서 `POST /api/registry/{id}/approve-contract`
+  (Console의 '계약 재승인')가 있고, 무엇이 무엇으로 바뀌었는지를 사유와 함께 기록에
+  남깁니다. 기동할 때 자동으로 승인하지 않는 것이 요점입니다 — 그러면 계약 고정이라는
+  통제 자체가 사라집니다.
 - 종료 판정의 모집단(C1)은 제공자가 하위 위임 자격을 고지해야 확정됩니다. 고지가 없으면 판정은 T3이며, 이것은 구현의 한계가 아니라 MCP 인가 명세와 RFC 7009가 만드는 구조적 한계입니다 → [TERMINATION.md](full_stack_lab/TERMINATION.md).
 - 로컬 성공은 운영 배포 검증이 아닙니다. 실제 환경에서는 IdP 연동, 비밀 관리, TLS/mTLS, egress 제어, 독립 로그 보존을 검증해야 합니다.
 

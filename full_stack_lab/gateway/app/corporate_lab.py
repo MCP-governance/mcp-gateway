@@ -150,10 +150,18 @@ async def verify_aig() -> dict:
     if not report:
         raise RuntimeError("A.I.G mcp-scan report is missing.")
     summary = report["summary"] or {}
-    if summary.get("evidence_mode") != "test-double" or not summary.get("total"):
-        raise RuntimeError("Expected a nonempty A.I.G test-double result, not a live finding.")
-    return {"phase": "aig", "report": report,
-            "control_claim": "test-double output is evidence of queue/SARIF wiring only"}
+    mode = summary.get("evidence_mode")
+    if mode not in {"live", "test-double"}:
+        raise RuntimeError("A.I.G report has no usable evidence_mode: " + repr(mode))
+    if not summary.get("total"):
+        raise RuntimeError("A.I.G mcp-scan returned no finding at all.")
+    # 배선 확인(test-double)과 실제 점검(live)은 둘 다 정상 경로다. 이전 판은
+    # test-double만 통과시켜서, A.I.G를 실제로 연결하면 그 성공이 실패로 판정됐다.
+    # 무엇을 주장할 수 있는지가 다를 뿐이라 주장 문구만 갈라 둔다.
+    claim = ("live A.I.G findings attributed to this source_ref"
+             if mode == "live"
+             else "test-double output is evidence of queue/SARIF wiring only")
+    return {"phase": "aig", "report": report, "evidence_mode": mode, "control_claim": claim}
 
 
 async def contain() -> dict:

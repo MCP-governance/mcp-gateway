@@ -73,6 +73,11 @@ Authorization: Bearer <access_token>
 | **열림** | 토큰 없이 호출 가능 (loopback 바인딩 전제) | — |
 | **사용자** | 서명된 토큰 필요, 역할 무관 | 🔑 |
 | **관리자** | `admin` 역할 필요 | 🔒 |
+| **장치** | `X-Endpoint-Key` 헤더의 장치 자격 필요. 사람 토큰으로는 통과하지 못하고 그 반대도 마찬가지 | 📟 |
+
+장치 자격은 사람 계정과 완전히 다른 축입니다. 로그인하지 않고, 사람의 토큰을
+발급받지 않으며, 할 수 있는 일이 `scopes`에 적힌 것뿐입니다. 그래서 이 자격이
+새도 관리자 API는 열리지 않습니다.
 
 무인증으로 열린 Gateway API 목록은 `full_stack_lab/README.md` 13절이 정본이고,
 [`tests/open_endpoints.py`](../full_stack_lab/tests/open_endpoints.py)가 코드와
@@ -309,9 +314,53 @@ OPEN ──► REVOKING ──► ASSESSED ──► CLOSED
 
 | 메서드 | 경로 | 인증 | 설명 |
 | --- | --- | --- | --- |
-| POST | `/api/endpoint/enroll` | 🔒 | 엔드포인트 등록. **사람이 한다** |
-| POST | `/api/endpoint/inventory` | 🔑 | 설정 인벤토리 보고. **전체 교체** |
-| GET | `/api/endpoint/inventory?classification=` | 🔒 | 커버리지·에이전트·항목 |
+| POST | `/api/endpoint/devices` | 🔒 | 장치 자격 발급. 평문 키는 **이 응답에만** 존재 |
+| GET | `/api/endpoint/devices` | 🔒 | 발급된 장치와 마지막 보고 시각 |
+| DELETE | `/api/endpoint/devices/{endpoint_id}` | 🔒 | 자격 폐기. 그 단말의 보고가 즉시 멈춤 |
+| GET | `/api/endpoint/scan-policy/admin` | 🔒 | 내부망 탐색 범위 조회 |
+| PUT | `/api/endpoint/scan-policy` | 🔒 | 탐색 범위 변경. 사설 대역만, 최대 `/20` |
+| GET | `/api/endpoint/scan-policy` | 📟 | 에이전트가 범위를 받아 간다 (`netscan`) |
+| POST | `/api/endpoint/enroll` | 📟 | 에이전트가 버전·관측 경로를 신고 (`inventory`) |
+| POST | `/api/endpoint/inventory` | 📟 | 설정 인벤토리 보고. **전체 교체** (`inventory`) |
+| POST | `/api/endpoint/listeners` | 📟 | 망 리스너 보고. **전체 교체** (`netscan`) |
+| GET | `/api/endpoint/inventory?classification=` | 🔒 | 커버리지·장치·설정 항목·리스너·탐색 범위 |
+
+```http
+POST /api/endpoint/devices
+{"endpoint_id": "endpoint-ysg-laptop", "hostname": "ysg-laptop",
+ "owner_token": "emp-ysg", "scopes": ["inventory", "netscan"]}
+```
+
+```json
+{"endpoint_id": "endpoint-ysg-laptop", "enrollment_key": "...",
+ "scopes": ["inventory", "netscan"],
+ "note": "이 키는 다시 표시되지 않습니다. 잃어버리면 재발급하세요."}
+```
+
+```http
+POST /api/endpoint/listeners
+X-Endpoint-Key: <장치 키>
+{"endpoint_id": "endpoint-ysg-laptop",
+ "findings": [{"source": "local-socket", "address": "127.0.0.1", "port": 8787,
+               "process_name": "node", "command_line": "npx some-mcp",
+               "mcp_evidence": "confirmed", "server_name": "rogue-notes-mcp",
+               "server_version": "0.3.1", "protocol_version": "2025-06-18"}]}
+```
+
+```json
+{"endpoint_id": "endpoint-ysg-laptop", "accepted": 1, "removed": 0,
+ "counts": {"registered": 0, "shadow": 1, "retired-residue": 0},
+ "evidence": {"confirmed": 1, "suspected": 0, "unknown": 0}}
+```
+
+- 자격이 가리키는 `endpoint_id`와 다른 보고는 **403**입니다. 키 하나로 남의
+  엔드포인트를 덮어쓸 수 있으면 그것은 장치 자격이 아니라 관리자 자격입니다.
+- `mcp_evidence`가 `confirmed`/`suspected`인 미등록 리스너만 `shadow_listeners`
+  정책 입력에 들어갑니다. "열려 있는데 뭔지 모르는 포트"를 정책 입력으로 쓰면
+  사무실 프린터가 어느 직원의 호출을 경보로 만듭니다.
+- 탐색 범위는 **서버가 정합니다.** 에이전트가 스스로 대역을 고르면 그것은 조직이
+  통제하지 못하는 스캐너입니다. 공인 대역은 게이트웨이와 에이전트 양쪽에서
+  거절합니다.
 
 ```http
 POST /api/endpoint/inventory
@@ -332,6 +381,31 @@ POST /api/endpoint/inventory
   서버를 활성화하는 경로는 없습니다.
 - `env`·`headers`는 보내지 마세요. 서버가 저장하지 않으며, 보내면 그 토큰이
   전송 구간에 불필요하게 노출됩니다.
+
+### 3.8 계약 재승인
+
+| 메서드 | 경로 | 인증 | 설명 |
+| --- | --- | --- | --- |
+| POST | `/api/registry/{server_id}/approve-contract` | 🔒 | 관측된 계약을 승인본으로 승격 |
+
+```http
+POST /api/registry/mock-stdio/approve-contract
+{"note": "0.1.4 릴리스 노트 검토 완료. 추가 권한 요구 없음."}
+```
+
+```json
+{"server_id": "mock-stdio", "status": "READY", "actor": "admin-demo",
+ "changed": [{"tool": "get_current_time", "fields": ["schema"],
+              "from": {"schema": "4c5f83..."}, "to": {"schema": "7bd154..."}}]}
+```
+
+- 승인 대상은 **지금 관측된 값**입니다. 호출은 먼저 catalog를 다시 읽고 그 결과를
+  승인합니다. 관리자가 보고 있던 화면의 값을 승인하면, 화면과 실제가 갈라진 사이에
+  끼어든 변경이 함께 승인됩니다.
+- 공급망 차단·비활성·폐기 절차 중인 서버는 **409**입니다. 그 상태들은 "계약이
+  바뀌었다"가 아니라 "이 서버를 쓰지 않기로 했다"이고 되돌리는 절차가 다릅니다.
+- 무엇이 무엇으로 바뀌었는지가 `catalog_snapshots`에 `contract-reapproved`로
+  남습니다. 사유 없이 누를 수 없는 이유는 나중에 그 승인을 설명해야 하기 때문입니다.
 
 ---
 
@@ -485,6 +559,25 @@ Gateway가 직접 내는 판정(우선순위 2001~): `MCP-METHOD-001`, `P-INPUT-
 `P-CONTROL-FAIL-CLOSED`, `P-MONITOR-001`, `MCP-UPSTREAM-001`, `MCP-OUTPUT-001`.
 
 **숫자가 작은 정책이 이깁니다.** 진 후보는 `conflicts`에 남습니다.
+
+---
+
+### 6.1 v1.7에서 추가된 정책
+
+| 정책 ID | 판단 | 통제 | 조건 |
+| --- | --- | --- | --- |
+| `MCP-TRANSPORT-001` | Block | CTL-24 | 원격 endpoint가 전송 보호 없이 구성됨 |
+| `MCP-EGRESS-001` | Block | CTL-25 | 서버 endpoint의 host가 egress 허용 목록 밖 |
+| `P-UNTRUSTED-CONTENT-001` | Approval | CTL-13 | 인자의 비신뢰 지시 표지 + 행위 `w`/`x` + 승인 없음 |
+| `P-UNTRUSTED-CONTENT-002` | Alert | CTL-13 | 같은 표지 + 행위 `r` |
+| `P-ANOMALY-001` | Alert | CTL-28 | 창 안의 인가 거부가 상한 이상 |
+| `MCP-SHADOW-002` | Alert | CTL-03·CTL-28 | 요청자 엔드포인트 망의 미등록 MCP 리스너 |
+
+`P-ANOMALY-001`이 세는 것은 **인가 거부**뿐입니다(`P-333-DENY-001`,
+`MCP-REPOSITORY-001`, `MCP-EGRESS-001`, `P-CLASSIFICATION-001`,
+`P-APPROVAL-EXPIRY-001`). 모든 차단을 세면 서버 하나가 드리프트 상태일 때
+`MCP-CATALOG-001`이 모든 사용자에게 걸리고, 아무 잘못 없는 사람들의 다음 호출이
+전부 경보가 됩니다.
 
 ---
 

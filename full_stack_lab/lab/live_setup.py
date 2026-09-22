@@ -30,11 +30,17 @@ def read_env(path: Path) -> dict[str, str]:
 def validate(values: dict[str, str]) -> None:
     base, model, key = (values.get(name, "").strip() for name in KEYS)
     parsed = urlsplit(base)
+    # 평문 http는 이 호스트를 벗어나지 않는 주소에만 허용한다. 저장소가 "코드
+    # 반출이 불가한 조직은 로컬 모델만 연결하라"고 적어 두고 정작 로컬 주소를
+    # 막으면, 그 권고를 따르는 방법이 없다.
+    local_http = {"host.docker.internal", "localhost", "127.0.0.1", "::1", "ollama"}
     if (parsed.scheme not in {"http", "https"} or not parsed.hostname
             or parsed.username or parsed.password or parsed.query or parsed.fragment
-            or (parsed.scheme == "http" and parsed.hostname != "host.docker.internal")
+            or (parsed.scheme == "http" and parsed.hostname not in local_http)
             or parsed.hostname in {"aig-lab-model", "llm-stub"}):
-        raise ValueError("모델 URL은 HTTPS 주소 또는 http://host.docker.internal 주소여야 합니다.")
+        raise ValueError(
+            "모델 URL은 HTTPS 주소이거나 이 호스트를 벗어나지 않는 http 주소여야 합니다 "
+            "(host.docker.internal, localhost, 127.0.0.1).")
     if any(char.isspace() or char in "#$'\"\\" for char in base + model + key):
         raise ValueError("모델 설정에 공백, 제어문자 또는 .env 특수문자가 있습니다.")
     if not model or not key or key in {"replace-me", "wire-stub-key", "lab-only-test-double"}:

@@ -13,6 +13,9 @@ from mcp.server.transport_security import TransportSecuritySettings
 
 MODE = os.getenv("MCP_CATALOG_MODE", "normal")
 PORT = int(os.getenv("MCP_PORT", "9000"))
+# 컨테이너에서는 0.0.0.0이 맞다(같은 망의 gateway만 닿는다). 네이티브 실행에서는
+# 그 기본값이 이 호스트의 모든 인터페이스에 MCP를 여는 것이 된다.
+BIND_ADDR = os.getenv("MCP_BIND_ADDR", "0.0.0.0")
 EFFECT_LOG = Path(os.getenv("EFFECT_LOG", "/runtime/upstream-effects.jsonl"))
 VERSION = "1.1.0-drift" if MODE == "version-drift" else "1.0.0"
 DOCUMENTS = {
@@ -73,7 +76,7 @@ mcp = build_server()
 mcp_app = mcp.streamable_http_app(
     streamable_http_path="/",
     json_response=True,
-    host="0.0.0.0",
+    host=BIND_ADDR,
     transport_security=TransportSecuritySettings(
         allowed_hosts=["mock-http-mcp:*", "localhost:*", "127.0.0.1:*"],
         allowed_origins=["http://localhost:*", "http://127.0.0.1:*"],
@@ -99,4 +102,4 @@ app.mount("/mcp", mcp_app)
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=PORT)
+    uvicorn.run(app, host=BIND_ADDR, port=PORT)

@@ -296,15 +296,19 @@ services:
     profiles: [endpoint]
     environment:
       ENDPOINT_GATEWAY_URL: http://gateway:8080
-      ENDPOINT_AGENT_EMAIL: ${ENDPOINT_AGENT_EMAIL:-admin@bob.local}
-      MOCK_SSO_PASSWORD: ${MOCK_SSO_PASSWORD:-test-password}
+      # 관리자 계정이 아니라 장치 자격이다. 관리자가 Console이나
+      # `./console.sh endpoint-key` 로 발급하고, 이 키로 할 수 있는 일은 보고
+      # 두 가지뿐이다. 소유자(누구의 단말인가)는 발급할 때 정해져 키에 묶인다.
+      # 비어 있으면 에이전트가 기동하면서 exit 2와 함께 이유를 말한다.
+      # compose config 자체를 실패시키지는 않는다 - 이 서비스는 profile 뒤에
+      # 있고, 구성 검증은 키 없이도 돌아야 한다.
+      ENDPOINT_DEVICE_KEY: ${ENDPOINT_DEVICE_KEY:-}
       ENDPOINT_ID: ${ENDPOINT_ID:-endpoint-dev-001}
-      # 이 엔드포인트를 누구의 것으로 볼 것인가. MCP-SHADOW-001이 이 값으로
-      # 요청자와 엔드포인트를 잇는다. 비워 두면 섀도 발견이 어떤 사람의 호출과도
-      # 연결되지 않고 화면에만 남는다.
-      ENDPOINT_OWNER_TOKEN: ${ENDPOINT_OWNER_TOKEN:-emp-demo}
       ENDPOINT_REPORT_SECONDS: ${ENDPOINT_REPORT_SECONDS:-60}
       ENDPOINT_CONFIG_PATHS: /endpoint-configs
+      # 망 탐색을 할지. 범위는 여기서 정하지 않는다 — 게이트웨이의 탐색 정책이
+      # 정하고 에이전트는 받아서 따른다.
+      ENDPOINT_NETSCAN: ${ENDPOINT_NETSCAN:-1}
     depends_on:
       gateway:
         condition: service_started

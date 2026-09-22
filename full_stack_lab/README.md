@@ -129,9 +129,15 @@ Console <http://localhost:8000>에서 다음 개발 계정 중 하나를 고릅�
 
 | 화면의 역할 | 이메일 | 333 역할 | 대표 관찰 |
 | --- | --- | --- | --- |
-| 협력업체 직원 | `partner@bob.local` | `partner` | 공개 읽기는 Allow, 중요 읽기는 Block, 감사 사본은 예외로 Alert |
-| 직원 | `miso@bob.local` | `employee` | 중요 읽기는 Alert, 비중요 쓰기는 Allow |
-| 관리자 | `admin@bob.local` | `admin` | 공개 외부 전송은 Restrict, 중요 외부 전송은 Approval |
+| 관리자 | `kkg@bob.local` 김경곤 (거버넌스팀) · `mks@bob.local` 문광석 (보안운영팀) | `admin` | 공개 외부 전송은 Restrict, 중요 외부 전송은 Approval |
+| 직원 | `pse@bob.local` 박소은 · `miso@bob.local` 김미소 (보안기술팀) · `ysg@bob.local` 양승권 (플랫폼개발팀) · `jwj@bob.local` 정원재 (데이터분석팀) | `employee` | 중요 읽기는 Alert, 비중요 쓰기는 Allow |
+| 협력사 직원 | `nkk@bob.local` 권노경 (협력사 A) | `partner` | 공개 읽기는 Allow, 중요 읽기는 Block, 감사 사본은 예외로 Alert |
+
+계정은 `db/init.sql`의 `principals` 관리대장 한 곳에만 있습니다. v1.6까지는 같은
+목록이 `agent_contract.py`의 Python 상수에도 있어서, 사람이 늘거나 부서가 바뀌면
+배포가 필요했고 둘이 갈라지면 "관리대장에는 있는데 로그인은 안 되는 계정"이
+생겼습니다. 지금은 서명 검증이 "이 토큰을 이 IdP가 발급했는가"만 보고, 그 주체가
+누구인지는 관리대장이 답합니다.
 
 역할은 볼 수 있는 화면이 다릅니다. 메뉴를 감추기만 하면 개발자 도구를 여는 순간 통제가 사라지므로, `/api/console`이 역할에 없는 화면의 **데이터 자체를 응답에서 뺍니다.**
 
@@ -341,13 +347,57 @@ Gateway는 자기를 통과한 호출만 압니다. 사람들의 PC에 있는 MC
 ./console.sh endpoint
 ```
 
-에이전트가 클라이언트 설정 파일을 읽어 Registry와 대조하고 보고합니다.
+에이전트는 두 가지를 봅니다.
+
+**(1) 클라이언트 설정 파일** — 그 사람이 쓰겠다고 적어 둔 MCP 목록입니다.
 
 | 분류 | 의미 | 이어지는 통제 |
 | --- | --- | --- |
 | `registered` | 운영 중인 등록 서버 | — |
 | `shadow` | 어느 등록 서버와도 대조되지 않음 | `MCP-SHADOW-001`(Alert)로 그 사람의 호출 증적 강화 |
 | `retired-residue` | 폐기했는데 설정에 남아 있음 | 종료 케이스의 회수 대상으로 자동 추가 → C1 미충족 |
+
+**(2) 내부망에서 실제로 떠 있는 MCP 리스너** — 설정에 적지 않고 띄운 것입니다.
+
+설정 대조만으로는 못 보는 경로가 있습니다. 터미널에서 `npx some-mcp-server`를 직접
+실행하거나, 팀 서버에 MCP를 하나 올려놓고 주소만 공유하면 설정 파일에는 아무 흔적이
+없고 게이트웨이도 그 호출을 보지 못합니다.
+
+이 관측은 **게이트웨이 장비에서 할 수 없습니다.** 사원 PC의 루프백은 정의상 그 단말
+안에만 있고, 내부 세그먼트는 NAT와 방화벽 뒤에 있습니다. 그 단말의 권한을 가진
+프로세스만 답할 수 있는 질문이라 엔드포인트 평면에 둡니다.
+
+| 관측 | 무엇을 보는가 | 왜 단말이라야 하는가 |
+| --- | --- | --- |
+| `local-socket` | LISTEN 소켓과 그 소켓을 가진 프로세스 | 프로세스 소유자는 그 단말 안에서만 보인다 |
+| `network` | 허용된 내부 대역의 TCP 응답 | 세그먼트 너머는 게이트웨이에서 닿지 않는다 |
+| `stdio-process` | 포트를 열지 않는 stdio MCP 서버 | 어떤 망 스캔으로도 보이지 않는다 |
+
+MCP 여부는 **`initialize` 한 번**으로 확인합니다. 그 밖의 요청은 만들지 않습니다.
+응답이 MCP면 `confirmed`, 프로세스 명령줄의 표지로만 추정되면 `suspected`이고,
+둘 다 아니면 올리지 않습니다 — 자산대장이 아니라 MCP 관측이기 때문입니다.
+`confirmed`/`suspected`인 미등록 리스너는 `MCP-SHADOW-002`(Alert)로 그 사람의
+호출 증적을 올립니다. 설정 기반 발견보다 우선순위가 앞선 이유는, 설정은 지울 수
+있지만 떠 있는 리스너는 지금 이 순간 열려 있는 경로이기 때문입니다.
+
+**탐색 범위는 에이전트가 정하지 않습니다.** Console의 '엔드포인트' 화면에서 정하고
+에이전트는 받아서 따릅니다. 에이전트가 스스로 대역을 고르면 그것은 조직이 통제하지
+못하는 스캐너입니다. 사설 대역만 지정할 수 있고(최대 `/20`), 공인 대역은 게이트웨이와
+에이전트 **양쪽**에서 거절합니다 — 범위 통제가 한쪽에만 있으면 그 한쪽이 틀리는 날
+통제가 없습니다. 기본값은 꺼짐이고, 대역이 비어 있으면 루프백만 봅니다.
+
+**장치 자격** — 에이전트는 관리자 계정으로 로그인하지 않습니다. v1.6까지는
+로그인했고, 그래서 사람들의 PC에 깔린 프로세스 하나가 침해되면 관리자 API 전체가
+노출됐습니다. 지금은 관리자가 발급한 장치 키로만 들어오고, 그 키로 할 수 있는 일은
+`scopes`에 적힌 보고(`inventory`, `netscan`)뿐입니다. 키 하나로 남의 엔드포인트를
+덮어쓸 수도 없습니다.
+
+```bash
+./console.sh endpoint-key endpoint-ysg-laptop emp-ysg inventory,netscan
+```
+
+평문 키는 발급 응답에만 존재합니다. 저장은 해시로 하고, 잃어버리면 재발급합니다.
+다시 보여줄 수 있게 두면 관리 화면이 조직에서 두 번째로 위험한 표가 됩니다.
 
 **이 평면은 아무것도 막지 않습니다.** 설정을 고치거나 프로세스를 죽일 권한을 주면
 에이전트가 침해당했을 때 조직의 모든 개발 환경을 조작할 수 있는 경로가 됩니다.
@@ -492,7 +542,7 @@ Gateway의 짧은 모의 모델 API도 같은 방식으로 비교할 수 있습�
 ```bash
 GW_TOKEN="$(curl -sS http://localhost:8080/api/session \
   -H 'content-type: application/json' \
-  -d '{"email":"partner@bob.local","password":"test-password"}' \
+  -d '{"email":"nkk@bob.local","password":"test-password"}' \
   | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')"
 
 curl -sS http://localhost:8080/api/calls \

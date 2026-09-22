@@ -6,5 +6,15 @@
   "department_scope": {
     "_comment": "Ships disabled. Set enabled to true to require approval for important data outside the principal's own department.",
     "enabled": false
+  },
+  "egress": {
+    "_comment": "CTL-25 / RSK-25. 등록 서버가 붙어도 되는 목적지. MCP-EGRESS-001이 이 목록으로 판단한다. 비워 두면 통제가 없는 것이지 전부 허용인 것이 아니며, 정책은 그 경우 판단하지 않고 통과시킨다. 조직 배치에서는 이 목록이 네트워크 평면의 egress 허용목록과 같은 값이어야 한다.",
+    "allowed_hosts": [
+      "mock-http-mcp",
+      "localhost",
+      "127.0.0.1",
+      "host.docker.internal",
+      "api.githubcopilot.com"
+    ]
   }
 }

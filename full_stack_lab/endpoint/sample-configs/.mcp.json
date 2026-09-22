@@ -8,7 +8,9 @@
       "command": "python",
       "args": [
         "-m",
-        "mcp_server_time"
+        "mcp_server_time",
+        "--local-timezone",
+        "UTC"
       ]
     },
     "internal-crm": {

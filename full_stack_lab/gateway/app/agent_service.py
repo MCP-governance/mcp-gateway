@@ -593,6 +593,20 @@ async def refresh_registry(authorization: str | None = Header(default=None)):
     return await gateway_json("/api/catalog/refresh", authorization, method="POST")
 
 
+
+
+class ContractApprovalBody(StrictModel):
+    note: str = Field(min_length=5, max_length=500)
+
+
+@app.post("/api/registry/{server_id}/approve-contract")
+async def approve_contract(server_id: str, request: ContractApprovalBody,
+                           authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy(f"/api/registry/{server_id}/approve-contract",
+                               authorization, "POST", request.model_dump())
+
+
 @app.get("/api/enforcement")
 async def read_enforcement(authorization: str | None = Header(default=None)):
     await current_identity(authorization)
@@ -766,7 +780,11 @@ async def mcp_scan_connection_test(authorization: str | None = Header(default=No
 class ScanRequest(StrictModel):
     # 이전 판은 intake_id 하나만 받아 도입 요청만 감사할 수 있었다. 대상 종류를
     # 받아야 등록된 서버의 재감사가 가능해진다.
-    target_kind: Literal["intake", "server"] = "intake"
+    #
+    # 'endpoint'는 엔드포인트 평면이 망에서 찾아낸 미등록 MCP 리스너다. 등록되지
+    # 않았으므로 Registry에 행이 없고, 그래서 이전 판에서는 A.I.G를 붙일 방법이
+    # 아예 없었다 - 가장 알고 싶은 대상이 유일하게 검사할 수 없는 대상이었다.
+    target_kind: Literal["intake", "server", "endpoint"] = "intake"
     target_id: str = Field(min_length=1, max_length=200)
     # 정적 감사는 코드를 복제해 읽고, 동적 점검은 실행 중인 endpoint에 붙는다.
     # 후자는 그 서버의 응답이 설정한 LLM endpoint로 나간다.
@@ -788,6 +806,23 @@ def local_model_endpoint() -> bool:
 
 async def resolve_scan_target(target_kind: str, target_id: str, mode: str = "static") -> str:
     """대상이 실제로 감사 가능한지 확인하고 표시 이름을 돌려준다."""
+    if target_kind == "endpoint":
+        # 미등록 리스너는 코드가 없다. 주소만 있으므로 동적 점검만 가능하다.
+        if mode != "dynamic":
+            raise HTTPException(409, "발견된 리스너에는 동적 점검만 할 수 있습니다. 복제할 코드가 없습니다.")
+        if not target_id.isdigit():
+            raise HTTPException(422, "리스너 ID 형식이 아닙니다.")
+        row = await db.fetch_one(
+            """SELECT address, port, server_name, classification, mcp_evidence
+                 FROM endpoint_listeners WHERE id=%s""", (int(target_id),))
+        if not row:
+            raise HTTPException(404, "관측된 리스너를 찾을 수 없습니다.")
+        if row["mcp_evidence"] != "confirmed":
+            # 추정 단계에서 붙으면 MCP가 아닌 서비스에 요청을 보내게 된다.
+            raise HTTPException(409, "MCP로 확인된 리스너만 점검할 수 있습니다.")
+        if not row["port"]:
+            raise HTTPException(409, "포트가 없는 관측(stdio 프로세스)은 동적 점검 대상이 아닙니다.")
+        return "%s (%s:%s)" % (row["server_name"] or "미등록 MCP", row["address"], row["port"])
     if mode == "dynamic":
         # 동적 점검은 "지금 이 주소에 있는 것"을 보는 검사다. 아직 들이지 않기로
         # 한 도입 요청에는 붙일 주소가 없고, 붙인다면 그것은 격리 원칙과 반대다.
@@ -844,6 +879,8 @@ async def run_mcp_scan_job(request: ScanRequest, authorization: str | None = Hea
     # 동적 점검은 서버가 돌려주는 내용을 모델로 보낸다. 폐기 중인 서버의 응답에
     # 잔존 데이터가 들어 있을 수 있으므로, 외부 endpoint를 쓸 때는 관리자가 그
     # 사실을 확인한 기록이 남아야 한다. 로컬 모델은 확인 없이 진행한다.
+    # 미등록 리스너 점검은 조직이 모르는 서버의 응답을 모델로 보낸다. 등록 서버보다
+    # 내용을 덜 알고 있는 대상이라 확인 요구를 낮출 이유가 없다.
     external_model = request.mode == "dynamic" and not local_model_endpoint()
     if external_model and not request.acknowledge_external_model:
         raise HTTPException(
@@ -1076,6 +1113,90 @@ async def endpoint_inventory(classification: str | None = None,
     await admin_only(authorization)
     suffix = f"?classification={classification}" if classification else ""
     return await gateway_proxy("/api/endpoint/inventory" + suffix, authorization)
+
+
+# ── 엔드포인트 평면 (Console 포트에서 Gateway로 중계) ───────────────────────
+#
+# 장치 발급과 탐색 범위는 사람이 정하는 결정이라 사람의 자격으로 지나간다.
+# 에이전트가 쓰는 보고 경로(x-endpoint-key)는 이 포트에 열지 않는다 - 같은
+# 문으로 사람과 장치가 들어오면 두 자격의 분리가 화면에서만 존재하게 된다.
+
+
+class DeviceCreate(StrictModel):
+    endpoint_id: str = Field(min_length=3, max_length=120)
+    hostname: str = Field(min_length=1, max_length=200)
+    platform: str = Field(default="unknown", max_length=80)
+    owner_token: str | None = Field(default=None, max_length=120)
+    scopes: list[Literal["inventory", "netscan"]] = Field(default=["inventory"], max_length=2)
+
+
+class ScanPolicyBody(StrictModel):
+    enabled: bool | None = None
+    allowed_cidrs: list[str] | None = Field(default=None, max_length=16)
+    ports: list[int] | None = Field(default=None, max_length=64)
+    max_hosts: int | None = Field(default=None, ge=1, le=4096)
+    connect_timeout_ms: int | None = Field(default=None, ge=50, le=5000)
+    probe_mcp: bool | None = None
+    interval_seconds: int | None = Field(default=None, ge=60, le=86400)
+
+
+class ListenerScanRequest(StrictModel):
+    listener_id: int = Field(ge=1)
+    acknowledge_external_model: bool = False
+
+
+@app.get("/api/endpoint/devices")
+async def endpoint_devices(authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy("/api/endpoint/devices", authorization)
+
+
+@app.post("/api/endpoint/devices", status_code=201)
+async def endpoint_device_issue(request: DeviceCreate,
+                                authorization: str | None = Header(default=None)):
+    """장치 자격 발급. 평문 키는 이 응답에만 존재한다."""
+    await admin_only(authorization)
+    return await gateway_proxy("/api/endpoint/devices", authorization, "POST",
+                               request.model_dump())
+
+
+@app.delete("/api/endpoint/devices/{endpoint_id}")
+async def endpoint_device_revoke(endpoint_id: str,
+                                 authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy(f"/api/endpoint/devices/{endpoint_id}", authorization, "DELETE")
+
+
+@app.get("/api/endpoint/scan-policy")
+async def endpoint_scan_policy(authorization: str | None = Header(default=None)):
+    await admin_only(authorization)
+    return await gateway_proxy("/api/endpoint/scan-policy/admin", authorization)
+
+
+@app.put("/api/endpoint/scan-policy")
+async def endpoint_scan_policy_set(request: ScanPolicyBody,
+                                   authorization: str | None = Header(default=None)):
+    """탐색 범위는 사람이 정한다. 에이전트가 스스로 고르면 통제되지 않는 스캐너다."""
+    await admin_only(authorization)
+    return await gateway_proxy("/api/endpoint/scan-policy", authorization, "PUT",
+                               request.model_dump(exclude_none=True))
+
+
+@app.post("/api/endpoint/listeners/{listener_id}/scan")
+async def endpoint_listener_scan(listener_id: int, request: ListenerScanRequest,
+                                 authorization: str | None = Header(default=None)):
+    """발견된 미등록 MCP에 A.I.G 동적 점검을 건다.
+
+    등록되지 않은 서버라 Registry 행이 없고, 그래서 이전 판에서는 가장 알고 싶은
+    대상이 유일하게 검사할 수 없는 대상이었다.
+    """
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "동적 점검 실행은 관리자만 할 수 있습니다.")
+    return await run_mcp_scan_job(
+        ScanRequest(target_kind="endpoint", target_id=str(listener_id), mode="dynamic",
+                    acknowledge_external_model=request.acknowledge_external_model),
+        authorization)
 
 
 @app.get("/api/risk-catalog")
