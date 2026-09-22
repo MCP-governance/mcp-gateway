@@ -165,6 +165,15 @@ INSERT INTO mcp_servers(id, display_name, transport, endpoint, source_url, sourc
   ('github', 'GitHub MCP Server', 'Streamable HTTP', 'https://api.githubcopilot.com/mcp/', 'https://github.com/github/github-mcp-server', 'v1.12.1', 'GitHub', 'MIT', 'DISABLED', '인증정보를 저장하지 않아 의도적으로 비활성')
 ON CONFLICT (id) DO NOTHING;
 
+-- mock-stdio의 승인 schema 해시는 `--local-timezone UTC`로 고정한 명령이 내는 값이다.
+-- 고정하기 전에는 mcp-server-time이 도구 Schema 안에 호스트의 지역 시간대를 문자열로
+-- 박아 넣어서, 같은 버전의 같은 서버가 호스트마다 다른 해시를 냈다. 그 상태에서는
+-- MCP-CATALOG-001이 변조가 아니라 "이 컨테이너가 어느 시간대에서 돌았는가"를 탐지한다.
+--
+-- 그래도 이 값은 여전히 **그 빌드의** 값이다. mcp-server-time의 전이 의존성이 바뀌면
+-- 정당한 설치도 드리프트로 잡힌다. 그때는 SQL을 고치는 것이 아니라 Console의
+-- '계약 재승인'(POST /api/registry/{id}/approve-contract)으로 무엇이 바뀌었는지 보고
+-- 사유와 함께 승격한다.
 INSERT INTO mcp_tools(
   server_id, name, action, enabled,
   approved_description_hash, approved_schema_hash, approved_server_version
@@ -172,8 +181,8 @@ INSERT INTO mcp_tools(
   ('mock-http', 'read_document', 'r', true, 'd204053e86b958fc69afb655f7e375b202da57cac039d0a3c22c1a2b6a04d5bf', '6acf3889056551ca3e64167571d763aa08965a43e62d76cb3ebf65ac6ad2fad2', '1.0.0'),
   ('mock-http', 'write_document', 'w', true, '7ac99629874d91247a42fbc95776f375ad0c072bd3ad8cd5f030267fb8d3cfa0', '0343900e1ef1ea1e32e1f79dd11b230d3124a5df5480dbea5dab4b6bb95e2b32', '1.0.0'),
   ('mock-http', 'send_external', 'x', true, '9c668b07cecd4f93829842a503425b9794a311b93cc4bb1fb385b09020ba680c', '43b37769ed173223b4ff3e5ba229f97e1ec3e046e6715796c26fd7f3fb448e9d', '1.0.0'),
-  ('mock-stdio', 'get_current_time', 'r', true, '0a34bcff2277db311ef58792a1ce0a5d4b0d678e88a0c6d77eeed328898cd9d5', '4c5f8341a69e313883df9a1bb60aeea0e8e5178e4591da372ff6d2571da53e69', '1.30.0'),
-  ('mock-stdio', 'convert_time', 'r', false, '171c9160f314ac7ce564c0679d229f864814c2ed99728e2ca0e8bb34df580aa0', '116b20b454386f6d32475bdd7e7bf5cba5673c0644f23865bc19fafc9a9fafde', '1.30.0'),
+  ('mock-stdio', 'get_current_time', 'r', true, '0a34bcff2277db311ef58792a1ce0a5d4b0d678e88a0c6d77eeed328898cd9d5', '7bd154068baa5db1bf6d477a9c462c1d3a852f63905d6f8688ff9c635de792f7', '1.30.0'),
+  ('mock-stdio', 'convert_time', 'r', false, '171c9160f314ac7ce564c0679d229f864814c2ed99728e2ca0e8bb34df580aa0', '635607a0af323e46173e8a4432c7d05130c8e364921d7f5f8fbcfa5c7ed3a3f1', '1.30.0'),
   ('github', 'get_file_contents', 'r', false, NULL, NULL, 'v1.12.1'),
   ('github', 'issue_read', 'r', false, NULL, NULL, 'v1.12.1')
 ON CONFLICT (server_id, name) DO NOTHING;
