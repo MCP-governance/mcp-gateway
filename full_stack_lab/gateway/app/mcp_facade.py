@@ -1,83 +1,137 @@
+"""The Gateway as an MCP server: the one endpoint employee agents can reach.
+
+tools/list returns the approved tools of every operating server under the name
+`<server>__<tool>` with the schema that was approved, not whatever the server says
+today. tools/call runs through execute_call(). Identity comes from the transport
+(Bearer token on HTTP/SSE, the spawn-time principal on stdio) and never from tool
+arguments.
+
+Only initialize/ping/tools/list/tools/call are handled; resources, prompts,
+sampling and the rest are not mediated, so the server does not register them and
+the SDK answers "method not found" (MCP-METHOD-001 in the audit narrative).
+"""
 from __future__ import annotations
 
+import json
 import os
+from typing import Any
 
-from mcp.server import MCPServer
-from mcp.server.mcpserver import Context
+from mcp import types
+from mcp.server.lowlevel.server import Server
 from mcp.server.transport_security import TransportSecuritySettings
 
+from . import db
 from .agent_contract import authenticated_user
 from .core import execute_call
-from .method_scope import MethodScope
 
-# stdio has no request headers, so the identity of a stdio ingress is bound once, at
-# process start, by whoever is allowed to spawn it. Unset means no identity, which
-# fails closed rather than falling back to a default principal.
+SEPARATOR = "__"
 STDIO_PRINCIPAL = os.getenv("GATEWAY_STDIO_PRINCIPAL", "")
+DECISION_LABEL = {"Allow": "허용", "Alert": "허용·경보", "Restrict": "제한 실행", "Approval": "승인 대기", "Block": "차단"}
 
 
-async def principal(ctx: Context) -> str:
-    """Resolve the caller from the transport, never from tool arguments.
+def _headers(ctx: Any) -> Any:
+    return getattr(getattr(ctx, "request", None), "headers", None)
 
-    HTTP and SSE carry a signed synthetic JWT; the header is client-supplied input, so
-    it is verified (signature, issuer, audience, expiry, revocation) before it becomes
-    an identity. stdio carries no headers and uses the principal bound at spawn time.
-    """
-    headers = ctx.headers
+
+async def _caller(ctx: Any) -> dict:
+    """Verified principal for this request. stdio has no headers and uses the
+    principal bound when the process was spawned; unset fails closed."""
+    headers = _headers(ctx)
     if headers is None:
         if not STDIO_PRINCIPAL:
             raise ValueError("stdio ingress에 신원이 바인딩되지 않았습니다. GATEWAY_STDIO_PRINCIPAL을 설정하세요.")
-        return STDIO_PRINCIPAL
+        row = await db.fetch_one("SELECT token, role FROM principals WHERE token=%s", (STDIO_PRINCIPAL,))
+        return {"principal": STDIO_PRINCIPAL, "roles": [row["role"] if row else "unknown"], "claims": {}}
     user = await authenticated_user(headers.get("authorization"))
-    return user["principal"]
+    return user
 
 
-def build_mcp() -> MCPServer:
-    mcp = MCPServer(
+def _client_context(ctx: Any, user: dict) -> dict:
+    """What the workstation says about itself. Client-reported, recorded as such."""
+    headers = _headers(ctx) or {}
+    claims = user.get("claims") or {}
+    return {
+        "workstation": (headers.get("x-workstation-id") or "")[:64] or None,
+        "agent": (headers.get("x-agent-name") or headers.get("user-agent") or "")[:80] or None,
+        "task_id": (headers.get("x-agent-task-id") or "")[:64] or None,
+        "token_jti": claims.get("jti"),
+        "oauth_client": claims.get("client_id"),
+    }
+
+
+async def _approved_tools(role: str) -> list[types.Tool]:
+    rows = await db.fetch_all(
+        """SELECT t.server_id, t.name, t.action, t.description, t.input_schema, s.display_name
+             FROM mcp_tools t JOIN mcp_servers s ON s.id = t.server_id
+            WHERE t.enabled AND t.input_schema IS NOT NULL
+              AND COALESCE(s.lifecycle, 'OPERATING') = 'OPERATING'
+              AND s.status NOT IN ('DISABLED', 'BLOCKED_SUPPLY_CHAIN')
+            ORDER BY t.server_id, t.name""")
+    tools = []
+    for row in rows:
+        # A partner never gets w/x anywhere in the 333 matrix; listing those tools
+        # to a partner's model only invites refused calls.
+        if role == "partner" and row["action"] != "r":
+            continue
+        tools.append(types.Tool(
+            name=f"{row['server_id']}{SEPARATOR}{row['name']}",
+            description=f"[{row['display_name']} · {row['action']}] {row['description'] or ''}"[:1500],
+            inputSchema=row["input_schema"],
+        ))
+    return tools
+
+
+def _render(outcome: dict) -> types.CallToolResult:
+    decision = outcome.get("decision", "Block")
+    gateway = {
+        "decision": decision, "policy_id": outcome.get("policy_id"), "decision_id": outcome.get("decision_id"),
+        "trace_id": outcome.get("trace_id"), "approval_id": outcome.get("approval_id"),
+        "data_class": outcome.get("data_class"), "action": outcome.get("action"),
+        "restrictions_applied": outcome.get("restrictions_applied") or [],
+    }
+    header = f"[MCP Gateway · {DECISION_LABEL.get(decision, decision)} · {outcome.get('policy_id')}] {outcome.get('reason', '')}"
+    result = outcome.get("result")
+    if outcome.get("upstream_executed") and result:
+        content = [types.TextContent(type="text", text=header)] if decision != "Allow" else []
+        for item in result.get("content") or []:
+            if item.get("type") == "text":
+                content.append(types.TextContent(type="text", text=item.get("text", "")))
+            else:
+                content.append(types.TextContent(type="text", text=json.dumps(item, ensure_ascii=False)[:4000]))
+        return types.CallToolResult(content=content or [types.TextContent(type="text", text="(빈 결과)")],
+                                    isError=bool(result.get("is_error")), _meta={"gateway": gateway})
+    if decision == "Approval":
+        text = (f"{header}\n관리자 승인이 필요합니다. 승인 ID {outcome.get('approval_id')} "
+                "(Console → 승인 대기). 승인되면 Gateway가 이 요청을 그대로 실행합니다.")
+    else:
+        text = header + (f"\n오류: {outcome['error']}" if outcome.get("error") else "")
+    return types.CallToolResult(content=[types.TextContent(type="text", text=text)], isError=True,
+                                _meta={"gateway": gateway})
+
+
+def build_mcp() -> Server:
+    async def list_tools(ctx: Any, params: Any) -> types.ListToolsResult:
+        user = await _caller(ctx)
+        return types.ListToolsResult(tools=await _approved_tools(user["roles"][0]))
+
+    async def call_tool(ctx: Any, params: types.CallToolRequestParams) -> types.CallToolResult:
+        user = await _caller(ctx)
+        name = params.name or ""
+        server_id, _, tool = name.partition(SEPARATOR)
+        outcome = await execute_call({
+            "server_id": server_id, "tool": tool, "arguments": dict(params.arguments or {}),
+            "user_token": user["principal"], "client": _client_context(ctx, user),
+        })
+        return _render(outcome)
+
+    return Server(
         "mcp-governance-security-gateway",
-        version="1.1.0",
-        instructions="합성 사용자·데이터만 사용하는 정책 강제 실습용 Gateway입니다. 신원은 transport 인증에서만 옵니다.",
-        middleware=[MethodScope()],
+        version="2.0.0",
+        instructions=("BoB Corp MCP Gateway. 모든 도구 호출은 신원·계약·자원 분류·OPA 정책으로 판정됩니다. "
+                      "도구 이름은 <server>__<tool> 형식입니다. 차단·승인 대기 응답의 사유를 사용자에게 그대로 알려 주세요."),
+        on_list_tools=list_tools,
+        on_call_tool=call_tool,
     )
-
-    @mcp.tool(description="등록된 합성 문서를 정책 확인 후 읽습니다.")
-    async def read_document(document_id: str, ctx: Context) -> dict:
-        return await execute_call({
-            "tool_name": "read_document", "user_token": await principal(ctx),
-            "document_id": document_id,
-        })
-
-    @mcp.tool(description="등록된 합성 문서를 정책 확인 후 변경합니다.")
-    async def write_document(document_id: str, content: str, ctx: Context) -> dict:
-        return await execute_call({
-            "tool_name": "write_document", "user_token": await principal(ctx),
-            "document_id": document_id, "content": content,
-        })
-
-    @mcp.tool(description="외부 전송·고위험 실행(x)을 승인 또는 제한 정책으로 통제합니다.")
-    async def send_external(
-        document_id: str, destination: str, content: str, ctx: Context
-    ) -> dict:
-        return await execute_call({
-            "tool_name": "send_external", "user_token": await principal(ctx),
-            "document_id": document_id, "destination": destination, "content": content,
-        })
-
-    @mcp.tool(description="허용된 stdio MCP 프로세스로 공개 시간정보를 조회합니다.")
-    async def get_current_time(ctx: Context, timezone: str = "Asia/Seoul") -> dict:
-        return await execute_call({
-            "tool_name": "get_current_time", "user_token": await principal(ctx),
-            "timezone": timezone,
-        })
-
-    @mcp.tool(description="GitHub 공식 MCP의 읽기 도구입니다. 인증 전에는 의도적으로 차단됩니다.")
-    async def github_get_file(owner: str, repo: str, path: str, ctx: Context) -> dict:
-        return await execute_call({
-            "tool_name": "github_get_file", "user_token": await principal(ctx),
-            "owner": owner, "repo": repo, "path": path,
-        })
-
-    return mcp
 
 
 def transport_security() -> TransportSecuritySettings:

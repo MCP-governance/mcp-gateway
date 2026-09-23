@@ -6,15 +6,11 @@ import json
 import os
 import re
 import uuid
-from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 import httpx
-import httpx2
-from mcp import Client, StdioServerParameters
-from mcp.client.streamable_http import streamable_http_client
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
@@ -23,29 +19,28 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import db, endpoint_plane
+from . import classify, db, endpoint_plane, registry, upstream
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/mcp/authz/decision")
 # 정책 관리대장(§11.8 / §12.5)은 정책 코드와 함께 배포되고 OPA가 그 정본이다.
 # Gateway가 별도 사본을 들면 "승인된 정책"이 둘이 된다.
 POLICY_LEDGER_URL = os.getenv("POLICY_LEDGER_URL", "http://opa:8181/v1/data/policy_ledger")
 GATEWAY_ENVIRONMENT = os.getenv("GATEWAY_ENVIRONMENT", "prod")
-HTTP_MCP_URL = os.getenv("HTTP_MCP_URL", "http://mock-http-mcp:9000/mcp/")
-GITHUB_MCP_URL = os.getenv("GITHUB_MCP_URL", "https://api.githubcopilot.com/mcp/")
-GITHUB_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN", "")
-EFFECT_LOG = Path(os.getenv("EFFECT_LOG", "/runtime/upstream-effects.jsonl"))
 REPORT_DIR = Path(os.getenv("REPORT_DIR", "/reports"))
 POLICY_PATH = Path(os.getenv("POLICY_PATH", "/policy/policy.rego"))
-TIME_MCP_PYTHON = os.getenv("TIME_MCP_PYTHON", "/opt/time-mcp/bin/python")
-# 승인 계약 기준선을 재현 가능하게 만드는 고정값. 아래 _client() 주석 참고.
-STDIO_TIME_TZ = os.getenv("STDIO_TIME_TZ", "UTC")
 APPROVAL_TTL_MINUTES = 10
+CATALOG_REFRESH_SECONDS = int(os.getenv("CATALOG_REFRESH_SECONDS", "60"))
 
-# External names normally match the registered MCP tool. Only this user-facing
-# GitHub name differs; r/w/x always comes from mcp_tools, the Registry source of truth.
-TOOL_ALIASES = {"github_get_file": ("github", "get_file_contents")}
+# Instruction-shaped text aimed at the model, in tool descriptions (contract) and in
+# tool results (output control). Plain words such as "credential" are not on the
+# list: real servers use them in honest descriptions (mcp-email-server does), and a
+# pattern that flags honest servers gets switched off.
 UNSAFE_METADATA = re.compile(
-    r"ignore\s+(all\s+)?previous|system\s+prompt|credential|secret\s+key|bypass\s+policy",
+    r"ignore\s+(all\s+|any\s+)?(previous|prior|above)\s+(instructions|rules)"
+    r"|disregard\s+(all\s+)?(previous|prior)\s+instructions"
+    r"|system\s+(prompt|note)\s+for\s+ai|<\s*/?\s*system\s*>"
+    r"|bypass\s+(the\s+)?(security\s+)?policy|do\s+not\s+tell\s+the\s+user"
+    r"|이전\s*지시(를|사항을)?\s*무시|시스템\s*프롬프트를?\s*(무시|출력)",
     re.IGNORECASE,
 )
 MAX_RESULT_BYTES = int(os.getenv("MAX_RESULT_BYTES", "262144"))
@@ -68,8 +63,8 @@ BLOCK_STREAK_MINUTES = int(os.getenv("BLOCK_STREAK_MINUTES", "10"))
 # 모든 차단을 세면 그 신호가 환경 상태에 묻힌다 - 서버 하나가 드리프트 상태면
 # MCP-CATALOG-001이 모든 사용자에게 걸리고, 그러면 아무 잘못 없는 사람들의 다음
 # 호출이 전부 경보가 된다. 주체에게 귀속되는 인가 거부만 센다.
-DENIAL_POLICIES = ("P-333-DENY-001", "MCP-REPOSITORY-001", "MCP-EGRESS-001",
-                   "P-CLASSIFICATION-001", "P-APPROVAL-EXPIRY-001")
+DENIAL_POLICIES = ("P-333-DENY-001", "MCP-EGRESS-001", "MCP-EGRESS-002", "P-DLP-001",
+                   "P-CLASSIFICATION-001", "P-APPROVAL-EXPIRY-001", "MCP-REGISTRY-001")
 
 # OPA is a trust boundary too. Only policy fields may enter the execution event;
 # a malformed result must never become Allow through monitor mode.
@@ -82,8 +77,8 @@ POLICY_RESULT = Draft202012Validator({
         "reason": {"type": "string", "minLength": 1},
         "restrictions": {
             "type": "object", "additionalProperties": False,
-            "properties": {"destination": {"type": "string", "minLength": 1, "maxLength": 200},
-                           "max_chars": {"type": "integer", "minimum": 0, "maximum": 2000}},
+            "properties": {"max_chars": {"type": "integer", "minimum": 0, "maximum": 100000},
+                           "journal_bcc": {"type": "string", "pattern": "^[^@\\s]+@[^@\\s]+$"}},
         },
         **{key: {"type": "string"} for key in (
             "policy_name", "policy_version", "policy_status", "policy_set_version", "environment")},
@@ -129,79 +124,11 @@ def canonical_hash(value: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def effect_count() -> int:
-    if not EFFECT_LOG.exists():
-        return 0
-    with EFFECT_LOG.open(encoding="utf-8") as handle:
-        return sum(1 for line in handle if line.strip())
-
-
-async def _tool_spec(tool_name: str) -> dict:
-    """Resolve action from the approved Registry, not a duplicate Python table."""
-    alias = TOOL_ALIASES.get(tool_name)
-    if alias:
-        row = await db.fetch_one(
-            "SELECT server_id,name,action FROM mcp_tools WHERE server_id=%s AND name=%s", alias,
-        )
-    else:
-        rows = await db.fetch_all("SELECT server_id,name,action FROM mcp_tools WHERE name=%s", (tool_name,))
-        row = rows[0] if len(rows) == 1 else None
-    if not row:
-        # Keep unknown requests on the existing fail-closed MCP-REGISTRY path.
-        return {"server_id": "mock-http", "registry_name": tool_name, "action": "x"}
-    return {"server_id": row["server_id"], "registry_name": row["name"], "action": row["action"]}
-
-
-def _tool_view(tool: Any) -> dict:
-    return {
-        "name": tool.name,
-        "description": tool.description or "",
-        "input_schema": tool.input_schema,
-    }
-
-
-@asynccontextmanager
-async def _client(server_id: str):
-    if server_id == "github":
-        if not GITHUB_TOKEN:
-            raise RuntimeError("GitHub token is not configured")
-        headers = {"Authorization": "Bearer " + GITHUB_TOKEN, "X-MCP-Tools": "get_file_contents", "X-MCP-Readonly": "true"}
-        async with httpx2.AsyncClient(headers=headers, timeout=20, trust_env=False) as http_client:
-            async with Client(streamable_http_client(GITHUB_MCP_URL, http_client=http_client)) as client:
-                yield client
-        return
-    if server_id == "mock-http":
-        client_source: Any = HTTP_MCP_URL
-    elif server_id == "mock-stdio":
-        # --local-timezone을 고정한다. mcp-server-time은 도구 설명·Schema 안에
-        # 호스트의 지역 시간대를 문자열로 박아 넣는다. 고정하지 않으면 같은 버전의
-        # 같은 서버가 호스트마다 다른 schema_hash를 내고, MCP-CATALOG-001이 실제
-        # 변조가 아니라 "이 컨테이너가 어느 시간대에서 돌았는가"를 탐지하게 된다.
-        # 승인 계약의 기준선은 재현 가능해야 한다.
-        client_source = StdioServerParameters(
-            command=TIME_MCP_PYTHON,
-            args=["-m", "mcp_server_time", "--local-timezone", STDIO_TIME_TZ],
-        )
-    else:
-        raise RuntimeError(f"discovery is disabled for {server_id}")
-
-    async with Client(client_source) as client:
-        yield client
-
-
 async def _discover(server_id: str) -> dict:
-    async with _client(server_id) as client:
-        listed = await client.list_tools()
-        info = client.server_info
-        return {
-            # 서버가 initialize에서 스스로 말하는 이름. 망 관측이 손에 넣는 것은
-            # 사람이 적은 라벨이 아니라 이 값이라, Registry가 이것을 알고 있어야
-            # 등록된 서버가 섀도로 분류되지 않는다.
-            "advertised_name": (info.name if info else "") or "",
-            "version": info.version if info else "unknown",
-            "protocol_version": str(client.protocol_version),
-            "tools": [_tool_view(tool) for tool in listed.tools],
-        }
+    spec = registry.server(server_id)
+    if not spec:
+        raise RuntimeError(f"catalog has no server {server_id}")
+    return await upstream.discover(spec["endpoint"])
 
 
 async def refresh_catalog(server_id: str) -> dict:
@@ -221,19 +148,26 @@ async def refresh_catalog(server_id: str) -> dict:
 
     discovered = await _discover(server_id)
     observed = {tool["name"]: tool for tool in discovered["tools"]}
+    catalog_hash = canonical_hash(discovered["tools"])
     registered_rows = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s ORDER BY name", (server_id,))
     registered = {row["name"]: row for row in registered_rows}
-
-    for name, tool in observed.items():
-        if name not in registered:
-            continue
-        description_hash = canonical_hash(tool["description"])
-        schema_hash = canonical_hash(tool["input_schema"])
-        await db.execute(
-            """UPDATE mcp_tools SET observed_description_hash=%s, observed_schema_hash=%s,
-               observed_server_version=%s, observed_at=now() WHERE server_id=%s AND name=%s""",
-            (description_hash, schema_hash, discovered["version"], server_id, name),
-        )
+    # Per-tool observed columns change only when the catalog changes; writing them on
+    # every refresh would cost one UPDATE per tool (gitea has 55) for no new fact.
+    unchanged = await db.fetch_one(
+        "SELECT 1 FROM catalog_snapshots WHERE server_id=%s AND catalog_hash=%s ORDER BY id DESC LIMIT 1",
+        (server_id, catalog_hash))
+    if not unchanged or any(row["observed_schema_hash"] is None for row in registered_rows):
+        for name, tool in observed.items():
+            if name not in registered:
+                continue
+            await db.execute(
+                """UPDATE mcp_tools SET observed_description_hash=%s, observed_schema_hash=%s,
+                   observed_server_version=%s, observed_at=now(), description=%s, input_schema=%s,
+                   annotations=%s WHERE server_id=%s AND name=%s""",
+                (canonical_hash(tool["description"]), canonical_hash(tool["input_schema"]),
+                 discovered["version"], tool["description"], Jsonb(tool["input_schema"]),
+                 Jsonb(tool.get("annotations")), server_id, name),
+            )
     registered_rows = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s ORDER BY name", (server_id,))
     registered = {row["name"]: row for row in registered_rows}
     names_match = set(observed) == set(registered)
@@ -264,7 +198,6 @@ async def refresh_catalog(server_id: str) -> dict:
             findings.append({"type": "contract-drift", "tool": name, "fields": mismatches})
 
     exact_match = names_match and metadata_safe and hashes_match
-    catalog_hash = canonical_hash(discovered["tools"])
     previous = await db.fetch_one(
         "SELECT catalog_hash, exact_match FROM catalog_snapshots WHERE server_id=%s ORDER BY id DESC LIMIT 1",
         (server_id,),
@@ -387,6 +320,8 @@ async def bootstrap() -> None:
     await db.wait_until_ready()
     await db.execute((Path(__file__).parent / "agent_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "lifecycle_tables.sql").read_text())
+    await db.execute((Path(__file__).parent / "v2_tables.sql").read_text())
+    await registry.sync()
     await policy_ledger(refresh=True)
     if POLICY_PATH.exists():
         digest = hashlib.sha256(POLICY_PATH.read_bytes()).hexdigest()
@@ -397,18 +332,32 @@ async def bootstrap() -> None:
             (f"rego-{digest[:12]}", str(POLICY_PATH), digest),
         )
 
-    for server_id in ("mock-http", "mock-stdio"):
-        for attempt in range(20):
-            try:
-                await refresh_catalog(server_id)
-                break
-            except Exception as exc:
-                if attempt == 19:
-                    await db.execute(
-                        "UPDATE mcp_servers SET status='ERROR', status_reason=%s WHERE id=%s",
-                        (str(exc)[:240], server_id),
-                    )
-                await asyncio.sleep(1)
+
+async def refresh_all_catalogs() -> dict:
+    """One pass over every catalog server. A server that does not answer is ERROR,
+    which the policy path reads as an unverifiable contract (MCP-CATALOG-001)."""
+    results = {}
+    for server_id in registry.servers():
+        try:
+            results[server_id] = (await refresh_catalog(server_id))["status"]
+        except Exception as exc:
+            await db.execute(
+                "UPDATE mcp_servers SET status='ERROR', status_reason=%s WHERE id=%s AND status NOT IN ('DISABLED','BLOCKED_SUPPLY_CHAIN')",
+                (f"연결 실패: {type(exc).__name__}: {str(exc)[:200]}", server_id))
+            results[server_id] = "ERROR"
+    return results
+
+
+async def catalog_watch() -> None:
+    """Background drift watch. Calls themselves re-check the contract on the same
+    connection that executes, so this loop only keeps the dashboard and the policy
+    input current; it is not what makes execution safe."""
+    while True:
+        try:
+            await refresh_all_catalogs()
+        except Exception:
+            pass
+        await asyncio.sleep(CATALOG_REFRESH_SECONDS)
 
 
 async def _contract(server_id: str, tool_name: str) -> dict:
@@ -514,16 +463,14 @@ async def monitor_summary(hours: int = 168) -> dict:
 # CTL-13 / RSK-12. 도구 설명만 검사하면 "설명은 깨끗한데 인자로 들어온 문서 본문에
 # 지시가 박혀 있는" 경로가 그대로 남는다. 간접 프롬프트 인젝션은 대부분 그 경로다.
 # 여기서는 세기만 하고 판단은 정책이 한다.
-def untrusted_markers(payload: dict) -> list[str]:
-    found: list[str] = []
-    for key in ("content", "destination", "path", "timezone", "owner", "repo"):
-        value = payload.get(key)
-        if not isinstance(value, str):
-            continue
-        for match in UNSAFE_METADATA.findall(value):
-            found.append(key)
-            break
-    return sorted(set(found))
+def untrusted_markers(arguments: dict) -> list[str]:
+    found: set[str] = set()
+    for key, value in (arguments or {}).items():
+        for text in classify._strings(value):
+            if UNSAFE_METADATA.search(text):
+                found.add(str(key))
+                break
+    return sorted(found)
 
 
 # CTL-24 / RSK-24. 원격 endpoint가 평문이면 요청·응답이 경로 위에서 읽히고 바뀐다.
@@ -686,50 +633,62 @@ async def _policy(input_document: dict) -> dict:
         if not POLICY_RESULT.is_valid(result):
             raise RuntimeError("OPA returned an invalid decision contract")
         restrictions = result["restrictions"]
-        if ((result["decision"] == "Restrict" or restrictions)
-                and (input_document.get("tool", {}).get("name") != "send_external"
-                     or set(restrictions) != {"destination", "max_chars"})):
+        enforceable = set(input_document.get("tool", {}).get("restrictable") or [])
+        if (result["decision"] == "Restrict" and not restrictions) or not set(restrictions) <= enforceable:
             raise RuntimeError("OPA returned unenforceable restrictions")
         return result
 
 
-async def _call_upstream(spec: dict, arguments: dict, approval_id: str | None = None) -> dict:
-    try:
-        async with _client(spec["server_id"]) as client:
-            # Recheck the approved contract on the SAME connection that will execute.
-            listed = await client.list_tools()
-            registered = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s", (spec["server_id"],))
-            observed = {t.name: _tool_view(t) for t in listed.tools}
-            if set(observed) != {t["name"] for t in registered}:
-                raise DispatchRejected("MCP catalog changed before execution")
+async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id: str | None = None) -> dict:
+    """Recheck the contract and call, on one connection.
+
+    Nothing is raised inside the MCP client context on purpose: an exception there is
+    wrapped into an ExceptionGroup together with whatever the transport's teardown
+    raises, and a "blocked by the contract check" would read as "the call's outcome
+    is unknown". The decision is taken after the connection has closed.
+    """
+    spec = registry.server(server_id)
+    if not spec:
+        raise DispatchRejected("server is not in the catalog")
+    problem = None
+    payload: dict | None = None
+    async with upstream.session(spec["endpoint"]) as client:
+        listed = await client.list_tools()
+        registered = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s", (server_id,))
+        observed = {t.name: upstream.tool_view(t) for t in listed.tools}
+        version = client.server_info.version if client.server_info else ""
+        if set(observed) != {t["name"] for t in registered}:
+            problem = "MCP catalog changed before execution"
+        else:
             for row in registered:
-                tool = observed[row["name"]]
-                if (canonical_hash(tool["description"]) != row["approved_description_hash"]
-                        or canonical_hash(tool["input_schema"]) != row["approved_schema_hash"]
-                        or client.server_info.version != row["approved_server_version"]):
-                    raise DispatchRejected("MCP contract changed before execution")
-            if not Draft202012Validator(observed[spec["registry_name"]]["input_schema"]).is_valid(arguments):
-                raise DispatchRejected("Arguments do not match the approved input schema")
-            if approval_id is not None:
-                # Discovery may take longer than the remaining approval lifetime.
-                approval = await db.fetch_one(
-                    "SELECT status, expires_at FROM approvals WHERE id=%s", (approval_id,),
-                )
-                if (not approval or approval["status"] != "APPROVED"
-                        or approval["expires_at"] <= datetime.now(UTC)):
-                    raise DispatchRejected("Approval expired or was withdrawn before execution")
-            result = await client.call_tool(spec["registry_name"], arguments)
-            if result.is_error:
-                messages = [getattr(item, "text", str(item)) for item in result.content]
-                raise RuntimeError("; ".join(messages))
+                item = observed[row["name"]]
+                if (canonical_hash(item["description"]) != row["approved_description_hash"]
+                        or canonical_hash(item["input_schema"]) != row["approved_schema_hash"]
+                        or version != row["approved_server_version"]):
+                    problem = "MCP contract changed before execution"
+                    break
+        if problem is None and not Draft202012Validator(observed[tool]["input_schema"]).is_valid(arguments):
+            problem = "Arguments do not match the approved input schema"
+        if problem is None and approval_id is not None:
+            # Discovery may take longer than the remaining approval lifetime.
+            approval = await db.fetch_one("SELECT status, expires_at FROM approvals WHERE id=%s", (approval_id,))
+            if (not approval or approval["status"] != "APPROVED"
+                    or approval["expires_at"] <= datetime.now(UTC)):
+                problem = "Approval expired or was withdrawn before execution"
+        if problem is None:
+            result = await client.call_tool(tool, arguments)
+            payload = {"content": upstream.content_items(result), "is_error": bool(result.is_error)}
             if result.structured_content is not None:
-                return _guarded_result(result.structured_content)
-            return _guarded_result({"content": [getattr(item, "text", str(item)) for item in result.content]})
-    except* DispatchRejected as exc:
-        # MCP Client task groups wrap exceptions raised inside their context.
-        raise DispatchRejected("Pre-execution contract or approval check failed") from exc
-    except* ResultRejected as exc:
-        raise ResultRejected("Upstream result failed output controls") from exc
+                payload["structured"] = result.structured_content
+    if problem:
+        raise DispatchRejected(problem)
+    return _guarded_result(payload or {"content": [], "is_error": True})
+
+
+def _root_cause(exc: BaseException) -> str:
+    while isinstance(exc, BaseExceptionGroup) and exc.exceptions:
+        exc = exc.exceptions[0]
+    return f"{type(exc).__name__}: {str(exc)[:400]}"
 
 
 def _guarded_result(payload: dict) -> dict:
@@ -746,34 +705,21 @@ def _guarded_result(payload: dict) -> dict:
     return payload
 
 
-def _upstream_arguments(tool_name: str, payload: dict, restrictions: dict) -> dict:
-    if tool_name == "read_document":
-        return {"document_id": payload["document_id"]}
-    if tool_name == "write_document":
-        return {"document_id": payload["document_id"], "content": payload.get("content", "")}
-    if tool_name == "send_external":
-        content = payload.get("content", "")
-        if "max_chars" in restrictions:
-            content = content[: int(restrictions["max_chars"])]
-        return {
-            "document_id": payload["document_id"],
-            "destination": restrictions.get("destination", payload.get("destination", "")),
-            "content": content,
-        }
-    if tool_name == "get_current_time":
-        return {"timezone": payload.get("timezone", "Asia/Seoul")}
-    if tool_name == "github_get_file":
-        return {key: payload[key] for key in ("owner", "repo", "path") if key in payload}
-    return {}
-
-
 def _audit_payload(payload: dict) -> dict:
-    """Structural evidence stays readable; the document body becomes a digest."""
-    if "content" not in payload:
-        return payload
-    content = str(payload.get("content") or "")
-    return {**{k: v for k, v in payload.items() if k != "content"},
-            "content_sha256": canonical_hash(content), "content_chars": len(content)}
+    """Structure stays readable; long text becomes a digest.
+
+    Mail bodies, file contents and SQL results are evidence of *what kind* of call it
+    was, not something the audit table should hold a second copy of.
+    """
+    def shrink(value: Any, depth: int = 0) -> Any:
+        if isinstance(value, str) and len(value) > 300:
+            return {"sha256": canonical_hash(value), "chars": len(value), "head": value[:120]}
+        if isinstance(value, dict) and depth < 4:
+            return {k: shrink(v, depth + 1) for k, v in value.items()}
+        if isinstance(value, list) and depth < 4:
+            return [shrink(v, depth + 1) for v in value[:50]]
+        return value
+    return shrink(payload)
 
 
 def _audit_result(result: Any) -> dict:
@@ -804,7 +750,10 @@ AUDIT_COLUMN_SETS = {
     ),
 }
 AUDIT_COLUMN_SETS[4] = (*AUDIT_COLUMN_SETS[3], "upstream_attempted")
-CHAIN_VERSION = 4
+# v5: which registered server, which resource, where it was going, and from which
+# workstation/agent - the fields a reader needs to understand the row without a join.
+AUDIT_COLUMN_SETS[5] = (*AUDIT_COLUMN_SETS[4], "server_id", "resource_id", "destinations", "client", "summary")
+CHAIN_VERSION = 5
 AUDIT_COLUMNS = AUDIT_COLUMN_SETS[CHAIN_VERSION]
 GENESIS = "0" * 64
 
@@ -852,6 +801,11 @@ async def _record_decision(event: dict) -> int:
         "exception_id": (event.get("exception") or {}).get("id"),
         "conflicts": event.get("conflicts") or [],
         "environment": event.get("environment") or GATEWAY_ENVIRONMENT,
+        "server_id": event.get("server_id"),
+        "resource_id": event.get("resource_id"),
+        "destinations": event.get("destinations") or [],
+        "client": event.get("client") or {},
+        "summary": event.get("summary"),
     }
     async with db.transaction() as connection:
         cursor = await connection.execute("SELECT head_sha256 FROM audit_chain WHERE id=1 FOR UPDATE")
@@ -865,8 +819,9 @@ async def _record_decision(event: dict) -> int:
                  approval_id, request_payload, result_preview, error,
                  enforcement, would_decision, would_policy_id,
                  policy_version, obligations, exception_id, conflicts, environment,
-                 prev_sha256, entry_sha256, chain_version, upstream_attempted)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                 prev_sha256, entry_sha256, chain_version, upstream_attempted,
+                 server_id, resource_id, destinations, client, summary)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                RETURNING id""",
             (
                 record["request_id"], record["trace_id"], record["user_token"], record["role"],
@@ -880,6 +835,8 @@ async def _record_decision(event: dict) -> int:
                 record["policy_version"], Jsonb(record["obligations"]), record["exception_id"],
                 Jsonb(record["conflicts"]), record["environment"],
                 previous, entry, CHAIN_VERSION, record["upstream_attempted"],
+                record["server_id"], record["resource_id"], Jsonb(record["destinations"]),
+                Jsonb(record["client"]), record["summary"],
             ),
         )
         row = await cursor.fetchone()
@@ -928,129 +885,91 @@ async def verify_audit_chain() -> dict:
             "entries_recorded": int(head["entries"]) if head else None}
 
 
+async def _decision_payload(event: dict, before: float) -> dict:
+    decision_id = await _record_decision(event)
+    return {**event, "decision_id": decision_id, "latency_ms": int((asyncio.get_running_loop().time() - before) * 1000)}
+
+
 async def execute_call(payload: dict, approval_granted: bool = False, approval_id: str | None = None) -> dict:
-    request_id = str(payload.get("_agent_context", {}).get("request_id") or uuid.uuid4())
-    before = effect_count()
+    """One tools/call through the enforced path.
+
+    payload: {"server_id", "tool", "arguments", "user_token", "client"}. Identity is
+    the verified transport principal placed in user_token by the ingress; nothing in
+    `arguments` is ever read as identity.
+    """
+    before = asyncio.get_running_loop().time()
+    request_id = str(payload.get("request_id") or uuid.uuid4())
+    server_id = str(payload.get("server_id") or "")
+    tool = str(payload.get("tool") or "")
+    arguments = payload.get("arguments") if isinstance(payload.get("arguments"), dict) else {}
+    user_token = str(payload.get("user_token") or "")
     with tracer.start_as_current_span("mcp.gateway.call") as span:
         trace_id = f"{span.get_span_context().trace_id:032x}"
-        tool_name = str(payload.get("tool_name", "unknown"))
-        spec = await _tool_spec(tool_name)
-        principal = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (payload.get("user_token", ""),))
-        document = None
-        classification = {"required": False}
-        if tool_name == "get_current_time":
-            data_class = "public"
-        elif tool_name == "github_get_file":
-            # An external repository is important unless an operator classifies it otherwise.
-            data_class = "important"
-            classification = {"required": True, "source": "github-allowlist", "version": "v1"}
-        else:
-            document = await db.fetch_one("SELECT * FROM documents WHERE id=%s", (payload.get("document_id", ""),))
-            data_class = document["data_class"] if document else "important"
-            if document:
-                classification = {
-                    "required": True,
-                    "source": document.get("classification_source"),
-                    "version": document.get("classification_version"),
-                }
+        principal = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (user_token,))
+        cls = classify.classify(server_id, tool, arguments, user_token)
         role = principal["role"] if principal else "unknown"
-        span.set_attribute("mcp.tool", tool_name)
-        span.set_attribute("mcp.role", role)
-        span.set_attribute("mcp.data_class", data_class)
+        for key, value in (("mcp.server", server_id), ("mcp.tool", tool), ("mcp.role", role),
+                           ("mcp.data_class", cls.data_class), ("mcp.action", cls.action)):
+            span.set_attribute(key, value)
 
         base_event = {
-            "request_id": request_id,
-            "trace_id": trace_id,
-            "user_token": str(payload.get("user_token", "unknown")),
-            "role": role,
-            "tool_name": tool_name,
-            "data_class": data_class,
-            "action": spec["action"],
-            "upstream_executed": False,
-            "upstream_attempted": False,
-            "enforcement": "enforce",
-            "would_decision": None,
-            "would_policy_id": None,
-            "approval_id": approval_id,
-            "request_payload": payload,
-            "result": None,
-            "error": None,
+            "request_id": request_id, "trace_id": trace_id, "user_token": user_token or "unknown",
+            "role": role, "server_id": server_id, "tool_name": tool,
+            "data_class": cls.data_class, "action": cls.action,
+            "resource_id": cls.primary.id, "destinations": [d.view() for d in cls.destinations],
+            "client": payload.get("client") or {}, "summary": cls.summary(),
+            "classification": {"resources": [r.view() for r in cls.resources], "dlp": cls.dlp,
+                               "notes": cls.notes, "base_action": cls.base_action},
+            "upstream_executed": False, "upstream_attempted": False,
+            "enforcement": "enforce", "would_decision": None, "would_policy_id": None,
+            "approval_id": approval_id, "request_payload": {"server_id": server_id, "tool": tool, "arguments": arguments},
+            "result": None, "error": None,
         }
 
         await policy_ledger()
-        if (not principal or principal["status"] != "active"
-                or (spec["server_id"] == "mock-http" and not document)):
-            base_event.update(local_verdict(
-                "P-INPUT-001", "Block", "활성 상태의 등록 계정과 유효한 문서 ID가 필요합니다.",
-            ))
-            decision_id = await _record_decision(base_event)
-            return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
+        if not principal or principal["status"] != "active":
+            base_event.update(local_verdict("P-INPUT-001", "Block", "활성 상태의 등록 계정이 아닙니다."))
+            return await _decision_payload(base_event, before)
 
-        from .agent_contract import SCHEMAS
-        if tool_name in SCHEMAS:
-            try:
-                Draft202012Validator(SCHEMAS[tool_name]).validate(_upstream_arguments(tool_name, payload, {}))
-            except Exception:
+        tool_row = await db.fetch_one("SELECT * FROM mcp_tools WHERE server_id=%s AND name=%s", (server_id, tool))
+        # Arguments are checked against the approved schema before the policy sees
+        # them. The same check runs again on the live schema right before dispatch.
+        if tool_row and tool_row.get("input_schema") and tool_row["enabled"]:
+            if not Draft202012Validator(tool_row["input_schema"]).is_valid(arguments):
                 base_event.update(local_verdict(
-                    "P-INPUT-SCHEMA-001", "Block", "도구 인자가 승인된 입력 형식과 다릅니다.",
-                ))
-                decision_id = await _record_decision(base_event)
-                return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
+                    "P-INPUT-SCHEMA-001", "Block", "도구 인자가 승인된 입력 형식과 다릅니다."))
+                return await _decision_payload(base_event, before)
 
-        if tool_name == "github_get_file":
-            allowed_repos = {item.strip().lower() for item in os.getenv("GITHUB_ALLOWED_REPOS", "MCP-governance/mcp-gateway").split(",") if item.strip()}
-            if f"{payload.get('owner', '')}/{payload.get('repo', '')}".lower() not in allowed_repos:
-                base_event.update(local_verdict(
-                    "MCP-REPOSITORY-001", "Block", "허용 목록에 없는 GitHub 저장소입니다.",
-                ))
-                decision_id = await _record_decision(base_event)
-                return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
-
-        catalog_fresh = True
-        if spec["server_id"] != "github" or GITHUB_TOKEN:
-            try:
-                await refresh_catalog(spec["server_id"])
-            except Exception as exc:
-                span.record_exception(exc)
-                catalog_fresh = False
-
-        contract = await _contract(spec["server_id"], spec["registry_name"])
-        if not catalog_fresh:
-            contract["known_tools_only"] = False
+        contract = await _contract(server_id, tool)
         policy_input = {
-            # §11.6 환경정보와 상황정보. 시각을 정책이 스스로 읽으면 만료 판단이
-            # 판단 시점마다 달라지고 시험으로 재현할 수 없다. Gateway가 재고, 정책이 판단한다.
+            # §11.6 환경정보와 상황정보. 시각은 Gateway가 재고 정책이 판단한다.
             "environment": GATEWAY_ENVIRONMENT,
             "now": datetime.now(UTC).isoformat(),
-            "principal": {"role": role, "synthetic": bool(principal["synthetic"]),
-                          "department": principal.get("department"),
-                          # 이 사람의 엔드포인트에 게이트웨이를 통과하지 않는 MCP
-                          # 설정이 몇 건 보고됐는가. 강제 경로 밖의 경로를 가진
-                          # 사람의 호출은 같은 권한이어도 같은 위험이 아니다.
-                          "shadow_endpoints": await endpoint_plane.shadow_count_for(
-                              str(payload.get("user_token", ""))),
-                          # 설정 파일과 다른 증거. 설정에 적지 않고 띄운 서버는
-                          # 설정 대조로는 보이지 않고, 망 관측만 답할 수 있다.
-                          "shadow_listeners": await endpoint_plane.shadow_listener_count_for(
-                              str(payload.get("user_token", ""))),
-                          },
-            "resource": {"id": payload.get("document_id", "time"), "data_class": data_class,
-                         "owner_department": document.get("owner_department") if document else None,
-                         "classification": classification},
-            "tool": {"name": spec["registry_name"], "action": spec["action"]},
-            # 이 호출의 인자 자체가 신뢰할 수 없는 콘텐츠인가. 도구 설명 검사(계약)와
-            # 다른 축이라 따로 싣는다 - 같은 서버의 같은 도구라도 인자는 매 호출 다르다.
-            "request": {"untrusted_markers": untrusted_markers(payload)},
+            "principal": {
+                "role": role, "synthetic": bool(principal["synthetic"]),
+                "department": principal.get("department"),
+                "shadow_endpoints": await endpoint_plane.shadow_count_for(user_token),
+                "shadow_listeners": await endpoint_plane.shadow_listener_count_for(user_token),
+            },
+            "resource": {
+                "id": cls.primary.id, "kind": cls.primary.kind, "data_class": cls.data_class,
+                "owner_department": cls.primary.owner_department,
+                "classification": {"required": True, "source": "registry/catalog.toml",
+                                   "version": registry.catalog_version()},
+            },
+            "resources": [r.view() for r in cls.resources],
+            "destinations": [d.view() for d in cls.destinations],
+            "tool": {"server": server_id, "name": tool, "action": cls.action,
+                     "base_action": cls.base_action, "restrictable": cls.restrictable},
+            "request": {"untrusted_markers": untrusted_markers(arguments), "dlp": cls.dlp},
             "approval": {"granted": approval_granted, "id": approval_id},
             "contract": contract,
-            "context": await _recent_activity(str(payload.get("user_token", ""))),
+            "context": await _recent_activity(user_token),
         }
         try:
             result = await _policy(policy_input)
         except Exception as exc:
-            result = local_verdict(
-                "P-CONTROL-FAIL-CLOSED", "Block", "OPA 정책 결정에 실패하여 기본 차단했습니다.",
-            )
+            result = local_verdict("P-CONTROL-FAIL-CLOSED", "Block", "OPA 정책 결정에 실패하여 기본 차단했습니다.")
             base_event["error"] = str(exc)[:500]
 
         mode = await enforcement_mode()
@@ -1073,26 +992,30 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
 
         if result["decision"] == "Approval":
             new_approval_id = str(uuid.uuid4())
-            fingerprint = canonical_hash(payload)
+            stored = {k: payload.get(k) for k in ("server_id", "tool", "arguments", "user_token", "client")}
             await db.execute(
                 """INSERT INTO approvals(id, request_fingerprint, request_payload, status, requested_by, expires_at)
                    VALUES (%s,%s,%s,'PENDING',%s,%s)""",
-                (
-                    new_approval_id, fingerprint, Jsonb(payload), payload["user_token"],
-                    datetime.now(UTC) + timedelta(minutes=APPROVAL_TTL_MINUTES),
-                ),
+                (new_approval_id, canonical_hash(stored), Jsonb(stored), user_token,
+                 datetime.now(UTC) + timedelta(minutes=APPROVAL_TTL_MINUTES)),
             )
             base_event["approval_id"] = new_approval_id
         elif result["decision"] in {"Allow", "Alert", "Restrict"}:
-            effective = _upstream_arguments(tool_name, payload, result.get("restrictions") or {})
+            effective, applied = classify.apply_restrictions(cls, arguments, result.get("restrictions") or {})
+            base_event["restrictions_applied"] = applied
             base_event["upstream_attempted"] = True
             try:
                 with tracer.start_as_current_span("mcp.upstream.call") as upstream_span:
-                    upstream_span.set_attribute("mcp.server", spec["server_id"])
-                    upstream_span.set_attribute("mcp.transport", "stdio" if spec["server_id"] == "mock-stdio" else "streamable-http")
-                    base_event["result"] = await _call_upstream(spec, effective, approval_id)
+                    upstream_span.set_attribute("mcp.server", server_id)
+                    upstream_span.set_attribute("mcp.transport", "streamable-http")
+                    base_event["result"] = await _call_upstream(server_id, tool, effective, approval_id)
                 base_event["upstream_executed"] = True
                 base_event["effective_arguments"] = effective
+                classify.remember_navigation(user_token, cls, True)
+                if base_event["result"].get("is_error"):
+                    # The server ran the call and answered with a tool error (missing
+                    # file, bad SQL). That is a definite outcome, not an unknown one.
+                    base_event["error"] = upstream.text_of(base_event["result"]["content"])[:500]
             except DispatchRejected as exc:
                 base_event.update(local_verdict(
                     "P-CONTROL-FAIL-CLOSED", "Block",
@@ -1100,11 +1023,13 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     upstream_attempted=False, error=str(exc),
                 ))
                 span.record_exception(exc)
+                # Record the drift now so the next call is refused up front.
+                try:
+                    await refresh_catalog(server_id)
+                except Exception:
+                    pass
             except ResultRejected as exc:
-                # The call did run upstream; only the answer is withheld. Recording it
-                # as "not executed" would make the effect log and the audit disagree.
-                # 이 호출을 통과시킨 제한조건과 예외는 남긴다. 나중에 "무엇을 허용한
-                # 판정이 결국 결과를 반환하지 않았는가"를 재구성해야 한다.
+                # The call did run upstream; only the answer is withheld.
                 base_event.update(local_verdict(
                     "MCP-OUTPUT-001", "Block",
                     "upstream 결과가 출력 통제에 걸려 반환하지 않았습니다. 호출 자체는 실행됐습니다.",
@@ -1116,16 +1041,14 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             except Exception as exc:
                 base_event.update(local_verdict(
                     "MCP-UPSTREAM-001", "Block",
-                    "허용 후 MCP 통신이 실패했습니다. 실제 실행 여부는 독립 증적을 확인하세요.",
+                    "허용 후 MCP 통신이 실패했습니다. 실제 실행 여부는 하위 시스템에서 확인해야 합니다.",
                     restrictions=base_event.get("restrictions") or {},
                     exception=base_event.get("exception"),
-                    error=str(exc)[:500],
+                    error=_root_cause(exc),
                 ))
                 span.record_exception(exc)
 
-        decision_id = await _record_decision(base_event)
-        after = effect_count()
-        return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": after}
+        return await _decision_payload(base_event, before)
 
 
 async def approve_request(approval_id: str, reviewer_token: str) -> dict:

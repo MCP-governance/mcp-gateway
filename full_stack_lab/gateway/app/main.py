@@ -5,7 +5,6 @@ import json
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime
-from pathlib import Path
 from typing import Literal
 
 import httpx
@@ -18,27 +17,24 @@ from .core import (
     OPA_URL,
     approve_request,
     bootstrap,
-    effect_count,
-    execute_call,
     enforcement_mode,
     import_supply_chain_reports,
     supply_chain_coverage,
     monitor_summary,
-    refresh_catalog,
+    refresh_all_catalogs,
+    catalog_watch,
     reject_request,
     set_enforcement_mode,
     verify_audit_chain,
 )
 from .mcp_facade import build_mcp, transport_security
-from .agent_contract import DOCUMENT_IDS, authenticated_user
-from .agent_gateway import router as agent_router
+from .agent_contract import authenticated_user
+from . import registry
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 
-EFFECT_LOG = Path(os.getenv("EFFECT_LOG", "/runtime/upstream-effects.jsonl"))
 # 배선 주소를 코드에 박아두면 compose 바깥(네이티브 실행)에서 항상 degraded가 된다.
 # 실제로 무엇이 죽었는지와 "이 배치에는 그 구성요소가 없다"가 구분되지 않는다.
-MOCK_MCP_HEALTH_URL = os.getenv("MOCK_MCP_HEALTH_URL", "http://mock-http-mcp:9000/health")
 JAEGER_QUERY_URL = os.getenv("JAEGER_QUERY_URL", "http://jaeger:16686/api/services")
 gateway_mcp = build_mcp()
 mcp_http = gateway_mcp.streamable_http_app(
@@ -49,27 +45,6 @@ mcp_http = gateway_mcp.streamable_http_app(
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
-
-
-class CallRequest(StrictModel):
-    tool_name: Literal["read_document", "write_document", "send_external", "get_current_time", "github_get_file"]
-    document_id: Literal["notice-001", "work-001", "secret-001", "audit-001"] | None = None
-    content: str = Field(default="합성 데모 내용", max_length=2000)
-    destination: str = Field(default="outside.example", max_length=200)
-    timezone: str = Field(default="Asia/Seoul", max_length=64)
-    owner: str = Field(default="MCP-governance", max_length=100)
-    repo: str = Field(default="mcp-gateway", max_length=100)
-    path: str = Field(default="README.md", max_length=300)
-
-
-# Literal은 정적이어야 해서 목록을 한 번 더 적는다. 갈라지는 순간 기동이 실패하게
-# 둔다. 두 목록이 다른 채로 뜨면 한쪽 ingress만 새 문서를 받는다.
-assert set(CallRequest.model_fields["document_id"].annotation.__args__[0].__args__) == set(DOCUMENT_IDS), \
-    "CallRequest.document_id와 agent_contract.DOCUMENT_IDS가 다릅니다."
-
-
-class MockModelRequest(StrictModel):
-    message: str = Field(min_length=1, max_length=500)
 
 
 class RejectRequest(StrictModel):
@@ -104,15 +79,16 @@ async def admin_caller(user: dict = Depends(caller)) -> dict:
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await bootstrap()
+    watcher = asyncio.create_task(catalog_watch())
     try:
         async with gateway_mcp.session_manager.run():
             yield
     finally:
+        watcher.cancel()
         await db.close()
 
 
 app = FastAPI(title="MCP Governance Security Gateway", version="1.1.0", lifespan=lifespan)
-app.include_router(agent_router)
 
 
 async def _absent() -> None:
@@ -131,69 +107,71 @@ async def _probe(url: str) -> bool:
 
 @app.get("/api/health")
 async def health() -> dict:
-    opa_ok, upstream_ok, jaeger_ok = await asyncio.gather(
+    opa_ok, jaeger_ok = await asyncio.gather(
         _probe(OPA_URL.rsplit("/v1/", 1)[0] + "/health?bundles=true"),
-        _probe(MOCK_MCP_HEALTH_URL),
         _probe(JAEGER_QUERY_URL) if JAEGER_QUERY_URL else _absent(),
     )
     try:
-        await db.fetch_one("SELECT 1")
+        rows = await db.fetch_all("SELECT id, status FROM mcp_servers ORDER BY id")
         db_ok = True
     except Exception:
-        db_ok = False
-    github = await db.fetch_one("SELECT status FROM mcp_servers WHERE id='github'") if db_ok else None
-    components = {
-        "gateway": True,
-        "postgresql": db_ok,
-        "opa": opa_ok,
-        "mock_http_mcp": upstream_ok,
-        "jaeger": jaeger_ok,
-        "github_mcp": bool(os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN") and github and github["status"] == "READY"),
-    }
-    # None은 "이 배치에 없음"이라 판정에서 제외한다. github_mcp는 자격 미설정이
-    # 기본값이라 원래부터 제외 대상이다.
-    required = [value for key, value in components.items()
-                if key != "github_mcp" and value is not None]
-    return {"status": "ok" if all(required) else "degraded", "components": components}
+        rows, db_ok = [], False
+    servers = {row["id"]: row["status"] for row in rows if row["id"] in registry.servers()}
+    components = {"gateway": True, "postgresql": db_ok, "opa": opa_ok, "jaeger": jaeger_ok}
+    required = [value for value in components.values() if value is not None]
+    return {"status": "ok" if all(required) else "degraded", "components": components,
+            # Upstream state is reported, not required: one server in DRIFT must not
+            # make the control point "unhealthy" - that is the Gateway doing its job.
+            "mcp_servers": {"ready": sum(1 for v in servers.values() if v == "READY"),
+                            "total": len(servers), "status": servers}}
 
 
 @app.get("/api/state")
 async def state() -> dict:
-    servers, tools, decisions, approvals, reports, principals, documents, policy = await asyncio.gather(
+    servers, tools, decisions, approvals, reports, principals, policy = await asyncio.gather(
         db.fetch_all("SELECT * FROM mcp_servers ORDER BY id"),
-        db.fetch_all("SELECT * FROM mcp_tools ORDER BY server_id,name"),
+        db.fetch_all("""SELECT server_id, name, action, enabled,
+                               approved_schema_hash = observed_schema_hash AS schema_ok
+                          FROM mcp_tools ORDER BY server_id, name"""),
         db.fetch_all("SELECT * FROM decisions ORDER BY id DESC LIMIT 40"),
         db.fetch_all("SELECT * FROM approvals WHERE status='PENDING' ORDER BY created_at DESC"),
         db.fetch_all("SELECT * FROM supply_chain_reports ORDER BY id DESC LIMIT 20"),
         db.fetch_all("SELECT display_name,role,synthetic FROM principals ORDER BY role"),
-        db.fetch_all("SELECT * FROM documents ORDER BY id"),
         db.fetch_one("SELECT * FROM policy_versions WHERE status='ACTIVE' ORDER BY activated_at DESC LIMIT 1"),
     )
-    return {
-        "servers": servers,
-        "tools": tools,
-        "decisions": decisions,
-        "approvals": approvals,
-        "supply_chain": reports,
-        "principals": principals,
-        "documents": documents,
-        "policy": policy,
-        "upstream_effect_count": effect_count(),
-        "github_auth_configured": bool(os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")),
-    }
+    return {"servers": servers, "tools": tools, "decisions": decisions, "approvals": approvals,
+            "supply_chain": reports, "principals": principals, "policy": policy,
+            "catalog_version": registry.catalog_version()}
 
 
-@app.get("/api/integration")
-async def integration() -> dict:
-    try:
-        async with httpx.AsyncClient(timeout=5) as client:
-            response = await client.get(AGENT_SERVICE_URL.rstrip("/") + "/api/readiness")
-            response.raise_for_status()
-            readiness = response.json()
-    except (httpx.HTTPError, ValueError):
-        readiness = {"status": "not_ready", "model": {"mode": "unknown"}}
-    runs = await db.fetch_all("SELECT id,session_id,status,user_id,created_at,response->>'status' AS outcome FROM agent_runs ORDER BY created_at DESC LIMIT 10")
-    return {"readiness": readiness, "runs": runs}
+@app.get("/api/registry")
+async def registry_view() -> dict:
+    """Catalog + contract state in one document: what was approved, what runs now."""
+    servers, tools, relationships = await asyncio.gather(
+        db.fetch_all("SELECT * FROM mcp_servers ORDER BY id"),
+        db.fetch_all("""SELECT server_id, name, action, enabled, description,
+                               approved_schema_hash IS NOT NULL AS pinned,
+                               (approved_schema_hash = observed_schema_hash
+                                AND approved_description_hash = observed_description_hash) AS contract_ok
+                          FROM mcp_tools ORDER BY server_id, name"""),
+        db.fetch_all("SELECT * FROM usage_relationships ORDER BY id"),
+    )
+    catalog_servers = registry.servers()
+    return {"catalog_version": registry.catalog_version(),
+            "classification": registry.catalog().get("classification", {}),
+            "organization": registry.catalog().get("organization", {}),
+            "servers": [row for row in servers if row["id"] in catalog_servers],
+            "tools": tools, "usage_relationships": relationships}
+
+
+@app.get("/.well-known/oauth-protected-resource")
+async def protected_resource_metadata() -> dict:
+    """RFC 9728. The Gateway's MCP endpoint is a protected resource; employees get
+    tokens from the organisation's IdP, never from an upstream MCP server."""
+    return {"resource": os.getenv("GATEWAY_PUBLIC_MCP_URL", "http://gateway:8080/mcp/"),
+            "authorization_servers": [os.getenv("IDP_ISSUER", "http://agent-service:8000")],
+            "bearer_methods_supported": ["header"],
+            "resource_name": "BoB Corp MCP Gateway"}
 
 
 @app.get("/api/policy/matrix")
@@ -276,44 +254,6 @@ async def session(request: SessionRequest) -> dict:
     return response.json()
 
 
-@app.post("/api/calls")
-async def call_tool(request: CallRequest, user: dict = Depends(caller)) -> dict:
-    payload = {**request.model_dump(exclude_none=True), "user_token": user["principal"]}
-    if request.tool_name in {"read_document", "write_document", "send_external"} and not request.document_id:
-        raise HTTPException(422, "문서 도구에는 document_id가 필요합니다.")
-    return await execute_call(payload)
-
-
-@app.post("/api/mock-model")
-async def mock_model(request: MockModelRequest, user: dict = Depends(caller)) -> dict:
-    message = request.message
-    if "시간" in message:
-        tool = "get_current_time"
-    elif any(word in message for word in ("외부", "전송", "보내")):
-        tool = "send_external"
-    elif any(word in message for word in ("수정", "작성", "써")):
-        tool = "write_document"
-    else:
-        tool = "read_document"
-
-    if any(word in message for word in ("중요", "계약", "비밀")):
-        document_id = "secret-001"
-    elif any(word in message for word in ("내부", "업무")):
-        document_id = "work-001"
-    else:
-        document_id = "notice-001"
-    payload = {
-        "user_token": user["principal"],
-        "tool_name": tool,
-        "document_id": document_id,
-        "content": message,
-        "destination": "outside.example",
-        "timezone": "Asia/Seoul",
-    }
-    result = await execute_call(payload)
-    return {"generator": "deterministic-mock-v1", "generated_call": payload, "result": result}
-
-
 @app.post("/api/approvals/{approval_id}/approve")
 async def approve(approval_id: str, user: dict = Depends(admin_caller)) -> dict:
     try:
@@ -332,13 +272,7 @@ async def reject(approval_id: str, request: RejectRequest, user: dict = Depends(
 
 @app.post("/api/catalog/refresh")
 async def catalog_refresh(user: dict = Depends(caller)) -> dict:
-    results = []
-    for server_id in ("mock-http", "mock-stdio"):
-        try:
-            results.append(await refresh_catalog(server_id))
-        except Exception as exc:
-            results.append({"server_id": server_id, "status": "ERROR", "reason": str(exc)})
-    return {"results": results}
+    return {"results": await refresh_all_catalogs()}
 
 
 
@@ -403,18 +337,6 @@ async def monitor(hours: int = 168) -> dict:
 async def audit_verify(user: dict = Depends(admin_caller)) -> dict:
     """Answers "감사 로그가 위변조됐나요?" with a row id instead of an assurance."""
     return await verify_audit_chain()
-
-
-@app.get("/api/effects")
-async def effects() -> dict:
-    events = []
-    if EFFECT_LOG.exists():
-        for line in EFFECT_LOG.read_text(encoding="utf-8").splitlines()[-30:]:
-            try:
-                events.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
-    return {"count": len(events), "events": list(reversed(events))}
 
 
 # ── 전주기 종료·폐기 ────────────────────────────────────────────────────────

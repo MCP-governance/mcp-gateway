@@ -3,8 +3,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
-    && python -m venv /opt/time-mcp \
-    && /opt/time-mcp/bin/pip install --no-cache-dir mcp-server-time==2026.8.18 \
     && useradd --uid 10001 --create-home appuser \
     && mkdir -p /runtime /reports \
     && chown -R appuser:appuser /app /runtime /reports

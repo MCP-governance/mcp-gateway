@@ -633,7 +633,7 @@
       "author": "보안기술팀",
       "reviewer": "보안 담당자",
       "approver": "승인권자",
-      "scope": "important이 아닌 자원에 대한 x 행위",
+      "scope": "important가 아닌 자원에 대한 x 행위 중 도구가 제한을 집행할 수 있는 것",
       "environments": [
         "dev",
         "stage",
@@ -642,6 +642,7 @@
       "inputs": [
         "tool.action",
         "resource.data_class",
+        "tool.restrictable",
         "data.restrictions"
       ],
       "condition": "x 행위 + important 아님 + 권한 있음",
@@ -1069,107 +1070,6 @@
       "approval_status": "승인",
       "effective_from": "2026-09-16T00:00:00Z",
       "pac_candidate_id": "PAC-CAND-14"
-    },
-    "MCP-REPOSITORY-001": {
-      "name": "외부 저장소 허용목록",
-      "purpose": "허용 목록 밖의 GitHub 저장소 접근을 차단한다.",
-      "enforced_by": "gateway",
-      "risk_ids": [
-        "RSK-25",
-        "RSK-02"
-      ],
-      "requirement_ids": [
-        "REQ-25"
-      ],
-      "control_ids": [
-        "CTL-25"
-      ],
-      "principle_ids": [
-        "PRN-04",
-        "PRN-08"
-      ],
-      "owner": "서비스 소유자",
-      "scope": "github_get_file",
-      "inputs": [
-        "owner",
-        "repo",
-        "GITHUB_ALLOWED_REPOS"
-      ],
-      "condition": "owner/repo가 허용 목록에 없음",
-      "outcome": "차단",
-      "enforcement": "정책 질의 전 거부",
-      "priority": 2004,
-      "exceptionable": true,
-      "obligations": [
-        "evidence.standard"
-      ],
-      "test_ids": [
-        "T-REPO-001"
-      ],
-      "author": "보안기술팀",
-      "reviewer": "보안 담당자",
-      "approver": "승인권자",
-      "environments": [
-        "dev",
-        "stage",
-        "prod"
-      ],
-      "automation": "자동화",
-      "version": "1.0.0",
-      "status": "운영",
-      "approval_status": "승인",
-      "effective_from": "2026-09-16T00:00:00Z",
-      "pac_candidate_id": "PAC-CAND-22"
-    },
-    "MCP-RECEIPT-001": {
-      "name": "중복 실행 방지",
-      "purpose": "같은 request_id 또는 tool_call_id의 재시도는 저장된 응답을 돌려주고 upstream을 다시 실행하지 않는다.",
-      "enforced_by": "gateway",
-      "risk_ids": [
-        "RSK-28"
-      ],
-      "requirement_ids": [
-        "REQ-29"
-      ],
-      "control_ids": [
-        "CTL-29"
-      ],
-      "principle_ids": [
-        "PRN-06",
-        "PRN-10"
-      ],
-      "owner": "개발·도입 담당자",
-      "scope": "Agent Service → Gateway 내부 호출",
-      "inputs": [
-        "request_id",
-        "tool_call_id",
-        "envelope fingerprint"
-      ],
-      "condition": "동일 지문의 receipt가 이미 존재",
-      "outcome": "허용",
-      "enforcement": "저장된 응답 반환, upstream 미실행",
-      "priority": 2005,
-      "exceptionable": false,
-      "obligations": [
-        "evidence.standard"
-      ],
-      "test_ids": [
-        "T-RECEIPT-001"
-      ],
-      "author": "보안기술팀",
-      "reviewer": "보안 담당자",
-      "approver": "승인권자",
-      "environments": [
-        "dev",
-        "stage",
-        "prod"
-      ],
-      "automation": "자동화",
-      "version": "1.0.0",
-      "status": "운영",
-      "approval_status": "승인",
-      "effective_from": "2026-09-16T00:00:00Z",
-      "pac_candidate_id": "PAC-CAND-26"
     },
     "P-CONTROL-FAIL-CLOSED": {
       "name": "정책 엔진 장애 시 기본 차단",
@@ -1775,6 +1675,153 @@
         "T-SHADOW-002"
       ],
       "pac_candidate_id": "PAC-CAND-13"
+    },
+    "MCP-EGRESS-002": {
+      "name": "인자 목적지 SSRF 차단",
+      "purpose": "도구 인자로 지정한 URL이 사내 인프라를 향하면 역할과 무관하게 차단한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-25"
+      ],
+      "requirement_ids": [
+        "REQ-25"
+      ],
+      "control_ids": [
+        "CTL-25"
+      ],
+      "principle_ids": [
+        "PRN-07"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "fetch·playwright·desktop(URL 읽기) 호출의 목적지",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "destinations"
+      ],
+      "condition": "목적지 범주 = infrastructure",
+      "outcome": "차단",
+      "enforcement": "목적지·길이를 축소한 인자로 실행",
+      "priority": 42,
+      "automation": "자동화",
+      "exceptionable": true,
+      "version": "2.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-23T00:00:00Z",
+      "obligations": [
+        "alert.security",
+        "evidence.enhanced"
+      ],
+      "test_ids": [
+        "T-EGRESS-002"
+      ],
+      "pac_candidate_id": "PAC-CAND-20"
+    },
+    "P-DLP-001": {
+      "name": "민감정보 외부 전송 차단",
+      "purpose": "외부로 나가는 내용에 주민등록번호·카드번호·비밀 패턴이 있으면 차단한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-21"
+      ],
+      "requirement_ids": [
+        "REQ-22"
+      ],
+      "control_ids": [
+        "CTL-22"
+      ],
+      "principle_ids": [
+        "PRN-07"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "x 행위의 발신 내용",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "tool.action",
+        "request.dlp"
+      ],
+      "condition": "x 행위 + DLP 패턴 1건 이상",
+      "outcome": "차단",
+      "enforcement": "목적지·길이를 축소한 인자로 실행",
+      "priority": 78,
+      "automation": "자동화",
+      "exceptionable": true,
+      "version": "2.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-23T00:00:00Z",
+      "obligations": [
+        "alert.security",
+        "evidence.enhanced"
+      ],
+      "test_ids": [
+        "T-DLP-001"
+      ],
+      "pac_candidate_id": "PAC-CAND-20"
+    },
+    "P-X-ALERT-001": {
+      "name": "제한 불가 외부 전송 경보",
+      "purpose": "제한을 걸 수 없는 외부 전송은 권한 범위 안에서 허용하되 증적을 강화한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-21",
+        "RSK-25"
+      ],
+      "requirement_ids": [
+        "REQ-22"
+      ],
+      "control_ids": [
+        "CTL-22",
+        "CTL-25"
+      ],
+      "principle_ids": [
+        "PRN-07"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "x 행위 + important 아님 + 권한 있음 + 제한 불가",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "tool.action",
+        "tool.restrictable"
+      ],
+      "condition": "restrictable 없음",
+      "outcome": "경고",
+      "enforcement": "목적지·길이를 축소한 인자로 실행",
+      "priority": 125,
+      "automation": "자동화",
+      "exceptionable": true,
+      "version": "2.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-23T00:00:00Z",
+      "obligations": [
+        "evidence.enhanced"
+      ],
+      "test_ids": [
+        "T-X-ALERT-001"
+      ],
+      "pac_candidate_id": "PAC-CAND-20"
     }
   }
 }

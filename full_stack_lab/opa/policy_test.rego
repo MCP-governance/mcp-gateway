@@ -18,7 +18,7 @@ base := {
 	"now": "2026-09-16T10:00:00Z",
 	"principal": {"role": "partner", "department": "협력사 A"},
 	"resource": {"id": "notice-001", "data_class": "public"},
-	"tool": {"name": "read_document", "action": "r"},
+	"tool": {"name": "read_text_file", "action": "r"},
 	"approval": {"granted": false},
 	"contract": {
 		"registered": true,
@@ -234,15 +234,67 @@ test_approved_admin_important_x if {
 # ── T-RESTRICT-001/002 외부 전송 제한 ───────────────────────────────────────
 
 test_restrict_admin_public_x if {
-	result := decision with input as with_input({"principal": {"role": "admin"}, "tool": {"action": "x"}})
+	result := decision with input as with_input({"principal": {"role": "admin"}, "tool": {"action": "x", "restrictable": ["max_chars"]}})
 	result.decision == "Restrict"
 	result.policy_id == "P-X-RESTRICT-001"
 }
 
 test_restrict_values_come_from_policy_data if {
+	result := decision with input as with_input({"principal": {"role": "admin"}, "tool": {"action": "x", "restrictable": ["max_chars", "journal_bcc"]}})
+	result.restrictions == {"max_chars": data.restrictions.max_chars, "journal_bcc": data.restrictions.journal_bcc}
+}
+
+# 도구가 집행할 수 없는 제한은 제안하지 않는다. 판정에 실린 제한을 Gateway가 적용하지
+# 못하면 fail-closed가 되므로, 제한 목록은 도구가 선언한 것과 교집합이어야 한다.
+test_restrict_only_what_the_tool_can_enforce if {
+	result := decision with input as with_input({"principal": {"role": "admin"}, "tool": {"action": "x", "restrictable": ["max_chars"]}})
+	object.keys(result.restrictions) == {"max_chars"}
+}
+
+# ── T-X-ALERT-001 제한 불가 외부 전송 ───────────────────────────────────────
+
+test_x_without_restrictable_is_alert if {
 	result := decision with input as with_input({"principal": {"role": "admin"}, "tool": {"action": "x"}})
-	result.restrictions.destination == data.restrictions.external_destination
-	result.restrictions.max_chars == data.restrictions.max_chars
+	result.decision == "Alert"
+	result.policy_id == "P-X-ALERT-001"
+}
+
+# ── T-EGRESS-002 인자 목적지 SSRF ───────────────────────────────────────────
+
+test_ssrf_destination_blocks_even_admin if {
+	result := decision with input as with_input({
+		"principal": {"role": "admin"}, "tool": {"action": "r"},
+		"destinations": [{"kind": "url", "value": "http://corp-git:3000/api/v1/admin/users", "category": "infrastructure"}],
+	})
+	result.decision == "Block"
+	result.policy_id == "MCP-EGRESS-002"
+}
+
+test_intranet_destination_is_not_ssrf if {
+	result := decision with input as with_input({
+		"principal": {"role": "employee"}, "tool": {"action": "r"}, "resource": {"data_class": "nonimportant"},
+		"destinations": [{"kind": "url", "value": "http://intranet.bob.local/", "category": "intranet"}],
+	})
+	result.decision == "Allow"
+}
+
+# ── T-DLP-001 민감정보 외부 전송 ────────────────────────────────────────────
+
+test_dlp_blocks_external_send_even_with_approval if {
+	result := decision with input as with_input({
+		"principal": {"role": "admin"}, "tool": {"action": "x"}, "resource": {"data_class": "important"},
+		"request": {"dlp": ["kr-rrn"]}, "approval": {"granted": true},
+	})
+	result.decision == "Block"
+	result.policy_id == "P-DLP-001"
+}
+
+test_dlp_on_internal_write_is_not_dlp_block if {
+	result := decision with input as with_input({
+		"principal": {"role": "employee"}, "tool": {"action": "w"}, "resource": {"data_class": "nonimportant"},
+		"request": {"dlp": ["kr-mobile"]},
+	})
+	result.policy_id != "P-DLP-001"
 }
 
 # ── T-ALERT-001 중요정보 열람 증적 강화 ─────────────────────────────────────
@@ -356,8 +408,8 @@ test_policy_without_ledger_entry_blocks if {
 # ── T-EXC 예외 적용과 유효기간 (§8, §11.2) ──────────────────────────────────
 
 exception_request := with_input({
-	"resource": {"id": "audit-001", "data_class": "important"},
-	"tool": {"name": "read_document", "action": "r"},
+	"resource": {"id": "/shared/confidential/audit/external-audit-copy-2026.md", "data_class": "important"},
+	"tool": {"name": "read_text_file", "action": "r"},
 })
 
 test_registered_exception_relaxes_block if {
@@ -469,7 +521,8 @@ matrix_cell(role, data_class, action) := result.decision if {
 	result := decision with input as with_input({
 		"principal": {"role": role},
 		"resource": {"id": "matrix", "data_class": data_class},
-		"tool": {"action": action},
+		# The 27 cells describe tools that can carry a restriction (mail, fetch).
+		"tool": {"action": action, "restrictable": ["max_chars"]},
 	})
 		with data.exceptions as []
 }

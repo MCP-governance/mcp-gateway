@@ -79,20 +79,8 @@ async def _server(server_id: str) -> dict:
 
 
 async def _tool_names(server_id: str) -> list[str]:
-    """이 서버의 호출이 감사 기록에 어떤 tool_name으로 남는가.
-
-    decisions.tool_name은 요청자가 쓴 이름이고 Registry 이름과 다를 수 있다
-    (github_get_file -> github/get_file_contents). 별칭을 빠뜨리면 폐기 후 호출을
-    0건으로 세게 되고, 그 0건이 곧 C3 충족으로 읽힌다. 가장 조용한 실패다.
-    """
-    from .core import TOOL_ALIASES
-
     rows = await db.fetch_all("SELECT name FROM mcp_tools WHERE server_id=%s", (server_id,))
-    names = {row["name"] for row in rows}
-    for alias, (alias_server, registry_name) in TOOL_ALIASES.items():
-        if alias_server == server_id and registry_name in names:
-            names.add(alias)
-    return sorted(names)
+    return sorted(row["name"] for row in rows)
 
 
 # ── 케이스 ──────────────────────────────────────────────────────────────────
@@ -152,15 +140,14 @@ async def seed_targets(case_id: str, actor: str) -> list[dict]:
     if not case:
         raise ValueError("존재하지 않는 종료 케이스입니다.")
     server = await _server(case["server_id"])
-    names = await _tool_names(case["server_id"])
     created: list[dict] = []
 
     # (1) 이 서버를 실제로 호출한 주체. 게이트웨이 원장이 정본이다.
     callers = await db.fetch_all(
         """SELECT DISTINCT d.user_token, p.display_name, p.email
              FROM decisions d LEFT JOIN principals p ON p.token = d.user_token
-            WHERE d.tool_name = ANY(%s::text[]) AND d.created_at < %s""",
-        (names, case["cutover_at"]),
+            WHERE d.server_id = %s AND d.created_at < %s""",
+        (case["server_id"], case["cutover_at"]),
     )
     for row in callers:
         created.append(await add_target(
@@ -187,7 +174,7 @@ async def seed_targets(case_id: str, actor: str) -> list[dict]:
 
     # (3) 원격 제공자가 하위 시스템에 대해 보유한 자격. 조직은 존재조차 모른다.
     #     자리만 만들고 UNVERIFIABLE로 둔다. 이 행이 C1을 미충족으로 만든다.
-    if server["transport"] in REMOTE_TRANSPORTS and server["endpoint"]:
+    if (server.get("deployment") or "internal") == "provider":
         created.append(await add_target(
             case_id, "server-held-credential",
             f"{server['supplier']} 가 하위 시스템에 대해 보유한 위임 자격",
@@ -280,7 +267,6 @@ async def _invalidate(case_id: str, actor: str, note: str) -> None:
 
 async def _post_cutover(case: dict) -> dict:
     """차단 시작 이후 이 서버에 무슨 일이 있었는가. C3의 직접 증거."""
-    names = await _tool_names(case["server_id"])
     row = await db.fetch_one(
         """SELECT count(*) FILTER (WHERE upstream_executed) AS executed,
                   count(*) FILTER (WHERE NOT upstream_executed AND NOT
@@ -288,8 +274,8 @@ async def _post_cutover(case: dict) -> dict:
                   count(*) FILTER (WHERE NOT upstream_executed AND
                     COALESCE(upstream_attempted, policy_id='MCP-UPSTREAM-001')) AS unknown,
                   max(created_at) AS last_attempt
-             FROM decisions WHERE tool_name = ANY(%s::text[]) AND created_at >= %s""",
-        (names, case["cutover_at"]),
+             FROM decisions WHERE server_id = %s AND created_at >= %s""",
+        (case["server_id"], case["cutover_at"]),
     )
     return {
         "executed": int(row["executed"] or 0),
@@ -328,7 +314,7 @@ async def assess(case_id: str, actor: str) -> dict:
         else:
             case_wide.append(row)
 
-    remote = server["transport"] in REMOTE_TRANSPORTS and bool(server["endpoint"])
+    remote = (server.get("deployment") or "internal") == "provider"
     activity = await _post_cutover(case)
     residue = await _residue_count(case["server_id"])
 
@@ -612,19 +598,18 @@ async def drill(server_id: str) -> dict:
     "끊을 수 있는가". 끝낼 수 없는 것을 시작하지 않는 것이 유일한 완화다.
     """
     server = await _server(server_id)
-    remote = server["transport"] in REMOTE_TRANSPORTS and bool(server["endpoint"])
+    remote = (server.get("deployment") or "internal") == "provider"
     terms = server.get("exit_terms") or {}
     disclosure_agreed = bool(terms.get("provider_credential_disclosure"))
     evidence_agreed = bool(terms.get("revocation_evidence"))
 
-    names = await _tool_names(server_id)
     callers = await db.fetch_all(
         """SELECT d.user_token, p.display_name, count(*) AS calls,
                   max(d.created_at) AS last_call
              FROM decisions d LEFT JOIN principals p ON p.token = d.user_token
-            WHERE d.tool_name = ANY(%s::text[]) AND d.upstream_executed
+            WHERE d.server_id = %s AND d.upstream_executed
             GROUP BY d.user_token, p.display_name ORDER BY calls DESC""",
-        (names,),
+        (server_id,),
     )
     residue = await db.fetch_all(
         """SELECT a.hostname, i.config_path, i.server_label

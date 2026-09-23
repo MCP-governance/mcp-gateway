@@ -88,10 +88,6 @@ CREATE TABLE IF NOT EXISTS gateway_settings (
 -- a server's own source_ref is what _contract() counts, so without this the Trivy
 -- numbers on the dashboard and the MCP-SUPPLY-001 gate were two unrelated things.
 ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS scan_path text;
-UPDATE mcp_servers SET scan_path = 'full_stack_lab/mock_server' WHERE id = 'mock-http' AND scan_path IS NULL;
--- mcp-server-time is pinned and installed in the gateway image, so the gateway's own
--- dependency set is the closest local proxy for that server's supply chain.
-UPDATE mcp_servers SET scan_path = 'full_stack_lab/gateway' WHERE id = 'mock-stdio' AND scan_path IS NULL;
 
 -- A reviewer who can only approve has one button and no way to say why not.
 ALTER TABLE approvals ADD COLUMN IF NOT EXISTS review_note text;
@@ -101,26 +97,9 @@ ALTER TABLE approvals ADD COLUMN IF NOT EXISTS review_note text;
 -- policy *input* now costs nothing and is what keeps the rule set from having to be
 -- rewritten later; the rule that uses it ships disabled (see opa/data.json).
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS department text;
-ALTER TABLE documents ADD COLUMN IF NOT EXISTS owner_department text;
--- Classification is an operator-owned registry value, not an LLM guess. Existing
--- demo rows receive the same explicit source during the idempotent migration.
-ALTER TABLE documents ADD COLUMN IF NOT EXISTS classification_source text;
-ALTER TABLE documents ADD COLUMN IF NOT EXISTS classification_version text;
-ALTER TABLE documents ADD COLUMN IF NOT EXISTS classified_at timestamptz;
-UPDATE documents SET classification_source='manual-registry' WHERE classification_source IS NULL;
-UPDATE documents SET classification_version='demo-v1' WHERE classification_version IS NULL;
-UPDATE documents SET classified_at=now() WHERE classified_at IS NULL;
-ALTER TABLE documents ALTER COLUMN classification_source SET DEFAULT 'manual-registry';
-ALTER TABLE documents ALTER COLUMN classification_version SET DEFAULT 'demo-v1';
-ALTER TABLE documents ALTER COLUMN classified_at SET DEFAULT now();
-ALTER TABLE documents ALTER COLUMN classification_source SET NOT NULL;
-ALTER TABLE documents ALTER COLUMN classification_version SET NOT NULL;
-ALTER TABLE documents ALTER COLUMN classified_at SET NOT NULL;
 UPDATE principals SET department='고객' WHERE token='cust-demo' AND department IS NULL;
 UPDATE principals SET department='보안기술팀' WHERE token='emp-demo' AND department IS NULL;
 UPDATE principals SET department='거버넌스팀' WHERE token='admin-demo' AND department IS NULL;
-UPDATE documents SET owner_department='보안기술팀' WHERE id='work-001' AND owner_department IS NULL;
-UPDATE documents SET owner_department='거버넌스팀' WHERE id='secret-001' AND owner_department IS NULL;
 
 -- Applied on every boot so existing volumes get them too. Audit lookups are by
 -- request id or by user over a time window; without these both are seq scans.
@@ -145,12 +124,6 @@ ALTER TABLE decisions ADD COLUMN IF NOT EXISTS upstream_attempted boolean;
 ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS approval_valid_until timestamptz;
 UPDATE mcp_tools SET approval_valid_until = timestamptz '2027-06-30 23:59:59+00'
   WHERE approval_valid_until IS NULL;
-
--- EXC-001(감사 대응 한시 열람) 예외의 유일한 적용 대상. 기존 볼륨에도 들어가야
--- 예외 시연이 secret-001의 차단 시나리오를 덮어쓰지 않는다.
-INSERT INTO documents(id, title, data_class, classification_source, classification_version, owner_department)
-VALUES ('audit-001', '외부 감사 대응 계약 사본', 'important', 'manual-registry', 'demo-v1', '거버넌스팀')
-ON CONFLICT (id) DO NOTHING;
 
 -- 협력업체 직원(partner)으로 역할 이름을 바꾼다. 내부망 테스트베드에 "고객"이
 -- 있는 것이 이상하고, 이 역할이 실제로 대리하는 것은 신뢰경계 밖에서 들어오는

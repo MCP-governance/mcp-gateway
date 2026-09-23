@@ -66,6 +66,22 @@ transport_secure := object.get(input, ["contract", "transport_secure"], true)
 
 endpoint_allowed := object.get(input, ["contract", "endpoint_allowed"], true)
 
+# v2: where the call is going (URLs, mail recipients) and what outbound content holds.
+# The Gateway's classifier fills these from the tool arguments; the policy judges.
+destinations := object.get(input, ["destinations"], [])
+
+dlp_findings := object.get(input, ["request", "dlp"], [])
+
+# Restrictions a Restrict decision may carry are the ones this tool can enforce.
+# A policy that returns something the Gateway cannot apply is a fail-closed error,
+# so the policy only ever proposes what the tool declares.
+restrictable := object.get(input, ["tool", "restrictable"], [])
+
+x_restrictions := {key: data.restrictions[key] |
+	some key in restrictable
+	data.restrictions[key]
+}
+
 # ── 권한표: 3 역할 x 3 등급 x r/w/x ─────────────────────────────────────────
 
 permissions := {
@@ -300,17 +316,54 @@ candidate["P-DEPT-001"] := {
 
 candidate["P-X-RESTRICT-001"] := {
 	"decision": "Restrict",
-	"reason": "외부 전송은 승인된 목적지와 길이 제한을 적용한 뒤 실행합니다.",
-	# 값이지 규칙이 아니다. 조직은 정책의 모양보다 허용 목적지를 훨씬 자주 바꾼다.
-	"restrictions": {
-		"destination": data.restrictions.external_destination,
-		"max_chars": data.restrictions.max_chars,
-	},
-	"conditions": {"matched": ["tool.action=x", "permissions[role][data_class][action]"], "violated": []},
+	"reason": "외부 전송은 도구가 집행할 수 있는 제한(길이·저널링 사본)을 적용한 뒤 실행합니다.",
+	# 값이지 규칙이 아니다. 조직은 정책의 모양보다 제한 값을 훨씬 자주 바꾼다.
+	"restrictions": x_restrictions,
+	"conditions": {"matched": ["tool.action=x", "permissions[role][data_class][action]", "tool.restrictable"], "violated": []},
 } if {
 	input.tool.action == "x"
 	input.resource.data_class != "important"
 	has_permission
+	count(x_restrictions) > 0
+}
+
+# x 행위인데 이 도구에 걸 수 있는 제한이 없다(예: 외부 사이트로 이동). 권한은 있으므로
+# 막지 않지만, 제한 없이 나가는 외부 전송이므로 증적을 올린다.
+candidate["P-X-ALERT-001"] := {
+	"decision": "Alert",
+	"reason": "외부 전송·고위험 실행이지만 이 도구에는 적용할 제한이 없어 증적을 강화해 허용합니다.",
+	"restrictions": {},
+	"conditions": {"matched": ["tool.action=x", "permissions[role][data_class][action]"], "violated": ["tool.restrictable"]},
+} if {
+	input.tool.action == "x"
+	input.resource.data_class != "important"
+	has_permission
+	count(x_restrictions) == 0
+}
+
+# CTL-25 / RSK-25. 인자로 지정한 목적지가 사내 인프라(서비스 이름, 사설·링크로컬
+# 주소, 메타데이터 엔드포인트, file://)다. 등록 서버의 주소(MCP-EGRESS-001)가 아니라
+# 이번 호출이 향하는 곳이고, 권한과 무관하게 끊는다 - SSRF에는 정당한 역할이 없다.
+candidate["MCP-EGRESS-002"] := {
+	"decision": "Block",
+	"reason": "도구 인자의 목적지가 사내 인프라 주소입니다(SSRF). 인트라넷 허용 목록 밖의 내부 주소로는 요청하지 않습니다.",
+	"restrictions": {},
+	"conditions": {"matched": ["destinations[].category=infrastructure"], "violated": []},
+} if {
+	some destination in destinations
+	destination.category == "infrastructure"
+}
+
+# 개인정보·비밀 패턴이 실린 외부 전송. 역할과 무관하게 막는다 - 승인으로 풀 수 있게
+# 두면 승인이 개인정보 반출 절차가 된다. 정당한 반출은 예외 관리대장으로 간다.
+candidate["P-DLP-001"] := {
+	"decision": "Block",
+	"reason": sprintf("외부로 나가는 내용에서 민감정보 패턴이 발견되었습니다: %v", [concat(", ", sort(dlp_findings))]),
+	"restrictions": {},
+	"conditions": {"matched": ["tool.action=x", "request.dlp"], "violated": []},
+} if {
+	input.tool.action == "x"
+	count(dlp_findings) > 0
 }
 
 candidate["P-IMPORTANT-ALERT-001"] := {

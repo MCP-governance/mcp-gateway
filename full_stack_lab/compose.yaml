@@ -1,6 +1,39 @@
 name: ${MCP_COMPOSE_PROJECT:-mcp-governance-full}
 
+# v2 topology (docs/ai/ARCHITECTURE.md). Employees work from workstation
+# containers on the internal `office` network; the only MCP endpoint they can reach
+# is the Gateway. The ten MCP servers sit on `tools`, which only the Gateway joins,
+# and talk to the company systems on `corp`.
+
+x-hardened: &hardened
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+
+x-mcp: &mcp
+  image: mcpgw/mcp-runtime:2.0
+  build: {context: ./mcp, dockerfile: runtime.Dockerfile}
+  restart: unless-stopped
+  depends_on:
+    corp-seed: {condition: service_completed_successfully}
+  healthcheck:
+    test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8000), 2)"]
+    interval: 5s
+    timeout: 3s
+    retries: 24
+  <<: *hardened
+
+x-workstation: &workstation
+  image: mcpgw/workstation:2.0
+  build: {context: ., dockerfile: workstation/Dockerfile}
+  restart: unless-stopped
+  depends_on:
+    gateway: {condition: service_started}
+    agent-service: {condition: service_started}
+  networks: [office]
+  <<: *hardened
+
 services:
+  # ── governance core ──────────────────────────────────────────────────────
   db:
     image: postgres:18-alpine
     environment:
@@ -15,17 +48,12 @@ services:
     volumes:
       - db_data:/var/lib/postgresql
       - ./db/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+      - ./db/002-litellm.sql:/docker-entrypoint-initdb.d/002-litellm.sql:ro
     networks: [data]
 
   opa:
     image: openpolicyagent/opa:1.20.2-static
-    command:
-      - run
-      - --server
-      - --addr=0.0.0.0:8181
-      - --set=decision_logs.console=true
-      - --log-level=info
-      - /policy
+    command: [run, --server, --addr=0.0.0.0:8181, --set=decision_logs.console=true, --log-level=info, /policy]
     healthcheck:
       test: ["CMD", "/opa", "eval", "1"]
       interval: 3s
@@ -35,120 +63,85 @@ services:
       - ./opa:/policy:ro
     networks: [policy]
 
-  mock-http-mcp:
-    build: ./mock_server
-    environment:
-      MCP_TRANSPORT: streamable-http
-      MCP_PORT: "9000"
-      MCP_CATALOG_MODE: ${MCP_CATALOG_MODE:-normal}
-      EFFECT_LOG: /runtime/upstream-effects.jsonl
-    volumes:
-      - effects:/runtime
-    networks: [tools]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
-
   gateway:
     build: ./gateway
     environment: &gateway-env
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
       OPA_URL: http://opa:8181/v1/data/mcp/authz/decision
-      # 종료 절차의 기한. 케이스가 열린 채로 잊히면 "차단은 했으나 아무것도
-      # 회수되지 않은 상태"가 무기한 지속되고, 그 상태는 판정이 없어 위험 보고에
-      # 잡히지 않는다.
       TERMINATION_SLA_DAYS: ${TERMINATION_SLA_DAYS:-14}
-      HTTP_MCP_URL: http://mock-http-mcp:9000/mcp/
-      EFFECT_LOG: /runtime/upstream-effects.jsonl
       REPORT_DIR: /reports
-      GITHUB_MCP_URL: https://api.githubcopilot.com/mcp/
-      GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN:-}
-      GITHUB_ALLOWED_REPOS: ${GITHUB_ALLOWED_REPOS:-MCP-governance/mcp-gateway}
+      REGISTRY_DIR: /registry
+      # IdP metadata that the Gateway republishes as RFC 9728 protected-resource
+      # metadata, and uses to collect RFC 7009 / 7662 evidence in termination cases.
+      IDP_ISSUER: http://agent-service:8000
+      GATEWAY_PUBLIC_MCP_URL: http://gateway:8080/mcp/
+      GITEA_ADMIN_URL: http://corp-git:3000
+      GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-corpadmin}
+      GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD:-corp-admin-lab-only}
       # Verifiers get the public key only; they cannot mint a token.
       AGENT_JWT_PUBLIC_KEY: ${AGENT_JWT_PUBLIC_KEY:?Run ./console.sh to initialize the local signing keys}
       OTEL_SERVICE_NAME: mcp-security-gateway
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
     depends_on:
-      db:
-        condition: service_healthy
-      opa:
-        condition: service_healthy
-      mock-http-mcp:
-        condition: service_started
-      jaeger:
-        condition: service_started
+      db: {condition: service_healthy}
+      opa: {condition: service_healthy}
+      jaeger: {condition: service_started}
     ports:
       - "127.0.0.1:8080:8080"
     volumes:
-      - effects:/runtime:ro
       - ./reports:/reports:ro
       - ./opa:/policy:ro
-    networks: [edge, policy, tools, data, telemetry]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
+      - ./registry:/registry:ro
+    networks: [edge, office, policy, tools, data, telemetry, ops]
+    <<: *hardened
 
+  # Legacy SSE ingress: the same policy path for clients that only speak SSE.
+  gateway-sse:
+    build: ./gateway
+    command: ["python", "-m", "app.sse_entry"]
+    environment: *gateway-env
+    depends_on:
+      db: {condition: service_healthy}
+      opa: {condition: service_healthy}
+    volumes:
+      - ./reports:/reports:ro
+      - ./opa:/policy:ro
+      - ./registry:/registry:ro
+    networks: [office, policy, tools, data, telemetry]
+    <<: *hardened
+
+  # Console (admin UI) + the synthetic IdP. It never calls an MCP tool.
   agent-service:
     build: ./gateway
     command: ["uvicorn", "app.agent_service:app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
       GATEWAY_URL: http://gateway:8080
+      IDP_ISSUER: http://agent-service:8000
       # The only service that holds the signing key, because it is the issuer.
       AGENT_JWT_PRIVATE_KEY: ${AGENT_JWT_PRIVATE_KEY:?Run ./console.sh}
       AGENT_JWT_PUBLIC_KEY: ${AGENT_JWT_PUBLIC_KEY:?Run ./console.sh}
       MOCK_SSO_PASSWORD: ${MOCK_SSO_PASSWORD:-test-password}
-      MODEL_MODE: ${MODEL_MODE:-mock}
-      MODEL_BASE_URL: ${MODEL_BASE_URL:-}
-      MODEL_API_KEY: ${MODEL_API_KEY:-}
-      MODEL_NAME: ${MODEL_NAME:-}
-      MODEL_TIMEOUT_SECONDS: ${MODEL_TIMEOUT_SECONDS:-20}
-      # Console이 "AI 코드 감사를 지금 돌릴 수 있는가"를 답하려면 워커와 같은
-      # 설정을 봐야 한다. 키는 연결 확인 요청에만 쓰고 화면으로 내보내지 않는다.
+      ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-10}
+      REFRESH_TOKEN_HOURS: ${REFRESH_TOKEN_HOURS:-8}
+      LITELLM_URL: http://llm-gateway:4000
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-}
       MCP_SCAN_BASE_URL: ${MCP_SCAN_BASE_URL:-}
       MCP_SCAN_MODEL: ${MCP_SCAN_MODEL:-}
       MCP_SCAN_API_KEY: ${MCP_SCAN_API_KEY:-}
-      # 워커가 lease를 갱신하는 주기보다 넉넉하게. 이 시간을 넘도록 소식이 없으면
-      # Console이 "설정됨"이 아니라 "실행할 워커 없음"이라고 말해야 한다.
       INTAKE_WORKER_STALE_SECONDS: ${INTAKE_WORKER_STALE_SECONDS:-60}
       MCP_SCAN_REQUIRED_FOR_APPROVAL: ${MCP_SCAN_REQUIRED_FOR_APPROVAL:-0}
-      # 종료 준비 게이트. 켜면 원격 MCP는 제공자의 하위 자격 고지 조항 없이
-      # 승인되지 않는다. 고지 없이 들인 이용 관계는 끝낼 때 반드시 T3가 되고,
-      # 그 사실을 종료 단계에서 알면 이미 늦다. 기본값이 꺼짐인 이유는 기존 등록
-      # 서버들이 도입 심사 이전에 들어온 것이라 켜 둔 채로는 승인이 막히기 때문이다.
       INTAKE_EXIT_TERMS_REQUIRED: ${INTAKE_EXIT_TERMS_REQUIRED:-0}
       OTEL_SERVICE_NAME: agent-service
     ports:
       - "127.0.0.1:8000:8000"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
-      gateway:
-        condition: service_started
-    networks: [edge, agent, data, telemetry, model]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
+      gateway: {condition: service_started}
+    networks: [edge, office, data, telemetry, model]
+    <<: *hardened
 
-  gateway-sse:
-    build: ./gateway
-    command: ["python", "-m", "app.sse_entry"]
-    environment: *gateway-env
-    depends_on:
-      db:
-        condition: service_healthy
-      opa:
-        condition: service_healthy
-      mock-http-mcp:
-        condition: service_started
-    volumes:
-      - effects:/runtime:ro
-      - ./reports:/reports:ro
-      - ./opa:/policy:ro
-    networks: [policy, tools, data, telemetry]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
-
-  # 제출된 저장소를 격리해서 복제·검사만 하는 워커. 저장소 코드는 실행하지 않고
-  # Gateway와 파일시스템·네트워크를 공유하지 않는다. tools/policy 망에 붙이지
+  # 제출된 저장소를 격리해서 복제·검사만 하는 워커. tools/policy 망에 붙이지
   # 않으므로 여기서 무엇이 실행돼도 MCP 실행 경로에는 닿지 않는다.
   intake-worker:
     build:
@@ -160,15 +153,11 @@ services:
       INTAKE_WORK_DIR: /work
       SEMGREP_RULES: /rules/semgrep-mcp.yml
       INTAKE_POLL_SECONDS: ${INTAKE_POLL_SECONDS:-5}
-      # AI-Infra-Guard mcp-scan은 OpenAI 호환 endpoint가 있을 때만 돌아간다.
-      # 비어 있으면 Console이 "실행할 수 없음"과 필요한 값을 그대로 보여준다.
       MCP_SCAN_API_KEY: ${MCP_SCAN_API_KEY:-}
       MCP_SCAN_BASE_URL: ${MCP_SCAN_BASE_URL:-}
       MCP_SCAN_MODEL: ${MCP_SCAN_MODEL:-}
       MCP_SCAN_LANGUAGE: ${MCP_SCAN_LANGUAGE:-en}
       MCP_SCAN_TIMEOUT: ${MCP_SCAN_TIMEOUT:-900}
-      # 구조적 트리거와 lease. 감사가 "관리자가 기억날 때"가 아니라 정해진
-      # 시점에 걸리게 하고, 워커가 죽어도 작업이 영구 RUNNING으로 남지 않게 한다.
       INTAKE_WORKER_ID: ${INTAKE_WORKER_ID:-intake-worker-1}
       MCP_SCAN_LEASE_SECONDS: ${MCP_SCAN_LEASE_SECONDS:-1200}
       MCP_SCAN_MAX_ATTEMPTS: ${MCP_SCAN_MAX_ATTEMPTS:-3}
@@ -176,25 +165,16 @@ services:
       MCP_SCAN_RESCAN_DAYS: ${MCP_SCAN_RESCAN_DAYS:-30}
       MCP_SCAN_RESCAN_SWEEP_SECONDS: ${MCP_SCAN_RESCAN_SWEEP_SECONDS:-900}
     depends_on:
-      db:
-        condition: service_healthy
+      db: {condition: service_healthy}
     volumes:
-      # 호스트 bind가 아니라 named volume을 쓴다. 워커는 비특권 uid로 돌고 호스트
-      # reports/는 사용자 소유라 쓰기가 막히는데, 스캐너 출력이 조용히 사라지면
-      # "증적 없는 검증 통과"가 만들어진다.
       - intake_reports:/reports
       - ./supply_chain/semgrep-mcp.yml:/rules/semgrep-mcp.yml:ro
       - intake_work:/work
-      # 워크스페이스 스캔용 trivy_cache는 root 소유로 만들어져 있어 비특권 워커가
-      # 쓸 수 없다. DB 캐시는 워커 전용 볼륨에 둔다.
       - intake_trivy_cache:/trivy-cache
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     networks: [data, scanner, model]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
+    <<: *hardened
 
-  # 배선 확인 전용 OpenAI 호환 stub. 보안 판단을 하지 않으며 기본 기동에 없다.
+  # 배선 확인 전용 OpenAI 호환 stub (기업 실습의 A.I.G test double).
   llm-stub:
     image: python:3.12-slim
     profiles: [llm-stub]
@@ -204,8 +184,7 @@ services:
     volumes:
       - ./supply_chain/llm_stub.py:/app/llm_stub.py:ro
     networks: [model]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
+    <<: *hardened
 
   jaeger:
     image: cr.jaegertracing.io/jaegertracing/jaeger:2.20.0
@@ -217,53 +196,329 @@ services:
       - "127.0.0.1:16686:16686"
     networks: [edge, telemetry]
 
-  # Model downloads use a short-lived scanner-side container. Inference has
-  # no published port or route to the internet after the download completes.
+  # ── local LLM: per-employee keys (LiteLLM) in front of Ollama ─────────────
+  # Downloads happen in a disposable container on `scanner`; inference runs on the
+  # internal `model` network with no published port.
   ollama-pull:
     image: ollama/ollama:0.34.2
-    profiles: [local-llm-download]
+    profiles: [llm-download]
     entrypoint: ["/bin/sh", "-c"]
-    command: ["ollama serve >/tmp/ollama.log 2>&1 & for i in 1 2 3 4 5 6 7 8 9 10; do ollama list >/dev/null 2>&1 && break; sleep 1; done; ollama pull \"$$LOCAL_LLM_MODEL\""]
+    command: ["ollama serve >/tmp/ollama.log 2>&1 & for i in $$(seq 1 20); do ollama list >/dev/null 2>&1 && break; sleep 1; done; ollama pull \"$$LOCAL_LLM_MODEL\""]
     environment:
-      LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-qwen2.5:0.5b}
+      LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-qwen2.5:1.5b}
       OLLAMA_HOST: 127.0.0.1:11434
       OLLAMA_NO_CLOUD: "1"
     volumes:
       - ollama_models:/root/.ollama
     networks: [scanner]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
+    <<: *hardened
 
   ollama:
     image: ollama/ollama:0.34.2
-    profiles: [local-llm]
+    profiles: [llm]
     environment:
       OLLAMA_HOST: 0.0.0.0:11434
       OLLAMA_NO_CLOUD: "1"
+      OLLAMA_KEEP_ALIVE: 30m
     volumes:
       - ollama_models:/root/.ollama
     networks: [model]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 5s
       timeout: 5s
       retries: 24
+    <<: *hardened
 
+  # LiteLLM proxy: the "AI Agent gateway" of the team's architecture. Every
+  # employee gets a virtual key; usage is attributed per key and per user.
+  llm-gateway:
+    image: ghcr.io/berriai/litellm-database:v1.102.1
+    profiles: [llm]
+    command: ["--config", "/config/litellm.yaml", "--port", "4000"]
+    environment:
+      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/litellm
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?Run ./console.sh to initialize the LiteLLM master key}
+      LOCAL_LLM_MODEL_ROUTE: ollama_chat/${LOCAL_LLM_MODEL:-qwen2.5:1.5b}
+      LITELLM_TELEMETRY: "False"
+      DISABLE_ADMIN_UI: "True"
+      STORE_MODEL_IN_DB: "False"
+    volumes:
+      - ./llm/litellm.yaml:/config/litellm.yaml:ro
+    depends_on:
+      db: {condition: service_healthy}
+    networks: [office, model, data]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+    <<: *hardened
+
+  # ── BoB Corp systems (what the MCP servers act on) ────────────────────────
+  corp-db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: corp
+      POSTGRES_USER: corp_owner
+      POSTGRES_PASSWORD: ${CORP_DB_PASSWORD:-corp-owner-lab-only}
+    volumes:
+      - corp_db_data:/var/lib/postgresql
+      - ./corp/corpdb.sql:/docker-entrypoint-initdb.d/001-corp.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U corp_owner -d corp"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    networks: [corp]
+
+  corp-redis:
+    image: redis:8.6-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    networks: [corp]
+    <<: *hardened
+
+  # SMTP + IMAP sink. It accepts every recipient, including external domains, so
+  # a message the Gateway failed to stop is visible here as evidence.
+  corp-mail:
+    image: greenmail/standalone:2.1.14
+    environment:
+      GREENMAIL_OPTS: >-
+        -Dgreenmail.setup.test.smtp -Dgreenmail.setup.test.imap -Dgreenmail.setup.test.api
+        -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled
+        -Dgreenmail.users=ai-assistant:assistant-lab-only@bob.local
+    networks: [corp]
+
+  corp-git:
+    image: gitea/gitea:1.27.3-rootless
+    entrypoint: ["/bin/sh", "/corp/gitea-entrypoint.sh"]
+    environment:
+      GITEA__security__INSTALL_LOCK: "true"
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__server__ROOT_URL: http://corp-git:3000/
+      GITEA__server__OFFLINE_MODE: "true"
+      GITEA__service__DISABLE_REGISTRATION: "true"
+      GITEA__repository__DEFAULT_BRANCH: main
+      GITEA__log__LEVEL: Warn
+      GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-corpadmin}
+      GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD:-corp-admin-lab-only}
+    volumes:
+      - corp_git_data:/var/lib/gitea
+      - ./corp/gitea-entrypoint.sh:/corp/gitea-entrypoint.sh:ro
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /var/lib/gitea/.admin-ready && wget -qO- http://127.0.0.1:3000/api/healthz >/dev/null"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+    networks: [edge, corp, ops]
+
+  intranet:
+    image: nginx:1.30-alpine
+    volumes:
+      - corp_www_intranet:/usr/share/nginx/html:ro
+    networks:
+      corp:
+        aliases: [intranet.bob.local]
+
+  # The "internet" as seen from inside the lab: a file-sharing site whose access log
+  # shows every URL an exfiltration attempt reached.
+  external-web:
+    image: nginx:1.30-alpine
+    volumes:
+      - corp_www_external:/usr/share/nginx/html:ro
+    networks:
+      internet:
+        aliases: [share.external.example]
+
+  corp-seed:
+    image: mcpgw/mcp-runtime:2.0
+    build: {context: ./mcp, dockerfile: runtime.Dockerfile}
+    user: "0:0"
+    entrypoint: ["python", "/corp/seed.py"]
+    environment:
+      GITEA_URL: http://corp-git:3000
+      GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-corpadmin}
+      GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD:-corp-admin-lab-only}
+      GITEA_BOT_PASSWORD: ${GITEA_BOT_PASSWORD:-mcp-bot-lab-only}
+    volumes:
+      - ./corp/seed.py:/corp/seed.py:ro
+      - corp_shared:/shared
+      - corp_repos:/repos
+      - corp_workspace:/workspace
+      - corp_memory:/memory
+      - corp_www_intranet:/www/intranet
+      - corp_www_external:/www/external
+      - corp_secrets:/run/corp-secrets
+      - corp_state:/state
+    depends_on:
+      corp-git: {condition: service_healthy}
+      corp-redis: {condition: service_started}
+    networks: [corp]
+
+  # ── the ten MCP servers (only the Gateway can reach them) ─────────────────
+  mcp-filesystem:
+    <<: *mcp
+    command: ["filesystem"]
+    volumes: [corp_shared:/shared]
+    networks: [tools]
+
+  mcp-git:
+    <<: *mcp
+    command: ["git"]
+    volumes: [corp_repos:/repos]
+    networks: [tools]
+
+  mcp-fetch:
+    <<: *mcp
+    command: ["fetch"]
+    networks: [tools, corp, internet]
+
+  mcp-memory:
+    <<: *mcp
+    command: ["memory"]
+    volumes: [corp_memory:/data]
+    networks: [tools]
+
+  mcp-desktop:
+    <<: *mcp
+    command: ["desktop"]
+    volumes: [corp_workspace:/workspace]
+    networks: [tools]
+
+  mcp-postgres:
+    <<: *mcp
+    command: ["postgres"]
+    environment:
+      DATABASE_URI: postgresql://corp_owner:${CORP_DB_PASSWORD:-corp-owner-lab-only}@corp-db:5432/corp
+    networks: [tools, corp]
+
+  mcp-redis:
+    <<: *mcp
+    command: ["redis"]
+    environment:
+      REDIS_URL: redis://corp-redis:6379/0
+    networks: [tools, corp]
+
+  mcp-email:
+    <<: *mcp
+    command: ["email"]
+    environment:
+      MCP_EMAIL_SERVER_ACCOUNT_NAME: assistant
+      MCP_EMAIL_SERVER_FULL_NAME: BoB AI Assistant
+      MCP_EMAIL_SERVER_EMAIL_ADDRESS: ai-assistant@bob.local
+      MCP_EMAIL_SERVER_USER_NAME: ai-assistant
+      MCP_EMAIL_SERVER_PASSWORD: assistant-lab-only
+      MCP_EMAIL_SERVER_IMAP_HOST: corp-mail
+      MCP_EMAIL_SERVER_IMAP_PORT: "3143"
+      MCP_EMAIL_SERVER_IMAP_SSL: "false"
+      MCP_EMAIL_SERVER_SMTP_HOST: corp-mail
+      MCP_EMAIL_SERVER_SMTP_PORT: "3025"
+      MCP_EMAIL_SERVER_SMTP_SSL: "false"
+      MCP_EMAIL_SERVER_SMTP_START_SSL: "false"
+      # The server's own allowlist is left open on purpose: the Gateway is the
+      # control under test. A second layer would hide whether the first one works.
+      MCP_EMAIL_SERVER_ALLOWED_RECIPIENTS: "*"
+      MCP_EMAIL_SERVER_CREDENTIAL_STORAGE: plaintext
+      # DNS-rebinding protection stays on; only the service name the Gateway dials is allowed.
+      MCP_ALLOWED_HOSTS: mcp-email:8000
+    networks: [tools, corp]
+
+  mcp-gitea:
+    <<: *mcp
+    command: ["gitea"]
+    environment:
+      GITEA_HOST: http://corp-git:3000
+    volumes: [corp_secrets:/run/corp-secrets:ro]
+    healthcheck:
+      test: ["CMD", "gitea-mcp", "-healthcheck", "-p", "8000"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+    networks: [tools, corp]
+
+  mcp-playwright:
+    image: mcr.microsoft.com/playwright/mcp:v0.0.82
+    command: [--headless, --browser, chromium, --no-sandbox, --isolated,
+              --port, "8000", --host, 0.0.0.0, --allowed-hosts, "mcp-playwright:8000"]
+    restart: unless-stopped
+    depends_on:
+      corp-seed: {condition: service_completed_successfully}
+    networks: [tools, corp, internet]
+    security_opt: ["no-new-privileges:true"]
+
+  # ── employee workstations (office-agent + endpoint-agent) ─────────────────
+  ws-ysg:
+    <<: *workstation
+    hostname: ws-ysg
+    environment: &ws-env
+      EMPLOYEE_EMAIL: ysg@bob.local
+      WORKSTATION_ID: ws-ysg
+      LLM_API_KEY: ${LLM_KEY_WS_YSG:-}
+      EMPLOYEE_PASSWORD: ${MOCK_SSO_PASSWORD:-test-password}
+      IDP_URL: http://agent-service:8000
+      GATEWAY_MCP_URL: http://gateway:8080/mcp/
+      GATEWAY_URL: http://gateway:8080
+      LLM_BASE_URL: http://llm-gateway:4000/v1
+      LLM_MODEL: bob-assistant
+      AGENT_MODE: ${AGENT_MODE:-llm}
+
+  ws-jwj:
+    <<: *workstation
+    hostname: ws-jwj
+    environment:
+      <<: *ws-env
+      EMPLOYEE_EMAIL: jwj@bob.local
+      WORKSTATION_ID: ws-jwj
+      LLM_API_KEY: ${LLM_KEY_WS_JWJ:-}
+
+  ws-pse:
+    <<: *workstation
+    hostname: ws-pse
+    environment:
+      <<: *ws-env
+      EMPLOYEE_EMAIL: pse@bob.local
+      WORKSTATION_ID: ws-pse
+      LLM_API_KEY: ${LLM_KEY_WS_PSE:-}
+
+  # Partner contractor. Also keeps a personal MCP configuration that bypasses the
+  # Gateway - the endpoint agent reports it as shadow MCP.
+  ws-nkk:
+    <<: *workstation
+    hostname: ws-nkk
+    environment:
+      <<: *ws-env
+      EMPLOYEE_EMAIL: nkk@bob.local
+      WORKSTATION_ID: ws-nkk
+      LLM_API_KEY: ${LLM_KEY_WS_NKK:-}
+      SHADOW_MCP_CONFIG: "1"
+
+  # Registers each workstation's key as a LiteLLM virtual key bound to that employee.
+  llm-provision:
+    image: mcpgw/workstation:2.0
+    build: {context: ., dockerfile: workstation/Dockerfile}
+    profiles: [llm]
+    entrypoint: ["python", "/opt/office/provision_keys.py"]
+    environment:
+      LITELLM_URL: http://llm-gateway:4000
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-}
+      # Register the keys that ./console.sh generated into .env, one per workstation.
+      LLM_KEYS: >-
+        ws-ysg=ysg@bob.local=${LLM_KEY_WS_YSG:-},ws-jwj=jwj@bob.local=${LLM_KEY_WS_JWJ:-},
+        ws-pse=pse@bob.local=${LLM_KEY_WS_PSE:-},ws-nkk=nkk@bob.local=${LLM_KEY_WS_NKK:-}
+    depends_on:
+      llm-gateway: {condition: service_healthy}
+    networks: [office]
+
+  # ── supply-chain scanners (on demand) ─────────────────────────────────────
   syft:
     image: anchore/syft:v1.51.1
     profiles: [supply-chain]
     environment:
       SYFT_CHECK_FOR_APP_UPDATE: "false"
-    command:
-      - dir:/workspace/full_stack_lab
-      - --source-name
-      - mcp-gateway
-      - --source-version
-      - local-workspace
-      - -o
-      - cyclonedx-json=/reports/sbom.cdx.json
+    command: [dir:/workspace/full_stack_lab, --source-name, mcp-gateway, --source-version, local-workspace,
+              -o, cyclonedx-json=/reports/sbom.cdx.json]
     volumes:
       - ..:/workspace:ro
       - ./reports:/reports
@@ -272,17 +527,8 @@ services:
   trivy:
     image: aquasec/trivy:0.74.0
     profiles: [supply-chain]
-    command:
-      - fs
-      - --scanners
-      - vuln,misconfig,secret,license
-      - --format
-      - json
-      - --output
-      - /reports/trivy.json
-      - --skip-dirs
-      - /workspace/.git
-      - /workspace/full_stack_lab
+    command: [fs, --scanners, "vuln,misconfig,secret,license", --format, json, --output, /reports/trivy.json,
+              --skip-dirs, /workspace/.git, /workspace/full_stack_lab]
     volumes:
       - ..:/workspace:ro
       - ./reports:/reports
@@ -294,85 +540,50 @@ services:
     profiles: [supply-chain]
     environment:
       SEMGREP_SEND_METRICS: "off"
-    command:
-      - semgrep
-      - scan
-      - --config
-      - /rules/semgrep-mcp.yml
-      - --json
-      - --output
-      - /reports/semgrep.json
-      - /workspace/full_stack_lab
+    command: [semgrep, scan, --config, /rules/semgrep-mcp.yml, --json, --output, /reports/semgrep.json,
+              /workspace/full_stack_lab]
     volumes:
       - ..:/workspace:ro
       - ./reports:/reports
       - ./supply_chain/semgrep-mcp.yml:/rules/semgrep-mcp.yml:ro
     network_mode: none
 
-
-  # ── 엔드포인트 평면 ──────────────────────────────────────────────────────
-  #
-  # 이 서비스는 통제 평면이 아니다. Gateway·OPA와 달리 아무 호출도 막지 않고,
-  # 클라이언트 설정에 적힌 MCP 서버 목록을 읽어 Registry와 대조해 보고만 한다.
-  # 그 보고가 종료 판정의 C1(회수 대상 모집단)과 섀도 MCP 탐지의 유일한 입력이다.
-  #
-  # 실제 배치에서는 컨테이너가 아니라 사용자 PC의 서비스/데몬으로 돌아간다.
-  # 여기서는 한 호스트 안에서 같은 흐름을 보이기 위해 설정 디렉터리를 읽기 전용으로
-  # 마운트한 컨테이너로 둔다. 기본 기동에는 없다 — 남의 PC 설정을 읽는 기능이
-  # 기본값으로 켜져 있으면 안 된다.
-  endpoint-agent:
-    build:
-      context: ./endpoint
-      dockerfile: endpoint-agent.Dockerfile
-    profiles: [endpoint]
-    environment:
-      ENDPOINT_GATEWAY_URL: http://gateway:8080
-      # 관리자 계정이 아니라 장치 자격이다. 관리자가 Console이나
-      # `./console.sh endpoint-key` 로 발급하고, 이 키로 할 수 있는 일은 보고
-      # 두 가지뿐이다. 소유자(누구의 단말인가)는 발급할 때 정해져 키에 묶인다.
-      # 비어 있으면 에이전트가 기동하면서 exit 2와 함께 이유를 말한다.
-      # compose config 자체를 실패시키지는 않는다 - 이 서비스는 profile 뒤에
-      # 있고, 구성 검증은 키 없이도 돌아야 한다.
-      ENDPOINT_DEVICE_KEY: ${ENDPOINT_DEVICE_KEY:-}
-      ENDPOINT_ID: ${ENDPOINT_ID:-endpoint-dev-001}
-      ENDPOINT_REPORT_SECONDS: ${ENDPOINT_REPORT_SECONDS:-60}
-      ENDPOINT_CONFIG_PATHS: /endpoint-configs
-      # 망 탐색을 할지. 범위는 여기서 정하지 않는다 — 게이트웨이의 탐색 정책이
-      # 정하고 에이전트는 받아서 따른다.
-      ENDPOINT_NETSCAN: ${ENDPOINT_NETSCAN:-1}
-    depends_on:
-      gateway:
-        condition: service_started
-    volumes:
-      # 읽기 전용. 에이전트에는 쓰기 경로가 없다. 기본값은 이 실습의 합성 설정이고,
-      # 실제 PC를 보려면 ENDPOINT_CONFIG_SOURCE로 그 경로를 준다.
-      - ${ENDPOINT_CONFIG_SOURCE:-./endpoint/sample-configs}:/endpoint-configs:ro
-    networks: [edge]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
-    read_only: true
-
 networks:
   edge: {}
-  agent:
-    internal: true
-  policy:
+  office:
     internal: true
   tools:
+    internal: true
+  corp:
+    internal: true
+  ops:
+    internal: true
+  internet:
+    internal: true
+  model:
+    internal: true
+  policy:
     internal: true
   data:
     internal: true
   telemetry:
     internal: true
-  model:
-    internal: true
   scanner: {}
 
 volumes:
   db_data: {}
-  effects: {}
   trivy_cache: {}
   intake_work: {}
   intake_reports: {}
   intake_trivy_cache: {}
   ollama_models: {}
+  corp_db_data: {}
+  corp_git_data: {}
+  corp_shared: {}
+  corp_repos: {}
+  corp_workspace: {}
+  corp_memory: {}
+  corp_secrets: {}
+  corp_state: {}
+  corp_www_intranet: {}
+  corp_www_external: {}
