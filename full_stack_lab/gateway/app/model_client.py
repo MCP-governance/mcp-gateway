@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 from urllib.parse import urlsplit
@@ -24,7 +25,11 @@ MODEL_TIMEOUT_CEILING = 120.0
 
 
 def effective_timeout() -> float:
-    return min(max(float(os.getenv("MODEL_TIMEOUT_SECONDS", "20") or 20), 0.1), MODEL_TIMEOUT_CEILING)
+    try:
+        value = float(os.getenv("MODEL_TIMEOUT_SECONDS", "20") or 20)
+    except ValueError:
+        value = 20.0
+    return min(max(value if math.isfinite(value) else 20.0, 0.1), MODEL_TIMEOUT_CEILING)
 
 
 def readiness() -> dict:
@@ -35,7 +40,7 @@ def readiness() -> dict:
                       and parsed.scheme in {"http", "https"} and bool(parsed.hostname)
                       and not parsed.username and not parsed.password and not parsed.query and not parsed.fragment)
     # HTTP is reserved for a local compatibility server; remote providers require TLS.
-    if parsed.scheme == "http" and parsed.hostname not in {"model-stub", "localhost", "127.0.0.1", "host.docker.internal"}:
+    if parsed.scheme == "http" and parsed.hostname not in {"model-stub", "ollama", "localhost", "127.0.0.1", "host.docker.internal"}:
         provider_ready = False
     return {"mode": mode, "configured": mode == "mock" or (mode == "provider" and provider_ready),
             "provider_configured": provider_ready, "model": os.getenv("MODEL_NAME", ""),
@@ -87,7 +92,7 @@ async def propose(message: str, history: list[str]) -> tuple[Proposal | None, st
     async with httpx.AsyncClient(timeout=timeout, follow_redirects=False, trust_env=False) as client:
         async with client.stream("POST", os.environ["MODEL_BASE_URL"].rstrip("/") + "/chat/completions",
                                  headers={"Authorization": "Bearer " + os.environ["MODEL_API_KEY"]},
-                                 json={"model": os.environ["MODEL_NAME"], "messages": messages, "tools": model_tools(), "tool_choice": "auto", "max_tokens": 1000}) as response:
+                                 json={"model": os.environ["MODEL_NAME"], "messages": messages, "tools": model_tools(), "tool_choice": "auto", "temperature": 0, "max_tokens": 1000}) as response:
             response.raise_for_status()
             body = bytearray()
             async for chunk in response.aiter_bytes():

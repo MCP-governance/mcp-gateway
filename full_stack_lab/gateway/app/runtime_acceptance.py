@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, patch
 import httpx
 from mcp import Client, StdioServerParameters
 
-from . import core, db, decommission
+from . import core, db, decommission, model_client
 from .acceptance import check, tool_payload
 
 
@@ -24,6 +24,29 @@ async def run() -> dict:
              "reason": "boundary fixture", "restrictions": {}}
     policy_input = {"tool": {"name": "send_external"}}
     client_factory = httpx.AsyncClient
+
+    with patch.dict(os.environ, {"MODEL_TIMEOUT_SECONDS": "nan"}):
+        checks.append(check(model_client.effective_timeout() == 20.0,
+                            "invalid-model-timeout-uses-safe-default"))
+
+    source = (await db.fetch_one("SELECT source_ref FROM mcp_servers WHERE id='mock-http'"))["source_ref"]
+    marker = "runtime-evidence-mode-acceptance"
+    try:
+        for mode, critical in (("live", 2), ("advisory", 0)):
+            await db.execute(
+                """INSERT INTO supply_chain_reports
+                   (scanner, source_ref, report_path, status, critical_count, summary)
+                   VALUES ('AI-Infra-Guard mcp-scan', %s, %s, 'TEST', %s, %s::jsonb)""",
+                (source, f"{marker}-{mode}", critical, json.dumps({"evidence_mode": mode})),
+            )
+            count = (await core._contract("mock-http", "read_document"))["critical_vulnerabilities"]
+            if mode == "live":
+                live_count = count
+        checks.append(check(live_count >= 2 and count == live_count,
+                            "advisory-scan-does-not-hide-live-critical"))
+    finally:
+        await db.execute("DELETE FROM supply_chain_reports WHERE report_path IN (%s, %s)",
+                         (marker + "-live", marker + "-advisory"))
 
     def response(body):
         transport = httpx.MockTransport(lambda request: httpx.Response(200, json=body))

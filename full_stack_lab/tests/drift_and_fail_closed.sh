@@ -72,6 +72,33 @@ if [[ -n "$published" || -n "$bindings" ]]; then
 fi
 echo "PASS upstream MCP has no host port"
 
+# Published UIs stay on host loopback. The Agent cannot resolve the upstream
+# service name, while the Gateway can: this is the actual Compose trust path.
+python3 - <<'PY'
+import json
+import subprocess
+
+for service in ("gateway", "agent-service", "jaeger"):
+    container = subprocess.check_output(["docker", "compose", "ps", "-q", service], text=True).strip()
+    ports = json.loads(subprocess.check_output(
+        ["docker", "inspect", "--format", "{{json .NetworkSettings.Ports}}", container], text=True))
+    hosts = [binding["HostIp"] for bindings in ports.values() if bindings for binding in bindings]
+    if not hosts or any(host != "127.0.0.1" for host in hosts):
+        raise SystemExit(f"FAIL {service} published outside loopback: {hosts}")
+print("PASS published APIs are loopback-only")
+PY
+curl -fsS --max-time 3 http://127.0.0.1:16686/ >/dev/null
+echo "PASS Jaeger UI is reachable on loopback"
+
+if docker compose exec -T agent-service python -c \
+  'import socket; socket.getaddrinfo("mock-http-mcp", 9000)' >/dev/null 2>&1; then
+  echo "FAIL Agent Service can resolve the upstream MCP" >&2
+  exit 1
+fi
+docker compose exec -T gateway python -c \
+  'import socket; socket.getaddrinfo("mock-http-mcp", 9000)'
+echo "PASS only Gateway resolves the upstream MCP"
+
 # 격리 워커의 스캐너가 실제로 실행되는지.
 #
 # acceptance는 도입 요청을 VALIDATION_QUEUED까지만 확인하고 행을 지운다. 그래서
@@ -87,4 +114,36 @@ for probe in "semgrep --version" "syft version" "trivy --version" "aig-mcp-scan 
   fi
 done
 echo "PASS intake worker scanners run"
+docker compose exec -T intake-worker python - <<'PY'
+import os
+import psycopg
+from psycopg.pq import TransactionStatus
+from psycopg.rows import dict_row
+import intake_worker
+from intake_worker import scan_target
+from uuid import uuid4
+
+with psycopg.connect(os.environ["DATABASE_URL"], row_factory=dict_row) as connection:
+    target = scan_target(connection, {"target_kind": "server", "target_id": "mock-stdio"})
+    assert target["ref"] == "2026.8.18" and target["source_ref"] == "mcp-server-time", target
+
+    class StopBeforeNetwork(Exception):
+        pass
+
+    def inspect_before_clone(*args, **kwargs):
+        assert connection.info.transaction_status == TransactionStatus.IDLE
+        raise StopBeforeNetwork
+
+    intake_worker.clone = inspect_before_clone
+    try:
+        intake_worker.run_mcp_scan(connection, {
+            "id": uuid4(), "target_kind": "server", "target_id": "mock-stdio", "mode": "static",
+        })
+    except StopBeforeNetwork:
+        pass
+    else:
+        raise AssertionError("expected to stop before network clone")
+print("PASS Time MCP scan uses its pinned upstream release")
+print("PASS scan releases registry lock before network work")
+PY
 echo "PASS security regression"

@@ -1,0 +1,26 @@
+# Apply after compose.corporate-lab.yaml. The model is reachable only on the
+# internal model network; small local models produce advisory scan evidence.
+services:
+  agent-service:
+    environment:
+      MODEL_MODE: provider
+      MODEL_BASE_URL: http://ollama:11434/v1
+      MODEL_NAME: ${LOCAL_LLM_MODEL:-qwen2.5:0.5b}
+      MODEL_API_KEY: local-only
+      MODEL_TIMEOUT_SECONDS: ${MODEL_TIMEOUT_SECONDS:-120}
+      MCP_SCAN_BASE_URL: http://ollama:11434/v1
+      MCP_SCAN_MODEL: ${LOCAL_LLM_MODEL:-qwen2.5:0.5b}
+      MCP_SCAN_API_KEY: local-only
+      MCP_SCAN_EVIDENCE_MODE: advisory
+      MCP_SCAN_AUTO_ON_VALIDATED: "0"
+      MCP_SCAN_RESCAN_DAYS: "0"
+
+  intake-worker:
+    environment:
+      MCP_SCAN_BASE_URL: http://ollama:11434/v1
+      MCP_SCAN_MODEL: ${LOCAL_LLM_MODEL:-qwen2.5:0.5b}
+      MCP_SCAN_API_KEY: local-only
+      MCP_SCAN_EVIDENCE_MODE: advisory
+      MCP_SCAN_AUTO_JOBS: "0"
+      MCP_SCAN_AUTO_ON_VALIDATED: "0"
+      MCP_SCAN_RESCAN_DAYS: "0"

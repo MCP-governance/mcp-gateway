@@ -1,9 +1,7 @@
 # 망 경계와 Tailscale
 
-이 문서는 "왜 지금 구성이 한 호스트를 벗어나면 통제가 아닌가"와 "tailnet을 붙일 때
-무엇을 정본으로 삼아야 하는가"를 정리합니다. 여기 적힌 tailnet 구성은 **아직
-저장소에 구현되어 있지 않습니다.** 적용 가능한 부분(`BIND_ADDR`)만 코드에 있고
-나머지는 설계 결정과 검증 조건입니다.
+이 문서는 현재 Docker 내부망과 호스트 경계, tailnet을 붙일 때의 검증 조건을 정리합니다.
+여기 적힌 tailnet ACL과 조직 신원 연동은 **저장소에 구현되어 있지 않습니다.**
 
 ## 1. 지금의 경로 통제는 무엇에 기대고 있는가
 
@@ -13,16 +11,24 @@ Gateway의 효과는 **모든 MCP 도구 호출이 이 강제 경로를 통과�
 | 장치 | 위치 | 성립 범위 |
 | --- | --- | --- |
 | upstream MCP에 host port가 없음 | [`compose.yaml`](compose.yaml)의 `mock-http-mcp`, 내부 `tools` 망 | Docker 네트워크 안 |
-| API가 loopback에만 바인딩 | `${BIND_ADDR:-127.0.0.1}:8000/8080/16686` | 이 호스트 안 |
+| Console·Gateway·Jaeger가 loopback에만 게시 | `127.0.0.1:8000/8080/16686` | 이 호스트 안 |
+| A.I.G 실습 UI가 loopback에만 게시 | `127.0.0.1:8088` | 이 호스트 안 |
+| Ollama 추론 서비스가 내부 `model` 망에만 연결 | `ollama`에 `ports` 없음; 다운로드 전용 컨테이너는 별도 | 같은 Compose 프로젝트 안 |
+| Agent Service가 `tools` 망에 없음 | `gateway`만 승인된 MCP 리스너에 접근 | 같은 Compose 프로젝트 안 |
+
+Ollama의 로컬 API에는 자체 인증이 없으므로 `model` 망에만 두고 포트를 게시하지 않습니다. 모델 다운로드는 `scanner` 망의 일회성 `ollama-pull`이 맡으며, 추론 서비스에는 `OLLAMA_NO_CLOUD=1`을 적용합니다.
 
 두 번째가 무너지면 [README 13절](README.md)이 "의도적으로 열어두었다"고 적은 무인증
 읽기 API — `/api/state`, `/api/effects`, `/api/policy/ledger`, `/api/monitor/summary`,
 `/api/supply-chain/coverage` — 가 그대로 노출됩니다. 그 목록은 **loopback 바인딩을
 전제로 한 결정**이었습니다.
 
-그래서 `./console.sh`는 `BIND_ADDR`이 `0.0.0.0`이나 `::`이면 기동을 거절합니다.
-와일드카드로 열면 화면에는 아무 변화가 없고 통제만 사라집니다. 아무도 알아채지
-못하는 통제 해제가 가장 위험합니다.
+Compose의 게시 주소는 loopback으로 고정했습니다. `./console.sh`는 기존
+`BIND_ADDR`/`AIG_BIND_ADDR` 설정에 다른 주소가 남아 있으면 기동을 거절합니다.
+네트워크 분리는 해당 Compose 프로젝트의 컨테이너에 적용됩니다. 다른 호스트나
+Docker 외부의 MCP 클라이언트까지 Gateway 통과를 강제하지는 않습니다. 또한
+`edge`에 붙은 서비스와 다운로드용 `scanner` 망에는 호스트의 외부 경로가
+있으므로 조직 egress 방화벽의 대체물로 취급하면 안 됩니다.
 
 ## 2. 이전 two-VM 구성에서 무엇이 잘못됐는가
 
@@ -106,8 +112,8 @@ tailscale serve --bg --https=443 http://127.0.0.1:8000
 그 프록시 하나뿐이어야 합니다.** 같은 호스트에서 `curl http://127.0.0.1:8000`으로
 직접 치면서 헤더를 손으로 붙이면 위조됩니다. 즉:
 
-- `BIND_ADDR`은 `127.0.0.1`로 두고 `tailscale serve`만 그 앞에 세우거나,
-- 컨테이너를 tailnet 인터페이스 주소에만 바인딩하고 loopback 경로를 막아야 합니다.
+- 이 실습처럼 loopback 게시를 유지하고 `tailscale serve`를 Console 앞에 세우거나,
+- 별도 배포에서 프록시 이외의 경로를 네트워크 규칙으로 차단해야 합니다.
 
 둘 중 하나를 하지 않은 채 헤더를 신뢰하면, 헤더는 인증이 아니라 요청서입니다.
 이것은 이 저장소가 `/tool-call`에 대해 이미 내린 결론과 같습니다 — **신원은
@@ -125,8 +131,10 @@ tailnet 신원은 디바이스·계정 신원이고, 이 실습의 역할(`partn
 
 | 항목 | 상태 |
 | --- | --- |
-| `BIND_ADDR`로 바인딩 주소 분리 (`compose.yaml`) | 반영. 기본값은 `127.0.0.1`로 동작 변화 없음 |
-| 와일드카드 바인딩 거절 (`console.sh`) | 반영 |
+| 게시 포트를 loopback으로 고정 (`compose.yaml`, 기업 실습 오버레이) | 반영. 8000/8080/16686/8088 |
+| 예전 `BIND_ADDR`/`AIG_BIND_ADDR`의 다른 주소 거절 (`console.sh`) | 반영 |
+| `model` 내부망의 Ollama, 분리된 다운로드 컨테이너 | 반영. 로컬 모델 프로필에서만 실행 |
+| `tools`에서 Agent Service 분리 | 반영. Gateway만 도구 서버에 연결 |
 | tailnet ACL, `tailscale serve`, 신원 헤더 연동 | **미구현.** 이 문서의 3절이 설계 기준 |
 | upstream MCP를 별도 호스트로 분리 | **미구현.** 삭제한 two-VM 실습을 tailnet 기준으로 다시 만들 때의 대상 |
 
@@ -138,7 +146,7 @@ tailnet 신원은 디바이스·계정 신원이고, 이 실습의 역할(`partn
    (토큰을 알아도, 애플리케이션 응답을 받기 전에 연결이 막혀야 한다.)
 2. `tag:mcp-gateway` 노드에서만 upstream `tools/call`이 성공한다.
 3. tailnet 밖(같은 물리 LAN, 다른 노드)에서 Console·Gateway API에 닿지 않는다.
-4. `tailscale serve` 없이 직접 `BIND_ADDR:8000`에 붙어 `Tailscale-User-Login`
+4. `tailscale serve` 없이 직접 `127.0.0.1:8000`에 붙어 `Tailscale-User-Login`
    헤더를 위조한 요청이 **역할을 얻지 못한다.**
 5. `./console.sh test`의 기존 완료 조건이 그대로 통과한다. 망 경계를 바꾸면서
    정책 경로가 조용히 달라지지 않았다는 증거가 필요하다.

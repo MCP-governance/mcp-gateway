@@ -436,8 +436,10 @@ async def _contract(server_id: str, tool_name: str) -> dict:
     )
     critical = await db.fetch_one(
         """SELECT COALESCE(sum(critical_count),0) AS critical_count FROM
-           (SELECT DISTINCT ON (scanner) critical_count FROM supply_chain_reports
-            WHERE source_ref=%s ORDER BY scanner,id DESC) latest_per_scanner""",
+           (SELECT DISTINCT ON (scanner, COALESCE(summary->>'evidence_mode', 'live'))
+                   critical_count FROM supply_chain_reports
+            WHERE source_ref=%s
+            ORDER BY scanner, COALESCE(summary->>'evidence_mode', 'live'), id DESC) latest_per_scanner""",
         (server["source_ref"],),
     )
     return {

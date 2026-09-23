@@ -637,7 +637,7 @@ MCP_SCAN_CONFIG = {
     "MCP_SCAN_API_KEY": os.getenv("MCP_SCAN_API_KEY", ""),
 }
 MCP_SCAN_EVIDENCE_MODE = os.getenv("MCP_SCAN_EVIDENCE_MODE", "live").strip().lower()
-MCP_SCAN_EVIDENCE_MODES = {"live", "test-double"}
+MCP_SCAN_EVIDENCE_MODES = {"live", "advisory", "test-double"}
 # 워커가 lease를 갱신하는 주기보다 넉넉하게 잡는다. 이 값을 넘도록 소식이 없으면
 # "큐에 넣었다"와 "누군가 실행한다"가 더는 같은 말이 아니다.
 WORKER_STALE_SECONDS = int(os.getenv("INTAKE_WORKER_STALE_SECONDS", "60"))
@@ -653,13 +653,14 @@ EXIT_TERMS_REQUIRED = os.getenv("INTAKE_EXIT_TERMS_REQUIRED", "0") not in ("0", 
 def mcp_scan_status() -> dict:
     missing = [key for key, value in MCP_SCAN_CONFIG.items() if not value]
     if MCP_SCAN_EVIDENCE_MODE not in MCP_SCAN_EVIDENCE_MODES:
-        missing.append("MCP_SCAN_EVIDENCE_MODE(live|test-double)")
+        missing.append("MCP_SCAN_EVIDENCE_MODE(live|advisory|test-double)")
     return {
         "configured": not missing,
         "missing": missing,
         "base_url": MCP_SCAN_CONFIG["MCP_SCAN_BASE_URL"],
         "model": MCP_SCAN_CONFIG["MCP_SCAN_MODEL"],
         "evidence_mode": MCP_SCAN_EVIDENCE_MODE,
+        "local": local_model_endpoint(),
         "pinned_commit": "036c39bd03b39ce4a811f7f125bc3b8f47e39b7c",
         "required_for_approval": SCAN_REQUIRED_FOR_APPROVAL,
     }
@@ -757,7 +758,8 @@ async def mcp_scan_connection_test(authorization: str | None = Header(default=No
         raise HTTPException(409, f"설정이 없습니다: {', '.join(status['missing'])}")
     url = status["base_url"].rstrip("/") + "/chat/completions"
     try:
-        async with httpx.AsyncClient(timeout=20) as client:
+        async with httpx.AsyncClient(timeout=120 if local_model_endpoint() else 20,
+                                     trust_env=False) as client:
             response = await client.post(url, headers={
                 "Authorization": "Bearer " + MCP_SCAN_CONFIG["MCP_SCAN_API_KEY"],
             }, json={"model": status["model"], "max_tokens": 1,
@@ -1302,6 +1304,7 @@ async def chat(request: ChatRequest, authorization: str | None = Header(default=
         raise HTTPException(409, "같은 요청이 처리 중입니다.")
     result = {"request_id": str(request.request_id), "session_id": str(session_id), "status": "failed", "tool_call": None, "gateway_result": None, "replayed": False}
     async with slots:
+        gateway_attempted = False
         try:
             history = await db.fetch_all("SELECT message FROM agent_runs WHERE session_id=%s AND id<>%s AND status='COMPLETE' ORDER BY created_at DESC LIMIT 4", (session_id, request.request_id))
             proposal, generator = await propose(message, [r["message"] for r in reversed(history)])
@@ -1315,6 +1318,7 @@ async def chat(request: ChatRequest, authorization: str | None = Header(default=
                                     **proposal.model_dump())
                 result["tool_call"] = {"tool_call_id": str(call_id), **proposal.model_dump()}
                 async with httpx.AsyncClient(timeout=30, follow_redirects=False) as client:
+                    gateway_attempted = True
                     response = await client.post(
                         GATEWAY_URL + "/tool-call",
                         headers={"Authorization": authorization or "", "X-Agent-Assertion": "Bearer " + issue_agent_assertion(user, envelope)},
@@ -1326,7 +1330,9 @@ async def chat(request: ChatRequest, authorization: str | None = Header(default=
         except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError, AttributeError) as exc:
             # Never echo provider URLs, credentials or raw provider error responses to the browser/audit.
             code = "MODEL-TIMEOUT" if isinstance(exc, httpx.TimeoutException) else "AGENT-PIPELINE-001"
-            result.update(error_code=code, message="모델 또는 Gateway 응답 검증에 실패했습니다. 실행 결과가 불확실할 수 있으므로 같은 요청을 자동 재실행하지 않습니다.")
+            message = ("Gateway 응답 확인에 실패했습니다. 실행 결과가 불확실할 수 있으므로 같은 요청을 자동 재실행하지 않습니다."
+                       if gateway_attempted else "모델의 도구 제안을 검증하지 못해 Gateway를 호출하지 않았습니다.")
+            result.update(error_code=code, message=message)
     await db.execute("UPDATE agent_runs SET status=%s,response=%s,completed_at=now() WHERE id=%s", ("FAILED" if result["status"] == "failed" else "COMPLETE", Jsonb(result), request.request_id))
     return result
 

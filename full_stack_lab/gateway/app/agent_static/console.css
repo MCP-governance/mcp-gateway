@@ -8,9 +8,16 @@
  * 색의 원천이고, 나머지는 전부 무채색이다. 장식에 색을 쓰기 시작하면 표 안에서
  * 판정 색이 묻히고, 그러면 운영자가 색으로 읽지 못한다.
  *
- * 글꼴은 시스템 스택만 쓴다. 외부 폰트 CDN을 부르는 순간 이 콘솔은 폐쇄망에서
- * 깨지고, 폐쇄망이야말로 이 콘솔이 놓일 자리다.
+ * Noto Sans KR은 저장소에 함께 넣어 폐쇄망에서도 같은 화면을 제공한다.
  */
+
+@font-face {
+  font-family: "Noto Sans KR";
+  src: url("/static/fonts/NotoSansKR-variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
 
 :root {
   color-scheme: dark;
@@ -26,7 +33,7 @@
 
   --text-1: #e6e9ee;
   --text-2: #a8b1c0;
-  --text-3: #6f7889;
+  --text-3: #98a3b4;
 
   /* 구조 강조 하나. 선택 상태와 초점에만 쓴다. */
   --mark: #7aa2f7;
@@ -44,8 +51,8 @@
   --approval-bg: rgba(155, 127, 212, 0.13);
   --block-bg: rgba(204, 106, 99, 0.13);
 
-  --sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
-          "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  --sans: "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", "Cascadia Mono", Consolas,
           "D2Coding", "Noto Sans Mono CJK KR", monospace;
 
@@ -266,7 +273,7 @@ button { font: inherit; cursor: pointer; }
   margin-bottom: 20px;
 }
 .head h1 { margin: 0; font-size: 21px; font-weight: 650; letter-spacing: -0.015em; }
-.head p { margin: 3px 0 0; color: var(--text-3); font-size: 12.5px; max-width: 62ch; }
+.head p { margin: 3px 0 0; color: var(--text-2); font-size: 13px; max-width: 62ch; }
 .head .head-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
 
 /* ── 판정 색 ─────────────────────────────────────────────────────────────── */
@@ -595,15 +602,37 @@ fieldset legend { font-size: 11.5px; color: var(--text-3); padding: 0 6px; }
 @media (max-width: 900px) {
   .shell {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto minmax(0, 1fr);
     grid-template-areas: "brand" "top" "rail" "main";
   }
+  .topbar {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    grid-template-areas: "wire mode theme logout" "who who who who";
+    height: auto;
+    min-height: 68px;
+    padding: 8px var(--gut);
+    gap: 5px 10px;
+  }
+  #wire { grid-area: wire; }
+  #mode-tag { grid-area: mode; justify-self: start; }
+  .who { grid-area: who; margin: 0; text-align: left; display: flex; gap: 6px; align-items: baseline; }
+  .who b { display: inline; }
+  .who span { font-size: 12px; color: var(--text-2); }
+  #theme { grid-area: theme; }
+  #logout { grid-area: logout; }
   .brand, .rail { border-right: 0; }
   .rail { display: flex; overflow-x: auto; padding: 0; border-bottom: 1px solid var(--rule); }
   .rail-group { display: none; }
   .rail a { border-left: 0; border-bottom: 2px solid transparent; white-space: nowrap; padding: 10px 14px; }
   .rail a[aria-current="page"] { border-left: 0; border-bottom-color: var(--mark); }
-  .feed li { grid-template-columns: 56px minmax(0, 1fr); }
-  .feed li .what { grid-column: 1 / -1; }
+  .grid[data-cols="2"], .grid[data-cols="3"] { grid-template-columns: minmax(0, 1fr); }
+  .head { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .head .head-actions { margin-left: 0; flex-wrap: wrap; }
+  .feed li { grid-template-columns: auto minmax(0, 1fr); gap: 4px 9px; }
+  .feed li .verdict { justify-self: start; }
+  .feed li .what, .feed li .who-cell { grid-column: 1 / -1; white-space: normal; overflow-wrap: anywhere; }
+  .feed li .who-cell { font-size: 12px; }
   :root { --gut: 16px; }
 }
 
