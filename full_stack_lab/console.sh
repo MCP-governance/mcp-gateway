@@ -5,6 +5,14 @@ LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$LAB_DIR"
 mkdir -p reports
 
+# A fresh checkout must not silently attach another checkout's database volume.
+# Existing .env files with signing keys keep the legacy Compose project.
+touch .env && chmod 600 .env
+if [[ -z "${COMPOSE_PROJECT_NAME:-}" ]] &&
+   ! grep -qE '^(MCP_COMPOSE_PROJECT|COMPOSE_PROJECT_NAME|AGENT_JWT_PRIVATE_KEY)=' .env; then
+  printf 'MCP_COMPOSE_PROJECT=mcpgw-%s\n' "$(printf '%s' "$LAB_DIR" | sha256sum | cut -c1-10)" >> .env
+fi
+
 # The synthetic IdP signs with Ed25519: Agent Service holds the private key, every
 # verifier holds only the public key. Generated inside the gateway image so the host
 # needs no crypto library. The placeholders only satisfy compose interpolation.
@@ -27,19 +35,15 @@ ensure_keys() {
   chmod 600 .env
 }
 
-ensure_keys
+# Published APIs are loopback-only even when Compose is invoked directly.
+# Use tailscale serve for private remote access; never publish the unauthenticated
+# read endpoints or the A.I.G Web UI on a LAN interface.
+if [[ "${BIND_ADDR:-127.0.0.1}" != 127.0.0.1 || "${AIG_BIND_ADDR:-127.0.0.1}" != 127.0.0.1 ]]; then
+  echo "BIND_ADDR와 AIG_BIND_ADDR는 127.0.0.1만 허용합니다. 내부망 접속은 NETWORK.md의 tailscale serve 경로를 사용하세요." >&2
+  exit 2
+fi
 
-# 이 실습에서 upstream MCP에 host port가 없다는 사실과 API가 loopback에만 붙는다는
-# 사실이 유일한 경로 통제다. BIND_ADDR을 와일드카드로 열면 그 통제가 사라지는데,
-# 화면에는 아무 변화도 없어서 아무도 알아채지 못한다. 그래서 여기서 거절한다.
-# tailnet에 붙이려면 와일드카드가 아니라 이 호스트의 tailscale0 주소를 준다.
-case "${BIND_ADDR:-127.0.0.1}" in
-  0.0.0.0|::|"*")
-    echo "BIND_ADDR=${BIND_ADDR}는 모든 인터페이스에 여는 설정입니다." >&2
-    echo "특정 주소(127.0.0.1 또는 이 호스트의 tailscale0 100.x 주소)를 지정하세요. NETWORK.md 참고." >&2
-    exit 2
-    ;;
-esac
+ensure_keys
 
 # The gateway API is authenticated now, so scripted maintenance calls log in the
 # same way a person does. The password lives in the uncommitted .env.
@@ -113,8 +117,17 @@ live_compose() {
   LAB_MODE=1 docker compose -f compose.yaml -f compose.corporate-lab.yaml -f compose.live-lab.yaml "$@"
 }
 
+local_compose() {
+  LAB_MODE=1 docker compose -f compose.yaml -f compose.corporate-lab.yaml -f compose.local-llm.yaml "$@"
+}
+
+compose_project_name() {
+  docker compose config --format json | python3 -c 'import json,sys; print(json.load(sys.stdin)["name"])'
+}
+
 retire_legacy_aig_containers() {
-  local service id
+  local service id project
+  project="$(compose_project_name)"
   for service in aig-agent aig-webserver aig-lab-model; do
     while read -r id; do
       [[ -z "$id" ]] && continue
@@ -122,7 +135,7 @@ retire_legacy_aig_containers() {
       # volumes stay intact and are remounted into the combined Gateway image.
       docker rm -f "$id" >/dev/null
     done < <(docker ps -aq \
-      --filter 'label=com.docker.compose.project=mcp-governance-full' \
+      --filter "label=com.docker.compose.project=$project" \
       --filter "label=com.docker.compose.service=$service")
   done
 }
@@ -200,6 +213,25 @@ sys.exit(0 if result.get("ok") and result.get("worker_alive") else 1)'
   echo "A.I.G Web에서는 mcp-gateway-live 모델을 선택해 검사할 수 있습니다."
 }
 
+local_up() {
+  # Downloads happen in a disposable container with internet access. The
+  # inference container then starts only on the internal model network.
+  local_compose --profile local-llm-download run --rm --no-deps ollama-pull
+  retire_legacy_aig_containers
+  local_compose --profile local-llm up -d --build ollama gateway gateway-sse agent-service intake-worker
+  wait_ready
+  wait_aig_ready
+  python3 lab/live_setup.py local-register
+  local admin
+  admin="$(gateway_token)"
+  curl -fsS --max-time 150 -X POST http://127.0.0.1:8000/api/mcp-scan/connection-test \
+    -H "authorization: Bearer $admin" | python3 -c 'import json,sys
+result=json.load(sys.stdin)
+print("로컬 모델 연결:", "정상" if result.get("ok") else result.get("message"))
+sys.exit(0 if result.get("ok") else 1)'
+  echo "로컬 모델 테스트베드: http://localhost:8000 / http://localhost:8088"
+}
+
 lab_gateway() {
   lab_compose exec -T gateway /opt/gateway-venv/bin/python -m app.corporate_lab "$@"
 }
@@ -246,11 +278,12 @@ queue_aig_dynamic_scan() {
 }
 
 lab_network_targets() {
-  local network
+  local network project
+  project="$(compose_project_name)"
   while read -r network; do
     [[ -z "$network" ]] && continue
     docker network inspect "$network" --format '{{range $id, $container := .Containers}}{{$container.IPv4Address}}{{"\\n"}}{{end}}'
-  done < <(docker network ls --filter 'label=com.docker.compose.project=mcp-governance-full' --format '{{.Name}}') \
+  done < <(docker network ls --filter "label=com.docker.compose.project=$project" --format '{{.Name}}') \
     | sed 's:/.*::' | sort -u | paste -sd, -
 }
 
@@ -351,6 +384,13 @@ case "${1:-up}" in
   live-lab)
     live_up
     ;;
+  local-llm)
+    local_up
+    ;;
+  local-stop)
+    local_compose --profile local-llm down
+    echo "로컬 모델 테스트베드를 중지했습니다. 모델과 DB 데이터는 유지됩니다."
+    ;;
   live-stop)
     lab_compose down
     echo "실모델 테스트베드를 중지했습니다. DB와 A.I.G 데이터는 유지됩니다."
@@ -358,7 +398,7 @@ case "${1:-up}" in
   lab-down)
     # This overlay owns only lab services/volumes. It also removes the test
     # double and Tencent A.I.G data; normal `down` remains non-destructive.
-    lab_compose --profile endpoint --profile llm-stub down -v
+    lab_compose --profile endpoint --profile llm-stub --profile local-llm down -v
     ;;
   lab-logs)
     lab_compose --profile llm-stub logs -f --tail=120 llm-stub intake-worker gateway agent-service
@@ -422,7 +462,7 @@ json.dump(module.app.openapi(), sys.stdout, ensure_ascii=False, indent=2, sort_k
     echo "이 실습 전용 DB·효과 로그·생성 보고서를 초기화했습니다."
     ;;
   *)
-    echo "usage: ./console.sh [up|test|agent-test|endpoint|endpoint-key|scan|openapi|status|logs|down|reset|corporate-lab|live-lab|live-stop|lab-down|lab-logs]" >&2
+    echo "usage: ./console.sh [up|test|agent-test|endpoint|endpoint-key|scan|openapi|status|logs|down|reset|corporate-lab|live-lab|local-llm|local-stop|live-stop|lab-down|lab-logs]" >&2
     exit 2
     ;;
 esac

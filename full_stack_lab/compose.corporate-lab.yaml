@@ -15,14 +15,14 @@ services:
       AIG_SERVER: 127.0.0.1:8088
       AIG_API_CHECKER_URL: http://127.0.0.1:8000
     ports:
-      - "${AIG_BIND_ADDR:-127.0.0.1}:8088:8088"
+      - "127.0.0.1:8088:8088"
     volumes:
       - aig_data:/aig-web/data
       - aig_db:/aig-web/db
       - aig_logs:/aig-web/logs
       - aig_uploads:/aig-web/uploads
       - aig_api_checker_data:/api-checker-data
-    networks: [edge, policy, tools, data, telemetry, scanner, aig-targets]
+    networks: [edge, policy, tools, data, telemetry, scanner, model, aig-targets]
     cap_add: [SYS_ADMIN, SETUID, SETGID, CHOWN]
     security_opt: [seccomp:unconfined]
     shm_size: 2gb

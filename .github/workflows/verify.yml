@@ -50,6 +50,30 @@ jobs:
           AGENT_JWT_PUBLIC_KEY: ci-placeholder
         run: docker compose config --quiet
 
+      - name: 내부망과 게시 포트 검증
+        working-directory: full_stack_lab
+        env:
+          AGENT_JWT_PRIVATE_KEY: ci-placeholder
+          AGENT_JWT_PUBLIC_KEY: ci-placeholder
+        run: |
+          docker compose -f compose.yaml -f compose.corporate-lab.yaml -f compose.local-llm.yaml \
+            --profile local-llm --profile local-llm-download config --format json > /tmp/mcp-compose.json
+          python3 - <<'PY'
+          import json
+          stack = json.load(open('/tmp/mcp-compose.json'))
+          services = stack['services']
+          assert stack['networks']['model']['internal'] is True
+          assert set(services['ollama']['networks']) == {'model'}
+          assert set(services['ollama-pull']['networks']) == {'scanner'}
+          assert not services['ollama'].get('ports')
+          assert 'tools' not in services['agent-service']['networks']
+          assert services['intake-worker']['environment']['MCP_SCAN_AUTO_JOBS'] == '0'
+          assert services['intake-worker']['environment']['MCP_SCAN_RESCAN_DAYS'] == '0'
+          for name in ('gateway', 'agent-service', 'jaeger'):
+              assert services[name]['ports'] and all(port['host_ip'] == '127.0.0.1' for port in services[name]['ports'])
+          print('PASS internal model, upstream and loopback boundaries')
+          PY
+
       # The trust boundary is only real if the key material says so. A verifier that
       # receives the signing key can mint an admin session for itself.
       - name: 검증자는 서명 개인키를 받지 않는지 확인

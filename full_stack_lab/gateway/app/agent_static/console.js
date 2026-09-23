@@ -424,22 +424,23 @@ async function loadScan() {
     <table><tbody>
       <tr><td>Base URL</td><td class="id">${esc(config.base_url || "-")}</td></tr>
       <tr><td>모델</td><td class="id">${esc(config.model || "-")}</td></tr>
-      <tr><td>로컬 endpoint</td><td>${config.local ? tag("예 — 코드가 조직 밖으로 나가지 않음", "good") : tag("아니오 — 외부로 나감", "warn")}</td></tr>
+      <tr><td>모델 주소</td><td>${config.local ? tag("로컬 주소", "good") : tag("외부 주소", "warn")}</td></tr>
+      <tr><td>검사 증적</td><td>${tag(config.evidence_mode === "advisory" ? "참고용 · 자동 차단 없음" : config.evidence_mode || "-")}</td></tr>
     </tbody></table>`);
 
   fill($("#scan-worker"), `
     <p class="hintline" style="margin-top:0">${worker.alive
-      ? `워커 ${esc(worker.worker_id || "")}가 살아 있습니다.`
+      ? `워커 ${esc(worker.worker || "")}가 살아 있습니다.`
       : "격리 워커의 생존 신호가 없습니다. 큐에 넣어도 실행되지 않습니다."}</p>
     <table><tbody>
-      <tr><td>마지막 신호</td><td class="id">${when(worker.last_seen_at, true)}</td></tr>
+      <tr><td>마지막 신호</td><td class="id">${when(worker.seen_at, true)}</td></tr>
       <tr><td>대기</td><td class="num">${esc(worker.queued ?? 0)}</td></tr>
       <tr><td>실행 중</td><td class="num">${esc(worker.running ?? 0)}</td></tr>
     </tbody></table>`);
 
   const intakeItems = (targets || []).map((row) => `<li>
     <div class="item-top"><b>${esc(row.display_name)}</b>${tag("도입 요청")}
-      ${row.last_status ? tag(row.last_status, row.last_status === "SUCCEEDED" ? "good" : "warn") : ""}
+      ${row.last_status ? tag(row.last_status, row.last_status === "DONE" ? "good" : "warn") : ""}
       <span class="spacer"></span><span class="item-sub">${esc(String(row.commit_sha || "").slice(0, 12))}</span></div>
     <div class="item-sub">${esc(row.repository_url)}</div>
     <div class="item-acts">
@@ -449,7 +450,7 @@ async function loadScan() {
   const serverItems = (servers || []).map((row) => `<li>
     <div class="item-top"><b>${esc(row.display_name)}</b>${tag("등록 서버")}
       ${tag(row.status, row.status === "READY" ? "good" : "warn")}
-      ${row.last_status ? tag(row.last_status, row.last_status === "SUCCEEDED" ? "good" : "warn") : ""}</div>
+      ${row.last_status ? tag(row.last_status, row.last_status === "DONE" ? "good" : "warn") : ""}</div>
     <div class="item-sub">${esc(row.source_url || row.endpoint || "")}</div>
     <div class="item-acts">
       <button class="btn" data-size="sm" data-scan="server" data-id="${esc(row.id)}" data-mode="static"
@@ -460,7 +461,7 @@ async function loadScan() {
   fill($("#scan-targets"), intakeItems + serverItems, "감사할 대상이 없습니다.");
 
   $("#scan-job-n").textContent = (jobs || []).length;
-  const jobTone = { SUCCEEDED: "good", FAILED: "bad", CANCELLED: "", RUNNING: "info", QUEUED: "warn" };
+  const jobTone = { DONE: "good", FAILED: "bad", CANCELLED: "", RUNNING: "info", QUEUED: "warn" };
   fill($("#scan-jobs"), (jobs || []).map((job) => `<li>
     <div class="item-top"><b>${esc(job.target_label || job.target_id)}</b>
       ${tag(job.status, jobTone[job.status] || "")}${tag(job.mode)}${tag(job.target_kind)}
@@ -480,7 +481,7 @@ async function loadScan() {
       <div class="item-top"><b>${esc(row.source_ref)}</b>
         ${summary.evidence_mode ? tag(summary.evidence_mode, summary.evidence_mode === "live" ? "good" : "") : ""}
         ${row.critical_count ? tag(`치명 ${row.critical_count}`, "bad") : ""}
-        ${summary.blocks ? tag("호출 차단으로 이어짐", "bad") : tag("증적만")}
+        ${summary.blocks_calls ? tag("호출 차단으로 이어짐", "bad") : tag("증적만")}
         <span class="spacer"></span><span class="item-sub">${when(row.imported_at)}</span></div>
       ${(summary.findings || []).slice(0, 5).map((f) =>
         `<div class="item-note">${esc(f.severity || "")} · ${esc(f.title || f.id || "")}</div>`).join("")}

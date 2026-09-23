@@ -30,7 +30,7 @@ flowchart LR
     IW[격리 검증 워커\nSyft · Trivy · Semgrep] --> R
 ```
 
-MCP 서버는 Docker 내부망에 있고 호스트에는 Agent Service(`127.0.0.1:8000`), Gateway API(`127.0.0.1:8080`), Jaeger UI(`127.0.0.1:16686`)만 공개됩니다. 브라우저 UI는 `8000` Console 하나이며, `8080/`에 접속하면 Console로 이동합니다. 이 Compose 구성에서는 합성 문서 MCP를 직접 호출하지 않고 Gateway 강제 경로를 사용합니다.
+MCP 서버는 Docker 내부망에 있고 호스트에는 Agent Service(`127.0.0.1:8000`), Gateway API(`127.0.0.1:8080`), Jaeger UI(`127.0.0.1:16686`)만 게시됩니다. 기업 실습을 켜면 A.I.G UI(`127.0.0.1:8088`)도 게시됩니다. 브라우저 UI는 `8000` Console 하나이며, `8080/`에 접속하면 Console로 이동합니다. 이 Compose 구성에서는 합성 문서 MCP를 직접 호출하지 않고 Gateway 강제 경로를 사용합니다. 새 복제본은 고유한 Compose 프로젝트와 볼륨을 사용하므로 다른 랩의 DB를 덮어쓰지 않습니다.
 
 ## 2. WSL에서 원클릭 실행
 
@@ -107,7 +107,17 @@ host loopback ── Console :8000 / Gateway 컨테이너 :8080, A.I.G UI :8088
 
 세부 후보·증적 구분·제약은 [lab/README.md](lab/README.md)에 기록합니다.
 
-### 2.2 실제 모델 API로 계속 쓰는 테스트베드
+### 2.2 내부망 로컬 모델
+
+```bash
+./console.sh local-llm
+```
+
+첫 실행은 다운로드 전용 일회성 컨테이너가 Ollama 모델(`qwen2.5:0.5b` 기본값)을 받습니다. 상시 실행되는 Ollama는 인터넷 경로와 호스트 포트가 없는 내부 `model` 망에만 붙습니다. Agent Service의 도구 제안, A.I.G Web·Agent·API Checker, 격리 워커의 mcp-scan이 같은 로컬 모델을 사용합니다. A.I.G Web에는 `mcp-gateway-live`가 자동 등록되고 Console의 연결 시험으로 실제 모델 API 응답을 확인합니다. 소형 모델의 코드 감사는 `advisory`로 저장하며 자동 차단 근거로 쓰지 않습니다. 이 프로필에서는 무거운 정기 재감사를 자동 시작하지 않고 Console에서 명시적으로 요청합니다. 모델 출력은 Gateway의 도구 계약과 OPA 판정을 통과해야 실행됩니다. 중지는 `./console.sh local-stop`이고 DB·모델 볼륨은 유지됩니다.
+
+모델을 바꾸려면 `.env`의 `LOCAL_LLM_MODEL`을 설정하고 다시 `local-llm`을 실행합니다. CPU에서 이 작은 모델은 첫 도구 제안에 수십 초가 걸리거나 유효하지 않은 제안을 낼 수 있습니다. 실행 전 거부와 Gateway 요청 후 응답 유실을 구분해 표시합니다. 자세한 경계는 [NETWORK.md](NETWORK.md)에 있습니다.
+
+### 2.3 실제 모델 API로 계속 쓰는 테스트베드
 
 Windows에서는 `start-live-lab.cmd`를 더블클릭하고 열린 창을 유지합니다. 이 PC의 Kali WSL은 유휴 상태가 되면 Docker도 내려가므로 창이 WSL을 실행 상태로 유지합니다. WSL/Linux에서는 `full_stack_lab`에서 `./console.sh live-lab`을 실행하고 터미널 세션을 유지합니다. 처음 한 번 OpenAI 호환 Base URL, 모델 이름, API 키를 묻습니다. 키 입력은 화면에 나타나지 않고 Git에서 제외된 `.env`에 저장됩니다. 다음 실행부터는 같은 명령 하나로 재기동합니다.
 
@@ -578,7 +588,7 @@ MODEL_NAME=replace-me
 curl -sS http://localhost:8000/api/readiness | python3 -m json.tool
 ```
 
-외부 endpoint는 HTTPS만 허용합니다. 로컬 호환 서버만 `localhost`, `127.0.0.1`, `host.docker.internal`, Compose의 `model-stub`에 HTTP로 연결할 수 있습니다. Agent는 사용자 요청에서 이메일·휴대전화·일반적인 API 키 패턴을 치환하고, 응답은 128 KB·Tool Call 1개·등록된 서버/도구·JSON Schema로 제한합니다. 모델 결과를 신뢰해 권한을 부여하지 않으며, 도구 실행 결과도 모델에 재전송하지 않습니다.
+외부 endpoint는 HTTPS만 허용합니다. 로컬 호환 서버만 `localhost`, `127.0.0.1`, `host.docker.internal`, Compose의 `model-stub` 또는 `ollama`에 HTTP로 연결할 수 있습니다. Agent는 사용자 요청에서 이메일·휴대전화·일반적인 API 키 패턴을 치환하고, 응답은 128 KB·Tool Call 1개·등록된 서버/도구·JSON Schema로 제한합니다. 모델 결과를 신뢰해 권한을 부여하지 않으며, 도구 실행 결과도 모델에 재전송하지 않습니다.
 
 현재 자동 시험은 실제 LLM이 아닌 로컬 HTTP wire stub으로 정상·차단·잘못된 Schema·알 수 없는 도구·복수 호출·401·429·500·timeout·과대 응답을 검증합니다. 자동 시험에 실제 모델을 넣지 않는 이유는 CI가 모델의 그날 컨디션에 따라 빨강·초록을 오가면 그 신호가 무엇을 뜻하는지 아무도 신뢰하지 않게 되기 때문입니다.
 
@@ -956,7 +966,7 @@ curl -sS http://localhost:8080/api/audit/verify -H "authorization: Bearer $GW_TO
 | --- | --- |
 | `compose.yaml` | 네트워크·서비스·scanner profile |
 | `console.sh` | `up/test/agent-test/endpoint/scan/openapi/status/logs/down/reset` 단일 진입점 |
-| [`NETWORK.md`](NETWORK.md) | 망 경계 설계와 Tailscale 적용 기준. `BIND_ADDR`의 의미와 금지 값 |
+| [`NETWORK.md`](NETWORK.md) | 실제 망 경계와 Tailscale 적용 기준. 게시 포트와 모델 내부망 |
 | [`CONTROL_PLANES.md`](CONTROL_PLANES.md) | **무엇이 엔드포인트에 깔리고 무엇이 네트워크에 깔리는가.** 평면별 책임과 배치 결정표 |
 | [`TERMINATION.md`](TERMINATION.md) | **전주기의 마지막.** 종료 절차, C1~C4 기준, T1~T3 등급, 판정서 |
 | [`../docs/API.md`](../docs/API.md) | 통합용 API 명세. 경계·인증 주체·실패의 의미 |

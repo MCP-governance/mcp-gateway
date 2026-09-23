@@ -104,8 +104,8 @@ def api(method: str, path: str, payload: dict | None = None) -> dict:
     return result
 
 
-def register(path: Path) -> None:
-    values = read_env(path)
+def register(path: Path, values: dict[str, str] | None = None) -> None:
+    values = values or read_env(path)
     validate(values)
     rows = api("GET", "/api/v1/app/models").get("data") or []
     if not isinstance(rows, list):
@@ -126,15 +126,22 @@ def register(path: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("init", "register"))
+    parser.add_argument("action", choices=("init", "register", "local-register"))
     parser.add_argument("--env-file", type=Path, default=ENV_FILE)
     parser.add_argument("--rotate", action="store_true")
     args = parser.parse_args()
     try:
         if args.action == "init":
             init(args.env_file, args.rotate)
-        else:
+        elif args.action == "register":
             register(args.env_file)
+        else:
+            saved = read_env(args.env_file)
+            register(args.env_file, {
+                "MCP_SCAN_BASE_URL": "http://ollama:11434/v1",
+                "MCP_SCAN_MODEL": os.getenv("LOCAL_LLM_MODEL", saved.get("LOCAL_LLM_MODEL", "qwen2.5:0.5b")),
+                "MCP_SCAN_API_KEY": "local-only",
+            })
     except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
         print(f"실모델 설정 실패: {exc}", file=sys.stderr)
         return 1

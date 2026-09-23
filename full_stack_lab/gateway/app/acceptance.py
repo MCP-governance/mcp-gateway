@@ -54,6 +54,13 @@ def check(condition: bool, name: str, details: str = "") -> dict:
     return {"name": name, "status": "PASS", "details": details}
 
 
+def public_read_executes(result: dict) -> bool:
+    """A repeated run may raise the real anomaly Alert without denying the read."""
+    return bool(result["upstream_executed"] and (
+        (result["decision"] == "Allow" and result["policy_id"] == "P-333-ALLOW-001")
+        or (result["decision"] == "Alert" and result["policy_id"] == "P-ANOMALY-001")))
+
+
 def tool_payload(result) -> dict:
     if result.structured_content is not None:
         return result.structured_content
@@ -341,7 +348,8 @@ async def run() -> dict:
     approval_id = None
     for expected_decision, principal, body, should_execute in scenarios:
         result = await post("/api/calls", body, principal)
-        checks.append(check(result["decision"] == expected_decision, f"decision-{expected_decision.lower()}", result["policy_id"]))
+        checks.append(check(public_read_executes(result) if expected_decision == "Allow" else result["decision"] == expected_decision,
+                            f"decision-{expected_decision.lower()}", result["policy_id"]))
         checks.append(check(result["upstream_executed"] is should_execute, f"effect-{expected_decision.lower()}", f"{result['effect_before']}->{result['effect_after']}"))
         if should_execute and body["tool_name"] != "get_current_time":
             check(result["effect_after"] == result["effect_before"] + 1, "effect-increment")
@@ -379,7 +387,7 @@ async def run() -> dict:
     checks.append(check(expired_blocked, "approval-expiry", "expired request rejected"))
 
     stdio_upstream = await post("/api/calls", {"tool_name": "get_current_time", "timezone": "Asia/Seoul"})
-    checks.append(check(stdio_upstream["decision"] == "Allow" and stdio_upstream["upstream_executed"], "stdio-upstream", "mcp-server-time"))
+    checks.append(check(public_read_executes(stdio_upstream), "stdio-upstream", "mcp-server-time"))
 
     github = await post("/api/calls", {"tool_name": "github_get_file", "owner": "MCP-governance", "repo": "mcp-gateway", "path": "README.md"})
     checks.append(check(github["decision"] == "Block" and github["policy_id"] == "MCP-REGISTRY-002", "github-auth-deferred", "registered but disabled"))
@@ -424,7 +432,7 @@ async def run() -> dict:
     checks.append(check(all("MCP-METHOD-001" in value for value in refusals.values()),
                         "mcp-method-scope", json.dumps(refusals, ensure_ascii=False)))
     checks.append(check({"read_document", "write_document", "send_external", "get_current_time", "github_get_file"} == {tool.name for tool in tools.tools}, "streamable-http-ingress", protocol_version))
-    checks.append(check(not result.is_error and structured["decision"] == "Allow", "streamable-http-call", "actual MCP tools/call"))
+    checks.append(check(not result.is_error and public_read_executes(structured), "streamable-http-call", "actual MCP tools/call"))
     checks.append(check(all("user_token" not in (tool.input_schema.get("properties") or {}) for tool in tools.tools),
                         "ingress-schema-has-no-identity", "identity is not a tool argument"))
 
@@ -447,7 +455,7 @@ async def run() -> dict:
     async with Client(parameters) as client:
         result = await client.call_tool("read_document", {"document_id": "notice-001"})
         structured = tool_payload(result)
-    checks.append(check(not result.is_error and structured["decision"] == "Allow", "stdio-ingress", "identity bound at spawn time"))
+    checks.append(check(not result.is_error and public_read_executes(structured), "stdio-ingress", "identity bound at spawn time"))
 
     # 신원만 빼고 나머지는 같은 환경이다. 그래야 "신원이 없어서 거부됐다"와
     # "DB에 못 붙어서 죽었다"가 구분된다.
@@ -626,7 +634,7 @@ async def run() -> dict:
     finally:
         await db.execute("UPDATE mcp_tools SET approval_valid_until=timestamptz '2027-06-30 23:59:59+00' WHERE server_id='mock-http' AND name='read_document'")
     restored = await post("/api/calls", {"tool_name": "read_document", "document_id": "notice-001"}, "partner-demo")
-    checks.append(check(restored["decision"] == "Allow", "pac-reapproval-restores", restored["policy_id"]))
+    checks.append(check(public_read_executes(restored), "pac-reapproval-restores", restored["policy_id"]))
 
     # §11.17 판단 증적: 정책 버전·의무·환경이 감사 테이블에 실제로 들어갔는가.
     recorded = await db.fetch_one(
@@ -651,7 +659,7 @@ async def run() -> dict:
     async with Client(sse_client(SSE_URL, headers=bearer("partner-demo"))) as client:
         result = await client.call_tool("read_document", {"document_id": "notice-001"})
         structured = tool_payload(result)
-    checks.append(check(not result.is_error and structured["decision"] == "Allow", "legacy-sse-ingress", "compatibility adapter"))
+    checks.append(check(not result.is_error and public_read_executes(structured), "legacy-sse-ingress", "compatibility adapter"))
 
     checks.extend(await termination_checks())
     checks.extend(await drill_checks())

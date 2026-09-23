@@ -46,7 +46,7 @@ MCP_SCAN_LANGUAGE = os.getenv("MCP_SCAN_LANGUAGE", "en")  # CLI가 지원하는 
 # A.I.G 결과가 실제 모델 판단인지, 배선 검증용 test double인지 구분한다. 후자를
 # 통제 증적으로 세면 "연결됐다"가 "안전하다/차단했다"로 바뀌는 착시가 생긴다.
 MCP_SCAN_EVIDENCE_MODE = os.getenv("MCP_SCAN_EVIDENCE_MODE", "live").strip().lower()
-MCP_SCAN_EVIDENCE_MODES = {"live", "test-double"}
+MCP_SCAN_EVIDENCE_MODES = {"live", "advisory", "test-double"}
 SARIF_LEVELS = {"error": "HIGH", "warning": "MEDIUM", "note": "LOW", "none": "LOW"}
 
 WORKER_ID = os.getenv("INTAKE_WORKER_ID", "intake-worker-1")
@@ -62,6 +62,7 @@ SCAN_MAX_ATTEMPTS = int(os.getenv("MCP_SCAN_MAX_ATTEMPTS", "3"))
 #   T3 재감사 주기 도래     - 심사한 코드와 지금 도는 코드는 시간이 지나면 갈라진다.
 #   T4 catalog drift        - 계약이 바뀌었으면 코드 감사도 다시 해야 한다.
 AUTO_ON_VALIDATED = os.getenv("MCP_SCAN_AUTO_ON_VALIDATED", "1") not in ("0", "false", "")
+AUTO_JOBS = os.getenv("MCP_SCAN_AUTO_JOBS", "1") not in ("0", "false", "")
 RESCAN_DAYS = int(os.getenv("MCP_SCAN_RESCAN_DAYS", "30"))
 RESCAN_SWEEP_SECONDS = int(os.getenv("MCP_SCAN_RESCAN_SWEEP_SECONDS", "900"))
 
@@ -470,14 +471,17 @@ def scan_target(connection, job: dict) -> dict:
         raise RuntimeError(
             "국소 감사 대상이 아닙니다: source_url=" + repr(row["source_url"]) +
             ". 원격 전용 서버는 공급자의 증적으로 대신해야 합니다.")
-    # 등록 서버는 고정 커밋이 아니라 승인된 source_ref(태그·버전)를 가진다.
-    # 그 값으로 가져올 수 없으면 기본 브랜치로 조용히 내려가지 않고 실패시킨다.
-    # "무엇을 감사했는지 모르는 결과"는 증적이 아니다.
+    # The Time MCP source_ref is a package identity, not a Git ref. Its pinned
+    # package release has a matching upstream tag; keep report attribution under
+    # the package identity while fetching the exact release source.
+    # tests/drift_and_fail_closed.sh fails when this tag and the gateway/Dockerfile pin differ.
+    ref = "2026.8.18" if row["id"] == "mock-stdio" and row["source_ref"] == "mcp-server-time" else row["source_ref"]
+    # Never fall back to the default branch when the approved ref is absent.
     return {
         "label": row["display_name"],
         "repository_url": row["source_url"],
         "commit": job.get("commit_sha") or None,
-        "ref": row["source_ref"],
+        "ref": ref,
         "source_ref": row["source_ref"],
         # 운영 중인 서버의 치명점은 실제로 호출을 막아야 한다. 막지 않는 감사는
         # 대시보드 숫자일 뿐이다.
@@ -606,12 +610,16 @@ def run_mcp_scan(connection, job: dict) -> None:
     if dynamic:
         target = (listener_target(connection, job) if job["target_kind"] == "endpoint"
                   else dynamic_target(connection, job))
+        # Release the registry read lock before a potentially long model call.
+        connection.commit()
         checkout = None
         commit = None
         log("mcp-scan(dynamic) " + job_id + " 시작: " + target["endpoint"])
         command = scan_command(job, report, None, target["endpoint"])
     else:
         target = scan_target(connection, job)
+        # A remote clone/scan can take minutes; schema startup must not wait on it.
+        connection.commit()
         checkout = WORK_DIR / ("scan-" + job_id)
         shutil.rmtree(checkout, ignore_errors=True)
         pinned = target.get("commit") or target.get("ref")
@@ -628,10 +636,11 @@ def run_mcp_scan(connection, job: dict) -> None:
 
     counts, findings, note = sarif_findings(report, checkout or WORK_DIR)
     if MCP_SCAN_EVIDENCE_MODE not in MCP_SCAN_EVIDENCE_MODES:
-        raise RuntimeError("MCP_SCAN_EVIDENCE_MODE must be live or test-double")
+        raise RuntimeError("MCP_SCAN_EVIDENCE_MODE must be live, advisory or test-double")
     # 배선 stub으로 돌린 결과가 "발견 0건"으로 보이면 그게 곧 깨끗하다는 뜻이
     # 된다. 어떤 종류의 endpoint였는지를 결과에 박아 둔다.
-    endpoint_kind = "wire-stub" if urlsplit(MCP_SCAN_BASE_URL).hostname == "llm-stub" else MCP_SCAN_EVIDENCE_MODE
+    endpoint_kind = "wire-stub" if urlsplit(MCP_SCAN_BASE_URL).hostname == "llm-stub" else (
+        "local-model" if urlsplit(MCP_SCAN_BASE_URL).hostname == "ollama" else MCP_SCAN_EVIDENCE_MODE)
     # test double 결과는 어떤 경우에도 차단 집계에 들어가지 않는다. 배선 확인이
     # 통제처럼 보이기 시작하면 그 순간부터 통제가 아니라 착시다.
     blocks = bool(target["blocks"]) and MCP_SCAN_EVIDENCE_MODE == "live" and endpoint_kind != "wire-stub"
@@ -660,9 +669,13 @@ def run_mcp_scan(connection, job: dict) -> None:
         # 귀속은 그대로 두되 치명점 집계에는 넣지 않는다. 화면에서는 같은
         # source_ref로 모이고, _contract()의 차단 계산에는 기여하지 않는다.
         stored["CRITICAL"] = 0
+    # A later advisory/test-double run must not erase a previous blocking live
+    # report. A new live run replaces only the previous live result.
     connection.execute(
-        "DELETE FROM supply_chain_reports WHERE scanner='AI-Infra-Guard mcp-scan' AND source_ref=%s",
-        (source_ref,),
+        """DELETE FROM supply_chain_reports
+           WHERE scanner='AI-Infra-Guard mcp-scan' AND source_ref=%s
+             AND COALESCE(summary->>'evidence_mode', 'live')=%s""",
+        (source_ref, MCP_SCAN_EVIDENCE_MODE),
     )
     store_report(connection, "AI-Infra-Guard mcp-scan", MCP_SCAN_MODEL, source_ref, report, stored, summary)
     connection.execute(
@@ -703,6 +716,7 @@ def heartbeat(connection) -> None:
             "poll_seconds": POLL_SECONDS,
             "lease_seconds": SCAN_LEASE_SECONDS,
             "auto_on_validated": AUTO_ON_VALIDATED,
+            "auto_jobs": AUTO_JOBS,
             "rescan_days": RESCAN_DAYS,
         })),
     )
@@ -920,15 +934,15 @@ def main() -> int:
                     heartbeat(connection)
                     reclaim_expired(connection)
                     drop_cancelled(connection)
-                    auto_enqueue_validated(connection)
-                    now = time.monotonic()
-                    if now - last_sweep >= RESCAN_SWEEP_SECONDS:
-                        sweep_rescans(connection)
-                        last_sweep = now
-                    # 드리프트와 종료 확인은 주기가 아니라 사건에 반응한다. 다음
-                    # 재감사 스윕까지 기다리면 계약이 바뀐 채로 최대 15분이 지난다.
-                    sweep_drift(connection)
-                    sweep_termination(connection)
+                    if AUTO_JOBS:
+                        auto_enqueue_validated(connection)
+                        now = time.monotonic()
+                        if now - last_sweep >= RESCAN_SWEEP_SECONDS:
+                            sweep_rescans(connection)
+                            last_sweep = now
+                        # 드리프트와 종료 확인은 주기가 아니라 사건에 반응한다.
+                        sweep_drift(connection)
+                        sweep_termination(connection)
                     connection.commit()
 
                     while True:

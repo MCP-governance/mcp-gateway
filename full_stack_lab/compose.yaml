@@ -1,4 +1,4 @@
-name: mcp-governance-full
+name: ${MCP_COMPOSE_PROJECT:-mcp-governance-full}
 
 services:
   db:
@@ -78,10 +78,7 @@ services:
       jaeger:
         condition: service_started
     ports:
-      # 기본은 그대로 loopback이다. tailnet에서만 보이게 하려면 BIND_ADDR에 이
-      # 호스트의 tailscale0 주소(100.x)를 넣는다. 0.0.0.0은 넣지 않는다 - 그
-      # 순간 이 실습의 유일한 경로 통제가 사라진다. NETWORK.md 참고.
-      - "${BIND_ADDR:-127.0.0.1}:8080:8080"
+      - "127.0.0.1:8080:8080"
     volumes:
       - effects:/runtime:ro
       - ./reports:/reports:ro
@@ -121,13 +118,13 @@ services:
       INTAKE_EXIT_TERMS_REQUIRED: ${INTAKE_EXIT_TERMS_REQUIRED:-0}
       OTEL_SERVICE_NAME: agent-service
     ports:
-      - "${BIND_ADDR:-127.0.0.1}:8000:8000"
+      - "127.0.0.1:8000:8000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       gateway:
         condition: service_started
-    networks: [edge, agent, data, telemetry, scanner]
+    networks: [edge, agent, data, telemetry, model]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 
@@ -193,7 +190,7 @@ services:
       - intake_trivy_cache:/trivy-cache
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    networks: [data, scanner]
+    networks: [data, scanner, model]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 
@@ -206,7 +203,7 @@ services:
       LLM_STUB_PORT: "4010"
     volumes:
       - ./supply_chain/llm_stub.py:/app/llm_stub.py:ro
-    networks: [scanner]
+    networks: [model]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 
@@ -217,8 +214,42 @@ services:
       - --set=receivers.otlp.protocols.http.endpoint=0.0.0.0:4318
       - --set=extensions.jaeger_query.http.endpoint=0.0.0.0:16686
     ports:
-      - "${BIND_ADDR:-127.0.0.1}:16686:16686"
-    networks: [telemetry]
+      - "127.0.0.1:16686:16686"
+    networks: [edge, telemetry]
+
+  # Model downloads use a short-lived scanner-side container. Inference has
+  # no published port or route to the internet after the download completes.
+  ollama-pull:
+    image: ollama/ollama:0.34.2
+    profiles: [local-llm-download]
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ollama serve >/tmp/ollama.log 2>&1 & for i in 1 2 3 4 5 6 7 8 9 10; do ollama list >/dev/null 2>&1 && break; sleep 1; done; ollama pull \"$$LOCAL_LLM_MODEL\""]
+    environment:
+      LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-qwen2.5:0.5b}
+      OLLAMA_HOST: 127.0.0.1:11434
+      OLLAMA_NO_CLOUD: "1"
+    volumes:
+      - ollama_models:/root/.ollama
+    networks: [scanner]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  ollama:
+    image: ollama/ollama:0.34.2
+    profiles: [local-llm]
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_NO_CLOUD: "1"
+    volumes:
+      - ollama_models:/root/.ollama
+    networks: [model]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
 
   syft:
     image: anchore/syft:v1.51.1
@@ -333,6 +364,8 @@ networks:
     internal: true
   telemetry:
     internal: true
+  model:
+    internal: true
   scanner: {}
 
 volumes:
@@ -342,3 +375,4 @@ volumes:
   intake_work: {}
   intake_reports: {}
   intake_trivy_cache: {}
+  ollama_models: {}
