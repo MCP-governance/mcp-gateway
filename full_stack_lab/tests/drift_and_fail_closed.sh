@@ -90,11 +90,15 @@ PY
 curl -fsS --max-time 3 http://127.0.0.1:16686/ >/dev/null
 echo "PASS Jaeger UI is reachable on loopback"
 
-if docker compose exec -T agent-service python -c \
-  'import socket; socket.getaddrinfo("mock-http-mcp", 9000)' >/dev/null 2>&1; then
-  echo "FAIL Agent Service can resolve the upstream MCP" >&2
-  exit 1
-fi
+# Only a resolver miss proves isolation. A stopped container or a missing
+# interpreter must fail this check instead of passing it.
+docker compose exec -T agent-service python -c '
+import socket, sys
+try:
+    socket.getaddrinfo("mock-http-mcp", 9000)
+except socket.gaierror:
+    sys.exit(0)
+sys.exit("FAIL Agent Service can resolve the upstream MCP")'
 docker compose exec -T gateway python -c \
   'import socket; socket.getaddrinfo("mock-http-mcp", 9000)'
 echo "PASS only Gateway resolves the upstream MCP"
@@ -114,7 +118,9 @@ for probe in "semgrep --version" "syft version" "trivy --version" "aig-mcp-scan 
   fi
 done
 echo "PASS intake worker scanners run"
-docker compose exec -T intake-worker python - <<'PY'
+# The audit must fetch the release the gateway image installs, not a copy of it.
+time_pin="$(sed -n 's/.*mcp-server-time==\([0-9.]*\).*/\1/p' gateway/Dockerfile)"
+docker compose exec -T -e TIME_MCP_PIN="$time_pin" intake-worker python - <<'PY'
 import os
 import psycopg
 from psycopg.pq import TransactionStatus
@@ -125,7 +131,7 @@ from uuid import uuid4
 
 with psycopg.connect(os.environ["DATABASE_URL"], row_factory=dict_row) as connection:
     target = scan_target(connection, {"target_kind": "server", "target_id": "mock-stdio"})
-    assert target["ref"] == "2026.8.18" and target["source_ref"] == "mcp-server-time", target
+    assert target["ref"] == os.environ["TIME_MCP_PIN"] and target["source_ref"] == "mcp-server-time", target
 
     class StopBeforeNetwork(Exception):
         pass

@@ -474,6 +474,7 @@ def scan_target(connection, job: dict) -> dict:
     # The Time MCP source_ref is a package identity, not a Git ref. Its pinned
     # package release has a matching upstream tag; keep report attribution under
     # the package identity while fetching the exact release source.
+    # tests/drift_and_fail_closed.sh fails when this tag and the gateway/Dockerfile pin differ.
     ref = "2026.8.18" if row["id"] == "mock-stdio" and row["source_ref"] == "mcp-server-time" else row["source_ref"]
     # Never fall back to the default branch when the approved ref is absent.
     return {
