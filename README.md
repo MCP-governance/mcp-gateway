@@ -2,6 +2,8 @@
 
 MCP 도구 호출을 실행 직전에 검증하는 보안 실습입니다. 사용자·에이전트 신원, Registry 계약, 공급망 증적, OPA/Rego 정책, 승인, 감사 기록을 하나의 Gateway 경로에서 대조합니다.
 
+사용자 제공 PDF와 읽기 전용 draw.io 구조도를 반영한 설계·정책·테스트·재설치 절차는 [PDF 반영 설계·재설치·검증 기록](docs/PDF-INTEGRATION-2026-09.md)에 있습니다. 이번 버전은 Presidio의 실제 Analyzer/Anonymizer, 외부 수신처·동일 세션 연쇄 정책, 감사 체인 v5, 후보 정책 재생을 포함합니다.
+
 > **범위:** 합성 계정과 모의 MCP 서버를 쓰는 재현용 랩입니다. 운영망의 SSO, 키 관리, TLS, 호스트 방화벽과 중앙 로그 보존을 대신하지 않습니다.
 
 ## 빠른 시작
@@ -13,6 +15,7 @@ git clone https://github.com/MCP-governance/mcp-gateway.git
 cd mcp-gateway/full_stack_lab
 ./console.sh up
 ./console.sh test
+./console.sh replay 100
 ~~~
 
 - Console: <http://127.0.0.1:8000>
@@ -24,8 +27,7 @@ cd mcp-gateway/full_stack_lab
 
 ### Docker가 없는 장비에서
 
-Docker Desktop이 없는 노트북이나 WSL2 한 대에서도 같은 스택을 띄울 수 있습니다.
-"환경이 없어서 검증을 못 했다"가 나오지 않게 하는 경로입니다.
+네이티브 경로는 Presidio Analyzer/Anonymizer REST 서비스 두 개를 별도로 준비한 개발 장비에서 사용할 수 있습니다. Compose 클린 설치가 기본 검증 경로입니다.
 
 ~~~bash
 cd mcp-gateway/full_stack_lab
@@ -35,7 +37,7 @@ cd mcp-gateway/full_stack_lab
 ./run-native.sh test     # Rego + core/agent/runtime acceptance
 ~~~
 
-필요한 것은 PostgreSQL 16+ 한 대와 Python 3.12+뿐입니다. 컨테이너가 주던 격리는
+PostgreSQL 16+, Python 3.12+, OPA와 별도 Presidio REST 서비스가 필요합니다. URL과 실행 방법은 [재설치 문서](docs/PDF-INTEGRATION-2026-09.md#기존-네이티브-경로)에 있습니다. 컨테이너가 주던 격리는
 여기 없으므로 **개발·검증용이고 운영 배치 모델이 아닙니다.** 바인딩은 전부
 127.0.0.1이고 와일드카드는 기동 자체를 거부합니다. `baseline`이 따로 있는 이유는
 [운영으로 옮기기 전에](#운영으로-옮기기-전에)의 stdio 서버 항목에 적었습니다.
@@ -49,6 +51,7 @@ flowchart LR
     A -->|"JWT + 요청에 결속된 Agent Assertion"| G["Security Gateway"]
     G --> C["Registry · 계약"]
     G --> P["OPA / Rego"]
+    G --> X["Presidio 입력 검사 · 출력 마스킹"]
     G --> D["PostgreSQL 감사 연쇄"]
     G -->|"허용·승인된 호출만"| M["등록 MCP 서버"]
     M --> E["독립 upstream 효과 로그"]

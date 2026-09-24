@@ -179,8 +179,7 @@ function renderOverview() {
   const data = state.console;
   const decisions = data.decisions || [];
   const blocked = decisions.filter((d) => d.decision === "Block").length;
-  const unconfirmed = decisions.filter((d) => d.upstream_attempted && !d.upstream_executed
-    && d.decision !== "Block").length;
+  const unconfirmed = decisions.filter((d) => d.upstream_attempted && !d.upstream_executed).length;
 
   fill($("#figures"), [
     figure("최근 판정", decisions.length, "게이트웨이를 지난 호출"),
@@ -247,7 +246,7 @@ function renderEnforcement() {
   fill($("#enforce"), `
     <p class="hintline" style="margin-top:0">
       ${mode === "enforce"
-        ? "판정이 그대로 집행됩니다. 무결성 통제(MCP-·P-CONTROL-·P-INPUT-·P-RATE-)는 관찰 모드에서도 항상 집행됩니다."
+        ? "판정이 그대로 집행됩니다. 무결성 통제(MCP-·P-CONTROL-·P-INPUT-·P-RATE-·P-CHAIN-)는 관찰 모드에서도 항상 집행됩니다."
         : `관찰 모드입니다. 지난 ${monitor.window_hours ?? 168}시간 동안 ${monitor.would_have_stopped ?? 0}건이 집행 모드였다면 막혔고, ${monitor.affected_principals ?? 0}명이 영향을 받았습니다.`}
     </p>
     ${isAdmin ? `<div class="row" style="margin-top:10px">
@@ -263,6 +262,14 @@ function renderEnforcement() {
 }
 
 function renderFeed(rows, prepend) {
+  if (rows.length) {
+    const last = rows[0];
+    const outcome = last.upstream_attempted && !last.upstream_executed ? "실행 여부 미확인 — 독립 효과 증적 확인 필요"
+      : last.upstream_executed && last.decision === "Block" ? "MCP 실행 후 출력 차단"
+      : last.upstream_executed ? "MCP 실행 확인"
+      : last.decision === "Approval" ? "승인 대기 — MCP 미실행" : "MCP 미실행";
+    $("#process-current").textContent = `최근 ${last.tool_name} · ${last.policy_id} · ${outcome}`;
+  }
   const feed = $("#feed");
   const strip = $("#strip");
   const html = rows.map((row) => `<li${prepend ? ' class="fresh"' : ""} data-id="${esc(row.id)}">

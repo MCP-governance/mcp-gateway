@@ -49,7 +49,7 @@ test_decision_carries_policy_management_information if {
 	result := decision with input as base
 	result.policy_version == "1.0.0"
 	result.policy_status == "운영"
-	result.policy_set_version == "2.0.0"
+	result.policy_set_version == "2.1.0"
 	count(result.risk_ids) > 0
 	count(result.control_ids) > 0
 	count(result.obligations) > 0
@@ -513,6 +513,51 @@ test_every_ledger_outcome_is_a_reference_value if {
 	every _, entry in data.policy_ledger {
 		object.get(entry, "outcome", "차단") in allowed
 	}
+}
+
+# PDF runtime data boundary: the registered server endpoint and Tool recipient
+# are independent destinations. Only the latter carries the requested disclosure.
+test_confidential_external_send_blocks_before_approval if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"resource": {"data_class": "important"},
+		"tool": {"name": "send_external", "action": "x"},
+		"request": {"destination_host": "outside.example", "pii_types": []},
+	})
+	result := decision with input as request
+	result.policy_id == "MCP-DATA-EGRESS-001"
+}
+
+test_pii_external_send_blocks_even_for_public_document if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "send_external", "action": "x"},
+		"request": {"destination_host": "outside.example", "pii_types": ["EMAIL_ADDRESS"]},
+	})
+	result := decision with input as request
+	result.policy_id == "MCP-DATA-EGRESS-001"
+}
+
+test_internal_important_send_still_requires_approval if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"resource": {"data_class": "important"},
+		"tool": {"name": "send_external", "action": "x"},
+		"request": {"destination_host": "review.corp.invalid", "pii_types": []},
+	})
+	result := decision with input as request
+	result.policy_id == "P-X-APPROVAL-001"
+}
+
+test_sensitive_read_then_send_blocks_even_with_public_document if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "send_external", "action": "x"},
+		"request": {"destination_host": "outside.example", "pii_types": [],
+		            "sequence_flags": ["sensitive_read_then_send"]},
+	})
+	result := decision with input as request
+	result.policy_id == "P-CHAIN-001"
 }
 
 test_every_registered_exception_survives_section_8_6 if {

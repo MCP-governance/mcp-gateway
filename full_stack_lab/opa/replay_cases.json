@@ -1,0 +1,37 @@
+{
+  "base": {
+    "environment": "prod",
+    "now": "2026-09-24T00:00:00Z",
+    "principal": {"role": "partner", "department": "협력사 A"},
+    "resource": {"id": "notice-001", "data_class": "public"},
+    "tool": {"name": "read_document", "action": "r"},
+    "approval": {"granted": false},
+    "contract": {"registered": true, "enabled": true, "schema_hash_match": true,
+                 "description_hash_match": true, "version_match": true, "known_tools_only": true,
+                 "metadata_safe": true, "supplier_approved": true, "critical_vulnerabilities": 0}
+  },
+  "cases": [
+    {"id": "normal-public-read", "label": "normal", "patch": {}},
+    {"id": "normal-employee-work-write", "label": "normal", "patch": {
+      "principal": {"role": "employee"}, "resource": {"id": "work-001", "data_class": "nonimportant"},
+      "tool": {"name": "write_document", "action": "w"}}},
+    {"id": "normal-public-send-with-restriction", "label": "normal", "patch": {
+      "principal": {"role": "admin"}, "tool": {"name": "send_external", "action": "x"},
+      "request": {"destination_host": "review.corp.invalid", "pii_types": []}}},
+    {"id": "attack-partner-important-read", "label": "attack", "patch": {
+      "resource": {"id": "secret-001", "data_class": "important"}}},
+    {"id": "attack-unregistered-server", "label": "attack", "patch": {
+      "contract": {"registered": false}}},
+    {"id": "attack-pii-external-send", "label": "attack", "patch": {
+      "principal": {"role": "admin"}, "tool": {"name": "send_external", "action": "x"},
+      "request": {"destination_host": "outside.example", "pii_types": ["EMAIL_ADDRESS"]}}},
+    {"id": "attack-important-external-send", "label": "attack", "patch": {
+      "principal": {"role": "admin"}, "resource": {"id": "secret-001", "data_class": "important"},
+      "tool": {"name": "send_external", "action": "x"},
+      "request": {"destination_host": "outside.example", "pii_types": []}}},
+    {"id": "attack-sensitive-read-then-send", "label": "attack", "patch": {
+      "principal": {"role": "admin"}, "tool": {"name": "send_external", "action": "x"},
+      "request": {"destination_host": "review.corp.invalid", "pii_types": [],
+                  "sequence_flags": ["sensitive_read_then_send"]}}}
+  ]
+}

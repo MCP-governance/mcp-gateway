@@ -17,8 +17,8 @@ from mcp.client.sse import sse_client
 from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.exceptions import MCPError
 
-from . import db
-from .core import (RATE_LIMIT_CALLS, IMPORTANT_BURST_LIMIT, _policy, _recent_activity, _tool_spec, effect_count,
+from . import db, privacy
+from .core import (CHAIN_VERSION, EFFECT_LOG, RATE_LIMIT_CALLS, IMPORTANT_BURST_LIMIT, _policy, _recent_activity, _tool_spec, canonical_hash, effect_count,
                    approve_request, execute_call, set_enforcement_mode, supply_chain_coverage,
                    verify_audit_chain)
 
@@ -342,7 +342,7 @@ async def run() -> dict:
         ("Allow", "partner-demo", {"tool_name": "read_document", "document_id": "notice-001"}, True),
         ("Alert", "emp-demo", {"tool_name": "read_document", "document_id": "secret-001"}, True),
         ("Restrict", "admin-demo", {"tool_name": "send_external", "document_id": "notice-001", "destination": "not-approved.example", "content": "A" * 120}, True),
-        ("Approval", "admin-demo", {"tool_name": "send_external", "document_id": "secret-001", "destination": "not-approved.example", "content": "synthetic important"}, False),
+        ("Approval", "admin-demo", {"tool_name": "send_external", "document_id": "secret-001", "destination": "review@corp.invalid", "content": "synthetic important"}, False),
         ("Block", "partner-demo", {"tool_name": "read_document", "document_id": "secret-001"}, False),
     ]
     approval_id = None
@@ -356,9 +356,25 @@ async def run() -> dict:
         if not should_execute:
             check(result["effect_after"] == result["effect_before"], "effect-blocked")
         if expected_decision == "Restrict":
-            checks.append(check(result["effective_arguments"]["destination"] == "restricted.invalid" and len(result["effective_arguments"]["content"]) == 80, "restriction-applied", "destination + 80 chars"))
+            checks.append(check(result["effective_arguments"]["destination_sha256"] == canonical_hash("restricted.invalid") and result["effective_arguments"]["content_chars"] == 80, "restriction-applied", "destination digest + 80 chars"))
         if expected_decision == "Approval":
             approval_id = result["approval_id"]
+
+    pii = await post("/api/calls", {"tool_name": "send_external", "document_id": "notice-001",
+                                      "destination": "outside.example", "content": "Contact demo@example.com"}, "admin-demo")
+    checks.append(check(pii["decision"] == "Block" and pii["policy_id"] == "MCP-DATA-EGRESS-001"
+                        and not pii["upstream_attempted"] and pii["effect_before"] == pii["effect_after"],
+                        "pii-egress-block-before-upstream", pii["policy_id"]))
+    pii_row = await db.fetch_one("SELECT request_payload,policy_input,privacy_types FROM decisions WHERE id=%s",
+                                 (pii["decision_id"],))
+    checks.append(check("EMAIL_ADDRESS" in pii_row["privacy_types"] and
+                        "demo@example.com" not in json.dumps(pii_row, default=str) and
+                        "demo@example.com" not in json.dumps(pii, default=str),
+                        "pii-evidence-keeps-types-not-values"))
+    masked, kinds = await privacy.mask_text("주민번호 900101-1234567 / 010-1234-5678")
+    checks.append(check({"KR_RRN", "KR_PHONE"}.issubset(kinds) and
+                        "900101-1234567" not in masked and "010-1234-5678" not in masked,
+                        "presidio-korean-identifiers-masked", str(kinds)))
 
     async with httpx.AsyncClient(timeout=10) as client:
         anonymous = await client.post(API + "/api/calls", json={"tool_name": "read_document", "document_id": "notice-001"})
@@ -376,8 +392,15 @@ async def run() -> dict:
     approved = await approve_request(approval_id, "admin-demo")
     checks.append(check(approved["decision"] == "Allow" and approved["upstream_executed"], "approval-revalidation", approved["policy_id"]))
     checks.append(check(approved["effect_after"] == approved["effect_before"] + 1, "approval-effect", f"{approved['effect_before']}->{approved['effect_after']}"))
+    checks.append(check("review@corp.invalid" not in json.dumps(approved["result"]) and
+                        "[REDACTED]" in json.dumps(approved["result"]),
+                        "presidio-masks-upstream-output", json.dumps(approved["result"], ensure_ascii=False)))
+    last_effect = json.loads(EFFECT_LOG.read_text(encoding="utf-8").splitlines()[-1])
+    checks.append(check(last_effect["tool"] == "send_external" and "arguments_sha256" in last_effect
+                        and "destination" not in last_effect and "content" not in last_effect,
+                        "upstream-effect-log-has-digest-only"))
 
-    expired = await execute_call({"user_token": "admin-demo", "tool_name": "send_external", "document_id": "secret-001", "destination": "outside.example", "content": "expiry test"})
+    expired = await execute_call({"user_token": "admin-demo", "tool_name": "send_external", "document_id": "secret-001", "destination": "review.corp.invalid", "content": "expiry test"})
     await db.execute("UPDATE approvals SET expires_at=now()-interval '1 second' WHERE id=%s", (expired["approval_id"],))
     try:
         await approve_request(expired["approval_id"], "admin-demo")
@@ -537,7 +560,7 @@ async def run() -> dict:
     # Rejecting is the other half of approving. Without it a reviewer can only approve
     # or let the request expire, and the audit cannot tell refusal from inattention.
     pending = await post("/api/calls", {"tool_name": "send_external", "document_id": "secret-001",
-                                        "destination": "not-approved.example", "content": "거부 대상"}, "admin-demo")
+                                        "destination": "review.corp.invalid", "content": "거부 대상"}, "admin-demo")
     before = effect_count()
     approval = pending["approval_id"]
     async with httpx.AsyncClient(timeout=30) as client:
@@ -643,7 +666,7 @@ async def run() -> dict:
     checks.append(check(
         bool(recorded) and recorded["policy_version"] == ledger["P-333-DENY-001"]["version"]
         and recorded["exception_id"] == "EXC-001" and recorded["environment"]
-        and recorded["chain_version"] == 4 and recorded["obligations"],
+        and recorded["chain_version"] == CHAIN_VERSION and recorded["obligations"],
         "pac-decision-evidence-recorded", json.dumps(recorded, ensure_ascii=False, default=str)))
 
     chain = await verify_audit_chain()

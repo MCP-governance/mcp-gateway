@@ -55,6 +55,26 @@ shadow_listeners := object.get(input, ["principal", "shadow_listeners"], 0)
 # CTL-13 / RSK-12. 이번 호출의 인자에서 발견된 비신뢰 지시 표지.
 untrusted_markers := object.get(input, ["request", "untrusted_markers"], [])
 
+destination_host := object.get(input, ["request", "destination_host"], "")
+
+pii_types := object.get(input, ["request", "pii_types"], [])
+
+sequence_flags := object.get(input, ["request", "sequence_flags"], [])
+
+internal_destination if {
+	some domain in data.egress.internal_domains
+	destination_host == domain
+}
+
+internal_destination if {
+	some domain in data.egress.internal_domains
+	endswith(destination_host, concat("", [".", domain]))
+}
+
+sensitive_transfer if input.resource.data_class == "important"
+
+sensitive_transfer if count(pii_types) > 0
+
 # CTL-28 / RSK-27. 최근 창 안에서 이 주체가 받은 차단 수.
 recent_blocks := object.get(input, ["context", "recent_blocks"], 0)
 
@@ -266,7 +286,7 @@ candidate["P-333-DENY-001"] := {
 
 candidate["P-X-APPROVAL-001"] := {
 	"decision": "Approval",
-	"reason": "중요정보 외부 전송 또는 고위험 실행은 10분 이내 승인이 필요합니다.",
+	"reason": "중요정보의 고위험 실행은 10분 이내 승인이 필요합니다.",
 	"restrictions": {},
 	"conditions": {"matched": ["tool.action=x", "resource.data_class=important"], "violated": ["approval.granted"]},
 } if {
@@ -358,6 +378,29 @@ candidate["MCP-EGRESS-001"] := {
 	"conditions": {"matched": [], "violated": ["contract.endpoint_allowed"]},
 } if {
 	not endpoint_allowed
+}
+
+# The tool's own destination is distinct from the registered MCP endpoint.
+# Presidio reports entity types only; raw content never enters OPA's decision log.
+candidate["MCP-DATA-EGRESS-001"] := {
+	"decision": "Block",
+	"reason": "중요정보 또는 탐지된 개인정보를 외부 목적지로 전송할 수 없습니다.",
+	"restrictions": {},
+	"conditions": {"matched": ["request.destination_host"], "violated": ["request.pii_types", "resource.data_class"]},
+} if {
+	input.tool.name == "send_external"
+	not internal_destination
+	sensitive_transfer
+}
+
+candidate["P-CHAIN-001"] := {
+	"decision": "Block",
+	"reason": "같은 세션에서 중요정보 열람 뒤 외부 전송을 시도했습니다.",
+	"restrictions": {},
+	"conditions": {"matched": ["request.sequence_flags"], "violated": []},
+} if {
+	input.tool.name == "send_external"
+	"sensitive_read_then_send" in sequence_flags
 }
 
 # CTL-13 / RSK-12. 인자 안의 비신뢰 지시. 고위험 행위에서는 사람이 본다.

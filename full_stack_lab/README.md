@@ -2,6 +2,8 @@
 
 MCP 도입 요청, 공급망 검증, 정책 집행, 실행·감사 증적을 하나의 운영 콘솔에서 관리하는 WSL2 + Docker Compose 구성입니다. 기본 실행은 외부 LLM·실제 개인정보·GitHub 자격증명을 사용하지 않습니다. Agent가 Tool Call 후보를 만들면 Gateway가 서명된 사용자·입력 Schema·Registry 계약·공급망 증적·OPA/Rego 정책을 검사한 뒤에만 upstream MCP를 호출합니다.
 
+**2026-09 PDF 반영:** Presidio 입력·출력 검사, 외부 수신처·동일 세션 연쇄 정책, 감사 체인 v5, 동결 사례/후보 정책 재생과 클린 재설치 안내는 [전용 기록](../docs/PDF-INTEGRATION-2026-09.md)에 있습니다. `./console.sh replay 100`은 MCP를 실행하지 않고 후보 OPA만 비교합니다.
+
 > 가장 빠른 시작: `./console.sh` → <http://localhost:8000>
 
 ## 1. 어떤 통제를 제공하는가
@@ -22,6 +24,7 @@ flowchart LR
     AS -->|사용자 JWT + 60초 Agent Assertion| G[MCP Security Gateway]
     G <--> R[(Registry / PostgreSQL)]
     G <--> O[OPA / Rego]
+    G <--> P[Presidio Analyzer / Anonymizer]
     G -->|허용된 호출만| H[Streamable HTTP MCP]
     G -->|허용된 호출만| S[stdio Time MCP]
     G -. 토큰·catalog 승인 후 .-> GH[GitHub MCP]
@@ -612,7 +615,7 @@ Agent Console·인증·도입 요청 경계만 빠르게 확인할 때는 다음
 
 정상 기준은 다음과 같습니다.
 
-- Rego 단위 테스트 `62/62 PASS` (프레임워크 §11.11이 요구하는 시험 조건: 정상 허용, 비인가 차단, 경계값·누락 입력, 권한·Scope 초과, 미등록 구성요소, 민감정보 접근·외부 전송, 고위험 추가 승인, 예외 적용과 유효기간 만료, 다중 정책 동시 적용, 정책 충돌과 우선순위, 연쇄호출 누적, 27칸 판정 기준선 대조)
+- Rego 단위 테스트 `80/80 PASS` (프레임워크 §11.11이 요구하는 시험 조건: 정상 허용, 비인가 차단, 경계값·누락 입력, 권한·Scope 초과, 미등록 구성요소, 민감정보 접근·외부 전송, 고위험 추가 승인, 예외 적용과 유효기간 만료, 다중 정책 동시 적용, 정책 충돌과 우선순위, 연쇄호출 누적, 27칸 판정 기준선 대조)
 - core acceptance와 Agent/API 경계 acceptance 실패 0, 실행 경계 회귀(`runtime_acceptance`) 실패 0. 현재 검증 수치와 범위는 [실행 경계 검증 기록](../docs/runtime-hardening.md) 참고
 - 익명·위조 토큰의 Gateway API 호출이 `401`, 협력업체 계정의 승인 시도가 `403`
 - `/tool-call`은 사용자 JWT와 Agent Assertion을 함께 요구하며, 사용자 JWT 재사용·다른 actor·변조된 envelope는 `401`

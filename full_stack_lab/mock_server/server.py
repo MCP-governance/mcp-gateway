@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import hashlib
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -27,7 +28,11 @@ DOCUMENTS = {
 
 def record(tool: str, arguments: dict) -> None:
     EFFECT_LOG.parent.mkdir(parents=True, exist_ok=True)
-    event = {"at": datetime.now(UTC).isoformat(), "tool": tool, "arguments": arguments}
+    encoded = json.dumps(arguments, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    event = {"at": datetime.now(UTC).isoformat(), "tool": tool,
+             "document_id": arguments.get("document_id"),
+             "arguments_sha256": hashlib.sha256(encoded).hexdigest(),
+             "content_chars": len(str(arguments.get("content") or ""))}
     with EFFECT_LOG.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(event, ensure_ascii=False) + "\n")
 

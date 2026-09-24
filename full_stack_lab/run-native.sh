@@ -80,6 +80,8 @@ common_env() {
   export GATEWAY_URL="http://127.0.0.1:8080"
   export AGENT_SERVICE_URL="http://127.0.0.1:8000"
   export GATEWAY_SSE_URL="http://127.0.0.1:8081/sse"
+  export PRESIDIO_ANALYZER_URL="${PRESIDIO_ANALYZER_URL:-http://127.0.0.1:5002}"
+  export PRESIDIO_ANONYMIZER_URL="${PRESIDIO_ANONYMIZER_URL:-http://127.0.0.1:5001}"
   # 네이티브 경로에는 Jaeger가 없다. 끄지 않으면 매 스팬마다 연결 실패 로그가
   # 쌓여서 실제 오류가 그 안에 묻힌다.
   export OTEL_SDK_DISABLED="${OTEL_SDK_DISABLED:-true}"
@@ -160,6 +162,10 @@ cmd_up() {
   ensure_keys
   load_env
   common_env
+  curl -fsS "${PRESIDIO_ANALYZER_URL}/health" >/dev/null 2>&1 \
+    || die "Presidio Analyzer가 필요합니다: ${PRESIDIO_ANALYZER_URL}/health (README의 native 선행 조건 참조)"
+  curl -fsS "${PRESIDIO_ANONYMIZER_URL}/health" >/dev/null 2>&1 \
+    || die "Presidio Anonymizer가 필요합니다: ${PRESIDIO_ANONYMIZER_URL}/health (README의 native 선행 조건 참조)"
   schema
 
   start_one opa "$OPA_BIN" run --server --addr=127.0.0.1:8181 \

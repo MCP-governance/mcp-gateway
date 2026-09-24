@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 import httpx2
@@ -23,7 +24,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import db, endpoint_plane
+from . import db, endpoint_plane, privacy
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/mcp/authz/decision")
 # 정책 관리대장(§11.8 / §12.5)은 정책 코드와 함께 배포되고 OPA가 그 정본이다.
@@ -57,7 +58,7 @@ DEFAULT_ENFORCEMENT = os.getenv("GATEWAY_ENFORCEMENT", "enforce")
 # P-RATE- is here because a call-rate ceiling protects the gateway and the upstream,
 # not a permission opinion about who may read what. Observing it would mean having no
 # ceiling at all for as long as observation lasts.
-ALWAYS_ENFORCED = ("MCP-", "P-CONTROL-", "P-INPUT-", "P-RATE-")
+ALWAYS_ENFORCED = ("MCP-", "P-CONTROL-", "P-INPUT-", "P-RATE-", "P-CHAIN-")
 RATE_LIMIT_CALLS = int(os.getenv("RATE_LIMIT_CALLS", "60"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
 IMPORTANT_BURST_LIMIT = int(os.getenv("IMPORTANT_BURST_LIMIT", "10"))
@@ -533,13 +534,33 @@ LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
 
 
 def _endpoint_host(endpoint: str | None) -> str:
-    from urllib.parse import urlsplit
     value = (endpoint or "").strip()
     if not value:
         return ""
     if not value.startswith(("http://", "https://")):
         return ""
     return (urlsplit(value).hostname or "").lower()
+
+
+def _destination_host(destination: str | None) -> str:
+    value = (destination or "").strip()
+    if not value or any(char.isspace() for char in value):
+        return ""
+    try:
+        if value.startswith(("http://", "https://")):
+            parsed = urlsplit(value)
+            if parsed.username or parsed.password:
+                return ""
+            host = parsed.hostname or ""
+        elif "@" in value:
+            host = value.rsplit("@", 1)[1] if value.count("@") == 1 else ""
+        else:
+            host = value
+    except ValueError:
+        return ""
+    host = host.lower()
+    label = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?")
+    return host if len(host) <= 253 and all(label.fullmatch(part) for part in host.split(".")) else ""
 
 
 def transport_secure(endpoint: str | None) -> bool:
@@ -610,6 +631,30 @@ async def _recent_activity(user_token: str) -> dict:
         "recent_blocks": int(row["recent_blocks"]) if row else 0,
         "block_limit": BLOCK_STREAK_LIMIT,
     }
+
+
+async def _sequence_flags(payload: dict, tool_name: str) -> list[str]:
+    """Only signed Agent sessions can link a sensitive read to a later send."""
+    session_id = str(payload.get("_agent_context", {}).get("session_id") or "")
+    if tool_name != "send_external" or not session_id:
+        return []
+    row = await db.fetch_one(
+        """SELECT 1 FROM decisions
+           WHERE user_token=%s AND request_payload #>> '{_agent_context,session_id}'=%s
+             AND tool_name='read_document' AND data_class='important'
+             AND upstream_executed=true AND created_at > now() - interval '10 minutes'
+           LIMIT 1""",
+        (payload["user_token"], session_id),
+    )
+    return ["sensitive_read_then_send"] if row else []
+
+
+def _risk_score(data_class: str, action: str, external: bool,
+                privacy_types: list[str], sequence_flags: list[str]) -> int:
+    return min(100, (30 if data_class == "important" else 10 if data_class == "nonimportant" else 0)
+               + (20 if action == "x" else 10 if action == "w" else 0)
+               + (15 if external else 0) + (25 if privacy_types else 0)
+               + (30 if sequence_flags else 0))
 
 
 _ledger_cache: dict[str, dict] = {}
@@ -768,18 +813,27 @@ def _upstream_arguments(tool_name: str, payload: dict, restrictions: dict) -> di
 
 
 def _audit_payload(payload: dict) -> dict:
-    """Structural evidence stays readable; the document body becomes a digest."""
-    if "content" not in payload:
-        return payload
-    content = str(payload.get("content") or "")
-    return {**{k: v for k, v in payload.items() if k != "content"},
-            "content_sha256": canonical_hash(content), "content_chars": len(content)}
+    """Keep structural evidence while excluding body, address and file path values."""
+    safe = dict(payload)
+    for key in ("content", "destination", "path"):
+        if key in safe:
+            value = str(safe.pop(key) or "")
+            safe[key + "_sha256"] = canonical_hash(value)
+            safe[key + "_chars"] = len(value)
+    return safe
 
 
 def _audit_result(result: Any) -> dict:
     """Enough to prove what came back and to compare it later, not a copy of it."""
     body = json.dumps(result, ensure_ascii=False)
-    return {"sha256": canonical_hash(result), "chars": len(body), "head": body[:200]}
+    return {"sha256": canonical_hash(result), "chars": len(body)}
+
+
+def _public_event(event: dict) -> dict:
+    safe = {**event, "request_payload": _audit_payload(event.get("request_payload") or {})}
+    if "effective_arguments" in safe:
+        safe["effective_arguments"] = _audit_payload(safe["effective_arguments"])
+    return safe
 
 
 AUDIT_COLUMN_SETS = {
@@ -804,7 +858,9 @@ AUDIT_COLUMN_SETS = {
     ),
 }
 AUDIT_COLUMN_SETS[4] = (*AUDIT_COLUMN_SETS[3], "upstream_attempted")
-CHAIN_VERSION = 4
+AUDIT_COLUMN_SETS[5] = (*AUDIT_COLUMN_SETS[4], "policy_input", "risk_score",
+                        "privacy_types", "sequence_flags")
+CHAIN_VERSION = 5
 AUDIT_COLUMNS = AUDIT_COLUMN_SETS[CHAIN_VERSION]
 GENESIS = "0" * 64
 
@@ -852,35 +908,25 @@ async def _record_decision(event: dict) -> int:
         "exception_id": (event.get("exception") or {}).get("id"),
         "conflicts": event.get("conflicts") or [],
         "environment": event.get("environment") or GATEWAY_ENVIRONMENT,
+        "policy_input": event.get("policy_input"),
+        "risk_score": int(event.get("risk_score") or 0),
+        "privacy_types": event.get("privacy_types") or [],
+        "sequence_flags": event.get("sequence_flags") or [],
     }
     async with db.transaction() as connection:
         cursor = await connection.execute("SELECT head_sha256 FROM audit_chain WHERE id=1 FOR UPDATE")
         head = await cursor.fetchone()
         previous = head["head_sha256"] if head else GENESIS
         entry = hashlib.sha256((previous + _audit_fingerprint(record)).encode()).hexdigest()
+        values = {**record, "prev_sha256": previous, "entry_sha256": entry,
+                  "chain_version": CHAIN_VERSION}
+        json_columns = {"restrictions", "request_payload", "result_preview", "obligations",
+                        "conflicts", "policy_input", "privacy_types", "sequence_flags"}
         cursor = await connection.execute(
-            """INSERT INTO decisions(
-                 request_id, trace_id, user_token, role, tool_name, data_class, action,
-                 decision, policy_id, reason, upstream_executed, restrictions,
-                 approval_id, request_payload, result_preview, error,
-                 enforcement, would_decision, would_policy_id,
-                 policy_version, obligations, exception_id, conflicts, environment,
-                 prev_sha256, entry_sha256, chain_version, upstream_attempted)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-               RETURNING id""",
-            (
-                record["request_id"], record["trace_id"], record["user_token"], record["role"],
-                record["tool_name"], record["data_class"], record["action"], record["decision"],
-                record["policy_id"], record["reason"], record["upstream_executed"],
-                Jsonb(record["restrictions"]), record["approval_id"],
-                Jsonb(record["request_payload"]),
-                Jsonb(record["result_preview"]) if record["result_preview"] is not None else None,
-                record["error"], record["enforcement"], record["would_decision"],
-                record["would_policy_id"],
-                record["policy_version"], Jsonb(record["obligations"]), record["exception_id"],
-                Jsonb(record["conflicts"]), record["environment"],
-                previous, entry, CHAIN_VERSION, record["upstream_attempted"],
-            ),
+            f"INSERT INTO decisions ({', '.join(values)}) VALUES "
+            f"({', '.join(['%s'] * len(values))}) RETURNING id",
+            tuple(Jsonb(value) if key in json_columns and value is not None else value
+                  for key, value in values.items()),
         )
         row = await cursor.fetchone()
         await connection.execute(
@@ -975,6 +1021,10 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "request_payload": payload,
             "result": None,
             "error": None,
+            "policy_input": None,
+            "risk_score": 0,
+            "privacy_types": [],
+            "sequence_flags": [],
         }
 
         await policy_ledger()
@@ -984,7 +1034,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 "P-INPUT-001", "Block", "활성 상태의 등록 계정과 유효한 문서 ID가 필요합니다.",
             ))
             decision_id = await _record_decision(base_event)
-            return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
+            return {**_public_event(base_event), "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
 
         from .agent_contract import SCHEMAS
         if tool_name in SCHEMAS:
@@ -995,7 +1045,31 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     "P-INPUT-SCHEMA-001", "Block", "도구 인자가 승인된 입력 형식과 다릅니다.",
                 ))
                 decision_id = await _record_decision(base_event)
-                return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
+                return {**_public_event(base_event), "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
+
+        destination_host = _destination_host(payload.get("destination")) if tool_name == "send_external" else ""
+        if tool_name == "send_external" and not destination_host:
+            base_event.update(local_verdict(
+                "P-INPUT-SCHEMA-001", "Block", "외부 목적지를 도메인으로 해석할 수 없습니다.",
+            ))
+            decision_id = await _record_decision(base_event)
+            return {**_public_event(base_event), "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
+
+        try:
+            findings = await privacy.analyze(str(payload.get("content") or "")) if tool_name in {"write_document", "send_external"} else []
+        except privacy.InspectionUnavailable as exc:
+            base_event.update(local_verdict(
+                "P-DATA-INSPECTION-001", "Block", "민감정보 검사를 완료하지 못해 실행을 차단했습니다.",
+                error=str(exc),
+            ))
+            decision_id = await _record_decision(base_event)
+            return {**_public_event(base_event), "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
+        privacy_types = sorted({item["entity_type"] for item in findings})
+        sequence_flags = await _sequence_flags(payload, tool_name)
+        base_event["privacy_types"] = privacy_types
+        base_event["sequence_flags"] = sequence_flags
+        base_event["risk_score"] = _risk_score(data_class, spec["action"],
+                                               tool_name == "send_external", privacy_types, sequence_flags)
 
         if tool_name == "github_get_file":
             allowed_repos = {item.strip().lower() for item in os.getenv("GITHUB_ALLOWED_REPOS", "MCP-governance/mcp-gateway").split(",") if item.strip()}
@@ -1004,7 +1078,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     "MCP-REPOSITORY-001", "Block", "허용 목록에 없는 GitHub 저장소입니다.",
                 ))
                 decision_id = await _record_decision(base_event)
-                return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
+                return {**_public_event(base_event), "decision_id": decision_id, "effect_before": before, "effect_after": effect_count()}
 
         catalog_fresh = True
         if spec["server_id"] != "github" or GITHUB_TOKEN:
@@ -1040,11 +1114,15 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "tool": {"name": spec["registry_name"], "action": spec["action"]},
             # 이 호출의 인자 자체가 신뢰할 수 없는 콘텐츠인가. 도구 설명 검사(계약)와
             # 다른 축이라 따로 싣는다 - 같은 서버의 같은 도구라도 인자는 매 호출 다르다.
-            "request": {"untrusted_markers": untrusted_markers(payload)},
+            "request": {"untrusted_markers": untrusted_markers(payload),
+                        "destination_host": destination_host,
+                        "pii_types": privacy_types,
+                        "sequence_flags": sequence_flags},
             "approval": {"granted": approval_granted, "id": approval_id},
             "contract": contract,
             "context": await _recent_activity(str(payload.get("user_token", ""))),
         }
+        base_event["policy_input"] = policy_input
         try:
             result = await _policy(policy_input)
         except Exception as exc:
@@ -1090,8 +1168,13 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 with tracer.start_as_current_span("mcp.upstream.call") as upstream_span:
                     upstream_span.set_attribute("mcp.server", spec["server_id"])
                     upstream_span.set_attribute("mcp.transport", "stdio" if spec["server_id"] == "mock-stdio" else "streamable-http")
-                    base_event["result"] = await _call_upstream(spec, effective, approval_id)
+                    raw_result = await _call_upstream(spec, effective, approval_id)
                 base_event["upstream_executed"] = True
+                try:
+                    base_event["result"], output_types = await privacy.mask_payload(raw_result)
+                except privacy.InspectionUnavailable as exc:
+                    raise ResultRejected(str(exc)) from exc
+                base_event["privacy_types"] = sorted(set(privacy_types) | set(output_types))
                 base_event["effective_arguments"] = effective
             except DispatchRejected as exc:
                 base_event.update(local_verdict(
@@ -1125,7 +1208,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
 
         decision_id = await _record_decision(base_event)
         after = effect_count()
-        return {**base_event, "decision_id": decision_id, "effect_before": before, "effect_after": after}
+        return {**_public_event(base_event), "decision_id": decision_id, "effect_before": before, "effect_after": after}
 
 
 async def approve_request(approval_id: str, reviewer_token: str) -> dict:

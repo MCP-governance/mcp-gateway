@@ -72,7 +72,7 @@ def mock_proposal(message: str) -> Proposal | None:
     if tool != "read_document":
         args["content"] = message
     if tool == "send_external":
-        args["destination"] = "outside.example"
+        args["destination"] = "review.corp.invalid" if "사내" in message else "outside.example"
     return Proposal(server_id="mock-http", tool_name=tool, arguments=args)
 
 

@@ -257,7 +257,9 @@ async def main():
             await db.execute("DELETE FROM mcp_intake_requests WHERE id=%s", (intake_id,))
         cases = [("partner", "공개 문서를 읽어줘", "Allow", 1), ("partner", "비밀 인증정보를 읽어줘", "Block", 0),
                  ("employee", "비밀 인증정보를 읽어줘", "Alert", 1), ("employee", "내부 업무 메모를 수정해줘", "Allow", 1),
-                 ("admin", "공개 공지를 외부에 전송해줘", "Restrict", 1), ("admin", "중요 계약을 외부에 전송해줘", "Approval", 0)]
+                 ("admin", "공개 공지를 외부에 전송해줘", "Restrict", 1),
+                 ("admin", "중요 계약을 외부에 전송해줘", "Block", 0),
+                 ("admin", "중요 계약을 사내로 전송해줘", "Approval", 0)]
         # 판정을 정확히 한 값으로 고정하지 않는 이유: 이 체계에는 실행을 바꾸지 않고
         # 증적만 올리는 정책들이 있다(P-IMPORTANT-ALERT-001, MCP-SHADOW-001/002,
         # P-ANOMALY-001). 그 중 하나가 걸리면 판정 문자열은 바뀌지만 "이 호출이
@@ -281,11 +283,29 @@ async def main():
             if expected == "Approval":
                 approval_id = outcome["approval_id"]
             if expected == "Restrict":
-                check("agent-restrictions", outcome["effective_arguments"]["destination"] == "restricted.invalid" and len(outcome["effective_arguments"]["content"]) <= 80)
+                check("agent-restrictions", outcome["effective_arguments"]["destination_sha256"] == canonical_hash("restricted.invalid") and outcome["effective_arguments"]["content_chars"] <= 80)
         check("approval-non-admin", (await client.post(AGENT + f"/approvals/{approval_id}/approve", headers=users["employee"], json={})).status_code == 403)
         before = effect_count()
         approved = await asyncio.gather(*(client.post(AGENT + f"/approvals/{approval_id}/approve", headers=users["admin"], json={}) for _ in range(2)))
         check("approval-race-exactly-once", sorted(r.status_code for r in approved) == [200, 409] and effect_count() == before + 1)
+        sensitive_read = (await client.post(AGENT + "/chat", headers=users["admin"],
+                                            json={"message": "중요 계약을 읽어줘"})).json()
+        read_result = sensitive_read["gateway_result"]
+        if read_result["decision"] == "Approval":
+            before = effect_count()
+            reviewed_read = await client.post(AGENT + f"/approvals/{read_result['approval_id']}/approve",
+                                              headers=users["admin"], json={})
+            check("chain-read-approved", reviewed_read.status_code == 200 and effect_count() == before + 1,
+                  str(reviewed_read.status_code))
+        else:
+            check("chain-read-executed", read_result["upstream_executed"], read_result["policy_id"])
+        before = effect_count()
+        chained_send = (await client.post(AGENT + "/chat", headers=users["admin"],
+                                          json={"message": "공개 공지를 외부에 전송해줘",
+                                                "session_id": sensitive_read["session_id"]})).json()["gateway_result"]
+        check("signed-session-read-then-send-blocked",
+              chained_send["policy_id"] == "P-CHAIN-001" and not chained_send["upstream_attempted"]
+              and effect_count() == before)
         request = {"message": "공개 문서를 읽어줘", "request_id": str(uuid4())}
         first = (await client.post(AGENT + "/chat", headers=users["employee"], json=request)).json()
         before = effect_count()

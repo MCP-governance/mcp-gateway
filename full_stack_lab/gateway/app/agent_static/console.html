@@ -44,6 +44,21 @@
 
         <div class="notice" id="banner" role="status"></div>
 
+        <article class="block process-block" aria-labelledby="process-title">
+          <header><h2 id="process-title">호출 처리 경로</h2><span class="spacer"></span><span class="hint">최근 판정 기준</span></header>
+          <div class="body">
+            <ol class="process-map">
+              <li><b>1 · 사용자 요청</b><small>신원과 요청</small></li>
+              <li><b>2 · Agent 또는 API</b><small>도구 제안</small></li>
+              <li><b>3 · Gateway</b><small>계약·입력·민감정보</small></li>
+              <li><b>4 · OPA</b><small>정책 판정</small></li>
+              <li><b>5 · 승인·제한</b><small>실행 조건</small></li>
+              <li><b>6 · MCP·증적</b><small>효과와 감사 기록</small></li>
+            </ol>
+            <p class="process-current" id="process-current" role="status">아직 판정이 없습니다.</p>
+          </div>
+        </article>
+
         <section class="stream" aria-label="실시간 판정">
           <div class="stream-head">
             <h2>실시간 판정</h2>

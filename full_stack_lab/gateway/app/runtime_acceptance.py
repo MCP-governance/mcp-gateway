@@ -132,7 +132,16 @@ async def run() -> dict:
                             and result["effect_before"] == result["effect_after"], "inactive-approval-requester"))
 
         send = {"user_token": "admin-demo", "tool_name": "send_external", "document_id": "secret-001",
-                "destination": "outside.invalid", "content": "synthetic boundary check"}
+                "destination": "review.corp.invalid", "content": "synthetic boundary check"}
+        await core.set_enforcement_mode("monitor", "admin-demo")
+        try:
+            with patch.object(core, "_policy", AsyncMock(return_value={**valid, "decision": "Block", "policy_id": "P-CHAIN-001"})):
+                chain = await core.execute_call({**send, "document_id": "notice-001"})
+            checks.append(check(chain["policy_id"] == "P-CHAIN-001" and not chain["upstream_attempted"]
+                                and chain["effect_before"] == chain["effect_after"],
+                                "sensitive-chain-always-enforced-in-monitor"))
+        finally:
+            await core.set_enforcement_mode("enforce", "admin-demo")
         pending = await core.execute_call(send)
         check(pending["decision"] == "Approval", "approval-created", str(pending))
         await db.execute("UPDATE principals SET status='locked' WHERE token='admin-demo'")
@@ -188,10 +197,22 @@ async def run() -> dict:
                             and result["effect_after"] == result["effect_before"] + 1,
                             "output-rejection-keeps-confirmed-execution"))
 
-        with response({"result": {**valid, "decision": "Restrict", "restrictions": {
-                "destination": "restricted.invalid", "max_chars": 0}}}):
+        with patch.object(core.privacy, "analyze", AsyncMock(side_effect=core.privacy.InspectionUnavailable("synthetic analyzer outage"))):
             result = await core.execute_call({**send, "document_id": "notice-001"})
-        checks.append(check(result["upstream_executed"] and result["effective_arguments"]["content"] == ""
+        checks.append(check(result["policy_id"] == "P-DATA-INSPECTION-001" and
+                            not result["upstream_attempted"] and result["effect_before"] == result["effect_after"],
+                            "analyzer-outage-blocks-before-upstream"))
+
+        with patch.object(core.privacy, "mask_payload", AsyncMock(side_effect=core.privacy.InspectionUnavailable("synthetic anonymizer outage"))):
+            result = await core.execute_call({**public_call, "user_token": "admin-demo"})
+        checks.append(check(result["policy_id"] == "MCP-OUTPUT-001" and result["upstream_executed"]
+                            and result["result"] is None and result["effect_after"] == result["effect_before"] + 1,
+                            "anonymizer-outage-withholds-result-after-execution"))
+
+        with patch.object(core, "_policy", AsyncMock(return_value={**valid, "decision": "Restrict", "restrictions": {
+                "destination": "restricted.invalid", "max_chars": 0}})):
+            result = await core.execute_call({**send, "document_id": "notice-001"})
+        checks.append(check(result["upstream_executed"] and result["effective_arguments"]["content_chars"] == 0
                             and result["effect_after"] == result["effect_before"] + 1, "zero-content-limit-enforced"))
         checks.append(check((await core.verify_audit_chain())["intact"], "runtime-audit-chain-intact"))
     finally:

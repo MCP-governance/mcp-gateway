@@ -323,6 +323,13 @@ case "${1:-up}" in
     docker compose exec -T gateway python -m app.runtime_acceptance | tee reports/runtime-acceptance.json
     echo "모든 필수 검증이 통과했습니다."
     ;;
+  replay)
+    up
+    REPLAY_POLICY_DIR="${REPLAY_POLICY_DIR:-./opa}" docker compose --profile replay up -d --wait opa-candidate
+    trap 'docker compose --profile replay stop opa-candidate >/dev/null' EXIT
+    docker compose exec -T -e REPLAY_OPA_URL=http://opa-candidate:8181/v1/data/mcp/authz/decision \
+      gateway python -m app.replay --limit "${2:-100}" | tee reports/policy-replay.json
+    ;;
   agent-test)
     up
     agent_test
@@ -439,10 +446,10 @@ json.dump(module.app.openapi(), sys.stdout, ensure_ascii=False, indent=2, sort_k
   down)
     # 프로필로 띄운 서비스는 profile을 함께 줘야 내려간다. 그러지 않으면
     # down 뒤에도 엔드포인트 에이전트가 남아 계속 보고한다.
-    docker compose --profile endpoint --profile llm-stub down
+    docker compose --profile endpoint --profile llm-stub --profile replay down
     ;;
   reset)
-    docker compose --profile endpoint --profile llm-stub down -v
+    docker compose --profile endpoint --profile llm-stub --profile replay down -v
     # trivy-*.json are the per-server reports that actually feed MCP-SUPPLY-001.
     # Leaving them behind meant a reset did not reset supply-chain evidence: the
     # next import re-attributed stale findings to a freshly created database.
@@ -452,6 +459,7 @@ json.dump(module.app.openapi(), sys.stdout, ensure_ascii=False, indent=2, sort_k
       reports/acceptance.json \
       reports/agent-acceptance.json \
       reports/runtime-acceptance.json \
+      reports/policy-replay.json \
       reports/security-regression.txt \
       reports/full-test.log \
       reports/sbom.cdx.json \
@@ -462,7 +470,7 @@ json.dump(module.app.openapi(), sys.stdout, ensure_ascii=False, indent=2, sort_k
     echo "이 실습 전용 DB·효과 로그·생성 보고서를 초기화했습니다."
     ;;
   *)
-    echo "usage: ./console.sh [up|test|agent-test|endpoint|endpoint-key|scan|openapi|status|logs|down|reset|corporate-lab|live-lab|local-llm|local-stop|live-stop|lab-down|lab-logs]" >&2
+    echo "usage: ./console.sh [up|test|replay|agent-test|endpoint|endpoint-key|scan|openapi|status|logs|down|reset|corporate-lab|live-lab|local-llm|local-stop|live-stop|lab-down|lab-logs]" >&2
     exit 2
     ;;
 esac

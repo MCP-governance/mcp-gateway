@@ -13,7 +13,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from . import core, db, decommission, endpoint_plane
+from . import core, db, decommission, endpoint_plane, privacy
 from .core import (
     OPA_URL,
     approve_request,
@@ -124,17 +124,19 @@ async def _probe(url: str) -> bool:
     try:
         async with httpx.AsyncClient(timeout=2) as client:
             response = await client.get(url)
-            return response.status_code < 500
+            return response.status_code == 200
     except Exception:
         return False
 
 
 @app.get("/api/health")
 async def health() -> dict:
-    opa_ok, upstream_ok, jaeger_ok = await asyncio.gather(
+    opa_ok, upstream_ok, jaeger_ok, analyzer_ok, anonymizer_ok = await asyncio.gather(
         _probe(OPA_URL.rsplit("/v1/", 1)[0] + "/health?bundles=true"),
         _probe(MOCK_MCP_HEALTH_URL),
         _probe(JAEGER_QUERY_URL) if JAEGER_QUERY_URL else _absent(),
+        _probe(privacy.ANALYZER + "/health"),
+        _probe(privacy.ANONYMIZER + "/health"),
     )
     try:
         await db.fetch_one("SELECT 1")
@@ -148,6 +150,8 @@ async def health() -> dict:
         "opa": opa_ok,
         "mock_http_mcp": upstream_ok,
         "jaeger": jaeger_ok,
+        "presidio_analyzer": analyzer_ok,
+        "presidio_anonymizer": anonymizer_ok,
         "github_mcp": bool(os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN") and github and github["status"] == "READY"),
     }
     # None은 "이 배치에 없음"이라 판정에서 제외한다. github_mcp는 자격 미설정이

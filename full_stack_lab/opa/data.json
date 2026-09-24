@@ -15,6 +15,9 @@
       "127.0.0.1",
       "host.docker.internal",
       "api.githubcopilot.com"
+    ],
+    "internal_domains": [
+      "corp.invalid"
     ]
   }
 }

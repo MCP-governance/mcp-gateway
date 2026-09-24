@@ -35,6 +35,36 @@ services:
       - ./opa:/policy:ro
     networks: [policy]
 
+  opa-candidate:
+    image: openpolicyagent/opa:1.20.2-static
+    profiles: [replay]
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "/policy"]
+    volumes:
+      - ${REPLAY_POLICY_DIR:-./opa}:/policy:ro
+    networks: [policy]
+
+  presidio-analyzer:
+    image: ghcr.io/data-privacy-stack/presidio-analyzer:2.2.364
+    networks: [privacy]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  presidio-anonymizer:
+    image: ghcr.io/data-privacy-stack/presidio-anonymizer:2.2.364
+    networks: [privacy]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
   mock-http-mcp:
     build: ./mock_server
     environment:
@@ -68,6 +98,8 @@ services:
       OTEL_SERVICE_NAME: mcp-security-gateway
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      PRESIDIO_ANALYZER_URL: http://presidio-analyzer:3000
+      PRESIDIO_ANONYMIZER_URL: http://presidio-anonymizer:3000
     depends_on:
       db:
         condition: service_healthy
@@ -77,13 +109,17 @@ services:
         condition: service_started
       jaeger:
         condition: service_started
+      presidio-analyzer:
+        condition: service_healthy
+      presidio-anonymizer:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8080:8080"
     volumes:
       - effects:/runtime:ro
       - ./reports:/reports:ro
       - ./opa:/policy:ro
-    networks: [edge, policy, tools, data, telemetry]
+    networks: [edge, policy, tools, data, telemetry, privacy]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 
@@ -139,11 +175,15 @@ services:
         condition: service_healthy
       mock-http-mcp:
         condition: service_started
+      presidio-analyzer:
+        condition: service_healthy
+      presidio-anonymizer:
+        condition: service_healthy
     volumes:
       - effects:/runtime:ro
       - ./reports:/reports:ro
       - ./opa:/policy:ro
-    networks: [policy, tools, data, telemetry]
+    networks: [policy, tools, data, telemetry, privacy]
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 
@@ -357,6 +397,8 @@ networks:
   agent:
     internal: true
   policy:
+    internal: true
+  privacy:
     internal: true
   tools:
     internal: true
