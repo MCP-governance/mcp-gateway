@@ -34,6 +34,17 @@ jobs:
           python -m pip install --quiet pyflakes
           python -m pyflakes full_stack_lab/gateway/app/*.py full_stack_lab/tests/*.py full_stack_lab/mock_server/*.py full_stack_lab/supply_chain/*.py full_stack_lab/endpoint/*.py
 
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: 콘솔 문법과 상태 회귀 검사
+        run: |
+          node --check full_stack_lab/gateway/app/agent_static/console.js
+          node --check full_stack_lab/gateway/app/agent_static/login.js
+          node --test full_stack_lab/tests/console-state.test.mjs
+
       - name: Shell 문법
         run: bash -n full_stack_lab/console.sh full_stack_lab/run-native.sh full_stack_lab/tests/drift_and_fail_closed.sh
 

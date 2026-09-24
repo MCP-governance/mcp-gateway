@@ -193,6 +193,7 @@ v1.7에서 PaC 후보 5개를 정책으로 구현했습니다.
 | [full_stack_lab/NETWORK.md](full_stack_lab/NETWORK.md) | Docker 내부망·게시 포트 경계와 Tailscale 적용 기준 (tailnet 부분은 미구현, 문서에 명시) |
 | [docs/API.md](docs/API.md) | 통합용 API 명세. `./console.sh openapi`가 기계용 명세를 생성 |
 | [아키텍처 구조 개선안](docs/architecture/hardening.md) | 공통 실행 경로, 실행 상태, DB 권한과 검사 환경의 단계적 분리 제안. 현재 구현과 후속 검증 기준 구분 |
+| [대시보드 UX 개선과 검증](docs/dashboard-ux-review.md) | 공식 디자인 레퍼런스, 실제 콘솔 변경, 다섯 관점의 교차 검토와 검증 범위 |
 | [research/](research/README.md) | 레퍼런스 조사와 설계 자료 |
 
 v1.5에서 구버전 실습(`container_lab/`, `library_lab/`, 루트의 two-VM·stdio 최소 예제)을 제거했습니다. 정책 원본이 네 곳으로 갈라져 있으면 어느 것이 정본인지 저장소가 답하지 못합니다. 제거된 코드는 [`2026-09-v1.4-product-console-supply-chain`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v1.4-product-console-supply-chain) 태그에 그대로 남아 있습니다.
