@@ -1,6 +1,6 @@
 {
  "catalog": "catalog-56c08e2881e7",
- "generated_at": "2026-09-23T10:11:54+00:00",
+ "generated_at": "2026-09-24T10:14:27+00:00",
  "servers": {
   "desktop": {
    "package": "@wonderwhy-er/desktop-commander@0.2.51",
@@ -93,7 +93,7 @@
      "schema_sha256": "17498e0aba9db8e1c0b9695162dd6299400246b6f28b208a2c9cdef72ab85a93"
     },
     "start_process": {
-     "description_sha256": "820f176257e5cdda0e48bccf0b92000c072d918a832be062715b8db0c2e1228d",
+     "description_sha256": "dfba475035faef8e9f8f2f44035bb1f211eada407ffa5e8a3d9c5e2367eaba56",
      "schema_sha256": "41c0a6fda7a89c45cc30b191805e75aa63a0cb8f058a3d022d49720587b2a4bc"
     },
     "start_search": {

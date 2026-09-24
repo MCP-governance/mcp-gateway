@@ -29,7 +29,7 @@ from .core import (
 )
 from .mcp_facade import build_mcp, transport_security
 from .agent_contract import authenticated_user
-from . import registry
+from . import activity, registry
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 
@@ -162,6 +162,15 @@ async def registry_view() -> dict:
             "organization": registry.catalog().get("organization", {}),
             "servers": [row for row in servers if row["id"] in catalog_servers],
             "tools": tools, "usage_relationships": relationships}
+
+
+@app.get("/api/activity")
+async def activity_feed(after: int = 0, limit: int = 100, decision: str | None = None,
+                        server: str | None = None, person: str | None = None,
+                        user: dict = Depends(caller)) -> dict:
+    """Decisions as readable sentences. Admins see everyone; others see themselves."""
+    own = None if "admin" in user["roles"] else user["principal"]
+    return await activity.recent(after, limit, own, decision, server, person)
 
 
 @app.get("/.well-known/oauth-protected-resource")
@@ -535,6 +544,7 @@ class EndpointDeviceCreate(StrictModel):
     platform: str = Field(default="unknown", max_length=80)
     owner_token: str | None = Field(default=None, max_length=120)
     scopes: list[Literal["inventory", "netscan"]] = Field(default=["inventory"], max_length=2)
+    enrollment_key: str | None = Field(default=None, min_length=32, max_length=128)
 
 
 class EndpointEnroll(StrictModel):
@@ -607,7 +617,7 @@ async def endpoint_device_create(request: EndpointDeviceCreate,
     try:
         return await endpoint_plane.issue_device(
             request.endpoint_id, request.hostname, request.platform,
-            request.owner_token, list(request.scopes), user["principal"])
+            request.owner_token, list(request.scopes), user["principal"], request.enrollment_key)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 

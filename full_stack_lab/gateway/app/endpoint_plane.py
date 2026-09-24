@@ -73,11 +73,16 @@ async def _registry_index() -> list[dict]:
         """SELECT id, transport, endpoint, display_name, advertised_name, lifecycle, status
              FROM mcp_servers"""
     )
+    # The Gateway is recognised by its MCP URL, not by a label: anyone can name a
+    # server "bob-gateway" in a config file.
+    gateway_urls = {normalise("streamable-http", url) for url in (
+        os.getenv("GATEWAY_PUBLIC_MCP_URL", "http://gateway:8080/mcp/"),
+        "http://localhost:8080/mcp/", "http://127.0.0.1:8080/mcp/")}
     index = [{
         "id": "__gateway__",
         "lifecycle": "OPERATING",
         "status": "READY",
-        "keys": {SELF_MCP_NAME},
+        "keys": {SELF_MCP_NAME, *gateway_urls},
     }]
     for row in rows:
         index.append({
@@ -135,7 +140,10 @@ async def ingest(endpoint_id: str, entries: list[dict]) -> dict:
             classification = "retired-residue"
             registry_match = matched["id"]
         else:
-            classification = "registered"
+            # v2: every approved server sits behind the Gateway, so a client config
+            # that points at a registered server itself is a path around the
+            # enforcement point, not a registered use of it.
+            classification = "shadow"
             registry_match = matched["id"]
         counts[classification] += 1
         seen.append(mark)
@@ -290,7 +298,7 @@ def _hash_key(raw: str) -> str:
 
 
 async def issue_device(endpoint_id: str, hostname: str, platform: str, owner_token: str | None,
-                       scopes: list[str], issued_by: str) -> dict:
+                       scopes: list[str], issued_by: str, enrollment_key: str | None = None) -> dict:
     """장치를 등록하고 자격을 한 번만 돌려준다.
 
     평문 키는 이 응답에만 존재한다. 저장은 해시로 하고, 잃어버리면 재발급한다.
@@ -299,7 +307,11 @@ async def issue_device(endpoint_id: str, hostname: str, platform: str, owner_tok
     unknown = sorted(set(scopes) - set(DEVICE_SCOPES))
     if unknown:
         raise ValueError("알 수 없는 장치 권한입니다: " + ", ".join(unknown))
-    raw = secrets.token_urlsafe(32)
+    # An administrator may supply the key (workstation provisioning generates it
+    # before the container exists); otherwise it is generated here.
+    raw = enrollment_key or secrets.token_urlsafe(32)
+    if len(raw) < 32:
+        raise ValueError("장치 자격은 32자 이상이어야 합니다.")
     await db.execute(
         """INSERT INTO endpoint_agents(endpoint_id, hostname, platform, agent_version,
                                        owner_token, key_hash, key_prefix, scopes, status,

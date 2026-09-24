@@ -1,412 +1,215 @@
 #!/usr/bin/env bash
+# MCP Governance Lab v2 — single entry point. See docs/ai/RUNBOOK.md.
 set -euo pipefail
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$LAB_DIR"
 mkdir -p reports
+WORKSTATIONS=(ws-ysg ws-jwj ws-pse ws-nkk)
+declare -A WS_OWNER=([ws-ysg]=emp-ysg [ws-jwj]=emp-jwj [ws-pse]=emp-pse [ws-nkk]=partner-demo)
 
-# A fresh checkout must not silently attach another checkout's database volume.
-# Existing .env files with signing keys keep the legacy Compose project.
-touch .env && chmod 600 .env
-if [[ -z "${COMPOSE_PROJECT_NAME:-}" ]] &&
-   ! grep -qE '^(MCP_COMPOSE_PROJECT|COMPOSE_PROJECT_NAME|AGENT_JWT_PRIVATE_KEY)=' .env; then
-  printf 'MCP_COMPOSE_PROJECT=mcpgw-%s\n' "$(printf '%s' "$LAB_DIR" | sha256sum | cut -c1-10)" >> .env
-fi
+usage() {
+  cat >&2 <<'EOF'
+usage: ./console.sh <command>
 
-# The synthetic IdP signs with Ed25519: Agent Service holds the private key, every
-# verifier holds only the public key. Generated inside the gateway image so the host
-# needs no crypto library. The placeholders only satisfy compose interpolation.
-ensure_keys() {
-  touch .env && chmod 600 .env
-  if grep -qE '^AGENT_JWT_PRIVATE_KEY=.+' .env && grep -qE '^AGENT_JWT_PUBLIC_KEY=.+' .env; then
-    return
-  fi
-  echo "합성 인증용 Ed25519 키쌍을 생성합니다. (최초 1회, gateway 이미지 빌드 필요)"
-  AGENT_JWT_PRIVATE_KEY=placeholder AGENT_JWT_PUBLIC_KEY=placeholder docker compose build --quiet gateway
-  local generated
-  generated="$(AGENT_JWT_PRIVATE_KEY=placeholder AGENT_JWT_PUBLIC_KEY=placeholder \
-    docker compose run --rm --no-deps -T --entrypoint python gateway -m app.keygen | tr -d '\r')"
-  if ! grep -q '^AGENT_JWT_PRIVATE_KEY=' <<<"$generated"; then
-    echo "키 생성에 실패했습니다. docker compose build gateway 를 먼저 확인하세요." >&2
-    exit 1
-  fi
-  sed -i -E '/^AGENT_JWT_(PRIVATE|PUBLIC)_KEY=/d' .env
-  printf '%s\n' "$generated" >> .env
-  chmod 600 .env
+  up [--no-llm]          전체 기동 (회사 시스템·MCP 10종·Gateway·Console·직원 PC 4대·로컬 LLM)
+  workday [ws|all] [--mode llm|scripted] [--check]
+                         직원의 하루 업무 시나리오를 실행 (기본: 전원, llm 모드)
+  ask <ws> "지시" [--servers a,b] [--mode llm|scripted]
+                         한 직원의 AI 어시스턴트에게 업무 지시
+  watch                  Gateway 판정을 사람이 읽는 한 줄 로그로 계속 출력
+  contracts [--update|--check]
+                         MCP 서버 계약 해시(registry/contracts.lock.json) 생성·대조
+  experiment e1|e2|e3    논문 재현 실험 (E1 토큰 폐기, E2 세션 종료, E3 서버 보유 자격)
+  test                   전체 검증 (Rego·분류 self-check·acceptance·시나리오·보안 회귀)
+  status | logs [svc] | down | reset | scan | openapi
+EOF
 }
 
-# Published APIs are loopback-only even when Compose is invoked directly.
-# Use tailscale serve for private remote access; never publish the unauthenticated
-# read endpoints or the A.I.G Web UI on a LAN interface.
-if [[ "${BIND_ADDR:-127.0.0.1}" != 127.0.0.1 || "${AIG_BIND_ADDR:-127.0.0.1}" != 127.0.0.1 ]]; then
-  echo "BIND_ADDR와 AIG_BIND_ADDR는 127.0.0.1만 허용합니다. 내부망 접속은 NETWORK.md의 tailscale serve 경로를 사용하세요." >&2
-  exit 2
-fi
+# ── .env: project name, signing keys, LiteLLM master key, per-workstation keys ──
+ensure_env() {
+  touch .env && chmod 600 .env
+  if [[ -z "${COMPOSE_PROJECT_NAME:-}" ]] && ! grep -qE '^(MCP_COMPOSE_PROJECT|COMPOSE_PROJECT_NAME)=' .env; then
+    printf 'MCP_COMPOSE_PROJECT=mcpgw-%s\n' "$(printf '%s' "$LAB_DIR" | sha256sum | cut -c1-10)" >> .env
+  fi
+  if ! grep -qE '^AGENT_JWT_PRIVATE_KEY=.+' .env; then
+    echo "합성 IdP 서명 키(Ed25519)를 생성합니다."
+    export AGENT_JWT_PRIVATE_KEY=placeholder AGENT_JWT_PUBLIC_KEY=placeholder LITELLM_MASTER_KEY=placeholder
+    docker compose build -q gateway
+    docker compose run --rm --no-deps -T --entrypoint python gateway -m app.keygen | tr -d '\r' >> .env
+    unset AGENT_JWT_PRIVATE_KEY AGENT_JWT_PUBLIC_KEY LITELLM_MASTER_KEY
+  fi
+  grep -q '^LITELLM_MASTER_KEY=' .env || echo "LITELLM_MASTER_KEY=sk-master-$(openssl rand -hex 16)" >> .env
+  for ws in "${WORKSTATIONS[@]}"; do
+    local up; up="$(echo "${ws#ws-}" | tr a-z A-Z)"
+    grep -q "^LLM_KEY_WS_${up}=" .env || echo "LLM_KEY_WS_${up}=sk-${ws}-$(openssl rand -hex 12)" >> .env
+    grep -q "^ENDPOINT_KEY_WS_${up}=" .env || echo "ENDPOINT_KEY_WS_${up}=ek-${ws}-$(openssl rand -hex 20)" >> .env
+  done
+}
 
-ensure_keys
+env_value() { sed -n "s/^$1=//p" .env | tail -1; }
 
-# The gateway API is authenticated now, so scripted maintenance calls log in the
-# same way a person does. The password lives in the uncommitted .env.
-session_token() {
-  local email="$1"
-  local password
-  password="$(sed -n 's/^MOCK_SSO_PASSWORD=//p' .env 2>/dev/null | tail -1)"
-  curl -fsS -X POST http://127.0.0.1:8080/api/session \
-    -H 'content-type: application/json' \
-    -d "{\"email\":\"${email}\",\"password\":\"${password:-test-password}\"}" \
+admin_token() {
+  curl -fsS -X POST http://127.0.0.1:8000/auth/mock-login -H 'content-type: application/json' \
+    -d "{\"email\":\"kkg@bob.local\",\"password\":\"$(env_value MOCK_SSO_PASSWORD || true)\"}" 2>/dev/null \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])' 2>/dev/null \
+  || curl -fsS -X POST http://127.0.0.1:8000/auth/mock-login -H 'content-type: application/json' \
+    -d '{"email":"kkg@bob.local","password":"test-password"}' \
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])'
 }
 
-gateway_token() { session_token kkg@bob.local; }
-
-# A workspace-wide scan tells you nothing about which MCP server is affected, and the
-# MCP-SUPPLY-001 gate counts criticals against a server's pinned source_ref. So each
-# registered server with a scan_path is scanned on its own and the report is named
-# after it; core.import_supply_chain_reports attributes it from that name.
-scan_registered_servers() {
-  local targets
-  targets="$(curl -fsS http://127.0.0.1:8080/api/supply-chain/coverage \
-    | python3 -c 'import json,sys
-for row in json.load(sys.stdin)["servers"]:
-    if row["scan_path"]:
-        print(row["server_id"], row["scan_path"])')"
-  if [[ -z "$targets" ]]; then
-    echo "스캔 대상으로 등록된 서버가 없습니다." >&2
-    return
-  fi
-  while read -r server_id scan_path; do
-    [[ -z "$server_id" ]] && continue
-    echo "[supply-chain] $server_id <- $scan_path"
-    docker compose --profile supply-chain run --rm trivy \
-      fs --scanners vuln,misconfig,secret --format json \
-      --output "/reports/trivy-${server_id}.json" "/workspace/${scan_path}"
-  done <<< "$targets"
-}
-
-import_reports() {
-  curl -fsS -X POST http://127.0.0.1:8080/api/supply-chain/import \
-    -H "authorization: Bearer $(gateway_token)" | python3 -m json.tool
-}
-
-agent_test() {
-  # The gateway service has no private key. The acceptance run is handed one here
-  # on purpose, so it can forge expired/wrong-audience/wrong-issuer claim variants.
-  docker compose exec -T \
-    -e AGENT_JWT_PRIVATE_KEY="$(sed -n 's/^AGENT_JWT_PRIVATE_KEY=//p' .env | tail -1)" \
-    gateway python -m app.agent_acceptance | tee reports/agent-acceptance.json
-}
-
 wait_ready() {
-  for _ in {1..60}; do
-    if curl -fsS http://127.0.0.1:8000/api/readiness | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["status"] == "ready" else 1)' >/dev/null 2>&1; then
-      return
+  for _ in $(seq 1 90); do
+    if curl -fsS http://127.0.0.1:8000/api/readiness 2>/dev/null \
+      | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["status"] == "ready" else 1)' 2>/dev/null; then
+      return 0
     fi
-    sleep 1
+    sleep 2
   done
-  echo "Agent와 Gateway가 60초 안에 준비되지 않았습니다. ./console.sh logs 로 확인하세요." >&2
+  echo "Gateway·Console이 3분 안에 준비되지 않았습니다. ./console.sh logs gateway 로 확인하세요." >&2
   exit 1
 }
 
-# Corporate-lab puts Tencent A.I.G in the Gateway container, while keeping
-# the normal lab image unchanged.
-lab_compose() {
-  LAB_MODE=1 docker compose -f compose.yaml -f compose.corporate-lab.yaml "$@"
-}
-
-live_compose() {
-  LAB_MODE=1 docker compose -f compose.yaml -f compose.corporate-lab.yaml -f compose.live-lab.yaml "$@"
-}
-
-local_compose() {
-  LAB_MODE=1 docker compose -f compose.yaml -f compose.corporate-lab.yaml -f compose.local-llm.yaml "$@"
-}
-
-compose_project_name() {
-  docker compose config --format json | python3 -c 'import json,sys; print(json.load(sys.stdin)["name"])'
-}
-
-retire_legacy_aig_containers() {
-  local service id project
-  project="$(compose_project_name)"
-  for service in aig-agent aig-webserver aig-lab-model; do
-    while read -r id; do
-      [[ -z "$id" ]] && continue
-      # Only remove this Compose project's former A.I.G services. Named data
-      # volumes stay intact and are remounted into the combined Gateway image.
-      docker rm -f "$id" >/dev/null
-    done < <(docker ps -aq \
-      --filter "label=com.docker.compose.project=$project" \
-      --filter "label=com.docker.compose.service=$service")
+# Device credentials for each workstation's endpoint agent, registered with the keys
+# that ensure_env generated. Issuing is an admin act; the agent only reports.
+provision_devices() {
+  local token ws up key
+  token="$(admin_token)"
+  for ws in "${WORKSTATIONS[@]}"; do
+    up="$(echo "${ws#ws-}" | tr a-z A-Z)"
+    key="$(env_value "ENDPOINT_KEY_WS_${up}")"
+    curl -fsS -o /dev/null -X POST http://127.0.0.1:8080/api/endpoint/devices \
+      -H "authorization: Bearer $token" -H 'content-type: application/json' \
+      -d "{\"endpoint_id\":\"$ws\",\"hostname\":\"$ws\",\"platform\":\"linux\",\"owner_token\":\"${WS_OWNER[$ws]}\",\"scopes\":[\"inventory\",\"netscan\"],\"enrollment_key\":\"$key\"}"
   done
+  echo "  장치 자격 ${#WORKSTATIONS[@]}건 등록"
 }
 
-wait_aig_ready() {
-  for _ in {1..60}; do
-    # Docker Desktop/WSL port forwarding can lag even after the container's own
-    # listener is ready. Verify the service from its network namespace first.
-    if lab_compose exec -T gateway curl -fsS http://localhost:8088/ >/dev/null 2>&1; then
-      return
-    fi
-    sleep 1
-  done
-  echo "A.I.G Web UI가 60초 안에 준비되지 않았습니다. ./console.sh lab-logs 로 확인하세요." >&2
-  exit 1
-}
-
-lab_up() {
-  retire_legacy_aig_containers
-  lab_compose --profile llm-stub up -d --build gateway gateway-sse agent-service intake-worker \
-    llm-stub
-  wait_ready
-  wait_aig_ready
-  echo "기업 내부망 실습과 Tencent A.I.G가 준비되었습니다."
-  echo "  Governance Console: http://localhost:8000"
-  echo "  A.I.G Web UI       : http://localhost:8088"
-}
-
-live_up() {
-  # First run asks for the real endpoint, model and hidden API key. Later runs
-  # reuse the ignored, mode-600 .env file without another prompt.
-  python3 lab/live_setup.py init
-  retire_legacy_aig_containers
-  live_compose up -d --build gateway gateway-sse agent-service intake-worker
-  wait_ready
-  wait_aig_ready
-  local checker_ready=0
-  for _ in {1..30}; do
-    if live_compose exec -T gateway curl -fsS http://localhost:8088/api-checker/healthz \
-      | python3 -c 'import json,sys
-try:
-    health=json.load(sys.stdin)
-    assert health["status"] == "ok"
-    assert health["allow_http_targets"] and health["allow_private_targets"]
-except (ValueError, TypeError, KeyError, AssertionError):
-    sys.exit(1)' >/dev/null 2>&1; then
-      checker_ready=1
-      break
-    fi
-    sleep 1
-  done
-  if [[ "$checker_ready" != 1 ]]; then
-    echo "A.I.G API Checker가 Web 경로에서 준비되지 않았습니다." >&2
-    return 1
+ensure_contracts() {
+  if [[ ! -s registry/contracts.lock.json ]]; then
+    echo "  계약 기준선이 없어 지금 서버에서 생성합니다 (registry/contracts.lock.json)."
+    contracts_update
   fi
-  local admin
-  admin="$(gateway_token)"
-  for _ in {1..30}; do
-    if curl -fsS http://127.0.0.1:8000/api/mcp-scan -H "authorization: Bearer $admin" \
-      | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["worker"]["alive"] else 1)' >/dev/null 2>&1; then
-      break
-    fi
-    sleep 1
-  done
-  curl -fsS -X POST http://127.0.0.1:8000/api/mcp-scan/connection-test \
-    -H "authorization: Bearer $admin" \
-    | python3 -c 'import json,sys
-result=json.load(sys.stdin)
-print("실모델 연결: HTTP %s · 워커 %s" % (result.get("http_status"), "정상" if result.get("worker_alive") else "대기"))
-sys.exit(0 if result.get("ok") and result.get("worker_alive") else 1)'
-  python3 lab/live_setup.py register
-  scan_internal_network
-  lab_gateway verify-network
-  echo "실모델 테스트베드 준비 완료: http://localhost:8000 / http://localhost:8088"
-  echo "A.I.G Web에서는 mcp-gateway-live 모델을 선택해 검사할 수 있습니다."
 }
 
-local_up() {
-  # Downloads happen in a disposable container with internet access. The
-  # inference container then starts only on the internal model network.
-  local_compose --profile local-llm-download run --rm --no-deps ollama-pull
-  retire_legacy_aig_containers
-  local_compose --profile local-llm up -d --build ollama gateway gateway-sse agent-service intake-worker
+contracts_update() {
+  docker compose exec -T gateway python -m app.registry lock > /tmp/contracts.lock.$$ \
+    && mv /tmp/contracts.lock.$$ registry/contracts.lock.json
+  docker compose restart gateway gateway-sse >/dev/null
   wait_ready
-  wait_aig_ready
-  python3 lab/live_setup.py local-register
-  local admin
-  admin="$(gateway_token)"
-  curl -fsS --max-time 150 -X POST http://127.0.0.1:8000/api/mcp-scan/connection-test \
-    -H "authorization: Bearer $admin" | python3 -c 'import json,sys
-result=json.load(sys.stdin)
-print("로컬 모델 연결:", "정상" if result.get("ok") else result.get("message"))
-sys.exit(0 if result.get("ok") else 1)'
-  echo "로컬 모델 테스트베드: http://localhost:8000 / http://localhost:8088"
-}
-
-lab_gateway() {
-  lab_compose exec -T gateway /opt/gateway-venv/bin/python -m app.corporate_lab "$@"
-}
-
-submit_normal_intake() {
-  local employee admin created request_id
-  employee="$(session_token miso@bob.local)"
-  created="$(curl -fsS -X POST http://127.0.0.1:8000/api/mcp-requests \
-    -H "authorization: Bearer $employee" -H 'content-type: application/json' \
-    -d '{"display_name":"GitHub MCP Server (normal intake)","repository_url":"https://github.com/github/github-mcp-server","requested_transport":"streamable-http","purpose":"Corporate-lab normal intake through the isolated supply-chain queue.","provider_credential_disclosure":true,"revocation_evidence":true,"audit_access_retained":true}')"
-  request_id="$(printf '%s' "$created" | python3 -c 'import json,sys; print(json.load(sys.stdin)["request"]["id"])')"
-  admin="$(gateway_token)"
-  curl -fsS -X POST "http://127.0.0.1:8000/api/mcp-requests/${request_id}/queue-validation" \
-    -H "authorization: Bearer $admin" | python3 -m json.tool
-  echo "정상 MCP 도입 요청을 격리 검증 대기열에 넣었습니다: $request_id"
-}
-
-run_candidate_trivy() {
-  lab_compose --profile supply-chain run --rm trivy \
-    fs --scanners vuln --format json --output /reports/trivy-mock-http.json \
-    /workspace/full_stack_lab/lab/candidates/filesystem-0.6.2
-  import_reports
-}
-
-queue_aig_dynamic_scan() {
-  local admin job_id
-  admin="$(gateway_token)"
-  job_id="$(curl -fsS -X POST http://127.0.0.1:8000/api/mcp-scan/run \
-    -H "authorization: Bearer $admin" -H 'content-type: application/json' \
-    -d '{"target_kind":"server","target_id":"mock-http","mode":"dynamic"}' \
-    | python3 -c 'import json,sys; print(json.load(sys.stdin)["job_id"])')"
-  for _ in {1..180}; do
-    local state
-    state="$(curl -fsS http://127.0.0.1:8000/api/mcp-scan -H "authorization: Bearer $admin" \
-      | python3 -c 'import json,sys; job=sys.argv[1]; rows=json.load(sys.stdin)["jobs"]; print(next((r["status"] for r in rows if str(r["id"]) == job), "MISSING"))' "$job_id")"
-    case "$state" in
-      DONE) echo "A.I.G mcp-scan 완료: $job_id"; return ;;
-      FAILED|CANCELLED|MISSING) echo "A.I.G mcp-scan 실패 상태: $state ($job_id)" >&2; return 1 ;;
-    esac
-    sleep 1
-  done
-  echo "A.I.G mcp-scan 시간 초과: $job_id" >&2
-  return 1
-}
-
-lab_network_targets() {
-  local network project
-  project="$(compose_project_name)"
-  while read -r network; do
-    [[ -z "$network" ]] && continue
-    docker network inspect "$network" --format '{{range $id, $container := .Containers}}{{$container.IPv4Address}}{{"\\n"}}{{end}}'
-  done < <(docker network ls --filter "label=com.docker.compose.project=$project" --format '{{.Name}}') \
-    | sed 's:/.*::' | sort -u | paste -sd, -
-}
-
-scan_internal_network() {
-  local targets
-  targets="$(lab_network_targets)"
-  if [[ -z "$targets" ]]; then
-    echo "Compose 내부망 자산 IP를 찾지 못했습니다." >&2
-    return 1
-  fi
-  LAB_NET_TARGETS="$targets" LAB_NET_PORTS='5432,8000,8080,8088,8181,9000,4010,4317,4318,16686' \
-    lab_compose --profile lab-network-probe run --rm --no-deps aig-network-probe \
-    | tee reports/aig-network-inventory.json
+  curl -fsS -X POST http://127.0.0.1:8080/api/catalog/refresh -H "authorization: Bearer $(admin_token)" >/dev/null
 }
 
 up() {
-  docker compose up -d --build gateway gateway-sse agent-service intake-worker
+  local llm=1
+  [[ "${1:-}" == "--no-llm" ]] && llm=0
+  ensure_env
+  echo "[1/5] 이미지 빌드"
+  docker compose build -q
+  echo "[2/5] 회사 시스템과 MCP 서버 10종"
+  docker compose up -d corp-git corp-redis corp-db corp-mail intranet external-web
+  docker compose up -d mcp-filesystem mcp-git mcp-fetch mcp-memory mcp-desktop mcp-postgres \
+    mcp-redis mcp-email mcp-gitea mcp-playwright
+  if [[ $llm == 1 ]]; then
+    echo "[3/5] 로컬 LLM (Ollama + LiteLLM 직원별 키)"
+    local model; model="$(env_value LOCAL_LLM_MODEL)"; model="${model:-qwen2.5:1.5b}"
+    # The manifest file is how Ollama records a pulled model; checking it needs no network.
+    if ! docker compose --profile llm run --rm --no-deps --entrypoint sh ollama -c \
+        "test -f /root/.ollama/models/manifests/registry.ollama.ai/library/${model%%:*}/${model##*:}"; then
+      docker compose --profile llm-download run --rm ollama-pull
+    fi
+    docker compose --profile llm up -d ollama
+    # The model employees get is a derived one with a fixed thread count. On hybrid
+    # Intel CPUs (P + E + LP-E cores) llama.cpp's default of one thread per logical
+    # CPU waits on the slowest cores: 0.5 tok/s at 16 threads vs 32 tok/s at 6-8 on
+    # this lab's Ultra 7 255H. LOCAL_LLM_THREADS overrides it.
+    local threads; threads="$(env_value LOCAL_LLM_THREADS)"; threads="${threads:-6}"
+    for _ in $(seq 1 30); do docker compose --profile llm exec -T ollama ollama list >/dev/null 2>&1 && break; sleep 2; done
+    docker compose --profile llm exec -T ollama sh -c \
+      "printf 'FROM %s\nPARAMETER num_thread %s\nPARAMETER temperature 0\nPARAMETER num_ctx 8192\n' '$model' '$threads' > /tmp/Modelfile && ollama create bob-assistant -f /tmp/Modelfile >/dev/null"
+    docker compose --profile llm up -d llm-gateway
+    docker compose --profile llm run --rm llm-provision
+  else
+    echo "[3/5] 로컬 LLM 생략 (--no-llm: 직원 PC는 scripted 모드로만 동작)"
+  fi
+  echo "[4/5] Gateway·Console·검증 워커"
+  docker compose up -d gateway gateway-sse agent-service intake-worker
   wait_ready
+  ensure_contracts
+  provision_devices
+  echo "[5/5] 직원 워크스테이션"
+  if [[ $llm == 1 ]]; then
+    docker compose up -d "${WORKSTATIONS[@]}"
+  else
+    AGENT_MODE=scripted docker compose up -d "${WORKSTATIONS[@]}"
+  fi
   echo
-  echo "MCP Governance Console이 준비되었습니다."
-  echo "  운영 콘솔  : http://localhost:8000"
+  echo "준비되었습니다."
+  echo "  운영 콘솔 : http://localhost:8000   (kkg@bob.local / test-password)"
+  echo "  Gitea     : http://localhost:3000   (corpadmin — 제공자 자격 확인용)"
   echo "  Jaeger    : http://localhost:16686"
-  echo "  상태       : ./console.sh status"
-  echo "  전체 검증  : ./console.sh test"
+  echo "  하루 업무 : ./console.sh workday        판정 흐름 : ./console.sh watch"
+}
+
+workday() {
+  local target="all" mode="" check=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --mode) mode="$2"; shift 2 ;;
+      --check) check="--check"; shift ;;
+      *) target="$1"; shift ;;
+    esac
+  done
+  local list=("${WORKSTATIONS[@]}")
+  [[ "$target" != "all" ]] && list=("$target")
+  local failed=0
+  for ws in "${list[@]}"; do
+    echo "════ $ws ════"
+    docker compose exec -T "$ws" office-agent workday ${mode:+--mode "$mode"} $check || failed=1
+  done
+  return $failed
+}
+
+watch_decisions() {
+  python3 scripts/watch.py "$(admin_token)"
 }
 
 case "${1:-up}" in
-  up)
-    up
+  up) shift || true; up "$@" ;;
+  workday) shift; workday "$@" ;;
+  ask)
+    ws="${2:?워크스테이션을 지정하세요 (예: ws-ysg)}"; goal="${3:?지시를 입력하세요}"; shift 3
+    docker compose exec -T "$ws" office-agent run "$goal" "$@"
+    ;;
+  watch) watch_decisions ;;
+  contracts)
+    case "${2:-}" in
+      --update) contracts_update; echo "registry/contracts.lock.json 갱신" ;;
+      --check|"") docker compose exec -T gateway python -m app.registry lock > /tmp/contracts.check.$$
+                  python3 tests/contracts_check.py registry/contracts.lock.json /tmp/contracts.check.$$ ;;
+    esac
+    ;;
+  experiment)
+    docker compose exec -T gateway python -m app.experiments "${2:?e1|e2|e3}" | tee "reports/experiment-${2}.json"
     ;;
   test)
-    up
-    docker run --rm -v "$LAB_DIR/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v
+    ensure_env
+    docker run --rm -v "$LAB_DIR/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy
+    docker compose exec -T gateway python -m app.classify
     docker compose exec -T gateway python -m app.acceptance | tee reports/acceptance.json
-    tests/drift_and_fail_closed.sh | tee reports/security-regression.txt
-    agent_test
-    docker compose exec -T gateway python -m app.runtime_acceptance | tee reports/runtime-acceptance.json
+    AGENT_MODE=scripted workday all --mode scripted --check | tee reports/workday.txt
+    tests/security_regression.sh | tee reports/security-regression.txt
+    for e in e1 e2 e3; do docker compose exec -T gateway python -m app.experiments "$e" > "reports/experiment-$e.json"; done
+    python3 tests/experiments_check.py reports/experiment-e1.json reports/experiment-e2.json reports/experiment-e3.json
     echo "모든 필수 검증이 통과했습니다."
     ;;
-  agent-test)
-    up
-    agent_test
-    ;;
-  endpoint-key)
-    # 장치 자격 발급. 에이전트는 관리자 계정으로 로그인하지 않는다 - 사람들의 PC에
-    # 깔린 프로세스가 침해됐을 때 최악이 "거짓 인벤토리"여야지 "관리자 API 전체"여서는
-    # 안 된다. 이 키로 할 수 있는 일은 scopes에 적힌 보고뿐이다.
-    endpoint_id="${2:-endpoint-dev-001}"
-    owner="${3:-emp-demo}"
-    scopes="${4:-inventory,netscan}"
-    scope_json="$(python3 -c 'import json,sys; print(json.dumps([s for s in sys.argv[1].split(",") if s]))' "$scopes")"
-    curl -fsS -X POST http://127.0.0.1:8080/api/endpoint/devices \
-      -H "authorization: Bearer $(gateway_token)" -H 'content-type: application/json' \
-      -d "{\"endpoint_id\":\"${endpoint_id}\",\"hostname\":\"${endpoint_id}\",\"platform\":\"linux\",\"owner_token\":\"${owner}\",\"scopes\":${scope_json}}" \
-      | python3 -m json.tool
-    echo "이 키는 다시 표시되지 않습니다. .env의 ENDPOINT_DEVICE_KEY에 넣으세요." >&2
-    ;;
-  endpoint)
-    # 엔드포인트 평면. 기본 기동에 넣지 않는 이유는 남의 PC 설정을 읽는 기능이
-    # 기본값으로 켜져 있으면 안 되기 때문이다. 켤 때는 무엇을 읽는지 화면에 적는다.
-    up
-    if ! grep -qE '^ENDPOINT_DEVICE_KEY=.+' .env; then
-      echo "장치 자격을 발급합니다 (최초 1회)."
-      key="$(curl -fsS -X POST http://127.0.0.1:8080/api/endpoint/devices \
-        -H "authorization: Bearer $(gateway_token)" -H 'content-type: application/json' \
-        -d "{\"endpoint_id\":\"${ENDPOINT_ID:-endpoint-dev-001}\",\"hostname\":\"${ENDPOINT_ID:-endpoint-dev-001}\",\"platform\":\"linux\",\"owner_token\":\"${ENDPOINT_OWNER_TOKEN:-emp-demo}\",\"scopes\":[\"inventory\",\"netscan\"]}" \
-        | python3 -c 'import json,sys; print(json.load(sys.stdin)["enrollment_key"])')"
-      sed -i -E '/^ENDPOINT_DEVICE_KEY=/d' .env
-      printf 'ENDPOINT_DEVICE_KEY=%s\n' "$key" >> .env
-      chmod 600 .env
-    fi
-    echo "관측 경로: ${ENDPOINT_CONFIG_SOURCE:-./endpoint/sample-configs} (읽기 전용)"
-    echo "망 탐색 범위: Console의 '엔드포인트' 화면에서 정합니다. 기본값은 꺼짐입니다."
-    docker compose --profile endpoint up -d --build endpoint-agent
-    echo "엔드포인트 에이전트를 올렸습니다. Console의 '엔드포인트' 화면에서 확인하세요."
-    echo "  로그: docker compose logs -f endpoint-agent"
-    ;;
-  corporate-lab)
-    lab_up
-    lab_gateway self-check
-    scan_internal_network
-    lab_gateway verify-network
-    submit_normal_intake
-    lab_gateway seed
-    run_candidate_trivy
-    lab_gateway verify-supply
-    queue_aig_dynamic_scan
-    lab_gateway verify-aig
-    lab_gateway contain
-    lab_gateway open-retirement
-    # The target has no host port. Removing this one container is the physical
-    # removal proof that the retirement probe evaluates; it does not touch DB.
-    lab_compose rm -sf mock-http-mcp
-    lab_gateway finish-retirement
-    lab_gateway summary | tee reports/corporate-lab-summary.json
-    echo "기업 내부망 시나리오를 완료했습니다. 증적: reports/corporate-lab-summary.json"
-    ;;
-  live-lab)
-    live_up
-    ;;
-  local-llm)
-    local_up
-    ;;
-  local-stop)
-    local_compose --profile local-llm down
-    echo "로컬 모델 테스트베드를 중지했습니다. 모델과 DB 데이터는 유지됩니다."
-    ;;
-  live-stop)
-    lab_compose down
-    echo "실모델 테스트베드를 중지했습니다. DB와 A.I.G 데이터는 유지됩니다."
-    ;;
-  lab-down)
-    # This overlay owns only lab services/volumes. It also removes the test
-    # double and Tencent A.I.G data; normal `down` remains non-destructive.
-    lab_compose --profile endpoint --profile llm-stub --profile local-llm down -v
-    ;;
-  lab-logs)
-    lab_compose --profile llm-stub logs -f --tail=120 llm-stub intake-worker gateway agent-service
+  scan)
+    docker compose --profile supply-chain run --rm syft
+    docker compose --profile supply-chain run --rm trivy
+    docker compose --profile supply-chain run --rm semgrep
+    curl -fsS -X POST http://127.0.0.1:8080/api/supply-chain/import -H "authorization: Bearer $(admin_token)" | python3 -m json.tool
     ;;
   openapi)
-    # 개발용 API 명세. FastAPI가 코드에서 만들어 주므로 손으로 쓴 문서가 코드와
-    # 갈라질 일이 없다. 통합 단계에서 다른 팀이 보는 것은 이 파일이다.
-    up
     mkdir -p ../docs/openapi
     for service in gateway agent-service; do
       docker compose exec -T "$service" python -c "
@@ -417,52 +220,18 @@ json.dump(module.app.openapi(), sys.stdout, ensure_ascii=False, indent=2, sort_k
 " > "../docs/openapi/${service}.json"
       echo "docs/openapi/${service}.json"
     done
-    echo "OpenAPI 명세를 생성했습니다. 사람이 읽는 명세는 docs/API.md 입니다."
-    ;;
-  scan)
-    up
-    docker compose --profile supply-chain run --rm syft
-    docker compose --profile supply-chain run --rm trivy
-    docker compose --profile supply-chain run --rm semgrep
-    scan_registered_servers
-    import_reports
-    echo "SBOM·SCA·SAST 결과를 reports/ 및 운영 콘솔에 반영했습니다."
     ;;
   status)
-    docker compose ps
+    docker compose --profile llm ps --format 'table {{.Service}}\t{{.Status}}'
     curl -fsS http://127.0.0.1:8080/api/health | python3 -m json.tool
-    curl -fsS http://127.0.0.1:8000/api/readiness | python3 -m json.tool
     ;;
-  logs)
-    docker compose logs -f --tail=120 agent-service gateway opa mock-http-mcp intake-worker
-    ;;
-  down)
-    # 프로필로 띄운 서비스는 profile을 함께 줘야 내려간다. 그러지 않으면
-    # down 뒤에도 엔드포인트 에이전트가 남아 계속 보고한다.
-    docker compose --profile endpoint --profile llm-stub down
-    ;;
+  logs) shift; docker compose --profile llm logs -f --tail=120 "${@:-gateway}" ;;
+  down) docker compose --profile llm --profile llm-stub down ;;
   reset)
-    docker compose --profile endpoint --profile llm-stub down -v
-    # trivy-*.json are the per-server reports that actually feed MCP-SUPPLY-001.
-    # Leaving them behind meant a reset did not reset supply-chain evidence: the
-    # next import re-attributed stale findings to a freshly created database.
-    # 이전 판은 줄바꿈 이어쓰기가 끊겨서 두 번째 줄부터가 삭제 대상이 아니라
-    # 실행할 명령으로 해석됐다. reset이 보고서를 한 번도 지우지 못했다는 뜻이다.
-    rm -f \
-      reports/acceptance.json \
-      reports/agent-acceptance.json \
-      reports/runtime-acceptance.json \
-      reports/security-regression.txt \
-      reports/full-test.log \
-      reports/sbom.cdx.json \
-      reports/trivy.json \
-      reports/trivy-*.json \
-      reports/semgrep.json \
-      reports/intake-*.json
-    echo "이 실습 전용 DB·효과 로그·생성 보고서를 초기화했습니다."
+    docker compose --profile llm --profile llm-stub down -v
+    rm -f reports/*.json reports/*.txt
+    echo "DB·회사 시스템·모델 볼륨과 보고서를 초기화했습니다. registry/contracts.lock.json은 유지합니다."
     ;;
-  *)
-    echo "usage: ./console.sh [up|test|agent-test|endpoint|endpoint-key|scan|openapi|status|logs|down|reset|corporate-lab|live-lab|local-llm|local-stop|live-stop|lab-down|lab-logs]" >&2
-    exit 2
-    ;;
+  -h|--help|help) usage ;;
+  *) usage; exit 2 ;;
 esac

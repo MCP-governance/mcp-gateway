@@ -35,6 +35,7 @@ x-workstation: &workstation
 services:
   # ── governance core ──────────────────────────────────────────────────────
   db:
+    restart: unless-stopped
     image: postgres:18-alpine
     environment:
       POSTGRES_DB: mcp_governance
@@ -52,6 +53,7 @@ services:
     networks: [data]
 
   opa:
+    restart: unless-stopped
     image: openpolicyagent/opa:1.20.2-static
     command: [run, --server, --addr=0.0.0.0:8181, --set=decision_logs.console=true, --log-level=info, /policy]
     healthcheck:
@@ -64,6 +66,7 @@ services:
     networks: [policy]
 
   gateway:
+    restart: unless-stopped
     build: ./gateway
     environment: &gateway-env
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
@@ -98,6 +101,7 @@ services:
 
   # Legacy SSE ingress: the same policy path for clients that only speak SSE.
   gateway-sse:
+    restart: unless-stopped
     build: ./gateway
     command: ["python", "-m", "app.sse_entry"]
     environment: *gateway-env
@@ -113,6 +117,7 @@ services:
 
   # Console (admin UI) + the synthetic IdP. It never calls an MCP tool.
   agent-service:
+    restart: unless-stopped
     build: ./gateway
     command: ["uvicorn", "app.agent_service:app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
@@ -144,6 +149,7 @@ services:
   # 제출된 저장소를 격리해서 복제·검사만 하는 워커. tools/policy 망에 붙이지
   # 않으므로 여기서 무엇이 실행돼도 MCP 실행 경로에는 닿지 않는다.
   intake-worker:
+    restart: unless-stopped
     build:
       context: ./supply_chain
       dockerfile: intake-worker.Dockerfile
@@ -187,6 +193,7 @@ services:
     <<: *hardened
 
   jaeger:
+    restart: unless-stopped
     image: cr.jaegertracing.io/jaegertracing/jaeger:2.20.0
     command:
       - --set=receivers.otlp.protocols.grpc.endpoint=0.0.0.0:4317
@@ -214,6 +221,7 @@ services:
     <<: *hardened
 
   ollama:
+    restart: unless-stopped
     image: ollama/ollama:0.34.2
     profiles: [llm]
     environment:
@@ -233,13 +241,13 @@ services:
   # LiteLLM proxy: the "AI Agent gateway" of the team's architecture. Every
   # employee gets a virtual key; usage is attributed per key and per user.
   llm-gateway:
+    restart: unless-stopped
     image: ghcr.io/berriai/litellm-database:v1.102.1
     profiles: [llm]
     command: ["--config", "/config/litellm.yaml", "--port", "4000"]
     environment:
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/litellm
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?Run ./console.sh to initialize the LiteLLM master key}
-      LOCAL_LLM_MODEL_ROUTE: ollama_chat/${LOCAL_LLM_MODEL:-qwen2.5:1.5b}
       LITELLM_TELEMETRY: "False"
       DISABLE_ADMIN_UI: "True"
       STORE_MODEL_IN_DB: "False"
@@ -257,6 +265,7 @@ services:
 
   # ── BoB Corp systems (what the MCP servers act on) ────────────────────────
   corp-db:
+    restart: unless-stopped
     image: postgres:18-alpine
     environment:
       POSTGRES_DB: corp
@@ -273,6 +282,7 @@ services:
     networks: [corp]
 
   corp-redis:
+    restart: unless-stopped
     image: redis:8.6-alpine
     command: ["redis-server", "--save", "", "--appendonly", "no"]
     networks: [corp]
@@ -281,6 +291,7 @@ services:
   # SMTP + IMAP sink. It accepts every recipient, including external domains, so
   # a message the Gateway failed to stop is visible here as evidence.
   corp-mail:
+    restart: unless-stopped
     image: greenmail/standalone:2.1.14
     environment:
       GREENMAIL_OPTS: >-
@@ -290,6 +301,7 @@ services:
     networks: [corp]
 
   corp-git:
+    restart: unless-stopped
     image: gitea/gitea:1.27.3-rootless
     entrypoint: ["/bin/sh", "/corp/gitea-entrypoint.sh"]
     environment:
@@ -315,6 +327,7 @@ services:
     networks: [edge, corp, ops]
 
   intranet:
+    restart: unless-stopped
     image: nginx:1.30-alpine
     volumes:
       - corp_www_intranet:/usr/share/nginx/html:ro
@@ -325,6 +338,7 @@ services:
   # The "internet" as seen from inside the lab: a file-sharing site whose access log
   # shows every URL an exfiltration attempt reached.
   external-web:
+    restart: unless-stopped
     image: nginx:1.30-alpine
     volumes:
       - corp_www_external:/usr/share/nginx/html:ro
@@ -360,35 +374,41 @@ services:
   # ── the ten MCP servers (only the Gateway can reach them) ─────────────────
   mcp-filesystem:
     <<: *mcp
+    hostname: mcp-filesystem
     command: ["filesystem"]
     volumes: [corp_shared:/shared]
     networks: [tools]
 
   mcp-git:
     <<: *mcp
+    hostname: mcp-git
     command: ["git"]
     volumes: [corp_repos:/repos]
     networks: [tools]
 
   mcp-fetch:
     <<: *mcp
+    hostname: mcp-fetch
     command: ["fetch"]
     networks: [tools, corp, internet]
 
   mcp-memory:
     <<: *mcp
+    hostname: mcp-memory
     command: ["memory"]
     volumes: [corp_memory:/data]
     networks: [tools]
 
   mcp-desktop:
     <<: *mcp
+    hostname: mcp-desktop
     command: ["desktop"]
     volumes: [corp_workspace:/workspace]
     networks: [tools]
 
   mcp-postgres:
     <<: *mcp
+    hostname: mcp-postgres
     command: ["postgres"]
     environment:
       DATABASE_URI: postgresql://corp_owner:${CORP_DB_PASSWORD:-corp-owner-lab-only}@corp-db:5432/corp
@@ -396,6 +416,7 @@ services:
 
   mcp-redis:
     <<: *mcp
+    hostname: mcp-redis
     command: ["redis"]
     environment:
       REDIS_URL: redis://corp-redis:6379/0
@@ -403,6 +424,7 @@ services:
 
   mcp-email:
     <<: *mcp
+    hostname: mcp-email
     command: ["email"]
     environment:
       MCP_EMAIL_SERVER_ACCOUNT_NAME: assistant
@@ -427,6 +449,7 @@ services:
 
   mcp-gitea:
     <<: *mcp
+    hostname: mcp-gitea
     command: ["gitea"]
     environment:
       GITEA_HOST: http://corp-git:3000
@@ -439,6 +462,7 @@ services:
     networks: [tools, corp]
 
   mcp-playwright:
+    hostname: mcp-playwright
     image: mcr.microsoft.com/playwright/mcp:v0.0.82
     command: [--headless, --browser, chromium, --no-sandbox, --isolated,
               --port, "8000", --host, 0.0.0.0, --allowed-hosts, "mcp-playwright:8000"]
@@ -456,6 +480,7 @@ services:
       EMPLOYEE_EMAIL: ysg@bob.local
       WORKSTATION_ID: ws-ysg
       LLM_API_KEY: ${LLM_KEY_WS_YSG:-}
+      ENDPOINT_DEVICE_KEY: ${ENDPOINT_KEY_WS_YSG:-}
       EMPLOYEE_PASSWORD: ${MOCK_SSO_PASSWORD:-test-password}
       IDP_URL: http://agent-service:8000
       GATEWAY_MCP_URL: http://gateway:8080/mcp/
@@ -472,6 +497,7 @@ services:
       EMPLOYEE_EMAIL: jwj@bob.local
       WORKSTATION_ID: ws-jwj
       LLM_API_KEY: ${LLM_KEY_WS_JWJ:-}
+      ENDPOINT_DEVICE_KEY: ${ENDPOINT_KEY_WS_JWJ:-}
 
   ws-pse:
     <<: *workstation
@@ -481,6 +507,7 @@ services:
       EMPLOYEE_EMAIL: pse@bob.local
       WORKSTATION_ID: ws-pse
       LLM_API_KEY: ${LLM_KEY_WS_PSE:-}
+      ENDPOINT_DEVICE_KEY: ${ENDPOINT_KEY_WS_PSE:-}
 
   # Partner contractor. Also keeps a personal MCP configuration that bypasses the
   # Gateway - the endpoint agent reports it as shadow MCP.
@@ -492,6 +519,7 @@ services:
       EMPLOYEE_EMAIL: nkk@bob.local
       WORKSTATION_ID: ws-nkk
       LLM_API_KEY: ${LLM_KEY_WS_NKK:-}
+      ENDPOINT_DEVICE_KEY: ${ENDPOINT_KEY_WS_NKK:-}
       SHADOW_MCP_CONFIG: "1"
 
   # Registers each workstation's key as a LiteLLM virtual key bound to that employee.

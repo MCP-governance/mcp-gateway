@@ -1,17 +1,22 @@
 # LiteLLM proxy for the office network. Employees never see the Ollama endpoint;
 # they see one model alias and hold a virtual key that LiteLLM ties to their email.
+#
+# Route through Ollama's OpenAI-compatible endpoint: with the `ollama_chat/` provider
+# this LiteLLM version dropped the model's tool_calls (content "" and no calls),
+# while /v1 passes them through unchanged.
 model_list:
   - model_name: bob-assistant
     litellm_params:
-      model: os.environ/LOCAL_LLM_MODEL_ROUTE
-      api_base: http://ollama:11434
+      model: openai/bob-assistant
+      api_base: http://ollama:11434/v1
+      api_key: ollama-local-no-auth
       # Small CPU models are slow on the first prompt that carries tool schemas.
-      timeout: 180
+      timeout: 300
 
 litellm_settings:
   drop_params: true
   telemetry: false
-  request_timeout: 180
+  request_timeout: 300
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
