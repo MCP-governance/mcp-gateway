@@ -21,6 +21,7 @@ usage: ./console.sh <command>
   contracts [--update|--check]
                          MCP 서버 계약 해시(registry/contracts.lock.json) 생성·대조
   experiment e1|e2|e3    논문 재현 실험 (E1 토큰 폐기, E2 세션 종료, E3 서버 보유 자격)
+  restore <server>       (실습용) 종료·폐기한 서버를 다시 운영 상태로 되돌림 (gitea는 토큰 재발급)
   test                   전체 검증 (Rego·분류 self-check·acceptance·시나리오·보안 회귀)
   status | logs [svc] | down | reset | scan | openapi
 EOF
@@ -188,6 +189,21 @@ case "${1:-up}" in
       --check|"") docker compose exec -T gateway python -m app.registry lock > /tmp/contracts.check.$$
                   python3 tests/contracts_check.py registry/contracts.lock.json /tmp/contracts.check.$$ ;;
     esac
+    ;;
+  restore)
+    server="${2:?서버 id를 지정하세요 (예: gitea)}"
+    curl -fsS -X POST "http://127.0.0.1:8080/api/lab/restore/${server}" -H "authorization: Bearer $(admin_token)" | python3 -m json.tool
+    [[ "$server" == "gitea" ]] && "$0" restore-token gitea
+    ;;
+  restore-token)
+    # The Gitea MCP server's own token was revoked by a termination case: issue a new
+    # one (corp-seed issues it when the secret file is missing) and restart the server.
+    docker compose run --rm --no-deps --entrypoint sh corp-seed -c 'rm -f /run/corp-secrets/gitea-mcp.token' >/dev/null
+    docker compose run --rm corp-seed >/dev/null
+    docker compose restart mcp-gitea >/dev/null
+    for _ in $(seq 1 30); do docker compose ps mcp-gitea | grep -q healthy && break; sleep 2; done
+    curl -fsS -X POST http://127.0.0.1:8080/api/catalog/refresh -H "authorization: Bearer $(admin_token)" >/dev/null
+    echo "gitea-mcp 토큰을 재발급하고 서버를 재시작했습니다."
     ;;
   experiment)
     docker compose exec -T gateway python -m app.experiments "${2:?e1|e2|e3}" | tee "reports/experiment-${2}.json"

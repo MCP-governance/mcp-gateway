@@ -356,13 +356,15 @@ async def audit_verify(user: dict = Depends(admin_caller)) -> dict:
 
 
 class TerminationOpen(StrictModel):
-    server_id: str = Field(min_length=1, max_length=120)
+    # A usage relationship id (UR-...) or, for compatibility, a server id.
+    server_id: str | None = Field(default=None, min_length=1, max_length=120)
+    relationship_id: str | None = Field(default=None, min_length=1, max_length=120)
     reason: str = Field(min_length=10, max_length=1000)
     engagement_label: str | None = Field(default=None, max_length=300)
 
 
 class TargetCreate(StrictModel):
-    kind: Literal["client-token", "refresh-token", "dynamic-registration", "session",
+    kind: Literal["gateway-route", "gateway-access", "client-token", "refresh-token", "dynamic-registration", "session",
                   "server-held-credential", "endpoint-config", "api-key", "webhook",
                   "cached-artifact"]
     label: str = Field(min_length=1, max_length=300)
@@ -380,8 +382,8 @@ class TargetUpdate(StrictModel):
 
 class EvidenceCreate(StrictModel):
     kind: Literal["revocation-response", "introspection", "provider-attestation",
-                  "gateway-denial", "liveness-probe", "endpoint-inventory",
-                  "operator-statement"]
+                  "gateway-denial", "liveness-probe", "endpoint-inventory", "credential-check",
+                  "session-termination", "operator-statement"]
     subject: str = Field(min_length=1, max_length=300)
     source: str = Field(min_length=1, max_length=300)
     detail: dict = Field(default_factory=dict)
@@ -398,6 +400,51 @@ class CaseReopen(StrictModel):
     reason: str = Field(min_length=1, max_length=1000)
 
 
+class EvidenceCollect(StrictModel):
+    kinds: list[Literal["gateway", "endpoint", "credentials", "liveness", "session"]] = Field(
+        default=["gateway", "endpoint", "credentials", "liveness"], min_length=1, max_length=5)
+
+
+@app.get("/api/termination/relationships")
+async def termination_relationships(user: dict = Depends(admin_caller)) -> dict:
+    """Usage relationships with their exit readiness (best attainable grade)."""
+    return {"relationships": await decommission.relationships(),
+            "evidence_kinds": decommission.EVIDENCE_KINDS, "criteria": decommission.CRITERION_LABEL}
+
+
+@app.post("/api/termination/cases/{case_id}/collect")
+async def termination_collect(case_id: str, request: EvidenceCollect, user: dict = Depends(admin_caller)) -> dict:
+    """Collect state evidence the organisation can obtain itself (paper 5.2)."""
+    try:
+        return await decommission.collect(case_id, list(request.kinds), user["principal"])
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+
+
+@app.post("/api/termination/targets/{target_id}/revoke-credential")
+async def termination_revoke_credential(target_id: str, user: dict = Depends(admin_caller)) -> dict:
+    """Revoke a disclosed server-held credential in a downstream system the
+    organisation administers, then verify its state."""
+    try:
+        return await decommission.revoke_credential(target_id, user["principal"])
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+
+
+@app.post("/api/lab/restore/{server_id}")
+async def lab_restore(server_id: str, user: dict = Depends(admin_caller)) -> dict:
+    """Lab only: bring a terminated server back so the demo can be repeated."""
+    try:
+        result = await decommission.restore_server(server_id, user["principal"])
+    except ValueError as exc:
+        raise HTTPException(404, str(exc))
+    try:
+        result["catalog"] = await core.refresh_catalog(server_id)
+    except Exception as exc:
+        result["catalog"] = {"status": "ERROR", "reason": str(exc)[:200]}
+    return result
+
+
 @app.get("/api/termination/cases")
 async def termination_cases(user: dict = Depends(admin_caller)) -> dict:
     return {"cases": await decommission.list_cases(), "summary": await decommission.summary()}
@@ -406,8 +453,10 @@ async def termination_cases(user: dict = Depends(admin_caller)) -> dict:
 @app.post("/api/termination/cases", status_code=201)
 async def termination_open(request: TerminationOpen, user: dict = Depends(admin_caller)) -> dict:
     try:
-        return await decommission.open_case(
-            request.server_id, request.reason, user["principal"], request.engagement_label)
+        target = request.relationship_id or request.server_id
+        if not target:
+            raise HTTPException(422, "relationship_id 또는 server_id가 필요합니다.")
+        return await decommission.open_case(target, request.reason, user["principal"], request.engagement_label)
     except ValueError as exc:
         raise HTTPException(409, str(exc))
 

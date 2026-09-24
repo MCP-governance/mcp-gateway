@@ -124,7 +124,7 @@ async def _revoke_family(family_id) -> None:
     await db.execute("UPDATE oauth_refresh_tokens SET revoked_at=COALESCE(revoked_at, now()) WHERE family_id=%s", (family_id,))
     await db.execute(
         """INSERT INTO agent_revoked_tokens(jti, expires_at)
-           SELECT jti, expires_at FROM oauth_issued_tokens WHERE family_id=%s AND expires_at > now()
+           SELECT jti::uuid, expires_at FROM oauth_issued_tokens WHERE family_id=%s AND expires_at > now()
            ON CONFLICT DO NOTHING""", (family_id,))
 
 

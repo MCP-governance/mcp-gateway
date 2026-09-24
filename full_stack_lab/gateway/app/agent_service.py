@@ -1305,3 +1305,28 @@ async def approve(approval_id: UUID, authorization: str | None = Header(default=
     if response.status_code >= 400:
         raise HTTPException(response.status_code, "승인할 수 없습니다. 이미 처리됐거나 만료된 요청인지 확인하세요.")
     return response.json()
+
+
+# ── generic Gateway API proxy for the Console ────────────────────────────────
+# The Console lives on :8000 and the Gateway API on :8080; the browser's CSP allows
+# only same-origin requests. The proxy forwards the caller's own bearer token, so
+# every authorisation decision stays with the Gateway. Only these prefixes pass.
+GATEWAY_PROXY_PREFIXES = ("activity", "registry", "state", "health", "termination/", "approvals/",
+                          "catalog/", "enforcement", "monitor/", "audit/", "policy/", "endpoint/",
+                          "supply-chain/", "risk-catalog", "lab/")
+
+
+@app.api_route("/gw/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def gateway_passthrough(path: str, request: Request, authorization: str | None = Header(default=None)):
+    if not path.startswith(GATEWAY_PROXY_PREFIXES) or ".." in path:
+        raise HTTPException(404, "Console이 중계하지 않는 경로입니다.")
+    await current_identity(authorization)
+    body = await request.body()
+    async with httpx.AsyncClient(timeout=120) as client:
+        response = await client.request(
+            request.method, f"{GATEWAY_URL}/api/{path}", params=dict(request.query_params),
+            content=body or None, headers={"Authorization": authorization or "",
+                                           "Content-Type": request.headers.get("content-type", "application/json")})
+    from fastapi.responses import Response
+    return Response(response.content, status_code=response.status_code,
+                    media_type=response.headers.get("content-type", "application/json"))

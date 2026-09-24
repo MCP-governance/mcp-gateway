@@ -69,3 +69,13 @@ CREATE TABLE IF NOT EXISTS oauth_refresh_tokens (
   revoked_at timestamptz
 );
 CREATE INDEX IF NOT EXISTS oauth_refresh_family_idx ON oauth_refresh_tokens(family_id);
+
+-- v2 target and evidence kinds (the v1 constraints enumerated the old set).
+ALTER TABLE revocation_targets DROP CONSTRAINT IF EXISTS revocation_targets_kind_check;
+ALTER TABLE revocation_targets ADD CONSTRAINT revocation_targets_kind_check CHECK (kind IN (
+  'gateway-route', 'gateway-access', 'client-token', 'refresh-token', 'dynamic-registration', 'session',
+  'server-held-credential', 'endpoint-config', 'api-key', 'webhook', 'cached-artifact'));
+ALTER TABLE termination_evidence DROP CONSTRAINT IF EXISTS termination_evidence_kind_check;
+ALTER TABLE termination_evidence ADD CONSTRAINT termination_evidence_kind_check CHECK (kind IN (
+  'revocation-response', 'introspection', 'provider-attestation', 'gateway-denial', 'liveness-probe',
+  'endpoint-inventory', 'credential-check', 'session-termination', 'operator-statement'));

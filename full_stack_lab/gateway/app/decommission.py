@@ -234,7 +234,17 @@ async def open_case(target: str, reason: str, opened_by: str, engagement_label: 
             (cutover, opened_by, case_id, server_id))
         if rel:
             await connection.execute("UPDATE usage_relationships SET status='TERMINATING' WHERE id=%s", (rel["id"],))
-    await seed_targets(case_id, opened_by)
+    try:
+        await seed_targets(case_id, opened_by)
+    except Exception:
+        # A half-opened case would leave the server cut over with no population to
+        # judge. Undo both and let the caller see the error.
+        await db.execute("DELETE FROM termination_cases WHERE id=%s", (case_id,))
+        await db.execute(
+            "UPDATE mcp_servers SET lifecycle='OPERATING', termination_case_id=NULL WHERE id=%s", (server_id,))
+        if rel:
+            await db.execute("UPDATE usage_relationships SET status='ACTIVE' WHERE id=%s", (rel["id"],))
+        raise
     return await case_detail(case_id)
 
 
@@ -305,13 +315,17 @@ async def add_target(case_id: str, kind: str, label: str, holder: str, discovere
     return dict(await db.fetch_one("SELECT * FROM revocation_targets WHERE id=%s", (target_id,)))
 
 
-async def revoke_target(target_id: str, actor: str, status: str, note: str | None = None) -> dict:
+async def revoke_target(target_id: str, actor: str, status: str, note: str | None = None,
+                        at: datetime | None = None) -> dict:
+    """Record the revocation. `at` is when the action actually took effect (the cutover
+    for the Gateway's own paths, the observation for a change seen at an endpoint or a
+    downstream system); C4 accepts only evidence observed at or after it."""
     if status not in {"REVOKED", "EXPIRED", "UNVERIFIABLE", "OUTSTANDING"}:
         raise ValueError("알 수 없는 회수 상태입니다.")
     target = await db.fetch_one("SELECT * FROM revocation_targets WHERE id=%s", (target_id,))
     if not target:
         raise ValueError("존재하지 않는 회수 대상입니다.")
-    revoked_at = (target["revoked_at"] or _now()) if status in {"REVOKED", "EXPIRED"} else None
+    revoked_at = (target["revoked_at"] or at or _now()) if status in {"REVOKED", "EXPIRED"} else None
     await db.execute(
         """UPDATE revocation_targets SET status=%s, revoked_at=%s, revoked_by=%s, note=COALESCE(%s, note)
            WHERE id=%s""",
@@ -399,7 +413,8 @@ async def collect(case_id: str, kinds: list[str], actor: str) -> dict:
             collected.append(await add_evidence(case_id, "gateway-denial", f"{principal} → {server['id']}.{tool}",
                                                 "gateway", detail, actor, target_id=str(target["id"])))
             if blocked and outcome["policy_id"] == "MCP-DECOMM-001" and target["status"] == "OUTSTANDING":
-                await revoke_target(str(target["id"]), actor, "REVOKED", "Gateway가 이 경로를 실행 전에 차단함을 확인")
+                await revoke_target(str(target["id"]), actor, "REVOKED", "Gateway가 이 경로를 실행 전에 차단함을 확인",
+                                    at=case["cutover_at"])
     if "endpoint" in kinds:
         for target in targets:
             if target["kind"] != "endpoint-config":
@@ -407,10 +422,12 @@ async def collect(case_id: str, kinds: list[str], actor: str) -> dict:
             still = await db.fetch_one("SELECT reported_at FROM endpoint_inventory WHERE fingerprint=%s", (target["subject_ref"],))
             detail = {"fingerprint": target["subject_ref"], "absent": still is None,
                       "last_report": still["reported_at"].isoformat() if still else None}
-            collected.append(await add_evidence(case_id, "endpoint-inventory", target["label"], "endpoint-agent",
-                                                detail, actor, target_id=str(target["id"])))
+            evidence = await add_evidence(case_id, "endpoint-inventory", target["label"], "endpoint-agent",
+                                          detail, actor, target_id=str(target["id"]))
+            collected.append(evidence)
             if still is None and target["status"] == "OUTSTANDING":
-                await revoke_target(str(target["id"]), actor, "REVOKED", "단말 보고에서 항목이 사라짐")
+                await revoke_target(str(target["id"]), actor, "REVOKED", "단말 보고에서 항목이 사라짐",
+                                    at=evidence["observed_at"])
     if "credentials" in kinds:
         for target in targets:
             if target["kind"] != "server-held-credential" or target["verification"] != "gitea-token":
@@ -419,10 +436,12 @@ async def collect(case_id: str, kinds: list[str], actor: str) -> dict:
             present, status_code = await _gitea_token_present(cred["account"], cred["token_name"])
             detail = {"system": cred.get("system"), "account": cred["account"], "token_name": cred["token_name"],
                       "present": present, "http_status": status_code, "checked_as": GITEA_ADMIN_USER}
-            collected.append(await add_evidence(case_id, "credential-check", cred["label"], "corp-git admin API",
-                                                detail, actor, target_id=str(target["id"])))
+            evidence = await add_evidence(case_id, "credential-check", cred["label"], "corp-git admin API",
+                                          detail, actor, target_id=str(target["id"]))
+            collected.append(evidence)
             if present is False and target["status"] == "OUTSTANDING":
-                await revoke_target(str(target["id"]), actor, "REVOKED", "하위 시스템에서 자격이 사라진 것을 확인")
+                await revoke_target(str(target["id"]), actor, "REVOKED", "하위 시스템에서 자격이 사라진 것을 확인",
+                                    at=evidence["observed_at"])
     if "liveness" in kinds and server.get("endpoint"):
         detail: dict[str, Any] = {"endpoint": server["endpoint"], "method": "HEAD"}
         try:
@@ -510,32 +529,37 @@ async def _post_cutover(case: dict, principal: str | None = None) -> dict:
 
 
 def _judge_target(target: dict, evidence: list[dict], activity: dict, provider_can_verify: bool) -> dict:
+    """C1-C4 for one revocation target.
+
+    C4 asks whether the evidence identifies the target's *state* and time - which a
+    check showing "the credential still exists" does as much as one showing it gone.
+    That is what makes T2 possible: the residual is known, so its upper bound can be
+    set. Whether the state is "revoked" is C2's and C3's question.
+    """
     kind = target["kind"]
     status = target["status"]
     revoked_at = target.get("revoked_at")
     state_kinds = STATE_EVIDENCE_FOR.get(kind, DEFAULT_STATE_EVIDENCE)
-    usable = [e for e in evidence
-              if e["kind"] in state_kinds and EVIDENCE_KINDS[e["kind"]]["state"]
-              and (not revoked_at or e["observed_at"] >= revoked_at)
-              and _evidence_shows_revoked(e)]
+    state_evidence = [e for e in evidence
+                      if e["kind"] in state_kinds and EVIDENCE_KINDS[e["kind"]]["state"]
+                      and (not revoked_at or e["observed_at"] >= revoked_at)]
+    confirmed = [e for e in state_evidence if _evidence_shows_revoked(e)]
     # C1
-    c1_gaps = []
-    if status == "UNVERIFIABLE":
-        c1_gaps.append("대상의 존재·범위를 열거할 수 없습니다.")
+    c1_gaps = ["대상의 존재·범위를 열거할 수 없습니다."] if status == "UNVERIFIABLE" else []
     # C4
     c4_gaps = []
-    if not usable:
-        weak = [e for e in evidence if not EVIDENCE_KINDS[e["kind"]]["state"]]
+    if not state_evidence:
+        weak = sorted({EVIDENCE_KINDS[e["kind"]]["label"] for e in evidence if not EVIDENCE_KINDS[e["kind"]]["state"]})
         c4_gaps.append("대상의 상태를 특정하는 증거가 없습니다."
-                       + (f" ({', '.join(sorted({EVIDENCE_KINDS[e['kind']]['label'] for e in weak}))}은(는) 요청 처리만 증명)" if weak else ""))
+                       + (f" ({', '.join(weak)}은(는) 요청 처리만 증명)" if weak else ""))
     # C2
     c2_gaps = []
     if status not in {"REVOKED", "EXPIRED"}:
         c2_gaps.append("아직 회수 조치가 기록되지 않았습니다." if target["holder"] != "provider"
                        else "제공자만 회수할 수 있는 자격이며 아직 회수되지 않았습니다.")
     elif target["holder"] == "provider":
-        attested = any(e["kind"] == "provider-attestation" for e in usable)
-        org_checked = provider_can_verify and any(e["kind"] == "credential-check" for e in usable)
+        attested = any(e["kind"] == "provider-attestation" for e in confirmed)
+        org_checked = provider_can_verify and any(e["kind"] == "credential-check" for e in confirmed)
         if not (attested or org_checked):
             c2_gaps.append("제공자 보유 자격의 회수를 제공자 증명이나 조직의 직접 확인으로 입증하지 못했습니다.")
     # C3
@@ -549,8 +573,10 @@ def _judge_target(target: dict, evidence: list[dict], activity: dict, provider_c
         gap = (target["expires_at"] - revoked_at).total_seconds()
         if gap > 0:
             c3_gaps.append(f"상태 비저장 토큰이라 폐기 후 만료까지 {int(gap)}초 동안 자원 접근이 가능했습니다(E1).")
-    if status in {"REVOKED", "EXPIRED"} and not usable and not c3_gaps:
-        c3_gaps.append("조치 이후 전파 완료를 확인한 기록이 없습니다.")
+    if status in {"REVOKED", "EXPIRED"} and not confirmed and not c3_gaps:
+        c3_gaps.append("조치 이후 대상이 무효가 되었음을 확인한 기록이 없습니다(전파 완료 미확인).")
+    if status not in {"REVOKED", "EXPIRED"} and not c3_gaps:
+        c3_gaps.append("회수 전이라 전파를 판단할 수 없습니다.")
     crit = {"C1": {"met": not c1_gaps, "gaps": c1_gaps}, "C2": {"met": not c2_gaps, "gaps": c2_gaps},
             "C3": {"met": not c3_gaps, "gaps": c3_gaps}, "C4": {"met": not c4_gaps, "gaps": c4_gaps}}
     if not crit["C1"]["met"] or not crit["C4"]["met"]:
@@ -559,7 +585,7 @@ def _judge_target(target: dict, evidence: list[dict], activity: dict, provider_c
         grade = "T2"
     else:
         grade = "T1"
-    return {"criteria": crit, "grade": grade, "evidence_used": [str(e["id"]) for e in usable]}
+    return {"criteria": crit, "grade": grade, "evidence_used": [str(e["id"]) for e in state_evidence]}
 
 
 def _evidence_shows_revoked(evidence: dict) -> bool:
