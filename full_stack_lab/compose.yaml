@@ -91,7 +91,7 @@ services:
       opa: {condition: service_healthy}
       jaeger: {condition: service_started}
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${GATEWAY_PORT:-8080}:8080"
     volumes:
       - ./reports:/reports:ro
       - ./opa:/policy:ro
@@ -140,7 +140,7 @@ services:
       INTAKE_EXIT_TERMS_REQUIRED: ${INTAKE_EXIT_TERMS_REQUIRED:-0}
       OTEL_SERVICE_NAME: agent-service
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:${CONSOLE_PORT:-8000}:8000"
     depends_on:
       gateway: {condition: service_started}
     networks: [edge, office, data, telemetry, model]
@@ -200,7 +200,7 @@ services:
       - --set=receivers.otlp.protocols.http.endpoint=0.0.0.0:4318
       - --set=extensions.jaeger_query.http.endpoint=0.0.0.0:16686
     ports:
-      - "127.0.0.1:16686:16686"
+      - "127.0.0.1:${JAEGER_PORT:-16686}:16686"
     networks: [edge, telemetry]
 
   # ── local LLM: per-employee keys (LiteLLM) in front of Ollama ─────────────
@@ -318,7 +318,7 @@ services:
       - corp_git_data:/var/lib/gitea
       - ./corp/gitea-entrypoint.sh:/corp/gitea-entrypoint.sh:ro
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${GITEA_PORT:-3000}:3000"
     healthcheck:
       test: ["CMD-SHELL", "test -f /var/lib/gitea/.admin-ready && wget -qO- http://127.0.0.1:3000/api/healthz >/dev/null"]
       interval: 3s

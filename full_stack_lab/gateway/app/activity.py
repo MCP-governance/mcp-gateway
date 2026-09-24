@@ -52,7 +52,7 @@ def describe(row: dict) -> dict:
         "executed": bool(row.get("upstream_executed")), "approval_id": row.get("approval_id"),
         "trace_id": row.get("trace_id"), "error": row.get("error"),
         "exception_id": row.get("exception_id"), "enforcement": row.get("enforcement"),
-        "would_decision": row.get("would_decision"),
+        "would_decision": row.get("would_decision"), "summary": row.get("summary"),
         "line": line,
     }
 

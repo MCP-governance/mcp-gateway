@@ -2,8 +2,8 @@
 
 const TOKEN_KEY = "mcp-console-token";
 
-const saved = localStorage.getItem("mcp-console-theme");
-if (saved) document.documentElement.dataset.theme = saved;
+document.documentElement.dataset.theme = localStorage.getItem("mcp-console-theme")
+  || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 
 const pick = document.querySelector("#pick");
 const email = document.querySelector("#email");

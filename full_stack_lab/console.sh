@@ -5,6 +5,13 @@ set -euo pipefail
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$LAB_DIR"
 mkdir -p reports
+
+env_value() { [[ -f .env ]] || return 0; sed -n "s/^$1=//p" .env | tail -1; }
+# Host ports come from the environment or .env so two labs can share one Docker host.
+host_port() { local v="${!1:-}"; [[ -n "$v" ]] || v="$(env_value "$1")"; echo "${v:-$2}"; }
+CONSOLE="http://127.0.0.1:$(host_port CONSOLE_PORT 8000)"
+GATEWAY="http://127.0.0.1:$(host_port GATEWAY_PORT 8080)"
+export LAB_CONSOLE_URL="$CONSOLE" LAB_GATEWAY_URL="$GATEWAY"
 WORKSTATIONS=(ws-ysg ws-jwj ws-pse ws-nkk)
 declare -A WS_OWNER=([ws-ysg]=emp-ysg [ws-jwj]=emp-jwj [ws-pse]=emp-pse [ws-nkk]=partner-demo)
 
@@ -48,20 +55,19 @@ ensure_env() {
   done
 }
 
-env_value() { sed -n "s/^$1=//p" .env | tail -1; }
 
 admin_token() {
-  curl -fsS -X POST http://127.0.0.1:8000/auth/mock-login -H 'content-type: application/json' \
+  curl -fsS -X POST $CONSOLE/auth/mock-login -H 'content-type: application/json' \
     -d "{\"email\":\"kkg@bob.local\",\"password\":\"$(env_value MOCK_SSO_PASSWORD || true)\"}" 2>/dev/null \
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])' 2>/dev/null \
-  || curl -fsS -X POST http://127.0.0.1:8000/auth/mock-login -H 'content-type: application/json' \
+  || curl -fsS -X POST $CONSOLE/auth/mock-login -H 'content-type: application/json' \
     -d '{"email":"kkg@bob.local","password":"test-password"}' \
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])'
 }
 
 wait_ready() {
   for _ in $(seq 1 90); do
-    if curl -fsS http://127.0.0.1:8000/api/readiness 2>/dev/null \
+    if curl -fsS $CONSOLE/api/readiness 2>/dev/null \
       | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["status"] == "ready" else 1)' 2>/dev/null; then
       return 0
     fi
@@ -79,7 +85,7 @@ provision_devices() {
   for ws in "${WORKSTATIONS[@]}"; do
     up="$(echo "${ws#ws-}" | tr a-z A-Z)"
     key="$(env_value "ENDPOINT_KEY_WS_${up}")"
-    curl -fsS -o /dev/null -X POST http://127.0.0.1:8080/api/endpoint/devices \
+    curl -fsS -o /dev/null -X POST $GATEWAY/api/endpoint/devices \
       -H "authorization: Bearer $token" -H 'content-type: application/json' \
       -d "{\"endpoint_id\":\"$ws\",\"hostname\":\"$ws\",\"platform\":\"linux\",\"owner_token\":\"${WS_OWNER[$ws]}\",\"scopes\":[\"inventory\",\"netscan\"],\"enrollment_key\":\"$key\"}"
   done
@@ -98,7 +104,7 @@ contracts_update() {
     && mv /tmp/contracts.lock.$$ registry/contracts.lock.json
   docker compose restart gateway gateway-sse >/dev/null
   wait_ready
-  curl -fsS -X POST http://127.0.0.1:8080/api/catalog/refresh -H "authorization: Bearer $(admin_token)" >/dev/null
+  curl -fsS -X POST $GATEWAY/api/catalog/refresh -H "authorization: Bearer $(admin_token)" >/dev/null
 }
 
 up() {
@@ -146,9 +152,9 @@ up() {
   fi
   echo
   echo "준비되었습니다."
-  echo "  운영 콘솔 : http://localhost:8000   (kkg@bob.local / test-password)"
-  echo "  Gitea     : http://localhost:3000   (corpadmin — 제공자 자격 확인용)"
-  echo "  Jaeger    : http://localhost:16686"
+  echo "  운영 콘솔 : ${CONSOLE/127.0.0.1/localhost}   (kkg@bob.local / test-password)"
+  echo "  Gitea     : http://localhost:$(host_port GITEA_PORT 3000)   (corpadmin — 제공자 자격 확인용)"
+  echo "  Jaeger    : http://localhost:$(host_port JAEGER_PORT 16686)"
   echo "  하루 업무 : ./console.sh workday        판정 흐름 : ./console.sh watch"
 }
 
@@ -192,7 +198,7 @@ case "${1:-up}" in
     ;;
   restore)
     server="${2:?서버 id를 지정하세요 (예: gitea)}"
-    curl -fsS -X POST "http://127.0.0.1:8080/api/lab/restore/${server}" -H "authorization: Bearer $(admin_token)" | python3 -m json.tool
+    curl -fsS -X POST "$GATEWAY/api/lab/restore/${server}" -H "authorization: Bearer $(admin_token)" | python3 -m json.tool
     [[ "$server" == "gitea" ]] && "$0" restore-token gitea
     ;;
   restore-token)
@@ -202,7 +208,7 @@ case "${1:-up}" in
     docker compose run --rm corp-seed >/dev/null
     docker compose restart mcp-gitea >/dev/null
     for _ in $(seq 1 30); do docker compose ps mcp-gitea | grep -q healthy && break; sleep 2; done
-    curl -fsS -X POST http://127.0.0.1:8080/api/catalog/refresh -H "authorization: Bearer $(admin_token)" >/dev/null
+    curl -fsS -X POST $GATEWAY/api/catalog/refresh -H "authorization: Bearer $(admin_token)" >/dev/null
     echo "gitea-mcp 토큰을 재발급하고 서버를 재시작했습니다."
     ;;
   experiment)
@@ -223,7 +229,7 @@ case "${1:-up}" in
     docker compose --profile supply-chain run --rm syft
     docker compose --profile supply-chain run --rm trivy
     docker compose --profile supply-chain run --rm semgrep
-    curl -fsS -X POST http://127.0.0.1:8080/api/supply-chain/import -H "authorization: Bearer $(admin_token)" | python3 -m json.tool
+    curl -fsS -X POST $GATEWAY/api/supply-chain/import -H "authorization: Bearer $(admin_token)" | python3 -m json.tool
     ;;
   openapi)
     mkdir -p ../docs/openapi
@@ -239,7 +245,7 @@ json.dump(module.app.openapi(), sys.stdout, ensure_ascii=False, indent=2, sort_k
     ;;
   status)
     docker compose --profile llm ps --format 'table {{.Service}}\t{{.Status}}'
-    curl -fsS http://127.0.0.1:8080/api/health | python3 -m json.tool
+    curl -fsS $GATEWAY/api/health | python3 -m json.tool
     ;;
   logs) shift; docker compose --profile llm logs -f --tail=120 "${@:-gateway}" ;;
   down) docker compose --profile llm --profile llm-stub down ;;

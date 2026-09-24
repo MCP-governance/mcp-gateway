@@ -74,7 +74,7 @@ EVIDENCE_KINDS: dict[str, dict] = {
     "endpoint-inventory": {"label": "단말 설정 보고", "state": True,
                            "proves": "보고 시점에 단말 설정에서 항목이 사라졌다",
                            "not_proves": "보고 이후 재설치"},
-    "revocation-response": {"label": "폐기 요청 응답(RFC 7009)", "state": False,
+    "revocation-response": {"label": "폐기 요청 응답(RFC 7009·삭제 API)", "state": False,
                             "proves": "폐기 요청이 처리되었다",
                             "not_proves": "대상이 그 시점에 유효했는지 — 200은 무효 토큰에도 반환된다"},
     "liveness-probe": {"label": "endpoint 도달 확인", "state": False,
@@ -133,6 +133,10 @@ async def _case(case_id: str) -> dict:
     return dict(row)
 
 
+PROBE_AGENT = "termination-probe"
+REAL_CALL = "COALESCE(d.client->>'agent', '') <> 'termination-probe' AND d.user_token <> 'unknown'"
+
+
 def _is_provider(server: dict) -> bool:
     return (server.get("deployment") or "internal") == "provider"
 
@@ -143,11 +147,12 @@ async def relationships() -> list[dict]:
         """SELECT u.*, s.display_name, s.deployment, s.lifecycle, s.status AS server_status,
                   s.exit_terms, s.server_held_credentials, s.supplier,
                   (SELECT count(DISTINCT d.user_token) FROM decisions d WHERE d.server_id=u.server_id
-                     AND d.upstream_executed) AS users,
-                  (SELECT count(*) FROM decisions d WHERE d.server_id=u.server_id AND d.upstream_executed) AS calls,
+                     AND {real}) AS users,
+                  (SELECT count(*) FROM decisions d WHERE d.server_id=u.server_id AND d.upstream_executed
+                     AND {real}) AS calls,
                   (SELECT id FROM termination_cases c WHERE c.relationship_id=u.id
                      ORDER BY opened_at DESC LIMIT 1) AS latest_case
-             FROM usage_relationships u JOIN mcp_servers s ON s.id=u.server_id ORDER BY u.id""")
+             FROM usage_relationships u JOIN mcp_servers s ON s.id=u.server_id ORDER BY u.id""".format(real=REAL_CALL))
     out = []
     for row in rows:
         item = dict(row)
@@ -172,9 +177,9 @@ async def drill(server_id: str) -> dict:
     records = bool(terms.get("revocation_evidence"))
     org_verifiable = all(c.get("verify") for c in creds) if creds else False
     callers = await db.fetch_all(
-        """SELECT d.user_token, p.display_name, p.department, count(*) AS calls, max(d.created_at) AS last_call
+        f"""SELECT d.user_token, p.display_name, p.department, count(*) AS calls, max(d.created_at) AS last_call
              FROM decisions d LEFT JOIN principals p ON p.token = d.user_token
-            WHERE d.server_id = %s AND d.upstream_executed
+            WHERE d.server_id = %s AND {REAL_CALL}
             GROUP BY d.user_token, p.display_name, p.department ORDER BY calls DESC""", (server_id,))
     residue = await db.fetch_all(
         """SELECT a.hostname, i.config_path, i.server_label, i.classification
@@ -260,7 +265,7 @@ async def seed_targets(case_id: str, actor: str) -> list[dict]:
     callers = await db.fetch_all(
         """SELECT DISTINCT d.user_token, p.display_name, p.department
              FROM decisions d LEFT JOIN principals p ON p.token = d.user_token
-            WHERE d.server_id = %s AND d.created_at < %s AND d.user_token <> 'unknown'""",
+            WHERE d.server_id = %s AND d.created_at < %s AND """ + REAL_CALL,
         (case["server_id"], case["cutover_at"]))
     for row in callers:
         created.append(await add_target(
@@ -406,7 +411,7 @@ async def collect(case_id: str, kinds: list[str], actor: str) -> dict:
             principal = target["subject_ref"] if target["kind"] == "gateway-access" else actor
             outcome = await execute_call({"server_id": server["id"], "tool": tool, "arguments": arguments,
                                           "user_token": principal,
-                                          "client": {"agent": "termination-probe", "task_id": case_id}})
+                                          "client": {"agent": PROBE_AGENT, "task_id": case_id}})
             blocked = outcome["decision"] == "Block" and not outcome["upstream_executed"]
             detail = {"decision_id": outcome["decision_id"], "decision": outcome["decision"],
                       "policy_id": outcome["policy_id"], "tool": tool, "principal": principal, "blocked": blocked}
@@ -704,7 +709,17 @@ async def restore_server(server_id: str, actor: str) -> dict:
         """UPDATE mcp_servers SET lifecycle='OPERATING', status='PENDING', status_reason='실습 복원 — 계약 재확인 대기',
              lifecycle_changed_at=now(), lifecycle_changed_by=%s, termination_case_id=NULL WHERE id=%s""", (actor, server_id))
     await db.execute("UPDATE usage_relationships SET status='ACTIVE' WHERE server_id=%s", (server_id,))
-    return {"server_id": server_id, "previous_lifecycle": server.get("lifecycle"), "lifecycle": "OPERATING"}
+    # Restoring the lifecycle does not bring back a credential the case revoked in a
+    # downstream system; say so instead of letting the next tool call fail with 401.
+    follow_up = []
+    for cred in server.get("server_held_credentials") or []:
+        if cred.get("verify") == "gitea-token":
+            present, _ = await _gitea_token_present(cred["account"], cred["token_name"])
+            if present is False:
+                follow_up.append(f"{cred['label']}이(가) 폐기된 상태입니다. "
+                                 f"./console.sh restore-token {server_id} 로 재발급해야 도구가 다시 동작합니다.")
+    return {"server_id": server_id, "previous_lifecycle": server.get("lifecycle"), "lifecycle": "OPERATING",
+            "follow_up": follow_up}
 
 
 # ── views ────────────────────────────────────────────────────────────────────

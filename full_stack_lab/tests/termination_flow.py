@@ -9,17 +9,18 @@ UR-EMAIL-ASSIST provider-operated, credential NOT disclosed -> C1 unmet -> T3,
 
 Both servers are restored afterwards (lab only) so the demo can run again.
 """
+import os
 import json
 import subprocess
 import sys
 import urllib.error
 import urllib.request
 
-GATEWAY = "http://127.0.0.1:8080"
+GATEWAY = os.getenv("LAB_GATEWAY_URL", "http://127.0.0.1:8080")
 
 
 def token() -> str:
-    req = urllib.request.Request("http://127.0.0.1:8000/auth/mock-login", method="POST",
+    req = urllib.request.Request(os.getenv("LAB_CONSOLE_URL", "http://127.0.0.1:8000") + "/auth/mock-login", method="POST",
                                  data=json.dumps({"email": "kkg@bob.local", "password": "test-password"}).encode(),
                                  headers={"Content-Type": "application/json"})
     return json.load(urllib.request.urlopen(req))["access_token"]

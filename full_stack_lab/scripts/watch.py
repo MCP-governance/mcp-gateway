@@ -2,12 +2,13 @@
 
     10:31:05  차단   권노경(협력사 A) @ws-nkk · filesystem.read_text_file /shared/confidential/... [P-333-DENY-001] ...
 """
+import os
 import json
 import sys
 import time
 import urllib.request
 
-GATEWAY = "http://127.0.0.1:8080"
+GATEWAY = os.getenv("LAB_GATEWAY_URL", "http://127.0.0.1:8080")
 COLOR = {"ok": "\033[32m", "warn": "\033[33m", "info": "\033[36m", "hold": "\033[35m", "stop": "\033[31m"}
 
 

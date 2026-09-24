@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 import time
 from collections import defaultdict
@@ -15,7 +14,7 @@ from uuid import UUID, uuid4
 
 import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from psycopg.types.json import Jsonb
@@ -197,7 +196,7 @@ async def login(request: Login, http_request: Request):
 @app.get("/auth/me")
 async def me(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
-    return {k: v for k, v in {**user, "synthetic": True}.items() if k != "principal"}
+    return {**console_user(user), "synthetic": True}
 
 
 @app.post("/auth/logout")
@@ -282,16 +281,6 @@ async def ready():
             "identity": "synthetic-oauth2", "llm_gateway": llm}
 
 
-async def gateway_json(path: str, authorization: str | None = None, method: str = "GET") -> dict:
-    try:
-        async with httpx.AsyncClient(timeout=8, follow_redirects=False) as client:
-            response = await client.request(method, GATEWAY_URL + path, headers={"Authorization": authorization or ""})
-            response.raise_for_status()
-            return response.json()
-    except (httpx.HTTPError, ValueError) as exc:
-        raise HTTPException(503, "거버넌스 상태를 불러올 수 없습니다.") from exc
-
-
 async def gateway_proxy(path: str, authorization: str | None, method: str = "GET",
                         body: dict | None = None) -> dict:
     """Gateway가 정본인 조작을 Console 포트에서 대신 부른다.
@@ -326,13 +315,11 @@ async def gateway_proxy(path: str, authorization: str | None, method: str = "GET
 # 역할이 볼 수 있는 화면. 숨기기만 하는 메뉴는 통제가 아니라 장식이므로
 # /api/console이 이 목록을 기준으로 데이터 자체를 빼고 응답한다.
 PAGES_BY_ROLE = {
-    # 내부 직원도 최소권한이다. 직원에게 필요한 것은 "내가 쓸 MCP가 이미 승인돼
-    # 있는가"와 "내 호출이 어떻게 판정됐는가"이지 조직 전체의 정책 관리대장이나
-    # 공급망 증적이 아니다.
-    "partner": ("execution", "intake"),
-    "employee": ("execution", "intake", "audit"),
-    "admin": ("overview", "intake", "verification", "risks", "mcpscan", "termination",
-              "endpoints", "policy", "accounts", "execution", "audit"),
+    # 직원·협력사 직원에게 필요한 것은 "내 호출이 어떻게 판정됐는가"와 "쓰고 싶은
+    # MCP를 신청하는 길"이다. 조직 전체의 기록·정책·종료 판정은 관리자 몫이다.
+    "partner": ("activity", "intake"),
+    "employee": ("activity", "intake"),
+    "admin": ("overview", "activity", "approvals", "servers", "people", "intake", "termination", "policy"),
 }
 ROLE_LABELS = {"partner": "협력업체 직원", "employee": "직원", "admin": "관리자"}
 
@@ -367,61 +354,11 @@ async def intake_rows(user: dict) -> list[dict]:
     return await db.fetch_all(query + " WHERE submitted_by=%s ORDER BY created_at DESC LIMIT 100", (user["principal"],))
 
 
-@app.get("/api/console")
-async def console(authorization: str | None = Header(default=None)):
+@app.get("/api/mcp-requests")
+async def list_mcp_requests(authorization: str | None = Header(default=None)):
+    """도입 신청 목록. 관리자는 전체, 그 외에는 자기 신청만 본다."""
     user = await current_identity(authorization)
-    pages = allowed_pages(user)
-    is_admin = "admin" in user["roles"]
-
-    wanted = {"health": gateway_json("/api/health"), "state": gateway_json("/api/state")}
-    if "verification" in pages or "risks" in pages:
-        wanted["coverage"] = gateway_json("/api/supply-chain/coverage")
-    if "overview" in pages:
-        wanted["monitor"] = gateway_json("/api/monitor/summary?hours=168")
-    if "policy" in pages:
-        wanted["ledger"] = gateway_json("/api/policy/ledger")
-    if "termination" in pages:
-        wanted["termination"] = gateway_json("/api/termination/cases", authorization)
-    if "endpoints" in pages:
-        wanted["endpoints"] = gateway_json("/api/endpoint/inventory", authorization)
-    results = dict(zip(wanted, await asyncio.gather(*wanted.values())))
-    state = results["state"]
-
-    # 공급망 증적과 정책 판정은 역할에 따라 아예 실어 보내지 않는다. 화면에서만
-    # 숨기면 개발자 도구를 여는 순간 통제가 사라진다.
-    reports = state["supply_chain"] if "risks" in pages or "verification" in pages else []
-    decisions = state["decisions"] if is_admin else [
-        row for row in state["decisions"] if row.get("user_token") == user["principal"]
-    ]
-    payload = {
-        "viewer": console_user(user),
-        "health": results["health"],
-        # 종료·폐기 화면도 Registry를 본다. 폐기할 서버를 고르는 목록이
-        # 없으면 그 화면에서 할 수 있는 것이 없다.
-        "registry": state["servers"] if {"overview", "termination"} & set(pages) else [],
-        "decisions": decisions if "overview" in pages or "audit" in pages else [],
-        "approvals": state["approvals"] if is_admin else [],
-        "supply_chain": reports,
-        "coverage": results.get("coverage", {"servers": []}),
-        "monitor": results.get("monitor", {}),
-        "policy": state["policy"] if "policy" in pages else None,
-        # §12.5 PaC 정책 관리대장. 운영자가 정책 코드를 읽지 않고도 어떤 위험·통제를
-        # 구현한 정책이 지금 어떤 버전·상태로 적용 중인지 확인할 수 있어야 한다.
-        "ledger": results.get("ledger", {}),
-        # 전주기의 마지막 구간. 요약만 싣고 케이스 상세는 화면이 따로 부른다.
-        # 케이스 하나에 회수 대상과 증거가 수십 건씩 붙으므로, 첫 화면 응답에
-        # 전부 실으면 목록을 보기만 해도 모든 증거를 내려받게 된다.
-        "termination": results.get("termination", {}),
-        "endpoints": results.get("endpoints", {}),
-        "upstream_effect_count": state["upstream_effect_count"],
-        "intake": await intake_rows(user),
-        "severity": {
-            "critical": sum(int(report.get("critical_count") or 0) for report in reports),
-            "high": sum(int(report.get("high_count") or 0) for report in reports),
-            "medium": sum(int(report.get("medium_count") or 0) for report in reports),
-        },
-    }
-    return payload
+    return {"requests": await intake_rows(user)}
 
 
 @app.get("/api/mcp-catalog/search")
@@ -578,58 +515,6 @@ async def reject_mcp_request(request_id: UUID, request: IntakeRejection, authori
     if not row:
         raise HTTPException(409, "보류 또는 검증 대기 상태의 요청만 거부할 수 있습니다.")
     return {"request": row}
-
-
-@app.post("/api/supply-chain/import")
-async def import_supply_chain(authorization: str | None = Header(default=None)):
-    user = await current_identity(authorization)
-    if "admin" not in user["roles"]:
-        raise HTTPException(403, "검증 결과 반영은 관리자만 할 수 있습니다.")
-    return await gateway_json("/api/supply-chain/import", authorization, method="POST")
-
-
-@app.post("/api/registry/refresh")
-async def refresh_registry(authorization: str | None = Header(default=None)):
-    await current_identity(authorization)
-    return await gateway_json("/api/catalog/refresh", authorization, method="POST")
-
-
-
-
-class ContractApprovalBody(StrictModel):
-    note: str = Field(min_length=5, max_length=500)
-
-
-@app.post("/api/registry/{server_id}/approve-contract")
-async def approve_contract(server_id: str, request: ContractApprovalBody,
-                           authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy(f"/api/registry/{server_id}/approve-contract",
-                               authorization, "POST", request.model_dump())
-
-
-@app.get("/api/enforcement")
-async def read_enforcement(authorization: str | None = Header(default=None)):
-    await current_identity(authorization)
-    return await gateway_json("/api/enforcement", authorization)
-
-
-class EnforcementSwitch(StrictModel):
-    mode: Literal["enforce", "monitor"]
-
-
-@app.put("/api/enforcement")
-async def switch_enforcement(request: EnforcementSwitch, authorization: str | None = Header(default=None)):
-    user = await current_identity(authorization)
-    if "admin" not in user["roles"]:
-        raise HTTPException(403, "집행 모드 전환은 관리자만 할 수 있습니다.")
-    async with httpx.AsyncClient(timeout=8) as client:
-        response = await client.put(GATEWAY_URL + "/api/enforcement",
-                                    headers={"Authorization": authorization or ""},
-                                    json={"mode": request.mode})
-    if response.status_code >= 400:
-        raise HTTPException(response.status_code, "집행 모드를 바꾸지 못했습니다.")
-    return response.json()
 
 
 MCP_SCAN_CONFIG = {
@@ -969,220 +854,9 @@ async def retry_mcp_scan_job(job_id: UUID, authorization: str | None = Header(de
     return {"job": row, "message": "대기열에 다시 넣었습니다."}
 
 
-# ── 전주기 종료·폐기 (Gateway가 정본, Console은 대리 호출) ──────────────────
-#
-# 조작 논리를 여기에 복제하지 않는다. 판정 규칙이 두 서비스에 나뉘면 어느 쪽이
-# 정본인지 저장소가 답하지 못한다. 이 저장소가 정책 원본을 한 곳에 모은 것과
-# 같은 이유다. 여기서는 역할만 확인하고 그대로 넘긴다.
-
-
-class TerminationOpen(StrictModel):
-    server_id: str = Field(min_length=1, max_length=120)
-    reason: str = Field(min_length=10, max_length=1000)
-    engagement_label: str | None = Field(default=None, max_length=300)
-
-
-class TerminationTarget(StrictModel):
-    kind: str = Field(min_length=1, max_length=40)
-    label: str = Field(min_length=1, max_length=300)
-    holder: str = Field(min_length=1, max_length=20)
-    discovered_by: str = Field(min_length=1, max_length=40)
-    status: str = Field(default="OUTSTANDING", max_length=20)
-    note: str | None = Field(default=None, max_length=1000)
-
-
-class TerminationTargetUpdate(StrictModel):
-    status: str = Field(min_length=1, max_length=20)
-    note: str | None = Field(default=None, max_length=1000)
-
-
-class TerminationEvidence(StrictModel):
-    kind: str = Field(min_length=1, max_length=40)
-    subject: str = Field(min_length=1, max_length=300)
-    source: str = Field(min_length=1, max_length=300)
-    detail: dict = Field(default_factory=dict)
-    target_id: str | None = None
-    observed_at: str | None = None
-
-
-class TerminationClose(StrictModel):
-    note: str = Field(min_length=1, max_length=1000)
-    risk_acceptance: str | None = Field(default=None, max_length=1000)
-
-
-class TerminationReopen(StrictModel):
-    reason: str = Field(min_length=1, max_length=1000)
-
-
-async def admin_only(authorization: str | None) -> dict:
-    user = await current_identity(authorization)
-    if "admin" not in user["roles"]:
-        raise HTTPException(403, "관리자만 사용할 수 있습니다.")
-    return user
-
-
-@app.get("/api/termination/cases")
-async def termination_cases(authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy("/api/termination/cases", authorization)
-
-
-@app.post("/api/termination/cases", status_code=201)
-async def termination_open(request: TerminationOpen, authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy("/api/termination/cases", authorization, "POST",
-                               request.model_dump(exclude_none=True))
-
-
-@app.get("/api/termination/cases/{case_id}")
-async def termination_detail(case_id: UUID, authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy(f"/api/termination/cases/{case_id}", authorization)
-
-
-@app.get("/api/termination/cases/{case_id}/report")
-async def termination_report(case_id: UUID, authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy(f"/api/termination/cases/{case_id}/report", authorization)
-
-
-@app.get("/api/termination/cases/{case_id}/disclosure-request")
-async def termination_disclosure(case_id: UUID, authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy(f"/api/termination/cases/{case_id}/disclosure-request", authorization)
-
-
-@app.get("/api/termination/drill/{server_id}")
-async def termination_drill(server_id: str, authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy(f"/api/termination/drill/{server_id}", authorization)
-
-
-@app.post("/api/termination/cases/{case_id}/targets", status_code=201)
-async def termination_add_target(case_id: UUID, request: TerminationTarget,
-                                 authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy(f"/api/termination/cases/{case_id}/targets", authorization,
-                               "POST", request.model_dump(exclude_none=True))
-
-
-@app.put("/api/termination/targets/{target_id}")
-async def termination_update_target(target_id: UUID, request: TerminationTargetUpdate,
-                                    authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy(f"/api/termination/targets/{target_id}", authorization,
-                               "PUT", request.model_dump(exclude_none=True))
-
-
-@app.post("/api/termination/cases/{case_id}/evidence", status_code=201)
-async def termination_add_evidence(case_id: UUID, request: TerminationEvidence,
-                                   authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy(f"/api/termination/cases/{case_id}/evidence", authorization,
-                               "POST", request.model_dump(exclude_none=True))
-
-
-@app.post("/api/termination/cases/{case_id}/probe")
-async def termination_probe(case_id: UUID, authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy(f"/api/termination/cases/{case_id}/probe", authorization, "POST", {})
-
-
-@app.post("/api/termination/cases/{case_id}/assess")
-async def termination_assess(case_id: UUID, authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy(f"/api/termination/cases/{case_id}/assess", authorization, "POST", {})
-
-
-@app.post("/api/termination/cases/{case_id}/close")
-async def termination_close(case_id: UUID, request: TerminationClose,
-                            authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy(f"/api/termination/cases/{case_id}/close", authorization,
-                               "POST", request.model_dump(exclude_none=True))
-
-
-@app.post("/api/termination/cases/{case_id}/reopen")
-async def termination_reopen(case_id: UUID, request: TerminationReopen,
-                             authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy(f"/api/termination/cases/{case_id}/reopen", authorization,
-                               "POST", request.model_dump(exclude_none=True))
-
-
-@app.get("/api/endpoint/inventory")
-async def endpoint_inventory(classification: str | None = None,
-                             authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    suffix = f"?classification={classification}" if classification else ""
-    return await gateway_proxy("/api/endpoint/inventory" + suffix, authorization)
-
-
-# ── 엔드포인트 평면 (Console 포트에서 Gateway로 중계) ───────────────────────
-#
-# 장치 발급과 탐색 범위는 사람이 정하는 결정이라 사람의 자격으로 지나간다.
-# 에이전트가 쓰는 보고 경로(x-endpoint-key)는 이 포트에 열지 않는다 - 같은
-# 문으로 사람과 장치가 들어오면 두 자격의 분리가 화면에서만 존재하게 된다.
-
-
-class DeviceCreate(StrictModel):
-    endpoint_id: str = Field(min_length=3, max_length=120)
-    hostname: str = Field(min_length=1, max_length=200)
-    platform: str = Field(default="unknown", max_length=80)
-    owner_token: str | None = Field(default=None, max_length=120)
-    scopes: list[Literal["inventory", "netscan"]] = Field(default=["inventory"], max_length=2)
-
-
-class ScanPolicyBody(StrictModel):
-    enabled: bool | None = None
-    allowed_cidrs: list[str] | None = Field(default=None, max_length=16)
-    ports: list[int] | None = Field(default=None, max_length=64)
-    max_hosts: int | None = Field(default=None, ge=1, le=4096)
-    connect_timeout_ms: int | None = Field(default=None, ge=50, le=5000)
-    probe_mcp: bool | None = None
-    interval_seconds: int | None = Field(default=None, ge=60, le=86400)
-
-
 class ListenerScanRequest(StrictModel):
     listener_id: int = Field(ge=1)
     acknowledge_external_model: bool = False
-
-
-@app.get("/api/endpoint/devices")
-async def endpoint_devices(authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy("/api/endpoint/devices", authorization)
-
-
-@app.post("/api/endpoint/devices", status_code=201)
-async def endpoint_device_issue(request: DeviceCreate,
-                                authorization: str | None = Header(default=None)):
-    """장치 자격 발급. 평문 키는 이 응답에만 존재한다."""
-    await admin_only(authorization)
-    return await gateway_proxy("/api/endpoint/devices", authorization, "POST",
-                               request.model_dump())
-
-
-@app.delete("/api/endpoint/devices/{endpoint_id}")
-async def endpoint_device_revoke(endpoint_id: str,
-                                 authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy(f"/api/endpoint/devices/{endpoint_id}", authorization, "DELETE")
-
-
-@app.get("/api/endpoint/scan-policy")
-async def endpoint_scan_policy(authorization: str | None = Header(default=None)):
-    await admin_only(authorization)
-    return await gateway_proxy("/api/endpoint/scan-policy/admin", authorization)
-
-
-@app.put("/api/endpoint/scan-policy")
-async def endpoint_scan_policy_set(request: ScanPolicyBody,
-                                   authorization: str | None = Header(default=None)):
-    """탐색 범위는 사람이 정한다. 에이전트가 스스로 고르면 통제되지 않는 스캐너다."""
-    await admin_only(authorization)
-    return await gateway_proxy("/api/endpoint/scan-policy", authorization, "PUT",
-                               request.model_dump(exclude_none=True))
 
 
 @app.post("/api/endpoint/listeners/{listener_id}/scan")
@@ -1212,53 +886,6 @@ async def risk_catalog(authorization: str | None = Header(default=None)):
     """
     await current_identity(authorization)
     return await gateway_proxy("/api/risk-catalog", authorization)
-
-
-@app.get("/api/stream/decisions")
-async def stream_decisions(after: int = 0, authorization: str | None = Header(default=None)):
-    """정책 판정 실시간 흐름.
-
-    숫자만 있는 대시보드는 "지금 무슨 일이 일어나는가"에 답하지 못한다. 역할
-    범위는 여기서도 그대로다. 관리자가 아니면 자기 호출만 흘러나온다.
-    """
-    user = await current_identity(authorization)
-    is_admin = "admin" in user["roles"]
-
-    async def events():
-        cursor = after
-        if cursor <= 0:
-            row = await db.fetch_one("SELECT COALESCE(max(id), 0) AS id FROM decisions")
-            cursor = int(row["id"]) if row else 0
-        idle = 0
-        while idle < 300:  # 10분 뒤에는 브라우저가 다시 붙게 둔다
-            query = """SELECT id, created_at, user_token, role, tool_name, data_class, action,
-                              decision, policy_id, policy_version, exception_id, upstream_executed, upstream_attempted, trace_id
-                       FROM decisions WHERE id > %s"""
-            params: tuple = (cursor,)
-            if not is_admin:
-                query += " AND user_token = %s"
-                params = (cursor, user["principal"])
-            rows = await db.fetch_all(query + " ORDER BY id LIMIT 25", params)
-            if rows:
-                idle = 0
-                cursor = max(int(row["id"]) for row in rows)
-                yield "event: decisions\ndata: " + json.dumps(
-                    {"rows": rows, "cursor": cursor}, ensure_ascii=False, default=str) + "\n\n"
-            else:
-                idle += 1
-                yield ": keep-alive\n\n"
-            await asyncio.sleep(2)
-
-    return StreamingResponse(events(), media_type="text/event-stream",
-                             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
-
-
-@app.get("/api/audit/verify")
-async def verify_audit(authorization: str | None = Header(default=None)):
-    user = await current_identity(authorization)
-    if "admin" not in user["roles"]:
-        raise HTTPException(403, "감사 체인 검증은 관리자만 할 수 있습니다.")
-    return await gateway_json("/api/audit/verify", authorization)
 
 
 @app.get("/approvals")
@@ -1311,22 +938,30 @@ async def approve(approval_id: UUID, authorization: str | None = Header(default=
 # The Console lives on :8000 and the Gateway API on :8080; the browser's CSP allows
 # only same-origin requests. The proxy forwards the caller's own bearer token, so
 # every authorisation decision stays with the Gateway. Only these prefixes pass.
-GATEWAY_PROXY_PREFIXES = ("activity", "registry", "state", "health", "termination/", "approvals/",
+GATEWAY_PROXY_PREFIXES = ("overview", "activity", "registry", "health", "termination/", "approvals/",
                           "catalog/", "enforcement", "monitor/", "audit/", "policy/", "endpoint/",
                           "supply-chain/", "risk-catalog", "lab/")
+# Several Gateway read APIs are open to any authenticated caller; the Console adds
+# the role boundary here so an employee's session cannot read the organisation's
+# registry, policy ledger or endpoint inventory through it.
+EMPLOYEE_PROXY_PREFIXES = ("activity", "health")
 
 
 @app.api_route("/gw/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def gateway_passthrough(path: str, request: Request, authorization: str | None = Header(default=None)):
     if not path.startswith(GATEWAY_PROXY_PREFIXES) or ".." in path:
         raise HTTPException(404, "Console이 중계하지 않는 경로입니다.")
-    await current_identity(authorization)
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"] and not path.startswith(EMPLOYEE_PROXY_PREFIXES):
+        raise HTTPException(403, "관리자만 볼 수 있는 화면입니다.")
     body = await request.body()
-    async with httpx.AsyncClient(timeout=120) as client:
-        response = await client.request(
-            request.method, f"{GATEWAY_URL}/api/{path}", params=dict(request.query_params),
-            content=body or None, headers={"Authorization": authorization or "",
-                                           "Content-Type": request.headers.get("content-type", "application/json")})
-    from fastapi.responses import Response
+    try:
+        async with httpx.AsyncClient(timeout=120) as client:
+            response = await client.request(
+                request.method, f"{GATEWAY_URL}/api/{path}", params=dict(request.query_params),
+                content=body or None, headers={"Authorization": authorization or "",
+                                               "Content-Type": request.headers.get("content-type", "application/json")})
+    except httpx.HTTPError as exc:
+        raise HTTPException(503, "Gateway에 연결할 수 없습니다. 잠시 후 다시 시도하세요.") from exc
     return Response(response.content, status_code=response.status_code,
                     media_type=response.headers.get("content-type", "application/json"))

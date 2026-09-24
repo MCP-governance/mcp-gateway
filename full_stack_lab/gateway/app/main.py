@@ -127,7 +127,7 @@ async def health() -> dict:
 
 
 @app.get("/api/state")
-async def state() -> dict:
+async def state(user: dict = Depends(admin_caller)) -> dict:
     servers, tools, decisions, approvals, reports, principals, policy = await asyncio.gather(
         db.fetch_all("SELECT * FROM mcp_servers ORDER BY id"),
         db.fetch_all("""SELECT server_id, name, action, enabled,
@@ -145,7 +145,7 @@ async def state() -> dict:
 
 
 @app.get("/api/registry")
-async def registry_view() -> dict:
+async def registry_view(user: dict = Depends(admin_caller)) -> dict:
     """Catalog + contract state in one document: what was approved, what runs now."""
     servers, tools, relationships = await asyncio.gather(
         db.fetch_all("SELECT * FROM mcp_servers ORDER BY id"),
@@ -162,6 +162,41 @@ async def registry_view() -> dict:
             "organization": registry.catalog().get("organization", {}),
             "servers": [row for row in servers if row["id"] in catalog_servers],
             "tools": tools, "usage_relationships": relationships}
+
+
+@app.get("/api/overview")
+async def overview(user: dict = Depends(admin_caller)) -> dict:
+    """Everything the first Console screen shows, in one round trip."""
+    today, per_server, stations, alerts, approvals, cases = await asyncio.gather(
+        db.fetch_all(f"""SELECT decision, count(*) AS n FROM decisions d
+                          WHERE created_at > date_trunc('day', now()) AND {decommission.REAL_CALL} GROUP BY decision"""),
+        db.fetch_all(f"""SELECT s.id, s.display_name, s.status, s.lifecycle, s.deployment, s.status_reason,
+                               count(d.id) FILTER (WHERE d.created_at > now() - interval '24 hours') AS calls,
+                               count(d.id) FILTER (WHERE d.created_at > now() - interval '24 hours' AND d.decision='Block') AS blocked,
+                               max(d.created_at) AS last_call,
+                               (SELECT count(*) FROM mcp_tools t WHERE t.server_id=s.id AND t.enabled) AS tools
+                          FROM mcp_servers s LEFT JOIN decisions d ON d.server_id = s.id AND {decommission.REAL_CALL}
+                         WHERE s.id = ANY(%s::text[])
+                         GROUP BY s.id ORDER BY s.id""", (sorted(registry.servers()),)),
+        db.fetch_all("""SELECT a.endpoint_id, a.hostname, a.owner_token, a.last_seen_at, p.display_name, p.department, p.role,
+                               (SELECT count(*) FROM endpoint_inventory i WHERE i.endpoint_id=a.endpoint_id AND i.classification='shadow') AS shadow,
+                               (SELECT max(d.created_at) FROM decisions d WHERE d.client->>'workstation' = a.endpoint_id) AS last_call
+                          FROM endpoint_agents a LEFT JOIN principals p ON p.token = a.owner_token
+                         WHERE a.status='active' ORDER BY a.endpoint_id"""),
+        db.fetch_all(f"""SELECT decision, policy_id, count(*) AS n FROM decisions d
+                          WHERE created_at > now() - interval '24 hours' AND decision IN ('Block','Alert')
+                            AND {decommission.REAL_CALL}
+                         GROUP BY decision, policy_id ORDER BY n DESC LIMIT 8"""),
+        db.fetch_one("SELECT count(*) AS n FROM approvals WHERE status='PENDING' AND expires_at > now()"),
+        decommission.summary(),
+    )
+    counts = {row["decision"]: int(row["n"]) for row in today}
+    return {
+        "today": {"total": sum(counts.values()), **{k: counts.get(k, 0) for k in ("Allow", "Alert", "Restrict", "Approval", "Block")}},
+        "servers": per_server, "workstations": stations, "top_policies": alerts,
+        "pending_approvals": int(approvals["n"] or 0), "termination": cases,
+        "enforcement": await enforcement_mode(), "catalog_version": registry.catalog_version(),
+    }
 
 
 @app.get("/api/activity")
@@ -184,7 +219,7 @@ async def protected_resource_metadata() -> dict:
 
 
 @app.get("/api/policy/matrix")
-async def policy_matrix() -> dict:
+async def policy_matrix(user: dict = Depends(caller)) -> dict:
     roles = ("partner", "employee", "admin")
     classes = ("public", "nonimportant", "important")
     actions = ("r", "w", "x")
@@ -212,7 +247,7 @@ async def policy_matrix() -> dict:
 
 
 @app.get("/api/policy/ledger")
-async def policy_ledger_view() -> dict:
+async def policy_ledger_view(user: dict = Depends(caller)) -> dict:
     """§12.5 PaC 정책 관리대장.
 
     정책 코드만으로는 정책의 목적과 근거를 대신할 수 없다(§11.8). 어떤 위험과 통제를
@@ -315,7 +350,7 @@ async def supply_chain_import(user: dict = Depends(admin_caller)) -> dict:
 
 
 @app.get("/api/supply-chain/coverage")
-async def supply_chain_cover() -> dict:
+async def supply_chain_cover(user: dict = Depends(admin_caller)) -> dict:
     """Says, per server, whether its scan output actually gates calls."""
     rows = await supply_chain_coverage()
     return {"servers": rows,
@@ -323,7 +358,7 @@ async def supply_chain_cover() -> dict:
 
 
 @app.get("/api/enforcement")
-async def enforcement() -> dict:
+async def enforcement(user: dict = Depends(caller)) -> dict:
     return {"enforcement": await enforcement_mode()}
 
 
@@ -337,7 +372,7 @@ async def enforcement_update(request: EnforcementRequest, user: dict = Depends(a
 
 
 @app.get("/api/monitor/summary")
-async def monitor(hours: int = 168) -> dict:
+async def monitor(hours: int = 168, user: dict = Depends(admin_caller)) -> dict:
     """What enforcement would have stopped, so a team can turn it on with numbers."""
     return await monitor_summary(min(max(hours, 1), 8760))
 
@@ -779,7 +814,7 @@ async def endpoint_inventory(classification: str | None = None,
 
 
 @app.get("/api/risk-catalog")
-async def risk_catalog() -> dict:
+async def risk_catalog(user: dict = Depends(caller)) -> dict:
     """AI-Infra-Guard의 위험 범주와 이 조직의 통제를 연결한 표.
 
     발견 목록을 읽을거리가 아니라 통제로 잇는 것은 이 매핑뿐이다. 인증 없이 여는
