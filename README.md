@@ -25,6 +25,10 @@ cd mcp-gateway/full_stack_lab
 
 처음 실행한 복제본에는 고유한 Docker 프로젝트 이름이 `.env`에 저장됩니다. 새 복제본이 다른 실습의 DB 볼륨을 재사용하지 않게 하기 위한 장치입니다. 기존 `.env`와 데이터는 자동 이전하거나 삭제하지 않습니다.
 
+### Docker 네트워크 주소 풀이 소진된 경우
+
+`all predefined address pools have been fully subnetted`는 Docker가 새 Compose 네트워크에 배정할 주소 대역을 찾지 못했다는 뜻입니다. 각 복제본은 격리를 위해 여러 네트워크를 만들므로, 사용을 마친 **해당 복제본**의 `full_stack_lab`에서 `./console.sh down`을 실행한 뒤 다시 `./console.sh up`을 실행하세요. `down`은 컨테이너와 그 복제본의 네트워크를 내리며 이름 있는 DB 볼륨은 보존합니다. 실행 중인 다른 프로젝트의 네트워크를 일괄 삭제하지 마세요. 여러 스택을 동시에 유지해야 한다면 [Docker 주소 풀 설정](https://docs.docker.com/engine/network/#automatic-subnet-allocation)에서 호스트 환경에 맞는 더 작은 네트워크 크기를 설정하세요. Docker 데몬 설정 변경에는 데몬 재시작이 필요하므로 실행 중인 다른 스택을 확인한 후 적용합니다.
+
 ### Docker가 없는 장비에서
 
 네이티브 경로는 Presidio Analyzer/Anonymizer REST 서비스 두 개를 별도로 준비한 개발 장비에서 사용할 수 있습니다. Compose 클린 설치가 기본 검증 경로입니다.

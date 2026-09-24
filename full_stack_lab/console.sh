@@ -43,7 +43,11 @@ if [[ "${BIND_ADDR:-127.0.0.1}" != 127.0.0.1 || "${AIG_BIND_ADDR:-127.0.0.1}" !=
   exit 2
 fi
 
-ensure_keys
+case "${1:-up}" in
+  up|test|replay|agent-test|endpoint|corporate-lab|live-lab|local-llm|openapi|scan)
+    ensure_keys
+    ;;
+esac
 
 # The gateway API is authenticated now, so scripted maintenance calls log in the
 # same way a person does. The password lives in the uncommitted .env.

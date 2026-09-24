@@ -52,6 +52,8 @@ cd ~/mcp-gateway/full_stack_lab
 
 첫 실행 때 `console.sh`가 커밋하지 않는 `.env`에 합성 JWT용 Ed25519 키쌍을 생성합니다. 별도 복사·설정 단계는 없습니다. 키는 gateway 이미지 안에서 만들기 때문에 host에는 추가 의존성이 필요 없습니다.
 
+`all predefined address pools have been fully subnetted` 오류가 나면 사용을 마친 복제본의 `full_stack_lab`에서 `./console.sh down`으로 **그 복제본의** 컨테이너와 네트워크만 내린 뒤 다시 시작하세요. DB 볼륨은 유지되며, `down`은 새 키나 네트워크를 만들지 않습니다. 여러 복제본을 동시에 실행해야 한다면 [Docker 주소 풀 설정](https://docs.docker.com/engine/network/#automatic-subnet-allocation)을 호스트에 맞게 조정하세요.
+
 | 값 | 받는 서비스 | 이유 |
 | --- | --- | --- |
 | `AGENT_JWT_PRIVATE_KEY` | `agent-service` | 합성 사용자 JWT와 60초 Agent Assertion의 유일한 발급자 |
