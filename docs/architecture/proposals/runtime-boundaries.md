@@ -17,7 +17,7 @@
 | 안 1: 현 구조 유지와 국소 보강 | 현재 배포와 공용 DB 역할을 유지하고 상태 표시, 회귀 시험, 실습 구성 검사를 보강 | 짧은 시연 일정이 우선이고 합성 랩 밖으로 확대하지 않을 때 |
 | 안 2: 내부 모듈과 권한 경계의 단계적 분리 | 공통 실행 서비스 유지, 실행 상태 영속화, migration과 DB 역할 분리, A.I.G 별도 격리, 정책 배포 식별자 연결 | 여러 사람이 기능을 확장하면서 실행 통제와 증적의 일관성을 유지해야 할 때 |
 
-두 안은 배포 전략의 선택지이고, 뒤의 A~D 단계는 안 2를 도입하는 순서다. 저는 현재 코드의 공통 집행 경로를 재사용할 수 있다는 점에서 안 2의 비용이 감당 가능한 수준이라고 판단한다. 다만 소요 기간과 성능 개선 수치는 측정 전에는 제시하지 않는다.
+두 안은 배포 전략의 선택지이고, 뒤의 A-D 단계는 안 2를 도입하는 순서다. 저는 현재 코드의 공통 집행 경로를 재사용할 수 있다는 점에서 안 2의 비용이 감당 가능한 수준이라고 판단한다. 다만 소요 기간과 성능 개선 수치는 측정 전에는 제시하지 않는다.
 
 ## Evidence
 
@@ -25,11 +25,11 @@
 
 | 근거 | 코드 또는 문서 | 확인한 사실 |
 | --- | --- | --- |
-| E1 공통 실행 경로 | [core.py](../../../full_stack_lab/gateway/app/core.py), [main.py](../../../full_stack_lab/gateway/app/main.py), [mcp_facade.py](../../../full_stack_lab/gateway/app/mcp_facade.py) | `execute_call`(core 977행)에 REST(main 284~288행), MCP facade(43~78행), Agent와 승인 후 실행이 수렴한다 |
-| E2 실행과 증적 저장 순서 | [agent_gateway.py](../../../full_stack_lab/gateway/app/agent_gateway.py), [core.py](../../../full_stack_lab/gateway/app/core.py), [실행 경계 설명](../../runtime-hardening.md) | Agent receipt(34~64행), 승인 claim(core 1225~1231행)은 존재한다. upstream 호출(1171행) 뒤 감사(1209행), 승인 최종 상태(1237~1241행)를 저장한다 |
-| E3 공용 DB 역할과 기동 DDL | [compose.yaml](../../../full_stack_lab/compose.yaml), [db.py](../../../full_stack_lab/gateway/app/db.py), [agent_tables.sql](../../../full_stack_lab/gateway/app/agent_tables.sql) | Gateway, SSE, Agent, Worker가 `mcp` 역할을 공유한다. Gateway bootstrap(core 387~390행)과 Agent lifespan(agent_service 70~75행)이 DDL을 수행한다. 감사 trigger는 있으나 앱 역할이 schema owner임을 SQL 57~60행이 명시한다 |
-| E4 실습 오버레이의 추가 권한 | [compose.corporate-lab.yaml](../../../full_stack_lab/compose.corporate-lab.yaml) | 기본 구성과 달리 A.I.G를 Gateway 컨테이너에서 실행하고 `SYS_ADMIN`, `seccomp:unconfined`, scanner 망을 추가한다(1~31행) |
-| E5 정책과 공용 유틸의 결합 | [core.py](../../../full_stack_lab/gateway/app/core.py), [replay.py](../../../full_stack_lab/gateway/app/replay.py), [agent_service.py](../../../full_stack_lab/gateway/app/agent_service.py) | Agent와 replay가 해시/Schema를 위해 core를 import한다. core 125행은 import 시 tracing을 구성한다. bootstrap은 policy.rego 해시를 기록하고, 관리대장 캐시는 명시적 refresh 전까지 유지한다(675~694행) |
+| E1 공통 실행 경로 | [core.py](../../../full_stack_lab/gateway/app/core.py), [main.py](../../../full_stack_lab/gateway/app/main.py), [mcp_facade.py](../../../full_stack_lab/gateway/app/mcp_facade.py) | `execute_call`(core 977행)에 REST(main 284-288행), MCP facade(43-78행), Agent와 승인 후 실행이 수렴한다 |
+| E2 실행과 증적 저장 순서 | [agent_gateway.py](../../../full_stack_lab/gateway/app/agent_gateway.py), [core.py](../../../full_stack_lab/gateway/app/core.py), [실행 경계 설명](../../runtime-hardening.md) | Agent receipt(34-64행), 승인 claim(core 1225-1231행)은 존재한다. upstream 호출(1171행) 뒤 감사(1209행), 승인 최종 상태(1237-1241행)를 저장한다 |
+| E3 공용 DB 역할과 기동 DDL | [compose.yaml](../../../full_stack_lab/compose.yaml), [db.py](../../../full_stack_lab/gateway/app/db.py), [agent_tables.sql](../../../full_stack_lab/gateway/app/agent_tables.sql) | Gateway, SSE, Agent, Worker가 `mcp` 역할을 공유한다. Gateway bootstrap(core 387-390행)과 Agent lifespan(agent_service 70-75행)이 DDL을 수행한다. 감사 trigger는 있으나 앱 역할이 schema owner임을 SQL 57-60행이 명시한다 |
+| E4 실습 오버레이의 추가 권한 | [compose.corporate-lab.yaml](../../../full_stack_lab/compose.corporate-lab.yaml) | 기본 구성과 달리 A.I.G를 Gateway 컨테이너에서 실행하고 `SYS_ADMIN`, `seccomp:unconfined`, scanner 망을 추가한다(1-31행) |
+| E5 정책과 공용 유틸의 결합 | [core.py](../../../full_stack_lab/gateway/app/core.py), [replay.py](../../../full_stack_lab/gateway/app/replay.py), [agent_service.py](../../../full_stack_lab/gateway/app/agent_service.py) | Agent와 replay가 해시/Schema를 위해 core를 import한다. core 125행은 import 시 tracing을 구성한다. bootstrap은 policy.rego 해시를 기록하고, 관리대장 캐시는 명시적 refresh 전까지 유지한다(675-694행) |
 | E6 이미 있는 검증과 한계 | [현재 반영 기록](../../PDF-INTEGRATION-2026-09.md), [통제 평면](../../../full_stack_lab/CONTROL_PLANES.md), [CI](../../../.github/workflows/verify.yml) | Presidio, 감사 체인 v5, 정책만 재생하는 후보 OPA, 장치 자격, 내부망 검사와 전체 acceptance 실행 절차가 있다 |
 
 이 근거에서 도출한 **추론**은 다음과 같다. 모듈 이름만 나누면 프로세스 침해의 영향 범위는 줄지 않는다. DB 역할과 검사 프로세스의 권한도 나눠야 한다. 또한 현재 Agent receipt가 다루는 미확정 실행을 모든 공통 실행 경로의 상태 모델로 확장해야 장애 복구의 해석이 일치한다. 실제 장애 빈도와 권한 오용 가능성의 크기는 이번 검토에서 측정하지 않았다.
@@ -51,7 +51,7 @@
 - 전송 전에 실행 의도를 영속화한다. 저장 실패 시 전송하지 않는다. 완료를 확인하지 못한 실행은 미확정으로 남기고 자동 재시도하지 않는다.
 - 승인에는 호출 내용, 승인자, 만료, 적용 계약 버전을 결속하고 전송 직전 재검증한다. 종료된 서버와 정지된 계정의 차단을 유지한다.
 - 검사 Worker는 Registry 승인, 사용자 역할, 정책 활성화, 감사 수정 권한을 갖지 않는다. 엔드포인트 보고는 계속 관측 자료로만 취급한다.
-- 판단 기록에서 적용 정책 코드, 데이터, 관리대장과 계약 버전을 식별할 수 있다. 이전 감사 체인 v1~v5의 검증 의미를 보존한다.
+- 판단 기록에서 적용 정책 코드, 데이터, 관리대장과 계약 버전을 식별할 수 있다. 이전 감사 체인 v1-v5의 검증 의미를 보존한다.
 - 조직 전체의 Gateway 우회 방지는 별도 엔드포인트 및 네트워크 검증으로 입증한다. Compose 내부망만으로 보장하지 않는다.
 
 ## Constraints And Non-Goals
@@ -230,7 +230,7 @@ Gateway 관리 API가 아직 같은 프로세스에 있다면 역할 분리만�
 | 운영/관측 | 현재 로그와 구성 검사 관리 | migration, 역할, 미확정 건, 배포 digest 관리 증가 | 설계 가정, 중간 | 설치/복구 소요시간과 운영 runbook 검증 |
 | 이관/호환 | 작은 변경과 쉬운 되돌리기 | API, DB, 상태 전이의 순차 이관 필요 | 소스 기반, 높음 | 이전 client 및 기존 DB 업그레이드 시험 |
 | 개발 편의 | 익숙한 구조, core 변경 충돌 지속 | 모듈별 변경 책임 명확, 초기 인터페이스 설계 필요 | 설계 가정, 중간 | import 경계 검사와 같은 요구의 변경 범위 비교 |
-| 롤백 | 개별 코드 변경 복원 | 확장 schema를 유지한 호환 코드 복원 필요 | 설계 가정, 중간 | 미확정 건과 v1~v5 감사를 보존한 복구 시험 |
+| 롤백 | 개별 코드 변경 복원 | 확장 schema를 유지한 호환 코드 복원 필요 | 설계 가정, 중간 | 미확정 건과 v1-v5 감사를 보존한 복구 시험 |
 
 안 2의 성능 비용을 상쇄한다고 가정해서는 안 된다. 전송 전 기록은 안전을 위한 추가 작업이고 client 재사용은 별도 최적화다. 실제 부하에서 두 효과를 각각 측정해야 한다. DB 감사 체인의 단일 head 잠금도 이미 존재하므로, 병목이 관측되기 전에 체인을 분할하지 않는다.
 
@@ -260,7 +260,7 @@ Gateway 관리 API가 아직 같은 프로세스에 있다면 역할 분리만�
 | A 계약 고정과 순수 모듈 추출 | P1, 첫 구현 단계 | 공통 응답, 해시, DTO, 설정/lifespan 추출. 기존 함수는 위임 wrapper로 유지 | 공개 API 및 저장 형식 변경 없이 이전 코드로 복원 |
 | B 실행 상태와 변경 이력 | P1, A의 계약 확정 후 | journal 추가, ingress/receipt 연결, 승인 상태 분리, 계약 갱신+이력 트랜잭션 | 새 테이블을 삭제하지 않고 호환 코드로 복원. 미완료 건은 UNKNOWN 유지 |
 | C 자격 및 검사 환경 격리 | P1, 데이터 변경 주체 목록 확보 후. B와 설계 병행 가능 | 별도 migration, 역할별 DSN, Worker 권한 축소, A.I.G 컨테이너 분리 | 검증 환경에서 단계별 복원. 운영에서 공용 owner 권한 복구를 자동 롤백으로 사용하지 않음 |
-| D 정책 배포와 운영 기준 | P2, A~C의 상태/권한 계약 후 | 정책 digest, 캐시 갱신, replay 연결, 성능/복구 기준 | 마지막 검증된 정책 묶음과 호환 앱으로 복원, 증적 보존 |
+| D 정책 배포와 운영 기준 | P2, A-C의 상태/권한 계약 후 | 정책 digest, 캐시 갱신, replay 연결, 성능/복구 기준 | 마지막 검증된 정책 묶음과 호환 앱으로 복원, 증적 보존 |
 
 A에서는 실행 순서와 판단을 바꾸지 않아 변경 원인을 분리한다. B의 journal과 기존 감사의 의미를 검증한 뒤 전 ingress로 확대한다. C에서는 먼저 별도 역할로 같은 기능을 성공시킨 다음 공용 자격을 제거한다. 권한 오류가 나면 영향을 받는 경로를 차단하고 배포를 복구해야 하며, 일괄 owner 부여로 우회하지 않는다.
 
@@ -276,7 +276,7 @@ A에서는 실행 순서와 판단을 바꾸지 않아 변경 원인을 분리�
 | DB 최소 권한 | Worker가 principal/Registry/decisions/DDL 변경 시도, 실행 역할의 승인 허가/거부 결정 및 다른 요청 변경 시도 | 금지 작업 거부. 정상 job 처리와 감사 append/체인 검증 성공 |
 | 구성 격리 | 기본/실습/로컬 모델의 합성 Compose 구성 검사 | 운영용 조합에서 고권한 Gateway 금지. A.I.G가 policy/data/tools에 불필요하게 닿지 않음 |
 | 정책 일치 | data/예외/관리대장만 변경, 활성 revision 불일치, cache 재기동 | digest가 구분되고 판단과 replay가 동일 묶음을 식별. 무결성 불일치 처리 검증 |
-| 이력 호환 | 기존 DB 이관 및 감사 v1~v5 검증 | 과거 hash 재작성 없이 검증 성공, 변경 이력 유실 없음 |
+| 이력 호환 | 기존 DB 이관 및 감사 v1-v5 검증 | 과거 hash 재작성 없이 검증 성공, 변경 이력 유실 없음 |
 | 상태 경쟁 | 승인 중복, 종료/정지와 dispatch 경쟁, 동일 멱등 키의 다른 내용 | 동일 요청의 중복 dispatch를 허용하지 않음. 원래 dispatch의 결과가 확인되지 않을 때만 미확정으로 표시하고 자동 재전송하지 않음 |
 
 기존 `./console.sh test`, `./console.sh replay 100`, `acceptance.py`, `agent_acceptance.py`, `runtime_acceptance.py`, `tests/drift_and_fail_closed.sh`를 계속 사용한다. 문서마다 과거 테스트 수가 다르므로 고정 성공 개수보다 **기준 커밋의 실행 보고서, 실패 0, 실제 실행 경계와 효과 증적**으로 판단한다.
