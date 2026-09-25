@@ -1,6 +1,12 @@
 # Endpoint Agent 설치
 
-이 디렉터리는 **사용자 PC에 설치하는 관측 에이전트**입니다. Gateway와 OPA는 `full_stack_lab/`에서 실행합니다. 여기에는 정책 집행기나 관리자 자격이 들어 있지 않습니다. 에이전트는 승인한 MCP 설정 경로와 로컬 리스너를 읽어 Gateway에 보고하며, 설정 변경·프로세스 종료·호출 차단은 하지 않습니다.
+이 디렉터리는 **사용자 PC에 설치하는 관측 에이전트**입니다(`agent.py` 버전 3.0.0). Gateway와 OPA는 `full_stack_lab/`에서 실행합니다. 여기에는 정책 집행기나 관리자 자격이 들어 있지 않습니다. 에이전트는 승인한 MCP 설정 경로와 로컬 리스너를 읽어 Gateway에 보고하며, 설정 변경·프로세스 종료·호출 차단은 하지 않습니다.
+
+인벤토리 대상 설정 파일명: `claude_desktop_config.json`·`claude_config.json`, `.claude.json`(Claude Code —
+user scope와 `projects.<디렉터리>.mcpServers`를 `이름@디렉터리`로 병합), `managed-mcp.json`(Claude Code
+IT 관리형), `.mcp.json`·`mcp.json`·`mcp_settings.json`·`cline_mcp_settings.json`, `settings.json`(Gemini CLI —
+`httpUrl` 키도 읽음 — 와 VS Code), `mcp_config.json`(Antigravity), `opencode.json`(배열형 `command`도 처리),
+`config.toml`·`managed_config.toml`(Codex, IT 관리형은 후자). `node_modules`는 뒤지지 않습니다.
 
 ## 준비
 

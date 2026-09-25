@@ -1,4 +1,4 @@
-# 설계 결정 기록 (v2)
+# 설계 결정 기록 (v2·v3)
 
 > 형식: 결정 · 이유 · 대안과 버린 이유 · 되돌릴 조건. 번호는 다른 문서에서 `D-07`처럼 인용한다.
 > 새 결정을 내리면 맨 아래에 추가하고, 뒤집으면 원래 항목에 "→ D-xx로 대체"를 적는다(지우지 않는다).
@@ -204,3 +204,74 @@
   `endpoint-agent/agent.py`를 쓴다. 워크스테이션 이미지는 compose `additional_contexts`(`endpoint: ../endpoint-agent`)로
   빌드 때 복사한다.
 - **이유**: 랩에서 검증한 에이전트와 배포하는 에이전트가 다르면 랩의 결과가 배포물에 대해 아무것도 말해 주지 않는다.
+
+## D-30 직원 PC는 실제 하네스, 관리형 설정은 레지스트리에서, Gateway는 서버별 엔드포인트 (v3)
+- **결정**: 손으로 짠 `office_agent.py`를 지우고 직원 PC 이미지에 Claude Code·Codex CLI·Gemini CLI·OpenCode를 공식 npm
+  패키지·고정 버전으로 설치한다. 회사가 더하는 것은 IT 부서가 더하는 것뿐이다 — 관리형 설정(`/etc/claude-code`,
+  `/etc/codex`, `/etc/gemini-cli`, `/etc/opencode`), SSO 자격 도우미(`bob-sso`), 단말 에이전트. 관리형 설정은
+  `registry/catalog.toml`에서 빌드 때 생성(`workstation/managed/render.py`)하고, 서버마다 Gateway의 `/mcp/<server>/`를
+  가리킨다. Gateway는 그 경로를 같은 MCP 앱·같은 판정 경로에 서버 범위로 태운다(`main.ServerPath`).
+- **이유**: 통제하려는 것은 "직원이 평소 쓰는 하네스가 MCP 서버를 부르는 통신"이다. 자체 에이전트로는 하네스의 MCP
+  클라이언트(세션·전송·도구 이름 규칙·재시도)가 게이트웨이와 맞물리는지 알 수 없다. 서버별 URL이면 직원에게는 서버가
+  원래 이름·원래 도구 이름으로 보이고(`mcp__filesystem__read_text_file`), 하네스의 서버 켜고 끄기도 그대로 동작한다.
+  설정 네 벌을 손으로 쓰면 서버 하나가 빠지는 일이 생기므로 레지스트리에서 만들고 CI가 대조한다.
+- **대안**: 집계 `/mcp/` 하나만 배포 — 도구 166개가 한 서버로 보여 소형 모델이 도구를 부르지 못했고(1.5B, 90초), 직원이
+  서버를 골라 켤 수 없다(집계는 호환용으로 남김). TLS 가로채기로 원격 MCP를 투명 프록시 — 사내 CA 배포와 하네스별
+  인증서 신뢰 설정이 필요하고, 관리형 설정이 있는 한 얻는 것이 없다.
+- **되돌릴 조건**: 하네스가 관리형 MCP 설정을 지원하지 않게 되면 그 하네스는 망 차단 + 단말 인벤토리로만 다룬다.
+- D-04의 집계 이름 규칙(`<server>__<tool>`)은 `/mcp/`에만 해당한다.
+
+## D-31 LLM 게이트웨이가 하네스별 API를 번역, 스크립트 모드는 MCP Inspector CLI (v3)
+- **결정**: 하네스는 각자 자기 형식으로 LiteLLM에 요청한다(Claude `/v1/messages`, Codex `/v1/responses`, Gemini
+  `generateContent`, OpenCode `/v1/chat/completions`). LiteLLM이 전부 `bob-assistant` → Ollama `/v1`로 번역하고
+  `reasoning_effort: none`을 붙인다. 모델 없는 결정적 실행(CI·`--no-llm`)은 공식 MCP Inspector CLI가 시나리오의 호출을
+  같은 URL·같은 SSO 토큰으로 보낸다. 판정 대조는 하네스 출력이 아니라 직원 토큰으로 읽은 Gateway 활동 기록으로 한다.
+  하네스 연결 확인은 각 하네스의 `mcp list`(Codex는 app-server `mcpServerStatus/list`)로 모델 없이 한다.
+- **이유**: 형식 번역·가상 키·사용량 귀속은 LLM 게이트웨이의 본업이고 이미 랩에 있다(손코드 대신 오픈소스). 스크립트
+  클라이언트를 직접 짜면 그것이 또 하나의 가짜 하네스가 된다. 판정을 Gateway에서 읽으면 네 하네스의 출력 형식 차이가
+  시험에 들어오지 않는다.
+- **실측**(2026-09-26): Claude Code(4B) filesystem 두 번 호출 후 올바른 요약 146초, Codex(2B) postgres 조회 43초, Gemini
+  CLI(2B) fetch 54초, OpenCode(2B) read_text_file → `MCP-SHADOW-001` 65초. qwen3.5 생각 모드를 끄지 않으면 한 턴에 70초가
+  더 걸렸다.
+- **대안**: 하네스를 Ollama에 직접 연결(Ollama도 Anthropic·Responses API를 낸다) — 직원별 키와 사용량 귀속이 사라지고
+  LLM 통제 지점이 없어진다.
+
+## D-32 메모리 예산: Presidio 소형 spaCy, 모델 하나, 기본 2B (v3)
+- **결정**: Presidio analyzer는 원본 이미지에 spaCy `en_core_web_sm`만 더한 파생 이미지(`full_stack_lab/privacy/`)를 쓴다.
+  Ollama는 모델 하나·요청 하나만 올리고(KV 캐시 q8), 기본 모델은 `qwen3.5:2b-q4_K_M`(12K)이다.
+- **이유**: 참조 노트북의 WSL VM은 7.6GB다. 스택 ~3.6GB + qwen3.5:4b@16K(+3.46GB) + Codex 실행에서 VM이 두 번 응답을
+  멈췄다(`Wsl/Service/0x8007274c`, `wsl --shutdown`으로만 복구). Gateway가 Presidio에 요청하는 엔터티는 전부 패턴
+  인식기라 NER 대형 모델(785MB)이 쓸모없었다 — 소형으로 182MB. 벤치(실제 도구 스키마·한국어 지시 4건): 4B 4/4·첫 턴
+  39~148초, 2B 2/4·12~44초(나머지 2건도 탐색 도구·별칭 도구로 합리적 선택), qwen3 4B·granite4·ministral-3 2/4.
+- **되돌릴 조건**: 메모리가 넉넉한 호스트에서는 `LOCAL_LLM_MODEL=qwen3.5:4b`, `LOCAL_LLM_CONTEXT=16384`. 사람 이름·주소 같은
+  NER 엔터티를 정책에 넣으면 대형 모델로 되돌린다.
+
+## D-33 Console v3: 페이지 내 탭, 차트 우선, 설명 없는 화면 (v3)
+- **결정**: 각 화면을 머리·KPI 스트립·페이지 내 탭·차트가 앞선 패널로 나누고, 상세는 탭이 있는 드로어로 연다. 차트는
+  Apache ECharts 6.1.0을 내장(`vendor/echarts.min.js`, npm 무결성 대조)하고 `charts.mjs`로 감싼다. 툴팁은
+  `renderMode: "richText"`(캔버스). 글꼴은 두 단계 키우고(본문 16px, KPI 36px), 사용법·의의 설명 문단은 UI에서 뺀다.
+- **이유**: 한 화면에 표·카드·설명이 모두 있어 읽히지 않았다(사용자 피드백). 레퍼런스(Datadog Cloud SIEM Signals Explorer,
+  Elastic Security Alerts·Overview, Tines Cases, Portkey·Langfuse)는 공통으로 KPI → 시계열 → 분포/Top-N, 목록 위 히스토그램,
+  측면 패널 안의 탭을 쓴다. 디자인 스킬(anthropics `frontend-design`, vercel `web-design-guidelines`, `ui-ux-pro-max`
+  밀도 8·모션 2)의 규칙을 따랐다: 판정 5색만 채도, 숫자 tabular-nums, 색만으로 의미를 싣지 않기(칩에 점+단어), 카드마다
+  같은 그림자 금지. 설명은 팀원이 가이드라인 문서로 쓴다.
+- **보안**: 감사 로그의 문자열(하네스가 스스로 대는 이름 포함)이 HTML 툴팁의 innerHTML로 들어가지 않게 캔버스 툴팁을 쓴다.
+  HTML 툴팁은 인라인 스타일 속성이 필요해 CSP(`style-src 'self'`)에도 걸린다.
+- **대안**: 관리자 템플릿(Tabler 등)을 통째로 도입 — 기존 안전 HTML 템플릿·드로어·키보드 동선을 다시 짜야 하고 화면
+  어휘가 제품과 무관해진다. 차트만 오픈소스(ECharts)로 가져왔다.
+
+## D-34 하네스 안의 도구 승인은 IT의 사전 승인, 판정은 Gateway (v3)
+- **결정**: Claude `permissions.allow: mcp__<server>`, Codex `default_tools_approval_mode = "approve"`, Gemini `trust: true`,
+  OpenCode 기본 허용. 소형 CPU 모델에서는 컴팩트 모드(`BOB_HARNESS_COMPACT=1`)로 하네스의 시스템 프롬프트를 짧게 바꾸고
+  내장 도구(셸·편집·웹·이미지·서브에이전트)를 하네스 고유 스위치로 끈다.
+- **이유**: 하네스와 Gateway가 둘 다 막으면 어디서 막혔는지 기록이 둘로 갈라지고, 헤드리스 실행은 사람 확인을 기다리다
+  실패한다(Codex: "MCP tool call requires approval, but approval policy is never"). 셸이 있으면 소형 모델은 MCP 도구 대신
+  `psql`을 시도했고, 컨테이너의 bwrap 샌드박스에서 실패하며 40턴을 돌았다. 컴팩트 모드는 모델이 읽는 것을 줄일 뿐 MCP
+  경로(하네스의 MCP 클라이언트 → Gateway)는 바꾸지 않는다.
+- **되돌릴 조건**: 클라우드 모델을 LiteLLM 뒤에 붙이면 `BOB_HARNESS_COMPACT=0`으로 하네스 본래 동작.
+
+## D-35 협력사에게 숨긴 도구는 시나리오가 아니라 acceptance가 확인 (v3)
+- **결정**: 협력사 목록에는 w/x 도구가 없으므로 ws-nkk의 `push-change`(Gitea 파일 수정) 기대 판정을 `[]`로 바꾼다.
+  숨긴 도구를 목록 없이 직접 호출해도 판정된다는 것은 acceptance `tool-hidden-from-partner-still-decided`가 확인한다.
+- **이유**: 실제 하네스(와 Inspector CLI)는 목록에 없는 도구를 부르지 않는다("tool not found"). 기대값을 Block으로 두면
+  하네스가 할 수 없는 행동을 시나리오가 요구하게 된다. 통제가 목록 숨김에 기대지 않는다는 보장은 직접 호출 시험이 맡는다.

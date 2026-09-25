@@ -6,8 +6,8 @@
 ## 1. 실행
 
 ```bash
-./console.sh up            # 전체 (첫 실행: 빌드 + qwen2.5:1.5b 다운로드)
-./console.sh up --no-llm   # LLM 없이 — 직원 PC는 정해진 호출만(scripted)
+./console.sh up            # 전체 (첫 실행: 빌드 + qwen3.5:2b-q4_K_M 다운로드)
+./console.sh up --no-llm   # LLM 없이 — 직원 PC의 하네스 도구 호출은 MCP Inspector CLI가 대신(scripted)
 ./console.sh status        # 서비스 상태와 MCP 서버 준비 수
 ```
 
@@ -24,13 +24,16 @@
 ## 2. 직원의 하루
 
 ```bash
-./console.sh workday                 # 네 명 전원, LLM 모드
+./console.sh workday                 # 네 명 전원, 각자의 하네스로(LLM 모드)
 ./console.sh workday ws-jwj --mode scripted --check
 ./console.sh ask ws-ysg "payment-service 최근 커밋 3개 요약해 줘" --servers git
+./console.sh harnesses               # PC 4대 × 하네스 4종이 관리형 서버 10종에 다 붙는지(모델 불필요)
 ./console.sh watch                   # 판정을 사람이 읽는 한 줄로
 ```
 
-시나리오(`workstation/scenarios/*.toml`, 21건)는 실제 업무와 실제 위험을 섞었습니다.
+직원 PC에는 Claude Code·Codex·Gemini CLI·OpenCode 네 하네스가 모두 설치돼 있고(주 하네스는 PC마다
+다름), `bob-ask`가 그중 하나를 헤드리스로 부릅니다. 관리형 MCP 설정은 `registry/catalog.toml`에서
+이미지 빌드 때 생성됩니다. 시나리오(`workstation/scenarios/*.toml`, 21건)는 실제 업무와 실제 위험을 섞었습니다.
 
 | 직원 | 하는 일 | 보이는 통제 |
 | --- | --- | --- |
@@ -97,7 +100,7 @@ Gateway API 중 토큰 없이 열려 있는 것은 다음뿐입니다: `/api/hea
 | `opa/` | Rego 정책·시험·관리대장·예외·값 |
 | `mcp/` | MCP 런타임 이미지와 실행 스크립트 |
 | `corp/` | 회사 시드(파일·저장소·DB·메일·Redis·인트라넷·Gitea) |
-| `workstation/` | 직원 PC 이미지, `office_agent.py`, 시나리오, MCP 설정(관리형·섀도) |
+| `workstation/` | 직원 PC 이미지(하네스 4종), `bin/{bob-ask,workday,harness-check,bob-sso}`, 시나리오, `managed/render.py`(카탈로그 → 하네스별 관리형 설정), 섀도 설정 |
 | `llm/` | LiteLLM 설정 |
 | `../endpoint-agent/` | 단말 에이전트(표준 라이브러리만). 직원 PC 이미지가 빌드 때 복사하고, 실제 PC에는 설치기로 배포 |
 | `supply_chain/` | 도입 신청 격리 검증 워커 |
@@ -108,6 +111,6 @@ Gateway API 중 토큰 없이 열려 있는 것은 다음뿐입니다: `/api/hea
 
 ## 8. 한계
 - 합성 로그인, 합성 회사 데이터. Compose 내부망은 방화벽이 아니다.
-- LLM 모드의 결과는 작은 로컬 모델(qwen2.5:1.5b) 품질에 좌우된다. 판정 대조는 scripted 모드로 한다.
+- LLM 모드의 결과는 작은 로컬 모델(기본 `qwen3.5:2b-q4_K_M`) 품질에 좌우된다. 판정 대조는 scripted 모드로 한다.
 - 섀도 MCP는 발견·증적까지. 차단은 네트워크 평면 몫.
 - 제공자가 보유 자격을 고지하지 않으면 종료 판정은 T3에 머문다 — 논문이 특정한 구조적 한계.

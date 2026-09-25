@@ -20,7 +20,7 @@
 | `upstream_attempted`, `upstream_executed` | 전달 시도 / 실행 확인. 시도했는데 미확인이면 종료 판정에서 "실행 여부 미확인" |
 | `approval_id` | 승인 대기 요청 |
 | `enforcement`, `would_decision`, `would_policy_id` | 관찰 모드 기록 |
-| `client` | `{workstation, agent, task_id, token_jti, oauth_client}` — 클라이언트가 보고한 값, 그대로 기록 |
+| `client` | `{workstation, agent, harness, endpoint, task_id, token_jti, oauth_client}` — 클라이언트가 보고한 값, 그대로 기록. `harness`는 `{name, version, user_agent}`(MCP `initialize`의 clientInfo — `claude-code`, `codex-mcp-client`, `gemini-cli-mcp-client`, `opencode`, `inspector-cli`). `endpoint`는 호출이 들어온 서버 id 또는 `aggregate`(집계 엔드포인트). `workstation`은 `X-Workstation-Id` 헤더가 없으면 토큰의 `client_id`(=워크스테이션)로 대신한다. 판정에는 쓰지 않고 기록만 |
 | `request_payload`, `result_preview`, `error` | 인자(긴 문자열 축약)·결과 미리보기·오류 |
 | `policy_input` | OPA에 보낸 입력 전체(재생용). 개인정보 값은 없고 유형만 |
 | `risk_score`, `privacy_types`, `sequence_flags` | 조사용 위험 점수(0~100), Presidio 엔터티 유형(입력 ∪ 출력), 연쇄 표지 |

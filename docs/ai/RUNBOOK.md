@@ -7,19 +7,18 @@
 | 항목 | 값 |
 | --- | --- |
 | 호스트 | Windows 11 + WSL2 `kali-linux` (Docker Desktop 없음, WSL 안의 Docker Engine 28) |
-| 자원 | RAM 7GB, 16 논리 CPU (Intel Ultra 7 255H, P/E/LP-E 하이브리드) |
+| 자원 | WSL VM 메모리 7.6GB, 호스트 15.4GB, 16 논리 CPU (Intel Ultra 7 255H, P/E/LP-E 하이브리드) |
 | 저장소 | WSL `/home/kali/mcpgw-v2` = Windows `\\wsl.localhost\kali-linux\home\kali\mcpgw-v2` |
-| 브랜치 | `feat/2026-09-v2.0-workforce-real-mcp` |
+| 브랜치 | `feat/2026-09-v3.0-harness-gateway` |
 | 비밀번호 | **WSL sudo를 포함해 로컬 비밀번호는 전부 `1111`** (sudo는 무암호 설정) |
 | 랩 계정 비밀번호 | `test-password` (`.env`의 `MOCK_SSO_PASSWORD`) |
 | 호스트 포트 | 이 노트북은 `.env`에 `CONSOLE_PORT=18000`, `GATEWAY_PORT=18080`, `JAEGER_PORT=26686`, `GITEA_PORT=13000` |
 
-같은 WSL에서 다른 작업 트리(`C:\Users\bobysg\bob\프로젝트\mcp-gateway-pdf-integration`, Compose 프로젝트
-`mcpgw-23ffc0f4e9`)가 v1 랩을 8000/8080으로 띄운다. **그 컨테이너를 멈추지 말 것** — 포트를 나눠
-공존한다(D-14). 프로젝트 이름은 `.env`의 `MCP_COMPOSE_PROJECT`(여기서는 `mcpgw-v2`).
+이 노트북에 있던 다른 작업 트리의 v1 랩 스택은 2026-09-25에 사용자 승인을 받아 내렸다. 지금은 이
+저장소의 `mcpgw-v2` 스택만 떠 있다. 프로젝트 이름은 `.env`의 `MCP_COMPOSE_PROJECT`.
 
 ### 망 대역 (주소 풀 소진 방지)
-이 WSL에는 랩이 여러 개(v2, v1 pdf-integration 트리, 또 다른 복제본) 떠 있다. v2는 처음 실행할 때 겹치지 않는
+한 Docker 호스트에 랩 복제본이 여러 개 뜰 수 있다(이 노트북도 한때 그랬다). 랩은 처음 실행할 때 겹치지 않는
 `/16`을 골라 `.env`의 `MCP_NET_PREFIX`에 고정하고 12개 망에 `/24`를 명시하므로 Docker 기본 주소 풀을 쓰지 않는다
 (D-24). 이 방식 이전에 만든 스택은 `./console.sh down` 뒤 `up`. 후보 대역이 모두 겹친다는 오류가 나면 쓰지 않는
 **자기** 복제본만 내린다. 남의 스택 네트워크를 지우지 않는다.
@@ -43,10 +42,11 @@ VM이 다시 뜨면 스스로 올라온다.
 
 | 명령 | 하는 일 |
 | --- | --- |
-| `./console.sh up` | `.env` 생성(서명 키·LiteLLM 마스터 키·직원별 LLM 키·장치 키) → 이미지 빌드 → 회사 시스템·MCP 10종 → Ollama 모델 확인/받기 → `bob-assistant` 파생 모델 → LiteLLM·키 발급 → Gateway·Console·워커 → 계약 기준선(없으면 생성) → 장치 자격 등록 → 직원 PC 4대 |
-| `./console.sh up --no-llm` | LLM 없이(직원 PC는 scripted 모드). CI가 쓴다 |
-| `./console.sh workday [ws\|all] [--mode llm\|scripted] [--check]` | 직원 PC의 하루 업무 시나리오(`workstation/scenarios/*.toml`). `--check`는 기대 판정과 대조 |
-| `./console.sh ask <ws> "지시" [--servers a,b]` | 한 직원 AI 어시스턴트에게 지시 |
+| `./console.sh up` | `.env` 생성(서명 키·LiteLLM 마스터 키·직원별 LLM 키·장치 키) → 이미지 빌드 → 회사 시스템·MCP 10종 → Ollama 모델 확인/받기 → `bob-assistant` 파생 모델 → LiteLLM·키 발급 → Gateway·Console·워커 → 계약 기준선(없으면 생성) → 장치 자격 등록 → 직원 PC 4대(각자 하네스 4종 설치) |
+| `./console.sh up --no-llm` | LLM 없이. 직원 PC의 하네스 도구 호출은 **MCP Inspector CLI**가 scripted 모드로 대신한다. CI가 쓴다 |
+| `./console.sh workday [ws\|all] [--mode llm\|scripted] [--check]` | 직원 PC의 하루 업무 시나리오(`workstation/scenarios/*.toml`)를 각자의 하네스로 실행. llm=하네스가 자연어 지시로 도구를 고름, scripted=MCP Inspector CLI가 같은 Gateway URL·SSO 토큰으로 직접 호출. `--check`는 scripted에서만 기대 판정과 엄격 대조 |
+| `./console.sh ask <ws> "지시" [--servers a,b] [--harness claude\|codex\|gemini\|opencode]` | 한 직원 PC에 설치된 하네스에 헤드리스로 업무 지시(`bob-ask`). PC마다 기본 하네스가 다르다(ws-ysg=claude, ws-jwj=codex, ws-pse=gemini, ws-nkk=opencode). 네 PC 모두 하네스 4종이 다 설치돼 있어 `--harness`로 바꿔 부를 수 있다 |
+| `./console.sh harnesses` | 직원 PC 4대의 하네스 4종이 Gateway의 관리형 MCP 서버 10종에 모두 붙는지 확인(모델 호출 없음) |
 | `./console.sh watch` | Gateway 판정을 사람이 읽는 한 줄 로그로 계속 출력 (`scripts/watch.py`) |
 | `./console.sh contracts [--check\|--update]` | 계약 잠금 대조 / 재생성(재생성 후 diff를 읽고 커밋) |
 | `./console.sh experiment e1\|e2\|e3` | 논문 실험 재현, `reports/experiment-*.json` |
@@ -105,3 +105,28 @@ Console `#/termination` → 관계 카드 "종료 시작" → 케이스 화면�
 - `./console.sh down` — 컨테이너만 중지(데이터 유지).
 - `./console.sh reset` — DB·회사 시스템·모델 볼륨 삭제. 다음 `up`이 시드부터 다시(모델 재다운로드 포함).
 - 회사 시드만 다시: `docker compose run --rm corp-seed --force`.
+
+## 6. 실제 PC에서 하네스를 손으로 쓰기
+`bob-ask`·`workday`를 거치지 않고, 직원이 평소 쓰듯 하네스를 직접 불러도 된다.
+
+```bash
+docker compose exec ws-ysg bash -l
+bob-ask "payment-service 최근 커밋 3개 요약해 줘"   # 이 PC의 기본 하네스(HARNESS=claude)로
+claude -p "..."                                      # 하네스를 직접 불러도 같은 경로 — Claude는 headersHelper로 토큰을 받고,
+                                                     # codex·gemini·opencode는 로그인 셸의 함수(/etc/profile.d/bob-harness.sh)가 실행마다 새 토큰을 채운다
+```
+다른 하네스도 같은 방식(`codex exec`, `gemini -p`, `opencode run`) — 네 PC 모두 하네스 4종이 다 설치돼 있다.
+
+관리형 설정(IT가 사전 승인한 MCP 서버 10종과 도구)은 `/etc/claude-code/managed-mcp.json`·`managed-settings.json`,
+`/etc/codex/managed_config.toml`, `/etc/gemini-cli/settings.json`, `/etc/opencode/opencode.json`
+(`OPENCODE_CONFIG`로 지정)에 있다. 전부 `registry/catalog.toml`에서 워크스테이션 이미지 빌드 때
+`workstation/managed/render.py`가 생성한 것이라 컨테이너 안에서 손으로 고치지 않는다 — 서버를 추가·변경하려면
+카탈로그를 고치고 이미지를 다시 빌드한다.
+
+`BOB_HARNESS_COMPACT=1`(기본)은 CPU 소형 모델을 위해 하네스의 내장 도구를 끄고 프롬프트를
+`/etc/bob/harness-prompt.md`로 줄인다. 클라우드 모델을 붙일 때는 `0`으로 하네스 본래 프롬프트를 쓴다.
+
+로컬 모델은 `LOCAL_LLM_MODEL`(기본 `qwen3.5:2b-q4_K_M`, 적재 1.7GB)·`LOCAL_LLM_CONTEXT`(기본 12288)로
+바꾼다. 품질이 더 필요하면 `LOCAL_LLM_MODEL=qwen3.5:4b`이지만 16K 컨텍스트에서 +3.4GB가 더 든다 — 이
+노트북의 WSL VM은 7.6GB(호스트 15.4GB)뿐이라 스택(~3.6GB) 위에 얹었다가 WSL이 두 번 멎은 적이 있다
+(복구는 `wsl --shutdown`). 모델을 여러 개 동시에 올리지 말 것(`OLLAMA_MAX_LOADED_MODELS=1`), 평소엔 2B로 둔다.

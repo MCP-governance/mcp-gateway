@@ -1,6 +1,7 @@
 # The completion criteria are only real if something runs them. `static` needs no
-# running stack; `verify` brings the whole v2 lab up (without the local LLM - the
-# workday runs its scripted mode) and runs the same `./console.sh test` a person runs.
+# running stack; `verify` brings the whole lab up (without the local LLM - the harnesses
+# are checked with `mcp list`, the workday runs its scripted mode through the MCP
+# Inspector CLI) and runs the same `./console.sh test` a person runs.
 name: full_stack_lab 검증
 
 on:
@@ -41,7 +42,8 @@ jobs:
       - name: Python lint
         run: |
           python -m pip install --quiet pyflakes
-          python -m pyflakes gateway/app/*.py tests/*.py supply_chain/*.py workstation/*.py corp/*.py scripts/*.py ../endpoint-agent/*.py
+          python -m pyflakes gateway/app/*.py tests/*.py supply_chain/*.py workstation/*.py workstation/managed/*.py \
+            workstation/bin/bob-sso workstation/bin/workday workstation/bin/harness-check corp/*.py scripts/*.py ../endpoint-agent/*.py
 
       # console.js is an ES module (it imports console-state.mjs); Node 22+ parses it with --check.
       - uses: actions/setup-node@v7
@@ -51,8 +53,9 @@ jobs:
 
       - name: Shell·JS 문법과 콘솔 상태 테스트
         run: |
-          bash -n console.sh tests/security_regression.sh workstation/entrypoint.sh mcp/run-server.sh corp/gitea-entrypoint.sh ../endpoint-agent/install-linux.sh
+          bash -n console.sh tests/security_regression.sh workstation/entrypoint.sh workstation/bin/bob-ask mcp/run-server.sh corp/gitea-entrypoint.sh ../endpoint-agent/install-linux.sh
           node --check gateway/app/agent_static/console.js
+          node --check gateway/app/agent_static/charts.mjs
           node --check gateway/app/agent_static/login.js
           node --test tests/console-state.test.mjs
 
@@ -63,6 +66,21 @@ jobs:
           python3 tests/replay_check.py
           python3 ../endpoint-agent/agent.py --self-check
           python3 scripts/network_prefix.py --self-check
+          # The four harness configs are rendered from the registry; every server must land in each.
+          python3 workstation/managed/render.py registry/catalog.toml /tmp/managed
+          python3 - <<'PY'
+          import json, tomllib
+          servers = sorted(tomllib.load(open("registry/catalog.toml", "rb"))["servers"])
+          got = {
+              "claude": sorted(json.load(open("/tmp/managed/claude-code/managed-mcp.json"))["mcpServers"]),
+              "codex": sorted(tomllib.load(open("/tmp/managed/codex/config.toml", "rb"))["mcp_servers"]),
+              "gemini": sorted(json.load(open("/tmp/managed/gemini-cli/settings.json"))["mcpServers"]),
+              "opencode": sorted(json.load(open("/tmp/managed/opencode/opencode.json"))["mcp"]),
+          }
+          bad = {k: v for k, v in got.items() if v != servers}
+          assert not bad, f"관리형 하네스 설정의 서버 목록이 레지스트리와 다름: {bad}"
+          print(f"PASS 하네스 4종 × 서버 {len(servers)}개")
+          PY
 
       # The README lists what is deliberately open. A list that silently falls behind
       # the code is worse than none: a reviewer reads it as exhaustive.

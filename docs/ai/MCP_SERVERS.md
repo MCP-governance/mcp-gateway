@@ -26,6 +26,15 @@
 - "제공자" 배치는 논문의 **원격 MCP 서비스**를 모사한다. 서버가 하위 시스템에 대한 자격을 들고 있고,
   조직은 그 서버를 직접 운영하지 않는다는 뜻이다. 종료 조건(`exit_terms`)이 여기서만 의미가 있다.
 
+## 1-1. 하네스가 서버에 닿는 법
+직원 PC의 하네스(Claude Code·Codex·Gemini CLI·OpenCode)는 각 서버를 Gateway의 `/mcp/<server>/`로 본다 —
+하네스 관리형 설정에 서버 하나당 URL 하나가 있고, 도구 이름도 그 서버 고유 이름 그대로라 직접 붙은 것처럼
+보인다(판정 경로는 집계 엔드포인트 `/mcp/`의 `<server>__<tool>`과 같다. 집계 엔드포인트도 유지됨).
+관리형 설정 파일(Claude Code `/etc/claude-code/managed-mcp.json`, Codex `/etc/codex/managed_config.toml`,
+Gemini CLI `/etc/gemini-cli/settings.json`, OpenCode `/etc/opencode/opencode.json`)은 `registry/catalog.toml`에서
+워크스테이션 이미지 **빌드 때** `workstation/managed/render.py`가 만든다. 그래서 서버를 추가·바꾸는 절차는
+"카탈로그를 고치고 워크스테이션 이미지를 다시 빌드"로 끝난다 — 컨테이너 안의 설정 파일은 손으로 고치지 않는다.
+
 ## 2. 설치·실행 구조
 
 - **런타임 이미지 하나**(`mcp/runtime.Dockerfile`)에 9종이 들어 있다: python:3.12-slim + Node 22.
@@ -117,4 +126,6 @@
 4. 분류 규칙이 필요하면 `[classification.*]`와 `gateway/app/classify.py`의 추출기, `python -m app.classify`.
 5. 띄운 뒤 `./console.sh contracts --update` → `registry/contracts.lock.json` diff를 **읽고** 커밋.
 6. 이용 관계가 있으면 `[[usage_relationships]]`, 시나리오가 있으면 `workstation/scenarios/*.toml`.
-7. `./console.sh test`.
+7. 하네스가 새 서버를 보게 워크스테이션 이미지도 다시 빌드(`./console.sh up`이 이미지 빌드를 포함) — 관리형
+   설정은 카탈로그에서 렌더링되므로 이 단계를 건너뛰면 하네스가 새 서버를 못 본다.
+8. `./console.sh test`(`harnesses`로 하네스 4종이 새 서버에 붙는지도 같이 확인).

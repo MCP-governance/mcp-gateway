@@ -16,10 +16,14 @@
 
 | 경로 | 인증 | 설명 |
 | --- | --- | --- |
-| `POST /mcp/` | 사용자 | Streamable HTTP MCP. 토큰 없음/무효 → `401` + `WWW-Authenticate: Bearer resource_metadata="…"`. 도구 이름 `<server>__<tool>`, 결과 `_meta.gateway`에 판정(decision·policy_id·decision_id·approval_id·trace_id) |
+| `POST /mcp/` | 사용자 | Streamable HTTP MCP(집계). 토큰 없음/무효 → `401` + `WWW-Authenticate: Bearer resource_metadata="…"`. 도구 이름 `<server>__<tool>`, 결과 `_meta.gateway`에 판정(decision·policy_id·decision_id·approval_id·trace_id) |
+| `POST /mcp/<server>/` | 사용자 | 서버 하나만 스코프한 같은 MCP 앱 — 하네스 관리형 설정이 서버당 이 URL 하나를 쓴다. 도구는 서버 고유 이름. 인증·판정 경로는 `/mcp/`와 동일(같은 401 챌린지). 등록되지 않은 서버 이름은 집계 엔드포인트로 새지 않고 `404` |
 | `GET /.well-known/oauth-protected-resource` | 공개 | RFC 9728 보호 자원 메타데이터(인가 서버 = IdP) |
 
-선택 헤더(클라이언트 보고, 감사 기록에 그대로): `X-Workstation-Id`, `X-Agent-Name`, `X-Agent-Task-Id`.
+하네스 신원(`claude-code`, `codex-mcp-client`, `gemini-cli-mcp-client`, `opencode`, `inspector-cli`)은 MCP
+`initialize`의 `clientInfo`와 `User-Agent`에서 자동으로 기록된다(헤더 불필요). 선택 헤더(여전히 클라이언트
+보고, 감사 기록에 그대로): `X-Workstation-Id`, `X-Agent-Name`, `X-Agent-Task-Id` — 없으면 `X-Workstation-Id`는
+토큰의 `client_id`(=워크스테이션)로 대신한다.
 
 ## 3. IdP (agent-service)
 
@@ -37,7 +41,7 @@
 | 경로 | 인증 | 설명 |
 | --- | --- | --- |
 | `GET/POST/PUT/DELETE /gw/<path>` | 사용자 | Gateway `/api/<path>` 프록시. 관리자: `overview, activity, registry, health, termination/, approvals/, catalog/, enforcement, monitor/, audit/, policy/, endpoint/, supply-chain/, risk-catalog, lab/` · 그 외: `activity, health`만 |
-| `GET /approvals` · `POST /approvals/{id}/approve|reject` | 관리자 | 승인 대기(요청자·도구·인자·판정 맥락) |
+| `GET /approvals` · `POST /approvals/{id}/approve|reject` | 관리자 | `{approvals, history}` — 대기 중(요청자·도구·인자·판정 맥락)과 처리·만료된 최근 50건 |
 | `GET /api/accounts` · `PUT /api/accounts/{user_id}/status` | 관리자 | 신원 관리대장, 계정 사용/중지/잠금 |
 | `GET /api/mcp-requests` · `POST /api/mcp-requests` | 사용자 | 도입 신청 목록(관리자=전체) / 신청 `{display_name, repository_url, requested_transport, purpose}` — 종료 조건 필드를 보내면 422 |
 | `PUT /api/mcp-requests/{id}/exit-terms` | 관리자 | 제공자 문서로 확인한 종료 조건 기록 `{provider_credential_disclosure, revocation_evidence, audit_access_retained, evidence_url(https), note}` → 검증 주체·시각과 함께 저장. 승인 전(HOLD~VALIDATED)만 |
@@ -53,7 +57,7 @@
 | `GET /api/health` | 공개 | 구성요소·MCP 서버 준비 수 |
 | `POST /api/session` | 공개 | 로그인 프록시(IdP로 전달) |
 | `GET /api/activity?after&limit&decision&server&person` | 사용자 | 판정을 읽는 문장으로(비관리자는 자기 것만) |
-| `GET /api/overview` | 관리자 | 개요 화면 한 번에 |
+| `GET /api/overview` | 관리자 | 개요 화면 한 번에 — `series`(24시간 시간대별 판정 수), `flows`(하네스×서버×판정 수), 워크스테이션별 `harness`·`calls` 포함 |
 | `GET /api/state` · `GET /api/registry` | 관리자 | 원시 상태 / 카탈로그+계약+이용 관계 |
 | `POST /api/catalog/refresh` | 관리자 | 모든 서버 계약 재확인 |
 | `POST /api/registry/{server}/approve-contract` | 관리자 | 검토한 계약 변경을 승인본으로(`note` 필수) |

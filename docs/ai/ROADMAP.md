@@ -19,36 +19,48 @@
    (TTL 동안 수락)를 추가하면 C3 공백의 스펙트럼을 보여 줄 수 있다.
 7. **Console 부가 기능** — 활동 로그 CSV 내보내기, 케이스 판정 이력 비교, 관찰 모드 요약(`/api/monitor/summary`) 화면.
 8. **CI 시간** — `verify` job이 MCP 런타임 이미지를 매번 빌드한다. GHCR 캐시(`docker/build-push-action` + cache-to)로 줄일 수 있다.
+9. **사내망 TLS** — Gateway·LLM 게이트웨이는 지금 평문 HTTP(`http://gateway:8080`, `http://llm-gateway:4000`)다. 실제 사내망에 놓으려면 인증서가 필요하다.
+10. **하네스의 완전한 MCP OAuth** — 지금은 `bob-sso`가 password grant로 대신 받아 온다. 인가 코드 + DCR(Dynamic Client Registration)을 하네스가 직접 하게 바꾸는 편이 MCP 인가 명세에 더 가깝다.
+11. **추가 클라이언트(Antigravity·Cursor·VS Code)** — 같은 Gateway URL을 각자의 MCP 설정에 넣으면 되고 단말 에이전트는 그 파일들을 이미 인벤토리한다. GUI 앱이라 랩에서 실행·검증하지 않았고, `render.py`에 이 형식들의 관리형 설정 생성을 더할 수 있다.
+12. **더 나은 도구 선택을 위한 모델 경로** — GPU 추론(Intel Arc, Vulkan 또는 IPEX 경유) 또는 LiteLLM 뒤에 클라우드 키를 붙이는 두 방향 다 검토할 것. 지금 CPU 2B 모델은 벤치 4건 중 2건만 기대한 도구를 곧바로 골랐다(나머지는 탐색 도구·별칭 도구).
+13. **Gemini CLI `tools.exclude` → Policy Engine 이관** — Gemini CLI가 사용 중단을 예고했다. 대체 설정 스키마가 확정되면 `workstation/managed/render.py`의 Gemini 설정을 옮긴다.
 
 ## 2. 알려진 한계 (의도적으로 남김)
 
 - 합성 로그인은 조직 SSO가 아니다. 비밀번호는 모두 `test-password`.
 - Compose 내부망은 호스트 방화벽·tailnet ACL이 아니다. 여러 호스트로 나누면 `docs/design/NETWORK.md`의
   설계가 선행되어야 한다.
-- LLM 모드의 업무 결과는 qwen2.5:1.5b 품질에 좌우된다. 정책 검증은 scripted 모드로 한다.
+- LLM 모드의 업무 결과는 로컬 모델(기본 `qwen3.5:2b-q4_K_M`) 품질에 좌우된다. 정책 검증은 scripted 모드로 한다.
 - 종료 판정의 C1은 제공자 고지에 의존한다. 고지가 없으면 T3이고 엔진은 T1을 주지 않는다 — 구현의
   한계가 아니라 논문이 특정한 구조적 한계다. 도입 시 종료 조건 합의가 유일한 완화.
 - `server_version`은 mcp-proxy가 자기 SDK 버전을 보고한다(D-03). 패키지 버전 고정은 이미지 빌드가 보장한다.
 
-## 3. 처리한 것 (2026-09-25)
+## 3. 처리한 것 (2026-09-26)
+- ~~직원 PC 하네스 네이티브 전환: 손으로 짠 `office_agent.py`·`workstation/configs/` 삭제, Claude Code·Codex·Gemini CLI·
+  OpenCode를 공식 패키지 그대로 설치. IT 관리형 설정은 `registry/catalog.toml`에서 빌드 때 생성~~
+- ~~서버별 MCP 엔드포인트(`/mcp/<server>/`): 하네스 관리형 설정이 서버 하나당 Gateway URL 하나를 갖고, 도구도 서버 고유
+  이름 그대로 보임(집계 엔드포인트 `/mcp/`는 유지)~~
+- ~~콘솔 v3: ECharts 기반 탭 레이아웃, 활동 로그의 하네스 신원 표시~~
+
+## 4. 처리한 것 (2026-09-25)
 - ~~origin/main 24시간 변경 통합(a14fe13·0c1736d·374dc0b·7a8aacb·906d227·ae7ec85·f2a5913·8b2b1b4): 권한 번들·P-AUTHZ(D-25),
   원격 MCP 종료 조건의 관리자 증거 검증(D-26), 망마다 명시 서브넷과 privacy 망 복원(D-24), 루트 `endpoint-agent/`
   패키지(D-29), 콘솔 UX·접근성과 상태 모듈 node 시험(D-28), 승인 최종 상태 UNCONFIRMED/NOT_EXECUTED(D-27),
   배포 정책 묶음 digest(D-25)~~
 - ~~origin/main의 PDF 통합(cc086e5·45b9f6e) 병합: Presidio 입력 검사·출력 마스킹, MCP-DATA-EGRESS-001, P-CHAIN-001, 위험 점수, 정책 재생을 v2 구조로 이식(D-20~D-23)~~
 
-## 3-1. PDF 통합에서 이어서 할 일
+## 4-1. PDF 통합에서 이어서 할 일
 - Presidio 인식기 정확도를 실제 한국어 업무 문서로 측정(현재는 합성 식별자 정규식 + 기본 인식기 일부).
 - 위험 점수를 Console 목록 정렬·경보 기준으로 쓰기(지금은 표시만, 판정 근거 아님).
 - 정책 재생 결과를 Console에서 보기(지금은 `reports/policy-replay.json`).
 
-## 4. 처리한 것 (2026-09-24)
+## 5. 처리한 것 (2026-09-24)
 - ~~Console 전면 재작성, 종료 판정 워크스페이스~~ (5567111)
 - ~~Gateway 읽기 API 인증, Console 프록시 역할 경계~~ (5567111)
 - ~~프로브 호출이 모집단을 불리는 문제~~ (5567111)
 - ~~`/mcp/` 401 + RFC 9728 챌린지, 승인형 예외가 실행되지 않던 문제, acceptance v2, 보안 회귀, 검사기, CI 재작성, v1 잔재 삭제~~
 
-## 5. 아키텍처 제안(`docs/architecture/`)에서 이어서 할 일
+## 6. 아키텍처 제안(`docs/architecture/`)에서 이어서 할 일
 제안은 v1 기준 커밋(45b9f6e)의 정적 검토다. v2에 반영한 것과 남은 것:
 - ~~승인 최종 상태가 미확인 실행을 REJECTED로 덮음~~ → D-27
 - ~~권한 데이터와 정책 코드의 배포 식별~~ → 네 파일 묶음 digest(D-25). **남음**: digest를 감사 행·재생 결과에 기록(감사 체인 v7).
