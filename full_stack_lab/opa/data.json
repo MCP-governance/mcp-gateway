@@ -1,4 +1,16 @@
 {
+  "authorization": {
+    "bundle_id": "LAB-AUTHZ-001",
+    "scope": "synthetic-lab-only",
+    "owner": "lab-maintainers",
+    "grants": [
+      {"id": "public-read", "roles": ["partner", "employee", "admin"], "data_classes": ["public"], "actions": ["r"]},
+      {"id": "admin-public-maintain", "roles": ["admin"], "data_classes": ["public"], "actions": ["w", "x"]},
+      {"id": "employee-work", "roles": ["employee"], "data_classes": ["nonimportant"], "actions": ["r", "w"]},
+      {"id": "employee-important-read", "roles": ["employee"], "data_classes": ["important"], "actions": ["r"]},
+      {"id": "admin-managed", "roles": ["admin"], "data_classes": ["nonimportant", "important"], "actions": ["r", "w", "x"]}
+    ]
+  },
   "restrictions": {
     "external_destination": "restricted.invalid",
     "max_chars": 80

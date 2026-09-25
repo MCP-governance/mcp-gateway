@@ -233,7 +233,21 @@ async def main():
         submitted.raise_for_status()
         intake_id = submitted.json()["request"]["id"]
         try:
-            check("intake-held-before-scan", submitted.json()["request"]["status"] == "HOLD")
+            check("intake-held-before-scan", submitted.json()["request"]["status"] == "HOLD"
+                  and submitted.json()["request"]["exit_terms"] == {})
+            terms = {"provider_credential_disclosure": True, "revocation_evidence": True,
+                     "audit_access_retained": True, "evidence_url": "https://example.invalid/provider-terms",
+                     "note": "플랫폼 담당자가 제공자의 계약 및 회수 증거를 확인했습니다."}
+            terms_url = AGENT + f"/api/mcp-requests/{intake_id}/exit-terms"
+            check("intake-terms-platform-only",
+                  (await client.put(terms_url, headers=users["employee"], json=terms)).status_code == 403)
+            check("intake-terms-require-https-evidence",
+                  (await client.put(terms_url, headers=users["admin"],
+                                    json={**terms, "evidence_url": "http://example.invalid/terms"})).status_code == 422)
+            reviewed = await client.put(terms_url, headers=users["admin"], json=terms)
+            check("intake-terms-record-platform-review", reviewed.status_code == 200
+                  and reviewed.json()["request"]["exit_terms"].get("verified_by") == "admin-demo"
+                  and bool(reviewed.json()["request"]["exit_terms"].get("verified_at")), reviewed.text[:160])
             check("intake-admin-only-queue", (await client.post(AGENT + f"/api/mcp-requests/{intake_id}/queue-validation", headers=users["employee"], json={})).status_code == 403)
             queued = await client.post(AGENT + f"/api/mcp-requests/{intake_id}/queue-validation", headers=users["admin"], json={})
             check("intake-validation-queue", queued.status_code == 200 and queued.json()["request"]["status"] == "VALIDATION_QUEUED")
@@ -263,7 +277,7 @@ async def main():
         # 판정을 정확히 한 값으로 고정하지 않는 이유: 이 체계에는 실행을 바꾸지 않고
         # 증적만 올리는 정책들이 있다(P-IMPORTANT-ALERT-001, MCP-SHADOW-001/002,
         # P-ANOMALY-001). 그 중 하나가 걸리면 판정 문자열은 바뀌지만 "이 호출이
-        # 실행되는가"는 그대로다. 정확한 27칸 대조는 rego-333-cells와 core
+        # 실행되는가"는 그대로다. 권한 번들 자체는 OPA 테스트와 core
         # acceptance가 깨끗한 이력에서 이미 한다. 여기서 지켜야 할 계약은
         # "실행 여부"와 "차단인가 아닌가"다.
         EVIDENCE_ONLY = {"Alert"}

@@ -20,7 +20,7 @@ async def run() -> dict:
     await core.policy_ledger(refresh=True)
     original_mode = await core.enforcement_mode()
     principals = await db.fetch_all("SELECT token,status FROM principals")
-    valid = {"decision": "Allow", "policy_id": "P-333-ALLOW-001",
+    valid = {"decision": "Allow", "policy_id": "P-AUTHZ-ALLOW-001",
              "reason": "boundary fixture", "restrictions": {}}
     policy_input = {"tool": {"name": "send_external"}}
     client_factory = httpx.AsyncClient

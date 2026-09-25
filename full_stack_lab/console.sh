@@ -12,6 +12,9 @@ if [[ -z "${COMPOSE_PROJECT_NAME:-}" ]] &&
    ! grep -qE '^(MCP_COMPOSE_PROJECT|COMPOSE_PROJECT_NAME|AGENT_JWT_PRIVATE_KEY)=' .env; then
   printf 'MCP_COMPOSE_PROJECT=mcpgw-%s\n' "$(printf '%s' "$LAB_DIR" | sha256sum | cut -c1-10)" >> .env
 fi
+if [[ -z "${MCP_NET_PREFIX:-}" ]] && ! grep -qE '^MCP_NET_PREFIX=10\.[0-9]+$' .env; then
+  printf 'MCP_NET_PREFIX=%s\n' "$(python3 lab/network_prefix.py "$LAB_DIR")" >> .env
+fi
 
 # The synthetic IdP signs with Ed25519: Agent Service holds the private key, every
 # verifier holds only the public key. Generated inside the gateway image so the host
@@ -245,7 +248,7 @@ submit_normal_intake() {
   employee="$(session_token miso@bob.local)"
   created="$(curl -fsS -X POST http://127.0.0.1:8000/api/mcp-requests \
     -H "authorization: Bearer $employee" -H 'content-type: application/json' \
-    -d '{"display_name":"GitHub MCP Server (normal intake)","repository_url":"https://github.com/github/github-mcp-server","requested_transport":"streamable-http","purpose":"Corporate-lab normal intake through the isolated supply-chain queue.","provider_credential_disclosure":true,"revocation_evidence":true,"audit_access_retained":true}')"
+    -d '{"display_name":"GitHub MCP Server (normal intake)","repository_url":"https://github.com/github/github-mcp-server","requested_transport":"streamable-http","purpose":"Corporate-lab normal intake through the isolated supply-chain queue."}')"
   request_id="$(printf '%s' "$created" | python3 -c 'import json,sys; print(json.load(sys.stdin)["request"]["id"])')"
   admin="$(gateway_token)"
   curl -fsS -X POST "http://127.0.0.1:8000/api/mcp-requests/${request_id}/queue-validation" \
@@ -319,6 +322,7 @@ case "${1:-up}" in
     up
     ;;
   test)
+    python3 lab/network_prefix.py --self-check
     up
     docker run --rm -v "$LAB_DIR/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v
     docker compose exec -T gateway python -m app.acceptance | tee reports/acceptance.json
@@ -450,10 +454,10 @@ json.dump(module.app.openapi(), sys.stdout, ensure_ascii=False, indent=2, sort_k
   down)
     # 프로필로 띄운 서비스는 profile을 함께 줘야 내려간다. 그러지 않으면
     # down 뒤에도 엔드포인트 에이전트가 남아 계속 보고한다.
-    docker compose --profile endpoint --profile llm-stub --profile replay down
+    docker compose --profile endpoint --profile llm-stub --profile local-llm --profile replay down
     ;;
   reset)
-    docker compose --profile endpoint --profile llm-stub --profile replay down -v
+    docker compose --profile endpoint --profile llm-stub --profile local-llm --profile replay down -v
     # trivy-*.json are the per-server reports that actually feed MCP-SUPPLY-001.
     # Leaving them behind meant a reset did not reset supply-chain evidence: the
     # next import re-attributed stale findings to a freshly created database.

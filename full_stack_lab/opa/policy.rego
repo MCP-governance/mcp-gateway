@@ -86,24 +86,14 @@ transport_secure := object.get(input, ["contract", "transport_secure"], true)
 
 endpoint_allowed := object.get(input, ["contract", "endpoint_allowed"], true)
 
-# ── 권한표: 3 역할 x 3 등급 x r/w/x ─────────────────────────────────────────
-
-permissions := {
-	"partner": {"public": {"r": true}},
-	"employee": {
-		"public": {"r": true},
-		"nonimportant": {"r": true, "w": true},
-		"important": {"r": true},
-	},
-	"admin": {
-		"public": {"r": true, "w": true, "x": true},
-		"nonimportant": {"r": true, "w": true, "x": true},
-		"important": {"r": true, "w": true, "x": true},
-	},
-}
+# 승인된 권한 번들에 없는 조합은 허용하지 않는다. 이 저장소의 번들은 랩 예시다.
+# 조직 배치에서는 소유자 승인과 배포 절차를 거친 data.authorization.grants로 교체한다.
 
 has_permission if {
-	permissions[input.principal.role][input.resource.data_class][input.tool.action]
+	some grant in data.authorization.grants
+	input.principal.role in grant.roles
+	input.resource.data_class in grant.data_classes
+	input.tool.action in grant.actions
 }
 
 contract_ok if {
@@ -275,11 +265,11 @@ candidate["P-RATE-001"] := {
 	recent_calls >= call_limit
 }
 
-candidate["P-333-DENY-001"] := {
+candidate["P-AUTHZ-DENY-001"] := {
 	"decision": "Block",
 	"reason": "역할·데이터 등급·행위 조합에 권한이 없습니다.",
 	"restrictions": {},
-	"conditions": {"matched": [], "violated": ["permissions[role][data_class][action]"]},
+	"conditions": {"matched": [], "violated": ["authorization.grants"]},
 } if {
 	not has_permission
 }
@@ -326,7 +316,7 @@ candidate["P-X-RESTRICT-001"] := {
 		"destination": data.restrictions.external_destination,
 		"max_chars": data.restrictions.max_chars,
 	},
-	"conditions": {"matched": ["tool.action=x", "permissions[role][data_class][action]"], "violated": []},
+	"conditions": {"matched": ["tool.action=x", "authorization.grants"], "violated": []},
 } if {
 	input.tool.action == "x"
 	input.resource.data_class != "important"
@@ -451,11 +441,11 @@ candidate["MCP-SHADOW-002"] := {
 	contract_ok
 }
 
-candidate["P-333-ALLOW-001"] := {
+candidate["P-AUTHZ-ALLOW-001"] := {
 	"decision": "Allow",
-	"reason": "333 권한표와 등록 계약을 모두 충족했습니다.",
+	"reason": "배포된 권한 규칙과 등록 계약을 모두 충족했습니다.",
 	"restrictions": {},
-	"conditions": {"matched": ["permissions[role][data_class][action]", "contract"], "violated": []},
+	"conditions": {"matched": ["authorization.grants", "contract"], "violated": []},
 } if {
 	has_permission
 	contract_ok

@@ -390,7 +390,7 @@
       ],
       "pac_candidate_id": "PAC-CAND-26"
     },
-    "P-333-DENY-001": {
+    "P-AUTHZ-DENY-001": {
       "name": "최소권한 미충족 차단",
       "purpose": "역할·데이터 등급·행위 조합에 권한이 없으면 차단한다.",
       "enforced_by": "opa",
@@ -424,7 +424,7 @@
         "resource.data_class",
         "tool.action"
       ],
-      "condition": "권한표에 해당 조합이 없음",
+      "condition": "배포된 권한 규칙에 해당 허용 항목이 없음",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 80,
@@ -716,9 +716,9 @@
       ],
       "pac_candidate_id": "PAC-CAND-23"
     },
-    "P-333-ALLOW-001": {
+    "P-AUTHZ-ALLOW-001": {
       "name": "최소권한 충족 허용",
-      "purpose": "권한표와 등록 계약을 모두 충족한 요청을 승인된 조건으로 실행한다.",
+      "purpose": "배포된 권한 규칙과 등록 계약을 모두 충족한 요청을 승인된 조건으로 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08"
@@ -749,7 +749,7 @@
         "tool.action",
         "contract"
       ],
-      "condition": "권한표 충족",
+      "condition": "배포된 권한 규칙 충족",
       "outcome": "허용",
       "enforcement": "그대로 실행",
       "priority": 140,

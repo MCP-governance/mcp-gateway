@@ -57,7 +57,7 @@ def check(condition: bool, name: str, details: str = "") -> dict:
 def public_read_executes(result: dict) -> bool:
     """A repeated run may raise the real anomaly Alert without denying the read."""
     return bool(result["upstream_executed"] and (
-        (result["decision"] == "Allow" and result["policy_id"] == "P-333-ALLOW-001")
+        (result["decision"] == "Allow" and result["policy_id"] == "P-AUTHZ-ALLOW-001")
         or (result["decision"] == "Alert" and result["policy_id"] == "P-ANOMALY-001")))
 
 
@@ -299,7 +299,7 @@ async def endpoint_plane_checks() -> list[dict]:
                             "endpoint-report-replaces-previous", f"removed={replaced['removed']}"))
         cleared = await execute_call({"tool_name": "read_document", "user_token": "emp-demo",
                                       "document_id": "work-001"})
-        checks.append(check(cleared["policy_id"] == "P-333-ALLOW-001",
+        checks.append(check(cleared["policy_id"] == "P-AUTHZ-ALLOW-001",
                             "endpoint-cleared-shadow-restores-allow", cleared["policy_id"]))
 
         # 위험 범주 매핑표가 실재하지 않는 정책을 가리키면, 화면은 있는데 통제는
@@ -326,17 +326,12 @@ async def run() -> dict:
 
     async with httpx.AsyncClient(timeout=30) as client:
         health = (await client.get(API + "/api/health")).json()
-        matrix = (await client.get(API + "/api/policy/matrix")).json()
+        ledger_view = (await client.get(API + "/api/policy/ledger")).json()
     checks.append(check(health["status"] == "ok", "core-health", json.dumps(health["components"], ensure_ascii=False)))
-    checks.append(check(len(matrix["cells"]) == 27, "rego-333-cells", "27 policy combinations"))
-    allowed = {("partner", "public", "r")}
-    allowed |= {("employee", "public", "r"), ("employee", "nonimportant", "r"), ("employee", "nonimportant", "w"), ("employee", "important", "r")}
-    allowed |= {("admin", data_class, action) for data_class in ("public", "nonimportant", "important") for action in ("r", "w", "x")}
-    for cell in matrix["cells"]:
-        observed = cell["decision"] != "Block"
-        expected = (cell["role"], cell["data_class"], cell["action"]) in allowed
-        check(observed == expected, "rego-333-exact", json.dumps(cell, ensure_ascii=False))
-    checks.append(check(True, "rego-333-exact", "14 permitted or controlled, 13 blocked"))
+    authorization = ledger_view.get("authorization") or {}
+    checks.append(check(authorization.get("bundle_id") == "LAB-AUTHZ-001"
+                        and len(authorization.get("grants") or []) == 5,
+                        "authorization-bundle-loaded", json.dumps(authorization, ensure_ascii=False)))
 
     scenarios = [
         ("Allow", "partner-demo", {"tool_name": "read_document", "document_id": "notice-001"}, True),
@@ -504,7 +499,7 @@ async def run() -> dict:
         observed = await post("/api/calls", {"tool_name": "read_document", "document_id": "secret-001"}, "partner-demo")
         checks.append(check(
             observed["decision"] == "Allow" and observed["policy_id"] == "P-MONITOR-001"
-            and observed["would_decision"] == "Block" and observed["would_policy_id"] == "P-333-DENY-001"
+            and observed["would_decision"] == "Block" and observed["would_policy_id"] == "P-AUTHZ-DENY-001"
             and observed["upstream_executed"] and observed["effect_after"] == observed["effect_before"] + 1,
             "monitor-observes-permission",
             f"{observed['policy_id']} would={observed['would_policy_id']}"))
@@ -628,13 +623,13 @@ async def run() -> dict:
     # §8 예외: 범위 안에서는 완화되고, 범위 밖 같은 등급 문서는 그대로 차단된다.
     excepted = await post("/api/calls", {"tool_name": "read_document", "document_id": "audit-001"}, "partner-demo")
     checks.append(check(
-        excepted["decision"] == "Alert" and excepted["policy_id"] == "P-333-DENY-001"
+        excepted["decision"] == "Alert" and excepted["policy_id"] == "P-AUTHZ-DENY-001"
         and excepted["exception"]["id"] == "EXC-001"
         and "사후 수동 검토 적용" in excepted["obligations"],
         "pac-exception-applies", json.dumps(excepted.get("exception"), ensure_ascii=False)))
     outside = await post("/api/calls", {"tool_name": "read_document", "document_id": "secret-001"}, "partner-demo")
     checks.append(check(
-        outside["decision"] == "Block" and outside["policy_id"] == "P-333-DENY-001"
+        outside["decision"] == "Block" and outside["policy_id"] == "P-AUTHZ-DENY-001"
         and outside["exception"] is None,
         "pac-exception-stays-in-scope", f"{outside['decision']}/{outside['policy_id']}"))
 
@@ -642,7 +637,7 @@ async def run() -> dict:
     conflicting = await post("/api/calls", {"tool_name": "read_document", "document_id": "secret-001"}, "emp-demo")
     checks.append(check(
         conflicting["policy_id"] == "P-IMPORTANT-ALERT-001"
-        and {item["policy_id"] for item in conflicting["conflicts"]} == {"P-333-ALLOW-001"}
+        and {item["policy_id"] for item in conflicting["conflicts"]} == {"P-AUTHZ-ALLOW-001"}
         and all(item["priority"] > conflicting["priority"] for item in conflicting["conflicts"]),
         "pac-conflicts-recorded", json.dumps(conflicting["conflicts"], ensure_ascii=False)))
 
@@ -662,9 +657,9 @@ async def run() -> dict:
     # §11.17 판단 증적: 정책 버전·의무·환경이 감사 테이블에 실제로 들어갔는가.
     recorded = await db.fetch_one(
         "SELECT policy_id, policy_version, obligations, exception_id, conflicts, environment, chain_version"
-        " FROM decisions WHERE policy_id='P-333-DENY-001' AND exception_id IS NOT NULL ORDER BY id DESC LIMIT 1")
+        " FROM decisions WHERE policy_id='P-AUTHZ-DENY-001' AND exception_id IS NOT NULL ORDER BY id DESC LIMIT 1")
     checks.append(check(
-        bool(recorded) and recorded["policy_version"] == ledger["P-333-DENY-001"]["version"]
+        bool(recorded) and recorded["policy_version"] == ledger["P-AUTHZ-DENY-001"]["version"]
         and recorded["exception_id"] == "EXC-001" and recorded["environment"]
         and recorded["chain_version"] == CHAIN_VERSION and recorded["obligations"],
         "pac-decision-evidence-recorded", json.dumps(recorded, ensure_ascii=False, default=str)))

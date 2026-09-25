@@ -88,6 +88,9 @@ services:
 networks:
   aig-targets:
     internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.10.0/24
 
 volumes:
   aig_data: {}
