@@ -178,6 +178,7 @@ Rego는 배포된 `opa/data.json`의 `authorization.grants`를 평가하고, 허
 | 경로 | 용도 |
 | --- | --- |
 | [full_stack_lab/](full_stack_lab/README.md) | **현재 유일한 통합판.** Agent Service, Gateway, OPA, PostgreSQL 감사, Jaeger, 공급망·AI 코드 감사 |
+| [endpoint-agent/](endpoint-agent/README.md) | 사용자 PC 관측 에이전트의 독립 설치 패키지. Linux·Windows 설치, 장치 키, 1회 보고, 제거 절차 |
 | [full_stack_lab/CONTROL_PLANES.md](full_stack_lab/CONTROL_PLANES.md) | **엔드포인트단·네트워크단·관리 평면의 분리.** 무엇이 어디에 깔리는가 |
 | [full_stack_lab/TERMINATION.md](full_stack_lab/TERMINATION.md) | **전주기의 마지막.** 종료 절차와 C1~C4 / T1~T3 판정 기준 |
 | [full_stack_lab/NETWORK.md](full_stack_lab/NETWORK.md) | Docker 내부망·게시 포트 경계와 Tailscale 적용 기준 (tailnet 부분은 미구현, 문서에 명시) |

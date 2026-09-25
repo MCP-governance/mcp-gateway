@@ -407,6 +407,8 @@ MCP 여부는 **`initialize` 한 번**으로 확인합니다. 그 밖의 요청�
 ./console.sh endpoint-key endpoint-ysg-laptop emp-ysg inventory,netscan
 ```
 
+이 명령은 Compose 실습용 키 발급입니다. 실제 사용자 PC에 설치할 때는 저장소 루트의 [endpoint-agent 설치 안내](../endpoint-agent/README.md)를 사용합니다. `./console.sh endpoint`는 이 PC의 Docker 컨테이너만 띄웁니다. Windows·Linux 호스트 설치기와 별개입니다.
+
 평문 키는 발급 응답에만 존재합니다. 저장은 해시로 하고, 잃어버리면 재발급합니다.
 다시 보여줄 수 있게 두면 관리 화면이 조직에서 두 번째로 위험한 표가 됩니다.
 
@@ -971,7 +973,7 @@ curl -sS http://localhost:8080/api/audit/verify -H "authorization: Bearer $GW_TO
 | `gateway/app/decommission.py` | 종료 케이스, 회수 대상, 증거, C1~C4 판정 엔진 |
 | `gateway/app/endpoint_plane.py` | 엔드포인트 인벤토리 수신과 Registry 대조 |
 | `gateway/app/lifecycle_tables.sql` | 종료·엔드포인트·위험범주 스키마 (매 기동 적용) |
-| `endpoint/endpoint_agent.py` | 엔드포인트 평면 에이전트. 표준 라이브러리만 사용 |
+| [`../endpoint-agent/agent.py`](../endpoint-agent/agent.py) | 엔드포인트 평면 관측 에이전트. 표준 라이브러리만 사용. 호스트 설치는 [별도 안내](../endpoint-agent/README.md) |
 | `endpoint/sample-configs/` | 합성 클라이언트 설정. 섀도·잔존 분류 시연용 |
 | `gateway/app/agent_service.py` | 합성 로그인, 세션, 요청 멱등성, 모델 제안 경로 |
 | `gateway/app/agent_gateway.py` | 서명 사용자와 Tool Call envelope를 기존 정책 경로에 연결 |
