@@ -105,7 +105,7 @@ agent_test() {
 
 wait_ready() {
   for _ in {1..60}; do
-    if curl -fsS http://127.0.0.1:8000/api/readiness | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["status"] == "ready" else 1)' >/dev/null 2>&1; then
+    if { curl -fsS http://127.0.0.1:8000/api/readiness | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["status"] == "ready" else 1)'; } >/dev/null 2>&1; then
       return
     fi
     sleep 1
