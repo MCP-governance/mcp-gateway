@@ -53,6 +53,7 @@ cd ~/mcp-gateway/full_stack_lab
 첫 실행 때 `console.sh`가 커밋하지 않는 `.env`에 합성 JWT용 Ed25519 키쌍을 생성합니다. 별도 복사·설정 단계는 없습니다. 키는 gateway 이미지 안에서 만들기 때문에 host에는 추가 의존성이 필요 없습니다.
 
 Docker 기본 주소 풀이 소진돼도 `console.sh`는 사용 가능한 `10.200`~`10.249` 접두사를 복제본별 `.env`에 저장하고 망마다 `/24`를 배정합니다. 기존 복제본의 망 설정을 바꿀 때는 `./console.sh down` 뒤 다시 `up`하세요. DB 볼륨은 유지됩니다. 후보 대역이 모두 호스트 라우트나 다른 Docker 망과 겹치면 오류를 내며 멈춥니다. 그때는 사용하지 않는 복제본만 내리거나 [Docker 주소 풀 설정](https://docs.docker.com/engine/network/#automatic-subnet-allocation)을 환경에 맞게 조정하세요.
+`up`의 60초 준비 검사 중 발생하는 일시적인 연결 재설정은 재시도하며 화면에 출력하지 않습니다. 제한 시간 안에 준비되지 않으면 `./console.sh logs`로 원인을 확인할 수 있도록 오류를 표시합니다.
 
 | 값 | 받는 서비스 | 이유 |
 | --- | --- | --- |
