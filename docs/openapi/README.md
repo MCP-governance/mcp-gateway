@@ -8,8 +8,8 @@ cd full_stack_lab && ./console.sh openapi
 
 | 파일 | 서비스 | 포트 |
 | --- | --- | --- |
-| `gateway.json` | MCP Governance Security Gateway | `127.0.0.1:8080` |
-| `agent-service.json` | Agent Service · Console | `127.0.0.1:8000` |
+| `gateway.json` | MCP Governance Security Gateway | `127.0.0.1:${GATEWAY_PORT:-8080}` |
+| `agent-service.json` | Console · IdP | `127.0.0.1:${CONSOLE_PORT:-8000}` |
 
 FastAPI가 라우터에서 직접 만들기 때문에 코드와 갈라질 수 없습니다. 손으로 쓴
 명세는 합치는 날 반드시 어긋나 있고, 그때 무엇이 맞는지 아무도 모릅니다.

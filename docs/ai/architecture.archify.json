@@ -1,0 +1,373 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BoB Corp MCP 거버넌스 테스트베드 v2",
+    "output": "architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "one-call",
+        "label": "도구 호출 한 건",
+        "focus": [
+          "ws",
+          "idp",
+          "llm",
+          "gateway",
+          "opa",
+          "audit",
+          "mcp",
+          "corp"
+        ],
+        "note": "직원 PC가 토큰과 LLM 키로 일하고, 모든 tools/call은 Gateway 한 곳에서 판정된 뒤에만 실제 서버에 닿는다."
+      },
+      {
+        "id": "termination",
+        "label": "종료·폐기 판정",
+        "focus": [
+          "gateway",
+          "audit",
+          "term",
+          "corp",
+          "mcp"
+        ],
+        "note": "케이스 개시가 곧 차단이고, 판정 원장과 하위 시스템 확인으로 회수 대상마다 C1~C4를 판정한다."
+      },
+      {
+        "id": "supply-chain",
+        "label": "도입·공급망",
+        "focus": [
+          "scanner",
+          "audit",
+          "gateway",
+          "mcp",
+          "admin",
+          "idp"
+        ],
+        "note": "도입 신청은 격리 워커의 SBOM·SCA·SAST를 거치고, 승인된 계약 해시만 실행 경로에 들어온다."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "admin",
+      "type": "frontend",
+      "label": "관리자 브라우저",
+      "sublabel": "승인 · 판정",
+      "pos": [
+        20,
+        40
+      ],
+      "size": [
+        140,
+        56
+      ]
+    },
+    {
+      "id": "idp",
+      "type": "security",
+      "label": "Console · IdP",
+      "sublabel": "OAuth 2.0",
+      "tag": "RFC 7009·7662",
+      "pos": [
+        250,
+        34
+      ],
+      "size": [
+        170,
+        68
+      ]
+    },
+    {
+      "id": "web",
+      "type": "external",
+      "label": "외부 웹",
+      "sublabel": "유출 목적지",
+      "pos": [
+        970,
+        40
+      ],
+      "size": [
+        150,
+        56
+      ]
+    },
+    {
+      "id": "ws",
+      "type": "frontend",
+      "label": "직원 PC ×4",
+      "sublabel": "AI 어시스턴트",
+      "tag": "office 망",
+      "pos": [
+        20,
+        170
+      ],
+      "size": [
+        150,
+        68
+      ]
+    },
+    {
+      "id": "gateway",
+      "type": "security",
+      "label": "MCP Gateway",
+      "sublabel": "신원 · 분류 · 계약 해시",
+      "tag": "OTel → Jaeger",
+      "pos": [
+        420,
+        164
+      ],
+      "size": [
+        180,
+        80
+      ]
+    },
+    {
+      "id": "mcp",
+      "type": "backend",
+      "label": "MCP 서버 10종",
+      "sublabel": "실제 서버 · 버전 고정",
+      "tag": "tools 망",
+      "pos": [
+        720,
+        170
+      ],
+      "size": [
+        150,
+        68
+      ]
+    },
+    {
+      "id": "corp",
+      "type": "database",
+      "label": "회사 시스템",
+      "sublabel": "DB · 메일 · Gitea",
+      "tag": "corp 망",
+      "pos": [
+        970,
+        170
+      ],
+      "size": [
+        150,
+        68
+      ]
+    },
+    {
+      "id": "llm",
+      "type": "cloud",
+      "label": "LiteLLM · Ollama",
+      "sublabel": "직원별 가상 키",
+      "pos": [
+        230,
+        320
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "opa",
+      "type": "security",
+      "label": "OPA",
+      "sublabel": "Rego · 333",
+      "pos": [
+        430,
+        320
+      ],
+      "size": [
+        130,
+        60
+      ]
+    },
+    {
+      "id": "audit",
+      "type": "database",
+      "label": "감사 원장",
+      "sublabel": "해시 체인",
+      "pos": [
+        600,
+        320
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "term",
+      "type": "security",
+      "label": "종료·폐기 판정",
+      "sublabel": "C1–C4 → T1·T2·T3",
+      "tag": "논문 구현",
+      "pos": [
+        970,
+        320
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "scanner",
+      "type": "security",
+      "label": "격리 검증 워커",
+      "sublabel": "SBOM · SCA · SAST",
+      "pos": [
+        600,
+        440
+      ],
+      "size": [
+        160,
+        60
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "정책·감사",
+      "wraps": [
+        "opa",
+        "audit"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "도구망 · 회사망",
+      "wraps": [
+        "mcp",
+        "corp"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "admin-console",
+      "from": "admin",
+      "to": "idp",
+      "label": "Console"
+    },
+    {
+      "id": "ws-token",
+      "from": "ws",
+      "to": "idp",
+      "label": "① OAuth 토큰",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "ws-llm",
+      "from": "ws",
+      "to": "llm",
+      "label": "② 추론",
+      "fromSide": "bottom",
+      "toSide": "left"
+    },
+    {
+      "id": "ws-call",
+      "from": "ws",
+      "to": "gateway",
+      "label": "③ tools/call · Bearer",
+      "variant": "emphasis"
+    },
+    {
+      "id": "console-proxy",
+      "from": "idp",
+      "to": "gateway",
+      "label": "/gw 프록시",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-policy",
+      "from": "gateway",
+      "to": "opa",
+      "label": "판정",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24,
+      "labelDx": -22
+    },
+    {
+      "id": "gw-audit",
+      "from": "gateway",
+      "to": "audit",
+      "label": "기록",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-exec",
+      "from": "gateway",
+      "to": "mcp",
+      "label": "재확인 후 실행",
+      "variant": "emphasis"
+    },
+    {
+      "id": "mcp-corp",
+      "from": "mcp",
+      "to": "corp",
+      "label": "보유 자격",
+      "variant": "emphasis"
+    },
+    {
+      "id": "mcp-web",
+      "from": "mcp",
+      "to": "web",
+      "label": "fetch · 브라우저",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "scan-evidence",
+      "from": "scanner",
+      "to": "audit",
+      "label": "검증 증적",
+      "variant": "dashed"
+    },
+    {
+      "id": "ledger-population",
+      "from": "audit",
+      "to": "term",
+      "label": "원장 → 모집단"
+    },
+    {
+      "id": "term-credential",
+      "from": "term",
+      "to": "corp",
+      "label": "자격 확인·폐기",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "강제 경로",
+      "items": [
+        "직원 PC는 office 망에만 — MCP 서버·회사 DB·OPA에 직접 닿지 않는다",
+        "신원은 transport 토큰, 없으면 401 + resource_metadata",
+        "판정: 허용 · 경보 · 제한 · 승인 · 차단"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "계약·공급망",
+      "items": [
+        "도구 설명·스키마 해시 잠금(TOFU 금지), 실행 직전 재확인",
+        "도입 신청은 격리 워커의 SBOM·SCA·SAST를 거친다"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "종료·폐기 (논문)",
+      "items": [
+        "개시 = 즉시 차단, 회수 대상마다 C1~C4 → T1·T2·T3",
+        "E1 폐기 200은 처리만 증명 · E3 서버 보유 PAT는 상위 폐기 후에도 유효"
+      ]
+    }
+  ]
+}

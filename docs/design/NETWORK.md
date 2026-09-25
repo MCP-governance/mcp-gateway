@@ -1,5 +1,7 @@
 # 망 경계와 Tailscale
 
+> **v1 시기 문서.** 여기의 설계 근거(왜 그렇게 나눴는가)는 v2에도 유효하지만, 경로·포트·서비스 이름·파일 위치는 v1 기준이다. 현재 구성은 [../ai/ARCHITECTURE.md](../ai/ARCHITECTURE.md), 결정 기록은 [../ai/DECISIONS.md](../ai/DECISIONS.md).
+
 이 문서는 현재 Docker 내부망과 호스트 경계, tailnet을 붙일 때의 검증 조건을 정리합니다.
 여기 적힌 tailnet ACL과 조직 신원 연동은 **저장소에 구현되어 있지 않습니다.**
 
