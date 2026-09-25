@@ -125,10 +125,22 @@ async def tools_listed_per_role() -> str:
     return f"직원 {len(employee)}개 · 협력사 {len(partner)}개(읽기만)"
 
 
+async def authorization_bundle_served() -> str:
+    """Grants live in the deployed data bundle, not in Rego source (P-AUTHZ-*)."""
+    async with httpx.AsyncClient(timeout=15) as client:
+        response = await client.get(API + "/api/policy/ledger", headers={"Authorization": f"Bearer {TOKENS['admin']}"})
+    response.raise_for_status()
+    bundle = response.json().get("authorization") or {}
+    expect(bundle.get("bundle_id") == "LAB-AUTHZ-001" and len(bundle.get("grants") or []) == 5,
+           f"OPA가 내어주는 권한 번들: {bundle}")
+    return f"{bundle['bundle_id']} · 허용 규칙 {len(bundle['grants'])}개"
+
+
 async def allowed_call_runs() -> str:
     await operating("git")
     out = await call("employee", "git__git_log", {"repo_path": "/repos/handbook", "max_count": 2})
-    expect(out.get("decision") == "Allow" and not out["is_error"], f"공개 저장소 로그 조회: {out.get('decision')} {out.get('policy_id')} {out['text'][:120]}")
+    expect(out.get("decision") == "Allow" and out.get("policy_id") == "P-AUTHZ-ALLOW-001" and not out["is_error"],
+           f"공개 저장소 로그 조회: {out.get('decision')} {out.get('policy_id')} {out['text'][:120]}")
     expect("commit" in out["text"].lower() or "Commit" in out["text"], f"실제 git 출력이 아님: {out['text'][:120]}")
     return out["policy_id"]
 
@@ -254,6 +266,7 @@ async def run() -> dict:
     for name, coro in [
         ("ingress-401-with-resource-metadata", ingress_requires_token()),
         ("tools-listed-per-role", tools_listed_per_role()),
+        ("authorization-bundle-served", authorization_bundle_served()),
         ("allowed-call-runs-on-real-server", allowed_call_runs()),
         ("unapproved-and-unknown-tools-blocked", unapproved_and_unknown_blocked()),
         ("arguments-checked-against-approved-schema", schema_enforced()),

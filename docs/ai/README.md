@@ -11,7 +11,7 @@
 | [RUNBOOK.md](RUNBOOK.md) | 환경(WSL·포트·비밀번호 1111), `console.sh` 명령, 계정, 자주 하는 일 | 띄우고 돌릴 때 |
 | [TESTING.md](TESTING.md) | 검증 층, 개별 실행, 시험 작성 규칙 | 고친 뒤 |
 | [MCP_SERVERS.md](MCP_SERVERS.md) | 10종 서버, 설치·실행, 함정, 추가 절차 | 서버를 만질 때 |
-| [POLICY.md](POLICY.md) | Rego 구조, 우선순위, 333 행렬, 예외, 정책 추가 절차 | 판정을 바꿀 때 |
+| [POLICY.md](POLICY.md) | Rego 구조, 우선순위, 권한 번들과 27칸 기본 판정, 예외, 정책 추가 절차 | 판정을 바꿀 때 |
 | [TERMINATION_MODEL.md](TERMINATION_MODEL.md) | 논문 모델 ↔ 코드, C1~C4 규칙, E1~E3 | 종료·폐기 |
 | [DATA_MODEL.md](DATA_MODEL.md) | 테이블과 열의 의미, 감사 체인 | DB를 볼 때 |
 | [CONSOLE_UI.md](CONSOLE_UI.md) | 화면 구조, 원칙(CSP·이스케이프), 새 화면 추가 | UI |

@@ -50,6 +50,7 @@
 from __future__ import annotations
 
 import ipaddress
+import hashlib
 import json
 import os
 import platform
@@ -60,21 +61,44 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urlsplit
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 AGENT_VERSION = "2.0.0"
 
-GATEWAY_URL = os.getenv("ENDPOINT_GATEWAY_URL", "http://gateway:8080").rstrip("/")
-DEVICE_KEY = os.getenv("ENDPOINT_DEVICE_KEY", "")
-ENDPOINT_ID = os.getenv("ENDPOINT_ID", "")
-INTERVAL = int(os.getenv("ENDPOINT_REPORT_SECONDS", "60"))
-ONE_SHOT = os.getenv("ENDPOINT_ONE_SHOT", "0") not in ("0", "false", "")
-SCAN_ENABLED = os.getenv("ENDPOINT_NETSCAN", "1") not in ("0", "false", "")
+def load_config() -> dict:
+    if "--config" not in sys.argv:
+        return {}
+    position = sys.argv.index("--config")
+    if len(sys.argv) <= position + 1:
+        raise SystemExit("--config 뒤에 설정 파일 경로가 필요합니다.")
+    try:
+        config = json.loads(Path(sys.argv[position + 1]).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise SystemExit(f"엔드포인트 설정을 읽을 수 없습니다: {exc}") from exc
+    if not isinstance(config, dict):
+        raise SystemExit("엔드포인트 설정은 JSON 객체여야 합니다.")
+    return config
+
+
+CONFIG = load_config()
+
+
+def setting(name: str, default: str) -> str:
+    return str(CONFIG.get(name, os.getenv(name, default)))
+
+
+GATEWAY_URL = setting("ENDPOINT_GATEWAY_URL", "http://gateway:8080").rstrip("/")
+DEVICE_KEY = setting("ENDPOINT_DEVICE_KEY", "")
+ENDPOINT_ID = setting("ENDPOINT_ID", "")
+INTERVAL = int(setting("ENDPOINT_REPORT_SECONDS", "60"))
+ONE_SHOT = "--once" in sys.argv or setting("ENDPOINT_ONE_SHOT", "0") not in ("0", "false", "")
+SCAN_ENABLED = setting("ENDPOINT_NETSCAN", "1") not in ("0", "false", "")
 
 SCAN_PATHS = [
     Path(item) for item in
-    os.getenv("ENDPOINT_CONFIG_PATHS", "/endpoint-configs").split(os.pathsep) if item.strip()
+    setting("ENDPOINT_CONFIG_PATHS", "/endpoint-configs").split(os.pathsep) if item.strip()
 ]
 
 CONFIG_NAMES = {
@@ -115,6 +139,11 @@ def endpoint_id() -> str:
     잔존 설정 수'가 영원히 줄지 않는다.
     """
     return ENDPOINT_ID or f"endpoint-{socket.gethostname()}".lower()[:120]
+
+
+def command_digest(value: str) -> str:
+    """Compare commands exactly without sending arguments that may contain secrets."""
+    return "sha256:" + hashlib.sha256(" ".join(value.split()).encode()).hexdigest()
 
 
 # ── 설정 파일 관측 ───────────────────────────────────────────────────────────
@@ -165,7 +194,7 @@ def describe(name: str, config: dict) -> dict | None:
         return {
             "server_label": name,
             "transport": "stdio",
-            "endpoint_ref": " ".join([str(command), *[str(item) for item in args]]),
+            "endpoint_ref": command_digest(" ".join([str(command), *[str(item) for item in args]])),
         }
     return None
 
@@ -333,7 +362,7 @@ def stdio_processes() -> list[dict]:
             if len(parts) < 3 or not PROCESS_MARKERS.search(parts[2]):
                 continue
             found.append({"source": "stdio-process", "address": "local-process", "port": None,
-                          "process_name": parts[1][:120], "command_line": parts[2][:600],
+                          "process_name": parts[1][:120], "command_line": command_digest(parts[2]),
                           "mcp_evidence": "suspected"})
         return found
     for pid_dir in Path("/proc").iterdir():
@@ -347,7 +376,7 @@ def stdio_processes() -> list[dict]:
             continue
         found.append({"source": "stdio-process", "address": "local-process", "port": None,
                       "process_name": raw.split(" ")[0].rsplit("/", 1)[-1][:120],
-                      "command_line": raw[:600], "mcp_evidence": "suspected"})
+                      "command_line": command_digest(raw), "mcp_evidence": "suspected"})
     return found
 
 
@@ -503,7 +532,7 @@ def listener_findings(policy: dict) -> list[dict]:
             continue  # MCP 표지도 없고 initialize에도 답하지 않으면 MCP가 아니다.
         findings.append({"source": "local-socket", "address": row["address"], "port": row["port"],
                          "process_name": row.get("process_name", ""),
-                         "command_line": row.get("command_line", ""),
+                         "command_line": command_digest(row.get("command_line", "")),
                          "mcp_evidence": evidence,
                          **{k: v for k, v in (info or {}).items() if k != "path"}})
     findings.extend(stdio_processes())
@@ -578,6 +607,11 @@ def main() -> int:
     if not DEVICE_KEY:
         log("ENDPOINT_DEVICE_KEY가 없습니다. 관리자가 발급한 장치 자격이 필요합니다.")
         return 2
+    parsed = urlsplit(GATEWAY_URL)
+    if parsed.scheme != "https" and not (parsed.scheme == "http" and parsed.hostname in {
+        "gateway", "localhost", "127.0.0.1", "::1"}):
+        log("원격 Gateway 주소는 HTTPS가 필요합니다. 로컬 터널만 HTTP를 허용합니다.")
+        return 2
     log(f"엔드포인트 {endpoint_id()} · 관측 경로 {[str(p) for p in SCAN_PATHS]}")
     enrolled = False
     while True:
@@ -587,21 +621,26 @@ def main() -> int:
                 enrolled = True
                 log("등록 완료")
             once()
+            failed = False
         except urllib.error.HTTPError as exc:
             detail = exc.read()[:200].decode("utf-8", "replace")
             if exc.code in (401, 403):
                 # 자격이 폐기됐다. 다음 회전에서도 같은 오류가 나고 그것이 정상이다.
                 enrolled = False
             log("보고 실패(HTTP %s): %s" % (exc.code, detail))
+            failed = True
         except Exception as exc:
             log("보고 실패: %s" % exc)
+            failed = True
         if ONE_SHOT:
-            return 0
+            return 1 if failed else 0
         time.sleep(INTERVAL)
 
 
 def demo() -> None:
     """의존성 없이 돌아가는 자체 점검. 분류 로직이 깨지면 여기서 먼저 걸린다."""
+    assert command_digest("node  server.js --token secret") == command_digest("node server.js --token secret")
+    assert "secret" not in command_digest("node server.js --token secret")
     assert PROCESS_MARKERS.search("node /app/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js")
     assert PROCESS_MARKERS.search("python -m mcp_server_time --local-timezone UTC")
     assert not PROCESS_MARKERS.search("/usr/bin/postgres -D /var/lib/postgresql/data")

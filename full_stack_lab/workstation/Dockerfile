@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends iproute2 procps
 COPY workstation/office_agent.py workstation/provision_keys.py /opt/office/
 COPY workstation/scenarios /opt/office/scenarios
 COPY workstation/configs /opt/office/configs
-COPY endpoint/endpoint_agent.py /opt/office/endpoint_agent.py
+COPY --from=endpoint agent.py /opt/office/endpoint_agent.py
 COPY --chmod=0755 workstation/entrypoint.sh /usr/local/bin/workstation-entrypoint
 RUN printf '#!/bin/sh\nexec python /opt/office/office_agent.py "$@"\n' > /usr/local/bin/office-agent \
  && chmod 0755 /usr/local/bin/office-agent \

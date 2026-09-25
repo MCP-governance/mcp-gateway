@@ -22,9 +22,17 @@ x-mcp: &mcp
     retries: 24
   <<: *hardened
 
+# The endpoint agent is the same package employees install on real PCs
+# (/endpoint-agent at the repository root); the workstation image copies it in.
+x-workstation-build: &workstation-build
+  context: .
+  dockerfile: workstation/Dockerfile
+  additional_contexts:
+    endpoint: ../endpoint-agent
+
 x-workstation: &workstation
   image: mcpgw/workstation:2.0
-  build: {context: ., dockerfile: workstation/Dockerfile}
+  build: *workstation-build
   restart: unless-stopped
   depends_on:
     gateway: {condition: service_started}
@@ -76,13 +84,13 @@ services:
     networks: [policy]
 
   # PDF 8~10쪽: Presidio's unmodified images detect PII in outbound arguments and mask
-  # it in results. They sit on `policy` with OPA - the Gateway's decision helpers,
-  # reachable only from the Gateway, no host port. (A dedicated network ran into
-  # Docker address-pool exhaustion on hosts running several labs; see D-20.)
+  # it in results. Their own internal `privacy` network, which only the Gateway joins;
+  # no host port. Every network has an explicit subnet under MCP_NET_PREFIX (D-24), so
+  # several labs on one Docker host no longer exhaust the default address pools.
   presidio-analyzer:
     restart: unless-stopped
     image: ghcr.io/data-privacy-stack/presidio-analyzer:2.2.364
-    networks: [policy]
+    networks: [privacy]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/health', timeout=2)"]
       interval: 5s
@@ -93,7 +101,7 @@ services:
   presidio-anonymizer:
     restart: unless-stopped
     image: ghcr.io/data-privacy-stack/presidio-anonymizer:2.2.364
-    networks: [policy]
+    networks: [privacy]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/health', timeout=2)"]
       interval: 5s
@@ -137,7 +145,7 @@ services:
       - ./reports:/reports:ro
       - ./opa:/policy:ro
       - ./registry:/registry:ro
-    networks: [edge, office, policy, tools, data, telemetry, ops]
+    networks: [edge, office, policy, privacy, tools, data, telemetry, ops]
     <<: *hardened
 
   # Legacy SSE ingress: the same policy path for clients that only speak SSE.
@@ -155,7 +163,7 @@ services:
       - ./reports:/reports:ro
       - ./opa:/policy:ro
       - ./registry:/registry:ro
-    networks: [office, policy, tools, data, telemetry]
+    networks: [office, policy, privacy, tools, data, telemetry]
     <<: *hardened
 
   # Console (admin UI) + the synthetic IdP. It never calls an MCP tool.
@@ -180,7 +188,6 @@ services:
       MCP_SCAN_API_KEY: ${MCP_SCAN_API_KEY:-}
       INTAKE_WORKER_STALE_SECONDS: ${INTAKE_WORKER_STALE_SECONDS:-60}
       MCP_SCAN_REQUIRED_FOR_APPROVAL: ${MCP_SCAN_REQUIRED_FOR_APPROVAL:-0}
-      INTAKE_EXIT_TERMS_REQUIRED: ${INTAKE_EXIT_TERMS_REQUIRED:-0}
       OTEL_SERVICE_NAME: agent-service
     ports:
       - "127.0.0.1:${CONSOLE_PORT:-8000}:8000"
@@ -568,7 +575,7 @@ services:
   # Registers each workstation's key as a LiteLLM virtual key bound to that employee.
   llm-provision:
     image: mcpgw/workstation:2.0
-    build: {context: ., dockerfile: workstation/Dockerfile}
+    build: *workstation-build
     profiles: [llm]
     entrypoint: ["python", "/opt/office/provision_keys.py"]
     environment:
@@ -620,26 +627,64 @@ services:
     network_mode: none
 
 networks:
-  edge: {}
+  edge:
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.1.0/24
   office:
     internal: true
-  tools:
-    internal: true
-  corp:
-    internal: true
-  ops:
-    internal: true
-  internet:
-    internal: true
-  model:
-    internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.2.0/24
   policy:
     internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.3.0/24
+  privacy:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.4.0/24
+  tools:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.5.0/24
   data:
     internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.6.0/24
   telemetry:
     internal: true
-  scanner: {}
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.7.0/24
+  model:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.8.0/24
+  scanner:
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.9.0/24
+  corp:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.10.0/24
+  ops:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.11.0/24
+  internet:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.12.0/24
 
 volumes:
   db_data: {}

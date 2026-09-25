@@ -43,6 +43,10 @@ def normalise(transport: str, endpoint_ref: str) -> str:
     return value.rstrip("/").lower()
 
 
+def command_digest(value: str) -> str:
+    return "sha256:" + hashlib.sha256(" ".join((value or "").split()).encode()).hexdigest()
+
+
 def fingerprint(config_path: str, server_label: str, transport: str, endpoint_ref: str) -> str:
     return hashlib.sha256(
         "\x1f".join([config_path, server_label, transport, normalise(transport, endpoint_ref)]).encode()
@@ -92,6 +96,7 @@ async def _registry_index() -> list[dict]:
             "keys": {
                 normalise(row["transport"], row["endpoint"] or ""),
                 normalise("stdio", row["endpoint"] or ""),
+                command_digest(row["endpoint"] or "") if row["transport"] == "stdio" else "",
                 row["id"].lower(),
                 (row["display_name"] or "").strip().lower(),
                 # 서버가 스스로 말한 이름. 망 관측은 이 값만 손에 넣는다.

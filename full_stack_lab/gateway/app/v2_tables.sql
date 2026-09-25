@@ -79,3 +79,15 @@ ALTER TABLE termination_evidence DROP CONSTRAINT IF EXISTS termination_evidence_
 ALTER TABLE termination_evidence ADD CONSTRAINT termination_evidence_kind_check CHECK (kind IN (
   'revocation-response', 'introspection', 'provider-attestation', 'gateway-denial', 'liveness-probe',
   'endpoint-inventory', 'credential-check', 'session-termination', 'operator-statement'));
+
+-- An approved call that did not run is not a rejection (docs/architecture/proposals/
+-- runtime-boundaries.md): NOT_EXECUTED = stopped before dispatch, UNCONFIRMED =
+-- dispatched but the result is unknown. Databases created before this get the wider CHECK.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'approvals_status_check'
+                  AND pg_get_constraintdef(oid) LIKE '%UNCONFIRMED%') THEN
+    ALTER TABLE approvals DROP CONSTRAINT IF EXISTS approvals_status_check;
+    ALTER TABLE approvals ADD CONSTRAINT approvals_status_check CHECK (status IN
+      ('PENDING', 'APPROVED', 'REJECTED', 'EXPIRED', 'EXECUTED', 'NOT_EXECUTED', 'UNCONFIRMED'));
+  END IF;
+END $$;

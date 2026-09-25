@@ -19,7 +19,7 @@
 - **실제 MCP 서버 10종**: filesystem · git · fetch · memory · desktop-commander · postgres-mcp · redis ·
   mcp-email-server · gitea-mcp · @playwright/mcp (버전 고정, 계약 해시 잠금).
 - **Gateway**: 신원(transport 토큰) → 자원 분류(경로·SQL·URL·수신자·키) → 승인 스키마 검증 →
-  **Presidio 개인정보 검사**(나가는 인자) → OPA/Rego(333 권한 행렬 + SSRF·DLP·민감정보 반출·열람→반출 연쇄·
+  **Presidio 개인정보 검사**(나가는 인자) → OPA/Rego(배포된 권한 번들 + SSRF·DLP·민감정보 반출·열람→반출 연쇄·
   계약·공급망·종료 통제) → 같은 연결에서 계약 재확인 → 실행 → **결과 개인정보 마스킹** → 해시 체인 감사.
   기록된 정책 입력은 후보 정책에 그대로 재생할 수 있습니다(`./console.sh replay`, MCP 호출 없음).
 - **Console**(웹): 활동 로그를 사람이 읽는 문장으로, 승인, 계약 검토, 직원·단말, 도입 신청, 정책,
@@ -46,25 +46,30 @@ cd mcp-gateway/full_stack_lab
 ### Docker 네트워크 주소 풀이 소진된 경우
 
 `all predefined address pools have been fully subnetted`는 Docker가 새 Compose 네트워크에 배정할 주소 대역을
-찾지 못했다는 뜻입니다. 이 랩은 격리를 위해 네트워크를 11개 만들므로, 같은 호스트에서 여러 복제본을 동시에
-띄우면 기본 주소 풀이 바닥납니다. 사용을 마친 **해당 복제본**의 `full_stack_lab`에서 `./console.sh down`을
-실행한 뒤 다시 시작하세요(`down`은 컨테이너와 네트워크만 내리고 볼륨은 보존합니다). 실행 중인 다른 프로젝트의
-네트워크를 일괄 삭제하지 마세요. 여러 스택을 계속 유지해야 한다면
-[Docker 주소 풀 설정](https://docs.docker.com/engine/network/#automatic-subnet-allocation)에서 더 작은 네트워크
-크기를 설정합니다(데몬 재시작이 필요하므로 실행 중인 다른 스택을 먼저 확인).
+찾지 못했다는 뜻입니다. 이 랩은 격리를 위해 네트워크를 12개 만듭니다. 그래서 `console.sh`는 처음 실행할 때
+다른 Docker 망·호스트 라우트와 겹치지 않는 `10.200.0.0/16`~`10.249.0.0/16` 중 하나를 골라 `.env`의
+`MCP_NET_PREFIX`에 고정하고, 망마다 그 아래 `/24`를 명시합니다(기본 풀을 쓰지 않음, D-24). 이 설정 이전에
+만든 복제본은 `./console.sh down` 뒤 다시 `up`하면 새 대역으로 망을 만듭니다(볼륨은 보존). 후보 대역이 모두
+겹치면 오류로 멈춥니다. 그때는 쓰지 않는 **자기** 복제본만 내리세요. 실행 중인 다른 프로젝트의 네트워크를
+일괄 삭제하지 마세요.
 
 ## 검증
 
-`./console.sh test`가 한 번에 돌리는 것: Rego 단위 시험 90건 · 분류기 self-check · Gateway 인수 시험 12건
-(개인정보 마스킹·반출 차단·열람→반출 연쇄 포함) · 직원 업무 시나리오 21건의 기대 판정 대조 · 종료 판정 흐름 21건 ·
-보안 회귀(망 분리 실제 소켓, loopback 게시, 토큰 없는 읽기 API, 역할 경계, 로그아웃 즉시 효력, OPA·상위 서버·
-Presidio 장애 시 실패 안전, 감사 변조 탐지, 계약 잠금) · 정책 재생(합성 공격·정상 사례) · 논문 실험 E1~E3 결과 대조. CI([`.github/workflows/verify.yml`](.github/workflows/verify.yml))가
+`./console.sh test`가 한 번에 돌리는 것: 망 대역 선택기 self-check · 콘솔 상태 모듈 node 시험 · Rego 단위 시험
+92건(권한 번들이 비면 전부 차단·번들 변경이 판정을 바꿈 포함) · 분류기 self-check · Gateway 인수 시험 13건
+(권한 번들 적재·개인정보 마스킹·반출 차단·열람→반출 연쇄 포함) · 직원 업무 시나리오 21건의 기대 판정 대조 ·
+종료 판정 흐름 21건 · 보안 회귀(망 분리 실제 소켓, loopback 게시, 토큰 없는 읽기 API, 역할 경계, 로그아웃 즉시
+효력, **원격 MCP 종료 조건은 관리자 증거 검증 없이 승인 불가**, OPA·상위 서버·Presidio 장애 시 실패 안전,
+감사 변조 탐지, 계약 잠금) · 정책 재생(합성 공격·정상 사례) · 논문 실험 E1~E3 결과 대조. CI([`.github/workflows/verify.yml`](.github/workflows/verify.yml))가
 `main`·`feat/**` 푸시와 PR마다 같은 명령을 실행합니다. 상세: [docs/ai/TESTING.md](docs/ai/TESTING.md).
 
-## 333 권한 모델
+## 권한 모델
 
-**역할 3 × 데이터 등급 3 × 행위 3 = 27칸.** 행위는 도구 이름이 아니라 인자에서 정합니다
-(`SELECT`=r, `UPDATE`=w, DDL·외부 메일·외부 목적지=x). 모르는 자원은 important로 봅니다.
+**역할 3 × 데이터 등급 3 × 행위 3 = 27칸**에서 어떤 조합을 허용할지는 Rego 코드가 아니라 배포된 **권한 번들**
+(`opa/data.json`의 `authorization.grants`)이 정합니다. 번들에 없는 조합은 `P-AUTHZ-DENY-001`로 차단되고,
+번들이 비면 전부 차단됩니다. 저장소의 `LAB-AUTHZ-001`은 합성 실습용 예시이며, 조직 배치에서는 소유자 승인을
+거친 번들로 교체합니다. 행위는 도구 이름이 아니라 인자에서 정합니다(`SELECT`=r, `UPDATE`=w, DDL·외부 메일·
+외부 목적지=x). 모르는 자원은 important로 봅니다. 아래는 예시 번들로 OPA에 물은 결과입니다(Console 정책 화면과 같음).
 
 | 역할 \ 등급 | 공개 r/w/x | 내부 r/w/x | 중요 r/w/x |
 | --- | --- | --- | --- |
@@ -90,7 +95,10 @@ Presidio 장애 시 실패 안전, 감사 변조 탐지, 계약 잠금) · 정�
 | --- | --- |
 | [full_stack_lab/](full_stack_lab/README.md) | 통합 랩 전체(Compose·Gateway·Console·MCP 서버·회사·직원 PC·시험) |
 | [docs/ai/](docs/ai/README.md) | **설계·운영·시험 문서** (다음 작업자는 여기부터) |
+| [endpoint-agent/](endpoint-agent/README.md) | 실제 사용자 PC(Linux·Windows)에 설치하는 단말 관측 에이전트. 랩의 직원 PC도 같은 파일을 씀 |
 | [docs/API.md](docs/API.md) | API 요약. `./console.sh openapi`가 기계용 명세 생성 |
+| [docs/architecture/](docs/architecture/hardening.md) | 실행 경로·실행 상태·DB 권한·검사 환경의 단계적 분리 제안(검토 문서, v2 반영 현황 포함) |
+| [docs/dashboard-ux-review.md](docs/dashboard-ux-review.md) | 콘솔 UX 교차 검토 기록(v1 콘솔 기준, v2 반영 현황 포함) |
 | [docs/design/](docs/design/) | v1 시기 설계 배경(통제 평면 분리, 망 경계·Tailscale) |
 | [docs/PDF-INTEGRATION-2026-09.md](docs/PDF-INTEGRATION-2026-09.md) | 20쪽 PDF 요구사항(런타임 통제·정책 수명주기) 대조 기록과 v2 이식 내용 |
 | [AGENTS.md](AGENTS.md) | AI 에이전트 작업 규칙과 깨면 안 되는 불변식 |

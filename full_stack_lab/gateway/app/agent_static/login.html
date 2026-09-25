@@ -17,7 +17,7 @@
     <p class="muted">직원 PC의 AI 에이전트가 MCP 도구를 부를 때 Gateway가 실행 전에 판정한 기록과,
       승인·계약 검토·종료 판정을 다루는 화면입니다. 이 화면에서 도구를 직접 실행하지는 않습니다.</p>
 
-    <form id="gate-form" class="form stack" novalidate>
+    <form id="gate-form" class="form stack">
       <label>계정
         <select id="pick">
           <optgroup label="관리자">
@@ -41,8 +41,8 @@
       <label>비밀번호
         <input id="password" name="password" type="password" autocomplete="current-password" value="test-password" required />
       </label>
-      <p class="err" id="gate-error" role="alert"></p>
-      <button class="btn primary" id="gate-go" type="submit">로그인</button>
+      <p class="err" id="gate-error" role="alert" tabindex="-1"></p>
+      <button class="btn primary" id="gate-go" type="submit">작업 공간 열기 →</button>
     </form>
 
     <footer class="small muted">

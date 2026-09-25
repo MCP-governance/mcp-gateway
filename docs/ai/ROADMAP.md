@@ -31,6 +31,10 @@
 - `server_version`은 mcp-proxy가 자기 SDK 버전을 보고한다(D-03). 패키지 버전 고정은 이미지 빌드가 보장한다.
 
 ## 3. 처리한 것 (2026-09-25)
+- ~~origin/main 24시간 변경 통합(a14fe13·0c1736d·374dc0b·7a8aacb·906d227·ae7ec85·f2a5913·8b2b1b4): 권한 번들·P-AUTHZ(D-25),
+  원격 MCP 종료 조건의 관리자 증거 검증(D-26), 망마다 명시 서브넷과 privacy 망 복원(D-24), 루트 `endpoint-agent/`
+  패키지(D-29), 콘솔 UX·접근성과 상태 모듈 node 시험(D-28), 승인 최종 상태 UNCONFIRMED/NOT_EXECUTED(D-27),
+  배포 정책 묶음 digest(D-25)~~
 - ~~origin/main의 PDF 통합(cc086e5·45b9f6e) 병합: Presidio 입력 검사·출력 마스킹, MCP-DATA-EGRESS-001, P-CHAIN-001, 위험 점수, 정책 재생을 v2 구조로 이식(D-20~D-23)~~
 
 ## 3-1. PDF 통합에서 이어서 할 일
@@ -43,3 +47,14 @@
 - ~~Gateway 읽기 API 인증, Console 프록시 역할 경계~~ (5567111)
 - ~~프로브 호출이 모집단을 불리는 문제~~ (5567111)
 - ~~`/mcp/` 401 + RFC 9728 챌린지, 승인형 예외가 실행되지 않던 문제, acceptance v2, 보안 회귀, 검사기, CI 재작성, v1 잔재 삭제~~
+
+## 5. 아키텍처 제안(`docs/architecture/`)에서 이어서 할 일
+제안은 v1 기준 커밋(45b9f6e)의 정적 검토다. v2에 반영한 것과 남은 것:
+- ~~승인 최종 상태가 미확인 실행을 REJECTED로 덮음~~ → D-27
+- ~~권한 데이터와 정책 코드의 배포 식별~~ → 네 파일 묶음 digest(D-25). **남음**: digest를 감사 행·재생 결과에 기록(감사 체인 v7).
+- **실행 journal**(RECEIVED → DISPATCHING → COMPLETED/OUTPUT_BLOCKED/UNKNOWN): 전송 의도를 전송 전에 영속화하고,
+  프로세스가 전송 뒤 감사 저장 전에 죽은 건을 UNKNOWN으로 남긴다. 지금은 `upstream_attempted`와 감사 행이 사후에 한 번 쓰인다.
+- **DB 역할 분리**: migration owner / 실행(감사 append만) / 관리 / Agent(IdP) / Worker. 지금은 모든 서비스가 `mcp`
+  역할(스키마 owner)이라 append-only 트리거를 끌 수 있다(보안 회귀가 변조 탐지로 보완).
+- **순수 계약 모듈**: 해시·스키마 유틸을 tracing을 초기화하는 `core`에서 분리(agent_service·replay의 import 경계).
+- 제안의 A.I.G 고권한 오버레이 항목은 v2에 해당 없음(v2는 A.I.G를 Gateway 컨테이너에서 실행하지 않는다).

@@ -22,7 +22,7 @@
 
 ### 1.1 이 저장소에 구현된 것
 
-[`endpoint/endpoint_agent.py`](endpoint/endpoint_agent.py) — 의존성 없는 단일 파일.
+[`../endpoint-agent/agent.py`](../endpoint-agent/agent.py) — 의존성 없는 단일 파일. 호스트 설치 절차는 [endpoint-agent/README.md](../endpoint-agent/README.md)에 있습니다.
 
 ```bash
 ./console.sh endpoint
@@ -51,7 +51,7 @@
 읽는 파일: `claude_desktop_config.json`, `.mcp.json`, `mcp.json`,
 `mcp_settings.json`, `cline_mcp_settings.json`, `.cursor/*.json`, `.vscode/*.json`.
 
-**보내는 것**: 서버 이름·전송 방식·주소(또는 명령).
+**보내는 것**: 서버 이름·전송 방식·주소. stdio 명령 인자는 SHA-256 digest로 바꿔 보냅니다.
 **보내지 않는 것**: `env`, `headers`, 파일 본문. 거기에 토큰이 있고 관측에는
 필요 없습니다. 사람들의 API 키가 인벤토리 테이블에 쌓이면 그 테이블이 조직에서
 가장 위험한 표가 됩니다.

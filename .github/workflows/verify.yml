@@ -41,20 +41,28 @@ jobs:
       - name: Python lint
         run: |
           python -m pip install --quiet pyflakes
-          python -m pyflakes gateway/app/*.py tests/*.py supply_chain/*.py endpoint/*.py workstation/*.py corp/*.py scripts/*.py
+          python -m pyflakes gateway/app/*.py tests/*.py supply_chain/*.py workstation/*.py corp/*.py scripts/*.py ../endpoint-agent/*.py
 
-      - name: Shell·JS 문법
+      # console.js is an ES module (it imports console-state.mjs); Node 22+ parses it with --check.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Shell·JS 문법과 콘솔 상태 테스트
         run: |
-          bash -n console.sh tests/security_regression.sh workstation/entrypoint.sh mcp/run-server.sh corp/gitea-entrypoint.sh
+          bash -n console.sh tests/security_regression.sh workstation/entrypoint.sh mcp/run-server.sh corp/gitea-entrypoint.sh ../endpoint-agent/install-linux.sh
           node --check gateway/app/agent_static/console.js
           node --check gateway/app/agent_static/login.js
+          node --test tests/console-state.test.mjs
 
       - name: 검사기 자체 점검
         run: |
           python3 tests/contracts_check.py
           python3 tests/experiments_check.py
           python3 tests/replay_check.py
-          python3 endpoint/endpoint_agent.py --self-check
+          python3 ../endpoint-agent/agent.py --self-check
+          python3 scripts/network_prefix.py --self-check
 
       # The README lists what is deliberately open. A list that silently falls behind
       # the code is worse than none: a reviewer reads it as exhaustive.
@@ -69,9 +77,14 @@ jobs:
           stack = json.load(open("/tmp/compose.json"))
           services, networks = stack["services"], stack["networks"]
           fail = []
-          for name in ("office", "tools", "corp", "data", "policy", "model"):
+          for name in ("office", "tools", "corp", "data", "policy", "privacy", "model"):
               if not networks[name].get("internal"):
                   fail.append(f"{name} 망이 internal이 아님")
+          # D-24: every network has its own subnet under MCP_NET_PREFIX, so several labs
+          # on one host do not draw from (and exhaust) Docker's default pools.
+          for name, net in networks.items():
+              if not (net.get("ipam") or {}).get("config"):
+                  fail.append(f"{name} 망에 명시한 대역이 없음")
           for name, svc in services.items():
               nets = set(svc.get("networks") or {})
               for port in svc.get("ports") or []:
@@ -81,8 +94,10 @@ jobs:
                   fail.append(f"{name}: 직원 PC가 office 밖 망에 연결 {sorted(nets)}")
               if name.startswith("mcp-") and (svc.get("ports") or "office" in nets):
                   fail.append(f"{name}: MCP 서버가 호스트나 office 망에 노출")
-              if name.startswith("presidio-") and (svc.get("ports") or nets != {"policy"}):
-                  fail.append(f"{name}: Presidio가 policy 망 밖에 노출 {sorted(nets)}")
+              if name.startswith("presidio-") and (svc.get("ports") or nets != {"privacy"}):
+                  fail.append(f"{name}: Presidio가 privacy 망 밖에 노출 {sorted(nets)}")
+              if "privacy" in nets and not (name.startswith("presidio-") or name in ("gateway", "gateway-sse")):
+                  fail.append(f"{name}: Gateway가 아닌데 privacy 망에 연결")
               env = svc.get("environment") or {}
               if "AGENT_JWT_PRIVATE_KEY" in env and name != "agent-service":
                   fail.append(f"{name}: 발급자가 아닌데 서명 개인키를 받음")

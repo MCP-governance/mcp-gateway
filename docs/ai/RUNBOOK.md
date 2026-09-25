@@ -18,10 +18,15 @@
 `mcpgw-23ffc0f4e9`)가 v1 랩을 8000/8080으로 띄운다. **그 컨테이너를 멈추지 말 것** — 포트를 나눠
 공존한다(D-14). 프로젝트 이름은 `.env`의 `MCP_COMPOSE_PROJECT`(여기서는 `mcpgw-v2`).
 
-### Docker 주소 풀 소진
-이 WSL에는 랩이 여러 개(v2, v1 pdf-integration 트리, 또 다른 복제본) 떠 있어 `all predefined address pools have been
-fully subnetted`가 날 수 있다. 새 망을 추가하지 말고(D-20), 쓰지 않는 **자기** 복제본을 `./console.sh down`으로 내린다.
-남의 스택 네트워크를 지우지 않는다.
+### 망 대역 (주소 풀 소진 방지)
+이 WSL에는 랩이 여러 개(v2, v1 pdf-integration 트리, 또 다른 복제본) 떠 있다. v2는 처음 실행할 때 겹치지 않는
+`/16`을 골라 `.env`의 `MCP_NET_PREFIX`에 고정하고 12개 망에 `/24`를 명시하므로 Docker 기본 주소 풀을 쓰지 않는다
+(D-24). 이 방식 이전에 만든 스택은 `./console.sh down` 뒤 `up`. 후보 대역이 모두 겹친다는 오류가 나면 쓰지 않는
+**자기** 복제본만 내린다. 남의 스택 네트워크를 지우지 않는다.
+
+### 실제 PC에 단말 에이전트 설치
+랩의 직원 PC는 `endpoint-agent/agent.py`를 이미지에 복사해 쓴다. 실제 PC(Linux·Windows)에는 저장소 루트의
+[`endpoint-agent/README.md`](../../endpoint-agent/README.md) 절차(장치 키 발급 → 설치기 → 1회 보고 확인 → 제거)를 따른다.
 
 ### WSL이 유휴로 꺼지는 문제
 WSL VM은 열린 프로세스가 없으면 몇 분 뒤 종료되고 컨테이너도 같이 죽는다. 작업 중에는 백그라운드로

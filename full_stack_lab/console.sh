@@ -41,6 +41,13 @@ ensure_env() {
   if [[ -z "${COMPOSE_PROJECT_NAME:-}" ]] && ! grep -qE '^(MCP_COMPOSE_PROJECT|COMPOSE_PROJECT_NAME)=' .env; then
     printf 'MCP_COMPOSE_PROJECT=mcpgw-%s\n' "$(printf '%s' "$LAB_DIR" | sha256sum | cut -c1-10)" >> .env
   fi
+  # compose.yaml gives every network an explicit /24 under this /16, picked once per
+  # checkout from ranges no other Docker network or route uses (D-24). A failed pick
+  # stops here rather than writing an empty prefix.
+  if [[ -z "${MCP_NET_PREFIX:-}" ]] && ! grep -qE '^MCP_NET_PREFIX=10\.[0-9]+$' .env; then
+    local prefix; prefix="$(python3 scripts/network_prefix.py "$LAB_DIR")"
+    echo "MCP_NET_PREFIX=$prefix" >> .env
+  fi
   if ! grep -qE '^AGENT_JWT_PRIVATE_KEY=.+' .env; then
     echo "합성 IdP 서명 키(Ed25519)를 생성합니다."
     export AGENT_JWT_PRIVATE_KEY=placeholder AGENT_JWT_PUBLIC_KEY=placeholder LITELLM_MASTER_KEY=placeholder
@@ -227,6 +234,9 @@ case "${1:-up}" in
     ;;
   test)
     ensure_env
+    python3 scripts/network_prefix.py --self-check
+    if command -v node >/dev/null; then node --test tests/console-state.test.mjs
+    else echo "node 없음 — 콘솔 상태 테스트는 CI 정적 검사에서 실행됩니다."; fi
     # --entrypoint: the static image's default entrypoint runs the tests without printing them
     docker run --rm --entrypoint /opa -v "$LAB_DIR/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy
     docker compose exec -T gateway python -m app.classify

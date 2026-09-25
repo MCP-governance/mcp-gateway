@@ -1,7 +1,8 @@
-body.gate { display: grid; place-items: center; min-height: 100vh; padding: 16px; }
+body.gate { display: grid; place-items: center; min-height: 100vh; min-height: 100dvh; padding: 16px; }
 .gate-card { width: min(440px, 100%); padding: 24px; display: flex; flex-direction: column; gap: 14px; }
 .gate-card header b { display: block; font-size: 18px; letter-spacing: -.01em; }
 .gate-card header span { font-size: 12.5px; color: var(--text-3); }
 .gate-card p { margin: 0; }
-.gate-card .btn.primary { justify-content: center; padding: 9px 12px; }
+.gate-card .btn.primary { justify-content: center; padding: 9px 12px; min-height: 44px; }
+.gate-card input, .gate-card select { min-height: 44px; }
 .err { color: var(--block); font-size: 13px; min-height: 1em; margin: 0; }

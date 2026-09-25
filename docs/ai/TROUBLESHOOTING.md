@@ -26,7 +26,12 @@
 | workday `--check` 대량 실패, 사유 `MCP-DECOMM-001` | 누가 연 종료 케이스로 서버가 TERMINATING | 케이스 확인 후 종결/복원(`./console.sh restore <server>`) |
 | Console 목록 500 한 번 | Gateway 재시작 중 프록시 연결 실패 | 이제 503 "Gateway에 연결할 수 없습니다"로 응답 |
 | Git Bash에서 보낸 스크립트의 `\n`·`$변수`가 사라짐 | heredoc/따옴표 처리 | 스크립트를 `\\wsl.localhost\kali-linux\tmp\`에 파일로 쓰고 실행 |
-| `all predefined address pools have been fully subnetted` | 한 호스트에 랩 여러 개 → Docker 기본 주소 풀 소진 | 새 망 대신 기존 망 사용(D-20), 안 쓰는 자기 복제본 `./console.sh down` |
+| `all predefined address pools have been fully subnetted` | 명시 대역(D-24) 이전에 만든 스택 | `./console.sh down` 뒤 `up`(볼륨 유지) — 이후에는 `MCP_NET_PREFIX` 아래 `/24`만 쓴다 |
+| `네트워크 대역 자동 선택 실패` | `10.200`~`10.249` 전부 다른 망·라우트와 겹침 | 안 쓰는 자기 복제본 `down`, 또는 `.env`에 `MCP_NET_PREFIX=10.x` 직접 지정 |
+| 원격 MCP 승인이 409 "…증거 문서로 확인해야…" | 종료 조건 검증 기록 없음(D-26) | 도입 신청 → **종료 조건 검증**(관리자, HTTPS 근거 문서) 뒤 승인 |
+| 도입 신청이 422 | 신청 본문에 종료 조건 필드(D-26) | 저장소·목적만 보낸다. 종료 조건은 관리자가 따로 기록 |
+| CI `node --check console.js`가 "Cannot use import statement" | Node 20 이하(ES 모듈 감지 없음) | `actions/setup-node`로 Node 24(verify.yml) |
+| 워크스테이션 빌드가 `endpoint` 컨텍스트를 못 찾음 | compose가 `additional_contexts` 미지원(2.17 미만) | Docker Compose 2.17+ |
 | 결과에 `[REDACTED]`가 보임 | Presidio 출력 마스킹(주민번호·전화·외부 이메일·카드·자격 문자열) | 의도된 동작. 가린 유형은 활동 로그의 "개인정보" 칩과 감사 행 `privacy_types` |
 | 외부 메일·URL 호출이 `P-CHAIN-001` | 같은 사용자가 10분 안에 중요정보를 읽었다 | 의도된 동작(D-22). 창은 `CHAIN_WINDOW_MINUTES` |
 | 모든 쓰기·외부 호출이 `P-DATA-INSPECTION-001` | presidio-analyzer 불능 | `docker compose ps presidio-analyzer`, `/api/health`의 `presidio_*` |

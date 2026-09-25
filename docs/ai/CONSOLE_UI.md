@@ -1,7 +1,7 @@
 # Console UI — 구조와 확장
 
 > 파일: `full_stack_lab/gateway/app/agent_static/`
-> `console.html`(껍데기) · `console.js`(단일 ES 모듈, 빌드 없음) · `console.css`(토큰·컴포넌트) ·
+> `console.html`(껍데기) · `console.js`(ES 모듈, 빌드 없음) · `console-state.mjs`(활동 로그 상태, DOM 없음 — `node --test`) · `console.css`(토큰·컴포넌트) ·
 > `login.html/js/css` · `fonts/NotoSansKR-variable.woff2`(폐쇄망에서도 같은 글꼴).
 > 서빙: `agent-service`(`/login`, `/workspace`, `/static/*`). 정적 파일은 **이미지에 들어간다** —
 > 바꾸면 `docker compose build -q agent-service && docker compose up -d agent-service`.
@@ -30,7 +30,11 @@
 | `openDrawer(title, body)` | 오른쪽 상세 패널(판정·서버·회수 대상·판정서·고지 요청서) |
 | `toast(msg, bad)` | 결과 알림 |
 
-키보드: 클릭 가능한 행(`li/tr[data-act]`)은 `tabindex=0`, Enter로 연다. Esc는 드로어 닫기.
+키보드: 클릭 가능한 행(`li/tr[data-act]`)은 `tabindex=0`, Enter로 연다(IME 조합 중 Enter는 무시). Esc는 드로어 닫기.
+접근성(D-28): 첫 Tab에 "본문으로 건너뛰기"(해시 라우팅과 충돌하지 않게 `data-act="skip"`으로 초점만 옮김),
+다른 화면으로 가면 그 화면의 `h1`로 초점·`document.title` 갱신(같은 화면 재렌더는 초점 유지), 드로어는 열 때
+닫기 버튼으로 초점 → 닫으면 연 요소로 복귀, 닫힌 드로어는 `inert`. 터치 기기에서 조작 요소 44px,
+`prefers-reduced-motion`·`forced-colors` 대응.
 테마: `localStorage["mcp-console-theme"]` 또는 시스템 설정(`prefers-color-scheme`).
 
 ## 3. 화면과 데이터
@@ -38,14 +42,14 @@
 | 화면 | 역할 | 데이터 | 조작 |
 | --- | --- | --- | --- |
 | `#/overview` 개요 | 관리자 | `/gw/overview`, `/gw/activity?limit=8` | — (프로브 호출은 숫자에서 제외, D-12) |
-| `#/activity` 활동 로그 | 전원(비관리자는 자기 것만) | `/gw/activity?decision&server&person&after&limit` | 필터, 3초 라이브 폴링, 판정 상세 드로어, 감사 체인 검증 |
+| `#/activity` 활동 로그 | 전원(비관리자는 자기 것만) | `/gw/activity?decision&server&person&after&limit` | 서버 필터(판정·서버·사람) + 불러온 기록 검색(사람·단말·도구·대상·정책·trace), 3초 폴링(일시정지 중에도 새 판정 수를 셈), 상태 줄(마지막 성공·실패), 판정 상세 드로어, 감사 체인 검증 |
 | `#/approvals` 승인 대기 | 관리자 | `/approvals` | 승인하고 실행 / 거부(사유) |
 | `#/servers[/id]` MCP 서버 | 관리자 | `/gw/registry` | 계약 다시 확인, DRIFT면 승인본 갱신(검토 내용 필수) |
 | `#/people` 직원·단말 | 관리자 | `/api/accounts`, `/gw/endpoint/inventory` | 계정 상태(본인 제외) |
-| `#/intake` 도입 신청 | 전원 | `/api/mcp-requests` | 신청(종료 조건 체크 포함), 관리자: 검증 시작·승인·거부 |
+| `#/intake` 도입 신청 | 전원 | `/api/mcp-requests` | 신청(저장소·목적만), 관리자: 검증 시작·**종료 조건 검증**(원격만, HTTPS 근거)·승인(원격은 검증 뒤에만 보임)·거부 |
 | `#/termination` 종료·폐기 | 관리자 | `/gw/termination/relationships`, `/gw/termination/cases` | 종료 시작(차단) |
 | `#/termination/<caseId>` 케이스 | 관리자 | `/gw/termination/cases/<id>` | 증거 수집·판정·조직 권한 폐기·상태 기록·대상 추가·증거 등록·판정서·고지 요청서·종결(위험 수용)·재개·실습 복원 |
-| `#/policy` 정책 | 관리자 | `/gw/enforcement`, `/gw/policy/matrix`, `/gw/policy/ledger` | 집행/관찰 모드 전환 |
+| `#/policy` 정책 | 관리자 | `/gw/enforcement`, `/gw/policy/matrix`, `/gw/policy/ledger` | 집행/관찰 모드 전환. 27칸(지금 번들로 OPA 질의)·권한 번들 grant 목록·관리대장·예외 |
 
 활동 로그 한 줄은 `activity.describe()`의 필드로 만든다: 시각 · 판정 칩 · 누가(부서·단말) ·
 `server.tool → 대상` · 행위·등급 · 정책 id — 사유 · 실행 결과. 개인정보가 검출되면 "개인정보 KR_RRN · 마스킹" 칩,
@@ -60,7 +64,7 @@
 - 색은 의미에만: 판정(허용 초록·경보 주황·제한 청록·승인 보라·차단 빨강)과 등급(T1 초록·T2 주황·T3 빨강).
 - 토큰은 `:root`(라이트)와 `:root[data-theme="dark"]`에. 컴포넌트: `.card`, `.kpi`, `.chip.<tone>`,
   `table.data`, `.feed`, `.servers`, `.stepper`/`.step.done|now|gap`, `.crit`, `.cdots`, `.evidence`, `.drawer`, `dialog`.
-- 반응형: ≤1100px 한 열, ≤760px 사이드바가 상단 가로 메뉴.
+- 반응형: ≤1100px 한 열, ≤760px 사이드바가 상단 가로 메뉴(테마·로그아웃은 계속 보임).
 
 ## 5. 새 화면을 추가하려면
 1. `PAGES`에 `{id, label, group}` 추가, `agent_service.PAGES_BY_ROLE`에 역할별로 추가.

@@ -286,15 +286,17 @@ async def policy_ledger_view(user: dict = Depends(caller)) -> dict:
     구현하는 정책인지, 지금 어떤 상태와 버전으로 어느 환경에 적용 중인지, 어떤 예외가
     붙어 있는지를 집행 중인 정본에서 그대로 읽어 보여준다.
     """
-    ledger, exceptions, policy_set, active = await asyncio.gather(
+    ledger, exceptions, policy_set, authorization, active = await asyncio.gather(
         core.policy_ledger(refresh=True),
         core.opa_document("exceptions"),
         core.opa_document("policy_set"),
+        core.opa_document("authorization"),
         db.fetch_one("SELECT * FROM policy_versions WHERE status='ACTIVE' ORDER BY activated_at DESC LIMIT 1"),
     )
     entries = [{"policy_id": pid, **entry} for pid, entry in sorted(ledger.items(), key=lambda item: item[1].get("priority", 9999))]
     return {
         "policy_set": policy_set or {},
+        "authorization": authorization or {},
         "deployed_rego": active,
         "environment": core.GATEWAY_ENVIRONMENT,
         "policies": entries,

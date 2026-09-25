@@ -43,8 +43,10 @@
 
 관리자로 로그인하면: **개요**(오늘 판정·서버·직원 PC·많이 걸린 정책) · **활동 로그**(한 줄이 호출 하나,
 누르면 판정 근거·분류·정책·trace, 실시간) · **승인 대기** · **MCP 서버**(계약 일치/불일치, 승인본 갱신) ·
-**직원·단말**(계정 상태, 단말의 MCP 설정과 섀도 MCP) · **도입 신청**(종료 조건 포함) · **종료·폐기** ·
-**정책**(27칸 행렬, 관리대장, 예외, 집행/관찰 모드). 직원·협력사는 자기 활동 로그와 도입 신청만 봅니다.
+**직원·단말**(계정 상태, 단말의 MCP 설정과 섀도 MCP) · **도입 신청**(원격 서버의 종료 조건은 관리자가 제공자
+문서로 검증해야 승인) · **종료·폐기** · **정책**(배포된 권한 번들과 그 번들로 OPA에 물은 27칸, 관리대장, 예외,
+집행/관찰 모드). 직원·협력사는 자기 활동 로그와 도입 신청만 봅니다. 활동 로그는 불러온 기록 안에서 사람·단말·
+도구·대상·정책·trace로 찾고, 일시정지해도 새 판정 수를 셉니다.
 구조: [../docs/ai/CONSOLE_UI.md](../docs/ai/CONSOLE_UI.md).
 
 ## 4. 종료·폐기 시연
@@ -68,11 +70,12 @@
 ./console.sh replay 100                               # 기록된 정책 입력 100건 + 합성 사례를 후보 정책에 재생
 REPLAY_POLICY_DIR=./candidate-opa ./console.sh replay  # 후보 정책 디렉터리 지정 (MCP 호출 없음)
 ```
-Rego → 분류기 → Gateway 인수 시험 → 업무 시나리오 대조 → 종료 판정 흐름 → 보안 회귀 → 정책 재생 → E1~E3.
-결과는 `reports/`. 층별 설명: [../docs/ai/TESTING.md](../docs/ai/TESTING.md).
+망 대역 self-check → 콘솔 상태(node) → Rego → 분류기 → Gateway 인수 시험 → 업무 시나리오 대조 → 종료 판정 흐름 →
+보안 회귀 → 정책 재생 → E1~E3. 결과는 `reports/`. 층별 설명: [../docs/ai/TESTING.md](../docs/ai/TESTING.md).
 
-`all predefined address pools have been fully subnetted`가 나면 사용을 마친 복제본에서 `./console.sh down`으로
-**그 복제본의** 컨테이너·네트워크만 내리고 다시 시작하세요(볼륨 유지). 여러 랩을 함께 띄운 호스트에서 생긴다.
+망 12개는 모두 `.env`의 `MCP_NET_PREFIX`(처음 실행 때 다른 Docker 망·라우트와 겹치지 않는 `10.200`~`10.249` 중
+하나를 자동 선택) 아래 `/24`를 명시해 만들므로, 한 호스트에 랩을 여러 벌 띄워도 Docker 기본 주소 풀이 소진되지
+않습니다. 이 방식 이전에 만든 복제본은 `./console.sh down` 뒤 `up`하면 새 대역으로 옮겨집니다(볼륨 유지).
 
 ## 6. 열려 있는 API
 
@@ -96,11 +99,11 @@ Gateway API 중 토큰 없이 열려 있는 것은 다음뿐입니다: `/api/hea
 | `corp/` | 회사 시드(파일·저장소·DB·메일·Redis·인트라넷·Gitea) |
 | `workstation/` | 직원 PC 이미지, `office_agent.py`, 시나리오, MCP 설정(관리형·섀도) |
 | `llm/` | LiteLLM 설정 |
-| `endpoint/` | 단말 에이전트 |
+| `../endpoint-agent/` | 단말 에이전트(표준 라이브러리만). 직원 PC 이미지가 빌드 때 복사하고, 실제 PC에는 설치기로 배포 |
 | `supply_chain/` | 도입 신청 격리 검증 워커 |
 | `db/` | Gateway DB 초기화 |
-| `scripts/watch.py` | 판정 한 줄 로그 |
-| `tests/` | 보안 회귀·종료 흐름·검사기·무인증 API 대조 |
+| `scripts/watch.py` · `scripts/network_prefix.py` | 판정 한 줄 로그 · 망 대역 선택 |
+| `tests/` | 보안 회귀·종료 흐름·검사기·무인증 API 대조·콘솔 상태 모듈(node) |
 | `reports/` | 검증 결과(커밋하지 않음) |
 
 ## 8. 한계

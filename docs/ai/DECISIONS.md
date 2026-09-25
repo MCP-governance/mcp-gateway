@@ -122,7 +122,9 @@
   관찰 모드에서도 그대로 집행.
 - **이유**: 도입 초기에 "켜면 무엇이 막히는가"를 숫자로 보여 줘야 집행을 켤 수 있다.
 
-## D-20 Presidio는 OPA와 같은 `policy` 망
+## D-20 ~~Presidio는 OPA와 같은 `policy` 망~~ — D-24로 대체
+- **대체(2026-09-25)**: 망마다 명시 서브넷을 주면서(D-24) 주소 풀 소진 문제가 사라져, Presidio는 전용 `privacy`
+  망으로 돌아갔다. 아래는 당시 기록.
 - **결정**: presidio-analyzer·anonymizer는 새 망 없이 `policy`(internal, Gateway·OPA만)에 붙는다.
 - **이유**: PDF 통합(cc086e5)은 전용 `privacy` 망을 만들었지만, 이 랩은 이미 망이 11개라 같은 호스트에 랩을
   여러 개 띄우면 Docker 기본 주소 풀이 소진돼 네트워크를 만들 수 없었다(2026-09-25 병합 중 실제 발생).
@@ -148,3 +150,57 @@
   git 로그의 날짜와 작성자, 웹 페이지의 링크까지 가려 업무가 불가능하다. 수신자 주소는 반출 내용이 아니라
   목적지이고(그것까지 세면 모든 외부 메일이 차단된다), 동료의 사내 주소는 조직이 스스로에게 숨길 개인정보가 아니다.
 - **실패 안전**: 입력 검사 불능 → `P-DATA-INSPECTION-001`(실행 전 차단), 출력 검사 불능 → `MCP-OUTPUT-001`(실행됨·출력 보류).
+
+## D-24 망마다 명시 서브넷, Presidio는 전용 `privacy` 망 (origin/main a14fe13 통합)
+- **결정**: 12개 망 전부 `${MCP_NET_PREFIX}.N.0/24`를 명시한다(edge 1 · office 2 · policy 3 · privacy 4 · tools 5 ·
+  data 6 · telemetry 7 · model 8 · scanner 9 · corp 10 · ops 11 · internet 12). `MCP_NET_PREFIX`는 처음 실행 때
+  `scripts/network_prefix.py`가 다른 Docker 망·호스트 라우트와 겹치지 않는 `10.200`~`10.249`에서 골라 `.env`에
+  고정한다(체크아웃 경로 해시가 시작점이라 복제본마다 다르다). presidio-analyzer·anonymizer는 `privacy`(internal)에만
+  붙고 그 망에는 gateway·gateway-sse만 들어온다.
+- **이유**: 한 호스트에 랩을 여러 벌 띄우면 Docker 기본 풀(/16·/20 단위)이 바닥난다. 명시 /24는 기본 풀을 쓰지
+  않으므로 망 수를 줄이려고 격리를 합칠 필요가 없어진다. 정책 엔진과 개인정보 검사기를 한 망에 둘 이유가 없다.
+- **검증**: CI `static`이 모든 망의 명시 대역, Presidio의 망 = {privacy}, privacy 망 구성원(Gateway·Presidio만)을 확인.
+- **주의**: 이 방식 이전에 만든 스택은 `./console.sh down` 뒤 `up`해야 망이 새 대역으로 다시 만들어진다(볼륨 유지).
+
+## D-25 권한 허용은 배포 데이터 번들, 배포 정책의 식별은 네 파일 묶음 (origin/main a14fe13 통합)
+- **결정**: 역할×등급×행위 허용 조합을 Rego 소스(`permissions` 표)에서 `opa/data.json`의 `authorization.grants`로
+  옮기고 정책 id를 `P-333-*` → `P-AUTHZ-DENY-001`/`P-AUTHZ-ALLOW-001`로 바꿨다(정책 집합 2.2.0). 번들이 비면 전부
+  차단. v2는 `/api/policy/matrix`를 **유지**한다 — 코드에 고정된 표가 아니라 지금 배포된 번들로 OPA에 27칸을 묻는
+  결과이기 때문이다(main은 이 API를 지웠다). `/api/policy/ledger`에 `authorization`(번들)을 더했다.
+  Gateway가 기동 때 기록하는 배포 정책 버전(`policy_versions`)은 `policy.rego`만이 아니라 `policy.rego`·`data.json`·
+  `exceptions.json`·`policy_ledger.json` 묶음의 sha256(`bundle-<12자>`)이다.
+- **이유**: 권한이 데이터로 옮겨 가면 Rego 해시만으로는 "무엇이 집행 중인가"를 식별할 수 없다. 번들만 바뀐
+  배포가 같은 버전으로 보이면 사후 조사에서 판정 차이를 설명할 수 없다(docs/architecture 제안 D단계의 첫걸음).
+- **남은 일**: 이 digest를 감사 행과 재생 결과에 연결하는 것(감사 체인 버전 변경이 필요) — ROADMAP.
+
+## D-26 원격 MCP의 종료 조건은 신청자가 아니라 플랫폼이 증거로 검증 (origin/main a14fe13 통합)
+- **결정**: 도입 신청은 저장소·목적만 받는다(종료 조건 필드를 보내면 `StrictModel`이 422). 관리자가
+  `PUT /api/mcp-requests/{id}/exit-terms`로 세 조항(제공자 보유 자격 고지·폐기 기록 제출·종료 후 감사 접근)의
+  확인 결과와 HTTPS 근거 문서·확인 내용을 기록하고, 원격(HTTP·SSE) 서버는 세 조항이 모두 확인돼야 승인된다.
+  `INTAKE_EXIT_TERMS_REQUIRED` 스위치는 없앴다(항상 요구).
+- **이유**: 신청자의 체크박스는 "합의했다"는 자기 신고라 종료 시점의 C1(모집단)을 뒷받침하지 못한다. 논문 5.2의
+  소급 불가 증거를 도입 때 확보하는 유일한 자리이므로 증거 문서와 검증 주체가 남아야 한다.
+- **Console**: 신청 양식의 체크박스를 없애고, 관리자에게 "종료 조건 검증" 대화상자(체크 3개·근거 URL·확인 내용)를
+  두었다. 승인 버튼은 서버와 같은 규칙(`termsVerified`)을 만족할 때만 보인다. 보안 회귀가 422·403·409·200을 확인한다.
+
+## D-27 승인된 호출의 최종 상태는 실행 사실을 그대로 (docs/architecture/proposals 반영)
+- **결정**: 승인 뒤 재판정·실행 결과로 `approvals.status`를 `EXECUTED`(실행됨) / `NOT_EXECUTED`(전송 전에 멈춤) /
+  `UNCONFIRMED`(전송했지만 결과 미확인)로 닫는다. `REJECTED`는 사람의 거부와 무결성 실패에만 쓴다.
+  기존 DB는 `v2_tables.sql`이 CHECK 제약을 넓힌다.
+- **이유**: 전과 같이 실행되지 않은 모든 경우를 REJECTED로 닫으면 "정책이 막았다"와 "외부 효과가 있었을 수
+  있다"가 같은 말이 된다. 후자는 종료 판정의 C3가 세는 미확인 호출과 같은 종류다.
+
+## D-28 활동 로그 상태는 DOM 없는 모듈로 (정원재 0c1736d 통합)
+- **결정**: `agent_static/console-state.mjs`(병합·검색·상태 문장)를 `node --test`로 검사한다. 폴링이 페이지 재구성과
+  겹쳐도 같은 호출이 두 번 보이지 않고(id로 병합, 세대 번호로 늦은 응답 폐기), 일시정지해도 폴링은 계속해
+  "새 판정 N건"을 세며, 실패한 폴링은 조용히 넘기지 않고 "마지막 성공 시각"과 함께 알린다.
+  접근성: 본문 건너뛰기 링크, 화면 이동 시 제목으로 초점, 닫힌 드로어는 `inert`, 드로어는 연 요소로 초점 복귀,
+  IME 조합 중 Enter 무시, 터치 기기 44px, `prefers-reduced-motion`, `forced-colors`.
+- **이유**: main의 콘솔 개편은 v1 화면 구조(웹 도구 실행 포함) 위의 것이라 그대로 가져올 수 없다. 사용자가
+  얻는 성질(정확성·접근성)만 v2 화면에 옮겼다.
+
+## D-29 단말 에이전트는 저장소 루트 `endpoint-agent/` 하나 (origin/main ae7ec85 통합)
+- **결정**: 실제 PC용 설치 패키지(Linux·Windows 설치기, 장치 키, 1회 보고, 제거)와 랩의 직원 PC가 같은
+  `endpoint-agent/agent.py`를 쓴다. 워크스테이션 이미지는 compose `additional_contexts`(`endpoint: ../endpoint-agent`)로
+  빌드 때 복사한다.
+- **이유**: 랩에서 검증한 에이전트와 배포하는 에이전트가 다르면 랩의 결과가 배포물에 대해 아무것도 말해 주지 않는다.

@@ -119,12 +119,14 @@ class McpIntake(StrictModel):
     repository_url: str = Field(min_length=12, max_length=300)
     requested_transport: Literal["streamable-http", "stdio", "sse"]
     purpose: str = Field(min_length=10, max_length=1000)
-    # 종료 조건을 도입 시점에 확인한다. 논문 5.2는 이들 증거가 "개시 시점의 기록
-    # 체계와 계약 설계에 의존하므로 소급 확보가 어렵다"고 적는다. 종료 단계에서
-    # 제공자에게 뒤늦게 요청하는 것보다, 들일 때 약속받는 편이 유일한 완화다.
-    provider_credential_disclosure: bool = False
-    revocation_evidence: bool = False
-    audit_access_retained: bool = False
+
+
+class ExitTermsReview(StrictModel):
+    provider_credential_disclosure: bool
+    revocation_evidence: bool
+    audit_access_retained: bool
+    evidence_url: str = Field(min_length=12, max_length=500)
+    note: str = Field(min_length=10, max_length=1000)
 
 
 class IntakeRejection(StrictModel):
@@ -410,11 +412,6 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
     )
     if existing:
         raise HTTPException(409, f"같은 저장소가 이미 {existing['status']} 상태로 등록돼 있습니다.")
-    exit_terms = {
-        "provider_credential_disclosure": request.provider_credential_disclosure,
-        "revocation_evidence": request.revocation_evidence,
-        "audit_access_retained": request.audit_access_retained,
-    }
     row = await db.fetch_one(
         """INSERT INTO mcp_intake_requests(
                  id, submitted_by, display_name, repository_url, requested_transport,
@@ -423,14 +420,32 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
              RETURNING id, display_name, repository_url, requested_transport, purpose,
                        status, risk_level, exit_terms, created_at""",
         (uuid4(), user["principal"], request.display_name.strip(), repository_url,
-         request.requested_transport, request.purpose.strip(), Jsonb(exit_terms)),
+         request.requested_transport, request.purpose.strip(), Jsonb({})),
     )
-    message = "제출 완료. 격리된 체크아웃과 검증 증적이 연결되기 전까지 보류됩니다."
-    if request.requested_transport != "stdio" and not request.provider_credential_disclosure:
-        # 경고이지 거절이 아니다. 신청 단계에서 막으면 신청자가 계약 조항을 임의로
-        # 체크하게 된다. 판단은 승인자가 하고, 여기서는 그 결과를 미리 말해 준다.
-        message += " 제공자 자격 고지 조항이 없어 이 서버는 종료 시 최선 등급이 T3입니다."
+    message = "요청을 접수했습니다. 플랫폼 담당자가 공급망과 종료 증거를 확인한 뒤 승인합니다."
     return {"request": row, "message": message}
+
+
+@app.put("/api/mcp-requests/{request_id}/exit-terms")
+async def review_exit_terms(request_id: UUID, review: ExitTermsReview,
+                            authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "종료 조건은 플랫폼 관리자만 검증할 수 있습니다.")
+    parsed = urlsplit(review.evidence_url.strip())
+    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+        raise HTTPException(422, "증거는 담당자가 확인한 HTTPS 문서 주소여야 합니다.")
+    terms = {**review.model_dump(), "verified_by": user["principal"],
+             "verified_at": datetime.now(UTC).isoformat()}
+    row = await db.fetch_one(
+        """UPDATE mcp_intake_requests SET exit_terms=%s, updated_at=now()
+           WHERE id=%s AND status IN ('HOLD','VALIDATION_QUEUED','VALIDATING','VALIDATED')
+           RETURNING id, status, exit_terms""",
+        (Jsonb(terms), request_id),
+    )
+    if not row:
+        raise HTTPException(409, "승인 전 도입 요청만 검증 기록을 바꿀 수 있습니다.")
+    return {"request": row, "message": "플랫폼 종료 조건 검증을 기록했습니다."}
 
 
 @app.post("/api/mcp-requests/{request_id}/queue-validation")
@@ -475,19 +490,16 @@ async def approve_mcp_request(request_id: UUID, authorization: str | None = Head
             raise HTTPException(
                 409, "이 commit에 대한 AI 코드 감사 결과가 없습니다. "
                      "감사를 실행해 완료된 뒤에 승인할 수 있습니다.")
-    # 종료 준비 게이트. 원격 서버를 제공자 자격 고지 없이 들이면 그 이용 관계는
-    # 끝낼 때 반드시 T3(판단 불가)가 된다. 그 사실을 종료 단계에서 알면 이미 늦다.
-    # 기본값은 경고이고, 조직이 이 조건을 필수로 만들려면 환경변수로 켠다.
-    if EXIT_TERMS_REQUIRED:
-        pending = await db.fetch_one(
-            "SELECT requested_transport, exit_terms FROM mcp_intake_requests WHERE id=%s",
-            (request_id,))
-        terms = (pending or {}).get("exit_terms") or {}
-        remote_intake = pending and pending["requested_transport"] != "stdio"
-        if remote_intake and not terms.get("provider_credential_disclosure"):
-            raise HTTPException(
-                409, "원격 MCP는 제공자의 하위 자격 고지 조항 없이 승인할 수 없습니다. "
-                     "고지 없이는 종료 시 회수 대상의 모집단을 열거할 수 없습니다.")
+    pending = await db.fetch_one(
+        "SELECT requested_transport, exit_terms FROM mcp_intake_requests WHERE id=%s",
+        (request_id,))
+    terms = (pending or {}).get("exit_terms") or {}
+    if pending and pending["requested_transport"] != "stdio" and not (
+        terms.get("verified_by") and terms.get("evidence_url") and
+        all(terms.get(key) is True for key in (
+            "provider_credential_disclosure", "revocation_evidence", "audit_access_retained"))
+    ):
+        raise HTTPException(409, "플랫폼이 제공자 자격 고지·회수 증거·감사 접근을 증거 문서로 확인해야 승인할 수 있습니다.")
     row = await db.fetch_one(
         """UPDATE mcp_intake_requests
            SET status='APPROVED', reviewed_by=%s, reviewed_at=now(), updated_at=now()
@@ -530,12 +542,6 @@ WORKER_STALE_SECONDS = int(os.getenv("INTAKE_WORKER_STALE_SECONDS", "60"))
 # §11.4.1의 승인 유효기간과 같은 생각이다. 승인에 기한이 있는데 그 승인의 근거인
 # 감사에 기한이 없으면, 먼저 낡는 것은 승인이 아니라 근거다.
 SCAN_REQUIRED_FOR_APPROVAL = os.getenv("MCP_SCAN_REQUIRED_FOR_APPROVAL", "0") not in ("0", "false", "")
-# 종료 준비 게이트. 기본값은 꺼짐 — 기존 등록 서버들이 도입 심사 이전에 들어온
-# 것이라 켜 둔 채로는 이 실습의 승인 시나리오가 통과하지 않는다. 조직이 이 조건을
-# 필수로 만들 준비가 되면 켠다.
-EXIT_TERMS_REQUIRED = os.getenv("INTAKE_EXIT_TERMS_REQUIRED", "0") not in ("0", "false", "")
-
-
 def mcp_scan_status() -> dict:
     missing = [key for key, value in MCP_SCAN_CONFIG.items() if not value]
     if MCP_SCAN_EVIDENCE_MODE not in MCP_SCAN_EVIDENCE_MODES:
@@ -659,10 +665,13 @@ async def mcp_scan_connection_test(authorization: str | None = Header(default=No
     ok = (response.status_code < 400 and isinstance(body, dict)
           and isinstance(body.get("choices"), list) and bool(body["choices"]))
     worker = await scan_worker_status()
-    return {"ok": ok, "http_status": response.status_code, "base_url": status["base_url"],
-            "model": status["model"], "worker_alive": worker["alive"],
-            "message": "endpoint가 응답했습니다. 이것은 연결 확인이며 보안 판단이 아닙니다."
-                       if ok else f"모델 응답을 확인하지 못했습니다 (HTTP {response.status_code})."}
+    ready = ok and worker["alive"]
+    return {"ok": ok, "ready_for_scan": ready, "http_status": response.status_code,
+            "base_url": status["base_url"], "model": status["model"],
+            "worker_alive": worker["alive"],
+            "message": ("모델과 검사 워커가 응답했습니다. 실제 검사 결과는 작업 이력에서 확인하세요."
+                        if ready else "모델은 응답했지만 검사 워커가 준비되지 않았습니다."
+                        if ok else f"모델 응답을 확인하지 못했습니다 (HTTP {response.status_code}).")}
 
 
 class ScanRequest(StrictModel):

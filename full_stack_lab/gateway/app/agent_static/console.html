@@ -9,6 +9,7 @@
   <script type="module" src="/static/console.js"></script>
 </head>
 <body>
+  <a class="skip-link" href="#view" data-act="skip">본문으로 건너뛰기</a>
   <div class="shell">
     <aside class="side">
       <div class="brand">
@@ -30,7 +31,7 @@
   </div>
 
   <div class="scrim" id="scrim" data-act="close-drawer"></div>
-  <aside class="drawer" id="drawer" aria-hidden="true" aria-labelledby="drawer-title">
+  <aside class="drawer" id="drawer" aria-hidden="true" aria-labelledby="drawer-title" inert>
     <header>
       <h2 id="drawer-title"></h2>
       <button class="icon-btn" type="button" data-act="close-drawer" aria-label="닫기">✕</button>

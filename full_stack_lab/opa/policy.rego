@@ -100,24 +100,16 @@ x_restrictions := {key: data.restrictions[key] |
 	data.restrictions[key]
 }
 
-# ── 권한표: 3 역할 x 3 등급 x r/w/x ─────────────────────────────────────────
-
-permissions := {
-	"partner": {"public": {"r": true}},
-	"employee": {
-		"public": {"r": true},
-		"nonimportant": {"r": true, "w": true},
-		"important": {"r": true},
-	},
-	"admin": {
-		"public": {"r": true, "w": true, "x": true},
-		"nonimportant": {"r": true, "w": true, "x": true},
-		"important": {"r": true, "w": true, "x": true},
-	},
-}
+# ── 권한: 배포된 권한 번들(data.authorization.grants) ───────────────────────
+# 허용 조합은 Rego 소스가 아니라 소유자가 승인해 배포한 데이터 번들에 둔다. 이 저장소의
+# 번들은 랩 기본값(역할 3 x 등급 3 x 행위 3, 이른바 333)이다. 조직 배치에서는 번들만
+# 교체하고, 번들에 없는 조합은 허용하지 않는다(빈 번들 = 전부 차단).
 
 has_permission if {
-	permissions[input.principal.role][input.resource.data_class][input.tool.action]
+	some grant in data.authorization.grants
+	input.principal.role in grant.roles
+	input.resource.data_class in grant.data_classes
+	input.tool.action in grant.actions
 }
 
 contract_ok if {
@@ -289,11 +281,11 @@ candidate["P-RATE-001"] := {
 	recent_calls >= call_limit
 }
 
-candidate["P-333-DENY-001"] := {
+candidate["P-AUTHZ-DENY-001"] := {
 	"decision": "Block",
 	"reason": "역할·데이터 등급·행위 조합에 권한이 없습니다.",
 	"restrictions": {},
-	"conditions": {"matched": [], "violated": ["permissions[role][data_class][action]"]},
+	"conditions": {"matched": [], "violated": ["authorization.grants"]},
 } if {
 	not has_permission
 }
@@ -337,7 +329,7 @@ candidate["P-X-RESTRICT-001"] := {
 	"reason": "외부 전송은 도구가 집행할 수 있는 제한(길이·저널링 사본)을 적용한 뒤 실행합니다.",
 	# 값이지 규칙이 아니다. 조직은 정책의 모양보다 제한 값을 훨씬 자주 바꾼다.
 	"restrictions": x_restrictions,
-	"conditions": {"matched": ["tool.action=x", "permissions[role][data_class][action]", "tool.restrictable"], "violated": []},
+	"conditions": {"matched": ["tool.action=x", "authorization.grants", "tool.restrictable"], "violated": []},
 } if {
 	input.tool.action == "x"
 	input.resource.data_class != "important"
@@ -351,7 +343,7 @@ candidate["P-X-ALERT-001"] := {
 	"decision": "Alert",
 	"reason": "외부 전송·고위험 실행이지만 이 도구에는 적용할 제한이 없어 증적을 강화해 허용합니다.",
 	"restrictions": {},
-	"conditions": {"matched": ["tool.action=x", "permissions[role][data_class][action]"], "violated": ["tool.restrictable"]},
+	"conditions": {"matched": ["tool.action=x", "authorization.grants"], "violated": ["tool.restrictable"]},
 } if {
 	input.tool.action == "x"
 	input.resource.data_class != "important"
@@ -503,11 +495,11 @@ candidate["MCP-SHADOW-002"] := {
 	contract_ok
 }
 
-candidate["P-333-ALLOW-001"] := {
+candidate["P-AUTHZ-ALLOW-001"] := {
 	"decision": "Allow",
-	"reason": "333 권한표와 등록 계약을 모두 충족했습니다.",
+	"reason": "배포된 권한 번들과 등록 계약을 모두 충족했습니다.",
 	"restrictions": {},
-	"conditions": {"matched": ["permissions[role][data_class][action]", "contract"], "violated": []},
+	"conditions": {"matched": ["authorization.grants", "contract"], "violated": []},
 } if {
 	has_permission
 	contract_ok

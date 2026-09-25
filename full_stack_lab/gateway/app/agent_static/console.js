@@ -6,6 +6,8 @@
  * termination judgment. Every request carries the signed-in user's token and the
  * server decides what that user may see, so hiding a menu here is convenience only.
  */
+import { mergeRows, searchRows, liveLabel } from "./console-state.mjs";
+
 const TOKEN_KEY = "mcp-console-token";
 const THEME_KEY = "mcp-console-theme";
 const token = localStorage.getItem(TOKEN_KEY);
@@ -128,19 +130,30 @@ function toast(message, bad = false) {
   toastTimer = setTimeout(() => { el.hidden = true; }, bad ? 8000 : 4000);
 }
 
+// Keyboard users land in the drawer when it opens and back on what opened it when it
+// closes; a closed drawer is inert so Tab cannot wander into it off-screen.
+let drawerReturn = null;
+function setDrawer(open) {
+  const drawer = $("#drawer");
+  drawer.classList.toggle("open", open);
+  drawer.setAttribute("aria-hidden", String(!open));
+  drawer.inert = !open;
+  $("#scrim").classList.toggle("show", open);
+}
 function openDrawer(title, body) {
+  if (!$("#drawer").classList.contains("open")) drawerReturn = document.activeElement;
   $("#drawer-title").textContent = title;
   $("#drawer-body").innerHTML = String(body);
-  $("#drawer").classList.add("open");
-  $("#drawer").setAttribute("aria-hidden", "false");
-  $("#scrim").classList.add("show");
+  setDrawer(true);
+  $("#drawer .icon-btn").focus();
 }
 function closeDrawer() {
   // Drop the item from the address so clicking the same card again reopens it.
   if (/^#\/servers\/./.test(location.hash)) history.replaceState(null, "", "#/servers");
-  $("#drawer").classList.remove("open");
-  $("#drawer").setAttribute("aria-hidden", "true");
-  $("#scrim").classList.remove("show");
+  const wasOpen = $("#drawer").classList.contains("open");
+  setDrawer(false);
+  if (wasOpen && drawerReturn?.isConnected) drawerReturn.focus();
+  drawerReturn = null;
 }
 
 /** Modal form. Resolves with the FormData, or null when cancelled. */
@@ -194,10 +207,19 @@ async function route() {
   const view = $("#view");
   if (!view.dataset.page || view.dataset.page !== id) view.innerHTML = '<p class="skeleton">불러오는 중…</p>';
   view.dataset.page = id;
+  // A reload after an action keeps focus where it was; a new page moves it to the
+  // page title so a screen reader announces where the user landed.
+  const moved = view.dataset.at !== location.hash;
+  view.dataset.at = location.hash;
   try {
     const out = await ROUTES[id](arg);
     if (seq !== routeSeq) return;  // the user already moved on
     view.innerHTML = String(out.html ?? out);
+    const h1 = $("h1", view);
+    if (h1) {
+      document.title = `${h1.textContent.trim()} · MCP Governance`;
+      if (moved) { h1.tabIndex = -1; h1.focus(); }
+    }
     out.after?.();
   } catch (error) {
     if (seq === routeSeq) view.innerHTML = String(html`<div class="note bad">${error.message}</div>`);
@@ -292,34 +314,64 @@ ROUTES.overview = async () => {
 };
 
 // Activity keeps its rows between renders so live updates and the detail drawer
-// read from the same list.
-const feed = { rows: [], cursor: 0, filters: { decision: "", server: "", person: "" }, live: true, servers: [] };
+// read from the same list. Paused, it keeps polling but holds new rows back and
+// counts them, so the list stops moving without going stale.
+const feed = { rows: [], pending: [], cursor: 0, filters: { decision: "", server: "", person: "" }, query: "",
+  live: true, servers: [], lastOk: 0, failing: false, gen: 0 };
 let liveTimer = null;
-function stopLive() { clearInterval(liveTimer); liveTimer = null; }
+function stopLive() { clearInterval(liveTimer); liveTimer = null; feed.gen += 1; }
 const feedQuery = (extra) => new URLSearchParams({ ...Object.fromEntries(Object.entries(feed.filters).filter(([, v]) => v)), ...extra });
+
+function renderFeedStatus() {
+  const status = $("#feed-status");
+  if (!status) return;
+  const shown = searchRows(feed.rows, feed.query).length;
+  status.textContent = `${shown}/${feed.rows.length}건 표시 · ${liveLabel({ ...feed, pending: feed.pending.length })}`;
+  $("#feed-dot").className = `dot ${feed.failing ? "bad" : feed.live ? "on" : ""}`;
+}
+
+function renderFeed() {
+  const list = $("#feed");
+  if (!list) return;
+  const focused = document.activeElement?.closest?.("#feed li")?.dataset.id;
+  const shown = searchRows(feed.rows, feed.query);
+  list.innerHTML = String(html`${shown.map(feedItem)}`);
+  if (focused) $(`#feed li[data-id="${CSS.escape(focused)}"]`)?.focus();
+  const empty = $("#feed-empty");
+  empty.hidden = shown.length > 0;
+  empty.innerHTML = String(feed.rows.length || feed.query || Object.values(feed.filters).some(Boolean)
+    ? html`조건에 맞는 호출이 없습니다. <button class="btn sm" type="button" data-act="feed-reset">조건 초기화</button>`
+    : html`아직 호출이 없습니다. <code>./console.sh workday</code>로 직원들의 업무를 시작하세요.`);
+  renderFeedStatus();
+}
 
 function startLive() {
   stopLive();
-  if (!feed.live) return;
+  const gen = feed.gen;
   liveTimer = setInterval(async () => {
     try {
       const data = await gw(`activity?${feedQuery({ after: feed.cursor, limit: 100 })}`);
-      if (!data.rows.length) return;
-      feed.cursor = data.cursor;
-      const fresh = data.rows.slice().reverse();
-      feed.rows = [...fresh, ...feed.rows].slice(0, 500);
-      const list = $("#feed");
-      if (!list) return;
-      $("#feed-empty")?.remove();
-      list.insertAdjacentHTML("afterbegin", fresh.map(feedItem).join(""));
-    } catch { /* a transient error must not end the live view; the next tick retries */ }
+      if (gen !== feed.gen) return;  // the page was rebuilt while this poll was in flight
+      feed.cursor = Math.max(feed.cursor, data.cursor || 0);
+      feed.lastOk = Date.now();
+      feed.failing = false;
+      if (feed.live) feed.rows = mergeRows(feed.rows, data.rows);
+      else feed.pending = mergeRows(feed.pending, data.rows);
+      if (feed.live && data.rows.length) renderFeed(); else renderFeedStatus();
+    } catch {
+      // A failed poll must not end the live view, and must not look like a quiet one.
+      if (gen === feed.gen) { feed.failing = true; renderFeedStatus(); }
+    }
   }, 3000);
 }
 
 ROUTES.activity = async () => {
   const data = await gw(`activity?${feedQuery({ limit: 200 })}`);
-  feed.rows = data.rows.slice().reverse();
+  feed.rows = mergeRows([], data.rows);
+  feed.pending = [];
   feed.cursor = data.cursor;
+  feed.lastOk = Date.now();
+  feed.failing = false;
   if (viewer.admin && !feed.servers.length) feed.servers = (await gw("registry")).servers.map((s) => s.id);
   const servers = viewer.admin ? feed.servers : [...new Set(feed.rows.map((r) => r.server))].sort();
   const option = (value, label, current) => html`<option value="${value}" ${value === current ? raw("selected") : ""}>${label}</option>`;
@@ -331,17 +383,19 @@ ROUTES.activity = async () => {
       <div class="actions">${viewer.admin ? html`<button class="btn" data-act="audit-verify">감사 체인 검증</button>` : ""}</div></div>
     <section class="card">
       <div class="filters">
+        <input class="grow" data-feed-search type="search" maxlength="120" value="${feed.query}"
+          placeholder="불러온 기록에서 찾기 — 사람·단말·도구·대상·정책·trace" aria-label="불러온 기록에서 찾기" />
         <select data-filter="decision" aria-label="판정">${option("", "모든 판정", f.decision)}
           ${Object.entries(DECISION).map(([k, [, label]]) => option(k, label, f.decision))}</select>
         <select data-filter="server" aria-label="서버">${option("", "모든 서버", f.server)}${servers.map((s) => option(s, s, f.server))}</select>
-        ${viewer.admin ? html`<input data-filter="person" type="search" placeholder="사람 이름" value="${f.person}" aria-label="사람" />` : ""}
-        <span class="live"><span class="dot ${feed.live ? "on" : ""}"></span>${feed.live ? "실시간" : "일시정지"}</span>
-        <button class="btn sm" data-act="live">${feed.live ? "일시정지" : "실시간 켜기"}</button>
+        ${viewer.admin ? html`<input data-filter="person" type="search" placeholder="사람 이름(서버 조회)" value="${f.person}" aria-label="사람" />` : ""}
+        <span class="live"><span class="dot" id="feed-dot"></span><span id="feed-status"></span></span>
+        <button class="btn sm" type="button" data-act="live" aria-pressed="${String(!feed.live)}">${feed.live ? "일시정지" : "실시간 재개"}</button>
       </div>
-      <ul class="feed" id="feed">${feed.rows.map(feedItem)}</ul>
-      ${feed.rows.length ? "" : html`<p class="empty" id="feed-empty">조건에 맞는 호출이 없습니다.</p>`}
+      <ul class="feed" id="feed" aria-label="도구 호출과 판정, 최신순"></ul>
+      <p class="empty" id="feed-empty" hidden></p>
     </section>`,
-    after: startLive,
+    after: () => { renderFeed(); startLive(); },
   };
 };
 
@@ -427,8 +481,10 @@ function showServer(id) {
       <a class="btn sm" href="#/termination">종료 준비도 보기 →</a>` : ""}`);
 }
 
+let peopleAccounts = [];
 ROUTES.people = async () => {
   const [{ accounts }, inv] = await Promise.all([api("/api/accounts"), gw("endpoint/inventory")]);
+  peopleAccounts = accounts;
   const cls = (c) => chip(...(ENDPOINT_CLASS[c] || ["", c]));
   return html`
   <div class="page-head"><div><h1>직원·단말</h1>
@@ -442,12 +498,15 @@ ROUTES.people = async () => {
         <td class="num">${a.user_id === viewer.user_id ? html`<span class="small muted">본인</span>`
           : html`<button class="btn sm" data-act="account-status" data-id="${a.user_id}" data-name="${a.display_name}" data-status="${a.status}">상태 변경</button>`}</td></tr>`)}
       </tbody></table></div></section>
-    <section class="card"><header><h2>단말</h2><span class="sub">${inv.coverage.known_endpoints}대 · 최근 15분 보고 ${inv.coverage.reporting_recently}대</span></header>
-      <div class="body flush"><table class="data"><thead><tr><th>단말</th><th>소유자</th><th>설정 항목</th><th>섀도</th><th>폐기 잔존</th><th>마지막 보고</th></tr></thead><tbody>
+    <section class="card"><header><h2>단말</h2><span class="sub">${inv.coverage.known_endpoints}대 · 최근 15분 보고 ${inv.coverage.reporting_recently}대</span>
+      <div class="tools"><button class="btn sm" type="button" data-act="device-issue">장치 자격 발급</button></div></header>
+      <div class="body flush"><table class="data"><thead><tr><th>단말</th><th>소유자</th><th>설정 항목</th><th>섀도</th><th>폐기 잔존</th><th>마지막 보고</th><th></th></tr></thead><tbody>
       ${inv.agents.map((a) => html`<tr><td class="mono">${a.endpoint_id}<div class="small muted">${a.platform || ""}</div></td><td>${a.owner_token || "—"}</td>
         <td class="num">${a.entries}</td><td>${Number(a.shadow) ? chip("block", a.shadow) : "0"}</td><td>${Number(a.residue) ? chip("alert", a.residue) : "0"}</td>
-        <td class="small">${ago(a.last_seen_at)}</td></tr>`)}
-      ${inv.agents.length ? "" : html`<tr><td colspan="6" class="empty">보고한 단말이 없습니다.</td></tr>`}
+        <td class="small">${ago(a.last_seen_at)}</td>
+        <td class="num">${a.status === "revoked" ? chip("outline", "자격 폐기됨")
+          : html`<button class="btn sm danger" type="button" data-act="device-revoke" data-id="${a.endpoint_id}">자격 폐기</button>`}</td></tr>`)}
+      ${inv.agents.length ? "" : html`<tr><td colspan="7" class="empty">보고한 단말이 없습니다.</td></tr>`}
       </tbody></table></div></section>
     <section class="card"><header><h2>단말의 MCP 설정</h2><span class="sub">단말 에이전트가 AI 클라이언트 설정 파일에서 찾은 서버</span></header>
       <div class="body flush"><table class="data"><thead><tr><th>단말</th><th>설정 파일</th><th>서버</th><th>연결</th><th>분류</th></tr></thead><tbody>
@@ -477,28 +536,38 @@ ROUTES.intake = async () => {
         <label>연결 방식<select name="requested_transport"><option value="streamable-http">Streamable HTTP (원격)</option>
           <option value="stdio">stdio (로컬 실행)</option><option value="sse">SSE (구형 원격)</option></select></label>
         <label>도입 목적<textarea name="purpose" required minlength="10" maxlength="1000" placeholder="어떤 업무에, 어떤 데이터에 쓰는지"></textarea></label>
-        <fieldset><legend>종료 조건 — 제공자와 도입 전에 합의해야 합니다</legend>
-          ${Object.entries(EXIT_TERMS).map(([k, label]) => html`<label class="check"><input type="checkbox" name="${k}" /> ${label}</label>`)}
-          <p class="small muted">원격 서버가 하위 시스템 자격을 고지하지 않으면, 이용을 끝낼 때 회수 대상 모집단을 열거할 수 없어 종료 판정이 T3(판단 불가)로 고정됩니다. 이 증거는 종료 시점에 소급해 얻을 수 없습니다.</p>
-        </fieldset>
+        <p class="note small">원격(HTTP·SSE) 서버의 종료 조건 — ${Object.values(EXIT_TERMS).join(" · ")} — 은
+          신청자가 체크하지 않습니다. 플랫폼 담당자가 제공자 문서로 확인해 기록해야 승인됩니다. 고지 없이 들인 서버는
+          끊을 때 회수 대상을 열거할 수 없어 종료 판정이 T3(판단 불가)로 고정되고, 이 증거는 종료 시점에 소급해 얻을 수 없습니다.</p>
         <button class="btn primary" type="submit">신청</button>
       </form></section>
     <section class="card"><header><h2>${viewer.admin ? "전체 신청" : "내 신청"}</h2><span class="sub">${requests.length}건</span></header>
       <div class="body flush"><table class="data"><thead><tr><th>서버</th><th>상태</th><th>종료 조건</th><th>신청</th>${viewer.admin ? html`<th></th>` : ""}</tr></thead><tbody>
-      ${requests.map((r) => html`<tr><td><b>${r.display_name}</b><div class="small mono muted">${r.repository_url}</div>
+      ${requests.map((r) => {
+        const remote = r.requested_transport !== "stdio";
+        const verified = termsVerified(r.exit_terms);
+        const open = ["HOLD", "VALIDATION_QUEUED", "VALIDATING", "VALIDATED"].includes(r.status);
+        return html`<tr><td><b>${r.display_name}</b><div class="small mono muted">${r.repository_url}</div>
           <div class="small muted">${r.requested_transport}${r.risk_level ? ` · 위험 ${r.risk_level}` : ""}${r.commit_sha ? ` · ${r.commit_sha.slice(0, 12)}` : ""}</div>
           ${r.review_note ? html`<div class="small">검토: ${r.review_note}</div>` : ""}</td>
         <td>${chip(...(INTAKE_STATUS[r.status] || ["", r.status]))}</td>
-        <td class="small">${Object.keys(EXIT_TERMS).filter((k) => r.exit_terms?.[k]).length}/3</td>
+        <td class="small">${!remote ? html`<span class="muted">해당 없음(로컬)</span>`
+          : r.exit_terms?.verified_by ? html`${chip(verified ? "allow" : "block", verified ? "검증됨" : "미충족")}
+            <div class="muted">${Object.keys(EXIT_TERMS).filter((k) => r.exit_terms[k] === true).length}/3 · ${r.exit_terms.verified_by}</div>`
+          : chip("outline", "미검증")}</td>
         <td class="small">${when(r.created_at)}</td>
         ${viewer.admin ? html`<td class="num nowrap">
           ${r.status === "HOLD" ? html`<button class="btn sm" data-act="intake-queue" data-id="${r.id}">검증 시작</button>` : ""}
-          ${r.status === "VALIDATED" ? html`<button class="btn sm primary" data-act="intake-approve" data-id="${r.id}">승인</button>` : ""}
-          ${["HOLD", "VALIDATION_QUEUED"].includes(r.status) ? html`<button class="btn sm danger" data-act="intake-reject" data-id="${r.id}">거부</button>` : ""}</td>` : ""}</tr>`)}
+          ${remote && open ? html`<button class="btn sm" data-act="intake-terms" data-id="${r.id}" data-name="${r.display_name}">종료 조건 검증</button>` : ""}
+          ${r.status === "VALIDATED" && (!remote || verified) ? html`<button class="btn sm primary" data-act="intake-approve" data-id="${r.id}">승인</button>` : ""}
+          ${["HOLD", "VALIDATION_QUEUED"].includes(r.status) ? html`<button class="btn sm danger" data-act="intake-reject" data-id="${r.id}">거부</button>` : ""}</td>` : ""}</tr>`;
+      })}
       ${requests.length ? "" : html`<tr><td colspan="5" class="empty">신청이 없습니다.</td></tr>`}
       </tbody></table></div></section>
   </div>`;
 };
+// The same rule agent_service.approve_mcp_request enforces; the button only mirrors it.
+const termsVerified = (t) => Boolean(t?.verified_by && t?.evidence_url && Object.keys(EXIT_TERMS).every((k) => t[k] === true));
 
 // ── termination ──────────────────────────────────────────────────────────────
 ROUTES.termination = async (caseId) => {
@@ -683,18 +752,27 @@ function showTarget(id) {
 ROUTES.policy = async () => {
   const [{ enforcement }, matrix, ledger] = await Promise.all([gw("enforcement"), gw("policy/matrix"), gw("policy/ledger")]);
   const cell = (role, dc, action) => matrix.cells.find((c) => c.role === role && c.data_class === dc && c.action === action) || {};
+  const bundle = ledger.authorization || {};
+  const names = (list, vocab) => (list || []).map((v) => vocab[v] || v).join(", ");
   return {
     html: html`
     <div class="page-head"><div><h1>정책</h1>
-      <p>모든 호출은 실행 전에 OPA 정책으로 판정됩니다. 역할 × 데이터 등급 × 행위(r/w/x)가 기본 틀이고, 그 위에 계약·SSRF·DLP·종료 정책이 우선합니다.</p></div>
+      <p>모든 호출은 실행 전에 OPA 정책으로 판정됩니다. 역할 × 데이터 등급 × 행위(r/w/x) 허용 조합은 Rego 코드가 아니라
+        배포된 <b>권한 번들</b>에 있고(번들에 없는 조합은 차단), 그 위에 계약·SSRF·DLP·종료 정책이 우선합니다.</p></div>
       <div class="actions">${chip(enforcement === "enforce" ? "allow" : "alert", enforcement === "enforce" ? "집행 모드" : "관찰 모드")}
         <button class="btn ${enforcement === "enforce" ? "danger" : "primary"}" data-act="enforcement" data-mode="${enforcement === "enforce" ? "monitor" : "enforce"}">
         ${enforcement === "enforce" ? "관찰 모드로 전환" : "집행 모드로 전환"}</button></div></div>
     <div class="stack">
-      <section class="card"><header><h2>기본 판정 행렬</h2><span class="sub">계약이 정상일 때 · 승인 없이</span></header>
+      <section class="card"><header><h2>기본 판정 행렬</h2><span class="sub">지금 배포된 번들로 OPA에 물은 결과 · 계약 정상 · 승인 없이</span></header>
         <div class="body flush"><table class="data"><thead><tr><th>역할</th><th>데이터</th>${matrix.actions.map((a) => html`<th>${ACTION[a]} (${a})</th>`)}</tr></thead><tbody>
         ${matrix.roles.map((role) => matrix.data_classes.map((dc, i) => html`<tr>${i === 0 ? html`<td rowspan="${matrix.data_classes.length}"><b>${ROLE[role] || role}</b></td>` : ""}
           <td>${DATA_CLASS[dc] || dc}</td>${matrix.actions.map((a) => { const c = cell(role, dc, a); return html`<td>${decisionChip(c.decision)}<div class="small mono muted">${c.policy_id || ""}</div></td>`; })}</tr>`))}
+        </tbody></table></div></section>
+      <section class="card"><header><h2>권한 번들</h2><span class="sub">${bundle.bundle_id || "배포 안 됨"} · ${bundle.scope || ""} · 소유 ${bundle.owner || "—"}</span></header>
+        <div class="body flush"><table class="data"><thead><tr><th>허용 규칙</th><th>역할</th><th>데이터 등급</th><th>행위</th></tr></thead><tbody>
+        ${(bundle.grants || []).map((g) => html`<tr><td class="mono small">${g.id}</td><td>${names(g.roles, ROLE)}</td>
+          <td>${names(g.data_classes, DATA_CLASS)}</td><td>${names(g.actions, ACTION)}</td></tr>`)}
+        ${(bundle.grants || []).length ? "" : html`<tr><td colspan="4" class="empty">허용 규칙이 없습니다 — 모든 조합이 P-AUTHZ-DENY-001로 차단됩니다.</td></tr>`}
         </tbody></table></div></section>
       <section class="card"><header><h2>정책 관리대장</h2><span class="sub">${ledger.policies.length}개 · 우선순위 순 · 환경 ${ledger.environment}</span></header>
         <div class="body flush"><table class="data"><thead><tr><th class="num">순위</th><th>정책</th><th>결과</th><th>상태</th><th>담당</th></tr></thead><tbody>
@@ -733,7 +811,19 @@ const ACTIONS = {
   },
   "close-drawer": closeDrawer,
   decision: (el) => showDecision(el.dataset.id),
-  live() { feed.live = !feed.live; reload(); },
+  skip: () => $("#view").focus(),
+  live(el) {
+    feed.live = !feed.live;
+    if (feed.live) { feed.rows = mergeRows(feed.rows, feed.pending); feed.pending = []; }
+    el.textContent = feed.live ? "일시정지" : "실시간 재개";
+    el.setAttribute("aria-pressed", String(!feed.live));
+    renderFeed();
+  },
+  "feed-reset"() {
+    feed.filters = { decision: "", server: "", person: "" };
+    feed.query = "";
+    reload();
+  },
   async "audit-verify"() {
     const r = await gw("audit/verify");
     if (r.intact) toast(`감사 체인 정상 — ${r.checked}건 연결 확인`);
@@ -771,8 +861,57 @@ const ACTIONS = {
     const r = await api(`/api/accounts/${el.dataset.id}/status`, { method: "PUT", body: { status: fd.get("status"), note: fd.get("note") || "" } });
     toast(r.message); reload();
   },
+  async "device-issue"() {
+    const owners = Object.fromEntries([["", "지정 안 함"], ...peopleAccounts.filter((a) => a.status === "active")
+      .map((a) => [a.token, `${a.display_name} · ${a.department || ROLE[a.role] || a.role}`])]);
+    const fd = await ask({ title: "장치 자격 발급",
+      body: "실제 PC에 설치할 단말 에이전트의 자격입니다(endpoint-agent/README.md). 키는 이번 한 번만 보이고 서버에는 해시만 남습니다. 이 키로는 보고만 할 수 있습니다.",
+      fields: html`${field.text("endpoint_id", "엔드포인트 ID", 'required minlength="3" maxlength="120" pattern="[A-Za-z0-9._\\-]+" placeholder="endpoint-ysg-laptop"')}
+        ${field.text("hostname", "호스트명", 'required maxlength="200" placeholder="ysg-laptop"')}
+        ${field.select("platform", "플랫폼", { windows: "Windows", linux: "Linux", macos: "macOS", unknown: "기타" }, "windows")}
+        ${field.select("owner_token", "소유자", owners)}
+        <fieldset><legend>보고 범위</legend>
+          <label class="check"><input type="checkbox" name="scopes" value="inventory" checked /> MCP 설정 인벤토리</label>
+          <label class="check"><input type="checkbox" name="scopes" value="netscan" /> 내부망 MCP 리스너 탐색(Gateway 탐색 정책 범위 안)</label></fieldset>`,
+      confirm: "발급" });
+    if (!fd) return;
+    const scopes = fd.getAll("scopes");
+    if (!scopes.length) { toast("보고 범위를 하나 이상 고르세요.", true); return; }
+    const r = await gw("endpoint/devices", { method: "POST", body: {
+      endpoint_id: fd.get("endpoint_id").trim(), hostname: fd.get("hostname").trim(), platform: fd.get("platform"),
+      owner_token: fd.get("owner_token") || null, scopes } });
+    await reload();  // a reload closes the drawer, so the one-time key opens after it
+    lastDocument = r.enrollment_key;
+    openDrawer("장치 자격 발급됨", html`<p class="note warn">이 키는 지금 한 번만 보입니다. 설치기가 물을 때 입력하세요(명령줄 인자로 넘기지 않음). 잃어버리면 재발급합니다.</p>
+      ${kv([["엔드포인트", html`<code>${r.endpoint_id}</code>`], ["범위", r.scopes.join(", ")], ["장치 키", html`<code>${r.enrollment_key}</code>`]])}
+      <p class="small muted">Linux: <code>./endpoint-agent/install-linux.sh --gateway-url … --endpoint-id ${r.endpoint_id} --scan-path …</code><br />
+        Windows: <code>.\\endpoint-agent\\install-windows.ps1 -GatewayUrl … -EndpointId ${r.endpoint_id} -ScanPath …</code></p>
+      <div class="row-actions"><button class="btn sm primary" type="button" data-act="copy-doc">키 복사</button></div>`);
+  },
+  async "device-revoke"(el) {
+    const fd = await ask({ title: `장치 자격 폐기 — ${el.dataset.id}`,
+      body: "이 장치 키의 보고가 다음 요청부터 거부됩니다. 이미 받은 인벤토리는 기록으로 남습니다. 다시 쓰려면 재발급합니다.",
+      confirm: "폐기", danger: true });
+    if (!fd) return;
+    await gw(`endpoint/devices/${encodeURIComponent(el.dataset.id)}`, { method: "DELETE" });
+    toast("장치 자격을 폐기했습니다."); reload();
+  },
   async "intake-queue"(el) {
     const r = await api(`/api/mcp-requests/${el.dataset.id}/queue-validation`, { method: "POST" });
+    toast(r.message); reload();
+  },
+  async "intake-terms"(el) {
+    const fd = await ask({ title: `종료 조건 검증 — ${el.dataset.name}`,
+      body: "제공자가 문서로 약속한 것만 체크하세요. 셋 다 확인되어야 승인할 수 있고, 체크 없이 기록하면 '미충족'으로 남습니다.",
+      fields: html`<fieldset><legend>제공자 문서에서 확인한 약속</legend>
+          ${Object.entries(EXIT_TERMS).map(([k, label]) => html`<label class="check"><input type="checkbox" name="${k}" /> ${label}</label>`)}</fieldset>
+        ${field.text("evidence_url", "근거 문서 (HTTPS)", 'type="url" required pattern="https://.+" maxlength="500" placeholder="https://provider.example/legal/mcp-terms"')}
+        ${field.area("note", "확인 내용", 'required minlength="10" maxlength="1000" placeholder="어느 조항에서 무엇을 확인했는지"')}`,
+      confirm: "검증 기록" });
+    if (!fd) return;
+    const body = { evidence_url: fd.get("evidence_url").trim(), note: fd.get("note").trim() };
+    for (const k of Object.keys(EXIT_TERMS)) body[k] = fd.get(k) === "on";
+    const r = await api(`/api/mcp-requests/${el.dataset.id}/exit-terms`, { method: "PUT", body });
     toast(r.message); reload();
   },
   async "intake-approve"(el) {
@@ -937,7 +1076,6 @@ const FORMS = {
   async intake(form) {
     const fd = new FormData(form);
     const body = Object.fromEntries(["display_name", "repository_url", "requested_transport", "purpose"].map((k) => [k, String(fd.get(k) || "").trim()]));
-    for (const k of Object.keys(EXIT_TERMS)) body[k] = fd.get(k) === "on";
     const r = await api("/api/mcp-requests", { method: "POST", body });
     toast(r.message);
     reload();
@@ -971,10 +1109,16 @@ document.addEventListener("change", (event) => {
   feed.filters[el.dataset.filter] = el.value.trim();
   reload();
 });
+// Search narrows what is already loaded, so it re-renders the list without a request.
+document.addEventListener("input", (event) => {
+  if (!event.target.matches("[data-feed-search]")) return;
+  feed.query = event.target.value;
+  renderFeed();
+});
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeDrawer();
   // Clickable rows are focusable (tabindex) and open with Enter like a button.
-  if (event.key === "Enter" && event.target.matches("li[data-act], tr[data-act]")) event.target.click();
+  if (event.key === "Enter" && !event.isComposing && event.target.matches("li[data-act], tr[data-act]")) event.target.click();
 });
 
 (function applyTheme() {

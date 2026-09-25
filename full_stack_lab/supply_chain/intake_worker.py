@@ -56,6 +56,10 @@ WORKER_ID = os.getenv("INTAKE_WORKER_ID", "intake-worker-1")
 SCAN_LEASE_SECONDS = int(os.getenv("MCP_SCAN_LEASE_SECONDS", str(MCP_SCAN_TIMEOUT + 300)))
 SCAN_MAX_ATTEMPTS = int(os.getenv("MCP_SCAN_MAX_ATTEMPTS", "3"))
 
+
+class ScanTimeout(RuntimeError):
+    """An expired model scan needs a new configuration, not an immediate retry."""
+
 # 구조적 트리거. 감사는 "관리자가 기억날 때"가 아니라 아래 시점에 걸려야 한다.
 #   T1 격리 검증 통과 직후  - 승인을 판단하기 전에 증적이 있어야 한다.
 #   T2 승인 게이트          - Gateway API가 집행한다(agent_service).
@@ -624,8 +628,13 @@ def run_mcp_scan(connection, job: dict) -> None:
         command = scan_command(job, report, checkout, None)
 
     # The pinned CLI reads LLM_API_KEY. Keep the live key out of process arguments.
-    result = run(command, timeout=MCP_SCAN_TIMEOUT,
-                 extra_env={"LLM_API_KEY": MCP_SCAN_API_KEY})
+    try:
+        result = run(command, timeout=MCP_SCAN_TIMEOUT,
+                     extra_env={"LLM_API_KEY": MCP_SCAN_API_KEY})
+    except subprocess.TimeoutExpired as exc:
+        raise ScanTimeout(
+            f"A.I.G 검사 제한 시간 {MCP_SCAN_TIMEOUT}초를 초과했습니다. "
+            "모델 응답 속도나 검사 설정을 확인하세요.") from exc
     if result.returncode != 0 or not report.exists():
         output = (result.stderr or result.stdout).strip().splitlines()
         raise RuntimeError("aig-mcp-scan(exit %s): " % result.returncode + " | ".join(output[-3:])[:400])
@@ -977,7 +986,8 @@ def main() -> int:
                             # 재시도 여지가 남아 있으면 대기열로 되돌린다. 한도를
                             # 넘겼을 때만 FAILED로 끝낸다. 한 번의 endpoint 장애가
                             # 그 대상을 영구히 감사 불가로 만들면 안 된다.
-                            retryable = int(job.get("attempts") or 0) < SCAN_MAX_ATTEMPTS
+                            retryable = (not isinstance(exc, ScanTimeout)
+                                         and int(job.get("attempts") or 0) < SCAN_MAX_ATTEMPTS)
                             connection.execute(
                                 """UPDATE scan_jobs
                                    SET status = CASE WHEN %s THEN 'QUEUED' ELSE 'FAILED' END,

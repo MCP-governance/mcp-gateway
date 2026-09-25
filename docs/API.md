@@ -39,8 +39,9 @@
 | `GET/POST/PUT/DELETE /gw/<path>` | 사용자 | Gateway `/api/<path>` 프록시. 관리자: `overview, activity, registry, health, termination/, approvals/, catalog/, enforcement, monitor/, audit/, policy/, endpoint/, supply-chain/, risk-catalog, lab/` · 그 외: `activity, health`만 |
 | `GET /approvals` · `POST /approvals/{id}/approve|reject` | 관리자 | 승인 대기(요청자·도구·인자·판정 맥락) |
 | `GET /api/accounts` · `PUT /api/accounts/{user_id}/status` | 관리자 | 신원 관리대장, 계정 사용/중지/잠금 |
-| `GET /api/mcp-requests` · `POST /api/mcp-requests` | 사용자 | 도입 신청 목록(관리자=전체) / 신청(종료 조건 포함) |
-| `POST /api/mcp-requests/{id}/queue-validation|approve|reject` | 관리자 | 격리 검증 대기열·승인·거부 |
+| `GET /api/mcp-requests` · `POST /api/mcp-requests` | 사용자 | 도입 신청 목록(관리자=전체) / 신청 `{display_name, repository_url, requested_transport, purpose}` — 종료 조건 필드를 보내면 422 |
+| `PUT /api/mcp-requests/{id}/exit-terms` | 관리자 | 제공자 문서로 확인한 종료 조건 기록 `{provider_credential_disclosure, revocation_evidence, audit_access_retained, evidence_url(https), note}` → 검증 주체·시각과 함께 저장. 승인 전(HOLD~VALIDATED)만 |
+| `POST /api/mcp-requests/{id}/queue-validation|approve|reject` | 관리자 | 격리 검증 대기열·승인·거부. 원격(HTTP·SSE) 서버의 승인은 세 조건이 모두 검증 기록돼 있어야 함(아니면 409) |
 | `GET /api/mcp-catalog/search?q=` | 사용자 | 이미 신청·등록된 서버인지 |
 | `GET /api/mcp-scan` 외 `/api/mcp-scan/*` | 관리자 | AI 코드 감사(격리 워커) 작업 |
 | `GET /api/readiness` · `GET /health` | 공개 | 준비 상태(Gateway·LLM 게이트웨이) |
@@ -57,7 +58,7 @@
 | `POST /api/catalog/refresh` | 관리자 | 모든 서버 계약 재확인 |
 | `POST /api/registry/{server}/approve-contract` | 관리자 | 검토한 계약 변경을 승인본으로(`note` 필수) |
 | `POST /api/approvals/{id}/approve|reject` | 관리자 | 승인 → 1회 실행 |
-| `GET /api/policy/matrix` · `GET /api/policy/ledger` | 사용자 | 333 행렬(OPA 질의) / 관리대장·예외 |
+| `GET /api/policy/matrix` · `GET /api/policy/ledger` | 사용자 | 역할×등급×행위 27칸을 지금 배포된 번들로 OPA에 질의한 결과 / 관리대장·예외·`authorization`(권한 번들)·`deployed_rego`(배포 정책 묶음 digest) |
 | `GET/PUT /api/enforcement` | 사용자/관리자 | 집행·관찰 모드 |
 | `GET /api/monitor/summary?hours` | 관리자 | 관찰 모드에서 "집행했다면" 통계 |
 | `GET /api/audit/verify` | 관리자 | 해시 체인 전체 검증, 끊긴 행 id |

@@ -32,10 +32,11 @@
 - 사람이 읽는 형태는 `activity.describe()`가 만든다(Console·`watch` 공용).
 
 ### `approvals`
-`request_payload`(서버·도구·인자·클라이언트), `status`(PENDING → APPROVED → EXECUTED, 또는
-REJECTED/EXPIRED), 만료 `APPROVAL_TTL_MINUTES`, `executed_decision_id`. 승인하면 Gateway가
-`approval.granted=true`로 **다시 판정**해 실행한다(한 번만 — 두 번째 승인은 거부). 재판정에서 실행되지
-않으면 REJECTED로 닫힌다.
+`request_payload`(서버·도구·인자·클라이언트), `status`(PENDING → APPROVED → EXECUTED | NOT_EXECUTED |
+UNCONFIRMED, 또는 REJECTED/EXPIRED), 만료 `APPROVAL_TTL_MINUTES`, `executed_decision_id`. 승인하면 Gateway가
+`approval.granted=true`로 **다시 판정**해 실행한다(한 번만 — 두 번째 승인은 거부). 재판정에서 전송 전에 멈추면
+NOT_EXECUTED, 전송했지만 결과를 확인하지 못하면 UNCONFIRMED(외부 효과가 있었을 수 있음). REJECTED는 사람의
+거부와 요청 무결성 실패뿐이다(D-27).
 
 ## 2. 레지스트리와 계약
 
@@ -82,11 +83,11 @@ REJECTED/EXPIRED), 만료 `APPROVAL_TTL_MINUTES`, `executed_decision_id`. 승인
 (망/소켓에서 찾은 MCP 리스너), `endpoint_scan_policy`.
 
 ## 6. 공급망·도입
-`mcp_intake_requests`(도입 신청, `exit_terms` 포함), `scan_jobs`(격리 워커 작업, lease), `supply_chain_reports`,
+`mcp_intake_requests`(도입 신청. `exit_terms`는 관리자 검증 기록: 세 조항·`evidence_url`·`note`·`verified_by`·`verified_at`, D-26), `scan_jobs`(격리 워커 작업, lease), `supply_chain_reports`,
 `worker_heartbeats`, `aig_risk_catalog`(AI-Infra-Guard 위험 범주 ↔ 통제 매핑).
 
 ## 7. 설정·정책
-`gateway_settings`(`enforcement` = enforce/monitor), `policy_versions`(배포된 Rego의 sha256).
+`gateway_settings`(`enforcement` = enforce/monitor), `policy_versions`(배포된 정책 묶음 — `policy.rego`·`data.json`·`exceptions.json`·`policy_ledger.json` — 의 sha256, id `bundle-<12자>`, D-25).
 
 ## 8. 쓰지 않는 v1 잔재
 `agent_sessions`, `agent_runs`, `agent_gateway_receipts`(v1 웹 채팅)는 아직 `agent_tables.sql`이 만든다.

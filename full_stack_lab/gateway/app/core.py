@@ -29,6 +29,9 @@ POLICY_LEDGER_URL = os.getenv("POLICY_LEDGER_URL", "http://opa:8181/v1/data/poli
 GATEWAY_ENVIRONMENT = os.getenv("GATEWAY_ENVIRONMENT", "prod")
 REPORT_DIR = Path(os.getenv("REPORT_DIR", "/reports"))
 POLICY_PATH = Path(os.getenv("POLICY_PATH", "/policy/policy.rego"))
+# What OPA serves from /policy. The grants moved from Rego into data.json, so the
+# Rego hash alone no longer identifies what is enforced (D-25).
+POLICY_BUNDLE = ("policy.rego", "data.json", "exceptions.json", "policy_ledger.json")
 APPROVAL_TTL_MINUTES = 10
 CATALOG_REFRESH_SECONDS = int(os.getenv("CATALOG_REFRESH_SECONDS", "60"))
 
@@ -67,7 +70,7 @@ BLOCK_STREAK_MINUTES = int(os.getenv("BLOCK_STREAK_MINUTES", "10"))
 # 모든 차단을 세면 그 신호가 환경 상태에 묻힌다 - 서버 하나가 드리프트 상태면
 # MCP-CATALOG-001이 모든 사용자에게 걸리고, 그러면 아무 잘못 없는 사람들의 다음
 # 호출이 전부 경보가 된다. 주체에게 귀속되는 인가 거부만 센다.
-DENIAL_POLICIES = ("P-333-DENY-001", "MCP-EGRESS-001", "MCP-EGRESS-002", "P-DLP-001",
+DENIAL_POLICIES = ("P-AUTHZ-DENY-001", "MCP-EGRESS-001", "MCP-EGRESS-002", "P-DLP-001",
                    "P-CLASSIFICATION-001", "P-APPROVAL-EXPIRY-001", "MCP-REGISTRY-001")
 
 # OPA is a trust boundary too. Only policy fields may enter the execution event;
@@ -328,12 +331,16 @@ async def bootstrap() -> None:
     await registry.sync()
     await policy_ledger(refresh=True)
     if POLICY_PATH.exists():
-        digest = hashlib.sha256(POLICY_PATH.read_bytes()).hexdigest()
+        files = [path for path in (POLICY_PATH.parent / name for name in POLICY_BUNDLE) if path.exists()]
+        bundle = hashlib.sha256()
+        for path in files:
+            bundle.update(path.name.encode() + b"\0" + path.read_bytes() + b"\0")
+        digest = bundle.hexdigest()
         await db.execute("UPDATE policy_versions SET status='SUPERSEDED' WHERE status='ACTIVE' AND source_sha256<>%s", (digest,))
         await db.execute(
             """INSERT INTO policy_versions(id, source_path, source_sha256, status)
                VALUES (%s,%s,%s,'ACTIVE') ON CONFLICT (id) DO UPDATE SET status='ACTIVE'""",
-            (f"rego-{digest[:12]}", str(POLICY_PATH), digest),
+            (f"bundle-{digest[:12]}", ", ".join(str(path) for path in files), digest),
         )
 
 
@@ -1174,7 +1181,10 @@ async def approve_request(approval_id: str, reviewer_token: str) -> dict:
         raise ValueError("승인 요청 내용의 무결성 검증에 실패했습니다.")
 
     result = await execute_call(payload, approval_granted=True, approval_id=approval_id)
-    final_status = "EXECUTED" if result["upstream_executed"] else "REJECTED"
+    # A granted call that did not run is not a rejection. Stopped before dispatch and
+    # dispatched-but-unconfirmed are different facts; the second may have had an effect.
+    final_status = ("EXECUTED" if result["upstream_executed"]
+                    else "UNCONFIRMED" if result.get("upstream_attempted") else "NOT_EXECUTED")
     await db.execute(
         "UPDATE approvals SET status=%s, executed_decision_id=%s WHERE id=%s",
         (final_status, result["decision_id"], approval_id),

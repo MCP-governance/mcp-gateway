@@ -44,11 +44,12 @@
 | `internet` | external-web, mcp-fetch, mcp-playwright | 외부 인터넷 모사(유출 목적지) |
 | `model` | ollama, llm-gateway, intake-worker, agent-service | 추론 |
 | `data` | db, gateway, agent-service, intake-worker, llm-gateway | Gateway DB(판정·감사·LiteLLM) |
-| `policy` | gateway, gateway-sse, opa, presidio-analyzer·anonymizer, (opa-candidate) | Gateway의 판정 보조 — 정책·개인정보 검사(D-20) |
+| `policy` | gateway, gateway-sse, opa, (opa-candidate) | 정책 판정 |
+| `privacy` | gateway, gateway-sse, presidio-analyzer·anonymizer | 개인정보 검사·마스킹(D-24) |
 | `telemetry` | jaeger | |
 | `scanner` | intake-worker, ollama-pull | 외부 다운로드(유일한 egress) |
 
-`internal: true`가 아닌 망은 `edge`와 `scanner`뿐이다. `tests/security_regression.sh`가
+모든 망은 `.env`의 `MCP_NET_PREFIX` 아래 명시 `/24`를 쓴다(D-24, 번호는 compose.yaml 끝). `internal: true`가 아닌 망은 `edge`와 `scanner`뿐이다. `tests/security_regression.sh`가
 "직원 PC에서 MCP 서버·회사 DB·OPA에 닿지 않는다"를 실제 소켓 연결로 확인한다.
 
 ## 3. 호출 한 건의 흐름
@@ -175,7 +176,7 @@ IdP는 RFC 8414 메타데이터, RFC 7009 폐기, RFC 7662 조사를 제공하�
 | `full_stack_lab/corp/` | 회사 시드 데이터(파일·저장소·DB·인트라넷·메일·Gitea) |
 | `full_stack_lab/workstation/` | 직원 워크스테이션 이미지, `office_agent.py`, 시나리오(TOML) |
 | `full_stack_lab/llm/` | LiteLLM 설정 |
-| `full_stack_lab/endpoint/` | 단말 에이전트(설정 인벤토리·리스너 탐지) |
+| `endpoint-agent/`(저장소 루트) | 단말 에이전트(설정 인벤토리·리스너 탐지)와 실제 PC 설치기. 직원 PC 이미지가 빌드 때 복사(D-29) |
 | `full_stack_lab/supply_chain/` | 도입 신청 격리 검증 워커(SBOM·SCA·SAST) |
 | `full_stack_lab/tests/` | 보안 회귀·종료 판정 흐름·검사기 |
 | `docs/ai/` | 다음 작업자를 위한 문서(이 폴더) |

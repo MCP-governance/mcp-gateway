@@ -116,12 +116,39 @@ expect "로그아웃 후 MCP ingress" "$(code -X POST "$GATEWAY/mcp/" -H "author
   -H 'accept: application/json, text/event-stream' -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')" 401
 
+echo "── 원격 MCP의 종료 조건은 신청자가 아니라 플랫폼이 증거로 확인 ──"
+# A requester cannot promise the provider's exit terms; a remote server is approvable
+# only after an admin records them from an HTTPS provider document. The request is
+# left in HOLD and rejected at the end, so a rerun can submit the same repository.
+REQ_BODY='{"display_name":"Exit terms regression","repository_url":"https://github.com/bob-lab/exit-terms-regression","requested_transport":"streamable-http","purpose":"security regression: exit terms are verified by the platform"}'
+# A run that died halfway leaves its request open; close it so this one can submit.
+psql_q "UPDATE mcp_intake_requests SET status='REJECTED', review_note='security regression rerun' WHERE repository_url='https://github.com/bob-lab/exit-terms-regression' AND status NOT IN ('REJECTED','FAILED')" >/dev/null
+REQUESTER="$(token miso@bob.local)"
+expect "신청자가 종료 조건을 스스로 체크 → 거부" "$(code -X POST "$CONSOLE/api/mcp-requests" -H "authorization: Bearer $REQUESTER" \
+  -H 'content-type: application/json' -d "${REQ_BODY%\}},\"revocation_evidence\":true}")" 422
+REQ_ID="$(curl -fsS -X POST "$CONSOLE/api/mcp-requests" -H "authorization: Bearer $REQUESTER" -H 'content-type: application/json' \
+  -d "$REQ_BODY" | python3 -c 'import json,sys; print(json.load(sys.stdin)["request"]["id"])')"
+ADMIN_I="$(token kkg@bob.local)"
+TERMS='{"provider_credential_disclosure":true,"revocation_evidence":true,"audit_access_retained":true,"note":"security regression: provider terms section 7"'
+expect "직원이 종료 조건 검증 기록 → 거부" "$(code -X PUT "$CONSOLE/api/mcp-requests/$REQ_ID/exit-terms" -H "authorization: Bearer $REQUESTER" \
+  -H 'content-type: application/json' -d "$TERMS,\"evidence_url\":\"https://provider.example/terms\"}")" 403
+detail="$(curl -s -X POST "$CONSOLE/api/mcp-requests/$REQ_ID/approve" -H "authorization: Bearer $ADMIN_I" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("detail",""))')"
+if [[ "$detail" == *"증거 문서로 확인"* ]]; then ok "검증 기록 없는 원격 MCP 승인 → 종료 조건 게이트"; else bad "검증 기록 없는 원격 MCP 승인 → 종료 조건 게이트" "$detail"; fi
+expect "HTTPS가 아닌 증거 주소 → 거부" "$(code -X PUT "$CONSOLE/api/mcp-requests/$REQ_ID/exit-terms" -H "authorization: Bearer $ADMIN_I" \
+  -H 'content-type: application/json' -d "$TERMS,\"evidence_url\":\"http://provider.example/terms\"}")" 422
+expect "관리자 검증 기록" "$(code -X PUT "$CONSOLE/api/mcp-requests/$REQ_ID/exit-terms" -H "authorization: Bearer $ADMIN_I" \
+  -H 'content-type: application/json' -d "$TERMS,\"evidence_url\":\"https://provider.example/terms\"}")" 200
+detail="$(curl -s -X POST "$CONSOLE/api/mcp-requests/$REQ_ID/approve" -H "authorization: Bearer $ADMIN_I" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("detail",""))')"
+if [[ "$detail" == *"격리 검증을 통과한"* ]]; then ok "검증 기록 뒤에도 격리 검증 전에는 승인 불가"; else bad "검증 기록 뒤에도 격리 검증 전에는 승인 불가" "$detail"; fi
+curl -fsS -o /dev/null -X POST "$CONSOLE/api/mcp-requests/$REQ_ID/reject" -H "authorization: Bearer $ADMIN_I" \
+  -H 'content-type: application/json' -d '{"note":"security regression cleanup"}' || bad "회귀용 신청 정리" "거부 실패"
+
 echo "── 실패 안전: 정책 엔진이 없으면 차단 ──"
 trap 'docker compose start opa mcp-git >/dev/null 2>&1' EXIT
 docker compose stop opa >/dev/null 2>&1
 expect "OPA 정지 중 호출" "$(probe emp-ysg git git_log "$HANDBOOK")" "Block P-CONTROL-FAIL-CLOSED False"
 docker compose start opa >/dev/null 2>&1 && wait_healthy opa
-expect "OPA 복구 후 호출" "$(probe emp-ysg git git_log "$HANDBOOK")" "Allow P-333-ALLOW-001 True"
+expect "OPA 복구 후 호출" "$(probe emp-ysg git git_log "$HANDBOOK")" "Allow P-AUTHZ-ALLOW-001 True"
 
 echo "── 실패 안전: 상위 서버가 없으면 실행되지 않음 ──"
 docker compose stop mcp-git >/dev/null 2>&1
@@ -129,7 +156,7 @@ down="$(probe emp-ysg git git_log "$HANDBOOK")"
 expect "mcp-git 정지 중 호출은 실행되지 않음" "${down##* }" False
 docker compose start mcp-git >/dev/null 2>&1 && wait_healthy mcp-git
 curl -fsS -X POST "$GATEWAY/api/catalog/refresh" -H "authorization: Bearer $(token kkg@bob.local)" >/dev/null
-expect "mcp-git 복구 후 호출" "$(probe emp-ysg git git_log "$HANDBOOK")" "Allow P-333-ALLOW-001 True"
+expect "mcp-git 복구 후 호출" "$(probe emp-ysg git git_log "$HANDBOOK")" "Allow P-AUTHZ-ALLOW-001 True"
 trap - EXIT
 
 echo "── 실패 안전: 개인정보 검사기가 없으면 ──"
