@@ -55,6 +55,24 @@ shadow_listeners := object.get(input, ["principal", "shadow_listeners"], 0)
 # CTL-13 / RSK-12. 이번 호출의 인자에서 발견된 비신뢰 지시 표지.
 untrusted_markers := object.get(input, ["request", "untrusted_markers"], [])
 
+# PDF 8~10쪽 민감 입력: Presidio가 본문에서 찾은 개인정보 유형(값은 넘기지 않는다)과,
+# 같은 주체의 최근 중요정보 열람 뒤 외부 전송이라는 연쇄 표지.
+pii_types := object.get(input, ["request", "pii_types"], [])
+
+sequence_flags := object.get(input, ["request", "sequence_flags"], [])
+
+# The call's own recipient (external mail, external URL) - distinct from the registered
+# MCP endpoint. The Gateway classifier decides internal vs external from the catalog's
+# organisation domains; the policy does not keep a second list.
+external_transfer if {
+	some destination in destinations
+	destination.external == true
+}
+
+sensitive_transfer if input.resource.data_class == "important"
+
+sensitive_transfer if count(pii_types) > 0
+
 # CTL-28 / RSK-27. 최근 창 안에서 이 주체가 받은 차단 수.
 recent_blocks := object.get(input, ["context", "recent_blocks"], 0)
 
@@ -282,7 +300,7 @@ candidate["P-333-DENY-001"] := {
 
 candidate["P-X-APPROVAL-001"] := {
 	"decision": "Approval",
-	"reason": "중요정보 외부 전송 또는 고위험 실행은 10분 이내 승인이 필요합니다.",
+	"reason": "중요정보의 고위험 실행은 10분 이내 승인이 필요합니다.",
 	"restrictions": {},
 	"conditions": {"matched": ["tool.action=x", "resource.data_class=important"], "violated": ["approval.granted"]},
 } if {
@@ -411,6 +429,30 @@ candidate["MCP-EGRESS-001"] := {
 	"conditions": {"matched": [], "violated": ["contract.endpoint_allowed"]},
 } if {
 	not endpoint_allowed
+}
+
+# Presidio reports entity types only; raw content never enters OPA's decision log.
+# Role-independent: an approval must not become the procedure for exporting PII.
+candidate["MCP-DATA-EGRESS-001"] := {
+	"decision": "Block",
+	"reason": "중요정보 또는 탐지된 개인정보를 외부 목적지로 전송할 수 없습니다.",
+	"restrictions": {},
+	"conditions": {"matched": ["destinations[].external"], "violated": ["request.pii_types", "resource.data_class"]},
+} if {
+	external_transfer
+	sensitive_transfer
+}
+
+# The Gateway links the calls of one verified principal: an executed read of important
+# data in the last 10 minutes followed by an external send. Each call alone may pass.
+candidate["P-CHAIN-001"] := {
+	"decision": "Block",
+	"reason": "최근 10분 안에 중요정보를 열람한 주체가 외부 전송을 시도했습니다(열람→반출 연쇄).",
+	"restrictions": {},
+	"conditions": {"matched": ["request.sequence_flags", "destinations[].external"], "violated": []},
+} if {
+	external_transfer
+	"sensitive_read_then_send" in sequence_flags
 }
 
 # CTL-13 / RSK-12. 인자 안의 비신뢰 지시. 고위험 행위에서는 사람이 본다.

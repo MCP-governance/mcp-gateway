@@ -49,7 +49,7 @@ test_decision_carries_policy_management_information if {
 	result := decision with input as base
 	result.policy_version == "1.0.0"
 	result.policy_status == "운영"
-	result.policy_set_version == "2.0.0"
+	result.policy_set_version == "2.1.0"
 	count(result.risk_ids) > 0
 	count(result.control_ids) > 0
 	count(result.obligations) > 0
@@ -566,6 +566,70 @@ test_every_ledger_outcome_is_a_reference_value if {
 	every _, entry in data.policy_ledger {
 		object.get(entry, "outcome", "차단") in allowed
 	}
+}
+
+# PDF runtime data boundary: the registered server endpoint and the call's recipient
+# are independent destinations. Only the latter carries the requested disclosure.
+external_mail := {"kind": "email", "value": "buyer@outside.example", "host": "outside.example",
+	"category": "external-mail", "external": true}
+
+internal_mail := {"kind": "email", "value": "review@bob.local", "host": "bob.local",
+	"category": "internal-mail", "external": false}
+
+test_confidential_external_send_blocks_before_approval if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"resource": {"id": "mail", "data_class": "important"},
+		"tool": {"name": "send_email", "action": "x"},
+		"destinations": [external_mail],
+	})
+	result := decision with input as request
+	result.policy_id == "MCP-DATA-EGRESS-001"
+}
+
+test_pii_external_send_blocks_even_for_public_document if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "send_email", "action": "x"},
+		"destinations": [external_mail],
+		"request": {"pii_types": ["KR_RRN"]},
+	})
+	result := decision with input as request
+	result.policy_id == "MCP-DATA-EGRESS-001"
+}
+
+test_internal_important_send_still_requires_approval if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"resource": {"id": "mail", "data_class": "important"},
+		"tool": {"name": "send_email", "action": "x"},
+		"destinations": [internal_mail],
+	})
+	result := decision with input as request
+	result.policy_id == "P-X-APPROVAL-001"
+}
+
+test_sensitive_read_then_send_blocks_even_with_public_document if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "fetch", "action": "x"},
+		"destinations": [{"kind": "url", "value": "https://share.external.example/u", "host": "share.external.example",
+			"category": "external", "external": true}],
+		"request": {"sequence_flags": ["sensitive_read_then_send"]},
+	})
+	result := decision with input as request
+	result.policy_id == "P-CHAIN-001"
+}
+
+test_read_then_internal_send_is_not_a_chain if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "send_email", "action": "w"},
+		"destinations": [internal_mail],
+		"request": {"sequence_flags": ["sensitive_read_then_send"]},
+	})
+	result := decision with input as request
+	result.policy_id != "P-CHAIN-001"
 }
 
 test_every_registered_exception_survives_section_8_6 if {

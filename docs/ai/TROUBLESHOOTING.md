@@ -26,6 +26,10 @@
 | workday `--check` 대량 실패, 사유 `MCP-DECOMM-001` | 누가 연 종료 케이스로 서버가 TERMINATING | 케이스 확인 후 종결/복원(`./console.sh restore <server>`) |
 | Console 목록 500 한 번 | Gateway 재시작 중 프록시 연결 실패 | 이제 503 "Gateway에 연결할 수 없습니다"로 응답 |
 | Git Bash에서 보낸 스크립트의 `\n`·`$변수`가 사라짐 | heredoc/따옴표 처리 | 스크립트를 `\\wsl.localhost\kali-linux\tmp\`에 파일로 쓰고 실행 |
+| `all predefined address pools have been fully subnetted` | 한 호스트에 랩 여러 개 → Docker 기본 주소 풀 소진 | 새 망 대신 기존 망 사용(D-20), 안 쓰는 자기 복제본 `./console.sh down` |
+| 결과에 `[REDACTED]`가 보임 | Presidio 출력 마스킹(주민번호·전화·외부 이메일·카드·자격 문자열) | 의도된 동작. 가린 유형은 활동 로그의 "개인정보" 칩과 감사 행 `privacy_types` |
+| 외부 메일·URL 호출이 `P-CHAIN-001` | 같은 사용자가 10분 안에 중요정보를 읽었다 | 의도된 동작(D-22). 창은 `CHAIN_WINDOW_MINUTES` |
+| 모든 쓰기·외부 호출이 `P-DATA-INSPECTION-001` | presidio-analyzer 불능 | `docker compose ps presidio-analyzer`, `/api/health`의 `presidio_*` |
 | `./console.sh: Permission denied` | Windows 도구로 `\\wsl.localhost\…` 파일을 편집하면 새 파일로 다시 써져 실행 비트가 사라진다 | `chmod +x console.sh tests/security_regression.sh`, 커밋 전 `git diff --summary`로 mode change 확인 |
 | `git` "dubious ownership"(시드) | root로 남의 디렉터리 | `git -c safe.directory=*` |
 | Gitea `PUT /orgs/bob/members` 405 | API가 팀 경유만 허용 | Owners 팀 멤버 PUT |

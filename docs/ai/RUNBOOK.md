@@ -18,6 +18,11 @@
 `mcpgw-23ffc0f4e9`)가 v1 랩을 8000/8080으로 띄운다. **그 컨테이너를 멈추지 말 것** — 포트를 나눠
 공존한다(D-14). 프로젝트 이름은 `.env`의 `MCP_COMPOSE_PROJECT`(여기서는 `mcpgw-v2`).
 
+### Docker 주소 풀 소진
+이 WSL에는 랩이 여러 개(v2, v1 pdf-integration 트리, 또 다른 복제본) 떠 있어 `all predefined address pools have been
+fully subnetted`가 날 수 있다. 새 망을 추가하지 말고(D-20), 쓰지 않는 **자기** 복제본을 `./console.sh down`으로 내린다.
+남의 스택 네트워크를 지우지 않는다.
+
 ### WSL이 유휴로 꺼지는 문제
 WSL VM은 열린 프로세스가 없으면 몇 분 뒤 종료되고 컨테이너도 같이 죽는다. 작업 중에는 백그라운드로
 `wsl.exe -d kali-linux -- sleep infinity`를 하나 띄워 둔다. 모든 장기 서비스는 `restart: unless-stopped`라
@@ -40,6 +45,7 @@ VM이 다시 뜨면 스스로 올라온다.
 | `./console.sh watch` | Gateway 판정을 사람이 읽는 한 줄 로그로 계속 출력 (`scripts/watch.py`) |
 | `./console.sh contracts [--check\|--update]` | 계약 잠금 대조 / 재생성(재생성 후 diff를 읽고 커밋) |
 | `./console.sh experiment e1\|e2\|e3` | 논문 실험 재현, `reports/experiment-*.json` |
+| `./console.sh replay [N]` | 기록된 정책 입력 N건 + 합성 라벨 사례를 후보 OPA(`REPLAY_POLICY_DIR`, 기본 `./opa`)에 재생, `reports/policy-replay.json` — MCP 호출 없음 |
 | `./console.sh restore <server>` | (실습) 종료·폐기한 서버 복원. gitea면 토큰 재발급까지 |
 | `./console.sh restore-token gitea` | 폐기된 gitea-mcp PAT 재발급 + 서버 재시작 |
 | `./console.sh test` | 전체 검증 → [TESTING.md](TESTING.md) |

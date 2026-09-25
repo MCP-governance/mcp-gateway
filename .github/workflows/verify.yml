@@ -53,6 +53,7 @@ jobs:
         run: |
           python3 tests/contracts_check.py
           python3 tests/experiments_check.py
+          python3 tests/replay_check.py
           python3 endpoint/endpoint_agent.py --self-check
 
       # The README lists what is deliberately open. A list that silently falls behind
@@ -80,6 +81,8 @@ jobs:
                   fail.append(f"{name}: 직원 PC가 office 밖 망에 연결 {sorted(nets)}")
               if name.startswith("mcp-") and (svc.get("ports") or "office" in nets):
                   fail.append(f"{name}: MCP 서버가 호스트나 office 망에 노출")
+              if name.startswith("presidio-") and (svc.get("ports") or nets != {"policy"}):
+                  fail.append(f"{name}: Presidio가 policy 망 밖에 노출 {sorted(nets)}")
               env = svc.get("environment") or {}
               if "AGENT_JWT_PRIVATE_KEY" in env and name != "agent-service":
                   fail.append(f"{name}: 발급자가 아닌데 서명 개인키를 받음")

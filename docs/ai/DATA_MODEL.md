@@ -22,7 +22,9 @@
 | `enforcement`, `would_decision`, `would_policy_id` | 관찰 모드 기록 |
 | `client` | `{workstation, agent, task_id, token_jti, oauth_client}` — 클라이언트가 보고한 값, 그대로 기록 |
 | `request_payload`, `result_preview`, `error` | 인자(긴 문자열 축약)·결과 미리보기·오류 |
-| `prev_sha256`, `entry_sha256`, `chain_version` | 해시 체인(v5). `core.AUDIT_COLUMN_SETS[5]`의 열이 지문에 들어간다 |
+| `policy_input` | OPA에 보낸 입력 전체(재생용). 개인정보 값은 없고 유형만 |
+| `risk_score`, `privacy_types`, `sequence_flags` | 조사용 위험 점수(0~100), Presidio 엔터티 유형(입력 ∪ 출력), 연쇄 표지 |
+| `prev_sha256`, `entry_sha256`, `chain_version` | 해시 체인(v6). `core.AUDIT_COLUMN_SETS[6]`의 열이 지문에 들어간다. v5 이하 행은 자기 버전의 열 집합으로 검증 |
 
 - 트리거 `decisions_append_only`가 UPDATE/DELETE를 거부한다.
 - `audit_chain`(1행)이 체인 head와 항목 수를 가진다. `GET /api/audit/verify`가 전체를 다시 계산해

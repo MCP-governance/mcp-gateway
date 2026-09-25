@@ -48,7 +48,8 @@
 | `#/policy` 정책 | 관리자 | `/gw/enforcement`, `/gw/policy/matrix`, `/gw/policy/ledger` | 집행/관찰 모드 전환 |
 
 활동 로그 한 줄은 `activity.describe()`의 필드로 만든다: 시각 · 판정 칩 · 누가(부서·단말) ·
-`server.tool → 대상` · 행위·등급 · 정책 id — 사유 · 실행 결과. 종료 절차의 프로브 호출은
+`server.tool → 대상` · 행위·등급 · 정책 id — 사유 · 실행 결과. 개인정보가 검출되면 "개인정보 KR_RRN · 마스킹" 칩,
+열람→반출 연쇄면 "열람→외부 전송 연쇄" 칩이 붙고, 상세 드로어에 위험 점수(조사용)·개인정보 유형·연쇄 표지가 나온다. 종료 절차의 프로브 호출은
 "종료 절차의 차단 확인 · 관리자 실행" 칩으로 구분한다.
 
 케이스 화면의 7단계 표시는 `procedureState()`가 케이스 상태에서 계산한다(→ [TERMINATION_MODEL.md](TERMINATION_MODEL.md) 3절).

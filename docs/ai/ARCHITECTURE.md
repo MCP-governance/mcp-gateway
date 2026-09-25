@@ -44,7 +44,8 @@
 | `internet` | external-web, mcp-fetch, mcp-playwright | 외부 인터넷 모사(유출 목적지) |
 | `model` | ollama, llm-gateway, intake-worker, agent-service | 추론 |
 | `data` | db, gateway, agent-service, intake-worker, llm-gateway | Gateway DB(판정·감사·LiteLLM) |
-| `policy` / `telemetry` | opa / jaeger | |
+| `policy` | gateway, gateway-sse, opa, presidio-analyzer·anonymizer, (opa-candidate) | Gateway의 판정 보조 — 정책·개인정보 검사(D-20) |
+| `telemetry` | jaeger | |
 | `scanner` | intake-worker, ollama-pull | 외부 다운로드(유일한 egress) |
 
 `internal: true`가 아닌 망은 `edge`와 `scanner`뿐이다. `tests/security_regression.sh`가
@@ -66,11 +67,15 @@
    (public/nonimportant/important)과 **실효 행위**(r/w/x)를 정한다. 예: `execute_sql`의
    `SELECT`는 r, `UPDATE`는 w, `DROP`은 x. 외부 수신 메일·외부 목적지는 x로 승격.
 6. 인자를 승인된 입력 스키마로 검사한다(`P-INPUT-SCHEMA-001`).
-7. OPA가 판정한다: Allow / Alert / Restrict / Approval / Block (→ [POLICY.md](POLICY.md)).
-8. 실행이면 **같은 연결에서** upstream의 `tools/list`를 다시 받아 설명·스키마 해시를 승인본과
+7. 쓰기·실행이거나 외부 목적지가 있으면 **Presidio**가 나가는 인자에서 개인정보 유형을 찾는다(값은 OPA로
+   보내지 않는다). 검사를 못 하면 실행 전 차단(`P-DATA-INSPECTION-001`). 같은 주체가 최근 10분 안에 중요정보를
+   읽고 이번에 외부로 보내면 연쇄 표지(`sensitive_read_then_send`)를 붙인다. 조사용 위험 점수(0~100)도 계산한다.
+8. OPA가 판정한다: Allow / Alert / Restrict / Approval / Block (→ [POLICY.md](POLICY.md)).
+9. 실행이면 **같은 연결에서** upstream의 `tools/list`를 다시 받아 설명·스키마 해시를 승인본과
    대조한 뒤 호출한다(`core._call_upstream`). 달라졌으면 실행하지 않고 `MCP-CATALOG-001`.
-9. 결과는 크기 제한·주입 표지 검사를 거쳐 돌려준다. 도구 출력이 앞, Gateway 메모가 뒤다
-   (작은 모델이 메모를 거절로 읽는 문제 — D-09). 판정은 해시 체인 감사 원장(`decisions`)에 남는다.
+10. 결과는 크기 제한·주입 표지 검사 뒤 **Presidio가 개인정보를 `[REDACTED]`로 가린다**(검사 불능이면
+   실행됨·출력 보류 `MCP-OUTPUT-001`). 도구 출력이 앞, Gateway 메모가 뒤다(D-09). 판정은 정책 입력과 함께
+   해시 체인 감사 원장(`decisions`, 체인 v6)에 남고, 그 입력은 후보 정책에 재생할 수 있다(`app/replay.py`).
 
 ## 4. MCP 서버 10종
 
@@ -160,6 +165,8 @@ IdP는 RFC 8414 메타데이터, RFC 7009 폐기, RFC 7662 조사를 제공하�
 | `…/idp.py` | OAuth 2.0 토큰·폐기·조사 |
 | `…/decommission.py` | 종료 케이스·회수 대상·증거·판정·판정서 |
 | `…/experiments.py` | 논문 E1·E2·E3 재현 (`python -m app.experiments e1`) |
+| `…/privacy.py` | Presidio 분석·마스킹 호출(엔터티 허용 목록·무시 규칙, D-23) |
+| `…/replay.py` | 기록된 정책 입력·합성 사례를 후보 OPA에 재생 (`./console.sh replay`) |
 | `…/activity.py` | 감사 행 → 사람이 읽는 문장 (Console·`watch` 공용) |
 | `…/acceptance.py` | Gateway 인수 시험 (`python -m app.acceptance`) |
 | `full_stack_lab/registry/` | `catalog.toml`(서버·분류·이용 관계), `contracts.lock.json` |

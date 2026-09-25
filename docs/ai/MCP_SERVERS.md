@@ -91,6 +91,11 @@
 - headless Chromium, 세션 발급(E2). `browser_evaluate`는 x. 페이지 내용이 도구 결과로 돌아오므로
   간접 주입 경로다(`request.untrusted_markers`).
 
+## 3-1. 출력 마스킹이 서버 결과에 미치는 영향
+모든 실행 결과는 Presidio를 거친다(D-23). 가려지는 것: 주민번호, 휴대전화, **외부 도메인** 이메일, 카드·IBAN·SSN,
+`password=`류 자격 문자열. 가려지지 않는 것: 날짜·이름·URL·IP, 사내(`bob.local`) 주소, 호출의 수신자 주소.
+그래서 postgres의 `sales.customers` 조회는 이름만 보이고 전화·주민번호·이메일이 `[REDACTED]`가 된다.
+
 ## 4. 발견한 함정 (다시 밟지 말 것)
 
 | 증상 | 원인 | 조치 |

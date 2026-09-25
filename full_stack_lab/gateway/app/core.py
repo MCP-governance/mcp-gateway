@@ -8,6 +8,7 @@ import re
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 
 import httpx
@@ -19,7 +20,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import classify, db, endpoint_plane, registry, upstream
+from . import classify, db, endpoint_plane, privacy, registry, upstream
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/mcp/authz/decision")
 # 정책 관리대장(§11.8 / §12.5)은 정책 코드와 함께 배포되고 OPA가 그 정본이다.
@@ -52,7 +53,10 @@ DEFAULT_ENFORCEMENT = os.getenv("GATEWAY_ENFORCEMENT", "enforce")
 # P-RATE- is here because a call-rate ceiling protects the gateway and the upstream,
 # not a permission opinion about who may read what. Observing it would mean having no
 # ceiling at all for as long as observation lasts.
-ALWAYS_ENFORCED = ("MCP-", "P-CONTROL-", "P-INPUT-", "P-RATE-")
+# P-CHAIN- (PDF integration): a read-then-export chain is a disclosure, not a permission
+# opinion; observing it would let the export through while "measuring".
+ALWAYS_ENFORCED = ("MCP-", "P-CONTROL-", "P-INPUT-", "P-RATE-", "P-CHAIN-")
+CHAIN_WINDOW_MINUTES = int(os.getenv("CHAIN_WINDOW_MINUTES", "10"))
 RATE_LIMIT_CALLS = int(os.getenv("RATE_LIMIT_CALLS", "60"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
 IMPORTANT_BURST_LIMIT = int(os.getenv("IMPORTANT_BURST_LIMIT", "10"))
@@ -525,6 +529,60 @@ async def egress_allowed(endpoint: str | None) -> bool:
     return False
 
 
+def _outbound_text(arguments: dict) -> str:
+    """Every string the call carries out. Presidio reads it; OPA only gets entity types."""
+    parts: list[str] = []
+
+    def walk(value: Any, depth: int = 0) -> None:
+        if isinstance(value, str):
+            parts.append(value)
+        elif isinstance(value, dict) and depth < 6:
+            for item in value.values():
+                walk(item, depth + 1)
+        elif isinstance(value, list) and depth < 6:
+            for item in value[:200]:
+                walk(item, depth + 1)
+
+    walk(arguments)
+    return "\n".join(parts)
+
+
+def _privacy_ignore(cls: classify.Classification) -> Callable[[str, str], bool]:
+    """A recipient address is where the call goes, not what it discloses; an internal
+    colleague's address is not personal data the organisation hides from itself."""
+    recipients = {d.value.lower() for d in cls.destinations if d.kind == "email"}
+    internal = tuple("@" + domain.lower() for domain in
+                     registry.catalog().get("organization", {}).get("internal_email_domains", []))
+
+    def ignore(entity: str, value: str) -> bool:
+        value = value.lower()
+        return entity == "EMAIL_ADDRESS" and (value in recipients or value.endswith(internal))
+    return ignore
+
+
+async def _sequence_flags(user_token: str, cls: classify.Classification) -> list[str]:
+    """P-CHAIN-001 input. v1 linked calls by a signed agent session; v2 links them by the
+    verified principal, which a client cannot split by opening new tasks."""
+    if not any(d.external for d in cls.destinations):
+        return []
+    row = await db.fetch_one(
+        """SELECT 1 FROM decisions
+            WHERE user_token=%s AND data_class='important' AND action='r' AND upstream_executed
+              AND created_at > now() - make_interval(mins => %s) LIMIT 1""",
+        (user_token, CHAIN_WINDOW_MINUTES))
+    return ["sensitive_read_then_send"] if row else []
+
+
+def _risk_score(data_class: str, action: str, external: bool,
+                privacy_types: list[str], sequence_flags: list[str]) -> int:
+    """0-100 for investigation and sorting. Evidence, never a reason to allow or deny:
+    the decision comes from concrete Rego conditions."""
+    return min(100, (30 if data_class == "important" else 10 if data_class == "nonimportant" else 0)
+               + (20 if action == "x" else 10 if action == "w" else 0)
+               + (15 if external else 0) + (25 if privacy_types else 0)
+               + (30 if sequence_flags else 0))
+
+
 async def _recent_activity(user_token: str) -> dict:
     """Both volume signals in one query.
 
@@ -753,7 +811,14 @@ AUDIT_COLUMN_SETS[4] = (*AUDIT_COLUMN_SETS[3], "upstream_attempted")
 # v5: which registered server, which resource, where it was going, and from which
 # workstation/agent - the fields a reader needs to understand the row without a join.
 AUDIT_COLUMN_SETS[5] = (*AUDIT_COLUMN_SETS[4], "server_id", "resource_id", "destinations", "client", "summary")
-CHAIN_VERSION = 5
+# v6: the PDF-integration fields - the policy input (for replay against a candidate
+# policy), the investigation risk score, Presidio entity types and chain flags.
+# origin/main (cc086e5) added these on v1 as *its* "v5"; v2's v5 means other columns,
+# so the merged line records them as v6. A database written by v1's v5 is not migrated
+# (v2 needs `./console.sh reset`): verifying its rows against v2's v5 would fail, and
+# accepting either definition would let a row tampered in a column only one covers pass.
+AUDIT_COLUMN_SETS[6] = (*AUDIT_COLUMN_SETS[5], "policy_input", "risk_score", "privacy_types", "sequence_flags")
+CHAIN_VERSION = 6
 AUDIT_COLUMNS = AUDIT_COLUMN_SETS[CHAIN_VERSION]
 GENESIS = "0" * 64
 
@@ -806,6 +871,10 @@ async def _record_decision(event: dict) -> int:
         "destinations": event.get("destinations") or [],
         "client": event.get("client") or {},
         "summary": event.get("summary"),
+        "policy_input": event.get("policy_input"),
+        "risk_score": int(event.get("risk_score") or 0),
+        "privacy_types": event.get("privacy_types") or [],
+        "sequence_flags": event.get("sequence_flags") or [],
     }
     async with db.transaction() as connection:
         cursor = await connection.execute("SELECT head_sha256 FROM audit_chain WHERE id=1 FOR UPDATE")
@@ -820,8 +889,9 @@ async def _record_decision(event: dict) -> int:
                  enforcement, would_decision, would_policy_id,
                  policy_version, obligations, exception_id, conflicts, environment,
                  prev_sha256, entry_sha256, chain_version, upstream_attempted,
-                 server_id, resource_id, destinations, client, summary)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                 server_id, resource_id, destinations, client, summary,
+                 policy_input, risk_score, privacy_types, sequence_flags)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                RETURNING id""",
             (
                 record["request_id"], record["trace_id"], record["user_token"], record["role"],
@@ -837,6 +907,8 @@ async def _record_decision(event: dict) -> int:
                 previous, entry, CHAIN_VERSION, record["upstream_attempted"],
                 record["server_id"], record["resource_id"], Jsonb(record["destinations"]),
                 Jsonb(record["client"]), record["summary"],
+                Jsonb(record["policy_input"]) if record["policy_input"] is not None else None,
+                record["risk_score"], Jsonb(record["privacy_types"]), Jsonb(record["sequence_flags"]),
             ),
         )
         row = await cursor.fetchone()
@@ -924,6 +996,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "enforcement": "enforce", "would_decision": None, "would_policy_id": None,
             "approval_id": approval_id, "request_payload": {"server_id": server_id, "tool": tool, "arguments": arguments},
             "result": None, "error": None,
+            "policy_input": None, "risk_score": 0, "privacy_types": [], "sequence_flags": [],
         }
 
         await policy_ledger()
@@ -939,6 +1012,24 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 base_event.update(local_verdict(
                     "P-INPUT-SCHEMA-001", "Block", "도구 인자가 승인된 입력 형식과 다릅니다."))
                 return await _decision_payload(base_event, before)
+
+        # PDF 8~10쪽. What leaves the organisation is inspected before the policy sees
+        # the call; if the inspection cannot run, the call does not either.
+        external = any(d.external for d in cls.destinations)
+        ignore = _privacy_ignore(cls)
+        try:
+            findings = (await privacy.analyze(_outbound_text(arguments), ignore)
+                        if cls.action in {"w", "x"} or external else [])
+        except privacy.InspectionUnavailable as exc:
+            base_event.update(local_verdict(
+                "P-DATA-INSPECTION-001", "Block", "민감정보 검사를 완료하지 못해 실행을 차단했습니다.",
+                error=str(exc)[:500]))
+            return await _decision_payload(base_event, before)
+        privacy_types = sorted({item["entity_type"] for item in findings})
+        sequence_flags = await _sequence_flags(user_token, cls)
+        base_event.update(privacy_types=privacy_types, sequence_flags=sequence_flags,
+                          risk_score=_risk_score(cls.data_class, cls.action, external,
+                                                 privacy_types, sequence_flags))
 
         contract = await _contract(server_id, tool)
         policy_input = {
@@ -961,11 +1052,13 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "destinations": [d.view() for d in cls.destinations],
             "tool": {"server": server_id, "name": tool, "action": cls.action,
                      "base_action": cls.base_action, "restrictable": cls.restrictable},
-            "request": {"untrusted_markers": untrusted_markers(arguments), "dlp": cls.dlp},
+            "request": {"untrusted_markers": untrusted_markers(arguments), "dlp": cls.dlp,
+                        "pii_types": privacy_types, "sequence_flags": sequence_flags},
             "approval": {"granted": approval_granted, "id": approval_id},
             "contract": contract,
             "context": await _recent_activity(user_token),
         }
+        base_event["policy_input"] = policy_input  # kept for replay against a candidate policy
         try:
             result = await _policy(policy_input)
         except Exception as exc:
@@ -1008,8 +1101,14 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 with tracer.start_as_current_span("mcp.upstream.call") as upstream_span:
                     upstream_span.set_attribute("mcp.server", server_id)
                     upstream_span.set_attribute("mcp.transport", "streamable-http")
-                    base_event["result"] = await _call_upstream(server_id, tool, effective, approval_id)
+                    raw_result = await _call_upstream(server_id, tool, effective, approval_id)
                 base_event["upstream_executed"] = True
+                try:
+                    base_event["result"], output_types = await privacy.mask_payload(raw_result, ignore)
+                except privacy.InspectionUnavailable as exc:
+                    # Executed, answer withheld: MCP-OUTPUT-001 below records exactly that.
+                    raise ResultRejected(f"출력 개인정보 검사 실패: {exc}") from exc
+                base_event["privacy_types"] = sorted(set(privacy_types) | set(output_types))
                 base_event["effective_arguments"] = effective
                 classify.remember_navigation(user_token, cls, True)
                 if base_event["result"].get("is_error"):

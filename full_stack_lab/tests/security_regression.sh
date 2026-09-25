@@ -68,6 +68,7 @@ expect "mcp-memory ↛ corp-db:5432 (tools망 서버의 회사 DB 접근)" "$(re
 # The Console holds every user's session; it must not have a path to the tools either.
 expect "agent-service ↛ mcp-filesystem:8000 (Console은 도구망 밖)" "$(reachable agent-service mcp-filesystem 8000)" closed
 expect "gateway → mcp-filesystem:8000 (강제 경로만 도구망에)" "$(reachable gateway mcp-filesystem 8000)" open
+expect "ws-ysg ↛ presidio-analyzer:3000 (Gateway의 판정 보조망)" "$(reachable ws-ysg presidio-analyzer 3000)" closed
 
 echo "── 격리 워커의 검사 도구가 실제로 뜬다 ──"
 # An intake request is only as good as the scanners behind it; a broken toolchain
@@ -129,6 +130,18 @@ expect "mcp-git 정지 중 호출은 실행되지 않음" "${down##* }" False
 docker compose start mcp-git >/dev/null 2>&1 && wait_healthy mcp-git
 curl -fsS -X POST "$GATEWAY/api/catalog/refresh" -H "authorization: Bearer $(token kkg@bob.local)" >/dev/null
 expect "mcp-git 복구 후 호출" "$(probe emp-ysg git git_log "$HANDBOOK")" "Allow P-333-ALLOW-001 True"
+trap - EXIT
+
+echo "── 실패 안전: 개인정보 검사기가 없으면 ──"
+trap 'docker compose start presidio-analyzer presidio-anonymizer >/dev/null 2>&1' EXIT
+OUTBOUND='{"account_name": "assistant", "recipients": ["platform@bob.local"], "subject": "배포", "body": "18시 배포 예정"}'
+docker compose stop presidio-analyzer >/dev/null 2>&1
+expect "분석기 정지 중 발송 → 실행 전 차단" "$(probe emp-ysg email send_email "$OUTBOUND")" "Block P-DATA-INSPECTION-001 False"
+docker compose start presidio-analyzer >/dev/null 2>&1 && wait_healthy presidio-analyzer
+docker compose stop presidio-anonymizer >/dev/null 2>&1
+masked="$(probe emp-ysg postgres execute_sql '{"sql": "SELECT rrn FROM sales.customers LIMIT 1"}')"
+expect "마스킹기 정지 중 개인정보 조회 → 실행됨·출력 차단" "$masked" "Block MCP-OUTPUT-001 True"
+docker compose start presidio-anonymizer >/dev/null 2>&1 && wait_healthy presidio-anonymizer
 trap - EXIT
 
 echo "── 감사 기록 변조는 드러난다 ──"

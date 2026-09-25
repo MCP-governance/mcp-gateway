@@ -53,6 +53,8 @@ def describe(row: dict) -> dict:
         "trace_id": row.get("trace_id"), "error": row.get("error"),
         "exception_id": row.get("exception_id"), "enforcement": row.get("enforcement"),
         "would_decision": row.get("would_decision"), "summary": row.get("summary"),
+        "risk_score": row.get("risk_score") or 0, "privacy_types": row.get("privacy_types") or [],
+        "sequence_flags": row.get("sequence_flags") or [],
         "line": line,
     }
 
@@ -73,7 +75,8 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
         f"""SELECT d.id, d.created_at, d.user_token, d.role, d.server_id, d.tool_name, d.resource_id,
                    d.destinations, d.client, d.summary, d.data_class, d.action, d.decision, d.policy_id,
                    d.reason, d.upstream_executed, d.upstream_attempted, d.approval_id, d.trace_id, d.error,
-                   d.exception_id, d.enforcement, d.would_decision, p.display_name, p.department
+                   d.exception_id, d.enforcement, d.would_decision, d.risk_score, d.privacy_types,
+                   d.sequence_flags, p.display_name, p.department
               FROM decisions d LEFT JOIN principals p ON p.token = d.user_token
              WHERE {' AND '.join(clauses)} ORDER BY d.id {order} LIMIT %s""",
         (*params, min(max(limit, 1), 500)))

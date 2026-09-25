@@ -14,12 +14,13 @@
           "idp",
           "llm",
           "gateway",
+          "presidio",
           "opa",
           "audit",
           "mcp",
           "corp"
         ],
-        "note": "직원 PC가 토큰과 LLM 키로 일하고, 모든 tools/call은 Gateway 한 곳에서 판정된 뒤에만 실제 서버에 닿는다."
+        "note": "직원 PC가 토큰과 LLM 키로 일하고, 모든 tools/call은 Gateway 한 곳에서 개인정보 검사와 정책 판정을 거친 뒤에만 실제 서버에 닿는다."
       },
       {
         "id": "termination",
@@ -120,6 +121,20 @@
       "size": [
         180,
         80
+      ]
+    },
+    {
+      "id": "presidio",
+      "type": "security",
+      "label": "Presidio",
+      "sublabel": "PII 검사·마스킹",
+      "pos": [
+        560,
+        34
+      ],
+      "size": [
+        150,
+        56
       ]
     },
     {
@@ -292,6 +307,15 @@
       "labelDx": -22
     },
     {
+      "id": "gw-privacy",
+      "from": "gateway",
+      "to": "presidio",
+      "label": "개인정보",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
       "id": "gw-audit",
       "from": "gateway",
       "to": "audit",
@@ -350,7 +374,7 @@
       "items": [
         "직원 PC는 office 망에만 — MCP 서버·회사 DB·OPA에 직접 닿지 않는다",
         "신원은 transport 토큰, 없으면 401 + resource_metadata",
-        "판정: 허용 · 경보 · 제한 · 승인 · 차단"
+        "Presidio: 개인정보 외부 반출 차단, 결과의 식별자 마스킹"
       ]
     },
     {

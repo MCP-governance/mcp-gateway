@@ -30,6 +30,7 @@ usage: ./console.sh <command>
   experiment e1|e2|e3    논문 재현 실험 (E1 토큰 폐기, E2 세션 종료, E3 서버 보유 자격)
   restore <server>       (실습용) 종료·폐기한 서버를 다시 운영 상태로 되돌림 (gitea는 토큰 재발급)
   test                   전체 검증 (Rego·분류 self-check·acceptance·시나리오·보안 회귀)
+  replay [N]             기록된 정책 입력 N건(기본 100)과 합성 라벨 사례를 후보 정책(REPLAY_POLICY_DIR)에 재생 — MCP 호출 없음
   status | logs [svc] | down | reset | scan | openapi
 EOF
 }
@@ -215,6 +216,15 @@ case "${1:-up}" in
   experiment)
     docker compose exec -T gateway python -m app.experiments "${2:?e1|e2|e3}" | tee "reports/experiment-${2}.json"
     ;;
+  replay)
+    # Candidate policy = REPLAY_POLICY_DIR (default: the current ./opa). Recorded policy
+    # inputs and the frozen synthetic corpus go to it; no MCP tool is called.
+    REPLAY_POLICY_DIR="${REPLAY_POLICY_DIR:-./opa}" docker compose --profile replay up -d --wait opa-candidate
+    trap 'docker compose --profile replay stop opa-candidate >/dev/null' EXIT
+    docker compose exec -T -e REPLAY_OPA_URL=http://opa-candidate:8181/v1/data/mcp/authz/decision \
+      gateway python -m app.replay --limit "${2:-100}" | tee reports/policy-replay.json
+    python3 tests/replay_check.py reports/policy-replay.json
+    ;;
   test)
     ensure_env
     # --entrypoint: the static image's default entrypoint runs the tests without printing them
@@ -224,6 +234,8 @@ case "${1:-up}" in
     AGENT_MODE=scripted workday all --mode scripted --check | tee reports/workday.txt
     python3 tests/termination_flow.py | tee reports/termination-flow.txt
     tests/security_regression.sh | tee reports/security-regression.txt
+    docker compose exec -T gateway python -m app.replay --limit 200 > reports/policy-replay.json
+    python3 tests/replay_check.py reports/policy-replay.json
     for e in e1 e2 e3; do docker compose exec -T gateway python -m app.experiments "$e" > "reports/experiment-$e.json"; done
     python3 tests/experiments_check.py reports/experiment-e1.json reports/experiment-e2.json reports/experiment-e3.json
     echo "모든 필수 검증이 통과했습니다."
@@ -251,9 +263,9 @@ json.dump(module.app.openapi(), sys.stdout, ensure_ascii=False, indent=2, sort_k
     curl -fsS $GATEWAY/api/health | python3 -m json.tool
     ;;
   logs) shift; docker compose --profile llm logs -f --tail=120 "${@:-gateway}" ;;
-  down) docker compose --profile llm --profile llm-stub down ;;
+  down) docker compose --profile llm --profile llm-stub --profile replay down ;;
   reset)
-    docker compose --profile llm --profile llm-stub down -v
+    docker compose --profile llm --profile llm-stub --profile replay down -v
     rm -f reports/*.json reports/*.txt
     echo "DB·회사 시스템·모델 볼륨과 보고서를 초기화했습니다. registry/contracts.lock.json은 유지합니다."
     ;;

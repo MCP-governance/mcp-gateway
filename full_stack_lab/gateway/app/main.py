@@ -12,7 +12,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from . import core, db, decommission, endpoint_plane
+from . import core, db, decommission, endpoint_plane, privacy
 from .core import (
     OPA_URL,
     approve_request,
@@ -134,9 +134,11 @@ async def _probe(url: str) -> bool:
 
 @app.get("/api/health")
 async def health() -> dict:
-    opa_ok, jaeger_ok = await asyncio.gather(
+    opa_ok, jaeger_ok, analyzer_ok, anonymizer_ok = await asyncio.gather(
         _probe(OPA_URL.rsplit("/v1/", 1)[0] + "/health?bundles=true"),
         _probe(JAEGER_QUERY_URL) if JAEGER_QUERY_URL else _absent(),
+        _probe(privacy.ANALYZER + "/health"),
+        _probe(privacy.ANONYMIZER + "/health"),
     )
     try:
         rows = await db.fetch_all("SELECT id, status FROM mcp_servers ORDER BY id")
@@ -144,7 +146,10 @@ async def health() -> dict:
     except Exception:
         rows, db_ok = [], False
     servers = {row["id"]: row["status"] for row in rows if row["id"] in registry.servers()}
-    components = {"gateway": True, "postgresql": db_ok, "opa": opa_ok, "jaeger": jaeger_ok}
+    # Presidio is required: without it outbound calls are refused (P-DATA-INSPECTION-001)
+    # and executed results are withheld (MCP-OUTPUT-001), so "ok" would be untrue.
+    components = {"gateway": True, "postgresql": db_ok, "opa": opa_ok, "jaeger": jaeger_ok,
+                  "presidio_analyzer": analyzer_ok, "presidio_anonymizer": anonymizer_ok}
     required = [value for value in components.values() if value is not None]
     return {"status": "ok" if all(required) else "degraded", "components": components,
             # Upstream state is reported, not required: one server in DRIFT must not

@@ -35,13 +35,15 @@
 | 30 | MCP-SUPPLY-001 | 차단 | 공급망 위험(치명 취약점·미승인 공급자) |
 | 40 | MCP-EGRESS-001 | 차단 | 허용 목록 밖 upstream |
 | 42 | MCP-EGRESS-002 | 차단 | 인자 목적지 SSRF(회사 시스템 관리 API·메타데이터 주소 등) |
+| 45 | MCP-DATA-EGRESS-001 | 차단 | 외부 목적지로 중요 등급 자료나 Presidio가 찾은 개인정보를 보냄(역할 무관, 예외 불가) |
+| 46 | P-CHAIN-001 | 차단 | 같은 주체가 최근 10분 안에 중요정보를 읽고 외부로 보냄(`request.sequence_flags`, 관찰 모드에서도 집행) |
 | 50 | MCP-CATALOG-001 | 차단 | 승인 계약(설명·스키마·버전 해시) 불일치 |
 | 55 | P-APPROVAL-EXPIRY-001 | 차단 | 승인 유효기간 만료 자산 |
 | 60 | P-CLASSIFICATION-001 | 차단 | 분류 근거 없는 데이터 |
 | 70 | P-RATE-001 | 차단 | 호출량 상한 |
 | 78 | P-DLP-001 | 차단 | 민감정보(주민번호·카드 등) 외부 전송 |
 | 80 | P-333-DENY-001 | 차단 | 최소권한 미충족(333 행렬) |
-| 90 | P-X-APPROVAL-001 | 승인 | 중요정보 외부 전송(x) |
+| 90 | P-X-APPROVAL-001 | 승인 | 중요정보의 고위험 실행(x) — 내부 목적지. 외부 반출은 MCP-DATA-EGRESS-001이 먼저 막는다 |
 | 95 | P-UNTRUSTED-CONTENT-001 | 승인 | 비신뢰 콘텐츠 기반 고위험 실행 |
 | 100 | P-VOLUME-001 | 승인 | 중요정보 누적 접근 |
 | 110 | P-DEPT-001 | 승인 | 소관 부서 외 중요정보(`data.department_scope.enabled`, 기본 꺼짐) |
@@ -51,8 +53,20 @@
 | 130 | P-IMPORTANT-ALERT-001 | 경고 | 중요정보 열람 |
 | 140 | P-333-ALLOW-001 | 허용 | 최소권한 충족 |
 
-Gateway 쪽(OPA 밖)에서 나오는 판정: `P-INPUT-SCHEMA-001`(승인 스키마 위반), `MCP-UPSTREAM-001`(상위 오류),
-`P-CONTROL-FAIL-CLOSED`(OPA 불능), `P-MONITOR-001`(관찰 모드).
+Gateway 쪽(OPA 밖)에서 나오는 판정: `P-INPUT-SCHEMA-001`(승인 스키마 위반), `P-DATA-INSPECTION-001`
+(Presidio 입력 검사 불능, priority 2010), `MCP-OUTPUT-001`(실행됐지만 결과 보류 — 크기·주입 표지·출력 개인정보
+검사 불능), `MCP-UPSTREAM-001`(상위 오류), `P-CONTROL-FAIL-CLOSED`(OPA 불능), `P-MONITOR-001`(관찰 모드).
+
+OPA 입력의 개인정보 관련 필드: `request.pii_types`(Presidio 엔터티 유형만 — 값은 넣지 않는다),
+`request.sequence_flags`, `request.dlp`(분류기의 정규식 DLP 라벨, `P-DLP-001`), `destinations[].external`.
+정책 집합 버전은 PDF 통합 병합으로 **2.1.0**.
+
+### 정책 재생 (`app/replay.py`, `./console.sh replay [N]`)
+감사 행에 저장된 정책 입력(`decisions.policy_input`, 체인 v6)과 `opa/replay_cases.json`의 합성 라벨 사례
+10건을 후보 OPA(`REPLAY_POLICY_DIR`, 기본 `./opa`)에 다시 질의한다. MCP는 호출하지 않는다. 결과의
+`counts`(same/changed/newly_executable/newly_nonexecuting)는 사람이 해석하고, 합성 사례의
+`missed_attacks`·`false_blocks`는 0이어야 한다(`tests/replay_check.py`). 정책을 바꾸기 전에 돌려
+"이 변경으로 어제의 호출 중 무엇이 새로 실행되는가"를 본다.
 
 ## 3. 333 행렬 (계약 정상·승인 없음일 때의 기본)
 
