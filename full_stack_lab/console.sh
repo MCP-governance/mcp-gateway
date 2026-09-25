@@ -199,7 +199,8 @@ case "${1:-up}" in
   restore)
     server="${2:?서버 id를 지정하세요 (예: gitea)}"
     curl -fsS -X POST "$GATEWAY/api/lab/restore/${server}" -H "authorization: Bearer $(admin_token)" | python3 -m json.tool
-    [[ "$server" == "gitea" ]] && "$0" restore-token gitea
+    # An `[[ … ]] && …` as the last command exits 1 for every other server under set -e.
+    if [[ "$server" == "gitea" ]]; then "$0" restore-token gitea; fi
     ;;
   restore-token)
     # The Gitea MCP server's own token was revoked by a termination case: issue a new
@@ -216,10 +217,12 @@ case "${1:-up}" in
     ;;
   test)
     ensure_env
-    docker run --rm -v "$LAB_DIR/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy
+    # --entrypoint: the static image's default entrypoint runs the tests without printing them
+    docker run --rm --entrypoint /opa -v "$LAB_DIR/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy
     docker compose exec -T gateway python -m app.classify
     docker compose exec -T gateway python -m app.acceptance | tee reports/acceptance.json
     AGENT_MODE=scripted workday all --mode scripted --check | tee reports/workday.txt
+    python3 tests/termination_flow.py | tee reports/termination-flow.txt
     tests/security_regression.sh | tee reports/security-regression.txt
     for e in e1 e2 e3; do docker compose exec -T gateway python -m app.experiments "$e" > "reports/experiment-$e.json"; done
     python3 tests/experiments_check.py reports/experiment-e1.json reports/experiment-e2.json reports/experiment-e3.json

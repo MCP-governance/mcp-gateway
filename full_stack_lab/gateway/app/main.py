@@ -9,7 +9,7 @@ from typing import Literal
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import core, db, decommission, endpoint_plane
@@ -41,6 +41,33 @@ mcp_http = gateway_mcp.streamable_http_app(
     streamable_http_path="/", json_response=True, host="0.0.0.0",
     transport_security=transport_security(),
 )
+
+
+# RFC 9728 via the MCP authorization spec: a protected MCP server answers an
+# unauthenticated request with 401 and points at its resource metadata, so a client
+# can find the organisation's IdP. Without this the request reaches the MCP app,
+# `initialize` succeeds and the refusal arrives later as a JSON-RPC error.
+RESOURCE_METADATA_URL = os.getenv("GATEWAY_PUBLIC_URL", "http://gateway:8080").rstrip("/") + \
+    "/.well-known/oauth-protected-resource"
+
+
+class RequireBearer:
+    def __init__(self, app) -> None:
+        self.app = app
+
+    async def __call__(self, scope, receive, send) -> None:
+        if scope["type"] == "http":
+            authorization = dict(scope.get("headers") or []).get(b"authorization", b"").decode("latin-1")
+            try:
+                await authenticated_user(authorization or None)
+            except HTTPException as exc:
+                challenge = f'Bearer resource_metadata="{RESOURCE_METADATA_URL}"'
+                if authorization:
+                    challenge += ', error="invalid_token"'
+                headers = {"WWW-Authenticate": challenge} if exc.status_code == 401 else {}
+                await JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=headers)(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
 
 
 class StrictModel(BaseModel):
@@ -315,7 +342,7 @@ async def reject(approval_id: str, request: RejectRequest, user: dict = Depends(
 
 
 @app.post("/api/catalog/refresh")
-async def catalog_refresh(user: dict = Depends(caller)) -> dict:
+async def catalog_refresh(user: dict = Depends(admin_caller)) -> dict:
     return {"results": await refresh_all_catalogs()}
 
 
@@ -824,10 +851,10 @@ async def risk_catalog(user: dict = Depends(caller)) -> dict:
     return {"categories": [dict(row) for row in rows]}
 
 
-app.mount("/mcp", mcp_http)
+app.mount("/mcp", RequireBearer(mcp_http))
 
 
 @app.get("/", include_in_schema=False)
 async def console() -> RedirectResponse:
     """The browser console lives with the Agent service; this port remains the API boundary."""
-    return RedirectResponse("http://localhost:8000/workspace")
+    return RedirectResponse(os.getenv("CONSOLE_PUBLIC_URL", "http://localhost:8000").rstrip("/") + "/workspace")

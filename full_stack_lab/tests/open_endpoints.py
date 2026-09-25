@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Keep the documented list of unauthenticated APIs equal to the code.
 
-README 13절 is the repository's statement of what it deliberately leaves open. That
+full_stack_lab/README.md (열려 있는 API) is the repository's statement of what it deliberately leaves open. That
 statement drifted the moment endpoints were added without touching it, and an
 incomplete "here is what is open" list is worse than none in a governance project:
 a reviewer reads it as exhaustive.
@@ -19,8 +19,8 @@ import sys
 LAB = pathlib.Path(__file__).resolve().parent.parent
 ROUTER = LAB / "gateway" / "app" / "main.py"
 README = LAB / "README.md"
-DOC_MARKER = "Gateway의 읽기 API는 인증 없이 열려 있습니다:"
-CONSOLE_REDIRECT = 'RedirectResponse("http://localhost:8000/workspace")'
+DOC_MARKER = "Gateway API 중 토큰 없이 열려 있는 것은 다음뿐입니다:"
+CONSOLE_REDIRECT = '+ "/workspace")'
 # Login has to be reachable without a token or nobody could ever get one; the
 # browser console is served by the Agent service and is not an API.
 EXEMPT = {"/api/session"}
@@ -87,7 +87,7 @@ def documented() -> set[str]:
 def main() -> None:
     source = ROUTER.read_text(encoding="utf-8")
     if CONSOLE_REDIRECT not in source:
-        raise SystemExit("FAIL Gateway 루트가 8000 Console로 이동하지 않습니다.")
+        raise SystemExit("FAIL Gateway 루트가 Console(/workspace)로 이동하지 않습니다.")
     routes = route_auth(ast.parse(source))
     if not routes:
         raise SystemExit("FAIL main.py에서 route를 하나도 읽지 못했습니다.")

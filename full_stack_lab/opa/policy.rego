@@ -563,13 +563,23 @@ matching_exceptions := [exc |
 
 applicable_exception := matching_exceptions[0]
 
+# An exception that relaxes a block to "Approval" is satisfied by the approval it
+# asks for. Without this the approved request is judged again, the exception says
+# "Approval" again, and an approved call can never run.
+exception_effect := "Allow" if {
+	applicable_exception.effect == "Approval"
+	object.get(input, ["approval", "granted"], false) == true
+} else := applicable_exception.effect
+
 exception_verdict := {
-	"decision": applicable_exception.effect,
+	"decision": exception_effect,
 	"reason": sprintf(
-		"%s 예외 %s(%s)가 적용되어 %s로 완화했습니다. 유효기간 %s.",
+		"%s 예외 %s(%s)가 적용되어 %s로 완화했습니다.%s 유효기간 %s.",
 		[
 			base_verdict.reason, applicable_exception.id, applicable_exception.title,
-			applicable_exception.effect, applicable_exception.valid_until,
+			applicable_exception.effect,
+			{true: " 관리자 승인이 부여되어 실행합니다.", false: ""}[exception_effect != applicable_exception.effect],
+			applicable_exception.valid_until,
 		],
 	),
 	"restrictions": base_verdict.restrictions,

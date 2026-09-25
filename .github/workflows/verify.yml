@@ -1,7 +1,6 @@
-# The completion criteria in full_stack_lab/README.md are only real if something
-# runs them. Until now only CodeQL ran in CI and ./console.sh test was manual, so a
-# regression in the policy, the drift detection or the fail-closed path could sit
-# on main unnoticed until someone remembered to run it.
+# The completion criteria are only real if something runs them. `static` needs no
+# running stack; `verify` brings the whole v2 lab up (without the local LLM - the
+# workday runs its scripted mode) and runs the same `./console.sh test` a person runs.
 name: full_stack_lab 검증
 
 on:
@@ -22,7 +21,17 @@ jobs:
   static:
     name: 정적 검사
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: full_stack_lab
+    env:
+      # docker compose refuses to render without these. Set only here: in `verify`
+      # ./console.sh generates the real ones into .env, and a variable present in
+      # the environment - even empty - would override .env.
+      AGENT_JWT_PRIVATE_KEY: ci-placeholder
+      AGENT_JWT_PUBLIC_KEY: ci-placeholder
+      LITELLM_MASTER_KEY: ci-placeholder
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -32,98 +41,81 @@ jobs:
       - name: Python lint
         run: |
           python -m pip install --quiet pyflakes
-          python -m pyflakes full_stack_lab/gateway/app/*.py full_stack_lab/tests/*.py full_stack_lab/mock_server/*.py full_stack_lab/supply_chain/*.py full_stack_lab/endpoint/*.py
+          python -m pyflakes gateway/app/*.py tests/*.py supply_chain/*.py endpoint/*.py workstation/*.py corp/*.py scripts/*.py
 
-      - name: Shell 문법
-        run: bash -n full_stack_lab/console.sh full_stack_lab/run-native.sh full_stack_lab/tests/drift_and_fail_closed.sh
+      - name: Shell·JS 문법
+        run: |
+          bash -n console.sh tests/security_regression.sh workstation/entrypoint.sh mcp/run-server.sh corp/gitea-entrypoint.sh
+          node --check gateway/app/agent_static/console.js
+          node --check gateway/app/agent_static/login.js
 
-      # README 13절은 "무엇을 의도적으로 열어두었는가"라는 진술입니다. 엔드포인트를
-      # 추가하면서 그 문장을 건드리지 않는 순간 목록이 어긋나고, 불완전한 목록은
-      # 없는 것보다 나쁩니다. 검토자는 그 목록을 전부라고 읽습니다.
+      - name: 검사기 자체 점검
+        run: |
+          python3 tests/contracts_check.py
+          python3 tests/experiments_check.py
+          python3 endpoint/endpoint_agent.py --self-check
+
+      # The README lists what is deliberately open. A list that silently falls behind
+      # the code is worse than none: a reviewer reads it as exhaustive.
       - name: 무인증 API 목록과 문서 대조
-        run: python3 full_stack_lab/tests/open_endpoints.py
+        run: python3 tests/open_endpoints.py
 
-      - name: Compose 구성 검증
-        working-directory: full_stack_lab
-        env:
-          AGENT_JWT_PRIVATE_KEY: ci-placeholder
-          AGENT_JWT_PUBLIC_KEY: ci-placeholder
-        run: docker compose config --quiet
-
-      - name: 내부망과 게시 포트 검증
-        working-directory: full_stack_lab
-        env:
-          AGENT_JWT_PRIVATE_KEY: ci-placeholder
-          AGENT_JWT_PUBLIC_KEY: ci-placeholder
+      - name: 망 분리·게시 포트·서명 키 경계
         run: |
-          docker compose -f compose.yaml -f compose.corporate-lab.yaml -f compose.local-llm.yaml \
-            --profile local-llm --profile local-llm-download config --format json > /tmp/mcp-compose.json
-          python3 - <<'PY'
-          import json
-          stack = json.load(open('/tmp/mcp-compose.json'))
-          services = stack['services']
-          assert stack['networks']['model']['internal'] is True
-          assert set(services['ollama']['networks']) == {'model'}
-          assert set(services['ollama-pull']['networks']) == {'scanner'}
-          assert not services['ollama'].get('ports')
-          assert 'tools' not in services['agent-service']['networks']
-          assert services['intake-worker']['environment']['MCP_SCAN_AUTO_JOBS'] == '0'
-          assert services['intake-worker']['environment']['MCP_SCAN_RESCAN_DAYS'] == '0'
-          for name in ('gateway', 'agent-service', 'jaeger'):
-              assert services[name]['ports'] and all(port['host_ip'] == '127.0.0.1' for port in services[name]['ports'])
-          print('PASS internal model, upstream and loopback boundaries')
-          PY
-
-      # The trust boundary is only real if the key material says so. A verifier that
-      # receives the signing key can mint an admin session for itself.
-      - name: 검증자는 서명 개인키를 받지 않는지 확인
-        working-directory: full_stack_lab
-        env:
-          AGENT_JWT_PRIVATE_KEY: ci-placeholder
-          AGENT_JWT_PUBLIC_KEY: ci-placeholder
-        run: |
-          docker compose config --format json > /tmp/compose.json
+          docker compose --profile llm --profile llm-download config --format json > /tmp/compose.json
           python3 - <<'PY'
           import json, sys
-          services = json.load(open("/tmp/compose.json"))["services"]
-          issuers, leaked = [], []
-          for name, service in services.items():
-              env = service.get("environment") or {}
-              names = set(env) if isinstance(env, dict) else {item.split("=", 1)[0] for item in env}
-              if "AGENT_JWT_PRIVATE_KEY" in names:
-                  (issuers if name == "agent-service" else leaked).append(name)
-          if leaked:
-              sys.exit(f"FAIL 검증자가 서명 개인키를 받습니다: {leaked}")
-          if not issuers:
-              sys.exit("FAIL 발급자(agent-service)가 서명 개인키를 받지 않습니다")
-          print("PASS 발급자만 개인키를 보유합니다")
+          stack = json.load(open("/tmp/compose.json"))
+          services, networks = stack["services"], stack["networks"]
+          fail = []
+          for name in ("office", "tools", "corp", "data", "policy", "model"):
+              if not networks[name].get("internal"):
+                  fail.append(f"{name} 망이 internal이 아님")
+          for name, svc in services.items():
+              nets = set(svc.get("networks") or {})
+              for port in svc.get("ports") or []:
+                  if port.get("host_ip") != "127.0.0.1":
+                      fail.append(f"{name}: loopback 밖에 게시 {port}")
+              if name.startswith("ws-") and nets != {"office"}:
+                  fail.append(f"{name}: 직원 PC가 office 밖 망에 연결 {sorted(nets)}")
+              if name.startswith("mcp-") and (svc.get("ports") or "office" in nets):
+                  fail.append(f"{name}: MCP 서버가 호스트나 office 망에 노출")
+              env = svc.get("environment") or {}
+              if "AGENT_JWT_PRIVATE_KEY" in env and name != "agent-service":
+                  fail.append(f"{name}: 발급자가 아닌데 서명 개인키를 받음")
+          if "tools" in (services["agent-service"].get("networks") or {}):
+              fail.append("agent-service가 tools 망에 연결")
+          if set(services["ollama"].get("networks") or {}) != {"model"}:
+              fail.append("ollama가 model 망 밖에 연결")
+          if fail:
+              sys.exit("FAIL\n" + "\n".join(fail))
+          print(f"PASS {len(services)}개 서비스의 망·포트·키 경계")
           PY
 
-      # 엔드포인트 에이전트는 의존성 없는 단일 파일이라 CI에서 그대로 돌릴 수
-      # 있다. 분류·탐색범위 로직이 깨지면 여기서 먼저 걸린다.
-      - name: 엔드포인트 에이전트 자체 점검
-        run: python3 full_stack_lab/endpoint/endpoint_agent.py --self-check
-
       - name: Rego 단위 테스트
-        run: docker run --rm -v "$PWD/full_stack_lab/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v
+        run: docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v
 
   verify:
     name: 완료 조건 전체 검증
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
+    needs: static
+    defaults:
+      run:
+        working-directory: full_stack_lab
     steps:
       - uses: actions/checkout@v7
 
-      # Builds the images, waits for readiness, then runs the Rego unit tests,
-      # acceptance, the Agent/API boundary acceptance and the drift + fail-closed
-      # regression - the same single entry point a person uses locally.
+      - name: ./console.sh up --no-llm
+        run: ./console.sh up --no-llm
+
+      # Rego, classification self-check, gateway acceptance, the scripted workday of
+      # four workstations, the termination judgment, security regression, E1-E3.
       - name: ./console.sh test
-        working-directory: full_stack_lab
         run: ./console.sh test
 
       - name: 실패 시 컨테이너 로그
         if: failure()
-        working-directory: full_stack_lab
         run: docker compose logs --tail=300 --no-color
 
       - name: 증적 업로드
@@ -137,5 +129,4 @@ jobs:
 
       - name: 정리
         if: always()
-        working-directory: full_stack_lab
-        run: docker compose --profile endpoint --profile llm-stub down -v
+        run: docker compose --profile llm down -v

@@ -788,3 +788,30 @@ test_new_policies_carry_register_ids if {
 	startswith(entry.control_ids[0], "CTL-")
 	entry.pac_candidate_id != ""
 }
+
+# ── 승인형 예외(EXC-002): 승인이 부여되면 실행, 없으면 승인 대기 ───────────────
+approval_exception_request := with_input({
+	"principal": {"role": "employee", "department": "플랫폼개발팀"},
+	"resource": {"id": "/workspace", "data_class": "nonimportant"},
+	"tool": {"name": "start_process", "action": "x"},
+})
+
+test_approval_exception_waits_for_approval if {
+	result := decision with input as approval_exception_request
+	result.decision == "Approval"
+	result.exception.id == "EXC-002"
+}
+
+test_approval_exception_runs_once_approved if {
+	result := decision with input as object.union(approval_exception_request, {"approval": {"granted": true}})
+	result.decision == "Allow"
+	result.exception.id == "EXC-002"
+	"exception.monitored" in result.obligations
+}
+
+test_approval_exception_does_not_reach_other_departments if {
+	other := object.union(approval_exception_request, {"principal": {"role": "employee", "department": "데이터분석팀"}})
+	result := decision with input as object.union(other, {"approval": {"granted": true}})
+	result.decision == "Block"
+	result.exception == null
+}
