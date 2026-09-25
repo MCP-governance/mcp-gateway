@@ -32,7 +32,7 @@ jobs:
       - name: Python lint
         run: |
           python -m pip install --quiet pyflakes
-          python -m pyflakes full_stack_lab/gateway/app/*.py full_stack_lab/tests/*.py full_stack_lab/mock_server/*.py full_stack_lab/supply_chain/*.py full_stack_lab/endpoint/*.py
+          python -m pyflakes full_stack_lab/gateway/app/*.py full_stack_lab/tests/*.py full_stack_lab/mock_server/*.py full_stack_lab/supply_chain/*.py endpoint-agent/*.py
 
       - uses: actions/setup-node@v7
         with:
@@ -46,7 +46,7 @@ jobs:
           node --test full_stack_lab/tests/console-state.test.mjs
 
       - name: Shell 문법
-        run: bash -n full_stack_lab/console.sh full_stack_lab/run-native.sh full_stack_lab/tests/drift_and_fail_closed.sh
+        run: bash -n full_stack_lab/console.sh full_stack_lab/run-native.sh full_stack_lab/tests/drift_and_fail_closed.sh endpoint-agent/install-linux.sh
 
       # README 13절은 "무엇을 의도적으로 열어두었는가"라는 진술입니다. 엔드포인트를
       # 추가하면서 그 문장을 건드리지 않는 순간 목록이 어긋나고, 불완전한 목록은
@@ -59,7 +59,7 @@ jobs:
         env:
           AGENT_JWT_PRIVATE_KEY: ci-placeholder
           AGENT_JWT_PUBLIC_KEY: ci-placeholder
-        run: docker compose config --quiet
+        run: docker compose --profile endpoint config --quiet
 
       - name: 내부망과 게시 포트 검증
         working-directory: full_stack_lab
@@ -113,7 +113,7 @@ jobs:
       # 엔드포인트 에이전트는 의존성 없는 단일 파일이라 CI에서 그대로 돌릴 수
       # 있다. 분류·탐색범위 로직이 깨지면 여기서 먼저 걸린다.
       - name: 엔드포인트 에이전트 자체 점검
-        run: python3 full_stack_lab/endpoint/endpoint_agent.py --self-check
+        run: python3 endpoint-agent/agent.py --self-check
 
       - name: Rego 단위 테스트
         run: docker run --rm -v "$PWD/full_stack_lab/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v
