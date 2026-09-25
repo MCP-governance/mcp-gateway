@@ -8,7 +8,7 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
 RUN useradd --uid 10003 --create-home observer
-COPY --chown=observer:observer endpoint_agent.py /app/endpoint_agent.py
+COPY --chown=observer:observer agent.py /app/agent.py
 USER observer
 WORKDIR /app
-CMD ["python", "endpoint_agent.py"]
+CMD ["python", "agent.py"]

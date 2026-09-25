@@ -357,8 +357,8 @@ services:
   # 기본값으로 켜져 있으면 안 된다.
   endpoint-agent:
     build:
-      context: ./endpoint
-      dockerfile: endpoint-agent.Dockerfile
+      context: ../endpoint-agent
+      dockerfile: Dockerfile
     profiles: [endpoint]
     environment:
       ENDPOINT_GATEWAY_URL: http://gateway:8080

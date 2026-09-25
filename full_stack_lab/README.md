@@ -407,6 +407,8 @@ MCP 여부는 **`initialize` 한 번**으로 확인합니다. 그 밖의 요청�
 ./console.sh endpoint-key endpoint-ysg-laptop emp-ysg inventory,netscan
 ```
 
+이 명령은 Compose 실습용 키 발급입니다. 실제 사용자 PC에 설치할 때는 저장소 루트의 [endpoint-agent 설치 안내](../endpoint-agent/README.md)를 사용합니다. `./console.sh endpoint`는 이 PC의 Docker 컨테이너만 띄웁니다. Windows·Linux 호스트 설치기와 별개입니다.
+
 평문 키는 발급 응답에만 존재합니다. 저장은 해시로 하고, 잃어버리면 재발급합니다.
 다시 보여줄 수 있게 두면 관리 화면이 조직에서 두 번째로 위험한 표가 됩니다.
 
