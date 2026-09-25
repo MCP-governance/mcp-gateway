@@ -45,6 +45,7 @@ def describe(row: dict) -> dict:
         "decision_ko": DECISION_KO.get(decision, decision), "tone": TONE.get(decision, ""),
         "who": who, "department": dept, "role": row.get("role"), "workstation": station,
         "agent": client.get("agent"), "task_id": client.get("task_id"),
+        "harness": (client.get("harness") or {}).get("name"),
         "server": server, "tool": tool, "target": target,
         "action": row.get("action"), "action_ko": ACTION_KO.get(row.get("action") or "", row.get("action")),
         "data_class": row.get("data_class"), "data_class_ko": CLASS_KO.get(row.get("data_class") or "", row.get("data_class")),

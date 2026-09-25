@@ -1,11 +1,13 @@
-"""Acceptance for the v2 Gateway: the guarantees the workday scenarios do not show.
+"""Acceptance for the Gateway: the guarantees the workday scenarios do not show.
 
     docker compose exec -T gateway python -m app.acceptance        (./console.sh test)
 
 The workday scenarios walk the policy matrix through the employees' workstations.
 This covers the Gateway's own guarantees around that: the MCP ingress refuses an
 unauthenticated client the way the MCP authorization spec says, tools are listed
-per role, unapproved and unknown tools never run, arguments are checked against
+per role, the per-server endpoints that harness configs use behave like the servers
+themselves, a tool hidden from a partner is still decided when called directly,
+unapproved and unknown tools never run, arguments are checked against
 the approved schema, a drifted contract blocks, approval runs a call exactly once,
 monitor mode records what enforcement would have done, detected identifiers are
 masked in results and never sent outside, a read of important data followed by an
@@ -57,13 +59,13 @@ def _http(who: str) -> httpx2.AsyncClient:
         "Authorization": f"Bearer {TOKENS[who]}", "X-Agent-Name": "acceptance", "X-Workstation-Id": "acceptance"})
 
 
-async def list_tools(who: str) -> list:
-    async with _http(who) as http, Client(streamable_http_client(MCP_URL, http_client=http)) as client:
+async def list_tools(who: str, url: str = MCP_URL) -> list:
+    async with _http(who) as http, Client(streamable_http_client(url, http_client=http)) as client:
         return (await client.list_tools()).tools
 
 
-async def call(who: str, name: str, arguments: dict) -> dict:
-    async with _http(who) as http, Client(streamable_http_client(MCP_URL, http_client=http)) as client:
+async def call(who: str, name: str, arguments: dict, url: str = MCP_URL) -> dict:
+    async with _http(who) as http, Client(streamable_http_client(url, http_client=http)) as client:
         result = await client.call_tool(name, arguments)
     gateway = (result.meta or {}).get("gateway") or {}
     return {**gateway, "is_error": result.is_error,
@@ -123,6 +125,37 @@ async def tools_listed_per_role() -> str:
     expect(not writes, f"협력사 직원에게 w/x 도구가 보임: {writes[:5]}")
     expect(len(partner) < len(employee), "협력사 목록이 직원 목록보다 작지 않음")
     return f"직원 {len(employee)}개 · 협력사 {len(partner)}개(읽기만)"
+
+
+async def per_server_endpoint() -> str:
+    """D-30: /mcp/<server>/ is what harness configs point at - the server's own tool
+    names, the same decisions, and no fallback for a name the registry does not know."""
+    await operating("git")
+    url = API + "/mcp/git/"
+    tools = {t.name for t in await list_tools("employee", url)}
+    approved = {r["name"] for r in await db.fetch_all(
+        "SELECT name FROM mcp_tools WHERE server_id='git' AND enabled AND input_schema IS NOT NULL")}
+    expect(tools == approved, f"/mcp/git/ 목록과 승인 목록 차이: +{sorted(tools - approved)[:5]} -{sorted(approved - tools)[:5]}")
+    out = await call("employee", "git_log", {"repo_path": "/repos/handbook", "max_count": 1}, url)
+    expect(out.get("decision") == "Allow" and out.get("policy_id") == "P-AUTHZ-ALLOW-001" and not out["is_error"],
+           f"/mcp/git/ git_log: {out.get('decision')} {out.get('policy_id')}")
+    row = await db.fetch_one("SELECT client FROM decisions WHERE id=%s", (out.get("decision_id"),))
+    expect((row["client"] or {}).get("endpoint") == "git", f"감사 기록의 endpoint: {row['client']}")
+    async with httpx.AsyncClient(timeout=10) as client:
+        unknown = await client.post(API + "/mcp/nope/", json={}, headers={"Authorization": f"Bearer {TOKENS['employee']}"})
+    expect(unknown.status_code == 404, f"등록되지 않은 서버 경로가 {unknown.status_code}")
+    return f"/mcp/git/ 도구 {len(tools)}개 · git_log 허용 · /mcp/nope/ 404"
+
+
+async def hidden_tool_still_decided() -> str:
+    """A partner's list has no w/x tools, so a harness cannot offer one to its model.
+    A client that sends the call anyway still meets the policy."""
+    await operating("gitea")
+    out = await call("partner", "gitea__create_or_update_file", {
+        "owner": "bob", "repo": "payment-service", "path": "docs/a11y-notes.md", "content": "eA==",
+        "message": "acceptance", "branch_name": "main"})
+    expect(out.get("decision") == "Block", f"협력사의 숨은 쓰기 도구 직접 호출: {out.get('decision')} {out.get('policy_id')}")
+    return str(out.get("policy_id"))
 
 
 async def authorization_bundle_served() -> str:
@@ -266,6 +299,8 @@ async def run() -> dict:
     for name, coro in [
         ("ingress-401-with-resource-metadata", ingress_requires_token()),
         ("tools-listed-per-role", tools_listed_per_role()),
+        ("per-server-endpoint-for-harness-configs", per_server_endpoint()),
+        ("tool-hidden-from-partner-still-decided", hidden_tool_still_decided()),
         ("authorization-bundle-served", authorization_bundle_served()),
         ("allowed-call-runs-on-real-server", allowed_call_runs()),
         ("unapproved-and-unknown-tools-blocked", unapproved_and_unknown_blocked()),
@@ -282,7 +317,7 @@ async def run() -> dict:
     ]:
         await check(name, coro)
     counts = {s: sum(1 for r in RESULTS if r["status"] == s) for s in ("PASS", "FAIL", "SKIP")}
-    return {"suite": "gateway-acceptance-v2", **counts, "checks": RESULTS}
+    return {"suite": "gateway-acceptance-v3", **counts, "checks": RESULTS}
 
 
 if __name__ == "__main__":

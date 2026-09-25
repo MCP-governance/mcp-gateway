@@ -70,6 +70,28 @@ class RequireBearer:
         await self.app(scope, receive, send)
 
 
+class ServerPath:
+    """`/mcp/<server>/` is the same MCP app scoped to one registered server (D-30):
+    the harness's managed config lists one URL per server, so the employee sees the
+    servers under their own names. The name comes from the URL only; an unknown one
+    is 404 instead of silently falling back to the aggregate endpoint."""
+
+    def __init__(self, app) -> None:
+        self.app = app
+
+    async def __call__(self, scope, receive, send) -> None:
+        if scope["type"] == "http":
+            root = scope.get("root_path", "")
+            path = scope["path"][len(root):] if scope["path"].startswith(root) else scope["path"]
+            name = path.strip("/").split("/", 1)[0]
+            if name:
+                if name not in registry.servers():
+                    await JSONResponse({"detail": f"등록되지 않은 MCP 서버: {name[:40]}"}, status_code=404)(scope, receive, send)
+                    return
+                scope = dict(scope, path=root + "/", raw_path=(root + "/").encode(), mcp_server=name)
+        await self.app(scope, receive, send)
+
+
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -199,7 +221,7 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
 @app.get("/api/overview")
 async def overview(user: dict = Depends(admin_caller)) -> dict:
     """Everything the first Console screen shows, in one round trip."""
-    today, per_server, stations, alerts, approvals, cases = await asyncio.gather(
+    today, per_server, stations, alerts, approvals, cases, series, flows = await asyncio.gather(
         db.fetch_all(f"""SELECT decision, count(*) AS n FROM decisions d
                           WHERE created_at > date_trunc('day', now()) AND {decommission.REAL_CALL} GROUP BY decision"""),
         db.fetch_all(f"""SELECT s.id, s.display_name, s.status, s.lifecycle, s.deployment, s.status_reason,
@@ -212,7 +234,12 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
                          GROUP BY s.id ORDER BY s.id""", (sorted(registry.servers()),)),
         db.fetch_all("""SELECT a.endpoint_id, a.hostname, a.owner_token, a.last_seen_at, p.display_name, p.department, p.role,
                                (SELECT count(*) FROM endpoint_inventory i WHERE i.endpoint_id=a.endpoint_id AND i.classification='shadow') AS shadow,
-                               (SELECT max(d.created_at) FROM decisions d WHERE d.client->>'workstation' = a.endpoint_id) AS last_call
+                               (SELECT max(d.created_at) FROM decisions d WHERE d.client->>'workstation' = a.endpoint_id) AS last_call,
+                               (SELECT d.client->'harness'->>'name' FROM decisions d
+                                 WHERE d.client->>'workstation' = a.endpoint_id AND d.client->'harness'->>'name' IS NOT NULL
+                                 ORDER BY d.id DESC LIMIT 1) AS harness,
+                               (SELECT count(*) FROM decisions d WHERE d.client->>'workstation' = a.endpoint_id
+                                   AND d.created_at > now() - interval '24 hours') AS calls
                           FROM endpoint_agents a LEFT JOIN principals p ON p.token = a.owner_token
                          WHERE a.status='active' ORDER BY a.endpoint_id"""),
         db.fetch_all(f"""SELECT decision, policy_id, count(*) AS n FROM decisions d
@@ -221,12 +248,21 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
                          GROUP BY decision, policy_id ORDER BY n DESC LIMIT 8"""),
         db.fetch_one("SELECT count(*) AS n FROM approvals WHERE status='PENDING' AND expires_at > now()"),
         decommission.summary(),
+        # Charts: calls per hour by decision, and who called what (harness -> server -> decision).
+        db.fetch_all(f"""SELECT date_trunc('hour', created_at) AS hour, decision, count(*) AS n FROM decisions d
+                          WHERE created_at > now() - interval '24 hours' AND {decommission.REAL_CALL}
+                         GROUP BY 1, 2 ORDER BY 1"""),
+        db.fetch_all(f"""SELECT COALESCE(NULLIF(d.client->'harness'->>'name', ''), NULLIF(d.client->>'agent', ''), 'unknown') AS harness,
+                               d.server_id AS server, d.decision, count(*) AS n
+                          FROM decisions d WHERE created_at > now() - interval '24 hours' AND {decommission.REAL_CALL}
+                         GROUP BY 1, 2, 3"""),
     )
     counts = {row["decision"]: int(row["n"]) for row in today}
     return {
         "today": {"total": sum(counts.values()), **{k: counts.get(k, 0) for k in ("Allow", "Alert", "Restrict", "Approval", "Block")}},
         "servers": per_server, "workstations": stations, "top_policies": alerts,
         "pending_approvals": int(approvals["n"] or 0), "termination": cases,
+        "series": series, "flows": flows,
         "enforcement": await enforcement_mode(), "catalog_version": registry.catalog_version(),
     }
 
@@ -858,7 +894,7 @@ async def risk_catalog(user: dict = Depends(caller)) -> dict:
     return {"categories": [dict(row) for row in rows]}
 
 
-app.mount("/mcp", RequireBearer(mcp_http))
+app.mount("/mcp", RequireBearer(ServerPath(mcp_http)))
 
 
 @app.get("/", include_in_schema=False)

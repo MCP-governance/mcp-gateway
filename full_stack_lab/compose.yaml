@@ -22,8 +22,9 @@ x-mcp: &mcp
     retries: 24
   <<: *hardened
 
-# The endpoint agent is the same package employees install on real PCs
-# (/endpoint-agent at the repository root); the workstation image copies it in.
+# An employee PC: Claude Code, Codex CLI, Gemini CLI and OpenCode from their official
+# packages plus IT-managed config (D-30). The endpoint agent is the same package
+# employees install on real PCs (/endpoint-agent at the repository root).
 x-workstation-build: &workstation-build
   context: .
   dockerfile: workstation/Dockerfile
@@ -31,7 +32,7 @@ x-workstation-build: &workstation-build
     endpoint: ../endpoint-agent
 
 x-workstation: &workstation
-  image: mcpgw/workstation:2.0
+  image: mcpgw/workstation:3.0
   build: *workstation-build
   restart: unless-stopped
   depends_on:
@@ -89,7 +90,8 @@ services:
   # several labs on one Docker host no longer exhaust the default address pools.
   presidio-analyzer:
     restart: unless-stopped
-    image: ghcr.io/data-privacy-stack/presidio-analyzer:2.2.364
+    image: mcpgw/presidio-analyzer-sm:2.2.364
+    build: {context: ./privacy, dockerfile: analyzer.Dockerfile}
     networks: [privacy]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/health', timeout=2)"]
@@ -262,7 +264,7 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command: ["ollama serve >/tmp/ollama.log 2>&1 & for i in $$(seq 1 20); do ollama list >/dev/null 2>&1 && break; sleep 1; done; ollama pull \"$$LOCAL_LLM_MODEL\""]
     environment:
-      LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-qwen2.5:1.5b}
+      LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-qwen3.5:2b-q4_K_M}
       OLLAMA_HOST: 127.0.0.1:11434
       OLLAMA_NO_CLOUD: "1"
     volumes:
@@ -278,6 +280,12 @@ services:
       OLLAMA_HOST: 0.0.0.0:11434
       OLLAMA_NO_CLOUD: "1"
       OLLAMA_KEEP_ALIVE: 30m
+      # One model, one request at a time: the lab shares ~7 GB with 30 containers, and
+      # a second resident model pushed the WSL VM into swap until it stopped answering.
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_KV_CACHE_TYPE: q8_0
     volumes:
       - ollama_models:/root/.ollama
     networks: [model]
@@ -299,6 +307,8 @@ services:
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/litellm
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?Run ./console.sh to initialize the LiteLLM master key}
       LITELLM_TELEMETRY: "False"
+      # Offline network: use the cost map bundled in the image instead of fetching it.
+      LITELLM_LOCAL_MODEL_COST_MAP: "True"
       DISABLE_ADMIN_UI: "True"
       STORE_MODEL_IN_DB: "False"
     volumes:
@@ -522,31 +532,31 @@ services:
     networks: [tools, corp, internet]
     security_opt: ["no-new-privileges:true"]
 
-  # ── employee workstations (office-agent + endpoint-agent) ─────────────────
+  # ── employee PCs: one harness each (all four are installed on every PC) ────
   ws-ysg:
     <<: *workstation
     hostname: ws-ysg
     environment: &ws-env
+      HARNESS: claude
       EMPLOYEE_EMAIL: ysg@bob.local
       WORKSTATION_ID: ws-ysg
-      LLM_API_KEY: ${LLM_KEY_WS_YSG:-}
+      BOB_LLM_KEY: ${LLM_KEY_WS_YSG:-}
       ENDPOINT_DEVICE_KEY: ${ENDPOINT_KEY_WS_YSG:-}
       EMPLOYEE_PASSWORD: ${MOCK_SSO_PASSWORD:-test-password}
       IDP_URL: http://agent-service:8000
-      GATEWAY_MCP_URL: http://gateway:8080/mcp/
       GATEWAY_URL: http://gateway:8080
-      LLM_BASE_URL: http://llm-gateway:4000/v1
-      LLM_MODEL: bob-assistant
       AGENT_MODE: ${AGENT_MODE:-llm}
+      BOB_HARNESS_COMPACT: ${BOB_HARNESS_COMPACT:-1}
 
   ws-jwj:
     <<: *workstation
     hostname: ws-jwj
     environment:
       <<: *ws-env
+      HARNESS: codex
       EMPLOYEE_EMAIL: jwj@bob.local
       WORKSTATION_ID: ws-jwj
-      LLM_API_KEY: ${LLM_KEY_WS_JWJ:-}
+      BOB_LLM_KEY: ${LLM_KEY_WS_JWJ:-}
       ENDPOINT_DEVICE_KEY: ${ENDPOINT_KEY_WS_JWJ:-}
 
   ws-pse:
@@ -554,30 +564,32 @@ services:
     hostname: ws-pse
     environment:
       <<: *ws-env
+      HARNESS: gemini
       EMPLOYEE_EMAIL: pse@bob.local
       WORKSTATION_ID: ws-pse
-      LLM_API_KEY: ${LLM_KEY_WS_PSE:-}
+      BOB_LLM_KEY: ${LLM_KEY_WS_PSE:-}
       ENDPOINT_DEVICE_KEY: ${ENDPOINT_KEY_WS_PSE:-}
 
-  # Partner contractor. Also keeps a personal MCP configuration that bypasses the
-  # Gateway - the endpoint agent reports it as shadow MCP.
+  # Partner contractor on OpenCode. Also keeps a personal MCP configuration that
+  # bypasses the Gateway - the endpoint agent reports it as shadow MCP.
   ws-nkk:
     <<: *workstation
     hostname: ws-nkk
     environment:
       <<: *ws-env
+      HARNESS: opencode
       EMPLOYEE_EMAIL: nkk@bob.local
       WORKSTATION_ID: ws-nkk
-      LLM_API_KEY: ${LLM_KEY_WS_NKK:-}
+      BOB_LLM_KEY: ${LLM_KEY_WS_NKK:-}
       ENDPOINT_DEVICE_KEY: ${ENDPOINT_KEY_WS_NKK:-}
       SHADOW_MCP_CONFIG: "1"
 
   # Registers each workstation's key as a LiteLLM virtual key bound to that employee.
   llm-provision:
-    image: mcpgw/workstation:2.0
+    image: mcpgw/workstation:3.0
     build: *workstation-build
     profiles: [llm]
-    entrypoint: ["python", "/opt/office/provision_keys.py"]
+    entrypoint: ["python3", "/opt/office/provision_keys.py"]
     environment:
       LITELLM_URL: http://llm-gateway:4000
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-}

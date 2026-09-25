@@ -87,6 +87,7 @@ async def _registry_index() -> list[dict]:
         "lifecycle": "OPERATING",
         "status": "READY",
         "keys": {SELF_MCP_NAME, *gateway_urls},
+        "bases": gateway_urls,
     }]
     for row in rows:
         index.append({
@@ -107,7 +108,13 @@ async def _registry_index() -> list[dict]:
 
 
 def _match(index: list[dict], transport: str, endpoint_ref: str, server_label: str) -> dict | None:
-    candidates = {normalise(transport, endpoint_ref), (server_label or "").strip().lower()} - {""}
+    ref = normalise(transport, endpoint_ref)
+    # A harness's managed config names each server after itself ("filesystem") but
+    # points it at /mcp/<server>/ under the Gateway (D-30). The URL decides: checked
+    # before labels, or every managed entry would read as a copy of the real server.
+    if any(ref.startswith(base + "/") for base in index[0].get("bases", ())):
+        return index[0]
+    candidates = {ref, (server_label or "").strip().lower()} - {""}
     for entry in index:
         if entry["keys"] & candidates:
             return entry

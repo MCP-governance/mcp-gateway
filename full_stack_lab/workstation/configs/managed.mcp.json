@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "bob-gateway": {
-      "type": "streamable-http",
-      "url": "http://gateway:8080/mcp/",
-      "headers": {"Authorization": "Bearer ${BOB_SSO_TOKEN}"}
-    }
-  }
-}

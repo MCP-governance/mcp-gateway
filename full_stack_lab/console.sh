@@ -21,9 +21,10 @@ usage: ./console.sh <command>
 
   up [--no-llm]          전체 기동 (회사 시스템·MCP 10종·Gateway·Console·직원 PC 4대·로컬 LLM)
   workday [ws|all] [--mode llm|scripted] [--check]
-                         직원의 하루 업무 시나리오를 실행 (기본: 전원, llm 모드)
-  ask <ws> "지시" [--servers a,b] [--mode llm|scripted]
-                         한 직원의 AI 어시스턴트에게 업무 지시
+                         직원의 하루 업무 시나리오를 각자의 하네스로 실행 (기본: 전원, llm 모드)
+  ask <ws> "지시" [--servers a,b] [--harness claude|codex|gemini|opencode]
+                         한 직원의 PC에 설치된 하네스에 업무 지시 (헤드리스)
+  harnesses              직원 PC마다 하네스 4종이 Gateway의 MCP 서버에 붙는지 확인 (LLM 불필요)
   watch                  Gateway 판정을 사람이 읽는 한 줄 로그로 계속 출력
   contracts [--update|--check]
                          MCP 서버 계약 해시(registry/contracts.lock.json) 생성·대조
@@ -127,7 +128,9 @@ up() {
     mcp-redis mcp-email mcp-gitea mcp-playwright
   if [[ $llm == 1 ]]; then
     echo "[3/5] 로컬 LLM (Ollama + LiteLLM 직원별 키)"
-    local model; model="$(env_value LOCAL_LLM_MODEL)"; model="${model:-qwen2.5:1.5b}"
+    # qwen3.5 2B (Q4) calls MCP tools well enough and loads in 1.7 GB; the 4B chooses
+    # better but needs ~3.4 GB more than a 7.6 GB WSL VM can spare next to the lab (D-32).
+    local model; model="$(env_value LOCAL_LLM_MODEL)"; model="${model:-qwen3.5:2b-q4_K_M}"
     # The manifest file is how Ollama records a pulled model; checking it needs no network.
     if ! docker compose --profile llm run --rm --no-deps --entrypoint sh ollama -c \
         "test -f /root/.ollama/models/manifests/registry.ollama.ai/library/${model%%:*}/${model##*:}"; then
@@ -139,13 +142,16 @@ up() {
     # CPU waits on the slowest cores: 0.5 tok/s at 16 threads vs 32 tok/s at 6-8 on
     # this lab's Ultra 7 255H. LOCAL_LLM_THREADS overrides it.
     local threads; threads="$(env_value LOCAL_LLM_THREADS)"; threads="${threads:-6}"
+    # A harness's first turn is its prompt plus the MCP tool schemas of the servers in
+    # use: 12k tokens holds Codex's compact prompt with its own tools and one large server.
+    local ctx; ctx="$(env_value LOCAL_LLM_CONTEXT)"; ctx="${ctx:-12288}"
     for _ in $(seq 1 30); do docker compose --profile llm exec -T ollama ollama list >/dev/null 2>&1 && break; sleep 2; done
     docker compose --profile llm exec -T ollama sh -c \
-      "printf 'FROM %s\nPARAMETER num_thread %s\nPARAMETER temperature 0\nPARAMETER num_ctx 8192\n' '$model' '$threads' > /tmp/Modelfile && ollama create bob-assistant -f /tmp/Modelfile >/dev/null"
+      "printf 'FROM %s\nPARAMETER num_thread %s\nPARAMETER temperature 0\nPARAMETER num_ctx %s\n' '$model' '$threads' '$ctx' > /tmp/Modelfile && ollama create bob-assistant -f /tmp/Modelfile >/dev/null"
     docker compose --profile llm up -d llm-gateway
     docker compose --profile llm run --rm llm-provision
   else
-    echo "[3/5] 로컬 LLM 생략 (--no-llm: 직원 PC는 scripted 모드로만 동작)"
+    echo "[3/5] 로컬 LLM 생략 (--no-llm: 직원 PC의 도구 호출은 MCP Inspector CLI가 대신함)"
   fi
   echo "[4/5] Gateway·Console·검증 워커"
   docker compose up -d gateway gateway-sse agent-service intake-worker
@@ -180,7 +186,17 @@ workday() {
   local failed=0
   for ws in "${list[@]}"; do
     echo "════ $ws ════"
-    docker compose exec -T "$ws" office-agent workday ${mode:+--mode "$mode"} $check || failed=1
+    docker compose exec -T "$ws" workday ${mode:+--mode "$mode"} $check || failed=1
+  done
+  return $failed
+}
+
+# Every harness on every PC connects to each managed MCP server through the Gateway
+# with the SSO token. No model is involved: `mcp list` only opens the MCP sessions.
+harness_check() {
+  local failed=0 ws
+  for ws in "${WORKSTATIONS[@]}"; do
+    docker compose exec -T "$ws" harness-check || failed=1
   done
   return $failed
 }
@@ -194,8 +210,9 @@ case "${1:-up}" in
   workday) shift; workday "$@" ;;
   ask)
     ws="${2:?워크스테이션을 지정하세요 (예: ws-ysg)}"; goal="${3:?지시를 입력하세요}"; shift 3
-    docker compose exec -T "$ws" office-agent run "$goal" "$@"
+    docker compose exec -T "$ws" bob-ask "$@" "$goal"
     ;;
+  harnesses) harness_check ;;
   watch) watch_decisions ;;
   contracts)
     case "${2:-}" in
@@ -241,6 +258,7 @@ case "${1:-up}" in
     docker run --rm --entrypoint /opa -v "$LAB_DIR/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy
     docker compose exec -T gateway python -m app.classify
     docker compose exec -T gateway python -m app.acceptance | tee reports/acceptance.json
+    harness_check | tee reports/harnesses.txt
     AGENT_MODE=scripted workday all --mode scripted --check | tee reports/workday.txt
     python3 tests/termination_flow.py | tee reports/termination-flow.txt
     tests/security_regression.sh | tee reports/security-regression.txt

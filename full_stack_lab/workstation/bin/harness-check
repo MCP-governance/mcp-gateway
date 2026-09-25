@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""harness-check: can every harness on this PC reach every managed MCP server through
+the Gateway? Each harness is asked with its own client and no model call:
+
+    claude mcp list · gemini mcp list · opencode mcp list   (connection status)
+    codex app-server  mcpServerStatus/list                   (Codex's MCP client)
+
+Prints one line per harness; exit 1 if any managed server is not connected.
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+WS = os.getenv("WORKSTATION_ID") or os.uname().nodename
+SERVERS = Path("/etc/bob/servers").read_text().split()
+CONNECTED = re.compile(r"✓|✔|\bconnected\b", re.I)
+FAILED = re.compile(r"✗|✘|fail|error|disconnected|disabled|needs auth", re.I)
+
+
+def run(command: list[str], stdin: str | None = None, timeout: int = 180) -> str:
+    try:
+        done = subprocess.run(command, input=stdin, capture_output=True, text=True, timeout=timeout,
+                              cwd=Path.home() / "work")
+        return done.stdout + done.stderr
+    except subprocess.TimeoutExpired as exc:
+        return f"timeout: {exc}"
+
+
+def from_listing(output: str) -> set[str]:
+    ok = set()
+    for line in output.splitlines():
+        for server in SERVERS:
+            if re.search(rf"(^|[^\w-]){re.escape(server)}([^\w-]|$)", line) and CONNECTED.search(line) and not FAILED.search(line):
+                ok.add(server)
+    return ok
+
+
+def codex() -> tuple[set[str], str]:
+    requests = [{"id": 1, "method": "initialize", "params": {"clientInfo": {"name": "harness-check", "version": "1"}}},
+                {"method": "initialized"},
+                {"id": 2, "method": "mcpServerStatus/list", "params": {"detail": "toolsAndAuthOnly"}}]
+    # app-server answers on stdout and exits when stdin closes; the sleep keeps stdin open
+    # until the status arrives.
+    script = "printf '%s\\n' " + " ".join(f"'{json.dumps(r)}'" for r in requests) + "; sleep 40"
+    out = run(["bash", "-c", f"({script}) | timeout 60 codex app-server 2>/dev/null"], timeout=90)
+    for line in out.splitlines():
+        try:
+            message = json.loads(line)
+        except ValueError:
+            continue
+        if message.get("id") == 2:
+            servers = message.get("result", {}).get("data", [])
+            return {s["name"] for s in servers if s.get("tools")}, out
+    return set(), out
+
+
+def main() -> int:
+    os.environ["BOB_SSO_TOKEN"] = subprocess.run(["bob-sso", "token"], check=True, capture_output=True, text=True).stdout.strip()
+    failed = False
+    checks = {
+        "claude": lambda: (from_listing(out := run(["claude", "mcp", "list"])), out),
+        "gemini": lambda: (from_listing(out := run(["gemini", "mcp", "list"])), out),
+        "opencode": lambda: (from_listing(out := run(["opencode", "mcp", "list"])), out),
+        "codex": codex,
+    }
+    for harness, check in checks.items():
+        ok, output = check()
+        print(f"[{WS}] {harness:<8} MCP {len(ok)}/{len(SERVERS)} connected via Gateway", flush=True)
+        if len(ok) != len(SERVERS):
+            failed = True
+            print("\n".join(f"[{WS}]   {line}" for line in output.strip().splitlines()[-12:]), flush=True)
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

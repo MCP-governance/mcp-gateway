@@ -65,7 +65,7 @@ from urllib.parse import urlsplit
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-AGENT_VERSION = "2.0.0"
+AGENT_VERSION = "3.0.0"
 
 def load_config() -> dict:
     if "--config" not in sys.argv:
@@ -104,11 +104,17 @@ SCAN_PATHS = [
 CONFIG_NAMES = {
     "claude_desktop_config.json",
     "claude_config.json",
+    ".claude.json",          # Claude Code: user scope + projects.<dir>.mcpServers
+    "managed-mcp.json",      # Claude Code: /etc/claude-code (IT-managed)
     ".mcp.json",
     "mcp.json",
     "mcp_settings.json",
     "cline_mcp_settings.json",
-    "settings.json",
+    "settings.json",         # Gemini CLI ~/.gemini, /etc/gemini-cli; VS Code
+    "mcp_config.json",       # Antigravity
+    "opencode.json",
+    "config.toml",           # Codex ~/.codex
+    "managed_config.toml",   # Codex /etc/codex (IT-managed)
 }
 
 SERVER_KEYS = ("mcpServers", "mcp_servers", "servers", "mcp")
@@ -156,9 +162,11 @@ def candidate_files() -> list[Path]:
         if root.is_file():
             found.append(root)
             continue
-        for path in sorted(root.rglob("*.json")):
+        for path in sorted([*root.rglob("*.json"), *root.rglob("*.toml")]):
             # 깊게 파고들면 node_modules 같은 곳의 JSON을 전부 읽게 된다.
-            if len(path.relative_to(root).parts) > 4:
+            if len(path.relative_to(root).parts) > 4 or "node_modules" in path.parts:
+                continue
+            if path.suffix == ".toml" and path.name == "config.toml" and path.parent.name != ".codex":
                 continue
             if path.name in CONFIG_NAMES or path.parent.name in {".cursor", ".vscode", ".claude"}:
                 found.append(path)
@@ -176,13 +184,36 @@ def server_entries(document: dict) -> dict:
     return {}
 
 
+def all_server_entries(document: dict) -> dict:
+    """Top-level servers plus Claude Code's per-project ones in ~/.claude.json
+    (`projects.<dir>.mcpServers`), which is where `claude mcp add` writes by default."""
+    entries = dict(server_entries(document))
+    projects = document.get("projects")
+    if isinstance(projects, dict):
+        for directory, project in projects.items():
+            if isinstance(project, dict):
+                for name, config in server_entries(project).items():
+                    entries[f"{name}@{directory}"] = config
+    return entries
+
+
+def read_config(path: Path) -> dict | None:
+    text = path.read_text(encoding="utf-8") or "{}"
+    if path.suffix == ".toml":
+        import tomllib
+        document = tomllib.loads(text)
+    else:
+        document = json.loads(text)
+    return document if isinstance(document, dict) else None
+
+
 def describe(name: str, config: dict) -> dict | None:
     """설정 한 항목을 보고 가능한 형태로 줄인다.
 
     env와 headers는 의도적으로 버린다. 거기에 토큰이 들어 있고, 관측 목적에는
     필요 없다. 필요한 것은 "어느 서버를 가리키는가"뿐이다.
     """
-    url = config.get("url") or config.get("endpoint") or config.get("serverUrl")
+    url = config.get("url") or config.get("endpoint") or config.get("serverUrl") or config.get("httpUrl")
     if url:
         transport = str(config.get("type") or config.get("transport") or "streamable-http")
         return {"server_label": name, "transport": transport, "endpoint_ref": str(url)}
@@ -191,6 +222,8 @@ def describe(name: str, config: dict) -> dict | None:
         args = config.get("args") or []
         if not isinstance(args, list):
             args = [str(args)]
+        if isinstance(command, list):  # OpenCode: "command": ["npx", "-y", "server"]
+            command, args = (command or [""])[0], [*command[1:], *args]
         return {
             "server_label": name,
             "transport": "stdio",
@@ -203,12 +236,12 @@ def collect_configs() -> list[dict]:
     entries: list[dict] = []
     for path in candidate_files():
         try:
-            document = json.loads(path.read_text(encoding="utf-8") or "{}")
-        except (OSError, ValueError):
+            document = read_config(path)
+        except (OSError, ValueError, ImportError):  # TOMLDecodeError is a ValueError; no tomllib before 3.11
             continue
-        if not isinstance(document, dict):
+        if document is None:
             continue
-        for name, config in server_entries(document).items():
+        for name, config in all_server_entries(document).items():
             if not isinstance(config, dict):
                 continue
             described = describe(str(name), config)
@@ -650,6 +683,19 @@ def demo() -> None:
     assert parsed and parsed["server_name"] == "demo" and parsed["protocol_version"] == "2025-06-18"
     assert _parse_initialize('{"jsonrpc":"2.0","id":1,"error":{"code":-32000}}') is None
     assert _parse_initialize("<html>hello</html>") is None
+
+    # 하네스마다 다른 설정 모양이 같은 형태로 줄어야 Registry와 대조된다.
+    gemini = describe("fs", {"httpUrl": "http://gateway:8080/mcp/filesystem/", "headers": {"Authorization": "x"}})
+    assert gemini == {"server_label": "fs", "transport": "streamable-http", "endpoint_ref": "http://gateway:8080/mcp/filesystem/"}
+    opencode = describe("notes", {"type": "local", "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/n"]})
+    assert opencode["transport"] == "stdio"
+    assert opencode["endpoint_ref"] == command_digest("npx -y @modelcontextprotocol/server-filesystem /n")
+    claude = all_server_entries({"mcpServers": {"a": {"url": "u"}},
+                                 "projects": {"/w": {"mcpServers": {"b": {"command": "c"}}}}})
+    assert set(claude) == {"a", "b@/w"}
+    import tomllib
+    codex = server_entries(tomllib.loads('[mcp_servers.git]\nurl = "http://gateway:8080/mcp/git/"\n'))
+    assert describe("git", codex["git"])["endpoint_ref"].endswith("/mcp/git/")
 
     # 탐색 범위는 정책이 정하고, 공인 대역은 정책이 내려줘도 펼치지 않는다.
     assert scan_targets({"allowed_cidrs": [], "max_hosts": 8}) == ["127.0.0.1"]

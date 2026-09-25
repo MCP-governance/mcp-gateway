@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""workday: this PC's scenario (scenarios/<workstation>.toml) through the employee's
+own harness, and what the Gateway decided about each call.
+
+    workday [--mode llm|scripted] [--task ID] [--check]
+
+llm       bob-ask hands the task's request to the installed harness (Claude Code,
+          Codex, Gemini CLI, OpenCode); the model decides which MCP tools to call.
+scripted  the official MCP Inspector CLI makes the scenario's tool calls with the same
+          Gateway URLs and SSO token, no model - deterministic, for tests and CI.
+
+Decisions are read back from the Gateway's activity API with the employee's own token
+(an employee sees only their own rows), so the check does not depend on how a
+harness prints tool results.
+"""
+import argparse
+import json
+import os
+import subprocess
+import sys
+import tomllib
+import urllib.request
+from datetime import datetime
+from pathlib import Path
+
+WS = os.getenv("WORKSTATION_ID") or os.uname().nodename
+GATEWAY = os.getenv("GATEWAY_URL", "http://gateway:8080").rstrip("/")
+SCENARIO = Path(os.getenv("SCENARIO_FILE", f"/opt/office/scenarios/{WS}.toml"))
+
+
+def say(mark: str, text: str) -> None:
+    print(f"[{WS} {datetime.now():%H:%M:%S}] {mark} {text}", flush=True)
+
+
+def token() -> str:
+    return subprocess.run(["bob-sso", "token"], check=True, capture_output=True, text=True).stdout.strip()
+
+
+def activity(after: int, limit: int = 100) -> dict:
+    request = urllib.request.Request(f"{GATEWAY}/api/activity?after={after}&limit={limit}",
+                                     headers={"Authorization": f"Bearer {token()}"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.load(response)
+
+
+def inspector_call(tool: str, arguments: dict) -> None:
+    server, _, name = tool.partition("__")
+    done = subprocess.run(
+        ["mcp-inspector", "--cli", "--transport", "http", "--server-url", f"{GATEWAY}/mcp/{server}/",
+         "--header", f"Authorization: Bearer {token()}", "--method", "tools/call",
+         "--tool-name", name, "--tool-args-json", json.dumps(arguments, ensure_ascii=False)],
+        capture_output=True, text=True, timeout=300)
+    if done.returncode != 0:
+        say("!", f"inspector {tool}: {(done.stderr or done.stdout).strip()[-300:]}")
+
+
+def run(task: dict, mode: str) -> list[dict]:
+    before = activity(0, 1)["cursor"]
+    say("▶", f"{task.get('title', task['goal'])} ({mode})")
+    if mode == "scripted":
+        for step in task.get("steps", []):
+            inspector_call(step["tool"], step.get("arguments", {}))
+    else:
+        servers = ",".join(task.get("servers") or [])
+        done = subprocess.run(["bob-ask", *(["--servers", servers] if servers else []), task["goal"]],
+                              capture_output=True, text=True, timeout=int(os.getenv("WORKDAY_TASK_TIMEOUT", "1200")))
+        if done.returncode != 0:
+            say("!", f"harness exit {done.returncode}: {done.stdout.strip()[-300:]}")
+    rows = activity(before)["rows"]
+    for row in rows:
+        say("◆", row["line"])
+    return rows
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="workday")
+    parser.add_argument("--mode", default=os.getenv("AGENT_MODE", "llm"), choices=["llm", "scripted"])
+    parser.add_argument("--task", default="")
+    parser.add_argument("--check", action="store_true", help="scripted 모드에서 시나리오의 expect와 판정을 대조")
+    args = parser.parse_args()
+    tasks = [t for t in tomllib.loads(SCENARIO.read_text(encoding="utf-8")).get("tasks", [])
+             if not args.task or t.get("id") == args.task]
+    if not tasks:
+        print(f"시나리오가 없습니다: {SCENARIO}", file=sys.stderr)
+        return 1
+    mismatches = 0
+    for task in tasks:
+        try:
+            got = [row["decision"] for row in run(task, args.mode)]
+        except Exception as exc:  # one broken task must not end the day
+            say("!", f"{task.get('id')}: {type(exc).__name__}: {str(exc)[:200]}")
+            mismatches += 1
+            continue
+        if args.check and "expect" in task:
+            # With a model the calls are the model's choice; only scripted runs are checked.
+            ok = got == task["expect"] if args.mode == "scripted" else True
+            mismatches += not ok
+            say("■", f"CHECK {'OK' if ok else 'FAIL'} {task['id']}: 기대 {task['expect']} / 실제 {got}")
+    if args.check:
+        print(f"[{WS}] check: {len(tasks) - mismatches}/{len(tasks)} 일치", flush=True)
+    return 1 if args.check and mismatches else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

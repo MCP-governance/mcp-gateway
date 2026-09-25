@@ -46,7 +46,7 @@ async def main():
 asyncio.run(main())'
 probe() { docker compose exec -T gateway python -c "$PROBE" "$@" 2>/dev/null | tail -1; }
 reachable() {  # reachable <service> <host> <port> -> open|closed
-  docker compose exec -T "$1" python -c "
+  docker compose exec -T "$1" python3 -c "
 import socket
 s = socket.socket(); s.settimeout(2)
 try:
