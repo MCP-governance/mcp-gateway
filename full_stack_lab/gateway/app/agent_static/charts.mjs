@@ -115,11 +115,14 @@ export function donut(items, { total = true } = {}) {
   const sum = items.reduce((s, i) => s + (i.value || 0), 0);
   return {
     tooltip: { ...base().tooltip, trigger: "item", formatter: "{b} · {c}건 ({d}%)" },
-    legend: { ...base().legend, top: "middle", left: "62%", orient: "vertical" },
-    title: total ? { text: String(sum), subtext: "건", left: "30%", top: "38%", textAlign: "center",
+    // Legend below, one scrolling row: it fits a narrow panel as well as a wide one. Long
+    // names (a harness names itself) are cut with an ellipsis; the tooltip has the full name.
+    legend: { ...base().legend, type: "scroll", top: undefined, bottom: 0, left: "center", orient: "horizontal",
+      textStyle: { ...base().legend.textStyle, width: 120, overflow: "truncate" } },
+    title: total ? { text: String(sum), subtext: "건", left: "center", top: "33%",
       textStyle: { fontSize: 30, fontWeight: 700, color: css("--ink") }, subtextStyle: { color: css("--ink-3"), fontSize: 14 } } : undefined,
     series: [{
-      type: "pie", radius: ["52%", "76%"], center: ["30%", "52%"], avoidLabelOverlap: true,
+      type: "pie", radius: ["48%", "72%"], center: ["50%", "44%"], avoidLabelOverlap: true,
       label: { show: false }, itemStyle: { borderColor: css("--panel"), borderWidth: 2 },
       data: items.filter((i) => i.value).map((i) => ({ name: i.name, value: i.value, itemStyle: { color: i.color } })),
     }],
