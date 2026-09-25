@@ -43,7 +43,7 @@ document.querySelector("#gate-form").addEventListener("submit", async (event) =>
     error.focus();
   } finally {
     button.disabled = false;
-    button.textContent = "작업 공간 열기 →";
+    button.textContent = "로그인";
     event.target.setAttribute("aria-busy", "false");
   }
 });

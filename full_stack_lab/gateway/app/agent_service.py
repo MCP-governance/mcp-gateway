@@ -902,7 +902,7 @@ async def approvals(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
-    return {"approvals": await db.fetch_all(
+    pending, history = await asyncio.gather(db.fetch_all(
         """SELECT a.id, a.requested_by, a.created_at, a.expires_at,
                   a.request_payload->>'server_id' AS server_id, a.request_payload->>'tool' AS tool,
                   a.request_payload->'arguments' AS arguments, a.request_payload->'client' AS client,
@@ -911,7 +911,17 @@ async def approvals(authorization: str | None = Header(default=None)):
              LEFT JOIN principals p ON p.token = a.requested_by
              LEFT JOIN LATERAL (SELECT summary, policy_id, reason, data_class, action FROM decisions
                                  WHERE approval_id = a.id ORDER BY id LIMIT 1) d ON true
-            WHERE a.status='PENDING' AND a.expires_at>now() ORDER BY a.created_at DESC LIMIT 30""")}
+            WHERE a.status='PENDING' AND a.expires_at>now() ORDER BY a.created_at DESC LIMIT 30"""),
+        # Decided (or lapsed) requests: what the queue turned into.
+        db.fetch_all(
+        """SELECT a.id, a.requested_by, a.created_at, a.reviewed_at, a.reviewed_by,
+                  CASE WHEN a.status='PENDING' THEN 'EXPIRED' ELSE a.status END AS status,
+                  a.request_payload->>'server_id' AS server_id, a.request_payload->>'tool' AS tool,
+                  p.display_name, p.department
+             FROM approvals a LEFT JOIN principals p ON p.token = a.requested_by
+            WHERE a.status <> 'PENDING' OR a.expires_at <= now()
+            ORDER BY COALESCE(a.reviewed_at, a.expires_at) DESC LIMIT 50"""))
+    return {"approvals": pending, "history": history}
 
 
 class Rejection(StrictModel):
