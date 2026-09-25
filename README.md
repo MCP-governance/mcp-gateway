@@ -100,7 +100,7 @@ cd full_stack_lab
 ./console.sh local-llm
 ~~~
 
-첫 실행은 [Ollama](https://github.com/ollama/ollama)의 고정 버전 이미지와 기본 qwen2.5:0.5b 모델을 내려받습니다. 이후 Ollama는 내부 model 망에서만 추론하고 호스트 포트를 열지 않습니다. Agent Service는 OpenAI 호환 API로 도구 제안을 받고, Tencent [AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard)의 Web·Agent·API Checker와 mcp-scan은 같은 로컬 모델을 사용할 수 있습니다. A.I.G는 **실습 오버레이**로 Gateway 컨테이너에서 실행하며 브라우저 UI는 <http://127.0.0.1:8088>입니다.
+첫 실행은 [Ollama](https://github.com/ollama/ollama)의 고정 버전 이미지와 기본 qwen2.5:0.5b 모델을 내려받습니다. 이후 Ollama는 내부 model 망에서만 추론하고 호스트 포트를 열지 않습니다. Agent Service는 OpenAI 호환 API로 도구 제안을 받고, Tencent [AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard)의 Web·Agent·API Checker와 mcp-scan은 같은 로컬 모델을 사용할 수 있습니다. A.I.G는 **실습 오버레이**로 Gateway 컨테이너에서 실행하며 브라우저 UI는 <http://127.0.0.1:8088>입니다. 기본 소형 모델의 API 연결 성공은 전체 A.I.G 검사 성공이 아닙니다. 실제 검사는 작업 이력에서 `DONE`을 확인해야 합니다.
 
 0.5B 모델의 코드 감사 결과는 `advisory`(참고용)로 저장하며 자동 차단 근거에 넣지 않습니다. 로컬 프로필의 무거운 재감사는 Console에서 직접 요청합니다. test-double 배선 결과도 차단 근거에 넣지 않습니다. 두 모드의 새 보고서는 기존 live 보고서를 지우지 않습니다. 모델을 바꾸려면 `.env`의 `LOCAL_LLM_MODEL`을 지정하고 다시 실행합니다. 모델 품질과 GPU 사용 여부는 배치 환경에서 따로 검증해야 합니다.
 
@@ -182,6 +182,8 @@ Rego는 배포된 `opa/data.json`의 `authorization.grants`를 평가하고, 허
 | [full_stack_lab/TERMINATION.md](full_stack_lab/TERMINATION.md) | **전주기의 마지막.** 종료 절차와 C1~C4 / T1~T3 판정 기준 |
 | [full_stack_lab/NETWORK.md](full_stack_lab/NETWORK.md) | Docker 내부망·게시 포트 경계와 Tailscale 적용 기준 (tailnet 부분은 미구현, 문서에 명시) |
 | [docs/API.md](docs/API.md) | 통합용 API 명세. `./console.sh openapi`가 기계용 명세를 생성 |
+| [아키텍처 구조 개선안](docs/architecture/hardening.md) | 공통 실행 경로, 실행 상태, DB 권한과 검사 환경의 단계적 분리 제안. 현재 구현과 후속 검증 기준 구분 |
+| [대시보드 UX 개선과 검증](docs/dashboard-ux-review.md) | 공식 디자인 레퍼런스, 실제 콘솔 변경, 다섯 관점의 교차 검토와 검증 범위 |
 | [research/](research/README.md) | 레퍼런스 조사와 설계 자료 |
 
 v1.5에서 구버전 실습(`container_lab/`, `library_lab/`, 루트의 two-VM·stdio 최소 예제)을 제거했습니다. 정책 원본이 네 곳으로 갈라져 있으면 어느 것이 정본인지 저장소가 답하지 못합니다. 제거된 코드는 [`2026-09-v1.4-product-console-supply-chain`](https://github.com/MCP-governance/mcp-gateway/tree/2026-09-v1.4-product-console-supply-chain) 태그에 그대로 남아 있습니다.

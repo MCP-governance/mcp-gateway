@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ko" data-theme="dark">
+<html lang="ko" data-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark light" />
-  <title>로그인 · MCP Governance</title>
+  <title>로그인  /  MCP Governance</title>
   <link rel="stylesheet" href="/static/console.css" />
   <link rel="stylesheet" href="/static/login.css" />
 </head>
@@ -12,29 +12,28 @@
   <main class="gate-card">
     <header class="gate-head">
       <b>MCP Governance</b>
-      <span>판정 기록부</span>
+      <span>SECURITY WORKSPACE</span>
     </header>
 
-    <p class="gate-lede">
-      MCP 도구 호출을 <b>실행 전에</b> 인증·정책·승인·카탈로그·공급망·감사로 검증하는
-      강제 경로입니다. 이 화면의 모든 계정과 데이터는 합성입니다.
-    </p>
+    <h1>안전한 운영의 시작</h1>
+    <p class="gate-lede">MCP 도구 실행과 정책 판정을 한곳에서 확인하세요. 역할에 맞는 작업 공간으로 연결합니다.</p>
+    <div class="notice" data-tone="info"><div>합성 계정을 사용하는 실습 환경입니다.</div></div>
 
-    <form id="gate-form" novalidate>
+    <form id="gate-form">
       <label class="field"><span>합성 계정</span>
         <select id="pick">
           <optgroup label="관리자">
-            <option value="kkg@bob.local">김경곤 · 거버넌스팀</option>
-            <option value="mks@bob.local">문광석 · 보안운영팀</option>
+            <option value="kkg@bob.local">김경곤  /  거버넌스팀</option>
+            <option value="mks@bob.local">문광석  /  보안운영팀</option>
           </optgroup>
           <optgroup label="직원">
-            <option value="pse@bob.local">박소은 · 보안기술팀</option>
-            <option value="miso@bob.local" selected>김미소 · 보안기술팀</option>
-            <option value="ysg@bob.local">양승권 · 플랫폼개발팀</option>
-            <option value="jwj@bob.local">정원재 · 데이터분석팀</option>
+            <option value="pse@bob.local">박소은  /  보안기술팀</option>
+            <option value="miso@bob.local" selected>김미소  /  보안기술팀</option>
+            <option value="ysg@bob.local">양승권  /  플랫폼개발팀</option>
+            <option value="jwj@bob.local">정원재  /  데이터분석팀</option>
           </optgroup>
           <optgroup label="협력사 직원">
-            <option value="nkk@bob.local">권노경 · 협력사 A</option>
+            <option value="nkk@bob.local">권노경  /  협력사 A</option>
           </optgroup>
         </select>
       </label>
@@ -49,16 +48,16 @@
                value="test-password" required />
       </label>
 
-      <p class="err" id="gate-error" role="alert"></p>
-      <button class="btn" data-tone="primary" id="gate-go" type="submit">로그인</button>
+      <p class="err" id="gate-error" role="alert" tabindex="-1"></p>
+      <button class="btn" data-tone="primary" id="gate-go" type="submit">작업 공간 열기 →</button>
     </form>
 
     <footer class="gate-foot">
-      <p>역할에 따라 보이는 화면이 다릅니다. 숨기는 것이 아니라 서버가 데이터를 실어 보내지 않습니다.</p>
+      <p>계정 역할에 따라 사용할 수 있는 작업이 달라집니다.</p>
       <ul>
-        <li><b>관리자</b> 전체 · 정책 관리대장 · 신원 · 종료 판정</li>
-        <li><b>직원</b> 도구 실행 · 도입 신청 · 본인 호출 기록</li>
-        <li><b>협력사 직원</b> 도구 실행 · 도입 신청</li>
+        <li><b>관리자</b> 전체  /  정책 관리대장  /  신원  /  종료 판정</li>
+        <li><b>직원</b> 도구 실행  /  도입 신청  /  본인 호출 기록</li>
+        <li><b>협력사 직원</b> 도구 실행  /  도입 신청</li>
       </ul>
     </footer>
   </main>

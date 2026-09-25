@@ -8,14 +8,18 @@
   <link rel="stylesheet" href="/static/console.css" />
 </head>
 <body>
+  <a class="skip-link" href="#main">본문으로 건너뛰기</a>
   <div class="shell">
     <div class="brand">
-      <b>MCP Governance</b>
-      <span>Security Operations</span>
+      <span class="brand-mark" aria-hidden="true">M</span>
+      <div class="brand-copy"><b>MCP Governance</b><span>Security workspace</span></div>
     </div>
 
     <header class="topbar">
-      <span class="wire" id="wire" data-state=""><i></i><b>Gateway 확인 중</b></span>
+      <button class="icon-btn nav-toggle" id="nav-toggle" type="button" aria-label="메뉴 열기" aria-controls="rail" aria-expanded="false">☰</button>
+      <div class="page-context"><small>WORKSPACE</small><strong id="page-context">운영 현황</strong></div>
+      <span class="spacer"></span>
+      <span class="wire" id="wire" data-state=""><i></i><b>확인 중</b></span>
       <span class="tag" id="mode-tag" hidden></span>
       <div class="who">
         <b id="who-name">사용자</b>
@@ -25,41 +29,41 @@
       <button class="btn" id="logout" type="button">로그아웃</button>
     </header>
 
-    <nav class="rail" id="rail" aria-label="주 메뉴"></nav>
+    <button class="nav-scrim" id="nav-scrim" type="button" aria-label="메뉴 닫기" tabindex="-1" hidden></button>
+    <nav class="rail" id="rail" aria-label="주 메뉴">
+      <button class="btn nav-close" id="nav-close" type="button">메뉴 닫기</button>
+      <div id="rail-links"></div>
+      <div class="rail-foot"><span class="rail-status" aria-hidden="true"></span> MCP 보안 운영<br /><small>합성 데이터 실습 환경</small></div>
+    </nav>
 
-    <main class="main">
+    <main class="main" id="main" tabindex="-1">
+      <div class="sync-bar">
+        <span class="sync-info" id="sync-info" role="status">운영 데이터를 불러오는 중입니다.</span>
+        <button class="btn" id="refresh" type="button">새로고침</button>
+      </div>
+      <div class="notice" id="sync-error" role="alert" hidden></div>
       <div class="toasts" id="toasts" aria-live="polite"></div>
 
       <!-- ── 운영 현황 ─────────────────────────────────────────────────── -->
       <section class="view" data-view="overview" aria-labelledby="h-overview">
-        <div class="head">
+        <div class="head overview-hero">
           <div>
+            <span class="eyebrow">SECURITY OPERATIONS</span>
             <h1 id="h-overview">운영 현황</h1>
-            <p>최근 요청, 차단, 실행 증거를 한눈에 확인하세요.</p>
+            <p>연결 상태를 확인하고, 주의가 필요한 판정부터 살펴보세요.</p>
           </div>
-          <div class="head-actions">
-            <button class="btn" id="refresh" type="button">새로고침</button>
-          </div>
+          <div class="hero-note">최근 조회한 판정 기준<br /><small>최대 40건 / 전체 요약 30초 갱신</small></div>
         </div>
 
         <div class="notice" id="banner" role="status"></div>
 
-        <section class="stream" aria-label="실시간 판정">
-          <div class="stream-head">
-            <h2>실시간 판정</h2>
-            <span class="count" id="stream-count">0</span>
-            <span class="wire" id="stream-wire" data-state=""><i></i><b>대기</b></span>
-          </div>
-          <div class="strip" id="strip" aria-hidden="true"></div>
-          <ol class="feed" id="feed"></ol>
-        </section>
-
-        <dl class="figures" id="figures" style="margin-top:20px"></dl>
+        <dl class="figures" id="figures" aria-label="주요 운영 지표"></dl>
+        <div class="attention-grid" id="attention" aria-label="주의가 필요한 항목"></div>
 
         <div class="grid" data-cols="2">
           <article class="block">
             <header>
-              <h2>판정 분포</h2>
+              <h2>판정 분포</h2><span class="hint">최근 조회 기준</span>
               <span class="spacer"></span>
               <span class="count" id="dist-total">0</span>
             </header>
@@ -76,6 +80,23 @@
           </article>
         </div>
 
+        <section class="stream" aria-label="실시간 판정">
+          <div class="stream-head">
+            <h2>실시간 판정</h2>
+            <span class="count" id="stream-count">0</span>
+            <span class="wire" id="stream-wire" data-state=""><i></i><b>대기</b></span>
+          </div>
+          <div class="feed-tools">
+            <label class="field grow"><span>판정 검색</span><input id="feed-q" type="search" placeholder="도구, 정책 또는 추적 ID 검색" maxlength="120" /></label>
+            <label class="field"><span>판정</span><select id="feed-verdict"><option value="all">전체 판정</option><option>Allow</option><option>Alert</option><option>Restrict</option><option>Approval</option><option>Block</option></select></label>
+            <button class="btn" id="feed-reset" type="button">초기화</button>
+            <button class="btn" id="feed-pause" type="button" aria-pressed="false">목록 일시정지</button>
+          </div>
+          <div class="feed-summary"><span id="feed-summary" role="status" aria-live="polite"></span><button class="link-btn" id="feed-audit" type="button" hidden>감사 기록에서 보기 →</button></div>
+          <div class="strip" id="strip" aria-hidden="true"></div>
+          <ol class="feed" id="feed" tabindex="0" aria-label="최근 판정 목록"></ol>
+        </section>
+
         <article class="block">
           <header>
             <h2>집행 모드</h2>
@@ -84,6 +105,21 @@
           </header>
           <div class="body" id="enforce"></div>
         </article>
+        <details class="block process-block" aria-labelledby="process-title">
+          <summary id="process-title">호출 처리 경로 이해하기 <span class="hint">요청부터 감사 증적까지</span></summary>
+          <div class="body">
+            <ol class="process-map">
+              <li><b>1  /  사용자 요청</b><small>신원과 요청</small></li>
+              <li><b>2  /  Agent 또는 API</b><small>도구 제안</small></li>
+              <li><b>3  /  Gateway</b><small>계약 / 입력 / 민감정보</small></li>
+              <li><b>4  /  OPA</b><small>정책 판정</small></li>
+              <li><b>5  /  승인 / 제한</b><small>실행 조건</small></li>
+              <li><b>6  /  MCP / 증적</b><small>효과와 감사 기록</small></li>
+            </ol>
+            <p class="process-current" id="process-current">아직 판정이 없습니다.</p>
+          </div>
+        </details>
+
       </section>
 
       <!-- ── 도입 ──────────────────────────────────────────────────────── -->
@@ -99,10 +135,10 @@
           <header><h2>먼저 찾아보기</h2><span class="hint">저장소 URL 또는 이름</span></header>
           <div class="body">
             <div class="row">
-              <input class="grow" id="q" type="search" placeholder="예: github.com/org/some-mcp" maxlength="120" />
+              <input class="grow" id="q" aria-label="등록 MCP 검색" type="search" placeholder="예: github.com/org/some-mcp" maxlength="120" />
               <button class="btn" id="q-go" type="button">검색</button>
             </div>
-            <div id="q-out" style="margin-top:12px"></div>
+            <div id="q-out" class="space-top" role="status"></div>
           </div>
         </article>
 
@@ -125,10 +161,10 @@
                 </select>
               </label>
               <label class="field"><span>도입 목적</span>
-                <textarea name="purpose" rows="5" minlength="10" maxlength="1000"
+                <textarea name="purpose" aria-describedby="purpose-error" rows="5" minlength="10" maxlength="1000"
                   placeholder="사용 목적, 접근할 데이터, 예상 도구"></textarea>
-                <em class="hintline"><b id="purpose-n">0</b> / 1000 · 최소 10자</em>
-                <em class="err" data-err="purpose"></em>
+                <em class="hintline"><b id="purpose-n">0</b> / 1000  /  최소 10자</em>
+                <em class="err" id="purpose-error" data-err="purpose"></em>
               </label>
               <p class="notice" data-tone="info">공급망 검사와 제공자 종료 조건은 플랫폼 담당자가 증거를 확인합니다. 신청자가 체크할 항목은 없습니다.</p>
               <button class="btn" data-tone="primary" type="submit">요청 제출</button>
@@ -179,12 +215,12 @@
           <header>
             <h2>발견 항목</h2>
             <span class="spacer"></span>
-            <span class="count" id="find-n">0</span>
+            <span class="count" id="find-n" role="status">0</span>
           </header>
           <div class="body">
-            <div class="row" style="margin-bottom:12px">
+            <div class="row space-bottom">
               <div class="tags grow" id="find-filter"></div>
-              <input style="max-width:240px" id="find-q" type="search" placeholder="내용·파일·규칙" maxlength="80" />
+              <input id="find-q" aria-label="발견 항목 검색" type="search" placeholder="내용 / 파일 / 규칙" maxlength="80" />
             </div>
           </div>
           <div class="body flush scroll"><ul class="items" id="find-list"></ul></div>
@@ -253,7 +289,7 @@
                 <label class="check"><input type="checkbox" name="enabled" /> 탐색 켜기</label>
                 <label class="check"><input type="checkbox" name="probe_mcp" /> MCP 확인(initialize 1회)</label>
               </div>
-              <label class="field" style="margin-top:12px"><span>허용 대역 (쉼표 구분, 사설 대역만, 최대 /20)</span>
+              <label class="field space-top"><span>허용 대역 (쉼표 구분, 사설 대역만, 최대 /20)</span>
                 <input name="allowed_cidrs" type="text" placeholder="10.10.0.0/24, 192.168.1.0/24" maxlength="300" />
                 <em class="hintline">비우면 루프백만 봅니다. 공인 대역은 게이트웨이와 에이전트 양쪽에서 거절합니다.</em>
               </label>
@@ -261,13 +297,13 @@
                 <label class="field grow"><span>포트</span>
                   <input name="ports" type="text" placeholder="3000, 8000, 8080, 9000" maxlength="300" />
                 </label>
-                <label class="field" style="max-width:150px"><span>최대 호스트</span>
+                <label class="field scan-limit"><span>최대 호스트</span>
                   <input name="max_hosts" type="number" min="1" max="4096" />
                 </label>
-                <label class="field" style="max-width:150px"><span>연결 대기(ms)</span>
+                <label class="field scan-limit"><span>연결 대기(ms)</span>
                   <input name="connect_timeout_ms" type="number" min="50" max="5000" />
                 </label>
-                <label class="field" style="max-width:150px"><span>주기(초)</span>
+                <label class="field scan-limit"><span>주기(초)</span>
                   <input name="interval_seconds" type="number" min="60" max="86400" />
                 </label>
               </div>
@@ -302,7 +338,7 @@
                 <label class="check"><input type="checkbox" name="netscan" /> 내부망 탐색 보고</label>
               </div>
               <em class="err" data-err="device"></em>
-              <div class="row" style="margin-top:12px">
+              <div class="row space-top">
                 <button class="btn" data-tone="primary" type="submit">발급</button>
                 <button class="btn" type="button" id="device-cancel">취소</button>
               </div>
@@ -332,11 +368,11 @@
         </article>
       </section>
 
-      <!-- ── 종료·폐기 ─────────────────────────────────────────────────── -->
+      <!-- ── 종료 / 폐기 ─────────────────────────────────────────────────── -->
       <section class="view" data-view="termination" aria-labelledby="h-termination">
         <div class="head">
           <div>
-            <h1 id="h-termination">종료·폐기</h1>
+            <h1 id="h-termination">종료 / 폐기</h1>
             <p>종료 개시가 곧 차단입니다. C1~C4를 채워야 T1이 되고, 채우지 못한 것은 T3로 남습니다.</p>
           </div>
         </div>
@@ -358,7 +394,7 @@
         <div class="head">
           <div>
             <h1 id="h-policy">정책 관리대장</h1>
-            <p>지금 집행 중인 정책과 그것이 구현하는 위험·요구사항·통제입니다. 대장에 없는 정책은 판단에 관여할 수 없습니다.</p>
+            <p>지금 집행 중인 정책과 그것이 구현하는 위험 / 요구사항 / 통제입니다. 대장에 없는 정책은 판단에 관여할 수 없습니다.</p>
           </div>
         </div>
         <dl class="figures" id="policy-figures"></dl>
@@ -370,7 +406,7 @@
           <header>
             <h2>정책</h2>
             <span class="spacer"></span>
-            <input style="max-width:260px" id="policy-q" type="search" placeholder="정책·통제·위험 ID" maxlength="60" />
+            <input id="policy-q" aria-label="정책 검색" type="search" placeholder="정책 / 통제 / 위험 ID" maxlength="60" />
           </header>
           <div class="body flush scroll"><table id="policy-table"></table></div>
         </article>
@@ -389,7 +425,7 @@
           </div>
         </div>
         <div class="block">
-          <div class="body flush"><table id="account-table"></table></div>
+          <div class="body flush scroll"><table id="account-table"></table></div>
         </div>
       </section>
 
@@ -405,7 +441,7 @@
           <header><h2>요청</h2><span class="spacer"></span><span class="tag" id="model-tag">-</span></header>
           <div class="body">
             <div class="row">
-              <input class="grow" id="ask" type="text" placeholder="예: 공개 공지 문서 notice-001 을 읽어줘" maxlength="500" />
+              <input class="grow" id="ask" type="text" aria-label="도구 실행 요청" placeholder="예: 공개 공지 문서 notice-001 을 읽어줘" maxlength="500" />
               <button class="btn" data-tone="primary" id="ask-go" type="button">보내기</button>
             </div>
             <p class="hintline">합성 데이터만 사용합니다. 실제 개인정보를 입력하지 마세요.</p>
@@ -422,18 +458,20 @@
         <div class="head">
           <div>
             <h1 id="h-audit">감사 기록</h1>
-            <p>요청·판정·실행 여부가 해시 연쇄로 묶입니다. 실행 확인 / 미실행 / 실행 여부 미확인은 서로 다른 상태입니다.</p>
+            <p>요청 / 판정 / 실행 여부가 해시 연쇄로 묶입니다. 실행 확인 / 미실행 / 실행 여부 미확인은 서로 다른 상태입니다.</p>
           </div>
           <div class="head-actions">
             <button class="btn" id="verify-chain" type="button">연쇄 검증</button>
           </div>
         </div>
-        <div class="notice" id="chain-out"></div>
+        <div class="notice" id="chain-out" role="status"></div>
         <article class="block">
           <header>
             <h2>판정 기록</h2>
             <span class="spacer"></span>
-            <input style="max-width:240px" id="audit-q" type="search" placeholder="도구·정책·주체" maxlength="60" />
+            <label class="field"><span>판정</span><select id="audit-verdict"><option value="all">전체 판정</option><option>Allow</option><option>Alert</option><option>Restrict</option><option>Approval</option><option>Block</option></select></label>
+            <label class="field"><span>실행 상태</span><select id="audit-outcome"><option value="all">전체 실행 상태</option><option value="unconfirmed">실행 여부 미확인</option></select></label>
+            <input id="audit-q" aria-label="감사 기록 검색" type="search" placeholder="도구 / 정책 / 주체" maxlength="60" />
           </header>
           <div class="body flush scroll"><table id="audit-table"></table></div>
         </article>

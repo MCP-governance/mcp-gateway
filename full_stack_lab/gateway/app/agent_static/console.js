@@ -1,3 +1,5 @@
+import { mergeDecisions, reconcileSnapshot, streamPayload, filterDecisions, executionLabel, healthLabel } from "./console-state.mjs";
+
 /* MCP Governance Console
  *
  * 이 파일의 규칙 하나: 화면은 권한을 판단하지 않는다. 무엇을 보여줄지는 서버가
@@ -9,13 +11,13 @@ const TOKEN_KEY = "mcp-console-token";
 const VERDICTS = ["Allow", "Alert", "Restrict", "Approval", "Block"];
 const PAGE_TITLES = {
   overview: "운영 현황", intake: "MCP 도입", verification: "검증", risks: "위험 분석",
-  mcpscan: "AI 코드 감사", endpoints: "엔드포인트", termination: "종료·폐기",
+  mcpscan: "AI 코드 감사", endpoints: "엔드포인트", termination: "종료 / 폐기",
   policy: "정책", accounts: "신원", execution: "도구 실행", audit: "감사",
 };
 const PAGE_GROUPS = [
   ["집행", ["overview", "execution", "audit"]],
-  ["도입·검증", ["intake", "verification", "risks", "mcpscan"]],
-  ["자산·경로", ["endpoints", "termination"]],
+  ["도입 / 검증", ["intake", "verification", "risks", "mcpscan"]],
+  ["자산 / 경로", ["endpoints", "termination"]],
   ["관리", ["policy", "accounts"]],
 ];
 
@@ -27,6 +29,9 @@ const state = {
   console: null, page: null, scan: null, scanProbe: null, activeScanJob: null,
   endpoints: null, aig: null,
   seenDecision: 0, chat: [], session: null, findFilter: "all", termCase: null,
+  refreshing: false, lastSync: null, stale: false, asking: false,
+  feedPaused: false, frozenFeed: [], feedHTML: null, streamRendering: false,
+  streamController: null, viewerKey: null,
 };
 
 /* ── 공통 ────────────────────────────────────────────────────────────────── */
@@ -50,7 +55,7 @@ function clock(value) {
   if (!value) return "--:--:--";
   const at = new Date(value);
   return Number.isNaN(at.getTime()) ? "--:--:--"
-    : at.toLocaleTimeString("ko-KR", { hour12: false });
+    : at.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 }
 
 function toast(message, tone = "good") {
@@ -122,7 +127,14 @@ function emptyRow(message, span = 6) {
 
 function fill(node, html, emptyText) {
   if (!node) return;
-  node.innerHTML = html || `<p class="empty">${esc(emptyText || "표시할 항목이 없습니다.")}</p>`;
+  const focused = node.contains(document.activeElement) ? document.activeElement : null;
+  if (state.streamRendering && focused?.matches("button, a, input, select, textarea")) return;
+  const focusId = focused?.id;
+  const next = html || `<p class="empty">${esc(emptyText || "표시할 항목이 없습니다.")}</p>`;
+  if (node.innerHTML !== next) {
+    node.innerHTML = next;
+    if (focusId) document.getElementById(focusId)?.focus();
+  }
 }
 
 /* ── 이동 ────────────────────────────────────────────────────────────────── */
@@ -135,7 +147,14 @@ function buildRail(pages) {
     return `<div class="rail-group"><span>${esc(label)}</span></div>` + items.map((key) =>
       `<a href="#${key}" data-page="${key}">${esc(PAGE_TITLES[key])}<em>${esc(badges[key] || "")}</em></a>`).join("");
   }).join("");
-  $("#rail").innerHTML = html;
+  const rail = $("#rail-links");
+  const key = pages.join(",");
+  if (rail.dataset.pages !== key) {
+    rail.innerHTML = html;
+    rail.dataset.pages = key;
+  } else {
+    $$("a", rail).forEach((link) => { $("em", link).textContent = badges[link.dataset.page] || ""; });
+  }
 }
 
 function pageBadges() {
@@ -152,19 +171,50 @@ function pageBadges() {
   return badges;
 }
 
-function show(page) {
+function setNav(open, restore = false) {
+  document.body.classList.toggle("nav-open", open);
+  $("#nav-toggle").setAttribute("aria-expanded", String(open));
+  $("#nav-scrim").hidden = !open;
+  $("#main").inert = open;
+  $(".topbar").inert = open;
+  if (open) requestAnimationFrame(() => { if (document.body.classList.contains("nav-open")) $("#nav-close").focus(); });
+  else if (restore) $("#nav-toggle").focus();
+}
+
+function show(page, focus = false) {
   const pages = state.console?.viewer?.pages || [];
   const target = pages.includes(page) ? page : pages[0];
   if (!target) return;
+  const changed = state.page !== target;
   state.page = target;
-  $$(".view").forEach((view) => view.classList.toggle("on", view.dataset.view === target));
-  $$("#rail a").forEach((link) =>
-    link.setAttribute("aria-current", link.dataset.page === target ? "page" : "false"));
-  if (location.hash.slice(1) !== target) history.replaceState(null, "", "#" + target);
-  document.title = `${PAGE_TITLES[target]} · MCP Governance`;
-  if (target === "mcpscan") loadScan();
-  if (target === "endpoints") loadEndpoints();
-  if (target === "risks") loadRiskCatalog();
+  $$(".view").forEach((view) => { view.classList.toggle("on", view.dataset.view === target); });
+  $$("#rail a").forEach((link) => {
+    if (link.dataset.page === target) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  });
+  if (location.hash.slice(1) !== target) history[focus ? "pushState" : "replaceState"](null, "", "#" + target);
+  document.title = `${PAGE_TITLES[target]} | MCP Governance`;
+  $("#page-context").textContent = PAGE_TITLES[target];
+  if (changed || focus) {
+    setNav(false);
+    if (focus) {
+      const heading = $(`[data-view="${target}"] h1`);
+      heading.tabIndex = -1;
+      heading.focus();
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+    if (target === "mcpscan") loadScan();
+    if (target === "endpoints") loadEndpoints();
+    if (target === "risks") loadRiskCatalog();
+  }
+}
+
+function accessibleRegions() {
+  $$(".scroll").forEach((region) => {
+    region.tabIndex = 0;
+    region.setAttribute("role", "region");
+    region.setAttribute("aria-label", `${region.closest(".block")?.querySelector("h2")?.textContent || "데이터 표"} 스크롤 영역`);
+  });
 }
 
 /* ── 상단 ────────────────────────────────────────────────────────────────── */
@@ -173,14 +223,15 @@ function renderTop() {
   const data = state.console;
   const viewer = data.viewer;
   $("#who-name").textContent = viewer.name;
-  $("#who-role").textContent = `${viewer.role_label} · ${viewer.department}`;
+  $("#who-role").textContent = `${viewer.role_label}  /  ${viewer.department}`;
 
   const health = data.health || {};
   const wire = $("#wire");
-  wire.dataset.state = health.status === "ok" ? "ok" : health.status ? "degraded" : "down";
+  wire.dataset.state = health.status === "ok" ? "ok" : health.status === "degraded" ? "degraded" : "down";
   const down = Object.entries(health.components || {})
     .filter(([key, value]) => value === false && key !== "github_mcp").map(([key]) => key);
-  $("b", wire).textContent = down.length ? `Gateway 저하 · ${down.join(", ")}` : "Gateway 정상";
+  $("b", wire).textContent = health.status === "ok" ? "Gateway 정상" : healthLabel(health);
+  wire.title = down.length ? `응답 없는 서비스: ${down.join(", ")}` : healthLabel(health);
 
   const mode = data.monitor?.enforcement;
   const tagNode = $("#mode-tag");
@@ -202,28 +253,39 @@ function renderOverview() {
   const unconfirmed = decisions.filter((d) => d.upstream_attempted && !d.upstream_executed).length;
 
   fill($("#figures"), [
-    figure("최근 판정", decisions.length, "게이트웨이를 지난 호출"),
-    figure("차단", blocked, "실행 전 거부", blocked ? "bad" : ""),
-    figure("대기 승인", (data.approvals || []).length, "사람의 결정이 필요",
+    figure("최근 판정", decisions.length, "최근 조회 최대 40건"),
+    figure("Block 판정", blocked, "입력 또는 출력 정책 차단", blocked ? "bad" : ""),
+    figure("승인 대기 기록", (data.approvals || []).length, "만료된 대기 기록 포함",
       (data.approvals || []).length ? "warn" : ""),
-    figure("upstream 실행", data.upstream_effect_count ?? 0, "실제로 닿은 호출"),
-    figure("실행 여부 미확인", unconfirmed, "응답 유실 — 성공으로 세지 않음",
+    figure("누적 실행 증적", data.upstream_effect_count ?? "-", "독립 효과 증적 기준 / 누적"),
+    figure("실행 여부 미확인", unconfirmed, "시도했으나 완료 확인 없음",
       unconfirmed ? "warn" : ""),
   ].join(""));
 
   // 배너: 지금 사람이 해야 할 일이 있으면 그것만 말한다.
   const notes = [];
   if ((data.approvals || []).length) {
-    notes.push(`승인 대기 ${data.approvals.length}건이 있습니다.`);
+    notes.push(`승인 대기 기록 ${data.approvals.length}건이 있습니다. 만료된 요청이 포함될 수 있습니다.`);
   }
   const overdue = (data.termination?.cases || []).filter((c) => c.overdue).length;
   if (overdue) notes.push(`기한을 넘긴 종료 케이스 ${overdue}건이 있습니다.`);
   if (data.monitor?.enforcement === "monitor") {
-    notes.push(`관찰 모드입니다. 지난 주 ${data.monitor.would_have_stopped ?? 0}건이 집행 모드였다면 막혔습니다.`);
+    notes.push(`관찰 모드입니다. 지난 ${data.monitor.window_hours ?? 168}시간 동안 ${data.monitor.would_have_stopped ?? 0}건이 집행 모드였다면 막혔습니다.`);
   }
   const banner = $("#banner");
   banner.innerHTML = notes.length ? `<div>${notes.map(esc).join("<br />")}</div>` : "";
   banner.dataset.tone = overdue ? "bad" : notes.length ? "warn" : "";
+
+  const pages = data.viewer.pages || [];
+  const cards = [];
+  const attentionCard = (title, count, note, page, outcome = "", verdict = "") =>
+    `<article class="attention-card" data-tone="${count ? "warn" : "good"}"><div><span>${esc(title)}</span><strong>${count}</strong></div><p>${esc(note)}</p>${pages.includes(page) ? `<button class="link-btn" type="button" data-jump="${page}" data-outcome="${outcome}" data-verdict="${verdict}">기록 확인 →</button>` : ""}</article>`;
+  cards.push(attentionCard("실행 여부 미확인", unconfirmed, "독립 실행 증적과 대조가 필요합니다.", "audit", "unconfirmed"));
+  cards.push(attentionCard("종료 기한 초과", overdue, "회수 증적과 잔존 경로를 확인하세요.", "termination"));
+  const drift = (data.registry || []).filter((item) => item.status !== "READY" && item.status !== "DISABLED").length;
+  cards.push(attentionCard("MCP 상태 확인", drift, "등록 상태와 검증 증적을 살펴보세요.", "verification"));
+  fill($("#attention"), cards.join(""));
+  $("#feed-audit").hidden = !pages.includes("audit");
 
   // 분포
   const counts = Object.fromEntries(VERDICTS.map((v) => [v, 0]));
@@ -244,7 +306,7 @@ function renderOverview() {
       <div class="item-top"><b>${esc(server.display_name)}</b>
         ${tag(server.status, tone)}${life}
         <span class="spacer"></span>${tag(server.transport)}</div>
-      <div class="item-sub">${esc(server.advertised_name || server.id)} · ${esc(server.endpoint || server.source_ref || "")}</div>
+      <div class="item-sub">${esc(server.advertised_name || server.id)}  /  ${esc(server.endpoint || server.source_ref || "")}</div>
       <div class="item-note">${esc(server.status_reason || "")}</div>
       ${server.status === "DRIFT" ? `<div class="item-acts">
         <button class="btn" data-size="sm" data-reapprove="${esc(server.id)}">계약 재승인</button>
@@ -253,27 +315,28 @@ function renderOverview() {
   }).join(""), "등록된 서버가 없습니다.");
 
   renderEnforcement();
-  renderFeed(decisions.slice(0, 40), false);
+  renderFeed();
 }
 
 function renderEnforcement() {
   const monitor = state.console.monitor || {};
-  const mode = monitor.enforcement || "enforce";
+  const mode = monitor.enforcement;
   const badge = $("#enforce-tag");
-  badge.textContent = mode === "enforce" ? "집행" : "관찰";
+  badge.textContent = mode === "enforce" ? "집행" : mode === "monitor" ? "관찰" : "상태 미확인";
   badge.dataset.tone = mode === "enforce" ? "good" : "warn";
   const isAdmin = (state.console.viewer.roles || []).includes("admin");
+  if (!mode) { fill($("#enforce"), "<p class=empty>집행 모드 정보를 확인하지 못했습니다.</p>"); return; }
   fill($("#enforce"), `
-    <p class="hintline" style="margin-top:0">
+    <p class="hintline no-top">
       ${mode === "enforce"
-        ? "판정이 그대로 집행됩니다. 무결성 통제(MCP-·P-CONTROL-·P-INPUT-·P-RATE-·P-CHAIN-)는 관찰 모드에서도 항상 집행됩니다."
+        ? "판정이 그대로 집행됩니다. 무결성 통제(MCP- / P-CONTROL- / P-INPUT- / P-RATE- / P-CHAIN-)는 관찰 모드에서도 항상 집행됩니다."
         : `관찰 모드입니다. 지난 ${monitor.window_hours ?? 168}시간 동안 ${monitor.would_have_stopped ?? 0}건이 집행 모드였다면 막혔고, ${monitor.affected_principals ?? 0}명이 영향을 받았습니다.`}
     </p>
-    ${isAdmin ? `<div class="row" style="margin-top:10px">
+    ${isAdmin ? `<div class="row space-top">
       <button class="btn" data-tone="${mode === "enforce" ? "" : "primary"}" id="enforce-toggle" type="button">
         ${mode === "enforce" ? "관찰 모드로" : "집행 모드로"}
       </button></div>` : ""}
-    ${(monitor.breakdown || []).length ? `<div class="scroll" style="margin-top:12px"><table>
+    ${(monitor.breakdown || []).length ? `<div class="scroll space-top"><table>
       <thead><tr><th>가정 판정</th><th>정책</th><th>역할</th><th>도구</th><th class="num">건수</th></tr></thead>
       <tbody>${monitor.breakdown.slice(0, 10).map((row) => `<tr>
         <td>${verdictTag(row.would_decision)}</td><td class="id">${esc(row.would_policy_id)}</td>
@@ -281,25 +344,24 @@ function renderEnforcement() {
         <td class="num">${esc(row.calls)}</td></tr>`).join("")}</tbody></table></div>` : ""}`);
 }
 
-function renderFeed(rows, prepend) {
-  const feed = $("#feed");
-  const strip = $("#strip");
-  const html = rows.map((row) => `<li${prepend ? ' class="fresh"' : ""} data-id="${esc(row.id)}">
-      <time>${clock(row.created_at)}</time>
-      ${verdictTag(row.decision)}
-      <span class="what">${esc(row.tool_name)} · ${esc(row.policy_id)}</span>
-      <span class="who-cell">${esc(row.role || "")}${row.upstream_executed ? " · 실행" : ""}</span>
-    </li>`).join("");
-  if (prepend) feed.insertAdjacentHTML("afterbegin", html);
-  else feed.innerHTML = html || `<li class="empty">아직 판정이 없습니다.</li>`;
-  while (feed.children.length > 120) feed.lastElementChild.remove();
-
-  const bars = rows.map((row) =>
-    `<i data-v="${esc(row.decision)}" style="height:${row.upstream_executed ? 30 : 16}px"></i>`).join("");
-  if (prepend) strip.insertAdjacentHTML("afterbegin", bars);
-  else strip.innerHTML = bars;
-  while (strip.children.length > 160) strip.lastElementChild.remove();
-  $("#stream-count").textContent = feed.querySelectorAll("li[data-id]").length;
+function renderFeed() {
+  const rows = state.feedPaused ? state.frozenFeed : state.console?.decisions || [];
+  const filtered = filterDecisions(rows, $("#feed-q").value, $("#feed-verdict").value);
+  const last = rows[0];
+  $("#process-current").textContent = last
+    ? `최근 ${last.tool_name} / ${last.policy_id} / ${executionLabel(last)}` : "아직 판정이 없습니다.";
+  const feedHTML = filtered.map((row) => `<li data-id="${esc(row.id)}">
+    <time datetime="${esc(row.created_at)}">${clock(row.created_at)}</time>
+    ${verdictTag(row.decision)}
+    <span class="what"><strong>${esc(row.tool_name)}</strong><small>${esc(row.policy_id)} / ${esc(row.role || "")}</small></span>
+    <span class="who-cell">${esc(executionLabel(row))}</span>
+  </li>`).join("") || `<li class="empty">${rows.length ? "검색 조건에 맞는 판정이 없습니다. 필터를 초기화해 보세요." : "아직 판정이 없습니다. 도구 호출이 발생하면 이곳에 표시됩니다."}</li>`;
+  if (state.feedHTML !== feedHTML) { $("#feed").innerHTML = feedHTML; state.feedHTML = feedHTML; }
+  $("#strip").innerHTML = rows.map((row) => `<i data-v="${esc(row.decision)}" data-executed="${Boolean(row.upstream_executed)}"></i>`).join("");
+  $("#stream-count").textContent = filtered.length;
+  const pending = state.feedPaused ? (state.console?.decisions || []).filter((row) => Number(row.id) > Number(rows[0]?.id || 0)).length : 0;
+  const summary = `${filtered.length} / ${rows.length}건 표시${state.feedPaused ? ` / 목록 일시정지${pending ? ` / 새 판정 ${pending}건` : ""}` : " / 최신순"}`;
+  if ($("#feed-summary").textContent !== summary) $("#feed-summary").textContent = summary;
 }
 
 /* ── 도입 ────────────────────────────────────────────────────────────────── */
@@ -349,7 +411,7 @@ function renderVerification() {
       <div class="item-note">${remote ? (verified
         ? `종료 조건 확인 · ${esc(terms.verified_by)} · ${when(terms.verified_at)}`
         : "종료 조건 확인 대기 · 플랫폼 담당자 작업") : "로컬 실행 · 제공자 자격 확인 불필요"}</div>
-      ${Object.keys(evidence).length ? `<div class="tags" style="margin-top:7px">${
+      ${Object.keys(evidence).length ? `<div class="tags evidence-tags">${
         Object.entries(evidence).slice(0, 6).map(([key, value]) =>
           tag(`${key}=${typeof value === "object" ? "…" : value}`)).join("")}</div>` : ""}
       <div class="item-acts">
@@ -395,7 +457,7 @@ function renderRisks() {
 
   const scanners = [...new Set(reports.map((r) => r.scanner))];
   fill($("#find-filter"), ["all", ...scanners].map((name) =>
-    `<button class="tag" data-filter="${esc(name)}"${state.findFilter === name ? ' data-tone="info"' : ""}>
+    `<button class="tag" data-filter="${esc(name)}" aria-pressed="${state.findFilter === name}"${state.findFilter === name ? ' data-tone="info"' : ""}>
       ${esc(name === "all" ? "전체" : name)}</button>`).join(""));
   renderFindings();
 }
@@ -419,7 +481,7 @@ function renderFindings() {
         <span class="spacer"></span><span class="item-sub">${when(row.imported_at)}</span></div>
       <div class="item-sub">${esc(row.source_ref || "")}</div>
       ${findings.length ? `<div class="item-note">${findings.slice(0, 4).map((f) =>
-        `${esc(f.severity || f.level || "")} · ${esc(f.title || f.id || f.ruleId || "")}`).join("<br />")}</div>` : ""}
+        `${esc(f.severity || f.level || "")}  /  ${esc(f.title || f.id || f.ruleId || "")}`).join("<br />")}</div>` : ""}
     </li>`;
   }).join(""), "발견 항목이 없습니다.");
 }
@@ -443,38 +505,52 @@ async function loadRiskCatalog() {
 
 /* ── AI 코드 감사 ────────────────────────────────────────────────────────── */
 
+function scanError(error) {
+  const message = String(error || "");
+  const timeout = message.match(/timed out after (\d+) seconds/);
+  return timeout ? `검사 제한 시간 ${timeout[1]}초를 초과했습니다. 모델 응답 속도와 설정을 확인하세요.` : message;
+}
+
 async function loadScan() {
-  try { state.scan = await api("/api/mcp-scan"); } catch (error) { toast(error.message, "bad"); return; }
+  const viewerKey = state.viewerKey;
+  try {
+    const result = await api("/api/mcp-scan");
+    if (viewerKey !== state.viewerKey || !state.console.viewer.pages.includes("mcpscan")) return;
+    state.scan = result;
+  } catch (error) { toast(error.message, "bad"); return; }
   const { config, worker, jobs, reports, targets, servers } = state.scan;
   const badge = $("#scan-state");
   const ready = Boolean(config.configured && worker.alive && state.scanProbe?.ready_for_scan);
+  const completed = (jobs || []).some((job) => job.status === "DONE");
+  const failed = (jobs || []).find((job) => job.status === "FAILED");
   badge.textContent = !config.configured ? "모델 미설정" : !worker.alive ? "검사 워커 중단"
-    : ready ? "연결 검증 완료" : "연결 미확인";
-  badge.dataset.tone = ready ? "good" : "warn";
+    : completed ? "실제 검사 완료" : failed ? "검사 실패 확인" : ready ? "모델 연결 확인" : "연결 미확인";
+  badge.dataset.tone = completed ? "good" : failed ? "bad" : "warn";
   $("#scan-test").disabled = !config.configured;
   const banner = $("#scan-readiness");
-  banner.dataset.tone = ready ? "info" : "warn";
+  banner.dataset.tone = failed && !completed ? "bad" : ready ? "info" : "warn";
   const active = (jobs || []).find((job) => String(job.id) === state.activeScanJob);
   banner.textContent = !config.configured
     ? "AI 검사가 준비되지 않았습니다. 플랫폼 운영자가 검사 모델을 연결해야 합니다. 기본 설치의 Gateway 정상 표시는 AI 검사 준비를 뜻하지 않습니다."
     : !worker.alive ? "검사 워커가 응답하지 않습니다. 작업을 실행할 수 없습니다."
-    : active ? `최근 요청: ${active.target_label || active.target_id} · ${active.status}${active.status === "DONE" ? ` · 발견 ${active.summary?.total ?? 0}건` : ""}${active.error ? ` · ${active.error}` : ""}`
-    : ready ? "모델과 워커 연결을 확인했습니다. 검사를 실행하면 작업 상태와 결과가 이 화면에 표시됩니다."
+    : active ? `최근 요청: ${active.target_label || active.target_id} · ${active.status}${active.status === "DONE" ? ` · 발견 ${active.summary?.total ?? 0}건` : ""}${active.error ? ` · ${scanError(active.error)}` : ""}`
+    : failed && !completed ? "모델 연결과 실제 검사 성공은 다릅니다. 아래 실패 원인을 확인하고, 검사에 적합한 모델 또는 처리 시간을 설정하세요."
+    : ready ? "모델과 워커 연결을 확인했습니다. 실제 검사 성공은 작업 이력에서 확인하세요."
     : "모델 설정은 있지만 실제 연결을 확인하지 않았습니다. ‘연결 확인’을 먼저 실행하세요.";
 
   fill($("#scan-config"), `
-    <p class="hintline" style="margin-top:0">${config.configured
+    <p class="hintline no-top">${config.configured
       ? `모델 endpoint가 설정돼 있습니다. 키는 화면에 나오지 않습니다.`
       : `설정이 필요합니다: ${esc((config.missing || []).join(", "))}`}</p>
     <table><tbody>
       <tr><td>Base URL</td><td class="id">${esc(config.base_url || "-")}</td></tr>
       <tr><td>모델</td><td class="id">${esc(config.model || "-")}</td></tr>
       <tr><td>모델 주소</td><td>${config.local ? tag("로컬 주소", "good") : tag("외부 주소", "warn")}</td></tr>
-      <tr><td>검사 증적</td><td>${tag(config.evidence_mode === "advisory" ? "참고용 · 자동 차단 없음" : config.evidence_mode || "-")}</td></tr>
+      <tr><td>검사 증적</td><td>${tag(config.evidence_mode === "advisory" ? "참고용  /  자동 차단 없음" : config.evidence_mode || "-")}</td></tr>
     </tbody></table>`);
 
   fill($("#scan-worker"), `
-    <p class="hintline" style="margin-top:0">${worker.alive
+    <p class="hintline no-top">${worker.alive
       ? `워커 ${esc(worker.worker || "")}가 살아 있습니다.`
       : "격리 워커의 생존 신호가 없습니다. 큐에 넣어도 실행되지 않습니다."}</p>
     <table><tbody>
@@ -513,7 +589,7 @@ async function loadScan() {
       <span class="spacer"></span><span class="item-sub">${when(job.created_at, true)}</span></div>
     <div class="item-sub">작업 ID ${esc(job.id)} · ${esc(job.source_ref || (job.mode === "dynamic" ? "실행 중인 MCP endpoint 점검" : "코드 출처 확인 중"))}</div>
     ${job.status === "DONE" ? `<div class="item-note">발견 ${esc(job.summary?.total ?? 0)}건 · 증거 유형 ${esc(job.summary?.evidence_mode || "미표기")}</div>` : ""}
-    ${job.error ? `<div class="item-note" role="alert">실패 원인: ${esc(job.error)}</div>` : ""}
+    ${job.error ? `<div class="item-note" role="alert">실패 원인: ${esc(scanError(job.error))}</div>` : ""}
     <div class="item-acts">
       ${["QUEUED", "RUNNING"].includes(job.status)
         ? `<button class="btn" data-size="sm" data-job-cancel="${esc(job.id)}">취소</button>` : ""}
@@ -531,7 +607,7 @@ async function loadScan() {
         ${summary.blocks_calls ? tag("호출 차단으로 이어짐", "bad") : tag("증적만")}
         <span class="spacer"></span><span class="item-sub">${when(row.imported_at)}</span></div>
       ${(summary.findings || []).slice(0, 5).map((f) =>
-        `<div class="item-note">${esc(f.severity || "")} · ${esc(f.title || f.id || "")}</div>`).join("")}
+        `<div class="item-note">${esc(f.severity || "")}  /  ${esc(f.title || f.id || "")}</div>`).join("")}
     </li>`;
   }).join(""), "감사 결과가 없습니다.");
 }
@@ -558,6 +634,7 @@ async function loadEndpoints() {
 
   const policy = data.scan_policy || {};
   const form = $("#scan-policy-form");
+  if (form.dataset.dirty !== "true") {
   form.elements.enabled.checked = !!policy.enabled;
   form.elements.probe_mcp.checked = policy.probe_mcp !== false;
   form.elements.allowed_cidrs.value = (policy.allowed_cidrs || []).join(", ");
@@ -566,19 +643,22 @@ async function loadEndpoints() {
   form.elements.connect_timeout_ms.value = policy.connect_timeout_ms ?? 300;
   form.elements.interval_seconds.value = policy.interval_seconds ?? 900;
 
+  }
+  if ($("#device-form").dataset.dirty !== "true") {
   const owners = (state.console.principals || []).map((p) =>
     `<option value="${esc(p.token || "")}">${esc(p.display_name)} (${esc(p.role)})</option>`).join("");
   $("#device-owner").innerHTML = `<option value="">(소유자 없음)</option>` + owners;
+  }
 
   fill($("#device-list"), (data.devices || []).map((device) => `<li>
     <div class="item-top"><b>${esc(device.endpoint_id)}</b>
       ${tag(device.status, device.status === "active" ? "good" : "bad")}
       ${(device.scopes || []).map((s) => tag(s, "info")).join("")}
       <span class="spacer"></span><span class="item-sub">마지막 보고 ${when(device.last_seen_at, true)}</span></div>
-    <div class="item-sub">${esc(device.hostname)} · ${esc(device.platform)} · agent ${esc(device.agent_version)}
-      · 소유 ${esc(device.owner_name || device.owner_token || "미지정")}</div>
+    <div class="item-sub">${esc(device.hostname)}  /  ${esc(device.platform)}  /  agent ${esc(device.agent_version)}
+       /  소유 ${esc(device.owner_name || device.owner_token || "미지정")}</div>
     <div class="item-note">설정 섀도 ${esc(device.config_shadow ?? 0)}
-      · 관측 리스너 ${esc(device.listeners_seen ?? 0)} (섀도 ${esc(device.listener_shadow ?? 0)})</div>
+       /  관측 리스너 ${esc(device.listeners_seen ?? 0)} (섀도 ${esc(device.listener_shadow ?? 0)})</div>
     ${device.status === "active" ? `<div class="item-acts">
       <button class="btn" data-size="sm" data-tone="danger" data-device-revoke="${esc(device.endpoint_id)}">자격 폐기</button>
     </div>` : ""}
@@ -614,7 +694,7 @@ async function loadEndpoints() {
     </tr>`).join("") || emptyRow("보고된 설정이 없습니다.", 6)}</tbody>`;
 }
 
-/* ── 종료·폐기 ───────────────────────────────────────────────────────────── */
+/* ── 종료 / 폐기 ───────────────────────────────────────────────────────────── */
 
 function renderTermination() {
   const cases = state.console.termination?.cases || [];
@@ -647,7 +727,7 @@ async function openCase(caseId) {
     <div class="item-top"><b>${esc(c.engagement_label || c.server_id)}</b>
       ${tag(c.status)}${c.grade ? tag(c.grade, { T1: "good", T2: "warn", T3: "bad" }[c.grade] || "") : ""}</div>
     <p class="item-note">${esc(c.reason || "")}</p>
-    <table style="margin-top:10px"><thead><tr><th>기준</th><th>충족</th><th>근거</th></tr></thead><tbody>
+    <table class="space-top"><thead><tr><th>기준</th><th>충족</th><th>근거</th></tr></thead><tbody>
       ${["C1", "C2", "C3", "C4"].map((key) => {
         const item = criteria[key] || {};
         return `<tr><td class="id">${key}</td>
@@ -655,8 +735,8 @@ async function openCase(caseId) {
           <td>${esc(item.note || item.reason || "")}</td></tr>`;
       }).join("")}
     </tbody></table>
-    <h3 style="font-size:12.5px;margin:16px 0 6px">회수 대상 ${(detail.targets || []).length}건</h3>
-    <div class="scroll" style="max-height:200px"><table><tbody>
+    <h3 class="term-target-heading">회수 대상 ${(detail.targets || []).length}건</h3>
+    <div class="scroll target-list"><table><tbody>
       ${(detail.targets || []).map((t) => `<tr>
         <td class="id">${esc(t.kind)}</td><td>${esc(t.label)}</td>
         <td>${tag(t.status, t.status === "REVOKED" ? "good" : t.status === "UNVERIFIABLE" ? "bad" : "warn")}</td>
@@ -697,7 +777,7 @@ function renderPolicy() {
       ${tag(exc.policy_id, "info")}${tag(exc.effect)}${tag(exc.status, exc.status === "적용" ? "warn" : "")}
       <span class="spacer"></span><span class="item-sub">~ ${when(exc.valid_until)}</span></div>
     <div class="item-note">${esc(exc.reason || "")}</div>
-    <div class="item-note">보완통제: ${esc((exc.compensating_controls || []).join(" · "))}</div>
+    <div class="item-note">보완통제: ${esc((exc.compensating_controls || []).join("  /  "))}</div>
   </li>`).join(""), "등록된 예외가 없습니다.");
 }
 
@@ -725,8 +805,10 @@ function renderPolicyTable() {
 /* ── 신원 ────────────────────────────────────────────────────────────────── */
 
 async function renderAccounts() {
+  const viewerKey = state.viewerKey;
   let data;
   try { data = await api("/api/accounts"); } catch (error) { toast(error.message, "bad"); return; }
+  if (viewerKey !== state.viewerKey || !state.console.viewer.pages.includes("accounts")) return;
   const me = state.console.viewer.user_id;
   const tone = { active: "good", disabled: "", locked: "bad" };
   $("#account-table").innerHTML = `
@@ -739,7 +821,7 @@ async function renderAccounts() {
       <td>${tag(row.status, tone[row.status] || "")}</td>
       <td class="id">${row.status_changed_at ? `${when(row.status_changed_at)}<div class="item-sub">${esc(row.status_changed_by || "")}</div>` : "-"}</td>
       <td>${row.user_id === me ? `<span class="item-sub">본인</span>` : `
-        <select data-account="${esc(row.user_id)}">
+        <select aria-label="${esc(row.display_name)} 계정 상태" data-account="${esc(row.user_id)}">
           ${["active", "disabled", "locked"].map((s) =>
             `<option value="${s}"${s === row.status ? " selected" : ""}>${s}</option>`).join("")}
         </select>`}</td>
@@ -770,12 +852,14 @@ function renderExecution() {
 async function ask() {
   const input = $("#ask");
   const message = input.value.trim();
-  if (!message) return;
+  if (!message || state.asking) return;
+  state.asking = true;
   input.value = "";
   state.chat.push({ who: "user", text: message, at: new Date().toISOString() });
   renderExecution();
   const button = $("#ask-go");
   button.disabled = true;
+  button.textContent = "처리 중…";
   try {
     const body = {
       message,
@@ -796,7 +880,9 @@ async function ask() {
   } catch (error) {
     state.chat.push({ who: "gateway", at: new Date().toISOString(), text: error.message });
   } finally {
+    state.asking = false;
     button.disabled = false;
+    button.textContent = "보내기";
     renderExecution();
     refresh();
   }
@@ -806,10 +892,8 @@ async function ask() {
 
 function renderAudit() {
   const query = ($("#audit-q")?.value || "").toLowerCase();
-  const rows = (state.console.decisions || []).filter((row) => !query
-    || (row.tool_name || "").toLowerCase().includes(query)
-    || (row.policy_id || "").toLowerCase().includes(query)
-    || (row.user_token || "").toLowerCase().includes(query));
+  const rows = filterDecisions(state.console.decisions || [], query,
+    $("#audit-verdict").value, $("#audit-outcome").value);
   $("#audit-table").innerHTML = `
     <thead><tr><th>시각</th><th>판정</th><th>정책</th><th>주체</th><th>도구</th><th>등급</th><th>실행</th></tr></thead>
     <tbody>${rows.map((row) => `<tr>
@@ -819,76 +903,137 @@ function renderAudit() {
       <td>${esc(row.user_token)}<div class="item-sub">${esc(row.role || "")}</div></td>
       <td class="id">${esc(row.tool_name)}</td>
       <td>${esc(row.data_class || "-")}</td>
-      <td>${row.upstream_executed ? tag("실행 확인", "warn")
+      <td>${row.upstream_executed ? tag(executionLabel(row), row.decision === "Block" ? "bad" : "good")
         : row.upstream_attempted ? tag("실행 여부 미확인", "bad") : tag("미실행", "good")}</td>
-    </tr>`).join("") || emptyRow("판정 기록이 없습니다.", 7)}</tbody>`;
+    </tr>`).join("") || emptyRow("조건에 맞는 판정 기록이 없습니다. 검색어와 필터를 확인하세요.", 7)}</tbody>`;
 }
 
 /* ── 실시간 ──────────────────────────────────────────────────────────────── */
 
 async function stream() {
+  const controller = new AbortController();
+  state.streamController?.abort();
+  state.streamController = controller;
   const wire = $("#stream-wire");
-  while (true) {
+  while (!controller.signal.aborted) {
+    let reader;
     try {
-      wire.dataset.state = "ok";
-      $("b", wire).textContent = "연결";
+      wire.dataset.state = "";
+      $("b", wire).textContent = "연결 중";
       const response = await fetch(`/api/stream/decisions?after=${state.seenDecision}`, {
-        headers: { authorization: "Bearer " + token() },
+        headers: { authorization: "Bearer " + token() }, signal: controller.signal,
       });
+      if (response.status === 401) {
+        localStorage.removeItem(TOKEN_KEY);
+        location.href = "/login";
+        return;
+      }
       if (!response.ok || !response.body) throw new Error("stream unavailable");
-      const reader = response.body.getReader();
+      wire.dataset.state = "ok";
+      $("b", wire).textContent = "실시간 연결";
+      reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      while (true) {
+      while (!controller.signal.aborted) {
         const { value, done } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        const frames = buffer.split("\n\n");
+        const frames = buffer.split(/\r?\n\r?\n/);
         buffer = frames.pop() || "";
         for (const frame of frames) {
-          const line = frame.split("\n").find((l) => l.startsWith("data:"));
-          if (!line) continue;
-          let rows;
-          try { rows = JSON.parse(line.slice(5).trim()); } catch { continue; }
-          const list = Array.isArray(rows) ? rows : rows.decisions || [];
-          if (!list.length) continue;
-          state.seenDecision = Math.max(state.seenDecision, ...list.map((r) => r.id || 0));
-          renderFeed(list.slice().reverse(), true);
+          const data = frame.split(/\r?\n/).filter((line) => line.startsWith("data:")).map((line) => line.slice(5).trim()).join("\n");
+          if (!data) continue;
+          let payload;
+          try { payload = streamPayload(JSON.parse(data)); } catch { continue; }
+          if (!payload.rows.length || controller.signal.aborted || !state.console) continue;
+          state.seenDecision = Math.max(state.seenDecision, payload.cursor);
+          state.console.decisions = mergeDecisions(state.console.decisions || [], payload.rows);
+          state.streamRendering = true;
+          try {
+            if (state.console.viewer.pages.includes("overview")) renderOverview();
+            if (state.console.viewer.pages.includes("audit")) renderAudit();
+          } finally { state.streamRendering = false; }
         }
       }
-    } catch {
-      wire.dataset.state = "down";
-      $("b", wire).textContent = "재연결 중";
+    } catch (error) {
+      if (controller.signal.aborted) return;
+    } finally {
+      if (reader) { await reader.cancel().catch(() => {}); reader.releaseLock(); }
     }
+    if (controller.signal.aborted) return;
+    wire.dataset.state = "down";
+    $("b", wire).textContent = "재연결 중";
     await new Promise((resolve) => setTimeout(resolve, 3000));
   }
 }
 
 /* ── 새로고침 ────────────────────────────────────────────────────────────── */
 
-async function refresh() {
+async function refresh({ automatic = false } = {}) {
+  if (state.refreshing || (automatic && document.hidden)) return;
+  // Do not replace a focused action or a form that someone is editing.
+  if (automatic && document.activeElement?.closest(".main button, .main input, .main select, .main textarea")) return;
+  const requestCursor = state.seenDecision;
+  state.refreshing = true;
+  const button = $("#refresh");
+  button.disabled = true;
+  button.textContent = "갱신 중…";
+  $("#sync-info").textContent = "운영 데이터를 불러오는 중입니다.";
   try {
-    state.console = await api("/api/console");
+    const data = await api("/api/console");
+    const key = JSON.stringify([data.viewer.user_id, data.viewer.roles, data.viewer.pages]);
+    const changedViewer = state.viewerKey !== null && state.viewerKey !== key;
+    if (changedViewer) {
+      state.streamController?.abort();
+      state.seenDecision = 0;
+      state.frozenFeed = [];
+      state.feedHTML = null;
+      state.feedPaused = false;
+      $("#feed-pause").setAttribute("aria-pressed", "false");
+      $("#feed-pause").textContent = "목록 일시정지";
+      $$(".view").filter((view) => !data.viewer.pages.includes(view.dataset.view)).forEach((view) => {
+        $$(".items, .figures, .feed, .bars, .talk, table, #enforce, #attention, #term-detail, #scan-config, #scan-worker", view).forEach((node) => { node.replaceChildren(); });
+      });
+      state.aig = null; state.scan = null; state.endpoints = null; state.termCase = null;
+      state.chat = [];
+      state.session = null;
+    }
+    const rows = data.decisions || [];
+    data.decisions = reconcileSnapshot(changedViewer ? [] : state.console?.decisions || [], rows, requestCursor);
+    state.console = data;
+    state.viewerKey = key;
+    const pages = data.viewer.pages || [];
+    buildRail(pages);
+    renderTop();
+    if (pages.includes("overview")) renderOverview();
+    if (pages.includes("intake")) renderIntake();
+    if (pages.includes("verification")) renderVerification();
+    if (pages.includes("risks")) renderRisks();
+    if (pages.includes("termination")) renderTermination();
+    if (pages.includes("policy")) renderPolicy();
+    if (pages.includes("audit")) renderAudit();
+    if (pages.includes("execution")) renderExecution();
+    $("#verify-chain").hidden = !data.viewer.roles.includes("admin");
+    if (pages.includes("accounts")) renderAccounts();
+    if (state.page === "endpoints" && pages.includes("endpoints")) loadEndpoints();
+    show(state.page || location.hash.slice(1) || pages[0]);
+    accessibleRegions();
+    state.seenDecision = Math.max(state.seenDecision, ...data.decisions.map((row) => Number(row.id)));
+    state.lastSync = new Date().toISOString();
+    state.stale = false;
+    $("#sync-error").hidden = true;
+    $("#sync-info").textContent = `마지막 갱신 ${clock(state.lastSync)} / 30초마다 자동 갱신`;
+    if ((pages.includes("overview") || pages.includes("audit")) && (!state.streamController || changedViewer)) stream();
   } catch (error) {
-    toast(error.message, "bad");
-    return;
+    state.stale = true;
+    $("#sync-error").hidden = false;
+    $("#sync-error").textContent = `${state.lastSync ? "갱신하지 못했습니다. 이전 데이터를 표시합니다." : "운영 데이터를 불러오지 못했습니다."} ${error.message} 새로고침으로 다시 시도하세요.`;
+    $("#sync-info").textContent = state.lastSync ? `마지막 성공 ${clock(state.lastSync)} / 최신 정보가 아닐 수 있습니다.` : "데이터 확인 필요";
+  } finally {
+    state.refreshing = false;
+    button.disabled = false;
+    button.textContent = "새로고침";
   }
-  const pages = state.console.viewer.pages || [];
-  buildRail(pages);
-  renderTop();
-  if (pages.includes("overview")) renderOverview();
-  if (pages.includes("intake")) renderIntake();
-  if (pages.includes("verification")) renderVerification();
-  if (pages.includes("risks")) renderRisks();
-  if (pages.includes("termination")) renderTermination();
-  if (pages.includes("policy")) renderPolicy();
-  if (pages.includes("audit")) renderAudit();
-  if (pages.includes("execution")) renderExecution();
-  if (pages.includes("accounts")) renderAccounts();
-  if (state.page === "endpoints") loadEndpoints();
-  show(state.page || location.hash.slice(1) || pages[0]);
-  const ids = (state.console.decisions || []).map((d) => d.id || 0);
-  if (ids.length) state.seenDecision = Math.max(state.seenDecision, ...ids);
 }
 
 /* ── 동작 ────────────────────────────────────────────────────────────────── */
@@ -923,13 +1068,64 @@ function wire() {
   });
 
   $("#refresh").addEventListener("click", () => refresh());
-  addEventListener("hashchange", () => show(location.hash.slice(1)));
+  addEventListener("hashchange", () => {
+    if (location.hash === "#main") { $("#main").focus(); return; }
+    show(location.hash.slice(1), true);
+  });
+  matchMedia("(max-width: 900px)").addEventListener("change", () => setNav(false));
+  $("#nav-toggle").addEventListener("click", () => setNav(!document.body.classList.contains("nav-open")));
+  ["#nav-close", "#nav-scrim"].forEach((id) => $(id).addEventListener("click", () => setNav(false, true)));
+  document.addEventListener("keydown", (event) => {
+    if (!document.body.classList.contains("nav-open")) return;
+    if (event.key === "Escape") { setNav(false, true); return; }
+    if (event.key === "Tab") {
+      const items = $$("#rail button, #rail a");
+      const first = items[0], last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
+  });
+  $(".skip-link").addEventListener("click", (event) => {
+    event.preventDefault(); $("#main").focus();
+  });
+  $("#feed-q").addEventListener("input", renderFeed);
+  $("#feed-verdict").addEventListener("change", renderFeed);
+  $("#feed-reset").addEventListener("click", () => {
+    $("#feed-q").value = ""; $("#feed-verdict").value = "all"; renderFeed(); $("#feed-q").focus();
+  });
+  $("#feed-pause").addEventListener("click", () => {
+    state.feedPaused = !state.feedPaused;
+    state.frozenFeed = state.feedPaused ? [...(state.console?.decisions || [])] : [];
+    $("#feed-pause").setAttribute("aria-pressed", String(state.feedPaused));
+    $("#feed-pause").textContent = state.feedPaused ? "목록 재개" : "목록 일시정지";
+    renderFeed();
+  });
+  $("#feed-audit").addEventListener("click", () => {
+    $("#audit-q").value = $("#feed-q").value;
+    $("#audit-verdict").value = $("#feed-verdict").value;
+    $("#audit-outcome").value = "all";
+    renderAudit(); show("audit", true);
+  });
+  ["#audit-verdict", "#audit-outcome"].forEach((id) => $(id).addEventListener("change", renderAudit));
+  ["#scan-policy-form", "#device-form"].forEach((id) => {
+    ["input", "change"].forEach((type) => $(id).addEventListener(type, () => { $(id).dataset.dirty = "true"; }));
+  });
 
   document.addEventListener("click", async (event) => {
     const link = event.target.closest("#rail a");
-    if (link) { event.preventDefault(); show(link.dataset.page); return; }
+    if (link) { event.preventDefault(); show(link.dataset.page, true); return; }
 
-    const target = event.target;
+    const target = event.target.closest("button") || event.target;
+    const jump = target.closest("[data-jump]");
+    if (jump && state.console.viewer.pages.includes(jump.dataset.jump)) {
+      if (jump.dataset.jump === "audit") {
+        $("#audit-q").value = "";
+        $("#audit-verdict").value = jump.dataset.verdict || "all";
+        $("#audit-outcome").value = jump.dataset.outcome || "all";
+        renderAudit();
+      }
+      show(jump.dataset.jump, true); return;
+    }
     const intakeQueue = target.closest("[data-intake-queue]");
     if (intakeQueue) await act(() => api(`/api/mcp-requests/${intakeQueue.dataset.intakeQueue}/queue-validation`,
       { method: "POST" }), (r) => r.message);
@@ -947,6 +1143,7 @@ function wire() {
       await act(() => api("/api/registry/refresh", { method: "POST" }), "Catalog를 다시 대조했습니다.");
     } else if (target.id === "enforce-toggle") {
       const next = state.console.monitor?.enforcement === "enforce" ? "monitor" : "enforce";
+      if (!confirm(`${next === "monitor" ? "관찰 모드로 바꾸면 일부 정책은 실행을 차단하지 않습니다." : "집행 모드로 바꾸면 정책 판정에 따라 실행이 차단됩니다."} 변경하시겠습니까?`)) return;
       await act(() => api("/api/enforcement", { method: "PUT", body: JSON.stringify({ mode: next }) }),
         `집행 모드를 ${next === "enforce" ? "집행" : "관찰"}로 바꿨습니다.`);
     } else if (target.id === "import-evidence") {
@@ -956,8 +1153,8 @@ function wire() {
       const node = $("#chain-out");
       node.dataset.tone = result.intact ? "" : "bad";
       node.innerHTML = `<div>${result.error ? esc(result.error)
-        : result.intact ? `연쇄 정상 · ${esc(result.checked)}건 확인`
-        : `연쇄 불일치 · ${esc(result.reason || "")} (id ${esc(result.broken_at ?? "?")})`}</div>`;
+        : result.intact ? `연쇄 정상  /  ${esc(result.checked)}건 확인`
+        : `연쇄 불일치  /  ${esc(result.reason || "")} (id ${esc(result.broken_at ?? "?")})`}</div>`;
     } else if (target.id === "scan-test") {
       try {
         state.scanProbe = await api("/api/mcp-scan/connection-test", { method: "POST" });
@@ -978,9 +1175,11 @@ function wire() {
       } catch (error) { toast(error.message, "bad"); }
     } else if (target.id === "device-new") {
       $("#device-form-wrap").hidden = false;
+      $("#device-form input").focus();
     } else if (target.id === "device-cancel") {
       $("#device-form-wrap").hidden = true;
       $("#device-secret").hidden = true;
+      $("#device-new").focus();
     }
 
     const reapprove = target.closest("[data-reapprove]");
@@ -1100,6 +1299,7 @@ function wire() {
   intakeForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.target;
+    if (form.dataset.busy === "true" || !form.reportValidity()) return;
     const body = {
       display_name: form.elements.display_name.value.trim(),
       repository_url: form.elements.repository_url.value.trim(),
@@ -1109,10 +1309,17 @@ function wire() {
     $$(".err", form).forEach((node) => { node.textContent = ""; });
     if (body.purpose.length < 10) {
       $('[data-err="purpose"]', form).textContent = "도입 목적을 10자 이상 적어주세요.";
+      form.elements.purpose.setAttribute("aria-invalid", "true");
+      form.elements.purpose.focus();
       return;
     }
+    form.elements.purpose.removeAttribute("aria-invalid");
+    form.dataset.busy = "true";
+    $("button[type=submit]", form).disabled = true;
     const created = await act(() => api("/api/mcp-requests",
       { method: "POST", body: JSON.stringify(body) }), (r) => r.message);
+    form.dataset.busy = "false";
+    $("button[type=submit]", form).disabled = false;
     if (created) { form.reset(); $("#purpose-n").textContent = "0"; }
   });
 
@@ -1131,6 +1338,7 @@ function wire() {
     };
     try {
       await api("/api/endpoint/scan-policy", { method: "PUT", body: JSON.stringify(body) });
+      form.dataset.dirty = "false";
       toast("탐색 범위를 저장했습니다. 에이전트가 다음 회전에서 받아 갑니다.");
       await refresh();
       loadEndpoints();
@@ -1170,19 +1378,18 @@ function wire() {
   });
 
   $("#ask-go").addEventListener("click", ask);
-  $("#ask").addEventListener("keydown", (event) => { if (event.key === "Enter") ask(); });
+  $("#ask").addEventListener("keydown", (event) => { if (event.key === "Enter" && !event.isComposing) { event.preventDefault(); ask(); } });
 }
 
 /* ── 기동 ────────────────────────────────────────────────────────────────── */
 
 (async function start() {
   const saved = localStorage.getItem("mcp-console-theme");
-  if (saved) document.documentElement.dataset.theme = saved;
+  if (["dark", "light"].includes(saved)) document.documentElement.dataset.theme = saved;
   if (!token()) { location.href = "/login"; return; }
   wire();
   await refresh();
-  stream();
-  setInterval(refresh, 30000);
+  setInterval(() => refresh({ automatic: true }), 30000);
   setInterval(() => {
     if (state.page === "mcpscan" && state.scan?.jobs?.some((job) =>
       ["QUEUED", "RUNNING"].includes(job.status))) loadScan();
