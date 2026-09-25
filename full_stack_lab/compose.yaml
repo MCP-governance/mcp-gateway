@@ -147,11 +147,6 @@ services:
       # Console이 "설정됨"이 아니라 "실행할 워커 없음"이라고 말해야 한다.
       INTAKE_WORKER_STALE_SECONDS: ${INTAKE_WORKER_STALE_SECONDS:-60}
       MCP_SCAN_REQUIRED_FOR_APPROVAL: ${MCP_SCAN_REQUIRED_FOR_APPROVAL:-0}
-      # 종료 준비 게이트. 켜면 원격 MCP는 제공자의 하위 자격 고지 조항 없이
-      # 승인되지 않는다. 고지 없이 들인 이용 관계는 끝낼 때 반드시 T3가 되고,
-      # 그 사실을 종료 단계에서 알면 이미 늦다. 기본값이 꺼짐인 이유는 기존 등록
-      # 서버들이 도입 심사 이전에 들어온 것이라 켜 둔 채로는 승인이 막히기 때문이다.
-      INTAKE_EXIT_TERMS_REQUIRED: ${INTAKE_EXIT_TERMS_REQUIRED:-0}
       OTEL_SERVICE_NAME: agent-service
     ports:
       - "127.0.0.1:8000:8000"
@@ -393,22 +388,49 @@ services:
     read_only: true
 
 networks:
-  edge: {}
+  edge:
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.1.0/24
   agent:
     internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.2.0/24
   policy:
     internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.3.0/24
   privacy:
     internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.4.0/24
   tools:
     internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.5.0/24
   data:
     internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.6.0/24
   telemetry:
     internal: true
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.7.0/24
   model:
     internal: true
-  scanner: {}
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.8.0/24
+  scanner:
+    ipam:
+      config:
+        - subnet: ${MCP_NET_PREFIX:-10.245}.9.0/24
 
 volumes:
   db_data: {}

@@ -69,7 +69,7 @@ BLOCK_STREAK_MINUTES = int(os.getenv("BLOCK_STREAK_MINUTES", "10"))
 # 모든 차단을 세면 그 신호가 환경 상태에 묻힌다 - 서버 하나가 드리프트 상태면
 # MCP-CATALOG-001이 모든 사용자에게 걸리고, 그러면 아무 잘못 없는 사람들의 다음
 # 호출이 전부 경보가 된다. 주체에게 귀속되는 인가 거부만 센다.
-DENIAL_POLICIES = ("P-333-DENY-001", "MCP-REPOSITORY-001", "MCP-EGRESS-001",
+DENIAL_POLICIES = ("P-AUTHZ-DENY-001", "MCP-REPOSITORY-001", "MCP-EGRESS-001",
                    "P-CLASSIFICATION-001", "P-APPROVAL-EXPIRY-001")
 
 # OPA is a trust boundary too. Only policy fields may enter the execution event;

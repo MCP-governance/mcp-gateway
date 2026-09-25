@@ -200,34 +200,6 @@ async def integration() -> dict:
     return {"readiness": readiness, "runs": runs}
 
 
-@app.get("/api/policy/matrix")
-async def policy_matrix() -> dict:
-    roles = ("partner", "employee", "admin")
-    classes = ("public", "nonimportant", "important")
-    actions = ("r", "w", "x")
-    contract = {
-        "registered": True, "enabled": True, "schema_hash_match": True,
-        "description_hash_match": True, "version_match": True, "known_tools_only": True,
-        "metadata_safe": True, "supplier_approved": True, "critical_vulnerabilities": 0,
-    }
-
-    async def evaluate(role: str, data_class: str, action: str) -> dict:
-        try:
-            async with httpx.AsyncClient(timeout=3) as client:
-                response = await client.post(OPA_URL, json={"input": {
-                    "principal": {"role": role}, "resource": {"data_class": data_class},
-                    "tool": {"action": action}, "approval": {"granted": False}, "contract": contract,
-                }})
-                response.raise_for_status()
-                result = response.json()["result"]
-        except Exception:
-            result = core.local_verdict("P-CONTROL-FAIL-CLOSED", "Block", "정책 엔진에 질의하지 못했습니다.")
-        return {"role": role, "data_class": data_class, "action": action, **result}
-
-    cells = await asyncio.gather(*(evaluate(role, data_class, action) for role in roles for data_class in classes for action in actions))
-    return {"roles": roles, "data_classes": classes, "actions": actions, "cells": cells}
-
-
 @app.get("/api/policy/ledger")
 async def policy_ledger_view() -> dict:
     """§12.5 PaC 정책 관리대장.
@@ -236,15 +208,17 @@ async def policy_ledger_view() -> dict:
     구현하는 정책인지, 지금 어떤 상태와 버전으로 어느 환경에 적용 중인지, 어떤 예외가
     붙어 있는지를 집행 중인 정본에서 그대로 읽어 보여준다.
     """
-    ledger, exceptions, policy_set, active = await asyncio.gather(
+    ledger, exceptions, policy_set, authorization, active = await asyncio.gather(
         core.policy_ledger(refresh=True),
         core.opa_document("exceptions"),
         core.opa_document("policy_set"),
+        core.opa_document("authorization"),
         db.fetch_one("SELECT * FROM policy_versions WHERE status='ACTIVE' ORDER BY activated_at DESC LIMIT 1"),
     )
     entries = [{"policy_id": pid, **entry} for pid, entry in sorted(ledger.items(), key=lambda item: item[1].get("priority", 9999))]
     return {
         "policy_set": policy_set or {},
+        "authorization": authorization or {},
         "deployed_rego": active,
         "environment": core.GATEWAY_ENVIRONMENT,
         "policies": entries,

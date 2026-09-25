@@ -10,7 +10,7 @@ MCP 도입 요청, 공급망 검증, 정책 집행, 실행·감사 증적을 하
 
 이 실습의 핵심 질문은 “정책 응답이 Allow였는가?”에서 끝나지 않습니다.
 
-1. 요청자의 역할과 실제 문서 등급으로 333 `rwx` 권한을 계산했는가?
+1. 요청자의 역할·문서 등급·도구 행위가 배포된 권한 규칙에 있는가?
 2. 등록한 MCP 서버·도구·설명·입력 스키마·버전과 현재 catalog가 정확히 같은가?
 3. 서버 출처에 연결된 치명적 공급망 이슈가 없는가?
 4. `Allow / Alert / Approval / Restrict / Block` 중 어느 통제가 적용됐는가?
@@ -52,7 +52,7 @@ cd ~/mcp-gateway/full_stack_lab
 
 첫 실행 때 `console.sh`가 커밋하지 않는 `.env`에 합성 JWT용 Ed25519 키쌍을 생성합니다. 별도 복사·설정 단계는 없습니다. 키는 gateway 이미지 안에서 만들기 때문에 host에는 추가 의존성이 필요 없습니다.
 
-`all predefined address pools have been fully subnetted` 오류가 나면 사용을 마친 복제본의 `full_stack_lab`에서 `./console.sh down`으로 **그 복제본의** 컨테이너와 네트워크만 내린 뒤 다시 시작하세요. DB 볼륨은 유지되며, `down`은 새 키나 네트워크를 만들지 않습니다. 여러 복제본을 동시에 실행해야 한다면 [Docker 주소 풀 설정](https://docs.docker.com/engine/network/#automatic-subnet-allocation)을 호스트에 맞게 조정하세요.
+Docker 기본 주소 풀이 소진돼도 `console.sh`는 사용 가능한 `10.200`~`10.249` 접두사를 복제본별 `.env`에 저장하고 망마다 `/24`를 배정합니다. 기존 복제본의 망 설정을 바꿀 때는 `./console.sh down` 뒤 다시 `up`하세요. DB 볼륨은 유지됩니다. 후보 대역이 모두 호스트 라우트나 다른 Docker 망과 겹치면 오류를 내며 멈춥니다. 그때는 사용하지 않는 복제본만 내리거나 [Docker 주소 풀 설정](https://docs.docker.com/engine/network/#automatic-subnet-allocation)을 환경에 맞게 조정하세요.
 
 | 값 | 받는 서비스 | 이유 |
 | --- | --- | --- |
@@ -142,7 +142,7 @@ API 키: 해당 모델을 호출할 수 있는 실제 키
 
 Console <http://localhost:8000>에서 다음 개발 계정 중 하나를 고릅니다. 공통 비밀번호는 `test-password`이며 `.env`의 `MOCK_SSO_PASSWORD`로 바꿀 수 있습니다.
 
-| 화면의 역할 | 이메일 | 333 역할 | 대표 관찰 |
+| 화면의 역할 | 이메일 | 실습 권한 역할 | 대표 관찰 |
 | --- | --- | --- | --- |
 | 관리자 | `kkg@bob.local` 김경곤 (거버넌스팀) · `mks@bob.local` 문광석 (보안운영팀) | `admin` | 공개 외부 전송은 Restrict, 중요 외부 전송은 Approval |
 | 직원 | `pse@bob.local` 박소은 · `miso@bob.local` 김미소 (보안기술팀) · `ysg@bob.local` 양승권 (플랫폼개발팀) · `jwj@bob.local` 정원재 (데이터분석팀) | `employee` | 중요 읽기는 Alert, 비중요 쓰기는 Allow |
@@ -223,7 +223,7 @@ Server-Sent Events로 2초마다 새 판정만 밀어 보냅니다. **역할 범
 
 Gateway는 두 단계로 동작합니다.
 
-| 모드 | 권한 판정(333, 승인, 제한) | 무결성 판정(Registry, catalog, 공급망, 정책엔진 장애) |
+| 모드 | 권한 판정(배포 규칙, 승인, 제한) | 무결성 판정(Registry, catalog, 공급망, 정책엔진 장애) |
 | --- | --- | --- |
 | `enforce` (기본) | 그대로 집행 | 그대로 집행 |
 | `monitor` | **기록만 하고 실행** | **그대로 집행** |
@@ -244,7 +244,7 @@ curl -sS 'http://localhost:8080/api/monitor/summary?hours=168' | python3 -m json
 
 ```json
 {"enforcement": "monitor", "would_have_stopped": 37, "affected_principals": 3,
- "breakdown": [{"would_decision": "Block", "would_policy_id": "P-333-DENY-001",
+ "breakdown": [{"would_decision": "Block", "would_policy_id": "P-AUTHZ-DENY-001",
                 "role": "partner", "tool_name": "read_document", "calls": 21}]}
 ```
 
@@ -320,11 +320,7 @@ curl -sS -X PUT http://localhost:8000/api/accounts/user-partner-001/status   -H 
 회수를 전부 마쳐도 T1에 닿지 못하는 서버가 있고, 그 사실은 종료를 시작한 뒤에 알면
 늦습니다. 드릴은 케이스를 만들지도 `lifecycle`을 건드리지도 않습니다.
 
-그리고 T3를 줄이는 자리는 종료 단계가 아니라 **도입 단계**입니다. `MCP 도입`
-요청 양식의 종료 조건 세 개(제공자 자격 고지·폐기 기록 제출·감사 기록 접근)가
-그 서버의 최선 등급을 미리 정합니다. 논문 5.2가 "소급 확보가 어렵다"고 한 증거를
-들일 때 약속받는 것이 유일한 완화입니다. `INTAKE_EXIT_TERMS_REQUIRED=1`로 승인
-게이트를 켤 수 있습니다.
+그리고 T3를 줄이는 자리는 종료 단계가 아니라 **도입 단계**입니다. 신청자는 저장소와 업무 목적만 제출합니다. 플랫폼 관리자는 제공자 계약·증거 문서를 확인해 자격 고지, 폐기 기록, 감사 접근을 별도로 기록합니다. 원격 MCP는 세 조건의 관리자 검증 기록이 있어야 승인할 수 있습니다. 논문 5.2가 "소급 확보가 어렵다"고 한 증거를 도입 때 확보하는 절차입니다.
 
 케이스가 열린 채 `TERMINATION_SLA_DAYS`(기본 14일)를 넘기면 배너와 배지에
 올라옵니다. 차단만 하고 회수가 멈춘 상태는 T2도 T3도 아니라 **판정 자체가 없어**
@@ -426,38 +422,34 @@ MCP 여부는 **`initialize` 한 번**으로 확인합니다. 그 밖의 요청�
 어느 통제가 엔드포인트단에 깔리고 어느 것이 네트워크단에 깔리는지는
 [CONTROL_PLANES.md](CONTROL_PLANES.md)가 정리합니다.
 
-## 4. 확정한 333 Rego 정책
+## 4. 배포형 Rego 권한 정책
 
-`x`는 **외부 전송 또는 고위험 실행**입니다. 표에 없는 권한은 기본 차단입니다.
+`x`는 **외부 전송 또는 고위험 실행**입니다. Rego는 `opa/data.json`의 `authorization.grants`를 확인하며, 허용 규칙이 없으면 차단합니다. 포함된 `LAB-AUTHZ-001`은 합성 실습의 기대 결과를 재현하는 예시이므로 기업 권한 정책으로 사용하면 안 됩니다. 조직별 규칙은 소유자 승인·버전·배포 검증을 거친 번들로 교체해야 합니다.
 
-| 역할 | public | nonimportant | important |
-| --- | --- | --- | --- |
-| partner | `r` | `-` | `-` |
-| employee | `r` | `rw` | `r` |
-| admin | `rwx` | `rwx` | `rwx` |
+예시 번들은 `public-read`, `admin-public-maintain`, `employee-work`, `employee-important-read`, `admin-managed` 규칙으로 구성됩니다. 규칙에는 역할, 데이터 등급, 허용 행위를 명시합니다. 화면은 현재 OPA가 읽은 번들을 표시하며 코드에 고정된 권한 격자를 렌더링하지 않습니다.
 
 권한이 있다는 사실만으로 항상 단순 Allow가 되지는 않습니다.
 
 | 결과 | 의미 | 대표 정책 ID |
 | --- | --- | --- |
-| `Allow` | 계약과 권한을 충족하여 그대로 실행 | `P-333-ALLOW-001` |
+| `Allow` | 계약과 권한을 충족하여 그대로 실행 | `P-AUTHZ-ALLOW-001` |
 | `Alert` | 실행하되 중요 열람 증적을 강조 | `P-IMPORTANT-ALERT-001` |
 | `Approval` | 중요정보 `x`를 보류하고 10분 내 승인 또는 거부 요구 | `P-X-APPROVAL-001` |
 | `Restrict` | 비중요 `x`의 목적지와 길이를 축소한 뒤 실행 | `P-X-RESTRICT-001` |
-| `Block` | 권한·Registry·catalog·공급망·OPA 가용성 문제로 미실행 | `P-333-DENY-001` 등 |
+| `Block` | 권한·Registry·catalog·공급망·OPA 가용성 문제로 미실행 | `P-AUTHZ-DENY-001` 등 |
 
 `P-DEPT-001`(부서 축)은 기본 비활성입니다. 아래 "조직 축"을 참고하세요.
 
 ### 조직 축 (기본 비활성)
 
-역할 3 × 등급 3은 이 실습의 정책 어휘 전부이지만, 실제 조직은 부서·프로젝트·고객사로도 판단합니다. 그래서 **정책 입력에는 부서 축이 이미 들어갑니다.**
+이 실습의 예시 역할·등급만으로는 부족하며, 실제 조직은 부서·프로젝트·고객사로도 판단합니다. **정책 입력에는 부서 축이 이미 들어갑니다.**
 
 | 입력 | 출처 |
 | --- | --- |
 | `principal.department` | `principals.department` |
 | `resource.owner_department` | `documents.owner_department` |
 
-이 입력을 쓰는 규칙 `P-DEPT-001`(소관 부서가 아닌 중요정보 접근 → 승인)은 [`opa/data.json`](opa/data.json)의 `department_scope.enabled`가 `false`라 **꺼진 채로 배포됩니다.** 27칸 매트릭스와 기존 판정은 그대로입니다. 켜는 것은 조직의 결정이지만, 입력을 미리 넓혀두지 않으면 그때 규칙 전체를 다시 써야 합니다.
+이 입력을 쓰는 규칙 `P-DEPT-001`(소관 부서가 아닌 중요정보 접근 → 승인)은 [`opa/data.json`](opa/data.json)의 `department_scope.enabled`가 `false`라 **꺼진 채로 배포됩니다.** 켜는 것은 조직의 승인된 정책 변경입니다.
 
 ```json
 {"department_scope": {"enabled": true}}
@@ -480,7 +472,7 @@ MCP 여부는 **`initialize` 한 번**으로 확인합니다. 그 밖의 요청�
 | 최근 호출 수 (`RATE_LIMIT_CALLS` / `RATE_LIMIT_WINDOW_SECONDS`) | 60초에 60건 | `P-RATE-001` 차단 |
 | 최근 중요정보 접근 수 (`IMPORTANT_BURST_LIMIT` / `IMPORTANT_BURST_MINUTES`) | 5분에 10건 | `P-VOLUME-001` 승인 필요로 승격 |
 
-"중요문서 20건을 1분에 읽기"는 333 권한표만 보면 전부 통과하지만 실제 내부자 유출은 정확히 그 모양입니다. 차단된 호출도 수에 포함됩니다. 거부된 호출이 몰리는 것도 몰리는 것입니다.
+"중요문서 20건을 1분에 읽기"는 단건 권한 검사만 보면 전부 통과하지만 실제 내부자 유출은 정확히 그 모양입니다. 차단된 호출도 수에 포함됩니다. 거부된 호출이 몰리는 것도 몰리는 것입니다.
 
 호출 수는 프로세스 메모리가 아니라 감사 테이블에서 세므로 Gateway 복제본이 늘어도 상한이 유지됩니다. `P-RATE-001`은 관찰 모드에서도 집행합니다. 호출량 상한은 "누가 무엇을 읽어도 되는가"에 대한 의견이 아니라 Gateway와 upstream을 보호하는 장치이고, 관찰하는 동안 상한이 없어지면 안 됩니다.
 
@@ -567,7 +559,7 @@ curl -sS http://localhost:8080/api/calls \
   | python3 -m json.tool
 ```
 
-결과는 `Block`, `P-333-DENY-001`, `upstream_executed: false`, 동일한 `effect_before/effect_after`가 되어야 합니다.
+결과는 `Block`, `P-AUTHZ-DENY-001`, `upstream_executed: false`, 동일한 `effect_before/effect_after`가 되어야 합니다.
 
 토큰 없이, 또는 위조한 토큰으로 같은 호출을 보내면 정책 판정까지 가지 않고 `401`입니다.
 
@@ -617,7 +609,7 @@ Agent Console·인증·도입 요청 경계만 빠르게 확인할 때는 다음
 
 정상 기준은 다음과 같습니다.
 
-- Rego 단위 테스트 `80/80 PASS` (프레임워크 §11.11이 요구하는 시험 조건: 정상 허용, 비인가 차단, 경계값·누락 입력, 권한·Scope 초과, 미등록 구성요소, 민감정보 접근·외부 전송, 고위험 추가 승인, 예외 적용과 유효기간 만료, 다중 정책 동시 적용, 정책 충돌과 우선순위, 연쇄호출 누적, 27칸 판정 기준선 대조)
+- Rego 단위 테스트는 권한 번들 누락 시 차단과 번들 변경 시 판정 변경을 포함합니다. 전체 건수는 `./console.sh test` 결과를 따릅니다.
 - core acceptance와 Agent/API 경계 acceptance 실패 0, 실행 경계 회귀(`runtime_acceptance`) 실패 0. 현재 검증 수치와 범위는 [실행 경계 검증 기록](../docs/runtime-hardening.md) 참고
 - 익명·위조 토큰의 Gateway API 호출이 `401`, 협력업체 계정의 승인 시도가 `403`
 - `/tool-call`은 사용자 JWT와 Agent Assertion을 함께 요구하며, 사용자 JWT 재사용·다른 actor·변조된 envelope는 `401`
@@ -1031,7 +1023,7 @@ Agent 로그인·업무 공간·chat 흐름은 팀원 저장소 [`MCP-governance
 ## 13. 의도적으로 남긴 경계
 
 - 역할은 `partner`(협력업체 직원)·`employee`·`admin` 셋이고 볼 수 있는 화면과 응답 데이터가 다릅니다. 역할·계정 상태·비밀번호 해시는 v1.5부터 Python 상수가 아니라 PostgreSQL `principals` 관리대장에 있고 매 요청마다 확인됩니다(계정을 끄는 일이 배포가 되면 아무도 제때 끄지 않습니다). 다만 실제 사용자 SSO/OIDC와 RBAC 관리 화면, 실제 GitHub 토큰 위임은 여전히 미구현입니다. 합성 JWT와 Agent Assertion은 Ed25519로 서명하고 Agent Service만 개인키를 갖지만, assertion은 workload attestation이 아니며 키 회전·폐기 절차·JWKS 배포·SPIFFE SVID는 아직 없습니다.
-- Gateway의 읽기 API는 인증 없이 열려 있습니다: `/api/health`, `/api/state`, `/api/effects`, `/api/policy/matrix`, `/api/policy/ledger`, `/api/integration`, `/api/monitor/summary`, `/api/enforcement`, `/api/supply-chain/coverage`, `/api/risk-catalog`. 상태를 바꾸는 API는 모두 서명된 토큰을 요구하고 승인·거부·집행 전환·공급망 가져오기·감사 검증은 관리자까지 확인하지만, 증적 조회는 `127.0.0.1` 바인딩에만 의존합니다. 이 목록은 `tests/open_endpoints.py`가 코드와 대조합니다. **결정:** 운영에서는 새 로컬 토큰을 덧붙이지 않고, 조직 OIDC를 연결한 reverse proxy에서 이 읽기 경로도 보호합니다.
+- Gateway의 읽기 API는 인증 없이 열려 있습니다: `/api/health`, `/api/state`, `/api/effects`, `/api/policy/ledger`, `/api/integration`, `/api/monitor/summary`, `/api/enforcement`, `/api/supply-chain/coverage`, `/api/risk-catalog`. 상태를 바꾸는 API는 모두 서명된 토큰을 요구하고 승인·거부·집행 전환·공급망 가져오기·감사 검증은 관리자까지 확인하지만, 증적 조회는 `127.0.0.1` 바인딩에만 의존합니다. 이 목록은 `tests/open_endpoints.py`가 코드와 대조합니다. **결정:** 운영에서는 새 로컬 토큰을 덧붙이지 않고, 조직 OIDC를 연결한 reverse proxy에서 이 읽기 경로도 보호합니다.
 - 호출량 상한(`P-RATE-001`)과 중요정보 누적 승격(`P-VOLUME-001`)은 감사 테이블 기준이라 Gateway 복제본이 늘어도 유지되지만, 비용·토큰 쿼터는 없습니다. Agent Service의 동시 실행 제한과 로그인 시도 상한은 프로세스 단위라 복제본이 늘면 함께 늘어납니다. **결정:** 현재 배포 단위는 Gateway 1개입니다. 다중 복제본은 Postgres 감사 체인의 전역 잠금이 정확성은 지키지만 처리량을 직렬화하므로, ingress 공용 rate limit·OIDC·SIEM을 함께 설계한 뒤 별도 부하 시험으로 전환합니다.
 - 실제 상용 LLM API는 호출하지 않았습니다. 기본 자연어 변환은 규칙 기반 키워드 변환이고, OpenAI 호환 HTTP 경계는 로컬 stub으로만 검증했습니다.
 - GitHub MCP는 인증·catalog 승인 전이라 실제 upstream 호출을 하지 않습니다.

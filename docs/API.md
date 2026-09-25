@@ -148,7 +148,7 @@ timeout이나 연결 단절 뒤에는 upstream 실행 여부가 불확실할 수
   "restrictions": {},
   "obligations": ["evidence.enhanced"],
   "exception": null,
-  "conflicts": [{"policy_id": "P-333-ALLOW-001", "decision": "Allow", "priority": 140}],
+  "conflicts": [{"policy_id": "P-AUTHZ-ALLOW-001", "decision": "Allow", "priority": 140}],
   "risk_ids": ["RSK-005"], "control_ids": ["CTL-005"],
   "environment": "prod",
   "enforcement": "enforce",
@@ -190,7 +190,7 @@ timeout이나 연결 단절 뒤에는 upstream 실행 여부가 불확실할 수
 | GET | `/api/health` | — | 구성요소별 가용성 |
 | GET | `/api/state` | — | Registry·판정·승인·공급망·신원 요약 |
 | GET | `/api/integration` | — | Agent Service readiness와 최근 실행 |
-| GET | `/api/policy/matrix` | — | 27칸 권한 매트릭스 실측 |
+| GET | `/api/policy/ledger` | — | 현재 배포된 권한 번들과 정책 관리대장 |
 | GET | `/api/policy/ledger` | — | 집행 중인 정책 관리대장 |
 | GET | `/api/monitor/summary?hours=168` | — | 관찰 모드에서 막혔을 호출 집계 |
 | GET | `/api/enforcement` | — | 현재 집행 모드 |
@@ -464,7 +464,8 @@ Gateway가 모델에 노출하는 도구 스키마에는 신원 인자가 하나
 | --- | --- | --- | --- |
 | POST | `/api/mcp-requests` | 🔑 | 저장소 URL + **종료 조건 3개** 제출 → `HOLD` |
 | POST | `/api/mcp-requests/{id}/queue-validation` | 🔒 | 격리 검증 실행 |
-| POST | `/api/mcp-requests/{id}/approve` | 🔒 | `VALIDATED` → `APPROVED` |
+| PUT | `/api/mcp-requests/{id}/exit-terms` | 🔒 | 관리자만 제공자 계약 증거와 종료 조건 검증 기록 |
+| POST | `/api/mcp-requests/{id}/approve` | 🔒 | `VALIDATED` → `APPROVED`; 원격 MCP는 관리자 종료 조건 검증 필수 |
 | POST | `/api/mcp-requests/{id}/reject` | 🔒 | 사유 필수 |
 
 ```
@@ -476,11 +477,7 @@ Gateway가 모델에 노출하는 도구 스키마에는 신원 인자가 하나
 `APPROVED`는 "Registry에 올려도 된다"까지입니다. 실제 활성화는 endpoint와 catalog
 해시를 고정하는 **별도 단계**입니다.
 
-요청 본문의 종료 조건 세 개(`provider_credential_disclosure`,
-`revocation_evidence`, `audit_access_retained`)는 그 서버를 나중에 **끊을 수
-있는가**를 정합니다. 기록하는 것은 계약 조항의 존재이지 제공자가 실제로 고지했다는
-사실이 아닙니다 — 조항은 "요청할 권리가 있다"까지입니다.
-`INTAKE_EXIT_TERMS_REQUIRED=1`이면 원격 MCP는 자격 고지 조항 없이 승인되지 않습니다.
+신청 본문에는 종료 조건을 받지 않습니다. 관리자 전용 `exit-terms` API가 세 조항의 검증 결과, `evidence_url`(HTTPS 문서 주소), `note`, 검증 주체와 시각을 기록합니다. 원격 MCP는 세 조항 모두 확인되기 전 승인되지 않습니다. 조항 검증은 제공자의 실제 회수 완료 증거와 별개입니다.
 
 ### 4.5 AI 코드 감사
 
@@ -544,14 +541,14 @@ stdio ingress는 기본 principal로 넘어가지 않고 거부합니다.**
 | 55 | `P-APPROVAL-EXPIRY-001` | Block | 도입·사용 승인 기한 만료 |
 | 60 | `P-CLASSIFICATION-001` | Block | 데이터 등급의 출처 없음 |
 | 70 | `P-RATE-001` | Block | 호출량 상한 초과 |
-| 80 | `P-333-DENY-001` | Block | 27칸 권한표에 없는 조합 |
+| 80 | `P-AUTHZ-DENY-001` | Block | 배포된 권한 규칙에 없는 조합 |
 | 90 | `P-X-APPROVAL-001` | Approval | 중요정보 외부 전송 |
 | 100 | `P-VOLUME-001` | Approval | 중요정보 누적 접근 |
 | 110 | `P-DEPT-001` | Approval | 소관 부서 아닌 중요정보 (기본 비활성) |
 | 120 | `P-X-RESTRICT-001` | Restrict | 비중요 외부 전송의 목적지·길이 축소 |
 | 130 | `P-IMPORTANT-ALERT-001` | Alert | 직원의 중요정보 열람 |
 | **135** | **`MCP-SHADOW-001`** | **Alert** | **요청자 단말에 미등록 MCP 설정 보고됨** |
-| 140 | `P-333-ALLOW-001` | Allow | 권한표와 계약 충족 |
+| 140 | `P-AUTHZ-ALLOW-001` | Allow | 권한표와 계약 충족 |
 | 9999 | `P-CONTROL-DEFAULT-001` | Block | 성립한 정책 없음 |
 
 Gateway가 직접 내는 판정(우선순위 2001~): `MCP-METHOD-001`, `P-INPUT-001`,
@@ -573,7 +570,7 @@ Gateway가 직접 내는 판정(우선순위 2001~): `MCP-METHOD-001`, `P-INPUT-
 | `P-ANOMALY-001` | Alert | CTL-28 | 창 안의 인가 거부가 상한 이상 |
 | `MCP-SHADOW-002` | Alert | CTL-03·CTL-28 | 요청자 엔드포인트 망의 미등록 MCP 리스너 |
 
-`P-ANOMALY-001`이 세는 것은 **인가 거부**뿐입니다(`P-333-DENY-001`,
+`P-ANOMALY-001`이 세는 것은 **인가 거부**뿐입니다(`P-AUTHZ-DENY-001`,
 `MCP-REPOSITORY-001`, `MCP-EGRESS-001`, `P-CLASSIFICATION-001`,
 `P-APPROVAL-EXPIRY-001`). 모든 차단을 세면 서버 하나가 드리프트 상태일 때
 `MCP-CATALOG-001`이 모든 사용자에게 걸리고, 아무 잘못 없는 사람들의 다음 호출이

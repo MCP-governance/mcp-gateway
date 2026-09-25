@@ -24,7 +24,8 @@ const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 const token = () => localStorage.getItem(TOKEN_KEY) || "";
 const state = {
-  console: null, page: null, scan: null, endpoints: null, aig: null,
+  console: null, page: null, scan: null, scanProbe: null, activeScanJob: null,
+  endpoints: null, aig: null,
   seenDecision: 0, chat: [], session: null, findFilter: "all", termCase: null,
 };
 
@@ -53,12 +54,31 @@ function clock(value) {
 }
 
 function toast(message, tone = "good") {
+  const value = typeof message === "string" ? message : "요청을 처리하지 못했습니다. 입력과 서비스 상태를 확인하세요.";
+  if ($$("#toasts .toast").some((item) => item.textContent === value)) return;
   const node = document.createElement("div");
   node.className = "toast";
   node.dataset.tone = tone;
-  node.textContent = message;
+  node.setAttribute("role", tone === "bad" ? "alert" : "status");
+  node.textContent = value;
   $("#toasts").append(node);
+  while ($$("#toasts .toast").length > 3) $("#toasts .toast").remove();
   setTimeout(() => node.remove(), tone === "bad" ? 7000 : 4000);
+}
+
+function apiError(detail, status) {
+  if (typeof detail === "string" && detail.trim()) return detail;
+  if (Array.isArray(detail)) {
+    const labels = { display_name: "표시 이름", repository_url: "저장소 URL",
+      requested_transport: "전송 방식", purpose: "도입 목적", evidence_url: "증거 문서",
+      note: "검증 메모" };
+    return detail.map((item) => {
+      const field = item.loc?.at(-1);
+      return `${labels[field] || field || "입력"}: ${item.msg || "값을 확인하세요."}`;
+    }).join(" · ");
+  }
+  if (detail && typeof detail === "object") return detail.message || detail.reason || `요청이 거절됐습니다 (HTTP ${status})`;
+  return `요청이 거절됐습니다 (HTTP ${status})`;
 }
 
 async function api(path, options = {}) {
@@ -78,7 +98,7 @@ async function api(path, options = {}) {
   const text = await response.text();
   let body = {};
   try { body = text ? JSON.parse(text) : {}; } catch { body = { detail: text }; }
-  if (!response.ok) throw new Error(body.detail || `요청이 거절됐습니다 (HTTP ${response.status})`);
+  if (!response.ok) throw new Error(apiError(body.detail, response.status));
   return body;
 }
 
@@ -160,7 +180,7 @@ function renderTop() {
   wire.dataset.state = health.status === "ok" ? "ok" : health.status ? "degraded" : "down";
   const down = Object.entries(health.components || {})
     .filter(([key, value]) => value === false && key !== "github_mcp").map(([key]) => key);
-  $("b", wire).textContent = down.length ? `저하 · ${down.join(", ")}` : "정상";
+  $("b", wire).textContent = down.length ? `Gateway 저하 · ${down.join(", ")}` : "Gateway 정상";
 
   const mode = data.monitor?.enforcement;
   const tagNode = $("#mode-tag");
@@ -211,7 +231,7 @@ function renderOverview() {
   const max = Math.max(1, ...Object.values(counts));
   $("#dist-total").textContent = decisions.length;
   fill($("#dist"), VERDICTS.map((v) =>
-    `<div class="bar"><b>${v}</b><i data-v="${v}" style="width:${(counts[v] / max) * 100}%"></i>
+    `<div class="bar"><b>${v}</b><progress data-v="${v}" value="${counts[v]}" max="${max}" aria-label="${v} ${counts[v]}건, 최다 ${max}건"></progress>
      <span>${counts[v]}</span></div>`).join(""));
 
   // 등록 MCP
@@ -262,14 +282,6 @@ function renderEnforcement() {
 }
 
 function renderFeed(rows, prepend) {
-  if (rows.length) {
-    const last = rows[0];
-    const outcome = last.upstream_attempted && !last.upstream_executed ? "실행 여부 미확인 — 독립 효과 증적 확인 필요"
-      : last.upstream_executed && last.decision === "Block" ? "MCP 실행 후 출력 차단"
-      : last.upstream_executed ? "MCP 실행 확인"
-      : last.decision === "Approval" ? "승인 대기 — MCP 미실행" : "MCP 미실행";
-    $("#process-current").textContent = `최근 ${last.tool_name} · ${last.policy_id} · ${outcome}`;
-  }
   const feed = $("#feed");
   const strip = $("#strip");
   const html = rows.map((row) => `<li${prepend ? ' class="fresh"' : ""} data-id="${esc(row.id)}">
@@ -306,19 +318,6 @@ function renderIntake() {
   </li>`).join(""), "아직 신청한 요청이 없습니다.");
 }
 
-function exitTermsVerdict(form) {
-  const checked = ["provider_credential_disclosure", "revocation_evidence", "audit_access_retained"]
-    .filter((name) => form.elements[name]?.checked);
-  const node = $("#exit-verdict");
-  if (checked.length === 3) {
-    node.textContent = "세 조건이 모두 있으면 종료 시 T1 판정이 가능합니다.";
-  } else if (!checked.includes("provider_credential_disclosure")) {
-    node.textContent = "하위 위임 자격 고지가 없으면 이 이용 관계는 끝낼 때 반드시 T3(판단 불가)가 됩니다.";
-  } else {
-    node.textContent = "회수 증적이나 감사 접근이 빠지면 종료 판정이 T2 이하로 내려갑니다.";
-  }
-}
-
 /* ── 검증 ────────────────────────────────────────────────────────────────── */
 
 function renderVerification() {
@@ -337,13 +336,40 @@ function renderVerification() {
   $("#verify-n").textContent = rows.length;
   fill($("#verify-list"), rows.map((row) => {
     const evidence = row.evidence || {};
+    const terms = row.exit_terms || {};
+    const remote = row.requested_transport !== "stdio";
+    const verified = Boolean(terms.verified_by && terms.evidence_url &&
+      ["provider_credential_disclosure", "revocation_evidence", "audit_access_retained"]
+        .every((key) => terms[key] === true));
+    const pending = ["HOLD", "VALIDATION_QUEUED", "VALIDATING", "VALIDATED"].includes(row.status);
     return `<li>
       <div class="item-top"><b>${esc(row.display_name)}</b>${tag(row.status)}
         <span class="spacer"></span><span class="item-sub">${when(row.validated_at || row.created_at)}</span></div>
       <div class="item-sub">${esc(row.repository_url)}</div>
+      <div class="item-note">${remote ? (verified
+        ? `종료 조건 확인 · ${esc(terms.verified_by)} · ${when(terms.verified_at)}`
+        : "종료 조건 확인 대기 · 플랫폼 담당자 작업") : "로컬 실행 · 제공자 자격 확인 불필요"}</div>
       ${Object.keys(evidence).length ? `<div class="tags" style="margin-top:7px">${
         Object.entries(evidence).slice(0, 6).map(([key, value]) =>
           tag(`${key}=${typeof value === "object" ? "…" : value}`)).join("")}</div>` : ""}
+      <div class="item-acts">
+        ${row.status === "HOLD" ? `<button class="btn" data-intake-queue="${esc(row.id)}">공급망 검사 시작</button>` : ""}
+        ${row.status === "VALIDATED" ? `<button class="btn" data-tone="primary" data-intake-approve="${esc(row.id)}"
+          ${remote && !verified ? "disabled title='플랫폼 종료 조건 확인이 필요합니다'" : ""}>승인</button>` : ""}
+        ${pending ? `<button class="btn" data-intake-reject="${esc(row.id)}">반려</button>` : ""}
+      </div>
+      ${remote && pending ? `<details class="review"><summary>플랫폼 종료 조건 검증</summary>
+        <form data-terms-form="${esc(row.id)}">
+          <p class="hintline">신청자 진술은 증거가 아닙니다. 제공자 계약 또는 검증 가능한 문서를 확인하고 기록하세요.</p>
+          <label class="field"><span>증거 문서 HTTPS 주소</span><input name="evidence_url" type="url" required
+            value="${esc(terms.evidence_url || "")}" placeholder="https://..." /></label>
+          <label class="field"><span>확인 내용</span><textarea name="note" minlength="10" required
+            placeholder="누가 어떤 조항을 확인했는지 기록">${esc(terms.note || "")}</textarea></label>
+          <label class="check"><input type="checkbox" name="provider_credential_disclosure" ${terms.provider_credential_disclosure ? "checked" : ""} />하위 위임 자격 고지 조항 확인</label>
+          <label class="check"><input type="checkbox" name="revocation_evidence" ${terms.revocation_evidence ? "checked" : ""} />회수 결과 증거 제공 조항 확인</label>
+          <label class="check"><input type="checkbox" name="audit_access_retained" ${terms.audit_access_retained ? "checked" : ""} />종료 후 감사 접근 조항 확인</label>
+          <button class="btn" type="submit">검증 기록 저장</button>
+        </form></details>` : ""}
     </li>`;
   }).join(""), "검증 대상이 없습니다.");
 
@@ -421,8 +447,20 @@ async function loadScan() {
   try { state.scan = await api("/api/mcp-scan"); } catch (error) { toast(error.message, "bad"); return; }
   const { config, worker, jobs, reports, targets, servers } = state.scan;
   const badge = $("#scan-state");
-  badge.textContent = config.configured ? (worker.alive ? "실행 가능" : "워커 없음") : "설정 필요";
-  badge.dataset.tone = config.configured && worker.alive ? "good" : "warn";
+  const ready = Boolean(config.configured && worker.alive && state.scanProbe?.ready_for_scan);
+  badge.textContent = !config.configured ? "모델 미설정" : !worker.alive ? "검사 워커 중단"
+    : ready ? "연결 검증 완료" : "연결 미확인";
+  badge.dataset.tone = ready ? "good" : "warn";
+  $("#scan-test").disabled = !config.configured;
+  const banner = $("#scan-readiness");
+  banner.dataset.tone = ready ? "info" : "warn";
+  const active = (jobs || []).find((job) => String(job.id) === state.activeScanJob);
+  banner.textContent = !config.configured
+    ? "AI 검사가 준비되지 않았습니다. 플랫폼 운영자가 검사 모델을 연결해야 합니다. 기본 설치의 Gateway 정상 표시는 AI 검사 준비를 뜻하지 않습니다."
+    : !worker.alive ? "검사 워커가 응답하지 않습니다. 작업을 실행할 수 없습니다."
+    : active ? `최근 요청: ${active.target_label || active.target_id} · ${active.status}${active.status === "DONE" ? ` · 발견 ${active.summary?.total ?? 0}건` : ""}${active.error ? ` · ${active.error}` : ""}`
+    : ready ? "모델과 워커 연결을 확인했습니다. 검사를 실행하면 작업 상태와 결과가 이 화면에 표시됩니다."
+    : "모델 설정은 있지만 실제 연결을 확인하지 않았습니다. ‘연결 확인’을 먼저 실행하세요.";
 
   fill($("#scan-config"), `
     <p class="hintline" style="margin-top:0">${config.configured
@@ -451,7 +489,7 @@ async function loadScan() {
       <span class="spacer"></span><span class="item-sub">${esc(String(row.commit_sha || "").slice(0, 12))}</span></div>
     <div class="item-sub">${esc(row.repository_url)}</div>
     <div class="item-acts">
-      <button class="btn" data-size="sm" data-scan="intake" data-id="${esc(row.id)}" data-mode="static">정적 감사</button>
+      <button class="btn" data-size="sm" data-scan="intake" data-id="${esc(row.id)}" data-mode="static" ${ready ? "" : "disabled"}>정적 감사</button>
     </div></li>`).join("");
 
   const serverItems = (servers || []).map((row) => `<li>
@@ -461,9 +499,9 @@ async function loadScan() {
     <div class="item-sub">${esc(row.source_url || row.endpoint || "")}</div>
     <div class="item-acts">
       <button class="btn" data-size="sm" data-scan="server" data-id="${esc(row.id)}" data-mode="static"
-        ${row.scannable ? "" : "disabled title='국소 코드 감사 대상이 아닙니다'"}>정적 감사</button>
+        ${ready && row.scannable ? "" : "disabled title='연결 검증 또는 코드 출처가 필요합니다'"}>정적 감사</button>
       <button class="btn" data-size="sm" data-scan="server" data-id="${esc(row.id)}" data-mode="dynamic"
-        ${row.probeable ? "" : "disabled title='HTTP endpoint가 없습니다'"}>동적 점검</button>
+        ${ready && row.probeable ? "" : "disabled title='연결 검증 또는 HTTP endpoint가 필요합니다'"}>동적 점검</button>
     </div></li>`).join("");
   fill($("#scan-targets"), intakeItems + serverItems, "감사할 대상이 없습니다.");
 
@@ -473,7 +511,9 @@ async function loadScan() {
     <div class="item-top"><b>${esc(job.target_label || job.target_id)}</b>
       ${tag(job.status, jobTone[job.status] || "")}${tag(job.mode)}${tag(job.target_kind)}
       <span class="spacer"></span><span class="item-sub">${when(job.created_at, true)}</span></div>
-    ${job.error ? `<div class="item-note">${esc(job.error)}</div>` : ""}
+    <div class="item-sub">작업 ID ${esc(job.id)} · ${esc(job.source_ref || (job.mode === "dynamic" ? "실행 중인 MCP endpoint 점검" : "코드 출처 확인 중"))}</div>
+    ${job.status === "DONE" ? `<div class="item-note">발견 ${esc(job.summary?.total ?? 0)}건 · 증거 유형 ${esc(job.summary?.evidence_mode || "미표기")}</div>` : ""}
+    ${job.error ? `<div class="item-note" role="alert">실패 원인: ${esc(job.error)}</div>` : ""}
     <div class="item-acts">
       ${["QUEUED", "RUNNING"].includes(job.status)
         ? `<button class="btn" data-size="sm" data-job-cancel="${esc(job.id)}">취소</button>` : ""}
@@ -643,17 +683,12 @@ function renderPolicy() {
     figure("적용 환경", ledger.environment || "-", set.register || ""),
   ].join(""));
 
-  const roles = ["partner", "employee", "admin"];
-  const classes = ["public", "nonimportant", "important"];
-  const grid = { partner: { public: "r" }, employee: { public: "r", nonimportant: "rw", important: "r" },
-    admin: { public: "rwx", nonimportant: "rwx", important: "rwx" } };
-  fill($("#matrix"), `<table class="matrix"><thead><tr><th></th>${
-    classes.map((c) => `<th>${c}</th>`).join("")}</tr></thead><tbody>${
-    roles.map((role) => `<tr><th>${role}</th>${classes.map((cls) => {
-      const value = grid[role][cls] || "-";
-      return `<td style="color:var(--${value === "-" ? "block" : "allow"})">${value}</td>`;
-    }).join("")}</tr>`).join("")}</tbody></table>
-    <p class="hintline">27칸이 이 실습의 정책 어휘 전부입니다. 권한이 있어도 승인·제한·경보·누적 승격이 그 위에 겹칩니다.</p>`);
+  const auth = ledger.authorization || {};
+  fill($("#matrix"), `<div class="notice" data-tone="warn">현재 ${esc(auth.bundle_id || "미설정")}은 합성 실습용 권한 번들입니다. 조직의 승인된 권한 정책을 배포하기 전에는 운영 권한 기준으로 사용하지 마세요.</div>
+    <ul class="items">${(auth.grants || []).map((grant) => `<li>
+      <div class="item-top"><b>${esc(grant.id)}</b>${tag((grant.actions || []).join(", "))}</div>
+      <div class="item-sub">역할 ${(grant.roles || []).map(esc).join(", ")} · 데이터 ${(grant.data_classes || []).map(esc).join(", ")}</div>
+    </li>`).join("")}</ul>`, "배포된 권한 규칙이 없습니다. 기본 차단됩니다.");
 
   renderPolicyTable();
   $("#exc-n").textContent = (ledger.exceptions || []).length;
@@ -895,6 +930,19 @@ function wire() {
     if (link) { event.preventDefault(); show(link.dataset.page); return; }
 
     const target = event.target;
+    const intakeQueue = target.closest("[data-intake-queue]");
+    if (intakeQueue) await act(() => api(`/api/mcp-requests/${intakeQueue.dataset.intakeQueue}/queue-validation`,
+      { method: "POST" }), (r) => r.message);
+    const intakeApprove = target.closest("[data-intake-approve]");
+    if (intakeApprove) await act(() => api(`/api/mcp-requests/${intakeApprove.dataset.intakeApprove}/approve`,
+      { method: "POST" }), (r) => r.message);
+    const intakeReject = target.closest("[data-intake-reject]");
+    if (intakeReject) {
+      const note = prompt("반려 근거를 기록하세요 (2자 이상).");
+      if (note && note.trim().length >= 2) await act(() => api(
+        `/api/mcp-requests/${intakeReject.dataset.intakeReject}/reject`,
+        { method: "POST", body: JSON.stringify({ note: note.trim() }) }), (r) => r.message);
+    }
     if (target.id === "catalog-refresh") {
       await act(() => api("/api/registry/refresh", { method: "POST" }), "Catalog를 다시 대조했습니다.");
     } else if (target.id === "enforce-toggle") {
@@ -911,9 +959,14 @@ function wire() {
         : result.intact ? `연쇄 정상 · ${esc(result.checked)}건 확인`
         : `연쇄 불일치 · ${esc(result.reason || "")} (id ${esc(result.broken_at ?? "?")})`}</div>`;
     } else if (target.id === "scan-test") {
-      await act(() => api("/api/mcp-scan/connection-test", { method: "POST" }),
-        (r) => r.ok ? "모델 endpoint가 응답했습니다." : `응답 없음: ${r.detail || ""}`);
-      loadScan();
+      try {
+        state.scanProbe = await api("/api/mcp-scan/connection-test", { method: "POST" });
+        toast(state.scanProbe.message, state.scanProbe.ready_for_scan ? "good" : "bad");
+      } catch (error) {
+        state.scanProbe = null;
+        toast(error.message, "bad");
+      }
+      await loadScan();
     } else if (target.id === "q-go") {
       const out = $("#q-out");
       try {
@@ -951,17 +1004,19 @@ function wire() {
         mode: scanBtn.dataset.mode, acknowledge_external_model: false };
       try {
         const result = await api("/api/mcp-scan/run", { method: "POST", body: JSON.stringify(body) });
-        toast(result.message);
+        state.activeScanJob = result.job_id;
+        toast("검사 작업을 등록했습니다. 아래 작업 이력에서 진행 상태를 확인할 수 있습니다.");
       } catch (error) {
         if (error.message.includes("외부")) {
           if (confirm(error.message + "\n\n그래도 실행하시겠습니까?")) {
             body.acknowledge_external_model = true;
-            await act(() => api("/api/mcp-scan/run", { method: "POST", body: JSON.stringify(body) }),
-              (r) => r.message);
+            const result = await act(() => api("/api/mcp-scan/run", { method: "POST", body: JSON.stringify(body) }),
+              "검사 작업을 등록했습니다. 작업 이력에서 진행 상태를 확인하세요.");
+            if (result) state.activeScanJob = result.job_id;
           }
         } else { toast(error.message, "bad"); }
       }
-      loadScan();
+      await loadScan();
     }
 
     const cancelJob = target.closest("[data-job-cancel]");
@@ -1007,6 +1062,21 @@ function wire() {
     }
   });
 
+  $("#verify-list").addEventListener("submit", async (event) => {
+    const form = event.target.closest("[data-terms-form]");
+    if (!form) return;
+    event.preventDefault();
+    const body = {
+      evidence_url: form.elements.evidence_url.value.trim(),
+      note: form.elements.note.value.trim(),
+      provider_credential_disclosure: form.elements.provider_credential_disclosure.checked,
+      revocation_evidence: form.elements.revocation_evidence.checked,
+      audit_access_retained: form.elements.audit_access_retained.checked,
+    };
+    await act(() => api(`/api/mcp-requests/${form.dataset.termsForm}/exit-terms`,
+      { method: "PUT", body: JSON.stringify(body) }), (r) => r.message);
+  });
+
   document.addEventListener("change", async (event) => {
     const account = event.target.closest("[data-account]");
     if (account) {
@@ -1027,7 +1097,6 @@ function wire() {
   });
 
   const intakeForm = $("#intake-form");
-  intakeForm.addEventListener("change", () => exitTermsVerdict(intakeForm));
   intakeForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.target;
@@ -1036,11 +1105,6 @@ function wire() {
       repository_url: form.elements.repository_url.value.trim(),
       requested_transport: form.elements.requested_transport.value,
       purpose: form.elements.purpose.value.trim(),
-      exit_terms: {
-        provider_credential_disclosure: form.elements.provider_credential_disclosure.checked,
-        revocation_evidence: form.elements.revocation_evidence.checked,
-        audit_access_retained: form.elements.audit_access_retained.checked,
-      },
     };
     $$(".err", form).forEach((node) => { node.textContent = ""; });
     if (body.purpose.length < 10) {
@@ -1048,7 +1112,7 @@ function wire() {
       return;
     }
     const created = await act(() => api("/api/mcp-requests",
-      { method: "POST", body: JSON.stringify(body) }), "도입 요청을 제출했습니다.");
+      { method: "POST", body: JSON.stringify(body) }), (r) => r.message);
     if (created) { form.reset(); $("#purpose-n").textContent = "0"; }
   });
 
@@ -1119,4 +1183,8 @@ function wire() {
   await refresh();
   stream();
   setInterval(refresh, 30000);
+  setInterval(() => {
+    if (state.page === "mcpscan" && state.scan?.jobs?.some((job) =>
+      ["QUEUED", "RUNNING"].includes(job.status))) loadScan();
+  }, 5000);
 })();

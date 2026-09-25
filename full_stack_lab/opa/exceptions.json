@@ -7,7 +7,7 @@
   "exceptions": [
     {
       "id": "EXC-001",
-      "policy_id": "P-333-DENY-001",
+      "policy_id": "P-AUTHZ-DENY-001",
       "title": "감사 대응 기간 중 협력업체 직원의 감사 사본 열람",
       "reason": "외부 감사 대응을 위해 협력사 A의 담당자가 감사 사본 1건을 확인해야 한다.",
       "scope": {

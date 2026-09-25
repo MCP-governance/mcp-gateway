@@ -23,11 +23,11 @@ cd mcp-gateway/full_stack_lab
 - Jaeger: <http://127.0.0.1:16686>
 - 합성 관리자: kkg@bob.local / test-password
 
-처음 실행한 복제본에는 고유한 Docker 프로젝트 이름이 `.env`에 저장됩니다. 새 복제본이 다른 실습의 DB 볼륨을 재사용하지 않게 하기 위한 장치입니다. 기존 `.env`와 데이터는 자동 이전하거나 삭제하지 않습니다.
+처음 실행한 복제본에는 고유한 Docker 프로젝트 이름과 비어 있는 사설 네트워크 접두사(`MCP_NET_PREFIX`)가 `.env`에 저장됩니다. 새 복제본이 다른 실습의 DB 볼륨이나 Docker 주소 풀을 재사용하지 않게 하기 위한 장치입니다. 기존 `.env`와 데이터는 자동 이전하거나 삭제하지 않습니다.
 
 ### Docker 네트워크 주소 풀이 소진된 경우
 
-`all predefined address pools have been fully subnetted`는 Docker가 새 Compose 네트워크에 배정할 주소 대역을 찾지 못했다는 뜻입니다. 각 복제본은 격리를 위해 여러 네트워크를 만들므로, 사용을 마친 **해당 복제본**의 `full_stack_lab`에서 `./console.sh down`을 실행한 뒤 다시 `./console.sh up`을 실행하세요. `down`은 컨테이너와 그 복제본의 네트워크를 내리며 이름 있는 DB 볼륨은 보존합니다. 실행 중인 다른 프로젝트의 네트워크를 일괄 삭제하지 마세요. 여러 스택을 동시에 유지해야 한다면 [Docker 주소 풀 설정](https://docs.docker.com/engine/network/#automatic-subnet-allocation)에서 호스트 환경에 맞는 더 작은 네트워크 크기를 설정하세요. Docker 데몬 설정 변경에는 데몬 재시작이 필요하므로 실행 중인 다른 스택을 확인한 후 적용합니다.
+`all predefined address pools have been fully subnetted`는 Docker가 새 Compose 네트워크에 배정할 주소 대역을 찾지 못했다는 뜻입니다. 현재 `console.sh`는 Docker 네트워크와 호스트 라우트를 확인해 겹치지 않는 `10.200.0.0/16`~`10.249.0.0/16`의 한 접두사를 선택하고, 각 망에 `/24`를 명시합니다. 기존 설치에서 주소 설정을 바꾸는 경우 해당 복제본의 `./console.sh down` 뒤 다시 `up`하세요. `down`은 이름 있는 DB 볼륨을 보존합니다. 자동 선택 범위도 전부 점유됐다면 사용하지 않는 **해당 복제본**만 내리거나 [Docker 주소 풀 설정](https://docs.docker.com/engine/network/#automatic-subnet-allocation)을 조정하세요. 실행 중인 다른 프로젝트의 네트워크를 일괄 삭제하지 마세요.
 
 ### Docker가 없는 장비에서
 
@@ -169,19 +169,9 @@ v1.7에서 PaC 후보 5개를 정책으로 구현했습니다.
 | `P-ANOMALY-001` | CTL-28 | 반복 인가 거부 (RSK-27 탐색 행위) |
 | `MCP-SHADOW-002` | CTL-03·CTL-28 | 망에서 발견된 미등록 리스너 (RSK-01) |
 
-### 333 권한 모델
+### 권한 정책
 
-`333`은 **역할 3 × 데이터 등급 3 × 행위 3 = 27칸 권한 매트릭스**입니다. 강조하는 이유는 이 27칸이 이 실습의 **정책 어휘 전부**이고, 그래서 "빠뜨린 조합"이 존재할 수 없기 때문입니다. 27칸 전체가 기준선으로 고정되어 있고 `acceptance.py`의 `rego-333-cells`가 매번 27칸을 그대로 대조합니다.
-
-| | public | nonimportant | important |
-| --- | --- | --- | --- |
-| **partner** | `r` | `-` | `-` |
-| **employee** | `r` | `rw` | `r` |
-| **admin** | `rwx` | `rwx` | `rwx` |
-
-`x`는 외부 전송 또는 고위험 실행입니다. 표에 없는 권한은 기본 차단입니다.
-
-다만 **권한이 있다는 사실만으로 단순 Allow가 되지는 않습니다.** 27칸은 출발점이고, 그 위에 승인(`Approval`)·제한(`Restrict`)·경보(`Alert`)·누적 승격·Registry/공급망/예외/정책 관리대장 판정이 겹칩니다. 자세한 내용은 [full_stack_lab/README.md](full_stack_lab/README.md) 4절입니다.
+Rego는 배포된 `opa/data.json`의 `authorization.grants`를 평가하고, 허용 항목이 없으면 차단합니다. 저장소에 포함된 `LAB-AUTHZ-001`은 **합성 실습 전용 예시**입니다. 조직 배치에는 소유자와 승인 절차를 거친 실제 권한 번들을 배포해야 합니다. 계약·공급망·승인·민감정보 정책은 권한 허용과 별도로 집행됩니다. 운영 화면은 현재 OPA에 배포된 번들 ID와 규칙을 보여줍니다. 자세한 내용은 [full_stack_lab/README.md](full_stack_lab/README.md) 4절에 있습니다.
 
 ## 저장소 안내
 

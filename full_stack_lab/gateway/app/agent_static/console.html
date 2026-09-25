@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko" data-theme="dark">
+<html lang="ko" data-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -11,11 +11,11 @@
   <div class="shell">
     <div class="brand">
       <b>MCP Governance</b>
-      <span>판정 기록부</span>
+      <span>Security Operations</span>
     </div>
 
     <header class="topbar">
-      <span class="wire" id="wire" data-state=""><i></i><b>확인 중</b></span>
+      <span class="wire" id="wire" data-state=""><i></i><b>Gateway 확인 중</b></span>
       <span class="tag" id="mode-tag" hidden></span>
       <div class="who">
         <b id="who-name">사용자</b>
@@ -35,7 +35,7 @@
         <div class="head">
           <div>
             <h1 id="h-overview">운영 현황</h1>
-            <p>지금 이 강제 경로를 지나간 호출과 그 판정입니다. 이 목록에 없는 호출은 게이트웨이를 지나지 않은 것입니다.</p>
+            <p>최근 요청, 차단, 실행 증거를 한눈에 확인하세요.</p>
           </div>
           <div class="head-actions">
             <button class="btn" id="refresh" type="button">새로고침</button>
@@ -43,21 +43,6 @@
         </div>
 
         <div class="notice" id="banner" role="status"></div>
-
-        <article class="block process-block" aria-labelledby="process-title">
-          <header><h2 id="process-title">호출 처리 경로</h2><span class="spacer"></span><span class="hint">최근 판정 기준</span></header>
-          <div class="body">
-            <ol class="process-map">
-              <li><b>1 · 사용자 요청</b><small>신원과 요청</small></li>
-              <li><b>2 · Agent 또는 API</b><small>도구 제안</small></li>
-              <li><b>3 · Gateway</b><small>계약·입력·민감정보</small></li>
-              <li><b>4 · OPA</b><small>정책 판정</small></li>
-              <li><b>5 · 승인·제한</b><small>실행 조건</small></li>
-              <li><b>6 · MCP·증적</b><small>효과와 감사 기록</small></li>
-            </ol>
-            <p class="process-current" id="process-current" role="status">아직 판정이 없습니다.</p>
-          </div>
-        </article>
 
         <section class="stream" aria-label="실시간 판정">
           <div class="stream-head">
@@ -106,7 +91,7 @@
         <div class="head">
           <div>
             <h1 id="h-intake">MCP 도입</h1>
-            <p>같은 저장소를 두 사람이 따로 신청하지 않도록, 신청 전에 이미 심사된 것이 있는지 먼저 찾습니다.</p>
+            <p>저장소를 등록하면 플랫폼 담당자가 검증과 종료 준비를 확인합니다.</p>
           </div>
         </div>
 
@@ -121,12 +106,12 @@
           </div>
         </article>
 
-        <div class="grid" data-cols="2">
+        <div class="intake-flow">
           <form class="block" id="intake-form" novalidate>
             <header><h2>새 요청</h2></header>
             <div class="body">
               <label class="field"><span>표시 이름</span>
-                <input name="display_name" maxlength="200" required placeholder="예: Notes MCP" />
+                <input name="display_name" type="text" maxlength="80" required placeholder="예: Notes MCP" />
               </label>
               <label class="field"><span>저장소 URL</span>
                 <input name="repository_url" type="url" maxlength="300" required placeholder="https://github.com/org/repo" />
@@ -145,13 +130,7 @@
                 <em class="hintline"><b id="purpose-n">0</b> / 1000 · 최소 10자</em>
                 <em class="err" data-err="purpose"></em>
               </label>
-              <fieldset>
-                <legend>종료 조건 (제공자 고지)</legend>
-                <label class="check"><input type="checkbox" name="provider_credential_disclosure" /> 하위 위임 자격 고지</label><br />
-                <label class="check"><input type="checkbox" name="revocation_evidence" /> 회수 증적 제공</label><br />
-                <label class="check"><input type="checkbox" name="audit_access_retained" /> 종료 후 감사 접근 유지</label>
-                <p class="hintline" id="exit-verdict"></p>
-              </fieldset>
+              <p class="notice" data-tone="info">공급망 검사와 제공자 종료 조건은 플랫폼 담당자가 증거를 확인합니다. 신청자가 체크할 항목은 없습니다.</p>
               <button class="btn" data-tone="primary" type="submit">요청 제출</button>
             </div>
           </form>
@@ -168,14 +147,14 @@
         <div class="head">
           <div>
             <h1 id="h-verification">검증 파이프라인</h1>
-            <p>격리 워커가 고정 commit을 다시 복제해 검사합니다. 검사하지 않은 것은 승인할 수 없습니다.</p>
+            <p>요청 접수부터 공급망 검사, 계약 증거 확인, 승인까지 진행 상태를 관리합니다.</p>
           </div>
           <div class="head-actions">
             <button class="btn" id="import-evidence" type="button">워크스페이스 증적 반영</button>
           </div>
         </div>
         <dl class="figures" id="verify-figures"></dl>
-        <div class="grid" data-cols="2">
+        <div class="verification-flow">
           <article class="block">
             <header><h2>도입 요청 검증</h2><span class="spacer"></span><span class="count" id="verify-n">0</span></header>
             <div class="body flush"><ul class="items" id="verify-list"></ul></div>
@@ -221,13 +200,14 @@
         <div class="head">
           <div>
             <h1 id="h-mcpscan">AI 코드 감사</h1>
-            <p>AI-Infra-Guard mcp-scan. 정적 감사는 고정 commit을, 동적 점검은 지금 그 주소에 있는 것을 봅니다.</p>
+            <p>AI-Infra-Guard 검사 상태와 결과를 확인합니다.</p>
           </div>
           <div class="head-actions">
             <span class="tag" id="scan-state">-</span>
             <button class="btn" id="scan-test" type="button">연결 확인</button>
           </div>
         </div>
+        <div class="notice" id="scan-readiness" role="status"></div>
         <div class="grid" data-cols="2">
           <article class="block">
             <header><h2>실행 조건</h2></header>
@@ -274,12 +254,12 @@
                 <label class="check"><input type="checkbox" name="probe_mcp" /> MCP 확인(initialize 1회)</label>
               </div>
               <label class="field" style="margin-top:12px"><span>허용 대역 (쉼표 구분, 사설 대역만, 최대 /20)</span>
-                <input name="allowed_cidrs" placeholder="10.10.0.0/24, 192.168.1.0/24" maxlength="300" />
+                <input name="allowed_cidrs" type="text" placeholder="10.10.0.0/24, 192.168.1.0/24" maxlength="300" />
                 <em class="hintline">비우면 루프백만 봅니다. 공인 대역은 게이트웨이와 에이전트 양쪽에서 거절합니다.</em>
               </label>
               <div class="row">
                 <label class="field grow"><span>포트</span>
-                  <input name="ports" placeholder="3000, 8000, 8080, 9000" maxlength="300" />
+                  <input name="ports" type="text" placeholder="3000, 8000, 8080, 9000" maxlength="300" />
                 </label>
                 <label class="field" style="max-width:150px"><span>최대 호스트</span>
                   <input name="max_hosts" type="number" min="1" max="4096" />
@@ -308,10 +288,10 @@
             <form id="device-form">
               <div class="row">
                 <label class="field grow"><span>엔드포인트 ID</span>
-                  <input name="endpoint_id" required maxlength="120" placeholder="endpoint-ysg-laptop" />
+                  <input name="endpoint_id" type="text" required maxlength="120" placeholder="endpoint-ysg-laptop" />
                 </label>
                 <label class="field grow"><span>호스트명</span>
-                  <input name="hostname" required maxlength="200" placeholder="ysg-laptop" />
+                  <input name="hostname" type="text" required maxlength="200" placeholder="ysg-laptop" />
                 </label>
                 <label class="field grow"><span>소유자</span>
                   <select name="owner_token" id="device-owner"></select>
@@ -383,7 +363,7 @@
         </div>
         <dl class="figures" id="policy-figures"></dl>
         <article class="block">
-          <header><h2>333 권한 격자</h2><span class="hint">역할 3 × 등급 3 × 행위 3</span></header>
+          <header><h2>권한 규칙 배포</h2><span class="hint">OPA 데이터에서 관리</span></header>
           <div class="body" id="matrix"></div>
         </article>
         <article class="block">
@@ -425,7 +405,7 @@
           <header><h2>요청</h2><span class="spacer"></span><span class="tag" id="model-tag">-</span></header>
           <div class="body">
             <div class="row">
-              <input class="grow" id="ask" placeholder="예: 공개 공지 문서 notice-001 을 읽어줘" maxlength="500" />
+              <input class="grow" id="ask" type="text" placeholder="예: 공개 공지 문서 notice-001 을 읽어줘" maxlength="500" />
               <button class="btn" data-tone="primary" id="ask-go" type="button">보내기</button>
             </div>
             <p class="hintline">합성 데이터만 사용합니다. 실제 개인정보를 입력하지 마세요.</p>

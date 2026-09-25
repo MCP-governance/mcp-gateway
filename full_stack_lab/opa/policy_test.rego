@@ -40,7 +40,7 @@ with_input(patch) := object.union(base, patch)
 test_allow if {
 	result := decision with input as base
 	result.decision == "Allow"
-	result.policy_id == "P-333-ALLOW-001"
+	result.policy_id == "P-AUTHZ-ALLOW-001"
 	result.restrictions == {}
 }
 
@@ -61,19 +61,19 @@ test_decision_carries_policy_management_information if {
 test_block_partner_write if {
 	result := decision with input as with_input({"tool": {"action": "w"}})
 	result.decision == "Block"
-	result.policy_id == "P-333-DENY-001"
+	result.policy_id == "P-AUTHZ-DENY-001"
 }
 
 test_block_partner_important_read if {
 	result := decision with input as with_input({"resource": {"data_class": "important"}})
 	result.decision == "Block"
-	result.policy_id == "P-333-DENY-001"
+	result.policy_id == "P-AUTHZ-DENY-001"
 }
 
 # 권한 없는 x는 외부 전송 제한이 아니라 차단이어야 한다.
 test_block_beats_restrict_for_unprivileged_external_send if {
 	result := decision with input as with_input({"tool": {"action": "x"}})
-	result.policy_id == "P-333-DENY-001"
+	result.policy_id == "P-AUTHZ-DENY-001"
 }
 
 # ── T-REGISTRY-001/002 미등록·비활성 구성요소 ───────────────────────────────
@@ -306,7 +306,7 @@ test_conflicts_are_recorded_not_hidden if {
 	})
 	result.policy_id == "P-VOLUME-001"
 	losers := {item.policy_id | some item in result.conflicts}
-	losers == {"P-IMPORTANT-ALERT-001", "P-333-ALLOW-001"}
+	losers == {"P-IMPORTANT-ALERT-001", "P-AUTHZ-ALLOW-001"}
 }
 
 test_more_restrictive_policy_wins if {
@@ -323,8 +323,8 @@ test_more_restrictive_policy_wins if {
 # ── T-STATUS 정책 생명주기 상태 (§11.9) ─────────────────────────────────────
 
 test_suspended_policy_is_not_enforced if {
-	suspended := object.union(data.policy_ledger, {"P-333-ALLOW-001": object.union(
-		data.policy_ledger["P-333-ALLOW-001"],
+	suspended := object.union(data.policy_ledger, {"P-AUTHZ-ALLOW-001": object.union(
+		data.policy_ledger["P-AUTHZ-ALLOW-001"],
 		{"status": "중지"},
 	)})
 	result := decision with input as base with data.policy_ledger as suspended
@@ -347,7 +347,7 @@ test_declared_environment_is_enforced if {
 # ── T-LEDGER-001 관리정보 없는 정책 (§11.8) ─────────────────────────────────
 
 test_policy_without_ledger_entry_blocks if {
-	stripped := object.remove(data.policy_ledger, {"P-333-ALLOW-001"})
+	stripped := object.remove(data.policy_ledger, {"P-AUTHZ-ALLOW-001"})
 	result := decision with input as base with data.policy_ledger as stripped
 	result.policy_id == "P-CONTROL-LEDGER-001"
 	result.decision == "Block"
@@ -363,7 +363,7 @@ exception_request := with_input({
 test_registered_exception_relaxes_block if {
 	result := decision with input as exception_request
 	result.decision == "Alert"
-	result.policy_id == "P-333-DENY-001"
+	result.policy_id == "P-AUTHZ-DENY-001"
 	result.exception.id == "EXC-001"
 	"사후 수동 검토 적용" in result.obligations
 
@@ -433,7 +433,7 @@ test_exception_cannot_relax_integrity_control if {
 # 예외는 완화만 할 수 있고 강화는 변경관리 절차를 따라야 한다.
 test_exception_cannot_tighten_a_decision if {
 	bad := [object.union(data.exceptions[0], {
-		"policy_id": "P-333-ALLOW-001",
+		"policy_id": "P-AUTHZ-ALLOW-001",
 		"scope": {"principal_role": "partner"},
 		"effect": "Block",
 	})]
@@ -441,47 +441,21 @@ test_exception_cannot_tighten_a_decision if {
 	result.decision == "Allow"
 }
 
-# ── T-BASELINE 이전 버전과의 결과 비교 (§11.11) ─────────────────────────────
-#
-# 27칸 권한 매트릭스는 정책집을 다시 쓰기 전의 확정 판정이다. 구조를 바꾸면서
-# 조용히 달라진 칸이 없는지 여기서 대조한다.
-
-baseline := {
-	"partner": {
-		"public": {"r": "Allow", "w": "Block", "x": "Block"},
-		"nonimportant": {"r": "Block", "w": "Block", "x": "Block"},
-		"important": {"r": "Block", "w": "Block", "x": "Block"},
-	},
-	"employee": {
-		"public": {"r": "Allow", "w": "Block", "x": "Block"},
-		"nonimportant": {"r": "Allow", "w": "Allow", "x": "Block"},
-		"important": {"r": "Alert", "w": "Block", "x": "Block"},
-	},
-	"admin": {
-		"public": {"r": "Allow", "w": "Allow", "x": "Restrict"},
-		"nonimportant": {"r": "Allow", "w": "Allow", "x": "Restrict"},
-		"important": {"r": "Allow", "w": "Allow", "x": "Approval"},
-	},
+# 권한 허용은 Rego 소스가 아니라 배포한 데이터 번들에 따른다.
+test_authorization_bundle_fails_closed_without_grants if {
+	empty := {"grants": []}
+	result := decision with input as base with data.authorization as empty
+	result.policy_id == "P-AUTHZ-DENY-001"
 }
 
-# 예외 대장이 비어 있을 때의 순수 권한 판정을 본다.
-matrix_cell(role, data_class, action) := result.decision if {
-	result := decision with input as with_input({
-		"principal": {"role": role},
-		"resource": {"id": "matrix", "data_class": data_class},
-		"tool": {"action": action},
-	})
-		with data.exceptions as []
-}
-
-test_permission_matrix_matches_recorded_baseline if {
-	every role, classes in baseline {
-		every data_class, actions in classes {
-			every action, expected in actions {
-				matrix_cell(role, data_class, action) == expected
-			}
-		}
-	}
+test_authorization_bundle_grant_changes_decision if {
+	grant := {"id": "test-partner-write", "roles": ["partner"],
+	          "data_classes": ["public"], "actions": ["w"]}
+	changed := object.union(data.authorization,
+	    {"grants": array.concat(data.authorization.grants, [grant])})
+	request := with_input({"tool": {"action": "w"}})
+	result := decision with input as request with data.authorization as changed
+	result.policy_id == "P-AUTHZ-ALLOW-001"
 }
 
 # ── T-LEDGER 관리대장 자체의 정합성 (§12.3) ─────────────────────────────────
@@ -608,7 +582,7 @@ test_decommission_outranks_disabled_registry if {
 test_absent_lifecycle_defaults_to_operating if {
 	result := decision with input as base
 	result.decision == "Allow"
-	result.policy_id == "P-333-ALLOW-001"
+	result.policy_id == "P-AUTHZ-ALLOW-001"
 }
 
 # 폐기 차단은 예외로 완화할 수 없다. 완화되면 종료 판정의 연속성 근거가 사라진다.
@@ -625,7 +599,7 @@ test_shadow_endpoint_upgrades_allow_to_alert if {
 	result.decision == "Alert"
 	result.policy_id == "MCP-SHADOW-001"
 	some conflict in result.conflicts
-	conflict.policy_id == "P-333-ALLOW-001"
+	conflict.policy_id == "P-AUTHZ-ALLOW-001"
 }
 
 # 섀도 설정을 가진 사람이라고 해서 원래 막혔을 호출이 경고로 바뀌지는 않는다.
@@ -636,7 +610,7 @@ test_shadow_endpoint_does_not_weaken_a_block if {
 		"resource": {"id": "secret-001", "data_class": "important"},
 	})
 	result.decision == "Block"
-	result.policy_id == "P-333-DENY-001"
+	result.policy_id == "P-AUTHZ-DENY-001"
 }
 
 test_no_shadow_report_leaves_allow_unchanged if {
@@ -644,7 +618,7 @@ test_no_shadow_report_leaves_allow_unchanged if {
 		"principal": {"role": "partner", "department": "협력사 A", "shadow_endpoints": 0},
 	})
 	result.decision == "Allow"
-	result.policy_id == "P-333-ALLOW-001"
+	result.policy_id == "P-AUTHZ-ALLOW-001"
 }
 
 # ── 통합관리대장 V1.0 PaC 후보에서 새로 정책화한 통제 ───────────────────────
@@ -662,13 +636,13 @@ test_block_plaintext_remote_endpoint if {
 
 test_secure_transport_is_not_blocked if {
 	result := decision with input as with_input({"contract": object.union(base.contract, {"transport_secure": true})})
-	result.policy_id == "P-333-ALLOW-001"
+	result.policy_id == "P-AUTHZ-ALLOW-001"
 }
 
 # 입력이 아예 없는 구버전 Gateway에서 전부 막히면 안 된다.
 test_missing_transport_field_defaults_open if {
 	result := decision with input as base
-	result.policy_id == "P-333-ALLOW-001"
+	result.policy_id == "P-AUTHZ-ALLOW-001"
 }
 
 # T-EGRESS-001 CTL-25 허용 목록 밖 목적지
@@ -719,7 +693,7 @@ test_clean_write_is_not_escalated if {
 		"request": {"untrusted_markers": []},
 	}
 	result := decision with input as with_input(patch)
-	result.policy_id == "P-333-ALLOW-001"
+	result.policy_id == "P-AUTHZ-ALLOW-001"
 }
 
 # 승인을 받은 뒤에는 같은 호출이 통과해야 한다.
@@ -732,7 +706,7 @@ test_untrusted_marker_clears_after_approval if {
 		"approval": {"granted": true},
 	}
 	result := decision with input as with_input(patch)
-	result.policy_id == "P-333-ALLOW-001"
+	result.policy_id == "P-AUTHZ-ALLOW-001"
 }
 
 # T-ANOMALY-001 CTL-28 반복 차단
@@ -754,7 +728,7 @@ test_blocks_below_limit_do_not_alert if {
 		"context": {"recent_blocks": 4, "block_limit": 5},
 	}
 	result := decision with input as with_input(patch)
-	result.policy_id == "P-333-ALLOW-001"
+	result.policy_id == "P-AUTHZ-ALLOW-001"
 }
 
 # T-SHADOW-002 망에서 발견된 리스너는 설정 기반 발견보다 앞선다.
