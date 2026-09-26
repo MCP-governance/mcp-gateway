@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import asyncio
+import gzip
 import hmac
+import io
 import os
 import time
 from collections import defaultdict
@@ -164,6 +166,20 @@ async def ingest_runtime_evidence(
     body = await request.body()
     if len(body) > OTEL_AUDIT_MAX_BYTES:
         raise HTTPException(413, "OTLP payload가 제한을 초과했습니다.")
+    content_encoding = request.headers.get("content-encoding", "identity").strip().lower()
+    if content_encoding == "gzip":
+        try:
+            # Limit the decompressed stream as well as the wire payload.  A plain
+            # gzip.decompress() would let a small compressed request expand without
+            # bound before the size check (a telemetry zip bomb).
+            with gzip.GzipFile(fileobj=io.BytesIO(body)) as stream:
+                body = stream.read(OTEL_AUDIT_MAX_BYTES + 1)
+        except (EOFError, OSError) as exc:
+            raise HTTPException(400, "gzip OTLP payload를 해제할 수 없습니다.") from exc
+        if len(body) > OTEL_AUDIT_MAX_BYTES:
+            raise HTTPException(413, "압축 해제된 OTLP payload가 제한을 초과했습니다.")
+    elif content_encoding not in {"", "identity"}:
+        raise HTTPException(415, "지원하지 않는 OTLP Content-Encoding입니다.")
     message = ExportTraceServiceRequest()
     try:
         message.ParseFromString(body)

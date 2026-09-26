@@ -105,6 +105,16 @@ for path in gw/registry gw/overview gw/termination/cases gw/policy/ledger gw/end
 done
 expect "OTLP Audit API 무인증 적재" "$(code -X POST "$CONSOLE/api/audit/otlp/v1/traces" \
   -H 'content-type: application/x-protobuf' --data-binary '')" 401
+AUDIT_INGEST_TOKEN="$(sed -n 's/^OTEL_AUDIT_INGEST_TOKEN=//p' .env | tail -1)"
+if [[ -n "$AUDIT_INGEST_TOKEN" ]]; then
+  gzip_status="$(printf '' | gzip -c | curl -s -o /dev/null -w '%{http_code}' \
+    -X POST "$CONSOLE/api/audit/otlp/v1/traces" \
+    -H "x-otel-audit-token: $AUDIT_INGEST_TOKEN" \
+    -H 'content-type: application/x-protobuf' -H 'content-encoding: gzip' --data-binary @-)"
+  expect "OTLP Audit API gzip protobuf" "$gzip_status" 200
+else
+  bad "OTLP Audit API gzip protobuf" "OTEL_AUDIT_INGEST_TOKEN이 없습니다"
+fi
 expect "직원 → Runtime Evidence" "$(code "$CONSOLE/api/runtime-evidence?limit=1" \
   -H "authorization: Bearer $EMP")" 403
 ADMIN_CONSOLE="$(token kkg@bob.local)"
