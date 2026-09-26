@@ -521,7 +521,7 @@ services:
     - '0'
     - /target
     volumes:
-    - ./services:/target:ro
+    - ./services:/target/services:ro
     - ./uv.lock:/target/uv.lock:ro
     - scan-reports:/scan-reports
     - trivy-cache:/root/.cache/trivy

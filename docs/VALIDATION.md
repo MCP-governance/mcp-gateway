@@ -14,3 +14,5 @@ WSL Python 3.12, Docker Engine 29.8.1에서 실행했다.
 Presidio 이미지에 이미 포함된 en_core_web_lg를 사용해 격리망에서 모델을 다운로드하지 않는다.
 
 2안: 관리자 인증·고정 검사 대상·A.I.G task/status/result 형식·Trivy 정규화에 대한 27개 시험 추가. 실제 모델 자격 증명이 없어 A.I.G 보안 스캔 완료는 검증하지 않았다.
+
+2안에서도 실제 Keycloak/MCP/OPA/Presidio/Collector/PostgreSQL 통합 시험 통과. 브라우저의 Authorization Code + PKCE 로그인과 도구/증적 표시 확인. 실제 Trivy0.74.0 작업으로 uv.lock 의존성 보고서를 생성했다.

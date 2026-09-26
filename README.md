@@ -73,3 +73,5 @@ Collector JSON 전송 설정은 [OTel 공식 문서](https://github.com/open-tel
 관리자는 Keycloak 토큰으로 `http://127.0.0.1:18084/scans`에 `{"target":"demo"}`를 POST하고, 반환된 UUID를 `/scans/<UUID>`에서 조회합니다. 실제 MCP 스캔에는 `.env`의 `AIG_SCAN_MODEL`·`AIG_SCAN_MODEL_TOKEN` 또는 A.I.G에 미리 구성한 기본 모델이 필요합니다. 외부 LLM 호출이 발생하므로 배포한 모델의 과금 정책이 적용됩니다. 자격 증명 없이 검사 완료를 표시하지 않습니다.
 
 Trivy는 `docker compose --profile scan run --rm trivy`로 실행합니다. 자기 프로젝트의 새 보고서 볼륨으로 실행해 이전 결과와 구분하고, Gateway 내부에서 서비스 토큰으로 `POST /scans/trivy-result`를 호출하면 정규화된 발견 수가 중앙 OTel 경로로 저장됩니다. 자세한 배선·API·제품 요구사항은 [docs/SCANNING.md](docs/SCANNING.md)에 있습니다. A.I.G의 자체 SQLite 작업 DB는 제품 내부 저장소이며, Runtime Analyzer의 증적 DB는 PostgreSQL입니다.
+
+2안 기본 네트워크 대역은 `MCP_NETWORK_PREFIX=10.247`이며, 동시 배포 시 포트와 대역을 분리합니다. 검사 API 연결과 Trivy 결과 수집은 `uv run --frozen python tests/container_scan_smoke.py --trivy`로 확인할 수 있습니다.

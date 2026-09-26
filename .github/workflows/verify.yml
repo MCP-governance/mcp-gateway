@@ -20,5 +20,7 @@ jobs:
       - run: cp .env.example .env && python3 prepare.py && docker compose config --quiet
       - run: docker compose -p architecture-ci up -d --build --wait --wait-timeout 180
       - run: uv run --frozen python tests/container_smoke.py
+      - if: github.ref == 'refs/heads/architecture/plan-2'
+        run: docker compose -p architecture-ci --profile scan run --rm trivy && uv run --frozen python tests/container_scan_smoke.py --trivy
       - if: always()
         run: docker compose -p architecture-ci logs --tail=40 && docker compose -p architecture-ci down -v
