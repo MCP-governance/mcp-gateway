@@ -33,6 +33,15 @@ jobs:
       - run: uv sync --frozen
       - run: uv run --frozen python -m pyflakes mcp_gateway tests examples
       - run: uv run --frozen pytest -q
+      # The console is plain ES modules; Node checks their syntax and the DOM-free state module.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - run: node --check mcp_gateway/console/static/console.js
+      - run: node --check mcp_gateway/console/static/charts.mjs
+      - run: node --check mcp_gateway/console/static/login.js
+      - run: node --test tests/console-state.test.mjs
 
   container:
     name: Container and official MCP SDK
@@ -40,6 +49,7 @@ jobs:
     timeout-minutes: 15
     env:
       MCP_PROXY_PORT: "18080"
+      MCP_PROXY_ADMIN_TOKEN: "ci-console-token-0123456789"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -49,7 +59,7 @@ jobs:
       - run: uv sync --frozen
       - run: docker compose -p mcpgw-proxy-ci config --quiet
       - run: docker compose -p mcpgw-proxy-ci up --build --wait --wait-timeout 90
-      - run: uv run --frozen python tests/container_smoke.py --url http://127.0.0.1:18080
+      - run: uv run --frozen python tests/container_smoke.py --url http://127.0.0.1:18080 --admin-token "$MCP_PROXY_ADMIN_TOKEN"
       - name: Proxy image has no MCP SDK dependency
         run: docker compose -p mcpgw-proxy-ci exec -T proxy /app/.venv/bin/python -c "import importlib.util; assert importlib.util.find_spec('mcp') is None"
       - name: Logs on failure
@@ -57,4 +67,4 @@ jobs:
         run: docker compose -p mcpgw-proxy-ci logs --tail=100
       - name: Stop this test stack
         if: always()
-        run: docker compose -p mcpgw-proxy-ci down
+        run: docker compose -p mcpgw-proxy-ci down -v
