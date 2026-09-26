@@ -1,8 +1,0 @@
-{
-  "model": {"name": "bob-assistant"},
-  "security": {"auth": {"selectedType": "gemini-api-key"}},
-  "general": {"enableAutoUpdate": false, "enableAutoUpdateNotification": false},
-  "privacy": {"usageStatisticsEnabled": false},
-  "telemetry": {"enabled": false},
-  "tools": {"exclude": ["web_fetch", "google_web_search"]}
-}
