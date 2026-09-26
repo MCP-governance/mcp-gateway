@@ -1,0 +1,475 @@
+{
+  "documentType": "codex-security.hardening-analysis",
+  "schemaVersion": "1.0",
+  "analysisId": "hardening_20260924_mcp_gateway_architecture",
+  "sourceEvidence": {
+    "kind": "source_collection",
+    "label": "mcp-gateway main 아키텍처 검토",
+    "collectionSha256": "001fc42f109171185422ece33599e86733a63f7facbd87813c94cf04f529ff4f",
+    "artifactCount": 16,
+    "targetRevision": "45b9f6ed6dd9cb6b6eadfaf2b6cc6ee1ac377967",
+    "sourceDrift": "none",
+    "artifacts": [
+      {
+        "path": ".github/workflows/verify.yml",
+        "sha256": "b56486adff5c8c0daecceb4a10b7d14ee92dc29093a55c655bcb44ea3e70f033"
+      },
+      {
+        "path": "docs/PDF-INTEGRATION-2026-09.md",
+        "sha256": "ca31f11350c0f3c7e7b9331171baad17ac6234d91b23e4238694ad1263fd9209"
+      },
+      {
+        "path": "docs/runtime-hardening.md",
+        "sha256": "3f9edfcae0909cfe28d19c47688797872a0fedb550ac291f5fd69c6cbeceebbd"
+      },
+      {
+        "path": "full_stack_lab/CONTROL_PLANES.md",
+        "sha256": "91845d31e1ef51d7f17c3ad20367712043417629af8e8acb3ca9aa453a7c741a"
+      },
+      {
+        "path": "full_stack_lab/NETWORK.md",
+        "sha256": "d69be01510604cf374c5a36d157fe2e6f4fb2d3e32a8ee46b7482f26bd493c5b"
+      },
+      {
+        "path": "full_stack_lab/compose.corporate-lab.yaml",
+        "sha256": "a8d2e747f31e60d904bd51402a60aab1947c5c35765ead748ab4a801c6f53ab6"
+      },
+      {
+        "path": "full_stack_lab/compose.local-llm.yaml",
+        "sha256": "78854f7c5899b08afb0ff3a2dbbcabed89c59d12aebd74fdcab4903f37f29833"
+      },
+      {
+        "path": "full_stack_lab/compose.yaml",
+        "sha256": "75224d4d6413bef1f2b4a8a65bea1c49d301224d8595b81d8ca876bd134e87be"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/agent_gateway.py",
+        "sha256": "bf1ca71ba86f8918851983fd0a243b455c27b507066ce0c1dcd8737471fc45e3"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/agent_service.py",
+        "sha256": "d57f41b043a303735fc9355fd6a2c1fd304b560540d47decd37461d20387692d"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/agent_tables.sql",
+        "sha256": "c6094ea5b22ad3275a89b1b32b23e3e0e973f83d99fd6c67f93b624b24b10fdd"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "72e38d8174f8bc639ba30415f6f195ca995f9e3335ca58c50ad35cd2a008d46d"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/db.py",
+        "sha256": "0ecca90094806ea07d3f6b9a780a5e9cfdaf64173c2024a83d8d818096c3f45c"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/main.py",
+        "sha256": "27400dd35e989cc5ac3bf503648c3084806d9c5a2a80721d41d1c98c84989589"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/mcp_facade.py",
+        "sha256": "0991be2f62593780274dc442bd0833c2c88528351364342dd35a10d8815fc3ec"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/replay.py",
+        "sha256": "9e401235c27e1953e25c8f30ddc16a91be1959947eb8c4a450e98b120eb8e761"
+      }
+    ]
+  },
+  "assessment": {
+    "outcome": "opportunities_identified",
+    "summary": "기존 공통 실행 경로를 유지하고 내부 책임, 실행 상태, DB 권한과 검사 환경을 단계적으로 분리하는 설계 제안이다."
+  },
+  "constraints": {
+    "profile": "balanced",
+    "changeHorizons": [
+      "incremental",
+      "medium_term"
+    ],
+    "nonNegotiables": [
+      "기존 공통 집행 경로와 OPA fail-closed 유지",
+      "과거 감사 v1~v5 검증 의미 유지",
+      "미확정 실행 자동 재시도 금지",
+      "문서만 변경"
+    ],
+    "assumptions": [
+      "합성 Compose 랩과 기존 API 호환 유지",
+      "측정된 지연/처리량/메모리 예산 없음",
+      "실행 시험이나 취약점 스캔을 수행하지 않음"
+    ]
+  },
+  "opportunities": [
+    {
+      "opportunityId": "runtime-boundaries",
+      "title": "실행 경로와 권한 경계의 책임 분리",
+      "summary": "공통 실행 서비스의 내부 모듈, 상태 영속화, 데이터 권한과 검사 프로세스 경계를 정리한다.",
+      "diagnosis": "집행 함수는 공통이지만 승인/receipt/감사 상태와 관리 데이터 권한은 여러 경로에 걸쳐 있다.",
+      "evidence": [
+        {
+          "evidenceId": "E1",
+          "title": "공통 실행 경로",
+          "path": "full_stack_lab/gateway/app/core.py",
+          "claim": "execute_call로 REST, Agent, MCP와 승인 재개가 수렴한다.",
+          "claimType": "observed",
+          "sourceKind": "source"
+        },
+        {
+          "evidenceId": "E2",
+          "title": "실행과 증적 저장 순서",
+          "path": "full_stack_lab/gateway/app/agent_gateway.py",
+          "claim": "Agent receipt가 있지만 공통 경로의 최종 감사와 승인 상태 저장은 외부 호출 뒤다.",
+          "claimType": "observed",
+          "sourceKind": "source"
+        },
+        {
+          "evidenceId": "E3",
+          "title": "공용 DB 역할과 기동 DDL",
+          "path": "full_stack_lab/compose.yaml",
+          "claim": "Gateway, SSE, Agent, Worker가 mcp DB 역할을 공유한다.",
+          "claimType": "observed",
+          "sourceKind": "source"
+        },
+        {
+          "evidenceId": "E4",
+          "title": "실습 오버레이 추가 권한",
+          "path": "full_stack_lab/compose.corporate-lab.yaml",
+          "claim": "corporate-lab에서 A.I.G가 Gateway와 동거하며 추가 capability가 적용된다.",
+          "claimType": "observed",
+          "sourceKind": "source"
+        },
+        {
+          "evidenceId": "E5",
+          "title": "정책과 유틸 결합",
+          "path": "full_stack_lab/gateway/app/core.py",
+          "claim": "core import 시 tracing이 설정되며 관리대장 캐시는 명시적 refresh에 의존한다.",
+          "claimType": "observed",
+          "sourceKind": "source"
+        },
+        {
+          "evidenceId": "E6",
+          "title": "검증 자산과 외부 경계",
+          "path": "docs/PDF-INTEGRATION-2026-09.md",
+          "claim": "Presidio, 감사 v5, 정책 replay가 있고 조직 전체 강제 경로는 별도 검증 범위다.",
+          "claimType": "observed",
+          "sourceKind": "source"
+        }
+      ],
+      "desiredInvariants": [
+        "모든 ingress는 같은 실행 서비스 사용",
+        "전송 의도 저장 실패 시 외부 실행 금지",
+        "정책 허가와 실행 결과 구분",
+        "Worker에 계약 승인/감사 변경 권한 없음",
+        "정책 묶음과 증적 버전 대조 가능"
+      ],
+      "proposalPath": "proposals/runtime-boundaries.md",
+      "options": [
+        {
+          "optionId": "local-guards",
+          "title": "안 1: 현 구조 유지와 국소 보강",
+          "kind": "baseline",
+          "summary": "상태 표시, 장애 회귀 시험, 실습 구성 검사 보강",
+          "diagramPaths": {
+            "before": "diagrams/runtime-boundaries-before.mmd",
+            "after": "diagrams/runtime-boundaries-local-guards-after.mmd"
+          },
+          "evidenceCoverage": [
+            {
+              "evidenceId": "E1",
+              "title": "공통 실행 경로",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "기존 통제와 회귀 검사를 유지하며 제안 범위만 단계적으로 보강한다. 효과는 구현 후 검증 필요."
+            },
+            {
+              "evidenceId": "E2",
+              "title": "실행과 증적 저장 순서",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "기존 통제와 회귀 검사를 유지하며 제안 범위만 단계적으로 보강한다. 효과는 구현 후 검증 필요."
+            },
+            {
+              "evidenceId": "E3",
+              "title": "공용 DB 역할과 기동 DDL",
+              "effect": "unaffected",
+              "tacticalFixRequired": true,
+              "rationale": "기존 통제와 회귀 검사를 유지하며 제안 범위만 단계적으로 보강한다. 효과는 구현 후 검증 필요."
+            },
+            {
+              "evidenceId": "E4",
+              "title": "실습 오버레이 추가 권한",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "기존 통제와 회귀 검사를 유지하며 제안 범위만 단계적으로 보강한다. 효과는 구현 후 검증 필요."
+            },
+            {
+              "evidenceId": "E5",
+              "title": "정책과 유틸 결합",
+              "effect": "unaffected",
+              "tacticalFixRequired": true,
+              "rationale": "기존 통제와 회귀 검사를 유지하며 제안 범위만 단계적으로 보강한다. 효과는 구현 후 검증 필요."
+            },
+            {
+              "evidenceId": "E6",
+              "title": "검증 자산과 외부 경계",
+              "effect": "unaffected",
+              "tacticalFixRequired": true,
+              "rationale": "기존 통제와 회귀 검사를 유지하며 제안 범위만 단계적으로 보강한다. 효과는 구현 후 검증 필요."
+            }
+          ],
+          "tradeoffs": [
+            {
+              "dimension": "security",
+              "direction": "improves",
+              "confidence": "medium",
+              "basis": "source-derived",
+              "assessment": "상태 해석과 실습 구성 오류를 줄이지만 공용 권한은 남는다.",
+              "validationPlan": "미확정 상태 및 운영 구성 부정 시험"
+            },
+            {
+              "dimension": "performance",
+              "direction": "neutral",
+              "confidence": "medium",
+              "basis": "source-derived",
+              "assessment": "추가 동기 서비스 hop을 만들지 않는다.",
+              "validationPlan": "동일 부하의 지연 및 처리량 대조"
+            },
+            {
+              "dimension": "memory",
+              "direction": "neutral",
+              "confidence": "medium",
+              "basis": "hypothetical",
+              "assessment": "새 프로세스는 없고 회귀 검사 유지 비용이 중심이다.",
+              "validationPlan": "유휴/최대 RSS 대조"
+            },
+            {
+              "dimension": "reliability",
+              "direction": "neutral",
+              "confidence": "medium",
+              "basis": "source-derived",
+              "assessment": "기존 실패 결합과 복구 공백이 남는다.",
+              "validationPlan": "전송 후 프로세스 중단 시험"
+            },
+            {
+              "dimension": "operability",
+              "direction": "neutral",
+              "confidence": "medium",
+              "basis": "hypothetical",
+              "assessment": "기존 운영 절차에 검사 항목을 추가한다.",
+              "validationPlan": "기동/복구 runbook 점검"
+            },
+            {
+              "dimension": "migration",
+              "direction": "neutral",
+              "confidence": "high",
+              "basis": "source-derived",
+              "assessment": "기존 구조와 응답을 최대한 유지한다.",
+              "validationPlan": "이전 client 호환 시험"
+            },
+            {
+              "dimension": "developer_ergonomics",
+              "direction": "neutral",
+              "confidence": "medium",
+              "basis": "hypothetical",
+              "assessment": "익숙한 구조이지만 core의 변경 결합은 유지된다.",
+              "validationPlan": "같은 기능의 수정 범위 비교"
+            },
+            {
+              "dimension": "rollback",
+              "direction": "neutral",
+              "confidence": "medium",
+              "basis": "hypothetical",
+              "assessment": "개별 변경 복원은 쉽지만 미확정 의미는 보존해야 한다.",
+              "validationPlan": "기존 감사 보존 복구 시험"
+            }
+          ],
+          "residualRisks": [
+            "공용 DB 역할과 core 결합 유지",
+            "모든 ingress의 영속 실행 상태 복구를 보장하지 않음"
+          ],
+          "implementationReadiness": {
+            "affectedComponents": [
+              "full_stack_lab/gateway/app/core.py",
+              "full_stack_lab/gateway/app/agent_gateway.py",
+              "full_stack_lab/compose.corporate-lab.yaml"
+            ],
+            "workPackages": [
+              "미확정 표시 및 장애 회귀",
+              "실습 구성 검사"
+            ],
+            "acceptanceCriteria": [
+              "미확정 건을 차단 성공으로 집계하지 않음",
+              "운영용 구성에서 고권한 오버레이 거부"
+            ],
+            "migrationNotes": [
+              "기존 필드 유지"
+            ],
+            "rollback": "개별 변경을 복원하되 미확정 의미와 감사 이력을 보존한다."
+          }
+        },
+        {
+          "optionId": "owned-boundaries",
+          "title": "안 2: 내부 모듈과 권한 경계의 단계적 분리",
+          "kind": "structural",
+          "summary": "공통 journal, 모듈 책임, DB 역할/migration, A.I.G 분리와 정책 digest",
+          "diagramPaths": {
+            "before": "diagrams/runtime-boundaries-before.mmd",
+            "after": "diagrams/runtime-boundaries-owned-boundaries-after.mmd"
+          },
+          "evidenceCoverage": [
+            {
+              "evidenceId": "E1",
+              "title": "공통 실행 경로",
+              "effect": "addresses",
+              "tacticalFixRequired": true,
+              "rationale": "기존 통제와 회귀 검사를 유지하며 제안 범위만 단계적으로 보강한다. 효과는 구현 후 검증 필요."
+            },
+            {
+              "evidenceId": "E2",
+              "title": "실행과 증적 저장 순서",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "기존 통제와 회귀 검사를 유지하며 제안 범위만 단계적으로 보강한다. 효과는 구현 후 검증 필요."
+            },
+            {
+              "evidenceId": "E3",
+              "title": "공용 DB 역할과 기동 DDL",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "기존 통제와 회귀 검사를 유지하며 제안 범위만 단계적으로 보강한다. 효과는 구현 후 검증 필요."
+            },
+            {
+              "evidenceId": "E4",
+              "title": "실습 오버레이 추가 권한",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "기존 통제와 회귀 검사를 유지하며 제안 범위만 단계적으로 보강한다. 효과는 구현 후 검증 필요."
+            },
+            {
+              "evidenceId": "E5",
+              "title": "정책과 유틸 결합",
+              "effect": "addresses",
+              "tacticalFixRequired": true,
+              "rationale": "기존 통제와 회귀 검사를 유지하며 제안 범위만 단계적으로 보강한다. 효과는 구현 후 검증 필요."
+            },
+            {
+              "evidenceId": "E6",
+              "title": "검증 자산과 외부 경계",
+              "effect": "mitigates",
+              "tacticalFixRequired": true,
+              "rationale": "기존 통제와 회귀 검사를 유지하며 제안 범위만 단계적으로 보강한다. 효과는 구현 후 검증 필요."
+            }
+          ],
+          "tradeoffs": [
+            {
+              "dimension": "security",
+              "direction": "improves",
+              "confidence": "medium",
+              "basis": "source-derived",
+              "assessment": "역할과 프로세스 경계로 변경 권한을 축소한다.",
+              "validationPlan": "Worker의 Registry/감사/신원 변경 거부 시험"
+            },
+            {
+              "dimension": "performance",
+              "direction": "unknown",
+              "confidence": "medium",
+              "basis": "source-derived",
+              "assessment": "전송 전 DB 쓰기가 늘며 client 재사용의 이득은 미측정이다.",
+              "validationPlan": "동일 부하 p50/p95/p99, 처리량, lock 대기"
+            },
+            {
+              "dimension": "memory",
+              "direction": "regresses",
+              "confidence": "medium",
+              "basis": "hypothetical",
+              "assessment": "별도 검사 프로세스와 journal 보존량이 늘어난다.",
+              "validationPlan": "유휴/최대 RSS와 일별 저장량"
+            },
+            {
+              "dimension": "reliability",
+              "direction": "improves",
+              "confidence": "medium",
+              "basis": "source-derived",
+              "assessment": "검사 장애를 격리하고 미확정 복구를 명시하나 journal DB 장애는 실행을 막는다.",
+              "validationPlan": "DB/OPA/A.I.G 중단 및 재기동 시험"
+            },
+            {
+              "dimension": "operability",
+              "direction": "regresses",
+              "confidence": "medium",
+              "basis": "hypothetical",
+              "assessment": "migration, 역할, 미확정 처리, digest 관리가 추가된다.",
+              "validationPlan": "설치와 복구 절차 및 소요시간 확인"
+            },
+            {
+              "dimension": "migration",
+              "direction": "regresses",
+              "confidence": "high",
+              "basis": "source-derived",
+              "assessment": "API 호환, 기존 DB와 상태 전이의 이관이 필요하다.",
+              "validationPlan": "신규/기존 DB, 이전 client, v1~v5 감사 검증"
+            },
+            {
+              "dimension": "developer_ergonomics",
+              "direction": "improves",
+              "confidence": "medium",
+              "basis": "hypothetical",
+              "assessment": "모듈 책임이 명확해지나 인터페이스 도입 비용이 있다.",
+              "validationPlan": "import 경계 검사와 변경 범위 비교"
+            },
+            {
+              "dimension": "rollback",
+              "direction": "unknown",
+              "confidence": "medium",
+              "basis": "hypothetical",
+              "assessment": "확장 schema와 미확정 상태를 보존한 호환 코드 복구가 필요하다.",
+              "validationPlan": "공용 owner 복구 없이 단계별 rollback"
+            }
+          ],
+          "residualRisks": [
+            "DB와 외부 효과의 원자성 및 정확히 한 번 실행은 보장하지 않음",
+            "모듈 분리는 프로세스 격리가 아님",
+            "공유 호스트 커널과 조직 egress 통제는 별도",
+            "동적 정책 전환과 전송 직전 상태 경쟁은 별도 설계 필요"
+          ],
+          "implementationReadiness": {
+            "affectedComponents": [
+              "full_stack_lab/gateway/app",
+              "full_stack_lab/db",
+              "full_stack_lab/compose.yaml",
+              "full_stack_lab/compose.corporate-lab.yaml",
+              "full_stack_lab/opa"
+            ],
+            "workPackages": [
+              "A 계약 고정과 순수 모듈 추출",
+              "B 실행 상태와 변경 이력",
+              "C 자격 및 검사 환경 격리",
+              "D 정책 배포와 운영 기준"
+            ],
+            "acceptanceCriteria": [
+              "지원 ingress의 판단과 실행 의미 일치",
+              "미완료 실행 자동 재시도 없음",
+              "역할 밖 DB 변경 거부",
+              "기존 감사 체인 검증 성공",
+              "정책 digest와 replay 연결"
+            ],
+            "migrationNotes": [
+              "확장 후 축소 방식의 schema 이관",
+              "관리 모듈/Journal은 초기 독립 서버 아님",
+              "구현 시 기준 커밋 변경 재확인"
+            ],
+            "rollback": "호환 앱과 검증된 정책 묶음으로 복구하며 schema/미확정 증적을 보존한다. 공용 owner 권한 복구를 자동 rollback으로 사용하지 않는다."
+          }
+        }
+      ],
+      "recommendedOptionId": "owned-boundaries",
+      "recommendation": "지속적인 기능 확장을 전제로 안 2를 권고한다. 단기 합성 랩 시연만 필요하면 안 1을 선택할 수 있다."
+    }
+  ],
+  "openQuestions": [
+    "운영 대상 범위",
+    "미확정 조사 책임과 보존 기간",
+    "관리 API 독립 프로세스 필요",
+    "종료/정지와 dispatch의 직렬화 기준",
+    "실제 부하 및 성능 SLO"
+  ]
+}

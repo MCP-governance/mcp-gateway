@@ -1,0 +1,6 @@
+body.gate { display: grid; place-items: center; min-height: 100vh; min-height: 100dvh; padding: 16px; }
+.gate-card { width: min(460px, 100%); padding: 8px 28px 28px; display: flex; flex-direction: column; gap: 8px; }
+.gate-card .brand { padding: 20px 0 12px; }
+.gate-card .btn.primary { justify-content: center; min-height: 48px; font-size: var(--fs); }
+.gate-card input, .gate-card select { min-height: 48px; }
+.err { color: var(--block); font-size: var(--fs-sm); min-height: 1em; margin: 0; }
