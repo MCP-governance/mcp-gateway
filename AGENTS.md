@@ -42,5 +42,5 @@ git diff --check
 
 포트가 겹치면 `MCP_PROXY_PORT`로 피하고 자기 Compose 프로젝트만 정리한다.
 변경한 실행 경로에 맞는 시험과 문서를 갱신한다. 잠금 파일은 `uv lock`으로 갱신한다.
-`Proxy` 또는 `proxy-<주제>`에서 작업한다. `proxy/...`는 Windows·macOS에서 `Proxy` ref와 충돌한다.
+`proxy` 또는 `proxy-<주제>`에서 작업한다. `proxy/...`는 Windows·macOS에서 `proxy` ref와 충돌한다.
 `main`에 직접 푸시하거나 Proxy를 `main`에 병합하지 않는다. 병합은 사용자가 정하며 D-37의 되돌리기 커밋을 먼저 revert해야 한다.

@@ -2,9 +2,9 @@ name: MCP Proxy verification
 
 on:
   push:
-    branches: ["Proxy", "proxy-*"]
+    branches: ["proxy", "proxy-*"]
   pull_request:
-    branches: ["Proxy"]
+    branches: ["proxy"]
   workflow_dispatch:
 
 permissions:

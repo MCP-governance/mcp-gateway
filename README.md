@@ -1,6 +1,6 @@
 # MCP Gateway — Proxy
 
-`Proxy` 브랜치는 MCP 서버 앞에 두는 작은 **HTTP 리버스 프록시**입니다.
+`proxy` 브랜치는 MCP 서버 앞에 두는 작은 **HTTP 리버스 프록시**입니다.
 클라이언트는 `/mcp/<서버 이름>/`에 연결하고, 프록시는 설정에 적힌 upstream MCP 엔드포인트로 통신을 전달합니다.
 
 ```text
@@ -29,7 +29,7 @@ JSON-RPC를 재직렬화하거나 MCP 서버를 다시 구현하지 않습니다
 Python 3.12 이상과 [uv](https://docs.astral.sh/uv/)가 필요합니다. Windows, Linux, WSL에서 같은 명령을 사용합니다.
 
 ```bash
-git clone --branch Proxy https://github.com/MCP-governance/mcp-gateway.git
+git clone --branch proxy https://github.com/MCP-governance/mcp-gateway.git
 cd mcp-gateway
 uv sync --frozen
 uv run --frozen python examples/demo_server.py
@@ -198,9 +198,9 @@ uv run --frozen python tests/container_smoke.py --url http://127.0.0.1:8080 --ad
 서버별 연결 풀 분리, 본문 없는 요청, 열린 SSE가 있을 때의 종료 시간도 실제 소켓으로 확인합니다.
 기록을 켠 상태에서도 요청·응답 바이트가 같은지, 결과 분류·키 인증·LiteLLM 키(가짜 LiteLLM)·장애 시 거부·속도 제한,
 관리 API의 토큰·가림·CSP·JavaScript MIME, 지표 라벨, 도달 확인을 시험합니다.
-CI는 `Proxy`와 `proxy-*` 브랜치의 Python 시험 및 컨테이너 데모, CodeQL 분석을 실행합니다.
+CI는 `proxy`와 `proxy-*` 브랜치의 Python 시험 및 컨테이너 데모, CodeQL 분석을 실행합니다.
 작업 브랜치는 `proxy-<주제>`로 만듭니다. `proxy/<주제>`는 Windows·macOS처럼 대소문자를 구분하지 않는
-파일 시스템에서 `Proxy` ref와 경로가 겹쳐 `git fetch`가 실패합니다.
+파일 시스템에서 `proxy` ref와 경로가 겹쳐 `git fetch`가 실패합니다.
 
 ## 범위
 
