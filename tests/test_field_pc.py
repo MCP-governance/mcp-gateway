@@ -221,6 +221,15 @@ def test_password_grant_is_for_automation_with_another_client(kit, keycloak, mon
     assert fake.log == ["password"]
 
 
+def test_admin_pc_can_log_in_without_any_harness(kit, keycloak, tmp_path, monkeypatch, capsys):
+    fake = keycloak()
+    main(kit, monkeypatch, "setup", "--url", fake.url, "--no-browser", "--harness", "none")
+    assert not kit.claude_calls and not (tmp_path / "codex" / "config.toml").exists()
+    capsys.readouterr()
+    kit.main(["token"])
+    assert capsys.readouterr().out.startswith("at_")
+
+
 def test_doctor_and_uninstall(kit, keycloak, tmp_path, monkeypatch, capsys):
     fake = keycloak()
     main(kit, monkeypatch, "setup", "--url", fake.url, "--no-browser", "--harness", "codex")

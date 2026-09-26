@@ -390,7 +390,8 @@ def remove_codex_block() -> None:
 def cmd_setup(args) -> None:
     settings = {"url": gateway_url(args.url), "servers": server_names(args.servers),
                 "realm": args.realm, "client": args.client,
-                "harnesses": sorted({h.strip() for h in args.harness.split(",") if h.strip()})}
+                # none: 하네스 없이 로그인만(관리자 PC가 토큰으로 관리 API를 부를 때)
+                "harnesses": sorted({h.strip() for h in args.harness.split(",") if h.strip() not in ("", "none")})}
     unknown = set(settings["harnesses"]) - {"claude", "codex"}
     if unknown:
         fail(f"--harness는 claude,codex 중에서: {', '.join(sorted(unknown))}")
@@ -583,7 +584,7 @@ def main(argv: list[str] | None = None) -> None:
     setup.add_argument("--realm", default="mcp", help="Keycloak realm(기본 mcp)")
     setup.add_argument("--client", default="mcp-cli", help="Keycloak 클라이언트(기본 mcp-cli, device flow)")
     setup.add_argument("--ca", help="관리자가 준 루트 인증서(PEM)")
-    setup.add_argument("--harness", default="claude,codex", help="claude,codex 중 연결할 것")
+    setup.add_argument("--harness", default="claude,codex", help="claude,codex 중 연결할 것(none: 로그인만)")
     setup.add_argument("--no-browser", action="store_true", help="로그인 주소를 브라우저로 열지 않는다")
     setup.add_argument("--username", help=argparse.SUPPRESS)  # 자동화 전용(--password-stdin과 함께)
     setup.add_argument("--password-stdin", action="store_true", help=argparse.SUPPRESS)
