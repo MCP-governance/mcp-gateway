@@ -245,7 +245,7 @@ flowchart LR
    ```bash
    ./field/appliance.sh up        # = docker compose -f compose.yaml -f compose.field.yaml up -d --build --wait → ca → status
    ./field/appliance.sh ca        # 다시 꺼내기: field/ca/mcp-gw-root.crt 와 SHA-256 지문
-   ./field/appliance.sh status    # {"status":"ready",…} 이면 정상
+   ./field/appliance.sh status    # {"ready":true,…} 이면 정상(기동 직후엔 첫 도달 확인까지 잠깐 기다림)
    ```
 
 5. 방화벽에서 SSH는 관리자 PC에만, 443은 사내 대역에만 엽니다. Docker가 게시한 포트는 ufw 규칙을 거치지 않으므로

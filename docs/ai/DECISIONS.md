@@ -74,10 +74,10 @@ LiteLLM 1.89.4의 MCP 게이트웨이를 코드로 대조했다(main의 `docs/ai
 가져오지 않은 것: `tools/list` 거르기·의미 기반 도구 선택·도구 이름 접두어·서버 합치기(응답 변형), legacy SSE 변환(재직렬화),
 OAuth 메타데이터 합성, `oauth_passthrough`류 토큰 전달, 서버 CRUD(서버는 TOML이 정본이고 바꾸면 재시작).
 
-## D-43 솔루션 기기·관리자 PC·직원 PC로 나눈 실기기 배치 (2026-09-27)
+## D-45 솔루션 기기·관리자 PC·직원 PC로 나눈 실기기 배치 (2026-09-27)
 
 사용자 요청: "실제 노트북·실제 Codex·Claude Code 등의 하네스를 활용해 직원 PC, 관리자 PC, 솔루션 기기로 활용할 수 있게
-다듬고 README에 세팅 가이드라인을 만든다." (D-39~41은 `main`, D-42는 `main`의 같은 작업이 쓴다.)
+다듬고 README에 세팅 가이드라인을 만든다." (D-39~41은 `main`, D-42~44는 `main`의 같은 작업이 쓴다.)
 
 - **사내망 입구는 Caddy 하나**(`compose.field.yaml`): 프록시의 기본 바인딩·게시(loopback)는 그대로 두고, `tls internal`로
   사설 CA를 만드는 Caddy만 `${APPLIANCE_BIND}:443`에 게시한다. 평문 HTTP로 사내망에 여는 모드는 만들지 않았다 — 키가

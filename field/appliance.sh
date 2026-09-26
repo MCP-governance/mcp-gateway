@@ -40,8 +40,18 @@ ca)
 	;;
 status)
 	compose ps
-	curl -fsS --cacert "$CA" --resolve "$APPLIANCE_HOST:443:$APPLIANCE_BIND" "https://$APPLIANCE_HOST/api/ready"
+	# 직원 PC와 같은 조건(사설 CA 검증, 사내망 주소)으로 본다. 프록시의 첫 도달 확인이 upstream보다 먼저 돌면
+	# 다음 확인(30초)까지 down이라, 잠깐 기다린다.
+	for _ in $(seq 1 25); do
+		if curl -fsS --cacert "$CA" --resolve "$APPLIANCE_HOST:443:$APPLIANCE_BIND" "https://$APPLIANCE_HOST/api/ready"; then
+			echo
+			exit 0
+		fi
+		sleep 2
+	done
+	curl -sS --cacert "$CA" --resolve "$APPLIANCE_HOST:443:$APPLIANCE_BIND" "https://$APPLIANCE_HOST/api/ready"
 	echo
+	exit 1
 	;;
 logs)
 	compose logs --tail=100 -f
