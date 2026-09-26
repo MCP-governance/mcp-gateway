@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>로그인 · MCP Governance</title>
+  <link rel="stylesheet" href="/static/console.css" />
+  <link rel="stylesheet" href="/static/login.css" />
+</head>
+<body class="gate">
+  <main class="panel gate-card">
+    <header class="brand">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+      <div><b>MCP Governance Console</b><span>BoB Corp · 합성 계정</span></div>
+    </header>
+
+    <form id="gate-form" class="form stack">
+      <label>계정
+        <select id="pick">
+          <optgroup label="관리자">
+            <option value="kkg@bob.local" selected>김경곤 · 거버넌스팀</option>
+            <option value="mks@bob.local">문광석 · 보안운영팀</option>
+          </optgroup>
+          <optgroup label="직원">
+            <option value="ysg@bob.local">양승권 · 플랫폼개발팀 (ws-ysg)</option>
+            <option value="jwj@bob.local">정원재 · 데이터분석팀 (ws-jwj)</option>
+            <option value="pse@bob.local">박소은 · 보안기술팀 (ws-pse)</option>
+            <option value="miso@bob.local">김미소 · 보안기술팀</option>
+          </optgroup>
+          <optgroup label="협력사 직원">
+            <option value="nkk@bob.local">권노경 · 협력사 A (ws-nkk)</option>
+          </optgroup>
+        </select>
+      </label>
+      <label>이메일
+        <input id="email" name="email" type="email" autocomplete="username" value="kkg@bob.local" required />
+      </label>
+      <label>비밀번호
+        <input id="password" name="password" type="password" autocomplete="current-password" value="test-password" required />
+      </label>
+      <p class="err" id="gate-error" role="alert" tabindex="-1"></p>
+      <button class="btn primary" id="gate-go" type="submit">로그인</button>
+    </form>
+  </main>
+  <script src="/static/login.js"></script>
+</body>
+</html>

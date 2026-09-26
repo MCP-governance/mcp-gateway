@@ -1,0 +1,15 @@
+flowchart LR
+  U["사용자 / MCP Host"] --> A["Agent Service"]
+  U --> G["Gateway / 공통 execute_call"]
+  A --> G
+  G --> O["OPA / Presidio"]
+  G --> M["MCP 서버"]
+  G --> D[("공유 DB / mcp 역할")]
+  A --> D
+  W["Intake Worker"] --> D
+  E["Endpoint Agent / 관측"] --> G
+  subgraph LAB["corporate-lab 선택 시 Gateway 컨테이너"]
+    X["A.I.G / 추가 capability"]
+    G
+  end
+  X -. "컨테이너 권한 공유" .-> G

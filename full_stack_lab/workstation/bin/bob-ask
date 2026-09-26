@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# bob-ask: what the employee types into their AI harness, run headless.
+#
+#   bob-ask [--harness claude|codex|gemini|opencode] [--servers a,b] "지시"
+#
+# Runs the harness installed on this PC exactly as a person would in print mode.
+# The MCP servers it sees are the IT-managed ones (all via the Gateway); --servers
+# narrows them with each harness's own switch, the way a person enables the servers a
+# project needs. The harness's raw event stream goes to ~/transcripts/.
+#
+# BOB_HARNESS_COMPACT=1 (default) gives the harness a short system prompt and no
+# built-in tools: the lab's CPU model cannot read a 20k-token coding-agent prompt in
+# useful time. Set 0 with a cloud model behind LiteLLM for the harness's own prompt.
+set -euo pipefail
+. /etc/profile.d/bob-harness.sh
+
+harness="${HARNESS:-claude}" servers=""
+while [[ $# -gt 1 ]]; do
+  case "$1" in
+    --harness) harness="$2"; shift 2 ;;
+    --servers) servers="$2"; shift 2 ;;
+    *) break ;;
+  esac
+done
+prompt="${1:?usage: bob-ask [--harness h] [--servers a,b] \"지시\"}"
+compact="${BOB_HARNESS_COMPACT:-1}"
+prompt_file=/etc/bob/harness-prompt.md
+
+# Servers the task does not use: switched off per harness below.
+others=()
+if [[ -n "$servers" ]]; then
+  while read -r s; do
+    [[ ",$servers," == *",$s,"* ]] || others+=("$s")
+  done < /etc/bob/servers
+fi
+
+export BOB_SSO_TOKEN; BOB_SSO_TOKEN="$(bob-sso token)"
+mkdir -p "$HOME/transcripts" "$HOME/work"
+cd "$HOME/work"
+log="$HOME/transcripts/$(date +%Y%m%d-%H%M%S)-$harness.jsonl"
+
+case "$harness" in
+  claude)
+    args=(-p "$prompt" --output-format stream-json --verbose --max-turns 8)
+    [[ "$compact" == 1 ]] && args+=(--tools "" --system-prompt-file "$prompt_file")
+    for s in "${others[@]}"; do args+=(--disallowedTools "mcp__$s"); done
+    claude "${args[@]}" ;;
+  codex)
+    args=(exec --json --skip-git-repo-check)
+    if [[ "$compact" == 1 ]]; then
+      # Codex's own tools (shell, images, browser, sub-agents, skills) are feature flags;
+      # a small model given a shell tries `psql` before the MCP tool that does the job.
+      args+=(-c "model_instructions_file=\"$prompt_file\"")
+      for f in shell_tool unified_exec view_image image_generation multi_agent browser_use browser_use_external \
+               computer_use apps plugins skill_search skill_mcp_dependency_install tool_suggest sleep_tool goals \
+               workspace_dependencies in_app_browser realtime_conversation; do
+        args+=(--disable "$f")
+      done
+    fi
+    for s in "${others[@]}"; do args+=(-c "mcp_servers.$s.enabled=false"); done
+    codex "${args[@]}" "$prompt" ;;
+  gemini)
+    args=(-p "$prompt" --output-format stream-json --approval-mode yolo --skip-trust)
+    [[ -n "$servers" ]] && args+=(--allowed-mcp-server-names ${servers//,/ })
+    [[ "$compact" == 1 ]] && export GEMINI_SYSTEM_MD="$prompt_file"
+    gemini "${args[@]}" ;;
+  opencode)
+    args=(run --format json)
+    [[ "$compact" == 1 ]] && args+=(--agent bob)
+    if (( ${#others[@]} )); then
+      OPENCODE_CONFIG_CONTENT="$(printf '%s\n' "${others[@]}" | jq -Rn '{mcp: [inputs | {key: ., value: {enabled: false}}] | from_entries}')"
+      export OPENCODE_CONFIG_CONTENT
+    fi
+    opencode "${args[@]}" "$prompt" ;;
+  *) echo "bob-ask: 알 수 없는 하네스 $harness" >&2; exit 2 ;;
+esac 2>&1 | tee "$log"

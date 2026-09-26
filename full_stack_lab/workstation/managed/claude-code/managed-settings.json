@@ -1,0 +1,18 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://llm-gateway:4000",
+    "ANTHROPIC_MODEL": "bob-assistant",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "bob-assistant",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "bob-assistant",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "bob-assistant",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "bob-assistant",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "DISABLE_AUTOUPDATER": "1",
+    "DISABLE_TELEMETRY": "1",
+    "DISABLE_ERROR_REPORTING": "1"
+  },
+  "permissions": {
+    "allow": [],
+    "deny": ["WebFetch", "WebSearch"]
+  }
+}

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>MCP Governance Console</title>
+  <link rel="stylesheet" href="/static/console.css" />
+  <!-- Apache ECharts 6.1.0 (Apache-2.0, vendor/ECHARTS-LICENSE.txt), served same-origin for the CSP. -->
+  <script src="/static/vendor/echarts.min.js"></script>
+  <script type="module" src="/static/console.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#view" data-act="skip">본문으로 건너뛰기</a>
+  <div class="shell">
+    <aside class="side">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+        <div><b>MCP Governance</b><span>BoB Corp</span></div>
+      </div>
+      <nav class="nav" id="nav" aria-label="화면"></nav>
+      <div class="side-foot">
+        <div class="who" id="who"></div>
+        <div class="row">
+          <button class="btn sm" type="button" data-act="theme">테마</button>
+          <button class="btn sm" type="button" data-act="logout">로그아웃</button>
+        </div>
+      </div>
+    </aside>
+    <main class="main" id="view" tabindex="-1">
+      <p class="skeleton">불러오는 중…</p>
+    </main>
+  </div>
+
+  <div class="scrim" id="scrim" data-act="close-drawer"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true" aria-labelledby="drawer-title" inert>
+    <header>
+      <h2 id="drawer-title"></h2>
+      <button class="icon-btn" type="button" data-act="close-drawer" aria-label="닫기">✕</button>
+    </header>
+    <div class="content" id="drawer-body"></div>
+  </aside>
+
+  <dialog id="dialog"><form method="dialog" id="dialog-form"></form></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>
