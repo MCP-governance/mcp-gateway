@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import os
-from contextlib import asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
 
 import anyio
 import httpx
@@ -24,6 +24,21 @@ def forward_headers(raw: list[tuple[bytes, bytes]], excluded: set[str]) -> list[
         if name.lower() == b"connection":
             blocked |= {part.strip().lower() for part in value.decode("latin-1").split(",")}
     return [(name, value) for name, value in raw if name.decode("latin-1").lower() not in blocked]
+
+
+async def request_body(request: Request):
+    # An empty stream would still go upstream as chunked, giving a bodiless GET or
+    # DELETE a body; send no content at all unless the client actually sent some.
+    chunks = request.stream()
+    first = await anext(chunks)
+    if not first:
+        return None
+
+    async def replay():
+        yield first
+        async for chunk in chunks:
+            yield chunk
+    return replay()
 
 
 class RelayResponse(StreamingResponse):
@@ -65,10 +80,11 @@ def create_app(settings: Settings | None = None, *, transport=None) -> Starlette
             write=settings.write_timeout_seconds,
             pool=settings.connect_timeout_seconds,
         )
-        async with httpx.AsyncClient(
-            timeout=timeout, trust_env=False, follow_redirects=False, transport=transport,
-        ) as client:
-            app.state.client = client
+        limits = httpx.Limits(max_connections=settings.max_connections_per_server)
+        async with AsyncExitStack() as clients:
+            app.state.clients = {name: await clients.enter_async_context(httpx.AsyncClient(
+                timeout=timeout, limits=limits, trust_env=False, follow_redirects=False, transport=transport,
+            )) for name in settings.servers}
             yield
 
     async def health(request: Request) -> JSONResponse:
@@ -89,9 +105,12 @@ def create_app(settings: Settings | None = None, *, transport=None) -> Starlette
         query = b"&".join(part for part in (url.query, request.scope["query_string"]) if part)
         url = url.copy_with(query=query)
         # A fresh Request avoids replaying cookies collected by the shared connection pool.
-        outgoing = httpx.Request(request.method, url, headers=headers, content=request.stream())
+        outgoing = httpx.Request(request.method, url, headers=headers, content=await request_body(request))
         try:
-            response = await request.app.state.client.send(outgoing, stream=True)
+            response = await request.app.state.clients[name].send(outgoing, stream=True)
+        except httpx.PoolTimeout:
+            log.warning("upstream %s connection limit reached", name)
+            return JSONResponse({"detail": "upstream connection limit reached"}, status_code=503)
         except httpx.TimeoutException:
             return JSONResponse({"detail": "upstream timeout"}, status_code=504)
         except httpx.HTTPError as error:

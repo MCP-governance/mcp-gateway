@@ -25,10 +25,22 @@ def test_invalid_header(headers):
     ("connect_timeout_seconds", 0), ("connect_timeout_seconds", True),
     ("read_timeout_seconds", -1), ("read_timeout_seconds", math.nan),
     ("write_timeout_seconds", math.inf), ("write_timeout_seconds", "10"),
+    ("shutdown_timeout_seconds", -1), ("shutdown_timeout_seconds", math.inf),
+    ("max_connections_per_server", 0), ("max_connections_per_server", True),
+    ("max_connections_per_server", 1.5), ("max_connections_per_server", "10"),
 ])
-def test_invalid_timeout(name, value):
+def test_invalid_proxy_option(name, value):
     with pytest.raises(ValueError):
         Settings({"demo": Upstream("http://localhost/mcp")}, **{name: value})
+
+
+def test_proxy_options_loaded(tmp_path):
+    config = tmp_path / "proxy.toml"
+    config.write_text('[proxy]\nshutdown_timeout_seconds=0\nmax_connections_per_server=2\n'
+                      '[servers.demo]\nurl="http://localhost/mcp"\n')
+    settings = load_config(config)
+    assert settings.shutdown_timeout_seconds == 0
+    assert settings.max_connections_per_server == 2
 
 
 @pytest.mark.parametrize("servers", [{}, {"../other": Upstream("http://localhost/mcp")}, {"with space": Upstream("http://localhost/mcp")}])

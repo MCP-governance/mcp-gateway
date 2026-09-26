@@ -10,13 +10,13 @@ import uvicorn
 @pytest.fixture
 def live_server():
     @contextmanager
-    def start(app):
+    def start(app, **options):
         listener = socket.socket()
         listener.bind(("127.0.0.1", 0))
         listener.listen(128)
         port = listener.getsockname()[1]
         server = uvicorn.Server(uvicorn.Config(
-            app, log_level="warning", access_log=False, timeout_graceful_shutdown=2,
+            app, **{"log_level": "warning", "access_log": False, "timeout_graceful_shutdown": 2, **options},
         ))
         thread = threading.Thread(target=server.run, kwargs={"sockets": [listener]}, daemon=True)
         thread.start()
