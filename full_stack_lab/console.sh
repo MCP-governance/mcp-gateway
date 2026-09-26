@@ -33,6 +33,16 @@ usage: ./console.sh <command>
   test                   전체 검증 (Rego·분류 self-check·acceptance·시나리오·보안 회귀)
   replay [N]             기록된 정책 입력 N건(기본 100)과 합성 라벨 사례를 후보 정책(REPLAY_POLICY_DIR)에 재생 — MCP 호출 없음
   status | logs [svc] | down | reset | scan | openapi
+  field up [--with-lab-workstations]
+                         실기기 배치: 같은 스택 + Caddy(사내망 TLS 앞단, .env의 APPLIANCE_HOST·APPLIANCE_BIND)
+  field ca               Caddy의 사설 루트 인증서를 field/ca/root.crt로 꺼내고 SHA-256 지문 출력
+  field status           Caddy·Gateway·Console 상태, 사내망 주소와 사설 CA로 /api/health 확인
+  field pc-command       직원 PC에서 실행할 키트 setup 명령(서버 목록은 레지스트리에서)
+  field set-password <이메일>
+                         합성 계정 한 개의 비밀번호를 바꿈(사내망에 열기 전에 계정마다)
+  field register-pc <이름> [owner] [platform]
+                         실제 PC를 단말 장치로 등록(기존 /api/endpoint/devices), 장치 키를 한 번 출력
+  field down             Caddy만 멈춤(나머지 스택·데이터는 그대로 — 전체는 위 down/reset)
 EOF
 }
 
@@ -205,6 +215,125 @@ watch_decisions() {
   python3 scripts/watch.py "$(admin_token)"
 }
 
+# ── field: 실기기 배치(솔루션 기기·관리자 PC·직원 PC) — 루트 README 참고 ──────────
+# compose.field.yaml은 ./console.sh up 이나 CI가 아니라 이 명령들에서만 얹힌다.
+FIELD_COMPOSE=(-f compose.yaml -f compose.field.yaml)
+
+field_up() {
+  local with_ws=0
+  for a in "$@"; do [[ "$a" == "--with-lab-workstations" ]] && with_ws=1; done
+  ensure_env
+  local host bind
+  host="$(env_value APPLIANCE_HOST)"; bind="$(env_value APPLIANCE_BIND)"
+  if [[ -z "$host" || -z "$bind" ]]; then
+    echo ".env에 APPLIANCE_HOST(예: mcp-gw.internal)와 APPLIANCE_BIND(이 기기의 사내망 IP)를 지정하세요." >&2
+    echo "루트 README '실제 기기로 배치하기 → ① 솔루션 기기' 참고." >&2
+    exit 1
+  fi
+  echo "[field 1/4] 이미지 빌드"
+  docker compose "${FIELD_COMPOSE[@]}" build -q
+  echo "[field 2/4] 회사 시스템 · MCP 서버 10종 · Gateway · Console"
+  docker compose "${FIELD_COMPOSE[@]}" up -d corp-git corp-redis corp-db corp-mail intranet external-web \
+    mcp-filesystem mcp-git mcp-fetch mcp-memory mcp-desktop mcp-postgres mcp-redis mcp-email mcp-gitea mcp-playwright \
+    gateway gateway-sse agent-service intake-worker
+  wait_ready
+  ensure_contracts
+  provision_devices
+  if [[ $with_ws == 1 ]]; then
+    echo "[field 3/4] 컨테이너 직원 PC 4대도 함께 기동(--with-lab-workstations)"
+    docker compose "${FIELD_COMPOSE[@]}" --profile lab-workstations up -d "${WORKSTATIONS[@]}"
+  else
+    echo "[field 3/4] 컨테이너 직원 PC 4대는 끔(실제 PC가 대신함) — 같이 보려면 --with-lab-workstations"
+  fi
+  echo "[field 4/4] Caddy(사내망 TLS 앞단)"
+  docker compose "${FIELD_COMPOSE[@]}" up -d caddy
+  echo
+  echo "사내망 게시     : https://$host  (${bind}:443)"
+  field_ca
+  echo "직원 PC 키트    : field/pc/mcpgw_pc.py — 명령은 ./console.sh field pc-command"
+}
+
+field_ca() {
+  mkdir -p field/ca
+  # Caddy는 첫 인증서를 낼 때 사설 CA를 만든다. 막 띄운 직후면 몇 초 기다린다.
+  for _ in $(seq 1 10); do
+    docker compose "${FIELD_COMPOSE[@]}" cp caddy:/data/caddy/pki/authorities/local/root.crt field/ca/root.crt 2>/dev/null && break
+    sleep 2
+  done
+  [[ -s field/ca/root.crt ]] || { echo "CA를 꺼내지 못했습니다: docker compose -f compose.yaml -f compose.field.yaml logs caddy" >&2; exit 1; }
+  echo "루트 인증서 : full_stack_lab/field/ca/root.crt"
+  # 직원 PC 키트(setup --ca)가 보여 주는 것과 같은 SHA-256(DER) 지문. 파일과 다른 경로로 알린다.
+  echo "SHA-256 지문: $(python3 -c 'import hashlib, ssl, sys
+d = hashlib.sha256(ssl.PEM_cert_to_DER_cert(open(sys.argv[1]).read())).hexdigest().upper()
+print(":".join(d[i:i + 2] for i in range(0, len(d), 2)))' field/ca/root.crt)"
+}
+
+field_status() {
+  docker compose "${FIELD_COMPOSE[@]}" ps caddy gateway agent-service
+  local host bind; host="$(env_value APPLIANCE_HOST)"; bind="$(env_value APPLIANCE_BIND)"
+  [[ -n "$host" && -n "$bind" && -s field/ca/root.crt ]] || { echo "먼저 ./console.sh field up (그리고 field ca)" >&2; exit 1; }
+  # 직원 PC와 같은 조건으로 본다: 사설 CA로 검증하고, 사내망 주소(APPLIANCE_BIND)로 이름을 푼다.
+  curl -fsS --cacert field/ca/root.crt --resolve "${host}:443:${bind}" "https://${host}/api/health" | python3 -m json.tool
+}
+
+field_down() {
+  docker compose "${FIELD_COMPOSE[@]}" stop caddy
+  echo "Caddy(사내망 게시)를 멈췄습니다. 나머지는 그대로입니다 — 스택 전체는 './console.sh down'(데이터 유지)"
+  echo "또는 'reset'(볼륨까지 삭제)."
+}
+
+# 실제 PC 한 대를 단말 장치로 등록한다. 새 API가 아니라 기존 /api/endpoint/devices
+# (provision_devices()가 랩의 PC 4대에 쓰는 것과 같은 것)를 그대로 쓴다.
+field_register_pc() {
+  local id="${1:?PC 이름을 지정하세요 (예: ysg-laptop)}" owner="${2:-emp-real}" platform="${3:-windows}"
+  local key="ek-${id}-$(openssl rand -hex 20)"
+  curl -fsS -X POST "$GATEWAY/api/endpoint/devices" \
+    -H "authorization: Bearer $(admin_token)" -H 'content-type: application/json' \
+    -d "{\"endpoint_id\":\"$id\",\"hostname\":\"$id\",\"platform\":\"$platform\",\"owner_token\":\"$owner\",\"scopes\":[\"inventory\",\"netscan\"],\"enrollment_key\":\"$key\"}" \
+    | python3 -m json.tool
+  echo
+  echo "장치 키(한 번만 출력됨, 안전한 채널로 직원에게 전달): $key"
+  echo "단말 관측 에이전트 설치: ../endpoint-agent/README.md"
+}
+
+# 합성 계정은 첫 기동 때 모두 같은 MOCK_SSO_PASSWORD로 심긴다. 사내망에 열면 직원이 관리자 비밀번호를 아는
+# 셈이므로 계정마다 바꾼다. 비밀번호는 명령줄이 아니라 표준 입력으로 넘기고(프로세스 목록에 남지 않게),
+# 해시는 로그인과 같은 crypt()/bcrypt다.
+field_set_password() {
+  local email="${1:?계정 이메일을 지정하세요 (예: ysg@bob.local)}" pw
+  read -r -s -p "새 비밀번호(12자 이상, 화면에 보이지 않음): " pw; echo
+  [[ ${#pw} -ge 12 ]] || { echo "12자 이상으로 정하세요" >&2; exit 1; }
+  printf '%s' "$pw" | docker compose "${FIELD_COMPOSE[@]}" exec -T agent-service python -c '
+import os, sys, psycopg
+with psycopg.connect(os.environ["DATABASE_URL"]) as db:
+    n = db.execute("UPDATE principals SET password_hash = crypt(%s, gen_salt(%s, 12)) WHERE lower(email) = lower(%s)",
+                   (sys.stdin.read(), "bf", sys.argv[1])).rowcount
+print("바꿨습니다" if n else "그런 계정이 없습니다")
+sys.exit(0 if n else 1)' "$email"
+}
+
+# 직원에게 줄 setup 명령 한 줄. 서버 목록은 레지스트리에서 읽는다(손으로 옮기지 않는다, D-30).
+field_pc_command() {
+  local host; host="$(env_value APPLIANCE_HOST)"
+  [[ -n "$host" ]] || { echo ".env에 APPLIANCE_HOST를 지정하세요" >&2; exit 1; }
+  local servers
+  servers="$(python3 -c 'import sys, tomllib; print(",".join(sorted(tomllib.load(open(sys.argv[1], "rb"))["servers"])))' registry/catalog.toml)"
+  echo "python3 mcpgw_pc.py setup --url https://${host} --servers ${servers} --ca root.crt --workstation <이 PC의 이름>"
+}
+
+field_dispatch() {
+  case "${1:-}" in
+    up) shift; field_up "$@" ;;
+    ca) field_ca ;;
+    status) field_status ;;
+    down) field_down ;;
+    register-pc) shift; field_register_pc "$@" ;;
+    pc-command) field_pc_command ;;
+    set-password) shift; field_set_password "$@" ;;
+    *) usage; exit 2 ;;
+  esac
+}
+
 case "${1:-up}" in
   up) shift || true; up "$@" ;;
   workday) shift; workday "$@" ;;
@@ -256,6 +385,7 @@ case "${1:-up}" in
     else echo "node 없음 — 콘솔 상태 테스트는 CI 정적 검사에서 실행됩니다."; fi
     # --entrypoint: the static image's default entrypoint runs the tests without printing them
     docker run --rm --entrypoint /opa -v "$LAB_DIR/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy
+    python3 tests/field_kit_check.py
     docker compose exec -T gateway python -m app.classify
     docker compose exec -T gateway python -m app.acceptance | tee reports/acceptance.json
     harness_check | tee reports/harnesses.txt
@@ -297,6 +427,7 @@ json.dump(module.app.openapi(), sys.stdout, ensure_ascii=False, indent=2, sort_k
     rm -f reports/*.json reports/*.txt
     echo "DB·회사 시스템·모델 볼륨과 보고서를 초기화했습니다. registry/contracts.lock.json은 유지합니다."
     ;;
+  field) shift; field_dispatch "$@" ;;
   -h|--help|help) usage ;;
   *) usage; exit 2 ;;
 esac

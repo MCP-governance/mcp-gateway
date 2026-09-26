@@ -27,6 +27,12 @@
 랩의 직원 PC는 `endpoint-agent/agent.py`를 이미지에 복사해 쓴다. 실제 PC(Linux·Windows)에는 저장소 루트의
 [`endpoint-agent/README.md`](../../endpoint-agent/README.md) 절차(장치 키 발급 → 설치기 → 1회 보고 확인 → 제거)를 따른다.
 
+### 랩 전체를 실제 기기 세 종류에 나눠 올리기
+솔루션 기기(Docker 호스트) · 관리자 PC · 직원 PC로 나누는 절차는 루트
+[README.md "실제 기기로 배치하기"](../../README.md#실제-기기로-배치하기--솔루션-기기--관리자-pc--직원-pc)에
+있다. `./console.sh field up|ca|status|pc-command|set-password|register-pc|down` — 기본 `up`은 바뀌지 않고, CI는
+`verify` 끝에서 이 절차를 실제 Claude Code·Codex CLI로 돌린다(D-42~D-44).
+
 ### WSL이 유휴로 꺼지는 문제
 WSL VM은 열린 프로세스가 없으면 몇 분 뒤 종료되고 컨테이너도 같이 죽는다. 작업 중에는 백그라운드로
 `wsl.exe -d kali-linux -- sleep infinity`를 하나 띄워 둔다. 모든 장기 서비스는 `restart: unless-stopped`라

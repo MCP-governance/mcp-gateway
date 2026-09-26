@@ -108,8 +108,15 @@ Gateway API 중 토큰 없이 열려 있는 것은 다음뿐입니다: `/api/hea
 | `scripts/watch.py` · `scripts/network_prefix.py` | 판정 한 줄 로그 · 망 대역 선택 |
 | `tests/` | 보안 회귀·종료 흐름·검사기·무인증 API 대조·콘솔 상태 모듈(node) |
 | `reports/` | 검증 결과(커밋하지 않음) |
+| `compose.field.yaml`, `field/` | 실기기 배치 오버레이(Caddy, 직원 PC 키트) — `./console.sh field …`로만 얹힘. 아래 8절 |
 
-## 8. 한계
+## 8. 실제 기기로 배치하기
+
+같은 스택을 실제 노트북 세 종류(솔루션 기기·관리자 PC·직원 PC)에 나눠 올리는 절차는 루트
+[README.md](../README.md#실제-기기로-배치하기--솔루션-기기--관리자-pc--직원-pc)에 있습니다. 이 랩 자체를
+바꾸지 않는 오버레이입니다 — `compose.field.yaml`·`field/`는 `./console.sh field …`로만 얹힙니다.
+
+## 9. 한계
 - 합성 로그인, 합성 회사 데이터. Compose 내부망은 방화벽이 아니다.
 - LLM 모드의 결과는 작은 로컬 모델(기본 `qwen3.5:2b-q4_K_M`) 품질에 좌우된다. 판정 대조는 scripted 모드로 한다.
 - 섀도 MCP는 발견·증적까지. 차단은 네트워크 평면 몫.

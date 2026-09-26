@@ -19,6 +19,7 @@ cd full_stack_lab
 ./console.sh ask <ws> "지시" [--harness claude|codex|gemini|opencode]   # 한 PC의 하네스에 헤드리스 지시
 ./console.sh harnesses     # 하네스 4종이 관리형 서버 10종에 다 붙는지(모델 불필요)
 ./console.sh watch         # 판정 흐름
+./console.sh field up|ca|status|pc-command|set-password|register-pc|down   # 실기기 배치(README "실제 기기로 배치하기")
 ```
 정적 검사만: `pyflakes gateway/app/*.py tests/*.py …`, `node --check gateway/app/agent_static/console.js`,
 `python3 tests/open_endpoints.py`, Rego는 `docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy`.
@@ -35,6 +36,10 @@ cd full_stack_lab
 - **감사 원장은 append-only**. 판정 기록을 고치는 코드를 쓰지 않는다.
 - **하네스 관리형 설정은 레지스트리에서 렌더링된다**. 이미지 안 `/etc/claude-code`·`/etc/codex`·`/etc/gemini-cli`·
   `/etc/opencode`의 파일을 직접 고치지 않는다 — `registry/catalog.toml`을 고치고 워크스테이션 이미지를 다시 빌드한다.
+- **사내망 게시는 `compose.field.yaml`의 Caddy(TLS 443) 하나뿐**이다. 평문 HTTP를 사내망에 게시하지 않고, 기본
+  `compose.yaml`의 loopback 게시는 그대로 둔다(D-42·D-43).
+- **직원 PC 키트(`field/pc/mcpgw_pc.py`)는 토큰·비밀번호를 하네스 설정·환경 변수·로그에 쓰지 않는다**. 헬퍼 명령만 쓰고,
+  리프레시는 잠금 안에서만 한다(IdP가 재사용을 계열 폐기로 처리). 시험은 임시 HOME·CODEX_HOME에서만.
 - **Gateway는 하네스 신원을 기록만 한다**. `decisions.client.harness`(clientInfo·User-Agent)는 클라이언트가
   보고한 값이라 판정에 쓰지 않는다.
 

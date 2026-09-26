@@ -24,7 +24,10 @@
    (TTL 동안 수락)를 추가하면 C3 공백의 스펙트럼을 보여 줄 수 있다.
 7. **Console 부가 기능** — 활동 로그 CSV 내보내기, 케이스 판정 이력 비교, 관찰 모드 요약(`/api/monitor/summary`) 화면.
 8. **CI 시간** — `verify` job이 MCP 런타임 이미지를 매번 빌드한다. GHCR 캐시(`docker/build-push-action` + cache-to)로 줄일 수 있다.
-9. **사내망 TLS** — Gateway·LLM 게이트웨이는 지금 평문 HTTP(`http://gateway:8080`, `http://llm-gateway:4000`)다. 실제 사내망에 놓으려면 인증서가 필요하다.
+9. ~~**사내망 TLS**~~ (실기기 배치, v3.1) — `full_stack_lab/compose.field.yaml` + `field/Caddyfile`가 Caddy
+   (`tls internal`) 하나를 앞에 세워 Gateway·IdP·Console의 사내망 경로에 TLS를 씌운다(D-43). LLM 게이트웨이는
+   사내망에 열지 않았다(D-44). Caddy↔서비스 구간은 여전히 Docker 내부망의 평문이다 — 남은 것은 mTLS·조직 CA
+   자동 발급 같은 다음 단계다.
 10. **하네스의 완전한 MCP OAuth** — 지금은 `bob-sso`가 password grant로 대신 받아 온다. 인가 코드 + DCR(Dynamic Client Registration)을 하네스가 직접 하게 바꾸는 편이 MCP 인가 명세에 더 가깝다.
 11. **추가 클라이언트(Antigravity·Cursor·VS Code)** — 같은 Gateway URL을 각자의 MCP 설정에 넣으면 되고 단말 에이전트는 그 파일들을 이미 인벤토리한다. GUI 앱이라 랩에서 실행·검증하지 않았고, `render.py`에 이 형식들의 관리형 설정 생성을 더할 수 있다.
 12. **더 나은 도구 선택을 위한 모델 경로** — GPU 추론(Intel Arc, Vulkan 또는 IPEX 경유) 또는 LiteLLM 뒤에 클라우드 키를 붙이는 두 방향 다 검토할 것. 지금 CPU 2B 모델은 벤치 4건 중 2건만 기대한 도구를 곧바로 골랐다(나머지는 탐색 도구·별칭 도구).

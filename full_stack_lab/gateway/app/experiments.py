@@ -34,7 +34,8 @@ import jwt
 
 from . import db, registry
 
-IDP = os.getenv("IDP_ISSUER", "http://agent-service:8000").rstrip("/")
+# 실기기 배치(compose.field.yaml)에서는 IDP_ISSUER가 PC용 공개 주소라 컨테이너 안에서 풀리지 않는다.
+IDP = (os.getenv("IDP_INTERNAL_URL") or os.getenv("IDP_ISSUER", "http://agent-service:8000")).rstrip("/")
 GITEA = os.getenv("GITEA_ADMIN_URL", "http://corp-git:3000").rstrip("/")
 GITEA_ADMIN = os.getenv("GITEA_ADMIN_USER", "corpadmin")
 GITEA_ADMIN_PASSWORD = os.getenv("GITEA_ADMIN_PASSWORD", "corp-admin-lab-only")

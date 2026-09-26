@@ -43,7 +43,8 @@ jobs:
         run: |
           python -m pip install --quiet pyflakes
           python -m pyflakes gateway/app/*.py tests/*.py supply_chain/*.py workstation/*.py workstation/managed/*.py \
-            workstation/bin/bob-sso workstation/bin/workday workstation/bin/harness-check corp/*.py scripts/*.py ../endpoint-agent/*.py
+            workstation/bin/bob-sso workstation/bin/workday workstation/bin/harness-check corp/*.py scripts/*.py \
+            ../endpoint-agent/*.py field/pc/mcpgw_pc.py
 
       # console.js is an ES module (it imports console-state.mjs); Node 22+ parses it with --check.
       - uses: actions/setup-node@v7
@@ -86,6 +87,10 @@ jobs:
       # the code is worse than none: a reviewer reads it as exhaustive.
       - name: 무인증 API 목록과 문서 대조
         run: python3 tests/open_endpoints.py
+
+      # 실기기 배치(field deploy): 키트·렌더러 일반화·Caddy 오버레이. 엔진 없이 된다.
+      - name: 실기기 배치 키트·오버레이 검사
+        run: python3 tests/field_kit_check.py
 
       - name: 망 분리·게시 포트·서명 키 경계
         run: |
@@ -150,6 +155,39 @@ jobs:
       - name: ./console.sh test
         run: ./console.sh test
 
+      # 실기기 배치(README "실제 기기로 배치하기"): 같은 스택에 Caddy를 얹고, 러너를 직원 PC로 삼는다 —
+      # 사설 CA 신뢰 → 키트 setup(합성 계정 로그인) → 실제 Claude Code·Codex CLI가 헬퍼로 서버 10개에 붙는지.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: 실기기 오버레이 — ./console.sh field up
+        run: |
+          echo "127.0.0.1 mcp-gw.internal" | sudo tee -a /etc/hosts
+          echo "APPLIANCE_HOST=mcp-gw.internal" >> .env
+          echo "APPLIANCE_BIND=127.0.0.1" >> .env
+          ./console.sh field up
+          sudo cp field/ca/root.crt /usr/local/share/ca-certificates/mcp-gw-root.crt
+          sudo update-ca-certificates
+          ./console.sh field status
+
+      - name: 실기기 — 직원 PC 키트와 실제 하네스
+        run: |
+          npm install -g --no-fund --no-audit @anthropic-ai/claude-code@2.1.282 @openai/codex@0.157.0
+          # README ②: 사내망에 열기 전에 계정마다 비밀번호를 바꾼다 — 바꾼 값으로 로그인되는지까지 본다.
+          printf 'ci-field-password-01\n' | ./console.sh field set-password ysg@bob.local
+          servers="$(python3 -c 'import tomllib; print(",".join(sorted(tomllib.load(open("registry/catalog.toml", "rb"))["servers"])))')"
+          echo "ci-field-password-01" | python3 field/pc/mcpgw_pc.py setup --url https://mcp-gw.internal \
+            --servers "$servers" --ca field/ca/root.crt --workstation ci-runner --email ysg@bob.local --password-stdin
+          python3 ~/.mcpgw/mcpgw_pc.py doctor
+          claude mcp list | tee reports/field-claude.txt
+          test "$(grep -c '(HTTP) - ✔ Connected' reports/field-claude.txt)" -eq 10
+          codex mcp get filesystem | tee reports/field-codex.txt
+          grep -F "url: https://mcp-gw.internal/mcp/filesystem/" reports/field-codex.txt
+          python3 ~/.mcpgw/mcpgw_pc.py uninstall
+          if claude mcp get filesystem; then exit 1; fi
+
       - name: 실패 시 컨테이너 로그
         if: failure()
         run: docker compose logs --tail=300 --no-color
@@ -165,4 +203,4 @@ jobs:
 
       - name: 정리
         if: always()
-        run: docker compose --profile llm down -v
+        run: docker compose -f compose.yaml -f compose.field.yaml --profile llm down -v

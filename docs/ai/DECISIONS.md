@@ -305,3 +305,49 @@
 - **이유**: `replay`는 해시와 결과 스키마만 필요한데 `core`를 import하면서 tracing을 초기화했고, `registry`는 순환 import를
   피하려고 함수 안에서 `core`를 불렀다(ROADMAP 6절 "순수 계약 모듈"). 감사 체인의 열 집합은 버전별로 고정해야 하는 데이터라
   정책 판정 코드와 같은 파일에 있을 이유가 없다.
+
+## D-42 실기기 배치는 오버레이 하나와 직원 PC 키트로 (v3.1)
+- **결정**: 사내망 노출은 `full_stack_lab/compose.field.yaml` + `field/Caddyfile`로만 켠다(`./console.sh field …`,
+  내부적으로 `docker compose -f compose.yaml -f compose.field.yaml`). 기본 `compose.yaml`과 `./console.sh up`은 그대로이고,
+  CI는 `verify` 끝에서 이 오버레이를 얹어 README의 실기기 절차를 그대로 돌린다. 컨테이너 직원 PC 4대는 오버레이에서만
+  `profiles: [lab-workstations]`를 받아 기본으로 꺼진다. 직원 PC에는 `field/pc/mcpgw_pc.py`(표준 라이브러리 한 파일)를 준다.
+- **키트의 모양**: 랩의 `bob-sso`와 같은 일(합성 IdP에 password grant로 한 번 로그인, 리프레시 토큰으로 10분 토큰 갱신)을
+  Windows에서도 한다 — bob-sso의 `fcntl` 대신 `msvcrt`/`fcntl` 잠금. IdP는 리프레시 토큰을 쓰면 바꾸고 옛 토큰의 재사용을
+  계열 폐기로 처리하므로(idp.py), 하네스가 서버 10개에 동시에 헬퍼를 부를 때 갱신이 겹치면 로그인이 풀린다. 잠금 안에서만
+  갱신한다. 두 하네스 모두 연결마다 같은 헬퍼 명령을 실행한다(Claude Code `headersHelper`, Codex CLI 0.148+
+  `http_headers_helper`, 401이면 다시 부름). 랩의 Codex 설정이 쓰는 `bearer_token_env_var`는 실행 시 한 번 읽어 10분 뒤
+  긴 세션이 끊기므로 실기기에서는 쓰지 않았다. Codex는 헬퍼를 환경 변수를 비운 채(`env_clear()`) 실행하므로 토큰 폴더를
+  `--home`으로 명령에 싣는다. 이 Windows PC에서 실제 Claude Code 2.1.179·Codex CLI 0.157.1로 확인했다(가짜 IdP·Gateway,
+  서버 10개, 만료 뒤 동시 헬퍼 10개에서 갱신 1번·재사용 0번).
+- **render.py는 그대로 둔다**: 관리형 설정 네 형식의 원천(D-30)은 이미지 빌드용이고, 키트는 사용자 범위(Claude
+  `claude mcp add-json --scope user`, Codex `config.toml` 끝의 표식 블록)에 헬퍼만 쓴다. 서버 목록은 여전히 레지스트리가
+  원천이다 — `./console.sh field pc-command`가 `registry/catalog.toml`에서 읽어 직원용 명령을 만든다.
+- **한계**: 키트가 보내는 `client_id`(`--workstation`)는 허용 목록으로 검증되지 않는다 — 리프레시 토큰 계열을 나누는
+  이름표일 뿐이다. PC 단위 통제는 단말 관측 에이전트의 장치 자격(`field register-pc`, 기존 `POST /api/endpoint/devices`)과
+  조직 IdP의 몫이다(ROADMAP 10번). 합성 계정은 첫 기동 때 모두 같은 `MOCK_SSO_PASSWORD`로 심어지므로 사내망에 열 때는
+  `field set-password`로 계정마다 바꾼다.
+
+## D-43 사내망 TLS 앞단은 Caddy `tls internal` 하나만 게시 (v3.1)
+- **결정**: `field/Caddyfile`의 Caddy(`caddy:2.11.4-alpine`)만 `${APPLIANCE_BIND}:443`에 게시하고, 경로로 Gateway의
+  `/mcp/<server>/`·`/api/health`·`/.well-known/oauth-protected-resource`, IdP의 `/oauth/*`, Console을 나눈다. 나머지 서비스는
+  여전히 loopback 게시이거나 게시 자체가 없다. `APPLIANCE_BIND`에 기본값을 두지 않아 실수로 모든 인터페이스가 열리지
+  않는다. 인증서는 Caddy 자체 사설 CA가 내고, 루트 인증서와 SHA-256 지문만(`./console.sh field ca`) PC에 배포한다.
+- **이유**: ROADMAP 9번("사내망 TLS")이 남겨 둔 일이다. 평문 HTTP로 사내망에 여는 모드는 만들지 않았다 — 하네스의 MCP
+  베어러 토큰이 그대로 흐른다. Caddy 하나만 게시하면 "무엇이 노출되는가"가 오버레이 한 파일로 답이 되고(D-14와 같은 이유),
+  TLS 종료 지점이 하나면 인증서 갱신·CA 배포도 한 곳이다.
+- **공개 주소와 내부 주소**: 오버레이는 Gateway·IdP가 PC에 알리는 절대 URL(`IDP_ISSUER`, `GATEWAY_PUBLIC_MCP_URL`)을
+  `https://${APPLIANCE_HOST}`로 바꾼다. 그 이름은 컨테이너 안에서 풀리지 않으므로 Gateway가 IdP를 직접 부르는 논문 실험은
+  `IDP_INTERNAL_URL`(내부 주소)을 먼저 본다. 토큰의 `iss`는 URL이 아니라 상수라 판정은 바뀌지 않는다.
+- **대안**: 서비스마다 사내 CA 인증서 — 수명 관리가 서비스 수만큼 생기고 "게시된 것은 하나뿐"이 깨진다. mTLS는 넣지 않았다
+  — 자격은 여전히 IdP가 발급하는 OAuth 토큰이 진다.
+- **되돌릴 조건**: 조직에 이미 사내망 리버스 프록시·TLS 종료 지점이 있으면 이 Caddy는 그 뒤로 옮기고 Caddyfile은 예시로 남긴다.
+
+## D-44 실기기 기본은 하네스 벤더 로그인, 회사 LLM 게이트웨이는 열지 않음 (v3.1)
+- **결정**: 키트의 `setup`은 MCP 서버 등록만 한다 — 랩의 `managed-settings.json`처럼 `ANTHROPIC_BASE_URL`을 강제하거나
+  Codex의 `model_provider`를 바꾸지 않는다. 하네스는 각자의 벤더 계정으로 로그인한 그대로 쓰고, 이 배치가 통제하는 것은
+  MCP 경로뿐이다. 오버레이는 LiteLLM을 사내망에 게시하지 않고, `field up`은 로컬 LLM도 띄우지 않는다.
+- **이유**: 실제 노트북은 이미 그 사람의 Claude 구독이나 회사가 발급한 키로 하네스가 돌고 있을 가능성이 높다. 기본값이
+  그것을 덮어쓰면 첫 설치부터 "AI 코딩 도구가 갑자기 다른 모델을 쓴다"는 사고가 생긴다. 거버넌스 대상은 도구 호출이지
+  모델 선택이 아니다. 로컬 CPU 모델(D-32)은 실기기 여러 대의 하네스를 받기에 느리기도 하다.
+- **되돌릴 조건**: 조직이 사내 LLM 통제(사용량 귀속·키 회수)도 이 배치에서 하기로 정하면, LiteLLM을 같은 Caddy 뒤에
+  경로로 붙이고 직원별 가상 키 발급을 키트에 더한다 — 지금은 코드에 없다.

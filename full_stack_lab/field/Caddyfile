@@ -1,0 +1,55 @@
+# 사내망 노출용 TLS 앞단 — 실기기 배치 전용(루트 README "실제 기기로 배치하기", D-43). 게시하는 것은
+# 이 Caddy 하나뿐이다. 나머지 서비스는 여전히 loopback에만 있거나(Console·Gateway, 기존 compose.yaml 그대로)
+# 아예 게시되지 않는다(MCP 서버 10종, LLM 게이트웨이). 경로로만 나눈다:
+#
+#   /mcp/<server>/                        Gateway의 서버별 MCP 엔드포인트
+#   /api/health                           Gateway 생존 확인(무인증 — README가 밝힌 두 개 중 하나)
+#   /.well-known/oauth-protected-resource Gateway의 RFC 9728 메타데이터
+#   /oauth/*, /.well-known/oauth-authorization-server   IdP(직원 PC 키트의 로그인·갱신·폐기)
+#   그 밖 전부                             Console(웹) — agent-service가 정적 파일도 같이 서빙
+#
+# {$APPLIANCE_HOST}는 compose.field.yaml이 .env의 APPLIANCE_HOST로 채운다(예: mcp-gw.internal).
+# `tls internal`은 Caddy 자체 사설 CA로 인증서를 낸다. 루트 인증서는 `./console.sh field ca`로 꺼낸다.
+# 회사 CA가 이미 있으면 아래 tls internal 줄을 `tls /etc/caddy/certs/cert.pem /etc/caddy/certs/key.pem`으로
+# 바꾸고 그 파일을 볼륨으로 올린다.
+{
+	# 관리 API(:2019)는 쓰지 않는다. 이 파일이 정본이고, 바꾸면 컨테이너를 다시 띄운다.
+	admin off
+	# 사내망 이름으로 공인 인증서를 받으러 나가지 않고, :80 리다이렉트도 열지 않는다.
+	auto_https disable_redirects
+}
+
+{$APPLIANCE_HOST} {
+	tls internal
+
+	# handle_path가 아니라 handle이다 — Gateway의 ServerPath가 "/mcp/<server>/" 경로 그대로를 보고
+	# 서버 이름을 떼어내므로 접두어를 벗기면 안 된다. SSE는 모으지 않고 바로 보낸다.
+	handle /mcp/* {
+		reverse_proxy gateway:8080 {
+			flush_interval -1
+		}
+	}
+	handle /api/health {
+		reverse_proxy gateway:8080
+	}
+	handle /.well-known/oauth-protected-resource {
+		reverse_proxy gateway:8080
+	}
+
+	handle /oauth/* {
+		reverse_proxy agent-service:8000
+	}
+	handle /.well-known/oauth-authorization-server {
+		reverse_proxy agent-service:8000
+	}
+
+	# Console(웹) — 그 밖 전부.
+	handle {
+		reverse_proxy agent-service:8000
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
