@@ -73,3 +73,27 @@ LiteLLM 1.89.4의 MCP 게이트웨이를 코드로 대조했다(main의 `docs/ai
 
 가져오지 않은 것: `tools/list` 거르기·의미 기반 도구 선택·도구 이름 접두어·서버 합치기(응답 변형), legacy SSE 변환(재직렬화),
 OAuth 메타데이터 합성, `oauth_passthrough`류 토큰 전달, 서버 CRUD(서버는 TOML이 정본이고 바꾸면 재시작).
+
+## D-43 솔루션 기기·관리자 PC·직원 PC로 나눈 실기기 배치 (2026-09-27)
+
+사용자 요청: "실제 노트북·실제 Codex·Claude Code 등의 하네스를 활용해 직원 PC, 관리자 PC, 솔루션 기기로 활용할 수 있게
+다듬고 README에 세팅 가이드라인을 만든다." (D-39~41은 `main`, D-42는 `main`의 같은 작업이 쓴다.)
+
+- **사내망 입구는 Caddy 하나**(`compose.field.yaml`): 프록시의 기본 바인딩·게시(loopback)는 그대로 두고, `tls internal`로
+  사설 CA를 만드는 Caddy만 `${APPLIANCE_BIND}:443`에 게시한다. 평문 HTTP로 사내망에 여는 모드는 만들지 않았다 — 키가
+  평문으로 흐른다. `APPLIANCE_BIND`에 기본값을 두지 않아 실수로 모든 인터페이스가 열리지 않는다. TLS를 프록시에 넣지
+  않은 것은 D-36의 "TLS는 앞단에서"를 따른 것이다.
+- **콘솔 울타리**: `/console`·`/admin/*`은 `ADMIN_CIDR`에서만 Caddy가 넘긴다. 본 통제는 여전히 관리자 토큰이고, 울타리는
+  토큰이 새었을 때를 위한 심층 방어다. 직원 PC의 IP는 `FORWARDED_ALLOW_IPS`로 기록만 한다(인증·허용 판단에 쓰지 않음).
+- **키는 헬퍼로**: Claude Code의 `headersHelper`와 Codex CLI의 `http_headers_helper`(0.148.0부터, 소스
+  `codex-rs/rmcp-client/src/http_headers.rs`)가 같은 명령(`mcpgw_pc.py header`)을 연결마다 실행한다. 키 원문은
+  `~/.mcpgw/key` 한 곳에만 있고 하네스 설정·환경 변수·셸 프로필에 들어가지 않는다. 처음에는 Codex에
+  `bearer_token_env_var` + 셸 함수를 썼으나, 실제 Codex 0.157.1에서 헬퍼가 동작함을 확인하고 바꿨다 — IDE 확장에도 그대로
+  통하고 PowerShell 실행 정책·프로필 인코딩 문제가 없다.
+- **실제 하네스에서 찾은 것**: Codex는 헬퍼를 `cmd /Q /D /C`(그 밖 `sh -c`)로 실행하며 환경 변수를 비우고 MCP 서버와 같은
+  허용 목록만 넘긴다(`env_clear()`). 그래서 헬퍼 명령에 키 폴더를 `--home`으로 싣는다. 한국어 Windows에서 출력이 파이프로
+  가면 Python이 CP949로 써서 `—` 한 글자에 점검이 죽었다 → 출력 글자를 줄이고 `errors="replace"`.
+- **관리형 잠금은 선택**: `managed-mcp.json`(Claude Code 배타 제어)·`requirements.toml`(Codex 허용 목록)을 키트가 만든다.
+  모든 사용자가 읽는 파일이라 키 대신 `${MCPGW_PROXY_KEY}` 확장을 쓴다(공식 문서의 권장 방식). 잠금 없이는 직원이
+  게이트웨이를 거치지 않는 서버를 더하는 것을 막지 못한다는 점을 README에 적었다.
+- **범위**: 프록시의 동작(전달 바이트·인증·기록)은 바꾸지 않았다. 더한 것은 배치 파일·직원 PC 키트·시험·CI `field` 작업·문서다.

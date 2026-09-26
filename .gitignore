@@ -7,3 +7,4 @@ proxy.local.toml
 dist/
 *.egg-info/
 proxy-data/
+field/ca/

@@ -1,0 +1,32 @@
+# 솔루션 기기(compose.field.yaml)의 프록시 설정. 사내망 PC가 쓰므로 키 인증을 켠다.
+[proxy]
+# 하네스(Claude Code·Codex CLI)는 Origin을 보내지 않는다. 브라우저 클라이언트를 쓸 때만 정확한 Origin을 적는다.
+allowed_origins = []
+
+[auth]
+# 콘솔 "클라이언트 키"에서 직원마다 발급한다. LiteLLM 가상 키도 쓰려면 "litellm"과 litellm_url을 더한다.
+providers = ["keys"]
+# 키마다 따로 정하지 않으면 적용되는 분당 한도(0 = 무제한).
+default_rate_per_minute = 120
+
+[store]
+path = "/app/proxy-data/proxy.db"
+retention_days = 30
+record_arguments = false
+
+[admin]
+token = { env = "MCP_PROXY_ADMIN_TOKEN" }
+
+[health]
+interval_seconds = 30
+timeout_seconds = 5
+
+# 컨테이너 안에서 닿는 주소를 적는다(127.0.0.1은 프록시 컨테이너 자신이다).
+[servers.demo]
+url = "http://demo:9000/mcp"
+
+# 예: 사내망의 다른 기기에서 도는 HTTP MCP 서버와 upstream 자격(환경 변수는 compose.field.yaml에 추가).
+# [servers.filesystem]
+# url = "http://10.0.0.20:9001/mcp"
+# [servers.filesystem.headers]
+# Authorization = { env = "FILESYSTEM_MCP_AUTHORIZATION" }

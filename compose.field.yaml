@@ -1,0 +1,41 @@
+# 솔루션 기기(사내망) 배치. 기본 compose.yaml 위에 겹쳐 쓴다:
+#   docker compose -f compose.yaml -f compose.field.yaml up -d --build --wait
+# 사내망에는 Caddy(HTTPS 443) 하나만 게시한다. 프록시는 기본 파일 그대로 127.0.0.1에만 있고(기기 안 점검용),
+# 데모 upstream은 게시하지 않는다. 필요한 값은 .env에 둔다(field/field.env.example).
+services:
+  proxy:
+    volumes:
+      # 실기기 설정: 키 인증을 켜고 기록을 남긴다. 실제 서버를 붙이면 자기 파일을 MCP_PROXY_FIELD_CONFIG로.
+      - "${MCP_PROXY_FIELD_CONFIG:-./field/proxy.field.toml}:/app/proxy.toml:ro"
+    environment:
+      # 키 발급·중지는 콘솔에서 하므로 실기기에서는 관리자 토큰이 필수다.
+      MCP_PROXY_ADMIN_TOKEN: "${MCP_PROXY_ADMIN_TOKEN:?Set MCP_PROXY_ADMIN_TOKEN (16+ characters) in .env}"
+      # Caddy가 붙인 X-Forwarded-For로 직원 PC의 IP를 기록한다. 기록용일 뿐 인증·허용 판단에는 쓰지 않는다
+      # (실기기 설정은 키 인증이라 사용자는 키 이름이다).
+      FORWARDED_ALLOW_IPS: "*"
+    restart: unless-stopped
+
+  demo:
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.11.4-alpine
+    ports:
+      # 0.0.0.0을 기본값으로 두지 않는다. 기기의 사내망 IP를 적어야 열린다.
+      - "${APPLIANCE_BIND:?Set APPLIANCE_BIND to this appliance's LAN IP in .env}:443:443"
+    environment:
+      APPLIANCE_HOST: "${APPLIANCE_HOST:?Set APPLIANCE_HOST (e.g. mcp-gw.internal) in .env}"
+      ADMIN_CIDR: "${ADMIN_CIDR:?Set ADMIN_CIDR to the admin PC address range in .env}"
+    volumes:
+      - ./field/Caddyfile:/etc/caddy/Caddyfile:ro
+      # 사설 CA와 인증서. 지우면 CA가 새로 생겨 모든 PC가 다시 신뢰해야 한다(down -v 주의).
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      proxy:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  caddy-data:
+  caddy-config:

@@ -31,7 +31,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: python -m pip install uv==0.11.24
       - run: uv sync --frozen
-      - run: uv run --frozen python -m pyflakes mcp_gateway tests examples
+      - run: uv run --frozen python -m pyflakes mcp_gateway tests examples field
       - run: uv run --frozen pytest -q
       # The console is plain ES modules; Node checks their syntax and the DOM-free state module.
       - uses: actions/setup-node@v7
@@ -68,3 +68,82 @@ jobs:
       - name: Stop this test stack
         if: always()
         run: docker compose -p mcpgw-proxy-ci down -v
+
+  field:
+    # The appliance overlay exactly as README ① describes it: Caddy with its own CA on 443, key auth,
+    # a key issued through the admin API, then the employee-PC kit and the real harness CLIs.
+    name: Field overlay (TLS, key, Claude Code and Codex CLI)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      APPLIANCE_HOST: mcp-gw.internal
+      APPLIANCE_BIND: 127.0.0.1
+      # From the runner, requests reach Caddy through Docker's loopback proxy (source: a bridge gateway).
+      ADMIN_CIDR: "127.0.0.1/32 172.16.0.0/12 192.168.0.0/16 10.0.0.0/8"
+      MCP_PROXY_ADMIN_TOKEN: "ci-field-console-token-0123"
+      MCP_PROXY_PORT: "18081"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Appliance name and .env
+        run: |
+          echo "127.0.0.1 $APPLIANCE_HOST" | sudo tee -a /etc/hosts
+          {
+            echo "APPLIANCE_HOST=$APPLIANCE_HOST"
+            echo "APPLIANCE_BIND=$APPLIANCE_BIND"
+            echo "ADMIN_CIDR=\"$ADMIN_CIDR\""
+            echo "MCP_PROXY_ADMIN_TOKEN=$MCP_PROXY_ADMIN_TOKEN"
+            echo "MCP_PROXY_PORT=$MCP_PROXY_PORT"
+          } > .env
+      - run: ./field/appliance.sh up
+      - name: Trust the appliance CA like an employee PC
+        run: |
+          sudo cp field/ca/mcp-gw-root.crt /usr/local/share/ca-certificates/mcp-gw-root.crt
+          sudo update-ca-certificates
+      - name: Issue an employee key through the console API over HTTPS
+        run: |
+          key=$(curl -fsS -X POST "https://$APPLIANCE_HOST/admin/api/keys" \
+            -H "Authorization: Bearer $MCP_PROXY_ADMIN_TOKEN" -H "Content-Type: application/json" \
+            -d '{"name":"ci-employee","servers":["demo"]}' \
+            | python3 -c 'import json, sys; d = json.load(sys.stdin); print(d["key"]["id"], d["secret"])')
+          echo "::add-mask::${key#* }"
+          echo "KEY_ID=${key%% *}" >> "$GITHUB_ENV"
+          echo "${key#* }" > "$RUNNER_TEMP/key"
+      - run: npm install -g --no-fund --no-audit @anthropic-ai/claude-code@2.1.282 @openai/codex@0.157.0
+      - name: Employee-PC kit
+        run: |
+          python3 field/pc/mcpgw_pc.py setup --url "https://$APPLIANCE_HOST" --servers demo \
+            --ca field/ca/mcp-gw-root.crt --key-stdin < "$RUNNER_TEMP/key"
+          python3 ~/.mcpgw/mcpgw_pc.py doctor
+      - name: Real harnesses see the proxy through the helper
+        run: |
+          claude mcp list | tee "$RUNNER_TEMP/claude.txt"
+          grep -F "demo: https://mcp-gw.internal/mcp/demo/ (HTTP) - ✔ Connected" "$RUNNER_TEMP/claude.txt"
+          codex mcp get demo | tee "$RUNNER_TEMP/codex.txt"
+          grep -F "url: https://mcp-gw.internal/mcp/demo/" "$RUNNER_TEMP/codex.txt"
+      - name: A disabled key is refused before the proxy relays anything
+        run: |
+          curl -fsS -X PATCH "https://$APPLIANCE_HOST/admin/api/keys/$KEY_ID" \
+            -H "Authorization: Bearer $MCP_PROXY_ADMIN_TOKEN" -H "Content-Type: application/json" -d '{"disabled":true}'
+          status=0
+          python3 ~/.mcpgw/mcpgw_pc.py doctor > "$RUNNER_TEMP/doctor.txt" || status=$?
+          cat "$RUNNER_TEMP/doctor.txt"
+          test "$status" -ne 0
+          grep -F "MCP demo initialize: HTTP 401" "$RUNNER_TEMP/doctor.txt"
+      - name: Uninstall leaves nothing behind
+        run: |
+          python3 ~/.mcpgw/mcpgw_pc.py uninstall
+          if claude mcp get demo; then exit 1; fi
+          if grep -q "mcp-gateway proxy" ~/.codex/config.toml; then exit 1; fi
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -f compose.yaml -f compose.field.yaml logs --tail=100
+      - name: Stop this test stack
+        if: always()
+        run: docker compose -f compose.yaml -f compose.field.yaml down -v

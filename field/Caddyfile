@@ -1,0 +1,25 @@
+# 솔루션 기기의 사내망 입구. compose.field.yaml이 이 컨테이너만 ${APPLIANCE_BIND}:443에 게시한다.
+{
+	# 관리 API(:2019)는 쓰지 않는다. 이 파일이 정본이고, 바꾸면 컨테이너를 다시 띄운다.
+	admin off
+	# 사내망 이름으로 공인 인증서를 받으러 나가지 않고, :80 리다이렉트도 열지 않는다.
+	auto_https disable_redirects
+}
+
+{$APPLIANCE_HOST} {
+	# Caddy가 만든 사설 CA가 인증서를 낸다. 루트: /data/caddy/pki/authorities/local/root.crt
+	# 회사 CA가 있으면 이 줄을 `tls /certs/server.crt /certs/server.key`로 바꾸고 파일을 마운트한다.
+	tls internal
+
+	# 콘솔과 관리 API는 관리자 PC 대역에서만. 관리자 토큰 검사는 프록시가 그대로 한다(심층 방어).
+	@admin_elsewhere {
+		path /console /console/* /admin/*
+		not remote_ip {$ADMIN_CIDR}
+	}
+	respond @admin_elsewhere 404
+
+	reverse_proxy proxy:8080 {
+		# SSE와 스트리밍 응답을 모으지 않고 바로 보낸다.
+		flush_interval -1
+	}
+}

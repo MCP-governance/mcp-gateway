@@ -20,7 +20,10 @@
 - hop-by-hop 헤더 제거와 목적지 Host 변경을 제외한 응답 상태·헤더·본문을 보존한다.
 - 자동 재시도·리다이렉트 추적 금지. 쓰기 호출을 중복 실행할 수 있다.
 - 정상 완료·오류·연결 해제 모두 upstream 연결을 정리한다. 대기 중인 SSE에도 적용한다.
-- 기본 바인딩과 Compose 게시 주소는 loopback. 공유 배포의 인증은 별도 앞단에서 구성한다.
+- 기본 바인딩과 Compose 게시 주소는 loopback. 사내망 게시는 `compose.field.yaml`의 Caddy(TLS 443) 하나뿐이고
+  그 설정은 키 인증을 켠다(D-43). 평문 HTTP를 사내망에 게시하지 않는다.
+- 직원 PC 키트(`field/pc/mcpgw_pc.py`)는 표준 라이브러리만, Python 3.9 문법으로. 키 원문을 하네스 설정·환경 변수·로그에
+  쓰지 않고, 사용자의 기존 하네스 설정을 덮어쓰지 않는다. 시험은 임시 HOME·CODEX_HOME에서만 한다.
 - 콘솔·관리 API는 관리자 토큰이 있을 때만 생기고 MCP를 호출하지 않는다. 도달 확인은 HTTP GET이지 MCP 요청이 아니다.
 - 정책 엔진·응답 변형·MCP SDK 런타임 의존성을 더하려면 먼저 사용자의 범위를 확인한다
   (기록·인증·콘솔은 D-38에서 사용자가 범위를 넓혔다).
@@ -31,7 +34,7 @@
 
 ```bash
 uv sync --frozen
-uv run --frozen python -m pyflakes mcp_gateway tests examples
+uv run --frozen python -m pyflakes mcp_gateway tests examples field
 uv run --frozen pytest -q
 node --test tests/console-state.test.mjs
 MCP_PROXY_ADMIN_TOKEN=local-console-token-0123 docker compose -p mcpgw-proxy-check up --build --wait
