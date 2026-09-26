@@ -333,7 +333,7 @@ services:
     ports:
     - 127.0.0.1:${KEYCLOAK_PORT:-18081}:8080
     volumes:
-    - ./deploy/realm.json:/opt/keycloak/data/import/realm.json:ro
+    - ./outputs/deploy/realm.json:/opt/keycloak/data/import/realm.json:ro
     - keycloak-data:/opt/keycloak/data
     networks:
     - edge
@@ -396,6 +396,7 @@ services:
     volumes:
     - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     - ./dashboard:/usr/share/nginx/html:ro
+    - ./outputs/dashboard/config.js:/usr/share/nginx/html/config.js:ro
     networks:
     - edge
     - audit

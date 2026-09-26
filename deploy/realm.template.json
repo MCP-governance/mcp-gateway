@@ -1,6 +1,8 @@
 {
   "realm": "mcp",
   "enabled": true,
+  "ssoSessionIdleTimeout": 28800,
+  "ssoSessionMaxLifespan": 36000,
   "roles": {
     "realm": [
       {
@@ -25,6 +27,29 @@
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "gateway-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "mcp-gateway",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "mcp-cli",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [],
+      "webOrigins": [],
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "true"
       },
       "protocolMappers": [
         {

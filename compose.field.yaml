@@ -1,0 +1,53 @@
+services:
+  # 솔루션 기기에서 사내망에 여는 유일한 게시 지점. 나머지 서비스는 계속 127.0.0.1에만 게시된다
+  # (관리 목적으로 남겨둔 것이며 사내망에서는 도달하지 않는다).
+  caddy:
+    image: caddy:2.11.4-alpine
+    environment:
+      APPLIANCE_HOST: ${APPLIANCE_HOST:?README '① 솔루션 기기'대로 .env의 APPLIANCE_HOST를 먼저 채우세요}
+    ports:
+    - ${APPLIANCE_BIND:?README '① 솔루션 기기'대로 .env의 APPLIANCE_BIND(사내망 IP)를 먼저 채우세요}:443:443
+    volumes:
+    - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+    - caddy-data:/data
+    networks:
+    - edge
+    security_opt:
+    - no-new-privileges:true
+    restart: unless-stopped
+    depends_on:
+    - keycloak
+    - agent-service
+    - dashboard
+  keycloak:
+    environment:
+      # 원본(compose.yaml)의 loopback 주소 대신, Caddy 뒤에서 실제로 접속하는 주소를 알린다.
+      # Keycloak 26.x 리버스 프록시 구성(공식 문서 server/reverseproxy): KC_HOSTNAME은 외부에서 보이는
+      # 전체 URL, KC_PROXY_HEADERS=xforwarded는 Caddy가 보내는 X-Forwarded-* 헤더를 신뢰,
+      # KC_HTTP_ENABLED=true는 Caddy가 TLS를 종료하고 평문으로 넘기는 엣지 종단(edge termination) 구성이다.
+      KC_HOSTNAME: https://${APPLIANCE_HOST:?Set APPLIANCE_HOST}
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: 'true'
+      # 관리 콘솔은 사내망(Caddy)에 열지 않으므로 공개 주소로 보내지 않는다. 기기의 loopback 게시 주소 그대로 두고
+      # 관리자 PC는 SSH 터널(ssh -L 18081:127.0.0.1:18081)로 연다(공식 문서 server/hostname의 hostname-admin).
+      KC_HOSTNAME_ADMIN: http://127.0.0.1:${KEYCLOAK_PORT:-18081}
+  agent-service:
+    environment:
+      OIDC_ISSUER: https://${APPLIANCE_HOST:?Set APPLIANCE_HOST}/realms/mcp
+  mcp-gateway:
+    environment:
+      OIDC_ISSUER: https://${APPLIANCE_HOST:?Set APPLIANCE_HOST}/realms/mcp
+  evidence-processor:
+    environment:
+      OIDC_ISSUER: https://${APPLIANCE_HOST:?Set APPLIANCE_HOST}/realms/mcp
+  evidence-analyzer:
+    environment:
+      OIDC_ISSUER: https://${APPLIANCE_HOST:?Set APPLIANCE_HOST}/realms/mcp
+  evidence-decision:
+    environment:
+      OIDC_ISSUER: https://${APPLIANCE_HOST:?Set APPLIANCE_HOST}/realms/mcp
+  audit-api:
+    environment:
+      OIDC_ISSUER: https://${APPLIANCE_HOST:?Set APPLIANCE_HOST}/realms/mcp
+volumes:
+  caddy-data: {}

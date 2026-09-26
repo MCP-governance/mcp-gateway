@@ -1,0 +1,45 @@
+{
+	# 관리 API(:2019)는 쓰지 않는다. 이 파일이 정본이고, 바꾸면 컨테이너를 다시 띄운다.
+	admin off
+	# 사내망 이름으로 공인 인증서를 받으러 나가지 않고, :80 리다이렉트도 열지 않는다.
+	auto_https disable_redirects
+}
+
+# tls internal: Caddy가 스스로 사설 CA를 만들어 이 도메인의 인증서를 발급한다.
+# 루트 인증서는 컨테이너 안 /data/caddy/pki/authorities/local/root.crt (./field/appliance.sh ca 로 꺼낸다).
+# 회사 CA가 이미 있으면 이 줄을 `tls /etc/caddy/cert.pem /etc/caddy/key.pem`으로 바꾸고
+# 그 파일들을 이 Caddyfile 옆에 마운트한다.
+{$APPLIANCE_HOST} {
+	tls internal
+
+	# Keycloak은 mcp realm의 사용자 경로(로그인·device 코드 확인·토큰)와 테마 자원만 넘긴다. 관리 콘솔(/admin)과
+	# master realm(부트스트랩 관리자 로그인)은 사내망에 열지 않는다 — SSH 터널로만(README ②).
+	# 같은 이름의 handle은 경로가 긴 것부터 맞춰 보므로 /realms/mcp/*가 /realms/*보다 먼저다.
+	handle /realms/mcp/* {
+		reverse_proxy keycloak:8080
+	}
+	handle /resources/* {
+		reverse_proxy keycloak:8080
+	}
+	handle /realms/* {
+		respond 404
+	}
+	handle /admin* {
+		respond 404
+	}
+
+	# Agent Service: MCP 전송과 OpenAI Chat 호환 엔드포인트. SSE는 모으지 않고 바로 보낸다.
+	handle /mcp/* {
+		reverse_proxy agent-service:8000 {
+			flush_interval -1
+		}
+	}
+	handle /v1/chat/completions {
+		reverse_proxy agent-service:8000
+	}
+
+	# 그 외 전부는 Dashboard(SPA + /api 프록시)로.
+	handle {
+		reverse_proxy dashboard:8080
+	}
+}
