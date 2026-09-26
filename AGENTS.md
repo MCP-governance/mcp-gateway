@@ -1,6 +1,7 @@
 # Proxy 브랜치 작업 규칙
 
-이 브랜치는 MCP Streamable HTTP 리버스 프록시다. 사용자가 요청한 단순 프록시 범위가 기준이다.
+이 브랜치는 MCP Streamable HTTP 리버스 프록시다. 사용자가 정한 범위(D-36 단순 프록시, D-38 "프록시의 선을 넘지 않는"
+인증·기록·콘솔)가 기준이다.
 거버넌스 테스트베드는 `main`에 있으며 여기의 런타임이나 시험에 의존시키지 않는다.
 
 먼저 [README.md](README.md)와 [docs/ai/DECISIONS.md](docs/ai/DECISIONS.md)를 읽는다.
@@ -8,14 +9,21 @@
 
 ## 동작 경계
 
-- MCP 본문을 파싱·재직렬화하지 않고 스트리밍한다. 도구 이름·결과·오류·세션을 새로 만들지 않는다.
+- 전달하는 바이트를 바꾸지 않는다. JSON-RPC를 재직렬화하지 않고, 도구 이름·결과·오류·세션을 새로 만들지 않는다.
+  응답 본문을 고치는 기능(tools/list 거르기, 도구 이름 접두어, 여러 서버 합치기)은 프록시의 선 밖이다.
+- 기록은 요청·응답의 **사본**만 읽는다. 관찰용이라 실패해도 중계를 막지 않고, 버린 건수를 드러낸다.
+  세션 ID 원문·헤더 값·응답 본문은 남기지 않고, 도구 인자는 `record_arguments`일 때만 남긴다.
+- 거부(인증·키별 서버·속도 제한·Origin)는 전달 **전에만** 한다. 인증 백엔드(LiteLLM)에 닿지 못하면 거부한다.
 - URL은 기동 시 읽은 설정의 서버별 고정 목적지다. 요청 본문·추가 경로에서 목적지를 정하지 않는다.
-- 클라이언트 Authorization을 upstream에 전달하지 않는다. upstream 자격은 서버별 설정에서 별도로 공급한다.
+- 클라이언트 자격 헤더(`Authorization`, `x-litellm-api-key`)는 인증을 켜지 않았어도 어떤 upstream에도 전달하지 않는다.
+  upstream 자격은 서버별 설정에서 별도로 공급한다.
 - hop-by-hop 헤더 제거와 목적지 Host 변경을 제외한 응답 상태·헤더·본문을 보존한다.
 - 자동 재시도·리다이렉트 추적 금지. 쓰기 호출을 중복 실행할 수 있다.
 - 정상 완료·오류·연결 해제 모두 upstream 연결을 정리한다. 대기 중인 SSE에도 적용한다.
 - 기본 바인딩과 Compose 게시 주소는 loopback. 공유 배포의 인증은 별도 앞단에서 구성한다.
-- 새 정책·DB·로그인·콘솔·MCP SDK 런타임 의존성을 더하려면 먼저 사용자의 범위를 확인한다.
+- 콘솔·관리 API는 관리자 토큰이 있을 때만 생기고 MCP를 호출하지 않는다. 도달 확인은 HTTP GET이지 MCP 요청이 아니다.
+- 정책 엔진·응답 변형·MCP SDK 런타임 의존성을 더하려면 먼저 사용자의 범위를 확인한다
+  (기록·인증·콘솔은 D-38에서 사용자가 범위를 넓혔다).
 - 연결 풀은 서버별로 둔다. 한 서버의 열린 SSE가 다른 서버의 연결을 막지 않게 한다.
 - `research/`는 멘토님 디렉터리다. 내용이 README 하나여도 수정하거나 지우지 않는다.
 
@@ -25,9 +33,10 @@
 uv sync --frozen
 uv run --frozen python -m pyflakes mcp_gateway tests examples
 uv run --frozen pytest -q
-docker compose -p mcpgw-proxy-check up --build --wait
-uv run --frozen python tests/container_smoke.py --url http://127.0.0.1:8080
-docker compose -p mcpgw-proxy-check down
+node --test tests/console-state.test.mjs
+MCP_PROXY_ADMIN_TOKEN=local-console-token-0123 docker compose -p mcpgw-proxy-check up --build --wait
+uv run --frozen python tests/container_smoke.py --url http://127.0.0.1:8080 --admin-token local-console-token-0123
+docker compose -p mcpgw-proxy-check down -v
 git diff --check
 ```
 

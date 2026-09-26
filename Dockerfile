@@ -14,6 +14,8 @@ USER 10001:10001
 CMD ["/app/.venv/bin/python", "examples/demo_server.py", "--host", "0.0.0.0", "--port", "9000"]
 
 FROM base AS proxy
+# The record lives on a volume; the directory exists so a new volume inherits its owner.
+RUN mkdir -p /app/proxy-data && chown 10001:10001 /app/proxy-data
 USER 10001:10001
 EXPOSE 8080
 CMD ["/app/.venv/bin/mcp-gateway", "--host", "0.0.0.0", "--port", "8080"]

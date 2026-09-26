@@ -1,2 +1,11 @@
+[store]
+path = "/app/proxy-data/proxy.db"
+
+[admin]
+token = { env = "MCP_PROXY_ADMIN_TOKEN" }
+
+[health]
+interval_seconds = 30
+
 [servers.demo]
 url = "http://demo:9000/mcp"

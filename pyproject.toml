@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-gateway-proxy"
-version = "1.0.0"
+version = "1.1.0"
 description = "A streaming HTTP reverse proxy for MCP servers"
 requires-python = ">=3.12"
 dependencies = [

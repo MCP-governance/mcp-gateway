@@ -10,6 +10,32 @@ max_connections_per_server = 100
 # Native MCP clients normally omit Origin. Browser clients need their exact origin here.
 allowed_origins = []
 
+# Who may use the proxy. Empty: anyone who can reach it (the default binding is loopback).
+# "keys": keys issued in the console. "litellm": LiteLLM virtual keys, checked at /key/info.
+[auth]
+providers = []
+# litellm_url = "http://127.0.0.1:4000"
+# litellm_cache_seconds = 60
+# Servers a LiteLLM key may use unless its metadata lists mcp_proxy_servers ("*" = all).
+# litellm_default_servers = []
+# default_rate_per_minute = 0
+
+# Record of relayed calls for the console (SQLite). Remove `path` to record nothing.
+[store]
+path = "proxy-data/proxy.db"
+retention_days = 14
+# Tool arguments can carry personal data; they stay out of the record unless enabled.
+record_arguments = false
+
+# Console and admin API at /console/. Without the variable the console is off.
+[admin]
+token = { env = "MCP_PROXY_ADMIN_TOKEN" }
+
+# Reachability probe (an HTTP GET, not an MCP call). 0 turns it off.
+[health]
+interval_seconds = 30
+timeout_seconds = 5
+
 [servers.demo]
 url = "http://127.0.0.1:9000/mcp"
 

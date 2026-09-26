@@ -44,3 +44,32 @@ RelayResponse의 finally가 upstream 연결을 닫는다.
 
 D-36에서 CI를 교체할 때 함께 지워진 CodeQL 분석과 멘토님 디렉터리 `research/`를 되살린다.
 Proxy를 다시 `main`에 병합할지는 사용자가 정한다. 병합한다면 `b4de4fe`를 먼저 revert해야 프록시 변경이 들어간다.
+
+## D-38 프록시의 선 안에서 인증·기록·콘솔 (2026-09-26)
+
+사용자 요청: "프록시라는 선을 넘지 않는 지점에서 할 수 있는 개선을 다 한다. 웹 UI는 main의 것을 가져와도 된다."
+LiteLLM 1.89.4의 MCP 게이트웨이를 코드로 대조했다(main의 `docs/ai/BENCHMARK_LITELLM.md`). LiteLLM은 스스로 MCP 서버가 되어
+도구 목록을 거르고 이름에 접두어를 붙이고 여러 서버를 합친다 — 본문을 새로 만드는 일이라 그 부분은 가져오지 않았다.
+
+**선**: 전달하는 바이트는 바꾸지 않는다. 프록시는 전달 **전에** 거부할 수 있고, 전달 **중에** 사본을 읽을 수 있고, 중계
+**옆에** 관리 화면을 둘 수 있다. 응답을 고치거나 MCP를 대신 말하는 것은 선 밖이다.
+
+- **인증**(`auth.py`): 프록시 키(`mcpp_…`, SHA-256만 저장, 키별 서버·분당 한도·만료·중지)와 LiteLLM 가상 키. LiteLLM 키는
+  그 키로 `GET /key/info`를 불러 검증한다 — LiteLLM 소스에서 키가 자기 정보를 조회할 수 있음을 확인했다
+  (`key_management_endpoints._can_user_query_key_info`: `api_key == key`). 만료·차단 키는 LiteLLM 인증 단계에서 먼저 거부된다.
+  서버 권한은 키 메타데이터 `mcp_proxy_servers`에 둔다. LiteLLM의 `object_permission.mcp_servers`는 LiteLLM에 등록한 서버 id라,
+  쓰려면 같은 서버를 LiteLLM에도 등록해야 해서 택하지 않았다. LiteLLM에 닿지 못하면 거부(503) — LiteLLM의 옵트인 fail-open과 반대다.
+  클라이언트 자격 헤더는 인증 여부와 상관없이 upstream에 보내지 않는다(MCP 인가 명세의 토큰 전달 금지).
+- **기록**(`observe.py`, `store.py`): 요청·응답 사본에서 메서드·도구·결과를 뽑아 SQLite(WAL)에 남긴다. LiteLLM의
+  `StandardLoggingMCPToolCall`을 참고하되 도구 인자는 기본으로 남기지 않는다. 쓰기는 백그라운드 큐가 하고, 넘치거나 실패하면
+  기록을 버리고 센다 — 관찰 기능이 중계를 멈추게 해서는 안 된다. SSE는 줄 단위로 읽고 gzip·deflate는 사본만 푼다.
+- **콘솔**(`admin.py`, `console/`): main 콘솔의 디자인 토큰·차트 래퍼·안전한 HTML 템플릿·탭·드로어를 가져왔다. 판정 5색 대신
+  중계 결과 7종을 쓴다. 관리자 토큰이 없으면 라우트 자체가 없다. MCP를 호출하지 않는 원칙(main D-01)을 그대로 따른다 — 서버
+  상태는 HTTP GET 도달 확인, 도구 목록은 중계된 호출에서 본 이름이다. 한글 글꼴(3.9MB)은 패키지를 가볍게 두려고 넣지 않았다.
+- **도달 확인**: LiteLLM은 MCP 세션을 열어 확인하지만(`health_check_server`), 프록시가 MCP 클라이언트가 되면 선을 넘는다.
+  JSON을 달라는 GET을 보내 500 미만이면 정상으로 본다. 요청하지 않은 트래픽이라 기본값은 꺼짐.
+- **Windows에서 찾은 결함**: `mimetypes`가 레지스트리를 읽어 `.mjs`를 `text/plain`으로 내보내 브라우저가 모듈 스크립트를
+  거부했다. JavaScript MIME을 명시로 등록하고 시험에 넣었다.
+
+가져오지 않은 것: `tools/list` 거르기·의미 기반 도구 선택·도구 이름 접두어·서버 합치기(응답 변형), legacy SSE 변환(재직렬화),
+OAuth 메타데이터 합성, `oauth_passthrough`류 토큰 전달, 서버 CRUD(서버는 TOML이 정본이고 바꾸면 재시작).
