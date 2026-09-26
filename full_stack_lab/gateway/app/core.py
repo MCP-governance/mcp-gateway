@@ -21,6 +21,10 @@ from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
 from . import classify, db, endpoint_plane, privacy, registry, upstream
+from .contract import (  # re-exported: older callers import these from core
+    AUDIT_COLUMN_SETS, AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
+    audit_fingerprint as _audit_fingerprint,
+)
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/mcp/authz/decision")
 # 정책 관리대장(§11.8 / §12.5)은 정책 코드와 함께 배포되고 OPA가 그 정본이다.
@@ -34,6 +38,8 @@ POLICY_PATH = Path(os.getenv("POLICY_PATH", "/policy/policy.rego"))
 POLICY_BUNDLE = ("policy.rego", "data.json", "exceptions.json", "policy_ledger.json")
 APPROVAL_TTL_MINUTES = 10
 CATALOG_REFRESH_SECONDS = int(os.getenv("CATALOG_REFRESH_SECONDS", "60"))
+# A server check only negotiates a session; a slow answer is itself the finding.
+SERVER_CHECK_TIMEOUT_SECONDS = float(os.getenv("SERVER_CHECK_TIMEOUT_SECONDS", "5"))
 
 # Instruction-shaped text aimed at the model, in tool descriptions (contract) and in
 # tool results (output control). Plain words such as "credential" are not on the
@@ -73,32 +79,6 @@ BLOCK_STREAK_MINUTES = int(os.getenv("BLOCK_STREAK_MINUTES", "10"))
 DENIAL_POLICIES = ("P-AUTHZ-DENY-001", "MCP-EGRESS-001", "MCP-EGRESS-002", "P-DLP-001",
                    "P-CLASSIFICATION-001", "P-APPROVAL-EXPIRY-001", "MCP-REGISTRY-001")
 
-# OPA is a trust boundary too. Only policy fields may enter the execution event;
-# a malformed result must never become Allow through monitor mode.
-POLICY_RESULT = Draft202012Validator({
-    "type": "object", "additionalProperties": False,
-    "required": ["decision", "policy_id", "reason", "restrictions"],
-    "properties": {
-        "decision": {"enum": ["Allow", "Alert", "Restrict", "Approval", "Block"]},
-        "policy_id": {"type": "string", "minLength": 1},
-        "reason": {"type": "string", "minLength": 1},
-        "restrictions": {
-            "type": "object", "additionalProperties": False,
-            "properties": {"max_chars": {"type": "integer", "minimum": 0, "maximum": 100000},
-                           "journal_bcc": {"type": "string", "pattern": "^[^@\\s]+@[^@\\s]+$"}},
-        },
-        **{key: {"type": "string"} for key in (
-            "policy_name", "policy_version", "policy_status", "policy_set_version", "environment")},
-        **{key: {"type": "array", "items": {"type": "string"}} for key in (
-            "risk_ids", "control_ids", "requirement_ids", "obligations")},
-        "priority": {"type": ["integer", "null"]},
-        "conditions": {"type": "object"},
-        "exception": {"type": ["object", "null"], "required": ["id"],
-                      "properties": {"id": {"type": "string", "minLength": 1}}},
-        "conflicts": {"type": "array", "items": {"type": "object"}},
-    },
-})
-
 
 class ResultRejected(RuntimeError):
     """Upstream answered, but its output failed the gateway's output control."""
@@ -124,11 +104,6 @@ def _configure_tracing() -> Any:
 
 
 tracer = _configure_tracing()
-
-
-def canonical_hash(value: Any) -> str:
-    encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
-    return hashlib.sha256(encoded).hexdigest()
 
 
 async def _discover(server_id: str) -> dict:
@@ -246,8 +221,6 @@ async def refresh_catalog(server_id: str) -> dict:
     }
 
 
-
-
 async def approve_contract(server_id: str, actor: str, note: str) -> dict:
     """관측된 도구 계약을 승인본으로 올린다 (CTL-30 변경 식별과 재평가).
 
@@ -357,6 +330,32 @@ async def refresh_all_catalogs() -> dict:
                 (f"연결 실패: {type(exc).__name__}: {str(exc)[:200]}", server_id))
             results[server_id] = "ERROR"
     return results
+
+
+async def check_server(server_id: str) -> dict:
+    """D-40: can the Gateway open an MCP session with this server right now?
+
+    LiteLLM keeps the same split (health_check_server beside its tool discovery). The
+    catalog refresh reads tools/list and rewrites contract state, so it is the wrong
+    tool for "is it up": this one only negotiates a session, and records nothing.
+    A retired server is not contacted - its endpoint is the termination case's evidence.
+    """
+    spec = registry.server(server_id)
+    if not spec:
+        raise LookupError(server_id)
+    row = await db.fetch_one("SELECT lifecycle FROM mcp_servers WHERE id=%s", (server_id,))
+    checked_at = datetime.now(UTC).isoformat()
+    if row and row["lifecycle"] == "RETIRED":
+        return {"server_id": server_id, "state": "retired", "checked_at": checked_at}
+    loop = asyncio.get_running_loop()
+    started = loop.time()
+    try:
+        info = await asyncio.wait_for(upstream.handshake(spec["endpoint"]), SERVER_CHECK_TIMEOUT_SECONDS)
+        result = {"state": "healthy", **info}
+    except Exception as exc:
+        result = {"state": "unhealthy", "error": _root_cause(exc)}
+    return {"server_id": server_id, **result, "latency_ms": round((loop.time() - started) * 1000, 1),
+            "checked_at": checked_at}
 
 
 async def catalog_watch() -> None:
@@ -580,6 +579,23 @@ async def _sequence_flags(user_token: str, cls: classify.Classification) -> list
     return ["sensitive_read_then_send"] if row else []
 
 
+async def _relationship_scope(server_id: str, cls: classify.Classification) -> dict:
+    """D-39: the paper's unit of analysis, applied to every call and not only at termination.
+
+    A server with ACTIVE usage relationships admits the union of their allowed_resources;
+    the policy judges a call whose scoped resources fall outside it. Terminating or
+    terminated relationships are already refused by MCP-DECOMM-001.
+    """
+    rows = await db.fetch_all(
+        "SELECT id, allowed_resources FROM usage_relationships WHERE server_id=%s AND status='ACTIVE' ORDER BY id",
+        (server_id,))
+    if not rows:
+        return {"defined": False, "ids": [], "in_scope": True, "outside": []}
+    allowed = [str(entry) for row in rows for entry in (row["allowed_resources"] or [])]
+    outside = classify.outside_scope(cls.resources, allowed)
+    return {"defined": True, "ids": [row["id"] for row in rows], "in_scope": not outside, "outside": outside[:20]}
+
+
 def _risk_score(data_class: str, action: str, external: bool,
                 privacy_types: list[str], sequence_flags: list[str]) -> int:
     """0-100 for investigation and sorting. Evidence, never a reason to allow or deny:
@@ -793,61 +809,6 @@ def _audit_result(result: Any) -> dict:
     return {"sha256": canonical_hash(result), "chars": len(body), "head": body[:200]}
 
 
-AUDIT_COLUMN_SETS = {
-    1: (
-        "request_id", "trace_id", "user_token", "role", "tool_name", "data_class", "action",
-        "decision", "policy_id", "reason", "upstream_executed", "restrictions", "approval_id",
-        "request_payload", "result_preview", "error",
-    ),
-    2: (
-        "request_id", "trace_id", "user_token", "role", "tool_name", "data_class", "action",
-        "decision", "policy_id", "reason", "upstream_executed", "restrictions", "approval_id",
-        "request_payload", "result_preview", "error",
-        "enforcement", "would_decision", "would_policy_id",
-    ),
-    3: (
-        "request_id", "trace_id", "user_token", "role", "tool_name", "data_class", "action",
-        "decision", "policy_id", "reason", "upstream_executed", "restrictions", "approval_id",
-        "request_payload", "result_preview", "error",
-        "enforcement", "would_decision", "would_policy_id",
-        # §11.17 정책 판단 및 집행 증적
-        "policy_version", "obligations", "exception_id", "conflicts", "environment",
-    ),
-}
-AUDIT_COLUMN_SETS[4] = (*AUDIT_COLUMN_SETS[3], "upstream_attempted")
-# v5: which registered server, which resource, where it was going, and from which
-# workstation/agent - the fields a reader needs to understand the row without a join.
-AUDIT_COLUMN_SETS[5] = (*AUDIT_COLUMN_SETS[4], "server_id", "resource_id", "destinations", "client", "summary")
-# v6: the PDF-integration fields - the policy input (for replay against a candidate
-# policy), the investigation risk score, Presidio entity types and chain flags.
-# origin/main (cc086e5) added these on v1 as *its* "v5"; v2's v5 means other columns,
-# so the merged line records them as v6. A database written by v1's v5 is not migrated
-# (v2 needs `./console.sh reset`): verifying its rows against v2's v5 would fail, and
-# accepting either definition would let a row tampered in a column only one covers pass.
-AUDIT_COLUMN_SETS[6] = (*AUDIT_COLUMN_SETS[5], "policy_input", "risk_score", "privacy_types", "sequence_flags")
-CHAIN_VERSION = 6
-AUDIT_COLUMNS = AUDIT_COLUMN_SETS[CHAIN_VERSION]
-GENESIS = "0" * 64
-
-
-def _audit_fingerprint(record: dict, version: int = CHAIN_VERSION) -> str:
-    """One canonical form for both the append and the later verification.
-
-    Values are normalised to str / bool / None / JSON documents so that the hash of a
-    row read back from PostgreSQL matches the hash computed when it was written.
-    """
-    normalised = {}
-    for column in AUDIT_COLUMN_SETS[version]:
-        value = record.get(column)
-        if column in {"upstream_executed", "upstream_attempted"}:
-            normalised[column] = bool(value)
-        elif isinstance(value, (dict, list)) or value is None:
-            normalised[column] = value
-        else:
-            normalised[column] = str(value)
-    return canonical_hash(normalised)
-
-
 # The chain is appended under a row lock, so decision writes serialise on one row.
 # That is the right trade for a single gateway; a multi-replica deployment wants one
 # chain per instance, anchored together.
@@ -1057,6 +1018,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             },
             "resources": [r.view() for r in cls.resources],
             "destinations": [d.view() for d in cls.destinations],
+            "relationship": await _relationship_scope(server_id, cls),
             "tool": {"server": server_id, "name": tool, "action": cls.action,
                      "base_action": cls.base_action, "restrictable": cls.restrictable},
             "request": {"untrusted_markers": untrusted_markers(arguments), "dlp": cls.dlp,

@@ -49,7 +49,7 @@ test_decision_carries_policy_management_information if {
 	result := decision with input as base
 	result.policy_version == "1.0.0"
 	result.policy_status == "운영"
-	result.policy_set_version == "2.2.0"
+	result.policy_set_version == "2.3.0"
 	count(result.risk_ids) > 0
 	count(result.control_ids) > 0
 	count(result.obligations) > 0
@@ -734,6 +734,40 @@ test_no_shadow_report_leaves_allow_unchanged if {
 	})
 	result.decision == "Allow"
 	result.policy_id == "P-AUTHZ-ALLOW-001"
+}
+
+# ── T-SCOPE-001/002 이용 관계 범위 (D-39) ────────────────────────────────────
+
+scope_outside := {"relationship": {"defined": true, "in_scope": false, "ids": ["UR-FS-SHARED"], "outside": ["/workspace/notes.md"]}}
+
+test_scope_outside_relationship_raises_alert if {
+	result := decision with input as with_input(scope_outside)
+	result.decision == "Alert"
+	result.policy_id == "P-SCOPE-001"
+	contains(result.reason, "/workspace/notes.md")
+	some conflict in result.conflicts
+	conflict.policy_id == "P-AUTHZ-ALLOW-001"
+}
+
+test_scope_inside_relationship_leaves_allow if {
+	result := decision with input as with_input({"relationship": {"defined": true, "in_scope": true, "ids": ["UR-FS-SHARED"], "outside": []}})
+	result.decision == "Allow"
+	result.policy_id == "P-AUTHZ-ALLOW-001"
+}
+
+# 이용 관계가 없는 서버, relationship을 모르는 입력(구버전 Gateway·재생 사례)은 판단하지 않는다.
+test_scope_needs_a_relationship if {
+	result := decision with input as with_input({"relationship": {"defined": false, "in_scope": false}})
+	result.policy_id == "P-AUTHZ-ALLOW-001"
+	older := decision with input as base
+	older.policy_id == "P-AUTHZ-ALLOW-001"
+}
+
+# 범위 밖이라고 원래 막혔을 호출이 경보로 약해지지는 않는다.
+test_scope_does_not_weaken_a_block if {
+	result := decision with input as with_input(object.union(scope_outside, {"resource": {"id": "secret-001", "data_class": "important"}}))
+	result.decision == "Block"
+	result.policy_id == "P-AUTHZ-DENY-001"
 }
 
 # ── 통합관리대장 V1.0 PaC 후보에서 새로 정책화한 통제 ───────────────────────

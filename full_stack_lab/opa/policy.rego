@@ -402,6 +402,27 @@ candidate["MCP-SHADOW-001"] := {
 	contract_ok
 }
 
+# D-39. 논문의 분석 단위인 이용 관계(조직·목적·제공자·허용 자원)를 종료 때만이 아니라
+# 평상시 호출에도 적용한다. 서버에 운영 중인 이용 관계가 있는데 호출한 자원이 어느 관계의
+# 허용 자원에도 없으면 경보로 남긴다. 차단이 아닌 이유: 카탈로그의 allowed_resources는
+# 회수 범위를 적으려고 만든 목록이라 아직 소유자가 인가 목록으로 검토한 적이 없다. 차단으로
+# 올리는 것은 관리대장의 결정이다. 값이 없는 입력(구버전 Gateway·재생 사례)은 판단하지 않는다.
+relationship_defined := object.get(input, ["relationship", "defined"], false)
+
+relationship_in_scope := object.get(input, ["relationship", "in_scope"], true)
+
+candidate["P-SCOPE-001"] := {
+	"decision": "Alert",
+	"reason": sprintf("이용 관계가 허용한 자원 밖입니다: %v", [concat(", ", object.get(input, ["relationship", "outside"], []))]),
+	"restrictions": {},
+	"conditions": {"matched": ["relationship.defined"], "violated": ["relationship.in_scope"]},
+} if {
+	relationship_defined == true
+	relationship_in_scope == false
+	has_permission
+	contract_ok
+}
+
 # CTL-24 / RSK-24. 평문 원격 endpoint는 권한을 따지기 전에 끊는다. 이 통제가
 # 등록·권한 판단보다 뒤에 있으면 "권한은 있으니 평문으로 보냈다"가 만들어진다.
 candidate["MCP-TRANSPORT-001"] := {

@@ -275,3 +275,33 @@
   숨긴 도구를 목록 없이 직접 호출해도 판정된다는 것은 acceptance `tool-hidden-from-partner-still-decided`가 확인한다.
 - **이유**: 실제 하네스(와 Inspector CLI)는 목록에 없는 도구를 부르지 않는다("tool not found"). 기대값을 Block으로 두면
   하네스가 할 수 없는 행동을 시나리오가 요구하게 된다. 통제가 목록 숨김에 기대지 않는다는 보장은 직접 호출 시험이 맡는다.
+
+> D-36~D-38은 `Proxy` 브랜치(투명 MCP 리버스 프록시)의 결정이라 이 파일에 없다. 번호가 겹치지 않게 비워 둔다.
+
+## D-39 이용 관계의 허용 자원을 평상시 호출에도 적용 — `P-SCOPE-001` 경보 (v3.1)
+- **결정**: 서버의 ACTIVE 이용 관계가 허용한 자원(`[[usage_relationships]] allowed_resources`)을 모든 `tools/call`의
+  정책 입력 `relationship`(`defined`·`ids`·`in_scope`·`outside`)에 싣는다. 경로·저장소·테이블·메일함 자원이 그 합집합
+  밖이면 `P-SCOPE-001`(경고, priority 136)이 성립한다. 경로는 세그먼트 단위 접두어, 이름은 정확히 일치하거나 `sales.*`·
+  `bob/*`로 묶는다(`classify.outside_scope`). 메시지·명령·URL처럼 관계가 부여하지 않는 종류와 DB 카탈로그 뷰는 보지 않는다.
+- **이유**: LiteLLM MCP 게이트웨이 벤치마킹(BENCHMARK_LITELLM.md)에서 LiteLLM은 키·팀의 허용 서버·도구를 **호출마다**
+  평가하는데, 이 저장소의 이용 관계는 종료 케이스를 열 때만 읽혔다(`decommission.py`). 논문의 분석 단위가 평상시 호출에는
+  서류로만 있었다.
+- **왜 차단이 아니라 경보인가**: `allowed_resources`는 회수 범위를 적으려고 만든 목록이라 소유 부서가 인가 목록으로 검토한
+  적이 없다. 곧바로 차단하면 검토되지 않은 목록이 업무를 끊는다. 증적을 먼저 쌓고, 차단 승격은 관리대장의 결정이다(ROADMAP 0번).
+  경보는 권한·계약을 충족한 호출에만 붙고 더 강한 판정(차단·승인·제한)을 약하게 만들지 않는다(`test_scope_does_not_weaken_a_block`).
+- **호환**: 값이 없는 입력(구버전 Gateway, 정책 재생의 합성 사례)은 판단하지 않는다. 정책 묶음 2.3.0.
+
+## D-40 연결 확인을 계약 재검증과 분리 — `POST /api/registry/{server}/check` (v3.1)
+- **결정**: MCP 세션만 협상하고 닫는 확인을 둔다(`upstream.handshake`, 제한 5초 `SERVER_CHECK_TIMEOUT_SECONDS`).
+  결과는 `healthy`·`unhealthy`·`retired`와 지연·서버가 밝힌 이름·버전·프로토콜. `tools/list`를 읽지 않고, 계약 상태·
+  `mcp_servers.status`·감사 원장을 바꾸지 않는다. 폐기된 서버는 연결하지 않는다. Console 서버 화면의 "연결 확인" 버튼.
+- **이유**: LiteLLM은 `health_check_server()`를 도구 조회와 분리해 둔다. 여기서는 "살아 있나"를 알려면 `refresh_catalog`로
+  도구 목록 전체를 읽고 계약 상태까지 다시 써야 했다 — 장애 대응 중에 계약 드리프트 판정을 건드리는 것은 부작용이다.
+- **대안**: 종료 판정의 `liveness-probe`(HTTP HEAD) 재사용 — 그것은 케이스의 **증거**로 남고 MCP를 말하는지는 보지 않는다.
+
+## D-41 순수 계약 모듈 `contract.py` (v3.1)
+- **결정**: `canonical_hash`, OPA 결과 스키마 `POLICY_RESULT`, 감사 체인 열 집합·`audit_fingerprint`를 환경 변수·연결·
+  tracing이 없는 `gateway/app/contract.py`로 옮긴다. `core`는 같은 이름을 다시 내보낸다.
+- **이유**: `replay`는 해시와 결과 스키마만 필요한데 `core`를 import하면서 tracing을 초기화했고, `registry`는 순환 import를
+  피하려고 함수 안에서 `core`를 불렀다(ROADMAP 6절 "순수 계약 모듈"). 감사 체인의 열 집합은 버전별로 고정해야 하는 데이터라
+  정책 판정 코드와 같은 파일에 있을 이유가 없다.

@@ -658,7 +658,8 @@ function showServer(id) {
   openDrawer(s.display_name, html`<div class="row-actions">${chip({ READY: "allow", DRIFT: "alert" }[s.status] || "block", SERVER_STATUS[s.status] || s.status)}
       ${chip(s.lifecycle === "OPERATING" ? "outline" : "block", LIFECYCLE[s.lifecycle] || s.lifecycle)}
       ${chip("outline", s.deployment === "provider" ? "제공자 운영" : "사내 운영")}
-      ${s.status === "DRIFT" ? html`<button class="btn sm primary" data-act="approve-contract" data-id="${s.id}">승인본 갱신</button>` : ""}</div>
+      ${s.status === "DRIFT" ? html`<button class="btn sm primary" data-act="approve-contract" data-id="${s.id}">승인본 갱신</button>` : ""}
+      ${s.lifecycle !== "RETIRED" ? html`<button class="btn sm" type="button" data-act="server-check" data-id="${s.id}">연결 확인</button>` : ""}</div>
     ${s.status_reason && s.status !== "READY" ? html`<p class="note warn">${s.status_reason}</p>` : ""}`, [
     { key: "info", label: "개요", body: kv([["id", html`<code>${s.id}</code>`], ["Gateway 경로", html`<code>/mcp/${s.id}/</code>`],
       ["패키지", html`<code>${s.source_ref || `${s.package}@${s.version}`}</code>`], ["upstream", html`<code>${s.endpoint}</code>`],
@@ -669,7 +670,8 @@ function showServer(id) {
         <td>${!t.enabled ? chip("outline", "미승인") : t.contract_ok ? chip("allow", "일치") : chip("alert", "불일치")}</td></tr>`)}</tbody></table>` },
     { key: "exit", label: "종료 조건", body: html`<div class="pill-list">${Object.entries(EXIT_TERMS).map(([k, label]) => bool(terms[k], label))}</div>
       ${creds.length ? kv([["보유 자격", html`${creds.map((c) => html`<code>${c.id}</code> `)}`]]) : ""}
-      ${rels.length ? html`<h3>이용 관계</h3>${kv(rels.map((u) => [u.id, `${u.purpose} · ${u.organization} · ${u.status}`]))}
+      ${rels.length ? html`<h3>이용 관계</h3>${kv(rels.map((u) => [u.id, html`${u.purpose} · ${u.organization} · ${u.status}
+        <span class="sub">허용 자원 ${(u.allowed_resources || []).join(", ") || "없음"} — 밖이면 P-SCOPE-001 경보</span>`]))}
         <div class="row-actions"><a class="btn sm" href="#/termination">종료·폐기</a></div>` : ""}` },
   ]);
 }
@@ -1082,6 +1084,13 @@ const ACTIONS = {
     const drift = Object.values(results || {}).filter((status) => status !== "READY").length;
     toast(drift ? `계약 변경 ${drift}개 서버` : "모든 서버 계약 일치", Boolean(drift));
     reload();
+  },
+  async "server-check"(el) {
+    // A session handshake only; contract state is the catalog refresh's job (D-40).
+    const r = await gw(`registry/${encodeURIComponent(el.dataset.id)}/check`, { method: "POST" });
+    if (r.state === "healthy") toast(`연결 정상 · ${r.advertised_name || r.server_id} ${r.version} · ${Math.round(r.latency_ms)}ms`);
+    else if (r.state === "retired") toast("폐기된 서버는 확인하지 않습니다.");
+    else toast(`연결 실패 · ${r.error}`, true);
   },
   async "approve-contract"(el) {
     const fd = await ask({ title: "계약 변경 승인", fields: field.area("note", "검토 내용", 'required minlength="5" maxlength="500"'), confirm: "승인본 갱신" });

@@ -17,6 +17,7 @@
 | [CONSOLE_UI.md](CONSOLE_UI.md) | v3 화면 구조(탭·차트), 디자인 시스템·레퍼런스, 원칙(CSP·이스케이프), 새 화면 추가 | UI |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | 실제로 겪은 증상 → 원인 → 해결 | 막혔을 때 |
 | [ROADMAP.md](ROADMAP.md) | 남은 일, 의도적 한계 | 다음 할 일 |
+| [BENCHMARK_LITELLM.md](BENCHMARK_LITELLM.md) | LiteLLM MCP 게이트웨이와의 기능 대조(코드 근거), 반영한 것·가져오지 않는 것·main의 차별점 | 기능을 더하기 전, 발표·논문 |
 
 API 요약은 [../API.md](../API.md), 기계용 명세는 `./console.sh openapi` → `docs/openapi/*.json`.
 

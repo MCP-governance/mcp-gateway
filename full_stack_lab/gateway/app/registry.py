@@ -24,6 +24,7 @@ from typing import Any
 from psycopg.types.json import Jsonb
 
 from . import db
+from .contract import canonical_hash
 
 REGISTRY_DIR = Path(os.getenv("REGISTRY_DIR", "/registry"))
 CATALOG_PATH = REGISTRY_DIR / "catalog.toml"
@@ -165,7 +166,6 @@ async def sync() -> dict:
 
 
 def tool_hashes(tool: dict) -> dict:
-    from .core import canonical_hash
     return {"description_sha256": canonical_hash(tool["description"]),
             "schema_sha256": canonical_hash(tool["input_schema"])}
 

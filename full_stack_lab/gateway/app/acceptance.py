@@ -287,6 +287,42 @@ async def read_then_send_chain_blocked() -> str:
     return "P-CHAIN-001"
 
 
+async def relationship_scope_alerts() -> str:
+    """D-39: UR-PG-ANALYTICS allows public.products and sales.orders. A permitted read of
+    another table runs but is flagged; a read inside the relationship stays a plain Allow."""
+    await operating("postgres")
+    outside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM hr.employees"})
+    expect(outside.get("decision") == "Alert" and outside.get("policy_id") == "P-SCOPE-001" and not outside["is_error"],
+           f"이용 관계 밖 테이블: {outside.get('decision')} {outside.get('policy_id')} {outside['text'][:120]}")
+    row = await db.fetch_one("SELECT policy_input FROM decisions WHERE id=%s", (outside.get("decision_id"),))
+    scope = (row["policy_input"] or {}).get("relationship") or {}
+    expect(scope.get("ids") == ["UR-PG-ANALYTICS"] and scope.get("outside") == ["hr.employees"],
+           f"정책 입력의 relationship: {scope}")
+    inside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM sales.orders"})
+    expect(inside.get("decision") == "Allow" and inside.get("policy_id") == "P-AUTHZ-ALLOW-001" and not inside["is_error"],
+           f"이용 관계 안 테이블: {inside.get('decision')} {inside.get('policy_id')}")
+    return "hr.employees → P-SCOPE-001 경보 · sales.orders → 허용"
+
+
+async def server_check_is_side_effect_free() -> str:
+    """D-40: the check negotiates a session and changes nothing it reports on."""
+    # last_seen_at is not compared: the background catalog watch moves it every minute.
+    state = "SELECT (SELECT status FROM mcp_servers WHERE id='git') AS status, (SELECT count(*) FROM decisions) AS decisions"
+    before = await db.fetch_one(state)
+    async with httpx.AsyncClient(timeout=20) as client:
+        response = await client.post(API + "/api/registry/git/check", headers={"Authorization": f"Bearer {TOKENS['admin']}"})
+        missing = await client.post(API + "/api/registry/nope/check", headers={"Authorization": f"Bearer {TOKENS['admin']}"})
+        employee = await client.post(API + "/api/registry/git/check", headers={"Authorization": f"Bearer {TOKENS['employee']}"})
+    response.raise_for_status()
+    result = response.json()
+    expect(result.get("state") == "healthy" and result.get("latency_ms") is not None, f"git 연결 확인: {result}")
+    expect(missing.status_code == 404 and employee.status_code == 403,
+           f"없는 서버 {missing.status_code} · 직원 {employee.status_code}")
+    after = await db.fetch_one(state)
+    expect(dict(before) == dict(after), f"연결 확인이 서버 상태나 감사 원장을 바꿈: {dict(before)} → {dict(after)}")
+    return f"healthy · {result['latency_ms']}ms · {result.get('advertised_name')}"
+
+
 async def audit_chain_intact() -> str:
     result = await verify_audit_chain()
     expect(result["intact"], f"감사 체인 손상: {result}")
@@ -308,6 +344,8 @@ async def run() -> dict:
         ("drifted-contract-blocks", drifted_contract_blocks()),
         ("approval-runs-exactly-once", approval_runs_once()),
         ("monitor-mode-records-would-decision", monitor_mode_records()),
+        ("usage-relationship-scope-alerts", relationship_scope_alerts()),
+        ("server-check-changes-nothing", server_check_is_side_effect_free()),
         # PDF integration (Presidio, MCP-DATA-EGRESS-001, P-CHAIN-001) - order matters:
         # the chain check relies on the important read made by the first one.
         ("pii-masked-in-output", pii_masked_in_output()),

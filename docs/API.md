@@ -61,6 +61,7 @@
 | `GET /api/state` · `GET /api/registry` | 관리자 | 원시 상태 / 카탈로그+계약+이용 관계 |
 | `POST /api/catalog/refresh` | 관리자 | 모든 서버 계약 재확인 |
 | `POST /api/registry/{server}/approve-contract` | 관리자 | 검토한 계약 변경을 승인본으로(`note` 필수) |
+| `POST /api/registry/{server}/check` | 관리자 | MCP 세션만 협상해 연결 확인 — `state`(healthy·unhealthy·retired)·지연·서버 정보. 계약·상태·감사는 그대로(D-40) |
 | `POST /api/approvals/{id}/approve|reject` | 관리자 | 승인 → 1회 실행 |
 | `GET /api/policy/matrix` · `GET /api/policy/ledger` | 사용자 | 역할×등급×행위 27칸을 지금 배포된 번들로 OPA에 질의한 결과 / 관리대장·예외·`authorization`(권한 번들)·`deployed_rego`(배포 정책 묶음 digest) |
 | `GET/PUT /api/enforcement` | 사용자/관리자 | 집행·관찰 모드 |

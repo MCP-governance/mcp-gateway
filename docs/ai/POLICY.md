@@ -51,6 +51,7 @@
 | 125 | P-X-ALERT-001 | 경고 | 제한할 수 없는 외부 전송 |
 | 128~135 | P-UNTRUSTED-CONTENT-002, P-ANOMALY-001, MCP-SHADOW-00x | 경고 | 비신뢰 콘텐츠 열람, 반복 차단, 섀도 MCP 보유자 |
 | 130 | P-IMPORTANT-ALERT-001 | 경고 | 중요정보 열람 |
+| 136 | P-SCOPE-001 | 경고 | 이용 관계가 허용한 자원 밖(`relationship.in_scope=false`, D-39). 관계가 없는 서버·값이 없는 입력은 판단하지 않는다 |
 | 140 | P-AUTHZ-ALLOW-001 | 허용 | 최소권한 충족 |
 
 Gateway 쪽(OPA 밖)에서 나오는 판정: `P-INPUT-SCHEMA-001`(승인 스키마 위반), `P-DATA-INSPECTION-001`

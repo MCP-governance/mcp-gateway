@@ -3,7 +3,7 @@
     "id": "POLSET-MCP-001",
     "name": "MCP Tool Call 집행 정책집",
     "framework": "MCP 보안 관리 프레임워크 V2.0",
-    "version": "2.2.0",
+    "version": "2.3.0",
     "status": "운영",
     "owner": "거버넌스팀",
     "approver": "보안 의사결정기구",
@@ -1379,6 +1379,62 @@
         "T-SHADOW-002"
       ],
       "pac_candidate_id": "PAC-CAND-13"
+    },
+    "P-SCOPE-001": {
+      "name": "이용 관계 범위 밖 자원 경보",
+      "purpose": "논문의 분석 단위인 이용 관계(조직·목적·제공자·허용 자원)를 평상시 호출에도 적용한다. 운영 중인 이용 관계가 있는 서버에서 어느 관계도 허용하지 않은 자원을 부르면 경보와 증적을 남긴다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-20",
+        "RSK-29"
+      ],
+      "requirement_ids": [
+        "REQ-21",
+        "REQ-34"
+      ],
+      "control_ids": [
+        "CTL-21",
+        "CTL-34"
+      ],
+      "principle_ids": [
+        "PRN-04",
+        "PRN-06"
+      ],
+      "owner": "거버넌스팀",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "usage_relationships에 ACTIVE 관계가 있는 서버의 모든 호출(경로·저장소·테이블·메일함 자원)",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "relationship.defined",
+        "relationship.in_scope",
+        "relationship.outside"
+      ],
+      "condition": "호출의 범위 대상 자원 중 하나라도 서버의 ACTIVE 이용 관계 allowed_resources 합집합 밖",
+      "outcome": "경고",
+      "enforcement": "실행 후 증적 강화",
+      "priority": 136,
+      "automation": "자동화",
+      "exceptionable": true,
+      "exception_note": "관계의 allowed_resources를 고치는 것이 우선이다. 한시 예외는 관계 개정 기한과 함께만 허용한다.",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-26T00:00:00Z",
+      "obligations": [
+        "evidence.enhanced",
+        "alert.owner"
+      ],
+      "test_ids": [
+        "T-SCOPE-001",
+        "T-SCOPE-002"
+      ],
+      "pac_candidate_id": "PAC-CAND-SCOPE"
     },
     "MCP-TRANSPORT-001": {
       "name": "평문 원격 MCP 연결 차단",
