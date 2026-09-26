@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>MCP Proxy Console · 로그인</title>
+  <link rel="stylesheet" href="/console/static/console.css" />
+  <script type="module" src="/console/static/login.js"></script>
+</head>
+<body>
+  <main class="login">
+    <form id="login" autocomplete="off">
+      <h1><span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/></svg></span>MCP Proxy Console</h1>
+      <label>관리자 토큰
+        <input id="token" name="token" type="password" required minlength="16" spellcheck="false" autofocus />
+      </label>
+      <p class="error" id="error" role="alert"></p>
+      <button class="btn primary" type="submit">로그인</button>
+    </form>
+  </main>
+</body>
+</html>
