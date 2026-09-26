@@ -18,7 +18,10 @@ def main() -> None:
         settings = load_config(arguments.config)
     except (OSError, ValueError, KeyError, TypeError) as error:
         parser.exit(2, f"configuration error: {type(error).__name__}; check the config file and credential environment\n")
-    uvicorn.run(create_app(settings), host=arguments.host, port=arguments.port, access_log=False)
+    uvicorn.run(
+        create_app(settings), host=arguments.host, port=arguments.port, access_log=False,
+        timeout_graceful_shutdown=settings.shutdown_timeout_seconds,
+    )
 
 
 if __name__ == "__main__":

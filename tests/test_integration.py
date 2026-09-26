@@ -1,4 +1,5 @@
 import asyncio
+import sys
 import threading
 import time
 
@@ -11,6 +12,7 @@ from starlette.responses import Response, StreamingResponse
 from starlette.routing import Route
 
 from examples.demo_server import create_demo_app
+from mcp_gateway import __main__ as command_line
 from mcp_gateway.app import create_app
 from mcp_gateway.config import Settings, Upstream
 
@@ -93,9 +95,70 @@ def test_sse_flushes_before_completion_and_disconnect_closes_upstream(live_serve
             start = time.monotonic()
             with httpx.stream("GET", gateway + "/mcp/demo", timeout=3, trust_env=False) as response:
                 assert response.status_code == 200
-                assert next(response.iter_raw()) == b'id: first\nevent: message\ndata: {"message":"original"}\n\n'
+                # Keep the iterator: dropping it closes the connection and would fake a disconnect.
+                chunks = response.iter_raw()
+                assert next(chunks) == b'id: first\nevent: message\ndata: {"message":"original"}\n\n'
                 assert time.monotonic() - start < 2
+                assert not closed.wait(0.3), "upstream stream closed while the client was still reading"
             assert closed.wait(3), "downstream disconnect did not close the idle upstream stream"
+
+
+def idle_events(closed=None):
+    async def endpoint(request):
+        async def events():
+            try:
+                yield b"data: open\n\n"
+                await anyio.sleep_forever()
+            finally:
+                if closed:
+                    closed.set()
+        return StreamingResponse(events(), media_type="text/event-stream")
+    return endpoint
+
+
+def test_open_streams_to_one_server_do_not_block_another(live_server):
+    async def plain(request):
+        return Response(b"ok")
+
+    routes = [Route("/events", idle_events()), Route("/plain", plain, methods=["POST"])]
+    with live_server(Starlette(routes=routes)) as origin:
+        settings = Settings({"events": Upstream(origin + "/events"), "plain": Upstream(origin + "/plain")},
+                            max_connections_per_server=2, connect_timeout_seconds=0.3)
+        with live_server(create_app(settings)) as gateway, httpx.Client(trust_env=False, timeout=5) as client:
+            streams = [client.send(client.build_request("GET", gateway + "/mcp/events"), stream=True) for _ in range(2)]
+            try:
+                chunks = [response.iter_raw() for response in streams]
+                assert [next(chunk) for chunk in chunks] == [b"data: open\n\n"] * 2
+                assert client.post(gateway + "/mcp/plain").text == "ok"
+                limited = client.get(gateway + "/mcp/events")
+                assert limited.status_code == 503
+                assert limited.json() == {"detail": "upstream connection limit reached"}
+            finally:
+                for response in streams:
+                    response.close()
+
+
+def test_command_line_server_stops_despite_idle_stream(live_server, tmp_path, monkeypatch):
+    closed = threading.Event()
+    with live_server(Starlette(routes=[Route("/mcp", idle_events(closed))])) as origin:
+        config = tmp_path / "proxy.toml"
+        config.write_text(f'[proxy]\nshutdown_timeout_seconds = 0.2\n[servers.demo]\nurl = "{origin}/mcp"\n')
+        launched = {}
+        monkeypatch.setattr(sys, "argv", ["mcp-gateway", "--config", str(config)])
+        monkeypatch.setattr(command_line.uvicorn, "run", lambda app, **options: launched.update(app=app, **options))
+        command_line.main()
+        assert launched["timeout_graceful_shutdown"] == 0.2
+        options = {key: value for key, value in launched.items() if key not in ("app", "host", "port")}
+
+        with httpx.Client(trust_env=False, timeout=5) as client:
+            with live_server(launched["app"], **options) as gateway:
+                response = client.send(client.build_request("GET", gateway + "/mcp/demo"), stream=True)
+                chunks = response.iter_raw()
+                assert next(chunks) == b"data: open\n\n"
+                stopping = time.monotonic()
+            assert time.monotonic() - stopping < 1.5, "idle SSE stream held the proxy open"
+            assert closed.wait(3), "shutdown did not close the upstream stream"
+            response.close()
 
 
 def test_socket_timeout_and_streaming_upload(live_server):

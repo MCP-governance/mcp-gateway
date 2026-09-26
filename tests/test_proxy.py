@@ -63,6 +63,22 @@ def test_relay_method_body_session_and_query(suffix, method):
     assert stream.closed
 
 
+@pytest.mark.parametrize("method", ["GET", "DELETE", "HEAD", "OPTIONS", "POST"])
+def test_bodiless_request_is_not_sent_as_chunked(method):
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(200, stream=Body(b""))
+
+    with proxy(handler) as client:
+        client.request(method, "/mcp/demo", headers={"Mcp-Session-Id": "session-A"})
+    assert "transfer-encoding" not in calls[0].headers
+    assert calls[0].headers.get("content-length", "0") == "0"
+    assert calls[0].content == b""
+    assert calls[0].headers["mcp-session-id"] == "session-A"
+
+
 @pytest.mark.parametrize("status", [202, 204, 400, 401, 404, 405, 503, 307])
 def test_upstream_status_and_errors_not_wrapped_or_retried(status):
     calls = []

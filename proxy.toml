@@ -3,6 +3,10 @@ connect_timeout_seconds = 10
 # 0 keeps idle SSE connections open. A positive number is a per-read timeout.
 read_timeout_seconds = 0
 write_timeout_seconds = 30
+# Open SSE streams never end on their own. After this many seconds a stop cancels them.
+shutdown_timeout_seconds = 5
+# Upstream connections per server; each server has its own pool. Open SSE streams count.
+max_connections_per_server = 100
 # Native MCP clients normally omit Origin. Browser clients need their exact origin here.
 allowed_origins = []
 

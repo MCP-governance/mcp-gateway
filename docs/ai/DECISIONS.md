@@ -22,3 +22,25 @@ ASGI 버전과 무관하게 disconnect를 감시하고 finally에서 upstream을
 
 시험과 CI도 이 실행 경로로 교체한다. MCP SDK는 공식 클라이언트 호환성 시험과 데모 전용 개발 의존성이다.
 프록시 운영 의존성은 AnyIO·HTTPX·Starlette·Uvicorn이며 `uv.lock`으로 고정한다.
+
+## D-37 서버별 연결 풀, 본문 없는 요청, 종료 시간 제한, 브랜치 이름 (2026-09-26)
+
+사용자 요청: 실수로 `main`에 병합된 #27을 되돌리고(#28, 되돌리기 커밋 `b4de4fe`), Proxy 브랜치의 부족한 부분을 채운다.
+
+D-36의 공유 AsyncClient는 HTTPX 기본 한도인 연결 100개를 모든 서버가 나눠 썼다. 열린 SSE 스트림은 연결을 계속 잡고 있어서
+한 서버에 스트림 100개가 열리면 다른 정상 서버의 요청까지 연결을 기다리다 "upstream timeout" 504를 받았다.
+서버마다 AsyncClient를 따로 두고 `max_connections_per_server`(기본 100)로 한도를 정한다. 한도 초과는 시간 초과와 구분해 503으로 답한다.
+
+`request.stream()`을 그대로 넘기면 HTTPX가 빈 본문도 `Transfer-Encoding: chunked`로 보내 본문 없는 GET·DELETE가
+본문 있는 요청으로 바뀌었다. GET 본문을 거부하는 중간 장비나 서버를 거치면 SSE 열기와 세션 종료가 실패한다.
+첫 조각을 먼저 읽고 비어 있으면 본문 없이 보낸다. 헤더 대신 실제로 받은 본문으로 판단하므로 ASGI 서버 종류와 무관하다.
+
+Uvicorn은 기본적으로 모든 연결이 끝날 때까지 종료를 기다리는데 SSE는 스스로 끝나지 않는다. 열린 스트림이 하나만 있어도
+프록시가 멈추지 않았고 Compose는 SIGKILL까지 기다렸다. `shutdown_timeout_seconds`(기본 5)가 지나면 요청을 취소하며,
+RelayResponse의 finally가 upstream 연결을 닫는다.
+
+작업 브랜치 규칙 `proxy/...`는 대소문자를 구분하지 않는 파일 시스템에서 `refs/remotes/origin/Proxy` 파일과
+`refs/remotes/origin/proxy/` 디렉터리가 겹쳐 fetch가 실패한다. `proxy-<주제>`로 바꾸고 CI 트리거도 맞춘다.
+
+D-36에서 CI를 교체할 때 함께 지워진 CodeQL 분석과 멘토님 디렉터리 `research/`를 되살린다.
+Proxy를 다시 `main`에 병합할지는 사용자가 정한다. 병합한다면 `b4de4fe`를 먼저 revert해야 프록시 변경이 들어간다.

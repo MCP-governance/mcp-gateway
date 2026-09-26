@@ -48,17 +48,25 @@ class Settings:
     connect_timeout_seconds: float = 10
     read_timeout_seconds: float = 0
     write_timeout_seconds: float = 30
+    # Idle SSE streams never finish on their own; without a limit a stop would wait forever.
+    shutdown_timeout_seconds: float = 5
+    # Each server gets its own pool, so one server's open streams cannot starve another.
+    max_connections_per_server: int = 100
     allowed_origins: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.servers or any(not SERVER_NAME.fullmatch(name) for name in self.servers):
             raise ValueError("configure at least one server with a valid route name")
-        for name in ("connect_timeout_seconds", "read_timeout_seconds", "write_timeout_seconds"):
+        for name in ("connect_timeout_seconds", "read_timeout_seconds",
+                     "write_timeout_seconds", "shutdown_timeout_seconds"):
             value = getattr(self, name)
             if (isinstance(value, bool) or not isinstance(value, (int, float))
                     or not math.isfinite(value) or value < 0
-                    or (name != "read_timeout_seconds" and value == 0)):
+                    or (name in ("connect_timeout_seconds", "write_timeout_seconds") and value == 0)):
                 raise ValueError(f"invalid {name}")
+        limit = self.max_connections_per_server
+        if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+            raise ValueError("invalid max_connections_per_server")
         if not isinstance(self.allowed_origins, (tuple, list)) or any(
                 not isinstance(origin, str) for origin in self.allowed_origins):
             raise ValueError("allowed_origins must be a list of exact origin strings")
