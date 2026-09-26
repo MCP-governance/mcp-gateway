@@ -4,6 +4,11 @@
 
 ## 1. 다음에 할 일
 
+> LiteLLM MCP 게이트웨이 비교([BENCHMARK_LITELLM.md](BENCHMARK_LITELLM.md))에서 나온 후보는 3·14·15번과 아래 0번이다.
+
+0. **`P-SCOPE-001` 차단 승격과 이용 관계별 도구 목록** — D-39는 범위 밖 자원을 경보로만 남긴다. 관계 소유 부서가
+   `allowed_resources`를 인가 목록으로 검토한 뒤 관리대장에서 차단으로 올린다. 같은 입력에 `allowed_tools`를 더하면
+   "협력사 A는 filesystem의 read만" 같은 관계를 정책 데이터로 쓸 수 있다(LiteLLM `mcp_tool_permissions`의 1단 축소판).
 1. **엔드포인트 평면의 차단** — 지금은 섀도 MCP를 *발견*하고 증적만 강화한다(`MCP-SHADOW-*`).
    ws-nkk의 `fs-direct`가 동작하지 않는 이유는 망 분리(office↛tools)이지 에이전트의 차단이 아니다.
    실제 조직에서는 egress 허용목록·DNS가 해야 한다 → `docs/design/CONTROL_PLANES.md`.
@@ -24,6 +29,9 @@
 11. **추가 클라이언트(Antigravity·Cursor·VS Code)** — 같은 Gateway URL을 각자의 MCP 설정에 넣으면 되고 단말 에이전트는 그 파일들을 이미 인벤토리한다. GUI 앱이라 랩에서 실행·검증하지 않았고, `render.py`에 이 형식들의 관리형 설정 생성을 더할 수 있다.
 12. **더 나은 도구 선택을 위한 모델 경로** — GPU 추론(Intel Arc, Vulkan 또는 IPEX 경유) 또는 LiteLLM 뒤에 클라우드 키를 붙이는 두 방향 다 검토할 것. 지금 CPU 2B 모델은 벤치 4건 중 2건만 기대한 도구를 곧바로 골랐다(나머지는 탐색 도구·별칭 도구).
 13. **Gemini CLI `tools.exclude` → Policy Engine 이관** — Gemini CLI가 사용 중단을 예고했다. 대체 설정 스키마가 확정되면 `workstation/managed/render.py`의 Gemini 설정을 옮긴다.
+14. **CPU 소형 모델용 도구 선택 보조** — 도구가 많은 서버(gitea 39개, desktop 19개)에서 질의와 가까운 도구만 노출.
+    LiteLLM은 임베딩(`semantic_tool_filter`)을 쓰지만 의존성 없는 키워드 방식부터. 12번과 함께 벤치 4건으로 비교.
+15. **도구 호출 비용 필드** — 도구별 고정 단가를 `decisions`에 남겨 차단이 아낀 비용을 정량화(LiteLLM `cost_calculator`).
 
 ## 2. 알려진 한계 (의도적으로 남김)
 
@@ -68,5 +76,6 @@
   프로세스가 전송 뒤 감사 저장 전에 죽은 건을 UNKNOWN으로 남긴다. 지금은 `upstream_attempted`와 감사 행이 사후에 한 번 쓰인다.
 - **DB 역할 분리**: migration owner / 실행(감사 append만) / 관리 / Agent(IdP) / Worker. 지금은 모든 서비스가 `mcp`
   역할(스키마 owner)이라 append-only 트리거를 끌 수 있다(보안 회귀가 변조 탐지로 보완).
-- **순수 계약 모듈**: 해시·스키마 유틸을 tracing을 초기화하는 `core`에서 분리(agent_service·replay의 import 경계).
+- ~~**순수 계약 모듈**: 해시·스키마 유틸을 tracing을 초기화하는 `core`에서 분리(agent_service·replay의 import 경계).~~
+  → `gateway/app/contract.py`(canonical_hash·POLICY_RESULT·감사 열 집합·fingerprint). `replay`·`registry`가 `core`를 import하지 않는다.
 - 제안의 A.I.G 고권한 오버레이 항목은 v2에 해당 없음(v2는 A.I.G를 Gateway 컨테이너에서 실행하지 않는다).

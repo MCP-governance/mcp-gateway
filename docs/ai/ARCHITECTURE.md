@@ -170,10 +170,14 @@ LiteLLM DB에 직원 단위로 남는다.
   "resource": {"kind": "path", "id": "/shared/confidential/hr/salary-2026.csv", "data_class": "important"},
   "resources": [ ... ],
   "destinations": [{"kind": "email", "value": "x@gmail.com", "external": true}],
+  "relationship": {"defined": true, "ids": ["UR-FS-SHARED"], "in_scope": false, "outside": ["/workspace/notes.md"]},
   "request": {"untrusted_markers": [], "dlp": ["kr-rrn"]},
   "contract": { ... }, "context": { ... }, "approval": {"granted": false}
 }
 ```
+
+`relationship`은 그 서버의 ACTIVE 이용 관계가 허용한 자원(`[[usage_relationships]] allowed_resources`)과 이번 호출의
+경로·저장소·테이블·메일함 자원을 대조한 결과다(`classify.outside_scope`, D-39). 범위 밖이면 `P-SCOPE-001` 경보.
 
 분류 규칙은 `registry/catalog.toml`에 데이터로 둔다. 규칙에 없는 자원은 **important**로 본다(fail-safe). 하네스
 정보는 입력에 넣지 않는다 — 하네스가 스스로 이름을 대기 때문이다.
@@ -242,7 +246,8 @@ CPU에서 수십 초~2분 걸린다. 하네스 LLM 실측 결과는 DECISIONS D-
 | `full_stack_lab/gateway/app/` | Gateway(FastAPI)·IdP·Console API·Console 정적 파일 |
 | `…/mcp_facade.py` | MCP 서버(저수준 SDK): 서버별·집계 도구 목록, 하네스 식별 기록 |
 | `…/main.py` | API, `/mcp` 마운트(`RequireBearer` → `ServerPath`) |
-| `…/core.py` | 강제 경로(`execute_call`), 정책 입력 조립, 계약 확인, 감사 체인 |
+| `…/core.py` | 강제 경로(`execute_call`), 정책 입력 조립(이용 관계 범위 포함), 계약 확인, 감사 체인, 연결 확인(`check_server`) |
+| `…/contract.py` | 순수 계약 모듈: `canonical_hash`, OPA 결과 스키마, 감사 체인 열 집합·fingerprint(D-41) |
 | `…/classify.py` | 자원 추출·분류·DLP (`python -m app.classify`로 self-check) |
 | `…/endpoint_plane.py` | 단말 인벤토리 분류(Gateway 경유·섀도·폐기 잔존) |
 | `…/decommission.py` | 종료 케이스·회수 대상·증거·판정·판정서 |
