@@ -1,168 +1,24 @@
-# The completion criteria are only real if something runs them. `static` needs no
-# running stack; `verify` brings the whole lab up (without the local LLM - the harnesses
-# are checked with `mcp list`, the workday runs its scripted mode through the MCP
-# Inspector CLI) and runs the same `./console.sh test` a person runs.
-name: full_stack_lab 검증
-
+name: Architecture verification
 on:
   push:
-    branches: ["main", "feat/**", "release/**"]
+    branches: ["architecture/plan-1", "architecture/plan-2"]
   pull_request:
-    branches: ["main"]
-  workflow_dispatch:
-
+    branches: ["architecture/plan-1", "architecture/plan-2"]
 permissions:
   contents: read
-
-concurrency:
-  group: verify-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  static:
-    name: 정적 검사
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: full_stack_lab
-    env:
-      # docker compose refuses to render without these. Set only here: in `verify`
-      # ./console.sh generates the real ones into .env, and a variable present in
-      # the environment - even empty - would override .env.
-      AGENT_JWT_PRIVATE_KEY: ci-placeholder
-      AGENT_JWT_PUBLIC_KEY: ci-placeholder
-      LITELLM_MASTER_KEY: ci-placeholder
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-
-      - name: Python lint
-        run: |
-          python -m pip install --quiet pyflakes
-          python -m pyflakes gateway/app/*.py tests/*.py supply_chain/*.py workstation/*.py workstation/managed/*.py \
-            workstation/bin/bob-sso workstation/bin/workday workstation/bin/harness-check corp/*.py scripts/*.py ../endpoint-agent/*.py
-
-      # console.js is an ES module (it imports console-state.mjs); Node 22+ parses it with --check.
-      - uses: actions/setup-node@v7
-        with:
-          node-version: "24"
-          package-manager-cache: false
-
-      - name: Shell·JS 문법과 콘솔 상태 테스트
-        run: |
-          bash -n console.sh tests/security_regression.sh workstation/entrypoint.sh workstation/bin/bob-ask mcp/run-server.sh corp/gitea-entrypoint.sh ../endpoint-agent/install-linux.sh
-          node --check gateway/app/agent_static/console.js
-          node --check gateway/app/agent_static/charts.mjs
-          node --check gateway/app/agent_static/login.js
-          node --test tests/console-state.test.mjs
-
-      - name: 검사기 자체 점검
-        run: |
-          python3 tests/contracts_check.py
-          python3 tests/experiments_check.py
-          python3 tests/replay_check.py
-          python3 ../endpoint-agent/agent.py --self-check
-          python3 scripts/network_prefix.py --self-check
-          # The four harness configs are rendered from the registry; every server must land in each.
-          python3 workstation/managed/render.py registry/catalog.toml /tmp/managed
-          python3 - <<'PY'
-          import json, tomllib
-          servers = sorted(tomllib.load(open("registry/catalog.toml", "rb"))["servers"])
-          got = {
-              "claude": sorted(json.load(open("/tmp/managed/claude-code/managed-mcp.json"))["mcpServers"]),
-              "codex": sorted(tomllib.load(open("/tmp/managed/codex/config.toml", "rb"))["mcp_servers"]),
-              "gemini": sorted(json.load(open("/tmp/managed/gemini-cli/settings.json"))["mcpServers"]),
-              "opencode": sorted(json.load(open("/tmp/managed/opencode/opencode.json"))["mcp"]),
-          }
-          bad = {k: v for k, v in got.items() if v != servers}
-          assert not bad, f"관리형 하네스 설정의 서버 목록이 레지스트리와 다름: {bad}"
-          print(f"PASS 하네스 4종 × 서버 {len(servers)}개")
-          PY
-
-      # The README lists what is deliberately open. A list that silently falls behind
-      # the code is worse than none: a reviewer reads it as exhaustive.
-      - name: 무인증 API 목록과 문서 대조
-        run: python3 tests/open_endpoints.py
-
-      - name: 망 분리·게시 포트·서명 키 경계
-        run: |
-          docker compose --profile llm --profile llm-download config --format json > /tmp/compose.json
-          python3 - <<'PY'
-          import json, sys
-          stack = json.load(open("/tmp/compose.json"))
-          services, networks = stack["services"], stack["networks"]
-          fail = []
-          for name in ("office", "tools", "corp", "data", "policy", "privacy", "model"):
-              if not networks[name].get("internal"):
-                  fail.append(f"{name} 망이 internal이 아님")
-          # D-24: every network has its own subnet under MCP_NET_PREFIX, so several labs
-          # on one host do not draw from (and exhaust) Docker's default pools.
-          for name, net in networks.items():
-              if not (net.get("ipam") or {}).get("config"):
-                  fail.append(f"{name} 망에 명시한 대역이 없음")
-          for name, svc in services.items():
-              nets = set(svc.get("networks") or {})
-              for port in svc.get("ports") or []:
-                  if port.get("host_ip") != "127.0.0.1":
-                      fail.append(f"{name}: loopback 밖에 게시 {port}")
-              if name.startswith("ws-") and nets != {"office"}:
-                  fail.append(f"{name}: 직원 PC가 office 밖 망에 연결 {sorted(nets)}")
-              if name.startswith("mcp-") and (svc.get("ports") or "office" in nets):
-                  fail.append(f"{name}: MCP 서버가 호스트나 office 망에 노출")
-              if name.startswith("presidio-") and (svc.get("ports") or nets != {"privacy"}):
-                  fail.append(f"{name}: Presidio가 privacy 망 밖에 노출 {sorted(nets)}")
-              if "privacy" in nets and not (name.startswith("presidio-") or name in ("gateway", "gateway-sse")):
-                  fail.append(f"{name}: Gateway가 아닌데 privacy 망에 연결")
-              env = svc.get("environment") or {}
-              if "AGENT_JWT_PRIVATE_KEY" in env and name != "agent-service":
-                  fail.append(f"{name}: 발급자가 아닌데 서명 개인키를 받음")
-          if "tools" in (services["agent-service"].get("networks") or {}):
-              fail.append("agent-service가 tools 망에 연결")
-          if set(services["ollama"].get("networks") or {}) != {"model"}:
-              fail.append("ollama가 model 망 밖에 연결")
-          if fail:
-              sys.exit("FAIL\n" + "\n".join(fail))
-          print(f"PASS {len(services)}개 서비스의 망·포트·키 경계")
-          PY
-
-      - name: Rego 단위 테스트
-        run: docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v
-
   verify:
-    name: 완료 조건 전체 검증
     runs-on: ubuntu-latest
-    timeout-minutes: 75
-    needs: static
-    defaults:
-      run:
-        working-directory: full_stack_lab
     steps:
-      - uses: actions/checkout@v7
-
-      - name: ./console.sh up --no-llm
-        run: ./console.sh up --no-llm
-
-      # Rego, classification self-check, gateway acceptance, the scripted workday of
-      # four workstations, the termination judgment, security regression, E1-E3.
-      - name: ./console.sh test
-        run: ./console.sh test
-
-      - name: 실패 시 컨테이너 로그
-        if: failure()
-        run: docker compose logs --tail=300 --no-color
-
-      - name: 증적 업로드
-        if: always()
-        uses: actions/upload-artifact@v7
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
         with:
-          name: verification-reports
-          path: full_stack_lab/reports/
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: 정리
-        if: always()
-        run: docker compose --profile llm down -v
+          version: "0.11.24"
+      - run: uv sync --frozen
+      - run: uv run --frozen python -m pyflakes services tests prepare.py
+      - run: uv run --frozen pytest -q
+      - run: cp .env.example .env && python3 prepare.py && docker compose config --quiet
+      - run: docker compose -p architecture-ci up -d --build --wait --wait-timeout 180
+      - run: uv run --frozen python tests/container_smoke.py
+      - if: always()
+        run: docker compose -p architecture-ci logs --tail=40 && docker compose -p architecture-ci down -v

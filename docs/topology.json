@@ -1,0 +1,61 @@
+{
+  "plan": 1,
+  "source": {
+    "url": "https://drive.google.com/file/d/1i3WloSS4OpMtd_CuGsfouBLo5AzyG4VS/view",
+    "page_id": "jl1713ShlaMZFDe2wrXP",
+    "group_id": "EKwQxOCetbGDIcymAig8-423"
+  },
+  "boundaries": {
+    "AI Agent gateway": [
+      "agent-service",
+      "litellm"
+    ],
+    "MCP gateway": [
+      "mcp-gateway",
+      "opa",
+      "presidio"
+    ],
+    "Runtime Analyzer": [
+      "otel-collector",
+      "evidence-processor",
+      "evidence-analyzer",
+      "evidence-decision"
+    ],
+    "DB": [
+      "db",
+      "dashboard",
+      "audit-api"
+    ],
+    "MCP Server": [
+      "mcp-server"
+    ],
+    "Keycloak": [
+      "keycloak"
+    ],
+    "internal API": [
+      "internal-api"
+    ],
+    "external API": [
+      "external-api"
+    ]
+  },
+  "telemetry_sources": [
+    "agent-service",
+    "mcp-gateway",
+    "mcp-server"
+  ],
+  "excluded": [
+    "Security Test Zone",
+    "Scan Orchestrator",
+    "AI Infra Guard",
+    "employee workstations",
+    "endpoint agent",
+    "Jaeger",
+    "Syft",
+    "Semgrep"
+  ],
+  "notes": [
+    "MCP server OTel included by explicit user confirmation.",
+    "External API GitHub/tool symbols are integrations represented by a configurable example API, not deployed copies of GitHub."
+  ]
+}

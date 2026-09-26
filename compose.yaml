@@ -1,0 +1,468 @@
+services:
+  agent-service:
+    build: .
+    image: mcpgw-architecture:local
+    command:
+    - uvicorn
+    - services.agent:app
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    environment:
+      OIDC_ISSUER: http://127.0.0.1:${KEYCLOAK_PORT:-18081}/realms/mcp
+      OIDC_JWKS_URL: http://keycloak:8080/realms/mcp/protocol/openid-connect/certs
+      SERVICE_TOKEN: ${SERVICE_TOKEN:?Copy .env.example to .env and set SERVICE_TOKEN}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      LITELLM_URL: http://litellm:4000
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?Set LITELLM_MASTER_KEY}
+      GATEWAY_URL: http://mcp-gateway:8000
+    networks:
+    - edge
+    - auth
+    - ai
+    - runtime
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    tmpfs:
+    - /tmp
+    restart: unless-stopped
+    ports:
+    - 127.0.0.1:${AGENT_PORT:-18082}:8000
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=3)
+      interval: 3s
+      timeout: 4s
+      retries: 40
+  mcp-gateway:
+    build: .
+    image: mcpgw-architecture:local
+    command:
+    - uvicorn
+    - services.gateway:app
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    environment:
+      OIDC_ISSUER: http://127.0.0.1:${KEYCLOAK_PORT:-18081}/realms/mcp
+      OIDC_JWKS_URL: http://keycloak:8080/realms/mcp/protocol/openid-connect/certs
+      SERVICE_TOKEN: ${SERVICE_TOKEN:?Copy .env.example to .env and set SERVICE_TOKEN}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      MCP_UPSTREAM: http://mcp-server:8000/mcp
+      OPA_URL: http://opa:8181
+      PRESIDIO_URL: http://presidio:3000
+      DECISION_API_URL: http://evidence-decision:8000
+    networks:
+    - auth
+    - ai
+    - tools
+    - policy
+    - privacy
+    - runtime
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    tmpfs:
+    - /tmp
+    restart: unless-stopped
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=3)
+      interval: 3s
+      timeout: 4s
+      retries: 40
+  evidence-processor:
+    build: .
+    image: mcpgw-architecture:local
+    command:
+    - uvicorn
+    - services.evidence:processor
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    environment:
+      OIDC_ISSUER: http://127.0.0.1:${KEYCLOAK_PORT:-18081}/realms/mcp
+      OIDC_JWKS_URL: http://keycloak:8080/realms/mcp/protocol/openid-connect/certs
+      SERVICE_TOKEN: ${SERVICE_TOKEN:?Copy .env.example to .env and set SERVICE_TOKEN}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/mcp
+      ANALYZER_URL: http://evidence-analyzer:8000
+    networks:
+    - data
+    - runtime
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    tmpfs:
+    - /tmp
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=3)
+      interval: 3s
+      timeout: 4s
+      retries: 40
+  evidence-analyzer:
+    build: .
+    image: mcpgw-architecture:local
+    command:
+    - uvicorn
+    - services.evidence:analyzer
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    environment:
+      OIDC_ISSUER: http://127.0.0.1:${KEYCLOAK_PORT:-18081}/realms/mcp
+      OIDC_JWKS_URL: http://keycloak:8080/realms/mcp/protocol/openid-connect/certs
+      SERVICE_TOKEN: ${SERVICE_TOKEN:?Copy .env.example to .env and set SERVICE_TOKEN}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/mcp
+    networks:
+    - data
+    - runtime
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    tmpfs:
+    - /tmp
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=3)
+      interval: 3s
+      timeout: 4s
+      retries: 40
+  evidence-decision:
+    build: .
+    image: mcpgw-architecture:local
+    command:
+    - uvicorn
+    - services.evidence:decision
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    environment:
+      OIDC_ISSUER: http://127.0.0.1:${KEYCLOAK_PORT:-18081}/realms/mcp
+      OIDC_JWKS_URL: http://keycloak:8080/realms/mcp/protocol/openid-connect/certs
+      SERVICE_TOKEN: ${SERVICE_TOKEN:?Copy .env.example to .env and set SERVICE_TOKEN}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/mcp
+    networks:
+    - data
+    - runtime
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    tmpfs:
+    - /tmp
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=3)
+      interval: 3s
+      timeout: 4s
+      retries: 40
+  audit-api:
+    build: .
+    image: mcpgw-architecture:local
+    command:
+    - uvicorn
+    - services.evidence:audit
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    environment:
+      OIDC_ISSUER: http://127.0.0.1:${KEYCLOAK_PORT:-18081}/realms/mcp
+      OIDC_JWKS_URL: http://keycloak:8080/realms/mcp/protocol/openid-connect/certs
+      SERVICE_TOKEN: ${SERVICE_TOKEN:?Copy .env.example to .env and set SERVICE_TOKEN}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/mcp
+    networks:
+    - data
+    - auth
+    - audit
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    tmpfs:
+    - /tmp
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=3)
+      interval: 3s
+      timeout: 4s
+      retries: 40
+  mcp-server:
+    build: .
+    image: mcpgw-architecture:local
+    command:
+    - uvicorn
+    - services.mcp_server:app
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    environment:
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      INTERNAL_API_URL: http://internal-api:8000/data
+      EXTERNAL_API_URL: http://external-api:8000/data
+    networks:
+    - tools
+    - internal-api
+    - external-api
+    - runtime
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    tmpfs:
+    - /tmp
+  internal-api:
+    build: .
+    image: mcpgw-architecture:local
+    command:
+    - uvicorn
+    - services.api:app
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    networks:
+    - internal-api
+    read_only: true
+    security_opt:
+    - no-new-privileges:true
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=3)
+      interval: 3s
+      timeout: 4s
+      retries: 40
+  external-api:
+    build: .
+    image: mcpgw-architecture:local
+    command:
+    - uvicorn
+    - services.api:app
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    networks:
+    - external-api
+    read_only: true
+    security_opt:
+    - no-new-privileges:true
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=3)
+      interval: 3s
+      timeout: 4s
+      retries: 40
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: mcp
+      POSTGRES_USER: mcp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+    - db-data:/var/lib/postgresql
+    - ./deploy/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    networks:
+    - data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U mcp -d mcp
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.4
+    command:
+    - start-dev
+    - --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: bootstrap-admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: http://127.0.0.1:${KEYCLOAK_PORT:-18081}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: 'true'
+    ports:
+    - 127.0.0.1:${KEYCLOAK_PORT:-18081}:8080
+    volumes:
+    - ./deploy/realm.json:/opt/keycloak/data/import/realm.json:ro
+    - keycloak-data:/opt/keycloak/data
+    networks:
+    - edge
+    - auth
+  opa:
+    image: openpolicyagent/opa:1.20.2
+    command:
+    - run
+    - --server
+    - --addr=0.0.0.0:8181
+    - /policy/opa.rego
+    volumes:
+    - ./deploy/opa.rego:/policy/opa.rego:ro
+    networks:
+    - policy
+  presidio:
+    image: ghcr.io/data-privacy-stack/presidio-analyzer:2.2.364
+    networks:
+    - privacy
+    environment:
+      NLP_CONF_FILE: /app/conf/nlp-small.yaml
+    volumes:
+    - ./deploy/nlp-small.yaml:/app/conf/nlp-small.yaml:ro
+  otel-collector:
+    image: otel/opentelemetry-collector:0.153.0
+    command:
+    - --config=/etc/otelcol/config.yaml
+    environment:
+      SERVICE_TOKEN: ${SERVICE_TOKEN:?Copy .env.example to .env and set SERVICE_TOKEN}
+    volumes:
+    - ./deploy/collector.yaml:/etc/otelcol/config.yaml:ro
+    networks:
+    - runtime
+    depends_on:
+    - evidence-processor
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.102.1
+    command:
+    - --config
+    - /app/litellm.yaml
+    - --port
+    - '4000'
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?Set LITELLM_MASTER_KEY}
+      LLM_MODEL: ${LLM_MODEL:-openai/configured-model}
+      LLM_API_BASE: ${LLM_API_BASE:-https://api.openai.com/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-unconfigured}
+      LITELLM_TELEMETRY: 'False'
+      LITELLM_LOCAL_MODEL_COST_MAP: 'True'
+      DISABLE_ADMIN_UI: 'True'
+    volumes:
+    - ./deploy/litellm.yaml:/app/litellm.yaml:ro
+    networks:
+    - ai
+    - model-egress
+  dashboard:
+    image: nginx:1.30-alpine
+    ports:
+    - 127.0.0.1:${DASHBOARD_PORT:-18083}:8080
+    volumes:
+    - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    - ./dashboard:/usr/share/nginx/html:ro
+    networks:
+    - edge
+    - audit
+    depends_on:
+    - audit-api
+    restart: unless-stopped
+networks:
+  edge:
+    internal: false
+    ipam:
+      config:
+      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.1.0/24
+  auth:
+    internal: true
+    ipam:
+      config:
+      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.2.0/24
+  ai:
+    internal: true
+    ipam:
+      config:
+      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.3.0/24
+  tools:
+    internal: true
+    ipam:
+      config:
+      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.4.0/24
+  policy:
+    internal: true
+    ipam:
+      config:
+      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.5.0/24
+  privacy:
+    internal: true
+    ipam:
+      config:
+      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.6.0/24
+  runtime:
+    internal: true
+    ipam:
+      config:
+      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.7.0/24
+  data:
+    internal: true
+    ipam:
+      config:
+      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.8.0/24
+  audit:
+    internal: true
+    ipam:
+      config:
+      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.9.0/24
+  internal-api:
+    internal: true
+    ipam:
+      config:
+      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.10.0/24
+  external-api:
+    internal: true
+    ipam:
+      config:
+      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.11.0/24
+  model-egress:
+    internal: false
+    ipam:
+      config:
+      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.12.0/24
+volumes:
+  db-data: {}
+  keycloak-data: {}

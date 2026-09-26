@@ -1,0 +1,81 @@
+{
+  "realm": "mcp",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "admin"
+      },
+      {
+        "name": "user"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "mcp-gateway",
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "http://127.0.0.1:18083/*"
+      ],
+      "webOrigins": [
+        "http://127.0.0.1:18083"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "gateway-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "mcp-gateway",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "user",
+      "enabled": true,
+      "firstName": "Local",
+      "lastName": "User",
+      "email": "user@local.example",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "local-user-change-me",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "user"
+      ]
+    },
+    {
+      "username": "admin",
+      "enabled": true,
+      "firstName": "Local",
+      "lastName": "Admin",
+      "email": "admin@local.example",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "local-admin-user-change-me",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "user",
+        "admin"
+      ]
+    }
+  ]
+}

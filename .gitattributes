@@ -1,4 +1,0 @@
-full_stack_lab/console.sh text eol=lf
-full_stack_lab/run-native.sh text eol=lf
-full_stack_lab/gateway/start-with-aig.sh text eol=lf
-full_stack_lab/tests/*.sh text eol=lf

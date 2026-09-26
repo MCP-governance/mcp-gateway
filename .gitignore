@@ -1,9 +1,5 @@
+.venv/
 __pycache__/
-full_stack_lab/.env
-# 실행 산출물은 full_stack_lab/reports/.gitignore가 처리한다. 그 디렉터리 자체는
-# compose의 bind mount 대상이라 추적 상태로 남아 있어야 한다.
-# aig-mcp-scan CLI가 작업 디렉터리에 만드는 실행 로그.
-**/logs/
-# 네이티브 실행(run-native.sh)의 로컬 상태. 서명 키와 PID·로그가 들어간다.
-full_stack_lab/.env.native
-full_stack_lab/.native/
+.pytest_cache/
+.env
+outputs/

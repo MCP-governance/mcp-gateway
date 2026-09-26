@@ -1,0 +1,27 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+processors:
+  batch: {}
+exporters:
+  otlphttp/evidence:
+    traces_endpoint: http://evidence-processor:8000/v1/traces
+    encoding: json
+    headers:
+      X-Service-Token: ${env:SERVICE_TOKEN}
+    sending_queue:
+      enabled: true
+    retry_on_failure:
+      enabled: true
+    compression: none
+service:
+  pipelines:
+    traces:
+      receivers:
+      - otlp
+      processors:
+      - batch
+      exporters:
+      - otlphttp/evidence
