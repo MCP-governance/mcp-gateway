@@ -338,6 +338,9 @@
 - **공개 주소와 내부 주소**: 오버레이는 Gateway·IdP가 PC에 알리는 절대 URL(`IDP_ISSUER`, `GATEWAY_PUBLIC_MCP_URL`)을
   `https://${APPLIANCE_HOST}`로 바꾼다. 그 이름은 컨테이너 안에서 풀리지 않으므로 Gateway가 IdP를 직접 부르는 논문 실험은
   `IDP_INTERNAL_URL`(내부 주소)을 먼저 본다. 토큰의 `iss`는 URL이 아니라 상수라 판정은 바뀌지 않는다.
+  MCP 파사드의 DNS 리바인딩 방어(SDK `TransportSecuritySettings`)는 `gateway`·`localhost`만 허용해 Caddy가 넘긴
+  `Host: mcp-gw.internal`을 421로 거부했다(CI에서 발견). 허용 목록에 `GATEWAY_PUBLIC_MCP_URL`의 호스트 하나만 더한다 —
+  랩 기본값(`gateway:8080`)에서는 목록이 그대로다.
 - **대안**: 서비스마다 사내 CA 인증서 — 수명 관리가 서비스 수만큼 생기고 "게시된 것은 하나뿐"이 깨진다. mTLS는 넣지 않았다
   — 자격은 여전히 IdP가 발급하는 OAuth 토큰이 진다.
 - **되돌릴 조건**: 조직에 이미 사내망 리버스 프록시·TLS 종료 지점이 있으면 이 Caddy는 그 뒤로 옮기고 Caddyfile은 예시로 남긴다.

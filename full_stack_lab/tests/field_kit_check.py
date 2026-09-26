@@ -267,6 +267,12 @@ class OverlayTest(unittest.TestCase):
         self.assertRegex(text, r"handle /api/health \{\s*reverse_proxy gateway:8080")
         self.assertRegex(text, r"handle /oauth/\* \{\s*reverse_proxy agent-service:8000")
 
+    def test_mcp_facade_accepts_only_the_configured_public_host(self):
+        # Caddy는 Host를 그대로 넘긴다. DNS 리바인딩 방어는 두고 배포자가 정한 공개 이름만 더한다(D-43).
+        text = (LAB / "gateway" / "app" / "mcp_facade.py").read_text(encoding="utf-8")
+        self.assertIn('urlsplit(os.getenv("GATEWAY_PUBLIC_MCP_URL", "")).hostname', text)
+        self.assertIn('"gateway:*", "gateway-sse:*", "localhost:*", "127.0.0.1:*"', text)
+
     def test_experiments_use_the_internal_idp_address(self):
         text = (LAB / "gateway" / "app" / "experiments.py").read_text(encoding="utf-8")
         self.assertIn('os.getenv("IDP_INTERNAL_URL")', text)

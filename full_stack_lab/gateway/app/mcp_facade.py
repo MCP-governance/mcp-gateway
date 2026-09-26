@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import os
 from typing import Any
+from urllib.parse import urlsplit
 
 from mcp import types
 from mcp.server.lowlevel.server import Server
@@ -181,7 +182,13 @@ def build_mcp() -> Server:
 
 
 def transport_security() -> TransportSecuritySettings:
+    hosts = ["gateway:*", "gateway-sse:*", "localhost:*", "127.0.0.1:*"]
+    # 실기기 배치(compose.field.yaml): PC의 하네스는 공개 주소로 부르고 Caddy가 그 Host를 그대로 넘긴다.
+    # DNS 리바인딩 방어는 유지하되, 배포자가 정한 그 이름 하나만 더한다(포트 없는 Host도 오므로 둘 다).
+    public = urlsplit(os.getenv("GATEWAY_PUBLIC_MCP_URL", "")).hostname
+    if public and f"{public}:*" not in hosts:
+        hosts += [public, f"{public}:*"]
     return TransportSecuritySettings(
-        allowed_hosts=["gateway:*", "gateway-sse:*", "localhost:*", "127.0.0.1:*"],
+        allowed_hosts=hosts,
         allowed_origins=["http://localhost:*", "http://127.0.0.1:*"],
     )
