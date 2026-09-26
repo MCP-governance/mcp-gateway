@@ -1,9 +1,9 @@
 name: Architecture verification
 on:
   push:
-    branches: ["architecture/plan-1", "architecture/plan-2"]
+    branches: ["architecture/plan-1", "architecture/plan-2", "architecture/plan-1-*", "architecture/plan-2-*"]
   pull_request:
-    branches: ["architecture/plan-1", "architecture/plan-2"]
+    branches: ["architecture/plan-1", "architecture/plan-2", "architecture/plan-1-*", "architecture/plan-2-*"]
 permissions:
   contents: read
 jobs:
@@ -15,12 +15,64 @@ jobs:
         with:
           version: "0.11.24"
       - run: uv sync --frozen
-      - run: uv run --frozen python -m pyflakes services tests prepare.py
+      - run: uv run --frozen python -m pyflakes services tests prepare.py field/pc/mcpgw_pc.py
       - run: uv run --frozen pytest -q
       - run: cp .env.example .env && python3 prepare.py && docker compose config --quiet
       - run: docker compose -p architecture-ci up -d --build --wait --wait-timeout 180
       - run: uv run --frozen python tests/container_smoke.py
-      - if: github.ref == 'refs/heads/architecture/plan-2'
+      - if: startsWith(github.ref, 'refs/heads/architecture/plan-2') || github.base_ref == 'architecture/plan-2'
         run: docker compose -p architecture-ci --profile scan run --rm trivy && uv run --frozen python tests/container_scan_smoke.py --trivy
       - if: always()
         run: docker compose -p architecture-ci logs --tail=40 && docker compose -p architecture-ci down -v
+
+  field:
+    # README "실제 기기로 배치하기"를 러너 한 대에서: 솔루션 기기(./field/appliance.sh up)이자 직원 PC.
+    name: Field overlay (TLS, Keycloak, Claude Code and Codex CLI)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Appliance .env
+        run: |
+          echo "127.0.0.1 mcp-gw.internal" | sudo tee -a /etc/hosts
+          cp .env.example .env
+          sed -i 's/^APPLIANCE_HOST=.*/APPLIANCE_HOST=mcp-gw.internal/; s/^APPLIANCE_BIND=.*/APPLIANCE_BIND=127.0.0.1/' .env
+      - run: ./field/appliance.sh up
+      - name: Trust the appliance CA like an employee PC
+        run: |
+          sudo cp outputs/ca/mcp-gw-root.crt /usr/local/share/ca-certificates/mcp-gw-root.crt
+          sudo update-ca-certificates
+      - name: Admin console and master realm stay off the LAN
+        run: |
+          test "$(curl -s -o /dev/null -w '%{http_code}' https://mcp-gw.internal/admin/)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' https://mcp-gw.internal/realms/master/.well-known/openid-configuration)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' https://mcp-gw.internal/scans)" = 404
+          curl -s -o /dev/null -w '%{redirect_url}\n' http://127.0.0.1:18081/admin/ | tee /tmp/admin-redirect.txt
+          grep -F "http://127.0.0.1:18081/admin/master/console/" /tmp/admin-redirect.txt
+      - name: The device grant client answers (the step an employee finishes in a browser)
+        run: |
+          curl -fsS -d client_id=mcp-cli https://mcp-gw.internal/realms/mcp/protocol/openid-connect/auth/device \
+            | python3 -c 'import json, sys; d = json.load(sys.stdin); assert d["verification_uri"].startswith("https://mcp-gw.internal/realms/mcp/device"), d; print("device grant OK")'
+      - run: npm install -g --no-fund --no-audit @anthropic-ai/claude-code@2.1.282 @openai/codex@0.157.0
+      - name: Employee-PC kit and the real harnesses
+        run: |
+          password="$(sed -n 's/^USER_PASSWORD=//p' .env | tail -1)"
+          # CI는 브라우저로 device 코드를 승인할 수 없어, Direct Access Grants가 켜진 mcp-gateway 클라이언트로 로그인한다.
+          echo "$password" | python3 field/pc/mcpgw_pc.py setup --url https://mcp-gw.internal \
+            --ca outputs/ca/mcp-gw-root.crt --client mcp-gateway --username user --password-stdin
+          python3 ~/.mcpgw/mcpgw_pc.py doctor
+          claude mcp list | tee /tmp/claude.txt
+          grep -F "demo: https://mcp-gw.internal/mcp/demo (HTTP) - ✔ Connected" /tmp/claude.txt
+          codex mcp get demo | tee /tmp/codex.txt
+          grep -F "url: https://mcp-gw.internal/mcp/demo" /tmp/codex.txt
+      - name: Uninstall leaves nothing behind
+        run: |
+          python3 ~/.mcpgw/mcpgw_pc.py uninstall
+          if claude mcp get demo; then exit 1; fi
+      - if: failure()
+        run: docker compose -f compose.yaml -f compose.field.yaml logs --tail=60
+      - if: always()
+        run: docker compose -f compose.yaml -f compose.field.yaml down -v
