@@ -16,3 +16,5 @@ Presidio 이미지에 이미 포함된 en_core_web_lg를 사용해 격리망에�
 2안: 관리자 인증·고정 검사 대상·A.I.G task/status/result 형식·Trivy 정규화에 대한 27개 시험 추가. 실제 모델 자격 증명이 없어 A.I.G 보안 스캔 완료는 검증하지 않았다.
 
 2안에서도 실제 Keycloak/MCP/OPA/Presidio/Collector/PostgreSQL 통합 시험 통과. 브라우저의 Authorization Code + PKCE 로그인과 도구/증적 표시 확인. 실제 Trivy0.74.0 작업으로 uv.lock 의존성 보고서를 생성했다.
+
+실제 Trivy 보고서의 API 정규화·OTel 전달·승인 상태 유지 확인. 검사 관리 포트의 loopback 진입망 배선도 컨테이너 시험으로 수정했다.

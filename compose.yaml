@@ -66,6 +66,7 @@ services:
       AIG_SCAN_MODEL_BASE_URL: ${AIG_SCAN_MODEL_BASE_URL:-https://api.openai.com/v1}
       TRIVY_REPORT_PATH: /scan-reports/trivy.json
     networks:
+    - edge
     - auth
     - ai
     - tools
