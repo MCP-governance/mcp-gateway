@@ -15,7 +15,6 @@
 | --- | --- |
 | `http://localhost:8000` | Console (`CONSOLE_PORT`) |
 | `http://localhost:8080/api/health` | Gateway (`GATEWAY_PORT`) |
-| `http://localhost:16686` | Jaeger (`JAEGER_PORT`) |
 | `http://localhost:3000` | 회사 Gitea — 제공자 콘솔 역할 (`GITEA_PORT`, `corpadmin`) |
 
 모두 `127.0.0.1`에만 게시됩니다. 계정(비밀번호 `test-password`): 관리자 `kkg@bob.local`·`mks@bob.local`,
@@ -47,10 +46,16 @@
 관리자로 로그인하면: **개요**(오늘 판정·서버·직원 PC·많이 걸린 정책) · **활동 로그**(한 줄이 호출 하나,
 누르면 판정 근거·분류·정책·trace, 실시간) · **승인 대기** · **MCP 서버**(계약 일치/불일치, 승인본 갱신) ·
 **직원·단말**(계정 상태, 단말의 MCP 설정과 섀도 MCP) · **도입 신청**(원격 서버의 종료 조건은 관리자가 제공자
-문서로 검증해야 승인) · **종료·폐기** · **정책**(배포된 권한 번들과 그 번들로 OPA에 물은 27칸, 관리대장, 예외,
+문서로 검증해야 승인) · **AI 보안 검사**(A.I.G 연결·워커·정적/동적 작업·SARIF 결과) · **종료·폐기** ·
+**정책**(배포된 권한 번들과 그 번들로 OPA에 물은 27칸, 관리대장, 예외,
 집행/관찰 모드). 직원·협력사는 자기 활동 로그와 도입 신청만 봅니다. 활동 로그는 불러온 기록 안에서 사람·단말·
 도구·대상·정책·trace로 찾고, 일시정지해도 새 판정 수를 셉니다.
 구조: [../docs/ai/CONSOLE_UI.md](../docs/ai/CONSOLE_UI.md).
+
+기본 `./console.sh up`은 별도 설정이 없을 때 A.I.G를 같은 호스트의 Ollama `bob-assistant`에 연결하므로 저장소
+코드가 외부 모델로 나가지 않습니다. `--no-llm`에서는 A.I.G 모델 설정을 자동 생성하지 않습니다. 추적은
+gateway·Console·검증 워커가 OTel Collector로 보내고, Collector가 민감 속성을 제거한 뒤 내부 Audit API로
+전달합니다. Audit API는 허용된 메타데이터만 `runtime_evidence`에 저장하고 활동 로그의 Runtime Evidence 탭이 조회합니다.
 
 ## 4. 종료·폐기 시연
 

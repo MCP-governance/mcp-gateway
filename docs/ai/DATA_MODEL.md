@@ -11,7 +11,7 @@
 ### `decisions` — 호출 한 건 = 한 행 (append-only, 해시 체인)
 | 열 | 의미 |
 | --- | --- |
-| `id`, `created_at`, `request_id`, `trace_id` | 식별·시각·Jaeger trace |
+| `id`, `created_at`, `request_id`, `trace_id` | 식별·시각·runtime evidence 연결 키 |
 | `user_token`, `role` | transport 토큰에서 정한 주체(`principals.token`) |
 | `server_id`, `tool_name`, `resource_id`, `destinations`, `summary` | 무엇을 어디에(분류기 결과) |
 | `data_class`, `action` | 자원 등급(public/nonimportant/important), 실효 행위(r/w/x) |
@@ -30,6 +30,26 @@
 - `audit_chain`(1행)이 체인 head와 항목 수를 가진다. `GET /api/audit/verify`가 전체를 다시 계산해
   끊긴 행 id를 돌려준다(`tests/security_regression.sh`가 변조 → 지목 → 원복을 확인).
 - 사람이 읽는 형태는 `activity.describe()`가 만든다(Console·`watch` 공용).
+
+### `runtime_evidence` — 운영 span 증적 (append-only, 멱등 저장)
+OpenTelemetry SDK가 만든 span은 OTel Collector에서 민감 속성을 제거한 뒤 내부 Audit API
+(`POST /api/audit/otlp/v1/traces`)로 전달된다. Audit API는 원문 요청·응답·토큰·MCP 인자를 저장하지 않고
+서비스명, 작업명, 시작·종료 시각, 상태와 허용 목록에 든 운영 메타데이터만 정규화한다.
+
+| 열 | 의미 |
+| --- | --- |
+| `trace_id`, `span_id`, `parent_span_id` | 요청 흐름 연결 키. `(trace_id, span_id)`는 Collector 재시도 중복 방지 키 |
+| `service_name`, `operation` | span을 만든 서비스와 작업 |
+| `started_at`, `ended_at`, `duration_ms`, `status_code` | 실행 시각·지연·성공/오류 상태 |
+| `attributes`, `events` | 서버 측 허용 목록을 통과한 메타데이터와 이벤트 |
+| `received_at` | Audit API가 증적을 수신한 시각 |
+
+- `runtime_evidence_append_only` 트리거가 UPDATE/DELETE를 거부한다.
+- 정책 결정 원장인 `decisions`의 해시 체인과는 별도다. 운영 흐름 증적을 보존하되 정책 판정 증적이라고
+  과장하지 않기 위한 구분이다.
+- 관리자만 `GET /api/runtime-evidence`와 Console의 **Runtime Evidence** 탭에서 조회한다.
+- Collector→Audit API는 사용자 JWT가 아니라 별도 `OTEL_AUDIT_INGEST_TOKEN`으로 인증하며,
+  수집 endpoint 자체는 다시 trace하지 않아 재귀 전송을 막는다.
 
 ### `approvals`
 `request_payload`(서버·도구·인자·클라이언트), `status`(PENDING → APPROVED → EXECUTED | NOT_EXECUTED |

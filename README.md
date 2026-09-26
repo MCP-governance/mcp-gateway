@@ -44,7 +44,7 @@ cd mcp-gateway/full_stack_lab
 ~~~
 
 - Console: <http://localhost:8000> — `kkg@bob.local` / `test-password` (관리자)
-- 포트가 겹치면 `.env`에 `CONSOLE_PORT`·`GATEWAY_PORT`·`JAEGER_PORT`·`GITEA_PORT`를 지정합니다.
+- 포트가 겹치면 `.env`에 `CONSOLE_PORT`·`GATEWAY_PORT`·`GITEA_PORT`를 지정합니다.
 - PC 안에서 직접: `docker compose exec ws-ysg bash -l` 뒤 `claude -p "…"`, `codex exec "…"`, `gemini -p "…"`, `opencode run "…"`.
 - 로컬 모델은 CPU로 돕니다. 기본 `qwen3.5:2b-q4_K_M`(적재 1.7GB), 메모리가 넉넉하면 `.env`에 `LOCAL_LLM_MODEL=qwen3.5:4b`.
   하네스의 첫 턴은 CPU에서 수십 초~2분 걸립니다.

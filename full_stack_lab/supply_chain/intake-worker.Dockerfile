@@ -18,7 +18,9 @@ RUN apt-get update \
     && apt-get purge -y curl && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir "psycopg[binary]==3.3.5" "semgrep==1.172.0"
+RUN pip install --no-cache-dir "psycopg[binary]==3.3.5" "semgrep==1.172.0" \
+    "opentelemetry-api==1.44.0" "opentelemetry-sdk==1.44.0" \
+    "opentelemetry-exporter-otlp-proto-http==1.44.0"
 
 # mcp-scan과 semgrep은 같은 site-packages에 들어갈 수 없다.
 #
@@ -48,7 +50,7 @@ RUN set -eu; \
     syft version >/dev/null; \
     trivy --version >/dev/null; \
     aig-mcp-scan --help >/dev/null; \
-    python -c "import psycopg"; \
+    python -c "import psycopg, opentelemetry.trace"; \
     echo "scanner toolchain OK"
 
 RUN useradd --uid 10002 --create-home worker \

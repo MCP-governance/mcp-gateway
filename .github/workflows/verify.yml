@@ -33,6 +33,7 @@ jobs:
       AGENT_JWT_PRIVATE_KEY: ci-placeholder
       AGENT_JWT_PUBLIC_KEY: ci-placeholder
       LITELLM_MASTER_KEY: ci-placeholder
+      OTEL_AUDIT_INGEST_TOKEN: ci-placeholder
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -95,7 +96,7 @@ jobs:
           stack = json.load(open("/tmp/compose.json"))
           services, networks = stack["services"], stack["networks"]
           fail = []
-          for name in ("office", "tools", "corp", "data", "policy", "privacy", "model"):
+          for name in ("office", "tools", "corp", "data", "policy", "privacy", "model", "telemetry"):
               if not networks[name].get("internal"):
                   fail.append(f"{name} 망이 internal이 아님")
           # D-24: every network has its own subnet under MCP_NET_PREFIX, so several labs
@@ -123,6 +124,21 @@ jobs:
               fail.append("agent-service가 tools 망에 연결")
           if set(services["ollama"].get("networks") or {}) != {"model"}:
               fail.append("ollama가 model 망 밖에 연결")
+          telemetry_sources = ("gateway", "gateway-sse", "agent-service", "intake-worker")
+          for name in telemetry_sources:
+              env = services[name].get("environment") or {}
+              if env.get("OTEL_EXPORTER_OTLP_ENDPOINT") != "http://otel-collector:4318":
+                  fail.append(f"{name}: OTel Collector를 우회")
+              if "telemetry" not in (services[name].get("networks") or {}):
+                  fail.append(f"{name}: telemetry 망에 없음")
+          if set(services["otel-collector"].get("networks") or {}) != {"telemetry"}:
+              fail.append("otel-collector가 telemetry 망 밖에 연결")
+          if "jaeger" in services:
+              fail.append("Jaeger가 제거된 구성에 다시 포함됨")
+          if services["otel-collector"].get("ports"):
+              fail.append("otel-collector가 호스트에 게시됨")
+          if not (services["agent-service"].get("environment") or {}).get("OTEL_AUDIT_INGEST_TOKEN"):
+              fail.append("agent-service에 Audit 수집 자격이 없음")
           if fail:
               sys.exit("FAIL\n" + "\n".join(fail))
           print(f"PASS {len(services)}개 서비스의 망·포트·키 경계")

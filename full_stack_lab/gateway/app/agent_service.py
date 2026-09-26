@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import hmac
 import os
 import time
 from collections import defaultdict
@@ -16,10 +17,13 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
+from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
+    ExportTraceServiceRequest, ExportTraceServiceResponse,
+)
 from pydantic import Field
 from psycopg.types.json import Jsonb
 
-from . import db
+from . import db, telemetry
 from .agent_contract import (ACCOUNT_STATUS_REASON, StrictModel, authenticate,
                              authenticated_user, issue_token, private_key)
 from .idp import router as idp_router
@@ -79,19 +83,173 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="MCP Governance Console · IdP", version="2.0.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(idp_router)
+tracer = telemetry.configure("mcp-governance.agent-service", "agent-service")
+OTEL_AUDIT_INGEST_TOKEN = os.getenv("OTEL_AUDIT_INGEST_TOKEN", "")
+OTEL_AUDIT_MAX_BYTES = int(os.getenv("OTEL_AUDIT_MAX_BYTES", str(4 * 1024 * 1024)))
 
 
 @app.middleware("http")
 async def browser_boundary(request: Request, call_next):
-    origin = request.headers.get("origin")
-    if request.method not in {"GET", "HEAD", "OPTIONS"} and origin and origin != str(request.base_url).rstrip("/"):
-        from fastapi.responses import JSONResponse
-        return JSONResponse({"detail": "다른 출처의 요청은 허용하지 않습니다."}, status_code=403)
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["Cache-Control"] = "no-store"
-    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
-    return response
+    # Collector -> Audit API must not create another exported span, otherwise the
+    # exporter request observes itself forever.
+    if request.url.path == "/api/audit/otlp/v1/traces":
+        return await call_next(request)
+    # Do not attach headers, query strings, bodies or user identifiers.  They may
+    # contain the very credentials and evidence this service is meant to protect.
+    with tracer.start_as_current_span("console.http.request") as span:
+        span.set_attribute("http.request.method", request.method)
+        origin = request.headers.get("origin")
+        if request.method not in {"GET", "HEAD", "OPTIONS"} and origin and origin != str(request.base_url).rstrip("/"):
+            from fastapi.responses import JSONResponse
+            response = JSONResponse({"detail": "다른 출처의 요청은 허용하지 않습니다."}, status_code=403)
+        else:
+            response = await call_next(request)
+        route = request.scope.get("route")
+        route_path = getattr(route, "path", None)
+        if route_path:
+            span.set_attribute("http.route", route_path)
+        span.set_attribute("http.response.status_code", response.status_code)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+        return response
+
+
+SAFE_OTEL_ATTRIBUTES = {
+    "http.request.method", "http.route", "http.response.status_code",
+    "mcp.server", "mcp.tool", "mcp.role", "mcp.data_class", "mcp.action",
+    "mcp.decision", "mcp.policy_id", "mcp.enforcement", "mcp.would_decision",
+    "mcp.transport", "mcp.intake.request_id", "mcp.scan.job_id",
+    "mcp.scan.target_kind", "mcp.scan.mode",
+}
+
+
+def _otel_value(value):
+    kind = value.WhichOneof("value")
+    if kind in {"string_value", "bool_value", "int_value", "double_value"}:
+        return getattr(value, kind)
+    if kind == "array_value":
+        return [_otel_value(item) for item in value.array_value.values]
+    return None
+
+
+def _otel_attributes(items) -> dict:
+    return {item.key: _otel_value(item.value) for item in items
+            if item.key in SAFE_OTEL_ATTRIBUTES}
+
+
+def _otel_time(nanos: int) -> datetime:
+    return datetime.fromtimestamp(nanos / 1_000_000_000, UTC)
+
+
+@app.post("/api/audit/otlp/v1/traces", include_in_schema=False)
+async def ingest_runtime_evidence(
+    request: Request,
+    ingest_token: str | None = Header(default=None, alias="X-OTel-Audit-Token"),
+):
+    """Internal OTLP/HTTP receiver: normalize safe span metadata into audit DB."""
+    if not OTEL_AUDIT_INGEST_TOKEN or not ingest_token or not hmac.compare_digest(
+            ingest_token, OTEL_AUDIT_INGEST_TOKEN):
+        raise HTTPException(401, "runtime evidence 수집 자격이 올바르지 않습니다.")
+    media_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if media_type != "application/x-protobuf":
+        raise HTTPException(415, "OTLP protobuf만 받을 수 있습니다.")
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > OTEL_AUDIT_MAX_BYTES:
+                raise HTTPException(413, "OTLP payload가 제한을 초과했습니다.")
+        except ValueError as exc:
+            raise HTTPException(400, "Content-Length 형식이 올바르지 않습니다.") from exc
+    body = await request.body()
+    if len(body) > OTEL_AUDIT_MAX_BYTES:
+        raise HTTPException(413, "OTLP payload가 제한을 초과했습니다.")
+    message = ExportTraceServiceRequest()
+    try:
+        message.ParseFromString(body)
+    except Exception as exc:
+        raise HTTPException(400, "OTLP protobuf를 해석할 수 없습니다.") from exc
+
+    rows = []
+    for resource_spans in message.resource_spans:
+        resource = {item.key: _otel_value(item.value)
+                    for item in resource_spans.resource.attributes
+                    if item.key in {"service.name", "deployment.environment.name"}}
+        service_name = str(resource.get("service.name") or "unknown")[:160]
+        for scope_spans in resource_spans.scope_spans:
+            for span in scope_spans.spans:
+                if not span.trace_id or not span.span_id or not span.start_time_unix_nano:
+                    continue
+                attrs = _otel_attributes(span.attributes)
+                if scope_spans.scope.name:
+                    attrs["otel.scope.name"] = scope_spans.scope.name[:200]
+                if resource.get("deployment.environment.name"):
+                    attrs["deployment.environment.name"] = str(
+                        resource["deployment.environment.name"])[:100]
+                events = [{
+                    "name": event.name[:200],
+                    "at": _otel_time(event.time_unix_nano).isoformat(),
+                    "attributes": _otel_attributes(event.attributes),
+                } for event in span.events[:100] if event.time_unix_nano]
+                start = _otel_time(span.start_time_unix_nano)
+                end_nanos = max(span.end_time_unix_nano, span.start_time_unix_nano)
+                rows.append((
+                    span.trace_id.hex(), span.span_id.hex(),
+                    span.parent_span_id.hex() if span.parent_span_id else None,
+                    service_name, span.name[:240] or "unnamed", start,
+                    _otel_time(end_nanos),
+                    (end_nanos - span.start_time_unix_nano) / 1_000_000,
+                    {0: "UNSET", 1: "OK", 2: "ERROR"}.get(span.status.code, "UNSET"),
+                    Jsonb(attrs), Jsonb(events),
+                ))
+                if len(rows) > 5000:
+                    raise HTTPException(413, "한 요청의 span 수가 제한을 초과했습니다.")
+
+    if rows:
+        async with db.transaction() as connection:
+            await connection.executemany(
+                """INSERT INTO runtime_evidence(
+                       trace_id, span_id, parent_span_id, service_name, operation,
+                       started_at, ended_at, duration_ms, status_code, attributes, events)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                   ON CONFLICT (trace_id, span_id) DO NOTHING""",
+                rows,
+            )
+    response = ExportTraceServiceResponse()
+    return Response(response.SerializeToString(), media_type="application/x-protobuf")
+
+
+@app.get("/api/runtime-evidence")
+async def runtime_evidence(
+    limit: int = 200,
+    trace_id: str = "",
+    authorization: str | None = Header(default=None),
+):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "runtime evidence는 관리자만 볼 수 있습니다.")
+    limit = max(1, min(limit, 500))
+    where, params = "", []
+    if trace_id:
+        if len(trace_id) != 32 or any(c not in "0123456789abcdefABCDEF" for c in trace_id):
+            raise HTTPException(422, "trace_id 형식이 아닙니다.")
+        where, params = "WHERE trace_id=%s", [trace_id.lower()]
+    rows = await db.fetch_all(
+        f"""SELECT id, received_at, trace_id, span_id, parent_span_id, service_name,
+                   operation, started_at, ended_at, duration_ms, status_code,
+                   attributes, events
+              FROM runtime_evidence {where}
+             ORDER BY started_at DESC LIMIT %s""",
+        (*params, limit),
+    )
+    services = await db.fetch_all(
+        """SELECT service_name, count(*) AS spans,
+                  round(avg(duration_ms)::numeric, 2) AS avg_ms,
+                  count(*) FILTER (WHERE status_code='ERROR') AS errors
+             FROM runtime_evidence
+            WHERE started_at > now() - interval '24 hours'
+            GROUP BY service_name ORDER BY service_name""")
+    return {"rows": rows, "services": services, "count": len(rows)}
 
 
 @app.get("/", include_in_schema=False)
@@ -321,7 +479,7 @@ PAGES_BY_ROLE = {
     # MCP를 신청하는 길"이다. 조직 전체의 기록·정책·종료 판정은 관리자 몫이다.
     "partner": ("activity", "intake"),
     "employee": ("activity", "intake"),
-    "admin": ("overview", "activity", "approvals", "servers", "people", "intake", "termination", "policy"),
+    "admin": ("overview", "activity", "approvals", "servers", "people", "intake", "mcp-scan", "termination", "policy"),
 }
 ROLE_LABELS = {"partner": "협력업체 직원", "employee": "직원", "admin": "관리자"}
 

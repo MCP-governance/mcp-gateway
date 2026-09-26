@@ -103,6 +103,13 @@ EMP="$(token ysg@bob.local)"
 for path in gw/registry gw/overview gw/termination/cases gw/policy/ledger gw/endpoint/inventory api/accounts approvals; do
   expect "직원 → /$path" "$(code "$CONSOLE/$path" -H "authorization: Bearer $EMP")" 403
 done
+expect "OTLP Audit API 무인증 적재" "$(code -X POST "$CONSOLE/api/audit/otlp/v1/traces" \
+  -H 'content-type: application/x-protobuf' --data-binary '')" 401
+expect "직원 → Runtime Evidence" "$(code "$CONSOLE/api/runtime-evidence?limit=1" \
+  -H "authorization: Bearer $EMP")" 403
+ADMIN_CONSOLE="$(token kkg@bob.local)"
+expect "관리자 → Runtime Evidence" "$(code "$CONSOLE/api/runtime-evidence?limit=1" \
+  -H "authorization: Bearer $ADMIN_CONSOLE")" 200
 others="$(curl -fsS "$CONSOLE/gw/activity?limit=500" -H "authorization: Bearer $EMP" \
   | python3 -c 'import json,sys; print(sum(1 for r in json.load(sys.stdin)["rows"] if r["who"] != "양승권"))')"
 expect "직원 활동 로그에 다른 사람의 호출 없음" "$others" 0
@@ -174,6 +181,14 @@ trap - EXIT
 echo "── 감사 기록 변조는 드러난다 ──"
 ADMIN="$(token kkg@bob.local)"
 verify() { curl -fsS "$GATEWAY/api/audit/verify" -H "authorization: Bearer $ADMIN" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["intact"], d.get("broken_at"))'; }
+runtime_row="$(psql_q "SELECT max(id) FROM runtime_evidence")"
+if [[ -n "$runtime_row" ]] && psql_q "UPDATE runtime_evidence SET operation = operation WHERE id = $runtime_row" >/dev/null 2>&1; then
+  bad "runtime_evidence 수정 거부(append-only)" "UPDATE가 허용됨"
+elif [[ -n "$runtime_row" ]]; then
+  ok "runtime_evidence 수정 거부(append-only)"
+else
+  bad "runtime_evidence 생성" "Collector가 저장한 span이 없습니다"
+fi
 row="$(psql_q "SELECT max(id) FROM decisions")"
 if psql_q "UPDATE decisions SET reason = reason WHERE id = $row" >/dev/null 2>&1; then
   bad "decisions 수정 거부(append-only)" "UPDATE가 허용됨"

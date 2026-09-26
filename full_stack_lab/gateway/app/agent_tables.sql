@@ -176,6 +176,47 @@ CREATE TABLE IF NOT EXISTS scan_jobs (
 CREATE INDEX IF NOT EXISTS scan_jobs_status_idx ON scan_jobs(status, created_at);
 CREATE INDEX IF NOT EXISTS scan_jobs_target_idx ON scan_jobs(target_id, created_at DESC);
 
+-- OTel Collector가 Audit API로 전달한 runtime span의 정규화 저장소. 원문 HTTP
+-- 본문·토큰·MCP 인자/결과는 받지 않고 허용된 운영 메타데이터만 저장한다.
+-- (trace_id, span_id)는 OTLP exporter 재시도의 멱등성 키다.
+CREATE TABLE IF NOT EXISTS runtime_evidence (
+  id bigserial PRIMARY KEY,
+  received_at timestamptz NOT NULL DEFAULT now(),
+  trace_id text NOT NULL,
+  span_id text NOT NULL,
+  parent_span_id text,
+  service_name text NOT NULL,
+  operation text NOT NULL,
+  started_at timestamptz NOT NULL,
+  ended_at timestamptz NOT NULL,
+  duration_ms double precision NOT NULL CHECK (duration_ms >= 0),
+  status_code text NOT NULL,
+  attributes jsonb NOT NULL DEFAULT '{}',
+  events jsonb NOT NULL DEFAULT '[]',
+  UNIQUE(trace_id, span_id)
+);
+CREATE INDEX IF NOT EXISTS runtime_evidence_started_idx
+  ON runtime_evidence(started_at DESC);
+CREATE INDEX IF NOT EXISTS runtime_evidence_trace_idx
+  ON runtime_evidence(trace_id, started_at);
+CREATE INDEX IF NOT EXISTS runtime_evidence_service_idx
+  ON runtime_evidence(service_name, started_at DESC);
+
+-- Runtime evidence is not part of the policy-decision hash chain, but it is still
+-- evidence: Collector retries may insert the same span again, while an existing
+-- row must never be rewritten or removed.  The unique key handles retries and
+-- this trigger protects the stored observation.
+CREATE OR REPLACE FUNCTION reject_runtime_evidence_mutation()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION 'runtime_evidence is append-only';
+END;
+$$;
+DROP TRIGGER IF EXISTS runtime_evidence_append_only ON runtime_evidence;
+CREATE TRIGGER runtime_evidence_append_only
+  BEFORE UPDATE OR DELETE ON runtime_evidence
+  FOR EACH ROW EXECUTE FUNCTION reject_runtime_evidence_mutation();
+
 -- ── AI 코드 감사 실행 구조 (v1.5) ──────────────────────────────────────────
 -- 이전 판의 mcp-scan은 "관리자가 버튼을 누르면 QUEUED 한 줄을 넣는다"가 전부였다.
 -- 그래서 세 가지가 동시에 깨져 있었다.

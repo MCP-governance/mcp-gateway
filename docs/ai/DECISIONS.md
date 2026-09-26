@@ -305,3 +305,18 @@
 - **이유**: `replay`는 해시와 결과 스키마만 필요한데 `core`를 import하면서 tracing을 초기화했고, `registry`는 순환 import를
   피하려고 함수 안에서 `core`를 불렀다(ROADMAP 6절 "순수 계약 모듈"). 감사 체인의 열 집합은 버전별로 고정해야 하는 데이터라
   정책 판정 코드와 같은 파일에 있을 이유가 없다.
+
+## D-42 관측성은 OTel Collector → Audit API, A.I.G는 격리 워커에서 실행 (v3.1)
+- **결정**: gateway·gateway-sse·agent-service·intake-worker의 OTLP 목적지는 전용 `otel-collector`다. Collector는
+  메모리 제한·배치 처리와 민감 attribute 제거 후 내부 Audit API로 내보낸다. Audit API는 전용 자격을 검증하고 허용된
+  span 메타데이터만 `runtime_evidence`에 멱등 저장한다. trace에는 서비스·라우트·상태·작업 식별자만 넣고
+  토큰·요청 본문·MCP 인자·결과는 넣지 않는다. A.I.G `mcp-scan`은 Gateway 프로세스가 아니라 기존 격리
+  `intake-worker`가 수행하며 Console에서 상태와 SARIF 증적을 관리한다.
+- **이유**: Jaeger는 성능 추적 UI이고 이 프로젝트의 정본은 정책 판정·감사 증적을 조회하는 자체 Dashboard다. 별도 trace
+  저장소를 두지 않고 같은 Audit API와 PostgreSQL에서 runtime evidence를 연결한다. 원문 증적을 trace에 복제하면 DB 안에서도
+  두 번째 비밀 사본이 되므로 Collector와 수집 API가 이중으로 속성을 제한한다. A.I.G를 요청 경로에 넣으면 모델 지연·장애가 모든 MCP 호출을
+  멈추고, 외부 저장소 코드와 스캐너 의존성이 정책 집행 프로세스에 들어온다.
+- **로컬 기본값**: `./console.sh up`은 기존 사용자 설정이 없을 때만 A.I.G를 내부 Ollama
+  (`http://ollama:11434/v1`, `bob-assistant`)에 연결한다. `--no-llm`은 이 설정을 만들지 않는다. 실제 승인 차단 게이트는
+  검사 시간과 오탐을 확인한 뒤 `MCP_SCAN_REQUIRED_FOR_APPROVAL=1`로 켠다.
+- **D-14 변경**: Jaeger 호스트 포트는 제거한다. D-14의 과거 포트 충돌 기록은 남기되 현재 게시 포트가 아니다.

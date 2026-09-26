@@ -13,7 +13,7 @@ Gateway의 효과는 **모든 MCP 도구 호출이 이 강제 경로를 통과�
 | 장치 | 위치 | 성립 범위 |
 | --- | --- | --- |
 | upstream MCP에 host port가 없음 | [`compose.yaml`](compose.yaml)의 `mock-http-mcp`, 내부 `tools` 망 | Docker 네트워크 안 |
-| Console·Gateway·Jaeger가 loopback에만 게시 | `127.0.0.1:8000/8080/16686` | 이 호스트 안 |
+| Console·Gateway가 loopback에만 게시 | `127.0.0.1:8000/8080` | 이 호스트 안 |
 | A.I.G 실습 UI가 loopback에만 게시 | `127.0.0.1:8088` | 이 호스트 안 |
 | Ollama 추론 서비스가 내부 `model` 망에만 연결 | `ollama`에 `ports` 없음; 다운로드 전용 컨테이너는 별도 | 같은 Compose 프로젝트 안 |
 | Agent Service가 `tools` 망에 없음 | `gateway`만 승인된 MCP 리스너에 접근 | 같은 Compose 프로젝트 안 |
@@ -133,7 +133,7 @@ tailnet 신원은 디바이스·계정 신원이고, 이 실습의 역할(`partn
 
 | 항목 | 상태 |
 | --- | --- |
-| 게시 포트를 loopback으로 고정 (`compose.yaml`, 기업 실습 오버레이) | 반영. 8000/8080/16686/8088 |
+| 게시 포트를 loopback으로 고정 (`compose.yaml`, 기업 실습 오버레이) | 반영. 8000/8080/8088 |
 | 예전 `BIND_ADDR`/`AIG_BIND_ADDR`의 다른 주소 거절 (`console.sh`) | 반영 |
 | `model` 내부망의 Ollama, 분리된 다운로드 컨테이너 | 반영. 로컬 모델 프로필에서만 실행 |
 | `tools`에서 Agent Service 분리 | 반영. Gateway만 도구 서버에 연결 |

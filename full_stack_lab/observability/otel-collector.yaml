@@ -1,0 +1,52 @@
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+    spike_limit_mib: 64
+  # Defence in depth: application spans are intentionally metadata-only, and the
+  # collector drops well-known sensitive attributes if a library adds them later.
+  attributes/security:
+    actions:
+      - key: http.request.header.authorization
+        action: delete
+      - key: http.request.body
+        action: delete
+      - key: db.statement
+        action: delete
+      - key: mcp.arguments
+        action: delete
+      - key: mcp.result
+        action: delete
+      - key: enduser.id
+        action: delete
+  batch:
+    timeout: 2s
+    send_batch_size: 512
+
+exporters:
+  # The Audit API implements the OTLP/HTTP trace endpoint.  It normalizes an
+  # allow-listed subset of span metadata into PostgreSQL runtime evidence.
+  otlphttp/audit:
+    endpoint: http://agent-service:8000/api/audit/otlp
+    headers:
+      x-otel-audit-token: ${env:OTEL_AUDIT_INGEST_TOKEN}
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes/security, batch]
+      exporters: [otlphttp/audit]

@@ -138,6 +138,7 @@ const ICON = {
   servers: '<rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><path d="M6 6h.01M6 18h.01"/>',
   people: '<path d="M18 5a2 2 0 0 1 2 2v8.5a2 2 0 0 0 .2.9l1.1 2.1a1 1 0 0 1-.9 1.5H3.6a1 1 0 0 1-.9-1.5l1.1-2.1a2 2 0 0 0 .2-.9V7a2 2 0 0 1 2-2z"/><path d="M20 16H4"/>',
   intake: '<path d="M16 16h6M19 13v6"/><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="M3.3 7 12 12l8.7-5M12 22V12"/>',
+  "mcp-scan": '<path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V5l8-3 8 3z"/><path d="m9 12 2 2 4-4"/>',
   termination: '<path d="m19 5 3-3M2 22l3-3"/><path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z"/><path d="M7.5 13.5 10 11M10.5 16.5 13 14"/><path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z"/>',
   policy: '<path d="m16 16 3-8 3 8c-.9.7-1.9 1-3 1s-2.1-.3-3-1Z"/><path d="m2 16 3-8 3 8c-.9.7-1.9 1-3 1s-2.1-.3-3-1Z"/><path d="M7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
 };
@@ -230,6 +231,7 @@ const PAGES = [
   { id: "servers", label: "MCP 서버", group: "자산" },
   { id: "people", label: "직원·단말", group: "자산" },
   { id: "intake", label: "도입 신청", group: "자산" },
+  { id: "mcp-scan", label: "AI 보안 검사", group: "자산" },
   { id: "termination", label: "종료·폐기", group: "전주기", badge: "termination" },
   { id: "policy", label: "정책", group: "전주기" },
 ];
@@ -483,6 +485,7 @@ ROUTES.activity = async (_, tab, query) => {
   feed.lastOk = Date.now();
   feed.failing = false;
   if (viewer.admin && !feed.servers.length) feed.servers = (await gw("registry")).servers.map((s) => s.id);
+  const runtime = viewer.admin ? await api("/api/runtime-evidence?limit=200") : { rows: [], services: [] };
   const servers = viewer.admin ? feed.servers : [...new Set(feed.rows.map((r) => r.server))].sort();
   const option = (value, label, cur) => html`<option value="${value}" ${value === cur ? raw("selected") : ""}>${label}</option>`;
   const f = feed.filters;
@@ -509,6 +512,14 @@ ROUTES.activity = async (_, tab, query) => {
           ${panel("서버별", chartBox("c-by-server", "불러온 호출의 서버별 판정"))}
           ${panel("하네스별", chartBox("c-by-harness", "불러온 호출의 하네스별 비율"))}</div>
           ${panel("사람별", chartBox("c-by-person", "불러온 호출의 사람별 판정", "lg"))}</div>` },
+        ...(viewer.admin ? [{ key: "runtime", label: "Runtime Evidence", n: runtime.rows.length, body: html`<div class="stack">
+          ${panel("서비스 · 최근 24시간", html`<table class="data"><thead><tr><th>서비스</th><th class="num">Span</th><th class="num">평균</th><th class="num">오류</th></tr></thead><tbody>
+            ${runtime.services.map((s) => html`<tr><td><b>${s.service_name}</b></td><td class="num">${s.spans}</td><td class="num">${s.avg_ms} ms</td><td class="num">${s.errors}</td></tr>`)}</tbody></table>${runtime.services.length ? "" : empty("수집된 runtime evidence 없음")}`, { flush: true })}
+          ${panel("Span 증적", html`<table class="data"><thead><tr><th>시각</th><th>서비스·작업</th><th>상태</th><th class="num">시간</th><th>Trace</th></tr></thead><tbody>
+            ${runtime.rows.map((r) => html`<tr><td class="small">${when(r.started_at, { seconds: true })}</td><td><b>${r.service_name}</b><span class="sub mono">${r.operation}</span></td>
+              <td>${chip(r.status_code === "ERROR" ? "block" : r.status_code === "OK" ? "allow" : "outline", r.status_code)}</td>
+              <td class="num">${Number(r.duration_ms).toFixed(2)} ms</td><td class="mono small">${r.trace_id.slice(0, 12)}…</td></tr>`)}</tbody></table>${runtime.rows.length ? "" : empty("수집된 span 없음")}`, { flush: true })}
+        </div>` }] : []),
       ],
     }),
     charts: feedCharts(),
@@ -778,6 +789,53 @@ ROUTES.intake = async (_, tab) => {
 };
 // The same rule agent_service.approve_mcp_request enforces; the button only mirrors it.
 const termsVerified = (t) => Boolean(t?.verified_by && t?.evidence_url && Object.keys(EXIT_TERMS).every((k) => t[k] === true));
+
+// ── AI-Infra-Guard ────────────────────────────────────────────────────────────
+const scanTone = (s) => ({ DONE: "allow", RUNNING: "approval", QUEUED: "approval", FAILED: "block", CANCELLED: "outline" }[s] || "outline");
+ROUTES["mcp-scan"] = async (_, tab) => {
+  const o = await api("/api/mcp-scan");
+  const cfg = o.config || {};
+  const worker = o.worker || {};
+  return {
+    html: page({
+      head: head("AI 보안 검사", { status: html`${chip(cfg.configured ? "allow" : "block", cfg.configured ? "모델 설정 완료" : "모델 설정 필요")}${chip(worker.alive ? "allow" : "block", worker.alive ? "워커 동작" : "워커 응답 없음")}`,
+        actions: html`<button class="btn" data-act="scan-connection">연결 확인</button>` }),
+      kpis: kpiStrip([["대기", worker.queued || 0], ["실행 중", worker.running || 0, "approval"],
+        ["결과", o.reports.length], ["실패", o.jobs.filter((j) => j.status === "FAILED").length, "block"]]),
+      active: tab || "targets",
+      tabs: [
+        { key: "targets", label: "검사 대상", n: o.targets.length + o.servers.length, body: html`<div class="stack">
+          ${panel("검사 설정", kv([["모델", cfg.model || "미설정"], ["Endpoint", cfg.base_url || "미설정"],
+            ["증적 모드", cfg.evidence_mode], ["로컬 모델", cfg.local ? "예" : "아니오"], ["A.I.G 고정 커밋", cfg.pinned_commit],
+            ["승인 전 검사 필수", cfg.required_for_approval ? "사용" : "관찰"],
+            ["워커 마지막 신호", worker.seen_at ? ago(worker.seen_at) : "없음"]]))}
+          ${panel("도입 요청", html`<table class="data"><thead><tr><th>대상</th><th>상태</th><th>마지막 검사</th><th></th></tr></thead><tbody>
+            ${o.targets.map((t) => html`<tr><td><b>${t.display_name}</b><span class="sub mono">${t.commit_sha?.slice(0, 12) || "—"}</span></td>
+              <td>${chip(...(INTAKE_STATUS[t.status] || ["", t.status]))}</td><td>${t.last_status ? chip(scanTone(t.last_status), t.last_status) : "—"}</td>
+              <td class="num"><button class="btn sm primary" data-act="scan-run" data-kind="intake" data-id="${t.id}" data-mode="static">정적 검사</button></td></tr>`)}</tbody></table>${o.targets.length ? "" : empty("고정 commit이 있는 도입 요청 없음")}`, { flush: true })}
+          ${panel("등록 MCP 서버", html`<table class="data"><thead><tr><th>서버</th><th>운영 상태</th><th>검사 방식</th><th></th></tr></thead><tbody>
+            ${o.servers.map((s) => html`<tr><td><b>${s.display_name}</b><span class="sub mono">${s.id}</span></td><td>${chip("outline", s.status)} ${chip("plain", s.lifecycle)}</td>
+              <td>${s.scannable ? chip("allow", "코드") : chip("outline", "코드 없음")} ${s.probeable ? chip("allow", "동적") : chip("outline", "동적 불가")}</td>
+              <td class="num">${s.scannable ? html`<button class="btn sm" data-act="scan-run" data-kind="server" data-id="${s.id}" data-mode="static">정적</button>` : ""}
+                ${s.probeable ? html`<button class="btn sm" data-act="scan-run" data-kind="server" data-id="${s.id}" data-mode="dynamic">동적</button>` : ""}</td></tr>`)}</tbody></table>`, { flush: true })}
+        </div>` },
+        { key: "jobs", label: "작업 이력", n: o.jobs.length, hot: o.jobs.some((j) => j.status === "FAILED"), body:
+          panel("검사 작업", html`<table class="data"><thead><tr><th>대상</th><th>방식</th><th>상태</th><th>시각</th><th></th></tr></thead><tbody>
+            ${o.jobs.map((j) => html`<tr><td><b>${j.target_label || j.display_name || j.target_id}</b><span class="sub mono">${j.target_kind}</span></td>
+              <td>${j.mode === "dynamic" ? "동적" : "정적"}</td><td>${chip(scanTone(j.status), j.status)}${j.error ? html`<span class="sub">${short(j.error, 100)}</span>` : ""}</td>
+              <td class="small">${when(j.finished_at || j.started_at || j.created_at)}</td><td class="num">
+                ${["QUEUED", "RUNNING"].includes(j.status) ? html`<button class="btn sm danger" data-act="scan-cancel" data-id="${j.id}">취소</button>` : ""}
+                ${["FAILED", "CANCELLED"].includes(j.status) ? html`<button class="btn sm" data-act="scan-retry" data-id="${j.id}">재시도</button>` : ""}</td></tr>`)}</tbody></table>${o.jobs.length ? "" : empty("검사 작업 없음")}`, { flush: true }) },
+        { key: "reports", label: "결과", n: o.reports.length, body:
+          panel("A.I.G 증적", html`<table class="data"><thead><tr><th>대상</th><th>모델</th><th>결과</th><th>생성</th></tr></thead><tbody>
+            ${o.reports.map((r) => html`<tr><td class="mono">${r.source_ref}</td><td>${r.scanner}<span class="sub">${r.scanner_version}</span></td>
+              <td>${chip((r.summary?.blocks_calls || Number(r.critical)) ? "block" : "allow", `${r.summary?.total ?? 0}건`)}<span class="sub">${r.summary?.evidence_mode || "live"} · ${r.summary?.mode || "static"}</span></td>
+              <td class="small">${when(r.created_at)}</td></tr>`)}</tbody></table>${o.reports.length ? "" : empty("저장된 A.I.G 결과 없음")}`, { flush: true }) },
+      ],
+    }),
+    charts: {},
+  };
+};
 
 // ── termination ──────────────────────────────────────────────────────────────
 ROUTES.termination = async (caseId, tab) => {
@@ -1067,6 +1125,34 @@ const ACTIONS = {
     const r = await gw("audit/verify");
     if (r.intact) toast(`감사 체인 정상 · ${r.checked}건`);
     else toast(`감사 체인 손상 · #${r.broken_at ?? "끝부분"}: ${r.reason}`, true);
+  },
+  async "scan-connection"() {
+    const r = await api("/api/mcp-scan/connection-test", { method: "POST" });
+    toast(r.message, !r.ready_for_scan);
+  },
+  async "scan-run"(el) {
+    const dynamic = el.dataset.mode === "dynamic";
+    let acknowledge = false;
+    if (dynamic) {
+      const fd = await ask({ title: "동적 MCP 검사", body: "실행 중인 MCP 서버 응답을 설정된 모델로 보냅니다. 로컬 모델인지 확인한 뒤 진행하세요.", confirm: "검사 실행" });
+      if (!fd) return;
+      acknowledge = true;
+    }
+    const r = await api("/api/mcp-scan/run", { method: "POST", body: {
+      target_kind: el.dataset.kind, target_id: el.dataset.id, mode: el.dataset.mode,
+      acknowledge_external_model: acknowledge,
+    } });
+    toast(r.message, !r.worker_alive);
+    location.hash = "#/mcp-scan?t=jobs";
+    reload();
+  },
+  async "scan-cancel"(el) {
+    const r = await api(`/api/mcp-scan/jobs/${el.dataset.id}/cancel`, { method: "POST" });
+    toast(r.message); reload();
+  },
+  async "scan-retry"(el) {
+    const r = await api(`/api/mcp-scan/jobs/${el.dataset.id}/retry`, { method: "POST" });
+    toast(r.message); reload();
   },
   async approve(el) {
     const r = await api(`/approvals/${el.dataset.id}/approve`, { method: "POST" });

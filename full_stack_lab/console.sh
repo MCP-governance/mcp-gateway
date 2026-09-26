@@ -57,11 +57,21 @@ ensure_env() {
     unset AGENT_JWT_PRIVATE_KEY AGENT_JWT_PUBLIC_KEY LITELLM_MASTER_KEY
   fi
   grep -q '^LITELLM_MASTER_KEY=' .env || echo "LITELLM_MASTER_KEY=sk-master-$(openssl rand -hex 16)" >> .env
+  grep -qE '^OTEL_AUDIT_INGEST_TOKEN=.+' .env || echo "OTEL_AUDIT_INGEST_TOKEN=otel-$(openssl rand -hex 24)" >> .env
   for ws in "${WORKSTATIONS[@]}"; do
     local up; up="$(echo "${ws#ws-}" | tr a-z A-Z)"
     grep -q "^LLM_KEY_WS_${up}=" .env || echo "LLM_KEY_WS_${up}=sk-${ws}-$(openssl rand -hex 12)" >> .env
     grep -q "^ENDPOINT_KEY_WS_${up}=" .env || echo "ENDPOINT_KEY_WS_${up}=ek-${ws}-$(openssl rand -hex 20)" >> .env
   done
+}
+
+# Full local-LLM mode also makes AI-Infra-Guard usable without a cloud endpoint.
+# Existing values always win, so a team can point A.I.G at another on-prem model.
+ensure_local_aig_env() {
+  grep -qE '^MCP_SCAN_API_KEY=.+' .env || echo 'MCP_SCAN_API_KEY=local-ollama' >> .env
+  grep -qE '^MCP_SCAN_BASE_URL=.+' .env || echo 'MCP_SCAN_BASE_URL=http://ollama:11434/v1' >> .env
+  grep -qE '^MCP_SCAN_MODEL=.+' .env || echo 'MCP_SCAN_MODEL=bob-assistant' >> .env
+  grep -qE '^MCP_SCAN_EVIDENCE_MODE=.+' .env || echo 'MCP_SCAN_EVIDENCE_MODE=live' >> .env
 }
 
 
@@ -120,6 +130,7 @@ up() {
   local llm=1
   [[ "${1:-}" == "--no-llm" ]] && llm=0
   ensure_env
+  if [[ $llm == 1 ]]; then ensure_local_aig_env; fi
   echo "[1/5] 이미지 빌드"
   docker compose build -q
   echo "[2/5] 회사 시스템과 MCP 서버 10종"
@@ -168,7 +179,6 @@ up() {
   echo "준비되었습니다."
   echo "  운영 콘솔 : ${CONSOLE/127.0.0.1/localhost}   (kkg@bob.local / test-password)"
   echo "  Gitea     : http://localhost:$(host_port GITEA_PORT 3000)   (corpadmin — 제공자 자격 확인용)"
-  echo "  Jaeger    : http://localhost:$(host_port JAEGER_PORT 16686)"
   echo "  하루 업무 : ./console.sh workday        판정 흐름 : ./console.sh watch"
 }
 

@@ -12,7 +12,7 @@
 | 브랜치 | `feat/2026-09-v3.0-harness-gateway` |
 | 비밀번호 | **WSL sudo를 포함해 로컬 비밀번호는 전부 `1111`** (sudo는 무암호 설정) |
 | 랩 계정 비밀번호 | `test-password` (`.env`의 `MOCK_SSO_PASSWORD`) |
-| 호스트 포트 | 이 노트북은 `.env`에 `CONSOLE_PORT=18000`, `GATEWAY_PORT=18080`, `JAEGER_PORT=26686`, `GITEA_PORT=13000` |
+| 호스트 포트 | 이 노트북은 `.env`에 `CONSOLE_PORT=18000`, `GATEWAY_PORT=18080`, `GITEA_PORT=13000` |
 
 이 노트북에 있던 다른 작업 트리의 v1 랩 스택은 2026-09-25에 사용자 승인을 받아 내렸다. 지금은 이
 저장소의 `mcpgw-v2` 스택만 떠 있다. 프로젝트 이름은 `.env`의 `MCP_COMPOSE_PROJECT`.

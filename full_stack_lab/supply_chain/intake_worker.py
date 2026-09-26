@@ -2,8 +2,8 @@
 
 제출된 저장소 URL은 "가져와서 실행해도 된다"는 뜻이 아니다. 이 워커는 Gateway와
 분리된 컨테이너에서 얕은 복제만 수행하고, 저장소의 코드를 한 줄도 실행하지 않은
-채로 SBOM·SCA·SAST 증적을 만든다. 실행이 필요한 검사(AI-Infra-Guard mcp-scan의
-동적 분석 등)는 여기서 하지 않는다.
+채로 SBOM·SCA·SAST 증적을 만든다. AI-Infra-Guard 정적 검사는 고정 commit 사본을,
+동적 검사는 등록된 HTTP endpoint만 대상으로 같은 격리 워커에서 별도 작업으로 수행한다.
 
 Gateway가 이 일을 하지 않는 이유: Gateway는 정책 집행 경로이고 외부 저장소를
 내려받는 프로세스가 아니다. 두 역할이 한 프로세스에 있으면 복제 단계의 결함이
@@ -22,6 +22,11 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 import psycopg
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
@@ -69,6 +74,25 @@ AUTO_ON_VALIDATED = os.getenv("MCP_SCAN_AUTO_ON_VALIDATED", "1") not in ("0", "f
 AUTO_JOBS = os.getenv("MCP_SCAN_AUTO_JOBS", "1") not in ("0", "false", "")
 RESCAN_DAYS = int(os.getenv("MCP_SCAN_RESCAN_DAYS", "30"))
 RESCAN_SWEEP_SECONDS = int(os.getenv("MCP_SCAN_RESCAN_SWEEP_SECONDS", "900"))
+
+
+def configure_tracing():
+    if os.getenv("OTEL_SDK_DISABLED", "").strip().lower() in {"1", "true", "yes"}:
+        return trace.get_tracer("mcp-governance.intake-worker")
+    provider = TracerProvider(resource=Resource.create({
+        "service.name": os.getenv("OTEL_SERVICE_NAME", "intake-worker"),
+        "deployment.environment.name": os.getenv("OTEL_ENVIRONMENT", "local-lab"),
+    }))
+    endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4318").rstrip("/") + "/v1/traces"
+    provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))
+    try:
+        trace.set_tracer_provider(provider)
+    except Exception:
+        pass
+    return trace.get_tracer("mcp-governance.intake-worker")
+
+
+tracer = configure_tracing()
 
 
 def log(message: str) -> None:
@@ -957,7 +981,9 @@ def main() -> int:
                             break
                         connection.commit()
                         try:
-                            validate(connection, request)
+                            with tracer.start_as_current_span("intake.validate") as span:
+                                span.set_attribute("mcp.intake.request_id", str(request["id"]))
+                                validate(connection, request)
                             connection.commit()
                         except Exception as exc:  # 검증 실패도 결과다. 조용히 대기열에 남기지 않는다.
                             connection.rollback()
@@ -978,7 +1004,11 @@ def main() -> int:
                             break
                         connection.commit()
                         try:
-                            run_mcp_scan(connection, job)
+                            with tracer.start_as_current_span("aig.mcp_scan") as span:
+                                span.set_attribute("mcp.scan.job_id", str(job["id"]))
+                                span.set_attribute("mcp.scan.target_kind", str(job["target_kind"]))
+                                span.set_attribute("mcp.scan.mode", str(job.get("mode") or "static"))
+                                run_mcp_scan(connection, job)
                             connection.commit()
                         except Exception as exc:
                             connection.rollback()

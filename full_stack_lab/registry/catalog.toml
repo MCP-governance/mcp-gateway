@@ -15,7 +15,7 @@ internal_email_domains = ["bob.local"]
 # resolves inside the lab is infrastructure (SSRF target) and is never allowed.
 intranet_hosts = ["intranet.bob.local"]
 infrastructure_hosts = [
-  "gateway", "gateway-sse", "agent-service", "db", "opa", "jaeger", "ollama", "llm-gateway",
+  "gateway", "gateway-sse", "agent-service", "db", "opa", "otel-collector", "ollama", "llm-gateway",
   "corp-db", "corp-redis", "corp-mail", "corp-git", "localhost", "127.0.0.1", "0.0.0.0",
   "169.254.169.254", "metadata.google.internal", "host.docker.internal",
 ]

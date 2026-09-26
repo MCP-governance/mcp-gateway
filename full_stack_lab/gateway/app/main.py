@@ -33,9 +33,6 @@ from . import activity, registry
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 
-# 배선 주소를 코드에 박아두면 compose 바깥(네이티브 실행)에서 항상 degraded가 된다.
-# 실제로 무엇이 죽었는지와 "이 배치에는 그 구성요소가 없다"가 구분되지 않는다.
-JAEGER_QUERY_URL = os.getenv("JAEGER_QUERY_URL", "http://jaeger:16686/api/services")
 gateway_mcp = build_mcp()
 mcp_http = gateway_mcp.streamable_http_app(
     streamable_http_path="/", json_response=True, host="0.0.0.0",
@@ -140,11 +137,6 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="MCP Governance Security Gateway", version="1.1.0", lifespan=lifespan)
 
 
-async def _absent() -> None:
-    """이 배치에 없는 구성요소. False(장애)가 아니라 None(대상 아님)으로 구분한다."""
-    return None
-
-
 async def _probe(url: str) -> bool:
     try:
         async with httpx.AsyncClient(timeout=2) as client:
@@ -156,9 +148,8 @@ async def _probe(url: str) -> bool:
 
 @app.get("/api/health")
 async def health() -> dict:
-    opa_ok, jaeger_ok, analyzer_ok, anonymizer_ok = await asyncio.gather(
+    opa_ok, analyzer_ok, anonymizer_ok = await asyncio.gather(
         _probe(OPA_URL.rsplit("/v1/", 1)[0] + "/health?bundles=true"),
-        _probe(JAEGER_QUERY_URL) if JAEGER_QUERY_URL else _absent(),
         _probe(privacy.ANALYZER + "/health"),
         _probe(privacy.ANONYMIZER + "/health"),
     )
@@ -170,7 +161,7 @@ async def health() -> dict:
     servers = {row["id"]: row["status"] for row in rows if row["id"] in registry.servers()}
     # Presidio is required: without it outbound calls are refused (P-DATA-INSPECTION-001)
     # and executed results are withheld (MCP-OUTPUT-001), so "ok" would be untrue.
-    components = {"gateway": True, "postgresql": db_ok, "opa": opa_ok, "jaeger": jaeger_ok,
+    components = {"gateway": True, "postgresql": db_ok, "opa": opa_ok,
                   "presidio_analyzer": analyzer_ok, "presidio_anonymizer": anonymizer_ok}
     required = [value for value in components.values() if value is not None]
     return {"status": "ok" if all(required) else "degraded", "components": components,

@@ -21,7 +21,7 @@ v2와의 차이: v2는 PC에 손으로 짠 에이전트(`office_agent.py`)가 �
 
 ```text
                     host loopback (127.0.0.1, 포트는 .env로 바꿀 수 있음)
-     :CONSOLE_PORT Console·IdP   :GATEWAY_PORT Gateway API   :JAEGER_PORT Jaeger   :GITEA_PORT 회사 Gitea
+     :CONSOLE_PORT Console·IdP   :GATEWAY_PORT Gateway API   :GITEA_PORT 회사 Gitea
                 │                          │
 ┌───────────────┼──────────────── office (internal) ─────────────────────────────────────────────┐
 │  ws-ysg Claude Code   ws-jwj Codex CLI   ws-pse Gemini CLI   ws-nkk OpenCode(+섀도 설정)          │
@@ -39,7 +39,7 @@ v2와의 차이: v2는 PC에 손으로 짠 에이전트(`office_agent.py`)가 �
 
 | 망 | 붙는 서비스 | 의미 |
 | --- | --- | --- |
-| `edge` | agent-service, gateway, jaeger, corp-git | 호스트 loopback 게시 전용 |
+| `edge` | agent-service, gateway, corp-git | 호스트 loopback 게시 전용 |
 | `office` | 직원 PC 4대, agent-service, gateway, gateway-sse, llm-gateway | 직원 PC가 닿는 유일한 망 |
 | `tools` | gateway, gateway-sse, mcp-* | **Gateway만** MCP 서버에 닿는다 |
 | `corp` | mcp-email·gitea·postgres·redis·fetch·playwright, corp-*, intranet, corp-seed | MCP 서버의 하위 시스템 |
@@ -49,11 +49,17 @@ v2와의 차이: v2는 PC에 손으로 짠 에이전트(`office_agent.py`)가 �
 | `data` | db, gateway, agent-service, intake-worker, llm-gateway | Gateway DB(판정·감사·LiteLLM) |
 | `policy` | gateway, gateway-sse, opa, (opa-candidate) | 정책 판정 |
 | `privacy` | gateway, gateway-sse, presidio-analyzer·anonymizer | 개인정보 검사·마스킹(D-24) |
-| `telemetry` | jaeger | |
+| `telemetry` | gateway, gateway-sse, agent-service, intake-worker, OTel Collector | 애플리케이션은 Collector에만 OTLP를 보내고, Collector는 민감 속성을 제거한 뒤 내부 Audit API로 전달 |
 | `scanner` | intake-worker, ollama-pull | 외부 다운로드(유일한 egress) |
 
 모든 망은 `.env`의 `MCP_NET_PREFIX` 아래 명시 `/24`(D-24). `internal: true`가 아닌 망은 `edge`와 `scanner`뿐이다.
 직원 PC는 인터넷에 나갈 수 없어서 하네스의 텔레메트리·자동 업데이트·모델 카탈로그 조회도 망에서 막히고, 설정으로도 끈다.
+
+운영 추적 경로는 `서비스 SDK → OTel Collector → Audit API → runtime_evidence`다. 토큰·MCP 인자·결과·HTTP 본문은
+trace에 넣지 않고 감사 DB에만 둔다. Collector와 Audit API가 허용 목록으로 민감 attribute를 이중 제거한다(D-42).
+A.I.G `mcp-scan`은 Gateway 요청
+경로 안에서 실행하지 않는다. 격리된 `intake-worker`가 고정 commit 또는 등록 endpoint를 검사하고 SARIF 결과를 DB에
+저장하며, Console의 **AI 보안 검사** 화면은 그 작업을 조회·실행·취소·재시도한다.
 
 ## 3. 직원 PC — 하네스와 관리형 설정
 

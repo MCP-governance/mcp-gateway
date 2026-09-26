@@ -12,15 +12,10 @@ from collections.abc import Callable
 from typing import Any
 
 import httpx
-from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import classify, db, endpoint_plane, privacy, registry, upstream
+from . import classify, db, endpoint_plane, privacy, registry, telemetry, upstream
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMN_SETS, AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint,
@@ -88,22 +83,7 @@ class DispatchRejected(RuntimeError):
     """The final checks failed before tools/call was sent."""
 
 
-def _configure_tracing() -> Any:
-    # 수집기가 없는 배치(네이티브 실행, 단일 호스트 검증)에서는 매 스팬마다 연결
-    # 실패가 쌓여 실제 오류를 덮는다. OTEL 표준 스위치를 그대로 따른다.
-    if os.getenv("OTEL_SDK_DISABLED", "").strip().lower() in {"1", "true", "yes"}:
-        return trace.get_tracer("mcp-governance.gateway")
-    provider = TracerProvider(resource=Resource.create({"service.name": os.getenv("OTEL_SERVICE_NAME", "mcp-security-gateway")}))
-    endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://jaeger:4318").rstrip("/") + "/v1/traces"
-    provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))
-    try:
-        trace.set_tracer_provider(provider)
-    except Exception:
-        pass
-    return trace.get_tracer("mcp-governance.gateway")
-
-
-tracer = _configure_tracing()
+tracer = telemetry.configure("mcp-governance.gateway", "mcp-security-gateway")
 
 
 async def _discover(server_id: str) -> dict:

@@ -111,7 +111,7 @@
 | Security Gateway | `gateway/` · `127.0.0.1:8080` | 단일 정책 집행점(PEP). 모든 ingress가 `execute_call()`로 수렴 |
 | OPA / Rego | `opa/` · 내부 `policy` 망 | 정책 결정점(PDP) |
 | upstream 격리 | `compose.yaml`의 `tools` 망 | MCP 서버에 host port 없음 |
-| loopback 게시 | `compose.yaml`, `compose.corporate-lab.yaml` | 8000/8080/16686/8088이 이 호스트 밖으로 나가지 않음 |
+| loopback 게시 | `compose.yaml`, `compose.corporate-lab.yaml` | 8000/8080/8088이 이 호스트 밖으로 나가지 않음 |
 | 다른 게시 주소 거절 | `console.sh` | 예전 `BIND_ADDR`/`AIG_BIND_ADDR`에 127.0.0.1 외 주소가 있으면 기동 거부 |
 
 ### 2.2 네트워크단에 필요하지만 미구현인 것
