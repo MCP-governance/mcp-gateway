@@ -67,7 +67,7 @@ def attributes(items: list[dict]) -> dict:
 # raw arguments, result content and arbitrary span attributes before persistence.
 SAFE_KEYS = {"server", "tool", "hash", "approved", "status", "decision", "kind", "finding_count",
              "presidio.finding_count", "presidio.entity_types", "mcp.server", "mcp.tool", "tool.hash",
-             "http.status_code", "http.response.status_code", "error.type"}
+             "http.status_code", "http.response.status_code", "error.type", "session_id", "method", "transport"}
 
 
 def clean(data: dict) -> dict:
@@ -125,7 +125,7 @@ def evaluate(event: dict) -> tuple[str, list[str]]:
     except (TypeError, ValueError):
         count = 0
     if count > 0:
-        flags.append("presidio-findings")
+        flags.append("scanner-findings" if event.get("kind") == "scan" else "presidio-findings")
     if "drift" in event.get("kind", "").lower():
         flags.append("tool-contract-drift")
     risk = "high" if "tool-contract-drift" in flags or count > 0 else "medium" if flags else "low"

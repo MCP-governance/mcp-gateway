@@ -207,6 +207,8 @@ def create_app() -> FastAPI:
 
         return StreamingResponse(stream(), status_code=response.status_code, headers=response_headers)
 
+    from services.scanner import router as scan_router
+    app.include_router(scan_router)
     return app
 
 

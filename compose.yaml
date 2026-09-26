@@ -58,6 +58,13 @@ services:
       OPA_URL: http://opa:8181
       PRESIDIO_URL: http://presidio:3000
       DECISION_API_URL: http://evidence-decision:8000
+      AIG_BASE_URL: http://aig-web:8088
+      AIG_USERNAME: public_user
+      TEST_TARGETS: '{"demo":"http://test-mcp:8000/mcp"}'
+      AIG_SCAN_MODEL: ${AIG_SCAN_MODEL:-}
+      AIG_SCAN_MODEL_TOKEN: ${AIG_SCAN_MODEL_TOKEN:-}
+      AIG_SCAN_MODEL_BASE_URL: ${AIG_SCAN_MODEL_BASE_URL:-https://api.openai.com/v1}
+      TRIVY_REPORT_PATH: /scan-reports/trivy.json
     networks:
     - auth
     - ai
@@ -65,6 +72,7 @@ services:
     - policy
     - privacy
     - runtime
+    - scan-control
     security_opt:
     - no-new-privileges:true
     read_only: true
@@ -80,6 +88,10 @@ services:
       interval: 3s
       timeout: 4s
       retries: 40
+    volumes:
+    - scan-reports:/scan-reports:ro
+    ports:
+    - 127.0.0.1:${SCAN_API_PORT:-18084}:8000
   evidence-processor:
     build: .
     image: mcpgw-architecture:local
@@ -402,67 +414,196 @@ services:
     depends_on:
     - audit-api
     restart: unless-stopped
+  aig-web:
+    image: zhuquelab/aig-server:v4.6.3
+    environment:
+      APP_ENV: production
+      UPLOAD_DIR: /app/uploads
+      DB_PATH: /app/db/tasks.db
+      AIG_API_CHECKER_URL: http://aig-agent:8000
+    volumes:
+    - aig-data:/app/data
+    - aig-db:/app/db
+    - aig-logs:/app/logs
+    - aig-uploads:/app/uploads
+    networks:
+    - scan-control
+    - security-test-zone
+    depends_on:
+      aig-agent:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:8088/
+      interval: 10s
+      timeout: 3s
+      retries: 18
+      start_period: 15s
+  aig-agent:
+    image: zhuquelab/aig-agent:v4.6.3
+    environment:
+      AIG_SERVER: aig-web:8088
+      AIG_API_CHECKER_ROOT_PATH: /api-checker
+      AIG_API_CHECKER_DATA_DIR: /api-checker-data
+      AIG_API_CHECKER_MAX_JOBS: '2'
+    volumes:
+    - aig-api-checker-data:/api-checker-data
+    cap_add:
+    - SYS_ADMIN
+    security_opt:
+    - seccomp:unconfined
+    shm_size: 2gb
+    networks:
+    - security-test-zone
+    healthcheck:
+      test:
+      - CMD
+      - gosu
+      - agent:agent
+      - /app/api-checker-venv/bin/python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz',timeout=3).read()
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+  test-mcp:
+    build: .
+    image: mcpgw-architecture:local
+    command:
+    - uvicorn
+    - services.mcp_server:app
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    environment:
+      INTERNAL_API_URL: http://test-api:8000/data
+      EXTERNAL_API_URL: http://test-api:8000/data
+    networks:
+    - security-test-zone
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    tmpfs:
+    - /tmp
+  test-api:
+    build: .
+    image: mcpgw-architecture:local
+    command:
+    - uvicorn
+    - services.api:app
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    networks:
+    - security-test-zone
+    read_only: true
+    security_opt:
+    - no-new-privileges:true
+  trivy:
+    image: aquasec/trivy:0.74.0
+    profiles:
+    - scan
+    command:
+    - fs
+    - --scanners
+    - vuln,misconfig,secret
+    - --format
+    - json
+    - --output
+    - /scan-reports/trivy.json
+    - --exit-code
+    - '0'
+    - /target
+    volumes:
+    - ./services:/target:ro
+    - ./uv.lock:/target/uv.lock:ro
+    - scan-reports:/scan-reports
+    - trivy-cache:/root/.cache/trivy
+    networks:
+    - security-test-zone
 networks:
   edge:
     internal: false
     ipam:
       config:
-      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.1.0/24
+      - subnet: ${MCP_NETWORK_PREFIX:-10.247}.1.0/24
   auth:
     internal: true
     ipam:
       config:
-      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.2.0/24
+      - subnet: ${MCP_NETWORK_PREFIX:-10.247}.2.0/24
   ai:
     internal: true
     ipam:
       config:
-      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.3.0/24
+      - subnet: ${MCP_NETWORK_PREFIX:-10.247}.3.0/24
   tools:
     internal: true
     ipam:
       config:
-      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.4.0/24
+      - subnet: ${MCP_NETWORK_PREFIX:-10.247}.4.0/24
   policy:
     internal: true
     ipam:
       config:
-      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.5.0/24
+      - subnet: ${MCP_NETWORK_PREFIX:-10.247}.5.0/24
   privacy:
     internal: true
     ipam:
       config:
-      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.6.0/24
+      - subnet: ${MCP_NETWORK_PREFIX:-10.247}.6.0/24
   runtime:
     internal: true
     ipam:
       config:
-      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.7.0/24
+      - subnet: ${MCP_NETWORK_PREFIX:-10.247}.7.0/24
   data:
     internal: true
     ipam:
       config:
-      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.8.0/24
+      - subnet: ${MCP_NETWORK_PREFIX:-10.247}.8.0/24
   audit:
     internal: true
     ipam:
       config:
-      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.9.0/24
+      - subnet: ${MCP_NETWORK_PREFIX:-10.247}.9.0/24
   internal-api:
     internal: true
     ipam:
       config:
-      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.10.0/24
+      - subnet: ${MCP_NETWORK_PREFIX:-10.247}.10.0/24
   external-api:
     internal: true
     ipam:
       config:
-      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.11.0/24
+      - subnet: ${MCP_NETWORK_PREFIX:-10.247}.11.0/24
   model-egress:
     internal: false
     ipam:
       config:
-      - subnet: ${MCP_NETWORK_PREFIX:-10.246}.12.0/24
+      - subnet: ${MCP_NETWORK_PREFIX:-10.247}.12.0/24
+  scan-control:
+    internal: true
+    ipam:
+      config:
+      - subnet: ${MCP_NETWORK_PREFIX:-10.247}.13.0/24
+  security-test-zone:
+    ipam:
+      config:
+      - subnet: ${MCP_NETWORK_PREFIX:-10.247}.14.0/24
 volumes:
   db-data: {}
   keycloak-data: {}
+  scan-reports: {}
+  aig-data: {}
+  aig-db: {}
+  aig-logs: {}
+  aig-uploads: {}
+  aig-api-checker-data: {}
+  trivy-cache: {}

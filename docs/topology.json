@@ -1,9 +1,9 @@
 {
-  "plan": 1,
+  "plan": 2,
   "source": {
     "url": "https://drive.google.com/file/d/1i3WloSS4OpMtd_CuGsfouBLo5AzyG4VS/view",
     "page_id": "jl1713ShlaMZFDe2wrXP",
-    "group_id": "EKwQxOCetbGDIcymAig8-423"
+    "group_id": "EKwQxOCetbGDIcymAig8-337"
   },
   "boundaries": {
     "AI Agent gateway": [
@@ -37,6 +37,15 @@
     ],
     "external API": [
       "external-api"
+    ],
+    "AI Infra Guard": [
+      "aig-web",
+      "aig-agent"
+    ],
+    "Security Test Zone": [
+      "test-mcp",
+      "test-api",
+      "trivy"
     ]
   },
   "telemetry_sources": [
@@ -45,9 +54,6 @@
     "mcp-server"
   ],
   "excluded": [
-    "Security Test Zone",
-    "Scan Orchestrator",
-    "AI Infra Guard",
     "employee workstations",
     "endpoint agent",
     "Jaeger",
@@ -56,6 +62,8 @@
   ],
   "notes": [
     "MCP server OTel included by explicit user confirmation.",
-    "External API GitHub/tool symbols are integrations represented by a configurable example API, not deployed copies of GitHub."
+    "External API GitHub/tool symbols are integrations represented by a configurable example API, not deployed copies of GitHub.",
+    "Scan Orchestrator runs as router in MCP Gateway process (drawing cell 211).",
+    "Security Test Zone hosts a test-only MCP/API copy; scan agent cannot reach production tools/data networks."
   ]
 }

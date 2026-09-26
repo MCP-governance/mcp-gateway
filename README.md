@@ -1,6 +1,6 @@
-# MCP Gateway — 구조도 1안
+# MCP Gateway — 구조도 2안
 
-사용자가 제공한 [draw.io 원본](https://drive.google.com/file/d/1i3WloSS4OpMtd_CuGsfouBLo5AzyG4VS/view)의 **제1안**을 서비스 경계에 맞춰 구현한 브랜치입니다. 원본의 초안과 기존 `main`의 직원 PC 실습은 이 런타임에 포함하지 않습니다.
+사용자가 제공한 [draw.io 원본](https://drive.google.com/file/d/1i3WloSS4OpMtd_CuGsfouBLo5AzyG4VS/view)의 **제2안**을 서비스 경계에 맞춰 구현한 브랜치입니다. 원본의 초안과 기존 `main`의 직원 PC 실습은 이 런타임에 포함하지 않습니다.
 
 ```mermaid
 flowchart LR
@@ -10,6 +10,10 @@ flowchart LR
   Gateway --> OPA
   Gateway --> Presidio
   Gateway --> MCP[MCP Server]
+  Gateway --> Scan[Scan Orchestrator]
+  Scan --> AIG[AI Infra Guard Web/Agent]
+  AIG --> Zone[Security Test Zone: test MCP/API]
+  Trivy --> Zone
   MCP --> Internal[내부 API]
   MCP --> External[외부 API]
   Agent -. OTel .-> Collector
@@ -29,7 +33,7 @@ flowchart LR
 ## 실행
 
 ```bash
-git clone --branch architecture/plan-1 https://github.com/MCP-governance/mcp-gateway.git
+git clone --branch architecture/plan-2 https://github.com/MCP-governance/mcp-gateway.git
 cd mcp-gateway
 cp .env.example .env
 # .env의 비밀번호/내부 토큰을 설정하고 필요한 LLM 접속 정보를 입력합니다.
@@ -58,8 +62,14 @@ docker compose config --quiet
 docker compose down # 자기 프로젝트만 종료; DB 볼륨은 유지
 ```
 
-`main`은 기존 거버넌스 실습, `proxy`는 HTTP 프록시와 관제, `architecture/plan-1`·`architecture/plan-2`는 각각 구조도의 1안·2안입니다. 1안에는 Scan Orchestrator나 Security Test Zone이 없습니다. 사용한 제품 버전은 원본 표를 따릅니다. Collector(0.153.0)와 LiteLLM(v1.102.1)은 원본에 버전이 없어 실행 가능한 고정 버전을 사용합니다. Python 의존성은 `uv.lock`으로 고정합니다.
+`main`은 기존 거버넌스 실습, `proxy`는 HTTP 프록시와 관제, `architecture/plan-1`·`architecture/plan-2`는 각각 구조도의 1안·2안입니다. 2안의 Scan Orchestrator는 MCP Gateway 내부에 있고, 실제 A.I.G Web/Agent 4.6.3와 Security Test Zone 검사 복제본을 사용합니다. Syft와 Semgrep은 포함하지 않습니다. 사용한 제품 버전은 원본 표를 따릅니다. Collector(0.153.0)와 LiteLLM(v1.102.1)은 원본에 버전이 없어 실행 가능한 고정 버전을 사용합니다. Python 의존성은 `uv.lock`으로 고정합니다.
 
 Collector JSON 전송 설정은 [OTel 공식 문서](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/otlphttpexporter/README.md), Keycloak import/hostname은 [Keycloak 공식 문서](https://www.keycloak.org/server/containers)를 기준으로 구성했습니다.
 
-동시 배포 시 포트와 `MCP_NETWORK_PREFIX`를 분리합니다. 1안 기본 대역은 10.246, 2안은 10.247입니다.
+## 2안 보안 검사
+
+실제 A.I.G 이미지 `zhuquelab/aig-server:v4.6.3`와 `zhuquelab/aig-agent:v4.6.3`를 실행합니다. 검사 대상은 `TEST_TARGETS`에 등록된 테스트 구역의 복제본입니다. 운영 도구나 DB는 검사 컨테이너에 연결하지 않습니다. A.I.G/Trivy 검사 결과가 도구를 자동 승인하지 않습니다.
+
+관리자는 Keycloak 토큰으로 `http://127.0.0.1:18084/scans`에 `{"target":"demo"}`를 POST하고, 반환된 UUID를 `/scans/<UUID>`에서 조회합니다. 실제 MCP 스캔에는 `.env`의 `AIG_SCAN_MODEL`·`AIG_SCAN_MODEL_TOKEN` 또는 A.I.G에 미리 구성한 기본 모델이 필요합니다. 외부 LLM 호출이 발생하므로 배포한 모델의 과금 정책이 적용됩니다. 자격 증명 없이 검사 완료를 표시하지 않습니다.
+
+Trivy는 `docker compose --profile scan run --rm trivy`로 실행합니다. 자기 프로젝트의 새 보고서 볼륨으로 실행해 이전 결과와 구분하고, Gateway 내부에서 서비스 토큰으로 `POST /scans/trivy-result`를 호출하면 정규화된 발견 수가 중앙 OTel 경로로 저장됩니다. 자세한 배선·API·제품 요구사항은 [docs/SCANNING.md](docs/SCANNING.md)에 있습니다. A.I.G의 자체 SQLite 작업 DB는 제품 내부 저장소이며, Runtime Analyzer의 증적 DB는 PostgreSQL입니다.
