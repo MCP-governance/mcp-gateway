@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcp-gateway-proxy"
+version = "1.0.0"
+description = "A streaming HTTP reverse proxy for MCP servers"
+requires-python = ">=3.12"
+dependencies = [
+    "anyio>=4.9,<5",
+    "httpx==0.28.1",
+    "starlette>=0.47.2,<1",
+    "uvicorn>=0.35,<1",
+]
+
+[project.scripts]
+mcp-gateway = "mcp_gateway.__main__:main"
+
+[dependency-groups]
+dev = ["pytest>=8.4,<10", "pyflakes>=3.3,<4", "mcp==2.2.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["mcp_gateway"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

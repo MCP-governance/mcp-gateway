@@ -1,0 +1,2 @@
+[servers.demo]
+url = "http://demo:9000/mcp"

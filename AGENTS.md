@@ -1,59 +1,34 @@
-# AGENTS.md — 이 저장소에서 일하는 AI 에이전트를 위한 규칙
+# Proxy 브랜치 작업 규칙
 
-이 저장소는 **MCP 거버넌스 게이트웨이 테스트베드**다. 사내망 직원 PC의 AI 에이전트가 실제 MCP 서버
-10종을 쓰고, Gateway가 모든 도구 호출을 실행 전에 판정하며, 종료·폐기는 논문(CISC-W'26)의 C1~C4 /
-T1~T3 모델로 판정한다.
+이 브랜치는 MCP Streamable HTTP 리버스 프록시다. 사용자가 요청한 단순 프록시 범위가 기준이다.
+거버넌스 테스트베드는 `main`에 있으며 여기의 런타임이나 시험에 의존시키지 않는다.
 
-## 먼저 읽을 것
-1. [docs/ai/README.md](docs/ai/README.md) — 문서 지도
-2. [docs/ai/ARCHITECTURE.md](docs/ai/ARCHITECTURE.md) — 정본 설계
-3. [docs/ai/RUNBOOK.md](docs/ai/RUNBOOK.md) — 환경·명령·계정 (로컬 비밀번호는 전부 `1111`)
-4. 손댈 영역의 문서(POLICY / TERMINATION_MODEL / MCP_SERVERS / CONSOLE_UI / DATA_MODEL)
+먼저 [README.md](README.md)와 [docs/ai/DECISIONS.md](docs/ai/DECISIONS.md)를 읽는다.
+메인 에이전트가 직접 작업한다. 다른 작업 트리나 실행 중인 서비스를 멈추지 않는다.
 
-## 명령
+## 동작 경계
+
+- MCP 본문을 파싱·재직렬화하지 않고 스트리밍한다. 도구 이름·결과·오류·세션을 새로 만들지 않는다.
+- URL은 기동 시 읽은 설정의 서버별 고정 목적지다. 요청 본문·추가 경로에서 목적지를 정하지 않는다.
+- 클라이언트 Authorization을 upstream에 전달하지 않는다. upstream 자격은 서버별 설정에서 별도로 공급한다.
+- hop-by-hop 헤더 제거와 목적지 Host 변경을 제외한 응답 상태·헤더·본문을 보존한다.
+- 자동 재시도·리다이렉트 추적 금지. 쓰기 호출을 중복 실행할 수 있다.
+- 정상 완료·오류·연결 해제 모두 upstream 연결을 정리한다. 대기 중인 SSE에도 적용한다.
+- 기본 바인딩과 Compose 게시 주소는 loopback. 공유 배포의 인증은 별도 앞단에서 구성한다.
+- 새 정책·DB·로그인·콘솔·MCP SDK 런타임 의존성을 더하려면 먼저 사용자의 범위를 확인한다.
+
+## 검증과 Git
+
 ```bash
-cd full_stack_lab
-./console.sh up            # 전체 기동 (--no-llm: LLM 없이)
-./console.sh test          # 전체 검증 — 고친 뒤 반드시
-./console.sh workday       # 직원 업무 시나리오 (각자의 하네스로)
-./console.sh ask <ws> "지시" [--harness claude|codex|gemini|opencode]   # 한 PC의 하네스에 헤드리스 지시
-./console.sh harnesses     # 하네스 4종이 관리형 서버 10종에 다 붙는지(모델 불필요)
-./console.sh watch         # 판정 흐름
+uv sync --frozen
+uv run --frozen python -m pyflakes mcp_gateway tests examples
+uv run --frozen pytest -q
+docker compose -p mcpgw-proxy-check up --build --wait
+uv run --frozen python tests/container_smoke.py --url http://127.0.0.1:8080
+docker compose -p mcpgw-proxy-check down
+git diff --check
 ```
-정적 검사만: `pyflakes gateway/app/*.py tests/*.py …`, `node --check gateway/app/agent_static/console.js`,
-`python3 tests/open_endpoints.py`, Rego는 `docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy`.
 
-## 깨면 안 되는 불변식
-- **신원은 transport의 토큰에서만** 정한다. 인자·헤더에 적힌 신원은 기록만 하고 판정에 쓰지 않는다.
-- **직원 토큰을 upstream MCP 서버로 넘기지 않는다**(MCP 인가 명세, 토큰 전달 금지).
-- **Gateway의 새 라우트에는 `Depends(caller)` 또는 `Depends(admin_caller)`**. 무인증은 `/api/health`·
-  로그인뿐이고 `tests/open_endpoints.py`가 README 문장과 대조한다. 워크스테이션이 Gateway와 같은 망에 있다.
-- **실패는 차단으로**: OPA 불능 `P-CONTROL-FAIL-CLOSED`, 분류 모르면 important, 계약 확인 불가면 `MCP-CATALOG-001`.
-- **계약 승인은 사람이**: 첫 관찰값 자동 승인(TOFU) 금지. `registry/contracts.lock.json`은 diff를 읽고 커밋.
-- **Console은 MCP를 호출하지 않는다**. CSP same-origin, 인라인 스크립트·`style=` 금지, 모든 데이터는 `html```로 이스케이프.
-- **종료 판정 규칙을 바꾸면** `docs/ai/TERMINATION_MODEL.md`와 `tests/termination_flow.py`를 같이 고친다.
-- **감사 원장은 append-only**. 판정 기록을 고치는 코드를 쓰지 않는다.
-- **하네스 관리형 설정은 레지스트리에서 렌더링된다**. 이미지 안 `/etc/claude-code`·`/etc/codex`·`/etc/gemini-cli`·
-  `/etc/opencode`의 파일을 직접 고치지 않는다 — `registry/catalog.toml`을 고치고 워크스테이션 이미지를 다시 빌드한다.
-- **Gateway는 하네스 신원을 기록만 한다**. `decisions.client.harness`(clientInfo·User-Agent)는 클라이언트가
-  보고한 값이라 판정에 쓰지 않는다.
-
-## 시험을 쓰는 법
-- 판정은 `decision`과 `policy_id`까지 확인한다(다른 이유의 차단을 통과로 세지 않게).
-- 검사 도구가 죽으면 **실패**여야 한다(거짓 통과 금지).
-- 상태를 바꾸는 시험은 `trap`/`finally`로 원복한다.
-- 다른 사람이 연 종료 케이스·실행 중인 다른 랩을 되돌리거나 멈추지 않는다.
-
-## 환경 주의
-- 같은 WSL에 다른 작업 트리의 v1 랩이 8000/8080을 쓸 수 있다. **멈추지 말고** `.env`의 `*_PORT`로 피한다.
-- WSL은 유휴 시 꺼진다 → `wsl.exe -d kali-linux -- sleep infinity`를 백그라운드로.
-- Windows Git Bash에서 WSL로 여러 줄 스크립트를 보낼 때는 파일로 써서 실행한다(따옴표·`$`·`\` 손실).
-
-## 코드 스타일
-- 주석은 "무엇"이 아니라 **왜**. 주변 코드의 언어(한국어/영어)와 밀도를 따른다.
-- 새 의존성보다 표준 라이브러리·이미 있는 코드. 한 번 쓰는 추상화 금지.
-- 결정을 내리면 `docs/ai/DECISIONS.md`에 D-번호로 남긴다.
-
-## Git
-- 기능 브랜치(`feat/…`)에서 작업, `main` 직접 푸시 금지. PR 본문에 검증 결과를 붙인다.
-- 커밋 메시지: 첫 줄 `feat|fix|docs|test(v2): …`, 본문에 이유.
+포트가 겹치면 `MCP_PROXY_PORT`로 피하고 자기 Compose 프로젝트만 정리한다.
+변경한 실행 경로에 맞는 시험과 문서를 갱신한다. 잠금 파일은 `uv lock`으로 갱신한다.
+`Proxy` 또는 `proxy/...`에서 작업하며 `main`에 직접 푸시하지 않는다.
