@@ -40,6 +40,11 @@ exporters:
   # allow-listed subset of span metadata into PostgreSQL runtime evidence.
   otlphttp/audit:
     endpoint: http://agent-service:8000/api/audit/otlp
+    # This hop stays on the same internal Docker network.  Explicitly disabling
+    # the exporter's default gzip avoids needless CPU work and keeps the custom
+    # Audit receiver's wire format deterministic; the receiver still accepts gzip
+    # for standards-compatible clients.
+    compression: none
     headers:
       x-otel-audit-token: ${env:OTEL_AUDIT_INGEST_TOKEN}
 

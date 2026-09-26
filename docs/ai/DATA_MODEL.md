@@ -49,8 +49,8 @@ OpenTelemetry SDK가 만든 span은 OTel Collector에서 민감 속성을 제거
   과장하지 않기 위한 구분이다.
 - 관리자만 `GET /api/runtime-evidence`와 Console의 **Runtime Evidence** 탭에서 조회한다.
 - Collector→Audit API는 사용자 JWT가 아니라 별도 `OTEL_AUDIT_INGEST_TOKEN`으로 인증하며,
-  OTLP/HTTP의 기본 gzip 본문을 압축·해제 양쪽 크기 제한 아래 처리한다. 수집 endpoint 자체는 다시
-  trace하지 않아 재귀 전송을 막는다.
+  동일 호스트 내부망 구간은 무압축 protobuf로 고정한다. 수집 API는 다른 표준 클라이언트를 위해 gzip도
+  압축·해제 양쪽 크기 제한 아래 처리한다. 수집 endpoint 자체는 다시 trace하지 않아 재귀 전송을 막는다.
 
 ### `approvals`
 `request_payload`(서버·도구·인자·클라이언트), `status`(PENDING → APPROVED → EXECUTED | NOT_EXECUTED |
