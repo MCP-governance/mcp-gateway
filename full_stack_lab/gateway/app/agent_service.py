@@ -223,14 +223,18 @@ async def ingest_runtime_evidence(
 
     if rows:
         async with db.transaction() as connection:
-            await connection.executemany(
-                """INSERT INTO runtime_evidence(
-                       trace_id, span_id, parent_span_id, service_name, operation,
-                       started_at, ended_at, duration_ms, status_code, attributes, events)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                   ON CONFLICT (trace_id, span_id) DO NOTHING""",
-                rows,
-            )
+            # Psycopg exposes executemany() on AsyncCursor, not AsyncConnection.
+            # Keep the whole Collector batch in one transaction: either every
+            # normalized span is durable or none of the batch is acknowledged.
+            async with connection.cursor() as cursor:
+                await cursor.executemany(
+                    """INSERT INTO runtime_evidence(
+                           trace_id, span_id, parent_span_id, service_name, operation,
+                           started_at, ended_at, duration_ms, status_code, attributes, events)
+                       VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                       ON CONFLICT (trace_id, span_id) DO NOTHING""",
+                    rows,
+                )
     response = ExportTraceServiceResponse()
     return Response(response.SerializeToString(), media_type="application/x-protobuf")
 
