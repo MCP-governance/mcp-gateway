@@ -411,6 +411,15 @@ async def registry_approve_contract(server_id: str, request: ContractApproval,
         raise HTTPException(502, f"catalog를 다시 읽지 못했습니다: {exc}") from exc
 
 
+@app.post("/api/registry/{server_id}/check")
+async def registry_check(server_id: str, user: dict = Depends(admin_caller)) -> dict:
+    """지금 MCP 세션을 열 수 있는지만 본다 (D-40). 계약·상태·감사는 건드리지 않는다."""
+    try:
+        return await core.check_server(server_id)
+    except LookupError as exc:
+        raise HTTPException(404, "카탈로그에 없는 서버입니다.") from exc
+
+
 @app.post("/api/supply-chain/import")
 async def supply_chain_import(user: dict = Depends(admin_caller)) -> dict:
     try:

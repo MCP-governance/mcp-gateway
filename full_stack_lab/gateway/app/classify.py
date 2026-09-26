@@ -258,6 +258,40 @@ def sql_facts(sql: str) -> tuple[str, list[str]]:
     return action, sorted(set(tables))
 
 
+# ── usage relationship scope (D-39) ─────────────────────────────────────────
+# A relationship's allowed_resources name company data of four kinds. Other kinds (a
+# mail message, a shell command, a URL) are not something a relationship grants, so
+# they neither widen nor break its scope; destinations are judged by the egress rules.
+SCOPED_KINDS = {"path", "repository", "table", "mailbox"}
+CATALOG_SCHEMAS = ("information_schema.", "pg_catalog.")
+
+
+def _scope_covers(entry: str, resource: Resource) -> bool:
+    entry = str(entry).strip()
+    if resource.kind == "path":
+        base = posixpath.normpath(entry) if entry.startswith("/") else None
+        return bool(base) and (base == "/" or resource.id == base or resource.id.startswith(base + "/"))
+    value, entry = resource.id.lower(), entry.lower()
+    # "sales.*" and "bob/*" name a whole schema or organisation.
+    if entry.endswith(("/*", ".*")):
+        return value.startswith(entry[:-1])
+    return value == entry
+
+
+def outside_scope(resources: list[Resource], allowed: list[str]) -> list[str]:
+    """Ids of this call's scoped resources that no allowed resource covers."""
+    outside = []
+    for resource in resources:
+        if resource.kind not in SCOPED_KINDS or resource.id.startswith("("):
+            continue
+        # Catalog views are database metadata, not company data (catalog.toml).
+        if resource.kind == "table" and resource.id.startswith(CATALOG_SCHEMAS):
+            continue
+        if not any(_scope_covers(entry, resource) for entry in allowed):
+            outside.append(resource.id)
+    return outside
+
+
 def table_resource(name: str) -> Resource:
     rules = _rules("tables")
     schema = name.split(".", 1)[0]
@@ -525,4 +559,17 @@ if __name__ == "__main__":
     assert dlp_scan("card 4111 1111 1111 1111") == ["card-number"] and dlp_scan("1234 5678 9012 3456") == []
     args, applied = apply_restrictions(mail, {"recipients": ["a@gmail.com"], "body": "x" * 50}, {"max_chars": 10, "journal_bcc": "c@bob.local"})
     assert len(args["body"]) == 10 and args["bcc"] == ["c@bob.local"] and len(applied) == 2
+    # Usage relationship scope: path prefixes by segment, exact or wildcard names, unscoped kinds ignored.
+    scoped = classify("filesystem", "write_file", {"path": "/shared/team/data/x.md", "content": "x"})
+    assert outside_scope(scoped.resources, ["/shared"]) == []
+    assert outside_scope(classify("filesystem", "read_text_file", {"path": "/sharedx/a"}).resources, ["/shared"]) == ["/sharedx/a"]
+    orders = classify("postgres", "execute_sql", {"sql": "SELECT * FROM sales.orders o JOIN public.products p ON p.id = o.product_id"})
+    assert outside_scope(orders.resources, ["public.products", "sales.orders"]) == []
+    assert outside_scope(classify("postgres", "execute_sql", {"sql": "select * from sales.customers"}).resources,
+                         ["public.products", "sales.orders"]) == ["sales.customers"]
+    assert outside_scope(classify("postgres", "execute_sql", {"sql": "select * from sales.customers"}).resources, ["sales.*"]) == []
+    assert outside_scope(classify("postgres", "execute_sql", {"sql": "select * from information_schema.tables"}).resources, []) == []
+    assert outside_scope(classify("gitea", "get_file_contents", {"owner": "bob", "repo": "infra-secrets", "path": "a"}).resources,
+                         ["bob/handbook", "bob/payment-service"]) == ["bob/infra-secrets"]
+    assert outside_scope(classify("email", "send_email", {"recipients": ["ysg@bob.local"], "subject": "s", "body": "b"}).resources, []) == []
     print("classify self-check: OK")

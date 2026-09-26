@@ -50,6 +50,20 @@ async def discover(endpoint: str) -> dict:
         }
 
 
+async def handshake(endpoint: str, timeout: float = 5) -> dict:
+    """Open one MCP session and close it: the server speaks the protocol, nothing more.
+
+    No tools/list, so this says nothing about the contract - refresh_catalog does that.
+    """
+    async with session(endpoint, timeout=timeout) as client:
+        info = client.server_info
+        return {
+            "advertised_name": (info.name if info else "") or "",
+            "version": (info.version if info else "") or "unknown",
+            "protocol_version": str(client.protocol_version),
+        }
+
+
 def content_items(result: Any) -> list[dict]:
     """Upstream content as plain dicts, preserved item by item for the client."""
     items = []

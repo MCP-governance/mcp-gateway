@@ -11,7 +11,7 @@ from pathlib import Path
 import httpx
 
 from . import db
-from .core import POLICY_RESULT, canonical_hash
+from .contract import POLICY_RESULT, canonical_hash
 
 OPA_URL = os.getenv("REPLAY_OPA_URL", os.getenv("OPA_URL", "http://opa:8181/v1/data/mcp/authz/decision"))
 EXECUTABLE = {"Allow", "Alert", "Restrict"}
