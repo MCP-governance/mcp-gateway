@@ -130,3 +130,10 @@ claude -p "..."                                      # 하네스를 직접 불�
 바꾼다. 품질이 더 필요하면 `LOCAL_LLM_MODEL=qwen3.5:4b`이지만 16K 컨텍스트에서 +3.4GB가 더 든다 — 이
 노트북의 WSL VM은 7.6GB(호스트 15.4GB)뿐이라 스택(~3.6GB) 위에 얹었다가 WSL이 두 번 멎은 적이 있다
 (복구는 `wsl --shutdown`). 모델을 여러 개 동시에 올리지 말 것(`OLLAMA_MAX_LOADED_MODELS=1`), 평소엔 2B로 둔다.
+
+## 도입 신청 자동 검증과 보고서
+직원이 `#/intake`에서 신청하면 즉시 검증 대기열에 들어간다. 관리자에게 검증 시작 클릭을 요구하지 않는다. 워커가 GitHub 저장소를 격리 복제하여 commit을 고정하고 문서 종료조건 조사, Syft SBOM(Software Bill of Materials), Trivy SCA(Software Composition Analysis), Semgrep SAST(Static Application Security Testing)를 수행한다. 대기·검증 중 목록은 5초마다 갱신하며 입력 폼·보고서·검증 기록 대화상자를 방해하지 않는다.
+
+관리자는 신청의 **검증 보고서**에서 요약, 검사 오류, 취약점과 수정 버전, 구성요소·라이선스, C1~C4 문서 후보 근거를 확인하고 보고서 JSON과 원본 JSON을 내려받는다. 목록에서 FAILED는 재검증할 수 있다. 자동 조사만으로 제공자 종료조건이 검증됐다고 표시하지 않으며, 근거 문서를 확인해 종료조건 기록 후 승인한다. 스캐너 오류는 발견 0건으로 처리하지 않는다.
+
+기존 볼륨에서는 재기동 시 `agent_tables.sql`이 lease 열을 추가한다. 이 변경을 배포하려면 `gateway`, `agent-service`, `intake-worker` 이미지를 다시 빌드하고 Compose로 서비스를 갱신한다. Console에는 `intake_reports` 읽기 전용 볼륨이 필요하다. 기존 운영 스택과 별도 테스트 스택을 혼동하지 않는다.

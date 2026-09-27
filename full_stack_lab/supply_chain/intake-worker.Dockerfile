@@ -56,6 +56,7 @@ RUN useradd --uid 10002 --create-home worker \
     && chown -R worker:worker /work /reports /trivy-cache
 
 COPY --chown=worker:worker intake_worker.py /app/intake_worker.py
+COPY --chown=worker:worker exit_terms.py /app/exit_terms.py
 USER worker
 WORKDIR /app
 CMD ["python", "intake_worker.py"]

@@ -257,6 +257,7 @@ function parseHash() {
 
 async function route() {
   stopLive();
+  stopIntake();
   closeDrawer();
   charts.disposeAll();
   const at = parseHash();
@@ -735,13 +736,15 @@ ROUTES.people = async (_, tab, query) => {
 };
 
 // ── intake ───────────────────────────────────────────────────────────────────
+let intakeTimer = null;
+function stopIntake() { clearInterval(intakeTimer); intakeTimer = null; }
 ROUTES.intake = async (_, tab) => {
   const { requests } = await api("/api/mcp-requests");
   const byStatus = Object.entries(INTAKE_STATUS).map(([k, [tone, label]]) => ({ name: label, value: requests.filter((r) => r.status === k).length,
     color: charts.color({ allow: "Allow", block: "Block", alert: "Alert", approval: "Approval", restrict: "Restrict" }[tone]) }));
   return {
     html: page({
-      head: head("도입 신청"),
+      head: head("도입 신청", { actions: html`<button class="btn" data-act="reload">새로고침</button>` }),
       active: tab || "list",
       tabs: [
         { key: "list", label: viewer.admin ? "전체 신청" : "내 신청", n: requests.length, body: html`<div class="stack">
@@ -756,10 +759,11 @@ ROUTES.intake = async (_, tab) => {
             <td>${chip(...(INTAKE_STATUS[r.status] || ["", r.status]))}</td>
             <td class="small">${!remote ? html`<span class="muted">로컬</span>` : r.exit_terms?.verified_by
               ? html`${chip(verified ? "allow" : "block", verified ? "검증됨" : "미충족")} <span class="muted">${Object.keys(EXIT_TERMS).filter((k) => r.exit_terms[k] === true).length}/3</span>`
-              : chip("outline", "미검증")}</td>
+              : r.evidence?.exit_terms_discovery ? chip("alert", "조사 완료 · 확인 필요") : chip("outline", "조사 대기")}</td>
             <td class="small">${when(r.created_at)}</td>
             ${viewer.admin ? html`<td class="num nowrap">
-              ${r.status === "HOLD" ? html`<button class="btn sm" data-act="intake-queue" data-id="${r.id}">검증 시작</button>` : ""}
+              <button class="btn sm" data-act="intake-report" data-id="${r.id}">검증 보고서</button>
+              ${["HOLD", "FAILED"].includes(r.status) ? html`<button class="btn sm" data-act="intake-queue" data-id="${r.id}">${r.status === "FAILED" ? "재검증" : "검증 시작"}</button>` : ""}
               ${remote && open ? html`<button class="btn sm" data-act="intake-terms" data-id="${r.id}" data-name="${r.display_name}">종료 조건</button>` : ""}
               ${r.status === "VALIDATED" && (!remote || verified) ? html`<button class="btn sm primary" data-act="intake-approve" data-id="${r.id}">승인</button>` : ""}
               ${["HOLD", "VALIDATION_QUEUED"].includes(r.status) ? html`<button class="btn sm danger" data-act="intake-reject" data-id="${r.id}">거부</button>` : ""}</td>` : ""}</tr>`;
@@ -774,10 +778,69 @@ ROUTES.intake = async (_, tab) => {
       ],
     }),
     charts: { "c-intake": () => charts.columns(byStatus) },
+    after: () => {
+      if (!requests.some((r) => ["VALIDATION_QUEUED", "VALIDATING"].includes(r.status))) return;
+      intakeTimer = setInterval(() => {
+        // Do not close a report drawer, reset an unfinished form or interrupt a review.
+        if (!document.hidden && parseHash().page === "intake" && parseHash().query.get("t") !== "new"
+          && !$("#drawer").classList.contains("open") && !$("#dialog").open) reload();
+      }, 5000);
+    },
   };
 };
 // The same rule agent_service.approve_mcp_request enforces; the button only mirrors it.
 const termsVerified = (t) => Boolean(t?.verified_by && t?.evidence_url && Object.keys(EXIT_TERMS).every((k) => t[k] === true));
+
+const evidenceLink = (url, label) => /^https:\/\/github\.com\//.test(String(url || ""))
+  ? html`<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>` : html`${label}`;
+
+async function showIntakeReport(id) {
+  const report = await api(`/api/mcp-requests/${id}/report`);
+  const r = report.request, evidence = r.evidence || {}, investigation = report.exit_terms_discovery;
+  lastDocument = report;
+  const scanners = Object.entries(evidence.scanners || {});
+  const findings = report.reports.flatMap((scan) => (scan.summary?.findings || []).map((f) => ({ ...f, scanner: scan.scanner })));
+  const inventory = report.reports.find((scan) => scan.scanner === "Syft")?.summary || {};
+  openDrawer(`검증 보고서 · ${r.display_name}`, html`<div class="row-actions">
+    ${chip(...(INTAKE_STATUS[r.status] || ["", r.status]))}
+    <button class="btn sm" data-act="intake-report" data-id="${id}">새로고침</button>
+    <button class="btn sm" data-act="save-json" data-name="intake-${id}-report.json">보고서 JSON 저장</button>
+  </div>`, [
+    { key: "summary", label: "요약", body: html`<div class="stack">
+      ${panel("검증 결과", html`<p>${r.review_note || "자동 검증 대기 중"}</p>
+        <p class="mono small">${r.repository_url}<br />${r.commit_sha || "커밋 확인 대기"}</p>
+        ${kpiStrip([["SBOM 구성요소", evidence.sbom_components ?? "—"], ["Critical", evidence.critical ?? "—", "block"],
+          ["High", evidence.high ?? "—", "alert"], ["Medium", evidence.medium ?? "—"]])}
+        <p class="small muted">워커 최근 신호: ${when(report.worker.seen_at)}</p>`)}
+      ${panel("검사 단계", scanners.length ? html`<table class="data"><thead><tr><th>검사기</th><th>결과</th><th>오류</th></tr></thead>
+        <tbody>${scanners.map(([name, s]) => html`<tr><td>${name}</td><td>${chip(s.status === "DONE" ? "allow" : "block", s.status === "DONE" ? "완료" : "실패")}</td><td>${s.error || "—"}</td></tr>`)}</tbody></table>` : empty("검사 대기"))}
+      ${panel("원본 보고서", report.artifacts.length ? html`<div class="row-actions">${report.artifacts.map((a) => html`
+        <button class="btn sm" data-act="intake-download" data-id="${id}" data-kind="${a.kind}" data-name="${a.filename}">${a.kind} JSON</button>`)}</div>` : empty("생성된 보고서 없음"))}
+    </div>` },
+    { key: "findings", label: "취약점·코드 검사", n: findings.length, body: html`
+      ${report.reports.some((s) => s.summary?.truncated && s.scanner !== "Syft") ? html`<p class="note warn">검사기별 최대 200건 표시 · 전체 결과는 원본 JSON에서 확인</p>` : ""}
+      ${findings.length ? html`<table class="data"><thead><tr><th>검사기·등급</th><th>발견</th><th>대상</th><th>설치 → 수정 버전</th></tr></thead>
+      <tbody>${findings.map((f) => html`<tr><td>${f.scanner}<span class="sub">${f.severity}</span></td>
+        <td><b>${f.id}</b><span class="sub">${f.title}</span></td><td>${f.target}<span class="sub">${f.package || ""}</span></td>
+        <td>${f.installed_version || "—"} → ${f.fixed_version || "—"}</td></tr>`)}</tbody></table>`
+        : empty(scanners.some(([, s]) => s.status === "FAILED") || r.status === "FAILED" ? "검사 미완료 · 실패 사유를 확인하세요" : ["VALIDATED", "APPROVED", "REJECTED"].includes(r.status) ? "검사에서 발견된 항목 없음" : "검사 대기 중")}` },
+    { key: "sbom", label: "SBOM", n: inventory.components, body: html`
+      ${inventory.truncated ? html`<p class="note warn">구성요소 200개 표시 · 전체 목록은 SBOM JSON에서 확인</p>` : ""}
+      ${(inventory.inventory || []).length ? html`<table class="data"><thead><tr><th>이름</th><th>버전</th><th>유형</th><th>식별자·라이선스</th></tr></thead>
+        <tbody>${inventory.inventory.map((c) => html`<tr><td>${c.name}</td><td>${c.version || "—"}</td><td>${c.type}</td>
+          <td class="small">${c.purl || "—"}<span class="sub">${(c.licenses || []).map((l) => l.expression || l.license?.id || l.license?.name || "미상").join(", ")}</span></td></tr>`)}</tbody></table>`
+        : empty(inventory.components === 0 ? "탐지된 구성요소 없음" : "SBOM 생성 대기 또는 실패")}` },
+    { key: "exit", label: "종료조건 조사", body: investigation ? html`<div class="stack">
+      <p class="note warn">${investigation.limitations}</p><p class="small">문서 ${investigation.scanned_files}개 조사 · ${investigation.truncated ? "조사 범위 제한됨" : "조사 완료"}</p>
+      ${Object.entries(investigation.criteria).map(([key, c]) => panel(`${key} · ${c.label}`, html`
+        ${chip(c.status === "CANDIDATE" ? "alert" : "outline", c.status === "CANDIDATE" ? "후보 근거 발견 · 확인 필요" : "문서 근거 미발견")}
+        ${c.evidence.length ? html`<ul>${c.evidence.map((e) => html`<li>${evidenceLink(e.url, `${e.path}:${e.line}`)}<pre class="json">${e.excerpt}</pre></li>`)}</ul>` : ""}`))}
+      ${panel("관리자 확인", html`${chip(termsVerified(r.exit_terms) ? "allow" : "outline", termsVerified(r.exit_terms) ? "검증됨" : "확인 필요")}
+        <p>${r.exit_terms?.note || "—"}</p><p class="small">${r.exit_terms?.evidence_url || ""}</p>
+        ${["HOLD", "VALIDATION_QUEUED", "VALIDATING", "VALIDATED"].includes(r.status) ? html`<button class="btn" data-act="intake-terms" data-id="${id}" data-name="${r.display_name}">종료조건 확인 기록</button>` : ""}`)}
+    </div>` : empty("자동 조사 대기 또는 저장소 복제 실패") },
+  ]);
+}
 
 // ── termination ──────────────────────────────────────────────────────────────
 ROUTES.termination = async (caseId, tab) => {
@@ -1016,6 +1079,7 @@ const field = {
 };
 
 const ACTIONS = {
+  async reload() { await reload(); },
   theme() {
     const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
@@ -1138,6 +1202,19 @@ const ACTIONS = {
   async "intake-queue"(el) {
     const r = await api(`/api/mcp-requests/${el.dataset.id}/queue-validation`, { method: "POST" });
     toast(r.message); reload();
+  },
+  async "intake-report"(el) { await showIntakeReport(el.dataset.id); },
+  async "intake-download"(el) {
+    const response = await fetch(`/api/mcp-requests/${el.dataset.id}/artifacts/${encodeURIComponent(el.dataset.kind)}`,
+      { headers: { authorization: `Bearer ${token}` } });
+    if (!response.ok) {
+      if (response.status === 401) { localStorage.removeItem(TOKEN_KEY); location.replace("/login"); }
+      const body = await response.json().catch(() => ({}));
+      throw new Error(detailText(body.detail) || `다운로드 실패 (${response.status})`);
+    }
+    const url = URL.createObjectURL(await response.blob());
+    Object.assign(document.createElement("a"), { href: url, download: el.dataset.name }).click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
   async "intake-terms"(el) {
     const fd = await ask({ title: `종료 조건 검증 · ${el.dataset.name}`,

@@ -25,6 +25,8 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
+from exit_terms import investigate
+
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://mcp:demo-only-change-me@db:5432/mcp_governance")
 WORK_DIR = Path(os.getenv("INTAKE_WORK_DIR", "/work"))
 REPORT_DIR = Path(os.getenv("REPORT_DIR", "/reports"))
@@ -33,6 +35,8 @@ POLL_SECONDS = int(os.getenv("INTAKE_POLL_SECONDS", "5"))
 CLONE_TIMEOUT = int(os.getenv("INTAKE_CLONE_TIMEOUT", "120"))
 SCAN_TIMEOUT = int(os.getenv("INTAKE_SCAN_TIMEOUT", "600"))
 MAX_CHECKOUT_MB = int(os.getenv("INTAKE_MAX_CHECKOUT_MB", "512"))
+VALIDATION_LEASE_SECONDS = CLONE_TIMEOUT + SCAN_TIMEOUT * 3 + 300
+VALIDATION_MAX_ATTEMPTS = 3
 
 SEVERITY_ORDER = ("CRITICAL", "HIGH", "MEDIUM", "LOW")
 
@@ -166,6 +170,10 @@ def trivy_counts(report: Path, root: Path) -> tuple[dict[str, int], list[dict]]:
                     "id": item.get("VulnerabilityID") or item.get("ID") or item.get("RuleID") or group,
                     "title": item.get(title_key) or item.get("Message") or group,
                     "target": relative(target, root),
+                    "package": item.get("PkgName"),
+                    "installed_version": item.get("InstalledVersion"),
+                    "fixed_version": item.get("FixedVersion"),
+                    "reference": item.get("PrimaryURL"),
                 })
     return counts, findings[:200]
 
@@ -197,6 +205,19 @@ def sbom_components(report: Path) -> int:
     return len(document.get("components") or [])
 
 
+def sbom_inventory(report: Path) -> dict:
+    document = json.loads(report.read_text(encoding="utf-8"))
+    if not isinstance(document, dict) or document.get("bomFormat") != "CycloneDX" or not isinstance(document.get("components", []), list):
+        raise ValueError("Syft가 유효한 CycloneDX SBOM을 생성하지 않았습니다.")
+    components = document.get("components") or []
+    if not all(isinstance(component, dict) for component in components):
+        raise ValueError("SBOM 구성요소 형식이 올바르지 않습니다.")
+    return {"components": len(components), "truncated": len(components) > 200,
+            "inventory": [{"name": c.get("name"), "version": c.get("version"),
+                           "type": c.get("type"), "purl": c.get("purl"),
+                           "licenses": c.get("licenses", [])} for c in components[:200]]}
+
+
 def store_report(connection, scanner: str, version: str, source_ref: str, path: Path,
                  counts: dict[str, int], summary: dict) -> None:
     connection.execute(
@@ -216,13 +237,22 @@ def validate(connection, request: dict) -> None:
     checkout = WORK_DIR / request_id
     shutil.rmtree(checkout, ignore_errors=True)
     log(f"{request_id} 검증 시작: {url}")
-
     commit = clone(url, checkout)
     source_ref = f"intake:{owner_repo}@{commit[:12]}"
     sbom = REPORT_DIR / f"intake-{request_id}-sbom.cdx.json"
     trivy = REPORT_DIR / f"intake-{request_id}-trivy.json"
     semgrep = REPORT_DIR / f"intake-{request_id}-semgrep.json"
-
+    terms_report = REPORT_DIR / f"intake-{request_id}-exit-terms.json"
+    discovery = investigate(checkout, url, commit)
+    terms_report.write_text(json.dumps(discovery, ensure_ascii=False, indent=2), encoding="utf-8")
+    evidence = {"exit_terms_discovery": discovery, "reports": [terms_report.name], "scanners": {}}
+    # Persist source and investigation before long scanner runs. Failures must
+    # not discard evidence already collected by successful stages.
+    connection.execute(
+        """UPDATE mcp_intake_requests SET commit_sha=%s, source_ref=%s,
+                  evidence=%s, updated_at=now() WHERE id=%s AND status='VALIDATING'""",
+        (commit, source_ref, Jsonb(evidence), request["id"]))
+    connection.commit()
     scans = {
         "syft": (sbom, ["syft", f"dir:{checkout}", "--source-name", owner_repo,
                         "--source-version", commit[:12], "-o", f"cyclonedx-json={sbom}"]),
@@ -231,52 +261,65 @@ def validate(connection, request: dict) -> None:
         "semgrep": (semgrep, ["semgrep", "scan", "--config", str(RULES), "--json",
                               "--output", str(semgrep), "--metrics", "off", "--quiet", str(checkout)]),
     }
-    # 스캐너 종료코드를 보지 않으면 "출력 파일이 없어서 발견 0건"과 "정말 깨끗해서
-    # 0건"이 같은 화면이 된다. 증적 없는 통과가 가장 위험한 결과다.
-    failures: list[str] = []
+    failures = []
+    counts = {level: 0 for level in SEVERITY_ORDER}
+    components = 0
     for name, (path, command) in scans.items():
-        result = run(command, timeout=SCAN_TIMEOUT)
-        if result.returncode != 0 or not path.exists():
-            # 스캐너 오류는 마지막 줄에 있다. 앞에서 자르면 진행 로그만 남는다.
-            output = (result.stderr or result.stdout).strip().splitlines()
-            failures.append(f"{name}(exit {result.returncode}): " + " | ".join(output[-3:])[:300])
-    if failures:
-        raise RuntimeError(" · ".join(failures))
-
-    trivy_severity, trivy_findings = trivy_counts(trivy, checkout)
-    semgrep_severity, semgrep_findings = semgrep_counts(semgrep, checkout)
-    components = sbom_components(sbom)
-
-    store_report(connection, "Syft", "v1.51.1", source_ref, sbom,
-                 {level: 0 for level in SEVERITY_ORDER},
-                 {"components": components, "repository": owner_repo, "commit": commit})
-    store_report(connection, "Trivy", "0.74.0", source_ref, trivy, trivy_severity,
-                 {"findings": trivy_findings, "repository": owner_repo, "commit": commit})
-    store_report(connection, "Semgrep", "1.172.0", source_ref, semgrep, semgrep_severity,
-                 {"findings": semgrep_findings, "repository": owner_repo, "commit": commit})
-
-    critical = trivy_severity["CRITICAL"] + semgrep_severity["CRITICAL"]
-    high = trivy_severity["HIGH"] + semgrep_severity["HIGH"]
-    medium = trivy_severity["MEDIUM"] + semgrep_severity["MEDIUM"]
-    # 치명적 발견이 있으면 사람이 판단할 때까지 활성 Registry 후보가 되지 않는다.
-    # 자동 승인은 하지 않는다. 자동으로 올릴 수 있는 것은 "거부"뿐이다.
-    risk = "CRITICAL" if critical else "HIGH" if high else "MEDIUM" if medium else "LOW"
-    status = "REJECTED" if critical else "VALIDATED"
+        # An old output must not make a retried failed scanner look successful.
+        path.unlink(missing_ok=True)
+        try:
+            result = run(command, timeout=SCAN_TIMEOUT)
+            if result.returncode != 0 or not path.exists():
+                output = (result.stderr or result.stdout).strip().splitlines()
+                raise RuntimeError(f"exit {result.returncode}: " + " | ".join(output[-3:])[:300])
+            levels = {level: 0 for level in SEVERITY_ORDER}
+            if name == "syft":
+                summary = sbom_inventory(path)
+                components = summary["components"]
+            else:
+                document = json.loads(path.read_text(encoding="utf-8"))
+                if name == "semgrep" and (not isinstance(document.get("results"), list) or document.get("errors")):
+                    raise ValueError("Semgrep의 검사 결과가 불완전합니다.")
+                if name == "trivy" and not document.get("SchemaVersion"):
+                    raise ValueError("Trivy 결과의 SchemaVersion이 없습니다.")
+                levels, findings = (trivy_counts if name == "trivy" else semgrep_counts)(path, checkout)
+                summary = {"findings": findings, "total": sum(levels.values()),
+                           "truncated": sum(levels.values()) > len(findings)}
+            summary.update({"repository": owner_repo, "commit": commit})
+            scanner, version = {"syft": ("Syft", "v1.51.1"), "trivy": ("Trivy", "0.74.0"),
+                                "semgrep": ("Semgrep", "1.172.0")}[name]
+            connection.execute("DELETE FROM supply_chain_reports WHERE source_ref=%s AND report_path=%s",
+                               (source_ref, str(path)))
+            store_report(connection, scanner, version, source_ref, path, levels, summary)
+            for level in counts:
+                counts[level] += levels[level]
+            evidence["reports"].append(path.name)
+            evidence["scanners"][name] = {"status": "DONE"}
+        except (RuntimeError, ValueError, TypeError, AttributeError, OSError, subprocess.TimeoutExpired) as exc:
+            error = str(exc)[:400]
+            failures.append(f"{name}: {error}")
+            evidence["scanners"][name] = {"status": "FAILED", "error": error}
+        evidence.update({"sbom_components": components, **{k.lower(): v for k, v in counts.items()}})
+        connection.execute(
+            """UPDATE mcp_intake_requests SET evidence=%s, updated_at=now()
+               WHERE id=%s AND status='VALIDATING'""", (Jsonb(evidence), request["id"]))
+        connection.commit()
+    critical, high, medium = counts["CRITICAL"], counts["HIGH"], counts["MEDIUM"]
+    risk = "UNASSESSED" if failures else "CRITICAL" if critical else "HIGH" if high else "MEDIUM" if medium else "LOW"
+    status = "FAILED" if failures else "REJECTED" if critical else "VALIDATED"
     note = (f"격리 검증 완료 · SBOM 구성요소 {components}개 · "
             f"Critical {critical} / High {high} / Medium {medium} · commit {commit[:12]}")
-    if critical:
+    if critical and not failures:
         note += " · 치명적 발견이 있어 자동 거부했습니다."
-
+    if failures:
+        note = "격리 검증 미완료 · " + " · ".join(failures)
     connection.execute(
         """UPDATE mcp_intake_requests
            SET status=%s, risk_level=%s, review_note=%s, commit_sha=%s, source_ref=%s,
-               evidence=%s, validated_at=now(), updated_at=now()
-           WHERE id=%s""",
-        (status, risk, note, commit, source_ref,
-         Jsonb({"sbom_components": components, "critical": critical, "high": high, "medium": medium,
-                "reports": [p.name for p in (sbom, trivy, semgrep) if p.exists()]}),
-         request["id"]),
-    )
+               evidence=%s, validated_at=CASE WHEN %s THEN NULL ELSE now() END,
+               validation_lease_expires_at=NULL, updated_at=now()
+           WHERE id=%s AND status='VALIDATING'""",
+        (status, risk, note, commit, source_ref, Jsonb(evidence), bool(failures), request["id"]))
     shutil.rmtree(checkout, ignore_errors=True)
     log(f"{request_id} -> {status} ({risk})")
 
@@ -917,11 +960,27 @@ def claim_scan_job(connection) -> dict | None:
 
 def claim(connection) -> dict | None:
     cursor = connection.execute(
-        """UPDATE mcp_intake_requests SET status='VALIDATING', updated_at=now()
+        """UPDATE mcp_intake_requests SET status='VALIDATING', updated_at=now(),
+                  validation_attempts=validation_attempts+1,
+                  validation_lease_expires_at=now() + make_interval(secs => %s)
            WHERE id = (SELECT id FROM mcp_intake_requests WHERE status='VALIDATION_QUEUED'
                        ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
-           RETURNING id, repository_url, display_name""")
+           RETURNING id, repository_url, display_name""", (VALIDATION_LEASE_SECONDS,))
     return cursor.fetchone()
+
+
+def reclaim_intake(connection) -> None:
+    """A stopped worker must not leave an automatically queued request stuck forever."""
+    connection.execute(
+        """UPDATE mcp_intake_requests
+           SET status=CASE WHEN validation_attempts >= %s THEN 'FAILED' ELSE 'VALIDATION_QUEUED' END,
+               validation_lease_expires_at=NULL, updated_at=now(),
+               commit_sha=NULL, source_ref=NULL, evidence='{}', validated_at=NULL,
+               risk_level='UNASSESSED',
+               review_note='검증 워커 lease가 만료되었습니다. 자동 재예약 또는 수동 재검증이 필요합니다.'
+           WHERE status='VALIDATING' AND
+                 (validation_lease_expires_at IS NULL OR validation_lease_expires_at < now())""",
+        (VALIDATION_MAX_ATTEMPTS,))
 
 
 def main() -> int:
@@ -937,6 +996,7 @@ def main() -> int:
                     # 먼저 회수한다. 이 두 줄이 없으면 실패한 감사가 조용히 영구
                     # 대기 상태로 남는다.
                     heartbeat(connection)
+                    reclaim_intake(connection)
                     reclaim_expired(connection)
                     drop_cancelled(connection)
                     if AUTO_JOBS:
@@ -965,7 +1025,8 @@ def main() -> int:
                             connection.execute(
                                 """UPDATE mcp_intake_requests
                                    SET status='FAILED', risk_level='UNASSESSED',
-                                       review_note=%s, updated_at=now() WHERE id=%s""",
+                                       review_note=%s, validation_lease_expires_at=NULL,
+                                       updated_at=now() WHERE id=%s AND status='VALIDATING'""",
                                 ("격리 검증 실패: " + str(exc)[:400], request["id"]),
                             )
                             connection.commit()
