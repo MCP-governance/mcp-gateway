@@ -174,6 +174,7 @@ services:
     build: ./gateway
     command: ["uvicorn", "app.agent_service:app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
+      INTAKE_REPORT_DIR: /intake-reports
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
       GATEWAY_URL: http://gateway:8080
       IDP_ISSUER: http://agent-service:8000
@@ -193,6 +194,8 @@ services:
       OTEL_SERVICE_NAME: agent-service
     ports:
       - "127.0.0.1:${CONSOLE_PORT:-8000}:8000"
+    volumes:
+      - intake_reports:/intake-reports:ro
     depends_on:
       gateway: {condition: service_started}
     networks: [edge, office, data, telemetry, model]

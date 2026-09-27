@@ -119,8 +119,12 @@ expect "로그아웃 후 MCP ingress" "$(code -X POST "$GATEWAY/mcp/" -H "author
 echo "── 원격 MCP의 종료 조건은 신청자가 아니라 플랫폼이 증거로 확인 ──"
 # A requester cannot promise the provider's exit terms; a remote server is approvable
 # only after an admin records them from an HTTPS provider document. The request is
-# left in HOLD and rejected at the end, so a rerun can submit the same repository.
+# left in the validation queue and rejected at the end, so a rerun can submit the same repository.
 REQ_BODY='{"display_name":"Exit terms regression","repository_url":"https://github.com/bob-lab/exit-terms-regression","requested_transport":"streamable-http","purpose":"security regression: exit terms are verified by the platform"}'
+# Keep the synthetic nonexistent repository out of the live scanner while the
+# approval boundary is exercised; request submission now queues automatically.
+docker compose stop intake-worker >/dev/null 2>&1
+trap 'docker compose start intake-worker opa mcp-git >/dev/null 2>&1' EXIT
 # A run that died halfway leaves its request open; close it so this one can submit.
 psql_q "UPDATE mcp_intake_requests SET status='REJECTED', review_note='security regression rerun' WHERE repository_url='https://github.com/bob-lab/exit-terms-regression' AND status NOT IN ('REJECTED','FAILED')" >/dev/null
 REQUESTER="$(token miso@bob.local)"
@@ -142,9 +146,10 @@ detail="$(curl -s -X POST "$CONSOLE/api/mcp-requests/$REQ_ID/approve" -H "author
 if [[ "$detail" == *"격리 검증을 통과한"* ]]; then ok "검증 기록 뒤에도 격리 검증 전에는 승인 불가"; else bad "검증 기록 뒤에도 격리 검증 전에는 승인 불가" "$detail"; fi
 curl -fsS -o /dev/null -X POST "$CONSOLE/api/mcp-requests/$REQ_ID/reject" -H "authorization: Bearer $ADMIN_I" \
   -H 'content-type: application/json' -d '{"note":"security regression cleanup"}' || bad "회귀용 신청 정리" "거부 실패"
+docker compose start intake-worker >/dev/null 2>&1
 
 echo "── 실패 안전: 정책 엔진이 없으면 차단 ──"
-trap 'docker compose start opa mcp-git >/dev/null 2>&1' EXIT
+trap 'docker compose start intake-worker opa mcp-git >/dev/null 2>&1' EXIT
 docker compose stop opa >/dev/null 2>&1
 expect "OPA 정지 중 호출" "$(probe emp-ysg git git_log "$HANDBOOK")" "Block P-CONTROL-FAIL-CLOSED False"
 docker compose start opa >/dev/null 2>&1 && wait_healthy opa

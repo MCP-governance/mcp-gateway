@@ -49,7 +49,7 @@
 | `#/approvals` 승인 대기 | 대기 · 처리 이력 | 결과 비율 · 서버별 요청 | `/approvals` → `{approvals, history}` |
 | `#/servers[/id]` MCP 서버 | 서버 · 도구 · 계약 | 서버별 호출 · 서버별 도구(읽기/쓰기/실행) · 도구 계약 일치 | `/gw/registry`, `/gw/overview` |
 | `#/people` 직원·단말 | 단말 · MCP 설정 · 계정 | 단말별 호출 · 하네스 비율 · 설정 분류 · 설정 파일별 항목 | `/api/accounts`, `/gw/endpoint/inventory`, `/gw/overview` |
-| `#/intake` 도입 신청 | 신청 · 새 신청 | 상태별 건수 | `/api/mcp-requests` |
+| `#/intake` 도입 신청 | 신청 · 새 신청; 보고서: 요약 · 취약점·코드 검사 · SBOM · 종료조건 조사 | 상태별 건수 | `/api/mcp-requests`, `/api/mcp-requests/<id>/report` |
 | `#/termination` 종료·폐기 | 이용 관계 · 케이스 | 최선 도달 등급 · 케이스 등급 | `/gw/termination/relationships`, `/gw/termination/cases` |
 | `#/termination/<caseId>` 케이스 | 판정 · 회수 대상 · 증거 · 허용 자원 | 기준별 충족 대상 | `/gw/termination/cases/<id>` |
 | `#/policy` 정책 | 판정 행렬 · 권한 번들 · 관리대장 · 예외 | 역할 × (등급·행위) 판정 히트맵 · 결과별 정책 수 | `/gw/enforcement`, `/gw/policy/matrix`, `/gw/policy/ledger` |

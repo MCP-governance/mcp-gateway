@@ -25,6 +25,7 @@ from .agent_contract import (ACCOUNT_STATUS_REASON, StrictModel, authenticate,
 from .idp import router as idp_router
 
 STATIC_DIR = Path(__file__).parent / "agent_static"
+INTAKE_REPORT_DIR = Path(os.getenv("INTAKE_REPORT_DIR", "/intake-reports"))
 GATEWAY_URL = os.getenv("GATEWAY_URL", "http://gateway:8080")
 
 LOGIN_ATTEMPT_LIMIT = int(os.getenv("LOGIN_ATTEMPT_LIMIT", "10"))
@@ -415,14 +416,14 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
     row = await db.fetch_one(
         """INSERT INTO mcp_intake_requests(
                  id, submitted_by, display_name, repository_url, requested_transport,
-                 purpose, exit_terms
-             ) VALUES (%s,%s,%s,%s,%s,%s,%s)
+                 purpose, exit_terms, status
+             ) VALUES (%s,%s,%s,%s,%s,%s,%s,'VALIDATION_QUEUED')
              RETURNING id, display_name, repository_url, requested_transport, purpose,
                        status, risk_level, exit_terms, created_at""",
         (uuid4(), user["principal"], request.display_name.strip(), repository_url,
          request.requested_transport, request.purpose.strip(), Jsonb({})),
     )
-    message = "요청을 접수했습니다. 플랫폼 담당자가 공급망과 종료 증거를 확인한 뒤 승인합니다."
+    message = "요청을 접수하고 자동 검증을 예약했습니다. 공급망 검사와 종료조건 조사 후 관리자가 승인합니다."
     return {"request": row, "message": message}
 
 
@@ -455,14 +456,74 @@ async def queue_validation(request_id: UUID, authorization: str | None = Header(
         raise HTTPException(403, "검증 대기열은 관리자만 변경할 수 있습니다.")
     row = await db.fetch_one(
         """UPDATE mcp_intake_requests
-           SET status='VALIDATION_QUEUED', reviewed_by=%s, reviewed_at=now(), updated_at=now()
-           WHERE id=%s AND status='HOLD'
+           SET status='VALIDATION_QUEUED', reviewed_by=%s, reviewed_at=now(), updated_at=now(),
+               validation_lease_expires_at=NULL, validation_attempts=0,
+               commit_sha=NULL, source_ref=NULL, evidence='{}', validated_at=NULL,
+               risk_level='UNASSESSED', review_note=NULL
+           WHERE id=%s AND status IN ('HOLD','FAILED')
            RETURNING id, status, reviewed_by, reviewed_at""",
         (user["principal"], request_id),
     )
     if not row:
-        raise HTTPException(409, "보류 상태의 요청만 검증 대기열로 이동할 수 있습니다.")
-    return {"request": row, "message": "격리 워커가 복제 없이 대기 중인 요청을 가져가 SBOM·SCA·SAST를 만듭니다."}
+        raise HTTPException(409, "보류 또는 검증 실패 상태의 요청만 다시 검증할 수 있습니다.")
+    return {"request": row, "message": "격리 워커의 재검증 대기열에 넣었습니다."}
+
+
+async def intake_report_row(request_id: UUID, authorization: str | None) -> dict:
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "상세 보안 보고서는 관리자만 볼 수 있습니다.")
+    row = await db.fetch_one("SELECT * FROM mcp_intake_requests WHERE id=%s", (request_id,))
+    if not row:
+        raise HTTPException(404, "도입 요청을 찾지 못했습니다.")
+    return row
+
+
+@app.get("/api/mcp-requests/{request_id}/report")
+async def intake_report(request_id: UUID, authorization: str | None = Header(default=None)):
+    row = await intake_report_row(request_id, authorization)
+    reports = await db.fetch_all(
+        """SELECT id, scanner, scanner_version, source_ref, status, critical_count,
+                  high_count, medium_count, summary, imported_at
+           FROM supply_chain_reports
+           WHERE source_ref=%s AND report_path LIKE %s ORDER BY id""",
+        (row.get("source_ref"), f"%/intake-{request_id}-%"),
+    )
+    # Retried requests may have older report rows; expose only this attempt's
+    # completed scanners, not previous findings as a current successful scan.
+    scanner_states = (row.get("evidence") or {}).get("scanners", {})
+    if scanner_states:
+        reports = [r for r in reports if scanner_states.get(r["scanner"].lower(), {}).get("status") == "DONE"]
+    artifacts = {"sbom": "sbom.cdx.json", "trivy": "trivy.json", "semgrep": "semgrep.json",
+                 "exit-terms": "exit-terms.json"}
+    available = []
+    for kind, suffix in artifacts.items():
+        name = f"intake-{request_id}-{suffix}"
+        if name in (row.get("evidence") or {}).get("reports", []):
+            available.append({"kind": kind, "filename": name,
+                              "url": f"/api/mcp-requests/{request_id}/artifacts/{kind}"})
+    return {"request": row, "reports": reports, "artifacts": available,
+            "exit_terms_discovery": (row.get("evidence") or {}).get("exit_terms_discovery"),
+            "worker": await scan_worker_status()}
+
+
+@app.get("/api/mcp-requests/{request_id}/artifacts/{kind}")
+async def intake_artifact(request_id: UUID, kind: str,
+                          authorization: str | None = Header(default=None)):
+    row = await intake_report_row(request_id, authorization)
+    suffix = {"sbom": "sbom.cdx.json", "trivy": "trivy.json", "semgrep": "semgrep.json",
+              "exit-terms": "exit-terms.json"}.get(kind)
+    if not suffix:
+        raise HTTPException(404, "지원하지 않는 보고서입니다.")
+    name = f"intake-{request_id}-{suffix}"
+    if name not in (row.get("evidence") or {}).get("reports", []):
+        raise HTTPException(404, "이 요청의 보고서가 아직 생성되지 않았습니다.")
+    root = INTAKE_REPORT_DIR.resolve()
+    path = root / name
+    # File names are generated from a UUID and an allowlist; never accept a path.
+    if path.is_symlink() or path.resolve().parent != root or not path.is_file():
+        raise HTTPException(404, "보고서 파일을 찾지 못했습니다.")
+    return FileResponse(path, media_type="application/json", filename=name)
 
 
 @app.post("/api/mcp-requests/{request_id}/approve")

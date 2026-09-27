@@ -89,3 +89,9 @@
 - `409` 절차 순서 위반(예: 판정 전 종결, T3를 위험 수용 없이 종결, 이미 처리된 승인).
 - `503` Console 프록시가 Gateway에 닿지 못함(재시작 중 등).
 - 도구 호출의 차단·승인 대기는 HTTP 오류가 아니라 MCP 결과(`isError=true`, `_meta.gateway.decision`)다.
+
+### 도입 검증 보고서
+- `POST /api/mcp-requests`: 인증한 신청자의 요청을 VALIDATION_QUEUED로 접수합니다.
+- `GET /api/mcp-requests/{request_id}/report`: 관리자 전용 신청 상세·검사 요약·종료조건 조사·다운로드 목록입니다.
+- `GET /api/mcp-requests/{request_id}/artifacts/{kind}`: 관리자 전용 JSON 첨부 다운로드입니다. kind는 sbom, trivy, semgrep, exit-terms만 허용합니다.
+- `POST /api/mcp-requests/{request_id}/queue-validation`: 관리자 전용 HOLD·FAILED 재검증입니다. 이미 진행 중인 요청은 409입니다.
