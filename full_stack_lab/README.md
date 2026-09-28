@@ -1,6 +1,7 @@
-# full_stack_lab — BoB Corp MCP 거버넌스 랩 (v2)
+# full_stack_lab — BoB Corp MCP 거버넌스 랩 (v3.1)
 
-사내망 직원 PC의 AI 에이전트 → Gateway(`/mcp/`) → 실제 MCP 서버 10종 → 회사 시스템.
+사내망 직원 PC의 AI 하네스(Claude Code·Codex CLI·Gemini CLI·OpenCode) → Gateway(`/mcp/<server>/`) → 실제 MCP 서버 10종 → 회사 시스템.
+같은 스택을 실제 기기에 올리는 field 모드는 [8절](#8-실제-기기로-배치하기).
 설계는 [../docs/ai/ARCHITECTURE.md](../docs/ai/ARCHITECTURE.md), 운영은 [../docs/ai/RUNBOOK.md](../docs/ai/RUNBOOK.md).
 
 ## 1. 실행
@@ -44,11 +45,12 @@
 
 ## 3. Console
 
-관리자로 로그인하면: **개요**(오늘 판정·서버·직원 PC·많이 걸린 정책) · **활동 로그**(한 줄이 호출 하나,
-누르면 판정 근거·분류·정책·trace, 실시간) · **승인 대기** · **MCP 서버**(계약 일치/불일치, 승인본 갱신) ·
-**직원·단말**(계정 상태, 단말의 MCP 설정과 섀도 MCP) · **도입 신청**(원격 서버의 종료 조건은 관리자가 제공자
-문서로 검증해야 승인) · **종료·폐기** · **정책**(배포된 권한 번들과 그 번들로 OPA에 물은 27칸, 관리대장, 예외,
-집행/관찰 모드). 직원·협력사는 자기 활동 로그와 도입 신청만 봅니다. 활동 로그는 불러온 기록 안에서 사람·단말·
+관리자로 로그인하면: **개요**(오늘 판정·서버·직원 PC·많이 걸린 정책, 허용·경보·차단 수치를 누르면 해당 활동 로그) ·
+**활동 로그**(한 줄이 호출 하나, 누르면 판정 근거·분류·정책·trace, 실시간) · **승인 대기** · **MCP 서버**(계약
+일치/불일치, 승인본 갱신) · **직원·단말**(단말·MCP 설정·계정·가입 승인) · **도입 신청**(자동 검증 상태, 검증 보고서 —
+취약점·코드 검사·SBOM·종료조건 조사, A.I.G 검사; 원격 서버의 종료 조건은 관리자가 제공자 문서로 검증해야 승인) ·
+**종료·폐기** · **정책**(배포된 권한 번들과 그 번들로 OPA에 물은 27칸, 관리대장, 예외, 집행/관찰 모드).
+직원·협력사는 자기 활동 로그와 도입 신청만 봅니다. 활동 로그는 불러온 기록 안에서 사람·단말·
 도구·대상·정책·trace로 찾고, 일시정지해도 새 판정 수를 셉니다.
 구조: [../docs/ai/CONSOLE_UI.md](../docs/ai/CONSOLE_UI.md).
 
@@ -73,8 +75,9 @@
 ./console.sh replay 100                               # 기록된 정책 입력 100건 + 합성 사례를 후보 정책에 재생
 REPLAY_POLICY_DIR=./candidate-opa ./console.sh replay  # 후보 정책 디렉터리 지정 (MCP 호출 없음)
 ```
-망 대역 self-check → 콘솔 상태(node) → Rego → 분류기 → Gateway 인수 시험 → 업무 시나리오 대조 → 종료 판정 흐름 →
-보안 회귀 → 정책 재생 → E1~E3. 결과는 `reports/`. 층별 설명: [../docs/ai/TESTING.md](../docs/ai/TESTING.md).
+망 대역 self-check → 도입 검증 단위 시험(네트워크 없는 컨테이너) → 콘솔 상태(node) → Rego → 실기기 키트·오버레이 검사 →
+분류기 → Gateway 인수 시험 → 하네스 연결 점검 → 업무 시나리오 대조 → 종료 판정 흐름 → 보안 회귀 → 정책 재생 → E1~E3.
+결과는 `reports/`. 층별 설명: [../docs/ai/TESTING.md](../docs/ai/TESTING.md).
 
 망 12개는 모두 `.env`의 `MCP_NET_PREFIX`(처음 실행 때 다른 Docker 망·라우트와 겹치지 않는 `10.200`~`10.249` 중
 하나를 자동 선택) 아래 `/24`를 명시해 만들므로, 한 호스트에 랩을 여러 벌 띄워도 Docker 기본 주소 풀이 소진되지
@@ -94,26 +97,39 @@ Gateway API 중 토큰 없이 열려 있는 것은 다음뿐입니다: `/api/hea
 | 경로 | 내용 |
 | --- | --- |
 | `console.sh` | 단일 진입점 |
-| `compose.yaml` | 전체 스택 (프로필 `llm`, `llm-download`, `supply-chain`, `llm-stub`) |
+| `compose.yaml` | 전체 스택 (프로필 `llm`, `llm-download`, `supply-chain`, `llm-stub`, `replay`) |
 | `gateway/` | Gateway·IdP·Console(FastAPI) 이미지와 `app/` 코드 |
 | `registry/catalog.toml`, `registry/contracts.lock.json` | 승인 서버·도구·분류·이용 관계 / 계약 해시 |
+| `registry/field/` | field 기본 레지스트리(승인 서버 0개) |
 | `opa/` | Rego 정책·시험·관리대장·예외·값 |
 | `mcp/` | MCP 런타임 이미지와 실행 스크립트 |
 | `corp/` | 회사 시드(파일·저장소·DB·메일·Redis·인트라넷·Gitea) |
 | `workstation/` | 직원 PC 이미지(하네스 4종), `bin/{bob-ask,workday,harness-check,bob-sso}`, 시나리오, `managed/render.py`(카탈로그 → 하네스별 관리형 설정), 섀도 설정 |
 | `llm/` | LiteLLM 설정 |
 | `../endpoint-agent/` | 단말 에이전트(표준 라이브러리만). 직원 PC 이미지가 빌드 때 복사하고, 실제 PC에는 설치기로 배포 |
-| `supply_chain/` | 도입 신청 격리 검증 워커 |
+| `supply_chain/` | 도입 신청 격리 검증 워커(Syft·Trivy·Semgrep·AI-Infra-Guard mcp-scan, 종료 조건 조사) |
 | `db/` | Gateway DB 초기화 |
 | `scripts/watch.py` · `scripts/network_prefix.py` | 판정 한 줄 로그 · 망 대역 선택 |
-| `tests/` | 보안 회귀·종료 흐름·검사기·무인증 API 대조·콘솔 상태 모듈(node) |
+| `tests/` | 보안 회귀·종료 흐름·검사기·무인증 API 대조·콘솔 상태 모듈(node)·도입 검증·실기기 키트 |
 | `reports/` | 검증 결과(커밋하지 않음) |
 | `compose.field.yaml`, `field/` | 실기기 배치 오버레이(Caddy, 직원 PC 키트) — `./console.sh field …`로만 얹힘. 아래 8절 |
 
 ## 8. 실제 기기로 배치하기
 
-같은 스택을 실제 노트북 세 종류(솔루션 기기·관리자 PC·직원 PC)에 나눠 올리는 절차는 루트
-[README.md](../README.md#실제-기기로-배치하기--솔루션-기기--관리자-pc--직원-pc)에 있습니다. 이 랩 자체를
+솔루션 기기 한 대에 스택을 올리고 Tailscale IP에만 Caddy(`http://<Tailscale IP>:443`)를 게시합니다. 관리자 PC는
+브라우저로, 직원 PC는 브라우저와 키트(`field/pc/mcpgw_pc.py`)로 접속합니다.
+
+```bash
+./console.sh field up                     # MCP 서버 0개, 계정 root/root·user/user, 회원가입은 관리자 승인
+./console.sh field up --with-lab-mcp      # 랩의 회사 시스템·MCP 10종·랩 계정으로
+./console.sh field up --with-lab-workstations   # 컨테이너 직원 PC 4대까지
+./console.sh field pc-command             # 직원 PC에서 실행할 키트 setup 한 줄(서버 목록은 레지스트리에서)
+```
+
+그 밖에 `field status`(공개 주소의 `/api/health`), `field set-password <아이디>`, `field register-pc <이름>`(장치 키 발급),
+`field down`(Caddy만 멈춤)이 있습니다. field 모드는 별도 DB·Gitea 볼륨(`field_*`)을 쓰므로 랩 데이터는 그대로 남습니다. 경로 분기는 `field/Caddyfile`
+(`/mcp/*`·`/api/health`·RFC 9728 메타데이터는 Gateway, `/oauth/*`는 IdP, `/git/*`는 내부 Gitea, 나머지는 Console)에
+있습니다. 전체 절차와 한계는 루트 [README.md](../README.md#실제-기기로-배치하기--tailscale-내부망). 이 랩 자체를
 바꾸지 않는 오버레이입니다 — `compose.field.yaml`·`field/`는 `./console.sh field …`로만 얹힙니다.
 
 ## 9. 한계
@@ -121,3 +137,5 @@ Gateway API 중 토큰 없이 열려 있는 것은 다음뿐입니다: `/api/hea
 - LLM 모드의 결과는 작은 로컬 모델(기본 `qwen3.5:2b-q4_K_M`) 품질에 좌우된다. 판정 대조는 scripted 모드로 한다.
 - 섀도 MCP는 발견·증적까지. 차단은 네트워크 평면 몫.
 - 제공자가 보유 자격을 고지하지 않으면 종료 판정은 T3에 머문다 — 논문이 특정한 구조적 한계.
+- field 모드는 Tailscale 내부망의 HTTP 전용이다. 단말 관측 에이전트는 원격 HTTP를 거부하고 Caddy도 `/api/endpoint/*`를
+  게시하지 않으므로, 이 모드에서 다른 PC의 에이전트는 보고하지 못한다.

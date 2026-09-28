@@ -11,7 +11,7 @@ IT 관리형), `.mcp.json`·`mcp.json`·`mcp_settings.json`·`cline_mcp_settings
 ## 준비
 
 1. Console(관리자)의 **직원·단말 → 단말 → 장치 자격 발급**에서 고유한 `endpoint_id`와 `inventory` 권한의 장치 키를 발급합니다. 망 탐색이 필요하고 정책 범위가 승인됐다면 `netscan`도 추가합니다. 키는 한 번만 표시됩니다.
-2. 대상 PC에서 Gateway에 도달할 주소를 준비합니다. 다른 PC로 연결할 때는 인증서가 유효한 HTTPS 주소를 사용합니다. 로컬 터널이나 같은 PC의 `http://127.0.0.1:8080`만 HTTP로 허용합니다. Docker의 `http://gateway:8080`은 Compose 실습 컨테이너에서만 사용합니다.
+2. 대상 PC에서 Gateway에 도달할 주소를 준비합니다. 다른 PC로 연결할 때는 인증서가 유효한 HTTPS 주소를 사용합니다. 로컬 터널이나 같은 PC의 `http://127.0.0.1:8080`만 HTTP로 허용합니다. Docker의 `http://gateway:8080`은 Compose 실습 컨테이너에서만 사용합니다. field 배치(`./console.sh field up`)의 `http://<Tailscale IP>:443`은 HTTP이고 Caddy가 `/api/endpoint/*`를 게시하지 않으므로 쓸 수 없습니다. `./console.sh field register-pc <이름>`은 장치 키만 발급하며, 보고하려면 조직의 HTTPS 종료 지점이 따로 필요합니다.
 3. 해당 PC에서 **실제로 존재하는** MCP 설정 파일 또는 디렉터리 경로를 선택합니다. `env`·`headers`·파일 본문은 전송하지 않으며, stdio 명령 인자는 SHA-256 digest로 바꿔 보냅니다. URL에 직접 포함된 자격 정보는 설정에서 제거하세요.
 
 ## Linux / WSL

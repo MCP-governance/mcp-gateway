@@ -61,5 +61,6 @@ cd full_stack_lab
 
 ## Git
 - 사용자 요청 없이 새 브랜치를 만들거나 올리지 않는다. 새 이름은 `MM/DD-branchname`(Git ref에 공백 불가),
-  기존 field 브랜치에서 작업하며 `main` 직접 푸시 금지. PR 본문에 검증 결과를 붙인다.
+  기본 브랜치는 `main`(2026-09-28 `feat/2026-09-v3.1-field-deploy`에서 이름 변경)이고 여기서 이어서 작업한다.
+  유지 브랜치는 `main`과 다른 흐름의 field 브랜치 3개뿐이다. PR 본문에 검증 결과를 붙인다.
 - 커밋 메시지: 첫 줄 `feat|fix|docs|test(v2): …`, 본문에 이유.

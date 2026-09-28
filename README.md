@@ -9,7 +9,7 @@
 
 ![구성도](docs/ai/architecture.png)
 
-## 무엇이 들어 있나 (v3)
+## 무엇이 들어 있나 (v3.1)
 
 - **직원 PC 4대**(ws-ysg·ws-jwj·ws-pse·ws-nkk): 사내망(`office`)의 컨테이너에 **실제 하네스**를 공식 패키지 그대로
   설치했습니다 — Claude Code 2.1.282, Codex CLI 0.157.0, Gemini CLI 0.61.0, OpenCode 1.18.32. 회사가 더한 것은 IT 부서가 더하는
@@ -23,8 +23,14 @@
 - **Gateway**: 신원(transport 토큰) → 자원 분류(경로·SQL·URL·수신자·키) → 승인 스키마 검증 → **Presidio 개인정보 검사** →
   OPA/Rego(권한 번들 + SSRF·DLP·민감정보 반출·열람→반출 연쇄·계약·공급망·섀도·종료 통제) → 같은 연결에서 계약 재확인 → 실행 →
   **결과 개인정보 마스킹** → 해시 체인 감사. 어느 하네스(clientInfo)가 어느 서버를 불렀는지도 함께 기록합니다(판정에는 쓰지 않음).
-- **Console**(웹): 개요·활동 로그·승인·MCP 서버·직원·단말·도입 신청·종료·폐기·정책. 화면마다 페이지 내 탭과 차트
-  (시간대별 판정, 하네스 → 서버 → 판정 흐름, 판정 행렬 등). 웹에서 MCP를 호출하지는 않습니다.
+- **Console**(웹): 개요·활동 로그·승인 대기·MCP 서버·직원·단말(가입 승인 포함)·도입 신청(검증 보고서·A.I.G 검사)·
+  종료·폐기·정책. 화면마다 페이지 내 탭과 차트(시간대별 판정, 하네스 → 서버 → 판정 흐름, 판정 행렬 등).
+  웹에서 MCP를 호출하지는 않습니다.
+- **도입 신청 자동 검증**: 신청하면 격리 워커가 저장소를 받아 SBOM(Syft)·취약점(Trivy)·코드 규칙(Semgrep)을 돌리고
+  종료 조건(C1~C4) 근거 후보를 문서에서 찾습니다. 모델이 연결돼 있으면 AI-Infra-Guard(A.I.G) `mcp-scan` 코드 감사도 겁니다.
+- **실기기 배치(field)**: 같은 스택을 솔루션 기기 한 대에 올리고 Tailscale IP에만 게시합니다. 관리자·직원은 같은
+  로그인 화면을 쓰고, 직원 PC의 Claude Code·Codex CLI는 키트 한 파일(`field/pc/mcpgw_pc.py`)로 Gateway에 붙습니다.
+  기본 설치는 MCP 서버 0개에서 시작하고, 승인한 공개 저장소는 내부 Gitea로 가져옵니다.
 - **논문 구현**: 「원격 MCP 서비스 종료 시 권한 회수의 구조적 한계 및 종료 판정 기준 제안」(CISC-W'26)의 이용 관계 단위 판정
   (C1 모집단·C2 수행 권한·C3 연속성·C4 증거 접근 → T1/T2/T3)과 실험 E1~E3.
 
@@ -69,7 +75,7 @@ cd mcp-gateway/full_stack_lab
 Tailscale과 Docker Compose가 작동하는 기기에서 다음을 실행합니다.
 
 ```bash
-git clone --branch feat/2026-09-v3.1-field-deploy https://github.com/MCP-governance/mcp-gateway.git
+git clone https://github.com/MCP-governance/mcp-gateway.git
 cd mcp-gateway/full_stack_lab
 ./console.sh field up
 ./console.sh field status
@@ -82,7 +88,7 @@ Tailscale IP가 있어야 하고, 직원·관리자 PC도 같은 tailnet에서 �
 `field status`는 현재 공개 주소의 `/api/health`를 확인합니다. 기본 `./console.sh up`은
 종전의 loopback 실습용입니다.
 
-첫 설치의 시험 계정은 **관리자 `root` / `root`**, **직원 `user` / `user`**입니다. 로그인 화면에는 계정 목록이나 미리 입력된 비밀번호가 없습니다. 별도 계정은 `/signup`에서 신청하고, 관리자가 **직원·단말 → 가입 승인**에서 처리합니다. 시험이 끝나면 `field set-password`로 비밀번호를 바꿀 수 있습니다.
+첫 설치의 시험 계정은 **관리자 `root` / `root`**, **직원 `user` / `user`**입니다. 로그인 화면에는 계정 목록이나 미리 입력된 비밀번호가 없습니다. 별도 계정은 `/signup`에서 신청하고, 관리자가 **직원·단말 → 가입 승인**에서 처리합니다. 시험이 끝나면 `field set-password`로 비밀번호를 바꿉니다(12자 이상, 화면에 보이지 않는 입력).
 
 ```bash
 ./console.sh field set-password root
@@ -94,19 +100,20 @@ Tailscale IP가 있어야 하고, 직원·관리자 PC도 같은 tailnet에서 �
 접수 즉시 검증 대기열에 저장되고 관리자 목록은 열어 둔 상태에서도 5초마다 갱신됩니다.
 활동 로그의 MCP 도구 사용 기록은 도입 신청을 대신하지 않습니다.
 
-기본 field 프로필에는 **MCP 서버가 0개**입니다. 예전 회사 시스템·MCP 10종이 필요한 실습만 `./console.sh field up --with-lab-mcp`로 켭니다. 실습 직원 PC까지 필요하면 `--with-lab-workstations`를 사용합니다. 일반 field 실행은 실습 컨테이너를 중지합니다.
+기본 field 프로필에는 **MCP 서버가 0개**입니다(`registry/field/`). 예전 회사 시스템·MCP 10종이 필요한 실습만 `./console.sh field up --with-lab-mcp`로 켭니다. 이때는 별도 볼륨에 랩 계정(`kkg@bob.local` 등, 비밀번호는 `.env`의 `MOCK_SSO_PASSWORD`, 없으면 `test-password`)을 씁니다. 실습 직원 PC까지 필요하면 `--with-lab-workstations`를 사용합니다. 일반 field 실행은 실습 컨테이너를 중지합니다.
 
 검증을 통과한 공개 GitHub 저장소는 관리자가 승인할 때 같은 솔루션의 Gitea로 가져옵니다. 가져온 기본 브랜치 HEAD가 검증 커밋과 같을 때만 직원 읽기 주소가 도입 신청 목록에 표시됩니다. 저장소 브라우저는 `http://<Tailscale IP>:443/git/`이고, 승인 뒤 Gateway 실행은 기존의 계약·카탈로그 등록 절차를 거칩니다. 공개 저장소는 tailnet 구성원에게 읽기 가능하며 Gitea 관리 자격은 솔루션 내부에만 둡니다.
 
-개요의 허용·경보·차단 수치를 누르면 해당 활동 로그로 이동합니다. 직원·단말은 폐기 자격과 발급만 되고 보고하지 않은 장치를 기본 목록에서 제외합니다. 도입 신청 → **A.I.G 검사**에서 모델 설정, 워커, 검사 대상·작업·결과를 봅니다. 이상행위(`P-ANOMALY-001`) 자동 코드 감사는 **로컬 모델이 연결되고 검사 설정이 완료된 경우**에만 예약되며 대상별 24시간 중복을 막습니다. 모델이 없으면 UI에 꺼짐으로 표시합니다. 원격 MCP 후보와 취약 버전·엣지 케이스는 [field 후보 목록](docs/ai/FIELD_MCP_CANDIDATES.md)을 참조합니다.
+개요의 허용·경보·차단 수치를 누르면 해당 활동 로그로 이동합니다. 직원·단말은 폐기 자격과 발급만 되고 보고하지 않은 장치를 기본 목록에서 제외합니다. 도입 신청의 검증·A.I.G 검사는 [아래 절](#mcp-도입-신청-자동-검증)을 봅니다. 원격 MCP 후보와 취약 버전·엣지 케이스는 [field 후보 목록](docs/ai/FIELD_MCP_CANDIDATES.md)을 참조합니다.
 
 ### 직원 PC의 Claude Code·Codex CLI 연결
 
 웹 대시보드만 쓸 직원에게는 키트 설치가 필요 없습니다. 실제 AI 하네스에서 MCP를
-쓰는 직원에게는 `field/pc/mcpgw_pc.py` 한 파일을 전달합니다. 솔루션 기기에서
-`./console.sh field pc-command`가 출력한 한 줄을 직원 PC의 WSL/Linux 셸에서 실행하면
-회사 계정과 비밀번호를 묻고 필요한 서버를 등록합니다. `--workstation`의 기본값은
-그 PC의 호스트 이름이며, `--servers` 목록은 레지스트리에서 생성됩니다.
+쓰는 직원에게는 `field/pc/mcpgw_pc.py` 한 파일을 전달합니다(표준 라이브러리만, Python 3.9 이상,
+Windows·Linux·WSL). 솔루션 기기에서 `./console.sh field pc-command`가 출력한 한 줄을 직원 PC에서
+실행하면 회사 계정과 비밀번호를 묻고 Claude Code·Codex CLI에 서버를 등록합니다(`--harness`로 하나만 고를 수 있음).
+`--workstation`의 기본값은 그 PC의 호스트 이름이며, `--servers` 목록은 레지스트리에서 생성됩니다.
+승인된 MCP 서버가 없으면 `pc-command`는 명령 대신 그 사실을 알립니다.
 
 ```bash
 # 솔루션 기기의 ./console.sh field pc-command가 출력한 setup 명령을 그대로 실행
@@ -117,23 +124,43 @@ python3 ~/.mcpgw/mcpgw_pc.py doctor
 하네스 설정에는 토큰 값 대신 헤더 헬퍼 명령만 씁니다. 실제 MCP 호출과 Console 활동
 로그를 함께 확인합니다. 연결을 해제하려면 직원 PC에서
 `python3 ~/.mcpgw/mcpgw_pc.py uninstall`, 솔루션 기기에서 공개 포트만 닫으려면
-`./console.sh field down`을 실행합니다.
+`./console.sh field down`을 실행합니다. 직원이 목록 밖의 서버를 더하지 못하게 하려면
+`mcpgw_pc.py managed`로 Claude Code `managed-mcp.json`과 Codex `requirements.toml`을 만들어 MDM·그룹 정책으로 배포합니다.
 
 브라우저에는 HTTP 주소로 표시되므로 이 절차는 **Tailscale 내부망 전용**입니다.
 일반 LAN이나 인터넷에 게시할 때는 조직이 신뢰하는 HTTPS 종료 지점을 둬야 합니다.
 Tailscale의 `*.ts.net` HTTPS 인증서는 현재 tailnet 계정에서 발급이 거절되어 이
 설치 절차에는 사용하지 않습니다. 별도 인증서가 없어도 Gateway의 사용자 토큰,
-역할별 승인, 정책 판정과 감사 기록은 그대로 적용됩니다.
+역할별 승인, 정책 판정과 감사 기록은 그대로 적용됩니다. 단, 단말 관측 에이전트
+([endpoint-agent/](endpoint-agent/README.md))는 원격 Gateway에 HTTPS만 허용하고 Caddy도 `/api/endpoint/*`를
+게시하지 않으므로 이 HTTP 배치에서는 다른 PC의 에이전트가 보고하지 못합니다(`field register-pc`는 장치 키 발급까지).
+
+## MCP 도입 신청 자동 검증
+
+도입 신청을 제출하면 격리 워커(`intake-worker`)의 검증 대기열에 자동 등록됩니다. 워커는 저장소를 고정 커밋으로 받아
+Syft(CycloneDX SBOM)·Trivy·Semgrep을 돌리고, 문서에서 C1~C4 종료 조건의 근거 후보를 찾습니다. 관리자는 도입 신청의
+**검증 보고서**에서 취약점·코드 검사, SBOM 구성요소와 라이선스, 종료조건 조사를 확인하고 원본 JSON을 내려받을 수
+있습니다. 검사 실패 사유와 성공한 단계의 보고서는 함께 보존되며 재검증할 수 있습니다.
+
+**A.I.G 검사** 탭은 AI-Infra-Guard `mcp-scan`의 모델 설정·워커 상태·대상·작업·결과를 보여 줍니다. 코드 감사는
+`MCP_SCAN_BASE_URL`·`MCP_SCAN_MODEL`·`MCP_SCAN_API_KEY`가 모두 설정된 경우에만 돌고(설정되면 검증을 마친 신청은 자동 감사),
+이상행위(`P-ANOMALY-001`) 자동 감사는 로컬 모델일 때만 예약되며 대상별 24시간 중복을 막습니다. 설정이 없으면 UI에 꺼짐으로 표시합니다. 원격 서버는 관리자가 제공자 문서(HTTPS)로 종료 조건을 기록해야 승인할
+수 있습니다. 자동 문서 조사는 제공자의 실제 회수나 계약 검증을 대신하지 않으며 최종 도입 승인은 관리자가 합니다.
 
 ## 검증
 
-`./console.sh test`가 한 번에 돌리는 것: 망 대역 선택기 self-check · 콘솔 상태 모듈 node 시험 7건 · Rego 단위 시험 · 분류기
-self-check · Gateway 인수 시험 15건(서버별 엔드포인트, 협력사에게 숨긴 도구의 직접 호출, 권한 번들, 개인정보 마스킹, 반출 차단,
-열람→반출 연쇄 포함) · **하네스 연결 점검 16조합**(PC 4대 × 하네스 4종 × 서버 10개, 모델 없이) · 직원 업무 시나리오 21건의
-기대 판정 대조(공식 MCP Inspector CLI가 같은 URL·SSO 토큰으로 호출) · 종료 판정 흐름 · 보안 회귀 54건(망 분리 실제 소켓,
-loopback 게시, 토큰 없는 읽기 API, 역할 경계, 로그아웃 즉시 효력, OPA·상위 서버·Presidio 장애 시 실패 안전, 감사 변조 탐지,
-계약 잠금) · 정책 재생 · 논문 실험 E1~E3. CI([`.github/workflows/verify.yml`](.github/workflows/verify.yml))가 모든 브랜치
-푸시와 PR마다 같은 명령을 실행합니다. 상세: [docs/ai/TESTING.md](docs/ai/TESTING.md).
+`./console.sh test`가 한 번에 돌리는 것: 망 대역 선택기 self-check · 도입 검증 단위 시험 14건(네트워크 없는 컨테이너에서
+종료 조건 조사·부분 검사 증거·보고서 권한) · 콘솔 상태 모듈 node 시험 7건 · Rego 단위 시험 · 실기기 키트·Caddy 오버레이 검사 ·
+분류기 self-check · Gateway 인수 시험 17건(서버별 엔드포인트, 협력사에게 숨긴 도구의 직접 호출, 권한 번들, 이용 관계 범위 경보,
+부작용 없는 서버 점검, 개인정보 마스킹, 반출 차단, 열람→반출 연쇄 포함) · **하네스 연결 점검 16조합**(PC 4대 × 하네스 4종 ×
+서버 10개, 모델 없이) · 직원 업무 시나리오 21건의 기대 판정 대조(공식 MCP Inspector CLI가 같은 URL·SSO 토큰으로 호출) · 종료 판정
+흐름 · 보안 회귀 54건(망 분리 실제 소켓, loopback 게시, 토큰 없는 읽기 API, 역할 경계, 로그아웃 즉시 효력, 원격 MCP 종료 조건의
+플랫폼 확인, OPA·상위 서버·Presidio 장애 시 실패 안전, 감사 변조 탐지, 계약 잠금) · 정책 재생 · 논문 실험 E1~E3.
+
+CI([`.github/workflows/verify.yml`](.github/workflows/verify.yml))는 모든 브랜치 푸시와 PR마다 정적 검사(lint·무인증 API
+목록 대조·망과 게시 포트 경계) 뒤 `./console.sh up --no-llm`과 `./console.sh test`를 돌리고, 이어서 field 오버레이를 loopback에
+얹어 러너를 직원 PC로 삼습니다 — 키트 setup → 실제 Claude Code·Codex CLI가 서버 10개에 붙는지 → uninstall. CodeQL은 `main`
+푸시와 PR에서 돕니다. 상세: [docs/ai/TESTING.md](docs/ai/TESTING.md).
 
 ## 권한 모델
 
@@ -171,17 +198,18 @@ important로 봅니다. 아래는 예시 번들로 OPA에 물은 결과입니다
 | [docs/architecture/](docs/architecture/hardening.md) | 실행 경로·실행 상태·DB 권한·검사 환경의 단계적 분리 제안(검토 문서) |
 | [docs/design/](docs/design/) | v1 시기 설계 배경(통제 평면 분리, 망 경계) |
 | [AGENTS.md](AGENTS.md) | AI 에이전트 작업 규칙과 깨면 안 되는 불변식 |
-| [research/](research/README.md) | 레퍼런스 조사 |
+| [research/](research/README.md) | 조사 문서 안내(조사 결과 자체는 `docs/`에 있음) |
 
 v1(모의 MCP 서버·웹에서 도구 실행, `2026-09-v1.*`)과 v2(손으로 짠 사내 에이전트, `2026-09-v2.0-workforce-real-mcp`)는
 태그로 보존되어 있습니다. v3(`2026-09-v3.0-harness-gateway`)는 직원 PC의 호출 주체를 실제 하네스로 바꾸고, Gateway를 하네스의
-관리형 설정이 가리키는 서버별 MCP 엔드포인트로 만들었습니다.
+관리형 설정이 가리키는 서버별 MCP 엔드포인트로 만들었습니다. 지금의 `main`(v3.1)은 그 위에 실기기 배치, 가입 승인,
+도입 신청 자동 검증과 내부 Git을 더한 것입니다.
 
 ## 검토·브랜치 원칙
 
-- 새 브랜치는 사용자가 요청한 경우에만 만듭니다. 기존 field 브랜치에서 이어서 작업하고 `main`에는 직접 푸시하지 않습니다.
-- 새 브랜치 이름은 `MM/DD-branchname`입니다(예: `09/28-intake`; Git 브랜치 이름에 공백은 쓸 수 없어 ` - `의 공백을 뺍니다). 연도·`feat` 접두어는 쓰지 않습니다.
-- 유지하는 브랜치는 각 흐름의 field 버전 4개뿐입니다. 병합·정리 전에 필요한 변경을 유지 브랜치에 반영합니다.
+- 기본 브랜치는 `main`입니다(2026-09-28 `feat/2026-09-v3.1-field-deploy`에서 이름을 바꿈).
+- 새 브랜치는 사용자가 요청한 경우에만 만듭니다. 이름은 `MM/DD-branchname`입니다(예: `09/28-intake`; Git 브랜치 이름에 공백은 쓸 수 없어 ` - `의 공백을 뺍니다). 연도·`feat` 접두어는 쓰지 않습니다.
+- 유지하는 브랜치는 `main`과 다른 흐름의 field 버전 3개(`architecture/plan-1-field-deploy`·`architecture/plan-2-field-deploy`·`proxy-field-deploy`)뿐입니다. 병합·정리 전에 필요한 변경을 유지 브랜치에 반영합니다.
 
 ## 운영으로 옮기기 전에
 
@@ -195,6 +223,3 @@ v1(모의 MCP 서버·웹에서 도구 실행, `2026-09-v1.*`)과 v2(손으로 �
 - 계약 잠금(`registry/contracts.lock.json`)은 한 빌드의 값입니다. 서버 버전을 올리면 diff를 검토하고
   `./console.sh contracts --update`로 갱신합니다. 기동 시 자동 승인(TOFU)은 하지 않습니다.
 - AI 코드 감사(mcp-scan)는 저장소 코드를 설정한 LLM endpoint로 보냅니다. 코드 반출이 불가한 조직은 로컬 모델만 연결해야 합니다.
-
-### MCP 도입 요청 자동 검증
-도입 신청을 제출하면 격리 워커의 검증 대기열에 자동 등록됩니다. 관리자는 도입 신청의 **검증 보고서**에서 취약점·코드 검사, SBOM 구성요소와 라이선스, C1~C4 종료조건의 문서 후보 근거를 확인하고 원본 JSON을 내려받을 수 있습니다. 검사 실패 사유와 성공한 단계의 보고서는 함께 보존되며 재검증할 수 있습니다. 자동 문서 조사는 제공자의 실제 회수나 계약 검증을 대신하지 않으며 최종 도입 승인은 관리자가 수행합니다.

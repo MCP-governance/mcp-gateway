@@ -7,8 +7,8 @@
 | --- | --- | --- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | v3 정본 설계: 직원 PC의 하네스·관리형 설정·서버별 엔드포인트·LLM 경로·망·신원·디렉터리 | 항상 먼저 |
 | [architecture.html](architecture.html) · [architecture.png](architecture.png) | 구성도(archify로 생성, HTML은 브라우저로 — 확대·경로 추적·가이드 뷰) | 그림이 필요할 때 |
-| [DECISIONS.md](DECISIONS.md) | 설계 결정 D-01~ 과 이유, 되돌릴 조건 | "왜 이렇게 했지?" |
-| [RUNBOOK.md](RUNBOOK.md) | 환경(WSL·포트·비밀번호 1111), `console.sh` 명령, 계정, 자주 하는 일, PC에서 하네스를 손으로 쓰는 법 | 띄우고 돌릴 때 |
+| [DECISIONS.md](DECISIONS.md) | 설계 결정 D-01~ 과 이유, 되돌릴 조건(실기기 배치·도입 자동 검증은 D-42~D-46) | "왜 이렇게 했지?" |
+| [RUNBOOK.md](RUNBOOK.md) | 환경(WSL·포트·비밀번호 1111), `console.sh` 명령(field 포함), 계정, 자주 하는 일, PC에서 하네스를 손으로 쓰는 법 | 띄우고 돌릴 때 |
 | [TESTING.md](TESTING.md) | 검증 층, 개별 실행, 시험 작성 규칙 | 고친 뒤 |
 | [MCP_SERVERS.md](MCP_SERVERS.md) | 10종 서버, 설치·실행, 함정, 추가 절차 | 서버를 만질 때 |
 | [POLICY.md](POLICY.md) | Rego 구조, 우선순위, 권한 번들과 27칸 기본 판정, 예외, 정책 추가 절차 | 판정을 바꿀 때 |
@@ -18,6 +18,7 @@
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | 실제로 겪은 증상 → 원인 → 해결 | 막혔을 때 |
 | [ROADMAP.md](ROADMAP.md) | 남은 일, 의도적 한계 | 다음 할 일 |
 | [BENCHMARK_LITELLM.md](BENCHMARK_LITELLM.md) | LiteLLM MCP 게이트웨이와의 기능 대조(코드 근거), 반영한 것·가져오지 않는 것·main의 차별점 | 기능을 더하기 전, 발표·논문 |
+| [FIELD_MCP_CANDIDATES.md](FIELD_MCP_CANDIDATES.md) | field 설치에서 시험할 원격 MCP 후보, 취약 버전·엣지 케이스(자동 등록하지 않음) | 실기기 시연 준비 |
 
 API 요약은 [../API.md](../API.md), 기계용 명세는 `./console.sh openapi` → `docs/openapi/*.json`.
 
