@@ -1,0 +1,10 @@
+# Field default: no demo MCP server is approved or started.
+[organization]
+name = "MCP Gateway"
+internal_email_domains = []
+intranet_hosts = []
+infrastructure_hosts = ["gateway", "gateway-sse", "agent-service", "db", "opa", "corp-git", "localhost", "127.0.0.1"]
+infrastructure_prefixes = ["mcp-", "10.", "172.", "192.168.", "127."]
+journal_address = ""
+
+[servers]

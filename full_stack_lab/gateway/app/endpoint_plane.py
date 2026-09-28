@@ -216,10 +216,11 @@ async def inventory(classification: str | None = None, limit: int = 200) -> list
                       s.display_name AS registry_name, s.lifecycle
                  FROM endpoint_inventory i
                  JOIN endpoint_agents a USING (endpoint_id)
-                 LEFT JOIN mcp_servers s ON s.id = i.registry_match"""
+                 LEFT JOIN mcp_servers s ON s.id = i.registry_match
+                WHERE a.status='active' AND a.agent_version<>'unregistered'"""
     params: list[Any] = []
     if classification:
-        query += " WHERE i.classification=%s"
+        query += " AND i.classification=%s"
         params.append(classification)
     query += " ORDER BY i.reported_at DESC LIMIT %s"
     params.append(limit)
@@ -240,6 +241,7 @@ async def agents() -> list[dict]:
                   count(i.id) FILTER (WHERE i.classification='shadow') AS shadow,
                   count(i.id) FILTER (WHERE i.classification='retired-residue') AS residue
              FROM endpoint_agents a LEFT JOIN endpoint_inventory i USING (endpoint_id)
+            WHERE a.status='active' AND a.agent_version<>'unregistered'
             GROUP BY a.endpoint_id ORDER BY a.last_seen_at DESC"""
     )
     result = []
@@ -259,7 +261,8 @@ async def shadow_count_for(user_token: str) -> int:
     row = await db.fetch_one(
         """SELECT count(*) AS n FROM endpoint_inventory i
              JOIN endpoint_agents a USING (endpoint_id)
-            WHERE a.owner_token=%s AND i.classification='shadow'""",
+            WHERE a.owner_token=%s AND a.status='active' AND a.agent_version<>'unregistered'
+              AND i.classification='shadow'""",
         (user_token,),
     )
     return int(row["n"] or 0) if row else 0
@@ -273,13 +276,17 @@ async def coverage() -> dict:
     known_endpoints로만 말한다. 분모를 모르면 분모를 모른다고 적는다.
     """
     rows = await db.fetch_all(
-        """SELECT classification, count(*) AS n FROM endpoint_inventory GROUP BY classification"""
+        """SELECT i.classification, count(*) AS n FROM endpoint_inventory i
+             JOIN endpoint_agents a USING (endpoint_id)
+            WHERE a.status='active' AND a.agent_version<>'unregistered'
+            GROUP BY i.classification"""
     )
     counts = {row["classification"]: int(row["n"]) for row in rows}
     agent_rows = await db.fetch_all(
         """SELECT count(*) AS total,
                   count(*) FILTER (WHERE last_seen_at > now() - interval '15 minutes') AS fresh
-             FROM endpoint_agents"""
+             FROM endpoint_agents
+            WHERE status='active' AND agent_version<>'unregistered'"""
     )
     stats = agent_rows[0] if agent_rows else {"total": 0, "fresh": 0}
     return {

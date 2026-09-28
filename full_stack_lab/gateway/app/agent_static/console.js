@@ -351,7 +351,7 @@ ROUTES.overview = async (_, tab) => {
   return {
     html: page({
       head: head("개요", { status: html`${modeChip(o.enforcement)}${chip("outline", `카탈로그 ${o.catalog_version}`)}` }),
-      kpis: kpiStrip([["오늘 호출", t.total], ["허용", t.Allow, "allow"], ["경보", t.Alert, "alert"], ["차단", t.Block, "block"],
+      kpis: kpiStrip([["오늘 호출", t.total, "", "#/activity"], ["허용", t.Allow, "allow", "#/activity?decision=Allow"], ["경보", t.Alert, "alert", "#/activity?decision=Alert"], ["차단", t.Block, "block", "#/activity?decision=Block"],
         ["승인 대기", o.pending_approvals, "approval", "#/approvals"], ["섀도 MCP", shadow, shadow ? "block" : "", "#/people?t=configs"]]),
       active: tab || "traffic",
       tabs: [
@@ -370,7 +370,7 @@ ROUTES.overview = async (_, tab) => {
             </tbody></table>${stations.length ? "" : empty("등록된 단말 없음")}`, { flush: true })}</div>` },
         { key: "risk", label: "위험", n: t.Block, hot: t.Block > 0, body: html`<div class="stack">
           <div class="grid c2">
-            ${panel("많이 걸린 정책", o.top_policies.length ? chartBox("c-policies", "최근 24시간 차단·경보가 많은 정책") : empty("최근 24시간 차단·경보 없음"), { sub: "차단·경보 · 24시간" })}
+            ${panel("많이 걸린 정책", o.top_policies.length ? chartBox("c-policies", "최근 24시간 차단·경보가 많은 정책") : empty("최근 24시간 차단·경보 없음"), { sub: "차단·경보 · 24시간", tools: viewer.admin ? html`<a class="btn sm" href="#/intake?t=audit">A.I.G 검사</a>` : "" })}
             ${panel("종료·폐기", chartBox("c-term", "종료·폐기 현황"), { tools: html`<a class="btn sm" href="#/termination">열기</a>` })}
           </div>
           ${panel("최근 차단", feed.rows.length ? decisionTable(feed.rows) : empty("차단 기록 없음"), { flush: true, tools: html`<a class="btn sm" href="#/activity?decision=Block">전체</a>` })}
@@ -381,7 +381,7 @@ ROUTES.overview = async (_, tab) => {
       "c-traffic": () => charts.decisionColumns(buckets.map((b) => b.label), buckets),
       "c-share": () => charts.donut(DECISIONS.map((d) => ({ name: DECISION_LABEL[d], value: t[d], color: charts.color(d) }))),
       "c-servers": () => charts.decisionColumns(byServer.map((g) => g.key), byServer, {
-        horizontal: true, onClick: (p) => { location.hash = `#/activity?server=${encodeURIComponent(p.name)}`; } }),
+        horizontal: true, grouped: true, onClick: (p) => { location.hash = `#/activity?server=${encodeURIComponent(p.name)}`; } }),
       "c-flow": () => charts.sankey(sankeyData(o.flows, (d) => DECISION_LABEL[d] || d)),
       "c-policies": () => charts.bars(o.top_policies.map((p) => ({ name: p.policy_id, value: Number(p.n), color: charts.color(p.decision) }))),
       "c-term": () => charts.columns([
@@ -433,8 +433,8 @@ function feedCharts() {
   const buckets = minuteBuckets(shown);
   return {
     "c-minutes": () => charts.decisionColumns(buckets.map((b) => b.label), buckets),
-    "c-by-server": () => { const g = splitBy(shown, "server"); return charts.decisionColumns(g.map((x) => x.key), g, { horizontal: true }); },
-    "c-by-person": () => { const g = splitBy(shown, "who"); return charts.decisionColumns(g.map((x) => x.key), g, { horizontal: true }); },
+    "c-by-server": () => { const g = splitBy(shown, "server"); return charts.decisionColumns(g.map((x) => x.key), g, { horizontal: true, grouped: true }); },
+    "c-by-person": () => { const g = splitBy(shown, "who"); return charts.decisionColumns(g.map((x) => x.key), g, { horizontal: true, grouped: true }); },
     "c-by-harness": () => charts.donut(splitBy(shown, (r) => harnessLabel(r.harness)).map((g, i) => ({
       name: g.key, value: g.total, color: ["#1f4287", "#2c5bb8", "#4f7fd6", "#86a8ff", "#9aa6b8", "#647085"][i % 6] }))),
   };
@@ -679,7 +679,8 @@ function showServer(id) {
 
 let peopleAccounts = [];
 ROUTES.people = async (_, tab, query) => {
-  const [{ accounts }, inv, o] = await Promise.all([api("/api/accounts"), gw("endpoint/inventory"), gw("overview")]);
+  const [{ accounts }, { requests: signups }, inv, o] = await Promise.all([
+    api("/api/accounts"), api("/api/signup-requests"), gw("endpoint/inventory"), gw("overview")]);
   peopleAccounts = accounts;
   const cls = (c) => chip(...(ENDPOINT_CLASS[c] || ["", c]));
   const harnessOf = Object.fromEntries(o.workstations.map((w) => [w.endpoint_id, w]));
@@ -722,6 +723,13 @@ ROUTES.people = async (_, tab, query) => {
             <td class="num">${a.user_id === viewer.user_id ? html`<span class="small muted">본인</span>`
               : html`<button class="btn sm" data-act="account-status" data-id="${a.user_id}" data-name="${a.display_name}" data-status="${a.status}">상태 변경</button>`}</td></tr>`)}
           </tbody></table>`, { flush: true }) },
+        { key: "signups", label: "가입 승인", n: signups.filter((s) => s.status === "pending").length,
+          body: panel("회원가입 신청", html`<table class="data"><thead><tr><th>아이디</th><th>이름</th><th>신청</th><th>상태</th><th></th></tr></thead><tbody>
+          ${signups.map((s) => html`<tr><td class="mono">${s.username}</td><td>${s.display_name}</td><td>${when(s.requested_at)}</td>
+            <td>${chip(s.status === "approved" ? "allow" : s.status === "rejected" ? "block" : "approval", s.status)}</td>
+            <td>${s.status === "pending" ? html`<button class="btn sm primary" data-act="signup-approve" data-id="${s.id}">승인</button>
+              <button class="btn sm danger" data-act="signup-reject" data-id="${s.id}">거부</button>` : ""}</td></tr>`)}
+          </tbody></table>${signups.length ? "" : empty("가입 신청 없음")}`, { flush: true }) },
       ],
     }),
     charts: {
@@ -737,9 +745,11 @@ ROUTES.people = async (_, tab, query) => {
 
 // ── intake ───────────────────────────────────────────────────────────────────
 let intakeTimer = null;
+let scanJobs = [];
 function stopIntake() { clearInterval(intakeTimer); intakeTimer = null; }
 ROUTES.intake = async (_, tab) => {
-  const { requests } = await api("/api/mcp-requests");
+  const [{ requests }, audit] = await Promise.all([api("/api/mcp-requests"), viewer.admin ? api("/api/mcp-scan") : Promise.resolve(null)]);
+  scanJobs = audit?.jobs || [];
   const byStatus = Object.entries(INTAKE_STATUS).map(([k, [tone, label]]) => ({ name: label, value: requests.filter((r) => r.status === k).length,
     color: charts.color({ allow: "Allow", block: "Block", alert: "Alert", approval: "Approval", restrict: "Restrict" }[tone]) }));
   return {
@@ -755,6 +765,7 @@ ROUTES.intake = async (_, tab) => {
             const verified = termsVerified(r.exit_terms);
             const open = ["HOLD", "VALIDATION_QUEUED", "VALIDATING", "VALIDATED"].includes(r.status);
             return html`<tr><td><b>${r.display_name}</b><span class="sub mono">${r.repository_url}</span>
+              ${r.internal_repo_url ? html`<a class="sub" href="${r.internal_repo_url}" target="_blank" rel="noopener noreferrer">내부 저장소 열기 ↗</a>` : ""}
               <span class="sub">${r.requested_transport}${r.risk_level ? ` · 위험 ${r.risk_level}` : ""}${r.commit_sha ? ` · ${r.commit_sha.slice(0, 12)}` : ""}</span></td>
             <td>${chip(...(INTAKE_STATUS[r.status] || ["", r.status]))}</td>
             <td class="small">${!remote ? html`<span class="muted">로컬</span>` : r.exit_terms?.verified_by
@@ -775,6 +786,24 @@ ROUTES.intake = async (_, tab) => {
             <option value="stdio">stdio</option><option value="sse">SSE</option></select></label>
           <label>도입 목적<textarea name="purpose" required minlength="10" maxlength="1000"></textarea></label>
           <div class="row-actions"><button class="btn primary" type="submit">신청</button></div></form>`) },
+        ...(audit ? [{ key: "audit", label: "A.I.G 검사", n: audit.jobs.length, body: html`<div class="stack">
+          ${panel("검사 연결", html`<div class="row-actions">${chip(audit.config.configured ? "allow" : "alert", audit.config.configured ? "모델 연결 설정됨" : "모델 연결 미설정")}
+            ${chip(audit.worker.alive ? "allow" : "block", audit.worker.alive ? "검사 워커 동작" : "검사 워커 중지")}
+            ${chip(audit.config.auto_on_anomaly ? "allow" : "outline", audit.config.auto_on_anomaly ? "이상행위 자동 검사 켜짐" : "이상행위 자동 검사 꺼짐")}</div>
+            <p class="small muted">검증 완료 시 자동 코드 감사: ${audit.config.auto_on_validated ? "켜짐" : "꺼짐"} · 대기 ${audit.worker.queued}건 · 실행 ${audit.worker.running}건</p>
+            ${audit.config.missing.length ? html`<p class="note warn">필요한 설정: ${audit.config.missing.join(", ")}</p>` : ""}`)}
+          ${panel("검사 대상", html`<table class="data"><thead><tr><th>대상</th><th>상태</th><th>최근 검사</th><th></th></tr></thead><tbody>
+            ${audit.targets.map((r) => html`<tr><td>${r.display_name}<span class="sub mono">${r.commit_sha?.slice(0, 12)}</span></td><td>${r.status}</td><td>${r.last_status || "없음"}</td>
+              <td><button class="btn sm" data-act="scan-run" data-kind="intake" data-id="${r.id}" ${audit.config.configured ? "" : raw("disabled")}>코드 검사</button></td></tr>`)}
+            ${audit.servers.filter((s) => s.status !== "DISABLED").map((s) => html`<tr><td>${s.display_name}<span class="sub mono">${s.id}</span></td><td>${s.status}</td><td>${s.last_status || "없음"}</td>
+              <td>${s.scannable ? html`<button class="btn sm" data-act="scan-run" data-kind="server" data-id="${s.id}" ${audit.config.configured ? "" : raw("disabled")}>코드 검사</button>` : chip("outline", "원격 제공")}</td></tr>`)}
+            </tbody></table>${audit.targets.length || audit.servers.length ? "" : empty("검사 대상 없음")}`, { flush: true })}
+          ${panel("검사 작업", html`<table class="data"><thead><tr><th>시각</th><th>대상</th><th>시작 원인</th><th>상태</th><th>결과</th><th></th></tr></thead><tbody>
+            ${audit.jobs.map((j) => html`<tr><td>${when(j.created_at)}</td><td>${j.target_label}</td><td>${j.trigger}</td><td>${j.status}</td>
+              <td>${j.error || (j.status === "DONE" ? `${j.summary?.total ?? 0}건 · ${j.summary?.evidence_mode || "모드 미기록"}` : "—")}</td>
+              <td><button class="btn sm" data-act="scan-detail" data-id="${j.id}">상세</button></td></tr>`)}
+            </tbody></table>${audit.jobs.length ? "" : empty("검사 이력 없음")}`, { flush: true })}
+        </div>` }] : []),
       ],
     }),
     charts: { "c-intake": () => charts.columns(byStatus) },
@@ -1167,6 +1196,25 @@ const ACTIONS = {
     if (!fd) return;
     const r = await api(`/api/accounts/${el.dataset.id}/status`, { method: "PUT", body: { status: fd.get("status"), note: fd.get("note") || "" } });
     toast(r.message); reload();
+  },
+  async "signup-approve"(el) {
+    const r = await api(`/api/signup-requests/${el.dataset.id}/approve`, { method: "POST" });
+    toast(r.message); reload();
+  },
+  async "signup-reject"(el) {
+    await api(`/api/signup-requests/${el.dataset.id}/reject`, { method: "POST" });
+    toast("가입 신청을 거부했습니다."); reload();
+  },
+  async "scan-run"(el) {
+    const r = await api("/api/mcp-scan/run", { method: "POST", body: { target_kind: el.dataset.kind, target_id: el.dataset.id, mode: "static" } });
+    toast(r.message); reload();
+  },
+  "scan-detail"(el) {
+    const job = scanJobs.find((j) => j.id === el.dataset.id);
+    if (!job) return;
+    openDrawer(`A.I.G 검사 · ${job.target_label}`, html`${kv([["상태", job.status], ["시작 원인", job.trigger],
+      ["모델", job.model], ["완료", when(job.finished_at)], ["오류", job.error]])}
+      ${job.summary && Object.keys(job.summary).length ? json(job.summary) : empty("결과 보고서가 아직 없습니다.")}`);
   },
   async "device-issue"() {
     const owners = Object.fromEntries([["", "지정 안 함"], ...peopleAccounts.filter((a) => a.status === "active")

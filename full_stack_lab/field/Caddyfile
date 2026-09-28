@@ -38,6 +38,12 @@ http://:8080 {
 		reverse_proxy agent-service:8000
 	}
 
+	redir /git /git/
+	handle /git/* {
+		uri strip_prefix /git
+		reverse_proxy corp-git:3000
+	}
+
 	# Console(웹) — 그 밖 전부.
 	handle {
 		reverse_proxy agent-service:8000

@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import os
 import re
 import uuid
@@ -10,6 +11,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from collections.abc import Callable
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 from opentelemetry import trace
@@ -927,6 +929,30 @@ async def verify_audit_chain() -> dict:
 
 async def _decision_payload(event: dict, before: float) -> dict:
     decision_id = await _record_decision(event)
+    # Anomaly policy records the enforcement decision first; a scanner outage must
+    # never turn that decision into an unlogged gateway error.
+    scan_url = os.getenv("MCP_SCAN_BASE_URL", "")
+    local_model = (urlsplit(scan_url).hostname or "") in {
+        "localhost", "127.0.0.1", "::1", "host.docker.internal", "model-stub", "llm-stub", "ollama"}
+    if (event.get("policy_id") == "P-ANOMALY-001" and event.get("server_id")
+            and os.getenv("MCP_SCAN_AUTO_ON_ANOMALY", "0") == "1" and local_model
+            and os.getenv("MCP_SCAN_MODEL") and os.getenv("MCP_SCAN_API_KEY")
+            and os.getenv("MCP_SCAN_EVIDENCE_MODE", "live") == "live"):
+        try:
+            await db.execute(
+                """INSERT INTO scan_jobs(id,kind,target_kind,target_id,target_label,requested_by,trigger,mode)
+                   SELECT %s,'mcp-scan','server',s.id,s.display_name,'gateway-anomaly','anomaly','static'
+                     FROM mcp_servers s WHERE s.id=%s AND s.source_url LIKE 'https://github.com/%%'
+                       AND NOT EXISTS (SELECT 1 FROM scan_jobs j WHERE j.target_kind='server'
+                           AND j.target_id=s.id AND j.mode='static' AND j.status IN ('QUEUED','RUNNING'))
+                       AND NOT EXISTS (SELECT 1 FROM scan_jobs j WHERE j.target_kind='server'
+                           AND j.target_id=s.id AND j.trigger='anomaly'
+                           AND j.created_at > now() - interval '24 hours')
+                   ON CONFLICT DO NOTHING""",
+                (uuid.uuid4(), event["server_id"]),
+            )
+        except Exception:
+            logging.getLogger(__name__).exception("A.I.G anomaly scan enqueue failed for decision %s", decision_id)
     return {**event, "decision_id": decision_id, "latency_ms": int((asyncio.get_running_loop().time() - before) * 1000)}
 
 

@@ -89,7 +89,7 @@ export function redrawAll() {
 
 // ── builders ─────────────────────────────────────────────────────────────
 /** Stacked columns (or bars) per category: [{name, color, data}]. */
-export function stacked(categories, series, { horizontal = false, onClick } = {}) {
+export function stacked(categories, series, { horizontal = false, onClick, grouped = false } = {}) {
   const cat = axis({ type: "category", data: categories,
     axisLabel: { color: css("--ink-2"), fontSize: 13, ...(horizontal ? { width: 160, overflow: "truncate" } : {}) } });
   const val = axis({ type: "value", minInterval: 1 });
@@ -98,7 +98,7 @@ export function stacked(categories, series, { horizontal = false, onClick } = {}
     xAxis: horizontal ? val : cat,
     yAxis: horizontal ? { ...cat, inverse: true } : val,
     series: series.map((s) => ({
-      name: s.name, type: "bar", stack: "s", barMaxWidth: horizontal ? 22 : 28,
+      name: s.name, type: "bar", ...(grouped ? {} : { stack: "s" }), barMaxWidth: horizontal ? 22 : 28,
       itemStyle: { color: s.color }, emphasis: { focus: "series" }, data: s.data,
     })),
     onClick,

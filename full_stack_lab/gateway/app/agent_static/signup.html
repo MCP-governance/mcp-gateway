@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>회원가입 신청 · MCP Governance</title>
+  <link rel="stylesheet" href="/static/console.css" />
+  <link rel="stylesheet" href="/static/login.css" />
+</head>
+<body class="gate">
+  <main class="panel gate-card">
+    <header class="brand"><div><b>회원가입 신청</b><span>관리자 승인 후 로그인할 수 있습니다.</span></div></header>
+    <form id="signup-form" class="form stack">
+      <label>아이디<input name="username" autocomplete="username" required minlength="3" maxlength="32" pattern="[a-z][a-z0-9._-]{2,31}" /></label>
+      <label>표시 이름<input name="display_name" required minlength="2" maxlength="80" /></label>
+      <label>비밀번호<input name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="150" /></label>
+      <p class="err" id="signup-message" role="status" tabindex="-1"></p>
+      <button class="btn primary" type="submit">가입 신청</button>
+      <a href="/login">로그인으로 돌아가기</a>
+    </form>
+  </main>
+  <script src="/static/signup.js"></script>
+</body>
+</html>

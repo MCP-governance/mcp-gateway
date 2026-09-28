@@ -1,6 +1,7 @@
 """Intake automation, partial scanner evidence and report authorization regressions."""
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -13,7 +14,7 @@ from uuid import uuid4
 LAB = Path(__file__).resolve().parent.parent
 sys.path[:0] = [str(LAB / "supply_chain"), str(LAB / "gateway")]
 from exit_terms import investigate
-from app import agent_service
+from app import agent_service, core
 from fastapi.testclient import TestClient
 import intake_worker as worker
 
@@ -180,12 +181,58 @@ class ApiTest(unittest.TestCase):
             self.assertEqual(self.client.get(f"/api/mcp-requests/{self.id}/artifacts/sbom").status_code, 404)
 
     def test_discovery_does_not_bypass_remote_approval(self):
-        row = {"requested_transport": "streamable-http", "exit_terms": {},
+        row = {"status": "VALIDATED", "commit_sha": "d" * 40,
+               "requested_transport": "streamable-http", "exit_terms": {},
                "evidence": {"exit_terms_discovery": {"status": "REVIEW_REQUIRED"}}}
         with self.identity("admin"), patch.object(agent_service.db, "fetch_one", AsyncMock(return_value=row)), patch.object(agent_service, "SCAN_REQUIRED_FOR_APPROVAL", False):
             response = self.client.post(f"/api/mcp-requests/{self.id}/approve")
         self.assertEqual(response.status_code, 409)
         self.assertIn("증거 문서", response.json()["detail"])
+
+    def test_signup_is_pending_until_admin_approves(self):
+        with patch.object(agent_service.db, "fetch_one", AsyncMock(side_effect=[None, {"id": str(self.id)}])):
+            response = self.client.post("/auth/signup", json={
+                "username": "newuser", "display_name": "New User", "password": "password-123"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "pending")
+
+    def test_approval_publishes_verified_commit_before_state_change(self):
+        pending = {"id": self.id, "status": "VALIDATED", "commit_sha": "d" * 40,
+                   "requested_transport": "stdio", "exit_terms": {},
+                   "repository_url": "https://github.com/example/server"}
+        approved = {"id": self.id, "status": "APPROVED", "internal_repo_url": "http://internal/git/corpadmin/mcp-test"}
+        db = AsyncMock(side_effect=[pending, approved])
+        publisher = AsyncMock(return_value=approved["internal_repo_url"])
+        with self.identity("admin"), patch.object(agent_service.db, "fetch_one", db), \
+             patch.object(agent_service, "publish_internal_repo", publisher), \
+             patch.object(agent_service, "SCAN_REQUIRED_FOR_APPROVAL", False):
+            response = self.client.post(f"/api/mcp-requests/{self.id}/approve")
+        self.assertEqual(response.status_code, 200)
+        publisher.assert_awaited_once_with(pending)
+        self.assertIn("internal_repo_url", db.await_args.args[0])
+
+
+class AnomalyScanTest(unittest.TestCase):
+    def test_live_local_model_queues_anomaly_scan_after_audit(self):
+        async def decide():
+            return await core._decision_payload(
+                {"policy_id": "P-ANOMALY-001", "server_id": "server-1"},
+                asyncio.get_running_loop().time(),
+            )
+
+        config = {"MCP_SCAN_AUTO_ON_ANOMALY": "1", "MCP_SCAN_BASE_URL": "http://ollama:11434/v1",
+                  "MCP_SCAN_MODEL": "local-model", "MCP_SCAN_API_KEY": "local-key",
+                  "MCP_SCAN_EVIDENCE_MODE": "live"}
+        execute = AsyncMock()
+        with patch.dict(os.environ, config), patch.object(core, "_record_decision", AsyncMock(return_value="decision-1")), \
+             patch.object(core.db, "execute", execute):
+            self.assertEqual(asyncio.run(decide())["decision_id"], "decision-1")
+            self.assertIn("'anomaly'", execute.await_args.args[0])
+            self.assertEqual(execute.await_args.args[1][1], "server-1")
+            execute.reset_mock()
+            with patch.dict(os.environ, {"MCP_SCAN_EVIDENCE_MODE": "test-double"}):
+                asyncio.run(decide())
+            execute.assert_not_awaited()
 
 
 if __name__ == "__main__":

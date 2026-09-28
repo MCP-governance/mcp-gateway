@@ -76,24 +76,29 @@ cd mcp-gateway/full_stack_lab
 ./console.sh field pc-command
 ```
 
-`field up`은 Tailscale IP를 자동으로 찾고, 새 설치의 DB·합성 IdP 초기 비밀번호를
-`.env`에 임의 생성합니다. 기존 `.env`와 DB 비밀번호는 바꾸지 않습니다. 이 기기에는
+`field up`은 Tailscale IP를 자동으로 찾고 필수 내부 비밀값을 `.env`에 생성합니다.
+field 전용 DB·Gitea 볼륨을 사용하므로 기존 실습 데이터는 보존하면서 실습용 개인 이름과 MCP 10종이 기본 화면에 나타나지 않습니다. 이 기기에는
 Tailscale IP가 있어야 하고, 직원·관리자 PC도 같은 tailnet에서 접속할 수 있어야 합니다.
 `field status`는 현재 공개 주소의 `/api/health`를 확인합니다. 기본 `./console.sh up`은
 종전의 loopback 실습용입니다.
 
-처음 배치한 뒤 사용할 계정마다 비밀번호를 지정합니다(12자 이상, 입력은 화면에 보이지 않음).
+첫 설치의 시험 계정은 **관리자 `root` / `root`**, **직원 `user` / `user`**입니다. 로그인 화면에는 계정 목록이나 미리 입력된 비밀번호가 없습니다. 별도 계정은 `/signup`에서 신청하고, 관리자가 **직원·단말 → 가입 승인**에서 처리합니다. 시험이 끝나면 `field set-password`로 비밀번호를 바꿀 수 있습니다.
 
 ```bash
-./console.sh field set-password kkg@bob.local   # 관리자
-./console.sh field set-password ysg@bob.local   # 직원 예시
+./console.sh field set-password root
+./console.sh field set-password user
 ```
 
-기존 DB에서 이미 계정별 비밀번호를 바꿨다면 이 단계는 생략합니다. 관리자 PC에서
-`http://<Tailscale IP>:443/login`에 관리자 계정으로 로그인합니다. 직원도 같은 URL에
+관리자 PC에서 `http://<Tailscale IP>:443/login`에 로그인합니다. 직원도 같은 URL에
 자기 계정으로 로그인해 **도입 신청** 탭에서 GitHub 저장소·연결 방식·목적을 제출합니다.
 접수 즉시 검증 대기열에 저장되고 관리자 목록은 열어 둔 상태에서도 5초마다 갱신됩니다.
 활동 로그의 MCP 도구 사용 기록은 도입 신청을 대신하지 않습니다.
+
+기본 field 프로필에는 **MCP 서버가 0개**입니다. 예전 회사 시스템·MCP 10종이 필요한 실습만 `./console.sh field up --with-lab-mcp`로 켭니다. 실습 직원 PC까지 필요하면 `--with-lab-workstations`를 사용합니다. 일반 field 실행은 실습 컨테이너를 중지합니다.
+
+검증을 통과한 공개 GitHub 저장소는 관리자가 승인할 때 같은 솔루션의 Gitea로 가져옵니다. 가져온 기본 브랜치 HEAD가 검증 커밋과 같을 때만 직원 읽기 주소가 도입 신청 목록에 표시됩니다. 저장소 브라우저는 `http://<Tailscale IP>:443/git/`이고, 승인 뒤 Gateway 실행은 기존의 계약·카탈로그 등록 절차를 거칩니다. 공개 저장소는 tailnet 구성원에게 읽기 가능하며 Gitea 관리 자격은 솔루션 내부에만 둡니다.
+
+개요의 허용·경보·차단 수치를 누르면 해당 활동 로그로 이동합니다. 직원·단말은 폐기 자격과 발급만 되고 보고하지 않은 장치를 기본 목록에서 제외합니다. 도입 신청 → **A.I.G 검사**에서 모델 설정, 워커, 검사 대상·작업·결과를 봅니다. 이상행위(`P-ANOMALY-001`) 자동 코드 감사는 **로컬 모델이 연결되고 검사 설정이 완료된 경우**에만 예약되며 대상별 24시간 중복을 막습니다. 모델이 없으면 UI에 꺼짐으로 표시합니다. 원격 MCP 후보와 취약 버전·엣지 케이스는 [field 후보 목록](docs/ai/FIELD_MCP_CANDIDATES.md)을 참조합니다.
 
 ### 직원 PC의 Claude Code·Codex CLI 연결
 

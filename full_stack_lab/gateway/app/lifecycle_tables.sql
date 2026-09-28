@@ -239,7 +239,7 @@ ALTER TABLE scan_jobs ADD CONSTRAINT scan_jobs_target_kind_check
   CHECK (target_kind IN ('intake', 'server', 'endpoint'));
 ALTER TABLE scan_jobs DROP CONSTRAINT IF EXISTS scan_jobs_trigger_check;
 ALTER TABLE scan_jobs ADD CONSTRAINT scan_jobs_trigger_check
-  CHECK (trigger IN ('manual', 'validated', 'rescan', 'drift', 'termination'));
+  CHECK (trigger IN ('manual', 'validated', 'rescan', 'drift', 'termination', 'anomaly'));
 
 -- 같은 대상이라도 정적 감사와 동적 점검은 서로 다른 작업이다. v1.5의 유일 인덱스는
 -- 대상 하나에 살아 있는 작업 하나만 허용했으므로, 폐기 확인용 동적 점검이 정적

@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 from uuid import UUID, uuid4
 
 import httpx
@@ -63,6 +64,24 @@ async def bootstrap_passwords() -> None:
         (os.getenv("MOCK_SSO_PASSWORD", "test-password"),))
 
 
+async def bootstrap_field_accounts() -> None:
+    if os.getenv("MCP_FIELD_MODE") != "1":
+        return
+    # Keep the lab fixture in its own volume; old field volumes may still contain it.
+    await db.execute("UPDATE principals SET status='disabled' WHERE email LIKE '%@bob.local'")
+    for username, role in (("root", "admin"), ("user", "employee")):
+        await db.execute(
+            """INSERT INTO principals(token, user_id, email, display_name, role, password_hash)
+               VALUES (%s,%s,%s,%s,%s,crypt(%s, gen_salt('bf', 12)))
+               ON CONFLICT (token) DO NOTHING""",
+            (username, username, username, username, role, username),
+        )
+    await db.execute(
+        "UPDATE endpoint_agents SET status='revoked' WHERE endpoint_id = ANY(%s::text[])",
+        (["ws-ysg", "ws-jwj", "ws-pse", "ws-nkk"],),
+    )
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     private_key()  # fail fast if this process is not actually the token issuer
@@ -71,6 +90,7 @@ async def lifespan(_: FastAPI):
     await db.execute((Path(__file__).parent / "lifecycle_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "v2_tables.sql").read_text())
     await bootstrap_passwords()
+    await bootstrap_field_accounts()
     try:
         yield
     finally:
@@ -106,6 +126,11 @@ async def login_page():
     return FileResponse(STATIC_DIR / "login.html")
 
 
+@app.get("/signup", include_in_schema=False)
+async def signup_page():
+    return FileResponse(STATIC_DIR / "signup.html")
+
+
 @app.get("/workspace", include_in_schema=False)
 async def workspace_page():
     return FileResponse(STATIC_DIR / "console.html")
@@ -114,6 +139,35 @@ async def workspace_page():
 class Login(StrictModel):
     email: str = Field(max_length=150)
     password: str = Field(max_length=150)
+
+
+class Signup(StrictModel):
+    username: str = Field(min_length=3, max_length=32)
+    display_name: str = Field(min_length=2, max_length=80)
+    password: str = Field(min_length=8, max_length=150)
+
+
+@app.post("/auth/signup")
+async def request_signup(request: Signup, http_request: Request):
+    username = request.username.strip().lower()
+    if not re.fullmatch(r"[a-z][a-z0-9_.-]{2,31}", username):
+        raise HTTPException(422, "아이디는 영문자로 시작하는 영문·숫자·._- 3~32자여야 합니다.")
+    caller = http_request.client.host if http_request.client else "unknown"
+    key = f"signup|{caller}"
+    if not login_allowed(key):
+        raise HTTPException(429, "가입 신청이 너무 많습니다. 잠시 후 다시 시도하세요.")
+    record_failed_login(key)
+    if await db.fetch_one("SELECT 1 FROM principals WHERE lower(email)=%s", (username,)):
+        raise HTTPException(409, "이미 사용 중인 아이디입니다.")
+    row = await db.fetch_one(
+        """INSERT INTO signup_requests(id,username,display_name,password_hash)
+           VALUES (%s,%s,%s,crypt(%s, gen_salt('bf', 12)))
+           ON CONFLICT (username) DO NOTHING RETURNING id""",
+        (uuid4(), username, request.display_name.strip(), request.password),
+    )
+    if not row:
+        raise HTTPException(409, "이미 접수된 아이디입니다.")
+    return {"status": "pending", "message": "가입 신청을 접수했습니다. 관리자 승인 후 로그인할 수 있습니다."}
 
 
 class McpIntake(StrictModel):
@@ -193,14 +247,14 @@ async def login(request: Login, http_request: Request):
             "department": row["department"] or "미지정", "roles": [row["role"]], "email": row["email"]}
     token, _claims = issue_token(user)
     return {"access_token": token, "token_type": "bearer", "expires_in": 1800,
-            "user": {k: v for k, v in {**user, "job_title": row["job_title"], "synthetic": True}.items()
+            "user": {k: v for k, v in {**user, "job_title": row["job_title"], "synthetic": os.getenv("MCP_FIELD_MODE") != "1"}.items()
                      if k != "principal"}}
 
 
 @app.get("/auth/me")
 async def me(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
-    return {**console_user(user), "synthetic": True}
+    return {**console_user(user), "synthetic": os.getenv("MCP_FIELD_MODE") != "1"}
 
 
 @app.post("/auth/logout")
@@ -225,11 +279,63 @@ async def list_accounts(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "신원 관리대장은 관리자만 볼 수 있습니다.")
+    field_filter = " WHERE email NOT LIKE '%@bob.local'" if os.getenv("MCP_FIELD_MODE") == "1" else ""
     return {"accounts": await db.fetch_all(
         """SELECT token, user_id, email, display_name, role, department, employee_no, job_title,
                   status, status_changed_by, status_changed_at,
                   (password_hash IS NOT NULL) AS has_password
-           FROM principals ORDER BY role, email""")}
+           FROM principals""" + field_filter + " ORDER BY role, email")}
+
+
+@app.get("/api/signup-requests")
+async def list_signup_requests(authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "가입 신청은 관리자만 볼 수 있습니다.")
+    return {"requests": await db.fetch_all(
+        """SELECT id, username, display_name, status, requested_at, reviewed_at, reviewed_by
+           FROM signup_requests ORDER BY requested_at DESC LIMIT 100""")}
+
+
+@app.post("/api/signup-requests/{request_id}/approve")
+async def approve_signup(request_id: UUID, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "가입 승인은 관리자만 할 수 있습니다.")
+    async with db.transaction() as connection:
+        row = await (await connection.execute(
+            "SELECT * FROM signup_requests WHERE id=%s FOR UPDATE", (request_id,))).fetchone()
+        if not row or row["status"] != "pending":
+            raise HTTPException(409, "대기 중인 가입 신청이 아닙니다.")
+        created = await (await connection.execute(
+            """INSERT INTO principals(token,user_id,email,display_name,role,password_hash)
+               VALUES (%s,%s,%s,%s,'employee',%s)
+               ON CONFLICT DO NOTHING RETURNING user_id""",
+            (f"emp-{row['username']}", row["username"], row["username"],
+             row["display_name"], row["password_hash"]),
+        )).fetchone()
+        if not created:
+            raise HTTPException(409, "이미 등록된 아이디입니다.")
+        await connection.execute(
+            "UPDATE signup_requests SET status='approved', reviewed_at=now(), reviewed_by=%s WHERE id=%s",
+            (user["principal"], request_id),
+        )
+    return {"status": "approved", "message": f"{row['username']} 계정을 승인했습니다."}
+
+
+@app.post("/api/signup-requests/{request_id}/reject")
+async def reject_signup(request_id: UUID, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "가입 거부는 관리자만 할 수 있습니다.")
+    row = await db.fetch_one(
+        """UPDATE signup_requests SET status='rejected', reviewed_at=now(), reviewed_by=%s
+           WHERE id=%s AND status='pending' RETURNING id""",
+        (user["principal"], request_id),
+    )
+    if not row:
+        raise HTTPException(409, "대기 중인 가입 신청이 아닙니다.")
+    return {"status": "rejected"}
 
 
 @app.put("/api/accounts/{user_id}/status")
@@ -351,7 +457,7 @@ def console_user(user: dict) -> dict:
 async def intake_rows(user: dict) -> list[dict]:
     query = """SELECT id, submitted_by, display_name, repository_url, requested_transport, purpose,
                       status, risk_level, review_note, reviewed_by, reviewed_at, created_at, updated_at,
-                      commit_sha, source_ref, evidence, validated_at, exit_terms
+                      commit_sha, source_ref, evidence, validated_at, exit_terms, internal_repo_url
                FROM mcp_intake_requests"""
     if "admin" in user["roles"]:
         return await db.fetch_all(query + " ORDER BY created_at DESC LIMIT 100")
@@ -394,6 +500,48 @@ async def search_catalog(q: str = "", authorization: str | None = Header(default
         requests = await db.fetch_all(request_query + " ORDER BY created_at DESC LIMIT 50")
         servers = await db.fetch_all(server_query + " ORDER BY id LIMIT 50")
     return {"query": term, "requests": requests, "registry": servers}
+
+
+async def publish_internal_repo(row: dict) -> str:
+    """Import a reviewed public GitHub source into this appliance's Gitea."""
+    base = os.getenv("GITEA_ADMIN_URL", "http://corp-git:3000").rstrip("/")
+    owner = os.getenv("GITEA_ADMIN_USER", "corpadmin")
+    password = os.getenv("GITEA_ADMIN_PASSWORD", "corp-admin-lab-only")
+    name = f"mcp-{str(row['id'])[:8]}"
+    path = f"/api/v1/repos/{owner}/{name}"
+    try:
+        async with httpx.AsyncClient(base_url=base, auth=(owner, password),
+                                     timeout=120, trust_env=False) as client:
+            existing = await client.get(path)
+            if existing.status_code == 404:
+                imported = await client.post("/api/v1/repos/migrate", json={
+                    "clone_addr": row["repository_url"], "repo_owner": owner,
+                    "repo_name": name, "service": "git", "private": True,
+                    "mirror": False, "issues": False, "pull_requests": False,
+                    "wiki": False, "releases": False, "lfs": False,
+                })
+                if imported.status_code not in (200, 201):
+                    raise HTTPException(502, f"내부 저장소 가져오기 실패 (Gitea {imported.status_code}).")
+                info = imported.json()
+            elif existing.is_success:
+                info = existing.json()
+            else:
+                raise HTTPException(502, f"내부 저장소 확인 실패 (Gitea {existing.status_code}).")
+            branch = info.get("default_branch")
+            if not branch:
+                raise HTTPException(502, "가져온 저장소에 기본 브랜치가 없습니다.")
+            head = await client.get(f"{path}/branches/{quote(branch, safe='')}")
+            if not head.is_success:
+                raise HTTPException(502, "가져온 저장소의 커밋을 확인하지 못했습니다.")
+            if head.json().get("commit", {}).get("id") != row["commit_sha"]:
+                raise HTTPException(409, "검증한 커밋과 현재 원격 저장소의 기본 브랜치가 달라졌습니다. 재검증하세요.")
+            published = await client.patch(path, json={"private": False})
+            if not published.is_success:
+                raise HTTPException(502, f"직원 읽기 권한 게시 실패 (Gitea {published.status_code}).")
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, f"내부 저장소에 연결하지 못했습니다: {type(exc).__name__}") from exc
+    public = os.getenv("GITEA_PUBLIC_URL", "http://localhost:3000").rstrip("/")
+    return f"{public}/{owner}/{name}"
 
 
 @app.post("/api/mcp-requests")
@@ -553,8 +701,10 @@ async def approve_mcp_request(request_id: UUID, authorization: str | None = Head
                 409, "이 commit에 대한 AI 코드 감사 결과가 없습니다. "
                      "감사를 실행해 완료된 뒤에 승인할 수 있습니다.")
     pending = await db.fetch_one(
-        "SELECT requested_transport, exit_terms FROM mcp_intake_requests WHERE id=%s",
+        "SELECT id, status, requested_transport, exit_terms, repository_url, commit_sha FROM mcp_intake_requests WHERE id=%s",
         (request_id,))
+    if not pending or pending["status"] != "VALIDATED" or not pending["commit_sha"]:
+        raise HTTPException(409, "격리 검증을 통과한 요청만 승인할 수 있습니다.")
     terms = (pending or {}).get("exit_terms") or {}
     if pending and pending["requested_transport"] != "stdio" and not (
         terms.get("verified_by") and terms.get("evidence_url") and
@@ -562,16 +712,17 @@ async def approve_mcp_request(request_id: UUID, authorization: str | None = Head
             "provider_credential_disclosure", "revocation_evidence", "audit_access_retained"))
     ):
         raise HTTPException(409, "플랫폼이 제공자 자격 고지·회수 증거·감사 접근을 증거 문서로 확인해야 승인할 수 있습니다.")
+    internal_repo_url = await publish_internal_repo(pending)
     row = await db.fetch_one(
         """UPDATE mcp_intake_requests
-           SET status='APPROVED', reviewed_by=%s, reviewed_at=now(), updated_at=now()
+           SET status='APPROVED', internal_repo_url=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now()
            WHERE id=%s AND status='VALIDATED'
-           RETURNING id, status, reviewed_by, reviewed_at, source_ref, exit_terms""",
-        (user["principal"], request_id),
+           RETURNING id, status, internal_repo_url, reviewed_by, reviewed_at, source_ref, exit_terms""",
+        (internal_repo_url, user["principal"], request_id),
     )
     if not row:
         raise HTTPException(409, "격리 검증을 통과한 요청만 승인할 수 있습니다.")
-    return {"request": row, "message": "Registry 등록 대상으로 승인했습니다. 실제 활성화는 endpoint와 catalog 해시 고정 후입니다."}
+    return {"request": row, "message": "검증한 커밋을 내부 저장소에 게시했습니다. Gateway 활성화는 별도 등록 절차입니다."}
 
 
 @app.post("/api/mcp-requests/{request_id}/reject")
@@ -617,6 +768,10 @@ def mcp_scan_status() -> dict:
         "local": local_model_endpoint(),
         "pinned_commit": "036c39bd03b39ce4a811f7f125bc3b8f47e39b7c",
         "required_for_approval": SCAN_REQUIRED_FOR_APPROVAL,
+        "auto_on_anomaly": (not missing and local_model_endpoint()
+                            and os.getenv("MCP_SCAN_AUTO_ON_ANOMALY", "0") == "1"
+                            and MCP_SCAN_EVIDENCE_MODE == "live"),
+        "auto_on_validated": (not missing and os.getenv("MCP_SCAN_AUTO_ON_VALIDATED", "1") == "1"),
     }
 
 

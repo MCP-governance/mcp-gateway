@@ -8,6 +8,16 @@
 # APPLIANCE_BIND로 넘긴다. HTTP는 tailnet의 암호화된 경로에만 바인딩한다(D-46).
 
 services:
+  db:
+    volumes:
+      - ${FIELD_DB_VOLUME:-field_db_data}:/var/lib/postgresql
+
+  corp-git:
+    environment:
+      GITEA__server__ROOT_URL: http://${APPLIANCE_BIND}:443/git/
+    volumes:
+      - ${FIELD_GIT_VOLUME:-field_corp_git_data}:/var/lib/gitea
+
   caddy:
     image: caddy:2.11.4-alpine
     restart: unless-stopped
@@ -25,16 +35,36 @@ services:
   # RFC 8414 authorization_servers, Console 리다이렉트)도 실제 호스트 이름이어야 한다.
   gateway:
     environment:
+      REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
+      MCP_SCAN_BASE_URL: ${MCP_SCAN_BASE_URL:-}
+      MCP_SCAN_MODEL: ${MCP_SCAN_MODEL:-}
+      MCP_SCAN_API_KEY: ${MCP_SCAN_API_KEY:-}
+      MCP_SCAN_AUTO_ON_ANOMALY: ${MCP_SCAN_AUTO_ON_ANOMALY:-1}
       GATEWAY_PUBLIC_MCP_URL: http://${APPLIANCE_BIND}:443/mcp/
       CONSOLE_PUBLIC_URL: http://${APPLIANCE_BIND}:443/
       IDP_ISSUER: http://${APPLIANCE_BIND}:443
       # IDP_ISSUER는 PC에 알리는 공개 주소다. 컨테이너 안에서는 그 이름이 풀리지 않으므로 Gateway가 직접
       # IdP를 부를 때(논문 실험 E1~E3)는 내부 주소를 쓴다. 토큰의 iss는 URL이 아니라 상수라 판정은 그대로다.
       IDP_INTERNAL_URL: http://agent-service:8000
+    volumes:
+      - ./registry/field:/registry-field:ro
+
+  gateway-sse:
+    environment:
+      REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
+    volumes:
+      - ./registry/field:/registry-field:ro
 
   agent-service:
     environment:
       IDP_ISSUER: http://${APPLIANCE_BIND}:443
+      MCP_FIELD_MODE: ${FIELD_ACCOUNTS_MODE:-1}
+      GITEA_ADMIN_URL: http://corp-git:3000
+      GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-corpadmin}
+      GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD:-corp-admin-lab-only}
+      GITEA_PUBLIC_URL: http://${APPLIANCE_BIND}:443/git
+      MCP_SCAN_AUTO_ON_ANOMALY: ${MCP_SCAN_AUTO_ON_ANOMALY:-1}
+      MCP_SCAN_AUTO_ON_VALIDATED: ${MCP_SCAN_AUTO_ON_VALIDATED:-1}
 
   # 랩의 컨테이너 직원 PC 4대와 협력사 섀도 PC는 실기기 모드에서 기본으로 뜨지
   # 않는다(실제 PC가 대신한다). 같이 보고 싶으면 `--profile lab-workstations`
@@ -44,3 +74,9 @@ services:
   ws-jwj: {profiles: [lab-workstations]}
   ws-pse: {profiles: [lab-workstations]}
   ws-nkk: {profiles: [lab-workstations]}
+
+volumes:
+  field_db_data: {}
+  field_corp_git_data: {}
+  field_lab_db_data: {}
+  field_lab_corp_git_data: {}

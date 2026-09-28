@@ -20,6 +20,17 @@ CREATE TABLE IF NOT EXISTS agent_revoked_tokens (
   jti uuid PRIMARY KEY, expires_at timestamptz NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS signup_requests (
+  id uuid PRIMARY KEY,
+  username text NOT NULL UNIQUE,
+  display_name text NOT NULL,
+  password_hash text NOT NULL,
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  requested_at timestamptz NOT NULL DEFAULT now(),
+  reviewed_at timestamptz,
+  reviewed_by text
+);
+
 -- A repository URL is an intake record, never an instruction to fetch or run
 -- somebody else's code. It stays outside the active MCP registry until a
 -- reviewer attaches evidence from an isolated checkout.
@@ -147,6 +158,7 @@ ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS commit_sha text;
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS source_ref text;
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS evidence jsonb NOT NULL DEFAULT '{}';
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS validated_at timestamptz;
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS internal_repo_url text;
 ALTER TABLE mcp_intake_requests DROP CONSTRAINT IF EXISTS mcp_intake_requests_status_check;
 ALTER TABLE mcp_intake_requests ADD CONSTRAINT mcp_intake_requests_status_check
   CHECK (status IN ('HOLD', 'VALIDATION_QUEUED', 'VALIDATING', 'VALIDATED', 'APPROVED', 'FAILED', 'REJECTED'));

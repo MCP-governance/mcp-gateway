@@ -12,7 +12,7 @@ done
 if [ ! -f /var/lib/gitea/.admin-ready ]; then
   gitea admin user create --config /etc/gitea/app.ini --admin \
     --username "${GITEA_ADMIN_USER:-corpadmin}" --password "${GITEA_ADMIN_PASSWORD:?}" \
-    --email admin@bob.local --must-change-password=false >/dev/null 2>&1 || true
+    --email admin@example.invalid --must-change-password=false >/dev/null 2>&1 || true
   touch /var/lib/gitea/.admin-ready
 fi
 wait "$server"

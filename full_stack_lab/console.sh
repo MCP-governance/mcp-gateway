@@ -33,12 +33,12 @@ usage: ./console.sh <command>
   test                   전체 검증 (Rego·분류 self-check·acceptance·시나리오·보안 회귀)
   replay [N]             기록된 정책 입력 N건(기본 100)과 합성 라벨 사례를 후보 정책(REPLAY_POLICY_DIR)에 재생 — MCP 호출 없음
   status | logs [svc] | down | reset | scan | openapi
-  field up [--with-lab-workstations]
+  field up [--with-lab-mcp] [--with-lab-workstations]
                          Tailscale IP에만 HTTP 게시(터널 암호화, 별도 인증서·hosts 설정 없음)
   field status           Caddy·Gateway·Console 상태와 Tailscale 주소 확인
   field pc-command       직원 PC에서 실행할 키트 setup 명령(서버 목록은 레지스트리에서)
-  field set-password <이메일>
-                         합성 계정 한 개의 비밀번호를 바꿈(사내망에 열기 전에 계정마다)
+  field set-password <아이디>
+                         계정 한 개의 비밀번호를 바꿈
   field register-pc <이름> [owner] [platform]
                          실제 PC를 단말 장치로 등록(기존 /api/endpoint/devices), 장치 키를 한 번 출력
   field down             Caddy만 멈춤(나머지 스택·데이터는 그대로 — 전체는 위 down/reset)
@@ -75,6 +75,21 @@ ensure_env() {
 
 
 admin_token() {
+  if [[ "${MCP_FIELD_MODE:-}" == "1" ]]; then
+    local password="${MCP_FIELD_ADMIN_PASSWORD:-root}" token
+    for _ in 1 2; do
+      if token="$(printf '%s' "$password" \
+        | python3 -c 'import json,sys; print(json.dumps({"email":"root","password":sys.stdin.read()}))' \
+        | curl -fsS -X POST "$CONSOLE/auth/mock-login" -H 'content-type: application/json' --data-binary @- 2>/dev/null \
+        | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])' 2>/dev/null)"; then
+        printf '%s\n' "$token"
+        return
+      fi
+      read -r -s -p 'root 비밀번호: ' password; echo >&2
+    done
+    echo '관리자 로그인이 실패했습니다.' >&2
+    return 1
+  fi
   curl -fsS -X POST $CONSOLE/auth/mock-login -H 'content-type: application/json' \
     -d "{\"email\":\"kkg@bob.local\",\"password\":\"$(env_value MOCK_SSO_PASSWORD || true)\"}" 2>/dev/null \
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])' 2>/dev/null \
@@ -219,22 +234,40 @@ watch_decisions() {
 FIELD_COMPOSE=(-f compose.yaml -f compose.field.yaml)
 
 field_up() {
-  local with_ws=0
-  local services=(corp-git corp-redis corp-db corp-mail intranet external-web
-    mcp-filesystem mcp-git mcp-fetch mcp-memory mcp-desktop mcp-postgres mcp-redis mcp-email mcp-gitea mcp-playwright
-    gateway gateway-sse agent-service intake-worker)
-  for a in "$@"; do [[ "$a" == "--with-lab-workstations" ]] && with_ws=1; done
+  local with_ws=0 with_lab_mcp=0
+  local services=(corp-git gateway gateway-sse agent-service intake-worker)
+  local lab_services=(corp-redis corp-db corp-mail intranet external-web corp-seed
+    mcp-filesystem mcp-git mcp-fetch mcp-memory mcp-desktop mcp-postgres mcp-redis mcp-email mcp-gitea mcp-playwright)
+  for a in "$@"; do
+    case "$a" in
+      --with-lab-mcp) with_lab_mcp=1 ;;
+      --with-lab-workstations) with_ws=1; with_lab_mcp=1 ;;
+      *) echo "알 수 없는 field 옵션: $a" >&2; exit 2 ;;
+    esac
+  done
   if [[ ! -e .env ]]; then
     umask 077
     printf 'MOCK_SSO_PASSWORD=%s\nPOSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
   fi
   ensure_env
+  grep -qE '^GITEA_ADMIN_PASSWORD=.+' .env || echo "GITEA_ADMIN_PASSWORD=$(openssl rand -hex 24)" >> .env
+  if [[ $with_lab_mcp == 1 ]]; then
+    export FIELD_REGISTRY_DIR=/registry
+    export FIELD_DB_VOLUME=field_lab_db_data FIELD_GIT_VOLUME=field_lab_corp_git_data FIELD_ACCOUNTS_MODE=0
+    services+=("${lab_services[@]}")
+  else
+    export FIELD_REGISTRY_DIR=/registry-field
+    export FIELD_DB_VOLUME=field_db_data FIELD_GIT_VOLUME=field_corp_git_data FIELD_ACCOUNTS_MODE=1
+    docker compose "${FIELD_COMPOSE[@]}" stop "${lab_services[@]}" >/dev/null 2>&1 || true
+  fi
+  export MCP_FIELD_MODE="$FIELD_ACCOUNTS_MODE"
   echo "[field 1/4] 이미지 빌드"
   docker compose "${FIELD_COMPOSE[@]}" build -q "${services[@]}"
-  echo "[field 2/4] 회사 시스템 · MCP 서버 10종 · Gateway · Console"
+  if [[ $with_lab_mcp == 1 ]]; then echo "[field 2/4] Gateway · Console · 내부 Git · MCP 실습 모드"
+  else echo "[field 2/4] Gateway · Console · 내부 Git"; fi
   docker compose "${FIELD_COMPOSE[@]}" up -d "${services[@]}"
   wait_ready
-  ensure_contracts
+  if [[ $with_lab_mcp == 1 ]]; then ensure_contracts; fi
   if [[ $with_ws == 1 ]]; then
     echo "[field 3/4] 컨테이너 직원 PC 4대도 함께 기동(--with-lab-workstations)"
     docker compose "${FIELD_COMPOSE[@]}" --profile lab-workstations build -q "${WORKSTATIONS[@]}"
@@ -247,7 +280,8 @@ field_up() {
   docker compose "${FIELD_COMPOSE[@]}" up -d caddy
   echo
   echo "접속 주소       : http://${APPLIANCE_BIND}:443"
-  echo "처음 배치라면 계정별 비밀번호 설정: ./console.sh field set-password <이메일>"
+  if [[ $with_lab_mcp == 0 ]]; then echo "시험 계정       : root/root(관리자), user/user(직원) · 회원가입은 관리자 승인"; fi
+  echo "내부 저장소     : http://${APPLIANCE_BIND}:443/git/"
   echo "직원 PC 키트    : field/pc/mcpgw_pc.py — 명령은 ./console.sh field pc-command"
 }
 
@@ -280,7 +314,7 @@ field_register_pc() {
 # 셈이므로 계정마다 바꾼다. 비밀번호는 명령줄이 아니라 표준 입력으로 넘기고(프로세스 목록에 남지 않게),
 # 해시는 로그인과 같은 crypt()/bcrypt다.
 field_set_password() {
-  local email="${1:?계정 이메일을 지정하세요 (예: ysg@bob.local)}" pw
+  local email="${1:?아이디를 지정하세요 (예: root)}" pw
   read -r -s -p "새 비밀번호(12자 이상, 화면에 보이지 않음): " pw; echo
   [[ ${#pw} -ge 12 ]] || { echo "12자 이상으로 정하세요" >&2; exit 1; }
   printf '%s' "$pw" | docker compose "${FIELD_COMPOSE[@]}" exec -T agent-service python -c '
@@ -295,7 +329,8 @@ sys.exit(0 if n else 1)' "$email"
 # 직원에게 줄 setup 명령 한 줄. 서버 목록은 레지스트리에서 읽는다(손으로 옮기지 않는다, D-30).
 field_pc_command() {
   local servers
-  servers="$(python3 -c 'import sys, tomllib; print(",".join(sorted(tomllib.load(open(sys.argv[1], "rb"))["servers"])))' registry/catalog.toml)"
+  servers="$(docker compose "${FIELD_COMPOSE[@]}" exec -T gateway python -c 'from app.registry import servers; print(",".join(sorted(servers())))')"
+  if [[ -z "$servers" ]]; then echo "활성화된 MCP 서버가 없습니다. 도입 승인 후 레지스트리와 계약을 등록하세요."; return; fi
   echo "python3 mcpgw_pc.py setup --url http://${APPLIANCE_BIND}:443 --servers ${servers}"
 }
 
@@ -307,6 +342,7 @@ field_dispatch() {
     }
   fi
   export APPLIANCE_BIND
+  export MCP_FIELD_MODE=1
   case "${1:-}" in
     up) shift; field_up "$@" ;;
     status) field_status ;;

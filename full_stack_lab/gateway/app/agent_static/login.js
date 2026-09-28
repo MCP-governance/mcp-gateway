@@ -5,13 +5,10 @@ const TOKEN_KEY = "mcp-console-token";
 document.documentElement.dataset.theme = localStorage.getItem("mcp-console-theme")
   || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 
-const pick = document.querySelector("#pick");
 const email = document.querySelector("#email");
 const password = document.querySelector("#password");
 const error = document.querySelector("#gate-error");
 const button = document.querySelector("#gate-go");
-
-pick.addEventListener("change", () => { email.value = pick.value; });
 
 document.querySelector("#gate-form").addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -32,7 +29,7 @@ document.querySelector("#gate-form").addEventListener("submit", async (event) =>
       // 관리자조차 자기 조치가 먹혔는지 알 수 없게 된다.
       error.textContent = body.detail
         || (response.status === 429 ? "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요."
-          : "합성 계정과 비밀번호를 확인해주세요.");
+          : "아이디와 비밀번호를 확인해주세요.");
       error.focus();
       return;
     }
