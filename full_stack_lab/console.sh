@@ -445,6 +445,7 @@ case "${1:-up}" in
   test)
     ensure_env
     python3 scripts/network_prefix.py --self-check
+    python3 tests/schema_check.py
     docker run --rm --network none -v "$LAB_DIR:/validation:ro" "$(docker compose images -q gateway)" \
       python /validation/tests/intake_validation_test.py
     if command -v node >/dev/null; then node --test tests/console-state.test.mjs

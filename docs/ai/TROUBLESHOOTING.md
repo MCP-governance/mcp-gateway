@@ -50,3 +50,4 @@
 | A.I.G가 "발견 0"인데 믿기 어려움 | 로컬 소형 모델의 탐지력 한계(취약 예제에서도 0) | 화면의 "발견 0 · 로컬 소형 모델"은 안전 판정이 아님. 필요하면 `.env`의 `MCP_SCAN_*`로 큰 모델에 다시 감사 |
 | 원격 MCP를 등록했는데 모든 호출이 `MCP-EGRESS-001` | 정책 데이터의 egress 허용 목록에 랩 서버만 있음 | Console **Gateway 등록**으로 올린 엔드포인트는 그 URL만 허용으로 본다(D-49). catalog.toml에 손으로 넣은 원격 서버는 `opa/data.json`의 `egress.allowed_hosts`에도 추가 |
 | 내부 Git에서 로그인 화면이 반복 | 쿠키(`mcpgw_git`, 30분)가 만료됐거나 계정이 중지됨 | Console에 다시 로그인. 중지 계정은 관리자가 **직원·단말 → 계정**에서 확인 |
+| 재시작한 Gateway·Console이 `CheckViolation: scan_jobs_trigger_check`로 계속 재기동 | 기동마다 도는 `agent_tables.sql`이 제약을 `lifecycle_tables.sql`보다 좁게 다시 만들어, 이미 있는 `anomaly` 작업 행이 걸렸다(2026-09-28 수정) | 두 파일의 목록을 같게 유지 — `tests/schema_check.py`가 확인 |

@@ -217,7 +217,7 @@ BEGIN
 END $$;
 ALTER TABLE scan_jobs DROP CONSTRAINT IF EXISTS scan_jobs_target_kind_check;
 ALTER TABLE scan_jobs ADD CONSTRAINT scan_jobs_target_kind_check
-  CHECK (target_kind IN ('intake', 'server'));
+  CHECK (target_kind IN ('intake', 'server', 'endpoint'));
 ALTER TABLE scan_jobs DROP CONSTRAINT IF EXISTS scan_jobs_status_check;
 ALTER TABLE scan_jobs ADD CONSTRAINT scan_jobs_status_check
   CHECK (status IN ('QUEUED', 'RUNNING', 'DONE', 'FAILED', 'CANCELLED'));
@@ -226,8 +226,10 @@ ALTER TABLE scan_jobs ADD CONSTRAINT scan_jobs_status_check
 -- "검증 통과가 자동으로 걸었다"는 증적으로서 값이 다르다.
 ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS trigger text NOT NULL DEFAULT 'manual';
 ALTER TABLE scan_jobs DROP CONSTRAINT IF EXISTS scan_jobs_trigger_check;
+-- 이 파일은 기동마다 다시 실행되고 lifecycle_tables.sql보다 먼저 돈다. 여기서 목록을 좁게 다시 만들면
+-- 이미 있는 'anomaly'·'termination' 행이 제약을 어겨 Gateway·Console이 기동하지 못한다(tests/schema_check.py).
 ALTER TABLE scan_jobs ADD CONSTRAINT scan_jobs_trigger_check
-  CHECK (trigger IN ('manual', 'validated', 'rescan', 'drift'));
+  CHECK (trigger IN ('manual', 'validated', 'rescan', 'drift', 'termination', 'anomaly'));
 ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS commit_sha text;
 ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS repository_url text;
 ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS source_ref text;

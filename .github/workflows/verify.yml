@@ -63,6 +63,7 @@ jobs:
       - name: 검사기 자체 점검
         run: |
           python3 tests/contracts_check.py
+          python3 tests/schema_check.py
           python3 tests/experiments_check.py
           python3 tests/replay_check.py
           python3 ../endpoint-agent/agent.py --self-check

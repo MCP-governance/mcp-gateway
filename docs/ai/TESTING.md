@@ -23,7 +23,8 @@
 Node 24로 `node --check`(console.js·**charts.mjs**·login.js는 ES 모듈) + `node --test tests/console-state.test.mjs`,
 검사기·단말 에이전트·망 대역 self-check, **`workstation/managed/render.py`로 하네스 4종(Claude Code·Codex·
 Gemini CLI·OpenCode) 관리형 설정의 서버 목록이 `registry/catalog.toml`과 같은지 대조**, `tests/open_endpoints.py`
-(무인증 API 목록 ↔ `full_stack_lab/README.md` 문장), compose 망·포트·서명 키 경계(모든 망의 명시 대역, Presidio는
+(무인증 API 목록 ↔ `full_stack_lab/README.md` 문장), `tests/schema_check.py`(기동마다 다시 만드는 CHECK 제약이 SQL 파일
+사이에서 같은지 — 앞 파일이 좁히면 기존 행 때문에 재기동이 실패한다), compose 망·포트·서명 키 경계(모든 망의 명시 대역, Presidio는
 privacy 망만), Rego 시험. → `.github/workflows/verify.yml`
 
 ## 2. 개별 실행
