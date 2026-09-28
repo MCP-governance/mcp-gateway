@@ -251,6 +251,9 @@ field_up() {
   fi
   ensure_env
   grep -qE '^GITEA_ADMIN_PASSWORD=.+' .env || echo "GITEA_ADMIN_PASSWORD=$(openssl rand -hex 24)" >> .env
+  if [[ $with_ws == 0 ]]; then
+    docker compose "${FIELD_COMPOSE[@]}" stop "${WORKSTATIONS[@]}" >/dev/null 2>&1 || true
+  fi
   if [[ $with_lab_mcp == 1 ]]; then
     export FIELD_REGISTRY_DIR=/registry
     export FIELD_DB_VOLUME=field_lab_db_data FIELD_GIT_VOLUME=field_lab_corp_git_data FIELD_ACCOUNTS_MODE=0
