@@ -57,6 +57,7 @@ jobs:
           node --check gateway/app/agent_static/console.js
           node --check gateway/app/agent_static/charts.mjs
           node --check gateway/app/agent_static/login.js
+          node --check gateway/app/agent_static/signup.js
           node --test tests/console-state.test.mjs
 
       - name: 검사기 자체 점검
@@ -164,7 +165,7 @@ jobs:
       - name: 실기기 오버레이 — ./console.sh field up
         run: |
           echo "APPLIANCE_BIND=127.0.0.1" >> .env
-          APPLIANCE_BIND=127.0.0.1 ./console.sh field up
+          APPLIANCE_BIND=127.0.0.1 ./console.sh field up --with-lab-mcp
           APPLIANCE_BIND=127.0.0.1 ./console.sh field status
 
       - name: 실기기 — 직원 PC 키트와 실제 하네스
