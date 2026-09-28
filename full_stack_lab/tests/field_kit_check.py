@@ -21,6 +21,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 import secrets
 import shutil
 import subprocess
@@ -268,6 +269,16 @@ class OverlayTest(unittest.TestCase):
         self.assertRegex(text, r"handle /mcp/\* \{\s*reverse_proxy gateway:8080")
         self.assertRegex(text, r"handle /api/health \{\s*reverse_proxy gateway:8080")
         self.assertRegex(text, r"handle /oauth/\* \{\s*reverse_proxy agent-service:8000")
+        # D-48: Gitea 페이지는 솔루션 로그인을 거친다. 순서가 곧 통제다 — 클라이언트가 보낸 신원 헤더를
+        # 지우고, 인증하고, Authorization을 지운 뒤에야 Gitea로 간다.
+        git = re.search(r"handle /git/\* \{\s*route \{(.*?)\n\t\t\}", text, re.S)
+        self.assertIsNotNone(git, "/git/* 는 route 블록이어야 한다(적힌 순서대로 실행)")
+        steps = [line.strip().split(" {")[0] for line in git.group(1).splitlines()
+                 if line.startswith("\t\t\t") and not line.startswith("\t\t\t\t") and line.strip() not in {"", "}"}]
+        self.assertEqual(steps, ["request_header -X-WEBAUTH-USER", "forward_auth agent-service:8000",
+                                 "request_header -Authorization", "uri strip_prefix /git", "reverse_proxy corp-git:3000"])
+        self.assertIn("uri /auth/gitea", git.group(1))
+        self.assertIn("copy_headers X-WEBAUTH-USER", git.group(1))
 
     def test_mcp_facade_accepts_only_the_configured_public_host(self):
         # Caddy는 Host를 그대로 넘긴다. DNS 리바인딩 방어는 두고 배포자가 정한 공개 이름만 더한다(D-43).
@@ -292,6 +303,12 @@ class OverlayTest(unittest.TestCase):
         self.assertEqual({ip for name, ip in published if name != "caddy"}, {"127.0.0.1"})
         self.assertFalse([name for name in services if name.startswith("ws-")])  # 실제 PC가 대신한다
         self.assertEqual(services["gateway"]["environment"]["IDP_INTERNAL_URL"], "http://agent-service:8000")
+        # D-48: Gitea가 믿는 프록시는 Caddy의 고정 주소 하나뿐이고, 모르는 사용자를 자동으로 만들지 않는다.
+        caddy_ip = services["caddy"]["networks"]["edge"]["ipv4_address"]
+        gitea = services["corp-git"]["environment"]
+        self.assertEqual(gitea["GITEA__security__REVERSE_PROXY_TRUSTED_PROXIES"], caddy_ip + "/32")
+        self.assertEqual(gitea["GITEA__service__ENABLE_REVERSE_PROXY_AUTO_REGISTRATION"], "false")
+        self.assertEqual(gitea["GITEA__service__REQUIRE_SIGNIN_VIEW"], "true")
         missing = {k: v for k, v in env.items() if k != "APPLIANCE_BIND"}
         self.assertNotEqual(subprocess.run(command, env=missing, capture_output=True).returncode, 0)
 

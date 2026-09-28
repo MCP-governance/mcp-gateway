@@ -4,8 +4,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
     && useradd --uid 10001 --create-home appuser \
-    && mkdir -p /runtime /reports \
-    && chown -R appuser:appuser /app /runtime /reports
+    && mkdir -p /runtime /reports /registry-runtime \
+    && chown -R appuser:appuser /app /runtime /reports /registry-runtime
 COPY --chown=appuser:appuser app ./app
 USER appuser
 EXPOSE 8080 8081

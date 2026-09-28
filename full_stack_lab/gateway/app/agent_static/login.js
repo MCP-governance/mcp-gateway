@@ -34,7 +34,9 @@ document.querySelector("#gate-form").addEventListener("submit", async (event) =>
       return;
     }
     localStorage.setItem(TOKEN_KEY, body.access_token);
-    location.href = "/workspace";
+    // 내부 Git에서 로그인하러 온 경우만 그리로 돌려보낸다. 다른 주소로 보내는 열린 리다이렉트를 만들지 않는다.
+    const next = new URLSearchParams(location.search).get("next") || "";
+    location.href = /^\/git\/[^/\\]/.test(next) || next === "/git/" ? next : "/workspace";
   } catch {
     error.textContent = "인증 서비스에 연결할 수 없습니다. 잠시 후 다시 시도하세요.";
     error.focus();

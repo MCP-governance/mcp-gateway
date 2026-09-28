@@ -323,6 +323,46 @@ async def server_check_is_side_effect_free() -> str:
     return f"healthy · {result['latency_ms']}ms · {result.get('advertised_name')}"
 
 
+async def console_registration_expires() -> str:
+    """D-49: an approved server registered from the Console serves under /mcp/<id>/ with only
+    the tools the admin approved; a contract other than the reviewed one is refused; the
+    approval ends on a date (P-APPROVAL-EXPIRY-001); deregistering takes the path away.
+    The lab's fetch server stands in under another id, so no outside network is needed."""
+    await operating("fetch")
+    server_id, endpoint = "acceptance-fetch", "http://mcp-fetch:8000/mcp"
+    url = f"{API}/mcp/{server_id}/"
+    headers = {"Authorization": f"Bearer {TOKENS['admin']}"}
+    arguments = {"url": "http://intranet.bob.local/", "max_length": 200}
+    async with httpx.AsyncClient(timeout=120, headers=headers) as client:
+        found = await client.post(API + "/api/registry/discover", json={"endpoint": endpoint})
+        found.raise_for_status()
+        review = found.json()
+        expect([tool["name"] for tool in review["tools"]] == ["fetch"], f"도구 불러오기: {review['tools']}")
+        body = {"server_id": server_id, "display_name": "Acceptance fetch", "endpoint": endpoint,
+                "catalog_hash": review["catalog_hash"], "tools": {"fetch": "r"}, "data_class": "public", "valid_days": 1}
+        stale = await client.post(API + "/api/registry/servers", json={**body, "catalog_hash": "0" * 64})
+        expect(stale.status_code == 409, f"검토하지 않은 계약으로 등록: {stale.status_code}")
+        created = await client.post(API + "/api/registry/servers", json=body)
+        expect(created.status_code == 201 and created.json().get("status") == "READY", f"등록: {created.status_code} {created.text[:200]}")
+        try:
+            names = {tool.name for tool in await list_tools("employee", url)}
+            expect(names == {"fetch"}, f"/mcp/{server_id}/ 목록: {names}")
+            out = await call("admin", "fetch", arguments, url)
+            # Earlier checks leave blocks behind, so the anomaly alert may ride on an allowed call.
+            expect(out.get("decision") in {"Allow", "Alert"} and not out["is_error"],
+                   f"등록 서버 호출: {out.get('decision')} {out.get('policy_id')} {out['text'][:120]}")
+            await db.execute("UPDATE mcp_tools SET approval_valid_until = now() - interval '1 minute' WHERE server_id=%s", (server_id,))
+            expired = await call("admin", "fetch", arguments, url)
+            expect(expired.get("decision") == "Block" and expired.get("policy_id") == "P-APPROVAL-EXPIRY-001",
+                   f"기한 지난 등록 서버 호출: {expired.get('decision')} {expired.get('policy_id')}")
+        finally:
+            removed = await client.delete(f"{API}/api/registry/servers/{server_id}")
+        expect(removed.status_code == 200, f"등록 해제: {removed.status_code}")
+        gone = await client.post(url, json={})
+    expect(gone.status_code == 404, f"해제한 서버 경로가 {gone.status_code}")
+    return f"/mcp/{server_id}/ 도구 1개 · 계약 불일치 409 · 기한 만료 차단 · 해제 후 404"
+
+
 async def audit_chain_intact() -> str:
     result = await verify_audit_chain()
     expect(result["intact"], f"감사 체인 손상: {result}")
@@ -346,6 +386,7 @@ async def run() -> dict:
         ("monitor-mode-records-would-decision", monitor_mode_records()),
         ("usage-relationship-scope-alerts", relationship_scope_alerts()),
         ("server-check-changes-nothing", server_check_is_side_effect_free()),
+        ("console-registration-pins-and-expires", console_registration_expires()),
         # PDF integration (Presidio, MCP-DATA-EGRESS-001, P-CHAIN-001) - order matters:
         # the chain check relies on the important read made by the first one.
         ("pii-masked-in-output", pii_masked_in_output()),

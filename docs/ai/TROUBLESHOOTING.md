@@ -45,3 +45,8 @@
 | Gemini CLI가 `tools.exclude` 사용 중단 예고 경고를 띄움 | 설정 키가 곧 바뀔 예정 | 지금은 그대로 동작함 — 무시. 마이그레이션은 [ROADMAP.md](ROADMAP.md) |
 | 소형 모델이 도구를 못 찾고 90초씩 끔 | 집계 엔드포인트(`/mcp/`)의 도구 166개가 한 목록에 다 보임 | 서버별 엔드포인트(`/mcp/<server>/`) + `bob-ask --servers` |
 | WSL VM이 반복해서 멎음(`Wsl/Service/0x8007274c`, wsl.exe 무응답) | 스택(~3.6GB) 위에 큰 로컬 모델(qwen3.5:4b@16K, +3.46GB)과 하네스 실행이 겹쳐 7.6GB VM 메모리를 넘음 | `wsl --shutdown` 후 재기동. 기본 모델은 2B로 유지, Ollama는 모델 1개만 상주(`OLLAMA_MAX_LOADED_MODELS=1`) |
+| SSH로 솔루션 기기에서 compose를 부르면 이미지 받기가 `docker-credential-desktop.exe: executable file not found` | Docker Desktop WSL 통합의 자격 도우미가 대화형 셸 PATH(Windows 경로)에만 있음 | `export PATH="$PATH:/mnt/c/Program Files/Docker/Docker/resources/bin"` 뒤 실행 |
+| A.I.G 작업이 첫 요청에서 끊김(Ollama 로그에 `500 · 1m0s`) | `mcp-scan`의 OpenAI 클라이언트 제한이 요청당 60초. CPU에서 큰 모델·생각 모드가 그 안에 첫 바이트를 못 보냄 | 기본 `qwen3.5:0.8b` 유지(D-47). 더 큰 모델은 GPU 기기나 외부 endpoint |
+| A.I.G가 "발견 0"인데 믿기 어려움 | 로컬 소형 모델의 탐지력 한계(취약 예제에서도 0) | 화면의 "발견 0 · 로컬 소형 모델"은 안전 판정이 아님. 필요하면 `.env`의 `MCP_SCAN_*`로 큰 모델에 다시 감사 |
+| 원격 MCP를 등록했는데 모든 호출이 `MCP-EGRESS-001` | 정책 데이터의 egress 허용 목록에 랩 서버만 있음 | Console **Gateway 등록**으로 올린 엔드포인트는 그 URL만 허용으로 본다(D-49). catalog.toml에 손으로 넣은 원격 서버는 `opa/data.json`의 `egress.allowed_hosts`에도 추가 |
+| 내부 Git에서 로그인 화면이 반복 | 쿠키(`mcpgw_git`, 30분)가 만료됐거나 계정이 중지됨 | Console에 다시 로그인. 중지 계정은 관리자가 **직원·단말 → 계정**에서 확인 |

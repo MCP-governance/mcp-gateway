@@ -47,10 +47,12 @@
 
 관리자로 로그인하면: **개요**(오늘 판정·서버·직원 PC·많이 걸린 정책, 허용·경보·차단 수치를 누르면 해당 활동 로그) ·
 **활동 로그**(한 줄이 호출 하나, 누르면 판정 근거·분류·정책·trace, 실시간) · **승인 대기** · **MCP 서버**(계약
-일치/불일치, 승인본 갱신) · **직원·단말**(단말·MCP 설정·계정·가입 승인) · **도입 신청**(자동 검증 상태, 검증 보고서 —
-취약점·코드 검사·SBOM·종료조건 조사, A.I.G 검사; 원격 서버의 종료 조건은 관리자가 제공자 문서로 검증해야 승인) ·
+일치/불일치, 승인본 갱신, Console 등록 서버의 사용 기한·연장·해제) · **직원·단말**(단말·MCP 설정·계정·가입 승인) ·
+**도입 신청**(자동 검증 상태, 검증 보고서 — 취약점·코드 검사·SBOM·종료조건 조사, A.I.G 검사, 승인한 신청의 Gateway 등록;
+원격 서버의 종료 조건은 관리자가 제공자 문서로 검증해야 승인) ·
 **종료·폐기** · **정책**(배포된 권한 번들과 그 번들로 OPA에 물은 27칸, 관리대장, 예외, 집행/관찰 모드).
-직원·협력사는 자기 활동 로그와 도입 신청만 봅니다. 활동 로그는 불러온 기록 안에서 사람·단말·
+직원·협력사는 자기 활동 로그와 도입 신청만 보고, field 배치에서는 왼쪽 아래 **내 PC 연결**(키트·setup 한 줄)과
+**내부 Git**(같은 계정으로 로그인)을 씁니다. 활동 로그는 불러온 기록 안에서 사람·단말·
 도구·대상·정책·trace로 찾고, 일시정지해도 새 판정 수를 셉니다.
 구조: [../docs/ai/CONSOLE_UI.md](../docs/ai/CONSOLE_UI.md).
 
@@ -120,7 +122,7 @@ Gateway API 중 토큰 없이 열려 있는 것은 다음뿐입니다: `/api/hea
 브라우저로, 직원 PC는 브라우저와 키트(`field/pc/mcpgw_pc.py`)로 접속합니다.
 
 ```bash
-./console.sh field up                     # MCP 서버 0개, 계정 root/root·user/user, 회원가입은 관리자 승인
+./console.sh field up                     # MCP 서버 0개, 계정 root/root·user/user, 회원가입은 관리자 승인, A.I.G 로컬 모델(처음 1GB)
 ./console.sh field up --with-lab-mcp      # 랩의 회사 시스템·MCP 10종·랩 계정으로
 ./console.sh field up --with-lab-workstations   # 컨테이너 직원 PC 4대까지
 ./console.sh field pc-command             # 직원 PC에서 실행할 키트 setup 한 줄(서버 목록은 레지스트리에서)
@@ -128,8 +130,8 @@ Gateway API 중 토큰 없이 열려 있는 것은 다음뿐입니다: `/api/hea
 
 그 밖에 `field status`(공개 주소의 `/api/health`), `field set-password <아이디>`, `field register-pc <이름>`(장치 키 발급),
 `field down`(Caddy만 멈춤)이 있습니다. field 모드는 별도 DB·Gitea 볼륨(`field_*`)을 쓰므로 랩 데이터는 그대로 남습니다. 경로 분기는 `field/Caddyfile`
-(`/mcp/*`·`/api/health`·RFC 9728 메타데이터는 Gateway, `/oauth/*`는 IdP, `/git/*`는 내부 Gitea, 나머지는 Console)에
-있습니다. 전체 절차와 한계는 루트 [README.md](../README.md#실제-기기로-배치하기--tailscale-내부망). 이 랩 자체를
+(`/mcp/*`·`/api/health`·RFC 9728 메타데이터는 Gateway, `/oauth/*`는 IdP, `/git/*`는 솔루션 로그인을 거친 내부 Gitea,
+나머지는 Console)에 있습니다. Console에서 등록한 서버는 `registry_runtime` 볼륨의 `servers.json`에 남고(D-49), `reset`이면 함께 지워집니다. 전체 절차와 한계는 루트 [README.md](../README.md#실제-기기로-배치하기--tailscale-내부망). 이 랩 자체를
 바꾸지 않는 오버레이입니다 — `compose.field.yaml`·`field/`는 `./console.sh field …`로만 얹힙니다.
 
 ## 9. 한계
@@ -137,5 +139,6 @@ Gateway API 중 토큰 없이 열려 있는 것은 다음뿐입니다: `/api/hea
 - LLM 모드의 결과는 작은 로컬 모델(기본 `qwen3.5:2b-q4_K_M`) 품질에 좌우된다. 판정 대조는 scripted 모드로 한다.
 - 섀도 MCP는 발견·증적까지. 차단은 네트워크 평면 몫.
 - 제공자가 보유 자격을 고지하지 않으면 종료 판정은 T3에 머문다 — 논문이 특정한 구조적 한계.
+- field의 A.I.G 기본 모델(`qwen3.5:0.8b`)은 CPU에서 끝까지 돌지만 탐지력이 낮다. "발견 0 · 로컬 소형 모델"은 안전의 증거가 아니다(D-47).
 - field 모드는 Tailscale 내부망의 HTTP 전용이다. 단말 관측 에이전트는 원격 HTTP를 거부하고 Caddy도 `/api/endpoint/*`를
   게시하지 않으므로, 이 모드에서 다른 PC의 에이전트는 보고하지 못한다.

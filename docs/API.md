@@ -33,8 +33,10 @@
 | `POST /oauth/token` | 공개 | `grant_type=password|refresh_token`, `client_id`(워크스테이션 id) — Ed25519 JWT(10분) + refresh(8시간, 회전) |
 | `POST /oauth/revoke` | 공개 | RFC 7009. **항상 200**(무효 토큰도) — E1의 핵심 |
 | `POST /oauth/introspect` | 사용자 | RFC 7662 |
-| `POST /auth/mock-login` | 공개 | Console 로그인(30분). 실패 제한 있음 |
-| `GET /auth/me` · `POST /auth/logout` | 사용자 | 역할·볼 수 있는 화면 / 즉시 폐기 |
+| `POST /auth/mock-login` | 공개 | Console 로그인(30분). 실패 제한 있음. 같은 토큰을 `/git` 경로 전용 HttpOnly 쿠키 `mcpgw_git`로도 줌(D-48) |
+| `GET /auth/me` · `POST /auth/logout` | 사용자 | 역할·볼 수 있는 화면(field: 내부 Git 주소·`kit` 키트 주소와 setup 한 줄) / 즉시 폐기(쿠키도 지움) |
+| `POST /auth/signup` | 공개 | 가입 신청. 아이디는 Gitea 이름 규칙(영문·숫자 사이의 기호 하나). 시도 제한 있음 |
+| `GET /auth/gitea` | 쿠키 또는 Basic | Caddy `forward_auth` 전용(D-48). 통과 200 + `X-WEBAUTH-USER`, 브라우저 미로그인 302 `/login?next=/git/…`, 그 밖 401 Basic |
 
 ## 4. Console 전용 (agent-service)
 
@@ -45,7 +47,8 @@
 | `GET /api/accounts` · `PUT /api/accounts/{user_id}/status` | 관리자 | 신원 관리대장, 계정 사용/중지/잠금 |
 | `GET /api/mcp-requests` · `POST /api/mcp-requests` | 사용자 | 도입 신청 목록(관리자=전체) / 신청 `{display_name, repository_url, requested_transport, purpose}` — 종료 조건 필드를 보내면 422 |
 | `PUT /api/mcp-requests/{id}/exit-terms` | 관리자 | 제공자 문서로 확인한 종료 조건 기록 `{provider_credential_disclosure, revocation_evidence, audit_access_retained, evidence_url(https), note}` → 검증 주체·시각과 함께 저장. 승인 전(HOLD~VALIDATED)만 |
-| `POST /api/mcp-requests/{id}/queue-validation|approve|reject` | 관리자 | 격리 검증 대기열·승인·거부. 원격(HTTP·SSE) 서버의 승인은 세 조건이 모두 검증 기록돼 있어야 함(아니면 409) |
+| `POST /api/mcp-requests/{id}/queue-validation|approve|reject` | 관리자 | 격리 검증 대기열·승인·거부. 원격(HTTP·SSE) 서버의 승인은 세 조건이 모두 검증 기록돼 있어야 함(아니면 409). 승인은 저장소를 Gitea `mcp` 조직으로 가져옴 |
+| `POST /api/mcp-requests/{id}/register` | 관리자 | APPROVED 신청을 Gateway에 등록(D-49) `{server_id, endpoint, catalog_hash, tools:{이름:r|w|x}, data_class, valid_days}` — 저장소·검증 커밋·목적·종료 조건은 신청에서 실음 |
 | `GET /api/mcp-catalog/search?q=` | 사용자 | 이미 신청·등록된 서버인지 |
 | `GET /api/mcp-scan` 외 `/api/mcp-scan/*` | 관리자 | AI 코드 감사(격리 워커) 작업 |
 | `GET /api/readiness` · `GET /health` | 공개 | 준비 상태(Gateway·LLM 게이트웨이) |
@@ -58,10 +61,13 @@
 | `POST /api/session` | 공개 | 로그인 프록시(IdP로 전달) |
 | `GET /api/activity?after&limit&decision&server&person` | 사용자 | 판정을 읽는 문장으로(비관리자는 자기 것만) |
 | `GET /api/overview` | 관리자 | 개요 화면 한 번에 — `series`(24시간 시간대별 판정 수), `flows`(하네스×서버×판정 수), 워크스테이션별 `harness`·`calls` 포함 |
-| `GET /api/state` · `GET /api/registry` | 관리자 | 원시 상태 / 카탈로그+계약+이용 관계 |
+| `GET /api/state` · `GET /api/registry` | 관리자 | 원시 상태 / 카탈로그+계약+이용 관계, `registrations`(Console 등록 서버의 사용 기한·등록자) |
 | `POST /api/catalog/refresh` | 관리자 | 모든 서버 계약 재확인 |
 | `POST /api/registry/{server}/approve-contract` | 관리자 | 검토한 계약 변경을 승인본으로(`note` 필수) |
 | `POST /api/registry/{server}/check` | 관리자 | MCP 세션만 협상해 연결 확인 — `state`(healthy·unhealthy·retired)·지연·서버 정보. 계약·상태·감사는 그대로(D-40) |
+| `POST /api/registry/discover` | 관리자 | 등록 전 검토 `{endpoint}` → 광고 도구·권장 행위·`catalog_hash`. 아무것도 기록하지 않음(D-49) |
+| `POST /api/registry/servers` | 관리자 | Console 등록. `catalog_hash`가 지금 서버 계약과 다르면 409. 결과 `status`·`valid_until`·`gateway_path` |
+| `POST /api/registry/servers/{id}/extend` · `DELETE /api/registry/servers/{id}` | 관리자 | 사용 기한을 오늘부터 다시(`valid_days`) / 등록 해제(서버는 DISABLED로 남음). Console 등록 서버만 |
 | `POST /api/approvals/{id}/approve|reject` | 관리자 | 승인 → 1회 실행 |
 | `GET /api/policy/matrix` · `GET /api/policy/ledger` | 사용자 | 역할×등급×행위 27칸을 지금 배포된 번들로 OPA에 질의한 결과 / 관리대장·예외·`authorization`(권한 번들)·`deployed_rego`(배포 정책 묶음 digest) |
 | `GET/PUT /api/enforcement` | 사용자/관리자 | 집행·관찰 모드 |

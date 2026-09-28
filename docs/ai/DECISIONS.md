@@ -369,3 +369,64 @@
 - **이유**: 현재 tailnet에서 `tailscale cert`가 인증서 발급을 거절한다. 사설 CA·hosts 배포 없이 같은 tailnet의 관리자·직원이 ID/PW로 접속하도록, Tailscale 터널 암호화와 앱 토큰·역할 판정을 사용한다. 브라우저에는 HTTP로 표시되므로 이 배치는 tailnet 전용이며 일반 LAN/인터넷에는 조직이 신뢰하는 HTTPS 종료 지점을 둔다.
 - **신청 표시**: 신청 목록이 비어 있을 때도 폴링한다. 공개 `IDP_ISSUER`와 요청의 실제 origin을 함께 검사하여 Caddy 컨테이너 IP 변경이 로그인·신청 POST를 막지 않게 한다. 다른 origin의 쓰기 요청은 계속 거부한다.
 - **운영 단순화**: 새 `.env`에는 DB와 초기 IdP 비밀번호를 임의 생성한다. 기존 `.env`·DB는 건드리지 않는다. 컨테이너 직원 PC를 띄우지 않는 field 기본 배치에서는 가상 PC 등록을 생략한다.
+
+## D-47 A.I.G 코드 감사는 field 기본으로 초경량 로컬 모델 — `qwen3.5:0.8b`
+- **결정**: `./console.sh field up`이 [2/5] 단계에서 Ollama를 띄우고 `qwen3.5:0.8b`(Q8, 약 1GB)를 처음 한 번 받아,
+  컨텍스트 16K로 고정한 파생 모델 `aig-scanner`를 만든다. `.env`의 `MCP_SCAN_BASE_URL`·`MODEL`·`API_KEY`·`CONTEXT_WINDOW`가 비어
+  있을 때만 로컬 값으로 채운다 — 조직이 다른 검사 endpoint를 적어 두었으면 건드리지 않는다. 끄려면 `AIG_LOCAL_MODEL=none`,
+  바꾸려면 `AIG_LOCAL_MODEL=<ollama 태그>`. 이제 검증 완료·이상행위(`P-ANOMALY-001`)·정기 재감사가 별도 설정 없이 돈다.
+- **고른 과정(솔루션 기기 Ryzen 5 7530U, CPU만)**: 스캐너 저장소의 취약 예제(`mcp-scan/testcase/case1`)로 비교했다.
+  | 모델 | 결과 |
+  | --- | --- |
+  | `qwen3.5:0.8b` | 4분에 완료, 발견 0 |
+  | `qwen2.5-coder:1.5b` | 도구 호출 형식을 못 지켜 반복 한도(80회)까지 11분, 발견 0 |
+  | `qwen3:1.7b` | 첫 요청이 60초를 넘겨 끊김 |
+  `mcp-scan`은 텍스트로 쓴 도구 호출 형식을 모델이 따라야 하고, OpenAI 클라이언트 제한이 요청당 60초다(`utils/llm.py`). CPU에서
+  이 둘을 지키며 끝까지 도는 것은 0.8B뿐이었다. 도입 신청(MicrosoftDocs/mcp) 자동 감사는 약 6분, 이상행위로 걸린 재감사도 약 6분이었다.
+- **한계(중요)**: 0.8B는 심어 둔 취약점을 찾지 못했다. 파이프라인은 실제로 돌지만 **로컬 소형 모델의 "발견 0"은 안전의 증거가
+  아니다**. 화면은 이 경우 "발견 0 · 로컬 소형 모델"로 따로 표시한다. 실제 판단이 필요하면 더 큰 모델(GPU 기기)이나 조직이
+  승인한 외부 endpoint를 `.env`에 적는다 — 코드가 그 endpoint로 나간다는 점은 README "운영으로 옮기기 전에"의 경고 그대로다.
+- **함께 고친 것**: 워커가 `mcp-scan`에 `DEFAULT_MODEL_CONTEXT_WINDOW`(=`MCP_SCAN_CONTEXT_WINDOW`)를 넘긴다. 없으면 128K로 가정해
+  압축하지 않고, Ollama가 넘친 앞부분(시스템 프롬프트)을 조용히 자른다. 또 `mcp-scan`이 기본으로 만드는 thinking·coding·fast 보조
+  클라이언트가 OpenRouter를 가리켜서, 같은 로컬 endpoint·모델로 고정했다. 고정 커밋은 이 클라이언트를 부르지 않지만(해당 호출이
+  주석 처리돼 있음) 버전을 올리면 저장소 코드가 외부로 나갈 수 있는 경로였다.
+
+## D-48 내부 Gitea의 신원은 솔루션 계정 — Caddy `forward_auth` + Gitea 역방향 프록시 인증
+- **결정**: field 배치에서 `/git/*`는 Caddy가 agent-service의 `/auth/gitea`에 먼저 묻는다(`forward_auth`). Console 로그인 때
+  같은 토큰을 `/git` 경로 전용 HttpOnly 쿠키(`mcpgw_git`)로도 주고, git 명령은 같은 솔루션 ID/PW를 Basic으로 보낸다.
+  통과하면 Gitea 사용자 이름을 `X-WEBAUTH-USER`로 싣고, Gitea는 그 헤더를 Caddy의 고정 IP(`${MCP_NET_PREFIX}.1.250`)에서
+  온 것만 믿는다(`REVERSE_PROXY_TRUSTED_PROXIES`). 로그인하지 않은 브라우저는 `/login?next=/git/…`로, git은 401 Basic 요청으로 돌아간다.
+- **권한(인가)**: 승인한 저장소는 `mcp` 조직(visibility `limited`, 로그인한 사용자만)으로 가져오고 이슈를 켠다. 직원은 읽기·클론·
+  이슈·개인 저장소, 관리자 역할은 Gitea 관리자다(`ensure_gitea_user`가 역할에 맞춰 둔다). 풀 리퀘스트는 끈다 — 저장소는 검증한
+  커밋의 사본이고, 고친 코드는 도입 신청을 다시 거친다. 같은 저장소를 다시 승인하면 예전 사본을 덮지 않고 신청 id를 붙인 새 사본을 둔다.
+- **순서가 통제다**: Caddy `route` 안에서 ① 클라이언트가 보낸 `X-WEBAUTH-USER` 삭제 ② 인증 ③ `Authorization` 삭제(Gitea가 그 값으로
+  따로 로그인하지 않게) ④ 접두어 제거 ⑤ Gitea. Caddy 문서는 인증 응답에 헤더가 없을 때 같은 이름의 클라이언트 헤더를 지우는지
+  밝히지 않아 ①을 명시했다(`tests/field_kit_check.py`가 순서를 고정).
+- **Gitea 설정**: `REQUIRE_SIGNIN_VIEW`, 자동 가입 끔(agent-service가 만든 사용자만), 비밀번호 로그인 화면·가입 버튼·OpenID·SSH 끔.
+  Gitea가 예약한 이름(`user` 등)은 `-mcpgw`를 붙여 매핑하고, 그런 아이디로 가입 신청은 받지 않는다. 가입 아이디는 Gitea 규칙
+  (영문·숫자 사이의 기호 하나)을 따른다.
+- **이유**: 사용자 요구는 "내부 저장소를 직원이 잘 쓰게"였고, 이전 판은 저장소를 tailnet 전체에 무인증 공개로만 열어 직원이 로그인·
+  이슈·클론 인증을 할 수 없었다. OIDC 인가 코드 흐름을 IdP에 새로 짜는 대신 Caddy·Gitea에 이미 있는 기능을 썼다. 계정을 중지하면
+  다음 요청부터 Gitea도 막힌다(쿠키 토큰을 매번 관리대장에서 확인).
+- **한계**: 쿠키는 Console 토큰과 같은 30분이다. 만료되면 로그인 화면으로 돌아간다. Gitea API의 역방향 프록시 인증은 켜지 않았다(웹과 git만).
+
+## D-49 승인한 서버를 Console에서 Gateway에 등록 — 계약 고정과 사용 기한
+- **결정**: 도입 신청이 APPROVED면 관리자가 **Gateway 등록**을 한다: 엔드포인트 → 도구 불러오기(`POST /api/registry/discover`,
+  아무것도 기록하지 않음) → 도구별 읽기·쓰기·실행/미승인, 데이터 등급, 사용 기한(30~365일) → 등록(`POST /api/registry/servers`).
+  등록은 `REGISTRY_RUNTIME_DIR/servers.json`(named volume)에 카탈로그와 같은 모양으로 남고, `registry.catalog()`는 검토된
+  `catalog.toml`과의 합집합이다(이름이 겹치면 파일이 이긴다 — 등록 자체를 거부). `pc-command`·서버별 경로·`tools/list`가 그대로 따라온다.
+- **LiteLLM에서 가져온 것 / 가져오지 않은 것**(BENCHMARK_LITELLM.md 4절 1번, 2절 1·22번): 설정 서버와 런타임 서버를 합치는 모양,
+  제출→승인 흐름. 가져오지 않은 것은 "승인 뒤 무재검증 신뢰" — 등록 요청은 관리자가 검토한 `catalog_hash`를 싣고, 서버가 지금 말하는
+  계약이 그와 다르면 409다(검토와 등록 사이의 변경 차단). 고정한 해시는 이후 매 호출의 계약 재검증에 그대로 쓰인다.
+- **BeyondTrust에서 가져온 것**: 기한 있는 접근(요청 → 승인 → 사용 → 만료 → 감사). 기한은 그 서버 도구의 `approval_valid_until`이고,
+  지나면 기존 `P-APPROVAL-EXPIRY-001`이 호출을 막는다. 연장은 오늘부터 새 기한이며, 등록·연장·해제 이력은 `servers.json`의
+  `history`에 남는다. 해제하면 서버는 DISABLED로 남아 감사 행과 종료 케이스가 그대로 참조된다.
+- **신청의 근거를 등록에 싣는다**: GitHub 저장소·검증 커밋(`version` = 커밋, `source_ref` = `github.com/owner/repo@커밋`)·목적·
+  종료 조건 확인·신청자 부서. 그래서 이상행위(`P-ANOMALY-001`)나 정기 재감사로 도는 A.I.G 정적 감사가 도입 때 검증한 바로 그
+  커밋을 다시 받는다(워커가 `source_ref`의 40자리 커밋을 쓴다). 이용 관계 `UR-<ID>`도 함께 만들어 종료·폐기 절차에 바로 오른다.
+- **데이터 등급**: 전용 인자 추출기가 없는 서버는 전에는 모든 호출이 "중요"였다. 등록한 등급을 자원(`service`)으로 싣고, 인자는
+  DLP 패턴으로 본다. 모르는 서버는 여전히 중요다.
+- **egress**: 정책 데이터의 허용 목록에는 랩 서버만 있어 원격 서버가 전부 `MCP-EGRESS-001`로 막혔다. 관리자가 등록 절차에서 승인한
+  **그 엔드포인트 URL**만 허용으로 본다(`core.egress_allowed`). 호스트 전체를 열지 않는다. 사내가 아니면 HTTPS만 등록된다.
+- **검증**: `acceptance.console_registration_expires` — 랩 fetch 서버를 다른 id로 등록해 외부망 없이 등록·계약 불일치 409·호출·만료 차단·
+  해제 후 404를 본다.

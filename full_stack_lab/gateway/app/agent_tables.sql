@@ -166,6 +166,8 @@ CREATE INDEX IF NOT EXISTS mcp_intake_requests_status_idx ON mcp_intake_requests
 -- The automatic intake queue must recover work abandoned by a stopped worker.
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS validation_lease_expires_at timestamptz;
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS validation_attempts integer NOT NULL DEFAULT 0;
+-- D-49: 승인한 신청이 Gateway에 어떤 서버 id로 등록됐는가. 승인과 등록은 다른 결정이다.
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS registered_server_id text;
 
 -- AI-Infra-Guard mcp-scan은 LLM endpoint를 요구하는 코드 감사라 도입 검증과 같은
 -- 트랜잭션에 넣을 수 없다. 운영자가 필요할 때 돌리는 별도 작업으로 큐에 넣고,

@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import binascii
 import os
 import re
+import secrets
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -15,7 +18,7 @@ from uuid import UUID, uuid4
 
 import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from psycopg.types.json import Jsonb
@@ -107,7 +110,6 @@ async def browser_boundary(request: Request, call_next):
     origin = request.headers.get("origin")
     allowed_origins = {str(request.base_url).rstrip("/"), os.getenv("IDP_ISSUER", "").rstrip("/")}
     if request.method not in {"GET", "HEAD", "OPTIONS"} and origin and origin not in allowed_origins:
-        from fastapi.responses import JSONResponse
         return JSONResponse({"detail": "다른 출처의 요청은 허용하지 않습니다."}, status_code=403)
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -150,8 +152,11 @@ class Signup(StrictModel):
 @app.post("/auth/signup")
 async def request_signup(request: Signup, http_request: Request):
     username = request.username.strip().lower()
-    if not re.fullmatch(r"[a-z][a-z0-9_.-]{2,31}", username):
-        raise HTTPException(422, "아이디는 영문자로 시작하는 영문·숫자·._- 3~32자여야 합니다.")
+    # 같은 아이디가 내부 Gitea의 사용자 이름이 된다(D-48). Gitea는 기호 연속·기호로 끝나는 이름을 받지 않는다.
+    if not (3 <= len(username) <= 32 and re.fullmatch(r"[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*", username)):
+        raise HTTPException(422, "아이디는 영문자로 시작하는 영문·숫자 3~32자이고, 기호(._-)는 영문·숫자 사이에만 쓸 수 있습니다.")
+    if username.endswith(GITEA_ALIAS_SUFFIX):
+        raise HTTPException(422, "이 아이디는 쓸 수 없습니다.")
     caller = http_request.client.host if http_request.client else "unknown"
     key = f"signup|{caller}"
     if not login_allowed(key):
@@ -224,10 +229,25 @@ async def login(request: Login, http_request: Request):
     "계정을 끈다"는 조치가 배포가 된다. 팀원 저장소 Agent-Service의 `miso` 브랜치가
     쓰던 `crypt()` 검증 방식을 이 관리대장에 맞춰 가져왔다.
     """
-    email = request.email.strip().lower()
+    caller = http_request.client.host if http_request.client else "unknown"
+    row = await password_principal(request.email, request.password, caller)
+    user = {"user_id": row["user_id"], "principal": row["token"], "name": row["display_name"],
+            "department": row["department"] or "미지정", "roles": [row["role"]], "email": row["email"]}
+    token, _claims = issue_token(user)
+    response = JSONResponse({"access_token": token, "token_type": "bearer", "expires_in": 1800,
+            "user": {k: v for k, v in {**user, "job_title": row["job_title"], "synthetic": os.getenv("MCP_FIELD_MODE") != "1"}.items()
+                     if k != "principal"}})
+    # 같은 토큰을 내부 Gitea(/git) 전용 쿠키로도 준다. Console API는 계속 Bearer만 받으므로 이 쿠키로는
+    # Console을 조작할 수 없고, 스크립트도 읽지 못한다(HttpOnly).
+    response.set_cookie(GIT_COOKIE, token, max_age=1800, path="/git", httponly=True, samesite="lax")
+    return response
+
+
+async def password_principal(email: str, password: str, caller: str) -> dict:
+    """Console 로그인과 git의 Basic 인증이 함께 쓰는 비밀번호 확인과 시도 제한."""
+    email = email.strip().lower()
     # Checked before the identity lookup so an unknown address is throttled too;
     # otherwise the limit itself tells an attacker which addresses exist.
-    caller = http_request.client.host if http_request.client else "unknown"
     if not login_allowed(f"{caller}|{email}"):
         raise HTTPException(429, "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.")
     # 비밀번호 비교는 DB에서 한다. 애플리케이션으로 해시를 꺼내오면 "찾았지만 틀림"과
@@ -236,25 +256,36 @@ async def login(request: Login, http_request: Request):
         """SELECT token, user_id, email, display_name, role, department, job_title, status,
                   (password_hash IS NOT NULL AND password_hash = crypt(%s, password_hash)) AS password_ok
            FROM principals WHERE lower(email)=%s""",
-        (request.password, email))
+        (password, email))
     if not row or not row["password_ok"]:
         record_failed_login(f"{caller}|{email}")
         raise HTTPException(401, "합성 계정과 비밀번호를 확인해주세요.")
     if row["status"] != "active":
         # 실패 한도를 소진시키지 않는다. 비밀번호는 맞았고 계정 상태가 문제다.
         raise HTTPException(403, ACCOUNT_STATUS_REASON.get(row["status"], "사용할 수 없는 계정입니다."))
-    user = {"user_id": row["user_id"], "principal": row["token"], "name": row["display_name"],
-            "department": row["department"] or "미지정", "roles": [row["role"]], "email": row["email"]}
-    token, _claims = issue_token(user)
-    return {"access_token": token, "token_type": "bearer", "expires_in": 1800,
-            "user": {k: v for k, v in {**user, "job_title": row["job_title"], "synthetic": os.getenv("MCP_FIELD_MODE") != "1"}.items()
-                     if k != "principal"}}
+    return row
 
 
 @app.get("/auth/me")
 async def me(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
-    return {**console_user(user), "synthetic": os.getenv("MCP_FIELD_MODE") != "1"}
+    field = os.getenv("MCP_FIELD_MODE") == "1"
+    git_url = os.getenv("GITEA_PUBLIC_URL", "") if field else ""
+    return {**console_user(user), "synthetic": not field,
+            "git_url": git_url.rstrip("/") + "/" if git_url else "", "kit": await pc_kit() if field else None}
+
+
+async def pc_kit() -> dict | None:
+    """직원 PC 연결 한 줄: 키트를 받고 지금 운영 중인 서버로 setup한다(field, D-42 키트 그대로)."""
+    public = os.getenv("IDP_ISSUER", "").rstrip("/")
+    if not (STATIC_DIR / "kit" / "mcpgw_pc.py").is_file() or not public:
+        return None
+    rows = await db.fetch_all(
+        "SELECT id FROM mcp_servers WHERE status='READY' AND COALESCE(lifecycle,'OPERATING')='OPERATING' ORDER BY id")
+    servers = ",".join(row["id"] for row in rows)
+    return {"url": "/static/kit/mcpgw_pc.py", "servers": servers,
+            "command": (f"curl -fsSO {public}/static/kit/mcpgw_pc.py && python3 mcpgw_pc.py setup --url {public} --servers {servers}"
+                        if servers else "")}
 
 
 @app.post("/auth/logout")
@@ -265,7 +296,98 @@ async def logout(authorization: str | None = Header(default=None)):
     # of logouts inside one token lifetime. A revoked token past its own expiry is
     # already rejected by the signature check.
     await db.execute("DELETE FROM agent_revoked_tokens WHERE expires_at < now()")
-    return {"status": "logged_out"}
+    response = JSONResponse({"status": "logged_out"})
+    response.delete_cookie(GIT_COOKIE, path="/git")
+    return response
+
+
+# ── 내부 Gitea의 신원과 권한(D-48) ──────────────────────────────────────────────
+# Caddy가 /git/* 요청마다 이 엔드포인트에 묻는다(forward_auth). 통과하면 Gitea 사용자 이름을
+# X-WEBAUTH-USER로 돌려주고, Gitea는 Caddy의 고정 IP에서 온 그 헤더만 믿는다. 그래서 Gitea에
+# 들어가는 길은 솔루션 로그인 하나이고, 계정을 중지하면 Gitea도 다음 요청부터 막힌다.
+GIT_COOKIE = "mcpgw_git"
+GITEA_ORG = os.getenv("GITEA_ORG", "mcp")
+# Gitea가 자기 경로로 예약한 이름(models/user/user.go reservedUsernames). 시험 계정 `user`가 여기 걸린다.
+GITEA_RESERVED = {"api", "assets", "attachments", "avatar", "avatars", "captcha", "explore", "ghost",
+                  "gitea-actions", "issues", "login", "metrics", "milestones", "notifications", "org",
+                  "pulls", "repo", "repo-avatars", "user"}
+GITEA_ALIAS_SUFFIX = "-mcpgw"
+_gitea_ready: set[str] = set()  # ponytail: 프로세스별 캐시 — 역할이 바뀌면 키가 달라져 다시 맞춘다
+_gitea_lock = asyncio.Lock()
+
+
+def gitea_login(email: str) -> str:
+    name = email.split("@", 1)[0].lower()
+    return name + GITEA_ALIAS_SUFFIX if name in GITEA_RESERVED else name
+
+
+def gitea_admin_client() -> httpx.AsyncClient:
+    base = os.getenv("GITEA_ADMIN_URL", "http://corp-git:3000").rstrip("/")
+    return httpx.AsyncClient(base_url=base, timeout=30, trust_env=False,
+                             auth=(os.getenv("GITEA_ADMIN_USER", "corpadmin"),
+                                   os.getenv("GITEA_ADMIN_PASSWORD", "corp-admin-lab-only")))
+
+
+async def ensure_gitea_user(user: dict) -> str:
+    """솔루션 계정과 같은 이름의 Gitea 사용자를 만들고, 관리자 역할이면 Gitea 관리자로 맞춘다."""
+    login = gitea_login(user["email"])
+    admin = "admin" in user["roles"]
+    key = f"{login}|{admin}"
+    if key in _gitea_ready:
+        return login
+    async with _gitea_lock, gitea_admin_client() as client:
+        found = await client.get(f"/api/v1/users/{quote(login)}")
+        if found.status_code == 404:
+            created = await client.post("/api/v1/admin/users", json={
+                # 비밀번호는 쓰이지 않는다(Gitea의 비밀번호 로그인 화면을 껐다). 빈 값은 Gitea가 받지 않는다.
+                "username": login, "email": f"{login}@noreply.localhost", "full_name": user["name"],
+                "password": secrets.token_urlsafe(32), "must_change_password": False,
+                "send_notify": False, "visibility": "limited"})
+            if created.status_code != 201:
+                raise HTTPException(502, f"내부 Git 사용자를 만들지 못했습니다 (Gitea {created.status_code}).")
+        elif not found.is_success:
+            raise HTTPException(502, f"내부 Git 사용자를 확인하지 못했습니다 (Gitea {found.status_code}).")
+        elif found.json().get("is_admin") == admin:
+            _gitea_ready.add(key)
+            return login
+        changed = await client.patch(f"/api/v1/admin/users/{quote(login)}", json={
+            "login_name": login, "source_id": 0, "admin": admin})
+        if not changed.is_success:
+            raise HTTPException(502, f"내부 Git 권한을 맞추지 못했습니다 (Gitea {changed.status_code}).")
+    _gitea_ready.add(key)
+    return login
+
+
+@app.get("/auth/gitea", include_in_schema=False)
+async def gitea_forward_auth(request: Request):
+    user = None
+    if token := request.cookies.get(GIT_COOKIE):
+        try:
+            user = await authenticated_user(f"Bearer {token}")
+        except HTTPException:
+            user = None
+    basic = request.headers.get("authorization", "")
+    if user is None and basic[:6].lower() == "basic ":
+        # git clone·push는 쿠키가 없다. 같은 솔루션 ID/PW를 Basic으로 받는다(시도 제한도 로그인과 같다).
+        try:
+            name, _, password = base64.b64decode(basic[6:], validate=True).decode("utf-8").partition(":")
+        except (binascii.Error, UnicodeDecodeError):
+            name = password = ""
+        if name and password:
+            caller = request.client.host if request.client else "unknown"
+            try:
+                row = await password_principal(name, password, caller)
+                user = {"email": row["email"], "name": row["display_name"], "roles": [row["role"]]}
+            except HTTPException as exc:
+                if exc.status_code == 429:
+                    raise
+    if user is None:
+        uri = request.headers.get("x-forwarded-uri", "/git/")
+        if "text/html" in request.headers.get("accept", ""):
+            target = uri if uri.startswith("/git/") and "//" not in uri else "/git/"
+            return RedirectResponse("/login?next=" + quote(target, safe="/"), status_code=302)
+        return Response(status_code=401, headers={"WWW-Authenticate": 'Basic realm="MCP Gateway Git"'})
+    return Response(status_code=200, headers={"X-WEBAUTH-USER": await ensure_gitea_user(user)})
 
 
 class AccountStatus(StrictModel):
@@ -392,7 +514,7 @@ async def ready():
 
 
 async def gateway_proxy(path: str, authorization: str | None, method: str = "GET",
-                        body: dict | None = None) -> dict:
+                        body: dict | None = None, timeout: float = 15) -> dict:
     """Gateway가 정본인 조작을 Console 포트에서 대신 부른다.
 
     상태 코드를 그대로 넘기는 것이 gateway_json과 다른 점이다. "판정하지 않은
@@ -400,7 +522,7 @@ async def gateway_proxy(path: str, authorization: str | None, method: str = "GET
     보이면, 운영자는 시스템 장애로 읽고 같은 버튼을 다시 누른다.
     """
     try:
-        async with httpx.AsyncClient(timeout=15, follow_redirects=False) as client:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
             response = await client.request(
                 method, GATEWAY_URL + path,
                 headers={"Authorization": authorization or "", "content-type": "application/json"},
@@ -457,7 +579,8 @@ def console_user(user: dict) -> dict:
 async def intake_rows(user: dict) -> list[dict]:
     query = """SELECT id, submitted_by, display_name, repository_url, requested_transport, purpose,
                       status, risk_level, review_note, reviewed_by, reviewed_at, created_at, updated_at,
-                      commit_sha, source_ref, evidence, validated_at, exit_terms, internal_repo_url
+                      commit_sha, source_ref, evidence, validated_at, exit_terms, internal_repo_url,
+                      registered_server_id
                FROM mcp_intake_requests"""
     if "admin" in user["roles"]:
         return await db.fetch_all(query + " ORDER BY created_at DESC LIMIT 100")
@@ -502,20 +625,52 @@ async def search_catalog(q: str = "", authorization: str | None = Header(default
     return {"query": term, "requests": requests, "registry": servers}
 
 
+def internal_repo_name(repository_url: str) -> str:
+    """https://github.com/Owner/Repo -> owner-repo (Gitea 이름 규칙: 영문·숫자 사이의 기호 하나)."""
+    owner, repo = urlsplit(repository_url).path.strip("/").split("/")[:2]
+    return re.sub(r"[^a-z0-9]+", "-", f"{owner}-{repo}".lower()).strip("-")[:90] or "mcp"
+
+
+async def repo_head(client: httpx.AsyncClient, path: str, info: dict) -> str:
+    branch = info.get("default_branch")
+    if not branch:
+        raise HTTPException(502, "가져온 저장소에 기본 브랜치가 없습니다.")
+    head = await client.get(f"{path}/branches/{quote(branch, safe='')}")
+    if not head.is_success:
+        raise HTTPException(502, "가져온 저장소의 커밋을 확인하지 못했습니다.")
+    return head.json().get("commit", {}).get("id") or ""
+
+
 async def publish_internal_repo(row: dict) -> str:
-    """Import a reviewed public GitHub source into this appliance's Gitea."""
-    base = os.getenv("GITEA_ADMIN_URL", "http://corp-git:3000").rstrip("/")
-    owner = os.getenv("GITEA_ADMIN_USER", "corpadmin")
-    password = os.getenv("GITEA_ADMIN_PASSWORD", "corp-admin-lab-only")
-    name = f"mcp-{str(row['id'])[:8]}"
-    path = f"/api/v1/repos/{owner}/{name}"
+    """검증한 공개 GitHub 저장소를 이 기기의 Gitea `mcp` 조직으로 가져온다(D-48).
+
+    조직은 limited — 로그인한 사용자만 본다. 직원은 읽기·클론·이슈, 관리자는 Gitea 관리자다.
+    풀 리퀘스트는 끈다: 이 저장소는 검증한 커밋의 사본이고, 고친 코드는 도입 신청을 다시 거친다.
+    """
+    org = GITEA_ORG
+    name = internal_repo_name(row["repository_url"])
     try:
-        async with httpx.AsyncClient(base_url=base, auth=(owner, password),
-                                     timeout=120, trust_env=False) as client:
+        async with gitea_admin_client() as client:
+            client.timeout = httpx.Timeout(120)
+            found = await client.get(f"/api/v1/orgs/{org}")
+            if found.status_code == 404:
+                created = await client.post("/api/v1/orgs", json={
+                    "username": org, "full_name": "승인된 MCP", "visibility": "limited",
+                    "repo_admin_change_team_access": False})
+                if created.status_code != 201:
+                    raise HTTPException(502, f"내부 Git 조직을 만들지 못했습니다 (Gitea {created.status_code}).")
+            elif not found.is_success:
+                raise HTTPException(502, f"내부 Git 조직 확인 실패 (Gitea {found.status_code}).")
+            path = f"/api/v1/repos/{org}/{name}"
             existing = await client.get(path)
+            if existing.is_success and await repo_head(client, path, existing.json()) != row["commit_sha"]:
+                # 같은 저장소의 예전 승인본이 있다. 덮어쓰지 않고 이번 신청의 사본을 따로 둔다.
+                name = f"{name}-{str(row['id'])[:8]}"
+                path = f"/api/v1/repos/{org}/{name}"
+                existing = await client.get(path)
             if existing.status_code == 404:
                 imported = await client.post("/api/v1/repos/migrate", json={
-                    "clone_addr": row["repository_url"], "repo_owner": owner,
+                    "clone_addr": row["repository_url"], "repo_owner": org,
                     "repo_name": name, "service": "git", "private": True,
                     "mirror": False, "issues": False, "pull_requests": False,
                     "wiki": False, "releases": False, "lfs": False,
@@ -527,21 +682,18 @@ async def publish_internal_repo(row: dict) -> str:
                 info = existing.json()
             else:
                 raise HTTPException(502, f"내부 저장소 확인 실패 (Gitea {existing.status_code}).")
-            branch = info.get("default_branch")
-            if not branch:
-                raise HTTPException(502, "가져온 저장소에 기본 브랜치가 없습니다.")
-            head = await client.get(f"{path}/branches/{quote(branch, safe='')}")
-            if not head.is_success:
-                raise HTTPException(502, "가져온 저장소의 커밋을 확인하지 못했습니다.")
-            if head.json().get("commit", {}).get("id") != row["commit_sha"]:
+            if await repo_head(client, path, info) != row["commit_sha"]:
                 raise HTTPException(409, "검증한 커밋과 현재 원격 저장소의 기본 브랜치가 달라졌습니다. 재검증하세요.")
-            published = await client.patch(path, json={"private": False})
+            published = await client.patch(path, json={
+                "private": False, "has_issues": True, "has_pull_requests": False, "has_wiki": False,
+                "website": row["repository_url"],
+                "description": f"{row.get('display_name') or name} · 검증 커밋 {row['commit_sha'][:12]}"})
             if not published.is_success:
                 raise HTTPException(502, f"직원 읽기 권한 게시 실패 (Gitea {published.status_code}).")
     except httpx.HTTPError as exc:
         raise HTTPException(502, f"내부 저장소에 연결하지 못했습니다: {type(exc).__name__}") from exc
     public = os.getenv("GITEA_PUBLIC_URL", "http://localhost:3000").rstrip("/")
-    return f"{public}/{owner}/{name}"
+    return f"{public}/{org}/{name}"
 
 
 @app.post("/api/mcp-requests")
@@ -701,7 +853,7 @@ async def approve_mcp_request(request_id: UUID, authorization: str | None = Head
                 409, "이 commit에 대한 AI 코드 감사 결과가 없습니다. "
                      "감사를 실행해 완료된 뒤에 승인할 수 있습니다.")
     pending = await db.fetch_one(
-        "SELECT id, status, requested_transport, exit_terms, repository_url, commit_sha FROM mcp_intake_requests WHERE id=%s",
+        "SELECT id, status, display_name, requested_transport, exit_terms, repository_url, commit_sha FROM mcp_intake_requests WHERE id=%s",
         (request_id,))
     terms = (pending or {}).get("exit_terms") or {}
     if pending and pending["requested_transport"] != "stdio" and not (
@@ -723,6 +875,46 @@ async def approve_mcp_request(request_id: UUID, authorization: str | None = Head
     if not row:
         raise HTTPException(409, "격리 검증을 통과한 요청만 승인할 수 있습니다.")
     return {"request": row, "message": "검증한 커밋을 내부 저장소에 게시했습니다. Gateway 활성화는 별도 등록 절차입니다."}
+
+
+class IntakeRegistration(StrictModel):
+    server_id: str = Field(pattern=r"^[a-z][a-z0-9-]{1,30}$")
+    endpoint: str = Field(min_length=8, max_length=500)
+    catalog_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    tools: dict[str, Literal["r", "w", "x"]] = Field(min_length=1, max_length=300)
+    data_class: Literal["public", "nonimportant", "important"]
+    valid_days: int = Field(ge=1, le=365)
+
+
+@app.post("/api/mcp-requests/{request_id}/register")
+async def register_mcp_request(request_id: UUID, request: IntakeRegistration,
+                               authorization: str | None = Header(default=None)):
+    """승인한 신청을 Gateway에 등록한다(D-49).
+
+    승인은 "이 코드를 들여도 된다", 등록은 "이 엔드포인트의 이 도구를 이 등급·이 기한으로 쓴다"는
+    결정이다. 신청의 저장소·검증 커밋·목적·종료 조건을 그대로 실어, 등록 뒤의 A.I.G 감사와 종료
+    판정이 도입 때와 같은 근거를 쓴다.
+    """
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "Gateway 등록은 관리자만 할 수 있습니다.")
+    row = await db.fetch_one(
+        """SELECT r.*, p.department FROM mcp_intake_requests r
+           LEFT JOIN principals p ON p.token = r.submitted_by WHERE r.id=%s""", (request_id,))
+    if not row or row["status"] != "APPROVED":
+        raise HTTPException(409, "승인된 도입 신청만 Gateway에 등록할 수 있습니다.")
+    terms = row.get("exit_terms") or {}
+    body = {**request.model_dump(), "display_name": row["display_name"], "source_url": row["repository_url"],
+            "commit_sha": row["commit_sha"] or "",
+            "supplier": urlsplit(row["repository_url"]).path.strip("/").split("/")[0],
+            "purpose": row["purpose"], "owner_department": row.get("department") or "",
+            "intake_id": str(row["id"]),
+            "exit_terms": {key: terms.get(key) is True for key in (
+                "provider_credential_disclosure", "revocation_evidence", "audit_access_retained")}}
+    result = await gateway_proxy("/api/registry/servers", authorization, "POST", body, timeout=120)
+    await db.execute("UPDATE mcp_intake_requests SET registered_server_id=%s, updated_at=now() WHERE id=%s",
+                     (request.server_id, request_id))
+    return {**result, "message": f"Gateway에 등록했습니다 · /mcp/{request.server_id}/ · {result['valid_until'][:10]}까지 사용"}
 
 
 @app.post("/api/mcp-requests/{request_id}/reject")

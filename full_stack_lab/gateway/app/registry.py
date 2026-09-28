@@ -8,6 +8,11 @@ Both are reviewed in git; the database is the runtime copy the policy path reads
 Run as a module to (re)generate the lock from the live servers:
 
     python -m app.registry lock      # prints the lock JSON for every catalog server
+
+Servers an admin registers from the Console (an approved intake request → Gateway, D-49)
+live beside the reviewed files in REGISTRY_RUNTIME_DIR/servers.json, in the same shape
+plus their pinned contracts. catalog() is the union of the two - like LiteLLM's config
+servers + DB servers - and the reviewed file wins a name clash.
 """
 from __future__ import annotations
 
@@ -29,22 +34,60 @@ from .contract import canonical_hash
 REGISTRY_DIR = Path(os.getenv("REGISTRY_DIR", "/registry"))
 CATALOG_PATH = REGISTRY_DIR / "catalog.toml"
 LOCK_PATH = REGISTRY_DIR / "contracts.lock.json"
+RUNTIME_PATH = (Path(os.environ["REGISTRY_RUNTIME_DIR"]) / "servers.json"
+                if os.getenv("REGISTRY_RUNTIME_DIR") else None)
 
-_cache: dict[str, Any] = {"mtime": None, "catalog": None}
+_cache: dict[str, Any] = {"mtime": None, "catalog": None, "runtime": None}
+
+
+def _stamp(path: Path | None) -> int | None:
+    return path.stat().st_mtime_ns if path and path.exists() else None
+
+
+def runtime() -> dict:
+    """Console registrations: servers, usage_relationships, contracts and the event history."""
+    doc = json.loads(RUNTIME_PATH.read_text(encoding="utf-8")) if _stamp(RUNTIME_PATH) else {}
+    for key, empty in (("servers", {}), ("usage_relationships", []), ("contracts", {}), ("history", [])):
+        doc.setdefault(key, empty)
+    return doc
+
+
+def save_runtime(doc: dict) -> None:
+    """Replace servers.json atomically: gateway-sse reads it while the gateway writes."""
+    if RUNTIME_PATH is None:
+        raise RuntimeError("REGISTRY_RUNTIME_DIR가 설정되지 않아 Console에서 서버를 등록할 수 없습니다.")
+    temporary = RUNTIME_PATH.with_suffix(".tmp")
+    temporary.write_text(json.dumps(doc, ensure_ascii=False, indent=1, sort_keys=True), encoding="utf-8")
+    os.replace(temporary, RUNTIME_PATH)
+
+
+def reviewed_servers() -> dict[str, dict]:
+    return (tomllib.loads(CATALOG_PATH.read_text(encoding="utf-8")) if CATALOG_PATH.exists() else {}).get("servers", {})
 
 
 def catalog() -> dict:
-    """Parsed catalog.toml, reloaded when the file changes."""
-    mtime = CATALOG_PATH.stat().st_mtime if CATALOG_PATH.exists() else None
-    if _cache["catalog"] is None or _cache["mtime"] != mtime:
-        _cache["catalog"] = tomllib.loads(CATALOG_PATH.read_text(encoding="utf-8")) if mtime else {"servers": {}}
-        _cache["mtime"] = mtime
+    """catalog.toml ∪ Console registrations, reloaded when either file changes."""
+    stamp = (_stamp(CATALOG_PATH), _stamp(RUNTIME_PATH))
+    if _cache["catalog"] is None or _cache["mtime"] != stamp:
+        merged = tomllib.loads(CATALOG_PATH.read_text(encoding="utf-8")) if stamp[0] else {"servers": {}}
+        extra = runtime()
+        reviewed = merged.setdefault("servers", {})
+        merged["servers"] = {**reviewed, **{k: v for k, v in extra["servers"].items() if k not in reviewed}}
+        merged["usage_relationships"] = [*merged.get("usage_relationships", []), *extra["usage_relationships"]]
+        _cache["catalog"], _cache["runtime"], _cache["mtime"] = merged, extra, stamp
     return _cache["catalog"]
 
 
 def catalog_version() -> str:
-    raw = CATALOG_PATH.read_bytes() if CATALOG_PATH.exists() else b""
+    raw = (CATALOG_PATH.read_bytes() if CATALOG_PATH.exists() else b"") + \
+        (RUNTIME_PATH.read_bytes() if _stamp(RUNTIME_PATH) else b"")
     return "catalog-" + hashlib.sha256(raw).hexdigest()[:12]
+
+
+def runtime_endpoints() -> set[str]:
+    """Endpoints an admin approved by registering them; they count as allowed egress (D-49)."""
+    catalog()  # reloads the cache when a file changed
+    return {spec["endpoint"] for spec in _cache["runtime"]["servers"].values()}
 
 
 def servers() -> dict[str, dict]:
@@ -87,10 +130,12 @@ async def sync() -> dict:
     then the committed lock wins, which is the reviewable state.
     """
     cat_servers = servers()
-    pinned = lock().get("servers", {})
+    registered = runtime()
+    pinned = {**registered["contracts"], **lock().get("servers", {})}
     digest = lock_digest()
     applied = await db.fetch_one("SELECT value FROM gateway_settings WHERE key='contracts_lock_digest'")
     apply_lock = bool(digest) and (not applied or applied["value"] != digest)
+    reviewed_ids = set(reviewed_servers())
     stats = {"servers": 0, "tools": 0, "lock_applied": apply_lock}
 
     for server_id, spec in cat_servers.items():
@@ -125,13 +170,21 @@ async def sync() -> dict:
                 (server_id, name, action, enabled),
             )
             entry = pinned_tools.get(name)
-            if entry and apply_lock:
+            console = server_id in registered["servers"] and server_id not in reviewed_ids
+            if entry and (apply_lock or console):
+                # A Console registration pins its contract once; a later re-approval lives in the DB
+                # and must survive restarts, so only an empty row takes the registration's hashes.
                 await db.execute(
                     """UPDATE mcp_tools SET approved_description_hash=%s, approved_schema_hash=%s,
-                              approved_server_version=%s WHERE server_id=%s AND name=%s""",
+                              approved_server_version=%s WHERE server_id=%s AND name=%s"""
+                    + (" AND approved_schema_hash IS NULL" if console else ""),
                     (entry["description_sha256"], entry["schema_sha256"], pinned_version, server_id, name),
                 )
             stats["tools"] += 1
+        if spec.get("valid_until"):
+            # BeyondTrust식 기한 있는 사용 승인: 기한이 지나면 P-APPROVAL-EXPIRY-001이 호출을 막는다(D-49).
+            await db.execute("UPDATE mcp_tools SET approval_valid_until=%s WHERE server_id=%s",
+                             (spec["valid_until"], server_id))
         # Tools that neither the catalog nor the lock know any more.
         await db.execute(
             "DELETE FROM mcp_tools WHERE server_id=%s AND NOT (name = ANY(%s::text[]))",

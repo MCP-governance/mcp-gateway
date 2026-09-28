@@ -360,6 +360,144 @@ async def check_server(server_id: str) -> dict:
             "checked_at": checked_at}
 
 
+# ── Console registration of an approved server (D-49) ────────────────────────────
+# LiteLLM keeps config servers and runtime (DB) servers side by side; here the runtime
+# half is REGISTRY_RUNTIME_DIR/servers.json. What LiteLLM does not do, and this must:
+# pin the contract the admin reviewed (no trust-on-first-use), and give the approval an
+# end date - the BeyondTrust shape "request → approve → use → expire → audit", where the
+# expiry is enforced by the existing P-APPROVAL-EXPIRY-001.
+REGISTER_LOCK = asyncio.Lock()
+
+
+def registration_endpoint(value: str) -> str:
+    endpoint = value.strip()
+    parts = urlsplit(endpoint)
+    if parts.scheme not in {"http", "https"} or not parts.hostname or parts.username or parts.password or parts.fragment:
+        raise ValueError("http(s)://호스트/경로 형식의 MCP 엔드포인트여야 합니다. 자격 정보는 URL에 넣지 않습니다.")
+    if not transport_secure(endpoint):
+        raise ValueError("사내 서비스가 아니면 HTTPS 엔드포인트만 등록할 수 있습니다.")
+    return endpoint
+
+
+def suggested_action(annotations: dict | None) -> str:
+    # upstream.tool_view stores the SDK's field names (read_only_hint); the wire form is readOnlyHint.
+    hints = {key.replace("_", "").lower(): value for key, value in (annotations or {}).items()}
+    return "r" if hints.get("readonlyhint") else "x" if hints.get("destructivehint") or hints.get("openworldhint") else "w"
+
+
+async def discover_for_registration(endpoint: str) -> dict:
+    found = await upstream.discover(registration_endpoint(endpoint))
+    return {"endpoint": endpoint.strip(), "server_name": found["advertised_name"], "version": found["version"],
+            "protocol_version": found["protocol_version"], "catalog_hash": canonical_hash(found["tools"]),
+            "tools": [{**tool, "suggested": suggested_action(tool.get("annotations"))} for tool in found["tools"]]}
+
+
+async def register_server(request: dict, actor: str) -> dict:
+    server_id = request["server_id"]
+    endpoint = registration_endpoint(request["endpoint"])
+    if server_id in registry.reviewed_servers():
+        raise ValueError(f"검토된 카탈로그(catalog.toml)에 같은 id가 있습니다: {server_id}")
+    row = await db.fetch_one("SELECT lifecycle FROM mcp_servers WHERE id=%s", (server_id,))
+    if row and (row["lifecycle"] or "OPERATING") in {"TERMINATING", "RETIRED"}:
+        raise ValueError("종료 절차를 거친 서버 id는 다시 쓸 수 없습니다. 새 id로 등록하세요.")
+    found = await upstream.discover(endpoint)
+    # The admin approves what they saw. A contract that moved between review and this call
+    # is not what they approved, so they review again (the same rule as approve_contract).
+    if canonical_hash(found["tools"]) != request["catalog_hash"]:
+        raise ValueError("검토한 뒤 서버의 도구 계약이 바뀌었습니다. 도구를 다시 불러와 검토하세요.")
+    advertised = {tool["name"]: tool for tool in found["tools"]}
+    unknown = sorted(set(request["tools"]) - set(advertised))
+    if unknown:
+        raise ValueError(f"서버가 제공하지 않는 도구: {', '.join(unknown)}")
+    host = urlsplit(endpoint).hostname or ""
+    source_url = request.get("source_url") or ""
+    commit = request.get("commit_sha") or ""
+    github = source_url.startswith("https://github.com/")
+    package = source_url.removeprefix("https://") if github else host
+    # For a GitHub source the version is the validated commit, which is also what the
+    # A.I.G worker checks out for a static audit of this server (source_ref = package@commit).
+    version = commit if github and commit else found["version"]
+    valid_until = (datetime.now(UTC) + timedelta(days=int(request["valid_days"]))).isoformat(timespec="seconds")
+    spec = {
+        "display_name": request["display_name"], "package": package, "version": version,
+        "source_url": source_url or endpoint, "supplier": request.get("supplier") or host,
+        "license": None, "endpoint": endpoint,
+        # A dotless host is a service on this Docker host; anything else is run by its provider.
+        "deployment": "internal" if "." not in host else "provider",
+        "downstream": request.get("downstream") or None, "data_class": request["data_class"],
+        "tools": dict(sorted(request["tools"].items())), "exit_terms": request.get("exit_terms") or {},
+        "valid_until": valid_until, "registered_by": actor,
+        "registered_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "intake_id": request.get("intake_id") or None,
+    }
+    contract = {"package": f"{package}@{version}", "server_name": found["advertised_name"],
+                "server_version": found["version"], "protocol_version": found["protocol_version"],
+                "tools": {name: registry.tool_hashes(tool) for name, tool in sorted(advertised.items())}}
+    relationship = {"id": f"UR-{server_id.upper()}", "server": server_id,
+                    "purpose": request.get("purpose") or request["display_name"],
+                    "provider": spec["supplier"], "owner_department": request.get("owner_department") or None,
+                    "allowed_resources": []}
+    async with REGISTER_LOCK:
+        doc = registry.runtime()
+        doc["servers"][server_id] = spec
+        doc["contracts"][server_id] = contract
+        doc["usage_relationships"] = [r for r in doc["usage_relationships"] if r["id"] != relationship["id"]] + [relationship]
+        doc["history"].append({"type": "registered", "server_id": server_id, "actor": actor,
+                               "at": spec["registered_at"], "valid_until": valid_until})
+        registry.save_runtime(doc)
+        await registry.sync()
+    # Re-registering an id (after a deregistration) starts from what was approved now.
+    for name, hashes in contract["tools"].items():
+        await db.execute(
+            """UPDATE mcp_tools SET approved_description_hash=%s, approved_schema_hash=%s, approved_server_version=%s
+               WHERE server_id=%s AND name=%s""",
+            (hashes["description_sha256"], hashes["schema_sha256"], found["version"], server_id, name))
+    await db.execute(
+        "UPDATE mcp_servers SET status='PENDING', status_reason='Console 등록, 계약 확인 전', lifecycle='OPERATING' WHERE id=%s",
+        (server_id,))
+    await db.execute("UPDATE usage_relationships SET status='ACTIVE' WHERE id=%s", (relationship["id"],))
+    await db.execute(
+        """INSERT INTO catalog_snapshots(server_id, server_version, catalog_hash, tool_count, exact_match, findings)
+           VALUES (%s,%s,%s,%s,true,%s)""",
+        (server_id, found["version"], request["catalog_hash"], len(advertised),
+         Jsonb([{"type": "console-registered", "actor": actor, "endpoint": endpoint, "intake_id": spec["intake_id"],
+                 "approved_tools": spec["tools"], "valid_until": valid_until}])))
+    refreshed = await refresh_catalog(server_id)
+    return {"server_id": server_id, "status": refreshed["status"], "valid_until": valid_until,
+            "tools": spec["tools"], "relationship_id": relationship["id"], "gateway_path": f"/mcp/{server_id}/"}
+
+
+async def extend_server(server_id: str, days: int, actor: str) -> dict:
+    """Renewal is a new approval period from today, recorded beside the registration."""
+    async with REGISTER_LOCK:
+        doc = registry.runtime()
+        spec = doc["servers"].get(server_id)
+        if not spec:
+            raise LookupError(server_id)
+        spec["valid_until"] = (datetime.now(UTC) + timedelta(days=days)).isoformat(timespec="seconds")
+        doc["history"].append({"type": "extended", "server_id": server_id, "actor": actor,
+                               "at": datetime.now(UTC).isoformat(timespec="seconds"), "valid_until": spec["valid_until"]})
+        registry.save_runtime(doc)
+        await registry.sync()
+    return {"server_id": server_id, "valid_until": spec["valid_until"]}
+
+
+async def deregister_server(server_id: str, actor: str) -> dict:
+    """Takes a Console registration back out. The rows stay (DISABLED) for the audit trail."""
+    async with REGISTER_LOCK:
+        doc = registry.runtime()
+        if server_id not in doc["servers"]:
+            raise LookupError(server_id)
+        del doc["servers"][server_id]
+        doc["contracts"].pop(server_id, None)
+        doc["usage_relationships"] = [r for r in doc["usage_relationships"] if r["server"] != server_id]
+        doc["history"].append({"type": "deregistered", "server_id": server_id, "actor": actor,
+                               "at": datetime.now(UTC).isoformat(timespec="seconds")})
+        registry.save_runtime(doc)
+        await registry.sync()
+    return {"server_id": server_id, "status": "DISABLED"}
+
+
 async def catalog_watch() -> None:
     """Background drift watch. Calls themselves re-check the contract on the same
     connection that executes, so this loop only keeps the dashboard and the policy
@@ -521,6 +659,8 @@ async def egress_allowed(endpoint: str | None) -> bool:
     host = _endpoint_host(endpoint)
     if not host:
         return True  # stdio: 네트워크 목적지가 없다
+    if endpoint in registry.runtime_endpoints():
+        return True  # 관리자가 Console 등록 절차에서 이 엔드포인트 자체를 승인했다(D-49)
     allowed = await opa_document("egress")
     entries = (allowed or {}).get("allowed_hosts") if isinstance(allowed, dict) else None
     if not entries:

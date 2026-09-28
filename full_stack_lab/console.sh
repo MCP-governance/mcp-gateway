@@ -7,6 +7,12 @@ cd "$LAB_DIR"
 mkdir -p reports
 
 env_value() { [[ -f .env ]] || return 0; sed -n "s/^$1=//p" .env | tail -1; }
+# Fill a .env key only when it is missing or empty; a value someone set stays.
+env_default() {
+  [[ -n "$(env_value "$1")" ]] && return 0
+  sed -i "/^$1=\$/d" .env
+  echo "$1=$2" >> .env
+}
 # Host ports come from the environment or .env so two labs can share one Docker host.
 host_port() { local v="${!1:-}"; [[ -n "$v" ]] || v="$(env_value "$1")"; echo "${v:-$2}"; }
 CONSOLE="http://127.0.0.1:$(host_port CONSOLE_PORT 8000)"
@@ -233,6 +239,39 @@ watch_decisions() {
 # compose.field.yaml은 ./console.sh up 이나 CI가 아니라 이 명령들에서만 얹힌다.
 FIELD_COMPOSE=(-f compose.yaml -f compose.field.yaml)
 
+# A.I.G(AI-Infra-Guard mcp-scan) 코드 감사용 초경량 로컬 모델(D-47). 처음 한 번 받고, 이후에는 있는
+# 것을 쓴다. 조직이 .env에 다른 검사 endpoint를 정했으면 건드리지 않는다. 끄려면 AIG_LOCAL_MODEL=none.
+# qwen3.5:0.8b(Q8, 약 1GB): Ryzen 5 7530U CPU에서 mcp-scan의 요청당 60초 제한 안에 끝까지 도는 유일한 후보였다
+# (qwen2.5-coder:1.5b는 형식을 못 지켜 반복 한도, qwen3:1.7b는 첫 요청 60초 초과). 더 큰 모델은 AIG_LOCAL_MODEL로.
+AIG_DEFAULT_MODEL=qwen3.5:0.8b
+field_aig_model() {
+  local model ctx threads configured
+  model="$(env_value AIG_LOCAL_MODEL)"; model="${model:-$AIG_DEFAULT_MODEL}"
+  configured="$(env_value MCP_SCAN_BASE_URL)"
+  if [[ "$model" == "none" ]]; then echo "  A.I.G 로컬 모델 생략(AIG_LOCAL_MODEL=none)"; return; fi
+  if [[ -n "$configured" && "$configured" != "http://ollama:11434/v1" ]]; then
+    echo "  A.I.G는 .env의 검사 endpoint를 씀: $configured"; return
+  fi
+  ctx="$(env_value AIG_LOCAL_CONTEXT)"; ctx="${ctx:-16384}"
+  threads="$(env_value LOCAL_LLM_THREADS)"
+  docker compose "${FIELD_COMPOSE[@]}" --profile llm up -d ollama >/dev/null
+  for _ in $(seq 1 30); do docker compose "${FIELD_COMPOSE[@]}" --profile llm exec -T ollama ollama list >/dev/null 2>&1 && break; sleep 2; done
+  # The manifest file is how Ollama records a pulled model; checking it needs no network.
+  if ! docker compose "${FIELD_COMPOSE[@]}" --profile llm exec -T ollama \
+      test -f "/root/.ollama/models/manifests/registry.ollama.ai/library/${model%%:*}/${model##*:}"; then
+    echo "  모델 받기: $model (처음 한 번)"
+    LOCAL_LLM_MODEL="$model" docker compose "${FIELD_COMPOSE[@]}" --profile llm-download run --rm ollama-pull >/dev/null
+  fi
+  # The scanner sends a long system prompt; the derived model fixes the context it was sized for.
+  docker compose "${FIELD_COMPOSE[@]}" --profile llm exec -T ollama sh -c \
+    "printf 'FROM %s\nPARAMETER num_ctx %s\n%s' '$model' '$ctx' '${threads:+PARAMETER num_thread $threads}' > /tmp/Modelfile-aig && ollama create aig-scanner -f /tmp/Modelfile-aig >/dev/null"
+  env_default MCP_SCAN_BASE_URL http://ollama:11434/v1
+  env_default MCP_SCAN_MODEL aig-scanner
+  env_default MCP_SCAN_API_KEY ollama-local-no-auth
+  env_default MCP_SCAN_CONTEXT_WINDOW "$ctx"
+  echo "  A.I.G 모델: aig-scanner ($model, 컨텍스트 $ctx)"
+}
+
 field_up() {
   local with_ws=0 with_lab_mcp=0
   local services=(corp-git gateway gateway-sse agent-service intake-worker)
@@ -264,22 +303,24 @@ field_up() {
     docker compose "${FIELD_COMPOSE[@]}" stop "${lab_services[@]}" >/dev/null 2>&1 || true
   fi
   export MCP_FIELD_MODE="$FIELD_ACCOUNTS_MODE"
-  echo "[field 1/4] 이미지 빌드"
+  echo "[field 1/5] 이미지 빌드"
   docker compose "${FIELD_COMPOSE[@]}" build -q "${services[@]}"
-  if [[ $with_lab_mcp == 1 ]]; then echo "[field 2/4] Gateway · Console · 내부 Git · MCP 실습 모드"
-  else echo "[field 2/4] Gateway · Console · 내부 Git"; fi
+  echo "[field 2/5] A.I.G 코드 감사 모델"
+  field_aig_model
+  if [[ $with_lab_mcp == 1 ]]; then echo "[field 3/5] Gateway · Console · 내부 Git · MCP 실습 모드"
+  else echo "[field 3/5] Gateway · Console · 내부 Git"; fi
   docker compose "${FIELD_COMPOSE[@]}" up -d "${services[@]}"
   wait_ready
   if [[ $with_lab_mcp == 1 ]]; then ensure_contracts; fi
   if [[ $with_ws == 1 ]]; then
-    echo "[field 3/4] 컨테이너 직원 PC 4대도 함께 기동(--with-lab-workstations)"
+    echo "[field 4/5] 컨테이너 직원 PC 4대도 함께 기동(--with-lab-workstations)"
     docker compose "${FIELD_COMPOSE[@]}" --profile lab-workstations build -q "${WORKSTATIONS[@]}"
     provision_devices
     docker compose "${FIELD_COMPOSE[@]}" --profile lab-workstations up -d "${WORKSTATIONS[@]}"
   else
-    echo "[field 3/4] 컨테이너 직원 PC 4대는 끔(실제 PC가 대신함) — 같이 보려면 --with-lab-workstations"
+    echo "[field 4/5] 컨테이너 직원 PC 4대는 끔(실제 PC가 대신함) — 같이 보려면 --with-lab-workstations"
   fi
-  echo "[field 4/4] Caddy(Tailscale IP 전용 앞단)"
+  echo "[field 5/5] Caddy(Tailscale IP 전용 앞단)"
   docker compose "${FIELD_COMPOSE[@]}" up -d caddy
   echo
   echo "접속 주소       : http://${APPLIANCE_BIND}:443"

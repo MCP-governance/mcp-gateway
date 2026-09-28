@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -47,6 +48,9 @@ MCP_SCAN_BASE_URL = os.getenv("MCP_SCAN_BASE_URL", "")
 MCP_SCAN_MODEL = os.getenv("MCP_SCAN_MODEL", "")
 MCP_SCAN_TIMEOUT = int(os.getenv("MCP_SCAN_TIMEOUT", "900"))
 MCP_SCAN_LANGUAGE = os.getenv("MCP_SCAN_LANGUAGE", "en")  # CLI가 지원하는 값은 zh/en
+# 모델이 실제로 받는 컨텍스트(Ollama num_ctx). mcp-scan은 이 값의 60%에서 기록을 압축한다. 모르면 128K로
+# 가정하고, 작은 로컬 모델은 넘친 앞부분(시스템 프롬프트)을 조용히 잘라 버린다.
+MCP_SCAN_CONTEXT_WINDOW = os.getenv("MCP_SCAN_CONTEXT_WINDOW", "").strip()
 # A.I.G 결과가 실제 모델 판단인지, 배선 검증용 test double인지 구분한다. 후자를
 # 통제 증적으로 세면 "연결됐다"가 "안전하다/차단했다"로 바뀌는 착시가 생긴다.
 MCP_SCAN_EVIDENCE_MODE = os.getenv("MCP_SCAN_EVIDENCE_MODE", "live").strip().lower()
@@ -519,11 +523,14 @@ def scan_target(connection, job: dict) -> dict:
             "국소 감사 대상이 아닙니다: source_url=" + repr(row["source_url"]) +
             ". 원격 전용 서버는 공급자의 증적으로 대신해야 합니다.")
     ref = row["source_ref"]
+    # A server registered from an approved intake carries the validated commit as its
+    # version (source_ref = github.com/owner/repo@<sha>, D-49): audit exactly that code.
+    pinned = ref.rsplit("@", 1)[-1] if ref and "@" in ref else ""
     # Never fall back to the default branch when the approved ref is absent.
     return {
         "label": row["display_name"],
         "repository_url": row["source_url"],
-        "commit": job.get("commit_sha") or None,
+        "commit": job.get("commit_sha") or (pinned if re.fullmatch(r"[0-9a-f]{40}", pinned) else None),
         "ref": ref,
         "source_ref": row["source_ref"],
         # 운영 중인 서버의 치명점은 실제로 호출을 막아야 한다. 막지 않는 감사는
@@ -671,9 +678,17 @@ def run_mcp_scan(connection, job: dict) -> None:
         command = scan_command(job, report, checkout, None)
 
     # The pinned CLI reads LLM_API_KEY. Keep the live key out of process arguments.
+    # It also builds "thinking/coding/fast" clients that default to OpenRouter models. The
+    # pinned commit never calls them, but a later one may: pin them to the same endpoint so
+    # repository code can only ever reach the model the organisation configured.
+    scan_env = {"LLM_API_KEY": MCP_SCAN_API_KEY}
+    for purpose in ("THINKING", "CODING", "FAST"):
+        scan_env |= {f"{purpose}_MODEL": MCP_SCAN_MODEL, f"{purpose}_BASE_URL": MCP_SCAN_BASE_URL}
+    if MCP_SCAN_CONTEXT_WINDOW:
+        for purpose in ("DEFAULT", "THINKING", "CODING", "FAST"):
+            scan_env[f"{purpose}_MODEL_CONTEXT_WINDOW"] = MCP_SCAN_CONTEXT_WINDOW
     try:
-        result = run(command, timeout=MCP_SCAN_TIMEOUT,
-                     extra_env={"LLM_API_KEY": MCP_SCAN_API_KEY})
+        result = run(command, timeout=MCP_SCAN_TIMEOUT, extra_env=scan_env)
     except subprocess.TimeoutExpired as exc:
         raise ScanTimeout(
             f"A.I.G 검사 제한 시간 {MCP_SCAN_TIMEOUT}초를 초과했습니다. "

@@ -211,11 +211,16 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
         db.fetch_all("SELECT * FROM usage_relationships ORDER BY id"),
     )
     catalog_servers = registry.servers()
+    console = registry.runtime()["servers"]
     return {"catalog_version": registry.catalog_version(),
             "classification": registry.catalog().get("classification", {}),
             "organization": registry.catalog().get("organization", {}),
             "servers": [row for row in servers if row["id"] in catalog_servers],
-            "tools": tools, "usage_relationships": relationships}
+            "tools": tools, "usage_relationships": relationships,
+            # D-49: which servers came from a Console registration, and until when they may be used.
+            "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by",
+                                                                    "registered_at", "data_class")}
+                              for sid, spec in console.items() if sid not in registry.reviewed_servers()}}
 
 
 @app.get("/api/overview")
@@ -418,6 +423,71 @@ async def registry_check(server_id: str, user: dict = Depends(admin_caller)) -> 
         return await core.check_server(server_id)
     except LookupError as exc:
         raise HTTPException(404, "카탈로그에 없는 서버입니다.") from exc
+
+
+# ── 승인한 서버를 Console에서 Gateway에 등록 (D-49) ──────────────────────────────
+class RegistryDiscover(StrictModel):
+    endpoint: str = Field(min_length=8, max_length=500)
+
+
+class RegistryRegister(StrictModel):
+    server_id: str = Field(pattern=r"^[a-z][a-z0-9-]{1,30}$")
+    display_name: str = Field(min_length=2, max_length=80)
+    endpoint: str = Field(min_length=8, max_length=500)
+    catalog_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    tools: dict[str, Literal["r", "w", "x"]] = Field(min_length=1, max_length=300)
+    data_class: Literal["public", "nonimportant", "important"]
+    valid_days: int = Field(ge=1, le=365)
+    source_url: str = Field(default="", max_length=300)
+    commit_sha: str = Field(default="", pattern=r"^([0-9a-f]{40})?$")
+    supplier: str = Field(default="", max_length=120)
+    purpose: str = Field(default="", max_length=1000)
+    owner_department: str = Field(default="", max_length=120)
+    intake_id: str = Field(default="", max_length=64)
+    exit_terms: dict[str, bool] = Field(default_factory=dict)
+
+
+class RegistryExtend(StrictModel):
+    valid_days: int = Field(ge=1, le=365)
+
+
+@app.post("/api/registry/discover")
+async def registry_discover(request: RegistryDiscover, user: dict = Depends(admin_caller)) -> dict:
+    """등록 전 검토용: 엔드포인트가 지금 광고하는 도구와 그 계약 해시. 아무것도 기록하지 않는다."""
+    try:
+        return await core.discover_for_registration(request.endpoint)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(502, f"MCP 서버에 연결하지 못했습니다: {core._root_cause(exc)}") from exc
+
+
+@app.post("/api/registry/servers", status_code=201)
+async def registry_register(request: RegistryRegister, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await core.register_server(request.model_dump(), user["principal"])
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(502, f"MCP 서버에 연결하지 못했습니다: {core._root_cause(exc)}") from exc
+
+
+@app.post("/api/registry/servers/{server_id}/extend")
+async def registry_extend(server_id: str, request: RegistryExtend, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await core.extend_server(server_id, request.valid_days, user["principal"])
+    except LookupError as exc:
+        raise HTTPException(404, "Console에서 등록한 서버가 아닙니다.") from exc
+
+
+@app.delete("/api/registry/servers/{server_id}")
+async def registry_deregister(server_id: str, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await core.deregister_server(server_id, user["principal"])
+    except LookupError as exc:
+        raise HTTPException(404, "Console에서 등록한 서버가 아닙니다.") from exc
 
 
 @app.post("/api/supply-chain/import")

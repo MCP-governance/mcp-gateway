@@ -6,6 +6,7 @@
 #   /api/health                           Gateway 생존 확인(무인증 — README가 밝힌 두 개 중 하나)
 #   /.well-known/oauth-protected-resource Gateway의 RFC 9728 메타데이터
 #   /oauth/*, /.well-known/oauth-authorization-server   IdP(직원 PC 키트의 로그인·갱신·폐기)
+#   /git/*                                내부 Gitea — 솔루션 로그인을 거쳐야만(forward_auth, D-48)
 #   그 밖 전부                             Console(웹) — agent-service가 정적 파일도 같이 서빙
 #
 # Docker가 Caddy 포트를 Tailscale IP에만 바인딩한다. 연결 암호화는 Tailscale이 맡는다.
@@ -38,10 +39,26 @@ http://:8080 {
 		reverse_proxy agent-service:8000
 	}
 
+	# Gitea는 X-WEBAUTH-USER를 이 Caddy(고정 IP)가 보낸 경우에만 믿는다. 그 값은 agent-service가 솔루션
+	# 로그인(Console 쿠키, git은 Basic으로 같은 ID/PW)을 확인하고 정한다. route 안은 적힌 순서대로 돈다:
+	# 클라이언트가 보낸 같은 이름의 헤더를 먼저 지우고, 인증 뒤 Authorization을 지워 Gitea가 그 값으로
+	# 따로 로그인하지 않게 한다. 정적 자원만 인증 없이 둔다(페이지는 모두 로그인 필요).
 	redir /git /git/
-	handle /git/* {
+	handle /git/assets/* {
 		uri strip_prefix /git
 		reverse_proxy corp-git:3000
+	}
+	handle /git/* {
+		route {
+			request_header -X-WEBAUTH-USER
+			forward_auth agent-service:8000 {
+				uri /auth/gitea
+				copy_headers X-WEBAUTH-USER
+			}
+			request_header -Authorization
+			uri strip_prefix /git
+			reverse_proxy corp-git:3000
+		}
 	}
 
 	# Console(웹) — 그 밖 전부.

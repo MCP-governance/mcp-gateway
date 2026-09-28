@@ -491,6 +491,11 @@ def classify(server: str, tool: str, arguments: dict | None, principal: str = ""
             _playwright(tool, args, cls, principal)
         elif server in EXTRACTORS:
             EXTRACTORS[server](tool, args, cls)
+        elif (spec := registry.server(server) or {}).get("data_class") in CLASS_ORDER:
+            # A server registered from the Console has no argument extractor; its whole data is
+            # the grade the admin gave it at registration (D-49). Unknown stays important.
+            cls.resources.append(Resource("service", f"{server}:{tool}", spec["data_class"]))
+            cls.dlp = dlp_scan(args)
     except Exception as exc:  # classification must never make a call look safer
         cls.resources = [Resource("unclassified", f"{server}:{tool}", "important")]
         cls.escalate("x", f"분류 실패: {type(exc).__name__}")

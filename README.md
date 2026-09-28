@@ -29,8 +29,9 @@
 - **도입 신청 자동 검증**: 신청하면 격리 워커가 저장소를 받아 SBOM(Syft)·취약점(Trivy)·코드 규칙(Semgrep)을 돌리고
   종료 조건(C1~C4) 근거 후보를 문서에서 찾습니다. 모델이 연결돼 있으면 AI-Infra-Guard(A.I.G) `mcp-scan` 코드 감사도 겁니다.
 - **실기기 배치(field)**: 같은 스택을 솔루션 기기 한 대에 올리고 Tailscale IP에만 게시합니다. 관리자·직원은 같은
-  로그인 화면을 쓰고, 직원 PC의 Claude Code·Codex CLI는 키트 한 파일(`field/pc/mcpgw_pc.py`)로 Gateway에 붙습니다.
-  기본 설치는 MCP 서버 0개에서 시작하고, 승인한 공개 저장소는 내부 Gitea로 가져옵니다.
+  로그인 화면을 쓰고, 직원 PC의 Claude Code·Codex CLI는 Console에서 받는 키트 한 파일(`field/pc/mcpgw_pc.py`)로 Gateway에
+  붙습니다. 기본 설치는 MCP 서버 0개에서 시작합니다. 승인한 저장소는 내부 Gitea(같은 계정으로 로그인)로 가져오고, 승인한
+  서버는 Console에서 도구별 권한·데이터 등급·사용 기한을 정해 Gateway에 등록합니다.
 - **논문 구현**: 「원격 MCP 서비스 종료 시 권한 회수의 구조적 한계 및 종료 판정 기준 제안」(CISC-W'26)의 이용 관계 단위 판정
   (C1 모집단·C2 수행 권한·C3 연속성·C4 증거 접근 → T1/T2/T3)과 실험 E1~E3.
 
@@ -102,21 +103,36 @@ Tailscale IP가 있어야 하고, 직원·관리자 PC도 같은 tailnet에서 �
 
 기본 field 프로필에는 **MCP 서버가 0개**입니다(`registry/field/`). 예전 회사 시스템·MCP 10종이 필요한 실습만 `./console.sh field up --with-lab-mcp`로 켭니다. 이때는 별도 볼륨에 랩 계정(`kkg@bob.local` 등, 비밀번호는 `.env`의 `MOCK_SSO_PASSWORD`, 없으면 `test-password`)을 씁니다. 실습 직원 PC까지 필요하면 `--with-lab-workstations`를 사용합니다. 일반 field 실행은 실습 컨테이너를 중지합니다.
 
-검증을 통과한 공개 GitHub 저장소는 관리자가 승인할 때 같은 솔루션의 Gitea로 가져옵니다. 가져온 기본 브랜치 HEAD가 검증 커밋과 같을 때만 직원 읽기 주소가 도입 신청 목록에 표시됩니다. 저장소 브라우저는 `http://<Tailscale IP>:443/git/`이고, 승인 뒤 Gateway 실행은 기존의 계약·카탈로그 등록 절차를 거칩니다. 공개 저장소는 tailnet 구성원에게 읽기 가능하며 Gitea 관리 자격은 솔루션 내부에만 둡니다.
+### 내부 Git(Gitea)
+
+검증을 통과한 공개 GitHub 저장소는 관리자가 승인할 때 같은 솔루션의 Gitea `mcp` 조직으로 가져옵니다. 가져온 기본 브랜치 HEAD가 검증 커밋과 같을 때만 내부 저장소 주소가 도입 신청 목록에 표시됩니다. 주소는 `http://<Tailscale IP>:443/git/`이고 Console 왼쪽 아래 **내부 Git** 버튼으로 열립니다.
+
+- 로그인은 솔루션 계정 하나입니다. Console에 로그인한 브라우저는 그대로 Gitea에 들어가고, 아니면 로그인 화면을 거쳐 돌아옵니다. 계정을 중지하면 Gitea도 다음 요청부터 막힙니다.
+- 직원은 승인된 저장소를 읽고, 클론하고, 이슈를 남기고, 개인 저장소를 만들 수 있습니다. 관리자 역할은 Gitea 관리자입니다. 풀 리퀘스트는 끕니다. 고친 코드는 도입 신청을 다시 거칩니다.
+- 클론은 같은 ID/PW로 합니다: `git clone http://<Tailscale IP>:443/git/mcp/<저장소>.git`. Gitea 관리 자격은 솔루션 내부에만 둡니다.
+
+### 승인한 MCP를 Gateway에 등록
+
+도입 신청이 **승인**되면 관리자가 목록의 **Gateway 등록**을 누릅니다. MCP 엔드포인트(사내가 아니면 HTTPS)를 넣으면 서버가 지금 광고하는 도구를 불러오고, 도구마다 읽기·쓰기·외부전송·실행 또는 미승인을, 서버에는 데이터 등급과 사용 기한(30일~1년)을 고릅니다. 등록하면 `/mcp/<id>/`로 바로 쓸 수 있고 직원의 **내 PC 연결** 명령에도 들어갑니다.
+
+- 관리자가 본 도구 계약(해시)과 등록 순간 서버의 계약이 다르면 등록을 거부합니다. 고정한 계약은 이후 호출마다 다시 대조합니다.
+- 사용 기한이 지나면 호출이 `P-APPROVAL-EXPIRY-001`로 막힙니다. **MCP 서버** 화면에서 기한 연장·등록 해제를 합니다. 해제한 서버는 기록과 함께 사용 중지로 남고, 이용 관계 `UR-<ID>`는 **종료·폐기** 절차에 올릴 수 있습니다.
+- 등록에는 신청의 GitHub 저장소와 검증 커밋이 실리므로, 이상행위나 정기 재감사로 도는 A.I.G 감사는 도입 때 검증한 바로 그 커밋을 다시 검사합니다.
 
 개요의 허용·경보·차단 수치를 누르면 해당 활동 로그로 이동합니다. 직원·단말은 폐기 자격과 발급만 되고 보고하지 않은 장치를 기본 목록에서 제외합니다. 도입 신청의 검증·A.I.G 검사는 [아래 절](#mcp-도입-신청-자동-검증)을 봅니다. 원격 MCP 후보와 취약 버전·엣지 케이스는 [field 후보 목록](docs/ai/FIELD_MCP_CANDIDATES.md)을 참조합니다.
 
 ### 직원 PC의 Claude Code·Codex CLI 연결
 
-웹 대시보드만 쓸 직원에게는 키트 설치가 필요 없습니다. 실제 AI 하네스에서 MCP를
-쓰는 직원에게는 `field/pc/mcpgw_pc.py` 한 파일을 전달합니다(표준 라이브러리만, Python 3.9 이상,
-Windows·Linux·WSL). 솔루션 기기에서 `./console.sh field pc-command`가 출력한 한 줄을 직원 PC에서
-실행하면 회사 계정과 비밀번호를 묻고 Claude Code·Codex CLI에 서버를 등록합니다(`--harness`로 하나만 고를 수 있음).
-`--workstation`의 기본값은 그 PC의 호스트 이름이며, `--servers` 목록은 레지스트리에서 생성됩니다.
-승인된 MCP 서버가 없으면 `pc-command`는 명령 대신 그 사실을 알립니다.
+웹 대시보드만 쓸 직원에게는 키트 설치가 필요 없습니다. 실제 AI 하네스에서 MCP를 쓰는 직원은 Console 왼쪽 아래
+**내 PC 연결**에서 키트(`field/pc/mcpgw_pc.py`, 표준 라이브러리만, Python 3.9 이상, Windows·Linux·WSL)를 받고, 표시된
+한 줄을 복사해 자기 PC에서 실행합니다. 회사 계정과 비밀번호를 묻고 Claude Code·Codex CLI에 지금 운영 중인 서버를
+등록합니다(`--harness`로 하나만 고를 수 있음). 같은 명령은 솔루션 기기의 `./console.sh field pc-command`로도 볼 수
+있습니다. `--workstation`의 기본값은 그 PC의 호스트 이름이며, 서버 목록은 레지스트리에서 만듭니다. 운영 중인 서버가
+없으면 명령 대신 그 사실을 표시합니다.
 
 ```bash
-# 솔루션 기기의 ./console.sh field pc-command가 출력한 setup 명령을 그대로 실행
+# Console "내 PC 연결"의 명령 예: 키트를 받고 setup
+curl -fsSO http://<Tailscale IP>:443/static/kit/mcpgw_pc.py && python3 mcpgw_pc.py setup --url http://<Tailscale IP>:443 --servers <id,…>
 python3 ~/.mcpgw/mcpgw_pc.py doctor
 ```
 
@@ -142,24 +158,29 @@ Syft(CycloneDX SBOM)·Trivy·Semgrep을 돌리고, 문서에서 C1~C4 종료 조
 **검증 보고서**에서 취약점·코드 검사, SBOM 구성요소와 라이선스, 종료조건 조사를 확인하고 원본 JSON을 내려받을 수
 있습니다. 검사 실패 사유와 성공한 단계의 보고서는 함께 보존되며 재검증할 수 있습니다.
 
-**A.I.G 검사** 탭은 AI-Infra-Guard `mcp-scan`의 모델 설정·워커 상태·대상·작업·결과를 보여 줍니다. 코드 감사는
-`MCP_SCAN_BASE_URL`·`MCP_SCAN_MODEL`·`MCP_SCAN_API_KEY`가 모두 설정된 경우에만 돌고(설정되면 검증을 마친 신청은 자동 감사),
-이상행위(`P-ANOMALY-001`) 자동 감사는 로컬 모델일 때만 예약되며 대상별 24시간 중복을 막습니다. 설정이 없으면 UI에 꺼짐으로 표시합니다. 원격 서버는 관리자가 제공자 문서(HTTPS)로 종료 조건을 기록해야 승인할
+**A.I.G 검사**(AI-Infra-Guard `mcp-scan`)는 field 설치에서 따로 설정할 것이 없습니다. `field up`이 초경량 로컬 모델
+`qwen3.5:0.8b`(약 1GB)를 처음 한 번 받아 `aig-scanner`로 연결하고, 이후 검증을 마친 신청은 자동으로 코드 감사를 받습니다.
+Gateway 등록 서버에서 이상행위(`P-ANOMALY-001`, 짧은 시간의 반복 차단)가 나오면 그 서버의 검증 커밋을 다시 감사하도록
+자동 예약합니다(대상별 24시간 1회). 도입 신청의 **A.I.G 검사** 탭에서 모델·워커·자동 검사 상태, 시작 원인별 작업, 작업마다
+상태·경과·심각도별 발견을 보고, 이상행위 작업은 원인 칩에서 해당 경보 기록으로 이동합니다. 활동 로그의 이상행위 판정에도
+검사로 가는 버튼이 붙습니다. 0.8B 모델은 CPU에서 끝까지 도는 대신 탐지력이 낮아 **"발견 0 · 로컬 소형 모델"은 안전의 증거가
+아닙니다**. 더 큰 모델은 `.env`의 `AIG_LOCAL_MODEL`, 조직의 다른 endpoint는 `MCP_SCAN_*`에 적습니다(D-47). 끄려면 `AIG_LOCAL_MODEL=none`. 원격 서버는 관리자가 제공자 문서(HTTPS)로 종료 조건을 기록해야 승인할
 수 있습니다. 자동 문서 조사는 제공자의 실제 회수나 계약 검증을 대신하지 않으며 최종 도입 승인은 관리자가 합니다.
 
 ## 검증
 
 `./console.sh test`가 한 번에 돌리는 것: 망 대역 선택기 self-check · 도입 검증 단위 시험 14건(네트워크 없는 컨테이너에서
 종료 조건 조사·부분 검사 증거·보고서 권한) · 콘솔 상태 모듈 node 시험 7건 · Rego 단위 시험 · 실기기 키트·Caddy 오버레이 검사 ·
-분류기 self-check · Gateway 인수 시험 17건(서버별 엔드포인트, 협력사에게 숨긴 도구의 직접 호출, 권한 번들, 이용 관계 범위 경보,
-부작용 없는 서버 점검, 개인정보 마스킹, 반출 차단, 열람→반출 연쇄 포함) · **하네스 연결 점검 16조합**(PC 4대 × 하네스 4종 ×
+분류기 self-check · Gateway 인수 시험 18건(서버별 엔드포인트, 협력사에게 숨긴 도구의 직접 호출, 권한 번들, 이용 관계 범위 경보,
+부작용 없는 서버 점검, Console 등록의 계약 고정·기한 만료 차단, 개인정보 마스킹, 반출 차단, 열람→반출 연쇄 포함) · **하네스 연결 점검 16조합**(PC 4대 × 하네스 4종 ×
 서버 10개, 모델 없이) · 직원 업무 시나리오 21건의 기대 판정 대조(공식 MCP Inspector CLI가 같은 URL·SSO 토큰으로 호출) · 종료 판정
 흐름 · 보안 회귀 54건(망 분리 실제 소켓, loopback 게시, 토큰 없는 읽기 API, 역할 경계, 로그아웃 즉시 효력, 원격 MCP 종료 조건의
 플랫폼 확인, OPA·상위 서버·Presidio 장애 시 실패 안전, 감사 변조 탐지, 계약 잠금) · 정책 재생 · 논문 실험 E1~E3.
 
 CI([`.github/workflows/verify.yml`](.github/workflows/verify.yml))는 모든 브랜치 푸시와 PR마다 정적 검사(lint·무인증 API
 목록 대조·망과 게시 포트 경계) 뒤 `./console.sh up --no-llm`과 `./console.sh test`를 돌리고, 이어서 field 오버레이를 loopback에
-얹어 러너를 직원 PC로 삼습니다 — 키트 setup → 실제 Claude Code·Codex CLI가 서버 10개에 붙는지 → uninstall. CodeQL은 `main`
+얹어 러너를 직원 PC로 삼습니다 — 키트 setup → 실제 Claude Code·Codex CLI가 서버 10개에 붙는지 → uninstall, 그리고 내부 Git이
+솔루션 로그인(브라우저 쿠키·git Basic)으로만 열리고 위조한 신원 헤더가 통하지 않는지. CodeQL은 `main`
 푸시와 PR에서 돕니다. 상세: [docs/ai/TESTING.md](docs/ai/TESTING.md).
 
 ## 권한 모델

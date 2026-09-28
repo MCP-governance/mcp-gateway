@@ -23,7 +23,7 @@
 
 | # | 기능 | LiteLLM (1.89.4) | main (v3.0) |
 | --- | --- | --- | --- |
-| 1 | 서버 등록·저장 | 설정 파일 서버와 DB 서버를 합집합으로 노출(`mcp_server_manager.py:589-593`), CRUD `POST/PUT/DELETE /v1/mcp/server`(`management_endpoints/mcp_management_endpoints.py:1416,1848,2413`) | **부분** — `registry/catalog.toml`(git 리뷰)을 기동 때 DB로 동기화(`registry.py`). 런타임 추가 없음, 카탈로그 수정 + 이미지 재빌드 |
+| 1 | 서버 등록·저장 | 설정 파일 서버와 DB 서버를 합집합으로 노출(`mcp_server_manager.py:589-593`), CRUD `POST/PUT/DELETE /v1/mcp/server`(`management_endpoints/mcp_management_endpoints.py:1416,1848,2413`) | **동등(D-49)** — `registry/catalog.toml`(git 리뷰) ∪ Console 등록(`servers.json`), 등록·연장·해제 REST. 등록은 검토한 계약 해시 필수 |
 | 2 | 업스트림 전송 | stdio·sse·http(`types/mcp.py:19-22`) | **부분** — upstream은 Streamable HTTP만, 대신 **클라이언트 쪽**이 HTTP·SSE·stdio 3종(`sse_entry.py`, `stdio_entry.py`) |
 | 3 | 서버별·통합 엔드포인트, 도구 접두어 | `/mcp`, `/{server}/mcp`, 접두어 `{server}-{tool}`(`server.py:4119-4123`, `utils.py:29-30,245-253`) | **동등** — `/mcp/<server>/`(원래 이름) + `/mcp/`(`<server>__<tool>`) |
 | 4 | 업스트림 인증 | 9종 `auth_type`(`types/mcp.py:31-40`) | **없음(의도)** — Gateway는 자격 없이 붙고 서버가 자기 자격을 가진다(`upstream.py` 머리말) |
@@ -44,7 +44,7 @@
 | 19 | 관리 REST | `/v1/mcp/*` 34개, `/mcp-rest/*` 4개 | **부분** — 계약 승인·카탈로그 재조회·종료 REST(LiteLLM엔 없는 영역) |
 | 20 | 속도 제한 | MCP 전용은 없고 LLM 훅에 얹힘(`mcp_server_manager.py:3149-3267`) | **있음** — `P-RATE-001`·중요정보 버스트·차단 연속을 정책이 판단 |
 | 21 | 타임아웃·재시도 | `MCP_CLIENT_TIMEOUT` 60초, 재시도 없음 | 90초, 재시도 없음(`MCP-UPSTREAM-001`) |
-| 22 | 서버 제출→승인 | 비관리자 `register` → 관리자 `approve`(`mcp_management_endpoints.py:1084-1207`) | **없음** — 도입 신청은 있으나 승인해도 카탈로그에 안 들어감 |
+| 22 | 서버 제출→승인 | 비관리자 `register` → 관리자 `approve`(`mcp_management_endpoints.py:1084-1207`) | ~~없음~~ → **D-49**: 도입 신청 → 격리 검증 → 승인 → Console 등록(계약 고정·사용 기한) |
 | 23 | Sampling·Elicitation | 지원(`sampling_handler.py`, `elicitation_handler.py`) | **없음(의도)** — 중재 메서드는 initialize·ping·tools/list·tools/call |
 | 24 | 공개 카탈로그 | `/v1/mcp/registry.json` | 없음 — 무인증은 `/api/health`·로그인뿐 |
 
@@ -58,8 +58,10 @@
 
 ## 4. 다음 후보 (우선순위순)
 
-1. **도입 신청 → 카탈로그 초안** — 승인 시 `catalog.toml` 항목 초안과 계약 잠금 후보를 만들어 사람이 검토·커밋한다.
-   LiteLLM의 제출→대기열→승인 REST 모양만 참고하고, 승인 뒤 재검증 없이 신뢰하는 모델은 가져오지 않는다(5절).
+1. ~~**도입 신청 → 카탈로그 초안**~~ → **D-49로 반영**(2026-09-28): 승인한 신청을 Console에서 Gateway에 등록한다.
+   `REGISTRY_RUNTIME_DIR/servers.json`이 검토된 `catalog.toml`과 합쳐지고(LiteLLM의 설정+DB 서버 합집합), 관리자가 검토한
+   계약 해시가 등록 순간과 다르면 거부한다. 승인 뒤 무재검증 신뢰는 여전히 가져오지 않는다 — 고정한 계약은 매 호출 재대조.
+   사용 기한(BeyondTrust식)을 붙여 만료되면 `P-APPROVAL-EXPIRY-001`이 막는다.
 2. **이용 관계별 도구 허용 목록** — `[[usage_relationships]]`에 `allowed_tools`를 두고 `P-SCOPE-001`과 같은 입력으로 판단.
    LiteLLM `mcp_tool_permissions`의 자료 구조만 참고(키→팀→조직 교집합 대신 이용 관계 1단).
 3. **`P-SCOPE-001` 차단 승격** — 이용 관계 소유 부서가 `allowed_resources`를 인가 목록으로 검토한 뒤 관리대장에서 결정.

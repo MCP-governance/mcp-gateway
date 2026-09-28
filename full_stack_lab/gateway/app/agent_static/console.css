@@ -84,6 +84,7 @@ h1, h2, h3 { text-wrap: balance; }
 .side-foot { border-top: 1px solid var(--line); padding: 14px 18px; font-size: var(--fs-sm); color: var(--ink-3); }
 .side-foot .who b { color: var(--ink); display: block; font-size: var(--fs); }
 .side-foot .row { display: flex; gap: 8px; margin-top: 10px; }
+.side-foot .git-link { display: flex; justify-content: center; margin-top: 10px; }
 
 .main { min-width: 0; padding: 24px 32px 64px; }
 .page-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
@@ -261,7 +262,11 @@ pre.json { background: var(--panel-2); border: 1px solid var(--line); border-rad
 dialog { border: 1px solid var(--line); border-radius: 12px; padding: 0; background: var(--panel); color: var(--ink);
   width: min(580px, calc(100% - 32px)); box-shadow: var(--float); }
 dialog::backdrop { background: rgba(10, 18, 32, .45); }
-dialog form { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+dialog form { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; max-height: calc(100vh - 48px); overflow-y: auto; }
+dialog .tool-pick { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+dialog .tool-pick label { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; font-weight: 400; }
+dialog .tool-pick label > span { display: flex; flex-direction: column; min-width: 0; }
+dialog .tool-pick .sub { color: var(--ink-3); font-size: var(--fs-xs); }
 dialog h3 { margin: 0; font-size: var(--fs-lg); }
 dialog p { margin: 0; color: var(--ink-2); }
 dialog label { display: flex; flex-direction: column; gap: 6px; font-size: 15px; font-weight: 500; }
