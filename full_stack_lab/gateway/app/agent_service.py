@@ -703,8 +703,6 @@ async def approve_mcp_request(request_id: UUID, authorization: str | None = Head
     pending = await db.fetch_one(
         "SELECT id, status, requested_transport, exit_terms, repository_url, commit_sha FROM mcp_intake_requests WHERE id=%s",
         (request_id,))
-    if not pending or pending["status"] != "VALIDATED" or not pending["commit_sha"]:
-        raise HTTPException(409, "격리 검증을 통과한 요청만 승인할 수 있습니다.")
     terms = (pending or {}).get("exit_terms") or {}
     if pending and pending["requested_transport"] != "stdio" and not (
         terms.get("verified_by") and terms.get("evidence_url") and
@@ -712,6 +710,8 @@ async def approve_mcp_request(request_id: UUID, authorization: str | None = Head
             "provider_credential_disclosure", "revocation_evidence", "audit_access_retained"))
     ):
         raise HTTPException(409, "플랫폼이 제공자 자격 고지·회수 증거·감사 접근을 증거 문서로 확인해야 승인할 수 있습니다.")
+    if not pending or pending["status"] != "VALIDATED" or not pending["commit_sha"]:
+        raise HTTPException(409, "격리 검증을 통과한 요청만 승인할 수 있습니다.")
     internal_repo_url = await publish_internal_repo(pending)
     row = await db.fetch_one(
         """UPDATE mcp_intake_requests
