@@ -4,7 +4,7 @@
     python3 tests/field_kit_check.py
 
 확인하는 것:
-  * field/pc/mcpgw_pc.py(직원 PC 키트): https 강제(loopback 터널만 예외), 쓰기 전 충돌 확인,
+  * field/pc/mcpgw_pc.py(직원 PC 키트): HTTPS 또는 Tailscale/loopback HTTP만 허용, 쓰기 전 충돌 확인,
     Claude Code·Codex 설정에 토큰 원문이 없고 헬퍼 명령만 있음, Codex 블록이 사용자 설정을 보존하고
     멱등, uninstall이 자기 것만 지우고 IdP에 폐기를 요청, 관리형 파일에 비밀이 없음.
   * 실제 IdP처럼 리프레시 토큰을 회전하고 재사용을 계열 폐기로 처리하는 가짜 IdP·Gateway에 대해:
@@ -159,11 +159,12 @@ class KitTest(unittest.TestCase):
                          "--email", "ysg@bob.local", "--password-stdin", *extra, stdin="test-password\n")
 
     def test_address_rules(self):
-        for bad in ("http://mcp-gw.internal", "https://u:p@mcp-gw.internal", "https://mcp-gw.internal/?t=1"):
+        for bad in ("http://mcp-gw.internal", "http://192.168.0.10", "https://u:p@mcp-gw.internal", "https://mcp-gw.internal/?t=1"):
             with self.assertRaises(SystemExit):
                 self.kit.gateway_url(bad)
         self.assertEqual(self.kit.gateway_url("https://mcp-gw.internal/"), "https://mcp-gw.internal")
         self.assertEqual(self.kit.gateway_url("http://127.0.0.1:8443"), "http://127.0.0.1:8443")
+        self.assertEqual(self.kit.gateway_url("http://100.83.175.111:443"), "http://100.83.175.111:443")
 
     def test_setup_writes_helpers_keeps_user_config_and_is_idempotent(self):
         fake = FakeIdpGateway()
@@ -260,7 +261,8 @@ class OverlayTest(unittest.TestCase):
     def test_caddyfile_routes(self):
         lines = (LAB / "field" / "Caddyfile").read_text(encoding="utf-8").splitlines()
         text = "\n".join(line for line in lines if not line.lstrip().startswith("#"))
-        self.assertIn("tls internal", text)
+        self.assertIn("http://:8080", text)
+        self.assertNotIn("tls internal", text)
         self.assertIn("admin off", text)
         self.assertNotIn("handle_path", text)  # Gateway가 /mcp/<server>/ 경로 그대로에서 서버를 고른다
         self.assertRegex(text, r"handle /mcp/\* \{\s*reverse_proxy gateway:8080")
@@ -278,15 +280,15 @@ class OverlayTest(unittest.TestCase):
         self.assertIn('os.getenv("IDP_INTERNAL_URL")', text)
 
     @unittest.skipUnless(shutil.which("docker"), "docker CLI 없음")
-    def test_overlay_publishes_only_caddy_on_the_lan_address(self):
-        env = {**os.environ, "APPLIANCE_HOST": "mcp-gw.internal", "APPLIANCE_BIND": "192.0.2.10",
+    def test_overlay_publishes_only_caddy_on_the_tailnet_address(self):
+        env = {**os.environ, "APPLIANCE_BIND": "100.83.175.111",
                "AGENT_JWT_PRIVATE_KEY": "x", "AGENT_JWT_PUBLIC_KEY": "x", "LITELLM_MASTER_KEY": "x"}
         command = ["docker", "compose", "--project-directory", str(LAB), "-f", str(LAB / "compose.yaml"),
                    "-f", str(LAB / "compose.field.yaml"), "config", "--format", "json"]
         rendered = json.loads(subprocess.run(command, env=env, capture_output=True, encoding="utf-8", check=True).stdout)
         services = rendered["services"]
         published = {(name, p.get("host_ip")) for name, svc in services.items() for p in svc.get("ports", [])}
-        self.assertIn(("caddy", "192.0.2.10"), published)
+        self.assertIn(("caddy", "100.83.175.111"), published)
         self.assertEqual({ip for name, ip in published if name != "caddy"}, {"127.0.0.1"})
         self.assertFalse([name for name in services if name.startswith("ws-")])  # 실제 PC가 대신한다
         self.assertEqual(services["gateway"]["environment"]["IDP_INTERNAL_URL"], "http://agent-service:8000")

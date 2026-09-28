@@ -36,8 +36,8 @@ cd full_stack_lab
 - **감사 원장은 append-only**. 판정 기록을 고치는 코드를 쓰지 않는다.
 - **하네스 관리형 설정은 레지스트리에서 렌더링된다**. 이미지 안 `/etc/claude-code`·`/etc/codex`·`/etc/gemini-cli`·
   `/etc/opencode`의 파일을 직접 고치지 않는다 — `registry/catalog.toml`을 고치고 워크스테이션 이미지를 다시 빌드한다.
-- **사내망 게시는 `compose.field.yaml`의 Caddy(TLS 443) 하나뿐**이다. 평문 HTTP를 사내망에 게시하지 않고, 기본
-  `compose.yaml`의 loopback 게시는 그대로 둔다(D-42·D-43).
+- **실기기 게시는 `compose.field.yaml`의 Caddy 하나뿐**이다. `field` 명령이 찾은 Tailscale IP에만
+  HTTP를 바인딩하고, 일반 LAN·전체 인터페이스에는 게시하지 않는다(D-46). 기본 `compose.yaml`의 loopback 게시는 그대로 둔다.
 - **직원 PC 키트(`field/pc/mcpgw_pc.py`)는 토큰·비밀번호를 하네스 설정·환경 변수·로그에 쓰지 않는다**. 헬퍼 명령만 쓰고,
   리프레시는 잠금 안에서만 한다(IdP가 재사용을 계열 폐기로 처리). 시험은 임시 HOME·CODEX_HOME에서만.
 - **Gateway는 하네스 신원을 기록만 한다**. `decisions.client.harness`(clientInfo·User-Agent)는 클라이언트가
@@ -60,5 +60,6 @@ cd full_stack_lab
 - 결정을 내리면 `docs/ai/DECISIONS.md`에 D-번호로 남긴다.
 
 ## Git
-- 기능 브랜치(`feat/…`)에서 작업, `main` 직접 푸시 금지. PR 본문에 검증 결과를 붙인다.
+- 사용자 요청 없이 새 브랜치를 만들거나 올리지 않는다. 새 이름은 `MM/DD-branchname`(Git ref에 공백 불가),
+  기존 field 브랜치에서 작업하며 `main` 직접 푸시 금지. PR 본문에 검증 결과를 붙인다.
 - 커밋 메시지: 첫 줄 `feat|fix|docs|test(v2): …`, 본문에 이유.

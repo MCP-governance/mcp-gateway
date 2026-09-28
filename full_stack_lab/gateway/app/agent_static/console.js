@@ -779,7 +779,6 @@ ROUTES.intake = async (_, tab) => {
     }),
     charts: { "c-intake": () => charts.columns(byStatus) },
     after: () => {
-      if (!requests.some((r) => ["VALIDATION_QUEUED", "VALIDATING"].includes(r.status))) return;
       intakeTimer = setInterval(() => {
         // Do not close a report drawer, reset an unfinished form or interrupt a review.
         if (!document.hidden && parseHash().page === "intake" && parseHash().query.get("t") !== "new"

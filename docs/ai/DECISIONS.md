@@ -328,6 +328,7 @@
   `field set-password`로 계정마다 바꾼다.
 
 ## D-43 사내망 TLS 앞단은 Caddy `tls internal` 하나만 게시 (v3.1)
+- **현재 상태**: D-46의 Tailscale 전용 HTTP 배치로 대체했다. 아래는 이전 배치의 결정 기록이다.
 - **결정**: `field/Caddyfile`의 Caddy(`caddy:2.11.4-alpine`)만 `${APPLIANCE_BIND}:443`에 게시하고, 경로로 Gateway의
   `/mcp/<server>/`·`/api/health`·`/.well-known/oauth-protected-resource`, IdP의 `/oauth/*`, Console을 나눈다. 나머지 서비스는
   여전히 loopback 게시이거나 게시 자체가 없다. `APPLIANCE_BIND`에 기본값을 두지 않아 실수로 모든 인터페이스가 열리지
@@ -362,3 +363,9 @@
 - **파일 접근**: Console에 보고서 볼륨을 읽기 전용으로 마운트한다. 관리자 인증·UUID·보고서 종류 allowlist·신청 증적 귀속으로 다운로드를 제한한다. symlink와 임의 경로를 거부한다.
 - **중단 복구**: 도입 검증에도 lease를 둔다. 워커 중단 시 기한 뒤 재예약하며 자동 시도는 3회로 제한한다. 실패·기존 HOLD는 관리자가 재검증할 수 있다.
 - **되돌릴 조건**: 검증 예약을 별도 승인 단계로 요구하는 조직에서는 명시적 구성 정책을 도입해야 한다. 검증 예약을 도입 승인으로 간주하지 않는다.
+
+## D-46 실기기 간편 배치는 Tailscale IP에만 게시
+- **결정**: `field up`이 `tailscale ip -4`를 읽어 Caddy의 호스트 게시를 그 IP의 443 포트로 제한한다. Caddy는 내부 8080에서 HTTP를 제공하고 Gateway·IdP의 공개 주소는 `http://<Tailscale IP>:443`이다. CI의 `127.0.0.1` 예외만 별도로 허용한다. 일반 LAN IP나 전체 인터페이스로 HTTP를 게시하지 않는다.
+- **이유**: 현재 tailnet에서 `tailscale cert`가 인증서 발급을 거절한다. 사설 CA·hosts 배포 없이 같은 tailnet의 관리자·직원이 ID/PW로 접속하도록, Tailscale 터널 암호화와 앱 토큰·역할 판정을 사용한다. 브라우저에는 HTTP로 표시되므로 이 배치는 tailnet 전용이며 일반 LAN/인터넷에는 조직이 신뢰하는 HTTPS 종료 지점을 둔다.
+- **신청 표시**: 신청 목록이 비어 있을 때도 폴링한다. 공개 `IDP_ISSUER`와 요청의 실제 origin을 함께 검사하여 Caddy 컨테이너 IP 변경이 로그인·신청 POST를 막지 않게 한다. 다른 origin의 쓰기 요청은 계속 거부한다.
+- **운영 단순화**: 새 `.env`에는 DB와 초기 IdP 비밀번호를 임의 생성한다. 기존 `.env`·DB는 건드리지 않는다. 컨테이너 직원 PC를 띄우지 않는 field 기본 배치에서는 가상 PC 등록을 생략한다.

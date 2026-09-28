@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -145,6 +146,17 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["request"]["status"], "VALIDATION_QUEUED")
         self.assertIn("'VALIDATION_QUEUED'", db.call_args.args[0])
+
+    def test_public_origin_can_submit_but_other_origin_cannot(self):
+        body = {"display_name": "Example", "repository_url": "https://github.com/example/server",
+                "requested_transport": "stdio", "purpose": "use repository MCP safely"}
+        db = AsyncMock(side_effect=[None, {"id": str(self.id), "status": "VALIDATION_QUEUED"}])
+        with patch.dict(os.environ, {"IDP_ISSUER": "https://mcp-gw.internal"}), self.identity("employee"), patch.object(agent_service.db, "fetch_one", db):
+            allowed = self.client.post("/api/mcp-requests", json=body, headers={"origin": "https://mcp-gw.internal"})
+            blocked = self.client.post("/api/mcp-requests", json=body, headers={"origin": "https://elsewhere.invalid"})
+        self.assertEqual(allowed.status_code, 200)
+        self.assertEqual(blocked.status_code, 403)
+        self.assertEqual(db.await_count, 2)
 
     def test_reports_are_admin_only(self):
         with self.identity("employee"):

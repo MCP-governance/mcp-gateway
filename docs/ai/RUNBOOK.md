@@ -29,9 +29,10 @@
 
 ### 랩 전체를 실제 기기 세 종류에 나눠 올리기
 솔루션 기기(Docker 호스트) · 관리자 PC · 직원 PC로 나누는 절차는 루트
-[README.md "실제 기기로 배치하기"](../../README.md#실제-기기로-배치하기--솔루션-기기--관리자-pc--직원-pc)에
-있다. `./console.sh field up|ca|status|pc-command|set-password|register-pc|down` — 기본 `up`은 바뀌지 않고, CI는
-`verify` 끝에서 이 절차를 실제 Claude Code·Codex CLI로 돌린다(D-42~D-44).
+[README.md "실제 기기로 배치하기"](../../README.md#실제-기기로-배치하기--tailscale-내부망)에
+있다. `./console.sh field up|status|pc-command|set-password|register-pc|down` — Tailscale IP를 자동으로 찾아
+`http://<IP>:443`에 게시하며 root.crt·hosts 설정은 필요 없다. 기본 `up`은 바뀌지 않고, CI는
+`verify` 끝에서 loopback 변형으로 실제 Claude Code·Codex CLI를 확인한다(D-42·D-46).
 
 ### WSL이 유휴로 꺼지는 문제
 WSL VM은 열린 프로세스가 없으면 몇 분 뒤 종료되고 컨테이너도 같이 죽는다. 작업 중에는 백그라운드로
@@ -138,7 +139,7 @@ claude -p "..."                                      # 하네스를 직접 불�
 (복구는 `wsl --shutdown`). 모델을 여러 개 동시에 올리지 말 것(`OLLAMA_MAX_LOADED_MODELS=1`), 평소엔 2B로 둔다.
 
 ## 도입 신청 자동 검증과 보고서
-직원이 `#/intake`에서 신청하면 즉시 검증 대기열에 들어간다. 관리자에게 검증 시작 클릭을 요구하지 않는다. 워커가 GitHub 저장소를 격리 복제하여 commit을 고정하고 문서 종료조건 조사, Syft SBOM(Software Bill of Materials), Trivy SCA(Software Composition Analysis), Semgrep SAST(Static Application Security Testing)를 수행한다. 대기·검증 중 목록은 5초마다 갱신하며 입력 폼·보고서·검증 기록 대화상자를 방해하지 않는다.
+직원이 `#/intake`에서 신청하면 즉시 검증 대기열에 들어간다. 관리자에게 검증 시작 클릭을 요구하지 않는다. 워커가 GitHub 저장소를 격리 복제하여 commit을 고정하고 문서 종료조건 조사, Syft SBOM(Software Bill of Materials), Trivy SCA(Software Composition Analysis), Semgrep SAST(Static Application Security Testing)를 수행한다. 신청 목록은 비어 있어도 5초마다 갱신하며 입력 폼·보고서·검증 기록 대화상자를 방해하지 않는다.
 
 관리자는 신청의 **검증 보고서**에서 요약, 검사 오류, 취약점과 수정 버전, 구성요소·라이선스, C1~C4 문서 후보 근거를 확인하고 보고서 JSON과 원본 JSON을 내려받는다. 목록에서 FAILED는 재검증할 수 있다. 자동 조사만으로 제공자 종료조건이 검증됐다고 표시하지 않으며, 근거 문서를 확인해 종료조건 기록 후 승인한다. 스캐너 오류는 발견 0건으로 처리하지 않는다.
 

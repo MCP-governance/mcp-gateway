@@ -34,9 +34,8 @@ usage: ./console.sh <command>
   replay [N]             기록된 정책 입력 N건(기본 100)과 합성 라벨 사례를 후보 정책(REPLAY_POLICY_DIR)에 재생 — MCP 호출 없음
   status | logs [svc] | down | reset | scan | openapi
   field up [--with-lab-workstations]
-                         실기기 배치: 같은 스택 + Caddy(사내망 TLS 앞단, .env의 APPLIANCE_HOST·APPLIANCE_BIND)
-  field ca               Caddy의 사설 루트 인증서를 field/ca/root.crt로 꺼내고 SHA-256 지문 출력
-  field status           Caddy·Gateway·Console 상태, 사내망 주소와 사설 CA로 /api/health 확인
+                         Tailscale IP에만 HTTP 게시(터널 암호화, 별도 인증서·hosts 설정 없음)
+  field status           Caddy·Gateway·Console 상태와 Tailscale 주소 확인
   field pc-command       직원 PC에서 실행할 키트 setup 명령(서버 목록은 레지스트리에서)
   field set-password <이메일>
                          합성 계정 한 개의 비밀번호를 바꿈(사내망에 열기 전에 계정마다)
@@ -221,59 +220,40 @@ FIELD_COMPOSE=(-f compose.yaml -f compose.field.yaml)
 
 field_up() {
   local with_ws=0
+  local services=(corp-git corp-redis corp-db corp-mail intranet external-web
+    mcp-filesystem mcp-git mcp-fetch mcp-memory mcp-desktop mcp-postgres mcp-redis mcp-email mcp-gitea mcp-playwright
+    gateway gateway-sse agent-service intake-worker)
   for a in "$@"; do [[ "$a" == "--with-lab-workstations" ]] && with_ws=1; done
-  ensure_env
-  local host bind
-  host="$(env_value APPLIANCE_HOST)"; bind="$(env_value APPLIANCE_BIND)"
-  if [[ -z "$host" || -z "$bind" ]]; then
-    echo ".env에 APPLIANCE_HOST(예: mcp-gw.internal)와 APPLIANCE_BIND(이 기기의 사내망 IP)를 지정하세요." >&2
-    echo "루트 README '실제 기기로 배치하기 → ① 솔루션 기기' 참고." >&2
-    exit 1
+  if [[ ! -e .env ]]; then
+    umask 077
+    printf 'MOCK_SSO_PASSWORD=%s\nPOSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
   fi
+  ensure_env
   echo "[field 1/4] 이미지 빌드"
-  docker compose "${FIELD_COMPOSE[@]}" build -q
+  docker compose "${FIELD_COMPOSE[@]}" build -q "${services[@]}"
   echo "[field 2/4] 회사 시스템 · MCP 서버 10종 · Gateway · Console"
-  docker compose "${FIELD_COMPOSE[@]}" up -d corp-git corp-redis corp-db corp-mail intranet external-web \
-    mcp-filesystem mcp-git mcp-fetch mcp-memory mcp-desktop mcp-postgres mcp-redis mcp-email mcp-gitea mcp-playwright \
-    gateway gateway-sse agent-service intake-worker
+  docker compose "${FIELD_COMPOSE[@]}" up -d "${services[@]}"
   wait_ready
   ensure_contracts
-  provision_devices
   if [[ $with_ws == 1 ]]; then
     echo "[field 3/4] 컨테이너 직원 PC 4대도 함께 기동(--with-lab-workstations)"
+    docker compose "${FIELD_COMPOSE[@]}" --profile lab-workstations build -q "${WORKSTATIONS[@]}"
+    provision_devices
     docker compose "${FIELD_COMPOSE[@]}" --profile lab-workstations up -d "${WORKSTATIONS[@]}"
   else
     echo "[field 3/4] 컨테이너 직원 PC 4대는 끔(실제 PC가 대신함) — 같이 보려면 --with-lab-workstations"
   fi
-  echo "[field 4/4] Caddy(사내망 TLS 앞단)"
+  echo "[field 4/4] Caddy(Tailscale IP 전용 앞단)"
   docker compose "${FIELD_COMPOSE[@]}" up -d caddy
   echo
-  echo "사내망 게시     : https://$host  (${bind}:443)"
-  field_ca
+  echo "접속 주소       : http://${APPLIANCE_BIND}:443"
+  echo "처음 배치라면 계정별 비밀번호 설정: ./console.sh field set-password <이메일>"
   echo "직원 PC 키트    : field/pc/mcpgw_pc.py — 명령은 ./console.sh field pc-command"
-}
-
-field_ca() {
-  mkdir -p field/ca
-  # Caddy는 첫 인증서를 낼 때 사설 CA를 만든다. 막 띄운 직후면 몇 초 기다린다.
-  for _ in $(seq 1 10); do
-    docker compose "${FIELD_COMPOSE[@]}" cp caddy:/data/caddy/pki/authorities/local/root.crt field/ca/root.crt 2>/dev/null && break
-    sleep 2
-  done
-  [[ -s field/ca/root.crt ]] || { echo "CA를 꺼내지 못했습니다: docker compose -f compose.yaml -f compose.field.yaml logs caddy" >&2; exit 1; }
-  echo "루트 인증서 : full_stack_lab/field/ca/root.crt"
-  # 직원 PC 키트(setup --ca)가 보여 주는 것과 같은 SHA-256(DER) 지문. 파일과 다른 경로로 알린다.
-  echo "SHA-256 지문: $(python3 -c 'import hashlib, ssl, sys
-d = hashlib.sha256(ssl.PEM_cert_to_DER_cert(open(sys.argv[1]).read())).hexdigest().upper()
-print(":".join(d[i:i + 2] for i in range(0, len(d), 2)))' field/ca/root.crt)"
 }
 
 field_status() {
   docker compose "${FIELD_COMPOSE[@]}" ps caddy gateway agent-service
-  local host bind; host="$(env_value APPLIANCE_HOST)"; bind="$(env_value APPLIANCE_BIND)"
-  [[ -n "$host" && -n "$bind" && -s field/ca/root.crt ]] || { echo "먼저 ./console.sh field up (그리고 field ca)" >&2; exit 1; }
-  # 직원 PC와 같은 조건으로 본다: 사설 CA로 검증하고, 사내망 주소(APPLIANCE_BIND)로 이름을 푼다.
-  curl -fsS --cacert field/ca/root.crt --resolve "${host}:443:${bind}" "https://${host}/api/health" | python3 -m json.tool
+  curl -fsS "http://${APPLIANCE_BIND}:443/api/health" | python3 -m json.tool
 }
 
 field_down() {
@@ -314,17 +294,21 @@ sys.exit(0 if n else 1)' "$email"
 
 # 직원에게 줄 setup 명령 한 줄. 서버 목록은 레지스트리에서 읽는다(손으로 옮기지 않는다, D-30).
 field_pc_command() {
-  local host; host="$(env_value APPLIANCE_HOST)"
-  [[ -n "$host" ]] || { echo ".env에 APPLIANCE_HOST를 지정하세요" >&2; exit 1; }
   local servers
   servers="$(python3 -c 'import sys, tomllib; print(",".join(sorted(tomllib.load(open(sys.argv[1], "rb"))["servers"])))' registry/catalog.toml)"
-  echo "python3 mcpgw_pc.py setup --url https://${host} --servers ${servers} --ca root.crt --workstation <이 PC의 이름>"
+  echo "python3 mcpgw_pc.py setup --url http://${APPLIANCE_BIND}:443 --servers ${servers}"
 }
 
 field_dispatch() {
+  if [[ "${APPLIANCE_BIND:-}" != "127.0.0.1" ]]; then
+    APPLIANCE_BIND="$(tailscale ip -4 2>/dev/null)"
+    [[ "$APPLIANCE_BIND" =~ ^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\. ]] || {
+      echo "Tailscale IPv4 주소를 찾지 못했습니다. 이 기기에서 tailscale status를 확인하세요." >&2; exit 1;
+    }
+  fi
+  export APPLIANCE_BIND
   case "${1:-}" in
     up) shift; field_up "$@" ;;
-    ca) field_ca ;;
     status) field_status ;;
     down) field_down ;;
     register-pc) shift; field_register_pc "$@" ;;

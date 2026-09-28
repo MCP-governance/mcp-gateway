@@ -6,9 +6,8 @@ name: full_stack_lab 검증
 
 on:
   push:
-    branches: ["main", "feat/**", "release/**"]
+    branches: ["**"]
   pull_request:
-    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -156,7 +155,7 @@ jobs:
         run: ./console.sh test
 
       # 실기기 배치(README "실제 기기로 배치하기"): 같은 스택에 Caddy를 얹고, 러너를 직원 PC로 삼는다 —
-      # 사설 CA 신뢰 → 키트 setup(합성 계정 로그인) → 실제 Claude Code·Codex CLI가 헬퍼로 서버 10개에 붙는지.
+      # loopback HTTP → 키트 setup(합성 계정 로그인) → 실제 Claude Code·Codex CLI가 헬퍼로 서버 10개에 붙는지.
       - uses: actions/setup-node@v7
         with:
           node-version: "24"
@@ -164,27 +163,23 @@ jobs:
 
       - name: 실기기 오버레이 — ./console.sh field up
         run: |
-          echo "127.0.0.1 mcp-gw.internal" | sudo tee -a /etc/hosts
-          echo "APPLIANCE_HOST=mcp-gw.internal" >> .env
           echo "APPLIANCE_BIND=127.0.0.1" >> .env
-          ./console.sh field up
-          sudo cp field/ca/root.crt /usr/local/share/ca-certificates/mcp-gw-root.crt
-          sudo update-ca-certificates
-          ./console.sh field status
+          APPLIANCE_BIND=127.0.0.1 ./console.sh field up
+          APPLIANCE_BIND=127.0.0.1 ./console.sh field status
 
       - name: 실기기 — 직원 PC 키트와 실제 하네스
         run: |
           npm install -g --no-fund --no-audit @anthropic-ai/claude-code@2.1.282 @openai/codex@0.157.0
           # README ②: 사내망에 열기 전에 계정마다 비밀번호를 바꾼다 — 바꾼 값으로 로그인되는지까지 본다.
-          printf 'ci-field-password-01\n' | ./console.sh field set-password ysg@bob.local
+          printf 'ci-field-password-01\n' | APPLIANCE_BIND=127.0.0.1 ./console.sh field set-password ysg@bob.local
           servers="$(python3 -c 'import tomllib; print(",".join(sorted(tomllib.load(open("registry/catalog.toml", "rb"))["servers"])))')"
-          echo "ci-field-password-01" | python3 field/pc/mcpgw_pc.py setup --url https://mcp-gw.internal \
-            --servers "$servers" --ca field/ca/root.crt --workstation ci-runner --email ysg@bob.local --password-stdin
+          echo "ci-field-password-01" | python3 field/pc/mcpgw_pc.py setup --url http://127.0.0.1:443 \
+            --servers "$servers" --workstation ci-runner --email ysg@bob.local --password-stdin
           python3 ~/.mcpgw/mcpgw_pc.py doctor
           claude mcp list | tee reports/field-claude.txt
           test "$(grep -c '(HTTP) - ✔ Connected' reports/field-claude.txt)" -eq 10
           codex mcp get filesystem | tee reports/field-codex.txt
-          grep -F "url: https://mcp-gw.internal/mcp/filesystem/" reports/field-codex.txt
+          grep -F "url: http://127.0.0.1:443/mcp/filesystem/" reports/field-codex.txt
           python3 ~/.mcpgw/mcpgw_pc.py uninstall
           if claude mcp get filesystem; then exit 1; fi
 

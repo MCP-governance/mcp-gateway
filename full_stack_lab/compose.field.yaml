@@ -4,13 +4,8 @@
 # 로 얹을 때만 적용된다. 기본 `./console.sh up`은 이 파일을 읽지 않는다. CI는 `verify` 끝에서
 # 이 오버레이를 얹어 README의 실기기 절차를 그대로 돌린다(D-42).
 #
-# 게시하는 것은 Caddy(tls internal) 하나뿐이다 — 나머지 서비스는 여전히 loopback
-# 게시(Console·Gateway·Jaeger·Gitea)이거나 게시 자체가 없다(MCP 서버 10종, LiteLLM — D-44).
-# `APPLIANCE_BIND`는 이 기기의 사내망 IP여야 한다(0.0.0.0을 기본값으로 두지 않는다 —
-# 실수로 모든 인터페이스를 열지 않게). `.env`에 두 변수를 채운다:
-#
-#   APPLIANCE_HOST=mcp-gw.internal   # 사내 DNS 또는 각 PC의 hosts 파일
-#   APPLIANCE_BIND=10.0.30.15        # 이 기기의 사내망 IP (호스트 전용 IP는 안 됨)
+# 게시하는 것은 Caddy 하나뿐이다. `console.sh field`가 Tailscale IP를 찾아
+# APPLIANCE_BIND로 넘긴다. HTTP는 tailnet의 암호화된 경로에만 바인딩한다(D-46).
 
 services:
   caddy:
@@ -19,16 +14,10 @@ services:
     depends_on:
       gateway: {condition: service_started}
       agent-service: {condition: service_started}
-    environment:
-      APPLIANCE_HOST: "${APPLIANCE_HOST:?.env에 APPLIANCE_HOST를 지정하세요(예: mcp-gw.internal, 루트 README 참고)}"
     ports:
-      # 값이 없으면 기동을 거절한다(D-14의 loopback 기본 원칙 위에, 실수로 0.0.0.0을
-      # 기본값으로 두지 않는다는 이 오버라이드 자신의 규칙).
-      - "${APPLIANCE_BIND:?.env에 APPLIANCE_BIND(이 기기의 사내망 IP)를 지정하세요}:443:443"
+      - "${APPLIANCE_BIND:?./console.sh field up을 사용하세요}:443:8080"
     volumes:
       - ./field/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
     networks: [edge]
     security_opt: ["no-new-privileges:true"]
 
@@ -36,16 +25,16 @@ services:
   # RFC 8414 authorization_servers, Console 리다이렉트)도 실제 호스트 이름이어야 한다.
   gateway:
     environment:
-      GATEWAY_PUBLIC_MCP_URL: https://${APPLIANCE_HOST:-mcp-gw.internal}/mcp/
-      CONSOLE_PUBLIC_URL: https://${APPLIANCE_HOST:-mcp-gw.internal}/
-      IDP_ISSUER: https://${APPLIANCE_HOST:-mcp-gw.internal}
+      GATEWAY_PUBLIC_MCP_URL: http://${APPLIANCE_BIND}:443/mcp/
+      CONSOLE_PUBLIC_URL: http://${APPLIANCE_BIND}:443/
+      IDP_ISSUER: http://${APPLIANCE_BIND}:443
       # IDP_ISSUER는 PC에 알리는 공개 주소다. 컨테이너 안에서는 그 이름이 풀리지 않으므로 Gateway가 직접
       # IdP를 부를 때(논문 실험 E1~E3)는 내부 주소를 쓴다. 토큰의 iss는 URL이 아니라 상수라 판정은 그대로다.
       IDP_INTERNAL_URL: http://agent-service:8000
 
   agent-service:
     environment:
-      IDP_ISSUER: https://${APPLIANCE_HOST:-mcp-gw.internal}
+      IDP_ISSUER: http://${APPLIANCE_BIND}:443
 
   # 랩의 컨테이너 직원 PC 4대와 협력사 섀도 PC는 실기기 모드에서 기본으로 뜨지
   # 않는다(실제 PC가 대신한다). 같이 보고 싶으면 `--profile lab-workstations`
@@ -55,7 +44,3 @@ services:
   ws-jwj: {profiles: [lab-workstations]}
   ws-pse: {profiles: [lab-workstations]}
   ws-nkk: {profiles: [lab-workstations]}
-
-volumes:
-  caddy_data: {}
-  caddy_config: {}

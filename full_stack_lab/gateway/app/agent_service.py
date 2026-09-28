@@ -85,7 +85,8 @@ app.include_router(idp_router)
 @app.middleware("http")
 async def browser_boundary(request: Request, call_next):
     origin = request.headers.get("origin")
-    if request.method not in {"GET", "HEAD", "OPTIONS"} and origin and origin != str(request.base_url).rstrip("/"):
+    allowed_origins = {str(request.base_url).rstrip("/"), os.getenv("IDP_ISSUER", "").rstrip("/")}
+    if request.method not in {"GET", "HEAD", "OPTIONS"} and origin and origin not in allowed_origins:
         from fastapi.responses import JSONResponse
         return JSONResponse({"detail": "다른 출처의 요청은 허용하지 않습니다."}, status_code=403)
     response = await call_next(request)

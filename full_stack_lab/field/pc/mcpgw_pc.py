@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """mcpgw_pc: 직원 PC의 Claude Code·Codex CLI를 솔루션 기기의 거버넌스 Gateway에 연결한다.
 
-    python mcpgw_pc.py setup --url https://mcp-gw.internal --servers filesystem,git --ca mcp-gw-root.crt
+    python mcpgw_pc.py setup --url http://100.83.175.111:443 --servers filesystem,git
     python mcpgw_pc.py login         # 다시 로그인(리프레시 토큰이 만료·폐기됐을 때)
     python mcpgw_pc.py doctor        # 이름 해석·TLS·로그인·서버별 연결·하네스 설정을 한 줄씩 확인
     python mcpgw_pc.py uninstall     # 이 도구가 쓴 설정만 지우고 IdP의 리프레시 토큰을 폐기
@@ -57,18 +57,21 @@ def fail(message: str) -> None:
 # -- 입력 검증 -----------------------------------------------------------------
 
 def gateway_url(value: str) -> str:
-    """https만 받는다. 예외는 SSH 포트 포워딩(ssh -L)으로 연 loopback 주소뿐이다."""
+    """HTTPS 또는 Tailscale/loopback의 HTTP만 받는다."""
     parts = urllib.parse.urlsplit(value.strip())
     if parts.username or parts.password or parts.query or parts.fragment or not parts.hostname:
-        fail("주소에는 호스트만 적는다(자격·쿼리·조각 금지): https://mcp-gw.internal")
+        fail("주소에는 호스트만 적는다(자격·쿼리·조각 금지): http://100.x.y.z:443")
     if parts.scheme != "https":
         loopback = parts.hostname == "localhost"
+        tailnet = False
         try:
-            loopback = loopback or ipaddress.ip_address(parts.hostname).is_loopback
+            address = ipaddress.ip_address(parts.hostname)
+            loopback = loopback or address.is_loopback
+            tailnet = address in ipaddress.ip_network("100.64.0.0/10")
         except ValueError:
             pass
-        if parts.scheme != "http" or not loopback:
-            fail("사내망 주소는 https:// 만 쓴다. 평문 http는 SSH 포트 포워딩한 127.0.0.1에서만 허용한다")
+        if parts.scheme != "http" or not (loopback or tailnet):
+            fail("HTTP는 Tailscale IP(100.64.0.0/10) 또는 이 PC의 loopback 주소에서만 허용한다")
     return urllib.parse.urlunsplit((parts.scheme, parts.netloc, parts.path.rstrip("/"), "", ""))
 
 
@@ -450,7 +453,7 @@ def cmd_doctor(args) -> None:
         report(Path(settings["ca"]).exists(), "CA 파일", f"{settings['ca']} {pem_fingerprint(Path(settings['ca']))}")
     try:
         status, _, _ = request(settings, settings["url"] + "/api/health")
-        report(status == 200, "TLS와 Gateway 생존(/api/health)", f"HTTP {status}")
+        report(status == 200, "Gateway 생존(/api/health)", f"HTTP {status}")
     except (urllib.error.URLError, OSError) as error:
         reason = getattr(error, "reason", error)
         if isinstance(reason, ssl.SSLError):
@@ -550,7 +553,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--home", help=argparse.SUPPRESS)  # 헬퍼 명령이 토큰 폴더를 알려 줄 때
     commands = parser.add_subparsers(dest="command", required=True)
     setup = commands.add_parser("setup", help="로그인하고 하네스 설정을 기록")
-    setup.add_argument("--url", required=True, help="솔루션 기기 주소, 예: https://mcp-gw.internal")
+    setup.add_argument("--url", required=True, help="솔루션 기기 Tailscale 주소, 예: http://100.x.y.z:443")
     setup.add_argument("--servers", required=True, help="쓸 서버 이름, 쉼표로(관리자가 알려 줌)")
     setup.add_argument("--workstation", help="이 PC의 이름(IdP client_id). 기본: 호스트 이름")
     setup.add_argument("--ca", help="관리자가 준 루트 인증서(PEM)")
