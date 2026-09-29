@@ -1241,7 +1241,8 @@ const ACTIONS = {
       fields: html`${field.select("status", "상태", { active: "사용", disabled: "중지", locked: "잠김" }, el.dataset.status)}${field.text("note", "메모", 'maxlength="300"')}` });
     if (!fd) return;
     const r = await api(`/api/accounts/${el.dataset.id}/status`, { method: "PUT", body: { status: fd.get("status"), note: fd.get("note") || "" } });
-    toast(r.message); reload();
+    await reload();
+    toast(r.message);
   },
   async "signup-approve"(el) {
     const r = await api(`/api/signup-requests/${el.dataset.id}/approve`, { method: "POST" });
