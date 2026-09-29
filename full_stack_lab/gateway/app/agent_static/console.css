@@ -270,7 +270,7 @@ dialog .tool-pick .sub { color: var(--ink-3); font-size: var(--fs-xs); }
 dialog h3 { margin: 0; font-size: var(--fs-lg); }
 dialog p { margin: 0; color: var(--ink-2); }
 dialog label { display: flex; flex-direction: column; gap: 6px; font-size: 15px; font-weight: 500; }
-dialog input, dialog textarea, dialog select { border: 1px solid var(--line-2); border-radius: 8px; padding: 9px 12px; background: var(--panel); }
+dialog input:not([type=checkbox]):not([type=radio]), dialog textarea, dialog select { border: 1px solid var(--line-2); border-radius: 8px; padding: 9px 12px; background: var(--panel); }
 dialog textarea { min-height: 96px; resize: vertical; }
 dialog .row { display: flex; gap: 8px; justify-content: flex-end; }
 .toast { position: fixed; right: 24px; bottom: 24px; background: var(--ink); color: var(--panel); padding: 12px 16px;

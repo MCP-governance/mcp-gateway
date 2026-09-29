@@ -1238,7 +1238,9 @@ const ACTIONS = {
   },
   async "account-status"(el) {
     const fd = await ask({ title: `${el.dataset.name} 계정 상태`,
-      fields: html`${field.select("status", "상태", { active: "사용", disabled: "중지", locked: "잠김" }, el.dataset.status)}${field.text("note", "메모", 'maxlength="300"')}` });
+      fields: html`<fieldset><legend>상태</legend>${Object.entries({ active: "사용", disabled: "중지", locked: "잠김" }).map(([value, label]) =>
+        html`<label class="check"><input type="radio" name="status" value="${value}" ${value === el.dataset.status ? raw("checked") : ""} required />${label}</label>`)}</fieldset>
+        ${field.text("note", "메모", 'maxlength="300"')}` });
     if (!fd) return;
     const r = await api(`/api/accounts/${el.dataset.id}/status`, { method: "PUT", body: { status: fd.get("status"), note: fd.get("note") || "" } });
     await reload();
