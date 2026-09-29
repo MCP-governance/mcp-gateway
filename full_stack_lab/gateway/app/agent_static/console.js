@@ -1230,7 +1230,7 @@ const ACTIONS = {
     location.replace("/login");
   },
   "close-drawer": closeDrawer,
-  tab(el) {
+  async tab(el) {
     const key = el.dataset.tab;
     const bar = el.closest(".tabs");
     const scope = bar.parentElement;
@@ -1242,6 +1242,13 @@ const ACTIONS = {
     for (const p of scope.querySelectorAll(":scope > .tabpanel")) p.hidden = p.dataset.panel !== key;
     if (!el.closest(".drawer")) rememberTab(key);
     charts.mountVisible(scope);
+    if (key === "new" && current.page === "intake") {
+      const input = scope.querySelector("[data-catalog-search]");
+      const query = input.value.trim();
+      const data = await api(`/api/mcp-catalog/search?q=${encodeURIComponent(query)}`);
+      if (input.isConnected && input.value.trim() === data.query)
+        $("#catalog-results").innerHTML = String(catalogResults(data));
+    }
   },
   decision: (el) => showDecision(el.dataset.id),
   approval: (el) => showApproval(el.dataset.id),
