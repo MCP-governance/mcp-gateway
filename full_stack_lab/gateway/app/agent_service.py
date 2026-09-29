@@ -484,6 +484,8 @@ async def approve_signup(request_id: UUID, authorization: str | None = Header(de
             "UPDATE signup_requests SET status='approved', reviewed_at=now(), reviewed_by=%s WHERE id=%s",
             (user["principal"], request_id),
         )
+    if os.getenv("MCP_FIELD_MODE") == "1":
+        await ensure_gitea_user({"email": row["username"], "name": row["display_name"], "roles": ["employee"]})
     return {"status": "approved", "message": f"{row['username']} 계정을 승인했습니다."}
 
 
