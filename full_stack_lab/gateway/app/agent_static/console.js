@@ -772,6 +772,28 @@ let scanJobs = [];
 let intakeRendered = "";
 function stopIntake() { clearInterval(intakeTimer); intakeTimer = null; }
 let intakeRefreshing = false;
+function patchIntakePanel(view, next, key) {
+  const oldPanel = view.querySelector(`#p-panel-${key}`);
+  const newPanel = next.querySelector(`#p-panel-${key}`);
+  if (!oldPanel || !newPanel) return;
+  const oldStack = oldPanel.querySelector(":scope > .stack");
+  const newStack = newPanel.querySelector(":scope > .stack");
+  if (!oldStack || !newStack) { oldPanel.replaceWith(newPanel); return; }
+  const oldSections = [...oldStack.children];
+  const newSections = [...newStack.children];
+  const title = (section) => section.querySelector(":scope > header > h2")?.textContent;
+  for (const [index, section] of newSections.entries()) {
+    const previous = oldSections.find((item) => title(item) === title(section));
+    if (previous) {
+      if (!previous.querySelector(".chart") || !section.querySelector(".chart")) previous.replaceWith(section);
+    } else {
+      const following = newSections.slice(index + 1).map((item) => oldSections.find((old) => title(old) === title(item)))
+        .find((item) => item?.isConnected);
+      oldStack.insertBefore(section, following || null);
+    }
+  }
+  for (const section of oldSections) if (!newSections.some((item) => title(item) === title(section))) section.remove();
+}
 async function refreshIntake() {
   if (intakeRefreshing) return;
   intakeRefreshing = true;
@@ -784,15 +806,8 @@ async function refreshIntake() {
     const next = document.createElement("div");
     next.innerHTML = markup;
     const view = $("#view");
-    for (const id of Object.keys(out.charts)) {
-      const oldChart = view.querySelector(`#${CSS.escape(id)}`);
-      const newChart = next.querySelector(`#${CSS.escape(id)}`);
-      if (oldChart && newChart) newChart.replaceWith(oldChart);
-    }
     for (const key of ["list", "audit"]) {
-      const oldPanel = view.querySelector(`#p-panel-${key}`);
-      const newPanel = next.querySelector(`#p-panel-${key}`);
-      if (oldPanel && newPanel) oldPanel.replaceWith(newPanel);
+      patchIntakePanel(view, next, key);
       const oldCount = view.querySelector(`#p-tab-${key} .n`);
       const newCount = next.querySelector(`#p-tab-${key} .n`);
       if (oldCount && newCount) oldCount.replaceWith(newCount);
