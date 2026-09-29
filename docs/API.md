@@ -46,6 +46,7 @@
 | `GET /api/mcp-requests` · `POST /api/mcp-requests` | 사용자 | 도입 신청 목록(관리자=전체) / 신청 `{display_name, repository_url, requested_transport, purpose}` — 종료 조건 필드를 보내면 422 |
 | `PUT /api/mcp-requests/{id}/exit-terms` | 관리자 | 제공자 문서로 확인한 종료 조건 기록 `{provider_credential_disclosure, revocation_evidence, audit_access_retained, evidence_url(https), note}` → 검증 주체·시각과 함께 저장. 승인 전(HOLD~VALIDATED)만 |
 | `POST /api/mcp-requests/{id}/queue-validation|approve|reject` | 관리자 | 격리 검증 대기열·승인·거부. 원격(HTTP·SSE) 서버의 승인은 세 조건이 모두 검증 기록돼 있어야 함(아니면 409) |
+| `GET /api/mcp-requests/{id}/registration-draft` | 관리자 | 승인된 신청의 검증 커밋·스캔 근거·종료 조건과 등록 전 확인 항목. 미승인 또는 검증 증거 누락은 409. 실행 설정을 자동 생성하거나 활성화하지 않음 |
 | `GET /api/mcp-catalog/search?q=` | 사용자 | 이미 신청·등록된 서버인지 |
 | `GET /api/mcp-scan` 외 `/api/mcp-scan/*` | 관리자 | AI 코드 감사(격리 워커) 작업 |
 | `GET /api/readiness` · `GET /health` | 공개 | 준비 상태(Gateway·LLM 게이트웨이) |

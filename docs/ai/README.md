@@ -17,6 +17,7 @@
 | [CONSOLE_UI.md](CONSOLE_UI.md) | v3 화면 구조(탭·차트), 디자인 시스템·레퍼런스, 원칙(CSP·이스케이프), 새 화면 추가 | UI |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | 실제로 겪은 증상 → 원인 → 해결 | 막혔을 때 |
 | [ROADMAP.md](ROADMAP.md) | 남은 일, 의도적 한계 | 다음 할 일 |
+| [MICROSOFT_GATEWAY_INSIGHTS.md](MICROSOFT_GATEWAY_INSIGHTS.md) | Microsoft MCP Gateway 비교와 도입 신청→등록 개선 범위 | 외부 레퍼런스 적용 |
 
 API 요약은 [../API.md](../API.md), 기계용 명세는 `./console.sh openapi` → `docs/openapi/*.json`.
 

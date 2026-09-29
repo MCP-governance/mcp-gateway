@@ -512,6 +512,43 @@ async def approve_mcp_request(request_id: UUID, authorization: str | None = Head
     return {"request": row, "message": "Registry 등록 대상으로 승인했습니다. 실제 활성화는 endpoint와 catalog 해시 고정 후입니다."}
 
 
+@app.get("/api/mcp-requests/{request_id}/registration-draft")
+async def registration_draft(request_id: UUID, authorization: str | None = Header(default=None)):
+    """Export review evidence; missing runtime fields must be supplied in a Git change."""
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "등록 변경안은 플랫폼 관리자만 볼 수 있습니다.")
+    row = await db.fetch_one(
+        """SELECT id, display_name, repository_url, requested_transport, status,
+                  risk_level, review_note, reviewed_by, reviewed_at, commit_sha,
+                  source_ref, evidence, validated_at, exit_terms
+           FROM mcp_intake_requests WHERE id=%s""", (request_id,))
+    if not row or row["status"] != "APPROVED":
+        raise HTTPException(409, "승인된 도입 요청만 등록 변경안을 만들 수 있습니다.")
+    if not row["commit_sha"] or not row["source_ref"] or not row["validated_at"]:
+        raise HTTPException(409, "고정 커밋과 격리 검증 증거가 없어 등록 변경안을 만들 수 없습니다.")
+    return {"draft": {
+        "intake_id": str(row["id"]),
+        "approval": {"reviewed_by": row["reviewed_by"], "reviewed_at": row["reviewed_at"]},
+        "validated_source": {
+            "repository_url": row["repository_url"], "commit_sha": row["commit_sha"],
+            "scan_ref": row["source_ref"], "validated_at": row["validated_at"],
+            "risk_level": row["risk_level"], "summary": row["review_note"],
+            "evidence": row["evidence"],
+        },
+        "requested_transport": row["requested_transport"],
+        "exit_terms": row["exit_terms"],
+        "catalog_candidate": {"display_name": row["display_name"], "source_url": row["repository_url"]},
+        "review_before_activation": [
+            "검증 커밋에 대응하는 package/version과 배포 이미지를 고정",
+            "server_id, endpoint, supplier, license, deployment, downstream과 도구별 r/w/x를 검토",
+            "분류 규칙·이용 관계·제공자 보유 자격을 검토",
+            "catalog.toml·Compose·하네스 설정 변경을 PR로 검토하고 계약 잠금을 생성·diff 검토",
+            "배포 뒤 서버 상태·도구 계약·하네스 연결·정책 차단 증거를 확인",
+        ],
+    }}
+
+
 @app.post("/api/mcp-requests/{request_id}/reject")
 async def reject_mcp_request(request_id: UUID, request: IntakeRejection, authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)

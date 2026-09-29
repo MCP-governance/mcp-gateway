@@ -9,8 +9,9 @@
    실제 조직에서는 egress 허용목록·DNS가 해야 한다 → `docs/design/CONTROL_PLANES.md`.
 2. **v1 잔재 테이블 정리** — `agent_sessions`, `agent_runs`, `agent_gateway_receipts`(쓰지 않음).
    `agent_tables.sql`에서 CREATE를 빼고 `v2_tables.sql`에 DROP … IF EXISTS.
-3. **도입 신청 → 레지스트리 연결** — 승인된 신청은 아직 `catalog.toml`에 자동으로 들어가지 않는다(사람이
-   카탈로그·compose·잠금을 편집). 승인 시 카탈로그 초안(PR)을 만드는 흐름이 필요하다.
+3. **도입 신청 → 레지스트리 연결** — 승인된 신청의 검증 근거를 관리자용 등록 변경안으로 내보낸다(D-36).
+   `catalog.toml`·Compose·계약 잠금은 여전히 사람이 검토해 편집한다. 다음 단계는 필요한 실행 정보가 채워진
+   등록 변경안을 Git PR 초안으로 연결하는 것이다. 자동 활성화는 하지 않는다.
 4. **공급망 검사와 v2 서버** — `intake_worker`의 서버 검사는 `source_ref`를 git ref로 가정한다. v2의
    `source_ref`는 `패키지@버전`이다. npm/PyPI 아티팩트를 받아 SBOM을 만드는 경로가 필요하다.
 5. **제공자 증명 양식** — `provider-attestation` 증거는 자유 서술이다. 대상 식별자·시점·서명 필드를 강제하면

@@ -760,6 +760,7 @@ ROUTES.intake = async (_, tab) => {
               ${r.status === "HOLD" ? html`<button class="btn sm" data-act="intake-queue" data-id="${r.id}">검증 시작</button>` : ""}
               ${remote && open ? html`<button class="btn sm" data-act="intake-terms" data-id="${r.id}" data-name="${r.display_name}">종료 조건</button>` : ""}
               ${r.status === "VALIDATED" && (!remote || verified) ? html`<button class="btn sm primary" data-act="intake-approve" data-id="${r.id}">승인</button>` : ""}
+              ${r.status === "APPROVED" ? html`<button class="btn sm" data-act="intake-draft" data-id="${r.id}">등록 변경안</button>` : ""}
               ${["HOLD", "VALIDATION_QUEUED"].includes(r.status) ? html`<button class="btn sm danger" data-act="intake-reject" data-id="${r.id}">거부</button>` : ""}</td>` : ""}</tr>`;
           })}</tbody></table>${requests.length ? "" : empty("신청 없음")}`, { flush: true })}</div>` },
         { key: "new", label: "새 신청", body: panel("새 신청", html`<form class="stack form" data-form="intake">
@@ -1146,6 +1147,13 @@ const ACTIONS = {
   async "intake-approve"(el) {
     const r = await api(`/api/mcp-requests/${el.dataset.id}/approve`, { method: "POST" });
     toast(r.message); reload();
+  },
+  async "intake-draft"(el) {
+    const r = await api(`/api/mcp-requests/${el.dataset.id}/registration-draft`);
+    lastDocument = JSON.stringify(r.draft, null, 2);
+    openDrawer("등록 변경안", html`<p class="note">승인 근거와 등록 전 확인 항목입니다. 복사해 Git 변경 검토에 첨부하세요.</p>
+      <div class="row-actions"><button class="btn sm primary" data-act="copy-doc">복사</button></div>
+      <pre class="json">${lastDocument}</pre>`);
   },
   async "intake-reject"(el) {
     const fd = await ask({ title: "도입 신청 거부", fields: field.area("note", "사유", 'required minlength="2" maxlength="500"'), confirm: "거부", danger: true });

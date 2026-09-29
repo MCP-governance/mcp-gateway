@@ -252,6 +252,7 @@ case "${1:-up}" in
   test)
     ensure_env
     python3 scripts/network_prefix.py --self-check
+    docker compose exec -T agent-service python - < tests/registration_draft.py
     if command -v node >/dev/null; then node --test tests/console-state.test.mjs
     else echo "node 없음 — 콘솔 상태 테스트는 CI 정적 검사에서 실행됩니다."; fi
     # --entrypoint: the static image's default entrypoint runs the tests without printing them

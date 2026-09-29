@@ -103,6 +103,7 @@ important로 봅니다. 아래는 예시 번들로 OPA에 물은 결과입니다
 | [docs/design/](docs/design/) | v1 시기 설계 배경(통제 평면 분리, 망 경계) |
 | [AGENTS.md](AGENTS.md) | AI 에이전트 작업 규칙과 깨면 안 되는 불변식 |
 | [research/](research/README.md) | 레퍼런스 조사 |
+| [Microsoft MCP Gateway 비교](docs/ai/MICROSOFT_GATEWAY_INSIGHTS.md) | 서버 운영 기능과 우리 정책 집행 경계의 비교, 승인→등록 변경안 적용 |
 
 v1(모의 MCP 서버·웹에서 도구 실행, `2026-09-v1.*`)과 v2(손으로 짠 사내 에이전트, `2026-09-v2.0-workforce-real-mcp`)는
 태그로 보존되어 있습니다. v3(`2026-09-v3.0-harness-gateway`)는 직원 PC의 호출 주체를 실제 하네스로 바꾸고, Gateway를 하네스의
