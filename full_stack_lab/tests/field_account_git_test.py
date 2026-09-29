@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from pathlib import Path
 import sys
 import unittest
@@ -51,3 +52,20 @@ class FieldAccountGitTest(unittest.TestCase):
             self.assertEqual(asyncio.run(service.ensure_gitea_user(
                 {"email": "alice", "name": "Alice", "roles": ["employee"]})), "alice")
         self.assertIn(("PUT", "/api/v1/teams/2/members/alice"), seen)
+
+    def test_new_team_grants_code_read_access(self):
+        def reply(request):
+            if request.url.path == "/api/v1/orgs/mcp":
+                return httpx.Response(200, json={"username": "mcp"})
+            if request.method == "GET":
+                return httpx.Response(200, json=[])
+            body = json.loads(request.content)
+            self.assertEqual(body["units"], ["repo.code"])
+            self.assertTrue(body["includes_all_repositories"])
+            return httpx.Response(201, json={"id": 2})
+
+        async def check():
+            async with httpx.AsyncClient(base_url="http://gitea", transport=httpx.MockTransport(reply)) as client:
+                return await service.ensure_gitea_team(client)
+
+        self.assertEqual(asyncio.run(check()), 2)

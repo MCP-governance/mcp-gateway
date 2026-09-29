@@ -347,7 +347,7 @@ async def ensure_gitea_team(client: httpx.AsyncClient) -> int:
     if members is None:
         created = await client.post(f"/api/v1/orgs/{GITEA_ORG}/teams", json={
             "name": "Members", "description": "솔루션 조직원 읽기 권한",
-            "permission": "read", "includes_all_repositories": True})
+            "permission": "read", "units": ["repo.code"], "includes_all_repositories": True})
         if created.status_code != 201:
             raise HTTPException(502, f"내부 Git 조직 팀을 만들지 못했습니다 (Gitea {created.status_code}).")
         members = created.json()
