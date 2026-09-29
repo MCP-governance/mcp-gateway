@@ -539,13 +539,18 @@ async def delete_account(user_id: str, authorization: str | None = Header(defaul
            WHERE user_id=%s AND status <> 'deleted' RETURNING email""",
         (user["principal"], user_id))
     if not row:
-        raise HTTPException(404, "관리대장에 없는 계정입니다.")
+        row = await db.fetch_one("SELECT email FROM principals WHERE user_id=%s AND status='deleted'", (user_id,))
+        if not row:
+            raise HTTPException(404, "관리대장에 없는 계정입니다.")
     if os.getenv("MCP_FIELD_MODE") == "1":
         login = gitea_login(row["email"])
-        async with gitea_admin_client() as client:
-            removed = await client.delete(f"/api/v1/orgs/{GITEA_ORG}/members/{quote(login)}")
-            if removed.status_code not in (204, 404):
-                raise HTTPException(502, f"계정은 삭제됐지만 내부 Git 조직 탈퇴에 실패했습니다 (Gitea {removed.status_code}).")
+        try:
+            async with gitea_admin_client() as client:
+                removed = await client.delete(f"/api/v1/orgs/{GITEA_ORG}/members/{quote(login)}")
+                if removed.status_code not in (204, 404):
+                    raise HTTPException(502, f"계정은 삭제됐지만 내부 Git 조직 탈퇴에 실패했습니다 (Gitea {removed.status_code}).")
+        except httpx.HTTPError as exc:
+            raise HTTPException(502, "계정은 삭제됐지만 내부 Git에 연결하지 못했습니다. 삭제를 다시 시도하세요.") from exc
         _gitea_ready.difference_update({f"{login}|True", f"{login}|False"})
     return {"message": f"{row['email']} 계정을 삭제했습니다. 기존 감사 기록은 보존됩니다."}
 
