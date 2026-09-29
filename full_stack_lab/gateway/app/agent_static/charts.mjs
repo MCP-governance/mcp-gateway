@@ -79,6 +79,22 @@ export function redraw(id, build) {
   pending.set(id, build);
 }
 
+/** Replace chart data without replacing its canvas during an intake refresh. */
+export function update(id, build) {
+  for (const [el, entry] of live) {
+    if (el.id !== id) continue;
+    if (!el.isConnected) {
+      entry.observer.disconnect(); entry.chart.dispose(); live.delete(el);
+      break;
+    }
+    entry.build = build;
+    const { onClick, ...option } = build();
+    entry.chart.setOption({ ...base(), ...option }, { notMerge: true, lazyUpdate: true });
+    return;
+  }
+  pending.set(id, build);
+}
+
 /** Theme switch: rebuild with the new tokens. */
 export function redrawAll() {
   for (const [el, { chart, build, observer }] of live) {
