@@ -588,7 +588,9 @@ async def ready():
             llm = False
     # The LLM is optional for readiness: scripted workstations and every control
     # work without it. Its state is reported, not required.
-    consistent = gateway.get("build", {}).get("code_sha256") == build_info()["code_sha256"]
+    gateway_build, console_build = gateway.get("build") or {}, build_info()
+    consistent = (gateway_build.get("code_sha256") == console_build["code_sha256"]
+                  and gateway_build.get("revision") == console_build["revision"])
     return {"status": "ready" if gateway_ok and consistent else "not_ready", "gateway": gateway_ok,
             "build": {"console": build_info(), "gateway": gateway.get("build"), "consistent": consistent},
             "policy": gateway.get("policy"),

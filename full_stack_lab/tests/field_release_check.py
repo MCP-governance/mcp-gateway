@@ -18,17 +18,18 @@ from mcp.client.streamable_http import streamable_http_client
 async def run(args):
     identity = json.load(sys.stdin)
     async with httpx.AsyncClient(base_url=args.url, timeout=90, trust_env=False) as api:
-        health = (await api.get('/gw/api/health')).json()
+        health = (await api.get('/api/health')).json()
         ready = (await api.get('/api/readiness')).json()
         assert health['status'] == 'ok' and ready['status'] == 'ready'
         assert health['build']['revision'] == args.expected_revision
         assert ready['build']['console']['revision'] == args.expected_revision
         assert ready['build']['consistent'] and ready['policy']['matches']
-        response = await api.post('/gw/api/session', json=identity)
+        assert len(ready['build']['console']['pc_kit_sha256']) == 64
+        response = await api.post('/auth/mock-login', json=identity)
         response.raise_for_status()
         console_token = response.json()['access_token']
         api.headers['Authorization'] = 'Bearer ' + console_token
-        registry = (await api.get('/gw/api/registry')).json()
+        registry = (await api.get('/gw/registry')).json()
         # The operator specifies the already-approved server; no automatic enrollment.
         server_ids = [s['id'] for s in registry['servers']]
         assert args.server in server_ids, server_ids
@@ -37,7 +38,7 @@ async def run(args):
         grant.raise_for_status()
         token = grant.json()['access_token']
         try:
-            denied = await api.get('/gw/api/state', headers={'Authorization': 'Bearer ' + token})
+            denied = await api.get('/gw/registry', headers={'Authorization': 'Bearer ' + token})
             assert denied.status_code == 403, 'MCP token reached field control plane'
             async with httpx2.AsyncClient(timeout=90, trust_env=False, headers={
                     'Authorization': 'Bearer ' + token, 'X-Agent-Name': 'clean-ssh-sdk',
@@ -53,7 +54,7 @@ async def run(args):
             assert meta['upstream_attempted'] and meta['upstream_executed']
             body = json.dumps([c.model_dump(mode='json') for c in result.content]).encode()
             report = {'field_release_check': 'PASS', 'vm': '100.110.81.60', 'gateway': args.url,
-                      'build': health['build'], 'policy': health['policy'], 'mcp_admin_status': denied.status_code,
+                      'build': health['build'], 'console_build': ready['build']['console'], 'policy': health['policy'], 'mcp_admin_status': denied.status_code,
                       'server': args.server, 'tool': selected.name, 'decision_id': meta['decision_id'],
                       'decision': meta['decision'], 'policy_id': meta['policy_id'],
                       'upstream_attempted': True, 'upstream_executed': True,
@@ -63,7 +64,7 @@ async def run(args):
         finally:
             await api.post('/oauth/revoke', data={'token': token, 'token_type_hint': 'access_token'})
             await api.post('/oauth/revoke', data={'token': grant.json()['refresh_token'], 'token_type_hint': 'refresh_token'})
-            await api.post('/gw/api/logout')
+            await api.post('/auth/logout')
 
 
 if __name__ == '__main__':

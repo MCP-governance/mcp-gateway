@@ -173,3 +173,5 @@ claude -p "..."                                      # 하네스를 직접 불�
 관리자는 신청의 **검증 보고서**에서 요약, 검사 오류, 취약점과 수정 버전, 구성요소·라이선스, C1~C4 문서 후보 근거를 확인하고 보고서 JSON과 원본 JSON을 내려받는다. 목록에서 FAILED는 재검증할 수 있다. 자동 조사만으로 제공자 종료조건이 검증됐다고 표시하지 않으며, 근거 문서를 확인해 종료조건 기록 후 승인한다. 스캐너 오류는 발견 0건으로 처리하지 않는다.
 
 기존 볼륨에서는 재기동 시 `agent_tables.sql`이 lease 열을 추가한다. 이 변경을 배포하려면 `gateway`, `agent-service`, `intake-worker` 이미지를 다시 빌드하고 Compose로 서비스를 갱신한다. Console에는 `intake_reports` 읽기 전용 볼륨이 필요하다. 기존 운영 스택과 별도 테스트 스택을 혼동하지 않는다.
+
+Console과 Gateway의 빌드 revision·공통 앱 해시가 함께 같아야 ready다. Console에만 마운트되는 `agent_static/kit/mcpgw_pc.py`는 공통 앱 해시에서 제외하고 `pc_kit_sha256`으로 별도 표시한다.

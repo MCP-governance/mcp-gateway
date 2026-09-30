@@ -10,11 +10,16 @@ import httpx
 @lru_cache(maxsize=1)
 def build_info() -> dict:
     root = Path(__file__).parent
+    kit = root / 'agent_static/kit/mcpgw_pc.py'
     digest = hashlib.sha256()
     for path in sorted(root.rglob('*')):
+        # The field PC kit is published by a Console-only bind mount, not baked into this app image.
+        if path == kit:
+            continue
         if path.is_file() and path.suffix in {'.py', '.sql', '.js', '.mjs', '.html', '.css'}:
             digest.update(str(path.relative_to(root)).encode() + b'\0' + path.read_bytes())
-    return {'revision': os.getenv('MCP_BUILD_REVISION', 'unknown'), 'code_sha256': digest.hexdigest()}
+    return {'revision': os.getenv('MCP_BUILD_REVISION', 'unknown'), 'code_sha256': digest.hexdigest(),
+            'pc_kit_sha256': hashlib.sha256(kit.read_bytes()).hexdigest() if kit.is_file() else None}
 
 
 async def policy_info(opa_url: str) -> dict:

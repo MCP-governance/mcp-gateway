@@ -1260,7 +1260,8 @@ ROUTES.policy = async (_, tab) => {
           ["Gateway 빌드", runtime.build?.gateway?.revision || "미확인"],
           ["서비스 코드 일치", runtime.build?.consistent ? "일치" : "불일치 · 서비스 재배포 필요"],
           ["OPA 정책 일치", runtime.policy?.matches ? "일치" : "불일치 · OPA 갱신 필요"],
-          ["실행 코드 SHA-256", runtime.build?.gateway?.code_sha256 || "미확인"],
+          ["공통 앱 SHA-256", runtime.build?.gateway?.code_sha256 || "미확인"],
+          ["PC 설치 키트 SHA-256", runtime.build?.console?.pc_kit_sha256 || "미설치"],
           ["적재된 정책 SHA-256", runtime.policy?.loaded_sha256 || "미확인"],
         ])) },
         { key: "matrix", label: "판정 행렬", body: html`<div class="stack">
