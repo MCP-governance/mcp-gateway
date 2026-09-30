@@ -597,3 +597,7 @@
 - **시험**: 적대적 회귀에 자격 증명 유출 4건(메일·URL, GitHub·Slack·`sk-`·JWT)과 정상 대조 2건(커밋 해시·SHA-256이
   든 사내 메일, `extract`+창 함수 쿼리)을 더해 공격 42/42·정상 16/16. `python -m app.classify`에 카탈로그 판정과
   자격 증명 11종·정상 문자열 6종의 대조를 넣었다.
+- **실제 LLM 하네스**: Codex CLI 0.158(`gpt-6-luna`)과 Claude Code 2.1.283(`claude-sonnet-5-5`), effort medium으로
+  솔루션 기기의 게이트웨이를 거쳐 업무 5건씩 — 10회 모두 게이트웨이 경유, 4건 허용·권한 밖 수정 2건 실행 전 차단,
+  DB 값 불변을 독립 확인. 내장 셸이 켜진 Codex는 MCP 대신 셸로 `git`을 시도했다 — 관리형 설정이 셸을 끄는 근거.
+  기록은 [FOLLOWUP_VALIDATION_2026-10-01.md](FOLLOWUP_VALIDATION_2026-10-01.md).
