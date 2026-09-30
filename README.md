@@ -280,3 +280,5 @@ SQL AST·주소 정규화·호출 예약·관리 토큰 scope·별도 SaaS 자�
 - 계약 잠금(`registry/contracts.lock.json`)은 한 빌드의 값입니다. 서버 버전을 올리면 diff를 검토하고
   `./console.sh contracts --update`로 갱신합니다. 기동 시 자동 승인(TOFU)은 하지 않습니다.
 - AI 코드 감사(mcp-scan)는 저장소 코드를 설정한 LLM endpoint로 보냅니다. 코드 반출이 불가한 조직은 로컬 모델만 연결해야 합니다.
+
+2026-09-30/10-01 hardening은 클린 테스트보드·실제 MCP 7종·SSH VM을 거쳐 솔루션에 배포하고 Console 화면까지 확인했다. 시험 범위·실패와 수정·보존 증거는 [검증 기록](docs/ai/OVERHAUL_VALIDATION_2026-09-30.md)에 있다.

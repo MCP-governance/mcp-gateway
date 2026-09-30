@@ -110,5 +110,25 @@ Redis Lua 원자적 제한을 확인하여 기존 “비공개·원자성 미확
 
 ## 배포 기록
 
-field 배포와 SSH VM의 실제 호출·브라우저 `배포 확인` 검증은 코드 commit 이후 기록한다.
+**2026-09-30 배포 / 2026-10-01 화면 재확인**: 구현 `b82fb62`, 배포 provenance 보정
+`fbd75898bb805278ebf413d1dc855d6612a639ea`를 솔루션 기기에 반영했다. 공통 앱 해시는
+`58906f9453ca4aad513a90b602a14964c60196d50ece9b3bc67a1f2226481047`, OPA 로드 정책 해시는
+`c577f4ce37443e992e1f78ed4d1741d584e55334009b3ad888021ffc48182708`이며 예상 정책과 같다.
+Console에만 마운트되는 PC 설치 키트는 별도 hash로 보고한다. 전체 revision과 공통 앱 hash가 같아야 ready다.
+
+- SSH VM의 새 SDK 이미지에서 기존 승인 `ms-learn.microsoft_docs_search`를 실제 호출했다.
+  판정 109는 `Allow/P-AUTHZ-ALLOW-001`, 전달·실행 true이며 실제 응답은 25,679 bytes다.
+  SaaS 응답 본문 대신 SHA-256을 증거에 남겼다. 같은 MCP token의 Console 관리 API 접근은 403이었다.
+  생성한 access/refresh token은 시험 후 폐기했다.
+- 브라우저 Console에서 `정책 → 배포 확인`의 두 빌드·두 일치 상태, 관리대장의 `P-RATE-002/003`,
+  활동 로그의 `root / ssh-test-vm / Python SDK / ms-learn.microsoft_docs_search`를 확인했다.
+  브라우저 감사 체인 검증은 109건 정상이다.
+- DB backup의 기존 감사 행 108개를 배포 후 dump와 행별로 비교해 모두 동일함을 확인했다.
+  계정 13개를 유지했고 시험 호출 1건만 감사 기록에 추가됐다. 기존 데이터 초기화로 화면을 만든 것이 아니다.
+
+일곱 SaaS 읽기·원자적 예약의 독립 DB 효과·격리 네트워크 시험은 클린 테스트보드에서,
+현장 소스·정책·관리 scope·Microsoft Learn 호출·UI는 솔루션 기기에서 검증했다. 서로의 증명을
+대체하지 않는다. 외부 SaaS 자격 증명은 field 기기로 복사하지 않았다.
+동일 소스 `fbd7589`의 [CI 36732659861](https://github.com/MCP-governance/mcp-gateway/actions/runs/36732659861)은
+정적 검사·완료 조건 전체 검증 모두 success다. 이후 증거 문서 commit의 상태는 GitHub Actions에서 해당 SHA로 확인한다. OAuth 자격이 필요한 일곱 SaaS 시험은 일반 CI에 넣지 않는다.
 증거 요약은 [2026-09-30-overhaul.json](evidence/2026-09-30-overhaul.json)에 남기며 secret·계정 응답 본문은 포함하지 않는다.

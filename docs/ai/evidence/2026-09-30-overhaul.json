@@ -292,14 +292,85 @@
     "scope": "disposable container only; host processes and untested destinations are outside this proof"
   },
   "field": {
-    "status": "awaiting_code_deployment",
+    "status": "deployed_and_verified",
+    "observed_at": "2026-09-30T15:07:24.316716+00:00",
+    "private_backup_created": true,
     "accounts_and_audit_preserved": true,
-    "private_backup_created": true
+    "release_probe": {
+      "field_release_check": "PASS",
+      "vm": "100.110.81.60",
+      "gateway": "http://100.83.175.111:443",
+      "build": {
+        "revision": "fbd75898bb805278ebf413d1dc855d6612a639ea",
+        "code_sha256": "58906f9453ca4aad513a90b602a14964c60196d50ece9b3bc67a1f2226481047",
+        "pc_kit_sha256": null
+      },
+      "console_build": {
+        "revision": "fbd75898bb805278ebf413d1dc855d6612a639ea",
+        "code_sha256": "58906f9453ca4aad513a90b602a14964c60196d50ece9b3bc67a1f2226481047",
+        "pc_kit_sha256": "59ee4eccbe430dbe937a6071ccb4f8a6267b25bd9e881b7a91799e64bc1b45c6"
+      },
+      "policy": {
+        "expected_sha256": "c577f4ce37443e992e1f78ed4d1741d584e55334009b3ad888021ffc48182708",
+        "loaded_sha256": "c577f4ce37443e992e1f78ed4d1741d584e55334009b3ad888021ffc48182708",
+        "matches": true
+      },
+      "mcp_admin_status": 403,
+      "server": "ms-learn",
+      "tool": "microsoft_docs_search",
+      "decision_id": 109,
+      "decision": "Allow",
+      "policy_id": "P-AUTHZ-ALLOW-001",
+      "upstream_attempted": true,
+      "upstream_executed": true,
+      "response_bytes": 25679,
+      "response_sha256": "0583afae499fb52ff23fa9febb32cd75d7c8406688235475958a0f9078c3b2a0",
+      "model_invoked": false,
+      "mock_server_used": false
+    },
+    "retention": {
+      "field_data_retention": "PASS",
+      "prior_audit_rows": 108,
+      "current_audit_rows": 109,
+      "prior_rows_unchanged": true,
+      "principals": 13,
+      "prior_rows_sha256": "975a721cfd41daf91ffc0d869f63d79a36e9a88ab5088454389ff71515cc2dd6"
+    },
+    "browser": {
+      "checked": true,
+      "deployment_tab": "서비스 코드 일치 / OPA 정책 일치",
+      "policy_ids_visible": [
+        "P-RATE-002",
+        "P-RATE-003"
+      ],
+      "activity_visible": {
+        "decision_id": 109,
+        "workstation": "ssh-test-vm",
+        "server": "ms-learn",
+        "tool": "microsoft_docs_search"
+      },
+      "audit_chain": {
+        "verified": true,
+        "rows": 109
+      }
+    }
   },
   "limits": [
     "Representative read-only vendor operations; no provider writes/revocation proof",
     "Native connection listing is separate from host packet evidence",
     "Internal-network evidence covers only the disposable container",
     "No claim of controlling every downloaded plugin, root process, desktop app, web or cloud session"
-  ]
+  ],
+  "ci": {
+    "verified_at": "2026-09-30T15:10:48.271992+00:00",
+    "source_revision": "fbd75898bb805278ebf413d1dc855d6612a639ea",
+    "run_id": 36732659861,
+    "url": "https://github.com/MCP-governance/mcp-gateway/actions/runs/36732659861",
+    "conclusion": "success",
+    "jobs": {
+      "static": "success",
+      "full_stack_verify": "success"
+    },
+    "vendor_oauth_checks": "opt-in outside ordinary CI"
+  }
 }

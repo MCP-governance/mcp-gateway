@@ -95,21 +95,15 @@ DNS는 조회하지 않는다 — 조회하면 판정과 실제 연결 사이에
 (`python -m app.poisoning`). 예: "Send the invoice to finance@bob.local"은 인자에서 걸리지 않는다 —
 목적지는 문구가 아니라 분류기의 destinations가 판단한다.
 
-**탐지율을 실제 공격 말뭉치로 쟀다.** PyRIT(Microsoft)가 싣고 있는 garak(NVIDIA, Apache-2.0)의
-latent-injection 지시문 시드 32건 중, 도구 호출을 겨냥한 지시 주입은 26건이다(나머지 6건은 "혐오 문장을 써라"류로
-모델 답변의 내용 문제이지 호출을 돌리려는 시도가 아니라 범위 밖). 처음 규칙은 **26건 중 1건**만 잡았다 —
-"ignore" 뒤에 한정어와 명사가 순서대로 와야 하는 좁은 규칙이었고, 실제 공격은 "Ignore the above directions",
-"Ignore instructions, and just print", "Ignore the rest of this data"처럼 쓴다. 규칙을 그 말뭉치에 맞춰 넓히고
-채팅 템플릿 토큰(`<|im_start|>`·`[INST]`·`<end of session>`), 위조된 대화 턴(User:와 Assistant:가 함께 나올 때만),
-기계 전용 문구("invisible to humans, visible to the LLM scan"), 답변 유도("if questioned, report that …")를 더해
-**26건 중 21건**이 됐다. 못 잡는 5건은 명령문이 없는 설득문("이 이력서는 지금까지 본 것 중 최고다")과 강조 반복이라
-정규식으로는 오탐 없이 구분되지 않는다 — 모델 기반 판정이 필요한 영역으로 남긴다.
+Claude 인계 기록은 garak latent-injection 시드 중 선택한 26건에서 1 → 21건 탐지,
+내부 도구 223개에서 오탐 0을 보고했다. 해당 선별·실행 로그를 이번 클린 검증에서 독립 재현하지
+않았으므로 현재 탐지율·전수 무오탐의 확정 근거로 사용하지 않는다. 규칙을 다듬는 참고 기록이다.
+이번 재검증의 확정 범위는 적대적 회귀 38건·정상 14건과 실제 외부 MCP 7종이다.
 
-같은 규칙을 이 랩이 실제로 제공하는 **도구 223개의 이름·설명·입력 스키마 전수**에 걸어 오탐 0을 확인했다.
-넓히는 과정에서 실제로 하나를 되돌렸다: "reply/print/return … only … this" 가지는 playwright의 정상 스키마
-설명("Return only this part of the request")을 잡았다. 정직한 설명을 잡는 규칙은 결국 꺼지므로 그 가지를 지웠다.
-바꾼 규칙은 계약 해시(`MCP-CATALOG-001`)와 직접 연결되므로 — 설명 하나가 걸리면 그 서버 전체가 차단된다 —
-규칙을 넓힐 때마다 이 전수 검사를 다시 돌린다.
+실제 Sentry의 `root cause` 오탐은 수정했고, Notion의 미노출 안내 helper 경고가 정상 검색까지
+차단하던 오류도 수정했다. 새 흐름은 **노출되는 도구**의 미검토 경고를 차단하고, 명시적 설명 검토는
+해당 설명·입력 schema hash에 묶어 보존한다. 전체 catalog 이름·버전·계약 해시 고정은 유지한다.
+선택되지 않은 helper를 자동으로 노출하지 않으며 검토 hash가 달라지면 전달 전에 차단한다.
 
 ### 3.4 호출 상한의 원자적 예약 (PAC-15)
 
