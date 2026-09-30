@@ -1259,10 +1259,12 @@ ROUTES.policy = async (_, tab) => {
           ["Console 빌드", runtime.build?.console?.revision || "미확인"],
           ["Gateway 빌드", runtime.build?.gateway?.revision || "미확인"],
           ["서비스 코드 일치", runtime.build?.consistent ? "일치" : "불일치 · 서비스 재배포 필요"],
-          ["OPA 정책 일치", runtime.policy?.matches ? "일치" : "불일치 · OPA 갱신 필요"],
+          ["OPA 규칙 일치", runtime.policy?.rules_match ? "일치" : "불일치 · OPA 갱신 필요"],
+          ["OPA 데이터 일치", runtime.policy?.data_match ? "일치" : "불일치 · 권한 번들·관리대장·예외 갱신 필요"],
           ["공통 앱 SHA-256", runtime.build?.gateway?.code_sha256 || "미확인"],
           ["PC 설치 키트 SHA-256", runtime.build?.console?.pc_kit_sha256 || "미설치"],
           ["적재된 정책 SHA-256", runtime.policy?.loaded_sha256 || "미확인"],
+          ["적재된 데이터 SHA-256", runtime.policy?.loaded_data_sha256 || "미확인"],
         ])) },
         { key: "matrix", label: "판정 행렬", body: html`<div class="stack">
           ${panel("역할 × 데이터 등급 × 행위", chartBox("c-matrix", "역할과 데이터 등급·행위 조합별 기본 판정", "lg"), { sub: `번들 ${bundle.bundle_id || "—"}` })}

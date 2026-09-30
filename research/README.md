@@ -4,6 +4,7 @@
 
 | 문서 | 내용 |
 | --- | --- |
+| [pac15-review/](pac15-review/README.md) | 팀원 PAC-15 Rego 초안: 원본·수정본·300건 시험(`run.sh`), 결함 7종과 수정 |
 | [../docs/ai/BENCHMARK_LITELLM.md](../docs/ai/BENCHMARK_LITELLM.md) | LiteLLM MCP 게이트웨이와의 기능 대조(코드 근거), 반영한 것·가져오지 않는 것 |
 | [../docs/ai/FIELD_MCP_CANDIDATES.md](../docs/ai/FIELD_MCP_CANDIDATES.md) | field 설치에서 시험할 원격 MCP 후보와 취약 버전·엣지 케이스 |
 | [../docs/ai/CONSOLE_UI.md](../docs/ai/CONSOLE_UI.md) | Console이 참고한 LLM 게이트웨이·SIEM·SOAR 레퍼런스 |

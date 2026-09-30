@@ -568,3 +568,32 @@
   이 일치는 해당 서비스의 배포 증거이며 단말 전체의 강제성·공급자 권한 폐기를 뜻하지 않는다.
 - **문서**: [검증 보고서](OVERHAUL_VALIDATION_2026-09-30.md), [IBM 정정본](BENCHMARK_IBM_CONTEXTFORGE.md),
   [Microsoft 정정본](BENCHMARK_MICROSOFT.md). 이전 수치 중 재검증하지 않은 것은 확정 근거에서 제외한다.
+
+## D-56 판정의 기준을 손으로 쓴 목록이 아니라 원천에서 가져온다 (2026-10-01)
+
+- **문제**(D-54·D-55 뒤의 실측): (1) SQL의 "검토한 함수" 40개 허용목록은 평범한 분석 쿼리 40개 중 25개를 `x`로
+  올렸다 — `extract`, `row_number() over`, `lag`, `split_part`, `percentile_cont`, `generate_series` …. 직원에게 `x`는
+  차단이므로 규칙이 업무를 막고 있었다. (2) 발급자 접두어가 있는 토큰 9종(GitHub·Slack·Google·OpenAI·Anthropic·
+  Stripe·GitLab·JWT·AWS 비밀 키)이 DLP 라벨을 받지 못해 GitHub 토큰을 외부 메일로 보내도 통과했다. Presidio의
+  주민번호 인식기는 하이픈을 요구해, 하이픈 없는 번호는 분류기가 라벨을 붙이고도 결과 마스킹을 지나쳤다.
+  (3) 배포 확인의 정책 일치는 `policy.rego`만 비교해 권한 번들·관리대장·예외가 OPA에 반영되지 않은 상태를
+  "일치"로 보였다.
+- **결정**:
+  - SQL 함수는 **서버의 카탈로그**로 판정한다. PostgreSQL 18.6 `pg_proc`의 `pg_catalog` 함수 2,787개와 변동성을
+    `gateway/app/pg_builtin_functions.json`으로 두고(생성 쿼리는 `classify.PG_FUNCTIONS_QUERY`), 불변·안정은 읽기,
+    휘발성은 읽기 전용으로 확인한 26개 외 `x`, 내장이 아니거나 사용자 스키마의 함수는 `x`. D-55의 안전 성질(사용자
+    정의 함수 → `x`)은 그대로이고 같은 40개 쿼리의 오판은 25 → 0이다.
+  - 자격 증명은 **발급자가 문서화한 접두어**로 본다(`classify.SECRET_PATTERNS`, IBM CPEX `secrets_detection`의
+    접두어형 규칙 + OpenAI/LiteLLM `sk-`·Anthropic·GitLab). 같은 문자열을 DLP 라벨(`P-DLP-001`)과 Presidio
+    `SECRET_TOKEN`(결과 마스킹·`MCP-DATA-EGRESS-001`)이 함께 쓴다. CPEX의 일반 hex·base64 규칙은 커밋 해시와
+    SHA-256을 매번 잡으므로 차단 근거로 쓰지 않는다. 주민번호는 두 곳이 같은 모양(생년월일 검증, 하이픈 선택)을 쓴다.
+  - 정책 일치는 **OPA가 실제로 쓰는 네 파일 모두**를 본다: 규칙 해시와 `data.json`·`exceptions.json`·
+    `policy_ledger.json`의 최상위 문서를 OPA가 서빙하는 값과 정규 JSON으로 대조한다. 데이터만 바꾸고 OPA를 다시
+    읽히지 않으면 `not_ready`가 된다(실측: 한도 값 하나를 바꾸자 즉시 불일치, 되돌리자 일치).
+- **재현 가능성**: D-55가 확정 근거에서 뺀 두 수치를 다시 잴 수 있게 했다. 주입 탐지율은
+  `tests/injection_corpus_check.py`가 PyRIT 고정 커밋의 garak 시드를 받아 잰다(지시 주입 26건 중 21건).
+  팀원 PAC-15 초안의 검토는 [research/pac15-review](../../research/pac15-review/README.md)의 `run.sh` 한 번으로
+  원본(정상 200/200·결함 59)과 결함 7종을 고친 수정본(200/200·0)을 나란히 낸다.
+- **시험**: 적대적 회귀에 자격 증명 유출 4건(메일·URL, GitHub·Slack·`sk-`·JWT)과 정상 대조 2건(커밋 해시·SHA-256이
+  든 사내 메일, `extract`+창 함수 쿼리)을 더해 공격 42/42·정상 16/16. `python -m app.classify`에 카탈로그 판정과
+  자격 증명 11종·정상 문자열 6종의 대조를 넣었다.

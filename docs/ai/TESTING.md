@@ -16,7 +16,9 @@
 | 5 | 직원의 하루 | `workstation/scenarios/*.toml` (21건, scripted) | 각 직원 PC에서 **MCP Inspector CLI**가 하네스와 같은 Gateway URL·SSO 토큰으로 실제 서버에 보내는 업무 21건이 기대 판정(Allow/Alert/Approval/Block)과 일치(판정은 Gateway `/api/activity`에서 직원 토큰으로 대조 — 하네스 출력 형식과 무관) | ~1분 |
 | 6 | 종료 판정 흐름 | `tests/termination_flow.py` (21건) | UR-GITEA-DEV T3→T2→T1·종결, UR-EMAIL-ASSIST T3·위험 수용 없는 종결 거부·고지 요청서, 복원 | ~1분 |
 | 7 | 보안 회귀 | `tests/security_regression.sh` (55건) | 망 분리(실제 소켓, Presidio 포함), loopback 게시, 읽기 API 토큰, Console 역할 경계, 로그아웃 즉시 효력, **원격 MCP 종료 조건(신청자 자기 신고 422·직원 기록 403·검증 없는 승인 409·위험 수용 사유로도 격리 검증 전 승인 불가·http 근거 422·관리자 기록 200·검증 뒤에도 격리 검증 전 승인 불가)**, OPA 정지→`P-CONTROL-FAIL-CLOSED`, 상위 서버 정지→미실행, **Presidio 분석기 정지→`P-DATA-INSPECTION-001`, 마스킹기 정지→실행됨·`MCP-OUTPUT-001`**, 감사 변조 탐지, 계약 잠금 일치, 격리 워커 검사기 | ~1.5분 |
-| 7a | 적대적 회귀 | `tests/adversarial_check.py` | 통제를 **우회하는 방법**을 실제 ingress로 보낸다: 내부 주소의 다른 표기(10진·8진·16진·축약·IPv4-mapped·wildcard DNS·FQDN), 텍스트로는 읽기처럼 보이는 SQL(SELECT INTO·CTE DELETE·pg_read_file·COPY TO PROGRAM), 인자에 실린 지시문(영·한·보이지 않는 문자), 경로 회피 표기. **정상 업무 대조군을 같은 수만큼** 넣어 오탐을 함께 센다 — 전부 막는 통제는 공격 점수가 만점이어도 쓸 수 없다 | ~1분 |
+| 7a | 적대적 회귀 | `tests/adversarial_check.py` | 통제를 **우회하는 방법**을 실제 ingress로 보낸다: 내부 주소의 다른 표기(10진·8진·16진·축약·IPv4-mapped·wildcard DNS·FQDN), 텍스트로는 읽기처럼 보이는 SQL(SELECT INTO·CTE DELETE·pg_read_file·COPY TO PROGRAM), 인자에 실린 지시문(영·한·보이지 않는 문자), 경로 회피 표기, 메일·URL로 나가는 자격 증명(GitHub·Slack·`sk-`·JWT). **정상 업무 대조군**(커밋 해시가 든 사내 메일, 창 함수·`extract` 분석 쿼리 포함)으로 오탐을 함께 센다 — 전부 막는 통제는 공격 점수가 만점이어도 쓸 수 없다. 2026-10-01: 공격 42/42 · 정상 16/16 | ~1분 |
+| 7b | 주입 탐지율(요청 시) | `tests/injection_corpus_check.py` | PyRIT 고정 커밋의 garak latent-injection 지시문 시드로 `poisoning` 규칙의 탐지 수를 잰다(26건 중 21, 기준 미달이면 exit 1). 네트워크가 필요해 `console.sh test`에는 넣지 않는다 | 수 초 |
+| 7c | 팀원 PAC-15 초안 검토(요청 시) | `research/pac15-review/run.sh` | 원본과 수정본을 같은 300건으로 — 원본 정상 200/200·결함 59, 수정본 200/200·0 | 수 초 |
 | 8 | 정책 재생 | `gateway/app/replay.py` + `tests/replay_check.py` | 기록된 정책 입력을 현재 정책에 다시 넣은 결과(보고)와 합성 라벨 10사례의 공격 미탐·정상 차단 0 | 수 초 |
 | 9 | 논문 실험 | `gateway/app/experiments.py` + `tests/experiments_check.py` | E1·E2·E3 findings가 논문 주장과 같다 | ~30초 |
 

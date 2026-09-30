@@ -18,6 +18,8 @@ from collections.abc import Callable
 
 import httpx
 
+from .classify import SECRET_PATTERNS
+
 ANALYZER = os.getenv("PRESIDIO_ANALYZER_URL", "http://presidio-analyzer:3000")
 ANONYMIZER = os.getenv("PRESIDIO_ANONYMIZER_URL", "http://presidio-anonymizer:3000")
 
@@ -27,17 +29,25 @@ RECOGNIZERS = [
     {"name": "Email including reserved test domains", "supported_language": "en",
      "supported_entity": "EMAIL_ADDRESS", "patterns": [
          {"name": "email", "regex": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", "score": 0.85}]},
+    # The same shape the DLP labels use: birth date validated, hyphen optional. The
+    # hyphen was required here, so a number written without it was labelled by the
+    # classifier and still reached the model unmasked.
     {"name": "Korean resident registration number", "supported_language": "en",
      "supported_entity": "KR_RRN", "patterns": [
-         {"name": "rrn", "regex": r"\b\d{6}-[1-4]\d{6}\b", "score": 0.85}]},
+         {"name": "rrn", "regex": r"\b\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])-?[1-4]\d{6}\b", "score": 0.85}]},
     {"name": "Korean mobile number", "supported_language": "en",
      "supported_entity": "KR_PHONE", "patterns": [
          {"name": "mobile", "regex": r"\b01[016789]-?\d{3,4}-?\d{4}\b", "score": 0.8}]},
     {"name": "Assigned credential", "supported_language": "en",
      "supported_entity": "CREDENTIAL", "patterns": [
          {"name": "assignment", "regex": r"(?i)\b(?:api[_-]?key|access[_-]?token|password)\s*[:=]\s*[A-Za-z0-9._-]{8,}\b", "score": 0.85}]},
+    # Issuer-prefixed tokens (classify.SECRET_PATTERNS). A tool result that carries one is
+    # masked before the model sees it; the model never needs the value to do the work.
+    {"name": "Issuer-prefixed secret", "supported_language": "en",
+     "supported_entity": "SECRET_TOKEN", "patterns": [
+         {"name": label, "regex": pattern, "score": 0.9} for label, pattern in SECRET_PATTERNS.items()]},
 ]
-ENTITIES = ["EMAIL_ADDRESS", "KR_RRN", "KR_PHONE", "CREDENTIAL", "CREDIT_CARD", "IBAN_CODE", "US_SSN"]
+ENTITIES = ["EMAIL_ADDRESS", "KR_RRN", "KR_PHONE", "CREDENTIAL", "SECRET_TOKEN", "CREDIT_CARD", "IBAN_CODE", "US_SSN"]
 # Shorter strings cannot hold any of the entities above ("a@b.co" is 6).
 MIN_CHARS = 6
 

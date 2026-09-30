@@ -23,6 +23,7 @@ import posixpath
 import re
 import socket
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -99,12 +100,34 @@ class Classification:
 
 
 # ── DLP ─────────────────────────────────────────────────────────────────────
+# Credentials by the prefix their issuer puts on them. Only formats a vendor documents
+# are here, because a hit on an outbound call is a refusal (P-DLP-001): the generic
+# "32+ hex" and "24+ base64" rules of the IBM CPEX secrets plugin (Apache-2.0,
+# plugins/rust/python-package/secrets_detection/src/patterns.rs), from which the
+# GitHub, Slack, Google, Stripe, JWT and AWS-secret forms below are taken, also match
+# every git commit and SHA-256 digest a developer mails, so they are not.
+# The same strings feed the Presidio recognizer that masks them in tool results.
+SECRET_PATTERNS = {
+    "aws-access-key": r"\bAKIA[0-9A-Z]{16}\b",
+    "aws-secret-key": r"(?i)aws.{0,20}(?:secret|access).{0,20}[:=]\s*[\"']?[A-Za-z0-9/+=]{40}\b",
+    "github-token": r"\b(?:gh[opusr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{20,})\b",
+    "gitlab-token": r"\bglpat-[0-9A-Za-z_\-]{20,}\b",
+    "slack-token": r"\bxox[abpqr]-[0-9A-Za-z\-]{10,80}\b",
+    "google-api-key": r"\bAIza[0-9A-Za-z\-_]{35}\b",
+    "stripe-key": r"\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}\b",
+    # OpenAI keys and the LiteLLM virtual keys this lab issues share the `sk-` form.
+    "sk-api-key": r"\bsk-(?!ant-)(?:proj-|svcacct-|admin-)?[A-Za-z0-9_\-]{20,}\b",
+    "anthropic-key": r"\bsk-ant-(?:api|admin)\d{2}-[A-Za-z0-9_\-]{40,}\b",
+    "jwt": r"\beyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\b",
+    "private-key": r"-----BEGIN [A-Z ]*PRIVATE KEY-----",
+    "api-key-assignment": r"(?i)\b(?:(?:x[-_])?api[-_]?key|apikey|api[_-]?token|access[_-]?token|auth[_-]?token"
+                          r"|bearer[_-]?token|client[_-]?secret)\b\s*[:=]\s*[\"']?[A-Za-z0-9_\-./+]{20,}",
+}
 DLP_PATTERNS = {
     "kr-rrn": re.compile(r"\b\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])-?[1-4]\d{6}\b"),
     "card-number": re.compile(r"\b(?:\d{4}[- ]?){3}\d{4}\b"),
     "kr-mobile": re.compile(r"\b01[016789]-?\d{3,4}-?\d{4}\b"),
-    "aws-access-key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
-    "private-key": re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+    **{label: re.compile(pattern) for label, pattern in SECRET_PATTERNS.items()},
     "password-assignment": re.compile(r"(?i)\b(password|passwd|pwd|secret)\s*[=:]\s*\S{6,}"),
     "confidential-marker": re.compile(r"대외비|\bCONFIDENTIAL\b|기밀|급여|salary", re.IGNORECASE),
 }
@@ -323,16 +346,46 @@ SQL_X_FUNCTIONS = {
 }
 # Sequence state survives the statement, so these are writes even inside a SELECT.
 SQL_W_FUNCTIONS = {"nextval", "setval"}
-# A SELECT can call an arbitrary user-defined function with side effects. Only
-# reviewed built-ins are read candidates; the database's grants remain a separate boundary.
-SQL_R_FUNCTIONS = {
-    "count", "sum", "avg", "min", "max", "abs", "round", "ceil", "ceiling", "floor",
-    "length", "char_length", "lower", "upper", "trim", "substring", "replace",
-    "concat", "concat_ws", "now", "date_trunc", "date_part", "to_char", "to_date",
-    "json_agg", "jsonb_agg", "array_agg", "string_agg", "row_to_json", "json_build_object",
-    "jsonb_build_object", "pg_table_size", "pg_total_relation_size", "pg_relation_size",
-    "pg_size_pretty", "version", "current_database", "current_schema", "pg_backend_pid",
+# A SELECT can call a user-defined function with any side effect, so a function the
+# server does not ship is judged as "x". Which functions it ships, and whether each can
+# change anything, is the server's own catalog and not a list written here: an earlier
+# hand-written allowlist of 40 names classified 25 of 40 ordinary analytics queries
+# (`extract`, `row_number() over`, `split_part`, `percentile_cont` ...) as execution.
+# pg_proc marks every built-in immutable, stable or volatile; PostgreSQL does not let an
+# immutable or stable function modify the database, so those read. Volatile built-ins
+# are mostly administration (locks, replication slots, files, backends, statistics
+# resets) and are "x" unless they are listed here as reading only.
+#   Regenerate for a new major version (output → pg_builtin_functions.json):
+PG_FUNCTIONS_QUERY = """select proname, case when bool_or(provolatile = 'v') then 'v'
+  when bool_or(provolatile = 's') then 's' else 'i' end
+  from pg_proc where pronamespace = 'pg_catalog'::regnamespace group by proname"""
+PG_FUNCTIONS: dict[str, str] = json.loads(
+    (Path(__file__).parent / "pg_builtin_functions.json").read_text(encoding="utf-8"))["functions"]
+SQL_READ_VOLATILE = {
+    "random", "random_normal", "setseed", "array_sample", "array_shuffle", "clock_timestamp",
+    "timeofday", "gen_random_uuid", "uuidv4", "uuidv7", "currval", "lastval",
+    "pg_database_size", "pg_relation_size", "pg_table_size", "pg_total_relation_size",
+    "pg_indexes_size", "pg_tablespace_size", "pg_partition_tree", "pg_partition_ancestors",
+    "pg_is_in_recovery", "pg_blocking_pids", "pg_lock_status", "pg_xact_status", "txid_status",
+    "pg_sequence_last_value",
 }
+
+
+def _function_action(name: str) -> str:
+    """r/w/x for one called function, as the parse tree spells it (schema.name or name)."""
+    schema, _, bare = name.rpartition(".")
+    if schema and schema != "pg_catalog":
+        return "x"  # a function in a user schema, whatever it is called
+    if bare in SQL_X_FUNCTIONS:
+        return "x"
+    if bare in SQL_W_FUNCTIONS:
+        return "w"
+    volatility = PG_FUNCTIONS.get(bare)
+    if volatility is None:
+        return "x"  # not shipped with the server: user-defined or an extension
+    if volatility == "v" and bare not in SQL_READ_VOLATILE:
+        return "x"
+    return "r"
 
 
 def _sql_nodes(node: Any, key: str):
@@ -414,14 +467,8 @@ def sql_facts(sql: str) -> tuple[str, list[str]]:
         action = max(action, _statement_action(statement), key=ACTION_ORDER.__getitem__)
     functions = {".".join(part["String"]["sval"] for part in call.get("funcname") or [] if "String" in part).lower()
                  for call in _sql_nodes(tree, "FuncCall")}
-    bare = {name.rsplit(".", 1)[-1] for name in functions}
-    unknown = {name for name in functions
-               if name.rsplit(".", 1)[-1] not in SQL_R_FUNCTIONS | SQL_W_FUNCTIONS
-               or ("." in name and not name.startswith("pg_catalog."))}
-    if bare & SQL_X_FUNCTIONS or unknown:
-        action = "x"
-    elif bare & SQL_W_FUNCTIONS:
-        action = max(action, "w", key=ACTION_ORDER.__getitem__)
+    for name in functions:
+        action = max(action, _function_action(name), key=ACTION_ORDER.__getitem__)
     # A CTE name is a label for rows inside this statement, not a company table.
     ctes = {name.lower() for name in _sql_nodes(tree, "ctename") if isinstance(name, str)}
     return action, sorted(_sql_relations(tree, ctes))
@@ -723,6 +770,27 @@ if __name__ == "__main__":
     assert sql_facts("select public.count(*) from public.products")[0] == "x"
     assert sql_facts("select custom_side_effect()")[0] == "x"
     assert sql_facts("select pg_catalog.count(*) from public.products")[0] == "r"
+    # What the server ships and marks side-effect free reads; the rest does not. Syntax the
+    # parser rewrites into catalog calls (EXTRACT, AT TIME ZONE, POSITION, TRIM) reads too.
+    for analytics in (
+            "select extract(year from created_at) as y, count(*) from sales.orders group by 1",
+            "select id, row_number() over (order by amount desc) from sales.orders",
+            "select id, lag(amount) over (order by created_at) from sales.orders",
+            "select percentile_cont(0.5) within group (order by amount) from sales.orders",
+            "select created_at at time zone 'Asia/Seoul' from sales.orders",
+            "select split_part(email, '@', 2), position('@' in email) from sales.customers",
+            "select trim(both ' ' from name), regexp_replace(name, '[0-9]', '', 'g') from public.products",
+            "select stddev(amount), bool_and(true) from sales.orders",
+            "select * from generate_series(1, 10)", "select random(), gen_random_uuid()",
+            "select jsonb_extract_path_text('{}'::jsonb, 'k'), md5('x'), format('%s', 1)",
+            "select pg_total_relation_size('sales.orders')"):
+        assert sql_facts(analytics)[0] == "r", analytics
+    for side_effect in ("select pg_notify('c', 'x')", "select pg_stat_reset()",
+                        "select pg_create_logical_replication_slot('s', 'pgoutput')",
+                        "select pg_try_advisory_lock(1)", "select lo_creat(-1)",
+                        "select ts_stat('select vector from docs')", "select pg_hba_file_rules()",
+                        "select myschema.harmless_looking()", "select not_a_builtin(1)"):
+        assert sql_facts(side_effect)[0] == "x", side_effect
     for malformed in ("http://[invalid/", "https://example.com:99999/", "http://example.com:bad/"):
         assert url_destination(malformed).category == "infrastructure"
     assert sql_facts("with d as (delete from sales.orders returning *) select * from d") == ("w", ["sales.orders"])
@@ -773,6 +841,30 @@ if __name__ == "__main__":
     assert classify("playwright", "browser_type", {"text": "x"}, "p1").action == "w"
     assert classify("unknown-server", "anything", {}).data_class == "important"
     assert dlp_scan("card 4111 1111 1111 1111") == ["card-number"] and dlp_scan("1234 5678 9012 3456") == []
+    # Issuer-prefixed credentials. Synthetic values assembled here so no real key sits in the source.
+    fake = "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8S9t0"
+    for label, text in (("github-token", "GITHUB_TOKEN=ghp_" + fake[:36]),
+                        ("github-token", "github_pat_11" + fake + "_x"),
+                        ("gitlab-token", "glpat-" + fake[:20]),
+                        ("slack-token", "xoxb-123456789012-" + fake[:24]),
+                        ("google-api-key", "AIza" + fake[:35]),
+                        ("stripe-key", "sk_live_" + fake[:24]),
+                        ("sk-api-key", "OPENAI_API_KEY=sk-proj-" + fake),
+                        ("anthropic-key", "sk-ant-api03-" + fake + fake[:10]),
+                        ("jwt", "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0." + fake),
+                        ("aws-secret-key", "aws_secret_access_key = " + fake),
+                        ("api-key-assignment", "client_secret: " + fake)):
+        assert label in dlp_scan(text), (label, dlp_scan(text))
+    # What a developer mails every day must not read as a credential.
+    for ordinary in ("commit 9f1c2ab34de56f7890a1b2c3d4e5f60718293a4b merged",
+                     "sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                     "request 123e4567-e89b-12d3-a456-426614174000 failed",
+                     "pip install scikit-learn==1.5.0", "see https://github.com/pglast/pglast",
+                     "the access token expires in 10 minutes"):
+        assert dlp_scan(ordinary) == [], (ordinary, dlp_scan(ordinary))
+    leak = classify("email", "send_email", {"recipients": ["x@gmail.com"], "subject": "config",
+                                            "body": "GITHUB_TOKEN=ghp_" + fake[:36]})
+    assert leak.action == "x" and "github-token" in leak.dlp, (leak.action, leak.dlp)
     args, applied = apply_restrictions(mail, {"recipients": ["a@gmail.com"], "body": "x" * 50}, {"max_chars": 10, "journal_bcc": "c@bob.local"})
     assert len(args["body"]) == 10 and args["bcc"] == ["c@bob.local"] and len(applied) == 2
     # Usage relationship scope: path prefixes by segment, exact or wildcard names, unscoped kinds ignored.

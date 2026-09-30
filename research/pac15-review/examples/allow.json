@@ -1,0 +1,151 @@
+{
+  "request": {
+    "id": "req-001",
+    "user_id": "user-1",
+    "agent_id": "agent-1",
+    "session_id": "session-1",
+    "server_id": "server-1",
+    "feature_type": "tool",
+    "feature_id": "read_file",
+    "action": "READ",
+    "arguments": {"path": "file-1"},
+    "on_behalf_of": true,
+    "environment": "prod",
+    "targets": {"files": ["file-1"], "commands": [], "recipients": []},
+    "data": {"asset_id": "asset-1", "grade": "internal"},
+    "transfer": {"enabled": false, "destination_id": ""},
+    "high_risk": false,
+    "automated": false
+  },
+  "facts": {
+    "trusted": true,
+    "now_ns": 1800000000000000000,
+    "classification": {
+      "verified": true,
+      "high_risk": false,
+      "transfer_required": false,
+      "on_behalf_of": true,
+      "automated": false
+    },
+    "approval_workflow_available": true,
+    "approval": {
+      "status": "APPROVED",
+      "server_id": "server-1",
+      "conditions_met": true,
+      "valid_from_ns": 1700000000000000000,
+      "valid_until_ns": 1900000000000000000,
+      "baseline": {
+        "server_version": "1.0.0",
+        "feature_definition_hash": "sha256:feature-v1",
+        "schema_hash": "sha256:schema-v1",
+        "policy_version": "pac15-v1"
+      },
+      "environments": ["prod"],
+      "production_controls": true,
+      "subject": {"user_id": "user-1", "agent_id": "agent-1", "session_id": "session-1"},
+      "auth_issuer": "https://auth.example.test",
+      "connections": [{"server_id": "server-1", "endpoint_id": "endpoint-1", "final_target_id": "target-1"}],
+      "features": [{"server_id": "server-1", "type": "tool", "id": "read_file", "definition_hash": "sha256:feature-v1"}],
+      "actions": ["READ"],
+      "allowed_argument_keys": ["path"],
+      "parameter_bindings": [{"argument_path": ["path"], "target_type": "file"}],
+      "targets": {"files": ["file-1"], "commands": [], "recipients": []},
+      "data_scopes": [{"asset_id": "asset-1", "grade": "internal"}],
+      "transfer_pairs": [{"destination_id": "dest-1", "grade": "internal"}],
+      "limits": {
+        "allow_automated": false,
+        "max_retries": 2,
+        "max_concurrency": 2,
+        "max_calls": 10,
+        "max_chain_depth": 3,
+        "max_execution_ms": 30000
+      }
+    },
+    "baseline": {
+      "verified": true,
+      "server_version": "1.0.0",
+      "feature_definition_hash": "sha256:feature-v1",
+      "schema_hash": "sha256:schema-v1",
+      "policy_version": "pac15-v1"
+    },
+    "environment": {"verified": true, "id": "prod", "production_equivalent": false},
+    "identity": {
+      "verified": true,
+      "user_id": "user-1",
+      "agent_id": "agent-1",
+      "session_id": "session-1",
+      "allowed_actions": ["READ"]
+    },
+    "delegation": {
+      "verified": true,
+      "user_id": "user-1",
+      "agent_id": "agent-1",
+      "valid_from_ns": 1700000000000000000,
+      "valid_until_ns": 1900000000000000000,
+      "user_actions": ["READ"],
+      "agent_actions": ["READ"],
+      "delegated_actions": ["READ"]
+    },
+    "auth": {
+      "mode": "http",
+      "verified": true,
+      "not_revoked": true,
+      "issuer": "https://auth.example.test",
+      "audience": "server-1",
+      "valid_from_ns": 1700000000000000000,
+      "valid_until_ns": 1900000000000000000,
+      "scopes": ["READ"]
+    },
+    "connection": {
+      "verified": true,
+      "final_target_verified": true,
+      "server_id": "server-1",
+      "endpoint_id": "endpoint-1",
+      "final_target_id": "target-1"
+    },
+    "catalog_feature": {
+      "verified": true,
+      "server_id": "server-1",
+      "type": "tool",
+      "id": "read_file",
+      "definition_hash": "sha256:feature-v1"
+    },
+    "action": {"verified": true, "normalized": "READ"},
+    "parameters": {
+      "verified": true,
+      "normalized": true,
+      "schema_valid": true,
+      "coverage_complete": true,
+      "canonical_arguments": {"path": "file-1"},
+      "derived_targets": {"files": ["file-1"], "commands": [], "recipients": []}
+    },
+    "data": {"verified": true, "asset_id": "asset-1", "grade": "internal"},
+    "transfer": {
+      "verified": true,
+      "final_destination_verified": true,
+      "final_destination_id": "dest-1",
+      "data_grade": "internal"
+    },
+    "revocation": {
+      "verified": true,
+      "fresh": true,
+      "user": false,
+      "agent": false,
+      "server": false,
+      "feature": false,
+      "approval": false
+    },
+    "execution": {
+      "atomic_reservation_verified": true,
+      "reservation_request_id": "req-001",
+      "reservation_expires_ns": 1800000001000000000,
+      "duplicate_status": "clear",
+      "previous_mutation_status": "clear",
+      "retry_count": 0,
+      "active_concurrency": 1,
+      "total_calls": 1,
+      "chain_depth": 1,
+      "requested_timeout_ms": 5000
+    }
+  }
+}

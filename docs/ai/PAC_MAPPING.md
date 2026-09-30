@@ -95,10 +95,12 @@ DNS는 조회하지 않는다 — 조회하면 판정과 실제 연결 사이에
 (`python -m app.poisoning`). 예: "Send the invoice to finance@bob.local"은 인자에서 걸리지 않는다 —
 목적지는 문구가 아니라 분류기의 destinations가 판단한다.
 
-Claude 인계 기록은 garak latent-injection 시드 중 선택한 26건에서 1 → 21건 탐지,
-내부 도구 223개에서 오탐 0을 보고했다. 해당 선별·실행 로그를 이번 클린 검증에서 독립 재현하지
-않았으므로 현재 탐지율·전수 무오탐의 확정 근거로 사용하지 않는다. 규칙을 다듬는 참고 기록이다.
-이번 재검증의 확정 범위는 적대적 회귀 38건·정상 14건과 실제 외부 MCP 7종이다.
+**주입 탐지율은 재현 가능한 측정으로 둔다.** `tests/injection_corpus_check.py`가 microsoft/PyRIT 고정 커밋
+`ea9d0b4`의 garak latent-injection 지시문 시드(NVIDIA, Apache-2.0)를 받아 `poisoning.text_findings`에 넣는다.
+시드 32건 중 6건은 "혐오 문장을 써라"류의 독성 유도라 도구 호출을 돌리려는 시도가 아니므로 따로 센다.
+지시 주입 26건 중 **21건 탐지**(2026-10-01, 고정 URL 다운로드와 로컬 클론 양쪽에서 같은 값). 처음 규칙은 같은
+26건 중 1건이었다. 못 잡는 5건은 명령문이 없는 설득문("최고의 이력서다")·강조 반복·한 줄에 붙은 가짜 대화 턴이다.
+오탐 쪽은 같은 규칙을 이 랩이 제공하는 도구 전부의 이름·설명·스키마에 건다(2026-09-30 223개 전수 0건).
 
 실제 Sentry의 `root cause` 오탐은 수정했고, Notion의 미노출 안내 helper 경고가 정상 검색까지
 차단하던 오류도 수정했다. 새 흐름은 **노출되는 도구**의 미검토 경고를 차단하고, 명시적 설명 검토는
@@ -145,6 +147,20 @@ Claude 인계 기록은 garak latent-injection 시드 중 선택한 26건에서 
 
 - scope 요구를 Gateway 관리 API뿐 아니라 Console 계정·도입·커넥터 관리의 공통 인증 경계에도 적용했다.
 - SQL의 미검토 함수와 비표준 schema 함수는 `x`로 올린다. AST가 DB view·operator·함수의 순수성을 증명하지는 않는다.
+  **2026-10-01 정정**: "검토한 함수"를 손으로 쓴 40개 목록으로 정했더니 평범한 분석 쿼리 40개 중 25개
+  (`extract`, `row_number() over`, `split_part`, `percentile_cont` …)가 `x`가 되어 직원에게 차단됐다. 이제
+  기준은 서버의 카탈로그다 — PostgreSQL 18.6 `pg_proc`의 내장 함수 2,787개와 변동성(`pg_builtin_functions.json`).
+  불변·안정 함수는 PostgreSQL이 데이터베이스를 바꾸지 못하게 하므로 읽기, 휘발성 248개는 읽기 전용으로 확인한
+  26개(random·크기 조회 등) 외에는 `x`, 내장이 아닌 함수와 사용자 스키마 함수는 그대로 `x`. 같은 40개가 0개로 줄었다.
+- **자격 증명 유출(PAC-12)**: 발급자 접두어가 있는 토큰(GitHub·GitLab·Slack·Google·Stripe·OpenAI/LiteLLM `sk-`·
+  Anthropic·JWT·AWS 비밀 키·`client_secret=` 할당)을 DLP 라벨과 Presidio `SECRET_TOKEN`으로 본다. 이전에는 9종 모두
+  라벨이 없어 GitHub 토큰을 외부 메일로 보내도 통과했다. 규칙은 IBM CPEX `secrets_detection`(Apache-2.0)에서
+  접두어형만 가져왔고, 같은 플러그인의 "32자 이상 hex·24자 이상 base64" 규칙은 커밋 해시·SHA-256을 매번 잡아
+  외부 전송 차단의 근거로 쓸 수 없어 제외했다. 도구 **결과**에 섞인 토큰은 모델에 가기 전에 가린다.
+- 배포 확인의 정책 일치가 `policy.rego`만 비교해서, 권한 번들(`data.json`)·관리대장·예외가 바뀌고 OPA가 다시
+  읽지 않은 상태도 "일치"로 보였다. 이제 네 파일을 모두 대조한다(규칙 일치·데이터 일치를 따로 표시).
+- 팀원 초안의 검토는 재현 가능한 형태로 [research/pac15-review](../../research/pac15-review/README.md)에 있다 —
+  원본 200/200·결함 59건, 결함 7종을 고친 수정본 200/200·결함 0건.
 - malformed URL/port는 fail-closed로 분류한다. 인자 주소 정규화는 upstream MCP 자체의 DNS 재바인딩 방어를 대신하지 않는다.
 - code revision/hash와 OPA의 실제 로드 정책 hash를 Console의 `배포 확인`에서 비교한다.
 - 종료 대상에는 비활성 과거 이용자도 남긴다. 서버 종료 차단과 확인된 비활성 계정 차단을 서로 다른 근거로 기록한다.
