@@ -344,12 +344,17 @@ class KitTest(unittest.TestCase):
         out = self.tmp / "managed"
         self.main("managed", "--url", "https://mcp-gw.internal", "--servers", "git", "--out", str(out),
                   "--python", "/usr/bin/python3", "--kit", "/opt/mcpgw/mcpgw_pc.py", "--connectors", str(policy))
-        self.assertEqual(json.loads((out / "managed-settings.json").read_text(encoding="utf-8")),
-                         {"deniedMcpServers": [{"serverUrl": "*://mcp.notion.com/*"}], "allowAllClaudeAiMcps": True})
+        managed = json.loads((out / "managed-settings.json").read_text(encoding="utf-8"))
+        self.assertEqual(managed["deniedMcpServers"], [{"serverUrl": "*://mcp.notion.com/*"}])
+        self.assertIs(managed["allowAllClaudeAiMcps"], False)  # 이전의 관대한 정책도 강제 프로필을 넓히지 못한다.
+        self.assertIs(managed["allowManagedMcpServersOnly"], True)
+        self.assertEqual(managed["allowedMcpServers"], [{"serverUrl": "https://mcp-gw.internal/mcp/git/"}])
+        self.assertEqual(managed["strictKnownMarketplaces"], [])
         requirements = tomllib.loads((out / "requirements.toml").read_text(encoding="utf-8"))
         self.assertEqual(requirements["allowed_web_search_modes"], ["disabled"])
         self.assertIs(requirements["allow_browser_and_computer_use"], False)
-        self.assertEqual(requirements["features"], {"browser_use": False})
+        self.assertEqual(requirements["features"], {"apps": False, "plugins": False, "browser_use": False, "computer_use": False})
+        self.assertIs(requirements["marketplaces"]["restrict_to_allowed_sources"], True)
         self.assertEqual(requirements["apps"], {"asdk_app_1": {"enabled": False}})
         self.assertEqual(requirements["mcp_servers"]["git"]["identity"], {"url": "https://mcp-gw.internal/mcp/git/"})
 

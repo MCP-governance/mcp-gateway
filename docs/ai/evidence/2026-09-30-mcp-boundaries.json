@@ -1,0 +1,277 @@
+{
+  "date": "2026-09-30",
+  "base_commit": "65299912a6dfcb70a33ab953e5a172ca05538f66",
+  "model_invoked_for_live_tests": false,
+  "mock_server_used_for_live_tests": false,
+  "live_services": [
+    {
+      "server": "sentry",
+      "server_version": "0.42.0",
+      "tools_count": 9,
+      "tool": "find_organizations",
+      "mcp_call_passed": true,
+      "contract_sha256": "f5a51b636769bd708f890f96b81534f408e00ea6d7c8af9164bfde8a08e2fa4b",
+      "response_bytes": 262,
+      "response_sha256": "a78a9610ad331a28d06f05a78f084d66d0e7a11f3c15e3924445ed72d98a0da4",
+      "gateway_traversed": false
+    },
+    {
+      "server": "context7",
+      "server_version": "4.1.1",
+      "tools_count": 2,
+      "tool": "query-docs",
+      "mcp_call_passed": true,
+      "contract_sha256": "db4b6110f3519ec31046b8c0d61dd67d4420037ebf619c317bedf4e8a2028dfc",
+      "response_bytes": 4938,
+      "response_sha256": "5d678455a81ff3570f82c3ef8ce2e6c866878ffc46ce2d30dd95f4794cd3586e",
+      "gateway_traversed": false
+    },
+    {
+      "server": "figma",
+      "server_version": "1.0.0",
+      "tools_count": 43,
+      "tool": "whoami",
+      "mcp_call_passed": true,
+      "contract_sha256": "146d9c64ab129621e1ce3db1a4fc420760038853e6ba4282536f5af5c5454ede",
+      "response_bytes": 526,
+      "response_sha256": "9c44ac60435cff040b583a53f975725a38c914873a3d3fd780f3f2b9018c2df4",
+      "gateway_traversed": false
+    },
+    {
+      "server": "notion",
+      "server_version": "1.2.0",
+      "tools_count": 44,
+      "tool": "notion-search",
+      "mcp_call_passed": true,
+      "contract_sha256": "04d18ba4abe94a8f31dbbd5b9da7907ee6a2bec7379174c62e5228a20bdf9660",
+      "response_bytes": 658,
+      "response_sha256": "43a42cb338fa932c0bd9ada29ce916c9a03ddea7211939a4b482d2b3c1c15a23",
+      "gateway_traversed": false
+    },
+    {
+      "server": "github",
+      "server_version": "github-mcp-server/remote-102990907a285e34449beb3ffb31718d8702b436",
+      "tools_count": 27,
+      "tool": "get_file_contents",
+      "mcp_call_passed": true,
+      "contract_sha256": "3daf4dc6b2509e32d992f5ac50d1dd5fa0fff829b6deb91f556ee352aab515e1",
+      "response_bytes": 1477,
+      "response_sha256": "19d02c17018c9467f619388cec15e834974785cfa3f971b977cfb3cc7b8c0e4a",
+      "gateway_traversed": false
+    },
+    {
+      "server": "supabase",
+      "server_version": "0.13.0",
+      "tools_count": 1,
+      "tool": "search_docs",
+      "mcp_call_passed": true,
+      "contract_sha256": "ff4d44e69d34c90fd5ac66319af8494e80cdae24a02dae3fa8499e8ed9d3bed1",
+      "response_bytes": 203,
+      "response_sha256": "2c628a5d05a587a247ca1d6198d4e514e79e022664ed966e4b49a4efafe680d1",
+      "gateway_traversed": false
+    },
+    {
+      "server": "zapier",
+      "server_version": "1.0.0",
+      "tools_count": 17,
+      "tool": "discover_zapier_actions",
+      "mcp_call_passed": true,
+      "contract_sha256": "7d4e46dbf57f80e58404bab362405c021f017d1c2a15d60bb42992656e6743a6",
+      "response_bytes": 597,
+      "response_sha256": "b25a0822097dd85b5c8eb9a1b09b64d412b2b3dd46320cdaecab8749cc5e412b",
+      "gateway_traversed": false
+    }
+  ],
+  "native": {
+    "codex_version": "0.158.0",
+    "claude_code_version": "2.1.282",
+    "records": [
+      {
+        "phase": "unmanaged",
+        "started_at": 1790756474.1451573,
+        "finished_at": 1790756483.4213305,
+        "codex_tools": {
+          "context7": 2,
+          "figma": 43,
+          "github": 27,
+          "notion": 44,
+          "sentry": 9,
+          "supabase": 1,
+          "zapier": 17
+        },
+        "claude_connected": [
+          "github",
+          "supabase",
+          "sentry",
+          "notion",
+          "figma",
+          "zapier",
+          "context7"
+        ],
+        "model_invoked": false
+      },
+      {
+        "phase": "managed-gateway-only",
+        "started_at": 1790756483.631376,
+        "finished_at": 1790756485.6153882,
+        "codex_tools": {
+          "context7": 0,
+          "figma": 0,
+          "github": 0,
+          "notion": 0,
+          "sentry": 0,
+          "supabase": 0,
+          "zapier": 0
+        },
+        "claude_connected": [],
+        "model_invoked": false
+      },
+      {
+        "native_policy_check": "PASS",
+        "servers": [
+          "github",
+          "supabase",
+          "sentry",
+          "notion",
+          "figma",
+          "zapier",
+          "context7"
+        ],
+        "external_effect_oracle": "requires independent packet capture; listing is not sufficient"
+      },
+      {
+        "oracle": "host tcpdump, source restricted to disposable container, SYN metadata only",
+        "phases": [
+          {
+            "phase": "unmanaged",
+            "outbound_https_syn_packets": 92
+          },
+          {
+            "phase": "managed-gateway-only",
+            "outbound_https_syn_packets": 2
+          }
+        ],
+        "native_exit": 0,
+        "model_invoked": false,
+        "mock_server_used": false,
+        "independent_policy_check": "INCOMPLETE"
+      }
+    ],
+    "managed_https_destination_ips": [
+      "160.79.104.10"
+    ],
+    "managed_syn_observations": 2,
+    "post_test_dns_correlation": {
+      "api.anthropic.com": [
+        "160.79.104.10",
+        "2607:6bc0::10"
+      ]
+    },
+    "dns_correlation_is_inference": true,
+    "all_external_https_zero": false,
+    "capture_payloads_collected": false,
+    "capture_can_duplicate_interfaces": true
+  },
+  "field": {
+    "solution_ms_learn_ready": "1/1",
+    "employee_codex_version": "0.158.0",
+    "protected_native_policies_present_at_initial_inspection": false,
+    "independent_outside_gateway_receiver": {
+      "test_pc_peer": "100.110.81.60",
+      "synthetic_bytes": 24,
+      "http_status": 204,
+      "model_invoked": false
+    },
+    "endpoint_egress_policy_deployed": false
+  },
+  "regression": {
+    "exit_code": 0,
+    "rego_pass": 96,
+    "field_kit_pass": 16,
+    "gateway_acceptance_pass": 18,
+    "native_gateway_combinations": 160,
+    "scripted_workday_expected_matches": 21,
+    "security_regression_pass": 55,
+    "security_regression_fail": 0,
+    "replay_unchanged": 90,
+    "experiments": [
+      "E1 PASS",
+      "E2 PASS",
+      "E3 PASS"
+    ],
+    "log_sha256": "c38a419db0407e11984d3fd33b8520b2e2ca9e558de8cf15d766e1649f29060d"
+  },
+  "limits": [
+    "Seven direct official provider MCPs and native policy tests; no claim of all tools/actions exercised.",
+    "Provider metadata/read calls do not prove project/workspace isolation, writes or revocation.",
+    "CLI policy does not prove OS egress, cloud connector or model prompt governance."
+  ],
+  "gateway_live_check": {
+    "evidence_mode": "live-vendor-mcp-via-gateway",
+    "model_invoked": false,
+    "mock_server_used": false,
+    "discovery": [
+      {
+        "server": "github",
+        "gateway_api_status": 502,
+        "error_text_contains_401": false,
+        "upstream_credentials_supplied": false
+      },
+      {
+        "server": "supabase",
+        "gateway_api_status": 502,
+        "error_text_contains_401": false,
+        "upstream_credentials_supplied": false
+      },
+      {
+        "server": "sentry",
+        "gateway_api_status": 502,
+        "error_text_contains_401": false,
+        "upstream_credentials_supplied": false
+      },
+      {
+        "server": "notion",
+        "gateway_api_status": 502,
+        "error_text_contains_401": false,
+        "upstream_credentials_supplied": false
+      },
+      {
+        "server": "figma",
+        "gateway_api_status": 502,
+        "error_text_contains_401": false,
+        "upstream_credentials_supplied": false
+      },
+      {
+        "server": "zapier",
+        "gateway_api_status": 502,
+        "error_text_contains_401": false,
+        "upstream_credentials_supplied": false
+      },
+      {
+        "server": "context7",
+        "gateway_api_status": 200,
+        "error_text_contains_401": false,
+        "upstream_credentials_supplied": false
+      }
+    ],
+    "approved_tools": [
+      "resolve-library-id"
+    ],
+    "allowed": {
+      "decision": "Allow",
+      "policy_id": "P-AUTHZ-ALLOW-001",
+      "upstream_executed": true,
+      "is_error": false
+    },
+    "denied": {
+      "decision": "Block",
+      "policy_id": "MCP-REGISTRY-002",
+      "upstream_executed": false,
+      "is_error": true
+    },
+    "public_result_bytes": 1582,
+    "public_result_sha256": "7875ae4debfcd44c1acc0763e3f5dcfbe03b1bf9874f18d1a4b014724b376927",
+    "registration_removed": true,
+    "execution_flags_source": "Gateway decision record, not independent provider audit"
+  }
+}

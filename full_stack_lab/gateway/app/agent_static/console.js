@@ -713,17 +713,17 @@ function showServer(id) {
   ]);
 }
 
-// ── harness connectors (D-51): vendor-attached connectors and features, not shadow ──
+// ── harness inventory (D-53): reported state is not enforcement evidence ──
 const CONNECTOR_KIND = { connector: "claude.ai 커넥터", plugin: "플러그인", server: "직접 추가", app: "ChatGPT 앱", feature: "기본 기능" };
-const CONNECTOR_STATE = { pending: ["approval", "검토 대기"], expired: ["block", "기한 지나 거부"], denied: ["block", "거부"],
-  approved: ["allow", "승인"], default: ["outline", "기본 허용"] };
+const CONNECTOR_STATE = { pending: ["approval", "미승인"], expired: ["block", "검토 기한 만료"], denied: ["block", "거부 정책"],
+  approved: ["allow", "예외 승인"], default: ["outline", "재검토 필요"] };
 const FEATURE_LABEL = { web_search: "웹 검색", apps: "ChatGPT 앱 전체", plugins: "플러그인", browser_use: "브라우저 조작",
   computer_use: "컴퓨터 조작", image_generation: "이미지 생성", memories: "메모리" };
 const connectorName = (g) => (g.kinds.includes("feature") ? FEATURE_LABEL[g.names[0]] || g.names[0] : g.names.join(" · "));
 const connectorTarget = (g) => (g.key.split(":")[1] === "stdio" ? "stdio" : g.key.split(":").slice(2).join(":"));
 // What the harness said about the item on that PC, in words (Claude Code prints English symbols).
 const HARNESS_STATUS = [[/Connected/, "연결됨"], [/Needs authentication/, "인증 필요"], [/Failed/, "연결 실패"],
-  [/Not configured/, "설정 안 됨"], [/^(enabled|on)$/, "켜짐"], [/^disabled$/, "꺼짐"], [/^absent$/, "사라짐"]];
+  [/Not configured/, "설정 안 됨"], [/^(enabled|on)$/, "켜짐"], [/^disabled$/, "꺼짐"], [/^absent$/, "미관측"]];
 const harnessStatus = (s) => (HARNESS_STATUS.find(([re]) => re.test(s || "")) || [null, s || "켜짐"])[1];
 function connectorState(g) {
   const [tone, label] = CONNECTOR_STATE[g.state] || ["", g.state];
@@ -732,7 +732,7 @@ function connectorState(g) {
 }
 const connectorButtons = (g) => g.decision
   ? html`<button class="btn sm" data-act="connector-decide" data-key="${g.key}" data-decision="reset">되돌리기</button>`
-  : html`${g.state === "default" ? "" : html`<button class="btn sm primary" data-act="connector-decide" data-key="${g.key}" data-decision="approved">승인</button>`}
+  : html`${g.state === "default" ? "" : html`<button class="btn sm primary" data-act="connector-decide" data-key="${g.key}" data-decision="approved">예외 승인</button>`}
     <button class="btn sm danger" data-act="connector-deny" data-key="${g.key}" data-name="${connectorName(g)}">거부</button>`;
 let connectorGroups = [];
 
@@ -779,16 +779,16 @@ ROUTES.people = async (_, tab, query) => {
             </tbody></table>${entries.length ? "" : empty("항목 없음")}`, { flush: true,
             tools: html`<div class="seg" role="group" aria-label="분류">${segment("", "전체")}${segment("shadow", "섀도")}${segment("retired-residue", "잔존")}${segment("registered", "Gateway 경유")}</div>` })}</div>` },
         { key: "connectors", label: "하네스 커넥터", n: review, hot: review > 0, body: panel("하네스 커넥터",
-          conn.items.length ? html`<table class="data"><thead><tr><th>이름</th><th>하네스</th><th>종류</th><th class="num">켜진 PC</th><th>상태</th><th></th></tr></thead><tbody>
+          conn.items.length ? html`<table class="data"><thead><tr><th>이름</th><th>하네스</th><th>종류</th><th class="num">활성 보고 PC</th><th>상태</th><th></th></tr></thead><tbody>
             ${conn.items.map((g) => html`<tr class="clickable" tabindex="0" data-act="connector" data-key="${g.key}">
               <td><b>${connectorName(g)}</b><span class="sub mono">${connectorTarget(g)}</span></td>
               <td>${chip("plain", g.harness === "claude" ? "Claude Code" : "Codex")}</td>
               <td class="small">${g.kinds.map((k) => CONNECTOR_KIND[k] || k).join(" · ")}</td>
               <td class="num">${g.active_pcs}<span class="sub">${g.people}명</span></td>
-              <td>${connectorState(g)} ${g.violation ? chip("block", "거부 후에도 켜짐") : ""}</td>
+              <td>${connectorState(g)} ${chip("outline", "차단 미검증")} ${g.violation ? chip("block", "미승인 항목 보고됨") : ""}</td>
               <td class="num nowrap">${connectorButtons(g)}</td></tr>`)}</tbody></table>`
             : empty("직원 PC 키트의 보고가 아직 없어요"),
-          { flush: true, sub: conn.review_days ? `검토 없이 ${conn.review_days}일이면 거부` : "",
+          { flush: true, sub: `미승인은 거부 정책 대상${conn.review_days ? ` · 검토 기한 ${conn.review_days}일` : ""}`,
             tools: html`<button class="btn sm" type="button" data-act="connector-policy">정책 파일</button>` }) },
         { key: "accounts", label: "계정", n: accounts.length, body: panel("계정", html`<table class="data"><thead><tr><th>이름</th><th>이메일</th><th>역할</th><th>부서</th><th>상태</th><th></th></tr></thead><tbody>
           ${accounts.map((a) => html`<tr><td><b>${a.display_name}</b><span class="sub">${a.job_title || ""}</span></td><td class="small">${a.email}</td>
@@ -1700,14 +1700,14 @@ const ACTIONS = {
     const g = connectorGroups.find((x) => x.key === el.dataset.key);
     if (!g) return;
     openDrawer(connectorName(g), html`<div class="row-actions">${connectorState(g)}
-      ${g.violation ? chip("block", "거부 후에도 켜짐") : ""}${connectorButtons(g)}</div>
+      ${chip("outline", "차단 미검증")} ${g.violation ? chip("block", "미승인 항목 보고됨") : ""}${connectorButtons(g)}</div>
       ${kv([["하네스", g.harness === "claude" ? "Claude Code" : "Codex"], ["종류", g.kinds.map((k) => CONNECTOR_KIND[k] || k).join(" · ")],
         ["대상", html`<span class="mono">${connectorTarget(g)}</span>`], ["처음 보고", when(g.first_seen)],
         ["결정", g.decision ? html`${g.note || "—"}<span class="sub">${g.decided_by} · ${when(g.decided_at)}</span>` : ""]])}
       <h3>보고한 PC</h3>
       <table class="data"><thead><tr><th>직원</th><th>PC</th><th>상태</th><th>마지막 보고</th></tr></thead><tbody>
         ${g.holders.map((h) => html`<tr><td>${h.display_name || "—"}</td><td class="mono">${h.workstation}</td>
-          <td>${h.active ? chip(["denied", "expired"].includes(g.state) ? "block" : "plain", harnessStatus(h.status)) : chip("outline", "꺼짐")}</td><td class="small">${ago(h.last_seen)}</td></tr>`)}
+          <td>${h.active ? chip(["pending", "denied", "expired"].includes(g.state) ? "block" : "plain", harnessStatus(h.status)) : chip("outline", "미관측")}</td><td class="small">${ago(h.last_seen)}</td></tr>`)}
       </tbody></table>`);
   },
   async "connector-decide"(el) {

@@ -460,6 +460,7 @@
   규칙·질문을 고친다.
 
 ## D-51 하네스가 기본으로 붙이는 커넥터는 섀도가 아니라 승인 대상 — 키트 보고 · 관리자 결정 · 하네스 스스로 끄기
+- **대체된 부분**: 기본 허용·사용 유예·승인 후 전체 계정 커넥터 허용과 집행 추론은 D-53으로 대체했다. 아래는 이전 결정의 기록이다.
 - **문제**: 실제 직원 PC의 `claude mcp list`에는 Gateway 서버 말고도 `claude.ai Notion`·`claude.ai Google Drive` 같은 **계정 커넥터**와
   `plugin:engineering:slack` 같은 플러그인 서버가 나온다. Codex에는 ChatGPT 앱(Slack·Notion·Google Drive…)과 웹 검색·브라우저·
   컴퓨터 조작 같은 기본 기능이 켜져 있다. 모두 Gateway를 거치지 않는다. 엔드포인트 평면은 registered·shadow·retired-residue뿐이라
@@ -502,3 +503,10 @@
 - **오탐**: 실험실 서버 도구 222개 설명에서 0건. 공개된 공격 예시(Invariant Labs의 `add` 도구, 메일 조종 도구)와 숨김 문자는 잡는다
   (`python3 gateway/app/poisoning.py`).
 - **다음**: 계약 변경(DRIFT) 재승인 화면에도 같은 경고를 보여 준다 — 승인 뒤 설명을 바꾸는 rug pull이 거기서 승인될 수 있다.
+
+## D-53 Gateway 통제 범위를 한정하고 native 정책·집행 증거를 분리
+- **문제**: vendor prefix·기본 기능을 자동 신뢰하고 pending을 사용 유예로 취급했다. 커넥터 하나 승인 시 `allowAllClaudeAiMcps`를 켜면 전체 계정 연결이 다시 열린다. 사용자 보고에서 사라졌다는 것만으로 차단 적용을 추론할 수 없고, 현장 PC는 Docker office 망의 egress 격리를 받지 않는다.
+- **결정**: 벤더 출처와 무관하게 pending부터 거부 정책 대상. 14일은 검토 기한. 승인은 업무 예외 기록이며 Gateway 전용 프로필을 자동 확장하지 않는다. API와 Console은 `enforcement: unverified`·미관측을 표시한다.
+- **native 제약**: PC 키트가 인벤토리 파일 유무와 무관하게 세 파일을 생성한다. Claude는 고정 Gateway MCP, 관리형 allowlist, 계정 커넥터/마켓플레이스 제한. Codex는 name+URL identity의 `requirements.toml`과 Apps·plugins·web/browser 제한. 랩 이미지에도 requirements를 복사한다. 시스템 파일 보호와 지원 버전은 조직 IT 책임이다.
+- **시험**: 모형 MCP를 새로 만들지 않고 GitHub·Supabase·Sentry·Notion·Figma·Zapier·Context7의 실제 공식 원격 서버로 opt-in 검사한다. 별도 native 프로필, OAuth, secret-free 결과, 독립 패킷/목적지 관측을 사용한다. 회귀 검사와 실제 서비스/현장 증거를 구분한다.
+- **한계와 순서**: [SECURITY_BOUNDARIES.md](SECURITY_BOUNDARIES.md). Desktop/웹·임의 셸/SDK·root/admin·LLM 전송·원격 upstream OAuth는 이 변경의 집행 범위 밖이다. 기존 Gateway·Control Plane·PC 키트와 조직 관리 제품을 연결하며 새 범용 통제 서비스를 만들지 않는다.

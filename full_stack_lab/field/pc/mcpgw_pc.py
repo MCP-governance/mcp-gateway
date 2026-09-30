@@ -777,25 +777,26 @@ def cmd_managed(args) -> None:
     claude = {"mcpServers": {s: {"type": "http", "url": endpoint(settings, s), "headersHelper": helper, "timeout": 300000}
                              for s in settings["servers"]}}
     (out / "managed-mcp.json").write_text(json.dumps(claude, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    root, tables = [], []
+    # D-53: 인벤토리의 예외 승인은 이 강제 프로필을 넓히지 않는다. 처음 보는 항목도 닫혀 있어야 한다.
+    managed = {"allowAllClaudeAiMcps": False, "disableClaudeAiConnectors": True,
+               "allowManagedMcpServersOnly": True,
+               "allowedMcpServers": [{"serverUrl": endpoint(settings, s)} for s in settings["servers"]],
+               "strictKnownMarketplaces": [], "deniedMcpServers": []}
+    root = ['allowed_web_search_modes = ["disabled"]', "allow_browser_and_computer_use = false"]
+    features = {"apps", "plugins", "browser_use", "computer_use"}
+    apps = []
     if args.connectors:
-        # Console의 하네스 커넥터 결정(D-51). 거부한 것만 담긴다 - 검토 대기는 아직 켜 둔다.
+        # 이전 형식의 allowAllClaudeAiMcps도 강제 정책을 확장하는 데 쓰지 않는다.
         policy = json.loads(Path(args.connectors).read_text(encoding="utf-8"))
-        denied = {"deniedMcpServers": policy["claude"]["deniedMcpServers"]}
-        if policy["claude"].get("allowAllClaudeAiMcps"):
-            # managed-mcp.json이 있으면 claude.ai 커넥터가 모두 꺼진다. 승인한 것이 있으면 다시 켜고 거부 목록으로 뺀다.
-            denied["allowAllClaudeAiMcps"] = True
-        (out / "managed-settings.json").write_text(json.dumps(denied, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        features = [f for f in policy["codex"]["features_disabled"] if re.fullmatch(r"[a-z0-9_]+", f)]
-        if "web_search" in features:
-            root.append('allowed_web_search_modes = ["disabled"]')
-        if {"browser_use", "computer_use"} & set(features):
-            root.append("allow_browser_and_computer_use = false")
-        if [f for f in features if f != "web_search"]:
-            tables += ["", "[features]"] + [f"{f} = false" for f in features if f != "web_search"]
-        for app in policy["codex"]["apps_disabled"]:
-            if APP_ID.match(app):
-                tables += ["", f"[apps.{app}]", "enabled = false"]
+        managed["deniedMcpServers"] = policy["claude"]["deniedMcpServers"]
+        features.update(f for f in policy["codex"]["features_disabled"]
+                        if f != "web_search" and re.fullmatch(r"[a-z0-9_]+", f))
+        apps = [app for app in policy["codex"]["apps_disabled"] if APP_ID.fullmatch(app)]
+    (out / "managed-settings.json").write_text(json.dumps(managed, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tables = ["", "[features]"] + [f"{f} = false" for f in sorted(features)]
+    tables += ["", "[marketplaces]", "restrict_to_allowed_sources = true"]
+    for app in apps:
+        tables += ["", f"[apps.{app}]", "enabled = false"]
     # TOML은 루트 키가 첫 테이블보다 앞에 있어야 한다.
     lines = ["# Codex requirements.toml: 목록에 없는 MCP 서버는 켜지지 않는다(이름과 URL이 모두 맞아야 함)."] + root
     for server in settings["servers"]:
@@ -803,8 +804,7 @@ def cmd_managed(args) -> None:
     (out / "requirements.toml").write_text("\n".join(lines + tables) + "\n", encoding="utf-8")
     print(f"{out / 'managed-mcp.json'} -> macOS /Library/Application Support/ClaudeCode/, "
           "Linux /etc/claude-code/, Windows C:\\Program Files\\ClaudeCode\\")
-    if args.connectors:
-        print(f"{out / 'managed-settings.json'} -> managed-mcp.json과 같은 폴더")
+    print(f"{out / 'managed-settings.json'} -> managed-mcp.json과 같은 폴더")
     print(f"{out / 'requirements.toml'} -> Unix /etc/codex/, Windows %ProgramData%\\OpenAI\\Codex\\")
     print(f"각 PC에 키트를 {args.kit}에 두고, 직원은 setup --harness codex로 로그인·Codex 설정을 한다")
 

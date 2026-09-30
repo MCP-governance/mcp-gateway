@@ -6,6 +6,7 @@
 | 문서 | 무엇 | 언제 |
 | --- | --- | --- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | v3 정본 설계: 직원 PC의 하네스·관리형 설정·서버별 엔드포인트·LLM 경로·망·신원·디렉터리 | 항상 먼저 |
+| [SECURITY_BOUNDARIES.md](SECURITY_BOUNDARIES.md) | 실제 통제 범위, Kong·LiteLLM·Microsoft 비교, 우회 위협 모델, 재설계와 실제 MCP 검증 | 통제·시험·제품 주장을 정할 때 |
 | [architecture.html](architecture.html) · [architecture.png](architecture.png) | 구성도(archify로 생성, HTML은 브라우저로 — 확대·경로 추적·가이드 뷰) | 그림이 필요할 때 |
 | [DECISIONS.md](DECISIONS.md) | 설계 결정 D-01~ 과 이유, 되돌릴 조건(실기기 배치·도입 자동 검증은 D-42~D-46) | "왜 이렇게 했지?" |
 | [RUNBOOK.md](RUNBOOK.md) | 환경(WSL·포트·비밀번호 1111), `console.sh` 명령(field 포함), 계정, 자주 하는 일, PC에서 하네스를 손으로 쓰는 법 | 띄우고 돌릴 때 |

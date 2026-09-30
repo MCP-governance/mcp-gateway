@@ -195,7 +195,7 @@ services:
       MCP_SCAN_API_KEY: ${MCP_SCAN_API_KEY:-}
       INTAKE_WORKER_STALE_SECONDS: ${INTAKE_WORKER_STALE_SECONDS:-60}
       MCP_SCAN_REQUIRED_FOR_APPROVAL: ${MCP_SCAN_REQUIRED_FOR_APPROVAL:-0}
-      # D-51: 검토 대기 커넥터를 이 날수가 지나면 거부로 본다(0이면 자동 거부 없음).
+      # D-53: 처음부터 미승인 거부 대상. 이 값은 검토 기한(0이면 자동 기한 만료 없음).
       CONNECTOR_REVIEW_DAYS: ${CONNECTOR_REVIEW_DAYS:-14}
       OTEL_SERVICE_NAME: agent-service
     ports:

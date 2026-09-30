@@ -1,15 +1,8 @@
 """하네스가 기본으로 붙이는 커넥터와 기능(D-51).
 
-직원 PC 키트(`mcpgw_pc.py report`)가 Claude Code의 claude.ai 계정 커넥터·플러그인 서버와 Codex의 ChatGPT 앱·
-기본 기능(웹 검색, 브라우저·컴퓨터 사용 등)을 보고한다. 이것들은 섀도가 아니다 — 섀도는 조직이 모르는 경로이고,
-이것들은 하네스 벤더가 계정에 붙여 주는 기능이라 직원이 몰래 설치한 것이 아니다. 그래서 곧바로 막지 않고 목록에
-올려 관리자가 승인·거부한다. 거부는 하네스 스스로 끄게 한다: 키트가 사용자 설정에(Claude Code `deniedMcpServers`,
-Codex `[apps.<id>] enabled = false`), IT가 관리형 설정에(`mcpgw_pc.py managed --connectors`) 넣는다.
-
-- 벤더 자신의 것(api.anthropic.com 커넥터, Codex `connector_openai_*` 앱, 기본 기능)은 기본 허용으로 시작한다.
-- 제3자 커넥터·앱·플러그인은 검토 대기로 시작하고, CONNECTOR_REVIEW_DAYS(기본 14일) 동안 결정이 없으면 거부로
-  본다 — BeyondTrust PRA의 무응답 거부와 같은 이유다: 대기가 무기한이면 검토하지 않은 외부 전송이 무기한 열린다.
-- 직접 추가한 서버(Gateway 밖)는 섀도로 표시한다. 승인은 예외 승인이고, 정식 경로는 도입 신청이다.
+직원 PC의 보고는 인벤토리이며 집행 증거가 아니다(D-53). 벤더 출처와 무관하게 미승인 항목은 거부 정책의 대상이다.
+승인은 Gateway 밖 경로의 예외 승인이고, 관리형 Gateway 전용 프로필을 넓히지 않는다. 정식 경로는 도입 신청이다.
+사용자 설정은 보조 조치이며, 보호된 관리형 설정·단말 실행 통제·망·상위 자격 통제를 별도로 검증해야 한다.
 """
 from __future__ import annotations
 
@@ -19,14 +12,14 @@ from typing import Literal
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Header, HTTPException
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from . import db
 from .agent_contract import StrictModel, authenticated_user
 
 router = APIRouter()
 REVIEW_DAYS = int(os.getenv("CONNECTOR_REVIEW_DAYS", "14"))
-BLOCKING = {"denied", "expired"}
+BLOCKING = {"pending", "denied", "expired", "default"}
 
 
 def host_of(target: str) -> str:
@@ -53,23 +46,20 @@ def first_party(kind: str, target: str) -> bool:
 def state_of(decision: str | None, vendor_own: bool, first_seen: datetime, now: datetime) -> str:
     if decision:
         return decision
-    if vendor_own:
-        return "default"
+    # 출처는 표시용이다. 벤더 접두어와 기본 기능은 권한의 근거가 아니다.
     if REVIEW_DAYS and now - first_seen > timedelta(days=REVIEW_DAYS):
         return "expired"
     return "pending"
 
 
 def policy(groups: list[dict], gateway_host: str = "") -> dict:
-    """거부한 것(명시 거부·검토 기한 만료)을 하네스가 읽는 키로 바꾼다. 키트가 사용자 설정에, managed가 관리형
+    """미승인·거부·검토 기한 만료를 하네스가 읽는 키로 바꾼다. 키트가 사용자 설정에, managed가 관리형
     설정에 그대로 쓴다. 이름 거부는 벤더가 붙인 이름(claude.ai …, plugin:…)에만 쓴다 — 직원이 붙인 이름을 막으면
     같은 이름의 Gateway 서버까지 막힐 수 있다. Gateway 자신의 호스트는 어떤 경우에도 거부 목록에 넣지 않는다."""
-    denied, apps, features, account_connectors = [], [], [], False
+    denied, apps, features = [], [], []
     for g in sorted(groups, key=lambda g: g["key"]):
         harness, how, value = g["key"].split(":", 2)
         blocked = g["state"] in BLOCKING
-        if harness == "claude" and "connector" in g["kinds"] and not blocked:
-            account_connectors = True
         if not blocked:
             continue
         if harness == "claude":
@@ -80,7 +70,8 @@ def policy(groups: list[dict], gateway_host: str = "") -> dict:
             apps.append(value)
         elif how == "feature":
             features.append(value)
-    return {"claude": {"deniedMcpServers": denied, "allowAllClaudeAiMcps": account_connectors},
+    return {"scope": "managed-cli-gateway-only", "enforcement": "unverified",
+            "claude": {"deniedMcpServers": denied, "allowAllClaudeAiMcps": False},
             "codex": {"apps_disabled": apps, "features_disabled": features}}
 
 
@@ -92,6 +83,20 @@ class HarnessItem(StrictModel):
     target: str = Field(default="", max_length=300)
     status: str = Field(default="", max_length=120)
     active: bool = True
+
+    @field_validator("target")
+    @classmethod
+    def safe_target(cls, value: str) -> str:
+        if value.lower().startswith(("http://", "https://")):
+            try:
+                parts = urlsplit(value)
+                if not parts.hostname:
+                    raise ValueError("URL needs a host")
+                host = f"[{parts.hostname}]" if ":" in parts.hostname else parts.hostname
+                return f"{parts.scheme}://{host}" + (f":{parts.port}" if parts.port else "")
+            except ValueError:
+                raise ValueError("invalid target origin") from None
+        return value
 
 
 class Inventory(StrictModel):
@@ -126,13 +131,13 @@ async def groups() -> list[dict]:
         g["vendor_own"] = any(first_party(k, g["target"]) for k in g["kinds"])
         g["state"] = state_of(g["decision"], g["vendor_own"], g["first_seen"], now)
         g["due"] = (g["first_seen"] + timedelta(days=REVIEW_DAYS)).isoformat() if REVIEW_DAYS else None
+        g["enforcement"] = "unverified"  # 보고에서 사라져도 실행·송신 차단을 입증하지 못한다.
     return rows
 
 
 @router.post("/api/pc/inventory")
 async def pc_inventory(report: Inventory, authorization: str | None = Header(default=None)):
-    """키트의 보고. 이번에 목록을 읽은 하네스의 이전 항목은 먼저 '없음'으로 내리고, 보고한 것만 다시 켠다 —
-    거부가 적용돼 목록에서 사라진 커넥터가 '적용됨'으로 보이는 길이 이것뿐이다."""
+    """키트가 보고한 목록을 갱신한다. absent는 미관측이며 차단 확인이 아니다."""
     user = await authenticated_user(authorization)
     async with db.transaction() as connection:
         await connection.execute(
@@ -201,8 +206,8 @@ async def decide_connector(request: Decision, authorization: str | None = Header
            ON CONFLICT (item_key) DO UPDATE SET decision=EXCLUDED.decision, note=EXCLUDED.note,
              decided_by=EXCLUDED.decided_by, decided_at=now()""",
         (request.key, request.decision, request.note.strip(), user["principal"]))
-    return {"message": "승인했어요." if request.decision == "approved"
-            else "거부했어요. 직원 PC는 다음 키트 보고 때 꺼지고, 관리형 설정을 배포하면 바로 꺼져요."}
+    return {"message": "예외 승인 저장. Gateway 전용 관리형 정책은 유지됩니다." if request.decision == "approved"
+            else "거부 정책 저장. PC 설정 적용과 실제 차단은 별도 확인이 필요합니다."}
 
 
 @router.get("/api/connectors/policy")
@@ -224,7 +229,12 @@ if __name__ == "__main__":
     assert first_party("app", "connector_openai_hotline") and not first_party("app", "asdk_app_1")
     old = now - timedelta(days=REVIEW_DAYS + 1)
     assert state_of(None, False, now, now) == "pending" and state_of(None, False, old, now) == "expired"
-    assert state_of(None, True, old, now) == "default" and state_of("approved", False, old, now) == "approved"
+    assert state_of(None, True, now, now) == "pending" and state_of(None, True, old, now) == "expired"
+    assert state_of("approved", False, old, now) == "approved"
+    assert HarnessItem(harness="claude", kind="server", name="redaction",
+                       target="https://user:secret@example.com:443/key-secret?token=secret").target == "https://example.com:443"
+    assert HarnessItem(harness="claude", kind="server", name="upper",
+                       target="HTTPS://user:secret@example.com/key").target == "https://example.com"
     g = lambda key, state, names, kinds=("connector",): {"key": key, "state": state, "names": list(names), "kinds": list(kinds)}
     p = policy([g("claude:host:mcp.notion.com", "denied", ["claude.ai Notion", "plugin:engineering:notion"], ("connector", "plugin")),
                 g("claude:host:100.64.0.1", "denied", ["filesystem"], ("server",)),
@@ -232,8 +242,11 @@ if __name__ == "__main__":
                 g("claude:stdio:mine", "expired", ["mine"], ("server",)),
                 g("codex:app:asdk_app_1", "expired", ["Notion"], ("app",)),
                 g("codex:feature:browser_use", "denied", ["browser_use"], ("feature",))], gateway_host="100.64.0.1")
-    assert p["claude"]["deniedMcpServers"] == [{"serverUrl": "*://mcp.notion.com/*"}, {"serverName": "claude.ai Notion"},
+    assert p["claude"]["deniedMcpServers"] == [{"serverUrl": "*://mcp.canva.com/*"}, {"serverName": "claude.ai Canva"},
+                                               {"serverUrl": "*://mcp.notion.com/*"}, {"serverName": "claude.ai Notion"},
                                                {"serverName": "plugin:engineering:notion"}], p
-    assert p["claude"]["allowAllClaudeAiMcps"] is True  # Canva is still pending, so connectors stay loadable
+    assert p["claude"]["allowAllClaudeAiMcps"] is False
+    assert policy([g("claude:host:mcp.canva.com", "approved", ["claude.ai Canva"])])["claude"]["allowAllClaudeAiMcps"] is False
+    assert p["enforcement"] == "unverified"
     assert p["codex"] == {"apps_disabled": ["asdk_app_1"], "features_disabled": ["browser_use"]}
     print("connectors self-check OK")

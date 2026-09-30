@@ -8,9 +8,9 @@
 | 순서 | 무엇 | 파일 | 보장 | 소요 |
 | --- | --- | --- | --- | --- |
 | 0 | 망 대역·콘솔 상태 | `scripts/network_prefix.py --self-check`, `tests/console-state.test.mjs` (node, 7건) | 대역 선택이 점유 대역을 피하고 소진 시 실패 / 활동 로그 병합(중복·잘못된 id)·검색·상태 문장(실패를 최신처럼 보이지 않음)·**시간대별 판정 버킷(`hourBuckets`), 그룹별 집계(`splitBy`), 하네스×서버 상키 데이터(`sankeyData`)** | 수 초 |
-| 1 | Rego 단위 시험 | `opa/policy_test.rego` (92건) | 27칸 기본 판정 기준선, 권한 번들이 비면 전부 차단·번들 변경이 판정을 바꿈, MCP-* 통제, 예외(유효기간·범위·자가승인·보완통제), 승인형 예외, 민감정보 반출·연쇄(v2 입력), 관리대장 필수 항목, 충돌 우선순위 | 수 초 |
+| 1 | Rego 단위 시험 | `opa/policy_test.rego` (96건) | 27칸 기본 판정 기준선, 권한 번들이 비면 전부 차단·번들 변경이 판정을 바꿈, MCP-* 통제, 예외(유효기간·범위·자가승인·보완통제), 승인형 예외, 민감정보 반출·연쇄(v2 입력), 관리대장 필수 항목, 충돌 우선순위 | 수 초 |
 | 2 | 분류기 self-check | `gateway/app/classify.py` (`python -m app.classify`) | 경로·SQL·URL·메일·Redis 키 분류, DLP(주민번호·카드 Luhn·휴대폰·AWS 키·개인키·비밀번호), 행위 승격 | 수 초 |
-| 2a | 도구 설명·커넥터 정책 self-check | `gateway/app/poisoning.py`(`python -m app.poisoning`), `gateway/app/connectors.py`(agent-service `python -m app.connectors`) | 공개된 tool poisoning 예시(숨긴 지시 태그·민감 경로·다른 도구 조종·보이지 않는 문자)는 잡고 평범한 설명은 통과(D-52) / 결정 단위(호스트·앱 id·기능), 벤더 자신의 것 기본 허용, 검토 기한 뒤 거부, 거부 → `deniedMcpServers`·앱·기능 목록, Gateway 호스트와 직원이 붙인 이름은 거부 목록에 넣지 않음(D-51) | 수 초 |
+| 2a | 도구 설명·커넥터 정책 self-check | `gateway/app/poisoning.py`(`python -m app.poisoning`), `gateway/app/connectors.py`(agent-service `python -m app.connectors`) | 공개된 tool poisoning 예시와 정상 설명(D-52) / 벤더 출처와 무관하게 처음부터 미승인 거부 대상, 승인 하나가 전체 계정 커넥터를 열지 않음, URL 비밀값 제거, 집행 상태는 미검증(D-53) | 수 초 |
 | 3 | Gateway 인수 시험 | `gateway/app/acceptance.py` (스위트 `gateway-acceptance-v3`) | `/mcp/` 401+RFC 9728 챌린지, 역할별 도구 목록, OPA가 내어주는 권한 번들(`LAB-AUTHZ-001`), 허용 호출은 `P-AUTHZ-ALLOW-001`, 미승인·미등록 도구 차단, 스키마 검증, 계약 드리프트 차단→복구, 승인 1회 실행, 관찰 모드 기록, **결과 개인정보 마스킹, 개인정보 외부 발송 차단(MCP-DATA-EGRESS-001), 열람→반출 연쇄(P-CHAIN-001)**, 감사 체인, **`per-server-endpoint-for-harness-configs`(`/mcp/git/`의 도구 목록=승인 목록, `git_log` 허용, `client.endpoint=git`, `/mcp/nope/` 404), `tool-hidden-from-partner-still-decided`(협력사 목록에 없는 도구도 직접 호출하면 판정된다), `usage-relationship-scope-alerts`(이용 관계 밖 `hr.employees` → `P-SCOPE-001` 경보, 안 `sales.orders` → 허용, D-39), `server-check-changes-nothing`(연결 확인이 서버 상태·감사 원장을 바꾸지 않음, 없는 서버 404, 직원 403, D-40)** · **`console-registration-pins-and-expires`(랩 fetch를 다른 id로 Console 등록 — 검토하지 않은 계약 해시 409, `/mcp/<id>/`에 승인 도구만, 호출, 기한 지나면 `P-APPROVAL-EXPIRY-001`, 해제 후 404, D-49)** | ~40초 |
 | 4 | 하네스 연결 확인 | `workstation/bin/harness-check`(`./console.sh harnesses`, `reports/harnesses.txt`) | PC 4대 × 하네스 4종이 관리형 MCP 서버 10종 전부에 Gateway로 붙는지 — 모델 호출 없이(`claude/gemini/opencode mcp list`, Codex는 `app-server` `mcpServerStatus/list`) | 수 초 |
 | 5 | 직원의 하루 | `workstation/scenarios/*.toml` (21건, scripted) | 각 직원 PC에서 **MCP Inspector CLI**가 하네스와 같은 Gateway URL·SSO 토큰으로 실제 서버에 보내는 업무 21건이 기대 판정(Allow/Alert/Approval/Block)과 일치(판정은 Gateway `/api/activity`에서 직원 토큰으로 대조 — 하네스 출력 형식과 무관) | ~1분 |
@@ -67,8 +67,20 @@ tests/security_regression.sh
 가짜 IdP·Gateway에 대해 키트 전체를 돌린다. D-51 부분: 실제 VM의 `claude mcp list` 줄(계정 커넥터·플러그인·stdio·SSE·Gateway 서버)을
 보고 항목으로 바꾸고 경로 속 키를 보내지 않는지, 거부가 오면 사용자 설정의 `deniedMcpServers`에 넣되 직원이 직접 넣은 항목은
 남기는지, Codex 블록의 `[apps.<id>]`·`[features]`와 직원 `[features]`가 있을 때 건너뛰는지, `header`가 6시간에 한 번만 보고를
-떼어 내는지, `managed --connectors`가 `managed-settings.json`과 루트 키가 앞선 `requirements.toml`을 만드는지. CI의 field 단계는 실제
+떼어 내는지, `managed`가 인벤토리 없이도 엄격한 세 파일을 만들고 이전 `allowAllClaudeAiMcps: true`를 무시하는지,
+Codex의 name+URL identity·Apps/플러그인·웹 제약과 Claude의 계정 커넥터·마켓플레이스 제한이 있는지. CI의 field 단계는 실제
 Claude Code·Codex를 설치한 러너에서 `report`가 "N건 보고"로 끝나는지 본다.
+
+## 실제 공급자 MCP 시험 (opt-in, `tests/real_mcp_check.py`)
+
+GitHub·Supabase·Sentry·Notion·Figma·Zapier·Context7의 공식 원격 MCP를 별도 프로필에 등록하고 실제 OAuth/PAT로
+연결·읽기 호출을 검사한다. mock으로 대체하거나 로그인 실패를 통과로 세지 않는다. 일반 CI에는 계정 자격을 넣지 않는다.
+재실행 방법과 서비스별 조회 범위는 [SECURITY_BOUNDARIES.md](SECURITY_BOUNDARIES.md#6-실제-많이-쓰는-mcp로-시험)에 있다.
+
+`native`는 폐기 가능한 workstation 컨테이너에서 실제 Claude Code·Codex에 일곱 MCP를 먼저 연결한 뒤,
+PC 키트의 관리형 정책을 배포하고 같은 직접 연결이 사라지는지 검사한다. 컨테이너에서 외부 목적지로 나가는 HTTPS SYN을
+호스트에서 별도로 수집하여 Gateway 로그와 독립적으로 확인한다. 승인된 Gateway 목적지는 이 외부 목적지 집계에서 제외한다.
+이것은 해당 CLI·정책·HTTP MCP 경로의 증거이며 현장 OS 전체의 egress, SaaS 쓰기/회수, 웹/클라우드 연결의 증거는 아니다.
 
 ## 계정 삭제·내부 Git 조직 (`tests/field_account_git_test.py`)
 `./console.sh test`가 도입 검증 시험과 같은 방식(Gateway 이미지, 네트워크 없음)으로 돌린다. root·본인 삭제 거부와 삭제의 표식

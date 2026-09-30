@@ -7,9 +7,11 @@
 ## 1. 한 문장 요약
 
 직원은 **자기 PC에서 Claude Code·Codex CLI·Gemini CLI·OpenCode 같은 AI 하네스를 평소처럼** 쓰고, 하네스가
-MCP 서버를 부르는 통신은 회사가 배포한 **관리형 설정**에 따라 전부 **Gateway의 서버별 MCP 엔드포인트
-(`/mcp/<server>/`)**로 간다. Gateway는 모든 도구 호출을 신원·계약·자원 분류·개인정보·OPA 정책으로 **실행 전에**
-판정하고, 허용된 호출만 내부 `tools` 망의 **실제 MCP 서버 10종**으로 전달한다. 하네스가 쓰는 LLM은 회사 LLM
+지원 버전 CLI의 승인된 MCP 연결은 회사가 배포한 **관리형 설정**에 따라 **Gateway의 서버별 MCP 엔드포인트
+(`/mcp/<server>/`)**로 간다. Gateway는 **자신을 통과하는** 도구 호출을 신원·계약·자원 분류·개인정보·OPA 정책으로 **실행 전에**
+판정하고, 허용된 호출만 내부 `tools` 망의 **실제 MCP 서버 10종**으로 전달한다. 아래 구성도는 컨테이너 랩이며, 현장 기본 배치는
+직원 PC의 인터넷·직접 API 호출을 차단하지 않는다. 실측·범위·재설계는 [SECURITY_BOUNDARIES.md](SECURITY_BOUNDARIES.md)(D-53).
+컨테이너 랩에서 하네스가 쓰는 LLM은 회사 LLM
 게이트웨이(LiteLLM, 직원별 가상 키) 뒤의 로컬 모델이다. 웹 Console은 관제·승인·계약 검토·종료 판정만 하고
 **MCP를 호출하지 않는다.**
 
@@ -53,7 +55,8 @@ v2와의 차이: v2는 PC에 손으로 짠 에이전트(`office_agent.py`)가 �
 | `scanner` | intake-worker, ollama-pull | 외부 다운로드(유일한 egress) |
 
 모든 망은 `.env`의 `MCP_NET_PREFIX` 아래 명시 `/24`(D-24). `internal: true`가 아닌 망은 `edge`와 `scanner`뿐이다.
-직원 PC는 인터넷에 나갈 수 없어서 하네스의 텔레메트리·자동 업데이트·모델 카탈로그 조회도 망에서 막히고, 설정으로도 끈다.
+컨테이너 랩의 직원 PC는 인터넷에 나갈 수 없어서 하네스의 텔레메트리·자동 업데이트·모델 카탈로그 조회도 망에서 막히고, 설정으로도 끈다.
+이 Docker 망은 현장 PC에 배포되는 방화벽이 아니다. Tailscale 연결과 Gateway 건강 상태로 현장 egress 통제를 입증하지 않는다.
 
 ## 3. 직원 PC — 하네스와 관리형 설정
 
@@ -80,7 +83,7 @@ Antigravity는 GUI 앱이라 랩에서 실행하지 않는다. 같은 Gateway UR
 | 하네스 | 파일(시스템 관리형 위치) | 서버 항목 | 토큰 | 하네스 안의 도구 승인 |
 | --- | --- | --- | --- | --- |
 | Claude Code | `/etc/claude-code/managed-mcp.json`(배타적) + `managed-settings.json` | `type:"http"`, `url` | `headersHelper: bob-sso header` | `permissions.allow: mcp__<server>` |
-| Codex CLI | `/etc/codex/managed_config.toml` | `[mcp_servers.<s>] url` | `bearer_token_env_var = "BOB_SSO_TOKEN"` | `default_tools_approval_mode = "approve"` |
+| Codex CLI | `/etc/codex/managed_config.toml`(기본 설정) + `requirements.toml`(강제 제약) | `[mcp_servers.<s>] url` + 이름·URL identity | `bearer_token_env_var = "BOB_SSO_TOKEN"` | `default_tools_approval_mode = "approve"` |
 | Gemini CLI | `/etc/gemini-cli/settings.json`(시스템 설정, 최우선) | `httpUrl` | `headers.Authorization = "Bearer $BOB_SSO_TOKEN"` | `trust: true` |
 | OpenCode | `/etc/opencode/opencode.json`(`OPENCODE_CONFIG`) | `type:"remote"`, `url` | `headers … {env:BOB_SSO_TOKEN}` | 기본 허용 |
 
@@ -199,7 +202,7 @@ IdP는 RFC 8414 메타데이터, RFC 7009 폐기, RFC 7662 조사를 제공하�
 
 ## 9. 섀도 MCP와 단말
 
-강제 경로 밖의 MCP는 두 겹으로 다룬다. **망**: 직원 PC의 `office` 망에서는 MCP 서버·회사 DB·인터넷에 닿지 않는다
+강제 경로 밖의 MCP는 두 겹으로 다룬다. **컨테이너 랩의 망**: 직원 PC의 `office` 망에서는 MCP 서버·회사 DB·인터넷에 닿지 않는다
 (`tests/security_regression.sh`가 실제 소켓으로 확인). **관측**: 단말 에이전트(3.0.0)가 하네스 설정 파일을 읽어 보고한다 —
 `~/.claude.json`(`projects.<dir>.mcpServers` 포함), `.mcp.json`, `/etc/claude-code/managed-mcp.json`, `~/.codex/config.toml`,
 `/etc/codex/managed_config.toml`, `~/.gemini/settings.json`·`/etc/gemini-cli/settings.json`, `opencode.json`,

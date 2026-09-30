@@ -49,9 +49,9 @@
 | `PUT /api/mcp-requests/{id}/exit-terms` | 관리자 | 제공자 문서로 확인한 종료 조건 기록 `{provider_credential_disclosure, revocation_evidence, audit_access_retained, evidence_url(https), note}` → 검증 주체·시각과 함께 저장. 승인 전(HOLD~VALIDATED)만 |
 | `POST /api/mcp-requests/{id}/queue-validation|approve|reject` | 관리자 | 격리 검증 대기열(HOLD·FAILED·VALIDATED)·승인·거부(승인 전 모든 단계). 원격(HTTP·SSE) 서버의 승인은 ① 종료 조건 결론 T1 ② 관리자 증거 기록 ③ `approve` 본문 `{risk_acceptance}`(10자 이상, 수용자·시각·결론 등급과 함께 저장) 중 하나가 있어야 함(아니면 409, D-50). 승인은 저장소를 Gitea `mcp` 조직으로 가져옴 |
 | `POST /api/mcp-requests/{id}/register` | 관리자 | APPROVED 신청을 Gateway에 등록(D-49) `{server_id, endpoint, catalog_hash, tools:{이름:r|w|x}, data_class, valid_days, poisoning_ack}` — 저장소·검증 커밋·목적·종료 조건은 신청에서 실음. 설명 경고가 있는 도구를 고르면 `poisoning_ack: true` 필요(D-52) |
-| `POST /api/pc/inventory` | 사용자(키트) | 직원 PC 키트의 하네스 보고(D-51) `{workstation, harnesses:[claude|codex], items:[{harness, kind(connector·plugin·server·app·feature), name, target(scheme://host[:port]·stdio·앱 id·기능 값), status, active}]}` → `{accepted, policy, review}`. 이번에 읽은 하네스의 이전 항목은 '없음'으로 내림 |
-| `GET /api/connectors[?summary=1]` · `PUT /api/connectors/decision` | 관리자 | 하네스 커넥터 목록(상태 pending·expired·denied·approved·default, 켜진 PC 수, 보고한 PC) / 결정 `{key, decision: approved|denied|reset, note}` — 거부는 사유 필수 |
-| `GET /api/connectors/policy` | 관리자 | 거부 목록을 하네스 키로: `claude.deniedMcpServers`·`allowAllClaudeAiMcps`, `codex.apps_disabled`·`features_disabled` — `mcpgw_pc.py managed --connectors`가 관리형 파일로 바꿈 |
+| `POST /api/pc/inventory` | 사용자(키트) | 직원 PC의 자기 보고(D-51·D-53) `{workstation, harnesses:[claude|codex], items:[{harness, kind(connector·plugin·server·app·feature), name, target(scheme://host[:port]·stdio·앱 id·기능 값), status, active}]}` → `{accepted, policy, review}`. 서버도 URL의 자격·경로·query를 제거한다. 이전 항목의 absent는 미관측이며 차단 확인이 아니다 |
+| `GET /api/connectors[?summary=1]` · `PUT /api/connectors/decision` | 관리자 | 상태 pending·expired·denied·approved(예외 승인), 활성 보고 PC, `enforcement: unverified` / 결정 `{key, decision: approved|denied|reset, note}` — 거부 사유 필수. 벤더 출처도 자동 허용하지 않음 |
+| `GET /api/connectors/policy` | 관리자 | `scope: managed-cli-gateway-only`, `enforcement: unverified`, `claude.deniedMcpServers`·`allowAllClaudeAiMcps: false`, `codex.apps_disabled`·`features_disabled`. 예외 승인으로 전체 계정 커넥터를 열지 않음. `managed`는 인벤토리 유무와 무관하게 엄격한 세 파일 생성 |
 | `GET /api/mcp-catalog/search?q=` | 사용자 | 이미 신청·등록된 서버인지 |
 | `GET /api/mcp-scan` 외 `/api/mcp-scan/*` | 관리자 | AI 코드 감사(격리 워커) 작업 |
 | `GET /api/readiness` · `GET /health` | 공개 | 준비 상태(Gateway·LLM 게이트웨이) |

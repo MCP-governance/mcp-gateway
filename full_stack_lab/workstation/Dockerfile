@@ -23,6 +23,7 @@ RUN python3 /opt/office/managed/render.py /opt/office/catalog.toml /opt/office/r
  && install -d /etc/claude-code /etc/codex /etc/gemini-cli /etc/opencode /etc/bob \
  && cp /opt/office/rendered/claude-code/* /etc/claude-code/ \
  && cp /opt/office/rendered/codex/config.toml /etc/codex/managed_config.toml \
+ && cp /opt/office/rendered/codex/requirements.toml /etc/codex/requirements.toml \
  && cp /opt/office/rendered/gemini-cli/settings.json /etc/gemini-cli/settings.json \
  && cp /opt/office/rendered/opencode/opencode.json /etc/opencode/opencode.json \
  && cp /opt/office/rendered/bob/servers /opt/office/managed/bob/harness-prompt.md /etc/bob/ \

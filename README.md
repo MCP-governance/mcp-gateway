@@ -1,7 +1,7 @@
 # MCP Governance Security Gateway
 
-직원들이 **자기 PC에서 Claude Code·Codex CLI·Gemini CLI·OpenCode 같은 AI 하네스를 평소처럼 쓸 때** 오가는 MCP 통신을
-한곳으로 모아, 모든 도구 호출을 **실행 전에** 판정하는 게이트웨이와, MCP 이용 관계를 **끝냈다고 말할 수 있는지**
+직원들이 **자기 PC에서 Claude Code·Codex CLI·Gemini CLI·OpenCode 같은 AI 하네스를 평소처럼 쓸 때** 승인된 MCP 연결을
+한곳으로 모아, Gateway를 통과하는 도구 호출을 **실행 전에** 판정하는 게이트웨이와, MCP 이용 관계를 **끝냈다고 말할 수 있는지**
 판정하는 종료·폐기 절차를 한 저장소에서 재현하는 보안 테스트베드입니다.
 
 > **범위:** 합성 계정과 합성 회사(BoB Corp) 데이터를 쓰는 재현용 랩입니다. 운영망의 SSO, 키 관리,
@@ -148,7 +148,7 @@ python3 ~/.mcpgw/mcpgw_pc.py doctor
 로그를 함께 확인합니다. 연결을 해제하려면 직원 PC에서
 `python3 ~/.mcpgw/mcpgw_pc.py uninstall`, 솔루션 기기에서 공개 포트만 닫으려면
 `./console.sh field down`을 실행합니다. 직원이 목록 밖의 서버를 더하지 못하게 하려면
-`mcpgw_pc.py managed`로 Claude Code `managed-mcp.json`과 Codex `requirements.toml`을 만들어 MDM·그룹 정책으로 배포합니다.
+`mcpgw_pc.py managed`로 Claude Code `managed-mcp.json`·`managed-settings.json`과 Codex `requirements.toml`을 만들어 MDM·그룹 정책으로 배포합니다.
 
 ### 하네스가 기본으로 붙이는 커넥터(claude.ai 커넥터·ChatGPT 앱·기본 기능)
 
@@ -157,12 +157,14 @@ Claude Code는 claude.ai 계정에 연결한 커넥터(`claude.ai Notion` 등)�
 하네스가 연결할 때 6시간에 한 번(`python3 ~/.mcpgw/mcpgw_pc.py report`로 바로 보낼 수도 있음). 보내는 것은 이름과 목적지
 호스트뿐입니다.
 
-- 관리자는 **직원·단말 → 하네스 커넥터**에서 승인·거부(사유 필수)합니다. 벤더 자신의 것(Anthropic 문서 커넥터, OpenAI 자체 앱,
-  기본 기능)은 기본 허용, 제3자 커넥터는 검토 대기로 시작해 **14일 안에 결정하지 않으면 거부**로 봅니다(`CONNECTOR_REVIEW_DAYS`).
-- 거부하면 다음 보고 때 키트가 사용자 설정에 넣어 하네스가 스스로 끕니다(Claude Code `deniedMcpServers`, Codex
-  `[apps.<id>] enabled = false`·`[features]`). 직원이 지우면 "거부 후에도 켜짐"으로 보입니다. 되돌릴 수 없게 하려면 **정책 파일**을
-  받아 `mcpgw_pc.py managed … --connectors connector-policy.json`으로 `managed-settings.json`·`requirements.toml`을 만들어
-  MDM·그룹 정책으로 배포합니다(웹 검색 끄기는 이 경로로만 됩니다).
+- 관리자는 **직원·단말 → 하네스 커넥터**에서 예외 승인·거부를 기록합니다. 벤더 출처와 무관하게 **미승인 항목은 처음부터
+  거부 정책 대상**입니다. `CONNECTOR_REVIEW_DAYS`(기본 14일)는 검토 기한이며 사용 유예가 아닙니다(D-53).
+- 사용자 설정 적용은 보조 조치입니다. 목록에서 사라져도 실제 차단이 입증되지 않아 화면에는 **차단 미검증**으로 표시합니다.
+- `mcpgw_pc.py managed …`는 항상 세 파일을 만듭니다. Claude Code는 Gateway 서버만 고정하고 계정 커넥터·새 마켓플레이스를
+  제한합니다. Codex는 `requirements.toml`의 서버 이름·URL 제약과 Apps·플러그인·웹 검색·브라우저/컴퓨터 사용 제한을 받습니다.
+  IT가 시스템 위치에 배포하고 직원이 파일을 바꾸지 못하게 보호해야 합니다. 예외 승인으로 이 프로필이 자동 확장되지 않습니다.
+- 이 범위는 **지원 버전의 관리형 CLI**입니다. Desktop·웹·다른 클라이언트·셸의 직접 API 호출에는 별도 조직 설정·단말 실행 통제·
+  egress·상위 자격 통제가 필요합니다. 비교 조사·위협 모델·실측과 남은 일은 [SECURITY_BOUNDARIES.md](docs/ai/SECURITY_BOUNDARIES.md).
 
 브라우저에는 HTTP 주소로 표시되므로 이 절차는 **Tailscale 내부망 전용**입니다.
 일반 LAN이나 인터넷에 게시할 때는 조직이 신뢰하는 HTTPS 종료 지점을 둬야 합니다.
