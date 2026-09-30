@@ -47,8 +47,11 @@
 | `GET /api/accounts` · `PUT /api/accounts/{user_id}/status` | 관리자 | 신원 관리대장, 계정 사용/중지/잠금 |
 | `GET /api/mcp-requests` · `POST /api/mcp-requests` | 사용자 | 도입 신청 목록(관리자=전체) / 신청 `{display_name, repository_url, requested_transport, purpose}` — 종료 조건 필드를 보내면 422 |
 | `PUT /api/mcp-requests/{id}/exit-terms` | 관리자 | 제공자 문서로 확인한 종료 조건 기록 `{provider_credential_disclosure, revocation_evidence, audit_access_retained, evidence_url(https), note}` → 검증 주체·시각과 함께 저장. 승인 전(HOLD~VALIDATED)만 |
-| `POST /api/mcp-requests/{id}/queue-validation|approve|reject` | 관리자 | 격리 검증 대기열·승인·거부. 원격(HTTP·SSE) 서버의 승인은 세 조건이 모두 검증 기록돼 있어야 함(아니면 409). 승인은 저장소를 Gitea `mcp` 조직으로 가져옴 |
-| `POST /api/mcp-requests/{id}/register` | 관리자 | APPROVED 신청을 Gateway에 등록(D-49) `{server_id, endpoint, catalog_hash, tools:{이름:r|w|x}, data_class, valid_days}` — 저장소·검증 커밋·목적·종료 조건은 신청에서 실음 |
+| `POST /api/mcp-requests/{id}/queue-validation|approve|reject` | 관리자 | 격리 검증 대기열(HOLD·FAILED·VALIDATED)·승인·거부(승인 전 모든 단계). 원격(HTTP·SSE) 서버의 승인은 ① 종료 조건 결론 T1 ② 관리자 증거 기록 ③ `approve` 본문 `{risk_acceptance}`(10자 이상, 수용자·시각·결론 등급과 함께 저장) 중 하나가 있어야 함(아니면 409, D-50). 승인은 저장소를 Gitea `mcp` 조직으로 가져옴 |
+| `POST /api/mcp-requests/{id}/register` | 관리자 | APPROVED 신청을 Gateway에 등록(D-49) `{server_id, endpoint, catalog_hash, tools:{이름:r|w|x}, data_class, valid_days, poisoning_ack}` — 저장소·검증 커밋·목적·종료 조건은 신청에서 실음. 설명 경고가 있는 도구를 고르면 `poisoning_ack: true` 필요(D-52) |
+| `POST /api/pc/inventory` | 사용자(키트) | 직원 PC 키트의 하네스 보고(D-51) `{workstation, harnesses:[claude|codex], items:[{harness, kind(connector·plugin·server·app·feature), name, target(scheme://host[:port]·stdio·앱 id·기능 값), status, active}]}` → `{accepted, policy, review}`. 이번에 읽은 하네스의 이전 항목은 '없음'으로 내림 |
+| `GET /api/connectors[?summary=1]` · `PUT /api/connectors/decision` | 관리자 | 하네스 커넥터 목록(상태 pending·expired·denied·approved·default, 켜진 PC 수, 보고한 PC) / 결정 `{key, decision: approved|denied|reset, note}` — 거부는 사유 필수 |
+| `GET /api/connectors/policy` | 관리자 | 거부 목록을 하네스 키로: `claude.deniedMcpServers`·`allowAllClaudeAiMcps`, `codex.apps_disabled`·`features_disabled` — `mcpgw_pc.py managed --connectors`가 관리형 파일로 바꿈 |
 | `GET /api/mcp-catalog/search?q=` | 사용자 | 이미 신청·등록된 서버인지 |
 | `GET /api/mcp-scan` 외 `/api/mcp-scan/*` | 관리자 | AI 코드 감사(격리 워커) 작업 |
 | `GET /api/readiness` · `GET /health` | 공개 | 준비 상태(Gateway·LLM 게이트웨이) |
@@ -65,7 +68,7 @@
 | `POST /api/catalog/refresh` | 관리자 | 모든 서버 계약 재확인 |
 | `POST /api/registry/{server}/approve-contract` | 관리자 | 검토한 계약 변경을 승인본으로(`note` 필수) |
 | `POST /api/registry/{server}/check` | 관리자 | MCP 세션만 협상해 연결 확인 — `state`(healthy·unhealthy·retired)·지연·서버 정보. 계약·상태·감사는 그대로(D-40) |
-| `POST /api/registry/discover` | 관리자 | 등록 전 검토 `{endpoint}` → 광고 도구·권장 행위·`catalog_hash`. 아무것도 기록하지 않음(D-49) |
+| `POST /api/registry/discover` | 관리자 | 등록 전 검토 `{endpoint}` → 광고 도구·권장 행위·`catalog_hash`, 도구별 `warnings`(설명 속 숨은 지시, D-52). 아무것도 기록하지 않음(D-49) |
 | `POST /api/registry/servers` | 관리자 | Console 등록. `catalog_hash`가 지금 서버 계약과 다르면 409. 결과 `status`·`valid_until`·`gateway_path` |
 | `POST /api/registry/servers/{id}/extend` · `DELETE /api/registry/servers/{id}` | 관리자 | 사용 기한을 오늘부터 다시(`valid_days`) / 등록 해제(서버는 DISABLED로 남음). Console 등록 서버만 |
 | `POST /api/approvals/{id}/approve|reject` | 관리자 | 승인 → 1회 실행 |
@@ -100,4 +103,4 @@
 - `POST /api/mcp-requests`: 인증한 신청자의 요청을 VALIDATION_QUEUED로 접수합니다.
 - `GET /api/mcp-requests/{request_id}/report`: 관리자 전용 신청 상세·검사 요약·종료조건 조사·다운로드 목록입니다.
 - `GET /api/mcp-requests/{request_id}/artifacts/{kind}`: 관리자 전용 JSON 첨부 다운로드입니다. kind는 sbom, trivy, semgrep, exit-terms만 허용합니다.
-- `POST /api/mcp-requests/{request_id}/queue-validation`: 관리자 전용 HOLD·FAILED 재검증입니다. 이미 진행 중인 요청은 409입니다.
+- `POST /api/mcp-requests/{request_id}/queue-validation`: 관리자 전용 HOLD·FAILED·VALIDATED 재검증입니다(VALIDATED는 새 규칙으로 종료 조건 결론을 다시 낼 때). 이미 진행 중인 요청은 409입니다.

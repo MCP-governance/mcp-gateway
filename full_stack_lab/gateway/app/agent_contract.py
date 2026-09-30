@@ -109,7 +109,10 @@ async def authenticated_user(authorization: str | None) -> dict:
         # 관리대장에서 사라진 신원은 토큰이 유효해도 신원이 아니다.
         raise HTTPException(401, "신원 관리대장에 없는 계정입니다.")
     if row["status"] != "active":
-        raise HTTPException(403, ACCOUNT_STATUS_REASON.get(row["status"], "사용할 수 없는 계정입니다."))
+        # The header lets the Console end a session whose account was just switched off, instead
+        # of leaving the shell open with every panel failing.
+        raise HTTPException(403, ACCOUNT_STATUS_REASON.get(row["status"], "사용할 수 없는 계정입니다."),
+                            headers={"X-Account-Status": row["status"]})
     return {**user, "principal": row["token"], "name": row["display_name"],
             "department": row["department"] or "미지정", "job_title": row["job_title"],
             "roles": [row["role"]], "status": row["status"],

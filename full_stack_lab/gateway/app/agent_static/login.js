@@ -9,6 +9,9 @@ const email = document.querySelector("#email");
 const password = document.querySelector("#password");
 const error = document.querySelector("#gate-error");
 const button = document.querySelector("#gate-go");
+// The Console sends a session here when an admin switched the account off.
+error.textContent = { disabled: "사용이 중지된 계정이에요. 관리자에게 문의하세요.",
+  locked: "잠긴 계정이에요. 관리자에게 문의하세요." }[new URLSearchParams(location.search).get("account")] || "";
 
 document.querySelector("#gate-form").addEventListener("submit", async (event) => {
   event.preventDefault();

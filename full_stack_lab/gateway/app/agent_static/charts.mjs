@@ -50,10 +50,23 @@ export function mountVisible(root = document) {
   }
 }
 
+// Every value a series carries: numbers, {value}, heatmap [x, y, v], sankey links.
+const values = (option) => (option.series || []).flatMap((s) => [...(s.data || []), ...(s.links || [])])
+  .map((d) => (Array.isArray(d) ? d.at(-1) : d && typeof d === "object" ? d.value : d));
+
 function draw(el, build) {
   const echarts = globalThis.echarts;
   if (!echarts) { el.textContent = "차트를 불러오지 못했습니다."; return; }
   const { onClick, ...option } = build();
+  // A chart of zeros reads as a broken chart. Say there is nothing yet; redraw() replaces it when data comes.
+  if (!values(option).some((v) => Number(v) > 0)) {
+    el.classList.add("is-empty");
+    el.replaceChildren(Object.assign(document.createElement("p"), { className: "empty", textContent: "아직 데이터가 없어요" }));
+    live.set(el, { chart: null, build, observer: null });
+    return;
+  }
+  el.classList.remove("is-empty");
+  el.replaceChildren();
   const chart = echarts.init(el, null, { renderer: "canvas" });
   chart.setOption({ ...base(), ...option });
   if (onClick) chart.on("click", onClick);
@@ -64,7 +77,7 @@ function draw(el, build) {
 
 /** Drop every chart (route change). */
 export function disposeAll() {
-  for (const [el, { chart, observer }] of live) { observer.disconnect(); chart.dispose(); live.delete(el); }
+  for (const [el, { chart, observer }] of live) { observer?.disconnect(); chart?.dispose(); live.delete(el); }
   pending.clear();
 }
 
@@ -72,7 +85,7 @@ export function disposeAll() {
 export function redraw(id, build) {
   for (const [el, entry] of live) {
     if (el.id !== id) continue;
-    entry.observer.disconnect(); entry.chart.dispose(); live.delete(el);
+    entry.observer?.disconnect(); entry.chart?.dispose(); live.delete(el);
     draw(el, build);
     return;
   }
@@ -81,8 +94,10 @@ export function redraw(id, build) {
 
 /** Theme switch: rebuild with the new tokens. */
 export function redrawAll() {
-  for (const [el, { chart, build, observer }] of live) {
-    observer.disconnect(); chart.dispose(); live.delete(el);
+  // Iterate a copy: draw() puts the same element back into `live`, and a Map iterator visits
+  // entries added during iteration - over the live map this never ended and froze the page.
+  for (const [el, { chart, build, observer }] of [...live]) {
+    observer?.disconnect(); chart?.dispose(); live.delete(el);
     draw(el, build);
   }
 }

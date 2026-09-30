@@ -244,10 +244,27 @@ FIELD_COMPOSE=(-f compose.yaml -f compose.field.yaml)
 # qwen3.5:0.8b(Q8, 약 1GB): Ryzen 5 7530U CPU에서 mcp-scan의 요청당 60초 제한 안에 끝까지 도는 유일한 후보였다
 # (qwen2.5-coder:1.5b는 형식을 못 지켜 반복 한도, qwen3:1.7b는 첫 요청 60초 초과). 더 큰 모델은 AIG_LOCAL_MODEL로.
 AIG_DEFAULT_MODEL=qwen3.5:0.8b
+# OPENROUTER_API_KEY가 있으면 로컬 소형 모델 대신 OpenRouter(A.I.G가 원래 기본으로 쓰는 곳, D-50). 모델은 A.I.G 기본
+# 계열인 DeepSeek V3.2(입력·출력 백만 토큰당 약 $0.28·$0.42). 바꾸려면 OPENROUTER_MODEL. 키를 지우면 로컬로 돌아간다.
+# 동적 점검(서버 응답을 모델로 보냄)은 외부 endpoint면 관리자 확인이 필요하고, 이상 징후 자동 점검은 로컬에서만 돈다.
+OPENROUTER_URL=https://openrouter.ai/api/v1
+AIG_OPENROUTER_MODEL=deepseek/deepseek-v3.2
+env_put() { sed -i "/^$1=/d" .env; echo "$1=$2" >> .env; }
 field_aig_model() {
-  local model ctx threads configured
+  local model ctx threads configured key
   model="$(env_value AIG_LOCAL_MODEL)"; model="${model:-$AIG_DEFAULT_MODEL}"
   configured="$(env_value MCP_SCAN_BASE_URL)"
+  key="$(env_value OPENROUTER_API_KEY)"
+  if [[ -n "$key" && ( -z "$configured" || "$configured" == "http://ollama:11434/v1" || "$configured" == "$OPENROUTER_URL" ) ]]; then
+    model="$(env_value OPENROUTER_MODEL)"; model="${model:-$AIG_OPENROUTER_MODEL}"
+    env_put MCP_SCAN_BASE_URL "$OPENROUTER_URL"; env_put MCP_SCAN_MODEL "$model"
+    env_put MCP_SCAN_API_KEY "$key"; env_put MCP_SCAN_CONTEXT_WINDOW 128000
+    echo "  A.I.G 모델: OpenRouter $model"; return
+  fi
+  if [[ "$configured" == "$OPENROUTER_URL" ]]; then  # 키를 지웠다: 로컬 모델로 되돌린다
+    for k in MCP_SCAN_BASE_URL MCP_SCAN_MODEL MCP_SCAN_API_KEY MCP_SCAN_CONTEXT_WINDOW; do env_put "$k" ""; done
+    configured=""
+  fi
   if [[ "$model" == "none" ]]; then echo "  A.I.G 로컬 모델 생략(AIG_LOCAL_MODEL=none)"; return; fi
   if [[ -n "$configured" && "$configured" != "http://ollama:11434/v1" ]]; then
     echo "  A.I.G는 .env의 검사 endpoint를 씀: $configured"; return
@@ -454,6 +471,8 @@ case "${1:-up}" in
     docker run --rm --entrypoint /opa -v "$LAB_DIR/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy
     python3 tests/field_kit_check.py
     docker compose exec -T gateway python -m app.classify
+    docker compose exec -T gateway python -m app.poisoning
+    docker compose exec -T agent-service python -m app.connectors
     docker compose exec -T gateway python -m app.acceptance | tee reports/acceptance.json
     harness_check | tee reports/harnesses.txt
     AGENT_MODE=scripted workday all --mode scripted --check | tee reports/workday.txt

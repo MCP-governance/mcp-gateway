@@ -26,6 +26,7 @@ from psycopg.types.json import Jsonb
 from . import db
 from .agent_contract import (ACCOUNT_STATUS_REASON, StrictModel, authenticate,
                              authenticated_user, issue_token, private_key)
+from .connectors import router as connectors_router
 from .idp import router as idp_router
 
 STATIC_DIR = Path(__file__).parent / "agent_static"
@@ -103,6 +104,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="MCP Governance Console · IdP", version="2.0.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(idp_router)
+app.include_router(connectors_router)
 
 
 @app.middleware("http")
@@ -271,8 +273,9 @@ async def me(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     field = os.getenv("MCP_FIELD_MODE") == "1"
     git_url = os.getenv("GITEA_PUBLIC_URL", "") if field else ""
+    # The org page, not Gitea's home: the home is a personal dashboard where company repos were hard to find.
     return {**console_user(user), "synthetic": not field,
-            "git_url": git_url.rstrip("/") + "/" if git_url else "", "kit": await pc_kit() if field else None}
+            "git_url": f"{git_url.rstrip('/')}/{GITEA_ORG}" if git_url else "", "kit": await pc_kit() if field else None}
 
 
 async def pc_kit() -> dict | None:
@@ -328,8 +331,42 @@ def gitea_admin_client() -> httpx.AsyncClient:
                                    os.getenv("GITEA_ADMIN_PASSWORD", "corp-admin-lab-only")))
 
 
+GITEA_TEAM = "employees"
+
+
+async def ensure_org(client: httpx.AsyncClient) -> int:
+    """`mcp` 조직과, 모든 사용자가 드는 읽기 팀(모든 저장소 포함)의 id.
+
+    구성원이 아니면 Gitea 첫 화면(개인 대시보드)에 조직 저장소가 보이지 않아 직원이 사내 저장소를
+    찾지 못했다. 팀에 넣으면 대시보드·조직 화면·검색에 승인 저장소가 바로 나온다.
+    """
+    found = await client.get(f"/api/v1/orgs/{GITEA_ORG}")
+    if found.status_code == 404:
+        created = await client.post("/api/v1/orgs", json={
+            "username": GITEA_ORG, "full_name": "승인된 MCP", "visibility": "limited",
+            "repo_admin_change_team_access": False})
+        if created.status_code != 201:
+            raise HTTPException(502, f"내부 Git 조직을 만들지 못했습니다 (Gitea {created.status_code}).")
+    elif not found.is_success:
+        raise HTTPException(502, f"내부 Git 조직 확인 실패 (Gitea {found.status_code}).")
+    teams = await client.get(f"/api/v1/orgs/{GITEA_ORG}/teams")
+    if not teams.is_success:
+        raise HTTPException(502, f"내부 Git 팀을 확인하지 못했습니다 (Gitea {teams.status_code}).")
+    for team in teams.json():
+        if team.get("name") == GITEA_TEAM:
+            return team["id"]
+    created = await client.post(f"/api/v1/orgs/{GITEA_ORG}/teams", json={
+        "name": GITEA_TEAM, "description": "승인된 MCP 저장소 읽기·이슈(모든 직원)", "permission": "read",
+        "includes_all_repositories": True, "can_create_org_repo": False,
+        "units": ["repo.code", "repo.issues", "repo.releases", "repo.wiki"],
+        "units_map": {"repo.code": "read", "repo.issues": "read", "repo.releases": "read", "repo.wiki": "read"}})
+    if created.status_code != 201:
+        raise HTTPException(502, f"내부 Git 팀을 만들지 못했습니다 (Gitea {created.status_code}).")
+    return created.json()["id"]
+
+
 async def ensure_gitea_user(user: dict) -> str:
-    """솔루션 계정과 같은 이름의 Gitea 사용자를 만들고, 관리자 역할이면 Gitea 관리자로 맞춘다."""
+    """솔루션 계정과 같은 이름의 Gitea 사용자를 만들고, 읽기 팀에 넣고, 관리자 역할이면 Gitea 관리자로 맞춘다."""
     login = gitea_login(user["email"])
     admin = "admin" in user["roles"]
     key = f"{login}|{admin}"
@@ -347,13 +384,16 @@ async def ensure_gitea_user(user: dict) -> str:
                 raise HTTPException(502, f"내부 Git 사용자를 만들지 못했습니다 (Gitea {created.status_code}).")
         elif not found.is_success:
             raise HTTPException(502, f"내부 Git 사용자를 확인하지 못했습니다 (Gitea {found.status_code}).")
-        elif found.json().get("is_admin") == admin:
-            _gitea_ready.add(key)
-            return login
-        changed = await client.patch(f"/api/v1/admin/users/{quote(login)}", json={
-            "login_name": login, "source_id": 0, "admin": admin})
-        if not changed.is_success:
-            raise HTTPException(502, f"내부 Git 권한을 맞추지 못했습니다 (Gitea {changed.status_code}).")
+        if (found.status_code == 404 and admin) or (found.is_success and found.json().get("is_admin") != admin):
+            changed = await client.patch(f"/api/v1/admin/users/{quote(login)}", json={
+                "login_name": login, "source_id": 0, "admin": admin})
+            if not changed.is_success:
+                raise HTTPException(502, f"내부 Git 권한을 맞추지 못했습니다 (Gitea {changed.status_code}).")
+        team = await ensure_org(client)
+        if (await client.get(f"/api/v1/teams/{team}/members/{quote(login)}")).status_code == 404:
+            joined = await client.put(f"/api/v1/teams/{team}/members/{quote(login)}")
+            if not joined.is_success:
+                raise HTTPException(502, f"내부 Git 팀에 넣지 못했습니다 (Gitea {joined.status_code}).")
     _gitea_ready.add(key)
     return login
 
@@ -481,8 +521,9 @@ async def set_account_status(user_id: str, request: AccountStatus,
         (request.status, user["principal"], user_id))
     if not row:
         raise HTTPException(404, "관리대장에 없는 계정입니다.")
+    label = {"active": "사용", "disabled": "중지", "locked": "잠금"}[request.status]
     return {"account": row,
-            "message": f"{row['email']} 계정을 {request.status}로 바꿨습니다. 이미 발급된 인증도 다음 요청부터 적용됩니다."}
+            "message": f"{row['display_name'] or row['email']} 계정을 {label} 상태로 바꿨어요. 로그인 중인 기기에도 바로 적용돼요."}
 
 
 @app.get("/health")
@@ -652,15 +693,7 @@ async def publish_internal_repo(row: dict) -> str:
     try:
         async with gitea_admin_client() as client:
             client.timeout = httpx.Timeout(120)
-            found = await client.get(f"/api/v1/orgs/{org}")
-            if found.status_code == 404:
-                created = await client.post("/api/v1/orgs", json={
-                    "username": org, "full_name": "승인된 MCP", "visibility": "limited",
-                    "repo_admin_change_team_access": False})
-                if created.status_code != 201:
-                    raise HTTPException(502, f"내부 Git 조직을 만들지 못했습니다 (Gitea {created.status_code}).")
-            elif not found.is_success:
-                raise HTTPException(502, f"내부 Git 조직 확인 실패 (Gitea {found.status_code}).")
+            await ensure_org(client)
             path = f"/api/v1/repos/{org}/{name}"
             existing = await client.get(path)
             if existing.is_success and await repo_head(client, path, existing.json()) != row["commit_sha"]:
@@ -761,12 +794,12 @@ async def queue_validation(request_id: UUID, authorization: str | None = Header(
                validation_lease_expires_at=NULL, validation_attempts=0,
                commit_sha=NULL, source_ref=NULL, evidence='{}', validated_at=NULL,
                risk_level='UNASSESSED', review_note=NULL
-           WHERE id=%s AND status IN ('HOLD','FAILED')
+           WHERE id=%s AND status IN ('HOLD','FAILED','VALIDATED')
            RETURNING id, status, reviewed_by, reviewed_at""",
         (user["principal"], request_id),
     )
     if not row:
-        raise HTTPException(409, "보류 또는 검증 실패 상태의 요청만 다시 검증할 수 있습니다.")
+        raise HTTPException(409, "승인 전(보류·검증 실패·검증 완료) 요청만 다시 검증할 수 있습니다.")
     return {"request": row, "message": "격리 워커의 재검증 대기열에 넣었습니다."}
 
 
@@ -827,8 +860,29 @@ async def intake_artifact(request_id: UUID, kind: str,
     return FileResponse(path, media_type="application/json", filename=name)
 
 
+EXIT_TERM_KEYS = ("provider_credential_disclosure", "revocation_evidence", "audit_access_retained")
+
+
+def manual_terms_verified(terms: dict) -> bool:
+    return bool(terms.get("verified_by") and terms.get("evidence_url") and all(terms.get(k) is True for k in EXIT_TERM_KEYS))
+
+
+def exit_term_flags(row: dict) -> dict[str, bool]:
+    """What the Gateway registration carries: the admin's record if there is one, else the conclusion."""
+    terms = row.get("exit_terms") or {}
+    if terms.get("verified_by"):
+        return {key: terms.get(key) is True for key in EXIT_TERM_KEYS}
+    concluded = ((row.get("evidence") or {}).get("exit_terms_conclusion") or {}).get("terms") or {}
+    return {key: (concluded.get(key) or {}).get("verdict") == "met" for key in EXIT_TERM_KEYS}
+
+
+class IntakeApproval(StrictModel):
+    risk_acceptance: str = Field(default="", max_length=1000)
+
+
 @app.post("/api/mcp-requests/{request_id}/approve")
-async def approve_mcp_request(request_id: UUID, authorization: str | None = Header(default=None)):
+async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None = None,
+                              authorization: str | None = Header(default=None)):
     """검증을 통과한 요청만 Registry 등록 대상이 된다.
 
     승인이 곧 연결은 아니다. 승인은 "이 저장소를 Registry에 올려도 된다"까지이고,
@@ -853,24 +907,31 @@ async def approve_mcp_request(request_id: UUID, authorization: str | None = Head
                 409, "이 commit에 대한 AI 코드 감사 결과가 없습니다. "
                      "감사를 실행해 완료된 뒤에 승인할 수 있습니다.")
     pending = await db.fetch_one(
-        "SELECT id, status, display_name, requested_transport, exit_terms, repository_url, commit_sha FROM mcp_intake_requests WHERE id=%s",
-        (request_id,))
+        """SELECT id, status, display_name, requested_transport, exit_terms, evidence, repository_url, commit_sha
+           FROM mcp_intake_requests WHERE id=%s""", (request_id,))
     terms = (pending or {}).get("exit_terms") or {}
+    conclusion = ((pending or {}).get("evidence") or {}).get("exit_terms_conclusion") or {}
+    risk = (approval.risk_acceptance.strip() if approval else "")
     if pending and pending["requested_transport"] != "stdio" and not (
-        terms.get("verified_by") and terms.get("evidence_url") and
-        all(terms.get(key) is True for key in (
-            "provider_credential_disclosure", "revocation_evidence", "audit_access_retained"))
+        manual_terms_verified(terms) or conclusion.get("grade") == "T1" or len(risk) >= 10
     ):
-        raise HTTPException(409, "플랫폼이 제공자 자격 고지·회수 증거·감사 접근을 증거 문서로 확인해야 승인할 수 있습니다.")
+        # D-50: the platform concludes; below T1 the admin either records provider evidence or
+        # accepts the risk in writing - the same rule that closes a T3 termination case.
+        raise HTTPException(409, f"종료 조건 결론이 {conclusion.get('grade') or '아직 없음'}입니다. 위험을 수용하는 사유를 "
+                                 "10자 이상 적거나, 제공자 증거 문서로 확인한 기록을 남겨야 승인할 수 있습니다.")
     if not pending or pending["status"] != "VALIDATED" or not pending["commit_sha"]:
         raise HTTPException(409, "격리 검증을 통과한 요청만 승인할 수 있습니다.")
+    if risk and pending["requested_transport"] != "stdio" and not manual_terms_verified(terms):
+        terms = {**terms, "risk_acceptance": risk, "risk_accepted_by": user["principal"],
+                 "risk_accepted_at": datetime.now(UTC).isoformat(), "conclusion_grade": conclusion.get("grade")}
     internal_repo_url = await publish_internal_repo(pending)
     row = await db.fetch_one(
         """UPDATE mcp_intake_requests
-           SET status='APPROVED', internal_repo_url=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now()
+           SET status='APPROVED', internal_repo_url=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now(),
+               exit_terms=%s
            WHERE id=%s AND status='VALIDATED'
            RETURNING id, status, internal_repo_url, reviewed_by, reviewed_at, source_ref, exit_terms""",
-        (internal_repo_url, user["principal"], request_id),
+        (internal_repo_url, user["principal"], Jsonb(terms), request_id),
     )
     if not row:
         raise HTTPException(409, "격리 검증을 통과한 요청만 승인할 수 있습니다.")
@@ -884,6 +945,7 @@ class IntakeRegistration(StrictModel):
     tools: dict[str, Literal["r", "w", "x"]] = Field(min_length=1, max_length=300)
     data_class: Literal["public", "nonimportant", "important"]
     valid_days: int = Field(ge=1, le=365)
+    poisoning_ack: bool = False
 
 
 @app.post("/api/mcp-requests/{request_id}/register")
@@ -903,14 +965,11 @@ async def register_mcp_request(request_id: UUID, request: IntakeRegistration,
            LEFT JOIN principals p ON p.token = r.submitted_by WHERE r.id=%s""", (request_id,))
     if not row or row["status"] != "APPROVED":
         raise HTTPException(409, "승인된 도입 신청만 Gateway에 등록할 수 있습니다.")
-    terms = row.get("exit_terms") or {}
     body = {**request.model_dump(), "display_name": row["display_name"], "source_url": row["repository_url"],
             "commit_sha": row["commit_sha"] or "",
             "supplier": urlsplit(row["repository_url"]).path.strip("/").split("/")[0],
             "purpose": row["purpose"], "owner_department": row.get("department") or "",
-            "intake_id": str(row["id"]),
-            "exit_terms": {key: terms.get(key) is True for key in (
-                "provider_credential_disclosure", "revocation_evidence", "audit_access_retained")}}
+            "intake_id": str(row["id"]), "exit_terms": exit_term_flags(row)}
     result = await gateway_proxy("/api/registry/servers", authorization, "POST", body, timeout=120)
     await db.execute("UPDATE mcp_intake_requests SET registered_server_id=%s, updated_at=now() WHERE id=%s",
                      (request.server_id, request_id))
@@ -925,12 +984,12 @@ async def reject_mcp_request(request_id: UUID, request: IntakeRejection, authori
     row = await db.fetch_one(
         """UPDATE mcp_intake_requests
            SET status='REJECTED', review_note=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now()
-           WHERE id=%s AND status IN ('HOLD','VALIDATION_QUEUED')
+           WHERE id=%s AND status IN ('HOLD','VALIDATION_QUEUED','VALIDATED','FAILED')
            RETURNING id, status, review_note, reviewed_by, reviewed_at""",
         (request.note.strip(), user["principal"], request_id),
     )
     if not row:
-        raise HTTPException(409, "보류 또는 검증 대기 상태의 요청만 거부할 수 있습니다.")
+        raise HTTPException(409, "승인 전(보류·검증 대기·검증 완료·검증 실패) 요청만 거부할 수 있습니다.")
     return {"request": row}
 
 
@@ -1391,5 +1450,7 @@ async def gateway_passthrough(path: str, request: Request, authorization: str | 
                                                "Content-Type": request.headers.get("content-type", "application/json")})
     except httpx.HTTPError as exc:
         raise HTTPException(503, "Gateway에 연결할 수 없습니다. 잠시 후 다시 시도하세요.") from exc
+    status = response.headers.get("x-account-status")
     return Response(response.content, status_code=response.status_code,
-                    media_type=response.headers.get("content-type", "application/json"))
+                    media_type=response.headers.get("content-type", "application/json"),
+                    headers={"X-Account-Status": status} if status else None)

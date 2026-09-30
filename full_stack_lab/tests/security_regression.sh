@@ -138,6 +138,10 @@ expect "직원이 종료 조건 검증 기록 → 거부" "$(code -X PUT "$CONSO
   -H 'content-type: application/json' -d "$TERMS,\"evidence_url\":\"https://provider.example/terms\"}")" 403
 detail="$(curl -s -X POST "$CONSOLE/api/mcp-requests/$REQ_ID/approve" -H "authorization: Bearer $ADMIN_I" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("detail",""))')"
 if [[ "$detail" == *"증거 문서로 확인"* ]]; then ok "검증 기록 없는 원격 MCP 승인 → 종료 조건 게이트"; else bad "검증 기록 없는 원격 MCP 승인 → 종료 조건 게이트" "$detail"; fi
+# D-50: a written risk acceptance passes the exit-terms gate, never the isolated validation before it.
+detail="$(curl -s -X POST "$CONSOLE/api/mcp-requests/$REQ_ID/approve" -H "authorization: Bearer $ADMIN_I" -H 'content-type: application/json' \
+  -d '{"risk_acceptance":"security regression: accepting the exit-terms risk in writing"}' | python3 -c 'import json,sys; print(json.load(sys.stdin).get("detail",""))')"
+if [[ "$detail" == *"격리 검증을 통과한"* ]]; then ok "위험 수용 사유로도 격리 검증 전에는 승인 불가"; else bad "위험 수용 사유로도 격리 검증 전에는 승인 불가" "$detail"; fi
 expect "HTTPS가 아닌 증거 주소 → 거부" "$(code -X PUT "$CONSOLE/api/mcp-requests/$REQ_ID/exit-terms" -H "authorization: Bearer $ADMIN_I" \
   -H 'content-type: application/json' -d "$TERMS,\"evidence_url\":\"http://provider.example/terms\"}")" 422
 expect "관리자 검증 기록" "$(code -X PUT "$CONSOLE/api/mcp-requests/$REQ_ID/exit-terms" -H "authorization: Bearer $ADMIN_I" \

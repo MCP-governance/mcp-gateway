@@ -68,6 +68,8 @@ jobs:
           python3 tests/replay_check.py
           python3 ../endpoint-agent/agent.py --self-check
           python3 scripts/network_prefix.py --self-check
+          python3 gateway/app/poisoning.py
+          python3 supply_chain/exit_terms.py
           # The four harness configs are rendered from the registry; every server must land in each.
           python3 workstation/managed/render.py registry/catalog.toml /tmp/managed
           python3 - <<'PY'
@@ -180,6 +182,9 @@ jobs:
           echo "ci-field-password-01" | python3 field/pc/mcpgw_pc.py setup --url http://127.0.0.1:443 \
             --servers "$servers" --workstation ci-runner --email ysg@bob.local --password-stdin
           python3 ~/.mcpgw/mcpgw_pc.py doctor
+          # D-51: 키트가 실제 하네스의 기본 커넥터·기능을 읽어 Gateway에 보고하는지(Codex 웹 검색은 기본으로 켜져 있다).
+          python3 ~/.mcpgw/mcpgw_pc.py report | tee reports/field-report.txt
+          grep -q "건 보고" reports/field-report.txt
           claude mcp list | tee reports/field-claude.txt
           test "$(grep -c '(HTTP) - ✔ Connected' reports/field-claude.txt)" -eq 10
           codex mcp get filesystem | tee reports/field-codex.txt

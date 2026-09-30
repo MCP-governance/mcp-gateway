@@ -13,24 +13,29 @@ from uuid import uuid4
 
 LAB = Path(__file__).resolve().parent.parent
 sys.path[:0] = [str(LAB / "supply_chain"), str(LAB / "gateway")]
-from exit_terms import investigate
+from exit_terms import conclude, investigate
 from app import agent_service, core
 from fastapi.testclient import TestClient
 import intake_worker as worker
 
 
 class InvestigationTest(unittest.TestCase):
-    def test_pinned_evidence_and_no_automatic_verification(self):
+    def test_pinned_evidence_and_a_conclusion_without_a_verification_record(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             (root / "README.md").write_text("API key credentials\nAdministrator can revoke\nSession expires\nAudit log retention\n")
             result = investigate(root, "https://github.com/example/server", "a" * 40)
-            self.assertEqual(result["status"], "REVIEW_REQUIRED")
+            self.assertEqual(result["status"], "INVESTIGATED")
             self.assertEqual(result["scanned_files"], 1)
             self.assertNotIn("verified_by", result)
             for criterion in result["criteria"].values():
                 self.assertEqual(criterion["status"], "CANDIDATE")
                 self.assertIn("/blob/" + "a" * 40, criterion["evidence"][0]["url"])
+            # Keywords alone ("API key", "revoke") are candidates. With no sentence saying what the
+            # server holds, the conclusion is T3 - and it is a conclusion, not the admin's record.
+            conclusion = conclude(result, "", "streamable-http")
+            self.assertEqual((conclusion["method"], conclusion["grade"]), ("rules", "T3"))
+            self.assertNotIn("verified_by", conclusion)
 
     def test_missing_documents_and_external_symlink(self):
         with tempfile.TemporaryDirectory() as temp:

@@ -26,7 +26,7 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-from exit_terms import investigate
+from exit_terms import conclude, investigate, readme
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://mcp:demo-only-change-me@db:5432/mcp_governance")
 WORK_DIR = Path(os.getenv("INTAKE_WORK_DIR", "/work"))
@@ -248,8 +248,14 @@ def validate(connection, request: dict) -> None:
     semgrep = REPORT_DIR / f"intake-{request_id}-semgrep.json"
     terms_report = REPORT_DIR / f"intake-{request_id}-exit-terms.json"
     discovery = investigate(checkout, url, commit)
+    # D-50: the platform concludes (Jev when TYPESAFE_API_KEY is set, strict rules otherwise);
+    # the admin approves on that conclusion or accepts the risk, instead of re-reading the docs.
+    conclusion = conclude(discovery, readme(checkout), request.get("requested_transport") or "streamable-http",
+                          os.getenv("TYPESAFE_API_KEY", ""))
+    discovery["conclusion"] = conclusion
     terms_report.write_text(json.dumps(discovery, ensure_ascii=False, indent=2), encoding="utf-8")
-    evidence = {"exit_terms_discovery": discovery, "reports": [terms_report.name], "scanners": {}}
+    evidence = {"exit_terms_discovery": discovery, "exit_terms_conclusion": conclusion,
+                "reports": [terms_report.name], "scanners": {}}
     # Persist source and investigation before long scanner runs. Failures must
     # not discard evidence already collected by successful stages.
     connection.execute(
@@ -980,7 +986,7 @@ def claim(connection) -> dict | None:
                   validation_lease_expires_at=now() + make_interval(secs => %s)
            WHERE id = (SELECT id FROM mcp_intake_requests WHERE status='VALIDATION_QUEUED'
                        ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
-           RETURNING id, repository_url, display_name""", (VALIDATION_LEASE_SECONDS,))
+           RETURNING id, repository_url, display_name, requested_transport""", (VALIDATION_LEASE_SECONDS,))
     return cursor.fetchone()
 
 

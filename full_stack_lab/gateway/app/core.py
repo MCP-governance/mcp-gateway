@@ -22,7 +22,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import classify, db, endpoint_plane, privacy, registry, upstream
+from . import classify, db, endpoint_plane, poisoning, privacy, registry, upstream
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMN_SETS, AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint,
@@ -389,7 +389,8 @@ async def discover_for_registration(endpoint: str) -> dict:
     found = await upstream.discover(registration_endpoint(endpoint))
     return {"endpoint": endpoint.strip(), "server_name": found["advertised_name"], "version": found["version"],
             "protocol_version": found["protocol_version"], "catalog_hash": canonical_hash(found["tools"]),
-            "tools": [{**tool, "suggested": suggested_action(tool.get("annotations"))} for tool in found["tools"]]}
+            "tools": [{**tool, "suggested": suggested_action(tool.get("annotations")), "warnings": poisoning.findings(tool)}
+                      for tool in found["tools"]]}
 
 
 async def register_server(request: dict, actor: str) -> dict:
@@ -409,6 +410,13 @@ async def register_server(request: dict, actor: str) -> dict:
     unknown = sorted(set(request["tools"]) - set(advertised))
     if unknown:
         raise ValueError(f"서버가 제공하지 않는 도구: {', '.join(unknown)}")
+    # D-52: a selected tool whose text reads like an instruction to the model is approved only on purpose.
+    flagged = {name: poisoning.findings(advertised[name]) for name in request["tools"]}
+    flagged = {name: reasons for name, reasons in flagged.items() if reasons}
+    if flagged and not request.get("poisoning_ack"):
+        raise ValueError("도구 설명에 모델을 조종하는 문구로 보이는 부분이 있습니다: "
+                         + ", ".join(f"{name}({'·'.join(reasons)})" for name, reasons in sorted(flagged.items()))
+                         + ". 내용을 읽고 확인했다고 표시해야 등록할 수 있습니다.")
     host = urlsplit(endpoint).hostname or ""
     source_url = request.get("source_url") or ""
     commit = request.get("commit_sha") or ""

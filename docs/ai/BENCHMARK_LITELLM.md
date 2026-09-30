@@ -1,7 +1,7 @@
 # LiteLLM MCP 게이트웨이 벤치마킹 (2026-09-26)
 
 > 이 랩이 LLM 게이트웨이로 쓰는 LiteLLM에는 **MCP 게이트웨이 기능**이 따로 있다. v1~v3를 설계하면서 이 기능을 비교하지
-> 않았고, 이 문서가 그 비교다. 반영한 것은 D-39·D-40, 다음 후보는 [ROADMAP.md](ROADMAP.md) 1절에 옮겼다.
+> 않았고, 이 문서가 그 비교다. 반영한 것은 D-39·D-40, 다음 후보는 [ROADMAP.md](ROADMAP.md) 1절에 옮겼다. 1.104 재조사와 다른 제품은 [BENCHMARK_GATEWAYS.md](BENCHMARK_GATEWAYS.md).
 >
 > - 근거: LiteLLM **1.89.4 설치 소스**(`litellm/proxy/_experimental/mcp_server/` 등, 아래 경로는 `litellm/` 기준)와
 >   이 저장소 `main`(`dacc1ce`, v3.0). 문서보다 코드를 우선했다. 줄 번호는 그 시점 기준이다.

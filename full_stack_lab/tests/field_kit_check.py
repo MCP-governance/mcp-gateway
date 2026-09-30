@@ -56,6 +56,8 @@ class FakeIdpGateway:
         self.access_seconds = access_seconds
         self.lock = threading.Lock()
         self.access, self.refresh, self.revoked, self.log = {}, {}, set(), []
+        # /api/pc/inventory(D-51): 받은 보고와 돌려줄 결정. 결정은 테스트가 바꾼다.
+        self.reports, self.denied = [], {"claude": [], "codex": []}
         fake = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -79,6 +81,16 @@ class FakeIdpGateway:
                     form = {k: v[0] for k, v in urllib.parse.parse_qs(body.decode()).items()}
                     status, answer = fake.oauth(self.path, form)
                     return self.reply(status, answer)
+                if self.path == "/api/pc/inventory":
+                    token = self.headers.get("Authorization", "").removeprefix("Bearer ")
+                    with fake.lock:
+                        if fake.access.get(token, 0) < time.time():
+                            return self.reply(401, {"detail": "token"})
+                        report = json.loads(body)
+                        fake.reports.append(report)
+                    return self.reply(200, {"accepted": len(report["items"]), "review": [], "policy": {
+                        "claude": {"deniedMcpServers": fake.denied["claude"], "allowAllClaudeAiMcps": True},
+                        "codex": {"apps_disabled": fake.denied["codex"], "features_disabled": []}}})
                 if self.path.startswith("/mcp/") and self.path.endswith("/"):
                     token = self.headers.get("Authorization", "").removeprefix("Bearer ")
                     with fake.lock:
@@ -130,15 +142,19 @@ class FakeIdpGateway:
 class KitTest(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="field kit "))  # 공백이 든 경로도 헬퍼가 한 인자로 받는지
-        self.env = mock.patch.dict(os.environ, {"MCPGW_HOME": str(self.tmp / "home"), "CODEX_HOME": str(self.tmp / "codex")})
+        self.env = mock.patch.dict(os.environ, {"MCPGW_HOME": str(self.tmp / "home"), "CODEX_HOME": str(self.tmp / "codex"),
+                                                "CLAUDE_CONFIG_DIR": str(self.tmp / "claude")})
         self.env.start()
         self.kit = load_kit()
         self.claude_calls, self.claude_servers = [], set()
 
+        self.claude_list = ""  # `claude mcp list`가 찍을 내용
+
         def fake_run(command):
             self.claude_calls.append(command[1:])
             found = command[1:3] == ["mcp", "get"] and command[3] in self.claude_servers
-            return subprocess.CompletedProcess(command, 0 if command[1:3] != ["mcp", "get"] or found else 1, "", "")
+            listing = self.claude_list if command[1:3] == ["mcp", "list"] else ""
+            return subprocess.CompletedProcess(command, 0 if command[1:3] != ["mcp", "get"] or found else 1, listing, "")
 
         self.kit.run = fake_run
         self.which = mock.patch.object(self.kit.shutil, "which", lambda name: "claude" if name == "claude" else None)
@@ -252,6 +268,89 @@ class KitTest(unittest.TestCase):
         claude = json.loads((out / "managed-mcp.json").read_text(encoding="utf-8"))
         self.assertEqual(claude["mcpServers"]["git"]["headersHelper"], '"/usr/bin/python3" "/opt/mcpgw/mcpgw_pc.py" header')
         requirements = tomllib.loads((out / "requirements.toml").read_text(encoding="utf-8"))
+        self.assertEqual(requirements["mcp_servers"]["git"]["identity"], {"url": "https://mcp-gw.internal/mcp/git/"})
+
+    def test_report_lists_vendor_connectors_and_applies_only_its_own_denies(self):
+        fake = FakeIdpGateway()
+        self.addCleanup(fake.close)
+        # 실제 VM의 `claude mcp list` 모양(2.1.283). Gateway 서버 줄은 보고하지 않는다.
+        self.claude_list = "\n".join([
+            "Checking MCP server health…", "",
+            "claude.ai Notion: https://mcp.notion.com/mcp - ✔ Connected",
+            "claude.ai Claude Docs: https://api.anthropic.com/v1/pages/mcp - ✔ Connected",
+            "plugin:engineering:slack: https://mcp.slack.com/mcp (HTTP) - ! Needs authentication",
+            "plugin:engineering:gmail:  (HTTP) - - Not configured",
+            "plugin:pdf-viewer:pdf: npx -y @modelcontextprotocol/server-pdf --stdio - ✔ Connected",
+            "zapier: https://actions.zapier.com/mcp/sk-secret-path/sse (SSE) - ✘ Failed to connect",
+            f"git: {fake.url}/mcp/git/ (HTTP) - ✔ Connected"])
+        self.setup_against(fake.url, "--harness", "claude")
+        items = {i["name"]: i for i in fake.reports[-1]["items"]}
+        self.assertEqual(fake.reports[-1]["harnesses"], ["claude"])
+        self.assertEqual(set(items), {"claude.ai Notion", "claude.ai Claude Docs", "plugin:engineering:slack",
+                                      "plugin:engineering:gmail", "plugin:pdf-viewer:pdf", "zapier"})
+        self.assertEqual((items["claude.ai Notion"]["kind"], items["claude.ai Notion"]["target"]), ("connector", "https://mcp.notion.com"))
+        self.assertEqual((items["plugin:pdf-viewer:pdf"]["kind"], items["plugin:pdf-viewer:pdf"]["target"]), ("plugin", "stdio"))
+        self.assertEqual((items["zapier"]["kind"], items["zapier"]["target"]), ("server", "https://actions.zapier.com"))
+        self.assertNotIn("sk-secret", json.dumps(fake.reports[-1]))  # 경로에 든 키는 보내지 않는다
+        # 거부가 오면 사용자 설정에 넣되, 직원이 직접 넣은 항목은 그대로 둔다.
+        settings = self.tmp / "claude" / "settings.json"
+        settings.parent.mkdir(parents=True, exist_ok=True)
+        settings.write_text(json.dumps({"model": "sonnet", "deniedMcpServers": [{"serverName": "mine"}]}), encoding="utf-8")
+        fake.denied["claude"] = [{"serverUrl": "*://mcp.notion.com/*"}, {"serverName": "claude.ai Notion"}]
+        self.main("report")
+        document = json.loads(settings.read_text(encoding="utf-8"))
+        self.assertEqual(document["model"], "sonnet")
+        self.assertEqual(document["deniedMcpServers"], [{"serverName": "mine"}] + fake.denied["claude"])
+        fake.denied["claude"] = []  # 관리자가 되돌리면 이 도구가 넣은 것만 빠진다
+        self.main("report")
+        self.assertEqual(json.loads(settings.read_text(encoding="utf-8"))["deniedMcpServers"], [{"serverName": "mine"}])
+
+    def test_codex_app_denies_live_in_the_block_and_leave_with_uninstall(self):
+        codex = self.tmp / "codex" / "config.toml"
+        self.kit.codex_config().parent.mkdir(parents=True)
+        codex.write_text('model = "gpt-5"\n', encoding="utf-8")
+        settings = {"url": "https://mcp-gw.internal", "servers": ["git"], "codex": True}
+        self.kit.setup_codex(settings, False)
+        self.assertIn("Codex 앱 끔 1건 · 기능 끔 1건", self.kit.apply_codex(settings, ["asdk_app_1", "bad id"], ["browser_use", "web_search"]))
+        parsed = tomllib.loads(codex.read_text(encoding="utf-8"))
+        self.assertEqual((parsed["model"], parsed["apps"]), ("gpt-5", {"asdk_app_1": {"enabled": False}}))
+        self.assertEqual(parsed["features"], {"browser_use": False})  # 웹 검색은 루트 키라 블록에 두지 않는다
+        # 직원이 [features]를 이미 쓰면 기능은 건너뛴다(TOML 중복 테이블 방지).
+        codex.write_text('model = "gpt-5"\n[features]\nshell_tool = true\n', encoding="utf-8")
+        self.assertIn("기능은 건너뜀", self.kit.apply_codex(settings, [], ["browser_use"]))
+        self.assertEqual(tomllib.loads(codex.read_text(encoding="utf-8"))["features"], {"shell_tool": True})
+        codex.write_text('model = "gpt-5"\n', encoding="utf-8")
+        self.kit.remove_codex_block()
+        self.assertEqual(codex.read_text(encoding="utf-8"), 'model = "gpt-5"\n')
+
+    def test_header_starts_a_background_report_at_most_every_six_hours(self):
+        (self.tmp / "home").mkdir(parents=True)
+        spawned = []
+        with mock.patch.object(self.kit.subprocess, "Popen", lambda command, **kw: spawned.append(command)):
+            for _ in range(3):  # 하네스는 서버마다·연결마다 헬퍼를 부른다
+                self.kit.report_in_background({"harnesses": ["claude"]})
+            self.assertEqual(len(spawned), 1)
+            self.assertEqual(spawned[0][-1], "report")
+            stamp = self.tmp / "home" / "report.stamp"
+            os.utime(stamp, (time.time() - self.kit.REPORT_EVERY - 1,) * 2)
+            self.kit.report_in_background({"harnesses": ["claude"]})
+            self.assertEqual(len(spawned), 2)
+
+    def test_managed_files_take_the_console_connector_policy(self):
+        policy = self.tmp / "connector-policy.json"
+        policy.write_text(json.dumps({"claude": {"deniedMcpServers": [{"serverUrl": "*://mcp.notion.com/*"}], "allowAllClaudeAiMcps": True},
+                                      "codex": {"apps_disabled": ["asdk_app_1"], "features_disabled": ["web_search", "browser_use"]}}),
+                          encoding="utf-8")
+        out = self.tmp / "managed"
+        self.main("managed", "--url", "https://mcp-gw.internal", "--servers", "git", "--out", str(out),
+                  "--python", "/usr/bin/python3", "--kit", "/opt/mcpgw/mcpgw_pc.py", "--connectors", str(policy))
+        self.assertEqual(json.loads((out / "managed-settings.json").read_text(encoding="utf-8")),
+                         {"deniedMcpServers": [{"serverUrl": "*://mcp.notion.com/*"}], "allowAllClaudeAiMcps": True})
+        requirements = tomllib.loads((out / "requirements.toml").read_text(encoding="utf-8"))
+        self.assertEqual(requirements["allowed_web_search_modes"], ["disabled"])
+        self.assertIs(requirements["allow_browser_and_computer_use"], False)
+        self.assertEqual(requirements["features"], {"browser_use": False})
+        self.assertEqual(requirements["apps"], {"asdk_app_1": {"enabled": False}})
         self.assertEqual(requirements["mcp_servers"]["git"]["identity"], {"url": "https://mcp-gw.internal/mcp/git/"})
 
     def test_kit_parses_as_python_3_9(self):

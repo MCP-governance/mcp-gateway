@@ -289,3 +289,29 @@ UPDATE principals SET user_id='user-test-001', email='miso@bob.local',
 UPDATE principals SET user_id='user-admin-001', email='admin@bob.local',
        employee_no=COALESCE(employee_no,'EMP-002'), job_title=COALESCE(job_title,'거버넌스팀 관리자')
  WHERE token='admin-demo' AND user_id IS NULL;
+
+-- ── 하네스 기본 커넥터(D-51) ────────────────────────────────────────────────
+-- 직원 PC 키트가 보고한 Claude Code·Codex의 계정 커넥터·플러그인·앱·기본 기능. 섀도와 따로 둔다:
+-- 벤더가 계정에 붙여 주는 기능이라 먼저 목록에 올리고 관리자가 승인·거부한다(connectors.py).
+CREATE TABLE IF NOT EXISTS harness_items (
+  principal text NOT NULL,
+  workstation text NOT NULL,
+  harness text NOT NULL,
+  kind text NOT NULL,
+  name text NOT NULL,
+  item_key text NOT NULL,
+  target text NOT NULL DEFAULT '',
+  status text NOT NULL DEFAULT '',
+  active boolean NOT NULL DEFAULT true,
+  first_seen timestamptz NOT NULL DEFAULT now(),
+  last_seen timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (principal, workstation, harness, kind, name)
+);
+CREATE INDEX IF NOT EXISTS harness_items_key ON harness_items(item_key);
+CREATE TABLE IF NOT EXISTS harness_decisions (
+  item_key text PRIMARY KEY,
+  decision text NOT NULL CHECK (decision IN ('approved', 'denied')),
+  note text NOT NULL DEFAULT '',
+  decided_by text NOT NULL,
+  decided_at timestamptz NOT NULL DEFAULT now()
+);

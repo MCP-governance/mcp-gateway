@@ -445,6 +445,7 @@ class RegistryRegister(StrictModel):
     owner_department: str = Field(default="", max_length=120)
     intake_id: str = Field(default="", max_length=64)
     exit_terms: dict[str, bool] = Field(default_factory=dict)
+    poisoning_ack: bool = False  # D-52: the admin read the flagged tool text and approves it anyway
 
 
 class RegistryExtend(StrictModel):

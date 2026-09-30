@@ -4,8 +4,9 @@
     python mcpgw_pc.py setup --url http://100.83.175.111:443 --servers filesystem,git
     python mcpgw_pc.py login         # 다시 로그인(리프레시 토큰이 만료·폐기됐을 때)
     python mcpgw_pc.py doctor        # 이름 해석·TLS·로그인·서버별 연결·하네스 설정을 한 줄씩 확인
+    python mcpgw_pc.py report        # 하네스 기본 커넥터·기능을 보고하고 관리자가 거부한 것을 끈다(D-51)
     python mcpgw_pc.py uninstall     # 이 도구가 쓴 설정만 지우고 IdP의 리프레시 토큰을 폐기
-    python mcpgw_pc.py managed --url ... --servers ... --out DIR   # 관리자 강제 배포용 파일 생성
+    python mcpgw_pc.py managed --url ... --servers ... --out DIR [--connectors connector-policy.json]
 
 랩 컨테이너의 `workstation/bin/bob-sso`와 같은 일을 실제 PC에서 한다: 회사 IdP(`/oauth/token`)에 password grant로
 한 번 로그인하고, 리프레시 토큰으로 10분짜리 접근 토큰을 갱신한다. 두 하네스는 연결할 때마다 이 도구의 `header`를
@@ -329,17 +330,22 @@ def codex_block(settings: dict) -> str:
         lines += ["", f"[mcp_servers.{server}]", f'url = "{endpoint(settings, server)}"',
                   f"http_headers_helper = {json.dumps(helper_command(), ensure_ascii=False)}",
                   "startup_timeout_sec = 30", "tool_timeout_sec = 300"]
+    for app in settings.get("codex_apps_disabled", []):
+        lines += ["", "# 관리자가 거부한 ChatGPT 앱(report가 쓴다)", f"[apps.{app}]", "enabled = false"]
+    if settings.get("codex_features_disabled"):
+        lines += ["", "# 관리자가 거부한 기본 기능(report가 쓴다)", "[features]"]
+        lines += [f"{name} = false" for name in settings["codex_features_disabled"]]
     return "\n".join(lines + [END]) + "\n"
 
 
-def codex_conflicts(text: str, servers: list[str]) -> list[str]:
+def codex_conflicts(text: str, servers: list[str], table: str = "mcp_servers") -> list[str]:
     """블록 밖에서 직원이 이미 정의한 같은 이름 - 그대로 두면 TOML 중복 테이블이 된다."""
     try:
         import tomllib
-        existing = tomllib.loads(text).get("mcp_servers", {})
+        existing = tomllib.loads(text).get(table, {})
         return [s for s in servers if s in existing]
     except ImportError:  # Python 3.10 이하
-        return [s for s in servers if re.search(r"^\s*\[mcp_servers\.(\"?)" + re.escape(s) + r"\1\]", text, re.M)]
+        return [s for s in servers if re.search(rf"^\s*\[{table}\.(\"?)" + re.escape(s) + r"\1\]", text, re.M)]
 
 
 def setup_codex(settings: dict, dry_run: bool) -> bool:
@@ -380,6 +386,9 @@ def cmd_setup(args) -> None:
         settings["ca"] = str(root / "ca.crt")
     elif previous.get("ca"):
         settings["ca"] = previous["ca"]
+    # report가 넣은 거부 항목을 이어받는다. setup을 다시 해도 이전에 끈 커넥터가 되살아나지 않게.
+    for key in ("claude_denied", "codex_apps_disabled", "codex_features_disabled"):
+        settings[key] = previous.get(key, [])
     preflight(settings, previous.get("claude_servers", []), args.replace)
     if args.dry_run:
         print("[dry-run] 아무 것도 쓰지 않는다")
@@ -409,6 +418,10 @@ def cmd_setup(args) -> None:
             if claude:
                 run([claude, "mcp", "remove", "--scope", "user", server])
         (root / "config.json").write_text(json.dumps(settings, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        try:
+            print(f"하네스 커넥터: {report_and_apply(settings)}")
+        except SystemExit as error:  # 연결은 끝났다. 보고는 doctor·report가 다시 한다
+            print(f"하네스 커넥터 보고 못 함: {error.code}")
         print(f"완료. 확인: python \"{root / TOOL}\" doctor")
 
 
@@ -421,7 +434,227 @@ def cmd_token(args) -> None:
 
 
 def cmd_header(args) -> None:
-    print(json.dumps({"Authorization": f"Bearer {access_token(load_settings())}"}))
+    settings = load_settings()
+    print(json.dumps({"Authorization": f"Bearer {access_token(settings)}"}), flush=True)
+    try:  # 헤더는 이미 나갔다. 무엇이 실패해도 하네스 연결에는 영향이 없다
+        report_in_background(settings)
+    except OSError:
+        pass
+
+
+REPORT_EVERY = 6 * 3600
+
+
+def report_in_background(settings: dict) -> None:
+    """하네스가 연결할 때마다 이 헬퍼를 부르므로, 따로 예약 작업을 깔지 않고 6시간에 한 번 report를 떼어 낸다.
+    도장을 먼저 찍는다 - report가 부르는 `claude mcp list`가 이 헬퍼를 다시 부른다."""
+    stamp = home() / "report.stamp"
+    if not settings.get("harnesses") or (stamp.exists() and time.time() - stamp.stat().st_mtime < REPORT_EVERY):
+        return
+    stamp.touch()
+    detach = {"creationflags": 0x00000008 | 0x00000200} if os.name == "nt" else {"start_new_session": True}
+    with open(home() / "report.log", "w", encoding="utf-8") as log:  # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+        subprocess.Popen([sys.executable, str(home() / TOOL), "--home", str(home()), "report"],
+                         stdin=subprocess.DEVNULL, stdout=log, stderr=log, **detach)
+
+
+# -- 하네스 기본 커넥터·기능(D-51): 보고하고, 관리자가 거부한 것을 하네스 스스로 끄게 한다 --------------
+
+# `claude mcp list`의 한 줄: "claude.ai Notion: https://mcp.notion.com/mcp - ✔ Connected",
+# "plugin:engineering:slack: https://mcp.slack.com/mcp (HTTP) - ! Needs authentication",
+# "plugin:pdf-viewer:pdf: npx -y @modelcontextprotocol/server-pdf --stdio - ✔ Connected". JSON 출력이 없어 줄을 읽는다.
+CLAUDE_LINE = re.compile(r"^(?P<name>.+?): (?P<target>.*?)(?: \((?:HTTP|SSE)\))? - (?P<status>[✔✓√✘✗×!-] .*)$")
+# 보고하는 Codex 기본 기능: 켜져 있으면 데이터가 회사 밖(웹·앱·다른 프로그램)으로 나가는 것들.
+CODEX_FEATURES = ("apps", "plugins", "browser_use", "computer_use", "image_generation", "memories")
+APP_ID = re.compile(r"^[A-Za-z0-9_-]{1,120}$")
+
+
+def origin(url: str) -> str:
+    """scheme://host[:port]만 보낸다. MCP URL의 경로·쿼리에 키를 넣는 서비스가 있다."""
+    try:
+        parts = urllib.parse.urlsplit(url)
+        port = f":{parts.port}" if parts.port else ""
+    except ValueError:
+        return ""
+    return f"{parts.scheme}://{parts.hostname}{port}" if parts.scheme in ("http", "https") and parts.hostname else ""
+
+
+def claude_items(settings: dict) -> list[dict] | None:
+    claude = shutil.which("claude")
+    if not claude:
+        return None
+    result = run([claude, "mcp", "list"])  # 서버마다 연결을 확인하므로 느리다(run의 한도 120초)
+    if result.returncode != 0:
+        return None
+    items = []
+    for line in result.stdout.splitlines():
+        match = CLAUDE_LINE.match(line.strip())
+        if not match or match["target"].startswith(settings["url"] + "/mcp/"):
+            continue  # Gateway를 거치는 서버는 Gateway가 이미 본다
+        name, target = match["name"], match["target"].strip()
+        kind = "connector" if name.startswith("claude.ai ") else "plugin" if name.startswith("plugin:") else "server"
+        items.append({"harness": "claude", "kind": kind, "name": name[:200],
+                      "target": origin(target) or ("stdio" if target else ""), "status": match["status"][:120]})
+    return items
+
+
+def codex_rpc(codex: str, method: str, params: dict, timeout: float = 60) -> dict | None:
+    """`codex app-server`에 JSON-RPC 한 번. stdin을 닫으면 답하기 전에 끝나므로 답을 받을 때까지 열어 둔다."""
+    import queue
+    import threading
+    try:
+        process = subprocess.Popen([codex, "app-server"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   stderr=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    lines: queue.Queue = queue.Queue()
+    threading.Thread(target=lambda: [lines.put(line) for line in process.stdout], daemon=True).start()
+    try:
+        for message in ({"id": 1, "method": "initialize", "params": {"clientInfo": {"name": TOOL, "version": "1"}}},
+                        {"method": "initialized"}, {"id": 2, "method": method, "params": params}):
+            process.stdin.write(json.dumps({"jsonrpc": "2.0", **message}) + "\n")
+        process.stdin.flush()
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            try:
+                reply = json.loads(lines.get(timeout=max(0.1, deadline - time.monotonic())))
+            except (queue.Empty, ValueError):
+                continue
+            if isinstance(reply, dict) and reply.get("id") == 2:
+                return reply.get("result")
+        return None
+    except OSError:
+        return None
+    finally:
+        process.kill()
+
+
+def codex_items(settings: dict) -> list[dict] | None:
+    codex = shutil.which("codex")
+    if not codex:
+        return None
+    listed = run([codex, "mcp", "list", "--json"])
+    if listed.returncode != 0:
+        return None
+    items = []
+    try:
+        servers = json.loads(listed.stdout or "[]")
+    except ValueError:
+        servers = []
+    for server in servers:
+        transport = server.get("transport") or {}
+        url = transport.get("url") or ""
+        if url.startswith(settings["url"] + "/mcp/"):
+            continue
+        items.append({"harness": "codex", "kind": "server", "name": str(server.get("name"))[:200],
+                      "target": origin(url) or "stdio", "status": "enabled" if server.get("enabled") else "disabled",
+                      "active": bool(server.get("enabled"))})
+    # ChatGPT 계정에 연결한 앱(커넥터). app/list는 앱 디렉터리 전체라 설치된 것만 읽는다.
+    for app in (codex_rpc(codex, "app/installed", {}) or {}).get("apps", []):
+        if APP_ID.match(str(app.get("id", ""))):
+            items.append({"harness": "codex", "kind": "app", "name": str(app.get("runtimeName") or app["id"])[:200],
+                          "target": app["id"], "status": "enabled" if app.get("enabled") else "disabled",
+                          "active": bool(app.get("enabled"))})
+    features = run([codex, "features", "list"])
+    for line in features.stdout.splitlines() if features.returncode == 0 else []:
+        cells = line.split()
+        if len(cells) >= 3 and cells[0] in CODEX_FEATURES and cells[-1] == "true":
+            items.append({"harness": "codex", "kind": "feature", "name": cells[0], "target": "on", "status": "on"})
+    mode = "cached"  # Codex 기본값(WebSearchMode::Cached)
+    try:
+        import tomllib
+        mode = str(tomllib.loads(codex_config().read_text(encoding="utf-8")).get("web_search", mode))
+    except (ImportError, OSError, ValueError):
+        pass
+    if mode != "disabled":
+        items.append({"harness": "codex", "kind": "feature", "name": "web_search", "target": mode, "status": mode})
+    return items
+
+
+def claude_settings_path() -> Path:
+    return Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude") / "settings.json"
+
+
+def apply_claude(settings: dict, denied: list[dict]) -> str:
+    """사용자 설정의 deniedMcpServers에 거부 항목을 둔다. 이 도구가 넣은 것만 기억해 두고 바꾼다 — 직원이 직접 넣은
+    항목은 건드리지 않는다. 사용자 범위라 직원이 지울 수 있고, 지우면 다음 보고에서 '위반'으로 보인다."""
+    path = claude_settings_path()
+    try:
+        document = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    except (OSError, ValueError):
+        return f"{path}을 읽지 못해 거부 목록을 넣지 않았다(JSON 확인)"
+    if not isinstance(document, dict):
+        return f"{path}이 JSON 객체가 아니라 거부 목록을 넣지 않았다"
+    previous = settings.get("claude_denied", [])
+    theirs = [entry for entry in document.get("deniedMcpServers", []) if entry not in previous]
+    ours = [entry for entry in denied if entry not in theirs]
+    if theirs + ours:
+        document["deniedMcpServers"] = theirs + ours
+    else:
+        document.pop("deniedMcpServers", None)
+    if ours != previous:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    settings["claude_denied"] = ours
+    return f"Claude Code 거부 {len(ours)}건({path})"
+
+
+def apply_codex(settings: dict, apps: list[str], features: list[str] = ()) -> str:
+    """거부한 앱은 [apps.<id>], 기능은 [features]로 블록에 둔다. 직원이 같은 테이블을 이미 쓰면 TOML 중복이라 건너뛴다.
+    웹 검색은 루트 키(web_search)라 파일 끝의 블록에 둘 수 없다 - 관리형 requirements.toml로만 끈다."""
+    path = codex_config()
+    current = path.read_text(encoding="utf-8") if path.exists() else ""
+    wanted = [a for a in apps if APP_ID.match(a)]
+    clash = codex_conflicts(without_block(current), wanted, "apps")
+    settings["codex_apps_disabled"] = [a for a in wanted if a not in clash]
+    features = [f for f in features if f != "web_search" and re.fullmatch(r"[a-z0-9_]+", f)]
+    own_features = bool(features) and bool(codex_conflicts(without_block(current), ["features"], "features") or
+                                            re.search(r"^\s*\[features\]", without_block(current), re.M))
+    settings["codex_features_disabled"] = [] if own_features else features
+    if settings.get("codex"):
+        path.write_text(with_block(current, codex_block(settings)), encoding="utf-8")
+    skipped = f", 직접 정의한 [apps.{clash[0]}]가 있어 건너뜀" if clash else ""
+    skipped += ", 직접 정의한 [features]가 있어 기능은 건너뜀" if own_features else ""
+    return f"Codex 앱 끔 {len(settings['codex_apps_disabled'])}건 · 기능 끔 {len(settings['codex_features_disabled'])}건{skipped}"
+
+
+STATE_LABEL = {"pending": "검토 대기", "denied": "거부", "expired": "검토 기한 지나 거부"}
+
+
+def report_and_apply(settings: dict) -> str:
+    inventories = {}
+    for harness, collect in (("claude", claude_items), ("codex", codex_items)):
+        if harness in settings.get("harnesses", []):
+            try:
+                found = collect(settings)
+            except (OSError, subprocess.TimeoutExpired):
+                found = None
+            if found is not None:
+                inventories[harness] = found
+    if not inventories:
+        return "보고할 하네스 없음(설치 또는 목록 명령 실패)"
+    body = json.dumps({"workstation": settings["workstation"], "harnesses": sorted(inventories),
+                       "items": [item for found in inventories.values() for item in found]}).encode()
+    status, data, _ = request(settings, settings["url"] + "/api/pc/inventory", data=body, timeout=30, headers={
+        "Authorization": f"Bearer {access_token(settings)}", "Content-Type": "application/json"})
+    if status != 200:
+        return f"보고 실패 HTTP {status}"
+    (home() / "report.stamp").touch()
+    answer = json.loads(data)
+    applied = []
+    if "claude" in inventories:
+        applied.append(apply_claude(settings, answer["policy"]["claude"]["deniedMcpServers"]))
+    if "codex" in inventories:
+        applied.append(apply_codex(settings, answer["policy"]["codex"]["apps_disabled"], answer["policy"]["codex"]["features_disabled"]))
+    (home() / "config.json").write_text(json.dumps(settings, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    for item in answer.get("review", []):
+        note = f" — {item['note']}" if item.get("note") else ""
+        print(f"  {STATE_LABEL.get(item['state'], item['state'])}: {', '.join(item['names'])}{note}")
+    return f"{answer['accepted']}건 보고 · " + " · ".join(applied)
+
+
+def cmd_report(args) -> None:
+    print(report_and_apply(load_settings()))
 
 
 INITIALIZE = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
@@ -491,6 +724,10 @@ def cmd_doctor(args) -> None:
         report(bool(codex), "Codex CLI 설치", codex or "npm install -g @openai/codex (0.148 이상)")
         text = codex_config().read_text(encoding="utf-8") if codex_config().exists() else ""
         report(BEGIN in text, "Codex 설정 블록", str(codex_config()))
+    try:  # 연결 점검이 아니라 알림이다. 실패해도 doctor 결과를 바꾸지 않는다
+        print(f"INFO 하네스 커넥터: {report_and_apply(settings)}")
+    except SystemExit as error:
+        print(f"INFO 하네스 커넥터 보고 못 함: {error.code}")
     helper = subprocess.run(helper_command(), shell=True, capture_output=True, text=True, timeout=15)
     try:
         report(helper.returncode == 0 and "Authorization" in json.loads(helper.stdout), "헬퍼 명령(하네스가 실행하는 것)")
@@ -508,6 +745,8 @@ def cmd_uninstall(args) -> None:
             result = run([claude, "mcp", "remove", "--scope", "user", server])
             print(f"Claude Code {server}: {'지움' if result.returncode == 0 else '이미 없음'}")
     remove_codex_block()
+    if settings.get("claude_denied"):
+        print(apply_claude(settings, []))
     refresh = cached_tokens().get("refresh_token")
     if settings.get("url") and refresh:
         # 종료 판정(TERMINATION_MODEL)의 회수 대상: 이 PC의 리프레시 토큰 계열을 IdP에서 폐기한다.
@@ -519,7 +758,7 @@ def cmd_uninstall(args) -> None:
             print(f"IdP 리프레시 토큰 폐기 요청: HTTP {status} (회수 확인은 관리자 Console의 종료·폐기에서)")
         except OSError as error:
             print(f"IdP에 닿지 못해 폐기 요청을 못 했다({error}). 관리자에게 이 PC({settings.get('workstation')})의 회수를 요청한다")
-    for name in ("token.json", "token.lock", "ca.crt", "config.json", TOOL):
+    for name in ("token.json", "token.lock", "ca.crt", "config.json", "report.stamp", "report.log", TOOL):
         if (root / name).exists():
             (root / name).unlink()
     print(f"지움: {root} 의 토큰·CA·설정. OS 인증서 저장소의 CA와 hosts 항목은 README 절차대로 따로 지운다")
@@ -538,12 +777,34 @@ def cmd_managed(args) -> None:
     claude = {"mcpServers": {s: {"type": "http", "url": endpoint(settings, s), "headersHelper": helper, "timeout": 300000}
                              for s in settings["servers"]}}
     (out / "managed-mcp.json").write_text(json.dumps(claude, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    lines = ["# Codex requirements.toml: 목록에 없는 MCP 서버는 켜지지 않는다(이름과 URL이 모두 맞아야 함)."]
+    root, tables = [], []
+    if args.connectors:
+        # Console의 하네스 커넥터 결정(D-51). 거부한 것만 담긴다 - 검토 대기는 아직 켜 둔다.
+        policy = json.loads(Path(args.connectors).read_text(encoding="utf-8"))
+        denied = {"deniedMcpServers": policy["claude"]["deniedMcpServers"]}
+        if policy["claude"].get("allowAllClaudeAiMcps"):
+            # managed-mcp.json이 있으면 claude.ai 커넥터가 모두 꺼진다. 승인한 것이 있으면 다시 켜고 거부 목록으로 뺀다.
+            denied["allowAllClaudeAiMcps"] = True
+        (out / "managed-settings.json").write_text(json.dumps(denied, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        features = [f for f in policy["codex"]["features_disabled"] if re.fullmatch(r"[a-z0-9_]+", f)]
+        if "web_search" in features:
+            root.append('allowed_web_search_modes = ["disabled"]')
+        if {"browser_use", "computer_use"} & set(features):
+            root.append("allow_browser_and_computer_use = false")
+        if [f for f in features if f != "web_search"]:
+            tables += ["", "[features]"] + [f"{f} = false" for f in features if f != "web_search"]
+        for app in policy["codex"]["apps_disabled"]:
+            if APP_ID.match(app):
+                tables += ["", f"[apps.{app}]", "enabled = false"]
+    # TOML은 루트 키가 첫 테이블보다 앞에 있어야 한다.
+    lines = ["# Codex requirements.toml: 목록에 없는 MCP 서버는 켜지지 않는다(이름과 URL이 모두 맞아야 함)."] + root
     for server in settings["servers"]:
         lines += ["", f"[mcp_servers.{server}]", f'identity = {{ url = "{endpoint(settings, server)}" }}']
-    (out / "requirements.toml").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (out / "requirements.toml").write_text("\n".join(lines + tables) + "\n", encoding="utf-8")
     print(f"{out / 'managed-mcp.json'} -> macOS /Library/Application Support/ClaudeCode/, "
           "Linux /etc/claude-code/, Windows C:\\Program Files\\ClaudeCode\\")
+    if args.connectors:
+        print(f"{out / 'managed-settings.json'} -> managed-mcp.json과 같은 폴더")
     print(f"{out / 'requirements.toml'} -> Unix /etc/codex/, Windows %ProgramData%\\OpenAI\\Codex\\")
     print(f"각 PC에 키트를 {args.kit}에 두고, 직원은 setup --harness codex로 로그인·Codex 설정을 한다")
 
@@ -570,6 +831,7 @@ def main(argv: list[str] | None = None) -> None:
     commands.add_parser("token", help="접근 토큰(다른 클라이언트에 넣을 때)").set_defaults(run=cmd_token)
     commands.add_parser("header", help="하네스 헤더 헬퍼 출력").set_defaults(run=cmd_header)
     commands.add_parser("doctor", help="연결 점검").set_defaults(run=cmd_doctor)
+    commands.add_parser("report", help="하네스 기본 커넥터·기능 보고와 거부 적용").set_defaults(run=cmd_report)
     commands.add_parser("uninstall", help="이 도구가 쓴 설정 제거와 토큰 폐기").set_defaults(run=cmd_uninstall)
     managed = commands.add_parser("managed", help="관리자 강제 배포 파일 생성")
     managed.add_argument("--url", required=True)
@@ -577,6 +839,7 @@ def main(argv: list[str] | None = None) -> None:
     managed.add_argument("--out", required=True)
     managed.add_argument("--python", required=True, help="모든 PC에서 같은 파이썬 경로")
     managed.add_argument("--kit", required=True, help="모든 PC에서 같은 이 키트의 경로")
+    managed.add_argument("--connectors", help="Console에서 받은 connector-policy.json(하네스 커넥터 거부)")
     managed.set_defaults(run=cmd_managed)
     # 파이프로 받으면 Windows는 로캘 인코딩(CP949 등)으로 쓴다. 표시 못 하는 글자 때문에 점검이 죽지 않게.
     for stream in (sys.stdout, sys.stderr):
