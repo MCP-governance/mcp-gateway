@@ -2220,6 +2220,58 @@
       "pac_ids": [
         "PAC-15"
       ]
+    },
+    "MCP-REGISTRY-003": {
+      "name": "도입 승인 사용자 범위 집행",
+      "purpose": "서버 등록 시 승인된 실제 주체만 도구를 사용한다.",
+      "enforced_by": "gateway",
+      "risk_ids": [
+        "RSK-01"
+      ],
+      "requirement_ids": [
+        "REQ-03"
+      ],
+      "control_ids": [
+        "CTL-03"
+      ],
+      "principle_ids": [
+        "PRN-02"
+      ],
+      "owner": "거버넌스팀",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "모든 MCP Tool",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "registry.allowed_principals",
+        "principal.token"
+      ],
+      "condition": "transport 인증 주체가 도입 승인 주체 목록에 없음",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 22,
+      "automation": "자동화",
+      "exceptionable": false,
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-16T00:00:00Z",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "T-REGISTRY-002"
+      ],
+      "pac_candidate_id": "PAC-CAND-01",
+      "pac_ids": [
+        "PAC-04",
+        "PAC-09"
+      ]
     }
   }
 }

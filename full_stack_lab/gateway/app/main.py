@@ -60,7 +60,7 @@ class RequireBearer:
         if scope["type"] == "http":
             authorization = dict(scope.get("headers") or []).get(b"authorization", b"").decode("latin-1")
             try:
-                await authenticated_user(authorization or None)
+                scope = dict(scope, authenticated_mcp_user=await authenticated_user(authorization or None))
             except HTTPException as exc:
                 challenge = f'Bearer resource_metadata="{RESOURCE_METADATA_URL}"'
                 if authorization:
@@ -87,7 +87,44 @@ class ServerPath:
             name = path.strip("/").split("/", 1)[0]
             if name:
                 if name not in registry.servers():
-                    await JSONResponse({"detail": f"등록되지 않은 MCP 서버: {name[:40]}"}, status_code=404)(scope, receive, send)
+                    # Authentication precedes this middleware. Record the actual
+                    # connection refusal, never a fabricated tool invocation.
+                    user = scope["authenticated_mcp_user"]
+                    headers = dict(scope.get("headers") or [])
+                    info = {}
+                    method = scope.get("method", "unknown")
+                    if method == "POST":
+                        body = bytearray()
+                        try:
+                            async with asyncio.timeout(2):
+                                while True:
+                                    message = await receive()
+                                    if message["type"] != "http.request":
+                                        break
+                                    body.extend(message.get("body", b""))
+                                    if len(body) > 8192 or not message.get("more_body"):
+                                        break
+                            if len(body) <= 8192:
+                                request = json.loads(body)
+                                if isinstance(request, dict):
+                                    method = str(request.get("method") or method)[:80]
+                                    params = request.get("params") or {}
+                                    if method == "initialize" and isinstance(params, dict):
+                                        candidate = params.get("clientInfo")
+                                        if isinstance(candidate, dict):
+                                            info = {key: str(candidate.get(key) or "")[:60] for key in ("name", "version")}
+                        except (ValueError, TimeoutError):
+                            pass
+                    claims = user.get("claims") or {}
+                    agent = headers.get(b"user-agent", b"").decode("latin-1")[:120]
+                    decision_id = await core.record_connection_denial(user, name, method, {
+                        "harness": {**info, "user_agent": agent}, "agent": info.get("name") or agent,
+                        "workstation": claims.get("client_id"), "oauth_client": claims.get("client_id"),
+                        "token_jti": claims.get("jti"), "endpoint": name[:120],
+                    })
+                    await JSONResponse({"detail": f"등록되지 않은 MCP 서버: {name[:40]}",
+                                        "decision": "Block", "policy_id": "MCP-REGISTRY-001",
+                                        "decision_id": decision_id}, status_code=404)(scope, receive, send)
                     return
                 scope = dict(scope, path=root + "/", raw_path=(root + "/").encode(), mcp_server=name)
         await self.app(scope, receive, send)
@@ -236,7 +273,7 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
 @app.get("/api/overview")
 async def overview(user: dict = Depends(admin_caller)) -> dict:
     """Everything the first Console screen shows, in one round trip."""
-    today, per_server, stations, alerts, approvals, cases, series, flows = await asyncio.gather(
+    today, per_server, stations, alerts, approvals, cases, series, flows, execution = await asyncio.gather(
         db.fetch_all(f"""SELECT decision, count(*) AS n FROM decisions d
                           WHERE created_at > date_trunc('day', now()) AND {decommission.REAL_CALL} GROUP BY decision"""),
         db.fetch_all(f"""SELECT s.id, s.display_name, s.status, s.lifecycle, s.deployment, s.status_reason,
@@ -270,14 +307,21 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
         db.fetch_all(f"""SELECT COALESCE(NULLIF(d.client->'harness'->>'name', ''), NULLIF(d.client->>'agent', ''), 'unknown') AS harness,
                                d.server_id AS server, d.decision, count(*) AS n
                           FROM decisions d WHERE created_at > now() - interval '24 hours' AND {decommission.REAL_CALL}
+                            AND COALESCE(d.client->>'event_kind','tools/call')='tools/call'
                          GROUP BY 1, 2, 3"""),
+        db.fetch_one(f"""SELECT count(*) FILTER (WHERE COALESCE(client->>'event_kind','tools/call')='mcp-connection') AS connections,
+                               count(*) FILTER (WHERE COALESCE(client->>'event_kind','tools/call')='tools/call') AS tool_calls,
+                               count(*) FILTER (WHERE upstream_executed) AS executed,
+                               count(*) FILTER (WHERE upstream_attempted AND NOT upstream_executed) AS unknown,
+                               count(*) FILTER (WHERE NOT upstream_attempted AND NOT upstream_executed) AS not_sent
+                          FROM decisions d WHERE created_at > date_trunc('day',now()) AND {decommission.REAL_CALL}"""),
     )
     counts = {row["decision"]: int(row["n"]) for row in today}
     return {
         "today": {"total": sum(counts.values()), **{k: counts.get(k, 0) for k in ("Allow", "Alert", "Restrict", "Approval", "Block")}},
         "servers": per_server, "workstations": stations, "top_policies": alerts,
         "pending_approvals": int(approvals["n"] or 0), "termination": cases,
-        "series": series, "flows": flows,
+        "series": series, "flows": flows, "execution": execution,
         "enforcement": await enforcement_mode(), "catalog_version": registry.catalog_version(),
     }
 
@@ -285,10 +329,12 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
 @app.get("/api/activity")
 async def activity_feed(after: int = 0, limit: int = 100, decision: str | None = None,
                         server: str | None = None, person: str | None = None,
+                        event_kind: Literal["tools/call", "mcp-connection"] | None = None,
+                        execution: Literal["executed", "not-sent", "unknown"] | None = None,
                         user: dict = Depends(caller)) -> dict:
     """Decisions as readable sentences. Admins see everyone; others see themselves."""
     own = None if "admin" in user["roles"] else user["principal"]
-    return await activity.recent(after, limit, own, decision, server, person)
+    return await activity.recent(after, limit, own, decision, server, person, event_kind, execution)
 
 
 @app.get("/.well-known/oauth-protected-resource")
@@ -491,6 +537,8 @@ async def registry_extend(server_id: str, request: RegistryExtend, user: dict = 
         return await core.extend_server(server_id, request.valid_days, user["principal"])
     except LookupError as exc:
         raise HTTPException(404, "Console에서 등록한 서버가 아닙니다.") from exc
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
 
 
 @app.delete("/api/registry/servers/{server_id}")

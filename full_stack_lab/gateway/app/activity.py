@@ -12,7 +12,7 @@ from typing import Any
 from . import db
 
 DECISION_KO = {"Allow": "허용", "Alert": "허용·경보", "Restrict": "제한 실행", "Approval": "승인 대기", "Block": "차단"}
-ACTION_KO = {"r": "읽기", "w": "쓰기", "x": "외부전송·실행"}
+ACTION_KO = {"r": "읽기", "w": "쓰기", "x": "외부전송·실행", "connect": "연결"}
 CLASS_KO = {"public": "공개", "nonimportant": "내부", "important": "중요"}
 TONE = {"Allow": "ok", "Alert": "warn", "Restrict": "info", "Approval": "hold", "Block": "stop"}
 
@@ -46,6 +46,7 @@ def describe(row: dict) -> dict:
         "who": who, "department": dept, "role": row.get("role"), "workstation": station,
         "agent": client.get("agent"), "task_id": client.get("task_id"),
         "harness": (client.get("harness") or {}).get("name"),
+        "event_kind": client.get("event_kind") or "tools/call",
         "server": server, "tool": tool, "target": target,
         "action": row.get("action"), "action_ko": ACTION_KO.get(row.get("action") or "", row.get("action")),
         "data_class": row.get("data_class"), "data_class_ko": CLASS_KO.get(row.get("data_class") or "", row.get("data_class")),
@@ -61,7 +62,8 @@ def describe(row: dict) -> dict:
 
 
 async def recent(after: int = 0, limit: int = 100, user_token: str | None = None,
-                 decision: str | None = None, server: str | None = None, person: str | None = None) -> dict:
+                 decision: str | None = None, server: str | None = None, person: str | None = None,
+                 event_kind: str | None = None, execution: str | None = None) -> dict:
     clauses, params = ["d.id > %s"], [after]
     if user_token:
         clauses.append("d.user_token = %s"); params.append(user_token)
@@ -71,6 +73,14 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
         clauses.append("d.server_id = %s"); params.append(server)
     if person:
         clauses.append("(p.display_name ILIKE %s OR d.user_token ILIKE %s)"); params += [f"%{person}%", f"%{person}%"]
+    if event_kind:
+        clauses.append("COALESCE(d.client->>'event_kind','tools/call')=%s"); params.append(event_kind)
+    if execution == "executed":
+        clauses.append("d.upstream_executed=true")
+    elif execution == "not-sent":
+        clauses.append("d.upstream_attempted=false AND d.upstream_executed=false")
+    elif execution == "unknown":
+        clauses.append("d.upstream_attempted=true AND d.upstream_executed=false")
     order = "ASC" if after else "DESC"
     rows = await db.fetch_all(
         f"""SELECT d.id, d.created_at, d.user_token, d.role, d.server_id, d.tool_name, d.resource_id,

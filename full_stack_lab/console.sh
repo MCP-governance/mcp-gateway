@@ -479,6 +479,7 @@ case "${1:-up}" in
     docker compose exec -T gateway python -m app.classify
     docker compose exec -T gateway python -m app.poisoning
     docker compose exec -T agent-service python -m app.connectors
+    docker compose exec -T gateway python -m app.endpoint_plane
     docker compose exec -T gateway python -m app.acceptance | tee reports/acceptance.json
     python3 tests/reservation_effect_check.py | tee reports/reservation-effects.json
     harness_check | tee reports/harnesses.txt

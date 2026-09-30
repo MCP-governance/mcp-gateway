@@ -129,7 +129,9 @@ server-held-credential → credential-check·provider-attestation, endpoint-conf
 ## 6. 실습 시나리오 (termination_flow.py가 자동으로 하는 것)
 
 - **UR-GITEA-DEV**(고지 있음·조직이 Gitea 관리자): 개시 → 수집(PAT 아직 있음) → 판정 **T2** →
-  "조직 권한으로 폐기"(DELETE 204 = 처리 증거, 재확인 = 상태 증거) → 판정 **T1** → 종결 → 복원.
+  "조직 권한으로 폐기"(DELETE 204 = 처리 증거, 재확인 = 상태 증거) → 단말 설정 잔존 때문에 **T2** 유지 →
+  관리형 설정 생성기로 실제 4대 PC에서 해당 MCP 설정 회수 → 단말 관측 재보고로 지문 부재 확인 → **T1** → 종결 → 복원.
+  `render.py --exclude-server gitea --install`은 root만 실행할 수 있다. 정책·설정 파일을 직접 편집해 결과를 맞추지 않는다.
 - **UR-EMAIL-ASSIST**(고지 없음): 개시 → UNVERIFIABLE 대상 → 판정 **T3** → 위험 수용 없는 종결 거부 →
   고지 요청서 생성 → 위험 수용과 함께 종결 → 복원.
 

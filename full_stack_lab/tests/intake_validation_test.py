@@ -151,7 +151,7 @@ class ApiTest(unittest.TestCase):
                 "requested_transport": "stdio", "purpose": "use repository MCP safely"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["request"]["status"], "VALIDATION_QUEUED")
-        self.assertIn("'VALIDATION_QUEUED'", db.call_args.args[0])
+        self.assertIn("VALIDATION_QUEUED", db.call_args.args[1])
 
     def test_public_origin_can_submit_but_other_origin_cannot(self):
         body = {"display_name": "Example", "repository_url": "https://github.com/example/server",
@@ -186,7 +186,7 @@ class ApiTest(unittest.TestCase):
             self.assertEqual(self.client.get(f"/api/mcp-requests/{self.id}/artifacts/sbom").status_code, 404)
 
     def test_discovery_does_not_bypass_remote_approval(self):
-        row = {"status": "VALIDATED", "commit_sha": "d" * 40,
+        row = {"status": "VALIDATED", "commit_sha": "d" * 40, "submitted_by": "requester", "intake_kind": "repository",
                "requested_transport": "streamable-http", "exit_terms": {},
                "evidence": {"exit_terms_discovery": {"status": "REVIEW_REQUIRED"}}}
         with self.identity("admin"), patch.object(agent_service.db, "fetch_one", AsyncMock(return_value=row)), patch.object(agent_service, "SCAN_REQUIRED_FOR_APPROVAL", False):
@@ -202,7 +202,7 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(response.json()["status"], "pending")
 
     def test_approval_publishes_verified_commit_before_state_change(self):
-        pending = {"id": self.id, "status": "VALIDATED", "commit_sha": "d" * 40,
+        pending = {"id": self.id, "status": "VALIDATED", "commit_sha": "d" * 40, "submitted_by": "requester", "intake_kind": "repository",
                    "requested_transport": "stdio", "exit_terms": {},
                    "repository_url": "https://github.com/example/server"}
         approved = {"id": self.id, "status": "APPROVED", "internal_repo_url": "http://internal/git/corpadmin/mcp-test"}

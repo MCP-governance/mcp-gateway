@@ -246,6 +246,8 @@ async def approve_contract(server_id: str, actor: str, note: str) -> dict:
     server = await db.fetch_one("SELECT * FROM mcp_servers WHERE id=%s", (server_id,))
     if not server:
         raise ValueError(f"등록되지 않은 서버입니다: {server_id}")
+    if (registry.server(server_id) or {}).get("intake_id"):
+        raise ValueError("도입 승인으로 고정한 계약은 새 도입 신청에서 재검토해야 합니다.")
     if server["status"] in {"DISABLED", "BLOCKED_SUPPLY_CHAIN"}:
         raise ValueError("비활성 또는 공급망 차단 상태의 서버는 재승인할 수 없습니다.")
     if (server.get("lifecycle") or "OPERATING") in {"TERMINATING", "RETIRED"}:
@@ -400,12 +402,43 @@ async def discover_for_registration(endpoint: str) -> dict:
 async def register_server(request: dict, actor: str) -> dict:
     server_id = request["server_id"]
     endpoint = registration_endpoint(request["endpoint"])
+    try:
+        intake_id = uuid.UUID(request.get("intake_id") or "")
+    except ValueError as exc:
+        raise ValueError("승인된 도입 신청 id가 필요합니다. 관리자 직접 등록으로 신청을 우회할 수 없습니다.") from exc
+    intake = await db.fetch_one("SELECT * FROM mcp_intake_requests WHERE id=%s", (intake_id,))
+    if not intake or intake["status"] != "APPROVED" or not intake.get("reviewed_by"):
+        raise ValueError("승인된 도입 신청만 등록할 수 있습니다.")
+    if intake["submitted_by"] == intake["reviewed_by"]:
+        raise ValueError("신청자와 승인자가 같아 등록할 수 없습니다.")
+    remote_review = None
+    if intake["intake_kind"] == "remote-endpoint":
+        remote_review = (intake.get("evidence") or {}).get("remote_contract") or {}
+        approval = (intake.get("evidence") or {}).get("remote_approval") or {}
+        if (approval.get("review_digest") != canonical_hash(remote_review)
+                or approval.get("actor") != intake["reviewed_by"]
+                or not remote_review.get("allowed_principals")):
+            raise ValueError("검토한 계약과 도입 승인 근거가 일치하지 않습니다.")
+        selected = {key: request.get(key) for key in remote_review["registration"]}
+        if selected != remote_review["registration"] or endpoint != intake["endpoint_url"]:
+            raise ValueError("승인된 endpoint·도구·등급·기한과 다른 등록은 거부합니다.")
+        if request.get("source_url") != endpoint or request.get("commit_sha"):
+            raise ValueError("원격 서비스 등록을 검증한 구현 소스인 것처럼 표시할 수 없습니다.")
+        if datetime.fromisoformat(remote_review["valid_until"]) <= datetime.now(UTC):
+            raise ValueError("도입 승인 사용 기한이 지났습니다.")
+    elif (not intake.get("commit_sha") or request.get("source_url") != intake["repository_url"]
+          or request.get("commit_sha") != intake["commit_sha"]):
+        raise ValueError("검증·승인된 구현 저장소와 커밋이 일치하지 않습니다.")
     if server_id in registry.reviewed_servers():
         raise ValueError(f"검토된 카탈로그(catalog.toml)에 같은 id가 있습니다: {server_id}")
     row = await db.fetch_one("SELECT lifecycle FROM mcp_servers WHERE id=%s", (server_id,))
     if row and (row["lifecycle"] or "OPERATING") in {"TERMINATING", "RETIRED"}:
         raise ValueError("종료 절차를 거친 서버 id는 다시 쓸 수 없습니다. 새 id로 등록하세요.")
     found = await upstream.discover(endpoint)
+    if remote_review and (found["version"] != remote_review["version"]
+            or found["advertised_name"] != remote_review["advertised_name"]
+            or found["protocol_version"] != remote_review["protocol_version"]):
+        raise ValueError("검토한 공급자 신원·버전·프로토콜과 다릅니다.")
     # The admin approves what they saw. A contract that moved between review and this call
     # is not what they approved, so they review again (the same rule as approve_contract).
     if canonical_hash(found["tools"]) != request["catalog_hash"]:
@@ -430,6 +463,8 @@ async def register_server(request: dict, actor: str) -> dict:
     # A.I.G worker checks out for a static audit of this server (source_ref = package@commit).
     version = commit if github and commit else found["version"]
     valid_until = (datetime.now(UTC) + timedelta(days=int(request["valid_days"]))).isoformat(timespec="seconds")
+    if remote_review:
+        valid_until = remote_review["valid_until"]
     spec = {
         "display_name": request["display_name"], "package": package, "version": version,
         "source_url": source_url or endpoint, "supplier": request.get("supplier") or host,
@@ -441,6 +476,7 @@ async def register_server(request: dict, actor: str) -> dict:
         "valid_until": valid_until, "registered_by": actor,
         "registered_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "intake_id": request.get("intake_id") or None,
+        "allowed_principals": remote_review["allowed_principals"] if remote_review else [intake["submitted_by"]],
         "poisoning_review": {name: registry.tool_hashes(advertised[name]) for name in flagged}
                             if request.get("poisoning_ack") else {},
     }
@@ -489,6 +525,8 @@ async def extend_server(server_id: str, days: int, actor: str) -> dict:
         spec = doc["servers"].get(server_id)
         if not spec:
             raise LookupError(server_id)
+        if spec.get("intake_id"):
+            raise ValueError("도입 승인 사용 기한을 연장하려면 새 신청·승인이 필요합니다.")
         spec["valid_until"] = (datetime.now(UTC) + timedelta(days=days)).isoformat(timespec="seconds")
         doc["history"].append({"type": "extended", "server_id": server_id, "actor": actor,
                                "at": datetime.now(UTC).isoformat(timespec="seconds"), "valid_until": spec["valid_until"]})
@@ -1102,6 +1140,22 @@ async def _record_decision(event: dict) -> int:
     return int(row["id"])
 
 
+async def record_connection_denial(user: dict, server_id: str, method: str, client: dict) -> int:
+    """A refused connection is evidence too; it is not a tools/call execution."""
+    await policy_ledger()
+    event = {
+        "request_id": str(uuid.uuid4()), "trace_id": "connection-" + uuid.uuid4().hex,
+        "user_token": user["principal"], "role": user["roles"][0],
+        "server_id": server_id[:120], "tool_name": method[:80],
+        "data_class": "important", "action": "connect", "upstream_executed": False,
+        "upstream_attempted": False, "client": {**client, "event_kind": "mcp-connection"},
+        "request_payload": {"server_id": server_id[:120], "method": method[:80]},
+        "summary": "미등록 MCP 연결 차단",
+        **local_verdict("MCP-REGISTRY-001", "Block", "등록·승인되지 않은 MCP 경로의 연결을 차단했습니다."),
+    }
+    return await _record_decision(event)
+
+
 async def verify_audit_chain() -> dict:
     """Walk the chain and name the first row that does not follow from the previous.
 
@@ -1213,6 +1267,11 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         await policy_ledger()
         if not principal or principal["status"] != "active":
             base_event.update(local_verdict("P-INPUT-001", "Block", "활성 상태의 등록 계정이 아닙니다."))
+            return await _decision_payload(base_event, before)
+
+        spec = registry.server(server_id) or {}
+        if spec.get("allowed_principals") is not None and user_token not in spec["allowed_principals"]:
+            base_event.update(local_verdict("MCP-REGISTRY-003", "Block", "이 서비스의 도입 승인 사용 주체에 포함되지 않습니다."))
             return await _decision_payload(base_event, before)
 
         # Reserved before any check that can pass, so a burst cannot race past the

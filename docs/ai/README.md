@@ -7,6 +7,8 @@
 | --- | --- | --- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | v3 정본 설계: 직원 PC의 하네스·관리형 설정·서버별 엔드포인트·LLM 경로·망·신원·디렉터리 | 항상 먼저 |
 | [SECURITY_BOUNDARIES.md](SECURITY_BOUNDARIES.md) | 실제 통제 범위, Kong·LiteLLM·Microsoft 비교, 우회 위협 모델, 재설계와 실제 MCP 검증 | 통제·시험·제품 주장을 정할 때 |
+| [REMASTER_2026-10-01.md](REMASTER_2026-10-01.md) | 사용자 요청 8개, 원격 MCP 오류 원인, 실제 시험과 미완료 경계 | 이번 개편을 이어서 할 때 |
+| [BENCHMARK_UI_ONBOARDING_2026-10-01.md](BENCHMARK_UI_ONBOARDING_2026-10-01.md) | MS·IBM·LiteLLM 고정 커밋의 UI·조직 관리 분석, 채택한 흐름과 OS 통제 경계 | UI·가입·단말 통제를 바꿀 때 |
 | [FOLLOWUP_VALIDATION_2026-10-01.md](FOLLOWUP_VALIDATION_2026-10-01.md) | 인계 뒤 남은 빈 곳의 실측과 보강(D-56), 실제 LLM 하네스(Codex·Claude Code)가 솔루션 기기 게이트웨이를 거친 업무 10회 | 최신 검증 범위와 결과를 볼 때 |
 | [OVERHAUL_VALIDATION_2026-09-30.md](OVERHAUL_VALIDATION_2026-09-30.md) | Claude 변경 인계, 클린 재구축, 실제 일곱 MCP·DB 효과·SSH VM·배포 확인 | 그 전 단계의 검증 |
 | [PAC_MAPPING.md](PAC_MAPPING.md) | PAC-01~15의 집행 위치와 남은 경계 | 정책 초안과 실제 구현을 대조할 때 |

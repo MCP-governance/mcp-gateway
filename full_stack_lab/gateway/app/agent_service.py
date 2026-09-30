@@ -4,13 +4,14 @@ from __future__ import annotations
 import asyncio
 import base64
 import binascii
+import hashlib
 import os
 import re
 import secrets
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
 from urllib.parse import quote, urlsplit
@@ -23,7 +24,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from psycopg.types.json import Jsonb
 
-from . import db
+from . import core, db
 from .release import build_info
 from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, authenticate,
                              authenticated_user, issue_token, private_key)
@@ -152,6 +153,7 @@ class Signup(StrictModel):
     username: str = Field(min_length=3, max_length=32)
     display_name: str = Field(min_length=2, max_length=80)
     password: str = Field(min_length=8, max_length=150)
+    invitation_token: str = Field(default="", max_length=150)
 
 
 @app.post("/auth/signup")
@@ -169,6 +171,29 @@ async def request_signup(request: Signup, http_request: Request):
     record_failed_login(key)
     if await db.fetch_one("SELECT 1 FROM principals WHERE lower(email)=%s", (username,)):
         raise HTTPException(409, "이미 사용 중인 아이디입니다.")
+    if request.invitation_token:
+        async with db.transaction() as connection:
+            invitation = await (await connection.execute(
+                """UPDATE account_invitations SET consumed_at=now()
+                   WHERE token_sha256=%s AND username=%s AND consumed_at IS NULL AND revoked_at IS NULL
+                     AND expires_at > now() RETURNING id,department,issued_by""",
+                (hashlib.sha256(request.invitation_token.encode()).hexdigest(), username))).fetchone()
+            if not invitation:
+                raise HTTPException(409, "초대가 만료·회수·사용되었거나 지정한 아이디와 다릅니다.")
+            created = await (await connection.execute(
+                """INSERT INTO principals(token,user_id,email,display_name,role,department,password_hash)
+                   VALUES (%s,%s,%s,%s,'employee',%s,crypt(%s,gen_salt('bf',12)))
+                   ON CONFLICT DO NOTHING RETURNING user_id""",
+                (f"emp-{username}", username, username, request.display_name.strip(),
+                 invitation["department"], request.password))).fetchone()
+            if not created:
+                raise HTTPException(409, "이미 사용 중인 아이디입니다.")
+            await connection.execute(
+                """INSERT INTO signup_requests(id,username,display_name,password_hash,status,reviewed_at,reviewed_by)
+                   SELECT %s,%s,%s,password_hash,'approved',now(),%s FROM principals WHERE user_id=%s
+                   ON CONFLICT (username) DO UPDATE SET status='approved',reviewed_at=now(),reviewed_by=EXCLUDED.reviewed_by""",
+                (invitation["id"], username, request.display_name.strip(), invitation["issued_by"], username))
+        return {"status": "approved", "message": "조직 초대로 일반 사용자 등록을 완료했습니다. 로그인 후 내 PC 연결을 진행하세요."}
     row = await db.fetch_one(
         """INSERT INTO signup_requests(id,username,display_name,password_hash)
            VALUES (%s,%s,%s,crypt(%s, gen_salt('bf', 12)))
@@ -182,7 +207,9 @@ async def request_signup(request: Signup, http_request: Request):
 
 class McpIntake(StrictModel):
     display_name: str = Field(min_length=2, max_length=80)
-    repository_url: str = Field(min_length=12, max_length=300)
+    repository_url: str = Field(default="", max_length=300)
+    intake_kind: Literal["repository", "remote-endpoint"] = "repository"
+    endpoint_url: str = Field(default="", max_length=500)
     requested_transport: Literal["streamable-http", "stdio", "sse"]
     purpose: str = Field(min_length=10, max_length=1000)
 
@@ -441,6 +468,58 @@ class AccountStatus(StrictModel):
     note: str = Field(default="", max_length=300)
 
 
+class AccountInvitations(StrictModel):
+    usernames: list[str] = Field(min_length=1, max_length=50)
+    department: str = Field(min_length=2, max_length=80)
+
+
+@app.post("/api/account-invitations", status_code=201)
+async def invite_accounts(request: AccountInvitations, http_request: Request,
+                          authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "조직 초대는 관리자만 만들 수 있습니다.")
+    names = [name.strip().lower() for name in request.usernames]
+    if len(set(names)) != len(names) or any(
+        not re.fullmatch(r"[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*", name)
+        or not 3 <= len(name) <= 32 or name.endswith(GITEA_ALIAS_SUFFIX) for name in names
+    ):
+        raise HTTPException(422, "중복 없이 유효한 일반 사용자 아이디 1~50개를 지정하세요.")
+    issued = []
+    expires = datetime.now(UTC) + timedelta(hours=48)
+    async with db.transaction() as connection:
+        for name in sorted(names):
+            await connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", ("invite|" + name,))
+            if await (await connection.execute("SELECT 1 FROM principals WHERE lower(email)=%s", (name,))).fetchone():
+                raise HTTPException(409, f"이미 등록된 아이디입니다: {name}")
+            await connection.execute("UPDATE account_invitations SET revoked_at=now() WHERE username=%s AND consumed_at IS NULL AND revoked_at IS NULL", (name,))
+            secret = secrets.token_urlsafe(32)
+            await connection.execute(
+                "INSERT INTO account_invitations(id,username,department,token_sha256,issued_by,expires_at) VALUES (%s,%s,%s,%s,%s,%s)",
+                (uuid4(), name, request.department.strip(), hashlib.sha256(secret.encode()).hexdigest(), user["principal"], expires))
+            issued.append({"username": name, "url": f"{str(http_request.base_url).rstrip('/')}/signup#invite={secret}&username={quote(name)}", "expires_at": expires})
+    return {"invitations": issued, "message": "48시간·1회용 일반 사용자 초대입니다. 링크는 이번 응답에서만 표시됩니다."}
+
+
+@app.get("/api/account-invitations")
+async def list_invitations(authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "조직 초대는 관리자만 볼 수 있습니다.")
+    return {"invitations": await db.fetch_all("SELECT id,username,department,issued_by,issued_at,expires_at,consumed_at,revoked_at FROM account_invitations ORDER BY issued_at DESC LIMIT 100")}
+
+
+@app.delete("/api/account-invitations/{invitation_id}")
+async def revoke_invitation(invitation_id: UUID, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "조직 초대 회수는 관리자만 할 수 있습니다.")
+    row = await db.fetch_one("UPDATE account_invitations SET revoked_at=now() WHERE id=%s AND consumed_at IS NULL RETURNING id", (invitation_id,))
+    if not row:
+        raise HTTPException(409, "이미 사용했거나 없는 초대입니다.")
+    return {"status": "revoked"}
+
+
 @app.get("/api/accounts")
 async def list_accounts(authorization: str | None = Header(default=None)):
     """신원 관리대장. 관리자만 본다. 비밀번호 해시는 응답에 넣지 않는다."""
@@ -664,7 +743,7 @@ async def intake_rows(user: dict) -> list[dict]:
     query = """SELECT id, submitted_by, display_name, repository_url, requested_transport, purpose,
                       status, risk_level, review_note, reviewed_by, reviewed_at, created_at, updated_at,
                       commit_sha, source_ref, evidence, validated_at, exit_terms, internal_repo_url,
-                      registered_server_id
+                      registered_server_id, intake_kind, endpoint_url
                FROM mcp_intake_requests"""
     if "admin" in user["roles"]:
         return await db.fetch_all(query + " ORDER BY created_at DESC LIMIT 100")
@@ -684,7 +763,7 @@ async def search_catalog(q: str = "", authorization: str | None = Header(default
     await current_identity(authorization)
     term = q.strip()
     like = f"%{term}%"
-    request_query = """SELECT r.display_name, r.repository_url, r.requested_transport, r.status, r.risk_level,
+    request_query = """SELECT r.display_name, r.repository_url, r.endpoint_url, r.intake_kind, r.requested_transport, r.status, r.risk_level,
                               r.commit_sha, r.source_ref, r.validated_at, r.reviewed_at, r.created_at,
                               r.internal_repo_url, COALESCE(p.display_name, r.submitted_by) AS submitted_by_name
                        FROM mcp_intake_requests r LEFT JOIN principals p ON p.token=r.submitted_by"""
@@ -693,8 +772,8 @@ async def search_catalog(q: str = "", authorization: str | None = Header(default
                       FROM mcp_servers"""
     if term:
         requests = await db.fetch_all(
-            request_query + " WHERE r.repository_url ILIKE %s OR r.display_name ILIKE %s"
-            " ORDER BY r.created_at DESC LIMIT 50", (like, like))
+            request_query + " WHERE r.repository_url ILIKE %s OR r.display_name ILIKE %s OR r.endpoint_url ILIKE %s"
+            " ORDER BY r.created_at DESC LIMIT 50", (like, like, like))
         servers = await db.fetch_all(
             server_query + " WHERE source_url ILIKE %s OR display_name ILIKE %s OR id ILIKE %s"
             " ORDER BY id LIMIT 50", (like, like, like))
@@ -771,7 +850,12 @@ async def publish_internal_repo(row: dict) -> str:
 async def create_mcp_request(request: McpIntake, authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     try:
-        repository_url = github_repository_url(request.repository_url)
+        repository_url = github_repository_url(request.repository_url) if request.repository_url else ""
+        endpoint = core.registration_endpoint(request.endpoint_url) if request.intake_kind == "remote-endpoint" else None
+        if request.intake_kind == "repository" and not repository_url:
+            raise ValueError("소스 도입에는 구현 저장소 주소가 필요합니다.")
+        if request.intake_kind == "remote-endpoint" and request.requested_transport != "streamable-http":
+            raise ValueError("현재 원격 서비스 검토는 Streamable HTTP를 지원합니다. 다른 전송은 아직 검증되지 않았습니다.")
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     # 거부(REJECTED)는 사람의 판단이고 실패(FAILED)는 검증이 끝나지 못한 오류다.
@@ -780,22 +864,25 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
     # 실패한 시도의 행과 사유는 그대로 남으므로 증적이 사라지지는 않는다.
     existing = await db.fetch_one(
         "SELECT id, status FROM mcp_intake_requests"
-        " WHERE repository_url=%s AND status NOT IN ('REJECTED', 'FAILED')",
-        (repository_url,),
+        " WHERE intake_kind=%s AND COALESCE(endpoint_url,repository_url)=%s AND status NOT IN ('REJECTED', 'FAILED')"
+        " AND (status <> 'APPROVED' OR intake_kind='repository')",
+        (request.intake_kind, endpoint or repository_url),
     )
     if existing:
         raise HTTPException(409, f"같은 저장소가 이미 {existing['status']} 상태로 등록돼 있습니다.")
     row = await db.fetch_one(
         """INSERT INTO mcp_intake_requests(
                  id, submitted_by, display_name, repository_url, requested_transport,
-                 purpose, exit_terms, status
-             ) VALUES (%s,%s,%s,%s,%s,%s,%s,'VALIDATION_QUEUED')
+                 purpose, exit_terms, status, intake_kind, endpoint_url
+             ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
              RETURNING id, display_name, repository_url, requested_transport, purpose,
-                       status, risk_level, exit_terms, created_at""",
+                       status, risk_level, exit_terms, created_at, intake_kind, endpoint_url""",
         (uuid4(), user["principal"], request.display_name.strip(), repository_url,
-         request.requested_transport, request.purpose.strip(), Jsonb({})),
+         request.requested_transport, request.purpose.strip(), Jsonb({}),
+         "HOLD" if endpoint else "VALIDATION_QUEUED", request.intake_kind, endpoint),
     )
-    message = "요청을 접수하고 자동 검증을 예약했습니다. 공급망 검사와 종료조건 조사 후 관리자가 승인합니다."
+    message = ("원격 도입 신청을 접수했습니다. 관리자가 실제 도구 계약·접근 범위·종료 조건을 검토한 뒤 승인합니다."
+               if endpoint else "요청을 접수하고 자동 검증을 예약했습니다. 공급망 검사와 종료조건 조사 후 관리자가 승인합니다.")
     return {"request": row, "message": message}
 
 
@@ -826,6 +913,9 @@ async def queue_validation(request_id: UUID, authorization: str | None = Header(
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "검증 대기열은 관리자만 변경할 수 있습니다.")
+    kind = await db.fetch_one("SELECT intake_kind FROM mcp_intake_requests WHERE id=%s", (request_id,))
+    if kind and kind["intake_kind"] != "repository":
+        raise HTTPException(409, "원격 서비스의 구현 코드를 검증한 것으로 표시할 수 없습니다. 도구 계약 검토를 사용하세요.")
     row = await db.fetch_one(
         """UPDATE mcp_intake_requests
            SET status='VALIDATION_QUEUED', reviewed_by=%s, reviewed_at=now(), updated_at=now(),
@@ -930,6 +1020,39 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "도입 승인은 관리자만 할 수 있습니다.")
+    remote = await db.fetch_one("SELECT * FROM mcp_intake_requests WHERE id=%s", (request_id,))
+    if remote and remote["submitted_by"] == user["principal"]:
+        raise HTTPException(403, "본인이 신청한 서비스는 본인이 승인할 수 없습니다.")
+    if remote and remote.get("intake_kind") == "remote-endpoint":
+        reviewed = (remote.get("evidence") or {}).get("remote_contract") or {}
+        if remote["submitted_by"] == user["principal"]:
+            raise HTTPException(403, "본인이 신청한 서비스는 본인이 승인할 수 없습니다.")
+        if remote["status"] != "REMOTE_REVIEWED" or not reviewed.get("reviewed_by"):
+            raise HTTPException(409, "실제 도구 계약과 접근 범위를 검토한 뒤 승인하세요.")
+        risk = approval.risk_acceptance.strip() if approval else ""
+        if not manual_terms_verified(remote.get("exit_terms") or {}) and len(risk) < 10:
+            raise HTTPException(409, "제공자 종료 조건 증거 또는 10자 이상의 위험 수용 사유가 필요합니다.")
+        if datetime.fromisoformat(reviewed["valid_until"]) <= datetime.now(UTC):
+            raise HTTPException(409, "검토한 사용 기한이 지났습니다. 다시 검토하세요.")
+        found = await gateway_proxy("/api/registry/discover", authorization, "POST",
+                                    {"endpoint": remote["endpoint_url"]}, timeout=45)
+        if (found["catalog_hash"] != reviewed["registration"]["catalog_hash"]
+                or found["version"] != reviewed["version"]
+                or found["server_name"] != reviewed["advertised_name"]
+                or found["protocol_version"] != reviewed["protocol_version"]):
+            raise HTTPException(409, "검토 후 공급자 계약이 바뀌었습니다. 다시 검토하세요.")
+        evidence = {**remote["evidence"], "remote_approval": {
+            "actor": user["principal"], "at": datetime.now(UTC).isoformat(),
+            "review_digest": core.canonical_hash(reviewed), "risk_acceptance": risk,
+            "code_scan_performed": False}}
+        row = await db.fetch_one("""UPDATE mcp_intake_requests SET status='APPROVED', evidence=%s,
+                reviewed_by=%s, reviewed_at=now(), updated_at=now()
+                WHERE id=%s AND status='REMOTE_REVIEWED' AND evidence=%s
+                RETURNING id,status,reviewed_by,reviewed_at""",
+                (Jsonb(evidence), user["principal"], request_id, Jsonb(remote["evidence"])))
+        if not row:
+            raise HTTPException(409, "요청 상태가 변경되어 승인하지 않았습니다.")
+        return {"request": row, "message": "원격 서비스 계약과 범위를 승인했습니다. 구현 소스 검증은 수행하지 않았습니다. 활성화는 별도입니다."}
     # T2 · 승인 게이트. AI 코드 감사를 요구하도록 설정했다면, 승인 시점에 "지금
     # 이 commit에 대한" 감사 결과가 있어야 한다. 감사가 승인 뒤에만 가능하면
     # 그것은 승인의 근거가 아니라 승인 뒤의 기록이다.
@@ -944,9 +1067,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
             raise HTTPException(
                 409, "이 commit에 대한 AI 코드 감사 결과가 없습니다. "
                      "감사를 실행해 완료된 뒤에 승인할 수 있습니다.")
-    pending = await db.fetch_one(
-        """SELECT id, status, display_name, requested_transport, exit_terms, evidence, repository_url, commit_sha
-           FROM mcp_intake_requests WHERE id=%s""", (request_id,))
+    pending = remote
     terms = (pending or {}).get("exit_terms") or {}
     conclusion = ((pending or {}).get("evidence") or {}).get("exit_terms_conclusion") or {}
     risk = (approval.risk_acceptance.strip() if approval else "")
@@ -986,6 +1107,51 @@ class IntakeRegistration(StrictModel):
     poisoning_ack: bool = False
 
 
+class RemoteContractReview(IntakeRegistration):
+    allowed_principals: list[str] = Field(min_length=1, max_length=100)
+    review_note: str = Field(min_length=10, max_length=1000)
+
+
+@app.post("/api/mcp-requests/{request_id}/review-contract")
+async def review_remote_contract(request_id: UUID, review: RemoteContractReview,
+                                 authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "도구 계약 검토는 관리자만 할 수 있습니다.")
+    row = await db.fetch_one("SELECT * FROM mcp_intake_requests WHERE id=%s", (request_id,))
+    if not row or row["intake_kind"] != "remote-endpoint" or row["status"] not in {"HOLD", "REMOTE_REVIEWED"}:
+        raise HTTPException(409, "승인 전 원격 신청만 계약을 검토할 수 있습니다.")
+    if review.endpoint != row["endpoint_url"]:
+        raise HTTPException(409, "신청한 엔드포인트와 검토 대상이 다릅니다.")
+    principals = await db.fetch_all("SELECT token FROM principals WHERE status='active' AND token=ANY(%s::text[])",
+                                    (review.allowed_principals,))
+    if {p["token"] for p in principals} != set(review.allowed_principals):
+        raise HTTPException(422, "사용 범위에는 활성 관리대장 주체만 지정할 수 있습니다.")
+    found = await gateway_proxy("/api/registry/discover", authorization, "POST",
+                                {"endpoint": review.endpoint}, timeout=45)
+    advertised = {tool["name"]: tool for tool in found["tools"]}
+    if review.catalog_hash != found["catalog_hash"] or not set(review.tools) <= set(advertised):
+        raise HTTPException(409, "실제 공급자 계약과 검토 내용이 다릅니다.")
+    if any(advertised[name]["warnings"] for name in review.tools) and not review.poisoning_ack:
+        raise HTTPException(409, "선택한 도구의 설명 경고를 읽고 검토 확인을 남기세요.")
+    from datetime import timedelta
+    contract = {"registration": review.model_dump(exclude={"allowed_principals", "review_note"}),
+                "allowed_principals": sorted(set(review.allowed_principals)), "review_note": review.review_note,
+                "reviewed_by": user["principal"], "reviewed_at": datetime.now(UTC).isoformat(),
+                "valid_until": (datetime.now(UTC) + timedelta(days=review.valid_days)).isoformat(),
+                "advertised_name": found["server_name"], "version": found["version"],
+                "protocol_version": found["protocol_version"],
+                "tools": {name: advertised[name] for name in review.tools}, "code_scan_performed": False}
+    evidence = {**row["evidence"], "remote_contract": contract}
+    changed = await db.fetch_one("""UPDATE mcp_intake_requests SET status='REMOTE_REVIEWED', evidence=%s,
+              updated_at=now() WHERE id=%s AND status IN ('HOLD','REMOTE_REVIEWED') AND evidence=%s
+              RETURNING id,status,evidence""",
+              (Jsonb(evidence), request_id, Jsonb(row["evidence"])))
+    if not changed:
+        raise HTTPException(409, "검토 도중 요청 상태가 변경되었습니다.")
+    return {"request": changed, "message": "실제 계약과 사용 범위를 검토 기록했습니다. 아직 활성화되지 않았습니다."}
+
+
 @app.post("/api/mcp-requests/{request_id}/register")
 async def register_mcp_request(request_id: UUID, request: IntakeRegistration,
                                authorization: str | None = Header(default=None)):
@@ -1003,9 +1169,14 @@ async def register_mcp_request(request_id: UUID, request: IntakeRegistration,
            LEFT JOIN principals p ON p.token = r.submitted_by WHERE r.id=%s""", (request_id,))
     if not row or row["status"] != "APPROVED":
         raise HTTPException(409, "승인된 도입 신청만 Gateway에 등록할 수 있습니다.")
-    body = {**request.model_dump(), "display_name": row["display_name"], "source_url": row["repository_url"],
+    if row["intake_kind"] == "remote-endpoint":
+        reviewed = (row.get("evidence") or {}).get("remote_contract") or {}
+        if reviewed.get("registration") != request.model_dump():
+            raise HTTPException(409, "승인된 endpoint·도구·등급·기한과 다릅니다. 새 도입 신청이 필요합니다.")
+    body = {**request.model_dump(), "display_name": row["display_name"],
+            "source_url": row["endpoint_url"] if row["intake_kind"] == "remote-endpoint" else row["repository_url"],
             "commit_sha": row["commit_sha"] or "",
-            "supplier": urlsplit(row["repository_url"]).path.strip("/").split("/")[0],
+            "supplier": urlsplit(row["endpoint_url"] or row["repository_url"]).hostname or "",
             "purpose": row["purpose"], "owner_department": row.get("department") or "",
             "intake_id": str(row["id"]), "exit_terms": exit_term_flags(row)}
     result = await gateway_proxy("/api/registry/servers", authorization, "POST", body, timeout=120)
@@ -1022,7 +1193,7 @@ async def reject_mcp_request(request_id: UUID, request: IntakeRejection, authori
     row = await db.fetch_one(
         """UPDATE mcp_intake_requests
            SET status='REJECTED', review_note=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now()
-           WHERE id=%s AND status IN ('HOLD','VALIDATION_QUEUED','VALIDATED','FAILED')
+           WHERE id=%s AND status IN ('HOLD','VALIDATION_QUEUED','VALIDATED','REMOTE_REVIEWED','FAILED')
            RETURNING id, status, review_note, reviewed_by, reviewed_at""",
         (request.note.strip(), user["principal"], request_id),
     )

@@ -31,6 +31,18 @@ CREATE TABLE IF NOT EXISTS signup_requests (
   reviewed_by text
 );
 
+CREATE TABLE IF NOT EXISTS account_invitations (
+  id uuid PRIMARY KEY,
+  username text NOT NULL,
+  department text NOT NULL,
+  token_sha256 text NOT NULL UNIQUE,
+  issued_by text NOT NULL,
+  issued_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL,
+  consumed_at timestamptz,
+  revoked_at timestamptz
+);
+
 -- A repository URL is an intake record, never an instruction to fetch or run
 -- somebody else's code. It stays outside the active MCP registry until a
 -- reviewer attaches evidence from an isolated checkout.
@@ -161,13 +173,15 @@ ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS validated_at timestampt
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS internal_repo_url text;
 ALTER TABLE mcp_intake_requests DROP CONSTRAINT IF EXISTS mcp_intake_requests_status_check;
 ALTER TABLE mcp_intake_requests ADD CONSTRAINT mcp_intake_requests_status_check
-  CHECK (status IN ('HOLD', 'VALIDATION_QUEUED', 'VALIDATING', 'VALIDATED', 'APPROVED', 'FAILED', 'REJECTED'));
+  CHECK (status IN ('HOLD', 'VALIDATION_QUEUED', 'VALIDATING', 'VALIDATED', 'REMOTE_REVIEWED', 'APPROVED', 'FAILED', 'REJECTED'));
 CREATE INDEX IF NOT EXISTS mcp_intake_requests_status_idx ON mcp_intake_requests(status, created_at);
 -- The automatic intake queue must recover work abandoned by a stopped worker.
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS validation_lease_expires_at timestamptz;
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS validation_attempts integer NOT NULL DEFAULT 0;
 -- D-49: 승인한 신청이 Gateway에 어떤 서버 id로 등록됐는가. 승인과 등록은 다른 결정이다.
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS registered_server_id text;
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS intake_kind text NOT NULL DEFAULT 'repository';
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS endpoint_url text;
 
 -- AI-Infra-Guard mcp-scan은 LLM endpoint를 요구하는 코드 감사라 도입 검증과 같은
 -- 트랜잭션에 넣을 수 없다. 운영자가 필요할 때 돌리는 별도 작업으로 큐에 넣고,

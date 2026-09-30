@@ -25,7 +25,7 @@ from mcp import types
 from mcp.server.lowlevel.server import Server
 from mcp.server.transport_security import TransportSecuritySettings
 
-from . import db
+from . import db, registry
 from .agent_contract import authenticated_user
 from .core import execute_call
 
@@ -90,7 +90,7 @@ def _client_context(ctx: Any, user: dict) -> dict:
     }
 
 
-async def _approved_tools(role: str, server: str | None = None) -> list[types.Tool]:
+async def _approved_tools(role: str, server: str | None = None, principal: str = "") -> list[types.Tool]:
     rows = await db.fetch_all(
         """SELECT t.server_id, t.name, t.action, t.description, t.input_schema, s.display_name
              FROM mcp_tools t JOIN mcp_servers s ON s.id = t.server_id
@@ -101,6 +101,9 @@ async def _approved_tools(role: str, server: str | None = None) -> list[types.To
             ORDER BY t.server_id, t.name""", (server, server))
     tools = []
     for row in rows:
+        allowed = (registry.server(row["server_id"]) or {}).get("allowed_principals")
+        if allowed is not None and principal not in allowed:
+            continue
         # A partner never gets w/x anywhere in the 333 matrix; listing those tools
         # to a partner's model only invites refused calls.
         if role == "partner" and row["action"] != "r":
@@ -159,7 +162,7 @@ def _render(outcome: dict) -> types.CallToolResult:
 def build_mcp() -> Server:
     async def list_tools(ctx: Any, params: Any) -> types.ListToolsResult:
         user = await _caller(ctx)
-        return types.ListToolsResult(tools=await _approved_tools(user["roles"][0], _scope(ctx)))
+        return types.ListToolsResult(tools=await _approved_tools(user["roles"][0], _scope(ctx), user["principal"]))
 
     async def call_tool(ctx: Any, params: types.CallToolRequestParams) -> types.CallToolResult:
         user = await _caller(ctx)

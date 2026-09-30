@@ -34,7 +34,7 @@
   --block: #cc3434;    --block-bg: #fbe6e6;
   --muted-series: #9aa6b8;
   --float: 0 12px 32px rgba(14, 26, 43, .18);
-  --radius: 10px;
+  --radius: 7px;
   --fs-xs: 13px; --fs-sm: 14px; --fs: 16px; --fs-md: 18px; --fs-lg: 22px; --fs-xl: 28px; --fs-kpi: 36px;
   --sans: "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Consolas, "D2Coding", monospace;
@@ -66,9 +66,21 @@ h1, h2, h3 { text-wrap: balance; }
 .hide { display: none !important; }
 
 /* ── shell ─────────────────────────────────────────────────────────────── */
-.shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+.app-bar { height: 56px; position: sticky; top: 0; z-index: 15; display: flex; align-items: center; gap: 16px;
+  padding: 0 20px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.app-title { font-size: 16px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.app-title span { font-size: 13px; font-weight: 400; color: var(--ink-3); margin-left: 12px; }
+.command-search { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.command-search input { width: min(28vw, 340px); border: 1px solid var(--line-2); border-radius: 6px; padding: 6px 10px; background: var(--panel-2); }
+.app-identity { font-size: var(--fs-sm); color: var(--ink-2); }
+.shell { display: grid; grid-template-columns: 224px minmax(0, 1fr); min-height: calc(100vh - 56px); }
 .side { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column;
-  position: sticky; top: 0; height: 100vh; }
+  position: sticky; top: 56px; height: calc(100vh - 56px); }
+.nav-collapsed .shell { grid-template-columns: 64px minmax(0, 1fr); }
+.nav-collapsed .brand > div, .nav-collapsed .nav .group, .nav-collapsed .nav a span, .nav-collapsed .side-foot { display: none; }
+.nav-collapsed .brand { padding: 18px 14px; }
+.nav-collapsed .nav { padding: 4px 6px; }
+.nav-collapsed .nav a { justify-content: center; padding: 12px; }
 .brand { display: flex; align-items: center; gap: 12px; padding: 20px 20px 18px; }
 .brand .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--brand); color: #fff; display: grid; place-items: center; flex: none; }
 :root[data-theme="dark"] .brand .mark { color: #0a1220; }
@@ -315,6 +327,11 @@ details summary { cursor: pointer; color: var(--ink-2); }
   .crit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 800px) {
+  .app-bar { padding: 0 12px; gap: 10px; }
+  .app-title span, .app-identity { display: none; }
+  .command-search input { width: 28vw; }
+  .nav-collapsed .shell { grid-template-columns: minmax(0,1fr); }
+  .nav-collapsed .side { display: none; }
   .shell { grid-template-columns: minmax(0, 1fr); }
   .side { position: static; height: auto; }
   .nav { flex-direction: row; overflow-x: auto; padding: 6px; }

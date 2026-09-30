@@ -24,6 +24,7 @@ import json
 import os
 import re
 import sys
+from urllib.parse import urlsplit, parse_qs
 from uuid import uuid4
 
 import httpx
@@ -154,9 +155,24 @@ async def per_server_endpoint() -> str:
     row = await db.fetch_one("SELECT client FROM decisions WHERE id=%s", (out.get("decision_id"),))
     expect((row["client"] or {}).get("endpoint") == "git", f"감사 기록의 endpoint: {row['client']}")
     async with httpx.AsyncClient(timeout=10) as client:
-        unknown = await client.post(API + "/mcp/nope/", json={}, headers={"Authorization": f"Bearer {TOKENS['employee']}"})
+        unknown = await client.post(API + "/mcp/nope/", json={"jsonrpc": "2.0", "id": 1,
+            "method": "initialize", "params": {"protocolVersion": "2025-03-26", "capabilities": {},
+            "clientInfo": {"name": "connection-regression", "version": "1"}}},
+            headers={"Authorization": f"Bearer {TOKENS['employee']}"})
     expect(unknown.status_code == 404, f"등록되지 않은 서버 경로가 {unknown.status_code}")
-    return f"/mcp/git/ 도구 {len(tools)}개 · git_log 허용 · /mcp/nope/ 404"
+    refused = unknown.json()
+    expect(refused.get("policy_id") == "MCP-REGISTRY-001" and refused.get("decision") == "Block", refused)
+    row = await db.fetch_one("SELECT * FROM decisions WHERE id=%s", (refused.get("decision_id"),))
+    expect(row and row["tool_name"] == "initialize" and row["action"] == "connect"
+           and row["client"].get("event_kind") == "mcp-connection"
+           and not row["upstream_attempted"] and not row["upstream_executed"], "미등록 연결의 차단 증적 누락")
+    before = (await db.fetch_one("SELECT count(*) AS n FROM decisions"))["n"]
+    async with httpx.AsyncClient(timeout=10) as client:
+        unauthenticated = await client.post(API + "/mcp/nope/", json={})
+    expect(unauthenticated.status_code == 401, "미등록 경로가 인증 경계를 우회함")
+    expect((await db.fetch_one("SELECT count(*) AS n FROM decisions"))["n"] == before,
+           "무인증 요청을 인증된 직원의 차단 증적으로 기록함")
+    return f"/mcp/git/ 도구 {len(tools)}개 · git_log 허용 · /mcp/nope/ 404 + 미등록 연결 감사"
 
 
 async def hidden_tool_still_decided() -> str:
@@ -429,17 +445,39 @@ async def console_registration_expires() -> str:
                 "catalog_hash": review["catalog_hash"], "tools": {"fetch": "r"}, "data_class": "public", "valid_days": 1}
         stale = await client.post(API + "/api/registry/servers", json={**body, "catalog_hash": "0" * 64})
         expect(stale.status_code == 409, f"검토하지 않은 계약으로 등록: {stale.status_code}")
-        created = await client.post(API + "/api/registry/servers", json=body)
-        expect(created.status_code == 201 and created.json().get("status") == "READY", f"등록: {created.status_code} {created.text[:200]}")
+        bypass = await client.post(API + "/api/registry/servers", json=body)
+        expect(bypass.status_code == 409, "관리자 직접 등록이 도입 신청을 우회함")
+        console = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
+        requested = await client.post(console + "/api/mcp-requests", headers={"Authorization": f"Bearer {TOKENS['employee']}"},
+            json={"display_name": "Acceptance fetch", "intake_kind": "remote-endpoint", "endpoint_url": endpoint,
+                  "requested_transport": "streamable-http", "purpose": "실제 공급자 fetch 서버의 계약과 신청 승인 경계를 확인합니다."})
+        requested.raise_for_status();intake_id = requested.json()["request"]["id"]
+        scope = {k: v for k, v in body.items() if k != "display_name"}
+        scope["poisoning_ack"] = False
+        premature = await client.post(console + f"/api/mcp-requests/{intake_id}/approve", json={"risk_acceptance": "테스트보드 내 공개 intranet만 읽는 계약입니다."})
+        expect(premature.status_code == 409, "계약 검토 없는 원격 신청이 승인됨")
+        checked = await client.post(console + f"/api/mcp-requests/{intake_id}/review-contract", json={**scope,
+            "allowed_principals": [PRINCIPAL['employee']],
+            "review_note": "실제 fetch 입력 계약과 intranet 공개 자료 읽기 범위를 검토했습니다."})
+        checked.raise_for_status()
+        approved = await client.post(console + f"/api/mcp-requests/{intake_id}/approve", json={"risk_acceptance": "격리 테스트보드에서 intranet 공개 자료의 읽기만 수행합니다."})
+        approved.raise_for_status()
+        altered = await client.post(console + f"/api/mcp-requests/{intake_id}/register", json={**scope, "tools": {"fetch": "x"}})
+        expect(altered.status_code == 409, "승인 후 도구 권한이 변경됨")
+        created = await client.post(console + f"/api/mcp-requests/{intake_id}/register", json=scope)
+        expect(created.status_code == 200 and created.json().get("status") == "READY", f"등록: {created.status_code} {created.text[:200]}")
         try:
             names = {tool.name for tool in await list_tools("employee", url)}
             expect(names == {"fetch"}, f"/mcp/{server_id}/ 목록: {names}")
-            out = await call("admin", "fetch", arguments, url)
+            denied = await call("admin", "fetch", arguments, url)
+            expect(denied.get("decision") == "Block" and denied.get("policy_id") == "MCP-REGISTRY-003"
+                   and not denied.get("upstream_attempted"), "관리자가 도입 승인 사용 주체 범위를 우회함")
+            out = await call("employee", "fetch", arguments, url)
             # Earlier checks leave blocks behind, so the anomaly alert may ride on an allowed call.
             expect(out.get("decision") in {"Allow", "Alert"} and not out["is_error"],
                    f"등록 서버 호출: {out.get('decision')} {out.get('policy_id')} {out['text'][:120]}")
             await db.execute("UPDATE mcp_tools SET approval_valid_until = now() - interval '1 minute' WHERE server_id=%s", (server_id,))
-            expired = await call("admin", "fetch", arguments, url)
+            expired = await call("employee", "fetch", arguments, url)
             expect(expired.get("decision") == "Block" and expired.get("policy_id") == "P-APPROVAL-EXPIRY-001",
                    f"기한 지난 등록 서버 호출: {expired.get('decision')} {expired.get('policy_id')}")
         finally:
@@ -454,6 +492,35 @@ async def audit_chain_intact() -> str:
     result = await verify_audit_chain()
     expect(result["intact"], f"감사 체인 손상: {result}")
     return f"{result['checked']}건 연결"
+
+
+async def invitation_enrollment() -> str:
+    console = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
+    username = "invite-" + uuid4().hex[:12]
+    body = {"usernames": [username], "department": "초대 검증팀"}
+    admin_headers = {"Authorization": f"Bearer {TOKENS['admin']}"}
+    async with httpx.AsyncClient(timeout=30) as client:
+        denied = await client.post(console + "/api/account-invitations", json=body,
+                                   headers={"Authorization": f"Bearer {TOKENS['employee']}"})
+        expect(denied.status_code == 403, "일반 사용자가 조직 초대를 발급함")
+        response = await client.post(console + "/api/account-invitations", json=body, headers=admin_headers)
+        response.raise_for_status()
+        secret = parse_qs(urlsplit(response.json()["invitations"][0]["url"]).fragment)["invite"][0]
+        signup = {"username": username, "display_name": "초대 검증 사용자", "password": "invitation-test-2026", "invitation_token": secret}
+        wrong = await client.post(console + "/auth/signup", json={**signup, "username": username + "x"})
+        expect(wrong.status_code == 409, "초대를 다른 아이디로 사용함")
+        try:
+            accepted = await client.post(console + "/auth/signup", json=signup)
+            expect(accepted.status_code == 200 and accepted.json()["status"] == "approved", "유효한 조직 초대 수락 실패")
+            account = await db.fetch_one("SELECT role,department FROM principals WHERE user_id=%s", (username,))
+            expect(account == {"role": "employee", "department": "초대 검증팀"}, "초대에서 역할·부서가 변조됨")
+            listed = await client.get(console + "/api/account-invitations", headers=admin_headers)
+            expect(secret not in listed.text and "token_sha256" not in listed.text, "초대 목록에 자격 유출")
+            replay = await client.post(console + "/auth/signup", json=signup)
+            expect(replay.status_code == 409, "1회용 초대를 다시 사용함")
+        finally:
+            await client.delete(console + "/api/accounts/" + username, headers=admin_headers)
+    return "실제 48시간 초대 발급·아이디 바인딩·employee 고정·재사용 거부·비밀 재조회 금지"
 
 
 async def _run() -> dict:
@@ -477,6 +544,7 @@ async def _run() -> dict:
         ("usage-relationship-scope-alerts", relationship_scope_alerts()),
         ("server-check-changes-nothing", server_check_is_side_effect_free()),
         ("console-registration-pins-and-expires", console_registration_expires()),
+        ("invited-employee-enrollment", invitation_enrollment()),
         # PDF integration (Presidio, MCP-DATA-EGRESS-001, P-CHAIN-001) - order matters:
         # the chain check relies on the important read made by the first one.
         ("pii-masked-in-output", pii_masked_in_output()),

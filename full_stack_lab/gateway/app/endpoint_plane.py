@@ -112,13 +112,38 @@ def _match(index: list[dict], transport: str, endpoint_ref: str, server_label: s
     # A harness's managed config names each server after itself ("filesystem") but
     # points it at /mcp/<server>/ under the Gateway (D-30). The URL decides: checked
     # before labels, or every managed entry would read as a copy of the real server.
-    if any(ref.startswith(base + "/") for base in index[0].get("bases", ())):
-        return index[0]
+    for base in index[0].get("bases", ()):
+        if ref.startswith(base + "/"):
+            server_id = ref[len(base) + 1:]
+            matched = next((entry for entry in index[1:] if entry["id"] == server_id), None)
+            if not matched:
+                return None
+            if matched["lifecycle"] == "OPERATING" and matched["status"] == "READY":
+                return {**index[0], "routed_server_id": server_id}
+            return matched
     candidates = {ref, (server_label or "").strip().lower()} - {""}
     for entry in index:
         if entry["keys"] & candidates:
             return entry
     return None
+
+
+def check_route_matching() -> None:
+    base = "https://gateway.internal/mcp"
+    gateway = {"id": "__gateway__", "lifecycle": "OPERATING", "status": "READY", "keys": {base}, "bases": {base}}
+    server = {"id": "github", "lifecycle": "OPERATING", "status": "READY", "keys": {"github"}}
+    index = [gateway, server]
+    assert _match(index, "streamable-http", base + "/github/", "github")["routed_server_id"] == "github"
+    assert _match(index, "streamable-http", base + "/unregistered/", "github") is None
+    assert _match(index, "streamable-http", base + "/github/extra/", "github") is None
+    disabled = {**server, "status": "DISABLED"}
+    assert _match([gateway, disabled], "streamable-http", base + "/github", "github")["id"] == "github"
+    assert _match(index, "streamable-http", "https://vendor.example/mcp", "github")["id"] == "github"
+
+
+if __name__ == "__main__":
+    check_route_matching()
+    print("PASS active registered Gateway route matching; unknown/disabled/direct routes never count as approved")
 
 
 async def ingest(endpoint_id: str, entries: list[dict]) -> dict:
@@ -147,7 +172,7 @@ async def ingest(endpoint_id: str, entries: list[dict]) -> dict:
             registry_match = None
         elif matched["id"] == "__gateway__":
             classification = "registered"
-            registry_match = None
+            registry_match = matched.get("routed_server_id")
         elif matched["lifecycle"] in {"TERMINATING", "RETIRED"}:
             classification = "retired-residue"
             registry_match = matched["id"]

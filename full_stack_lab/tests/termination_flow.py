@@ -9,6 +9,7 @@ UR-EMAIL-ASSIST provider-operated, credential NOT disclosed -> C1 unmet -> T3,
 
 Both servers are restored afterwards (lab only) so the demo can run again.
 """
+import atexit
 import os
 import json
 import subprocess
@@ -40,6 +41,22 @@ def api(method: str, path: str, body: dict | None = None) -> tuple[int, dict]:
 
 
 failures = []
+
+
+def managed_settings(excluded: str | None = None) -> None:
+    for workstation in ("ws-ysg", "ws-jwj", "ws-pse", "ws-nkk"):
+        command = ["docker", "compose", "exec", "-T", "--user", "root", workstation, "python3",
+                   "/opt/office/managed/render.py", "/opt/office/catalog.toml", "/opt/office/rendered", "--install"]
+        if excluded:
+            command.extend(["--exclude-server", excluded])
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL)
+        subprocess.run(["docker", "compose", "exec", "-T", workstation, "sh", "-c",
+            'ENDPOINT_ID="$WORKSTATION_ID" ENDPOINT_GATEWAY_URL="$GATEWAY_URL" '
+            'ENDPOINT_CONFIG_PATHS="$HOME:/etc/claude-code:/etc/codex:/etc/gemini-cli:/etc/opencode" '
+            'python3 /opt/office/endpoint_agent.py --once'], check=True, stdout=subprocess.DEVNULL)
+
+
+atexit.register(managed_settings)
 
 
 def check(condition: bool, name: str, detail: str = "") -> None:
@@ -87,6 +104,12 @@ cred_target = next(t for t in graded["targets"] if t["kind"] == "server-held-cre
 status, revoked = api("POST", f"/api/termination/targets/{cred_target['id']}/revoke-credential")
 after = [e for e in revoked.get("collected", []) if e["kind"] == "credential-check"]
 check(status == 200 and after and after[0]["detail"]["present"] is False, "gitea: organisation revoked the token in Gitea and verified it", str(status))
+status, graded = api("POST", f"/api/termination/cases/{case_id}/assess")
+check(graded["case"]["grade"] == "T2", "gitea: actual endpoint configuration residue prevents T1", graded["case"]["grade"])
+managed_settings("gitea")
+status, collected = api("POST", f"/api/termination/cases/{case_id}/collect", {"kinds": ["endpoint"]})
+removed = [e for e in collected.get("collected", []) if e["kind"] == "endpoint-inventory"]
+check(removed and all(e["detail"]["absent"] for e in removed), "gitea: real managed settings removed and endpoint observer confirms absence")
 status, graded = api("POST", f"/api/termination/cases/{case_id}/assess")
 check(graded["case"]["grade"] == "T1", "gitea: T1 after revocation with state evidence", f"{graded['case']['grade']} {graded['case']['criteria'].get('notes')}")
 weak = [e for e in graded["evidence"] if e["kind"] == "revocation-response"]

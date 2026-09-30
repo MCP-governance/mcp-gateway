@@ -124,7 +124,7 @@ SERVER_KEYS = ("mcpServers", "mcp_servers", "servers", "mcp")
 # initialize 응답이 한다.
 PROCESS_MARKERS = re.compile(
     r"(@modelcontextprotocol/|mcp[-_]server|server[-_]mcp|mcp\.server|fastmcp|"
-    r"uvx\s+mcp|npx\s+.*mcp|modelcontextprotocol)",
+    r"uvx\s+mcp|npx\s+.*mcp|modelcontextprotocol|ida[-_]mcp|ghidra[-_]?mcp|obsidian[-_]mcp|bridge_mcp_ghidra)",
     re.IGNORECASE,
 )
 
@@ -677,6 +677,9 @@ def demo() -> None:
     assert PROCESS_MARKERS.search("node /app/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js")
     assert PROCESS_MARKERS.search("python -m mcp_server_time --local-timezone UTC")
     assert not PROCESS_MARKERS.search("/usr/bin/postgres -D /var/lib/postgresql/data")
+    assert PROCESS_MARKERS.search("uvx ida-mcp stdio")
+    assert PROCESS_MARKERS.search("python bridge_mcp_ghidra.py")
+    assert PROCESS_MARKERS.search("node /opt/obsidian-mcp/dist/index.js")
 
     frame = 'event: message\ndata: {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18","serverInfo":{"name":"demo","version":"1.0.0"}}}\n'
     parsed = _parse_initialize(frame)
