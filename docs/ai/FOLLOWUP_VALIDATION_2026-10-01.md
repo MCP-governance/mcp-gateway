@@ -48,6 +48,8 @@
 **배치**: 솔루션 기기 `100.83.175.111`에 `16df3f7`을 `./console.sh field up --with-lab-mcp`로 올렸다. 실습 MCP 10종과
 별도 DB(`field_lab_db_data`)를 쓰는 모드라 현장 계정·감사 원장은 건드리지 않았다(배포 전 덤프도 남김).
 `/api/readiness`: 빌드 일치, 규칙·데이터 일치, MCP 서버 10/11 READY(playwright만 ERROR — 이번 시험에 쓰지 않음).
+시험 뒤 같은 코드로 `./console.sh field up`(현장 모드)으로 되돌렸다 — 준비 완료·규칙·데이터 일치, `ms-learn` READY,
+현장 계정 13개·감사 기록 109행이 배포 전과 같다. 코드 커밋 `16df3f7`의 CI는 성공이다.
 
 **하네스**: 시험 VM `100.110.81.60`의 실제 CLI와 실제 벤더 모델. 사용자 지정대로 effort는 high 이하(medium).
 
