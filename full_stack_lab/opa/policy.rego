@@ -34,6 +34,16 @@ recent_important := object.get(input, ["context", "recent_important"], 0)
 
 important_limit := object.get(input, ["context", "important_limit"], 1000000000)
 
+# PAC-15. 호출량은 "끝난 호출"만 세면 막을 수 없다 - 같이 도착한 호출은 서로를
+# 세지 못한다. Gateway가 판정 전에 이번 호출의 자리를 원자적으로 예약하고, 그
+# 결과(진행 중 호출 수·같은 호출의 중복 여부)를 여기로 넘긴다. 값이 없는 배포와
+# 예전에 기록된 재생 사례는 이 통제가 없던 때이므로 판단하지 않는다.
+active_calls := object.get(input, ["context", "active_calls"], 0)
+
+concurrency_limit := object.get(input, ["context", "concurrency_limit"], 1000000000)
+
+duplicate_in_flight := object.get(input, ["context", "duplicate_in_flight"], false)
+
 classification_required := object.get(input, ["resource", "classification", "required"], false)
 
 classification_source := object.get(input, ["resource", "classification", "source"], null)
@@ -279,6 +289,30 @@ candidate["P-RATE-001"] := {
 	"conditions": {"matched": [], "violated": ["context.recent_calls"]},
 } if {
 	recent_calls >= call_limit
+}
+
+# 한 주체가 동시에 돌리는 호출 수. 호출량 상한과 다른 것을 막는다 - 상한은 시간당
+# 총량이고 이것은 "지금 열려 있는 연결"이다. 상한만으로는 60건을 1초 안에 동시에
+# 보내는 것과 1분에 걸쳐 보내는 것이 같아진다.
+candidate["P-RATE-002"] := {
+	"decision": "Block",
+	"reason": "이 주체가 동시에 실행 중인 호출 수가 상한을 넘었습니다.",
+	"restrictions": {},
+	"conditions": {"matched": [], "violated": ["context.active_calls"]},
+} if {
+	active_calls > concurrency_limit
+}
+
+# 같은 인자의 같은 호출이 아직 끝나지 않았는데 또 들어왔다. 시간초과 뒤의 재시도는
+# 여기에 걸리지 않는다 - 그때는 앞의 예약이 이미 풀렸거나 만료됐다. 걸리는 것은
+# 같은 부수효과를 두 번 내려는 호출이다(이중 발송, 재생).
+candidate["P-RATE-003"] := {
+	"decision": "Block",
+	"reason": "같은 호출이 실행 중이거나 결과가 확정되지 않았습니다. 결과를 확인한 뒤 다시 보내세요.",
+	"restrictions": {},
+	"conditions": {"matched": [], "violated": ["context.duplicate_in_flight"]},
+} if {
+	duplicate_in_flight == true
 }
 
 candidate["P-AUTHZ-DENY-001"] := {

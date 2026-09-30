@@ -60,7 +60,10 @@ def headers(name, credentials):
     if credentials and Path(credentials).exists():
         for row in json.loads(Path(credentials).read_text(encoding="utf-8")).values():
             if row.get("server_name") == name and row.get("server_url") == SERVERS[name]:
-                if row.get("expires_at") and row["expires_at"] <= time.time():
+                expiry = row.get("expires_at") or 0
+                # Native Codex stores Unix milliseconds; accept seconds from older exports.
+                expiry = expiry / 1000 if expiry > 100_000_000_000 else expiry
+                if expiry and expiry <= time.time():
                     raise ValueError("expired vendor token; refresh through the native client")
                 return {"Authorization": "Bearer " + row["access_token"]}
     if name == "github" and os.getenv("GITHUB_MCP_TOKEN"):

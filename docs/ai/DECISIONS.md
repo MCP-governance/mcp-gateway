@@ -510,3 +510,61 @@
 - **native 제약**: PC 키트가 인벤토리 파일 유무와 무관하게 세 파일을 생성한다. Claude는 고정 Gateway MCP, 관리형 allowlist, 계정 커넥터/마켓플레이스 제한. Codex는 name+URL identity의 `requirements.toml`과 Apps·plugins·web/browser 제한. 랩 이미지에도 requirements를 복사한다. 시스템 파일 보호와 지원 버전은 조직 IT 책임이다.
 - **시험**: 모형 MCP를 새로 만들지 않고 GitHub·Supabase·Sentry·Notion·Figma·Zapier·Context7의 실제 공식 원격 서버로 opt-in 검사한다. 별도 native 프로필, OAuth, secret-free 결과, 독립 패킷/목적지 관측을 사용한다. 회귀 검사와 실제 서비스/현장 증거를 구분한다.
 - **한계와 순서**: [SECURITY_BOUNDARIES.md](SECURITY_BOUNDARIES.md). Desktop/웹·임의 셸/SDK·root/admin·LLM 전송·원격 upstream OAuth는 이 변경의 집행 범위 밖이다. 기존 Gateway·Control Plane·PC 키트와 조직 관리 제품을 연결하며 새 범용 통제 서비스를 만들지 않는다.
+
+## D-54 우회 표기를 판정의 근거로 삼지 않는다 — 주소·SQL·지시문·상한
+- **문제**: 통제는 전부 있었지만 넷 다 **입력의 겉모습**을 봤다. 실측(2026-09-30, 운영 중이던 랩 컨테이너):
+  `http://0177.0.0.1/`·`http://0x7f.0.0.1/`·`http://169.254.169.254.nip.io/`·`http://corp-db.bob.local/`이 모두
+  **external**로 분류돼 `MCP-EGRESS-002`(SSRF)를 지났다. `select * into public.stolen from hr.salaries`와
+  `select pg_terminate_backend(…)`·`set_config(…)`는 **r**(읽기)로 분류됐고, 반대로 `select $$; drop table x;$$`는
+  문자열 안의 단어 때문에 **x**로 올라가며 없는 테이블 `public.x`를 만들어 냈다. 인자·결과의 주입 검사는
+  `core.py`의 짧은 정규식 8개였고 등록 시점의 `poisoning.py`(6규칙+숨김 문자)보다 약했다 — **가장 신뢰할 수 없는
+  내용에 가장 약한 검사**가 돌았다. 호출량은 감사표에서 셌는데 그 표에는 끝난 호출만 있어, 같이 도착한 6건이
+  서로를 세지 못하고 전부 통과했다(동시 실행 수는 물어볼 수조차 없었다).
+- **결정**: 네 가지 모두 "그 입력이 실제로 무엇이 되는가"로 판정한다.
+  - **주소**: `classify.host_category()`가 후행 점·대문자, `socket.inet_aton`이 받는 10진·8진·16진·축약 IPv4,
+    IPv4-mapped IPv6, 이름 안에 박힌 주소(`nip.io`·`sslip.io`의 점·하이픈 표기), 인프라 호스트의 FQDN,
+    `internal_domains` 아래 이름을 모두 infrastructure로 본다. **DNS는 조회하지 않는다** — 조회하면 판정과 실제
+    연결 사이에 TOCTOU가 생기고, 조회 자체가 유출 신호가 된다.
+  - **SQL**: `pglast`(libpg_query — PostgreSQL 서버와 같은 파서)의 구문 트리로 판정한다. 문장 종류, `SELECT INTO`,
+    `COPY … TO PROGRAM`/파일, `EXPLAIN ANALYZE`의 내부 문장, WITH 안의 DML, 바깥에 닿는 함수(파일·대형 객체·
+    dblink·설정·세션 종료·sleep)를 본다. 파싱되지 않으면 `x` — 서버가 받지 않을 문장을 "읽기"로 보는 쪽이 위험하다.
+  - **지시문**: `poisoning.py` 하나가 계약·인자·결과를 모두 본다. 규칙 묶음은 **결과의 무게에 맞춰** 넓어진다:
+    `OVERRIDE_RULES`(결과 보류) ⊂ `INSTRUCTION_RULES`(인자 → 승인/경보) ⊂ `CATALOG_RULES`(계약 → 확인 요구).
+    오탐 비용이 다르기 때문이다 — 결과를 막으면 업무가 끊기고, 계약은 사람이 한 번 읽으면 된다.
+  - **상한**: `call_reservations`에 판정 **전에** 자리를 적고, 주체별 `pg_advisory_xact_lock` 안에서 세기와 쓰기를
+    한 트랜잭션에 넣는다. 예약은 모든 종료 경로가 지나는 `_decision_payload`에서 풀리고 TTL로도 만료된다.
+    상태 저장소가 답하지 않으면 실행하지 않는다 — 셀 수 없는 상한은 상한이 아니다.
+    새 정책 `P-RATE-002`(동시 실행), `P-RATE-003`(같은 호출이 아직 실행 중).
+- **덧붙여**: PC에 파일로 놓이는 MCP 토큰으로 관리 API가 열려 있었다(`/api/state` 200, 승인 API는 역할 검사를 통과).
+  관리 API는 이제 대화형 로그인의 `console` scope를 요구한다. 그리고 `approve_request`가 요청자=승인자를 거부한다 —
+  예외 관리대장이 이미 지키던 §8.6을 건별 승인에도 적용한다.
+- **오탐 관리**: 넓힌 규칙마다 정상 업무 대조군을 같은 자리에 넣었다. `tests/adversarial_check.py`는 공격과 정상
+  업무를 **같은 수만큼** 돌리고 둘 다 센다 — 전부 막는 통제는 공격 점수가 만점이어도 쓸 수 없기 때문이다.
+  `python -m app.classify`·`python -m app.poisoning`의 자체 검사에도 "걸리면 안 되는 문장"이 들어 있다
+  (예: 인자의 "Send the invoice to finance@bob.local"은 걸리지 않는다 — 목적지는 문구가 아니라 destinations가 판단한다).
+- **PAC 대응**: 이 변경으로 PAC-15(원자적 예약)가 처음 집행되고 PAC-06·10·12·13이 강화된다. 전체 대응은
+  [PAC_MAPPING.md](PAC_MAPPING.md), 관리대장의 `pac_ids`에도 같은 값이 있다. PAC-05(대리 실행)는 하네스가 인증된
+  주체가 아니라서 구조상 판정할 수 없다 — 헤더로 자기소개한 하네스를 인가 근거로 쓰지 않는다는 결정을 유지한다.
+
+## D-55 — 클린 배포와 독립 효과 검증, 원격 자격의 최소 경계 (2026-09-30)
+
+- **문제**: Claude의 hardening은 `/home/kali/mcp-gateway`의 미커밋 변경에만 있었고 솔루션 기기는 이전
+  `853e0a6`이었다. 기존 WSL 스택은 두 checkout의 bind mount가 섞여 자체 테스트와 사용자가 보는 배포를
+  같은 것으로 해석할 수 없었다. IBM 비교에도 공개 CPEX 코드를 비공개로 오인한 결론이 있었다.
+- **결정**: 원본 변경은 patch·파일 해시로 보존하고 새 checkout·프로젝트·DB·회사 시스템 볼륨에서
+  `reset → up → test`를 수행한다. 기존 회사 계정과 감사 원장은 field 배포 시 보존·백업한다.
+- **집행**: Console/커넥터 관리 공통 인증에도 `console` scope를 요구한다. 예약은 도착량을 세고 판정 저장 뒤
+  해제하며, `tools/call` 전달 뒤 결과 불명은 lease까지 유지한다. 전달 전 연결 실패와 구분한다.
+- **실제 SaaS 호환성**: Sentry의 `root cause`를 역할 탈취로 오인하던 규칙을 정정했다. 노출하지 않은 도구의
+  설명 경고가 선택한 정상 도구까지 막지 않게 하되 전체 계약 hash 고정은 유지한다. 선택한 경고 도구의 명시적
+  검토는 설명·스키마 hash에 묶어 runtime과 등록 증거에 보존하고, hash가 바뀌면 재검토한다.
+- **자격**: 기존 upstream helper에 operator-provisioned 자격 파일을 추가한다. exact HTTPS resource,
+  등록 주체, 초 단위 만료, 파일 권한을 검증한다. 사용자 SSO는 전달하지 않는다. 자동 OAuth 수명주기나
+  표준 위임을 구현했다고 주장하지 않는다.
+- **증거**: 실제 DB 잠금을 유지한 동시·중복 쓰기는 별도 DB 변화로 대조한다. 실제 일곱 벤더 MCP를
+  native 하네스와 SDK로 시험하고, VM 호스트 SYN 관측 및 독립 internal network 시험을 분리 기록한다.
+  managed 연결 목록에서 사라진 결과를 전체 egress 차단으로 바꾸어 쓰지 않는다.
+- **배포**: health/readiness와 Console `정책 → 배포 확인`에 code revision/hash·OPA의 로드 정책 일치를 표시한다.
+  이 일치는 해당 서비스의 배포 증거이며 단말 전체의 강제성·공급자 권한 폐기를 뜻하지 않는다.
+- **문서**: [검증 보고서](OVERHAUL_VALIDATION_2026-09-30.md), [IBM 정정본](BENCHMARK_IBM_CONTEXTFORGE.md),
+  [Microsoft 정정본](BENCHMARK_MICROSOFT.md). 이전 수치 중 재검증하지 않은 것은 확정 근거에서 제외한다.

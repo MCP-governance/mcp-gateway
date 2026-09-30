@@ -73,8 +73,12 @@ status, graded = api("POST", f"/api/termination/cases/{case_id}/assess")
 check(graded["case"]["grade"] == "T3", "gitea: before any evidence the grade is T3", graded["case"]["grade"])
 status, collected = api("POST", f"/api/termination/cases/{case_id}/collect", {"kinds": ["gateway", "endpoint", "credentials", "session"]})
 denials = [e for e in collected.get("collected", []) if e["kind"] == "gateway-denial"]
-check(denials and all(e["detail"]["blocked"] and e["detail"]["policy_id"] == "MCP-DECOMM-001" for e in denials),
-      "gitea: every gateway path is refused as MCP-DECOMM-001", f"{len(denials)} probes")
+check(denials and all(e["detail"]["blocked"] and not e["detail"].get("upstream_attempted") and (
+    e["detail"]["policy_id"] == "MCP-DECOMM-001" or (
+        e["detail"]["policy_id"] == "P-INPUT-001"
+        and e["detail"].get("identity_status") in {"deleted", "disabled", "inactive", "suspended"})) for e in denials),
+      "gitea: every historical caller is refused before dispatch with lifecycle or identity state evidence",
+      f"{len(denials)} probes")
 creds = [e for e in collected.get("collected", []) if e["kind"] == "credential-check"]
 check(creds and creds[0]["detail"]["present"] is True, "gitea: server-held token still exists after cutover (E3)")
 status, graded = api("POST", f"/api/termination/cases/{case_id}/assess")

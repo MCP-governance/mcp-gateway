@@ -258,11 +258,17 @@ v1(모의 MCP 서버·웹에서 도구 실행, `2026-09-v1.*`)과 v2(손으로 �
 
 ## 검토·브랜치 원칙
 
-- 기본 브랜치는 `main`입니다(2026-09-28 `feat/2026-09-v3.1-field-deploy`에서 이름을 바꿈).
+- 작업 전 `git ls-remote --symref origin HEAD`로 기본 브랜치를 확인합니다. 2026-09-30 실조회 값은
+  `feat/2026-09-v3.1-field-deploy`입니다. 문서의 과거 `main` 전환 기록만으로 작업 대상을 정하지 않습니다.
 - 새 브랜치는 사용자가 요청한 경우에만 만듭니다. 이름은 `MM/DD-branchname`입니다(예: `09/28-intake`; Git 브랜치 이름에 공백은 쓸 수 없어 ` - `의 공백을 뺍니다). 연도·`feat` 접두어는 쓰지 않습니다.
 - 유지하는 브랜치는 `main`과 다른 흐름의 field 버전 3개(`architecture/plan-1-field-deploy`·`architecture/plan-2-field-deploy`·`proxy-field-deploy`)뿐입니다. 병합·정리 전에 필요한 변경을 유지 브랜치에 반영합니다.
 
 ## 운영으로 옮기기 전에
+
+2026-09-30 후속 개선은 Console **정책 → 배포 확인**에서 실행 코드와 OPA 정책 일치를 표시합니다.
+SQL AST·주소 정규화·호출 예약·관리 토큰 scope·별도 SaaS 자격의 경계를 보강했습니다.
+클린 테스트보드 및 SSH VM 검증 범위는 [검증 보고서](docs/ai/OVERHAUL_VALIDATION_2026-09-30.md),
+재사용할 외부 분석은 [IBM/CPEX](docs/ai/BENCHMARK_IBM_CONTEXTFORGE.md)와 [Microsoft](docs/ai/BENCHMARK_MICROSOFT.md)에 있습니다.
 
 - 이 저장소는 강제 경로 **안의** 호출을 통제합니다. 섀도 MCP는 발견·증적 강화까지이고, 실제 차단은 네트워크 평면
   (egress 허용목록·DNS)과 하네스의 관리형 설정 잠금(Claude Code `managed-mcp.json`의 배타적 제어 등)의 몫입니다

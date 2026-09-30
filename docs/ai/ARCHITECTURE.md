@@ -127,6 +127,8 @@ OpenCode `--agent bob`. **MCP 경로는 그대로**다: 도구 목록 조회와 
 6. `classify.py`가 인자에서 자원(경로·URL·SQL 테이블·저장소·수신자·명령·키)을 뽑아 등급과 실효 행위(r/w/x)를 정한다.
 7. 승인 스키마 검증(`P-INPUT-SCHEMA-001`) → 쓰기·실행·외부 목적지면 **Presidio**가 나가는 인자의 개인정보를 찾는다
    (불능이면 `P-DATA-INSPECTION-001`). 최근 10분 중요정보 열람 뒤 외부 전송이면 연쇄 표지.
+   그리고 판정 **전에** 이번 호출의 자리를 `call_reservations`에 원자적으로 예약한다(주체별 advisory lock) —
+   호출량·동시 실행·중복 판단은 예약 뒤의 수를 쓴다(D-54, PAC-15). 예약할 수 없으면 실행하지 않는다.
 8. OPA가 판정한다: Allow / Alert / Restrict / Approval / Block(→ [POLICY.md](POLICY.md)). 단말 에이전트가 섀도 설정을
    보고한 PC의 호출은 `MCP-SHADOW-001` 경보가 붙는다.
 9. 실행이면 같은 연결에서 upstream `tools/list`를 다시 받아 계약 해시를 대조한 뒤 호출(`core._call_upstream`), 달라졌으면
@@ -251,7 +253,8 @@ CPU에서 수십 초~2분 걸린다. 하네스 LLM 실측 결과는 DECISIONS D-
 | `…/main.py` | API, `/mcp` 마운트(`RequireBearer` → `ServerPath`) |
 | `…/core.py` | 강제 경로(`execute_call`), 정책 입력 조립(이용 관계 범위 포함), 계약 확인, 감사 체인, 연결 확인(`check_server`) |
 | `…/contract.py` | 순수 계약 모듈: `canonical_hash`, OPA 결과 스키마, 감사 체인 열 집합·fingerprint(D-41) |
-| `…/classify.py` | 자원 추출·분류·DLP (`python -m app.classify`로 self-check) |
+| `…/classify.py` | 자원 추출·분류·DLP. 목적지 주소는 표기를 정규화해 판정하고(`host_category`), SQL은 PostgreSQL 파서(`pglast`)의 구문 트리로 r/w/x와 테이블을 정한다(D-54). `python -m app.classify`로 self-check |
+| `…/poisoning.py` | 모델을 겨냥한 지시문 탐지 한 벌 — 계약·인자·결과가 각자의 결과 무게에 맞는 묶음을 쓴다(D-54). `python -m app.poisoning` |
 | `…/endpoint_plane.py` | 단말 인벤토리 분류(Gateway 경유·섀도·폐기 잔존) |
 | `…/decommission.py` | 종료 케이스·회수 대상·증거·판정·판정서 |
 | `…/privacy.py` | Presidio 분석·마스킹 호출 |

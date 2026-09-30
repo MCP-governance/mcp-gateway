@@ -24,7 +24,8 @@ from pydantic import Field
 from psycopg.types.json import Jsonb
 
 from . import db
-from .agent_contract import (ACCOUNT_STATUS_REASON, StrictModel, authenticate,
+from .release import build_info
+from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, authenticate,
                              authenticated_user, issue_token, private_key)
 from .connectors import router as connectors_router
 from .idp import router as idp_router
@@ -221,7 +222,7 @@ def github_repository_url(value: str) -> str:
 
 
 async def current_identity(authorization: str | None) -> dict:
-    return await authenticated_user(authorization)
+    return await authenticated_user(authorization, require_scope=CONSOLE_SCOPE)
 
 
 @app.post("/auth/mock-login")
@@ -237,7 +238,7 @@ async def login(request: Login, http_request: Request):
     row = await password_principal(request.email, request.password, caller)
     user = {"user_id": row["user_id"], "principal": row["token"], "name": row["display_name"],
             "department": row["department"] or "미지정", "roles": [row["role"]], "email": row["email"]}
-    token, _claims = issue_token(user)
+    token, _claims = issue_token(user, extra={"scope": CONSOLE_SCOPE})
     response = JSONResponse({"access_token": token, "token_type": "bearer", "expires_in": 1800,
             "user": {k: v for k, v in {**user, "job_title": row["job_title"], "synthetic": os.getenv("MCP_FIELD_MODE") != "1"}.items()
                      if k != "principal"}})
@@ -564,16 +565,18 @@ async def delete_account(user_id: str, authorization: str | None = Header(defaul
 @app.get("/health")
 async def health():
     await db.fetch_one("SELECT 1")
-    return {"status": "ok", "service": "agent-service"}
+    return {"status": "ok", "service": "agent-service", "build": build_info()}
 
 
 @app.get("/api/readiness")
 async def ready():
     gateway_ok = False
+    gateway = {}
     try:
         async with httpx.AsyncClient(timeout=3) as client:
             response = await client.get(GATEWAY_URL + "/api/health")
-            gateway_ok = response.status_code == 200 and response.json().get("status") == "ok"
+            gateway = response.json()
+            gateway_ok = response.status_code == 200 and gateway.get("status") == "ok"
     except (httpx.HTTPError, ValueError):
         pass
     llm = None
@@ -585,7 +588,10 @@ async def ready():
             llm = False
     # The LLM is optional for readiness: scripted workstations and every control
     # work without it. Its state is reported, not required.
-    return {"status": "ready" if gateway_ok else "not_ready", "gateway": gateway_ok,
+    consistent = gateway.get("build", {}).get("code_sha256") == build_info()["code_sha256"]
+    return {"status": "ready" if gateway_ok and consistent else "not_ready", "gateway": gateway_ok,
+            "build": {"console": build_info(), "gateway": gateway.get("build"), "consistent": consistent},
+            "policy": gateway.get("policy"),
             "identity": "synthetic-oauth2", "llm_gateway": llm}
 
 

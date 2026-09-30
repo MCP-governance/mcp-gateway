@@ -4,6 +4,8 @@ set -euo pipefail
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$LAB_DIR"
+export MCP_BUILD_REVISION="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+if [[ -n "$(git status --porcelain -- gateway ../docs 2>/dev/null)" ]]; then MCP_BUILD_REVISION+="+dirty"; fi
 mkdir -p reports
 
 env_value() { [[ -f .env ]] || return 0; sed -n "s/^$1=//p" .env | tail -1; }
@@ -467,6 +469,8 @@ case "${1:-up}" in
       python /validation/tests/intake_validation_test.py
     docker run --rm --network none -v "$LAB_DIR:/validation:ro" "$(docker compose images -q gateway)" \
       python /validation/tests/field_account_git_test.py
+    docker run --rm --network none -e PYTHONPATH=/app -v "$LAB_DIR:/validation:ro" "$(docker compose images -q gateway)" \
+      python /validation/tests/credential_binding_check.py
     if command -v node >/dev/null; then node --test tests/console-state.test.mjs
     else echo "node 없음 — 콘솔 상태 테스트는 CI 정적 검사에서 실행됩니다."; fi
     # --entrypoint: the static image's default entrypoint runs the tests without printing them
@@ -476,10 +480,17 @@ case "${1:-up}" in
     docker compose exec -T gateway python -m app.poisoning
     docker compose exec -T agent-service python -m app.connectors
     docker compose exec -T gateway python -m app.acceptance | tee reports/acceptance.json
+    python3 tests/reservation_effect_check.py | tee reports/reservation-effects.json
     harness_check | tee reports/harnesses.txt
     AGENT_MODE=scripted workday all --mode scripted --check | tee reports/workday.txt
     python3 tests/termination_flow.py | tee reports/termination-flow.txt
     tests/security_regression.sh | tee reports/security-regression.txt
+    # Evasions of the controls, with an equally sized benign control group. Runs in the
+    # gateway image for its MCP client, on the office network the harnesses use.
+    docker compose run --rm --no-deps --entrypoint python \
+      -e LAB_GATEWAY_URL=http://gateway:8080 -e MOCK_SSO_PASSWORD="$(env_value MOCK_SSO_PASSWORD || true)" \
+      -v "$LAB_DIR/tests:/tests:ro" \
+      gateway /tests/adversarial_check.py | tee reports/adversarial.txt
     docker compose exec -T gateway python -m app.replay --limit 200 > reports/policy-replay.json
     python3 tests/replay_check.py reports/policy-replay.json
     for e in e1 e2 e3; do docker compose exec -T gateway python -m app.experiments "$e" > "reports/experiment-$e.json"; done
@@ -511,7 +522,9 @@ json.dump(module.app.openapi(), sys.stdout, ensure_ascii=False, indent=2, sort_k
   logs) shift; docker compose --profile llm logs -f --tail=120 "${@:-gateway}" ;;
   down) docker compose --profile llm --profile llm-stub --profile replay down ;;
   reset)
-    docker compose --profile llm --profile llm-stub --profile replay down -v
+    # Reset also works on a fresh checkout; no service is started with these placeholders.
+    AGENT_JWT_PRIVATE_KEY=unused AGENT_JWT_PUBLIC_KEY=unused LITELLM_MASTER_KEY=unused \
+      docker compose --profile llm --profile llm-stub --profile replay down -v
     rm -f reports/*.json reports/*.txt
     echo "DB·회사 시스템·모델 볼륨과 보고서를 초기화했습니다. registry/contracts.lock.json은 유지합니다."
     ;;

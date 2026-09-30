@@ -80,6 +80,29 @@ ALTER TABLE termination_evidence ADD CONSTRAINT termination_evidence_kind_check 
   'revocation-response', 'introspection', 'provider-attestation', 'gateway-denial', 'liveness-probe',
   'endpoint-inventory', 'credential-check', 'session-termination', 'operator-statement'));
 
+-- Calls that are in flight right now. The ceilings used to be counted from the audit
+-- table, which only holds calls that already finished, so ten calls arriving together
+-- each saw nine of them as not yet existing and all ten passed. A row is written here
+-- before the policy sees the call, under a per-principal lock, so the number the policy
+-- reads already includes this call and every other one still running.
+CREATE TABLE IF NOT EXISTS call_reservations (
+  request_id   uuid PRIMARY KEY,
+  user_token   text NOT NULL,
+  server_id    text,
+  tool_name    text,
+  fingerprint  text NOT NULL,
+  data_class   text NOT NULL DEFAULT 'important',
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  expires_at   timestamptz NOT NULL,
+  released_at  timestamptz
+);
+ALTER TABLE call_reservations ADD COLUMN IF NOT EXISTS data_class text NOT NULL DEFAULT 'important';
+-- "what is this principal running now" is the only question asked of this table.
+CREATE INDEX IF NOT EXISTS call_reservations_open_idx
+  ON call_reservations(user_token, expires_at) WHERE released_at IS NULL;
+CREATE INDEX IF NOT EXISTS call_reservations_arrivals_idx
+  ON call_reservations(user_token, created_at);
+
 -- An approved call that did not run is not a rejection (docs/architecture/proposals/
 -- runtime-boundaries.md): NOT_EXECUTED = stopped before dispatch, UNCONFIRMED =
 -- dispatched but the result is unknown. Databases created before this get the wider CHECK.

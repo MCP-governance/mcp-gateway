@@ -28,7 +28,8 @@ from .core import (
     verify_audit_chain,
 )
 from .mcp_facade import build_mcp, transport_security
-from .agent_contract import authenticated_user
+from .agent_contract import CONSOLE_SCOPE, authenticated_user
+from .release import build_info, policy_info
 from . import activity, registry
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
@@ -119,7 +120,14 @@ async def caller(authorization: str | None = Header(default=None)) -> dict:
     return await authenticated_user(authorization)
 
 
-async def admin_caller(user: dict = Depends(caller)) -> dict:
+async def admin_caller(authorization: str | None = Header(default=None)) -> dict:
+    """An administrative API asks for the role *and* for an interactive sign-in.
+
+    The same person also holds an `mcp` token, which `bob-sso` leaves in a file on their
+    PC for the harnesses to read. Accepting it here would make every local process on an
+    administrator's machine able to approve calls and change enforcement in their name.
+    """
+    user = await authenticated_user(authorization, require_scope=CONSOLE_SCOPE)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
     return user
@@ -156,6 +164,7 @@ async def _probe(url: str) -> bool:
 
 @app.get("/api/health")
 async def health() -> dict:
+    policy = await policy_info(OPA_URL)
     opa_ok, jaeger_ok, analyzer_ok, anonymizer_ok = await asyncio.gather(
         _probe(OPA_URL.rsplit("/v1/", 1)[0] + "/health?bundles=true"),
         _probe(JAEGER_QUERY_URL) if JAEGER_QUERY_URL else _absent(),
@@ -173,7 +182,8 @@ async def health() -> dict:
     components = {"gateway": True, "postgresql": db_ok, "opa": opa_ok, "jaeger": jaeger_ok,
                   "presidio_analyzer": analyzer_ok, "presidio_anonymizer": anonymizer_ok}
     required = [value for value in components.values() if value is not None]
-    return {"status": "ok" if all(required) else "degraded", "components": components,
+    return {"status": "ok" if all(required) and policy["matches"] else "degraded", "components": components,
+            "build": build_info(), "policy": policy,
             # Upstream state is reported, not required: one server in DRIFT must not
             # make the control point "unhealthy" - that is the Gateway doing its job.
             "mcp_servers": {"ready": sum(1 for v in servers.values() if v == "READY"),

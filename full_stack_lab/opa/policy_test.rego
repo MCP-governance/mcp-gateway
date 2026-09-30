@@ -187,6 +187,36 @@ test_rate_limit_inert_without_context if {
 	result.decision == "Allow"
 }
 
+# ── T-RATE-003/004 동시 실행과 중복 (PAC-15) ────────────────────────────────
+
+test_concurrency_blocks_above_limit if {
+	result := decision with input as with_input({"context": {"active_calls": 5, "concurrency_limit": 4}})
+	result.policy_id == "P-RATE-002"
+	result.decision == "Block"
+}
+
+test_concurrency_allows_at_limit if {
+	result := decision with input as with_input({"context": {"active_calls": 4, "concurrency_limit": 4}})
+	result.decision == "Allow"
+}
+
+test_duplicate_call_in_flight_blocks if {
+	result := decision with input as with_input({"context": {"duplicate_in_flight": true}})
+	result.policy_id == "P-RATE-003"
+	result.decision == "Block"
+}
+
+test_duplicate_call_after_release_allows if {
+	result := decision with input as with_input({"context": {"duplicate_in_flight": false}})
+	result.decision == "Allow"
+}
+
+# 예약 값이 없던 때에 기록된 입력(정책 재생)은 이 통제로 판단하지 않는다.
+test_ceilings_inert_for_recorded_inputs_without_reservation if {
+	result := decision with input as with_input({"context": {"recent_calls": 1, "call_limit": 60}})
+	result.decision == "Allow"
+}
+
 # ── T-VOLUME-001/002 연쇄호출 누적 ──────────────────────────────────────────
 
 test_volume_escalates_important_read if {
@@ -567,6 +597,17 @@ test_every_ledger_entry_has_required_management_information if {
 	every _, entry in data.policy_ledger {
 		every field in required {
 			object.get(entry, field, null) != null
+		}
+	}
+}
+
+# 팀원의 실행 전 정책 PAC-01~15 중 이 정책이 무엇을 집행하는지(docs/ai/PAC_MAPPING.md).
+# 없는 번호를 적어 두면 대응표와 관리대장이 조용히 갈라진다.
+test_pac_ids_reference_existing_controls if {
+	valid := {sprintf("PAC-%02d", [n]) | some n in numbers.range(1, 15)}
+	every _, entry in data.policy_ledger {
+		every pac in object.get(entry, "pac_ids", []) {
+			pac in valid
 		}
 	}
 }

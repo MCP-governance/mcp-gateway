@@ -72,7 +72,11 @@
       "test_ids": [
         "T-REGISTRY-001"
       ],
-      "pac_candidate_id": "PAC-CAND-01"
+      "pac_candidate_id": "PAC-CAND-01",
+      "pac_ids": [
+        "PAC-01",
+        "PAC-08"
+      ]
     },
     "MCP-REGISTRY-002": {
       "name": "비활성 MCP 도구 실행 차단",
@@ -120,7 +124,11 @@
       "test_ids": [
         "T-REGISTRY-002"
       ],
-      "pac_candidate_id": "PAC-CAND-01"
+      "pac_candidate_id": "PAC-CAND-01",
+      "pac_ids": [
+        "PAC-01",
+        "PAC-08"
+      ]
     },
     "MCP-SUPPLY-001": {
       "name": "공급망 위험 서버 차단",
@@ -174,7 +182,10 @@
         "T-SUPPLY-001",
         "T-SUPPLY-002"
       ],
-      "pac_candidate_id": "PAC-CAND-02"
+      "pac_candidate_id": "PAC-CAND-02",
+      "pac_ids": [
+        "PAC-08"
+      ]
     },
     "MCP-CATALOG-001": {
       "name": "승인 계약 불일치 차단",
@@ -231,7 +242,11 @@
       "test_ids": [
         "T-CATALOG-001"
       ],
-      "pac_candidate_id": "PAC-CAND-10"
+      "pac_candidate_id": "PAC-CAND-10",
+      "pac_ids": [
+        "PAC-02",
+        "PAC-08"
+      ]
     },
     "P-APPROVAL-EXPIRY-001": {
       "name": "승인 유효기간 만료 자산 차단",
@@ -286,7 +301,10 @@
         "T-APPROVAL-001",
         "T-APPROVAL-002"
       ],
-      "pac_candidate_id": "PAC-CAND-03"
+      "pac_candidate_id": "PAC-CAND-03",
+      "pac_ids": [
+        "PAC-01"
+      ]
     },
     "P-CLASSIFICATION-001": {
       "name": "분류 근거 없는 데이터 차단",
@@ -337,7 +355,10 @@
         "T-CLASS-001",
         "T-CLASS-002"
       ],
-      "pac_candidate_id": "PAC-CAND-19"
+      "pac_candidate_id": "PAC-CAND-19",
+      "pac_ids": [
+        "PAC-11"
+      ]
     },
     "P-RATE-001": {
       "name": "호출량 상한",
@@ -388,7 +409,10 @@
         "T-RATE-001",
         "T-RATE-002"
       ],
-      "pac_candidate_id": "PAC-CAND-26"
+      "pac_candidate_id": "PAC-CAND-26",
+      "pac_ids": [
+        "PAC-15"
+      ]
     },
     "P-AUTHZ-DENY-001": {
       "name": "최소권한 미충족 차단",
@@ -442,7 +466,10 @@
         "T-RBAC-001",
         "T-RBAC-002"
       ],
-      "pac_candidate_id": "PAC-CAND-07"
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-09"
+      ]
     },
     "P-X-APPROVAL-001": {
       "name": "중요정보 고위험 실행 추가 승인",
@@ -498,7 +525,10 @@
         "T-APPROVAL-X-001",
         "T-APPROVAL-X-002"
       ],
-      "pac_candidate_id": "PAC-CAND-15"
+      "pac_candidate_id": "PAC-CAND-15",
+      "pac_ids": [
+        "PAC-13"
+      ]
     },
     "P-VOLUME-001": {
       "name": "중요정보 누적 접근 승격",
@@ -555,7 +585,10 @@
         "T-VOLUME-001",
         "T-VOLUME-002"
       ],
-      "pac_candidate_id": "PAC-CAND-16"
+      "pac_candidate_id": "PAC-CAND-16",
+      "pac_ids": [
+        "PAC-15"
+      ]
     },
     "P-DEPT-001": {
       "name": "소관 부서 외 중요정보 접근 승인",
@@ -662,7 +695,10 @@
         "T-RESTRICT-001",
         "T-RESTRICT-002"
       ],
-      "pac_candidate_id": "PAC-CAND-20"
+      "pac_candidate_id": "PAC-CAND-20",
+      "pac_ids": [
+        "PAC-12"
+      ]
     },
     "P-IMPORTANT-ALERT-001": {
       "name": "중요정보 열람 경고",
@@ -767,7 +803,10 @@
       "test_ids": [
         "T-ALLOW-001"
       ],
-      "pac_candidate_id": "PAC-CAND-07"
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-09"
+      ]
     },
     "P-CONTROL-INPUT-001": {
       "name": "정책 입력 누락 차단",
@@ -1022,7 +1061,10 @@
       "status": "운영",
       "approval_status": "승인",
       "effective_from": "2026-09-16T00:00:00Z",
-      "pac_candidate_id": "PAC-CAND-05"
+      "pac_candidate_id": "PAC-CAND-05",
+      "pac_ids": [
+        "PAC-04"
+      ]
     },
     "P-INPUT-SCHEMA-001": {
       "name": "도구 인자 형식 검증",
@@ -1069,7 +1111,10 @@
       "status": "운영",
       "approval_status": "승인",
       "effective_from": "2026-09-16T00:00:00Z",
-      "pac_candidate_id": "PAC-CAND-14"
+      "pac_candidate_id": "PAC-CAND-14",
+      "pac_ids": [
+        "PAC-10"
+      ]
     },
     "P-CONTROL-FAIL-CLOSED": {
       "name": "정책 엔진 장애 시 기본 차단",
@@ -1324,7 +1369,11 @@
         "T-DECOMM-002",
         "T-DECOMM-003"
       ],
-      "pac_candidate_id": "PAC-CAND-29"
+      "pac_candidate_id": "PAC-CAND-29",
+      "pac_ids": [
+        "PAC-01",
+        "PAC-14"
+      ]
     },
     "MCP-SHADOW-001": {
       "name": "강제 경로 밖 설정 보유자 증적 강화",
@@ -1434,7 +1483,10 @@
         "T-SCOPE-001",
         "T-SCOPE-002"
       ],
-      "pac_candidate_id": "PAC-CAND-SCOPE"
+      "pac_candidate_id": "PAC-CAND-SCOPE",
+      "pac_ids": [
+        "PAC-10"
+      ]
     },
     "MCP-TRANSPORT-001": {
       "name": "평문 원격 MCP 연결 차단",
@@ -1482,7 +1534,10 @@
       "test_ids": [
         "T-TRANSPORT-001"
       ],
-      "pac_candidate_id": "PAC-CAND-21"
+      "pac_candidate_id": "PAC-CAND-21",
+      "pac_ids": [
+        "PAC-07"
+      ]
     },
     "MCP-EGRESS-001": {
       "name": "허용 목록 밖 목적지 차단",
@@ -1530,7 +1585,10 @@
       "test_ids": [
         "T-EGRESS-001"
       ],
-      "pac_candidate_id": "PAC-CAND-22"
+      "pac_candidate_id": "PAC-CAND-22",
+      "pac_ids": [
+        "PAC-07"
+      ]
     },
     "P-UNTRUSTED-CONTENT-001": {
       "name": "비신뢰 콘텐츠 기반 고위험 실행 승인",
@@ -1580,7 +1638,10 @@
       "test_ids": [
         "T-UNTRUSTED-001"
       ],
-      "pac_candidate_id": "PAC-CAND-11"
+      "pac_candidate_id": "PAC-CAND-11",
+      "pac_ids": [
+        "PAC-13"
+      ]
     },
     "P-UNTRUSTED-CONTENT-002": {
       "name": "비신뢰 콘텐츠 열람 증적 강화",
@@ -1631,7 +1692,10 @@
       "test_ids": [
         "T-UNTRUSTED-002"
       ],
-      "pac_candidate_id": "PAC-CAND-11"
+      "pac_candidate_id": "PAC-CAND-11",
+      "pac_ids": [
+        "PAC-13"
+      ]
     },
     "P-ANOMALY-001": {
       "name": "반복 차단 이상행위 증적 강화",
@@ -1680,7 +1744,10 @@
       "test_ids": [
         "T-ANOMALY-001"
       ],
-      "pac_candidate_id": "PAC-CAND-25"
+      "pac_candidate_id": "PAC-CAND-25",
+      "pac_ids": [
+        "PAC-15"
+      ]
     },
     "MCP-SHADOW-002": {
       "name": "망에서 발견된 미등록 MCP 리스너 증적 강화",
@@ -1778,7 +1845,10 @@
       "test_ids": [
         "T-EGRESS-002"
       ],
-      "pac_candidate_id": "PAC-CAND-20"
+      "pac_candidate_id": "PAC-CAND-20",
+      "pac_ids": [
+        "PAC-12"
+      ]
     },
     "P-DLP-001": {
       "name": "민감정보 외부 전송 차단",
@@ -1827,7 +1897,10 @@
       "test_ids": [
         "T-DLP-001"
       ],
-      "pac_candidate_id": "PAC-CAND-20"
+      "pac_candidate_id": "PAC-CAND-20",
+      "pac_ids": [
+        "PAC-12"
+      ]
     },
     "P-X-ALERT-001": {
       "name": "제한 불가 외부 전송 경보",
@@ -1877,7 +1950,10 @@
       "test_ids": [
         "T-X-ALERT-001"
       ],
-      "pac_candidate_id": "PAC-CAND-20"
+      "pac_candidate_id": "PAC-CAND-20",
+      "pac_ids": [
+        "PAC-12"
+      ]
     },
     "MCP-DATA-EGRESS-001": {
       "name": "민감정보 외부 전송 차단",
@@ -1931,7 +2007,10 @@
       "test_ids": [
         "T-DATA-EGRESS-001"
       ],
-      "pac_candidate_id": "PAC-CAND-20"
+      "pac_candidate_id": "PAC-CAND-20",
+      "pac_ids": [
+        "PAC-12"
+      ]
     },
     "P-CHAIN-001": {
       "name": "중요정보 열람 뒤 전송 연쇄 차단",
@@ -1982,7 +2061,10 @@
       "test_ids": [
         "T-CHAIN-001"
       ],
-      "pac_candidate_id": "PAC-CAND-25"
+      "pac_candidate_id": "PAC-CAND-25",
+      "pac_ids": [
+        "PAC-15"
+      ]
     },
     "P-DATA-INSPECTION-001": {
       "name": "민감정보 검사 장애 시 실행 전 차단",
@@ -2033,6 +2115,111 @@
         "T-DATA-INSPECTION-001"
       ],
       "pac_candidate_id": "PAC-CAND-30"
+    },
+    "P-RATE-002": {
+      "name": "동시 실행 상한",
+      "purpose": "한 주체가 동시에 실행 중인 호출 수가 상한을 넘으면 차단한다. 호출량 상한과 달리 지금 열려 있는 호출을 센다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-28"
+      ],
+      "requirement_ids": [
+        "REQ-29"
+      ],
+      "control_ids": [
+        "CTL-29"
+      ],
+      "principle_ids": [
+        "PRN-04",
+        "PRN-11"
+      ],
+      "owner": "운영 담당자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "모든 사용자",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "context.active_calls",
+        "context.concurrency_limit"
+      ],
+      "condition": "예약된 동시 실행 호출 수가 상한 초과",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 71,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "가용성 보호 장치라 관찰 모드에서도 집행한다.",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-30T00:00:00Z",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "T-RATE-003"
+      ],
+      "pac_candidate_id": "PAC-CAND-26",
+      "pac_ids": [
+        "PAC-15"
+      ]
+    },
+    "P-RATE-003": {
+      "name": "중복 호출 차단",
+      "purpose": "같은 인자의 같은 호출이 아직 끝나지 않았는데 다시 들어오면 차단한다. 같은 부수효과가 두 번 나는 것을 막는다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-28"
+      ],
+      "requirement_ids": [
+        "REQ-29"
+      ],
+      "control_ids": [
+        "CTL-29"
+      ],
+      "principle_ids": [
+        "PRN-04",
+        "PRN-11"
+      ],
+      "owner": "운영 담당자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "모든 사용자",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "context.duplicate_in_flight"
+      ],
+      "condition": "같은 지문의 호출이 예약된 채 실행 중",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 72,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "중복 실행 방지 장치라 관찰 모드에서도 집행한다.",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-30T00:00:00Z",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "T-RATE-004"
+      ],
+      "pac_candidate_id": "PAC-CAND-26",
+      "pac_ids": [
+        "PAC-15"
+      ]
     }
   }
 }

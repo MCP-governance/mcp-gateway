@@ -15,7 +15,7 @@ from fastapi import APIRouter, Header, HTTPException
 from pydantic import Field, field_validator
 
 from . import db
-from .agent_contract import StrictModel, authenticated_user
+from .agent_contract import CONSOLE_SCOPE, StrictModel, authenticated_user, token_scopes
 
 router = APIRouter()
 REVIEW_DAYS = int(os.getenv("CONNECTOR_REVIEW_DAYS", "14"))
@@ -163,6 +163,8 @@ async def pc_inventory(report: Inventory, authorization: str | None = Header(def
 
 
 def require_admin(user: dict) -> None:
+    if CONSOLE_SCOPE not in token_scopes(user["claims"]):
+        raise HTTPException(403, "Console 로그인으로 받은 인증이 필요합니다.")
     if "admin" not in user["roles"]:
         raise HTTPException(403, "관리자만 볼 수 있습니다.")
 

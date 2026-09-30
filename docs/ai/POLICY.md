@@ -41,6 +41,8 @@
 | 55 | P-APPROVAL-EXPIRY-001 | 차단 | 승인 유효기간 만료 자산 |
 | 60 | P-CLASSIFICATION-001 | 차단 | 분류 근거 없는 데이터 |
 | 70 | P-RATE-001 | 차단 | 호출량 상한 |
+| 71 | P-RATE-002 | 차단 | 동시 실행 상한(이 주체가 지금 돌리는 호출 수) |
+| 72 | P-RATE-003 | 차단 | 같은 인자의 같은 호출이 아직 실행 중(중복·재생) |
 | 78 | P-DLP-001 | 차단 | 민감정보(주민번호·카드 등) 외부 전송 |
 | 80 | P-AUTHZ-DENY-001 | 차단 | 최소권한 미충족(권한 번들 data.authorization.grants) |
 | 90 | P-X-APPROVAL-001 | 승인 | 중요정보의 고위험 실행(x) — 내부 목적지. 외부 반출은 MCP-DATA-EGRESS-001이 먼저 막는다 |
@@ -60,6 +62,12 @@ Gateway 쪽(OPA 밖)에서 나오는 판정: `P-INPUT-SCHEMA-001`(승인 스키�
 
 OPA 입력의 개인정보 관련 필드: `request.pii_types`(Presidio 엔터티 유형만 — 값은 넣지 않는다),
 `request.sequence_flags`, `request.dlp`(분류기의 정규식 DLP 라벨, `P-DLP-001`), `destinations[].external`.
+
+호출 상한 관련 필드(`context`)는 **판정 전에 Gateway가 원자적으로 예약한 뒤의 값**이다.
+`recent_calls`는 끝난 호출 + 지금 도는 호출(이번 것 포함), `active_calls`는 이 주체가 지금 돌리는 수,
+`duplicate_in_flight`는 같은 인자의 같은 호출이 아직 안 끝났는지다(`core._reserve_call`,
+`call_reservations` 테이블 + 주체별 advisory lock). 값이 없는 입력(구버전·재생 사례)은 판단하지 않는다.
+정책과 PAC-01~15의 대응은 [PAC_MAPPING.md](PAC_MAPPING.md), 관리대장의 `pac_ids`에도 같은 값이 있다.
 정책 집합 버전은 PDF 통합 병합으로 2.1.0, 권한 번들 분리(D-25)로 **2.2.0**.
 
 ### 정책 재생 (`app/replay.py`, `./console.sh replay [N]`)

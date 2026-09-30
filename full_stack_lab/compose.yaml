@@ -113,7 +113,10 @@ services:
 
   gateway:
     restart: unless-stopped
-    build: ./gateway
+    build: &gateway-build
+      context: ./gateway
+      args:
+        MCP_BUILD_REVISION: ${MCP_BUILD_REVISION:-unknown}
     environment: &gateway-env
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
       OPA_URL: http://opa:8181/v1/data/mcp/authz/decision
@@ -122,6 +125,7 @@ services:
       REGISTRY_DIR: /registry
       # Servers an admin registers from the Console (approved intake → Gateway, D-49).
       REGISTRY_RUNTIME_DIR: /registry-runtime
+      MCP_UPSTREAM_CREDENTIALS_FILE: ${MCP_UPSTREAM_CREDENTIALS_FILE:-}
       # IdP metadata that the Gateway republishes as RFC 9728 protected-resource
       # metadata, and uses to collect RFC 7009 / 7662 evidence in termination cases.
       IDP_ISSUER: http://agent-service:8000
@@ -150,13 +154,14 @@ services:
       - ./opa:/policy:ro
       - ./registry:/registry:ro
       - registry_runtime:/registry-runtime
+      - upstream_credentials:/run/upstream-credentials:ro
     networks: [edge, office, policy, privacy, tools, data, telemetry, ops]
     <<: *hardened
 
   # Legacy SSE ingress: the same policy path for clients that only speak SSE.
   gateway-sse:
     restart: unless-stopped
-    build: ./gateway
+    build: *gateway-build
     command: ["python", "-m", "app.sse_entry"]
     environment: *gateway-env
     depends_on:
@@ -169,13 +174,14 @@ services:
       - ./opa:/policy:ro
       - ./registry:/registry:ro
       - registry_runtime:/registry-runtime:ro
+      - upstream_credentials:/run/upstream-credentials:ro
     networks: [office, policy, privacy, tools, data, telemetry]
     <<: *hardened
 
   # Console (admin UI) + the synthetic IdP. It never calls an MCP tool.
   agent-service:
     restart: unless-stopped
-    build: ./gateway
+    build: *gateway-build
     command: ["uvicorn", "app.agent_service:app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       INTAKE_REPORT_DIR: /intake-reports
@@ -713,6 +719,7 @@ networks:
 volumes:
   db_data: {}
   registry_runtime: {}
+  upstream_credentials: {}
   trivy_cache: {}
   intake_work: {}
   intake_reports: {}

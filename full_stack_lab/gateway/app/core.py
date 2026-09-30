@@ -5,7 +5,6 @@ import hashlib
 import json
 import logging
 import os
-import re
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -43,18 +42,10 @@ CATALOG_REFRESH_SECONDS = int(os.getenv("CATALOG_REFRESH_SECONDS", "60"))
 # A server check only negotiates a session; a slow answer is itself the finding.
 SERVER_CHECK_TIMEOUT_SECONDS = float(os.getenv("SERVER_CHECK_TIMEOUT_SECONDS", "5"))
 
-# Instruction-shaped text aimed at the model, in tool descriptions (contract) and in
-# tool results (output control). Plain words such as "credential" are not on the
-# list: real servers use them in honest descriptions (mcp-email-server does), and a
-# pattern that flags honest servers gets switched off.
-UNSAFE_METADATA = re.compile(
-    r"ignore\s+(all\s+|any\s+)?(previous|prior|above)\s+(instructions|rules)"
-    r"|disregard\s+(all\s+)?(previous|prior)\s+instructions"
-    r"|system\s+(prompt|note)\s+for\s+ai|<\s*/?\s*system\s*>"
-    r"|bypass\s+(the\s+)?(security\s+)?policy|do\s+not\s+tell\s+the\s+user"
-    r"|이전\s*지시(를|사항을)?\s*무시|시스템\s*프롬프트를?\s*(무시|출력)",
-    re.IGNORECASE,
-)
+# Instruction-shaped text aimed at the model lives in one ruleset (app/poisoning.py),
+# which every door uses: contracts at registration and catalog refresh, arguments on
+# the way out, results on the way back. The gateway used to keep a shorter pattern of
+# its own here, so the weakest check ran on the least trusted content.
 MAX_RESULT_BYTES = int(os.getenv("MAX_RESULT_BYTES", "262144"))
 DEFAULT_ENFORCEMENT = os.getenv("GATEWAY_ENFORCEMENT", "enforce")
 # Integrity failures are not opinions. A drifted catalog, an unregistered tool, a
@@ -74,6 +65,11 @@ IMPORTANT_BURST_LIMIT = int(os.getenv("IMPORTANT_BURST_LIMIT", "10"))
 IMPORTANT_BURST_MINUTES = int(os.getenv("IMPORTANT_BURST_MINUTES", "5"))
 BLOCK_STREAK_LIMIT = int(os.getenv("BLOCK_STREAK_LIMIT", "5"))
 BLOCK_STREAK_MINUTES = int(os.getenv("BLOCK_STREAK_MINUTES", "10"))
+# How many calls one principal may have in flight at once, and how long a reservation
+# survives if the gateway dies mid-call. The TTL is the upstream timeout plus a margin:
+# shorter and a slow tool frees its own place while still running.
+CONCURRENCY_LIMIT = int(os.getenv("CONCURRENCY_LIMIT", "4"))
+RESERVATION_TTL_SECONDS = int(os.getenv("RESERVATION_TTL_SECONDS", "120"))
 # CTL-28이 보라는 "반복 실패"는 이 사람이 권한 경계를 더듬고 있다는 신호다.
 # 모든 차단을 세면 그 신호가 환경 상태에 묻힌다 - 서버 하나가 드리프트 상태면
 # MCP-CATALOG-001이 모든 사용자에게 걸리고, 그러면 아무 잘못 없는 사람들의 다음
@@ -155,7 +151,14 @@ async def refresh_catalog(server_id: str) -> dict:
     registered_rows = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s ORDER BY name", (server_id,))
     registered = {row["name"]: row for row in registered_rows}
     names_match = set(observed) == set(registered)
-    metadata_safe = all(not UNSAFE_METADATA.search(tool["description"]) for tool in observed.values())
+    # Only enabled tools reach a client. Unexposed provider helpers cannot inject
+    # their descriptions into that client, but the entire catalog remains pinned.
+    reviewed = (registry.server(server_id) or {}).get("poisoning_review") or {}
+    metadata_findings = {name: reasons for name, tool in observed.items()
+                         if name in registered and registered[name]["enabled"]
+                         and reviewed.get(name) != registry.tool_hashes(tool)
+                         and (reasons := poisoning.findings(tool))}
+    metadata_safe = not metadata_findings
     findings: list[dict] = []
     if not names_match:
         findings.append({
@@ -164,7 +167,8 @@ async def refresh_catalog(server_id: str) -> dict:
             "missing": sorted(set(registered) - set(observed)),
         })
     if not metadata_safe:
-        findings.append({"type": "unsafe-description", "tools": [name for name, tool in observed.items() if UNSAFE_METADATA.search(tool["description"])]})
+        findings.append({"type": "unsafe-description",
+                         "tools": metadata_findings})
 
     hashes_match = True
     for name in set(observed) & set(registered):
@@ -437,6 +441,8 @@ async def register_server(request: dict, actor: str) -> dict:
         "valid_until": valid_until, "registered_by": actor,
         "registered_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "intake_id": request.get("intake_id") or None,
+        "poisoning_review": {name: registry.tool_hashes(advertised[name]) for name in flagged}
+                            if request.get("poisoning_ack") else {},
     }
     contract = {"package": f"{package}@{version}", "server_name": found["advertised_name"],
                 "server_version": found["version"], "protocol_version": found["protocol_version"],
@@ -469,7 +475,8 @@ async def register_server(request: dict, actor: str) -> dict:
            VALUES (%s,%s,%s,%s,true,%s)""",
         (server_id, found["version"], request["catalog_hash"], len(advertised),
          Jsonb([{"type": "console-registered", "actor": actor, "endpoint": endpoint, "intake_id": spec["intake_id"],
-                 "approved_tools": spec["tools"], "valid_until": valid_until}])))
+                 "approved_tools": spec["tools"], "valid_until": valid_until,
+                 "poisoning_review": spec["poisoning_review"]}])))
     refreshed = await refresh_catalog(server_id)
     return {"server_id": server_id, "status": refreshed["status"], "valid_until": valid_until,
             "tools": spec["tools"], "relationship_id": relationship["id"], "gateway_path": f"/mcp/{server_id}/"}
@@ -625,7 +632,7 @@ def untrusted_markers(arguments: dict) -> list[str]:
     found: set[str] = set()
     for key, value in (arguments or {}).items():
         for text in classify._strings(value):
-            if UNSAFE_METADATA.search(text):
+            if poisoning.text_findings(text):
                 found.add(str(key))
                 break
     return sorted(found)
@@ -756,38 +763,92 @@ def _risk_score(data_class: str, action: str, external: bool,
                + (30 if sequence_flags else 0))
 
 
-async def _recent_activity(user_token: str) -> dict:
-    """Both volume signals in one query.
+async def _reserve_call(request_id: str, user_token: str, server_id: str, tool: str,
+                        arguments: dict, data_class: str) -> dict:
+    """Take this call's place in the ceilings, then report where it stands.
 
-    Counted from the audit table rather than from in-process state, so the ceilings
-    still hold when more than one gateway replica is serving. Blocked calls count
-    too: a flood of denied calls is still a flood.
+    Counting alone cannot hold a ceiling. The counts come from the audit table, which a
+    call only reaches once it is over, so calls that arrive together each counted the
+    others as absent and the whole batch passed a limit of one. The count and this
+    call's own row are therefore written in one transaction, serialised per principal by
+    an advisory lock, which is also what makes "how many is this person running right
+    now" answerable at all: `decisions` has no row for a call still in flight.
+
+    The lock is per principal, so two people never wait for each other, and it is held
+    for one short transaction rather than for the tool call.
 
     The gateway measures and the policy decides, so the limits travel as part of the
     input rather than as a branch in this function.
     """
-    row = await db.fetch_one(
-        """SELECT count(*) FILTER (WHERE created_at > now() - make_interval(secs => %s)) AS recent_calls,
-                  count(*) FILTER (WHERE data_class = 'important'
-                                     AND created_at > now() - make_interval(mins => %s)) AS recent_important,
-                  count(*) FILTER (WHERE decision = 'Block'
-                                     AND policy_id = ANY(%s::text[])
-                                     AND created_at > now() - make_interval(mins => %s)) AS recent_blocks
-           FROM decisions WHERE user_token = %s AND created_at > now() - interval '1 hour'""",
-        (RATE_LIMIT_WINDOW_SECONDS, IMPORTANT_BURST_MINUTES,
-         list(DENIAL_POLICIES), BLOCK_STREAK_MINUTES, user_token),
-    )
+    fingerprint = canonical_hash({"server": server_id, "tool": tool, "arguments": arguments})
+    async with db.transaction() as connection:
+        # hashtext() maps the principal onto the advisory lock space; a collision costs
+        # two principals a moment of waiting and never a wrong count.
+        await connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (user_token,))
+        cursor = await connection.execute(
+            """SELECT count(*) AS active,
+                      count(*) FILTER (WHERE fingerprint = %s) AS same_call
+                 FROM call_reservations
+                WHERE user_token = %s AND released_at IS NULL AND expires_at > now()""",
+            (fingerprint, user_token))
+        open_calls = await cursor.fetchone()
+        cursor = await connection.execute(
+            """SELECT count(*) FILTER (WHERE decision = 'Block'
+                                         AND policy_id = ANY(%s::text[])
+                                         AND created_at > now() - make_interval(mins => %s)) AS recent_blocks
+               FROM decisions WHERE user_token = %s AND created_at > now() - interval '1 hour'""",
+            (list(DENIAL_POLICIES), BLOCK_STREAK_MINUTES, user_token))
+        finished = await cursor.fetchone()
+        # Count arrivals, including released/crashed calls. Moving a call from the
+        # reservation table to the audit ledger must not create a gap or count it twice.
+        # The second arm preserves the current window when upgrading an existing DB.
+        cursor = await connection.execute(
+            """SELECT count(*) FILTER (WHERE created_at > now() - make_interval(secs => %s)) AS recent_calls,
+                      count(*) FILTER (WHERE data_class='important' AND created_at > now() - make_interval(mins => %s)) AS recent_important
+               FROM (
+                 SELECT request_id, created_at, data_class FROM call_reservations
+                  WHERE user_token=%s AND created_at > now() - interval '1 hour'
+                 UNION ALL
+                 SELECT d.request_id, d.created_at, d.data_class FROM decisions d
+                  WHERE d.user_token=%s AND d.created_at > now() - interval '1 hour'
+                    AND NOT EXISTS (SELECT 1 FROM call_reservations r WHERE r.request_id=d.request_id)
+               ) arrivals""",
+            (RATE_LIMIT_WINDOW_SECONDS, IMPORTANT_BURST_MINUTES, user_token, user_token))
+        arrivals = await cursor.fetchone()
+        await connection.execute(
+            """INSERT INTO call_reservations(request_id, user_token, server_id, tool_name, fingerprint, data_class, expires_at)
+               VALUES (%s,%s,%s,%s,%s,%s, now() + make_interval(secs => %s))
+               """,
+            (request_id, user_token, server_id, tool, fingerprint, data_class, RESERVATION_TTL_SECONDS))
+    active = int(open_calls["active"]) + 1  # this call now holds a place too
     return {
-        "recent_calls": int(row["recent_calls"]) if row else 0,
+        # Prior arrivals only; P-RATE-001 uses >= so the configured limit is inclusive.
+        "recent_calls": int(arrivals["recent_calls"]),
         "call_limit": RATE_LIMIT_CALLS,
-        "recent_important": int(row["recent_important"]) if row else 0,
+        "recent_important": int(arrivals["recent_important"]),
         "important_limit": IMPORTANT_BURST_LIMIT,
         # CTL-28 / RSK-27. 한 건의 인가 거부는 오조작이지만 짧은 시간에 쌓인 거부는
         # 권한 경계를 더듬고 있다는 뜻이다. 막지는 않는다 - 막으면 정상 사용자의
         # 오타가 계정 정지가 된다. 증적을 올리고 사람이 본다.
-        "recent_blocks": int(row["recent_blocks"]) if row else 0,
+        "recent_blocks": int(finished["recent_blocks"]) if finished else 0,
         "block_limit": BLOCK_STREAK_LIMIT,
+        "active_calls": active,
+        "concurrency_limit": CONCURRENCY_LIMIT,
+        # The identical call is already running. A retry after a timeout is not this:
+        # the earlier reservation is released or expired by then.
+        "duplicate_in_flight": int(open_calls["same_call"]) > 0,
     }
+
+
+async def _release_call(request_id: str) -> None:
+    """Give the place back. Every exit from execute_call passes through here, and a
+    reservation that is somehow never released still expires on its own."""
+    try:
+        await db.execute(
+            "UPDATE call_reservations SET released_at=now() WHERE request_id=%s AND released_at IS NULL",
+            (request_id,))
+    except Exception:
+        logging.getLogger(__name__).exception("call reservation release failed for %s", request_id)
 
 
 _ledger_cache: dict[str, dict] = {}
@@ -870,7 +931,8 @@ async def _policy(input_document: dict) -> dict:
         return result
 
 
-async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id: str | None = None) -> dict:
+async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id: str | None = None,
+                         principal: str | None = None, *, dispatch_state: dict) -> dict:
     """Recheck the contract and call, on one connection.
 
     Nothing is raised inside the MCP client context on purpose: an exception there is
@@ -881,9 +943,11 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
     spec = registry.server(server_id)
     if not spec:
         raise DispatchRejected("server is not in the catalog")
+    if principal is None:
+        raise DispatchRejected("authenticated dispatch principal is required")
     problem = None
     payload: dict | None = None
-    async with upstream.session(spec["endpoint"]) as client:
+    async with upstream.session(spec["endpoint"], principal=principal) as client:
         listed = await client.list_tools()
         registered = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s", (server_id,))
         observed = {t.name: upstream.tool_view(t) for t in listed.tools}
@@ -907,6 +971,7 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                     or approval["expires_at"] <= datetime.now(UTC)):
                 problem = "Approval expired or was withdrawn before execution"
         if problem is None:
+            dispatch_state["upstream_attempted"] = True
             result = await client.call_tool(tool, arguments)
             payload = {"content": upstream.content_items(result), "is_error": bool(result.is_error)}
             if result.structured_content is not None:
@@ -931,8 +996,8 @@ def _guarded_result(payload: dict) -> dict:
     body = json.dumps(payload, ensure_ascii=False)
     if len(body.encode()) > MAX_RESULT_BYTES:
         raise ResultRejected(f"도구 결과가 {MAX_RESULT_BYTES} byte 상한을 넘었습니다.")
-    if UNSAFE_METADATA.search(body):
-        raise ResultRejected("도구 결과에 정책 우회 지시 패턴이 포함되어 있습니다.")
+    if reasons := poisoning.result_findings(body):
+        raise ResultRejected(f"도구 결과에 모델을 조종하는 지시가 포함되어 있습니다: {', '.join(reasons)}")
     return payload
 
 
@@ -1077,6 +1142,10 @@ async def verify_audit_chain() -> dict:
 
 async def _decision_payload(event: dict, before: float) -> dict:
     decision_id = await _record_decision(event)
+    # Keep the reservation until the decision is durably recorded. If persistence
+    # fails, its TTL keeps the unconfirmed call counted instead of allowing a retry.
+    if event.get("request_id") and not (event.get("upstream_attempted") and not event.get("upstream_executed")):
+        await _release_call(event["request_id"])
     # Anomaly policy records the enforcement decision first; a scanner outage must
     # never turn that decision into an unlogged gateway error.
     scan_url = os.getenv("MCP_SCAN_BASE_URL", "")
@@ -1112,7 +1181,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
     `arguments` is ever read as identity.
     """
     before = asyncio.get_running_loop().time()
-    request_id = str(payload.get("request_id") or uuid.uuid4())
+    request_id = str(uuid.uuid4())
     server_id = str(payload.get("server_id") or "")
     tool = str(payload.get("tool") or "")
     arguments = payload.get("arguments") if isinstance(payload.get("arguments"), dict) else {}
@@ -1144,6 +1213,18 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         await policy_ledger()
         if not principal or principal["status"] != "active":
             base_event.update(local_verdict("P-INPUT-001", "Block", "활성 상태의 등록 계정이 아닙니다."))
+            return await _decision_payload(base_event, before)
+
+        # Reserved before any check that can pass, so a burst cannot race past the
+        # ceilings while each of its calls is being classified. A store that cannot
+        # answer is not an empty ceiling: without a reservation there is no basis for
+        # the numbers the policy is about to judge.
+        try:
+            context = await _reserve_call(request_id, user_token, server_id, tool, arguments, cls.data_class)
+        except Exception as exc:
+            base_event.update(local_verdict(
+                "P-CONTROL-FAIL-CLOSED", "Block",
+                "호출 예약 상태 저장소를 사용할 수 없어 실행하지 않았습니다.", error=_root_cause(exc)))
             return await _decision_payload(base_event, before)
 
         tool_row = await db.fetch_one("SELECT * FROM mcp_tools WHERE server_id=%s AND name=%s", (server_id, tool))
@@ -1199,7 +1280,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                         "pii_types": privacy_types, "sequence_flags": sequence_flags},
             "approval": {"granted": approval_granted, "id": approval_id},
             "contract": contract,
-            "context": await _recent_activity(user_token),
+            "context": context,
         }
         base_event["policy_input"] = policy_input  # kept for replay against a candidate policy
         try:
@@ -1239,12 +1320,21 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         elif result["decision"] in {"Allow", "Alert", "Restrict"}:
             effective, applied = classify.apply_restrictions(cls, arguments, result.get("restrictions") or {})
             base_event["restrictions_applied"] = applied
-            base_event["upstream_attempted"] = True
             try:
                 with tracer.start_as_current_span("mcp.upstream.call") as upstream_span:
                     upstream_span.set_attribute("mcp.server", server_id)
                     upstream_span.set_attribute("mcp.transport", "streamable-http")
-                    raw_result = await _call_upstream(server_id, tool, effective, approval_id)
+                    renewed = await db.execute(
+                        """UPDATE call_reservations SET expires_at=now()+make_interval(secs => %s)
+                           WHERE request_id=%s AND released_at IS NULL AND expires_at > now()""",
+                        (RESERVATION_TTL_SECONDS, request_id))
+                    if not renewed or RESERVATION_TTL_SECONDS <= 10:
+                        raise DispatchRejected("call reservation expired before dispatch")
+                    # Bound discovery + dispatch together; per-message timeouts alone
+                    # let a slow session outlive the reservation. Response loss stays unknown.
+                    async with asyncio.timeout(min(upstream.CONNECT_TIMEOUT, RESERVATION_TTL_SECONDS - 10)):
+                        raw_result = await _call_upstream(server_id, tool, effective, approval_id, user_token,
+                                                         dispatch_state=base_event)
                 base_event["upstream_executed"] = True
                 try:
                     base_event["result"], output_types = await privacy.mask_payload(raw_result, ignore)
@@ -1258,7 +1348,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     # The server ran the call and answered with a tool error (missing
                     # file, bad SQL). That is a definite outcome, not an unknown one.
                     base_event["error"] = upstream.text_of(base_event["result"]["content"])[:500]
-            except DispatchRejected as exc:
+            except (DispatchRejected, upstream.CredentialUnavailable) as exc:
                 base_event.update(local_verdict(
                     "P-CONTROL-FAIL-CLOSED", "Block",
                     "실행 직전 계약 또는 승인 재검증에 실패하여 도구 호출을 전달하지 않았습니다.",
@@ -1300,6 +1390,12 @@ async def approve_request(approval_id: str, reviewer_token: str) -> dict:
     row = await db.fetch_one("SELECT * FROM approvals WHERE id=%s", (approval_id,))
     if not row or row["status"] != "PENDING":
         raise ValueError("대기 중인 승인 요청이 아닙니다.")
+    # §8.6 forbids a self-approved exception and the exception ledger enforces it
+    # (requested_by != approved_by). The same rule has to hold for the per-call approval
+    # an administrator raises for their own high-risk call, or the control is one click
+    # by one person - which is the thing an approval step exists to prevent.
+    if row["requested_by"] == reviewer_token:
+        raise ValueError("자기가 요청한 호출은 자기가 승인할 수 없습니다. 다른 승인자가 처리해야 합니다.")
     if row["expires_at"] <= datetime.now(UTC):
         await db.execute("UPDATE approvals SET status='EXPIRED' WHERE id=%s AND status='PENDING'", (approval_id,))
         raise ValueError("승인 요청의 10분 유효시간이 지났습니다.")

@@ -10,5 +10,8 @@ uvicorn==0.52.4
 PyJWT==2.14.0
 cryptography==50.0.1
 jsonschema==4.26.0
+# PostgreSQL's own parser (libpg_query). The SQL classifier decides r/w/x and which
+# tables a call touches from the parse tree instead of from the statement's text.
+pglast==7.11
 httpx2==2.12.0
 python-multipart==0.0.32

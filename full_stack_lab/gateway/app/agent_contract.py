@@ -62,6 +62,7 @@ def issue_token(user: dict, minutes: int = 30, client_id: str = "console",
     now = datetime.now(UTC)
     claims = {"sub": user["user_id"], "iss": ISSUER, "aud": AUDIENCE, "client_id": client_id,
               "iat": now, "nbf": now, "exp": now + timedelta(minutes=minutes), "jti": str(uuid4()),
+              "scope": "console" if client_id == "console" else "mcp",
               **(extra or {})}
     return jwt.encode(claims, private_key(), algorithm=ALGORITHM), claims
 
@@ -88,8 +89,21 @@ ACCOUNT_STATUS_REASON = {
     "deleted": "삭제된 계정입니다.",
 }
 
+# What a token was issued for. `mcp` tokens are what `bob-sso` keeps on the employee's
+# PC for the harnesses, so they sit at rest in a file a local process can read; `console`
+# tokens come from an interactive sign-in and last 30 minutes. They authenticate the same
+# person, which is why the administrative APIs ask for the second: otherwise anything that
+# could read the token file could also approve a high-risk call in that person's name.
+# Missing scope never grants an administrative capability; old sessions sign in again.
+CONSOLE_SCOPE = "console"
 
-async def authenticated_user(authorization: str | None) -> dict:
+
+def token_scopes(claims: dict) -> set[str]:
+    value = claims.get("scope")
+    return set(value.split()) if isinstance(value, str) else set()
+
+
+async def authenticated_user(authorization: str | None, require_scope: str | None = None) -> dict:
     """The one verified-caller helper every ingress uses.
 
     `authenticate` proves the token was minted by the synthetic IdP; this adds the
@@ -101,6 +115,9 @@ async def authenticated_user(authorization: str | None) -> dict:
     토큰으로도 통과하지 못한다.
     """
     user, claims = authenticate(authorization)
+    if require_scope and require_scope not in token_scopes(claims):
+        raise HTTPException(403, "이 작업에는 Console 로그인으로 받은 인증이 필요합니다. "
+                                 "하네스에 배포된 MCP 토큰으로는 할 수 없습니다.")
     if await db.fetch_one("SELECT jti FROM agent_revoked_tokens WHERE jti=%s", (claims["jti"],)):
         raise HTTPException(401, "로그아웃된 인증입니다.")
     row = await db.fetch_one(

@@ -122,6 +122,10 @@ def _render(outcome: dict) -> types.CallToolResult:
         "decision": decision, "policy_id": outcome.get("policy_id"), "decision_id": outcome.get("decision_id"),
         "trace_id": outcome.get("trace_id"), "approval_id": outcome.get("approval_id"),
         "data_class": outcome.get("data_class"), "action": outcome.get("action"),
+        "upstream_attempted": bool(outcome.get("upstream_attempted")),
+        "upstream_executed": bool(outcome.get("upstream_executed")),
+        "execution_status": ("executed" if outcome.get("upstream_executed") else
+                             "unconfirmed" if outcome.get("upstream_attempted") else "not_dispatched"),
         "restrictions_applied": outcome.get("restrictions_applied") or [],
     }
     header = f"[MCP Gateway · {DECISION_LABEL.get(decision, decision)} · {outcome.get('policy_id')}] {outcome.get('reason', '')}"

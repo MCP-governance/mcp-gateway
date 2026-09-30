@@ -1237,7 +1237,7 @@ function showTarget(id) {
 // ── policy ───────────────────────────────────────────────────────────────────
 let policyLedger = [];
 ROUTES.policy = async (_, tab) => {
-  const [{ enforcement }, matrix, ledger] = await Promise.all([gw("enforcement"), gw("policy/matrix"), gw("policy/ledger")]);
+  const [{ enforcement }, matrix, ledger, runtime] = await Promise.all([gw("enforcement"), gw("policy/matrix"), gw("policy/ledger"), api("/api/readiness")]);
   policyLedger = ledger.policies;
   const bundle = ledger.authorization || {};
   const names = (list, vocab) => (list || []).map((v) => vocab[v] || v).join(", ");
@@ -1255,6 +1255,14 @@ ROUTES.policy = async (_, tab) => {
         data-mode="${enforcement === "enforce" ? "monitor" : "enforce"}">${enforcement === "enforce" ? "관찰 모드로 전환" : "집행 모드로 전환"}</button>` }),
       active: tab || "matrix",
       tabs: [
+        { key: "runtime", label: "배포 확인", body: panel("실행 중인 빌드와 정책", kv([
+          ["Console 빌드", runtime.build?.console?.revision || "미확인"],
+          ["Gateway 빌드", runtime.build?.gateway?.revision || "미확인"],
+          ["서비스 코드 일치", runtime.build?.consistent ? "일치" : "불일치 · 서비스 재배포 필요"],
+          ["OPA 정책 일치", runtime.policy?.matches ? "일치" : "불일치 · OPA 갱신 필요"],
+          ["실행 코드 SHA-256", runtime.build?.gateway?.code_sha256 || "미확인"],
+          ["적재된 정책 SHA-256", runtime.policy?.loaded_sha256 || "미확인"],
+        ])) },
         { key: "matrix", label: "판정 행렬", body: html`<div class="stack">
           ${panel("역할 × 데이터 등급 × 행위", chartBox("c-matrix", "역할과 데이터 등급·행위 조합별 기본 판정", "lg"), { sub: `번들 ${bundle.bundle_id || "—"}` })}
           ${panel("정책 ID", html`<table class="data"><thead><tr><th>역할</th><th>데이터</th>${matrix.actions.map((a) => html`<th>${ACTION[a]}</th>`)}</tr></thead><tbody>

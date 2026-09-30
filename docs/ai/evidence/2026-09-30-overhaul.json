@@ -1,0 +1,305 @@
+{
+  "observed_at": "2026-09-30T14:32:39.674729+00:00",
+  "baseline_revision": "853e0a62f484d83b1a6b218c042fdffeaeef4c49",
+  "testbed": {
+    "checkout": "/home/kali/mcpgw-clean-20260930",
+    "compose": "mcpgw-clean-20260930",
+    "clean_reset_up_test_exit": 0,
+    "final_source_test_exit": 0,
+    "model_invoked": false
+  },
+  "checks": {
+    "rego": {
+      "passed": 102,
+      "failed": 0
+    },
+    "acceptance": {
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0
+    },
+    "security_regression": {
+      "passed": 55,
+      "failed": 0
+    },
+    "adversarial": {
+      "attacks_caught": 38,
+      "attacks": 38,
+      "benign_allowed": 14,
+      "benign": 14
+    },
+    "reservation_effects": [
+      {
+        "case": "concurrency",
+        "requests": 6,
+        "blocked_before_unlock": 2,
+        "policy_id": "P-RATE-002",
+        "independent_db_effects": 4.0,
+        "passed": true
+      },
+      {
+        "case": "duplicate",
+        "requests": 2,
+        "blocked_before_unlock": 1,
+        "policy_id": "P-RATE-003",
+        "independent_db_effects": 1.0,
+        "passed": true
+      }
+    ],
+    "termination_and_experiments": "PASS"
+  },
+  "real_vendor_reads": [
+    {
+      "server": "github",
+      "server_id": "probe-6fa0265b-github",
+      "tool": "get_file_contents",
+      "gateway_traversed": true,
+      "model_invoked": false,
+      "mcp_is_error": false,
+      "decision": "Allow",
+      "policy_id": "P-AUTHZ-ALLOW-001",
+      "decision_id": 125,
+      "response_bytes": 1537,
+      "upstream_attempted": true,
+      "upstream_executed": true,
+      "response_sha256": "527c06cd1a28c81cf7c9ed1f7a47baa1f153d5c3eafbb91cecfa29796237026e"
+    },
+    {
+      "server": "supabase",
+      "server_id": "probe-6fa0265b-supabase",
+      "tool": "search_docs",
+      "gateway_traversed": true,
+      "model_invoked": false,
+      "mcp_is_error": false,
+      "decision": "Allow",
+      "policy_id": "P-AUTHZ-ALLOW-001",
+      "decision_id": 126,
+      "response_bytes": 203,
+      "upstream_attempted": true,
+      "upstream_executed": true,
+      "response_sha256": "8e93c44fa85f4139c38ccc6e47d3c628a2375ef15d8aa9d215863bde0cd8542d"
+    },
+    {
+      "server": "sentry",
+      "server_id": "probe-6fa0265b-sentry",
+      "tool": "find_organizations",
+      "gateway_traversed": true,
+      "model_invoked": false,
+      "mcp_is_error": false,
+      "decision": "Allow",
+      "policy_id": "P-AUTHZ-ALLOW-001",
+      "decision_id": 127,
+      "response_bytes": 262,
+      "upstream_attempted": true,
+      "upstream_executed": true,
+      "response_sha256": "d873b486503bd8eeef8166e4216c0c084ed9b2f78b861e56b73e1e813fc7cc6e"
+    },
+    {
+      "server": "notion",
+      "server_id": "probe-6fa0265b-notion",
+      "tool": "notion-search",
+      "gateway_traversed": true,
+      "model_invoked": false,
+      "mcp_is_error": false,
+      "decision": "Allow",
+      "policy_id": "P-AUTHZ-ALLOW-001",
+      "decision_id": 128,
+      "response_bytes": 658,
+      "upstream_attempted": true,
+      "upstream_executed": true,
+      "response_sha256": "de21c8c0bc6d853630c42fb023cf4a27e40411f948f803ca106f5df6d97b1801"
+    },
+    {
+      "server": "figma",
+      "server_id": "probe-6fa0265b-figma",
+      "tool": "whoami",
+      "gateway_traversed": true,
+      "model_invoked": false,
+      "mcp_is_error": false,
+      "decision": "Allow",
+      "policy_id": "P-AUTHZ-ALLOW-001",
+      "decision_id": 129,
+      "response_bytes": 512,
+      "upstream_attempted": true,
+      "upstream_executed": true,
+      "response_sha256": "96069222b95b3607c23bb198cef361c0223f8f4838730f0f874d069e44e726b5"
+    },
+    {
+      "server": "zapier",
+      "server_id": "probe-6fa0265b-zapier",
+      "tool": "discover_zapier_actions",
+      "gateway_traversed": true,
+      "model_invoked": false,
+      "mcp_is_error": false,
+      "decision": "Allow",
+      "policy_id": "P-AUTHZ-ALLOW-001",
+      "decision_id": 130,
+      "response_bytes": 597,
+      "upstream_attempted": true,
+      "upstream_executed": true,
+      "response_sha256": "5cb7ef8383826e93de063a16f853fb24322096a925b7bc5fb62f0a18d93811ca"
+    },
+    {
+      "server": "context7",
+      "server_id": "probe-6fa0265b-context7",
+      "tool": "query-docs",
+      "gateway_traversed": true,
+      "model_invoked": false,
+      "mcp_is_error": false,
+      "decision": "Allow",
+      "policy_id": "P-AUTHZ-ALLOW-001",
+      "decision_id": 131,
+      "response_bytes": 2677,
+      "upstream_attempted": true,
+      "upstream_executed": true,
+      "response_sha256": "bb084baffcdb57ebde85f1d6b838b52fdf82374a4725e32f3ae8d3d928c9895b"
+    }
+  ],
+  "real_warning_review": {
+    "real_warning_review_check": "PASS",
+    "server": "notion",
+    "tool": "notion-check-mcp-next-steps",
+    "no_ack_status": 409,
+    "exact_review_status": "READY",
+    "mismatched_review": {
+      "decision": "Block",
+      "policy_id": "MCP-CATALOG-001",
+      "decision_id": 132,
+      "trace_id": "872ef7e7886573c8bebe6964673f8793",
+      "approval_id": null,
+      "data_class": "important",
+      "action": "r",
+      "upstream_attempted": false,
+      "upstream_executed": false,
+      "execution_status": "not_dispatched",
+      "restrictions_applied": []
+    },
+    "model_invoked": false,
+    "mock_server_used": false
+  },
+  "native_vm": [
+    {
+      "phase": "unmanaged",
+      "started_at": 1790774447.1809576,
+      "finished_at": 1790774460.160785,
+      "codex_tools": {
+        "context7": 2,
+        "figma": 43,
+        "github": 27,
+        "notion": 44,
+        "sentry": 9,
+        "supabase": 1,
+        "zapier": 17
+      },
+      "claude_connected": [
+        "github",
+        "supabase",
+        "sentry",
+        "notion",
+        "figma",
+        "zapier",
+        "context7"
+      ],
+      "model_invoked": false
+    },
+    {
+      "phase": "managed-gateway-only",
+      "started_at": 1790774460.266219,
+      "finished_at": 1790774471.0174973,
+      "codex_tools": {
+        "context7": 0,
+        "figma": 0,
+        "github": 0,
+        "notion": 0,
+        "sentry": 0,
+        "supabase": 0,
+        "zapier": 0
+      },
+      "claude_connected": [],
+      "model_invoked": false
+    },
+    {
+      "native_policy_check": "PASS",
+      "servers": [
+        "github",
+        "supabase",
+        "sentry",
+        "notion",
+        "figma",
+        "zapier",
+        "context7"
+      ],
+      "external_effect_oracle": "requires independent packet capture; listing is not sufficient"
+    },
+    {
+      "testbed": "fresh SSH VM Docker image and disposable profiles",
+      "vm": "100.110.81.60",
+      "native_image": "sha256:abacd9b854ce6989f91aff58993ad75b3878047883016bf543adee3f1cd7631f",
+      "oracle": "VM host tcpdump, container source IP, outbound HTTPS SYN metadata",
+      "phases": [
+        {
+          "phase": "unmanaged",
+          "outbound_https_syn_packets": 94
+        },
+        {
+          "phase": "managed-gateway-only",
+          "outbound_https_syn_packets": 6
+        }
+      ],
+      "model_invoked": false,
+      "mock_server_used": false,
+      "native_policy_check": "PASS",
+      "independent_egress_check": "INCOMPLETE"
+    }
+  ],
+  "network_vm": {
+    "testbed": "fresh SSH VM Docker internal network, fixed real gateway relay",
+    "positive": {
+      "vendor_tls_connected": {
+        "github": true,
+        "supabase": true,
+        "sentry": true,
+        "notion": true,
+        "figma": true,
+        "zapier": true,
+        "context7": true
+      },
+      "real_gateway_status": "ok"
+    },
+    "restricted": {
+      "vendor_tls_connected": {
+        "github": false,
+        "supabase": false,
+        "sentry": false,
+        "notion": false,
+        "figma": false,
+        "zapier": false,
+        "context7": false
+      },
+      "real_gateway_status": "ok"
+    },
+    "native_image": "sha256:abacd9b854ce6989f91aff58993ad75b3878047883016bf543adee3f1cd7631f",
+    "network_internal": true,
+    "client_networks": [
+      "mcpgw-network-clean-office"
+    ],
+    "client_cap_drop": [
+      "ALL"
+    ],
+    "network_check": "PASS",
+    "model_invoked": false,
+    "mock_server_used": false,
+    "scope": "disposable container only; host processes and untested destinations are outside this proof"
+  },
+  "field": {
+    "status": "awaiting_code_deployment",
+    "accounts_and_audit_preserved": true,
+    "private_backup_created": true
+  },
+  "limits": [
+    "Representative read-only vendor operations; no provider writes/revocation proof",
+    "Native connection listing is separate from host packet evidence",
+    "Internal-network evidence covers only the disposable container",
+    "No claim of controlling every downloaded plugin, root process, desktop app, web or cloud session"
+  ]
+}

@@ -4,6 +4,15 @@
 (`파일:줄`), 소스가 없는 제품은 공식 문서로 정리했다(**문서 근거**). 받은 커밋: LiteLLM `118ce3c`(1.104.0), IBM
 mcp-context-forge `077071b`(1.0.11), Kong `8927af6`(3.10.0), OpenAI Codex `0d7b811`(2026-09-29 main).
 
+**2026-09-30 재조사**: IBM ContextForge `5735c9d`와 공개 IBM CPEX 플러그인 `ae269381`,
+Microsoft MCP Gateway `3594c4ee`와 Wassette `742ebb72`의 소스를 별도로 확인했다.
+상세 근거와 확인 범위는 [IBM 분석](BENCHMARK_IBM_CONTEXTFORGE.md),
+[Microsoft 분석](BENCHMARK_MICROSOFT.md)에 저장했다. 아래 2026-09-29 비교는 당시 조사 범위의 기록이다.
+CPEX 탐지 로직을 비공개로 보았던 판단은 정정한다. 공개 저장소에 Rust 구현이 있으며,
+설정·배포 모드와 실제 실행 여부를 함께 확인해야 한다. 단일 저장소 검색이나 PAC 매핑만으로
+제품 전체의 기능 부재·우열을 판정하지 않는다. IBM의 RFC 8693 위임 구조는 참고하되,
+우리 구현의 자격 증명 분리는 같은 표준의 대리 실행을 구현했다는 뜻이 아니다.
+
 ## 1. 한 줄 요약
 
 | 대상 | 무엇을 봤나 | 우리에게 남긴 것 |

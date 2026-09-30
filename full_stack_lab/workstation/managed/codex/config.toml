@@ -6,6 +6,10 @@ approval_policy = "never"
 sandbox_mode = "read-only"
 check_for_update_on_startup = false
 
+# Codex Apps call connected services outside the MCP Gateway.
+[features]
+apps = false
+
 [analytics]
 enabled = false
 

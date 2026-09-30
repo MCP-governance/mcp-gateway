@@ -114,7 +114,7 @@ Gemini CLI `/etc/gemini-cli/settings.json`, OpenCode `/etc/opencode/opencode.jso
 | fetch 첫 호출이 멈춤 | readabilipy 런타임 npm install | 빌드 때 설치 |
 | desktop 계약이 재생성마다 DRIFT | 설명에 컨테이너 id | `hostname` 고정 |
 | email 421 | 허용 호스트 | `MCP_ALLOWED_HOSTS` |
-| 옛 `UNSAFE_METADATA`가 email 설명의 "credential"을 오탐 | 단어 목록 방식 | 지시문 패턴(영·한) 방식으로 교체, 222개 도구 오탐 0 |
+| 옛 `UNSAFE_METADATA`가 email 설명의 "credential"을 오탐 | 단어 목록 방식 | 지시문 패턴(영·한) 방식으로 교체, 222개 도구 오탐 0. 그 뒤 규칙은 `poisoning.py` 하나로 합쳤다(D-54) |
 | 업스트림 결과 거부가 `MCP-UPSTREAM-001`로 기록 | 클라이언트 TaskGroup 안에서 예외 → ExceptionGroup | `_call_upstream`이 컨텍스트를 닫은 뒤 판단, `_root_cause` |
 
 ## 5. 서버를 추가·교체하는 법

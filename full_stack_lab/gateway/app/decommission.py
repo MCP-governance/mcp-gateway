@@ -412,12 +412,22 @@ async def collect(case_id: str, kinds: list[str], actor: str) -> dict:
             outcome = await execute_call({"server_id": server["id"], "tool": tool, "arguments": arguments,
                                           "user_token": principal,
                                           "client": {"agent": PROBE_AGENT, "task_id": case_id}})
-            blocked = outcome["decision"] == "Block" and not outcome["upstream_executed"]
+            identity = await db.fetch_one("SELECT status FROM principals WHERE token=%s", (principal,))
+            identity_status = identity["status"] if identity else None
+            blocked = (outcome["decision"] == "Block" and not outcome["upstream_executed"]
+                       and not outcome.get("upstream_attempted"))
+            # Keep departed callers in the population. Their identity guard runs before
+            # the lifecycle guard; record both the denial and the account's actual state.
+            confirmed = blocked and (outcome["policy_id"] == "MCP-DECOMM-001" or (
+                target["kind"] == "gateway-access" and outcome["policy_id"] == "P-INPUT-001"
+                and identity_status is not None and identity_status != "active"))
             detail = {"decision_id": outcome["decision_id"], "decision": outcome["decision"],
-                      "policy_id": outcome["policy_id"], "tool": tool, "principal": principal, "blocked": blocked}
+                      "policy_id": outcome["policy_id"], "tool": tool, "principal": principal,
+                      "blocked": confirmed, "identity_status": identity_status,
+                      "upstream_attempted": outcome.get("upstream_attempted", False)}
             collected.append(await add_evidence(case_id, "gateway-denial", f"{principal} → {server['id']}.{tool}",
                                                 "gateway", detail, actor, target_id=str(target["id"])))
-            if blocked and outcome["policy_id"] == "MCP-DECOMM-001" and target["status"] == "OUTSTANDING":
+            if confirmed and target["status"] == "OUTSTANDING":
                 await revoke_target(str(target["id"]), actor, "REVOKED", "Gateway가 이 경로를 실행 전에 차단함을 확인",
                                     at=case["cutover_at"])
     if "endpoint" in kinds:

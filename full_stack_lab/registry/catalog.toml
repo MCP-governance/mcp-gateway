@@ -20,6 +20,9 @@ infrastructure_hosts = [
   "169.254.169.254", "metadata.google.internal", "host.docker.internal",
 ]
 infrastructure_prefixes = ["mcp-", "10.", "172.", "192.168.", "127."]
+# Names the organisation runs. A host under one of these that is not an approved
+# intranet host is company infrastructure, whatever address it resolves to.
+internal_domains = ["bob.local"]
 journal_address = "compliance@bob.local"
 
 # ── data classification (longest prefix wins; unmatched data is important) ─────

@@ -10,12 +10,13 @@
 | 0 | 망 대역·콘솔 상태 | `scripts/network_prefix.py --self-check`, `tests/console-state.test.mjs` (node, 7건) | 대역 선택이 점유 대역을 피하고 소진 시 실패 / 활동 로그 병합(중복·잘못된 id)·검색·상태 문장(실패를 최신처럼 보이지 않음)·**시간대별 판정 버킷(`hourBuckets`), 그룹별 집계(`splitBy`), 하네스×서버 상키 데이터(`sankeyData`)** | 수 초 |
 | 1 | Rego 단위 시험 | `opa/policy_test.rego` (96건) | 27칸 기본 판정 기준선, 권한 번들이 비면 전부 차단·번들 변경이 판정을 바꿈, MCP-* 통제, 예외(유효기간·범위·자가승인·보완통제), 승인형 예외, 민감정보 반출·연쇄(v2 입력), 관리대장 필수 항목, 충돌 우선순위 | 수 초 |
 | 2 | 분류기 self-check | `gateway/app/classify.py` (`python -m app.classify`) | 경로·SQL·URL·메일·Redis 키 분류, DLP(주민번호·카드 Luhn·휴대폰·AWS 키·개인키·비밀번호), 행위 승격 | 수 초 |
-| 2a | 도구 설명·커넥터 정책 self-check | `gateway/app/poisoning.py`(`python -m app.poisoning`), `gateway/app/connectors.py`(agent-service `python -m app.connectors`) | 공개된 tool poisoning 예시와 정상 설명(D-52) / 벤더 출처와 무관하게 처음부터 미승인 거부 대상, 승인 하나가 전체 계정 커넥터를 열지 않음, URL 비밀값 제거, 집행 상태는 미검증(D-53) | 수 초 |
+| 2a | 도구 설명·커넥터 정책 self-check | `gateway/app/poisoning.py`(`python -m app.poisoning`), `gateway/app/connectors.py`(agent-service `python -m app.connectors`) | 공개된 tool poisoning 예시와 정상 설명(D-52), **세 묶음(계약·인자·결과)이 각자의 결과 무게에 맞는 규칙만 쓰는지와 정상 문장 대조군**(D-54) / 벤더 출처와 무관하게 처음부터 미승인 거부 대상, 승인 하나가 전체 계정 커넥터를 열지 않음, URL 비밀값 제거, 집행 상태는 미검증(D-53) | 수 초 |
 | 3 | Gateway 인수 시험 | `gateway/app/acceptance.py` (스위트 `gateway-acceptance-v3`) | `/mcp/` 401+RFC 9728 챌린지, 역할별 도구 목록, OPA가 내어주는 권한 번들(`LAB-AUTHZ-001`), 허용 호출은 `P-AUTHZ-ALLOW-001`, 미승인·미등록 도구 차단, 스키마 검증, 계약 드리프트 차단→복구, 승인 1회 실행, 관찰 모드 기록, **결과 개인정보 마스킹, 개인정보 외부 발송 차단(MCP-DATA-EGRESS-001), 열람→반출 연쇄(P-CHAIN-001)**, 감사 체인, **`per-server-endpoint-for-harness-configs`(`/mcp/git/`의 도구 목록=승인 목록, `git_log` 허용, `client.endpoint=git`, `/mcp/nope/` 404), `tool-hidden-from-partner-still-decided`(협력사 목록에 없는 도구도 직접 호출하면 판정된다), `usage-relationship-scope-alerts`(이용 관계 밖 `hr.employees` → `P-SCOPE-001` 경보, 안 `sales.orders` → 허용, D-39), `server-check-changes-nothing`(연결 확인이 서버 상태·감사 원장을 바꾸지 않음, 없는 서버 404, 직원 403, D-40)** · **`console-registration-pins-and-expires`(랩 fetch를 다른 id로 Console 등록 — 검토하지 않은 계약 해시 409, `/mcp/<id>/`에 승인 도구만, 호출, 기한 지나면 `P-APPROVAL-EXPIRY-001`, 해제 후 404, D-49)** | ~40초 |
 | 4 | 하네스 연결 확인 | `workstation/bin/harness-check`(`./console.sh harnesses`, `reports/harnesses.txt`) | PC 4대 × 하네스 4종이 관리형 MCP 서버 10종 전부에 Gateway로 붙는지 — 모델 호출 없이(`claude/gemini/opencode mcp list`, Codex는 `app-server` `mcpServerStatus/list`) | 수 초 |
 | 5 | 직원의 하루 | `workstation/scenarios/*.toml` (21건, scripted) | 각 직원 PC에서 **MCP Inspector CLI**가 하네스와 같은 Gateway URL·SSO 토큰으로 실제 서버에 보내는 업무 21건이 기대 판정(Allow/Alert/Approval/Block)과 일치(판정은 Gateway `/api/activity`에서 직원 토큰으로 대조 — 하네스 출력 형식과 무관) | ~1분 |
 | 6 | 종료 판정 흐름 | `tests/termination_flow.py` (21건) | UR-GITEA-DEV T3→T2→T1·종결, UR-EMAIL-ASSIST T3·위험 수용 없는 종결 거부·고지 요청서, 복원 | ~1분 |
 | 7 | 보안 회귀 | `tests/security_regression.sh` (55건) | 망 분리(실제 소켓, Presidio 포함), loopback 게시, 읽기 API 토큰, Console 역할 경계, 로그아웃 즉시 효력, **원격 MCP 종료 조건(신청자 자기 신고 422·직원 기록 403·검증 없는 승인 409·위험 수용 사유로도 격리 검증 전 승인 불가·http 근거 422·관리자 기록 200·검증 뒤에도 격리 검증 전 승인 불가)**, OPA 정지→`P-CONTROL-FAIL-CLOSED`, 상위 서버 정지→미실행, **Presidio 분석기 정지→`P-DATA-INSPECTION-001`, 마스킹기 정지→실행됨·`MCP-OUTPUT-001`**, 감사 변조 탐지, 계약 잠금 일치, 격리 워커 검사기 | ~1.5분 |
+| 7a | 적대적 회귀 | `tests/adversarial_check.py` | 통제를 **우회하는 방법**을 실제 ingress로 보낸다: 내부 주소의 다른 표기(10진·8진·16진·축약·IPv4-mapped·wildcard DNS·FQDN), 텍스트로는 읽기처럼 보이는 SQL(SELECT INTO·CTE DELETE·pg_read_file·COPY TO PROGRAM), 인자에 실린 지시문(영·한·보이지 않는 문자), 경로 회피 표기. **정상 업무 대조군을 같은 수만큼** 넣어 오탐을 함께 센다 — 전부 막는 통제는 공격 점수가 만점이어도 쓸 수 없다 | ~1분 |
 | 8 | 정책 재생 | `gateway/app/replay.py` + `tests/replay_check.py` | 기록된 정책 입력을 현재 정책에 다시 넣은 결과(보고)와 합성 라벨 10사례의 공격 미탐·정상 차단 0 | 수 초 |
 | 9 | 논문 실험 | `gateway/app/experiments.py` + `tests/experiments_check.py` | E1·E2·E3 findings가 논문 주장과 같다 | ~30초 |
 
@@ -31,6 +32,38 @@ privacy 망만), Rego 시험. → `.github/workflows/verify.yml`
 
 ## 2. 개별 실행
 
+2026-09-30 클린 검증은 별도 checkout·Compose 프로젝트·신규 볼륨에서 `reset → up --no-llm → test`로 수행한다.
+`tests/reservation_effect_check.py`는 실제 PostgreSQL row lock을 유지한 채 6개 쓰기와 2개 중복 쓰기를 보내고,
+Gateway 응답과 **별도 회사 DB의 값 변화**를 대조한다. 시험 값은 finally에서 복원한다.
+`tests/credential_binding_check.py`는 private 임시 파일에서 resource·주체·만료·권한 형식을 검증한다.
+외부 서비스 응답을 생성하는 mock MCP 서버는 이 실제 서비스 시험에 사용하지 않는다.
+
+실제 서비스 시험은 계정 자격을 별도 private volume에 배치한 뒤 opt-in으로 수행한다.
+`tests/real_mcp_check.py`는 일곱 공식 원격 MCP의 직접 연결·대표 읽기와 native CLI 대조군을 검사한다.
+`tests/real_mcp_gateway_check.py --review-out /output/review.json`으로 도구·스키마·warning을 먼저 읽고,
+같은 파일을 `--reviewed`에 전달한다. warning을 자동 승인하지 않는다. 유효기간 1일의 임시 등록은 finally에서
+해제하며, 출력은 결정 ID·전달/실행 상태·내용 digest만 남긴다. mount 출력 경로는 Compose 기본 read-only
+`/reports`와 겹치지 않는 `/output`을 쓴다. 두 단계는 `{email,password}`를 stdin에서 받는다.
+
+SSH VM의 새 native Docker 이미지에는 공식 Claude Code 2.1.282·Codex 0.158.0을 설치한다. 임시 profile의
+일곱 실제 MCP 연결과 managed 정책 적용을 비교하되 host SYN 관측을 따로 기록한다. SYN은 전체 interface
+capture에서 중복될 수 있으며 MCP 호출 횟수가 아니다. `tests/testbed_network_check.py --out report.json`은
+동일 이미지의 fresh internal network에서 일곱 실제 destination의 TLS 실패와 고정 relay를 통한 실제 field
+Gateway health 성공을 대조한다. 이는 해당 disposable container의 경계이며 host 전체의 보장은 아니다.
+재현 이미지 정의는 `tests/native_testbed.Dockerfile`이며 `full_stack_lab`을 context로 빌드한다. npm cache는
+같은 layer에서 정리한다. 테스트 VM의 20GB 디스크에서 중복 설치 layer가 공간을 소진한 실패를 확인했기 때문이다.
+field 배포 후에는 같은 이미지의 `tests/field_release_check.py`로 SSH VM에서 release 일치·MCP 관리 API 403·
+기존 승인 Microsoft Learn 도구의 실제 호출을 검증한다. 자격은 stdin으로 주고 생성한 토큰·refresh를 폐기한다.
+
+`tests/real_warning_review_check.py`는 별도 opt-in이다. 실제 Notion의 경고 도구를 임시 등록해 명시적 검토 없이는
+409, hash에 결합한 검토는 READY, 검토 hash를 무효화하면 `MCP-CATALOG-001`·전달 전 차단인지 확인한다.
+통과 경로에서 해당 공급자 helper는 실행하지 않으며 임시 레코드만 finally에서 해제한다.
+`PYTHONPATH=/app`으로 runtime 사용자에게 실행하며 일곱 서비스 시험과 동시에 registry를 바꾸지 않는다.
+
+서명·scope 시험과 scripted 업무에는 일반 단위 검사가 포함된다. 이것을 외부 벤더의 실제 업무 효과 증명과
+섞지 않는다. Supabase docs, Sentry 조직 목록, Figma 신원, Zapier action 발견은 DB 쓰기·디자인 수정·action
+실행을 검증한 것이 아니다. LLM을 호출하지 않으며 검증 결과는 [보고서](OVERHAUL_VALIDATION_2026-09-30.md)에 기록한다.
+
 ```bash
 docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v
 docker compose exec -T gateway python -m app.classify
@@ -41,6 +74,8 @@ python3 tests/termination_flow.py
 tests/security_regression.sh
 ./console.sh experiment e1 && python3 tests/experiments_check.py reports/experiment-e1.json
 ./console.sh replay 100          # 후보 정책: REPLAY_POLICY_DIR=./candidate-opa
+docker compose run --rm --no-deps --entrypoint python -e LAB_GATEWAY_URL=http://gateway:8080 \
+  -v "$PWD/tests:/tests:ro" gateway /tests/adversarial_check.py
 ```
 
 호스트에서 도는 스크립트(`termination_flow.py`, `security_regression.sh`, `watch.py`)는

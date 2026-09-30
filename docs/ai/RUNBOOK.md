@@ -2,6 +2,31 @@
 
 > 단일 진입점은 `full_stack_lab/console.sh`. 모든 명령은 `full_stack_lab/`에서 실행한다.
 
+## 2026-09-30 이후 배포 확인과 원격 MCP 자격
+
+Console **정책 → 배포 확인**은 Gateway/Console code revision·content hash와 OPA 로드 정책을 대조한다.
+`/api/health`의 `build`·`policy`, `/api/readiness`의 `build`·`policy`도 같은 정보를 준다.
+직접 Compose로 빌드한다면 `MCP_BUILD_REVISION=$(git rev-parse HEAD)`를 먼저 export한다.
+`console.sh`는 revision을 넣고 추적/미추적 코드·문서 변경이 있으면 `+dirty`를 붙인다.
+DB migration은 기존 계정·원장을 보존하며, 이미지 갱신 후 gateway·gateway-sse·agent-service를 함께 재기동하고
+OPA를 재기동해 파일이 아니라 **로드된** 정책이 일치하는지 확인한다. 정책 mismatch는 readiness 불가다.
+
+인증이 필요한 SaaS MCP는 operator가 별도 자격 파일을 준비하고 `MCP_UPSTREAM_CREDENTIALS_FILE`을
+설정한다. Compose의 `upstream_credentials` 볼륨은 Gateway 두 서비스에 read-only로 마운트된다.
+파일과 상위 디렉터리는 runtime 사용자만 읽도록 600/700, runtime UID 소유로 배치한다.
+내용은 `credentials` 배열이며 각 행은 `endpoint`, `allowed_principals`(관리대장 token ID 배열),
+`expires_at`(Unix **초**, 0은 비만료), `access_token`이다. 같은 endpoint를 중복하지 않는다.
+자격을 command line·URL query·Git·audit에 쓰지 않는다. 파일 교체·검증은 운영자의 private provisioning
+절차로 한다. access token 만료 전에 native OAuth/공급자 절차로 갱신하여 재배치해야 한다.
+
+등록 metadata discovery는 control plane의 관리자 작업이며 principal 없는 별도 조회다. 실제 도구 dispatch는
+검증된 principal을 반드시 넘긴다. principal/resource/expiry/permission 오류는 전달 전 fail-closed다.
+서버가 주장하는 read-only 옵션과 OAuth 권한은 서로 다르다. SaaS 프로젝트·자원·토큰 권한도 별도로 제한한다.
+이번 실험 자격은 로컬 격리 볼륨의 `admin-demo`에만 묶였고 field 배포나 일반 사용자에게 복제하지 않았다.
+
+MCP 토큰으로 관리 API가 403이면 올바른 동작이다. 대화형 Console 로그인으로 `console` scope를 받는다.
+scope가 없는 예전 토큰도 관리권한으로 승격하지 않으므로 다시 로그인해야 한다.
+
 ## 1. 작업 환경 (이 노트북 기준)
 
 | 항목 | 값 |

@@ -72,7 +72,10 @@ server-held-credential → credential-check·provider-attestation, endpoint-conf
 
 ### 증거 수집이 하는 일 (`collect`)
 - `gateway`: 대상 주체의 이름으로 실제 호출을 Gateway에 보내 `MCP-DECOMM-001`로 막히는지 본다
-  (`client.agent = termination-probe`). 막히면 대상 REVOKED, 회수 시각은 **cutover**로 고정.
+  (`client.agent = termination-probe`). 비활성 과거 이용자도 모집단에서 제거하지 않는다. 이 경우 먼저 적용되는
+  `P-INPUT-001`과 실제 `principals.status`를 함께 기록한다. 등록된 비활성 계정의 접근 대상에만 이 증거를
+  인정하며, 알 수 없는 주체나 다른 이유의 차단은 회수 확인으로 세지 않는다. `upstream_attempted=false`인
+  확인된 차단이면 대상 REVOKED, 회수 시각은 **cutover**로 고정.
 - `endpoint`: 인벤토리에서 지문이 사라졌는지. 사라졌으면 REVOKED, 회수 시각은 관찰 시각.
 - `credentials`: Gitea 관리 API(Sudo)로 토큰 존재 확인. 없으면 REVOKED. **있으면 그 사실도 상태 증거**.
 - `liveness`/`session`: 처리 증거(C4 불충족). E2 측정을 증거로 남긴다.
