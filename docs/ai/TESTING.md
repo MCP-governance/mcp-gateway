@@ -70,6 +70,10 @@ tests/security_regression.sh
 떼어 내는지, `managed --connectors`가 `managed-settings.json`과 루트 키가 앞선 `requirements.toml`을 만드는지. CI의 field 단계는 실제
 Claude Code·Codex를 설치한 러너에서 `report`가 "N건 보고"로 끝나는지 본다.
 
+## 계정 삭제·내부 Git 조직 (`tests/field_account_git_test.py`)
+`./console.sh test`가 도입 검증 시험과 같은 방식(Gateway 이미지, 네트워크 없음)으로 돌린다. root·본인 삭제 거부와 삭제의 표식
+처리, 이미 있는 Gitea 사용자도 조직의 읽기 팀(`Members`)에 들어가는지, 새 팀이 전체 저장소 코드 읽기로 만들어지는지.
+
 ## 도입 자동 검증 회귀
 `./console.sh test`에 `tests/intake_validation_test.py`를 포함한다. Gateway 이미지의 의존성을 사용하지만 네트워크가 없는 별도 컨테이너에서 실행한다. 자동 대기열 등록, 문서의 commit 고정·범위 제한·symlink 제외, 부분 검사 실패 시 증적 보존, 치명점 자동 거부, 관리자 전용 보고서·파일 allowlist, 문서 조사로 원격 승인 게이트를 우회할 수 없는지를 검증한다. 스캐너 단위 회귀의 출력은 fixture이며 실제 공급망 검사 결과와 구분한다.
 

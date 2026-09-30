@@ -71,6 +71,8 @@ services:
       - ./registry/field:/registry-field:ro
 
   agent-service:
+    depends_on:
+      corp-git: {condition: service_healthy}
     # 직원이 Console에서 PC 키트를 직접 받는다(/static/kit/mcpgw_pc.py). 관리자가 파일을 따로 전달하지 않는다.
     volumes:
       - ./field/pc/mcpgw_pc.py:/app/app/agent_static/kit/mcpgw_pc.py:ro

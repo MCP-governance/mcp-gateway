@@ -95,6 +95,8 @@ async def lifespan(_: FastAPI):
     await db.execute((Path(__file__).parent / "v2_tables.sql").read_text())
     await bootstrap_passwords()
     await bootstrap_field_accounts()
+    if os.getenv("MCP_FIELD_MODE") == "1":
+        await reconcile_gitea_accounts()
     try:
         yield
     finally:
@@ -275,7 +277,7 @@ async def me(authorization: str | None = Header(default=None)):
     git_url = os.getenv("GITEA_PUBLIC_URL", "") if field else ""
     # The org page, not Gitea's home: the home is a personal dashboard where company repos were hard to find.
     return {**console_user(user), "synthetic": not field,
-            "git_url": f"{git_url.rstrip('/')}/{GITEA_ORG}" if git_url else "", "kit": await pc_kit() if field else None}
+            "git_url": git_url.rstrip("/") + f"/{GITEA_ORG}" if git_url else "", "kit": await pc_kit() if field else None}
 
 
 async def pc_kit() -> dict | None:
@@ -331,15 +333,7 @@ def gitea_admin_client() -> httpx.AsyncClient:
                                    os.getenv("GITEA_ADMIN_PASSWORD", "corp-admin-lab-only")))
 
 
-GITEA_TEAM = "employees"
-
-
-async def ensure_org(client: httpx.AsyncClient) -> int:
-    """`mcp` 조직과, 모든 사용자가 드는 읽기 팀(모든 저장소 포함)의 id.
-
-    구성원이 아니면 Gitea 첫 화면(개인 대시보드)에 조직 저장소가 보이지 않아 직원이 사내 저장소를
-    찾지 못했다. 팀에 넣으면 대시보드·조직 화면·검색에 승인 저장소가 바로 나온다.
-    """
+async def ensure_gitea_team(client: httpx.AsyncClient) -> int:
     found = await client.get(f"/api/v1/orgs/{GITEA_ORG}")
     if found.status_code == 404:
         created = await client.post("/api/v1/orgs", json={
@@ -349,24 +343,22 @@ async def ensure_org(client: httpx.AsyncClient) -> int:
             raise HTTPException(502, f"내부 Git 조직을 만들지 못했습니다 (Gitea {created.status_code}).")
     elif not found.is_success:
         raise HTTPException(502, f"내부 Git 조직 확인 실패 (Gitea {found.status_code}).")
-    teams = await client.get(f"/api/v1/orgs/{GITEA_ORG}/teams")
+    teams = await client.get(f"/api/v1/orgs/{GITEA_ORG}/teams", params={"limit": 50})
     if not teams.is_success:
-        raise HTTPException(502, f"내부 Git 팀을 확인하지 못했습니다 (Gitea {teams.status_code}).")
-    for team in teams.json():
-        if team.get("name") == GITEA_TEAM:
-            return team["id"]
-    created = await client.post(f"/api/v1/orgs/{GITEA_ORG}/teams", json={
-        "name": GITEA_TEAM, "description": "승인된 MCP 저장소 읽기·이슈(모든 직원)", "permission": "read",
-        "includes_all_repositories": True, "can_create_org_repo": False,
-        "units": ["repo.code", "repo.issues", "repo.releases", "repo.wiki"],
-        "units_map": {"repo.code": "read", "repo.issues": "read", "repo.releases": "read", "repo.wiki": "read"}})
-    if created.status_code != 201:
-        raise HTTPException(502, f"내부 Git 팀을 만들지 못했습니다 (Gitea {created.status_code}).")
-    return created.json()["id"]
+        raise HTTPException(502, f"내부 Git 조직 팀 확인 실패 (Gitea {teams.status_code}).")
+    members = next((team for team in teams.json() if team["name"] == "Members"), None)
+    if members is None:
+        created = await client.post(f"/api/v1/orgs/{GITEA_ORG}/teams", json={
+            "name": "Members", "description": "솔루션 조직원 읽기 권한",
+            "permission": "read", "units": ["repo.code"], "includes_all_repositories": True})
+        if created.status_code != 201:
+            raise HTTPException(502, f"내부 Git 조직 팀을 만들지 못했습니다 (Gitea {created.status_code}).")
+        members = created.json()
+    return members["id"]
 
 
 async def ensure_gitea_user(user: dict) -> str:
-    """솔루션 계정과 같은 이름의 Gitea 사용자를 만들고, 읽기 팀에 넣고, 관리자 역할이면 Gitea 관리자로 맞춘다."""
+    """솔루션 계정을 Gitea 조직의 전체 저장소 읽기 팀에 동기화한다."""
     login = gitea_login(user["email"])
     admin = "admin" in user["roles"]
     key = f"{login}|{admin}"
@@ -384,18 +376,31 @@ async def ensure_gitea_user(user: dict) -> str:
                 raise HTTPException(502, f"내부 Git 사용자를 만들지 못했습니다 (Gitea {created.status_code}).")
         elif not found.is_success:
             raise HTTPException(502, f"내부 Git 사용자를 확인하지 못했습니다 (Gitea {found.status_code}).")
-        if (found.status_code == 404 and admin) or (found.is_success and found.json().get("is_admin") != admin):
+        if found.status_code == 404 or found.json().get("is_admin") != admin:
             changed = await client.patch(f"/api/v1/admin/users/{quote(login)}", json={
                 "login_name": login, "source_id": 0, "admin": admin})
             if not changed.is_success:
                 raise HTTPException(502, f"내부 Git 권한을 맞추지 못했습니다 (Gitea {changed.status_code}).")
-        team = await ensure_org(client)
-        if (await client.get(f"/api/v1/teams/{team}/members/{quote(login)}")).status_code == 404:
-            joined = await client.put(f"/api/v1/teams/{team}/members/{quote(login)}")
-            if not joined.is_success:
-                raise HTTPException(502, f"내부 Git 팀에 넣지 못했습니다 (Gitea {joined.status_code}).")
+        team_id = await ensure_gitea_team(client)
+        joined = await client.put(f"/api/v1/teams/{team_id}/members/{quote(login)}")
+        if not joined.is_success:
+            raise HTTPException(502, f"내부 Git 조직 가입 실패 (Gitea {joined.status_code}).")
     _gitea_ready.add(key)
     return login
+
+
+async def reconcile_gitea_accounts() -> None:
+    rows = await db.fetch_all("""SELECT email, display_name, role, status FROM principals
+                                 WHERE email IS NOT NULL AND email NOT LIKE '%@bob.local'""")
+    for row in rows:
+        login = gitea_login(row["email"])
+        if row["status"] == "deleted":
+            async with gitea_admin_client() as client:
+                removed = await client.delete(f"/api/v1/orgs/{GITEA_ORG}/members/{quote(login)}")
+                if removed.status_code not in (204, 404):
+                    raise HTTPException(502, f"내부 Git 조직 탈퇴 실패 (Gitea {removed.status_code}).")
+        else:
+            await ensure_gitea_user({"email": row["email"], "name": row["display_name"], "roles": [row["role"]]})
 
 
 @app.get("/auth/gitea", include_in_schema=False)
@@ -441,12 +446,12 @@ async def list_accounts(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "신원 관리대장은 관리자만 볼 수 있습니다.")
-    field_filter = " WHERE email NOT LIKE '%@bob.local'" if os.getenv("MCP_FIELD_MODE") == "1" else ""
+    field_filter = " AND email NOT LIKE '%@bob.local'" if os.getenv("MCP_FIELD_MODE") == "1" else ""
     return {"accounts": await db.fetch_all(
         """SELECT token, user_id, email, display_name, role, department, employee_no, job_title,
                   status, status_changed_by, status_changed_at,
                   (password_hash IS NOT NULL) AS has_password
-           FROM principals""" + field_filter + " ORDER BY role, email")}
+           FROM principals WHERE status <> 'deleted'""" + field_filter + " ORDER BY role, email")}
 
 
 @app.get("/api/signup-requests")
@@ -482,6 +487,8 @@ async def approve_signup(request_id: UUID, authorization: str | None = Header(de
             "UPDATE signup_requests SET status='approved', reviewed_at=now(), reviewed_by=%s WHERE id=%s",
             (user["principal"], request_id),
         )
+    if os.getenv("MCP_FIELD_MODE") == "1":
+        await ensure_gitea_user({"email": row["username"], "name": row["display_name"], "roles": ["employee"]})
     return {"status": "approved", "message": f"{row['username']} 계정을 승인했습니다."}
 
 
@@ -516,7 +523,7 @@ async def set_account_status(user_id: str, request: AccountStatus,
         raise HTTPException(409, "자기 계정은 스스로 중지하거나 잠글 수 없습니다.")
     row = await db.fetch_one(
         """UPDATE principals SET status=%s, status_changed_by=%s, status_changed_at=now()
-           WHERE user_id=%s
+           WHERE user_id=%s AND status <> 'deleted'
            RETURNING token, user_id, email, display_name, role, status, status_changed_by, status_changed_at""",
         (request.status, user["principal"], user_id))
     if not row:
@@ -524,6 +531,34 @@ async def set_account_status(user_id: str, request: AccountStatus,
     label = {"active": "사용", "disabled": "중지", "locked": "잠금"}[request.status]
     return {"account": row,
             "message": f"{row['display_name'] or row['email']} 계정을 {label} 상태로 바꿨어요. 로그인 중인 기기에도 바로 적용돼요."}
+
+
+@app.delete("/api/accounts/{user_id}")
+async def delete_account(user_id: str, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "계정 삭제는 관리자만 할 수 있습니다.")
+    if user_id in (user["user_id"], "root"):
+        raise HTTPException(409, "본인 또는 root 계정은 삭제할 수 없습니다.")
+    row = await db.fetch_one(
+        """UPDATE principals SET status='deleted', status_changed_by=%s, status_changed_at=now()
+           WHERE user_id=%s AND status <> 'deleted' RETURNING email""",
+        (user["principal"], user_id))
+    if not row:
+        row = await db.fetch_one("SELECT email FROM principals WHERE user_id=%s AND status='deleted'", (user_id,))
+        if not row:
+            raise HTTPException(404, "관리대장에 없는 계정입니다.")
+    if os.getenv("MCP_FIELD_MODE") == "1":
+        login = gitea_login(row["email"])
+        try:
+            async with gitea_admin_client() as client:
+                removed = await client.delete(f"/api/v1/orgs/{GITEA_ORG}/members/{quote(login)}")
+                if removed.status_code not in (204, 404):
+                    raise HTTPException(502, f"계정은 삭제됐지만 내부 Git 조직 탈퇴에 실패했습니다 (Gitea {removed.status_code}).")
+        except httpx.HTTPError as exc:
+            raise HTTPException(502, "계정은 삭제됐지만 내부 Git에 연결하지 못했습니다. 삭제를 다시 시도하세요.") from exc
+        _gitea_ready.difference_update({f"{login}|True", f"{login}|False"})
+    return {"message": f"{row['email']} 계정을 삭제했습니다. 기존 감사 기록은 보존됩니다."}
 
 
 @app.get("/health")
@@ -637,31 +672,26 @@ async def list_mcp_requests(authorization: str | None = Header(default=None)):
 
 @app.get("/api/mcp-catalog/search")
 async def search_catalog(q: str = "", authorization: str | None = Header(default=None)):
-    """이미 누가 신청했거나 승인받은 MCP인지 누구나 조회할 수 있다.
-
-    이것이 없으면 같은 저장소를 여러 사람이 반복해서 신청하고, 이미 거부된
-    서버를 모르고 다시 올린다. 대신 신청자 신원과 도입 목적 본문은 돌려주지
-    않는다. 필요한 답은 "이미 있는가 / 어떤 상태인가"이지 "누가 왜 냈는가"가
-    아니다.
-    """
+    """신청 전에 기존 요청의 신청자·상태·승인된 내부 저장소를 조회한다."""
     await current_identity(authorization)
     term = q.strip()
     like = f"%{term}%"
-    request_query = """SELECT display_name, repository_url, requested_transport, status, risk_level,
-                              commit_sha, source_ref, validated_at, reviewed_at, created_at
-                       FROM mcp_intake_requests"""
+    request_query = """SELECT r.display_name, r.repository_url, r.requested_transport, r.status, r.risk_level,
+                              r.commit_sha, r.source_ref, r.validated_at, r.reviewed_at, r.created_at,
+                              r.internal_repo_url, COALESCE(p.display_name, r.submitted_by) AS submitted_by_name
+                       FROM mcp_intake_requests r LEFT JOIN principals p ON p.token=r.submitted_by"""
     server_query = """SELECT id, display_name, transport, source_url, source_ref, supplier,
                              status, status_reason
                       FROM mcp_servers"""
     if term:
         requests = await db.fetch_all(
-            request_query + " WHERE repository_url ILIKE %s OR display_name ILIKE %s"
-            " ORDER BY created_at DESC LIMIT 50", (like, like))
+            request_query + " WHERE r.repository_url ILIKE %s OR r.display_name ILIKE %s"
+            " ORDER BY r.created_at DESC LIMIT 50", (like, like))
         servers = await db.fetch_all(
             server_query + " WHERE source_url ILIKE %s OR display_name ILIKE %s OR id ILIKE %s"
             " ORDER BY id LIMIT 50", (like, like, like))
     else:
-        requests = await db.fetch_all(request_query + " ORDER BY created_at DESC LIMIT 50")
+        requests = await db.fetch_all(request_query + " ORDER BY r.created_at DESC LIMIT 50")
         servers = await db.fetch_all(server_query + " ORDER BY id LIMIT 50")
     return {"query": term, "requests": requests, "registry": servers}
 
@@ -693,7 +723,7 @@ async def publish_internal_repo(row: dict) -> str:
     try:
         async with gitea_admin_client() as client:
             client.timeout = httpx.Timeout(120)
-            await ensure_org(client)
+            await ensure_gitea_team(client)
             path = f"/api/v1/repos/{org}/{name}"
             existing = await client.get(path)
             if existing.is_success and await repo_head(client, path, existing.json()) != row["commit_sha"]:

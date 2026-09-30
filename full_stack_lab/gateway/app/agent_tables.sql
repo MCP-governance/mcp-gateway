@@ -275,7 +275,7 @@ ALTER TABLE principals ADD COLUMN IF NOT EXISTS status_changed_by text;
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS status_changed_at timestamptz;
 ALTER TABLE principals DROP CONSTRAINT IF EXISTS principals_status_check;
 ALTER TABLE principals ADD CONSTRAINT principals_status_check
-  CHECK (status IN ('active', 'disabled', 'locked'));
+  CHECK (status IN ('active', 'disabled', 'locked', 'deleted'));
 CREATE UNIQUE INDEX IF NOT EXISTS principals_user_id_key ON principals(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS principals_email_key ON principals(email);
 CREATE INDEX IF NOT EXISTS principals_email_idx ON principals(lower(email));

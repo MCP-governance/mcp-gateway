@@ -85,6 +85,7 @@ def authenticate(authorization: str | None) -> tuple[dict, dict]:
 ACCOUNT_STATUS_REASON = {
     "disabled": "사용 중지된 계정입니다.",
     "locked": "잠긴 계정입니다. 관리자에게 문의하세요.",
+    "deleted": "삭제된 계정입니다.",
 }
 
 

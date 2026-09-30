@@ -290,6 +290,7 @@ async function route() {
     const out = await ROUTES[id](at.arg, at.query.get("t") || "", at.query);
     if (seq !== routeSeq) return;  // the user already moved on
     view.innerHTML = String(out.html ?? out);
+    if (id === "intake") intakeRendered = String(out.html);
     charts.register(out.charts);
     charts.mountVisible(view);
     const h1 = $("h1", view);
@@ -302,7 +303,8 @@ async function route() {
     if (seq === routeSeq) view.innerHTML = String(html`<div class="note bad">${error.message}</div>`);
   }
 }
-const reload = () => route();
+const reload = () => current.page === "intake" && parseHash().page === "intake"
+  && parseHash().query.get("t") !== "new" ? refreshIntake() : route();
 
 /** Remember the open tab in the address, without a reload. */
 function rememberTab(key) {
@@ -793,7 +795,8 @@ ROUTES.people = async (_, tab, query) => {
             <td>${ROLE[a.role] || a.role}</td><td>${a.department}</td>
             <td>${chip({ active: "allow", disabled: "block", locked: "alert" }[a.status] || "", { active: "사용", disabled: "중지", locked: "잠김" }[a.status] || a.status)}</td>
             <td class="num">${a.user_id === viewer.user_id ? html`<span class="small muted">본인</span>`
-              : html`<button class="btn sm" data-act="account-status" data-id="${a.user_id}" data-name="${a.display_name}" data-status="${a.status}">상태 변경</button>`}</td></tr>`)}
+              : html`<button class="btn sm" data-act="account-status" data-id="${a.user_id}" data-name="${a.display_name}" data-status="${a.status}">상태 변경</button>
+                ${a.user_id !== "root" ? html`<button class="btn sm danger" data-act="account-delete" data-id="${a.user_id}" data-name="${a.display_name}">삭제</button>` : ""}`}</td></tr>`)}
           </tbody></table>`, { flush: true }) },
         { key: "signups", label: "가입 승인", n: signups.filter((s) => s.status === "pending").length,
           body: panel("회원가입 신청", html`<table class="data"><thead><tr><th>아이디</th><th>이름</th><th>신청</th><th>상태</th><th></th></tr></thead><tbody>
@@ -818,9 +821,65 @@ ROUTES.people = async (_, tab, query) => {
 // ── intake ───────────────────────────────────────────────────────────────────
 let intakeTimer = null;
 let scanJobs = [];
+let intakeRendered = "";
 function stopIntake() { clearInterval(intakeTimer); intakeTimer = null; }
+let intakeRefreshing = false;
+function patchIntakePanel(view, next, key) {
+  const oldPanel = view.querySelector(`#p-panel-${key}`);
+  const newPanel = next.querySelector(`#p-panel-${key}`);
+  if (!oldPanel || !newPanel) return;
+  const oldStack = oldPanel.querySelector(":scope > .stack");
+  const newStack = newPanel.querySelector(":scope > .stack");
+  if (!oldStack || !newStack) { oldPanel.replaceWith(newPanel); return; }
+  const oldSections = [...oldStack.children];
+  const newSections = [...newStack.children];
+  const title = (section) => section.querySelector(":scope > header > h2")?.textContent;
+  for (const [index, section] of newSections.entries()) {
+    const previous = oldSections.find((item) => title(item) === title(section));
+    if (previous) {
+      if (!previous.querySelector(".chart") || !section.querySelector(".chart")) previous.replaceWith(section);
+    } else {
+      const following = newSections.slice(index + 1).map((item) => oldSections.find((old) => title(old) === title(item)))
+        .find((item) => item?.isConnected);
+      oldStack.insertBefore(section, following || null);
+    }
+  }
+  for (const section of oldSections) if (!newSections.some((item) => title(item) === title(section))) section.remove();
+}
+async function refreshIntake() {
+  if (intakeRefreshing) return;
+  intakeRefreshing = true;
+  const seq = routeSeq;
+  try {
+    const out = await ROUTES.intake("", parseHash().query.get("t") || "list");
+    if (seq !== routeSeq || parseHash().page !== "intake") return;
+    const markup = String(out.html);
+    if (markup === intakeRendered) return;
+    const next = document.createElement("div");
+    next.innerHTML = markup;
+    const view = $("#view");
+    for (const key of ["list", "audit"]) {
+      patchIntakePanel(view, next, key);
+      const oldCount = view.querySelector(`#p-tab-${key} .n`);
+      const newCount = next.querySelector(`#p-tab-${key} .n`);
+      if (oldCount && newCount) oldCount.replaceWith(newCount);
+    }
+    intakeRendered = markup;
+    for (const [id, build] of Object.entries(out.charts)) charts.update(id, build);
+    charts.mountVisible(view);
+  } finally { intakeRefreshing = false; }
+}
+function catalogResults(data) {
+  const requests = data.requests || [], registry = data.registry || [];
+  return html`${requests.length ? html`<table class="data"><thead><tr><th>MCP</th><th>신청자</th><th>상태</th><th>내부 저장소</th></tr></thead><tbody>
+    ${requests.map((r) => html`<tr><td><b>${r.display_name}</b><span class="sub mono">${r.repository_url}</span></td>
+      <td>${r.submitted_by_name}</td><td>${chip(...(INTAKE_STATUS[r.status] || ["", r.status]))}</td>
+      <td>${r.internal_repo_url ? html`<a href="${r.internal_repo_url}" target="_blank" rel="noopener noreferrer">열기·클론 ↗</a>` : "승인 전"}</td></tr>`)}</tbody></table>` : empty(data.query ? "일치하는 신청 없음" : "아직 신청된 MCP가 없습니다.")}
+    ${registry.length ? html`<p class="small muted">등록된 MCP: ${registry.map((r) => r.display_name).join(", ")}</p>` : ""}`;
+}
 ROUTES.intake = async (_, tab) => {
-  const [{ requests }, audit] = await Promise.all([api("/api/mcp-requests"), viewer.admin ? api("/api/mcp-scan") : Promise.resolve(null)]);
+  const [{ requests }, audit, catalog] = await Promise.all([api("/api/mcp-requests"), viewer.admin ? api("/api/mcp-scan") : Promise.resolve(null),
+    tab === "new" ? api("/api/mcp-catalog/search") : Promise.resolve(null)]);
   scanJobs = audit?.jobs || [];
   // Colours are read when the chart is drawn, so a theme switch redraws them in the new palette.
   const byStatus = () => Object.entries(INTAKE_STATUS).map(([k, [tone, label]]) => ({ name: label, value: requests.filter((r) => r.status === k).length,
@@ -854,13 +913,17 @@ ROUTES.intake = async (_, tab) => {
               <button class="btn sm" data-act="intake-report" data-id="${r.id}">보고서</button>
               ${["HOLD", "VALIDATION_QUEUED", "VALIDATED", "FAILED"].includes(r.status) ? html`<button class="btn sm danger" data-act="intake-reject" data-id="${r.id}">거부</button>` : ""}</td>` : ""}</tr>`;
           })}</tbody></table>${requests.length ? "" : empty("신청 없음")}`, { flush: true })}</div>` },
-        { key: "new", label: "새 신청", body: panel("새 신청", html`<form class="stack form" data-form="intake">
+        { key: "new", label: "새 신청", body: html`<div class="stack">
+          ${panel("기존 신청 검색", html`<div class="filters"><input class="grow" type="search" data-catalog-search
+            aria-label="MCP 이름 또는 GitHub 저장소 검색" placeholder="MCP 이름 또는 GitHub 저장소" /></div>
+            <div id="catalog-results" aria-live="polite">${catalogResults(catalog || { requests: [], registry: [] })}</div>`, { flush: true })}
+          ${panel("새 신청", html`<form class="stack form" data-form="intake">
           <label>이름<input name="display_name" required minlength="2" maxlength="80" placeholder="Slack MCP" /></label>
           <label>GitHub 저장소<input name="repository_url" required placeholder="https://github.com/org/repo" /></label>
           <label>연결 방식<select name="requested_transport"><option value="streamable-http">Streamable HTTP</option>
             <option value="stdio">stdio</option><option value="sse">SSE</option></select></label>
           <label>도입 목적<textarea name="purpose" required minlength="10" maxlength="1000"></textarea></label>
-          <div class="row-actions"><button class="btn primary" type="submit">신청</button></div></form>`) },
+          <div class="row-actions"><button class="btn primary" type="submit">신청</button></div></form>`)}</div>` },
         ...(audit ? [{ key: "audit", label: "A.I.G 검사", n: audit.jobs.length, hot: audit.jobs.some((j) => j.trigger === "anomaly" && j.status !== "DONE"), body: html`<div class="stack">
           ${panel("검사 연결", html`<div class="row-actions">
             ${chip(audit.config.configured ? "allow" : "alert", audit.config.configured ? `모델 ${audit.config.model}${audit.config.local ? " · 로컬" : " · 외부"}` : "모델 미설정")}
@@ -894,7 +957,8 @@ ROUTES.intake = async (_, tab) => {
       intakeTimer = setInterval(() => {
         // Do not close a report drawer, reset an unfinished form or interrupt a review.
         if (!document.hidden && parseHash().page === "intake" && parseHash().query.get("t") !== "new"
-          && !$("#drawer").classList.contains("open") && !$("#dialog").open) reload();
+          && !$("#drawer").classList.contains("open") && !$("#dialog").open)
+          refreshIntake().catch((error) => toast(error.message, true));
       }, 5000);
     },
   };
@@ -1245,7 +1309,7 @@ const ACTIONS = {
     location.replace("/login");
   },
   "close-drawer": closeDrawer,
-  tab(el) {
+  async tab(el) {
     const key = el.dataset.tab;
     const bar = el.closest(".tabs");
     const scope = bar.parentElement;
@@ -1257,6 +1321,13 @@ const ACTIONS = {
     for (const p of scope.querySelectorAll(":scope > .tabpanel")) p.hidden = p.dataset.panel !== key;
     if (!el.closest(".drawer")) rememberTab(key);
     charts.mountVisible(scope);
+    if (key === "new" && current.page === "intake") {
+      const input = scope.querySelector("[data-catalog-search]");
+      const query = input.value.trim();
+      const data = await api(`/api/mcp-catalog/search?q=${encodeURIComponent(query)}`);
+      if (input.isConnected && input.value.trim() === data.query)
+        $("#catalog-results").innerHTML = String(catalogResults(data));
+    }
   },
   decision: (el) => showDecision(el.dataset.id),
   approval: (el) => showApproval(el.dataset.id),
@@ -1317,10 +1388,21 @@ const ACTIONS = {
   },
   async "account-status"(el) {
     const fd = await ask({ title: `${el.dataset.name} 계정 상태`,
-      fields: html`${field.select("status", "상태", { active: "사용", disabled: "중지", locked: "잠김" }, el.dataset.status)}${field.text("note", "메모", 'maxlength="300"')}` });
+      fields: html`<fieldset><legend>상태</legend>${Object.entries({ active: "사용", disabled: "중지", locked: "잠김" }).map(([value, label]) =>
+        html`<label class="check"><input type="radio" name="status" value="${value}" ${value === el.dataset.status ? raw("checked") : ""} required />${label}</label>`)}</fieldset>
+        ${field.text("note", "메모", 'maxlength="300"')}` });
     if (!fd) return;
     const r = await api(`/api/accounts/${el.dataset.id}/status`, { method: "PUT", body: { status: fd.get("status"), note: fd.get("note") || "" } });
-    toast(r.message); reload();
+    await reload();
+    toast(r.message);
+  },
+  async "account-delete"(el) {
+    const fd = await ask({ title: `${el.dataset.name} 계정 삭제`,
+      body: "로그인과 내부 Git 접근이 즉시 차단됩니다. 감사 기록은 보존됩니다.", confirm: "계정 삭제", danger: true });
+    if (!fd) return;
+    const r = await api(`/api/accounts/${encodeURIComponent(el.dataset.id)}`, { method: "DELETE" });
+    await reload();
+    toast(r.message);
   },
   async "signup-approve"(el) {
     const r = await api(`/api/signup-requests/${el.dataset.id}/approve`, { method: "POST" });
@@ -1704,6 +1786,17 @@ document.addEventListener("change", (event) => {
 });
 // Search narrows what is already loaded, so it re-renders the list without a request.
 document.addEventListener("input", (event) => {
+  if (event.target.matches("[data-catalog-search]")) {
+    const input = event.target;
+    clearTimeout(input.searchTimer);
+    input.searchTimer = setTimeout(async () => {
+      try {
+        const data = await api(`/api/mcp-catalog/search?q=${encodeURIComponent(input.value.trim())}`);
+        if (input.isConnected && input.value.trim() === data.query) $("#catalog-results").innerHTML = String(catalogResults(data));
+      } catch (error) { toast(error.message, true); }
+    }, 250);
+    return;
+  }
   if (!event.target.matches("[data-feed-search]")) return;
   feed.query = event.target.value;
   renderFeed();

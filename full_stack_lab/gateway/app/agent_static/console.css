@@ -281,7 +281,7 @@ dialog .tool-pick .sub { color: var(--ink-3); font-size: var(--fs-xs); }
 dialog h3 { margin: 0; font-size: var(--fs-lg); }
 dialog p { margin: 0; color: var(--ink-2); }
 dialog label { display: flex; flex-direction: column; gap: 6px; font-size: 15px; font-weight: 500; }
-dialog input, dialog textarea, dialog select { border: 1px solid var(--line-2); border-radius: 8px; padding: 9px 12px; background: var(--panel); }
+dialog input:not([type=checkbox]):not([type=radio]), dialog textarea, dialog select { border: 1px solid var(--line-2); border-radius: 8px; padding: 9px 12px; background: var(--panel); }
 dialog textarea { min-height: 96px; resize: vertical; }
 dialog .row { display: flex; gap: 8px; justify-content: flex-end; }
 dialog .row .btn[value="cancel"] { order: -1; }
@@ -300,6 +300,7 @@ label.check { flex-direction: row; align-items: center; gap: 10px; font-weight: 
 .pill-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .row-actions.center { justify-content: center; padding-bottom: 8px; }
+#catalog-results > p { margin: 0; padding: 12px 20px 16px; }
 .spacer { flex: 1; }
 details summary { cursor: pointer; color: var(--ink-2); }
 

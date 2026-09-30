@@ -92,6 +92,28 @@ export function redraw(id, build) {
   pending.set(id, build);
 }
 
+/** Replace chart data without replacing its canvas during an intake refresh. */
+export function update(id, build) {
+  for (const [el, entry] of live) {
+    if (el.id !== id) continue;
+    if (!el.isConnected) {
+      entry.observer?.disconnect(); entry.chart?.dispose(); live.delete(el);
+      break;
+    }
+    const { onClick, ...option } = build();
+    // An empty state has no canvas to update, and a chart whose data went to zeros becomes one: draw anew.
+    if (!entry.chart || !values(option).some((v) => Number(v) > 0)) {
+      entry.observer?.disconnect(); entry.chart?.dispose(); live.delete(el);
+      draw(el, build);
+      return;
+    }
+    entry.build = build;
+    entry.chart.setOption({ ...base(), ...option }, { notMerge: true, lazyUpdate: true });
+    return;
+  }
+  pending.set(id, build);
+}
+
 /** Theme switch: rebuild with the new tokens. */
 export function redrawAll() {
   // Iterate a copy: draw() puts the same element back into `live`, and a Map iterator visits
