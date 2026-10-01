@@ -7,7 +7,9 @@ the client: the same Claude Code connection calls before, during and after each 
       --drift-on 'bash /tmp/r.sh sol /tmp/drift_on.sh' --drift-off 'bash /tmp/r.sh sol /tmp/drift_off.sh' < admin.json
 
 --drift-on/--drift-off are operator commands run between calls (they change the approved
-contract hash on the appliance and put it back). The withdrawal uses the Console API.
+contract hash on the appliance and put it back). The independently approved intake is
+captured before changes and restored through its normal register API in finally. The
+contract restoration runs in finally too: a failed check must not leave either changed.
 Prints one JSON line per step; exit 1 when a step does not match.
 """
 from __future__ import annotations
@@ -31,8 +33,16 @@ def main() -> None:
     args = parser.parse_args()
     base = args.console.rstrip("/")
     token = console(base, "/auth/mock-login", body=json.load(sys.stdin))["access_token"]
+    registration = console(base, "/gw/registry", token)["registrations"].get(args.server)
+    assert registration and registration.get("intake_id"), "An approved Console registration is required for restoration"
+    intake = next(r for r in console(base, "/api/mcp-requests", token)["requests"] if r["id"] == registration["intake_id"])
+    reviewed = (intake.get("evidence") or {}).get("remote_contract") or {}
+    assert intake["status"] == "APPROVED" and intake["reviewed_by"] != intake["submitted_by"]
+    restore = reviewed.get("registration")
+    assert restore and restore["server_id"] == args.server and args.person in reviewed["allowed_principals"]
     harness = Harness(args, "claude").start(args.cwd)
     failures = 0
+    drifted = withdrawn = False
 
     def step(name: str, expect: dict) -> None:
         nonlocal failures
@@ -51,15 +61,26 @@ def main() -> None:
 
     try:
         step("approved", {"executed": True})
+        drifted = True
         subprocess.run(args.drift_on, shell=True, check=True, stdout=subprocess.DEVNULL)
         step("contract-drift", {"decision": "Block", "policy_id": "MCP-CATALOG-001", "attempted": False, "executed": False})
         subprocess.run(args.drift_off, shell=True, check=True, stdout=subprocess.DEVNULL)
+        drifted = False
         step("drift-restored", {"executed": True})
+        withdrawn = True
         console(base, f"/gw/registry/servers/{args.server}", token, method="DELETE")
         time.sleep(args.settle)
         step("registration-withdrawn", {"decision": "Block", "policy_id": "MCP-REGISTRY-001", "attempted": False, "executed": False})
     finally:
-        harness.close_io()
+        try:
+            harness.close_io()
+        finally:
+            try:
+                if drifted:
+                    subprocess.run(args.drift_off, shell=True, check=True, stdout=subprocess.DEVNULL)
+            finally:
+                if withdrawn:
+                    console(base, f"/api/mcp-requests/{intake['id']}/register", token, restore)
     print(json.dumps({"steps": 4, "failed": failures}))
     sys.exit(1 if failures else 0)
 

@@ -19,5 +19,6 @@
    "arguments": {"sql": "UPDATE public.products SET price = price WHERE id = 1"},
    "expect": {"decision": "Block", "attempted": false, "executed": false}},
   {"id": "concurrent-duplicate", "harness": "codex", "server": "filesystem", "tool": "read_text_file", "parallel": 3,
-   "arguments": {"path": "/shared/team/platform/deploy-checklist.md"}}
+   "arguments": {"path": "/shared/team/platform/deploy-checklist.md"},
+   "expect_counts": {"executed": 1, "duplicate_blocked": 2}}
 ]

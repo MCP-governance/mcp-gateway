@@ -481,7 +481,7 @@ ROUTES.overview = async (_, tab) => {
       head: head("운영 현황", { status: modeChip(o.enforcement), actions: html`<a class="btn" href="#/coverage">통제 범위</a><a class="btn primary" href="#/activity">호출</a>` }),
       // One cell per operator question: traversal, enforcing plane, execution, response, bypass, termination.
       kpis: kpiStrip([["Gateway 경유 호출", x.tool_calls, "", "#/activity?event_kind=tools/call"],
-        ["Endpoint 강제 단말", `${devices.filter((d) => d.account_state === "endpoint_enforced").length}/${devices.length}`, "", "#/coverage?t=devices"],
+        ["강제된 관리 계정", devices.filter((d) => d.account_state === "endpoint_enforced").length, "", "#/coverage?t=devices"],
         ["upstream 실행", x.executed, "allow", "#/activity?execution=executed"],
         ["실행 후 응답 보류", x.withheld, "block", "#/activity?execution=withheld"],
         ["우회 가능 항목", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"],

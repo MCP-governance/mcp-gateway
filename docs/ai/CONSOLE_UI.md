@@ -50,7 +50,7 @@
 
 | 화면 | 탭 | 차트 | 데이터 |
 | --- | --- | --- | --- |
-| `#/overview` 개요 | 평면 · 실행·응답 · 출처·트래픽 · 위험·종료 | KPI 6칸 = 운영 질문 Q1~Q6(Gateway 경유 호출 · Endpoint 강제 단말 · upstream 실행 · 실행 후 응답 보류 · 우회 가능 항목 · 종료 T2·T3) · **분류 × 통제 상태 누적 막대**(누르면 통제 범위 필터) · 증거 수준 도넛 · 우회 가능 상위 표 · **판정 → 전송 → 실행 → 응답 Sankey** · 응답 처리·전송 여부 도넛 · 시간대별 판정 · 하네스 → 서버 → 판정 Sankey · 직원 PC(상태·증거) · 많이 걸린 정책 · 종료·폐기 | `/gw/overview`(`execution{executed,unknown,not_sent,masked,withheld}`, `pipeline`, `series`, `flows`), `/api/integrations`, `/gw/activity?decision=Block` |
+| `#/overview` 개요 | 평면 · 실행·응답 · 출처·트래픽 · 위험·종료 | KPI 6칸 = 운영 질문 Q1~Q6(Gateway 경유 호출 · 강제된 관리 계정 · upstream 실행 · 실행 후 응답 보류 · 우회 가능 항목 · 종료 T2·T3) · **분류 × 통제 상태 누적 막대**(누르면 통제 범위 필터) · 증거 수준 도넛 · 우회 가능 상위 표 · **판정 → 전송 → 실행 → 응답 Sankey** · 응답 처리·전송 여부 도넛 · 시간대별 판정 · 하네스 → 서버 → 판정 Sankey · 직원 PC(상태·증거) · 많이 걸린 정책 · 종료·폐기 | `/gw/overview`(`execution{executed,unknown,not_sent,masked,withheld}`, `pipeline`, `series`, `flows`), `/api/integrations`, `/gw/activity?decision=Block` |
 | `#/activity` 호출 | 이벤트 · 분석 | 시간 분포 · 응답 처리 · 강제 평면(Gateway 단독 / 단말 결합) · 서버별 · 하네스별 · 사람별 | `/gw/activity` 3초 폴링. 표 6열: 시각 · 판정·정책 · 사람·단말·하네스 · 도구·대상 · 경로(GW·EP·VD 글리프) · 전송→실행→응답(○ 전송 안 함 / ◐ 전송·미확인 / ● 실행됨 + 응답 칩). 필터 `execution=withheld` |
 | `#/coverage` 통제 범위(관리자) | 항목 · 단말·계정 · 섀도·잔존 · 벤더·커넥터 | 분류 × 상태 누적 막대 · 증거 수준 도넛 · 단말별 발견 대비 커널 차단 | `/api/integrations`(15초 캐시 `planes()`), `/gw/endpoint/inventory`, `/api/connectors`. 항목은 `dedupeItems`로 PC별 행을 묶어 ×N PC. 단말 검사 4칸(AA·NF·CF·UA). 벤더 콘솔 수기 기록 |
 | `#/approvals` 승인 대기 | 대기 · 처리 이력 | 결과 비율 · 서버별 요청 | `/approvals` → `{approvals, history}` |
@@ -117,6 +117,6 @@
    Gateway 쪽 라우트에 `Depends(caller|admin_caller)`를 반드시 붙인다(`tests/open_endpoints.py`).
 5. `node --check console.js charts.mjs`, 브라우저 콘솔에서 CSP 위반이 없는지 확인한다.
 
-세 레퍼런스 제품 어디에도 "평면 × 증거 단계" 모델은 없다. 이 표시는 D-62/D-63의 자체 확장이며 제품 기능 동등성을 주장하지 않는다.
+분석한 공개 UI 소스에서는 "평면 × 증거 단계" 표시를 확인하지 못했다. 이 표시는 D-62/D-63의 자체 확장이며 제품 기능 동등성을 주장하지 않는다.
 레퍼런스 분석은 [BENCHMARK_UI_ONBOARDING_2026-10-01.md](BENCHMARK_UI_ONBOARDING_2026-10-01.md)의 고정 커밋 소스 범위에 한정되고,
 세 제품을 직접 기동한 화면 비교는 하지 않았다.

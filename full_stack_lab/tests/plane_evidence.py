@@ -46,18 +46,27 @@ class Harness:
             import paramiko
             user, host = args.ssh.split("@", 1)
             self.ssh = paramiko.SSHClient()
-            self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            self.ssh.load_system_host_keys()
+            self.ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
             self.ssh.connect(host, username=user, password=os.environ["SSHPW"], look_for_keys=False,
                              allow_agent=False, timeout=15)
             # A login shell, so the harness is found where the user's own shell finds it (~/.local/bin).
             self.stdin, out, _ = self.ssh.exec_command("bash -lc " + shlex.quote(command), timeout=300)
             lines = out
-            self.close_io = lambda: (self.stdin.channel.shutdown_write(), self.ssh.close())
+            stdin, ssh = self.stdin, self.ssh
+            def close_ssh():
+                try:
+                    stdin.close()
+                finally:
+                    ssh.close()
+                    reader.join(timeout=2)
+            self.close_io = close_ssh
         else:
             self.proc = subprocess.Popen(shlex.split(args.exec) + ["bash", "-lc", command], stdin=subprocess.PIPE,
                                          stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
             self.stdin, lines, self.close_io = self.proc.stdin, self.proc.stdout, self.proc.kill
-        threading.Thread(target=self._read, args=(lines,), daemon=True).start()
+        reader = threading.Thread(target=self._read, args=(lines,), daemon=True)
+        reader.start()
 
     def _read(self, lines) -> None:
         for line in lines:
@@ -167,7 +176,18 @@ def main() -> None:
                 harness.close_io()
         expect_rows = 0 if case.get("expect", {}).get("transport") == "not seen by Gateway" else count
         rows = ledger_after(base, token, cursor, args.person, case["server"], case["tool"], expect_rows)
+        replies = {}
+        for answer in answers:
+            body = answer.get("result" if case["harness"] == "codex" else "response") or {}
+            gateway = (body.get("_meta") or {}).get("gateway") or {}
+            if gateway.get("decision_id"):
+                replies[gateway["decision_id"]] = (body, answer.get("error") or answer.get("exception"))
         expect = case.get("expect", {})
+        batch = case.get("expect_counts", {})
+        batch_actual = {"executed": sum(r.get("executed") is True for r in rows),
+                        "duplicate_blocked": sum(r.get("decision") == "Block" and r.get("policy_id") == "P-RATE-003"
+                                                 and r.get("attempted") is False and r.get("executed") is False for r in rows)}
+        batch_mismatch = {k: {"want": v, "got": batch_actual.get(k)} for k, v in batch.items() if batch_actual.get(k) != v}
         for row in rows or [{}]:
             evidence = {"case": case["id"], "harness": case["harness"], "target": f"{case['server']}.{case['tool']}",
                         "transport": "streamable-http via Gateway" if row else "not seen by Gateway",
@@ -179,6 +199,15 @@ def main() -> None:
             mismatch = {k: v for k, v in expect.items() if evidence.get(k) != v}
             if len(rows) != expect_rows:
                 mismatch["ledger_rows"] = f"{len(rows)} != {expect_rows}"
+            if batch_mismatch:
+                mismatch["batch"] = batch_mismatch
+            if row.get("executed") and row.get("response") in {"returned", "masked"}:
+                body, rpc_error = replies.get(row["id"], ({}, "No native reply with the same decision id"))
+                native_success = (not rpc_error and body.get("isError") is not True
+                                  and any(item.get("type") == "text" and item.get("text") for item in body.get("content") or []))
+                evidence["native_success"] = bool(native_success)
+                if not native_success:
+                    mismatch["native_reply"] = "Expected a successful nonempty native reply bound to this ledger row"
             refused = bool(answers) and "error" in answers[0] and not answers[0].get("exception")
             # Not seen by the Gateway counts only when the harness itself answered with a refusal.
             evidence["ok"] = (bool(row) if expect_rows else refused) and not mismatch

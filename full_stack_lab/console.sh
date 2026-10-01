@@ -486,6 +486,7 @@ case "${1:-up}" in
     docker compose exec -T gateway python -m app.poisoning
     docker compose exec -T agent-service python -m app.connectors
     docker compose exec -T gateway python -m app.endpoint_plane
+    docker compose exec -T agent-service python -m app.integrations
     docker compose exec -T gateway python -m app.acceptance | tee reports/acceptance.json
     docker compose exec -T gateway python - < tests/pac_boundary_check.py
     docker compose exec -T gateway python - < tests/managed_enrollment_check.py

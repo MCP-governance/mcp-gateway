@@ -7,6 +7,7 @@
 | --- | --- | --- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | v3 정본 설계: 직원 PC의 하네스·관리형 설정·서버별 엔드포인트·LLM 경로·망·신원·디렉터리 | 항상 먼저 |
 | [SECURITY_BOUNDARIES.md](SECURITY_BOUNDARIES.md) | 실제 통제 범위, Kong·LiteLLM·Microsoft 비교, 우회 위협 모델, 재설계와 실제 MCP 검증 | 통제·시험·제품 주장을 정할 때 |
+| [CONTROL_PLANES_2026-10-01.md](CONTROL_PLANES_2026-10-01.md) | D-62/D-63 통제 상태·증거·응답 통제, 실제 원장 대조와 UI 배포 | 이번 인계를 이어서 볼 때 |
 | [PJ1_SIGNALS_2026-10-01.md](PJ1_SIGNALS_2026-10-01.md) | D-59 뒤 실제 PC(pj1)의 신호 81건·하네스 12회를 기기 원장과 대조, 찾은 결함과 조치 | 실기기 최신 검증 결과를 볼 때 |
 | [REMASTER_2026-10-01.md](REMASTER_2026-10-01.md) | 사용자 요청 8개, 원격 MCP 오류 원인, 실제 시험과 미완료 경계 | 이번 개편을 이어서 할 때 |
 | [BENCHMARK_UI_ONBOARDING_2026-10-01.md](BENCHMARK_UI_ONBOARDING_2026-10-01.md) | MS·IBM·LiteLLM 고정 커밋의 UI·조직 관리 분석, 채택한 흐름과 OS 통제 경계 | UI·가입·단말 통제를 바꿀 때 |

@@ -167,7 +167,7 @@ root 서비스만 장기 단말 키를 보유합니다. 하네스 헬퍼는 UID�
 
 ### 누가 무엇을 강제하는가 (D-62)
 
-Console **직원·단말 → 통제 범위**와 `GET /api/integrations`는 MCP·커넥터·플러그인·stdio·섀도를 다섯 분류
+Console **통제 범위**와 `GET /api/integrations`는 MCP·커넥터·플러그인·stdio·섀도를 다섯 분류
 (`gateway_mcp`·`gateway_backend_connector`·`vendor_native_connector`·`local_plugin_or_stdio`·`shadow_or_unknown`)로
 나누고, 관리 주체와 상태를 증거와 함께 보입니다.
 
@@ -184,6 +184,9 @@ Console **직원·단말 → 통제 범위**와 `GET /api/integrations`는 MCP·
 활동 로그의 각 호출은 출처·Gateway 통과·강제 주체·upstream 시도/실행·응답 처리(반환·마스킹·실행 후 보류)·
 PAC 실패와 다른 해당 정책을 함께 보여 줍니다. 응답 보류는 이미 실행된 쓰기·전송을 되돌리지 않습니다.
 감사 원장에는 응답 원문 대신 해시·크기·형식·마스킹 유형만 남습니다.
+상태는 커널 heartbeat·원장·수기 기록·자체 보고와 짝으로 표시하고 만료된 근거로 강제 완료를 표시하지 않습니다.
+실기기 원장, 등록 해제 시험에서 찾은 복구 결함과 UI 배포 기록은
+[통제 범위 검증](docs/ai/CONTROL_PLANES_2026-10-01.md)(D-62/D-63)을 따릅니다.
 
 ### 하네스가 기본으로 붙이는 커넥터(claude.ai 커넥터·ChatGPT 앱·기본 기능)
 
