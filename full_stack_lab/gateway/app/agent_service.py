@@ -193,6 +193,10 @@ async def request_signup(request: Signup, http_request: Request):
                    SELECT %s,%s,%s,password_hash,'approved',now(),%s FROM principals WHERE user_id=%s
                    ON CONFLICT (username) DO UPDATE SET status='approved',reviewed_at=now(),reviewed_by=EXCLUDED.reviewed_by""",
                 (invitation["id"], username, request.display_name.strip(), invitation["issued_by"], username))
+        # A consumed one-time invitation is not the guessing this ceiling exists for, so
+        # fifty colleagues behind one office address can all accept theirs.
+        if _login_attempts.get(key):
+            _login_attempts[key].pop()
         return {"status": "approved", "message": "조직 초대로 일반 사용자 등록을 완료했습니다. 로그인 후 내 PC 연결을 진행하세요."}
     row = await db.fetch_one(
         """INSERT INTO signup_requests(id,username,display_name,password_hash)
@@ -899,7 +903,7 @@ async def review_exit_terms(request_id: UUID, review: ExitTermsReview,
              "verified_at": datetime.now(UTC).isoformat()}
     row = await db.fetch_one(
         """UPDATE mcp_intake_requests SET exit_terms=%s, updated_at=now()
-           WHERE id=%s AND status IN ('HOLD','VALIDATION_QUEUED','VALIDATING','VALIDATED')
+           WHERE id=%s AND status IN ('HOLD','VALIDATION_QUEUED','VALIDATING','VALIDATED','REMOTE_REVIEWED')
            RETURNING id, status, exit_terms""",
         (Jsonb(terms), request_id),
     )
@@ -1123,10 +1127,15 @@ async def review_remote_contract(request_id: UUID, review: RemoteContractReview,
         raise HTTPException(409, "승인 전 원격 신청만 계약을 검토할 수 있습니다.")
     if review.endpoint != row["endpoint_url"]:
         raise HTTPException(409, "신청한 엔드포인트와 검토 대상이 다릅니다.")
-    principals = await db.fetch_all("SELECT token FROM principals WHERE status='active' AND token=ANY(%s::text[])",
-                                    (review.allowed_principals,))
-    if {p["token"] for p in principals} != set(review.allowed_principals):
-        raise HTTPException(422, "사용 범위에는 활성 관리대장 주체만 지정할 수 있습니다.")
+    # The Console asks for login ids; the ledger and the Gateway work in principal tokens.
+    principals = await db.fetch_all(
+        "SELECT token, user_id FROM principals WHERE status='active' AND (token=ANY(%s::text[]) OR user_id=ANY(%s::text[]))",
+        (review.allowed_principals, review.allowed_principals))
+    named = {p["token"] for p in principals} | {p["user_id"] for p in principals}
+    missing = sorted(set(review.allowed_principals) - named)
+    if missing:
+        raise HTTPException(422, f"활성 계정이 아닌 사용자: {', '.join(missing)}")
+    review = review.model_copy(update={"allowed_principals": sorted({p["token"] for p in principals})})
     found = await gateway_proxy("/api/registry/discover", authorization, "POST",
                                 {"endpoint": review.endpoint}, timeout=45)
     advertised = {tool["name"]: tool for tool in found["tools"]}

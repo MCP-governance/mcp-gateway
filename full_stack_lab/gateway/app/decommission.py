@@ -135,6 +135,8 @@ async def _case(case_id: str) -> dict:
 
 PROBE_AGENT = "termination-probe"
 REAL_CALL = "COALESCE(d.client->>'agent', '') <> 'termination-probe' AND d.user_token <> 'unknown'"
+# Who used a service: a refused connection to a path that was not registered yet is not use.
+TOOL_CALL = REAL_CALL + " AND d.action <> 'connect'"
 
 
 def _is_provider(server: dict) -> bool:
@@ -152,7 +154,7 @@ async def relationships() -> list[dict]:
                      AND {real}) AS calls,
                   (SELECT id FROM termination_cases c WHERE c.relationship_id=u.id
                      ORDER BY opened_at DESC LIMIT 1) AS latest_case
-             FROM usage_relationships u JOIN mcp_servers s ON s.id=u.server_id ORDER BY u.id""".format(real=REAL_CALL))
+             FROM usage_relationships u JOIN mcp_servers s ON s.id=u.server_id ORDER BY u.id""".format(real=TOOL_CALL))
     out = []
     for row in rows:
         item = dict(row)
@@ -179,7 +181,7 @@ async def drill(server_id: str) -> dict:
     callers = await db.fetch_all(
         f"""SELECT d.user_token, p.display_name, p.department, count(*) AS calls, max(d.created_at) AS last_call
              FROM decisions d LEFT JOIN principals p ON p.token = d.user_token
-            WHERE d.server_id = %s AND {REAL_CALL}
+            WHERE d.server_id = %s AND {TOOL_CALL}
             GROUP BY d.user_token, p.display_name, p.department ORDER BY calls DESC""", (server_id,))
     residue = await db.fetch_all(
         """SELECT a.hostname, i.config_path, i.server_label, i.classification
@@ -265,7 +267,7 @@ async def seed_targets(case_id: str, actor: str) -> list[dict]:
     callers = await db.fetch_all(
         """SELECT DISTINCT d.user_token, p.display_name, p.department
              FROM decisions d LEFT JOIN principals p ON p.token = d.user_token
-            WHERE d.server_id = %s AND d.created_at < %s AND """ + REAL_CALL,
+            WHERE d.server_id = %s AND d.created_at < %s AND """ + TOOL_CALL,
         (case["server_id"], case["cutover_at"]))
     for row in callers:
         created.append(await add_target(

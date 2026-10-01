@@ -98,6 +98,29 @@ def server(server_id: str) -> dict | None:
     return servers().get(server_id)
 
 
+def allowed_principals(server_id: str) -> list[str] | None:
+    """Who may call a server; None means whoever the policy allows.
+
+    D-57: a Console registration made without an approved intake (registered before the
+    intake became mandatory) serves nobody until it is re-registered through one.
+    Reviewed catalog.toml servers keep the policy-only scope.
+    """
+    spec = _runtime_spec(server_id)
+    if spec is None:
+        return None
+    return spec.get("allowed_principals") if spec.get("intake_id") else []
+
+
+def is_console_registration(server_id: str) -> bool:
+    return _runtime_spec(server_id) is not None
+
+
+def _runtime_spec(server_id: str) -> dict | None:
+    """The Console registration behind server_id, unless catalog.toml owns that id."""
+    spec = server(server_id)
+    return spec if spec is not None and spec is _cache["runtime"]["servers"].get(server_id) else None
+
+
 def approved_tools(server_id: str) -> dict[str, str]:
     return dict((server(server_id) or {}).get("tools", {}))
 

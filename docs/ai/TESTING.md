@@ -45,7 +45,9 @@ Gateway 응답과 **별도 회사 DB의 값 변화**를 대조한다. 시험 값
 `tests/real_mcp_gateway_check.py --review-out /output/review.json`으로 도구·스키마·warning을 먼저 읽고,
 같은 파일을 `--reviewed`에 전달한다. warning을 자동 승인하지 않는다. 유효기간 1일의 임시 등록은 finally에서
 해제하며, 출력은 결정 ID·전달/실행 상태·내용 digest만 남긴다. mount 출력 경로는 Compose 기본 read-only
-`/reports`와 겹치지 않는 `/output`을 쓴다. 두 단계는 `{email,password}`를 stdin에서 받는다.
+`/reports`와 겹치지 않는 `/output`을 쓴다. 두 단계는 `{"requester": {email,password}, "approver": {email,password}}`를
+stdin에서 받는다(D-57·D-59). 임시 등록도 `tests/intake_register.py`로 신청 → 계약 검토 → 다른 사람의 승인 → 활성화를
+거친다. 관리자 직접 등록은 409다. 같은 도우미를 실기기에서 Console 주소로 직접 실행해 공급자 MCP를 등록한다.
 
 SSH VM의 새 native Docker 이미지에는 공식 Claude Code 2.1.282·Codex 0.158.0을 설치한다. 임시 profile의
 일곱 실제 MCP 연결과 managed 정책 적용을 비교하되 host SYN 관측을 따로 기록한다. SYN은 전체 interface
@@ -57,8 +59,9 @@ Gateway health 성공을 대조한다. 이는 해당 disposable container의 경
 field 배포 후에는 같은 이미지의 `tests/field_release_check.py`로 SSH VM에서 release 일치·MCP 관리 API 403·
 기존 승인 Microsoft Learn 도구의 실제 호출을 검증한다. 자격은 stdin으로 주고 생성한 토큰·refresh를 폐기한다.
 
-`tests/real_warning_review_check.py`는 별도 opt-in이다. 실제 Notion의 경고 도구를 임시 등록해 명시적 검토 없이는
-409, hash에 결합한 검토는 READY, 검토 hash를 무효화하면 `MCP-CATALOG-001`·전달 전 차단인지 확인한다.
+`tests/real_warning_review_check.py`는 별도 opt-in이다. 실제 Notion의 경고 도구를 도입 신청으로 임시 등록해 명시적
+검토 없는 계약 검토는 서버가 409, hash에 결합한 검토는 READY, 검토 hash를 무효화하면 `MCP-CATALOG-001`·전달 전
+차단인지 확인한다. stdin은 위와 같은 requester·approver 두 사람이다.
 통과 경로에서 해당 공급자 helper는 실행하지 않으며 임시 레코드만 finally에서 해제한다.
 `PYTHONPATH=/app`으로 runtime 사용자에게 실행하며 일곱 서비스 시험과 동시에 registry를 바꾸지 않는다.
 

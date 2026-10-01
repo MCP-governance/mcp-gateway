@@ -101,7 +101,7 @@ async def _approved_tools(role: str, server: str | None = None, principal: str =
             ORDER BY t.server_id, t.name""", (server, server))
     tools = []
     for row in rows:
-        allowed = (registry.server(row["server_id"]) or {}).get("allowed_principals")
+        allowed = registry.allowed_principals(row["server_id"])
         if allowed is not None and principal not in allowed:
             continue
         # A partner never gets w/x anywhere in the 333 matrix; listing those tools

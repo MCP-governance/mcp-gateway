@@ -246,8 +246,8 @@ async def approve_contract(server_id: str, actor: str, note: str) -> dict:
     server = await db.fetch_one("SELECT * FROM mcp_servers WHERE id=%s", (server_id,))
     if not server:
         raise ValueError(f"등록되지 않은 서버입니다: {server_id}")
-    if (registry.server(server_id) or {}).get("intake_id"):
-        raise ValueError("도입 승인으로 고정한 계약은 새 도입 신청에서 재검토해야 합니다.")
+    if registry.is_console_registration(server_id):
+        raise ValueError("Console 등록 서버의 계약 변경은 새 도입 신청에서 재검토해야 합니다.")
     if server["status"] in {"DISABLED", "BLOCKED_SUPPLY_CHAIN"}:
         raise ValueError("비활성 또는 공급망 차단 상태의 서버는 재승인할 수 없습니다.")
     if (server.get("lifecycle") or "OPERATING") in {"TERMINATING", "RETIRED"}:
@@ -431,6 +431,12 @@ async def register_server(request: dict, actor: str) -> dict:
         raise ValueError("검증·승인된 구현 저장소와 커밋이 일치하지 않습니다.")
     if server_id in registry.reviewed_servers():
         raise ValueError(f"검토된 카탈로그(catalog.toml)에 같은 id가 있습니다: {server_id}")
+    # One approval is one registration, and it never replaces a server another approval runs.
+    if intake.get("registered_server_id") not in (None, "", server_id):
+        raise ValueError(f"이 도입 승인은 이미 {intake['registered_server_id']}로 등록했습니다. 새 서버는 새 신청이 필요합니다.")
+    active = registry.runtime()["servers"].get(server_id)
+    if active and active.get("intake_id") != str(intake_id):
+        raise ValueError(f"운영 중인 서버 id입니다: {server_id}. 기존 등록을 해제한 뒤 등록하세요.")
     row = await db.fetch_one("SELECT lifecycle FROM mcp_servers WHERE id=%s", (server_id,))
     if row and (row["lifecycle"] or "OPERATING") in {"TERMINATING", "RETIRED"}:
         raise ValueError("종료 절차를 거친 서버 id는 다시 쓸 수 없습니다. 새 id로 등록하세요.")
@@ -476,7 +482,10 @@ async def register_server(request: dict, actor: str) -> dict:
         "valid_until": valid_until, "registered_by": actor,
         "registered_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "intake_id": request.get("intake_id") or None,
-        "allowed_principals": remote_review["allowed_principals"] if remote_review else [intake["submitted_by"]],
+        # A remote service is scoped to the principals its contract review named. A
+        # source-validated server runs inside the organisation and stays policy-scoped
+        # (None) as before D-57, rather than silently becoming the requester's alone.
+        "allowed_principals": remote_review["allowed_principals"] if remote_review else None,
         "poisoning_review": {name: registry.tool_hashes(advertised[name]) for name in flagged}
                             if request.get("poisoning_ack") else {},
     }
@@ -516,23 +525,6 @@ async def register_server(request: dict, actor: str) -> dict:
     refreshed = await refresh_catalog(server_id)
     return {"server_id": server_id, "status": refreshed["status"], "valid_until": valid_until,
             "tools": spec["tools"], "relationship_id": relationship["id"], "gateway_path": f"/mcp/{server_id}/"}
-
-
-async def extend_server(server_id: str, days: int, actor: str) -> dict:
-    """Renewal is a new approval period from today, recorded beside the registration."""
-    async with REGISTER_LOCK:
-        doc = registry.runtime()
-        spec = doc["servers"].get(server_id)
-        if not spec:
-            raise LookupError(server_id)
-        if spec.get("intake_id"):
-            raise ValueError("도입 승인 사용 기한을 연장하려면 새 신청·승인이 필요합니다.")
-        spec["valid_until"] = (datetime.now(UTC) + timedelta(days=days)).isoformat(timespec="seconds")
-        doc["history"].append({"type": "extended", "server_id": server_id, "actor": actor,
-                               "at": datetime.now(UTC).isoformat(timespec="seconds"), "valid_until": spec["valid_until"]})
-        registry.save_runtime(doc)
-        await registry.sync()
-    return {"server_id": server_id, "valid_until": spec["valid_until"]}
 
 
 async def deregister_server(server_id: str, actor: str) -> dict:
@@ -834,7 +826,8 @@ async def _reserve_call(request_id: str, user_token: str, server_id: str, tool: 
             """SELECT count(*) FILTER (WHERE decision = 'Block'
                                          AND policy_id = ANY(%s::text[])
                                          AND created_at > now() - make_interval(mins => %s)) AS recent_blocks
-               FROM decisions WHERE user_token = %s AND created_at > now() - interval '1 hour'""",
+               FROM decisions WHERE user_token = %s AND created_at > now() - interval '1 hour'
+                AND action <> 'connect'""",
             (list(DENIAL_POLICIES), BLOCK_STREAK_MINUTES, user_token))
         finished = await cursor.fetchone()
         # Count arrivals, including released/crashed calls. Moving a call from the
@@ -849,6 +842,7 @@ async def _reserve_call(request_id: str, user_token: str, server_id: str, tool: 
                  UNION ALL
                  SELECT d.request_id, d.created_at, d.data_class FROM decisions d
                   WHERE d.user_token=%s AND d.created_at > now() - interval '1 hour'
+                    AND d.action <> 'connect'  -- a refused connection is not a call (D-57)
                     AND NOT EXISTS (SELECT 1 FROM call_reservations r WHERE r.request_id=d.request_id)
                ) arrivals""",
             (RATE_LIMIT_WINDOW_SECONDS, IMPORTANT_BURST_MINUTES, user_token, user_token))
@@ -1140,16 +1134,38 @@ async def _record_decision(event: dict) -> int:
     return int(row["id"])
 
 
-async def record_connection_denial(user: dict, server_id: str, method: str, client: dict) -> int:
-    """A refused connection is evidence too; it is not a tools/call execution."""
+CONNECTION_DENIAL_WINDOW_SECONDS = 60
+CONNECTION_DENIALS_PER_WINDOW = 20
+
+
+async def record_connection_denial(user: dict, server_id: str, method: str, client: dict) -> int | None:
+    """A refused connection is evidence too; it is not a tools/call execution.
+
+    One harness start sends initialize, GET and discovery to the same path, and a stale
+    config retries on every start. The first refusal per principal and path per minute
+    stands for the rest, and a principal spraying paths stops adding rows after 20 a
+    minute; the 404 is returned either way. Every row takes the audit-chain lock, so an
+    unbounded path here would let one token slow down every other decision.
+    """
+    server_id = server_id[:120]
+    seen = await db.fetch_one(
+        """SELECT max(id) FILTER (WHERE server_id=%s) AS same, count(*) AS n FROM decisions
+            WHERE user_token=%s AND action='connect' AND created_at > now() - make_interval(secs => %s)""",
+        (server_id, user["principal"], CONNECTION_DENIAL_WINDOW_SECONDS))
+    if seen and seen["same"]:
+        return int(seen["same"])
+    if seen and seen["n"] >= CONNECTION_DENIALS_PER_WINDOW:
+        return None
     await policy_ledger()
     event = {
         "request_id": str(uuid.uuid4()), "trace_id": "connection-" + uuid.uuid4().hex,
         "user_token": user["principal"], "role": user["roles"][0],
-        "server_id": server_id[:120], "tool_name": method[:80],
-        "data_class": "important", "action": "connect", "upstream_executed": False,
+        "server_id": server_id, "tool_name": method[:80],
+        # Nothing was read or sent; the class only fills the column. Ceilings skip
+        # action='connect' rows (_reserve_call), so this never counts as an access.
+        "data_class": "public", "action": "connect", "upstream_executed": False,
         "upstream_attempted": False, "client": {**client, "event_kind": "mcp-connection"},
-        "request_payload": {"server_id": server_id[:120], "method": method[:80]},
+        "request_payload": {"server_id": server_id, "method": method[:80]},
         "summary": "미등록 MCP 연결 차단",
         **local_verdict("MCP-REGISTRY-001", "Block", "등록·승인되지 않은 MCP 경로의 연결을 차단했습니다."),
     }
@@ -1269,9 +1285,11 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             base_event.update(local_verdict("P-INPUT-001", "Block", "활성 상태의 등록 계정이 아닙니다."))
             return await _decision_payload(base_event, before)
 
-        spec = registry.server(server_id) or {}
-        if spec.get("allowed_principals") is not None and user_token not in spec["allowed_principals"]:
-            base_event.update(local_verdict("MCP-REGISTRY-003", "Block", "이 서비스의 도입 승인 사용 주체에 포함되지 않습니다."))
+        allowed = registry.allowed_principals(server_id)
+        if allowed is not None and user_token not in allowed:
+            base_event.update(local_verdict("MCP-REGISTRY-003", "Block",
+                "이 서비스의 도입 승인 사용 주체에 포함되지 않습니다." if allowed else
+                "도입 신청·승인 기록이 없는 직접 등록입니다. 도입 신청으로 다시 등록해야 실행합니다."))
             return await _decision_payload(base_event, before)
 
         # Reserved before any check that can pass, so a burst cannot race past the

@@ -45,10 +45,12 @@
 | `GET/POST/PUT/DELETE /gw/<path>` | 사용자 | Gateway `/api/<path>` 프록시. 관리자: `overview, activity, registry, health, termination/, approvals/, catalog/, enforcement, monitor/, audit/, policy/, endpoint/, supply-chain/, risk-catalog, lab/` · 그 외: `activity, health`만 |
 | `GET /approvals` · `POST /approvals/{id}/approve|reject` | 관리자 | `{approvals, history}` — 대기 중(요청자·도구·인자·판정 맥락)과 처리·만료된 최근 50건 |
 | `GET /api/accounts` · `PUT /api/accounts/{user_id}/status` | 관리자 | 신원 관리대장, 계정 사용/중지/잠금 |
-| `GET /api/mcp-requests` · `POST /api/mcp-requests` | 사용자 | 도입 신청 목록(관리자=전체) / 신청 `{display_name, repository_url, requested_transport, purpose}` — 종료 조건 필드를 보내면 422 |
-| `PUT /api/mcp-requests/{id}/exit-terms` | 관리자 | 제공자 문서로 확인한 종료 조건 기록 `{provider_credential_disclosure, revocation_evidence, audit_access_retained, evidence_url(https), note}` → 검증 주체·시각과 함께 저장. 승인 전(HOLD~VALIDATED)만 |
+| `GET /api/mcp-requests` · `POST /api/mcp-requests` | 사용자 | 도입 신청 목록(관리자=전체) / 신청 `{display_name, intake_kind: repository|remote-endpoint, repository_url, endpoint_url, requested_transport, purpose}`. 저장소 신청은 검증 대기열로, 공급자 호스팅(`remote-endpoint`, Streamable HTTP만)은 HOLD로 시작(D-57). 종료 조건 필드를 보내면 422 |
+| `POST /api/mcp-requests/{id}/review-contract` | 관리자 | 원격 신청의 실제 광고 계약 검토 `{server_id, endpoint, catalog_hash, tools, data_class, valid_days, poisoning_ack, allowed_principals(로그인 아이디 또는 주체 토큰), review_note}` → REMOTE_REVIEWED. 구현 소스 검사는 하지 않았다고 기록 |
+| `POST/GET /api/account-invitations` · `DELETE /api/account-invitations/{id}` | 관리자 | 일반 사용자 초대 `{usernames(1~50), department}` → 48시간·1회용 링크(발급 응답에서만) / 목록(비밀·해시 없음) / 회수(D-58) |
+| `PUT /api/mcp-requests/{id}/exit-terms` | 관리자 | 제공자 문서로 확인한 종료 조건 기록 `{provider_credential_disclosure, revocation_evidence, audit_access_retained, evidence_url(https), note}` → 검증 주체·시각과 함께 저장. 승인 전(HOLD~VALIDATED, REMOTE_REVIEWED)만 |
 | `POST /api/mcp-requests/{id}/queue-validation|approve|reject` | 관리자 | 격리 검증 대기열(HOLD·FAILED·VALIDATED)·승인·거부(승인 전 모든 단계). 원격(HTTP·SSE) 서버의 승인은 ① 종료 조건 결론 T1 ② 관리자 증거 기록 ③ `approve` 본문 `{risk_acceptance}`(10자 이상, 수용자·시각·결론 등급과 함께 저장) 중 하나가 있어야 함(아니면 409, D-50). 승인은 저장소를 Gitea `mcp` 조직으로 가져옴 |
-| `POST /api/mcp-requests/{id}/register` | 관리자 | APPROVED 신청을 Gateway에 등록(D-49) `{server_id, endpoint, catalog_hash, tools:{이름:r|w|x}, data_class, valid_days, poisoning_ack}` — 저장소·검증 커밋·목적·종료 조건은 신청에서 실음. 설명 경고가 있는 도구를 고르면 `poisoning_ack: true` 필요(D-52) |
+| `POST /api/mcp-requests/{id}/register` | 관리자 | APPROVED 신청을 Gateway에 등록(D-49) `{server_id, endpoint, catalog_hash, tools:{이름:r|w|x}, data_class, valid_days, poisoning_ack}` — 저장소·검증 커밋·목적·종료 조건은 신청에서 실음. 설명 경고가 있는 도구를 고르면 `poisoning_ack: true` 필요(D-52). 원격 신청은 검토한 값과 한 글자라도 다르면 409, 승인자는 신청자와 달라야 함. 명령줄 도우미: `tests/intake_register.py` |
 | `POST /api/pc/inventory` | 사용자(키트) | 직원 PC의 자기 보고(D-51·D-53) `{workstation, harnesses:[claude|codex], items:[{harness, kind(connector·plugin·server·app·feature), name, target(scheme://host[:port]·stdio·앱 id·기능 값), status, active}]}` → `{accepted, policy, review}`. 서버도 URL의 자격·경로·query를 제거한다. 이전 항목의 absent는 미관측이며 차단 확인이 아니다 |
 | `GET /api/connectors[?summary=1]` · `PUT /api/connectors/decision` | 관리자 | 상태 pending·expired·denied·approved(예외 승인), 활성 보고 PC, `enforcement: unverified` / 결정 `{key, decision: approved|denied|reset, note}` — 거부 사유 필수. 벤더 출처도 자동 허용하지 않음 |
 | `GET /api/connectors/policy` | 관리자 | `scope: managed-cli-gateway-only`, `enforcement: unverified`, `claude.deniedMcpServers`·`allowAllClaudeAiMcps: false`, `codex.apps_disabled`·`features_disabled`. 예외 승인으로 전체 계정 커넥터를 열지 않음. `managed`는 인벤토리 유무와 무관하게 엄격한 세 파일 생성 |
@@ -69,8 +71,8 @@
 | `POST /api/registry/{server}/approve-contract` | 관리자 | 검토한 계약 변경을 승인본으로(`note` 필수) |
 | `POST /api/registry/{server}/check` | 관리자 | MCP 세션만 협상해 연결 확인 — `state`(healthy·unhealthy·retired)·지연·서버 정보. 계약·상태·감사는 그대로(D-40) |
 | `POST /api/registry/discover` | 관리자 | 등록 전 검토 `{endpoint}` → 광고 도구·권장 행위·`catalog_hash`, 도구별 `warnings`(설명 속 숨은 지시, D-52). 아무것도 기록하지 않음(D-49) |
-| `POST /api/registry/servers` | 관리자 | Console 등록. `catalog_hash`가 지금 서버 계약과 다르면 409. 결과 `status`·`valid_until`·`gateway_path` |
-| `POST /api/registry/servers/{id}/extend` · `DELETE /api/registry/servers/{id}` | 관리자 | 사용 기한을 오늘부터 다시(`valid_days`) / 등록 해제(서버는 DISABLED로 남음). Console 등록 서버만 |
+| `POST /api/registry/servers` | 관리자 | 승인된 도입 신청(`intake_id`)의 활성화만 받는다 — Console은 `POST /api/mcp-requests/{id}/register`로 부른다. 신청 없음·신청자=승인자·승인과 다른 범위·이미 다른 id로 등록한 승인·운영 중인 다른 서버 id·`catalog_hash` 불일치는 409(D-57·D-59). 결과 `status`·`valid_until`·`gateway_path` |
+| `DELETE /api/registry/servers/{id}` | 관리자 | 등록 해제(서버는 DISABLED로 남음). Console 등록 서버만. 기한 연장은 없다 — 새 도입 신청(D-59) |
 | `POST /api/approvals/{id}/approve|reject` | 관리자 | 승인 → 1회 실행 |
 | `GET /api/policy/matrix` · `GET /api/policy/ledger` | 사용자 | 역할×등급×행위 27칸을 지금 배포된 번들로 OPA에 질의한 결과 / 관리대장·예외·`authorization`(권한 번들)·`deployed_rego`(배포 정책 묶음 digest) |
 | `GET/PUT /api/enforcement` | 사용자/관리자 | 집행·관찰 모드 |

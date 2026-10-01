@@ -2265,7 +2265,7 @@
         "evidence.standard"
       ],
       "test_ids": [
-        "T-REGISTRY-002"
+        "acceptance:console-registration-pins-and-expires"
       ],
       "pac_candidate_id": "PAC-CAND-01",
       "pac_ids": [

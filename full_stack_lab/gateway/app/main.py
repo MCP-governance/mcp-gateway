@@ -33,6 +33,9 @@ from .release import build_info, policy_info
 from . import activity, registry
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
+# "오늘" is the operator's day. The DB session runs in UTC, so date_trunc('day', now())
+# reset the Console's counters at 09:00 KST.
+TODAY = "(date_trunc('day', now() AT TIME ZONE 'Asia/Seoul') AT TIME ZONE 'Asia/Seoul')"
 
 # 배선 주소를 코드에 박아두면 compose 바깥(네이티브 실행)에서 항상 degraded가 된다.
 # 실제로 무엇이 죽었는지와 "이 배치에는 그 구성요소가 없다"가 구분되지 않는다.
@@ -113,8 +116,8 @@ class ServerPath:
                                         candidate = params.get("clientInfo")
                                         if isinstance(candidate, dict):
                                             info = {key: str(candidate.get(key) or "")[:60] for key in ("name", "version")}
-                        except (ValueError, TimeoutError):
-                            pass
+                        except (ValueError, TimeoutError, RecursionError):
+                            pass  # a body we cannot read still leaves the refusal on record
                     claims = user.get("claims") or {}
                     agent = headers.get(b"user-agent", b"").decode("latin-1")[:120]
                     decision_id = await core.record_connection_denial(user, name, method, {
@@ -275,7 +278,7 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
     """Everything the first Console screen shows, in one round trip."""
     today, per_server, stations, alerts, approvals, cases, series, flows, execution = await asyncio.gather(
         db.fetch_all(f"""SELECT decision, count(*) AS n FROM decisions d
-                          WHERE created_at > date_trunc('day', now()) AND {decommission.REAL_CALL} GROUP BY decision"""),
+                          WHERE created_at > {TODAY} AND {decommission.REAL_CALL} GROUP BY decision"""),
         db.fetch_all(f"""SELECT s.id, s.display_name, s.status, s.lifecycle, s.deployment, s.status_reason,
                                count(d.id) FILTER (WHERE d.created_at > now() - interval '24 hours') AS calls,
                                count(d.id) FILTER (WHERE d.created_at > now() - interval '24 hours' AND d.decision='Block') AS blocked,
@@ -314,7 +317,7 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
                                count(*) FILTER (WHERE upstream_executed) AS executed,
                                count(*) FILTER (WHERE upstream_attempted AND NOT upstream_executed) AS unknown,
                                count(*) FILTER (WHERE NOT upstream_attempted AND NOT upstream_executed) AS not_sent
-                          FROM decisions d WHERE created_at > date_trunc('day',now()) AND {decommission.REAL_CALL}"""),
+                          FROM decisions d WHERE created_at > {TODAY} AND {decommission.REAL_CALL}"""),
     )
     counts = {row["decision"]: int(row["n"]) for row in today}
     return {
@@ -504,10 +507,6 @@ class RegistryRegister(StrictModel):
     poisoning_ack: bool = False  # D-52: the admin read the flagged tool text and approves it anyway
 
 
-class RegistryExtend(StrictModel):
-    valid_days: int = Field(ge=1, le=365)
-
-
 @app.post("/api/registry/discover")
 async def registry_discover(request: RegistryDiscover, user: dict = Depends(admin_caller)) -> dict:
     """등록 전 검토용: 엔드포인트가 지금 광고하는 도구와 그 계약 해시. 아무것도 기록하지 않는다."""
@@ -529,16 +528,6 @@ async def registry_register(request: RegistryRegister, user: dict = Depends(admi
         raise HTTPException(503, str(exc)) from exc
     except Exception as exc:
         raise HTTPException(502, f"MCP 서버에 연결하지 못했습니다: {core._root_cause(exc)}") from exc
-
-
-@app.post("/api/registry/servers/{server_id}/extend")
-async def registry_extend(server_id: str, request: RegistryExtend, user: dict = Depends(admin_caller)) -> dict:
-    try:
-        return await core.extend_server(server_id, request.valid_days, user["principal"])
-    except LookupError as exc:
-        raise HTTPException(404, "Console에서 등록한 서버가 아닙니다.") from exc
-    except ValueError as exc:
-        raise HTTPException(409, str(exc)) from exc
 
 
 @app.delete("/api/registry/servers/{server_id}")

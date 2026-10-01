@@ -118,7 +118,10 @@ def _match(index: list[dict], transport: str, endpoint_ref: str, server_label: s
             matched = next((entry for entry in index[1:] if entry["id"] == server_id), None)
             if not matched:
                 return None
-            if matched["lifecycle"] == "OPERATING" and matched["status"] == "READY":
+            # Still registered (READY, or DRIFT/ERROR/PENDING which the Gateway blocks per
+            # call): a managed route, not a shadow. Deregistered (DISABLED) is a config
+            # for something no longer approved, and a retiring server is residue.
+            if matched["lifecycle"] == "OPERATING" and matched["status"] != "DISABLED":
                 return {**index[0], "routed_server_id": server_id}
             return matched
     candidates = {ref, (server_label or "").strip().lower()} - {""}
@@ -138,12 +141,16 @@ def check_route_matching() -> None:
     assert _match(index, "streamable-http", base + "/github/extra/", "github") is None
     disabled = {**server, "status": "DISABLED"}
     assert _match([gateway, disabled], "streamable-http", base + "/github", "github")["id"] == "github"
+    drift = {**server, "status": "DRIFT"}
+    assert _match([gateway, drift], "streamable-http", base + "/github/", "github")["routed_server_id"] == "github"
+    retiring = {**server, "lifecycle": "TERMINATING"}
+    assert _match([gateway, retiring], "streamable-http", base + "/github/", "github")["id"] == "github"
     assert _match(index, "streamable-http", "https://vendor.example/mcp", "github")["id"] == "github"
 
 
 if __name__ == "__main__":
     check_route_matching()
-    print("PASS active registered Gateway route matching; unknown/disabled/direct routes never count as approved")
+    print("PASS registered Gateway routes (incl. drifted) are managed; unknown/disabled/direct routes never count as approved")
 
 
 async def ingest(endpoint_id: str, entries: list[dict]) -> dict:

@@ -186,6 +186,8 @@ up() {
     echo "[3/5] 로컬 LLM 생략 (--no-llm: 직원 PC의 도구 호출은 MCP Inspector CLI가 대신함)"
   fi
   echo "[4/5] Gateway·Console·검증 워커"
+  # Same as field_up: OPA and the Gateway's ledger cache only read ./opa at start (D-59).
+  docker compose up -d --force-recreate opa gateway gateway-sse
   docker compose up -d gateway gateway-sse agent-service intake-worker
   wait_ready
   ensure_contracts
@@ -328,6 +330,9 @@ field_up() {
   field_aig_model
   if [[ $with_lab_mcp == 1 ]]; then echo "[field 3/5] Gateway · Console · 내부 Git · MCP 실습 모드"
   else echo "[field 3/5] Gateway · Console · 내부 Git"; fi
+  # OPA reads ./opa only when it starts (no --watch) and the Gateway keeps the policy
+  # ledger it read at boot, so a policy-only change reached neither (D-59).
+  docker compose "${FIELD_COMPOSE[@]}" up -d --force-recreate opa gateway gateway-sse
   docker compose "${FIELD_COMPOSE[@]}" up -d "${services[@]}"
   wait_ready
   if [[ $with_lab_mcp == 1 ]]; then ensure_contracts; fi

@@ -41,7 +41,9 @@ def setup(profile):
     root = Path(profile)
     for name in ("codex", "claude"):
         (root / name).mkdir(parents=True, exist_ok=True, mode=0o700)
-    codex = 'mcp_oauth_credentials_store_mode = "file"\nmcp_oauth_callback_port = 29431\n'
+    # Installed Codex CLIs read mcp_oauth_credentials_store; the older *_mode key was
+    # ignored and tokens went to the encrypted store the migration never looked in.
+    codex = 'mcp_oauth_credentials_store = "file"\nmcp_oauth_callback_port = 29431\n'
     codex += "".join(f'\n[mcp_servers.{name}]\nurl = {json.dumps(url)}\n'
                      'startup_timeout_sec = 30\ntool_timeout_sec = 45\n' for name, url in SERVERS.items())
     files = {root / "codex/config.toml": codex,

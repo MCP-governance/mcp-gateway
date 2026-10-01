@@ -33,7 +33,7 @@ from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
 
 from . import db
-from .core import approve_request, enforcement_mode, set_enforcement_mode, verify_audit_chain
+from .core import _release_call, _reserve_call, approve_request, enforcement_mode, set_enforcement_mode, verify_audit_chain
 
 API = os.getenv("ACCEPTANCE_GATEWAY_URL", "http://127.0.0.1:8080").rstrip("/")
 MCP_URL = API + "/mcp/"
@@ -167,12 +167,28 @@ async def per_server_endpoint() -> str:
            and row["client"].get("event_kind") == "mcp-connection"
            and not row["upstream_attempted"] and not row["upstream_executed"], "미등록 연결의 차단 증적 누락")
     before = (await db.fetch_one("SELECT count(*) AS n FROM decisions"))["n"]
+    # A harness start (initialize, GET, discovery) or a retry loop is one refusal a minute.
+    async with httpx.AsyncClient(timeout=10, headers={"Authorization": f"Bearer {TOKENS['employee']}"}) as client:
+        again = [await client.post(API + "/mcp/nope/", json={"jsonrpc": "2.0", "id": i, "method": "initialize"}) for i in range(3)]
+        again.append(await client.get(API + "/mcp/nope/"))
+    expect(all(r.status_code == 404 and r.json().get("decision_id") == refused.get("decision_id") for r in again)
+           and (await db.fetch_one("SELECT count(*) AS n FROM decisions"))["n"] == before, "반복된 미등록 연결이 원장에 중복 기록됨")
+    # A refused connection is not a call: it must not use up the caller's ceilings.
+    first, second = str(uuid4()), str(uuid4())
+    a = await _reserve_call(first, PRINCIPAL["employee"], "acceptance", "probe", {"n": 1}, "public")
+    async with httpx.AsyncClient(timeout=10, headers={"Authorization": f"Bearer {TOKENS['employee']}"}) as client:
+        await client.post(API + "/mcp/nope-ceiling/", json={"jsonrpc": "2.0", "id": 1, "method": "initialize"})
+    b = await _reserve_call(second, PRINCIPAL["employee"], "acceptance", "probe", {"n": 2}, "public")
+    await _release_call(first); await _release_call(second)
+    expect(b["recent_calls"] <= a["recent_calls"] + 1 and b["recent_important"] <= a["recent_important"]
+           and b["recent_blocks"] <= a["recent_blocks"], f"연결 거부가 호출 한도에 합산됨: {a} → {b}")
+    before = (await db.fetch_one("SELECT count(*) AS n FROM decisions"))["n"]
     async with httpx.AsyncClient(timeout=10) as client:
         unauthenticated = await client.post(API + "/mcp/nope/", json={})
     expect(unauthenticated.status_code == 401, "미등록 경로가 인증 경계를 우회함")
     expect((await db.fetch_one("SELECT count(*) AS n FROM decisions"))["n"] == before,
            "무인증 요청을 인증된 직원의 차단 증적으로 기록함")
-    return f"/mcp/git/ 도구 {len(tools)}개 · git_log 허용 · /mcp/nope/ 404 + 미등록 연결 감사"
+    return f"/mcp/git/ 도구 {len(tools)}개 · git_log 허용 · /mcp/nope/ 404 + 미등록 연결 감사(1분 1건)"
 
 
 async def hidden_tool_still_decided() -> str:
@@ -443,10 +459,8 @@ async def console_registration_expires() -> str:
         expect([tool["name"] for tool in review["tools"]] == ["fetch"], f"도구 불러오기: {review['tools']}")
         body = {"server_id": server_id, "display_name": "Acceptance fetch", "endpoint": endpoint,
                 "catalog_hash": review["catalog_hash"], "tools": {"fetch": "r"}, "data_class": "public", "valid_days": 1}
-        stale = await client.post(API + "/api/registry/servers", json={**body, "catalog_hash": "0" * 64})
-        expect(stale.status_code == 409, f"검토하지 않은 계약으로 등록: {stale.status_code}")
         bypass = await client.post(API + "/api/registry/servers", json=body)
-        expect(bypass.status_code == 409, "관리자 직접 등록이 도입 신청을 우회함")
+        expect(bypass.status_code == 409 and "도입 신청" in bypass.text, f"관리자 직접 등록이 도입 신청을 우회함: {bypass.text[:160]}")
         console = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
         requested = await client.post(console + "/api/mcp-requests", headers={"Authorization": f"Bearer {TOKENS['employee']}"},
             json={"display_name": "Acceptance fetch", "intake_kind": "remote-endpoint", "endpoint_url": endpoint,
@@ -464,6 +478,19 @@ async def console_registration_expires() -> str:
         approved.raise_for_status()
         altered = await client.post(console + f"/api/mcp-requests/{intake_id}/register", json={**scope, "tools": {"fetch": "x"}})
         expect(altered.status_code == 409, "승인 후 도구 권한이 변경됨")
+        # Separation of duties: the admin's own request for the same endpoint cannot be
+        # approved by that admin (an APPROVED remote intake does not block a new one).
+        own = await client.post(console + "/api/mcp-requests", json={"display_name": "Acceptance fetch (self)",
+            "intake_kind": "remote-endpoint", "endpoint_url": endpoint, "requested_transport": "streamable-http",
+            "purpose": "관리자 본인 신청은 본인이 승인할 수 없는지 확인합니다."})
+        own.raise_for_status(); own_id = own.json()["request"]["id"]
+        (await client.post(console + f"/api/mcp-requests/{own_id}/review-contract", json={**scope,
+            "server_id": "acceptance-self", "allowed_principals": [PRINCIPAL['admin']],
+            "review_note": "자기 승인 금지를 확인하기 위한 검토 기록입니다."})).raise_for_status()
+        self_approved = await client.post(console + f"/api/mcp-requests/{own_id}/approve",
+                                          json={"risk_acceptance": "자기 승인 금지를 확인하는 시험입니다."})
+        expect(self_approved.status_code == 403, f"신청자 본인이 승인함: {self_approved.status_code}")
+        await client.post(console + f"/api/mcp-requests/{own_id}/reject", json={"note": "자기 승인 금지 시험 정리"})
         created = await client.post(console + f"/api/mcp-requests/{intake_id}/register", json=scope)
         expect(created.status_code == 200 and created.json().get("status") == "READY", f"등록: {created.status_code} {created.text[:200]}")
         try:
@@ -485,7 +512,7 @@ async def console_registration_expires() -> str:
         expect(removed.status_code == 200, f"등록 해제: {removed.status_code}")
         gone = await client.post(url, json={})
     expect(gone.status_code == 404, f"해제한 서버 경로가 {gone.status_code}")
-    return f"/mcp/{server_id}/ 도구 1개 · 계약 불일치 409 · 기한 만료 차단 · 해제 후 404"
+    return f"/mcp/{server_id}/ 도구 1개 · 직접 등록 409 · 자기 승인 403 · 주체 범위 차단 · 기한 만료 차단 · 해제 후 404"
 
 
 async def audit_chain_intact() -> str:
@@ -516,11 +543,18 @@ async def invitation_enrollment() -> str:
             expect(account == {"role": "employee", "department": "초대 검증팀"}, "초대에서 역할·부서가 변조됨")
             listed = await client.get(console + "/api/account-invitations", headers=admin_headers)
             expect(secret not in listed.text and "token_sha256" not in listed.text, "초대 목록에 자격 유출")
+            issued = await db.fetch_one("SELECT expires_at - issued_at AS life, consumed_at FROM account_invitations WHERE username=%s", (username,))
+            expect(issued and issued["consumed_at"] and abs(issued["life"].total_seconds() - 48 * 3600) < 120,
+                   f"초대 기한·소비 기록: {issued}")
+            # Free the id so a replay reaches the one-time check itself instead of
+            # stopping at "이미 사용 중인 아이디".
+            await db.execute("UPDATE principals SET email=email || '-replay-check' WHERE user_id=%s", (username,))
             replay = await client.post(console + "/auth/signup", json=signup)
-            expect(replay.status_code == 409, "1회용 초대를 다시 사용함")
+            expect(replay.status_code == 409 and "초대" in replay.json().get("detail", ""),
+                   f"1회용 초대를 다시 사용함: {replay.status_code} {replay.text[:120]}")
         finally:
             await client.delete(console + "/api/accounts/" + username, headers=admin_headers)
-    return "실제 48시간 초대 발급·아이디 바인딩·employee 고정·재사용 거부·비밀 재조회 금지"
+    return "48시간 초대 발급·아이디 바인딩·employee 고정·소비된 초대 재사용 거부·비밀 재조회 금지"
 
 
 async def _run() -> dict:

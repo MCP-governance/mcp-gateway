@@ -422,6 +422,7 @@ ROUTES.overview = async (_, tab) => {
 // Activity keeps its rows between renders so live updates and the detail drawer
 // read from the same list. Paused, it keeps polling but holds new rows back and
 // counts them, so the list stops moving without going stale.
+const FEED_FILTERS = ["decision", "server", "person", "event_kind", "execution"];
 const feed = { rows: [], pending: [], cursor: 0, filters: { decision: "", server: "", person: "", event_kind: "", execution: "" }, query: "",
   live: true, servers: [], lastOk: 0, failing: false, gen: 0 };
 let liveTimer = null;
@@ -503,7 +504,9 @@ function startLive() {
 }
 
 ROUTES.activity = async (_, tab, query) => {
-  for (const key of ["decision", "server", "person", "event_kind", "execution"]) if (query.has(key)) feed.filters[key] = query.get(key);
+  // A link that names a filter (an overview KPI) replaces the whole set; keeping the
+  // others would AND a stale "미등록 연결" with "실제 실행" into an empty list.
+  if (FEED_FILTERS.some((key) => query.has(key))) for (const key of FEED_FILTERS) feed.filters[key] = query.get(key) || "";
   if (query.has("q")) feed.query = query.get("q");
   const data = await gw(`activity?${feedQuery({ limit: 200 })}`);
   feed.rows = mergeRows([], data.rows);
@@ -666,7 +669,7 @@ ROUTES.servers = async (id, tab, query) => {
             ${servers.map((s) => html`<tr><td><b>${s.display_name}</b><span class="sub mono">${s.id}</span></td>
               <td>${chip({ READY: "allow", DRIFT: "alert" }[s.status] || "block", SERVER_STATUS[s.status] || s.status)}</td>
               <td class="small clip">${s.status_reason || "—"}</td><td class="small">${ago(s.last_seen_at)}</td>
-              <td class="num">${s.status === "DRIFT" ? html`<button class="btn sm primary" data-act="approve-contract" data-id="${s.id}">승인본 갱신</button>` : ""}</td></tr>`)}
+              <td class="num">${s.status === "DRIFT" && !s.registration ? html`<button class="btn sm primary" data-act="approve-contract" data-id="${s.id}">승인본 갱신</button>` : ""}</td></tr>`)}
             </tbody></table>`, { flush: true })}</div></div>` },
       ],
     }),
@@ -695,10 +698,10 @@ function showServer(id) {
       ${chip(s.lifecycle === "OPERATING" ? "outline" : "block", LIFECYCLE[s.lifecycle] || s.lifecycle)}
       ${chip("outline", s.deployment === "provider" ? "제공자 운영" : "사내 운영")}
       ${validityChip(registration)}
-      ${s.status === "DRIFT" ? html`<button class="btn sm primary" data-act="approve-contract" data-id="${s.id}">승인본 갱신</button>` : ""}
+      ${s.status === "DRIFT" && !registration ? html`<button class="btn sm primary" data-act="approve-contract" data-id="${s.id}">승인본 갱신</button>` : ""}
       ${s.lifecycle !== "RETIRED" ? html`<button class="btn sm" type="button" data-act="server-check" data-id="${s.id}">연결 확인</button>` : ""}
-      ${registration ? html`<button class="btn sm" type="button" data-act="server-extend" data-id="${s.id}">기한 연장</button>
-        <button class="btn sm danger" type="button" data-act="server-deregister" data-id="${s.id}">등록 해제</button>` : ""}</div>
+      ${registration && !registration.intake_id ? chip("block", "신청 기록 없는 직접 등록 · 실행 차단") : ""}
+      ${registration ? html`<button class="btn sm danger" type="button" data-act="server-deregister" data-id="${s.id}">등록 해제</button>` : ""}</div>
     ${s.status_reason && s.status !== "READY" ? html`<p class="note warn">${s.status_reason}</p>` : ""}`, [
     { key: "info", label: "개요", body: kv([["id", html`<code>${s.id}</code>`], ["Gateway 경로", html`<code>/mcp/${s.id}/</code>`],
       ["패키지", html`<code>${s.source_ref || `${s.package}@${s.version}`}</code>`], ["upstream", html`<code>${s.endpoint}</code>`],
@@ -1394,7 +1397,7 @@ const ACTIONS = {
     renderFeed();
   },
   "feed-reset"() {
-    feed.filters = { decision: "", server: "", person: "" };
+    feed.filters = Object.fromEntries(FEED_FILTERS.map((key) => [key, ""]));
     feed.query = "";
     location.hash = "#/activity";
     reload();
@@ -1614,12 +1617,6 @@ const ACTIONS = {
       data_class: fd.get("data_class"), valid_days: Number(fd.get("valid_days")), poisoning_ack: fd.get("poisoning_ack") === "on",
       ...(el.dataset.review ? {allowed_principals: fd.get("allowed_principals").split(",").map((p) => p.trim()).filter(Boolean), review_note: fd.get("review_note").trim()} : {}) } });
     toast(r.message); reload();
-  },
-  async "server-extend"(el) {
-    const fd = await ask({ title: `사용 기한 연장 · ${el.dataset.id}`, fields: field.select("valid_days", "오늘부터", VALIDITY, "90"), confirm: "연장" });
-    if (!fd) return;
-    const r = await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}/extend`, { method: "POST", body: { valid_days: Number(fd.get("valid_days")) } });
-    toast(`${when(r.valid_until)}까지 연장했습니다.`); reload();
   },
   async "server-deregister"(el) {
     const fd = await ask({ title: `등록 해제 · ${el.dataset.id}`, body: "즉시 호출 차단 · 기록 유지", confirm: "해제", danger: true });

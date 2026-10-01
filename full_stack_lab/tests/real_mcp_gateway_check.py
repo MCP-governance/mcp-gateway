@@ -2,8 +2,10 @@
 
 python /tests/real_mcp_gateway_check.py --url http://gateway:8080 --review-out /output/review.json
 python /tests/real_mcp_gateway_check.py --url http://gateway:8080 --reviewed /output/review.json
-Both commands read {email,password} from stdin. No vendor credentials enter this client.
-The second command registers temporary, expiring, read-only entries and removes them.
+Both commands read {"requester": {email,password}, "approver": {email,password}} from stdin
+(D-57: the requester never approves). No vendor credentials enter this client.
+The second command registers temporary, expiring, read-only entries through the intake
+(request -> contract review -> approval -> activation) and removes them.
 """
 import argparse
 import asyncio
@@ -17,15 +19,14 @@ import httpx
 import httpx2
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
+from intake_register import login, register
 from real_mcp_check import SERVERS, SMOKE
 
 
 async def run(args):
-    identity = json.load(sys.stdin)
-    async with httpx.AsyncClient(timeout=90) as api:
-        login = await api.post(args.url + '/api/session', json=identity)
-        login.raise_for_status()
-        api.headers['Authorization'] = 'Bearer ' + login.json()['access_token']
+    identities = json.load(sys.stdin)
+    approver = login(args.console, identities["approver"])
+    async with httpx.AsyncClient(timeout=90, headers={'Authorization': 'Bearer ' + approver}) as api:
         if args.review_out:
             review = []
             for name, endpoint in SERVERS.items():
@@ -42,6 +43,8 @@ async def run(args):
             print(json.dumps({'review': args.review_out, 'servers': len(review),
                               'warnings': {r['server']: r['catalog_warnings'] for r in review}}, ensure_ascii=False))
             return
+        requester = login(args.console, identities["requester"])
+        who = (await api.get(args.console + '/auth/me', headers={'Authorization': 'Bearer ' + requester})).json()
         review = {r['server']: r for r in json.loads(Path(args.reviewed).read_text())}
         prefix = 'probe-' + uuid4().hex[:8] + '-'
         results = []
@@ -54,15 +57,14 @@ async def run(args):
             server_id = prefix + name
             registered = False
             try:
-                response = await api.post(args.url + '/api/registry/servers', json={
-                    'server_id': server_id, 'display_name': 'Live verification ' + name,
-                    'endpoint': endpoint, 'catalog_hash': row['catalog_hash'], 'tools': {tool: 'r'},
-                    'data_class': 'important', 'valid_days': 1,
-                    'poisoning_ack': bool(row['catalog_warnings'] and row.get('warning_review')),
-                    'purpose': 'Authorized live vendor read verification; no writes, messages, or production enrollment'})
-                response.raise_for_status()
+                register(args.console, requester, approver, endpoint=endpoint, server_id=server_id,
+                         name='Live verification ' + name, tools={tool: 'r'}, data_class='important', valid_days=1,
+                         allowed=[who['user_id']], ack_warnings=bool(row['catalog_warnings'] and row.get('warning_review')),
+                         purpose='Authorized live vendor read verification; no writes, messages, or production enrollment',
+                         review_note='Pinned review file: selected read tool only, one-day verification window.',
+                         risk_acceptance='Provider-hosted service; only the selected read tool runs for one day.')
                 registered = True
-                async with httpx2.AsyncClient(timeout=90, headers=dict(api.headers)) as http:
+                async with httpx2.AsyncClient(timeout=90, headers={'Authorization': 'Bearer ' + requester}) as http:
                     async with Client(streamable_http_client(args.url + '/mcp/' + server_id + '/', http_client=http)) as client:
                         # The SDK learns x-mcp-header annotations from tools/list and
                         # then emits matching Mcp-Param-* headers on modern calls.
@@ -92,6 +94,7 @@ async def run(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--url', required=True)
+    parser.add_argument('--console', default='http://agent-service:8000')
     choice = parser.add_mutually_exclusive_group(required=True)
     choice.add_argument('--review-out')
     choice.add_argument('--reviewed')
