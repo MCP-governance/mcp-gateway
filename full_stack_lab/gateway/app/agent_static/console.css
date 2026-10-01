@@ -316,6 +316,44 @@ label.check { flex-direction: row; align-items: center; gap: 10px; font-weight: 
 .spacer { flex: 1; }
 details summary { cursor: pointer; color: var(--ink-2); }
 
+/* ── control planes: status × evidence (D-63) ─────────────────────────────
+ * A status chip never stands alone; it is paired with an evidence meter whose four
+ * cells count how sure the claim is (kernel heartbeat > ledger > manual > report).
+ * The meter is colourless on purpose so it cannot be read as a second status. */
+:root { --ev-on: var(--ink-2); --ev-off: var(--line-2); --ev-stale: var(--alert); }
+.pair { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; vertical-align: middle; }
+.ev { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--ink-3);
+  font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ev svg { width: 26px; height: 10px; flex: none; }
+.ev rect { fill: var(--ev-off); }
+.ev rect.on { fill: var(--ev-on); }
+.ev.stale rect.on { fill: none; stroke: var(--ev-stale); stroke-dasharray: 2 1; }
+.ev.stale { color: var(--alert); }
+/* Plane glyphs: GW · EP · VD, told apart by fill and outline, never by colour alone. */
+.pg { display: inline-flex; gap: 3px; vertical-align: middle; }
+.pg b { font: 600 11px/1 var(--mono); padding: 3px 4px; border-radius: 4px; border: 1px solid var(--ink-3); color: var(--ink-3); }
+.pg b.on { background: var(--ink-2); border-color: var(--ink-2); color: var(--panel); }
+.pg b.na { border-style: dashed; opacity: .55; }
+.pg b.res { border-style: dashed; }
+/* Sent → executed → response, as three marks in a row. */
+.flow3 { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); color: var(--ink-3); white-space: nowrap; }
+.flow3 i { font-style: normal; font-size: 14px; color: var(--ink-2); }
+/* The five stops of one call in the drawer head. */
+.pipe { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.pipe li { border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; background: var(--panel-2);
+  display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: var(--fs-xs); }
+.pipe li > b { font-size: var(--fs-xs); color: var(--ink-3); font-weight: 600; }
+.pipe li .v { overflow-wrap: anywhere; color: var(--ink-2); }
+.pipe li.off { background: transparent; border-style: dashed; }
+.pipe li.stop { border-color: var(--block); }
+.quote { margin: 0; padding: 8px 12px; border-left: 3px solid var(--line-2); color: var(--ink-2); background: var(--panel-2); border-radius: 0 6px 6px 0; }
+.kpi .sub { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; font-size: var(--fs-xs); color: var(--ink-3); }
+/* Tone glyphs so a chip reads without colour: ● allow, ◐ restrict, ◆ alert, ◇ approval, ▲ block. */
+.chip.allow::before { content: "●"; } .chip.restrict::before { content: "◐"; } .chip.alert::before { content: "◆"; }
+.chip.approval::before { content: "◇"; } .chip.block::before { content: "▲"; }
+.chip.allow::before, .chip.restrict::before, .chip.alert::before, .chip.approval::before, .chip.block::before {
+  width: auto; height: auto; border-radius: 0; background: none; font-size: 10px; line-height: 1; opacity: 1; }
+
 /* ── small screens ────────────────────────────────────────────────────── */
 @media (max-width: 1200px) {
   .grid.c3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -345,6 +383,8 @@ details summary { cursor: pointer; color: var(--ink-2); }
   .kpi:nth-child(n + 3) { border-top: 1px solid var(--line); }
   .crit, .stepper { grid-template-columns: minmax(0, 1fr); }
   .rels { grid-template-columns: minmax(0, 1fr); }
+  .pipe { grid-template-columns: minmax(0, 1fr); }
+  td[data-pri="2"], th[data-pri="2"] { display: none; }
 }
 
 /* ── touch, motion and contrast preferences ───────────────────────────── */
@@ -358,4 +398,5 @@ details summary { cursor: pointer; color: var(--ink-2); }
 @media (forced-colors: active) {
   .chip, .btn, .dot, .kpi, .panel, .tab[aria-selected="true"] { border: 1px solid CanvasText; }
   .nav a[aria-current="page"] { outline: 2px solid Highlight; }
+  .pg b, .pipe li, .ev svg { border: 1px solid CanvasText; }
 }

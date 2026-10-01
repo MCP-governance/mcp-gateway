@@ -97,3 +97,80 @@ export function sankeyData(flows, decisionLabel = (d) => d) {
   }
   return { nodes: [...nodes.values()], links: [...links.values()] };
 }
+
+// ── control planes (D-62/D-63) ───────────────────────────────────────────────
+// A status is never shown alone: it travels with how sure we are. Levels follow the
+// evidence the server names (integrations.py evidence_kind): 4 kernel heartbeat,
+// 3 Gateway ledger row, 2 manual vendor-console record, 1 self report, 0 none.
+export const EVIDENCE = {
+  kernel: { level: 4, label: "커널 heartbeat", ttl: 180 },
+  ledger: { level: 3, label: "원장", ttl: null },
+  manual: { level: 2, label: "수기 확인", ttl: 14 * 86400 },
+  report: { level: 1, label: "자체 보고", ttl: 6 * 3600 },
+  none: { level: 0, label: "증거 없음", ttl: null },
+};
+export const STATE_TONE = {
+  gateway_enforced: "allow", endpoint_enforced: "allow", vendor_enforced: "restrict",
+  observed_only: "alert", unknown_not_enrolled: "outline", bypass_possible: "block",
+};
+
+/** Seconds since an ISO time, or null. */
+export function ageSeconds(iso, now = Date.now()) {
+  const t = new Date(iso ?? NaN).getTime();
+  return Number.isFinite(t) ? Math.max(0, Math.round((now - t) / 1000)) : null;
+}
+
+export function agoText(seconds) {
+  if (seconds === null || seconds === undefined) return "";
+  if (seconds < 90) return `${seconds}초 전`;
+  if (seconds < 5400) return `${Math.round(seconds / 60)}분 전`;
+  if (seconds < 172800) return `${Math.round(seconds / 3600)}시간 전`;
+  return `${Math.round(seconds / 86400)}일 전`;
+}
+
+/** {state, tone, level, evLabel, stale}. An enforced state without fresh evidence of
+ * at least a ledger row is drawn neutral, so green always means "seen enforcing". */
+export function statusView(item, now = Date.now()) {
+  const kind = EVIDENCE[item?.evidence_kind] ? item.evidence_kind : "none";
+  const ev = EVIDENCE[kind];
+  const age = ageSeconds(item?.evidence_at, now);
+  const stale = ev.ttl !== null && (age === null || age >= ev.ttl);
+  let tone = STATE_TONE[item?.state] || "outline";
+  if (tone === "allow" && (ev.level < 3 || stale)) tone = "outline";
+  const ref = kind === "ledger" && item?.evidence_ref ? ` #${item.evidence_ref}` : "";
+  const evLabel = kind === "none" ? (item?.state === "gateway_enforced" ? "경유 기록 없음" : ev.label)
+    : `${ev.label}${ref}${age !== null ? ` · ${agoText(age)}` : ""}${stale ? " · 만료" : ""}`;
+  return { state: item?.state || "unknown_not_enrolled", tone, level: stale ? Math.min(ev.level, 1) : ev.level, evLabel, stale };
+}
+
+/** One row per item_key; the PCs and owners that reported it are folded into a count. */
+export function dedupeItems(items) {
+  const groups = new Map();
+  for (const item of items || []) {
+    const key = item?.item_key || item?.key;
+    if (!key) continue;
+    const g = groups.get(key);
+    if (!g) { groups.set(key, { ...item, key, pcs: 1, owners: [item.owner].filter(Boolean), devices: [item.device].filter(Boolean) }); continue; }
+    g.pcs += 1;
+    if (item.owner && !g.owners.includes(item.owner)) g.owners.push(item.owner);
+    if (item.device && !g.devices.includes(item.device)) g.devices.push(item.device);
+    // The worst state wins: one open PC makes the item bypassable.
+    if (item.state === "bypass_possible") g.state = "bypass_possible";
+    g.bypass = [...new Set([...(g.bypass || []), ...(item.bypass || [])])];
+  }
+  return [...groups.values()];
+}
+
+/** The five stops of one ledger row: source, Gateway, Endpoint, upstream, response. */
+export function pipelineOf(row) {
+  const connection = row?.event_kind === "mcp-connection";
+  const endpoint = (row?.planes || []).includes("endpoint");
+  const upstream = row?.executed ? "executed" : row?.attempted ? "unknown" : "not_sent";
+  return [
+    { key: "source", state: row?.device_id ? "signed" : "reported" },
+    { key: "gateway", state: connection ? "refused-connection" : "decided", decision: row?.decision, policy: row?.policy_id },
+    { key: "endpoint", state: endpoint ? "bound" : "none" },
+    { key: "upstream", state: upstream },
+    { key: "response", state: row?.response || (upstream === "not_sent" ? "not_executed" : "unknown") },
+  ];
+}

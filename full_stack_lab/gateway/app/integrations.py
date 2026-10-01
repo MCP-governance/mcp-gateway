@@ -99,7 +99,16 @@ def device_state(device: dict, now: datetime) -> dict:
             "platform": platform, "account": device.get("local_username"), "uid": device.get("local_uid"),
             "account_state": state, "state": "bypass_possible" if bypass and state != "unknown_not_enrolled" else state,
             "evidence": evidence, "bypass": bypass, "verified_at": device.get("heartbeat_at") or device.get("last_seen_at"),
+            # What the state rests on: the kernel heartbeat for a confined account, else the agent's own report.
+            "evidence_kind": ("kernel" if state == "endpoint_enforced" else "none" if state == "unknown_not_enrolled" else "report"),
+            "evidence_at": device.get("heartbeat_at") or device.get("last_seen_at"), "checks": checks,
             "kernel_denials_24h": int(device.get("kernel_denials") or 0)}
+
+
+def item_evidence(state: str, device: dict | None, seen: Any) -> dict:
+    if device and device.get("account_state") == "endpoint_enforced" and state in {"endpoint_enforced", "bypass_possible"}:
+        return {"evidence_kind": "kernel", "evidence_at": device.get("verified_at")}
+    return {"evidence_kind": "report", "evidence_at": seen}
 
 
 def endpoint_item_state(device: dict | None, approved: bool) -> tuple[str, str, list[str]]:
@@ -129,12 +138,14 @@ async def snapshot() -> dict:
         if person["managed_required"] and person["token"] not in owners_with_device:
             devices[f"unenrolled:{person['token']}"] = {
                 "endpoint_id": None, "owner": person["token"], "platform": None, "state": "unknown_not_enrolled",
-                "account_state": "unknown_not_enrolled", "evidence": "관리형 단말 등록 없음", "bypass": [], "verified_at": None}
+                "account_state": "unknown_not_enrolled", "evidence": "관리형 단말 등록 없음", "bypass": [], "verified_at": None,
+                "evidence_kind": "none", "evidence_at": None, "checks": {}}
     items: list[dict] = []
 
     # Gateway routes: enforced for what reaches them; open wherever a holder is unmanaged.
     traversal = {r["server_id"]: r for r in await db.fetch_all(
         """SELECT server_id, max(created_at) FILTER (WHERE upstream_executed) AS executed_at,
+                  max(id) FILTER (WHERE upstream_executed) AS executed_id,
                   max(created_at) AS last_at, count(*) FILTER (WHERE created_at > now() - interval '7 days') AS calls_7d
              FROM decisions WHERE created_at > now() - interval '30 days'
               AND COALESCE(client->>'event_kind','tools/call')='tools/call' GROUP BY server_id""")}
@@ -161,6 +172,8 @@ async def snapshot() -> dict:
                          if seen.get("executed_at") else "Gateway 경유 실행 기록 없음") + ("" if operating else f" · {server['status']} 상태라 호출 차단"),
             "approval": {"state": "approved" if operating else server["status"].lower(), "expires_at": spec.get("valid_until")},
             "bypass": bypass, "last_verified_at": seen.get("last_at"),
+            "evidence_kind": "ledger" if seen.get("last_at") else "none",
+            "evidence_at": seen.get("executed_at") or seen.get("last_at"), "evidence_ref": seen.get("executed_id"),
             # Outside any device: the same SaaS account used from another machine.
             "residual": ["공급자 계정의 다른 단말·웹 접근은 SaaS 조직 정책 소관"] if provider else []})
 
@@ -196,7 +209,9 @@ async def snapshot() -> dict:
             "state": state, "evidence": evidence,
             "approval": {"state": approval, "expires_at": None, "decided_by": decision.get("decided_by"),
                          "review_days": REVIEW_DAYS},
-            "vendor_control": vendor or None, "bypass": bypass, "last_verified_at": row["last_seen"]})
+            "vendor_control": vendor or None, "bypass": bypass, "last_verified_at": row["last_seen"],
+            **({"evidence_kind": "manual", "evidence_at": vendor.get("verified_at")} if state == "vendor_enforced"
+               else {"evidence_kind": "report", "evidence_at": row["last_seen"]})})
 
     # Device-bound inventory: configs and listeners the endpoint agent reported.
     for row in await db.fetch_all(
@@ -219,7 +234,8 @@ async def snapshot() -> dict:
             "discovered_at": row["seen"], "source": row["classification"],
             "managed_by": "endpoint" if state == "endpoint_enforced" else "none", "enforced": state == "endpoint_enforced",
             "state": state, "evidence": evidence,
-            "approval": {"state": "unapproved", "expires_at": None}, "bypass": bypass, "last_verified_at": row["seen"]})
+            "approval": {"state": "unapproved", "expires_at": None}, "bypass": bypass, "last_verified_at": row["seen"],
+            **item_evidence(state, device, row["seen"])})
 
     summary = {"states": {s: sum(i["state"] == s for i in items) for s in STATES},
                "classes": {c: sum(i["class"] == c for i in items) for c in CLASSES},

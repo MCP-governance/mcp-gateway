@@ -87,3 +87,39 @@ test("sankey layers never merge a server with a harness of the same name", () =>
   assert.equal(links.find((l) => l.source === "git ·" && l.target === "Allow").value, 2);
   assert.equal(links.length, 6);
 });
+
+test("enforced is green only with fresh evidence of a ledger row or a kernel heartbeat", async () => {
+  const { statusView, dedupeItems, pipelineOf, ageSeconds } = await import("../gateway/app/agent_static/console-state.mjs");
+  const now = Date.parse("2026-10-01T10:00:00Z");
+  const at = (s) => new Date(now - s * 1000).toISOString();
+  assert.equal(statusView({ state: "gateway_enforced", evidence_kind: "ledger", evidence_at: at(60), evidence_ref: 4812 }, now).tone, "allow");
+  assert.match(statusView({ state: "gateway_enforced", evidence_kind: "ledger", evidence_at: at(60), evidence_ref: 4812 }, now).evLabel, /원장 #4812/);
+  const noRecord = statusView({ state: "gateway_enforced", evidence_kind: "none" }, now);
+  assert.equal(noRecord.tone, "outline");
+  assert.equal(noRecord.evLabel, "경유 기록 없음");
+  assert.equal(statusView({ state: "endpoint_enforced", evidence_kind: "kernel", evidence_at: at(42) }, now).tone, "allow");
+  const stale = statusView({ state: "endpoint_enforced", evidence_kind: "kernel", evidence_at: at(181) }, now);
+  assert.equal(stale.tone, "outline");
+  assert.ok(stale.stale && stale.level <= 1 && stale.evLabel.endsWith("만료"));
+  assert.equal(statusView({ state: "vendor_enforced", evidence_kind: "manual", evidence_at: at(3600) }, now).tone, "restrict");
+  assert.equal(statusView({ state: "bypass_possible", evidence_kind: "report", evidence_at: at(60) }, now).tone, "block");
+  assert.equal(statusView({}, now).state, "unknown_not_enrolled");
+  assert.equal(ageSeconds("not a date", now), null);
+
+  const items = dedupeItems([
+    { key: "k|a|pc1", item_key: "k", owner: "a", device: "pc1", state: "observed_only", bypass: ["x"] },
+    { key: "k|b|pc2", item_key: "k", owner: "b", device: "pc2", state: "bypass_possible", bypass: ["y"] },
+    { key: "gateway:github", state: "gateway_enforced" },
+  ]);
+  assert.equal(items.length, 2);
+  const merged = items.find((i) => i.key === "k");
+  assert.equal(merged.pcs, 2);
+  assert.equal(merged.state, "bypass_possible", "one open PC makes the item bypassable");
+  assert.deepEqual(merged.owners, ["a", "b"]);
+  assert.deepEqual(merged.bypass, ["x", "y"]);
+
+  const refused = pipelineOf({ event_kind: "mcp-connection", decision: "Block", policy_id: "MCP-REGISTRY-001", planes: ["gateway"] });
+  assert.deepEqual(refused.map((n) => n.state), ["reported", "refused-connection", "none", "not_sent", "not_executed"]);
+  const withheld = pipelineOf({ device_id: "d", planes: ["gateway", "endpoint"], attempted: true, executed: true, response: "withheld" });
+  assert.deepEqual(withheld.map((n) => n.state), ["signed", "decided", "bound", "executed", "withheld"]);
+});

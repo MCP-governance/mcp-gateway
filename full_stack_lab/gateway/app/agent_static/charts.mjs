@@ -189,7 +189,7 @@ export function sankey({ nodes, links }) {
     legend: { show: false },
     tooltip: { ...base().tooltip, trigger: "item" },
     series: [{
-      type: "sankey", left: 8, right: 110, top: 8, bottom: 8, nodeWidth: 14, nodeGap: 12, draggable: false,
+      type: "sankey", left: 8, right: 110, top: 8, bottom: 8, nodeWidth: 14, nodeGap: 12, draggable: false, nodeAlign: "left",
       emphasis: { focus: "adjacency" },
       label: { color: css("--ink"), fontSize: 14 },
       lineStyle: { color: "gradient", opacity: 0.35, curveness: 0.5 },

@@ -751,7 +751,7 @@ PAGES_BY_ROLE = {
     # MCP를 신청하는 길"이다. 조직 전체의 기록·정책·종료 판정은 관리자 몫이다.
     "partner": ("activity", "intake"),
     "employee": ("activity", "intake"),
-    "admin": ("overview", "activity", "approvals", "servers", "people", "intake", "termination", "policy"),
+    "admin": ("overview", "activity", "approvals", "coverage", "servers", "people", "intake", "termination", "policy"),
 }
 ROLE_LABELS = {"partner": "협력업체 직원", "employee": "직원", "admin": "관리자"}
 

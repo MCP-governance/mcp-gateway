@@ -328,15 +328,28 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
                                count(*) FILTER (WHERE COALESCE(client->>'event_kind','tools/call')='tools/call') AS tool_calls,
                                count(*) FILTER (WHERE upstream_executed) AS executed,
                                count(*) FILTER (WHERE upstream_attempted AND NOT upstream_executed) AS unknown,
-                               count(*) FILTER (WHERE NOT upstream_attempted AND NOT upstream_executed) AS not_sent
+                               count(*) FILTER (WHERE NOT upstream_attempted AND NOT upstream_executed) AS not_sent,
+                               count(*) FILTER (WHERE result_preview->>'disposition'='masked') AS masked,
+                               count(*) FILTER (WHERE upstream_executed AND (result_preview->>'disposition'='withheld'
+                                                OR policy_id='MCP-OUTPUT-001')) AS withheld
                           FROM decisions d WHERE created_at > {TODAY} AND {decommission.REAL_CALL}"""),
     )
+    # decision -> sent? -> executed? -> what came back, for today's tool calls (D-63 Sankey).
+    pipeline = await db.fetch_all(f"""SELECT decision, upstream_attempted AS attempted, upstream_executed AS executed,
+                                             COALESCE(result_preview->>'disposition',
+                                                      CASE WHEN upstream_executed AND policy_id='MCP-OUTPUT-001' THEN 'withheld'
+                                                           WHEN upstream_executed THEN 'returned'
+                                                           WHEN upstream_attempted THEN 'unknown' ELSE 'not_executed' END) AS response,
+                                             count(*) AS n
+                                        FROM decisions d WHERE created_at > {TODAY} AND {decommission.REAL_CALL}
+                                         AND COALESCE(client->>'event_kind','tools/call')='tools/call'
+                                       GROUP BY 1, 2, 3, 4""")
     counts = {row["decision"]: int(row["n"]) for row in today}
     return {
         "today": {"total": sum(counts.values()), **{k: counts.get(k, 0) for k in ("Allow", "Alert", "Restrict", "Approval", "Block")}},
         "servers": per_server, "workstations": stations, "top_policies": alerts,
         "pending_approvals": int(approvals["n"] or 0), "termination": cases,
-        "series": series, "flows": flows, "execution": execution,
+        "series": series, "flows": flows, "execution": execution, "pipeline": pipeline,
         "enforcement": await enforcement_mode(), "catalog_version": registry.catalog_version(),
     }
 

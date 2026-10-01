@@ -49,7 +49,8 @@ class Harness:
             self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             self.ssh.connect(host, username=user, password=os.environ["SSHPW"], look_for_keys=False,
                              allow_agent=False, timeout=15)
-            self.stdin, out, _ = self.ssh.exec_command(command, timeout=300)
+            # A login shell, so the harness is found where the user's own shell finds it (~/.local/bin).
+            self.stdin, out, _ = self.ssh.exec_command("bash -lc " + shlex.quote(command), timeout=300)
             lines = out
             self.close_io = lambda: (self.stdin.channel.shutdown_write(), self.ssh.close())
         else:
@@ -112,8 +113,8 @@ class Harness:
         return self.call("mcpServer/tool/call", {"threadId": self.thread, "server": server, "tool": tool, "arguments": arguments})
 
 
-def console(base: str, path: str, token: str | None = None, body: dict | None = None) -> dict:
-    request = urllib.request.Request(base + path, data=None if body is None else json.dumps(body).encode(),
+def console(base: str, path: str, token: str | None = None, body: dict | None = None, method: str | None = None) -> dict:
+    request = urllib.request.Request(base + path, data=None if body is None else json.dumps(body).encode(), method=method,
                                      headers={"content-type": "application/json",
                                               **({"authorization": "Bearer " + token} if token else {})})
     with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request, timeout=30) as response:
@@ -128,8 +129,10 @@ def ledger_after(base: str, token: str, cursor: int, person: str, server: str, t
     while time.time() < deadline:
         query = urllib.parse.urlencode({"after": cursor, "limit": 200, "person": person})
         found = console(base, f"/gw/activity?{query}", token)["rows"]
+        # A refused connection is recorded under the MCP method that was refused
+        # (initialize, server/discover, ...), not under the tool name.
         rows = [r for r in found if r.get("principal") == person and r["server"] == server
-                and r["tool"] in {tool, "initialize", "GET", "POST"}]
+                and (r["tool"] == tool or r.get("event_kind") == "mcp-connection")]
         if want and len(rows) > want:
             return rows
         time.sleep(1.5)
