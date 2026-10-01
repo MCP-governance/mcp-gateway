@@ -47,7 +47,7 @@ async def _caller(ctx: Any) -> dict:
             raise ValueError("stdio ingress에 신원이 바인딩되지 않았습니다. GATEWAY_STDIO_PRINCIPAL을 설정하세요.")
         row = await db.fetch_one("SELECT token, role FROM principals WHERE token=%s", (STDIO_PRINCIPAL,))
         return {"principal": STDIO_PRINCIPAL, "roles": [row["role"] if row else "unknown"], "claims": {}}
-    user = await authenticated_user(headers.get("authorization"))
+    user = await authenticated_user(headers.get("authorization"), require_mcp=True)
     return user
 
 
@@ -87,6 +87,7 @@ def _client_context(ctx: Any, user: dict) -> dict:
         "task_id": (headers.get("x-agent-task-id") or "")[:64] or None,
         "token_jti": claims.get("jti"),
         "oauth_client": claims.get("client_id"),
+        "device_id": claims.get("device_id"),
     }
 
 

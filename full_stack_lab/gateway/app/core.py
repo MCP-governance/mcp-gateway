@@ -1011,9 +1011,14 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                 problem = "Approval expired or was withdrawn before execution"
         if problem is None:
             person = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (principal,))
+            from .endpoint_plane import managed_failure
+            failure = await managed_failure(person or {}, pac_payload.get("transport_claims") or {})
+            if failure:
+                problem = failure
+                blocked_verdict = local_verdict("ENDPOINT-MANAGED-001", "Block", failure)
             if not person or person["status"] != "active":
                 problem = "Principal was revoked before dispatch"
-            else:
+            elif not failure:
                 final_input = dict(dispatch_state["policy_input"])
                 final_input["now"] = datetime.now(UTC).isoformat()
                 live = next(row for row in registered if row["name"] == tool)
@@ -1319,6 +1324,12 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
 
         if not registry.server(server_id):
             base_event.update(local_verdict("MCP-REGISTRY-001", "Block", "검토된 카탈로그나 승인 도입 신청에 없는 서버입니다."))
+            return await _decision_payload(base_event, before)
+
+        from .endpoint_plane import managed_failure
+        failure = await managed_failure(principal, payload.get("transport_claims") or {})
+        if failure:
+            base_event.update(local_verdict("ENDPOINT-MANAGED-001", "Block", failure))
             return await _decision_payload(base_event, before)
         allowed = registry.allowed_principals(server_id)
         if allowed is not None and user_token not in allowed:

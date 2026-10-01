@@ -8,6 +8,12 @@ Microsoft의 공식 문서다. 시험 대상은 별도 WSL 랩과 허가받은 �
 [OVERHAUL_VALIDATION_2026-09-30.md](OVERHAUL_VALIDATION_2026-09-30.md)를 본다.
 아래 §6의 연결 실패는 **자격 연동 추가 전 기준선**이며 현재 기능의 부재를 뜻하지 않는다.
 
+2026-10-01 D-61 후속: field 가입자는 개인별 1회용 키트 → root 관리 Linux 단말 → 독립 활성화로 연결한다.
+PJ1 일반 UID에서 실제 AppArmor/nft 집행, 185초 heartbeat 만료, 보호 파일 변조·격리·독립 복구,
+미만료 JWT의 단말 폐기 차단을 확인했다. 설치·실측 범위는 [Endpoint Agent](../../endpoint-agent/README.md)에 적었다.
+단말 결합 JWT도 bearer token이다. 키와 발급 경로 보호·짧은 수명·현재 상태 검사를 추가한 것이며,
+토큰의 복사·재사용 자체를 암호학적으로 막는 mTLS/DPoP 또는 root 원격 attestation을 구현한 것은 아니다.
+
 ## 1. 판단
 
 Gateway·OPA·계약 고정·이용 관계·종료 모델을 버릴 이유는 없다. 바꿔야 하는 것은

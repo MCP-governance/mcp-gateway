@@ -5,10 +5,12 @@ import asyncio
 import base64
 import binascii
 import hashlib
+import io
 import os
 import re
 import secrets
 import time
+import zipfile
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
@@ -86,6 +88,7 @@ async def bootstrap_field_accounts() -> None:
         "UPDATE endpoint_agents SET status='revoked' WHERE endpoint_id = ANY(%s::text[])",
         (["ws-ysg", "ws-jwj", "ws-pse", "ws-nkk"],),
     )
+    await db.execute("UPDATE principals SET managed_required=true WHERE role<>'admin'")
 
 
 @asynccontextmanager
@@ -181,8 +184,8 @@ async def request_signup(request: Signup, http_request: Request):
             if not invitation:
                 raise HTTPException(409, "초대가 만료·회수·사용되었거나 지정한 아이디와 다릅니다.")
             created = await (await connection.execute(
-                """INSERT INTO principals(token,user_id,email,display_name,role,department,password_hash)
-                   VALUES (%s,%s,%s,%s,'employee',%s,crypt(%s,gen_salt('bf',12)))
+                """INSERT INTO principals(token,user_id,email,display_name,role,department,password_hash,managed_required)
+                   VALUES (%s,%s,%s,%s,'employee',%s,crypt(%s,gen_salt('bf',12)),true)
                    ON CONFLICT DO NOTHING RETURNING user_id""",
                 (f"emp-{username}", username, username, request.display_name.strip(),
                  invitation["department"], request.password))).fetchone()
@@ -309,20 +312,48 @@ async def me(authorization: str | None = Header(default=None)):
     git_url = os.getenv("GITEA_PUBLIC_URL", "") if field else ""
     # The org page, not Gitea's home: the home is a personal dashboard where company repos were hard to find.
     return {**console_user(user), "synthetic": not field,
+            "managed_required": user["managed_required"],
+            "managed_devices": await db.fetch_all(
+                "SELECT endpoint_id,managed_state,status,heartbeat_at FROM endpoint_agents WHERE owner_token=%s AND device_epoch IS NOT NULL",
+                (user["principal"],)),
             "git_url": git_url.rstrip("/") + f"/{GITEA_ORG}" if git_url else "", "kit": await pc_kit() if field else None}
 
 
 async def pc_kit() -> dict | None:
-    """직원 PC 연결 한 줄: 키트를 받고 지금 운영 중인 서버로 setup한다(field, D-42 키트 그대로)."""
+    """개인별 1회용 enrollment 키트. MCP 서버가 없어도 단말 등록은 가능하다."""
     public = os.getenv("IDP_ISSUER", "").rstrip("/")
-    if not (STATIC_DIR / "kit" / "mcpgw_pc.py").is_file() or not public:
+    if not (Path(os.getenv("ENDPOINT_KIT_DIR", "/endpoint-kit")) / "managed-linux.py").is_file() or not public:
         return None
     rows = await db.fetch_all(
         "SELECT id FROM mcp_servers WHERE status='READY' AND COALESCE(lifecycle,'OPERATING')='OPERATING' ORDER BY id")
     servers = ",".join(row["id"] for row in rows)
-    return {"url": "/static/kit/mcpgw_pc.py", "servers": servers,
-            "command": (f"curl -fsSO {public}/static/kit/mcpgw_pc.py && python3 mcpgw_pc.py setup --url {public} --servers {servers}"
-                        if servers else "")}
+    return {"url": "/api/pc-kit", "servers": servers, "mode": "managed-linux",
+            "command": "unzip mcp-managed-kit.zip -d mcp-managed-kit\ncd mcp-managed-kit\nsudo python3 managed-linux.py install --user 일반사용자계정"}
+
+
+@app.post("/api/pc-kit")
+async def download_managed_kit(authorization: str | None = Header(default=None)):
+    from .endpoint_plane import enrollment_token
+    user = await current_identity(authorization)
+    source = Path(os.getenv("ENDPOINT_KIT_DIR", "/endpoint-kit"))
+    names = ("managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py")
+    if any(not (source / name).is_file() for name in names):
+        raise HTTPException(503, "관리형 설치 키트가 배포되지 않았습니다.")
+    public = os.getenv("IDP_ISSUER", "").rstrip("/")
+    if not public:
+        raise HTTPException(503, "Gateway 공개 주소가 없습니다.")
+    if public.startswith("http://") and urlsplit(public).hostname not in {"127.0.0.1", "localhost", "::1"} and not os.getenv("ENDPOINT_TAILSCALE_NODE_ID"):
+        raise HTTPException(503, "Gateway Tailscale 노드 ID를 운영자가 먼저 고정해야 합니다.")
+    import json
+    bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""),
+              "owner": user["user_id"], **await enrollment_token(user["principal"])}
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("enrollment.json", json.dumps(bundle))
+        for name in names:
+            archive.writestr(name, (source / name).read_bytes())
+    return Response(output.getvalue(), media_type="application/zip",
+                    headers={"Content-Disposition": 'attachment; filename="mcp-managed-kit.zip"', "Cache-Control": "no-store"})
 
 
 @app.post("/auth/logout")
@@ -559,8 +590,8 @@ async def approve_signup(request_id: UUID, authorization: str | None = Header(de
         if not row or row["status"] != "pending":
             raise HTTPException(409, "대기 중인 가입 신청이 아닙니다.")
         created = await (await connection.execute(
-            """INSERT INTO principals(token,user_id,email,display_name,role,password_hash)
-               VALUES (%s,%s,%s,%s,'employee',%s)
+            """INSERT INTO principals(token,user_id,email,display_name,role,password_hash,managed_required)
+               VALUES (%s,%s,%s,%s,'employee',%s,true)
                ON CONFLICT DO NOTHING RETURNING user_id""",
             (f"emp-{row['username']}", row["username"], row["username"],
              row["display_name"], row["password_hash"]),

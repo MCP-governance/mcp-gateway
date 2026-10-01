@@ -4,6 +4,7 @@ Received events are device observations, not attestation against compromised roo
 No argument strings, environment variables, tokens or raw journal text are sent.
 """
 import argparse
+import importlib.util
 import json
 import os
 import re
@@ -54,7 +55,9 @@ def main() -> None:
     for path in (Path(__file__).resolve(), args.config.resolve()):
         if any(p.stat().st_uid != 0 or p.stat().st_mode & 0o022 for p in (path, *path.parents)):
             parser.error("프로그램·설정·상위 경로가 root 관리 경로여야 합니다")
-    import agent
+    spec = importlib.util.spec_from_file_location("agent", Path(__file__).with_name("agent.py"))
+    agent = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(agent)
     agent.validate_gateway()
     cursor = args.config.with_suffix(".journal-cursor")
     command = ["journalctl", "-k", "-o", "json", "--no-pager"]

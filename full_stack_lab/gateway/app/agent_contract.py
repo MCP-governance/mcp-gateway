@@ -103,7 +103,7 @@ def token_scopes(claims: dict) -> set[str]:
     return set(value.split()) if isinstance(value, str) else set()
 
 
-async def authenticated_user(authorization: str | None, require_scope: str | None = None) -> dict:
+async def authenticated_user(authorization: str | None, require_scope: str | None = None, *, require_mcp: bool = False) -> dict:
     """The one verified-caller helper every ingress uses.
 
     `authenticate` proves the token was minted by the synthetic IdP; this adds the
@@ -121,7 +121,7 @@ async def authenticated_user(authorization: str | None, require_scope: str | Non
     if await db.fetch_one("SELECT jti FROM agent_revoked_tokens WHERE jti=%s", (claims["jti"],)):
         raise HTTPException(401, "로그아웃된 인증입니다.")
     row = await db.fetch_one(
-        """SELECT token, user_id, email, display_name, role, department, job_title, status
+        """SELECT token, user_id, email, display_name, role, department, job_title, status, managed_required
            FROM principals WHERE user_id=%s""", (claims["sub"],))
     if not row:
         # 관리대장에서 사라진 신원은 토큰이 유효해도 신원이 아니다.
@@ -131,7 +131,13 @@ async def authenticated_user(authorization: str | None, require_scope: str | Non
         # of leaving the shell open with every panel failing.
         raise HTTPException(403, ACCOUNT_STATUS_REASON.get(row["status"], "사용할 수 없는 계정입니다."),
                             headers={"X-Account-Status": row["status"]})
+    if require_mcp or "mcp" in token_scopes(claims):
+        from .endpoint_plane import managed_failure
+        failure = await managed_failure(row, claims)
+        if failure:
+            raise HTTPException(403, failure, headers={"X-Endpoint-Policy": "ENDPOINT-MANAGED-001"})
     return {**user, "principal": row["token"], "name": row["display_name"],
             "department": row["department"] or "미지정", "job_title": row["job_title"],
             "roles": [row["role"]], "status": row["status"],
+            "managed_required": row["managed_required"],
             "email": row["email"], "claims": claims}

@@ -769,13 +769,21 @@ ROUTES.people = async (_, tab, query) => {
         { key: "devices", label: "단말", n: inv.agents.length, body: html`<div class="stack"><div class="grid c21">
           ${panel("단말별 호출", o.workstations.length ? chartBox("c-ws-calls", "최근 24시간 단말별 호출 수", "sm") : empty("단말 없음"), { sub: "24시간" })}
           ${panel("하네스", byHarness.length ? chartBox("c-harness", "최근 24시간 하네스별 호출 비율", "sm") : empty("호출 없음"), { sub: "24시간" })}</div>
-          ${panel("단말", html`<table class="data"><thead><tr><th>단말</th><th>소유자</th><th>하네스</th><th class="num">설정</th><th>섀도</th><th>잔존</th><th>마지막 보고</th><th></th></tr></thead><tbody>
+          ${panel("단말", html`<table class="data"><thead><tr><th>단말</th><th>소유자</th><th>하네스</th><th class="num">설정</th><th>섀도</th><th>잔존</th><th>관리형 연결</th><th>마지막 보고</th><th></th></tr></thead><tbody>
             ${inv.agents.map((a) => html`<tr><td class="mono">${a.endpoint_id}<span class="sub">${a.platform || ""}</span></td><td>${harnessOf[a.endpoint_id]?.display_name || a.owner_token || "—"}</td>
               <td>${harnessOf[a.endpoint_id]?.harness ? chip("plain", harnessLabel(harnessOf[a.endpoint_id].harness)) : "—"}</td><td class="num">${a.entries}</td>
               <td>${Number(a.shadow) ? chip("block", a.shadow) : "0"}</td><td>${Number(a.residue) ? chip("alert", a.residue) : "0"}</td>
+              <td>${chip(a.managed_state === "active" ? "allow" : a.managed_state === "quarantined" ? "block" : "outline",
+                ({active:"활성",pending:"설치 검토 대기",quarantined:"격리",unmanaged:"관측 전용"})[a.managed_state] || "관측 전용")}
+                ${a.heartbeat_at ? html`<span class="sub">정책 확인 ${ago(a.heartbeat_at)}</span>` : ""}</td>
               <td class="small">${ago(a.last_seen_at)}</td>
-              <td class="num">${a.status === "revoked" ? chip("outline", "폐기됨") : html`<button class="btn sm danger" type="button" data-act="device-revoke" data-id="${a.endpoint_id}">자격 폐기</button>`}</td></tr>`)}
+              <td class="num">${["pending","quarantined"].includes(a.managed_state) && a.policy_hash ? html`<button class="btn sm primary" type="button" data-act="device-activate" data-id="${a.endpoint_id}" data-hash="${a.policy_hash}">설치 확인·활성화</button>` : ""}
+                ${a.status === "revoked" ? chip("outline", "폐기됨") : html`<button class="btn sm danger" type="button" data-act="device-revoke" data-id="${a.endpoint_id}">자격 폐기</button>`}</td></tr>`)}
             </tbody></table>${inv.agents.length ? "" : empty("보고한 단말 없음")}`, { flush: true })}</div>` },
+        { key: "managed", label: "설치·연결 이력", n: (inv.managed_events || []).length,
+          body: panel("관리형 단말 연결 이력", html`<table class="data"><thead><tr><th>시각</th><th>사용자·단말</th><th>결과</th><th>근거</th></tr></thead><tbody>
+            ${(inv.managed_events || []).map((e) => html`<tr><td>${when(e.observed_at)}</td><td>${e.owner_token}<span class="sub mono">${e.endpoint_id || "—"}</span></td>
+              <td>${e.kind}</td><td class="small">${short(JSON.stringify(e.detail), 220)}</td></tr>`)}</tbody></table>`, {flush:true}) },
         { key: "os", label: "OS 차단", n: (inv.os_events || []).length, body: panel("실제 단말 OS 차단 관측",
           html`<p class="note">장치 키로 받은 커널 관측입니다. MCP 도구 호출 통계에 합산하지 않습니다. root 침해에 대한 원격 증명은 아닙니다.</p>
           <table class="data"><thead><tr><th>시각</th><th>단말</th><th>차단 종류</th><th>관측 내용</th></tr></thead><tbody>
@@ -1488,10 +1496,29 @@ const ACTIONS = {
     const kit = viewer.kit;
     lastDocument = kit.command;
     openDrawer("내 PC 연결", html`<div class="row-actions">${chip(kit.servers ? "allow" : "outline", kit.servers ? `서버 ${kit.servers.split(",").length}` : "운영 중인 서버 없음")}
-        <a class="btn sm" href="${kit.url}" download>키트 받기</a>
+        <button class="btn sm primary" type="button" data-act="pc-kit-download">1회용 설치 키트 받기</button>
         ${kit.command ? html`<button class="btn sm primary" type="button" data-act="copy-doc">명령 복사</button>` : ""}</div>
       ${kit.command ? html`<pre class="json">${kit.command}</pre>` : ""}
-      ${kv([["점검", html`<code>python3 ~/.mcpgw/mcpgw_pc.py doctor</code>`], ["해제", html`<code>python3 ~/.mcpgw/mcpgw_pc.py uninstall</code>`]])}`);
+      <p class="note">Linux 일반 사용자용입니다. 조직 관리자가 설치하고 실제 OS 통제를 확인한 뒤 단말을 활성화합니다. 설치 토큰은 30분·1회용입니다.</p>
+      ${kv([["연결 조건", "단말 활성화 · 최근 정책 heartbeat · 보호된 하네스 설정"], ["해제", "조직 관리자가 단말 자격을 폐기합니다."]])}`);
+  },
+  async "pc-kit-download"() {
+    const response = await fetch("/api/pc-kit", { method: "POST", headers: { authorization: `Bearer ${token}` } });
+    if (!response.ok) {
+      const r = await response.json();
+      throw new Error(detailText(r.detail) || "설치 키트를 받을 수 없습니다.");
+    }
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a"); link.href = url; link.download = "mcp-managed-kit.zip";
+    link.click(); setTimeout(() => URL.revokeObjectURL(url), 30000);
+    toast("1회용 설치 키트를 받았습니다. 조직 관리자에게 설치를 요청하세요.");
+  },
+  async "device-activate"(el) {
+    const fd = await ask({ title: `관리형 단말 활성화 · ${el.dataset.id}`,
+      fields: field.area("note", "실제 호스트의 일반 계정·root 관리 설정·AppArmor·방화벽 확인 근거", 'required minlength="20" maxlength="1000"'), confirm: "확인 후 활성화" });
+    if (!fd) return;
+    await gw(`endpoint/devices/${encodeURIComponent(el.dataset.id)}/activate`, { method: "POST", body: { policy_hash: el.dataset.hash, note: fd.get("note") } });
+    toast("관리형 단말을 활성화했습니다."); reload();
   },
   async "scan-connection"() {
     const r = await api("/api/mcp-scan/connection-test", { method: "POST" });
@@ -1899,6 +1926,9 @@ async function boot() {
   // 내부 저장소(Gitea)와 PC 키트는 field 배치에서만 주소가 온다 - renderNav()의 바로가기(D-48).
   window.addEventListener("hashchange", route);
   await route();
+  if (viewer.kit && viewer.managed_required && !(viewer.managed_devices || []).some((d) => d.status === "active" && d.managed_state === "active")) {
+    ACTIONS["pc-kit"]();
+  }
   if (viewer.admin) { refreshBadges(); setInterval(refreshBadges, 30000); }
 }
 boot().catch((error) => { $("#view").innerHTML = String(html`<div class="note bad">${error.message}</div>`); });

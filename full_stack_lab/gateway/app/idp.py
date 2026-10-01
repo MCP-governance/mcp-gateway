@@ -25,9 +25,10 @@ from datetime import UTC, datetime, timedelta
 import jwt
 from fastapi import APIRouter, Form, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
+from pydantic import Field
 
 from . import db
-from .agent_contract import ACCOUNT_STATUS_REASON, ALGORITHM, AUDIENCE, ISSUER, authenticated_user, issue_token, public_key
+from .agent_contract import ACCOUNT_STATUS_REASON, ALGORITHM, AUDIENCE, ISSUER, StrictModel, authenticated_user, issue_token, public_key
 
 router = APIRouter()
 ISSUER_URL = os.getenv("IDP_ISSUER", "http://agent-service:8000")
@@ -92,13 +93,17 @@ async def token(request: Request, grant_type: str = Form(...), client_id: str = 
         if not login_allowed(key):
             return _error("slow_down", "로그인 시도가 너무 많습니다.", 429)
         row = await db.fetch_one(
-            """SELECT user_id, status, (password_hash IS NOT NULL AND password_hash = crypt(%s, password_hash)) AS ok
+            """SELECT token, user_id, status, managed_required, (password_hash IS NOT NULL AND password_hash = crypt(%s, password_hash)) AS ok
                  FROM principals WHERE lower(email)=%s""", (password, username.strip().lower()))
         if not row or not row["ok"]:
             record_failed_login(key)
             return _error("invalid_grant", "계정 또는 비밀번호가 올바르지 않습니다.")
         if row["status"] != "active":
             return _error("invalid_grant", ACCOUNT_STATUS_REASON.get(row["status"], "사용할 수 없는 계정입니다."))
+        if row["managed_required"]:
+            from .endpoint_plane import managed_event
+            await managed_event(None, row["token"], "unmanaged-login-denied", {"client_id": client_id})
+            return _error("invalid_client", "관리형 단말 등록이 필요합니다. Console의 내 PC 연결에서 키트를 설치하세요.", 403)
         return await _issue(row, client_id, uuid.uuid4())
     if grant_type == "refresh_token":
         if not refresh_token:
@@ -112,12 +117,62 @@ async def token(request: Request, grant_type: str = Form(...), client_id: str = 
             # Reuse of a rotated refresh token means it leaked: revoke the family.
             await _revoke_family(stored["family_id"])
             return _error("invalid_grant", "이미 사용된 refresh token입니다. 이 인가 전체를 폐기했습니다.")
-        row = await db.fetch_one("SELECT user_id, status FROM principals WHERE user_id=%s", (stored["user_id"],))
+        row = await db.fetch_one("SELECT user_id, status, managed_required FROM principals WHERE user_id=%s", (stored["user_id"],))
         if not row or row["status"] != "active":
             return _error("invalid_grant", "사용할 수 없는 계정입니다.")
+        if row["managed_required"]:
+            await _revoke_family(stored["family_id"])
+            return _error("invalid_grant", "관리형 단말 인증으로 전환했습니다. 기존 사용자 refresh 인증은 폐기했습니다.", 403)
         await db.execute("UPDATE oauth_refresh_tokens SET rotated_at=now() WHERE id=%s", (stored["id"],))
         return await _issue(row, client_id, stored["family_id"])
     return _error("unsupported_grant_type", "password 또는 refresh_token만 지원합니다.")
+
+
+class DeviceEnrollment(StrictModel):
+    enrollment_token: str = Field(min_length=32, max_length=128)
+    device_key: str = Field(min_length=43, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")
+    hostname: str = Field(min_length=1, max_length=200)
+    local_username: str = Field(pattern=r"^[a-z_][a-z0-9_-]{0,30}$")
+    local_uid: int = Field(ge=1000)
+
+
+@router.post("/oauth/device-enroll", status_code=201)
+async def device_enroll(request: DeviceEnrollment):
+    from .endpoint_plane import consume_enrollment
+    try:
+        device = await consume_enrollment(request.enrollment_token, request.device_key, request.hostname,
+                                           request.local_username, request.local_uid)
+    except PermissionError as exc:
+        raise HTTPException(403, str(exc)) from exc
+    return {"endpoint_id": device["endpoint_id"], "state": device["managed_state"],
+            "owner_token": device["owner_token"], "device_epoch": device["device_epoch"]}
+
+
+@router.post("/oauth/device-token")
+async def device_token(x_endpoint_key: str | None = Header(default=None)):
+    from .endpoint_plane import authenticate_device, managed_event, managed_failure, managed_policy
+    try:
+        device = await authenticate_device(x_endpoint_key, "enforcement")
+    except PermissionError as exc:
+        return _error("invalid_client", str(exc), 401)
+    row = await db.fetch_one("SELECT token,user_id,status,managed_required FROM principals WHERE token=%s", (device["owner_token"],))
+    if not row or row["status"] != "active":
+        return _error("invalid_grant", "사용할 수 없는 계정입니다.", 403)
+    claims = {"device_id": device["endpoint_id"], "device_epoch": device["device_epoch"]}
+    failure = await managed_failure(row, claims, mint=True)
+    if failure:
+        await managed_event(device["endpoint_id"], row["token"], "token-denied", {"reason": failure})
+        return _error("invalid_grant", failure, 403)
+    policy = await managed_policy(device)
+    token, signed = issue_token(row, minutes=5, client_id=device["endpoint_id"],
+                               extra={**claims, "scope": "mcp", "device_policy": policy["policy_hash"]})
+    await db.execute(
+        """INSERT INTO oauth_issued_tokens(jti,user_id,client_id,family_id,expires_at,device_id,device_epoch,device_policy)
+           VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+        (signed["jti"], row["user_id"], device["endpoint_id"], uuid.uuid4(), signed["exp"],
+         device["endpoint_id"], device["device_epoch"], policy["policy_hash"]))
+    return JSONResponse({"access_token": token, "token_type": "Bearer", "expires_in": 300, "scope": "mcp"},
+                        headers={"Cache-Control": "no-store"})
 
 
 async def _revoke_family(family_id) -> None:
@@ -162,9 +217,13 @@ async def introspection(token: str) -> dict:
         return {"active": False}
     if await db.fetch_one("SELECT 1 FROM agent_revoked_tokens WHERE jti=%s", (claims["jti"],)):
         return {"active": False}
-    row = await db.fetch_one("SELECT status FROM principals WHERE user_id=%s", (claims["sub"],))
+    row = await db.fetch_one("SELECT token,status,managed_required FROM principals WHERE user_id=%s", (claims["sub"],))
     if not row or row["status"] != "active":
         return {"active": False}
+    if "mcp" in str(claims.get("scope", "")).split():
+        from .endpoint_plane import managed_failure
+        if await managed_failure(row, claims):
+            return {"active": False}
     return {"active": True, "token_type": "access_token", "scope": claims.get("scope", ""),
             "client_id": claims.get("client_id"), "sub": claims["sub"], "jti": claims["jti"],
             "exp": claims["exp"], "iat": claims["iat"], "iss": claims["iss"], "aud": claims["aud"]}
@@ -178,6 +237,13 @@ async def introspect_jti(jti: str) -> dict:
         return {"active": False, "jti": jti, "known": False}
     revoked = await db.fetch_one("SELECT 1 FROM agent_revoked_tokens WHERE jti=%s", (jti,))
     active = not revoked and row["expires_at"] > datetime.now(UTC)
+    person = await db.fetch_one("SELECT token,status,managed_required FROM principals WHERE user_id=%s", (row["user_id"],))
+    if not person or person["status"] != "active":
+        active = False
+    elif active:
+        from .endpoint_plane import managed_failure
+        if await managed_failure(person, {"scope": "mcp", **{k: row.get(k) for k in ("device_id", "device_epoch", "device_policy")}}):
+            active = False
     return {"active": bool(active), "jti": jti, "known": True, "client_id": row["client_id"],
             "sub": row["user_id"], "exp": int(row["expires_at"].timestamp()), "revoked": bool(revoked)}
 

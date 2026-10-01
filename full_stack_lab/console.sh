@@ -44,7 +44,7 @@ usage: ./console.sh <command>
   field up [--with-lab-mcp] [--with-lab-workstations]
                          Tailscale IP에만 HTTP 게시(터널 암호화, 별도 인증서·hosts 설정 없음)
   field status           Caddy·Gateway·Console 상태와 Tailscale 주소 확인
-  field pc-command       직원 PC에서 실행할 키트 setup 명령(서버 목록은 레지스트리에서)
+  field pc-command       개인별 설치 키트 다운로드와 관리형 설치 절차
   field set-password <아이디>
                          계정 한 개의 비밀번호를 바꿈
   field register-pc <이름> [owner] [platform]
@@ -350,7 +350,7 @@ field_up() {
   echo "접속 주소       : http://${APPLIANCE_BIND}:443"
   if [[ $with_lab_mcp == 0 ]]; then echo "시험 계정       : root/root(관리자), user/user(직원) · 회원가입은 관리자 승인"; fi
   echo "내부 저장소     : http://${APPLIANCE_BIND}:443/git/"
-  echo "직원 PC 키트    : field/pc/mcpgw_pc.py — 명령은 ./console.sh field pc-command"
+  echo "직원 PC 키트    : Console 로그인 → 내 PC 연결 → 개인별 1회용 키트"
 }
 
 field_status() {
@@ -394,12 +394,13 @@ print("바꿨습니다" if n else "그런 계정이 없습니다")
 sys.exit(0 if n else 1)' "$email"
 }
 
-# 직원에게 줄 setup 명령 한 줄. 서버 목록은 레지스트리에서 읽는다(손으로 옮기지 않는다, D-30).
+# 설치 권한은 OS 관리자에게 있고, 가입자용 grant는 Console 인증 뒤 생성한다.
 field_pc_command() {
-  local servers
-  servers="$(docker compose "${FIELD_COMPOSE[@]}" exec -T gateway python -c 'from app.registry import servers; print(",".join(sorted(servers())))')"
-  if [[ -z "$servers" ]]; then echo "활성화된 MCP 서버가 없습니다. 도입 승인 후 레지스트리와 계약을 등록하세요."; return; fi
-  echo "python3 mcpgw_pc.py setup --url http://${APPLIANCE_BIND}:443 --servers ${servers}"
+  echo "http://${APPLIANCE_BIND}:443/workspace 로그인 → 내 PC 연결 → 설치 키트 다운로드"
+  echo "unzip mcp-managed-kit.zip -d mcp-managed-kit"
+  echo "cd mcp-managed-kit"
+  echo "조직 IT가 승인된 설치기를 확인한 뒤: sudo python3 managed-linux.py install --user 일반사용자계정"
+  echo "설치 뒤 Console 단말 표에서 실제 호스트 집행 확인 후 독립 관리자 활성화"
 }
 
 field_dispatch() {
@@ -487,6 +488,7 @@ case "${1:-up}" in
     docker compose exec -T gateway python -m app.endpoint_plane
     docker compose exec -T gateway python -m app.acceptance | tee reports/acceptance.json
     docker compose exec -T gateway python - < tests/pac_boundary_check.py
+    docker compose exec -T gateway python - < tests/managed_enrollment_check.py
     python3 tests/reservation_effect_check.py | tee reports/reservation-effects.json
     harness_check | tee reports/harnesses.txt
     AGENT_MODE=scripted workday all --mode scripted --check | tee reports/workday.txt

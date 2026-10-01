@@ -49,7 +49,7 @@ def nft_rules(uid: int, addresses: list[str], port: int) -> str:
             f"meta skuid {uid} counter reject with icmpx type admin-prohibited\n }}\n}}\n")
 
 
-def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper: bool) -> str:
+def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper: bool, managed: bool = False) -> str:
     common = f"""
   #include <abstractions/base>
   /etc/** r,
@@ -58,6 +58,10 @@ def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper
   /dev/tty rw,
   /dev/pts/** rw,
   /proc/** r,
+  /run/systemd/resolve/{{stub-resolv.conf,resolv.conf}} r,
+  /sys/kernel/mm/transparent_hugepage/enabled r,
+  /sys/fs/cgroup/**/cpu.max r,
+  /sys/fs/cgroup/**/memory.{{max,high}} r,
   owner {home}/** rwk,
   owner {home}/ r,
   /tmp/** rwk,
@@ -65,7 +69,7 @@ def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper
   network inet stream,
   network inet6 stream,
   signal (receive, send) peer={name}*,
-  /usr/{{bin,sbin}}/{{bash,sh,cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,date,timeout,sleep,true,false,tr,locale,locale-check}} ix,
+  /usr/{{bin,sbin}}/{{bash,dash,sh,cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,uname,date,timeout,sleep,true,false,tr,locale,locale-check,getconf}} ix,
   # No general interpreter, package manager, git, downloaded executable or Unix IPC.
 """
     clients = "".join(f"  {BASE}/{name}/{key} px -> {name}-{key}-entry,\n" for key in binaries)
@@ -82,7 +86,9 @@ def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper
 profile {name}-{key} {{
 {common}
   {binary} mr,
-{credential}}}
+{credential}
+  {f'unix (send, receive) type=stream peer=(label={name}-credential),' if managed else ''}
+}}
 """
     if helper:
         python = Path("/usr/bin/python3").resolve()
@@ -97,6 +103,7 @@ profile {name}-{key} {{
   network inet stream,
   network inet6 stream,
   {python} ix,
+  {f'network unix stream, /run/{name}.sock rw,' if managed else ''}
 }}
 """
     return text
@@ -138,6 +145,7 @@ def main() -> None:
     parser.add_argument("--gateway-port", type=int, default=443)
     parser.add_argument("--client", action="append", default=[], help="codex=/root-owned/native/binary")
     parser.add_argument("--helper-source", help="root 소유 직원 PC 키트 mcpgw_pc.py")
+    parser.add_argument("--managed-agent", help="root 관리형 단말 서비스의 header 명령")
     parser.add_argument("--rollback", action="store_true")
     parser.add_argument("--self-check", action="store_true")
     args = parser.parse_args()
@@ -203,10 +211,14 @@ def main() -> None:
         helper.chmod(0o644)
         wrapper(folder / "header-helper", Path("/usr/bin/python3").resolve(), person.pw_dir, args.user,
                 fixed=["-I", "-S", str(helper), "--home", person.pw_dir + "/.mcpgw", "header"])
+    if args.managed_agent:
+        source = trusted_binary(args.managed_agent)
+        wrapper(folder / "header-helper", Path("/usr/bin/python3").resolve(), person.pw_dir, args.user,
+                fixed=["-I", "-S", str(source), "header", "--socket", f"/run/{name}.sock"])
     rules = folder / "egress.nft"
     rules.write_text(nft_rules(person.pw_uid, args.gateway_ip, args.gateway_port))
     run("nft", "-c", "-f", str(rules))
-    policy.write_text(profile(name, shell, person.pw_dir, binaries, bool(args.helper_source)))
+    policy.write_text(profile(name, shell, person.pw_dir, binaries, bool(args.helper_source or args.managed_agent), bool(args.managed_agent)))
     run("apparmor_parser", "-r", str(policy))
     # An atomic batch replaces only this UID's table, never the host's ruleset.
     run("nft", "-f", str(rules))

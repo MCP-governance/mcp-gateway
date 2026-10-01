@@ -50,12 +50,16 @@ services:
   # RFC 8414 authorization_servers, Console 리다이렉트)도 실제 호스트 이름이어야 한다.
   gateway:
     environment:
+      MCP_FIELD_MODE: ${FIELD_ACCOUNTS_MODE:-1}
+      ENDPOINT_TAILSCALE_NODE_ID: ${ENDPOINT_TAILSCALE_NODE_ID:-}
+      ENDPOINT_GATEWAY_IPS: ${ENDPOINT_GATEWAY_IPS:-${APPLIANCE_BIND}}
       REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
       MCP_SCAN_BASE_URL: ${MCP_SCAN_BASE_URL:-}
       MCP_SCAN_MODEL: ${MCP_SCAN_MODEL:-}
       MCP_SCAN_API_KEY: ${MCP_SCAN_API_KEY:-}
       MCP_SCAN_AUTO_ON_ANOMALY: ${MCP_SCAN_AUTO_ON_ANOMALY:-1}
       GATEWAY_PUBLIC_MCP_URL: http://${APPLIANCE_BIND}:443/mcp/
+      GATEWAY_PUBLIC_URL: http://${APPLIANCE_BIND}:443
       CONSOLE_PUBLIC_URL: http://${APPLIANCE_BIND}:443/
       IDP_ISSUER: http://${APPLIANCE_BIND}:443
       # IDP_ISSUER는 PC에 알리는 공개 주소다. 컨테이너 안에서는 그 이름이 풀리지 않으므로 Gateway가 직접
@@ -66,6 +70,11 @@ services:
 
   gateway-sse:
     environment:
+      MCP_FIELD_MODE: ${FIELD_ACCOUNTS_MODE:-1}
+      IDP_ISSUER: http://${APPLIANCE_BIND}:443
+      GATEWAY_PUBLIC_URL: http://${APPLIANCE_BIND}:443
+      ENDPOINT_TAILSCALE_NODE_ID: ${ENDPOINT_TAILSCALE_NODE_ID:-}
+      ENDPOINT_GATEWAY_IPS: ${ENDPOINT_GATEWAY_IPS:-${APPLIANCE_BIND}}
       REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
     volumes:
       - ./registry/field:/registry-field:ro
@@ -76,7 +85,12 @@ services:
     # 직원이 Console에서 PC 키트를 직접 받는다(/static/kit/mcpgw_pc.py). 관리자가 파일을 따로 전달하지 않는다.
     volumes:
       - ./field/pc/mcpgw_pc.py:/app/app/agent_static/kit/mcpgw_pc.py:ro
+      - ../endpoint-agent:/endpoint-kit:ro
+      - ./registry/field:/registry-field:ro
     environment:
+      REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
+      ENDPOINT_TAILSCALE_NODE_ID: ${ENDPOINT_TAILSCALE_NODE_ID:-}
+      ENDPOINT_GATEWAY_IPS: ${ENDPOINT_GATEWAY_IPS:-${APPLIANCE_BIND}}
       IDP_ISSUER: http://${APPLIANCE_BIND}:443
       MCP_FIELD_MODE: ${FIELD_ACCOUNTS_MODE:-1}
       GITEA_ADMIN_URL: http://corp-git:3000

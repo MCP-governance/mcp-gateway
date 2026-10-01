@@ -57,6 +57,9 @@ CREATE TABLE IF NOT EXISTS oauth_issued_tokens (
   expires_at timestamptz NOT NULL
 );
 CREATE INDEX IF NOT EXISTS oauth_issued_tokens_user_idx ON oauth_issued_tokens(user_id, issued_at DESC);
+ALTER TABLE oauth_issued_tokens ADD COLUMN IF NOT EXISTS device_id text;
+ALTER TABLE oauth_issued_tokens ADD COLUMN IF NOT EXISTS device_epoch text;
+ALTER TABLE oauth_issued_tokens ADD COLUMN IF NOT EXISTS device_policy text;
 CREATE TABLE IF NOT EXISTS oauth_refresh_tokens (
   id uuid PRIMARY KEY,
   family_id uuid NOT NULL,

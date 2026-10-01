@@ -359,3 +359,33 @@ CREATE UNIQUE INDEX IF NOT EXISTS endpoint_listeners_unique
   ON endpoint_listeners(endpoint_id, fingerprint);
 CREATE INDEX IF NOT EXISTS endpoint_listeners_class_idx
   ON endpoint_listeners(classification, observed_at DESC);
+
+-- Installation and enrollment do not attest to OS enforcement. Only an independent
+-- organization administrator activates a device after checking the actual host.
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS managed_state text NOT NULL DEFAULT 'unmanaged'
+  CHECK (managed_state IN ('unmanaged','pending','active','quarantined'));
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS device_epoch text;
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS local_username text;
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS local_uid integer;
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS policy_hash text;
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS heartbeat_at timestamptz;
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS configuration_hashes jsonb NOT NULL DEFAULT '{}';
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS enforcement_checks jsonb NOT NULL DEFAULT '{}';
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS activated_by text;
+ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS activated_at timestamptz;
+CREATE TABLE IF NOT EXISTS endpoint_enrollment_tokens (
+  token_hash text PRIMARY KEY,
+  owner_token text NOT NULL REFERENCES principals(token),
+  issued_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL,
+  consumed_at timestamptz,
+  endpoint_id text REFERENCES endpoint_agents(endpoint_id)
+);
+CREATE TABLE IF NOT EXISTS endpoint_managed_events (
+  id bigserial PRIMARY KEY,
+  endpoint_id text,
+  owner_token text NOT NULL,
+  kind text NOT NULL,
+  detail jsonb NOT NULL DEFAULT '{}',
+  observed_at timestamptz NOT NULL DEFAULT now()
+);

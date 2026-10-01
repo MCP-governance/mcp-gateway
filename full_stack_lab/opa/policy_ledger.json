@@ -3255,6 +3255,58 @@
       "pac_ids": [
         "PAC-02"
       ]
+    },
+    "ENDPOINT-MANAGED-001": {
+      "name": "관리형 단말 연결 필수",
+      "purpose": "가입자에게 등록·활성화된 일반 단말의 최근 정책 확인과 단말 연결 인증을 요구한다.",
+      "enforced_by": "gateway",
+      "risk_ids": [],
+      "requirement_ids": [],
+      "control_ids": [],
+      "principle_ids": [],
+      "owner": "거버넌스팀",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "관리형 필수 계정의 MCP HTTP/SSE/실행 경로",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "principals.managed_required",
+        "verified.device_id",
+        "device.status",
+        "device.managed_state",
+        "device.heartbeat_at",
+        "device.policy_hash"
+      ],
+      "condition": "미등록·미활성·격리·폐기·heartbeat 만료·정책 불일치",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 9,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "무결성 통제라 예외를 적용하지 않는다(프레임워크 8.6).",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-09-16T00:00:00Z",
+      "obligations": [
+        "evidence.enhanced",
+        "alert.security"
+      ],
+      "test_ids": [
+        "managed_enrollment_check",
+        "PJ1-managed-install"
+      ],
+      "pac_candidate_id": null,
+      "pac_ids": [
+        "PAC-01",
+        "PAC-03",
+        "PAC-04"
+      ]
     }
   }
 }

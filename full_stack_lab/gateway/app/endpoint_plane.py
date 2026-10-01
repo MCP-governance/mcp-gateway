@@ -25,7 +25,10 @@ import hmac
 import ipaddress
 import os
 import secrets
+import uuid
+from datetime import UTC, datetime, timedelta
 from typing import Any
+from urllib.parse import urlsplit
 
 from psycopg.types.json import Jsonb
 
@@ -386,7 +389,8 @@ async def issue_device(endpoint_id: str, hostname: str, platform: str, owner_tok
              hostname=EXCLUDED.hostname, platform=EXCLUDED.platform,
              owner_token=EXCLUDED.owner_token, key_hash=EXCLUDED.key_hash,
              key_prefix=EXCLUDED.key_prefix, scopes=EXCLUDED.scopes,
-             status='active', issued_by=EXCLUDED.issued_by, issued_at=now()""",
+             status='active', issued_by=EXCLUDED.issued_by, issued_at=now(),
+             managed_state='unmanaged',device_epoch=NULL,heartbeat_at=NULL,activated_at=NULL,activated_by=NULL""",
         (endpoint_id, hostname, platform, owner_token, _hash_key(raw), raw[:8],
          Jsonb(sorted(set(scopes))), issued_by),
     )
@@ -401,6 +405,9 @@ async def revoke_device(endpoint_id: str, actor: str) -> dict:
     )
     if not changed:
         raise ValueError("등록되지 않은 엔드포인트입니다.")
+    row = await db.fetch_one("SELECT owner_token FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
+    if row and row["owner_token"]:
+        await managed_event(endpoint_id, row["owner_token"], "revoked", {"actor": actor})
     return {"endpoint_id": endpoint_id, "status": "revoked"}
 
 
@@ -428,6 +435,8 @@ async def devices() -> list[dict]:
         """SELECT a.endpoint_id, a.hostname, a.platform, a.agent_version, a.owner_token,
                   a.scopes, a.status, a.issued_by, a.issued_at, a.enrolled_at,
                   a.last_seen_at, a.last_scan_at, p.display_name AS owner_name,
+                  a.managed_state, a.policy_hash, a.heartbeat_at, a.configuration_hashes,
+                  a.enforcement_checks, a.activated_by, a.activated_at, a.local_username, a.local_uid,
                   (SELECT count(*) FROM endpoint_inventory i
                     WHERE i.endpoint_id = a.endpoint_id AND i.classification='shadow')
                     AS config_shadow,
@@ -442,11 +451,160 @@ async def devices() -> list[dict]:
     result = []
     for row in rows:
         item = dict(row)
-        for key in ("issued_at", "enrolled_at", "last_seen_at", "last_scan_at"):
+        for key in ("issued_at", "enrolled_at", "last_seen_at", "last_scan_at", "heartbeat_at", "activated_at"):
             if item.get(key):
                 item[key] = item[key].isoformat()
         result.append(item)
     return result
+
+
+# Managed enrollment reuses the device-key boundary. The key stays with the root
+# service; the ordinary user receives only a short-lived, device-bound MCP JWT.
+HEARTBEAT_SECONDS = 180
+MANAGED_CHECKS = {"apparmor_enforcing", "nftables_active", "protected_configs", "ordinary_account"}
+
+
+async def managed_event(endpoint_id: str | None, owner: str, kind: str, detail: dict) -> None:
+    await db.execute(
+        "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,%s,%s)",
+        (endpoint_id, owner, kind, Jsonb(detail)))
+
+
+async def enrollment_token(owner: str) -> dict:
+    raw = secrets.token_urlsafe(32)
+    expires = datetime.now(UTC) + timedelta(minutes=30)
+    await db.execute(
+        "INSERT INTO endpoint_enrollment_tokens(token_hash,owner_token,expires_at) VALUES (%s,%s,%s)",
+        (_hash_key(raw), owner, expires))
+    await managed_event(None, owner, "kit-issued", {"expires_at": expires.isoformat()})
+    return {"enrollment_token": raw, "expires_at": expires.isoformat()}
+
+
+async def consume_enrollment(raw: str, key: str, hostname: str, username: str, uid: int) -> dict:
+    endpoint_id = "managed-" + str(uuid.uuid4())
+    async with db.transaction() as connection:
+        grant = await (await connection.execute(
+            """UPDATE endpoint_enrollment_tokens SET consumed_at=now()
+                 WHERE token_hash=%s AND consumed_at IS NULL AND expires_at>now()
+                   AND EXISTS (SELECT 1 FROM principals p WHERE p.token=owner_token AND p.status='active')
+                 RETURNING owner_token""", (_hash_key(raw),))).fetchone()
+        if not grant:
+            raise PermissionError("설치 키트가 만료·소비됐거나 계정이 비활성 상태입니다. 새 키트를 받으세요.")
+        await connection.execute(
+            """INSERT INTO endpoint_agents(endpoint_id,hostname,platform,agent_version,owner_token,
+                 key_hash,key_prefix,scopes,status,issued_by,issued_at,managed_state,device_epoch,local_username,local_uid)
+               VALUES (%s,%s,'linux','managed-1',%s,%s,%s,%s,'active',%s,now(),'pending',%s,%s,%s)""",
+            (endpoint_id, hostname, grant["owner_token"], _hash_key(key), key[:8],
+             Jsonb(list(DEVICE_SCOPES)), grant["owner_token"], str(uuid.uuid4()), username, uid))
+        await connection.execute(
+            "UPDATE endpoint_enrollment_tokens SET endpoint_id=%s WHERE token_hash=%s", (endpoint_id, _hash_key(raw)))
+        await connection.execute("UPDATE principals SET managed_required=true WHERE token=%s", (grant["owner_token"],))
+        await connection.execute(
+            "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'enrolled',%s)",
+            (endpoint_id, grant["owner_token"], Jsonb({"local_username": username, "local_uid": uid})))
+    return await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
+
+
+async def managed_policy(device: dict) -> dict:
+    from . import registry
+    if not device.get("device_epoch"):
+        raise PermissionError("관리형 설치로 등록한 장치가 아닙니다.")
+    public = os.getenv("IDP_ISSUER", "").rstrip("/")
+    parsed = urlsplit(public)
+    if parsed.scheme not in {"https", "http"} or not parsed.hostname or parsed.path or parsed.username or parsed.password or parsed.query or parsed.fragment:
+        raise ValueError("관리형 설치의 Gateway 공개 주소가 구성되지 않았습니다.")
+    addresses = os.getenv("ENDPOINT_GATEWAY_IPS", parsed.hostname).split(",")
+    addresses = [str(ipaddress.ip_address(a.strip())) for a in addresses]
+    rows = await db.fetch_all("SELECT id FROM mcp_servers WHERE status='READY' AND lifecycle='OPERATING' ORDER BY id")
+    servers = [r["id"] for r in rows if registry.allowed_principals(r["id"]) is None
+               or device["owner_token"] in registry.allowed_principals(r["id"])]
+    helper = f'/usr/local/lib/mcpgw-enforcement/mcpgw-{device["local_username"]}/header-helper'
+    routes = {s: public + "/mcp/" + s + "/" for s in servers}
+    files = {
+        "managed-mcp.json": json_document({"mcpServers": {s: {"type": "http", "url": url,
+                    "headersHelper": helper, "timeout": 300000} for s, url in routes.items()}}),
+        "managed-settings.json": json_document({"allowAllClaudeAiMcps": False, "disableClaudeAiConnectors": True,
+                    "allowManagedMcpServersOnly": True, "allowedMcpServers": [{"serverUrl": u} for u in routes.values()],
+                    "strictKnownMarketplaces": []}),
+        "requirements.toml": 'allowed_web_search_modes = ["disabled"]\nallow_browser_and_computer_use = false\n'
+                    + "".join(f'\n[mcp_servers.{s}]\nidentity = {{ url = {json_document(u).strip()} }}\n' for s, u in routes.items())
+                    + '\n[features]\napps = false\nplugins = false\nbrowser_use = false\ncomputer_use = false\n'
+                    + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n',
+        "managed_config.toml": 'mcp_oauth_credentials_store = "file"\nweb_search = "disabled"\n'
+                    + "".join(f'\n[mcp_servers.{s}]\nurl = {json_document(u).strip()}\nhttp_headers_helper = {json_document(helper).strip()}\n'
+                         'default_tools_approval_mode = "approve"\nstartup_timeout_sec = 30\ntool_timeout_sec = 300\n' for s, u in routes.items()),
+    }
+    policy = {"version": 1, "gateway_url": public, "gateway_ips": addresses, "gateway_port": parsed.port or (443 if parsed.scheme == "https" else 80),
+              "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), "servers": servers,
+              "local_username": device["local_username"], "local_uid": device["local_uid"],
+              "heartbeat_seconds": 60, "max_heartbeat_age": HEARTBEAT_SECONDS, "files": files}
+    policy["configuration_hashes"] = {k: hashlib.sha256(v.encode()).hexdigest() for k, v in files.items()}
+    policy["policy_hash"] = hashlib.sha256(json_document(policy).encode()).hexdigest()
+    return policy
+
+
+def json_document(value) -> str:
+    import json
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+
+
+async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict) -> dict:
+    policy = await managed_policy(device)
+    compliant = (policy_hash == policy["policy_hash"] and hashes == policy["configuration_hashes"]
+                 and set(checks) == MANAGED_CHECKS and all(value is True for value in checks.values()))
+    async with db.transaction() as connection:
+        row = await (await connection.execute(
+            """UPDATE endpoint_agents SET heartbeat_at=now(),last_seen_at=now(),policy_hash=%s,
+                 configuration_hashes=%s,enforcement_checks=%s,
+                 managed_state=CASE WHEN %s THEN managed_state ELSE 'quarantined' END
+               WHERE endpoint_id=%s AND status='active' RETURNING managed_state""",
+            (policy_hash, Jsonb(hashes), Jsonb(checks), compliant, device["endpoint_id"]))).fetchone()
+        if not row:
+            raise PermissionError("폐기한 장치는 heartbeat로 복구할 수 없습니다.")
+        if not compliant or row["managed_state"] != device["managed_state"]:
+            await connection.execute(
+                "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'quarantined',%s)",
+                (device["endpoint_id"], device["owner_token"], Jsonb({"policy_hash": policy_hash, "checks": checks,
+                 "policy_match": policy_hash == policy["policy_hash"],
+                 "mismatched_files": sorted(name for name, expected in policy["configuration_hashes"].items()
+                                            if hashes.get(name) != expected)})))
+    return {"state": row["managed_state"], "compliant": compliant, "policy_hash": policy["policy_hash"]}
+
+
+async def activate_managed(endpoint_id: str, actor: str, expected_hash: str, note: str) -> dict:
+    # Compare-and-set: the reviewer approves the state actually displayed, not a
+    # later changed enrollment or a heartbeat supplied by another device.
+    device = await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
+    if not device or device["owner_token"] == actor:
+        raise ValueError("등록 장치가 없거나 자기 소유 장치는 스스로 활성화할 수 없습니다.")
+    policy = await managed_policy(device)
+    changed = await db.execute(
+        """UPDATE endpoint_agents SET managed_state='active',activated_by=%s,activated_at=now()
+           WHERE endpoint_id=%s AND status='active' AND policy_hash=%s AND policy_hash=%s
+             AND heartbeat_at>now()-interval '180 seconds' AND configuration_hashes=%s AND enforcement_checks=%s""",
+        (actor, endpoint_id, expected_hash, policy["policy_hash"], Jsonb(policy["configuration_hashes"]),
+         Jsonb({key: True for key in MANAGED_CHECKS})))
+    if not changed:
+        raise ValueError("최근 정상 설치 증거가 없거나 검토한 정책이 바뀌었습니다. 장치 설치를 확인하세요.")
+    await managed_event(endpoint_id, device["owner_token"], "activated", {"actor": actor, "note": note, "policy_hash": expected_hash})
+    return {"endpoint_id": endpoint_id, "managed_state": "active"}
+
+
+async def managed_failure(principal: dict, claims: dict, *, mint: bool = False) -> str | None:
+    if not principal.get("managed_required") and not claims.get("device_id"):
+        return None
+    if not claims.get("device_id") or (not mint and "mcp" not in str(claims.get("scope", "")).split()):
+        return "관리형 설치·활성화한 단말의 MCP 인증이 필요합니다. 내 PC 연결에서 새 키트를 설치하세요."
+    device = await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (claims["device_id"],))
+    if (not device or device["owner_token"] != principal["token"] or device["status"] != "active"
+            or device["managed_state"] != "active" or device["device_epoch"] != claims.get("device_epoch")):
+        return "단말이 미활성·격리·폐기됐거나 해당 사용자에게 등록된 장치가 아닙니다."
+    if not device["heartbeat_at"] or (datetime.now(UTC) - device["heartbeat_at"]).total_seconds() >= HEARTBEAT_SECONDS:
+        return "단말 정책 heartbeat가 만료돼 연결을 중단했습니다."
+    policy = await managed_policy(device)
+    if device["policy_hash"] != policy["policy_hash"] or (not mint and claims.get("device_policy") != policy["policy_hash"]):
+        return "단말 정책이 최신 정책과 일치하지 않아 연결을 중단했습니다."
+    return None
 
 
 # ── 탐색 정책 ────────────────────────────────────────────────────────────────

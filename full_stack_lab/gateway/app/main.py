@@ -11,6 +11,7 @@ import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
+from psycopg.types.json import Jsonb
 
 from . import core, db, decommission, endpoint_plane, privacy
 from .core import (
@@ -28,7 +29,7 @@ from .core import (
     verify_audit_chain,
 )
 from .mcp_facade import build_mcp, transport_security
-from .agent_contract import CONSOLE_SCOPE, authenticated_user
+from .agent_contract import CONSOLE_SCOPE, authenticate, authenticated_user
 from .release import build_info, policy_info
 from . import activity, registry
 
@@ -63,13 +64,24 @@ class RequireBearer:
         if scope["type"] == "http":
             authorization = dict(scope.get("headers") or []).get(b"authorization", b"").decode("latin-1")
             try:
-                scope = dict(scope, authenticated_mcp_user=await authenticated_user(authorization or None))
+                scope = dict(scope, authenticated_mcp_user=await authenticated_user(authorization or None, require_mcp=True))
             except HTTPException as exc:
+                if (exc.headers or {}).get("X-Endpoint-Policy") == "ENDPOINT-MANAGED-001":
+                    _, claims = authenticate(authorization)
+                    await db.execute(
+                        """INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail)
+                           SELECT %s,p.token,'mcp-auth-denied',%s FROM principals p WHERE p.user_id=%s""",
+                        (claims.get("device_id"), Jsonb({"reason": exc.detail, "path": scope.get("path", "")[:160]}), claims["sub"]))
                 challenge = f'Bearer resource_metadata="{RESOURCE_METADATA_URL}"'
                 if authorization:
                     challenge += ', error="invalid_token"'
-                headers = {"WWW-Authenticate": challenge} if exc.status_code == 401 else {}
-                await JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=headers)(scope, receive, send)
+                headers = dict(exc.headers or {})
+                if exc.status_code == 401:
+                    headers["WWW-Authenticate"] = challenge
+                body = {"detail": exc.detail}
+                if headers.get("X-Endpoint-Policy"):
+                    body["policy_id"] = headers["X-Endpoint-Policy"]
+                await JSONResponse(body, status_code=exc.status_code, headers=headers)(scope, receive, send)
                 return
         await self.app(scope, receive, send)
 
@@ -844,6 +856,17 @@ class EndpointOSReport(StrictModel):
     events: list[EndpointOSEvent] = Field(max_length=100)
 
 
+class ManagedHeartbeat(StrictModel):
+    policy_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    configuration_hashes: dict[str, str] = Field(max_length=4)
+    checks: dict[str, bool] = Field(max_length=4)
+
+
+class ManagedActivation(StrictModel):
+    policy_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    note: str = Field(min_length=20, max_length=1000)
+
+
 class ListenerFinding(StrictModel):
     source: Literal["local-socket", "network", "stdio-process"]
     address: str = Field(min_length=1, max_length=200)
@@ -909,6 +932,32 @@ async def endpoint_device_revoke(endpoint_id: str, user: dict = Depends(admin_ca
 @app.get("/api/endpoint/devices")
 async def endpoint_device_list(user: dict = Depends(admin_caller)) -> dict:
     return {"devices": await endpoint_plane.devices()}
+
+
+@app.get("/api/endpoint/managed-policy")
+async def endpoint_managed_policy(device: dict = Depends(endpoint_device("enforcement"))) -> dict:
+    try:
+        return await endpoint_plane.managed_policy(device)
+    except (PermissionError, ValueError) as exc:
+        raise HTTPException(403, str(exc)) from exc
+
+
+@app.post("/api/endpoint/heartbeat")
+async def endpoint_heartbeat(request: ManagedHeartbeat,
+                             device: dict = Depends(endpoint_device("enforcement"))) -> dict:
+    try:
+        return await endpoint_plane.heartbeat(device, request.policy_hash, request.configuration_hashes, request.checks)
+    except PermissionError as exc:
+        raise HTTPException(403, str(exc)) from exc
+
+
+@app.post("/api/endpoint/devices/{endpoint_id}/activate")
+async def endpoint_managed_activate(endpoint_id: str, request: ManagedActivation,
+                                    user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await endpoint_plane.activate_managed(endpoint_id, user["principal"], request.policy_hash, request.note)
+    except (ValueError, PermissionError) as exc:
+        raise HTTPException(409, str(exc)) from exc
 
 
 @app.post("/api/endpoint/enroll", status_code=201)
@@ -1003,6 +1052,7 @@ async def endpoint_inventory(classification: str | None = None,
         "listeners": await endpoint_plane.listeners(classification),
         "scan_policy": await endpoint_plane.scan_policy(),
         "os_events": await endpoint_plane.os_events(),
+        "managed_events": await db.fetch_all("SELECT * FROM endpoint_managed_events ORDER BY id DESC LIMIT 200"),
     }
 
 

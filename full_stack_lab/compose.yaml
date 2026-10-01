@@ -128,7 +128,9 @@ services:
       MCP_UPSTREAM_CREDENTIALS_FILE: ${MCP_UPSTREAM_CREDENTIALS_FILE:-}
       # IdP metadata that the Gateway republishes as RFC 9728 protected-resource
       # metadata, and uses to collect RFC 7009 / 7662 evidence in termination cases.
-      IDP_ISSUER: http://agent-service:8000
+      IDP_ISSUER: ${IDP_ISSUER:-http://agent-service:8000}
+      IDP_INTERNAL_URL: http://agent-service:8000
+      ENDPOINT_GATEWAY_IPS: ${ENDPOINT_GATEWAY_IPS:-127.0.0.1}
       CONSOLE_PUBLIC_URL: http://localhost:${CONSOLE_PORT:-8000}
       GATEWAY_PUBLIC_MCP_URL: http://gateway:8080/mcp/
       GITEA_ADMIN_URL: http://corp-git:3000
@@ -187,7 +189,10 @@ services:
       INTAKE_REPORT_DIR: /intake-reports
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
       GATEWAY_URL: http://gateway:8080
-      IDP_ISSUER: http://agent-service:8000
+      IDP_ISSUER: ${IDP_ISSUER:-http://agent-service:8000}
+      ENDPOINT_GATEWAY_IPS: ${ENDPOINT_GATEWAY_IPS:-127.0.0.1}
+      REGISTRY_DIR: /registry
+      REGISTRY_RUNTIME_DIR: /registry-runtime
       # The only service that holds the signing key, because it is the issuer.
       AGENT_JWT_PRIVATE_KEY: ${AGENT_JWT_PRIVATE_KEY:?Run ./console.sh}
       AGENT_JWT_PUBLIC_KEY: ${AGENT_JWT_PUBLIC_KEY:?Run ./console.sh}
@@ -208,6 +213,9 @@ services:
       - "127.0.0.1:${CONSOLE_PORT:-8000}:8000"
     volumes:
       - intake_reports:/intake-reports:ro
+      - ./registry:/registry:ro
+      - registry_runtime:/registry-runtime:ro
+      - ../endpoint-agent:/endpoint-kit:ro
     depends_on:
       gateway: {condition: service_started}
     networks: [edge, office, data, telemetry, model]
