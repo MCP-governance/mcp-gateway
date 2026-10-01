@@ -13,6 +13,7 @@ Ported from origin/main cc086e5 (PDF integration) to v2's real tools. Two change
 
 from __future__ import annotations
 
+import asyncio
 import os
 from collections.abc import Callable
 
@@ -22,6 +23,12 @@ from .classify import SECRET_PATTERNS
 
 ANALYZER = os.getenv("PRESIDIO_ANALYZER_URL", "http://presidio-analyzer:3000")
 ANONYMIZER = os.getenv("PRESIDIO_ANONYMIZER_URL", "http://presidio-anonymizer:3000")
+# The analyzer serves requests in turn. Six concurrent documentation results queued
+# past an 8 s timeout on the appliance and a public result was withheld (fail-closed,
+# D-59 pj1). Queue here, where the wait is not the request's timeout, and give the
+# request itself room. Still fail-closed when Presidio is really down.
+TIMEOUT = float(os.getenv("PRESIDIO_TIMEOUT_SECONDS", "20"))
+_slots = asyncio.Semaphore(int(os.getenv("PRESIDIO_CONCURRENCY", "2")))
 
 # Presidio ships English recognizers. These request-local patterns cover the Korean
 # identifiers and credential assignments used by this lab without forking Presidio.
@@ -62,7 +69,7 @@ async def analyze(text: str, ignore: Ignore | None = None) -> list[dict]:
     if len(text or "") < MIN_CHARS:
         return []
     try:
-        async with httpx.AsyncClient(timeout=8, trust_env=False) as client:
+        async with _slots, httpx.AsyncClient(timeout=TIMEOUT, trust_env=False) as client:
             response = await client.post(ANALYZER + "/analyze", json={
                 "text": text, "language": "en", "score_threshold": 0.6,
                 "entities": ENTITIES, "ad_hoc_recognizers": RECOGNIZERS,
@@ -96,7 +103,7 @@ async def mask_text(text: str, ignore: Ignore | None = None) -> tuple[str, list[
     if not findings:
         return text, []
     try:
-        async with httpx.AsyncClient(timeout=8, trust_env=False) as client:
+        async with _slots, httpx.AsyncClient(timeout=TIMEOUT, trust_env=False) as client:
             response = await client.post(ANONYMIZER + "/anonymize", json={
                 "text": text, "analyzer_results": findings,
                 "anonymizers": {"DEFAULT": {"type": "replace", "new_value": "[REDACTED]"}},

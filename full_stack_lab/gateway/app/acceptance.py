@@ -515,6 +515,16 @@ async def console_registration_expires() -> str:
     return f"/mcp/{server_id}/ 도구 1개 · 직접 등록 409 · 자기 승인 403 · 주체 범위 차단 · 기한 만료 차단 · 해제 후 404"
 
 
+async def oversized_arguments_not_sent() -> str:
+    """D-59: the arguments go to the server as they are; a size the schema never bounded
+    is refused before dispatch instead of being handed to the provider."""
+    await operating("git")
+    out = await call("employee", "git_log", {"repo_path": "/srv/git/" + "a" * 70_000, "max_count": 1}, API + "/mcp/git/")
+    expect(out.get("decision") == "Block" and out.get("policy_id") == "P-INPUT-SCHEMA-001"
+           and not out.get("upstream_attempted"), f"64KB 넘는 인자: {out.get('decision')} {out.get('policy_id')}")
+    return "70KB 인자 → P-INPUT-SCHEMA-001 · 미전송"
+
+
 async def audit_chain_intact() -> str:
     result = await verify_audit_chain()
     expect(result["intact"], f"감사 체인 손상: {result}")
@@ -579,6 +589,7 @@ async def _run() -> dict:
         ("server-check-changes-nothing", server_check_is_side_effect_free()),
         ("console-registration-pins-and-expires", console_registration_expires()),
         ("invited-employee-enrollment", invitation_enrollment()),
+        ("oversized-arguments-not-sent", oversized_arguments_not_sent()),
         # PDF integration (Presidio, MCP-DATA-EGRESS-001, P-CHAIN-001) - order matters:
         # the chain check relies on the important read made by the first one.
         ("pii-masked-in-output", pii_masked_in_output()),

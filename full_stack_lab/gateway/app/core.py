@@ -70,6 +70,7 @@ BLOCK_STREAK_MINUTES = int(os.getenv("BLOCK_STREAK_MINUTES", "10"))
 # shorter and a slow tool frees its own place while still running.
 CONCURRENCY_LIMIT = int(os.getenv("CONCURRENCY_LIMIT", "4"))
 RESERVATION_TTL_SECONDS = int(os.getenv("RESERVATION_TTL_SECONDS", "120"))
+MAX_ARGUMENT_BYTES = int(os.getenv("MAX_ARGUMENT_BYTES", "65536"))
 # CTL-28이 보라는 "반복 실패"는 이 사람이 권한 경계를 더듬고 있다는 신호다.
 # 모든 차단을 세면 그 신호가 환경 상태에 묻힌다 - 서버 하나가 드리프트 상태면
 # MCP-CATALOG-001이 모든 사용자에게 걸리고, 그러면 아무 잘못 없는 사람들의 다음
@@ -1302,6 +1303,13 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             base_event.update(local_verdict(
                 "P-CONTROL-FAIL-CLOSED", "Block",
                 "호출 예약 상태 저장소를 사용할 수 없어 실행하지 않았습니다.", error=_root_cause(exc)))
+            return await _decision_payload(base_event, before)
+
+        # A schema rarely bounds length, and the arguments go to the provider as they are:
+        # a 200 KB string reached an outside provider before it refused it (D-59, pj1).
+        if len(json.dumps(arguments, ensure_ascii=False).encode()) > MAX_ARGUMENT_BYTES:
+            base_event.update(local_verdict(
+                "P-INPUT-SCHEMA-001", "Block", f"도구 인자가 {MAX_ARGUMENT_BYTES // 1024}KB를 넘어 보내지 않았습니다."))
             return await _decision_payload(base_event, before)
 
         tool_row = await db.fetch_one("SELECT * FROM mcp_tools WHERE server_id=%s AND name=%s", (server_id, tool))
