@@ -711,3 +711,38 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   이는 모델 턴 없는 native 도구 호출이다. 합성 공급자나 변조 MCP를 실측 증거로 세지 않는다.
 - **한계**: Linux SSH 일반 계정 + UID IP egress. Windows/다른 로그인 경로/root·커널 침해는 미검증.
   LLM 전송은 승인된 사내 모델 프록시 경로가 필요하다. 공급자 OAuth와 종료 C1~C4/T1~T3는 기존 모델을 그대로 따른다.
+
+## D-62 강제한 주체와 관찰한 주체를 나누고, 응답 보류를 실행 여부와 같이 기록한다 (2026-10-01)
+
+- **문제**: 통제 상태가 `enforcement: unverified` 하나뿐이라 Gateway·Endpoint·Vendor 중 누가 강제했는지,
+  관찰만 했는지, 우회 가능한지를 화면·API가 구분하지 못했다. 관리형 단말의 다른 관리자 계정(PJ1 `pj1`,
+  sudo·docker)도 표시되지 않았다. 응답은 text 밖의 형식(image·resource·embedded)이 JSON 문자열로 잘려 하네스에
+  전달됐고, 처리 결과(반환·마스킹·보류)는 사유 문장에만 있었으며, 감사 `result_preview.head`에 응답 원문 200자가
+  남았다. 공급자 호스팅 MCP의 읽기 인자는 PII 검사를 건너뛰었다. 예외·관찰 모드는 *선택된* 정책 ID만 보고
+  완화해, conflicts에 남은 PAC 거부·승인을 지울 수 있었다(현재 적용 중인 예외는 없어 잠재 결함).
+- **통제면 모델**(`integrations.py`, `GET /api/integrations`): Registry·키트 보고·단말 설정·리스너를
+  `gateway_mcp`·`gateway_backend_connector`·`vendor_native_connector`·`local_plugin_or_stdio`·`shadow_or_unknown`으로
+  나누고, 항목마다 발견 위치·시각, 소유자·단말·하네스, 출처, 관리 주체, 실제 강제 여부, 승인·만료, 우회 경로,
+  마지막 확인 시각을 계산한다. 상태는 `gateway_enforced`·`endpoint_enforced`·`vendor_enforced`·`observed_only`·
+  `unknown_not_enrolled`·`bypass_possible`. 저장된 판단이 아니라 현재 원장·장치 보고에서 매번 계산한다.
+- **Endpoint 강제의 조건**: Linux 관리형 장치, 180초 안의 heartbeat, AppArmor·UID nft·보호 설정 네 검사가 모두 참.
+  같은 단말의 다른 로그인 계정(관리자 그룹 포함), 다른 계정을 보고하지 않은 구버전 에이전트, Windows·WSL은
+  `bypass_possible`로 표시하고 관리 계정의 커널 강제 사실은 `account_state`로 따로 남긴다. 에이전트는 heartbeat에
+  `host`(커널·WSL 여부·다른 계정과 특권 그룹)를 보고한다. 이 보고는 준수 판정(격리)에 쓰지 않는다.
+- **Vendor 통제**: 벤더 관리 콘솔 상태는 이 저장소가 가져오지 못한다. 관리자가 본 콘솔 상태·허용 action·OAuth
+  scope·역할 접근을 `PUT /api/integrations/vendor-control`로 기록하면 `vendor_enforced(수기 확인)`로만 표시한다.
+  Gateway 차단으로 표시하지 않는다.
+- **응답 통제**: 결과 content는 `text`만 반환한다. 다른 형식, MCP 구조가 아닌 결과, 크기 초과, 지시문 표지,
+  마스킹 실패는 실행 후 보류(`MCP-OUTPUT-001`, `upstream_executed=true`)다. 감사에는 응답 대신
+  `{disposition, sha256, bytes, content_types, structured, masked_types}`만 남긴다(`result_preview` 열을 재사용).
+  하네스 `_meta.gateway`와 활동 API에 `response_disposition`·`response_withheld`를 싣고, 보류 응답 문구와 화면에
+  "이미 실행된 쓰기·전송은 되돌리지 않는다"를 표시한다.
+- **공급자 호스팅 인자**: registry endpoint가 외부 host면 읽기 인자도 Presidio 검사를 거치고, 탐지 PII는
+  `MCP-DATA-EGRESS-001`로 실행 전에 막는다. 서버의 데이터 등급은 돌아오는 데이터의 등급이라 이 조건에 쓰지 않는다.
+- **PAC 보존**: PAC 결과가 하나라도 있으면 예외를 적용하지 않는다. 관찰 모드도 conflicts에 항상 집행 정책
+  (PAC·MCP·INPUT_CONTRACT 등)이 있으면 완화하지 않는다. 활동 상세에 PAC 실패 목록과 conflicts를 함께 보인다.
+- **판정 근거 원칙**: 차단 근거는 transport 신원·등록·계약 해시·승인 범위·예약 상태·커널 규칙 같은 재현 가능한
+  사실이다. 지시문 표지는 실행 판정에서 승인 요청·경보로만 쓰고(P-UNTRUSTED-CONTENT-001/002), 응답에서는
+  반환 보류로만 쓴다. 호출의 허용·차단에 LLM 판단을 쓰지 않는다(A.I.G·Jev는 도입 검토 보조 자료다).
+- **한계**: 응답 보류는 이미 일어난 공급자 쪽 효과를 되돌리지 못한다. 공급자 계정의 다른 단말·웹 접근은
+  SaaS 조직 정책 소관이다(`residual`). Windows·WSL·root·Docker 권한 계정은 강제 범위 밖이다.

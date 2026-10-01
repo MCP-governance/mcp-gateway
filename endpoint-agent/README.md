@@ -34,6 +34,16 @@ root 서비스 `mcpgw-managed-<계정>.service`는 60초마다 실제 커널 규
 통제했다고 주장하지 않습니다. Windows 관측 설치에는 같은 강제성이 없습니다. 기본 UID 규칙은 Gateway 목적지만 허용하므로
 LLM·일반 인터넷 작업은 사내 승인 프록시 경로를 별도로 설계해야 합니다. 임의 외부 모델 주소를 예외로 열지 않습니다.
 
+### 같은 단말의 다른 계정(D-62)
+
+heartbeat는 `host`로 커널 버전·WSL 여부·관리 계정 밖의 로그인 계정(uid ≥ 1000, nologin 제외)과 그 계정의 특권 그룹
+(sudo·wheel·docker·lxd·libvirt·root)을 함께 보냅니다. 이 계정들은 AppArmor·UID 방화벽이 가두지 않으므로 Console
+**직원·단말 → 통제 범위**에서 관리 계정의 커널 강제(`account_state: endpoint_enforced`)와 별도로 단말 상태를
+`bypass_possible`로 표시합니다. 다른 계정을 보고하지 않는 구버전 에이전트, Windows·WSL도 같은 상태입니다.
+이 보고는 격리 판정에 쓰지 않습니다. 다른 계정이 있다고 관리 계정의 MCP 인증을 끊지 않습니다.
+
+Gateway가 먼저 이 필드를 받도록 배포된 뒤에 에이전트를 갱신합니다. 이전 Gateway는 알 수 없는 필드를 거부합니다.
+
 ### 확인·격리·제거
 
 - Console 단말 표의 상태·정책 확인 시각과 **OS 차단 / 설치·연결 이력**을 확인합니다. MCP 도구 실행 기록과 섞지 않습니다.

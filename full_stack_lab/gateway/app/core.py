@@ -81,6 +81,35 @@ DENIAL_POLICIES = ("P-AUTHZ-DENY-001", "MCP-EGRESS-001", "MCP-EGRESS-002", "P-DL
 class ResultRejected(RuntimeError):
     """Upstream answered, but its output failed the gateway's output control."""
 
+    def __init__(self, message: str, payload: Any = None):
+        super().__init__(message)
+        self.evidence = response_evidence(payload, "withheld") if payload is not None else None
+
+
+# What a client receives as tool output. Images, audio, embedded resources and
+# resource links carry bytes or URIs the output checks cannot read; they used to reach
+# the client flattened into truncated JSON text. They are withheld instead.
+RESULT_CONTENT_TYPES = {"text"}
+
+
+def response_evidence(payload: Any, disposition: str, masked_types: list[str] | None = None) -> dict:
+    """What the audit keeps of a response: digest, size and shape, never the text."""
+    content = payload.get("content") if isinstance(payload, dict) else None
+    return {"disposition": disposition, "sha256": canonical_hash(payload),
+            "bytes": len(json.dumps(payload, ensure_ascii=False).encode()),
+            "content_types": sorted({str(item.get("type")) for item in content or [] if isinstance(item, dict)}),
+            "structured": bool(isinstance(payload, dict) and payload.get("structured") is not None),
+            "masked_types": masked_types or []}
+
+
+def response_disposition(event: dict) -> str:
+    """returned · masked · withheld (executed, answer kept back) · unknown · not_executed."""
+    if (event.get("result_evidence") or {}).get("disposition"):
+        return event["result_evidence"]["disposition"]
+    if event.get("upstream_executed"):
+        return "withheld" if event.get("result") is None else "returned"
+    return "unknown" if event.get("upstream_attempted") else "not_executed"
+
 
 class DispatchRejected(RuntimeError):
     """The final checks failed before tools/call was sent."""
@@ -1064,9 +1093,16 @@ def _guarded_result(payload: dict) -> dict:
     """
     body = json.dumps(payload, ensure_ascii=False)
     if len(body.encode()) > MAX_RESULT_BYTES:
-        raise ResultRejected(f"도구 결과가 {MAX_RESULT_BYTES} byte 상한을 넘었습니다.")
+        raise ResultRejected(f"도구 결과가 {MAX_RESULT_BYTES} byte 상한을 넘었습니다.", payload)
+    content = payload.get("content")
+    if not isinstance(content, list) or any(not isinstance(item, dict) for item in content):
+        raise ResultRejected("도구 결과의 content 구조가 MCP 형식이 아닙니다.", payload)
+    if unexpected := sorted({str(item.get("type")) for item in content} - RESULT_CONTENT_TYPES):
+        raise ResultRejected(f"반환하지 않는 결과 형식입니다: {', '.join(unexpected)}", payload)
+    if any(not isinstance(item.get("text"), str) for item in content):
+        raise ResultRejected("text 결과에 문자열 본문이 없습니다.", payload)
     if reasons := poisoning.result_findings(body):
-        raise ResultRejected(f"도구 결과에 모델을 조종하는 지시가 포함되어 있습니다: {', '.join(reasons)}")
+        raise ResultRejected(f"도구 결과에 모델을 조종하는 지시가 포함되어 있습니다: {', '.join(reasons)}", payload)
     return payload
 
 
@@ -1087,12 +1123,6 @@ def _audit_payload(payload: dict) -> dict:
     return shrink(payload)
 
 
-def _audit_result(result: Any) -> dict:
-    """Enough to prove what came back and to compare it later, not a copy of it."""
-    body = json.dumps(result, ensure_ascii=False)
-    return {"sha256": canonical_hash(result), "chars": len(body), "head": body[:200]}
-
-
 # The chain is appended under a row lock, so decision writes serialise on one row.
 # That is the right trade for a single gateway; a multi-replica deployment wants one
 # chain per instance, anchored together.
@@ -1108,7 +1138,8 @@ async def _record_decision(event: dict) -> int:
         "restrictions": event.get("restrictions") or {},
         "approval_id": event.get("approval_id"),
         "request_payload": _audit_payload(event.get("request_payload") or {}),
-        "result_preview": _audit_result(event["result"]) if event.get("result") is not None else None,
+        # The response itself is not kept: digest, size, content types and what happened to it.
+        "result_preview": event.get("result_evidence") or {"disposition": response_disposition(event)},
         "error": event.get("error"),
         "enforcement": event.get("enforcement") or "enforce",
         "would_decision": event.get("would_decision"),
@@ -1369,10 +1400,13 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         # PDF 8~10쪽. What leaves the organisation is inspected before the policy sees
         # the call; if the inspection cannot run, the call does not either.
         external = any(d.external for d in cls.destinations)
+        # A provider-hosted server receives every argument, reads included: a search
+        # query sent to GitHub has left the organisation whatever the tool's action is.
+        provider_hosted = classify.url_destination((registry.server(server_id) or {}).get("endpoint")).external
         ignore = _privacy_ignore(cls)
         try:
             findings = (await privacy.analyze(_outbound_text(arguments), ignore)
-                        if cls.action in {"w", "x"} or external else [])
+                        if cls.action in {"w", "x"} or external or provider_hosted else [])
         except privacy.InspectionUnavailable as exc:
             base_event.update(local_verdict(
                 "P-DATA-INSPECTION-001", "Block", "민감정보 검사를 완료하지 못해 실행을 차단했습니다.",
@@ -1405,7 +1439,8 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "destinations": [d.view() for d in cls.destinations],
             "relationship": await _relationship_scope(server_id, cls),
             "tool": {"server": server_id, "name": tool, "action": cls.action,
-                     "base_action": cls.base_action, "restrictable": cls.restrictable},
+                     "base_action": cls.base_action, "restrictable": cls.restrictable,
+                     "provider_hosted": provider_hosted},
             "request": {"untrusted_markers": untrusted_markers(arguments), "dlp": cls.dlp,
                         "pii_types": privacy_types, "sequence_flags": sequence_flags},
             "approval": {"granted": approval_granted, "id": approval_id},
@@ -1423,8 +1458,12 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
 
         mode = await enforcement_mode()
         base_event["enforcement"] = mode
+        # A PAC denial or approval ranked below the selected policy is still in force:
+        # monitoring relaxes only when nothing always-enforced is among the findings.
+        enforced_findings = [result["policy_id"], *(c.get("policy_id", "") for c in result.get("conflicts") or []
+                                                    if c.get("decision") != "Allow")]
         if (mode == "monitor" and result["decision"] != "Allow"
-                and not result["policy_id"].startswith(ALWAYS_ENFORCED)):
+                and not any(pid.startswith(ALWAYS_ENFORCED) for pid in enforced_findings)):
             base_event["would_decision"] = result["decision"]
             base_event["would_policy_id"] = result["policy_id"]
             span.set_attribute("mcp.would_decision", result["decision"])
@@ -1473,7 +1512,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     base_event["result"], output_types = await privacy.mask_payload(raw_result, ignore)
                 except privacy.InspectionUnavailable as exc:
                     # Executed, answer withheld: MCP-OUTPUT-001 below records exactly that.
-                    raise ResultRejected(f"출력 개인정보 검사 실패: {exc}") from exc
+                    raise ResultRejected(f"출력 개인정보 검사 실패: {exc}", raw_result) from exc
+                base_event["result_evidence"] = response_evidence(
+                    raw_result, "masked" if output_types else "returned", output_types)
                 base_event["privacy_types"] = sorted(set(privacy_types) | set(output_types))
                 base_event["effective_arguments"] = effective
                 classify.remember_navigation(user_token, cls, True)
@@ -1501,6 +1542,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     restrictions=base_event.get("restrictions") or {},
                     exception=base_event.get("exception"),
                     upstream_executed=True, result=None, error=str(exc)[:500],
+                    result_evidence=exc.evidence or {"disposition": "withheld"},
                 ))
                 span.record_exception(exc)
             except Exception as exc:

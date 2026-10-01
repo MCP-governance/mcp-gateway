@@ -31,6 +31,7 @@ from .release import build_info
 from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, authenticate,
                              authenticated_user, issue_token, private_key)
 from .connectors import router as connectors_router
+from .integrations import router as integrations_router
 from .idp import router as idp_router
 
 STATIC_DIR = Path(__file__).parent / "agent_static"
@@ -112,6 +113,7 @@ app = FastAPI(title="MCP Governance Console · IdP", version="2.0.0", lifespan=l
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(idp_router)
 app.include_router(connectors_router)
+app.include_router(integrations_router)
 
 
 @app.middleware("http")

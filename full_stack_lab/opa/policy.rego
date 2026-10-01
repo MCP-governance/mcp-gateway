@@ -479,14 +479,23 @@ candidate["MCP-EGRESS-001"] := {
 
 # Presidio reports entity types only; raw content never enters OPA's decision log.
 # Role-independent: an approval must not become the procedure for exporting PII.
-candidate["MCP-DATA-EGRESS-001"] := {
+candidate["MCP-DATA-EGRESS-001"] := data_egress_verdict if {
+	external_transfer
+	sensitive_transfer
+}
+
+# A provider-hosted server receives the arguments of every call, reads included.
+# Its own data grade is about what comes back, so only detected PII in what goes out counts.
+candidate["MCP-DATA-EGRESS-001"] := data_egress_verdict if {
+	object.get(input, ["tool", "provider_hosted"], false) == true
+	count(pii_types) > 0
+}
+
+data_egress_verdict := {
 	"decision": "Block",
 	"reason": "중요정보 또는 탐지된 개인정보를 외부 목적지로 전송할 수 없습니다.",
 	"restrictions": {},
-	"conditions": {"matched": ["destinations[].external"], "violated": ["request.pii_types", "resource.data_class"]},
-} if {
-	external_transfer
-	sensitive_transfer
+	"conditions": {"matched": ["destinations[].external", "tool.provider_hosted"], "violated": ["request.pii_types", "resource.data_class"]},
 }
 
 # The Gateway links the calls of one verified principal: an executed read of important
@@ -644,6 +653,8 @@ matching_exceptions := [exc |
 	some exc in data.exceptions
 	not startswith(selected_id, "PAC-")
 	not selected_id in {"INPUT_CONTRACT", "POLICY_BUNDLE"}
+	# A PAC finding ranked below the selected policy still stands; no exception relaxes it.
+	count(pac_findings) == 0
 	exc.policy_id == selected_id
 	data.policy_ledger[selected_id].exceptionable == true
 	valid_exception(exc)

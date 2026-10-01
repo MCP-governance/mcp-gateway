@@ -37,6 +37,18 @@ def describe(row: dict) -> dict:
     outcome = "실행됨" if row.get("upstream_executed") else ("실행 여부 미확인" if row.get("upstream_attempted") else "실행 안 함")
     if decision == "Approval":
         outcome = "관리자 승인 대기"
+    evidence = row.get("result_preview") or {}
+    # Rows written before D-62 have no disposition; derive it from the execution flags.
+    response = evidence.get("disposition") or (
+        "withheld" if row.get("upstream_executed") and row.get("policy_id") == "MCP-OUTPUT-001"
+        else "returned" if row.get("upstream_executed")
+        else "unknown" if row.get("upstream_attempted") else "not_executed")
+    conflicts = row.get("conflicts") or []
+    pac_failures = sorted({pid for pid in [row.get("policy_id"), *(c.get("policy_id") for c in conflicts)]
+                           if pid and (pid.startswith("PAC-") or pid in {"INPUT_CONTRACT", "POLICY_BUNDLE"})})
+    # The row exists because the call reached the Gateway. A device-bound token adds
+    # the endpoint plane: that harness ran on an enrolled, kernel-confined account.
+    planes = ["gateway"] + (["endpoint"] if client.get("device_id") else [])
     headline = (f"{who}({dept})" if dept else who) + (f" @{station}" if station else "")
     line = (f"{_time(row.get('created_at'))}  {DECISION_KO.get(decision, decision):<5}  {headline} · "
             f"{server}.{tool} {target[:90]}  [{row.get('policy_id')}] {row.get('reason', '')[:80]}")
@@ -57,6 +69,11 @@ def describe(row: dict) -> dict:
         "would_decision": row.get("would_decision"), "summary": row.get("summary"),
         "risk_score": row.get("risk_score") or 0, "privacy_types": row.get("privacy_types") or [],
         "sequence_flags": row.get("sequence_flags") or [],
+        "attempted": bool(row.get("upstream_attempted")),
+        "response": response, "response_bytes": evidence.get("bytes"), "response_sha256": evidence.get("sha256"),
+        "response_types": evidence.get("content_types") or [], "masked_types": evidence.get("masked_types") or [],
+        "conflicts": conflicts, "pac_failures": pac_failures,
+        "planes": planes, "device_id": client.get("device_id"), "evidence_sha256": row.get("entry_sha256"),
         "line": line,
     }
 
@@ -81,13 +98,15 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
         clauses.append("d.upstream_attempted=false AND d.upstream_executed=false")
     elif execution == "unknown":
         clauses.append("d.upstream_attempted=true AND d.upstream_executed=false")
+    elif execution == "withheld":
+        clauses.append("d.upstream_executed=true AND (d.result_preview->>'disposition'='withheld' OR d.policy_id='MCP-OUTPUT-001')")
     order = "ASC" if after else "DESC"
     rows = await db.fetch_all(
         f"""SELECT d.id, d.created_at, d.user_token, d.role, d.server_id, d.tool_name, d.resource_id,
                    d.destinations, d.client, d.summary, d.data_class, d.action, d.decision, d.policy_id,
                    d.reason, d.upstream_executed, d.upstream_attempted, d.approval_id, d.trace_id, d.error,
                    d.exception_id, d.enforcement, d.would_decision, d.risk_score, d.privacy_types,
-                   d.sequence_flags, p.display_name, p.department
+                   d.sequence_flags, d.result_preview, d.conflicts, d.entry_sha256, p.display_name, p.department
               FROM decisions d LEFT JOIN principals p ON p.token = d.user_token
              WHERE {' AND '.join(clauses)} ORDER BY d.id {order} LIMIT %s""",
         (*params, min(max(limit, 1), 500)))

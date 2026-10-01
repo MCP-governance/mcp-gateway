@@ -165,6 +165,26 @@ root 서비스만 장기 단말 키를 보유합니다. 하네스 헬퍼는 UID�
 
 `field/pc/mcpgw_pc.py`의 비관리 setup은 기존 랩·관측용으로 남습니다. field 일반 계정의 실행 인증을 발급하지 않습니다.
 
+### 누가 무엇을 강제하는가 (D-62)
+
+Console **직원·단말 → 통제 범위**와 `GET /api/integrations`는 MCP·커넥터·플러그인·stdio·섀도를 다섯 분류
+(`gateway_mcp`·`gateway_backend_connector`·`vendor_native_connector`·`local_plugin_or_stdio`·`shadow_or_unknown`)로
+나누고, 관리 주체와 상태를 증거와 함께 보입니다.
+
+| 상태 | 뜻 | 근거 |
+| --- | --- | --- |
+| Gateway 강제 | 이 경로의 호출은 Gateway가 실행 전에 판정 | 원장 행·실행 시각 |
+| Endpoint 강제 | 관리 계정의 실행·egress를 커널이 제한 | 180초 안의 heartbeat, AppArmor·UID nft·보호 설정 일치 |
+| Vendor 강제(수기 확인) | 벤더 관리 콘솔에서 차단 | 관리자가 기록한 콘솔 상태·scope·역할 |
+| 관찰만 | 보고는 있으나 막는 주체 없음 | 키트·관측 에이전트 보고 |
+| 미등록·알 수 없음 | 관리형 단말 없음 | 가입자 단말 등록 부재 |
+| 우회 가능 | 직접 경로가 열려 있음 | 같은 단말의 다른 계정(관리자 그룹 포함)·WSL·Windows·비관리 단말 |
+
+섀도 MCP **발견**은 차단이 아닙니다. 관리 단말에서 커널 규칙이 확인될 때만 Endpoint 강제로 표시합니다.
+활동 로그의 각 호출은 출처·Gateway 통과·강제 주체·upstream 시도/실행·응답 처리(반환·마스킹·실행 후 보류)·
+PAC 실패와 다른 해당 정책을 함께 보여 줍니다. 응답 보류는 이미 실행된 쓰기·전송을 되돌리지 않습니다.
+감사 원장에는 응답 원문 대신 해시·크기·형식·마스킹 유형만 남습니다.
+
 ### 하네스가 기본으로 붙이는 커넥터(claude.ai 커넥터·ChatGPT 앱·기본 기능)
 
 Claude Code는 claude.ai 계정에 연결한 커넥터(`claude.ai Notion` 등)와 플러그인 서버를, Codex는 ChatGPT 앱과 웹 검색·브라우저·

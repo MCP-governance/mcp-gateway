@@ -16,7 +16,6 @@ the SDK answers "method not found" (MCP-METHOD-001 in the audit narrative).
 """
 from __future__ import annotations
 
-import json
 import os
 from typing import Any
 from urllib.parse import urlsplit
@@ -27,7 +26,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 
 from . import db, pac, registry
 from .agent_contract import authenticated_user
-from .core import execute_call
+from .core import execute_call, response_disposition
 
 SEPARATOR = "__"
 STDIO_PRINCIPAL = os.getenv("GATEWAY_STDIO_PRINCIPAL", "")
@@ -133,6 +132,8 @@ def _render(outcome: dict) -> types.CallToolResult:
         "upstream_executed": bool(outcome.get("upstream_executed")),
         "execution_status": ("executed" if outcome.get("upstream_executed") else
                              "unconfirmed" if outcome.get("upstream_attempted") else "not_dispatched"),
+        "response_disposition": response_disposition(outcome),
+        "response_withheld": response_disposition(outcome) == "withheld",
         "restrictions_applied": outcome.get("restrictions_applied") or [],
     }
     header = f"[MCP Gateway · {DECISION_LABEL.get(decision, decision)} · {outcome.get('policy_id')}] {outcome.get('reason', '')}"
@@ -141,12 +142,8 @@ def _render(outcome: dict) -> types.CallToolResult:
         # The tool's own output comes first. A notice at the top of an allowed result
         # ("허용·경보 ...") reads like a refusal to small models; they then tell the
         # user the call was blocked when it ran. The note goes last, phrased as done.
-        content = []
-        for item in result.get("content") or []:
-            if item.get("type") == "text":
-                content.append(types.TextContent(type="text", text=item.get("text", "")))
-            else:
-                content.append(types.TextContent(type="text", text=json.dumps(item, ensure_ascii=False)[:4000]))
+        # core._guarded_result passes only text items; anything else was withheld there.
+        content = [types.TextContent(type="text", text=item["text"]) for item in result.get("content") or []]
         if decision != "Allow":
             applied = outcome.get("restrictions_applied") or []
             note = {"Alert": "실행되었으며 보안 경보로 기록되었습니다",
@@ -157,6 +154,9 @@ def _render(outcome: dict) -> types.CallToolResult:
     if decision == "Approval":
         text = (f"{header}\n관리자 승인이 필요합니다. 승인 ID {outcome.get('approval_id')} "
                 "(Console → 승인 대기). 승인되면 Gateway가 이 요청을 그대로 실행합니다.")
+    elif gateway["response_withheld"]:
+        text = (f"{header}\n도구는 공급자에서 이미 실행됐고 결과만 반환하지 않았습니다. "
+                "쓰기·전송 효과는 이 보류로 되돌려지지 않습니다.")
     else:
         text = header + (f"\n오류: {outcome['error']}" if outcome.get("error") else "")
     return types.CallToolResult(content=[types.TextContent(type="text", text=text)], isError=True,

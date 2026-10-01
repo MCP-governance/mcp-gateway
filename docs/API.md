@@ -54,6 +54,8 @@
 | `POST /api/pc/inventory` | 사용자(키트) | 직원 PC의 자기 보고(D-51·D-53) `{workstation, harnesses:[claude|codex], items:[{harness, kind(connector·plugin·server·app·feature), name, target(scheme://host[:port]·stdio·앱 id·기능 값), status, active}]}` → `{accepted, policy, review}`. 서버도 URL의 자격·경로·query를 제거한다. 이전 항목의 absent는 미관측이며 차단 확인이 아니다 |
 | `GET /api/connectors[?summary=1]` · `PUT /api/connectors/decision` | 관리자 | 상태 pending·expired·denied·approved(예외 승인), 활성 보고 PC, `enforcement: unverified` / 결정 `{key, decision: approved|denied|reset, note}` — 거부 사유 필수. 벤더 출처도 자동 허용하지 않음 |
 | `GET /api/connectors/policy` | 관리자 | `scope: managed-cli-gateway-only`, `enforcement: unverified`, `claude.deniedMcpServers`·`allowAllClaudeAiMcps: false`, `codex.apps_disabled`·`features_disabled`. 예외 승인으로 전체 계정 커넥터를 열지 않음. `managed`는 인벤토리 유무와 무관하게 엄격한 세 파일 생성 |
+| `GET /api/integrations` | 관리자 | D-62 통제면 인벤토리 `{items, devices, summary}`. 항목: `class`(gateway_mcp·gateway_backend_connector·vendor_native_connector·local_plugin_or_stdio·shadow_or_unknown), `managed_by`(gateway·endpoint·vendor·none), `enforced`, `state`(gateway_enforced·endpoint_enforced·vendor_enforced·observed_only·unknown_not_enrolled·bypass_possible), `evidence`, `approval{state, expires_at}`, `bypass[]`, `residual[]`, `discovered_from/at`, `last_verified_at`. 단말: `state`·`account_state`·`platform`·`bypass[]`(같은 단말의 다른 계정·WSL·Windows) |
+| `PUT /api/integrations/vendor-control` | 관리자 | 벤더 관리 콘솔에서 확인한 상태의 수기 기록 `{key, console_state: allowed|limited|blocked|unknown, allowed_actions, oauth_scopes, role_access, evidence_url, note}`. 벤더에서 가져온 값이 아니며 `vendor_enforced(수기 확인)`로만 표시 |
 | `GET /api/mcp-catalog/search?q=` | 사용자 | 이미 신청·등록된 서버인지 |
 | `GET /api/mcp-scan` 외 `/api/mcp-scan/*` | 관리자 | AI 코드 감사(격리 워커) 작업 |
 | `GET /api/readiness` · `GET /health` | 공개 | 준비 상태(Gateway·LLM 게이트웨이) |
@@ -64,7 +66,7 @@
 | --- | --- | --- |
 | `GET /api/health` | 공개 | 구성요소·MCP 서버 준비 수 |
 | `POST /api/session` | 공개 | 로그인 프록시(IdP로 전달) |
-| `GET /api/activity?after&limit&decision&server&person` | 사용자 | 판정을 읽는 문장으로(비관리자는 자기 것만) |
+| `GET /api/activity?after&limit&decision&server&person&event_kind&execution` | 사용자 | 판정을 읽는 문장으로(비관리자는 자기 것만). `execution=executed|not-sent|unknown|withheld`. 행마다 `attempted`·`executed`·`response`(returned·masked·withheld·unknown·not_executed)·`response_sha256/bytes/types`·`masked_types`·`planes`·`device_id`·`pac_failures`·`conflicts`·`evidence_sha256`(감사 체인 항목 해시) |
 | `GET /api/overview` | 관리자 | 개요 화면 한 번에 — `series`(24시간 시간대별 판정 수), `flows`(하네스×서버×판정 수), 워크스테이션별 `harness`·`calls` 포함 |
 | `GET /api/state` · `GET /api/registry` | 관리자 | 원시 상태 / 카탈로그+계약+이용 관계, `registrations`(Console 등록 서버의 사용 기한·등록자) |
 | `POST /api/catalog/refresh` | 관리자 | 모든 서버 계약 재확인 |

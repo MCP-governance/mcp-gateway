@@ -64,7 +64,7 @@ async def enroll(endpoint_id: str, hostname: str, platform: str, agent_version: 
            ON CONFLICT (endpoint_id) DO UPDATE SET
              hostname=EXCLUDED.hostname, platform=EXCLUDED.platform,
              agent_version=EXCLUDED.agent_version, owner_token=EXCLUDED.owner_token,
-             detail=EXCLUDED.detail, last_seen_at=now()""",
+             detail=endpoint_agents.detail || EXCLUDED.detail, last_seen_at=now()""",
         (endpoint_id, hostname, platform, agent_version, owner_token, Jsonb(detail or {})),
     )
     return await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
@@ -548,17 +548,20 @@ def json_document(value) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
 
 
-async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict) -> dict:
+async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, host: dict | None = None) -> dict:
     policy = await managed_policy(device)
     compliant = (policy_hash == policy["policy_hash"] and hashes == policy["configuration_hashes"]
                  and set(checks) == MANAGED_CHECKS and all(value is True for value in checks.values()))
+    # The host report is not a compliance input: another account on the device does not
+    # quarantine the managed one; it is shown as a bypass path (integrations.device_state).
+    detail = {"host": {**host, "reported_at": datetime.now(UTC).isoformat(timespec="seconds")}} if host else {}
     async with db.transaction() as connection:
         row = await (await connection.execute(
             """UPDATE endpoint_agents SET heartbeat_at=now(),last_seen_at=now(),policy_hash=%s,
-                 configuration_hashes=%s,enforcement_checks=%s,
+                 configuration_hashes=%s,enforcement_checks=%s, detail=detail || %s,
                  managed_state=CASE WHEN %s THEN managed_state ELSE 'quarantined' END
                WHERE endpoint_id=%s AND status='active' RETURNING managed_state""",
-            (policy_hash, Jsonb(hashes), Jsonb(checks), compliant, device["endpoint_id"]))).fetchone()
+            (policy_hash, Jsonb(hashes), Jsonb(checks), Jsonb(detail), compliant, device["endpoint_id"]))).fetchone()
         if not row:
             raise PermissionError("폐기한 장치는 heartbeat로 복구할 수 없습니다.")
         if not compliant or row["managed_state"] != device["managed_state"]:

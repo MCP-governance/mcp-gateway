@@ -14,6 +14,12 @@ PJ1 일반 UID에서 실제 AppArmor/nft 집행, 185초 heartbeat 만료, 보호
 단말 결합 JWT도 bearer token이다. 키와 발급 경로 보호·짧은 수명·현재 상태 검사를 추가한 것이며,
 토큰의 복사·재사용 자체를 암호학적으로 막는 mTLS/DPoP 또는 root 원격 attestation을 구현한 것은 아니다.
 
+2026-10-01 D-62 후속: 통제 상태를 `gateway_enforced`·`endpoint_enforced`·`vendor_enforced(수기 확인)`·`observed_only`·
+`unknown_not_enrolled`·`bypass_possible`로 나눠 Console·API에 표시한다. PJ1처럼 관리 계정(`managed-pj1`)은 커널 강제지만
+같은 단말에 sudo·docker 계정(`pj1`)이 있으면 단말은 `bypass_possible`이다. 응답은 text만 반환하고, 그 밖의 형식·마스킹
+실패는 실행 후 보류로 기록한다. 공급자 호스팅 MCP의 읽기 인자도 PII 검사 대상이다. 검증 기록은
+[CONTROL_PLANES_2026-10-01.md](CONTROL_PLANES_2026-10-01.md).
+
 ## 1. 판단
 
 Gateway·OPA·계약 고정·이용 관계·종료 모델을 버릴 이유는 없다. 바꿔야 하는 것은

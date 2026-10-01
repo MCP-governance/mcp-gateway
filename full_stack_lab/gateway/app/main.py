@@ -345,7 +345,7 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
 async def activity_feed(after: int = 0, limit: int = 100, decision: str | None = None,
                         server: str | None = None, person: str | None = None,
                         event_kind: Literal["tools/call", "mcp-connection"] | None = None,
-                        execution: Literal["executed", "not-sent", "unknown"] | None = None,
+                        execution: Literal["executed", "not-sent", "unknown", "withheld"] | None = None,
                         user: dict = Depends(caller)) -> dict:
     """Decisions as readable sentences. Admins see everyone; others see themselves."""
     own = None if "admin" in user["roles"] else user["principal"]
@@ -856,10 +856,24 @@ class EndpointOSReport(StrictModel):
     events: list[EndpointOSEvent] = Field(max_length=100)
 
 
+class HostAccount(StrictModel):
+    name: str = Field(min_length=1, max_length=64)
+    uid: int = Field(ge=0)
+    privileged_groups: list[str] = Field(default_factory=list, max_length=8)
+
+
+class HostReport(StrictModel):
+    """Other login accounts on the managed device: each is a path the kernel profile does not confine."""
+    kernel: str = Field(max_length=120)
+    wsl: bool
+    other_accounts: list[HostAccount] = Field(default_factory=list, max_length=64)
+
+
 class ManagedHeartbeat(StrictModel):
     policy_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     configuration_hashes: dict[str, str] = Field(max_length=4)
     checks: dict[str, bool] = Field(max_length=4)
+    host: HostReport | None = None
 
 
 class ManagedActivation(StrictModel):
@@ -946,7 +960,8 @@ async def endpoint_managed_policy(device: dict = Depends(endpoint_device("enforc
 async def endpoint_heartbeat(request: ManagedHeartbeat,
                              device: dict = Depends(endpoint_device("enforcement"))) -> dict:
     try:
-        return await endpoint_plane.heartbeat(device, request.policy_hash, request.configuration_hashes, request.checks)
+        return await endpoint_plane.heartbeat(device, request.policy_hash, request.configuration_hashes, request.checks,
+                                              request.host.model_dump() if request.host else None)
     except PermissionError as exc:
         raise HTTPException(403, str(exc)) from exc
 

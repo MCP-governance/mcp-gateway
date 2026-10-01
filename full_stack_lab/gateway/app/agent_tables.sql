@@ -330,3 +330,10 @@ CREATE TABLE IF NOT EXISTS harness_decisions (
   decided_by text NOT NULL,
   decided_at timestamptz NOT NULL DEFAULT now()
 );
+-- D-62: what an administrator saw in the vendor's admin console for a native connector.
+-- A manual record, never fetched from the vendor; it is shown as such.
+CREATE TABLE IF NOT EXISTS harness_vendor_controls (
+  item_key text PRIMARY KEY,
+  record jsonb NOT NULL,
+  recorded_at timestamptz NOT NULL DEFAULT now()
+);

@@ -33,6 +33,7 @@ FILES = {"managed-mcp.json": Path("/etc/claude-code/managed-mcp.json"),
          "managed_config.toml": Path("/etc/codex/managed_config.toml")}
 PROGRAMS = Path("/usr/local/lib/mcpgw-managed")
 STATE = Path("/var/lib/mcpgw-managed")
+PRIVILEGED = {"sudo", "wheel", "docker", "lxd", "libvirt", "root"}
 
 
 def load_module(name, path):
@@ -118,7 +119,21 @@ def checks(config, policy):
                     "nftables_active": expected.returncode == 0 and stable(json.loads(nft.stdout)) == stable(baseline),
                     "protected_configs": all(protected(p) and not p.is_symlink() and p.stat().st_mode & 0o777 == 0o644 for p in FILES.values()),
                     "ordinary_account": account.pw_uid == uid and account.pw_shell == str(rule_file.parent / "login-shell")
-                       and not groups & {"sudo", "wheel", "docker", "lxd", "libvirt", "root"}}
+                       and not groups & PRIVILEGED}
+
+
+def host_report(config):
+    """Every other login account on this device. The managed profile confines one UID;
+    the rest are reported so the Console shows them as bypass paths, not as enforced."""
+    accounts = []
+    for entry in pwd.getpwall():
+        if (entry.pw_uid in (0, config["uid"], 65534) or entry.pw_uid < 1000
+                or entry.pw_shell.endswith(("nologin", "false", "sync"))):
+            continue
+        groups = {grp.getgrgid(g).gr_name for g in os.getgrouplist(entry.pw_name, entry.pw_gid)}
+        accounts.append({"name": entry.pw_name[:64], "uid": entry.pw_uid, "privileged_groups": sorted(groups & PRIVILEGED)})
+    return {"kernel": os.uname().release[:120], "wsl": "microsoft" in Path("/proc/version").read_text().lower(),
+            "other_accounts": accounts[:64]}
 
 
 def install(args):
@@ -128,7 +143,7 @@ def install(args):
     if person.pw_uid < 1000 or not person.pw_dir.startswith("/home/"):
         raise ValueError("/home의 실제 일반 사용자만 지원합니다")
     groups = {grp.getgrgid(g).gr_name for g in os.getgrouplist(person.pw_name, person.pw_gid)}
-    if groups & {"sudo", "wheel", "docker", "lxd", "libvirt", "root"}:
+    if groups & PRIVILEGED:
         raise ValueError("관리 권한이 있는 계정에는 일반 사용자 집행을 설치할 수 없습니다")
     if subprocess.run(["pgrep", "-u", str(person.pw_uid)], capture_output=True).returncode == 0:
         raise ValueError("해당 계정의 기존 비관리 세션을 종료한 뒤 설치하세요")
@@ -238,7 +253,8 @@ def serve(args):
                 private_write(args.config, json.dumps(config))
             previous = policy["policy_hash"]
             hashes, health = checks(config, policy)
-            report = request(config, "/api/endpoint/heartbeat", {"policy_hash": policy["policy_hash"], "configuration_hashes": hashes, "checks": health})
+            report = request(config, "/api/endpoint/heartbeat", {"policy_hash": policy["policy_hash"], "configuration_hashes": hashes,
+                                                               "checks": health, "host": host_report(config)})
             for name, extra in (("agent.py", ["--once"]), ("os-observer.py", ["--uid", str(config["uid"]), "--profile", "mcpgw-" + config["username"]])):
                 subprocess.run([sys.executable, "-I", "-S", str(PROGRAMS / name), "--config", str(observer_config), *extra],
                                check=True, timeout=40, stdout=subprocess.DEVNULL)

@@ -751,6 +751,43 @@ test_exception_cannot_relax_integrity_control if {
 	result.policy_id == "MCP-REGISTRY-001"
 }
 
+# D-62: 우선순위가 PAC보다 높은 예외 가능 정책(MCP-EGRESS-001)이 선택돼도, conflicts에 남은
+# PAC 거부를 그 예외가 지우지 못한다. 대조군은 같은 예외가 PAC 결과가 없을 때 실제로 적용됨을 보인다.
+egress_exception := [object.union(object.remove(valid_exception_fixture, {"scope"}),
+	{"policy_id": "MCP-EGRESS-001", "scope": {"tool": "read_text_file"}})]
+
+egress_request := with_input({"contract": object.union(base.contract, {"endpoint_allowed": false})})
+
+test_exception_cannot_hide_a_lower_ranked_pac_denial if {
+	facts := object.union(pac_fixture.facts, {"approval": object.union(pac_fixture.facts.approval, {"data_scopes": []})})
+	request := object.union(egress_request, {"pac": {"request": pac_fixture.request, "facts": facts}})
+	result := decision with input as request with data.exceptions as egress_exception
+	result.decision == "Block"
+	result.policy_id == "MCP-EGRESS-001"
+	result.exception == null
+	some c in result.conflicts
+	c.policy_id == "PAC-11"
+}
+
+test_exception_applies_when_pac_has_no_finding if {
+	result := decision with input as egress_request with data.exceptions as egress_exception
+	result.decision == "Alert"
+	result.exception.id == valid_exception_fixture.id
+}
+
+# 공급자 호스팅 서버는 읽기 인자도 받는다. 인자에서 탐지된 PII는 행위와 무관하게 실행 전에 막는다.
+test_pii_to_provider_hosted_server_blocks_even_for_reads if {
+	result := decision with input as with_input({"tool": {"name": "read_text_file", "action": "r", "provider_hosted": true},
+		"request": {"pii_types": ["KR_RRN"]}})
+	result.decision == "Block"
+	result.policy_id == "MCP-DATA-EGRESS-001"
+}
+
+test_provider_hosted_read_without_pii_is_not_an_egress_block if {
+	result := decision with input as with_input({"tool": {"name": "read_text_file", "action": "r", "provider_hosted": true}})
+	result.policy_id != "MCP-DATA-EGRESS-001"
+}
+
 # 예외는 완화만 할 수 있고 강화는 변경관리 절차를 따라야 한다.
 test_exception_cannot_tighten_a_decision if {
 	bad := [object.union(data.exceptions[0], {
