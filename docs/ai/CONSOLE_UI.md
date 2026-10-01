@@ -28,6 +28,7 @@
 - 호출 상세는 최대 900px native `dialog`. **출처 → Gateway 판정 → 단말 연결 → 도구 실행 → 응답 처리**를 넓은 세로 행으로 표시한다.
 - 하네스 이름의 자기 신고, 호출 당시 서명 단말 결합, 현재 단말 상태를 구분한다. 응답 보류가 이미 실행된 효과를 취소한다고 표시하지 않는다.
 - native modal이 배경 접근과 초점 순환을 담당한다. Enter·Space로 표의 상세를 열 때 기본 키 동작을 취소해 새로 초점이 간 닫기 버튼이 연이어 실행되지 않게 한다. Escape 이후 원래 행으로 복귀한다.
+- 상세를 다시 열면 공통 `openDrawer`에서 본문 스크롤을 0으로 초기화한다. 이전 상세의 스크롤 위치로 새 호출의 요약이 가려지지 않는다.
 - 확인 폼도 기존 native `dialog`를 사용한다. 상세 패널 위에서 폼을 열 때 Escape는 폼을 먼저 닫는다.
 - 로그인·가입·조직 초대 화면도 같은 글꼴·색상·폼 체계를 사용한다. 기존 인증·초대·1회용 키트 흐름을 유지한다.
 - 차트는 기존 ECharts를 사용한다. 숨긴 탭·닫힌 펼침 영역에서는 초기화하지 않고, 범례는 좁은 폭에서 스크롤한다.
@@ -53,11 +54,11 @@
 서버 검색은 공백·대소문자·빈 결과를 확인했고, 호출 상세는 Enter 열기·닫기 버튼 초점·Escape 원래 행 복귀를 확인했다.
 
 색상 토큰의 텍스트 18쌍은 WCAG 대비 4.5 이상(최저 5.69), 입력·버튼 경계 2쌍은 3 이상이다.
-390px 화면은 렌더링 캡처로 재배치를 확인한다. 해당 브라우저의 viewport 설정과 DOM 측정은 일치하지 않아 좁은 화면의 키보드 동작까지 검증한 것으로 간주하지 않는다.
+390px 화면은 viewport 적용 후 렌더링과 DOM 크기가 일치한 상태에서 메뉴 열기·이동 후 닫기, 호출 필터 재배치, 상세 Enter 열기·닫기 버튼 초점·Escape 복귀를 확인했다. 호출 목록과 상세의 페이지 전체 가로 넘침은 0이다.
 스크린 리더 사용 시험이나 WCAG 전체 인증을 주장하지 않는다.
 
 필수 회귀: `./full_stack_lab/console.sh test` 종료 0, Rego 103/103, 공격 42/42 탐지·정상 16/16 통과, E1·E2·E3 통과.
-상세 키보드·빈 목록 처리까지 반영한 최종 소스로 전체 필수 시험을 재실행해 종료 0을 확인했다. JavaScript 구문 검사·기존 상태 시험 8/8·실제 브라우저 키보드 검수도 통과했다.
+상세 키보드·빈 목록 처리·상세 스크롤 초기화까지 반영한 최종 소스로 전체 필수 시험을 재실행해 종료 0을 확인했다. JavaScript 구문 검사·기존 상태 시험 8/8·실제 브라우저 키보드 검수도 통과했다.
 실제 공급자 MCP의 실행 증거와 이번 UI 렌더링 검수는 별개이며, UI 검수를 위해 공급자 서버나 실행 로그를 만들지 않는다.
 
 기존 직원 데이터 제한, 승인·검증·활성화 분리, PAC 인가, OPA fail-closed, 감사 원장과 OS 집행 경계는 바꾸지 않는다.
@@ -69,11 +70,26 @@ Console는 MCP를 직접 호출하지 않는다. 공격자 입력은 `html` tagg
 
 ```javascript
 await tab.playwright.locator('#feed tr[data-act="decision"]').first().press('Enter');
+await tab.playwright.getByRole('dialog', {name: /호출 #/}).waitFor({state: 'visible'});
 if (!(await tab.playwright.getByRole('dialog', {name: /호출 #/}).isVisible())) throw Error('Enter must leave the drawer open');
 const state = await tab.getAXState({emit: false});
 if (!/focused UI element.*button 닫기/.test(state)) throw Error('close button must receive focus');
+if ((await tab.playwright.evaluate(() => document.querySelector('#drawer-body').scrollTop)) !== 0) throw Error('new detail must start at the top');
 await tab.pressKey(null, 'Escape');
 if (await tab.playwright.getByRole('dialog', {name: /호출 #/}).isVisible()) throw Error('Escape must close the drawer');
+
+// 세로 스크롤이 생기는 상세를 1280px 데스크톱에서 열고 재진입한다.
+await tab.playwright.locator('#feed tr[data-act="decision"]').first().press('Enter');
+await tab.playwright.getByRole('dialog', {name: /호출 #/}).waitFor({state: 'visible'});
+await tab.getAXState({emit: false});
+await tab.scroll([720, 560], 'down', 1);
+await tab.getAXState({emit: false});
+if ((await tab.playwright.evaluate(() => document.querySelector('#drawer-body').scrollTop)) <= 0) throw Error('use a scrollable call detail');
+await tab.pressKey(null, 'Escape');
+await tab.getAXState({emit: false});
+await tab.playwright.locator('#feed tr[data-act="decision"]').first().press('Enter');
+await tab.playwright.getByRole('dialog', {name: /호출 #/}).waitFor({state: 'visible'});
+if ((await tab.playwright.evaluate(() => document.querySelector('#drawer-body').scrollTop)) !== 0) throw Error('new detail must reset previous scroll');
 ```
 
 ## 수정 지침

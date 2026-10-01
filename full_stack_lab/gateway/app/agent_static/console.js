@@ -253,7 +253,7 @@ function openDrawer(title, body, tabs = null) {
   $("#drawer-title").textContent = title;
   $("#drawer-body").innerHTML = String(tabs ? html`${body}${tabBar(tabs, tabs[0].key, "d")}${tabs.map((t) => tabPanel(t.key, tabs[0].key, t.body, "d"))}` : body);
   setDrawer(true);
-
+  $("#drawer-body").scrollTop = 0;
 }
 function closeDrawer() {
   if (/^#\/servers\/./.test(location.hash)) history.replaceState(null, "", "#/servers");
