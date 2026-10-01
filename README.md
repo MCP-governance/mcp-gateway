@@ -230,7 +230,9 @@ CI([`.github/workflows/verify.yml`](.github/workflows/verify.yml))는 모든 브
 
 PAC15는 기존 계약·SSRF·DLP·출력 검사·종료·원자적 예약 통제와 함께 적용됩니다.
 → [런타임 통합과 증거 경계](docs/ai/PAC_RUNTIME_2026-10-01.md),
-[정책 구조](docs/ai/POLICY.md). 실제 배포와 시험 결과는 검증 후 별도로 기록합니다.
+[정책 구조](docs/ai/POLICY.md). 새 빈 볼륨 테스트보드 전체 검증과 실기기 배포를 완료했습니다. PJ1 실제 Codex·Claude의 GitHub 호출은
+정상 커밋 반환 2건과 범위 밖 PAC-01 미전송 차단 2건(원장 384~387)을 확인했습니다.
+원격 나머지 서비스 및 로컬 MCP의 전체 강제 경로 검증은 진행 중입니다.
 
 ## 종료·폐기 판정
 

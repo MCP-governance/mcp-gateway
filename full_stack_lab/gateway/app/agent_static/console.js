@@ -1276,7 +1276,6 @@ let policyLedger = [];
 ROUTES.policy = async (_, tab) => {
   const [{ enforcement }, matrix, ledger, runtime] = await Promise.all([gw("enforcement"), gw("policy/matrix"), gw("policy/ledger"), api("/api/readiness")]);
   policyLedger = ledger.policies;
-  const bundle = ledger.authorization || {};
   const byOutcome = splitBy(ledger.policies, "outcome");
   return {
     html: page({
@@ -1295,12 +1294,12 @@ ROUTES.policy = async (_, tab) => {
           ["적재된 정책 SHA-256", runtime.policy?.loaded_sha256 || "미확인"],
           ["적재된 데이터 SHA-256", runtime.policy?.loaded_data_sha256 || "미확인"],
         ])) },
-        { key: "capabilities", label: "승인 실행 범위", n: matrix.capabilities.length, body: html`<div class="stack">
+        { key: "capabilities", label: "승인 실행 범위", n: matrix.capabilities.length + matrix.runtime_envelopes.length, body: html`<div class="stack">
           ${panel("PAC-15 · 사용자·서버·기능·자원", html`<table class="data"><thead><tr><th>승인</th><th>사용자</th><th>서버</th><th>행위·자원</th><th>만료</th></tr></thead><tbody>
           ${matrix.capabilities.map((g) => html`<tr><td><code>${g.id}</code></td><td>${g.principals.join(", ")}</td><td>${g.servers.join(", ")}</td>
             <td>${g.actions.join(", ")}<span class="sub">${g.path_roots.join(", ")}</span></td><td>${when(g.valid_until)}</td></tr>`)}
           ${matrix.runtime_envelopes.map((g) => html`<tr><td><code>${g.server_id}</code></td><td>${g.principals.join(", ")}</td><td>${Object.keys(g.tools).join(", ")}</td><td>독립 도입 승인</td><td>${when(g.valid_until)}</td></tr>`)}
-          </tbody></table>`, { flush: true, sub: `${bundle.bundle_id || "—"} · ${matrix.pack_version}` })}</div>` },
+          </tbody></table>`, { flush: true, sub: `${matrix.bundle_id || "—"} · ${matrix.pack_version}` })}</div>` },
         { key: "ledger", label: "관리대장", n: ledger.policies.length, body: html`<div class="stack">
           ${panel("결과별 정책 수", chartBox("c-outcomes", "정책 관리대장의 결과별 정책 수", "sm"), { sub: `환경 ${ledger.environment}` })}
           ${panel("정책", html`<table class="data"><thead><tr><th class="num">순위</th><th>정책</th><th>결과</th><th>상태</th><th>담당</th></tr></thead><tbody>

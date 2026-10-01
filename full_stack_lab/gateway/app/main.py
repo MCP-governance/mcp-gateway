@@ -353,8 +353,9 @@ async def protected_resource_metadata() -> dict:
 @app.get("/api/policy/matrix")
 async def policy_matrix(user: dict = Depends(caller)) -> dict:
     # Kept as a compatibility URL; there is no synthetic 333 policy query.
+    scopes = core.pac.capabilities()
     return {"model": "pac15-capabilities", "pack_version": "pac15-v1",
-            "capabilities": core.pac.capabilities()["capabilities"],
+            "bundle_id": scopes["bundle_id"], "capabilities": scopes["capabilities"],
             "runtime_envelopes": [{"server_id": k, "principals": v.get("allowed_principals", []),
                                    "tools": v.get("tools", {}), "valid_until": v.get("valid_until")}
                                   for k,v in registry.servers().items() if v.get("intake_id")]}

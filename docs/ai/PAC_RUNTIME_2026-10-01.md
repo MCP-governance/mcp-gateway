@@ -1,11 +1,10 @@
 # PAC-15 런타임 통합과 증거 경계
 
-검토일: 2026-10-01. 이 문서는 `fa70b959` 이후 작업 트리의 PAC 개편을 설명한다.
-코드 구현, 테스트보드 확인, 솔루션 기기 배포는 서로 다른 상태다. 문서 작성 시 PAC·OS 집행
-변경은 미커밋 상태였으며, 실기기의 기존 배포에 들어갔다고 주장하지 않는다.
-운영 revision은 재확인 결과 `b3c5efb`이며, 기존 Claude D-54 하드닝은 포함하지만
-이 문서의 팀원 PAC15 통합은 아직 포함하지 않는다.
-이후 배포 확인은 실제 `/api/health`의 revision·정책 해시와 해당 시험 보고서를 함께 남긴다.
+검토·배포일: 2026-10-01. 기존 Claude D-54 하드닝과 운영 `b3c5efb` 위에
+팀원 공격 검토 수정 PAC15를 통합하고, 역할×등급×행위 인가를 교체했습니다.
+실행 코드 변경 커밋은 `15db1cb2472269443a8545055eb62ecf486460cc`입니다.
+최종 배포 revision은 `/api/health`와 Console 정책 → 배포 확인에서 확인합니다.
+아래 시험은 코드·클린 테스트보드·실기기 PJ1 증거를 구분합니다.
 
 이 문서는 [기존 PAC 대응표](PAC_MAPPING.md)의 **통합 전 설명**을 대체한다.
 기존 감사 기록의 `333`, `P-AUTHZ-DENY-001`, `EXC-001/002` 표시는 과거 증거다.
@@ -165,3 +164,39 @@ Rego 99/99, acceptance 23/23, 보안 회귀 55/55, 공격 42/42, 정상 대조�
 기록 재생 192건 동일·변경 0, 합성 10건 미탐/오탐 0, E1/E2/E3 PASS입니다.
 제품 PAC 사실 입력 시험 300건과 정적 pyflakes·JS/Shell·무인증 API 검사도 통과했습니다.
 실서비스 공급자와 PJ1의 배포 후 시험은 별도의 실기기 증거로 확인해야 합니다.
+
+## 솔루션 실기기·PJ1 배포 후 검증
+
+솔루션 `100.83.175.111`에서 gateway·gateway-sse·agent-service 이미지를 함께 갱신하고
+OPA·Caddy를 재생성했습니다. DB·공급자 자격·기존 원장은 유지하고 배포 전 DB 백업을 비공개로 보존했습니다.
+세 서비스 revision·공통 앱 코드 해시 일치, OPA 규칙·데이터 파일 일치를 확인했습니다.
+`data.authorization.grants`는 없고 운영 정적 capability는 0건입니다.
+
+| 확인 대상 | 실측 |
+| --- | --- |
+| 적재된 규칙 SHA-256 | `992fe94a6c763f98cce6e3a56a8a7763a29370e603e618a10aeead44f5fdc307` |
+| 적재된 데이터 SHA-256 | `da797c573b36d0e595f640abc401da25995686266e50d9ea0da8ff665307a594` |
+| 운영 capability SHA-256 | `8d5ae06a530da6885814ec44012467c201d21d997d32066d6c176612bf82b305` |
+| 새 GitHub 도입 신청 | `3db85cb8-c23f-488b-8ddb-7116c92ea67c` · requester=user, reviewer/approver=root |
+| 승인한 도구와 인자 | get_me는 빈 객체, list_commits는 MCP-governance/mcp-gateway·최대 2개 식별자·2페이지 |
+| 기한 | 2026-10-31T06:47:26.526450Z |
+
+기존 인자 범위 없는 GitHub 승인은 자동 확장하지 않았습니다. 새 신청을 독립 검토·승인한 뒤
+기존 등록을 해제하고 새 신청으로 활성화했습니다. 공식 `https://api.githubcopilot.com/mcp/readonly`
+서버와 공급자 코드를 수정하지 않았습니다.
+
+PJ1 실제 Codex app-server·Claude Code 스트림 제어 API에서 사용자/모델 턴 없이 4번 호출했습니다.
+사실 입력이나 Gateway execute 함수를 직접 호출한 것이 아닙니다. 추론 토큰을 쓰지 않았습니다.
+
+| 원장 id | 하네스·내용 | 판정과 실제 효과 |
+| --- | --- | --- |
+| 384 | Codex list_commits, 승인 owner | Alert/P-IMPORTANT-ALERT-001, attempted=true·executed=true, 실제 커밋 `15db1cb` 반환 |
+| 385 | Codex list_commits, owner=microsoft | Block/PAC-01, attempted=false·executed=false |
+| 386 | Claude list_commits, 승인 owner | Alert/P-IMPORTANT-ALERT-001, attempted=true·executed=true, 실제 커밋 `b3c5efb` 반환 |
+| 387 | Claude list_commits, owner=microsoft | Block/PAC-01, attempted=false·executed=false |
+
+원장 379에서 387로 증가했습니다. 나머지 380~383은 native Codex 설정에 있던 미등록 context7·figma·
+supabase·ms-learn의 initialize 거부이며 MCP-REGISTRY-001·미전송입니다. 도구 실행 4건으로 합산하지 않습니다.
+private raw 응답은 PJ1 `~/.local/mcpgw-native-log-20261001/pac15-canary-20261001-154803/responses.json`에 보존합니다.
+위 결과는 GitHub 공식 원격 서비스의 읽기와 범위 위반에 관한 실기기 증거이며, 나머지 원격 6종과
+로컬 MCP 3종의 전체 등록·집행을 완료했다는 뜻은 아닙니다.
