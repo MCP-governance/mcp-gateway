@@ -1,3 +1,4 @@
+document.documentElement.dataset.theme = localStorage.getItem("mcp-console-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 const form = document.querySelector("#signup-form");
 const message = document.querySelector("#signup-message");
 const invitation = new URLSearchParams(location.hash.slice(1));
@@ -6,6 +7,8 @@ if (invitationToken) {
   form.elements.username.value = invitation.get("username") || "";
   form.elements.username.readOnly = true;
   document.querySelector(".brand b").textContent = "조직 초대 수락";
+  document.querySelector(".gate-heading h2").textContent = "조직 초대 수락";
+  document.querySelector(".gate-heading p").textContent = "이름과 비밀번호를 설정한 뒤 관리형 단말을 연결하세요.";
   document.querySelector(".brand span").textContent = "이름과 비밀번호를 설정하면 일반 사용자로 등록됩니다.";
   form.querySelector("button").textContent = "등록 완료";
   history.replaceState(null, "", "/signup");

@@ -15,9 +15,9 @@
   <a class="skip-link" href="#view" data-act="skip">본문으로 건너뛰기</a>
   <header class="app-bar">
     <button class="icon-btn" type="button" data-act="sidebar" aria-label="메뉴 접기" aria-expanded="true" title="메뉴 접기">☰</button>
-    <a class="app-title" href="#/overview">MCP Governance <span>운영 콘솔</span></a>
+    <a class="app-title" href="#/overview">MCP Governance <span>조직 운영 콘솔</span></a>
     <form class="command-search" data-form="command-search" role="search">
-      <input name="query" type="search" maxlength="120" placeholder="최근 활동 200건에서 찾기" aria-label="최근 활동 200건에서 찾기" />
+      <input name="query" type="search" maxlength="120" placeholder="호출·도구·정책 검색" aria-label="호출·도구·정책 검색" />
       <button class="btn sm" type="submit">검색</button>
     </form>
     <span class="app-identity" id="app-identity"></span>
@@ -26,14 +26,14 @@
     <aside class="side">
       <div class="brand">
         <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
-        <div><b>MCP Governance</b><span>내부망</span></div>
+        <div><b>MCP Governance</b><span>조직 워크스페이스</span></div>
       </div>
       <nav class="nav" id="nav" aria-label="화면"></nav>
       <div class="side-foot">
         <div class="who" id="who"></div>
         <div class="row">
           <button class="icon-btn" type="button" data-act="theme" aria-label="밝게·어둡게 바꾸기" title="밝게·어둡게"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8a2.83 2.83 0 0 0 4 4 4 4 0 1 1-4-4"/><path d="M12 2v2M12 20v2m-7.1-17.1 1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></svg></button>
-          <button class="btn sm" type="button" data-act="logout">로그아웃</button>
+          <button class="btn sm logout" type="button" data-act="logout" aria-label="로그아웃" title="로그아웃"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true"><path d="M9 3H4v18h5M15 7l5 5-5 5M8 12h12"/></svg><span>로그아웃</span></button>
         </div>
       </div>
     </aside>
@@ -42,16 +42,15 @@
     </main>
   </div>
 
-  <div class="scrim" id="scrim" data-act="close-drawer"></div>
-  <aside class="drawer" id="drawer" aria-hidden="true" aria-labelledby="drawer-title" inert>
+  <dialog class="drawer" id="drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="drawer-title" inert>
     <header>
       <h2 id="drawer-title"></h2>
-      <button class="icon-btn" type="button" data-act="close-drawer" aria-label="닫기">✕</button>
+      <button class="icon-btn" type="button" data-act="close-drawer" aria-label="닫기" autofocus>✕</button>
     </header>
     <div class="content" id="drawer-body"></div>
-  </aside>
+  </dialog>
 
-  <dialog id="dialog"><form method="dialog" id="dialog-form"></form></dialog>
+  <dialog id="dialog" aria-labelledby="dialog-title"><form method="dialog" id="dialog-form"></form></dialog>
   <div id="toast" class="toast" role="status" hidden></div>
 </body>
 </html>

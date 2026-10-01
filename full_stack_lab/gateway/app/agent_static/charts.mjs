@@ -14,22 +14,22 @@ const calm = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 function base() {
   return {
     animation: !calm(),
-    textStyle: { fontFamily: css("--sans"), fontSize: 14, color: css("--ink-2") },
+    textStyle: { fontFamily: css("--sans"), fontSize: 12, color: css("--ink-2") },
     // richText: the tooltip is drawn on the canvas, not built as HTML. Series names come
     // from the audit log (a harness names itself), so nothing here may reach innerHTML;
     // HTML tooltips would also need inline style attributes, which the CSP refuses.
     tooltip: {
       renderMode: "richText", backgroundColor: css("--panel"), borderColor: css("--line-2"), borderWidth: 1,
-      textStyle: { color: css("--ink"), fontSize: 14 }, confine: true,
+      textStyle: { color: css("--ink"), fontSize: 12 }, confine: true,
     },
-    legend: { top: 0, left: 0, icon: "circle", itemWidth: 10, itemHeight: 10, itemGap: 18,
-      textStyle: { color: css("--ink-2"), fontSize: 14 } },
+    legend: { type: "scroll", pageIconColor: css("--ink-2"), pageTextStyle: { color: css("--ink-2") }, top: 0, left: 0, icon: "circle", itemWidth: 10, itemHeight: 10, itemGap: 18,
+      textStyle: { color: css("--ink-2"), fontSize: 12 } },
     grid: { left: 4, right: 20, top: 44, bottom: 4, containLabel: true },
   };
 }
 const axis = (extra = {}) => ({
   axisLine: { lineStyle: { color: css("--line-2") } }, axisTick: { show: false },
-  axisLabel: { color: css("--ink-3"), fontSize: 13 }, splitLine: { lineStyle: { color: css("--line") } }, ...extra,
+  axisLabel: { color: css("--ink-3"), fontSize: 12 }, splitLine: { lineStyle: { color: css("--line") } }, ...extra,
 });
 
 // ── mounting ─────────────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ export function register(builders) {
 export function mountVisible(root = document) {
   for (const [id, build] of pending) {
     const el = root.querySelector(`#${CSS.escape(id)}`);
-    if (!el || el.closest("[hidden]")) continue;
+    if (!el || el.closest("[hidden], details:not([open])")) continue;
     pending.delete(id);
     draw(el, build);
   }
@@ -61,7 +61,7 @@ function draw(el, build) {
   // A chart of zeros reads as a broken chart. Say there is nothing yet; redraw() replaces it when data comes.
   if (!values(option).some((v) => Number(v) > 0)) {
     el.classList.add("is-empty");
-    el.replaceChildren(Object.assign(document.createElement("p"), { className: "empty", textContent: "아직 데이터가 없어요" }));
+    el.replaceChildren(Object.assign(document.createElement("p"), { className: "empty", textContent: "표시할 데이터가 없습니다." }));
     live.set(el, { chart: null, build, observer: null });
     return;
   }
@@ -128,7 +128,7 @@ export function redrawAll() {
 /** Stacked columns (or bars) per category: [{name, color, data}]. */
 export function stacked(categories, series, { horizontal = false, onClick, grouped = false } = {}) {
   const cat = axis({ type: "category", data: categories,
-    axisLabel: { color: css("--ink-2"), fontSize: 13, ...(horizontal ? { width: 160, overflow: "truncate" } : {}) } });
+    axisLabel: { color: css("--ink-2"), fontSize: 12, ...(horizontal ? { width: 160, overflow: "truncate" } : {}) } });
   const val = axis({ type: "value", minInterval: 1 });
   return {
     tooltip: { ...base().tooltip, trigger: "axis", axisPointer: { type: "shadow" } },
@@ -157,7 +157,7 @@ export function donut(items, { total = true } = {}) {
     legend: { ...base().legend, type: "scroll", top: undefined, bottom: 0, left: "center", orient: "horizontal",
       textStyle: { ...base().legend.textStyle, width: 120, overflow: "truncate" } },
     title: total ? { text: String(sum), subtext: "건", left: "center", top: "33%",
-      textStyle: { fontSize: 30, fontWeight: 700, color: css("--ink") }, subtextStyle: { color: css("--ink-3"), fontSize: 14 } } : undefined,
+      textStyle: { fontSize: 30, fontWeight: 700, color: css("--ink") }, subtextStyle: { color: css("--ink-3"), fontSize: 12 } } : undefined,
     series: [{
       type: "pie", radius: ["48%", "72%"], center: ["50%", "44%"], avoidLabelOverlap: true,
       label: { show: false }, itemStyle: { borderColor: css("--panel"), borderWidth: 2 },
@@ -174,7 +174,7 @@ export function bars(items, { unit = "건", tone = "--brand", onClick } = {}) {
     grid: { ...base().grid, top: 8 },
     xAxis: axis({ type: "value", minInterval: 1 }),
     yAxis: axis({ type: "category", data: items.map((i) => i.name), inverse: true,
-      axisLabel: { color: css("--ink-2"), fontSize: 14, width: 180, overflow: "truncate" } }),
+      axisLabel: { color: css("--ink-2"), fontSize: 12, width: 180, overflow: "truncate" } }),
     series: [{ type: "bar", barMaxWidth: 20, data: items.map((i) => ({ value: i.value, itemStyle: { color: i.color || css(tone) } })),
       label: { show: true, position: "right", color: css("--ink-2"), formatter: `{c}${unit}` } }],
     onClick,
@@ -191,7 +191,7 @@ export function sankey({ nodes, links }) {
     series: [{
       type: "sankey", left: 8, right: 110, top: 8, bottom: 8, nodeWidth: 14, nodeGap: 12, draggable: false, nodeAlign: "left",
       emphasis: { focus: "adjacency" },
-      label: { color: css("--ink"), fontSize: 14 },
+      label: { color: css("--ink"), fontSize: 12 },
       lineStyle: { color: "gradient", opacity: 0.35, curveness: 0.5 },
       data: nodes.map((n) => ({ name: n.name, itemStyle: { color: decisionColor[n.name] || layerColor[n.layer] || css("--ink-3") } })),
       links,
@@ -207,13 +207,13 @@ export function decisionGrid(rows, cols, cells) {
     tooltip: { ...base().tooltip, trigger: "item", formatter: (p) => `${rows[p.value[1]]} · ${cols[p.value[0]]}\n${p.data.label}` },
     grid: { left: 4, right: 12, top: 8, bottom: 8, containLabel: true },
     xAxis: axis({ type: "category", data: cols, position: "top", splitArea: { show: false },
-      axisLabel: { color: css("--ink-2"), fontSize: 14, interval: 0 } }),
+      axisLabel: { color: css("--ink-2"), fontSize: 12, interval: 0 } }),
     yAxis: axis({ type: "category", data: rows, inverse: true, axisLabel: { color: css("--ink"), fontSize: 15, fontWeight: 600 } }),
     visualMap: { show: false, type: "piecewise", dimension: 2,
       pieces: DECISIONS.map((d, i) => ({ value: i, color: color(d) })) },
     series: [{
       type: "heatmap", itemStyle: { borderColor: css("--panel"), borderWidth: 4, borderRadius: 6 },
-      label: { show: true, color: "#fff", fontSize: 14, fontWeight: 600, formatter: (p) => p.data.label },
+      label: { show: true, color: "#fff", fontSize: 12, fontWeight: 600, formatter: (p) => p.data.label },
       data: cells.map((c) => ({ value: [c.x, c.y, index[c.decision] ?? 0], label: DECISION_LABEL[c.decision] || c.decision })),
     }],
   };
@@ -225,7 +225,7 @@ export function columns(items, { tone = "--brand" } = {}) {
     legend: { show: false },
     tooltip: { ...base().tooltip, trigger: "axis", axisPointer: { type: "shadow" } },
     grid: { ...base().grid, top: 16 },
-    xAxis: axis({ type: "category", data: items.map((i) => i.name), axisLabel: { color: css("--ink-2"), fontSize: 14, interval: 0 } }),
+    xAxis: axis({ type: "category", data: items.map((i) => i.name), axisLabel: { color: css("--ink-2"), fontSize: 12, interval: 0 } }),
     yAxis: axis({ type: "value", minInterval: 1 }),
     series: [{ type: "bar", barMaxWidth: 36, data: items.map((i) => ({ value: i.value, itemStyle: { color: i.color || css(tone) } })),
       label: { show: true, position: "top", color: css("--ink-2") } }],

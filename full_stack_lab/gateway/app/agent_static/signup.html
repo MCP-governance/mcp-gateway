@@ -9,8 +9,11 @@
   <link rel="stylesheet" href="/static/login.css" />
 </head>
 <body class="gate">
+  <div class="gate-layout">
+  <section class="gate-intro" aria-label="MCP Governance"><span class="gate-kicker">MCP GOVERNANCE</span><h1>도구 연결부터<br />실행과 회수까지</h1><p>조직의 MCP 연결, 사용자와 단말, 승인과 감사 기록을 한 곳에서 관리합니다.</p><div class="gate-points"><span>연결·접근 관리</span><span>정책·실행 추적</span><span>종료·회수 증거</span></div></section>
   <main class="panel gate-card">
     <header class="brand"><div><b>회원가입 신청</b><span>관리자 승인 후 로그인할 수 있습니다.</span></div></header>
+    <div class="gate-heading"><h2>조직 계정 신청</h2><p>관리자 승인 후 계정과 관리형 단말을 연결할 수 있습니다.</p></div>
     <form id="signup-form" class="form stack">
       <label>아이디<input name="username" autocomplete="username" required minlength="3" maxlength="32" pattern="[a-z][a-z0-9._-]{2,31}" /></label>
       <label>표시 이름<input name="display_name" required minlength="2" maxlength="80" /></label>
@@ -20,6 +23,7 @@
       <a href="/login">로그인으로 돌아가기</a>
     </form>
   </main>
+  </div>
   <script src="/static/signup.js"></script>
 </body>
 </html>

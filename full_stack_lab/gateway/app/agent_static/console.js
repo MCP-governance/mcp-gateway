@@ -17,6 +17,7 @@ import * as charts from "./charts.mjs";
 const { DECISION_LABEL } = charts;
 const TOKEN_KEY = "mcp-console-token";
 const THEME_KEY = "mcp-console-theme";
+const NAV_KEY = "mcp-console-nav-v4";
 const token = localStorage.getItem(TOKEN_KEY);
 if (!token) location.replace("/login");
 
@@ -38,6 +39,9 @@ function html(strings, ...values) {
   return new Raw(out);
 }
 const short = (text, n = 120) => { const s = String(text ?? ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
+
+const entityRef = (value, n = 24) => html`<span class="entity-ref mono" title="${value || ""}">${short(value || "—", n)}</span>`;
+const listToolbar = (id, placeholder) => html`<label class="list-search"><input type="search" data-list-search="${id}" placeholder="${placeholder}" aria-label="${placeholder}" maxlength="120" /><span class="result-count" data-list-count="${id}" role="status"></span></label>`;
 
 // ── API ──────────────────────────────────────────────────────────────────────
 function detailText(detail) {
@@ -134,20 +138,23 @@ const UPSTREAM = { executed: ["allow", "실행됨"], unknown: ["alert", "전송�
 /** The five stops of one call. Self-reported fields are named as such. */
 function pipeline(r, device) {
   const [source, gate, endpoint, upstream, response] = pipelineOf(r);
-  const hash = (h) => (h ? html`<code>${String(h).slice(0, 8)}</code>` : "");
+  const hash = (h) => h ? html`<code title="${h}">${String(h).slice(0, 12)}</code>` : "";
+  const stage = (n, title, body, cls = "") => html`<li class="${cls}"><span class="step-no" aria-hidden="true">${n}</span><b>${title}</b><div class="stage-body">${body}</div></li>`;
   return html`<ol class="pipe" aria-label="호출 경로">
-    <li><b>출처</b><span class="v">${r.harness ? harnessLabel(r.harness) : r.agent || "—"} <span class="muted">자기 신고</span></span>
-      <span class="v">${r.workstation || "단말 미상"}</span>${source.state === "signed" ? chip("brand", "서명 토큰") : chip("outline", "단말 결합 없음")}</li>
-    <li class="${r.decision === "Block" ? "stop" : ""}"><b>Gateway</b>${decisionChip(r.decision)}<span class="v mono">${r.policy_id}</span>
-      <span class="v">${gate.state === "refused-connection" ? "연결 단계 거부" : html`원장 #${r.id} ${hash(r.evidence_sha256)}`}</span></li>
-    <li class="${endpoint.state === "bound" ? "" : "off"}"><b>Endpoint</b>${endpoint.state === "bound"
-      ? html`${chip("brand", "단말 토큰 결합")}${device ? html`<span class="v">현재</span>${statusPair(device)}` : ""}`
-      : chip("outline", "Endpoint 강제 아님")}</li>
-    <li class="${upstream.state === "not_sent" ? "off" : ""}"><b>Upstream</b>${chip(...UPSTREAM[upstream.state])}</li>
-    <li class="${response.state === "withheld" ? "stop" : ""}"><b>응답</b>${responseChip(response.state)}
-      ${r.response_bytes != null ? html`<span class="v">${r.response_bytes} byte · ${(r.response_types || []).join(", ") || "—"} ${hash(r.response_sha256)}</span>` : ""}
-      ${(r.masked_types || []).length ? html`<span class="v">${r.masked_types.join(", ")}</span>` : ""}
-      ${response.state === "withheld" ? chip("block", "효과 유지") : ""}</li></ol>`;
+    ${stage(1, "호출 출처", html`<span>${r.harness ? harnessLabel(r.harness) : r.agent || "—"}</span>
+      ${chip("outline", "하네스 이름은 자기 신고")}${source.state === "signed" ? chip("brand", "서명된 단말 토큰") : chip("outline", "단말 결합 없음")}
+      <span class="v">단말 <code>${r.workstation || "미상"}</code></span>`)}
+    ${stage(2, "Gateway 판정", html`${decisionChip(r.decision)}<code>${r.policy_id}</code>
+      <span class="v">${gate.state === "refused-connection" ? "연결 단계에서 거부" : html`감사 원장 #${r.id} · ${hash(r.evidence_sha256)}`}</span>`, r.decision === "Block" ? "stop" : "")}
+    ${stage(3, "단말 연결", endpoint.state === "bound" ? html`${chip("brand", "호출 당시 단말 토큰 결합")}
+      ${device ? html`<span class="v">현재 단말 상태 · 호출 이후의 최신 보고</span>${statusPair(device)}` : ""}` : chip("outline", "단말 강제 증거 없음"), endpoint.state === "bound" ? "" : "off")}
+    ${stage(4, "도구 실행", html`${chip(...UPSTREAM[upstream.state])}
+      <span class="v">${r.executed ? "Upstream 실행이 확인되었습니다." : r.attempted ? "요청을 전송했지만 실행 여부를 확인하지 못했습니다." : "Upstream에 요청을 보내지 않았습니다."}</span>`, upstream.state === "not_sent" ? "off" : "")}
+    ${stage(5, "응답 처리", html`${responseChip(response.state)}
+      ${r.response_bytes != null ? html`<span class="v">${r.response_bytes} byte · ${(r.response_types || []).join(", ") || "형식 미상"} · ${hash(r.response_sha256)}</span>` : ""}
+      ${(r.masked_types || []).length ? html`<span class="v">마스킹 항목 · ${r.masked_types.join(", ")}</span>` : ""}
+      ${response.state === "withheld" ? html`<span class="v">${chip("block", "실행 효과 유지")} 응답 보류는 이미 실행된 작업을 되돌리지 않습니다.</span>` : ""}`, response.state === "withheld" ? "stop" : "")}
+    </ol>`;
 }
 
 // /api/integrations is admin-only and several pages read it; one fetch serves a 15 s window.
@@ -237,7 +244,8 @@ function setDrawer(open) {
   drawer.classList.toggle("open", open);
   drawer.setAttribute("aria-hidden", String(!open));
   drawer.inert = !open;
-  $("#scrim").classList.toggle("show", open);
+  if (open && !drawer.open) drawer.showModal();
+  if (!open && drawer.open) drawer.close();
 }
 /** body is html; `tabs` (optional) is [{key, label, n, body}] shown as drawer tabs. */
 function openDrawer(title, body, tabs = null) {
@@ -245,7 +253,7 @@ function openDrawer(title, body, tabs = null) {
   $("#drawer-title").textContent = title;
   $("#drawer-body").innerHTML = String(tabs ? html`${body}${tabBar(tabs, tabs[0].key, "d")}${tabs.map((t) => tabPanel(t.key, tabs[0].key, t.body, "d"))}` : body);
   setDrawer(true);
-  $("#drawer .icon-btn").focus();
+
 }
 function closeDrawer() {
   if (/^#\/servers\/./.test(location.hash)) history.replaceState(null, "", "#/servers");
@@ -262,7 +270,7 @@ function ask({ title, body = "", fields = "", confirm = "확인", danger = false
   // The confirm button comes first in the DOM so Enter in a field confirms: implicit submission
   // uses the form's first submit button, and with 취소 first Enter silently cancelled (a status
   // change with a memo never applied). CSS shows 취소 on the left.
-  form.innerHTML = String(html`<h3>${title}</h3>${body ? html`<p>${body}</p>` : ""}${fields}
+  form.innerHTML = String(html`<h3 id="dialog-title">${title}</h3>${body ? html`<p>${body}</p>` : ""}${fields}
     <div class="row"><button class="btn ${danger ? "danger solid" : "primary"}" value="ok">${confirm}</button>
     <button class="btn" value="cancel" formnovalidate>취소</button></div>`);
   dialog.returnValue = "";
@@ -290,30 +298,46 @@ function page({ head, kpis = "", tabs, active }) {
   const current = tabs.some((t) => t.key === active) ? active : tabs[0].key;
   return html`${head}${kpis}${tabBar(tabs, current)}${tabs.map((t) => tabPanel(t.key, current, t.body))}`;
 }
+const PAGE_HELP = {
+  overview: "호출 판정, 실제 실행, 응답 처리와 미해결 통제 항목을 함께 확인합니다.",
+  activity: "Gateway를 거친 요청을 추적하고, 판정과 Upstream 실행 결과를 구분합니다.",
+  approvals: "승인이 필요한 도구 호출을 검토합니다. 승인하면 요청이 실행될 수 있습니다.",
+  coverage: "MCP와 커넥터의 통제 주체, 증거 수준, 남아 있는 우회 경로를 확인합니다.",
+  servers: "등록된 MCP 서버와 승인 도구, 계약 변경 및 연결 상태를 관리합니다.",
+  people: "조직 계정, 관리형 단말의 등록 상태와 설치·연결 이력을 관리합니다.",
+  intake: "새 MCP의 도입을 신청하고, 검증 결과와 독립적인 승인 기록을 확인합니다.",
+  termination: "회수 대상과 잔존 위험을 확인하고, 증거에 따라 종료 등급을 판정합니다.",
+  policy: "현재 적용 중인 PAC15 권한과 안전 정책, 변경 기록 및 예외를 확인합니다.",
+};
 const head = (title, { status = "", actions = "", back = "" } = {}) => html`<div class="page-head">
-  ${back}<h1>${title}</h1>${status ? html`<div class="status">${status}</div>` : ""}${actions ? html`<div class="actions">${actions}</div>` : ""}</div>`;
+  <div class="heading"><div class="eyebrow">${back || "운영 콘솔"}<span aria-hidden="true">/</span>${PAGES.find((p) => p.id === current.page)?.group || ""}</div>
+    <h1>${title}</h1>${PAGE_HELP[current.page] ? html`<p class="description">${PAGE_HELP[current.page]}</p>` : ""}
+    ${status ? html`<div class="status">${status}</div>` : ""}</div>
+  ${actions ? html`<div class="actions">${actions}</div>` : ""}</div>`;
+// Keep a deliberate column count for pages with fewer than six metrics.
 // A zero is not news: it stays in ink colour, and only a count that needs attention takes the decision colour.
-const kpiStrip = (items) => html`<div class="kpis">${items.map(([label, value, tone = "", href = ""]) => [label, value,
+const kpiStrip = (items) => html`<div class="kpis kpis-${items.length}">${items.map(([label, value, tone = "", href = ""]) => [label, value,
   value === 0 || value === "0" ? "" : tone, href]).map(([label, value, tone, href]) => href
   ? html`<a class="kpi ${tone}" href="${href}"><div class="label">${label}</div><div class="value">${value ?? 0}</div></a>`
   : html`<div class="kpi ${tone}"><div class="label">${label}</div><div class="value">${value ?? 0}</div></div>`)}</div>`;
 const panel = (title, body, { sub = "", tools = "", flush = false } = {}) => html`<section class="panel">
-  <header><h2>${title}</h2>${sub ? html`<span class="sub">${sub}</span>` : ""}${tools ? html`<div class="tools">${tools}</div>` : ""}</header>
+  <header><h2>${title}</h2>${sub ? html`<span class="sub">${sub}</span>` : ""}</header>
+  ${tools ? html`<div class="tools">${tools}</div>` : ""}
   <div class="body ${flush ? "flush" : ""}">${body}</div></section>`;
 const chartBox = (id, label, size = "") => html`<div class="chart ${size}" id="${id}" role="img" aria-label="${label}"></div>`;
 
 // ── routing ──────────────────────────────────────────────────────────────────
 // Grouped the way an operator asks: what is happening, who controls what, how it starts and ends.
 const PAGES = [
-  { id: "overview", label: "개요", group: "관제" },
-  { id: "activity", label: "호출", group: "관제" },
-  { id: "approvals", label: "승인 대기", group: "관제", badge: "approvals" },
-  { id: "coverage", label: "통제 범위", group: "통제", badge: "coverage" },
-  { id: "servers", label: "MCP 서버", group: "통제" },
-  { id: "people", label: "직원·단말", group: "통제" },
-  { id: "intake", label: "도입 신청", group: "도입·종료" },
-  { id: "termination", label: "종료·폐기", group: "도입·종료", badge: "termination" },
-  { id: "policy", label: "정책", group: "도입·종료" },
+  { id: "overview", label: "운영 현황", group: "모니터링" },
+  { id: "activity", label: "호출 로그", group: "모니터링" },
+  { id: "approvals", label: "승인 대기", group: "모니터링", badge: "approvals" },
+  { id: "coverage", label: "통제 범위", group: "접근·통제", badge: "coverage" },
+  { id: "servers", label: "MCP 서버", group: "접근·통제" },
+  { id: "people", label: "직원·단말", group: "접근·통제" },
+  { id: "intake", label: "도입 신청", group: "수명주기" },
+  { id: "termination", label: "종료·폐기", group: "수명주기", badge: "termination" },
+  { id: "policy", label: "정책", group: "수명주기" },
 ];
 // Addresses from before D-63 land on the tab that now holds their content.
 const ALIASES = { "people?t=planes": "coverage?t=items", "people?t=configs": "coverage?t=shadow",
@@ -330,13 +354,21 @@ function renderNav(active) {
     groups.get(p.group).push(p);
   }
   const shortcuts = [
-    viewer.git_url && html`<a href="${viewer.git_url}" target="_blank" rel="noopener">${icon("git")}<span>내부 저장소</span><span class="ext" aria-hidden="true">↗</span></a>`,
-    viewer.kit && html`<a href="#" data-act="pc-kit">${icon("plug")}<span>내 PC 연결</span></a>`,
+    viewer.git_url && html`<a href="${viewer.git_url}" target="_blank" rel="noopener" aria-label="내부 저장소 (새 탭)" title="내부 저장소">${icon("git")}<span>내부 저장소</span><span class="ext" aria-hidden="true">↗</span></a>`,
+    viewer.kit && html`<a href="#" data-act="pc-kit" aria-label="내 PC 연결" title="내 PC 연결">${icon("plug")}<span>내 PC 연결</span></a>`,
   ].filter(Boolean);
   $("#nav").innerHTML = String(html`${[...groups].map(([group, pages]) => html`<div class="group">${group}</div>${pages.map((p) => html`
-    <a href="#/${p.id}" title="${p.label}" ${active === p.id ? raw('aria-current="page"') : ""}>${icon(p.id)}<span>${p.label}</span>
+    <a href="#/${p.id}" title="${p.label}" aria-label="${p.label}" ${active === p.id ? raw('aria-current="page"') : ""}>${icon(p.id)}<span>${p.label}</span>
       ${p.badge && badges[p.badge] ? html`<span class="count">${badges[p.badge]}</span>` : ""}</a>`)}`)}
     ${shortcuts.length ? html`<div class="group">바로가기</div>${shortcuts}` : ""}`);
+}
+
+function setNavCollapsed(closed) {
+  document.documentElement.classList.toggle("nav-collapsed", closed);
+  const button = document.querySelector('[data-act="sidebar"]');
+  button.setAttribute("aria-expanded", String(!closed));
+  button.setAttribute("aria-label", closed ? "메뉴 펼치기" : "메뉴 접기");
+  button.title = closed ? "메뉴 펼치기" : "메뉴 접기";
 }
 
 function parseHash() {
@@ -346,6 +378,7 @@ function parseHash() {
 }
 
 async function route() {
+  if (matchMedia("(max-width: 900px)").matches) setNavCollapsed(true);
   stopLive();
   stopIntake();
   // Only hide the drawer: closeDrawer() also rewrites #/servers/<id> to #/servers, which here
@@ -413,12 +446,12 @@ function decisionRow(r) {
   return html`<tr class="clickable" tabindex="0" data-act="decision" data-id="${r.id}">
     <td class="t">${when(r.at, { seconds: true })}</td>
     <td>${decisionChip(r.decision)}<span class="sub mono">${r.policy_id}</span></td>
-    <td class="who-cell"><b>${r.who}</b><span class="sub">${r.workstation ? html`<span class="mono">${r.workstation}</span> · ` : ""}${r.agent === "termination-probe" ? "종료 점검" : r.harness ? harnessLabel(r.harness) : "—"}</span></td>
-    <td class="clip">${r.event_kind === "mcp-connection" ? chip("block", "연결 거부") : ""}<code>${r.server}.${r.tool}</code>${r.target ? html`<span class="sub muted">${short(r.target, 60)}</span>` : ""}</td>
+    <td class="who-cell"><b>${r.who}</b><span class="sub">${r.workstation ? html`${entityRef(r.workstation, 18)} · ` : ""}${r.agent === "termination-probe" ? "종료 점검" : r.harness ? harnessLabel(r.harness) : "—"}</span></td>
+    <td>${r.event_kind === "mcp-connection" ? chip("block", "연결 거부") : ""}<code>${r.server}.${r.tool}</code>${r.target ? html`<span class="sub muted" title="${r.target}">${short(r.target, 60)}</span>` : ""}</td>
     <td data-pri="2">${planeGlyphs(r, providerServers)}</td>
     <td>${flow3(r)}</td></tr>`;
 }
-const decisionTable = (rows, id = "") => html`<table class="data"><thead><tr><th>시각</th><th>판정·정책</th><th>사람·단말·하네스</th>
+const decisionTable = (rows, id = "") => html`<table class="data call-table"><thead><tr><th>시각</th><th>판정·정책</th><th>사람·단말·하네스</th>
   <th>도구·대상</th><th data-pri="2">경로</th><th>전송→실행→응답</th></tr></thead><tbody ${id ? raw(`id="${id}"`) : ""}>${rows.map(decisionRow)}</tbody></table>`;
 
 // D-49: a Console registration is approved until a date; past it P-APPROVAL-EXPIRY-001 blocks the calls.
@@ -456,9 +489,9 @@ ROUTES.overview = async (_, tab) => {
   const byServer = splitBy(o.flows, "server", (r) => Number(r.n));
   const flowTotal = o.flows.reduce((s, f) => s + Number(f.n || 0), 0);
   const stations = o.workstations;
-  const items = dedupeItems(pl.items);
+  const items = dedupeItems(pl?.items || []);
   const count = (s) => items.filter((i) => i.state === s).length;
-  const devices = pl.devices.filter((d) => d.endpoint_id);
+  const devices = (pl?.devices || []).filter((d) => d.endpoint_id);
   const deviceOf = Object.fromEntries(devices.map((d) => [d.endpoint_id, d]));
   const outside = items.filter((i) => !i.class.startsWith("gateway_")).length;
   const bypass = items.filter((i) => i.state === "bypass_possible").sort((a, b) => (b.bypass || []).length - (a.bypass || []).length).slice(0, 8);
@@ -486,9 +519,20 @@ ROUTES.overview = async (_, tab) => {
         ["실행 후 응답 보류", x.withheld, "block", "#/activity?execution=withheld"],
         ["우회 가능 항목", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"],
         ["종료 T2·T3", term.unresolved_grades, "alert", "#/termination"]]),
-      active: tab || "planes",
+      active: tab || "summary",
       tabs: [
-        { key: "planes", label: "평면", n: count("bypass_possible"), hot: count("bypass_possible") > 0, body: html`<div class="stack"><div class="grid c21">
+        { key: "summary", label: "운영 요약", body: html`<div class="stack">
+          <div class="overview-hero">
+            ${panel("최근 24시간 호출", chartBox("c-summary-traffic", "최근 24시간 시간대별 판정", "sm"), { sub: "Gateway 감사 기록", tools: html`<a class="btn sm" href="#/activity">로그 보기</a>` })}
+            ${panel("확인이 필요한 항목", html`<div class="action-list">
+              <a class="action-link" href="#/approvals"><span>도구 호출 승인<span class="hint">실행 전 검토가 필요한 요청</span></span><b class="n">${o.pending_approvals || 0}</b></a>
+              <a class="action-link" href="#/coverage?t=items&state=bypass_possible"><span>우회 가능한 통합<span class="hint">현재 통제 증거와 잔여 경로</span></span><b class="n">${count("bypass_possible")}</b></a>
+              <a class="action-link" href="#/termination"><span>종료 처리 중<span class="hint">회수 대상과 종료 판정</span></span><b class="n">${term.open_cases || 0}</b></a>
+            </div>`)}
+          </div>
+          ${panel("최근 차단 호출", feed.rows.length ? decisionTable(feed.rows) : empty("차단된 호출이 없습니다."), { flush: true, sub: "최신 10건", tools: html`<a class="btn sm" href="#/activity?decision=Block">전체 차단 기록</a>` })}
+        </div>` },
+        { key: "planes", label: "통제 현황", n: count("bypass_possible"), hot: count("bypass_possible") > 0, body: html`<div class="stack"><div class="grid c21">
           ${panel("분류 × 통제 상태", items.length ? chartBox("c-ov-matrix", "분류별 통제 상태 항목 수", "lg") : empty("항목 없음"), { sub: `Gateway 밖 ${outside}건` })}
           ${panel("증거 수준", items.length ? chartBox("c-ov-evidence", "통제 상태를 받치는 증거 종류", "sm") : empty("항목 없음"))}</div>
           ${panel("우회 가능 상위", bypass.length ? html`<table class="data"><thead><tr><th>항목</th><th>분류</th><th>상태·증거</th><th>우회</th></tr></thead><tbody>
@@ -509,7 +553,7 @@ ROUTES.overview = async (_, tab) => {
           </div>
           ${panel("하네스 → MCP 서버 → 판정", flowTotal ? chartBox("c-flow", "하네스에서 서버를 거쳐 판정까지의 호출 흐름", "xl") : empty("최근 24시간 호출 없음"), { sub: `${flowTotal}건 · 24시간` })}
           ${panel("직원 PC", html`<table class="data"><thead><tr><th>단말</th><th>사용자</th><th data-pri="2">하네스</th><th class="num">24시간 호출</th><th>통제 상태·증거</th><th data-pri="2">마지막 호출</th></tr></thead><tbody>
-            ${stations.map((w) => html`<tr><td class="mono">${w.endpoint_id}</td><td><b>${w.display_name || w.owner_token}</b><span class="sub">${w.department || ""}</span></td>
+            ${stations.map((w) => html`<tr><td>${entityRef(w.endpoint_id)}</td><td><b>${w.display_name || w.owner_token}</b><span class="sub">${w.department || ""}</span></td>
               <td data-pri="2">${w.harness ? chip("plain", harnessLabel(w.harness)) : html`<span class="muted">—</span>`}</td><td class="num">${w.calls}</td>
               <td>${deviceOf[w.endpoint_id] ? statusPair(deviceOf[w.endpoint_id]) : chip("outline", "관측 전용")}</td><td class="small" data-pri="2">${ago(w.last_call)}</td></tr>`)}
             </tbody></table>${stations.length ? "" : empty("등록된 단말 없음")}`, { flush: true })}</div>` },
@@ -523,6 +567,7 @@ ROUTES.overview = async (_, tab) => {
       ],
     }),
     charts: {
+      "c-summary-traffic": () => charts.decisionColumns(buckets.map((b) => b.label), buckets),
       "c-ov-matrix": () => charts.stacked(Object.values(INTEGRATION_CLASS),
         Object.entries(CONTROL_STATE).map(([k, [, label]]) => ({ name: label, color: charts.color(STATE_DECISION[k]),
           data: Object.keys(INTEGRATION_CLASS).map((c) => items.filter((i) => i.class === c && i.state === k).length) })),
@@ -664,26 +709,26 @@ ROUTES.activity = async (_, tab, query) => {
   const f = feed.filters;
   return {
     html: page({
-      head: head("호출", {
+      head: head("호출 로그", {
         status: html`<span class="live"><span class="dot" id="feed-dot"></span><span id="feed-status"></span></span>`,
         actions: html`<button class="btn" type="button" data-act="live" aria-pressed="${String(!feed.live)}">${feed.live ? "일시정지" : "실시간 재개"}</button>
           ${viewer.admin ? html`<button class="btn" data-act="audit-verify">감사 체인 검증</button>` : ""}`,
       }),
       active: tab || "live",
       tabs: [
-        { key: "live", label: "이벤트", body: html`<section class="panel">
+        { key: "live", label: "호출 목록", body: html`<section class="panel">
           <div class="filters">
-            <input class="grow" data-feed-search type="search" maxlength="120" value="${feed.query}" placeholder="사람·단말·하네스·도구·대상·정책·trace" aria-label="불러온 기록에서 찾기" />
-            <select data-filter="decision" aria-label="판정">${option("", "모든 판정", f.decision)}
-              ${Object.entries(DECISION).map(([k, [, label]]) => option(k, label, f.decision))}</select>
-            <select data-filter="server" aria-label="서버">${option("", "모든 서버", f.server)}${servers.map((s) => option(s, s, f.server))}</select>
-            <select data-filter="event_kind" aria-label="이벤트 종류">${option("", "모든 이벤트", f.event_kind)}${option("tools/call", "도구 호출", f.event_kind)}${option("mcp-connection", "연결 거부", f.event_kind)}</select>
-            <select data-filter="execution" aria-label="실행 여부">${option("", "모든 실행 결과", f.execution)}${option("executed", "실제 실행", f.execution)}${option("not-sent", "미전송", f.execution)}${option("unknown", "실행 여부 미확인", f.execution)}${option("withheld", "실행 후 응답 보류", f.execution)}</select>
-            ${viewer.admin ? html`<input data-filter="person" type="search" placeholder="사람" value="${f.person}" aria-label="사람" />` : ""}
+            <label class="grow">기록 검색<input data-feed-search type="search" maxlength="120" value="${feed.query}" placeholder="사람·단말·하네스·도구·대상·정책·trace" aria-label="불러온 기록에서 찾기" /></label>
+            <label>판정<select data-filter="decision" aria-label="판정">${option("", "모든 판정", f.decision)}
+              ${Object.entries(DECISION).map(([k, [, label]]) => option(k, label, f.decision))}</select></label>
+            <label>MCP 서버<select data-filter="server" aria-label="서버">${option("", "모든 서버", f.server)}${servers.map((s) => option(s, s, f.server))}</select></label>
+            <label>이벤트<select data-filter="event_kind" aria-label="이벤트 종류">${option("", "모든 이벤트", f.event_kind)}${option("tools/call", "도구 호출", f.event_kind)}${option("mcp-connection", "연결 거부", f.event_kind)}</select></label>
+            <label>실행 결과<select data-filter="execution" aria-label="실행 여부">${option("", "모든 실행 결과", f.execution)}${option("executed", "실제 실행", f.execution)}${option("not-sent", "미전송", f.execution)}${option("unknown", "실행 여부 미확인", f.execution)}${option("withheld", "실행 후 응답 보류", f.execution)}</select></label>
+            ${viewer.admin ? html`<label>사용자<input data-filter="person" type="search" placeholder="이름 또는 계정" value="${f.person}" aria-label="사람" /></label>` : ""}
           </div>
-          <div class="body">${chartBox("c-minutes", "불러온 호출의 시간 분포", "sm")}</div>
           <div class="body flush">${decisionTable([], "feed")}<p class="empty" id="feed-empty" hidden></p></div></section>` },
-        { key: "stats", label: "분석", body: html`<div class="stack"><div class="grid c2">
+        { key: "stats", label: "분석", body: html`<div class="stack">
+          ${panel("시간대별 호출", chartBox("c-minutes", "불러온 호출의 시간 분포", "sm"))}<div class="grid c2">
           ${panel("응답 처리", chartBox("c-by-response", "불러온 호출의 응답 처리 비율", "sm"))}
           ${panel("강제 평면", chartBox("c-by-plane", "불러온 호출의 Gateway 단독·단말 결합 비율", "sm"))}</div>
           <div class="grid c2">
@@ -703,7 +748,9 @@ async function showDecision(id) {
   // The device's current state, beside (never instead of) what the call itself carried.
   const device = r.device_id ? (await planes().catch(() => null))?.devices.find((d) => d.endpoint_id === r.device_id) : null;
   const conflictChip = (c) => chip((DECISION[c.decision] || [""])[0], `${(DECISION[c.decision] || [, c.decision])[1]} ${c.policy_id}`);
-  openDrawer(`호출 #${r.id}`, html`${pipeline(r, device)}`, [
+  openDrawer(`호출 #${r.id}`, html`<div class="drawer-summary"><span class="tool">${r.server}.${r.tool}</span>
+    ${decisionChip(r.decision)}${flow3(r)}<span class="muted small">${new Date(r.at).toLocaleString("ko-KR")}</span></div>`, [
+    { key: "flow", label: "호출 경로", body: html`${pipeline(r, device)}<blockquote class="quote">${r.reason}</blockquote>` },
     { key: "summary", label: "요약", body: html`<blockquote class="quote">${r.reason}</blockquote>
       ${r.policy_id === "P-ANOMALY-001" && viewer.admin ? html`<div class="row-actions">${chip("alert", "A.I.G 자동 검사 대상")}
         <a class="btn sm" href="#/intake?t=audit">A.I.G 검사 보기</a></div>` : ""}${kv([
@@ -749,13 +796,13 @@ ROUTES.approvals = async (_, tab) => {
             <td class="num nowrap"><button class="btn sm danger" data-act="reject" data-id="${a.id}">거부</button>
               <button class="btn sm primary" data-act="approve" data-id="${a.id}">승인·실행</button></td></tr>`)}
           </tbody></table>` : empty("대기 중인 요청 없음"), { flush: true }) },
-        { key: "history", label: "처리 이력", n: history.length, body: html`<div class="stack"><div class="grid c12">
-          ${panel("결과", history.length ? chartBox("c-appr-status", "처리된 승인 요청의 결과 비율", "sm") : empty("이력 없음"))}
-          ${panel("서버별 요청", byServer.length ? chartBox("c-appr-server", "서버별 승인 요청 수", "sm") : empty("요청 없음"))}</div>
+        { key: "history", label: "처리 이력", n: history.length, body: html`<div class="stack">
           ${panel("이력", history.length ? html`<table class="data"><thead><tr><th>요청자</th><th>도구</th><th>결과</th><th>처리</th><th>검토자</th></tr></thead><tbody>
             ${history.map((h) => html`<tr><td class="who-cell"><b>${h.display_name || h.requested_by}</b><span class="sub">${h.department || ""}</span></td>
               <td><code>${h.server_id}.${h.tool}</code></td><td>${chip(...(APPROVAL_STATUS[h.status] || ["", h.status]))}</td>
-              <td class="small">${when(h.reviewed_at || h.created_at)}</td><td class="small">${h.reviewed_by || "—"}</td></tr>`)}</tbody></table>` : "", { flush: true })}</div>` },
+              <td class="small">${when(h.reviewed_at || h.created_at)}</td><td class="small">${h.reviewed_by || "—"}</td></tr>`)}</tbody></table>` : "", { flush: true })}<details class="analysis"><summary>승인 처리 분석</summary><div class="grid c12">
+          ${panel("결과", history.length ? chartBox("c-appr-status", "처리된 승인 요청의 결과 비율", "sm") : empty("이력 없음"))}
+          ${panel("서버별 요청", byServer.length ? chartBox("c-appr-server", "서버별 승인 요청 수", "sm") : empty("요청 없음"))}</div></details></div>` },
       ],
     }),
     charts: {
@@ -806,18 +853,26 @@ ROUTES.servers = async (id, tab, query) => {
       head: head("MCP 서버", { actions: html`<button class="btn" data-act="catalog-refresh">계약 다시 확인</button>` }),
       active: tab || "servers",
       tabs: [
-        { key: "servers", label: "서버", n: servers.length, body: html`<div class="stack">
-          ${panel("서버별 호출", byServer.length ? chartBox("c-srv-calls", "최근 24시간 서버별 호출과 판정") : empty("최근 24시간 호출 없음"), { sub: "24시간" })}
-          ${servers.length ? html`<div class="tiles">${servers.map(serverTile)}</div>`
-            : panel("서버", html`${empty("등록된 서버가 없어요")}<div class="row-actions center"><a class="btn primary" href="#/intake">도입 신청 보기</a></div>`)}</div>` },
+        { key: "servers", label: "서버 목록", n: servers.length, body: html`<div class="stack">
+          ${panel("등록된 MCP 서버", servers.length ? html`<table class="data"><thead><tr><th>서버</th><th>연결·계약</th><th>통제 상태·증거</th><th>승인 기한</th><th class="num">도구</th><th class="num">24시간 호출</th><th></th></tr></thead><tbody id="server-list">
+            ${servers.map((s) => html`<tr class="clickable" tabindex="0" data-act="goto" data-href="#/servers/${encodeURIComponent(s.id)}">
+              <td><b>${s.display_name}</b><span class="sub mono">${s.id}</span></td>
+              <td>${chip(s.status === "READY" ? "allow" : s.status === "DISABLED" ? "outline" : "alert", SERVER_STATUS[s.status] || s.status)}<span class="sub">${s.deployment === "provider" ? "제공자 운영" : "조직 운영"} · ${LIFECYCLE[s.lifecycle] || s.lifecycle || "운영"}</span></td>
+              <td>${s.plane ? statusPair(s.plane) : chip("outline", "통제 증거 없음")}</td>
+              <td>${validityChip(s.registration) || chip("outline", "기한 정보 없음")}</td>
+              <td class="num">${s.tools ?? reg.tools.filter((t) => t.server_id === s.id && t.enabled).length}</td><td class="num">${s.calls || 0}</td>
+              <td><a class="btn sm" href="#/servers/${encodeURIComponent(s.id)}">상세</a></td></tr>`)}</tbody></table><p class="empty" data-list-empty="server-list" hidden>검색에 맞는 서버가 없습니다.</p>`
+            : html`${empty("등록된 MCP 서버가 없습니다.")}<div class="row-actions center"><a class="btn primary" href="#/intake">도입 신청 보기</a></div>`,
+            { flush: true, tools: listToolbar("server-list", "서버 이름·상태 검색") })}
+          <details class="analysis"><summary>서버별 호출 분석</summary>${chartBox("c-srv-calls", "최근 24시간 서버별 호출과 판정")}</details>
+        </div>` },
         { key: "tools", label: "도구", n: reg.tools.length, body: html`<div class="stack">
-          ${panel("서버별 도구 (행위)", chartBox("c-srv-actions", "서버별 승인 도구 수를 읽기·쓰기·실행으로 나눈 막대"))}
           ${panel("도구", html`<table class="data"><thead><tr><th>서버</th><th>도구</th><th>행위</th><th>상태</th></tr></thead><tbody>
             ${tools.map((t) => html`<tr><td class="mono">${t.server_id}</td><td><code>${t.name}</code></td>
               <td>${chip({ r: "allow", w: "alert", x: "block" }[t.action] || "", ACTION[t.action] || t.action)}</td>
               <td>${!t.enabled ? chip("outline", "미승인") : t.contract_ok ? chip("allow", "계약 일치") : chip("alert", "계약 불일치")}</td></tr>`)}
             </tbody></table>`, { flush: true, sub: `${tools.length}개`,
-            tools: html`<select data-act-change="tool-filter" aria-label="서버">${option("", "모든 서버")}${reg.servers.map((s) => option(s.id, s.id))}</select>` })}</div>` },
+            tools: html`<select data-act-change="tool-filter" aria-label="서버">${option("", "모든 서버")}${reg.servers.map((s) => option(s.id, s.id))}</select>` })}<details class="analysis"><summary>도구 권한 분포</summary>${chartBox("c-srv-actions", "서버별 승인 도구 수를 읽기·쓰기·실행으로 나눈 막대")}</details></div>` },
         { key: "contract", label: "계약", n: drifted.length, hot: drifted.length > 0, body: html`<div class="stack"><div class="grid c12">
           ${panel("도구 계약", chartBox("c-contract", "승인 도구의 계약 일치 비율", "sm"), { sub: html`<span class="mono">${reg.catalog_version}</span>` })}
           ${panel("서버 상태", html`<table class="data"><thead><tr><th>서버</th><th>상태</th><th>사유</th><th>마지막 확인</th><th></th></tr></thead><tbody>
@@ -914,7 +969,8 @@ ROUTES.coverage = async (_, tab, query) => {
     && (!q || `${i.name} ${i.target || ""} ${(i.owners || []).join(" ")}`.toLowerCase().includes(q)));
   const count = (s) => items.filter((i) => i.state === s).length;
   const review = conn.summary.pending + conn.summary.expired;
-  const seg = (key, value, label, cur) => html`<button type="button" data-act="coverage-filter" data-key="${key}" data-value="${value}" aria-pressed="${String(cur === value)}">${label}</button>`;
+  const coverageSelect = (key, label, choices, cur) => html`<label class="list-search">${label}<select data-coverage-filter="${key}" aria-label="${label}">
+    <option value="">전체</option>${Object.entries(choices).map(([k,v]) => html`<option value="${k}" ${k === cur ? raw("selected") : ""}>${Array.isArray(v) ? v[1] : v}</option>`)}</select></label>`;
   const shadowRows = inv.entries.filter((e) => e.classification !== "registered");
   const oldest = p.devices.filter((d) => d.evidence_kind === "kernel").map((d) => statusView(d)).sort((a, b) => b.level - a.level)[0];
   return {
@@ -929,12 +985,10 @@ ROUTES.coverage = async (_, tab, query) => {
         ["우회 가능", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"]]),
       active: tab || "items",
       tabs: [
-        { key: "items", label: "항목", n: items.length, body: html`<div class="stack"><div class="grid c21">
-          ${panel("분류 × 상태", items.length ? chartBox("c-cov-matrix", "분류별 통제 상태 항목 수", "lg") : empty("항목 없음"))}
-          ${panel("증거 수준", items.length ? chartBox("c-cov-evidence", "항목 상태를 받치는 증거 종류 비율", "sm") : empty("항목 없음"))}</div>
+        { key: "items", label: "항목", n: items.length, body: html`<div class="stack">
           ${panel("MCP·커넥터·플러그인", html`<table class="data"><thead><tr><th>항목</th><th>분류</th><th data-pri="2">관리 주체</th><th>상태·증거</th><th data-pri="2">승인</th><th>우회</th><th data-pri="2">발견</th></tr></thead><tbody>
             ${rows.map((i) => html`<tr class="clickable" tabindex="0" data-act="integration" data-key="${i.key}">
-              <td><b>${i.name}</b><span class="sub mono">${short(i.target || "", 56)}</span>${i.pcs > 1 ? html`<span class="sub">×${i.pcs} PC</span>` : ""}</td>
+              <td><b>${i.name}</b><span class="sub">${entityRef(i.target || "", 48)}</span>${i.pcs > 1 ? html`<span class="sub">×${i.pcs} PC</span>` : ""}</td>
               <td class="small">${INTEGRATION_CLASS[i.class] || i.class}${i.harness ? html`<span class="sub">${i.harness === "claude" ? "Claude Code" : "Codex"}</span>` : ""}</td>
               <td data-pri="2">${MANAGED_BY[i.managed_by] || i.managed_by}</td><td>${statusPair(i)}</td>
               <td class="small" data-pri="2">${i.approval?.state || "—"}${i.approval?.expires_at ? html`<span class="sub">~${when(i.approval.expires_at)}</span>` : ""}</td>
@@ -942,11 +996,13 @@ ROUTES.coverage = async (_, tab, query) => {
               <td class="small" data-pri="2">${i.discovered_from}${i.discovered_at ? html`<span class="sub">${when(i.discovered_at)}</span>` : ""}</td></tr>`)}
             </tbody></table>${rows.length ? "" : empty("조건에 맞는 항목 없음")}`, { flush: true,
             tools: html`<input type="search" data-coverage-search maxlength="80" value="${query.get("q") || ""}" placeholder="이름·대상·소유자" aria-label="항목 찾기" />
-              <div class="seg" role="group" aria-label="상태">${seg("state", "", "전체", state)}${Object.entries(CONTROL_STATE).map(([k, [, label]]) => seg("state", k, label, state))}</div>
-              <div class="seg" role="group" aria-label="분류">${seg("class", "", "모든 분류", cls)}${Object.entries(INTEGRATION_CLASS).map(([k, label]) => seg("class", k, label, cls))}</div>` })}</div>` },
+              ${coverageSelect("state", "통제 상태", CONTROL_STATE, state)}
+              ${coverageSelect("class", "통합 종류", INTEGRATION_CLASS, cls)}<span class="small muted">${rows.length}/${items.length}건</span>` })}<details class="analysis"><summary>통제 상태·증거 분석</summary><div class="grid c21">
+          ${panel("분류 × 상태", items.length ? chartBox("c-cov-matrix", "분류별 통제 상태 항목 수", "lg") : empty("항목 없음"))}
+          ${panel("증거 수준", items.length ? chartBox("c-cov-evidence", "항목 상태를 받치는 증거 종류 비율", "sm") : empty("항목 없음"))}</div></details></div>` },
         { key: "devices", label: "단말·계정", n: p.devices.length, hot: p.summary.devices.bypass_possible > 0, body: panel("단말·계정",
           html`<table class="data"><thead><tr><th>단말·계정</th><th>소유자</th><th data-pri="2">플랫폼</th><th>단말 상태·증거</th><th>관리 계정</th><th data-pri="2">검사</th><th>우회 경로</th></tr></thead><tbody>
-            ${p.devices.map((d) => html`<tr><td class="mono">${d.endpoint_id || "—"}<span class="sub">${d.hostname || ""}${d.account ? ` · ${d.account}(${d.uid})` : ""}</span></td>
+            ${p.devices.map((d) => html`<tr><td>${entityRef(d.endpoint_id)}<span class="sub">${d.hostname || ""}${d.account ? ` · ${d.account}(${d.uid})` : ""}</span></td>
               <td>${d.owner || "—"}</td><td data-pri="2">${d.platform || "—"}</td><td>${statusPair(d)}</td>
               <td>${d.account_state ? controlChip(d.account_state) : "—"}</td>
               <td data-pri="2">${Object.keys(d.checks || {}).length ? html`<span class="pg" role="img" aria-label="${Object.entries(d.checks).map(([k, v]) => `${k} ${v ? "통과" : "실패"}`).join(", ")}">${Object.entries(d.checks).map(([k, v]) => html`<b class="${v ? "on" : ""}" aria-hidden="true">${{ apparmor_enforcing: "AA", nftables_active: "NF", protected_configs: "CF", ordinary_account: "UA" }[k] || k}</b>`)}</span>` : html`<span class="muted">—</span>`}</td>
@@ -956,12 +1012,12 @@ ROUTES.coverage = async (_, tab, query) => {
         { key: "shadow", label: "섀도·잔존", n: shadowRows.length + (inv.os_events || []).length, hot: shadowRows.length > 0, body: html`<div class="stack">
           ${panel("발견 대비 커널 차단", (shadowRows.length || (inv.os_events || []).length) ? chartBox("c-cov-shadow", "단말별 발견한 섀도·잔존 설정과 커널 차단 수", "sm") : empty("발견·차단 없음"))}
           ${panel("단말 MCP 설정", html`<table class="data"><thead><tr><th>단말</th><th data-pri="2">설정 파일</th><th>서버</th><th>연결</th><th>분류</th></tr></thead><tbody>
-            ${inv.entries.map((e) => html`<tr><td class="mono">${e.endpoint_id}</td><td class="small mono" data-pri="2">${e.config_path}</td>
+            ${inv.entries.map((e) => html`<tr><td>${entityRef(e.endpoint_id)}</td><td class="small mono" data-pri="2">${e.config_path}</td>
               <td><b>${e.server_label}</b>${e.registry_name ? html`<span class="sub">${e.registry_name}</span>` : ""}</td>
               <td class="small mono clip">${e.transport} ${short(e.endpoint_ref, 60)}</td><td>${chip(...(ENDPOINT_CLASS[e.classification] || ["", e.classification]))}</td></tr>`)}
             </tbody></table>${inv.entries.length ? "" : empty("보고된 설정 없음")}`, { flush: true })}
           ${panel("커널 차단 관측", html`<table class="data"><thead><tr><th>시각</th><th>단말</th><th>종류</th><th>관측</th></tr></thead><tbody>
-            ${(inv.os_events || []).map((e) => html`<tr><td>${when(e.observed_at)}</td><td class="mono small">${e.endpoint_id}</td>
+            ${(inv.os_events || []).map((e) => html`<tr><td>${when(e.observed_at)}</td><td>${entityRef(e.endpoint_id)}</td>
               <td>${chip("block", e.kind === "network-denied" ? "네트워크 차단" : "실행 차단")}</td>
               <td class="mono small">${Object.entries(e.details).map(([k, v]) => `${k}=${v}`).join(" · ")}</td></tr>`)}
             </tbody></table>${(inv.os_events || []).length ? "" : empty("커널 차단 관측 없음")}`, { flush: true })}</div>` },
@@ -1010,32 +1066,32 @@ ROUTES.people = async (_, tab) => {
   return {
     html: page({
       head: head("직원·단말", { actions: html`<button class="btn primary" type="button" data-act="account-invite">조직 초대</button><button class="btn" type="button" data-act="device-issue">장치 자격 발급</button>` }),
-      kpis: kpiStrip([["단말", inv.coverage.known_endpoints], ["최근 15분 보고", inv.coverage.reporting_recently],
+      kpis: kpiStrip([["조직 계정", accounts.length], ["단말 자격", inv.coverage.known_endpoints], ["최근 15분 보고", inv.coverage.reporting_recently],
         ["관리형 활성", managed.filter((a) => a.managed_state === "active").length, "allow"],
         ["격리", managed.filter((a) => a.managed_state === "quarantined").length, "block"],
         ["설치 검토 대기", managed.filter((a) => a.managed_state === "pending").length, "approval"]]),
-      active: tab || "devices",
+      active: tab || "accounts",
       tabs: [
-        { key: "devices", label: "단말", n: inv.agents.length, body: html`<div class="stack"><div class="grid c21">
-          ${panel("단말별 호출", o.workstations.length ? chartBox("c-ws-calls", "최근 24시간 단말별 호출 수", "sm") : empty("단말 없음"), { sub: "24시간" })}
-          ${panel("하네스", byHarness.length ? chartBox("c-harness", "최근 24시간 하네스별 호출 비율", "sm") : empty("호출 없음"), { sub: "24시간" })}</div>
+        { key: "devices", label: "단말", n: inv.agents.length, body: html`<div class="stack">
           ${panel("단말", html`<table class="data"><thead><tr><th>단말</th><th>소유자</th><th data-pri="2">하네스</th><th>통제 상태·증거</th><th data-pri="2">마지막 보고</th><th></th></tr></thead><tbody>
-            ${inv.agents.map((a) => html`<tr><td class="mono">${a.endpoint_id}<span class="sub">${a.platform || ""}</span></td><td>${harnessOf[a.endpoint_id]?.display_name || a.owner_token || "—"}</td>
+            ${inv.agents.map((a) => html`<tr><td>${entityRef(a.endpoint_id)}<span class="sub">${a.platform || ""}</span></td><td>${harnessOf[a.endpoint_id]?.display_name || a.owner_token || "—"}</td>
               <td data-pri="2">${harnessOf[a.endpoint_id]?.harness ? chip("plain", harnessLabel(harnessOf[a.endpoint_id].harness)) : "—"}</td>
               <td>${deviceState[a.endpoint_id] ? statusPair(deviceState[a.endpoint_id]) : chip("outline", "관측 전용")}
                 ${a.managed_state && a.managed_state !== "unmanaged" ? html`<span class="sub">${({ active: "활성", pending: "설치 검토 대기", quarantined: "격리" })[a.managed_state] || a.managed_state}</span>` : ""}</td>
               <td class="small" data-pri="2">${ago(a.last_seen_at)}</td>
               <td class="num">${["pending", "quarantined"].includes(a.managed_state) && a.policy_hash ? html`<button class="btn sm primary" type="button" data-act="device-activate" data-id="${a.endpoint_id}" data-hash="${a.policy_hash}">설치 확인·활성화</button>` : ""}
                 ${a.status === "revoked" ? chip("outline", "폐기됨") : html`<button class="btn sm danger" type="button" data-act="device-revoke" data-id="${a.endpoint_id}">자격 폐기</button>`}</td></tr>`)}
-            </tbody></table>${inv.agents.length ? "" : empty("보고한 단말 없음")}`, { flush: true })}</div>` },
-        { key: "accounts", label: "계정", n: accounts.length, body: panel("계정", html`<table class="data"><thead><tr><th>이름</th><th data-pri="2">이메일</th><th>역할</th><th data-pri="2">부서</th><th>상태</th><th></th></tr></thead><tbody>
+            </tbody></table>${inv.agents.length ? "" : empty("보고한 단말 없음")}`, { flush: true })}<details class="analysis"><summary>단말·하네스 호출 분석</summary><div class="grid c21">
+          ${panel("단말별 호출", o.workstations.length ? chartBox("c-ws-calls", "최근 24시간 단말별 호출 수", "sm") : empty("단말 없음"), { sub: "24시간" })}
+          ${panel("하네스", byHarness.length ? chartBox("c-harness", "최근 24시간 하네스별 호출 비율", "sm") : empty("호출 없음"), { sub: "24시간" })}</div></details></div>` },
+        { key: "accounts", label: "조직 계정", n: accounts.length, body: panel("계정", html`<table class="data"><thead><tr><th>이름</th><th data-pri="2">이메일</th><th>역할</th><th data-pri="2">부서</th><th>상태</th><th></th></tr></thead><tbody id="account-list">
           ${accounts.map((a) => html`<tr><td><b>${a.display_name}</b><span class="sub">${a.job_title || ""}</span></td><td class="small" data-pri="2">${a.email}</td>
             <td>${ROLE[a.role] || a.role}</td><td data-pri="2">${a.department}</td>
             <td>${chip({ active: "allow", disabled: "block", locked: "alert" }[a.status] || "", { active: "사용", disabled: "중지", locked: "잠김" }[a.status] || a.status)}</td>
             <td class="num">${a.user_id === viewer.user_id ? html`<span class="small muted">본인</span>`
               : html`<button class="btn sm" data-act="account-status" data-id="${a.user_id}" data-name="${a.display_name}" data-status="${a.status}">상태 변경</button>
                 ${a.user_id !== "root" ? html`<button class="btn sm danger" data-act="account-delete" data-id="${a.user_id}" data-name="${a.display_name}">삭제</button>` : ""}`}</td></tr>`)}
-          </tbody></table>`, { flush: true }) },
+          </tbody></table><p class="empty" data-list-empty="account-list" hidden>검색에 맞는 계정이 없습니다.</p>`, { flush: true, tools: listToolbar("account-list", "이름·이메일·부서 검색") }) },
         { key: "signups", label: "가입 승인", n: signups.filter((s) => s.status === "pending").length,
           body: panel("회원가입 신청", html`<table class="data"><thead><tr><th>아이디</th><th>이름</th><th>신청</th><th>상태</th><th></th></tr></thead><tbody>
           ${signups.map((s) => html`<tr><td class="mono">${s.username}</td><td>${s.display_name}</td><td>${when(s.requested_at)}</td>
@@ -1125,17 +1181,16 @@ ROUTES.intake = async (_, tab) => {
     color: charts.color({ allow: "Allow", block: "Block", alert: "Alert", approval: "Approval", restrict: "Restrict" }[tone]) }));
   return {
     html: page({
-      head: head("도입 신청", { actions: html`<button class="btn" data-act="reload">새로고침</button>` }),
+      head: head("도입 신청", { actions: html`<button class="btn" data-act="reload">새로고침</button><a class="btn primary" href="#/intake?t=new">새 MCP 신청</a>` }),
       active: tab || "list",
       tabs: [
         { key: "list", label: viewer.admin ? "전체 신청" : "내 신청", n: requests.length, body: html`<div class="stack">
-          ${panel("상태", requests.length ? chartBox("c-intake", "도입 신청의 상태별 건수", "sm") : empty("신청 없음"))}
           ${panel("신청", html`<table class="data"><thead><tr><th>서버</th><th>상태</th><th>종료 조건</th><th>신청</th>${viewer.admin ? html`<th></th>` : ""}</tr></thead><tbody>
           ${requests.map((r) => {
             const remote = r.requested_transport !== "stdio";
             const grade = r.evidence?.exit_terms_conclusion?.grade;
             const clear = !remote || termsVerified(r.exit_terms) || grade === "T1";
-            return html`<tr><td><b>${r.display_name}</b><span class="sub mono">${r.endpoint_url || r.repository_url}</span>
+            return html`<tr><td><b>${r.display_name}</b><span class="sub">${entityRef(r.endpoint_url || r.repository_url, 52)}</span>
               <span class="sub">${r.intake_kind === "remote-endpoint" ? "공급자 호스팅 · 계약 검토" : "구현 소스 · 격리 검사"}</span>
               ${r.internal_repo_url ? html`<a class="sub" href="${r.internal_repo_url}" target="_blank" rel="noopener noreferrer">사내 저장소 열기 ↗</a>` : ""}
               ${r.registered_server_id ? html`<span class="sub">${chip("allow", "Gateway 등록")} <code>/mcp/${r.registered_server_id}/</code></span>` : ""}
@@ -1143,7 +1198,7 @@ ROUTES.intake = async (_, tab) => {
             <td>${chip(...(INTAKE_STATUS[r.status] || ["", r.status]))}</td>
             <td class="small">${exitConclusionChip(r)}</td>
             <td class="small">${when(r.created_at)}</td>
-            ${viewer.admin ? html`<td class="num nowrap">
+            ${viewer.admin ? html`<td><div class="row-actions">
               ${r.intake_kind === "remote-endpoint" && ["HOLD", "REMOTE_REVIEWED"].includes(r.status) ? html`<button class="btn sm primary" data-act="intake-register" data-review="true" data-id="${r.id}"
                 data-name="${r.display_name}" data-repo="${r.endpoint_url}" data-principal="${r.submitted_by}">계약·사용 범위 검토</button>` : ""}
               ${r.intake_kind !== "remote-endpoint" && ["HOLD", "FAILED"].includes(r.status) ? html`<button class="btn sm primary" data-act="intake-queue" data-id="${r.id}">${r.status === "FAILED" ? "재검증" : "검증 시작"}</button>` : ""}
@@ -1153,21 +1208,25 @@ ROUTES.intake = async (_, tab) => {
               ${r.status === "APPROVED" && !r.registered_server_id ? html`<button class="btn sm primary" data-act="intake-register" data-id="${r.id}"
                 data-name="${r.display_name}" data-repo="${r.endpoint_url || r.repository_url}" data-kind="${r.intake_kind}">Gateway 활성화</button>` : ""}
               <button class="btn sm" data-act="intake-report" data-id="${r.id}">보고서</button>
-              ${["HOLD", "VALIDATION_QUEUED", "VALIDATED", "REMOTE_REVIEWED", "FAILED"].includes(r.status) ? html`<button class="btn sm danger" data-act="intake-reject" data-id="${r.id}">거부</button>` : ""}</td>` : ""}</tr>`;
-          })}</tbody></table>${requests.length ? "" : empty("신청 없음")}`, { flush: true })}</div>` },
+              ${["HOLD", "VALIDATION_QUEUED", "VALIDATED", "REMOTE_REVIEWED", "FAILED"].includes(r.status) ? html`<button class="btn sm danger" data-act="intake-reject" data-id="${r.id}">거부</button>` : ""}</div></td>` : ""}</tr>`;
+          })}</tbody></table>${requests.length ? "" : empty("신청 없음")}`, { flush: true })}<details class="analysis"><summary>신청 상태 분석</summary>${panel("상태", requests.length ? chartBox("c-intake", "도입 신청의 상태별 건수", "sm") : empty("신청 없음"))}</details></div>` },
         { key: "new", label: "새 신청", body: html`<div class="stack">
           ${panel("기존 신청 검색", html`<div class="filters"><input class="grow" type="search" data-catalog-search
             aria-label="MCP 이름 또는 GitHub 저장소 검색" placeholder="MCP 이름 또는 GitHub 저장소" /></div>
             <div id="catalog-results" aria-live="polite">${catalogResults(catalog || { requests: [], registry: [] })}</div>`, { flush: true })}
           ${panel("새 신청", html`<form class="stack form" data-form="intake">
-          <label>이름<input name="display_name" required minlength="2" maxlength="80" placeholder="Slack MCP" /></label>
-          <label>도입 대상<select name="intake_kind"><option value="remote-endpoint">공급자 호스팅 MCP · 엔드포인트 계약 검토</option><option value="repository">구현 소스 · 격리 공급망 검사</option></select></label>
-          <label>MCP 엔드포인트<input name="endpoint_url" type="url" maxlength="500" placeholder="https://…/mcp" /></label>
-          <label>구현 GitHub 저장소<input name="repository_url" type="url" maxlength="300" placeholder="소스 도입 시 필수 · https://github.com/org/repo" /></label>
-          <label>연결 방식<select name="requested_transport"><option value="streamable-http">Streamable HTTP</option>
-            <option value="stdio">stdio</option><option value="sse">SSE</option></select></label>
-          <label>도입 목적<textarea name="purpose" required minlength="10" maxlength="1000"></textarea></label>
-          <div class="row-actions"><button class="btn primary" type="submit">신청</button></div></form>`)}</div>` },
+          <fieldset><legend>서비스와 사용 목적</legend>
+            <label>서비스 이름<input name="display_name" required minlength="2" maxlength="80" placeholder="예: GitHub MCP" /></label>
+            <label>사용 목적<textarea name="purpose" required minlength="10" maxlength="1000" placeholder="사용할 업무, 필요한 도구와 데이터 범위를 적어 주세요."></textarea></label>
+          </fieldset>
+          <fieldset><legend>연결 정보</legend><div class="grid c2">
+            <label>도입 대상<select name="intake_kind"><option value="remote-endpoint">공급자 호스팅 MCP</option><option value="repository">구현 소스·로컬 MCP</option></select></label>
+            <label>연결 방식<select name="requested_transport"><option value="streamable-http">Streamable HTTP</option><option value="stdio">stdio</option><option value="sse">SSE</option></select></label>
+            <label>MCP 엔드포인트<input name="endpoint_url" type="url" maxlength="500" placeholder="https://…/mcp" /><span class="small muted">원격 MCP를 신청할 때 입력합니다.</span></label>
+            <label>구현 GitHub 저장소<input name="repository_url" type="url" maxlength="300" placeholder="https://github.com/org/repo" /><span class="small muted">소스 검증을 신청할 때 입력합니다.</span></label>
+          </div></fieldset>
+          <p class="note">신청은 연결을 활성화하지 않습니다. 검증과 별도 승인 후 사용할 수 있습니다.</p>
+          <div class="row-actions"><button class="btn primary" type="submit">도입 신청 제출</button></div></form>`)}</div>` },
         ...(audit ? [{ key: "audit", label: "A.I.G 검사", n: audit.jobs.length, hot: audit.jobs.some((j) => j.trigger === "anomaly" && j.status !== "DONE"), body: html`<div class="stack">
           ${panel("검사 연결", html`<div class="row-actions">
             ${chip(audit.config.configured ? "allow" : "alert", audit.config.configured ? `모델 ${audit.config.model}${audit.config.local ? " · 로컬" : " · 외부"}` : "모델 미설정")}
@@ -1340,17 +1399,15 @@ ROUTES.termination = async (caseId, tab) => {
       active: tab || "relationships",
       tabs: [
         { key: "relationships", label: "이용 관계", n: relationships.length, body: html`<div class="stack">
-          ${panel("지금 끊으면 도달 가능한 등급", chartBox("c-readiness", "이용 관계별 최선 도달 등급 분포", "sm"))}
-          <div class="rels">${relationships.map(relationshipCard)}</div>${relationships.length ? "" : empty("이용 관계 없음")}</div>` },
+          <div class="rels">${relationships.map(relationshipCard)}</div>${relationships.length ? "" : empty("이용 관계 없음")}<details class="analysis"><summary>종료 가능 등급 분석</summary>${chartBox("c-readiness", "이용 관계별 최선 도달 등급 분포", "sm")}</details></div>` },
         { key: "cases", label: "케이스", n: cases.length, body: html`<div class="stack">
-          ${panel("등급", cases.length ? chartBox("c-grades", "종료 케이스의 등급 분포", "sm") : empty("케이스 없음"))}
           ${panel("케이스", html`<table class="data"><thead><tr><th>이용 관계</th><th>상태</th><th>등급</th><th class="num">대상</th><th class="num">미회수</th><th class="num">증거</th><th>개시</th></tr></thead><tbody>
             ${cases.map((c) => html`<tr class="clickable" tabindex="0" data-act="open-case" data-id="${c.id}">
               <td><b>${c.display_name}</b><span class="sub mono">${c.relationship_id || c.server_id}</span></td>
               <td>${chip(c.status === "CLOSED" ? "outline" : "approval", CASE_STATUS[c.status] || c.status)}${c.overdue ? chip("block", "기한 초과") : ""}</td>
               <td>${gradeChip(c.grade)}</td><td class="num">${c.targets}</td><td class="num">${c.outstanding}</td><td class="num">${c.evidence}</td>
               <td class="small">${when(c.opened_at)}</td></tr>`)}
-            </tbody></table>${cases.length ? "" : empty("케이스 없음")}`, { flush: true })}</div>` },
+            </tbody></table>${cases.length ? "" : empty("케이스 없음")}`, { flush: true })}<details class="analysis"><summary>케이스 등급 분석</summary>${chartBox("c-grades", "종료 케이스의 등급 분포", "sm")}</details></div>` },
       ],
     }),
     charts: { "c-grades": () => charts.columns(grades()), "c-readiness": () => charts.columns(readiness()) },
@@ -1523,15 +1580,14 @@ ROUTES.policy = async (_, tab) => {
           ${panel("PAC-15 · 사용자·서버·기능·자원", html`<table class="data"><thead><tr><th>승인</th><th>사용자</th><th>서버</th><th>행위·자원</th><th>만료</th></tr></thead><tbody>
           ${matrix.capabilities.map((g) => html`<tr><td><code>${g.id}</code></td><td>${g.principals.join(", ")}</td><td>${g.servers.join(", ")}</td>
             <td>${g.actions.join(", ")}<span class="sub">${g.path_roots.join(", ")}</span></td><td>${when(g.valid_until)}</td></tr>`)}
-          ${matrix.runtime_envelopes.map((g) => html`<tr><td><code>${g.server_id}</code></td><td>${g.principals.join(", ")}</td><td>${Object.keys(g.tools).join(", ")}</td><td>독립 도입 승인</td><td>${when(g.valid_until)}</td></tr>`)}
+          ${matrix.runtime_envelopes.map((g) => html`<tr><td><code>${g.server_id}</code></td><td>${g.principals.join(", ")}</td><td><code>${g.server_id}</code></td><td>${Object.keys(g.tools).join(", ")}<span class="sub">독립 도입 승인</span></td><td>${when(g.valid_until)}</td></tr>`)}
           </tbody></table>`, { flush: true, sub: `${matrix.bundle_id || "—"} · ${matrix.pack_version}` })}</div>` },
         { key: "ledger", label: "관리대장", n: ledger.policies.length, body: html`<div class="stack">
-          ${panel("결과별 정책 수", chartBox("c-outcomes", "정책 관리대장의 결과별 정책 수", "sm"), { sub: `환경 ${ledger.environment}` })}
           ${panel("정책", html`<table class="data"><thead><tr><th class="num">순위</th><th>정책</th><th>결과</th><th>상태</th><th>담당</th></tr></thead><tbody>
             ${ledger.policies.map((p) => html`<tr class="clickable" tabindex="0" data-act="policy" data-id="${p.policy_id}"><td class="num">${p.priority}</td>
               <td><code>${p.policy_id}</code><span class="sub">${p.name}</span></td><td>${outcomeDecision(p.outcome) ? decisionChip(outcomeDecision(p.outcome)) : chip("outline", p.outcome)}</td>
               <td class="small">${p.status} · v${p.version}</td><td class="small">${p.owner}</td></tr>`)}
-            </tbody></table>`, { flush: true })}</div>` },
+            </tbody></table>`, { flush: true })}<details class="analysis"><summary>정책 결과별 분석</summary>${chartBox("c-outcomes", "정책 관리대장의 결과별 정책 수", "sm")}</details></div>` },
         { key: "exceptions", label: "예외", n: ledger.exceptions.length, body: html`<div class="stack">${ledger.exceptions.map((x) => panel(`${x.id} · ${x.title}`,
           html`<div class="row-actions">${decisionChip(x.effect)}${chip("outline", x.status)}</div>${kv([["사유", x.reason], ["대상 정책", html`<code>${x.policy_id}</code>`],
             ["범위", JSON.stringify(x.scope)], ["기한", when(x.valid_until)], ["보완 통제", (x.compensating_controls || []).join(" · ")],
@@ -1564,11 +1620,10 @@ const ACTIONS = {
     openDrawer("조직 초대 · 48시간 · 1회용", html`<p class="note">지정한 일반 사용자만 가입합니다. 링크는 다시 조회할 수 없습니다.</p>
       ${issued.invitations.map((item) => html`<section class="panel"><div class="body"><b>${item.username}</b><p><a href="${item.url}" target="_blank" rel="noopener noreferrer">${item.url}</a></p><span class="sub">${when(item.expires_at)}까지</span></div></section>`)}`);
   },
-  sidebar(el) {
-    const closed = document.documentElement.classList.toggle("nav-collapsed");
-    el.setAttribute("aria-expanded", String(!closed));
-    el.setAttribute("aria-label", closed ? "메뉴 펼치기" : "메뉴 접기");
-    localStorage.setItem("mcp-console-nav-collapsed", String(closed));
+  sidebar() {
+    const closed = !document.documentElement.classList.contains("nav-collapsed");
+    setNavCollapsed(closed);
+    if (!matchMedia("(max-width: 900px)").matches) localStorage.setItem(NAV_KEY, String(closed));
     charts.redrawAll();
   },
   async reload() { await reload(); },
@@ -2108,6 +2163,12 @@ const FORMS = {
 };
 
 // ── wiring ───────────────────────────────────────────────────────────────────
+$("#drawer").addEventListener("cancel", (event) => { event.preventDefault(); closeDrawer(); });
+$("#drawer").addEventListener("click", (event) => {
+  if (event.target !== event.currentTarget) return;
+  const bounds = event.currentTarget.getBoundingClientRect();
+  if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) closeDrawer();
+});
 document.addEventListener("click", (event) => {
   const el = event.target.closest("[data-act]");
   if (!el) return;
@@ -2129,7 +2190,15 @@ document.addEventListener("submit", (event) => {
   if (button) button.disabled = true;
   Promise.resolve(FORMS[form.dataset.form](form)).catch((error) => toast(error.message, true)).finally(() => { if (button?.isConnected) button.disabled = false; });
 });
+document.addEventListener("toggle", (event) => {
+  if (event.target.matches("details[open]")) charts.mountVisible(event.target);
+}, true);
 document.addEventListener("change", (event) => {
+  const coverageFilter = event.target.closest("[data-coverage-filter]");
+  if (coverageFilter) {
+    ACTIONS["coverage-filter"]({ dataset: { key: coverageFilter.dataset.coverageFilter, value: coverageFilter.value } });
+    return;
+  }
   const filter = event.target.closest("[data-filter]");
   if (filter) {
     feed.filters[filter.dataset.filter] = filter.value.trim();
@@ -2144,6 +2213,21 @@ document.addEventListener("change", (event) => {
 });
 // Search narrows what is already loaded, so it re-renders the list without a request.
 document.addEventListener("input", (event) => {
+  const input = event.target.closest("[data-list-search]");
+  if (input) {
+    const rows = [...(document.getElementById(input.dataset.listSearch)?.children || [])];
+    const term = input.value.trim().toLocaleLowerCase();
+    let shown = 0;
+    for (const row of rows) {
+      row.hidden = !row.textContent.toLocaleLowerCase().includes(term);
+      if (!row.hidden) shown += 1;
+    }
+    const count = document.querySelector(`[data-list-count="${input.dataset.listSearch}"]`);
+    if (count) count.textContent = `${shown}/${rows.length}건`;
+    const note = document.querySelector(`[data-list-empty="${input.dataset.listSearch}"]`);
+    if (note) note.hidden = shown > 0;
+    return;
+  }
   if (event.target.matches("[data-catalog-search]")) {
     const input = event.target;
     clearTimeout(input.searchTimer);
@@ -2172,9 +2256,10 @@ document.addEventListener("input", (event) => {
   renderFeed();
 });
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closeDrawer();
-  // Clickable rows are focusable (tabindex) and open with Enter like a button.
-  if (event.key === "Enter" && !event.isComposing && event.target.matches("tr[data-act]")) event.target.click();
+  if ($("#dialog").open) return; // Native dialog owns Escape and focus while it is open.
+  if ($("#drawer").open && event.key === "Escape") { event.preventDefault(); closeDrawer(); }
+  // Cancel the key default before opening: focus moves to the modal close button.
+  if (["Enter", " "].includes(event.key) && !event.isComposing && event.target.matches("tr[data-act]")) { event.preventDefault(); event.target.click(); }
   if (event.target.matches('[role="tab"]') && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
     const tabs = [...event.target.closest(".tabs").querySelectorAll('[role="tab"]')];
     const i = tabs.indexOf(event.target);
@@ -2194,8 +2279,9 @@ document.addEventListener("keydown", (event) => {
 async function boot() {
   viewer = await api("/auth/me");
   viewer.admin = viewer.roles.includes("admin");
-  document.documentElement.classList.toggle("nav-collapsed", localStorage.getItem("mcp-console-nav-collapsed") === "true");
-  document.querySelector('[data-act="sidebar"]').setAttribute("aria-expanded", String(!document.documentElement.classList.contains("nav-collapsed")));
+  const mobile = matchMedia("(max-width: 900px)");
+  setNavCollapsed(mobile.matches || localStorage.getItem(NAV_KEY) === "true");
+  mobile.addEventListener("change", () => setNavCollapsed(mobile.matches || localStorage.getItem(NAV_KEY) === "true"));
   $("#app-identity").textContent = `${viewer.name} · ${viewer.role_label}`;
   $("#who").innerHTML = String(html`<b>${viewer.name}</b>${[viewer.department, viewer.role_label].filter((x) => x && x !== "미지정").join(" · ")}`);
   // 내부 저장소(Gitea)와 PC 키트는 field 배치에서만 주소가 온다 - renderNav()의 바로가기(D-48).
