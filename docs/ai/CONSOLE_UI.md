@@ -30,6 +30,7 @@
 - native modal이 배경 접근과 초점 순환을 담당한다. Enter·Space로 표의 상세를 열 때 기본 키 동작을 취소해 새로 초점이 간 닫기 버튼이 연이어 실행되지 않게 한다. Escape 이후 원래 행으로 복귀한다.
 - 상세를 다시 열면 공통 `openDrawer`에서 본문 스크롤을 0으로 초기화한다. 이전 상세의 스크롤 위치로 새 호출의 요약이 가려지지 않는다.
 - 확인 폼도 기존 native `dialog`를 사용한다. 상세 패널 위에서 폼을 열 때 Escape는 폼을 먼저 닫는다.
+- 직원에게 조회 권한이 없는 공급자 범위는 `미확인`으로 표시한다. 직원 호출 상세는 관리자 전용 현재 단말 조회를 하지 않는다. 내부 저장소 URL 부재를 승인 대기로 추정하지 않는다.
 - 로그인·가입·조직 초대 화면도 같은 글꼴·색상·폼 체계를 사용한다. 기존 인증·초대·1회용 키트 흐름을 유지한다.
 - 차트는 기존 ECharts를 사용한다. 숨긴 탭·닫힌 펼침 영역에서는 초기화하지 않고, 범례는 좁은 폭에서 스크롤한다.
 
@@ -92,6 +93,20 @@ await tab.playwright.getByRole('dialog', {name: /호출 #/}).waitFor({state: 'vi
 if ((await tab.playwright.evaluate(() => document.querySelector('#drawer-body').scrollTop)) !== 0) throw Error('new detail must reset previous scroll');
 ```
 
+### 직원 표시 회귀 확인
+
+직원 계정으로 로그인한 `tab`의 호출 로그·새 도입 신청 탭에서 확인한다. 조회 권한을 확대하지 않는다.
+
+```javascript
+await tab.playwright.getByRole('heading', {name: '호출 로그', level: 1}).waitFor({state: 'visible'});
+if (!(await tab.playwright.getByRole('img', {name: /벤더 범위 미확인/}).count())) throw Error('unavailable vendor scope must remain unknown');
+await tab.playwright.getByRole('navigation', {name: '화면'}).getByRole('link', {name: '도입 신청', exact: true}).click();
+await tab.playwright.getByRole('tab', {name: '새 신청', exact: true}).click();
+await tab.playwright.getByRole('tabpanel', {name: '새 신청', exact: true}).waitFor({state: 'visible'});
+const approved = tab.playwright.locator('#catalog-results tbody tr').filter({hasText: '승인'});
+if (!(await approved.count())) throw Error('use an employee with an approved intake');
+if ((await approved.allTextContents()).some(s => s.includes('승인 전'))) throw Error('repository absence must not relabel approval');
+```
 ## 수정 지침
 
 기존 `PAGES`·`ROUTES`·안전 HTML 조립·공통 컴포넌트를 사용한다. 새 프런트엔드 프레임워크나 원격 자산은 필요하지 않다.

@@ -124,8 +124,8 @@ function statusPair(item) {
 function planeGlyphs(r, providers) {
   const ep = (r.planes || []).includes("endpoint");
   const vd = providers?.has(r.server);
-  const label = `게이트웨이 경유, ${ep ? "단말 결합" : "단말 결합 없음"}, ${vd ? "공급자 SaaS 잔여 범위" : "벤더 해당 없음"}`;
-  return html`<span class="pg" role="img" aria-label="${label}"><b class="on" aria-hidden="true">GW</b><b class="${ep ? "on" : ""}" aria-hidden="true">EP</b><b class="${vd ? "res" : "na"}" aria-hidden="true">VD</b></span>`;
+  const label = `게이트웨이 경유, ${ep ? "단말 결합" : "단말 결합 없음"}, ${vd == null ? "벤더 범위 미확인" : vd ? "공급자 SaaS 잔여 범위" : "벤더 해당 없음"}`;
+  return html`<span class="pg" role="img" aria-label="${label}" title="${label}"><b class="on" aria-hidden="true">GW</b><b class="${ep ? "on" : ""}" aria-hidden="true">EP</b><b class="${vd == null ? "" : vd ? "res" : "na"}" aria-hidden="true">VD</b></span>`;
 }
 /** Sent · executed · response: ○ not sent, ◐ sent but unknown, ● executed. */
 function flow3(r) {
@@ -441,7 +441,7 @@ async function refreshBadges() {
 const modeChip = (mode) => chip(mode === "enforce" ? "allow" : "alert", mode === "enforce" ? "집행 모드" : "관찰 모드");
 
 // Provider-hosted servers (registry deployment "provider"): the vendor holds the SaaS side.
-let providerServers = new Set();
+let providerServers = null;
 function decisionRow(r) {
   return html`<tr class="clickable" tabindex="0" data-act="decision" data-id="${r.id}">
     <td class="t">${when(r.at, { seconds: true })}</td>
@@ -746,7 +746,7 @@ async function showDecision(id) {
   const r = feed.rows.find((row) => String(row.id) === String(id));
   if (!r) return;
   // The device's current state, beside (never instead of) what the call itself carried.
-  const device = r.device_id ? (await planes().catch(() => null))?.devices.find((d) => d.endpoint_id === r.device_id) : null;
+  const device = viewer.admin && r.device_id ? (await planes().catch(() => null))?.devices.find((d) => d.endpoint_id === r.device_id) : null;
   const conflictChip = (c) => chip((DECISION[c.decision] || [""])[0], `${(DECISION[c.decision] || [, c.decision])[1]} ${c.policy_id}`);
   openDrawer(`호출 #${r.id}`, html`<div class="drawer-summary"><span class="tool">${r.server}.${r.tool}</span>
     ${decisionChip(r.decision)}${flow3(r)}<span class="muted small">${new Date(r.at).toLocaleString("ko-KR")}</span></div>`, [
@@ -1169,7 +1169,7 @@ function catalogResults(data) {
   return html`${requests.length ? html`<table class="data"><thead><tr><th>MCP</th><th>신청자</th><th>상태</th><th>내부 저장소</th></tr></thead><tbody>
     ${requests.map((r) => html`<tr><td><b>${r.display_name}</b><span class="sub mono">${r.repository_url}</span></td>
       <td>${r.submitted_by_name}</td><td>${chip(...(INTAKE_STATUS[r.status] || ["", r.status]))}</td>
-      <td>${r.internal_repo_url ? html`<a href="${r.internal_repo_url}" target="_blank" rel="noopener noreferrer">열기·클론 ↗</a>` : "승인 전"}</td></tr>`)}</tbody></table>` : empty(data.query ? "일치하는 신청 없음" : "아직 신청된 MCP가 없습니다.")}
+      <td>${r.internal_repo_url ? html`<a href="${r.internal_repo_url}" target="_blank" rel="noopener noreferrer">열기·클론 ↗</a>` : "저장소 정보 없음"}</td></tr>`)}</tbody></table>` : empty(data.query ? "일치하는 신청 없음" : "아직 신청된 MCP가 없습니다.")}
     ${registry.length ? html`<p class="small muted">등록된 MCP: ${registry.map((r) => r.display_name).join(", ")}</p>` : ""}`;
 }
 ROUTES.intake = async (_, tab) => {
