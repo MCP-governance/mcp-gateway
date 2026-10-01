@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import ipaddress
 import json
 import os
 import shutil
@@ -21,7 +22,13 @@ def gateway_url(value: str) -> str:
         return value.rstrip("/")
     if parsed.scheme == "http" and parsed.hostname in {"localhost", "127.0.0.1", "::1"}:
         return value.rstrip("/")
-    raise argparse.ArgumentTypeError("원격 Gateway는 HTTPS가 필요합니다. HTTP는 로컬 터널만 허용합니다.")
+    if parsed.scheme == "http" and parsed.hostname:
+        try:
+            if ipaddress.ip_address(parsed.hostname) in ipaddress.ip_network("100.64.0.0/10"):
+                return value.rstrip("/")
+        except ValueError:
+            pass
+    raise argparse.ArgumentTypeError("HTTPS, 로컬 터널 또는 명시적으로 확인할 Tailscale 주소만 허용합니다.")
 
 
 def install_dir() -> Path:
@@ -60,9 +67,17 @@ def main() -> int:
     parser.add_argument("--scan-path", action="append", required=True,
                         help="승인한 MCP 설정 파일 또는 디렉터리. 반복 지정 가능")
     parser.add_argument("--key-file", type=Path, help="발급된 장치 키만 담은 파일")
+    parser.add_argument("--tailscale-node-id", help="HTTP overlay를 사용할 때 관리자가 확인한 Gateway 노드 ID")
     parser.add_argument("--no-verify", action="store_true", help="설치 뒤 1회 보고를 생략")
     parser.add_argument("--windows-wrapper", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if urlsplit(args.gateway_url).scheme == "http" and urlsplit(args.gateway_url).hostname not in {"localhost", "127.0.0.1", "::1"}:
+        if not args.tailscale_node_id:
+            parser.error("Tailscale HTTP에는 관리자가 확인한 --tailscale-node-id가 필요합니다")
+        import agent as observer
+        observer.GATEWAY_URL = args.gateway_url
+        observer.CONFIG["ENDPOINT_TAILSCALE_NODE_ID"] = args.tailscale_node_id
+        observer.validate_gateway()
     if os.name == "nt" and not args.windows_wrapper:
         parser.error("Windows에서는 ACL을 먼저 적용하는 install-windows.ps1을 사용하세요.")
     if not 3 <= len(args.endpoint_id) <= 120 or not all(c.isalnum() or c in "-_" for c in args.endpoint_id):
@@ -104,6 +119,7 @@ def main() -> int:
         "ENDPOINT_CONFIG_PATHS": os.pathsep.join(paths),
         "ENDPOINT_NETSCAN": "1",
         "ENDPOINT_REPORT_SECONDS": "60",
+        "ENDPOINT_TAILSCALE_NODE_ID": args.tailscale_node_id or "",
     })
     print(f"에이전트: {agent}\n설정 파일: {config}")
     if not args.no_verify:

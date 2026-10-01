@@ -208,9 +208,9 @@ async def authorization_bundle_served() -> str:
         response = await client.get(API + "/api/policy/ledger", headers={"Authorization": f"Bearer {TOKENS['admin']}"})
     response.raise_for_status()
     bundle = response.json().get("authorization") or {}
-    expect(bundle.get("bundle_id") == "LAB-AUTHZ-001" and len(bundle.get("grants") or []) == 5,
+    expect(bundle.get("bundle_id") == "PAC15-CAPABILITIES-20261001" and "grants" not in bundle,
            f"OPA가 내어주는 권한 번들: {bundle}")
-    return f"{bundle['bundle_id']} · 허용 규칙 {len(bundle['grants'])}개"
+    return f"{bundle['bundle_id']} · {bundle['pack_version']}"
 
 
 async def allowed_call_runs() -> str:
@@ -360,11 +360,12 @@ async def monitor_mode_records() -> str:
         await set_enforcement_mode(before, PRINCIPAL["admin"])
     row = await db.fetch_one("SELECT decision, enforcement, would_decision, upstream_executed FROM decisions WHERE id=%s",
                              (observed.get("decision_id"),))
-    expect(row and row["enforcement"] == "monitor" and row["would_decision"] == "Block" and row["upstream_executed"],
+    expect(row and row["enforcement"] == "monitor" and row["would_decision"] is None
+           and row["decision"] == "Block" and not row["upstream_executed"],
            f"관찰 모드 기록: {row}")
     enforced = await call("partner", "git__git_log", {"repo_path": "/repos/payment-service", "max_count": 1})
     expect(enforced.get("decision") == "Block", f"집행 모드 복귀 후: {enforced.get('decision')}")
-    return "관찰 모드: 실행 + would_decision=Block → 복귀 후 Block"
+    return "관찰·집행 모드 모두 PAC 범위 위반 차단 · 관찰 모드로 인가 우회 불가"
 
 
 RRN = re.compile(r"\b\d{6}-[1-4]\d{6}\b")
@@ -472,6 +473,8 @@ async def console_registration_expires() -> str:
         expect(premature.status_code == 409, "계약 검토 없는 원격 신청이 승인됨")
         checked = await client.post(console + f"/api/mcp-requests/{intake_id}/review-contract", json={**scope,
             "allowed_principals": [PRINCIPAL['employee']],
+            "parameter_constraints": {"fetch": {"type": "object", "additionalProperties": False,
+                "required": ["url", "max_length"], "properties": {"url": {"const": "http://intranet.bob.local/"}, "max_length": {"const": 200}}}},
             "review_note": "실제 fetch 입력 계약과 intranet 공개 자료 읽기 범위를 검토했습니다."})
         checked.raise_for_status()
         approved = await client.post(console + f"/api/mcp-requests/{intake_id}/approve", json={"risk_acceptance": "격리 테스트보드에서 intranet 공개 자료의 읽기만 수행합니다."})
@@ -486,6 +489,8 @@ async def console_registration_expires() -> str:
         own.raise_for_status(); own_id = own.json()["request"]["id"]
         (await client.post(console + f"/api/mcp-requests/{own_id}/review-contract", json={**scope,
             "server_id": "acceptance-self", "allowed_principals": [PRINCIPAL['admin']],
+            "parameter_constraints": {"fetch": {"type": "object", "additionalProperties": False,
+                "required": ["url", "max_length"], "properties": {"url": {"const": "http://intranet.bob.local/"}, "max_length": {"const": 200}}}},
             "review_note": "자기 승인 금지를 확인하기 위한 검토 기록입니다."})).raise_for_status()
         self_approved = await client.post(console + f"/api/mcp-requests/{own_id}/approve",
                                           json={"risk_acceptance": "자기 승인 금지를 확인하는 시험입니다."})
@@ -503,6 +508,9 @@ async def console_registration_expires() -> str:
             # Earlier checks leave blocks behind, so the anomaly alert may ride on an allowed call.
             expect(out.get("decision") in {"Allow", "Alert"} and not out["is_error"],
                    f"등록 서버 호출: {out.get('decision')} {out.get('policy_id')} {out['text'][:120]}")
+            outside = await call("employee", "fetch", {**arguments, "url": "http://intranet.bob.local/other"}, url)
+            expect(outside.get("decision") == "Block" and outside.get("policy_id") == "PAC-01"
+                   and not outside.get("upstream_attempted"), "원격 도입 승인 인자 범위를 벗어난 호출이 전달됨")
             await db.execute("UPDATE mcp_tools SET approval_valid_until = now() - interval '1 minute' WHERE server_id=%s", (server_id,))
             expired = await call("employee", "fetch", arguments, url)
             expect(expired.get("decision") == "Block" and expired.get("policy_id") == "P-APPROVAL-EXPIRY-001",

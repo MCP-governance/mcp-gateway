@@ -352,30 +352,12 @@ async def protected_resource_metadata() -> dict:
 
 @app.get("/api/policy/matrix")
 async def policy_matrix(user: dict = Depends(caller)) -> dict:
-    roles = ("partner", "employee", "admin")
-    classes = ("public", "nonimportant", "important")
-    actions = ("r", "w", "x")
-    contract = {
-        "registered": True, "enabled": True, "schema_hash_match": True,
-        "description_hash_match": True, "version_match": True, "known_tools_only": True,
-        "metadata_safe": True, "supplier_approved": True, "critical_vulnerabilities": 0,
-    }
-
-    async def evaluate(role: str, data_class: str, action: str) -> dict:
-        try:
-            async with httpx.AsyncClient(timeout=3) as client:
-                response = await client.post(OPA_URL, json={"input": {
-                    "principal": {"role": role}, "resource": {"data_class": data_class},
-                    "tool": {"action": action}, "approval": {"granted": False}, "contract": contract,
-                }})
-                response.raise_for_status()
-                result = response.json()["result"]
-        except Exception:
-            result = core.local_verdict("P-CONTROL-FAIL-CLOSED", "Block", "정책 엔진에 질의하지 못했습니다.")
-        return {"role": role, "data_class": data_class, "action": action, **result}
-
-    cells = await asyncio.gather(*(evaluate(role, data_class, action) for role in roles for data_class in classes for action in actions))
-    return {"roles": roles, "data_classes": classes, "actions": actions, "cells": cells}
+    # Kept as a compatibility URL; there is no synthetic 333 policy query.
+    return {"model": "pac15-capabilities", "pack_version": "pac15-v1",
+            "capabilities": core.pac.capabilities()["capabilities"],
+            "runtime_envelopes": [{"server_id": k, "principals": v.get("allowed_principals", []),
+                                   "tools": v.get("tools", {}), "valid_until": v.get("valid_until")}
+                                  for k,v in registry.servers().items() if v.get("intake_id")]}
 
 
 @app.get("/api/policy/ledger")
@@ -824,7 +806,7 @@ class EndpointDeviceCreate(StrictModel):
     hostname: str = Field(min_length=1, max_length=200)
     platform: str = Field(default="unknown", max_length=80)
     owner_token: str | None = Field(default=None, max_length=120)
-    scopes: list[Literal["inventory", "netscan"]] = Field(default=["inventory"], max_length=2)
+    scopes: list[Literal["inventory", "netscan", "enforcement"]] = Field(default=["inventory"], max_length=3)
     enrollment_key: str | None = Field(default=None, min_length=32, max_length=128)
 
 
@@ -847,6 +829,18 @@ class EndpointEntry(StrictModel):
 class EndpointReport(StrictModel):
     endpoint_id: str = Field(min_length=3, max_length=120)
     entries: list[EndpointEntry] = Field(default_factory=list, max_length=500)
+
+
+class EndpointOSEvent(StrictModel):
+    event_id: str = Field(min_length=10, max_length=300)
+    observed_at: datetime
+    kind: Literal["execution-denied", "network-denied"]
+    details: dict[str, str | int] = Field(max_length=12)
+
+
+class EndpointOSReport(StrictModel):
+    endpoint_id: str = Field(min_length=3, max_length=120)
+    events: list[EndpointOSEvent] = Field(max_length=100)
 
 
 class ListenerFinding(StrictModel):
@@ -1007,7 +1001,18 @@ async def endpoint_inventory(classification: str | None = None,
         "entries": await endpoint_plane.inventory(classification),
         "listeners": await endpoint_plane.listeners(classification),
         "scan_policy": await endpoint_plane.scan_policy(),
+        "os_events": await endpoint_plane.os_events(),
     }
+
+
+@app.post("/api/endpoint/os-events")
+async def endpoint_os_report(request: EndpointOSReport,
+                             device: dict = Depends(endpoint_device("enforcement"))) -> dict:
+    if request.endpoint_id != device["endpoint_id"]:
+        raise HTTPException(403, "장치 자격과 다른 엔드포인트의 보고는 받지 않습니다.")
+    if any(len(str(v)) > 300 for e in request.events for v in e.details.values()):
+        raise HTTPException(422, "OS 관측 필드는 300자를 넘을 수 없습니다.")
+    return await endpoint_plane.ingest_os_events(request.endpoint_id, [e.model_dump() for e in request.events])
 
 
 @app.get("/api/risk-catalog")

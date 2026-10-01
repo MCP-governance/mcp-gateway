@@ -5,7 +5,7 @@ There is no other way in: /api/registry/servers refuses a registration without a
 
   python3 intake_register.py --console http://100.83.175.111:443 --endpoint https://mcp.context7.com/mcp \
       --server-id context7 --tools resolve-library-id=r,query-docs=r --data-class public --valid-days 30 \
-      --allowed user --name "Context7" < identities.json
+      --allowed user --name "Context7" --parameter-constraints reviewed-scopes.json < identities.json
 
 identities.json: {"requester": {"email": "...", "password": "..."}, "approver": {"email": "...", "password": "..."}}
 Prints the registration result as one JSON line. stdlib only, so it runs on a bare appliance host.
@@ -36,7 +36,9 @@ def login(base: str, identity: dict) -> str:
 
 def register(base: str, requester: str, approver: str, *, endpoint: str, server_id: str, name: str,
              tools: dict[str, str], data_class: str, valid_days: int, allowed: list[str], purpose: str,
-             review_note: str, risk_acceptance: str, ack_warnings: bool = False) -> dict:
+             review_note: str, risk_acceptance: str, parameter_constraints: dict, ack_warnings: bool = False) -> dict:
+    if set(parameter_constraints) != set(tools):
+        raise ValueError("Every selected tool needs an explicitly reviewed parameter constraint")
     found = _call(base, "POST", "/gw/registry/discover", approver, {"endpoint": endpoint})
     advertised = {tool["name"]: tool for tool in found["tools"]}
     missing = sorted(set(tools) - set(advertised))
@@ -51,7 +53,8 @@ def register(base: str, requester: str, approver: str, *, endpoint: str, server_
     scope = {"server_id": server_id, "endpoint": endpoint, "catalog_hash": found["catalog_hash"], "tools": tools,
              "data_class": data_class, "valid_days": valid_days, "poisoning_ack": bool(flagged)}
     _call(base, "POST", f"/api/mcp-requests/{request['id']}/review-contract", approver,
-          {**scope, "allowed_principals": allowed, "review_note": review_note})
+          {**scope, "allowed_principals": allowed, "review_note": review_note,
+           "parameter_constraints": parameter_constraints})
     _call(base, "POST", f"/api/mcp-requests/{request['id']}/approve", approver, {"risk_acceptance": risk_acceptance})
     result = _call(base, "POST", f"/api/mcp-requests/{request['id']}/register", approver, scope)
     return {"intake_id": request["id"], "server_id": server_id, "status": result.get("status"),
@@ -62,6 +65,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--console", required=True)
     parser.add_argument("--endpoint", required=True)
+    parser.add_argument("--parameter-constraints", required=True, type=argparse.FileType('r'),
+                        help="Reviewed per-tool JSON schemas; no automatic unconstrained approval")
     parser.add_argument("--server-id", required=True)
     parser.add_argument("--name", required=True)
     parser.add_argument("--tools", required=True, help="name=r|w|x,...")
@@ -80,7 +85,8 @@ def main() -> None:
                       endpoint=args.endpoint, server_id=args.server_id, name=args.name, tools=tools,
                       data_class=args.data_class, valid_days=args.valid_days,
                       allowed=[p.strip() for p in args.allowed.split(",") if p.strip()], purpose=args.purpose,
-                      review_note=args.review_note, risk_acceptance=args.risk, ack_warnings=args.ack_warnings)
+                      review_note=args.review_note, risk_acceptance=args.risk,
+                      parameter_constraints=json.load(args.parameter_constraints), ack_warnings=args.ack_warnings)
     print(json.dumps(result, ensure_ascii=False))
 
 

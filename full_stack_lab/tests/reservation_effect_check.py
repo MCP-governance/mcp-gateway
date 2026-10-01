@@ -84,5 +84,23 @@ def race(token, duplicate=False):
 
 
 if __name__ == '__main__':
-    token = post('/api/session', {'email': 'kkg@bob.local', 'password': os.getenv('MOCK_SSO_PASSWORD', 'test-password')})['access_token']
-    print(json.dumps([race(token), race(token, duplicate=True)], indent=2))
+    # A reviewed, finite SQL capability belongs to this lab actor, not the admin
+    # role. It permits exactly seven increments of this public fixture row.
+    setup = """import asyncio
+from app import db
+asyncio.run(db.execute(\"\"\"INSERT INTO principals(token,email,display_name,role,synthetic,department,password_hash,user_id)
+SELECT 'reservation-check','reservation-check@bob.local','reservation-check','employee',true,department,password_hash,'reservation-check'
+FROM principals WHERE email='ysg@bob.local' ON CONFLICT(token) DO UPDATE SET status='active'\"\"\"))
+"""
+    subprocess.check_call(['docker', 'compose', 'exec', '-T', 'gateway', 'python', '-c', setup])
+    try:
+        token = post('/api/session', {'email': 'reservation-check@bob.local', 'password': os.getenv('MOCK_SSO_PASSWORD', 'test-password')})['access_token']
+        before = sql('SELECT price FROM public.products WHERE id=1')
+        denied = mcp_write(token, 'UPDATE public.products SET price=0 WHERE id=1')
+        assert denied['decision'] == 'Block' and denied['policy_id'] == 'PAC-01' and not denied['upstream_attempted'], denied
+        assert sql('SELECT price FROM public.products WHERE id=1') == before, 'Out-of-scope SQL changed the independent database'
+        print(json.dumps([race(token), race(token, duplicate=True)], indent=2))
+    finally:
+        subprocess.check_call(['docker', 'compose', 'exec', '-T', 'db', 'psql', '-X', '-q', '-v', 'ON_ERROR_STOP=1',
+                               '-U', 'mcp', '-d', 'mcp_governance', '-c',
+                               "UPDATE principals SET status='deleted' WHERE token='reservation-check'"])

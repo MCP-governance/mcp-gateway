@@ -25,7 +25,7 @@ from mcp import types
 from mcp.server.lowlevel.server import Server
 from mcp.server.transport_security import TransportSecuritySettings
 
-from . import db, registry
+from . import db, pac, registry
 from .agent_contract import authenticated_user
 from .core import execute_call
 
@@ -99,14 +99,17 @@ async def _approved_tools(role: str, server: str | None = None, principal: str =
               AND s.status NOT IN ('DISABLED', 'BLOCKED_SUPPLY_CHAIN')
               AND (%s::text IS NULL OR t.server_id = %s)
             ORDER BY t.server_id, t.name""", (server, server))
+    person = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (principal,))
     tools = []
     for row in rows:
         allowed = registry.allowed_principals(row["server_id"])
         if allowed is not None and principal not in allowed:
             continue
-        # A partner never gets w/x anywhere in the 333 matrix; listing those tools
-        # to a partner's model only invites refused calls.
-        if role == "partner" and row["action"] != "r":
+        # SQL's effective action depends on its parsed statement. Other tools keep
+        # their reviewed action; testing every action would expose writes to a
+        # read-only capability.
+        actions = {"r", "w", "x"} if (row["server_id"], row["name"]) == ("postgres", "execute_sql") else {row["action"]}
+        if not person or not any(pac.scope(person, row["server_id"], row["name"], action, [])["allowed"] for action in actions):
             continue
         if server:
             # A per-server endpoint is the server as the harness would see it directly:
@@ -174,7 +177,7 @@ def build_mcp() -> Server:
             server_id, _, tool = name.partition(SEPARATOR)
         outcome = await execute_call({
             "server_id": server_id, "tool": tool, "arguments": dict(params.arguments or {}),
-            "user_token": user["principal"], "client": _client_context(ctx, user),
+            "user_token": user["principal"], "client": _client_context(ctx, user), "transport_claims": user.get("claims") or {},
         })
         return _render(outcome)
 

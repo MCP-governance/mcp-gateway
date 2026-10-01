@@ -1,0 +1,215 @@
+{
+  "bundle_id": "PAC15-CAPABILITIES-20261001",
+  "scope": "authorized-lab-principals-and-resources",
+  "owner": "lab-maintainers",
+  "capabilities": [
+    {
+      "id": "public-handbook-read",
+      "principals": [
+        "partner-demo"
+      ],
+      "synthetic_subjects": [
+        "acceptance-partner"
+      ],
+      "servers": [
+        "filesystem",
+        "git",
+        "gitea",
+        "postgres"
+      ],
+      "actions": [
+        "r"
+      ],
+      "resource_kinds": [
+        "path",
+        "repository",
+        "table",
+        "database",
+        "gitea"
+      ],
+      "path_roots": [
+        "/shared/public",
+        "/shared/partners",
+        "/repos/handbook"
+      ],
+      "repositories": [
+        "bob/handbook"
+      ],
+      "tables": [
+        "public.products",
+        "(no table)"
+      ],
+      "commands": [],
+      "transfer_destinations": [],
+      "environments": [
+        "prod",
+        "test"
+      ],
+      "valid_from": "2026-10-01T00:00:00+09:00",
+      "valid_until": "2026-11-01T00:00:00+09:00"
+    },
+    {
+      "id": "reviewed-lab-workspaces",
+      "principals": [
+        "emp-ysg",
+        "emp-jwj",
+        "emp-pse",
+        "admin-demo",
+        "root",
+        "user"
+      ],
+      "synthetic_subjects": [
+        "adversarial",
+        "boundary",
+        "acceptance-employee",
+        "acceptance-privacy",
+        "acceptance-admin"
+      ],
+      "servers": [
+        "filesystem",
+        "git",
+        "fetch",
+        "memory",
+        "desktop",
+        "postgres",
+        "redis",
+        "email",
+        "gitea",
+        "playwright"
+      ],
+      "actions": [
+        "r",
+        "w",
+        "x"
+      ],
+      "server_actions": {
+        "postgres": [
+          "r"
+        ],
+        "gitea": [
+          "r",
+          "w"
+        ],
+        "email": [
+          "r",
+          "w"
+        ]
+      },
+      "resource_kinds": [
+        "path",
+        "repository",
+        "repository-list",
+        "table",
+        "database",
+        "redis",
+        "redis-key",
+        "redis-pattern",
+        "web",
+        "mailbox",
+        "message",
+        "knowledge-graph",
+        "gitea",
+        "command"
+      ],
+      "path_roots": [
+        "/shared",
+        "/repos",
+        "/workspace"
+      ],
+      "readonly_path_roots": [
+        "/shared/confidential",
+        "/repos/infra-secrets"
+      ],
+      "repositories": [
+        "bob/handbook",
+        "bob/payment-service",
+        "bob/infra-secrets"
+      ],
+      "tables": [
+        "public.products",
+        "sales.orders",
+        "sales.customers",
+        "hr.employees",
+        "hr.salaries",
+        "(no table)"
+      ],
+      "commands": [
+        "echo acceptance-approval",
+        "cd /workspace/payment-service && python -m pytest -q",
+        "ls /workspace",
+        "pwd"
+      ],
+      "transfer_destinations": [],
+      "environments": [
+        "prod",
+        "test"
+      ],
+      "valid_from": "2026-10-01T00:00:00+09:00",
+      "valid_until": "2026-11-01T00:00:00+09:00"
+    },
+    {
+      "id": "reservation-products-increment",
+      "principals": [
+        "reservation-check"
+      ],
+      "servers": [
+        "postgres"
+      ],
+      "tools": [
+        "execute_sql"
+      ],
+      "actions": [
+        "w"
+      ],
+      "resource_kinds": [
+        "table"
+      ],
+      "path_roots": [],
+      "repositories": [],
+      "tables": [
+        "public.products"
+      ],
+      "commands": [],
+      "transfer_destinations": [],
+      "environments": [
+        "test",
+        "prod"
+      ],
+      "valid_from": "2026-10-01T00:00:00+09:00",
+      "valid_until": "2026-11-01T00:00:00+09:00",
+      "argument_schema": {
+        "required": [
+          "sql"
+        ],
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": "string",
+            "enum": [
+              "UPDATE public.products SET price=price+1 WHERE id=1",
+              "UPDATE public.products SET price=price+1 WHERE id=1 /* slot-0 */",
+              "UPDATE public.products SET price=price+1 WHERE id=1 /* slot-1 */",
+              "UPDATE public.products SET price=price+1 WHERE id=1 /* slot-2 */",
+              "UPDATE public.products SET price=price+1 WHERE id=1 /* slot-3 */",
+              "UPDATE public.products SET price=price+1 WHERE id=1 /* slot-4 */",
+              "UPDATE public.products SET price=price+1 WHERE id=1 /* slot-5 */"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "execution_profile": {
+    "production_controls": true,
+    "id": "reviewed-gateway-broker-limits-v1",
+    "limits": {
+      "max_calls": 60,
+      "max_concurrency": 4,
+      "allow_automated": true,
+      "max_retries": 0,
+      "max_chain_depth": 1,
+      "max_execution_ms": 90000
+    }
+  }
+}

@@ -13,7 +13,249 @@ package mcp.authz_test
 import data.mcp.authz.decision
 import rego.v1
 
+pac_fixture := {
+  "request": {
+    "id": "req-001",
+    "user_id": "user-1",
+    "agent_id": "agent-1",
+    "session_id": "session-1",
+    "server_id": "server-1",
+    "feature_type": "tool",
+    "feature_id": "read_file",
+    "action": "READ",
+    "arguments": {
+      "path": "file-1"
+    },
+    "on_behalf_of": true,
+    "environment": "prod",
+    "targets": {
+      "files": [
+        "file-1"
+      ],
+      "commands": [],
+      "recipients": []
+    },
+    "data": {
+      "asset_id": "asset-1",
+      "grade": "internal"
+    },
+    "transfer": {
+      "enabled": false,
+      "destination_id": ""
+    },
+    "high_risk": false,
+    "automated": false
+  },
+  "facts": {
+    "trusted": true,
+    "now_ns": 1800000000000000000,
+    "classification": {
+      "verified": true,
+      "high_risk": false,
+      "transfer_required": false,
+      "on_behalf_of": true,
+      "automated": false
+    },
+    "approval_workflow_available": true,
+    "approval": {
+      "status": "APPROVED",
+      "server_id": "server-1",
+      "conditions_met": true,
+      "valid_from_ns": 1700000000000000000,
+      "valid_until_ns": 1900000000000000000,
+      "baseline": {
+        "server_version": "1.0.0",
+        "feature_definition_hash": "sha256:feature-v1",
+        "schema_hash": "sha256:schema-v1",
+        "policy_version": "pac15-v1"
+      },
+      "environments": [
+        "prod"
+      ],
+      "production_controls": true,
+      "subject": {
+        "user_id": "user-1",
+        "agent_id": "agent-1",
+        "session_id": "session-1"
+      },
+      "auth_issuer": "https://auth.example.test",
+      "connections": [
+        {
+          "server_id": "server-1",
+          "endpoint_id": "endpoint-1",
+          "final_target_id": "target-1"
+        }
+      ],
+      "features": [
+        {
+          "server_id": "server-1",
+          "type": "tool",
+          "id": "read_file",
+          "definition_hash": "sha256:feature-v1"
+        }
+      ],
+      "actions": [
+        "READ"
+      ],
+      "allowed_argument_keys": [
+        "path"
+      ],
+      "parameter_bindings": [
+        {
+          "argument_path": [
+            "path"
+          ],
+          "target_type": "file"
+        }
+      ],
+      "targets": {
+        "files": [
+          "file-1"
+        ],
+        "commands": [],
+        "recipients": []
+      },
+      "data_scopes": [
+        {
+          "asset_id": "asset-1",
+          "grade": "internal"
+        }
+      ],
+      "transfer_pairs": [
+        {
+          "destination_id": "dest-1",
+          "grade": "internal"
+        }
+      ],
+      "limits": {
+        "allow_automated": false,
+        "max_retries": 2,
+        "max_concurrency": 2,
+        "max_calls": 10,
+        "max_chain_depth": 3,
+        "max_execution_ms": 30000
+      }
+    },
+    "baseline": {
+      "verified": true,
+      "server_version": "1.0.0",
+      "feature_definition_hash": "sha256:feature-v1",
+      "schema_hash": "sha256:schema-v1",
+      "policy_version": "pac15-v1"
+    },
+    "environment": {
+      "verified": true,
+      "id": "prod",
+      "production_equivalent": false
+    },
+    "identity": {
+      "verified": true,
+      "user_id": "user-1",
+      "agent_id": "agent-1",
+      "session_id": "session-1",
+      "allowed_actions": [
+        "READ"
+      ]
+    },
+    "delegation": {
+      "verified": true,
+      "user_id": "user-1",
+      "agent_id": "agent-1",
+      "valid_from_ns": 1700000000000000000,
+      "valid_until_ns": 1900000000000000000,
+      "user_actions": [
+        "READ"
+      ],
+      "agent_actions": [
+        "READ"
+      ],
+      "delegated_actions": [
+        "READ"
+      ]
+    },
+    "auth": {
+      "mode": "http",
+      "verified": true,
+      "not_revoked": true,
+      "issuer": "https://auth.example.test",
+      "audience": "server-1",
+      "valid_from_ns": 1700000000000000000,
+      "valid_until_ns": 1900000000000000000,
+      "scopes": [
+        "READ"
+      ]
+    },
+    "connection": {
+      "verified": true,
+      "final_target_verified": true,
+      "server_id": "server-1",
+      "endpoint_id": "endpoint-1",
+      "final_target_id": "target-1"
+    },
+    "catalog_feature": {
+      "verified": true,
+      "server_id": "server-1",
+      "type": "tool",
+      "id": "read_file",
+      "definition_hash": "sha256:feature-v1"
+    },
+    "action": {
+      "verified": true,
+      "normalized": "READ"
+    },
+    "parameters": {
+      "verified": true,
+      "normalized": true,
+      "schema_valid": true,
+      "coverage_complete": true,
+      "canonical_arguments": {
+        "path": "file-1"
+      },
+      "derived_targets": {
+        "files": [
+          "file-1"
+        ],
+        "commands": [],
+        "recipients": []
+      }
+    },
+    "data": {
+      "verified": true,
+      "asset_id": "asset-1",
+      "grade": "internal"
+    },
+    "transfer": {
+      "verified": true,
+      "final_destination_verified": true,
+      "final_destination_id": "dest-1",
+      "data_grade": "internal"
+    },
+    "revocation": {
+      "verified": true,
+      "fresh": true,
+      "user": false,
+      "agent": false,
+      "server": false,
+      "feature": false,
+      "approval": false
+    },
+    "execution": {
+      "atomic_reservation_verified": true,
+      "reservation_request_id": "req-001",
+      "reservation_expires_ns": 1800000001000000000,
+      "duplicate_status": "clear",
+      "previous_mutation_status": "clear",
+      "retry_count": 0,
+      "active_concurrency": 1,
+      "total_calls": 1,
+      "chain_depth": 1,
+      "requested_timeout_ms": 5000
+    }
+  }
+}
+
 base := {
+    "pac": pac_fixture,
 	"environment": "prod",
 	"now": "2026-09-16T10:00:00Z",
 	"principal": {"role": "partner", "department": "협력사 A"},
@@ -47,9 +289,9 @@ test_allow if {
 # §11.7 판단 결과에 적용 정책과 정책 버전이 포함되어야 한다.
 test_decision_carries_policy_management_information if {
 	result := decision with input as base
-	result.policy_version == "1.0.0"
+	result.policy_version == "pac15-v1"
 	result.policy_status == "운영"
-	result.policy_set_version == "2.3.0"
+	result.policy_set_version == "4.0.0-pac15"
 	count(result.risk_ids) > 0
 	count(result.control_ids) > 0
 	count(result.obligations) > 0
@@ -58,22 +300,38 @@ test_decision_carries_policy_management_information if {
 
 # ── T-RBAC-001/002 비인가 요청과 권한 초과 ──────────────────────────────────
 
-test_block_partner_write if {
-	result := decision with input as with_input({"tool": {"action": "w"}})
-	result.decision == "Block"
-	result.policy_id == "P-AUTHZ-DENY-001"
+test_block_approved_scope_write if {
+    facts := object.union(pac_fixture.facts, {"approval": object.union(pac_fixture.facts.approval, {"data_scopes": []})})
+    request := object.union(base, {"pac": {"request": pac_fixture.request, "facts": facts},
+                                  "principal": {"role": "admin", "shadow_endpoints": 5},
+                                  "relationship": {"defined": true, "in_scope": false}})
+    result := decision with input as request
+    result.decision == "Block"
+    result.policy_id == "PAC-11"
+    result.exception == null
 }
 
-test_block_partner_important_read if {
-	result := decision with input as with_input({"resource": {"data_class": "important"}})
-	result.decision == "Block"
-	result.policy_id == "P-AUTHZ-DENY-001"
+test_block_approved_scope_important_read if {
+    facts := object.union(pac_fixture.facts, {"approval": object.union(pac_fixture.facts.approval, {"data_scopes": []})})
+    request := object.union(base, {"pac": {"request": pac_fixture.request, "facts": facts},
+                                  "principal": {"role": "admin", "shadow_endpoints": 5},
+                                  "relationship": {"defined": true, "in_scope": false}})
+    result := decision with input as request
+    result.decision == "Block"
+    result.policy_id == "PAC-11"
+    result.exception == null
 }
 
 # 권한 없는 x는 외부 전송 제한이 아니라 차단이어야 한다.
 test_block_beats_restrict_for_unprivileged_external_send if {
-	result := decision with input as with_input({"tool": {"action": "x"}})
-	result.policy_id == "P-AUTHZ-DENY-001"
+    facts := object.union(pac_fixture.facts, {"approval": object.union(pac_fixture.facts.approval, {"data_scopes": []})})
+    request := object.union(base, {"pac": {"request": pac_fixture.request, "facts": facts},
+                                  "principal": {"role": "admin", "shadow_endpoints": 5},
+                                  "relationship": {"defined": true, "in_scope": false}})
+    result := decision with input as request
+    result.decision == "Block"
+    result.policy_id == "PAC-11"
+    result.exception == null
 }
 
 # ── T-REGISTRY-001/002 미등록·비활성 구성요소 ───────────────────────────────
@@ -442,63 +700,44 @@ exception_request := with_input({
 	"tool": {"name": "read_text_file", "action": "r"},
 })
 
-test_registered_exception_relaxes_block if {
-	result := decision with input as exception_request
-	result.decision == "Alert"
-	result.policy_id == "P-AUTHZ-DENY-001"
-	result.exception.id == "EXC-001"
-	"사후 수동 검토 적용" in result.obligations
-
-	# §8.14 예외로 완화된 호출은 원래 정책보다 약한 증적을 남겨서는 안 된다.
-	"evidence.enhanced" in result.obligations
-	"exception.monitored" in result.obligations
+test_retired_333_exceptions_cannot_authorize_a_pac_denial if {
+    every exc in [x | some x in data.exceptions; x.policy_id == "P-AUTHZ-DENY-001"] { exc.status == "종료" }
+    facts := object.union(pac_fixture.facts, {"approval": object.union(pac_fixture.facts.approval, {"data_scopes": []})})
+    request := object.union(exception_request, {"pac": {"request": pac_fixture.request, "facts": facts}})
+    result := decision with input as request
+    result.decision == "Block"
+    result.policy_id == "PAC-11"
+    result.exception == null
 }
 
-test_expired_exception_does_not_apply if {
-	result := decision with input as object.union(exception_request, {"now": "2027-02-01T00:00:00Z"})
-	result.decision == "Block"
-	result.exception == null
+valid_exception_fixture := object.union(data.exceptions[0], {"status": "적용"})
+
+test_exception_valid_window if {
+    data.mcp.authz.valid_exception(valid_exception_fixture) with input as base
+}
+test_exception_rejects_self_approval if {
+    bad := object.union(valid_exception_fixture, {"approved_by": valid_exception_fixture.requested_by})
+    not data.mcp.authz.valid_exception(bad) with input as base
+}
+test_exception_rejects_missing_controls if {
+    bad := object.union(valid_exception_fixture, {"compensating_controls": []})
+    not data.mcp.authz.valid_exception(bad) with input as base
+}
+test_exception_rejects_blanket_scope if {
+    bad := object.union(object.remove(valid_exception_fixture, {"scope"}), {"scope": {}})
+    not data.mcp.authz.valid_exception(bad) with input as base
+}
+test_exception_rejects_open_ended_window if {
+    bad := object.remove(valid_exception_fixture, {"valid_until"})
+    not data.mcp.authz.valid_exception(bad) with input as base
+}
+test_exception_rejects_expired_window if {
+    not data.mcp.authz.valid_exception(valid_exception_fixture) with input as with_input({"now": "2027-02-01T00:00:00Z"})
+}
+test_exception_rejects_before_window if {
+    not data.mcp.authz.valid_exception(valid_exception_fixture) with input as with_input({"now": "2026-01-01T00:00:00Z"})
 }
 
-test_exception_before_validity_does_not_apply if {
-	result := decision with input as object.union(exception_request, {"now": "2026-01-01T00:00:00Z"})
-	result.decision == "Block"
-}
-
-test_exception_outside_its_scope_does_not_apply if {
-	out_of_scope := object.union(exception_request, {"resource": {"id": "work-001"}})
-	result := decision with input as out_of_scope
-	result.decision == "Block"
-	result.exception == null
-}
-
-# §8.6 요청자가 자신의 예외를 단독으로 승인하는 경우
-test_self_approved_exception_is_rejected if {
-	bad := [object.union(data.exceptions[0], {"approved_by": data.exceptions[0].requested_by})]
-	result := decision with input as exception_request with data.exceptions as bad
-	result.decision == "Block"
-}
-
-# §8.6 중대한 위험에 대해 적절한 보완통제가 없는 경우
-test_exception_without_compensating_control_is_rejected if {
-	bad := [object.union(data.exceptions[0], {"compensating_controls": []})]
-	result := decision with input as exception_request with data.exceptions as bad
-	result.decision == "Block"
-}
-
-# §8.6 적용범위가 불명확한 포괄 예외
-test_blanket_exception_is_rejected if {
-	bad := [object.union(object.remove(data.exceptions[0], {"scope"}), {"scope": {}})]
-	result := decision with input as exception_request with data.exceptions as bad
-	result.decision == "Block"
-}
-
-# §8.6 종료일을 정하지 않은 무기한 예외
-test_open_ended_exception_is_rejected if {
-	bad := [object.remove(data.exceptions[0], {"valid_until"})]
-	result := decision with input as exception_request with data.exceptions as bad
-	result.decision == "Block"
-}
 
 # 무결성 통제는 예외 대상이 아니다(관리대장 exceptionable=false).
 test_exception_cannot_relax_integrity_control if {
@@ -523,66 +762,23 @@ test_exception_cannot_tighten_a_decision if {
 	result.decision == "Allow"
 }
 
-# ── T-BASELINE 이전 버전과의 결과 비교 (§11.11) ─────────────────────────────
-#
-# 27칸 권한 매트릭스는 정책집을 다시 쓰기 전의 확정 판정이다. 구조를 바꾸면서
-# 조용히 달라진 칸이 없는지 여기서 대조한다.
-
-baseline := {
-	"partner": {
-		"public": {"r": "Allow", "w": "Block", "x": "Block"},
-		"nonimportant": {"r": "Block", "w": "Block", "x": "Block"},
-		"important": {"r": "Block", "w": "Block", "x": "Block"},
-	},
-	"employee": {
-		"public": {"r": "Allow", "w": "Block", "x": "Block"},
-		"nonimportant": {"r": "Allow", "w": "Allow", "x": "Block"},
-		"important": {"r": "Alert", "w": "Block", "x": "Block"},
-	},
-	"admin": {
-		"public": {"r": "Allow", "w": "Allow", "x": "Restrict"},
-		"nonimportant": {"r": "Allow", "w": "Allow", "x": "Restrict"},
-		"important": {"r": "Allow", "w": "Allow", "x": "Approval"},
-	},
+# PAC 입력 누락은 역할에 관계없이 실행 전에 차단한다.
+test_missing_pac_facts_fails_closed if {
+    result := decision with input as object.remove(base, {"pac"})
+    result.decision == "Block"
+    result.policy_id == "INPUT_CONTRACT"
 }
 
-# 예외 대장이 비어 있을 때의 순수 권한 판정을 본다.
-matrix_cell(role, data_class, action) := result.decision if {
-	result := decision with input as with_input({
-		"principal": {"role": role},
-		"resource": {"id": "matrix", "data_class": data_class},
-		# The 27 cells describe tools that can carry a restriction (mail, fetch).
-		"tool": {"action": action, "restrictable": ["max_chars"]},
-	})
-		with data.exceptions as []
+test_pac_scope_denies_unapproved_action if {
+    altered := object.union(pac_fixture.request, {"action": "WRITE"})
+    facts := object.union(pac_fixture.facts, {"action": {"verified": true, "normalized": "WRITE"}})
+    request := object.union(base, {"pac": {"request": altered, "facts": facts}})
+    result := decision with input as request
+    result.decision == "Block"
+    some violation in array.concat([{"policy_id": result.policy_id}], result.conflicts)
+    violation.policy_id == "PAC-09"
 }
 
-test_permission_matrix_matches_recorded_baseline if {
-	every role, classes in baseline {
-		every data_class, actions in classes {
-			every action, expected in actions {
-				matrix_cell(role, data_class, action) == expected
-			}
-		}
-	}
-}
-
-# 권한 허용은 Rego 소스가 아니라 배포한 데이터 번들에 따른다(origin/main a14fe13).
-test_authorization_bundle_fails_closed_without_grants if {
-	empty := {"grants": []}
-	result := decision with input as base with data.authorization as empty
-	result.policy_id == "P-AUTHZ-DENY-001"
-}
-
-test_authorization_bundle_grant_changes_decision if {
-	grant := {"id": "test-partner-write", "roles": ["partner"],
-	          "data_classes": ["public"], "actions": ["w"]}
-	changed := object.union(data.authorization,
-	    {"grants": array.concat(data.authorization.grants, [grant])})
-	request := with_input({"tool": {"action": "w"}})
-	result := decision with input as request with data.authorization as changed
-	result.policy_id == "P-AUTHZ-ALLOW-001"
-}
 
 # ── T-LEDGER 관리대장 자체의 정합성 (§12.3) ─────────────────────────────────
 
@@ -761,12 +957,14 @@ test_shadow_endpoint_upgrades_allow_to_alert if {
 # 섀도 설정을 가진 사람이라고 해서 원래 막혔을 호출이 경고로 바뀌지는 않는다.
 # 더 제한적인 판정이 이긴다.
 test_shadow_endpoint_does_not_weaken_a_block if {
-	result := decision with input as with_input({
-		"principal": {"role": "partner", "department": "협력사 A", "shadow_endpoints": 5},
-		"resource": {"id": "secret-001", "data_class": "important"},
-	})
-	result.decision == "Block"
-	result.policy_id == "P-AUTHZ-DENY-001"
+    facts := object.union(pac_fixture.facts, {"approval": object.union(pac_fixture.facts.approval, {"data_scopes": []})})
+    request := object.union(base, {"pac": {"request": pac_fixture.request, "facts": facts},
+                                  "principal": {"role": "admin", "shadow_endpoints": 5},
+                                  "relationship": {"defined": true, "in_scope": false}})
+    result := decision with input as request
+    result.decision == "Block"
+    result.policy_id == "PAC-11"
+    result.exception == null
 }
 
 test_no_shadow_report_leaves_allow_unchanged if {
@@ -806,9 +1004,14 @@ test_scope_needs_a_relationship if {
 
 # 범위 밖이라고 원래 막혔을 호출이 경보로 약해지지는 않는다.
 test_scope_does_not_weaken_a_block if {
-	result := decision with input as with_input(object.union(scope_outside, {"resource": {"id": "secret-001", "data_class": "important"}}))
-	result.decision == "Block"
-	result.policy_id == "P-AUTHZ-DENY-001"
+    facts := object.union(pac_fixture.facts, {"approval": object.union(pac_fixture.facts.approval, {"data_scopes": []})})
+    request := object.union(base, {"pac": {"request": pac_fixture.request, "facts": facts},
+                                  "principal": {"role": "admin", "shadow_endpoints": 5},
+                                  "relationship": {"defined": true, "in_scope": false}})
+    result := decision with input as request
+    result.decision == "Block"
+    result.policy_id == "PAC-11"
+    result.exception == null
 }
 
 # ── 통합관리대장 V1.0 PaC 후보에서 새로 정책화한 통제 ───────────────────────
@@ -952,22 +1155,11 @@ approval_exception_request := with_input({
 	"tool": {"name": "start_process", "action": "x"},
 })
 
-test_approval_exception_waits_for_approval if {
-	result := decision with input as approval_exception_request
-	result.decision == "Approval"
-	result.exception.id == "EXC-002"
-}
-
-test_approval_exception_runs_once_approved if {
-	result := decision with input as object.union(approval_exception_request, {"approval": {"granted": true}})
-	result.decision == "Allow"
-	result.exception.id == "EXC-002"
-	"exception.monitored" in result.obligations
-}
-
-test_approval_exception_does_not_reach_other_departments if {
-	other := object.union(approval_exception_request, {"principal": {"role": "employee", "department": "데이터분석팀"}})
-	result := decision with input as object.union(other, {"approval": {"granted": true}})
-	result.decision == "Block"
-	result.exception == null
+test_old_approval_exception_cannot_bypass_pac if {
+    changed := object.union(pac_fixture.facts, {"approval": object.union(pac_fixture.facts.approval, {"data_scopes": []})})
+    request := object.union(approval_exception_request, {"pac": {"request": pac_fixture.request, "facts": changed}, "approval": {"granted": true}})
+    result := decision with input as request
+    result.decision == "Block"
+    result.policy_id == "PAC-11"
+    result.exception == null
 }

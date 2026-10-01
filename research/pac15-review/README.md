@@ -51,10 +51,11 @@ Gateway에 넣기 전에 따로 시험한 기록이다. **다시 돌릴 수 있�
 | `PAC-13 valid individual approval` | 승인 레코드에 `approver_id`(요청자가 아닌 사람) |
 | `verified local connector` | `facts.auth`에 `connector_id`·`not_revoked`·`valid_from_ns`·`valid_until_ns`·`scopes`, `facts.approval.local_connectors` |
 
-## Gateway에 그대로 넣지 않은 이유
+## Gateway 런타임 통합
 
-초안은 `data.mcp.decision.decision`에서 `{effect, policy_ids}`를 돌려주고 `request`+`facts` 입력을 요구한다.
-Gateway는 `data.mcp.authz.decision`에 `{decision, policy_id, reason, restrictions}`를 묻는다. 그대로 교체하면
-결과가 비어 `P-CONTROL-FAIL-CLOSED`로 모든 호출이 차단된다(실측). 그래서 PAC 각각이 말하는 통제를 Gateway의 입력과
-결과 계약 위에서 구현했고, 그 대응은 [../../docs/ai/PAC_MAPPING.md](../../docs/ai/PAC_MAPPING.md)에 있다.
-수정본은 초안을 계속 발전시킬 때의 출발점으로 둔다.
+수정본을 제품 `opa/pac15.rego`·`decision.rego`로 통합했습니다. Gateway가 검증된 토큰·현재 DB·
+검토된 registry에서 사실을 생성하고 `policy.rego`가 PAC 결과를 기존 응답 계약에 연결합니다.
+역할×등급×행위 인가는 제거했습니다. 원본·수정본은 비교 자료로 그대로 보존합니다.
+제품 모듈을 대상으로도 정상 200/200·탐색 100/100을 확인했습니다(2026-10-01 새 테스트보드).
+원본 대비 세 통합 변경과 실제 운영 한계는
+[런타임 통합 문서](../../docs/ai/PAC_RUNTIME_2026-10-01.md)를 따릅니다.

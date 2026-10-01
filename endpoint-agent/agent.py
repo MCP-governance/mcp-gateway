@@ -636,14 +636,31 @@ def once() -> None:
         evidence.get("suspected", 0)))
 
 
+def validate_gateway() -> None:
+    parsed = urlsplit(GATEWAY_URL)
+    if parsed.scheme == "https" or (parsed.scheme == "http" and parsed.hostname in {"gateway", "localhost", "127.0.0.1", "::1"}):
+        return
+    pinned = setting("ENDPOINT_TAILSCALE_NODE_ID", "")
+    if parsed.scheme == "http" and pinned:
+        address = ipaddress.ip_address(parsed.hostname)
+        if address not in ipaddress.ip_network("100.64.0.0/10"):
+            raise ValueError("Tailscale HTTP 주소는 승인한 overlay 대역이어야 합니다")
+        status = json.loads(subprocess.check_output(["tailscale", "status", "--json"], text=True, timeout=10))
+        if status.get("BackendState") == "Running" and any(
+                peer.get("ID") == pinned and str(address) in peer.get("TailscaleIPs", [])
+                for peer in status.get("Peer", {}).values()):
+            return
+    raise ValueError("원격 Gateway는 HTTPS 또는 관리자 지정 Tailscale 노드의 overlay HTTP만 허용합니다")
+
+
 def main() -> int:
     if not DEVICE_KEY:
         log("ENDPOINT_DEVICE_KEY가 없습니다. 관리자가 발급한 장치 자격이 필요합니다.")
         return 2
-    parsed = urlsplit(GATEWAY_URL)
-    if parsed.scheme != "https" and not (parsed.scheme == "http" and parsed.hostname in {
-        "gateway", "localhost", "127.0.0.1", "::1"}):
-        log("원격 Gateway 주소는 HTTPS가 필요합니다. 로컬 터널만 HTTP를 허용합니다.")
+    try:
+        validate_gateway()
+    except (ValueError, OSError, subprocess.SubprocessError) as exc:
+        log(str(exc))
         return 2
     log(f"엔드포인트 {endpoint_id()} · 관측 경로 {[str(p) for p in SCAN_PATHS]}")
     enrolled = False

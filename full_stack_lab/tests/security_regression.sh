@@ -35,12 +35,18 @@ wait_healthy() {
   return 1
 }
 # One call through the Gateway's enforced path, as <principal>: "decision policy executed"
-PROBE='import asyncio, json, sys
-from app import db
-from app.core import execute_call
+PROBE='import asyncio, json, os, sys
+import httpx
+from app.acceptance import TOKENS, call
 async def main():
-    out = await execute_call({"server_id": sys.argv[2], "tool": sys.argv[3], "arguments": json.loads(sys.argv[4]),
-                              "user_token": sys.argv[1], "client": {"agent": "security-regression"}})
+    from app import db
+    principal = await db.fetch_one("SELECT email FROM principals WHERE token=%s", (sys.argv[1],))
+    async with httpx.AsyncClient(timeout=15) as client:
+        response = await client.post("http://127.0.0.1:8080/api/session", json={
+            "email": principal["email"], "password": os.getenv("MOCK_SSO_PASSWORD", "test-password")})
+        response.raise_for_status()
+        TOKENS["probe"] = response.json()["access_token"]
+    out = await call("probe", sys.argv[2] + "__" + sys.argv[3], json.loads(sys.argv[4]))
     print(out["decision"], out["policy_id"], out["upstream_executed"])
     await db.close()
 asyncio.run(main())'

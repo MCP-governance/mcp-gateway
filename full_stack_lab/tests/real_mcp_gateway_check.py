@@ -59,6 +59,7 @@ async def run(args):
             try:
                 register(args.console, requester, approver, endpoint=endpoint, server_id=server_id,
                          name='Live verification ' + name, tools={tool: 'r'}, data_class='important', valid_days=1,
+                         parameter_constraints=row['parameter_constraints'],
                          allowed=[who['user_id']], ack_warnings=bool(row['catalog_warnings'] and row.get('warning_review')),
                          purpose='Authorized live vendor read verification; no writes, messages, or production enrollment',
                          review_note='Pinned review file: selected read tool only, one-day verification window.',

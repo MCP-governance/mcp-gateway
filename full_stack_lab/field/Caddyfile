@@ -28,6 +28,11 @@ http://:8080 {
 	handle /api/health {
 		reverse_proxy gateway:8080
 	}
+	# Device reports use the bound device key; administrative operations still require
+	# a Console-scoped administrator token at the Gateway.
+	handle /api/endpoint/* {
+		reverse_proxy gateway:8080
+	}
 	handle /.well-known/oauth-protected-resource {
 		reverse_proxy gateway:8080
 	}

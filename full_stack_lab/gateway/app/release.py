@@ -23,10 +23,8 @@ def build_info() -> dict:
             'pc_kit_sha256': hashlib.sha256(kit.read_bytes()).hexdigest() if kit.is_file() else None}
 
 
-# The rules decide nothing alone: who may do what is the grant bundle in data.json, which
-# policies are in force is the ledger, and the exceptions relax them. An OPA that still
-# serves yesterday's grants beside today's rules is as far from what was approved as one
-# serving yesterday's rules, so all four files are compared, not the Rego alone.
+# Compare all PAC/routing modules and policy data. Reviewed capability scopes have a
+# separate hash because they are enforced by the Gateway adapter, not OPA data documents.
 POLICY_DATA_FILES = ('data.json', 'exceptions.json', 'policy_ledger.json')
 
 
@@ -37,21 +35,25 @@ def _canonical(value) -> str:
 
 async def policy_info(opa_url: str) -> dict:
     root = Path('/policy')
-    expected = hashlib.sha256((root / 'policy.rego').read_bytes()).hexdigest()
+    modules = ('policy.rego', 'pac15.rego', 'decision.rego')
+    expected = _canonical({name: hashlib.sha256((root/name).read_bytes()).hexdigest() for name in modules})
     documents: dict = {}
     for name in POLICY_DATA_FILES:
         documents.update(json.loads((root / name).read_text(encoding='utf-8')))
     result = {'expected_sha256': expected, 'loaded_sha256': None,
               'expected_data_sha256': _canonical(documents), 'loaded_data_sha256': None,
               'rules_match': False, 'data_match': False, 'matches': False}
+    from . import registry
+    result['capabilities_sha256'] = hashlib.sha256((registry.REGISTRY_DIR/'capabilities.json').read_bytes()).hexdigest()
     base = opa_url.split('/v1/')[0]
     try:
         async with httpx.AsyncClient(timeout=3) as client:
             response = await client.get(base + '/v1/policies')
             response.raise_for_status()
-            rules = [p for p in response.json()['result'] if p['id'].endswith('/policy.rego') or p['id'] == 'policy.rego']
-            if len(rules) == 1:
-                result['loaded_sha256'] = hashlib.sha256(rules[0]['raw'].encode()).hexdigest()
+            rules = {p['id'].rsplit('/',1)[-1]: p['raw'] for p in response.json()['result']
+                     if p['id'].rsplit('/',1)[-1] in modules}
+            if set(rules) == set(modules):
+                result['loaded_sha256'] = _canonical({name: hashlib.sha256(rules[name].encode()).hexdigest() for name in modules})
                 result['rules_match'] = result['loaded_sha256'] == expected
             loaded = {}
             for key in documents:

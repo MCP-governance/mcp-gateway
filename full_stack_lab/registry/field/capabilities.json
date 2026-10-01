@@ -1,0 +1,18 @@
+{
+  "bundle_id": "PAC15-FIELD-20261001",
+  "scope": "reviewed-runtime-intakes-only",
+  "owner": "organization-administrators",
+  "capabilities": [],
+  "execution_profile": {
+    "production_controls": true,
+    "id": "reviewed-gateway-broker-limits-v1",
+    "limits": {
+      "max_calls": 60,
+      "max_concurrency": 4,
+      "allow_automated": true,
+      "max_retries": 0,
+      "max_chain_depth": 1,
+      "max_execution_ms": 90000
+    }
+  }
+}

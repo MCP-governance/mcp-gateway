@@ -11,7 +11,6 @@ import argparse
 import json
 import os
 import shutil
-import sys
 import tomllib
 from pathlib import Path
 

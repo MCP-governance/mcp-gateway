@@ -72,7 +72,10 @@ def catalog() -> dict:
         merged = tomllib.loads(CATALOG_PATH.read_text(encoding="utf-8")) if stamp[0] else {"servers": {}}
         extra = runtime()
         reviewed = merged.setdefault("servers", {})
-        merged["servers"] = {**reviewed, **{k: v for k, v in extra["servers"].items() if k not in reviewed}}
+        # Registrations made before intake enforcement are retained as historical
+        # records, but cannot become operating approvals by surviving an upgrade.
+        merged["servers"] = {**reviewed, **{k: v for k, v in extra["servers"].items()
+                                           if k not in reviewed and v.get("intake_id")}}
         merged["usage_relationships"] = [*merged.get("usage_relationships", []), *extra["usage_relationships"]]
         _cache["catalog"], _cache["runtime"], _cache["mtime"] = merged, extra, stamp
     return _cache["catalog"]
@@ -87,7 +90,8 @@ def catalog_version() -> str:
 def runtime_endpoints() -> set[str]:
     """Endpoints an admin approved by registering them; they count as allowed egress (D-49)."""
     catalog()  # reloads the cache when a file changed
-    return {spec["endpoint"] for spec in _cache["runtime"]["servers"].values()}
+    return {spec["endpoint"] for key, spec in _cache["runtime"]["servers"].items()
+            if key in servers() and spec.get("intake_id")}
 
 
 def servers() -> dict[str, dict]:

@@ -43,7 +43,7 @@ def activity(after: int, limit: int = 100) -> dict:
         return json.load(response)
 
 
-def inspector_call(tool: str, arguments: dict) -> None:
+def inspector_call(tool: str, arguments: dict) -> bool:
     server, _, name = tool.partition("__")
     done = subprocess.run(
         ["mcp-inspector", "--cli", "--transport", "http", "--server-url", f"{GATEWAY}/mcp/{server}/",
@@ -52,14 +52,27 @@ def inspector_call(tool: str, arguments: dict) -> None:
         capture_output=True, text=True, timeout=300)
     if done.returncode != 0:
         say("!", f"inspector {tool}: {(done.stderr or done.stdout).strip()[-300:]}")
+        for line in reversed((done.stderr + "\n" + done.stdout).splitlines()):
+            try:
+                code = json.loads(line).get("error", {}).get("code")
+            except (ValueError, AttributeError):
+                continue
+            if code == "tool_not_found":
+                return True
+            if code == "tool_is_error":
+                return False  # the independent audit row must explain the denial
+        raise RuntimeError(f"Inspector failed without a recognized MCP result: {tool}")
+    return False
 
 
-def run(task: dict, mode: str) -> list[dict]:
+def run(task: dict, mode: str) -> tuple[list[dict], list[str]]:
     before = activity(0, 1)["cursor"]
     say("▶", f"{task.get('title', task['goal'])} ({mode})")
+    hidden = []
     if mode == "scripted":
         for step in task.get("steps", []):
-            inspector_call(step["tool"], step.get("arguments", {}))
+            if inspector_call(step["tool"], step.get("arguments", {})):
+                hidden.append(step["tool"])
     else:
         servers = ",".join(task.get("servers") or [])
         done = subprocess.run(["bob-ask", *(["--servers", servers] if servers else []), task["goal"]],
@@ -69,7 +82,7 @@ def run(task: dict, mode: str) -> list[dict]:
     rows = activity(before)["rows"]
     for row in rows:
         say("◆", row["line"])
-    return rows
+    return rows, hidden
 
 
 def main() -> int:
@@ -86,7 +99,8 @@ def main() -> int:
     mismatches = 0
     for task in tasks:
         try:
-            got = [row["decision"] for row in run(task, args.mode)]
+            rows, hidden = run(task, args.mode)
+            got = [row["decision"] for row in rows]
         except Exception as exc:  # one broken task must not end the day
             say("!", f"{task.get('id')}: {type(exc).__name__}: {str(exc)[:200]}")
             mismatches += 1
@@ -94,6 +108,11 @@ def main() -> int:
         if args.check and "expect" in task:
             # With a model the calls are the model's choice; only scripted runs are checked.
             ok = got == task["expect"] if args.mode == "scripted" else True
+            if args.mode == "scripted":
+                ok = ok and hidden == task.get("expect_hidden", [])
+                if "expect_policy" in task:
+                    ok = ok and [r["policy_id"] for r in rows] == task["expect_policy"]
+                    ok = ok and all(not r.get("upstream_attempted") for r in rows if r["policy_id"].startswith("PAC-"))
             mismatches += not ok
             say("■", f"CHECK {'OK' if ok else 'FAIL'} {task['id']}: 기대 {task['expect']} / 실제 {got}")
     if args.check:

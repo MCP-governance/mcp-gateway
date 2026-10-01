@@ -165,14 +165,13 @@ ATTACKS: list[tuple] = [
     # answer proves the point and neither makes the case depend on that history.
     ("traversal-not-graded-public", "filesystem", "read_text_file",
      {"path": "/shared/public/../confidential/hr/salary-2026.csv"},
-     {"Alert", "Approval"}, {"P-IMPORTANT-ALERT-001", "P-VOLUME-001"}),
+     "Block", "PAC-10"),
     ("encoded-traversal-not-graded-public", "filesystem", "read_text_file",
      {"path": "/shared/public/%2e%2e/confidential/hr/salary-2026.csv"},
      {"Alert", "Approval"}, {"P-IMPORTANT-ALERT-001", "P-VOLUME-001"}),
-    # Outside the server's root the grade is "important" rather than some prefix's grade;
-    # the server's own allowed-directory check is what refuses the read itself.
+    # The reviewed resource scope now refuses paths outside the root before dispatch.
     ("outside-root-not-graded-public", "filesystem", "read_text_file", {"path": "/etc/shadow"},
-     {"Alert", "Approval"}, {"P-IMPORTANT-ALERT-001", "P-VOLUME-001"}),
+     "Block", "PAC-01"),
 
     # ── Identity and scope.
     ("unapproved-tool", "filesystem", "write_file",

@@ -21,7 +21,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import classify, db, endpoint_plane, poisoning, privacy, registry, upstream
+from . import classify, db, endpoint_plane, pac, poisoning, privacy, registry, upstream
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMN_SETS, AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint,
@@ -34,9 +34,8 @@ POLICY_LEDGER_URL = os.getenv("POLICY_LEDGER_URL", "http://opa:8181/v1/data/poli
 GATEWAY_ENVIRONMENT = os.getenv("GATEWAY_ENVIRONMENT", "prod")
 REPORT_DIR = Path(os.getenv("REPORT_DIR", "/reports"))
 POLICY_PATH = Path(os.getenv("POLICY_PATH", "/policy/policy.rego"))
-# What OPA serves from /policy. The grants moved from Rego into data.json, so the
-# Rego hash alone no longer identifies what is enforced (D-25).
-POLICY_BUNDLE = ("policy.rego", "data.json", "exceptions.json", "policy_ledger.json")
+# What OPA serves from /policy, including the integrated PAC pack and its decision contract.
+POLICY_BUNDLE = ("policy.rego", "pac15.rego", "decision.rego", "data.json", "exceptions.json", "policy_ledger.json")
 APPROVAL_TTL_MINUTES = 10
 CATALOG_REFRESH_SECONDS = int(os.getenv("CATALOG_REFRESH_SECONDS", "60"))
 # A server check only negotiates a session; a slow answer is itself the finding.
@@ -57,7 +56,7 @@ DEFAULT_ENFORCEMENT = os.getenv("GATEWAY_ENFORCEMENT", "enforce")
 # ceiling at all for as long as observation lasts.
 # P-CHAIN- (PDF integration): a read-then-export chain is a disclosure, not a permission
 # opinion; observing it would let the export through while "measuring".
-ALWAYS_ENFORCED = ("MCP-", "P-CONTROL-", "P-INPUT-", "P-RATE-", "P-CHAIN-")
+ALWAYS_ENFORCED = ("MCP-", "PAC-", "INPUT_CONTRACT", "POLICY_BUNDLE", "P-CONTROL-", "P-INPUT-", "P-RATE-", "P-CHAIN-")
 CHAIN_WINDOW_MINUTES = int(os.getenv("CHAIN_WINDOW_MINUTES", "10"))
 RATE_LIMIT_CALLS = int(os.getenv("RATE_LIMIT_CALLS", "60"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
@@ -85,6 +84,10 @@ class ResultRejected(RuntimeError):
 
 class DispatchRejected(RuntimeError):
     """The final checks failed before tools/call was sent."""
+
+    def __init__(self, message: str, verdict: dict | None = None):
+        super().__init__(message)
+        self.verdict = verdict
 
 
 def _configure_tracing() -> Any:
@@ -487,6 +490,7 @@ async def register_server(request: dict, actor: str) -> dict:
         # source-validated server runs inside the organisation and stays policy-scoped
         # (None) as before D-57, rather than silently becoming the requester's alone.
         "allowed_principals": remote_review["allowed_principals"] if remote_review else None,
+        "parameter_constraints": remote_review.get("parameter_constraints", {}) if remote_review else {},
         "poisoning_review": {name: registry.tool_hashes(advertised[name]) for name in flagged}
                             if request.get("poisoning_ack") else {},
     }
@@ -561,7 +565,7 @@ async def _contract(server_id: str, tool_name: str) -> dict:
     tool = await db.fetch_one(
         "SELECT * FROM mcp_tools WHERE server_id=%s AND name=%s", (server_id, tool_name)
     )
-    if not server or not tool:
+    if not server or not tool or not registry.server(server_id):
         return {
             "registered": False,
             "enabled": False,
@@ -870,6 +874,7 @@ async def _reserve_call(request_id: str, user_token: str, server_id: str, tool: 
         # The identical call is already running. A retry after a timeout is not this:
         # the earlier reservation is released or expired by then.
         "duplicate_in_flight": int(open_calls["same_call"]) > 0,
+        "execution_timeout_ms": int(min(upstream.CONNECT_TIMEOUT, RESERVATION_TTL_SECONDS - 10) * 1000),
     }
 
 
@@ -965,7 +970,7 @@ async def _policy(input_document: dict) -> dict:
 
 
 async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id: str | None = None,
-                         principal: str | None = None, *, dispatch_state: dict) -> dict:
+                         principal: str | None = None, *, dispatch_state: dict, pac_payload: dict) -> dict:
     """Recheck the contract and call, on one connection.
 
     Nothing is raised inside the MCP client context on purpose: an exception there is
@@ -979,6 +984,7 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
     if principal is None:
         raise DispatchRejected("authenticated dispatch principal is required")
     problem = None
+    blocked_verdict = None
     payload: dict | None = None
     async with upstream.session(spec["endpoint"], principal=principal) as client:
         listed = await client.list_tools()
@@ -1004,13 +1010,38 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                     or approval["expires_at"] <= datetime.now(UTC)):
                 problem = "Approval expired or was withdrawn before execution"
         if problem is None:
+            person = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (principal,))
+            if not person or person["status"] != "active":
+                problem = "Principal was revoked before dispatch"
+            else:
+                final_input = dict(dispatch_state["policy_input"])
+                final_input["now"] = datetime.now(UTC).isoformat()
+                live = next(row for row in registered if row["name"] == tool)
+                live = {**live, "observed_server_version": version,
+                        "observed_description_hash": canonical_hash(observed[tool]["description"]),
+                        "observed_schema_hash": canonical_hash(observed[tool]["input_schema"])}
+                original = pac_payload["arguments"]
+                final_input["pac"] = await pac.build(
+                    pac_payload, person, classify.classify(server_id, tool, original, principal), live,
+                    await _contract(server_id, tool), final_input["context"], dispatch_state["request_id"],
+                    GATEWAY_ENVIRONMENT, approval_id)
+                dispatch_state["policy_input"] = final_input
+                try:
+                    verdict = await _policy(final_input)
+                except Exception:
+                    verdict = local_verdict("P-CONTROL-FAIL-CLOSED", "Block", "실행 직전 PAC 재검증에 실패했습니다.")
+                if verdict["decision"] not in {"Allow", "Alert", "Restrict"}:
+                    problem, blocked_verdict = "PAC changed before dispatch", verdict
+                elif verdict.get("restrictions", {}) != dispatch_state.get("restrictions", {}):
+                    problem = "Restrictions changed before dispatch"
+        if problem is None:
             dispatch_state["upstream_attempted"] = True
             result = await client.call_tool(tool, arguments)
             payload = {"content": upstream.content_items(result), "is_error": bool(result.is_error)}
             if result.structured_content is not None:
                 payload["structured"] = result.structured_content
     if problem:
-        raise DispatchRejected(problem)
+        raise DispatchRejected(problem, blocked_verdict)
     return _guarded_result(payload or {"content": [], "is_error": True})
 
 
@@ -1286,6 +1317,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             base_event.update(local_verdict("P-INPUT-001", "Block", "활성 상태의 등록 계정이 아닙니다."))
             return await _decision_payload(base_event, before)
 
+        if not registry.server(server_id):
+            base_event.update(local_verdict("MCP-REGISTRY-001", "Block", "검토된 카탈로그나 승인 도입 신청에 없는 서버입니다."))
+            return await _decision_payload(base_event, before)
         allowed = registry.allowed_principals(server_id)
         if allowed is not None and user_token not in allowed:
             base_event.update(local_verdict("MCP-REGISTRY-003", "Block",
@@ -1367,6 +1401,8 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "contract": contract,
             "context": context,
         }
+        policy_input["pac"] = await pac.build(payload, principal, cls, tool_row, contract, context,
+                                             request_id, GATEWAY_ENVIRONMENT, approval_id)
         base_event["policy_input"] = policy_input  # kept for replay against a candidate policy
         try:
             result = await _policy(policy_input)
@@ -1394,7 +1430,8 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
 
         if result["decision"] == "Approval":
             new_approval_id = str(uuid.uuid4())
-            stored = {k: payload.get(k) for k in ("server_id", "tool", "arguments", "user_token", "client")}
+            stored = {k: payload.get(k) for k in ("server_id", "tool", "arguments", "user_token", "client", "transport_claims")}
+            stored.update(pac_request_id=request_id, pac_digest=pac.digest(policy_input["pac"]))
             await db.execute(
                 """INSERT INTO approvals(id, request_fingerprint, request_payload, status, requested_by, expires_at)
                    VALUES (%s,%s,%s,'PENDING',%s,%s)""",
@@ -1419,7 +1456,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     # let a slow session outlive the reservation. Response loss stays unknown.
                     async with asyncio.timeout(min(upstream.CONNECT_TIMEOUT, RESERVATION_TTL_SECONDS - 10)):
                         raw_result = await _call_upstream(server_id, tool, effective, approval_id, user_token,
-                                                         dispatch_state=base_event)
+                                                         dispatch_state=base_event, pac_payload=payload)
                 base_event["upstream_executed"] = True
                 try:
                     base_event["result"], output_types = await privacy.mask_payload(raw_result, ignore)
@@ -1434,7 +1471,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     # file, bad SQL). That is a definite outcome, not an unknown one.
                     base_event["error"] = upstream.text_of(base_event["result"]["content"])[:500]
             except (DispatchRejected, upstream.CredentialUnavailable) as exc:
-                base_event.update(local_verdict(
+                base_event.update(exc.verdict if isinstance(exc, DispatchRejected) and exc.verdict else local_verdict(
                     "P-CONTROL-FAIL-CLOSED", "Block",
                     "실행 직전 계약 또는 승인 재검증에 실패하여 도구 호출을 전달하지 않았습니다.",
                     upstream_attempted=False, error=str(exc),

@@ -110,16 +110,24 @@ x_restrictions := {key: data.restrictions[key] |
 	data.restrictions[key]
 }
 
-# ── 권한: 배포된 권한 번들(data.authorization.grants) ───────────────────────
-# 허용 조합은 Rego 소스가 아니라 소유자가 승인해 배포한 데이터 번들에 둔다. 이 저장소의
-# 번들은 랩 기본값(역할 3 x 등급 3 x 행위 3, 이른바 333)이다. 조직 배치에서는 번들만
-# 교체하고, 번들에 없는 조합은 허용하지 않는다(빈 번들 = 전부 차단).
+# PAC-15 replaces the role × classification × action matrix.
+pac_findings := findings if {
+    document := object.get(input, "pac", {})
+    findings := data.mcp.decision.all_findings with input as document
+}
 
 has_permission if {
-	some grant in data.authorization.grants
-	input.principal.role in grant.roles
-	input.resource.data_class in grant.data_classes
-	input.tool.action in grant.actions
+    count(pac_findings) == 0
+}
+
+candidate[id] := {
+    "decision": {"DENY": "Block", "APPROVAL": "Approval", "ALERT": "Alert"}[finding.effect],
+    "reason": sprintf("승인된 PAC 실행 범위를 충족하지 못했습니다: %s", [id]),
+    "restrictions": {},
+    "conditions": {"matched": [], "violated": [id]},
+} if {
+    some finding in pac_findings
+    id := finding.policy_id
 }
 
 contract_ok if {
@@ -315,15 +323,6 @@ candidate["P-RATE-003"] := {
 	duplicate_in_flight == true
 }
 
-candidate["P-AUTHZ-DENY-001"] := {
-	"decision": "Block",
-	"reason": "역할·데이터 등급·행위 조합에 권한이 없습니다.",
-	"restrictions": {},
-	"conditions": {"matched": [], "violated": ["authorization.grants"]},
-} if {
-	not has_permission
-}
-
 candidate["P-X-APPROVAL-001"] := {
 	"decision": "Approval",
 	"reason": "중요정보의 고위험 실행은 10분 이내 승인이 필요합니다.",
@@ -363,7 +362,7 @@ candidate["P-X-RESTRICT-001"] := {
 	"reason": "외부 전송은 도구가 집행할 수 있는 제한(길이·저널링 사본)을 적용한 뒤 실행합니다.",
 	# 값이지 규칙이 아니다. 조직은 정책의 모양보다 제한 값을 훨씬 자주 바꾼다.
 	"restrictions": x_restrictions,
-	"conditions": {"matched": ["tool.action=x", "authorization.grants", "tool.restrictable"], "violated": []},
+	"conditions": {"matched": ["tool.action=x", "PAC15.capabilities", "tool.restrictable"], "violated": []},
 } if {
 	input.tool.action == "x"
 	input.resource.data_class != "important"
@@ -377,7 +376,7 @@ candidate["P-X-ALERT-001"] := {
 	"decision": "Alert",
 	"reason": "외부 전송·고위험 실행이지만 이 도구에는 적용할 제한이 없어 증적을 강화해 허용합니다.",
 	"restrictions": {},
-	"conditions": {"matched": ["tool.action=x", "authorization.grants"], "violated": ["tool.restrictable"]},
+	"conditions": {"matched": ["tool.action=x", "PAC15.capabilities"], "violated": ["tool.restrictable"]},
 } if {
 	input.tool.action == "x"
 	input.resource.data_class != "important"
@@ -552,9 +551,9 @@ candidate["MCP-SHADOW-002"] := {
 
 candidate["P-AUTHZ-ALLOW-001"] := {
 	"decision": "Allow",
-	"reason": "배포된 권한 번들과 등록 계약을 모두 충족했습니다.",
+	"reason": "승인된 사용자·서버·기능·자원 범위와 PAC 실행 조건을 충족했습니다.",
 	"restrictions": {},
-	"conditions": {"matched": ["authorization.grants", "contract"], "violated": []},
+	"conditions": {"matched": ["PAC15.capabilities", "contract"], "violated": []},
 } if {
 	has_permission
 	contract_ok
@@ -643,6 +642,8 @@ scope_matches(exc) if {
 # 여기서는 대장 순서의 첫 건을 적용하고 나머지는 exception.candidates로 드러낸다.
 matching_exceptions := [exc |
 	some exc in data.exceptions
+	not startswith(selected_id, "PAC-")
+	not selected_id in {"INPUT_CONTRACT", "POLICY_BUNDLE"}
 	exc.policy_id == selected_id
 	data.policy_ledger[selected_id].exceptionable == true
 	valid_exception(exc)

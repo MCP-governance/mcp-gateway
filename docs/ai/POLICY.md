@@ -2,10 +2,10 @@
 
 > 파일: `full_stack_lab/opa/`
 > - `policy.rego` — 규칙 (`package mcp.authz`, 결과는 `data.mcp.authz.decision`)
-> - `policy_test.rego` — 단위 시험(92건)
+> - `policy_test.rego` — 단위 시험(99건)
 > - `policy_ledger.json` — 정책 관리대장(정책마다 이름·목적·우선순위·결과·상태·버전·위험/통제 id·예외 허용 여부·의무)
 > - `exceptions.json` — 예외 관리대장
-> - `data.json` — **권한 번들**(`authorization.grants`)과 자주 바뀌는 값(제한 실행 값, egress 허용 호스트, 부서 범위 스위치)
+> - `data.json` — 운영 제한과 자주 바뀌는 값(제한 실행 값, egress 허용 호스트, 부서 범위 스위치)
 >
 > Gateway는 `OPA_URL`(`http://opa:8181/v1/data/mcp/authz/decision`)에 입력을 보내고, 실패하면
 > `P-CONTROL-FAIL-CLOSED`로 차단한다. OPA는 `--watch` 없이 뜨므로 Rego를 바꾸면 `docker compose restart opa`.
@@ -44,7 +44,7 @@
 | 71 | P-RATE-002 | 차단 | 동시 실행 상한(이 주체가 지금 돌리는 호출 수) |
 | 72 | P-RATE-003 | 차단 | 같은 인자의 같은 호출이 아직 실행 중(중복·재생) |
 | 78 | P-DLP-001 | 차단 | 민감정보(주민번호·카드 등) 외부 전송 |
-| 80 | P-AUTHZ-DENY-001 | 차단 | 최소권한 미충족(권한 번들 data.authorization.grants) |
+| 79~89 | INPUT_CONTRACT, POLICY_BUNDLE, PAC-01~15 | 차단·승인 | 사실 계약·정책 버전·승인 실행 범위 검사 |
 | 90 | P-X-APPROVAL-001 | 승인 | 중요정보의 고위험 실행(x) — 내부 목적지. 외부 반출은 MCP-DATA-EGRESS-001이 먼저 막는다 |
 | 95 | P-UNTRUSTED-CONTENT-001 | 승인 | 비신뢰 콘텐츠 기반 고위험 실행 |
 | 100 | P-VOLUME-001 | 승인 | 중요정보 누적 접근 |
@@ -54,7 +54,7 @@
 | 128~135 | P-UNTRUSTED-CONTENT-002, P-ANOMALY-001, MCP-SHADOW-00x | 경고 | 비신뢰 콘텐츠 열람, 반복 차단, 섀도 MCP 보유자 |
 | 130 | P-IMPORTANT-ALERT-001 | 경고 | 중요정보 열람 |
 | 136 | P-SCOPE-001 | 경고 | 이용 관계가 허용한 자원 밖(`relationship.in_scope=false`, D-39). 관계가 없는 서버·값이 없는 입력은 판단하지 않는다 |
-| 140 | P-AUTHZ-ALLOW-001 | 허용 | 최소권한 충족 |
+| 140 | P-AUTHZ-ALLOW-001 | 허용 | PAC 실행 범위 충족 |
 
 Gateway 쪽(OPA 밖)에서 나오는 판정: `P-INPUT-SCHEMA-001`(승인 스키마 위반), `P-DATA-INSPECTION-001`
 (Presidio 입력 검사 불능, priority 2010), `MCP-OUTPUT-001`(실행됐지만 결과 보류 — 크기·주입 표지·출력 개인정보
@@ -77,46 +77,24 @@ OPA 입력의 개인정보 관련 필드: `request.pii_types`(Presidio 엔터티
 `missed_attacks`·`false_blocks`는 0이어야 한다(`tests/replay_check.py`). 정책을 바꾸기 전에 돌려
 "이 변경으로 어제의 호출 중 무엇이 새로 실행되는가"를 본다.
 
-## 3. 권한 번들 (`data.authorization`, D-25)
+## 3. PAC15와 capability
 
-역할×데이터 등급×행위 허용 조합은 Rego가 아니라 `data.json`의 번들에 있다. `has_permission`은 번들의 어떤
-grant가 (역할, 등급, 행위)를 모두 포함할 때만 참이고, 아니면 `P-AUTHZ-DENY-001`. **번들이 비면 전부 차단**
-(`test_authorization_bundle_fails_closed_without_grants`), grant 하나를 더하면 판정이 바뀐다
-(`test_authorization_bundle_grant_changes_decision`).
+`opa/pac15.rego`·`decision.rego`의 실행 조건을 `policy.rego`가 Gateway 판정으로 수집합니다.
+`INPUT_CONTRACT`와 `POLICY_BUNDLE`도 집행하며, PAC 차단은 monitor·예외로 완화하지 않습니다.
+`registry/capabilities.json`은 주체·서버·행위·자원·환경·기한을 명시한 제한적 랩 권한입니다.
+원격 도입은 독립 검토·승인을 받은 도구별 `parameter_constraints`가 필요합니다.
+정적 grant의 역할명이나 관리자 지위로 범위를 넓히지 않습니다.
 
-| grant | 역할 | 등급 | 행위 |
-| --- | --- | --- | --- |
-| `public-read` | 협력사 직원·직원·관리자 | 공개 | r |
-| `admin-public-maintain` | 관리자 | 공개 | w·x |
-| `employee-work` | 직원 | 내부 | r·w |
-| `employee-important-read` | 직원 | 중요 | r |
-| `admin-managed` | 관리자 | 내부·중요 | r·w·x |
-
-`LAB-AUTHZ-001`은 합성 실습 예시다(이전 333 표와 같은 결과). 번들을 바꾸려면 `data.json`을 고치고
-`docker compose restart opa gateway gateway-sse` — Gateway가 다시 뜨며 배포 묶음 digest(`policy_versions`,
-`bundle-…`)가 바뀐다. 조직 배치에서는 소유자 승인을 거친 번들로 교체한다.
-
-### 기본 판정 (지금 번들로 OPA에 물은 27칸 · 계약 정상 · 승인 없음)
-
-| 역할 \ 등급·행위 | 공개 r/w/x | 내부 r/w/x | 중요 r/w/x |
-| --- | --- | --- | --- |
-| 협력사 직원 | 허용/차단/차단 | 차단/차단/차단 | 차단/차단/차단 |
-| 직원 | 허용/차단/차단 | 허용/허용/차단 | 경보/차단/차단 |
-| 관리자 | 허용/허용/경보 | 허용/허용/경보 | 허용/허용/승인 |
-
-Console `#/policy`가 OPA에 27칸을 직접 질의해 보여 주고(번들 목록도 함께), `policy_test.rego`의
-`test_permission_matrix_matches_recorded_baseline`이 이 표가 바뀌면 실패한다. 경보·제한·승인 칸은 권한이 아니라
-그 위의 정책(`P-IMPORTANT-ALERT-001`, `P-X-RESTRICT-001`, `P-X-APPROVAL-001`)이 정한 것이다.
+이전 D-25의 `authorization.grants`와 27칸은 제거했습니다. 기존 감사 기록은 보존합니다.
+Console 정책 화면은 현재 capability와 검토된 원격 승인 범위를 보여 줍니다.
+구체적인 사실 생성, 범위, 원본 대비 세 통합 변경과 남은 한계는
+[PAC 런타임 통합](PAC_RUNTIME_2026-10-01.md)에 기록합니다.
 
 ## 4. 예외 (`exceptions.json`)
-- **EXC-001** 협력사 직원의 외부 감사 사본 1건(`/shared/confidential/audit/external-audit-copy-2026.md`,
-  `read_text_file`) 열람: `P-AUTHZ-DENY-001` 차단 → Alert, 기한 2026-12-31.
-- **EXC-002** 플랫폼개발팀의 개발 샌드박스 `start_process`(x): `P-AUTHZ-DENY-001` 차단 → Approval(건별 승인),
-  기한 2026-12-31.
 
-예외가 성립하려면: 상태 "적용", 기한 있음, 범위(scope) 비어 있지 않음, 보완통제 있음, 요청자≠승인자,
-기한 안, **완화만**(원래 판정보다 약한 effect). 예외로 완화된 호출에는 `evidence.enhanced`,
-`exception.monitored`, `alert.security` 의무가 붙는다.
+과거 333 인가를 완화하던 EXC-001·002는 종료했습니다.
+PAC·입력 계약·정책 묶음은 예외 완화 대상이 아닙니다.
+그 밖의 예외는 적용 상태·기한·범위·보완통제·요청자와 승인자 분리를 검사합니다.
 
 ## 5. 정책을 추가·수정하는 법
 1. `policy.rego`에 `candidate["NEW-ID"] := {...} if { … }` 추가(입력은 `object.get`으로 기본값 처리 —

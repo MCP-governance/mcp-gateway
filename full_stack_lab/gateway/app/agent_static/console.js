@@ -388,7 +388,7 @@ ROUTES.overview = async (_, tab) => {
             ${panel("판정 비율", chartBox("c-share", "오늘 판정 비율", "sm"), { sub: "오늘" })}
             ${panel("서버별 호출", chartBox("c-servers", "최근 24시간 서버별 호출과 판정", "sm"), { sub: `${byServer.length}개 서버 · 24시간` })}
           </div></div>` },
-        { key: "flow", label: "하네스·서버", n: stations.length, body: html`<div class="stack">
+        { key: "flow", label: "하네스·서버", n: flowTotal, body: html`<div class="stack">
           ${panel("하네스 → MCP 서버 → 판정", flowTotal ? chartBox("c-flow", "하네스에서 서버를 거쳐 판정까지의 호출 흐름", "xl") : empty("최근 24시간 호출 없음"), { sub: `${flowTotal}건 · 24시간` })}
           ${panel("직원 PC", html`<table class="data"><thead><tr><th>단말</th><th>사용자</th><th>하네스</th><th class="num">24시간 호출</th><th>섀도 MCP</th><th>마지막 호출</th></tr></thead><tbody>
             ${stations.map((w) => html`<tr><td class="mono">${w.endpoint_id}</td><td><b>${w.display_name || w.owner_token}</b><span class="sub">${w.department || ""}</span></td>
@@ -776,6 +776,13 @@ ROUTES.people = async (_, tab, query) => {
               <td class="small">${ago(a.last_seen_at)}</td>
               <td class="num">${a.status === "revoked" ? chip("outline", "폐기됨") : html`<button class="btn sm danger" type="button" data-act="device-revoke" data-id="${a.endpoint_id}">자격 폐기</button>`}</td></tr>`)}
             </tbody></table>${inv.agents.length ? "" : empty("보고한 단말 없음")}`, { flush: true })}</div>` },
+        { key: "os", label: "OS 차단", n: (inv.os_events || []).length, body: panel("실제 단말 OS 차단 관측",
+          html`<p class="note">장치 키로 받은 커널 관측입니다. MCP 도구 호출 통계에 합산하지 않습니다. root 침해에 대한 원격 증명은 아닙니다.</p>
+          <table class="data"><thead><tr><th>시각</th><th>단말</th><th>차단 종류</th><th>관측 내용</th></tr></thead><tbody>
+          ${(inv.os_events || []).map((e) => html`<tr><td>${when(e.observed_at)}</td><td>${e.endpoint_id}</td>
+            <td>${chip("block", e.kind === "network-denied" ? "직접 네트워크 차단" : "실행·파일 접근 차단")}</td>
+            <td class="mono small">${Object.entries(e.details).map(([k, v]) => `${k}=${v}`).join(" · ")}</td></tr>`)}
+          </tbody></table>${(inv.os_events || []).length ? "" : empty("수신한 OS 차단 관측 없음")}`, {flush:true}) },
         { key: "configs", label: "MCP 설정", n: inv.entries.length, body: html`<div class="stack"><div class="grid c12">
           ${panel("분류", inv.entries.length ? chartBox("c-classes", "단말 MCP 설정의 분류 비율", "sm") : empty("보고된 설정 없음"))}
           ${panel("하네스 설정 파일", inv.entries.length ? chartBox("c-config-files", "설정 파일별 서버 항목 수", "sm") : empty("보고된 설정 없음"))}</div>
@@ -1045,6 +1052,7 @@ async function showIntakeReport(id) {
           <p>사용 주체 ${review.allowed_principals.join(", ")} · ${when(review.valid_until)}까지</p>
           <p class="mono small">${review.advertised_name} ${review.version}<br />계약 ${review.registration.catalog_hash}</p>
           <pre>${JSON.stringify(review.registration.tools, null, 2)}</pre>` : empty("계약 검토 전 · 활성화되지 않음"))}
+        ${panel("승인한 인자 범위", review ? html`<pre>${JSON.stringify(review.parameter_constraints || {}, null, 2)}</pre>` : empty("검토 전"))}
         ${panel("도입 승인", approval ? html`<p>${approval.actor} · ${when(approval.at)}</p><p>${approval.risk_acceptance || "제공자 종료 조건 증거 확인"}</p>
           <p class="mono small">검토 다이제스트 ${approval.review_digest}</p>` : empty("승인 전 · 활성화되지 않음"))}
       </div>`},
@@ -1269,20 +1277,12 @@ ROUTES.policy = async (_, tab) => {
   const [{ enforcement }, matrix, ledger, runtime] = await Promise.all([gw("enforcement"), gw("policy/matrix"), gw("policy/ledger"), api("/api/readiness")]);
   policyLedger = ledger.policies;
   const bundle = ledger.authorization || {};
-  const names = (list, vocab) => (list || []).map((v) => vocab[v] || v).join(", ");
-  const rows = matrix.roles.map((r) => ROLE[r] || r);
-  const verb = { r: "읽기", w: "쓰기", x: "실행" };
-  const cols = matrix.data_classes.flatMap((dc) => matrix.actions.map((a) => `${DATA_CLASS[dc] || dc}\n${verb[a] || a}`));
-  const cells = matrix.cells.map((c) => ({ y: matrix.roles.indexOf(c.role),
-    x: matrix.data_classes.indexOf(c.data_class) * matrix.actions.length + matrix.actions.indexOf(c.action), decision: c.decision }))
-    .filter((c) => c.x >= 0 && c.y >= 0);
   const byOutcome = splitBy(ledger.policies, "outcome");
-  const cell = (role, dc, action) => matrix.cells.find((c) => c.role === role && c.data_class === dc && c.action === action) || {};
   return {
     html: page({
       head: head("정책", { status: modeChip(enforcement), actions: html`<button class="btn ${enforcement === "enforce" ? "danger" : "primary"}" data-act="enforcement"
         data-mode="${enforcement === "enforce" ? "monitor" : "enforce"}">${enforcement === "enforce" ? "관찰 모드로 전환" : "집행 모드로 전환"}</button>` }),
-      active: tab || "matrix",
+      active: tab || "capabilities",
       tabs: [
         { key: "runtime", label: "배포 확인", body: panel("실행 중인 빌드와 정책", kv([
           ["Console 빌드", runtime.build?.console?.revision || "미확인"],
@@ -1295,17 +1295,12 @@ ROUTES.policy = async (_, tab) => {
           ["적재된 정책 SHA-256", runtime.policy?.loaded_sha256 || "미확인"],
           ["적재된 데이터 SHA-256", runtime.policy?.loaded_data_sha256 || "미확인"],
         ])) },
-        { key: "matrix", label: "판정 행렬", body: html`<div class="stack">
-          ${panel("역할 × 데이터 등급 × 행위", chartBox("c-matrix", "역할과 데이터 등급·행위 조합별 기본 판정", "lg"), { sub: `번들 ${bundle.bundle_id || "—"}` })}
-          ${panel("정책 ID", html`<table class="data"><thead><tr><th>역할</th><th>데이터</th>${matrix.actions.map((a) => html`<th>${ACTION[a]}</th>`)}</tr></thead><tbody>
-            ${matrix.roles.map((role) => matrix.data_classes.map((dc, i) => html`<tr>${i === 0 ? html`<td rowspan="${matrix.data_classes.length}"><b>${ROLE[role] || role}</b></td>` : ""}
-              <td>${DATA_CLASS[dc] || dc}</td>${matrix.actions.map((a) => { const c = cell(role, dc, a); return html`<td>${decisionChip(c.decision)}<span class="sub mono">${c.policy_id || ""}</span></td>`; })}</tr>`))}
-            </tbody></table>`, { flush: true })}</div>` },
-        { key: "bundle", label: "권한 번들", n: (bundle.grants || []).length, body: panel(bundle.bundle_id || "배포 안 됨", html`<table class="data">
-          <thead><tr><th>규칙</th><th>역할</th><th>데이터 등급</th><th>행위</th></tr></thead><tbody>
-          ${(bundle.grants || []).map((g) => html`<tr><td class="mono small">${g.id}</td><td>${names(g.roles, ROLE)}</td>
-            <td>${names(g.data_classes, DATA_CLASS)}</td><td>${names(g.actions, ACTION)}</td></tr>`)}
-          </tbody></table>${(bundle.grants || []).length ? "" : empty("허용 규칙 없음 · 모든 조합 차단")}`, { flush: true, sub: `${bundle.scope || ""} · ${bundle.owner || ""}` }) },
+        { key: "capabilities", label: "승인 실행 범위", n: matrix.capabilities.length, body: html`<div class="stack">
+          ${panel("PAC-15 · 사용자·서버·기능·자원", html`<table class="data"><thead><tr><th>승인</th><th>사용자</th><th>서버</th><th>행위·자원</th><th>만료</th></tr></thead><tbody>
+          ${matrix.capabilities.map((g) => html`<tr><td><code>${g.id}</code></td><td>${g.principals.join(", ")}</td><td>${g.servers.join(", ")}</td>
+            <td>${g.actions.join(", ")}<span class="sub">${g.path_roots.join(", ")}</span></td><td>${when(g.valid_until)}</td></tr>`)}
+          ${matrix.runtime_envelopes.map((g) => html`<tr><td><code>${g.server_id}</code></td><td>${g.principals.join(", ")}</td><td>${Object.keys(g.tools).join(", ")}</td><td>독립 도입 승인</td><td>${when(g.valid_until)}</td></tr>`)}
+          </tbody></table>`, { flush: true, sub: `${bundle.bundle_id || "—"} · ${matrix.pack_version}` })}</div>` },
         { key: "ledger", label: "관리대장", n: ledger.policies.length, body: html`<div class="stack">
           ${panel("결과별 정책 수", chartBox("c-outcomes", "정책 관리대장의 결과별 정책 수", "sm"), { sub: `환경 ${ledger.environment}` })}
           ${panel("정책", html`<table class="data"><thead><tr><th class="num">순위</th><th>정책</th><th>결과</th><th>상태</th><th>담당</th></tr></thead><tbody>
@@ -1321,7 +1316,6 @@ ROUTES.policy = async (_, tab) => {
       ],
     }),
     charts: {
-      "c-matrix": () => charts.decisionGrid(rows, cols, cells),
       "c-outcomes": () => charts.bars(byOutcome.map((g) => ({ name: g.key, value: g.total, color: charts.color(outcomeDecision(g.key)) }))),
     },
   };
@@ -1514,6 +1508,7 @@ const ACTIONS = {
         ${field.select("owner_token", "소유자", owners)}
         <fieldset><legend>보고 범위</legend>
           <label class="check"><input type="checkbox" name="scopes" value="inventory" checked /> MCP 설정 인벤토리</label>
+          <label class="check"><input type="checkbox" name="scopes" value="enforcement" /> root 관리 OS 차단 수집</label>
           <label class="check"><input type="checkbox" name="scopes" value="netscan" /> 내부망 MCP 리스너 탐색</label></fieldset>`,
       confirm: "발급" });
     if (!fd) return;
@@ -1601,6 +1596,8 @@ const ACTIONS = {
         <p class="mono small">${found.endpoint}<br />계약 SHA-256 ${found.catalog_hash}</p>
         <div class="grid c2">${field.select("data_class", "데이터 등급", DATA_CLASS, "nonimportant")}${field.select("valid_days", "사용 기한", VALIDITY, "90")}</div>
         ${el.dataset.review ? html`${field.text("allowed_principals", "허용할 사용자 id (쉼표 구분)", "required", el.dataset.principal)}${field.area("review_note", "계약·자격·데이터 범위 검토 내용", 'required minlength="10" maxlength="1000"')}` : ""}
+        ${el.dataset.review ? html`<p class="note">선택할 도구마다 인자 범위를 검토하세요. 저장소·프로젝트·경로에는 const 또는 enum으로 실제 승인 대상을 지정하세요.</p>
+          ${field.area("parameter_constraints", "도구별 승인 인자 범위 (JSON Schema)", 'required maxlength="30000"', "{}")}` : ""}
         ${found.tools.some((t) => t.warnings?.length) ? html`<p class="note warn">모델을 조종하는 문구로 보이는 도구가 있어요 · 설명을 읽고 고르세요</p>` : ""}
         <fieldset class="tool-pick"><legend>도구 ${found.tools.length}</legend>${found.tools.map((t) => html`<label>
           <span><code>${t.name}</code>${(t.warnings || []).map((w) => chip("block", w))}
@@ -1612,10 +1609,15 @@ const ACTIONS = {
     if (!fd) return;
     const tools = Object.fromEntries(found.tools.map((t) => [t.name, fd.get(`tool:${t.name}`)]).filter(([, v]) => v));
     if (!Object.keys(tools).length) { toast("승인할 도구를 하나 이상 고르세요.", true); return; }
+    let parameterConstraints;
+    if (el.dataset.review) {
+      try { parameterConstraints = JSON.parse(fd.get("parameter_constraints")); }
+      catch { toast("승인 인자 범위에 올바른 JSON을 입력하세요.", true); return; }
+    }
     const r = await api(`/api/mcp-requests/${el.dataset.id}/${el.dataset.review ? "review-contract" : "register"}`, { method: "POST", body: {
       server_id: fd.get("server_id").trim(), endpoint: found.endpoint, catalog_hash: found.catalog_hash, tools,
       data_class: fd.get("data_class"), valid_days: Number(fd.get("valid_days")), poisoning_ack: fd.get("poisoning_ack") === "on",
-      ...(el.dataset.review ? {allowed_principals: fd.get("allowed_principals").split(",").map((p) => p.trim()).filter(Boolean), review_note: fd.get("review_note").trim()} : {}) } });
+      ...(el.dataset.review ? {allowed_principals: fd.get("allowed_principals").split(",").map((p) => p.trim()).filter(Boolean), review_note: fd.get("review_note").trim(), parameter_constraints: parameterConstraints} : {}) } });
     toast(r.message); reload();
   },
   async "server-deregister"(el) {

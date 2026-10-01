@@ -53,7 +53,10 @@ def codex() -> tuple[set[str], str]:
             continue
         if message.get("id") == 2:
             servers = message.get("result", {}).get("data", [])
-            return {s["name"] for s in servers if s.get("tools")}, out
+            # An authenticated MCP may legitimately expose zero tools to this
+            # subject. Its initialize evidence, not a permission count, proves
+            # connection; retain a real error as failure.
+            return {s["name"] for s in servers if s.get("serverInfo") and not s.get("toolsError")}, out
     return set(), out
 
 

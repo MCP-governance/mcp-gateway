@@ -3,7 +3,7 @@
     "id": "POLSET-MCP-001",
     "name": "MCP Tool Call 집행 정책집",
     "framework": "MCP 보안 관리 프레임워크 V2.0",
-    "version": "2.3.0",
+    "version": "4.0.0-pac15",
     "status": "운영",
     "owner": "거버넌스팀",
     "approver": "보안 의사결정기구",
@@ -416,7 +416,7 @@
     },
     "P-AUTHZ-DENY-001": {
       "name": "최소권한 미충족 차단",
-      "purpose": "역할·데이터 등급·행위 조합에 권한이 없으면 차단한다.",
+      "purpose": "폐기한 333 판정의 과거 감사 기록 식별용. 새 인가에 사용하지 않는다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -456,7 +456,7 @@
       "exceptionable": true,
       "exception_note": "업무 필요성이 확인된 한시적 권한은 보완통제와 기간을 정한 예외로 처리한다.",
       "version": "1.0.0",
-      "status": "운영",
+      "status": "중지",
       "approval_status": "승인",
       "effective_from": "2026-09-16T00:00:00Z",
       "obligations": [
@@ -781,19 +781,18 @@
         "prod"
       ],
       "inputs": [
-        "principal.role",
-        "resource.data_class",
-        "tool.action",
+        "pac.request",
+        "pac.facts",
         "contract"
       ],
-      "condition": "배포된 권한 규칙 충족",
+      "condition": "PAC 필수 조건과 승인된 사용자·서버·기능·자원 범위를 충족한다.",
       "outcome": "허용",
       "enforcement": "그대로 실행",
       "priority": 140,
       "automation": "자동화",
       "exceptionable": false,
       "exception_note": "허용 판정에는 완화할 통제가 없다.",
-      "version": "1.0.0",
+      "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
       "effective_from": "2026-09-16T00:00:00Z",
@@ -2271,6 +2270,990 @@
       "pac_ids": [
         "PAC-04",
         "PAC-09"
+      ]
+    },
+    "PAC-01": {
+      "name": "PAC 실행 통제 01",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 61,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-01"
+      ]
+    },
+    "PAC-02": {
+      "name": "PAC 실행 통제 02",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 62,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-02"
+      ]
+    },
+    "PAC-03": {
+      "name": "PAC 실행 통제 03",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 63,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-03"
+      ]
+    },
+    "PAC-04": {
+      "name": "PAC 실행 통제 04",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 64,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-04"
+      ]
+    },
+    "PAC-05": {
+      "name": "PAC 실행 통제 05",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 65,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-05"
+      ]
+    },
+    "PAC-06": {
+      "name": "PAC 실행 통제 06",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 66,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-06"
+      ]
+    },
+    "PAC-07": {
+      "name": "PAC 실행 통제 07",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 67,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-07"
+      ]
+    },
+    "PAC-08": {
+      "name": "PAC 실행 통제 08",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 68,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-08"
+      ]
+    },
+    "PAC-09": {
+      "name": "PAC 실행 통제 09",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 69,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-09"
+      ]
+    },
+    "PAC-10": {
+      "name": "PAC 실행 통제 10",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 73,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-10"
+      ]
+    },
+    "PAC-11": {
+      "name": "PAC 실행 통제 11",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 74,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-11"
+      ]
+    },
+    "PAC-12": {
+      "name": "PAC 실행 통제 12",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 75,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-12"
+      ]
+    },
+    "PAC-13": {
+      "name": "PAC 실행 통제 13",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "추가 승인",
+      "enforcement": "실행 전 거부",
+      "priority": 89,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-13"
+      ]
+    },
+    "PAC-14": {
+      "name": "PAC 실행 통제 14",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 76,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-14"
+      ]
+    },
+    "PAC-15": {
+      "name": "PAC 실행 통제 15",
+      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 77,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-15"
+      ]
+    },
+    "INPUT_CONTRACT": {
+      "name": "PAC 입력 계약 누락 차단",
+      "purpose": "검증된 PAC facts가 없거나 입력이 불일치하면 차단한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "모든 Tool Call",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "검증된 PAC facts가 없거나 입력이 불일치하면 차단한다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 79,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-09"
+      ]
+    },
+    "POLICY_BUNDLE": {
+      "name": "PAC 정책 묶음 버전 불일치",
+      "purpose": "실제 PAC 정책 묶음 버전이 승인 기준과 다르면 실행하지 않는다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "모든 Tool Call",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "data.mcp.pac15.pack_version != pac.facts.approval.baseline.policy_version",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 81,
+      "automation": "자동화",
+      "exceptionable": false,
+      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "tests/pac_boundary_check.py",
+        "app.acceptance",
+        "research/pac15-review/pac15_suite.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-02"
       ]
     }
   }

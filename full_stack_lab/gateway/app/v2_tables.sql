@@ -103,6 +103,20 @@ CREATE INDEX IF NOT EXISTS call_reservations_open_idx
 CREATE INDEX IF NOT EXISTS call_reservations_arrivals_idx
   ON call_reservations(user_token, created_at);
 
+-- OS refusals are device observations, not Gateway tools/call decisions. The
+-- journal identity makes retries idempotent without rewriting received evidence.
+CREATE TABLE IF NOT EXISTS endpoint_os_events (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  endpoint_id text NOT NULL REFERENCES endpoint_agents(endpoint_id),
+  event_id text NOT NULL,
+  observed_at timestamptz NOT NULL,
+  received_at timestamptz NOT NULL DEFAULT now(),
+  kind text NOT NULL CHECK (kind IN ('execution-denied','network-denied')),
+  details jsonb NOT NULL,
+  UNIQUE(endpoint_id,event_id)
+);
+CREATE INDEX IF NOT EXISTS endpoint_os_events_received_idx ON endpoint_os_events(received_at DESC);
+
 -- An approved call that did not run is not a rejection (docs/architecture/proposals/
 -- runtime-boundaries.md): NOT_EXECUTED = stopped before dispatch, UNCONFIRMED =
 -- dispatched but the result is unknown. Databases created before this get the wider CHECK.

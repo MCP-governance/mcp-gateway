@@ -337,7 +337,21 @@ async def coverage() -> dict:
 # 할 수 있는 일이 scopes에 적힌 것뿐이다. 그래서 이 자격이 새도 관리자 API는
 # 열리지 않는다 — v1.5까지 이 평면의 가장 큰 구멍이 그것이었다.
 
-DEVICE_SCOPES = ("inventory", "netscan")
+DEVICE_SCOPES = ("inventory", "netscan", "enforcement")
+
+
+async def ingest_os_events(endpoint_id: str, events: list[dict]) -> dict:
+    accepted = 0
+    for event in events:
+        accepted += await db.execute(
+            """INSERT INTO endpoint_os_events(endpoint_id,event_id,observed_at,kind,details)
+               VALUES (%s,%s,%s,%s,%s) ON CONFLICT(endpoint_id,event_id) DO NOTHING""",
+            (endpoint_id, event["event_id"], event["observed_at"], event["kind"], Jsonb(event["details"])))
+    return {"endpoint_id": endpoint_id, "accepted": accepted, "received": len(events)}
+
+
+async def os_events() -> list[dict]:
+    return await db.fetch_all("SELECT * FROM endpoint_os_events ORDER BY id DESC LIMIT 200")
 
 
 def _hash_key(raw: str) -> str:

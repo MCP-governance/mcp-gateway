@@ -40,7 +40,7 @@ async def _candidate(client: httpx.AsyncClient, policy_input: dict) -> dict:
     return candidate
 
 
-async def run(limit: int, corpus_path: str = "/policy/replay_cases.json") -> dict:
+async def run(limit: int, corpus_path: str = "/policy/replay_cases_pac15.json") -> dict:
     rows = await db.fetch_all(
         """SELECT id, request_id, trace_id, decision, policy_id, policy_version,
                   upstream_attempted, upstream_executed, enforcement,
@@ -50,6 +50,7 @@ async def run(limit: int, corpus_path: str = "/policy/replay_cases.json") -> dic
     )
     comparisons = []
     corpus = json.loads(Path(corpus_path).read_text(encoding="utf-8"))
+    corpus = corpus.get("pac15_replay", corpus)
     if not isinstance(corpus.get("base"), dict) or not isinstance(corpus.get("cases"), list):
         raise ValueError("Invalid frozen replay corpus")
     async with httpx.AsyncClient(timeout=8, trust_env=False) as client:
@@ -82,7 +83,8 @@ async def run(limit: int, corpus_path: str = "/policy/replay_cases.json") -> dic
             cases.append({"id": item["id"], "label": item["label"],
                           "input_sha256": canonical_hash(policy_input),
                           "candidate": {"decision": candidate["decision"], "policy_id": candidate["policy_id"]},
-                          "passed": executable == (item["label"] == "normal")})
+                          "passed": executable == (item["label"] == "normal")
+                          and (not item.get("expected_policy") or candidate["policy_id"] == item["expected_policy"])})
     return {"mode": "policy-only; no MCP execution", "opa_url": OPA_URL,
             "compared": len(comparisons), "skipped": len(rows) - len(comparisons),
             "counts": {kind: sum(item["category"] == kind for item in comparisons)
@@ -96,7 +98,7 @@ async def run(limit: int, corpus_path: str = "/policy/replay_cases.json") -> dic
 async def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--limit", type=int, default=100)
-    parser.add_argument("--corpus", default="/policy/replay_cases.json")
+    parser.add_argument("--corpus", default="/policy/replay_cases_pac15.json")
     args = parser.parse_args()
     if not 1 <= args.limit <= 1000:
         parser.error("--limit must be 1..1000")

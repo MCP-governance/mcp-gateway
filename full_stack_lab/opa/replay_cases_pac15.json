@@ -1,0 +1,2653 @@
+{
+  "pac15_replay": {
+    "base": {
+      "environment": "prod",
+      "now": "2026-10-01T00:00:00Z",
+      "principal": {
+        "role": "partner",
+        "department": "협력사 A",
+        "shadow_endpoints": 0,
+        "shadow_listeners": 0
+      },
+      "resource": {
+        "id": "/shared/public/company-intro.md",
+        "kind": "path",
+        "data_class": "public"
+      },
+      "destinations": [],
+      "tool": {
+        "server": "filesystem",
+        "name": "read_text_file",
+        "action": "r",
+        "base_action": "r",
+        "restrictable": []
+      },
+      "request": {
+        "untrusted_markers": [],
+        "dlp": [],
+        "pii_types": [],
+        "sequence_flags": []
+      },
+      "approval": {
+        "granted": false
+      },
+      "contract": {
+        "registered": true,
+        "enabled": true,
+        "schema_hash_match": true,
+        "description_hash_match": true,
+        "version_match": true,
+        "known_tools_only": true,
+        "metadata_safe": true,
+        "supplier_approved": true,
+        "critical_vulnerabilities": 0
+      }
+    },
+    "cases": [
+      {
+        "id": "normal-public-read",
+        "label": "normal",
+        "patch": {
+          "pac": {
+            "request": {
+              "id": "normal-public-read",
+              "user_id": "fixture-partner",
+              "agent_id": "agent-1",
+              "session_id": "session-1",
+              "server_id": "filesystem",
+              "feature_type": "tool",
+              "feature_id": "read_text_file",
+              "action": "READ",
+              "arguments": {
+                "path": "/shared/public/company-intro.md"
+              },
+              "on_behalf_of": false,
+              "environment": "prod",
+              "targets": {
+                "files": [
+                  "/shared/public/company-intro.md"
+                ],
+                "commands": [],
+                "recipients": []
+              },
+              "data": {
+                "asset_id": "/shared/public/company-intro.md",
+                "grade": "public"
+              },
+              "transfer": {
+                "enabled": false,
+                "destination_id": ""
+              },
+              "high_risk": false,
+              "automated": false
+            },
+            "facts": {
+              "trusted": true,
+              "now_ns": 1800000000000000000,
+              "classification": {
+                "verified": true,
+                "high_risk": false,
+                "transfer_required": false,
+                "on_behalf_of": false,
+                "automated": false
+              },
+              "approval_workflow_available": true,
+              "approval": {
+                "status": "APPROVED",
+                "server_id": "filesystem",
+                "conditions_met": true,
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "baseline": {
+                  "server_version": "1.0.0",
+                  "feature_definition_hash": "sha256:feature-v1",
+                  "schema_hash": "sha256:schema-v1",
+                  "policy_version": "pac15-v1"
+                },
+                "environments": [
+                  "prod"
+                ],
+                "production_controls": true,
+                "subject": {
+                  "user_id": "fixture-partner",
+                  "agent_id": "agent-1",
+                  "session_id": "session-1"
+                },
+                "auth_issuer": "https://auth.example.test",
+                "connections": [
+                  {
+                    "server_id": "filesystem",
+                    "endpoint_id": "endpoint-1",
+                    "final_target_id": "target-1"
+                  }
+                ],
+                "features": [
+                  {
+                    "server_id": "filesystem",
+                    "type": "tool",
+                    "id": "read_text_file",
+                    "definition_hash": "sha256:feature-v1"
+                  }
+                ],
+                "actions": [
+                  "READ"
+                ],
+                "allowed_argument_keys": [
+                  "path"
+                ],
+                "parameter_bindings": [
+                  {
+                    "argument_path": [
+                      "path"
+                    ],
+                    "target_type": "file"
+                  }
+                ],
+                "targets": {
+                  "files": [
+                    "/shared/public/company-intro.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                },
+                "data_scopes": [
+                  {
+                    "asset_id": "/shared/public/company-intro.md",
+                    "grade": "public"
+                  }
+                ],
+                "transfer_pairs": [
+                  {
+                    "destination_id": "dest-1",
+                    "grade": "internal"
+                  }
+                ],
+                "limits": {
+                  "allow_automated": false,
+                  "max_retries": 2,
+                  "max_concurrency": 2,
+                  "max_calls": 10,
+                  "max_chain_depth": 3,
+                  "max_execution_ms": 30000
+                }
+              },
+              "baseline": {
+                "verified": true,
+                "server_version": "1.0.0",
+                "feature_definition_hash": "sha256:feature-v1",
+                "schema_hash": "sha256:schema-v1",
+                "policy_version": "pac15-v1"
+              },
+              "environment": {
+                "verified": true,
+                "id": "prod",
+                "production_equivalent": false
+              },
+              "identity": {
+                "verified": true,
+                "user_id": "fixture-partner",
+                "agent_id": "agent-1",
+                "session_id": "session-1",
+                "allowed_actions": [
+                  "READ"
+                ]
+              },
+              "delegation": {
+                "verified": true,
+                "user_id": "user-1",
+                "agent_id": "agent-1",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "user_actions": [
+                  "READ"
+                ],
+                "agent_actions": [
+                  "READ"
+                ],
+                "delegated_actions": [
+                  "READ"
+                ]
+              },
+              "auth": {
+                "mode": "http",
+                "verified": true,
+                "not_revoked": true,
+                "issuer": "https://auth.example.test",
+                "audience": "filesystem",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "scopes": [
+                  "READ"
+                ]
+              },
+              "connection": {
+                "verified": true,
+                "final_target_verified": true,
+                "server_id": "filesystem",
+                "endpoint_id": "endpoint-1",
+                "final_target_id": "target-1"
+              },
+              "catalog_feature": {
+                "verified": true,
+                "server_id": "filesystem",
+                "type": "tool",
+                "id": "read_text_file",
+                "definition_hash": "sha256:feature-v1"
+              },
+              "action": {
+                "verified": true,
+                "normalized": "READ"
+              },
+              "parameters": {
+                "verified": true,
+                "normalized": true,
+                "schema_valid": true,
+                "coverage_complete": true,
+                "canonical_arguments": {
+                  "path": "/shared/public/company-intro.md"
+                },
+                "derived_targets": {
+                  "files": [
+                    "/shared/public/company-intro.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                }
+              },
+              "data": {
+                "verified": true,
+                "asset_id": "/shared/public/company-intro.md",
+                "grade": "public"
+              },
+              "transfer": {
+                "verified": true,
+                "final_destination_verified": true,
+                "final_destination_id": "dest-1",
+                "data_grade": "internal"
+              },
+              "revocation": {
+                "verified": true,
+                "fresh": true,
+                "user": false,
+                "agent": false,
+                "server": false,
+                "feature": false,
+                "approval": false
+              },
+              "execution": {
+                "atomic_reservation_verified": true,
+                "reservation_request_id": "normal-public-read",
+                "reservation_expires_ns": 1800000001000000000,
+                "duplicate_status": "clear",
+                "previous_mutation_status": "clear",
+                "retry_count": 0,
+                "active_concurrency": 1,
+                "total_calls": 1,
+                "chain_depth": 1,
+                "requested_timeout_ms": 5000
+              }
+            }
+          }
+        },
+        "expected_policy": "P-AUTHZ-ALLOW-001"
+      },
+      {
+        "id": "normal-employee-team-write",
+        "label": "normal",
+        "patch": {
+          "principal": {
+            "role": "employee",
+            "department": "데이터분석팀"
+          },
+          "resource": {
+            "id": "/shared/team/data/weekly-report.md",
+            "kind": "path",
+            "data_class": "nonimportant"
+          },
+          "tool": {
+            "server": "filesystem",
+            "name": "write_file",
+            "action": "w",
+            "base_action": "w",
+            "restrictable": []
+          },
+          "pac": {
+            "request": {
+              "id": "normal-employee-team-write",
+              "user_id": "fixture-employee",
+              "agent_id": "agent-1",
+              "session_id": "session-1",
+              "server_id": "filesystem",
+              "feature_type": "tool",
+              "feature_id": "write_file",
+              "action": "WRITE",
+              "arguments": {
+                "path": "/shared/team/data/weekly-report.md"
+              },
+              "on_behalf_of": false,
+              "environment": "prod",
+              "targets": {
+                "files": [
+                  "/shared/team/data/weekly-report.md"
+                ],
+                "commands": [],
+                "recipients": []
+              },
+              "data": {
+                "asset_id": "/shared/team/data/weekly-report.md",
+                "grade": "nonimportant"
+              },
+              "transfer": {
+                "enabled": false,
+                "destination_id": ""
+              },
+              "high_risk": false,
+              "automated": false
+            },
+            "facts": {
+              "trusted": true,
+              "now_ns": 1800000000000000000,
+              "classification": {
+                "verified": true,
+                "high_risk": false,
+                "transfer_required": false,
+                "on_behalf_of": false,
+                "automated": false
+              },
+              "approval_workflow_available": true,
+              "approval": {
+                "status": "APPROVED",
+                "server_id": "filesystem",
+                "conditions_met": true,
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "baseline": {
+                  "server_version": "1.0.0",
+                  "feature_definition_hash": "sha256:feature-v1",
+                  "schema_hash": "sha256:schema-v1",
+                  "policy_version": "pac15-v1"
+                },
+                "environments": [
+                  "prod"
+                ],
+                "production_controls": true,
+                "subject": {
+                  "user_id": "fixture-employee",
+                  "agent_id": "agent-1",
+                  "session_id": "session-1"
+                },
+                "auth_issuer": "https://auth.example.test",
+                "connections": [
+                  {
+                    "server_id": "filesystem",
+                    "endpoint_id": "endpoint-1",
+                    "final_target_id": "target-1"
+                  }
+                ],
+                "features": [
+                  {
+                    "server_id": "filesystem",
+                    "type": "tool",
+                    "id": "write_file",
+                    "definition_hash": "sha256:feature-v1"
+                  }
+                ],
+                "actions": [
+                  "WRITE"
+                ],
+                "allowed_argument_keys": [
+                  "path"
+                ],
+                "parameter_bindings": [
+                  {
+                    "argument_path": [
+                      "path"
+                    ],
+                    "target_type": "file"
+                  }
+                ],
+                "targets": {
+                  "files": [
+                    "/shared/team/data/weekly-report.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                },
+                "data_scopes": [
+                  {
+                    "asset_id": "/shared/team/data/weekly-report.md",
+                    "grade": "nonimportant"
+                  }
+                ],
+                "transfer_pairs": [
+                  {
+                    "destination_id": "dest-1",
+                    "grade": "internal"
+                  }
+                ],
+                "limits": {
+                  "allow_automated": false,
+                  "max_retries": 2,
+                  "max_concurrency": 2,
+                  "max_calls": 10,
+                  "max_chain_depth": 3,
+                  "max_execution_ms": 30000
+                }
+              },
+              "baseline": {
+                "verified": true,
+                "server_version": "1.0.0",
+                "feature_definition_hash": "sha256:feature-v1",
+                "schema_hash": "sha256:schema-v1",
+                "policy_version": "pac15-v1"
+              },
+              "environment": {
+                "verified": true,
+                "id": "prod",
+                "production_equivalent": false
+              },
+              "identity": {
+                "verified": true,
+                "user_id": "fixture-employee",
+                "agent_id": "agent-1",
+                "session_id": "session-1",
+                "allowed_actions": [
+                  "WRITE"
+                ]
+              },
+              "delegation": {
+                "verified": true,
+                "user_id": "user-1",
+                "agent_id": "agent-1",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "user_actions": [
+                  "READ"
+                ],
+                "agent_actions": [
+                  "READ"
+                ],
+                "delegated_actions": [
+                  "READ"
+                ]
+              },
+              "auth": {
+                "mode": "http",
+                "verified": true,
+                "not_revoked": true,
+                "issuer": "https://auth.example.test",
+                "audience": "filesystem",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "scopes": [
+                  "WRITE"
+                ]
+              },
+              "connection": {
+                "verified": true,
+                "final_target_verified": true,
+                "server_id": "filesystem",
+                "endpoint_id": "endpoint-1",
+                "final_target_id": "target-1"
+              },
+              "catalog_feature": {
+                "verified": true,
+                "server_id": "filesystem",
+                "type": "tool",
+                "id": "write_file",
+                "definition_hash": "sha256:feature-v1"
+              },
+              "action": {
+                "verified": true,
+                "normalized": "WRITE"
+              },
+              "parameters": {
+                "verified": true,
+                "normalized": true,
+                "schema_valid": true,
+                "coverage_complete": true,
+                "canonical_arguments": {
+                  "path": "/shared/team/data/weekly-report.md"
+                },
+                "derived_targets": {
+                  "files": [
+                    "/shared/team/data/weekly-report.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                }
+              },
+              "data": {
+                "verified": true,
+                "asset_id": "/shared/team/data/weekly-report.md",
+                "grade": "nonimportant"
+              },
+              "transfer": {
+                "verified": true,
+                "final_destination_verified": true,
+                "final_destination_id": "dest-1",
+                "data_grade": "internal"
+              },
+              "revocation": {
+                "verified": true,
+                "fresh": true,
+                "user": false,
+                "agent": false,
+                "server": false,
+                "feature": false,
+                "approval": false
+              },
+              "execution": {
+                "atomic_reservation_verified": true,
+                "reservation_request_id": "normal-employee-team-write",
+                "reservation_expires_ns": 1800000001000000000,
+                "duplicate_status": "clear",
+                "previous_mutation_status": "clear",
+                "retry_count": 0,
+                "active_concurrency": 1,
+                "total_calls": 1,
+                "chain_depth": 1,
+                "requested_timeout_ms": 5000
+              }
+            }
+          }
+        },
+        "expected_policy": "P-AUTHZ-ALLOW-001"
+      },
+      {
+        "id": "normal-internal-mail",
+        "label": "normal",
+        "patch": {
+          "principal": {
+            "role": "employee",
+            "department": "플랫폼개발팀"
+          },
+          "resource": {
+            "id": "mail:deploy-notice",
+            "kind": "mail",
+            "data_class": "nonimportant"
+          },
+          "destinations": [
+            {
+              "kind": "email",
+              "value": "dev-team@bob.local",
+              "host": "bob.local",
+              "category": "internal-mail",
+              "external": false
+            }
+          ],
+          "tool": {
+            "server": "email",
+            "name": "send_email",
+            "action": "w",
+            "base_action": "w",
+            "restrictable": [
+              "journal_bcc"
+            ]
+          },
+          "pac": {
+            "request": {
+              "id": "normal-internal-mail",
+              "user_id": "fixture-employee",
+              "agent_id": "agent-1",
+              "session_id": "session-1",
+              "server_id": "email",
+              "feature_type": "tool",
+              "feature_id": "send_email",
+              "action": "WRITE",
+              "arguments": {},
+              "on_behalf_of": false,
+              "environment": "prod",
+              "targets": {
+                "files": [],
+                "commands": [],
+                "recipients": []
+              },
+              "data": {
+                "asset_id": "mail:deploy-notice",
+                "grade": "nonimportant"
+              },
+              "transfer": {
+                "enabled": false,
+                "destination_id": ""
+              },
+              "high_risk": false,
+              "automated": false
+            },
+            "facts": {
+              "trusted": true,
+              "now_ns": 1800000000000000000,
+              "classification": {
+                "verified": true,
+                "high_risk": false,
+                "transfer_required": false,
+                "on_behalf_of": false,
+                "automated": false
+              },
+              "approval_workflow_available": true,
+              "approval": {
+                "status": "APPROVED",
+                "server_id": "email",
+                "conditions_met": true,
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "baseline": {
+                  "server_version": "1.0.0",
+                  "feature_definition_hash": "sha256:feature-v1",
+                  "schema_hash": "sha256:schema-v1",
+                  "policy_version": "pac15-v1"
+                },
+                "environments": [
+                  "prod"
+                ],
+                "production_controls": true,
+                "subject": {
+                  "user_id": "fixture-employee",
+                  "agent_id": "agent-1",
+                  "session_id": "session-1"
+                },
+                "auth_issuer": "https://auth.example.test",
+                "connections": [
+                  {
+                    "server_id": "email",
+                    "endpoint_id": "endpoint-1",
+                    "final_target_id": "target-1"
+                  }
+                ],
+                "features": [
+                  {
+                    "server_id": "email",
+                    "type": "tool",
+                    "id": "send_email",
+                    "definition_hash": "sha256:feature-v1"
+                  }
+                ],
+                "actions": [
+                  "WRITE"
+                ],
+                "allowed_argument_keys": [],
+                "parameter_bindings": [],
+                "targets": {
+                  "files": [],
+                  "commands": [],
+                  "recipients": []
+                },
+                "data_scopes": [
+                  {
+                    "asset_id": "mail:deploy-notice",
+                    "grade": "nonimportant"
+                  }
+                ],
+                "transfer_pairs": [
+                  {
+                    "destination_id": "dest-1",
+                    "grade": "internal"
+                  }
+                ],
+                "limits": {
+                  "allow_automated": false,
+                  "max_retries": 2,
+                  "max_concurrency": 2,
+                  "max_calls": 10,
+                  "max_chain_depth": 3,
+                  "max_execution_ms": 30000
+                }
+              },
+              "baseline": {
+                "verified": true,
+                "server_version": "1.0.0",
+                "feature_definition_hash": "sha256:feature-v1",
+                "schema_hash": "sha256:schema-v1",
+                "policy_version": "pac15-v1"
+              },
+              "environment": {
+                "verified": true,
+                "id": "prod",
+                "production_equivalent": false
+              },
+              "identity": {
+                "verified": true,
+                "user_id": "fixture-employee",
+                "agent_id": "agent-1",
+                "session_id": "session-1",
+                "allowed_actions": [
+                  "WRITE"
+                ]
+              },
+              "delegation": {
+                "verified": true,
+                "user_id": "user-1",
+                "agent_id": "agent-1",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "user_actions": [
+                  "READ"
+                ],
+                "agent_actions": [
+                  "READ"
+                ],
+                "delegated_actions": [
+                  "READ"
+                ]
+              },
+              "auth": {
+                "mode": "http",
+                "verified": true,
+                "not_revoked": true,
+                "issuer": "https://auth.example.test",
+                "audience": "email",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "scopes": [
+                  "WRITE"
+                ]
+              },
+              "connection": {
+                "verified": true,
+                "final_target_verified": true,
+                "server_id": "email",
+                "endpoint_id": "endpoint-1",
+                "final_target_id": "target-1"
+              },
+              "catalog_feature": {
+                "verified": true,
+                "server_id": "email",
+                "type": "tool",
+                "id": "send_email",
+                "definition_hash": "sha256:feature-v1"
+              },
+              "action": {
+                "verified": true,
+                "normalized": "WRITE"
+              },
+              "parameters": {
+                "verified": true,
+                "normalized": true,
+                "schema_valid": true,
+                "coverage_complete": true,
+                "canonical_arguments": {},
+                "derived_targets": {
+                  "files": [],
+                  "commands": [],
+                  "recipients": []
+                }
+              },
+              "data": {
+                "verified": true,
+                "asset_id": "mail:deploy-notice",
+                "grade": "nonimportant"
+              },
+              "transfer": {
+                "verified": true,
+                "final_destination_verified": true,
+                "final_destination_id": "dest-1",
+                "data_grade": "internal"
+              },
+              "revocation": {
+                "verified": true,
+                "fresh": true,
+                "user": false,
+                "agent": false,
+                "server": false,
+                "feature": false,
+                "approval": false
+              },
+              "execution": {
+                "atomic_reservation_verified": true,
+                "reservation_request_id": "normal-internal-mail",
+                "reservation_expires_ns": 1800000001000000000,
+                "duplicate_status": "clear",
+                "previous_mutation_status": "clear",
+                "retry_count": 0,
+                "active_concurrency": 1,
+                "total_calls": 1,
+                "chain_depth": 1,
+                "requested_timeout_ms": 5000
+              }
+            }
+          }
+        },
+        "expected_policy": "P-AUTHZ-ALLOW-001"
+      },
+      {
+        "id": "attack-partner-important-read",
+        "label": "attack",
+        "patch": {
+          "resource": {
+            "id": "/shared/confidential/hr/salary-2026.csv",
+            "kind": "path",
+            "data_class": "important"
+          },
+          "pac": {
+            "request": {
+              "id": "attack-partner-important-read",
+              "user_id": "fixture-partner",
+              "agent_id": "agent-1",
+              "session_id": "session-1",
+              "server_id": "filesystem",
+              "feature_type": "tool",
+              "feature_id": "read_text_file",
+              "action": "READ",
+              "arguments": {
+                "path": "/shared/confidential/hr/salary-2026.csv"
+              },
+              "on_behalf_of": false,
+              "environment": "prod",
+              "targets": {
+                "files": [
+                  "/shared/confidential/hr/salary-2026.csv"
+                ],
+                "commands": [],
+                "recipients": []
+              },
+              "data": {
+                "asset_id": "/shared/confidential/hr/salary-2026.csv",
+                "grade": "important"
+              },
+              "transfer": {
+                "enabled": false,
+                "destination_id": ""
+              },
+              "high_risk": false,
+              "automated": false
+            },
+            "facts": {
+              "trusted": true,
+              "now_ns": 1800000000000000000,
+              "classification": {
+                "verified": true,
+                "high_risk": false,
+                "transfer_required": false,
+                "on_behalf_of": false,
+                "automated": false
+              },
+              "approval_workflow_available": true,
+              "approval": {
+                "status": "APPROVED",
+                "server_id": "filesystem",
+                "conditions_met": true,
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "baseline": {
+                  "server_version": "1.0.0",
+                  "feature_definition_hash": "sha256:feature-v1",
+                  "schema_hash": "sha256:schema-v1",
+                  "policy_version": "pac15-v1"
+                },
+                "environments": [
+                  "prod"
+                ],
+                "production_controls": true,
+                "subject": {
+                  "user_id": "fixture-partner",
+                  "agent_id": "agent-1",
+                  "session_id": "session-1"
+                },
+                "auth_issuer": "https://auth.example.test",
+                "connections": [
+                  {
+                    "server_id": "filesystem",
+                    "endpoint_id": "endpoint-1",
+                    "final_target_id": "target-1"
+                  }
+                ],
+                "features": [
+                  {
+                    "server_id": "filesystem",
+                    "type": "tool",
+                    "id": "read_text_file",
+                    "definition_hash": "sha256:feature-v1"
+                  }
+                ],
+                "actions": [
+                  "READ"
+                ],
+                "allowed_argument_keys": [
+                  "path"
+                ],
+                "parameter_bindings": [
+                  {
+                    "argument_path": [
+                      "path"
+                    ],
+                    "target_type": "file"
+                  }
+                ],
+                "targets": {
+                  "files": [
+                    "/shared/public/company-intro.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                },
+                "data_scopes": [
+                  {
+                    "asset_id": "/shared/public/company-intro.md",
+                    "grade": "public"
+                  }
+                ],
+                "transfer_pairs": [
+                  {
+                    "destination_id": "dest-1",
+                    "grade": "internal"
+                  }
+                ],
+                "limits": {
+                  "allow_automated": false,
+                  "max_retries": 2,
+                  "max_concurrency": 2,
+                  "max_calls": 10,
+                  "max_chain_depth": 3,
+                  "max_execution_ms": 30000
+                }
+              },
+              "baseline": {
+                "verified": true,
+                "server_version": "1.0.0",
+                "feature_definition_hash": "sha256:feature-v1",
+                "schema_hash": "sha256:schema-v1",
+                "policy_version": "pac15-v1"
+              },
+              "environment": {
+                "verified": true,
+                "id": "prod",
+                "production_equivalent": false
+              },
+              "identity": {
+                "verified": true,
+                "user_id": "fixture-partner",
+                "agent_id": "agent-1",
+                "session_id": "session-1",
+                "allowed_actions": [
+                  "READ"
+                ]
+              },
+              "delegation": {
+                "verified": true,
+                "user_id": "user-1",
+                "agent_id": "agent-1",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "user_actions": [
+                  "READ"
+                ],
+                "agent_actions": [
+                  "READ"
+                ],
+                "delegated_actions": [
+                  "READ"
+                ]
+              },
+              "auth": {
+                "mode": "http",
+                "verified": true,
+                "not_revoked": true,
+                "issuer": "https://auth.example.test",
+                "audience": "filesystem",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "scopes": [
+                  "READ"
+                ]
+              },
+              "connection": {
+                "verified": true,
+                "final_target_verified": true,
+                "server_id": "filesystem",
+                "endpoint_id": "endpoint-1",
+                "final_target_id": "target-1"
+              },
+              "catalog_feature": {
+                "verified": true,
+                "server_id": "filesystem",
+                "type": "tool",
+                "id": "read_text_file",
+                "definition_hash": "sha256:feature-v1"
+              },
+              "action": {
+                "verified": true,
+                "normalized": "READ"
+              },
+              "parameters": {
+                "verified": true,
+                "normalized": true,
+                "schema_valid": true,
+                "coverage_complete": true,
+                "canonical_arguments": {
+                  "path": "/shared/confidential/hr/salary-2026.csv"
+                },
+                "derived_targets": {
+                  "files": [
+                    "/shared/confidential/hr/salary-2026.csv"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                }
+              },
+              "data": {
+                "verified": true,
+                "asset_id": "/shared/confidential/hr/salary-2026.csv",
+                "grade": "important"
+              },
+              "transfer": {
+                "verified": true,
+                "final_destination_verified": true,
+                "final_destination_id": "dest-1",
+                "data_grade": "internal"
+              },
+              "revocation": {
+                "verified": true,
+                "fresh": true,
+                "user": false,
+                "agent": false,
+                "server": false,
+                "feature": false,
+                "approval": false
+              },
+              "execution": {
+                "atomic_reservation_verified": true,
+                "reservation_request_id": "attack-partner-important-read",
+                "reservation_expires_ns": 1800000001000000000,
+                "duplicate_status": "clear",
+                "previous_mutation_status": "clear",
+                "retry_count": 0,
+                "active_concurrency": 1,
+                "total_calls": 1,
+                "chain_depth": 1,
+                "requested_timeout_ms": 5000
+              }
+            }
+          }
+        },
+        "expected_policy": "PAC-10"
+      },
+      {
+        "id": "attack-unregistered-server",
+        "label": "attack",
+        "patch": {
+          "contract": {
+            "registered": false
+          },
+          "pac": {
+            "request": {
+              "id": "attack-unregistered-server",
+              "user_id": "fixture-partner",
+              "agent_id": "agent-1",
+              "session_id": "session-1",
+              "server_id": "filesystem",
+              "feature_type": "tool",
+              "feature_id": "read_text_file",
+              "action": "READ",
+              "arguments": {
+                "path": "/shared/public/company-intro.md"
+              },
+              "on_behalf_of": false,
+              "environment": "prod",
+              "targets": {
+                "files": [
+                  "/shared/public/company-intro.md"
+                ],
+                "commands": [],
+                "recipients": []
+              },
+              "data": {
+                "asset_id": "/shared/public/company-intro.md",
+                "grade": "public"
+              },
+              "transfer": {
+                "enabled": false,
+                "destination_id": ""
+              },
+              "high_risk": false,
+              "automated": false
+            },
+            "facts": {
+              "trusted": true,
+              "now_ns": 1800000000000000000,
+              "classification": {
+                "verified": true,
+                "high_risk": false,
+                "transfer_required": false,
+                "on_behalf_of": false,
+                "automated": false
+              },
+              "approval_workflow_available": true,
+              "approval": {
+                "status": "APPROVED",
+                "server_id": "filesystem",
+                "conditions_met": true,
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "baseline": {
+                  "server_version": "1.0.0",
+                  "feature_definition_hash": "sha256:feature-v1",
+                  "schema_hash": "sha256:schema-v1",
+                  "policy_version": "pac15-v1"
+                },
+                "environments": [
+                  "prod"
+                ],
+                "production_controls": true,
+                "subject": {
+                  "user_id": "fixture-partner",
+                  "agent_id": "agent-1",
+                  "session_id": "session-1"
+                },
+                "auth_issuer": "https://auth.example.test",
+                "connections": [
+                  {
+                    "server_id": "filesystem",
+                    "endpoint_id": "endpoint-1",
+                    "final_target_id": "target-1"
+                  }
+                ],
+                "features": [
+                  {
+                    "server_id": "filesystem",
+                    "type": "tool",
+                    "id": "read_text_file",
+                    "definition_hash": "sha256:feature-v1"
+                  }
+                ],
+                "actions": [
+                  "READ"
+                ],
+                "allowed_argument_keys": [
+                  "path"
+                ],
+                "parameter_bindings": [
+                  {
+                    "argument_path": [
+                      "path"
+                    ],
+                    "target_type": "file"
+                  }
+                ],
+                "targets": {
+                  "files": [
+                    "/shared/public/company-intro.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                },
+                "data_scopes": [
+                  {
+                    "asset_id": "/shared/public/company-intro.md",
+                    "grade": "public"
+                  }
+                ],
+                "transfer_pairs": [
+                  {
+                    "destination_id": "dest-1",
+                    "grade": "internal"
+                  }
+                ],
+                "limits": {
+                  "allow_automated": false,
+                  "max_retries": 2,
+                  "max_concurrency": 2,
+                  "max_calls": 10,
+                  "max_chain_depth": 3,
+                  "max_execution_ms": 30000
+                }
+              },
+              "baseline": {
+                "verified": true,
+                "server_version": "1.0.0",
+                "feature_definition_hash": "sha256:feature-v1",
+                "schema_hash": "sha256:schema-v1",
+                "policy_version": "pac15-v1"
+              },
+              "environment": {
+                "verified": true,
+                "id": "prod",
+                "production_equivalent": false
+              },
+              "identity": {
+                "verified": true,
+                "user_id": "fixture-partner",
+                "agent_id": "agent-1",
+                "session_id": "session-1",
+                "allowed_actions": [
+                  "READ"
+                ]
+              },
+              "delegation": {
+                "verified": true,
+                "user_id": "user-1",
+                "agent_id": "agent-1",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "user_actions": [
+                  "READ"
+                ],
+                "agent_actions": [
+                  "READ"
+                ],
+                "delegated_actions": [
+                  "READ"
+                ]
+              },
+              "auth": {
+                "mode": "http",
+                "verified": true,
+                "not_revoked": true,
+                "issuer": "https://auth.example.test",
+                "audience": "filesystem",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "scopes": [
+                  "READ"
+                ]
+              },
+              "connection": {
+                "verified": true,
+                "final_target_verified": true,
+                "server_id": "filesystem",
+                "endpoint_id": "endpoint-1",
+                "final_target_id": "target-1"
+              },
+              "catalog_feature": {
+                "verified": true,
+                "server_id": "filesystem",
+                "type": "tool",
+                "id": "read_text_file",
+                "definition_hash": "sha256:feature-v1"
+              },
+              "action": {
+                "verified": true,
+                "normalized": "READ"
+              },
+              "parameters": {
+                "verified": true,
+                "normalized": true,
+                "schema_valid": true,
+                "coverage_complete": true,
+                "canonical_arguments": {
+                  "path": "/shared/public/company-intro.md"
+                },
+                "derived_targets": {
+                  "files": [
+                    "/shared/public/company-intro.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                }
+              },
+              "data": {
+                "verified": true,
+                "asset_id": "/shared/public/company-intro.md",
+                "grade": "public"
+              },
+              "transfer": {
+                "verified": true,
+                "final_destination_verified": true,
+                "final_destination_id": "dest-1",
+                "data_grade": "internal"
+              },
+              "revocation": {
+                "verified": true,
+                "fresh": true,
+                "user": false,
+                "agent": false,
+                "server": false,
+                "feature": false,
+                "approval": false
+              },
+              "execution": {
+                "atomic_reservation_verified": true,
+                "reservation_request_id": "attack-unregistered-server",
+                "reservation_expires_ns": 1800000001000000000,
+                "duplicate_status": "clear",
+                "previous_mutation_status": "clear",
+                "retry_count": 0,
+                "active_concurrency": 1,
+                "total_calls": 1,
+                "chain_depth": 1,
+                "requested_timeout_ms": 5000
+              }
+            }
+          }
+        },
+        "expected_policy": "MCP-REGISTRY-001"
+      },
+      {
+        "id": "attack-drifted-contract",
+        "label": "attack",
+        "patch": {
+          "contract": {
+            "registered": true,
+            "enabled": true,
+            "schema_hash_match": false,
+            "description_hash_match": true,
+            "version_match": true,
+            "known_tools_only": true,
+            "metadata_safe": true,
+            "supplier_approved": true,
+            "critical_vulnerabilities": 0
+          },
+          "pac": {
+            "request": {
+              "id": "attack-drifted-contract",
+              "user_id": "fixture-partner",
+              "agent_id": "agent-1",
+              "session_id": "session-1",
+              "server_id": "filesystem",
+              "feature_type": "tool",
+              "feature_id": "read_text_file",
+              "action": "READ",
+              "arguments": {
+                "path": "/shared/public/company-intro.md"
+              },
+              "on_behalf_of": false,
+              "environment": "prod",
+              "targets": {
+                "files": [
+                  "/shared/public/company-intro.md"
+                ],
+                "commands": [],
+                "recipients": []
+              },
+              "data": {
+                "asset_id": "/shared/public/company-intro.md",
+                "grade": "public"
+              },
+              "transfer": {
+                "enabled": false,
+                "destination_id": ""
+              },
+              "high_risk": false,
+              "automated": false
+            },
+            "facts": {
+              "trusted": true,
+              "now_ns": 1800000000000000000,
+              "classification": {
+                "verified": true,
+                "high_risk": false,
+                "transfer_required": false,
+                "on_behalf_of": false,
+                "automated": false
+              },
+              "approval_workflow_available": true,
+              "approval": {
+                "status": "APPROVED",
+                "server_id": "filesystem",
+                "conditions_met": true,
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "baseline": {
+                  "server_version": "1.0.0",
+                  "feature_definition_hash": "sha256:feature-v1",
+                  "schema_hash": "sha256:schema-v1",
+                  "policy_version": "pac15-v1"
+                },
+                "environments": [
+                  "prod"
+                ],
+                "production_controls": true,
+                "subject": {
+                  "user_id": "fixture-partner",
+                  "agent_id": "agent-1",
+                  "session_id": "session-1"
+                },
+                "auth_issuer": "https://auth.example.test",
+                "connections": [
+                  {
+                    "server_id": "filesystem",
+                    "endpoint_id": "endpoint-1",
+                    "final_target_id": "target-1"
+                  }
+                ],
+                "features": [
+                  {
+                    "server_id": "filesystem",
+                    "type": "tool",
+                    "id": "read_text_file",
+                    "definition_hash": "sha256:feature-v1"
+                  }
+                ],
+                "actions": [
+                  "READ"
+                ],
+                "allowed_argument_keys": [
+                  "path"
+                ],
+                "parameter_bindings": [
+                  {
+                    "argument_path": [
+                      "path"
+                    ],
+                    "target_type": "file"
+                  }
+                ],
+                "targets": {
+                  "files": [
+                    "/shared/public/company-intro.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                },
+                "data_scopes": [
+                  {
+                    "asset_id": "/shared/public/company-intro.md",
+                    "grade": "public"
+                  }
+                ],
+                "transfer_pairs": [
+                  {
+                    "destination_id": "dest-1",
+                    "grade": "internal"
+                  }
+                ],
+                "limits": {
+                  "allow_automated": false,
+                  "max_retries": 2,
+                  "max_concurrency": 2,
+                  "max_calls": 10,
+                  "max_chain_depth": 3,
+                  "max_execution_ms": 30000
+                }
+              },
+              "baseline": {
+                "verified": true,
+                "server_version": "1.0.0",
+                "feature_definition_hash": "sha256:feature-v1",
+                "schema_hash": "sha256:schema-v1",
+                "policy_version": "pac15-v1"
+              },
+              "environment": {
+                "verified": true,
+                "id": "prod",
+                "production_equivalent": false
+              },
+              "identity": {
+                "verified": true,
+                "user_id": "fixture-partner",
+                "agent_id": "agent-1",
+                "session_id": "session-1",
+                "allowed_actions": [
+                  "READ"
+                ]
+              },
+              "delegation": {
+                "verified": true,
+                "user_id": "user-1",
+                "agent_id": "agent-1",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "user_actions": [
+                  "READ"
+                ],
+                "agent_actions": [
+                  "READ"
+                ],
+                "delegated_actions": [
+                  "READ"
+                ]
+              },
+              "auth": {
+                "mode": "http",
+                "verified": true,
+                "not_revoked": true,
+                "issuer": "https://auth.example.test",
+                "audience": "filesystem",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "scopes": [
+                  "READ"
+                ]
+              },
+              "connection": {
+                "verified": true,
+                "final_target_verified": true,
+                "server_id": "filesystem",
+                "endpoint_id": "endpoint-1",
+                "final_target_id": "target-1"
+              },
+              "catalog_feature": {
+                "verified": true,
+                "server_id": "filesystem",
+                "type": "tool",
+                "id": "read_text_file",
+                "definition_hash": "sha256:feature-v1"
+              },
+              "action": {
+                "verified": true,
+                "normalized": "READ"
+              },
+              "parameters": {
+                "verified": true,
+                "normalized": true,
+                "schema_valid": true,
+                "coverage_complete": true,
+                "canonical_arguments": {
+                  "path": "/shared/public/company-intro.md"
+                },
+                "derived_targets": {
+                  "files": [
+                    "/shared/public/company-intro.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                }
+              },
+              "data": {
+                "verified": true,
+                "asset_id": "/shared/public/company-intro.md",
+                "grade": "public"
+              },
+              "transfer": {
+                "verified": true,
+                "final_destination_verified": true,
+                "final_destination_id": "dest-1",
+                "data_grade": "internal"
+              },
+              "revocation": {
+                "verified": true,
+                "fresh": true,
+                "user": false,
+                "agent": false,
+                "server": false,
+                "feature": false,
+                "approval": false
+              },
+              "execution": {
+                "atomic_reservation_verified": true,
+                "reservation_request_id": "attack-drifted-contract",
+                "reservation_expires_ns": 1800000001000000000,
+                "duplicate_status": "clear",
+                "previous_mutation_status": "clear",
+                "retry_count": 0,
+                "active_concurrency": 1,
+                "total_calls": 1,
+                "chain_depth": 1,
+                "requested_timeout_ms": 5000
+              }
+            }
+          }
+        },
+        "expected_policy": "MCP-CATALOG-001"
+      },
+      {
+        "id": "attack-pii-external-send",
+        "label": "attack",
+        "patch": {
+          "principal": {
+            "role": "admin",
+            "department": "거버넌스팀"
+          },
+          "destinations": [
+            {
+              "kind": "email",
+              "value": "buyer@outside.example",
+              "host": "outside.example",
+              "category": "external-mail",
+              "external": true
+            }
+          ],
+          "tool": {
+            "server": "email",
+            "name": "send_email",
+            "action": "x",
+            "base_action": "w",
+            "restrictable": [
+              "journal_bcc"
+            ]
+          },
+          "request": {
+            "untrusted_markers": [],
+            "dlp": [],
+            "pii_types": [
+              "KR_RRN"
+            ],
+            "sequence_flags": []
+          },
+          "pac": {
+            "request": {
+              "id": "attack-pii-external-send",
+              "user_id": "fixture-admin",
+              "agent_id": "agent-1",
+              "session_id": "session-1",
+              "server_id": "email",
+              "feature_type": "tool",
+              "feature_id": "send_email",
+              "action": "EXECUTE",
+              "arguments": {
+                "path": "/shared/public/company-intro.md"
+              },
+              "on_behalf_of": false,
+              "environment": "prod",
+              "targets": {
+                "files": [
+                  "/shared/public/company-intro.md"
+                ],
+                "commands": [],
+                "recipients": []
+              },
+              "data": {
+                "asset_id": "/shared/public/company-intro.md",
+                "grade": "public"
+              },
+              "transfer": {
+                "enabled": false,
+                "destination_id": ""
+              },
+              "high_risk": false,
+              "automated": false
+            },
+            "facts": {
+              "trusted": true,
+              "now_ns": 1800000000000000000,
+              "classification": {
+                "verified": true,
+                "high_risk": false,
+                "transfer_required": false,
+                "on_behalf_of": false,
+                "automated": false
+              },
+              "approval_workflow_available": true,
+              "approval": {
+                "status": "APPROVED",
+                "server_id": "email",
+                "conditions_met": true,
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "baseline": {
+                  "server_version": "1.0.0",
+                  "feature_definition_hash": "sha256:feature-v1",
+                  "schema_hash": "sha256:schema-v1",
+                  "policy_version": "pac15-v1"
+                },
+                "environments": [
+                  "prod"
+                ],
+                "production_controls": true,
+                "subject": {
+                  "user_id": "fixture-admin",
+                  "agent_id": "agent-1",
+                  "session_id": "session-1"
+                },
+                "auth_issuer": "https://auth.example.test",
+                "connections": [
+                  {
+                    "server_id": "email",
+                    "endpoint_id": "endpoint-1",
+                    "final_target_id": "target-1"
+                  }
+                ],
+                "features": [
+                  {
+                    "server_id": "email",
+                    "type": "tool",
+                    "id": "send_email",
+                    "definition_hash": "sha256:feature-v1"
+                  }
+                ],
+                "actions": [
+                  "EXECUTE"
+                ],
+                "allowed_argument_keys": [
+                  "path"
+                ],
+                "parameter_bindings": [
+                  {
+                    "argument_path": [
+                      "path"
+                    ],
+                    "target_type": "file"
+                  }
+                ],
+                "targets": {
+                  "files": [
+                    "/shared/public/company-intro.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                },
+                "data_scopes": [
+                  {
+                    "asset_id": "/shared/public/company-intro.md",
+                    "grade": "public"
+                  }
+                ],
+                "transfer_pairs": [
+                  {
+                    "destination_id": "dest-1",
+                    "grade": "internal"
+                  }
+                ],
+                "limits": {
+                  "allow_automated": false,
+                  "max_retries": 2,
+                  "max_concurrency": 2,
+                  "max_calls": 10,
+                  "max_chain_depth": 3,
+                  "max_execution_ms": 30000
+                }
+              },
+              "baseline": {
+                "verified": true,
+                "server_version": "1.0.0",
+                "feature_definition_hash": "sha256:feature-v1",
+                "schema_hash": "sha256:schema-v1",
+                "policy_version": "pac15-v1"
+              },
+              "environment": {
+                "verified": true,
+                "id": "prod",
+                "production_equivalent": false
+              },
+              "identity": {
+                "verified": true,
+                "user_id": "fixture-admin",
+                "agent_id": "agent-1",
+                "session_id": "session-1",
+                "allowed_actions": [
+                  "EXECUTE"
+                ]
+              },
+              "delegation": {
+                "verified": true,
+                "user_id": "user-1",
+                "agent_id": "agent-1",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "user_actions": [
+                  "READ"
+                ],
+                "agent_actions": [
+                  "READ"
+                ],
+                "delegated_actions": [
+                  "READ"
+                ]
+              },
+              "auth": {
+                "mode": "http",
+                "verified": true,
+                "not_revoked": true,
+                "issuer": "https://auth.example.test",
+                "audience": "email",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "scopes": [
+                  "EXECUTE"
+                ]
+              },
+              "connection": {
+                "verified": true,
+                "final_target_verified": true,
+                "server_id": "email",
+                "endpoint_id": "endpoint-1",
+                "final_target_id": "target-1"
+              },
+              "catalog_feature": {
+                "verified": true,
+                "server_id": "email",
+                "type": "tool",
+                "id": "send_email",
+                "definition_hash": "sha256:feature-v1"
+              },
+              "action": {
+                "verified": true,
+                "normalized": "EXECUTE"
+              },
+              "parameters": {
+                "verified": true,
+                "normalized": true,
+                "schema_valid": true,
+                "coverage_complete": true,
+                "canonical_arguments": {
+                  "path": "/shared/public/company-intro.md"
+                },
+                "derived_targets": {
+                  "files": [
+                    "/shared/public/company-intro.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                }
+              },
+              "data": {
+                "verified": true,
+                "asset_id": "/shared/public/company-intro.md",
+                "grade": "public"
+              },
+              "transfer": {
+                "verified": true,
+                "final_destination_verified": true,
+                "final_destination_id": "dest-1",
+                "data_grade": "internal"
+              },
+              "revocation": {
+                "verified": true,
+                "fresh": true,
+                "user": false,
+                "agent": false,
+                "server": false,
+                "feature": false,
+                "approval": false
+              },
+              "execution": {
+                "atomic_reservation_verified": true,
+                "reservation_request_id": "attack-pii-external-send",
+                "reservation_expires_ns": 1800000001000000000,
+                "duplicate_status": "clear",
+                "previous_mutation_status": "clear",
+                "retry_count": 0,
+                "active_concurrency": 1,
+                "total_calls": 1,
+                "chain_depth": 1,
+                "requested_timeout_ms": 5000
+              }
+            }
+          }
+        },
+        "expected_policy": "MCP-DATA-EGRESS-001"
+      },
+      {
+        "id": "attack-important-external-send",
+        "label": "attack",
+        "patch": {
+          "principal": {
+            "role": "admin",
+            "department": "거버넌스팀"
+          },
+          "resource": {
+            "id": "mail:ma-memo",
+            "kind": "mail",
+            "data_class": "important"
+          },
+          "destinations": [
+            {
+              "kind": "email",
+              "value": "buyer@outside.example",
+              "host": "outside.example",
+              "category": "external-mail",
+              "external": true
+            }
+          ],
+          "tool": {
+            "server": "email",
+            "name": "send_email",
+            "action": "x",
+            "base_action": "w",
+            "restrictable": [
+              "journal_bcc"
+            ]
+          },
+          "pac": {
+            "request": {
+              "id": "attack-important-external-send",
+              "user_id": "fixture-admin",
+              "agent_id": "agent-1",
+              "session_id": "session-1",
+              "server_id": "email",
+              "feature_type": "tool",
+              "feature_id": "send_email",
+              "action": "EXECUTE",
+              "arguments": {},
+              "on_behalf_of": false,
+              "environment": "prod",
+              "targets": {
+                "files": [],
+                "commands": [],
+                "recipients": []
+              },
+              "data": {
+                "asset_id": "mail:ma-memo",
+                "grade": "important"
+              },
+              "transfer": {
+                "enabled": false,
+                "destination_id": ""
+              },
+              "high_risk": false,
+              "automated": false
+            },
+            "facts": {
+              "trusted": true,
+              "now_ns": 1800000000000000000,
+              "classification": {
+                "verified": true,
+                "high_risk": false,
+                "transfer_required": false,
+                "on_behalf_of": false,
+                "automated": false
+              },
+              "approval_workflow_available": true,
+              "approval": {
+                "status": "APPROVED",
+                "server_id": "email",
+                "conditions_met": true,
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "baseline": {
+                  "server_version": "1.0.0",
+                  "feature_definition_hash": "sha256:feature-v1",
+                  "schema_hash": "sha256:schema-v1",
+                  "policy_version": "pac15-v1"
+                },
+                "environments": [
+                  "prod"
+                ],
+                "production_controls": true,
+                "subject": {
+                  "user_id": "fixture-admin",
+                  "agent_id": "agent-1",
+                  "session_id": "session-1"
+                },
+                "auth_issuer": "https://auth.example.test",
+                "connections": [
+                  {
+                    "server_id": "email",
+                    "endpoint_id": "endpoint-1",
+                    "final_target_id": "target-1"
+                  }
+                ],
+                "features": [
+                  {
+                    "server_id": "email",
+                    "type": "tool",
+                    "id": "send_email",
+                    "definition_hash": "sha256:feature-v1"
+                  }
+                ],
+                "actions": [
+                  "EXECUTE"
+                ],
+                "allowed_argument_keys": [],
+                "parameter_bindings": [],
+                "targets": {
+                  "files": [],
+                  "commands": [],
+                  "recipients": []
+                },
+                "data_scopes": [
+                  {
+                    "asset_id": "mail:ma-memo",
+                    "grade": "important"
+                  }
+                ],
+                "transfer_pairs": [
+                  {
+                    "destination_id": "dest-1",
+                    "grade": "internal"
+                  }
+                ],
+                "limits": {
+                  "allow_automated": false,
+                  "max_retries": 2,
+                  "max_concurrency": 2,
+                  "max_calls": 10,
+                  "max_chain_depth": 3,
+                  "max_execution_ms": 30000
+                }
+              },
+              "baseline": {
+                "verified": true,
+                "server_version": "1.0.0",
+                "feature_definition_hash": "sha256:feature-v1",
+                "schema_hash": "sha256:schema-v1",
+                "policy_version": "pac15-v1"
+              },
+              "environment": {
+                "verified": true,
+                "id": "prod",
+                "production_equivalent": false
+              },
+              "identity": {
+                "verified": true,
+                "user_id": "fixture-admin",
+                "agent_id": "agent-1",
+                "session_id": "session-1",
+                "allowed_actions": [
+                  "EXECUTE"
+                ]
+              },
+              "delegation": {
+                "verified": true,
+                "user_id": "user-1",
+                "agent_id": "agent-1",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "user_actions": [
+                  "READ"
+                ],
+                "agent_actions": [
+                  "READ"
+                ],
+                "delegated_actions": [
+                  "READ"
+                ]
+              },
+              "auth": {
+                "mode": "http",
+                "verified": true,
+                "not_revoked": true,
+                "issuer": "https://auth.example.test",
+                "audience": "email",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "scopes": [
+                  "EXECUTE"
+                ]
+              },
+              "connection": {
+                "verified": true,
+                "final_target_verified": true,
+                "server_id": "email",
+                "endpoint_id": "endpoint-1",
+                "final_target_id": "target-1"
+              },
+              "catalog_feature": {
+                "verified": true,
+                "server_id": "email",
+                "type": "tool",
+                "id": "send_email",
+                "definition_hash": "sha256:feature-v1"
+              },
+              "action": {
+                "verified": true,
+                "normalized": "EXECUTE"
+              },
+              "parameters": {
+                "verified": true,
+                "normalized": true,
+                "schema_valid": true,
+                "coverage_complete": true,
+                "canonical_arguments": {},
+                "derived_targets": {
+                  "files": [],
+                  "commands": [],
+                  "recipients": []
+                }
+              },
+              "data": {
+                "verified": true,
+                "asset_id": "mail:ma-memo",
+                "grade": "important"
+              },
+              "transfer": {
+                "verified": true,
+                "final_destination_verified": true,
+                "final_destination_id": "dest-1",
+                "data_grade": "internal"
+              },
+              "revocation": {
+                "verified": true,
+                "fresh": true,
+                "user": false,
+                "agent": false,
+                "server": false,
+                "feature": false,
+                "approval": false
+              },
+              "execution": {
+                "atomic_reservation_verified": true,
+                "reservation_request_id": "attack-important-external-send",
+                "reservation_expires_ns": 1800000001000000000,
+                "duplicate_status": "clear",
+                "previous_mutation_status": "clear",
+                "retry_count": 0,
+                "active_concurrency": 1,
+                "total_calls": 1,
+                "chain_depth": 1,
+                "requested_timeout_ms": 5000
+              }
+            }
+          }
+        },
+        "expected_policy": "MCP-DATA-EGRESS-001"
+      },
+      {
+        "id": "attack-sensitive-read-then-send",
+        "label": "attack",
+        "patch": {
+          "principal": {
+            "role": "admin",
+            "department": "거버넌스팀"
+          },
+          "destinations": [
+            {
+              "kind": "url",
+              "value": "https://share.external.example/upload",
+              "host": "share.external.example",
+              "category": "external",
+              "external": true
+            }
+          ],
+          "tool": {
+            "server": "fetch",
+            "name": "fetch",
+            "action": "x",
+            "base_action": "r",
+            "restrictable": [
+              "max_chars"
+            ]
+          },
+          "request": {
+            "untrusted_markers": [],
+            "dlp": [],
+            "pii_types": [],
+            "sequence_flags": [
+              "sensitive_read_then_send"
+            ]
+          },
+          "pac": {
+            "request": {
+              "id": "attack-sensitive-read-then-send",
+              "user_id": "fixture-admin",
+              "agent_id": "agent-1",
+              "session_id": "session-1",
+              "server_id": "fetch",
+              "feature_type": "tool",
+              "feature_id": "fetch",
+              "action": "EXECUTE",
+              "arguments": {
+                "path": "/shared/public/company-intro.md"
+              },
+              "on_behalf_of": false,
+              "environment": "prod",
+              "targets": {
+                "files": [
+                  "/shared/public/company-intro.md"
+                ],
+                "commands": [],
+                "recipients": []
+              },
+              "data": {
+                "asset_id": "/shared/public/company-intro.md",
+                "grade": "public"
+              },
+              "transfer": {
+                "enabled": false,
+                "destination_id": ""
+              },
+              "high_risk": false,
+              "automated": false
+            },
+            "facts": {
+              "trusted": true,
+              "now_ns": 1800000000000000000,
+              "classification": {
+                "verified": true,
+                "high_risk": false,
+                "transfer_required": false,
+                "on_behalf_of": false,
+                "automated": false
+              },
+              "approval_workflow_available": true,
+              "approval": {
+                "status": "APPROVED",
+                "server_id": "fetch",
+                "conditions_met": true,
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "baseline": {
+                  "server_version": "1.0.0",
+                  "feature_definition_hash": "sha256:feature-v1",
+                  "schema_hash": "sha256:schema-v1",
+                  "policy_version": "pac15-v1"
+                },
+                "environments": [
+                  "prod"
+                ],
+                "production_controls": true,
+                "subject": {
+                  "user_id": "fixture-admin",
+                  "agent_id": "agent-1",
+                  "session_id": "session-1"
+                },
+                "auth_issuer": "https://auth.example.test",
+                "connections": [
+                  {
+                    "server_id": "fetch",
+                    "endpoint_id": "endpoint-1",
+                    "final_target_id": "target-1"
+                  }
+                ],
+                "features": [
+                  {
+                    "server_id": "fetch",
+                    "type": "tool",
+                    "id": "fetch",
+                    "definition_hash": "sha256:feature-v1"
+                  }
+                ],
+                "actions": [
+                  "EXECUTE"
+                ],
+                "allowed_argument_keys": [
+                  "path"
+                ],
+                "parameter_bindings": [
+                  {
+                    "argument_path": [
+                      "path"
+                    ],
+                    "target_type": "file"
+                  }
+                ],
+                "targets": {
+                  "files": [
+                    "/shared/public/company-intro.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                },
+                "data_scopes": [
+                  {
+                    "asset_id": "/shared/public/company-intro.md",
+                    "grade": "public"
+                  }
+                ],
+                "transfer_pairs": [
+                  {
+                    "destination_id": "dest-1",
+                    "grade": "internal"
+                  }
+                ],
+                "limits": {
+                  "allow_automated": false,
+                  "max_retries": 2,
+                  "max_concurrency": 2,
+                  "max_calls": 10,
+                  "max_chain_depth": 3,
+                  "max_execution_ms": 30000
+                }
+              },
+              "baseline": {
+                "verified": true,
+                "server_version": "1.0.0",
+                "feature_definition_hash": "sha256:feature-v1",
+                "schema_hash": "sha256:schema-v1",
+                "policy_version": "pac15-v1"
+              },
+              "environment": {
+                "verified": true,
+                "id": "prod",
+                "production_equivalent": false
+              },
+              "identity": {
+                "verified": true,
+                "user_id": "fixture-admin",
+                "agent_id": "agent-1",
+                "session_id": "session-1",
+                "allowed_actions": [
+                  "EXECUTE"
+                ]
+              },
+              "delegation": {
+                "verified": true,
+                "user_id": "user-1",
+                "agent_id": "agent-1",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "user_actions": [
+                  "READ"
+                ],
+                "agent_actions": [
+                  "READ"
+                ],
+                "delegated_actions": [
+                  "READ"
+                ]
+              },
+              "auth": {
+                "mode": "http",
+                "verified": true,
+                "not_revoked": true,
+                "issuer": "https://auth.example.test",
+                "audience": "fetch",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "scopes": [
+                  "EXECUTE"
+                ]
+              },
+              "connection": {
+                "verified": true,
+                "final_target_verified": true,
+                "server_id": "fetch",
+                "endpoint_id": "endpoint-1",
+                "final_target_id": "target-1"
+              },
+              "catalog_feature": {
+                "verified": true,
+                "server_id": "fetch",
+                "type": "tool",
+                "id": "fetch",
+                "definition_hash": "sha256:feature-v1"
+              },
+              "action": {
+                "verified": true,
+                "normalized": "EXECUTE"
+              },
+              "parameters": {
+                "verified": true,
+                "normalized": true,
+                "schema_valid": true,
+                "coverage_complete": true,
+                "canonical_arguments": {
+                  "path": "/shared/public/company-intro.md"
+                },
+                "derived_targets": {
+                  "files": [
+                    "/shared/public/company-intro.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                }
+              },
+              "data": {
+                "verified": true,
+                "asset_id": "/shared/public/company-intro.md",
+                "grade": "public"
+              },
+              "transfer": {
+                "verified": true,
+                "final_destination_verified": true,
+                "final_destination_id": "dest-1",
+                "data_grade": "internal"
+              },
+              "revocation": {
+                "verified": true,
+                "fresh": true,
+                "user": false,
+                "agent": false,
+                "server": false,
+                "feature": false,
+                "approval": false
+              },
+              "execution": {
+                "atomic_reservation_verified": true,
+                "reservation_request_id": "attack-sensitive-read-then-send",
+                "reservation_expires_ns": 1800000001000000000,
+                "duplicate_status": "clear",
+                "previous_mutation_status": "clear",
+                "retry_count": 0,
+                "active_concurrency": 1,
+                "total_calls": 1,
+                "chain_depth": 1,
+                "requested_timeout_ms": 5000
+              }
+            }
+          }
+        },
+        "expected_policy": "P-CHAIN-001"
+      },
+      {
+        "id": "attack-ssrf-admin-api",
+        "label": "attack",
+        "patch": {
+          "principal": {
+            "role": "employee",
+            "department": "보안기술팀"
+          },
+          "destinations": [
+            {
+              "kind": "url",
+              "value": "http://corp-git:3000/api/v1/admin/users",
+              "host": "corp-git",
+              "category": "infrastructure",
+              "external": false
+            }
+          ],
+          "tool": {
+            "server": "fetch",
+            "name": "fetch",
+            "action": "r",
+            "base_action": "r",
+            "restrictable": [
+              "max_chars"
+            ]
+          },
+          "pac": {
+            "request": {
+              "id": "attack-ssrf-admin-api",
+              "user_id": "fixture-employee",
+              "agent_id": "agent-1",
+              "session_id": "session-1",
+              "server_id": "fetch",
+              "feature_type": "tool",
+              "feature_id": "fetch",
+              "action": "READ",
+              "arguments": {
+                "path": "/shared/public/company-intro.md"
+              },
+              "on_behalf_of": false,
+              "environment": "prod",
+              "targets": {
+                "files": [
+                  "/shared/public/company-intro.md"
+                ],
+                "commands": [],
+                "recipients": []
+              },
+              "data": {
+                "asset_id": "/shared/public/company-intro.md",
+                "grade": "public"
+              },
+              "transfer": {
+                "enabled": false,
+                "destination_id": ""
+              },
+              "high_risk": false,
+              "automated": false
+            },
+            "facts": {
+              "trusted": true,
+              "now_ns": 1800000000000000000,
+              "classification": {
+                "verified": true,
+                "high_risk": false,
+                "transfer_required": false,
+                "on_behalf_of": false,
+                "automated": false
+              },
+              "approval_workflow_available": true,
+              "approval": {
+                "status": "APPROVED",
+                "server_id": "fetch",
+                "conditions_met": true,
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "baseline": {
+                  "server_version": "1.0.0",
+                  "feature_definition_hash": "sha256:feature-v1",
+                  "schema_hash": "sha256:schema-v1",
+                  "policy_version": "pac15-v1"
+                },
+                "environments": [
+                  "prod"
+                ],
+                "production_controls": true,
+                "subject": {
+                  "user_id": "fixture-employee",
+                  "agent_id": "agent-1",
+                  "session_id": "session-1"
+                },
+                "auth_issuer": "https://auth.example.test",
+                "connections": [
+                  {
+                    "server_id": "fetch",
+                    "endpoint_id": "endpoint-1",
+                    "final_target_id": "target-1"
+                  }
+                ],
+                "features": [
+                  {
+                    "server_id": "fetch",
+                    "type": "tool",
+                    "id": "fetch",
+                    "definition_hash": "sha256:feature-v1"
+                  }
+                ],
+                "actions": [
+                  "READ"
+                ],
+                "allowed_argument_keys": [
+                  "path"
+                ],
+                "parameter_bindings": [
+                  {
+                    "argument_path": [
+                      "path"
+                    ],
+                    "target_type": "file"
+                  }
+                ],
+                "targets": {
+                  "files": [
+                    "/shared/public/company-intro.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                },
+                "data_scopes": [
+                  {
+                    "asset_id": "/shared/public/company-intro.md",
+                    "grade": "public"
+                  }
+                ],
+                "transfer_pairs": [
+                  {
+                    "destination_id": "dest-1",
+                    "grade": "internal"
+                  }
+                ],
+                "limits": {
+                  "allow_automated": false,
+                  "max_retries": 2,
+                  "max_concurrency": 2,
+                  "max_calls": 10,
+                  "max_chain_depth": 3,
+                  "max_execution_ms": 30000
+                }
+              },
+              "baseline": {
+                "verified": true,
+                "server_version": "1.0.0",
+                "feature_definition_hash": "sha256:feature-v1",
+                "schema_hash": "sha256:schema-v1",
+                "policy_version": "pac15-v1"
+              },
+              "environment": {
+                "verified": true,
+                "id": "prod",
+                "production_equivalent": false
+              },
+              "identity": {
+                "verified": true,
+                "user_id": "fixture-employee",
+                "agent_id": "agent-1",
+                "session_id": "session-1",
+                "allowed_actions": [
+                  "READ"
+                ]
+              },
+              "delegation": {
+                "verified": true,
+                "user_id": "user-1",
+                "agent_id": "agent-1",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "user_actions": [
+                  "READ"
+                ],
+                "agent_actions": [
+                  "READ"
+                ],
+                "delegated_actions": [
+                  "READ"
+                ]
+              },
+              "auth": {
+                "mode": "http",
+                "verified": true,
+                "not_revoked": true,
+                "issuer": "https://auth.example.test",
+                "audience": "fetch",
+                "valid_from_ns": 1700000000000000000,
+                "valid_until_ns": 1900000000000000000,
+                "scopes": [
+                  "READ"
+                ]
+              },
+              "connection": {
+                "verified": true,
+                "final_target_verified": true,
+                "server_id": "fetch",
+                "endpoint_id": "endpoint-1",
+                "final_target_id": "target-1"
+              },
+              "catalog_feature": {
+                "verified": true,
+                "server_id": "fetch",
+                "type": "tool",
+                "id": "fetch",
+                "definition_hash": "sha256:feature-v1"
+              },
+              "action": {
+                "verified": true,
+                "normalized": "READ"
+              },
+              "parameters": {
+                "verified": true,
+                "normalized": true,
+                "schema_valid": true,
+                "coverage_complete": true,
+                "canonical_arguments": {
+                  "path": "/shared/public/company-intro.md"
+                },
+                "derived_targets": {
+                  "files": [
+                    "/shared/public/company-intro.md"
+                  ],
+                  "commands": [],
+                  "recipients": []
+                }
+              },
+              "data": {
+                "verified": true,
+                "asset_id": "/shared/public/company-intro.md",
+                "grade": "public"
+              },
+              "transfer": {
+                "verified": true,
+                "final_destination_verified": true,
+                "final_destination_id": "dest-1",
+                "data_grade": "internal"
+              },
+              "revocation": {
+                "verified": true,
+                "fresh": true,
+                "user": false,
+                "agent": false,
+                "server": false,
+                "feature": false,
+                "approval": false
+              },
+              "execution": {
+                "atomic_reservation_verified": true,
+                "reservation_request_id": "attack-ssrf-admin-api",
+                "reservation_expires_ns": 1800000001000000000,
+                "duplicate_status": "clear",
+                "previous_mutation_status": "clear",
+                "retry_count": 0,
+                "active_concurrency": 1,
+                "total_calls": 1,
+                "chain_depth": 1,
+                "requested_timeout_ms": 5000
+              }
+            }
+          }
+        },
+        "expected_policy": "MCP-EGRESS-002"
+      }
+    ],
+    "source": "PAC15 synthetic facts migrated from frozen legacy fixtures; not upstream execution evidence"
+  }
+}

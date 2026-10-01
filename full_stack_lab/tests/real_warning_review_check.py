@@ -50,6 +50,7 @@ async def run(args):
             accepted = register(args.console, requester, approver, endpoint=row['endpoint'], server_id=server,
                                 name='Live metadata review verification', tools=scope['tools'], data_class='important',
                                 valid_days=1, allowed=[who['user_id']], ack_warnings=True,
+                                parameter_constraints=row['parameter_constraints'],
                                 purpose='Authorized metadata review check; provider helper is not executed on success',
                                 review_note='Read the flagged description; selected for the review-binding check only.',
                                 risk_acceptance='One-day verification of the review binding; the helper is not run on success.')

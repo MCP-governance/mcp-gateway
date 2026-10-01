@@ -1114,6 +1114,7 @@ class IntakeRegistration(StrictModel):
 class RemoteContractReview(IntakeRegistration):
     allowed_principals: list[str] = Field(min_length=1, max_length=100)
     review_note: str = Field(min_length=10, max_length=1000)
+    parameter_constraints: dict[str, dict] = Field(min_length=1, max_length=300)
 
 
 @app.post("/api/mcp-requests/{request_id}/review-contract")
@@ -1143,8 +1144,19 @@ async def review_remote_contract(request_id: UUID, review: RemoteContractReview,
         raise HTTPException(409, "실제 공급자 계약과 검토 내용이 다릅니다.")
     if any(advertised[name]["warnings"] for name in review.tools) and not review.poisoning_ack:
         raise HTTPException(409, "선택한 도구의 설명 경고를 읽고 검토 확인을 남기세요.")
+    from jsonschema import Draft202012Validator, SchemaError
+    if set(review.parameter_constraints) != set(review.tools):
+        raise HTTPException(422, "선택한 모든 도구의 인자 범위를 JSON Schema로 검토하세요.")
+    try:
+        for constraint in review.parameter_constraints.values():
+            Draft202012Validator.check_schema(constraint)
+            if constraint.get("type") != "object" or constraint.get("additionalProperties") is not False:
+                raise ValueError("명시적 object 형식과 additionalProperties=false가 필요합니다")
+    except (SchemaError, ValueError) as exc:
+        raise HTTPException(422, "인자 범위 검토 형식이 올바르지 않습니다.") from exc
     from datetime import timedelta
-    contract = {"registration": review.model_dump(exclude={"allowed_principals", "review_note"}),
+    contract = {"registration": review.model_dump(exclude={"allowed_principals", "review_note", "parameter_constraints"}),
+                "parameter_constraints": review.parameter_constraints,
                 "allowed_principals": sorted(set(review.allowed_principals)), "review_note": review.review_note,
                 "reviewed_by": user["principal"], "reviewed_at": datetime.now(UTC).isoformat(),
                 "valid_until": (datetime.now(UTC) + timedelta(days=review.valid_days)).isoformat(),
