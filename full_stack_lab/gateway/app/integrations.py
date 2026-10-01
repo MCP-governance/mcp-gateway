@@ -37,8 +37,25 @@ STATES = ("gateway_enforced", "endpoint_enforced", "vendor_enforced", "observed_
 CLASSES = ("gateway_mcp", "gateway_backend_connector", "vendor_native_connector", "local_plugin_or_stdio", "shadow_or_unknown")
 
 
-def platform_of(device: dict) -> str:
-    host = (device.get("detail") or {}).get("host") or {}
+def host_report(device: dict, now: datetime) -> dict | None:
+    """The validated heartbeat report of other accounts, if it is current.
+
+    Only the managed heartbeat writes it, but an older row or a hand-edited detail must
+    not break the inventory or keep vouching after the agent stopped reporting."""
+    host = (device.get("detail") or {}).get("host")
+    if not isinstance(host, dict) or not isinstance(host.get("other_accounts", []), list):
+        return None
+    if any(not isinstance(a, dict) or not isinstance(a.get("name"), str) for a in host.get("other_accounts", [])):
+        return None
+    try:
+        reported = datetime.fromisoformat(str(host.get("reported_at")))
+    except ValueError:
+        return None
+    return host if (now - reported).total_seconds() < HEARTBEAT_SECONDS else None
+
+
+def platform_of(device: dict, host: dict | None = None) -> str:
+    host = host or {}
     text = f"{device.get('platform') or ''} {host.get('kernel') or ''}".lower()
     if host.get("wsl") or "microsoft" in text or "wsl" in text:
         return "wsl"
@@ -49,18 +66,20 @@ def platform_of(device: dict) -> str:
 
 def device_state(device: dict, now: datetime) -> dict:
     """The managed account's path, and every other path the same device leaves open."""
-    host = (device.get("detail") or {}).get("host")
-    platform = platform_of(device)
+    host = host_report(device, now)
+    platform = platform_of(device, host)
     checks = device.get("enforcement_checks") or {}
     age = (now - device["heartbeat_at"]).total_seconds() if device.get("heartbeat_at") else None
     bypass = []
     for account in (host or {}).get("other_accounts") or []:
-        groups = account.get("privileged_groups") or []
+        groups = [str(g) for g in account.get("privileged_groups") or []]
         bypass.append(f"{account['name']}({','.join(groups)}) 관리 불가" if groups else f"{account['name']} 비관리 계정")
     if device.get("device_epoch") and host is None:
-        bypass.append("같은 단말의 다른 계정 보고 없음")
+        bypass.append("같은 단말의 다른 계정 보고 없음·만료")
     if platform in {"windows", "wsl"}:
         bypass.append(f"{platform} 강제 미지원")
+    if device.get("status") != "active":
+        bypass = []  # a revoked device is no path at all; it is listed only as history
     managed = device.get("managed_state")
     if device.get("status") != "active":
         state, evidence = "unknown_not_enrolled", "장치 자격 폐기"
@@ -80,7 +99,7 @@ def device_state(device: dict, now: datetime) -> dict:
             "platform": platform, "account": device.get("local_username"), "uid": device.get("local_uid"),
             "account_state": state, "state": "bypass_possible" if bypass and state != "unknown_not_enrolled" else state,
             "evidence": evidence, "bypass": bypass, "verified_at": device.get("heartbeat_at") or device.get("last_seen_at"),
-            "kernel_denials": int(device.get("kernel_denials") or 0)}
+            "kernel_denials_24h": int(device.get("kernel_denials") or 0)}
 
 
 def endpoint_item_state(device: dict | None, approved: bool) -> tuple[str, str, list[str]]:
@@ -97,11 +116,14 @@ def endpoint_item_state(device: dict | None, approved: bool) -> tuple[str, str, 
 async def snapshot() -> dict:
     now = datetime.now(UTC)
     raw_devices = await db.fetch_all(
-        """SELECT a.*, (SELECT count(*) FROM endpoint_os_events e WHERE e.endpoint_id=a.endpoint_id) AS kernel_denials
+        """SELECT a.*, (SELECT count(*) FROM endpoint_os_events e WHERE e.endpoint_id=a.endpoint_id
+                            AND e.observed_at > now() - interval '24 hours') AS kernel_denials
              FROM endpoint_agents a WHERE a.agent_version<>'unregistered' OR a.device_epoch IS NOT NULL""")
     devices = {d["endpoint_id"]: device_state(d, now) for d in raw_devices}
     people = await db.fetch_all("SELECT token, role, status, managed_required FROM principals WHERE status='active'")
-    enforced_owners = {d["owner"] for d in devices.values() if d["state"] == "endpoint_enforced"}
+    # The managed account is confined even when its device has other open accounts; those
+    # accounts are listed as their own bypass reasons, not as "no managed device".
+    enforced_owners = {d["owner"] for d in devices.values() if d["account_state"] == "endpoint_enforced"}
     owners_with_device = {d["owner"] for d in devices.values() if d["state"] != "unknown_not_enrolled"}
     for person in people:
         if person["managed_required"] and person["token"] not in owners_with_device:
@@ -114,16 +136,18 @@ async def snapshot() -> dict:
     traversal = {r["server_id"]: r for r in await db.fetch_all(
         """SELECT server_id, max(created_at) FILTER (WHERE upstream_executed) AS executed_at,
                   max(created_at) AS last_at, count(*) FILTER (WHERE created_at > now() - interval '7 days') AS calls_7d
-             FROM decisions WHERE COALESCE(client->>'event_kind','tools/call')='tools/call' GROUP BY server_id""")}
+             FROM decisions WHERE created_at > now() - interval '30 days'
+              AND COALESCE(client->>'event_kind','tools/call')='tools/call' GROUP BY server_id""")}
     for server in await db.fetch_all("SELECT id, endpoint, status, lifecycle, display_name FROM mcp_servers ORDER BY id"):
         spec = registry.server(server["id"]) or {}
         provider = classify.url_destination(server["endpoint"]).external
         allowed = registry.allowed_principals(server["id"])
         holders = sorted(allowed if allowed is not None else {p["token"] for p in people})
         operating = server["status"] == "READY" and server["lifecycle"] == "OPERATING"
-        bypass = [f"{p}: 관리 단말 없음" for p in holders if p not in enforced_owners]
+        # A server the Gateway refuses has no holders; direct use of the SaaS is `residual`.
+        bypass = [f"{p}: 관리 단말 없음" for p in holders if p not in enforced_owners] if operating else []
         bypass += sorted({f"{d['owner']}@{d['hostname']}: {b}" for d in devices.values()
-                          if d["owner"] in holders for b in d["bypass"]})
+                          if operating and d["owner"] in holders for b in d["bypass"]})
         seen = traversal.get(server["id"]) or {}
         items.append({
             "class": "gateway_backend_connector" if provider else "gateway_mcp",
@@ -155,11 +179,17 @@ async def snapshot() -> dict:
         state, evidence, bypass = endpoint_item_state(None, approval == "approved")
         if not row["active"]:
             state, evidence = "observed_only", "마지막 보고에서 사라짐 — 차단 증거 아님"
-        if not local and vendor.get("console_state") == "blocked" and vendor.get("verified_at"):
-            state, evidence = "vendor_enforced", f"벤더 관리 콘솔 차단(수기 확인 {vendor['verified_at']})"
+        if row["kind"] in {"connector", "app"} and vendor.get("console_state") == "blocked" and vendor.get("verified_at"):
+            # A manual record ages like a review: past REVIEW_DAYS it no longer vouches.
+            checked = datetime.fromisoformat(vendor["verified_at"])
+            if REVIEW_DAYS and (now - checked).days < REVIEW_DAYS:
+                state, evidence = "vendor_enforced", f"벤더 관리 콘솔 차단(수기 확인 {vendor['verified_at']})"
+            else:
+                evidence = f"벤더 콘솔 수기 확인 만료({vendor['verified_at']})"
         items.append({
             "class": "local_plugin_or_stdio" if local else "vendor_native_connector",
-            "key": row["item_key"], "name": row["name"], "target": row["target"], "harness": row["harness"],
+            "key": f"{row['item_key']}|{row['principal']}|{row['workstation']}", "item_key": row["item_key"],
+            "name": row["name"], "target": row["target"], "harness": row["harness"],
             "owner": row["principal"], "device": row["workstation"],
             "discovered_from": "PC 키트 보고", "discovered_at": row["first_seen"], "source": row["kind"],
             "managed_by": "endpoint" if local else "vendor", "enforced": state in {"endpoint_enforced", "vendor_enforced"},
@@ -188,7 +218,7 @@ async def snapshot() -> dict:
             "discovered_from": f"단말 {'설정' if row['source'] == 'config' else '리스너'} {row['location']}",
             "discovered_at": row["seen"], "source": row["classification"],
             "managed_by": "endpoint" if state == "endpoint_enforced" else "none", "enforced": state == "endpoint_enforced",
-            "state": state, "evidence": evidence + (f" · 커널 차단 {device['kernel_denials']}건" if device and device.get("kernel_denials") else ""),
+            "state": state, "evidence": evidence,
             "approval": {"state": "unapproved", "expires_at": None}, "bypass": bypass, "last_verified_at": row["seen"]})
 
     summary = {"states": {s: sum(i["state"] == s for i in items) for s in STATES},
@@ -230,23 +260,29 @@ async def record_vendor_control(request: VendorControl, authorization: str | Non
 
 
 if __name__ == "__main__":
+    from datetime import timedelta
     now = datetime.now(UTC)
+    fresh = now.isoformat(timespec="seconds")
     checks = {key: True for key in MANAGED_CHECKS}
     base = {"endpoint_id": "d1", "status": "active", "managed_state": "active", "platform": "Linux 7.0", "device_epoch": "e",
             "heartbeat_at": now, "enforcement_checks": checks, "owner_token": "user", "local_username": "managed"}
-    clean = device_state({**base, "detail": {"host": {"kernel": "7.0", "wsl": False, "other_accounts": []}}}, now)
+    host = lambda accounts, **extra: {"host": {"kernel": "7.0", "wsl": False, "other_accounts": accounts, "reported_at": fresh, **extra}}
+    clean = device_state({**base, "detail": host([])}, now)
     assert clean["state"] == "endpoint_enforced", clean
-    shared = device_state({**base, "detail": {"host": {"kernel": "7.0", "wsl": False,
-                           "other_accounts": [{"name": "pj1", "uid": 1000, "privileged_groups": ["sudo", "docker"]}]}}}, now)
+    shared = device_state({**base, "detail": host([{"name": "pj1", "uid": 1000, "privileged_groups": ["sudo", "docker"]}])}, now)
     assert shared["account_state"] == "endpoint_enforced" and shared["state"] == "bypass_possible", shared
     assert device_state({**base, "detail": {}}, now)["state"] == "bypass_possible"  # old agent: other accounts unknown
-    wsl = device_state({**base, "platform": "Linux 6.6-microsoft-standard-WSL2", "detail": {"host": {"other_accounts": []}}}, now)
+    stale = {"host": {**host([])["host"], "reported_at": (now - timedelta(seconds=HEARTBEAT_SECONDS)).isoformat()}}
+    assert device_state({**base, "detail": stale}, now)["state"] == "bypass_possible"  # an old empty report vouches for nothing
+    assert device_state({**base, "detail": {"host": "x"}}, now)["state"] == "bypass_possible"  # malformed detail never crashes
+    assert device_state({**base, "detail": {"host": {"other_accounts": [1], "reported_at": fresh}}}, now)["state"] == "bypass_possible"
+    wsl = device_state({**base, "platform": "Linux 6.6-microsoft-standard-WSL2", "detail": host([])}, now)
     assert wsl["account_state"] == "observed_only" and wsl["state"] == "bypass_possible", wsl
-    from datetime import timedelta
-    assert device_state({**base, "heartbeat_at": now - timedelta(seconds=HEARTBEAT_SECONDS), "detail": {"host": {}}}, now)["account_state"] == "bypass_possible"
-    assert device_state({**base, "enforcement_checks": {**checks, "nftables_active": False}, "detail": {"host": {}}}, now)["account_state"] == "bypass_possible"
-    assert device_state({**base, "managed_state": "pending", "detail": {"host": {}}}, now)["state"] == "observed_only"
-    assert device_state({**base, "status": "revoked"}, now)["state"] == "unknown_not_enrolled"
+    assert device_state({**base, "heartbeat_at": now - timedelta(seconds=HEARTBEAT_SECONDS), "detail": host([])}, now)["account_state"] == "bypass_possible"
+    assert device_state({**base, "enforcement_checks": {**checks, "nftables_active": False}, "detail": host([])}, now)["account_state"] == "bypass_possible"
+    assert device_state({**base, "managed_state": "pending", "detail": host([])}, now)["state"] == "observed_only"
+    revoked = device_state({**base, "status": "revoked", "detail": {}}, now)
+    assert revoked["state"] == "unknown_not_enrolled" and revoked["bypass"] == [], revoked
     assert endpoint_item_state(None, True)[0] == "observed_only" and endpoint_item_state(None, False)[0] == "bypass_possible"
     assert endpoint_item_state(clean, False)[0] == "endpoint_enforced"
     assert endpoint_item_state(shared, False)[0] == "bypass_possible"

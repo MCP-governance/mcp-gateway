@@ -130,7 +130,12 @@ def host_report(config):
         if (entry.pw_uid in (0, config["uid"], 65534) or entry.pw_uid < 1000
                 or entry.pw_shell.endswith(("nologin", "false", "sync"))):
             continue
-        groups = {grp.getgrgid(g).gr_name for g in os.getgrouplist(entry.pw_name, entry.pw_gid)}
+        groups = set()
+        for gid in os.getgrouplist(entry.pw_name, entry.pw_gid):
+            try:
+                groups.add(grp.getgrgid(gid).gr_name)
+            except KeyError:  # a gid with no group entry grants nothing by name
+                continue
         accounts.append({"name": entry.pw_name[:64], "uid": entry.pw_uid, "privileged_groups": sorted(groups & PRIVILEGED)})
     return {"kernel": os.uname().release[:120], "wsl": "microsoft" in Path("/proc/version").read_text().lower(),
             "other_accounts": accounts[:64]}
@@ -253,8 +258,18 @@ def serve(args):
                 private_write(args.config, json.dumps(config))
             previous = policy["policy_hash"]
             hashes, health = checks(config, policy)
-            report = request(config, "/api/endpoint/heartbeat", {"policy_hash": policy["policy_hash"], "configuration_hashes": hashes,
-                                                               "checks": health, "host": host_report(config)})
+            beat = {"policy_hash": policy["policy_hash"], "configuration_hashes": hashes, "checks": health}
+            try:
+                beat["host"] = host_report(config)
+            except (OSError, KeyError, ValueError):
+                pass  # the account report is informational; it never holds back the heartbeat
+            try:
+                report = request(config, "/api/endpoint/heartbeat", beat)
+            except urllib.error.HTTPError as exc:
+                if exc.code != 422 or "host" not in beat:
+                    raise
+                beat.pop("host")  # a Gateway older than D-62 rejects the extra field
+                report = request(config, "/api/endpoint/heartbeat", beat)
             for name, extra in (("agent.py", ["--once"]), ("os-observer.py", ["--uid", str(config["uid"]), "--profile", "mcpgw-" + config["username"]])):
                 subprocess.run([sys.executable, "-I", "-S", str(PROGRAMS / name), "--config", str(observer_config), *extra],
                                check=True, timeout=40, stdout=subprocess.DEVNULL)

@@ -83,7 +83,10 @@ class ResultRejected(RuntimeError):
 
     def __init__(self, message: str, payload: Any = None):
         super().__init__(message)
-        self.evidence = response_evidence(payload, "withheld") if payload is not None else None
+        # No digest of the withheld text: a short unmasked answer could be confirmed by
+        # hashing guesses. Size and shape are enough to tell what was kept back.
+        self.evidence = ({**response_evidence(payload, "withheld"), "sha256": None}
+                         if payload is not None else None)
 
 
 # What a client receives as tool output. Images, audio, embedded resources and
@@ -1459,9 +1462,10 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         mode = await enforcement_mode()
         base_event["enforcement"] = mode
         # A PAC denial or approval ranked below the selected policy is still in force:
-        # monitoring relaxes only when nothing always-enforced is among the findings.
+        # monitoring relaxes only when no always-enforced Block/Approval is among the
+        # findings. Alerts (MCP-SHADOW-*) are observations and do not switch it off.
         enforced_findings = [result["policy_id"], *(c.get("policy_id", "") for c in result.get("conflicts") or []
-                                                    if c.get("decision") != "Allow")]
+                                                    if c.get("decision") in {"Block", "Approval"})]
         if (mode == "monitor" and result["decision"] != "Allow"
                 and not any(pid.startswith(ALWAYS_ENFORCED) for pid in enforced_findings)):
             base_event["would_decision"] = result["decision"]
@@ -1513,8 +1517,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 except privacy.InspectionUnavailable as exc:
                     # Executed, answer withheld: MCP-OUTPUT-001 below records exactly that.
                     raise ResultRejected(f"출력 개인정보 검사 실패: {exc}", raw_result) from exc
+                # The digest is of what the client receives (masked), not of the raw answer.
                 base_event["result_evidence"] = response_evidence(
-                    raw_result, "masked" if output_types else "returned", output_types)
+                    base_event["result"], "masked" if output_types else "returned", output_types)
                 base_event["privacy_types"] = sorted(set(privacy_types) | set(output_types))
                 base_event["effective_arguments"] = effective
                 classify.remember_navigation(user_token, cls, True)

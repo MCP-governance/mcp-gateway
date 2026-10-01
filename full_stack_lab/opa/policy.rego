@@ -479,23 +479,32 @@ candidate["MCP-EGRESS-001"] := {
 
 # Presidio reports entity types only; raw content never enters OPA's decision log.
 # Role-independent: an approval must not become the procedure for exporting PII.
-candidate["MCP-DATA-EGRESS-001"] := data_egress_verdict if {
+candidate["MCP-DATA-EGRESS-001"] := {
+	"decision": "Block",
+	"reason": "중요정보 또는 탐지된 개인정보를 외부 목적지로 전송할 수 없습니다.",
+	"restrictions": {},
+	"conditions": {"matched": ["destinations[].external"], "violated": ["request.pii_types", "resource.data_class"]},
+} if {
 	external_transfer
 	sensitive_transfer
+	not provider_pii_transfer
 }
 
 # A provider-hosted server receives the arguments of every call, reads included.
 # Its own data grade is about what comes back, so only detected PII in what goes out counts.
-candidate["MCP-DATA-EGRESS-001"] := data_egress_verdict if {
-	object.get(input, ["tool", "provider_hosted"], false) == true
-	count(pii_types) > 0
+# One body per fact set, so the recorded conditions name the fact that matched.
+candidate["MCP-DATA-EGRESS-001"] := {
+	"decision": "Block",
+	"reason": "탐지된 개인정보를 공급자 호스팅 서버로 전송할 수 없습니다.",
+	"restrictions": {},
+	"conditions": {"matched": ["tool.provider_hosted"], "violated": ["request.pii_types"]},
+} if {
+	provider_pii_transfer
 }
 
-data_egress_verdict := {
-	"decision": "Block",
-	"reason": "중요정보 또는 탐지된 개인정보를 외부 목적지로 전송할 수 없습니다.",
-	"restrictions": {},
-	"conditions": {"matched": ["destinations[].external", "tool.provider_hosted"], "violated": ["request.pii_types", "resource.data_class"]},
+provider_pii_transfer if {
+	object.get(input, ["tool", "provider_hosted"], false) == true
+	count(pii_types) > 0
 }
 
 # The Gateway links the calls of one verified principal: an executed read of important

@@ -58,6 +58,8 @@ def fingerprint(config_path: str, server_label: str, transport: str, endpoint_re
 
 async def enroll(endpoint_id: str, hostname: str, platform: str, agent_version: str,
                  owner_token: str | None, detail: dict | None = None) -> dict:
+    # `host` comes only from the validated managed heartbeat (main.HostReport).
+    detail = {key: value for key, value in (detail or {}).items() if key != "host"}
     await db.execute(
         """INSERT INTO endpoint_agents(endpoint_id, hostname, platform, agent_version, owner_token, detail)
            VALUES (%s,%s,%s,%s,%s,%s)
@@ -554,11 +556,13 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
                  and set(checks) == MANAGED_CHECKS and all(value is True for value in checks.values()))
     # The host report is not a compliance input: another account on the device does not
     # quarantine the managed one; it is shown as a bypass path (integrations.device_state).
+    # A heartbeat without the report drops the previous one: an old "no other account"
+    # must not keep standing in for a check that is no longer made.
     detail = {"host": {**host, "reported_at": datetime.now(UTC).isoformat(timespec="seconds")}} if host else {}
     async with db.transaction() as connection:
         row = await (await connection.execute(
             """UPDATE endpoint_agents SET heartbeat_at=now(),last_seen_at=now(),policy_hash=%s,
-                 configuration_hashes=%s,enforcement_checks=%s, detail=detail || %s,
+                 configuration_hashes=%s,enforcement_checks=%s, detail=(detail - 'host') || %s,
                  managed_state=CASE WHEN %s THEN managed_state ELSE 'quarantined' END
                WHERE endpoint_id=%s AND status='active' RETURNING managed_state""",
             (policy_hash, Jsonb(hashes), Jsonb(checks), Jsonb(detail), compliant, device["endpoint_id"]))).fetchone()

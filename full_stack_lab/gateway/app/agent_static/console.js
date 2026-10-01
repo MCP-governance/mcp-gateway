@@ -577,13 +577,13 @@ function showDecision(id) {
     { key: "path", label: "통제 경로", body: html`${kv([
       ["출처", html`${r.harness ? harnessLabel(r.harness) : r.agent || "—"} · ${r.workstation || "단말 미상"} · ${r.device_id ? html`관리 단말 <code>${r.device_id}</code>` : "단말 결합 없음"}`],
       ["Gateway 통과", connection ? "연결 단계에서 거부" : html`예 · 원장 #${r.id}`],
-      ["강제 주체", html`${chip("brand", "Gateway")}${r.planes.includes("endpoint") ? chip("brand", "Endpoint") : ""}`],
+      ["강제 주체", html`${chip("brand", "Gateway")}${(r.planes || []).includes("endpoint") ? chip("brand", "Endpoint") : ""}`],
       ["upstream 시도", bool(r.attempted, r.attempted ? "전송함" : "전송 안 함")],
       ["upstream 실행", bool(r.executed, r.executed ? "실행됨" : r.attempted ? "미확인" : "실행 안 함")],
       ["응답", html`${responseChip(r.response)}${r.response_bytes != null ? html` <span class="small">${r.response_bytes} byte · ${(r.response_types || []).join(", ") || "—"} · ${shortHash(r.response_sha256)}</span>` : ""}`],
       ["마스킹", (r.masked_types || []).join(", ")],
       ["PAC 실패", (r.pac_failures || []).length ? html`${r.pac_failures.map((p) => chip("block", p))}` : "없음"],
-      ["다른 해당 정책", (r.conflicts || []).length ? html`${r.conflicts.map((c) => chip(...(DECISION[c.decision] || ["", c.decision]), `${c.policy_id}`))}` : "없음"],
+      ["다른 해당 정책", (r.conflicts || []).length ? html`${r.conflicts.map((c) => chip((DECISION[c.decision] || [""])[0], `${(DECISION[c.decision] || [, c.decision])[1]} ${c.policy_id}`))}` : "없음"],
       ["종료 판정", r.server && r.server !== "?" ? html`<a href="#/termination">종료·폐기에서 T1~T3 보기</a>` : ""],
     ])}${r.response === "withheld" ? html`<p class="note">${chip("block", "이미 실행됨")} 보류는 응답만 막습니다. 쓰기·전송 효과는 되돌리지 않습니다.</p>` : ""}` },
     { key: "summary", label: "요약", body: html`<p class="note">${r.reason}</p>
@@ -1481,7 +1481,7 @@ const ACTIONS = {
     if (!i) return;
     const v = i.vendor_control;
     openDrawer(i.name, html`<div class="row-actions">${controlChip(i.state)}${chip("outline", MANAGED_BY[i.managed_by] || i.managed_by)}
-      ${i.class === "vendor_native_connector" ? html`<button class="btn sm" type="button" data-act="vendor-control" data-key="${i.key}" data-name="${i.name}">벤더 콘솔 확인 기록</button>` : ""}</div>
+      ${i.class === "vendor_native_connector" ? html`<button class="btn sm" type="button" data-act="vendor-control" data-key="${i.item_key}" data-name="${i.name}">벤더 콘솔 확인 기록</button>` : ""}</div>
       ${kv([["분류", INTEGRATION_CLASS[i.class] || i.class], ["대상", i.target ? html`<span class="mono">${i.target}</span>` : ""],
         ["소유자·단말", `${i.owner || "—"}${i.device ? ` · ${i.device}` : ""}`], ["발견", `${i.discovered_from}${i.discovered_at ? ` · ${when(i.discovered_at)}` : ""}`],
         ["출처", i.source], ["실제 강제", i.enforced ? "예" : "아니오"], ["증거", i.evidence],

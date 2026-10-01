@@ -1,0 +1,8 @@
+[
+  {"id": "unmanaged-account-uses-managed-route", "harness": "codex", "server": "github", "tool": "list_commits",
+   "arguments": {"owner": "MCP-governance", "repo": "mcp-gateway", "perPage": 1, "page": 1, "fields": ["sha"]},
+   "expect": {"transport": "not seen by Gateway"}},
+  {"id": "unmanaged-account-uses-managed-route", "harness": "claude", "server": "github", "tool": "list_commits",
+   "arguments": {"owner": "MCP-governance", "repo": "mcp-gateway", "perPage": 1, "page": 1, "fields": ["sha"]},
+   "expect": {"transport": "not seen by Gateway"}}
+]

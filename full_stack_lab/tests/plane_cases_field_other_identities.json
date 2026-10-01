@@ -1,0 +1,11 @@
+[
+  {"id": "unapproved-user-root", "harness": "codex", "server": "github", "tool": "list_commits",
+   "harness_args": ["-c", "mcp_servers.github.url=\"http://100.83.175.111:443/mcp/github/\"",
+                    "-c", "mcp_servers.github.bearer_token_env_var=\"GW_TEST_TOKEN\""],
+   "arguments": {"owner": "MCP-governance", "repo": "mcp-gateway", "perPage": 1, "page": 1, "fields": ["sha"]},
+   "expect": {"decision": "Block", "policy_id": "MCP-REGISTRY-003", "attempted": false, "executed": false}},
+  {"id": "unapproved-user-root", "harness": "claude", "server": "github", "tool": "list_commits",
+   "harness_args": ["--mcp-config", "{\"mcpServers\":{\"github\":{\"type\":\"http\",\"url\":\"http://100.83.175.111:443/mcp/github/\",\"headers\":{\"Authorization\":\"Bearer ${GW_TEST_TOKEN}\"}}}}", "--strict-mcp-config"],
+   "arguments": {"owner": "MCP-governance", "repo": "mcp-gateway", "perPage": 1, "page": 1, "fields": ["sha"]},
+   "expect": {"decision": "Block", "policy_id": "MCP-REGISTRY-003", "attempted": false, "executed": false}}
+]

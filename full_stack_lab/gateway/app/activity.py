@@ -48,14 +48,18 @@ def describe(row: dict) -> dict:
                            if pid and (pid.startswith("PAC-") or pid in {"INPUT_CONTRACT", "POLICY_BUNDLE"})})
     # The row exists because the call reached the Gateway. A device-bound token adds
     # the endpoint plane: that harness ran on an enrolled, kernel-confined account.
-    planes = ["gateway"] + (["endpoint"] if client.get("device_id") else [])
+    # A call refused because the device failed (ENDPOINT-MANAGED-001) or a refused
+    # connection was enforced by the Gateway alone.
+    endpoint = (client.get("device_id") and row.get("policy_id") != "ENDPOINT-MANAGED-001"
+                and (client.get("event_kind") or "tools/call") == "tools/call")
+    planes = ["gateway"] + (["endpoint"] if endpoint else [])
     headline = (f"{who}({dept})" if dept else who) + (f" @{station}" if station else "")
     line = (f"{_time(row.get('created_at'))}  {DECISION_KO.get(decision, decision):<5}  {headline} · "
             f"{server}.{tool} {target[:90]}  [{row.get('policy_id')}] {row.get('reason', '')[:80]}")
     return {
         "id": row.get("id"), "at": row.get("created_at"), "decision": decision,
         "decision_ko": DECISION_KO.get(decision, decision), "tone": TONE.get(decision, ""),
-        "who": who, "department": dept, "role": row.get("role"), "workstation": station,
+        "who": who, "principal": row.get("user_token"), "department": dept, "role": row.get("role"), "workstation": station,
         "agent": client.get("agent"), "task_id": client.get("task_id"),
         "harness": (client.get("harness") or {}).get("name"),
         "event_kind": client.get("event_kind") or "tools/call",
