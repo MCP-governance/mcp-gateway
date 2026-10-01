@@ -91,6 +91,12 @@ def workstation_name(value: str | None) -> str:
     return name
 
 
+def claude_path() -> str | None:
+    """The native installer puts claude in ~/.local/bin, which a non-login shell (SSH, MDM
+    script) often lacks on PATH; setup then registered nothing for Claude Code."""
+    return shutil.which("claude") or shutil.which("claude", path=str(Path.home() / ".local" / "bin"))
+
+
 def endpoint(settings: dict, server: str) -> str:
     return f"{settings['url']}/mcp/{server}/"
 
@@ -273,7 +279,7 @@ def claude_exists(claude: str, server: str) -> bool:
 
 def preflight(settings: dict, previous: list[str], replace: bool) -> None:
     """무엇이든 쓰기 전에 충돌을 모두 본다. 중간에 멈춰 반쯤 쓴 상태를 남기지 않게."""
-    claude = shutil.which("claude")
+    claude = claude_path()
     if "claude" in settings["harnesses"] and claude and not replace:
         # 직원이 직접 만든 같은 이름의 서버를 말없이 덮어쓰지 않는다.
         mine = [s for s in settings["servers"] if s not in previous and claude_exists(claude, s)]
@@ -288,7 +294,7 @@ def preflight(settings: dict, previous: list[str], replace: bool) -> None:
 
 
 def setup_claude(settings: dict, dry_run: bool) -> list[str]:
-    claude = shutil.which("claude")
+    claude = claude_path()
     commands = [["claude", "mcp", "add-json", "--scope", "user", s, json.dumps(claude_entry(settings, s))]
                 for s in settings["servers"]]
     if dry_run or not claude:
@@ -327,9 +333,11 @@ def codex_block(settings: dict) -> str:
     lines = [BEGIN, f"# {TOOL} setup이 다시 쓴다. 이 블록 아래에 루트 키(model = ... 등)를 두지 않는다."]
     for server in settings["servers"]:
         # JSON 문자열은 TOML 기본 문자열로도 유효하다(따옴표·역슬래시 이스케이프가 같다).
+        # The Gateway decides every call, as in the lab's managed config (render.py). Without
+        # this Codex asks per call, and `codex exec` declines them all before they reach it.
         lines += ["", f"[mcp_servers.{server}]", f'url = "{endpoint(settings, server)}"',
                   f"http_headers_helper = {json.dumps(helper_command(), ensure_ascii=False)}",
-                  "startup_timeout_sec = 30", "tool_timeout_sec = 300"]
+                  'default_tools_approval_mode = "approve"', "startup_timeout_sec = 30", "tool_timeout_sec = 300"]
     for app in settings.get("codex_apps_disabled", []):
         lines += ["", "# 관리자가 거부한 ChatGPT 앱(report가 쓴다)", f"[apps.{app}]", "enabled = false"]
     if settings.get("codex_features_disabled"):
@@ -413,7 +421,7 @@ def cmd_setup(args) -> None:
     if not args.dry_run:
         # 이전 setup에만 있던 Claude 서버는 지운다(서버 목록을 줄였을 때).
         stale = set(previous.get("claude_servers", [])) - set(settings.get("claude_servers", []))
-        claude = shutil.which("claude")
+        claude = claude_path()
         for server in sorted(stale):
             if claude:
                 run([claude, "mcp", "remove", "--scope", "user", server])
@@ -480,7 +488,7 @@ def origin(url: str) -> str:
 
 
 def claude_items(settings: dict) -> list[dict] | None:
-    claude = shutil.which("claude")
+    claude = claude_path()
     if not claude:
         return None
     result = run([claude, "mcp", "list"])  # 서버마다 연결을 확인하므로 느리다(run의 한도 120초)
@@ -715,7 +723,7 @@ def cmd_doctor(args) -> None:
             except OSError:
                 pass
     if "claude" in settings.get("harnesses", []):
-        claude = shutil.which("claude")
+        claude = claude_path()
         report(bool(claude), "Claude Code 설치", claude or "https://code.claude.com/docs 의 설치 명령")
         for server in settings.get("claude_servers", []) if claude else []:
             report(claude_exists(claude, server), f"Claude Code 설정 {server}", "claude mcp get " + server)
@@ -739,7 +747,7 @@ def cmd_doctor(args) -> None:
 def cmd_uninstall(args) -> None:
     root = home()
     settings = json.loads((root / "config.json").read_text(encoding="utf-8")) if (root / "config.json").exists() else {}
-    claude = shutil.which("claude")
+    claude = claude_path()
     for server in settings.get("claude_servers", []):
         if claude:
             result = run([claude, "mcp", "remove", "--scope", "user", server])

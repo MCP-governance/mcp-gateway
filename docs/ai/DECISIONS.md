@@ -656,5 +656,9 @@
   아이디를 비운 뒤 1회 소비 자체와 48시간을 확인한다. 자기 승인 403, 연결 거부 1분 1건, 연결 거부가 한도에 들어가지
   않음을 더했다. 깨진 opt-in 실서비스 시험 2개는 `tests/intake_register.py`(신청 → 검토 → 다른 사람의 승인 →
   활성화)를 쓴다. Codex OAuth 설정 키(`mcp_oauth_credentials_store`)를 시험 프로필 생성기에도 반영했다.
+- **PC 키트**(pj1 실측): Codex 서버 항목에 `default_tools_approval_mode = "approve"`가 없어, 실제 PC의 Codex는 MCP
+  호출마다 승인을 묻고 `codex exec`에서는 게이트웨이에 닿기 전에 스스로 거절했다(원장 0건, 답변 "승인 정책에 의해
+  차단"). 랩 관리형 설정(`render.py`)과 같게 판정을 게이트웨이에 맡긴다. `claude`가 PATH에 없으면(공식 설치 위치
+  `~/.local/bin`, SSH·스크립트 같은 비로그인 셸) Claude 등록을 건너뛰던 것을 그 위치까지 찾게 했다.
 - **남은 것**: Codex 테스트보드(`mcpgw-remaster-20261001`)의 미커밋 PAC 통합·단말 집행 작업(49개 파일, 업무 시나리오
   3건 실패)은 검토·통합 전이다. 커밋된 fa70b95만 이 결정의 대상이다.
