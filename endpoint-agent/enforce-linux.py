@@ -145,7 +145,7 @@ def main() -> None:
     parser.add_argument("--gateway-port", type=int, default=443)
     parser.add_argument("--client", action="append", default=[], help="codex=/root-owned/native/binary")
     parser.add_argument("--helper-source", help="root 소유 직원 PC 키트 mcpgw_pc.py")
-    parser.add_argument("--managed-agent", help="root 관리형 단말 서비스의 header 명령")
+    parser.add_argument("--managed-agent", help="root 관리형 엔드포인트 서비스의 header 명령")
     parser.add_argument("--rollback", action="store_true")
     parser.add_argument("--self-check", action="store_true")
     args = parser.parse_args()
@@ -182,7 +182,7 @@ def main() -> None:
     if not args.gateway_ip or not 1 <= args.gateway_port <= 65535:
         parser.error("명시적인 Gateway IP와 포트가 필요합니다")
     if not Path("/sys/module/apparmor/parameters/enabled").read_text().strip().startswith("Y"):
-        parser.error("이 커널에는 AppArmor 집행이 없습니다. 설치 성공으로 처리하지 않습니다")
+        parser.error("이 시스템에서 AppArmor 집행을 사용할 수 없어 설치를 중단합니다")
     if run("pgrep", "-u", str(person.pw_uid), capture_output=True, check=False).returncode == 0:
         parser.error("해당 계정의 기존 프로세스를 먼저 종료하세요. 실행 중인 비관리 세션을 남기지 않습니다")
     binaries = {}

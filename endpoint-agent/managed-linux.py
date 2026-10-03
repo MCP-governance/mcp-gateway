@@ -156,7 +156,7 @@ def install(args):
         if not shutil.which(dependency):
             raise ValueError("관리자가 먼저 설치할 필수 구성요소: " + dependency)
     if not Path("/sys/module/apparmor/parameters/enabled").read_text().startswith("Y"):
-        raise ValueError("커널 AppArmor 집행이 없습니다")
+        raise ValueError("이 시스템에서 AppArmor 집행을 사용할 수 없습니다")
     enforcer = load_module("enforcer", Path(__file__).with_name("enforce-linux.py"))
     binaries = {}
     for name in ("codex", "claude"):
@@ -229,7 +229,7 @@ def serve(args):
             _, uid, _ = struct.unpack("3i", self.request.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12))
             with lock:
                 if uid != config["uid"] or time.monotonic() >= cache.get("until", 0):
-                    answer = {"error": "단말 활성화·정책 연결이 필요합니다"}
+                    answer = {"error": "엔드포인트 활성화·정책 연결이 필요합니다"}
                 else:
                     answer = {"Authorization": "Bearer " + cache["token"]}
             self.request.sendall(json.dumps(answer).encode())
@@ -295,7 +295,7 @@ def header(args):
         connection.connect(args.socket)
         response = json.loads(connection.recv(8192))
     if set(response) != {"Authorization"}:
-        raise ValueError("단말 활성화·정책 연결이 필요합니다")
+        raise ValueError("엔드포인트 활성화·정책 연결이 필요합니다")
     print(json.dumps(response))
 
 
