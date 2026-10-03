@@ -464,6 +464,17 @@ async def devices() -> list[dict]:
 # service; the ordinary user receives only a short-lived, device-bound MCP JWT.
 HEARTBEAT_SECONDS = 180
 MANAGED_CHECKS = {"apparmor_enforcing", "nftables_active", "protected_configs", "ordinary_account"}
+MANAGED_CHECKS_BY_PLATFORM = {"linux": MANAGED_CHECKS,
+                              "windows": {"firewall_enforcing", "protected_configs", "ordinary_account"}}
+
+
+def managed_platform(device: dict) -> str:
+    # Not the platform column: the observer's own enroll report rewrites it ("Windows 10", "Linux 6.8").
+    return "windows" if (device.get("detail") or {}).get("local_sid") else "linux"
+
+
+def managed_checks(device: dict) -> set[str]:
+    return MANAGED_CHECKS_BY_PLATFORM[managed_platform(device)]
 
 
 async def managed_event(endpoint_id: str | None, owner: str, kind: str, detail: dict) -> None:
@@ -482,7 +493,9 @@ async def enrollment_token(owner: str) -> dict:
     return {"enrollment_token": raw, "expires_at": expires.isoformat()}
 
 
-async def consume_enrollment(raw: str, key: str, hostname: str, username: str, uid: int) -> dict:
+async def consume_enrollment(raw: str, key: str, hostname: str, username: str, uid: int | None, *,
+                             platform: str = "linux", local_sid: str | None = None,
+                             helper_command: str | None = None) -> dict:
     endpoint_id = "managed-" + str(uuid.uuid4())
     async with db.transaction() as connection:
         grant = await (await connection.execute(
@@ -494,16 +507,18 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
             raise PermissionError("설치 키트가 만료·소비됐거나 계정이 비활성 상태입니다. 새 키트를 받으세요.")
         await connection.execute(
             """INSERT INTO endpoint_agents(endpoint_id,hostname,platform,agent_version,owner_token,
-                 key_hash,key_prefix,scopes,status,issued_by,issued_at,managed_state,device_epoch,local_username,local_uid)
-               VALUES (%s,%s,'linux','managed-1',%s,%s,%s,%s,'active',%s,now(),'pending',%s,%s,%s)""",
-            (endpoint_id, hostname, grant["owner_token"], _hash_key(key), key[:8],
-             Jsonb(list(DEVICE_SCOPES)), grant["owner_token"], str(uuid.uuid4()), username, uid))
+                 key_hash,key_prefix,scopes,status,issued_by,issued_at,managed_state,device_epoch,local_username,local_uid,detail)
+               VALUES (%s,%s,%s,'managed-1',%s,%s,%s,%s,'active',%s,now(),'pending',%s,%s,%s,%s)""",
+            (endpoint_id, hostname, platform, grant["owner_token"], _hash_key(key), key[:8],
+             Jsonb(list(DEVICE_SCOPES)), grant["owner_token"], str(uuid.uuid4()), username, uid,
+             Jsonb({"local_sid": local_sid, "helper_command": helper_command} if platform == "windows" else {})))
         await connection.execute(
             "UPDATE endpoint_enrollment_tokens SET endpoint_id=%s WHERE token_hash=%s", (endpoint_id, _hash_key(raw)))
         await connection.execute("UPDATE principals SET managed_required=true WHERE token=%s", (grant["owner_token"],))
         await connection.execute(
             "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'enrolled',%s)",
-            (endpoint_id, grant["owner_token"], Jsonb({"local_username": username, "local_uid": uid})))
+            (endpoint_id, grant["owner_token"], Jsonb({"platform": platform, "local_username": username,
+                                                       "local_uid": uid, "local_sid": local_sid})))
     return await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
 
 
@@ -520,26 +535,51 @@ async def managed_policy(device: dict) -> dict:
     rows = await db.fetch_all("SELECT id FROM mcp_servers WHERE status='READY' AND lifecycle='OPERATING' ORDER BY id")
     servers = [r["id"] for r in rows if registry.allowed_principals(r["id"]) is None
                or device["owner_token"] in registry.allowed_principals(r["id"])]
-    helper = f'/usr/local/lib/mcpgw-enforcement/mcpgw-{device["local_username"]}/header-helper'
+    windows = managed_platform(device) == "windows"
+    detail = device.get("detail") or {}
+    helper = (detail.get("helper_command") if windows
+              else f'/usr/local/lib/mcpgw-enforcement/mcpgw-{device["local_username"]}/header-helper')
+    if not helper:
+        raise ValueError("관리형 설치의 헤더 명령이 등록되지 않았습니다.")
     routes = {s: public + "/mcp/" + s + "/" for s in servers}
+    # The managed account reaches nothing but the Gateway host, so the harness reaches its model
+    # through the approved proxy there. MCP traffic to the Gateway itself stays direct (NO_PROXY).
+    proxy_port = int(os.getenv("MODEL_PROXY_PORT") or 0) or None
+    proxy = {}
+    if proxy_port:
+        proxy_url = f"http://{parsed.hostname}:{proxy_port}"
+        proxy = {"HTTPS_PROXY": proxy_url, "HTTP_PROXY": proxy_url, "NO_PROXY": ",".join(sorted({parsed.hostname, *addresses}))}
+    settings = {"allowAllClaudeAiMcps": False, "disableClaudeAiConnectors": True,
+                "allowManagedMcpServersOnly": True, "allowedMcpServers": [{"serverUrl": u} for u in routes.values()],
+                "strictKnownMarketplaces": []}
+    if proxy:
+        settings["env"] = proxy
+    codex_servers = "".join(f'\n[mcp_servers.{s}]\nurl = {json_document(u).strip()}\nhttp_headers_helper = {json_document(helper).strip()}\n'
+                            'default_tools_approval_mode = "approve"\nstartup_timeout_sec = 30\ntool_timeout_sec = 300\n' for s, u in routes.items())
     files = {
         "managed-mcp.json": json_document({"mcpServers": {s: {"type": "http", "url": url,
                     "headersHelper": helper, "timeout": 300000} for s, url in routes.items()}}),
-        "managed-settings.json": json_document({"allowAllClaudeAiMcps": False, "disableClaudeAiConnectors": True,
-                    "allowManagedMcpServersOnly": True, "allowedMcpServers": [{"serverUrl": u} for u in routes.values()],
-                    "strictKnownMarketplaces": []}),
+        "managed-settings.json": json_document(settings),
         "requirements.toml": 'allowed_web_search_modes = ["disabled"]\nallow_browser_and_computer_use = false\n'
                     + "".join(f'\n[mcp_servers.{s}]\nidentity = {{ url = {json_document(u).strip()} }}\n' for s, u in routes.items())
                     + '\n[features]\napps = false\nplugins = false\nbrowser_use = false\ncomputer_use = false\n'
                     + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n',
-        "managed_config.toml": 'mcp_oauth_credentials_store = "file"\nweb_search = "disabled"\n'
-                    + "".join(f'\n[mcp_servers.{s}]\nurl = {json_document(u).strip()}\nhttp_headers_helper = {json_document(helper).strip()}\n'
-                         'default_tools_approval_mode = "approve"\nstartup_timeout_sec = 30\ntool_timeout_sec = 300\n' for s, u in routes.items()),
     }
+    if windows:
+        # Codex on Windows reads no managed_config.toml. requirements.toml admits only these servers;
+        # their definitions go in the account's own config.toml as one marked block.
+        files["codex-config.toml"] = codex_servers
+    else:
+        files["managed_config.toml"] = 'mcp_oauth_credentials_store = "file"\nweb_search = "disabled"\n' + codex_servers
     policy = {"version": 1, "gateway_url": public, "gateway_ips": addresses, "gateway_port": parsed.port or (443 if parsed.scheme == "https" else 80),
               "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), "servers": servers,
               "local_username": device["local_username"], "local_uid": device["local_uid"],
               "heartbeat_seconds": 60, "max_heartbeat_age": HEARTBEAT_SECONDS, "files": files}
+    if proxy_port:
+        policy["proxy_port"] = proxy_port
+        policy["proxy_environment"] = proxy
+    if windows:
+        policy.update(platform="windows", local_sid=detail.get("local_sid"))
     policy["configuration_hashes"] = {k: hashlib.sha256(v.encode()).hexdigest() for k, v in files.items()}
     policy["policy_hash"] = hashlib.sha256(json_document(policy).encode()).hexdigest()
     return policy
@@ -553,7 +593,7 @@ def json_document(value) -> str:
 async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, host: dict | None = None) -> dict:
     policy = await managed_policy(device)
     compliant = (policy_hash == policy["policy_hash"] and hashes == policy["configuration_hashes"]
-                 and set(checks) == MANAGED_CHECKS and all(value is True for value in checks.values()))
+                 and set(checks) == managed_checks(device) and all(value is True for value in checks.values()))
     # The host report is not a compliance input: another account on the device does not
     # quarantine the managed one; it is shown as a bypass path (integrations.device_state).
     # A heartbeat without the report drops the previous one: an old "no other account"
@@ -590,7 +630,7 @@ async def activate_managed(endpoint_id: str, actor: str, expected_hash: str, not
            WHERE endpoint_id=%s AND status='active' AND policy_hash=%s AND policy_hash=%s
              AND heartbeat_at>now()-interval '180 seconds' AND configuration_hashes=%s AND enforcement_checks=%s""",
         (actor, endpoint_id, expected_hash, policy["policy_hash"], Jsonb(policy["configuration_hashes"]),
-         Jsonb({key: True for key in MANAGED_CHECKS})))
+         Jsonb({key: True for key in managed_checks(device)})))
     if not changed:
         raise ValueError("최근 정상 설치 증거가 없거나 검토한 정책이 바뀌었습니다. 장치 설치를 확인하세요.")
     await managed_event(endpoint_id, device["owner_token"], "activated", {"actor": actor, "note": note, "policy_hash": expected_hash})

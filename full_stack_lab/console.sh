@@ -292,8 +292,9 @@ field_up() {
   else
     echo "[field 3/4] 컨테이너 직원 PC 4대는 끔(실제 PC가 대신함) — 같이 보려면 --with-lab-workstations"
   fi
-  echo "[field 4/4] Caddy(Tailscale IP 전용 앞단)"
-  docker compose "${FIELD_COMPOSE[@]}" up -d caddy
+  echo "[field 4/4] Caddy·모델 프록시(Tailscale IP 전용 앞단)"
+  docker compose "${FIELD_COMPOSE[@]}" build -q model-proxy
+  docker compose "${FIELD_COMPOSE[@]}" up -d caddy model-proxy
   echo
   echo "접속 주소       : http://${APPLIANCE_BIND}:443"
   if [[ $with_lab_mcp == 0 ]]; then echo "시험 계정       : root/root(관리자), user/user(직원) · 회원가입은 관리자 승인"; fi

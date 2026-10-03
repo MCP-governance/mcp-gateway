@@ -151,28 +151,41 @@ Tailscale IP가 있어야 하고, 직원·관리자 PC도 같은 tailnet에서 �
 가입 승인·초대 수락 후 **내 PC 연결**에서 개인별 ZIP을 받습니다. 가입자에 묶인 등록 토큰은 30분 동안 한 번만
 사용할 수 있습니다. 단말이 활성화되지 않았으면 로그인 직후 설치 안내가 열립니다. MCP 서버가 없어도 설치할 수 있습니다.
 
-조직 IT가 승인된 설치기와 공식 native Codex·Claude 배포판을 확인하고, **관리 권한 없는 Linux 계정**에 설치합니다.
-systemd·AppArmor·nftables·gcc와 Python 3.10 이상이 필요합니다. Windows 설치는 현재 관측 전용이며 강제 설치로 표시하지 않습니다.
+조직 IT가 승인된 설치기와 공식 하네스 배포판을 확인하고, **관리 권한 없는 계정**에 설치합니다. 같은 키트에 두 설치기가 있습니다.
+
+- Linux: systemd·AppArmor·nftables·gcc와 Python 3.10 이상, native Codex·Claude를 `/opt/mcpgw-approved/`에.
+- Windows 10/11: 모든 사용자용(Program Files) Python 3.10 이상. 대상 계정은 Administrators가 아니고, 한 번 로그인해
+  프로필이 있으며, 설치 때는 로그아웃 상태여야 합니다(D-68).
 
 ```bash
 # Console에서 인증 후 받은 개인별 키트. 조직 IT가 승인 출처를 확인한 뒤 실행합니다.
 unzip mcp-managed-kit.zip -d mcp-managed-kit
-cd mcp-managed-kit
-sudo python3 managed-linux.py install --user 일반사용자계정
+sudo python3 mcp-managed-kit/managed-linux.py install --user 일반사용자계정
 ```
 
-설치기는 root 비밀 경로에 단말 키를 저장하고, 레지스트리에서 만든 시스템 설정 4개·AppArmor·UID 방화벽·root 서비스를
-설치합니다. Console의 **직원·단말 → 단말**에서 다른 관리자가 실제 호스트 집행을 확인한 뒤 활성화해야 MCP 인증이 열립니다.
-root 서비스만 장기 단말 키를 보유합니다. 하네스 헬퍼는 UID가 일치하는 Unix 소켓에서 5분짜리 단말·정책 결합 JWT만 받습니다.
+```powershell
+# 관리자 권한 PowerShell
+Expand-Archive mcp-managed-kit.zip mcp-managed-kit
+py -3 mcp-managed-kit\managed-windows.py install --user 일반사용자계정
+```
+
+Linux 설치기는 root 비밀 경로에 단말 키를 저장하고, 레지스트리에서 만든 시스템 설정 4개·AppArmor·UID 방화벽·root 서비스를
+설치합니다. Windows 설치기는 `%ProgramData%` 관리자 전용 경로에 단말 키를 두고, 관리형 하네스 설정(Claude Code
+`C:\Program Files\ClaudeCode\`, Codex `%ProgramData%\OpenAI\Codex\requirements.toml`과 계정 `config.toml`의 표식 블록)·
+계정 SID 범위의 Windows 방화벽 차단 규칙·SYSTEM 예약 작업을 설치합니다. Console의 **직원·단말 → 단말**에서 다른 관리자가 실제 호스트 집행을 확인한 뒤 활성화해야 MCP 인증이 열립니다.
+root·SYSTEM 서비스만 장기 단말 키를 보유합니다. 하네스 헬퍼는 UID가 일치하는 Unix 소켓(Windows는 계정 SID만 열 수 있는
+명명 파이프)에서 5분짜리 단말·정책 결합 JWT만 받습니다.
 사용자 비밀번호 grant와 기존 refresh grant로 관리형 조건을 우회할 수 없습니다.
 
 정책 확인은 60초마다 합니다. 180초 동안 보고가 없거나 설정·OS 집행이 불일치하거나 단말 자격이 폐기되면,
 아직 만료되지 않은 JWT도 MCP 진입과 도구 실행 직전에 거부합니다. 정상 보고만으로 격리를 풀지 않습니다.
 설치·연결 거부와 실제 커널 차단은 직원·단말의 별도 이력에, 실제 도구 실행 판정은 활동 로그에 기록합니다.
 
-이 프로필은 UID의 Gateway 외 IP 통신을 모두 막습니다. PJ1 검증은 **모델 턴 없이 실제 하네스의 MCP 호출**로 수행했습니다.
-일반 LLM 작업에는 승인된 사내 모델 프록시 경로가 추가로 필요합니다. Linux SSH 일반 계정 집행, 관리자 재설치·제거 절차와
-실측 증거는 [Endpoint Agent](endpoint-agent/README.md), 설계 결정은 [D-61](docs/ai/DECISIONS.md#d-61-가입을-관리형-단말-연결의-시작점으로-2026-10-01)을 봅니다.
+이 프로필은 관리 계정의 바깥 통신을 솔루션 기기의 게이트웨이 포트와 모델 프록시 포트(기본 3128)로만 묶습니다.
+하네스는 `HTTPS_PROXY`로 프록시에 접속하고, 프록시는 `full_stack_lab/model-proxy/model-domains.txt`의 모델 도메인에 대한
+TLS 터널만 허용합니다(D-67). MCP 호출은 `NO_PROXY`로 게이트웨이에 직접 갑니다. 하네스의 모델 로그인(`codex login`·
+`claude` 로그인)은 관리 계정에서 직원이 한 번 합니다. 재설치·제거 절차와 실측 증거는 [Endpoint Agent](endpoint-agent/README.md),
+설계 결정은 [D-61](docs/ai/DECISIONS.md#d-61-가입을-관리형-단말-연결의-시작점으로-2026-10-01)·D-67·D-68을 봅니다.
 
 `field/pc/mcpgw_pc.py`의 비관리 setup은 기존 랩·관측용으로 남습니다. field 일반 계정의 실행 인증을 발급하지 않습니다.
 
@@ -185,11 +198,11 @@ Console **통제 범위**와 `GET /api/integrations`는 MCP·커넥터·플러�
 | 상태 | 뜻 | 근거 |
 | --- | --- | --- |
 | Gateway 강제 | 이 경로의 호출은 Gateway가 실행 전에 판정 | 원장 행·실행 시각 |
-| Endpoint 강제 | 관리 계정의 실행·egress를 커널이 제한 | 180초 안의 heartbeat, AppArmor·UID nft·보호 설정 일치 |
+| Endpoint 강제 | 관리 계정의 실행·egress를 OS가 제한 | 180초 안의 heartbeat, AppArmor·UID nft(Windows는 SID 방화벽 규칙)·보호 설정 일치 |
 | Vendor 강제(수기 확인) | 벤더 관리 콘솔에서 차단 | 관리자가 기록한 콘솔 상태·scope·역할 |
 | 관찰만 | 보고는 있으나 막는 주체 없음 | 키트·관측 에이전트 보고 |
 | 미등록·알 수 없음 | 관리형 단말 없음 | 가입자 단말 등록 부재 |
-| 우회 가능 | 직접 경로가 열려 있음 | 같은 단말의 다른 계정(관리자 그룹 포함)·WSL·Windows·비관리 단말 |
+| 우회 가능 | 직접 경로가 열려 있음 | 같은 단말의 다른 계정(관리자 그룹 포함)·WSL·관리형 설치 없는 Windows·비관리 단말 |
 
 섀도 MCP **발견**은 차단이 아닙니다. 관리 단말에서 커널 규칙이 확인될 때만 Endpoint 강제로 표시합니다.
 활동 로그의 각 호출은 출처·Gateway 통과·강제 주체·upstream 시도/실행·응답 처리(반환·마스킹·실행 후 보류)·

@@ -332,8 +332,9 @@ async def pc_kit() -> dict | None:
     rows = await db.fetch_all(
         "SELECT id FROM mcp_servers WHERE status='READY' AND COALESCE(lifecycle,'OPERATING')='OPERATING' ORDER BY id")
     servers = ",".join(row["id"] for row in rows)
-    return {"url": "/api/pc-kit", "servers": servers, "mode": "managed-linux",
-            "command": "unzip mcp-managed-kit.zip -d mcp-managed-kit\ncd mcp-managed-kit\nsudo python3 managed-linux.py install --user 일반사용자계정"}
+    return {"url": "/api/pc-kit", "servers": servers, "commands": {
+        "linux": "unzip mcp-managed-kit.zip -d mcp-managed-kit\nsudo python3 mcp-managed-kit/managed-linux.py install --user 일반사용자계정",
+        "windows": "Expand-Archive mcp-managed-kit.zip mcp-managed-kit\npy -3 mcp-managed-kit\\managed-windows.py install --user 일반사용자계정"}}
 
 
 @app.post("/api/pc-kit")
@@ -341,7 +342,7 @@ async def download_managed_kit(authorization: str | None = Header(default=None))
     from .endpoint_plane import enrollment_token
     user = await current_identity(authorization)
     source = Path(os.getenv("ENDPOINT_KIT_DIR", "/endpoint-kit"))
-    names = ("managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py")
+    names = ("managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py", "managed-windows.py")
     if any(not (source / name).is_file() for name in names):
         raise HTTPException(503, "관리형 설치 키트가 배포되지 않았습니다.")
     public = os.getenv("IDP_ISSUER", "").rstrip("/")

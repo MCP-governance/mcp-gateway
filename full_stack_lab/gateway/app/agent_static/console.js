@@ -1764,11 +1764,15 @@ const ACTIONS = {
   "pc-kit"() {
     // The kit points the harnesses at the gateway; no password is stored on the PC.
     const kit = viewer.kit;
-    lastDocument = kit.command;
     openDrawer("내 PC 연결", html`<div class="row-actions">${chip(kit.servers ? "allow" : "outline", kit.servers ? `MCP 서버 ${kit.servers.split(",").length}개` : "사용 가능한 서버 없음")}
-        <button class="btn sm primary" type="button" data-act="pc-kit-download">설치 키트 받기</button>
-        ${kit.command ? html`<button class="btn sm" type="button" data-act="copy-doc">명령 복사</button>` : ""}</div>
-      ${kit.command ? html`<pre class="json">${kit.command}</pre>` : ""}`);
+        <button class="btn sm primary" type="button" data-act="pc-kit-download">설치 키트 받기</button></div>
+      ${[["windows", "Windows"], ["linux", "Linux"]].filter(([os]) => kit.commands?.[os]).map(([os, label]) => html`
+        <h4>${label} <button class="btn sm" type="button" data-act="copy-kit" data-os="${os}">명령 복사</button></h4>
+        <pre class="json">${kit.commands[os]}</pre>`)}`);
+  },
+  async "copy-kit"(el) {
+    await navigator.clipboard.writeText(viewer.kit.commands[el.dataset.os]);
+    toast("복사했습니다.");
   },
   async "pc-kit-download"() {
     const response = await fetch("/api/pc-kit", { method: "POST", headers: { authorization: `Bearer ${token}` } });

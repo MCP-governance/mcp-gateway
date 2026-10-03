@@ -4,8 +4,8 @@
 # 로 얹을 때만 적용된다. 기본 `./console.sh up`은 이 파일을 읽지 않는다. CI는 `verify` 끝에서
 # 이 오버레이를 얹어 README의 실기기 절차를 그대로 돌린다(D-42).
 #
-# 게시하는 것은 Caddy 하나뿐이다. `console.sh field`가 Tailscale IP를 찾아
-# APPLIANCE_BIND로 넘긴다. HTTP는 tailnet의 암호화된 경로에만 바인딩한다(D-46).
+# 게시하는 것은 Caddy와 모델 프록시뿐이다. `console.sh field`가 Tailscale IP를 찾아
+# APPLIANCE_BIND로 넘긴다. 둘 다 tailnet의 암호화된 경로에만 바인딩한다(D-46·D-67).
 
 services:
   db:
@@ -46,6 +46,19 @@ services:
         ipv4_address: ${MCP_NET_PREFIX:-10.245}.1.250
     security_opt: ["no-new-privileges:true"]
 
+  # 관리형 엔드포인트 계정의 모델 API 경로(D-67). 엔드포인트 방화벽은 이 호스트의 게이트웨이·프록시 포트만 열어 두고,
+  # 프록시는 model-domains.txt의 도메인에 대한 TLS 터널만 허용한다. Caddy처럼 Tailscale IP에만 게시한다.
+  model-proxy:
+    build: ./model-proxy
+    image: mcpgw/model-proxy:1.0
+    restart: unless-stopped
+    ports:
+      - "${APPLIANCE_BIND:?./console.sh field up을 사용하세요}:${MODEL_PROXY_PORT:-3128}:3128"
+    networks: [edge]
+    read_only: true
+    tmpfs: [/var/run/squid, /var/cache/squid, /var/log/squid, /tmp]
+    security_opt: ["no-new-privileges:true"]
+
   # 사내망에서는 Gateway·IdP가 하네스에 알려 주는 절대 URL(RFC 9728 resource_metadata,
   # RFC 8414 authorization_servers, Console 리다이렉트)도 실제 호스트 이름이어야 한다.
   gateway:
@@ -53,6 +66,7 @@ services:
       MCP_FIELD_MODE: ${FIELD_ACCOUNTS_MODE:-1}
       ENDPOINT_TAILSCALE_NODE_ID: ${ENDPOINT_TAILSCALE_NODE_ID:-}
       ENDPOINT_GATEWAY_IPS: ${ENDPOINT_GATEWAY_IPS:-${APPLIANCE_BIND}}
+      MODEL_PROXY_PORT: ${MODEL_PROXY_PORT:-3128}
       REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
       GATEWAY_PUBLIC_MCP_URL: http://${APPLIANCE_BIND}:443/mcp/
       GATEWAY_PUBLIC_URL: http://${APPLIANCE_BIND}:443
@@ -71,6 +85,7 @@ services:
       GATEWAY_PUBLIC_URL: http://${APPLIANCE_BIND}:443
       ENDPOINT_TAILSCALE_NODE_ID: ${ENDPOINT_TAILSCALE_NODE_ID:-}
       ENDPOINT_GATEWAY_IPS: ${ENDPOINT_GATEWAY_IPS:-${APPLIANCE_BIND}}
+      MODEL_PROXY_PORT: ${MODEL_PROXY_PORT:-3128}
       REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
     volumes:
       - ./registry/field:/registry-field:ro
@@ -87,6 +102,7 @@ services:
       REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
       ENDPOINT_TAILSCALE_NODE_ID: ${ENDPOINT_TAILSCALE_NODE_ID:-}
       ENDPOINT_GATEWAY_IPS: ${ENDPOINT_GATEWAY_IPS:-${APPLIANCE_BIND}}
+      MODEL_PROXY_PORT: ${MODEL_PROXY_PORT:-3128}
       IDP_ISSUER: http://${APPLIANCE_BIND}:443
       MCP_FIELD_MODE: ${FIELD_ACCOUNTS_MODE:-1}
       GITEA_ADMIN_URL: http://corp-git:3000

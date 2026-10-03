@@ -30,7 +30,7 @@ from psycopg.types.json import Jsonb
 from . import classify, db, registry
 from .agent_contract import StrictModel, authenticated_user
 from .connectors import REVIEW_DAYS, require_admin, state_of
-from .endpoint_plane import HEARTBEAT_SECONDS, MANAGED_CHECKS
+from .endpoint_plane import HEARTBEAT_SECONDS, managed_checks, managed_platform
 
 router = APIRouter()
 PLATFORM_LABEL = {"wsl": "WSL", "windows": "Windows", "linux": "Linux", "other": "이 플랫폼"}
@@ -77,17 +77,19 @@ def device_state(device: dict, now: datetime) -> dict:
         bypass.append(f"{account['name']}({','.join(groups)}) 관리 불가" if groups else f"{account['name']} 비관리 계정")
     if device.get("device_epoch") and host is None:
         bypass.append("같은 엔드포인트의 다른 계정 보고 없음")
-    if platform in {"windows", "wsl"}:
+    # A Windows device under the managed installer is enforced like Linux; WSL and unmanaged Windows are not.
+    managed_windows = platform == "windows" and device.get("device_epoch") and managed_platform(device) == "windows"
+    if platform in {"windows", "wsl"} and not managed_windows:
         bypass.append(f"{PLATFORM_LABEL[platform]} 엔드포인트 통제 미지원")
     if device.get("status") != "active":
         bypass = []  # a revoked device is no path at all; it is listed only as history
     managed = device.get("managed_state")
     if device.get("status") != "active":
         state, evidence = "unknown_not_enrolled", "등록 해제됨"
-    elif platform != "linux":
+    elif platform != "linux" and not managed_windows:
         state, evidence = "observed_only", f"{PLATFORM_LABEL[platform]} 엔드포인트 통제 미지원"
     elif (managed == "active" and age is not None and age < HEARTBEAT_SECONDS
-          and set(checks) == MANAGED_CHECKS and all(v is True for v in checks.values())):
+          and set(checks) == managed_checks(device) and all(v is True for v in checks.values())):
         state, evidence = "endpoint_enforced", f"엔드포인트 점검 정상 · {int(age)}초 전"
     elif managed in {"active", "quarantined"}:
         state = "bypass_possible"
@@ -282,6 +284,7 @@ if __name__ == "__main__":
     from datetime import timedelta
     now = datetime.now(UTC)
     fresh = now.isoformat(timespec="seconds")
+    from .endpoint_plane import MANAGED_CHECKS, MANAGED_CHECKS_BY_PLATFORM
     checks = {key: True for key in MANAGED_CHECKS}
     base = {"endpoint_id": "d1", "status": "active", "managed_state": "active", "platform": "Linux 7.0", "device_epoch": "e",
             "heartbeat_at": now, "enforcement_checks": checks, "owner_token": "user", "local_username": "managed"}
@@ -300,6 +303,10 @@ if __name__ == "__main__":
     assert device_state({**base, "heartbeat_at": now - timedelta(seconds=HEARTBEAT_SECONDS), "detail": host([])}, now)["account_state"] == "bypass_possible"
     assert device_state({**base, "enforcement_checks": {**checks, "nftables_active": False}, "detail": host([])}, now)["account_state"] == "bypass_possible"
     assert device_state({**base, "managed_state": "pending", "detail": host([])}, now)["state"] == "observed_only"
+    win = {**base, "platform": "Windows 11", "enforcement_checks": {key: True for key in MANAGED_CHECKS_BY_PLATFORM["windows"]}}
+    managed_win = device_state({**win, "detail": {"local_sid": "S-1-5-21-1-2-3-1001", **host([])}}, now)
+    assert managed_win["state"] == "endpoint_enforced", managed_win
+    assert device_state({**win, "detail": host([])}, now)["account_state"] == "observed_only"  # observed only, no managed install
     revoked = device_state({**base, "status": "revoked", "detail": {}}, now)
     assert revoked["state"] == "unknown_not_enrolled" and revoked["bypass"] == [], revoked
     assert endpoint_item_state(None, True)[0] == "observed_only" and endpoint_item_state(None, False)[0] == "bypass_possible"

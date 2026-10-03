@@ -1,5 +1,5 @@
 # Tailscale IP 전용 HTTP 앞단 — 실기기 배치 전용(루트 README "실제 기기로 배치하기", D-46). 게시하는 것은
-# 이 Caddy 하나뿐이다. 나머지 서비스는 여전히 loopback에만 있거나(Console·Gateway, 기존 compose.yaml 그대로)
+# 이 Caddy와 모델 프록시(D-67)뿐이다. 나머지 서비스는 여전히 loopback에만 있거나(Console·Gateway, 기존 compose.yaml 그대로)
 # 아예 게시되지 않는다(MCP 서버 10종, LLM 게이트웨이). 경로로만 나눈다:
 #
 #   /mcp/<server>/                        Gateway의 서버별 MCP 엔드포인트

@@ -193,7 +193,8 @@ def install(args):
     policy = request(config, "/api/endpoint/managed-policy")
     if policy["tailscale_node_id"] != config["tailscale_node_id"]:
         raise ValueError("설치 키트와 정책의 Gateway 노드가 다릅니다")
-    config.update(gateway_ips=policy["gateway_ips"], gateway_port=policy["gateway_port"], policy_hash=policy["policy_hash"])
+    config.update(gateway_ips=policy["gateway_ips"], gateway_port=policy["gateway_port"], policy_hash=policy["policy_hash"],
+                  proxy_port=policy.get("proxy_port"))
     private_write(config_path, json.dumps(config))
     for target in FILES.values():
         if target.exists():
@@ -201,6 +202,8 @@ def install(args):
     apply_policy(policy)
     subprocess.run([sys.executable, str(PROGRAMS / "enforce-linux.py"), "--user", args.user,
                     "--gateway-port", str(policy["gateway_port"]),
+                    *(["--proxy-port", str(policy["proxy_port"]), "--proxy-env", json.dumps(policy["proxy_environment"])]
+                      if policy.get("proxy_port") else []),
                     *[part for ip in policy["gateway_ips"] for part in ("--gateway-ip", ip)],
                     *[part for name, binary in binaries.items() for part in ("--client", name + "=" + binary)],
                     "--managed-agent", str(PROGRAMS / "managed-linux.py")], check=True)
@@ -250,7 +253,9 @@ def serve(args):
             verify_transport(config)
             policy = request(config, "/api/endpoint/managed-policy")
             if (policy["gateway_ips"] != config["gateway_ips"] or policy["gateway_port"] != config["gateway_port"]
-                    or policy["tailscale_node_id"] != config["tailscale_node_id"] or policy["gateway_url"] != config["gateway_url"]):
+                    or policy["tailscale_node_id"] != config["tailscale_node_id"] or policy["gateway_url"] != config["gateway_url"]
+                    # Installs older than the model proxy carry no proxy_port; they keep working without it.
+                    or ("proxy_port" in config and policy.get("proxy_port") != config["proxy_port"])):
                 raise ValueError("Gateway 네트워크 변경은 조직 관리자의 재설치가 필요합니다")
             if previous != policy["policy_hash"]:
                 apply_policy(policy)
@@ -270,9 +275,8 @@ def serve(args):
                     raise
                 beat.pop("host")  # a Gateway older than D-62 rejects the extra field
                 report = request(config, "/api/endpoint/heartbeat", beat)
-            for name, extra in (("agent.py", ["--once"]), ("os-observer.py", ["--uid", str(config["uid"]), "--profile", "mcpgw-" + config["username"]])):
-                subprocess.run([sys.executable, "-I", "-S", str(PROGRAMS / name), "--config", str(observer_config), *extra],
-                               check=True, timeout=40, stdout=subprocess.DEVNULL)
+            # The token comes first: the observers below can take up to 80 seconds, and a token
+            # fetched after them would lapse before the next round.
             if report["state"] == "active" and report["compliant"]:
                 token = request(config, "/oauth/device-token", {})
                 with lock:
@@ -280,7 +284,18 @@ def serve(args):
             else:
                 with lock:
                     cache.clear()
-            print(json.dumps({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health}), flush=True)
+            observers = {}
+            for name, extra in (("agent.py", ["--once"]), ("os-observer.py", ["--uid", str(config["uid"]), "--profile", "mcpgw-" + config["username"]])):
+                # Inventory and kernel-event reports are observations; one failing must not cut the
+                # enforced account off from the Gateway.
+                try:
+                    subprocess.run([sys.executable, "-I", "-S", str(PROGRAMS / name), "--config", str(observer_config), *extra],
+                                   check=True, timeout=40, stdout=subprocess.DEVNULL)
+                    observers[name] = "ok"
+                except (OSError, subprocess.SubprocessError) as exc:
+                    observers[name] = type(exc).__name__
+            print(json.dumps({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health,
+                              "observers": observers}), flush=True)
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
             with lock:
                 cache.clear()
@@ -304,7 +319,7 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     setup = commands.add_parser("install")
     setup.add_argument("--user", required=True)
-    setup.add_argument("--enrollment", type=Path, default=Path("enrollment.json"))
+    setup.add_argument("--enrollment", type=Path, default=Path(__file__).with_name("enrollment.json"))
     setup.add_argument("--client", action="append", default=[])
     setup.set_defaults(run=install)
     service = commands.add_parser("serve")

@@ -817,3 +817,32 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **A.I.G**: mcp-scan은 LLM이 필수라 기기의 소형 로컬 모델로는 의미 있는 결과를 내지 못했다. 화면·API·워커 작업·이상행위 자동
   예약·기기 로컬 모델 준비를 지운다. 과거 mcp-scan 보고는 공급망 차단 계산에서 제외하고 표는 남긴다(파괴적 이전 없음).
 - **검증**: OPA 86/86(예외·부서 시험 17건은 기능과 함께 삭제), node·pyflakes 정적 검사. 기능 확인은 솔루션 기기 배포 뒤 PJ1.
+
+## D-67 관리형 계정의 모델 API는 솔루션 기기의 승인 프록시로만 연다 (2026-10-03)
+
+- **문제**: 관리형 계정의 UID 방화벽은 게이트웨이 IP·포트만 열어 PJ1의 Codex가 `wss://api.openai.com`에서 Permission denied로
+  멈췄다. MCP 단계까지 가지 못해 관리형 설치로는 하네스를 쓸 수 없었다.
+- **결정**: 기기에 Squid(`full_stack_lab/model-proxy`, alpine 패키지)를 Caddy처럼 Tailscale IP에만 게시한다(기본 3128).
+  CONNECT·443·`model-domains.txt`의 도메인만 허용하고 캐시·평문 전달은 하지 않는다. 관리형 정책은 `proxy_port`와
+  `HTTPS_PROXY`·`HTTP_PROXY`·`NO_PROXY`(게이트웨이 주소)를 내려 준다. Linux는 nft가 두 포트만 열고 실행기 래퍼가 환경 변수를
+  고정한다. Claude Code는 `managed-settings.json`의 `env`로도 받는다. Codex의 모델 웹소켓이 `HTTPS_PROXY`를 따르는 것을
+  확인했다(Windows 0.153.4, 존재하지 않는 프록시로 연결 거부).
+- **호환**: 정책 해시는 gateway·gateway-sse·agent-service가 각자 계산하므로 `MODEL_PROXY_PORT`를 세 서비스에 같은 값으로 둔다.
+  프록시 이전 설치(설정에 `proxy_port` 없음)는 재설치 요구 없이 동작하되 모델에 닿지 않는다.
+- **불변식 변경**: 실기기 게시는 Caddy와 모델 프록시 두 개다. 둘 다 Tailscale IP에만 바인딩한다.
+- **함께 고친 것**: 관측 보고(`agent.py --once`·`os-observer.py`)가 실패하면 토큰 캐시를 비워 MCP 인증이 끊기던 순서를
+  바꿨다(토큰 먼저, 관측 실패는 기록만). `os-observer.py`의 `datetime.UTC`(3.11+)를 3.10 호환으로.
+
+## D-68 Windows 관리형 설치기 (2026-10-03)
+
+- **문제**: field는 관리자가 아닌 계정을 모두 관리형 필수로 두는데 관리형 키트는 Linux뿐이라 Windows 직원은 연결할 방법이 없었다.
+- **결정**: `endpoint-agent/managed-windows.py`. 관리자 권한으로 한 계정을 등록하고(`platform=windows`, 계정 SID, 헤더 명령),
+  SYSTEM 예약 작업이 단말 키를 보유한다. Linux의 AppArmor+UID nft 대신 계정 SID(`LocalUser`) 범위의 방화벽 차단 규칙
+  3개로 게이트웨이 호스트의 게이트웨이·프록시 포트 밖 통신을 막는다(차단 규칙은 허용 규칙보다 우선, 프로그램 경로 무관).
+  헤더는 그 SID에만 읽기를 허용하는 명명 파이프로 전달한다. 점검은 `firewall_enforcing`·`protected_configs`·`ordinary_account`.
+- **Codex**: Windows Codex는 `managed_config.toml`을 지원하지 않는다(바이너리 문구로 확인). `requirements.toml`이 서버 신원을
+  강제하고, 서버 정의는 계정 `config.toml`의 표식 블록(정책 파일 `codex-config.toml`)에 두어 해시로 점검한다.
+- **판별**: 관리형 플랫폼은 등록 때 저장한 SID로 정한다. `platform` 열은 관측 에이전트의 enroll 보고가 덮어쓴다.
+- **검증**: 이 노트북에서 관리자 권한 없이 가능한 범위 — 파이프 전달·거부, 계정·ACL·방화벽 조회, Claude Code·Codex가
+  공백 있는 따옴표 경로의 헬퍼를 인자 그대로 실행함. 방화벽·예약 작업·관리형 파일 설치는 Windows 시험 PC에서 확인한다.
+- **한계**: loopback은 Windows 방화벽 대상이 아니다. 도메인 그룹을 거친 관리자 구성원은 점검하지 않는다. WFP 차단 이벤트는 미수집.

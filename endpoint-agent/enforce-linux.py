@@ -37,12 +37,13 @@ def trusted_binary(raw: str) -> Path:
     return path
 
 
-def nft_rules(uid: int, addresses: list[str], port: int) -> str:
+def nft_rules(uid: int, addresses: list[str], port: int, proxy_port: int | None = None) -> str:
     rules = []
+    ports = f"{{ {port}, {proxy_port} }}" if proxy_port else str(port)
     for address in addresses:
         ip = ipaddress.ip_address(address)
         family = "ip6" if ip.version == 6 else "ip"
-        rules.append(f"meta skuid {uid} {family} daddr {ip} tcp dport {port} accept")
+        rules.append(f"meta skuid {uid} {family} daddr {ip} tcp dport {ports} accept")
     return (f"destroy table inet mcpgw_uid_{uid}\ntable inet mcpgw_uid_{uid} {{\n chain output {{\n"
             "type filter hook output priority -10; policy accept;\n" + "\n".join(rules) +
             f'\nmeta skuid {uid} limit rate 10/second burst 20 packets log prefix "MCPGW_DENY uid={uid} "\n'
@@ -110,12 +111,15 @@ profile {name}-{key} {{
 
 
 def wrapper(path: Path, executable: Path, home: str, username: str, login: bool = False,
-            fixed: list[str] | None = None) -> None:
+            fixed: list[str] | None = None, environment: dict[str, str] | None = None) -> None:
     # Native wrapper avoids a shebang/interpreter attachment ambiguity and removes
     # runtime variables such as BUN_BE_BUN, LD_PRELOAD and alternate config roots.
     arguments = ("char *args[] = {" + ",".join(json.dumps(x) for x in [str(executable), *fixed]) + ",NULL};"
                  if fixed is not None else "char **args = calloc(argc + 1, sizeof(char *)); if (!args) return 125;")
     forward = "" if fixed is not None else "for (int i=1; i<argc; i++) args[i]=argv[i];"
+    # Tools read either case of the proxy variables; set both.
+    extra = "".join(f"setenv({json.dumps(name)}, {json.dumps(value)}, 1); "
+                    for key, value in (environment or {}).items() for name in (key, key.lower()))
     source = f"""
 #include <stdlib.h>
 #include <string.h>
@@ -126,6 +130,7 @@ int main(int argc, char **argv) {{
   setenv("PATH", "{path.parent}:/usr/bin:/bin", 1);
   setenv("HOME", "{home}", 1); setenv("USER", "{username}", 1);
   setenv("LANG", "C.UTF-8", 1); setenv("TERM", "xterm-256color", 1);
+  {extra}
   args[0] = {json.dumps('-bash' if login else str(executable))};
   {forward}
   execv("{executable}", args); return 126;
@@ -143,6 +148,8 @@ def main() -> None:
     parser.add_argument("--user", required=True)
     parser.add_argument("--gateway-ip", action="append", default=[])
     parser.add_argument("--gateway-port", type=int, default=443)
+    parser.add_argument("--proxy-port", type=int, help="게이트웨이 호스트의 승인 모델 프록시 포트")
+    parser.add_argument("--proxy-env", default="{}", help="하네스에 넣을 프록시 환경 변수(JSON)")
     parser.add_argument("--client", action="append", default=[], help="codex=/root-owned/native/binary")
     parser.add_argument("--helper-source", help="root 소유 직원 PC 키트 mcpgw_pc.py")
     parser.add_argument("--managed-agent", help="root 관리형 엔드포인트 서비스의 header 명령")
@@ -154,6 +161,7 @@ def main() -> None:
         assert "tcp dport 443 accept" in text and "ip6 daddr" in text
         assert "udp" not in text and "sport 22" not in text
         assert "meta skuid 1234 counter reject" in text
+        assert "tcp dport { 443, 3128 } accept" in nft_rules(1234, ["100.83.175.111"], 443, 3128)
         print("enforcement rule self-check OK")
         return
     if os.geteuid() != 0 or not re.fullmatch(r"[a-z_][a-z0-9_-]{0,30}", args.user):
@@ -181,6 +189,12 @@ def main() -> None:
         parser.error("검토된 /home 일반 계정만 지원합니다")
     if not args.gateway_ip or not 1 <= args.gateway_port <= 65535:
         parser.error("명시적인 Gateway IP와 포트가 필요합니다")
+    if args.proxy_port is not None and not 1 <= args.proxy_port <= 65535:
+        parser.error("프록시 포트가 올바르지 않습니다")
+    proxy_env = json.loads(args.proxy_env)
+    if not isinstance(proxy_env, dict) or set(proxy_env) - {"HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY"} or not all(
+            isinstance(v, str) and re.fullmatch(r"[A-Za-z0-9.:/,\[\]_-]{1,300}", v) for v in proxy_env.values()):
+        parser.error("프록시 환경 변수가 올바르지 않습니다")
     if not Path("/sys/module/apparmor/parameters/enabled").read_text().strip().startswith("Y"):
         parser.error("이 시스템에서 AppArmor 집행을 사용할 수 없어 설치를 중단합니다")
     if run("pgrep", "-u", str(person.pw_uid), capture_output=True, check=False).returncode == 0:
@@ -203,7 +217,7 @@ def main() -> None:
     shell = folder / "login-shell"
     wrapper(shell, Path("/bin/bash"), person.pw_dir, args.user, login=True)
     for key, binary in binaries.items():
-        wrapper(folder / key, binary, person.pw_dir, args.user)
+        wrapper(folder / key, binary, person.pw_dir, args.user, environment=proxy_env)
     if args.helper_source:
         source = trusted_binary(args.helper_source)
         helper = folder / "mcpgw_pc.py"
@@ -216,7 +230,7 @@ def main() -> None:
         wrapper(folder / "header-helper", Path("/usr/bin/python3").resolve(), person.pw_dir, args.user,
                 fixed=["-I", "-S", str(source), "header", "--socket", f"/run/{name}.sock"])
     rules = folder / "egress.nft"
-    rules.write_text(nft_rules(person.pw_uid, args.gateway_ip, args.gateway_port))
+    rules.write_text(nft_rules(person.pw_uid, args.gateway_ip, args.gateway_port, args.proxy_port))
     run("nft", "-c", "-f", str(rules))
     policy.write_text(profile(name, shell, person.pw_dir, binaries, bool(args.helper_source or args.managed_agent), bool(args.managed_agent)))
     run("apparmor_parser", "-r", str(policy))
@@ -231,7 +245,7 @@ def main() -> None:
     run("systemctl", "start", unit)
     run("usermod", "--shell", str(shell), args.user)
     print(json.dumps({"user": args.user, "uid": person.pw_uid, "profile": name,
-                      "gateway_ips": args.gateway_ip, "port": args.gateway_port,
+                      "gateway_ips": args.gateway_ip, "port": args.gateway_port, "proxy_port": args.proxy_port,
                       "ordinary_account_only": True, "rollback": f"sudo python3 {__file__} --user {args.user} --rollback"}))
 
 
