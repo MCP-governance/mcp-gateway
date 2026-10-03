@@ -81,9 +81,10 @@ Gateway가 먼저 이 필드를 받도록 배포된 뒤에 에이전트를 갱�
 
 - Console 단말 표의 상태·정책 확인 시각과 **OS 차단 / 설치·연결 이력**을 확인합니다. MCP 도구 실행 기록과 섞지 않습니다.
 - 설치 실패나 이미 설치된 장치는 새 등록 토큰을 재사용하지 않습니다. 먼저 기존 단말 자격을 폐기하고 IT가 아래 절차로 제거한 뒤 새 키트를 받습니다.
-- 관리형 제거: 서버에서 **자격 폐기** → 해당 계정 세션 종료 → root 서비스 disable/stop →
-  `sudo python3 /usr/local/lib/mcpgw-managed/enforce-linux.py --user <계정> --rollback`.
-  root가 원래 설정의 private `.backup`을 확인해 복구하고 해당 계정의 `/var/lib/mcpgw-managed/<계정>`을 제거합니다.
+- 관리형 제거: 서버에서 **자격 폐기** → 해당 계정 세션 종료 →
+  `sudo python3 mcp-managed-kit/managed-linux.py rollback --user <계정>`(새 키트의 설치기).
+  서비스를 멈추고 로그인 셸·AppArmor·UID 방화벽을 원복한 뒤, 원래 설정의 private `.backup`을 복구하고(없으면 관리형 파일 삭제)
+  해당 계정의 `/var/lib/mcpgw-managed/<계정>`을 제거합니다. 그 뒤 같은 키트로 재설치할 수 있습니다.
   공용 프로그램과 다른 계정의 방화벽·장치 자격은 제거하지 않습니다.
 - PJ1 재검증: root가 Console 직원·독립 관리자 신원을 stdin으로 제공하고
   `python3 full_stack_lab/tests/managed_kernel_proof.py --config /var/lib/mcpgw-managed/<계정>/config.json` 실행.

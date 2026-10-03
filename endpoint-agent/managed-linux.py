@@ -304,6 +304,32 @@ def serve(args):
         time.sleep(60)
 
 
+def rollback(args):
+    """Run after the device credential is revoked in the Console and the account is signed out.
+    enforce-linux.py --rollback alone left the service, the /etc files and the device secret behind,
+    and a reinstall then refused the device as already installed."""
+    if os.geteuid() != 0:
+        raise ValueError("root로 실행하세요")
+    pwd.getpwnam(args.user)
+    folder = STATE / args.user
+    unit = f"mcpgw-managed-{args.user}.service"
+    subprocess.run(["systemctl", "disable", "--now", unit], check=False)
+    Path("/etc/systemd/system", unit).unlink(missing_ok=True)
+    subprocess.run(["systemctl", "daemon-reload"], check=True)
+    if (Path("/usr/local/lib/mcpgw-enforcement") / f"mcpgw-{args.user}" / "state.json").exists():
+        subprocess.run([sys.executable, str(PROGRAMS / "enforce-linux.py"), "--user", args.user, "--rollback"], check=True)
+    for name, target in FILES.items():
+        backup = folder / (target.name + ".backup")
+        if backup.exists():
+            private_write(target, backup.read_text())
+            target.chmod(0o644)
+        else:
+            target.unlink(missing_ok=True)
+    Path(f"/run/mcpgw-{args.user}.sock").unlink(missing_ok=True)
+    shutil.rmtree(folder, ignore_errors=True)
+    print("해당 계정의 관리형 서비스·설정·방화벽·프로필을 제거했습니다")
+
+
 def header(args):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
         connection.settimeout(8)
@@ -328,6 +354,9 @@ def main():
     helper = commands.add_parser("header")
     helper.add_argument("--socket", required=True)
     helper.set_defaults(run=header)
+    remove = commands.add_parser("rollback")
+    remove.add_argument("--user", required=True)
+    remove.set_defaults(run=rollback)
     args = parser.parse_args()
     try:
         args.run(args)
