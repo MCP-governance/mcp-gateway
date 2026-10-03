@@ -35,7 +35,7 @@ from typing import Any
 import httpx
 from psycopg.types.json import Jsonb
 
-from . import db
+from . import db, registry
 
 SLA_DAYS = int(os.getenv("TERMINATION_SLA_DAYS", "14"))
 GITEA_ADMIN_URL = os.getenv("GITEA_ADMIN_URL", "http://corp-git:3000").rstrip("/")
@@ -154,7 +154,11 @@ async def relationships() -> list[dict]:
                      AND {real}) AS calls,
                   (SELECT id FROM termination_cases c WHERE c.relationship_id=u.id
                      ORDER BY opened_at DESC LIMIT 1) AS latest_case
-             FROM usage_relationships u JOIN mcp_servers s ON s.id=u.server_id ORDER BY u.id""".format(real=TOOL_CALL))
+             FROM usage_relationships u JOIN mcp_servers s ON s.id=u.server_id
+            -- A relationship whose server left the registry without a termination case is an orphan, not an engagement.
+            WHERE u.server_id = ANY(%s::text[])
+               OR EXISTS (SELECT 1 FROM termination_cases c WHERE c.relationship_id=u.id)
+            ORDER BY u.id""".format(real=TOOL_CALL), (sorted(registry.servers()),))
     out = []
     for row in rows:
         item = dict(row)
