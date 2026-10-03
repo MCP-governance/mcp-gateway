@@ -9,7 +9,7 @@ import json
 import os
 import re
 import subprocess
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -31,7 +31,7 @@ def event(record: dict, uid: int, profile: str) -> dict | None:
     if details is None:
         return None
     return {"event_id": record["_BOOT_ID"] + ":" + record["__CURSOR"],
-            "observed_at": datetime.fromtimestamp(int(record["__REALTIME_TIMESTAMP"]) / 1e6, UTC).isoformat(),
+            "observed_at": datetime.fromtimestamp(int(record["__REALTIME_TIMESTAMP"]) / 1e6, timezone.utc).isoformat(),
             "kind": kind, "details": details}
 
 

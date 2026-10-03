@@ -326,13 +326,26 @@ def _linux_listeners() -> list[dict]:
     return found
 
 
-def _windows_listeners() -> list[dict]:
+def _windows_processes() -> dict[str, tuple[str, str]]:
+    """PID -> (name, command line). tasklist has no command line, and without one a node.exe
+    or python.exe MCP server looks like any other process."""
+    script = ("[Console]::OutputEncoding=[Text.Encoding]::UTF8; Get-CimInstance Win32_Process | "
+              "Select-Object ProcessId,Name,CommandLine | ConvertTo-Json -Compress")
+    try:
+        done = subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
+                              capture_output=True, timeout=30, check=False)
+        rows = json.loads(done.stdout.decode("utf-8", "replace") or "[]")
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return {}
+    if isinstance(rows, dict):
+        rows = [rows]
+    return {str(row.get("ProcessId")): (str(row.get("Name") or "")[:120], str(row.get("CommandLine") or "")[:600])
+            for row in rows if isinstance(row, dict)}
+
+
+def _windows_listeners(processes: dict[str, tuple[str, str]] | None = None) -> list[dict]:
     rows = []
-    pid_names: dict[str, str] = {}
-    for line in _run(["tasklist", "/FO", "CSV", "/NH"]).splitlines():
-        cells = [cell.strip('"') for cell in line.split('","')]
-        if len(cells) >= 2:
-            pid_names[cells[1].strip('"')] = cells[0].strip('"')
+    processes = _windows_processes() if processes is None else processes
     for line in _run(["netstat", "-ano", "-p", "TCP"]).splitlines():
         parts = line.split()
         if len(parts) < 5 or parts[3].upper() != "LISTENING":
@@ -341,9 +354,9 @@ def _windows_listeners() -> list[dict]:
         address, _, port = local.rpartition(":")
         if not port.isdigit():
             continue
-        pid = parts[4]
+        name, command = processes.get(parts[4], ("", ""))
         rows.append({"address": address.strip("[]") or "0.0.0.0", "port": int(port),
-                     "process_name": pid_names.get(pid, ""), "command_line": ""})
+                     "process_name": name, "command_line": command})
     return rows
 
 
@@ -388,8 +401,14 @@ def stdio_processes() -> list[dict]:
     경로이고, 단말에서만 보인다.
     """
     found = []
+    if platform.system() == "Windows":
+        for name, raw in _windows_processes().values():
+            if raw and PROCESS_MARKERS.search(raw):
+                found.append({"source": "stdio-process", "address": "local-process", "port": None,
+                              "process_name": name, "command_line": command_digest(raw), "mcp_evidence": "suspected"})
+        return found
     if platform.system() != "Linux":
-        output = _run(["ps", "-eo", "pid=,comm=,args="]) if platform.system() != "Windows" else ""
+        output = _run(["ps", "-eo", "pid=,comm=,args="])
         for line in output.splitlines():
             parts = line.strip().split(None, 2)
             if len(parts) < 3 or not PROCESS_MARKERS.search(parts[2]):
