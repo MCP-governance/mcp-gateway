@@ -150,7 +150,9 @@ async def snapshot() -> dict:
                   max(created_at) AS last_at, count(*) FILTER (WHERE created_at > now() - interval '7 days') AS calls_7d
              FROM decisions WHERE created_at > now() - interval '30 days'
               AND COALESCE(client->>'event_kind','tools/call')='tools/call' GROUP BY server_id""")}
-    for server in await db.fetch_all("SELECT id, endpoint, status, lifecycle, display_name FROM mcp_servers ORDER BY id"):
+    # Only servers the registry still holds; a row left behind by a removed catalog entry is history, not an integration.
+    for server in await db.fetch_all("SELECT id, endpoint, status, lifecycle, display_name FROM mcp_servers"
+                                     " WHERE id = ANY(%s::text[]) ORDER BY id", (sorted(registry.servers()),)):
         spec = registry.server(server["id"]) or {}
         provider = classify.url_destination(server["endpoint"]).external
         allowed = registry.allowed_principals(server["id"])
