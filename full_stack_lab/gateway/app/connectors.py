@@ -200,16 +200,15 @@ async def decide_connector(request: Decision, authorization: str | None = Header
         raise HTTPException(404, "보고된 적 없는 항목입니다.")
     if request.decision == "reset":
         await db.execute("DELETE FROM harness_decisions WHERE item_key=%s", (request.key,))
-        return {"message": "결정을 지웠어요. 다시 검토 대기예요."}
+        return {"message": "결정을 취소했습니다."}
     if request.decision == "denied" and len(request.note.strip()) < 2:
-        raise HTTPException(422, "거부 사유를 적어 주세요. 직원 PC 키트가 이 사유를 보여 줘요.")
+        raise HTTPException(422, "거부 사유를 입력하세요.")
     await db.execute(
         """INSERT INTO harness_decisions(item_key, decision, note, decided_by) VALUES (%s,%s,%s,%s)
            ON CONFLICT (item_key) DO UPDATE SET decision=EXCLUDED.decision, note=EXCLUDED.note,
              decided_by=EXCLUDED.decided_by, decided_at=now()""",
         (request.key, request.decision, request.note.strip(), user["principal"]))
-    return {"message": "예외 승인 저장. Gateway 전용 관리형 정책은 유지됩니다." if request.decision == "approved"
-            else "거부 정책 저장. PC 설정 적용과 실제 차단은 별도 확인이 필요합니다."}
+    return {"message": "승인했습니다." if request.decision == "approved" else "거부했습니다."}
 
 
 @router.get("/api/connectors/policy")

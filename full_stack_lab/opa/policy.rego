@@ -1,15 +1,13 @@
 package mcp.authz
 
-# MCP 보안 관리 프레임워크 V1.0 §11(보안통제 자동화 및 PaC 연계) 초안 구현.
+# MCP 도구 호출 판정 규칙.
 #
 #   규칙      : 이 파일
 #   값        : opa/data.json          (조직이 자주 바꾸는 허용 목적지·길이 제한)
-#   관리정보  : opa/policy_ledger.json (§11.8 / §12.5 정책 관리대장)
-#   예외      : opa/exceptions.json    (§8 예외 관리대장)
+#   관리정보  : opa/policy_ledger.json (정책 목록)
 #
-# 세 가지가 이 파일 밖에 있는 이유는 수명이 다르기 때문이다. 판단조건은 재검토와
-# 재승인을 거쳐 바뀌고, 허용 목적지는 그보다 훨씬 자주 바뀌며, 예외는 기간이 지나면
-# 코드 변경 없이 사라져야 한다.
+# 값과 관리정보가 이 파일 밖에 있는 이유는 수명이 다르기 때문이다. 판단조건은 재검토와
+# 재승인을 거쳐 바뀌고, 허용 목적지는 그보다 훨씬 자주 바뀐다.
 #
 # 구조: else 사슬이 아니라 "성립한 후보 전부"를 모으고 관리대장의 priority로 최종
 # 판단을 고른다(§11.14). else 사슬은 첫 일치 이후를 볼 수 없어 정책 충돌 자체를
@@ -23,7 +21,7 @@ import rego.v1
 environment := object.get(input, ["environment"], "prod")
 
 # 상황정보(요청 시각). 없으면 undefined가 되어 시간 기반 판단이 성립하지 않는다.
-# 조용히 현재 시각으로 대체하면 만료된 예외가 되살아나므로 대체하지 않는다.
+# 조용히 현재 시각으로 대체하면 만료된 승인이 되살아나므로 대체하지 않는다.
 now_ns := time.parse_rfc3339_ns(input.now)
 
 recent_calls := object.get(input, ["context", "recent_calls"], 0)
@@ -148,22 +146,6 @@ classification_missing if {
 
 classification_missing if {
 	classification_source == ""
-}
-
-# 조직 축. opa/data.json에서 꺼진 채 배포된다. 입력을 미리 넓혀두지 않으면
-# 조직이 켜기로 결정한 날 규칙 전체를 다시 써야 한다.
-# 루트 `data` 문서를 참조하면 테스트 패키지까지 의존성 그래프에 들어가 재귀로
-# 거부되므로 항상 구체 경로를 쓴다.
-default department_scope_enabled := false
-
-department_scope_enabled if {
-	data.department_scope.enabled == true
-}
-
-cross_department if {
-	owner := object.get(input, ["resource", "owner_department"], null)
-	owner != null
-	object.get(input, ["principal", "department"], null) != owner
 }
 
 # ── 필수 입력 누락 (§11.16) ─────────────────────────────────────────────────
@@ -342,18 +324,6 @@ candidate["P-VOLUME-001"] := {
 } if {
 	input.resource.data_class == "important"
 	recent_important >= important_limit
-	not input.approval.granted
-}
-
-candidate["P-DEPT-001"] := {
-	"decision": "Approval",
-	"reason": "소관 부서가 아닌 중요정보 접근이라 승인이 필요합니다.",
-	"restrictions": {},
-	"conditions": {"matched": ["resource.owner_department"], "violated": ["principal.department", "approval.granted"]},
-} if {
-	department_scope_enabled
-	input.resource.data_class == "important"
-	cross_department
 	not input.approval.granted
 }
 
@@ -622,80 +592,6 @@ conflicts := [{
 	pid != selected_id
 ]
 
-# ── 예외 (§8, §11.2) ────────────────────────────────────────────────────────
-
-severity := {"Block": 5, "Approval": 4, "Restrict": 3, "Alert": 2, "Allow": 1}
-
-# §8.6 예외를 허용해서는 안 되는 경우를 그대로 검사한다. 하나라도 어기면 예외가
-# 적용되지 않고, 원래 판단이 그대로 집행된다.
-valid_exception(exc) if {
-	exc.status == "적용"
-	is_string(exc.valid_until) # 무기한 예외 금지
-	count(object.get(exc, "scope", {})) > 0 # 적용범위 불명확 금지
-	count(object.get(exc, "compensating_controls", [])) > 0 # 보완통제 없는 완화 금지
-	exc.requested_by != exc.approved_by # 자가 승인 금지
-	now_ns >= time.parse_rfc3339_ns(exc.valid_from)
-	now_ns < time.parse_rfc3339_ns(exc.valid_until)
-}
-
-scope_value("principal_role") := input.principal.role
-
-scope_value("department") := object.get(input, ["principal", "department"], null)
-
-scope_value("tool") := object.get(input, ["tool", "name"], null)
-
-scope_value("action") := input.tool.action
-
-scope_value("resource_id") := object.get(input, ["resource", "id"], null)
-
-scope_value("data_class") := input.resource.data_class
-
-scope_matches(exc) if {
-	every key, value in exc.scope {
-		scope_value(key) == value
-	}
-}
-
-# 같은 정책·범위에 유효한 예외가 둘 이상 있는 것은 그 자체로 예외관리 미흡이다.
-# 여기서는 대장 순서의 첫 건을 적용하고 나머지는 exception.candidates로 드러낸다.
-matching_exceptions := [exc |
-	some exc in data.exceptions
-	not startswith(selected_id, "PAC-")
-	not selected_id in {"INPUT_CONTRACT", "POLICY_BUNDLE"}
-	# A PAC finding ranked below the selected policy still stands; no exception relaxes it.
-	count(pac_findings) == 0
-	exc.policy_id == selected_id
-	data.policy_ledger[selected_id].exceptionable == true
-	valid_exception(exc)
-	scope_matches(exc)
-	severity[exc.effect] < severity[base_verdict.decision] # 예외는 완화만, 강화는 변경관리로
-]
-
-applicable_exception := matching_exceptions[0]
-
-# An exception that relaxes a block to "Approval" is satisfied by the approval it
-# asks for. Without this the approved request is judged again, the exception says
-# "Approval" again, and an approved call can never run.
-exception_effect := "Allow" if {
-	applicable_exception.effect == "Approval"
-	object.get(input, ["approval", "granted"], false) == true
-} else := applicable_exception.effect
-
-exception_verdict := {
-	"decision": exception_effect,
-	"reason": sprintf(
-		"%s 예외 %s(%s)가 적용되어 %s로 완화했습니다.%s 유효기간 %s.",
-		[
-			base_verdict.reason, applicable_exception.id, applicable_exception.title,
-			applicable_exception.effect,
-			{true: " 관리자 승인이 부여되어 실행합니다.", false: ""}[exception_effect != applicable_exception.effect],
-			applicable_exception.valid_until,
-		],
-	),
-	"restrictions": base_verdict.restrictions,
-	"conditions": base_verdict.conditions,
-}
-
 # ── 실패 안전 (§11.16) ──────────────────────────────────────────────────────
 
 default_verdict := {
@@ -714,39 +610,7 @@ ledger_failure_verdict := {
 
 # ── 판단 결과 조립 (§11.7, §11.17) ──────────────────────────────────────────
 
-obligations(entry, exc) := object.get(entry, "obligations", []) if {
-	count(exc) == 0
-}
-
-# §8.14는 예외 적용기간의 실제 사용내역과 보완통제 동작을 모니터링하라고 요구한다.
-# 예외로 완화된 호출이 원래 정책의 기본 증적만 남기면, 완화됐다는 사실이 통제를
-# 가장 많이 필요로 하는 바로 그 호출에서 가장 약한 기록으로 남는다.
-obligations(entry, exc) := array.concat(
-	array.concat(
-		object.get(entry, "obligations", []),
-		["evidence.enhanced", "exception.monitored", "alert.security"],
-	),
-	object.get(exc, "compensating_controls", []),
-) if {
-	count(exc) > 0
-}
-
-exception_view(exc) := null if {
-	count(exc) == 0
-}
-
-exception_view(exc) := {
-	"id": exc.id,
-	"title": exc.title,
-	"valid_until": exc.valid_until,
-	"approved_by": exc.approved_by,
-	"compensating_controls": exc.compensating_controls,
-	"candidates": count(matching_exceptions),
-} if {
-	count(exc) > 0
-}
-
-enrich(verdict, pid, exc) := object.union(verdict, {
+enrich(verdict, pid) := object.union(verdict, {
 	"policy_id": pid,
 	"policy_name": object.get(data.policy_ledger, [pid, "name"], ""),
 	"policy_version": object.get(data.policy_ledger, [pid, "version"], "unknown"),
@@ -755,17 +619,14 @@ enrich(verdict, pid, exc) := object.union(verdict, {
 	"risk_ids": object.get(data.policy_ledger, [pid, "risk_ids"], []),
 	"control_ids": object.get(data.policy_ledger, [pid, "control_ids"], []),
 	"requirement_ids": object.get(data.policy_ledger, [pid, "requirement_ids"], []),
-	"obligations": obligations(object.get(data.policy_ledger, pid, {}), exc),
-	"exception": exception_view(exc),
+	"obligations": object.get(data.policy_ledger, [pid, "obligations"], []),
 	"conflicts": conflicts,
 	"policy_set_version": object.get(data.policy_set, "version", "unknown"),
 	"environment": environment,
 })
 
-decision := enrich(ledger_failure_verdict, "P-CONTROL-LEDGER-001", {}) if {
+decision := enrich(ledger_failure_verdict, "P-CONTROL-LEDGER-001") if {
 	count(unregistered_candidates) > 0
-} else := enrich(exception_verdict, selected_id, applicable_exception) if {
-	applicable_exception
-} else := enrich(base_verdict, selected_id, {}) if {
+} else := enrich(base_verdict, selected_id) if {
 	selected_id
-} else := enrich(default_verdict, "P-CONTROL-DEFAULT-001", {})
+} else := enrich(default_verdict, "P-CONTROL-DEFAULT-001")

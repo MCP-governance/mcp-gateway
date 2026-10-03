@@ -332,7 +332,7 @@ async def coverage() -> dict:
         "registered": counts.get("registered", 0),
         "shadow": counts.get("shadow", 0),
         "retired_residue": counts.get("retired-residue", 0),
-        "note": "조직 전체 자산 대비 커버리지는 이 실습이 자산 목록을 갖고 있지 않아 산출하지 않습니다.",
+        "note": "자산 목록이 없어 전체 대비 비율은 산출하지 않습니다.",
     }
 
 
@@ -601,16 +601,16 @@ async def managed_failure(principal: dict, claims: dict, *, mint: bool = False) 
     if not principal.get("managed_required") and not claims.get("device_id"):
         return None
     if not claims.get("device_id") or (not mint and "mcp" not in str(claims.get("scope", "")).split()):
-        return "관리형 설치·활성화한 단말의 MCP 인증이 필요합니다. 내 PC 연결에서 새 키트를 설치하세요."
+        return "관리형 엔드포인트 인증이 필요합니다. 내 PC 연결에서 설치 키트를 받으세요."
     device = await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (claims["device_id"],))
     if (not device or device["owner_token"] != principal["token"] or device["status"] != "active"
             or device["managed_state"] != "active" or device["device_epoch"] != claims.get("device_epoch")):
-        return "단말이 미활성·격리·폐기됐거나 해당 사용자에게 등록된 장치가 아닙니다."
+        return "활성 상태가 아니거나 이 사용자에게 등록되지 않은 엔드포인트입니다."
     if not device["heartbeat_at"] or (datetime.now(UTC) - device["heartbeat_at"]).total_seconds() >= HEARTBEAT_SECONDS:
-        return "단말 정책 heartbeat가 만료돼 연결을 중단했습니다."
+        return "엔드포인트 점검 보고가 만료되어 연결을 중단했습니다."
     policy = await managed_policy(device)
     if device["policy_hash"] != policy["policy_hash"] or (not mint and claims.get("device_policy") != policy["policy_hash"]):
-        return "단말 정책이 최신 정책과 일치하지 않아 연결을 중단했습니다."
+        return "엔드포인트 정책이 최신 정책과 달라 연결을 중단했습니다."
     return None
 
 

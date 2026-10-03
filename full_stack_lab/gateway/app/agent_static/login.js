@@ -1,4 +1,4 @@
-/* 합성 IdP 로그인. 토큰은 Agent Service가 발급하고 이 화면은 보관만 한다. */
+/* Sign-in. The server issues the token; this page only stores it. */
 
 const TOKEN_KEY = "mcp-console-token";
 
@@ -15,10 +15,10 @@ async function configureLogin() {
     const config = await (await fetch("/auth/provider")).json();
     if (config.provider === "oidc") {
       document.querySelector("#sso-login").hidden = false;
-      document.querySelector("#sso-login a").hidden = !config.configured;
-      document.querySelector("#sso-label").textContent = `${config.label} 계정으로 로그인합니다.`;
-      document.querySelector("#sso-error").textContent = {unbound: "조직 사용자와 연결되지 않은 SSO 계정입니다. 관리자에게 신원 연결을 요청하세요.",
-        invalid: "SSO 인증을 확인하지 못했습니다. 다시 로그인하세요."}[params.get("sso_error")] || (!config.configured ? "조직 SSO 설정이 완료되지 않았습니다." : "");
+      document.querySelector("#sso-button").hidden = !config.configured;
+      if (config.label) document.querySelector("#sso-button").textContent = `${config.label} 로그인`;
+      document.querySelector("#sso-error").textContent = {unbound: "연결되지 않은 SSO 계정입니다. 관리자에게 문의하세요.",
+        invalid: "SSO 인증에 실패했습니다. 다시 로그인하세요."}[params.get("sso_error")] || (!config.configured ? "SSO 설정이 완료되지 않았습니다." : "");
     } else document.querySelector("#gate-form").hidden = false;
     if (params.get("sso") === "complete") {
       const response = await fetch("/auth/oidc/session", {method: "POST"});
@@ -34,15 +34,15 @@ async function configureLogin() {
 }
 configureLogin();
 // The Console sends a session here when an admin switched the account off.
-error.textContent = { disabled: "사용이 중지된 계정이에요. 관리자에게 문의하세요.",
-  locked: "잠긴 계정이에요. 관리자에게 문의하세요.", deleted: "삭제된 계정이에요." }[new URLSearchParams(location.search).get("account")] || "";
+error.textContent = { disabled: "사용이 중지된 계정입니다. 관리자에게 문의하세요.",
+  locked: "잠긴 계정입니다. 관리자에게 문의하세요.", deleted: "삭제된 계정입니다." }[new URLSearchParams(location.search).get("account")] || "";
 
 document.querySelector("#gate-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   if (button.disabled || !event.target.reportValidity()) return;
   error.textContent = "";
   button.disabled = true;
-  button.textContent = "로그인 확인 중…";
+  button.textContent = "확인 중…";
   event.target.setAttribute("aria-busy", "true");
   try {
     const response = await fetch("/auth/mock-login", {
@@ -56,7 +56,7 @@ document.querySelector("#gate-form").addEventListener("submit", async (event) =>
       // 관리자조차 자기 조치가 먹혔는지 알 수 없게 된다.
       error.textContent = body.detail
         || (response.status === 429 ? "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요."
-          : "아이디와 비밀번호를 확인해주세요.");
+          : "아이디와 비밀번호를 확인하세요.");
       error.focus();
       return;
     }

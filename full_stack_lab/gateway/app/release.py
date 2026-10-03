@@ -25,7 +25,7 @@ def build_info() -> dict:
 
 # Compare all PAC/routing modules and policy data. Reviewed capability scopes have a
 # separate hash because they are enforced by the Gateway adapter, not OPA data documents.
-POLICY_DATA_FILES = ('data.json', 'exceptions.json', 'policy_ledger.json')
+POLICY_DATA_FILES = ('data.json', 'policy_ledger.json')
 
 
 def _canonical(value) -> str:

@@ -195,7 +195,7 @@ class ApiTest(unittest.TestCase):
         row = {"status": "VALIDATED", "commit_sha": "d" * 40, "submitted_by": "requester", "intake_kind": "repository",
                "requested_transport": "streamable-http", "exit_terms": {},
                "evidence": {"exit_terms_discovery": {"status": "REVIEW_REQUIRED"}}}
-        with self.identity("admin"), patch.object(agent_service.db, "fetch_one", AsyncMock(return_value=row)), patch.object(agent_service, "SCAN_REQUIRED_FOR_APPROVAL", False):
+        with self.identity("admin"), patch.object(agent_service.db, "fetch_one", AsyncMock(return_value=row)):
             response = self.client.post(f"/api/mcp-requests/{self.id}/approve")
         self.assertEqual(response.status_code, 409)
         self.assertIn("증거 문서", response.json()["detail"])
@@ -215,35 +215,25 @@ class ApiTest(unittest.TestCase):
         db = AsyncMock(side_effect=[pending, approved])
         publisher = AsyncMock(return_value=approved["internal_repo_url"])
         with self.identity("admin"), patch.object(agent_service.db, "fetch_one", db), \
-             patch.object(agent_service, "publish_internal_repo", publisher), \
-             patch.object(agent_service, "SCAN_REQUIRED_FOR_APPROVAL", False):
+             patch.object(agent_service, "publish_internal_repo", publisher):
             response = self.client.post(f"/api/mcp-requests/{self.id}/approve")
         self.assertEqual(response.status_code, 200)
         publisher.assert_awaited_once_with(pending)
         self.assertIn("internal_repo_url", db.await_args.args[0])
 
 
-class AnomalyScanTest(unittest.TestCase):
-    def test_live_local_model_queues_anomaly_scan_after_audit(self):
+class AnomalyRecordTest(unittest.TestCase):
+    def test_anomaly_decision_is_recorded_without_queuing_any_scan(self):
         async def decide():
             return await core._decision_payload(
                 {"policy_id": "P-ANOMALY-001", "server_id": "server-1"},
                 asyncio.get_running_loop().time(),
             )
 
-        config = {"MCP_SCAN_AUTO_ON_ANOMALY": "1", "MCP_SCAN_BASE_URL": "http://ollama:11434/v1",
-                  "MCP_SCAN_MODEL": "local-model", "MCP_SCAN_API_KEY": "local-key",
-                  "MCP_SCAN_EVIDENCE_MODE": "live"}
         execute = AsyncMock()
-        with patch.dict(os.environ, config), patch.object(core, "_record_decision", AsyncMock(return_value="decision-1")), \
-             patch.object(core.db, "execute", execute):
+        with patch.object(core, "_record_decision", AsyncMock(return_value="decision-1")),              patch.object(core.db, "execute", execute):
             self.assertEqual(asyncio.run(decide())["decision_id"], "decision-1")
-            self.assertIn("'anomaly'", execute.await_args.args[0])
-            self.assertEqual(execute.await_args.args[1][1], "server-1")
-            execute.reset_mock()
-            with patch.dict(os.environ, {"MCP_SCAN_EVIDENCE_MODE": "test-double"}):
-                asyncio.run(decide())
-            execute.assert_not_awaited()
+        execute.assert_not_awaited()
 
 
 if __name__ == "__main__":

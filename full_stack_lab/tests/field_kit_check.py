@@ -121,7 +121,7 @@ class FakeIdpGateway:
                 return 200, {}
             if form.get("grant_type") == "password":
                 if (form.get("username"), form.get("password")) != ("ysg@bob.local", "test-password"):
-                    return 401, {"error": "invalid_grant", "error_description": "합성 계정과 비밀번호를 확인하세요."}
+                    return 401, {"error": "invalid_grant", "error_description": "아이디와 비밀번호를 확인하세요."}
                 self.log.append("password")
                 return 200, self.issue(form["client_id"], secrets.token_hex(4))
             stored = self.refresh.get(form.get("refresh_token"))
@@ -258,7 +258,7 @@ class KitTest(unittest.TestCase):
         with self.assertRaises(SystemExit) as failed:
             self.main("setup", "--url", fake.url, "--servers", "git", "--email", "ysg@bob.local", "--password-stdin",
                       stdin="wrong\n")
-        self.assertIn("합성 계정과 비밀번호", str(failed.exception.code))
+        self.assertIn("아이디와 비밀번호", str(failed.exception.code))
         self.assertFalse([c for c in self.claude_calls if c[:2] == ["mcp", "add-json"]])
 
     def test_managed_files_carry_no_secret(self):

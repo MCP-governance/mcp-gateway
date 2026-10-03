@@ -2,10 +2,9 @@
 
 > 파일: `full_stack_lab/opa/`
 > - `policy.rego` — 규칙 (`package mcp.authz`, 결과는 `data.mcp.authz.decision`)
-> - `policy_test.rego` — 단위 시험(99건)
-> - `policy_ledger.json` — 정책 관리대장(정책마다 이름·목적·우선순위·결과·상태·버전·위험/통제 id·예외 허용 여부·의무)
-> - `exceptions.json` — 예외 관리대장
-> - `data.json` — 운영 제한과 자주 바뀌는 값(제한 실행 값, egress 허용 호스트, 부서 범위 스위치)
+> - `policy_test.rego` — 단위 시험(86건)
+> - `policy_ledger.json` — 정책 목록(정책마다 이름·목적·우선순위·결과·상태·버전·위험/통제 id·의무)
+> - `data.json` — 운영 제한과 자주 바뀌는 값(제한 실행 값, egress 허용 호스트)
 >
 > Gateway는 `OPA_URL`(`http://opa:8181/v1/data/mcp/authz/decision`)에 입력을 보내고, 실패하면
 > `P-CONTROL-FAIL-CLOSED`로 차단한다. OPA는 `--watch` 없이 뜨므로 Rego를 바꾸면 `docker compose restart opa`.
@@ -48,7 +47,6 @@
 | 90 | P-X-APPROVAL-001 | 승인 | 중요정보의 고위험 실행(x) — 내부 목적지. 외부 반출은 MCP-DATA-EGRESS-001이 먼저 막는다 |
 | 95 | P-UNTRUSTED-CONTENT-001 | 승인 | 비신뢰 콘텐츠 기반 고위험 실행 |
 | 100 | P-VOLUME-001 | 승인 | 중요정보 누적 접근 |
-| 110 | P-DEPT-001 | 승인 | 소관 부서 외 중요정보(`data.department_scope.enabled`, 기본 꺼짐) |
 | 120 | P-X-RESTRICT-001 | 제한 | 외부 전송을 제한 값으로(`restrictable ∩ data.restrictions`) |
 | 125 | P-X-ALERT-001 | 경고 | 제한할 수 없는 외부 전송 |
 | 128~135 | P-UNTRUSTED-CONTENT-002, P-ANOMALY-001, MCP-SHADOW-00x | 경고 | 비신뢰 콘텐츠 열람, 반복 차단, 섀도 MCP 보유자 |
@@ -90,19 +88,18 @@ Console 정책 화면은 현재 capability와 검토된 원격 승인 범위를 
 구체적인 사실 생성, 범위, 원본 대비 세 통합 변경과 남은 한계는
 [PAC 런타임 통합](PAC_RUNTIME_2026-10-01.md)에 기록합니다.
 
-## 4. 예외 (`exceptions.json`)
+## 4. 예외
 
-과거 333 인가를 완화하던 EXC-001·002는 종료했습니다.
-PAC·입력 계약·정책 묶음은 예외 완화 대상이 아닙니다.
-그 밖의 예외는 적용 상태·기한·범위·보완통제·요청자와 승인자 분리를 검사합니다.
+예외 등록부는 없습니다(2026-10-03 제거). 정책을 완화해야 하면 정책 목록과 규칙을 바꾸고 시험을 고칩니다.
+333 권한 시절의 `P-AUTHZ-DENY-001`·`P-DEPT-001`과 예외 EXC-001·002는 삭제했고, 과거 감사 기록의 해당 id는 그대로 둡니다.
 
 ## 5. 정책을 추가·수정하는 법
 1. `policy.rego`에 `candidate["NEW-ID"] := {...} if { … }` 추가(입력은 `object.get`으로 기본값 처리 —
    값이 없을 때 조용히 허용되지 않게).
 2. `policy_ledger.json`에 같은 id로 관리대장 항목(필수 항목 누락 시 시험 실패): priority·결과·상태·버전·
-   목적·조건·집행·위험/통제/요구사항 id·환경·예외 허용·의무·담당·시행일.
-3. `policy_test.rego`에 정상/경계/예외 시험.
-4. 값이면 `data.json`, 예외면 `exceptions.json`.
+   목적·조건·집행·위험/통제/요구사항 id·환경·의무·담당·시행일.
+3. `policy_test.rego`에 정상/경계 시험.
+4. 값이면 `data.json`.
 5. `docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v`
 6. `docker compose restart opa` 후 `./console.sh test`.
 7. 새 판정이 업무 흐름에 보이면 `workstation/scenarios/*.toml`에 한 건 추가.

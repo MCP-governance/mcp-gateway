@@ -308,7 +308,6 @@ test_block_approved_scope_write if {
     result := decision with input as request
     result.decision == "Block"
     result.policy_id == "PAC-11"
-    result.exception == null
 }
 
 test_block_approved_scope_important_read if {
@@ -319,7 +318,6 @@ test_block_approved_scope_important_read if {
     result := decision with input as request
     result.decision == "Block"
     result.policy_id == "PAC-11"
-    result.exception == null
 }
 
 # 권한 없는 x는 외부 전송 제한이 아니라 차단이어야 한다.
@@ -331,7 +329,6 @@ test_block_beats_restrict_for_unprivileged_external_send if {
     result := decision with input as request
     result.decision == "Block"
     result.policy_id == "PAC-11"
-    result.exception == null
 }
 
 # ── T-REGISTRY-001/002 미등록·비활성 구성요소 ───────────────────────────────
@@ -596,46 +593,6 @@ test_alert_employee_important_read if {
 	"evidence.enhanced" in result.obligations
 }
 
-# ── T-DEPT-001/002 조직 축 (기본 중지) ──────────────────────────────────────
-
-# 관리대장 status가 "중지"라 부서 축은 data.json을 켜도 집행되지 않는다.
-test_department_scope_inert_while_suspended if {
-	result := decision with input as with_input({
-		"principal": {"role": "employee", "department": "보안기술팀"},
-		"resource": {"data_class": "important", "owner_department": "거버넌스팀"},
-	})
-		with data.department_scope as {"enabled": true}
-	result.decision == "Alert"
-}
-
-test_department_scope_escalates_when_both_switches_on if {
-	live := object.union(data.policy_ledger, {"P-DEPT-001": object.union(
-		data.policy_ledger["P-DEPT-001"],
-		{"status": "운영"},
-	)})
-	result := decision with input as with_input({
-		"principal": {"role": "employee", "department": "보안기술팀"},
-		"resource": {"data_class": "important", "owner_department": "거버넌스팀"},
-	})
-		with data.department_scope as {"enabled": true}
-		with data.policy_ledger as live
-	result.policy_id == "P-DEPT-001"
-}
-
-test_department_scope_allows_own_department if {
-	live := object.union(data.policy_ledger, {"P-DEPT-001": object.union(
-		data.policy_ledger["P-DEPT-001"],
-		{"status": "운영"},
-	)})
-	result := decision with input as with_input({
-		"principal": {"role": "employee", "department": "거버넌스팀"},
-		"resource": {"data_class": "important", "owner_department": "거버넌스팀"},
-	})
-		with data.department_scope as {"enabled": true}
-		with data.policy_ledger as live
-	result.decision == "Alert"
-}
-
 # ── T-CONFLICT 정책 충돌과 우선순위 (§11.14) ────────────────────────────────
 
 test_conflicts_are_recorded_not_hidden if {
@@ -693,88 +650,6 @@ test_policy_without_ledger_entry_blocks if {
 	result.decision == "Block"
 }
 
-# ── T-EXC 예외 적용과 유효기간 (§8, §11.2) ──────────────────────────────────
-
-exception_request := with_input({
-	"resource": {"id": "/shared/confidential/audit/external-audit-copy-2026.md", "data_class": "important"},
-	"tool": {"name": "read_text_file", "action": "r"},
-})
-
-test_retired_333_exceptions_cannot_authorize_a_pac_denial if {
-    every exc in [x | some x in data.exceptions; x.policy_id == "P-AUTHZ-DENY-001"] { exc.status == "종료" }
-    facts := object.union(pac_fixture.facts, {"approval": object.union(pac_fixture.facts.approval, {"data_scopes": []})})
-    request := object.union(exception_request, {"pac": {"request": pac_fixture.request, "facts": facts}})
-    result := decision with input as request
-    result.decision == "Block"
-    result.policy_id == "PAC-11"
-    result.exception == null
-}
-
-valid_exception_fixture := object.union(data.exceptions[0], {"status": "적용"})
-
-test_exception_valid_window if {
-    data.mcp.authz.valid_exception(valid_exception_fixture) with input as base
-}
-test_exception_rejects_self_approval if {
-    bad := object.union(valid_exception_fixture, {"approved_by": valid_exception_fixture.requested_by})
-    not data.mcp.authz.valid_exception(bad) with input as base
-}
-test_exception_rejects_missing_controls if {
-    bad := object.union(valid_exception_fixture, {"compensating_controls": []})
-    not data.mcp.authz.valid_exception(bad) with input as base
-}
-test_exception_rejects_blanket_scope if {
-    bad := object.union(object.remove(valid_exception_fixture, {"scope"}), {"scope": {}})
-    not data.mcp.authz.valid_exception(bad) with input as base
-}
-test_exception_rejects_open_ended_window if {
-    bad := object.remove(valid_exception_fixture, {"valid_until"})
-    not data.mcp.authz.valid_exception(bad) with input as base
-}
-test_exception_rejects_expired_window if {
-    not data.mcp.authz.valid_exception(valid_exception_fixture) with input as with_input({"now": "2027-02-01T00:00:00Z"})
-}
-test_exception_rejects_before_window if {
-    not data.mcp.authz.valid_exception(valid_exception_fixture) with input as with_input({"now": "2026-01-01T00:00:00Z"})
-}
-
-
-# 무결성 통제는 예외 대상이 아니다(관리대장 exceptionable=false).
-test_exception_cannot_relax_integrity_control if {
-	bad := [object.union(data.exceptions[0], {
-		"policy_id": "MCP-REGISTRY-001",
-		"scope": {"principal_role": "partner"},
-	})]
-	result := decision with input as with_input({"contract": {"registered": false}})
-		with data.exceptions as bad
-	result.decision == "Block"
-	result.policy_id == "MCP-REGISTRY-001"
-}
-
-# D-62: 우선순위가 PAC보다 높은 예외 가능 정책(MCP-EGRESS-001)이 선택돼도, conflicts에 남은
-# PAC 거부를 그 예외가 지우지 못한다. 대조군은 같은 예외가 PAC 결과가 없을 때 실제로 적용됨을 보인다.
-egress_exception := [object.union(object.remove(valid_exception_fixture, {"scope"}),
-	{"policy_id": "MCP-EGRESS-001", "scope": {"tool": "read_text_file"}})]
-
-egress_request := with_input({"contract": object.union(base.contract, {"endpoint_allowed": false})})
-
-test_exception_cannot_hide_a_lower_ranked_pac_denial if {
-	facts := object.union(pac_fixture.facts, {"approval": object.union(pac_fixture.facts.approval, {"data_scopes": []})})
-	request := object.union(egress_request, {"pac": {"request": pac_fixture.request, "facts": facts}})
-	result := decision with input as request with data.exceptions as egress_exception
-	result.decision == "Block"
-	result.policy_id == "MCP-EGRESS-001"
-	result.exception == null
-	some c in result.conflicts
-	c.policy_id == "PAC-11"
-}
-
-test_exception_applies_when_pac_has_no_finding if {
-	result := decision with input as egress_request with data.exceptions as egress_exception
-	result.decision == "Alert"
-	result.exception.id == valid_exception_fixture.id
-}
-
 # 공급자 호스팅 서버는 읽기 인자도 받는다. 인자에서 탐지된 PII는 행위와 무관하게 실행 전에 막는다.
 test_pii_to_provider_hosted_server_blocks_even_for_reads if {
 	result := decision with input as with_input({"tool": {"name": "read_text_file", "action": "r", "provider_hosted": true},
@@ -786,17 +661,6 @@ test_pii_to_provider_hosted_server_blocks_even_for_reads if {
 test_provider_hosted_read_without_pii_is_not_an_egress_block if {
 	result := decision with input as with_input({"tool": {"name": "read_text_file", "action": "r", "provider_hosted": true}})
 	result.policy_id != "MCP-DATA-EGRESS-001"
-}
-
-# 예외는 완화만 할 수 있고 강화는 변경관리 절차를 따라야 한다.
-test_exception_cannot_tighten_a_decision if {
-	bad := [object.union(data.exceptions[0], {
-		"policy_id": "P-AUTHZ-ALLOW-001",
-		"scope": {"principal_role": "partner"},
-		"effect": "Block",
-	})]
-	result := decision with input as base with data.exceptions as bad
-	result.decision == "Allow"
 }
 
 # PAC 입력 누락은 역할에 관계없이 실행 전에 차단한다.
@@ -826,7 +690,7 @@ test_ledger_priorities_are_unique if {
 }
 
 test_every_ledger_entry_has_required_management_information if {
-	required := ["name", "purpose", "risk_ids", "control_ids", "owner", "approver", "version", "status", "priority", "environments", "obligations", "exceptionable"]
+	required := ["name", "purpose", "risk_ids", "control_ids", "owner", "approver", "version", "status", "priority", "environments", "obligations"]
 	every _, entry in data.policy_ledger {
 		every field in required {
 			object.get(entry, field, null) != null
@@ -923,17 +787,6 @@ test_read_then_internal_send_is_not_a_chain if {
 	result.policy_id != "P-CHAIN-001"
 }
 
-test_every_registered_exception_survives_section_8_6 if {
-	every exc in data.exceptions {
-		exc.requested_by != exc.approved_by
-		is_string(exc.valid_until)
-		count(exc.scope) > 0
-		count(exc.compensating_controls) > 0
-		is_string(exc.exit_plan)
-		data.policy_ledger[exc.policy_id].exceptionable == true
-	}
-}
-
 # ── T-DECOMM 전주기 종료 (§11.11 미등록·비인가 구성요소 + 전주기 종료 단계) ──
 #
 # 이 시험들이 지키는 것은 "폐기했다"가 판정이 아니라 집행이 되게 하는 것이다.
@@ -974,11 +827,6 @@ test_absent_lifecycle_defaults_to_operating if {
 	result.policy_id == "P-AUTHZ-ALLOW-001"
 }
 
-# 폐기 차단은 예외로 완화할 수 없다. 완화되면 종료 판정의 연속성 근거가 사라진다.
-test_decommission_is_not_exceptionable if {
-	data.policy_ledger["MCP-DECOMM-001"].exceptionable == false
-}
-
 # ── T-SHADOW 강제 경로 밖 설정 (§11.11 다중 정책 동시 적용) ─────────────────
 
 test_shadow_endpoint_upgrades_allow_to_alert if {
@@ -1001,7 +849,6 @@ test_shadow_endpoint_does_not_weaken_a_block if {
     result := decision with input as request
     result.decision == "Block"
     result.policy_id == "PAC-11"
-    result.exception == null
 }
 
 test_no_shadow_report_leaves_allow_unchanged if {
@@ -1048,7 +895,6 @@ test_scope_does_not_weaken_a_block if {
     result := decision with input as request
     result.decision == "Block"
     result.policy_id == "PAC-11"
-    result.exception == null
 }
 
 # ── 통합관리대장 V1.0 PaC 후보에서 새로 정책화한 통제 ───────────────────────
@@ -1185,18 +1031,17 @@ test_new_policies_carry_register_ids if {
 	entry.pac_candidate_id != ""
 }
 
-# ── 승인형 예외(EXC-002): 승인이 부여되면 실행, 없으면 승인 대기 ───────────────
-approval_exception_request := with_input({
+# ── 승인이 부여돼도 실행 권한 범위 밖이면 차단 ──────────────────────────────
+approval_request := with_input({
 	"principal": {"role": "employee", "department": "플랫폼개발팀"},
 	"resource": {"id": "/workspace", "data_class": "nonimportant"},
 	"tool": {"name": "start_process", "action": "x"},
 })
 
-test_old_approval_exception_cannot_bypass_pac if {
+test_granted_approval_cannot_bypass_pac if {
     changed := object.union(pac_fixture.facts, {"approval": object.union(pac_fixture.facts.approval, {"data_scopes": []})})
-    request := object.union(approval_exception_request, {"pac": {"request": pac_fixture.request, "facts": changed}, "approval": {"granted": true}})
+    request := object.union(approval_request, {"pac": {"request": pac_fixture.request, "facts": changed}, "approval": {"granted": true}})
     result := decision with input as request
     result.decision == "Block"
     result.policy_id == "PAC-11"
-    result.exception == null
 }

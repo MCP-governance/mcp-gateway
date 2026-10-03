@@ -210,7 +210,7 @@ class Binding(StrictModel):
 async def administrator(authorization):
     user = await authenticated_user(authorization, require_scope=CONSOLE_SCOPE)
     if "admin" not in user["roles"]:
-        raise HTTPException(403, "관리자만 SSO 신원을 연결할 수 있습니다.")
+        raise HTTPException(403, "관리자만 SSO 계정을 연결할 수 있습니다.")
     return user
 
 
@@ -228,18 +228,18 @@ async def bind(body: Binding, authorization: str | None = Header(default=None)):
     if not configured():
         raise HTTPException(409, "운영자가 먼저 OIDC 공급자를 설정해야 합니다.")
     if not await db.fetch_one("SELECT token FROM principals WHERE token=%s AND status='active'", (body.principal,)):
-        raise HTTPException(422, "활성 상태의 등록 사용자 id가 필요합니다.")
+        raise HTTPException(422, "활성 사용자 ID가 필요합니다.")
     inserted = await db.fetch_one(
         """INSERT INTO oidc_bindings(id,issuer,subject,principal,linked_by) VALUES (%s,%s,%s,%s,%s)
            ON CONFLICT (issuer,subject) DO NOTHING RETURNING id""",
         (uuid4(), settings()["issuer"], body.subject, body.principal, user["principal"]))
     if not inserted:
-        raise HTTPException(409, "이미 연결된 SSO 신원입니다. 해제 후 다시 검토하세요.")
-    return {"message": "SSO 신원을 연결했습니다. 권한은 기존 사용자 관리대장을 따릅니다."}
+        raise HTTPException(409, "이미 연결된 SSO 계정입니다.")
+    return {"message": "SSO 계정을 연결했습니다."}
 
 
 @router.delete("/api/identity/bindings/{binding_id}")
 async def unbind(binding_id: UUID, authorization: str | None = Header(default=None)):
     await administrator(authorization)
     await db.execute("DELETE FROM oidc_bindings WHERE id=%s", (binding_id,))
-    return {"message": "SSO 연결과 해당 세션을 해제했습니다."}
+    return {"message": "SSO 연결을 해제했습니다."}

@@ -1,6 +1,6 @@
 """Follow Gateway decisions as readable lines: `./console.sh watch`.
 
-    10:31:05  차단   권노경(협력사 A) @ws-nkk · filesystem.read_text_file /shared/confidential/... [P-AUTHZ-DENY-001] ...
+    10:31:05  차단   권노경(협력사 A) @ws-nkk · filesystem.read_text_file /shared/confidential/... [PAC-11] ...
 """
 import os
 import json

@@ -1,6 +1,5 @@
-// Console state and data shaping, kept free of the DOM so `node --test` can check it
-// (full_stack_lab/tests/console-state.test.mjs). The server already scopes rows to
-// the signed-in viewer; nothing here may widen that.
+// Console state and data shaping, kept free of the DOM so it can be tested on its own.
+// The server already scopes rows to the signed-in viewer; nothing here may widen that.
 export const FEED_LIMIT = 500;
 export const DECISIONS = ["Allow", "Alert", "Restrict", "Approval", "Block"];
 
@@ -98,16 +97,16 @@ export function sankeyData(flows, decisionLabel = (d) => d) {
   return { nodes: [...nodes.values()], links: [...links.values()] };
 }
 
-// ── control planes (D-62/D-63) ───────────────────────────────────────────────
+// ── control planes ───────────────────────────────────────────────────────────
 // A status is never shown alone: it travels with how sure we are. Levels follow the
-// evidence the server names (integrations.py evidence_kind): 4 kernel heartbeat,
-// 3 Gateway ledger row, 2 manual vendor-console record, 1 self report, 0 none.
+// evidence kind the server names: 4 endpoint heartbeat, 3 audit record, 2 manual
+// vendor-console record, 1 self report, 0 none.
 export const EVIDENCE = {
-  kernel: { level: 4, label: "커널 heartbeat", ttl: 180 },
-  ledger: { level: 3, label: "원장", ttl: null },
-  manual: { level: 2, label: "수기 확인", ttl: 14 * 86400 },
+  kernel: { level: 4, label: "엔드포인트 점검", ttl: 180 },
+  ledger: { level: 3, label: "감사 기록", ttl: null },
+  manual: { level: 2, label: "수동 확인", ttl: 14 * 86400 },
   report: { level: 1, label: "자체 보고", ttl: 6 * 3600 },
-  none: { level: 0, label: "증거 없음", ttl: null },
+  none: { level: 0, label: "기록 없음", ttl: null },
 };
 export const STATE_TONE = {
   gateway_enforced: "allow", endpoint_enforced: "allow", vendor_enforced: "restrict",
@@ -161,7 +160,7 @@ export function dedupeItems(items) {
   return [...groups.values()];
 }
 
-/** The five stops of one ledger row: source, Gateway, Endpoint, upstream, response. */
+/** The five stops of one audit row: source, gateway, endpoint, upstream, response. */
 export function pipelineOf(row) {
   const connection = row?.event_kind === "mcp-connection";
   const endpoint = (row?.planes || []).includes("endpoint");

@@ -1,4 +1,4 @@
-"""Which control plane governs each integration, and what evidence says so (D-62).
+"""Which control plane governs each integration, and what evidence says so.
 
 The Gateway enforces only the calls that reach it. A vendor's native connector is
 governed in the vendor's admin plane, a local plugin or stdio server by the endpoint,
@@ -33,6 +33,7 @@ from .connectors import REVIEW_DAYS, require_admin, state_of
 from .endpoint_plane import HEARTBEAT_SECONDS, MANAGED_CHECKS
 
 router = APIRouter()
+PLATFORM_LABEL = {"wsl": "WSL", "windows": "Windows", "linux": "Linux", "other": "이 플랫폼"}
 STATES = ("gateway_enforced", "endpoint_enforced", "vendor_enforced", "observed_only", "unknown_not_enrolled", "bypass_possible")
 CLASSES = ("gateway_mcp", "gateway_backend_connector", "vendor_native_connector", "local_plugin_or_stdio", "shadow_or_unknown")
 
@@ -75,26 +76,26 @@ def device_state(device: dict, now: datetime) -> dict:
         groups = [str(g) for g in account.get("privileged_groups") or []]
         bypass.append(f"{account['name']}({','.join(groups)}) 관리 불가" if groups else f"{account['name']} 비관리 계정")
     if device.get("device_epoch") and host is None:
-        bypass.append("같은 단말의 다른 계정 보고 없음·만료")
+        bypass.append("같은 엔드포인트의 다른 계정 보고 없음")
     if platform in {"windows", "wsl"}:
-        bypass.append(f"{platform} 강제 미지원")
+        bypass.append(f"{PLATFORM_LABEL[platform]} 엔드포인트 통제 미지원")
     if device.get("status") != "active":
         bypass = []  # a revoked device is no path at all; it is listed only as history
     managed = device.get("managed_state")
     if device.get("status") != "active":
-        state, evidence = "unknown_not_enrolled", "장치 자격 폐기"
+        state, evidence = "unknown_not_enrolled", "등록 해제됨"
     elif platform != "linux":
-        state, evidence = "observed_only", f"{platform}: 커널 강제 미지원, 관측만"
+        state, evidence = "observed_only", f"{PLATFORM_LABEL[platform]} 엔드포인트 통제 미지원"
     elif (managed == "active" and age is not None and age < HEARTBEAT_SECONDS
           and set(checks) == MANAGED_CHECKS and all(v is True for v in checks.values())):
-        state, evidence = "endpoint_enforced", f"AppArmor·UID nftables·보호 설정 일치, heartbeat {int(age)}초 전"
+        state, evidence = "endpoint_enforced", f"엔드포인트 점검 정상 · {int(age)}초 전"
     elif managed in {"active", "quarantined"}:
         state = "bypass_possible"
-        evidence = "격리됨 — 커널 규칙·설정 불일치" if managed == "quarantined" else "heartbeat 만료 — 커널 규칙 확인 불가"
+        evidence = "격리 · 엔드포인트 점검 불일치" if managed == "quarantined" else "엔드포인트 점검 보고 만료"
     elif managed == "pending":
-        state, evidence = "observed_only", "설치 보고, 관리자 활성화 전"
+        state, evidence = "observed_only", "활성화 대기"
     else:
-        state, evidence = "observed_only", "관측 에이전트 보고만 있음"
+        state, evidence = "observed_only", "보고만 있음"
     return {"endpoint_id": device["endpoint_id"], "hostname": device.get("hostname"), "owner": device.get("owner_token"),
             "platform": platform, "account": device.get("local_username"), "uid": device.get("local_uid"),
             "account_state": state, "state": "bypass_possible" if bypass and state != "unknown_not_enrolled" else state,
@@ -114,11 +115,11 @@ def item_evidence(state: str, device: dict | None, seen: Any) -> dict:
 def endpoint_item_state(device: dict | None, approved: bool) -> tuple[str, str, list[str]]:
     """An item found on a device is enforced only as far as that device is."""
     if device is None:
-        return ("observed_only" if approved else "bypass_possible"), "단말 결합 없는 자체 보고", ["관리 단말 없음"]
+        return ("observed_only" if approved else "bypass_possible"), "엔드포인트 인증 없는 자체 보고", ["관리형 엔드포인트 없음"]
     if device["state"] == "endpoint_enforced":
         return "endpoint_enforced", device["evidence"], []
     if device["account_state"] == "endpoint_enforced":
-        return "bypass_possible", "관리 계정은 커널 차단 · " + device["evidence"], device["bypass"]
+        return "bypass_possible", "관리 계정은 엔드포인트에서 차단 · " + device["evidence"], device["bypass"]
     return ("observed_only" if approved else "bypass_possible"), device["evidence"], device["bypass"] or [device["evidence"]]
 
 
@@ -138,7 +139,7 @@ async def snapshot() -> dict:
         if person["managed_required"] and person["token"] not in owners_with_device:
             devices[f"unenrolled:{person['token']}"] = {
                 "endpoint_id": None, "owner": person["token"], "platform": None, "state": "unknown_not_enrolled",
-                "account_state": "unknown_not_enrolled", "evidence": "관리형 단말 등록 없음", "bypass": [], "verified_at": None,
+                "account_state": "unknown_not_enrolled", "evidence": "관리형 엔드포인트 없음", "bypass": [], "verified_at": None,
                 "evidence_kind": "none", "evidence_at": None, "checks": {}}
     items: list[dict] = []
 
@@ -156,7 +157,7 @@ async def snapshot() -> dict:
         holders = sorted(allowed if allowed is not None else {p["token"] for p in people})
         operating = server["status"] == "READY" and server["lifecycle"] == "OPERATING"
         # A server the Gateway refuses has no holders; direct use of the SaaS is `residual`.
-        bypass = [f"{p}: 관리 단말 없음" for p in holders if p not in enforced_owners] if operating else []
+        bypass = [f"{p}: 관리형 엔드포인트 없음" for p in holders if p not in enforced_owners] if operating else []
         bypass += sorted({f"{d['owner']}@{d['hostname']}: {b}" for d in devices.values()
                           if operating and d["owner"] in holders for b in d["bypass"]})
         seen = traversal.get(server["id"]) or {}
@@ -164,18 +165,18 @@ async def snapshot() -> dict:
             "class": "gateway_backend_connector" if provider else "gateway_mcp",
             "key": f"gateway:{server['id']}", "name": server["display_name"] or server["id"], "target": server["endpoint"],
             "harness": None, "owner": ", ".join(holders) or "—", "device": None,
-            "discovered_from": "Registry", "discovered_at": spec.get("registered_at"),
+            "discovered_from": "서버 등록", "discovered_at": spec.get("registered_at"),
             "source": spec.get("source_url") or ("도입 신청 " + str(spec["intake_id"]) if spec.get("intake_id") else "검토 카탈로그"),
             "managed_by": "gateway", "enforced": True,
             "state": "bypass_possible" if operating and bypass else "gateway_enforced",
-            "evidence": (f"Gateway 실행 {seen['executed_at'].isoformat(timespec='seconds')} · 7일 {seen['calls_7d']}건"
-                         if seen.get("executed_at") else "Gateway 경유 실행 기록 없음") + ("" if operating else f" · {server['status']} 상태라 호출 차단"),
+            "evidence": (f"게이트웨이 실행 기록 · 7일 {seen['calls_7d']}건"
+                         if seen.get("executed_at") else "게이트웨이 실행 기록 없음") + ("" if operating else " · 호출 차단 상태"),
             "approval": {"state": "approved" if operating else server["status"].lower(), "expires_at": spec.get("valid_until")},
             "bypass": bypass, "last_verified_at": seen.get("last_at"),
             "evidence_kind": "ledger" if seen.get("last_at") else "none",
             "evidence_at": seen.get("executed_at") or seen.get("last_at"), "evidence_ref": seen.get("executed_id"),
             # Outside any device: the same SaaS account used from another machine.
-            "residual": ["공급자 계정의 다른 단말·웹 접근은 SaaS 조직 정책 소관"] if provider else []})
+            "residual": ["다른 기기·웹에서의 SaaS 접근은 벤더 정책 소관"] if provider else []})
 
     # Harness reports (kit, not device-bound): vendor connectors/apps/features and local plugins.
     decided = {d["item_key"]: d for d in await db.fetch_all("SELECT * FROM harness_decisions")}
@@ -191,20 +192,20 @@ async def snapshot() -> dict:
         # item is not bound to a managed device even when its owner has one.
         state, evidence, bypass = endpoint_item_state(None, approval == "approved")
         if not row["active"]:
-            state, evidence = "observed_only", "마지막 보고에서 사라짐 — 차단 증거 아님"
+            state, evidence = "observed_only", "마지막 보고에서 사라짐"
         if row["kind"] in {"connector", "app"} and vendor.get("console_state") == "blocked" and vendor.get("verified_at"):
             # A manual record ages like a review: past REVIEW_DAYS it no longer vouches.
             checked = datetime.fromisoformat(vendor["verified_at"])
             if REVIEW_DAYS and (now - checked).days < REVIEW_DAYS:
-                state, evidence = "vendor_enforced", f"벤더 관리 콘솔 차단(수기 확인 {vendor['verified_at']})"
+                state, evidence = "vendor_enforced", "벤더 콘솔 차단 · 수동 확인"
             else:
-                evidence = f"벤더 콘솔 수기 확인 만료({vendor['verified_at']})"
+                evidence = "벤더 콘솔 수동 확인 만료"
         items.append({
             "class": "local_plugin_or_stdio" if local else "vendor_native_connector",
             "key": f"{row['item_key']}|{row['principal']}|{row['workstation']}", "item_key": row["item_key"],
             "name": row["name"], "target": row["target"], "harness": row["harness"],
             "owner": row["principal"], "device": row["workstation"],
-            "discovered_from": "PC 키트 보고", "discovered_at": row["first_seen"], "source": row["kind"],
+            "discovered_from": "PC 보고", "discovered_at": row["first_seen"], "source": row["kind"],
             "managed_by": "endpoint" if local else "vendor", "enforced": state in {"endpoint_enforced", "vendor_enforced"},
             "state": state, "evidence": evidence,
             "approval": {"state": approval, "expires_at": None, "decided_by": decision.get("decided_by"),
@@ -230,7 +231,7 @@ async def snapshot() -> dict:
             "class": "local_plugin_or_stdio" if stdio and row["classification"] == "retired-residue" else "shadow_or_unknown",
             "key": f"{row['source']}:{row['endpoint_id']}:{row['location']}:{row['name']}", "name": row["name"],
             "target": row["target"], "harness": None, "owner": (device or {}).get("owner"), "device": row["endpoint_id"],
-            "discovered_from": f"단말 {'설정' if row['source'] == 'config' else '리스너'} {row['location']}",
+            "discovered_from": f"엔드포인트 {'설정' if row['source'] == 'config' else '리스너'} {row['location']}",
             "discovered_at": row["seen"], "source": row["classification"],
             "managed_by": "endpoint" if state == "endpoint_enforced" else "none", "enforced": state == "endpoint_enforced",
             "state": state, "evidence": evidence,

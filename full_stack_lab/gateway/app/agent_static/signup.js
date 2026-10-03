@@ -6,11 +6,9 @@ const invitationToken = invitation.get("invite") || "";
 if (invitationToken) {
   form.elements.username.value = invitation.get("username") || "";
   form.elements.username.readOnly = true;
-  document.querySelector(".brand b").textContent = "조직 초대 수락";
-  document.querySelector(".gate-heading h2").textContent = "조직 초대 수락";
-  document.querySelector(".gate-heading p").textContent = "이름과 비밀번호를 설정한 뒤 관리형 단말을 연결하세요.";
-  document.querySelector(".brand span").textContent = "이름과 비밀번호를 설정하면 일반 사용자로 등록됩니다.";
-  form.querySelector("button").textContent = "등록 완료";
+  document.querySelector("#signup-title").textContent = "초대 수락";
+  document.title = "초대 수락 · MCP Governance";
+  form.querySelector("button").textContent = "등록";
   history.replaceState(null, "", "/signup");
 }
 form.addEventListener("submit", async (event) => {
@@ -23,7 +21,8 @@ form.addEventListener("submit", async (event) => {
     if (invitationToken) body.invitation_token = invitationToken;
     const response = await fetch("/auth/signup", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const result = await response.json();
-    message.textContent = response.ok ? result.message : result.detail || "가입 신청에 실패했습니다.";
+    message.textContent = response.ok ? result.message : result.detail || "가입 요청에 실패했습니다.";
+    message.classList.toggle("ok", response.ok);
     if (response.ok) {
       form.reset();
       if (invitationToken) {

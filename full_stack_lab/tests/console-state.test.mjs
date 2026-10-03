@@ -1,4 +1,4 @@
-// node --test full_stack_lab/tests/console-state.test.mjs   (CI: verify.yml static job)
+// node --test full_stack_lab/tests/console-state.test.mjs
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -32,8 +32,8 @@ test("ids sort numerically and malformed rows cannot displace real decisions", (
 
 test("search matches person, PC, harness, server.tool, target, policy and trace, ignoring case and spaces", () => {
   const rows = [row(1), row(2, { who: "권노경", workstation: "ws-nkk", harness: "opencode", server: "filesystem",
-    tool: "read_text_file", target: "/shared/confidential/pay.csv", policy_id: "P-AUTHZ-DENY-001", trace_id: "ABC123" })];
-  for (const q of ["권노경", "WS-NKK", "OpenCode", "filesystem.read_text_file", "confidential", "p-authz-deny", "  abc123 "]) {
+    tool: "read_text_file", target: "/shared/confidential/pay.csv", policy_id: "PAC-11", trace_id: "ABC123" })];
+  for (const q of ["권노경", "WS-NKK", "OpenCode", "filesystem.read_text_file", "confidential", "pac-11", "  abc123 "]) {
     assert.deepEqual(searchRows(rows, q).map((r) => r.id), [2], q);
   }
   assert.deepEqual(searchRows(rows, ""), rows);
@@ -93,7 +93,7 @@ test("enforced is green only with fresh evidence of a ledger row or a kernel hea
   const now = Date.parse("2026-10-01T10:00:00Z");
   const at = (s) => new Date(now - s * 1000).toISOString();
   assert.equal(statusView({ state: "gateway_enforced", evidence_kind: "ledger", evidence_at: at(60), evidence_ref: 4812 }, now).tone, "allow");
-  assert.match(statusView({ state: "gateway_enforced", evidence_kind: "ledger", evidence_at: at(60), evidence_ref: 4812 }, now).evLabel, /원장 #4812/);
+  assert.match(statusView({ state: "gateway_enforced", evidence_kind: "ledger", evidence_at: at(60), evidence_ref: 4812 }, now).evLabel, /감사 기록 #4812/);
   const noRecord = statusView({ state: "gateway_enforced", evidence_kind: "none" }, now);
   assert.equal(noRecord.tone, "outline");
   assert.equal(noRecord.evLabel, "경유 기록 없음");

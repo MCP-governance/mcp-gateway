@@ -46,7 +46,7 @@
 | `GET/POST/PUT/DELETE /gw/<path>` | 사용자 | Gateway `/api/<path>` 프록시. 관리자: `overview, activity, registry, health, termination/, approvals/, catalog/, enforcement, monitor/, audit/, policy/, endpoint/, supply-chain/, risk-catalog, lab/` · 그 외: `activity, health`만 |
 | `GET /approvals` · `POST /approvals/{id}/approve|reject` | 관리자 | `{approvals, history}` — 대기 중(요청자·도구·인자·판정 맥락)과 처리·만료된 최근 50건 |
 | `GET /api/accounts` · `PUT /api/accounts/{user_id}/status` | 관리자 | 신원 관리대장, 계정 사용/중지/잠금 |
-| `GET /api/components` · `GET /api/identity` · `POST /api/identity/bindings` · `DELETE /api/identity/bindings/{id}` | 관리자(Console scope) | 설치/설정/실행 확인과 적용 범위, 공급자/명시 issuer-sub 연결. `{principal,subject}`는 기존 활성 주체에만 연결. 해제는 해당 Console 세션을 차단하며 단말 키 회수는 별도 |
+| `GET /api/identity` · `POST /api/identity/bindings` · `DELETE /api/identity/bindings/{id}` | 관리자(Console scope) | SSO 공급자 설정과 명시 issuer-sub 연결. `{principal,subject}`는 기존 활성 주체에만 연결. 해제는 해당 Console 세션을 차단하며 단말 키 회수는 별도 |
 | `GET /api/mcp-requests` · `POST /api/mcp-requests` | 사용자 | 도입 신청 목록(관리자=전체) / 신청 `{display_name, intake_kind: repository|remote-endpoint, repository_url, endpoint_url, requested_transport, purpose}`. 저장소 신청은 검증 대기열로, 공급자 호스팅(`remote-endpoint`, Streamable HTTP만)은 HOLD로 시작(D-57). 종료 조건 필드를 보내면 422 |
 | `POST /api/mcp-requests/{id}/review-contract` | 관리자 | 원격 신청의 실제 광고 계약 검토 `{server_id, endpoint, catalog_hash, tools, data_class, valid_days, poisoning_ack, allowed_principals(로그인 아이디 또는 주체 토큰), review_note}` → REMOTE_REVIEWED. 구현 소스 검사는 하지 않았다고 기록 |
 | `POST/GET /api/account-invitations` · `DELETE /api/account-invitations/{id}` | 관리자 | 일반 사용자 초대 `{usernames(1~50), department}` → 48시간·1회용 링크(발급 응답에서만) / 목록(비밀·해시 없음) / 회수(D-58) |
@@ -54,12 +54,11 @@
 | `POST /api/mcp-requests/{id}/queue-validation|approve|reject` | 관리자 | 격리 검증 대기열(HOLD·FAILED·VALIDATED)·승인·거부(승인 전 모든 단계). 원격(HTTP·SSE) 서버의 승인은 ① 종료 조건 결론 T1 ② 관리자 증거 기록 ③ `approve` 본문 `{risk_acceptance}`(10자 이상, 수용자·시각·결론 등급과 함께 저장) 중 하나가 있어야 함(아니면 409, D-50). 승인은 저장소를 Gitea `mcp` 조직으로 가져옴 |
 | `POST /api/mcp-requests/{id}/register` | 관리자 | APPROVED 신청을 Gateway에 등록(D-49) `{server_id, endpoint, catalog_hash, tools:{이름:r|w|x}, data_class, valid_days, poisoning_ack}` — 저장소·검증 커밋·목적·종료 조건은 신청에서 실음. 설명 경고가 있는 도구를 고르면 `poisoning_ack: true` 필요(D-52). 원격 신청은 검토한 값과 한 글자라도 다르면 409, 승인자는 신청자와 달라야 함. 명령줄 도우미: `tests/intake_register.py` |
 | `POST /api/pc/inventory` | 사용자(키트) | 직원 PC의 자기 보고(D-51·D-53) `{workstation, harnesses:[claude|codex], items:[{harness, kind(connector·plugin·server·app·feature), name, target(scheme://host[:port]·stdio·앱 id·기능 값), status, active}]}` → `{accepted, policy, review}`. 서버도 URL의 자격·경로·query를 제거한다. 이전 항목의 absent는 미관측이며 차단 확인이 아니다 |
-| `GET /api/connectors[?summary=1]` · `PUT /api/connectors/decision` | 관리자 | 상태 pending·expired·denied·approved(예외 승인), 활성 보고 PC, `enforcement: unverified` / 결정 `{key, decision: approved|denied|reset, note}` — 거부 사유 필수. 벤더 출처도 자동 허용하지 않음 |
-| `GET /api/connectors/policy` | 관리자 | `scope: managed-cli-gateway-only`, `enforcement: unverified`, `claude.deniedMcpServers`·`allowAllClaudeAiMcps: false`, `codex.apps_disabled`·`features_disabled`. 예외 승인으로 전체 계정 커넥터를 열지 않음. `managed`는 인벤토리 유무와 무관하게 엄격한 세 파일 생성 |
+| `GET /api/connectors[?summary=1]` · `PUT /api/connectors/decision` | 관리자 | 상태 pending·expired·denied·approved(승인), 활성 보고 PC, `enforcement: unverified` / 결정 `{key, decision: approved|denied|reset, note}` — 거부 사유 필수. 벤더 출처도 자동 허용하지 않음 |
+| `GET /api/connectors/policy` | 관리자 | `scope: managed-cli-gateway-only`, `enforcement: unverified`, `claude.deniedMcpServers`·`allowAllClaudeAiMcps: false`, `codex.apps_disabled`·`features_disabled`. 승인으로 전체 계정 커넥터를 열지 않음. `managed`는 인벤토리 유무와 무관하게 엄격한 세 파일 생성 |
 | `GET /api/integrations` | 관리자 | D-62 통제면 인벤토리 `{items, devices, summary}`. 항목: `class`(gateway_mcp·gateway_backend_connector·vendor_native_connector·local_plugin_or_stdio·shadow_or_unknown), `managed_by`(gateway·endpoint·vendor·none), `enforced`, `state`(gateway_enforced·endpoint_enforced·vendor_enforced·observed_only·unknown_not_enrolled·bypass_possible), `evidence`, `approval{state, expires_at}`, `bypass[]`, `residual[]`, `discovered_from/at`, `last_verified_at`. 단말: `state`·`account_state`·`platform`·`bypass[]`(같은 단말의 다른 계정·WSL·Windows) |
 | `PUT /api/integrations/vendor-control` | 관리자 | 벤더 관리 콘솔에서 확인한 상태의 수기 기록 `{key, console_state: allowed|limited|blocked|unknown, allowed_actions, oauth_scopes, role_access, evidence_url, note}`. 벤더에서 가져온 값이 아니며 `vendor_enforced(수기 확인)`로만 표시 |
 | `GET /api/mcp-catalog/search?q=` | 사용자 | 이미 신청·등록된 서버인지 |
-| `GET /api/mcp-scan` 외 `/api/mcp-scan/*` | 관리자 | AI 코드 감사(격리 워커) 작업 |
 | `GET /api/readiness` · `GET /health` | 공개 | 준비 상태(Gateway·LLM 게이트웨이) |
 
 ## 5. Gateway 운영 API

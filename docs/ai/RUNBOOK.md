@@ -58,7 +58,6 @@ scope가 없는 예전 토큰도 관리권한으로 승격하지 않으므로 �
 있다. `./console.sh field up|status|pc-command|set-password|register-pc|down` — Tailscale IP를 자동으로 찾아
 `http://<IP>:443`에 게시하며 root.crt·hosts 설정은 필요 없다. 기본 `up`은 바뀌지 않고, CI는
 `verify` 끝에서 loopback 변형으로 실제 Claude Code·Codex CLI와 내부 Git 로그인을 확인한다(D-42·D-46·D-48).
-- `field up`은 A.I.G용 `qwen3.5:0.8b`를 처음 한 번 받아 `aig-scanner`로 만든다(D-47, `AIG_LOCAL_MODEL=none`이면 생략).
 - 승인한 신청은 Console **도입 신청 → Gateway 등록**으로 올린다(D-49). 등록은 `registry_runtime` 볼륨의 `servers.json`에 남고,
   `./console.sh reset`이면 지워진다. 파일로 검토·보관하려면 `docker compose exec gateway cat /registry-runtime/servers.json`.
 - 내부 Git(`/git/`)은 솔루션 계정으로만 열린다(D-48). 클론은 같은 ID/PW, Gitea 관리는 관리자 역할 계정으로 로그인한 브라우저에서.
@@ -128,8 +127,8 @@ cd full_stack_lab && ./console.sh up          # 첫 실행은 모델 다운로�
   `./console.sh contracts --check`.
 
 ### 종료 판정 시연
-Console `#/termination` → 관계 카드 "종료 시작" → 케이스 화면에서 증거 수집 → 판정 → (gitea) 조직
-권한으로 폐기 → 증거 수집 → 판정(T1) → 종결 → 실습 복원 → `./console.sh restore-token gitea`.
+Console `#/termination` → 이용 관계 "종료 시작" → 케이스 화면에서 증거 수집 → 판정 → (gitea) 하위 시스템
+자격 폐기 → 증거 수집 → 판정(T1) → 종결 → `./console.sh restore gitea`·`./console.sh restore-token gitea`.
 자동 버전: `python3 tests/termination_flow.py`.
 
 ### 누가 연 종료 케이스가 남아 서버가 막혀 있을 때

@@ -35,7 +35,7 @@ GATEWAY_ENVIRONMENT = os.getenv("GATEWAY_ENVIRONMENT", "prod")
 REPORT_DIR = Path(os.getenv("REPORT_DIR", "/reports"))
 POLICY_PATH = Path(os.getenv("POLICY_PATH", "/policy/policy.rego"))
 # What OPA serves from /policy, including the integrated PAC pack and its decision contract.
-POLICY_BUNDLE = ("policy.rego", "pac15.rego", "decision.rego", "data.json", "exceptions.json", "policy_ledger.json")
+POLICY_BUNDLE = ("policy.rego", "pac15.rego", "decision.rego", "data.json", "policy_ledger.json")
 APPROVAL_TTL_MINUTES = 10
 CATALOG_REFRESH_SECONDS = int(os.getenv("CATALOG_REFRESH_SECONDS", "60"))
 # A server check only negotiates a session; a slow answer is itself the finding.
@@ -74,7 +74,7 @@ MAX_ARGUMENT_BYTES = int(os.getenv("MAX_ARGUMENT_BYTES", "65536"))
 # 모든 차단을 세면 그 신호가 환경 상태에 묻힌다 - 서버 하나가 드리프트 상태면
 # MCP-CATALOG-001이 모든 사용자에게 걸리고, 그러면 아무 잘못 없는 사람들의 다음
 # 호출이 전부 경보가 된다. 주체에게 귀속되는 인가 거부만 센다.
-DENIAL_POLICIES = ("P-AUTHZ-DENY-001", "MCP-EGRESS-001", "MCP-EGRESS-002", "P-DLP-001",
+DENIAL_POLICIES = ("MCP-EGRESS-001", "MCP-EGRESS-002", "P-DLP-001",
                    "P-CLASSIFICATION-001", "P-APPROVAL-EXPIRY-001", "MCP-REGISTRY-001")
 
 
@@ -619,7 +619,7 @@ async def _contract(server_id: str, tool_name: str) -> dict:
         """SELECT COALESCE(sum(critical_count),0) AS critical_count FROM
            (SELECT DISTINCT ON (scanner, COALESCE(summary->>'evidence_mode', 'live'))
                    critical_count FROM supply_chain_reports
-            WHERE source_ref=%s
+            WHERE source_ref=%s AND scanner <> 'AI-Infra-Guard mcp-scan'
             ORDER BY scanner, COALESCE(summary->>'evidence_mode', 'live'), id DESC) latest_per_scanner""",
         (server["source_ref"],),
     )
@@ -1291,30 +1291,6 @@ async def _decision_payload(event: dict, before: float) -> dict:
     # fails, its TTL keeps the unconfirmed call counted instead of allowing a retry.
     if event.get("request_id") and not (event.get("upstream_attempted") and not event.get("upstream_executed")):
         await _release_call(event["request_id"])
-    # Anomaly policy records the enforcement decision first; a scanner outage must
-    # never turn that decision into an unlogged gateway error.
-    scan_url = os.getenv("MCP_SCAN_BASE_URL", "")
-    local_model = (urlsplit(scan_url).hostname or "") in {
-        "localhost", "127.0.0.1", "::1", "host.docker.internal", "model-stub", "llm-stub", "ollama"}
-    if (event.get("policy_id") == "P-ANOMALY-001" and event.get("server_id")
-            and os.getenv("MCP_SCAN_AUTO_ON_ANOMALY", "0") == "1" and local_model
-            and os.getenv("MCP_SCAN_MODEL") and os.getenv("MCP_SCAN_API_KEY")
-            and os.getenv("MCP_SCAN_EVIDENCE_MODE", "live") == "live"):
-        try:
-            await db.execute(
-                """INSERT INTO scan_jobs(id,kind,target_kind,target_id,target_label,requested_by,trigger,mode)
-                   SELECT %s,'mcp-scan','server',s.id,s.display_name,'gateway-anomaly','anomaly','static'
-                     FROM mcp_servers s WHERE s.id=%s AND s.source_url LIKE 'https://github.com/%%'
-                       AND NOT EXISTS (SELECT 1 FROM scan_jobs j WHERE j.target_kind='server'
-                           AND j.target_id=s.id AND j.mode='static' AND j.status IN ('QUEUED','RUNNING'))
-                       AND NOT EXISTS (SELECT 1 FROM scan_jobs j WHERE j.target_kind='server'
-                           AND j.target_id=s.id AND j.trigger='anomaly'
-                           AND j.created_at > now() - interval '24 hours')
-                   ON CONFLICT DO NOTHING""",
-                (uuid.uuid4(), event["server_id"]),
-            )
-        except Exception:
-            logging.getLogger(__name__).exception("A.I.G anomaly scan enqueue failed for decision %s", decision_id)
     return {**event, "decision_id": decision_id, "latency_ms": int((asyncio.get_running_loop().time() - before) * 1000)}
 
 
@@ -1751,31 +1727,4 @@ async def import_supply_chain_reports() -> list[dict]:
         await _store_trivy(report, source_ref, summary, counts)
         imported.append({"scanner": "Trivy", "server_id": server_id, "source_ref": source_ref, **summary})
 
-    sarif = REPORT_DIR / "mcp-scan.sarif.json"
-    if sarif.exists():
-        data = json.loads(sarif.read_text(encoding="utf-8"))
-        results = [item for run in data.get("runs", []) for item in run.get("results", [])]
-        levels = {"error": 0, "warning": 0, "note": 0}
-        findings = []
-        for item in results:
-            level = item.get("level", "warning")
-            levels[level] = levels.get(level, 0) + 1
-            location = (item.get("locations") or [{}])[0].get("physicalLocation", {})
-            if len(findings) < 50:
-                findings.append({
-                    "rule": item.get("ruleId", "unclassified"),
-                    "severity": level,
-                    "message": item.get("message", {}).get("text", "세부 정보 없음"),
-                    "path": location.get("artifactLocation", {}).get("uri", ""),
-                    "line": location.get("region", {}).get("startLine"),
-                })
-        summary = {"findings": findings, "total": len(results), "levels": levels}
-        await db.execute("DELETE FROM supply_chain_reports WHERE scanner='AI-Infra-Guard mcp-scan' AND report_path=%s", (str(sarif),))
-        await db.execute(
-            """INSERT INTO supply_chain_reports(scanner, scanner_version, source_ref, report_path, status,
-               critical_count, high_count, medium_count, summary)
-               VALUES ('AI-Infra-Guard mcp-scan','036c39bd03b3','workspace',%s,'IMPORTED',%s,%s,%s,%s)""",
-            (str(sarif), levels["error"], levels["warning"], levels["note"], Jsonb(summary)),
-        )
-        imported.append({"scanner": "AI-Infra-Guard mcp-scan", **summary})
     return imported

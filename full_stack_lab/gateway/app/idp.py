@@ -105,7 +105,7 @@ async def token(request: Request, grant_type: str = Form(...), client_id: str = 
         if row["managed_required"]:
             from .endpoint_plane import managed_event
             await managed_event(None, row["token"], "unmanaged-login-denied", {"client_id": client_id})
-            return _error("invalid_client", "관리형 단말 등록이 필요합니다. Console의 내 PC 연결에서 키트를 설치하세요.", 403)
+            return _error("invalid_client", "관리형 엔드포인트 등록이 필요합니다. 콘솔의 내 PC 연결에서 설치 키트를 받으세요.", 403)
         return await _issue(row, client_id, uuid.uuid4())
     if grant_type == "refresh_token":
         if not refresh_token:
@@ -124,7 +124,7 @@ async def token(request: Request, grant_type: str = Form(...), client_id: str = 
             return _error("invalid_grant", "사용할 수 없는 계정입니다.")
         if row["managed_required"]:
             await _revoke_family(stored["family_id"])
-            return _error("invalid_grant", "관리형 단말 인증으로 전환했습니다. 기존 사용자 refresh 인증은 폐기했습니다.", 403)
+            return _error("invalid_grant", "관리형 엔드포인트 인증으로 전환했습니다. 기존 갱신 토큰은 폐기했습니다.", 403)
         await db.execute("UPDATE oauth_refresh_tokens SET rotated_at=now() WHERE id=%s", (stored["id"],))
         return await _issue(row, client_id, stored["family_id"])
     return _error("unsupported_grant_type", "password 또는 refresh_token만 지원합니다.")

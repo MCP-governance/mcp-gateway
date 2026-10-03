@@ -1,12 +1,9 @@
-body.gate{display:grid;place-items:center;min-height:100vh;min-height:100dvh;padding:40px}
-.gate-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,460px);gap:80px;align-items:center;width:min(1040px,100%)}
-.gate-intro{padding:24px 0}.gate-kicker{font:700 12px var(--sans);letter-spacing:.18em;color:var(--brand)}
-.gate-intro h1{font-size:42px;line-height:1.4;margin:20px 0;color:var(--ink);font-weight:750}
-.gate-intro p{max-width:400px;font-size:16px;line-height:1.9;color:var(--ink-3)}
-.gate-points{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}.gate-points span{font-size:12px;color:var(--brand);padding:7px 10px;border:1px solid var(--line-2);border-radius:6px}
-.gate-card{padding:32px;display:flex;flex-direction:column;gap:24px}.gate-card .brand{padding:0;gap:10px}
-.gate-card .brand b{font-size:14px}.gate-card .brand span{font-size:12px}
-.gate-heading h2{font-size:22px;margin:0 0 8px}.gate-heading p{color:var(--ink-3);font-size:13px;margin:0}
-.gate-card .form{gap:18px}.gate-card .btn.primary{min-height:46px}.gate-card input{min-height:46px}.gate-card .form>a{text-align:center;font-size:13px}
+body.gate{display:grid;place-items:center;min-height:100vh;min-height:100dvh;padding:40px 16px}
+.gate-card{width:min(400px,100%);padding:32px;display:flex;flex-direction:column;gap:22px}
+.gate-brand{display:flex;align-items:center;gap:10px;font-size:16px;letter-spacing:-.02em}
+.gate-brand .mark{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:var(--brand);color:var(--panel)}
+.gate-brand .mark svg{width:18px;height:18px}
+.gate-card h1{font-size:22px;margin:0}
+.gate-card .form{gap:16px}.gate-card .btn.primary{min-height:46px}.gate-card input{min-height:46px}.gate-card .form>a{text-align:center;font-size:13px}
 .err{color:var(--block);font-size:13px;min-height:1em;margin:0}
-@media(max-width:850px){body.gate{padding:24px}.gate-layout{grid-template-columns:minmax(0,460px);gap:16px;justify-content:center}.gate-intro{padding:0}.gate-intro h1{font-size:28px;margin:12px 0}.gate-intro p,.gate-points{display:none}.gate-card{padding:24px}}
+.ok{color:var(--allow)}

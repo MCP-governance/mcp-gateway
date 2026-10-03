@@ -62,7 +62,7 @@ EVIDENCE_KINDS: dict[str, dict] = {
     "gateway-denial": {"label": "게이트웨이 차단 확인", "state": True,
                        "proves": "조직의 강제 경로가 이 주체의 호출을 실행 전에 막았다",
                        "not_proves": "강제 경로 밖의 다른 경로"},
-    "introspection": {"label": "토큰 조사 응답(RFC 7662)", "state": True,
+    "introspection": {"label": "토큰 상태 조회", "state": True,
                       "proves": "인가 서버가 판단하는 토큰의 활성 상태",
                       "not_proves": "자원 서버가 그 상태를 반영해 차단하는지"},
     "credential-check": {"label": "하위 시스템 자격 확인", "state": True,
@@ -71,16 +71,16 @@ EVIDENCE_KINDS: dict[str, dict] = {
     "provider-attestation": {"label": "제공자 폐기 증명", "state": True,
                              "proves": "제공자가 대상·시점을 특정해 회수를 진술했다",
                              "not_proves": "진술의 진위(제3자 검증이 아님)"},
-    "endpoint-inventory": {"label": "단말 설정 보고", "state": True,
-                           "proves": "보고 시점에 단말 설정에서 항목이 사라졌다",
+    "endpoint-inventory": {"label": "엔드포인트 설정 보고", "state": True,
+                           "proves": "보고 시점에 엔드포인트 설정에서 항목이 사라졌다",
                            "not_proves": "보고 이후 재설치"},
-    "revocation-response": {"label": "폐기 요청 응답(RFC 7009·삭제 API)", "state": False,
+    "revocation-response": {"label": "폐기 요청 응답", "state": False,
                             "proves": "폐기 요청이 처리되었다",
                             "not_proves": "대상이 그 시점에 유효했는지 — 200은 무효 토큰에도 반환된다"},
-    "liveness-probe": {"label": "endpoint 도달 확인", "state": False,
+    "liveness-probe": {"label": "서버 도달 확인", "state": False,
                        "proves": "그 주소가 응답하는지",
                        "not_proves": "조직의 자격이 아직 유효한지(다른 고객에게 계속 서비스할 수 있다)"},
-    "session-termination": {"label": "세션 종료 요청 응답(E2)", "state": False,
+    "session-termination": {"label": "세션 종료 요청 응답", "state": False,
                             "proves": "세션 종료 요청에 서버가 보인 응답",
                             "not_proves": "세션·토큰의 소멸 — 405면 소멸 시점은 서버 정책에 달렸다"},
     "operator-statement": {"label": "담당자 진술", "state": False,
@@ -189,9 +189,9 @@ async def drill(server_id: str) -> dict:
             WHERE i.registry_match=%s""", (server_id,))
     blockers = []
     if provider and not disclosed:
-        blockers.append("제공자가 하위 시스템에 보유한 자격의 고지가 계약에 없습니다 → 회수 대상 모집단을 열거할 수 없어 C1이 성립하지 않습니다.")
+        blockers.append("제공자 보유 자격 고지 없음 (C1 불충족)")
     if provider and disclosed and not (records or org_verifiable):
-        blockers.append("고지된 자격의 폐기를 확인할 수단(폐기 기록 제출 또는 조직의 직접 확인)이 없습니다 → C2·C3을 입증할 수 없습니다.")
+        blockers.append("자격 폐기 확인 수단 없음 (C2·C3 입증 불가)")
     ceiling = "T3" if provider and not disclosed else ("T2" if provider and not (records or org_verifiable) else "T1")
     return _row({
         "server_id": server_id, "display_name": server["display_name"], "provider_operated": provider,
@@ -284,7 +284,7 @@ async def seed_targets(case_id: str, actor: str) -> list[dict]:
         created.append(await add_target(
             case_id, "endpoint-config", f"{row['hostname']} · {row['config_path']} 의 '{row['server_label']}' 항목",
             "endpoint", "endpoint-agent", actor, invalidate=False, subject_ref=row["fingerprint"],
-            verification="endpoint-report", note="엔드포인트 평면이 보고한 클라이언트 설정 잔존"))
+            verification="endpoint-report", note="엔드포인트가 보고한 MCP 설정 잔존"))
     if _is_provider(server):
         terms = server.get("exit_terms") or {}
         creds = server.get("server_held_credentials") or []
@@ -443,7 +443,7 @@ async def collect(case_id: str, kinds: list[str], actor: str) -> dict:
                                           detail, actor, target_id=str(target["id"]))
             collected.append(evidence)
             if still is None and target["status"] == "OUTSTANDING":
-                await revoke_target(str(target["id"]), actor, "REVOKED", "단말 보고에서 항목이 사라짐",
+                await revoke_target(str(target["id"]), actor, "REVOKED", "엔드포인트 보고에서 항목이 사라짐",
                                     at=evidence["observed_at"])
     if "credentials" in kinds:
         for target in targets:
@@ -589,7 +589,7 @@ def _judge_target(target: dict, evidence: list[dict], activity: dict, provider_c
     if target.get("verification") == "stateless" and target.get("expires_at") and revoked_at:
         gap = (target["expires_at"] - revoked_at).total_seconds()
         if gap > 0:
-            c3_gaps.append(f"상태 비저장 토큰이라 폐기 후 만료까지 {int(gap)}초 동안 자원 접근이 가능했습니다(E1).")
+            c3_gaps.append(f"상태 비저장 토큰이라 폐기 후 만료까지 {int(gap)}초 동안 자원 접근이 가능했습니다.")
     if status in {"REVOKED", "EXPIRED"} and not confirmed and not c3_gaps:
         c3_gaps.append("조치 이후 대상이 무효가 되었음을 확인한 기록이 없습니다(전파 완료 미확인).")
     if status not in {"REVOKED", "EXPIRED"} and not c3_gaps:

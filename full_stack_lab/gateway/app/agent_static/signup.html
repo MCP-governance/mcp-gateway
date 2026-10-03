@@ -3,27 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>회원가입 신청 · MCP Governance</title>
+  <meta name="color-scheme" content="light dark" />
+  <title>가입 요청 · MCP Governance</title>
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/static/console.css" />
   <link rel="stylesheet" href="/static/login.css" />
 </head>
 <body class="gate">
-  <div class="gate-layout">
-  <section class="gate-intro" aria-label="MCP Governance"><span class="gate-kicker">MCP GOVERNANCE</span><h1>도구 연결부터<br />실행과 회수까지</h1><p>조직의 MCP 연결, 사용자와 단말, 승인과 감사 기록을 한 곳에서 관리합니다.</p><div class="gate-points"><span>연결·접근 관리</span><span>정책·실행 추적</span><span>종료·회수 증거</span></div></section>
   <main class="panel gate-card">
-    <header class="brand"><div><b>회원가입 신청</b><span>관리자 승인 후 로그인할 수 있습니다.</span></div></header>
-    <div class="gate-heading"><h2>조직 계정 신청</h2><p>관리자 승인 후 계정과 관리형 단말을 연결할 수 있습니다.</p></div>
+    <header class="gate-brand">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+      <b>MCP Governance</b>
+    </header>
+    <h1 id="signup-title">가입 요청</h1>
     <form id="signup-form" class="form stack">
       <label>아이디<input name="username" autocomplete="username" required minlength="3" maxlength="32" pattern="[a-z][a-z0-9._-]{2,31}" /></label>
-      <label>표시 이름<input name="display_name" required minlength="2" maxlength="80" /></label>
+      <label>이름<input name="display_name" required minlength="2" maxlength="80" /></label>
       <label>비밀번호<input name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="150" /></label>
       <p class="err" id="signup-message" role="status" tabindex="-1"></p>
-      <button class="btn primary" type="submit">가입 신청</button>
-      <a href="/login">로그인으로 돌아가기</a>
+      <button class="btn primary" type="submit">가입 요청</button>
+      <a href="/login">로그인</a>
     </form>
   </main>
-  </div>
   <script src="/static/signup.js"></script>
 </body>
 </html>

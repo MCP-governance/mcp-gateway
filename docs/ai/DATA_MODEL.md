@@ -89,7 +89,7 @@ NOT_EXECUTED, 전송했지만 결과를 확인하지 못하면 UNCONFIRMED(외�
 
 ## 6. 공급망·도입
 `mcp_intake_requests`(도입 신청. `exit_terms`는 관리자 검증 기록: 세 조항·`evidence_url`·`note`·`verified_by`·`verified_at`, D-26;
-`internal_repo_url`은 Gitea `mcp` 조직의 사본, `registered_server_id`는 Gateway에 등록한 서버 id, D-48·D-49), `scan_jobs`(격리 워커 작업, lease), `supply_chain_reports`,
+`internal_repo_url`은 Gitea `mcp` 조직의 사본, `registered_server_id`는 Gateway에 등록한 서버 id, D-48·D-49), `scan_jobs`(과거 코드 감사 작업 기록, 새 작업 없음), `supply_chain_reports`,
 `worker_heartbeats`, `aig_risk_catalog`(AI-Infra-Guard 위험 범주 ↔ 통제 매핑).
 
 Console 등록 서버(D-49)는 DB가 아니라 `REGISTRY_RUNTIME_DIR/servers.json`에 있다 — `servers`(catalog.toml과 같은 모양 +
@@ -97,7 +97,7 @@ Console 등록 서버(D-49)는 DB가 아니라 `REGISTRY_RUNTIME_DIR/servers.jso
 `registry.sync()`가 이 파일을 카탈로그와 함께 `mcp_servers`·`mcp_tools`(`approval_valid_until` = 사용 기한)·`usage_relationships`로 옮긴다.
 
 ## 7. 설정·정책
-`gateway_settings`(`enforcement` = enforce/monitor), `policy_versions`(배포된 정책 묶음 — `policy.rego`·`data.json`·`exceptions.json`·`policy_ledger.json` — 의 sha256, id `bundle-<12자>`, D-25).
+`gateway_settings`(`enforcement` = enforce/monitor), `policy_versions`(배포된 정책 묶음 — `policy.rego`·`pac15.rego`·`decision.rego`·`data.json`·`policy_ledger.json` — 의 sha256, id `bundle-<12자>`, D-25).
 
 ## 8. 쓰지 않는 v1 잔재
 `agent_sessions`, `agent_runs`, `agent_gateway_receipts`(v1 웹 채팅)는 아직 `agent_tables.sql`이 만든다.

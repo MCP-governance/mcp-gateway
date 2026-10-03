@@ -372,12 +372,11 @@ async def protected_resource_metadata() -> dict:
     return {"resource": os.getenv("GATEWAY_PUBLIC_MCP_URL", "http://gateway:8080/mcp/"),
             "authorization_servers": [os.getenv("IDP_ISSUER", "http://agent-service:8000")],
             "bearer_methods_supported": ["header"],
-            "resource_name": "BoB Corp MCP Gateway"}
+            "resource_name": "MCP Gateway"}
 
 
 @app.get("/api/policy/matrix")
 async def policy_matrix(user: dict = Depends(caller)) -> dict:
-    # Kept as a compatibility URL; there is no synthetic 333 policy query.
     scopes = core.pac.capabilities()
     return {"model": "pac15-capabilities", "pack_version": "pac15-v1",
             "bundle_id": scopes["bundle_id"], "capabilities": scopes["capabilities"],
@@ -388,15 +387,9 @@ async def policy_matrix(user: dict = Depends(caller)) -> dict:
 
 @app.get("/api/policy/ledger")
 async def policy_ledger_view(user: dict = Depends(caller)) -> dict:
-    """§12.5 PaC 정책 관리대장.
-
-    정책 코드만으로는 정책의 목적과 근거를 대신할 수 없다(§11.8). 어떤 위험과 통제를
-    구현하는 정책인지, 지금 어떤 상태와 버전으로 어느 환경에 적용 중인지, 어떤 예외가
-    붙어 있는지를 집행 중인 정본에서 그대로 읽어 보여준다.
-    """
-    ledger, exceptions, policy_set, authorization, active = await asyncio.gather(
+    """The policy list as the running OPA holds it, ordered by priority."""
+    ledger, policy_set, authorization, active = await asyncio.gather(
         core.policy_ledger(refresh=True),
-        core.opa_document("exceptions"),
         core.opa_document("policy_set"),
         core.opa_document("authorization"),
         db.fetch_one("SELECT * FROM policy_versions WHERE status='ACTIVE' ORDER BY activated_at DESC LIMIT 1"),
@@ -408,7 +401,6 @@ async def policy_ledger_view(user: dict = Depends(caller)) -> dict:
         "deployed_rego": active,
         "environment": core.GATEWAY_ENVIRONMENT,
         "policies": entries,
-        "exceptions": exceptions if isinstance(exceptions, list) else [],
     }
 
 
@@ -436,7 +428,7 @@ async def session(request: SessionRequest) -> dict:
             pass
         raise HTTPException(403, detail)
     if response.status_code != 200:
-        raise HTTPException(401, "합성 계정과 비밀번호를 확인하세요.")
+        raise HTTPException(401, "아이디와 비밀번호를 확인하세요.")
     return response.json()
 
 

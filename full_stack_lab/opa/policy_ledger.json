@@ -54,13 +54,11 @@
       "inputs": [
         "contract.registered"
       ],
-      "condition": "Registry에 서버·도구 조합이 없음",
+      "condition": "등록 정보에 서버·도구 조합이 없다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 10,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "무결성 통제라 예외를 적용하지 않는다(프레임워크 8.6).",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -108,12 +106,11 @@
         "contract.registered",
         "contract.enabled"
       ],
-      "condition": "등록은 되었으나 활성 상태가 아님",
+      "condition": "등록됐지만 사용이 중지된 도구이다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 20,
       "automation": "자동화",
-      "exceptionable": false,
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -163,13 +160,11 @@
         "contract.supplier_approved",
         "contract.critical_vulnerabilities"
       ],
-      "condition": "공급자 미승인 또는 치명적 취약점 1건 이상",
+      "condition": "공급자가 승인되지 않았거나 치명적 취약점이 있다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 30,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "중대한 위험에 대한 보완통제가 없으므로 예외 대상이 아니다(8.6).",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -225,12 +220,11 @@
         "contract.known_tools_only",
         "contract.metadata_safe"
       ],
-      "condition": "고정한 계약 항목 중 하나라도 불일치",
+      "condition": "도구 계약이 승인 당시와 다르다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 50,
       "automation": "자동화",
-      "exceptionable": false,
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -282,13 +276,11 @@
         "contract.approval_valid_until",
         "now"
       ],
-      "condition": "현재 시각이 승인 유효기간을 지남",
+      "condition": "사용 기한이 지났다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부, 재승인 요구",
       "priority": 55,
       "automation": "자동화",
-      "exceptionable": true,
-      "exception_note": "재승인 처리 중 업무 연속성이 필요한 경우 기간을 정한 예외를 적용할 수 있다.",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -337,12 +329,11 @@
         "resource.classification.required",
         "resource.classification.source"
       ],
-      "condition": "분류가 필요하나 출처가 비어 있음",
+      "condition": "분류가 필요한 데이터에 분류 근거가 없다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 60,
       "automation": "자동화",
-      "exceptionable": false,
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -391,13 +382,11 @@
         "context.recent_calls",
         "context.call_limit"
       ],
-      "condition": "최근 호출 수가 상한 이상",
+      "condition": "최근 호출 수가 한도를 넘었다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 70,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "가용성 보호 장치라 관찰 모드에서도 집행한다.",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -412,63 +401,6 @@
       "pac_candidate_id": "PAC-CAND-26",
       "pac_ids": [
         "PAC-15"
-      ]
-    },
-    "P-AUTHZ-DENY-001": {
-      "name": "최소권한 미충족 차단",
-      "purpose": "폐기한 333 판정의 과거 감사 기록 식별용. 새 인가에 사용하지 않는다.",
-      "enforced_by": "opa",
-      "risk_ids": [
-        "RSK-08",
-        "RSK-20"
-      ],
-      "requirement_ids": [
-        "REQ-09",
-        "REQ-21"
-      ],
-      "control_ids": [
-        "CTL-09",
-        "CTL-21"
-      ],
-      "principle_ids": [
-        "PRN-04"
-      ],
-      "owner": "서비스 소유자",
-      "author": "보안기술팀",
-      "reviewer": "보안 담당자",
-      "approver": "승인권자",
-      "scope": "모든 Tool Call",
-      "environments": [
-        "dev",
-        "stage",
-        "prod"
-      ],
-      "inputs": [
-        "principal.role",
-        "resource.data_class",
-        "tool.action"
-      ],
-      "condition": "배포된 권한 규칙에 해당 허용 항목이 없음",
-      "outcome": "차단",
-      "enforcement": "실행 전 거부",
-      "priority": 80,
-      "automation": "자동화",
-      "exceptionable": true,
-      "exception_note": "업무 필요성이 확인된 한시적 권한은 보완통제와 기간을 정한 예외로 처리한다.",
-      "version": "1.0.0",
-      "status": "중지",
-      "approval_status": "승인",
-      "effective_from": "2026-09-16T00:00:00Z",
-      "obligations": [
-        "evidence.standard"
-      ],
-      "test_ids": [
-        "T-RBAC-001",
-        "T-RBAC-002"
-      ],
-      "pac_candidate_id": "PAC-CAND-07",
-      "pac_ids": [
-        "PAC-09"
       ]
     },
     "P-X-APPROVAL-001": {
@@ -506,13 +438,11 @@
         "resource.data_class",
         "approval.granted"
       ],
-      "condition": "x 행위 + important 등급 + 승인 없음",
+      "condition": "중요 등급 데이터의 외부 전송·실행에 승인이 없다.",
       "outcome": "추가 승인",
       "enforcement": "10분 유효한 승인 요청 생성 후 보류",
       "priority": 90,
       "automation": "부분 자동화",
-      "exceptionable": false,
-      "exception_note": "인간의 감독이 필요한 결정이라 자동 예외로 우회하지 않는다(11.15).",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -566,12 +496,11 @@
         "context.important_limit",
         "approval.granted"
       ],
-      "condition": "important 접근 누적이 상한 이상이고 승인 없음",
+      "condition": "중요 등급 데이터 접근 누적이 한도를 넘었고 승인이 없다.",
       "outcome": "추가 승인",
       "enforcement": "승인 요청 생성 후 보류",
       "priority": 100,
       "automation": "부분 자동화",
-      "exceptionable": true,
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -589,59 +518,6 @@
       "pac_ids": [
         "PAC-15"
       ]
-    },
-    "P-DEPT-001": {
-      "name": "소관 부서 외 중요정보 접근 승인",
-      "purpose": "자신의 소관 부서가 아닌 중요정보 접근은 승인을 요구한다.",
-      "enforced_by": "opa",
-      "risk_ids": [
-        "RSK-20"
-      ],
-      "requirement_ids": [
-        "REQ-21"
-      ],
-      "control_ids": [
-        "CTL-21"
-      ],
-      "principle_ids": [
-        "PRN-04",
-        "PRN-05"
-      ],
-      "owner": "데이터 소유자",
-      "author": "보안기술팀",
-      "reviewer": "보안 담당자",
-      "approver": "승인권자",
-      "scope": "important 등급 자원 중 owner_department가 지정된 자원",
-      "environments": [
-        "dev",
-        "stage",
-        "prod"
-      ],
-      "inputs": [
-        "principal.department",
-        "resource.owner_department",
-        "approval.granted"
-      ],
-      "condition": "부서 축 활성 + important + 부서 불일치 + 승인 없음",
-      "outcome": "추가 승인",
-      "enforcement": "승인 요청 생성 후 보류",
-      "priority": 110,
-      "automation": "부분 자동화",
-      "exceptionable": true,
-      "version": "1.0.0",
-      "status": "중지",
-      "approval_status": "승인",
-      "effective_from": "2026-09-16T00:00:00Z",
-      "status_note": "조직 축은 도입 결정 전이라 중지 상태로 배포한다. opa/data.json의 department_scope.enabled와 함께 켠다.",
-      "obligations": [
-        "evidence.enhanced",
-        "approval.required"
-      ],
-      "test_ids": [
-        "T-DEPT-001",
-        "T-DEPT-002"
-      ],
-      "pac_candidate_id": "PAC-CAND-19"
     },
     "P-X-RESTRICT-001": {
       "name": "외부 전송 제한 실행",
@@ -678,12 +554,11 @@
         "tool.restrictable",
         "data.restrictions"
       ],
-      "condition": "x 행위 + important 아님 + 권한 있음",
+      "condition": "중요 등급이 아닌 데이터의 외부 전송·실행이다.",
       "outcome": "제한",
       "enforcement": "목적지·길이를 축소한 인자로 실행",
       "priority": 120,
       "automation": "자동화",
-      "exceptionable": true,
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -734,12 +609,11 @@
         "resource.data_class",
         "tool.action"
       ],
-      "condition": "employee + important + r",
+      "condition": "중요 등급 데이터를 읽는다.",
       "outcome": "경고",
       "enforcement": "실행하되 기록·모니터링 강화",
       "priority": 130,
       "automation": "자동화",
-      "exceptionable": true,
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -754,8 +628,8 @@
       "pac_candidate_id": "PAC-CAND-23"
     },
     "P-AUTHZ-ALLOW-001": {
-      "name": "최소권한 충족 허용",
-      "purpose": "배포된 권한 규칙과 등록 계약을 모두 충족한 요청을 승인된 조건으로 실행한다.",
+      "name": "실행 권한 충족 허용",
+      "purpose": "모든 실행 권한 조건을 충족한 호출을 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08"
@@ -785,13 +659,11 @@
         "pac.facts",
         "contract"
       ],
-      "condition": "PAC 필수 조건과 승인된 사용자·서버·기능·자원 범위를 충족한다.",
+      "condition": "실행 권한 조건과 승인된 사용자·서버·기능·자원 범위를 모두 충족한다.",
       "outcome": "허용",
       "enforcement": "그대로 실행",
       "priority": 140,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "허용 판정에는 완화할 통제가 없다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -843,12 +715,11 @@
         "resource",
         "tool"
       ],
-      "condition": "필수 입력 항목이 없음",
+      "condition": "판정에 필요한 입력이 없다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 5,
       "automation": "자동화",
-      "exceptionable": false,
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -890,12 +761,11 @@
         "prod"
       ],
       "inputs": [],
-      "condition": "집행 중인 정책 후보가 없음",
+      "condition": "적용 중인 정책이 없다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 9999,
       "automation": "자동화",
-      "exceptionable": false,
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -910,7 +780,7 @@
       "pac_candidate_id": "PAC-CAND-30"
     },
     "P-CONTROL-LEDGER-001": {
-      "name": "관리대장 누락 정책 차단",
+      "name": "정책 목록 누락 차단",
       "purpose": "관리정보가 없는 정책이 집행되지 않도록 한다. 정책 코드만으로는 목적과 근거를 대신할 수 없다(11.8).",
       "enforced_by": "opa",
       "risk_ids": [
@@ -940,12 +810,11 @@
         "prod"
       ],
       "inputs": [],
-      "condition": "성립한 정책 후보에 관리대장 항목이 없음",
+      "condition": "판정에 관여한 정책이 정책 목록에 없다.",
       "outcome": "차단",
-      "enforcement": "실행 전 거부, 통제 실패로 조사",
+      "enforcement": "실행 전 거부",
       "priority": 1,
       "automation": "자동화",
-      "exceptionable": false,
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -984,11 +853,10 @@
       "inputs": [
         "mcp.method"
       ],
-      "condition": "허용 목록(initialize, server/discover, ping, tools/list, tools/call) 밖의 메서드",
+      "condition": "중개하지 않는 MCP 메서드이다.",
       "outcome": "차단",
-      "enforcement": "ingress에서 거부",
+      "enforcement": "연결 단계에서 거부",
       "priority": 2001,
-      "exceptionable": false,
       "obligations": [
         "evidence.standard"
       ],
@@ -1036,11 +904,10 @@
         "user_token",
         "document_id"
       ],
-      "condition": "principal 미확인·정지·잠금 또는 문서 ID 미등록",
+      "condition": "사용자를 확인할 수 없거나 정지·잠금 상태이거나 문서 ID가 등록되지 않았다.",
       "outcome": "차단",
       "enforcement": "정책 질의 전 거부",
       "priority": 2002,
-      "exceptionable": false,
       "obligations": [
         "evidence.standard"
       ],
@@ -1086,11 +953,10 @@
       "inputs": [
         "tool arguments"
       ],
-      "condition": "Draft 2020-12 검증 실패",
+      "condition": "도구 인자가 승인된 입력 형식과 맞지 않는다.",
       "outcome": "차단",
       "enforcement": "정책 질의 전 거부",
       "priority": 2003,
-      "exceptionable": false,
       "obligations": [
         "evidence.standard"
       ],
@@ -1136,11 +1002,10 @@
       "inputs": [
         "OPA 응답"
       ],
-      "condition": "OPA 질의 실패 또는 decision 부재",
+      "condition": "정책 엔진에 연결할 수 없거나 판정이 없다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 2006,
-      "exceptionable": false,
       "obligations": [
         "evidence.enhanced",
         "alert.security"
@@ -1186,11 +1051,10 @@
         "gateway_settings.enforcement",
         "원 판정"
       ],
-      "condition": "관찰 모드이고 원 판정이 Allow가 아니며 항상 집행 대상이 아님",
+      "condition": "관찰 모드에서 차단 대상 호출이 발생했다.",
       "outcome": "허용",
-      "enforcement": "실행하되 would_decision을 기록",
+      "enforcement": "실행하되 판정을 기록",
       "priority": 2007,
-      "exceptionable": false,
       "obligations": [
         "evidence.enhanced"
       ],
@@ -1213,7 +1077,7 @@
       "pac_candidate_id": "PAC-CAND-30"
     },
     "MCP-UPSTREAM-001": {
-      "name": "upstream 통신 실패",
+      "name": "원격 서버 통신 실패",
       "purpose": "허용 후 MCP 통신이 실패한 경우를 실행 성공으로 기록하지 않는다. 실제 실행 여부는 독립 증적으로 확인한다.",
       "enforced_by": "gateway",
       "risk_ids": [
@@ -1237,11 +1101,10 @@
       "inputs": [
         "upstream 예외"
       ],
-      "condition": "연결·인증·계약 재확인 실패",
+      "condition": "원격 서버 연결·인증·계약 재확인에 실패했다.",
       "outcome": "차단",
-      "enforcement": "결과 미반환, 자동 재시도 없음",
+      "enforcement": "결과 미반환",
       "priority": 2008,
-      "exceptionable": false,
       "obligations": [
         "evidence.enhanced",
         "alert.owner"
@@ -1290,11 +1153,10 @@
         "결과 크기",
         "결과 본문 패턴"
       ],
-      "condition": "MAX_RESULT_BYTES 초과 또는 위험 메타데이터 탐지",
+      "condition": "결과가 크기 한도를 넘거나 위험한 내용이 탐지됐다.",
       "outcome": "차단",
-      "enforcement": "결과 미반환, 실행 사실은 그대로 기록",
+      "enforcement": "결과 미반환, 실행 기록 유지",
       "priority": 2009,
-      "exceptionable": false,
       "obligations": [
         "evidence.enhanced",
         "alert.security"
@@ -1348,13 +1210,11 @@
       "inputs": [
         "contract.lifecycle"
       ],
-      "condition": "이용 관계의 전주기 단계가 TERMINATING 또는 RETIRED",
+      "condition": "이용 관계가 종료 중이거나 폐기됐다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 15,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "종료 판정의 연속성(C3) 근거 자체를 무너뜨리므로 예외 대상이 아니다. 종료를 되돌려야 한다면 예외가 아니라 케이스 재개 절차를 쓴다.",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -1407,13 +1267,11 @@
       "inputs": [
         "principal.shadow_endpoints"
       ],
-      "condition": "요청자 소유 엔드포인트에 미등록 MCP 설정이 1건 이상 보고됨",
+      "condition": "요청자 엔드포인트에서 미등록 MCP 설정이 보고됐다.",
       "outcome": "경고",
       "enforcement": "실행 후 증적 강화",
       "priority": 135,
       "automation": "자동화",
-      "exceptionable": true,
-      "exception_note": "보완통제(설정 제거 기한과 재보고)를 붙인 한시 예외만 허용한다.",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -1463,13 +1321,11 @@
         "relationship.in_scope",
         "relationship.outside"
       ],
-      "condition": "호출의 범위 대상 자원 중 하나라도 서버의 ACTIVE 이용 관계 allowed_resources 합집합 밖",
+      "condition": "호출 대상 자원이 이용 관계의 허용 자원 밖이다.",
       "outcome": "경고",
       "enforcement": "실행 후 증적 강화",
       "priority": 136,
       "automation": "자동화",
-      "exceptionable": true,
-      "exception_note": "관계의 allowed_resources를 고치는 것이 우선이다. 한시 예외는 관계 개정 기한과 함께만 허용한다.",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -1515,13 +1371,11 @@
       "inputs": [
         "contract.transport_secure"
       ],
-      "condition": "원격 endpoint가 http이고 루프백·내부 서비스 이름이 아님",
+      "condition": "원격 서버 주소가 암호화되지 않은 http이다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 35,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "전송 보호 없는 원격 연결은 완화 대상이 아니다. 구성을 고쳐야 한다.",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -1566,13 +1420,11 @@
       "inputs": [
         "contract.endpoint_allowed"
       ],
-      "condition": "서버 endpoint의 host가 egress 허용 목록에 없음",
+      "condition": "서버 주소가 허용 목적지 목록에 없다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 40,
       "automation": "자동화",
-      "exceptionable": true,
-      "exception_note": "일시 허용은 예외 관리대장에 기간·보완통제와 함께 등록한다.",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -1619,13 +1471,11 @@
         "tool.action",
         "approval.granted"
       ],
-      "condition": "인자에서 비신뢰 지시 표지 1건 이상 + 행위가 w 또는 x + 승인 없음",
+      "condition": "인자에 신뢰할 수 없는 지시가 있고 쓰기·실행이며 승인이 없다.",
       "outcome": "추가 승인",
       "enforcement": "승인 전 보류",
       "priority": 95,
       "automation": "부분 자동화",
-      "exceptionable": true,
-      "exception_note": "업무 특성상 반복되는 경우 범위·기간을 특정해 예외로 등록한다.",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -1673,13 +1523,11 @@
         "request.untrusted_markers",
         "tool.action"
       ],
-      "condition": "인자에서 비신뢰 지시 표지 1건 이상 + 행위가 r",
+      "condition": "인자에 신뢰할 수 없는 지시가 있는 읽기이다.",
       "outcome": "경고",
       "enforcement": "기록 후 실행",
       "priority": 128,
       "automation": "자동화",
-      "exceptionable": true,
-      "exception_note": "",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -1725,13 +1573,11 @@
         "context.recent_blocks",
         "context.block_limit"
       ],
-      "condition": "창 안의 차단 수가 상한 이상 + 권한 있음",
+      "condition": "일정 시간 안의 차단 횟수가 한도를 넘었다.",
       "outcome": "경고",
       "enforcement": "기록 후 실행",
       "priority": 132,
       "automation": "자동화",
-      "exceptionable": true,
-      "exception_note": "",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -1778,13 +1624,11 @@
       "inputs": [
         "principal.shadow_listeners"
       ],
-      "condition": "요청자 엔드포인트 망에서 미등록 MCP 리스너 1건 이상 + 권한 있음 + 계약 충족",
+      "condition": "요청자 엔드포인트의 내부망에서 미등록 MCP가 발견됐다.",
       "outcome": "경고",
       "enforcement": "기록 후 실행",
       "priority": 134,
       "automation": "자동화",
-      "exceptionable": true,
-      "exception_note": "발견이 해소될 때까지의 한시 완화만 예외로 허용한다.",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -1827,12 +1671,11 @@
       "inputs": [
         "destinations"
       ],
-      "condition": "목적지 범주 = infrastructure",
+      "condition": "인자의 목적지가 내부 기반시설 주소이다.",
       "outcome": "차단",
       "enforcement": "목적지·길이를 축소한 인자로 실행",
       "priority": 42,
       "automation": "자동화",
-      "exceptionable": true,
       "version": "2.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -1879,12 +1722,11 @@
         "tool.action",
         "request.dlp"
       ],
-      "condition": "x 행위 + DLP 패턴 1건 이상",
+      "condition": "외부 전송·실행 인자에서 민감정보가 탐지됐다.",
       "outcome": "차단",
       "enforcement": "목적지·길이를 축소한 인자로 실행",
       "priority": 78,
       "automation": "자동화",
-      "exceptionable": true,
       "version": "2.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -1933,12 +1775,11 @@
         "tool.action",
         "tool.restrictable"
       ],
-      "condition": "restrictable 없음",
+      "condition": "외부 전송·실행에 적용할 수 있는 제한이 없다.",
       "outcome": "경고",
       "enforcement": "목적지·길이를 축소한 인자로 실행",
       "priority": 125,
       "automation": "자동화",
-      "exceptionable": true,
       "version": "2.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -1988,13 +1829,11 @@
         "request.pii_types",
         "resource.data_class"
       ],
-      "condition": "중요 등급 자료 또는 탐지된 개인정보를 외부 목적지로 전송",
+      "condition": "중요 등급 데이터나 탐지된 개인정보를 외부로 전송한다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 45,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "민감정보 외부 전송에는 정책 예외를 적용하지 않는다.",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -2042,13 +1881,11 @@
         "request.sequence_flags",
         "destinations"
       ],
-      "condition": "10분 이내 같은 주체의 중요정보 열람 실행 확인 뒤 외부 전송",
+      "condition": "10분 안에 중요 등급 데이터를 읽은 뒤 외부로 전송한다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 46,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "연쇄 유출 탐지는 승인만으로 해제하지 않는다.",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -2095,13 +1932,11 @@
       "inputs": [
         "privacy.analyzer_status"
       ],
-      "condition": "민감정보 분석 실패 또는 결과 계약 위반",
+      "condition": "민감정보 검사에 실패했다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 2010,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "검사 장애를 권한 예외로 무시하지 않는다.",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -2146,13 +1981,11 @@
         "context.active_calls",
         "context.concurrency_limit"
       ],
-      "condition": "예약된 동시 실행 호출 수가 상한 초과",
+      "condition": "동시에 실행 중인 호출 수가 한도를 넘었다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 71,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "가용성 보호 장치라 관찰 모드에서도 집행한다.",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -2198,13 +2031,11 @@
       "inputs": [
         "context.duplicate_in_flight"
       ],
-      "condition": "같은 지문의 호출이 예약된 채 실행 중",
+      "condition": "같은 호출이 이미 실행 중이다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 72,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "중복 실행 방지 장치라 관찰 모드에서도 집행한다.",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -2250,12 +2081,11 @@
         "registry.allowed_principals",
         "principal.token"
       ],
-      "condition": "transport 인증 주체가 도입 승인 주체 목록에 없음",
+      "condition": "인증된 사용자가 도입 승인 사용자 목록에 없다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 22,
       "automation": "자동화",
-      "exceptionable": false,
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",
@@ -2273,8 +2103,8 @@
       ]
     },
     "PAC-01": {
-      "name": "PAC 실행 통제 01",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "승인 상태·유효기간",
+      "purpose": "승인된 서버만 승인 기간 안에서 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -2306,13 +2136,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "도입 승인이 없거나 유효기간 밖이다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 61,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -2331,8 +2159,8 @@
       ]
     },
     "PAC-02": {
-      "name": "PAC 실행 통제 02",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "승인 기준 구성 일치",
+      "purpose": "승인 당시 구성과 같은 서버만 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -2364,13 +2192,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "서버 버전·기능 정의·스키마·정책 버전이 승인 당시와 다르다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 62,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -2389,8 +2215,8 @@
       ]
     },
     "PAC-03": {
-      "name": "PAC 실행 통제 03",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "승인 실행 환경",
+      "purpose": "승인된 환경에서만 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -2422,13 +2248,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "요청 환경이 승인된 실행 환경이 아니다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 63,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -2447,8 +2271,8 @@
       ]
     },
     "PAC-04": {
-      "name": "PAC 실행 통제 04",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "사용자·에이전트·세션 확인",
+      "purpose": "인증된 주체만 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -2480,13 +2304,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "인증된 사용자·에이전트·세션이 승인 주체와 다르다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 64,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -2505,8 +2327,8 @@
       ]
     },
     "PAC-05": {
-      "name": "PAC 실행 통제 05",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "대리 실행 권한",
+      "purpose": "대리 실행은 위임된 권한 안에서만 허용한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -2538,13 +2360,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "대리 실행인데 사용자·에이전트·위임 권한의 교집합 밖이다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 65,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -2563,8 +2383,8 @@
       ]
     },
     "PAC-06": {
-      "name": "PAC 실행 통제 06",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "인증 토큰 검증",
+      "purpose": "유효한 토큰으로만 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -2596,13 +2416,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "토큰 발급자·대상·기간·범위가 맞지 않거나 폐기됐다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 66,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -2621,8 +2439,8 @@
       ]
     },
     "PAC-07": {
-      "name": "PAC 실행 통제 07",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "접속 대상 확인",
+      "purpose": "승인된 접속 대상으로만 연결한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -2654,13 +2472,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "실제 접속 대상이 승인된 서버·주소가 아니다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 67,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -2679,8 +2495,8 @@
       ]
     },
     "PAC-08": {
-      "name": "PAC 실행 통제 08",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "승인 기능 확인",
+      "purpose": "승인된 기능만 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -2712,13 +2528,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "호출한 기능이 승인된 기능 목록·정의와 다르다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 68,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -2737,8 +2551,8 @@
       ]
     },
     "PAC-09": {
-      "name": "PAC 실행 통제 09",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "행위 권한",
+      "purpose": "허용된 행위만 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -2770,13 +2584,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "정규화한 행위가 승인 범위나 사용자 권한 밖이다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 69,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -2795,8 +2607,8 @@
       ]
     },
     "PAC-10": {
-      "name": "PAC 실행 통제 10",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "인자 대상 범위",
+      "purpose": "승인된 대상에 대해서만 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -2828,13 +2640,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "인자의 파일·명령·수신자가 승인된 대상 밖이다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 73,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -2853,8 +2663,8 @@
       ]
     },
     "PAC-11": {
-      "name": "PAC 실행 통제 11",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "데이터 자산·등급",
+      "purpose": "승인된 데이터 범위에서만 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -2886,13 +2696,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "대상 데이터 자산·등급이 승인 범위 밖이다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 74,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -2911,8 +2719,8 @@
       ]
     },
     "PAC-12": {
-      "name": "PAC 실행 통제 12",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "외부 전송 목적지",
+      "purpose": "승인된 목적지로만 전송한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -2944,13 +2752,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "외부 전송 목적지·데이터 등급 조합이 승인되지 않았다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 75,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -2969,8 +2775,8 @@
       ]
     },
     "PAC-13": {
-      "name": "PAC 실행 통제 13",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "고위험 실행 건별 승인",
+      "purpose": "고위험 실행은 건별 승인 뒤에만 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -3002,13 +2808,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "고위험 실행에 이 요청에 묶인 승인이 없다.",
       "outcome": "추가 승인",
       "enforcement": "실행 전 거부",
       "priority": 89,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -3027,8 +2831,8 @@
       ]
     },
     "PAC-14": {
-      "name": "PAC 실행 통제 14",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "철회·중지 상태",
+      "purpose": "철회·중지된 대상은 실행하지 않는다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -3060,13 +2864,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "사용자·에이전트·서버·기능·승인 중 하나가 철회·중지됐다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 76,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -3085,8 +2887,8 @@
       ]
     },
     "PAC-15": {
-      "name": "PAC 실행 통제 15",
-      "purpose": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "name": "실행 한도",
+      "purpose": "승인된 한도 안에서만 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -3118,13 +2920,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "팀원 PAC-15 공격 검토 수정본을 검증된 Gateway 사실에 적용한다.",
+      "condition": "반복·동시·자동 실행이 승인된 한도를 넘었다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 77,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -3143,8 +2943,8 @@
       ]
     },
     "INPUT_CONTRACT": {
-      "name": "PAC 입력 계약 누락 차단",
-      "purpose": "검증된 PAC facts가 없거나 입력이 불일치하면 차단한다.",
+      "name": "판정 입력 누락 차단",
+      "purpose": "판정 입력이 없으면 실행하지 않는다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -3175,13 +2975,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "검증된 PAC facts가 없거나 입력이 불일치하면 차단한다.",
+      "condition": "판정에 필요한 검증 입력이 없거나 요청과 일치하지 않는다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 79,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -3200,8 +2998,8 @@
       ]
     },
     "POLICY_BUNDLE": {
-      "name": "PAC 정책 묶음 버전 불일치",
-      "purpose": "실제 PAC 정책 묶음 버전이 승인 기준과 다르면 실행하지 않는다.",
+      "name": "정책 묶음 버전 불일치",
+      "purpose": "승인 당시 정책으로만 실행한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-08",
@@ -3232,13 +3030,11 @@
         "pac.request",
         "pac.facts"
       ],
-      "condition": "data.mcp.pac15.pack_version != pac.facts.approval.baseline.policy_version",
+      "condition": "적용 중인 정책 묶음 버전이 승인 당시 버전과 다르다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 81,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "PAC 필수 조건은 예외로 완화하지 않는다.",
       "version": "pac15-v1",
       "status": "운영",
       "approval_status": "승인",
@@ -3257,7 +3053,7 @@
       ]
     },
     "ENDPOINT-MANAGED-001": {
-      "name": "관리형 단말 연결 필수",
+      "name": "관리형 엔드포인트 연결 필수",
       "purpose": "가입자에게 등록·활성화된 일반 단말의 최근 정책 확인과 단말 연결 인증을 요구한다.",
       "enforced_by": "gateway",
       "risk_ids": [],
@@ -3282,13 +3078,11 @@
         "device.heartbeat_at",
         "device.policy_hash"
       ],
-      "condition": "미등록·미활성·격리·폐기·heartbeat 만료·정책 불일치",
+      "condition": "엔드포인트가 미등록·미활성·격리·등록 해제 상태이거나 점검 보고가 만료됐거나 정책이 다르다.",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 9,
       "automation": "자동화",
-      "exceptionable": false,
-      "exception_note": "무결성 통제라 예외를 적용하지 않는다(프레임워크 8.6).",
       "version": "1.0.0",
       "status": "운영",
       "approval_status": "승인",

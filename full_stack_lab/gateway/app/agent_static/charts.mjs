@@ -199,26 +199,6 @@ export function sankey({ nodes, links }) {
   };
 }
 
-/** Role x (data class, action) grid coloured by the decision OPA returned. */
-export function decisionGrid(rows, cols, cells) {
-  const index = Object.fromEntries(DECISIONS.map((d, i) => [d, i]));
-  return {
-    legend: { show: false },
-    tooltip: { ...base().tooltip, trigger: "item", formatter: (p) => `${rows[p.value[1]]} · ${cols[p.value[0]]}\n${p.data.label}` },
-    grid: { left: 4, right: 12, top: 8, bottom: 8, containLabel: true },
-    xAxis: axis({ type: "category", data: cols, position: "top", splitArea: { show: false },
-      axisLabel: { color: css("--ink-2"), fontSize: 12, interval: 0 } }),
-    yAxis: axis({ type: "category", data: rows, inverse: true, axisLabel: { color: css("--ink"), fontSize: 15, fontWeight: 600 } }),
-    visualMap: { show: false, type: "piecewise", dimension: 2,
-      pieces: DECISIONS.map((d, i) => ({ value: i, color: color(d) })) },
-    series: [{
-      type: "heatmap", itemStyle: { borderColor: css("--panel"), borderWidth: 4, borderRadius: 6 },
-      label: { show: true, color: "#fff", fontSize: 12, fontWeight: 600, formatter: (p) => p.data.label },
-      data: cells.map((c) => ({ value: [c.x, c.y, index[c.decision] ?? 0], label: DECISION_LABEL[c.decision] || c.decision })),
-    }],
-  };
-}
-
 /** Columns by category without a decision split (e.g. requests per status). */
 export function columns(items, { tone = "--brand" } = {}) {
   return {

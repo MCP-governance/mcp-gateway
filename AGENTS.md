@@ -4,6 +4,19 @@
 10종을 쓰고, Gateway가 모든 도구 호출을 실행 전에 판정하며, 종료·폐기는 논문(CISC-W'26)의 C1~C4 /
 T1~T3 모델로 판정한다.
 
+## 소유자 규칙 (2026-10-03, 다른 모든 문서보다 우선)
+1. **솔루션은 솔루션 기기에서만 띄운다**(`user@100.83.175.111`, `./console.sh field up`). 이 노트북 WSL에는 compose 스택을
+   띄우지 않는다(대시보드 보기·간단한 데모만). 로컬에서 하는 것은 정적 검사와 일회성 `opa test` 컨테이너까지.
+2. **솔루션 시험은 PJ1**(`pj1@100.110.81.60`)의 실제 하네스로 한다.
+3. **콘솔은 즉시 판매 가능한 제품 화면이다.** 프로젝트 진행 중이라는 흔적을 남기지 않는다.
+   - 설명 문단·도움말·주석 같은 안내문(“~합니다”, “~는 자기 신고”), 브레드크럼, 부제, 중복 로고·중복 사용자 표시 금지. 라벨과 값만.
+   - 개발 흔적 금지: D-번호, PAC-15·팀원·실습·v3/v4·WIP, 빌드 SHA·버전 표, 시험 데이터, 참고 제품 이름, 영어 enum 원문.
+     브라우저로 내려가는 HTML·CSS·JS에도 이런 주석을 넣지 않는다.
+   - 용어는 한글 **게이트웨이 · 엔드포인트**로 통일(`단말`·`커널`·Gateway/Endpoint 혼용 금지). 엔드포인트가 막은 것은 “엔드포인트에서 차단”.
+   - GW/EP/VD 같은 약어 표식 금지. 모든 상태값은 한국어로 번역하고 값이 없으면 `—`.
+   - 화면에서 설정·조작할 수 없는 기능은 화면과 코드에서 뺀다(예: 예외, 333 잔재). 정책 목록은 번호·정책·결과만.
+4. **모호하면 작업 전에 소유자에게 묻는다.** 추측으로 화면·기능을 늘리지 않는다.
+
 ## 먼저 읽을 것
 1. [docs/ai/README.md](docs/ai/README.md) — 문서 지도
 2. [docs/ai/ARCHITECTURE.md](docs/ai/ARCHITECTURE.md) — 정본 설계
@@ -11,18 +24,16 @@ T1~T3 모델로 판정한다.
 4. 손댈 영역의 문서(POLICY / TERMINATION_MODEL / MCP_SERVERS / CONSOLE_UI / DATA_MODEL)
 
 ## 명령
+검증 순서(소유자 규칙): ① 로컬 정적 검사 → ② 솔루션 기기에 `field up`으로 배포 → ③ PJ1의 실제 하네스로 기능 확인.
+로컬 정적 검사: `pyflakes gateway/app/*.py tests/*.py …`, `node --check gateway/app/agent_static/console.js`,
+`node --test tests/console-state.test.mjs`, `python3 tests/open_endpoints.py`,
+Rego는 `docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy`.
 ```bash
 cd full_stack_lab
-./console.sh up            # 전체 기동 (--no-llm: LLM 없이)
-./console.sh test          # 전체 검증 — 고친 뒤 반드시
-./console.sh workday       # 직원 업무 시나리오 (각자의 하네스로)
-./console.sh ask <ws> "지시" [--harness claude|codex|gemini|opencode]   # 한 PC의 하네스에 헤드리스 지시
-./console.sh harnesses     # 하네스 4종이 관리형 서버 10종에 다 붙는지(모델 불필요)
+./console.sh field up|ca|status|pc-command|set-password|register-pc|down   # 솔루션 기기에서만 (README "실제 기기로 배치하기")
+./console.sh test          # 실습 스택 전체 회귀 — 이 노트북에서는 돌리지 않는다
 ./console.sh watch         # 판정 흐름
-./console.sh field up|ca|status|pc-command|set-password|register-pc|down   # 실기기 배치(README "실제 기기로 배치하기")
 ```
-정적 검사만: `pyflakes gateway/app/*.py tests/*.py …`, `node --check gateway/app/agent_static/console.js`,
-`python3 tests/open_endpoints.py`, Rego는 `docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy`.
 
 ## 깨면 안 되는 불변식
 - **신원은 transport의 토큰에서만** 정한다. 인자·헤더에 적힌 신원은 기록만 하고 판정에 쓰지 않는다.
@@ -50,7 +61,7 @@ cd full_stack_lab
 - 다른 사람이 연 종료 케이스·실행 중인 다른 랩을 되돌리거나 멈추지 않는다.
 
 ## 환경 주의
-- 같은 WSL에 다른 작업 트리의 v1 랩이 8000/8080을 쓸 수 있다. **멈추지 말고** `.env`의 `*_PORT`로 피한다.
+- 스택은 솔루션 기기에서만 돌린다(위 소유자 규칙 1). 기기 접속은 WSL의 `/home/kali/.ssh/id_ed25519` 키로 한다.
 - WSL은 유휴 시 꺼진다 → `wsl.exe -d kali-linux -- sleep infinity`를 백그라운드로.
 - Windows Git Bash에서 WSL로 여러 줄 스크립트를 보낼 때는 파일로 써서 실행한다(따옴표·`$`·`\` 손실).
 

@@ -10,16 +10,13 @@
   <link rel="stylesheet" href="/static/login.css" />
 </head>
 <body class="gate">
-  <div class="gate-layout">
-  <section class="gate-intro" aria-label="MCP Governance"><span class="gate-kicker">MCP GOVERNANCE</span><h1>도구 연결부터<br />실행과 회수까지</h1><p>조직의 MCP 연결, 사용자와 단말, 승인과 감사 기록을 한 곳에서 관리합니다.</p><div class="gate-points"><span>연결·접근 관리</span><span>정책·실행 추적</span><span>종료·회수 증거</span></div></section>
   <main class="panel gate-card">
-    <header class="brand">
-      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
-      <div><b>MCP Governance Console</b><span>내부망 운영 콘솔</span></div>
+    <header class="gate-brand">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+      <b>MCP Governance</b>
     </header>
-
-    <div class="gate-heading"><h2>조직 워크스페이스 로그인</h2><p>계정으로 로그인해 MCP 연결과 조직 정책을 확인하세요.</p></div>
-    <div id="sso-login" class="stack" hidden><p id="sso-label"></p><a class="btn primary" href="/auth/oidc/login">조직 SSO로 로그인</a><p id="sso-error" class="err" role="alert"></p></div>
+    <h1>로그인</h1>
+    <div id="sso-login" class="stack" hidden><a class="btn primary" href="/auth/oidc/login" id="sso-button">SSO로 로그인</a><p id="sso-error" class="err" role="alert"></p></div>
     <form id="gate-form" class="form stack" hidden>
       <label>아이디
         <input id="email" name="email" type="text" autocomplete="username" required />
@@ -29,10 +26,9 @@
       </label>
       <p class="err" id="gate-error" role="alert" tabindex="-1"></p>
       <button class="btn primary" id="gate-go" type="submit">로그인</button>
-      <a href="/signup">회원가입 신청</a>
+      <a href="/signup">가입 요청</a>
     </form>
   </main>
-  </div>
   <script src="/static/login.js"></script>
 </body>
 </html>
