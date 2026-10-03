@@ -73,9 +73,11 @@ MAX_ARGUMENT_BYTES = int(os.getenv("MAX_ARGUMENT_BYTES", "65536"))
 # CTL-28이 보라는 "반복 실패"는 이 사람이 권한 경계를 더듬고 있다는 신호다.
 # 모든 차단을 세면 그 신호가 환경 상태에 묻힌다 - 서버 하나가 드리프트 상태면
 # MCP-CATALOG-001이 모든 사용자에게 걸리고, 그러면 아무 잘못 없는 사람들의 다음
-# 호출이 전부 경보가 된다. 주체에게 귀속되는 인가 거부만 센다.
+# 호출이 전부 경보가 된다. 주체에게 귀속되는 인가 거부만 센다. 실행 권한의 행위·인자·데이터·전송
+# 범위 거부(PAC-09~12)는 요청 내용 때문이라 센다. 승인 기한·기준 구성·토큰처럼 상태에서 오는 PAC 거부는 세지 않는다.
 DENIAL_POLICIES = ("MCP-EGRESS-001", "MCP-EGRESS-002", "P-DLP-001",
-                   "P-CLASSIFICATION-001", "P-APPROVAL-EXPIRY-001", "MCP-REGISTRY-001")
+                   "P-CLASSIFICATION-001", "P-APPROVAL-EXPIRY-001", "MCP-REGISTRY-001",
+                   "PAC-09", "PAC-10", "PAC-11", "PAC-12")
 
 
 class ResultRejected(RuntimeError):
