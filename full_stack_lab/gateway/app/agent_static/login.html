@@ -19,7 +19,8 @@
     </header>
 
     <div class="gate-heading"><h2>조직 워크스페이스 로그인</h2><p>계정으로 로그인해 MCP 연결과 조직 정책을 확인하세요.</p></div>
-    <form id="gate-form" class="form stack">
+    <div id="sso-login" class="stack" hidden><p id="sso-label"></p><a class="btn primary" href="/auth/oidc/login">조직 SSO로 로그인</a><p id="sso-error" class="err" role="alert"></p></div>
+    <form id="gate-form" class="form stack" hidden>
       <label>아이디
         <input id="email" name="email" type="text" autocomplete="username" required />
       </label>

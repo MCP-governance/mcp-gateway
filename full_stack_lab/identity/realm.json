@@ -1,0 +1,31 @@
+{
+  "realm": "mcpgw",
+  "enabled": true,
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "bruteForceProtected": true,
+  "clients": [{
+    "clientId": "mcp-console",
+    "enabled": true,
+    "protocol": "openid-connect",
+    "publicClient": false,
+    "secret": "${OIDC_CLIENT_SECRET}",
+    "standardFlowEnabled": true,
+    "directAccessGrantsEnabled": false,
+    "serviceAccountsEnabled": false,
+    "redirectUris": ["${OIDC_REDIRECT_URI}"],
+    "attributes": {"pkce.code.challenge.method": "S256"},
+    "protocolMappers": [{
+      "name": "console-audience",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-audience-mapper",
+      "consentRequired": false,
+      "config": {
+        "included.client.audience": "mcp-console",
+        "access.token.claim": "true",
+        "id.token.claim": "false",
+        "introspection.token.claim": "true"
+      }
+    }]
+  }]
+}

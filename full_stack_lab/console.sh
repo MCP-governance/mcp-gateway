@@ -469,6 +469,8 @@ case "${1:-up}" in
     ;;
   test)
     ensure_env
+    docker run --rm --network none -e PYTHONPATH=/app:/validation/supply_chain -v "$LAB_DIR:/validation:ro" "$(docker compose images -q gateway)" \
+      python /validation/tests/oss_audit_test.py
     python3 scripts/network_prefix.py --self-check
     python3 tests/schema_check.py
     docker run --rm --network none -v "$LAB_DIR:/validation:ro" "$(docker compose images -q gateway)" \

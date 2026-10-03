@@ -88,7 +88,7 @@ class ValidationTest(unittest.TestCase):
 
             def run(command, **kwargs):
                 name = command[0]
-                suffix = {"syft": "sbom.cdx.json", "trivy": "trivy.json", "semgrep": "semgrep.json"}[name]
+                suffix = {"syft": "sbom.cdx.json", "trivy": "trivy.json", "semgrep": "semgrep.json", "gitleaks": "gitleaks.json"}[name]
                 path = reports / f"intake-{request_id}-{suffix}"
                 if name == fail:
                     return worker.subprocess.CompletedProcess(command, 2, "", "scanner unavailable")
@@ -98,6 +98,7 @@ class ValidationTest(unittest.TestCase):
                         {"VulnerabilityID": "CVE-fixture", "Severity": "CRITICAL" if critical else "HIGH",
                          "PkgName": "example", "InstalledVersion": "1.0", "FixedVersion": "2.0"}]}]},
                     "semgrep": {"results": [], "errors": []},
+                    "gitleaks": [],
                 }[name]
                 path.write_text(json.dumps(body))
                 return worker.subprocess.CompletedProcess(command, 0, "", "")
@@ -117,7 +118,7 @@ class ValidationTest(unittest.TestCase):
         final, evidence, stored = self.validate()
         self.assertEqual(final[0], "VALIDATED")
         self.assertEqual(final[1], "HIGH")
-        self.assertEqual(len(evidence["reports"]), 4)
+        self.assertEqual(len(evidence["reports"]), 5)
         self.assertEqual(stored[0][-1].obj["inventory"][0]["name"], "example")
         self.assertEqual(stored[1][-1].obj["findings"][0]["fixed_version"], "2.0")
 
@@ -125,8 +126,13 @@ class ValidationTest(unittest.TestCase):
         final, evidence, stored = self.validate(fail="syft")
         self.assertEqual(final[0:2], ("FAILED", "UNASSESSED"))
         self.assertEqual(evidence["scanners"]["syft"]["status"], "FAILED")
-        self.assertEqual(len(stored), 2)
-        self.assertEqual(len(evidence["reports"]), 3)
+        self.assertEqual(len(stored), 3)
+        self.assertEqual(len(evidence["reports"]), 4)
+
+    def test_gitleaks_failure_cannot_pass(self):
+        final, evidence, _ = self.validate(fail="gitleaks")
+        self.assertEqual(final[0:2], ("FAILED", "UNASSESSED"))
+        self.assertEqual(evidence["scanners"]["gitleaks"]["status"], "FAILED")
 
     def test_critical_is_rejected(self):
         final, _, _ = self.validate(critical=True)

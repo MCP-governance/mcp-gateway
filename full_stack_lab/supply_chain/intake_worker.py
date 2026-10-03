@@ -36,7 +36,7 @@ POLL_SECONDS = int(os.getenv("INTAKE_POLL_SECONDS", "5"))
 CLONE_TIMEOUT = int(os.getenv("INTAKE_CLONE_TIMEOUT", "120"))
 SCAN_TIMEOUT = int(os.getenv("INTAKE_SCAN_TIMEOUT", "600"))
 MAX_CHECKOUT_MB = int(os.getenv("INTAKE_MAX_CHECKOUT_MB", "512"))
-VALIDATION_LEASE_SECONDS = CLONE_TIMEOUT + SCAN_TIMEOUT * 3 + 300
+VALIDATION_LEASE_SECONDS = CLONE_TIMEOUT + SCAN_TIMEOUT * 4 + 300
 VALIDATION_MAX_ATTEMPTS = 3
 
 SEVERITY_ORDER = ("CRITICAL", "HIGH", "MEDIUM", "LOW")
@@ -202,6 +202,19 @@ def semgrep_counts(report: Path, root: Path) -> tuple[dict[str, int], list[dict]
     return counts, findings[:200]
 
 
+def gitleaks_counts(report: Path, root: Path) -> tuple[dict[str, int], list[dict]]:
+    document = json.loads(report.read_text(encoding="utf-8"))
+    if not isinstance(document, list) or any(not isinstance(item, dict) or not item.get("RuleID") for item in document):
+        raise ValueError("Gitleaks 결과가 올바르지 않습니다.")
+    # Strip source snippets even from the downloadable artifact; --redact alone may
+    # leave the rest of a sensitive line in Match.
+    findings = [{"severity": "HIGH", "id": str(item["RuleID"]), "title": str(item.get("Description") or "Secret 발견")[:200],
+                 "target": relative(str(item.get("File") or ""), root), "line": item.get("StartLine")}
+                for item in document]
+    report.write_text(json.dumps(findings, ensure_ascii=False), encoding="utf-8")
+    return {level: len(findings) if level == "HIGH" else 0 for level in SEVERITY_ORDER}, findings[:200]
+
+
 def sbom_components(report: Path) -> int:
     if not report.exists():
         return 0
@@ -246,6 +259,7 @@ def validate(connection, request: dict) -> None:
     sbom = REPORT_DIR / f"intake-{request_id}-sbom.cdx.json"
     trivy = REPORT_DIR / f"intake-{request_id}-trivy.json"
     semgrep = REPORT_DIR / f"intake-{request_id}-semgrep.json"
+    gitleaks = REPORT_DIR / f"intake-{request_id}-gitleaks.json"
     terms_report = REPORT_DIR / f"intake-{request_id}-exit-terms.json"
     discovery = investigate(checkout, url, commit)
     # D-50: the platform concludes (Jev when TYPESAFE_API_KEY is set, strict rules otherwise);
@@ -270,6 +284,9 @@ def validate(connection, request: dict) -> None:
                           "--format", "json", "--output", str(trivy), "--exit-code", "0", str(checkout)]),
         "semgrep": (semgrep, ["semgrep", "scan", "--config", str(RULES), "--json",
                               "--output", str(semgrep), "--metrics", "off", "--quiet", str(checkout)]),
+        "gitleaks": (gitleaks, ["gitleaks", "dir", str(checkout), "--no-banner", "--redact=100", "--exit-code=0",
+                                "--report-format=json", f"--report-path={gitleaks}", "--ignore-gitleaks-allow",
+                                "--config=/rules/gitleaks.toml", "--gitleaks-ignore-path=/dev/null"]),
     }
     failures = []
     counts = {level: 0 for level in SEVERITY_ORDER}
@@ -292,12 +309,12 @@ def validate(connection, request: dict) -> None:
                     raise ValueError("Semgrep의 검사 결과가 불완전합니다.")
                 if name == "trivy" and not document.get("SchemaVersion"):
                     raise ValueError("Trivy 결과의 SchemaVersion이 없습니다.")
-                levels, findings = (trivy_counts if name == "trivy" else semgrep_counts)(path, checkout)
+                levels, findings = {"trivy": trivy_counts, "semgrep": semgrep_counts, "gitleaks": gitleaks_counts}[name](path, checkout)
                 summary = {"findings": findings, "total": sum(levels.values()),
                            "truncated": sum(levels.values()) > len(findings)}
             summary.update({"repository": owner_repo, "commit": commit})
             scanner, version = {"syft": ("Syft", "v1.51.1"), "trivy": ("Trivy", "0.74.0"),
-                                "semgrep": ("Semgrep", "1.172.0")}[name]
+                                "semgrep": ("Semgrep", "1.172.0"), "gitleaks": ("Gitleaks", "8.30.1")}[name]
             connection.execute("DELETE FROM supply_chain_reports WHERE source_ref=%s AND report_path=%s",
                                (source_ref, str(path)))
             store_report(connection, scanner, version, source_ref, path, levels, summary)

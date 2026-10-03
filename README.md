@@ -1,5 +1,14 @@
 # MCP Governance Security Gateway
 
+## 오픈소스 인증·Secret 검사와 Audit API (2026-10-03)
+
+- **Keycloak OIDC + Authlib** 조직 로그인: 관리자가 issuer/subject를 기존 사용자에 연결합니다. OIDC 모드에서는 로컬 비밀번호를 거부하며 역할·단말 활성화는 기존 관리대장을 따릅니다.
+- **Gitleaks 8.30.1**이 도입 저장소, 전송되는 도구 인자와 마스킹 후 응답을 검사합니다. 검사 실패는 검증 실패/실행 전 차단이며 응답에 남은 Secret은 보류합니다. 기존 추가 규칙·Presidio 개인정보 및 응답 마스킹은 병행합니다.
+- 관리자용 **Audit API**: `GET /api/audit/events`, `/api/audit/events/{id}`, `/api/audit/export`, `/api/audit/verify`. 민감 본문을 제외한 필터·페이지 조회와 동일 DB 스냅샷의 체인 검증·내보내기를 제공합니다.
+- Console **감사 증거**, **정책 → 구성요소·조직 SSO**, **도입 검증 보고서 → Secret 검사**에서 사용합니다. 설치·설정·실행 확인 상태를 구분합니다.
+
+Keycloak 기동·신원 연결·전환 절차와 확인 범위는 [도입 기록](docs/ai/OSS_ADOPTION_2026-10-03.md)을 봅니다.
+
 직원들이 **자기 PC에서 Claude Code·Codex CLI·Gemini CLI·OpenCode 같은 AI 하네스를 평소처럼 쓸 때** 승인된 MCP 연결을
 한곳으로 모아, Gateway를 통과하는 도구 호출을 **실행 전에** 판정하는 게이트웨이와, MCP 이용 관계를 **끝냈다고 말할 수 있는지**
 판정하는 종료·폐기 절차를 한 저장소에서 재현하는 보안 테스트베드입니다.

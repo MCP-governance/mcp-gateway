@@ -1,7 +1,9 @@
+FROM zricethezav/gitleaks:v8.30.1 AS secrets
 FROM zhuquelab/aig-server@sha256:0c2560d64ee48f3110a035c9ca385668fcb0723592db51a41b89687f1af7810a AS aig-web
 
 FROM zhuquelab/aig-agent@sha256:7699c4004cd04c7b9c95766f07eb28d19b11d8d91ee4a38602acd74872734f7a
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+COPY --from=secrets /usr/bin/gitleaks /usr/local/bin/gitleaks
 COPY --from=aig-web /app/ /aig-web/
 WORKDIR /gateway
 COPY requirements.txt .

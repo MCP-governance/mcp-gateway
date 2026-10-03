@@ -1,4 +1,6 @@
+FROM zricethezav/gitleaks:v8.30.1 AS secrets
 FROM python:3.12-slim
+COPY --from=secrets /usr/bin/gitleaks /usr/local/bin/gitleaks
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY requirements.txt .

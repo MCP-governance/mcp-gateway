@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Literal
 
 import httpx
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field
 from psycopg.types.json import Jsonb
@@ -31,7 +31,7 @@ from .core import (
 from .mcp_facade import build_mcp, transport_security
 from .agent_contract import CONSOLE_SCOPE, authenticate, authenticated_user
 from .release import build_info, policy_info
-from . import activity, registry
+from . import activity, audit, registry
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 # "오늘" is the operator's day. The DB session runs in UTC, so date_trunc('day', now())
@@ -586,6 +586,32 @@ async def monitor(hours: int = 168, user: dict = Depends(admin_caller)) -> dict:
 async def audit_verify(user: dict = Depends(admin_caller)) -> dict:
     """Answers "감사 로그가 위변조됐나요?" with a row id instead of an assurance."""
     return await verify_audit_chain()
+
+
+def audit_filters(before: int = Query(0, ge=0), decision: str | None = Query(None, max_length=20),
+                  server: str | None = Query(None, max_length=150), principal: str | None = Query(None, max_length=150),
+                  policy: str | None = Query(None, max_length=150), event_kind: str | None = Query(None, max_length=30),
+                  execution: str | None = Query(None, max_length=30), since: datetime | None = None,
+                  until: datetime | None = None, trace_id: str | None = Query(None, max_length=128)) -> dict:
+    return dict(before=before, decision=decision, server=server, principal=principal, policy=policy,
+                event_kind=event_kind, execution=execution, since=since, until=until, trace_id=trace_id)
+
+
+@app.get("/api/audit/events")
+async def audit_events(limit: int = Query(100, ge=1, le=500), filters: dict = Depends(audit_filters),
+                       user: dict = Depends(admin_caller)) -> dict:
+    return await audit.events(limit=limit, **filters)
+
+
+@app.get("/api/audit/export")
+async def audit_export(limit: int = Query(500, ge=1, le=5000), filters: dict = Depends(audit_filters),
+                       user: dict = Depends(admin_caller)) -> dict:
+    return await audit.export(limit=limit, **filters)
+
+
+@app.get("/api/audit/events/{event_id}")
+async def audit_event(event_id: int, user: dict = Depends(admin_caller)) -> dict:
+    return await audit.detail(event_id)
 
 
 # ── 전주기 종료·폐기 ────────────────────────────────────────────────────────

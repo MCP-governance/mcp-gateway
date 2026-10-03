@@ -301,6 +301,7 @@ function page({ head, kpis = "", tabs, active }) {
 const PAGE_HELP = {
   overview: "호출 판정, 실제 실행, 응답 처리와 미해결 통제 항목을 함께 확인합니다.",
   activity: "Gateway를 거친 요청을 추적하고, 판정과 Upstream 실행 결과를 구분합니다.",
+  audit: "공식 감사 원장의 이벤트를 조회하고, 같은 시점의 체인 검증 결과와 함께 내보냅니다.",
   approvals: "승인이 필요한 도구 호출을 검토합니다. 승인하면 요청이 실행될 수 있습니다.",
   coverage: "MCP와 커넥터의 통제 주체, 증거 수준, 남아 있는 우회 경로를 확인합니다.",
   servers: "등록된 MCP 서버와 승인 도구, 계약 변경 및 연결 상태를 관리합니다.",
@@ -331,6 +332,7 @@ const chartBox = (id, label, size = "") => html`<div class="chart ${size}" id="$
 const PAGES = [
   { id: "overview", label: "운영 현황", group: "모니터링" },
   { id: "activity", label: "호출 로그", group: "모니터링" },
+  { id: "audit", label: "감사 증거", group: "모니터링" },
   { id: "approvals", label: "승인 대기", group: "모니터링", badge: "approvals" },
   { id: "coverage", label: "통제 범위", group: "접근·통제", badge: "coverage" },
   { id: "servers", label: "MCP 서버", group: "접근·통제" },
@@ -1345,7 +1347,9 @@ async function showIntakeReport(id) {
     return;
   }
   const scanners = Object.entries(evidence.scanners || {});
-  const findings = report.reports.flatMap((scan) => (scan.summary?.findings || []).map((f) => ({ ...f, scanner: scan.scanner })));
+  const allFindings = report.reports.flatMap((scan) => (scan.summary?.findings || []).map((f) => ({ ...f, scanner: scan.scanner })));
+  const findings = allFindings.filter((f) => f.scanner !== "Gitleaks");
+  const secretFindings = allFindings.filter((f) => f.scanner === "Gitleaks");
   const inventory = report.reports.find((scan) => scan.scanner === "Syft")?.summary || {};
   openDrawer(`검증 보고서 · ${r.display_name}`, html`<div class="row-actions">
     ${chip(...(INTAKE_STATUS[r.status] || ["", r.status]))}
@@ -1370,6 +1374,8 @@ async function showIntakeReport(id) {
         <td><b>${f.id}</b><span class="sub">${f.title}</span></td><td>${f.target}<span class="sub">${f.package || ""}</span></td>
         <td>${f.installed_version || "—"} → ${f.fixed_version || "—"}</td></tr>`)}</tbody></table>`
         : empty(scanners.some(([, s]) => s.status === "FAILED") || r.status === "FAILED" ? "검사 미완료 · 실패 사유를 확인하세요" : ["VALIDATED", "APPROVED", "REJECTED"].includes(r.status) ? "검사에서 발견된 항목 없음" : "검사 대기 중")}` },
+    {key: "secrets", label: "Secret 검사", n: secretFindings.length, body: html`<p class="note">Gitleaks가 저장소 파일을 검사합니다. Secret 값과 코드 본문은 보고서에 포함하지 않습니다. 탐지는 자격의 유효성을 증명하지 않습니다.</p>
+      ${secretFindings.length ? html`<table class="data"><thead><tr><th>규칙·등급</th><th>파일</th><th>행</th></tr></thead><tbody>${secretFindings.map((f) => html`<tr><td>${f.id}<span class="sub">${f.severity}</span></td><td>${f.target}</td><td>${f.line || "—"}</td></tr>`)}</tbody></table>` : empty(evidence.scanners?.gitleaks?.status === "DONE" ? "Gitleaks에서 발견된 Secret 없음" : "Gitleaks 검사 미완료 · 검사 단계에서 상태 확인")}`},
     { key: "sbom", label: "SBOM", n: inventory.components, body: html`
       ${inventory.truncated ? html`<p class="note warn">구성요소 200개 표시 · 전체 목록은 SBOM JSON에서 확인</p>` : ""}
       ${(inventory.inventory || []).length ? html`<table class="data"><thead><tr><th>이름</th><th>버전</th><th>유형</th><th>식별자·라이선스</th></tr></thead>
@@ -1555,8 +1561,31 @@ function showTarget(id) {
 
 // ── policy ───────────────────────────────────────────────────────────────────
 let policyLedger = [];
+ROUTES.audit = async (_, tab, query) => {
+  const q = new URLSearchParams(query);
+  const filters = ["decision", "server", "principal", "policy", "event_kind", "execution", "trace_id", "since", "until"];
+  const params = new URLSearchParams([...q].filter(([k, v]) => [...filters, "before"].includes(k) && v));
+  const data = await gw(`audit/events?${params}&limit=100`);
+  const options = (values, selected) => values.map(([value, label]) => html`<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`);
+  return {html: page({head: head("감사 증거", {actions: html`<button class="btn" data-act="audit-verify">체인 검증</button><button class="btn primary" data-act="audit-export">조회 결과 내보내기</button>`}),
+    active: "events", tabs: [{key: "events", label: "감사 이벤트", n: data.events.length, body: html`<div class="stack">
+      ${panel("조회 조건", html`<form class="form stack" data-form="audit"><div class="grid c3">
+        <label>판정<select name="decision">${options([["", "전체"], ...Object.entries(DECISION).map(([k,v]) => [k,v[1]])], q.get("decision") || "")}</select></label>
+        <label>실행 결과<select name="execution">${options([["", "전체"], ["executed", "실제 실행"], ["not-sent", "미전송"], ["unknown", "실행 여부 미확인"], ["withheld", "실행 후 응답 보류"]], q.get("execution") || "")}</select></label>
+        <label>이벤트<select name="event_kind">${options([["", "전체"], ["tools/call", "도구 호출"], ["mcp-connection", "연결 거부"]], q.get("event_kind") || "")}</select></label>
+        ${[...["server", "principal", "policy", "trace_id"].map((k) => field.text(k, {server:"서버 id", principal:"사용자 id", policy:"정책 id", trace_id:"Trace id"}[k], 'maxlength="150"', q.get(k) || "")),
+          ...["since", "until"].map((k) => field.text(k, k === "since" ? "시작 시각 (시간대 포함)" : "종료 시각 (시간대 포함)", 'placeholder="2026-10-03T00:00:00+09:00"', q.get(k) || ""))]}
+      </div><div class="row-actions"><button class="btn primary" type="submit">조회</button><a class="btn" href="#/audit">조건 초기화</a></div></form>`)}
+      ${panel("공식 감사 원장", html`<p class="note">PostgreSQL 원장의 감사 필드만 표시합니다. 요청·응답 본문과 토큰은 포함하지 않습니다. 내보내기는 최대 500건의 조회 페이지입니다.</p>
+        ${data.events.length ? html`<table class="data"><thead><tr><th>이벤트·시각</th><th>사용자·도구</th><th>판정·정책</th><th>실행·증거</th></tr></thead><tbody>${data.events.map((e) => html`<tr class="clickable" tabindex="0" data-act="audit-event" data-id="${e.id}">
+          <td>#${e.id}<span class="sub">${when(e.created_at)} · ${e.event_kind}</span></td><td>${e.user_token}<span class="sub mono">${e.server_id}.${e.tool_name}</span></td><td>${decisionChip(e.decision)}<span class="sub mono">${e.policy_id}</span></td>
+          <td>${e.upstream_executed ? (e.response_disposition === "withheld" || e.policy_id === "MCP-OUTPUT-001" ? "실행 후 응답 보류" : "실행 확인") : e.upstream_attempted ? "실행 여부 미확인" : "미전송"}<span class="sub mono">${e.entry_sha256 ? e.entry_sha256.slice(0,16) : "해시 없음"}</span></td></tr>`)}</tbody></table>` : empty("조회 조건에 해당하는 감사 이벤트 없음")}
+          ${data.has_more ? html`<a class="btn" href="#/audit?${new URLSearchParams({...Object.fromEntries(params), before: data.next_before})}">이전 기록</a>` : ""}`, {flush:true})}</div>`}]})};
+};
+
 ROUTES.policy = async (_, tab) => {
   const [{ enforcement }, matrix, ledger, runtime] = await Promise.all([gw("enforcement"), gw("policy/matrix"), gw("policy/ledger"), api("/api/readiness")]);
+  const [engines, identity] = await Promise.all([api("/api/components"), api("/api/identity")]);
   policyLedger = ledger.policies;
   const byOutcome = splitBy(ledger.policies, "outcome");
   return {
@@ -1565,6 +1594,12 @@ ROUTES.policy = async (_, tab) => {
         data-mode="${enforcement === "enforce" ? "monitor" : "enforce"}">${enforcement === "enforce" ? "관찰 모드로 전환" : "집행 모드로 전환"}</button>` }),
       active: tab || "capabilities",
       tabs: [
+        {key: "components", label: "구성요소", body: panel("오픈소스와 적용 범위", html`<table class="data"><thead><tr><th>구성요소·버전</th><th>상태</th><th>기능·적용 범위</th></tr></thead><tbody>
+          ${engines.components.map((c) => html`<tr><td><b>${c.name}</b><span class="sub">${c.version || "버전 미확인"}</span></td><td>${chip(c.state === "실행 미확인" || c.state === "미설정" ? "alert" : "outline", c.state)}</td><td>${c.function}<span class="sub">${c.scope}</span></td></tr>`)}</tbody></table>`, {flush: true})},
+        {key: "identity", label: "조직 SSO", body: html`<div class="stack">${panel("로그인 공급자", html`${kv([["로그인 방식", identity.provider === "oidc" ? identity.label : "로컬 계정"], ["OIDC 설정", identity.configured ? "설정됨" : "미설정"], ["발급자", identity.issuer || "—"], ["콜백", identity.redirect_uri || "—"]])}
+          <p class="note">SSO 신원을 기존 사용자 id에 연결합니다. 역할과 단말 활성화는 조직 관리대장을 따릅니다. SSO 연결 해제는 Console 세션을 차단합니다. 단말 접근도 종료하려면 사용자 관리에서 계정 중지 또는 장치 회수를 수행하세요. 전환은 운영자가 배포 설정에서 수행합니다.</p>
+          ${identity.configured ? html`<button class="btn primary" data-act="identity-bind">SSO 신원 연결</button>` : ""}`)}
+          ${panel("연결된 SSO 신원", identity.bindings.length ? html`<table class="data"><thead><tr><th>사용자</th><th>SSO subject</th><th>연결 기록</th><th>작업</th></tr></thead><tbody>${identity.bindings.map((b) => html`<tr><td>${b.principal}</td><td class="mono">${b.subject}</td><td>${b.linked_by}<span class="sub">${when(b.linked_at)}</span></td><td><button class="btn sm danger" data-act="identity-unbind" data-id="${b.id}">연결 해제</button></td></tr>`)}</tbody></table>` : empty("연결된 신원 없음"), {flush: true})}</div>`},
         { key: "runtime", label: "배포 확인", body: panel("실행 중인 빌드와 정책", kv([
           ["Console 빌드", runtime.build?.console?.revision || "미확인"],
           ["Gateway 빌드", runtime.build?.gateway?.revision || "미확인"],
@@ -1610,6 +1645,28 @@ const field = {
 };
 
 const ACTIONS = {
+  async "audit-event"(el) {
+    const event = await gw(`audit/events/${el.dataset.id}`);
+    openDrawer(`감사 이벤트 #${event.id}`, html`<p class="note">원장에 기록된 판정·실행·응답 상태입니다. 본문과 자격은 내보내지 않습니다.</p>`, [{key:"record", label:"감사 필드", body:json(event)}]);
+  },
+  async "audit-export"() {
+    const q = new URLSearchParams(current.query);
+    q.delete("t"); q.set("limit", "500");
+    lastDocument = await gw(`audit/export?${q}`);
+    ACTIONS["save-json"]({dataset:{name:"mcp-audit-evidence.json"}});
+    toast(`${lastDocument.manifest.count}건 내보냄${lastDocument.payload.has_more ? " · 추가 페이지 있음" : ""} · ${lastDocument.payload.verification.intact ? "체인 정상" : "체인 손상"}`);
+  },
+  async "identity-bind"() {
+    const fd = await ask({title:"SSO 신원 연결", fields:html`${field.text("principal", "기존 사용자 id", "required maxlength=150")}${field.text("subject", "Keycloak 사용자 id (sub)", "required maxlength=255")}<p class="note">Keycloak에서 확인한 subject를 입력하세요. 이메일이나 공급자 역할로 자동 연결하지 않습니다.</p>`, confirm:"연결"});
+    if (!fd) return;
+    const r = await api("/api/identity/bindings", {method:"POST", body:{principal:fd.get("principal").trim(), subject:fd.get("subject").trim()}});
+    toast(r.message); reload();
+  },
+  async "identity-unbind"(el) {
+    if (!await ask({title:"SSO 연결 해제", body:"이 신원으로 로그인한 Console 세션도 즉시 차단됩니다.", confirm:"해제", danger:true})) return;
+    const r = await api(`/api/identity/bindings/${el.dataset.id}`, {method:"DELETE"});
+    toast(r.message); reload();
+  },
   async "account-invite"() {
     const result = await ask({ title: "일반 사용자 초대", confirm: "초대 만들기", fields: html`
       ${field.area("usernames", "아이디 · 쉼표 또는 줄바꿈으로 구분", "required maxlength=1700")}
@@ -2148,6 +2205,11 @@ const ACTIONS = {
 let lastDocument = null;
 
 const FORMS = {
+  audit(form) {
+    const q = new URLSearchParams([...new FormData(form)].filter(([,v]) => String(v).trim()));
+    location.hash = `#/audit?${q}`;
+    reload();
+  },
   "command-search"(form) {
     const query = String(new FormData(form).get("query") || "").trim();
     location.hash = `#/activity?q=${encodeURIComponent(query)}`;

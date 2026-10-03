@@ -243,6 +243,12 @@ CPU에서 수십 초~2분 걸린다. 하네스 LLM 실측 결과는 DECISIONS D-
 
 ## 13. 디렉터리
 
+조직 로그인은 선택형 Keycloak/OIDC + Authlib 경로를 제공한다(D-65). SSO 활성화 시 로컬 비밀번호·refresh와
+기존 비장치 토큰을 거부한다. 역할·계정 상태·관리형 단말 인증은 기존 조직 관리대장이 담당한다.
+Gitleaks 기본 규칙을 Gateway 전송 인자와 도입 워커에 연결하고 검사 실패 시 통과시키지 않는다.
+감사 조회·상세·내보내기는 `/api/audit/*`의 본문 제외 projection이며 공식 원장은 PostgreSQL이다.
+채택 범위와 설정·검증은 [OSS_ADOPTION_2026-10-03.md](OSS_ADOPTION_2026-10-03.md)에 있다.
+
 | 경로 | 내용 |
 | --- | --- |
 | `full_stack_lab/console.sh` | 단일 진입점(up·workday·ask·harnesses·test·experiment·restore …) → [RUNBOOK.md](RUNBOOK.md) |

@@ -76,6 +76,11 @@ NOT_EXECUTED, 전송했지만 결과를 확인하지 못하면 UNCONFIRMED(외�
 - `agent_revoked_tokens`: 로그아웃·폐기된 JWT의 `jti`(uuid)와 만료.
 - `oauth_issued_tokens`(jti text, family), `oauth_refresh_tokens`(해시·회전·폐기): refresh family 폐기 시
   같은 family의 접근 토큰 jti를 `agent_revoked_tokens`에 넣는다(`jti::uuid` 주의).
+- `oidc_bindings`: 고유 `(issuer,subject)`를 기존 `principals.token`에 관리자가 명시적으로 연결한다.
+  `linked_by/at`로 연결 기록을 보존한다. 공급자 이메일·role로 자동 연결하지 않는다.
+- `oidc_sessions`: binding FK, 조직 JWT의 jti, AES-GCM 암호화된 외부 access token, 만료,
+  60초 handoff 해시·만료. handoff는 한 번 소비하고 binding 삭제 시 세션을 함께 삭제한다.
+  외부 refresh token은 저장하지 않는다. 요청마다 외부 introspection과 기존 계정 상태를 확인한다(D-65).
 
 ## 5. 엔드포인트 평면
 `endpoint_agents`(장치·소유자·키 해시·scopes), `endpoint_inventory`(설정 파일에서 찾은 MCP 서버,
@@ -105,4 +110,4 @@ v2 코드는 읽지도 쓰지도 않는다 → [ROADMAP.md](ROADMAP.md) 정리 �
 ## 도입 검증 보고서와 lease
 `mcp_intake_requests.evidence`는 `scanners`(검사기별 DONE/FAILED·오류), `reports`(해당 시도의 성공한 산출물 이름), `exit_terms_discovery`(commit 고정 문서 후보 근거), SBOM 구성요소 수·위험 등급별 수를 담는다. `exit_terms`의 관리자 검증 기록과 자동 조사 결과는 별도 필드다.
 
-`validation_lease_expires_at`와 `validation_attempts`는 VALIDATING 작업의 중단 복구에 쓰인다. 신규 요청은 API의 단일 INSERT에서 VALIDATION_QUEUED가 된다. Syft·Trivy·Semgrep의 정규화 요약은 `supply_chain_reports`에 남고 Console은 source_ref뿐 아니라 신청 UUID가 포함된 report_path로 귀속을 제한한다. 부분 검사 실패 시 수집한 증적은 남지만 요청 상태는 FAILED이며 승인되지 않는다.
+`validation_lease_expires_at`와 `validation_attempts`는 VALIDATING 작업의 중단 복구에 쓰인다. 신규 요청은 API의 단일 INSERT에서 VALIDATION_QUEUED가 된다. Syft·Trivy·Semgrep·Gitleaks의 정규화 요약은 `supply_chain_reports`에 남고 Console은 source_ref뿐 아니라 신청 UUID가 포함된 report_path로 귀속을 제한한다. Gitleaks 산출물은 RuleID·상대 파일·행·설명만 남기고 Secret/Match를 제거한다. 부분 검사 실패 시 수집한 증적은 남지만 요청 상태는 FAILED이며 승인되지 않는다.

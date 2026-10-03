@@ -21,7 +21,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import classify, db, endpoint_plane, pac, poisoning, privacy, registry, upstream
+from . import classify, db, endpoint_plane, pac, poisoning, privacy, registry, secret_scan, upstream
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMN_SETS, AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint,
@@ -1243,17 +1243,21 @@ async def record_connection_denial(user: dict, server_id: str, method: str, clie
     return await _record_decision(event)
 
 
-async def verify_audit_chain() -> dict:
+async def verify_audit_chain(connection=None) -> dict:
     """Walk the chain and name the first row that does not follow from the previous.
 
     An edited or deleted row cannot be made to fit again without rewriting every row
     after it, so this answers "was the audit log tampered with" with a row id rather
     than with an assurance.
     """
-    rows = await db.fetch_all(
+    if connection is None:
+        async with db.transaction() as snapshot:
+            await snapshot.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+            return await verify_audit_chain(snapshot)
+    rows = await (await connection.execute(
         "SELECT id, " + ", ".join(AUDIT_COLUMNS) + ", prev_sha256, entry_sha256, chain_version"
         " FROM decisions ORDER BY id"
-    )
+    )).fetchall()
     previous = GENESIS
     chained = 0
     for row in rows:
@@ -1273,7 +1277,7 @@ async def verify_audit_chain() -> dict:
                     "reason": "항목 내용이 기록된 해시와 다릅니다."}
         previous = row["entry_sha256"]
         chained += 1
-    head = await db.fetch_one("SELECT head_sha256, entries FROM audit_chain WHERE id=1")
+    head = await (await connection.execute("SELECT head_sha256, entries FROM audit_chain WHERE id=1")).fetchone()
     if head and head["head_sha256"] != previous:
         return {"intact": False, "checked": chained, "broken_at": None,
                 "reason": "마지막 항목이 체인 head와 다릅니다. 끝부분이 잘렸을 수 있습니다."}
@@ -1408,6 +1412,10 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         provider_hosted = classify.url_destination((registry.server(server_id) or {}).get("endpoint")).external
         ignore = _privacy_ignore(cls)
         try:
+            if cls.action in {"w", "x"} or external or provider_hosted:
+                secrets_found = await secret_scan.labels(json.dumps(arguments, ensure_ascii=False))
+                cls.dlp = sorted(set(cls.dlp) | set(secrets_found))
+                base_event["classification"]["dlp"] = cls.dlp
             findings = (await privacy.analyze(_outbound_text(arguments), ignore)
                         if cls.action in {"w", "x"} or external or provider_hosted else [])
         except privacy.InspectionUnavailable as exc:
@@ -1514,9 +1522,12 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 base_event["upstream_executed"] = True
                 try:
                     base_event["result"], output_types = await privacy.mask_payload(raw_result, ignore)
+                    remaining_secrets = await secret_scan.labels(upstream.text_of(base_event["result"]["content"]))
+                    if remaining_secrets:
+                        raise ResultRejected("응답에 마스킹되지 않은 Secret이 있어 보류했습니다: " + ", ".join(remaining_secrets), raw_result)
                 except privacy.InspectionUnavailable as exc:
                     # Executed, answer withheld: MCP-OUTPUT-001 below records exactly that.
-                    raise ResultRejected(f"출력 개인정보 검사 실패: {exc}", raw_result) from exc
+                    raise ResultRejected(f"출력 검사 실패: {exc}", raw_result) from exc
                 # The digest is of what the client receives (masked), not of the raw answer.
                 base_event["result_evidence"] = response_evidence(
                     base_event["result"], "masked" if output_types else "returned", output_types)

@@ -26,13 +26,14 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from psycopg.types.json import Jsonb
 
-from . import core, db
+from . import core, db, oidc
 from .release import build_info
 from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, authenticate,
                              authenticated_user, issue_token, private_key)
 from .connectors import router as connectors_router
 from .integrations import router as integrations_router
 from .idp import router as idp_router
+from .components import router as components_router
 
 STATIC_DIR = Path(__file__).parent / "agent_static"
 INTAKE_REPORT_DIR = Path(os.getenv("INTAKE_REPORT_DIR", "/intake-reports"))
@@ -99,6 +100,7 @@ async def lifespan(_: FastAPI):
     await db.execute((Path(__file__).parent / "agent_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "lifecycle_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "v2_tables.sql").read_text())
+    await db.execute((Path(__file__).parent / "oidc_tables.sql").read_text())
     await bootstrap_passwords()
     await bootstrap_field_accounts()
     if os.getenv("MCP_FIELD_MODE") == "1":
@@ -114,6 +116,8 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(idp_router)
 app.include_router(connectors_router)
 app.include_router(integrations_router)
+oidc.install(app)
+app.include_router(components_router)
 
 
 @app.middleware("http")
@@ -286,6 +290,7 @@ async def login(request: Login, http_request: Request):
 
 async def password_principal(email: str, password: str, caller: str) -> dict:
     """Console 로그인과 git의 Basic 인증이 함께 쓰는 비밀번호 확인과 시도 제한."""
+    oidc.local_login_allowed()
     email = email.strip().lower()
     # Checked before the identity lookup so an unknown address is throttled too;
     # otherwise the limit itself tells an attacker which addresses exist.
@@ -751,7 +756,7 @@ PAGES_BY_ROLE = {
     # MCP를 신청하는 길"이다. 조직 전체의 기록·정책·종료 판정은 관리자 몫이다.
     "partner": ("activity", "intake"),
     "employee": ("activity", "intake"),
-    "admin": ("overview", "activity", "approvals", "coverage", "servers", "people", "intake", "termination", "policy"),
+    "admin": ("overview", "activity", "audit", "approvals", "coverage", "servers", "people", "intake", "termination", "policy"),
 }
 ROLE_LABELS = {"partner": "협력업체 직원", "employee": "직원", "admin": "관리자"}
 
@@ -993,7 +998,7 @@ async def intake_report(request_id: UUID, authorization: str | None = Header(def
     scanner_states = (row.get("evidence") or {}).get("scanners", {})
     if scanner_states:
         reports = [r for r in reports if scanner_states.get(r["scanner"].lower(), {}).get("status") == "DONE"]
-    artifacts = {"sbom": "sbom.cdx.json", "trivy": "trivy.json", "semgrep": "semgrep.json",
+    artifacts = {"sbom": "sbom.cdx.json", "trivy": "trivy.json", "semgrep": "semgrep.json", "gitleaks": "gitleaks.json",
                  "exit-terms": "exit-terms.json"}
     available = []
     for kind, suffix in artifacts.items():
@@ -1010,7 +1015,7 @@ async def intake_report(request_id: UUID, authorization: str | None = Header(def
 async def intake_artifact(request_id: UUID, kind: str,
                           authorization: str | None = Header(default=None)):
     row = await intake_report_row(request_id, authorization)
-    suffix = {"sbom": "sbom.cdx.json", "trivy": "trivy.json", "semgrep": "semgrep.json",
+    suffix = {"sbom": "sbom.cdx.json", "trivy": "trivy.json", "semgrep": "semgrep.json", "gitleaks": "gitleaks.json",
               "exit-terms": "exit-terms.json"}.get(kind)
     if not suffix:
         raise HTTPException(404, "지원하지 않는 보고서입니다.")

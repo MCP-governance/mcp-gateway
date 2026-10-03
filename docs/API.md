@@ -34,6 +34,7 @@
 | `POST /oauth/revoke` | 공개 | RFC 7009. **항상 200**(무효 토큰도) — E1의 핵심 |
 | `POST /oauth/introspect` | 사용자 | RFC 7662 |
 | `POST /auth/mock-login` | 공개 | Console 로그인(30분). 실패 제한 있음. 같은 토큰을 `/git` 경로 전용 HttpOnly 쿠키 `mcpgw_git`로도 줌(D-48) |
+| `GET /auth/provider` · `GET /auth/oidc/login|callback` · `POST /auth/oidc/session` | 공개 | D-65 선택형 OIDC Code/PKCE 로그인. Authlib 검증, 명시 binding, 60초 1회 handoff. SSO 모드는 로컬 비밀번호·refresh·기존 비장치 토큰을 거부 |
 | `GET /auth/me` · `POST /auth/logout` | 사용자 | 역할·볼 수 있는 화면(field: 내부 Git 주소·`kit` 키트 주소와 setup 한 줄) / 즉시 폐기(쿠키도 지움) |
 | `POST /auth/signup` | 공개 | 가입 신청. 아이디는 Gitea 이름 규칙(영문·숫자 사이의 기호 하나). 시도 제한 있음 |
 | `GET /auth/gitea` | 쿠키 또는 Basic | Caddy `forward_auth` 전용(D-48). 통과 200 + `X-WEBAUTH-USER`, 브라우저 미로그인 302 `/login?next=/git/…`, 그 밖 401 Basic |
@@ -45,6 +46,7 @@
 | `GET/POST/PUT/DELETE /gw/<path>` | 사용자 | Gateway `/api/<path>` 프록시. 관리자: `overview, activity, registry, health, termination/, approvals/, catalog/, enforcement, monitor/, audit/, policy/, endpoint/, supply-chain/, risk-catalog, lab/` · 그 외: `activity, health`만 |
 | `GET /approvals` · `POST /approvals/{id}/approve|reject` | 관리자 | `{approvals, history}` — 대기 중(요청자·도구·인자·판정 맥락)과 처리·만료된 최근 50건 |
 | `GET /api/accounts` · `PUT /api/accounts/{user_id}/status` | 관리자 | 신원 관리대장, 계정 사용/중지/잠금 |
+| `GET /api/components` · `GET /api/identity` · `POST /api/identity/bindings` · `DELETE /api/identity/bindings/{id}` | 관리자(Console scope) | 설치/설정/실행 확인과 적용 범위, 공급자/명시 issuer-sub 연결. `{principal,subject}`는 기존 활성 주체에만 연결. 해제는 해당 Console 세션을 차단하며 단말 키 회수는 별도 |
 | `GET /api/mcp-requests` · `POST /api/mcp-requests` | 사용자 | 도입 신청 목록(관리자=전체) / 신청 `{display_name, intake_kind: repository|remote-endpoint, repository_url, endpoint_url, requested_transport, purpose}`. 저장소 신청은 검증 대기열로, 공급자 호스팅(`remote-endpoint`, Streamable HTTP만)은 HOLD로 시작(D-57). 종료 조건 필드를 보내면 422 |
 | `POST /api/mcp-requests/{id}/review-contract` | 관리자 | 원격 신청의 실제 광고 계약 검토 `{server_id, endpoint, catalog_hash, tools, data_class, valid_days, poisoning_ack, allowed_principals(로그인 아이디 또는 주체 토큰), review_note}` → REMOTE_REVIEWED. 구현 소스 검사는 하지 않았다고 기록 |
 | `POST/GET /api/account-invitations` · `DELETE /api/account-invitations/{id}` | 관리자 | 일반 사용자 초대 `{usernames(1~50), department}` → 48시간·1회용 링크(발급 응답에서만) / 목록(비밀·해시 없음) / 회수(D-58) |
@@ -80,6 +82,8 @@
 | `GET/PUT /api/enforcement` | 사용자/관리자 | 집행·관찰 모드 |
 | `GET /api/monitor/summary?hours` | 관리자 | 관찰 모드에서 "집행했다면" 통계 |
 | `GET /api/audit/verify` | 관리자 | 해시 체인 전체 검증, 끊긴 행 id |
+| `GET /api/audit/events` · `GET /api/audit/events/{id}` | 관리자(Console scope) | 본문 제외 projection, 최대 500건·before cursor·decision/server/principal/policy/event_kind/execution/since/until/trace_id 필터. 시각에 시간대 필요 |
+| `GET /api/audit/export` | 관리자(Console scope) | 최대 5000건 페이지, 동일 DB 스냅샷의 전체 체인 검증, payload SHA-256 manifest. 본문 제외 파일만으로 원문 체인을 재검증할 수 없음 |
 | `GET /api/supply-chain/coverage` · `POST /api/supply-chain/import` | 관리자 | 공급망 증적 |
 | `GET /api/risk-catalog` | 사용자 | AI-Infra-Guard 위험 범주 ↔ 통제 |
 
@@ -106,5 +110,5 @@
 ### 도입 검증 보고서
 - `POST /api/mcp-requests`: 인증한 신청자의 요청을 VALIDATION_QUEUED로 접수합니다.
 - `GET /api/mcp-requests/{request_id}/report`: 관리자 전용 신청 상세·검사 요약·종료조건 조사·다운로드 목록입니다.
-- `GET /api/mcp-requests/{request_id}/artifacts/{kind}`: 관리자 전용 JSON 첨부 다운로드입니다. kind는 sbom, trivy, semgrep, exit-terms만 허용합니다.
+- `GET /api/mcp-requests/{request_id}/artifacts/{kind}`: 관리자 전용 JSON 첨부 다운로드입니다. kind는 sbom, trivy, semgrep, gitleaks, exit-terms만 허용합니다. gitleaks 산출물은 Secret/Match를 제거합니다.
 - `POST /api/mcp-requests/{request_id}/queue-validation`: 관리자 전용 HOLD·FAILED·VALIDATED 재검증입니다(VALIDATED는 새 규칙으로 종료 조건 결론을 다시 낼 때). 이미 진행 중인 요청은 409입니다.

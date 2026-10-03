@@ -1,6 +1,8 @@
 # 도입 요청 격리 검증 워커. Gateway 이미지와 분리한 이유는 스캐너 도구 체인과
 # git이 정책 집행 프로세스와 같은 파일시스템에 있을 이유가 없기 때문이다.
+FROM zricethezav/gitleaks:v8.30.1 AS secrets
 FROM python:3.12-slim
+COPY --from=secrets /usr/bin/gitleaks /usr/local/bin/gitleaks
 
 ARG TRIVY_VERSION=0.74.0
 ARG SYFT_VERSION=1.51.1
@@ -47,6 +49,7 @@ RUN set -eu; \
     semgrep --version >/dev/null; \
     syft version >/dev/null; \
     trivy --version >/dev/null; \
+    gitleaks version >/dev/null; \
     aig-mcp-scan --help >/dev/null; \
     python -c "import psycopg"; \
     echo "scanner toolchain OK"
@@ -57,6 +60,7 @@ RUN useradd --uid 10002 --create-home worker \
 
 COPY --chown=worker:worker intake_worker.py /app/intake_worker.py
 COPY --chown=worker:worker exit_terms.py /app/exit_terms.py
+COPY gitleaks.toml /rules/gitleaks.toml
 USER worker
 WORKDIR /app
 CMD ["python", "intake_worker.py"]

@@ -9,6 +9,30 @@ const email = document.querySelector("#email");
 const password = document.querySelector("#password");
 const error = document.querySelector("#gate-error");
 const button = document.querySelector("#gate-go");
+const params = new URLSearchParams(location.search);
+async function configureLogin() {
+  try {
+    const config = await (await fetch("/auth/provider")).json();
+    if (config.provider === "oidc") {
+      document.querySelector("#sso-login").hidden = false;
+      document.querySelector("#sso-login a").hidden = !config.configured;
+      document.querySelector("#sso-label").textContent = `${config.label} 계정으로 로그인합니다.`;
+      document.querySelector("#sso-error").textContent = {unbound: "조직 사용자와 연결되지 않은 SSO 계정입니다. 관리자에게 신원 연결을 요청하세요.",
+        invalid: "SSO 인증을 확인하지 못했습니다. 다시 로그인하세요."}[params.get("sso_error")] || (!config.configured ? "조직 SSO 설정이 완료되지 않았습니다." : "");
+    } else document.querySelector("#gate-form").hidden = false;
+    if (params.get("sso") === "complete") {
+      const response = await fetch("/auth/oidc/session", {method: "POST"});
+      const result = await response.json();
+      if (!response.ok || !result.access_token) throw Error("SSO 인증을 완료하지 못했습니다. 다시 로그인하세요.");
+      localStorage.setItem(TOKEN_KEY, result.access_token);
+      location.replace("/workspace");
+    }
+  } catch (failure) {
+    document.querySelector("#sso-login").hidden = false;
+    document.querySelector("#sso-error").textContent = failure.message || "로그인 방식을 확인하지 못했습니다.";
+  }
+}
+configureLogin();
 // The Console sends a session here when an admin switched the account off.
 error.textContent = { disabled: "사용이 중지된 계정이에요. 관리자에게 문의하세요.",
   locked: "잠긴 계정이에요. 관리자에게 문의하세요.", deleted: "삭제된 계정이에요." }[new URLSearchParams(location.search).get("account")] || "";

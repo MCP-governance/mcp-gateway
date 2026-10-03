@@ -52,7 +52,7 @@ async def metadata() -> dict:
         "token_endpoint": f"{ISSUER_URL}/oauth/token",
         "revocation_endpoint": f"{ISSUER_URL}/oauth/revoke",
         "introspection_endpoint": f"{ISSUER_URL}/oauth/introspect",
-        "grant_types_supported": ["password", "refresh_token"],
+        "grant_types_supported": [] if os.getenv("AUTH_PROVIDER", "local") == "oidc" else ["password", "refresh_token"],
         "token_endpoint_auth_methods_supported": ["none"],
         "revocation_endpoint_auth_methods_supported": ["none"],
         "introspection_endpoint_auth_methods_supported": ["bearer"],
@@ -81,6 +81,8 @@ async def _issue(user_row: dict, client_id: str, family_id: uuid.UUID) -> dict:
 async def token(request: Request, grant_type: str = Form(...), client_id: str = Form(...),
                 username: str | None = Form(None), password: str | None = Form(None),
                 refresh_token: str | None = Form(None)):
+    from .oidc import local_login_allowed
+    local_login_allowed()
     client_id = client_id.strip()[:64]
     if not client_id:
         return _error("invalid_client", "client_id가 필요합니다.", 401)
@@ -224,6 +226,11 @@ async def introspection(token: str) -> dict:
         from .endpoint_plane import managed_failure
         if await managed_failure(row, claims):
             return {"active": False}
+    from .oidc import validate_session
+    try:
+        await validate_session(claims)
+    except HTTPException:
+        return {"active": False}
     return {"active": True, "token_type": "access_token", "scope": claims.get("scope", ""),
             "client_id": claims.get("client_id"), "sub": claims["sub"], "jti": claims["jti"],
             "exp": claims["exp"], "iat": claims["iat"], "iss": claims["iss"], "aud": claims["aud"]}
@@ -241,6 +248,8 @@ async def introspect_jti(jti: str) -> dict:
     if not person or person["status"] != "active":
         active = False
     elif active:
+        if os.getenv("AUTH_PROVIDER", "local") == "oidc" and not row.get("device_id"):
+            active = False
         from .endpoint_plane import managed_failure
         if await managed_failure(person, {"scope": "mcp", **{k: row.get(k) for k in ("device_id", "device_epoch", "device_policy")}}):
             active = False
