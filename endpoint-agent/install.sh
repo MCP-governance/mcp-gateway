@@ -6,6 +6,8 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ ${EUID} -ne 0 ]]; then
   command -v sudo >/dev/null || { echo "관리자 권한이 필요합니다. root로 실행하세요." >&2; exit 2; }
   # The one elevation: sudo keeps SUDO_USER, which is the employee this device is connected for.
-  exec sudo -p "관리자 권한 확인 - %u 비밀번호: " /usr/bin/env python3 "$HERE/bootstrap.py" "$@"
+  exec sudo -p "관리자 권한 확인 - %u 비밀번호: " /usr/bin/env python3 -B "$HERE/bootstrap.py" "$@"
 fi
-exec python3 "$HERE/bootstrap.py" "$@"
+# -B: the kit sits in the employee's own folder, and root-owned __pycache__ there is something they
+# cannot delete afterwards.
+exec python3 -B "$HERE/bootstrap.py" "$@"

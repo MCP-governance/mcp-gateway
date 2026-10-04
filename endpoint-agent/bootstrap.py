@@ -269,7 +269,7 @@ def rollback(account: str) -> None:
     # is removed by the newest removal logic.
     step(f"기존 설치 제거: {account}")
     remove_shims(account)
-    run(sys.executable, str(HERE / "managed-linux.py"), "rollback", "--user", account, check=False)
+    run(sys.executable, "-B", str(HERE / "managed-linux.py"), "rollback", "--user", account, check=False)
 
 
 def close_sessions(account: str) -> None:
@@ -284,7 +284,7 @@ def install_managed(account: str, placed: dict[str, dict], enrollment: Path) -> 
     step(f"관리형 연결 설치: {account}")
     close_sessions(account)
     clients = [part for name, item in placed.items() for part in ("--client", f"{name}={item['path']}")]
-    done = subprocess.run([sys.executable, str(HERE / "managed-linux.py"), "install", "--user", account,
+    done = subprocess.run([sys.executable, "-B", str(HERE / "managed-linux.py"), "install", "--user", account,
                            "--enrollment", str(enrollment), *clients], capture_output=True, text=True)
     if done.returncode:
         raise Failed((done.stderr or done.stdout).strip().splitlines()[-1][:300] if (done.stderr or done.stdout)
