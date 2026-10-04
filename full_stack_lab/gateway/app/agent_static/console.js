@@ -156,6 +156,7 @@ async function planes() {
 const ACTION = { r: "읽기", w: "쓰기", x: "외부 전송·실행" };
 const DATA_CLASS = { public: "공개", nonimportant: "내부", important: "중요" };
 const ROLE = { admin: "관리자", employee: "직원", partner: "협력사" };
+const PLATFORM_KIT = { linux: "Linux 설치 파일", windows: "Windows 설치 파일" };
 const EXIT_TERMS = {
   provider_credential_disclosure: "보유 자격 고지",
   revocation_evidence: "폐기 기록 제출",
@@ -1765,25 +1766,20 @@ const ACTIONS = {
     // The kit points the harnesses at the gateway; no password is stored on the PC.
     const kit = viewer.kit;
     openDrawer("내 PC 연결", html`<div class="row-actions">${chip(kit.servers ? "allow" : "outline", kit.servers ? `MCP 서버 ${kit.servers.split(",").length}개` : "사용 가능한 서버 없음")}
-        <button class="btn sm primary" type="button" data-act="pc-kit-download">설치 키트 받기</button></div>
-      ${[["windows", "Windows"], ["linux", "Linux"]].filter(([os]) => kit.commands?.[os]).map(([os, label]) => html`
-        <h4>${label} <button class="btn sm" type="button" data-act="copy-kit" data-os="${os}">명령 복사</button></h4>
-        <pre class="json">${kit.commands[os]}</pre>`)}`);
+      ${(kit.platforms || []).map((os) => html`<button class="btn sm primary" type="button" data-act="pc-kit-download" data-os="${os}">${PLATFORM_KIT[os] || os}</button>`)}</div>`);
   },
-  async "copy-kit"(el) {
-    await navigator.clipboard.writeText(viewer.kit.commands[el.dataset.os]);
-    toast("복사했습니다.");
-  },
-  async "pc-kit-download"() {
-    const response = await fetch("/api/pc-kit", { method: "POST", headers: { authorization: `Bearer ${token}` } });
+  async "pc-kit-download"(el) {
+    const os = el.dataset.os || "linux";
+    const response = await fetch(`/api/pc-kit?platform=${encodeURIComponent(os)}`,
+      { method: "POST", headers: { authorization: `Bearer ${token}` } });
     if (!response.ok) {
       const r = await response.json();
-      throw new Error(detailText(r.detail) || "설치 키트를 받지 못했습니다.");
+      throw new Error(detailText(r.detail) || "설치 파일을 받지 못했습니다.");
     }
     const url = URL.createObjectURL(await response.blob());
-    const link = document.createElement("a"); link.href = url; link.download = "mcp-managed-kit.zip";
+    const link = document.createElement("a"); link.href = url; link.download = `mcp-managed-kit-${os}.zip`;
     link.click(); setTimeout(() => URL.revokeObjectURL(url), 30000);
-    toast("설치 키트를 받았습니다.");
+    toast("설치 파일을 받았습니다.");
   },
   async "device-activate"(el) {
     const fd = await ask({ title: `엔드포인트 활성화 · ${el.dataset.id}`,

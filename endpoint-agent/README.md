@@ -16,9 +16,13 @@ Gateway와 OPA는 `full_stack_lab/`에서 실행합니다. 아래 사용자 범�
    실행 파일과 상위 경로는 root 소유이며 사용자 쓰기가 금지돼야 합니다. `--client codex=/승인경로`로 경로를 지정할 수 있습니다.
 
 ```bash
-unzip mcp-managed-kit.zip -d mcp-managed-kit
-sudo python3 mcp-managed-kit/managed-linux.py install --user 일반사용자계정
+unzip mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.sh
 ```
+
+`install.sh`는 `bootstrap.py`를 sudo로 한 번 올리고, 그 안에서 필수 구성요소 설치 → 승인 하네스 배치(SHA-256 기록) →
+관리 계정 결정 → `managed-linux.py install` → 실행 연결(관리자 계정일 때) → 모델 로그인을 순서대로 합니다(D-71).
+이미 설치된 장치면 먼저 `rollback`을 돌리고 다시 설치합니다. `--remove`는 이 PC의 연결만 제거합니다.
+아래 수동 경로는 그 단계들을 따로 돌릴 때만 씁니다.
 
 4. 설치기는 단말 키를 생성하여 한 번 등록하고, `/var/lib/mcpgw-managed/<계정>/config.json`(root 600)에만 저장합니다.
    `/etc/claude-code/{managed-mcp.json,managed-settings.json}`과 `/etc/codex/{managed_config.toml,requirements.toml}`은

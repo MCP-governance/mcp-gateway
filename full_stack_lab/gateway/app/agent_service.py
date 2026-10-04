@@ -324,25 +324,30 @@ async def me(authorization: str | None = Header(default=None)):
             "git_url": git_url.rstrip("/") + f"/{GITEA_ORG}" if git_url else "", "kit": await pc_kit() if field else None}
 
 
+KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py"),
+             "windows": ("install.cmd", "managed-windows.py", "agent.py")}
+# The employee runs one file and answers one elevation prompt; the installer does the rest (D-71).
+KIT_EXECUTABLE = {"install.sh"}
+
+
 async def pc_kit() -> dict | None:
     """개인별 1회용 enrollment 키트. MCP 서버가 없어도 단말 등록은 가능하다."""
     public = os.getenv("IDP_ISSUER", "").rstrip("/")
-    if not (Path(os.getenv("ENDPOINT_KIT_DIR", "/endpoint-kit")) / "managed-linux.py").is_file() or not public:
+    if not (Path(os.getenv("ENDPOINT_KIT_DIR", "/endpoint-kit")) / "bootstrap.py").is_file() or not public:
         return None
     rows = await db.fetch_all(
         "SELECT id FROM mcp_servers WHERE status='READY' AND COALESCE(lifecycle,'OPERATING')='OPERATING' ORDER BY id")
     servers = ",".join(row["id"] for row in rows)
-    return {"url": "/api/pc-kit", "servers": servers, "commands": {
-        "linux": "unzip mcp-managed-kit.zip -d mcp-managed-kit\nsudo python3 mcp-managed-kit/managed-linux.py install --user 일반사용자계정",
-        "windows": "Expand-Archive mcp-managed-kit.zip mcp-managed-kit\npy -3 mcp-managed-kit\\managed-windows.py install --user 일반사용자계정"}}
+    return {"url": "/api/pc-kit", "servers": servers, "platforms": sorted(KIT_FILES)}
 
 
 @app.post("/api/pc-kit")
-async def download_managed_kit(authorization: str | None = Header(default=None)):
+async def download_managed_kit(platform: Literal["linux", "windows"] = "linux",
+                               authorization: str | None = Header(default=None)):
     from .endpoint_plane import enrollment_token
     user = await current_identity(authorization)
     source = Path(os.getenv("ENDPOINT_KIT_DIR", "/endpoint-kit"))
-    names = ("managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py", "managed-windows.py")
+    names = KIT_FILES[platform]
     if any(not (source / name).is_file() for name in names):
         raise HTTPException(503, "관리형 설치 키트가 배포되지 않았습니다.")
     public = os.getenv("IDP_ISSUER", "").rstrip("/")
@@ -357,9 +362,14 @@ async def download_managed_kit(authorization: str | None = Header(default=None))
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("enrollment.json", json.dumps(bundle))
         for name in names:
-            archive.writestr(name, (source / name).read_bytes())
+            entry = zipfile.ZipInfo(name)
+            # unzip applies the stored mode: the entry point has to come out runnable.
+            entry.external_attr = (0o755 if name in KIT_EXECUTABLE else 0o644) << 16
+            entry.compress_type = zipfile.ZIP_DEFLATED
+            archive.writestr(entry, (source / name).read_bytes())
     return Response(output.getvalue(), media_type="application/zip",
-                    headers={"Content-Disposition": 'attachment; filename="mcp-managed-kit.zip"', "Cache-Control": "no-store"})
+                    headers={"Content-Disposition": f'attachment; filename="mcp-managed-kit-{platform}.zip"',
+                             "Cache-Control": "no-store"})
 
 
 @app.post("/auth/logout")

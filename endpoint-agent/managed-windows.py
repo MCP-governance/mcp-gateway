@@ -17,6 +17,7 @@ import os
 import platform
 import re
 import secrets
+import shutil
 import socket
 import subprocess
 import sys
@@ -232,7 +233,8 @@ def set_user_environment(config, values):
         subprocess.run(["reg", "load", "HKU\\" + loaded, str(Path(config["profile"]) / "NTUSER.DAT")], check=True, capture_output=True)
         root = loaded
     try:
-        with winreg.CreateKeyEx(winreg.HKEY_USERS, root + r"\Environment", 0, winreg.KEY_SET_VALUE) as key:
+        with winreg.CreateKeyEx(winreg.HKEY_USERS, root + r"\Environment", 0,
+                                winreg.KEY_SET_VALUE | winreg.KEY_QUERY_VALUE) as key:
             for name in ("HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY"):
                 if values.get(name):
                     winreg.SetValueEx(key, name, 0, winreg.REG_SZ, values[name])
@@ -241,6 +243,18 @@ def set_user_environment(config, values):
                         winreg.DeleteValue(key, name)
                     except FileNotFoundError:
                         pass
+            # The account's own PATH, appended to the machine one: how a created companion account
+            # finds the approved harness at all. Entries that are not ours are kept.
+            try:
+                current = [part for part in str(winreg.QueryValueEx(key, "PATH")[0]).split(os.pathsep) if part]
+            except FileNotFoundError:
+                current = []
+            kept = [part for part in current if not part.lower().startswith(str(PROGRAMS).lower())]
+            wanted = kept + ([values["PATH_APPEND"]] if values.get("PATH_APPEND") else [])
+            if wanted:
+                winreg.SetValueEx(key, "PATH", 0, winreg.REG_EXPAND_SZ, os.pathsep.join(wanted))
+            elif current:
+                winreg.DeleteValue(key, "PATH")
     finally:
         if loaded:
             subprocess.run(["reg", "unload", "HKU\\" + loaded], check=False, capture_output=True)
@@ -387,29 +401,88 @@ def header(args):
 
 # -- commands ---------------------------------------------------------------------
 
+CREATE_ACCOUNT = """
+$existing = Get-LocalUser -Name $in.name -ErrorAction SilentlyContinue
+if (-not $existing) { New-LocalUser -Name $in.name -NoPassword -FullName 'MCP managed harness account' -Description 'MCP Gateway managed harness account' | Out-Null }
+"@ok" | Out-Null
+"""
+HARNESS = ("codex.exe", "codex-code-mode-host.exe", "claude.exe")
+
+
+def managed_user(name):
+    """The employee's own account when it is a standard one, else a created standard companion.
+
+    An administrator cannot be confined by rules they can remove, and Windows has no way to run a
+    program as another local account without that account's password, so the companion is one the
+    employee signs in to. It is created without a password: Windows restricts blank-password local
+    accounts to console sign-in, and the employee sets one at first sign-in.
+    """
+    person = account(name)
+    if not person["admin"]:
+        return name, person, False
+    companion = ("mcpgw-" + name)[:20]
+    powershell(CREATE_ACCOUNT, {"name": companion})
+    created = account(companion)
+    if created["admin"]:
+        raise ValueError(f"{companion} 계정에 관리자 권한이 있어 통제를 설치할 수 없습니다")
+    return companion, created, True
+
+
+def place_harnesses(source_profile):
+    """Copy the official harness executables where every account can run them, and pin the digests.
+
+    Windows confinement is scoped to the account's SID, not to a program path, so this is about the
+    companion account being able to run the harness at all - and a record of what was approved.
+    """
+    folder = PROGRAMS / "harness"
+    lock_down(folder)
+    roots = [Path(__file__).parent / "harness", Path(source_profile) / "AppData/Roaming/npm/node_modules",
+             Path(source_profile) / "AppData/Local/Programs", Path(os.environ.get("ProgramFiles", "")) / "nodejs"]
+    placed = {}
+    for item in HARNESS:
+        found = next((candidate for root in roots if root.exists()
+                      for candidate in sorted(root.rglob(item)) if candidate.is_file()), None)
+        if not found:
+            continue
+        digest = hashlib.sha256(found.read_bytes()).hexdigest()
+        target = folder / item
+        if not target.exists() or hashlib.sha256(target.read_bytes()).hexdigest() != digest:
+            shutil.copyfile(found, target)
+        placed[item] = digest
+    if "codex.exe" in placed and "codex-code-mode-host.exe" not in placed:
+        raise ValueError("Codex와 같은 릴리스의 codex-code-mode-host.exe를 찾지 못했습니다")
+    if not placed:
+        raise ValueError("공식 Codex 또는 Claude 설치를 찾지 못했습니다. 설치한 뒤 다시 실행하세요")
+    return folder, placed
+
+
 def install(args):
     if not ctypes.windll.shell32.IsUserAnAdmin():
-        raise ValueError("조직 관리자가 관리자 권한 PowerShell에서 설치해야 합니다")
+        raise ValueError("관리자 권한으로 실행해야 합니다")
     if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,31}", args.user):
         raise ValueError("일반 사용자 계정 이름을 지정하세요")
-    person = account(args.user)
-    if person["admin"]:
-        raise ValueError("관리자 그룹의 계정에는 일반 사용자 통제를 설치할 수 없습니다")
+    employee = args.user
+    args.user, person, companion = managed_user(employee)
     if not person["profile"] or not (Path(person["profile"]) / "NTUSER.DAT").exists():
-        raise ValueError("해당 계정으로 한 번 로그인해 사용자 프로필을 만든 뒤 설치하세요")
+        if not companion:
+            raise ValueError("해당 계정으로 한 번 로그인해 사용자 프로필을 만든 뒤 설치하세요")
+        raise ValueError(f"{args.user} 계정으로 한 번 로그인해 프로필을 만든 뒤 이 파일을 다시 실행하세요")
     if int(powershell(OWNED_PROCESSES, {"sid": person["sid"]}, timeout=180)):
-        raise ValueError("해당 계정을 로그아웃한 뒤 설치하세요. 실행 중인 비관리 세션을 남기지 않습니다")
+        raise ValueError(f"{args.user} 계정을 로그아웃한 뒤 다시 실행하세요. 실행 중인 비관리 세션을 남기지 않습니다")
     python = Path(sys.executable)
     if not protected([python, python.parent]):
         raise ValueError("Python을 모든 사용자용(Program Files)으로 설치한 뒤 그 python.exe로 실행하세요")
     lock_down(PROGRAMS)
     for name in ("managed-windows.py", "agent.py"):
         write_file(PROGRAMS / name, (Path(__file__).parent / name).read_text(encoding="utf-8"))
+    harness_folder, harnesses = place_harnesses(person["profile"])
     folder = STATE / args.user.lower()
     lock_down(folder, readers=False)
     config_path = folder / "config.json"
     if config_path.exists():
-        raise ValueError("이미 설치된 장치입니다. 기존 자격을 폐기하고 제거한 뒤 재설치하세요")
+        # The same file is the repair and the reinstall path.
+        rollback(argparse.Namespace(user=args.user))
+        lock_down(folder, readers=False)
     bundle = json.loads(args.enrollment.read_text(encoding="utf-8"))
     verify_transport(bundle)
     helper = f'"{python}" -I -S "{PROGRAMS / "managed-windows.py"}" header'
@@ -433,7 +506,7 @@ def install(args):
     if codex_config(config).exists():
         write_file(folder / "config.toml.backup", codex_config(config).read_text(encoding="utf-8"))
     apply_policy(config, policy)
-    set_user_environment(config, policy.get("proxy_environment") or {})
+    set_user_environment(config, {**(policy.get("proxy_environment") or {}), "PATH_APPEND": str(harness_folder)})
     powershell(APPLY_RULES, {"rules": firewall_rules(args.user, person["sid"], policy["gateway_ips"], ports(policy))})
     write_file(Path(config["firewall_baseline"]), json.dumps({"rules": rule_state(config)["rules"]}))
     powershell("""
@@ -446,8 +519,13 @@ Start-ScheduledTask -TaskName $in.name
 """, {"python": str(python), "name": TASK.format(user=args.user.lower()),
       "arguments": f'-I -S "{PROGRAMS / "managed-windows.py"}" serve --config "{config_path}"'})
     args.enrollment.unlink()
-    print(json.dumps({"endpoint_id": config["endpoint_id"], "user": args.user, "state": "pending-organization-activation",
+    print(json.dumps({"endpoint_id": config["endpoint_id"], "employee": employee, "managed_account": args.user,
+                      "state": "pending-organization-activation", "harnesses": harnesses,
                       "task": TASK.format(user=args.user.lower())}, ensure_ascii=False))
+    print("\n연결을 신청했습니다. 조직 관리자가 콘솔에서 활성화하면 사용할 수 있습니다.")
+    if companion:
+        print(f"{args.user} 계정으로 로그인해 비밀번호를 정하고, 그 계정에서 codex 또는 claude를 실행하세요.")
+    print("처음 한 번은 codex login --device-auth 로 모델 로그인을 하세요.")
 
 
 def serve(args):

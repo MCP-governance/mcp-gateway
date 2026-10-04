@@ -153,24 +153,19 @@ Tailscale IP가 있어야 하고, 직원·관리자 PC도 같은 tailnet에서 �
 가입 승인·초대 수락 후 **내 PC 연결**에서 개인별 ZIP을 받습니다. 가입자에 묶인 등록 토큰은 30분 동안 한 번만
 사용할 수 있습니다. 단말이 활성화되지 않았으면 로그인 직후 설치 안내가 열립니다. MCP 서버가 없어도 설치할 수 있습니다.
 
-조직 IT가 승인된 설치기와 공식 하네스 배포판을 확인하고, **관리 권한 없는 계정**에 설치합니다. 같은 키트에 두 설치기가 있습니다.
-
-- Linux: systemd·AppArmor·nftables·gcc와 Python 3.10 이상, native Codex(같은 릴리스의 `codex-code-mode-host` 포함)·Claude를
-  `/opt/mcpgw-approved/`에.
-- Windows 10/11: 모든 사용자용(Program Files) Python 3.10 이상. 대상 계정은 Administrators가 아니고, 한 번 로그인해
-  프로필이 있으며, 설치 때는 로그아웃 상태여야 합니다(D-68).
+받은 파일을 풀고 **설치 파일 하나를 실행한 뒤 OS 권한 확인에 한 번 응하면** 끝납니다(D-71). 필수 구성요소 설치, 승인 하네스 배치,
+관리 계정 결정, 관리형 설정·프록시 구성, 모델 로그인까지 설치기가 합니다. 이미 설치돼 있으면 같은 파일이 재설치·복구 경로입니다.
 
 ```bash
-# Console에서 인증 후 받은 개인별 키트. 조직 IT가 승인 출처를 확인한 뒤 실행합니다.
-unzip mcp-managed-kit.zip -d mcp-managed-kit
-sudo python3 mcp-managed-kit/managed-linux.py install --user 일반사용자계정
+unzip mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.sh
 ```
 
-```powershell
-# 관리자 권한 PowerShell
-Expand-Archive mcp-managed-kit.zip mcp-managed-kit
-py -3 mcp-managed-kit\managed-windows.py install --user 일반사용자계정
-```
+Windows는 `mcp-managed-kit-windows.zip`을 풀고 `install.cmd`를 두 번 눌러 실행합니다. Python 3.10 이상이 모든 사용자용
+(Program Files)으로 설치돼 있어야 합니다. Linux는 Python 3.10 이상과 systemd가 필요하고, gcc·nftables·AppArmor 도구는 설치기가 깝니다.
+
+직원 계정이 **관리 권한이 있는 계정**이면 자기가 지울 수 있는 규칙으로 자기를 통제할 수 없으므로, 설치기가 관리 계정을 따로 만듭니다.
+Linux는 평소 계정에서 `codex`·`claude`를 그대로 치면 그 계정의 로그인 셸을 거쳐 실행되고(AppArmor·방화벽 동일 적용),
+Windows는 만들어진 계정으로 로그인해 쓰라고 안내합니다. 관리 계정은 홈이 달라 평소 계정의 파일은 읽지 못합니다.
 
 Linux 설치기는 root 비밀 경로에 단말 키를 저장하고, 레지스트리에서 만든 시스템 설정 4개·AppArmor·UID 방화벽·root 서비스를
 설치합니다. Windows 설치기는 `%ProgramData%` 관리자 전용 경로에 단말 키를 두고, 관리형 하네스 설정(Claude Code
