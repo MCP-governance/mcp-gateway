@@ -185,6 +185,25 @@ def managed_account(employee: str) -> tuple[str, bool]:
     return name, True
 
 
+MARK = b"#!/bin/bash\n# mcpgw"
+
+
+def shim_state(path: Path) -> tuple[bool, bool]:
+    """(something is there, it is one of ours). A dangling symlink is still something."""
+    if path.is_symlink():
+        return True, False
+    if path.is_file():
+        with path.open("rb") as handle:
+            return True, handle.read(len(MARK)) == MARK
+    return False, False
+
+
+def replaced_dir(managed: str) -> Path:
+    keep = PROGRAMS / managed / "replaced"
+    keep.mkdir(mode=0o700, parents=True, exist_ok=True)
+    return keep
+
+
 def write_shims(employee: str, managed: str) -> list[str]:
     """`codex` and `claude` in the employee's own account, run as the managed account.
 
@@ -200,32 +219,42 @@ def write_shims(employee: str, managed: str) -> list[str]:
     if subprocess.run(["visudo", "-cqf", str(SUDOERS)], check=False).returncode:
         SUDOERS.unlink(missing_ok=True)
         raise Failed("sudo 규칙 검사에 실패해 실행 연결을 만들지 않았습니다")
-    written = []
-    for name in ("codex", "claude"):
-        shim = SHIM_DIR / name
-        if shim.exists() and not shim.read_text(errors="replace").startswith("#!/bin/bash\n# mcpgw"):
-            backup = PROGRAMS / managed / (name + ".original-path")
-            backup.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-            backup.write_text(str(shim.resolve()) + "\n", encoding="utf-8")
-        shim.write_text("#!/bin/bash\n# mcpgw managed harness launcher\n"
-                        'command="' + name + '"\n'
-                        'for argument in "$@"; do command+=" $(printf %q "$argument")"; done\n'
-                        f'exec sudo -n -u {managed} -- "{shell}" -c "$command"\n', encoding="utf-8")
-        shim.chmod(0o755)
-        written.append(str(shim))
-    return written
+    return [replace_launcher(name, managed, shell) for name in ("codex", "claude")]
+
+
+def replace_launcher(name: str, managed: str, shell: Path) -> str:
+    shim = SHIM_DIR / name
+    exists, ours = shim_state(shim)
+    if exists and not ours:
+        keep = replaced_dir(managed)
+        # A symlink keeps its target; a real file keeps its bytes. Writing to the path without
+        # unlinking first would follow the link and overwrite the program it points at.
+        if shim.is_symlink():
+            (keep / (name + ".symlink")).write_text(os.readlink(shim), encoding="utf-8")
+        else:
+            shutil.copy2(shim, keep / name)
+    shim.unlink(missing_ok=True)
+    shim.write_text(MARK.decode() + " managed harness launcher\n"
+                    'command="' + name + '"\n'
+                    'for argument in "$@"; do command+=" $(printf %q "$argument")"; done\n'
+                    f'exec sudo -n -u {managed} -- "{shell}" -c "$command"\n', encoding="utf-8")
+    shim.chmod(0o755)
+    return str(shim)
 
 
 def remove_shims(managed: str) -> None:
+    keep = PROGRAMS / managed / "replaced"
     for name in ("codex", "claude"):
         shim = SHIM_DIR / name
-        if shim.is_file() and shim.read_text(errors="replace").startswith("#!/bin/bash\n# mcpgw"):
-            shim.unlink()
-            recorded = PROGRAMS / managed / (name + ".original-path")
-            if recorded.is_file():
-                original = Path(recorded.read_text(encoding="utf-8").strip())
-                if original.exists():
-                    shim.symlink_to(original)
+        if not shim_state(shim)[1]:
+            continue
+        shim.unlink()
+        link, copied = keep / (name + ".symlink"), keep / name
+        if link.is_file():
+            shim.symlink_to(link.read_text(encoding="utf-8").strip())
+            link.unlink()
+        elif copied.is_file():
+            shutil.move(copied, shim)
     SUDOERS.unlink(missing_ok=True)
 
 
@@ -278,13 +307,45 @@ def harness_login(account: str) -> bool:
                            "codex login --device-auth"], check=False).returncode == 0
 
 
+def self_check() -> None:
+    """The launcher replacement, where getting it wrong overwrites the program it replaces."""
+    import tempfile
+    global SHIM_DIR, PROGRAMS, SUDOERS
+    with tempfile.TemporaryDirectory(prefix="mcpgw-selfcheck-") as folder:
+        root = Path(folder)
+        SHIM_DIR, PROGRAMS, SUDOERS = root / "bin", root / "lib", root / "sudoers"
+        SHIM_DIR.mkdir()
+        shell = root / "enforcement/mcpgw-m/login-shell"
+        shell.parent.mkdir(parents=True)
+        shell.write_text("#!/bin/sh\n")
+        target = root / "node_modules/codex.js"
+        target.parent.mkdir(parents=True)
+        target.write_text("original launcher\n")
+        (SHIM_DIR / "codex").symlink_to(target)
+        (SHIM_DIR / "claude").write_text("a real file\n")
+        assert shim_state(SHIM_DIR / "codex") == (True, False)
+        written = [replace_launcher(name, "m", shell) for name in ("codex", "claude")]
+        # The replaced program is untouched and both launchers are ours now.
+        assert target.read_text() == "original launcher\n", "wrote through the symlink"
+        assert all(shim_state(SHIM_DIR / name) == (True, True) for name in ("codex", "claude"))
+        remove_shims("m")
+        assert (SHIM_DIR / "codex").is_symlink() and (SHIM_DIR / "codex").resolve() == target.resolve()
+        assert (SHIM_DIR / "claude").read_text() == "a real file\n", "lost the replaced file"
+        assert written and not SUDOERS.exists()
+    print("bootstrap self-check OK")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--self-check", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--user", help="설치 대상 직원 계정(기본: 설치를 실행한 계정)")
     parser.add_argument("--enrollment", type=Path, default=HERE / "enrollment.json")
     parser.add_argument("--remove", action="store_true", help="이 PC의 연결만 제거")
     parser.add_argument("--skip-login", action="store_true", help="하네스 모델 로그인을 건너뜀")
     args = parser.parse_args()
+    if args.self_check:
+        self_check()
+        return 0
     if os.name != "posix":
         print("이 설치기는 Linux용입니다. Windows에서는 install.cmd를 실행하세요.", file=sys.stderr)
         return 2
