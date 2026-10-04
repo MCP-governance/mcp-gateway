@@ -307,8 +307,15 @@ def harness_login(account: str) -> bool:
         return True
     shell = Path("/usr/local/lib/mcpgw-enforcement") / ("mcpgw-" + account) / "login-shell"
     step("하네스 모델 로그인 (화면의 안내를 따르세요)")
-    return subprocess.run(["runuser", "-u", account, "--", str(shell), "-c",
-                           "codex login --device-auth"], check=False).returncode == 0
+    done = subprocess.run(["runuser", "-u", account, "--", str(shell), "-c",
+                           "codex login --device-auth"], check=False)
+    if done.returncode:
+        # An organization that turns off device-code sign-in refuses here, and the employee is left
+        # with a connected endpoint and no model. Both ways out, in one line each.
+        print(f"모델 로그인은 나중에 해도 됩니다. ChatGPT 보안 설정에서 장치 코드 로그인을 켠 뒤 다시: "
+              f"sudo -u {account} {shell} -c 'codex login --device-auth'")
+        print(f"이 PC의 브라우저로 하려면: sudo -u {account} {shell} -c 'codex login'")
+    return done.returncode == 0
 
 
 def self_check() -> None:
