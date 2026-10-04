@@ -234,10 +234,14 @@ def replace_launcher(name: str, managed: str, shell: Path) -> str:
         else:
             shutil.copy2(shim, keep / name)
     shim.unlink(missing_ok=True)
+    # The harness runs in the managed account's home. Its own working directory is not readable by
+    # that account, and starting a child from a directory it cannot search fails - which is how the
+    # header helper failed on PJ1. `cd /` keeps that out of the way; the login shell moves to $HOME.
     shim.write_text(MARK.decode() + " managed harness launcher\n"
                     'command="' + name + '"\n'
                     'for argument in "$@"; do command+=" $(printf %q "$argument")"; done\n'
-                    f'exec sudo -n -u {managed} -- "{shell}" -c "$command"\n', encoding="utf-8")
+                    'cd / || exit 1\n'
+                    f'exec sudo -n -u {managed} -- "{shell}" -c "cd \\"\\$HOME\\" && $command"\n', encoding="utf-8")
     shim.chmod(0o755)
     return str(shim)
 
@@ -328,6 +332,19 @@ def self_check() -> None:
         # The replaced program is untouched and both launchers are ours now.
         assert target.read_text() == "original launcher\n", "wrote through the symlink"
         assert all(shim_state(SHIM_DIR / name) == (True, True) for name in ("codex", "claude"))
+        # Run it against a sudo stub: an argument with spaces and quotes has to reach the harness
+        # as one argument, which is where a hand-built command line goes wrong.
+        stub = root / "stub"
+        stub.mkdir()
+        (stub / "sudo").write_text('#!/bin/bash\nwhile [ "$1" != "-c" ]; do shift; done\nprintf %s "$2"\n')
+        (stub / "sudo").chmod(0o755)
+        reconstructed = subprocess.run([str(SHIM_DIR / "codex"), "exec", 'say "hi there"'],
+                                       capture_output=True, text=True,
+                                       env={**os.environ, "PATH": f"{stub}:{os.environ['PATH']}", "HOME": "/managed"})
+        assert reconstructed.stdout.startswith('cd "$HOME" && codex exec '), reconstructed
+        split = subprocess.run(["bash", "-c", 'eval "set -- $MCPGW_ARGS"; printf "%s|" "$@"'], capture_output=True,
+                               text=True, env={**os.environ, "MCPGW_ARGS": reconstructed.stdout.split("codex ", 1)[1]})
+        assert split.stdout == 'exec|say "hi there"|', split
         remove_shims("m")
         assert (SHIM_DIR / "codex").is_symlink() and (SHIM_DIR / "codex").resolve() == target.resolve()
         assert (SHIM_DIR / "claude").read_text() == "a real file\n", "lost the replaced file"
