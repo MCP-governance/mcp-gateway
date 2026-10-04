@@ -607,6 +607,49 @@ async def deregister_server(server_id: str, actor: str) -> dict:
     return {"server_id": server_id, "status": "DISABLED"}
 
 
+RENEW_WINDOW_DAYS = int(os.getenv("APPROVAL_RENEW_WINDOW_DAYS", "7"))
+RENEW_CONTRACT = ("registered", "enabled", "schema_hash_match", "description_hash_match", "known_tools_only",
+                  "metadata_safe", "supplier_approved", "transport_secure", "endpoint_allowed")
+
+
+async def renew_approvals(now: datetime | None = None) -> list[dict]:
+    """Extend a Console registration's use approval by its original period when it is about to
+    lapse and nothing it was approved on has changed (D-70): every enabled tool still matches its
+    reviewed description and schema, the server is READY and operating, the supply chain shows no
+    critical finding, the endpoint is still allowed. Anything else lapses as before and needs a new
+    intake. An approval that has already lapsed is not revived."""
+    now = now or datetime.now(UTC)
+    renewed = []
+    async with REGISTER_LOCK:
+        doc = registry.runtime()
+        for server_id, spec in doc["servers"].items():
+            if not spec.get("valid_until") or not spec.get("registered_at"):
+                continue
+            until = datetime.fromisoformat(spec["valid_until"])
+            if not now < until <= now + timedelta(days=RENEW_WINDOW_DAYS):
+                continue
+            server = await db.fetch_one("SELECT status, lifecycle FROM mcp_servers WHERE id=%s", (server_id,))
+            if not server or server["status"] != "READY" or (server["lifecycle"] or "OPERATING") != "OPERATING":
+                continue
+            tools = await db.fetch_all("SELECT name FROM mcp_tools WHERE server_id=%s AND enabled", (server_id,))
+            contracts = [await _contract(server_id, row["name"]) for row in tools]
+            if not contracts or not all(c.get(key) is True for c in contracts for key in RENEW_CONTRACT) \
+                    or any(c.get("critical_vulnerabilities") for c in contracts):
+                continue
+            days = int(spec.get("approval_days")
+                       or max(1, round((until - datetime.fromisoformat(spec["registered_at"])).total_seconds() / 86400)))
+            spec.update(valid_until=(until + timedelta(days=days)).isoformat(timespec="seconds"), approval_days=days)
+            event = {"type": "approval-renewed", "server_id": server_id, "actor": "system",
+                     "at": now.isoformat(timespec="seconds"), "from": until.isoformat(timespec="seconds"),
+                     "valid_until": spec["valid_until"], "tools": sorted(row["name"] for row in tools)}
+            doc["history"].append(event)
+            renewed.append(event)
+        if renewed:
+            registry.save_runtime(doc)
+            await registry.sync()
+    return renewed
+
+
 async def catalog_watch() -> None:
     """Background drift watch. Calls themselves re-check the contract on the same
     connection that executes, so this loop only keeps the dashboard and the policy
@@ -614,6 +657,7 @@ async def catalog_watch() -> None:
     while True:
         try:
             await refresh_all_catalogs()
+            await renew_approvals()  # after the refresh: renewal reads the contract it just checked
         except Exception:
             pass
         await asyncio.sleep(CATALOG_REFRESH_SECONDS)
