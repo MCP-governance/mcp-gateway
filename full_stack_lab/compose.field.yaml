@@ -47,7 +47,7 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   # 관리형 엔드포인트 계정의 모델 API 경로(D-67). 엔드포인트 방화벽은 이 호스트의 게이트웨이·프록시 포트만 열어 두고,
-  # 프록시는 model-domains.txt의 도메인에 대한 TLS 터널만 허용한다. Caddy처럼 Tailscale IP에만 게시한다.
+  # 프록시는 model-domains.txt의 도메인만 허용한다(TLS 터널은 443만). Caddy처럼 Tailscale IP에만 게시한다.
   model-proxy:
     build: ./model-proxy
     image: mcpgw/model-proxy:1.0
@@ -56,7 +56,7 @@ services:
       - "${APPLIANCE_BIND:?./console.sh field up을 사용하세요}:${MODEL_PROXY_PORT:-3128}:3128"
     networks: [edge]
     read_only: true
-    tmpfs: [/var/run/squid, /var/cache/squid, /var/log/squid, /tmp]
+    tmpfs: [/tmp]
     security_opt: ["no-new-privileges:true"]
 
   # 사내망에서는 Gateway·IdP가 하네스에 알려 주는 절대 URL(RFC 9728 resource_metadata,

@@ -166,6 +166,8 @@ def install(args):
         if binary.read_bytes()[:4] != b"\x7fELF":
             raise ValueError("공식 native ELF 배포판이 필요합니다: " + name)
         binaries[name] = str(binary)
+    # Before the one-time enrollment token is spent, not halfway through the install.
+    enforcer.companions("codex", Path(binaries["codex"]))
     source = Path(__file__).parent
     PROGRAMS.mkdir(mode=0o755, parents=True, exist_ok=True)
     if not protected(PROGRAMS):

@@ -10,6 +10,7 @@ import argparse
 import grp
 import ipaddress
 import json
+import mmap
 import os
 import pwd
 import re
@@ -37,6 +38,21 @@ def trusted_binary(raw: str) -> Path:
     return path
 
 
+def companions(key: str, binary: Path) -> list[Path]:
+    """Programs a harness starts from its own release folder. Codex runs every tool call through
+    codex-code-mode-host next to its executable; without that file (and the profile allowing it)
+    no MCP tool can be called from the managed account."""
+    if key != "codex":
+        return []
+    host = binary.with_name("codex-code-mode-host")
+    if host.exists():
+        return [trusted_binary(str(host))]
+    with open(binary, "rb") as source, mmap.mmap(source.fileno(), 0, access=mmap.ACCESS_READ) as image:
+        if image.find(b"codex-code-mode-host") != -1:
+            raise ValueError("Codex와 같은 릴리스의 codex-code-mode-host를 같은 폴더에 설치하세요: " + str(host))
+    return []
+
+
 def nft_rules(uid: int, addresses: list[str], port: int, proxy_port: int | None = None) -> str:
     rules = []
     ports = f"{{ {port}, {proxy_port} }}" if proxy_port else str(port)
@@ -50,7 +66,8 @@ def nft_rules(uid: int, addresses: list[str], port: int, proxy_port: int | None 
             f"meta skuid {uid} counter reject with icmpx type admin-prohibited\n }}\n}}\n")
 
 
-def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper: bool, managed: bool = False) -> str:
+def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper: bool, managed: bool = False,
+            extras: dict[str, list[Path]] | None = None) -> str:
     common = f"""
   #include <abstractions/base>
   /etc/** r,
@@ -76,6 +93,8 @@ def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper
     clients = "".join(f"  {BASE}/{name}/{key} px -> {name}-{key}-entry,\n" for key in binaries)
     credential = f"  {BASE}/{name}/header-helper px -> {name}-credential,\n" if helper else ""
     text = f"#include <tunables/global>\nprofile {name} {shell} {{\n{common}\n{clients}}}\n"
+    # A companion runs under the harness's own profile (ix): same network and execution limits.
+    allowed = {key: "".join(f"  {extra} mrix,\n" for extra in (extras or {}).get(key, [])) for key in binaries}
     for key, binary in binaries.items():
         text += f"""profile {name}-{key}-entry {{
   #include <abstractions/base>
@@ -87,7 +106,7 @@ def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper
 profile {name}-{key} {{
 {common}
   {binary} mr,
-{credential}
+{allowed[key]}{credential}
   {f'unix (send, receive) type=stream peer=(label={name}-credential),' if managed else ''}
 }}
 """
@@ -162,6 +181,9 @@ def main() -> None:
         assert "udp" not in text and "sport 22" not in text
         assert "meta skuid 1234 counter reject" in text
         assert "tcp dport { 443, 3128 } accept" in nft_rules(1234, ["100.83.175.111"], 443, 3128)
+        confined = profile("mcpgw-u", Path("/x/login-shell"), "/home/u", {"codex": Path("/opt/a/codex"), "claude": Path("/opt/a/claude")},
+                           True, True, {"codex": [Path("/opt/a/codex-code-mode-host")], "claude": []})
+        assert confined.count("/opt/a/codex-code-mode-host mrix,") == 1  # only inside the codex profile
         print("enforcement rule self-check OK")
         return
     if os.geteuid() != 0 or not re.fullmatch(r"[a-z_][a-z0-9_-]{0,30}", args.user):
@@ -207,6 +229,10 @@ def main() -> None:
         binaries[key] = trusted_binary(raw)
     if not binaries:
         parser.error("검증한 native 하네스 실행 파일을 지정하세요")
+    try:
+        extras = {key: companions(key, binary) for key, binary in binaries.items()}
+    except ValueError as exc:
+        parser.error(str(exc))
     folder.mkdir(mode=0o755, parents=True, exist_ok=True)
     for node in (BASE, folder):
         if node.stat().st_uid != 0 or node.stat().st_mode & 0o022:
@@ -232,7 +258,8 @@ def main() -> None:
     rules = folder / "egress.nft"
     rules.write_text(nft_rules(person.pw_uid, args.gateway_ip, args.gateway_port, args.proxy_port))
     run("nft", "-c", "-f", str(rules))
-    policy.write_text(profile(name, shell, person.pw_dir, binaries, bool(args.helper_source or args.managed_agent), bool(args.managed_agent)))
+    policy.write_text(profile(name, shell, person.pw_dir, binaries, bool(args.helper_source or args.managed_agent),
+                              bool(args.managed_agent), extras))
     run("apparmor_parser", "-r", str(policy))
     # An atomic batch replaces only this UID's table, never the host's ruleset.
     run("nft", "-f", str(rules))

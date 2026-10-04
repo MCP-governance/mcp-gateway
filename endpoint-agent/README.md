@@ -11,6 +11,8 @@ Gateway와 OPA는 `full_stack_lab/`에서 실행합니다. 아래 사용자 범�
    사용자가 수정한 스크립트를 root로 실행하지 않습니다. 관리형 배포 시스템에서 승인 출처를 검증한 설치기를 사용하세요.
 3. 일반 계정 UID 1000 이상, sudo·wheel·docker·lxd·libvirt 권한 없음, 기존 세션 없음이 필요합니다.
    root가 systemd·AppArmor·nftables·gcc를 준비하고 Codex·Claude를 `/opt/mcpgw-approved/{codex,claude}`에 설치합니다.
+   Codex는 같은 릴리스의 `codex-code-mode-host`를 같은 폴더에 둡니다(npm 패키지의
+   `@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/`에 둘이 함께 있음). 없으면 도구 호출이 모두 실패해 설치기가 거부합니다.
    실행 파일과 상위 경로는 root 소유이며 사용자 쓰기가 금지돼야 합니다. `--client codex=/승인경로`로 경로를 지정할 수 있습니다.
 
 ```bash
@@ -32,7 +34,7 @@ root 서비스 `mcpgw-managed-<계정>.service`는 60초마다 실제 커널 규
 이 프로필은 **Linux SSH 일반 계정**의 실행과 UID 전체 IP egress를 제한합니다. 다른 로그인 경로·root·관리자·커널 침해를
 통제했다고 주장하지 않습니다. UID 규칙은 솔루션 기기의 게이트웨이 포트와 **모델 프록시 포트**만 엽니다(D-67).
 하네스 실행기는 `HTTPS_PROXY`·`HTTP_PROXY`를 프록시로, `NO_PROXY`를 게이트웨이 주소로 고정합니다. 프록시는
-`full_stack_lab/model-proxy/model-domains.txt`의 모델 도메인에 대한 443 TLS 터널만 허용하고, 임의 외부 주소를 열지 않습니다.
+`full_stack_lab/model-proxy/model-domains.txt`의 모델 도메인만 허용하고(TLS 터널은 443만), 임의 외부 주소를 열지 않습니다.
 프록시 이전에 설치한 장치는 그대로 동작하지만 모델에 닿지 않습니다. 자격 폐기 → 롤백 → 새 키트로 재설치합니다.
 관리 계정의 하네스 모델 로그인(`codex login --device-auth`, `claude` 첫 실행)은 직원이 그 계정에서 한 번 합니다.
 

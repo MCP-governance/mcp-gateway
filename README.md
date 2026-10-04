@@ -153,7 +153,8 @@ Tailscale IP가 있어야 하고, 직원·관리자 PC도 같은 tailnet에서 �
 
 조직 IT가 승인된 설치기와 공식 하네스 배포판을 확인하고, **관리 권한 없는 계정**에 설치합니다. 같은 키트에 두 설치기가 있습니다.
 
-- Linux: systemd·AppArmor·nftables·gcc와 Python 3.10 이상, native Codex·Claude를 `/opt/mcpgw-approved/`에.
+- Linux: systemd·AppArmor·nftables·gcc와 Python 3.10 이상, native Codex(같은 릴리스의 `codex-code-mode-host` 포함)·Claude를
+  `/opt/mcpgw-approved/`에.
 - Windows 10/11: 모든 사용자용(Program Files) Python 3.10 이상. 대상 계정은 Administrators가 아니고, 한 번 로그인해
   프로필이 있으며, 설치 때는 로그아웃 상태여야 합니다(D-68).
 
@@ -182,8 +183,8 @@ root·SYSTEM 서비스만 장기 단말 키를 보유합니다. 하네스 헬퍼
 설치·연결 거부와 실제 커널 차단은 직원·단말의 별도 이력에, 실제 도구 실행 판정은 활동 로그에 기록합니다.
 
 이 프로필은 관리 계정의 바깥 통신을 솔루션 기기의 게이트웨이 포트와 모델 프록시 포트(기본 3128)로만 묶습니다.
-하네스는 `HTTPS_PROXY`로 프록시에 접속하고, 프록시는 `full_stack_lab/model-proxy/model-domains.txt`의 모델 도메인에 대한
-TLS 터널만 허용합니다(D-67). MCP 호출은 `NO_PROXY`로 게이트웨이에 직접 갑니다. 하네스의 모델 로그인(`codex login`·
+하네스는 `HTTPS_PROXY`로 프록시에 접속하고, 프록시(tinyproxy)는 `full_stack_lab/model-proxy/model-domains.txt`의
+모델 도메인만 허용합니다(TLS 터널은 443만, D-67). MCP 호출은 `NO_PROXY`로 게이트웨이에 직접 갑니다. 하네스의 모델 로그인(`codex login`·
 `claude` 로그인)은 관리 계정에서 직원이 한 번 합니다. 재설치·제거 절차와 실측 증거는 [Endpoint Agent](endpoint-agent/README.md),
 설계 결정은 [D-61](docs/ai/DECISIONS.md#d-61-가입을-관리형-단말-연결의-시작점으로-2026-10-01)·D-67·D-68을 봅니다.
 

@@ -1,5 +1,5 @@
-.openai.com
-.chatgpt.com
-.anthropic.com
-.claude.ai
-.claude.com
+(^|\.)openai\.com$
+(^|\.)chatgpt\.com$
+(^|\.)anthropic\.com$
+(^|\.)claude\.ai$
+(^|\.)claude\.com$

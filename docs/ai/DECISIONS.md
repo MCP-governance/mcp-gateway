@@ -822,8 +822,9 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 
 - **문제**: 관리형 계정의 UID 방화벽은 게이트웨이 IP·포트만 열어 PJ1의 Codex가 `wss://api.openai.com`에서 Permission denied로
   멈췄다. MCP 단계까지 가지 못해 관리형 설치로는 하네스를 쓸 수 없었다.
-- **결정**: 기기에 Squid(`full_stack_lab/model-proxy`, alpine 패키지)를 Caddy처럼 Tailscale IP에만 게시한다(기본 3128).
-  CONNECT·443·`model-domains.txt`의 도메인만 허용하고 캐시·평문 전달은 하지 않는다. 관리형 정책은 `proxy_port`와
+- **결정**: 기기에 tinyproxy(`full_stack_lab/model-proxy`, alpine 패키지)를 Caddy처럼 Tailscale IP에만 게시한다(기본 3128).
+  `model-domains.txt`(정규식)의 도메인만, TLS 터널은 443만 허용한다. 처음 붙인 Squid 6.12는 PJ1 시험 중 연결 도중
+  끊긴 터널에서 `check failed: waiting()` 단언 실패로 죽었다. tinyproxy는 같은 상황(중도 종료 200건)에서 재시작 없이 동작했다. 관리형 정책은 `proxy_port`와
   `HTTPS_PROXY`·`HTTP_PROXY`·`NO_PROXY`(게이트웨이 주소)를 내려 준다. Linux는 nft가 두 포트만 열고 실행기 래퍼가 환경 변수를
   고정한다. Claude Code는 `managed-settings.json`의 `env`로도 받는다. Codex의 모델 웹소켓이 `HTTPS_PROXY`를 따르는 것을
   확인했다(Windows 0.153.4, 존재하지 않는 프록시로 연결 거부).
@@ -832,6 +833,9 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **불변식 변경**: 실기기 게시는 Caddy와 모델 프록시 두 개다. 둘 다 Tailscale IP에만 바인딩한다.
 - **함께 고친 것**: 관측 보고(`agent.py --once`·`os-observer.py`)가 실패하면 토큰 캐시를 비워 MCP 인증이 끊기던 순서를
   바꿨다(토큰 먼저, 관측 실패는 기록만). `os-observer.py`의 `datetime.UTC`(3.11+)를 3.10 호환으로.
+  Codex 0.158은 모든 도구 호출을 실행 파일 옆의 `codex-code-mode-host`로 처리한다. 승인 경로에 이 파일이 없고 AppArmor가
+  실행을 막아 관리형 계정에서는 MCP 도구를 부를 수 없었다(모델 경로가 열리자 드러남). 설치기는 같은 릴리스의 짝 실행기를
+  요구하고, Codex 프로필 안에서 같은 제한을 물려받아(`ix`) 실행하게 한다. `managed-linux.py rollback`으로 제거가 완전해졌다.
 
 ## D-68 Windows 관리형 설치기 (2026-10-03)
 
