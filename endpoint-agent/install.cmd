@@ -6,8 +6,8 @@ cd /d "%~dp0"
 net session >nul 2>&1
 if errorlevel 1 (
   rem The one elevation: UAC. The elevated copy keeps this folder and reports who asked for it.
-  powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "Start-Process -Verb RunAs -FilePath '%~f0' -ArgumentList 'elevated',$env:USERNAME -WorkingDirectory '%~dp0'"
+  rem One line, no caret continuation: this file is served from Linux and may arrive with LF endings.
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -Verb RunAs -FilePath '%~f0' -ArgumentList 'elevated',$env:USERNAME -WorkingDirectory '%~dp0'"
   exit /b 0
 )
 
