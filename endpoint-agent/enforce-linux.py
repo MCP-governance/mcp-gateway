@@ -273,7 +273,10 @@ def main() -> None:
     run("usermod", "--shell", str(shell), args.user)
     print(json.dumps({"user": args.user, "uid": person.pw_uid, "profile": name,
                       "gateway_ips": args.gateway_ip, "port": args.gateway_port, "proxy_port": args.proxy_port,
-                      "ordinary_account_only": True, "rollback": f"sudo python3 {__file__} --user {args.user} --rollback"}))
+                      "ordinary_account_only": True,
+                      # A managed install is removed as a whole (service, /etc files, device secret), not just this layer.
+                      "rollback": (f"sudo python3 {args.managed_agent} rollback --user {args.user}" if args.managed_agent
+                                   else f"sudo python3 {__file__} --user {args.user} --rollback")}))
 
 
 if __name__ == "__main__":

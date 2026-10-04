@@ -836,6 +836,12 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   Codex 0.158은 모든 도구 호출을 실행 파일 옆의 `codex-code-mode-host`로 처리한다. 승인 경로에 이 파일이 없고 AppArmor가
   실행을 막아 관리형 계정에서는 MCP 도구를 부를 수 없었다(모델 경로가 열리자 드러남). 설치기는 같은 릴리스의 짝 실행기를
   요구하고, Codex 프로필 안에서 같은 제한을 물려받아(`ix`) 실행하게 한다. `managed-linux.py rollback`으로 제거가 완전해졌다.
+- **PJ1 검증(2026-10-04)**: 옛 설치에서 OS 이벤트 수집기를 실패시키자 `connection-stopped`·헤더 거부(재현), 새 설치에서는
+  `observers: {"os-observer.py": "CalledProcessError"}`로 기록만 하고 `active`·토큰 유지. `rollback` 뒤 서비스·유닛·nft·장치 비밀·
+  AppArmor·관리형 파일이 모두 사라지고 같은 키트로 재설치됨. 관리 계정 UID: 인터넷 직접 접속 차단, 프록시 경유 OpenAI 401(도달),
+  example.com 403, 게이트웨이 200. 관리 계정 로그인 셸의 Codex 0.158이 프록시로 모델에 닿고 `context7/resolve-library-id`를 호출해
+  원장에 `Allow P-AUTHZ-ALLOW-001`·upstream 실행·관리형 장치 ID로 남음. 같은 시간 AppArmor가 `bwrap`·`lsb_release`·`mawk` 실행을 차단.
+  Python 3.10 컨테이너에서 옛 `os-observer.py`는 `ImportError`, 새 파일은 통과.
 
 ## D-68 Windows 관리형 설치기 (2026-10-03)
 
