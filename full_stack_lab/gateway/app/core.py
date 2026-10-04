@@ -234,16 +234,17 @@ async def refresh_catalog(server_id: str) -> dict:
                 version_only.append(name)
     if enabled_missing:
         findings.append({"type": "enabled-tool-missing", "tools": enabled_missing})
-    if hashes_match and version_only:
-        # Same reviewed description and schema under a new build id: the approval carries over,
-        # and the snapshot keeps the old and new version as evidence.
+    if hashes_match:
+        # Same reviewed description and schema under whatever build id answered: the approval carries
+        # over. Both columns, every refresh: the observed ones are otherwise rewritten only when the
+        # tool list changes, and the per-call contract compares the two (version_match).
         await db.execute(
-            # Both columns: the observed ones are rewritten only when the tool list changes, and the
-            # per-call contract compares the two (version_match).
-            """UPDATE mcp_tools SET approved_server_version=%s, observed_server_version=%s WHERE server_id=%s AND name = ANY(%s)
+            """UPDATE mcp_tools SET approved_server_version=%s, observed_server_version=%s WHERE server_id=%s
+                 AND (approved_server_version IS DISTINCT FROM %s OR observed_server_version IS DISTINCT FROM %s)
                  AND approved_description_hash=observed_description_hash AND approved_schema_hash=observed_schema_hash""",
-            (discovered["version"], discovered["version"], server_id, version_only))
-        findings.append({"type": "version-carried", "to": discovered["version"], "tools": sorted(version_only)})
+            (discovered["version"], discovered["version"], server_id, discovered["version"], discovered["version"]))
+        if version_only:
+            findings.append({"type": "version-carried", "to": discovered["version"], "tools": sorted(version_only)})
 
     # Stored as catalog_snapshots.exact_match and read as contract.known_tools_only: no tool a client can
     # reach differs from its review. Unregistered tools are never listed and are refused as unregistered.
