@@ -208,7 +208,14 @@ async def refresh_catalog(server_id: str) -> dict:
         findings.append({"type": "unsafe-description",
                          "tools": metadata_findings})
 
-    hashes_match = True
+    # What gates the server (D-69) is the contract a client can actually reach: the enabled tools'
+    # descriptions and schemas. Hosted servers report a build id as their version (GitHub: one per
+    # deploy) and change helpers nobody enabled; pinning those took figma and github down every few
+    # days with no reviewed tool changed. Those changes are still recorded below as findings.
+    enabled = {name for name, row in registered.items() if row["enabled"]}
+    enabled_missing = sorted(enabled - set(observed))
+    hashes_match = not enabled_missing
+    version_only = []
     for name in set(observed) & set(registered):
         row = registered[name]
         tool = observed[name]
@@ -220,10 +227,25 @@ async def refresh_catalog(server_id: str) -> dict:
         if row["approved_server_version"] != discovered["version"]:
             mismatches.append("version")
         if mismatches:
-            hashes_match = False
-            findings.append({"type": "contract-drift", "tool": name, "fields": mismatches})
+            findings.append({"type": "contract-drift", "tool": name, "fields": mismatches, "enabled": name in enabled})
+            if name in enabled and mismatches != ["version"]:
+                hashes_match = False
+            elif mismatches == ["version"]:
+                version_only.append(name)
+    if enabled_missing:
+        findings.append({"type": "enabled-tool-missing", "tools": enabled_missing})
+    if hashes_match and version_only:
+        # Same reviewed description and schema under a new build id: the approval carries over,
+        # and the snapshot keeps the old and new version as evidence.
+        await db.execute(
+            """UPDATE mcp_tools SET approved_server_version=%s WHERE server_id=%s AND name = ANY(%s)
+                 AND approved_description_hash=observed_description_hash AND approved_schema_hash=observed_schema_hash""",
+            (discovered["version"], server_id, version_only))
+        findings.append({"type": "version-carried", "to": discovered["version"], "tools": sorted(version_only)})
 
-    exact_match = names_match and metadata_safe and hashes_match
+    # Stored as catalog_snapshots.exact_match and read as contract.known_tools_only: no tool a client can
+    # reach differs from its review. Unregistered tools are never listed and are refused as unregistered.
+    exact_match = metadata_safe and hashes_match
     previous = await db.fetch_one(
         "SELECT catalog_hash, exact_match FROM catalog_snapshots WHERE server_id=%s ORDER BY id DESC LIMIT 1",
         (server_id,),
