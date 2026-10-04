@@ -238,9 +238,11 @@ async def refresh_catalog(server_id: str) -> dict:
         # Same reviewed description and schema under a new build id: the approval carries over,
         # and the snapshot keeps the old and new version as evidence.
         await db.execute(
-            """UPDATE mcp_tools SET approved_server_version=%s WHERE server_id=%s AND name = ANY(%s)
+            # Both columns: the observed ones are rewritten only when the tool list changes, and the
+            # per-call contract compares the two (version_match).
+            """UPDATE mcp_tools SET approved_server_version=%s, observed_server_version=%s WHERE server_id=%s AND name = ANY(%s)
                  AND approved_description_hash=observed_description_hash AND approved_schema_hash=observed_schema_hash""",
-            (discovered["version"], server_id, version_only))
+            (discovered["version"], discovered["version"], server_id, version_only))
         findings.append({"type": "version-carried", "to": discovered["version"], "tools": sorted(version_only)})
 
     # Stored as catalog_snapshots.exact_match and read as contract.known_tools_only: no tool a client can
@@ -1046,15 +1048,17 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
         listed = await client.list_tools()
         registered = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s", (server_id,))
         observed = {t.name: upstream.tool_view(t) for t in listed.tools}
-        version = client.server_info.version if client.server_info else ""
-        if set(observed) != {t["name"] for t in registered}:
+        # Same rule as refresh_catalog (D-69): the reviewed contract is what a client can reach — the
+        # enabled tools' descriptions and schemas. Hosted servers answer from pods with different build
+        # ids, so the version string is not part of it; unexposed helpers may change without blocking.
+        enabled_rows = [row for row in registered if row["enabled"]]
+        if tool not in observed or any(row["name"] not in observed for row in enabled_rows):
             problem = "MCP catalog changed before execution"
         else:
-            for row in registered:
+            for row in enabled_rows:
                 item = observed[row["name"]]
                 if (canonical_hash(item["description"]) != row["approved_description_hash"]
-                        or canonical_hash(item["input_schema"]) != row["approved_schema_hash"]
-                        or version != row["approved_server_version"]):
+                        or canonical_hash(item["input_schema"]) != row["approved_schema_hash"]):
                     problem = "MCP contract changed before execution"
                     break
         if problem is None and not Draft202012Validator(observed[tool]["input_schema"]).is_valid(arguments):
@@ -1078,7 +1082,9 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                 final_input = dict(dispatch_state["policy_input"])
                 final_input["now"] = datetime.now(UTC).isoformat()
                 live = next(row for row in registered if row["name"] == tool)
-                live = {**live, "observed_server_version": version,
+                # The description and schema were just matched above; the build id this connection
+                # happened to report is not part of the reviewed contract (D-69).
+                live = {**live, "observed_server_version": live["approved_server_version"],
                         "observed_description_hash": canonical_hash(observed[tool]["description"]),
                         "observed_schema_hash": canonical_hash(observed[tool]["input_schema"])}
                 original = pac_payload["arguments"]
