@@ -598,19 +598,34 @@ function renderFeedStatus() {
 }
 
 function feedCharts() {
-  const data = feed.analysis || { series: [], responses: [], harnesses: [], servers: [], people: [] };
-  const buckets = new Map();
+  const data = feed.analysis || { series: [], hours: [], responses: [], harnesses: [], servers: [], people: [] };
+  const occupied = new Map();
   for (const row of data.series || []) {
     const at = new Date(row.at);
-    const label = data.bucket === "hour" ? `${pad(at.getMonth() + 1)}-${pad(at.getDate())} ${pad(at.getHours())}시`
-      : data.bucket === "day" ? `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`
-        : `${at.getFullYear()}-${pad(at.getMonth() + 1)}`;
-    if (!buckets.has(label)) buckets.set(label, { label, ...Object.fromEntries(DECISIONS.map((key) => [key, 0])) });
-    if (DECISIONS.includes(row.decision)) buckets.get(label)[row.decision] = Number(row.n) || 0;
+    const key = at.getTime();
+    if (!occupied.has(key)) occupied.set(key, Object.fromEntries(DECISIONS.map((decision) => [decision, 0])));
+    if (DECISIONS.includes(row.decision)) occupied.get(key)[row.decision] = Number(row.n) || 0;
   }
-  const series = [...buckets.values()];
+  const series = [];
+  const times = [...occupied.keys()].sort((a, b) => a - b);
+  if (times.length) {
+    const cursor = new Date(times[0]), end = times[times.length - 1];
+    while (cursor.getTime() <= end) {
+      const at = cursor.getTime();
+      const label = data.bucket === "hour" ? `${pad(cursor.getMonth() + 1)}-${pad(cursor.getDate())} ${pad(cursor.getHours())}시`
+        : data.bucket === "day" ? `${cursor.getFullYear()}-${pad(cursor.getMonth() + 1)}-${pad(cursor.getDate())}`
+          : `${cursor.getFullYear()}-${pad(cursor.getMonth() + 1)}`;
+      series.push({ label, ...(occupied.get(at) || Object.fromEntries(DECISIONS.map((decision) => [decision, 0]))) });
+      if (data.bucket === "month") cursor.setMonth(cursor.getMonth() + 1);
+      else cursor.setTime(cursor.getTime() + (data.bucket === "day" ? 86400000 : 3600000));
+    }
+  }
+  const hours = Array.from({ length: 24 }, (_, hour) => ({ label: `${pad(hour)}시`,
+    ...Object.fromEntries(DECISIONS.map((decision) => [decision, 0])) }));
+  for (const row of data.hours || []) if (hours[row.hour] && DECISIONS.includes(row.decision)) hours[row.hour][row.decision] = Number(row.n) || 0;
   return {
     "c-minutes": () => charts.decisionColumns(series.map((b) => b.label), series),
+    "c-hours": () => charts.decisionColumns(hours.map((b) => b.label), hours),
     "c-by-server": () => charts.decisionColumns(data.servers.map((x) => x.key), data.servers, { horizontal: true, grouped: true }),
     "c-by-person": () => charts.decisionColumns(data.people.map((x) => x.key), data.people, { horizontal: true, grouped: true }),
     "c-by-response": () => charts.donut(Object.entries(RESPONSE).map(([k, [tone, label]]) => ({ name: label,
@@ -708,9 +723,10 @@ ROUTES.activity = async (_, tab, query) => {
           </div>
           <div class="body flush">${decisionTable([], "feed")}<p class="empty" id="feed-empty" hidden></p><div class="pager" id="feed-pager"></div></div></section>` },
         { key: "stats", label: "분석", body: html`<div class="stack">
-          ${panel("시간대별 호출", chartBox("c-minutes", "전체 호출의 시간 분포", "sm"), { sub: `${analysis.total}건` })}<div class="grid c2">
+          ${panel("호출 추이", chartBox("c-minutes", "전체 호출 추이", "sm"), { sub: `${analysis.total}건` })}<div class="grid c2">
           ${panel("응답 처리", chartBox("c-by-response", "전체 호출의 응답 처리 비율", "sm"))}
-          ${panel("하네스별", chartBox("c-by-harness", "전체 호출의 하네스별 비율", "sm"))}</div>
+          ${panel("시간대별 분포", chartBox("c-hours", "한국 시간 기준 전체 호출의 시간대별 분포", "sm"), { sub: "한국 시간" })}</div>
+          ${panel("하네스별", chartBox("c-by-harness", "전체 호출의 하네스별 비율", "sm"))}
           ${panel("서버별", chartBox("c-by-server", "전체 호출의 서버별 판정"))}
           ${panel("사용자별", chartBox("c-by-person", "전체 호출의 사용자별 판정", "lg"))}</div>` },
       ],

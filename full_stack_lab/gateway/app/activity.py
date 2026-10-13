@@ -189,11 +189,16 @@ async def analysis(user_token: str | None = None, decision: str | None = None,
     total = int(bounds["n"] or 0)
     if not total:
         return {"total": 0, "bucket": "hour", "series": [], "responses": [],
-                "harnesses": [], "servers": [], "people": []}
+                "hours": [], "harnesses": [], "servers": [], "people": []}
     span = (bounds["last"] - bounds["first"]).total_seconds()
     unit = "hour" if span <= 172800 else "day" if span <= 10368000 else "month"
     series_rows = await db.fetch_all(
-        f"""SELECT date_trunc('{unit}', d.created_at) AS bucket, d.decision, count(*) AS n
+        f"""SELECT date_trunc('{unit}', d.created_at AT TIME ZONE 'Asia/Seoul') AS bucket,
+                    d.decision, count(*) AS n
+               {joins} WHERE {where} GROUP BY 1, 2 ORDER BY 1""", args)
+    hour_rows = await db.fetch_all(
+        f"""SELECT extract(hour FROM d.created_at AT TIME ZONE 'Asia/Seoul')::int AS hour,
+                    d.decision, count(*) AS n
                {joins} WHERE {where} GROUP BY 1, 2 ORDER BY 1""", args)
     response_rows = await db.fetch_all(
         f"""SELECT COALESCE(d.result_preview->>'disposition',
@@ -233,6 +238,7 @@ async def analysis(user_token: str | None = None, decision: str | None = None,
     return {
         "total": total, "bucket": unit,
         "series": [{"at": row["bucket"], "decision": row["decision"], "n": int(row["n"] or 0)} for row in series_rows],
+        "hours": [{"hour": int(row["hour"]), "decision": row["decision"], "n": int(row["n"] or 0)} for row in hour_rows],
         "responses": [{"response": row["response"], "n": int(row["n"] or 0)} for row in response_rows],
         "harnesses": grouped(dimension_rows["harnesses"]),
         "servers": grouped(dimension_rows["servers"]),
