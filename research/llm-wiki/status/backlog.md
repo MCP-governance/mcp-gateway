@@ -5,7 +5,7 @@
 | ID | 작업 | 근거 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- |
 | WIKI-01 | 개발 위키와 공유 보고 체계 | [위키](../README.md), [협업 콘솔](../../collaboration-console/README.md) | 자료 분류·원본·해시·MD·Claude 규칙·실제 협업 기록·검사 통과 | MD 정본·협업 콘솔 구축, 실제 Claude 분석 수신; 수정 후 Claude 리뷰는 계정 한도로 미완료 |
-| DEV-01 | 실제 관리형 하네스 증거 연결 | [통제 증거](../methodology/control-design.md) | 활성화 상태와 fresh 신원, model→MCP→원장 IDs, 정상/차단의 독립 효과 | 실기기 미실행 |
+| DEV-01 | 실제 관리형 하네스 증거 연결 | [실기기 결과](reports/2026-10-13-development-results.md), [통제 증거](../methodology/control-design.md) | 활성화 상태와 fresh 신원, model→MCP→원장 IDs, 정상/차단의 독립 효과 | 새 PJ1 Codex 세션2개·원장3건 일치. 공급자 quota 응답·PII 차단 확인; 정상 문서·독립 수신 trace는 미완료 |
 | DEV-02 | 계약 변경·오염 탐지 코퍼스 | [분석](../solutions/README.md), [실험](../experiments/README.md) | 다국어 정상/공격/인코딩 표본, 오탐·미탐 및 계약 diff, 검사기 장애 차단 | 조사·설계 |
 | DEV-03 | 원본 위협표와 구현 추적 검토 | [위협 매핑](../threats/README.md) | 24개 정책의 통제 위치·코드·실험·한계별 리뷰와 근거 | 매핑 초안, 독립 리뷰 필요 |
 | DEV-04 | 승인 재사용·경쟁 조건 | [PAC 설계](../../../docs/ai/PAC_RUNTIME_2026-10-01.md) | 변형 요청·중복 동시 호출·철회 경쟁의 정확한 효과 수와 판정 | 설계·새 실험 미실행 |
@@ -20,7 +20,7 @@
 | DEV-13 | 새 감사 기록 시각 무결성 | [회귀](../../../full_stack_lab/tests/security_edges_check.py) | 새 v7의 created_at 변조 검출·UTC 정규화, 기존 v1~6 검증 유지 | 수정·회귀 통과; 과거 체인의 시각 무결성은 소급 보장 불가 |
 | DEV-14 | 결과의 디코딩된 줄바꿈 검사 | [회귀](../../../full_stack_lab/tests/security_edges_check.py) | MCP text와 structuredContent의 위조 대화록, 정상 로그·크기/형식 대조 | 수정 전 우회 재현, 수정 후 통과 |
 | DEV-15 | 목적지 정책 데이터 실패 차단 | [회귀](../../../full_stack_lab/tests/security_edges_check.py) | None/결측/잘못된 타입은 거부, 명시적 빈 목록·허용 호스트 정상군 | 수정 전 잘못된 허용 재현, 수정 후 통과 |
-| DEV-16 | refresh 회전·계열 철회 경쟁 | [Claude 후보 B5](reports/2026-10-13-claude-code-review.md) | 동일 계열의 회전·발급·재사용/철회를 트랜잭션 안에서 직렬화, 실패 롤백 | 구현·검증 진행 중 |
+| DEV-16 | refresh 회전·계열 철회 경쟁 | [실기기 결과](reports/2026-10-13-development-results.md), [Claude 후보 B5](reports/2026-10-13-claude-code-review.md) | 동일 계열의 회전·발급·재사용/철회를 트랜잭션 안에서 직렬화, 실패 롤백 | 수정·단위7건·솔루션 실제 PostgreSQL3건·전체CI 통과 |
 | DEV-17 | 승인 후 신선한 요청자 인증 | [Claude 후보 B2](reports/2026-10-13-claude-code-review.md) | 만료 검증을 완화하지 않고 승인과 새 요청자의 실행을 연결, 현재 권한·철회 재검증 | 설계; 만료 토큰 거부는 유지 |
 | DEV-18 | 엔드포인트 수집 신선도·전체 집계 | [Claude 후보 B7](reports/2026-10-13-claude-code-review.md) | 최근 200건 목록과 전체 집계를 구분, 수집기 마지막 성공·실패·감사 경로 표시 | 목록·범례를 수신/최근 200건으로 수정; 전체 집계·수집 신선도는 후속 |
 

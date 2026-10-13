@@ -9,16 +9,19 @@
 | 개발 연구 위키 | 논문·문서 25건, 솔루션 8건, 실험 설계 12건, 위협표 24개 정책과 두 XLSM 원본 | 지속적인 새 자료·실험 결과 갱신 |
 | 개발 협업 | 실제 WSL claude-sonnet-5-5, 요청 effort xhigh, 공개 최종 분석 수신 | 수정 후 Claude 리뷰는 계정 세션 한도(17:50 KST 재설정 안내)로 미완료. 모델 자동 대체 없음 |
 | 기능·설계 | [목표 10개](reports/2026-10-13-development-goals.md), [현재 기능·8개 제품 대조·보강 설계](reports/2026-10-13-feature-design.md), [Claude 검토 원문](reports/2026-10-13-claude-code-review.md) | 후보 재현 결과와 큰 설계 공백은 백로그로 추적 |
-| 자원 상태 | 관리자 Console scope API/UI, Linux CPU·메모리, 내부 DNS·TCP 연결 지연, 결측·오래된 값 제외 | 실기기 배포·실측은 작업 결과 보고에서 별도 판정 |
+| 자원 상태 | 관리자 Console scope API/UI, Linux CPU·메모리·내부 DNS/TCP 연결 지연, 실기기 표본·권한·Chrome 화면 검증 | PC→솔루션 Tailnet 지연·패킷 손실률·개별 컨테이너 지표는 범위 밖 |
 | 계약·결과·감사·목적지 | 카탈로그 A→B→A, 디코딩된 결과 지시문, 새 체인 시각 무결성, egress 데이터 실패 회귀와 수정 | 과거 체인 시각 보호는 소급 불가. 동시 카탈로그 경합·크래시 의도 기록 등 후속 |
-| 배치 검사 | 정확한 Caddy+모델 프록시 게시 집합과 음성 회귀, 17건 로컬 통과 | 새 전체 CI와 실제 배포 결과 |
-| 지정 기기 | 솔루션·PJ1 온라인/SSH/서비스, PJ1 활성 상태·최신 heartbeat 확인 | 새 배포 이미지·정책·실제 하네스와 원장 연계 |
+| 배치 검사 | 정확한 Caddy+모델 프록시 게시 집합과 음성 회귀, 17건 로컬·최종 전체 CI 통과 | 새 배치 변경마다 회귀 유지 |
+| 지정 기기 | field up 배포, 이미지·내용/로드 정책 일치, PJ1 실제 새 하네스 호출과 원장740~742·체인v7 대조 | Context7 월간 한도 초과로 정상 문서 조회는 미완료, 독립 수신 측 trace는 미확보 |
+| refresh 계열 | 단위7건과 솔루션 실제 PostgreSQL 격리3건, 동시 발급·폐기·롤백 통과 | 현재 완료 조건 검증 유지 |
 
 ## 보고와 증거 경계
 
 [최초 위키 구축 보고](reports/2026-10-13-wiki-bootstrap.md)는 위키 구축 당시 범위를 기록합니다. 최초 웹 해석은 사용자 정정에 따라 폐기했습니다. 개발 코드 분석·설계·구현·단위 검사·배포·실제 하네스 호출은 각각의 증거 수준으로 보고합니다. 기존 실험 카드 12개는 이번 단위 검사 결과로 자동 완료하지 않습니다.
 
-저장소는 MCP-governance/mcp-gateway, 원격 기본 브랜치는 feat/2026-09-v3.1-field-deploy 입니다. 작업 시작 시 HEAD는 0df1adf5596161d258536219c8dabde8b16dd532 입니다. 기존 docs/ai·엔드포인트·poisoning 미커밋 작업은 보존합니다. 솔루션 기기 소스는 6fdd9f6 이지만 실행 이미지는 77c4da0 으로 다른 상태였으므로 새 배포 후 이미지·내용 해시·로드 정책을 확인해야 합니다. 현재 로컬 코드 관찰은 [스냅샷](repository-snapshot.md)에 있습니다.
+[최종 개발·실기기 결과 보고](reports/2026-10-13-development-results.md)에 수정 전 재현, 구현, 검증과 한계를 남겼습니다. 구현6178dd3 배포 검증, 통합 검사c6ab26a의 [전체 CI](https://github.com/MCP-governance/mcp-gateway/actions/runs/38353250953) 정적·완료 조건 검증 모두 통과. 이후 문서·시험 커밋과 실행 이미지의 구현 revision을 구분합니다.
+
+저장소는 MCP-governance/mcp-gateway, 원격 기본 브랜치는 feat/2026-09-v3.1-field-deploy 입니다. 작업 시작 시 HEAD는 0df1adf5596161d258536219c8dabde8b16dd532 입니다. 기존 docs/ai·엔드포인트·poisoning 미커밋 작업은 보존합니다. 기기 시작 소스6fdd9f6·이미지77c4da0의 차이를 확인해 구현6178dd3을 배포했고, Gateway/Console build와 실제 로드 정책 일치를 확인했습니다. 현재 로컬 코드 관찰은 [스냅샷](repository-snapshot.md)에 있습니다.
 
 ## 다음 우선순위
 

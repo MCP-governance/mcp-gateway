@@ -1,0 +1,68 @@
+{
+  "checked_on": "2026-10-13",
+  "code_revision": "6178dd33afd36380578eb4327786300e51b954d9",
+  "rows": [
+    {
+      "id": 740,
+      "created_at": "2026-10-13T05:37:41.709992Z",
+      "request_id": "c3834414-7316-439d-bc37-f350c722c151",
+      "trace_id": "2cd1ea2e56673422038ea70ade5ee958",
+      "decision": "Allow",
+      "policy_id": "P-AUTHZ-ALLOW-001",
+      "upstream_attempted": true,
+      "upstream_executed": true,
+      "response_disposition": "returned",
+      "chain_version": 7,
+      "harness": "Codex CLI",
+      "fresh_thread_id": "01a133c3-d8bf-7e41-af05-39855a30eb5d",
+      "tool": "context7.resolve-library-id",
+      "ledger_matches_harness": true,
+      "provider_result": "quota_exceeded"
+    },
+    {
+      "id": 741,
+      "created_at": "2026-10-13T05:37:50.354554Z",
+      "request_id": "b08ea4af-409f-4187-8ecb-3ac0fa6cb9f2",
+      "trace_id": "fbd46e53ad0d84e9aca189665b458e4c",
+      "decision": "Alert",
+      "policy_id": "P-UNTRUSTED-CONTENT-002",
+      "upstream_attempted": true,
+      "upstream_executed": true,
+      "response_disposition": "returned",
+      "chain_version": 7,
+      "harness": "Codex CLI",
+      "fresh_thread_id": "01a133c3-d8bf-7e41-af05-39855a30eb5d",
+      "tool": "context7.resolve-library-id",
+      "ledger_matches_harness": true,
+      "provider_result": "quota_exceeded"
+    },
+    {
+      "id": 742,
+      "created_at": "2026-10-13T05:40:57.883063Z",
+      "request_id": "fcc37ea0-feda-4ebd-9586-513c488cd0f6",
+      "trace_id": "6986cef1b9072afbe950d7d810cbfdc6",
+      "decision": "Block",
+      "policy_id": "MCP-DATA-EGRESS-001",
+      "upstream_attempted": false,
+      "upstream_executed": false,
+      "response_disposition": "not_executed",
+      "chain_version": 7,
+      "harness": "Codex CLI",
+      "fresh_thread_id": "01a133c7-0e07-7ff3-8dfa-a88b055ad417",
+      "tool": "context7.resolve-library-id",
+      "ledger_matches_harness": true,
+      "provider_result": "not_dispatched"
+    }
+  ],
+  "audit_chain": {
+    "intact": true,
+    "checked": 742,
+    "head": "92044017d77c5c92e8eb57d6395cf876be59f53a53be2b02ffab6594db23ed8b",
+    "entries_recorded": 742
+  },
+  "limitations": [
+    "Context7 documents were not retrieved: provider monthly quota exceeded.",
+    "No independent receiving-side packet/effect trace; false upstream flags are Gateway evidence.",
+    "Twelve existing experiment cards are not automatically marked complete."
+  ]
+}
