@@ -36,6 +36,7 @@ router = APIRouter()
 ISSUER_URL = os.getenv("IDP_ISSUER", "http://agent-service:8000")
 ACCESS_MINUTES = int(os.getenv("ACCESS_TOKEN_MINUTES", "10"))
 REFRESH_HOURS = int(os.getenv("REFRESH_TOKEN_HOURS", "8"))
+FAMILY_LOCK_SQL = "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))"
 
 
 def _sha(value: str) -> str:
@@ -62,15 +63,18 @@ async def metadata() -> dict:
     }
 
 
-async def _issue(user_row: dict, client_id: str, family_id: uuid.UUID) -> dict:
+async def _issue(user_row: dict, client_id: str, family_id: uuid.UUID, connection=None) -> dict:
+    if connection is None:
+        async with db.transaction() as connection:
+            return await _issue(user_row, client_id, family_id, connection)
     user = {"user_id": user_row["user_id"]}
     token, claims = issue_token(user, minutes=ACCESS_MINUTES, client_id=client_id,
                                 extra={"sid": str(family_id), "scope": "mcp"})
-    await db.execute(
+    await connection.execute(
         "INSERT INTO oauth_issued_tokens(jti, user_id, client_id, family_id, expires_at) VALUES (%s,%s,%s,%s,%s)",
         (claims["jti"], user_row["user_id"], client_id, family_id, claims["exp"]))
     refresh = "rt_" + secrets.token_urlsafe(32)
-    await db.execute(
+    await connection.execute(
         """INSERT INTO oauth_refresh_tokens(id, family_id, user_id, client_id, token_sha256, expires_at)
            VALUES (%s,%s,%s,%s,%s,%s)""",
         (uuid.uuid4(), family_id, user_row["user_id"], client_id, _sha(refresh),
@@ -115,20 +119,27 @@ async def token(request: Request, grant_type: str = Form(...), client_id: str = 
         stored = await db.fetch_one("SELECT * FROM oauth_refresh_tokens WHERE token_sha256=%s", (_sha(refresh_token),))
         if not stored or stored["client_id"] != client_id:
             return _error("invalid_grant", "알 수 없는 refresh token입니다.")
-        if stored["revoked_at"] or stored["expires_at"] <= datetime.now(UTC):
-            return _error("invalid_grant", "폐기되었거나 만료된 refresh token입니다.")
-        if stored["rotated_at"]:
-            # Reuse of a rotated refresh token means it leaked: revoke the family.
-            await _revoke_family(stored["family_id"])
-            return _error("invalid_grant", "이미 사용된 refresh token입니다. 이 인가 전체를 폐기했습니다.")
-        row = await db.fetch_one("SELECT user_id, status, managed_required FROM principals WHERE user_id=%s", (stored["user_id"],))
-        if not row or row["status"] != "active":
-            return _error("invalid_grant", "사용할 수 없는 계정입니다.")
-        if row["managed_required"]:
-            await _revoke_family(stored["family_id"])
-            return _error("invalid_grant", "관리형 엔드포인트 인증으로 전환했습니다. 기존 갱신 토큰은 폐기했습니다.", 403)
-        await db.execute("UPDATE oauth_refresh_tokens SET rotated_at=now() WHERE id=%s", (stored["id"],))
-        return await _issue(row, client_id, stored["family_id"])
+        async with db.transaction() as connection:
+            # Hold the family lock through descendant issuance commit, including revocation/reuse.
+            await connection.execute(FAMILY_LOCK_SQL, ("oauth-refresh:" + str(stored["family_id"]),))
+            stored = await (await connection.execute(
+                "SELECT * FROM oauth_refresh_tokens WHERE token_sha256=%s FOR UPDATE", (_sha(refresh_token),))).fetchone()
+            if not stored or stored["client_id"] != client_id:
+                return _error("invalid_grant", "알 수 없는 refresh token입니다.")
+            if stored["revoked_at"] or stored["expires_at"] <= datetime.now(UTC):
+                return _error("invalid_grant", "폐기되었거나 만료된 refresh token입니다.")
+            if stored["rotated_at"]:
+                await _revoke_family(stored["family_id"], connection)
+                return _error("invalid_grant", "이미 사용된 refresh token입니다. 이 인가 전체를 폐기했습니다.")
+            row = await (await connection.execute(
+                "SELECT user_id, status, managed_required FROM principals WHERE user_id=%s", (stored["user_id"],))).fetchone()
+            if not row or row["status"] != "active":
+                return _error("invalid_grant", "사용할 수 없는 계정입니다.")
+            if row["managed_required"]:
+                await _revoke_family(stored["family_id"], connection)
+                return _error("invalid_grant", "관리형 엔드포인트 인증으로 전환했습니다. 기존 갱신 토큰은 폐기했습니다.", 403)
+            await connection.execute("UPDATE oauth_refresh_tokens SET rotated_at=now() WHERE id=%s", (stored["id"],))
+            return await _issue(row, client_id, stored["family_id"], connection)
     return _error("unsupported_grant_type", "password 또는 refresh_token만 지원합니다.")
 
 
@@ -195,9 +206,13 @@ async def device_token(x_endpoint_key: str | None = Header(default=None)):
                         headers={"Cache-Control": "no-store"})
 
 
-async def _revoke_family(family_id) -> None:
-    await db.execute("UPDATE oauth_refresh_tokens SET revoked_at=COALESCE(revoked_at, now()) WHERE family_id=%s", (family_id,))
-    await db.execute(
+async def _revoke_family(family_id, connection=None) -> None:
+    if connection is None:
+        async with db.transaction() as connection:
+            await connection.execute(FAMILY_LOCK_SQL, ("oauth-refresh:" + str(family_id),))
+            return await _revoke_family(family_id, connection)
+    await connection.execute("UPDATE oauth_refresh_tokens SET revoked_at=COALESCE(revoked_at, now()) WHERE family_id=%s", (family_id,))
+    await connection.execute(
         """INSERT INTO agent_revoked_tokens(jti, expires_at)
            SELECT jti::uuid, expires_at FROM oauth_issued_tokens WHERE family_id=%s AND expires_at > now()
            ON CONFLICT DO NOTHING""", (family_id,))

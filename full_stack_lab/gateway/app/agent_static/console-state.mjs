@@ -3,6 +3,27 @@
 export const FEED_LIMIT = 500;
 export const DECISIONS = ["Allow", "Alert", "Restrict", "Approval", "Block"];
 
+export function resourceValues(sample, now = Date.now()) {
+  const missing = { cpu: "—", memory: "—", latency: "—", measuredAt: null };
+  const timestamp = Date.parse(sample?.measured_at);
+  if (!Number.isFinite(timestamp) || now - timestamp > 30000 || timestamp - now > 5000) return missing;
+  const finite = (v) => typeof v === "number" && Number.isFinite(v);
+  const percent = (v) => finite(v) && v >= 0 && v <= 100 ? `${v.toFixed(1)}%` : "—";
+  const mem = sample.memory || {};
+  const bytesValid = finite(mem.total_bytes) && mem.total_bytes > 0 && finite(mem.used_bytes)
+    && mem.used_bytes >= 0 && mem.used_bytes <= mem.total_bytes;
+  const gib = (n) => (n / 1073741824).toFixed(1);
+  return {
+    cpu: sample.cpu?.scope === "linux_host" ? percent(sample.cpu.percent) : "—",
+    memory: mem.scope === "linux_host" && bytesValid && percent(mem.percent) !== "—"
+      ? `${gib(mem.used_bytes)} / ${gib(mem.total_bytes)} GB · ${percent(mem.percent)}` : "—",
+    latency: sample.network?.source === "console_gateway_tcp" && sample.network.state === "ok"
+      && finite(sample.network.rtt_ms) && sample.network.rtt_ms >= 0
+      ? `${sample.network.rtt_ms.toFixed(1)} ms` : "—",
+    measuredAt: timestamp,
+  };
+}
+
 /** Newest first, one row per numeric id. A poll that overlaps a page load must not
  * show a call twice, and a malformed row must not push a real decision out. */
 export function mergeRows(current, incoming, limit = FEED_LIMIT) {

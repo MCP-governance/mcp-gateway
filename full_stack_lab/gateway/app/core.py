@@ -171,10 +171,10 @@ async def refresh_catalog(server_id: str) -> dict:
     registered = {row["name"]: row for row in registered_rows}
     # Per-tool observed columns change only when the catalog changes; writing them on
     # every refresh would cost one UPDATE per tool (gitea has 55) for no new fact.
-    unchanged = await db.fetch_one(
-        "SELECT 1 FROM catalog_snapshots WHERE server_id=%s AND catalog_hash=%s ORDER BY id DESC LIMIT 1",
-        (server_id, catalog_hash))
-    if not unchanged or any(row["observed_schema_hash"] is None for row in registered_rows):
+    latest = await db.fetch_one(
+        "SELECT catalog_hash FROM catalog_snapshots WHERE server_id=%s ORDER BY id DESC LIMIT 1",
+        (server_id,))
+    if not latest or latest["catalog_hash"] != catalog_hash or any(row["observed_schema_hash"] is None for row in registered_rows):
         for name, tool in observed.items():
             if name not in registered:
                 continue
@@ -816,6 +816,8 @@ async def egress_allowed(endpoint: str | None) -> bool:
         return True  # 관리자가 Console 등록 절차에서 이 엔드포인트 자체를 승인했다(D-49)
     allowed = await opa_document("egress")
     entries = (allowed or {}).get("allowed_hosts") if isinstance(allowed, dict) else None
+    if not isinstance(entries, list):
+        return False
     if not entries:
         return True
     for item in entries:
@@ -1179,7 +1181,18 @@ def _guarded_result(payload: dict) -> dict:
         raise ResultRejected(f"반환하지 않는 결과 형식입니다: {', '.join(unexpected)}", payload)
     if any(not isinstance(item.get("text"), str) for item in content):
         raise ResultRejected("text 결과에 문자열 본문이 없습니다.", payload)
-    if reasons := poisoning.result_findings(body):
+    # JSON escapes newlines; inspect decoded strings too so line-boundary rules survive serialization.
+    text = [body]
+    pending = [payload]
+    while pending:
+        value = pending.pop()
+        if isinstance(value, str):
+            text.append(value)
+        elif isinstance(value, dict):
+            pending.extend(value.values())
+        elif isinstance(value, list):
+            pending.extend(reversed(value))
+    if reasons := poisoning.result_findings("\n".join(text)):
         raise ResultRejected(f"도구 결과에 모델을 조종하는 지시가 포함되어 있습니다: {', '.join(reasons)}", payload)
     return payload
 
@@ -1241,6 +1254,7 @@ async def _record_decision(event: dict) -> int:
         cursor = await connection.execute("SELECT head_sha256 FROM audit_chain WHERE id=1 FOR UPDATE")
         head = await cursor.fetchone()
         previous = head["head_sha256"] if head else GENESIS
+        record["created_at"] = datetime.now(UTC)
         entry = hashlib.sha256((previous + _audit_fingerprint(record)).encode()).hexdigest()
         cursor = await connection.execute(
             """INSERT INTO decisions(
@@ -1251,8 +1265,8 @@ async def _record_decision(event: dict) -> int:
                  policy_version, obligations, exception_id, conflicts, environment,
                  prev_sha256, entry_sha256, chain_version, upstream_attempted,
                  server_id, resource_id, destinations, client, summary,
-                 policy_input, risk_score, privacy_types, sequence_flags)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                 policy_input, risk_score, privacy_types, sequence_flags, created_at)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                RETURNING id""",
             (
                 record["request_id"], record["trace_id"], record["user_token"], record["role"],
@@ -1270,6 +1284,7 @@ async def _record_decision(event: dict) -> int:
                 Jsonb(record["client"]), record["summary"],
                 Jsonb(record["policy_input"]) if record["policy_input"] is not None else None,
                 record["risk_score"], Jsonb(record["privacy_types"]), Jsonb(record["sequence_flags"]),
+                record["created_at"],
             ),
         )
         row = await cursor.fetchone()

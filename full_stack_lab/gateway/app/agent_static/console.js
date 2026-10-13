@@ -6,7 +6,7 @@
  * a menu here is convenience only.
  */
 import { mergeRows, searchRows, liveLabel, hourBuckets, splitBy, sankeyData, harnessLabel, DECISIONS,
-  statusView, dedupeItems, pipelineOf, EVIDENCE } from "./console-state.mjs";
+  statusView, dedupeItems, pipelineOf, EVIDENCE, resourceValues } from "./console-state.mjs";
 import * as charts from "./charts.mjs";
 
 const { DECISION_LABEL } = charts;
@@ -46,11 +46,12 @@ function detailText(detail) {
   return JSON.stringify(detail);
 }
 
-async function api(path, { method = "GET", body } = {}) {
+async function api(path, { method = "GET", body, signal } = {}) {
   const response = await fetch(path, {
     method,
     headers: { authorization: `Bearer ${token}`, ...(body === undefined ? {} : { "content-type": "application/json" }) },
     body: body === undefined ? undefined : JSON.stringify(body),
+    signal,
   });
   const accountStatus = response.headers.get("x-account-status");
   if (response.status === 401 || accountStatus) {
@@ -355,6 +356,7 @@ function parseHash() {
 async function route() {
   if (matchMedia("(max-width: 900px)").matches) setNavCollapsed(true);
   stopLive();
+  stopSystemMetrics();
   stopIntake();
   // Only hide the drawer: closeDrawer() also rewrites #/servers/<id> to #/servers, which here
   // would drop the id this route is about to open (a server row never opened its drawer).
@@ -435,6 +437,54 @@ function validityChip(registration) {
 // ── pages ────────────────────────────────────────────────────────────────────
 const ROUTES = {};
 
+let metricsTimer = null;
+let metricsRequest = null;
+function stopSystemMetrics() {
+  clearInterval(metricsTimer);
+  metricsTimer = null;
+  metricsRequest?.abort();
+  metricsRequest = null;
+}
+function metricsCards(sample, failure = false) {
+  const values = resourceValues(sample);
+  return html`<div class="system-values">${[
+    ["CPU 부하", values.cpu], ["메모리 사용", values.memory], ["내부 연결 지연", values.latency],
+  ].map(([label, value]) => html`<div class="system-stat"><span>${label}</span><b>${value}</b></div>`)}</div>
+    <div class="system-time">${failure ? "확인 실패" : values.measuredAt
+      ? `확인 ${new Date(values.measuredAt).toLocaleTimeString("ko-KR")}` : sample ? "갱신 필요" : "미측정"}</div>`;
+}
+function startSystemMetrics() {
+  if (!$("#system-metrics")) return;
+  const seq = routeSeq;
+  let busy = false;
+  let lastSample = null;
+  let failing = false;
+  const refresh = async () => {
+    if (seq === routeSeq && $("#system-metrics")) $("#system-metrics").innerHTML = String(metricsCards(lastSample, failing));
+    if (busy || seq !== routeSeq || document.hidden) return;
+    busy = true;
+    const controller = new AbortController();
+    metricsRequest = controller;
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const sample = await api("/api/system/metrics", { signal: controller.signal });
+      lastSample = sample;
+      failing = false;
+      if (seq === routeSeq && $("#system-metrics")) $("#system-metrics").innerHTML = String(metricsCards(sample));
+    } catch {
+      lastSample = null;
+      failing = true;
+      if (seq === routeSeq && $("#system-metrics")) $("#system-metrics").innerHTML = String(metricsCards(null, true));
+    } finally {
+      clearTimeout(timeout);
+      if (metricsRequest === controller) metricsRequest = null;
+      busy = false;
+    }
+  };
+  refresh();
+  metricsTimer = setInterval(refresh, 10000);
+}
+
 ROUTES.overview = async (_, tab) => {
   const [o, blocked, pl] = await Promise.all([gw("overview"), gw("activity?limit=10&decision=Block"), planes()]);
   feed.rows = mergeRows([], blocked.rows);
@@ -475,6 +525,7 @@ ROUTES.overview = async (_, tab) => {
       active: tab || "summary",
       tabs: [
         { key: "summary", label: "요약", body: html`<div class="stack">
+          ${panel("시스템 상태", html`<div id="system-metrics" aria-live="polite">${metricsCards(null)}</div>`)}
           <div class="overview-hero">
             ${panel("최근 24시간 호출", chartBox("c-summary-traffic", "최근 24시간 시간대별 판정", "sm"), { end: html`<a class="btn sm" href="#/activity">호출 로그</a>` })}
             ${panel("확인 필요", html`<div class="action-list">
@@ -546,6 +597,7 @@ ROUTES.overview = async (_, tab) => {
         { name: "T2·T3", value: term.unresolved_grades, color: charts.color("Alert") }, { name: "기한 초과", value: term.overdue, color: charts.color("Block") },
         { name: "폐기 잔존", value: term.retired_residue, color: charts.color("Alert") }, { name: "미등록 MCP", value: term.shadow_endpoints, color: charts.color("Block") }]),
     },
+    after: startSystemMetrics,
   };
 };
 
@@ -961,7 +1013,7 @@ ROUTES.coverage = async (_, tab, query) => {
             ${(inv.os_events || []).map((e) => html`<tr><td>${when(e.observed_at)}</td><td>${entityRef(e.endpoint_id)}</td>
               <td>${chip("block", e.kind === "network-denied" ? "네트워크 차단" : "실행 차단")}</td>
               <td class="mono small">${osEventTarget(e)}</td></tr>`)}
-            </tbody></table>${(inv.os_events || []).length ? "" : empty("엔드포인트 차단 없음")}`, { flush: true })}</div>` },
+            </tbody></table>${(inv.os_events || []).length ? "" : empty("수신된 차단 기록 없음")}`, { flush: true })}</div>` },
         { key: "vendor", label: "벤더 커넥터", n: review, hot: review > 0, body: panel("하네스 커넥터·앱·기능",
           conn.items.length ? html`<table class="data"><thead><tr><th>이름</th><th>하네스</th><th>종류</th><th class="num">사용 PC</th><th>승인</th><th>벤더 콘솔</th><th></th></tr></thead><tbody>
             ${conn.items.map((g) => { const vendor = items.find((i) => i.item_key === g.key)?.vendor_control; return html`<tr class="clickable" tabindex="0" data-act="connector" data-key="${g.key}">
@@ -987,7 +1039,7 @@ ROUTES.coverage = async (_, tab, query) => {
       "c-cov-shadow": () => { const ids = [...new Set([...shadowRows.map((e) => e.endpoint_id), ...(inv.os_events || []).map((e) => e.endpoint_id)])];
         return charts.stacked(ids.map((id) => id.slice(0, 18)), [
           { name: "발견", color: charts.color("Alert"), data: ids.map((id) => shadowRows.filter((e) => e.endpoint_id === id).length) },
-          { name: "엔드포인트 차단", color: charts.color("Block"), data: ids.map((id) => (inv.os_events || []).filter((e) => e.endpoint_id === id).length) }],
+          { name: "최근 수신 200건 내 차단", color: charts.color("Block"), data: ids.map((id) => (inv.os_events || []).filter((e) => e.endpoint_id === id).length) }],
           { horizontal: true }); },
     },
   };

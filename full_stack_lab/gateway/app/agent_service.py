@@ -28,6 +28,7 @@ from psycopg.types.json import Jsonb
 
 from . import core, db, oidc
 from .release import build_info
+from .system_metrics import SystemMetrics
 from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, authenticate,
                              authenticated_user, issue_token, private_key)
 from .connectors import router as connectors_router
@@ -37,6 +38,7 @@ from .idp import router as idp_router
 STATIC_DIR = Path(__file__).parent / "agent_static"
 INTAKE_REPORT_DIR = Path(os.getenv("INTAKE_REPORT_DIR", "/intake-reports"))
 GATEWAY_URL = os.getenv("GATEWAY_URL", "http://gateway:8080")
+system_metrics_sampler = SystemMetrics(GATEWAY_URL)
 
 LOGIN_ATTEMPT_LIMIT = int(os.getenv("LOGIN_ATTEMPT_LIMIT", "10"))
 LOGIN_ATTEMPT_WINDOW = int(os.getenv("LOGIN_ATTEMPT_WINDOW_SECONDS", "300"))
@@ -696,6 +698,14 @@ async def delete_account(user_id: str, authorization: str | None = Header(defaul
 async def health():
     await db.fetch_one("SELECT 1")
     return {"status": "ok", "service": "agent-service", "build": build_info()}
+
+
+@app.get("/api/system/metrics")
+async def system_metrics(authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "관리자만 볼 수 있는 화면입니다.")
+    return await system_metrics_sampler.sample()
 
 
 @app.get("/api/readiness")

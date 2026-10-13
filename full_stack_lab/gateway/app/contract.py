@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import UTC, datetime
 from typing import Any
 
 from jsonschema import Draft202012Validator
@@ -76,7 +77,8 @@ AUDIT_COLUMN_SETS[5] = (*AUDIT_COLUMN_SETS[4], "server_id", "resource_id", "dest
 # (v2 needs `./console.sh reset`): verifying its rows against v2's v5 would fail, and
 # accepting either definition would let a row tampered in a column only one covers pass.
 AUDIT_COLUMN_SETS[6] = (*AUDIT_COLUMN_SETS[5], "policy_input", "risk_score", "privacy_types", "sequence_flags")
-CHAIN_VERSION = 6
+AUDIT_COLUMN_SETS[7] = (*AUDIT_COLUMN_SETS[6], "created_at")
+CHAIN_VERSION = 7
 AUDIT_COLUMNS = AUDIT_COLUMN_SETS[CHAIN_VERSION]
 GENESIS = "0" * 64
 
@@ -90,7 +92,12 @@ def audit_fingerprint(record: dict, version: int = CHAIN_VERSION) -> str:
     normalised = {}
     for column in AUDIT_COLUMN_SETS[version]:
         value = record.get(column)
-        if column in {"upstream_executed", "upstream_attempted"}:
+        if column == "created_at" and value is not None:
+            timestamp = value if isinstance(value, datetime) else datetime.fromisoformat(str(value))
+            if timestamp.tzinfo is None:
+                raise ValueError("audit timestamp requires a timezone")
+            normalised[column] = timestamp.astimezone(UTC).isoformat(timespec="microseconds")
+        elif column in {"upstream_executed", "upstream_attempted"}:
             normalised[column] = bool(value)
         elif isinstance(value, (dict, list)) or value is None:
             normalised[column] = value

@@ -13,6 +13,8 @@ research/llm-wiki/status/current.md와 status/backlog.md를 보고 작업을 이
 미실행·검증 실패·배포 미확인 상태를 유지해줘.
 끝나면 status/current.md와 backlog, 작업 보고서를 갱신하고
 tools/capture_status.py, tools/build_wiki.py, tools/check_wiki.py를 실행해줘.
+웹 위키는 생성하지 말고 실제 공개 메시지, 작업 시작·중단·완료,
+수행한 검증 결과를 research/collaboration-console/console.py emit으로 남겨줘.
 ```
 
 실험만 맡길 때는 대상 MCP, 테스트 계정의 권한, 정상·공격 입력, 허용된 기기, 독립 효과 확인·정리 절차를 추가합니다. 공급자 자격증명 값은 대화·Git에 붙이지 않습니다.

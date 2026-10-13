@@ -34,4 +34,4 @@ XLSM은 `tools/import_threat_workbook.py <원본 경로> --kind policy|wbs`로 �
 
 ## 검증과 유지
 
-MD·카탈로그를 갱신하면 `build_wiki.py`와 `check_wiki.py`를 실행합니다. 검사는 로컬 링크·원본 해시·식별자·필수 필드·웹 생성 동기화를 확인합니다. 외부 URL의 현재 가용성이나 논문 결과의 진실성은 별도 연구 검토 대상입니다.
+MD·카탈로그를 갱신하면 `build_wiki.py`로 Markdown 목록을 확인하고 `check_wiki.py`를 실행합니다. 검사는 로컬 링크·원본 해시·재배포 상태·식별자·필수 필드·실험 증거를 확인합니다. 웹 위키는 생성하지 않습니다. 실제 공유 메시지·작업 상태·검증 결과는 [개발 협업 콘솔](../../collaboration-console/README.md)에 남깁니다. 외부 URL의 현재 가용성이나 논문 결과의 진실성은 별도 연구 검토 대상입니다.

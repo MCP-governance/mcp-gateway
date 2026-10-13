@@ -1,13 +1,11 @@
-"""Check provenance, navigation and offline renderer synchronization."""
+"""Check Markdown evidence, provenance, licenses, links and experiment claims."""
 import hashlib
 import json
 import re
 import sys
-from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from build_wiki import ROOT, ResearchRenderer, safe_url, render_markdown
-import mistune
+from build_wiki import ROOT, markdown_files
 
 REPO = ROOT.parents[1]
 
@@ -27,7 +25,7 @@ def check():
         return path
 
     for name in ("README.md", "AGENTS.md", "CLAUDE.md", "papers/README.md", "solutions/README.md",
-                 "experiments/README.md", "status/current.md", "status/backlog.md", "web/index.html"):
+                 "experiments/README.md", "status/current.md", "status/backlog.md"):
         local_path(name)
     catalogs = {}
     for file in sorted((ROOT / "catalogs").glob("*.json")):
@@ -125,40 +123,8 @@ def check():
                 resolved = (file.parent / path).resolve()
                 local_path(path, file.parent, optional=resolved.is_relative_to(ROOT / "local-sources"))
 
-    renderer = mistune.create_markdown(renderer=ResearchRenderer(escape=True),
-                      plugins=["table", "strikethrough", "task_lists", "url"])
-    for url in ("javascript:alert(1)", "java&#x73;cript:alert(1)", "data:text/html,test",
-                "file:///C:/secret", "//remote.example/x", "java\nscript:test", "C:/tool.exe"):
-        require(safe_url(url) == "#harmful-link", f"Unsafe renderer URL accepted: {url}")
-    attack = renderer('<script>alert(1)</script> [attack](javascript:alert(1)) ![beacon](https://remote.example/image)')
-    require("<script" not in attack and 'href="javascript:' not in attack and "<img" not in attack,
-            "Untrusted Markdown is active in browser output")
-    require("<table>" in renderer("| a | b |\n| --- | --- |\n| 1 | 2 |"), "Markdown tables not rendered")
-
-    content_file = ROOT / "web/content.js"
-    if not content_file.is_file():
-        errors.append("Web content missing: run build_wiki.py")
-    else:
-        text = content_file.read_text(encoding="utf-8")
-        prefix = "window.WIKI_DATA="
-        require(text.startswith(prefix), "Unexpected generated JS format")
-        web = json.loads(text[len(prefix):].rstrip().removesuffix(";"))
-        require(web["catalogs"] == catalogs, "Web catalogs stale: run build_wiki.py")
-        actual = {p.relative_to(ROOT).as_posix() for p in ROOT.rglob("*.md")
-                  if p.relative_to(ROOT).parts[0] not in ("web", "tools", "local-sources") and "__pycache__" not in p.parts}
-        require(actual == {p["path"] for p in web["pages"]}, "Web document inventory stale")
-        for page in web["pages"]:
-            require(not page["path"].startswith("local-sources/"), "Local-only full text leaked into public web")
-            source = (ROOT / page["path"]).read_text(encoding="utf-8-sig")
-            require(source == page["markdown"], f"Web Markdown stale: {page['path']}")
-            require(render_markdown(source) == page["html"], f"Web HTML stale: {page['path']}")
-        for original, plain_copy in web.get("text_sources", {}).items():
-            original_path = local_path(original, optional=original.startswith("local-sources/"))
-            copy_path = local_path(plain_copy, optional=plain_copy.startswith("local-sources/"))
-            require(copy_path.suffix == ".txt", f"Active source text filename: {plain_copy}")
-            if original_path.is_file() and copy_path.is_file():
-                require(original_path.read_bytes() == copy_path.read_bytes(), f"Source text copy stale: {original}")
-        totals["web_pages"] = len(web["pages"])
+    totals["markdown_documents"] = len(markdown_files())
+    require(not (ROOT / "web/content.js").exists(), "Retired wiki browser bundle must not be generated")
     for record in catalogs.get("experiments", []):
         status = record.get("status")
         require(status in ("not_run", "in_progress", "blocked", "passed", "failed"),

@@ -2,10 +2,11 @@
 
 솔루션 개발용 조사·분석·실험 자료와 현황 보고를 모읍니다.
 
-**[LLM 개발 연구 위키](llm-wiki/README.md)** · **[브라우저로 보기](llm-wiki/web/index.html)** · **[개발 현황](llm-wiki/status/current.md)**
+**[LLM 개발 연구 위키 · Markdown](llm-wiki/README.md)** · **[Codex × Claude 개발 협업 콘솔](collaboration-console/README.md)** · **[개발 현황](llm-wiki/status/current.md)**
 
 논문·기술문서 원본과 Markdown, 상용·오픈소스 분석, 구축 방법론, 실험 대상 MCP와 위협 XLSM을 연결합니다.
 Claude Code·Codex 공통 규칙과 갱신 방법은 [위키 AGENTS.md](llm-wiki/AGENTS.md)에 있습니다.
+웹 콘솔은 연구 문서 뷰어 대신 실제 소통·작업 담당·진행 상태·검증 결과를 보여 줍니다. `python -X utf8 research/collaboration-console/console.py serve`로 실행한 후 `http://127.0.0.1:18766`에서 봅니다.
 
 | 문서 | 내용 |
 | --- | --- |

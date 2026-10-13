@@ -363,6 +363,33 @@ class KitTest(unittest.TestCase):
 
 
 class OverlayTest(unittest.TestCase):
+    def assert_field_publications(self, services, tailnet_ip, proxy_port=3128):
+        public = {(name, p.get("host_ip"), int(p["published"]), int(p["target"]), p.get("protocol", "tcp"))
+                  for name, svc in services.items() for p in svc.get("ports", [])
+                  if p.get("host_ip") != "127.0.0.1"}
+        self.assertEqual(public, {("caddy", tailnet_ip, 443, 8080, "tcp"),
+                                  ("model-proxy", tailnet_ip, proxy_port, 3128, "tcp")})
+
+    def test_field_publications_reject_wildcard_other_service_wrong_port_and_protocol(self):
+        baseline = {"caddy": {"ports": [{"host_ip": "100.83.175.111", "published": 443, "target": 8080}]},
+                    "model-proxy": {"ports": [{"host_ip": "100.83.175.111", "published": 3128, "target": 3128}]}}
+        self.assert_field_publications(baseline, "100.83.175.111")
+        for case in ("wildcard", "other-service", "wrong-port", "wrong-protocol", "missing-proxy"):
+            with self.subTest(case=case):
+                services = json.loads(json.dumps(baseline))
+                if case == "wildcard":
+                    services["model-proxy"]["ports"][0]["host_ip"] = "0.0.0.0"
+                elif case == "other-service":
+                    services["db"] = {"ports": [{"host_ip": "100.83.175.111", "published": 5432, "target": 5432}]}
+                elif case == "wrong-port":
+                    services["caddy"]["ports"][0]["published"] = 80
+                elif case == "wrong-protocol":
+                    services["model-proxy"]["ports"][0]["protocol"] = "udp"
+                else:
+                    del services["model-proxy"]
+                with self.assertRaises(AssertionError):
+                    self.assert_field_publications(services, "100.83.175.111")
+
     def test_caddyfile_routes(self):
         lines = (LAB / "field" / "Caddyfile").read_text(encoding="utf-8").splitlines()
         text = "\n".join(line for line in lines if not line.lstrip().startswith("#"))
@@ -395,16 +422,15 @@ class OverlayTest(unittest.TestCase):
         self.assertIn('os.getenv("IDP_INTERNAL_URL")', text)
 
     @unittest.skipUnless(shutil.which("docker"), "docker CLI 없음")
-    def test_overlay_publishes_only_caddy_on_the_tailnet_address(self):
+    def test_overlay_publishes_only_caddy_and_model_proxy_on_the_tailnet_address(self):
         env = {**os.environ, "APPLIANCE_BIND": "100.83.175.111",
-               "AGENT_JWT_PRIVATE_KEY": "x", "AGENT_JWT_PUBLIC_KEY": "x", "LITELLM_MASTER_KEY": "x"}
+               "AGENT_JWT_PRIVATE_KEY": "x", "AGENT_JWT_PUBLIC_KEY": "x", "LITELLM_MASTER_KEY": "x",
+               "MODEL_PROXY_PORT": "3128"}
         command = ["docker", "compose", "--project-directory", str(LAB), "-f", str(LAB / "compose.yaml"),
                    "-f", str(LAB / "compose.field.yaml"), "config", "--format", "json"]
         rendered = json.loads(subprocess.run(command, env=env, capture_output=True, encoding="utf-8", check=True).stdout)
         services = rendered["services"]
-        published = {(name, p.get("host_ip")) for name, svc in services.items() for p in svc.get("ports", [])}
-        self.assertIn(("caddy", "100.83.175.111"), published)
-        self.assertEqual({ip for name, ip in published if name != "caddy"}, {"127.0.0.1"})
+        self.assert_field_publications(services, env["APPLIANCE_BIND"], int(env["MODEL_PROXY_PORT"]))
         self.assertFalse([name for name in services if name.startswith("ws-")])  # 실제 PC가 대신한다
         self.assertEqual(services["gateway"]["environment"]["IDP_INTERNAL_URL"], "http://agent-service:8000")
         # D-48: Gitea가 믿는 프록시는 Caddy의 고정 주소 하나뿐이고, 모르는 사용자를 자동으로 만들지 않는다.
