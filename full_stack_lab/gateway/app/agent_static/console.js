@@ -553,11 +553,14 @@ ROUTES.overview = async (_, tab) => {
 // read from the same list. Paused, it keeps polling but holds new rows back and
 // counts them, so the list stops moving without going stale.
 const FEED_FILTERS = ["decision", "server", "person", "event_kind", "execution"];
+const FEED_PAGE_SIZE = 50;
 const feed = { rows: [], pending: [], cursor: 0, filters: { decision: "", server: "", person: "", event_kind: "", execution: "" }, query: "",
-  live: true, servers: [], lastOk: 0, failing: false, gen: 0 };
+  live: true, servers: [], lastOk: 0, failing: false, gen: 0, page: 1, pageSize: FEED_PAGE_SIZE,
+  total: 0, filteredTotal: 0, highlight: [] };
 let liveTimer = null;
 function stopLive() { clearInterval(liveTimer); liveTimer = null; feed.gen += 1; }
-const feedQuery = (extra) => new URLSearchParams({ ...Object.fromEntries(Object.entries(feed.filters).filter(([, v]) => v)), ...extra });
+const feedQuery = (extra) => new URLSearchParams({ ...Object.fromEntries(Object.entries(feed.filters).filter(([, v]) => v)),
+  ...(feed.query ? { q: feed.query } : {}), ...extra });
 
 /** Calls over the loaded span in at most ~30 buckets (1, 5, 10, 30 or 60 minutes). */
 function minuteBuckets(rows) {
@@ -581,8 +584,13 @@ function minuteBuckets(rows) {
 function renderFeedStatus() {
   const status = $("#feed-status");
   if (!status) return;
-  const shown = searchRows(feed.rows, feed.query).length;
-  status.textContent = `${shown}/${feed.rows.length}건 · ${liveLabel({ ...feed, pending: feed.pending.length })}`;
+  const start = feed.rows.length ? (feed.page - 1) * feed.pageSize + 1 : 0;
+  const end = feed.rows.length ? start + feed.rows.length - 1 : 0;
+  const range = feed.query ? `${start}–${end} / 검색 ${feed.filteredTotal}건 · 전체 ${feed.total}건`
+    : Object.values(feed.filters).some(Boolean) ? `${start}–${end} / 필터 ${feed.filteredTotal}건 · 전체 ${feed.total}건`
+      : `${start}–${end} / 전체 ${feed.total}건`;
+  status.innerHTML = String(html`${range} · ${liveLabel({ ...feed, pending: feed.pending.length })}
+    ${feed.pending.length ? html`<button class="btn sm" type="button" data-act="feed-new">새 로그 ${feed.pending.length}건</button>` : ""}`);
   $("#feed-dot").className = `dot ${feed.failing ? "bad" : feed.live ? "on" : ""}`;
 }
 
@@ -604,15 +612,19 @@ function renderFeed(newIds = []) {
   const body = $("#feed");
   if (!body) return;
   const focused = document.activeElement?.closest?.("#feed tr")?.dataset.id;
-  const shown = searchRows(feed.rows, feed.query);
-  body.innerHTML = String(html`${shown.map(decisionRow)}`);
+  body.innerHTML = String(html`${feed.rows.map(decisionRow)}`);
   const fresh = new Set(newIds.map(String));
   for (const row of body.querySelectorAll("tr[data-id]")) row.classList.toggle("new-call", fresh.has(row.dataset.id));
   if (focused) $(`#feed tr[data-id="${CSS.escape(focused)}"]`)?.focus();
   const note = $("#feed-empty");
-  note.hidden = shown.length > 0;
+  note.hidden = feed.rows.length > 0;
   note.innerHTML = String(feed.rows.length || feed.query || Object.values(feed.filters).some(Boolean)
     ? html`조건에 맞는 호출 없음 <button class="btn sm" type="button" data-act="feed-reset">조건 초기화</button>` : html`호출 없음`);
+  const pages = Math.max(1, Math.ceil(feed.filteredTotal / feed.pageSize));
+  const pager = $("#feed-pager");
+  if (pager) pager.innerHTML = String(html`<button class="pager-button" type="button" data-act="feed-page" data-page="${feed.page - 1}" aria-label="이전 페이지" title="이전 페이지" ${feed.page <= 1 ? raw("disabled") : ""}>‹</button>
+    <span>${feed.page} / ${pages}</span>
+    <button class="pager-button" type="button" data-act="feed-page" data-page="${feed.page + 1}" aria-label="다음 페이지" title="다음 페이지" ${feed.page >= pages ? raw("disabled") : ""}>›</button>`);
   for (const [id, build] of Object.entries(feedCharts())) charts.redraw(id, build);
   renderFeedStatus();
 }
@@ -621,20 +633,20 @@ function startLive() {
   stopLive();
   const gen = feed.gen;
   liveTimer = setInterval(async () => {
+    if (document.hidden) return;
     try {
       const data = await gw(`activity?${feedQuery({ after: feed.cursor, limit: 100 })}`);
       if (gen !== feed.gen) return;  // the page was rebuilt while this poll was in flight
       feed.cursor = Math.max(feed.cursor, data.cursor || 0);
       feed.lastOk = Date.now();
       feed.failing = false;
-      if (feed.live) feed.rows = mergeRows(feed.rows, data.rows);
-      else feed.pending = mergeRows(feed.pending, data.rows);
-      if (feed.live && data.rows.length) renderFeed(data.rows.map((row) => row.id)); else renderFeedStatus();
+      feed.pending = mergeRows(feed.pending, data.rows);
+      renderFeedStatus();
     } catch {
       // A failed poll must not end the live view, and must not look like a quiet one.
       if (gen === feed.gen) { feed.failing = true; renderFeedStatus(); }
     }
-  }, 3000);
+  }, 5000);
 }
 
 ROUTES.activity = async (_, tab, query) => {
@@ -642,10 +654,14 @@ ROUTES.activity = async (_, tab, query) => {
   // others would AND a stale filter with the new one into an empty list.
   if (FEED_FILTERS.some((key) => query.has(key))) for (const key of FEED_FILTERS) feed.filters[key] = query.get(key) || "";
   if (query.has("q")) feed.query = query.get("q");
-  const data = await gw(`activity?${feedQuery({ limit: 200 })}`);
+  const data = await gw(`activity?${feedQuery({ limit: FEED_PAGE_SIZE, page: feed.page })}`);
   feed.rows = mergeRows([], data.rows);
   feed.pending = [];
   feed.cursor = data.cursor;
+  feed.page = data.page || feed.page;
+  feed.pageSize = data.page_size || FEED_PAGE_SIZE;
+  feed.total = data.total || 0;
+  feed.filteredTotal = data.filtered_total || 0;
   feed.lastOk = Date.now();
   feed.failing = false;
   if (viewer.admin && !feed.servers.length) feed.servers = (await gw("registry")).servers.map((s) => s.id);
@@ -670,7 +686,7 @@ ROUTES.activity = async (_, tab, query) => {
             <label>실행 결과<select data-filter="execution" aria-label="실행 결과">${option("", "모든 실행 결과", f.execution)}${option("executed", "실행됨", f.execution)}${option("not-sent", "실행 안 함", f.execution)}${option("unknown", "실행 미확인", f.execution)}${option("withheld", "응답 보류", f.execution)}</select></label>
             ${viewer.admin ? html`<label>사용자<input data-filter="person" type="search" placeholder="이름 또는 계정" value="${f.person}" aria-label="사용자" /></label>` : ""}
           </div>
-          <div class="body flush">${decisionTable([], "feed")}<p class="empty" id="feed-empty" hidden></p></div></section>` },
+          <div class="body flush">${decisionTable([], "feed")}<p class="empty" id="feed-empty" hidden></p><div class="pager" id="feed-pager"></div></div></section>` },
         { key: "stats", label: "분석", body: html`<div class="stack">
           ${panel("시간대별 호출", chartBox("c-minutes", "불러온 호출의 시간 분포", "sm"))}<div class="grid c2">
           ${panel("응답 처리", chartBox("c-by-response", "불러온 호출의 응답 처리 비율", "sm"))}
@@ -680,7 +696,7 @@ ROUTES.activity = async (_, tab, query) => {
       ],
     }),
     charts: feedCharts(),
-    after: () => { renderFeed(); startLive(); },
+    after: () => { const highlighted = feed.highlight; feed.highlight = []; renderFeed(highlighted); startLive(); },
   };
 };
 
@@ -1641,10 +1657,18 @@ const ACTIONS = {
   skip: () => $("#view").focus(),
   live(el) {
     feed.live = !feed.live;
-    if (feed.live) { feed.rows = mergeRows(feed.rows, feed.pending); feed.pending = []; }
     el.textContent = feed.live ? "일시정지" : "실시간 재개";
     el.setAttribute("aria-pressed", String(!feed.live));
-    renderFeed();
+    renderFeedStatus();
+  },
+  "feed-new"() {
+    feed.highlight = feed.pending.map((row) => row.id);
+    feed.page = 1;
+    reload();
+  },
+  "feed-page"(el) {
+    feed.page = Math.max(1, Number(el.dataset.page) || 1);
+    reload();
   },
   "feed-reset"() {
     feed.filters = Object.fromEntries(FEED_FILTERS.map((key) => [key, ""]));
@@ -2150,6 +2174,7 @@ document.addEventListener("change", (event) => {
   const filter = event.target.closest("[data-filter]");
   if (filter) {
     feed.filters[filter.dataset.filter] = filter.value.trim();
+    feed.page = 1;
     reload();
     return;
   }
@@ -2161,6 +2186,16 @@ document.addEventListener("change", (event) => {
 });
 // Search narrows what is already loaded, so it re-renders the list without a request.
 document.addEventListener("input", (event) => {
+  if (event.target.matches("[data-feed-search]")) {
+    const input = event.target;
+    clearTimeout(input.searchTimer);
+    input.searchTimer = setTimeout(() => {
+      feed.query = input.value.trim();
+      feed.page = 1;
+      reload();
+    }, 300);
+    return;
+  }
   const input = event.target.closest("[data-list-search]");
   if (input) {
     const rows = [...(document.getElementById(input.dataset.listSearch)?.children || [])];

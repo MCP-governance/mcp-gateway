@@ -359,10 +359,11 @@ async def activity_feed(after: int = 0, limit: int = 100, decision: str | None =
                         server: str | None = None, person: str | None = None,
                         event_kind: Literal["tools/call", "mcp-connection"] | None = None,
                         execution: Literal["executed", "not-sent", "unknown", "withheld"] | None = None,
+                        page: int = 1, q: str | None = None,
                         user: dict = Depends(caller)) -> dict:
     """Decisions as readable sentences. Admins see everyone; others see themselves."""
     own = None if "admin" in user["roles"] else user["principal"]
-    return await activity.recent(after, limit, own, decision, server, person, event_kind, execution)
+    return await activity.recent(after, limit, own, decision, server, person, event_kind, execution, page, q)
 
 
 @app.get("/.well-known/oauth-protected-resource")

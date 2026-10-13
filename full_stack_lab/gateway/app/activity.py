@@ -84,10 +84,12 @@ def describe(row: dict) -> dict:
 
 async def recent(after: int = 0, limit: int = 100, user_token: str | None = None,
                  decision: str | None = None, server: str | None = None, person: str | None = None,
-                 event_kind: str | None = None, execution: str | None = None) -> dict:
-    clauses, params = ["d.id > %s"], [after]
+                 event_kind: str | None = None, execution: str | None = None,
+                 page: int = 1, query: str | None = None) -> dict:
+    base_clauses, base_params = [], []
     if user_token:
-        clauses.append("d.user_token = %s"); params.append(user_token)
+        base_clauses.append("d.user_token = %s"); base_params.append(user_token)
+    clauses, params = list(base_clauses), list(base_params)
     if decision:
         clauses.append("d.decision = %s"); params.append(decision)
     if server:
@@ -104,7 +106,22 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
         clauses.append("d.upstream_attempted=true AND d.upstream_executed=false")
     elif execution == "withheld":
         clauses.append("d.upstream_executed=true AND (d.result_preview->>'disposition'='withheld' OR d.policy_id='MCP-OUTPUT-001')")
+    if query and query.strip():
+        term = f"%{query.strip()}%"
+        clauses.append("""(p.display_name ILIKE %s OR p.department ILIKE %s OR d.user_token ILIKE %s
+            OR COALESCE(d.client->>'workstation','') ILIKE %s OR COALESCE(d.client->>'endpoint_id','') ILIKE %s
+            OR COALESCE(d.client->>'harness','') ILIKE %s OR COALESCE(d.client->>'agent','') ILIKE %s
+            OR d.server_id ILIKE %s OR d.tool_name ILIKE %s OR COALESCE(d.resource_id,'') ILIKE %s
+            OR d.policy_id ILIKE %s OR COALESCE(d.trace_id::text,'') ILIKE %s OR d.reason ILIKE %s)""")
+        params.extend([term] * 13)
+    filtered_where = " AND ".join(clauses) or "true"
+    filtered_params = tuple(params)
+    page_size = min(max(limit, 1), 100)
+    current_page = max(page, 1)
+    if after:
+        clauses.append("d.id > %s"); params.append(after)
     order = "ASC" if after else "DESC"
+    offset = 0 if after else (current_page - 1) * page_size
     rows = await db.fetch_all(
         f"""SELECT d.id, d.created_at, d.user_token, d.role, d.server_id, d.tool_name, d.resource_id,
                    d.destinations, d.client, d.summary, d.data_class, d.action, d.decision, d.policy_id,
@@ -112,10 +129,21 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
                    d.exception_id, d.enforcement, d.would_decision, d.risk_score, d.privacy_types,
                    d.sequence_flags, d.result_preview, d.conflicts, d.entry_sha256, p.display_name, p.department
               FROM decisions d LEFT JOIN principals p ON p.token = d.user_token
-             WHERE {' AND '.join(clauses)} ORDER BY d.id {order} LIMIT %s""",
-        (*params, min(max(limit, 1), 500)))
+             WHERE {' AND '.join(clauses) or 'true'} ORDER BY d.id {order} LIMIT %s OFFSET %s""",
+        (*params, page_size, offset))
     described = [describe(dict(row)) for row in rows]
     if not after:
         described.reverse()
     cursor = max([after] + [int(r["id"]) for r in described])
-    return {"rows": described, "cursor": cursor}
+    if after:
+        return {"rows": described, "cursor": cursor}
+    filtered = await db.fetch_one(
+        f"""SELECT count(*) AS n, COALESCE(max(d.id), 0) AS cursor
+              FROM decisions d LEFT JOIN principals p ON p.token = d.user_token
+             WHERE {filtered_where}""", filtered_params)
+    base_where = " AND ".join(base_clauses) or "true"
+    total = await db.fetch_one(
+        f"SELECT count(*) AS n FROM decisions d WHERE {base_where}", tuple(base_params))
+    return {"rows": described, "cursor": int(filtered["cursor"] or 0),
+            "total": int(total["n"] or 0), "filtered_total": int(filtered["n"] or 0),
+            "page": current_page, "page_size": page_size}
