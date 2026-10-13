@@ -559,7 +559,7 @@ const FEED_FILTERS = ["decision", "server", "person", "event_kind", "execution"]
 const FEED_PAGE_SIZE = 50;
 const feed = { rows: [], pending: [], cursor: 0, filters: { decision: "", server: "", person: "", event_kind: "", execution: "" }, query: "",
   live: true, servers: [], lastOk: 0, failing: false, gen: 0, page: 1, pageSize: FEED_PAGE_SIZE,
-  total: 0, filteredTotal: 0, highlight: [] };
+  total: 0, filteredTotal: 0, highlight: [], analysis: null, analysisKey: "", analysisAt: 0 };
 let liveTimer = null;
 function stopLive() { clearInterval(liveTimer); liveTimer = null; feed.gen += 1; }
 const feedQuery = (extra) => new URLSearchParams({ ...Object.fromEntries(Object.entries(feed.filters).filter(([, v]) => v)),
@@ -598,16 +598,25 @@ function renderFeedStatus() {
 }
 
 function feedCharts() {
-  const shown = searchRows(feed.rows, feed.query);
-  const buckets = minuteBuckets(shown);
+  const data = feed.analysis || { series: [], responses: [], harnesses: [], servers: [], people: [] };
+  const buckets = new Map();
+  for (const row of data.series || []) {
+    const at = new Date(row.at);
+    const label = data.bucket === "hour" ? `${pad(at.getMonth() + 1)}-${pad(at.getDate())} ${pad(at.getHours())}시`
+      : data.bucket === "day" ? `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`
+        : `${at.getFullYear()}-${pad(at.getMonth() + 1)}`;
+    if (!buckets.has(label)) buckets.set(label, { label, ...Object.fromEntries(DECISIONS.map((key) => [key, 0])) });
+    if (DECISIONS.includes(row.decision)) buckets.get(label)[row.decision] = Number(row.n) || 0;
+  }
+  const series = [...buckets.values()];
   return {
-    "c-minutes": () => charts.decisionColumns(buckets.map((b) => b.label), buckets),
-    "c-by-server": () => { const g = splitBy(shown, "server"); return charts.decisionColumns(g.map((x) => x.key), g, { horizontal: true, grouped: true }); },
-    "c-by-person": () => { const g = splitBy(shown, "who"); return charts.decisionColumns(g.map((x) => x.key), g, { horizontal: true, grouped: true }); },
+    "c-minutes": () => charts.decisionColumns(series.map((b) => b.label), series),
+    "c-by-server": () => charts.decisionColumns(data.servers.map((x) => x.key), data.servers, { horizontal: true, grouped: true }),
+    "c-by-person": () => charts.decisionColumns(data.people.map((x) => x.key), data.people, { horizontal: true, grouped: true }),
     "c-by-response": () => charts.donut(Object.entries(RESPONSE).map(([k, [tone, label]]) => ({ name: label,
-      value: shown.filter((r) => (r.response || "not_executed") === k).length, color: charts.color(TONE_DECISION[tone]) })).filter((g) => g.value)),
-    "c-by-harness": () => charts.donut(splitBy(shown, (r) => harnessLabel(r.harness)).map((g, i) => ({
-      name: g.key, value: g.total, color: ["#1f4287", "#2c5bb8", "#4f7fd6", "#86a8ff", "#9aa6b8", "#647085"][i % 6] }))),
+      value: Number(data.responses.find((row) => row.response === k)?.n) || 0, color: charts.color(TONE_DECISION[tone]) })).filter((g) => g.value)),
+    "c-by-harness": () => charts.donut(data.harnesses.map((g, i) => ({
+      name: harnessLabel(g.key), value: g.total, color: ["#1f4287", "#2c5bb8", "#4f7fd6", "#86a8ff", "#9aa6b8", "#647085"][i % 6] }))),
   };
 }
 
@@ -657,7 +666,12 @@ ROUTES.activity = async (_, tab, query) => {
   // others would AND a stale filter with the new one into an empty list.
   if (FEED_FILTERS.some((key) => query.has(key))) for (const key of FEED_FILTERS) feed.filters[key] = query.get(key) || "";
   if (query.has("q")) feed.query = query.get("q");
-  const data = await gw(`activity?${feedQuery({ limit: FEED_PAGE_SIZE, page: feed.page })}`);
+  const analysisKey = feedQuery({}).toString();
+  const [data, analysis] = await Promise.all([
+    gw(`activity?${feedQuery({ limit: FEED_PAGE_SIZE, page: feed.page })}`),
+    feed.analysis && feed.analysisKey === analysisKey && Date.now() - feed.analysisAt < 30000
+      ? Promise.resolve(feed.analysis) : gw(`activity/analysis?${analysisKey}`),
+  ]);
   feed.rows = mergeRows([], data.rows);
   feed.pending = [];
   feed.cursor = data.cursor;
@@ -665,6 +679,9 @@ ROUTES.activity = async (_, tab, query) => {
   feed.pageSize = data.page_size || FEED_PAGE_SIZE;
   feed.total = data.total || 0;
   feed.filteredTotal = data.filtered_total || 0;
+  feed.analysis = analysis;
+  feed.analysisKey = analysisKey;
+  feed.analysisAt = Date.now();
   feed.lastOk = Date.now();
   feed.failing = false;
   if (viewer.admin && !feed.servers.length) feed.servers = (await gw("registry")).servers.map((s) => s.id);
@@ -691,11 +708,11 @@ ROUTES.activity = async (_, tab, query) => {
           </div>
           <div class="body flush">${decisionTable([], "feed")}<p class="empty" id="feed-empty" hidden></p><div class="pager" id="feed-pager"></div></div></section>` },
         { key: "stats", label: "분석", body: html`<div class="stack">
-          ${panel("시간대별 호출", chartBox("c-minutes", "불러온 호출의 시간 분포", "sm"))}<div class="grid c2">
-          ${panel("응답 처리", chartBox("c-by-response", "불러온 호출의 응답 처리 비율", "sm"))}
-          ${panel("하네스별", chartBox("c-by-harness", "불러온 호출의 하네스별 비율", "sm"))}</div>
-          ${panel("서버별", chartBox("c-by-server", "불러온 호출의 서버별 판정"))}
-          ${panel("사용자별", chartBox("c-by-person", "불러온 호출의 사용자별 판정", "lg"))}</div>` },
+          ${panel("시간대별 호출", chartBox("c-minutes", "전체 호출의 시간 분포", "sm"), { sub: `${analysis.total}건` })}<div class="grid c2">
+          ${panel("응답 처리", chartBox("c-by-response", "전체 호출의 응답 처리 비율", "sm"))}
+          ${panel("하네스별", chartBox("c-by-harness", "전체 호출의 하네스별 비율", "sm"))}</div>
+          ${panel("서버별", chartBox("c-by-server", "전체 호출의 서버별 판정"))}
+          ${panel("사용자별", chartBox("c-by-person", "전체 호출의 사용자별 판정", "lg"))}</div>` },
       ],
     }),
     charts: feedCharts(),
@@ -1672,6 +1689,7 @@ const ACTIONS = {
   "feed-new"() {
     feed.highlight = feed.pending.map((row) => row.id);
     feed.page = 1;
+    feed.analysisAt = 0;
     reload();
   },
   "feed-page"(el) {

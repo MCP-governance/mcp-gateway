@@ -147,3 +147,94 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
     return {"rows": described, "cursor": int(filtered["cursor"] or 0),
             "total": int(total["n"] or 0), "filtered_total": int(filtered["n"] or 0),
             "page": current_page, "page_size": page_size}
+
+
+async def analysis(user_token: str | None = None, decision: str | None = None,
+                   server: str | None = None, person: str | None = None,
+                   event_kind: str | None = None, execution: str | None = None,
+                   query: str | None = None) -> dict:
+    clauses, params = [], []
+    if user_token:
+        clauses.append("d.user_token = %s"); params.append(user_token)
+    if decision:
+        clauses.append("d.decision = %s"); params.append(decision)
+    if server:
+        clauses.append("d.server_id = %s"); params.append(server)
+    if person:
+        clauses.append("(p.display_name ILIKE %s OR d.user_token ILIKE %s)")
+        params += [f"%{person}%", f"%{person}%"]
+    if event_kind:
+        clauses.append("COALESCE(d.client->>'event_kind','tools/call')=%s"); params.append(event_kind)
+    if execution == "executed":
+        clauses.append("d.upstream_executed=true")
+    elif execution == "not-sent":
+        clauses.append("d.upstream_attempted=false AND d.upstream_executed=false")
+    elif execution == "unknown":
+        clauses.append("d.upstream_attempted=true AND d.upstream_executed=false")
+    elif execution == "withheld":
+        clauses.append("d.upstream_executed=true AND (d.result_preview->>'disposition'='withheld' OR d.policy_id='MCP-OUTPUT-001')")
+    if query and query.strip():
+        term = f"%{query.strip()}%"
+        clauses.append("""(p.display_name ILIKE %s OR p.department ILIKE %s OR d.user_token ILIKE %s
+            OR COALESCE(d.client->>'workstation','') ILIKE %s OR COALESCE(d.client->>'endpoint_id','') ILIKE %s
+            OR COALESCE(d.client->>'harness','') ILIKE %s OR COALESCE(d.client->>'agent','') ILIKE %s
+            OR d.server_id ILIKE %s OR d.tool_name ILIKE %s OR COALESCE(d.resource_id,'') ILIKE %s
+            OR d.policy_id ILIKE %s OR COALESCE(d.trace_id::text,'') ILIKE %s OR d.reason ILIKE %s)""")
+        params.extend([term] * 13)
+    where = " AND ".join(clauses) or "true"
+    joins = "FROM decisions d LEFT JOIN principals p ON p.token = d.user_token"
+    args = tuple(params)
+    bounds = await db.fetch_one(
+        f"SELECT count(*) AS n, min(d.created_at) AS first, max(d.created_at) AS last {joins} WHERE {where}", args)
+    total = int(bounds["n"] or 0)
+    if not total:
+        return {"total": 0, "bucket": "hour", "series": [], "responses": [],
+                "harnesses": [], "servers": [], "people": []}
+    span = (bounds["last"] - bounds["first"]).total_seconds()
+    unit = "hour" if span <= 172800 else "day" if span <= 10368000 else "month"
+    series_rows = await db.fetch_all(
+        f"""SELECT date_trunc('{unit}', d.created_at) AS bucket, d.decision, count(*) AS n
+               {joins} WHERE {where} GROUP BY 1, 2 ORDER BY 1""", args)
+    response_rows = await db.fetch_all(
+        f"""SELECT COALESCE(d.result_preview->>'disposition',
+                    CASE WHEN d.upstream_executed AND d.policy_id='MCP-OUTPUT-001' THEN 'withheld'
+                         WHEN d.upstream_executed THEN 'returned'
+                         WHEN d.upstream_attempted THEN 'unknown' ELSE 'not_executed' END) AS response,
+                    count(*) AS n
+               {joins} WHERE {where} GROUP BY 1""", args)
+    dimension_rows = {}
+    dimensions = {
+        "harnesses": "COALESCE(d.client->'harness'->>'name', d.client->>'agent', '알 수 없음')",
+        "servers": "COALESCE(d.server_id, '알 수 없음')",
+        "people": "COALESCE(p.display_name, d.user_token, '알 수 없음')",
+    }
+    for name, expression in dimensions.items():
+        dimension_rows[name] = await db.fetch_all(
+            f"""SELECT {expression} AS key, d.decision, count(*) AS n
+                   {joins} WHERE {where} GROUP BY 1, 2""", args)
+
+    decisions = ("Allow", "Alert", "Restrict", "Approval", "Block")
+    def grouped(rows: list, cap: int = 12) -> list[dict]:
+        groups = {}
+        for row in rows:
+            item = groups.setdefault(row["key"], {"key": row["key"], "total": 0, **{key: 0 for key in decisions}})
+            count = int(row["n"] or 0)
+            item[row["decision"]] = count
+            item["total"] += count
+        ordered = sorted(groups.values(), key=lambda item: item["total"], reverse=True)
+        if len(ordered) <= cap:
+            return ordered
+        other = {"key": "기타", "total": 0, **{key: 0 for key in decisions}}
+        for item in ordered[cap:]:
+            for key in ("total", *decisions):
+                other[key] += item[key]
+        return ordered[:cap] + [other]
+
+    return {
+        "total": total, "bucket": unit,
+        "series": [{"at": row["bucket"], "decision": row["decision"], "n": int(row["n"] or 0)} for row in series_rows],
+        "responses": [{"response": row["response"], "n": int(row["n"] or 0)} for row in response_rows],
+        "harnesses": grouped(dimension_rows["harnesses"]),
+        "servers": grouped(dimension_rows["servers"]),
+        "people": grouped(dimension_rows["people"]),
+    }

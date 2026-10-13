@@ -366,6 +366,16 @@ async def activity_feed(after: int = 0, limit: int = 100, decision: str | None =
     return await activity.recent(after, limit, own, decision, server, person, event_kind, execution, page, q)
 
 
+@app.get("/api/activity/analysis")
+async def activity_analysis(decision: str | None = None, server: str | None = None,
+                            person: str | None = None,
+                            event_kind: Literal["tools/call", "mcp-connection"] | None = None,
+                            execution: Literal["executed", "not-sent", "unknown", "withheld"] | None = None,
+                            q: str | None = None, user: dict = Depends(caller)) -> dict:
+    own = None if "admin" in user["roles"] else user["principal"]
+    return await activity.analysis(own, decision, server, person, event_kind, execution, q)
+
+
 @app.get("/.well-known/oauth-protected-resource")
 async def protected_resource_metadata() -> dict:
     """RFC 9728. The Gateway's MCP endpoint is a protected resource; employees get
