@@ -1,6 +1,19 @@
 # MCP 및 관련 실험 대상
 
-확인일: 2026-10-13. 로컬 목록은 [registry/catalog.toml](../../../full_stack_lab/registry/catalog.toml)의 package/version을 정적으로 확인했다. 실제 배포·기동 상태·현재 제공 tool schema는 미확인이다.
+확인일: 2026-10-13. 로컬 목록은 [registry/catalog.toml](../../../full_stack_lab/registry/catalog.toml)의 package/version을 정적으로 확인했다. 아래 10종의 현재 field 배포·기동·tool schema는 미확인이다. 기존 field 하네스 표본과 이 후보 목록을 구분한다.
+
+## 로컬 범위와 우선순위
+
+로컬 MCP는 포함돼 있다. 다만 두 실행 경로를 구분한다.
+
+1. **솔루션 기기의 자체 운영 MCP:** 아래 10종. [run-server.sh](../../../full_stack_lab/mcp/run-server.sh)는 filesystem·git·fetch·memory·desktop·postgres·redis의 stdio를 `mcp-proxy` 뒤 Streamable HTTP로 연결한다. email·gitea·playwright는 HTTP 경로다. PJ1 하네스→Gateway→내부 MCP 경로에서 정책과 실제 효과를 확인한다.
+2. **PJ1에서 직접 실행하는 로컬 MCP:** `stdio`, localhost HTTP, 별도 interpreter·실행 파일 경로. 이 경로는 Gateway를 거치지 않으면 도구 단위 원장이 생기지 않는다. 기존 12개 카드에 전용 시험이 없었으므로 [E13](E13-local-bypass.md)을 추가했다. 관리형 Linux의 비승인 실행·직접 접속 차단을 검증하며, 모든 in-process 플러그인·Windows 앱까지 보호한다고 주장하지 않는다.
+
+현재 field 레지스트리는 이 10종 lab 레지스트리와 별도다. [기존 실기기 보고](../status/reports/2026-10-13-development-results.md)는 Context7 실제 호출을 기록했지만 공급자 quota로 정상 문서 조회는 미완료였다. 로컬 10종이 모두 설치·활성화·통과했다는 결과는 없다.
+
+먼저 **수신 횟수·파일/DB 효과를 직접 확인할 수 있는 격리 mock, filesystem, fetch, email sink**를 준비한다. 다음으로 git·postgres·redis·memory, 마지막으로 desktop·playwright·gitea와 원격 OAuth 후보를 진행한다. 패키지와 schema는 후보 목록의 판본을 설치 시 재확인하고 승인 계약을 고정한다. 취약 판본은 도입 거부 메타데이터 fixture로만 사용한다.
+
+솔루션 스택과 자체 운영 fixture는 솔루션 기기에만 배치하고, 실제 하네스는 PJ1에서 실행한다. 사용자 노트북에서 제품 Compose를 기동하지 않는다. 공유 field의 기존 계약·계정·종료 관계는 교체하지 않고 시험용 대상만 별도로 등록한다.
 
 ## 저장소에 준비된 10종 MCP
 

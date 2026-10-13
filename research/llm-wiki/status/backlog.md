@@ -23,5 +23,9 @@
 | DEV-16 | refresh 회전·계열 철회 경쟁 | [실기기 결과](reports/2026-10-13-development-results.md), [Claude 후보 B5](reports/2026-10-13-claude-code-review.md) | 동일 계열의 회전·발급·재사용/철회를 트랜잭션 안에서 직렬화, 실패 롤백 | 수정·단위7건·솔루션 실제 PostgreSQL3건·전체CI 통과 |
 | DEV-17 | 승인 후 신선한 요청자 인증 | [Claude 후보 B2](reports/2026-10-13-claude-code-review.md) | 만료 검증을 완화하지 않고 승인과 새 요청자의 실행을 연결, 현재 권한·철회 재검증 | 설계; 만료 토큰 거부는 유지 |
 | DEV-18 | 엔드포인트 수집 신선도·전체 집계 | [Claude 후보 B7](reports/2026-10-13-claude-code-review.md) | 최근 200건 목록과 전체 집계를 구분, 수집기 마지막 성공·실패·감사 경로 표시 | 목록·범례를 수신/최근 200건으로 수정; 전체 집계·수집 신선도는 후속 |
+| DEV-19 | PJ1 로컬 stdio·loopback 우회 | [E13](../experiments/E13-local-bypass.md) | 관리형 실제 시도·UID/profile 거부·독립 수신/효과0와 승인 정상군; IPv4/IPv6 구분 | 전용 카드·통과/실패 기준 설계, 미실행 |
+| DEV-20 | MCP 서버의 외부 API 통신 | [Lunar 분석](../solutions/lunar-mcpx.md), [팀 시험 계획](reports/2026-10-13-mcp-validation-plan.md) | 서버 egress의 목적지·자격·재시도·허용/차단과 독립 외부 효과 연결 | 관측·집행 범위 설계, 미실행 |
+| DEV-21 | 크래시 실행 의도·불확실성 기록 | [CPEX 분석](../solutions/ibm-cpex.md), [팀 시험 계획](reports/2026-10-13-mcp-validation-plan.md) | dispatch 전 durable intent, worker 사망 시 uncertain 보존, 중복 쓰기 자동 재시도 금지와 효과 대조 | 설계, 미실행 |
+| DEV-22 | PJ1→솔루션 연결 품질 | [팀 시험 계획](reports/2026-10-13-mcp-validation-plan.md) | 고정 Gateway 대상의 endpoint 측정 ms·jitter·접속 실패율·신선도·권한, packet loss는 별도 실제 측정일 때만 표기 | 현재 내부 DNS/TCP 지표와 구분한 후속 설계 |
 
 변경할 때 작업 보고서를 연결하고 `완료`의 검증 층을 함께 씁니다. 소스·문서 확인만 끝났으면 실행 검증 완료로 올리지 않습니다.

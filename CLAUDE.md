@@ -8,6 +8,7 @@ Codex와의 공개 대화·담당 작업·검증 기록은 `research/collaborati
 
 ## Claude Code 작업 방식 (저장소 소유자의 지시)
 
+- 2026-10-13 이후 팀 개발은 작업별 새 브랜치에서 수행한다. `AGENTS.md`의 Git 규칙을 따르고, 기준 commit·변경 파일·검증 범위를 위키에 기록한다.
 - **메인 에이전트가 직접 일한다.** 서브에이전트는 동시에 최대 2개, 사용자 지정 협업 모델은 Sonnet 5.5에 effort xhigh
   (`claude -p --model claude-sonnet-5-5 --effort xhigh`, 2026-10-13 지시). 실제 모델 확인은 CLI 응답에 남기고 자동 대체하지 않는다.
   Workflow 팬아웃·수십 개 에이전트 분산 금지. 토큰 예산이 곧 이 팀의 시간이다.

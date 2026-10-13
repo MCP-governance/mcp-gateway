@@ -1,15 +1,17 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-13T15:05:32+09:00
+확인 시각: 2026-10-13T16:23:24+09:00
 
-HEAD: `c6ab26a4300fdcccd3c74a0905671394f250f478` · 로컬 브랜치: `10/03-product-console`
+HEAD: `2e36095bf982ffab29ea81b6cdc24bdc435b184f` · 로컬 브랜치: `10/13-mcp-validation`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M docs/ai/DECISIONS.md
+M AGENTS.md
+ M CLAUDE.md
+ M docs/ai/DECISIONS.md
  M docs/ai/PAC_MAPPING.md
  M docs/ai/README.md
  M docs/ai/TESTING.md
@@ -18,14 +20,19 @@ M docs/ai/DECISIONS.md
  M endpoint-agent/enforce-linux.py
  M endpoint-agent/managed-linux.py
  M full_stack_lab/gateway/app/poisoning.py
- M research/llm-wiki/catalogs/threats.json
+ M research/llm-wiki/catalogs/experiments.json
+ M research/llm-wiki/experiments/README.md
+ M research/llm-wiki/experiments/fixtures/cases.json
+ M research/llm-wiki/experiments/targets.md
  M research/llm-wiki/status/backlog.md
  M research/llm-wiki/status/current.md
+ M research/llm-wiki/status/repository-snapshot.json
+ M research/llm-wiki/status/repository-snapshot.md
 ?? docs/ai/BENCHMARK_AGT_2026-10-05.md
 ?? docs/ai/REFERENCES_MCP_SECURITY_2026-10-05.md
 ?? full_stack_lab/tests/protocol_versions_check.py
-?? research/llm-wiki/status/reports/2026-10-13-development-results.md
-?? research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json
+?? research/llm-wiki/experiments/E13-local-bypass.md
+?? research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md
 ```
 
 ## 주요 파일 바이트

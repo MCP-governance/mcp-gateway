@@ -6,7 +6,7 @@
 
 | 영역 | 현재 확인 | 남은 확인 |
 | --- | --- | --- |
-| 개발 연구 위키 | 논문·문서 25건, 솔루션 8건, 실험 설계 12건, 위협표 24개 정책과 두 XLSM 원본 | 지속적인 새 자료·실험 결과 갱신 |
+| 개발 연구 위키 | 논문·문서 25건, 솔루션 8건, 실험 설계 13건(E13 로컬 stdio/loopback 추가), 위협표 24개 정책과 두 XLSM 원본 | 13개 카드 미실행. 지속적인 새 자료·실험 결과 갱신 |
 | 개발 협업 | 실제 WSL claude-sonnet-5-5, 요청 effort xhigh, 공개 최종 분석 수신 | 수정 후 Claude 리뷰는 계정 세션 한도(17:50 KST 재설정 안내)로 미완료. 모델 자동 대체 없음 |
 | 기능·설계 | [목표 10개](reports/2026-10-13-development-goals.md), [현재 기능·8개 제품 대조·보강 설계](reports/2026-10-13-feature-design.md), [Claude 검토 원문](reports/2026-10-13-claude-code-review.md) | 후보 재현 결과와 큰 설계 공백은 백로그로 추적 |
 | 자원 상태 | 관리자 Console scope API/UI, Linux CPU·메모리·내부 DNS/TCP 연결 지연, 실기기 표본·권한·Chrome 화면 검증 | PC→솔루션 Tailnet 지연·패킷 손실률·개별 컨테이너 지표는 범위 밖 |
@@ -21,8 +21,10 @@
 
 [최종 개발·실기기 결과 보고](reports/2026-10-13-development-results.md)에 수정 전 재현, 구현, 검증과 한계를 남겼습니다. 구현6178dd3 배포 검증, 통합 검사c6ab26a의 [전체 CI](https://github.com/MCP-governance/mcp-gateway/actions/runs/38353250953) 정적·완료 조건 검증 모두 통과. 이후 문서·시험 커밋과 실행 이미지의 구현 revision을 구분합니다.
 
-저장소는 MCP-governance/mcp-gateway, 원격 기본 브랜치는 feat/2026-09-v3.1-field-deploy 입니다. 작업 시작 시 HEAD는 0df1adf5596161d258536219c8dabde8b16dd532 입니다. 기존 docs/ai·엔드포인트·poisoning 미커밋 작업은 보존합니다. 기기 시작 소스6fdd9f6·이미지77c4da0의 차이를 확인해 구현6178dd3을 배포했고, Gateway/Console build와 실제 로드 정책 일치를 확인했습니다. 현재 로컬 코드 관찰은 [스냅샷](repository-snapshot.md)에 있습니다.
+저장소는 MCP-governance/mcp-gateway, 원격 기본 브랜치는 feat/2026-09-v3.1-field-deploy 입니다. 최초 개발 작업 기준은 0df1adf5596161d258536219c8dabde8b16dd532, 팀 개발 계획 기준 최신은 2e36095bf982ffab29ea81b6cdc24bdc435b184f 입니다. 최신 [전체 CI](https://github.com/MCP-governance/mcp-gateway/actions/runs/38355027939) 성공을 재확인했습니다. 기존 docs/ai·엔드포인트·poisoning 미커밋 작업은 보존합니다. 기기 시작 소스6fdd9f6·이미지77c4da0의 차이를 확인해 구현6178dd3을 배포했고, Gateway/Console build와 실제 로드 정책 일치를 확인했습니다. 현재 로컬 코드 관찰은 [스냅샷](repository-snapshot.md)에 있습니다.
+
+사용자의 팀원 합류 지시에 따라 **이후 작업은 작업별 새 브랜치**에서 수행합니다. 현재 `10/13-mcp-validation`을 2e36095에서 만들었습니다. [팀 개발·후보·실험·실패 시 수정 보고](reports/2026-10-13-mcp-validation-plan.md)에 로컬10종·직접 stdio 경로, 구현 변화, 8개 제품 대조와 통과 기준을 정리했습니다. 이번 변경은 문서·설계이며 새 제품 코드·배포·실험 실행은 없습니다.
 
 ## 다음 우선순위
 
-[백로그](backlog.md)의 실제 관리 하네스 정상/차단 증거, refresh 계열 경쟁, 신선한 요청자 인증을 유지한 승인 실행, 수집기 신선도·전체 집계, 크래시 실행 불확실성, 다국어/한국어 PII 평가, OAuth 대상·권한·철회와 자원 서버별 종료 검증 순서로 진행합니다. Gateway 경유 통제와 엔드포인트 우회 집행을 합쳐 모든 경로 통제라고 표현하지 않습니다.
+[팀 시험 계획](reports/2026-10-13-mcp-validation-plan.md)에 따라 독립 수신·효과를 관찰하는 로컬 fixture의 정상군을 먼저 확보하고, 데이터/계약/권한·직접 stdio/loopback·동시성·종료 시험을 진행합니다. 신선한 요청자 인증을 유지한 승인 실행, 수집기 신선도·전체 집계, 크래시 실행 불확실성, 한국어 PII, OAuth 대상·권한·철회와 서버 outbound 통제를 보강합니다. refresh 계열 경쟁 수정은 기존 회귀를 유지합니다. Gateway 경유 통제와 엔드포인트 우회 집행을 합쳐 모든 경로 통제라고 표현하지 않습니다.
