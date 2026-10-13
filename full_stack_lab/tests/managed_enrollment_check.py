@@ -67,7 +67,7 @@ async def main():
         status, result = call("/oauth/device-enroll", {**body, "enrollment_token": expired["enrollment_token"]})
         assert status == 403, result
         failure = await endpoint_plane.managed_failure(person, {"device_id": device["endpoint_id"], "device_epoch": device["device_epoch"], "scope": "mcp"})
-        assert failure and "미활성" in failure
+        assert failure == "활성 상태가 아니거나 이 사용자에게 등록되지 않은 엔드포인트입니다.", failure
         try:
             await endpoint_plane.activate_managed(device["endpoint_id"], principal, "0" * 64, "Self approval must never activate this device.")
         except ValueError:
