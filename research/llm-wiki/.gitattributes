@@ -1,0 +1,14 @@
+*.md text eol=lf
+*.json text eol=lf
+*.py text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.txt -text
+# Source provenance hashes refer to exact bytes, including original line endings.
+sources/** -text -diff
+solutions/evidence/** -text -diff
+threats/originals/** -text -diff
+web/source-text/** -text -diff
+*.pdf binary
+*.xlsm binary

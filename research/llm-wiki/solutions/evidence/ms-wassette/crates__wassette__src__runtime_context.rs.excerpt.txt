@@ -1,0 +1,60 @@
+SOURCE EXCERPT - NOT AN EXECUTABLE FILE
+Repository: https://github.com/microsoft/wassette
+Commit: 742ebb7236273dad2d88c415eabe872d3b95dff9
+Source: crates/wassette/src/runtime_context.rs
+License: MIT (see LICENSE.txt)
+Original file SHA-256: 1fad725d537725f416fc2cba7ae8e5f7b1447bbde2ff8dd9147d4797271e124c
+
+--- original lines 1-51 ---
+1: // Copyright (c) Microsoft Corporation.
+2: // Licensed under the MIT license.
+3: 
+4: //! Support utilities for sharing Wasmtime engine and linker state across lifecycle
+5: //! manager instances.
+6: 
+7: use std::sync::Arc;
+8: 
+9: use anyhow::Result;
+10: use wasmtime::component::{Component, InstancePre, Linker};
+11: use wasmtime::Engine;
+12: use wasmtime_wasi_config::WasiConfig;
+13: 
+14: use crate::{WasiState, WassetteWasiState};
+15: 
+16: /// Encapsulates Wasmtime engine and linker setup for reuse across the lifecycle manager.
+17: #[derive(Clone)]
+18: pub struct RuntimeContext {
+19:     engine: Arc<Engine>,
+20:     linker: Arc<Linker<WassetteWasiState<WasiState>>>,
+21: }
+22: 
+23: impl RuntimeContext {
+24:     /// Build a runtime context with the standard configuration used by Wassette.
+25:     pub fn initialize() -> Result<Self> {
+26:         if rustls::crypto::aws_lc_rs::default_provider()
+27:             .install_default()
+28:             .is_err()
+29:         {
+30:             tracing::debug!("Using the previously installed rustls crypto provider");
+31:         }
+32: 
+33:         let mut config = wasmtime::Config::new();
+34:         config.wasm_component_model(true);
+35:         config.wasm_component_model_map(true);
+36: 
+37:         let engine = Arc::new(Engine::new(&config)?);
+38: 
+39:         let mut linker = Linker::new(engine.as_ref());
+40:         wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+41:         wasmtime_wasi_http::p2::add_only_http_to_linker_async(&mut linker)?;
+42:         wasmtime_wasi_config::add_to_linker(
+43:             &mut linker,
+44:             |h: &mut WassetteWasiState<WasiState>| WasiConfig::from(&h.inner.wasi_config_vars),
+45:         )?;
+46: 
+47:         Ok(Self {
+48:             engine,
+49:             linker: Arc::new(linker),
+50:         })
+51:     }
+

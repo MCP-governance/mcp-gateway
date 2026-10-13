@@ -1,5 +1,10 @@
 @AGENTS.md
 
+@research/llm-wiki/AGENTS.md
+
+개발 조사와 현황 보고는 [개발 연구 위키](research/llm-wiki/README.md)를 사용합니다.
+작업 시작 시 `research/llm-wiki/status/current.md`와 백로그를 읽고, 종료 시 Markdown 현황·작업 보고서와 웹 페이지를 갱신합니다.
+
 ## Claude Code 작업 방식 (저장소 소유자의 지시)
 
 - **메인 에이전트가 직접 일한다.** 서브에이전트는 동시에 최대 2개, 모델은 Sonnet 5에 effort high~max

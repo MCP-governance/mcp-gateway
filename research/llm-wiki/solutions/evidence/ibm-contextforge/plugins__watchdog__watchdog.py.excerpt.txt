@@ -1,0 +1,58 @@
+SOURCE EXCERPT - NOT AN EXECUTABLE FILE
+Repository: https://github.com/IBM/mcp-context-forge
+Commit: 5735c9db7f8f50cd5a55eb7fefe83ecde00b5324
+Source: plugins/watchdog/watchdog.py
+License: Apache-2.0 (see LICENSE.txt)
+Original file SHA-256: 24ac41c11b1bca72afad92d17889262da16ed3ca706df747aa85bb2460598659
+
+--- original lines 1-7 ---
+1: # -*- coding: utf-8 -*-
+2: """Location: ./plugins/watchdog/watchdog.py
+3: Copyright 2025
+4: SPDX-License-Identifier: Apache-2.0
+5: Authors: Mihai Criveti
+6: 
+7: Watchdog Plugin.
+
+--- original lines 77-116 ---
+77:     async def tool_pre_invoke(self, payload: ToolPreInvokePayload, context: PluginContext) -> ToolPreInvokeResult:
+78:         """Record tool start time before execution.
+79: 
+80:         Args:
+81:             payload: Tool invocation payload.
+82:             context: Plugin execution context.
+83: 
+84:         Returns:
+85:             Result allowing processing to continue.
+86:         """
+87:         context.set_state("watchdog_start", time.time())
+88:         return ToolPreInvokeResult(continue_processing=True)
+89: 
+90:     async def tool_post_invoke(self, payload: ToolPostInvokePayload, context: PluginContext) -> ToolPostInvokeResult:
+91:         """Check tool execution duration and enforce timeout policy.
+92: 
+93:         Args:
+94:             payload: Tool result payload.
+95:             context: Plugin execution context.
+96: 
+97:         Returns:
+98:             Result indicating timeout violation or execution metadata.
+99:         """
+100:         start = context.get_state("watchdog_start", time.time())
+101:         elapsed_ms = int((time.time() - start) * 1000)
+102:         cfg = self._cfg_for(payload.name)
+103:         meta = {"watchdog_elapsed_ms": elapsed_ms, "watchdog_limit_ms": cfg.max_duration_ms}
+104:         if elapsed_ms > max(1, int(cfg.max_duration_ms)):
+105:             if cfg.action == "block":
+106:                 return ToolPostInvokeResult(
+107:                     continue_processing=False,
+108:                     violation=PluginViolation(
+109:                         reason="Execution time exceeded",
+110:                         description=f"Tool '{payload.name}' exceeded max duration",
+111:                         code="WATCHDOG_TIMEOUT",
+112:                         details=meta,
+113:                     ),
+114:                 )
+115:             return ToolPostInvokeResult(metadata={**meta, "watchdog_violation": True})
+116:         return ToolPostInvokeResult(metadata=meta)
+

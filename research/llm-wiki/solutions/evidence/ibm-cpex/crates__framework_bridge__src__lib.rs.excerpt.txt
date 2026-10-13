@@ -1,0 +1,57 @@
+SOURCE EXCERPT - NOT AN EXECUTABLE FILE
+Repository: https://github.com/IBM/cpex-plugins
+Commit: ae26938128cb438a268e7f3217603bc39b9dd18f
+Source: crates/framework_bridge/src/lib.rs
+License: Apache-2.0 (see LICENSE.txt)
+Original file SHA-256: a6b004a2cf55df2d646ee78ad69355f62fc88a718f715ec31c565ccc5c547bd6
+
+--- original lines 1-48 ---
+1: // Copyright 2026
+2: // SPDX-License-Identifier: Apache-2.0
+3: 
+4: use pyo3::prelude::*;
+5: use pyo3::types::{PyAny, PyDict, PyModule};
+6: 
+7: fn framework_class<'py>(py: Python<'py>, name: &str) -> PyResult<Bound<'py, PyAny>> {
+8:     PyModule::import(py, "cpex.framework")?.getattr(name)
+9: }
+10: 
+11: pub fn build_framework_object<'py, const N: usize>(
+12:     py: Python<'py>,
+13:     class_name: &str,
+14:     kwargs: [(&str, Py<PyAny>); N],
+15: ) -> PyResult<Py<PyAny>> {
+16:     let kwargs_dict = PyDict::new(py);
+17:     for (key, value) in kwargs {
+18:         kwargs_dict.set_item(key, value.bind(py))?;
+19:     }
+20:     Ok(framework_class(py, class_name)?
+21:         .call((), Some(&kwargs_dict))?
+22:         .unbind())
+23: }
+24: 
+25: /// Sibling of [`build_framework_object`] for callers with a variable kwarg
+26: /// count (e.g. an optional trailing `metadata` entry). Prefer the fixed-size
+27: /// array form when `N` is known at the call site; use this when it isn't.
+28: pub fn build_framework_object_dyn(
+29:     py: Python<'_>,
+30:     class_name: &str,
+31:     kwargs: Vec<(&str, Py<PyAny>)>,
+32: ) -> PyResult<Py<PyAny>> {
+33:     let kwargs_dict = PyDict::new(py);
+34:     for (key, value) in kwargs {
+35:         kwargs_dict.set_item(key, value.bind(py))?;
+36:     }
+37:     Ok(framework_class(py, class_name)?
+38:         .call((), Some(&kwargs_dict))?
+39:         .unbind())
+40: }
+41: 
+42: pub fn default_result(py: Python<'_>, class_name: &str) -> PyResult<Py<PyAny>> {
+43:     framework_class(py, class_name)
+44:         .and_then(|class| class.call0())
+45:         .map(|result| result.unbind())
+46: }
+47: 
+48: #[cfg(test)]
+

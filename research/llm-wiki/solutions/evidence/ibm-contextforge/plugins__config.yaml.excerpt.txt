@@ -1,0 +1,84 @@
+SOURCE EXCERPT - NOT AN EXECUTABLE FILE
+Repository: https://github.com/IBM/mcp-context-forge
+Commit: 5735c9db7f8f50cd5a55eb7fefe83ecde00b5324
+Source: plugins/config.yaml
+License: Apache-2.0 (see LICENSE.txt)
+Original file SHA-256: 955c919a421d299ffbc754dd165290ffc533d6e969f7d36a56f73169fa6bf377
+
+--- original lines 88-115 ---
+88:   # PII Filter Plugin - Run first with highest priority for security
+89:   - name: "PIIFilterPlugin"
+90:     kind: "cpex_pii_filter.PIIFilterPlugin"
+91:     hooks:
+92:       [
+93:         "prompt_pre_fetch",
+94:         "prompt_post_fetch",
+95:         "tool_pre_invoke",
+96:         "tool_post_invoke",
+97:       ]
+98:     tags: ["security", "pii", "compliance", "filter", "gdpr", "hipaa"]
+99:     mode: "enforce" # enforce | enforce_ignore_error | permissive | disabled
+100:     priority: 50 # Lower number = higher priority (runs first)
+101:     conditions:
+102:       - prompts: [] # Empty list = apply to all prompts
+103:         server_ids: [] # Apply to all servers
+104:         tenant_ids: [] # Apply to all tenants
+105:     config:
+106:       # PII Detection Settings
+107:       detect_ssn: true
+108:       detect_credit_card: true
+109:       detect_email: true
+110:       detect_phone: false
+111:       detect_ip_address: false # Disabled for development
+112:       # Masking Settings
+113:       default_mask_strategy: "partial" # redact | partial | hash | tokenize | remove
+114:       redaction_text: "[PII_REDACTED]"
+115:       # Behavior Settings
+
+--- original lines 1259-1303 ---
+1259:       skip_on_error: true # Continue with original JSON if conversion fails
+1260: 
+1261:   # Unified Policy Decision Point - single interface for Cedar, OPA, Native RBAC, MAC
+1262:   - name: "UnifiedPDPPlugin"
+1263:     kind: "plugins.unified_pdp.unified_pdp.UnifiedPDPPlugin"
+1264:     description: "Unified Policy Decision Point for access control across multiple policy engines"
+1265:     version: "0.1.0"
+1266:     author: "yiannis2804"
+1267:     hooks: ["tool_pre_invoke", "resource_pre_fetch"]
+1268:     tags: ["security", "policy", "access-control", "pdp", "rbac", "mac"]
+1269:     mode: "disabled"  # set to "sequential" to activate
+1270:     priority: 10  # Run early — access control before other plugins
+1271:     conditions: []
+1272:     config:
+1273:       engines:
+1274:         - name: native
+1275:           enabled: true
+1276:           priority: 1
+1277:           settings:
+1278:             rules_file: "plugins/unified_pdp/default_rules.json"
+1279:         - name: mac
+1280:           enabled: false
+1281:           priority: 2
+1282:           settings:
+1283:             relaxed_star: false
+1284:         - name: opa
+1285:           enabled: false
+1286:           priority: 3
+1287:           settings:
+1288:             opa_url: "http://localhost:8181"
+1289:             policy_path: "mcpgateway"
+1290:             timeout_ms: 5000
+1291:             max_retries: 3
+1292:         - name: cedar
+1293:           enabled: false
+1294:           priority: 4
+1295:           settings:
+1296:             cedar_url: "http://localhost:8700"
+1297:             timeout_ms: 5000
+1298:             max_retries: 3
+1299:       combination_mode: "all_must_allow"
+1300:       default_decision: "deny"
+1301:       cache:
+1302:         enabled: true
+1303:         ttl_seconds: 60
+

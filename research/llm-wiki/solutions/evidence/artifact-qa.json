@@ -1,0 +1,17 @@
+{
+  "verified_on": "2026-10-13",
+  "scope": "solutions/ and experiments/ only",
+  "verification": "local_static_artifact_qa",
+  "md_count": 25,
+  "local_links_checked": 107,
+  "evidence_files_hashed": 21,
+  "source_excerpts": 14,
+  "license_notice_files": 7,
+  "evidence_bytes": 463641,
+  "catalog_counts": {
+    "solutions.json": 8,
+    "experiments.json": 12
+  },
+  "runtime_tests_run": false,
+  "errors": []
+}

@@ -1,0 +1,51 @@
+SOURCE EXCERPT - NOT AN EXECUTABLE FILE
+Repository: https://github.com/microsoft/mcp-gateway
+Commit: 3594c4eee36308ac131aad1c946ea14140b4353d
+Source: dotnet/Microsoft.McpGateway.Management/src/Authorization/BuiltinToolAuthorizer.cs
+License: MIT (see LICENSE.txt)
+Original file SHA-256: 8b64e8ece47bdb12f5d9e2a539082b8d86e5acc546104e01378f2bfbfab29bc6
+
+--- original lines 1-42 ---
+1: // Copyright (c) Microsoft Corporation.
+2: // Licensed under the MIT License.
+3: 
+4: using System.Security.Claims;
+5: using Microsoft.Extensions.Options;
+6: using Microsoft.McpGateway.Management.Extensions;
+7: 
+8: namespace Microsoft.McpGateway.Management.Authorization
+9: {
+10:     /// <summary>
+11:     /// Default <see cref="IBuiltinToolAuthorizer"/>: a caller may use built-in
+12:     /// tools when they hold <c>mcp.admin</c> or any role configured in
+13:     /// <see cref="BuiltinToolSettings.RequiredRoles"/>. Fail-closed — with no
+14:     /// configuration only administrators are permitted.
+15:     /// </summary>
+16:     public sealed class BuiltinToolAuthorizer : IBuiltinToolAuthorizer
+17:     {
+18:         private const string AdminRole = "mcp.admin";
+19: 
+20:         private readonly HashSet<string> _allowedRoles;
+21: 
+22:         public BuiltinToolAuthorizer(IOptions<BuiltinToolSettings> options)
+23:         {
+24:             ArgumentNullException.ThrowIfNull(options);
+25: 
+26:             _allowedRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { AdminRole };
+27:             foreach (var role in options.Value?.RequiredRoles ?? Enumerable.Empty<string>())
+28:             {
+29:                 if (!string.IsNullOrWhiteSpace(role))
+30:                 {
+31:                     _allowedRoles.Add(role.Trim());
+32:                 }
+33:             }
+34:         }
+35: 
+36:         public bool IsAuthorized(ClaimsPrincipal principal)
+37:         {
+38:             ArgumentNullException.ThrowIfNull(principal);
+39:             return principal.GetUserRoles().Any(role => _allowedRoles.Contains(role));
+40:         }
+41:     }
+42: }
+

@@ -1,0 +1,48 @@
+{
+  "organization": "arXiv (Cornell-hosted repository)",
+  "country": "international",
+  "doi": "10.48550/arXiv.2603.05637",
+  "type": "preprint",
+  "status": "arXiv preprint; 동료심사 게재 상태 미확인",
+  "verification": "metadata",
+  "venue": "arXiv",
+  "kci_verified": false,
+  "id": "P47",
+  "title": "Real Faults in MCP Software: A Comprehensive Taxonomy",
+  "authors": [
+    "Mina Taraghi",
+    "Mohammad Mehdi Morovati",
+    "Foutse Khomh"
+  ],
+  "date": "2026-03-05",
+  "url": "https://arxiv.org/abs/2603.05637",
+  "summary": "MCP 소프트웨어의 실제 결함을 조사하여 분류하고 실무적 문제를 검토한다.",
+  "mcp_relevance": "프롬프트 인젝션 외에도 구현 결함·패치·품질 관리를 포함해야 하는 공급망 정책의 근거이다.",
+  "limitations": "조사 저장소와 결함 선택 방식의 대표성은 원문에서 확인해야 한다. 전체 생태계 결함률로 해석하지 않는다.",
+  "year_window_met": true,
+  "pdf_url": "https://arxiv.org/pdf/2603.05637",
+  "date_precision": "day",
+  "date_basis": "arXiv first submitted date; revised versions not new records",
+  "group": "학술 논문",
+  "level": "I",
+  "month": "2026-03",
+  "agent_specific": true,
+  "local": [
+    {
+      "manifest": "acquisition_academic",
+      "status": "downloaded_and_extracted",
+      "url": "https://arxiv.org/pdf/2603.05637",
+      "original": "P47.pdf",
+      "md": "P47.md",
+      "text_chars": 217237,
+      "error": "",
+      "file_exists": true,
+      "sha256": "6fa224ad032f2187f21e6d5f23f8bde51b81897c2d969f6d46e9f3fd57fa976d",
+      "pages": 48,
+      "bytes": 1609753,
+      "original_path": "originals/web/P47.pdf",
+      "md_path": "extracted/P47.md"
+    }
+  ],
+  "acquisition_failed": []
+}

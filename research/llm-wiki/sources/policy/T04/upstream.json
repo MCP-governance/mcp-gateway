@@ -1,0 +1,36 @@
+{
+  "id": "T04",
+  "title": "Enterprise-Managed Authorization extension",
+  "organization": "Model Context Protocol / LF Projects",
+  "country": "International",
+  "date": "2026-06-18 stable announcement",
+  "url": "https://modelcontextprotocol.io/extensions/auth/enterprise-managed-authorization",
+  "type": "protocol extension",
+  "status": "stable extension; 구현 지원 여부는 제품별 확인",
+  "verification": "fulltext",
+  "summary": "기존 조직 IdP에서 MCP 서버 접근을 중앙 관리하는 확장. ID-JAG와 토큰 교환으로 조직 신원 기반 연결을 지원한다.",
+  "mcp_relevance": "독자 인증 체계를 새로 강제하지 말고 조직 IdP와 호환되는 권한 프로파일 채택.",
+  "related_url": "https://blog.modelcontextprotocol.io/posts/enterprise-managed-auth/",
+  "group": "표준·프로토콜·커뮤니티",
+  "level": "D",
+  "month": "2026-06",
+  "agent_specific": true,
+  "local": [
+    {
+      "manifest": "acquisition_webtexts",
+      "status": "archived_html_text",
+      "url": "https://modelcontextprotocol.io/extensions/auth/enterprise-managed-authorization",
+      "original": "T04.html",
+      "md": "T04_web.md",
+      "text_chars": 7771,
+      "error": "",
+      "file_exists": true,
+      "sha256": "e6b95c7b10293e446609ffe9428260b3b727832227cab6a292725e75b50be30b",
+      "pages": null,
+      "bytes": 352973,
+      "original_path": "originals/web/T04.html",
+      "md_path": "extracted/T04_web.md"
+    }
+  ],
+  "acquisition_failed": []
+}

@@ -1,0 +1,100 @@
+[
+  {
+    "id": "ibm-contextforge",
+    "title": "IBM ContextForge",
+    "kind": "oss",
+    "url": "https://github.com/IBM/mcp-context-forge",
+    "commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+    "verification": "pinned_source_static",
+    "summary": "사전 실행 PDP, OAuth 위임과 플러그인 활성 설정. 기존 all disabled 주장 정정.",
+    "path": "solutions/ibm-contextforge.md",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-13",
+    "runtime_verified": false
+  },
+  {
+    "id": "ibm-cpex",
+    "title": "IBM CPEX plugins",
+    "kind": "oss",
+    "url": "https://github.com/IBM/cpex-plugins",
+    "commit": "ae26938128cb438a268e7f3217603bc39b9dd18f",
+    "verification": "pinned_source_static",
+    "summary": "Redis Lua 배치 호출량 제한과 외부 framework bridge의 확인 경계.",
+    "path": "solutions/ibm-cpex.md",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-13",
+    "runtime_verified": false
+  },
+  {
+    "id": "ms-mcp-gateway",
+    "title": "Microsoft MCP Gateway",
+    "kind": "oss",
+    "url": "https://github.com/microsoft/mcp-gateway",
+    "commit": "3594c4eee36308ac131aad1c946ea14140b4353d",
+    "verification": "pinned_source_static",
+    "summary": "관리 자원의 소유권·역할·빈 RequiredRoles 처리와 내장 도구 인가.",
+    "path": "solutions/ms-mcp-gateway.md",
+    "license": "MIT",
+    "verified_on": "2026-10-13",
+    "runtime_verified": false
+  },
+  {
+    "id": "ms-wassette",
+    "title": "Microsoft Wassette",
+    "kind": "oss",
+    "url": "https://github.com/microsoft/wassette",
+    "commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+    "verification": "pinned_source_static",
+    "summary": "Wasmtime/WASI, HTTP host 허용, preopened 파일 권한.",
+    "path": "solutions/ms-wassette.md",
+    "license": "MIT",
+    "verified_on": "2026-10-13",
+    "runtime_verified": false
+  },
+  {
+    "id": "litellm",
+    "title": "LiteLLM MCP Gateway",
+    "kind": "oss",
+    "url": "https://github.com/BerriAI/litellm",
+    "commit": "f8e456d105af921213267d0ef801ca08b8fdbc0b",
+    "verification": "pinned_source_static",
+    "summary": "1.102.0 소스의 명시 MCP 범위·미등록 alias fail-closed 처리.",
+    "path": "solutions/litellm.md",
+    "license": "MIT for inspected non-enterprise paths",
+    "verified_on": "2026-10-13",
+    "runtime_verified": false
+  },
+  {
+    "id": "kong-ai-gateway",
+    "title": "Kong AI Gateway MCP",
+    "kind": "commercial",
+    "url": "https://developer.konghq.com/plugins/ai-mcp-proxy/",
+    "verification": "official_documentation",
+    "summary": "도구 ACL, OAuth audience, Enterprise·Tech Preview·version 제한.",
+    "path": "solutions/kong-ai-gateway.md",
+    "verified_on": "2026-10-13",
+    "runtime_verified": false
+  },
+  {
+    "id": "beyondtrust-pathfinder",
+    "title": "BeyondTrust Pathfinder MCP",
+    "kind": "commercial",
+    "url": "https://docs.beyondtrust.com/bt-docs/docs/configure-pathfinder-mcp",
+    "verification": "official_documentation",
+    "summary": "미국 Early Access·Read Only, 사이트 활성화·사용자 토큰 만료·회수.",
+    "path": "solutions/beyondtrust-pathfinder.md",
+    "verified_on": "2026-10-13",
+    "runtime_verified": false
+  },
+  {
+    "id": "lunar-mcpx",
+    "title": "Lunar MCPX + AI Gateway",
+    "kind": "commercial_ecosystem",
+    "url": "https://www.lunar.dev/post/safely-running-untrusted-mcp-servers-with-lunar-mcpx-and-gateway-integration",
+    "verification": "official_vendor_description",
+    "summary": "MCP ACL과 서버 outbound API 통제의 경로 차이. OSS 코드 분석 미실시.",
+    "path": "solutions/lunar-mcpx.md",
+    "verified_on": "2026-10-13",
+    "runtime_verified": false
+  }
+]

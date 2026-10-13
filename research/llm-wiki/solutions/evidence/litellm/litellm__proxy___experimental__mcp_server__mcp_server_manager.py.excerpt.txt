@@ -1,0 +1,101 @@
+SOURCE EXCERPT - NOT AN EXECUTABLE FILE
+Repository: https://github.com/BerriAI/litellm
+Commit: f8e456d105af921213267d0ef801ca08b8fdbc0b
+Source: litellm/proxy/_experimental/mcp_server/mcp_server_manager.py
+License: MIT (enterprise excluded) (see LICENSE.txt)
+Original file SHA-256: a79480a3d44bd3d5daaa768a738534bea18727ed97180d67f2db4d354a259735
+
+--- original lines 3169-3207 ---
+3169: 
+3170:         if _mcp_active_toolset_id.get() is not None:
+3171:             return set()
+3172:         if allow_all_server_ids is None:
+3173:             allow_all_server_ids = self.get_allow_all_keys_server_ids()
+3174:         open_ids: Final = set(allow_all_server_ids)
+3175:         key_object_permission: Final = user_api_key_auth.object_permission if user_api_key_auth else None
+3176:         # "Explicitly scoped, so do not widen with BYOM" is a rule about a CREDENTIAL that carries
+3177:         # its own mcp_servers list. It does not describe a keyless admitted subject: its
+3178:         # object_permission is the user's own row, whose mcp_servers column is [] by DB default, so
+3179:         # applying this rule would hide almost every admitted user's OWN submitted servers. Their
+3180:         # submissions are theirs by authorship, and their scope comes from the per-source union.
+3181:         has_explicit_object_permission: Final = (
+3182:             not _is_mcp_admitted_user_subject(user_api_key_auth)
+3183:             and key_object_permission is not None
+3184:             and (key_object_permission.mcp_servers is not None)
+3185:         )
+3186:         if not has_explicit_object_permission:
+3187:             if submitted_server_ids is None:
+3188:                 submitted_server_ids = await self._get_active_submitted_mcp_server_ids_for_user(user_api_key_auth)
+3189:             open_ids.update(submitted_server_ids)
+3190:         return open_ids
+3191: 
+3192:     @staticmethod
+3193:     def _admitted_session_resource_scope(user_api_key_auth: UserAPIKeyAuth | None) -> str | None:
+3194:         """The single server an admitted session subject's bearer was scoped to at authorize
+3195:         time (RFC 8707 resource), or None for every other principal shape and for unscoped
+3196:         sessions. Read at every return path of :meth:`get_allowed_mcp_servers`, including
+3197:         the exception fallback, and applied AFTER every union (grants, operator-open,
+3198:         submitted) because the scope is a ceiling over the whole reachable set; a resolver
+3199:         fault therefore never widens a scoped bearer to the allow-all set."""
+3200:         if user_api_key_auth is None or not _is_mcp_admitted_user_subject(user_api_key_auth):
+3201:             return None
+3202:         return user_api_key_auth.mcp_session_resource_server_id
+3203: 
+3204:     async def get_allowed_mcp_servers(
+3205:         self,
+3206:         user_api_key_auth: UserAPIKeyAuth | None = None,
+3207:         *,
+
+--- original lines 3210-3260 ---
+3210:     ) -> list[str]:
+3211:         """
+3212:         Get the allowed MCP Servers for the user.
+3213: 
+3214:         Priority:
+3215:         1. If object_permission.mcp_servers is explicitly set, use it (even for admins)
+3216:         2. If admin and no object_permission, return all servers
+3217:         3. Otherwise, use standard permission checks
+3218:         """
+3219:         from litellm.proxy.proxy_server import general_settings as proxy_general_settings
+3220: 
+3221:         resolved_general_settings: Final = proxy_general_settings if general_settings is None else general_settings
+3222:         allow_all_server_ids: Final = self.get_allow_all_keys_server_ids()
+3223: 
+3224:         # A keyless admitted subject is resolved per grant source, and channel decisions that are
+3225:         # absolute for a scoped KEY credential are not absolute for it: its own opt-out silences its
+3226:         # own source (handled per source in the resolver), never its teams' grants. Its admin role
+3227:         # rides the HUMAN, not the credential: an admin's session resolves the same registry their
+3228:         # dashboard shows (connect-page parity), bounded like an admin key by explicit
+3229:         # object_permission scope, the entitlement ceiling, and the session resource scope below.
+3230:         is_admitted_subject: Final = _is_mcp_admitted_user_subject(user_api_key_auth)
+3231: 
+3232:         # The key explicitly opted out of every MCP server. Return zero before
+3233:         # layering on allow_all_keys or submitted servers so the opt-out is absolute.
+3234:         key_object_permission: Final = user_api_key_auth.object_permission if user_api_key_auth else None
+3235:         if (
+3236:             not is_admitted_subject
+3237:             and key_object_permission is not None
+3238:             and (SpecialMCPServerNames.no_mcp_servers.value in (key_object_permission.mcp_servers or []))
+3239:         ):
+3240:             return []
+3241: 
+3242:         # Check if object_permission.mcp_servers is explicitly set (not None, empty list is valid)
+3243:         has_explicit_object_permission: Final = key_object_permission is not None and (
+3244:             key_object_permission.mcp_servers is not None
+3245:         )
+3246:         if has_explicit_object_permission:
+3247:             verbose_logger.debug("Object permission mcp_servers explicitly set: %s", key_object_permission.mcp_servers)
+3248: 
+3249:         # BYOM creator visibility never widens a key that was explicitly scoped:
+3250:         # only keys without their own mcp_servers list get submitted servers unioned in.
+3251:         submitted_server_ids: Final = (
+3252:             []
+3253:             if has_explicit_object_permission
+3254:             else await self._get_active_submitted_mcp_server_ids_for_user(user_api_key_auth)
+3255:         )
+3256: 
+3257:         try:
+3258:             # Admin view with no explicit object permission and no entitlement ceiling resolves the
+3259:             # whole registry, for keys AND admitted session subjects alike (one predicate owns the
+3260:             # question). Seeded into the union rather than returned early so the session resource
+

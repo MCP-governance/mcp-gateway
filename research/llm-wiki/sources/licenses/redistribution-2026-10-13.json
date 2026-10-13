@@ -1,0 +1,227 @@
+[
+  {
+    "id": "P38",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://aclanthology.org/2024.findings-acl.624/",
+    "license": "CC-BY-4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "distribution": "public-under-license",
+    "reason": "보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다."
+  },
+  {
+    "id": "P39",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/97091a5177d8dc64b1da8bf3e1f6fb54-Abstract-Datasets_and_Benchmarks_Track.html",
+    "license": "unconfirmed",
+    "license_url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/97091a5177d8dc64b1da8bf3e1f6fb54-Abstract-Datasets_and_Benchmarks_Track.html",
+    "distribution": "local-only",
+    "reason": "보존 NeurIPS 게재 PDF의 제3자 재배포 라이선스를 확인하지 못했다. 별도 허가 또는 허용된 판본 확인 전에는 로컬에만 보존한다."
+  },
+  {
+    "id": "P43",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://arxiv.org/abs/2508.13220v3",
+    "license": "arXiv nonexclusive-distrib 1.0",
+    "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
+    "distribution": "local-only",
+    "reason": "보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다."
+  },
+  {
+    "id": "P46",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://arxiv.org/abs/2512.08290v2",
+    "license": "arXiv nonexclusive-distrib 1.0",
+    "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
+    "distribution": "local-only",
+    "reason": "보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다."
+  },
+  {
+    "id": "P47",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://arxiv.org/abs/2603.05637v2",
+    "license": "arXiv nonexclusive-distrib 1.0",
+    "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
+    "distribution": "local-only",
+    "reason": "보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다."
+  },
+  {
+    "id": "P51",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://arxiv.org/abs/2604.07551v1",
+    "license": "CC-BY-4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "distribution": "public-under-license",
+    "reason": "보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다."
+  },
+  {
+    "id": "P54",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://arxiv.org/abs/2504.11703v3",
+    "license": "arXiv nonexclusive-distrib 1.0",
+    "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
+    "distribution": "local-only",
+    "reason": "보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다."
+  },
+  {
+    "id": "P55",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://arxiv.org/abs/2506.08837v3",
+    "license": "CC-BY-4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "distribution": "public-under-license",
+    "reason": "보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다."
+  },
+  {
+    "id": "P57",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://arxiv.org/abs/2505.23643v2",
+    "license": "CC-BY-4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "distribution": "public-under-license",
+    "reason": "보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다."
+  },
+  {
+    "id": "P58",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://arxiv.org/abs/2609.15906v1",
+    "license": "arXiv nonexclusive-distrib 1.0",
+    "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
+    "distribution": "local-only",
+    "reason": "보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다."
+  },
+  {
+    "id": "P60",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://ojs.aaai.org/index.php/AAAI/about",
+    "license": "AAAI copyright; republication permission required",
+    "license_url": "https://aaai.org/aaai-publications/request-to-reproduce-copyrighted-materials/",
+    "distribution": "local-only",
+    "reason": "AAAI 게재본의 공개 재게시에는 별도 허가가 필요하다. 원본과 전체 추출은 로컬에만 보존한다."
+  },
+  {
+    "id": "P63",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://arxiv.org/abs/2607.13718v2",
+    "license": "arXiv nonexclusive-distrib 1.0",
+    "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
+    "distribution": "local-only",
+    "reason": "보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다."
+  },
+  {
+    "id": "P64",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://arxiv.org/abs/2604.13630v2",
+    "license": "CC-BY-4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "distribution": "public-under-license",
+    "reason": "보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다."
+  },
+  {
+    "id": "T01",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "license": "website snapshot redistribution unconfirmed",
+    "license_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "distribution": "local-only",
+    "reason": "MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다."
+  },
+  {
+    "id": "T02",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "license": "website snapshot redistribution unconfirmed",
+    "license_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "distribution": "local-only",
+    "reason": "MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다."
+  },
+  {
+    "id": "T04",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "license": "website snapshot redistribution unconfirmed",
+    "license_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "distribution": "local-only",
+    "reason": "MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다."
+  },
+  {
+    "id": "T08",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://owasp.org/www-project-mcp-top-10/",
+    "license": "CC-BY-NC-SA-4.0; preserved snapshot licensing unconfirmed",
+    "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "distribution": "local-only",
+    "reason": "현재 OWASP MCP Top 10 페이지가 CC BY-NC-SA 4.0을 명시하며 상용 솔루션 개발 저장소의 전체 원문 재배포 범위는 확인하지 못했다."
+  },
+  {
+    "id": "T10",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://www.rfc-editor.org/rfc/rfc9700.txt",
+    "license": "IETF Trust Legal Provisions / BCP 78",
+    "license_url": "https://trustee.ietf.org/license-info/",
+    "distribution": "public-under-license",
+    "reason": "공식 RFC 전체 텍스트를 IETF Trust 고지와 함께 보존한다."
+  },
+  {
+    "id": "T11",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://www.rfc-editor.org/rfc/rfc8693.txt",
+    "license": "IETF Trust Legal Provisions / BCP 78",
+    "license_url": "https://trustee.ietf.org/license-info/",
+    "distribution": "public-under-license",
+    "reason": "공식 RFC 전체 텍스트를 IETF Trust 고지와 함께 보존한다."
+  },
+  {
+    "id": "T12",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://www.rfc-editor.org/rfc/rfc9396.txt",
+    "license": "IETF Trust Legal Provisions / BCP 78",
+    "license_url": "https://trustee.ietf.org/license-info/",
+    "distribution": "public-under-license",
+    "reason": "공식 RFC 전체 텍스트를 IETF Trust 고지와 함께 보존한다."
+  },
+  {
+    "id": "T15",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://raw.githubusercontent.com/cosai-oasis/ws4-secure-design-agentic-systems/main/LICENSE.md",
+    "license": "CC-BY-4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "distribution": "public-under-license",
+    "reason": "보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다."
+  },
+  {
+    "id": "T19",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://trustee.ietf.org/license-info/",
+    "license": "IETF Trust Legal Provisions / BCP 78",
+    "license_url": "https://trustee.ietf.org/license-info/",
+    "distribution": "public-under-license",
+    "reason": "IETF Trust 원문 고지와 문서 재사용 조건을 유지한다. 본문 원문을 수정하지 않고 텍스트를 MD 코드 블록에 보존했다."
+  },
+  {
+    "id": "T20",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://trustee.ietf.org/license-info/",
+    "license": "IETF Trust Legal Provisions / BCP 78",
+    "license_url": "https://trustee.ietf.org/license-info/",
+    "distribution": "public-under-license",
+    "reason": "IETF Trust 원문 고지와 문서 재사용 조건을 유지한다. 본문 원문을 수정하지 않고 텍스트를 MD 코드 블록에 보존했다."
+  },
+  {
+    "id": "T21",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "license": "website snapshot redistribution unconfirmed",
+    "license_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "distribution": "local-only",
+    "reason": "MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다."
+  },
+  {
+    "id": "T22",
+    "verified_on": "2026-10-13",
+    "evidence_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "license": "website snapshot redistribution unconfirmed",
+    "license_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "distribution": "local-only",
+    "reason": "MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다."
+  }
+]

@@ -1,0 +1,141 @@
+SOURCE EXCERPT - NOT AN EXECUTABLE FILE
+Repository: https://github.com/IBM/mcp-context-forge
+Commit: 5735c9db7f8f50cd5a55eb7fefe83ecde00b5324
+Source: plugins/unified_pdp/unified_pdp.py
+License: Apache-2.0 (see LICENSE.txt)
+Original file SHA-256: 6fe60477da84f9451af75912f10c7563c75a31f6aff67b5f6a4cc1e678f9c4d4
+
+--- original lines 1-7 ---
+1: # -*- coding: utf-8 -*-
+2: """Location: ./plugins/unified_pdp/unified_pdp.py
+3: Copyright 2025
+4: SPDX-License-Identifier: Apache-2.0
+5: Authors: Your Name
+6: 
+7: Unified Policy Decision Point plugin.
+
+--- original lines 123-164 ---
+123:     def _build_pdp(raw: dict) -> PolicyDecisionPoint:
+124:         """Parse the raw YAML config dict into a PDPConfig and create the PDP.
+125: 
+126:         Args:
+127:             raw: The ``config:`` block from plugins/config.yaml.
+128: 
+129:         Returns:
+130:             An initialised PolicyDecisionPoint ready to evaluate requests.
+131:         """
+132:         engines = [
+133:             EngineConfig(
+134:                 name=EngineType(e["name"]),
+135:                 enabled=e.get("enabled", True),
+136:                 priority=e.get("priority", 1),
+137:                 settings=e.get("settings", {}),
+138:             )
+139:             for e in raw.get("engines", [])
+140:         ]
+141: 
+142:         cache_raw = raw.get("cache", {})
+143:         perf_raw = raw.get("performance", {})
+144: 
+145:         pdp_config = PDPConfig(
+146:             engines=engines,
+147:             combination_mode=CombinationMode(raw.get("combination_mode", "all_must_allow")),
+148:             default_decision=Decision(raw.get("default_decision", "deny")),
+149:             cache=CacheConfig(
+150:                 enabled=cache_raw.get("enabled", True),
+151:                 ttl_seconds=cache_raw.get("ttl_seconds", 60),
+152:                 max_entries=cache_raw.get("max_entries", 10000),
+153:             ),
+154:             performance=PerformanceConfig(
+155:                 timeout_ms=perf_raw.get("timeout_ms", 1000),
+156:                 parallel_evaluation=perf_raw.get("parallel_evaluation", True),
+157:             ),
+158:         )
+159: 
+160:         pdp = PolicyDecisionPoint(pdp_config)
+161:         logger.info(
+162:             "UnifiedPDPPlugin initialised | engines=%s | combination=%s",
+163:             [e.name.value for e in engines if e.enabled],
+164:             pdp_config.combination_mode.value,
+
+--- original lines 234-312 ---
+234:     async def tool_pre_invoke(
+235:         self,
+236:         payload: ToolPreInvokePayload,
+237:         context: PluginContext,
+238:     ) -> ToolPreInvokeResult:
+239:         """Called before every tool invocation.
+240: 
+241:         Builds the action string as ``tools.invoke.<tool_name>`` so that
+242:         policies can match on the specific tool or use a wildcard
+243:         (``tools.invoke.*``).
+244: 
+245:         Args:
+246:             payload: Contains the tool name and invocation arguments.
+247:             context: Gateway-provided request context (user, tenant, etc.).
+248: 
+249:         Returns:
+250:             A ToolPreInvokeResult — either pass-through or blocked with a
+251:             PluginViolation.
+252:         """
+253:         subject = self._extract_subject(context)
+254: 
+255:         # Extract HTTP metadata from headers for IP and user_agent
+256:         http_meta = self._extract_http_metadata(payload.headers)
+257: 
+258:         # Extract classification_level from tool args if provided (for MAC engine)
+259:         tool_args = payload.args or {}
+260:         classification_level = tool_args.get("classification_level")
+261: 
+262:         resource = Resource(
+263:             type="tool",
+264:             id=payload.name,
+265:             server=context.global_context.server_id,
+266:             classification_level=classification_level,
+267:             # Pass tool annotations for fine-grained policy checks
+268:             annotations={"args_keys": list(tool_args.keys())},
+269:         )
+270: 
+271:         pdp_context = Context(
+272:             ip=http_meta["ip"],
+273:             user_agent=http_meta["user_agent"],
+274:             session_id=context.global_context.request_id,
+275:             # Pass tool args to context.extra for policy evaluation
+276:             extra={"tool_args": payload.args or {}},
+277:         )
+278: 
+279:         action = f"tools.invoke.{payload.name}"
+280: 
+281:         decision = await self._pdp.check_access(subject, action, resource, pdp_context)
+282: 
+283:         if decision.decision == Decision.DENY:
+284:             logger.warning(
+285:                 "PDP DENY tool_pre_invoke | tool=%s | user=%s | reason=%s",
+286:                 payload.name,
+287:                 subject.email,
+288:                 decision.reason,
+289:             )
+290:             violation = PluginViolation(
+291:                 reason="Policy decision: DENY",
+292:                 description=decision.reason or "Access denied by unified PDP",
+293:                 code="PDP_DENY",
+294:                 details={
+295:                     "tool": payload.name,
+296:                     "user": subject.email,
+297:                     "engines": [ed.engine.value for ed in decision.engine_decisions],
+298:                 },
+299:             )
+300:             return ToolPreInvokeResult(
+301:                 continue_processing=False,
+302:                 modified_payload=payload,
+303:                 violation=violation,
+304:             )
+305: 
+306:         logger.debug(
+307:             "PDP ALLOW tool_pre_invoke | tool=%s | user=%s | cached=%s",
+308:             payload.name,
+309:             subject.email,
+310:             decision.cached,
+311:         )
+312:         return ToolPreInvokeResult(modified_payload=payload)
+

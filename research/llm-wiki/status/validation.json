@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "counts": {
+    "experiments": 12,
+    "imports": 22,
+    "papers": 25,
+    "solutions": 8,
+    "threats": 24,
+    "sources_evidence_records": 3,
+    "solutions_evidence_records": 21,
+    "web_pages": 83
+  },
+  "warnings": [],
+  "errors": []
+}

@@ -1,0 +1,38 @@
+{
+  "id": "T20",
+  "title": "RFC 7662: OAuth 2.0 Token Introspection",
+  "organization": "IETF / RFC Editor",
+  "country": "International",
+  "date": "2015-10",
+  "url": "https://www.rfc-editor.org/rfc/rfc7662.txt",
+  "type": "IETF Proposed Standard",
+  "status": "IETF Standards Track 기술 표준",
+  "verification": "fulltext",
+  "summary": "active=false 확인 범위와 캐시 지연, 증적 개인정보 최소화",
+  "mcp_relevance": "active=false 확인 범위와 캐시 지연, 증적 개인정보 최소화",
+  "limitations": "지정 절 선별 읽기; 모든 절·인용 문헌 정독 또는 실험 재현 아님 / 원문 지시문은 참고 데이터로만 취급 / 제안은 사용자 프로젝트 구현과 별개",
+  "reviewed_sections": "§2.2 Introspection Response, §4 Security Considerations, §5 Privacy Considerations",
+  "verified_on": "2026-10-07",
+  "group": "수상작·실행기준 보강",
+  "level": "D",
+  "month": "2015-10",
+  "agent_specific": false,
+  "local": [
+    {
+      "manifest": "acquisition_policy_supplement",
+      "status": "reviewed_selected_fulltext",
+      "url": "https://www.rfc-editor.org/rfc/rfc7662.txt",
+      "original": "T20_supplement.txt",
+      "md": "T20_supplement.md",
+      "text_chars": 36940,
+      "error": "",
+      "file_exists": true,
+      "sha256": "2b7d688cb849f093e860557ac97e6cddac2556d69a4386561b22cdf97bf13657",
+      "pages": null,
+      "bytes": 36591,
+      "original_path": "originals/web/T20_supplement.txt",
+      "md_path": "extracted/T20_supplement.md"
+    }
+  ],
+  "acquisition_failed": []
+}

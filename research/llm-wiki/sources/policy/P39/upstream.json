@@ -1,0 +1,51 @@
+{
+  "id": "P39",
+  "title": "AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM Agents",
+  "authors": [
+    "Edoardo Debenedetti",
+    "Jie Zhang",
+    "Mislav Balunović",
+    "Luca Beurer-Kellner",
+    "Marc Fischer",
+    "Florian Tramèr"
+  ],
+  "organization": "NeurIPS Foundation",
+  "country": "international",
+  "date": "2024",
+  "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/97091a5177d8dc64b1da8bf3e1f6fb54-Abstract-Datasets_and_Benchmarks_Track.html",
+  "doi": "10.52202/079017-2636",
+  "type": "conference",
+  "status": "NeurIPS 2024 Datasets and Benchmarks Track proceedings",
+  "verification": "metadata",
+  "venue": "NeurIPS 2024",
+  "summary": "에이전트의 정상 업무 수행과 프롬프트 인젝션 방어를 함께 평가할 수 있는 동적 환경을 제안한다.",
+  "mcp_relevance": "도구를 무조건 막는 방어와 정상 업무를 보존하는 방어를 함께 평가하는 수용 시험의 기반이다.",
+  "limitations": "범위가 정해진 환경이며 새로운 모델·업무·공격에 대한 안전성을 자동 보장하지 않는다.",
+  "pdf_url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/97091a5177d8dc64b1da8bf3e1f6fb54-Paper-Datasets_and_Benchmarks_Track.pdf",
+  "year_window_met": false,
+  "kci_verified": false,
+  "date_precision": "year",
+  "date_basis": "official proceedings year/month",
+  "group": "학술 논문",
+  "level": "I",
+  "month": "2024",
+  "agent_specific": true,
+  "local": [
+    {
+      "manifest": "acquisition_academic",
+      "status": "downloaded_and_extracted",
+      "url": "https://proceedings.neurips.cc/paper_files/paper/2024/file/97091a5177d8dc64b1da8bf3e1f6fb54-Paper-Datasets_and_Benchmarks_Track.pdf",
+      "original": "P39.pdf",
+      "md": "P39.md",
+      "text_chars": 91650,
+      "error": "",
+      "file_exists": true,
+      "sha256": "26a3f0426ee1d533e4dd9f62d1343a7a1d231fe718cfaf3a362cc7de829ae913",
+      "pages": 26,
+      "bytes": 900328,
+      "original_path": "originals/web/P39.pdf",
+      "md_path": "extracted/P39.md"
+    }
+  ],
+  "acquisition_failed": []
+}

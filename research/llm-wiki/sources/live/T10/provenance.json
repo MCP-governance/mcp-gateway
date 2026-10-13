@@ -1,0 +1,43 @@
+{
+  "id": "T10",
+  "upstream_id": "T10",
+  "requested_url": "https://www.rfc-editor.org/rfc/rfc9700.txt",
+  "resolved_url": "https://www.rfc-editor.org/rfc/rfc9700.txt",
+  "retrieved_on": "2026-10-13",
+  "mime": "text/plain;charset=utf-8",
+  "status": "downloaded_and_text_wrapped",
+  "files": [
+    {
+      "path": "sources/live/T10/rfc9700.txt",
+      "role": "original",
+      "sha256": "9919d061d40a97886ca866b51c69389b6c81c65cd4b979056c14fdbebfcf622a",
+      "bytes": 124673
+    },
+    {
+      "path": "sources/live/T10/rfc9700.md",
+      "role": "extract",
+      "sha256": "dbdb8ebc433f57728243572b8d1f8804845e1055ed344fa78a9df03bf7b3415e",
+      "bytes": 127630
+    }
+  ],
+  "upstream_metadata_source": "raw/sources/all_sources.json",
+  "upstream_record": {
+    "id": "T10",
+    "title": "RFC 9700 / BCP 240: Best Current Practice for OAuth 2.0 Security",
+    "organization": "IETF / RFC Editor",
+    "country": "International",
+    "date": "2025-01",
+    "url": "https://www.rfc-editor.org/info/rfc9700/",
+    "type": "IETF Best Current Practice",
+    "status": "BCP 240 / RFC 9700",
+    "verification": "fulltext",
+    "summary": "OAuth 보안 위협과 권고를 업데이트하며 취약한 운영 방식을 배제한다.",
+    "mcp_relevance": "동적 서버 발견·조직 위임의 보안을 기존 인증 표준과 연결.",
+    "group": "표준·프로토콜·커뮤니티",
+    "level": "D",
+    "month": "2025-01",
+    "agent_specific": false,
+    "local": [],
+    "acquisition_failed": []
+  }
+}

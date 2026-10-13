@@ -1,0 +1,43 @@
+{
+  "id": "T12",
+  "upstream_id": "T12",
+  "requested_url": "https://www.rfc-editor.org/rfc/rfc9396.txt",
+  "resolved_url": "https://www.rfc-editor.org/rfc/rfc9396.txt",
+  "retrieved_on": "2026-10-13",
+  "mime": "text/plain;charset=utf-8",
+  "status": "downloaded_and_text_wrapped",
+  "files": [
+    {
+      "path": "sources/live/T12/rfc9396.txt",
+      "role": "original",
+      "sha256": "d6a8f032d8a585daae1c33a8c7b6e539d199f886ec8cc1c7898436f7f2eed29c",
+      "bytes": 65926
+    },
+    {
+      "path": "sources/live/T12/rfc9396.md",
+      "role": "extract",
+      "sha256": "428e23ce6698f8fe9ca31b9ce6dd19007185f7700d1703ad257822ef6671c8b0",
+      "bytes": 68113
+    }
+  ],
+  "upstream_metadata_source": "raw/sources/all_sources.json",
+  "upstream_record": {
+    "id": "T12",
+    "title": "RFC 9396: OAuth 2.0 Rich Authorization Requests",
+    "organization": "IETF / RFC Editor",
+    "country": "International",
+    "date": "2023-05",
+    "url": "https://www.rfc-editor.org/rfc/rfc9396.html",
+    "type": "IETF RFC",
+    "status": "RFC 9396",
+    "verification": "fulltext",
+    "summary": "단순 scope 문자열보다 구체적인 authorization_details 표현을 지원한다.",
+    "mcp_relevance": "업무 대상·행위·제한을 표현하는 위임 설계의 기존 기반. 국내 동의 법률을 대체하지 않음.",
+    "group": "표준·프로토콜·커뮤니티",
+    "level": "D",
+    "month": "2023-05",
+    "agent_specific": false,
+    "local": [],
+    "acquisition_failed": []
+  }
+}

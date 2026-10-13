@@ -1,0 +1,92 @@
+SOURCE EXCERPT - NOT AN EXECUTABLE FILE
+Repository: https://github.com/microsoft/wassette
+Commit: 742ebb7236273dad2d88c415eabe872d3b95dff9
+Source: crates/wassette/src/http.rs
+License: MIT (see LICENSE.txt)
+Original file SHA-256: ac475968caea12155e386f266164362a8b83b860c88acb9f9cc5cfd9653a3803
+
+--- original lines 1-7 ---
+1: // Copyright (c) Microsoft Corporation.
+2: // Licensed under the MIT license.
+3: 
+4: use std::collections::HashSet;
+5: 
+6: use anyhow::Result;
+7: use tracing::{debug, warn};
+
+--- original lines 73-146 ---
+73:     pub fn new(inner: T, allowed_hosts: HashSet<String>) -> Result<Self> {
+74:         let mut parsed_hosts = HashSet::new();
+75: 
+76:         for host_str in allowed_hosts {
+77:             match AllowedHost::from_str(&host_str) {
+78:                 Ok(parsed_host) => {
+79:                     parsed_hosts.insert(parsed_host);
+80:                 }
+81:                 Err(e) => {
+82:                     warn!("Failed to parse allowed host '{}': {}", host_str, e);
+83:                     return Err(e);
+84:                 }
+85:             }
+86:         }
+87: 
+88:         Ok(Self {
+89:             inner,
+90:             http_hooks: NetworkPolicyHttpHooks {
+91:                 allowed_hosts: parsed_hosts,
+92:                 last_network_denial: std::sync::Arc::new(std::sync::Mutex::new(None)),
+93:             },
+94:         })
+95:     }
+96: }
+97: 
+98: impl NetworkPolicyHttpHooks {
+99:     fn is_host_allowed(&self, uri: &hyper::Uri) -> bool {
+100:         let request_host = if let Some(host) = uri.host() {
+101:             host.to_string()
+102:         } else {
+103:             return false;
+104:         };
+105: 
+106:         let request_scheme = uri.scheme().map(|s| s.as_str());
+107: 
+108:         let req = request_host.to_ascii_lowercase();
+109:         for allowed_host in &self.allowed_hosts {
+110:             if allowed_host.matches(&req, request_scheme) {
+111:                 return true;
+112:             }
+113:         }
+114: 
+115:         false
+116:     }
+117: 
+118:     fn validate_request_uri(&self, uri: &hyper::Uri) -> HttpResult<()> {
+119:         let Some(host) = uri.host() else {
+120:             warn!("HTTP request missing host, blocking request");
+121:             return Err(types::ErrorCode::HttpRequestUriInvalid.into());
+122:         };
+123: 
+124:         if !self.is_host_allowed(uri) {
+125:             let host = host.to_string();
+126:             let uri_str = uri.to_string();
+127: 
+128:             warn!(
+129:                 uri = %uri,
+130:                 allowed_hosts = ?self.allowed_hosts,
+131:                 "HTTP request blocked by network policy"
+132:             );
+133: 
+134:             if let Ok(mut denial) = self.last_network_denial.lock() {
+135:                 *denial = Some((host, uri_str));
+136:             }
+137: 
+138:             return Err(types::ErrorCode::HttpRequestDenied.into());
+139:         }
+140: 
+141:         if let Ok(mut denial) = self.last_network_denial.lock() {
+142:             *denial = None;
+143:         }
+144: 
+145:         debug!(uri = %uri, "HTTP request allowed by network policy");
+146:         Ok(())
+

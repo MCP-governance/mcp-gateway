@@ -1,0 +1,71 @@
+[
+  {
+    "id": "T10",
+    "upstream_id": "T10",
+    "requested_url": "https://www.rfc-editor.org/rfc/rfc9700.txt",
+    "resolved_url": "https://www.rfc-editor.org/rfc/rfc9700.txt",
+    "retrieved_on": "2026-10-13",
+    "mime": "text/plain;charset=utf-8",
+    "status": "downloaded_and_text_wrapped",
+    "files": [
+      {
+        "path": "sources/live/T10/rfc9700.txt",
+        "role": "original",
+        "sha256": "9919d061d40a97886ca866b51c69389b6c81c65cd4b979056c14fdbebfcf622a",
+        "bytes": 124673
+      },
+      {
+        "path": "sources/live/T10/rfc9700.md",
+        "role": "extract",
+        "sha256": "dbdb8ebc433f57728243572b8d1f8804845e1055ed344fa78a9df03bf7b3415e",
+        "bytes": 127630
+      }
+    ]
+  },
+  {
+    "id": "T11",
+    "upstream_id": "T11",
+    "requested_url": "https://www.rfc-editor.org/rfc/rfc8693.txt",
+    "resolved_url": "https://www.rfc-editor.org/rfc/rfc8693.txt",
+    "retrieved_on": "2026-10-13",
+    "mime": "text/plain;charset=utf-8",
+    "status": "downloaded_and_text_wrapped",
+    "files": [
+      {
+        "path": "sources/live/T11/rfc8693.txt",
+        "role": "original",
+        "sha256": "358d658014738bf4dc56c8aae2094ce716ede23b6d5a80488a7dc8e8d72da609",
+        "bytes": 63031
+      },
+      {
+        "path": "sources/live/T11/rfc8693.md",
+        "role": "extract",
+        "sha256": "e9efd3a1d7795d57f58cc100334d57410baaa1d45b8edcf83d1da606ac13693b",
+        "bytes": 64796
+      }
+    ]
+  },
+  {
+    "id": "T12",
+    "upstream_id": "T12",
+    "requested_url": "https://www.rfc-editor.org/rfc/rfc9396.txt",
+    "resolved_url": "https://www.rfc-editor.org/rfc/rfc9396.txt",
+    "retrieved_on": "2026-10-13",
+    "mime": "text/plain;charset=utf-8",
+    "status": "downloaded_and_text_wrapped",
+    "files": [
+      {
+        "path": "sources/live/T12/rfc9396.txt",
+        "role": "original",
+        "sha256": "d6a8f032d8a585daae1c33a8c7b6e539d199f886ec8cc1c7898436f7f2eed29c",
+        "bytes": 65926
+      },
+      {
+        "path": "sources/live/T12/rfc9396.md",
+        "role": "extract",
+        "sha256": "428e23ce6698f8fe9ca31b9ce6dd19007185f7700d1703ad257822ef6671c8b0",
+        "bytes": 68113
+      }
+    ]
+  }
+]

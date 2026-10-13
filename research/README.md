@@ -1,6 +1,11 @@
 # research
 
-조사 자료를 모을 자리입니다. 지금 이 디렉터리에는 이 안내만 있고, 조사 결과는 설계 문서 옆에 있습니다.
+솔루션 개발용 조사·분석·실험 자료와 현황 보고를 모읍니다.
+
+**[LLM 개발 연구 위키](llm-wiki/README.md)** · **[브라우저로 보기](llm-wiki/web/index.html)** · **[개발 현황](llm-wiki/status/current.md)**
+
+논문·기술문서 원본과 Markdown, 상용·오픈소스 분석, 구축 방법론, 실험 대상 MCP와 위협 XLSM을 연결합니다.
+Claude Code·Codex 공통 규칙과 갱신 방법은 [위키 AGENTS.md](llm-wiki/AGENTS.md)에 있습니다.
 
 | 문서 | 내용 |
 | --- | --- |

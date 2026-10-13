@@ -1,0 +1,1006 @@
+[
+  {
+    "id": "P38",
+    "title": "InjecAgent: Benchmarking Indirect Prompt Injections in Tool-Integrated Large Language Model Agents",
+    "kind": "paper",
+    "url": "https://aclanthology.org/2024.findings-acl.624/",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "metadata",
+    "upstream_verified_on": null,
+    "originals": [
+      "sources/policy/P38/originals/P38.pdf"
+    ],
+    "extracts": [
+      "sources/policy/P38/extracts/P38.md"
+    ],
+    "summary": "InjecAgent는 외부 도구 응답의 간접 주입을 사용자 피해와 정보 유출로 나누는 벤치마크다. 도구 응답에 실린 지시가 후속 호출의 권한을 바꾸려는 시나리오 설계에 사용한다.",
+    "engineering_use": [
+      "fetch·email·파일 읽기 결과를 통해 외부 전송이 유도되는 사례를 만든다.",
+      "정상 업무 성공률과 유출 차단률을 함께 측정한다.",
+      "모델 버전·프롬프트·공격 인자·DB나 메일의 효과를 보관한다."
+    ],
+    "findings": [
+      "외부 콘텐츠를 읽는 정상 작업 뒤에 공격자 지시를 끼워 넣는다.",
+      "악성 지시를 따르는 답변과 실제 위험 도구 호출의 판정은 분리해야 한다.",
+      "모의 도구의 성공 판정을 우리 실제 MCP upstream 효과에 연결해야 한다."
+    ],
+    "reading_anchors": [
+      "PDF 1쪽 초록·위협 예시",
+      "benchmark construction",
+      "evaluation setup"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "평가의 모의 도구 및 모델 설정과 실제 MCP 배포를 구분해야 한다. 공개 초록의 성능 수치를 정책안에 사용하지 않는다.",
+    "license_notice": "CC-BY-4.0: https://creativecommons.org/licenses/by/4.0/ . 보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "distribution": "public-under-license",
+    "distribution_reason": "보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다.",
+    "provenance": "sources/policy/P38/upstream.json",
+    "page": "papers/P38.md"
+  },
+  {
+    "id": "P39",
+    "title": "AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM Agents",
+    "kind": "paper",
+    "url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/97091a5177d8dc64b1da8bf3e1f6fb54-Abstract-Datasets_and_Benchmarks_Track.html",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "metadata",
+    "upstream_verified_on": null,
+    "originals": [
+      "local-sources/policy/P39/originals/P39.pdf"
+    ],
+    "extracts": [
+      "local-sources/policy/P39/extracts/P39.md"
+    ],
+    "summary": "AgentDojo는 정상 업무와 공격자 목표를 함께 평가하는 확장형 환경이다. 방어가 공격을 막는 동안 업무를 과도하게 중단하지 않는지 측정할 실험 구조로 사용한다.",
+    "engineering_use": [
+      "동일한 데이터 스냅숏에서 무방어·Gateway·추가 통제의 비교군을 만든다.",
+      "공격 성공률과 정상 업무 성공률 및 비용·지연을 함께 기록한다.",
+      "테스트마다 환경을 초기화하고 부작용을 확인해 교차 오염을 막는다."
+    ],
+    "findings": [
+      "상태를 가진 도구 환경에서 사용자 작업과 공격 작업을 별도로 정의한다.",
+      "정상 업무 실패와 공격 실패를 혼동하지 않는 지표가 필요하다.",
+      "새 모델·공격·방어를 연결할 수 있는 환경이지 모든 실제 업무를 대표하지는 않는다."
+    ],
+    "reading_anchors": [
+      "PDF 1쪽 초록",
+      "task suites and security properties",
+      "attack and defense evaluation"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "범위가 정해진 환경이며 새로운 모델·업무·공격에 대한 안전성을 자동 보장하지 않는다.",
+    "license_notice": "unconfirmed: https://proceedings.neurips.cc/paper_files/paper/2024/hash/97091a5177d8dc64b1da8bf3e1f6fb54-Abstract-Datasets_and_Benchmarks_Track.html . 보존 NeurIPS 게재 PDF의 제3자 재배포 라이선스를 확인하지 못했다. 별도 허가 또는 허용된 판본 확인 전에는 로컬에만 보존한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://proceedings.neurips.cc/paper_files/paper/2024/hash/97091a5177d8dc64b1da8bf3e1f6fb54-Abstract-Datasets_and_Benchmarks_Track.html",
+    "distribution": "local-only",
+    "distribution_reason": "보존 NeurIPS 게재 PDF의 제3자 재배포 라이선스를 확인하지 못했다. 별도 허가 또는 허용된 판본 확인 전에는 로컬에만 보존한다.",
+    "provenance": "sources/policy/P39/upstream.json",
+    "page": "papers/P39.md"
+  },
+  {
+    "id": "P43",
+    "title": "MCPSecBench: A Systematic Security Benchmark and Playground for Testing Model Context Protocols",
+    "kind": "paper",
+    "url": "https://arxiv.org/abs/2508.13220",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read; official_metadata_page_checked_2026-10-13",
+    "upstream_verification": "metadata",
+    "upstream_verified_on": null,
+    "originals": [
+      "local-sources/policy/P43/originals/P43.pdf"
+    ],
+    "extracts": [
+      "local-sources/policy/P43/extracts/P43.md"
+    ],
+    "summary": "MCPSecBench는 MCP의 client·protocol·server·host 공격 표면을 함께 다루는 벤치마크와 playground다. Gateway의 집행 범위 밖인 host나 프로토콜 위협을 실험 대상에 포함할 근거다.",
+    "engineering_use": [
+      "위협 XLSM에 공격 표면·실행 위치·검증 수단을 추가한다.",
+      "프로토콜 직접 호출과 자연어 하네스 호출 결과를 별도 보관한다.",
+      "현재 서버·SDK 버전의 성공 조건과 부작용 증거를 다시 확인한다."
+    ],
+    "findings": [
+      "본문의 분류는 네 공격 표면과 여러 공격 유형을 연결한다.",
+      "클라이언트·서버·전송·하네스를 교체 가능한 실험 대상으로 취급한다.",
+      "보호 기법의 논문 결과는 해당 플랫폼·모델·버전에 묶인다."
+    ],
+    "reading_anchors": [
+      "보존 PDF 1쪽(v3 표기)·위협 분류",
+      "benchmark architecture",
+      "attack scripts and GUI harness"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "벤치마크 결과는 구현·모델·공격 설정에 묶인다. 재현 구성과 버전을 함께 보관해야 한다.",
+    "license_notice": "arXiv nonexclusive-distrib 1.0: https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html . 보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
+    "distribution": "local-only",
+    "distribution_reason": "보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다.",
+    "provenance": "sources/policy/P43/upstream.json",
+    "page": "papers/P43.md"
+  },
+  {
+    "id": "P46",
+    "title": "Systematization of Knowledge: Security and Safety in the Model Context Protocol Ecosystem",
+    "kind": "paper",
+    "url": "https://arxiv.org/abs/2512.08290",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "metadata",
+    "upstream_verified_on": null,
+    "originals": [
+      "local-sources/policy/P46/originals/P46.pdf"
+    ],
+    "extracts": [
+      "local-sources/policy/P46/extracts/P46.md"
+    ],
+    "summary": "MCP 생태계의 security와 safety를 구분하는 SoK 논문이다. Resources·Prompts·Tools의 신뢰 경계와 provenance·실행 시점 통제를 설계 검토 지도에 활용한다.",
+    "engineering_use": [
+      "도구 목록·리소스·프롬프트 응답의 관측 범위를 명시한다.",
+      "행위 권한·출처·데이터 분류를 Gateway 입력으로 연결하는 후보를 검토한다.",
+      "미집행 경로를 ROADMAP과 실험의 미지원 범위로 연결한다."
+    ],
+    "findings": [
+      "악의적 입력에 의한 무단 실행과 비의도적 모델 오류를 구분한다.",
+      "Tools뿐 아니라 Resources와 Prompts가 제공하는 문맥도 공격 경로다.",
+      "문맥이 후속 실행 지시로 바뀌는 지점에서 경계가 약해질 수 있다."
+    ],
+    "reading_anchors": [
+      "PDF 1쪽 초록·security vs safety",
+      "MCP primitives taxonomy",
+      "provenance and runtime verification"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "사전 공개 체계화 논문이다. 제도적 의무나 표준 자체로 인용하지 않는다.",
+    "license_notice": "arXiv nonexclusive-distrib 1.0: https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html . 보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
+    "distribution": "local-only",
+    "distribution_reason": "보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다.",
+    "provenance": "sources/policy/P46/upstream.json",
+    "page": "papers/P46.md"
+  },
+  {
+    "id": "P47",
+    "title": "Real Faults in MCP Software: A Comprehensive Taxonomy",
+    "kind": "paper",
+    "url": "https://arxiv.org/abs/2603.05637",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "metadata",
+    "upstream_verified_on": null,
+    "originals": [
+      "local-sources/policy/P47/originals/P47.pdf"
+    ],
+    "extracts": [
+      "local-sources/policy/P47/extracts/P47.md"
+    ],
+    "summary": "실제 MCP 서버의 결함을 조사한 taxonomy 연구다. 프롬프트 공격뿐 아니라 응답 검증·설정·경계·재현 가능 오류 보고를 개발 회귀 검사에 포함하는 자료다.",
+    "engineering_use": [
+      "잘못된 스키마·빈 결과·이상 응답·전송 종료·설정 누락을 회귀 사례로 만든다.",
+      "결함 보고에 서버·SDK·전송·입력·원장·upstream 효과를 포함한다.",
+      "보안 차단과 기능 장애를 동일 성공 값으로 처리하지 않는다."
+    ],
+    "findings": [
+      "실제 소프트웨어 결함을 높은 수준의 범주로 묶어 조사한다.",
+      "MCP 특수 결함과 일반 소프트웨어 결함의 구분을 검토한다.",
+      "관찰 범위와 조사 방식이 있어 생태계 전체 결함률로 일반화할 수 없다."
+    ],
+    "reading_anchors": [
+      "보존 PDF 1쪽(v2 표기)·초록",
+      "fault taxonomy",
+      "boundary-aware testing and reproducibility"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "조사 저장소와 결함 선택 방식의 대표성은 원문에서 확인해야 한다. 전체 생태계 결함률로 해석하지 않는다.",
+    "license_notice": "arXiv nonexclusive-distrib 1.0: https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html . 보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
+    "distribution": "local-only",
+    "distribution_reason": "보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다.",
+    "provenance": "sources/policy/P47/upstream.json",
+    "page": "papers/P47.md"
+  },
+  {
+    "id": "P51",
+    "title": "MCP-DPT: A Defense-Placement Taxonomy and Coverage Analysis for Model Context Protocol Security",
+    "kind": "paper",
+    "url": "https://arxiv.org/abs/2604.07551",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "fulltext",
+    "upstream_verified_on": null,
+    "originals": [
+      "sources/policy/P51/originals/P51.pdf"
+    ],
+    "extracts": [
+      "sources/policy/P51/extracts/P51.md"
+    ],
+    "summary": "MCP-DPT는 방어를 어느 구성 요소에 배치할지 중심으로 위협과 통제를 매핑한다. Gateway만으로 host·transport·supply chain 전체를 덮는다고 주장하지 않게 만드는 개발 설계 자료다.",
+    "engineering_use": [
+      "각 정책에 Gateway·엔드포인트·하네스·MCP 서버의 책임을 표시한다.",
+      "직접 egress·로컬 stdio·in-process 실행의 우회 검증을 따로 둔다.",
+      "coverage 수치를 제품 차단 성능 수치로 쓰지 않는다."
+    ],
+    "findings": [
+      "여섯 MCP 계층의 1차·2차 방어 위치를 구분한다.",
+      "도구 중심 방어가 강해도 host·전송·공급망에 공백이 남을 수 있다.",
+      "§5의 coverage는 적용 가능성 매핑이며 탐지 정확도나 보안 보장이 아니다."
+    ],
+    "reading_anchors": [
+      "PDF 1쪽 초록",
+      "§5 Coverage analysis and limitations",
+      "primary and secondary defense points"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "§5에서 coverage가 capability-based applicability이고 실제 탐지 정확도나 보안 보장이 아니라고 명시한다. 제품별 매핑과 수치를 현재 제품 성능으로 인용하지 않는다. 각 통제의 운영 효과는 별도 배포 시험이 필요하다.",
+    "license_notice": "CC-BY-4.0: https://creativecommons.org/licenses/by/4.0/ . 보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "distribution": "public-under-license",
+    "distribution_reason": "보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다.",
+    "provenance": "sources/policy/P51/upstream.json",
+    "page": "papers/P51.md"
+  },
+  {
+    "id": "P54",
+    "title": "Progent: Securing AI Agents with Privilege Control",
+    "kind": "paper",
+    "url": "https://arxiv.org/abs/2504.11703v3",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read; official_metadata_page_checked_2026-10-13",
+    "upstream_verification": "metadata",
+    "upstream_verified_on": "2026-10-07",
+    "originals": [
+      "local-sources/policy/P54/originals/P54.pdf"
+    ],
+    "extracts": [
+      "local-sources/policy/P54/extracts/P54.md"
+    ],
+    "summary": "Progent는 도구 이름과 인자를 정책으로 표현하고 매 호출을 결정론적으로 검사한다. 권한 축소는 자동 반영하고 확장은 명시 승인하는 구조가 OPA 정책과 승인 설계의 직접 비교 대상이다.",
+    "engineering_use": [
+      "OPA 정책과 승인 레코드의 자원·동작·목적지·만료 결합을 비교한다.",
+      "승인 뒤 인자 교체·계약 변경·정책 변경에 따른 재검증을 시험한다.",
+      "자연어 의도 판정의 오류를 결정론적 권한 검증으로 보완한다."
+    ],
+    "findings": [
+      "도구 호출의 이름·인자를 구조화된 집행 지점으로 본다.",
+      "LLM 정책 생성과 실제 호출 허용 판정은 다른 역할이다.",
+      "v3는 정책 변경의 축소·확장을 SMT로 판별해 무승인 권한 확장을 제한한다."
+    ],
+    "reading_anchors": [
+      "보존 PDF 1~2쪽 v3·monotonic confinement",
+      "policy construction and updates",
+      "evaluation setup"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "공식 arXiv 제목·저자·제출/갱신일을 교차검증. 전 페이지 정독·실험 재현 아님.",
+    "license_notice": "arXiv nonexclusive-distrib 1.0: https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html . 보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
+    "distribution": "local-only",
+    "distribution_reason": "보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다.",
+    "provenance": "sources/policy/P54/upstream.json",
+    "page": "papers/P54.md"
+  },
+  {
+    "id": "P55",
+    "title": "Design Patterns for Securing LLM Agents against Prompt Injections",
+    "kind": "paper",
+    "url": "https://arxiv.org/abs/2506.08837v3",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "metadata",
+    "upstream_verified_on": "2026-10-07",
+    "originals": [
+      "sources/policy/P55/originals/P55.pdf"
+    ],
+    "extracts": [
+      "sources/policy/P55/extracts/P55.md"
+    ],
+    "summary": "프롬프트 주입에 대한 여섯 설계 패턴의 보안·업무 효용 절충을 분석한다. 필터만 추가하기 전에 실행 가능한 행동과 신뢰되지 않은 문맥을 구조적으로 나눌 때 읽을 자료다.",
+    "engineering_use": [
+      "고위험 쓰기 도구는 제한된 인자·사전 계획·승인 계약으로 묶는 후보를 검토한다.",
+      "도구 응답의 데이터와 실행 지시를 분리하는 하네스 통합을 검토한다.",
+      "모델 필터를 보안 경계로 단독 의존하지 않는다."
+    ],
+    "findings": [
+      "행동 선택·선계획 후실행·격리된 처리·문맥 최소화 등 구조를 비교한다.",
+      "신뢰되지 않은 콘텐츠가 권한을 가진 실행 단계에 영향을 주는 경로를 줄인다.",
+      "각 패턴은 허용 가능한 업무 형태와 효용의 제한이 있다."
+    ],
+    "reading_anchors": [
+      "PDF 1쪽 초록",
+      "six design patterns",
+      "utility and security trade-offs"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "공식 arXiv 제목·저자·제출/갱신일을 교차검증. 전 페이지 정독·실험 재현 아님.",
+    "license_notice": "CC-BY-4.0: https://creativecommons.org/licenses/by/4.0/ . 보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "distribution": "public-under-license",
+    "distribution_reason": "보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다.",
+    "provenance": "sources/policy/P55/upstream.json",
+    "page": "papers/P55.md"
+  },
+  {
+    "id": "P57",
+    "title": "Securing AI Agents with Information-Flow Control",
+    "kind": "paper",
+    "url": "https://arxiv.org/abs/2505.23643v2",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "metadata",
+    "upstream_verified_on": "2026-10-07",
+    "originals": [
+      "sources/policy/P57/originals/P57.pdf"
+    ],
+    "extracts": [
+      "sources/policy/P57/extracts/P57.md"
+    ],
+    "summary": "FIDES는 기밀성·무결성 라벨과 동적 정보 흐름 추적으로 에이전트 행동을 제한한다. 단일 호출의 정적 분류를 넘어 여러 호출 사이 데이터 계보를 연결하는 개발 연구 자료다.",
+    "engineering_use": [
+      "읽은 민감 데이터와 외부 전송 호출을 trace·resource로 연결하는 후보를 검토한다.",
+      "Gateway 밖 문맥과 로컬 변환이 라벨 추적에서 누락되는 경계를 표시한다.",
+      "낮은 무결성 콘텐츠가 목적지·도구 선택을 바꾸는 실험을 만든다."
+    ],
+    "findings": [
+      "입력 데이터의 출처·기밀성·무결성이 후속 행동 결정에 영향을 준다.",
+      "플래너가 라벨을 추적하며 정책 집행을 결정론적으로 수행한다.",
+      "정보를 숨기거나 공개하는 명시 연산과 업무 표현력의 절충이 있다."
+    ],
+    "reading_anchors": [
+      "PDF 1쪽 초록·email 예시",
+      "formal model and taint tracking",
+      "AgentDojo evaluation"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "공식 arXiv 제목·저자·제출/갱신일을 교차검증. 전 페이지 정독·실험 재현 아님.",
+    "license_notice": "CC-BY-4.0: https://creativecommons.org/licenses/by/4.0/ . 보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "distribution": "public-under-license",
+    "distribution_reason": "보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다.",
+    "provenance": "sources/policy/P57/upstream.json",
+    "page": "papers/P57.md"
+  },
+  {
+    "id": "P58",
+    "title": "Authorization Architectures for Tool-Using AI Agents",
+    "kind": "paper",
+    "url": "https://arxiv.org/abs/2609.15906v1",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "fulltext",
+    "upstream_verified_on": "2026-10-07",
+    "originals": [
+      "local-sources/policy/P58/originals/P58.pdf"
+    ],
+    "extracts": [
+      "local-sources/policy/P58/extracts/P58.md"
+    ],
+    "summary": "도구 사용 에이전트의 인가 구조를 신원·위임·실행 PEP·주입·감사 층으로 연결하는 review다. 인간 주체부터 하위 에이전트·도구까지의 권한 연결과 집계 상한을 검토한다.",
+    "engineering_use": [
+      "transport 신원과 자기 신고 하네스 정보를 섞지 않는다.",
+      "하위 도구 호출에도 승인 범위·subject·scope·audience의 전파를 점검한다.",
+      "호출 횟수·누적 유출·작업 단위 한도를 별도 개발 후보로 둔다."
+    ],
+    "findings": [
+      "권한을 인간 사용자·운영자·오케스트레이터·하위 에이전트·도구 계층으로 나눈다.",
+      "호출 시점 집행과 위임 전파를 별개로 두지 않고 연결한다.",
+      "집계 한계와 runtime 집행의 공백이 남는다고 논의한다."
+    ],
+    "reading_anchors": [
+      "PDF 1쪽 초록",
+      "principal hierarchy and five layers",
+      "seven structural requirements"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "지정 절 텍스트층 선별 읽기; 실험 재현·모든 참고문헌 정독 없음 / 이 논문의 체크리스트·평가 시나리오는 직접 선행이므로 최초성 근거로 쓰지 않음",
+    "license_notice": "arXiv nonexclusive-distrib 1.0: https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html . 보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
+    "distribution": "local-only",
+    "distribution_reason": "보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다.",
+    "provenance": "sources/policy/P58/upstream.json",
+    "page": "papers/P58.md"
+  },
+  {
+    "id": "P60",
+    "title": "MCPTox: A Benchmark for Tool Poisoning on Real-World MCP Servers",
+    "kind": "paper",
+    "url": "https://ojs.aaai.org/index.php/AAAI/article/view/40895",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read; official_metadata_page_checked_2026-10-13",
+    "upstream_verification": "fulltext",
+    "upstream_verified_on": "2026-10-07",
+    "originals": [
+      "local-sources/policy/P60/originals/P60.pdf"
+    ],
+    "extracts": [
+      "local-sources/policy/P60/extracts/P60.md"
+    ],
+    "summary": "MCPTox는 실행되지 않은 도구의 메타데이터에 공격 지시를 넣어 다른 정상 도구의 오용을 유도한다. 등록 시 설명 검사와 계약 변경 감시 및 호출 직전 집행을 함께 시험할 직접 자료다.",
+    "engineering_use": [
+      "tools/list 설명 변경·schema 변경·다른 도구 유출의 연쇄 사례를 만든다.",
+      "계약 해시 변경과 모델의 실제 후속 호출 및 upstream 실행을 대조한다.",
+      "단순 키워드 검사·사전 스캔·Gateway 정책의 비교군을 만든다."
+    ],
+    "findings": [
+      "도구 결과가 아니라 설명 등 메타데이터가 공격 입력이다.",
+      "악성 도구 자체의 실행 없이도 다른 도구의 인자·사용이 바뀔 수 있다.",
+      "AAAI 게재본의 구성과 이전 초록의 수치는 다를 수 있어 보존 판본을 기준으로 한다."
+    ],
+    "reading_anchors": [
+      "AAAI PDF 1~3쪽 위협·구성·성공 정의",
+      "tool poisoning attack templates",
+      "attack success metric"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "공식 서지와 PDF 1~3쪽(위협·구성·성공 정의)을 선별 확인. 수치·모델 성능의 독립 재현·현재 모델 일반화 아님.",
+    "license_notice": "AAAI copyright; republication permission required: https://aaai.org/aaai-publications/request-to-reproduce-copyrighted-materials/ . AAAI 게재본의 공개 재게시에는 별도 허가가 필요하다. 원본과 전체 추출은 로컬에만 보존한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://aaai.org/aaai-publications/request-to-reproduce-copyrighted-materials/",
+    "distribution": "local-only",
+    "distribution_reason": "AAAI 게재본의 공개 재게시에는 별도 허가가 필요하다. 원본과 전체 추출은 로컬에만 보존한다.",
+    "provenance": "sources/policy/P60/upstream.json",
+    "page": "papers/P60.md"
+  },
+  {
+    "id": "P63",
+    "title": "How Agents Ask for Permission: User Permissions for AI Agents, from Interfaces to Enforcement",
+    "kind": "paper",
+    "url": "https://arxiv.org/abs/2607.13718v2",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "metadata",
+    "upstream_verified_on": "2026-10-07",
+    "originals": [
+      "local-sources/policy/P63/originals/P63.pdf"
+    ],
+    "extracts": [
+      "local-sources/policy/P63/extracts/P63.md"
+    ],
+    "summary": "에이전트 권한 요청을 UI·내부 정책·런타임 집행까지 비교하는 연구다. 화면에서 사용자가 승인한 범위가 실제 호출의 자원·동작·목적지와 일치하는지 검토한다.",
+    "engineering_use": [
+      "승인 UI에 동작·자원·목적지·범위·유효기간을 결합한다.",
+      "대기 승인 뒤 인자·스키마 변화가 승인 재사용을 만들지 않는지 시험한다.",
+      "반복 승인 피로와 과도한 상시 권한 사이의 절충을 기록한다."
+    ],
+    "findings": [
+      "제품 전역 정책과 사용자별 정책은 요구 범위가 다르다.",
+      "사용자 입력에서 정책을 만드는 과정과 그 정책의 집행은 별개다.",
+      "상용 에이전트 분석과 권한 제안의 비교는 연구 당시 제품 상태에 묶인다."
+    ],
+    "reading_anchors": [
+      "PDF 1쪽 초록",
+      "permission specification and derivation",
+      "runtime enforcement and commercial comparisons"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "공식 arXiv 제목·저자·제출/갱신일을 교차검증. 전 페이지 정독·실험 재현 아님.",
+    "license_notice": "arXiv nonexclusive-distrib 1.0: https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html . 보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
+    "distribution": "local-only",
+    "distribution_reason": "보존 arXiv 판본은 arXiv에 대한 non-exclusive 배포 라이선스다. 제3자의 공개 재배포 권한은 확인되지 않아 로컬에만 보존한다.",
+    "provenance": "sources/policy/P63/upstream.json",
+    "page": "papers/P63.md"
+  },
+  {
+    "id": "P64",
+    "title": "SafeHarness: Lifecycle-Integrated Security Architecture for LLM-based Agent Deployment",
+    "kind": "paper",
+    "url": "https://arxiv.org/abs/2604.13630v2",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "metadata",
+    "upstream_verified_on": "2026-10-07",
+    "originals": [
+      "sources/policy/P64/originals/P64.pdf"
+    ],
+    "extracts": [
+      "sources/policy/P64/extracts/P64.md"
+    ],
+    "summary": "SafeHarness는 입력·의사결정·행동·상태 갱신 단계의 방어를 수명주기에 통합하는 구조다. Gateway가 볼 수 없는 하네스 내부 상태와 rollback의 경계를 확인하는 개발 자료다.",
+    "engineering_use": [
+      "지원 하네스에 직접 훅이 필요한 통제와 MCP 프록시로 가능한 통제를 분리한다.",
+      "상태 rollback과 이미 실행된 외부 부작용의 원복을 따로 검증한다.",
+      "모델·하네스·상태 저장소 버전과 격리 수준을 실험 기록에 포함한다."
+    ],
+    "findings": [
+      "입력 필터·인과 검증·권한 분리 도구 제어·상태 rollback을 층으로 연결한다.",
+      "상태 이상이 지속될 때 검증 강도·도구 권한·퇴행 동작이 바뀐다.",
+      "하네스 내부 통합이 필요한 기능은 외부 Gateway만으로 자동 확보되지 않는다."
+    ],
+    "reading_anchors": [
+      "보존 PDF 1쪽 v2·초록",
+      "four defense layers",
+      "lifecycle and rollback"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "공식 arXiv 제목·저자·제출/갱신일을 교차검증. 전 페이지 정독·실험 재현 아님.",
+    "license_notice": "CC-BY-4.0: https://creativecommons.org/licenses/by/4.0/ . 보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "distribution": "public-under-license",
+    "distribution_reason": "보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다.",
+    "provenance": "sources/policy/P64/upstream.json",
+    "page": "papers/P64.md"
+  },
+  {
+    "id": "T01",
+    "title": "MCP Authorization specification 2026-07-28",
+    "kind": "standard-document",
+    "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read; official_current_url_resolved_2026-10-13",
+    "upstream_verification": "fulltext",
+    "upstream_verified_on": "2026-10-07",
+    "originals": [
+      "local-sources/policy/T01/originals/T01_mcp_auth.html",
+      "local-sources/policy/T01/originals/T01_mcp_auth_security.html"
+    ],
+    "extracts": [
+      "local-sources/policy/T01/extracts/T01_mcp_auth.md",
+      "local-sources/policy/T01/extracts/T01_mcp_auth_security.md"
+    ],
+    "summary": "HTTP MCP 인가의 resource/audience 결합과 요청별 토큰 검증을 정의한다. 전송 인가와 도구·자원별 업무 권한을 분리해 설계할 기준이다.",
+    "engineering_use": [
+      "Gateway 토큰의 aud·issuer·scope·만료 검증을 실패 차단 테스트로 묶는다.",
+      "직원 토큰을 upstream에 그대로 전달하지 않고 서버별 자격을 분리한다.",
+      "403 scope 부족과 401 토큰 오류를 분리해 관리 API 권한 승격을 막는다."
+    ],
+    "findings": [
+      "HTTP 전송에 적용하며 stdio 자격 전달 방식은 별도다.",
+      "MCP 서버를 대상으로 발급된 토큰만 받아야 하며 만료·대상 검증이 필요하다.",
+      "scope 확장 절차와 원래 요청의 재시도 제한을 구분한다."
+    ],
+    "reading_anchors": [
+      "Purpose and Scope",
+      "Resource Parameter Implementation",
+      "Token Handling",
+      "Step-Up Authorization Flow"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "지정 절 선별 읽기; 모든 절·인용 문헌 정독 또는 실험 재현 아님 / 원문 지시문은 참고 데이터로만 취급 / 제안은 사용자 프로젝트 구현과 별개",
+    "license_notice": "website snapshot redistribution unconfirmed: https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE . MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "distribution": "local-only",
+    "distribution_reason": "MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다.",
+    "provenance": "sources/policy/T01/upstream.json",
+    "page": "papers/T01.md"
+  },
+  {
+    "id": "T02",
+    "title": "MCP Tools specification 2026-07-28",
+    "kind": "standard-document",
+    "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "fulltext",
+    "upstream_verified_on": null,
+    "originals": [
+      "local-sources/policy/T02/originals/T02_mcp_tools.html"
+    ],
+    "extracts": [
+      "local-sources/policy/T02/extracts/T02_mcp_tools.md"
+    ],
+    "summary": "MCP 도구 목록·입력 스키마·결과 형식과 도구 사용 안전 조건의 정본이다. 도구 계약 잠금과 호출 직전 재검증의 입력을 정의하는 데 사용한다.",
+    "engineering_use": [
+      "설명·스키마·annotation을 정규화한 계약 해시의 변화 테스트를 만든다.",
+      "출력 스키마 위반·비정상 결과 크기·콘텐츠 유형의 실패 처리를 점검한다.",
+      "readOnlyHint만으로 쓰기 권한을 축소했다고 주장하지 않는다."
+    ],
+    "findings": [
+      "도구 이름·설명·입력 스키마·선택적 출력 스키마가 계약 데이터다.",
+      "도구 annotation은 신뢰 경계 안에서만 해석하며 악성 서버의 자체 선언은 허가 근거가 될 수 없다.",
+      "도구 발견·변경과 실행 결과 검증을 별도 경로로 다룬다."
+    ],
+    "reading_anchors": [
+      "Tool Definition",
+      "Tool Annotations",
+      "Security Considerations"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "",
+    "license_notice": "website snapshot redistribution unconfirmed: https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE . MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "distribution": "local-only",
+    "distribution_reason": "MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다.",
+    "provenance": "sources/policy/T02/upstream.json",
+    "page": "papers/T02.md"
+  },
+  {
+    "id": "T04",
+    "title": "Enterprise-Managed Authorization extension",
+    "kind": "standard-document",
+    "url": "https://modelcontextprotocol.io/extensions/auth/enterprise-managed-authorization",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "fulltext",
+    "upstream_verified_on": null,
+    "originals": [
+      "local-sources/policy/T04/originals/T04.html"
+    ],
+    "extracts": [
+      "local-sources/policy/T04/extracts/T04_web.md"
+    ],
+    "summary": "조직 IdP와 MCP 인가를 연결하는 Enterprise-Managed Authorization 확장이다. 중앙 신원과 서버 접근 자격 교환의 설계 참고이며 구현된 기능과는 구분한다.",
+    "engineering_use": [
+      "Keycloak과 서버별 자격 브로커 연결의 지원 범위를 비교한다.",
+      "교환 토큰에 사용자·조직·audience가 제대로 결합되는지 검증한다.",
+      "지원하지 않는 SaaS 서버에는 자격 파일 경로의 제한과 만료를 유지한다."
+    ],
+    "findings": [
+      "조직 IdP 기반 접근 결정을 MCP 서버 인가 흐름과 연결한다.",
+      "ID-JAG를 사용하는 교환 흐름과 참여자별 신뢰 설정이 중요하다.",
+      "확장은 독립 버전·선택적 지원이므로 모든 서버가 지원한다고 가정하면 안 된다."
+    ],
+    "reading_anchors": [
+      "Enterprise-Managed Authorization",
+      "ID-JAG",
+      "Token Exchange"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "",
+    "license_notice": "website snapshot redistribution unconfirmed: https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE . MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "distribution": "local-only",
+    "distribution_reason": "MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다.",
+    "provenance": "sources/policy/T04/upstream.json",
+    "page": "papers/T04.md"
+  },
+  {
+    "id": "T08",
+    "title": "OWASP MCP Top 10 project",
+    "kind": "standard-document",
+    "url": "https://owasp.org/projects/mcp-top-10",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "fulltext",
+    "upstream_verified_on": null,
+    "originals": [
+      "local-sources/policy/T08/originals/T08_owasp_mcp.html",
+      "local-sources/policy/T08/originals/T08_owasp_cheat.html"
+    ],
+    "extracts": [
+      "local-sources/policy/T08/extracts/T08_owasp_mcp.md",
+      "local-sources/policy/T08/extracts/T08_owasp_cheat.md"
+    ],
+    "summary": "OWASP MCP Top 10과 MCP 보안 치트시트의 공개 스냅숏이다. 위협 분류와 개발 점검표를 연결하되 이 분류 자체를 제품 보안 검증 결과로 쓰지 않는다.",
+    "engineering_use": [
+      "위협 XLSM 항목별로 코드·정책·테스트·원장 증거의 연결을 추가한다.",
+      "해당 위협에 영향을 주는 Gateway와 엔드포인트의 책임을 분리한다.",
+      "분류 미해당·미지원·미검증 상태를 각자 표시한다."
+    ],
+    "findings": [
+      "MCP 도구와 서버의 신뢰·공급망·인증·실행 경계를 점검할 분류를 제공한다.",
+      "위협 분류는 실제 집행 위치와 실패 조건을 추가해야 개발 요구사항이 된다.",
+      "치트시트의 운영 권고와 특정 구현의 통제 증거는 별개다."
+    ],
+    "reading_anchors": [
+      "OWASP MCP Top 10 project page",
+      "MCP Security Cheat Sheet"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "",
+    "license_notice": "CC-BY-NC-SA-4.0; preserved snapshot licensing unconfirmed: https://creativecommons.org/licenses/by-nc-sa/4.0/ . 현재 OWASP MCP Top 10 페이지가 CC BY-NC-SA 4.0을 명시하며 상용 솔루션 개발 저장소의 전체 원문 재배포 범위는 확인하지 못했다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "distribution": "local-only",
+    "distribution_reason": "현재 OWASP MCP Top 10 페이지가 CC BY-NC-SA 4.0을 명시하며 상용 솔루션 개발 저장소의 전체 원문 재배포 범위는 확인하지 못했다.",
+    "provenance": "sources/policy/T08/upstream.json",
+    "page": "papers/T08.md"
+  },
+  {
+    "id": "T10",
+    "rfc": "9700",
+    "title": "RFC 9700 / BCP 240: Best Current Practice for OAuth 2.0 Security",
+    "summary": "OAuth 2.0의 보안 BCP 원문을 새로 확보했다. 코드 교환·토큰 재사용·최소 권한·refresh rotation·TLS 종료 프록시의 조건을 인증 구현 점검에 사용한다.",
+    "findings": [
+      "인가 코드 흐름의 PKCE·정확한 redirect URI·issuer 결합을 함께 다룬다.",
+      "토큰의 대상·자원·행위 권한을 제한하며 refresh 토큰의 재사용 탐지와 회전을 다룬다.",
+      "TLS 종료 프록시가 신뢰한 헤더와 자격정보를 안전하게 전달하도록 별도 경계를 요구한다."
+    ],
+    "engineering_use": [
+      "refresh helper의 잠금·회전·재사용 시 계열 회수 동작을 점검한다.",
+      "서버별 토큰의 audience·scope·동작 제한을 직접 오류 테스트로 검증한다.",
+      "프록시 뒤의 전달 헤더·로그·TLS 경계를 검토한다."
+    ],
+    "reading_anchors": [
+      "§2 Best Practices",
+      "§4.4 Mix-Up Attacks",
+      "§4.13 TLS Terminating Reverse Proxies",
+      "§4.14 Refresh Token Protection"
+    ],
+    "limitations": "공식 원문 전체를 새로 다운로드하고 지정 절을 선별 확인했다. 규격 준수 검사·인가 서버/SDK 구현 전체 검토·실제 토큰 교환 시험·errata 검토는 하지 않았다. 규격의 기능이 우리 솔루션에 구현되어 있다는 뜻은 아니다.",
+    "license_notice": "원문에 포함된 IETF Trust copyright 및 BCP 78 / Trust Legal Provisions 고지를 그대로 보존했다. 코드 부분의 사용은 원문 라이선스 조건을 따른다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "공식 RFC 전체 텍스트를 IETF Trust 고지와 함께 보존한다.",
+    "license_url": "https://trustee.ietf.org/license-info/",
+    "kind": "standard-document",
+    "url": "https://www.rfc-editor.org/rfc/rfc9700.txt",
+    "verified_on": "2026-10-13",
+    "verification": "official_original_downloaded_sha256_checked_and_selected_sections_read",
+    "upstream_verification": "fulltext",
+    "originals": [
+      "sources/live/T10/rfc9700.txt"
+    ],
+    "extracts": [
+      "sources/live/T10/rfc9700.md"
+    ],
+    "provenance": "sources/live/T10/provenance.json",
+    "page": "papers/T10.md"
+  },
+  {
+    "id": "T11",
+    "rfc": "8693",
+    "title": "RFC 8693: OAuth 2.0 Token Exchange",
+    "summary": "OAuth 토큰 교환의 subject·actor·resource·audience 의미를 정의한다. Gateway가 사용자를 대신해 서버별 자격을 얻는 브로커와 다중 위임 설계의 자료다.",
+    "findings": [
+      "delegation과 impersonation은 주체 표시와 책임 추적 의미가 다르다.",
+      "subject_token과 actor_token을 사용하여 교환할 수 있으며 발급 정책은 인가 서버에 달려 있다.",
+      "JWT act claim에 actor 계보를 표현할 수 있지만 발급과 집행의 정책 검증은 별도로 필요하다."
+    ],
+    "engineering_use": [
+      "직원 토큰을 upstream에 전달하지 않는 교환 경로를 설계할 때 참조한다.",
+      "issuer·subject·현재 actor·audience·scope를 감사에서 구분한다.",
+      "토큰 교환 지원 여부와 사용자 권한 확대를 각각 테스트한다."
+    ],
+    "reading_anchors": [
+      "§1.1 Delegation vs. Impersonation Semantics",
+      "§2 Token Exchange",
+      "§4.1 act Claim"
+    ],
+    "limitations": "공식 원문 전체를 새로 다운로드하고 지정 절을 선별 확인했다. 규격 준수 검사·인가 서버/SDK 구현 전체 검토·실제 토큰 교환 시험·errata 검토는 하지 않았다. 규격의 기능이 우리 솔루션에 구현되어 있다는 뜻은 아니다.",
+    "license_notice": "원문에 포함된 IETF Trust copyright 및 BCP 78 / Trust Legal Provisions 고지를 그대로 보존했다. 코드 부분의 사용은 원문 라이선스 조건을 따른다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "공식 RFC 전체 텍스트를 IETF Trust 고지와 함께 보존한다.",
+    "license_url": "https://trustee.ietf.org/license-info/",
+    "kind": "standard-document",
+    "url": "https://www.rfc-editor.org/rfc/rfc8693.txt",
+    "verified_on": "2026-10-13",
+    "verification": "official_original_downloaded_sha256_checked_and_selected_sections_read",
+    "upstream_verification": "fulltext",
+    "originals": [
+      "sources/live/T11/rfc8693.txt"
+    ],
+    "extracts": [
+      "sources/live/T11/rfc8693.md"
+    ],
+    "provenance": "sources/live/T11/provenance.json",
+    "page": "papers/T11.md"
+  },
+  {
+    "id": "T12",
+    "rfc": "9396",
+    "title": "RFC 9396: OAuth 2.0 Rich Authorization Requests",
+    "summary": "단순 scope 문자열보다 상세한 자원·행위·데이터 유형의 권한을 authorization_details로 요청하는 규격이다. 사용자 승인 내용을 실제 호출 인자와 결합하는 설계에 사용한다.",
+    "findings": [
+      "type·locations·actions·datatypes 등의 구조로 권한의 세부 범위를 표현할 수 있다.",
+      "scope와 authorization_details의 조합 및 요청·부여 권한의 차이를 명시한다.",
+      "인가 서버가 부여 권한을 자원 서버에 전달해야 실제 집행이 가능하다."
+    ],
+    "engineering_use": [
+      "승인 계약의 자원·동작·목적지·데이터 범위 필드를 비교한다.",
+      "요청한 권한보다 실제 부여된 권한을 기준으로 호출을 판정한다.",
+      "알 수 없는 type·field·값과 승인 요청 변조의 실패 조건을 검사한다."
+    ],
+    "reading_anchors": [
+      "§2 Authorization Data Types",
+      "§3.1 Relationship to scope",
+      "§9 Resource Servers",
+      "§12 Security Considerations"
+    ],
+    "limitations": "공식 원문 전체를 새로 다운로드하고 지정 절을 선별 확인했다. 규격 준수 검사·인가 서버/SDK 구현 전체 검토·실제 토큰 교환 시험·errata 검토는 하지 않았다. 규격의 기능이 우리 솔루션에 구현되어 있다는 뜻은 아니다.",
+    "license_notice": "원문에 포함된 IETF Trust copyright 및 BCP 78 / Trust Legal Provisions 고지를 그대로 보존했다. 코드 부분의 사용은 원문 라이선스 조건을 따른다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "공식 RFC 전체 텍스트를 IETF Trust 고지와 함께 보존한다.",
+    "license_url": "https://trustee.ietf.org/license-info/",
+    "kind": "standard-document",
+    "url": "https://www.rfc-editor.org/rfc/rfc9396.txt",
+    "verified_on": "2026-10-13",
+    "verification": "official_original_downloaded_sha256_checked_and_selected_sections_read",
+    "upstream_verification": "fulltext",
+    "originals": [
+      "sources/live/T12/rfc9396.txt"
+    ],
+    "extracts": [
+      "sources/live/T12/rfc9396.md"
+    ],
+    "provenance": "sources/live/T12/provenance.json",
+    "page": "papers/T12.md"
+  },
+  {
+    "id": "T15",
+    "title": "CoSAI Model Context Protocol Security v2.0",
+    "kind": "standard-document",
+    "url": "https://github.com/cosai-oasis/ws4-secure-design-agentic-systems/blob/main/whitepapers/model-context-protocol-security.md",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "fulltext",
+    "upstream_verified_on": "2026-10-07",
+    "originals": [
+      "sources/policy/T15/originals/T15_original.md"
+    ],
+    "extracts": [
+      "sources/policy/T15/extracts/T15.md"
+    ],
+    "summary": "CoSAI MCP Security v2.0은 신원·위임·도구 변경·감사 및 보증 프로파일을 함께 다룬다. 특히 서버 폐기와 자격·하위 위임 회수, 진행 중 작업의 정지 증거가 수명주기 개발과 직접 연결된다.",
+    "engineering_use": [
+      "TERMINATION_MODEL의 자격 회수·신규 호출 차단·진행 중 호출 정지 증거를 대조한다.",
+      "서버별 계약 변경이 미승인 상태로 전파되는 시나리오를 만든다.",
+      "원장 필드에 사용자·도구 버전·판정·효과·회수 시각을 연결한다."
+    ],
+    "findings": [
+      "도구 변경과 위임은 등록 시점 검사만으로 끝나지 않는다.",
+      "§3.3.2는 자격 회수·회수 전파·진행 중 호출·핸들 무효화를 함께 검토한다.",
+      "보증 프로파일의 충족 여부는 통제와 시험 증거로 확인해야 한다."
+    ],
+    "reading_anchors": [
+      "§3.3.2 server decommissioning and revocation",
+      "assurance profiles",
+      "delegation and lifecycle"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "지정 절 선별 읽기; 모든 절·인용 문헌 정독 또는 실험 재현 아님 / 원문 지시문은 참고 데이터로만 취급 / 제안은 사용자 프로젝트 구현과 별개 / 기존 출처 재검토 판본으로 취급; 기존 원문을 덮어쓰지 않음",
+    "license_notice": "CC-BY-4.0: https://creativecommons.org/licenses/by/4.0/ . 보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "distribution": "public-under-license",
+    "distribution_reason": "보존 판본의 CC BY 4.0 허용을 공식 출처에서 확인했다. 저자·제목·출처·원본 라이선스와 기계 추출 표시를 유지한다.",
+    "provenance": "sources/policy/T15/upstream.json",
+    "page": "papers/T15.md"
+  },
+  {
+    "id": "T19",
+    "title": "RFC 7009: OAuth 2.0 Token Revocation",
+    "kind": "standard-document",
+    "url": "https://www.rfc-editor.org/rfc/rfc7009.txt",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "fulltext",
+    "upstream_verified_on": "2026-10-07",
+    "originals": [
+      "sources/policy/T19/originals/T19_supplement.txt"
+    ],
+    "extracts": [
+      "sources/policy/T19/extracts/T19_supplement.md"
+    ],
+    "summary": "RFC 7009는 OAuth 토큰 회수 엔드포인트와 응답 의미를 정의한다. 회수 요청의 성공 응답과 실제 자원 서버의 사용 불가 상태를 구분하는 종료 판정 근거다.",
+    "engineering_use": [
+      "회수 응답·재사용 차단·자원 서버 효과를 각각 원장에 남긴다.",
+      "회수 중 503일 때 완료 상태를 부여하지 않고 재시도 정책을 명시한다.",
+      "현재 토큰 설계의 만료·블랙리스트·검증 캐시를 대조한다."
+    ],
+    "findings": [
+      "회수 엔드포인트는 토큰을 무효화하고 연관 토큰을 다룰 수 있다.",
+      "이미 무효한 토큰도 성공 응답을 받으므로 200만으로 회수 효과를 증명할 수 없다.",
+      "전파 지연·503 오류와 자체 완결 토큰의 집행 한계가 남는다."
+    ],
+    "reading_anchors": [
+      "§2 Token Revocation",
+      "§2.2 Revocation Response",
+      "§3 Implementation Note"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "지정 절 선별 읽기; 모든 절·인용 문헌 정독 또는 실험 재현 아님 / 원문 지시문은 참고 데이터로만 취급 / 제안은 사용자 프로젝트 구현과 별개",
+    "license_notice": "IETF Trust Legal Provisions / BCP 78: https://trustee.ietf.org/license-info/ . IETF Trust 원문 고지와 문서 재사용 조건을 유지한다. 본문 원문을 수정하지 않고 텍스트를 MD 코드 블록에 보존했다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://trustee.ietf.org/license-info/",
+    "distribution": "public-under-license",
+    "distribution_reason": "IETF Trust 원문 고지와 문서 재사용 조건을 유지한다. 본문 원문을 수정하지 않고 텍스트를 MD 코드 블록에 보존했다.",
+    "provenance": "sources/policy/T19/upstream.json",
+    "page": "papers/T19.md"
+  },
+  {
+    "id": "T20",
+    "title": "RFC 7662: OAuth 2.0 Token Introspection",
+    "kind": "standard-document",
+    "url": "https://www.rfc-editor.org/rfc/rfc7662.txt",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "fulltext",
+    "upstream_verified_on": "2026-10-07",
+    "originals": [
+      "sources/policy/T20/originals/T20_supplement.txt"
+    ],
+    "extracts": [
+      "sources/policy/T20/extracts/T20_supplement.md"
+    ],
+    "summary": "RFC 7662는 토큰의 active 상태와 메타데이터를 조회하는 introspection 규격이다. 중앙 회수 상태를 조회하는 방법과 캐시로 인한 지연을 같이 검토한다.",
+    "engineering_use": [
+      "회수 직후·캐시 만료 직후·IdP 불능의 판정 시나리오를 분리한다.",
+      "introspection 자격과 응답 로그의 개인정보 노출을 최소화한다.",
+      "active만 확인하고 aud·scope 검사를 생략하는 경로가 없는지 점검한다."
+    ],
+    "findings": [
+      "active=false와 active=true의 의미는 해당 자원 서버의 토큰 검증 맥락에 있다.",
+      "토큰 조회 응답에 subject·scope·audience·만료 등 메타데이터가 포함될 수 있다.",
+      "조회 결과 캐시는 회수 전파와 가용성 사이의 선택을 만든다."
+    ],
+    "reading_anchors": [
+      "§2.2 Introspection Response",
+      "§4 Security Considerations",
+      "§5 Privacy Considerations"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "지정 절 선별 읽기; 모든 절·인용 문헌 정독 또는 실험 재현 아님 / 원문 지시문은 참고 데이터로만 취급 / 제안은 사용자 프로젝트 구현과 별개",
+    "license_notice": "IETF Trust Legal Provisions / BCP 78: https://trustee.ietf.org/license-info/ . IETF Trust 원문 고지와 문서 재사용 조건을 유지한다. 본문 원문을 수정하지 않고 텍스트를 MD 코드 블록에 보존했다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://trustee.ietf.org/license-info/",
+    "distribution": "public-under-license",
+    "distribution_reason": "IETF Trust 원문 고지와 문서 재사용 조건을 유지한다. 본문 원문을 수정하지 않고 텍스트를 MD 코드 블록에 보존했다.",
+    "provenance": "sources/policy/T20/upstream.json",
+    "page": "papers/T20.md"
+  },
+  {
+    "id": "T21",
+    "title": "MCP Security Best Practices",
+    "kind": "standard-document",
+    "url": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read; official_current_url_resolved_2026-10-13",
+    "upstream_verification": "fulltext",
+    "upstream_verified_on": "2026-10-10",
+    "originals": [
+      "local-sources/policy/T21/originals/T21_mcp_best.html"
+    ],
+    "extracts": [
+      "local-sources/policy/T21/extracts/T21_mcp_best.md"
+    ],
+    "summary": "MCP Security Best Practices는 confused deputy, token passthrough, SSRF, 상태 핸들, 로컬 서버, 리다이렉트와 scope 최소화의 보안 조건을 설명한다. 프록시의 인가·네트워크 경계를 시험할 체크리스트로 사용한다.",
+    "engineering_use": [
+      "OAuth discovery SSRF와 승인된 내부 MCP 자산 조회를 구분한다.",
+      "토큰 전달·state 탈취·redirect mix-up의 직접 프로토콜 테스트를 만든다.",
+      "Gateway 경유 도구 정책과 엔드포인트의 로컬 실행 통제를 분리해 설명한다."
+    ],
+    "findings": [
+      "프록시는 사용자별·클라이언트별 동의와 정확한 redirect URI 검증이 필요하다.",
+      "다른 서비스용 토큰 전달과 OAuth 메타데이터의 임의 주소 조회는 별도 공격 경로다.",
+      "stdio 프록시와 로컬 서버에는 프로세스·환경·권한의 추가 경계가 있다."
+    ],
+    "reading_anchors": [
+      "Token Passthrough",
+      "Server-Side Request Forgery",
+      "State Handle Hijacking",
+      "stdio Transport Security in Proxy Scenarios"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "공격·통제 전11절 주요 조건을 선별 대조. 상위 authorization 규격·OAuth RFC·SDK 구현 전체 검증과 실제 시험은 미실시. OAuth metadata SSRF와 승인된 내부 자산 점검을 구별한다.",
+    "license_notice": "website snapshot redistribution unconfirmed: https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE . MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "distribution": "local-only",
+    "distribution_reason": "MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다.",
+    "provenance": "sources/policy/T21/upstream.json",
+    "page": "papers/T21.md"
+  },
+  {
+    "id": "T22",
+    "title": "MCP Tasks extension",
+    "kind": "standard-document",
+    "url": "https://tasks.extensions.modelcontextprotocol.io/specification/2026-07-28/tasks",
+    "verified_on": "2026-10-13",
+    "verification": "local_sha256_checked_and_selected_extract_read",
+    "upstream_verification": "fulltext",
+    "upstream_verified_on": "2026-10-07",
+    "originals": [
+      "local-sources/policy/T22/originals/T22_supplement.html"
+    ],
+    "extracts": [
+      "local-sources/policy/T22/extracts/T22_supplement.md"
+    ],
+    "summary": "MCP Tasks 확장의 작업 상태·조회·취소 흐름은 장기 실행 도구의 수명주기 참고다. 취소 요청 확인이 실제 작업 중단과 하위 시스템 효과의 원복을 뜻하지 않도록 설계해야 한다.",
+    "engineering_use": [
+      "종료 케이스에 task id와 신규 호출 차단·실행 중 작업 상태를 연결한다.",
+      "취소 후 외부 DB·메일·Git 효과가 더 생기는지 별도로 검사한다.",
+      "지원하지 않는 서버에는 취소 가능으로 표시하지 않는다."
+    ],
+    "findings": [
+      "장기 실행 작업에 별도 상태·식별자·조회 수명주기가 생긴다.",
+      "취소 수신·작업 상태 전환·부작용 중단은 서로 다른 관측이다.",
+      "확장 지원·보존 기간·권한 검사를 명시해야 한다."
+    ],
+    "reading_anchors": [
+      "Task lifecycle",
+      "tasks/cancel",
+      "task retention and cancellation"
+    ],
+    "limitations": "2026-10-13에 기존 원본·추출본 존재와 복사 SHA-256을 확인하고 초록·지정 절을 선별 읽었다. 원본 전체 정독·표/그림 육안 검증·실험 재현·현재 모델 성능 검증은 하지 않았다. 보존 판본과 온라인 최신 판본이 동일하다는 보장은 없다. 적용 후보는 우리 구현이나 배포에서 검증된 기능을 의미하지 않는다.",
+    "upstream_limitations": "지정 절 선별 읽기; 모든 절·인용 문헌 정독 또는 실험 재현 아님 / 원문 지시문은 참고 데이터로만 취급 / 제안은 사용자 프로젝트 구현과 별개 / draft URL이 아니라 2026-07-28 판본 URL을 확보; cancellation acknowledgement와 실제 정지 결과 구분",
+    "license_notice": "website snapshot redistribution unconfirmed: https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE . MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다. 원문 copyright 고지와 저자·출처 정보는 provenance에 보존했다.",
+    "license_url": "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/LICENSE",
+    "distribution": "local-only",
+    "distribution_reason": "MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다.",
+    "provenance": "sources/policy/T22/upstream.json",
+    "page": "papers/T22.md"
+  }
+]

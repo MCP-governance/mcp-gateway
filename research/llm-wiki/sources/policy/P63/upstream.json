@@ -1,0 +1,50 @@
+{
+  "id": "P63",
+  "title": "How Agents Ask for Permission: User Permissions for AI Agents, from Interfaces to Enforcement",
+  "authors": [
+    "Alexandra E. Michael",
+    "Franziska Roesner"
+  ],
+  "organization": "arXiv",
+  "country": "",
+  "date": "2026-07-15",
+  "url": "https://arxiv.org/abs/2607.13718v2",
+  "doi": "10.48550/arXiv.2607.13718",
+  "type": "preprint",
+  "status": "arXiv preprint; 동료심사 게재 미확인",
+  "verification": "metadata",
+  "venue": "arXiv",
+  "summary": "에이전트 권한 요청을 인터페이스에서 집행까지 다룸(검색 결과 제목 기준).",
+  "mcp_relevance": "사람 승인·동의 UX와 집행의 연결 근거 후보.",
+  "year_window_met": true,
+  "kci_verified": false,
+  "limitations": "공식 arXiv 제목·저자·제출/갱신일을 교차검증. 전 페이지 정독·실험 재현 아님.",
+  "date_precision": "day",
+  "date_basis": "arXiv 최초 제출일; 최신 수정일과 구분",
+  "verified_on": "2026-10-07",
+  "pdf_url": "https://arxiv.org/pdf/2607.13718v2",
+  "latest_revision_on": "2026-07-20",
+  "version": "2",
+  "group": "보강(학술)",
+  "level": "I",
+  "month": "2026-07",
+  "agent_specific": true,
+  "local": [
+    {
+      "manifest": "acquisition_academic_add",
+      "status": "downloaded_and_extracted",
+      "url": "https://arxiv.org/pdf/2607.13718v2",
+      "original": "P63.pdf",
+      "md": "P63.md",
+      "text_chars": 93778,
+      "error": "",
+      "file_exists": true,
+      "sha256": "0004b537084eb86b219bc7df770c04a746a43f1ab4e1b5a1e9f86c9eaad7ddae",
+      "pages": 15,
+      "bytes": 305673,
+      "original_path": "originals/web/P63.pdf",
+      "md_path": "extracted/P63.md"
+    }
+  ],
+  "acquisition_failed": []
+}

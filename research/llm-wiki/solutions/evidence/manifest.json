@@ -1,0 +1,349 @@
+[
+  {
+    "solution_id": "ibm-contextforge",
+    "repository": "https://github.com/IBM/mcp-context-forge",
+    "commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+    "source_path": "plugins/config.yaml",
+    "line_ranges": [
+      [
+        88,
+        115
+      ],
+      [
+        1259,
+        1303
+      ]
+    ],
+    "source_sha256": "955c919a421d299ffbc754dd165290ffc533d6e969f7d36a56f73169fa6bf377",
+    "path": "solutions/evidence/ibm-contextforge/plugins__config.yaml.excerpt.txt",
+    "sha256": "506b95f389b5bc5a14c53aa1647dbf01e9478f2be3e1d570e87a4e1ea2f8244d",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ibm-contextforge",
+    "repository": "https://github.com/IBM/mcp-context-forge",
+    "commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+    "source_path": "plugins/unified_pdp/unified_pdp.py",
+    "line_ranges": [
+      [
+        1,
+        7
+      ],
+      [
+        123,
+        164
+      ],
+      [
+        234,
+        312
+      ]
+    ],
+    "source_sha256": "6fe60477da84f9451af75912f10c7563c75a31f6aff67b5f6a4cc1e678f9c4d4",
+    "path": "solutions/evidence/ibm-contextforge/plugins__unified_pdp__unified_pdp.py.excerpt.txt",
+    "sha256": "a32acd0c08748b12b9727854c76d2c8281e69a150267ce3d1141c48c0b475ac6",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ibm-contextforge",
+    "repository": "https://github.com/IBM/mcp-context-forge",
+    "commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+    "source_path": "mcpgateway/services/oauth_manager.py",
+    "line_ranges": [
+      [
+        1,
+        7
+      ],
+      [
+        771,
+        852
+      ]
+    ],
+    "source_sha256": "8143266e10cdf957a4adb2a4e1e0bddef35d462851467464da43dc1af17f87b0",
+    "path": "solutions/evidence/ibm-contextforge/mcpgateway__services__oauth_manager.py.excerpt.txt",
+    "sha256": "781b4d46a01aca8ee2199574e2b56ba38d07013c43120a5ffed1c46aa5d95d7b",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ibm-contextforge",
+    "repository": "https://github.com/IBM/mcp-context-forge",
+    "commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+    "source_path": "plugins/watchdog/watchdog.py",
+    "line_ranges": [
+      [
+        1,
+        7
+      ],
+      [
+        77,
+        116
+      ]
+    ],
+    "source_sha256": "24ac41c11b1bca72afad92d17889262da16ed3ca706df747aa85bb2460598659",
+    "path": "solutions/evidence/ibm-contextforge/plugins__watchdog__watchdog.py.excerpt.txt",
+    "sha256": "ed5c2a17164ec02cea8019e5c75079dfd6e1eae9c364aeca5f0179d9dbdccd01",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ibm-contextforge",
+    "repository": "https://github.com/IBM/mcp-context-forge",
+    "commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+    "source_path": "LICENSE",
+    "path": "solutions/evidence/ibm-contextforge/LICENSE.txt",
+    "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+    "source_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ibm-cpex",
+    "repository": "https://github.com/IBM/cpex-plugins",
+    "commit": "ae26938128cb438a268e7f3217603bc39b9dd18f",
+    "source_path": "plugins/rust/python-package/rate_limiter/src/redis_backend.rs",
+    "line_ranges": [
+      [
+        1,
+        110
+      ]
+    ],
+    "source_sha256": "341d322283c892a88120fb1b91fac9b198efbb7c705eddb7bcd7c5b6666a421a",
+    "path": "solutions/evidence/ibm-cpex/plugins__rust__python-package__rate_limiter__src__redis_backend.rs.excerpt.txt",
+    "sha256": "0eebf65e5dc1219683679670216e6c9606f9aaecf45906a33b2a7c6a91472df0",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ibm-cpex",
+    "repository": "https://github.com/IBM/cpex-plugins",
+    "commit": "ae26938128cb438a268e7f3217603bc39b9dd18f",
+    "source_path": "crates/framework_bridge/src/lib.rs",
+    "line_ranges": [
+      [
+        1,
+        48
+      ]
+    ],
+    "source_sha256": "a6b004a2cf55df2d646ee78ad69355f62fc88a718f715ec31c565ccc5c547bd6",
+    "path": "solutions/evidence/ibm-cpex/crates__framework_bridge__src__lib.rs.excerpt.txt",
+    "sha256": "0abd0392043ea09737f0b77ef6635a9d2fc01ed67f6ccaf932917b2e36e78e3b",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ibm-cpex",
+    "repository": "https://github.com/IBM/cpex-plugins",
+    "commit": "ae26938128cb438a268e7f3217603bc39b9dd18f",
+    "source_path": "LICENSE",
+    "path": "solutions/evidence/ibm-cpex/LICENSE.txt",
+    "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+    "source_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ms-mcp-gateway",
+    "repository": "https://github.com/microsoft/mcp-gateway",
+    "commit": "3594c4eee36308ac131aad1c946ea14140b4353d",
+    "source_path": "dotnet/Microsoft.McpGateway.Management/src/Authorization/SimplePermissionProvider.cs",
+    "line_ranges": [
+      [
+        1,
+        96
+      ]
+    ],
+    "source_sha256": "105662e8677b2e3b595623a9ea248fbd171f430f27267e1f7c544febbc5f1cc0",
+    "path": "solutions/evidence/ms-mcp-gateway/dotnet__Microsoft.McpGateway.Management__src__Authorization__SimplePermissionProvider.cs.excerpt.txt",
+    "sha256": "916777529f9a5a41c9f42803b92aee03ded3fe9bc8d2137d3f9ab6c60fd6b280",
+    "license": "MIT",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ms-mcp-gateway",
+    "repository": "https://github.com/microsoft/mcp-gateway",
+    "commit": "3594c4eee36308ac131aad1c946ea14140b4353d",
+    "source_path": "dotnet/Microsoft.McpGateway.Management/src/Authorization/BuiltinToolAuthorizer.cs",
+    "line_ranges": [
+      [
+        1,
+        42
+      ]
+    ],
+    "source_sha256": "8b64e8ece47bdb12f5d9e2a539082b8d86e5acc546104e01378f2bfbfab29bc6",
+    "path": "solutions/evidence/ms-mcp-gateway/dotnet__Microsoft.McpGateway.Management__src__Authorization__BuiltinToolAuthorizer.cs.excerpt.txt",
+    "sha256": "112d73c78be19ae1dc6bbdd54bba27b599b63d7102aa13e69f81bdfff15e3434",
+    "license": "MIT",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ms-mcp-gateway",
+    "repository": "https://github.com/microsoft/mcp-gateway",
+    "commit": "3594c4eee36308ac131aad1c946ea14140b4353d",
+    "source_path": "LICENSE",
+    "path": "solutions/evidence/ms-mcp-gateway/LICENSE.txt",
+    "sha256": "98a96c38494df4963951e32b81ec4effebe4c8a812ab8d9e7d185d59e86fe2fc",
+    "source_sha256": "98a96c38494df4963951e32b81ec4effebe4c8a812ab8d9e7d185d59e86fe2fc",
+    "license": "MIT",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ms-mcp-gateway",
+    "repository": "https://github.com/microsoft/mcp-gateway",
+    "commit": "3594c4eee36308ac131aad1c946ea14140b4353d",
+    "source_path": "NOTICE",
+    "path": "solutions/evidence/ms-mcp-gateway/NOTICE.txt",
+    "sha256": "5d5d83e02fbd6f9fcd954e3d33192f2cb2b654e4cb21d805b239b52352731b28",
+    "source_sha256": "5d5d83e02fbd6f9fcd954e3d33192f2cb2b654e4cb21d805b239b52352731b28",
+    "license": "MIT",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ms-wassette",
+    "repository": "https://github.com/microsoft/wassette",
+    "commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+    "source_path": "crates/wassette/src/http.rs",
+    "line_ranges": [
+      [
+        1,
+        7
+      ],
+      [
+        73,
+        146
+      ]
+    ],
+    "source_sha256": "ac475968caea12155e386f266164362a8b83b860c88acb9f9cc5cfd9653a3803",
+    "path": "solutions/evidence/ms-wassette/crates__wassette__src__http.rs.excerpt.txt",
+    "sha256": "a8f5e38a1281aed069bf9e506ecc07846fa7d9b52f545acdce0f144a5bfce991",
+    "license": "MIT",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ms-wassette",
+    "repository": "https://github.com/microsoft/wassette",
+    "commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+    "source_path": "crates/wassette/src/wasistate.rs",
+    "line_ranges": [
+      [
+        1,
+        7
+      ],
+      [
+        96,
+        146
+      ]
+    ],
+    "source_sha256": "ef50c793ca8c2b6157900b6134cb2c8e093e5b0f46dffd2600363d2d27590a62",
+    "path": "solutions/evidence/ms-wassette/crates__wassette__src__wasistate.rs.excerpt.txt",
+    "sha256": "23106e20fe6c6e43a4b859af592fe3b4e800c09bc1d7787ec67a4bc7289d70ca",
+    "license": "MIT",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ms-wassette",
+    "repository": "https://github.com/microsoft/wassette",
+    "commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+    "source_path": "crates/wassette/src/runtime_context.rs",
+    "line_ranges": [
+      [
+        1,
+        51
+      ]
+    ],
+    "source_sha256": "1fad725d537725f416fc2cba7ae8e5f7b1447bbde2ff8dd9147d4797271e124c",
+    "path": "solutions/evidence/ms-wassette/crates__wassette__src__runtime_context.rs.excerpt.txt",
+    "sha256": "469687e76563b013712c0df165639889b99feecd8229309f6105097f9952cf3c",
+    "license": "MIT",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ms-wassette",
+    "repository": "https://github.com/microsoft/wassette",
+    "commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+    "source_path": "LICENSE",
+    "path": "solutions/evidence/ms-wassette/LICENSE.txt",
+    "sha256": "fd532481d828e13a0b13ccb598e02338a3617740675a862ee6bdc1541b68e93d",
+    "source_sha256": "fd532481d828e13a0b13ccb598e02338a3617740675a862ee6bdc1541b68e93d",
+    "license": "MIT",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "ms-wassette",
+    "repository": "https://github.com/microsoft/wassette",
+    "commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+    "source_path": "NOTICE",
+    "path": "solutions/evidence/ms-wassette/NOTICE.txt",
+    "sha256": "be3a33ec4f4ffa0d2dae1670570dc81b16777dfa30133d8d666ff6d642fa927c",
+    "source_sha256": "be3a33ec4f4ffa0d2dae1670570dc81b16777dfa30133d8d666ff6d642fa927c",
+    "license": "MIT",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "litellm",
+    "repository": "https://github.com/BerriAI/litellm",
+    "commit": "f8e456d105af921213267d0ef801ca08b8fdbc0b",
+    "source_path": "litellm/proxy/_experimental/mcp_server/server.py",
+    "line_ranges": [
+      [
+        1521,
+        1574
+      ]
+    ],
+    "source_sha256": "d739d56fed737efc756d9b871e8187325ffa0f374d46cc761f70edfd12a252ee",
+    "path": "solutions/evidence/litellm/litellm__proxy___experimental__mcp_server__server.py.excerpt.txt",
+    "sha256": "901fd14fbdf55668a1f0c3a8a50aad8bc15bacd5ef8b125807fac842b297032c",
+    "license": "MIT (enterprise excluded)",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "litellm",
+    "repository": "https://github.com/BerriAI/litellm",
+    "commit": "f8e456d105af921213267d0ef801ca08b8fdbc0b",
+    "source_path": "litellm/proxy/_experimental/mcp_server/mcp_server_manager.py",
+    "line_ranges": [
+      [
+        3169,
+        3207
+      ],
+      [
+        3210,
+        3260
+      ]
+    ],
+    "source_sha256": "a79480a3d44bd3d5daaa768a738534bea18727ed97180d67f2db4d354a259735",
+    "path": "solutions/evidence/litellm/litellm__proxy___experimental__mcp_server__mcp_server_manager.py.excerpt.txt",
+    "sha256": "b16d09e3e8457cbb1c2dcdbc5a8424a14fe7212a2e365e91d57f3bcc6d71a638",
+    "license": "MIT (enterprise excluded)",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "litellm",
+    "repository": "https://github.com/BerriAI/litellm",
+    "commit": "f8e456d105af921213267d0ef801ca08b8fdbc0b",
+    "source_path": "pyproject.toml",
+    "line_ranges": [
+      [
+        1,
+        15
+      ]
+    ],
+    "source_sha256": "fa037c5325bc3aea08966b9e03016d285f321ef1c8a22fc6a6a95b3b045356f8",
+    "path": "solutions/evidence/litellm/pyproject.toml.excerpt.txt",
+    "sha256": "577cda236f576d2912b66fcdcbb7aa4d536a1e924eb6e7f94900448c4146ed5f",
+    "license": "MIT (enterprise excluded)",
+    "verified_on": "2026-10-13"
+  },
+  {
+    "solution_id": "litellm",
+    "repository": "https://github.com/BerriAI/litellm",
+    "commit": "f8e456d105af921213267d0ef801ca08b8fdbc0b",
+    "source_path": "LICENSE",
+    "path": "solutions/evidence/litellm/LICENSE.txt",
+    "sha256": "b170d6bf8e8835dd357e011681db028f4d51e2fb0ea892058f56e01fb39b8273",
+    "source_sha256": "b170d6bf8e8835dd357e011681db028f4d51e2fb0ea892058f56e01fb39b8273",
+    "license": "MIT (enterprise excluded)",
+    "verified_on": "2026-10-13"
+  }
+]

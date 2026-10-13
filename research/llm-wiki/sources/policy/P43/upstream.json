@@ -1,0 +1,48 @@
+{
+  "organization": "arXiv (Cornell-hosted repository)",
+  "country": "international",
+  "doi": "10.48550/arXiv.2508.13220",
+  "type": "preprint",
+  "status": "arXiv preprint; 동료심사 게재 상태 미확인",
+  "verification": "metadata",
+  "venue": "arXiv",
+  "kci_verified": false,
+  "id": "P43",
+  "title": "MCPSecBench: A Systematic Security Benchmark and Playground for Testing Model Context Protocols",
+  "authors": [
+    "Yixuan Yang",
+    "Daoyuan Wu",
+    "Yufan Chen"
+  ],
+  "date": "2025-08-17",
+  "url": "https://arxiv.org/abs/2508.13220",
+  "summary": "MCP 시스템의 공격 표면을 분류하고 공격·방어를 시험하는 벤치마크와 playground를 제안한다.",
+  "mcp_relevance": "조달·운영의 보안 시험에 클라이언트·서버·전송·도구 경계별 공격 시나리오를 넣는 근거이다.",
+  "limitations": "벤치마크 결과는 구현·모델·공격 설정에 묶인다. 재현 구성과 버전을 함께 보관해야 한다.",
+  "year_window_met": true,
+  "pdf_url": "https://arxiv.org/pdf/2508.13220",
+  "date_precision": "day",
+  "date_basis": "arXiv first submitted date; revised versions not new records",
+  "group": "학술 논문",
+  "level": "I",
+  "month": "2025-08",
+  "agent_specific": true,
+  "local": [
+    {
+      "manifest": "acquisition_academic",
+      "status": "downloaded_and_extracted",
+      "url": "https://arxiv.org/pdf/2508.13220",
+      "original": "P43.pdf",
+      "md": "P43.md",
+      "text_chars": 103082,
+      "error": "",
+      "file_exists": true,
+      "sha256": "5f09aefb4bc08a8e7b97892d55566bc74afc2f8b166641f90cdceb958ff3d5e3",
+      "pages": 20,
+      "bytes": 2237396,
+      "original_path": "originals/web/P43.pdf",
+      "md_path": "extracted/P43.md"
+    }
+  ],
+  "acquisition_failed": []
+}

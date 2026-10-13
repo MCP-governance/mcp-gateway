@@ -1,0 +1,51 @@
+{
+  "organization": "arXiv (Cornell-hosted repository)",
+  "country": "international",
+  "doi": "10.48550/arXiv.2512.08290",
+  "type": "preprint",
+  "status": "arXiv preprint; 동료심사 게재 상태 미확인",
+  "verification": "metadata",
+  "venue": "arXiv",
+  "kci_verified": false,
+  "id": "P46",
+  "title": "Systematization of Knowledge: Security and Safety in the Model Context Protocol Ecosystem",
+  "authors": [
+    "Shiva Gaire",
+    "Srijan Gyawali",
+    "Saroj Mishra",
+    "Suman Niroula",
+    "Dilip Thakur",
+    "Umesh Yadav"
+  ],
+  "date": "2025-12-09",
+  "url": "https://arxiv.org/abs/2512.08290",
+  "summary": "MCP 생태계의 security와 safety 문제를 정리하고 provenance와 실행 시점 통제의 연구 과제를 도출한다.",
+  "mcp_relevance": "위협·통제·책임 주체를 한 체계에서 연결하는 정책 분류의 보조 문헌이다.",
+  "limitations": "사전 공개 체계화 논문이다. 제도적 의무나 표준 자체로 인용하지 않는다.",
+  "year_window_met": true,
+  "pdf_url": "https://arxiv.org/pdf/2512.08290",
+  "date_precision": "day",
+  "date_basis": "arXiv first submitted date; revised versions not new records",
+  "group": "학술 논문",
+  "level": "I",
+  "month": "2025-12",
+  "agent_specific": true,
+  "local": [
+    {
+      "manifest": "acquisition_academic",
+      "status": "downloaded_and_extracted",
+      "url": "https://arxiv.org/pdf/2512.08290",
+      "original": "P46.pdf",
+      "md": "P46.md",
+      "text_chars": 165348,
+      "error": "",
+      "file_exists": true,
+      "sha256": "7af5408c3009d22380f7f1023ddea5196ce1d108f0eeadf89805e0c256f3525b",
+      "pages": 23,
+      "bytes": 5210848,
+      "original_path": "originals/web/P46.pdf",
+      "md_path": "extracted/P46.md"
+    }
+  ],
+  "acquisition_failed": []
+}

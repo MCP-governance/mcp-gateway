@@ -1,0 +1,63 @@
+SOURCE EXCERPT - NOT AN EXECUTABLE FILE
+Repository: https://github.com/BerriAI/litellm
+Commit: f8e456d105af921213267d0ef801ca08b8fdbc0b
+Source: litellm/proxy/_experimental/mcp_server/server.py
+License: MIT (enterprise excluded) (see LICENSE.txt)
+Original file SHA-256: d739d56fed737efc756d9b871e8187325ffa0f374d46cc761f70edfd12a252ee
+
+--- original lines 1521-1574 ---
+1521:     async def _get_allowed_mcp_servers_from_mcp_server_names(
+1522:         mcp_servers: Sequence[str] | None,
+1523:         allowed_mcp_servers: list[MCPServer],
+1524:     ) -> list[MCPServer]:
+1525:         """
+1526:         Get the filtered MCP servers from the MCP server names.
+1527: 
+1528:         Fails closed when ``mcp_servers`` is explicitly provided (path- or
+1529:         header-derived) but none of the names resolve to a server alias or
+1530:         access group the caller can access. The previous behavior returned
+1531:         the full ``allowed_mcp_servers`` set, which silently widened scope
+1532:         when a client targeted ``/mcp/<unknown>/`` and made URL/header
+1533:         namespacing appear to work when it did not.
+1534:         """
+1535: 
+1536:         filtered_server: Final[dict[str, MCPServer]] = {}
+1537:         # Filter servers based on mcp_servers parameter if provided
+1538:         if mcp_servers is not None:
+1539:             for server_or_group in mcp_servers:
+1540:                 server_name_matched = False
+1541: 
+1542:                 for server in allowed_mcp_servers:
+1543:                     if server and _server_answers_to(server, server_or_group):
+1544:                         filtered_server[server.server_id] = server
+1545:                         server_name_matched = True
+1546:                         break
+1547: 
+1548:                 if not server_name_matched:
+1549:                     try:
+1550:                         access_group_server_ids = await MCPRequestHandler._get_mcp_servers_from_access_groups(
+1551:                             [server_or_group]
+1552:                         )
+1553:                         # Only include servers that the user has access to
+1554:                         for server_id in access_group_server_ids:
+1555:                             for server in allowed_mcp_servers:
+1556:                                 if server_id == server.server_id:
+1557:                                     filtered_server[server.server_id] = server
+1558:                     except Exception as e:
+1559:                         verbose_logger.debug("Could not resolve '%s' as access group: %s", server_or_group, e)
+1560: 
+1561:         if filtered_server:
+1562:             return list(filtered_server.values())
+1563: 
+1564:         if mcp_servers is not None:
+1565:             # Caller asked for a specific scope but nothing resolved. Fail
+1566:             # closed so URL/header namespacing cannot silently fall back to
+1567:             # the caller's full allowed-server set.
+1568:             verbose_logger.debug(
+1569:                 "MCP scope filter resolved to no servers for requested names %s; returning empty list (fail-closed).",
+1570:                 mcp_servers,
+1571:             )
+1572:             return []
+1573: 
+1574:         return allowed_mcp_servers
+

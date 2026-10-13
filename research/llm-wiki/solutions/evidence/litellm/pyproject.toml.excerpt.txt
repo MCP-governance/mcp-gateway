@@ -1,0 +1,24 @@
+SOURCE EXCERPT - NOT AN EXECUTABLE FILE
+Repository: https://github.com/BerriAI/litellm
+Commit: f8e456d105af921213267d0ef801ca08b8fdbc0b
+Source: pyproject.toml
+License: MIT (enterprise excluded) (see LICENSE.txt)
+Original file SHA-256: fa037c5325bc3aea08966b9e03016d285f321ef1c8a22fc6a6a95b3b045356f8
+
+--- original lines 1-15 ---
+1: [project]
+2: name = "litellm"
+3: version = "1.102.0"
+4: description = "Library to easily interface with LLM API providers"
+5: readme = "README.md"
+6: requires-python = ">=3.10, <3.15"
+7: license = "MIT"
+8: license-files = ["LICENSE"]
+9: authors = [
+10:     { name = "BerriAI" },
+11: ]
+12: dependencies = [
+13:     # Ranges (not exact pins) so SDK consumers can coexist with their other
+14:     # deps. Reproducibility for our Docker/CI comes from `uv.lock`.
+15:     # When changing a floor, verify it installs + imports on every supported
+

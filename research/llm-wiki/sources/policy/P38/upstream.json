@@ -1,0 +1,49 @@
+{
+  "id": "P38",
+  "title": "InjecAgent: Benchmarking Indirect Prompt Injections in Tool-Integrated Large Language Model Agents",
+  "authors": [
+    "Qiusi Zhan",
+    "Zhixiang Liang",
+    "Zifan Ying",
+    "Daniel Kang"
+  ],
+  "organization": "Association for Computational Linguistics",
+  "country": "international",
+  "date": "2024-08",
+  "url": "https://aclanthology.org/2024.findings-acl.624/",
+  "doi": "10.18653/v1/2024.findings-acl.624",
+  "type": "conference",
+  "status": "Findings of ACL 2024 proceedings",
+  "verification": "metadata",
+  "venue": "Findings of ACL 2024",
+  "summary": "외부 콘텐츠의 간접 프롬프트 인젝션을 이용자 피해와 개인정보 유출로 나누어 평가하는 벤치마크를 제안한다.",
+  "mcp_relevance": "도구 응답의 비신뢰 데이터를 다루며 정보 유출과 부정 실행을 시험하는 선행 벤치마크이다.",
+  "limitations": "평가의 모의 도구 및 모델 설정과 실제 MCP 배포를 구분해야 한다. 공개 초록의 성능 수치를 정책안에 사용하지 않는다.",
+  "pdf_url": "https://aclanthology.org/2024.findings-acl.624.pdf",
+  "year_window_met": false,
+  "kci_verified": false,
+  "date_precision": "month",
+  "date_basis": "official proceedings year/month",
+  "group": "학술 논문",
+  "level": "I",
+  "month": "2024-08",
+  "agent_specific": true,
+  "local": [
+    {
+      "manifest": "acquisition_academic",
+      "status": "downloaded_and_extracted",
+      "url": "https://aclanthology.org/2024.findings-acl.624.pdf",
+      "original": "P38.pdf",
+      "md": "P38.md",
+      "text_chars": 146796,
+      "error": "",
+      "file_exists": true,
+      "sha256": "690a5d14abf0d33002822b531b78fa375da51783ff831ba8ecbb6e22f3d4f382",
+      "pages": 36,
+      "bytes": 3008583,
+      "original_path": "originals/web/P38.pdf",
+      "md_path": "extracted/P38.md"
+    }
+  ],
+  "acquisition_failed": []
+}

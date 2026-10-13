@@ -1,0 +1,602 @@
+[
+  {
+    "id": "P38",
+    "upstream_id": "P38",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/P38.pdf",
+        "path": "sources/policy/P38/originals/P38.pdf",
+        "role": "original",
+        "sha256": "690a5d14abf0d33002822b531b78fa375da51783ff831ba8ecbb6e22f3d4f382",
+        "bytes": 3008583
+      },
+      {
+        "source_path": "raw/extracted/P38.md",
+        "path": "sources/policy/P38/extracts/P38.md",
+        "role": "extract",
+        "sha256": "70aca5d0f8da61daa641748034f1febaca98bf77f60b8682ee27fa3c3db7eced",
+        "bytes": 148637
+      }
+    ],
+    "distribution": "public-under-license",
+    "provenance": "sources/policy/P38/upstream.json"
+  },
+  {
+    "id": "P39",
+    "upstream_id": "P39",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/P39.pdf",
+        "path": "local-sources/policy/P39/originals/P39.pdf",
+        "role": "original",
+        "sha256": "26a3f0426ee1d533e4dd9f62d1343a7a1d231fe718cfaf3a362cc7de829ae913",
+        "bytes": 900328
+      },
+      {
+        "source_path": "raw/extracted/P39.md",
+        "path": "local-sources/policy/P39/extracts/P39.md",
+        "role": "extract",
+        "sha256": "a4ab30d9c6ca2fdeb29549b52ee1713e57b6f0c9c263de40d6cadde3efe3a71b",
+        "bytes": 93676
+      }
+    ],
+    "distribution": "local-only",
+    "provenance": "sources/policy/P39/upstream.json"
+  },
+  {
+    "id": "P43",
+    "upstream_id": "P43",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/P43.pdf",
+        "path": "local-sources/policy/P43/originals/P43.pdf",
+        "role": "original",
+        "sha256": "5f09aefb4bc08a8e7b97892d55566bc74afc2f8b166641f90cdceb958ff3d5e3",
+        "bytes": 2237396
+      },
+      {
+        "source_path": "raw/extracted/P43.md",
+        "path": "local-sources/policy/P43/extracts/P43.md",
+        "role": "extract",
+        "sha256": "6546f217a7861af17031a21fc6f39dd724eb580e00d47de3ddca0d9431088a74",
+        "bytes": 104497
+      }
+    ],
+    "distribution": "local-only",
+    "provenance": "sources/policy/P43/upstream.json"
+  },
+  {
+    "id": "P46",
+    "upstream_id": "P46",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/P46.pdf",
+        "path": "local-sources/policy/P46/originals/P46.pdf",
+        "role": "original",
+        "sha256": "7af5408c3009d22380f7f1023ddea5196ce1d108f0eeadf89805e0c256f3525b",
+        "bytes": 5210848
+      },
+      {
+        "source_path": "raw/extracted/P46.md",
+        "path": "local-sources/policy/P46/extracts/P46.md",
+        "role": "extract",
+        "sha256": "5c200804053aa4a7c8d2a3957ee9d2eac698320024da584165859397ea272472",
+        "bytes": 167519
+      }
+    ],
+    "distribution": "local-only",
+    "provenance": "sources/policy/P46/upstream.json"
+  },
+  {
+    "id": "P47",
+    "upstream_id": "P47",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/P47.pdf",
+        "path": "local-sources/policy/P47/originals/P47.pdf",
+        "role": "original",
+        "sha256": "6fa224ad032f2187f21e6d5f23f8bde51b81897c2d969f6d46e9f3fd57fa976d",
+        "bytes": 1609753
+      },
+      {
+        "source_path": "raw/extracted/P47.md",
+        "path": "local-sources/policy/P47/extracts/P47.md",
+        "role": "extract",
+        "sha256": "9f8b9229bef5d02a80a34a7ac2cca4cf3c7bf7ad38fff5737e070f3393a4c146",
+        "bytes": 219499
+      }
+    ],
+    "distribution": "local-only",
+    "provenance": "sources/policy/P47/upstream.json"
+  },
+  {
+    "id": "P51",
+    "upstream_id": "P51",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/P51.pdf",
+        "path": "sources/policy/P51/originals/P51.pdf",
+        "role": "original",
+        "sha256": "4ba23502be07ebca45221d88f552fcd42b943f1a60e6ec52c4ff4f8c46d3eb85",
+        "bytes": 1281537
+      },
+      {
+        "source_path": "raw/extracted/P51.md",
+        "path": "sources/policy/P51/extracts/P51.md",
+        "role": "extract",
+        "sha256": "5873fd02fe9b41f62ca510123353d56d42c9da63b7a869ada66d71e1332c5a1d",
+        "bytes": 108202
+      }
+    ],
+    "distribution": "public-under-license",
+    "provenance": "sources/policy/P51/upstream.json"
+  },
+  {
+    "id": "P54",
+    "upstream_id": "P54",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/P54.pdf",
+        "path": "local-sources/policy/P54/originals/P54.pdf",
+        "role": "original",
+        "sha256": "6b96e0a25ddd5df8afc368e8f8f3798bf911caf40db23945617cc5d1f2f36f26",
+        "bytes": 975363
+      },
+      {
+        "source_path": "raw/extracted/P54.md",
+        "path": "local-sources/policy/P54/extracts/P54.md",
+        "role": "extract",
+        "sha256": "026f33cded8b586cfce5d4402237a9007562a2995563b0ed3e153315591f02f0",
+        "bytes": 139522
+      }
+    ],
+    "distribution": "local-only",
+    "provenance": "sources/policy/P54/upstream.json"
+  },
+  {
+    "id": "P55",
+    "upstream_id": "P55",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/P55.pdf",
+        "path": "sources/policy/P55/originals/P55.pdf",
+        "role": "original",
+        "sha256": "c202a240f8f03c93cfafd157f218ec790c9e503beeaf80e229fb5e1645ab7f9c",
+        "bytes": 1358691
+      },
+      {
+        "source_path": "raw/extracted/P55.md",
+        "path": "sources/policy/P55/extracts/P55.md",
+        "role": "extract",
+        "sha256": "a7aa1b07084a87ae40384b0d611da170619941c56b7ce106e1d67df188e73253",
+        "bytes": 91564
+      }
+    ],
+    "distribution": "public-under-license",
+    "provenance": "sources/policy/P55/upstream.json"
+  },
+  {
+    "id": "P57",
+    "upstream_id": "P57",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/P57.pdf",
+        "path": "sources/policy/P57/originals/P57.pdf",
+        "role": "original",
+        "sha256": "5fa1de1932aad07d3bae5c1401782b84c431f3b2c49cb3dfef06654b862b8813",
+        "bytes": 634860
+      },
+      {
+        "source_path": "raw/extracted/P57.md",
+        "path": "sources/policy/P57/extracts/P57.md",
+        "role": "extract",
+        "sha256": "fea516d71bbb0ad581abe9e437847fe36f068550eddc46dfb0e0765914f9ed76",
+        "bytes": 139155
+      }
+    ],
+    "distribution": "public-under-license",
+    "provenance": "sources/policy/P57/upstream.json"
+  },
+  {
+    "id": "P58",
+    "upstream_id": "P58",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/P58.pdf",
+        "path": "local-sources/policy/P58/originals/P58.pdf",
+        "role": "original",
+        "sha256": "5e763996c48614188b99558cd99816dabb4557871a460ff7ea874f417bca327d",
+        "bytes": 2663128
+      },
+      {
+        "source_path": "raw/extracted/P58.md",
+        "path": "local-sources/policy/P58/extracts/P58.md",
+        "role": "extract",
+        "sha256": "7af9691f0dc98479caed70ef5a8e1b8881a8c45c4f95f999b6ffa3c56e6ede91",
+        "bytes": 205318
+      }
+    ],
+    "distribution": "local-only",
+    "provenance": "sources/policy/P58/upstream.json"
+  },
+  {
+    "id": "P60",
+    "upstream_id": "P60",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/P60.pdf",
+        "path": "local-sources/policy/P60/originals/P60.pdf",
+        "role": "original",
+        "sha256": "9aa84895de698748cbdd75f615832acdde29ceaa81e8d5f7c51337e170be162b",
+        "bytes": 1147189
+      },
+      {
+        "source_path": "raw/extracted/P60.md",
+        "path": "local-sources/policy/P60/extracts/P60.md",
+        "role": "extract",
+        "sha256": "4f59af73c4b5a5c35d5618bf56c9b75a10179b4a27c0288f95b6b05b7805ecdb",
+        "bytes": 57956
+      }
+    ],
+    "distribution": "local-only",
+    "provenance": "sources/policy/P60/upstream.json"
+  },
+  {
+    "id": "P63",
+    "upstream_id": "P63",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/P63.pdf",
+        "path": "local-sources/policy/P63/originals/P63.pdf",
+        "role": "original",
+        "sha256": "0004b537084eb86b219bc7df770c04a746a43f1ab4e1b5a1e9f86c9eaad7ddae",
+        "bytes": 305673
+      },
+      {
+        "source_path": "raw/extracted/P63.md",
+        "path": "local-sources/policy/P63/extracts/P63.md",
+        "role": "extract",
+        "sha256": "6310575aaacded8a10518c4ee2f3ca896574204a83f53693f1512b73b8e3cd2f",
+        "bytes": 95968
+      }
+    ],
+    "distribution": "local-only",
+    "provenance": "sources/policy/P63/upstream.json"
+  },
+  {
+    "id": "P64",
+    "upstream_id": "P64",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/P64.pdf",
+        "path": "sources/policy/P64/originals/P64.pdf",
+        "role": "original",
+        "sha256": "69c8e03665e90be03b389aee0bab504bb15d03792ec6ba88688a81a0a25dc4f4",
+        "bytes": 5052423
+      },
+      {
+        "source_path": "raw/extracted/P64.md",
+        "path": "sources/policy/P64/extracts/P64.md",
+        "role": "extract",
+        "sha256": "a7f1d0cd94ea03eaf4ccd568b9e90c6850ee4ebcaf41975c00c177d2492f1c4e",
+        "bytes": 142620
+      }
+    ],
+    "distribution": "public-under-license",
+    "provenance": "sources/policy/P64/upstream.json"
+  },
+  {
+    "id": "T01",
+    "upstream_id": "T01",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/reviewed/2026-10-11/finance_resume/T01_mcp_auth.html",
+        "path": "local-sources/policy/T01/originals/T01_mcp_auth.html",
+        "role": "original",
+        "sha256": "ddca62bf440ebf7ba657ff39465f0dcbb2f8b72aba48643c7af48cd19e3d437d",
+        "bytes": 493792
+      },
+      {
+        "source_path": "raw/reviewed/2026-10-11/finance_resume/T01_mcp_auth.md",
+        "path": "local-sources/policy/T01/extracts/T01_mcp_auth.md",
+        "role": "extract",
+        "sha256": "cdb8088b84a6b8d15f8de02ba14b855313ca270aafc849f89ca6262c7734fcea",
+        "bytes": 19238
+      },
+      {
+        "source_path": "raw/reviewed/2026-10-11/finance_resume/T01_mcp_auth_security.html",
+        "path": "local-sources/policy/T01/originals/T01_mcp_auth_security.html",
+        "role": "original",
+        "sha256": "41d69f03530e29481bba96ddd38efa2641a90ae85a764dde139635ae7fee856b",
+        "bytes": 338013
+      },
+      {
+        "source_path": "raw/reviewed/2026-10-11/finance_resume/T01_mcp_auth_security.md",
+        "path": "local-sources/policy/T01/extracts/T01_mcp_auth_security.md",
+        "role": "extract",
+        "sha256": "00100762af060e8b2708ca638128787065a4e57774f47bff2b0407538f622b17",
+        "bytes": 7984
+      }
+    ],
+    "distribution": "local-only",
+    "provenance": "sources/policy/T01/upstream.json"
+  },
+  {
+    "id": "T02",
+    "upstream_id": "T02",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/reviewed/2026-10-11/finance_resume/T02_mcp_tools.html",
+        "path": "local-sources/policy/T02/originals/T02_mcp_tools.html",
+        "role": "original",
+        "sha256": "c5a4f6cec967fd7ef67e31978a20558b49928c6bab86c645f2dcce41a936a762",
+        "bytes": 890167
+      },
+      {
+        "source_path": "raw/reviewed/2026-10-11/finance_resume/T02_mcp_tools.md",
+        "path": "local-sources/policy/T02/extracts/T02_mcp_tools.md",
+        "role": "extract",
+        "sha256": "e66d0297f7937105b89469fd2e43a89bdffd6f9f496c2065920006d23449ef6e",
+        "bytes": 21174
+      }
+    ],
+    "distribution": "local-only",
+    "provenance": "sources/policy/T02/upstream.json"
+  },
+  {
+    "id": "T04",
+    "upstream_id": "T04",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/T04.html",
+        "path": "local-sources/policy/T04/originals/T04.html",
+        "role": "original",
+        "sha256": "e6b95c7b10293e446609ffe9428260b3b727832227cab6a292725e75b50be30b",
+        "bytes": 352973
+      },
+      {
+        "source_path": "raw/extracted/T04_web.md",
+        "path": "local-sources/policy/T04/extracts/T04_web.md",
+        "role": "extract",
+        "sha256": "1742a030d6ceb45c9ac9bd17d2062f3d6a0076d4a8bd3f69a6e75b711fe6e847",
+        "bytes": 8239
+      }
+    ],
+    "distribution": "local-only",
+    "provenance": "sources/policy/T04/upstream.json"
+  },
+  {
+    "id": "T08",
+    "upstream_id": "T08",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/reviewed/2026-10-11/finance_resume/T08_owasp_mcp.html",
+        "path": "local-sources/policy/T08/originals/T08_owasp_mcp.html",
+        "role": "original",
+        "sha256": "4b2ef2b5a0340ddc04122868bae197780c476604bd853318fd94b03078a0bae5",
+        "bytes": 120002
+      },
+      {
+        "source_path": "raw/reviewed/2026-10-11/finance_resume/T08_owasp_mcp.md",
+        "path": "local-sources/policy/T08/extracts/T08_owasp_mcp.md",
+        "role": "extract",
+        "sha256": "64c8541574d713aa6e7dd9b448f9a8ce7ee5d3924a24d62c8daa2619ae291588",
+        "bytes": 8831
+      },
+      {
+        "source_path": "raw/reviewed/2026-10-11/finance_resume/T08_owasp_cheat.html",
+        "path": "local-sources/policy/T08/originals/T08_owasp_cheat.html",
+        "role": "original",
+        "sha256": "0ed0e940f327f973f06e5921806ab47269751b0bf54fbc865fd4213fa00ad585",
+        "bytes": 86454
+      },
+      {
+        "source_path": "raw/reviewed/2026-10-11/finance_resume/T08_owasp_cheat.md",
+        "path": "local-sources/policy/T08/extracts/T08_owasp_cheat.md",
+        "role": "extract",
+        "sha256": "301312c3e07778bc85c76a3f1104ca73909c06db6bd1913c75060fe615702a80",
+        "bytes": 12945
+      }
+    ],
+    "distribution": "local-only",
+    "provenance": "sources/policy/T08/upstream.json"
+  },
+  {
+    "id": "T15",
+    "upstream_id": "T15",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/T15_original.md",
+        "path": "sources/policy/T15/originals/T15_original.md",
+        "role": "original",
+        "sha256": "cc023c87995fec63fdadf395a70862dac9c1faf381ab44f9b2fc57124c7b0678",
+        "bytes": 131810
+      },
+      {
+        "source_path": "raw/extracted/T15.md",
+        "path": "sources/policy/T15/extracts/T15.md",
+        "role": "extract",
+        "sha256": "d729da7a62dc27dc6a136892659ffcccdc758e2066be47890df64ec38e7b7072",
+        "bytes": 133244
+      }
+    ],
+    "distribution": "public-under-license",
+    "provenance": "sources/policy/T15/upstream.json"
+  },
+  {
+    "id": "T19",
+    "upstream_id": "T19",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/T19_supplement.txt",
+        "path": "sources/policy/T19/originals/T19_supplement.txt",
+        "role": "original",
+        "sha256": "b2f346d5a87ba9d7f09047901257a65f7ac0b26352095969c25821afab447829",
+        "bytes": 23517
+      },
+      {
+        "source_path": "raw/extracted/T19_supplement.md",
+        "path": "sources/policy/T19/extracts/T19_supplement.md",
+        "role": "extract",
+        "sha256": "0476f566226c931b3cd3d5e81d06813aacf9a475c6d52339de450fc2697df26f",
+        "bytes": 24483
+      }
+    ],
+    "distribution": "public-under-license",
+    "provenance": "sources/policy/T19/upstream.json"
+  },
+  {
+    "id": "T20",
+    "upstream_id": "T20",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/T20_supplement.txt",
+        "path": "sources/policy/T20/originals/T20_supplement.txt",
+        "role": "original",
+        "sha256": "2b7d688cb849f093e860557ac97e6cddac2556d69a4386561b22cdf97bf13657",
+        "bytes": 36591
+      },
+      {
+        "source_path": "raw/extracted/T20_supplement.md",
+        "path": "sources/policy/T20/extracts/T20_supplement.md",
+        "role": "extract",
+        "sha256": "2972bd4f2cbcb9b7536e70fd56fefe92966f35efc62367eaeecf3b64982e2dd3",
+        "bytes": 37915
+      }
+    ],
+    "distribution": "public-under-license",
+    "provenance": "sources/policy/T20/upstream.json"
+  },
+  {
+    "id": "T21",
+    "upstream_id": "T21",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/reviewed/2026-10-11/finance_resume/T21_mcp_best.html",
+        "path": "local-sources/policy/T21/originals/T21_mcp_best.html",
+        "role": "original",
+        "sha256": "30a1e1972a2ddd12ea05922e30c56fb373e7aba43c5228f26137759eb106fb52",
+        "bytes": 577712
+      },
+      {
+        "source_path": "raw/reviewed/2026-10-11/finance_resume/T21_mcp_best.md",
+        "path": "local-sources/policy/T21/extracts/T21_mcp_best.md",
+        "role": "extract",
+        "sha256": "3849ff4187a9ad1e779eddae6dd535cf8af28f8730817bc250627015154f8875",
+        "bytes": 35574
+      }
+    ],
+    "distribution": "local-only",
+    "provenance": "sources/policy/T21/upstream.json"
+  },
+  {
+    "id": "T22",
+    "upstream_id": "T22",
+    "source_project": "mcp-governance-policy-wiki",
+    "metadata_source": "raw/sources/all_sources.json",
+    "metadata_sha256": "ca52bc06786fb2f14d080530e1c895689bfa7257adf631710615750b53baf5f2",
+    "imported_on": "2026-10-13",
+    "files": [
+      {
+        "source_path": "raw/originals/web/T22_supplement.html",
+        "path": "local-sources/policy/T22/originals/T22_supplement.html",
+        "role": "original",
+        "sha256": "8dfdffcf0e71b748c77cd0e2697d8fcbcc594c434f62fe4950b0ab748e121cb0",
+        "bytes": 166730
+      },
+      {
+        "source_path": "raw/extracted/T22_supplement.md",
+        "path": "local-sources/policy/T22/extracts/T22_supplement.md",
+        "role": "extract",
+        "sha256": "f38da628f0166386a1ead5dda0f0fd6e8847766a9d9b2d66571c52407ef61918",
+        "bytes": 31912
+      }
+    ],
+    "distribution": "local-only",
+    "provenance": "sources/policy/T22/upstream.json"
+  }
+]

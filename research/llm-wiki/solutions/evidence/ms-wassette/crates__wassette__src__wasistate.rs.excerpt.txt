@@ -1,0 +1,69 @@
+SOURCE EXCERPT - NOT AN EXECUTABLE FILE
+Repository: https://github.com/microsoft/wassette
+Commit: 742ebb7236273dad2d88c415eabe872d3b95dff9
+Source: crates/wassette/src/wasistate.rs
+License: MIT (see LICENSE.txt)
+Original file SHA-256: ef50c793ca8c2b6157900b6134cb2c8e093e5b0f46dffd2600363d2d27590a62
+
+--- original lines 1-7 ---
+1: // Copyright (c) Microsoft Corporation.
+2: // Licensed under the MIT license.
+3: 
+4: use std::collections::{HashMap, HashSet};
+5: use std::path::{Path, PathBuf};
+6: use std::sync::{Arc, Mutex};
+7: 
+
+--- original lines 96-146 ---
+96:     pub last_permission_error: Arc<Mutex<Option<PermissionError>>>,
+97: }
+98: 
+99: impl wasmtime_wasi::WasiView for WasiState {
+100:     fn ctx(&mut self) -> WasiCtxView<'_> {
+101:         WasiCtxView {
+102:             ctx: &mut self.ctx,
+103:             table: &mut self.table,
+104:         }
+105:     }
+106: }
+107: 
+108: impl WasiStateTemplate {
+109:     /// Creates a new `WasiState` from the template.
+110:     pub fn build(&self) -> anyhow::Result<WasiState> {
+111:         let mut ctx_builder = WasiCtxBuilder::new();
+112:         if self.allow_stdout {
+113:             ctx_builder.inherit_stdout();
+114:         }
+115:         if self.allow_stderr {
+116:             ctx_builder.inherit_stderr();
+117:         }
+118:         ctx_builder.inherit_args();
+119:         if self.allow_args {
+120:             ctx_builder.inherit_args();
+121:         }
+122:         // Note(mossaka): removed ctx_builder.inherit_network() to implement deny-by-default network policy
+123:         // For HTTP requests to work, we need to allow TCP and DNS lookups when there are network permissions
+124:         // But HTTP-level filtering happens in WassetteWasiState::send_request
+125:         if self.network_perms.allow_tcp || !self.allowed_hosts.is_empty() {
+126:             ctx_builder.allow_tcp(true);
+127:             ctx_builder.allow_ip_name_lookup(true);
+128:         } else {
+129:             ctx_builder.allow_tcp(false);
+130:             ctx_builder.allow_ip_name_lookup(false);
+131:         }
+132:         ctx_builder.allow_udp(self.network_perms.allow_udp);
+133:         for preopened_dir in &self.preopened_dirs {
+134:             ctx_builder.preopened_dir(
+135:                 preopened_dir.host_path.as_path(),
+136:                 preopened_dir.guest_path.as_str(),
+137:                 preopened_dir.dir_perms,
+138:                 preopened_dir.file_perms,
+139:             )?;
+140:         }
+141: 
+142:         // Inject forwarded config variables as real WASI environment variables so that
+143:         // component code using std::env::var can observe them.
+144:         for (k, v) in &self.config_vars {
+145:             ctx_builder.env(k, v);
+146:         }
+

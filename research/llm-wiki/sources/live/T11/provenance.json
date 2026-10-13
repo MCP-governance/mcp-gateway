@@ -1,0 +1,43 @@
+{
+  "id": "T11",
+  "upstream_id": "T11",
+  "requested_url": "https://www.rfc-editor.org/rfc/rfc8693.txt",
+  "resolved_url": "https://www.rfc-editor.org/rfc/rfc8693.txt",
+  "retrieved_on": "2026-10-13",
+  "mime": "text/plain;charset=utf-8",
+  "status": "downloaded_and_text_wrapped",
+  "files": [
+    {
+      "path": "sources/live/T11/rfc8693.txt",
+      "role": "original",
+      "sha256": "358d658014738bf4dc56c8aae2094ce716ede23b6d5a80488a7dc8e8d72da609",
+      "bytes": 63031
+    },
+    {
+      "path": "sources/live/T11/rfc8693.md",
+      "role": "extract",
+      "sha256": "e9efd3a1d7795d57f58cc100334d57410baaa1d45b8edcf83d1da606ac13693b",
+      "bytes": 64796
+    }
+  ],
+  "upstream_metadata_source": "raw/sources/all_sources.json",
+  "upstream_record": {
+    "id": "T11",
+    "title": "RFC 8693: OAuth 2.0 Token Exchange",
+    "organization": "IETF / RFC Editor",
+    "country": "International",
+    "date": "2020-01",
+    "url": "https://www.rfc-editor.org/info/rfc8693/",
+    "type": "IETF RFC",
+    "status": "RFC 8693",
+    "verification": "fulltext",
+    "summary": "토큰 교환과 delegation/impersonation 의미를 정의한다.",
+    "mcp_relevance": "사용자 토큰을 모든 downstream에 통과시키는 관행 대신 권한 범위·수신자에 맞는 교환 설계.",
+    "group": "표준·프로토콜·커뮤니티",
+    "level": "D",
+    "month": "2020-01",
+    "agent_specific": false,
+    "local": [],
+    "acquisition_failed": []
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "id": "T02",
+  "title": "MCP Tools specification 2026-07-28",
+  "organization": "Model Context Protocol / LF Projects",
+  "country": "International",
+  "date": "2026-07-28",
+  "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+  "type": "protocol specification",
+  "status": "버전 명시",
+  "verification": "fulltext",
+  "summary": "도구 스키마·결과 구조·안전 고려사항을 제공한다. 신뢰되지 않은 서버의 annotation을 신뢰하지 않도록 명시한다.",
+  "mcp_relevance": "readOnly 등의 공급자 자기 선언 대신 검증된 행위 분류·대상·효과로 정책 판단.",
+  "group": "표준·프로토콜·커뮤니티",
+  "level": "D",
+  "month": "2026-07",
+  "agent_specific": true,
+  "local": [
+    {
+      "manifest": "acquisition_finance_resume_20261011",
+      "status": "downloaded",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+      "original": "T02_mcp_tools.html",
+      "md": "T02_mcp_tools.md",
+      "text_chars": 19452,
+      "error": "",
+      "file_exists": true,
+      "sha256": "c5a4f6cec967fd7ef67e31978a20558b49928c6bab86c645f2dcce41a936a762",
+      "pages": null,
+      "bytes": 890167,
+      "original_path": "reviewed/2026-10-11/finance_resume/T02_mcp_tools.html",
+      "md_path": "reviewed/2026-10-11/finance_resume/T02_mcp_tools.md"
+    },
+    {
+      "manifest": "acquisition_webtexts",
+      "status": "archived_html_text",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+      "original": "T02.html",
+      "md": "T02_web.md",
+      "text_chars": 20770,
+      "error": "",
+      "file_exists": true,
+      "sha256": "eb97c57f759d27c35cd767d7f5dd3ce47703d7b4a938c0d960b15309cbe3a8c7",
+      "pages": null,
+      "bytes": 889288,
+      "original_path": "originals/web/T02.html",
+      "md_path": "extracted/T02_web.md"
+    }
+  ],
+  "acquisition_failed": []
+}

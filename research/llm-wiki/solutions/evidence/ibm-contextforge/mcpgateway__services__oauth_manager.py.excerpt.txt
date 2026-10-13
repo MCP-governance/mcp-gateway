@@ -1,0 +1,100 @@
+SOURCE EXCERPT - NOT AN EXECUTABLE FILE
+Repository: https://github.com/IBM/mcp-context-forge
+Commit: 5735c9db7f8f50cd5a55eb7fefe83ecde00b5324
+Source: mcpgateway/services/oauth_manager.py
+License: Apache-2.0 (see LICENSE.txt)
+Original file SHA-256: 8143266e10cdf957a4adb2a4e1e0bddef35d462851467464da43dc1af17f87b0
+
+--- original lines 1-7 ---
+1: # -*- coding: utf-8 -*-
+2: """Location: ./mcpgateway/services/oauth_manager.py
+3: Copyright contributors to the MCP-CONTEXT-FORGE project
+4: SPDX-License-Identifier: Apache-2.0
+5: 
+6: OAuth 2.0 Manager for ContextForge.
+7: 
+
+--- original lines 771-852 ---
+771:     async def token_exchange(
+772:         self,
+773:         token_url: str,
+774:         subject_token: str,
+775:         client_id: str,
+776:         client_secret: str,
+777:         audience: Optional[str] = None,
+778:         scope: Optional[str] = None,
+779:         requested_token_type: str = "urn:ietf:params:oauth:token-type:access_token",
+780:         subject_token_type: str = "urn:ietf:params:oauth:token-type:jwt",
+781:         ca_certificate: Optional[str] = None,
+782:         client_cert: Optional[str] = None,
+783:         client_key: Optional[str] = None,
+784:         client_secret_is_plaintext: bool = False,
+785:     ) -> Dict[str, Any]:
+786:         """RFC 8693 token exchange for on-behalf-of flows.
+787: 
+788:         Exchanges a subject token (e.g. the gateway's JWT) for a new token
+789:         scoped to a downstream service, enabling the downstream to act on
+790:         behalf of the original user.
+791: 
+792:         Args:
+793:             token_url: Token endpoint of the authorization server.
+794:             subject_token: The original user's access token.
+795:             client_id: Client ID for the gateway.
+796:             client_secret: Client secret for the gateway.
+797:             audience: Intended audience for the exchanged token.
+798:             scope: Requested scope for the exchanged token.
+799:             requested_token_type: The type of token being requested.
+800:             subject_token_type: RFC 8693 §3 identifier for the type of token in
+801:                 ``subject_token``. Defaults to ``urn:ietf:params:oauth:token-type:jwt``
+802:                 (a generic JWT), which is correct for CF's own inbound JWT — as
+803:                 opposed to ``...:access_token``, which per §3 implies a token the
+804:                 AS itself previously issued and can recognize as its own.
+805:             ca_certificate: Optional custom CA certificate for SSL verification (PEM format).
+806:             client_cert: Optional client certificate for mTLS (PEM format or file path).
+807:             client_key: Optional client private key for mTLS (PEM format or file path).
+808:             client_secret_is_plaintext: Set True when the caller has already decrypted
+809:                 ``client_secret`` (e.g. ``get_access_token`` routes through
+810:                 ``_prepare_runtime_credentials``). Skips the inline decrypt block so an
+811:                 already-plaintext secret is never re-run through ``is_encrypted``. The
+812:                 direct ``ToolService`` caller passes the raw encrypted DB value and keeps
+813:                 the default ``False`` so the inline decrypt still runs.
+814: 
+815:         Returns:
+816:             Dict with ``access_token``, ``token_type``, and optionally
+817:             ``expires_in`` and ``scope``.
+818: 
+819:         Raises:
+820:             OAuthError: If token exchange fails after all retries, or the
+821:                 response ``token_type`` is not ``Bearer`` (RFC 8693 §2.2.1
+822:                 allows ``N_A`` for non-access-token ``issued_token_type``
+823:                 values, but CF only forwards exchanged tokens as
+824:                 ``Authorization: Bearer <token>``).
+825:         """
+826:         # Decrypt client secret if encrypted. Skipped when the caller already decrypted it
+827:         # (client_secret_is_plaintext=True) to avoid re-running is_encrypted on plaintext.
+828:         if client_secret and not client_secret_is_plaintext:
+829:             try:
+830:                 settings = get_settings()
+831:                 encryption = get_encryption_service(settings.auth_encryption_secret)
+832:                 if encryption.is_encrypted(client_secret):
+833:                     decrypted = await encryption.decrypt_secret_async(client_secret)
+834:                     if decrypted:
+835:                         client_secret = decrypted
+836:             except Exception as e:
+837:                 logger.warning("Failed to decrypt client secret for token exchange: %s", e)
+838: 
+839:         token_data: Dict[str, str] = {
+840:             "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+841:             "subject_token": subject_token,
+842:             "subject_token_type": subject_token_type,  # nosec B105 - RFC 8693 token type URI, not a credential
+843:             "requested_token_type": requested_token_type,
+844:             "client_id": client_id,
+845:             "client_secret": client_secret,
+846:         }
+847:         if audience:
+848:             token_data["audience"] = audience
+849:         if scope:
+850:             token_data["scope"] = scope
+851: 
+852:         for attempt in range(self.max_retries):
+

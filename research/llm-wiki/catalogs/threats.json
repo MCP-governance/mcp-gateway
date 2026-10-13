@@ -1,0 +1,772 @@
+[
+  {
+    "id": "TH-01",
+    "source_id": "PAC01",
+    "title": "배포물 출처와 무결성 확인",
+    "threat": "출처나 무결성이 확인되지 않은 배포물 도입",
+    "sheet": "정책 최종본",
+    "row": 5,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "도입·공급망",
+    "runtime_candidates": [
+      "MCP-SUPPLY-001"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/tests/intake_validation_test.py",
+        "sha256": "9c75b8a4fda80157d1217167a30566549cfebfa9c998bf7f6c3e538fe1c5aa16",
+        "committed_sha256": "5fd127e6146544a85988c59cd9988f0408cfb78665c620db4c6945f9b8ee733e",
+        "normalized_sha256": "5fd127e6146544a85988c59cd9988f0408cfb78665c620db4c6945f9b8ee733e",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "라이선스·배포처·SBOM·취약점과 실제 도입 승인 증거 필요",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-02",
+    "source_id": "PAC02",
+    "title": "도입 범위와 필요 권한 검토",
+    "threat": "검토되지 않은 기능 도입과 과도한 권한 부여",
+    "sheet": "정책 최종본",
+    "row": 6,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "계약·권한 범위",
+    "runtime_candidates": [
+      "PAC-01",
+      "PAC-08"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/agent_service.py",
+        "sha256": "9b46d8076b56d47b869d71b0d52dd6777a07d014393ca7167c1b79a7b6048545",
+        "committed_sha256": "b6f0251d4f1d25e21f407595ea45f53a8e80086cbb292f184ca0c30e6cce6d64",
+        "normalized_sha256": "b6f0251d4f1d25e21f407595ea45f53a8e80086cbb292f184ca0c30e6cce6d64",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "sha256": "a2ce5dcc7d5261c2571d10b315434b5a1179ca48243b5d3a5fadbd414c37447c",
+        "committed_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+        "normalized_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "도구 계약과 실제 자원·인자의 승인 범위 독립 검토",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-03",
+    "source_id": "PAC03",
+    "title": "연결 승인과 사용자 동의 확인",
+    "threat": "승인 기간이 지났거나 승인 조건 또는 사용자 동의를 확인하지 않은 연결",
+    "sheet": "정책 최종본",
+    "row": 7,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "승인·유효기간",
+    "runtime_candidates": [
+      "P-APPROVAL-EXPIRY-001",
+      "PAC-01"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "2cc18d61b0b5aea2b39caa6efb72c3659a3c1b5ffd656cfc2e859dcd58b7f21b",
+        "committed_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "normalized_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "사용자 동의와 서버 사용 승인은 별도 증거",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-04",
+    "source_id": "PAC04",
+    "title": "실행 환경과 시험 데이터 관리",
+    "threat": "미승인 환경 실행과 시험 환경의 운영정보 노출",
+    "sheet": "정책 최종본",
+    "row": 8,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "시험·환경",
+    "runtime_candidates": [
+      "PAC-03"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/opa/pac15.rego",
+        "sha256": "fd48e4c3a989ca35e0a489a747dd39d43268c9749e470f7419a4a96c17fedce4",
+        "committed_sha256": "a37dfaca05408796a25f930322c7658a7f558b3c5ddaba665c8332107cb6c686",
+        "normalized_sha256": "a37dfaca05408796a25f930322c7658a7f558b3c5ddaba665c8332107cb6c686",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "환경 사실 입력과 실기기 관찰값 결합 검증",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-05",
+    "source_id": "PAC05",
+    "title": "실제 연결 주소 확인",
+    "threat": "승인 범위를 벗어난 서버나 OAuth 조회 주소에 접속",
+    "sheet": "정책 최종본",
+    "row": 9,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "목적지·SSRF",
+    "runtime_candidates": [
+      "MCP-EGRESS-001",
+      "MCP-EGRESS-002"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "sha256": "63e9ed2ee0f367e3116d43eaedab817dfb952ff2653a22ba81ca08508608610c",
+        "committed_sha256": "9b2c0196caacc59d722df38826f75d65d13d18af82ffcc119db964ff34a07a96",
+        "normalized_sha256": "9b2c0196caacc59d722df38826f75d65d13d18af82ffcc119db964ff34a07a96",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "committed_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "OAuth discovery·DNS 재결합 등 최종 접속 대상의 별도 경계",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-06",
+    "source_id": "PAC06",
+    "title": "서버별 사용 기능 등록",
+    "threat": "미승인 기능 또는 다른 서버의 동명 기능 실행",
+    "sheet": "정책 최종본",
+    "row": 10,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "도구 계약",
+    "runtime_candidates": [
+      "MCP-CATALOG-001",
+      "PAC-08"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/contract.py",
+        "sha256": "fe2e70c880fbedf80e067ff68d9e494955a4be34b3954420860f1d5e5de026dc",
+        "committed_sha256": "d8e048e0c85bfb6df0069a7e9edf7c1d14a2545e013fe8ca9d3c929a1754d8f8",
+        "normalized_sha256": "d8e048e0c85bfb6df0069a7e9edf7c1d14a2545e013fe8ca9d3c929a1754d8f8",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "2cc18d61b0b5aea2b39caa6efb72c3659a3c1b5ffd656cfc2e859dcd58b7f21b",
+        "committed_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "normalized_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "동명 도구·설명·스키마 변경과 승인 이후 변형 시험",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-07",
+    "source_id": "PAC07",
+    "title": "게이트웨이 우회 연결 차단",
+    "threat": "게이트웨이를 거치지 않은 직접 연결",
+    "sheet": "정책 최종본",
+    "row": 11,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "엔드포인트 우회",
+    "runtime_candidates": [
+      "MCP-SHADOW-*"
+    ],
+    "code_candidates": [
+      {
+        "path": "endpoint-agent/enforce-linux.py",
+        "sha256": "8ee74b9b62f5acd50ed1c08706f705b8f3c44f661a44425d3cfaba4f6fd6c819",
+        "committed_sha256": "8cc565afd96bbc8deac18a1ad590c4e7a57d99cbb5be8344ab31758681462283",
+        "normalized_sha256": "f1da8e6ab666f83e011f80a5e8c44a14c23b0be919f2d71cbe2a395ae476d85d",
+        "worktree_modified": true
+      },
+      {
+        "path": "endpoint-agent/managed-linux.py",
+        "sha256": "76c3d24edc8d36170e0eb00b7af72ba52a9c1bf6a10777e0a66c5ed5405deef4",
+        "committed_sha256": "2a312bad0a1d11b50294987f3b02d2cce853299a4b74449eff1f8a4dab892de9",
+        "normalized_sha256": "b8912408bccd2b8253dd8f13c628da762fee43220a0504338437d3d48e118671",
+        "worktree_modified": true
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "파일 설정만으로 차단을 주장하지 않음; 현재 기기의 실제 OS 집행 미확인",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-08",
+    "source_id": "PAC08",
+    "title": "사용자와 에이전트 신원 확인",
+    "threat": "요청 주체 사칭과 검증되지 않은 신원 수용",
+    "sheet": "정책 최종본",
+    "row": 12,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "신원",
+    "runtime_candidates": [
+      "PAC-04"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/idp.py",
+        "sha256": "e762f5e9491c94e174a1abbd903265f5615db0d8830b2c9c429445eeac35ff48",
+        "committed_sha256": "1e601b1069c31c62d4842cbb13efaf2193f19db67686f84694b856108b481c9a",
+        "normalized_sha256": "1e601b1069c31c62d4842cbb13efaf2193f19db67686f84694b856108b481c9a",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "2cc18d61b0b5aea2b39caa6efb72c3659a3c1b5ffd656cfc2e859dcd58b7f21b",
+        "committed_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "normalized_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "transport 신원과 사용자 자기 선언 필드 분리",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-09",
+    "source_id": "PAC09",
+    "title": "위임 범위와 유효기간 확인",
+    "threat": "위조되거나 만료된 위임정보를 이용한 대리 실행",
+    "sheet": "정책 최종본",
+    "row": 13,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "위임",
+    "runtime_candidates": [
+      "PAC-05"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "sha256": "a2ce5dcc7d5261c2571d10b315434b5a1179ca48243b5d3a5fadbd414c37447c",
+        "committed_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+        "normalized_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/opa/pac15.rego",
+        "sha256": "fd48e4c3a989ca35e0a489a747dd39d43268c9749e470f7419a4a96c17fedce4",
+        "committed_sha256": "a37dfaca05408796a25f930322c7658a7f558b3c5ddaba665c8332107cb6c686",
+        "normalized_sha256": "a37dfaca05408796a25f930322c7658a7f558b3c5ddaba665c8332107cb6c686",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "위임 근거·교집합·철회·만료 시험; 하네스 이름은 인증 근거 아님",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-10",
+    "source_id": "PAC10",
+    "title": "OAuth 토큰 검증",
+    "threat": "다른 대상용 또는 만료 토큰 수용과 목적 외 전달",
+    "sheet": "정책 최종본",
+    "row": 14,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "토큰",
+    "runtime_candidates": [
+      "PAC-06"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/idp.py",
+        "sha256": "e762f5e9491c94e174a1abbd903265f5615db0d8830b2c9c429445eeac35ff48",
+        "committed_sha256": "1e601b1069c31c62d4842cbb13efaf2193f19db67686f84694b856108b481c9a",
+        "normalized_sha256": "1e601b1069c31c62d4842cbb13efaf2193f19db67686f84694b856108b481c9a",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "committed_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "audience·scope·issuer·만료·직원 토큰 미전달의 독립 검증",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-11",
+    "source_id": "PAC11",
+    "title": "요청마다 실행 권한 확인",
+    "threat": "이전 허용 결과를 범위가 다른 후속 호출에 재사용",
+    "sheet": "정책 최종본",
+    "row": 15,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "호출별 권한",
+    "runtime_candidates": [
+      "PAC-09"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "2cc18d61b0b5aea2b39caa6efb72c3659a3c1b5ffd656cfc2e859dcd58b7f21b",
+        "committed_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "normalized_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/opa/pac15.rego",
+        "sha256": "fd48e4c3a989ca35e0a489a747dd39d43268c9749e470f7419a4a96c17fedce4",
+        "committed_sha256": "a37dfaca05408796a25f930322c7658a7f558b3c5ddaba665c8332107cb6c686",
+        "normalized_sha256": "a37dfaca05408796a25f930322c7658a7f558b3c5ddaba665c8332107cb6c686",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "이전 허용·캐시 결과를 범위가 다른 요청에 재사용하는지 시험",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-12",
+    "source_id": "PAC12",
+    "title": "작업별 권한 구분",
+    "threat": "조회 권한을 수정, 삭제, 실행 또는 전송 권한으로 확대",
+    "sheet": "정책 최종본",
+    "row": 16,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "행위 구분",
+    "runtime_candidates": [
+      "PAC-09"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "sha256": "63e9ed2ee0f367e3116d43eaedab817dfb952ff2653a22ba81ca08508608610c",
+        "committed_sha256": "9b2c0196caacc59d722df38826f75d65d13d18af82ffcc119db964ff34a07a96",
+        "normalized_sha256": "9b2c0196caacc59d722df38826f75d65d13d18af82ffcc119db964ff34a07a96",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "도구 이름이 아닌 실제 SQL·명령·수신자 효과로 분류",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-13",
+    "source_id": "PAC13",
+    "title": "입력값과 실행 대상 검사",
+    "threat": "승인 범위를 벗어난 인자와 실제 실행 대상 사용",
+    "sheet": "정책 최종본",
+    "row": 17,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "스키마·인자",
+    "runtime_candidates": [
+      "P-INPUT-SCHEMA-001",
+      "PAC-10"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "2cc18d61b0b5aea2b39caa6efb72c3659a3c1b5ffd656cfc2e859dcd58b7f21b",
+        "committed_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "normalized_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "sha256": "63e9ed2ee0f367e3116d43eaedab817dfb952ff2653a22ba81ca08508608610c",
+        "committed_sha256": "9b2c0196caacc59d722df38826f75d65d13d18af82ffcc119db964ff34a07a96",
+        "normalized_sha256": "9b2c0196caacc59d722df38826f75d65d13d18af82ffcc119db964ff34a07a96",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "정책 전과 실행 직전 입력 검사 및 정규화 우회 시험",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-14",
+    "source_id": "PAC14",
+    "title": "데이터별 접근권한 확인",
+    "threat": "권한 밖 데이터 자산 또는 보안 등급에 접근",
+    "sheet": "정책 최종본",
+    "row": 18,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "자산·등급",
+    "runtime_candidates": [
+      "P-CLASSIFICATION-001",
+      "PAC-11"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "sha256": "63e9ed2ee0f367e3116d43eaedab817dfb952ff2653a22ba81ca08508608610c",
+        "committed_sha256": "9b2c0196caacc59d722df38826f75d65d13d18af82ffcc119db964ff34a07a96",
+        "normalized_sha256": "9b2c0196caacc59d722df38826f75d65d13d18af82ffcc119db964ff34a07a96",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "sha256": "a2ce5dcc7d5261c2571d10b315434b5a1179ca48243b5d3a5fadbd414c37447c",
+        "committed_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+        "normalized_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "미분류를 낮은 등급으로 허용하지 않는지 확인",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-15",
+    "source_id": "PAC15",
+    "title": "외부 전송 대상과 데이터 확인",
+    "threat": "승인하지 않은 수신자에게 승인 범위 밖 데이터 전송",
+    "sheet": "정책 최종본",
+    "row": 19,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "외부 전송",
+    "runtime_candidates": [
+      "MCP-DATA-EGRESS-001",
+      "PAC-12"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "sha256": "63e9ed2ee0f367e3116d43eaedab817dfb952ff2653a22ba81ca08508608610c",
+        "committed_sha256": "9b2c0196caacc59d722df38826f75d65d13d18af82ffcc119db964ff34a07a96",
+        "normalized_sha256": "9b2c0196caacc59d722df38826f75d65d13d18af82ffcc119db964ff34a07a96",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/privacy.py",
+        "sha256": "b5b4bd304eb1db081014fb3934db7fe5c7da40bd9f1678bc5b02289295a5f393",
+        "committed_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
+        "normalized_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "실제 최종 목적지·데이터 조합과 프롬프트/모델 경로는 따로 검증",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-16",
+    "source_id": "PAC16",
+    "title": "민감한 작업의 개별 승인",
+    "threat": "다른 요청의 승인 재사용 또는 미승인 고위험 실행",
+    "sheet": "정책 최종본",
+    "row": 20,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "개별 승인",
+    "runtime_candidates": [
+      "PAC-13"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "2cc18d61b0b5aea2b39caa6efb72c3659a3c1b5ffd656cfc2e859dcd58b7f21b",
+        "committed_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "normalized_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/tests/reservation_effect_check.py",
+        "sha256": "745f7c349cfdd9980ba03813eac7163209580b4ca03d660afabc4ec744768fd3",
+        "committed_sha256": "6115f0f19a2e5af4f43c92ba7fcefcbe4e0c1b01908cbfcdfc1556dd8d259e65",
+        "normalized_sha256": "6115f0f19a2e5af4f43c92ba7fcefcbe4e0c1b01908cbfcdfc1556dd8d259e65",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "nonce·canonical fingerprint·자가 승인·동시 승인 재사용 시험",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-17",
+    "source_id": "PAC17",
+    "title": "호출량과 실행 시간 제한",
+    "threat": "호출 폭주와 과도한 동시 실행으로 인한 자원 고갈",
+    "sheet": "정책 최종본",
+    "row": 21,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "호출·동시성",
+    "runtime_candidates": [
+      "P-RATE-001",
+      "P-RATE-002",
+      "P-RATE-003"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "2cc18d61b0b5aea2b39caa6efb72c3659a3c1b5ffd656cfc2e859dcd58b7f21b",
+        "committed_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "normalized_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/tests/reservation_effect_check.py",
+        "sha256": "745f7c349cfdd9980ba03813eac7163209580b4ca03d660afabc4ec744768fd3",
+        "committed_sha256": "6115f0f19a2e5af4f43c92ba7fcefcbe4e0c1b01908cbfcdfc1556dd8d259e65",
+        "normalized_sha256": "6115f0f19a2e5af4f43c92ba7fcefcbe4e0c1b01908cbfcdfc1556dd8d259e65",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "호출량 상한과 모든 upstream의 실행 시간 제한을 동일시하지 않음",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-18",
+    "source_id": "PAC18",
+    "title": "외부 콘텐츠를 이용한 권한 변경 차단",
+    "threat": "외부 콘텐츠의 지시를 승인이나 권한 부여로 오인",
+    "sheet": "정책 최종본",
+    "row": 22,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "비신뢰 콘텐츠",
+    "runtime_candidates": [
+      "P-UNTRUSTED-CONTENT-001",
+      "P-UNTRUSTED-CONTENT-002"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/poisoning.py",
+        "sha256": "344bdab0e77e38f2a2273ae1a0516a9f63be913983fb0cf7e7cf900fb175a440",
+        "committed_sha256": "18c08c373bbbeac1f0721ebe5b9303dc3db426750389a1c52fe3873e71d1bbf2",
+        "normalized_sha256": "344bdab0e77e38f2a2273ae1a0516a9f63be913983fb0cf7e7cf900fb175a440",
+        "worktree_modified": true
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "패턴 검사와 의미적 주입 탐지 구분; 정상 대조군·다국어 표본 필요",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-19",
+    "source_id": "PAC19",
+    "title": "도구 입력의 민감정보 제한",
+    "threat": "업무에 불필요한 민감정보를 Tool 인자로 전달",
+    "sheet": "정책 최종본",
+    "row": 23,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "입력 PII·Secret",
+    "runtime_candidates": [
+      "P-DATA-INSPECTION-001"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/privacy.py",
+        "sha256": "b5b4bd304eb1db081014fb3934db7fe5c7da40bd9f1678bc5b02289295a5f393",
+        "committed_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
+        "normalized_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/secret_scan.py",
+        "sha256": "d4e35782a6d0afcea8071057faea979066b7f2254888d586798fda1e462fa052",
+        "committed_sha256": "d4e35782a6d0afcea8071057faea979066b7f2254888d586798fda1e462fa052",
+        "normalized_sha256": "d4e35782a6d0afcea8071057faea979066b7f2254888d586798fda1e462fa052",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "불필요 수집 제한과 탐지 성공은 다른 통제; scanner 장애 시험",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-20",
+    "source_id": "PAC20",
+    "title": "응답의 민감정보 노출 제한",
+    "threat": "Tool 응답을 통해 불필요한 정보가 모델이나 사용자에게 노출",
+    "sheet": "정책 최종본",
+    "row": 24,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "출력 PII·Secret",
+    "runtime_candidates": [
+      "MCP-OUTPUT-001"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "2cc18d61b0b5aea2b39caa6efb72c3659a3c1b5ffd656cfc2e859dcd58b7f21b",
+        "committed_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "normalized_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/privacy.py",
+        "sha256": "b5b4bd304eb1db081014fb3934db7fe5c7da40bd9f1678bc5b02289295a5f393",
+        "committed_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
+        "normalized_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "응답 보류·마스킹은 upstream 미실행을 뜻하지 않음",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-21",
+    "source_id": "PAC21",
+    "title": "구성 변경 검토와 재승인",
+    "threat": "검토하지 않은 기능이나 권한 변경을 계속 사용",
+    "sheet": "정책 최종본",
+    "row": 25,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "변경 재승인",
+    "runtime_candidates": [
+      "MCP-CATALOG-001",
+      "PAC-02"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/contract.py",
+        "sha256": "fe2e70c880fbedf80e067ff68d9e494955a4be34b3954420860f1d5e5de026dc",
+        "committed_sha256": "d8e048e0c85bfb6df0069a7e9edf7c1d14a2545e013fe8ca9d3c929a1754d8f8",
+        "normalized_sha256": "d8e048e0c85bfb6df0069a7e9edf7c1d14a2545e013fe8ca9d3c929a1754d8f8",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "2cc18d61b0b5aea2b39caa6efb72c3659a3c1b5ffd656cfc2e859dcd58b7f21b",
+        "committed_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "normalized_sha256": "bda7078bf0a01aa13c86a576f09c854ea2be16f92d5a7f8638bdc356b9f7987e",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "자동 최초 신뢰 금지; 사람이 승인한 계약과 호출 시 관찰 해시 대조",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-22",
+    "source_id": "PAC22",
+    "title": "호출과 권한 변경 이력 관리",
+    "threat": "인가, 승인과 폐기 이력의 누락 또는 변조",
+    "sheet": "정책 최종본",
+    "row": 26,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "감사",
+    "runtime_candidates": [
+      "append-only audit"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/audit.py",
+        "sha256": "414e1412303e1d1e6a183c98aa1fb07ad826f44c227343a26d6d0d447e124c9d",
+        "committed_sha256": "414e1412303e1d1e6a183c98aa1fb07ad826f44c227343a26d6d0d447e124c9d",
+        "normalized_sha256": "414e1412303e1d1e6a183c98aa1fb07ad826f44c227343a26d6d0d447e124c9d",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/tests/oss_audit_test.py",
+        "sha256": "5ba6b7b9831108b8f829c5ed9cdd714872008ef624366135c708210821b3b902",
+        "committed_sha256": "5ba6b7b9831108b8f829c5ed9cdd714872008ef624366135c708210821b3b902",
+        "normalized_sha256": "5ba6b7b9831108b8f829c5ed9cdd714872008ef624366135c708210821b3b902",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "체인 검증과 DB 소유자의 변조 가능성·보존 정책은 별도",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-23",
+    "source_id": "PAC23",
+    "title": "권한 철회와 연결 해제",
+    "threat": "중지, 철회 또는 폐기 이후 기존 연결로 재접근",
+    "sheet": "정책 최종본",
+    "row": 27,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "철회·종료",
+    "runtime_candidates": [
+      "MCP-DECOMM-001",
+      "PAC-14"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/decommission.py",
+        "sha256": "4cb9115269303adbae898ec12021d60d68edb1a662fbfe21bea5150ec69abb07",
+        "committed_sha256": "e4e082f9f41b6cad7500638cd20436defdba01c5d0b87f3c2c20ec6847068d4e",
+        "normalized_sha256": "e4e082f9f41b6cad7500638cd20436defdba01c5d0b87f3c2c20ec6847068d4e",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/tests/termination_flow.py",
+        "sha256": "ab0635a5ad14f6724eef6ba49ed2d114bc2e1b4386a586e83ef8e563f8c4fa69",
+        "committed_sha256": "ab0635a5ad14f6724eef6ba49ed2d114bc2e1b4386a586e83ef8e563f8c4fa69",
+        "normalized_sha256": "ab0635a5ad14f6724eef6ba49ed2d114bc2e1b4386a586e83ef8e563f8c4fa69",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "C1~C4와 자원 서버 재접근의 현재 증거 필요",
+    "experiment_index": "experiments/README.md"
+  },
+  {
+    "id": "TH-24",
+    "source_id": "PAC24",
+    "title": "토큰과 API 키 회수",
+    "threat": "설정 삭제 후 남은 인증정보를 이용한 재접근",
+    "sheet": "정책 최종본",
+    "row": 28,
+    "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "boundary": "잔존 자격",
+    "runtime_candidates": [
+      "PAC-14",
+      "C3/C4"
+    ],
+    "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/idp.py",
+        "sha256": "e762f5e9491c94e174a1abbd903265f5615db0d8830b2c9c429445eeac35ff48",
+        "committed_sha256": "1e601b1069c31c62d4842cbb13efaf2193f19db67686f84694b856108b481c9a",
+        "normalized_sha256": "1e601b1069c31c62d4842cbb13efaf2193f19db67686f84694b856108b481c9a",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/decommission.py",
+        "sha256": "4cb9115269303adbae898ec12021d60d68edb1a662fbfe21bea5150ec69abb07",
+        "committed_sha256": "e4e082f9f41b6cad7500638cd20436defdba01c5d0b87f3c2c20ec6847068d4e",
+        "normalized_sha256": "e4e082f9f41b6cad7500638cd20436defdba01c5d0b87f3c2c20ec6847068d4e",
+        "worktree_modified": false
+      }
+    ],
+    "verification": "static-candidate-mapping",
+    "verified_on": "2026-10-13",
+    "limitations": "설정 삭제는 외부 토큰·키 회수 증거 아님",
+    "experiment_index": "experiments/README.md"
+  }
+]

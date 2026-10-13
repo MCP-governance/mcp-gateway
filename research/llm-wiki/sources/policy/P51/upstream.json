@@ -1,0 +1,52 @@
+{
+  "organization": "arXiv (Cornell-hosted repository)",
+  "country": "international",
+  "doi": "10.48550/arXiv.2604.07551",
+  "type": "preprint",
+  "status": "arXiv preprint; 동료심사 게재 상태 미확인",
+  "verification": "fulltext",
+  "venue": "arXiv",
+  "kci_verified": false,
+  "id": "P51",
+  "title": "MCP-DPT: A Defense-Placement Taxonomy and Coverage Analysis for Model Context Protocol Security",
+  "authors": [
+    "Mehrdad Rostamzadeh",
+    "Sidhant Narula",
+    "Nahom Birhan",
+    "Mohammad Ghasemigol",
+    "Daniel Takabi"
+  ],
+  "date": "2026-04-08",
+  "url": "https://arxiv.org/abs/2604.07551",
+  "summary": "MCP 방어를 계층별 배치와 coverage 관점에서 분류하고 보호가 부족한 위치를 분석한다.",
+  "mcp_relevance": "Gateway, Host, Endpoint, 전송, 공급망 등 통제 위치마다 책임과 검증 증거를 지정하는 정책에 직접 유용하다.",
+  "limitations": "§5에서 coverage가 capability-based applicability이고 실제 탐지 정확도나 보안 보장이 아니라고 명시한다. 제품별 매핑과 수치를 현재 제품 성능으로 인용하지 않는다. 각 통제의 운영 효과는 별도 배포 시험이 필요하다.",
+  "year_window_met": true,
+  "pdf_url": "https://arxiv.org/pdf/2604.07551",
+  "read_scope": "arXiv v1 §3 architecture taxonomy, §4.6–4.8 coverage method, §5 discussion; no independent product testing",
+  "fulltext_url": "https://arxiv.org/html/2604.07551v1",
+  "date_precision": "day",
+  "date_basis": "arXiv first submitted date; revised versions not new records",
+  "group": "학술 논문",
+  "level": "I",
+  "month": "2026-04",
+  "agent_specific": true,
+  "local": [
+    {
+      "manifest": "acquisition_academic",
+      "status": "downloaded_and_extracted",
+      "url": "https://arxiv.org/pdf/2604.07551",
+      "original": "P51.pdf",
+      "md": "P51.md",
+      "text_chars": 105276,
+      "error": "",
+      "file_exists": true,
+      "sha256": "4ba23502be07ebca45221d88f552fcd42b943f1a60e6ec52c4ff4f8c46d3eb85",
+      "pages": 25,
+      "bytes": 1281537,
+      "original_path": "originals/web/P51.pdf",
+      "md_path": "extracted/P51.md"
+    }
+  ],
+  "acquisition_failed": []
+}
