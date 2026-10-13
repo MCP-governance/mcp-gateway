@@ -122,9 +122,12 @@ function statusPair(item) {
   return html`<span class="pair">${chip(v.tone, stateLabel(v.state))}<span class="ev ${v.stale ? "stale" : ""}">${v.evLabel}</span></span>`;
 }
 function flow3(r) {
-  if (r.decision === "Approval" && !r.attempted) return chip("approval", "승인 대기");
   const label = r.executed ? "실행됨" : r.attempted ? "실행 미확인" : "실행 안 함";
-  return html`<span class="flow3">${label}</span>${r.executed || r.attempted ? responseChip(r.response) : ""}`;
+  const notSent = r.event_kind === "mcp-connection" ? chip("block", "연결 거부")
+    : r.decision === "Block" ? chip("block", "차단")
+      : r.decision === "Approval" ? chip("approval", "승인 대기")
+        : chip("outline", "전송 안 함");
+  return html`<span class="flow3">${label}</span>${r.executed || r.attempted ? responseChip(r.response) : notSent}`;
 }
 const UPSTREAM = { executed: ["allow", "실행됨"], unknown: ["alert", "실행 미확인"], not_sent: ["outline", "실행 안 함"] };
 /** The five stops of one call. */
@@ -416,13 +419,13 @@ const modeChip = (mode) => chip(mode === "enforce" ? "allow" : "alert", mode ===
 function decisionRow(r) {
   return html`<tr class="clickable" tabindex="0" data-act="decision" data-id="${r.id}">
     <td class="t">${when(r.at, { seconds: true })}</td>
-    <td>${decisionChip(r.decision)}<span class="sub mono">${r.policy_id}</span></td>
-    <td class="who-cell"><b>${r.who}</b><span class="sub">${r.workstation ? html`${entityRef(r.workstation, 18)} · ` : ""}${r.agent === "termination-probe" ? "종료 점검" : r.harness ? harnessLabel(r.harness) : "—"}</span></td>
-    <td>${r.event_kind === "mcp-connection" ? chip("block", "연결 거부") : ""}<code>${r.server}.${r.tool}</code>${r.target ? html`<span class="sub muted" title="${r.target}">${short(r.target, 60)}</span>` : ""}</td>
+    <td>${decisionChip(r.decision)}</td>
+    <td class="who-cell"><b>${r.who}</b></td>
+    <td>${r.event_kind === "mcp-connection" ? chip("block", "연결 거부") : ""}<code>${r.server}.${r.tool}</code></td>
     <td>${flow3(r)}</td></tr>`;
 }
-const decisionTable = (rows, id = "") => html`<table class="data call-table"><thead><tr><th>시각</th><th>판정·정책</th><th>사용자·엔드포인트</th>
-  <th>도구·대상</th><th>실행 결과</th></tr></thead><tbody ${id ? raw(`id="${id}"`) : ""}>${rows.map(decisionRow)}</tbody></table>`;
+const decisionTable = (rows, id = "") => html`<table class="data call-table"><thead><tr><th>시각</th><th>판정</th><th>사용자</th>
+  <th>도구</th><th>실행 결과</th></tr></thead><tbody ${id ? raw(`id="${id}"`) : ""}>${rows.map(decisionRow)}</tbody></table>`;
 
 // A registration is approved until a date; past it the calls are blocked.
 const VALIDITY = { 1: "1일", 30: "30일", 90: "90일", 180: "180일", 365: "1년" };
@@ -676,7 +679,7 @@ ROUTES.activity = async (_, tab, query) => {
       }),
       active: tab || "live",
       tabs: [
-        { key: "live", label: "호출 목록", body: html`<section class="panel">
+        { key: "live", label: "목록", body: html`<section class="panel">
           <div class="filters">
             <label class="grow">검색<input data-feed-search type="search" maxlength="120" value="${feed.query}" placeholder="사용자·엔드포인트·도구·정책" aria-label="호출 검색" /></label>
             <label>판정<select data-filter="decision" aria-label="판정">${option("", "모든 판정", f.decision)}
@@ -707,24 +710,29 @@ async function showDecision(id) {
   const device = viewer.admin && r.device_id ? (await planes().catch(() => null))?.devices.find((d) => d.endpoint_id === r.device_id) : null;
   const conflictChip = (c) => chip((DECISION[c.decision] || [""])[0], `${(DECISION[c.decision] || [, c.decision])[1]} ${c.policy_id}`);
   openDrawer(`호출 #${r.id}`, html`<div class="drawer-summary"><span class="tool">${r.server}.${r.tool}</span>
-    ${decisionChip(r.decision)}${flow3(r)}<span class="muted small">${new Date(r.at).toLocaleString("ko-KR")}</span></div>`, [
-    { key: "flow", label: "호출 경로", body: html`${pipeline(r, device)}<blockquote class="quote">${r.reason}</blockquote>` },
-    { key: "summary", label: "요약", body: html`<blockquote class="quote">${r.reason}</blockquote>${kv([
-      ["시각", new Date(r.at).toLocaleString("ko-KR")], ["사용자", `${r.who}${r.department ? ` · ${r.department}` : ""}`],
+    ${decisionChip(r.decision)}<span class="muted small">${new Date(r.at).toLocaleString("ko-KR")}</span></div>`, [
+    { key: "flow", label: "호출 경로", body: pipeline(r, device) },
+    { key: "call", label: "호출 정보", body: kv([
+      ["시각", new Date(r.at).toLocaleString("ko-KR")], ["사용자", r.who], ["부서", r.department],
       ["역할", ROLE[r.role] || r.role], ["엔드포인트", r.workstation], ["하네스", r.harness ? harnessLabel(r.harness) : r.agent],
       ["이벤트", r.event_kind === "mcp-connection" ? "연결 거부" : "도구 호출"],
-      ["도구", html`<code>${r.server}.${r.tool}</code>`], ["대상", r.target ? html`<code>${r.target}</code>` : ""]])}` },
-    { key: "policy", label: "정책", n: (r.pac_failures || []).length, body: kv([
-      ["최종 정책", html`<code>${r.policy_id}</code>`],
-      ["실행 권한 위반", (r.pac_failures || []).length ? html`${r.pac_failures.map((x) => chip("block", x))}` : "없음"],
-      ["함께 해당한 정책", (r.conflicts || []).length ? html`${r.conflicts.map(conflictChip)}` : "없음"],
-      ["행위", r.action_ko || ACTION[r.action] || "—"], ["데이터 등급", r.data_class_ko], ["분류 근거", r.summary],
-      ["개인정보", (r.privacy_types || []).join(", ")], ["연쇄 탐지", (r.sequence_flags || []).join(", ")],
-      ["승인 요청", r.approval_id], ["집행 모드", r.enforcement === "monitor" ? "관찰" : r.enforcement === "enforce" ? "집행" : r.enforcement],
-      ["집행 모드 판정", r.would_decision ? (DECISION[r.would_decision]?.[1] || r.would_decision) : ""]]) },
-    { key: "trace", label: "추적", body: html`${kv([["감사 해시", r.evidence_sha256 ? html`<code>${r.evidence_sha256}</code>` : ""],
-      ["Trace ID", r.trace_id ? html`<code>${r.trace_id}</code>` : ""], ["오류", r.error], ["작업", r.task_id]])}
-      <details><summary>원본</summary>${json(r)}</details>` },
+      ["MCP 서버", r.server], ["도구", html`<code>${r.tool}</code>`], ["대상", r.target ? html`<code>${r.target}</code>` : ""]]) },
+    { key: "policy", label: "판정", n: (r.pac_failures || []).length, body: html`
+      <blockquote class="quote">${r.reason}</blockquote>${kv([
+        ["최종 판정", decisionChip(r.decision)], ["적용 정책", html`<code>${r.policy_id}</code>`],
+        ["실행 권한 위반", (r.pac_failures || []).length ? html`${r.pac_failures.map((x) => chip("block", x))}` : "없음"],
+        ["함께 해당한 정책", (r.conflicts || []).length ? html`${r.conflicts.map(conflictChip)}` : "없음"],
+        ["행위", r.action_ko || ACTION[r.action] || "—"], ["데이터 등급", r.data_class_ko], ["분류 근거", r.summary],
+        ["개인정보", (r.privacy_types || []).join(", ")], ["연쇄 탐지", (r.sequence_flags || []).join(", ")],
+        ["승인 요청", r.approval_id], ["집행 모드", r.enforcement === "monitor" ? "관찰" : r.enforcement === "enforce" ? "집행" : r.enforcement],
+        ["관찰 판정", r.would_decision ? (DECISION[r.would_decision]?.[1] || r.would_decision) : ""]])}` },
+    { key: "execution", label: "실행 결과", body: html`<div class="drawer-summary">${flow3(r)}</div>${kv([
+      ["MCP 서버 전송", r.attempted ? "시도" : "전송 안 함"],
+      ["도구 실행", r.executed ? "실행됨" : r.attempted ? "실행 미확인" : "실행 안 함"],
+      ["응답 처리", RESPONSE[r.response]?.[1] || r.response || "—"], ["오류", r.error]])}` },
+    { key: "trace", label: "추적", body: kv([
+      ["호출 번호", r.id], ["감사 해시", r.evidence_sha256 ? html`<code>${r.evidence_sha256}</code>` : ""],
+      ["Trace ID", r.trace_id ? html`<code>${r.trace_id}</code>` : ""], ["작업 ID", r.task_id]]) },
   ]);
 }
 
