@@ -307,7 +307,7 @@ const chartBox = (id, label, size = "") => html`<div class="chart ${size}" id="$
 // ── routing ──────────────────────────────────────────────────────────────────
 const PAGES = [
   { id: "overview", label: "운영 현황", group: "모니터링" },
-  { id: "activity", label: "호출 로그", group: "모니터링" },
+  { id: "activity", label: "도구 호출 로그", group: "모니터링" },
   { id: "audit", label: "감사 기록", group: "모니터링" },
   { id: "approvals", label: "승인 대기", group: "모니터링", badge: "approvals" },
   { id: "coverage", label: "통제 범위", group: "접근·통제", badge: "coverage" },
@@ -600,12 +600,14 @@ function feedCharts() {
   };
 }
 
-function renderFeed() {
+function renderFeed(newIds = []) {
   const body = $("#feed");
   if (!body) return;
   const focused = document.activeElement?.closest?.("#feed tr")?.dataset.id;
   const shown = searchRows(feed.rows, feed.query);
   body.innerHTML = String(html`${shown.map(decisionRow)}`);
+  const fresh = new Set(newIds.map(String));
+  for (const row of body.querySelectorAll("tr[data-id]")) row.classList.toggle("new-call", fresh.has(row.dataset.id));
   if (focused) $(`#feed tr[data-id="${CSS.escape(focused)}"]`)?.focus();
   const note = $("#feed-empty");
   note.hidden = shown.length > 0;
@@ -627,7 +629,7 @@ function startLive() {
       feed.failing = false;
       if (feed.live) feed.rows = mergeRows(feed.rows, data.rows);
       else feed.pending = mergeRows(feed.pending, data.rows);
-      if (feed.live && data.rows.length) renderFeed(); else renderFeedStatus();
+      if (feed.live && data.rows.length) renderFeed(data.rows.map((row) => row.id)); else renderFeedStatus();
     } catch {
       // A failed poll must not end the live view, and must not look like a quiet one.
       if (gen === feed.gen) { feed.failing = true; renderFeedStatus(); }
@@ -652,7 +654,7 @@ ROUTES.activity = async (_, tab, query) => {
   const f = feed.filters;
   return {
     html: page({
-      head: head("호출 로그", {
+      head: head("도구 호출 로그", {
         status: html`<span class="live"><span class="dot" id="feed-dot"></span><span id="feed-status"></span></span>`,
         actions: html`<button class="btn" type="button" data-act="live" aria-pressed="${String(!feed.live)}">${feed.live ? "일시정지" : "실시간 재개"}</button>`,
       }),

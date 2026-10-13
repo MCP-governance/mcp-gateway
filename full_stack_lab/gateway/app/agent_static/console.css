@@ -190,3 +190,17 @@ details.analysis[open]{padding-bottom:20px}
 @media(pointer:coarse){.btn,.btn.sm,.icon-btn,.nav a,.tab,.filters input,.filters select,.form input,.form select,label.check{min-height:44px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;scroll-behavior:auto!important}}
 @media(forced-colors:active){.chip,.btn,.dot,.kpi,.panel,.tab[aria-selected="true"],.pipe .step-no{border:1px solid CanvasText}.nav a[aria-current="page"]{outline:2px solid Highlight}}
+@keyframes new-call-fade {
+  from { background-color: #fff3b0; }
+  to { background-color: transparent; }
+}
+
+.call-table tbody tr.new-call > td {
+  animation: new-call-fade 3s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .call-table tbody tr.new-call > td {
+    animation-duration: 1ms;
+  }
+}
