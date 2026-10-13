@@ -205,6 +205,9 @@ const outcomeDecision = (text) => (OUTCOME_TONE.find(([word]) => String(text || 
 
 // ── icons (Lucide, ISC licence) ──────────────────────────────────────────────
 const ICON = {
+  pause: '<rect width="4" height="16" x="6" y="4" rx="1" fill="currentColor" stroke="none"/><rect width="4" height="16" x="14" y="4" rx="1" fill="currentColor" stroke="none"/>',
+  play: '<path d="m7 4 13 8-13 8Z" fill="currentColor" stroke="none"/>',
+  refresh: '<path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/>',
   overview: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
   activity: '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>',
   audit: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 15 2 2 4-4"/>',
@@ -594,7 +597,13 @@ function renderFeedStatus() {
       : `${start}–${end} / 전체 ${feed.total}건`;
   status.innerHTML = String(html`${range} · ${liveLabel({ ...feed, pending: feed.pending.length })}
     ${feed.pending.length ? html`<button class="btn sm" type="button" data-act="feed-new">새 로그 ${feed.pending.length}건</button>` : ""}`);
-  $("#feed-dot").className = `dot ${feed.failing ? "bad" : feed.live ? "on" : ""}`;
+  const statusParts = status.textContent.split(" \u00b7 ");
+  status.textContent = statusParts.shift() || "";
+  $("#feed-live-state").textContent = feed.failing ? "갱신 실패" : feed.live ? "실시간" : "일시정지";
+  $("#feed-live-time").textContent = feed.lastOk
+    ? new Date(feed.lastOk).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    : "연결 중";
+  $("#feed-dot").className = `dot ${feed.failing ? "bad" : feed.live ? "on" : "paused"}`;
 }
 
 function feedCharts() {
@@ -705,13 +714,14 @@ ROUTES.activity = async (_, tab, query) => {
   const f = feed.filters;
   return {
     html: page({
-      head: head("도구 호출 로그", {
-        status: html`<span class="live"><span class="dot" id="feed-dot"></span><span id="feed-status"></span></span>`,
-        actions: html`<button class="btn" type="button" data-act="live" aria-pressed="${String(!feed.live)}">${feed.live ? "일시정지" : "실시간 재개"}</button>`,
-      }),
+      head: head("도구 호출 로그"),
       active: tab || "live",
       tabs: [
-        { key: "live", label: "목록", body: html`<section class="panel">
+        { key: "live", label: "목록", body: html`<div class="feed-toolbar">
+          <span class="live"><span class="dot" id="feed-dot"></span><span id="feed-live-state"></span><span aria-hidden="true">|</span><span id="feed-live-time"></span>
+            <button class="feed-live-toggle" type="button" data-act="live" aria-pressed="${String(!feed.live)}" aria-label="${feed.live ? "일시정지" : "실시간 재개"}" title="${feed.live ? "일시정지" : "실시간 재개"}">${icon(feed.live ? "pause" : "play")}</button></span>
+          <span class="feed-count" id="feed-status"></span>
+        </div><section class="panel feed-panels">
           <div class="filters">
             <label class="grow">검색<input data-feed-search type="search" maxlength="120" value="${feed.query}" placeholder="사용자·엔드포인트·도구·정책" aria-label="호출 검색" /></label>
             <label>판정<select data-filter="decision" aria-label="판정">${option("", "모든 판정", f.decision)}
@@ -722,7 +732,11 @@ ROUTES.activity = async (_, tab, query) => {
             ${viewer.admin ? html`<label>사용자<input data-filter="person" type="search" placeholder="이름 또는 계정" value="${f.person}" aria-label="사용자" /></label>` : ""}
           </div>
           <div class="body flush">${decisionTable([], "feed")}<p class="empty" id="feed-empty" hidden></p><div class="pager" id="feed-pager"></div></div></section>` },
-        { key: "stats", label: "분석", body: html`<div class="stack">
+        { key: "stats", label: "분석", body: html`<div class="feed-toolbar analysis-toolbar">
+          <span class="analysis-total" id="analysis-total">전체 ${analysis.total ?? 0}건</span>
+          <span class="analysis-updated">업데이트 시각: <span id="analysis-updated-time">${new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span></span>
+          <button class="analysis-refresh" type="button" data-act="analysis-refresh" aria-label="분석 새로고침" title="분석 새로고침">${icon("refresh")}</button>
+        </div><div class="stack">
           ${panel("호출 추이", chartBox("c-minutes", "전체 호출 추이", "sm"), { sub: `${analysis.total}건` })}<div class="grid c2">
           ${panel("응답 처리", chartBox("c-by-response", "전체 호출의 응답 처리 비율", "sm"))}
           ${panel("시간대별 분포", chartBox("c-hours", "한국 시간 기준 전체 호출의 시간대별 분포", "sm"), { sub: "한국 시간" })}</div>
@@ -1698,9 +1712,22 @@ const ACTIONS = {
   skip: () => $("#view").focus(),
   live(el) {
     feed.live = !feed.live;
-    el.textContent = feed.live ? "일시정지" : "실시간 재개";
+    el.innerHTML = String(icon(feed.live ? "pause" : "play"));
+    el.setAttribute("aria-label", feed.live ? "일시정지" : "실시간 재개");
+    el.title = feed.live ? "일시정지" : "실시간 재개";
     el.setAttribute("aria-pressed", String(!feed.live));
     renderFeedStatus();
+  },
+  async "analysis-refresh"() {
+    const extra = feed.query ? { q: feed.query } : {};
+    const analysis = await gw(`activity/analysis?${feedQuery(extra)}`);
+    $("#analysis-total").textContent = `전체 ${analysis.total ?? 0}건`;
+    $("#analysis-updated-time").textContent = new Date().toLocaleTimeString("ko-KR", {
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+    });
+    for (const [id, build] of Object.entries(feedCharts(analysis))) {
+      if ($(`#${id}`)) charts.redraw(id, build);
+    }
   },
   "feed-new"() {
     feed.highlight = feed.pending.map((row) => row.id);

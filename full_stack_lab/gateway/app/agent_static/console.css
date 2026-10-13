@@ -121,6 +121,24 @@ table.call-table td:nth-child(4){min-width:200px;max-width:360px}table.call-tabl
 .kv{display:grid;grid-template-columns:140px minmax(0,1fr);gap:0;font-size:13px;margin:0}
 .kv dt,.kv dd{padding:11px 0;border-bottom:1px solid var(--line)}.kv dt{color:var(--ink-3)}.kv dd{margin:0;overflow-wrap:anywhere;min-width:0}
 .filters{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:18px 20px;border-bottom:1px solid var(--line)}
+.feed-panels{overflow:visible;border:0;border-radius:0;background:transparent}
+.feed-panels>.filters{margin-bottom:16px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel)}
+.feed-panels>.body{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel)}
+.feed-panels>.body.flush{padding-top:0}
+.feed-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-8px 0 16px}
+.feed-toolbar>.live{justify-content:flex-start}
+#feed-live-state{display:inline-block;width:5.5em;flex:none;white-space:nowrap}
+.feed-live-toggle{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-height:0;padding:0;border:0;background:transparent;color:var(--ink-3);cursor:pointer}
+.feed-live-toggle:hover{color:var(--ink)}
+.feed-live-toggle svg{width:16px;height:16px}
+.feed-count{margin-left:auto;color:var(--ink-3);font-size:12px;white-space:nowrap}
+.dot.paused{background:var(--alert);box-shadow:0 0 0 3px var(--alert-bg)}
+.analysis-toolbar{justify-content:flex-start;color:var(--ink-3);font-size:12px}
+.analysis-total{color:var(--ink);font-weight:650}
+.analysis-updated{margin-left:4px}
+.analysis-refresh{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-height:0;margin-left:-6px;padding:0;border:0;background:transparent;color:var(--ink-3);cursor:pointer}
+.analysis-refresh:hover{color:var(--ink)}
+.analysis-refresh svg{width:16px;height:16px}
 .filters label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink-3)}
 .filters input,.filters select{min-height:40px;padding:8px 11px;border:1px solid var(--line-2);border-radius:7px;background:var(--panel);color:var(--ink);min-width:0}
 .filters .grow{flex:1 1 240px;min-width:0}.filters>input[data-filter="person"]{width:130px}
