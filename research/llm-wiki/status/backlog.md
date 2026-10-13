@@ -14,5 +14,6 @@
 | DEV-07 | 상용·OSS 비교 재현 | [제품 분석](../solutions/README.md) | 같은 도구·정상군·공격군·검사기 장애·독립 효과의 비교표 | 소스/문서 분석 완료, 실행 미실행 |
 | DEV-08 | 종료 C3/C4의 자원 서버 차이 | [종료 모델](../../../docs/ai/TERMINATION_MODEL.md) | introspection TTL·캐시·발급 토큰의 재접근과 T1~T3 증거 | 문서·설계 |
 | DEV-09 | 한국어 PII/Secret 평가 | [PII/Secret 도입](../../../docs/ai/OSS_ADOPTION_2026-10-03.md) | 합성 한국어 표본의 탐지·마스킹·성능·scanner fail closed | 설계 |
+| DEV-10 | field 포트 배치와 CI 기대값 대조 | [실패 CI](https://github.com/MCP-governance/mcp-gateway/actions/runs/38346569656), [이전 동일 실패](https://github.com/MCP-governance/mcp-gateway/actions/runs/37201934077) | 루트 규칙의 Caddy+모델 프록시 게시와 field_kit_check.py:407의 Caddy 전용 기대를 검토하고 허용 서비스·주소의 양/음성 시험 | 기존 실패 확인, 코드 변경 미수행 |
 
 변경할 때 작업 보고서를 연결하고 `완료`의 검증 층을 함께 씁니다. 소스·문서 확인만 끝났으면 실행 검증 완료로 올리지 않습니다.

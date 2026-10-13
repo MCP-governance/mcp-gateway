@@ -32,6 +32,12 @@ Git에는 위키·진입점·위키 검사 workflow만 반영합니다. 시작 �
 
 ContextForge의 검토 커밋에서 PII 플러그인은 `enforce`입니다. 기존 “모두 disabled” 설명을 새 코드 분석에서 정정했습니다. LiteLLM은 확보한 커밋·해당 버전의 소스로 확인했습니다. 계약 변경은 발견 시점에 따라 `MCP-CATALOG-001` 또는 dispatch 경로의 `P-CONTROL-FAIL-CLOSED`로 기록되므로 실험 기대값을 구분했습니다.
 
+## GitHub 반영과 CI
+
+첫 구축 커밋 `531a4f384fca53653cdf44d27edb81c0c2b95d41`을 원격 기본 브랜치 `feat/2026-09-v3.1-field-deploy`에 반영하고 로컬/원격 SHA 일치를 확인했습니다. [Research wiki CI](https://github.com/MCP-governance/mcp-gateway/actions/runs/38346569660)는 성공했습니다. Git에 들어갈 파일만 깨끗한 디렉터리로 내보낸 검사도 성공했으며 제외한 실제 미커밋 코드 세 파일에 대해서는 로컬 관찰/HEAD 기준 차이를 표시했습니다.
+
+[전체 검증 CI](https://github.com/MCP-governance/mcp-gateway/actions/runs/38346569656)는 `field_kit_check.py:407`, `test_overlay_publishes_only_caddy_on_the_tailnet_address`에서 실패했습니다. Caddy 외 서비스의 게시 주소는 127.0.0.1만 기대하지만 실제 배치에는 모델 프록시의 tailnet 주소가 포함돼 있습니다. 루트 소유자 규칙은 Caddy와 모델 프록시 두 종류의 게시를 허용합니다. [이전 6fdd9f6 CI](https://github.com/MCP-governance/mcp-gateway/actions/runs/37201934077)에서도 동일 테스트·주소 실패를 확인했고 이번 위키 커밋은 테스트·Compose를 변경하지 않았습니다. 원인 후보는 배치 규칙과 검사 기대의 불일치이며 별도 DEV-10에서 검토합니다.
+
 ## 한계와 다음 작업
 
 논문 전체 정독·모든 표와 그림 육안 검사·논문 재현·상용 trial·솔루션 배포·원격 MCP 연결·PJ1 실제 하네스 실험은 수행하지 않았습니다. 과거 검증 기록은 새 결과로 합산하지 않습니다. 모든 실험 카드는 `not_run`, 실제 결과는 null입니다.

@@ -23,6 +23,8 @@
 
 [위키 구축 보고](reports/2026-10-13-wiki-bootstrap.md)에 확보 범위와 위키 검증 결과를 남깁니다. 모든 실험 설계 카드는 이번 작업에서 `미실행` 상태입니다. 기존 보고서의 과거 실측 수치를 새 결과로 집계하지 않습니다.
 
+GitHub 최초 위키 반영 커밋은 `531a4f3`이며 [위키 전용 CI](https://github.com/MCP-governance/mcp-gateway/actions/runs/38346569660)는 통과했습니다. [솔루션 전체 CI](https://github.com/MCP-governance/mcp-gateway/actions/runs/38346569656)는 field 포트 기대값에서 실패했습니다. [직전 코드의 CI](https://github.com/MCP-governance/mcp-gateway/actions/runs/37201934077)도 동일 실패였고 해당 테스트·배치 파일은 이번 변경에 포함되지 않았습니다. 검토 작업을 DEV-10에 기록합니다.
+
 ## 우선 진행
 
 1. [DEV-01](backlog.md): 관리 엔드포인트의 현재 활성화와 실제 모델→MCP→원장→독립 효과를 연결합니다.
