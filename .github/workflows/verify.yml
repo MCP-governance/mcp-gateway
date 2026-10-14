@@ -56,6 +56,7 @@ jobs:
           bash -n console.sh tests/security_regression.sh workstation/entrypoint.sh workstation/bin/bob-ask mcp/run-server.sh corp/gitea-entrypoint.sh ../endpoint-agent/install-linux.sh
           node --check gateway/app/agent_static/console.js
           node --check gateway/app/agent_static/charts.mjs
+          node --check gateway/app/agent_static/ui.mjs
           node --check gateway/app/agent_static/login.js
           node --check gateway/app/agent_static/signup.js
           node --test tests/console-state.test.mjs tests/resource-values.test.mjs
@@ -90,6 +91,11 @@ jobs:
       # the code is worse than none: a reviewer reads it as exhaustive.
       - name: 무인증 API 목록과 문서 대조
         run: python3 tests/open_endpoints.py
+
+      # The console is a product screen edited by more than one person; docs/ai/CONSOLE_UI.md
+      # forbids development traces, abbreviations, ~요 style and inline style. Checked here, not on the device.
+      - name: 콘솔 화면 문구 규칙
+        run: python3 tests/console_copy_check.py
 
       # 실기기 배치(field deploy): 키트·렌더러 일반화·Caddy 오버레이. 엔진 없이 된다.
       - name: 실기기 배치 키트·오버레이 검사
