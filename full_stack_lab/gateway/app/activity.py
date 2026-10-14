@@ -85,6 +85,8 @@ def describe(row: dict) -> dict:
 async def recent(after: int = 0, limit: int = 100, user_token: str | None = None,
                  decision: str | None = None, server: str | None = None, person: str | None = None,
                  event_kind: str | None = None, execution: str | None = None,
+                 endpoint: str | None = None, policy: str | None = None,
+                 since: datetime | None = None, until: datetime | None = None,
                  page: int = 1, query: str | None = None) -> dict:
     base_clauses, base_params = [], []
     if user_token:
@@ -96,6 +98,15 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
         clauses.append("d.server_id = %s"); params.append(server)
     if person:
         clauses.append("(p.display_name ILIKE %s OR d.user_token ILIKE %s)"); params += [f"%{person}%", f"%{person}%"]
+    if endpoint:
+        clauses.append("(COALESCE(d.client->>'workstation','') ILIKE %s OR COALESCE(d.client->>'endpoint_id','') ILIKE %s OR COALESCE(d.client->>'device_id','') ILIKE %s)")
+        params += [f"%{endpoint}%", f"%{endpoint}%", f"%{endpoint}%"]
+    if policy:
+        clauses.append("d.policy_id ILIKE %s"); params.append(f"%{policy}%")
+    if since:
+        clauses.append("d.created_at >= %s"); params.append(since)
+    if until:
+        clauses.append("d.created_at <= %s"); params.append(until)
     if event_kind:
         clauses.append("COALESCE(d.client->>'event_kind','tools/call')=%s"); params.append(event_kind)
     if execution == "executed":
@@ -106,6 +117,8 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
         clauses.append("d.upstream_attempted=true AND d.upstream_executed=false")
     elif execution == "withheld":
         clauses.append("d.upstream_executed=true AND (d.result_preview->>'disposition'='withheld' OR d.policy_id='MCP-OUTPUT-001')")
+    elif execution == "connection-denied":
+        clauses.append("COALESCE(d.client->>'event_kind','tools/call')='mcp-connection'")
     if query and query.strip():
         term = f"%{query.strip()}%"
         clauses.append("""(p.display_name ILIKE %s OR p.department ILIKE %s OR d.user_token ILIKE %s
@@ -152,6 +165,8 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
 async def analysis(user_token: str | None = None, decision: str | None = None,
                    server: str | None = None, person: str | None = None,
                    event_kind: str | None = None, execution: str | None = None,
+                   endpoint: str | None = None, policy: str | None = None,
+                   since: datetime | None = None, until: datetime | None = None,
                    query: str | None = None) -> dict:
     clauses, params = [], []
     if user_token:
@@ -163,6 +178,15 @@ async def analysis(user_token: str | None = None, decision: str | None = None,
     if person:
         clauses.append("(p.display_name ILIKE %s OR d.user_token ILIKE %s)")
         params += [f"%{person}%", f"%{person}%"]
+    if endpoint:
+        clauses.append("(COALESCE(d.client->>'workstation','') ILIKE %s OR COALESCE(d.client->>'endpoint_id','') ILIKE %s OR COALESCE(d.client->>'device_id','') ILIKE %s)")
+        params += [f"%{endpoint}%", f"%{endpoint}%", f"%{endpoint}%"]
+    if policy:
+        clauses.append("d.policy_id ILIKE %s"); params.append(f"%{policy}%")
+    if since:
+        clauses.append("d.created_at >= %s"); params.append(since)
+    if until:
+        clauses.append("d.created_at <= %s"); params.append(until)
     if event_kind:
         clauses.append("COALESCE(d.client->>'event_kind','tools/call')=%s"); params.append(event_kind)
     if execution == "executed":
@@ -173,6 +197,8 @@ async def analysis(user_token: str | None = None, decision: str | None = None,
         clauses.append("d.upstream_attempted=true AND d.upstream_executed=false")
     elif execution == "withheld":
         clauses.append("d.upstream_executed=true AND (d.result_preview->>'disposition'='withheld' OR d.policy_id='MCP-OUTPUT-001')")
+    elif execution == "connection-denied":
+        clauses.append("COALESCE(d.client->>'event_kind','tools/call')='mcp-connection'")
     if query and query.strip():
         term = f"%{query.strip()}%"
         clauses.append("""(p.display_name ILIKE %s OR p.department ILIKE %s OR d.user_token ILIKE %s

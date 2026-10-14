@@ -358,22 +358,28 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
 async def activity_feed(after: int = 0, limit: int = 100, decision: str | None = None,
                         server: str | None = None, person: str | None = None,
                         event_kind: Literal["tools/call", "mcp-connection"] | None = None,
-                        execution: Literal["executed", "not-sent", "unknown", "withheld"] | None = None,
+                        execution: Literal["executed", "not-sent", "unknown", "withheld", "connection-denied"] | None = None,
+                        endpoint: str | None = None, policy: str | None = None,
+                        since: datetime | None = None, until: datetime | None = None,
                         page: int = 1, q: str | None = None,
                         user: dict = Depends(caller)) -> dict:
     """Decisions as readable sentences. Admins see everyone; others see themselves."""
     own = None if "admin" in user["roles"] else user["principal"]
-    return await activity.recent(after, limit, own, decision, server, person, event_kind, execution, page, q)
+    return await activity.recent(after, limit, own, decision, server, person, event_kind, execution,
+                                 endpoint, policy, since, until, page, q)
 
 
 @app.get("/api/activity/analysis")
 async def activity_analysis(decision: str | None = None, server: str | None = None,
                             person: str | None = None,
                             event_kind: Literal["tools/call", "mcp-connection"] | None = None,
-                            execution: Literal["executed", "not-sent", "unknown", "withheld"] | None = None,
+                            execution: Literal["executed", "not-sent", "unknown", "withheld", "connection-denied"] | None = None,
+                            endpoint: str | None = None, policy: str | None = None,
+                            since: datetime | None = None, until: datetime | None = None,
                             q: str | None = None, user: dict = Depends(caller)) -> dict:
     own = None if "admin" in user["roles"] else user["principal"]
-    return await activity.analysis(own, decision, server, person, event_kind, execution, q)
+    return await activity.analysis(own, decision, server, person, event_kind, execution,
+                                   endpoint, policy, since, until, q)
 
 
 @app.get("/.well-known/oauth-protected-resource")

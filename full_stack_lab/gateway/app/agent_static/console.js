@@ -133,19 +133,16 @@ const UPSTREAM = { executed: ["allow", "실행됨"], unknown: ["alert", "실행 
 /** The five stops of one call. */
 function pipeline(r, device) {
   const [, gate, endpoint, upstream, response] = pipelineOf(r);
-  const hash = (h) => h ? html`<code title="${h}">${String(h).slice(0, 12)}</code>` : "";
   const stage = (n, title, body, cls = "") => html`<li class="${cls}"><span class="step-no" aria-hidden="true">${n}</span><b>${title}</b><div class="stage-body">${body}</div></li>`;
   return html`<ol class="pipe" aria-label="호출 경로">
     ${stage(1, "요청", html`<span>${r.harness ? harnessLabel(r.harness) : r.agent || "—"}</span>
       <span class="v">엔드포인트 <code>${r.workstation || "—"}</code></span>`)}
-    ${stage(2, "게이트웨이", html`${decisionChip(r.decision)}<code>${r.policy_id}</code>
-      <span class="v">${gate.state === "refused-connection" ? "연결 거부" : html`감사 기록 #${r.id} ${hash(r.evidence_sha256)}`}</span>`, r.decision === "Block" ? "stop" : "")}
+    ${stage(2, "게이트웨이", html`${decisionChip(r.decision)}
+      ${gate.state === "refused-connection" ? html`<span class="v">연결 거부</span>` : ""}`, r.decision === "Block" ? "stop" : "")}
     ${stage(3, "엔드포인트", endpoint.state === "bound" ? html`${chip("brand", "인증된 엔드포인트")}${device ? statusPair(device) : ""}`
       : chip("outline", "인증 없음"), endpoint.state === "bound" ? "" : "off")}
     ${stage(4, "도구 실행", chip(...UPSTREAM[upstream.state]), upstream.state === "not_sent" ? "off" : "")}
-    ${stage(5, "응답", html`${responseChip(response.state)}
-      ${r.response_bytes != null ? html`<span class="v">${r.response_bytes} byte · ${(r.response_types || []).join(", ") || "—"} ${hash(r.response_sha256)}</span>` : ""}
-      ${(r.masked_types || []).length ? html`<span class="v">마스킹 ${r.masked_types.join(", ")}</span>` : ""}`, response.state === "withheld" ? "stop" : "")}
+    ${stage(5, "응답", responseChip(response.state), response.state === "withheld" ? "stop" : "")}
     </ol>`;
 }
 
@@ -424,7 +421,7 @@ function decisionRow(r) {
     <td class="t">${when(r.at, { seconds: true })}</td>
     <td>${decisionChip(r.decision)}</td>
     <td class="who-cell"><b>${r.who}</b></td>
-    <td>${r.event_kind === "mcp-connection" ? chip("block", "연결 거부") : ""}<code>${r.server}.${r.tool}</code></td>
+    <td><code>${r.server}.${r.tool}</code></td>
     <td>${flow3(r)}</td></tr>`;
 }
 const decisionTable = (rows, id = "") => html`<table class="data call-table"><thead><tr><th>시각</th><th>판정</th><th>사용자</th>
@@ -472,7 +469,7 @@ ROUTES.overview = async (_, tab) => {
   return {
     html: page({
       head: head("운영 현황", { status: modeChip(o.enforcement) }),
-      kpis: kpiStrip([["게이트웨이 경유 호출", x.tool_calls, "", "#/activity?event_kind=tools/call"],
+      kpis: kpiStrip([["게이트웨이 경유 호출", x.tool_calls, "", "#/activity"],
         ["통제 중인 엔드포인트", devices.filter((d) => d.account_state === "endpoint_enforced").length, "", "#/coverage?t=devices"],
         ["실행된 호출", x.executed, "allow", "#/activity?execution=executed"],
         ["응답 보류", x.withheld, "block", "#/activity?execution=withheld"],
@@ -558,14 +555,16 @@ ROUTES.overview = async (_, tab) => {
 // Activity keeps its rows between renders so live updates and the detail drawer
 // read from the same list. Paused, it keeps polling but holds new rows back and
 // counts them, so the list stops moving without going stale.
-const FEED_FILTERS = ["decision", "server", "person", "event_kind", "execution"];
+const FEED_FILTERS = ["decision", "server", "since", "until", "execution", "person", "endpoint", "policy"];
 const FEED_PAGE_SIZE = 50;
-const feed = { rows: [], pending: [], cursor: 0, filters: { decision: "", server: "", person: "", event_kind: "", execution: "" }, query: "",
+const feed = { rows: [], pending: [], cursor: 0, filters: Object.fromEntries(FEED_FILTERS.map((key) => [key, ""])), query: "",
   live: true, servers: [], lastOk: 0, failing: false, gen: 0, page: 1, pageSize: FEED_PAGE_SIZE,
   total: 0, filteredTotal: 0, highlight: [], analysis: null, analysisKey: "", analysisAt: 0 };
 let liveTimer = null;
 function stopLive() { clearInterval(liveTimer); liveTimer = null; feed.gen += 1; }
-const feedQuery = (extra) => new URLSearchParams({ ...Object.fromEntries(Object.entries(feed.filters).filter(([, v]) => v)),
+const feedQuery = (extra) => new URLSearchParams({ ...Object.fromEntries(Object.entries(feed.filters).filter(([, v]) => v)
+  .map(([key, value]) => [key,
+    ["since", "until"].includes(key) ? new Date(value).toISOString() : value])),
   ...(feed.query ? { q: feed.query } : {}), ...extra });
 
 /** Calls over the loaded span in at most ~30 buckets (1, 5, 10, 30 or 60 minutes). */
@@ -712,6 +711,7 @@ ROUTES.activity = async (_, tab, query) => {
   const servers = viewer.admin ? feed.servers : [...new Set(feed.rows.map((r) => r.server))].sort();
   const option = (value, label, cur) => html`<option value="${value}" ${value === cur ? raw("selected") : ""}>${label}</option>`;
   const f = feed.filters;
+  const advancedOpen = ["execution", "person", "endpoint", "policy"].some((key) => f[key]);
   return {
     html: page({
       head: head("도구 호출 로그"),
@@ -723,13 +723,18 @@ ROUTES.activity = async (_, tab, query) => {
           <span class="feed-count" id="feed-status"></span>
         </div><section class="panel feed-panels">
           <div class="filters">
-            <label class="grow">검색<input data-feed-search type="search" maxlength="120" value="${feed.query}" placeholder="사용자·엔드포인트·도구·정책" aria-label="호출 검색" /></label>
+            <label class="grow">검색<input data-feed-search type="search" maxlength="120" value="${feed.query}" placeholder="사용자, 엔드포인트, 도구, 정책" aria-label="호출 검색" /></label>
+            <label>시작<input data-filter="since" type="datetime-local" value="${f.since}" aria-label="조회 시작 시각" /></label>
+            <label>종료<input data-filter="until" type="datetime-local" value="${f.until}" aria-label="조회 종료 시각" /></label>
             <label>판정<select data-filter="decision" aria-label="판정">${option("", "모든 판정", f.decision)}
               ${Object.entries(DECISION).map(([k, [, label]]) => option(k, label, f.decision))}</select></label>
             <label>MCP 서버<select data-filter="server" aria-label="서버">${option("", "모든 서버", f.server)}${servers.map((s) => option(s, s, f.server))}</select></label>
-            <label>이벤트<select data-filter="event_kind" aria-label="이벤트 종류">${option("", "모든 이벤트", f.event_kind)}${option("tools/call", "도구 호출", f.event_kind)}${option("mcp-connection", "연결 거부", f.event_kind)}</select></label>
-            <label>실행 결과<select data-filter="execution" aria-label="실행 결과">${option("", "모든 실행 결과", f.execution)}${option("executed", "실행됨", f.execution)}${option("not-sent", "실행 안 함", f.execution)}${option("unknown", "실행 미확인", f.execution)}${option("withheld", "응답 보류", f.execution)}</select></label>
-            ${viewer.admin ? html`<label>사용자<input data-filter="person" type="search" placeholder="이름 또는 계정" value="${f.person}" aria-label="사용자" /></label>` : ""}
+            <details class="feed-advanced" ${advancedOpen ? raw("open") : ""}><summary>상세 필터</summary><div class="advanced-filters">
+              <label>실행 결과<select data-filter="execution" aria-label="실행 결과">${option("", "모든 실행 결과", f.execution)}${option("executed", "실행됨", f.execution)}${option("not-sent", "실행 안 함", f.execution)}${option("unknown", "실행 미확인", f.execution)}${option("withheld", "응답 보류", f.execution)}${option("connection-denied", "연결 거부", f.execution)}</select></label>
+              ${viewer.admin ? html`<label>사용자<input data-filter="person" type="search" placeholder="이름 또는 계정" value="${f.person}" aria-label="사용자" /></label>` : ""}
+              <label>엔드포인트<input data-filter="endpoint" type="search" placeholder="엔드포인트 ID" value="${f.endpoint}" aria-label="엔드포인트" /></label>
+              <label>정책<input data-filter="policy" type="search" placeholder="정책 ID" value="${f.policy}" aria-label="정책" /></label>
+            </div></details>
           </div>
           <div class="body flush">${decisionTable([], "feed")}<p class="empty" id="feed-empty" hidden></p><div class="pager" id="feed-pager"></div></div></section>` },
         { key: "stats", label: "분석", body: html`<div class="feed-toolbar analysis-toolbar">
@@ -758,15 +763,15 @@ async function showDecision(id) {
   const conflictChip = (c) => chip((DECISION[c.decision] || [""])[0], `${(DECISION[c.decision] || [, c.decision])[1]} ${c.policy_id}`);
   openDrawer(`호출 #${r.id}`, html`<div class="drawer-summary"><span class="tool">${r.server}.${r.tool}</span>
     ${decisionChip(r.decision)}<span class="muted small">${new Date(r.at).toLocaleString("ko-KR")}</span></div>`, [
-    { key: "flow", label: "호출 경로", body: pipeline(r, device) },
-    { key: "call", label: "호출 정보", body: kv([
-      ["시각", new Date(r.at).toLocaleString("ko-KR")], ["사용자", r.who], ["부서", r.department],
+    { key: "flow", label: "요약", body: pipeline(r, device) },
+    { key: "call", label: "요청 정보", body: kv([
+      ["사용자", r.who], ["부서", r.department],
       ["역할", ROLE[r.role] || r.role], ["엔드포인트", r.workstation], ["하네스", r.harness ? harnessLabel(r.harness) : r.agent],
-      ["이벤트", r.event_kind === "mcp-connection" ? "연결 거부" : "도구 호출"],
+      ["이벤트", r.event_kind === "mcp-connection" ? "연결 거부" : ""],
       ["MCP 서버", r.server], ["도구", html`<code>${r.tool}</code>`], ["대상", r.target ? html`<code>${r.target}</code>` : ""]]) },
-    { key: "policy", label: "판정", n: (r.pac_failures || []).length, body: html`
-      <blockquote class="quote">${r.reason}</blockquote>${kv([
-        ["최종 판정", decisionChip(r.decision)], ["적용 정책", html`<code>${r.policy_id}</code>`],
+    { key: "policy", label: "판정", body: html`
+      <div class="decision-reason"><span>판정 사유</span><p>${r.reason || "—"}</p></div>${kv([
+        ["적용 정책", html`<code>${r.policy_id}</code>`],
         ["실행 권한 위반", (r.pac_failures || []).length ? html`${r.pac_failures.map((x) => chip("block", x))}` : "없음"],
         ["함께 해당한 정책", (r.conflicts || []).length ? html`${r.conflicts.map(conflictChip)}` : "없음"],
         ["행위", r.action_ko || ACTION[r.action] || "—"], ["데이터 등급", r.data_class_ko], ["분류 근거", r.summary],
@@ -776,10 +781,14 @@ async function showDecision(id) {
     { key: "execution", label: "실행 결과", body: html`<div class="drawer-summary">${flow3(r)}</div>${kv([
       ["MCP 서버 전송", r.attempted ? "시도" : "전송 안 함"],
       ["도구 실행", r.executed ? "실행됨" : r.attempted ? "실행 미확인" : "실행 안 함"],
-      ["응답 처리", RESPONSE[r.response]?.[1] || r.response || "—"], ["오류", r.error]])}` },
-    { key: "trace", label: "추적", body: kv([
-      ["호출 번호", r.id], ["감사 해시", r.evidence_sha256 ? html`<code>${r.evidence_sha256}</code>` : ""],
-      ["Trace ID", r.trace_id ? html`<code>${r.trace_id}</code>` : ""], ["작업 ID", r.task_id]]) },
+      ["응답 처리", RESPONSE[r.response]?.[1] || r.response || "—"],
+      ["응답 크기", r.response_bytes != null ? `${r.response_bytes} byte` : ""],
+      ["응답 형식", (r.response_types || []).join(", ")],
+      ["마스킹 항목", (r.masked_types || []).join(", ")],
+      ["응답 해시", r.response_sha256 ? html`<code>${r.response_sha256}</code>` : ""],
+      ["오류", r.error]])}<h3 class="detail-section-title">추적 정보</h3>${kv([
+      ["감사 해시", r.evidence_sha256 ? html`<code>${r.evidence_sha256}</code>` : ""],
+      ["Trace ID", r.trace_id ? html`<code>${r.trace_id}</code>` : ""], ["작업 ID", r.task_id]])}` },
   ]);
 }
 
@@ -1721,6 +1730,9 @@ const ACTIONS = {
   async "analysis-refresh"() {
     const extra = feed.query ? { q: feed.query } : {};
     const analysis = await gw(`activity/analysis?${feedQuery(extra)}`);
+    feed.analysis = analysis;
+    feed.analysisKey = feedQuery({}).toString();
+    feed.analysisAt = Date.now();
     $("#analysis-total").textContent = `전체 ${analysis.total ?? 0}건`;
     $("#analysis-updated-time").textContent = new Date().toLocaleTimeString("ko-KR", {
       hour: "2-digit", minute: "2-digit", second: "2-digit",
@@ -2181,10 +2193,6 @@ const FORMS = {
       .map(([k, v]) => [k, ["since", "until"].includes(k) ? new Date(v).toISOString() : v]));
     location.hash = `#/audit?${q}`;
     reload();
-  },
-  "command-search"(form) {
-    const query = String(new FormData(form).get("query") || "").trim();
-    location.hash = `#/activity?q=${encodeURIComponent(query)}`;
   },
   async intake(form) {
     const fd = new FormData(form);
