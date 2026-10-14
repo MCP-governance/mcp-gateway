@@ -475,21 +475,18 @@ ROUTES.overview = async (_, tab) => {
           ["실행된 요청", x.executed, "allow", "#/activity?execution=executed"],
           ["차단된 요청", x.blocked, "block", "#/activity?decision=Block"]])}</section>
         <section><h2>현재 상태</h2>${kpiStrip([
-          ["통제 엔드포인트", devices.filter((d) => d.account_state === "endpoint_enforced").length, "", "#/coverage?t=devices"],
-          ["우회 가능", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"],
-          ["미해결 종료", term.unresolved_grades, "alert", "#/termination"]])}</section>
+        ["통제 적용 기기", devices.filter((d) => d.account_state === "endpoint_enforced").length, "", "#/coverage?t=devices"],
+        ["우회 가능 MCP", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"],
+          ["종료 조치 필요", term.unresolved_grades, "alert", "#/termination"]])}</section>
       </div>`,
       active: tab || "summary",
       tabs: [
         { key: "summary", label: "요약", body: html`<div class="stack">
-          <div class="overview-hero">
-            ${panel("최근 24시간 호출", chartBox("c-summary-traffic", "최근 24시간 시간대별 판정", "sm"), { end: html`<a class="btn sm" href="#/activity">호출 로그</a>` })}
-            ${panel("확인 필요", html`<div class="action-list">
-              <a class="action-link" href="#/approvals"><span>승인 대기</span><b class="n">${o.pending_approvals || 0}</b></a>
-              <a class="action-link" href="#/coverage?t=items&state=bypass_possible"><span>우회 가능</span><b class="n">${count("bypass_possible")}</b></a>
-              <a class="action-link" href="#/termination"><span>진행 중인 종료</span><b class="n">${term.open_cases || 0}</b></a>
-            </div>`)}
-          </div>
+          ${panel("확인 필요", html`<div class="action-list">
+            <a class="action-link" href="#/approvals"><span>승인 대기</span><b class="n">${o.pending_approvals || 0}</b></a>
+            <a class="action-link" href="#/coverage?t=items&state=bypass_possible"><span>우회 가능 MCP</span><b class="n">${count("bypass_possible")}</b></a>
+            <a class="action-link" href="#/termination"><span>진행 중인 종료</span><b class="n">${term.open_cases || 0}</b></a>
+          </div>`)}
           ${panel("최근 차단", feed.rows.length ? decisionTable(feed.rows) : empty("차단된 호출 없음"), { flush: true, end: html`<a class="btn sm" href="#/activity?decision=Block">전체</a>` })}
         </div>` },
         { key: "planes", label: "통제 현황", n: count("bypass_possible"), hot: count("bypass_possible") > 0, body: html`<div class="stack"><div class="grid c21">
@@ -500,11 +497,9 @@ ROUTES.overview = async (_, tab) => {
               <td><b>${i.name}</b><span class="sub mono">${short(i.target || "", 50)}</span></td><td class="small">${INTEGRATION_CLASS[i.class] || i.class}</td>
               <td>${statusPair(i)}</td><td class="num bad-text">${(i.bypass || []).length}</td></tr>`)}</tbody></table>` : empty("우회 가능 항목 없음"),
             { flush: true, end: html`<a class="btn sm" href="#/coverage?t=items&state=bypass_possible">전체</a>` })}</div>` },
-        { key: "exec", label: "실행·응답", n: x.withheld, hot: x.withheld > 0, body: html`<div class="stack">
+        { key: "exec", label: "실행응답", n: x.withheld, hot: x.withheld > 0, body: html`<div class="stack">
           ${panel("판정에서 응답까지", (o.pipeline || []).length ? chartBox("c-ov-pipeline", "오늘 도구 호출의 판정에서 응답 처리까지의 흐름", "xl") : empty("오늘 도구 호출 없음"), { sub: "오늘" })}
-          <div class="grid c2">
-            ${panel("응답 처리", chartBox("c-ov-response", "오늘 실행된 호출의 응답 처리 비율", "sm"), { sub: `마스킹 ${x.masked} · 보류 ${x.withheld}` })}
-            ${panel("실행 여부", chartBox("c-ov-sent", "오늘 호출의 실행 여부", "sm"), { sub: `미확인 ${x.unknown}` })}</div></div>` },
+          ${panel("응답 처리", chartBox("c-ov-response", "오늘 실행된 호출의 응답 처리 비율", "sm"), { sub: `마스킹 ${x.masked} / 보류 ${x.withheld}` })}</div>` },
         { key: "traffic", label: "트래픽", body: html`<div class="stack">
           ${panel("시간대별 판정", chartBox("c-traffic", "최근 24시간 시간대별 판정 건수", "lg"), { sub: "최근 24시간" })}
           <div class="grid c12">
@@ -517,14 +512,13 @@ ROUTES.overview = async (_, tab) => {
               <td>${w.harness ? chip("plain", harnessLabel(w.harness)) : NONE}</td><td class="num">${w.calls}</td>
               <td>${deviceOf[w.endpoint_id] ? statusPair(deviceOf[w.endpoint_id]) : chip("outline", "관찰만")}</td><td class="small">${ago(w.last_call)}</td></tr>`)}
             </tbody></table>${stations.length ? "" : empty("엔드포인트 없음")}`, { flush: true })}</div>` },
-        { key: "risk", label: "위험·종료", n: t.Block, hot: t.Block > 0, body: html`<div class="grid c2">
+        { key: "risk", label: "위험종료", n: t.Block, hot: t.Block > 0, body: html`<div class="grid c2">
             ${panel("자주 걸린 정책", o.top_policies.length ? chartBox("c-policies", "최근 24시간 차단·경보가 많은 정책") : empty("최근 24시간 차단·경보 없음"), { sub: "최근 24시간" })}
             ${panel("종료·폐기", chartBox("c-term", "종료·폐기 현황"), { end: html`<a class="btn sm" href="#/termination">열기</a>` })}
           </div>` },
       ],
     }),
     charts: {
-      "c-summary-traffic": () => charts.decisionColumns(buckets.map((b) => b.label), buckets),
       "c-ov-matrix": () => charts.stacked(Object.values(INTEGRATION_CLASS),
         Object.entries(CONTROL_STATE).map(([k, [, label]]) => ({ name: label, color: charts.color(STATE_DECISION[k]),
           data: Object.keys(INTEGRATION_CLASS).map((c) => items.filter((i) => i.class === c && i.state === k).length) })),
@@ -538,10 +532,6 @@ ROUTES.overview = async (_, tab) => {
         { name: "응답 반환", value: Math.max(0, x.executed - x.masked - x.withheld), color: charts.color("Allow") },
         { name: "마스킹 반환", value: Number(x.masked), color: charts.color("Restrict") },
         { name: "응답 보류", value: Number(x.withheld), color: charts.color("Block") }].filter((g) => g.value)),
-      "c-ov-sent": () => charts.donut([
-        { name: "실행됨", value: Number(x.executed), color: charts.color("Allow") },
-        { name: "실행 미확인", value: Number(x.unknown), color: charts.color("Alert") },
-        { name: "실행 안 함", value: Number(x.not_sent), color: charts.color("") }].filter((g) => g.value)),
       "c-traffic": () => charts.decisionColumns(buckets.map((b) => b.label), buckets),
       "c-share": () => charts.donut(DECISIONS.map((d) => ({ name: DECISION_LABEL[d], value: t[d], color: charts.color(d) }))),
       "c-servers": () => charts.decisionColumns(byServer.map((g) => g.key), byServer, {
