@@ -326,6 +326,8 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
                          GROUP BY 1, 2, 3"""),
         db.fetch_one(f"""SELECT count(*) FILTER (WHERE COALESCE(client->>'event_kind','tools/call')='mcp-connection') AS connections,
                                count(*) FILTER (WHERE COALESCE(client->>'event_kind','tools/call')='tools/call') AS tool_calls,
+        count(*) FILTER (WHERE COALESCE(client->>'event_kind','tools/call')='tools/call'
+                         AND decision='Block') AS blocked,
                                count(*) FILTER (WHERE upstream_executed) AS executed,
                                count(*) FILTER (WHERE upstream_attempted AND NOT upstream_executed) AS unknown,
                                count(*) FILTER (WHERE NOT upstream_attempted AND NOT upstream_executed) AS not_sent,

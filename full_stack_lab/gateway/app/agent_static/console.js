@@ -309,7 +309,7 @@ const chartBox = (id, label, size = "") => html`<div class="chart ${size}" id="$
 
 // ── routing ──────────────────────────────────────────────────────────────────
 const PAGES = [
-  { id: "overview", label: "운영 현황", group: "모니터링" },
+  { id: "overview", label: "대시보드", group: "모니터링" },
   { id: "activity", label: "도구 호출 로그", group: "모니터링" },
   { id: "audit", label: "감사 기록", group: "모니터링" },
   { id: "approvals", label: "승인 대기", group: "모니터링", badge: "approvals" },
@@ -468,13 +468,17 @@ ROUTES.overview = async (_, tab) => {
   }
   return {
     html: page({
-      head: head("운영 현황", { status: modeChip(o.enforcement) }),
-      kpis: kpiStrip([["게이트웨이 경유 호출", x.tool_calls, "", "#/activity"],
-        ["통제 중인 엔드포인트", devices.filter((d) => d.account_state === "endpoint_enforced").length, "", "#/coverage?t=devices"],
-        ["실행된 호출", x.executed, "allow", "#/activity?execution=executed"],
-        ["응답 보류", x.withheld, "block", "#/activity?execution=withheld"],
-        ["우회 가능", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"],
-        ["미해결 T2·T3", term.unresolved_grades, "alert", "#/termination"]]),
+      head: head("대시보드", { status: modeChip(o.enforcement) }),
+      kpis: html`<div class="dashboard-kpi-groups">
+        <section><h2>금일 운영 현황</h2>${kpiStrip([
+          ["전체 요청", x.tool_calls, "", "#/activity"],
+          ["실행된 요청", x.executed, "allow", "#/activity?execution=executed"],
+          ["차단된 요청", x.blocked, "block", "#/activity?decision=Block"]])}</section>
+        <section><h2>현재 상태</h2>${kpiStrip([
+          ["통제 엔드포인트", devices.filter((d) => d.account_state === "endpoint_enforced").length, "", "#/coverage?t=devices"],
+          ["우회 가능", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"],
+          ["미해결 종료", term.unresolved_grades, "alert", "#/termination"]])}</section>
+      </div>`,
       active: tab || "summary",
       tabs: [
         { key: "summary", label: "요약", body: html`<div class="stack">
