@@ -433,6 +433,17 @@ async function refreshBadges() {
 
 // ── shared pieces ────────────────────────────────────────────────────────────
 const modeChip = (mode) => chip(mode === "enforce" ? "allow" : "alert", mode === "enforce" ? "집행 모드" : "관찰 모드");
+const HEALTH_LABEL = { gateway: "게이트웨이", postgresql: "데이터베이스", opa: "정책 엔진",
+  presidio_analyzer: "개인정보 분석기", presidio_anonymizer: "개인정보 익명화기" };
+function componentHealth(health) {
+  if (!health?.components) return chip("alert", "구성 요소 확인 불가");
+  const issues = Object.entries(HEALTH_LABEL).filter(([key]) => health.components[key] !== true).map(([, label]) => label);
+  if (health.policy?.matches === false) issues.push("정책 설정");
+  if (health.status !== "ok" && !issues.length && health.components.jaeger !== false) issues.push("상태 상세 확인");
+  const tracingIssue = health.components.jaeger === false;
+  return html`${chip(issues.length ? "alert" : "allow", issues.length ? "구성 요소 확인 필요" : "구성 요소 정상")}
+    ${issues.length || tracingIssue ? html`<span class="health-detail">${[...issues, ...(tracingIssue ? ["추적 수집(선택)"] : [])].join(", ")}</span>` : ""}`;
+}
 
 function decisionRow(r) {
   return html`<tr class="clickable" tabindex="0" data-act="decision" data-id="${r.id}">
@@ -457,7 +468,7 @@ function validityChip(registration) {
 const ROUTES = {};
 
 ROUTES.overview = async (_, tab) => {
-  const [o, blocked, pl] = await Promise.all([gw("overview"), gw("activity?limit=10&decision=Block"), planes()]);
+  const [o, blocked, pl, health] = await Promise.all([gw("overview"), gw("activity?limit=10&decision=Block"), planes(), gw("health").catch(() => null)]);
   feed.rows = mergeRows([], blocked.rows);
   const x = o.execution, term = o.termination || {};
   const todayFilter = `since=${encodeURIComponent(o.today_since)}&event_kind=tools%2Fcall`;
@@ -500,7 +511,7 @@ ROUTES.overview = async (_, tab) => {
   }
   return {
     html: page({
-      head: head("대시보드", { status: modeChip(o.enforcement) }),
+      head: head("대시보드", { status: html`${modeChip(o.enforcement)}${componentHealth(health)}` }),
       kpis: html`<div class="dashboard-kpi-groups">
         <section><h2>금일 운영 현황</h2>${kpiStrip([
           ["전체 요청", x.tool_calls, "", `#/activity?${todayFilter}`],
@@ -521,31 +532,29 @@ ROUTES.overview = async (_, tab) => {
             <a class="action-link" href="#/intake"><span>도입 조치 필요</span><b class="n">${o.intake_actions || 0}</b></a>
             <a class="action-link" href="#/termination"><span>종료 기한 초과</span><b class="n">${term.overdue || 0}</b></a>
           </div>`)}
-          ${panel("종료 및 폐기 현황", chartBox("c-term", "종료 및 폐기 현황"), { end: html`<a class="btn sm" href="#/termination">열기</a>` })}
           ${panel("최근 차단 10건", feed.rows.length ? decisionTable(feed.rows) : empty("차단된 호출 없음"), { flush: true, end: html`<a class="btn sm" href="#/activity?decision=Block">차단 로그 <span aria-hidden="true">↗</span></a>` })}
         </div>` },
-        { key: "planes", label: "통제 현황", body: html`<div class="stack">
-          ${panel("연동 유형별 통제 상태", items.length ? chartBox("c-ov-matrix", "연동 유형별 통제 상태 항목 수", "lg") : empty("항목 없음"))}
-          ${panel("우회 가능 경로", bypass.length ? html`<table class="data"><thead><tr><th>항목</th><th>연동 유형</th><th>영향 범위</th><th>우회 경로</th></tr></thead><tbody>
+        { key: "planes", label: "통제 적용 현황", body: html`<div class="stack">
+          ${panel("우회 가능 경로 (최대 8건)", bypass.length ? html`<table class="data"><thead><tr><th>항목</th><th>연동 유형</th><th>영향 범위</th><th>우회 경로</th></tr></thead><tbody>
             ${bypass.map((i) => html`<tr class="clickable" tabindex="0" data-act="goto" data-href="#/coverage?t=items&state=bypass_possible&q=${encodeURIComponent(i.name)}">
               <td><b>${i.name}</b><span class="sub mono">${short(i.target || "", 50)}</span></td><td class="small">${INTEGRATION_CLASS[i.class] || i.class}</td>
               <td class="small">${bypassImpact(i)}</td><td>${bypassPaths(i)}</td></tr>`)}</tbody></table>` : empty("우회 가능 경로 없음"),
-            { flush: true, end: html`<a class="btn sm" href="#/coverage?t=items&state=bypass_possible">전체</a>` })}</div>` },
-        { key: "exec", label: "도구 호출 흐름", body: html`<div class="stack">
-          ${panel("도구 호출 흐름", (o.pipeline || []).length ? chartBox("c-ov-pipeline", "오늘 도구 호출의 판정에서 응답 전달까지의 흐름", "xl") : empty("오늘 도구 호출 없음"), { sub: "오늘" })}</div>` },
-        { key: "traffic", label: "호출 추이", body: html`<div class="stack">
+            { flush: true, end: html`<a class="btn sm" href="#/coverage?t=items&state=bypass_possible">전체</a>` })}
+          ${panel("연동 유형별 통제 상태", items.length ? chartBox("c-ov-matrix", "연동 유형별 통제 항목 수", "lg") : empty("항목 없음"), { sub: "항목 수" })}</div>` },
+        { key: "traffic", label: "호출 분석", body: html`<div class="stack">
           <div class="grid c31">
             ${panel("시간대별 판정", chartBox("c-traffic", "최근 24시간 시간대별 판정 건수", "lg"), { sub: "최근 24시간" })}
             ${panel("판정 비율", chartBox("c-share", "최근 24시간 판정 비율", "sm"), { sub: "최근 24시간" })}
           </div>
-          ${panel("MCP 서버별 호출", chartBox("c-servers", "최근 24시간 MCP 서버별 호출과 판정", "sm"), { sub: "최근 24시간" })}
           ${panel("차단 및 경보 정책", o.top_policies.length ? chartBox("c-policies", "최근 24시간 차단 및 경보가 많은 정책") : empty("최근 24시간 차단 및 경보 없음"), { sub: "최근 24시간" })}
+          ${panel("MCP 서버별 호출", chartBox("c-servers", "최근 24시간 MCP 서버별 호출과 판정", "sm"), { sub: "최근 24시간" })}
           ${panel("클라이언트별 호출 흐름", flowTotal ? chartBox("c-flow", "클라이언트에서 MCP 서버를 거쳐 판정까지의 호출 흐름", "xl") : empty("최근 24시간 호출 없음"), { sub: `${flowTotal}건 | 최근 24시간` })}
           ${panel("엔드포인트별 호출", html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>최근 클라이언트</th><th class="num">24시간 호출</th><th>통제 상태</th><th>마지막 호출</th></tr></thead><tbody>
             ${stations.map((w) => html`<tr><td>${entityRef(w.endpoint_id)}</td><td><b>${w.display_name || w.owner_token}</b><span class="sub">${w.department || ""}</span></td>
               <td>${w.harness ? chip("plain", harnessLabel(w.harness)) : NONE}</td><td class="num">${w.calls}</td>
               <td>${deviceOf[w.endpoint_id] ? statusPair(deviceOf[w.endpoint_id]) : chip("outline", "확인 불가")}</td><td class="small">${ago(w.last_call)}</td></tr>`)}
-            </tbody></table>${stations.length ? "" : empty("최근 24시간 호출 없음")}`, { flush: true })}</div>` },
+            </tbody></table>${stations.length ? "" : empty("최근 24시간 호출 없음")}`, { flush: true })}
+          ${panel("도구 호출 흐름", (o.pipeline || []).length ? chartBox("c-ov-pipeline", "오늘 도구 호출의 판정에서 응답 전달까지의 흐름", "xl") : empty("오늘 도구 호출 없음"), { sub: "오늘" })}</div>` },
       ],
     }),
     charts: {
@@ -561,10 +570,6 @@ ROUTES.overview = async (_, tab) => {
         horizontal: true, grouped: true, onClick: (e) => { location.hash = `#/activity?server=${encodeURIComponent(e.name)}`; } }),
       "c-flow": () => charts.sankey(sankeyData(o.flows, (d) => DECISION_LABEL[d] || d)),
       "c-policies": () => charts.bars(o.top_policies.map((p) => ({ name: p.policy_id, value: Number(p.n), color: charts.color(p.decision) }))),
-      "c-term": () => charts.columns([
-        { name: "진행", value: term.open_cases }, { name: "종결 대기", value: term.awaiting_close },
-        { name: "T2 및 T3", value: term.unresolved_grades, color: charts.color("Alert") }, { name: "기한 초과", value: term.overdue, color: charts.color("Block") },
-        { name: "폐기 잔존", value: term.retired_residue, color: charts.color("Alert") }, { name: "미등록 MCP", value: term.shadow_endpoints, color: charts.color("Block") }]),
     },
   };
 };
