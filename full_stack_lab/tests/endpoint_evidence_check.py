@@ -72,6 +72,16 @@ def stored(params, position):
     return getattr(value, "obj", value)
 
 
+class OriginDefault(unittest.TestCase):
+    def test_a_running_service_is_automatic_and_a_hand_run_is_manual(self):
+        for argv, expected in ((["agent.py"], "automatic"), (["agent.py", "--once"], "manual")):
+            with mock.patch.object(sys, "argv", argv), mock.patch.dict("os.environ", clear=False):
+                self.assertEqual(load("origin_probe", "endpoint-agent/agent.py").ORIGIN, expected)
+        for forced, expected in (("automatic", "automatic"), ("operator", "manual")):
+            with mock.patch.object(sys, "argv", ["agent.py", "--once"]), mock.patch.dict("os.environ", {"ENDPOINT_ORIGIN": forced}):
+                self.assertEqual(load("origin_probe", "endpoint-agent/agent.py").ORIGIN, expected)
+
+
 class CanonicalHashes(unittest.TestCase):
     def test_agent_and_receiver_hash_the_same_bytes(self):
         for sample in ({"b": 1, "a": None, "c": "한글"}, {"details": {"x": "y", "n": 3}}, [], {"port": None}):
