@@ -502,7 +502,7 @@ ROUTES.overview = async (_, tab) => {
           </div>`)}
           ${panel("최근 차단 10건", feed.rows.length ? decisionTable(feed.rows) : empty("차단된 호출 없음"), { flush: true, end: html`<a class="btn sm" href="#/activity?decision=Block">차단 로그 <span aria-hidden="true">↗</span></a>` })}
         </div>` },
-        { key: "planes", label: "통제 현황", n: count("bypass_possible"), hot: count("bypass_possible") > 0, body: html`<div class="stack"><div class="grid c21">
+        { key: "planes", label: "통제 현황", body: html`<div class="stack"><div class="grid c21">
           ${panel("분류별 통제 상태", items.length ? chartBox("c-ov-matrix", "분류별 통제 상태 항목 수", "lg") : empty("항목 없음"), { sub: `게이트웨이 밖 ${outside}건` })}
           ${panel("확인 근거", items.length ? chartBox("c-ov-evidence", "통제 상태의 확인 근거", "sm") : empty("항목 없음"))}</div>
           ${panel("우회 가능 항목", bypass.length ? html`<table class="data"><thead><tr><th>항목</th><th>분류</th><th>상태</th><th class="num">우회 경로</th></tr></thead><tbody>
