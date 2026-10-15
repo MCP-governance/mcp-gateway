@@ -13,8 +13,18 @@ const { DECISION_LABEL } = charts;
 const TOKEN_KEY = "mcp-console-token";
 const THEME_KEY = "mcp-console-theme";
 const NAV_KEY = "mcp-console-nav-v4";
+const ADMIN_IDLE_MS = 30 * 60 * 1000;
+const SESSION_WARNING_MS = 2 * 60 * 1000;
 const token = localStorage.getItem(TOKEN_KEY);
 if (!token) location.replace("/login");
+
+function tokenExpiresAt(value) {
+  try {
+    const encoded = value.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=")));
+    return Number(payload.exp) * 1000;
+  } catch { return 0; }
+}
 
 const $ = (selector, root = document) => root.querySelector(selector);
 
@@ -2328,6 +2338,63 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+function startAdminSessionGuard() {
+  const warning = $("#session-warning");
+  const message = $("#session-warning-text");
+  const keepUsing = $("#session-continue");
+  const activityKey = `mcp-console-admin-activity-${viewer.user_id}`;
+  const absoluteAt = tokenExpiresAt(token);
+  let lastActivity = Date.now();
+  let ending = false;
+
+  const recordActivity = (event) => {
+    if (!event.isTrusted) return;
+    lastActivity = Date.now();
+    localStorage.setItem(activityKey, String(lastActivity));
+  };
+  for (const name of ["pointerdown", "keydown", "wheel"]) {
+    document.addEventListener(name, recordActivity, { passive: true });
+  }
+  window.addEventListener("storage", (event) => {
+    if (event.key === activityKey) lastActivity = Math.max(lastActivity, Number(event.newValue) || 0);
+  });
+  localStorage.setItem(activityKey, String(lastActivity));
+
+  keepUsing.addEventListener("click", () => {
+    lastActivity = Date.now();
+    localStorage.setItem(activityKey, String(lastActivity));
+  });
+
+  const endSession = async (reason) => {
+    if (ending) return;
+    ending = true;
+    await fetch("/auth/logout", { method: "POST", headers: { authorization: `Bearer ${token}` } }).catch(() => {});
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(activityKey);
+    location.replace(`/login?session=${reason}`);
+  };
+
+  setInterval(() => {
+    if (ending) return;
+    const now = Date.now();
+    const idleAt = lastActivity + ADMIN_IDLE_MS;
+    const absoluteFirst = absoluteAt <= idleAt;
+    const deadline = Math.min(idleAt, absoluteAt);
+    const remaining = deadline - now;
+    if (remaining <= 0) { endSession(absoluteFirst ? "maximum" : "idle"); return; }
+    if (remaining > SESSION_WARNING_MS) {
+      if (warning.open) warning.close();
+      return;
+    }
+    const seconds = Math.ceil(remaining / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const rest = seconds % 60;
+    message.textContent = `${absoluteFirst ? "최대 로그인 시간이" : "유휴 시간이"} ${minutes}분 ${rest}초 후 만료됩니다.`;
+    keepUsing.hidden = absoluteFirst;
+    if (!warning.open) warning.showModal();
+  }, 1000);
+}
+
 (function applyTheme() {
   const saved = localStorage.getItem(THEME_KEY);
   document.documentElement.dataset.theme = saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -2336,6 +2403,7 @@ document.addEventListener("keydown", (event) => {
 async function boot() {
   viewer = await api("/auth/me");
   viewer.admin = viewer.roles.includes("admin");
+  if (viewer.admin) startAdminSessionGuard();
   const mobile = matchMedia("(max-width: 900px)");
   setNavCollapsed(mobile.matches || localStorage.getItem(NAV_KEY) === "true");
   mobile.addEventListener("change", () => setNavCollapsed(mobile.matches || localStorage.getItem(NAV_KEY) === "true"));

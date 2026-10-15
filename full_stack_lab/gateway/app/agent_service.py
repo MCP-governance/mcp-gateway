@@ -276,13 +276,14 @@ async def login(request: Login, http_request: Request):
     row = await password_principal(request.email, request.password, caller)
     user = {"user_id": row["user_id"], "principal": row["token"], "name": row["display_name"],
             "department": row["department"] or "미지정", "roles": [row["role"]], "email": row["email"]}
-    token, _claims = issue_token(user, extra={"scope": CONSOLE_SCOPE})
-    response = JSONResponse({"access_token": token, "token_type": "bearer", "expires_in": 1800,
+    lifetime = 28800 if "admin" in user["roles"] else 1800
+    token, _claims = issue_token(user, minutes=lifetime // 60, extra={"scope": CONSOLE_SCOPE})
+    response = JSONResponse({"access_token": token, "token_type": "bearer", "expires_in": lifetime,
             "user": {k: v for k, v in {**user, "job_title": row["job_title"], "synthetic": os.getenv("MCP_FIELD_MODE") != "1"}.items()
                      if k != "principal"}})
     # 같은 토큰을 내부 Gitea(/git) 전용 쿠키로도 준다. Console API는 계속 Bearer만 받으므로 이 쿠키로는
     # Console을 조작할 수 없고, 스크립트도 읽지 못한다(HttpOnly).
-    response.set_cookie(GIT_COOKIE, token, max_age=1800, path="/git", httponly=True, samesite="lax")
+    response.set_cookie(GIT_COOKIE, token, max_age=lifetime, path="/git", httponly=True, samesite="lax")
     return response
 
 
