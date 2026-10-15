@@ -78,9 +78,11 @@ NOT_EXECUTED, 전송했지만 결과를 확인하지 못하면 UNCONFIRMED(외�
   같은 family의 접근 토큰 jti를 `agent_revoked_tokens`에 넣는다(`jti::uuid` 주의).
 - `oidc_bindings`: 고유 `(issuer,subject)`를 기존 `principals.token`에 관리자가 명시적으로 연결한다.
   `linked_by/at`로 연결 기록을 보존한다. 공급자 이메일·role로 자동 연결하지 않는다.
-- `oidc_sessions`: binding FK, 조직 JWT의 jti, AES-GCM 암호화된 외부 access token, 만료,
-  60초 handoff 해시·만료. handoff는 한 번 소비하고 binding 삭제 시 세션을 함께 삭제한다.
-  외부 refresh token은 저장하지 않는다. 요청마다 외부 introspection과 기존 계정 상태를 확인한다(D-65).
+- `console_sessions`: Console JWT의 jti, 사용자, 절대 만료, 마지막 사용자 활동 시각. 관리자는 서버가 유휴 30분과
+  최대 8시간을 함께 강제한다. 브라우저는 실제 사용자 활동이 있을 때만 인증된 heartbeat를 보낸다.
+- `oidc_sessions`: binding FK, Console JWT의 jti, AES-GCM 암호화된 외부 access token과 관리자용 refresh token,
+  외부 access token 만료, 절대 만료, 60초 handoff 해시와 만료. handoff는 한 번 소비하고 binding 삭제 시 세션을 함께 삭제한다.
+  관리자 접근 토큰은 만료 직전에 갱신하며 교체된 refresh token도 암호화해 저장한다. 요청마다 외부 introspection과 기존 계정 상태를 확인한다.
 
 ## 5. 엔드포인트 평면
 `endpoint_agents`(장치·소유자·키 해시·scopes), `endpoint_inventory`(설정 파일에서 찾은 MCP 서버,

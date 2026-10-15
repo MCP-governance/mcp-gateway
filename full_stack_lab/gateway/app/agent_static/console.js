@@ -23,7 +23,8 @@ function tokenTimes(value) {
   try {
     const encoded = value.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
     const payload = JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=")));
-    return { issuedAt: Number(payload.iat) * 1000, expiresAt: Number(payload.exp) * 1000 };
+    return { issuedAt: Number(payload.iat) * 1000, expiresAt: Number(payload.exp) * 1000,
+      identityBinding: payload.identity_binding || "" };
   } catch { return { issuedAt: 0, expiresAt: 0 }; }
 }
 
@@ -2355,28 +2356,46 @@ function startAdminSessionGuard() {
   const { issuedAt, expiresAt: tokenExpiresAt } = tokenTimes(token);
   const maximumAt = (issuedAt || Date.now()) + ADMIN_MAX_MS;
   let lastActivity = Date.now();
+  let lastServerTouch = 0;
+  let touching = false;
   let ending = false;
   let warningDismissed = false;
   let currentWarningReason = "";
+
+  const touchServerSession = async () => {
+    if (touching || Date.now() - lastServerTouch < 60000) return;
+    touching = true;
+    try {
+      await api("/auth/session/activity", { method: "POST" });
+      lastServerTouch = Date.now();
+    } catch { /* A failed heartbeat never extends the server session. */ }
+    finally { touching = false; }
+  };
 
   const recordActivity = (event) => {
     if (!event.isTrusted) return;
     lastActivity = Date.now();
     if (currentWarningReason === "idle") warningDismissed = false;
     localStorage.setItem(activityKey, String(lastActivity));
+    touchServerSession();
   };
   for (const name of ["pointerdown", "keydown", "wheel"]) {
     document.addEventListener(name, recordActivity, { passive: true });
   }
   window.addEventListener("storage", (event) => {
-    if (event.key === activityKey) lastActivity = Math.max(lastActivity, Number(event.newValue) || 0);
+    if (event.key === activityKey) {
+      lastActivity = Math.max(lastActivity, Number(event.newValue) || 0);
+      touchServerSession();
+    }
   });
   localStorage.setItem(activityKey, String(lastActivity));
+  touchServerSession();
 
   keepUsing.addEventListener("click", () => {
     lastActivity = Date.now();
     warningDismissed = false;
     localStorage.setItem(activityKey, String(lastActivity));
+    touchServerSession();
   });
   dismiss.addEventListener("click", () => {
     warningDismissed = true;
@@ -2395,6 +2414,7 @@ function startAdminSessionGuard() {
   setInterval(() => {
     if (ending) return;
     const now = Date.now();
+    if (!document.hidden && now - lastActivity < 60000) touchServerSession();
     const idleAt = lastActivity + ADMIN_IDLE_MS;
     const deadline = Math.min(idleAt, maximumAt, tokenExpiresAt);
     const reason = idleAt <= maximumAt && idleAt <= tokenExpiresAt ? "idle"

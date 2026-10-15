@@ -193,7 +193,7 @@ LiteLLM DB에 직원 단위로 남는다.
 | --- | --- | --- |
 | 직원의 하네스(MCP) | OAuth 접근 토큰(Ed25519 JWT, 10분) + refresh(8시간) | IdP `/oauth/token`(`bob-sso`), Gateway가 서명·폐기목록·관리대장으로 검증 |
 | 직원의 하네스(LLM) | LiteLLM 가상 키 `sk-…`(`BOB_LLM_KEY`) | LiteLLM이 검증, 사용량은 LiteLLM DB |
-| Console 사용자 | 로그인 세션 JWT(30분) | `/auth/mock-login`, 로그아웃은 즉시 폐기목록 |
+| Console 사용자 | 관리자 30분 유휴·최대 8시간, 그 외 계정 30분 | 서버 `console_sessions`가 만료를 강제하고, 관리자 SSO는 암호화된 refresh token으로 접근 토큰을 갱신한다. 로그아웃은 즉시 무효화한다 |
 | PC의 단말 에이전트 | 장치 키 | 엔드포인트 평면(인벤토리·리스너 보고만) |
 | Gateway → upstream | 없음(망 격리) | MCP 명세대로 **직원 토큰을 upstream에 넘기지 않는다** |
 | MCP 서버 → 하위 시스템 | 서버 보유 자격 | email: 메일 계정, gitea: PAT, postgres/redis: 접속 문자열 |

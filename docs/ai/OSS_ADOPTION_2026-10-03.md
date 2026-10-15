@@ -32,10 +32,13 @@ Keycloak 26.8의 introspection audience 검사를 위해 client에 `console-audi
 기존 realm은 import로 덮어쓰지 않으므로 클라이언트에 같은 mapper를 별도로 적용해야 한다.
 원격 도입은 운영자가 주소·client·자격·TLS·DB를 설정해야 한다.
 
-인증 후 60초짜리 HttpOnly handoff를 한 번 소비해 조직 세션을 발급한다. 외부 access token은 AES-GCM으로
-암호화해 서버에 보관하고 요청마다 introspection을 확인한다. 확인 실패는 503, 폐기·만료는 401이다.
-binding 해제와 조직 계정 중지도 차단한다. 조직 세션은 외부 access token 수명을 넘지 않는다.
-외부 refresh token은 보관하지 않는다. Console 로그아웃이 벤더의 다른 앱 세션까지 종료한다고 주장하지 않는다.
+인증 후 60초짜리 HttpOnly handoff를 한 번 소비해 조직 세션을 발급한다. 외부 access token과 관리자용 refresh token은
+AES-GCM으로 암호화해 서버에 보관한다. 접근 토큰 만료가 가까워지면 서버가 refresh grant를 수행하고 회전된 토큰을 교체 저장한다.
+refresh token이 없는 관리자 SSO 응답은 세션 정책을 보장할 수 없어 거부한다. `offline_access`는 요청하지 않는다.
+관리자 세션은 서버가 유휴 30분과 로그인 후 최대 8시간을 강제하며, 브라우저는 사용자 활동이 있을 때만 60초 간격으로
+인증된 heartbeat를 보낸다. 모든 요청에서 외부 introspection을 확인하고 실패는 503, 폐기·만료는 401이다.
+로그아웃은 로컬 세션을 먼저 무효화하고, 제공자 revocation endpoint가 있으면 외부 access token과 refresh token 폐기도 요청한다.
+Console 로그아웃이 벤더의 다른 앱 세션까지 종료한다고 주장하지 않는다.
 단말 키는 별도의 조직 관리대장·device epoch로 검증한다. Keycloak 사용자 삭제/binding 해제가 단말 키까지
 자동 회수하지 않는다. 단말 접근 종료는 기존 사용자 중지·장치 회수 절차로 수행한다. callback의 code/state는
 Uvicorn access log에서 제거한다.

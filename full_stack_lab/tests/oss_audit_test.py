@@ -6,7 +6,7 @@ import os
 import secrets
 import tempfile
 import unittest
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -66,10 +66,28 @@ class OidcTest(unittest.TestCase):
             with self.assertRaises(HTTPException) as denied:
                 oidc.local_login_allowed()
             self.assertEqual(denied.exception.status_code, 403)
-            for scope in ("console", "mcp", ""):
-                with self.assertRaises(HTTPException):
-                    asyncio.run(oidc.validate_session({"scope": scope}))
+            with patch.object(oidc.db, "fetch_one", AsyncMock(return_value=None)):
+                for scope in ("console", "mcp", ""):
+                    with self.assertRaises(HTTPException):
+                        asyncio.run(oidc.validate_session({"scope": scope}))
             asyncio.run(oidc.validate_session({"scope": "mcp", "device_id": "managed-test-device"}))
+
+    def test_admin_session_idle_expiry_is_server_enforced(self):
+        now = datetime.now(UTC)
+        row = {"expires_at": now + timedelta(hours=7), "last_activity_at": now - timedelta(minutes=31),
+               "user_id": "admin", "role": "admin", "status": "active"}
+        with patch.dict(os.environ, {"AUTH_PROVIDER": "local"}), \
+             patch.object(oidc.db, "fetch_one", AsyncMock(return_value=row)), \
+             patch.object(oidc.db, "execute", AsyncMock(return_value=1)):
+            with self.assertRaises(HTTPException) as denied:
+                asyncio.run(oidc.validate_session({"scope": "console", "sub": "admin", "jti": "session-jti"}))
+        self.assertEqual(denied.exception.status_code, 401)
+
+    def test_admin_activity_heartbeat_advances_server_deadline(self):
+        update = AsyncMock(return_value=1)
+        with patch.object(oidc.db, "execute", update):
+            asyncio.run(oidc.touch_session({"scope": "console", "sub": "admin", "jti": "session-jti"}))
+        self.assertIn("last_activity_at=now()", update.await_args.args[0])
 
     def test_encrypted_upstream_credentials(self):
         with patch.dict(os.environ, {"OIDC_SESSION_SECRET": "test-only-"*8}):
