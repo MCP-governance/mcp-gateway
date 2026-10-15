@@ -7,3 +7,4 @@ full_stack_lab/.env
 # 네이티브 실행(run-native.sh)의 로컬 상태. 서명 키와 PID·로그가 들어간다.
 full_stack_lab/.env.native
 full_stack_lab/.native/
+.vscode/settings.json
