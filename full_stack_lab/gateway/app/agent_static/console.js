@@ -830,9 +830,10 @@ function relatedBody(related) {
 async function showDecision(id) {
   const r = feed.rows.find((row) => String(row.id) === String(id));
   if (!r) return;
-  const related = viewer.admin && r.device_id ? await gw(`endpoint/correlation?decision_id=${encodeURIComponent(r.id)}`).catch(() => null) : null;
   // The device's current state, beside (never instead of) what the call itself carried.
-  const device = viewer.admin && r.device_id ? (await planes().catch(() => null))?.devices.find((d) => d.endpoint_id === r.device_id) : null;
+  const [related, device] = viewer.admin && r.device_id ? await Promise.all([
+    gw(`endpoint/correlation?decision_id=${encodeURIComponent(r.id)}`).catch(() => null),
+    planes().then((p) => p?.devices.find((d) => d.endpoint_id === r.device_id)).catch(() => null)]) : [null, null];
   const conflictChip = (c) => chip((DECISION[c.decision] || [""])[0], `${(DECISION[c.decision] || [, c.decision])[1]} ${c.policy_id}`);
   openDrawer(`호출 #${r.id}`, html`<div class="drawer-summary"><span class="tool">${r.server}.${r.tool}</span>
     ${decisionChip(r.decision)}<span class="muted small">${new Date(r.at).toLocaleString("ko-KR")}</span></div>`, [

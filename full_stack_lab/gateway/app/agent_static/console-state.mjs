@@ -257,7 +257,6 @@ export function pipelineOf(row) {
   ];
 }
 
-// ── endpoint evidence ────────────────────────────────────────────────────────
 const ORIGIN = { automatic: "자동 수집", manual: "수동 보고", os_event: "운영체제 이벤트" };
 export const originLabel = (origin) => ORIGIN[origin] || "—";
 
@@ -267,7 +266,6 @@ export const denialClass = (value) => DENIAL_CLASS[value] || DENIAL_CLASS.unknow
 const HEX64 = /^[a-f0-9]{64}$/;
 export const hashPrefix = (hash) => (HEX64.test(hash || "") ? hash.slice(0, 12) : "—");
 
-/** Agent hash against the hash the server computed from what it stored. Missing is shown as missing, never as a match. */
 export function provenanceView(provenance) {
   const state = provenance?.state === "match" || provenance?.state === "mismatch" ? provenance.state : "unreported";
   return {
@@ -279,13 +277,11 @@ export function provenanceView(provenance) {
   };
 }
 
-/** "전체 N건" beside what the window actually shows; truncated is true when rows are missing from the window. */
 export function countView(page, shown) {
   const total = Number.isSafeInteger(page?.total) && page.total >= 0 ? page.total : shown;
   return { total, shown, truncated: total > shown, label: `전체 ${total.toLocaleString("ko-KR")}건` };
 }
 
-/** Page navigation over a cursor list: `cursors[i]` is the cursor that opens page i. */
 export function pager(state, page) {
   const limit = Number.isSafeInteger(page?.limit) && page.limit > 0 ? page.limit : 1;
   const total = Number.isSafeInteger(page?.total) && page.total >= 0 ? page.total : 0;
@@ -298,7 +294,6 @@ export function pager(state, page) {
 const finite = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0;
 const trimmed = (v) => (v >= 10 ? String(Math.round(v)) : String(Number(v.toFixed(1))));
 
-/** Latency and probe-failure cells of one endpoint; anything but a fresh sample is a dash. */
 export function networkCells(sample) {
   const fresh = sample?.state === "fresh";
   return {
@@ -307,7 +302,6 @@ export function networkCells(sample) {
   };
 }
 
-/** Denial count of an endpoint; without a fresh kernel-event channel a zero would be a guess. */
 export function denialCount(device) {
   const state = device?.kernel_denials_state;
   if (state === "fresh") return `${Number(device.kernel_denials_24h) || 0}건`;
