@@ -255,6 +255,8 @@ async def validate_session(claims: dict) -> None:
         if settings()["provider"] == "oidc" and not claims.get("device_id"):
             raise HTTPException(401, "SSO로 다시 로그인하세요.")
         return
+    if not claims.get("jti") or not claims.get("sub"):
+        raise HTTPException(401, "로그인 세션이 만료됐습니다.")
     session = await db.fetch_one(
         """SELECT cs.expires_at,cs.last_activity_at,cs.user_id,p.role,p.status
              FROM console_sessions cs JOIN principals p ON p.user_id=cs.user_id

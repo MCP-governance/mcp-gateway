@@ -45,7 +45,8 @@ class AuditTest(unittest.TestCase):
             audit.predicates(since=datetime.now(), until=datetime.now(UTC))
 
     def test_pagination(self):
-        with patch.object(audit.db, "fetch_all", AsyncMock(return_value=[{"id": 3}, {"id": 2}, {"id": 1}])):
+        # The second query is the invalid-row annotations (review.mark_invalid): none here.
+        with patch.object(audit.db, "fetch_all", AsyncMock(side_effect=[[{"id": 3}, {"id": 2}, {"id": 1}], []])):
             page = asyncio.run(audit.events(limit=2))
         self.assertEqual([row["id"] for row in page["events"]], [3, 2])
         self.assertTrue(page["has_more"])
@@ -107,7 +108,8 @@ class SecretTest(unittest.TestCase):
             self.assertNotIn("sensitive source snippet", report.read_text())
 
     def test_missing_scanner_fails_closed(self):
-        with patch.dict(os.environ, {"GITLEAKS_BINARY": "/missing/gitleaks"}):
+        # The scanner is the in-process library now; a missing one must still block, never read as "clean".
+        with patch.object(secret_scan, "LIBRARY", "/missing/libmcpgw_gitleaks.so"), patch.object(secret_scan, "_library", None):
             with self.assertRaises(secret_scan.InspectionUnavailable):
                 asyncio.run(secret_scan.labels("ordinary outbound text"))
 
