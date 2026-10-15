@@ -26,7 +26,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from psycopg.types.json import Jsonb
 
-from . import core, db, oidc
+from . import connections, core, db, oidc
 from .release import build_info
 from .system_metrics import SystemMetrics
 from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, authenticate,
@@ -1335,7 +1335,7 @@ async def approve(approval_id: UUID, authorization: str | None = Header(default=
 # The Console lives on :8000 and the Gateway API on :8080; the browser's CSP allows
 # only same-origin requests. The proxy forwards the caller's own bearer token, so
 # every authorisation decision stays with the Gateway. Only these prefixes pass.
-GATEWAY_PROXY_PREFIXES = ("overview", "activity", "registry", "health", "termination/", "approvals/",
+GATEWAY_PROXY_PREFIXES = ("overview", "latency", "activity", "registry", "health", "termination/", "approvals/",
                           "catalog/", "enforcement", "monitor/", "audit/", "policy/", "endpoint/",
                           "supply-chain/", "risk-catalog", "lab/")
 # Several Gateway read APIs are open to any authenticated caller; the Console adds
@@ -1353,11 +1353,11 @@ async def gateway_passthrough(path: str, request: Request, authorization: str | 
         raise HTTPException(403, "관리자만 볼 수 있는 화면입니다.")
     body = await request.body()
     try:
-        async with httpx.AsyncClient(timeout=120) as client:
-            response = await client.request(
-                request.method, f"{GATEWAY_URL}/api/{path}", params=dict(request.query_params),
-                content=body or None, headers={"Authorization": authorization or "",
-                                               "Content-Type": request.headers.get("content-type", "application/json")})
+        client = connections.shared("gateway", lambda: httpx.AsyncClient(timeout=120))
+        response = await client.request(
+            request.method, f"{GATEWAY_URL}/api/{path}", params=dict(request.query_params),
+            content=body or None, headers={"Authorization": authorization or "",
+                                           "Content-Type": request.headers.get("content-type", "application/json")})
     except httpx.HTTPError as exc:
         raise HTTPException(503, "게이트웨이에 연결할 수 없습니다. 잠시 후 다시 시도하세요.") from exc
     status = response.headers.get("x-account-status")

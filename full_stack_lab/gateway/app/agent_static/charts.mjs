@@ -126,12 +126,13 @@ export function redrawAll() {
 
 // ── builders ─────────────────────────────────────────────────────────────
 /** Stacked columns (or bars) per category: [{name, color, data}]. */
-export function stacked(categories, series, { horizontal = false, onClick, grouped = false } = {}) {
+export function stacked(categories, series, { horizontal = false, onClick, grouped = false, unit = "" } = {}) {
   const cat = axis({ type: "category", data: categories,
     axisLabel: { color: css("--ink-2"), fontSize: 12, ...(horizontal ? { width: 160, overflow: "truncate" } : {}) } });
   const val = axis({ type: "value", minInterval: 1 });
+  const valueFormatter = unit ? (v) => (v == null ? "—" : `${Math.round(v * 10) / 10} ${unit}`) : undefined;
   return {
-    tooltip: { ...base().tooltip, trigger: "axis", axisPointer: { type: "shadow" } },
+    tooltip: { ...base().tooltip, trigger: "axis", axisPointer: { type: "shadow" }, ...(valueFormatter ? { valueFormatter } : {}) },
     xAxis: horizontal ? val : cat,
     yAxis: horizontal ? { ...cat, inverse: true } : val,
     series: series.map((s) => ({

@@ -6,6 +6,7 @@ import json
 import logging
 import math
 import os
+import time
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -22,7 +23,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import classify, db, endpoint_plane, pac, poisoning, privacy, registry, secret_scan, upstream
+from . import classify, connections, db, endpoint_plane, pac, poisoning, privacy, registry, secret_scan, upstream
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMN_SETS, AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint,
@@ -120,6 +121,26 @@ def response_disposition(event: dict) -> str:
     if event.get("upstream_executed"):
         return "withheld" if event.get("result") is None else "returned"
     return "unknown" if event.get("upstream_attempted") else "not_executed"
+
+
+class _Laps:
+    """Wall time per stage of one tools/call, in milliseconds, kept with its decision.
+
+    A stage is the time since the previous lap, so stages add up to the total; a stage
+    that runs twice (output inspection) accumulates.
+    """
+
+    def __init__(self) -> None:
+        self.started = self.mark = time.perf_counter()
+        self.stages: dict[str, float] = {}
+
+    def lap(self, stage: str) -> None:
+        now = time.perf_counter()
+        self.stages[stage] = round(self.stages.get(stage, 0.0) + (now - self.mark) * 1000, 2)
+        self.mark = now
+
+    def view(self) -> dict:
+        return {**self.stages, "total": round((time.perf_counter() - self.started) * 1000, 2)}
 
 
 class DispatchRejected(RuntimeError):
@@ -1004,13 +1025,16 @@ _ledger_cache: dict[str, dict] = {}
 OPA_DATA_ROOT = OPA_URL.split("/v1/data/")[0] + "/v1/data"
 
 
+def _opa() -> httpx.AsyncClient:
+    return connections.shared("opa", lambda: httpx.AsyncClient(timeout=5))
+
+
 async def opa_document(name: str) -> Any:
     """읽기 전용 data 문서 조회. 정책이 실제로 들고 있는 값을 화면에 그대로 보인다."""
     try:
-        async with httpx.AsyncClient(timeout=5) as client:
-            response = await client.get(f"{OPA_DATA_ROOT}/{name}")
-            response.raise_for_status()
-            return response.json().get("result")
+        response = await _opa().get(f"{OPA_DATA_ROOT}/{name}")
+        response.raise_for_status()
+        return response.json().get("result")
     except (httpx.HTTPError, ValueError):
         return None
 
@@ -1025,10 +1049,9 @@ async def policy_ledger(refresh: bool = False) -> dict:
     if _ledger_cache and not refresh:
         return _ledger_cache
     try:
-        async with httpx.AsyncClient(timeout=5) as client:
-            response = await client.get(POLICY_LEDGER_URL)
-            response.raise_for_status()
-            entries = response.json().get("result")
+        response = await _opa().get(POLICY_LEDGER_URL)
+        response.raise_for_status()
+        entries = response.json().get("result")
     except (httpx.HTTPError, ValueError):
         return _ledger_cache
     if isinstance(entries, dict):
@@ -1066,22 +1089,22 @@ def local_verdict(policy_id: str, decision: str, reason: str, **extra: Any) -> d
 
 
 async def _policy(input_document: dict) -> dict:
-    async with httpx.AsyncClient(timeout=5) as client:
-        response = await client.post(OPA_URL, json={"input": input_document})
-        response.raise_for_status()
-        result = response.json().get("result")
-        # Do not include an invalid policy response in the audit error verbatim.
-        if not POLICY_RESULT.is_valid(result):
-            raise RuntimeError("OPA returned an invalid decision contract")
-        restrictions = result["restrictions"]
-        enforceable = set(input_document.get("tool", {}).get("restrictable") or [])
-        if (result["decision"] == "Restrict" and not restrictions) or not set(restrictions) <= enforceable:
-            raise RuntimeError("OPA returned unenforceable restrictions")
-        return result
+    response = await _opa().post(OPA_URL, json={"input": input_document})
+    response.raise_for_status()
+    result = response.json().get("result")
+    # Do not include an invalid policy response in the audit error verbatim.
+    if not POLICY_RESULT.is_valid(result):
+        raise RuntimeError("OPA returned an invalid decision contract")
+    restrictions = result["restrictions"]
+    enforceable = set(input_document.get("tool", {}).get("restrictable") or [])
+    if (result["decision"] == "Restrict" and not restrictions) or not set(restrictions) <= enforceable:
+        raise RuntimeError("OPA returned unenforceable restrictions")
+    return result
 
 
 async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id: str | None = None,
-                         principal: str | None = None, *, dispatch_state: dict, pac_payload: dict) -> dict:
+                         principal: str | None = None, *, dispatch_state: dict, pac_payload: dict,
+                         laps: _Laps | None = None) -> dict:
     """Recheck the contract and call, on one connection.
 
     Nothing is raised inside the MCP client context on purpose: an exception there is
@@ -1097,7 +1120,10 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
     problem = None
     blocked_verdict = None
     payload: dict | None = None
+    laps = laps or _Laps()
+    laps.lap("dispatch")
     async with upstream.session(spec["endpoint"], principal=principal) as client:
+        laps.lap("connect")
         listed = await client.list_tools()
         registered = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s", (server_id,))
         observed = {t.name: upstream.tool_view(t) for t in listed.tools}
@@ -1116,6 +1142,7 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                     break
         if problem is None and not Draft202012Validator(observed[tool]["input_schema"]).is_valid(arguments):
             problem = "Arguments do not match the approved input schema"
+        laps.lap("list")
         if problem is None and approval_id is not None:
             # Discovery may take longer than the remaining approval lifetime.
             approval = await db.fetch_one("SELECT status, expires_at FROM approvals WHERE id=%s", (approval_id,))
@@ -1154,18 +1181,24 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                     problem, blocked_verdict = "PAC changed before dispatch", verdict
                 elif verdict.get("restrictions", {}) != dispatch_state.get("restrictions", {}):
                     problem = "Restrictions changed before dispatch"
+        laps.lap("recheck")
         if problem is None:
             dispatch_state["upstream_attempted"] = True
             result = await client.call_tool(tool, arguments)
+            laps.lap("call")
             # A definite MCP response was received. Later conversion/teardown failure
             # withholds that response rather than erasing the known execution state.
             dispatch_state["upstream_executed"] = True
             payload = {"content": upstream.content_items(result), "is_error": bool(result.is_error)}
             if result.structured_content is not None:
                 payload["structured"] = result.structured_content
+    laps.lap("close")
     if problem:
         raise DispatchRejected(problem, blocked_verdict)
-    return _guarded_result(payload or {"content": [], "is_error": True})
+    # Off the event loop: the native rule engine releases the GIL while it matches.
+    guarded = await asyncio.to_thread(_guarded_result, payload or {"content": [], "is_error": True})
+    laps.lap("inspect_out")
+    return guarded
 
 
 def _root_cause(exc: BaseException) -> str:
@@ -1311,8 +1344,8 @@ async def _record_decision(event: dict) -> int:
                  policy_version, obligations, exception_id, conflicts, environment,
                  prev_sha256, entry_sha256, chain_version, upstream_attempted,
                  server_id, resource_id, destinations, client, summary,
-                 policy_input, risk_score, privacy_types, sequence_flags, created_at)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                 policy_input, risk_score, privacy_types, sequence_flags, created_at, timings)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                RETURNING id""",
             (
                 record["request_id"], record["trace_id"], record["user_token"], record["role"],
@@ -1330,7 +1363,8 @@ async def _record_decision(event: dict) -> int:
                 Jsonb(record["client"]), record["summary"],
                 Jsonb(record["policy_input"]) if record["policy_input"] is not None else None,
                 record["risk_score"], Jsonb(record["privacy_types"]), Jsonb(record["sequence_flags"]),
-                record["created_at"],
+                # Operational, outside the fingerprint: how long each stage took, not what was decided.
+                record["created_at"], Jsonb(event["timings"]) if event.get("timings") else None,
             ),
         )
         row = await cursor.fetchone()
@@ -1421,13 +1455,14 @@ async def verify_audit_chain(connection=None) -> dict:
             "entries_recorded": int(head["entries"]) if head else None}
 
 
-async def _decision_payload(event: dict, before: float) -> dict:
+async def _decision_payload(event: dict, laps: _Laps) -> dict:
+    event["timings"] = laps.view()
     decision_id = await _record_decision(event)
     # Keep the reservation until the decision is durably recorded. If persistence
     # fails, its TTL keeps the unconfirmed call counted instead of allowing a retry.
     if event.get("request_id") and not (event.get("upstream_attempted") and not event.get("upstream_executed")):
         await _release_call(event["request_id"])
-    return {**event, "decision_id": decision_id, "latency_ms": int((asyncio.get_running_loop().time() - before) * 1000)}
+    return {**event, "decision_id": decision_id, "latency_ms": int((time.perf_counter() - laps.started) * 1000)}
 
 
 async def execute_call(payload: dict, approval_granted: bool = False, approval_id: str | None = None) -> dict:
@@ -1437,7 +1472,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
     the verified transport principal placed in user_token by the ingress; nothing in
     `arguments` is ever read as identity.
     """
-    before = asyncio.get_running_loop().time()
+    laps = _Laps()
     request_id = str(uuid.uuid4())
     server_id = str(payload.get("server_id") or "")
     tool = str(payload.get("tool") or "")
@@ -1470,23 +1505,24 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         await policy_ledger()
         if not principal or principal["status"] != "active":
             base_event.update(local_verdict("P-INPUT-001", "Block", "활성 상태의 등록 계정이 아닙니다."))
-            return await _decision_payload(base_event, before)
+            return await _decision_payload(base_event, laps)
 
         if not registry.server(server_id):
             base_event.update(local_verdict("MCP-REGISTRY-001", "Block", "검토된 카탈로그나 승인 도입 신청에 없는 서버입니다."))
-            return await _decision_payload(base_event, before)
+            return await _decision_payload(base_event, laps)
 
         from .endpoint_plane import managed_failure
         failure = await managed_failure(principal, payload.get("transport_claims") or {})
         if failure:
             base_event.update(local_verdict("ENDPOINT-MANAGED-001", "Block", failure))
-            return await _decision_payload(base_event, before)
+            return await _decision_payload(base_event, laps)
         allowed = registry.allowed_principals(server_id)
         if allowed is not None and user_token not in allowed:
             base_event.update(local_verdict("MCP-REGISTRY-003", "Block",
                 "이 서비스의 도입 승인 사용 주체에 포함되지 않습니다." if allowed else
                 "도입 신청·승인 기록이 없는 직접 등록입니다. 도입 신청으로 다시 등록해야 실행합니다."))
-            return await _decision_payload(base_event, before)
+            return await _decision_payload(base_event, laps)
+        laps.lap("identity")
 
         # Reserved before any check that can pass, so a burst cannot race past the
         # ceilings while each of its calls is being classified. A store that cannot
@@ -1498,14 +1534,15 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             base_event.update(local_verdict(
                 "P-CONTROL-FAIL-CLOSED", "Block",
                 "호출 예약 상태 저장소를 사용할 수 없어 실행하지 않았습니다.", error=_root_cause(exc)))
-            return await _decision_payload(base_event, before)
+            return await _decision_payload(base_event, laps)
+        laps.lap("reserve")
 
         # A schema rarely bounds length, and the arguments go to the provider as they are:
         # a 200 KB string reached an outside provider before it refused it (D-59, pj1).
         if len(json.dumps(arguments, ensure_ascii=False).encode()) > MAX_ARGUMENT_BYTES:
             base_event.update(local_verdict(
                 "P-INPUT-SCHEMA-001", "Block", f"도구 인자가 {MAX_ARGUMENT_BYTES // 1024}KB를 넘어 보내지 않았습니다."))
-            return await _decision_payload(base_event, before)
+            return await _decision_payload(base_event, laps)
 
         tool_row = await db.fetch_one("SELECT * FROM mcp_tools WHERE server_id=%s AND name=%s", (server_id, tool))
         # Arguments are checked against the approved schema before the policy sees
@@ -1514,7 +1551,8 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             if not Draft202012Validator(tool_row["input_schema"]).is_valid(arguments):
                 base_event.update(local_verdict(
                     "P-INPUT-SCHEMA-001", "Block", "도구 인자가 승인된 입력 형식과 다릅니다."))
-                return await _decision_payload(base_event, before)
+                return await _decision_payload(base_event, laps)
+        laps.lap("schema")
 
         # PDF 8~10쪽. What leaves the organisation is inspected before the policy sees
         # the call; if the inspection cannot run, the call does not either.
@@ -1534,7 +1572,8 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             base_event.update(local_verdict(
                 "P-DATA-INSPECTION-001", "Block", "민감정보 검사를 완료하지 못해 실행을 차단했습니다.",
                 error=str(exc)[:500]))
-            return await _decision_payload(base_event, before)
+            return await _decision_payload(base_event, laps)
+        laps.lap("inspect_in")
         privacy_types = sorted({item["entity_type"] for item in findings})
         sequence_flags = await _sequence_flags(user_token, cls)
         base_event.update(privacy_types=privacy_types, sequence_flags=sequence_flags,
@@ -1573,11 +1612,13 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         policy_input["pac"] = await pac.build(payload, principal, cls, tool_row, contract, context,
                                              request_id, GATEWAY_ENVIRONMENT, approval_id)
         base_event["policy_input"] = policy_input  # kept for replay against a candidate policy
+        laps.lap("context")
         try:
             result = await _policy(policy_input)
         except Exception as exc:
             result = local_verdict("P-CONTROL-FAIL-CLOSED", "Block", "OPA 정책 결정에 실패하여 기본 차단했습니다.")
             base_event["error"] = _root_cause(exc)
+        laps.lap("policy")
 
         mode = await enforcement_mode()
         base_event["enforcement"] = mode
@@ -1633,13 +1674,14 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     # inspection budget and a margin too. Response loss stays unknown.
                     async with asyncio.timeout(dispatch_budget):
                         raw_result = await _call_upstream(server_id, tool, effective, approval_id, user_token,
-                                                         dispatch_state=base_event, pac_payload=payload)
+                                                         dispatch_state=base_event, pac_payload=payload, laps=laps)
                 base_event["upstream_executed"] = True
                 try:
                     base_event["result"], output_types = await _inspected_result(raw_result, ignore)
                 except privacy.InspectionUnavailable as exc:
                     # Executed, answer withheld: MCP-OUTPUT-001 below records exactly that.
                     raise ResultRejected(f"출력 검사 실패: {exc}", raw_result) from exc
+                laps.lap("inspect_out")
                 # The digest is of what the client receives (masked), not of the raw answer.
                 base_event["result_evidence"] = response_evidence(
                     base_event["result"], "masked" if output_types else "returned", output_types)
@@ -1677,7 +1719,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 base_event.update(_upstream_failure(exc, base_event))
                 span.record_exception(RuntimeError(_root_cause(exc)))
 
-        return await _decision_payload(base_event, before)
+        return await _decision_payload(base_event, laps)
 
 
 async def approve_request(approval_id: str, reviewer_token: str) -> dict:

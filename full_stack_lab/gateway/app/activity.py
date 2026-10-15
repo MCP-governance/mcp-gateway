@@ -78,6 +78,7 @@ def describe(row: dict) -> dict:
         "response_types": evidence.get("content_types") or [], "masked_types": evidence.get("masked_types") or [],
         "conflicts": conflicts, "pac_failures": pac_failures,
         "planes": planes, "device_id": client.get("device_id"), "evidence_sha256": row.get("entry_sha256"),
+        "timings": row.get("timings") or {},
         "line": line,
     }
 
@@ -140,7 +141,7 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
                    d.destinations, d.client, d.summary, d.data_class, d.action, d.decision, d.policy_id,
                    d.reason, d.upstream_executed, d.upstream_attempted, d.approval_id, d.trace_id, d.error,
                    d.exception_id, d.enforcement, d.would_decision, d.risk_score, d.privacy_types,
-                   d.sequence_flags, d.result_preview, d.conflicts, d.entry_sha256, p.display_name, p.department
+                   d.sequence_flags, d.result_preview, d.conflicts, d.entry_sha256, d.timings, p.display_name, p.department
               FROM decisions d LEFT JOIN principals p ON p.token = d.user_token
              WHERE {' AND '.join(clauses) or 'true'} ORDER BY d.id {order} LIMIT %s OFFSET %s""",
         (*params, page_size, offset))

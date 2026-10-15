@@ -227,7 +227,7 @@ class AnomalyRecordTest(unittest.TestCase):
         async def decide():
             return await core._decision_payload(
                 {"policy_id": "P-ANOMALY-001", "server_id": "server-1"},
-                asyncio.get_running_loop().time(),
+                core._Laps(),
             )
 
         execute = AsyncMock()

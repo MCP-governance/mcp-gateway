@@ -6,7 +6,8 @@
  * a menu here is convenience only.
  */
 import { mergeRows, searchRows, liveLabel, hourBuckets, splitBy, sankeyData, harnessLabel, DECISIONS,
-  statusView, dedupeItems, pipelineOf, EVIDENCE, resourceValues, observationRows, listenerCoverage } from "./console-state.mjs";
+  statusView, dedupeItems, pipelineOf, EVIDENCE, resourceValues, observationRows, listenerCoverage,
+  msText, pctText, LATENCY_STAGE, timingRows } from "./console-state.mjs";
 import * as charts from "./charts.mjs";
 
 const { DECISION_LABEL } = charts;
@@ -456,6 +457,15 @@ function metricsCards(sample, failure = false) {
     <div class="system-time">${failure ? "확인 실패" : values.measuredAt
       ? `확인 ${new Date(values.measuredAt).toLocaleTimeString("ko-KR")}` : sample ? "갱신 필요" : "미측정"}</div>`;
 }
+function latencyCards(lat, net) {
+  const fresh = (net?.devices || []).filter((d) => d.state === "fresh").length;
+  return html`<div class="system-values latency-values">${[
+    ["게이트웨이 처리", lat?.gateway?.p50, lat?.gateway?.p95],
+    ["MCP 서버 응답", lat?.upstream?.p50, lat?.upstream?.p95],
+    ["엔드포인트 왕복", fresh ? net.summary?.p50_ms : null, fresh ? net.summary?.p95_ms : null],
+  ].map(([label, p50, p95]) => html`<div class="system-stat"><span>${label}</span><b>${msText(p50)}</b>
+    <small>${p95 == null ? "" : `95% ${msText(p95)}`}</small></div>`)}</div>`;
+}
 function startSystemMetrics() {
   if (!$("#system-metrics")) return;
   const seq = routeSeq;
@@ -489,7 +499,11 @@ function startSystemMetrics() {
 }
 
 ROUTES.overview = async (_, tab) => {
-  const [o, blocked, pl] = await Promise.all([gw("overview"), gw("activity?limit=10&decision=Block"), planes()]);
+  const [o, blocked, pl, lat, net] = await Promise.all([gw("overview"), gw("activity?limit=10&decision=Block"), planes(),
+    gw("latency").catch(() => null), gw("endpoint/network-quality").catch(() => null)]);
+  const serverName = Object.fromEntries((o.servers || []).map((s) => [s.id, s.display_name || s.id]));
+  const stages = lat?.stages || [];
+  const hoursLat = lat?.series || [];
   feed.rows = mergeRows([], blocked.rows);
   const t = o.today, x = o.execution, term = o.termination || {};
   const buckets = hourBuckets(o.series);
@@ -532,7 +546,7 @@ ROUTES.overview = async (_, tab) => {
       active: tab || "summary",
       tabs: [
         { key: "summary", label: "요약", body: html`<div class="stack">
-          ${panel("시스템 상태", html`<div id="system-metrics" aria-live="polite">${metricsCards(null)}</div>`)}
+          ${panel("시스템 상태", html`<div id="system-metrics" aria-live="polite">${metricsCards(null)}</div>${latencyCards(lat, net)}`)}
           ${panel("관리자 조치", html`<div class="action-list">
             <a class="action-link" href="#/approvals"><span>승인 요청</span><b class="n">${o.pending_approvals || 0}</b></a>
             <a class="action-link" href="#/intake"><span>도입 조치 필요</span><b class="n">${o.intake_actions || 0}</b></a>
@@ -563,6 +577,22 @@ ROUTES.overview = async (_, tab) => {
               <td>${w.harness ? chip("plain", harnessLabel(w.harness)) : NONE}</td><td class="num">${w.calls}</td>
               <td>${deviceOf[w.endpoint_id] ? statusPair(deviceOf[w.endpoint_id]) : chip("outline", "관찰만")}</td><td class="small">${ago(w.last_call)}</td></tr>`)}
             </tbody></table>${stations.length ? "" : empty("엔드포인트 없음")}`, { flush: true })}</div>` },
+        { key: "latency", label: "지연", body: html`<div class="stack">
+          ${latencyCards(lat, net)}
+          ${panel("구간별 처리 시간", stages.length ? chartBox("c-lat-stages", "최근 24시간 도구 호출의 구간별 처리 시간", "lg") : empty("측정된 호출 없음"),
+            { sub: lat?.calls ? `${lat.calls}건 · 24시간` : "" })}
+          ${panel("시간대별 게이트웨이 처리", hoursLat.length ? chartBox("c-lat-hours", "최근 24시간 시간대별 게이트웨이 처리 시간", "sm") : empty("측정된 호출 없음"))}
+          <div class="grid c2">
+          ${panel("MCP 서버", (lat?.servers || []).length ? html`<table class="data"><thead><tr><th>MCP 서버</th><th class="num">호출</th><th class="num">중앙값</th><th class="num">95%</th><th class="num">실패</th></tr></thead><tbody>
+            ${lat.servers.map((r) => html`<tr class="clickable" tabindex="0" data-act="goto" data-href="#/activity?server=${encodeURIComponent(r.server_id)}">
+              <td><b>${serverName[r.server_id] || r.server_id}</b></td><td class="num">${r.n}</td><td class="num">${msText(r.p50)}</td>
+              <td class="num">${msText(r.p95)}</td><td class="num ${r.failed ? "bad-text" : ""}">${r.failed}</td></tr>`)}</tbody></table>` : empty("측정된 호출 없음"), { flush: true })}
+          ${panel("엔드포인트 왕복", (net?.devices || []).length ? html`<table class="data"><thead><tr><th>엔드포인트</th><th class="num">중앙값</th><th class="num">95%</th><th class="num">지터</th><th class="num">실패율</th><th>확인</th></tr></thead><tbody>
+            ${net.devices.map((d) => html`<tr><td>${entityRef(d.endpoint_id)}<span class="sub">${d.hostname || ""}</span></td>
+              <td class="num">${d.state === "fresh" ? msText(d.rtt_p50_ms) : "—"}</td><td class="num">${d.state === "fresh" ? msText(d.rtt_p95_ms) : "—"}</td>
+              <td class="num">${d.state === "fresh" ? msText(d.jitter_ms) : "—"}</td><td class="num">${d.state === "fresh" ? pctText(d.failure_pct) : "—"}</td>
+              <td class="small">${d.state === "fresh" ? ago(d.measured_at) : d.state === "stale" ? chip("alert", "오래됨") : chip("outline", "확인 불가")}</td></tr>`)}</tbody></table>`
+            : empty("측정된 엔드포인트 없음"), { flush: true })}</div></div>` },
         { key: "risk", label: "위험종료", n: t.Block, hot: t.Block > 0, body: html`<div class="grid c2">
             ${panel("자주 걸린 정책", o.top_policies.length ? chartBox("c-policies", "최근 24시간 차단·경보가 많은 정책") : empty("최근 24시간 차단·경보 없음"), { sub: "최근 24시간" })}
             ${panel("종료·폐기", chartBox("c-term", "종료·폐기 현황"), { end: html`<a class="btn sm" href="#/termination">열기</a>` })}
@@ -584,6 +614,12 @@ ROUTES.overview = async (_, tab) => {
         { name: "마스킹 반환", value: Number(x.masked), color: charts.color("Restrict") },
         { name: "응답 보류", value: Number(x.withheld), color: charts.color("Block") }].filter((g) => g.value)),
       "c-traffic": () => charts.decisionColumns(buckets.map((b) => b.label), buckets),
+      "c-lat-stages": () => charts.stacked(stages.map((r) => LATENCY_STAGE[r.stage] || r.stage), [
+        { name: "중앙값", color: charts.color("Allow"), data: stages.map((r) => r.p50) },
+        { name: "95%", color: charts.color("Alert"), data: stages.map((r) => r.p95) }], { horizontal: true, grouped: true, unit: "ms" }),
+      "c-lat-hours": () => charts.stacked(hoursLat.map((r) => `${new Date(r.hour).getHours()}시`), [
+        { name: "중앙값", color: charts.color("Allow"), data: hoursLat.map((r) => r.p50) },
+        { name: "95%", color: charts.color("Alert"), data: hoursLat.map((r) => r.p95) }], { grouped: true, unit: "ms" }),
       "c-share": () => charts.donut(DECISIONS.map((d) => ({ name: DECISION_LABEL[d], value: t[d], color: charts.color(d) }))),
       "c-servers": () => charts.decisionColumns(byServer.map((g) => g.key), byServer, {
         horizontal: true, grouped: true, onClick: (e) => { location.hash = `#/activity?server=${encodeURIComponent(e.name)}`; } }),
@@ -801,6 +837,14 @@ ROUTES.activity = async (_, tab, query) => {
   };
 };
 
+function timingView(timings) {
+  const { rows, total } = timingRows(timings);
+  if (!rows.length) return empty("측정 없음");
+  return html`<table class="data"><thead><tr><th>구간</th><th class="num">시간</th><th class="num">비율</th></tr></thead><tbody>
+    ${rows.map((r) => html`<tr><td>${r.label}</td><td class="num">${msText(r.ms)}</td><td class="num">${r.share == null ? "—" : `${r.share}%`}</td></tr>`)}
+    <tr><td><b>전체</b></td><td class="num"><b>${msText(total)}</b></td><td class="num"></td></tr></tbody></table>`;
+}
+
 async function showDecision(id) {
   const r = feed.rows.find((row) => String(row.id) === String(id));
   if (!r) return;
@@ -835,6 +879,7 @@ async function showDecision(id) {
       ["오류", r.error]])}<h3 class="detail-section-title">추적 정보</h3>${kv([
       ["감사 해시", r.evidence_sha256 ? html`<code>${r.evidence_sha256}</code>` : ""],
       ["Trace ID", r.trace_id ? html`<code>${r.trace_id}</code>` : ""], ["작업 ID", r.task_id]])}` },
+    { key: "timing", label: "처리 시간", body: timingView(r.timings) },
   ]);
 }
 

@@ -20,6 +20,7 @@ from collections.abc import Callable
 
 import httpx
 
+from . import connections
 from .classify import SECRET_PATTERNS
 
 ANALYZER = os.getenv("PRESIDIO_ANALYZER_URL", "http://presidio-analyzer:3000")
@@ -66,12 +67,16 @@ class InspectionUnavailable(RuntimeError):
     pass
 
 
+def _client() -> httpx.AsyncClient:
+    return connections.shared("presidio", lambda: httpx.AsyncClient(timeout=TIMEOUT, trust_env=False))
+
+
 async def analyze(text: str, ignore: Ignore | None = None) -> list[dict]:
     if len(text or "") < MIN_CHARS:
         return []
     try:
-        async with _slots, httpx.AsyncClient(timeout=TIMEOUT, trust_env=False) as client:
-            response = await client.post(ANALYZER + "/analyze", json={
+        async with _slots:
+            response = await _client().post(ANALYZER + "/analyze", json={
                 "text": text, "language": "en", "score_threshold": 0.6,
                 "entities": ENTITIES, "ad_hoc_recognizers": RECOGNIZERS,
             })
@@ -104,8 +109,8 @@ async def mask_text(text: str, ignore: Ignore | None = None) -> tuple[str, list[
     if not findings:
         return text, []
     try:
-        async with _slots, httpx.AsyncClient(timeout=TIMEOUT, trust_env=False) as client:
-            response = await client.post(ANONYMIZER + "/anonymize", json={
+        async with _slots:
+            response = await _client().post(ANONYMIZER + "/anonymize", json={
                 "text": text, "analyzer_results": findings,
                 "anonymizers": {"DEFAULT": {"type": "replace", "new_value": "[REDACTED]"}},
             })

@@ -168,3 +168,18 @@ test("enforced is green only with fresh evidence of a ledger row or a kernel hea
   const withheld = pipelineOf({ device_id: "d", planes: ["gateway", "endpoint"], attempted: true, executed: true, response: "withheld" });
   assert.deepEqual(withheld.map((n) => n.state), ["signed", "decided", "bound", "executed", "withheld"]);
 });
+
+test("latency values read as durations and never invent a measurement", async () => {
+  const { msText, pctText, timingRows } = await import("../gateway/app/agent_static/console-state.mjs");
+  assert.equal(msText(4.25), "4.3 ms");
+  assert.equal(msText(38.4), "38 ms");
+  assert.equal(msText(16000), "16.0 s");
+  for (const missing of [null, undefined, -1, NaN, Infinity, "12"]) assert.equal(msText(missing), "—");
+  assert.equal(pctText(0), "0%");
+  assert.equal(pctText(2.5), "2.5%");
+  assert.equal(pctText(101), "—");
+  const view = timingRows({ total: 100, policy: 20, call: 60, bogus: 5, identity: -3 });
+  assert.deepEqual(view.rows.map((r) => [r.key, r.share]), [["policy", 20], ["call", 60]]);
+  assert.equal(view.total, 100);
+  assert.deepEqual(timingRows(undefined), { rows: [], total: null });
+});

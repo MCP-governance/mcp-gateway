@@ -6,11 +6,15 @@ remote SaaS credentials must be separately provisioned and bound to resource and
 """
 from __future__ import annotations
 
+import asyncio
+import hashlib
 import os
 import json
 import time
 import math
-from contextlib import asynccontextmanager
+from collections import OrderedDict
+from contextlib import AsyncExitStack, asynccontextmanager
+from http.cookiejar import CookieJar, DefaultCookiePolicy
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -66,15 +70,63 @@ def credential_headers(endpoint: str, principal: str | None = None) -> dict:
         raise CredentialUnavailable('Upstream credential is unavailable, expired, or outside its binding') from exc
 
 
-@asynccontextmanager
-async def session(endpoint: str, timeout: float = CONNECT_TIMEOUT, principal: str | None = None):
+class _Lease:
+    __slots__ = ("client", "loop", "users", "evicted")
+
+    def __init__(self, client: httpx2.AsyncClient, loop: asyncio.AbstractEventLoop) -> None:
+        self.client, self.loop, self.users, self.evicted = client, loop, 0, False
+
+
+# Dispatch connections are reused per (endpoint, principal, credential): a tools/call
+# no longer pays a TCP and TLS handshake every time. The MCP session itself is still
+# opened and closed per call (D-79), and a pool entry is never shared between
+# principals, so nothing an upstream ties to a connection crosses callers. Cookies are
+# not kept at all, as with the fresh client each call used to get.
+POOL_SIZE = int(os.getenv("UPSTREAM_POOL_SIZE", "32"))
+_pool: OrderedDict[tuple, _Lease] = OrderedDict()
+
+
+def _client(timeout: float, headers: dict) -> httpx2.AsyncClient:
     # trust_env=False: a proxy variable in the Gateway's environment must not reroute
     # policy-approved calls to somewhere the registry never approved.
-    async with httpx2.AsyncClient(timeout=timeout, trust_env=False, follow_redirects=False,
-                                 headers=credential_headers(endpoint, principal)) as http_client:
-        async with Client(streamable_http_client(endpoint, http_client=http_client),
-                          read_timeout_seconds=timeout) as client:
-            yield client
+    return httpx2.AsyncClient(timeout=timeout, trust_env=False, follow_redirects=False, headers=headers,
+                              cookies=CookieJar(policy=DefaultCookiePolicy(allowed_domains=[])),
+                              limits=httpx2.Limits(max_keepalive_connections=4, keepalive_expiry=60))
+
+
+@asynccontextmanager
+async def _dispatch_client(endpoint: str, principal: str, headers: dict, timeout: float):
+    loop = asyncio.get_running_loop()
+    key = (endpoint, principal, timeout, hashlib.sha256(json.dumps(headers, sort_keys=True).encode()).hexdigest())
+    lease = _pool.get(key)
+    if lease is None or lease.loop is not loop or lease.client.is_closed:
+        lease = _pool[key] = _Lease(_client(timeout, headers), loop)
+    _pool.move_to_end(key)
+    lease.users += 1
+    try:
+        while len(_pool) > POOL_SIZE:
+            _, old = _pool.popitem(last=False)
+            old.evicted = True
+            if not old.users and old.loop is loop:
+                await old.client.aclose()
+        yield lease.client
+    finally:
+        lease.users -= 1
+        if lease.evicted and not lease.users:
+            await lease.client.aclose()
+
+
+@asynccontextmanager
+async def session(endpoint: str, timeout: float = CONNECT_TIMEOUT, principal: str | None = None):
+    """One MCP session. With a principal (dispatch) the HTTP connection comes from the pool."""
+    headers = credential_headers(endpoint, principal)
+    async with AsyncExitStack() as stack:
+        if principal is None:
+            http_client = await stack.enter_async_context(_client(timeout, headers))
+        else:
+            http_client = await stack.enter_async_context(_dispatch_client(endpoint, principal, headers, timeout))
+        yield await stack.enter_async_context(
+            Client(streamable_http_client(endpoint, http_client=http_client), read_timeout_seconds=timeout))
 
 
 def tool_view(tool: Any) -> dict:

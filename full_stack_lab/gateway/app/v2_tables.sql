@@ -131,3 +131,7 @@ DO $$ BEGIN
       ('PENDING', 'APPROVED', 'REJECTED', 'EXPIRED', 'EXECUTED', 'NOT_EXECUTED', 'UNCONFIRMED'));
   END IF;
 END $$;
+
+-- Per-stage wall time of a tools/call in ms (core._Laps). Operational data outside the
+-- audit fingerprint: it says how long the gateway took, not what it decided.
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS timings jsonb;

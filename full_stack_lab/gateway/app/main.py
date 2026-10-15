@@ -360,6 +360,69 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
     }
 
 
+# Stage keys written by core._Laps, in path order. Upstream stages are the MCP server's
+# share of a call; the rest is the gateway's own processing.
+LATENCY_STAGES = ("identity", "reserve", "schema", "inspect_in", "context", "policy",
+                  "dispatch", "connect", "list", "recheck", "call", "close", "inspect_out")
+UPSTREAM_STAGES = ("connect", "list", "call", "close")
+
+
+@app.get("/api/latency")
+async def latency(hours: int = Query(24, ge=1, le=168), user: dict = Depends(admin_caller)) -> dict:
+    """Where a tools/call spends its time, from the per-stage timings kept with each decision."""
+    upstream_ms = " + ".join(f"COALESCE((d.timings->>'{stage}')::float8, 0)" for stage in UPSTREAM_STAGES)
+    window = f"""FROM decisions d WHERE d.created_at > now() - make_interval(hours => %s)
+                   AND d.timings IS NOT NULL AND d.action <> 'connect' AND {decommission.REAL_CALL}"""
+    summary, stages, servers, series = await asyncio.gather(
+        db.fetch_one(f"""WITH t AS (SELECT (d.timings->>'total')::float8 AS total, {upstream_ms} AS upstream,
+                                          d.timings ? 'call' AS dispatched {window})
+                         SELECT count(*) AS calls, count(*) FILTER (WHERE dispatched) AS dispatched,
+                                percentile_cont(0.5) WITHIN GROUP (ORDER BY total - upstream) AS gateway_p50,
+                                percentile_cont(0.95) WITHIN GROUP (ORDER BY total - upstream) AS gateway_p95,
+                                percentile_cont(0.99) WITHIN GROUP (ORDER BY total - upstream) AS gateway_p99,
+                                percentile_cont(0.5) WITHIN GROUP (ORDER BY total) AS total_p50,
+                                percentile_cont(0.95) WITHIN GROUP (ORDER BY total) AS total_p95,
+                                percentile_cont(0.5) WITHIN GROUP (ORDER BY upstream) FILTER (WHERE dispatched) AS upstream_p50,
+                                percentile_cont(0.95) WITHIN GROUP (ORDER BY upstream) FILTER (WHERE dispatched) AS upstream_p95
+                           FROM t""", (hours,)),
+        db.fetch_all(f"""SELECT s.key AS stage, count(*) AS n,
+                                percentile_cont(0.5) WITHIN GROUP (ORDER BY s.value::float8) AS p50,
+                                percentile_cont(0.95) WITHIN GROUP (ORDER BY s.value::float8) AS p95
+                           {window.replace("FROM decisions d", "FROM decisions d, jsonb_each_text(d.timings) s")}
+                            AND s.key <> 'total' GROUP BY s.key""", (hours,)),
+        db.fetch_all(f"""SELECT d.server_id, count(*) AS n,
+                                percentile_cont(0.5) WITHIN GROUP (ORDER BY {upstream_ms}) AS p50,
+                                percentile_cont(0.95) WITHIN GROUP (ORDER BY {upstream_ms}) AS p95,
+                                count(*) FILTER (WHERE d.upstream_attempted AND d.policy_id = 'MCP-UPSTREAM-001') AS failed
+                           {window} AND d.timings ? 'call' GROUP BY d.server_id ORDER BY n DESC LIMIT 12""", (hours,)),
+        db.fetch_all(f"""WITH t AS (SELECT date_trunc('hour', d.created_at) AS hour,
+                                          (d.timings->>'total')::float8 - ({upstream_ms}) AS gateway {window})
+                         SELECT hour, count(*) AS n,
+                                percentile_cont(0.5) WITHIN GROUP (ORDER BY gateway) AS p50,
+                                percentile_cont(0.95) WITHIN GROUP (ORDER BY gateway) AS p95
+                           FROM t GROUP BY hour ORDER BY hour""", (hours,)),
+    )
+    order = {stage: index for index, stage in enumerate(LATENCY_STAGES)}
+
+    def ms(value):
+        return None if value is None else round(float(value), 2)
+    return {
+        "window_hours": hours,
+        "calls": int(summary["calls"] or 0), "dispatched": int(summary["dispatched"] or 0),
+        "gateway": {key: ms(summary[f"gateway_{key}"]) for key in ("p50", "p95", "p99")},
+        "total": {key: ms(summary[f"total_{key}"]) for key in ("p50", "p95")},
+        "upstream": {key: ms(summary[f"upstream_{key}"]) for key in ("p50", "p95")},
+        "stages": [{"stage": row["stage"], "n": int(row["n"]), "p50": ms(row["p50"]), "p95": ms(row["p95"]),
+                    "upstream": row["stage"] in UPSTREAM_STAGES}
+                   for row in sorted(stages, key=lambda r: order.get(r["stage"], len(order)))
+                   if row["stage"] in order],
+        "servers": [{"server_id": row["server_id"], "n": int(row["n"]), "p50": ms(row["p50"]), "p95": ms(row["p95"]),
+                     "failed": int(row["failed"])} for row in servers],
+        "series": [{"hour": row["hour"].isoformat(), "n": int(row["n"]), "p50": ms(row["p50"]), "p95": ms(row["p95"])}
+                   for row in series],
+    }
+
+
 @app.get("/api/activity")
 async def activity_feed(after: int = 0, limit: int = 100, decision: str | None = None,
                         server: str | None = None, person: str | None = None,

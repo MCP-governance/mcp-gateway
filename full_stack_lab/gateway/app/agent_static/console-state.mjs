@@ -255,3 +255,32 @@ export function pipelineOf(row) {
     { key: "response", state: row?.response || (upstream === "not_sent" ? "not_executed" : "unknown") },
   ];
 }
+
+const isMs = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0;
+
+/** "4.2 ms", "38 ms", "1.6 s"; "—" for a value that was not measured. */
+export function msText(value) {
+  if (!isMs(value)) return "—";
+  if (value >= 10000) return `${(value / 1000).toFixed(1)} s`;
+  return value < 10 ? `${value.toFixed(1)} ms` : `${Math.round(value)} ms`;
+}
+
+export function pctText(value) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100
+    ? `${value < 10 && value % 1 ? value.toFixed(1) : Math.round(value)}%` : "—";
+}
+
+export const LATENCY_STAGE = {
+  identity: "신원 확인", reserve: "호출 예약", schema: "입력 형식", inspect_in: "입력 검사", context: "정책 입력",
+  policy: "정책 판정", dispatch: "전송 준비", connect: "서버 연결", list: "계약 재확인", recheck: "실행 전 재판정",
+  call: "도구 실행", close: "세션 종료", inspect_out: "출력 검사",
+};
+
+/** One call's stages in path order with their share of the total; unknown keys are dropped. */
+export function timingRows(timings) {
+  const total = isMs(timings?.total) ? timings.total : null;
+  const rows = Object.keys(LATENCY_STAGE).filter((key) => isMs(timings?.[key]))
+    .map((key) => ({ key, label: LATENCY_STAGE[key], ms: timings[key],
+      share: total ? Math.min(100, Math.round((timings[key] / total) * 100)) : null }));
+  return { rows, total };
+}
