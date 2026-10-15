@@ -1,0 +1,1392 @@
+[
+  {
+    "id": "LIB-A01",
+    "url": "https://modelcontextprotocol.io/seps/2468",
+    "method": "http",
+    "status": 200,
+    "agent_title": "SEP-2468: Recommend Issuer (iss) Parameter in MCP Auth Responses",
+    "matched_title": "SEP-2468: Recommend Issuer (iss) Parameter in MCP Auth Responses - Model Context Protocol",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-A02",
+    "url": "https://www.rfc-editor.org/rfc/rfc8707",
+    "method": "http",
+    "status": 200,
+    "agent_title": "RFC 8707: Resource Indicators for OAuth 2.0",
+    "matched_title": "RFC 8707: Resource Indicators for OAuth 2.0 | RFC Editor",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-A03",
+    "url": "https://www.rfc-editor.org/rfc/rfc9728",
+    "method": "http",
+    "status": 200,
+    "agent_title": "RFC 9728: OAuth 2.0 Protected Resource Metadata",
+    "matched_title": "RFC 9728: OAuth 2.0 Protected Resource Metadata | RFC Editor",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-A04",
+    "url": "https://modelcontextprotocol.io/seps/985",
+    "method": "http",
+    "status": 200,
+    "agent_title": "SEP-985: Align OAuth 2.0 Protected Resource Metadata with RFC 9728",
+    "matched_title": "SEP-985: Align OAuth 2.0 Protected Resource Metadata with RFC 9728 - Model Context Protocol",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-A05",
+    "url": "https://github.com/advisories/GHSA-6qxp-vccf-f47h",
+    "method": "http",
+    "status": 200,
+    "agent_title": "GHSA-6qxp-vccf-f47h (CVE-2026-104850): MCP TypeScript SDK: OAuth client could send credentials to an authorization server chosen by the MCP server",
+    "matched_title": "MCP TypeScript SDK: OAuth client could send credentials to an authorization server chosen by the MCP",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-A06",
+    "url": "https://modelcontextprotocol.io/seps/2260",
+    "method": "http",
+    "status": 200,
+    "agent_title": "SEP-2260: Require Server requests to be associated with a Client request.",
+    "matched_title": "SEP-2260: Require Server requests to be associated with a Client request. - Model Context Protocol",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-A07",
+    "url": "https://modelcontextprotocol.io/seps/1036",
+    "method": "http",
+    "status": 200,
+    "agent_title": "SEP-1036: URL Mode Elicitation for secure out-of-band interactions",
+    "matched_title": "SEP-1036: URL Mode Elicitation for secure out-of-band interactions - Model Context Protocol",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-A08",
+    "url": "https://modelcontextprotocol.io/seps/1024",
+    "method": "http",
+    "status": 200,
+    "agent_title": "SEP-1024: MCP Client Security Requirements for Local Server Installation",
+    "matched_title": "SEP-1024: MCP Client Security Requirements for Local Server Installation - Model Context Protocol",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-A09",
+    "url": "https://github.com/advisories/GHSA-6xpm-ggf7-wc3p",
+    "method": "http",
+    "status": 200,
+    "agent_title": "GHSA-6xpm-ggf7-wc3p (CVE-2025-6514): mcp-remote exposed to OS command injection via untrusted MCP server connections",
+    "matched_title": "mcp-remote exposed to OS command injection via untrusted MCP server connections · CVE-2025-6514 · Gi",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-A10",
+    "url": "https://github.com/advisories/GHSA-7f8r-222p-6f5g",
+    "method": "http",
+    "status": 200,
+    "agent_title": "GHSA-7f8r-222p-6f5g (CVE-2025-49596): MCP Inspector proxy server lacks authentication between the Inspector client and proxy",
+    "matched_title": "MCP Inspector proxy server lacks authentication between the Inspector client and proxy · CVE-2025-49",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-A11",
+    "url": "https://modelcontextprotocol.io/seps/2322",
+    "method": "http",
+    "status": 200,
+    "agent_title": "SEP-2322: Multi Round-Trip Requests",
+    "matched_title": "SEP-2322: Multi Round-Trip Requests - Model Context Protocol",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-A12",
+    "url": "https://modelcontextprotocol.io/seps/991",
+    "method": "http",
+    "status": 200,
+    "agent_title": "SEP-991: Enable URL-based Client Registration using OAuth Client ID Metadata Documents",
+    "matched_title": "SEP-991: Enable URL-based Client Registration using OAuth Client ID Metadata Documents - Model Conte",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-A13",
+    "url": "https://www.rfc-editor.org/rfc/rfc9207",
+    "method": "http",
+    "status": 200,
+    "agent_title": "RFC 9207: OAuth 2.0 Authorization Server Issuer Identification",
+    "matched_title": "RFC 9207: OAuth 2.0 Authorization Server Issuer Identification | RFC Editor",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-A14",
+    "url": "https://github.com/advisories/GHSA-345p-7cg4-v4c7",
+    "method": "http",
+    "status": 200,
+    "agent_title": "GHSA-345p-7cg4-v4c7 (CVE-2026-25536): @modelcontextprotocol/sdk has cross-client data leak via shared server/transport instance reuse",
+    "matched_title": "@modelcontextprotocol/sdk has cross-client data leak via shared server/transport instance reuse · CV",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-A15",
+    "url": "https://arxiv.org/abs/2503.23278",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Model Context Protocol (MCP): Landscape, Security Threats, and Future Research Directions",
+    "matched_title": "Model Context Protocol (MCP): Landscape, Security Threats, and Future Research Directions",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-A16",
+    "url": "https://github.com/advisories/GHSA-8r9q-7v3j-jr4g",
+    "method": "http",
+    "status": 200,
+    "agent_title": "GHSA-8r9q-7v3j-jr4g (CVE-2026-0621): Anthropic's MCP TypeScript SDK has a ReDoS vulnerability",
+    "matched_title": "Anthropic's MCP TypeScript SDK has a ReDoS vulnerability · CVE-2026-0621 · GitHub Advisory Database ",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-B01",
+    "url": "https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks",
+    "method": "http",
+    "status": 200,
+    "agent_title": "MCP Security Notification: Tool Poisoning Attacks",
+    "matched_title": "MCP Security Notification: Tool Poisoning Attacks",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-B02",
+    "url": "https://arxiv.org/abs/2506.01333",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "ETDI: Mitigating Tool Squatting and Rug Pull Attacks in Model Context Protocol (MCP) by using OAuth-Enhanced Tool Definitions and Policy-Based Access Control",
+    "matched_title": "ETDI: Mitigating Tool Squatting and Rug Pull Attacks in Model Context Protocol (MCP) by using OAuth-Enhanced T",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-B03",
+    "url": "https://arxiv.org/abs/2504.19793",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Prompt Injection Attack to Tool Selection in LLM Agents",
+    "matched_title": "Prompt Injection Attack to Tool Selection in LLM Agents",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-B04",
+    "url": "https://arxiv.org/abs/2505.11154",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "MPMA: Preference Manipulation Attack Against Model Context Protocol",
+    "matched_title": "MPMA: Preference Manipulation Attack Against Model Context Protocol",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-B05",
+    "url": "https://arxiv.org/abs/2604.01905",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "From Component Manipulation to System Compromise: Understanding and Detecting Malicious MCP Servers",
+    "matched_title": "From Component Manipulation to System Compromise: Understanding and Detecting Malicious MCP Servers",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-B06",
+    "url": "https://arxiv.org/abs/2508.02110",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Attractive Metadata Attack: Inducing LLM Agents to Invoke Malicious Tools",
+    "matched_title": "Attractive Metadata Attack: Inducing LLM Agents to Invoke Malicious Tools",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-B07",
+    "url": "https://arxiv.org/abs/2508.20412",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "MindGuard: Intrinsic Decision Inspection for Securing LLM Agents Against Metadata Poisoning",
+    "matched_title": "MindGuard: Intrinsic Decision Inspection for Securing LLM Agents Against Metadata Poisoning",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-B08",
+    "url": "https://arxiv.org/abs/2609.14119",
+    "method": "arxiv",
+    "status": 200,
+    "agent_title": "Same Name, Different Server: A Security Census of Silent Drift in the Model Context Protocol Ecosystem",
+    "matched_title": "Same Name, Different Server: A Security Census of Silent Drift in the Model Context Protocol Ecosyst",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-B09",
+    "url": "https://arxiv.org/abs/2508.10991",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "MCP-Guard: A Multi-Stage Defense-in-Depth Framework for Securing Model Context Protocol in Agentic AI",
+    "matched_title": "MCP-Guard: A Multi-Stage Defense-in-Depth Framework for Securing Model Context Protocol in Agentic AI",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-B10",
+    "url": "https://arxiv.org/abs/2603.22489",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Model Context Protocol Threat Modeling and Analyzing Vulnerabilities to Prompt Injection with Tool Poisoning",
+    "matched_title": "Model Context Protocol Threat Modeling and Analyzing Vulnerabilities to Prompt Injection with Tool Poisoning",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-B11",
+    "url": "https://arxiv.org/abs/2601.07395",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "MCP-ITP: An Automated Framework for Implicit Tool Poisoning in MCP",
+    "matched_title": "MCP-ITP: An Automated Framework for Implicit Tool Poisoning in MCP",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-B12",
+    "url": "https://arxiv.org/abs/2604.07536",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "TRUSTDESC: Preventing Tool Poisoning in LLM Applications via Trusted Description Generation",
+    "matched_title": "TRUSTDESC: Preventing Tool Poisoning in LLM Applications via Trusted Description Generation",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-B13",
+    "url": "https://arxiv.org/abs/2604.10534",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Machine Learning-Based Detection of MCP Attacks",
+    "matched_title": "Machine Learning-Based Detection of MCP Attacks",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-B14",
+    "url": "https://arxiv.org/abs/2508.12538",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "MCPXKIT: The Unified Toolkit for Analyzing Model Context Protocol Security",
+    "matched_title": "MCPXKIT: The Unified Toolkit for Analyzing Model Context Protocol Security",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-B15",
+    "url": "https://arxiv.org/abs/2504.19951",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Securing GenAI Multi-Agent Systems Against Tool Squatting: A Zero Trust Registry-Based Approach",
+    "matched_title": "Securing GenAI Multi-Agent Systems Against Tool Squatting: A Zero Trust Registry-Based Approach",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-B16",
+    "url": "https://arxiv.org/abs/2504.03767",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "MCP Safety Audit: LLMs with the Model Context Protocol Allow Major Security Exploits",
+    "matched_title": "MCP Safety Audit: LLMs with the Model Context Protocol Allow Major Security Exploits",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-C01",
+    "url": "https://arxiv.org/abs/2510.05244",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Indirect Prompt Injections: Are Firewalls All You Need, or Stronger Benchmarks?",
+    "matched_title": "Indirect Prompt Injections: Are Firewalls All You Need, or Stronger Benchmarks?",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-C02",
+    "url": "https://arxiv.org/abs/2503.18813",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Defeating Prompt Injections by Design",
+    "matched_title": "Defeating Prompt Injections by Design",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-C03",
+    "url": "https://arxiv.org/abs/2403.14720",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Defending Against Indirect Prompt Injection Attacks With Spotlighting",
+    "matched_title": "Defending Against Indirect Prompt Injection Attacks With Spotlighting",
+    "score": 1.0,
+    "year_src": 2024
+  },
+  {
+    "id": "LIB-C04",
+    "url": "https://arxiv.org/abs/2503.00061",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Adaptive Attacks Break Defenses Against Indirect Prompt Injection Attacks on LLM Agents",
+    "matched_title": "Adaptive Attacks Break Defenses Against Indirect Prompt Injection Attacks on LLM Agents",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-C05",
+    "url": "https://arxiv.org/abs/2510.09023",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "The Attacker Moves Second: Stronger Adaptive Attacks Bypass Defenses Against LLM Jailbreaks and Prompt Injections",
+    "matched_title": "The Attacker Moves Second: Stronger Adaptive Attacks Bypass Defenses Against Llm Jailbreaks and Prompt Injecti",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-C06",
+    "url": "https://arxiv.org/abs/2502.08966",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "RTBAS: Defending LLM Agents Against Prompt Injection and Privacy Leakage",
+    "matched_title": "RTBAS: Defending LLM Agents Against Prompt Injection and Privacy Leakage",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-C07",
+    "url": "https://arxiv.org/abs/2502.05174",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "MELON: Provable Defense Against Indirect Prompt Injection Attacks in AI Agents",
+    "matched_title": "MELON: Provable Defense Against Indirect Prompt Injection Attacks in AI Agents",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-C08",
+    "url": "https://arxiv.org/abs/2507.15219",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "PromptArmor: Simple yet Effective Prompt Injection Defenses",
+    "matched_title": "PromptArmor: Simple yet Effective Prompt Injection Defenses",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-C09",
+    "url": "https://arxiv.org/abs/2504.11358",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "DataSentinel: A Game-Theoretic Detection of Prompt Injection Attacks",
+    "matched_title": "DataSentinel: A Game-Theoretic Detection of Prompt Injection Attacks",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-C10",
+    "url": "https://arxiv.org/abs/2504.11168",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Bypassing LLM Guardrails: An Empirical Analysis of Evasion Attacks against Prompt Injection and Jailbreak Detection Systems",
+    "matched_title": "Bypassing LLM Guardrails: An Empirical Analysis of Evasion Attacks against Prompt Injection and Jailbreak Dete",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-C11",
+    "url": "https://arxiv.org/abs/2410.02644",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Agent Security Bench (ASB): Formalizing and Benchmarking Attacks and Defenses in LLM-based Agents",
+    "matched_title": "Agent Security Bench (ASB): Formalizing and Benchmarking Attacks and Defenses in LLM-based Agents",
+    "score": 1.0,
+    "year_src": 2024
+  },
+  {
+    "id": "LIB-C12",
+    "url": "https://arxiv.org/abs/2604.03870",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Your Agent is More Brittle Than You Think: Uncovering Indirect Injection Vulnerabilities in Agentic LLMs",
+    "matched_title": "Your Agent is More Brittle Than You Think: Uncovering Indirect Injection Vulnerabilities in Agentic LLMs",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-C13",
+    "url": "https://arxiv.org/abs/2302.12173",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Not what you've signed up for: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection",
+    "matched_title": "Not what you've signed up for: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Inject",
+    "score": 1.0,
+    "year_src": 2023
+  },
+  {
+    "id": "LIB-C14",
+    "url": "https://arxiv.org/abs/2402.06363",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "StruQ: Defending Against Prompt Injection with Structured Queries",
+    "matched_title": "StruQ: Defending Against Prompt Injection with Structured Queries",
+    "score": 1.0,
+    "year_src": 2024
+  },
+  {
+    "id": "LIB-C15",
+    "url": "https://arxiv.org/abs/2410.05451",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "SecAlign: Defending Against Prompt Injection with Preference Optimization",
+    "matched_title": "SecAlign: Defending Against Prompt Injection with Preference Optimization",
+    "score": 1.0,
+    "year_src": 2024
+  },
+  {
+    "id": "LIB-C16",
+    "url": "https://arxiv.org/abs/2312.14197",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Benchmarking and Defending Against Indirect Prompt Injection Attacks on Large Language Models",
+    "matched_title": "Benchmarking and Defending Against Indirect Prompt Injection Attacks on Large Language Models",
+    "score": 1.0,
+    "year_src": 2023
+  },
+  {
+    "id": "LIB-D01",
+    "url": "https://arxiv.org/abs/2510.21236",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "AgentBound: Securing Execution Boundaries of AI Agents",
+    "matched_title": "AgentBound: Securing Execution Boundaries of AI Agents",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-D02",
+    "url": "https://arxiv.org/abs/2503.18666",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "AgentSpec: Customizable Runtime Enforcement for Safe and Reliable LLM Agents",
+    "matched_title": "AgentSpec: Customizable Runtime Enforcement for Safe and Reliable LLM Agents",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-D03",
+    "url": "https://arxiv.org/abs/2602.16708",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Policy Compiler for Secure Agentic Systems",
+    "matched_title": "Formal Policy Enforcement for Agentic Systems",
+    "score": 0.67,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-D04",
+    "url": "https://arxiv.org/abs/2608.20481",
+    "method": "arxiv",
+    "status": 200,
+    "agent_title": "AEGIS: Preventing Cross-Domain Resource Abuse in MCP",
+    "matched_title": "AEGIS: Preventing Cross-Domain Resource Abuse in MCP",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-D05",
+    "url": "https://arxiv.org/abs/2604.04035",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Causality Laundering: Denial-Feedback Leakage in Tool-Calling LLM Agents",
+    "matched_title": "Causality Laundering: Denial-Feedback Leakage in Tool-Calling LLM Agents",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-D06",
+    "url": "https://arxiv.org/abs/2607.24625",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "APPA: Recoverable Information-Flow Control for Real-World LLM Agents",
+    "matched_title": "APPA: Recoverable Information-Flow Control for Real-World LLM Agents",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-D07",
+    "url": "https://arxiv.org/abs/2512.11147",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "MiniScope: A Least Privilege Framework for Authorizing Tool Calling Agents",
+    "matched_title": "MiniScope: Authorizing Agents with Least-Privilege Permissions",
+    "score": 0.5,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-D08",
+    "url": "https://arxiv.org/abs/2504.20984",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "ACE: A Security Architecture for LLM-Integrated App Systems",
+    "matched_title": "ACE: A Security Architecture for LLM-Integrated App Systems",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-D09",
+    "url": "https://arxiv.org/abs/2508.01249",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "AgentArmor: Enforcing Program Analysis on Agent Runtime Trace to Defend Against Prompt Injection",
+    "matched_title": "AgentArmor: Enforcing Program Analysis on Agent Runtime Trace to Defend Against Prompt Injection",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-D10",
+    "url": "https://arxiv.org/abs/2601.08012",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Towards Verifiably Safe Tool Use for LLM Agents",
+    "matched_title": "Towards Verifiably Safe Tool Use for LLM Agents",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-D11",
+    "url": "https://arxiv.org/abs/2503.22738",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "ShieldAgent: Shielding Agents via Verifiable Safety Policy Reasoning",
+    "matched_title": "ShieldAgent: Shielding Agents via Verifiable Safety Policy Reasoning",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-D12",
+    "url": "https://arxiv.org/abs/2406.09187",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "GuardAgent: Safeguard LLM Agents by a Guard Agent via Knowledge-Enabled Reasoning",
+    "matched_title": "GuardAgent: Safeguard LLM Agents by a Guard Agent via Knowledge-Enabled Reasoning",
+    "score": 1.0,
+    "year_src": 2024
+  },
+  {
+    "id": "LIB-D13",
+    "url": "https://arxiv.org/abs/2403.04960",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "IsolateGPT: An Execution Isolation Architecture for LLM-Based Agentic Systems",
+    "matched_title": "IsolateGPT: An Execution Isolation Architecture for LLM-Based Agentic Systems",
+    "score": 1.0,
+    "year_src": 2024
+  },
+  {
+    "id": "LIB-D14",
+    "url": "https://arxiv.org/abs/2501.17070",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Contextual Agent Security: A Policy for Every Purpose",
+    "matched_title": "Contextual Agent Security: A Policy for Every Purpose",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-E01",
+    "url": "https://www.rfc-editor.org/rfc/rfc9068",
+    "method": "http",
+    "status": 200,
+    "agent_title": "JSON Web Token (JWT) Profile for OAuth 2.0 Access Tokens",
+    "matched_title": "RFC 9068: JSON Web Token (JWT) Profile for OAuth 2.0 Access Tokens | RFC Editor",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-E02",
+    "url": "https://www.rfc-editor.org/rfc/rfc9449",
+    "method": "http",
+    "status": 200,
+    "agent_title": "OAuth 2.0 Demonstrating Proof of Possession (DPoP)",
+    "matched_title": "RFC 9449: OAuth 2.0 Demonstrating Proof of Possession (DPoP) | RFC Editor",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-E03",
+    "url": "https://datatracker.ietf.org/doc/draft-ietf-oauth-v2-1/",
+    "method": "http",
+    "status": 200,
+    "agent_title": "The OAuth 2.1 Authorization Framework",
+    "matched_title": "draft-ietf-oauth-v2-1-16 - The OAuth 2.1 Authorization Framework",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-E04",
+    "url": "https://datatracker.ietf.org/doc/draft-ietf-oauth-identity-assertion-authz-grant/",
+    "method": "http",
+    "status": 200,
+    "agent_title": "Identity Assertion JWT Authorization Grant",
+    "matched_title": "draft-ietf-oauth-identity-assertion-authz-grant-04 - Identity Assertion JWT Authorization Grant",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-E05",
+    "url": "https://datatracker.ietf.org/doc/draft-ietf-oauth-transaction-tokens/",
+    "method": "http",
+    "status": 200,
+    "agent_title": "Transaction Tokens",
+    "matched_title": "draft-ietf-oauth-transaction-tokens-11 - Transaction Tokens",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-E06",
+    "url": "https://arxiv.org/abs/2510.25819",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Identity Management for Agentic AI: The new frontier of authorization, authentication, and security for an AI agent world",
+    "matched_title": "Identity Management for Agentic AI: The new frontier of authorization, authentication, and security for an AI ",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-E07",
+    "url": "https://datatracker.ietf.org/doc/draft-ietf-oauth-client-id-metadata-document/",
+    "method": "http",
+    "status": 200,
+    "agent_title": "OAuth Client ID Metadata Document",
+    "matched_title": "draft-ietf-oauth-client-id-metadata-document-02 - OAuth Client ID Metadata Document",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-E08",
+    "url": "https://www.rfc-editor.org/rfc/rfc7591",
+    "method": "http",
+    "status": 200,
+    "agent_title": "Dynamic Client Registration Protocol (OAuth 2.0)",
+    "matched_title": "RFC 7591: OAuth 2.0 Dynamic Client Registration Protocol | RFC Editor",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-E09",
+    "url": "https://www.rfc-editor.org/rfc/rfc7523",
+    "method": "http",
+    "status": 200,
+    "agent_title": "JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants",
+    "matched_title": "RFC 7523: JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants ",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-E10",
+    "url": "https://datatracker.ietf.org/doc/draft-ietf-oauth-spiffe-client-auth/",
+    "method": "http",
+    "status": 200,
+    "agent_title": "OAuth SPIFFE Client Authentication",
+    "matched_title": "draft-ietf-oauth-spiffe-client-auth-02 - OAuth SPIFFE Client Authentication",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-E11",
+    "url": "https://datatracker.ietf.org/doc/draft-ietf-oauth-attestation-based-client-auth/",
+    "method": "http",
+    "status": 200,
+    "agent_title": "OAuth 2.0 Attestation-Based Client Authentication",
+    "matched_title": "draft-ietf-oauth-attestation-based-client-auth-12 - OAuth 2.0 Attestation-Based Client Authenticatio",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-E12",
+    "url": "https://datatracker.ietf.org/doc/draft-ietf-wimse-aims/",
+    "method": "http",
+    "status": 200,
+    "agent_title": "AI Identity Management System",
+    "matched_title": "draft-ietf-wimse-aims-00 - AI Identity Management System",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-E13",
+    "url": "https://arxiv.org/abs/2603.24775",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "AIP: Agent Identity Protocol for Verifiable Delegation Across MCP and A2A",
+    "matched_title": "AIP: Agent Identity Protocol for Verifiable Delegation Across MCP and A2A",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-E14",
+    "url": "https://arxiv.org/abs/2501.09674",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Authenticated Delegation and Authorized AI Agents",
+    "matched_title": "Authenticated Delegation and Authorized AI Agents",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-F01",
+    "url": "https://arxiv.org/abs/2505.03574",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "LlamaFirewall: An open source guardrail system for building secure AI agents",
+    "matched_title": "LlamaFirewall: An open source guardrail system for building secure AI agents",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-F02",
+    "url": "https://arxiv.org/abs/2512.23738",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Enforcing Temporal Constraints for LLM Agents",
+    "matched_title": "Enforcing Temporal Constraints for LLM Agents",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-F03",
+    "url": "https://arxiv.org/abs/2310.10501",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "NeMo Guardrails: A Toolkit for Controllable and Safe LLM Applications with Programmable Rails",
+    "matched_title": "NeMo Guardrails: A Toolkit for Controllable and Safe LLM Applications with Programmable Rails",
+    "score": 1.0,
+    "year_src": 2023
+  },
+  {
+    "id": "LIB-F04",
+    "url": "https://arxiv.org/abs/2312.06674",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations",
+    "matched_title": "Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations",
+    "score": 1.0,
+    "year_src": 2023
+  },
+  {
+    "id": "LIB-F05",
+    "url": "https://arxiv.org/abs/2508.02736",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "AgentSight: System-Level Observability for AI Agents Using eBPF",
+    "matched_title": "AgentSight: System-Level Observability for AI Agents Using eBPF",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-F06",
+    "url": "https://arxiv.org/abs/2602.06443",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "TrajAD: Trajectory Anomaly Detection for Trustworthy LLM Agents",
+    "matched_title": "TrajAD: Trajectory Anomaly Detection for Trustworthy LLM Agents",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-F07",
+    "url": "https://arxiv.org/abs/2601.00516",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Trajectory Guard: A Lightweight, Sequence-Aware Model for Real-Time Anomaly Detection in Agentic AI",
+    "matched_title": "Trajectory Guard -- A Lightweight, Sequence-Aware Model for Real-Time Anomaly Detection in Agentic AI",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-F08",
+    "url": "https://arxiv.org/abs/2406.18495",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "WildGuard: Open One-Stop Moderation Tools for Safety Risks, Jailbreaks, and Refusals of LLMs",
+    "matched_title": "WildGuard: Open One-Stop Moderation Tools for Safety Risks, Jailbreaks, and Refusals of LLMs",
+    "score": 1.0,
+    "year_src": 2024
+  },
+  {
+    "id": "LIB-F09",
+    "url": "https://arxiv.org/abs/2412.07724",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Granite Guardian",
+    "matched_title": "Granite Guardian",
+    "score": 1.0,
+    "year_src": 2024
+  },
+  {
+    "id": "LIB-F10",
+    "url": "https://arxiv.org/abs/2505.24201",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "SentinelAgent: Graph-based Anomaly Detection in Multi-Agent Systems",
+    "matched_title": "SentinelAgent: Graph-based Anomaly Detection in Multi-Agent Systems",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-G01",
+    "url": "https://arxiv.org/abs/2607.11086",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Rethinking MCP Security: A Large-Scale Study of Runtime MCP Servers and Security Scanner Reliability",
+    "matched_title": "Rethinking MCP Security: A Large-Scale Study of Runtime MCP Servers and Security Scanner Reliability",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-G02",
+    "url": "https://arxiv.org/abs/2607.05744",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Unicode TAG-Block Concealment of Tool-Metadata Payloads in the Model Context Protocol: An Approval-View Fidelity Gap Across Three Independent Server Implementations",
+    "matched_title": "Unicode TAG-Block Concealment of Tool-Metadata Payloads in the Model Context Protocol: An Approval-View Fideli",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-G03",
+    "url": "https://arxiv.org/abs/2607.25635",
+    "method": "arxiv",
+    "status": 200,
+    "agent_title": "An Empirical Study of Model Context Protocol Applications",
+    "matched_title": "An Empirical Study of Model Context Protocol Applications",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-G04",
+    "url": "https://arxiv.org/abs/2510.16558",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "A First Look at the Security Issues in the Model Context Protocol Ecosystem",
+    "matched_title": "A First Look at the Security Issues in the Model Context Protocol Ecosystem",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-G05",
+    "url": "https://arxiv.org/abs/2506.13538",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Model Context Protocol (MCP) at First Glance: Studying the Security and Maintainability of MCP Servers",
+    "matched_title": "Model Context Protocol (MCP) at First Glance: Studying the Security and Maintainability of MCP Servers",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-G06",
+    "url": "https://arxiv.org/abs/2608.00150",
+    "method": "arxiv",
+    "status": 200,
+    "agent_title": "Exposed by Design: A Dynamic Security Assessment of Internet-Facing MCP Servers at Scale",
+    "matched_title": "Exposed by Design: A Dynamic Security Assessment of Internet-Facing MCP Servers at Scale",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-G07",
+    "url": "https://arxiv.org/abs/2605.22333",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "A First Measurement Study on Authentication Security in Real-World Remote MCP Servers",
+    "matched_title": "A First Measurement Study on Authentication Security in Real-World Remote MCP Servers",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-G08",
+    "url": "https://arxiv.org/abs/2609.19100",
+    "method": "arxiv",
+    "status": 200,
+    "agent_title": "Characterizing Network Centralization and Observability in the Remote MCP Ecosystem",
+    "matched_title": "Characterizing Network Centralization and Observability in the Remote MCP Ecosystem",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-G09",
+    "url": "https://arxiv.org/abs/2607.14754",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "FlowGuard: From Signals to Evidence for MCP Security Detection",
+    "matched_title": "FlowGuard: From Signals to Evidence for MCP Security Detection",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-G10",
+    "url": "https://arxiv.org/abs/2605.21392",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "VIPER-MCP: Detecting and Exploiting Taint-Style Vulnerabilities in Model Context Protocol Servers",
+    "matched_title": "VIPER-MCP: Detecting and Exploiting Taint-Style Vulnerabilities in Model Context Protocol Servers",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-G11",
+    "url": "https://arxiv.org/abs/2605.07836",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Unsafe by Flow: Uncovering Bidirectional Data-Flow Risks in MCP Ecosystem",
+    "matched_title": "Unsafe by Flow: Uncovering Bidirectional Data-Flow Risks in MCP Ecosystem",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-G12",
+    "url": "https://arxiv.org/abs/2509.24272",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "When MCP Servers Attack: Taxonomy, Feasibility, and Mitigation",
+    "matched_title": "When MCP Servers Attack: Taxonomy, Feasibility, and Mitigation",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-G13",
+    "url": "https://arxiv.org/abs/2509.25292",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "A Measurement Study of Model Context Protocol Ecosystem",
+    "matched_title": "A Measurement Study of Model Context Protocol Ecosystem",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-G14",
+    "url": "https://arxiv.org/abs/2506.23474",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "A Large-Scale Evolvable Dataset for Model Context Protocol Ecosystem and Security Analysis",
+    "matched_title": "A Large-Scale Evolvable Dataset for Model Context Protocol Ecosystem and Security Analysis",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-H01",
+    "url": "https://github.com/microsoft/presidio",
+    "method": "http",
+    "status": 200,
+    "agent_title": "Microsoft Presidio (GitHub: microsoft/presidio)",
+    "matched_title": "GitHub - data-privacy-stack/presidio: An open-source framework for detecting, redacting, masking, an",
+    "score": 0.67,
+    "year_src": null
+  },
+  {
+    "id": "LIB-H02",
+    "url": "https://arxiv.org/abs/2311.08526",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "GLiNER: Generalist Model for Named Entity Recognition using Bidirectional Transformer",
+    "matched_title": "GLiNER: Generalist Model for Named Entity Recognition using Bidirectional Transformer",
+    "score": 1.0,
+    "year_src": 2023
+  },
+  {
+    "id": "LIB-H03",
+    "url": "https://github.com/gitleaks/gitleaks",
+    "method": "http",
+    "status": 200,
+    "agent_title": "Gitleaks (secret detection tool)",
+    "matched_title": "GitHub - gitleaks/gitleaks: Find secrets with Gitleaks 🔑 · GitHub",
+    "score": 0.75,
+    "year_src": null
+  },
+  {
+    "id": "LIB-H04",
+    "url": "https://genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure/",
+    "method": "http",
+    "status": 200,
+    "agent_title": "OWASP Top 10 for LLM Applications 2025: LLM02:2025 Sensitive Information Disclosure",
+    "matched_title": "LLM02:2025 Sensitive Information Disclosure - OWASP Gen AI Security Project",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-H05",
+    "url": "https://arxiv.org/abs/2504.18784",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Secret Breach Detection in Source Code with Large Language Models",
+    "matched_title": "Secret Breach Detection in Source Code with Large Language Models",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-H06",
+    "url": "https://arxiv.org/abs/2205.12628",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Are Large Pre-Trained Language Models Leaking Your Personal Information? (placeholder removed)",
+    "matched_title": "Are Large Pre-Trained Language Models Leaking Your Personal Information?",
+    "score": 0.83,
+    "year_src": 2022
+  },
+  {
+    "id": "LIB-I01",
+    "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026",
+    "method": "http",
+    "status": 200,
+    "agent_title": "OWASP Top 10 for Agentic Applications 2026",
+    "matched_title": "OWASP Top 10 for Agentic Applications for 2026 - OWASP Gen AI Security Project",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-I02",
+    "url": "https://www.nist.gov/node/1872381",
+    "method": "http",
+    "status": 200,
+    "agent_title": "Technical Blog: Strengthening AI Agent Hijacking Evaluations",
+    "matched_title": "Technical Blog: Strengthening AI Agent Hijacking Evaluations | NIST",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-I03",
+    "url": "https://arxiv.org/abs/2507.20526",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Security Challenges in AI Agent Deployment: Insights from a Large Scale Public Competition",
+    "matched_title": "Security Challenges in AI Agent Deployment: Insights from a Large Scale Public Competition",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-I04",
+    "url": "https://genai.owasp.org/llm-top-10/",
+    "method": "http",
+    "status": 200,
+    "agent_title": "OWASP Top 10 for LLM Applications 2025",
+    "matched_title": "LLMRisks Archive - OWASP Gen AI Security Project",
+    "score": 0.71,
+    "year_src": null
+  },
+  {
+    "id": "LIB-I05",
+    "url": "https://csrc.nist.gov/pubs/other/2026/02/05/accelerating-the-adoption-of-software-and-ai-agent/ipd",
+    "method": "http",
+    "status": 200,
+    "agent_title": "[Concept Paper] Accelerating the Adoption of Software and AI Agent Identity and Authorization",
+    "matched_title": "[Concept Paper] Accelerating the Adoption of Software and Artificial Intelligence Agent Identity and",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-I06",
+    "url": "https://csrc.nist.gov/projects/cosais",
+    "method": "http",
+    "status": 200,
+    "agent_title": "SP 800-53 Control Overlays for Securing AI Systems (COSAiS)",
+    "matched_title": "SP 800-53 Control Overlays for Securing AI Systems | CSRC",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-I07",
+    "url": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-12",
+    "method": "http",
+    "status": 200,
+    "agent_title": "Regulation (EU) 2024/1689 (AI Act), Article 12: Record-keeping",
+    "matched_title": "Article 12: Record-keeping | AI Act Service Desk",
+    "score": 0.7,
+    "year_src": null
+  },
+  {
+    "id": "LIB-I08",
+    "url": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-14",
+    "method": "http",
+    "status": 200,
+    "agent_title": "Regulation (EU) 2024/1689 (AI Act), Article 14: Human oversight",
+    "matched_title": "Article 14: Human oversight | AI Act Service Desk",
+    "score": 0.7,
+    "year_src": null
+  },
+  {
+    "id": "LIB-I09",
+    "url": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-15",
+    "method": "http",
+    "status": 200,
+    "agent_title": "Regulation (EU) 2024/1689 (AI Act), Article 15: Accuracy, robustness and cybersecurity",
+    "matched_title": "Article 15: Accuracy, robustness and cybersecurity | AI Act Service Desk",
+    "score": 0.75,
+    "year_src": null
+  },
+  {
+    "id": "LIB-I10",
+    "url": "https://csrc.nist.gov/pubs/ai/100/2/e2025/final",
+    "method": "crossref",
+    "status": 200,
+    "agent_title": "Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and Mitigations (NIST AI 100-2e2025)",
+    "matched_title": "Adversarial Machine Learning:",
+    "score": 0.21,
+    "year_src": null
+  },
+  {
+    "id": "LIB-I11",
+    "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+    "method": "http",
+    "status": 200,
+    "agent_title": "Artificial Intelligence Risk Management Framework (AI RMF 1.0)",
+    "matched_title": "AI Risk Management Framework | NIST",
+    "score": 0.78,
+    "year_src": null
+  },
+  {
+    "id": "LIB-I12",
+    "url": "https://www.coalitionforsecureai.org/announcing-the-cosai-principles-for-secure-by-design-agentic-systems/",
+    "method": "http",
+    "status": 200,
+    "agent_title": "Principles for Secure-by-Design Agentic Systems",
+    "matched_title": "Announcing the CoSAI Principles for Secure-by-Design Agentic Systems - Coalition for Secure AI",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-I13",
+    "url": "https://arxiv.org/abs/2504.19956",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Securing Agentic AI: A Comprehensive Threat Model and Mitigation Framework for Generative AI Agents",
+    "matched_title": "Securing Agentic AI: A Comprehensive Threat Model and Mitigation Framework for Generative AI Agents",
+    "score": 1.0,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-I14",
+    "url": "https://www.cloudsecurityalliance.org/blog/2025/02/06/agentic-ai-threat-modeling-framework-maestro",
+    "method": "http",
+    "status": 200,
+    "agent_title": "Agentic AI Threat Modeling Framework: MAESTRO",
+    "matched_title": "Agentic AI Threat Modeling Framework: MAESTRO | CSA",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-I15",
+    "url": "https://atlas.mitre.org/",
+    "method": "http",
+    "status": 200,
+    "agent_title": "MITRE ATLAS (Adversarial Threat Landscape for AI Systems)",
+    "matched_title": "MITRE ATLAS™",
+    "score": 0.25,
+    "year_src": null
+  },
+  {
+    "id": "LIB-J01",
+    "url": "https://www.rfc-editor.org/rfc/rfc9943",
+    "method": "http",
+    "status": 200,
+    "agent_title": "An Architecture for Trustworthy and Transparent Digital Supply Chains (RFC 9943)",
+    "matched_title": "RFC 9943: An Architecture for Trustworthy and Transparent Digital Supply Chains | RFC Editor",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-J02",
+    "url": "https://www.rfc-editor.org/rfc/rfc9162",
+    "method": "http",
+    "status": 200,
+    "agent_title": "Certificate Transparency Version 2.0 (RFC 9162)",
+    "matched_title": "RFC 9162: Certificate Transparency Version 2.0 | RFC Editor",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-J03",
+    "url": "https://arxiv.org/abs/2606.04193",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Notarized Agents: Receiver-Attested Confidential Receipts for AI Agent Actions",
+    "matched_title": "Notarized Agents: Receiver-Attested Confidential Receipts for AI Agent Actions",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-J04",
+    "url": "https://arxiv.org/abs/2609.30266",
+    "method": "arxiv",
+    "status": 200,
+    "agent_title": "LLM Agents Can Easily Tamper With Their Own Traces",
+    "matched_title": "LLM Agents Can Easily Tamper With Their Own Traces",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-J05",
+    "url": "https://arxiv.org/abs/2609.01931",
+    "method": "arxiv",
+    "status": 200,
+    "agent_title": "Agent Flight Recorder: Tamper-Evident Audit Trails with On-Chain Anchoring for Long-Horizon Tool-Using Agents",
+    "matched_title": "Agent Flight Recorder: Tamper-Evident Audit Trails with On-Chain Anchoring for Long-Horizon Tool-Usi",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-J06",
+    "url": "https://arxiv.org/abs/2607.05518",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "aiAuthZ: Off-Host, Identity-Bound Authorization for AI Agents",
+    "matched_title": "aiAuthZ: Off-Host, Identity-Bound Authorization for AI Agents",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-J07",
+    "url": "https://arxiv.org/abs/2606.30970",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Behavioral Governance for Autonomous AI Agents: The AgentBound Framework",
+    "matched_title": "Behavioral Governance for Autonomous AI Agents: The AgentBound Framework",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-J08",
+    "url": "https://github.com/open-telemetry/semantic-conventions-genai",
+    "method": "http",
+    "status": 200,
+    "agent_title": "open-telemetry/semantic-conventions-genai (OpenTelemetry generative AI semantic conventions repository)",
+    "matched_title": "GitHub - open-telemetry/semantic-conventions-genai · GitHub",
+    "score": 0.78,
+    "year_src": null
+  },
+  {
+    "id": "LIB-J09",
+    "url": "https://arxiv.org/abs/2606.05339",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "A Taxonomy of Runtime Faults in Model Context Protocol Servers",
+    "matched_title": "A Taxonomy of Runtime Faults in Model Context Protocol Servers",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-J10",
+    "url": "https://github.com/in-toto/attestation/blob/main/spec/README.md",
+    "method": "http",
+    "status": 200,
+    "agent_title": "in-toto Attestation Framework Specification",
+    "matched_title": "attestation/spec/README.md at main · in-toto/attestation · GitHub",
+    "score": 0.8,
+    "year_src": null
+  },
+  {
+    "id": "LIB-J11",
+    "url": "https://www.usenix.org/conference/usenixsecurity19/presentation/torres-arias",
+    "method": "http",
+    "status": 200,
+    "agent_title": "in-toto: Providing farm-to-table guarantees for bits and bytes",
+    "matched_title": "in-toto: Providing farm-to-table guarantees for bits and bytes | USENIX",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-J12",
+    "url": "https://slsa.dev/spec/v1.0/",
+    "method": "http",
+    "status": 200,
+    "agent_title": "SLSA specification (v1.0)",
+    "matched_title": "SLSA • SLSA specification",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-J13",
+    "url": "https://arxiv.org/abs/2204.04008",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Taxonomy of Attacks on Open-Source Software Supply Chains",
+    "matched_title": "Taxonomy of Attacks on Open-Source Software Supply Chains",
+    "score": 1.0,
+    "year_src": 2022
+  },
+  {
+    "id": "LIB-J14",
+    "url": "https://arxiv.org/abs/2602.20867",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "SoK: Agentic Skills -- Beyond Tool Use in LLM Agents",
+    "matched_title": "SoK: Agentic Skills -- Beyond Tool Use in LLM Agents",
+    "score": 1.0,
+    "year_src": 2026
+  },
+  {
+    "id": "LIB-J15",
+    "url": "https://arxiv.org/abs/2510.07070",
+    "method": "arxiv-abs",
+    "status": 200,
+    "agent_title": "Building an Open AIBOM Standard in the Wild: An Experience Report on Extending the SPDX SBOM (ISO/IEC 5962:2021) for AI Supply Chains",
+    "matched_title": "Building an Open AIBOM Standard in the Wild",
+    "score": 0.36,
+    "year_src": 2025
+  },
+  {
+    "id": "LIB-H07",
+    "url": "https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS217&mCode=G010030000&nttId=11931",
+    "method": "curl-page-title",
+    "status": 200,
+    "agent_title": "가명정보 처리 가이드라인(2026.3. 개정)",
+    "matched_title": "가명정보 처리 가이드라인(2026.3. 개정)",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-H08",
+    "url": "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000281400",
+    "method": "curl-page-title",
+    "status": 200,
+    "agent_title": "개인정보의 안전성 확보조치 기준",
+    "matched_title": "개인정보의 안전성 확보조치 기준",
+    "score": 1.0,
+    "year_src": null
+  },
+  {
+    "id": "LIB-I16",
+    "url": "https://www.law.go.kr/lsInfoP.do?lsiSeq=268543",
+    "method": "curl-page-title",
+    "status": 200,
+    "agent_title": "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법",
+    "matched_title": "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법",
+    "score": 1.0,
+    "year_src": null
+  }
+]

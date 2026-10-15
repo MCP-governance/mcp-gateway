@@ -43,7 +43,7 @@ Blender disable-autoexec·ambient 자격 제거는 로컬 실제 MCP 재시험�
 
 | 영역 | 현재 확인 | 남은 확인 |
 | --- | --- | --- |
-| 개발 연구 위키 | 논문·문서 25건, 솔루션 8건, 실험 설계 13건(E13 로컬 stdio/loopback 추가), 위협표 24개 정책과 두 XLSM 원본 | 13개 카드 미실행. 지속적인 새 자료·실험 결과 갱신 |
+| 개발 연구 위키 | 논문·문서 28건과 주제별 레퍼런스 139건(서지 대조 완료, 요약은 전문 선별 6·초록 대조 81·출처 페이지 대조 49·메타데이터만 3, [보고](reports/2026-10-14-reference-fill.md)), 솔루션 8건, 실험 설계 13건(E13 로컬 stdio/loopback 추가), 위협표 24개 정책과 두 XLSM 원본 | 13개 카드 미실행. 지속적인 새 자료·실험 결과 갱신 |
 | 개발 협업 | 실제 WSL claude-sonnet-5-5, 요청 effort xhigh, 공개 최종 분석 수신 | 수정 후 Claude 리뷰는 계정 세션 한도(17:50 KST 재설정 안내)로 미완료. 모델 자동 대체 없음 |
 | 기능·설계 | [목표 10개](reports/2026-10-13-development-goals.md), [현재 기능·8개 제품 대조·보강 설계](reports/2026-10-13-feature-design.md), [Claude 검토 원문](reports/2026-10-13-claude-code-review.md) | 후보 재현 결과와 큰 설계 공백은 백로그로 추적 |
 | 자원 상태 | 관리자 Console scope API/UI, Linux CPU·메모리·내부 DNS/TCP 연결 지연, 실기기 표본·권한·Chrome 화면 검증 | PC→솔루션 Tailnet 지연·패킷 손실률·개별 컨테이너 지표는 범위 밖 |
