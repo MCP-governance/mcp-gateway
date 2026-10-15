@@ -1,0 +1,4 @@
+# Evidence bytes are hashed in README.md; keep them as committed.
+*.log -text
+*.txt -text
+*.py -text
