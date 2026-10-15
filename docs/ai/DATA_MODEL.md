@@ -24,6 +24,7 @@
 | `request_payload`, `result_preview`, `error` | 인자(긴 문자열 축약)·결과 미리보기·오류 |
 | `policy_input` | OPA에 보낸 입력 전체(재생용). 개인정보 값은 없고 유형만 |
 | `risk_score`, `privacy_types`, `sequence_flags` | 조사용 위험 점수(0~100), Presidio 엔터티 유형(입력 ∪ 출력), 연쇄 표지 |
+| `timings` | 구간별 처리 시간 ms(`identity`…`inspect_out`, `total`, D-95). 지문 밖 운영 정보이며 행을 쓸 때 함께 기록 |
 | `prev_sha256`, `entry_sha256`, `chain_version` | 해시 체인(v6). `core.AUDIT_COLUMN_SETS[6]`의 열이 지문에 들어간다. v5 이하 행은 자기 버전의 열 집합으로 검증 |
 
 - 트리거 `decisions_append_only`가 UPDATE/DELETE를 거부한다.
