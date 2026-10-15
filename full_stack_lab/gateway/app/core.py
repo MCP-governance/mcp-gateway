@@ -1226,9 +1226,9 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                                     protocol=registry.pinned_protocol(server_id)) as client:
             laps.lap("connect")
             stage = "list"
-            listed = await client.list_tools()
+            listed = await upstream.list_all_tools(client)
             registered = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s", (server_id,))
-            observed = {t.name: upstream.tool_view(t) for t in listed.tools}
+            observed = {t.name: upstream.tool_view(t) for t in listed}
             # Same rule as refresh_catalog (D-69): the reviewed contract is what a client can reach — the
             # enabled tools' descriptions and schemas. Hosted servers answer from pods with different build
             # ids, so the version string is not part of it; unexposed helpers may change without blocking.

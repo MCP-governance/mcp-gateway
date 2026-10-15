@@ -211,6 +211,22 @@ def connect_mode(protocol: str | None) -> str:
     return protocol if protocol in MODERN_PROTOCOL_VERSIONS else "auto"
 
 
+MAX_TOOL_PAGES = 50
+
+
+async def list_all_tools(client: Client) -> list:
+    """Every page of tools/list. A contract compared on the first page alone missed tools the server
+    put on later pages, and an enabled tool there blocked every call to the server (DEV-44)."""
+    tools, cursor = [], None
+    for _ in range(MAX_TOOL_PAGES):
+        page = await client.list_tools(cursor=cursor)
+        tools.extend(page.tools)
+        cursor = page.next_cursor
+        if not cursor:
+            return tools
+    raise ValueError("tools/list did not finish within the page limit")
+
+
 def tool_view(tool: Any) -> dict:
     annotations = getattr(tool, "annotations", None)
     return {
@@ -223,13 +239,13 @@ def tool_view(tool: Any) -> dict:
 
 async def discover(endpoint: str) -> dict:
     async with session(endpoint, timeout=30) as client:
-        listed = await client.list_tools()
+        listed = await list_all_tools(client)
         info = client.server_info
         return {
             "advertised_name": (info.name if info else "") or "",
             "version": (info.version if info else "") or "unknown",
             "protocol_version": str(client.protocol_version),
-            "tools": [tool_view(tool) for tool in listed.tools],
+            "tools": [tool_view(tool) for tool in listed],
         }
 
 

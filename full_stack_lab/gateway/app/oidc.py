@@ -130,7 +130,9 @@ async def callback(request: Request):
         raise HTTPException(404, "조직 SSO가 활성화되지 않았습니다.")
     try:
         result = await client().authorize_access_token(request, claims_options={
-            "iss": {"essential": True, "value": config["issuer"]}}, leeway=30)
+            "iss": {"essential": True, "value": config["issuer"]},
+            # OIDC Core 3.1.3.7: aud must contain this client. Authlib only checks azp unless asked.
+            "aud": {"essential": True, "value": config["client_id"]}}, leeway=30)
         identity = result.get("userinfo") or {}
         if identity.get("iss") != config["issuer"] or not identity.get("sub") or not result.get("access_token"):
             raise ValueError("missing validated identity")

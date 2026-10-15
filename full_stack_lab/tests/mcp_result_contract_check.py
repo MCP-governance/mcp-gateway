@@ -22,6 +22,25 @@ def outcome(result, decision="Allow", disposition="returned"):
 
 
 class ResultContract(unittest.IsolatedAsyncioTestCase):
+    async def test_tool_listing_reads_every_page(self):
+        from app import upstream
+        pages = {None: (["a", "b"], "p2"), "p2": (["c"], "p3"), "p3": (["d"], None)}
+
+        class Paged:
+            async def list_tools(self, cursor=None):
+                names, nxt = pages[cursor]
+                return types.ListToolsResult(tools=[types.Tool(name=n, input_schema={"type": "object"}) for n in names],
+                                             next_cursor=nxt)
+
+        self.assertEqual([t.name for t in await upstream.list_all_tools(Paged())], ["a", "b", "c", "d"])
+
+        class Endless:
+            async def list_tools(self, cursor=None):
+                return types.ListToolsResult(tools=[], next_cursor="again")
+
+        with self.assertRaises(ValueError):
+            await upstream.list_all_tools(Endless())
+
     def test_structured_result_survives_official_sdk_wire_roundtrip(self):
         structured = {"items": [{"id": 12}], "count": 1, "empty": {}}
         rendered = mcp_facade._render(outcome({"content": [{"type": "text", "text": "ok"}],
