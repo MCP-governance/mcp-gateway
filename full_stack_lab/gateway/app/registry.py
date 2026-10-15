@@ -129,6 +129,14 @@ def approved_tools(server_id: str) -> dict[str, str]:
     return dict((server(server_id) or {}).get("tools", {}))
 
 
+def reviewed_tools(server_id: str) -> set[str]:
+    """Tools a person has scoped (D-91). A catalog.toml server is reviewed in git as a whole; a
+    Console registration serves only the approved tools that carry a scope review."""
+    approved = set((server(server_id) or {}).get("tools", {}))
+    spec = _runtime_spec(server_id)
+    return approved if spec is None else approved & set(spec.get("tool_reviews") or {})
+
+
 def source_ref(spec: dict) -> str:
     """Supply-chain attribution key: one per package version, never shared by two servers."""
     return f"{spec['package']}@{spec['version']}"
@@ -185,16 +193,19 @@ async def sync() -> dict:
         approved = spec.get("tools", {})
         pinned_tools = (pinned.get(server_id) or {}).get("tools", {})
         pinned_version = (pinned.get(server_id) or {}).get("server_version")
+        console_reviews = (spec.get("tool_reviews") or {}) if server_id in registered["servers"] and server_id not in reviewed_ids else None
         # Every advertised tool gets a row, approved or not: an unapproved tool that
         # appears or disappears is still a change to the contract.
         for name in sorted(set(approved) | set(pinned_tools)):
             action = approved.get(name, "x")
-            enabled = name in approved
+            enabled = name in approved and (console_reviews is None or name in console_reviews)
+            review = (console_reviews or {}).get(name)
             await db.execute(
-                """INSERT INTO mcp_tools(server_id, name, action, enabled)
-                   VALUES (%s,%s,%s,%s)
-                   ON CONFLICT (server_id, name) DO UPDATE SET action=EXCLUDED.action, enabled=EXCLUDED.enabled""",
-                (server_id, name, action, enabled),
+                """INSERT INTO mcp_tools(server_id, name, action, enabled, scope_review)
+                   VALUES (%s,%s,%s,%s,%s)
+                   ON CONFLICT (server_id, name) DO UPDATE SET action=EXCLUDED.action, enabled=EXCLUDED.enabled,
+                                                               scope_review=EXCLUDED.scope_review""",
+                (server_id, name, action, enabled, Jsonb(review) if review else None),
             )
             entry = pinned_tools.get(name)
             console = server_id in registered["servers"] and server_id not in reviewed_ids

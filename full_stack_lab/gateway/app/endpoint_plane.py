@@ -595,7 +595,7 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
 
 
 async def managed_policy(device: dict) -> dict:
-    from . import registry
+    from . import pac
     if not device.get("device_epoch"):
         raise PermissionError("관리형 설치로 등록한 장치가 아닙니다.")
     public = os.getenv("IDP_ISSUER", "").rstrip("/")
@@ -605,8 +605,11 @@ async def managed_policy(device: dict) -> dict:
     addresses = os.getenv("ENDPOINT_GATEWAY_IPS", parsed.hostname).split(",")
     addresses = [str(ipaddress.ip_address(a.strip())) for a in addresses]
     rows = await db.fetch_all("SELECT id FROM mcp_servers WHERE status='READY' AND lifecycle='OPERATING' ORDER BY id")
-    servers = [r["id"] for r in rows if registry.allowed_principals(r["id"]) is None
-               or device["owner_token"] in registry.allowed_principals(r["id"])]
+    # The minimal set (D-93): a harness is told about the servers whose tools this person may see
+    # in tools/list, not about every operating server.
+    owner = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (device["owner_token"],))
+    usable = set(pac.servers_for(owner)) if owner else set()
+    servers = [r["id"] for r in rows if r["id"] in usable]
     windows = managed_platform(device) == "windows"
     detail = device.get("detail") or {}
     helper = (detail.get("helper_command") if windows
