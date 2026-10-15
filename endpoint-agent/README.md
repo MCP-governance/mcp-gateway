@@ -169,8 +169,16 @@ python "$env:LOCALAPPDATA\MCPGatewayEndpoint\agent.py" --config "$env:LOCALAPPDA
 
 설정·프로세스·네트워크·OS 각 채널은 state/서버 수신시각/마지막 성공/건수를 기록한다. disabled·unauthorized·partial·failed·unsupported·unknown은 성공0건과 다르다. collector JSON은 supervisor 로그에 채널별로 남으며 collector 오류만으로 정상 기기 자격을 끊지 않는다. 실제 집행 점검 오류는 기존 자격 중단 경계를 유지한다.
 
-inventory/listener `complete` 기본은 False다. 정보원 오류나500건 초과는 partial이다. 명시적 complete 성공에서만 기존 미관측 행을 지우며 process-only 보고는 stdio-process 범위만 삭제한다. 네트워크/local-socket 결과는 보존한다. 과거 shadow를 stale 때문에 정상0으로 바꾸지 않는다. Console에는 listener fresh/stale/unknown, 최근 최대200건 및 별도 수집상태를 표시한다.
+inventory/listener `complete` 기본은 False다. 정보원 오류나500건 초과는 partial이다. 명시적 complete 성공에서만 기존 미관측 행을 지우며 process-only 보고는 stdio-process 범위만 삭제한다. 네트워크/local-socket 결과는 보존한다. 과거 shadow를 stale 때문에 정상0으로 바꾸지 않는다. Console은 listener fresh/stale/unknown과 별도 수집상태를 표시하고, 목록은 서버가 센 전체 건수와 반환 창을 따로 보이며 커서로 200건 너머를 넘긴다(D-85).
 
 Windows의 `os-observer-windows.py`는 보호된 collector다. AppLocker event TargetUser가 정확한 관리SID인 차단만 보며, WFP event-time SID가 없으면 partial/sid_unavailable로 제외한다. 감사/방화벽/실행 정책을 자동 활성화하지 않는다. Windows 실제 이벤트 전달 시험은 미실행이다.
 
 [PJ1 Linux 실제 검증과 로그](../research/llm-wiki/status/reports/2026-10-14-endpoint-telemetry-fix.md). 키트 설치·합성 marker 관측·실제 OS 이벤트·SDK/MCP 호출·모델 turn은 다른 검증 층이다.
+
+## 증거 계약 (D-86 – D-89)
+
+- **출처 해시.** 수집기는 레코드마다 `provenance`를 붙인다: `raw_sha256`(원본 레코드: 설정 항목은 `env`·`headers`를 뺀 설정, 커널 이벤트는 저널 한 줄, 프로세스는 명령줄), `projection_sha256`(보내는 필드만의 정규 JSON), `transformations`(적용한 변환 이름), `collector`. 정규 JSON은 키 정렬·공백 없음·UTF-8, 시각은 UTC 마이크로초 `…Z`이며 서버의 `endpoint_plane.canonical_sha256`과 같은 바이트여야 한다. 서버는 **저장한 필드만으로** projection 해시를 다시 계산해 `일치`/`불일치`를 남기고, 에이전트가 해시를 보내지 않은 옛 보고는 `미보고`다. 원본 해시는 서버가 검증할 수 없고 단말의 원본과 나중에 대조하기 위해서만 보관한다.
+- **수집 출처.** 관리형 서비스는 `observer.json`의 `ENDPOINT_ORIGIN=automatic`으로 수집기를 띄운다. 이 값이 없으면 계속 도는 서비스는 `automatic`, `--once`로 손수 돌린 실행·업로드는 `manual`이다. OS 이벤트는 항상 `os_event`다. 같은 원본 해시를 7일 안에 다시 받으면 새 행을 만들지 않는다.
+- **OS 거부 분류.** `os-observer.py`는 AppArmor 거부에서 실행 시도 프로세스(`comm`)·프로파일·대상 파일명을 보내고 `harness_startup`(Claude Code·Codex가 자기 기동 중 부르는 `git`·`claude`·`codex`를 시스템 경로에서 실행하려다 거부됨) / `blocked_attempt`(그 밖의 거부된 exec) / `unknown`(프로세스 또는 작업을 알 수 없음, 네트워크 거부)으로 나눈다. 프로파일과 nft 규칙은 바꾸지 않는다.
+- **게이트웨이 지연.** 관리형 서비스는 하트비트마다 설정된 Gateway 주소(다른 대상 없음)에 TCP 연결 5회와 `GET /api/health` 1회를 하고 p50·p95·지터(연속 표본 차이의 평균)·실패율을 `network_quality`로 보낸다. 지연은 TCP 연결 시간이며 실패율은 프로브 실패 비율이지 패킷 손실이 아니다.
+- `python endpoint-agent/agent.py --self-check`, `tests/endpoint_evidence_check.py`(단위), `tests/endpoint_evidence_pg_check.py`(격리 PostgreSQL)로 확인한다.

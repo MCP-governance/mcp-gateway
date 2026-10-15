@@ -52,6 +52,7 @@ from __future__ import annotations
 import ipaddress
 import hashlib
 import json
+import math
 import os
 import platform
 import re
@@ -61,6 +62,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from urllib.parse import urlsplit
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -94,6 +96,8 @@ DEVICE_KEY = setting("ENDPOINT_DEVICE_KEY", "")
 ENDPOINT_ID = setting("ENDPOINT_ID", "")
 INTERVAL = int(setting("ENDPOINT_REPORT_SECONDS", "60"))
 ONE_SHOT = "--once" in sys.argv or setting("ENDPOINT_ONE_SHOT", "0") not in ("0", "false", "")
+ORIGIN = setting("ENDPOINT_ORIGIN", "manual" if ONE_SHOT else "automatic")
+ORIGIN = ORIGIN if ORIGIN in ("automatic", "manual") else "manual"
 SCAN_ENABLED = setting("ENDPOINT_NETSCAN", "1") not in ("0", "false", "")
 PROCESS_ENABLED = setting("ENDPOINT_PROCESS_SCAN", "1" if SCAN_ENABLED else "0") not in ("0", "false", "")
 PROCESS_UID = setting("ENDPOINT_PROCESS_UID", "")
@@ -166,6 +170,49 @@ def safe_endpoint_ref(value: str) -> str:
     except ValueError:
         pass
     return "sha256:" + hashlib.sha256(value.encode()).hexdigest()
+
+
+# ── 증거 출처 ────────────────────────────────────────────────────────────────
+#
+# 보내기 직전 형태(projection)와 그 형태를 만든 원본의 해시를 같이 보낸다. 서버는 저장한
+# 필드만으로 projection 해시를 다시 계산해 이 값과 대조한다. 두 구현이 같은 바이트를
+# 만들어야 하므로 정규화 규칙은 endpoint_plane.canonical_sha256과 같다.
+
+SECRET_KEYS = {"env", "headers", "http_headers", "env_http_headers", "bearer_token_env_var"}
+INVENTORY_FIELDS = ("config_path", "server_label", "transport", "endpoint_ref")
+LISTENER_FIELDS = ("source", "address", "port", "process_name", "command_line", "mcp_evidence",
+                   "server_name", "server_version", "protocol_version")
+
+
+def canonical_sha256(value) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
+                                     ensure_ascii=False, default=str).encode()).hexdigest()
+
+
+def canonical_time(value: datetime) -> str:
+    return value.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def projection(record: dict, fields: tuple) -> dict:
+    return {key: record.get(key) if key == "port" else ("" if record.get(key) is None else record.get(key)) for key in fields}
+
+
+def provenance(raw, shaped: dict, steps: list, collector: str) -> dict:
+    return {"raw_sha256": canonical_sha256(raw), "projection_sha256": canonical_sha256(shaped),
+            "transformations": steps[:8], "collector": collector}
+
+
+def seal_os_event(event: dict, raw_text: str, collector: str, steps: list) -> dict:
+    """Fix the event's time format and attach the hashes. The raw text is the journal line or
+    event XML exactly as read; only its hash leaves the device."""
+    observed = datetime.fromisoformat(str(event["observed_at"]).replace("Z", "+00:00"))
+    event["observed_at"] = canonical_time(observed)
+    event.setdefault("denial_class", "unknown")
+    event["provenance"] = {
+        "raw_sha256": hashlib.sha256(raw_text.encode()).hexdigest(),
+        "projection_sha256": canonical_sha256({key: event[key] for key in ("event_id", "observed_at", "kind", "details", "denial_class")}),
+        "transformations": steps, "collector": collector}
+    return event
 
 
 # ── 설정 파일 관측 ───────────────────────────────────────────────────────────
@@ -269,7 +316,14 @@ def collect_configs() -> list[dict]:
                 continue
             described = describe(str(name), config)
             if described:
-                entries.append({"config_path": str(path), **described})
+                entry = {"config_path": str(path), **described}
+                steps = (["drop_env_headers"] if SECRET_KEYS & config.keys() else []) + (
+                    ["command_sha256"] if described["transport"] == "stdio"
+                    else ["url_sha256"] if described["endpoint_ref"].startswith("sha256:") else [])
+                raw = {"config_path": str(path), "name": str(name),
+                       "config": {key: value for key, value in config.items() if key not in SECRET_KEYS}}
+                entry["provenance"] = provenance(raw, projection(entry, INVENTORY_FIELDS), steps, "config-file")
+                entries.append(entry)
     return entries
 
 
@@ -444,6 +498,14 @@ def local_listeners() -> list[dict]:
     return unique
 
 
+def sealed_listener(finding: dict, raw: dict, collector: str) -> dict:
+    steps = ["command_sha256"] if raw.get("command_line") else []
+    finding["provenance"] = provenance({**raw, "source": finding["source"], "address": finding.get("address"),
+                                        "port": finding.get("port")},
+                                       projection(finding, LISTENER_FIELDS), steps, collector)
+    return finding
+
+
 def stdio_processes() -> list[dict]:
     """설정에 없이 직접 실행된 stdio MCP 서버.
 
@@ -454,8 +516,9 @@ def stdio_processes() -> list[dict]:
     if platform.system() == "Windows":
         for name, raw in _windows_processes().values():
             if raw and PROCESS_MARKERS.search(raw):
-                found.append({"source": "stdio-process", "address": "local-process", "port": None,
-                              "process_name": name, "command_line": command_digest(raw), "mcp_evidence": "suspected"})
+                found.append(sealed_listener({"source": "stdio-process", "address": "local-process", "port": None,
+                              "process_name": name, "command_line": command_digest(raw), "mcp_evidence": "suspected"},
+                              {"process_name": name, "command_line": raw}, "process-table"))
         return found
     if platform.system() != "Linux":
         output = _run(["ps", "-eo", "pid=,comm=,args="])
@@ -463,9 +526,9 @@ def stdio_processes() -> list[dict]:
             parts = line.strip().split(None, 2)
             if len(parts) < 3 or not PROCESS_MARKERS.search(parts[2]):
                 continue
-            found.append({"source": "stdio-process", "address": "local-process", "port": None,
+            found.append(sealed_listener({"source": "stdio-process", "address": "local-process", "port": None,
                           "process_name": parts[1][:120], "command_line": command_digest(parts[2]),
-                          "mcp_evidence": "suspected"})
+                          "mcp_evidence": "suspected"}, {"process_name": parts[1], "command_line": parts[2]}, "process-table"))
         return found
     for pid_dir in Path("/proc").iterdir():
         if not pid_dir.name.isdigit():
@@ -481,9 +544,10 @@ def stdio_processes() -> list[dict]:
             continue
         if not raw or not PROCESS_MARKERS.search(raw):
             continue
-        found.append({"source": "stdio-process", "address": "local-process", "port": None,
+        found.append(sealed_listener({"source": "stdio-process", "address": "local-process", "port": None,
                       "process_name": raw.split(" ")[0].rsplit("/", 1)[-1][:120],
-                      "command_line": command_digest(raw), "mcp_evidence": "suspected"})
+                      "command_line": command_digest(raw), "mcp_evidence": "suspected"},
+                      {"process_name": raw.split(" ")[0].rsplit("/", 1)[-1], "command_line": raw}, "process-table"))
     return found
 
 
@@ -609,16 +673,20 @@ def network_findings(policy: dict) -> list[dict]:
         opened = list(pool.map(lambda pair: (pair, tcp_open(pair[0], pair[1], timeout)), pairs))
     live = [pair for pair, ok in opened if ok]
     if not policy.get("probe_mcp", True):
-        return [{"source": "network", "address": address, "port": port,
-                 "mcp_evidence": "unknown"} for address, port in live]
+        return [sealed_listener({"source": "network", "address": address, "port": port, "mcp_evidence": "unknown"},
+                                {}, "network-probe") for address, port in live]
     with ThreadPoolExecutor(max_workers=min(8, max(1, len(live)))) as pool:
         probed = list(pool.map(lambda pair: (pair, probe_mcp(pair[0], pair[1])), live))
     for (address, port), info in probed:
         if info is None:
             continue  # MCP가 아닌 포트는 올리지 않는다. 자산대장이 아니라 MCP 관측이다.
-        findings.append({"source": "network", "address": address, "port": port,
-                         "mcp_evidence": "confirmed", **{k: v for k, v in info.items() if k != "path"}})
+        findings.append(sealed_listener({"source": "network", "address": address, "port": port,
+                         "mcp_evidence": "confirmed", **{k: v for k, v in info.items() if k != "path"}},
+                         {"probe": info}, "network-probe"))
     return findings
+
+
+LISTENER_COLLECTOR = {"Linux": "proc-socket", "Windows": "windows-netstat"}.get(platform.system(), "lsof")
 
 
 def listener_findings(policy: dict) -> list[dict]:
@@ -637,11 +705,13 @@ def listener_findings(policy: dict) -> list[dict]:
             evidence = "suspected"
         else:
             continue  # MCP 표지도 없고 initialize에도 답하지 않으면 MCP가 아니다.
-        findings.append({"source": "local-socket", "address": row["address"], "port": row["port"],
+        findings.append(sealed_listener({"source": "local-socket", "address": row["address"], "port": row["port"],
                          "process_name": row.get("process_name", ""),
                          "command_line": command_digest(row.get("command_line", "")),
                          "mcp_evidence": evidence,
-                         **{k: v for k, v in (info or {}).items() if k != "path"}})
+                         **{k: v for k, v in (info or {}).items() if k != "path"}},
+                         {"process_name": row.get("process_name", ""), "command_line": row.get("command_line", ""),
+                          "probe": info}, LISTENER_COLLECTOR))
     return findings
 
 
@@ -679,7 +749,7 @@ def report_configs() -> dict:
     entries = collect_configs()
     complete = not SCAN_ERRORS and len(entries) <= 500
     result = call("POST", "/api/endpoint/inventory",
-                  {"endpoint_id": endpoint_id(), "entries": entries[:500], "complete": complete})
+                  {"endpoint_id": endpoint_id(), "entries": entries[:500], "complete": complete, "origin": ORIGIN})
     return {**result, "state": "success" if complete else "partial"}
 
 
@@ -690,7 +760,8 @@ def report_processes() -> dict:
     findings = stdio_processes()
     complete = not SCAN_ERRORS and len(findings) <= 500
     result = call("POST", "/api/endpoint/listeners", {
-        "endpoint_id": endpoint_id(), "findings": findings[:500], "sources": ["stdio-process"], "complete": complete})
+        "endpoint_id": endpoint_id(), "findings": findings[:500], "sources": ["stdio-process"], "complete": complete,
+        "origin": ORIGIN})
     return {**result, "state": "success" if complete else "partial"}
 
 
@@ -711,7 +782,7 @@ def report_listeners() -> dict:
     complete = not SCAN_ERRORS and len(findings) <= 500
     result = call("POST", "/api/endpoint/listeners", {
         "endpoint_id": endpoint_id(), "findings": findings[:500],
-        "sources": ["local-socket", "network"], "complete": complete})
+        "sources": ["local-socket", "network"], "complete": complete, "origin": ORIGIN})
     return {**result, "state": "success" if complete else "partial"}
 
 
@@ -739,6 +810,44 @@ def once() -> dict:
         results[channel] = {"state": state, "accepted_count": count, "error_code": error}
     print(json.dumps({"observation": results}), flush=True)
     return results
+
+
+def measure_gateway(url: str, probes: int = 5, timeout: float = 2.0) -> dict:
+    """Five TCP connects and one HTTP(S) round trip to the Gateway this device already reports to.
+
+    The target is the caller's own configured Gateway address and nothing else. The latency
+    figures are the TCP connect times; a failed connect or a failed HTTP probe counts toward
+    the failure percentage, which is a probe failure rate and not a packet-loss measurement."""
+    parts = urlsplit(url)
+    port = parts.port or (443 if parts.scheme == "https" else 80)
+    samples, failed = [], 0
+    for _ in range(probes):
+        started = time.perf_counter()
+        try:
+            socket.create_connection((parts.hostname, port), timeout=timeout).close()
+            samples.append((time.perf_counter() - started) * 1000)
+        except OSError:
+            failed += 1
+    try:
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
+        with opener.open(urllib.request.Request(url.rstrip("/") + "/api/health"), timeout=5) as response:
+            response.read(1024)
+    except urllib.error.HTTPError as exc:
+        failed += exc.code >= 500
+    except (OSError, ValueError):
+        failed += 1
+    return summarise_samples(samples, failed, probes + 1)
+
+
+def summarise_samples(samples: list, failed: int, probes: int) -> dict:
+    """Nearest-rank percentiles; jitter is the mean absolute difference of successive samples."""
+    ordered = sorted(samples)
+    nearest = lambda q: round(ordered[max(0, math.ceil(q * len(ordered)) - 1)], 1) if ordered else None
+    jitter = (sum(abs(b - a) for a, b in zip(samples, samples[1:])) / (len(samples) - 1) if len(samples) > 1
+              else 0.0 if samples else None)
+    return {"measured_at": canonical_time(datetime.now(timezone.utc)), "rtt_p50_ms": nearest(0.5),
+            "rtt_p95_ms": nearest(0.95), "jitter_ms": None if jitter is None else round(jitter, 1),
+            "failure_pct": round(100 * failed / probes, 1), "probes": probes}
 
 
 def validate_gateway() -> None:

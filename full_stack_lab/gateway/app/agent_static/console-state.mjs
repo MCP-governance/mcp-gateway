@@ -186,6 +186,7 @@ export function listenerCoverage(listeners, now = Date.now()) {
     const scanStatus = item?.scan_source_status;
     const scanState = typeof scanStatus === "string" ? scanStatus : scanStatus?.state;
     return {
+      id: item?.id ?? null, origin: originLabel(item?.origin), provenance: item?.provenance_state,
       endpointId: item?.endpoint_id || "—", hostname: item?.hostname || "—",
       source: LISTENER_SOURCE[item?.source] || "확인 불가",
       address: item?.address || "—", port: Number.isInteger(item?.port) ? item.port : null,
@@ -283,4 +284,55 @@ export function timingRows(timings) {
     .map((key) => ({ key, label: LATENCY_STAGE[key], ms: timings[key],
       share: total ? Math.min(100, Math.round((timings[key] / total) * 100)) : null }));
   return { rows, total };
+}
+
+const ORIGIN = { automatic: "자동 수집", manual: "수동 보고", os_event: "운영체제 이벤트" };
+export const originLabel = (origin) => ORIGIN[origin] || "—";
+
+const DENIAL_CLASS = { harness_startup: ["outline", "하네스 기동"], blocked_attempt: ["block", "차단된 시도"], unknown: ["outline", "확인 불가"] };
+export const denialClass = (value) => DENIAL_CLASS[value] || DENIAL_CLASS.unknown;
+
+const HEX64 = /^[a-f0-9]{64}$/;
+export const hashPrefix = (hash) => (HEX64.test(hash || "") ? hash.slice(0, 12) : "—");
+
+export function provenanceView(provenance) {
+  const state = provenance?.state === "match" || provenance?.state === "mismatch" ? provenance.state : "unreported";
+  return {
+    state, label: { match: "일치", mismatch: "불일치", unreported: "—" }[state],
+    tone: { match: "allow", mismatch: "block", unreported: "outline" }[state],
+    raw: hashPrefix(provenance?.raw_sha256), agent: hashPrefix(provenance?.agent_projection_sha256),
+    server: hashPrefix(provenance?.server_projection_sha256),
+    steps: Array.isArray(provenance?.transformations) ? provenance.transformations : [],
+  };
+}
+
+export function countView(page, shown) {
+  const total = Number.isSafeInteger(page?.total) && page.total >= 0 ? page.total : shown;
+  return { total, shown, truncated: total > shown, label: `전체 ${total.toLocaleString("ko-KR")}건` };
+}
+
+export function pager(state, page) {
+  const limit = Number.isSafeInteger(page?.limit) && page.limit > 0 ? page.limit : 1;
+  const total = Number.isSafeInteger(page?.total) && page.total >= 0 ? page.total : 0;
+  return {
+    number: state.index + 1, count: Math.max(1, Math.ceil(total / limit)),
+    hasPrev: state.index > 0, hasNext: Boolean(page?.next_cursor),
+  };
+}
+
+const finite = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0;
+const trimmed = (v) => (v >= 10 ? String(Math.round(v)) : String(Number(v.toFixed(1))));
+
+export function networkCells(sample) {
+  const fresh = sample?.state === "fresh";
+  return {
+    latency: fresh && finite(sample.rtt_p50_ms) ? `${trimmed(sample.rtt_p50_ms)} ms` : "—",
+    failure: fresh && finite(sample.failure_pct) ? `${Number(sample.failure_pct.toFixed(1))}%` : "—",
+  };
+}
+
+export function denialCount(device) {
+  const state = device?.kernel_denials_state;
+  if (state === "fresh") return `${Number(device.kernel_denials_24h) || 0}건`;
+  return state === "failed" || state === "stale" ? "수집 중단" : null;
 }

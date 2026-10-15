@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -71,6 +72,15 @@ def _harness(ctx: Any, headers: Any) -> dict:
     }
 
 
+TRACEPARENT = re.compile(r"00-(?!0{32})[0-9a-f]{32}-(?!0{16})[0-9a-f]{16}-[0-9a-f]{2}")
+
+
+def _traceparent(headers: Any) -> str | None:
+    """W3C trace context the harness sent, kept for correlation only. It never decides a call."""
+    value = (headers.get("traceparent") or "").strip().lower()
+    return value if TRACEPARENT.fullmatch(value) else None
+
+
 def _client_context(ctx: Any, user: dict) -> dict:
     """What the workstation says about itself. Client-reported, recorded as such.
     The OAuth client of the token is the workstation that signed in (password grant
@@ -88,6 +98,7 @@ def _client_context(ctx: Any, user: dict) -> dict:
         "token_jti": claims.get("jti"),
         "oauth_client": claims.get("client_id"),
         "device_id": claims.get("device_id"),
+        "traceparent": _traceparent(headers),
     }
 
 

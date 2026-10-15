@@ -278,7 +278,7 @@ def collect(config_path: Path, self_check: bool = False) -> dict:
                 malformed += 1
             elif row:
                 row["event_id"] += f":{epoch}"
-                events.append(row)
+                events.append(agent.seal_os_event(row, xml_text, "windows-event-log", ["event_xml_allowlist", "path_to_basename"]))
         try:
             for start in range(0, len(events), MAX_BATCH):
                 agent.call("POST", "/api/endpoint/os-events", {

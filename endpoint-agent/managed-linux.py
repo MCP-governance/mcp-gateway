@@ -249,7 +249,7 @@ def serve(args):
     private_write(observer_config, json.dumps({"ENDPOINT_GATEWAY_URL": config["gateway_url"], "ENDPOINT_DEVICE_KEY": config["device_key"],
                  "ENDPOINT_ID": config["endpoint_id"], "ENDPOINT_CONFIG_PATHS": os.pathsep.join([pwd.getpwnam(config["username"]).pw_dir,
                  "/etc/codex", "/etc/claude-code"]), "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_NETSCAN": "0",
-                 "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"])}))
+                 "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"]), "ENDPOINT_ORIGIN": "automatic"}))
     previous = config["policy_hash"]
     observed = 0.0
     while True:
@@ -276,11 +276,16 @@ def serve(args):
             except (OSError, KeyError, ValueError):
                 pass  # the account report is informational; it never holds back the heartbeat
             try:
+                beat["network_quality"] = load_module("probe", Path(__file__).with_name("agent.py")).measure_gateway(config["gateway_url"])
+            except (OSError, KeyError, ValueError):
+                pass  # a failed measurement is simply absent
+            try:
                 report = request(config, "/api/endpoint/heartbeat", beat)
             except urllib.error.HTTPError as exc:
-                if exc.code != 422 or "host" not in beat:
+                if exc.code != 422 or not {"host", "network_quality"} & beat.keys():
                     raise
-                beat.pop("host")  # a Gateway older than D-62 rejects the extra field
+                beat.pop("host", None)  # a Gateway older than D-62 / this report rejects the extra field
+                beat.pop("network_quality", None)
                 report = request(config, "/api/endpoint/heartbeat", beat)
             # The token comes first: the observers below can take up to 80 seconds, and a token
             # fetched after them would lapse before the next round.

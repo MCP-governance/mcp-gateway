@@ -556,7 +556,8 @@ def serve(args):
         "ENDPOINT_CONFIG_PATHS": os.pathsep.join([str(Path(config["profile"]) / ".claude.json"), str(Path(config["profile"]) / ".codex"),
                                                   str(FILES["managed-mcp.json"].parent), str(FILES["requirements.toml"].parent)]),
         "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_MANAGED_SID": config["sid"],
-        "ENDPOINT_PROCESS_SID": config["sid"], "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_NETSCAN": "0"}))
+        "ENDPOINT_PROCESS_SID": config["sid"], "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_NETSCAN": "0",
+        "ENDPOINT_ORIGIN": "automatic"}))
     previous = config["policy_hash"]
 
     def record(entry):
@@ -583,7 +584,21 @@ def serve(args):
                 beat["host"] = host_report(config)
             except (OSError, KeyError, ValueError, IndexError):
                 pass  # informational; never holds back the heartbeat
-            report = request(config, "/api/endpoint/heartbeat", beat)
+            try:
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("probe", Path(__file__).with_name("agent.py"))
+                probe = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(probe)
+                beat["network_quality"] = probe.measure_gateway(config["gateway_url"])
+            except (OSError, KeyError, ValueError):
+                pass  # a failed measurement is simply absent
+            try:
+                report = request(config, "/api/endpoint/heartbeat", beat)
+            except urllib.error.HTTPError as exc:
+                if exc.code != 422 or "network_quality" not in beat:
+                    raise
+                beat.pop("network_quality")  # a Gateway older than this report rejects the extra field
+                report = request(config, "/api/endpoint/heartbeat", beat)
             if report["state"] == "active" and report["compliant"]:
                 token = request(config, "/oauth/device-token", {})
                 with lock:

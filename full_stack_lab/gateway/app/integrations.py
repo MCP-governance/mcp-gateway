@@ -55,6 +55,21 @@ def host_report(device: dict, now: datetime) -> dict | None:
     return host if (now - reported).total_seconds() < HEARTBEAT_SECONDS else None
 
 
+def os_telemetry(device: dict, now: datetime) -> str:
+    """Whether the kernel-event channel is being collected right now. Without it a zero
+    count of denials means nothing, so the count is shown only while this is `fresh`."""
+    status = ((device.get("detail") or {}).get("observation") or {}).get("os") or {}
+    if not device.get("device_epoch") or not isinstance(status, dict):
+        return "unknown"
+    if status.get("state") != "success":
+        return "failed" if status.get("state") in {"failed", "unauthorized"} else "unknown"
+    try:
+        age = (now - datetime.fromisoformat(str(status.get("reported_at")).replace("Z", "+00:00"))).total_seconds()
+    except ValueError:
+        return "unknown"
+    return "fresh" if 0 <= age <= HEARTBEAT_SECONDS else "stale"
+
+
 def platform_of(device: dict, host: dict | None = None) -> str:
     host = host or {}
     text = f"{device.get('platform') or ''} {host.get('kernel') or ''}".lower()
@@ -71,10 +86,11 @@ def device_state(device: dict, now: datetime) -> dict:
     platform = platform_of(device, host)
     checks = device.get("enforcement_checks") or {}
     age = (now - device["heartbeat_at"]).total_seconds() if device.get("heartbeat_at") else None
-    bypass = []
+    bypass, unmanaged = [], []
     for account in (host or {}).get("other_accounts") or []:
         groups = [str(g) for g in account.get("privileged_groups") or []]
-        bypass.append(f"{account['name']}({','.join(groups)}) 관리 불가" if groups else f"{account['name']} 비관리 계정")
+        unmanaged.append({"name": account["name"], "uid": account.get("uid"), "privileged_groups": groups, "scope": "out_of_scope"})
+        bypass.append(f"{account['name']}({','.join(groups)}) 통제 범위 밖" if groups else f"{account['name']} 통제 범위 밖")
     if device.get("device_epoch") and host is None:
         bypass.append("같은 엔드포인트의 다른 계정 보고 없음")
     # A Windows device under the managed installer is enforced like Linux; WSL and unmanaged Windows are not.
@@ -82,7 +98,7 @@ def device_state(device: dict, now: datetime) -> dict:
     if platform in {"windows", "wsl"} and not managed_windows:
         bypass.append(f"{PLATFORM_LABEL[platform]} 엔드포인트 통제 미지원")
     if device.get("status") != "active":
-        bypass = []  # a revoked device is no path at all; it is listed only as history
+        bypass, unmanaged = [], []  # a revoked device is no path at all; it is listed only as history
     managed = device.get("managed_state")
     if device.get("status") != "active":
         state, evidence = "unknown_not_enrolled", "등록 해제됨"
@@ -105,7 +121,8 @@ def device_state(device: dict, now: datetime) -> dict:
             # What the state rests on: the kernel heartbeat for a confined account, else the agent's own report.
             "evidence_kind": ("kernel" if state == "endpoint_enforced" else "none" if state == "unknown_not_enrolled" else "report"),
             "evidence_at": device.get("heartbeat_at") or device.get("last_seen_at"), "checks": checks,
-            "kernel_denials_24h": int(device.get("kernel_denials") or 0)}
+            "kernel_denials_24h": int(device.get("kernel_denials") or 0),
+            "kernel_denials_state": os_telemetry(device, now), "unmanaged_accounts": unmanaged}
 
 
 def item_evidence(state: str, device: dict | None, seen: Any) -> dict:
@@ -293,6 +310,14 @@ if __name__ == "__main__":
     assert clean["state"] == "endpoint_enforced", clean
     shared = device_state({**base, "detail": host([{"name": "pj1", "uid": 1000, "privileged_groups": ["sudo", "docker"]}])}, now)
     assert shared["account_state"] == "endpoint_enforced" and shared["state"] == "bypass_possible", shared
+    assert shared["unmanaged_accounts"] == [{"name": "pj1", "uid": 1000, "privileged_groups": ["sudo", "docker"], "scope": "out_of_scope"}], shared
+    assert all("통제 범위 밖" in label for label in shared["bypass"]), shared
+    assert clean["unmanaged_accounts"] == [] and clean["kernel_denials_state"] == "unknown", clean
+    observed = {**base, "detail": {**host([]), "observation": {"os": {"state": "success", "reported_at": fresh}}}}
+    assert device_state(observed, now)["kernel_denials_state"] == "fresh"
+    old = {**base, "detail": {"observation": {"os": {"state": "success", "reported_at": (now - timedelta(seconds=HEARTBEAT_SECONDS + 5)).isoformat()}}}}
+    assert device_state(old, now)["kernel_denials_state"] == "stale"
+    assert device_state({**base, "detail": {"observation": {"os": {"state": "failed"}}}}, now)["kernel_denials_state"] == "failed"
     assert device_state({**base, "detail": {}}, now)["state"] == "bypass_possible"  # old agent: other accounts unknown
     stale = {"host": {**host([])["host"], "reported_at": (now - timedelta(seconds=HEARTBEAT_SECONDS)).isoformat()}}
     assert device_state({**base, "detail": stale}, now)["state"] == "bypass_possible"  # an old empty report vouches for nothing
