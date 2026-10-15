@@ -299,6 +299,23 @@ def rule_state(config):
     return state
 
 
+def firewall_enforcing(config, rules, baseline):
+    # A matching but incomplete installation snapshot cannot establish enforcement.
+    if not isinstance(rules, dict) or not isinstance(baseline, dict):
+        return False
+    profiles, entries = rules.get("profiles"), rules.get("rules")
+    names = {f"MCPGW-{config['username']}-{name}" for name in RULES}
+    owner = f"D:(A;;CC;;;{config['sid']})"
+    return (isinstance(profiles, list) and len(profiles) == 3 and all(p is True for p in profiles)
+            and isinstance(entries, list) and len(entries) == len(names)
+            and all(isinstance(rule, dict) and isinstance(rule.get("Name"), str) for rule in entries)
+            and {rule.get("Name") for rule in entries} == names
+            and all(rule.get("Enabled") == "True" and rule.get("Direction") == "Outbound"
+                    and rule.get("Action") == "Block" and rule.get("Profile") == "Any"
+                    and rule.get("LocalUser") == owner for rule in entries)
+            and entries == baseline.get("rules"))
+
+
 def checks(config, policy):
     targets = list(FILES.values())
     hashes = {name: hashlib.sha256(target.read_bytes()).hexdigest() for name, target in FILES.items()}
@@ -309,7 +326,7 @@ def checks(config, policy):
     return hashes, {
         # Every profile on, and the account's rules exactly as installed (a removed, disabled or
         # broadened rule is a mismatch).
-        "firewall_enforcing": all(rules["profiles"]) and rules["rules"] == baseline["rules"],
+        "firewall_enforcing": firewall_enforcing(config, rules, baseline),
         "protected_configs": protected(targets + list({t.parent for t in targets}) + [PROGRAMS, Path(sys.executable).parent]),
         "ordinary_account": account(config["username"]) == {"sid": config["sid"], "profile": config["profile"], "admin": False},
     }
@@ -473,7 +490,7 @@ def install(args):
     if not protected([python, python.parent]):
         raise ValueError("Python을 모든 사용자용(Program Files)으로 설치한 뒤 그 python.exe로 실행하세요")
     lock_down(PROGRAMS)
-    for name in ("managed-windows.py", "agent.py"):
+    for name in ("managed-windows.py", "agent.py", "os-observer-windows.py"):
         write_file(PROGRAMS / name, (Path(__file__).parent / name).read_text(encoding="utf-8"))
     harness_folder, harnesses = place_harnesses(person["profile"])
     folder = STATE / args.user.lower()
@@ -538,7 +555,8 @@ def serve(args):
         "ENDPOINT_GATEWAY_URL": config["gateway_url"], "ENDPOINT_DEVICE_KEY": config["device_key"], "ENDPOINT_ID": config["endpoint_id"],
         "ENDPOINT_CONFIG_PATHS": os.pathsep.join([str(Path(config["profile"]) / ".claude.json"), str(Path(config["profile"]) / ".codex"),
                                                   str(FILES["managed-mcp.json"].parent), str(FILES["requirements.toml"].parent)]),
-        "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_NETSCAN": "0"}))
+        "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_MANAGED_SID": config["sid"],
+        "ENDPOINT_PROCESS_SID": config["sid"], "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_NETSCAN": "0"}))
     previous = config["policy_hash"]
 
     def record(entry):
@@ -573,13 +591,31 @@ def serve(args):
             else:
                 with lock:
                     cache.clear()
-            try:  # observation only; a failure never cuts the account off
+            inventory_status = "success"
+            try:  # configuration inventory is independent from OS event observation
                 subprocess.run([sys.executable, "-I", "-S", str(PROGRAMS / "agent.py"), "--config", str(observer_config), "--once"],
                                check=True, timeout=40, capture_output=True)
-                observer = "ok"
             except (OSError, subprocess.SubprocessError) as exc:
-                observer = type(exc).__name__
-            record({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health, "observer": observer})
+                inventory_status = type(exc).__name__
+            os_observer = {"state": "failed", "error_code": "collector_failed", "accepted_count": 0}
+            try:  # OS events are separately gated, scoped and reported; disabled is never mapped to success.
+                done = subprocess.run(
+                    [sys.executable, "-I", "-S", str(PROGRAMS / "os-observer-windows.py"),
+                     "--config", str(observer_config)], check=True, timeout=45, capture_output=True, text=True,
+                    encoding="utf-8", errors="replace")
+                lines = [line for line in done.stdout.splitlines() if line.startswith("{")]
+                if lines:
+                    candidate = json.loads(lines[-1])
+                    if isinstance(candidate, dict) and candidate.get("channel") == "os":
+                        os_observer = candidate
+                    else:
+                        os_observer["error_code"] = "invalid_collector_output"
+                else:
+                    os_observer["error_code"] = "missing_collector_output"
+            except (OSError, subprocess.SubprocessError, ValueError) as exc:
+                os_observer["error_code"] = type(exc).__name__
+            record({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health,
+                    "config_inventory": inventory_status, "os_observer": os_observer})
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
             with lock:
                 cache.clear()

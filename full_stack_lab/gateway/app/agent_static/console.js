@@ -6,7 +6,7 @@
  * a menu here is convenience only.
  */
 import { mergeRows, searchRows, liveLabel, hourBuckets, splitBy, sankeyData, harnessLabel, DECISIONS,
-  statusView, dedupeItems, pipelineOf, EVIDENCE, resourceValues } from "./console-state.mjs";
+  statusView, dedupeItems, pipelineOf, EVIDENCE, resourceValues, observationRows, listenerCoverage } from "./console-state.mjs";
 import * as charts from "./charts.mjs";
 
 const { DECISION_LABEL } = charts;
@@ -557,7 +557,7 @@ ROUTES.overview = async (_, tab) => {
           </div>
           ${panel("하네스 → MCP 서버 → 판정", flowTotal ? chartBox("c-flow", "하네스에서 서버를 거쳐 판정까지의 호출 흐름", "xl") : empty("최근 24시간 호출 없음"), { sub: `${flowTotal}건 · 24시간` })}
           ${panel("엔드포인트", html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>하네스</th><th class="num">24시간 호출</th><th>통제 상태</th><th>마지막 호출</th></tr></thead><tbody>
-            ${stations.map((w) => html`<tr><td>${entityRef(w.endpoint_id)}</td><td><b>${w.display_name || w.owner_token}</b><span class="sub">${w.department || ""}</span></td>
+            ${stations.map((w) => html`<tr><td>${entityRef(w.endpoint_id)}</td><td><b>${w.display_name || "—"}</b><span class="sub">${w.department || ""}</span></td>
               <td>${w.harness ? chip("plain", harnessLabel(w.harness)) : NONE}</td><td class="num">${w.calls}</td>
               <td>${deviceOf[w.endpoint_id] ? statusPair(deviceOf[w.endpoint_id]) : chip("outline", "관찰만")}</td><td class="small">${ago(w.last_call)}</td></tr>`)}
             </tbody></table>${stations.length ? "" : empty("엔드포인트 없음")}`, { flush: true })}</div>` },
@@ -967,6 +967,9 @@ ROUTES.coverage = async (_, tab, query) => {
   const coverageSelect = (key, label, choices, cur) => html`<label class="list-search">${label}<select data-coverage-filter="${key}" aria-label="${label}">
     <option value="">전체</option>${Object.entries(choices).map(([k,v]) => html`<option value="${k}" ${k === cur ? raw("selected") : ""}>${Array.isArray(v) ? v[1] : v}</option>`)}</select></label>`;
   const shadowRows = inv.entries.filter((e) => e.classification !== "registered");
+  const listenerView = listenerCoverage(inv.listeners);
+  const observations = observationRows(inv.agents);
+  const osEvents = inv.os_events || [];
   return {
     html: page({
       head: head("통제 범위", { actions: html`<button class="btn" type="button" data-act="connector-policy">커넥터 정책 내보내기</button>` }),
@@ -1002,18 +1005,39 @@ ROUTES.coverage = async (_, tab, query) => {
               <td class="small">${(d.bypass || []).length ? html`<div class="pill-list">${d.bypass.map((b) => chip("block", b))}</div>` : NONE}
                 ${d.kernel_denials_24h ? html`<span class="sub">엔드포인트 차단 24시간 ${d.kernel_denials_24h}건</span>` : ""}</td></tr>`)}
             </tbody></table>${p.devices.length ? "" : empty("엔드포인트 없음")}`, { flush: true }) },
-        { key: "shadow", label: "미등록·잔존", n: shadowRows.length + (inv.os_events || []).length, hot: shadowRows.length > 0, body: html`<div class="stack">
-          ${panel("발견·차단", (shadowRows.length || (inv.os_events || []).length) ? chartBox("c-cov-shadow", "엔드포인트별 발견한 미등록·잔존 설정과 엔드포인트 차단 수", "sm") : empty("발견·차단 없음"))}
+        { key: "shadow", label: "미등록·잔존", n: shadowRows.length + listenerView.total + osEvents.length,
+          hot: shadowRows.length + listenerView.total > 0, body: html`<div class="stack">
+          ${panel("발견·차단", (shadowRows.length || listenerView.total || osEvents.length)
+            ? chartBox("c-cov-shadow", "엔드포인트별 미등록 설정, 수신기 관측, 차단 기록", "sm") : empty("발견·차단 없음"),
+            { sub: `설정 ${shadowRows.length}건 · 수신기 ${listenerView.total}건 · 차단 ${osEvents.length}건` })}
           ${panel("엔드포인트 MCP 설정", html`<table class="data"><thead><tr><th>엔드포인트</th><th>설정 파일</th><th>서버</th><th>연결</th><th>분류</th></tr></thead><tbody>
-            ${inv.entries.map((e) => html`<tr><td>${entityRef(e.endpoint_id)}</td><td class="small mono">${e.config_path}</td>
+            ${shadowRows.map((e) => html`<tr><td>${entityRef(e.endpoint_id)}</td><td class="small mono">${e.config_path}</td>
               <td><b>${e.server_label}</b>${e.registry_name ? html`<span class="sub">${e.registry_name}</span>` : ""}</td>
-              <td class="small mono clip">${e.transport} ${short(e.endpoint_ref, 60)}</td><td>${chip(...(ENDPOINT_CLASS[e.classification] || ["", e.classification]))}</td></tr>`)}
-            </tbody></table>${inv.entries.length ? "" : empty("보고된 설정 없음")}`, { flush: true })}
+              <td class="small mono clip">${e.transport} ${short(e.endpoint_ref, 60)}</td><td>${chip(...(ENDPOINT_CLASS[e.classification] || ["outline", "확인 불가"]))}</td></tr>`)}
+            </tbody></table>${shadowRows.length ? "" : empty("미등록·잔존 설정 없음")}`, { flush: true,
+            sub: `최근 수신 최대 200건 · ${shadowRows.length}건` })}
+          ${panel("엔드포인트 수신기", html`<table class="data"><thead><tr><th>시각</th><th>엔드포인트</th><th>출처</th><th>주소·프로세스</th><th>MCP 여부</th><th>분류</th><th>신선도</th></tr></thead><tbody>
+            ${listenerView.rows.map((l) => html`<tr><td class="small">${when(l.observedAt)}</td><td>${entityRef(l.endpointId)}<span class="sub">${l.hostname}</span></td>
+              <td>${l.source}${l.scanStatusLabel ? html`<span class="sub">수집 ${l.scanStatusLabel}</span>` : ""}</td>
+              <td class="small mono">${l.address}${l.port ? `:${l.port}` : ""}${l.processName !== "—" ? html`<span class="sub">${l.processName}</span>` : ""}${l.serverName !== "—" ? html`<span class="sub">${l.serverName}</span>` : ""}</td>
+              <td>${chip(l.evidence === "MCP 응답 확인" ? "plain" : l.evidence === "MCP로 추정" ? "alert" : "outline", l.evidence)}</td>
+              <td>${chip(l.classification === "폐기 잔존" ? "alert" : l.classification === "미등록" ? "block" : "outline", l.classification)}</td>
+              <td>${chip(l.freshness === "stale" ? "alert" : l.freshness === "fresh" ? "plain" : "outline", l.freshnessLabel)}</td></tr>`)}
+            </tbody></table>${listenerView.total ? "" : empty("수신기 관측 없음")}`, { flush: true,
+            sub: `최근 수신 최대 200건 · ${listenerView.total}건` })}
+          ${panel("관측 수집 상태", html`<table class="data"><thead><tr><th>엔드포인트</th><th>관측 범위</th><th>상태</th><th>신선도</th><th>보고 시각</th><th>마지막 성공</th><th class="num">수신 건수</th><th>오류</th></tr></thead><tbody>
+            ${observations.map((o) => html`<tr><td>${entityRef(o.endpointId)}</td><td>${o.channelLabel}<span class="sub">엔드포인트 보고</span></td>
+              <td>${chip(o.tone, o.stateLabel)}</td><td>${chip(o.freshness === "stale" ? "alert" : o.freshness === "fresh" ? "plain" : "outline", o.freshnessLabel)}</td>
+              <td class="small">${when(o.reportedAt, { seconds: true })}</td><td class="small">${when(o.lastSuccessAt, { seconds: true })}</td>
+              <td class="num">${o.acceptedCount ?? "—"}</td><td>${o.hasError ? chip("alert", "오류 있음") : NONE}</td></tr>`)}
+            </tbody></table>${observations.length ? "" : empty("수집 상태 없음")}`, { flush: true,
+            sub: "최근 보고 180초" })}
           ${panel("엔드포인트 차단", html`<table class="data"><thead><tr><th>시각</th><th>엔드포인트</th><th>종류</th><th>대상</th></tr></thead><tbody>
-            ${(inv.os_events || []).map((e) => html`<tr><td>${when(e.observed_at)}</td><td>${entityRef(e.endpoint_id)}</td>
-              <td>${chip("block", e.kind === "network-denied" ? "네트워크 차단" : "실행 차단")}</td>
+            ${osEvents.map((e) => html`<tr><td>${when(e.observed_at)}</td><td>${entityRef(e.endpoint_id)}</td>
+              <td>${chip("block", e.kind === "network-denied" ? "네트워크 차단" : e.kind === "execution-denied" ? "실행 차단" : "차단 기록")}</td>
               <td class="mono small">${osEventTarget(e)}</td></tr>`)}
-            </tbody></table>${(inv.os_events || []).length ? "" : empty("수신된 차단 기록 없음")}`, { flush: true })}</div>` },
+            </tbody></table>${osEvents.length ? "" : empty("수신된 차단 기록 없음")}`, { flush: true,
+            sub: `최근 수신 최대 200건 · ${osEvents.length}건` })}</div>` },
         { key: "vendor", label: "벤더 커넥터", n: review, hot: review > 0, body: panel("하네스 커넥터·앱·기능",
           conn.items.length ? html`<table class="data"><thead><tr><th>이름</th><th>하네스</th><th>종류</th><th class="num">사용 PC</th><th>승인</th><th>벤더 콘솔</th><th></th></tr></thead><tbody>
             ${conn.items.map((g) => { const vendor = items.find((i) => i.item_key === g.key)?.vendor_control; return html`<tr class="clickable" tabindex="0" data-act="connector" data-key="${g.key}">
@@ -1036,10 +1060,11 @@ ROUTES.coverage = async (_, tab, query) => {
       "c-cov-evidence": () => charts.donut(Object.entries(EVIDENCE).map(([k, ev]) => ({ name: ev.label,
         value: items.filter((i) => (i.evidence_kind || "none") === k).length,
         color: charts.color(["", "Alert", "Restrict", "Allow", "Allow"][ev.level]) })).filter((g) => g.value)),
-      "c-cov-shadow": () => { const ids = [...new Set([...shadowRows.map((e) => e.endpoint_id), ...(inv.os_events || []).map((e) => e.endpoint_id)])];
+      "c-cov-shadow": () => { const ids = [...new Set([...shadowRows.map((e) => e.endpoint_id), ...listenerView.byEndpoint.map((e) => e.endpointId), ...osEvents.map((e) => e.endpoint_id)])];
         return charts.stacked(ids.map((id) => id.slice(0, 18)), [
-          { name: "발견", color: charts.color("Alert"), data: ids.map((id) => shadowRows.filter((e) => e.endpoint_id === id).length) },
-          { name: "최근 수신 200건 내 차단", color: charts.color("Block"), data: ids.map((id) => (inv.os_events || []).filter((e) => e.endpoint_id === id).length) }],
+          { name: "미등록·잔존 설정", color: charts.color("Alert"), data: ids.map((id) => shadowRows.filter((e) => e.endpoint_id === id).length) },
+          { name: "수신기 관측", color: charts.color("Restrict"), data: ids.map((id) => listenerView.byEndpoint.find((e) => e.endpointId === id)?.count || 0) },
+          { name: "차단 기록 · 최근 수신 최대 200건", color: charts.color("Block"), data: ids.map((id) => osEvents.filter((e) => e.endpoint_id === id).length) }],
           { horizontal: true }); },
     },
   };
@@ -1097,7 +1122,7 @@ ROUTES.people = async (_, tab) => {
           </tbody></table><p class="empty" data-list-empty="account-list" hidden>검색 결과 없음</p>`, { flush: true, tools: listToolbar("account-list", "이름·이메일·부서 검색") }) },
         { key: "devices", label: "엔드포인트", n: inv.agents.length, body: html`<div class="stack">
           ${panel("엔드포인트", html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>하네스</th><th>상태</th><th>마지막 보고</th><th></th></tr></thead><tbody>
-            ${inv.agents.map((a) => html`<tr><td>${entityRef(a.endpoint_id)}<span class="sub">${PLATFORM[String(a.platform || "").toLowerCase()] || a.platform || ""}</span></td><td>${harnessOf[a.endpoint_id]?.display_name || a.owner_token || "—"}</td>
+            ${inv.agents.map((a) => html`<tr><td>${entityRef(a.endpoint_id)}<span class="sub">${PLATFORM[String(a.platform || "").toLowerCase()] || a.platform || ""}</span></td><td>${a.owner_name || harnessOf[a.endpoint_id]?.display_name || "—"}</td>
               <td>${harnessOf[a.endpoint_id]?.harness ? chip("plain", harnessLabel(harnessOf[a.endpoint_id].harness)) : NONE}</td>
               <td>${deviceState[a.endpoint_id] ? statusPair(deviceState[a.endpoint_id]) : chip("outline", "관찰만")}
                 ${a.managed_state && a.managed_state !== "unmanaged" ? html`<span class="sub">${MANAGED_STATE[a.managed_state] || a.managed_state}</span>` : ""}</td>
@@ -1116,7 +1141,7 @@ ROUTES.people = async (_, tab) => {
           </tbody></table>${signups.length ? "" : empty("가입 요청 없음")}`, { flush: true }) },
         { key: "managed", label: "연결 이력", n: (inv.managed_events || []).length,
           body: panel("연결 이력", html`<table class="data"><thead><tr><th>시각</th><th>사용자·엔드포인트</th><th>내용</th><th>사유</th></tr></thead><tbody>
-            ${(inv.managed_events || []).map((e) => html`<tr><td>${when(e.observed_at)}</td><td>${e.owner_token}<span class="sub mono">${e.endpoint_id || "—"}</span></td>
+            ${(inv.managed_events || []).map((e) => html`<tr><td>${when(e.observed_at)}</td><td>${e.owner_name || "사용자 확인 불가"}<span class="sub mono">${e.endpoint_id || "—"}</span></td>
               <td>${chip(...(MANAGED_EVENT[e.kind] || ["", e.kind]))}</td><td class="small">${managedEventDetail(e.detail)}</td></tr>`)}</tbody></table>
             ${(inv.managed_events || []).length ? "" : empty("연결 이력 없음")}`, { flush: true }) },
         ...(identity.provider === "oidc" ? [{ key: "sso", label: "SSO", n: identity.bindings.length, body: html`<div class="stack">

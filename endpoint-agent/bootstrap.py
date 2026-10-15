@@ -31,6 +31,11 @@ PROGRAMS = Path("/usr/local/lib/mcpgw-managed")
 STATE = Path("/var/lib/mcpgw-managed")
 SHIM_DIR = Path("/usr/local/bin")
 SUDOERS = Path("/etc/sudoers.d/mcpgw-managed")
+FUNCTIONS = Path("/etc/profile.d/mcpgw-managed.sh")
+# Debian-family and Arch shells read these for every interactive terminal; profile.d alone only
+# reaches login shells (Fedora's /etc/bashrc already loads profile.d for both).
+RC_FILES = (Path("/etc/bash.bashrc"), Path("/etc/zsh/zshrc"))
+HOOK_BEGIN, HOOK_END = "# >>> mcpgw managed launchers >>>", "# <<< mcpgw managed launchers <<<"
 PRIVILEGED = {"sudo", "wheel", "docker", "lxd", "libvirt", "root", "adm"}
 PACKAGES = {"apt-get": ["gcc", "nftables", "apparmor-utils"],
             "dnf": ["gcc", "nftables", "apparmor-utils"],
@@ -105,9 +110,24 @@ def ensure_packages() -> list[str]:
 
 def search_roots(employee: str) -> list[Path]:
     home = Path(pwd.getpwnam(employee).pw_dir)
+    # The last one is where OpenAI's own installer puts the executable beside its tool-call host.
     roots = [HERE / "harness", Path("/usr/local/lib/node_modules"), Path("/usr/lib/node_modules"),
-             home / ".npm-global/lib/node_modules", home / ".local/share/reflex", home / ".local/lib"]
+             home / ".npm-global/lib/node_modules", home / ".local/share/reflex", home / ".local/lib",
+             *sorted(home.glob(".nvm/versions/node/*/lib/node_modules"), reverse=True),
+             home / ".codex/packages/standalone/current/bin"]
     return [root for root in roots if root.exists()]
+
+
+def native_claude(employee: str) -> Path | None:
+    """Anthropic's own installer keeps versioned executables (no folder named claude) and points
+    ~/.local/bin/claude at the active one."""
+    home = Path(pwd.getpwnam(employee).pw_dir)
+    versions = sorted((home / ".local/share/claude/versions").glob("*"), reverse=True)
+    for found in (home / ".local/bin/claude", *versions):
+        real = found.resolve()
+        if real.is_file() and native(real):
+            return real
+    return None
 
 
 def release_directory(employee: str, name: str) -> Path | None:
@@ -141,15 +161,18 @@ def place_harnesses(employee: str) -> dict[str, dict]:
     APPROVED.chmod(0o755)
     placed: dict[str, dict] = {}
     for name in ("codex", "claude"):
+        files = ["codex", "codex-code-mode-host"] if name == "codex" else ["claude"]
         source = release_directory(employee, name)
-        if not source:
+        origins = {item: source / item for item in files} if source else None
+        if not origins and name == "claude" and (found := native_claude(employee)):
+            source, origins = found.parent, {"claude": found}
+        if not origins:
             if name == "claude" and (APPROVED / "claude").is_file():
                 placed[name] = {"path": str(APPROVED / name), "source": "already-approved"}
                 continue
             raise Failed(f"공식 {name} 설치를 찾지 못했습니다. {name}을 설치한 뒤 다시 실행하세요")
-        files = ["codex", "codex-code-mode-host"] if name == "codex" else ["claude"]
-        for item in files:
-            origin, target = source / item, APPROVED / item
+        for item, origin in origins.items():
+            target = APPROVED / item
             if not native(origin):
                 raise Failed(f"native 실행 파일이 아닙니다: {origin}")
             digest = hashlib.sha256(origin.read_bytes()).hexdigest()
@@ -219,7 +242,54 @@ def write_shims(employee: str, managed: str) -> list[str]:
     if subprocess.run(["visudo", "-cqf", str(SUDOERS)], check=False).returncode:
         SUDOERS.unlink(missing_ok=True)
         raise Failed("sudo 규칙 검사에 실패해 실행 연결을 만들지 않았습니다")
-    return [replace_launcher(name, managed, shell) for name in ("codex", "claude")]
+    launchers = [replace_launcher(name, managed, shell) for name in ("codex", "claude")]
+    write_functions(employee)
+    return launchers
+
+
+def launcher_functions(shim_dir: Path, employee: str) -> str:
+    """The employee's own PATH lists ~/.local/bin and the like before /usr/local/bin, so the
+    launcher alone loses to a harness installed there: that one runs unmanaged, with no managed
+    MCP and nothing in the Console. A shell function wins over PATH lookup.
+
+    Only for the employee: the managed account's own login shell reads /etc/profile.d too, and a
+    function there would call the launcher from inside the confined account (denied by its profile),
+    while another user on the device has no sudo rule for it. Without the launcher (a removal that
+    skipped this file) the command still has to run."""
+    return ("# mcpgw managed harness launchers\n"
+            f"if [ \"$(id -un)\" = '{employee}' ]; then\n"
+            + "".join(f'  {name}() {{ if [ -x {shim_dir / name} ]; then {shim_dir / name} "$@"; '
+                      f'else command {name} "$@"; fi; }}\n' for name in ("codex", "claude"))
+            + "fi\n")
+
+
+def edit_hook(path: Path, install: bool) -> None:
+    if not path.is_file():
+        return
+    text = path.read_text(encoding="utf-8")
+    block = re.compile(rf"\n?{re.escape(HOOK_BEGIN)}.*?{re.escape(HOOK_END)}\n", re.S)
+    kept = block.sub("", text)
+    if install:
+        kept += (f"\n{HOOK_BEGIN}\n[ -r {FUNCTIONS} ] && . {FUNCTIONS}\n{HOOK_END}\n")
+    if kept == text:
+        return
+    temporary = path.with_name("." + path.name + ".mcpgw")
+    temporary.write_text(kept, encoding="utf-8")
+    shutil.copymode(path, temporary)
+    temporary.replace(path)
+
+
+def write_functions(employee: str) -> None:
+    FUNCTIONS.write_text(launcher_functions(SHIM_DIR, employee), encoding="utf-8")
+    FUNCTIONS.chmod(0o644)
+    for rc in RC_FILES:
+        edit_hook(rc, True)
+
+
+def remove_functions() -> None:
+    FUNCTIONS.unlink(missing_ok=True)
+    for rc in RC_FILES:
+        edit_hook(rc, False)
 
 
 def replace_launcher(name: str, managed: str, shell: Path) -> str:
@@ -260,6 +330,7 @@ def remove_shims(managed: str) -> None:
         elif copied.is_file():
             shutil.move(copied, shim)
     SUDOERS.unlink(missing_ok=True)
+    remove_functions()
 
 
 # -- the managed installer ----------------------------------------------------------
@@ -296,35 +367,51 @@ def install_managed(account: str, placed: dict[str, dict], enrollment: Path) -> 
     return json.loads(done.stdout.splitlines()[-1])
 
 
-def harness_login(account: str) -> bool:
+# Each harness keeps its own sign-in in the managed account's home, so each is asked once.
+LOGINS = {"codex": (".codex/auth.json", "codex login --device-auth"),
+          "claude": (".claude/.credentials.json", "claude auth login")}
+
+
+def harness_login(account: str, harnesses: list[str]) -> dict[str, bool]:
     """The model sign-in, in the managed account, while the installer still has the console.
 
-    Interactive by design: the harness prints a one-time URL and code for the employee. Skipped
-    when a credential is already there, and never fatal — `codex login` can be run again later.
+    Interactive by design: the harness prints a one-time URL (and code) for the employee. Skipped
+    when a credential is already there, and never fatal — Ctrl+C skips one, and the harness asks
+    again on its first run.
     """
     home = Path(pwd.getpwnam(account).pw_dir)
-    if (home / ".codex/auth.json").is_file():
-        return True
     shell = Path("/usr/local/lib/mcpgw-enforcement") / ("mcpgw-" + account) / "login-shell"
-    step("하네스 모델 로그인 (화면의 안내를 따르세요)")
-    done = subprocess.run(["runuser", "-u", account, "--", str(shell), "-c",
-                           "codex login --device-auth"], check=False)
-    if done.returncode:
-        # An organization that turns off device-code sign-in refuses here, and the employee is left
-        # with a connected endpoint and no model. Both ways out, in one line each.
-        print(f"모델 로그인은 나중에 해도 됩니다. ChatGPT 보안 설정에서 장치 코드 로그인을 켠 뒤 다시: "
-              f"sudo -u {account} {shell} -c 'codex login --device-auth'")
-        print(f"이 PC의 브라우저로 하려면: sudo -u {account} {shell} -c 'codex login'")
-    return done.returncode == 0
+    signed: dict[str, bool] = {}
+    for name in harnesses:
+        credential, command = LOGINS[name]
+        if (home / credential).is_file():
+            signed[name] = True
+            continue
+        step(f"{name} 모델 로그인 (화면의 안내를 따르세요. 건너뛰려면 Ctrl+C)")
+        try:
+            code = subprocess.run(["runuser", "-u", account, "--", str(shell), "-c", command], check=False).returncode
+        except KeyboardInterrupt:
+            code = 130
+        signed[name] = code == 0
+        if code and name == "codex":
+            # An organization that turns off device-code sign-in refuses here, and the employee is left
+            # with a connected endpoint and no model. Both ways out, in one line each.
+            print(f"모델 로그인은 나중에 해도 됩니다. ChatGPT 보안 설정에서 장치 코드 로그인을 켠 뒤 다시: "
+                  f"sudo -u {account} {shell} -c 'codex login --device-auth'")
+            print(f"이 PC의 브라우저로 하려면: sudo -u {account} {shell} -c 'codex login'")
+        elif code:
+            print(f"{name} 로그인은 나중에 해도 됩니다. 처음 실행하면 로그인 화면이 나옵니다.")
+    return signed
 
 
 def self_check() -> None:
     """The launcher replacement, where getting it wrong overwrites the program it replaces."""
     import tempfile
-    global SHIM_DIR, PROGRAMS, SUDOERS
+    global SHIM_DIR, PROGRAMS, SUDOERS, FUNCTIONS, RC_FILES
     with tempfile.TemporaryDirectory(prefix="mcpgw-selfcheck-") as folder:
         root = Path(folder)
         SHIM_DIR, PROGRAMS, SUDOERS = root / "bin", root / "lib", root / "sudoers"
+        FUNCTIONS, RC_FILES = root / "mcpgw-managed.sh", (root / "bash.bashrc", root / "absent.rc")
         SHIM_DIR.mkdir()
         shell = root / "enforcement/mcpgw-m/login-shell"
         shell.parent.mkdir(parents=True)
@@ -352,10 +439,44 @@ def self_check() -> None:
         split = subprocess.run(["bash", "-c", 'eval "set -- $MCPGW_ARGS"; printf "%s|" "$@"'], capture_output=True,
                                text=True, env={**os.environ, "MCPGW_ARGS": reconstructed.stdout.split("codex ", 1)[1]})
         assert split.stdout == 'exec|say "hi there"|', split
+        me = pwd.getpwuid(os.getuid()).pw_name
+        write_functions(me)
+        assert FUNCTIONS.is_file() and not RC_FILES[1].exists()
         remove_shims("m")
         assert (SHIM_DIR / "codex").is_symlink() and (SHIM_DIR / "codex").resolve() == target.resolve()
         assert (SHIM_DIR / "claude").read_text() == "a real file\n", "lost the replaced file"
-        assert written and not SUDOERS.exists()
+        assert written and not SUDOERS.exists() and not FUNCTIONS.exists()
+        # An employee's ~/.local/bin comes first on PATH. Typed in an interactive shell, the launcher
+        # must still win; with the launcher gone the same command must still reach the harness.
+        rc = RC_FILES[0]
+        rc.write_text('[ -z "$PS1" ] && return\n')
+        before = rc.read_text()
+        early = root / "early"
+        for folder_, label in ((early, "unmanaged"), (SHIM_DIR, "managed")):
+            folder_.mkdir(exist_ok=True)
+            for name in ("codex", "claude"):
+                (folder_ / name).unlink(missing_ok=True)
+                (folder_ / name).write_text(f'#!/bin/sh\necho "{label} {name} $*"\n')
+                (folder_ / name).chmod(0o755)
+        write_functions(me)
+        write_functions(me)
+        assert rc.read_text().count(HOOK_BEGIN) == 1, "the rc hook must be added once"
+        typed = subprocess.run(["bash", "-c", f"PS1=x; PATH={early}:{SHIM_DIR}:/usr/bin:/bin; . {rc}; claude mcp list; codex"],
+                               capture_output=True, text=True)
+        assert typed.stdout == "managed claude mcp list\nmanaged codex \n", typed
+        # The managed account reads the same /etc/profile.d: it must see no function, or its own
+        # `claude` would call the launcher from inside the confined account.
+        write_functions("another-account")
+        other = subprocess.run(["bash", "-c", f"PS1=x; PATH={early}:{SHIM_DIR}:/usr/bin:/bin; . {rc}; claude"],
+                               capture_output=True, text=True)
+        assert other.stdout == "unmanaged claude \n", other
+        write_functions(me)
+        (SHIM_DIR / "claude").unlink()
+        gone = subprocess.run(["bash", "-c", f"PATH={early}:/usr/bin:/bin; . {FUNCTIONS}; claude"],
+                              capture_output=True, text=True)
+        assert gone.stdout == "unmanaged claude \n", gone
+        remove_functions()
+        assert rc.read_text() == before and not FUNCTIONS.exists(), "rc file not restored"
     print("bootstrap self-check OK")
 
 
@@ -401,12 +522,13 @@ def main() -> int:
                 rollback(account)
             raise
         if not args.skip_login:
-            result["model_signed_in"] = harness_login(account)
+            result["model_signed_in"] = harness_login(account, list(placed))
         result.update(employee=employee, managed_account=account,
                       harnesses={name: item.get("digests", {}) for name, item in placed.items()})
         print(json.dumps(result, ensure_ascii=False))
         print("\n연결을 신청했습니다. 조직 관리자가 콘솔에서 활성화하면 사용할 수 있습니다.")
-        print(f"평소 계정({employee})에서 codex 또는 claude를 실행하세요." if companion
+        # A terminal opened before the install has neither the launcher functions nor a fresh PATH.
+        print(f"새 터미널을 열어 평소 계정({employee})에서 codex 또는 claude를 실행하세요." if companion
               else "이 계정에서 codex 또는 claude를 실행하세요.")
         return 0
     except Failed as exc:

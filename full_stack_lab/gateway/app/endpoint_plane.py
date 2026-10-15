@@ -43,11 +43,22 @@ def normalise(transport: str, endpoint_ref: str) -> str:
     value = (endpoint_ref or "").strip()
     if transport in {"stdio", "STDIO"}:
         return " ".join(value.split())
-    return value.rstrip("/").lower()
+    return safe_endpoint_ref(value).rstrip("/").lower()
 
 
 def command_digest(value: str) -> str:
     return "sha256:" + hashlib.sha256(" ".join((value or "").split()).encode()).hexdigest()
+
+
+def safe_endpoint_ref(value: str) -> str:
+    # Also protect reports from older collectors before anything is persisted.
+    try:
+        parsed = urlsplit(value)
+        if not (parsed.username is not None or parsed.password is not None or parsed.query or parsed.fragment):
+            return value
+    except ValueError:
+        pass
+    return "sha256:" + hashlib.sha256(value.encode()).hexdigest()
 
 
 def fingerprint(config_path: str, server_label: str, transport: str, endpoint_ref: str) -> str:
@@ -59,7 +70,7 @@ def fingerprint(config_path: str, server_label: str, transport: str, endpoint_re
 async def enroll(endpoint_id: str, hostname: str, platform: str, agent_version: str,
                  owner_token: str | None, detail: dict | None = None) -> dict:
     # `host` comes only from the validated managed heartbeat (main.HostReport).
-    detail = {key: value for key, value in (detail or {}).items() if key != "host"}
+    detail = {key: value for key, value in (detail or {}).items() if key not in {"host", "observation"}}
     await db.execute(
         """INSERT INTO endpoint_agents(endpoint_id, hostname, platform, agent_version, owner_token, detail)
            VALUES (%s,%s,%s,%s,%s,%s)
@@ -77,11 +88,10 @@ async def enroll(endpoint_id: str, hostname: str, platform: str, agent_version: 
 SELF_MCP_NAME = "mcp-governance-security-gateway"
 
 
-async def _registry_index() -> list[dict]:
-    rows = await db.fetch_all(
-        """SELECT id, transport, endpoint, display_name, advertised_name, lifecycle, status
-             FROM mcp_servers"""
-    )
+async def _registry_index(connection=None) -> list[dict]:
+    query = "SELECT id, transport, endpoint, display_name, advertised_name, lifecycle, status FROM mcp_servers"
+    rows = (await db.fetch_all(query) if connection is None
+            else await (await connection.execute(query)).fetchall())
     # The Gateway is recognised by its MCP URL, not by a label: anyone can name a
     # server "bob-gateway" in a config file.
     gateway_urls = {normalise("streamable-http", url) for url in (
@@ -118,7 +128,9 @@ def _match(index: list[dict], transport: str, endpoint_ref: str, server_label: s
     # points it at /mcp/<server>/ under the Gateway (D-30). The URL decides: checked
     # before labels, or every managed entry would read as a copy of the real server.
     for base in index[0].get("bases", ()):
-        if ref.startswith(base + "/"):
+        if transport.lower() != "stdio" and ref == base:
+            return index[0]
+        if transport.lower() != "stdio" and ref.startswith(base + "/"):
             server_id = ref[len(base) + 1:]
             matched = next((entry for entry in index[1:] if entry["id"] == server_id), None)
             if not matched:
@@ -130,7 +142,8 @@ def _match(index: list[dict], transport: str, endpoint_ref: str, server_label: s
                 return {**index[0], "routed_server_id": server_id}
             return matched
     candidates = {ref, (server_label or "").strip().lower()} - {""}
-    for entry in index:
+    # A claimed server name cannot turn a direct/stdio route into the Gateway.
+    for entry in index[1:]:
         if entry["keys"] & candidates:
             return entry
     return None
@@ -158,17 +171,69 @@ if __name__ == "__main__":
     print("PASS registered Gateway routes (incl. drifted) are managed; unknown/disabled/direct routes never count as approved")
 
 
-async def ingest(endpoint_id: str, entries: list[dict]) -> dict:
+async def ingest(endpoint_id: str, entries: list[dict], *, complete: bool = False) -> dict:
+    if not isinstance(complete, bool) or len(entries) > 500:
+        raise ValueError("알 수 없는 스냅샷 완전성 또는 보고 상한입니다.")
+    async with db.transaction() as connection:
+        result = await _ingest_inventory(connection, endpoint_id, entries, complete)
+    await _link_residue_to_cases(endpoint_id)
+    return result
+
+
+async def _record_observation(connection, endpoint_id: str, channel: str, state: str,
+                              accepted_count: int = 0, error_code: str = "", sources: list | None = None) -> None:
+    stamp = datetime.now(UTC).isoformat()
+    row = await (await connection.execute(
+        "SELECT detail FROM endpoint_agents WHERE endpoint_id=%s FOR UPDATE", (endpoint_id,))).fetchone()
+    if not row:
+        raise ValueError("등록되지 않은 엔드포인트입니다.")
+    previous = (row.get("detail") or {}).get("observation", {}).get(channel, {})
+    value = {"state": state, "reported_at": stamp, "accepted_count": accepted_count,
+             "last_success_at": stamp if state == "success" else previous.get("last_success_at"),
+             "error_code": error_code}
+    if sources is not None or previous.get("sources") is not None:
+        value["sources"] = sources if sources is not None else previous["sources"]
+    await connection.execute(
+        """UPDATE endpoint_agents SET detail=jsonb_set(COALESCE(detail,'{}'::jsonb),'{observation}',
+               COALESCE(detail->'observation','{}'::jsonb) || %s::jsonb), last_seen_at=now()
+             WHERE endpoint_id=%s""", (Jsonb({channel: value}), endpoint_id))
+
+
+async def observation_status(endpoint_id: str, channel: str, state: str,
+                             accepted_count: int = 0, error_code: str = "") -> dict:
+    if channel not in {"inventory", "process", "network", "os"} or state not in {
+            "success", "partial", "failed", "disabled", "unauthorized", "unsupported", "unknown"}:
+        raise ValueError("알 수 없는 수집 상태입니다.")
+    async with db.transaction() as connection:
+        await _record_observation(connection, endpoint_id, channel, state, accepted_count, error_code)
+    return {"endpoint_id": endpoint_id, "channel": channel, "state": state}
+
+
+def observation_freshness(status: dict, observed_at, now: datetime | None = None) -> str:
+    if status.get("state") != "success" or observed_at is None:
+        return "unknown"
+    try:
+        observed = datetime.fromisoformat(str(observed_at).replace("Z", "+00:00"))
+        reported = datetime.fromisoformat(str(status["reported_at"]).replace("Z", "+00:00"))
+        ages = [(now or datetime.now(UTC)) - item for item in (observed, reported)]
+        if any(age.total_seconds() < 0 for age in ages):
+            return "unknown"
+        return "fresh" if all(0 <= age.total_seconds() <= 180 for age in ages) else "stale"
+    except (ValueError, TypeError, KeyError):
+        return "unknown"
+
+
+async def _ingest_inventory(connection, endpoint_id: str, entries: list[dict], complete: bool) -> dict:
     """한 엔드포인트가 보고한 설정 목록 전체를 정본으로 교체한다.
 
     누적이 아니라 교체인 이유는, 설정에서 지워진 항목이 관리대장에 남아 있으면
     잔존이 해소되어도 C1이 영원히 미충족이 되기 때문이다. 회수를 확인할 방법이
     없는 통제는 회수를 유도하지 못한다.
     """
-    agent = await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
+    agent = await (await connection.execute("SELECT * FROM endpoint_agents WHERE endpoint_id=%s FOR UPDATE", (endpoint_id,))).fetchone()
     if not agent:
         raise ValueError("등록되지 않은 엔드포인트입니다. 먼저 enroll 하세요.")
-    index = await _registry_index()
+    index = await _registry_index(connection)
 
     seen: list[str] = []
     counts = {"registered": 0, "shadow": 0, "retired-residue": 0}
@@ -176,7 +241,10 @@ async def ingest(endpoint_id: str, entries: list[dict]) -> dict:
         config_path = str(raw.get("config_path") or "unknown")[:400]
         server_label = str(raw.get("server_label") or "unnamed")[:200]
         transport = str(raw.get("transport") or "stdio")[:40]
-        endpoint_ref = str(raw.get("endpoint_ref") or "")[:600]
+        value = str(raw.get("endpoint_ref") or "")
+        endpoint_ref = (command_digest(value) if transport.lower() == "stdio" and not value.startswith("sha256:")
+                        else safe_endpoint_ref(value))[:600]
+        observed = {**raw, "endpoint_ref": endpoint_ref}
         mark = fingerprint(config_path, server_label, transport, endpoint_ref)
         matched = _match(index, transport, endpoint_ref, server_label)
         if matched is None:
@@ -196,7 +264,7 @@ async def ingest(endpoint_id: str, entries: list[dict]) -> dict:
             registry_match = matched["id"]
         counts[classification] += 1
         seen.append(mark)
-        await db.execute(
+        await connection.execute(
             """INSERT INTO endpoint_inventory(
                  endpoint_id, config_path, server_label, transport, endpoint_ref,
                  fingerprint, registry_match, classification, raw)
@@ -205,18 +273,18 @@ async def ingest(endpoint_id: str, entries: list[dict]) -> dict:
                  reported_at=now(), registry_match=EXCLUDED.registry_match,
                  classification=EXCLUDED.classification, raw=EXCLUDED.raw""",
             (endpoint_id, config_path, server_label, transport, endpoint_ref,
-             mark, registry_match, classification, Jsonb(raw)),
+             mark, registry_match, classification, Jsonb(observed)),
         )
-    removed = await db.execute(
-        "DELETE FROM endpoint_inventory WHERE endpoint_id=%s AND NOT (fingerprint = ANY(%s::text[]))",
-        (endpoint_id, seen),
-    )
-    await db.execute(
-        "UPDATE endpoint_agents SET last_seen_at=now() WHERE endpoint_id=%s", (endpoint_id,)
-    )
-    await _link_residue_to_cases(endpoint_id)
+    removed = 0
+    if complete:
+        removed = (await connection.execute(
+            "DELETE FROM endpoint_inventory WHERE endpoint_id=%s AND NOT (fingerprint = ANY(%s::text[]))",
+            (endpoint_id, seen))).rowcount
+    await connection.execute("UPDATE endpoint_agents SET last_seen_at=now() WHERE endpoint_id=%s", (endpoint_id,))
+    await _record_observation(connection, endpoint_id, "inventory", "success" if complete else "partial", len(entries),
+                              "" if complete else "incomplete_snapshot")
     return {"endpoint_id": endpoint_id, "accepted": len(entries),
-            "removed": removed, "counts": counts}
+            "removed": removed, "counts": counts, "complete": complete}
 
 
 async def _link_residue_to_cases(endpoint_id: str) -> None:
@@ -347,11 +415,13 @@ DEVICE_SCOPES = ("inventory", "netscan", "enforcement")
 
 async def ingest_os_events(endpoint_id: str, events: list[dict]) -> dict:
     accepted = 0
-    for event in events:
-        accepted += await db.execute(
-            """INSERT INTO endpoint_os_events(endpoint_id,event_id,observed_at,kind,details)
-               VALUES (%s,%s,%s,%s,%s) ON CONFLICT(endpoint_id,event_id) DO NOTHING""",
-            (endpoint_id, event["event_id"], event["observed_at"], event["kind"], Jsonb(event["details"])))
+    async with db.transaction() as connection:
+        for event in events:
+            accepted += (await connection.execute(
+                """INSERT INTO endpoint_os_events(endpoint_id,event_id,observed_at,kind,details)
+                   VALUES (%s,%s,%s,%s,%s) ON CONFLICT(endpoint_id,event_id) DO NOTHING""",
+                (endpoint_id, event["event_id"], event["observed_at"], event["kind"], Jsonb(event["details"])))).rowcount
+        await _record_observation(connection, endpoint_id, "os", "success", len(events))
     return {"endpoint_id": endpoint_id, "accepted": accepted, "received": len(events)}
 
 
@@ -401,15 +471,17 @@ async def issue_device(endpoint_id: str, hostname: str, platform: str, owner_tok
 
 
 async def revoke_device(endpoint_id: str, actor: str) -> dict:
-    changed = await db.execute(
-        "UPDATE endpoint_agents SET status='revoked', issued_by=%s WHERE endpoint_id=%s",
-        (actor, endpoint_id),
-    )
-    if not changed:
-        raise ValueError("등록되지 않은 엔드포인트입니다.")
-    row = await db.fetch_one("SELECT owner_token FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
-    if row and row["owner_token"]:
-        await managed_event(endpoint_id, row["owner_token"], "revoked", {"actor": actor})
+    # A failed journal append must not leave an unrecorded committed transition.
+    async with db.transaction() as connection:
+        row = await (await connection.execute(
+            "UPDATE endpoint_agents SET status='revoked', issued_by=%s WHERE endpoint_id=%s RETURNING owner_token",
+            (actor, endpoint_id))).fetchone()
+        if not row:
+            raise ValueError("등록되지 않은 엔드포인트입니다.")
+        if row["owner_token"]:
+            await connection.execute(
+                "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'revoked',%s)",
+                (endpoint_id, row["owner_token"], Jsonb({"actor": actor})))
     return {"endpoint_id": endpoint_id, "status": "revoked"}
 
 
@@ -625,15 +697,18 @@ async def activate_managed(endpoint_id: str, actor: str, expected_hash: str, not
     if not device or device["owner_token"] == actor:
         raise ValueError("등록 장치가 없거나 자기 소유 장치는 스스로 활성화할 수 없습니다.")
     policy = await managed_policy(device)
-    changed = await db.execute(
-        """UPDATE endpoint_agents SET managed_state='active',activated_by=%s,activated_at=now()
-           WHERE endpoint_id=%s AND status='active' AND policy_hash=%s AND policy_hash=%s
-             AND heartbeat_at>now()-interval '180 seconds' AND configuration_hashes=%s AND enforcement_checks=%s""",
-        (actor, endpoint_id, expected_hash, policy["policy_hash"], Jsonb(policy["configuration_hashes"]),
-         Jsonb({key: True for key in managed_checks(device)})))
-    if not changed:
-        raise ValueError("최근 정상 설치 증거가 없거나 검토한 정책이 바뀌었습니다. 장치 설치를 확인하세요.")
-    await managed_event(endpoint_id, device["owner_token"], "activated", {"actor": actor, "note": note, "policy_hash": expected_hash})
+    async with db.transaction() as connection:
+        changed = await connection.execute(
+            """UPDATE endpoint_agents SET managed_state='active',activated_by=%s,activated_at=now()
+               WHERE endpoint_id=%s AND status='active' AND policy_hash=%s AND policy_hash=%s
+                 AND heartbeat_at>now()-interval '180 seconds' AND configuration_hashes=%s AND enforcement_checks=%s""",
+            (actor, endpoint_id, expected_hash, policy["policy_hash"], Jsonb(policy["configuration_hashes"]),
+             Jsonb({key: True for key in managed_checks(device)})))
+        if not changed.rowcount:
+            raise ValueError("최근 정상 설치 증거가 없거나 검토한 정책이 바뀌었습니다. 장치 설치를 확인하세요.")
+        await connection.execute(
+            "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'activated',%s)",
+            (endpoint_id, device["owner_token"], Jsonb({"actor": actor, "note": note, "policy_hash": expected_hash})))
     return {"endpoint_id": endpoint_id, "managed_state": "active"}
 
 
@@ -722,16 +797,28 @@ def _listener_keys(address: str, port, server_name: str, command_line: str) -> s
     return keys - {""}
 
 
-async def ingest_listeners(endpoint_id: str, findings: list) -> dict:
+async def ingest_listeners(endpoint_id: str, findings: list, *, complete: bool = False,
+                           sources: list[str] | None = None) -> dict:
+    sources = ["local-socket", "network", "stdio-process"] if sources is None else sources
+    if (not isinstance(complete, bool) or len(findings) > 500 or not isinstance(sources, list)
+            or not sources or len(set(sources)) != len(sources)
+            or not set(sources) <= {"local-socket", "network", "stdio-process"}
+            or any(item.get("source", "network") not in sources for item in findings)):
+        raise ValueError("알 수 없거나 일치하지 않는 관측 범위입니다.")
+    async with db.transaction() as connection:
+        return await _ingest_listeners(connection, endpoint_id, findings, complete, sources)
+
+
+async def _ingest_listeners(connection, endpoint_id: str, findings: list, complete: bool, sources: list) -> dict:
     """한 엔드포인트가 관측한 리스너 목록 전체를 정본으로 교체한다.
 
     인벤토리와 같은 이유로 누적이 아니라 교체다. 꺼진 서버가 표에 남으면
     "지금 열려 있는 미등록 경로 수"를 셀 수 없고, 그 수가 정책 입력이다.
     """
-    agent = await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
+    agent = await (await connection.execute("SELECT * FROM endpoint_agents WHERE endpoint_id=%s FOR UPDATE", (endpoint_id,))).fetchone()
     if not agent:
         raise ValueError("등록되지 않은 엔드포인트입니다.")
-    index = await _registry_index()
+    index = await _registry_index(connection)
 
     seen = []
     counts = {"registered": 0, "shadow": 0, "retired-residue": 0}
@@ -743,7 +830,10 @@ async def ingest_listeners(endpoint_id: str, findings: list) -> dict:
         address = str(raw.get("address") or "")[:200]
         port_raw = raw.get("port")
         port = int(port_raw) if str(port_raw).isdigit() else None
-        command_line = str(raw.get("command_line") or "")[:600]
+        command_line = str(raw.get("command_line") or "")
+        if command_line and not command_line.startswith("sha256:"):
+            command_line = command_digest(command_line)
+        command_line = command_line[:600]
         process_name = str(raw.get("process_name") or "")[:120] or None
         mcp_evidence = str(raw.get("mcp_evidence") or "unknown")
         if mcp_evidence not in evidence:
@@ -754,7 +844,8 @@ async def ingest_listeners(endpoint_id: str, findings: list) -> dict:
         matched = None
         candidates = _listener_keys(address, port, server_name or "", command_line)
         for entry in index:
-            if entry["keys"] & candidates:
+            route_candidates = _listener_keys(address, port, "", "") if entry["id"] == "__gateway__" else candidates
+            if entry["keys"] & route_candidates:
                 matched = entry
                 break
         if matched is None:
@@ -765,11 +856,11 @@ async def ingest_listeners(endpoint_id: str, findings: list) -> dict:
         elif matched["lifecycle"] in {"TERMINATING", "RETIRED"}:
             classification, registry_match = "retired-residue", matched["id"]
         else:
-            classification, registry_match = "registered", matched["id"]
+            classification, registry_match = "shadow", matched["id"]
         counts[classification] += 1
         evidence[mcp_evidence] += 1
         seen.append(mark)
-        await db.execute(
+        await connection.execute(
             """INSERT INTO endpoint_listeners(
                  endpoint_id, source, address, port, process_name, command_line,
                  mcp_evidence, server_name, server_version, protocol_version,
@@ -784,23 +875,29 @@ async def ingest_listeners(endpoint_id: str, findings: list) -> dict:
             (endpoint_id, source, address, port, process_name, command_line,
              mcp_evidence, server_name, str(raw.get("server_version") or "")[:80] or None,
              str(raw.get("protocol_version") or "")[:40] or None,
-             mark, registry_match, classification, Jsonb(raw)),
+             mark, registry_match, classification, Jsonb({**raw, "command_line": command_line})),
         )
-    removed = await db.execute(
-        "DELETE FROM endpoint_listeners WHERE endpoint_id=%s AND NOT (fingerprint = ANY(%s::text[]))",
-        (endpoint_id, seen),
-    )
-    await db.execute(
-        "UPDATE endpoint_agents SET last_seen_at=now(), last_scan_at=now() WHERE endpoint_id=%s",
-        (endpoint_id,),
-    )
+    removed = 0
+    if complete:
+        removed = (await connection.execute(
+            "DELETE FROM endpoint_listeners WHERE endpoint_id=%s AND source = ANY(%s::text[]) AND NOT (fingerprint = ANY(%s::text[]))",
+            (endpoint_id, sources, seen))).rowcount
+    await connection.execute(
+        "UPDATE endpoint_agents SET last_seen_at=now(), last_scan_at=CASE WHEN %s THEN now() ELSE last_scan_at END WHERE endpoint_id=%s",
+        (complete, endpoint_id))
+    for channel, covered in (("process", ["stdio-process"]), ("network", ["local-socket", "network"])):
+        reported = [source for source in covered if source in sources]
+        if reported:
+            count = sum(str(item.get("source") or "network") in reported for item in findings)
+            await _record_observation(connection, endpoint_id, channel, "success" if complete else "partial", count,
+                                      "" if complete else "incomplete_snapshot", reported)
     return {"endpoint_id": endpoint_id, "accepted": len(findings), "removed": removed,
-            "counts": counts, "evidence": evidence}
+            "counts": counts, "evidence": evidence, "complete": complete, "sources": sources}
 
 
 async def listeners(classification: str | None = None, limit: int = 200) -> list:
     query = """SELECT l.*, a.hostname, a.owner_token, p.display_name AS owner_name,
-                      s.display_name AS registry_name, s.lifecycle
+                      s.display_name AS registry_name, s.lifecycle, a.detail->'observation' AS observation
                  FROM endpoint_listeners l
                  JOIN endpoint_agents a USING (endpoint_id)
                  LEFT JOIN principals p ON p.token = a.owner_token
@@ -815,6 +912,10 @@ async def listeners(classification: str | None = None, limit: int = 200) -> list
     result = []
     for row in rows:
         item = dict(row)
+        channel = "process" if item["source"] == "stdio-process" else "network"
+        status = (item.pop("observation", None) or {}).get(channel, {})
+        item["scan_source_status"] = status.get("state", "unknown")
+        item["freshness"] = observation_freshness(status, item.get("observed_at"))
         if item.get("observed_at"):
             item["observed_at"] = item["observed_at"].isoformat()
         result.append(item)

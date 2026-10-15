@@ -21,7 +21,9 @@ unzip mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.
 
 `install.sh`는 `bootstrap.py`를 sudo로 한 번 올리고, 그 안에서 필수 구성요소 설치 → 승인 하네스 배치(SHA-256 기록) →
 관리 계정 결정 → `managed-linux.py install` → 실행 연결(관리자 계정일 때) → 모델 로그인을 순서대로 합니다(D-71).
-이미 설치된 장치면 먼저 `rollback`을 돌리고 다시 설치합니다. `--remove`는 이 PC의 연결만 제거합니다.
+실행 연결은 `/usr/local/bin`의 shim과, PATH 앞쪽 `~/.local/bin`의 하네스를 이기도록 직원 계정에만 정의되는 셸 함수
+(`/etc/profile.d/mcpgw-managed.sh`, `/etc/bash.bashrc`·`/etc/zsh/zshrc`의 표식 블록)입니다(D-72). 설치 뒤 **새 터미널**에서 실행합니다.
+이미 설치된 장치면 먼저 `rollback`을 돌리고 다시 설치합니다. `--remove`는 이 PC의 연결만 제거합니다(함수·블록 포함).
 아래 수동 경로는 그 단계들을 따로 돌릴 때만 씁니다.
 
 4. 설치기는 단말 키를 생성하여 한 번 등록하고, `/var/lib/mcpgw-managed/<계정>/config.json`(root 600)에만 저장합니다.
@@ -30,7 +32,8 @@ unzip mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.
 5. 다른 관리자가 **단말 → 활성화**에서 실제 호스트의 일반 계정·AppArmor enforce·nft UID 규칙·보호된 설정을 확인합니다.
    자체 보고는 원격 하드웨어 attestation이 아닙니다. 확인 없이 자동 활성화하거나 자기 장치를 승인하지 않습니다.
 
-root 서비스 `mcpgw-managed-<계정>.service`는 60초마다 실제 커널 규칙과 파일 해시를 보고합니다.
+root 서비스 `mcpgw-managed-<계정>.service`는 실제 커널 규칙과 파일 해시를 활성화 전에는 10초, 활성화 뒤에는 60초마다 보고합니다.
+AppArmor 프로필은 계정의 정확한 이름과 enforce 행을 대조합니다. 비슷한 다른 계정의 프로필명으로 정상 처리하지 않습니다.
 `mcpgw-egress-<계정>.service`는 부팅 후에도 UID별 방화벽을 유지합니다. 180초 heartbeat 만료·격리·폐기는
 아직 만료되지 않은 JWT도 Gateway에서 거부합니다. 설정이 복구돼도 독립 관리자 활성화가 다시 필요합니다.
 단말 키 대신 짧은 JWT만 UID가 일치하는 로컬 인증 헬퍼에 전달하며, 시스템 설정·argv·환경에 토큰을 넣지 않습니다.
@@ -40,7 +43,8 @@ root 서비스 `mcpgw-managed-<계정>.service`는 60초마다 실제 커널 규
 하네스 실행기는 `HTTPS_PROXY`·`HTTP_PROXY`를 프록시로, `NO_PROXY`를 게이트웨이 주소로 고정합니다. 프록시는
 `full_stack_lab/model-proxy/model-domains.txt`의 모델 도메인만 허용하고(TLS 터널은 443만), 임의 외부 주소를 열지 않습니다.
 프록시 이전에 설치한 장치는 그대로 동작하지만 모델에 닿지 않습니다. 자격 폐기 → 롤백 → 새 키트로 재설치합니다.
-관리 계정의 하네스 모델 로그인(`codex login --device-auth`, `claude` 첫 실행)은 직원이 그 계정에서 한 번 합니다.
+관리 계정의 하네스 모델 로그인은 직원이 한 번 합니다. 설치 끝에 `codex login --device-auth`와 `claude auth login`을
+안내하고(Ctrl+C로 건너뜀), 건너뛰면 첫 실행 때 하네스가 묻습니다.
 
 ## 가입자용 관리형 Windows 설치 (D-68)
 
@@ -68,8 +72,10 @@ py -3 mcp-managed-kit\managed-windows.py install --user 일반사용자계정
 Python 경로의 소유자와 쓰기 권한이 SYSTEM·Administrators·TrustedInstaller뿐), `ordinary_account`(Administrators 직접 구성원 아님)입니다.
 방화벽 규칙은 프로그램 경로가 아니라 계정에 걸리므로 하네스를 복사해도 같은 제한을 받습니다. 그 계정에서는 브라우저를 포함한
 모든 프로그램이 게이트웨이 호스트 밖으로 나가지 못합니다. AI 작업 전용 계정으로 운영하세요.
+프로필3개가 모두 boolean true이고 예상 차단 규칙3개의 이름·상태·방향·계정 SID가 일치해야 합니다. 비어 있거나 잘못된 설치 기준선은 정상으로 처리하지 않습니다.
 
-한계: Windows 방화벽은 loopback을 거르지 않습니다. 도메인 그룹을 거친 Administrators 구성원은 점검하지 않습니다.
+한계: 현재 키트의 규칙으로 native Win32 loopback(127.0.0.1·::1·IPv4-mapped IPv6) 차단을 실측하지 않았습니다. WFP 기능과 UWP 예외를 이 키트의 집행 결과로 일반화하지 않습니다. 도메인 그룹을 거친 Administrators 구성원은 점검하지 않습니다.
+Windows 키트는 실행파일·스크립트·DLL 통제 정책을 설치하지 않습니다. App Control/AppLocker/격리 계정·파일권한의 별도 설계와 실기기 검증이 필요합니다.
 같은 PC의 다른 계정은 통제 범위에 우회 경로로 표시합니다. OS 차단 이벤트(WFP 감사)는 아직 수집하지 않습니다.
 제거: Console에서 자격 폐기 → 계정 로그아웃 → `py -3 "%ProgramFiles%\MCPGatewayManaged\managed-windows.py" rollback --user <계정>`.
 
@@ -156,3 +162,15 @@ python "$env:LOCALAPPDATA\MCPGatewayEndpoint\agent.py" --config "$env:LOCALAPPDA
 - 코드 자체 점검: `python endpoint-agent/agent.py --self-check`. Compose 실습에서는 직원 PC 컨테이너(`ws-*`)가 이 `agent.py`를 이미지에 복사해 실행합니다(`cd full_stack_lab && ./console.sh up`).
 
 `agent.py`와 사용자 범위 설치기는 관측 전용입니다. 위 관리형 설치 경로만 OS 집행을 구성합니다.
+
+## 관측 보고 계약 (D-83, 2026-10-14)
+
+3.1 수집기는 `ENDPOINT_PROCESS_SCAN`과 `ENDPOINT_NETSCAN`을 분리한다. 관리형 Linux 서비스는 process=1, network=0, process UID=등록된 일반 계정으로 설정한다. Windows는 process SID를 사용한다. 직접 프로세스/네트워크 positive 보고에는 장치 netscan scope, OS positive 보고에는 enforcement scope가 필요하다. 범위를 벗어난 계정은 자동 수집하지 않는다.
+
+설정·프로세스·네트워크·OS 각 채널은 state/서버 수신시각/마지막 성공/건수를 기록한다. disabled·unauthorized·partial·failed·unsupported·unknown은 성공0건과 다르다. collector JSON은 supervisor 로그에 채널별로 남으며 collector 오류만으로 정상 기기 자격을 끊지 않는다. 실제 집행 점검 오류는 기존 자격 중단 경계를 유지한다.
+
+inventory/listener `complete` 기본은 False다. 정보원 오류나500건 초과는 partial이다. 명시적 complete 성공에서만 기존 미관측 행을 지우며 process-only 보고는 stdio-process 범위만 삭제한다. 네트워크/local-socket 결과는 보존한다. 과거 shadow를 stale 때문에 정상0으로 바꾸지 않는다. Console에는 listener fresh/stale/unknown, 최근 최대200건 및 별도 수집상태를 표시한다.
+
+Windows의 `os-observer-windows.py`는 보호된 collector다. AppLocker event TargetUser가 정확한 관리SID인 차단만 보며, WFP event-time SID가 없으면 partial/sid_unavailable로 제외한다. 감사/방화벽/실행 정책을 자동 활성화하지 않는다. Windows 실제 이벤트 전달 시험은 미실행이다.
+
+[PJ1 Linux 실제 검증과 로그](../research/llm-wiki/status/reports/2026-10-14-endpoint-telemetry-fix.md). 키트 설치·합성 marker 관측·실제 OS 이벤트·SDK/MCP 호출·모델 turn은 다른 검증 층이다.

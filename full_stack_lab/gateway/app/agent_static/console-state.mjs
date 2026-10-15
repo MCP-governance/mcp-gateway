@@ -140,6 +140,67 @@ export function ageSeconds(iso, now = Date.now()) {
   return Number.isFinite(t) ? Math.max(0, Math.round((now - t) / 1000)) : null;
 }
 
+const OBSERVATION_CHANNELS = { inventory: "설정", process: "프로세스", network: "네트워크", os: "운영체제" };
+const OBSERVATION_STATE = {
+  success: ["보고됨", "plain"], partial: ["일부 보고", "alert"], failed: ["실패", "block"],
+  disabled: ["중지", "outline"], unauthorized: ["권한 없음", "block"],
+  unsupported: ["지원 안 함", "outline"], unknown: ["확인 불가", "outline"],
+};
+const FRESHNESS_LABEL = { fresh: "최근 보고", stale: "오래됨", unknown: "확인 불가" };
+
+/** Render only bounded observation metadata; never pass the agent's detail object to the page. */
+export function observationRows(agents, now = Date.now()) {
+  return (agents || []).flatMap((agent) => Object.entries(OBSERVATION_CHANNELS).map(([key, label]) => {
+    const report = agent?.detail?.observation?.[key] || {};
+    const state = Object.hasOwn(OBSERVATION_STATE, report.state) ? report.state : "unknown";
+    const reportedAt = Date.parse(report.reported_at || "");
+    const future = Number.isFinite(reportedAt) && reportedAt - now > 5000;
+    const age = Number.isFinite(reportedAt) ? (now - reportedAt) / 1000 : null;
+    const freshness = future || age === null ? "unknown" : age > 180 ? "stale" : "fresh";
+    return {
+      endpointId: agent?.endpoint_id || "—", channel: key, channelLabel: label,
+      state, stateLabel: OBSERVATION_STATE[state][0], tone: OBSERVATION_STATE[state][1], freshness,
+      freshnessLabel: FRESHNESS_LABEL[freshness], reportedAt: report.reported_at || null,
+      lastSuccessAt: report.last_success_at || null,
+      acceptedCount: Number.isSafeInteger(report.accepted_count) && report.accepted_count >= 0 ? report.accepted_count : null,
+      hasError: Boolean(report.error_code),
+    };
+  }));
+}
+
+const LISTENER_SOURCE = { "local-socket": "로컬 소켓", network: "네트워크", "stdio-process": "표준입출력 프로세스" };
+const LISTENER_CLASS = { registered: "등록", shadow: "미등록", "retired-residue": "폐기 잔존" };
+const MCP_EVIDENCE = { confirmed: "MCP 응답 확인", suspected: "MCP로 추정", unknown: "MCP 여부 미확인" };
+const SCAN_STATE = { success: "보고됨", partial: "일부 보고", failed: "실패", disabled: "중지",
+  unauthorized: "권한 없음", unsupported: "지원 안 함", unknown: "확인 불가" };
+
+/** Keep listener-only endpoints in the coverage view and expose only display-safe fields. */
+export function listenerCoverage(listeners, now = Date.now()) {
+  const rows = (listeners || []).filter((item) => item?.classification !== "registered").map((item) => {
+    const observedAt = item?.observed_at || null;
+    const age = ageSeconds(observedAt, now);
+    const future = Number.isFinite(Date.parse(observedAt || "")) && Date.parse(observedAt) - now > 5000;
+    const reportedFreshness = item?.freshness;
+    const freshness = ["fresh", "stale", "unknown"].includes(reportedFreshness)
+      ? reportedFreshness : future || age === null ? "unknown" : age > 180 ? "stale" : "fresh";
+    const scanStatus = item?.scan_source_status;
+    const scanState = typeof scanStatus === "string" ? scanStatus : scanStatus?.state;
+    return {
+      endpointId: item?.endpoint_id || "—", hostname: item?.hostname || "—",
+      source: LISTENER_SOURCE[item?.source] || "확인 불가",
+      address: item?.address || "—", port: Number.isInteger(item?.port) ? item.port : null,
+      processName: item?.process_name || "—", serverName: item?.server_name || item?.registry_name || "—",
+      evidence: MCP_EVIDENCE[item?.mcp_evidence] || MCP_EVIDENCE.unknown,
+      classification: LISTENER_CLASS[item?.classification] || "확인 불가",
+      observedAt, freshness, freshnessLabel: FRESHNESS_LABEL[freshness],
+      scanStatusLabel: scanStatus == null ? "" : SCAN_STATE[scanState] || SCAN_STATE.unknown,
+    };
+  });
+  const counts = new Map();
+  for (const row of rows) counts.set(row.endpointId, (counts.get(row.endpointId) || 0) + 1);
+  return { rows, total: rows.length, byEndpoint: [...counts].map(([endpointId, count]) => ({ endpointId, count })) };
+}
+
 export function agoText(seconds) {
   if (seconds === null || seconds === undefined) return "";
   if (seconds < 90) return `${seconds}초 전`;

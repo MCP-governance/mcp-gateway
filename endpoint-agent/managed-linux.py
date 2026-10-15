@@ -99,7 +99,7 @@ def checks(config, policy):
     uid, name = config["uid"], "mcpgw-" + config["username"]
     account = pwd.getpwnam(config["username"])
     groups = {grp.getgrgid(g).gr_name for g in os.getgrouplist(account.pw_name, account.pw_gid)}
-    profiles = Path("/sys/kernel/security/apparmor/profiles").read_text()
+    profiles = set(Path("/sys/kernel/security/apparmor/profiles").read_text().splitlines())
     rule_file = Path("/usr/local/lib/mcpgw-enforcement") / name / "egress.nft"
     nft = subprocess.run(["nft", "-j", "list", "table", "inet", f"mcpgw_uid_{uid}"], capture_output=True, check=True, text=True)
     # Compare the actual kernel expressions to the root-installed file, excluding
@@ -248,9 +248,14 @@ def serve(args):
     observer_config = args.config.with_name("observer.json")
     private_write(observer_config, json.dumps({"ENDPOINT_GATEWAY_URL": config["gateway_url"], "ENDPOINT_DEVICE_KEY": config["device_key"],
                  "ENDPOINT_ID": config["endpoint_id"], "ENDPOINT_CONFIG_PATHS": os.pathsep.join([pwd.getpwnam(config["username"]).pw_dir,
-                 "/etc/codex", "/etc/claude-code"]), "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_NETSCAN": "0"}))
+                 "/etc/codex", "/etc/claude-code"]), "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_NETSCAN": "0",
+                 "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"])}))
     previous = config["policy_hash"]
+    observed = 0.0
     while True:
+        # Until the organization activates the device the loop runs fast, so the first token follows
+        # the activation within seconds instead of a minute; an active device keeps the slow cadence.
+        pause = 10
         try:
             verify_transport(config)
             policy = request(config, "/api/endpoint/managed-policy")
@@ -283,19 +288,23 @@ def serve(args):
                 token = request(config, "/oauth/device-token", {})
                 with lock:
                     cache.update(token=token["access_token"], until=time.monotonic() + 120)
+                pause = 60
             else:
                 with lock:
                     cache.clear()
             observers = {}
-            for name, extra in (("agent.py", ["--once"]), ("os-observer.py", ["--uid", str(config["uid"]), "--profile", "mcpgw-" + config["username"]])):
-                # Inventory and kernel-event reports are observations; one failing must not cut the
-                # enforced account off from the Gateway.
-                try:
-                    subprocess.run([sys.executable, "-I", "-S", str(PROGRAMS / name), "--config", str(observer_config), *extra],
-                                   check=True, timeout=40, stdout=subprocess.DEVNULL)
-                    observers[name] = "ok"
-                except (OSError, subprocess.SubprocessError) as exc:
-                    observers[name] = type(exc).__name__
+            if time.monotonic() - observed >= 55:
+                observed = time.monotonic()
+                for name, extra in (("agent.py", ["--once"]), ("os-observer.py", ["--uid", str(config["uid"]), "--profile", "mcpgw-" + config["username"]])):
+                    # Inventory and kernel-event reports are observations; one failing must not cut the
+                    # enforced account off from the Gateway.
+                    try:
+                        result = subprocess.run([sys.executable, "-I", "-S", str(PROGRAMS / name), "--config", str(observer_config), *extra],
+                                                timeout=40, capture_output=True, text=True)
+                        output = json.loads(result.stdout.splitlines()[-1])
+                        observers[name] = output.get("observation", {"state": "failed"})
+                    except (OSError, ValueError, IndexError, subprocess.SubprocessError) as exc:
+                        observers[name] = {"state": "failed", "error_code": type(exc).__name__}
             print(json.dumps({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health,
                               "observers": observers}), flush=True)
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
@@ -303,7 +312,7 @@ def serve(args):
                 cache.clear()
             print(json.dumps({"state": "connection-stopped", "error": type(exc).__name__,
                               "status": getattr(exc, "code", None), "reason": str(exc)[:200]}), flush=True)
-        time.sleep(60)
+        time.sleep(pause)
 
 
 def rollback(args):

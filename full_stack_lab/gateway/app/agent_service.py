@@ -327,7 +327,7 @@ async def me(authorization: str | None = Header(default=None)):
 
 
 KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py"),
-             "windows": ("install.cmd", "managed-windows.py", "agent.py")}
+             "windows": ("install.cmd", "managed-windows.py", "agent.py", "os-observer-windows.py")}
 # The employee runs one file and answers one elevation prompt; the installer does the rest (D-71).
 KIT_EXECUTABLE = {"install.sh"}
 

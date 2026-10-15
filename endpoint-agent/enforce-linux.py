@@ -53,6 +53,17 @@ def companions(key: str, binary: Path) -> list[Path]:
     return []
 
 
+def fixed_options(key: str, binary: Path) -> list[str]:
+    """Options the managed account's launcher always adds. Codex's interactive CLI starts a shared
+    background server from its installed package layout and talks to it over a Unix socket; the
+    approved copy is one executable and the profile allows no Unix IPC, so it runs its own server
+    (--no-daemon, a root option every subcommand accepts). Builds that predate the flag don't know it."""
+    if key != "codex":
+        return []
+    with open(binary, "rb") as source, mmap.mmap(source.fileno(), 0, access=mmap.ACCESS_READ) as image:
+        return ["--no-daemon"] if image.find(b"--no-daemon") != -1 else []
+
+
 def nft_rules(uid: int, addresses: list[str], port: int, proxy_port: int | None = None) -> str:
     rules = []
     ports = f"{{ {port}, {proxy_port} }}" if proxy_port else str(port)
@@ -130,12 +141,17 @@ profile {name}-{key} {{
 
 
 def wrapper(path: Path, executable: Path, home: str, username: str, login: bool = False,
-            fixed: list[str] | None = None, environment: dict[str, str] | None = None) -> None:
+            fixed: list[str] | None = None, environment: dict[str, str] | None = None,
+            options: list[str] | None = None) -> None:
     # Native wrapper avoids a shebang/interpreter attachment ambiguity and removes
     # runtime variables such as BUN_BE_BUN, LD_PRELOAD and alternate config roots.
+    # `options` go in front of the caller's own arguments.
+    leading = options or []
     arguments = ("char *args[] = {" + ",".join(json.dumps(x) for x in [str(executable), *fixed]) + ",NULL};"
-                 if fixed is not None else "char **args = calloc(argc + 1, sizeof(char *)); if (!args) return 125;")
-    forward = "" if fixed is not None else "for (int i=1; i<argc; i++) args[i]=argv[i];"
+                 if fixed is not None else
+                 f"char **args = calloc(argc + {len(leading) + 1}, sizeof(char *)); if (!args) return 125;"
+                 + "".join(f"args[{i + 1}] = {json.dumps(item)};" for i, item in enumerate(leading)))
+    forward = "" if fixed is not None else f"for (int i=1; i<argc; i++) args[i+{len(leading)}]=argv[i];"
     # Tools read either case of the proxy variables; set both.
     extra = "".join(f"setenv({json.dumps(name)}, {json.dumps(value)}, 1); "
                     for key, value in (environment or {}).items() for name in (key, key.lower()))
@@ -184,6 +200,19 @@ def main() -> None:
         confined = profile("mcpgw-u", Path("/x/login-shell"), "/home/u", {"codex": Path("/opt/a/codex"), "claude": Path("/opt/a/claude")},
                            True, True, {"codex": [Path("/opt/a/codex-code-mode-host")], "claude": []})
         assert confined.count("/opt/a/codex-code-mode-host mrix,") == 1  # only inside the codex profile
+        with tempfile.TemporaryDirectory(prefix="mcpgw-selfcheck-") as folder:
+            fake = Path(folder) / "codex"
+            fake.write_bytes(b"\x7fELF--no-daemon cannot be used with --remote.")
+            old = Path(folder) / "old"
+            old.write_bytes(b"\x7fELF no such flag")
+            assert fixed_options("codex", fake) == ["--no-daemon"] and fixed_options("codex", old) == []
+            assert fixed_options("claude", fake) == []
+            # The launcher puts the option ahead of whatever the employee typed, one argument each.
+            if subprocess.run(["which", "gcc"], capture_output=True).returncode == 0:
+                built = Path(folder) / "launcher"
+                wrapper(built, Path("/bin/echo"), folder, "u", environment={}, options=["--no-daemon"])
+                done = subprocess.run([str(built), "exec", "say hi"], capture_output=True, text=True)
+                assert done.stdout == "--no-daemon exec say hi\n", done
         print("enforcement rule self-check OK")
         return
     if os.geteuid() != 0 or not re.fullmatch(r"[a-z_][a-z0-9_-]{0,30}", args.user):
@@ -243,7 +272,7 @@ def main() -> None:
     shell = folder / "login-shell"
     wrapper(shell, Path("/bin/bash"), person.pw_dir, args.user, login=True)
     for key, binary in binaries.items():
-        wrapper(folder / key, binary, person.pw_dir, args.user, environment=proxy_env)
+        wrapper(folder / key, binary, person.pw_dir, args.user, environment=proxy_env, options=fixed_options(key, binary))
     if args.helper_source:
         source = trusted_binary(args.helper_source)
         helper = folder / "mcpgw_pc.py"

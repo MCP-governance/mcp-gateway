@@ -10,7 +10,7 @@ from typing import Literal
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import JSONResponse, RedirectResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
 
 from . import core, db, decommission, endpoint_plane, privacy
@@ -873,6 +873,15 @@ class EndpointEntry(StrictModel):
 class EndpointReport(StrictModel):
     endpoint_id: str = Field(min_length=3, max_length=120)
     entries: list[EndpointEntry] = Field(default_factory=list, max_length=500)
+    complete: bool = False
+
+
+class ObservationReport(StrictModel):
+    endpoint_id: str = Field(min_length=3, max_length=120)
+    channel: Literal["inventory", "process", "network", "os"]
+    state: Literal["success", "partial", "failed", "disabled", "unauthorized", "unsupported", "unknown"]
+    accepted_count: int = Field(default=0, ge=0, le=500)
+    error_code: str = Field(default="", pattern=r"^[a-z_]{0,48}$")
 
 
 class EndpointOSEvent(StrictModel):
@@ -927,6 +936,17 @@ class ListenerFinding(StrictModel):
 class ListenerReport(StrictModel):
     endpoint_id: str = Field(min_length=3, max_length=120)
     findings: list[ListenerFinding] = Field(default_factory=list, max_length=500)
+    complete: bool = False
+    sources: list[Literal["local-socket", "network", "stdio-process"]] | None = Field(default=None, min_length=1, max_length=3)
+
+    @model_validator(mode="after")
+    def source_scope(self):
+        if self.sources is not None:
+            if len(self.sources) != len(set(self.sources)):
+                raise ValueError("중복된 관측 범위입니다.")
+            if any(item.source not in self.sources for item in self.findings):
+                raise ValueError("관측 범위 밖의 결과입니다.")
+        return self
 
 
 class ScanPolicyUpdate(StrictModel):
@@ -1062,7 +1082,7 @@ async def endpoint_report(request: EndpointReport,
         raise HTTPException(403, "장치 자격과 다른 엔드포인트의 보고는 받지 않습니다.")
     try:
         return await endpoint_plane.ingest(
-            request.endpoint_id, [entry.model_dump() for entry in request.entries])
+            request.endpoint_id, [entry.model_dump() for entry in request.entries], complete=request.complete)
     except ValueError as exc:
         raise HTTPException(404, str(exc))
 
@@ -1080,9 +1100,22 @@ async def endpoint_listener_report(request: ListenerReport,
         raise HTTPException(403, "장치 자격과 다른 엔드포인트의 보고는 받지 않습니다.")
     try:
         return await endpoint_plane.ingest_listeners(
-            request.endpoint_id, [item.model_dump() for item in request.findings])
+            request.endpoint_id, [item.model_dump() for item in request.findings],
+            complete=request.complete, sources=request.sources)
     except ValueError as exc:
         raise HTTPException(404, str(exc))
+
+
+@app.post("/api/endpoint/observation-status")
+async def endpoint_observation_status(request: ObservationReport,
+                                      device: dict = Depends(endpoint_device("inventory"))) -> dict:
+    if request.endpoint_id != device["endpoint_id"]:
+        raise HTTPException(403, "장치 자격과 다른 엔드포인트의 보고는 받지 않습니다.")
+    required = {"process": "netscan", "network": "netscan", "os": "enforcement"}.get(request.channel)
+    if request.state in {"success", "partial"} and required and required not in device["scopes"]:
+        raise HTTPException(403, "이 관측 채널의 보고 권한이 없습니다.")
+    return await endpoint_plane.observation_status(
+        request.endpoint_id, request.channel, request.state, request.accepted_count, request.error_code)
 
 
 @app.get("/api/endpoint/inventory")

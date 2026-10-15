@@ -65,7 +65,7 @@ from urllib.parse import urlsplit
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-AGENT_VERSION = "3.0.0"
+AGENT_VERSION = "3.1.0"
 
 def load_config() -> dict:
     if "--config" not in sys.argv:
@@ -95,6 +95,10 @@ ENDPOINT_ID = setting("ENDPOINT_ID", "")
 INTERVAL = int(setting("ENDPOINT_REPORT_SECONDS", "60"))
 ONE_SHOT = "--once" in sys.argv or setting("ENDPOINT_ONE_SHOT", "0") not in ("0", "false", "")
 SCAN_ENABLED = setting("ENDPOINT_NETSCAN", "1") not in ("0", "false", "")
+PROCESS_ENABLED = setting("ENDPOINT_PROCESS_SCAN", "1" if SCAN_ENABLED else "0") not in ("0", "false", "")
+PROCESS_UID = setting("ENDPOINT_PROCESS_UID", "")
+PROCESS_SID = setting("ENDPOINT_PROCESS_SID", "")
+SCAN_ERRORS: set[str] = set()
 
 SCAN_PATHS = [
     Path(item) for item in
@@ -124,7 +128,8 @@ SERVER_KEYS = ("mcpServers", "mcp_servers", "servers", "mcp")
 # initialize 응답이 한다.
 PROCESS_MARKERS = re.compile(
     r"(@modelcontextprotocol/|mcp[-_]server|server[-_]mcp|mcp\.server|fastmcp|"
-    r"uvx\s+mcp|npx\s+.*mcp|modelcontextprotocol|ida[-_]mcp|ghidra[-_]?mcp|obsidian[-_]mcp|bridge_mcp_ghidra)",
+    r"uvx\s+mcp|npx\s+.*mcp|modelcontextprotocol|ida[-_]mcp|ghidra[-_]?mcp|obsidian[-_]mcp|bridge_mcp_ghidra|"
+    r"@playwright/mcp|@bytebase/dbhub|blender[-_]mcp|mcp[-_]for[-_]blender)",
     re.IGNORECASE,
 )
 
@@ -152,6 +157,17 @@ def command_digest(value: str) -> str:
     return "sha256:" + hashlib.sha256(" ".join(value.split()).encode()).hexdigest()
 
 
+def safe_endpoint_ref(value: str) -> str:
+    # URL userinfo/query/fragment may contain credentials; retain only an exact digest.
+    try:
+        parsed = urlsplit(value)
+        if not (parsed.username is not None or parsed.password is not None or parsed.query or parsed.fragment):
+            return value
+    except ValueError:
+        pass
+    return "sha256:" + hashlib.sha256(value.encode()).hexdigest()
+
+
 # ── 설정 파일 관측 ───────────────────────────────────────────────────────────
 
 def candidate_files() -> list[Path]:
@@ -162,7 +178,12 @@ def candidate_files() -> list[Path]:
         if root.is_file():
             found.append(root)
             continue
-        for path in sorted([*root.rglob("*.json"), *root.rglob("*.toml")]):
+        try:
+            candidates = sorted([*root.rglob("*.json"), *root.rglob("*.toml")])
+        except OSError:
+            SCAN_ERRORS.add("config_unreadable")
+            continue
+        for path in candidates:
             # 깊게 파고들면 node_modules 같은 곳의 JSON을 전부 읽게 된다.
             if len(path.relative_to(root).parts) > 4 or "node_modules" in path.parts:
                 continue
@@ -216,7 +237,7 @@ def describe(name: str, config: dict) -> dict | None:
     url = config.get("url") or config.get("endpoint") or config.get("serverUrl") or config.get("httpUrl")
     if url:
         transport = str(config.get("type") or config.get("transport") or "streamable-http")
-        return {"server_label": name, "transport": transport, "endpoint_ref": str(url)}
+        return {"server_label": name, "transport": transport, "endpoint_ref": safe_endpoint_ref(str(url))}
     command = config.get("command")
     if command:
         args = config.get("args") or []
@@ -238,8 +259,10 @@ def collect_configs() -> list[dict]:
         try:
             document = read_config(path)
         except (OSError, ValueError, ImportError):  # TOMLDecodeError is a ValueError; no tomllib before 3.11
+            SCAN_ERRORS.add("config_unreadable")
             continue
         if document is None:
+            SCAN_ERRORS.add("config_unreadable")
             continue
         for name, config in all_server_entries(document).items():
             if not isinstance(config, dict):
@@ -259,8 +282,11 @@ def _run(command: list[str], timeout: int = 10) -> str:
     try:
         done = subprocess.run(command, capture_output=True, text=True, timeout=timeout,
                               check=False)
+        if done.returncode != 0:
+            SCAN_ERRORS.add("source_unavailable")
         return done.stdout or ""
     except (OSError, subprocess.SubprocessError):
+        SCAN_ERRORS.add("source_unavailable")
         return ""
 
 
@@ -276,6 +302,7 @@ def _linux_listeners() -> list[dict]:
         try:
             lines = Path(f"/proc/net/{name}").read_text().splitlines()[1:]
         except OSError:
+            SCAN_ERRORS.add("source_unavailable")
             continue
         for line in lines:
             parts = line.split()
@@ -303,17 +330,26 @@ def _linux_listeners() -> list[dict]:
             continue
         try:
             fds = list((pid_dir / "fd").iterdir())
+        except FileNotFoundError:
+            continue
         except OSError:
+            SCAN_ERRORS.add("source_unavailable")
             continue  # 다른 사용자의 프로세스. 권한이 없으면 소유자는 비운다.
         try:
             raw = (pid_dir / "cmdline").read_bytes().replace(b"\x00", b" ").decode(errors="replace")
+        except FileNotFoundError:
+            continue
         except OSError:
+            SCAN_ERRORS.add("source_unavailable")
             raw = ""
         name = raw.split(" ")[0].rsplit("/", 1)[-1][:120]
         for fd in fds:
             try:
                 target = os.readlink(fd)
+            except FileNotFoundError:
+                continue
             except OSError:
+                SCAN_ERRORS.add("source_unavailable")
                 continue
             if target.startswith("socket:["):
                 owners[target[8:-1]] = (name, raw.strip()[:600])
@@ -331,11 +367,25 @@ def _windows_processes() -> dict[str, tuple[str, str]]:
     or python.exe MCP server looks like any other process."""
     script = ("[Console]::OutputEncoding=[Text.Encoding]::UTF8; Get-CimInstance Win32_Process | "
               "Select-Object ProcessId,Name,CommandLine | ConvertTo-Json -Compress")
+    if PROCESS_SID:
+        if not re.fullmatch(r"S-1-\d+(?:-\d+)+", PROCESS_SID):
+            raise ValueError("Invalid managed process SID")
+        script = ("[Console]::OutputEncoding=[Text.Encoding]::UTF8; $ErrorActionPreference='Stop'; "
+                  "$rows=@(); foreach($p in Get-CimInstance Win32_Process) { "
+                  "if($p.ProcessId -eq 0) {continue}; "
+                  "$o=Invoke-CimMethod -InputObject $p -MethodName GetOwnerSid; "
+                  "if($o.ReturnValue -ne 0) {throw 'owner_unavailable'}; "
+                  f"if($o.Sid -eq '{PROCESS_SID}') {{ $rows += $p | "
+                  "Select-Object ProcessId,Name,CommandLine } }; ConvertTo-Json -InputObject $rows -Compress")
     try:
         done = subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
                               capture_output=True, timeout=30, check=False)
-        rows = json.loads(done.stdout.decode("utf-8", "replace") or "[]")
+        if done.returncode != 0 or not done.stdout.strip():
+            SCAN_ERRORS.add("source_unavailable")
+            return {}
+        rows = json.loads(done.stdout.decode("utf-8", "replace"))
     except (OSError, subprocess.SubprocessError, ValueError):
+        SCAN_ERRORS.add("source_unavailable")
         return {}
     if isinstance(rows, dict):
         rows = [rows]
@@ -421,8 +471,13 @@ def stdio_processes() -> list[dict]:
         if not pid_dir.name.isdigit():
             continue
         try:
+            if PROCESS_UID and pid_dir.stat().st_uid != int(PROCESS_UID):
+                continue
             raw = (pid_dir / "cmdline").read_bytes().replace(b"\x00", b" ").decode(errors="replace").strip()
+        except FileNotFoundError:
+            continue
         except OSError:
+            SCAN_ERRORS.add("process_unreadable")
             continue
         if not raw or not PROCESS_MARKERS.search(raw):
             continue
@@ -457,7 +512,7 @@ def probe_mcp(address: str, port: int) -> dict | None:
         request.add_header("content-type", "application/json")
         request.add_header("accept", "application/json, text/event-stream")
         try:
-            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
             with opener.open(request, timeout=PROBE_TIMEOUT) as response:
                 payload = response.read(20000).decode("utf-8", "replace")
         except urllib.error.HTTPError as exc:
@@ -587,18 +642,22 @@ def listener_findings(policy: dict) -> list[dict]:
                          "command_line": command_digest(row.get("command_line", "")),
                          "mcp_evidence": evidence,
                          **{k: v for k, v in (info or {}).items() if k != "path"}})
-    findings.extend(stdio_processes())
     return findings
 
 
 # ── 게이트웨이 통신 ──────────────────────────────────────────────────────────
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request, *args):
+        return None
+
 
 def call(method: str, path: str, body: dict | None = None) -> dict:
     payload = json.dumps(body).encode() if body is not None else None
     request = urllib.request.Request(GATEWAY_URL + path, data=payload, method=method)
     request.add_header("content-type", "application/json")
     request.add_header("x-endpoint-key", DEVICE_KEY)
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     with opener.open(request, timeout=30) as response:
         return json.loads(response.read() or b"{}")
 
@@ -610,49 +669,76 @@ def enroll() -> None:
         "platform": f"{platform.system()} {platform.release()}"[:80],
         "agent_version": AGENT_VERSION,
         "detail": {"scan_paths": [str(path) for path in SCAN_PATHS],
-                   "capabilities": ["config-inventory", "local-socket", "network", "stdio-process"]},
+                   "capabilities": ["config-inventory", "local-socket", "network", "stdio-process"],
+                   "process_scope": {"uid": PROCESS_UID or None, "sid": PROCESS_SID or None}},
     })
 
 
 def report_configs() -> dict:
-    return call("POST", "/api/endpoint/inventory",
-                {"endpoint_id": endpoint_id(), "entries": collect_configs()})
+    SCAN_ERRORS.clear()
+    entries = collect_configs()
+    complete = not SCAN_ERRORS and len(entries) <= 500
+    result = call("POST", "/api/endpoint/inventory",
+                  {"endpoint_id": endpoint_id(), "entries": entries[:500], "complete": complete})
+    return {**result, "state": "success" if complete else "partial"}
 
 
-def report_listeners() -> dict | None:
+def report_processes() -> dict:
+    if not PROCESS_ENABLED:
+        return {"state": "disabled", "accepted": 0}
+    SCAN_ERRORS.clear()
+    findings = stdio_processes()
+    complete = not SCAN_ERRORS and len(findings) <= 500
+    result = call("POST", "/api/endpoint/listeners", {
+        "endpoint_id": endpoint_id(), "findings": findings[:500], "sources": ["stdio-process"], "complete": complete})
+    return {**result, "state": "success" if complete else "partial"}
+
+
+def report_listeners() -> dict:
     if not SCAN_ENABLED:
-        return None
+        return {"state": "disabled", "accepted": 0}
     try:
         policy = call("GET", "/api/endpoint/scan-policy")
     except urllib.error.HTTPError as exc:
         if exc.code in (401, 403):
             # 이 장치에 netscan 권한이 없다. 정상이다 — 관측 축은 선택이다.
-            return None
+            return {"state": "unauthorized", "accepted": 0, "error_code": "access_denied"}
         raise
     if not policy.get("enabled"):
-        return None
+        return {"state": "disabled", "accepted": 0, "error_code": "policy_disabled"}
+    SCAN_ERRORS.clear()
     findings = listener_findings(policy) + network_findings(policy)
-    return call("POST", "/api/endpoint/listeners",
-                {"endpoint_id": endpoint_id(), "findings": findings[:500]})
+    complete = not SCAN_ERRORS and len(findings) <= 500
+    result = call("POST", "/api/endpoint/listeners", {
+        "endpoint_id": endpoint_id(), "findings": findings[:500],
+        "sources": ["local-socket", "network"], "complete": complete})
+    return {**result, "state": "success" if complete else "partial"}
 
 
-def once() -> None:
-    inventory = report_configs()
-    counts = inventory.get("counts", {})
-    log("설정 %d건 · 등록 %d · 섀도 %d · 폐기 잔존 %d · 사라진 항목 %d" % (
-        inventory.get("accepted", 0), counts.get("registered", 0),
-        counts.get("shadow", 0), counts.get("retired-residue", 0),
-        inventory.get("removed", 0)))
-    scan = report_listeners()
-    if scan is None:
-        log("망 탐색 없음 (권한 없음 또는 정책 꺼짐)")
-        return
-    counts = scan.get("counts", {})
-    evidence = scan.get("evidence", {})
-    log("리스너 %d건 · 등록 %d · 섀도 %d · 폐기 잔존 %d · MCP 확정 %d · 추정 %d" % (
-        scan.get("accepted", 0), counts.get("registered", 0), counts.get("shadow", 0),
-        counts.get("retired-residue", 0), evidence.get("confirmed", 0),
-        evidence.get("suspected", 0)))
+def report_status(channel: str, state: str, accepted_count: int = 0, error_code: str = "") -> dict:
+    return call("POST", "/api/endpoint/observation-status", {
+        "endpoint_id": endpoint_id(), "channel": channel, "state": state,
+        "accepted_count": min(500, accepted_count), "error_code": error_code})
+
+
+def once() -> dict:
+    results = {}
+    for channel, collect in (("inventory", report_configs), ("process", report_processes), ("network", report_listeners)):
+        try:
+            result = collect()
+        except urllib.error.HTTPError as exc:
+            result = {"state": "unauthorized" if exc.code in (401, 403) else "failed", "error_code": "delivery_failed"}
+        except (OSError, ValueError, subprocess.SubprocessError):
+            result = {"state": "failed", "error_code": "source_unavailable"}
+        state, count = result["state"], result.get("accepted", 0)
+        error = result.get("error_code", "incomplete_snapshot" if state == "partial" else "")
+        try:
+            report_status(channel, state, count, error)
+        except (OSError, ValueError, subprocess.SubprocessError):
+            state, error = "failed", "delivery_failed"
+        results[channel] = {"state": state, "accepted_count": count, "error_code": error}
+    print(json.dumps({"observation": results}), flush=True)
+    return results
 
 
 def validate_gateway() -> None:
@@ -689,8 +775,8 @@ def main() -> int:
                 enroll()
                 enrolled = True
                 log("등록 완료")
-            once()
-            failed = False
+            results = once()
+            failed = any(value["state"] in {"failed", "partial", "unauthorized"} for value in results.values())
         except urllib.error.HTTPError as exc:
             detail = exc.read()[:200].decode("utf-8", "replace")
             if exc.code in (401, 403):
@@ -716,6 +802,10 @@ def demo() -> None:
     assert PROCESS_MARKERS.search("uvx ida-mcp stdio")
     assert PROCESS_MARKERS.search("python bridge_mcp_ghidra.py")
     assert PROCESS_MARKERS.search("node /opt/obsidian-mcp/dist/index.js")
+    assert PROCESS_MARKERS.search("node /opt/node_modules/@playwright/mcp/cli.js")
+    assert PROCESS_MARKERS.search("node /opt/node_modules/@bytebase/dbhub/dist/index.js --transport=stdio")
+    assert PROCESS_MARKERS.search("C:/synthetic/Scripts/mcp-for-blender.exe")
+    assert not PROCESS_MARKERS.search("C:/synthetic/blender.exe --background scene.blend")
 
     frame = 'event: message\ndata: {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18","serverInfo":{"name":"demo","version":"1.0.0"}}}\n'
     parsed = _parse_initialize(frame)

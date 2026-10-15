@@ -62,26 +62,38 @@ def main() -> None:
     cursor = args.config.with_suffix(".journal-cursor")
     command = ["journalctl", "-k", "-o", "json", "--no-pager"]
     command += ["--after-cursor", cursor.read_text().strip()] if cursor.exists() else ["--since", "-1 hour"]
-    result = subprocess.run(command, check=True, capture_output=True, text=True, timeout=20)
-    batch = []
-    last = None
-    for line in result.stdout.splitlines():
-        record = json.loads(line)
-        last = record["__CURSOR"]
-        found = event(record, args.uid, args.profile)
-        if found:
-            batch.append(found)
-        if len(batch) == 100:
+    state, count, error = "success", 0, ""
+    try:
+        result = subprocess.run(command, check=True, capture_output=True, text=True, timeout=20)
+        batch = []
+        last = None
+        for line in result.stdout.splitlines():
+            record = json.loads(line)
+            last = record["__CURSOR"]
+            found = event(record, args.uid, args.profile)
+            if found:
+                batch.append(found)
+            if len(batch) == 100:
+                agent.call("POST", "/api/endpoint/os-events", {"endpoint_id": agent.endpoint_id(), "events": batch})
+                count += len(batch)
+                batch.clear()
+        if batch:
             agent.call("POST", "/api/endpoint/os-events", {"endpoint_id": agent.endpoint_id(), "events": batch})
-            batch.clear()
-    if batch:
-        agent.call("POST", "/api/endpoint/os-events", {"endpoint_id": agent.endpoint_id(), "events": batch})
-    if last:
-        temporary = cursor.with_suffix(".tmp")
-        temporary.write_text(last)
-        temporary.chmod(0o600)
-        temporary.replace(cursor)
-    print("Actual kernel journal received; cursor advances only after successful delivery")
+            count += len(batch)
+        if last:
+            temporary = cursor.with_suffix(".tmp")
+            temporary.write_text(last)
+            temporary.chmod(0o600)
+            temporary.replace(cursor)
+    except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+        state, error = "failed", "journal_or_delivery_failed"
+    try:
+        agent.report_status("os", state, min(count, 500), error)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        state, error = "failed", "delivery_failed"
+    print(json.dumps({"observation": {"os": {"state": state, "accepted_count": min(count, 500), "error_code": error}}}), flush=True)
+    if state == "failed":
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
