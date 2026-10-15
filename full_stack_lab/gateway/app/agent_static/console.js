@@ -14,16 +14,17 @@ const TOKEN_KEY = "mcp-console-token";
 const THEME_KEY = "mcp-console-theme";
 const NAV_KEY = "mcp-console-nav-v4";
 const ADMIN_IDLE_MS = 30 * 60 * 1000;
+const ADMIN_MAX_MS = 8 * 60 * 60 * 1000;
 const SESSION_WARNING_MS = 2 * 60 * 1000;
 const token = localStorage.getItem(TOKEN_KEY);
 if (!token) location.replace("/login");
 
-function tokenExpiresAt(value) {
+function tokenTimes(value) {
   try {
     const encoded = value.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
     const payload = JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=")));
-    return Number(payload.exp) * 1000;
-  } catch { return 0; }
+    return { issuedAt: Number(payload.iat) * 1000, expiresAt: Number(payload.exp) * 1000 };
+  } catch { return { issuedAt: 0, expiresAt: 0 }; }
 }
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -2351,14 +2352,19 @@ function startAdminSessionGuard() {
   const warning = $("#session-warning");
   const message = $("#session-warning-text");
   const keepUsing = $("#session-continue");
+  const dismiss = $("#session-dismiss");
   const activityKey = `mcp-console-admin-activity-${viewer.user_id}`;
-  const absoluteAt = tokenExpiresAt(token);
+  const { issuedAt, expiresAt: tokenExpiresAt } = tokenTimes(token);
+  const maximumAt = (issuedAt || Date.now()) + ADMIN_MAX_MS;
   let lastActivity = Date.now();
   let ending = false;
+  let warningDismissed = false;
+  let currentWarningReason = "";
 
   const recordActivity = (event) => {
     if (!event.isTrusted) return;
     lastActivity = Date.now();
+    if (currentWarningReason === "idle") warningDismissed = false;
     localStorage.setItem(activityKey, String(lastActivity));
   };
   for (const name of ["pointerdown", "keydown", "wheel"]) {
@@ -2371,7 +2377,12 @@ function startAdminSessionGuard() {
 
   keepUsing.addEventListener("click", () => {
     lastActivity = Date.now();
+    warningDismissed = false;
     localStorage.setItem(activityKey, String(lastActivity));
+  });
+  dismiss.addEventListener("click", () => {
+    warningDismissed = true;
+    warning.close();
   });
 
   const endSession = async (reason) => {
@@ -2387,19 +2398,25 @@ function startAdminSessionGuard() {
     if (ending) return;
     const now = Date.now();
     const idleAt = lastActivity + ADMIN_IDLE_MS;
-    const absoluteFirst = absoluteAt <= idleAt;
-    const deadline = Math.min(idleAt, absoluteAt);
+    const deadline = Math.min(idleAt, maximumAt, tokenExpiresAt);
+    const reason = idleAt <= maximumAt && idleAt <= tokenExpiresAt ? "idle"
+      : maximumAt <= tokenExpiresAt ? "maximum" : "authentication";
     const remaining = deadline - now;
-    if (remaining <= 0) { endSession(absoluteFirst ? "maximum" : "idle"); return; }
+    if (remaining <= 0) { endSession(reason); return; }
     if (remaining > SESSION_WARNING_MS) {
       if (warning.open) warning.close();
+      warningDismissed = false;
       return;
     }
+    if (warningDismissed) return;
     const seconds = Math.ceil(remaining / 1000);
     const minutes = Math.floor(seconds / 60);
     const rest = seconds % 60;
-    message.textContent = `${absoluteFirst ? "최대 로그인 시간이" : "유휴 시간이"} ${minutes}분 ${rest}초 후 만료됩니다.`;
-    keepUsing.hidden = absoluteFirst;
+    const reasonText = reason === "idle" ? "유휴 시간이"
+      : reason === "maximum" ? "최대 로그인 시간이" : "인증 세션이";
+    message.textContent = `${reasonText} ${minutes}분 ${rest}초 후 만료됩니다.`;
+    keepUsing.hidden = reason !== "idle";
+    currentWarningReason = reason;
     if (!warning.open) warning.showModal();
   }, 1000);
 }
