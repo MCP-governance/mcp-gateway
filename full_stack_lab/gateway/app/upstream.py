@@ -23,6 +23,8 @@ import httpx2
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
 
+from . import db
+
 CONNECT_TIMEOUT = float(os.getenv("UPSTREAM_TIMEOUT_SECONDS", "90"))
 
 
@@ -94,12 +96,69 @@ def _client(timeout: float, headers: dict) -> httpx2.AsyncClient:
                               limits=httpx2.Limits(max_keepalive_connections=4, keepalive_expiry=60))
 
 
+async def close_pool(endpoint: str | None = None, principal: str | None = None) -> int:
+    """Drop the warm connections of one endpoint and/or one principal (None = any).
+
+    An idle one is closed now; one a call is using is closed by that call when it lets go,
+    and nothing new can be borrowed from either. The client holds the credential header
+    it was built with, so this is also how a removed credential leaves memory.
+    """
+    doomed = [key for key in _pool if (endpoint is None or key[0] == endpoint) and (principal is None or key[1] == principal)]
+    loop = asyncio.get_running_loop()
+    for key in doomed:
+        lease = _pool.pop(key)
+        lease.evicted = True
+        if not lease.users and lease.loop is loop:
+            await lease.client.aclose()
+    return len(doomed)
+
+
+async def release_pool(endpoint: str | None, principal: str | None, reason: str) -> int:
+    """close_pool here, and tell the other gateway processes through the database."""
+    closed = await close_pool(endpoint, principal)
+    await db.execute("INSERT INTO upstream_pool_events(endpoint, principal, reason) VALUES (%s,%s,%s)",
+                     (endpoint, principal, reason))
+    return closed
+
+
+SWEEP_SECONDS = 2.0
+_swept: dict = {"at": 0.0, "id": None}
+
+
+async def _sweep() -> None:
+    """Apply closures another process announced. Read at most every SWEEP_SECONDS, so a call
+    pays one query per interval, and never fails a call: the dispatch boundary refuses a
+    cut-off principal or server on its own, a stale connection only costs a warm socket."""
+    now = time.monotonic()
+    if now - _swept["at"] < SWEEP_SECONDS:
+        return
+    _swept["at"] = now
+    try:
+        if _swept["id"] is None:
+            _swept["id"] = (await db.fetch_one("SELECT COALESCE(max(id), 0) AS last FROM upstream_pool_events"))["last"]
+            return
+        for row in await db.fetch_all("SELECT id, endpoint, principal FROM upstream_pool_events WHERE id > %s ORDER BY id",
+                                      (_swept["id"],)):
+            _swept["id"] = row["id"]
+            await close_pool(row["endpoint"], row["principal"])
+    except Exception:
+        pass
+
+
 @asynccontextmanager
 async def _dispatch_client(endpoint: str, principal: str, headers: dict, timeout: float):
     loop = asyncio.get_running_loop()
+    await _sweep()
     key = (endpoint, principal, timeout, hashlib.sha256(json.dumps(headers, sort_keys=True).encode()).hexdigest())
     lease = _pool.get(key)
     if lease is None or lease.loop is not loop or lease.client.is_closed:
+        # A rotated or removed credential changes the key; the client built with the old
+        # one must not stay behind holding it.
+        for stale in [k for k in _pool if k[:2] == key[:2] and k != key]:
+            old = _pool.pop(stale)
+            old.evicted = True
+            if not old.users and old.loop is loop:
+                await old.client.aclose()
         lease = _pool[key] = _Lease(_client(timeout, headers), loop)
     _pool.move_to_end(key)
     lease.users += 1

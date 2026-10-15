@@ -274,7 +274,7 @@ export function pctText(value) {
 export const LATENCY_STAGE = {
   identity: "신원 확인", reserve: "호출 예약", schema: "입력 형식", inspect_in: "입력 검사", context: "정책 입력",
   policy: "정책 판정", dispatch: "전송 준비", connect: "서버 연결", list: "계약 재확인", recheck: "실행 전 재판정",
-  call: "도구 실행", close: "세션 종료", inspect_out: "출력 검사",
+  intent: "실행 기록", call: "도구 실행", close: "세션 종료", inspect_out: "출력 검사",
 };
 
 /** One call's stages in path order with their share of the total; unknown keys are dropped. */

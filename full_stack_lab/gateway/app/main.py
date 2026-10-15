@@ -6,6 +6,7 @@ import os
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
+from uuid import UUID
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Path, Query
@@ -13,7 +14,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
 
-from . import core, db, decommission, endpoint_plane, privacy
+from . import core, db, decommission, dispatch, endpoint_plane, privacy
 from .core import (
     OPA_URL,
     approve_request,
@@ -151,6 +152,11 @@ class StrictModel(BaseModel):
 
 class RejectRequest(StrictModel):
     note: str = Field(min_length=1, max_length=500)
+
+
+class IntentResolve(StrictModel):
+    outcome: Literal["executed", "not_executed"]
+    note: str = Field(default="", max_length=500)
 
 
 class EnforcementRequest(StrictModel):
@@ -363,7 +369,7 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
 # Stage keys written by core._Laps, in path order. Upstream stages are the MCP server's
 # share of a call; the rest is the gateway's own processing.
 LATENCY_STAGES = ("identity", "reserve", "schema", "inspect_in", "context", "policy",
-                  "dispatch", "connect", "list", "recheck", "call", "close", "inspect_out")
+                  "dispatch", "connect", "list", "recheck", "intent", "call", "close", "inspect_out")
 UPSTREAM_STAGES = ("connect", "list", "call", "close")
 
 
@@ -530,6 +536,20 @@ async def approve(approval_id: str, user: dict = Depends(admin_caller)) -> dict:
 async def reject(approval_id: str, request: RejectRequest, user: dict = Depends(admin_caller)) -> dict:
     try:
         return await reject_request(approval_id, user["principal"], request.note)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@app.get("/api/dispatch-intents")
+async def dispatch_intents(user: dict = Depends(admin_caller)) -> dict:
+    """Calls that were sent and never answered. The gateway does not retry them."""
+    return {"rows": await dispatch.uncertain()}
+
+
+@app.post("/api/dispatch-intents/{request_id}/resolve")
+async def dispatch_intent_resolve(request_id: UUID, request: IntentResolve, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await dispatch.resolve(str(request_id), request.outcome, user["principal"], request.note)
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 
@@ -727,7 +747,7 @@ class TargetUpdate(StrictModel):
 class EvidenceCreate(StrictModel):
     kind: Literal["revocation-response", "introspection", "provider-attestation",
                   "gateway-denial", "liveness-probe", "endpoint-inventory", "credential-check",
-                  "session-termination", "operator-statement"]
+                  "resource-rejection", "session-termination", "operator-statement"]
     subject: str = Field(min_length=1, max_length=300)
     source: str = Field(min_length=1, max_length=300)
     detail: dict = Field(default_factory=dict)

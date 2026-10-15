@@ -26,7 +26,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from psycopg.types.json import Jsonb
 
-from . import connections, core, db, oidc
+from . import connections, core, db, oidc, upstream
 from .release import build_info
 from .system_metrics import SystemMetrics
 from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, authenticate,
@@ -661,6 +661,8 @@ async def set_account_status(user_id: str, request: AccountStatus,
         (request.status, user["principal"], user_id))
     if not row:
         raise HTTPException(404, "관리대장에 없는 계정입니다.")
+    if request.status != "active":
+        await upstream.release_pool(None, row["token"], "principal")
     label = {"active": "사용", "disabled": "중지", "locked": "잠금"}[request.status]
     return {"account": row,
             "message": f"{row['display_name'] or row['email']} 계정을 {label} 상태로 변경했습니다."}
@@ -675,8 +677,10 @@ async def delete_account(user_id: str, authorization: str | None = Header(defaul
         raise HTTPException(409, "본인 또는 root 계정은 삭제할 수 없습니다.")
     row = await db.fetch_one(
         """UPDATE principals SET status='deleted', status_changed_by=%s, status_changed_at=now()
-           WHERE user_id=%s AND status <> 'deleted' RETURNING email""",
+           WHERE user_id=%s AND status <> 'deleted' RETURNING email, token""",
         (user["principal"], user_id))
+    if row:
+        await upstream.release_pool(None, row["token"], "principal")
     if not row:
         row = await db.fetch_one("SELECT email FROM principals WHERE user_id=%s AND status='deleted'", (user_id,))
         if not row:
@@ -1337,7 +1341,7 @@ async def approve(approval_id: UUID, authorization: str | None = Header(default=
 # every authorisation decision stays with the Gateway. Only these prefixes pass.
 GATEWAY_PROXY_PREFIXES = ("overview", "latency", "activity", "registry", "health", "termination/", "approvals/",
                           "catalog/", "enforcement", "monitor/", "audit/", "policy/", "endpoint/",
-                          "supply-chain/", "risk-catalog", "lab/")
+                          "supply-chain/", "risk-catalog", "lab/", "dispatch-intents")
 # Several Gateway read APIs are open to any authenticated caller; the Console adds
 # the role boundary here so an employee's session cannot read the organisation's
 # registry, policy ledger or endpoint inventory through it.

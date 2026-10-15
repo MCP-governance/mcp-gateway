@@ -35,12 +35,16 @@ from typing import Any
 import httpx
 from psycopg.types.json import Jsonb
 
-from . import db, registry
+from . import db, dispatch, registry, upstream
 
 SLA_DAYS = int(os.getenv("TERMINATION_SLA_DAYS", "14"))
 GITEA_ADMIN_URL = os.getenv("GITEA_ADMIN_URL", "http://corp-git:3000").rstrip("/")
 GITEA_ADMIN_USER = os.getenv("GITEA_ADMIN_USER", "corpadmin")
 GITEA_ADMIN_PASSWORD = os.getenv("GITEA_ADMIN_PASSWORD", "corp-admin-lab-only")
+# The protected resource the revoked token is shown to, and where the organisation keeps the value
+# it provisioned (a file the operator mounts; the value is only ever sent to that resource).
+GITEA_RESOURCE_URL = os.getenv("GITEA_RESOURCE_URL", GITEA_ADMIN_URL).rstrip("/")
+GITEA_PROBE_TOKEN_FILE = os.getenv("GITEA_PROBE_TOKEN_FILE", "")
 
 EXIT_TERMS = {
     "provider_credential_disclosure": "제공자가 하위 시스템에 대해 보유한 위임 자격을 고지한다",
@@ -68,6 +72,9 @@ EVIDENCE_KINDS: dict[str, dict] = {
     "credential-check": {"label": "하위 시스템 자격 확인", "state": True,
                          "proves": "하위 시스템에 그 자격이 더 이상 존재하지 않는다",
                          "not_proves": "이미 복제·발급된 다른 자격"},
+    "resource-rejection": {"label": "자원 서버 거부 확인", "state": True,
+                           "proves": "보호 자원이 이전 토큰을 실제로 거부하거나 수락했다",
+                           "not_proves": "다른 자원 서버·이미 복제된 다른 자격"},
     "provider-attestation": {"label": "제공자 폐기 증명", "state": True,
                              "proves": "제공자가 대상·시점을 특정해 회수를 진술했다",
                              "not_proves": "진술의 진위(제3자 검증이 아님)"},
@@ -90,12 +97,12 @@ EVIDENCE_KINDS: dict[str, dict] = {
 STATE_EVIDENCE_FOR = {
     "gateway-route": {"gateway-denial"},
     "gateway-access": {"gateway-denial"},
-    "server-held-credential": {"credential-check", "provider-attestation"},
+    "server-held-credential": {"credential-check", "provider-attestation", "resource-rejection"},
     "endpoint-config": {"endpoint-inventory"},
     "client-token": {"introspection", "credential-check", "provider-attestation"},
     "refresh-token": {"introspection", "credential-check", "provider-attestation"},
 }
-DEFAULT_STATE_EVIDENCE = {"introspection", "credential-check", "provider-attestation"}
+DEFAULT_STATE_EVIDENCE = {"introspection", "credential-check", "provider-attestation", "resource-rejection"}
 
 
 def _digest(value: Any) -> str:
@@ -228,11 +235,15 @@ async def open_case(target: str, reason: str, opened_by: str, engagement_label: 
     if live:
         raise ValueError("이 서버에 진행 중인 종료 케이스가 이미 있습니다.")
     case_id = str(uuid.uuid4())
-    cutover = _now()
     allowed = rel["allowed_resources"] if rel else [
         dict(r) for r in await db.fetch_all("SELECT name, action FROM mcp_tools WHERE server_id=%s AND enabled ORDER BY name", (server_id,))]
     label = engagement_label or (f"{rel['purpose']} · {rel['provider']}" if rel else f"{server['display_name']} · {server['supplier']}")
     async with db.transaction() as connection:
+        # The row every dispatch share-locks (dispatch.record): the lock waits for dispatches already
+        # recorded to commit, and the cutover is read from the database clock after it is held. A call
+        # is therefore recorded before the cutover or refused after it, never on the wrong side of it.
+        await connection.execute("SELECT 1 FROM mcp_servers WHERE id=%s FOR UPDATE", (server_id,))
+        cutover = (await (await connection.execute("SELECT clock_timestamp() AS at")).fetchone())["at"]
         await connection.execute(
             """INSERT INTO termination_cases(id, server_id, relationship_id, engagement_label, provider,
                  allowed_resources, reason, status, cutover_at, opened_by)
@@ -256,6 +267,7 @@ async def open_case(target: str, reason: str, opened_by: str, engagement_label: 
         if rel:
             await db.execute("UPDATE usage_relationships SET status='ACTIVE' WHERE id=%s", (rel["id"],))
         raise
+    await upstream.release_pool(server.get("endpoint"), None, "termination")
     return await case_detail(case_id)
 
 
@@ -454,13 +466,27 @@ async def collect(case_id: str, kinds: list[str], actor: str) -> dict:
             if target["kind"] != "server-held-credential" or target["verification"] != "gitea-token":
                 continue
             cred = json.loads(target["subject_ref"])
+            verdict = await _resource_verdict()
+            if verdict["rejected"] is not None:
+                prior = await db.fetch_one(
+                    """SELECT detail->'accepted_before' AS seen FROM termination_evidence
+                        WHERE target_id=%s AND kind='revocation-response' ORDER BY observed_at DESC LIMIT 1""",
+                    (target["id"],))
+                evidence = await add_evidence(
+                    case_id, "resource-rejection", cred["label"], "protected resource",
+                    {"resource": "GET /api/v1/user", "http_status": verdict["http_status"], "rejected": verdict["rejected"],
+                     "accepted_before_revocation": prior["seen"] if prior else None}, actor, target_id=str(target["id"]))
+                collected.append(evidence)
             present, status_code = await _gitea_token_present(cred["account"], cred["token_name"])
             detail = {"system": cred.get("system"), "account": cred["account"], "token_name": cred["token_name"],
                       "present": present, "http_status": status_code, "checked_as": GITEA_ADMIN_USER}
             evidence = await add_evidence(case_id, "credential-check", cred["label"], "corp-git admin API",
                                           detail, actor, target_id=str(target["id"]))
             collected.append(evidence)
-            if present is False and target["status"] == "OUTSTANDING":
+            # The resource's refusal outranks the issuer's list: a list that no longer shows the token
+            # does not revoke a resource that still takes it.
+            gone = verdict["rejected"] if verdict["rejected"] is not None else present is False
+            if gone and target["status"] == "OUTSTANDING":
                 await revoke_target(str(target["id"]), actor, "REVOKED", "하위 시스템에서 자격이 사라진 것을 확인",
                                     at=evidence["observed_at"])
     if "liveness" in kinds and server.get("endpoint"):
@@ -508,6 +534,35 @@ async def _gitea_token_present(account: str, token_name: str) -> tuple[bool | No
         return None, 0
 
 
+async def _resource_verdict() -> dict:
+    """Show the protected resource the credential the organisation provisioned and read its answer.
+
+    This asks the resource server, which the token list cannot: a token missing from an
+    administrator's list says what the issuer holds, not what the resource still accepts.
+    rejected is None when it could not be asked (no copy of the value, an unreachable or
+    erroring resource); the value itself is never written anywhere.
+    """
+    if not GITEA_PROBE_TOKEN_FILE:
+        return {"rejected": None, "http_status": None, "reason": "not_configured"}
+    try:
+        with open(GITEA_PROBE_TOKEN_FILE, encoding="utf-8") as handle:
+            secret = handle.read().strip()
+    except OSError:
+        return {"rejected": None, "http_status": None, "reason": "not_readable"}
+    if not secret:
+        return {"rejected": None, "http_status": None, "reason": "not_configured"}
+    try:
+        async with httpx.AsyncClient(timeout=10, trust_env=False, follow_redirects=False) as client:
+            response = await client.get(f"{GITEA_RESOURCE_URL}/api/v1/user", headers={"Authorization": f"token {secret}"})
+    except httpx.HTTPError as exc:
+        return {"rejected": None, "http_status": None, "reason": type(exc).__name__}
+    if response.status_code in (401, 403):
+        return {"rejected": True, "http_status": response.status_code, "reason": "rejected"}
+    if 200 <= response.status_code < 300:
+        return {"rejected": False, "http_status": response.status_code, "reason": "accepted"}
+    return {"rejected": None, "http_status": response.status_code, "reason": "unexpected_status"}
+
+
 async def revoke_credential(target_id: str, actor: str) -> dict:
     """The organisation exercises its own authority over a disclosed server-held
     credential because it owns the downstream system (here: Gitea admin). This is
@@ -516,6 +571,8 @@ async def revoke_credential(target_id: str, actor: str) -> dict:
     if not target or target["kind"] != "server-held-credential" or target["verification"] != "gitea-token":
         raise ValueError("조직이 직접 회수할 수 있는 하위 자격이 아닙니다.")
     cred = json.loads(target["subject_ref"])
+    # Whether the resource took the value before: a later refusal only means something if it did.
+    before = await _resource_verdict()
     async with httpx.AsyncClient(timeout=10) as client:
         response = await client.delete(
             f"{GITEA_ADMIN_URL}/api/v1/users/{cred['account']}/tokens/{cred['token_name']}",
@@ -523,7 +580,9 @@ async def revoke_credential(target_id: str, actor: str) -> dict:
     case_id = str(target["case_id"])
     await add_evidence(case_id, "revocation-response", cred["label"], "corp-git admin API",
                        {"http_status": response.status_code, "method": "DELETE", "account": cred["account"],
-                        "token_name": cred["token_name"]}, actor, target_id=target_id)
+                        "token_name": cred["token_name"],
+                        "accepted_before": None if before["rejected"] is None else not before["rejected"]},
+                       actor, target_id=target_id)
     if response.status_code in (204, 404):
         await revoke_target(target_id, actor, "REVOKED", "조직이 하위 시스템 관리자 권한으로 폐기")
     # The deletion response proves only that the request was processed; check state.
@@ -544,8 +603,16 @@ async def _post_cutover(case: dict, principal: str | None = None) -> dict:
                    count(*) FILTER (WHERE NOT upstream_executed AND COALESCE(upstream_attempted, false)) AS unknown,
                    max(created_at) AS last_attempt
               FROM decisions WHERE server_id = %s AND created_at >= %s{extra}""", tuple(params))
+    # Sent before the cutover, answered after it: still counted above as executed (the effect may
+    # have landed after the cutover), shown apart so the two kinds of "after" are not confused.
+    straddled = await db.fetch_one(
+        f"""SELECT count(*) AS n FROM dispatch_intents i JOIN decisions d ON d.request_id = i.request_id
+             WHERE i.server_id = %s AND i.attempted_at < %s AND d.created_at >= %s{extra.replace("user_token", "i.user_token")}""",
+        (case["server_id"], case["cutover_at"], case["cutover_at"], *params[2:]))
+    # Sent and never ledgered (the process died): the audit table cannot know of it, the intent can.
+    lost = await dispatch.uncertain_count(case["server_id"], principal, unledgered=True)
     return {"executed": int(row["executed"] or 0), "blocked": int(row["blocked"] or 0),
-            "unknown": int(row["unknown"] or 0),
+            "unknown": int(row["unknown"] or 0) + lost, "straddled": int(straddled["n"] or 0),
             "last_attempt": row["last_attempt"].isoformat() if row["last_attempt"] else None}
 
 
@@ -565,6 +632,12 @@ def _judge_target(target: dict, evidence: list[dict], activity: dict, provider_c
                       if e["kind"] in state_kinds and EVIDENCE_KINDS[e["kind"]]["state"]
                       and (not revoked_at or e["observed_at"] >= revoked_at)]
     confirmed = [e for e in state_evidence if _evidence_shows_revoked(e)]
+    # The resource server's own answer outranks the issuer's list. A credential the resource still
+    # takes after the organisation "revoked" it is residual access, whatever the list says.
+    probes = [e for e in state_evidence if e["kind"] == "resource-rejection"]
+    residual = bool(probes) and (probes[-1].get("detail") or {}).get("rejected") is False
+    if residual:
+        confirmed = [e for e in confirmed if e["kind"] not in {"credential-check", "resource-rejection"}]
     # C1
     c1_gaps = ["대상의 존재·범위를 열거할 수 없습니다."] if status == "UNVERIFIABLE" else []
     # C4
@@ -594,12 +667,19 @@ def _judge_target(target: dict, evidence: list[dict], activity: dict, provider_c
         gap = (target["expires_at"] - revoked_at).total_seconds()
         if gap > 0:
             c3_gaps.append(f"상태 비저장 토큰이라 폐기 후 만료까지 {int(gap)}초 동안 자원 접근이 가능했습니다.")
+    if residual:
+        c3_gaps.append("폐기 뒤에도 자원 서버가 이전 자격을 수락했습니다.")
     if status in {"REVOKED", "EXPIRED"} and not confirmed and not c3_gaps:
         c3_gaps.append("조치 이후 대상이 무효가 되었음을 확인한 기록이 없습니다(전파 완료 미확인).")
     if status not in {"REVOKED", "EXPIRED"} and not c3_gaps:
         c3_gaps.append("회수 전이라 전파를 판단할 수 없습니다.")
     crit = {"C1": {"met": not c1_gaps, "gaps": c1_gaps}, "C2": {"met": not c2_gaps, "gaps": c2_gaps},
             "C3": {"met": not c3_gaps, "gaps": c3_gaps}, "C4": {"met": not c4_gaps, "gaps": c4_gaps}}
+    if kind == "server-held-credential" and target.get("verification") == "gitea-token":
+        # Not asked is not the same as refused: only the expiry is known to bound it.
+        expires = target.get("expires_at")
+        crit["provider_side"] = {"state": "unverified" if not probes else "accepted" if residual else "rejected",
+                                 "expires_at": expires.isoformat() if expires else None}
     if not crit["C1"]["met"] or not crit["C4"]["met"]:
         grade = "T3"
     elif not crit["C2"]["met"] or not crit["C3"]["met"]:
@@ -618,6 +698,8 @@ def _evidence_shows_revoked(evidence: dict) -> bool:
         return detail.get("active") is False
     if kind == "credential-check":
         return detail.get("present") is False or detail.get("valid") is False
+    if kind == "resource-rejection":
+        return detail.get("rejected") is True
     if kind == "endpoint-inventory":
         return bool(detail.get("absent"))
     return kind == "provider-attestation"

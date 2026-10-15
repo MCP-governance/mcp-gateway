@@ -164,3 +164,39 @@ END $$;
 -- Per-stage wall time of a tools/call in ms (core._Laps). Operational data outside the
 -- audit fingerprint: it says how long the gateway took, not what it decided.
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS timings jsonb;
+
+-- A tools/call is written here immediately before it is sent. The audit ledger only
+-- learns of a call once its decision is recorded, so a process that dies after the send
+-- left no trace and the same call could be sent again once its reservation expired.
+-- pending = sent, no answer recorded yet; resolved = answered and ledgered;
+-- uncertain = sent, no definite answer (timeout, lost response); confirmed_* = an
+-- administrator checked the downstream system. Only uncertain (and a pending row whose
+-- reservation is gone) blocks an identical write. Separate from decisions, which stay append-only.
+CREATE TABLE IF NOT EXISTS dispatch_intents (
+  request_id   uuid PRIMARY KEY,
+  user_token   text NOT NULL,
+  server_id    text NOT NULL,
+  tool_name    text NOT NULL,
+  action       text NOT NULL CHECK (action IN ('r','w','x')),
+  fingerprint  text NOT NULL,
+  attempted_at timestamptz NOT NULL DEFAULT now(),
+  state        text NOT NULL DEFAULT 'pending'
+               CHECK (state IN ('pending','resolved','uncertain','confirmed_executed','confirmed_not_executed')),
+  decision_id  bigint,
+  resolved_at  timestamptz,
+  resolved_by  text,
+  note         text
+);
+CREATE INDEX IF NOT EXISTS dispatch_intents_unsettled_idx
+  ON dispatch_intents(user_token, fingerprint) WHERE state IN ('pending','uncertain');
+CREATE INDEX IF NOT EXISTS dispatch_intents_server_idx ON dispatch_intents(server_id, attempted_at DESC);
+
+-- Connection-pool closures. A cutover or a revoked principal is decided in one process
+-- while every process holds warm upstream connections; the others read these rows.
+CREATE TABLE IF NOT EXISTS upstream_pool_events (
+  id         bigserial PRIMARY KEY,
+  endpoint   text,
+  principal  text,
+  reason     text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
