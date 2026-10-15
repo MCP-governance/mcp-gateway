@@ -95,7 +95,8 @@
     "integration_50_execution_states_preserved": true,
     "document_only_diff": true,
     "new_workbook_bytes_preserved_against_curation_commit": true,
-    "policy_table_50_rows_and_code_hashes": true
+    "policy_table_50_rows_and_code_hashes": true,
+    "backlog_table_47_rows_contiguous": true
   },
   "product_runtime_tests_executed": false,
   "deployment_performed": false,

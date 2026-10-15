@@ -2179,9 +2179,9 @@
     {
       "path": "status/backlog.md",
       "title": "개발 백로그",
-      "lines": 58,
+      "lines": 55,
       "heading_count": 1,
-      "canonical_lf_sha256": "71caa12f205f4f0c354a2c91b836020101096e0e9c1d78d35483c3dd4170c93f",
+      "canonical_lf_sha256": "a4e2b43e53dfd3d7678069762c266ba941c60d3351530e7dcc147f879c9ca7db",
       "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
     },
     {
