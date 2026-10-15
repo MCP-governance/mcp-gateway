@@ -195,6 +195,12 @@ function when(value, { seconds = false } = {}) {
   const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}${seconds ? `:${pad(d.getSeconds())}` : ""}`;
   return d.toDateString() === new Date().toDateString() ? hm : `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hm}`;
 }
+function dateTimeInput(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
 function ago(value) {
   if (!value) return "—";
   const s = Math.round((Date.now() - new Date(value).getTime()) / 1000);
@@ -451,8 +457,11 @@ const ROUTES = {};
 ROUTES.overview = async (_, tab) => {
   const [o, blocked, pl] = await Promise.all([gw("overview"), gw("activity?limit=10&decision=Block"), planes()]);
   feed.rows = mergeRows([], blocked.rows);
-  const t = o.today, x = o.execution, term = o.termination || {};
+  const x = o.execution, term = o.termination || {};
+  const todayFilter = `since=${encodeURIComponent(o.today_since)}&event_kind=tools%2Fcall`;
   const buckets = hourBuckets(o.series);
+  const trafficDecisions = Object.fromEntries(DECISIONS.map((decision) => [decision,
+    buckets.reduce((sum, bucket) => sum + Number(bucket[decision] || 0), 0)]));
   const byServer = splitBy(o.flows, "server", (r) => Number(r.n));
   const flowTotal = o.flows.reduce((s, f) => s + Number(f.n || 0), 0);
   const stations = o.workstations;
@@ -491,10 +500,10 @@ ROUTES.overview = async (_, tab) => {
       head: head("대시보드", { status: modeChip(o.enforcement) }),
       kpis: html`<div class="dashboard-kpi-groups">
         <section><h2>금일 운영 현황</h2>${kpiStrip([
-          ["전체 요청", x.tool_calls, "", "#/activity"],
-          ["실행된 요청", x.executed, "allow", "#/activity?execution=executed"],
-          ["차단된 요청", x.blocked, "block", "#/activity?decision=Block"],
-          ["실행 미확인", x.unknown, "alert", "#/activity?execution=unknown"]])}</section>
+          ["전체 요청", x.tool_calls, "", `#/activity?${todayFilter}`],
+          ["실행된 요청", x.executed, "allow", `#/activity?${todayFilter}&execution=executed`],
+          ["차단된 요청", x.blocked, "block", `#/activity?${todayFilter}&decision=Block`],
+          ["실행 미확인", x.unknown, "alert", `#/activity?${todayFilter}&execution=unknown`]])}</section>
         <section><h2>현재 상태</h2>${kpiStrip([
         ["통제 적용 기기", devices.filter((d) => d.account_state === "endpoint_enforced").length, "", "#/coverage?t=devices"],
         ["우회 가능 경로", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"],
@@ -523,7 +532,7 @@ ROUTES.overview = async (_, tab) => {
         { key: "traffic", label: "트래픽", body: html`<div class="stack">
           ${panel("시간대별 판정", chartBox("c-traffic", "최근 24시간 시간대별 판정 건수", "lg"), { sub: "최근 24시간" })}
           <div class="grid c12">
-            ${panel("판정 비율", chartBox("c-share", "오늘 판정 비율", "sm"), { sub: "오늘" })}
+            ${panel("판정 비율", chartBox("c-share", "최근 24시간 판정 비율", "sm"), { sub: "최근 24시간" })}
             ${panel("서버별 호출", chartBox("c-servers", "최근 24시간 서버별 호출과 판정", "sm"), { sub: `${byServer.length}개 서버 · 24시간` })}
           </div>
           ${panel("하네스 → MCP 서버 → 판정", flowTotal ? chartBox("c-flow", "하네스에서 서버를 거쳐 판정까지의 호출 흐름", "xl") : empty("최근 24시간 호출 없음"), { sub: `${flowTotal}건 · 24시간` })}
@@ -532,7 +541,7 @@ ROUTES.overview = async (_, tab) => {
               <td>${w.harness ? chip("plain", harnessLabel(w.harness)) : NONE}</td><td class="num">${w.calls}</td>
               <td>${deviceOf[w.endpoint_id] ? statusPair(deviceOf[w.endpoint_id]) : chip("outline", "관찰만")}</td><td class="small">${ago(w.last_call)}</td></tr>`)}
             </tbody></table>${stations.length ? "" : empty("엔드포인트 없음")}`, { flush: true })}</div>` },
-        { key: "risk", label: "위험종료", n: t.Block, hot: t.Block > 0, body: html`<div class="grid c2">
+        { key: "risk", label: "위험종료", body: html`<div class="grid c2">
             ${panel("자주 걸린 정책", o.top_policies.length ? chartBox("c-policies", "최근 24시간 차단·경보가 많은 정책") : empty("최근 24시간 차단·경보 없음"), { sub: "최근 24시간" })}
             ${panel("종료·폐기", chartBox("c-term", "종료·폐기 현황"), { end: html`<a class="btn sm" href="#/termination">열기</a>` })}
           </div>` },
@@ -546,7 +555,7 @@ ROUTES.overview = async (_, tab) => {
           if (c && st) location.hash = `#/coverage?t=items&class=${c}&state=${st}`; } }),
       "c-ov-pipeline": () => charts.sankey({ nodes: [...pipe.nodes.values()], links: [...pipe.links.values()] }),
       "c-traffic": () => charts.decisionColumns(buckets.map((b) => b.label), buckets),
-      "c-share": () => charts.donut(DECISIONS.map((d) => ({ name: DECISION_LABEL[d], value: t[d], color: charts.color(d) }))),
+      "c-share": () => charts.donut(DECISIONS.map((d) => ({ name: DECISION_LABEL[d], value: trafficDecisions[d], color: charts.color(d) }))),
       "c-servers": () => charts.decisionColumns(byServer.map((g) => g.key), byServer, {
         horizontal: true, grouped: true, onClick: (e) => { location.hash = `#/activity?server=${encodeURIComponent(e.name)}`; } }),
       "c-flow": () => charts.sankey(sankeyData(o.flows, (d) => DECISION_LABEL[d] || d)),
@@ -562,7 +571,7 @@ ROUTES.overview = async (_, tab) => {
 // Activity keeps its rows between renders so live updates and the detail drawer
 // read from the same list. Paused, it keeps polling but holds new rows back and
 // counts them, so the list stops moving without going stale.
-const FEED_FILTERS = ["decision", "server", "since", "until", "execution", "person", "endpoint", "policy"];
+const FEED_FILTERS = ["decision", "server", "since", "until", "execution", "person", "endpoint", "policy", "event_kind"];
 const FEED_PAGE_SIZE = 50;
 const feed = { rows: [], pending: [], cursor: 0, filters: Object.fromEntries(FEED_FILTERS.map((key) => [key, ""])), query: "",
   live: true, servers: [], lastOk: 0, failing: false, gen: 0, page: 1, pageSize: FEED_PAGE_SIZE,
@@ -731,8 +740,8 @@ ROUTES.activity = async (_, tab, query) => {
         </div><section class="panel feed-panels">
           <div class="filters">
             <label class="grow">검색<input data-feed-search type="search" maxlength="120" value="${feed.query}" placeholder="사용자, 엔드포인트, 도구, 정책" aria-label="호출 검색" /></label>
-            <label>시작<input data-filter="since" type="datetime-local" value="${f.since}" aria-label="조회 시작 시각" /></label>
-            <label>종료<input data-filter="until" type="datetime-local" value="${f.until}" aria-label="조회 종료 시각" /></label>
+            <label>시작<input data-filter="since" type="datetime-local" value="${dateTimeInput(f.since)}" aria-label="조회 시작 시각" /></label>
+            <label>종료<input data-filter="until" type="datetime-local" value="${dateTimeInput(f.until)}" aria-label="조회 종료 시각" /></label>
             <label>판정<select data-filter="decision" aria-label="판정">${option("", "모든 판정", f.decision)}
               ${Object.entries(DECISION).map(([k, [, label]]) => option(k, label, f.decision))}</select></label>
             <label>MCP 서버<select data-filter="server" aria-label="서버">${option("", "모든 서버", f.server)}${servers.map((s) => option(s, s, f.server))}</select></label>

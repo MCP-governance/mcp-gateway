@@ -6,6 +6,7 @@ import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Literal
+from zoneinfo import ZoneInfo
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
@@ -301,17 +302,21 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
                          GROUP BY s.id ORDER BY s.id""", (sorted(registry.servers()),)),
         db.fetch_all("""SELECT a.endpoint_id, a.hostname, a.owner_token, a.last_seen_at, p.display_name, p.department, p.role,
                                (SELECT count(*) FROM endpoint_inventory i WHERE i.endpoint_id=a.endpoint_id AND i.classification='shadow') AS shadow,
-                               (SELECT max(d.created_at) FROM decisions d WHERE d.client->>'workstation' = a.endpoint_id) AS last_call,
+                               (SELECT max(d.created_at) FROM decisions d WHERE d.client->>'workstation' = a.endpoint_id
+                                   AND COALESCE(d.client->>'event_kind','tools/call')='tools/call') AS last_call,
                                (SELECT d.client->'harness'->>'name' FROM decisions d
                                  WHERE d.client->>'workstation' = a.endpoint_id AND d.client->'harness'->>'name' IS NOT NULL
+                                   AND COALESCE(d.client->>'event_kind','tools/call')='tools/call'
                                  ORDER BY d.id DESC LIMIT 1) AS harness,
                                (SELECT count(*) FROM decisions d WHERE d.client->>'workstation' = a.endpoint_id
-                                   AND d.created_at > now() - interval '24 hours') AS calls
+                                   AND d.created_at > now() - interval '24 hours'
+                                   AND COALESCE(d.client->>'event_kind','tools/call')='tools/call') AS calls
                           FROM endpoint_agents a LEFT JOIN principals p ON p.token = a.owner_token
                          WHERE a.status='active' ORDER BY a.endpoint_id"""),
         db.fetch_all(f"""SELECT decision, policy_id, count(*) AS n FROM decisions d
                           WHERE created_at > now() - interval '24 hours' AND decision IN ('Block','Alert')
                             AND {decommission.REAL_CALL}
+                            AND COALESCE(d.client->>'event_kind','tools/call')='tools/call'
                          GROUP BY decision, policy_id ORDER BY n DESC LIMIT 8"""),
         db.fetch_one("SELECT count(*) AS n FROM approvals WHERE status='PENDING' AND expires_at > now()"),
         db.fetch_one("""SELECT count(*) AS n FROM mcp_intake_requests
@@ -321,6 +326,7 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
         # Charts: calls per hour by decision, and who called what (harness -> server -> decision).
         db.fetch_all(f"""SELECT date_trunc('hour', created_at) AS hour, decision, count(*) AS n FROM decisions d
                           WHERE created_at > now() - interval '24 hours' AND {decommission.REAL_CALL}
+                            AND COALESCE(d.client->>'event_kind','tools/call')='tools/call'
                          GROUP BY 1, 2 ORDER BY 1"""),
         db.fetch_all(f"""SELECT COALESCE(NULLIF(d.client->'harness'->>'name', ''), NULLIF(d.client->>'agent', ''), 'unknown') AS harness,
                                d.server_id AS server, d.decision, count(*) AS n
@@ -352,6 +358,7 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
     counts = {row["decision"]: int(row["n"]) for row in today}
     return {
         "today": {"total": sum(counts.values()), **{k: counts.get(k, 0) for k in ("Allow", "Alert", "Restrict", "Approval", "Block")}},
+        "today_since": datetime.now(ZoneInfo("Asia/Seoul")).replace(hour=0, minute=0, second=0, microsecond=0).isoformat(),
         "servers": per_server, "workstations": stations, "top_policies": alerts,
         "pending_approvals": int(approvals["n"] or 0),
         "intake_actions": int(intake_actions["n"] or 0), "termination": cases,
