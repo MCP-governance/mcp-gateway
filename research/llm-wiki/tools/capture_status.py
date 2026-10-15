@@ -28,14 +28,14 @@ def capture():
                         for p in FILES]}
     folder = ROOT / "status"
     folder.mkdir(exist_ok=True)
-    (folder / "repository-snapshot.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (folder / "repository-snapshot.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     md = ["# 저장소 코드 스냅샷", "", f"확인 시각: {result['captured_at']}", "",
           f"HEAD: `{result['head']}` · 로컬 브랜치: `{result['branch']}`", "",
           "로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.", "",
           "## 워킹 트리", "", "```text", *result["status"], "```", "",
           "## 주요 파일 바이트", "", "| 파일 | SHA-256 |", "| --- | --- |"]
     md += [f"| `{f['path']}` | `{f['sha256']}` |" for f in result["files"]]
-    (folder / "repository-snapshot.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    (folder / "repository-snapshot.md").write_text("\n".join(md) + "\n", encoding="utf-8", newline="\n")
     print(json.dumps({"head": result["head"], "dirty_paths": len(result["status"]), "scope": result["scope"]}))
 
 

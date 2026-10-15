@@ -74,11 +74,11 @@ def build():
         links = "<br>".join(f"[{e['path'].split('/')[-1]}](../../../{e['path']})" for e in evidence)
         markdown.append(f"| {source_id} · A{row['row']} | {boundary}: {record['threat']} | {', '.join(runtime)} | {links} | {limitation} |")
     (ROOT / "catalogs").mkdir(exist_ok=True)
-    (ROOT / "catalogs/threats.json").write_text(json.dumps(output, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (ROOT / "catalogs/threats.json").write_text(json.dumps(output, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     markdown += ["", "JSON에는 로컬 파일의 원래 바이트 hash와 LF 정규화 hash, HEAD의 commit 파일 hash를 함께 기록했습니다. 코드의 CRLF/LF 차이는 실제 코드 변경과 구분합니다. 자료 원본 hash는 줄바꿈까지 그대로 보존합니다. `worktree_modified=true`인 기존 미커밋 파일은 위키 커밋에 포함하지 않습니다. 다른 PC의 HEAD 코드와 이 매핑의 로컬 관찰값이 다를 수 있으므로 실제 변경 파일을 다시 확인합니다."]
     if risks:
         markdown += ["", "[로컬 도구·MCP 위험매핑](local-tool-map.md)의 실제 스키마·호출·반례를 연결했습니다. 원본 24개 정책은 유지하며 로컬 실험 결과를 관리 엔드포인트 집행 완료로 승격하지 않습니다."]
-    (ROOT / "threats/control-map.md").write_text("\n".join(markdown) + "\n", encoding="utf-8")
+    (ROOT / "threats/control-map.md").write_text("\n".join(markdown) + "\n", encoding="utf-8", newline="\n")
     print(f"Mapped {len(output)} source policies; all code paths exist; runtime verification pending")
 
 

@@ -11,7 +11,7 @@ OUT = ROOT / "analysis"
 
 
 def dump(name, data):
-    (OUT / name).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (OUT / name).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
 
 
 def git(*args):

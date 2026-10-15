@@ -582,7 +582,7 @@ def main():
             raise RuntimeError('Dataset changed during refresh: '+p.name)
     for name, data in [('integrations.json',records),('integration-cases.json',cases)]:
         temporary = out/(name+'.tmp')
-        temporary.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+        temporary.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8', newline='\n')
         os.replace(temporary,out/name)
     print(json.dumps({'integration_products':len(records),'conditions':len(cases),
                       'non_not_run_records':sum(c['status'] != 'not_run' for c in cases),

@@ -275,7 +275,7 @@ def save_native_session(record, log, task_id, run_session_id):
     log.path.parent.mkdir(parents=True, exist_ok=True)
     path = log.path.parent / f"{task_id}.session.json"
     temporary = path.with_suffix(".json.tmp")
-    temporary.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     temporary.replace(path)
     return native_session
 
