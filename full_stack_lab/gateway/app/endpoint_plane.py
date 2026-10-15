@@ -768,7 +768,10 @@ async def managed_policy(device: dict) -> dict:
         proxy = {"HTTPS_PROXY": proxy_url, "HTTP_PROXY": proxy_url, "NO_PROXY": ",".join(sorted({parsed.hostname, *addresses}))}
     settings = {"allowAllClaudeAiMcps": False, "disableClaudeAiConnectors": True,
                 "allowManagedMcpServersOnly": True, "allowedMcpServers": [{"serverUrl": u} for u in routes.values()],
-                "strictKnownMarketplaces": []}
+                "strictKnownMarketplaces": [],
+                # User, project and plugin hooks run commands the harness starts; a hook could call the
+                # header helper the harness profile may run (DEV-42). Only managed hooks load.
+                "allowManagedHooksOnly": True}
     if proxy:
         settings["env"] = proxy
     codex_servers = "".join(f'\n[mcp_servers.{s}]\nurl = {json_document(u).strip()}\nhttp_headers_helper = {json_document(helper).strip()}\n'
