@@ -5,11 +5,16 @@ core.bootstrap() applies it. Rows here are synthetic principals and servers."""
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
+import os
 import sys
 import time
 import traceback
 from pathlib import Path
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from app import db
 
@@ -79,3 +84,26 @@ def run(main) -> None:
         finally:
             await db.close()
     sys.exit(asyncio.run(wrapped()))
+
+
+def signing_keys() -> None:
+    """A throwaway Ed25519 pair for this run, in the form the gateway reads from its environment."""
+    key = Ed25519PrivateKey.generate()
+    raw = lambda data: base64.urlsafe_b64encode(data).decode()  # noqa: E731
+    os.environ["AGENT_JWT_PRIVATE_KEY"] = raw(key.private_bytes(
+        serialization.Encoding.Raw, serialization.PrivateFormat.Raw, serialization.NoEncryption()))
+    os.environ["AGENT_JWT_PUBLIC_KEY"] = raw(key.public_key().public_bytes(
+        serialization.Encoding.Raw, serialization.PublicFormat.Raw))
+
+
+def mint(user_id: str, client_id: str = "lab", minutes: int = 10) -> tuple[str, dict]:
+    """(authorization header, claims the ingress would verify) for a token this IdP signs."""
+    from app.agent_contract import authenticate, issue_token
+    token, _ = issue_token({"user_id": user_id}, minutes=minutes, client_id=client_id)
+    header = "Bearer " + token
+    return header, authenticate(header)[1]
+
+
+def call_payload(token: str, server: str, tool: str, arguments: dict, claims: dict) -> dict:
+    return {"server_id": server, "tool": tool, "arguments": arguments, "user_token": token,
+            "client": {"agent": "lab"}, "transport_claims": claims}

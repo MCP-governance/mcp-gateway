@@ -3,7 +3,8 @@
 # isolated lab beside the product stack without touching it: its own network, PostgreSQL, OPA,
 # Presidio, a disposable Gitea and the Gitea MCP server (the project's own image) bound to it. Everything is named wbs-c-* and removed by `down`.
 #
-#   termination_dispatch_remote.sh up | run <test.py> [env...] | down
+#   termination_dispatch_remote.sh up | run <test.py> [env...] | reset | down
+# `reset` gives the provider a fresh token (a termination check revokes it) and restarts the MCP server with it.
 set -uo pipefail
 P=wbs-c
 LAB=/tmp/$P-lab
@@ -33,6 +34,14 @@ mcp_gitea() {
   docker run -d --name $P-mcp-gitea --network $NET --network-alias mcp-gitea \
     -e GITEA_ACCESS_TOKEN="$(cat $LAB/secrets/gitea-mcp.token)" \
     docker.gitea.com/gitea-mcp-server:1.7.0 /app/gitea-mcp -t http -p 8000 -H http://corp-git:3000 >/dev/null || return 1
+}
+
+# Org, repositories and the provider's token (written to the file the MCP server and the probe read).
+provision() {
+  load
+  docker run --rm --network $NET -e GITEA_ADMIN_URL=http://corp-git:3000 -e GITEA_ADMIN_USER=corpadmin \
+    -e GITEA_ADMIN_PASSWORD="$GITEA_ADMIN_PASSWORD" -v $LAB/secrets:/secrets -v $SRC/tests:/tests:ro \
+    $GATEWAY_IMAGE python /tests/termination_dispatch_provision.py
 }
 
 up() {
@@ -67,10 +76,7 @@ E
     --email corpadmin@bob.local --must-change-password=false >/dev/null || return 1
   docker exec $P-gitea gitea admin user create --username mcp-bot --random-password \
     --email mcp-bot@bob.local --must-change-password=false >/dev/null || return 1
-  # Org, repositories and the provider's token (written once to the file the MCP server reads).
-  docker run --rm --network $NET -e GITEA_ADMIN_URL=http://corp-git:3000 -e GITEA_ADMIN_USER=corpadmin \
-    -e GITEA_ADMIN_PASSWORD="$GITEA_ADMIN_PASSWORD" -v $LAB/secrets:/secrets -v $SRC/tests:/tests:ro \
-    $GATEWAY_IMAGE python /tests/termination_dispatch_provision.py || return 1
+  provision || return 1
   mcp_gitea || return 1
   wait_for presidio 120 docker exec $P-presidio-analyzer python -c "import urllib.request; urllib.request.urlopen('http://localhost:3000/health', timeout=2)" || return 1
   wait_for presidio-anonymizer 60 docker exec $P-presidio-anonymizer python -c "import urllib.request; urllib.request.urlopen('http://localhost:3000/health', timeout=2)" || return 1
@@ -90,7 +96,7 @@ run() {
     -v $SRC/gateway/app:/app/app:ro -v $SRC/tests:/tests:ro -v $SRC/registry:/registry:ro -v $SRC/opa:/policy:ro \
     -v $LAB/secrets:/secrets:ro \
     -e DATABASE_URL=postgresql://mcp:$PG_PASS@$P-pg:5432/$db -e DB_POOL_MAX=24 -e OTEL_SDK_DISABLED=true \
-    -e OPA_URL=http://$P-opa:8181/v1/data/mcp/authz/decision -e POLICY_PATH=/policy/policy.rego \
+    -e OPA_URL=http://$P-opa:8181/v1/data/mcp/authz/decision -e POLICY_LEDGER_URL=http://$P-opa:8181/v1/data/policy_ledger -e POLICY_PATH=/policy/policy.rego \
     -e REGISTRY_DIR=/registry -e REGISTRY_RUNTIME_DIR=/registry-runtime -e REPORT_DIR=/reports \
     -e GITEA_ADMIN_URL=http://corp-git:3000 -e GITEA_ADMIN_USER=corpadmin -e GITEA_ADMIN_PASSWORD="$GITEA_ADMIN_PASSWORD" \
     -e GITEA_PROBE_TOKEN_FILE=/secrets/gitea-mcp.token \
@@ -106,6 +112,7 @@ case "${1:-}" in
   up) up || { echo "lab not ready (left running for inspection; it removes itself after 3 hours)" >&2; exit 1; } ;;
   run) shift; run "$@" ;;
   mcp) mcp_gitea ;;
+  reset) provision && mcp_gitea ;;
   down) down ;;
   *) echo "usage: $0 up | run <test.py> [docker env args] | down" >&2; exit 2 ;;
 esac

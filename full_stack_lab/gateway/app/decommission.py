@@ -466,7 +466,7 @@ async def collect(case_id: str, kinds: list[str], actor: str) -> dict:
             if target["kind"] != "server-held-credential" or target["verification"] != "gitea-token":
                 continue
             cred = json.loads(target["subject_ref"])
-            verdict = await _resource_verdict()
+            verdict = await _resource_verdict(cred)
             if verdict["rejected"] is not None:
                 prior = await db.fetch_one(
                     """SELECT detail->'accepted_before' AS seen FROM termination_evidence
@@ -534,7 +534,7 @@ async def _gitea_token_present(account: str, token_name: str) -> tuple[bool | No
         return None, 0
 
 
-async def _resource_verdict() -> dict:
+async def _resource_verdict(cred: dict | None = None) -> dict:
     """Show the protected resource the credential the organisation provisioned and read its answer.
 
     This asks the resource server, which the token list cannot: a token missing from an
@@ -542,10 +542,11 @@ async def _resource_verdict() -> dict:
     rejected is None when it could not be asked (no copy of the value, an unreachable or
     erroring resource); the value itself is never written anywhere.
     """
-    if not GITEA_PROBE_TOKEN_FILE:
+    location = (cred or {}).get("probe_token_file") or GITEA_PROBE_TOKEN_FILE
+    if not location:
         return {"rejected": None, "http_status": None, "reason": "not_configured"}
     try:
-        with open(GITEA_PROBE_TOKEN_FILE, encoding="utf-8") as handle:
+        with open(location, encoding="utf-8") as handle:
             secret = handle.read().strip()
     except OSError:
         return {"rejected": None, "http_status": None, "reason": "not_readable"}
@@ -572,7 +573,7 @@ async def revoke_credential(target_id: str, actor: str) -> dict:
         raise ValueError("조직이 직접 회수할 수 있는 하위 자격이 아닙니다.")
     cred = json.loads(target["subject_ref"])
     # Whether the resource took the value before: a later refusal only means something if it did.
-    before = await _resource_verdict()
+    before = await _resource_verdict(cred)
     async with httpx.AsyncClient(timeout=10) as client:
         response = await client.delete(
             f"{GITEA_ADMIN_URL}/api/v1/users/{cred['account']}/tokens/{cred['token_name']}",

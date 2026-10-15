@@ -81,7 +81,7 @@ ALTER TABLE revocation_targets ADD CONSTRAINT revocation_targets_kind_check CHEC
 ALTER TABLE termination_evidence DROP CONSTRAINT IF EXISTS termination_evidence_kind_check;
 ALTER TABLE termination_evidence ADD CONSTRAINT termination_evidence_kind_check CHECK (kind IN (
   'revocation-response', 'introspection', 'provider-attestation', 'gateway-denial', 'liveness-probe',
-  'endpoint-inventory', 'credential-check', 'session-termination', 'operator-statement'));
+  'endpoint-inventory', 'credential-check', 'resource-rejection', 'session-termination', 'operator-statement'));
 
 -- Calls that are in flight right now. The ceilings used to be counted from the audit
 -- table, which only holds calls that already finished, so ten calls arriving together

@@ -20,6 +20,8 @@ with httpx.Client(base_url=base, auth=auth, timeout=20) as client:
     call("PUT", f"/teams/{owners['id']}/members/mcp-bot", {204})
     for name in ("payment-service", "infra-secrets", "handbook"):
         call("POST", "/orgs/bob/repos", {201, 409}, json={"name": name, "private": True, "auto_init": True})
+    for stale in ("gitea-mcp-server", "lab-second"):
+        call("DELETE", f"/users/mcp-bot/tokens/{stale}", {204, 404}, headers={"Sudo": "mcp-bot"})
     token = call("POST", "/users/mcp-bot/tokens", {201}, headers={"Sudo": "mcp-bot"},
                  json={"name": "gitea-mcp-server", "scopes": ["all"]}).json()["sha1"]
     with open("/secrets/gitea-mcp.token", "w", encoding="utf-8") as handle:
