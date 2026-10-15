@@ -9,3 +9,7 @@
 우리 개발에서 비교할 축은 하네스→MCP Gateway 통제와 MCP 서버→외부 API 통제의 경로 차이다. 현재 목적지 분류, 공급자 자격 분리, 실행 런타임·네트워크 정책을 같은 그림에 표시하되 각각의 실제 집행 증거를 요구한다. 목적지 allowlist와 OS 직접 연결 차단도 구분한다.
 
 MCPX OSS 저장소와 Lunar 상용 Control Plane의 라이선스·배포 기능은 분리해야 한다. 이 항목은 공개 소스 정적 분석으로 분류하지 않는다. 구현 커밋·기본 활성·TLS·우회·성능·국내 인증은 미확인이다. 비교 입력을 확보한 후 코드 분석을 추가한다.
+
+## 대상 서버 연결 처리 (2026-10-15, 부분 코드 확인)
+
+공개 저장소 `TheLunarCompany/lunar` 커밋 `7193eab`의 `mcpx/`(MIT, `mcpx/LICENSE.MD`)에서 [`upstream-handler.ts`](https://github.com/TheLunarCompany/lunar/blob/7193eab5535ec0be2c973007b9ab5cccab15fd70/mcpx/packages/mcpx-server/src/services/upstream-handler.ts#L126-L494)만 읽었다. 대상 서버 이름마다 오래 사는 클라이언트 하나(`Map<string, TargetClient>`)를 모든 소비자의 `callTool`이 공유한다. 우리 Gateway가 채택하지 않는 주체 간 공유 모델의 반례로 [세션 재사용 설계 비교](../analysis/upstream-session-reuse/README.md)에 썼다. 나머지 기능에 대한 위 문단의 미확인 상태는 그대로다.

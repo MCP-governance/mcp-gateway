@@ -16,6 +16,7 @@
 | [MCP 대상](mcp-candidates.json) | 상용/공개 OSS14개 후보. package/version·출처·metadata hash·라이선스·실험 연결 |
 | [논문 재검토](reference-updates.json) | 정식 저널3·학회1·게재처 미확인 preprint1. 기존2건 재검토 포함 |
 | [공개 스킬](skill-candidates.json) · [OSS 활용](oss-reuse.json) | commit·라이선스·실측 stars·검토 범위·실제 적용/후보 상태 |
+| [업스트림 세션 재사용 설계](upstream-session-reuse/README.md) | DEV-29 선택지 4개(협상 판 고정·세션 재사용·목록 캐시·상태 의존 서버) 지연 추정·불변식 8개·시험 12개. 제안, 결정 대기 |
 | [Excel](outputs/01a13365-enterprise/MCP_기업호환성_검증대장.xlsx) | 10개 시트. 필터·고정 행/식별 열·요구사항 상태 집계·근거 링크 |
 
 `source_only`는 코드 후보를 연결한 상태이며 해당 조건의 충족을 뜻하지 않는다. `gap`은 전체 조건을 충족하는 구현/운영 증거가 없다. `verified_unit`은 명시한 단위 회귀만 통과했다. `verified_field`는 해당 입력의 실제 관리형 하네스·독립 효과·원복 증거가 있을 때만 사용한다. 새 조건 대장의 실기기 통과는 현재0이다. 과거 특정 하네스 표본은 별도 보고서를 유지한다.
