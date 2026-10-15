@@ -8,5 +8,6 @@
 | [lab-results-batch1.jsonl](lab-results-batch1.jsonl) | D 병합 전 1차 실행. 실험 환경 차이로 실패한 9건과 그 원인을 그대로 보존 |
 | [deploy.json](deploy.json) · [deploy-stage2.json](deploy-stage2.json) | 솔루션 기기 배포 기록: commit, `field up` 결과, 기기 작업본 백업 위치, 네이티브 엔진 동등성, 분석기 이미지 빌드 시각, 포함된 병합 commit |
 | [appliance-evidence.json](appliance-evidence.json) | 기기 DB 조회: PJ1 실제 SDK 호출의 판정·구간 시간, 전송 의도, PJ1 망 품질 표본, 수집 기록의 출처·해시 일치, OS 거부 분류, 루프백 차단 포트, 도구 범위 기록, 무효 주석 |
+| [e2e-clean.json](e2e-clean.json) | 10-15 오후 클린 기기 E2E: 초기화·백업 위치, 신청·승인·등록 3건, PJ1 재설치·활성화, 원장 1~7, 하네스 7회, DEV-31 결과, 찾은 결함 3개 |
 
 토큰·비밀번호·장치 키는 담지 않는다(주체 값 `root`·`user`는 원장의 식별자다).

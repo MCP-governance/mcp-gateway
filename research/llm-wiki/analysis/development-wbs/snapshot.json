@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "title": "MCP 목표 기능 · WBS 현황",
-  "as_of": "2026-10-15T08:17:12.531322+00:00",
+  "as_of": "2026-10-15T08:51:20.911509+00:00",
   "audit_as_of": "2026-10-15T07:37:13+00:00",
-  "basis_head": "b301e42899d3f896813a122c4cf0776dba2f9a98",
+  "basis_head": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
   "branch": "10/15-wbs-implementation",
   "snapshot": true,
   "rubric": {
@@ -25,46 +25,46 @@
     "complete_rule": "5단계가 모두 1인 작업만 최종 완료. 신규 WBS의 현재 검수 기준이며 과거 실험 카드 완료를 변경하지 않음."
   },
   "summary": {
-    "progress": 55.2,
+    "progress": 57.5,
     "complete": 0,
     "total": 40,
     "stage_equivalent_counts": {
-      "implementation": 37.0,
-      "regression": 31.5,
-      "deployment": 32.5,
-      "real_device": 9.5,
+      "implementation": 37.5,
+      "regression": 32.0,
+      "deployment": 33.0,
+      "real_device": 12.5,
       "acceptance_complete": 0
     },
-    "implementation_full": 34,
-    "implementation_partial": 6,
+    "implementation_full": 35,
+    "implementation_partial": 5,
     "implementation_missing": 0
   },
   "goals": [
     {
       "id": "G01",
       "title": "도입·공급망 검증",
-      "progress": 67.5,
+      "progress": 70.0,
       "complete": 0,
       "total": 4
     },
     {
       "id": "G02",
       "title": "승인·계약 관리",
-      "progress": 65.0,
+      "progress": 70.0,
       "complete": 0,
       "total": 4
     },
     {
       "id": "G03",
       "title": "신원·호출 권한",
-      "progress": 67.5,
+      "progress": 70.0,
       "complete": 0,
       "total": 4
     },
     {
       "id": "G04",
       "title": "데이터·비신뢰 결과 보호",
-      "progress": 60.0,
+      "progress": 62.5,
       "complete": 0,
       "total": 4
     },
@@ -92,7 +92,7 @@
     {
       "id": "G08",
       "title": "가입·설치·하네스 운영",
-      "progress": 32.5,
+      "progress": 42.5,
       "complete": 0,
       "total": 4
     },
@@ -173,7 +173,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -248,7 +248,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -273,17 +273,16 @@
       "regression_test_candidates": [
         "full_stack_lab/tests/catalog_refresh_check.py",
         "full_stack_lab/tests/schema_check.py",
-        "full_stack_lab/tests/intake_identity_pg_check.py"
+        "full_stack_lab/tests/intake_identity_test.py"
       ],
       "actual_evidence_paths": [
         "research/llm-wiki/status/reports/2026-10-13-feature-design.md",
-        "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+        "research/llm-wiki/analysis/wbs-1015/e2e-clean.json",
         "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
-        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
         "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
         "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "외부 목적지는 기록·표시만 하며 집행은 PAC 전송 검사에 맡긴다. 독립 효과로 범위 준수를 보는 시험이 남았다.",
+      "known_gap": "이름이 주소가 아닌 인자에 담긴 주소는 PAC 전송 검사에 맡긴다. 쓰기 도구의 독립 효과 시험은 남았다.",
       "completion_condition": "각 도구의 목적·자산·읽기·변경·실행 권한·외부 목적지를 사람이 승인한 범위로 제한한다. 검토하지 않은 도구는 검색과 호출을 모두 막고, 독립적인 효과 확인으로 범위가 지켜졌는지 검증한다. 시험 환경은 운영 경로와 분리하고 합성 데이터·지정된 격리 자원으로 검증한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -297,38 +296,34 @@
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "도구마다 사람이 적은 목적·자산·행위·외부 목적지, 범위 없는 도구는 tools/list 제외·호출 MCP-REGISTRY-002.",
-        "regression": "병합 소스 격리 시험에서 목록·호출 양쪽 제외 확인.",
+        "implementation": "도구별 목적·자산·외부 목적지 심사에 더해, 등록 시 고정 계약의 인자만 받고 주소 인자는 심사한 목적지의 HTTPS로 제한하는 범위를 솔루션이 만든다.",
+        "regression": "병합 소스 단위 시험(intake_identity_test: file:·유사 도메인·http·내부 주소·추가 인자 거부).",
         "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
-        "real_device": "배포 직후 범위 없는 도구가 실제로 꺼졌고, 기존 신청 목적대로 범위를 기록한 4개 읽기 도구만 PJ1 SDK 호출에서 목록·실행됐다. 독립 효과 기반 범위 준수 시험은 하지 않았다.",
+        "real_device": "DB·등록 상태를 비운 기기에서 user 신청·root 검토·승인, PJ1 관리 Claude Code 자연어 호출(10-15 17:40~17:49). 소스 신청 MarkItDown에서 file:///etc/passwd와 미심사 호스트가 실행 전 PAC-01로 차단(원장 6·7, 업스트림 시도 없음), 심사한 호스트는 실행.",
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
         "regression": 1,
         "deployment": 1,
-        "real_device": 0.5,
+        "real_device": 1,
         "acceptance_complete": 0
       },
-      "progress": 70.0,
+      "progress": 80,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
-          "sha256": "4ec08968f579f209e5bc74e9d89d6a9e035a94e8d59c91ebf1dc6eae5d0e24bc"
+          "path": "research/llm-wiki/analysis/wbs-1015/e2e-clean.json",
+          "sha256": "79056e8cfe983f7f59a2d24b92a88dfb6841d13b0b151d4dd2d790b609802ebb"
         },
         {
           "path": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
           "sha256": "287da53db90e3bda93d5efdab45842a53dc9527e44a14101fe67661677972f70"
         },
         {
-          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
-          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
-        },
-        {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -401,7 +396,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -424,18 +419,15 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/managed_enrollment_check.py",
-        "full_stack_lab/tests/intake_identity_pg_check.py",
         "full_stack_lab/tests/intake_identity_test.py"
       ],
       "actual_evidence_paths": [
         "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md",
-        "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
-        "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
-        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/e2e-clean.json",
         "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
         "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "실제 운영에서 신청자=승인자 거부 화면 흐름은 확인하지 않았다.",
+      "known_gap": "같은 사람이 승인하려 할 때의 화면 거부는 이번에 확인하지 않았다.",
       "completion_condition": "신청자와 검토자가 같을 수 없도록 강제하고 위험 수준별 사람 승인을 적용한다. 승인 주체·근거·검토 범위를 기록하며, 무효 처리된 자기 승인 사례는 감사용 비활성 기록으로만 보존한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -449,38 +441,30 @@
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "도입 승인·원격 계약 검토·위험 수용·도구 범위 심사·건별 호출 승인에서 신청자=승인자 거부와 시도 기록, append-only 승인 기록과 무효 주석.",
-        "regression": "병합 소스 격리 시험에서 독립성 거부·append-only 트리거 확인.",
+        "implementation": "신청자와 검토·승인·활성화 주체가 달라야 하며 기록은 원장에 남는다.",
+        "regression": "병합 소스 격리 시험 통과.",
         "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
-        "real_device": "기기 원장: 범위 심사 3건이 신청자와 다른 root 명의로 기록, 에이전트 자가 승인 시험 58건(744–800·803)에 무효 주석.",
+        "real_device": "DB·등록 상태를 비운 기기에서 user 신청·root 검토·승인, PJ1 관리 Claude Code 자연어 호출(10-15 17:40~17:49). 원격 2건·소스 1건 모두 user 신청, root 검토·승인·등록·범위 심사·엔드포인트 활성화.",
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
         "regression": 1,
         "deployment": 1,
-        "real_device": 0.5,
+        "real_device": 1,
         "acceptance_complete": 0
       },
-      "progress": 70.0,
+      "progress": 80,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
-          "sha256": "4ec08968f579f209e5bc74e9d89d6a9e035a94e8d59c91ebf1dc6eae5d0e24bc"
-        },
-        {
-          "path": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
-          "sha256": "287da53db90e3bda93d5efdab45842a53dc9527e44a14101fe67661677972f70"
-        },
-        {
-          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
-          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+          "path": "research/llm-wiki/analysis/wbs-1015/e2e-clean.json",
+          "sha256": "79056e8cfe983f7f59a2d24b92a88dfb6841d13b0b151d4dd2d790b609802ebb"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -554,7 +538,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -623,7 +607,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -648,16 +632,15 @@
       "regression_test_candidates": [
         "full_stack_lab/tests/endpoint_inventory_check.py",
         "full_stack_lab/tests/field_kit_check.py",
-        "full_stack_lab/tests/intake_identity_pg_check.py"
+        "full_stack_lab/tests/intake_identity_test.py"
       ],
       "actual_evidence_paths": [
         "research/llm-wiki/status/reports/2026-10-14-pj1-endpoint-update.json",
-        "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
-        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/e2e-clean.json",
         "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
         "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "하네스 모델 호출로 최소 집합을 확인해야 한다.",
+      "known_gap": "Codex 설정 쪽은 이번에 하네스로 확인하지 않았다.",
       "completion_condition": "새로 승인된 하네스에는 허용된 서버만 표시되고, 등록이 철회된 서버는 목록과 호출에서 모두 제외되어야 한다. 모델에서 MCP 서버, 판정 기록까지 이어지는 연결을 확인한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -671,34 +654,30 @@
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "관리형 정책 파일의 서버 집합과 tools/list가 같은 판단(pac.servers_for)을 쓰고 허용 안 된 사용자·철회·범위 미심사 서버를 뺀다.",
-        "regression": "병합 소스 격리 시험에서 렌더링 파일 직접 확인.",
+        "implementation": "관리형 하네스 설정은 그 사람이 쓸 수 있는 서버만 담는다.",
+        "regression": "병합 소스 격리 시험 통과.",
         "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
-        "real_device": "PJ1 장치 정책이 사용자가 볼 수 있는 3개 서버만 담고 서버 계산 해시와 일치. 모델→MCP→판정 연결은 하지 않았다.",
+        "real_device": "DB·등록 상태를 비운 기기에서 user 신청·root 검토·승인, PJ1 관리 Claude Code 자연어 호출(10-15 17:40~17:49). PJ1 managed-mcp.json은 범위가 확정된 서버만 포함했고, MarkItDown은 범위 확정 53초 뒤 추가됐다(그 사이 ENDPOINT-MANAGED-001로 차단).",
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
         "regression": 1,
         "deployment": 1,
-        "real_device": 0.5,
+        "real_device": 1,
         "acceptance_complete": 0
       },
-      "progress": 70.0,
+      "progress": 80,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
-          "sha256": "4ec08968f579f209e5bc74e9d89d6a9e035a94e8d59c91ebf1dc6eae5d0e24bc"
-        },
-        {
-          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
-          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+          "path": "research/llm-wiki/analysis/wbs-1015/e2e-clean.json",
+          "sha256": "79056e8cfe983f7f59a2d24b92a88dfb6841d13b0b151d4dd2d790b609802ebb"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -773,7 +752,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -841,7 +820,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -868,16 +847,15 @@
       "regression_test_candidates": [
         "full_stack_lab/tests/security_edges_check.py",
         "full_stack_lab/tests/reservation_effect_check.py",
-        "full_stack_lab/tests/dispatch_effect_lab.py"
+        "full_stack_lab/tests/intake_identity_test.py"
       ],
       "actual_evidence_paths": [
         "research/llm-wiki/status/reports/2026-10-13-development-results.md",
-        "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
-        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/e2e-clean.json",
         "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
         "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "하네스 경로와 쓰기 도구의 독립 효과 0건 실기기 확인이 남았다.",
+      "known_gap": "쓰기 도구의 독립 효과 0건 확인이 남았다.",
       "completion_condition": "같은 도구라도 SQL·경로·수신자·자산이 바뀌면 매 호출마다 다시 분류한다. 정규화된 차단은 요청 전 적용되어야 하며, 독립된 대상에서 실제 효과가 0건인지 확인한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -891,34 +869,30 @@
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "요청마다 행위·인자·자산·목적지를 다시 분류하고 실행 직전 재판정.",
-        "regression": "병합 소스에서 보안 경계 시험과 실제 Gitea MCP 부수효과 시험(인자 변형 0건) 통과.",
+        "implementation": "요청마다 사용자·서버·도구·인자·목적지를 PAC로 다시 판정.",
+        "regression": "병합 소스 단위·격리 시험 통과.",
         "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
-        "real_device": "PJ1 SDK 호출에서 승인 인자 밖 list_commits가 업스트림 전 PAC-01로 차단(전송 의도 기록 없음).",
+        "real_device": "DB·등록 상태를 비운 기기에서 user 신청·root 검토·승인, PJ1 관리 Claude Code 자연어 호출(10-15 17:40~17:49). 같은 도구라도 인자가 범위 밖이면 실행 전 차단, 범위 안이면 실행(원장 5~7).",
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
         "regression": 1,
         "deployment": 1,
-        "real_device": 0.5,
+        "real_device": 1,
         "acceptance_complete": 0
       },
-      "progress": 70.0,
+      "progress": 80,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
-          "sha256": "60eac046be2cda31672dfe305564ea0477f030c2ddcd49a541688995222822c4"
-        },
-        {
-          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
-          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+          "path": "research/llm-wiki/analysis/wbs-1015/e2e-clean.json",
+          "sha256": "79056e8cfe983f7f59a2d24b92a88dfb6841d13b0b151d4dd2d790b609802ebb"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -992,7 +966,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -1066,7 +1040,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -1089,16 +1063,15 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/mcp_result_contract_check.py",
-        "full_stack_lab/tests/mcp_result_services_check.py",
-        "full_stack_lab/tests/korean_pii_eval.py"
+        "full_stack_lab/tests/mcp_result_services_check.py"
       ],
       "actual_evidence_paths": [
         "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json",
-        "research/llm-wiki/status/reports/2026-10-15-inspection-corpus.md",
+        "research/llm-wiki/analysis/wbs-1015/e2e-clean.json",
         "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
         "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "합성 표본은 규칙을 읽은 같은 작성자가 썼다. 라벨 없는 사업자·계좌 번호는 가리지 않는다.",
+      "known_gap": "마스킹된 유형별 정탐·오탐 대조는 하지 않았다. 라벨 없는 사업자·계좌 번호는 가리지 않는다.",
       "completion_condition": "합성 비밀이 모델에 전달되는 원문이나 구조화된 결과에 남지 않아야 한다. 업스트림 요청 시도·실행 여부와 결과를 가리거나 보류·공개한 상태를 각각 구분해 표시한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -1112,30 +1085,30 @@
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "한국어 조사가 붙은 식별자까지 18개 분류를 마스킹(라틴 문자·숫자 경계), 카드 Luhn 검증, 출력 보류·가림과 업스트림 시도·실행을 따로 표시.",
-        "regression": "병합 소스에서 한국어 PII 평가(재빌드한 분석기)·결과 계약·실제 Presidio/Gitleaks 시험 통과.",
-        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함). 분석기 이미지도 이번 배포에서 저장소 Dockerfile로 다시 빌드.",
-        "real_device": "실기기 응답에 합성 식별자를 넣는 시험은 하지 않았다.",
+        "implementation": "응답 개인정보·비밀 마스킹, 실행 후 보류, 비규격 structuredContent는 빼고 text로 전달하며 원장에 기록.",
+        "regression": "병합 소스 단위 시험(mcp_result_contract_check) 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "DB·등록 상태를 비운 기기에서 user 신청·root 검토·승인, PJ1 관리 Claude Code 자연어 호출(10-15 17:40~17:49). GitHub list_commits·MarkItDown 응답이 마스킹 후 반환(disposition masked), GitHub 배열 구조는 structured_dropped=list로 기록.",
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
         "regression": 1,
         "deployment": 1,
-        "real_device": 0,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 60,
+      "progress": 70.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-15-inspection-corpus.md",
-          "sha256": "88ab7a0f91c5340545192db040005ebcdc55eeefe23827604dcce48107617d11"
+          "path": "research/llm-wiki/analysis/wbs-1015/e2e-clean.json",
+          "sha256": "79056e8cfe983f7f59a2d24b92a88dfb6841d13b0b151d4dd2d790b609802ebb"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -1207,7 +1180,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         }
       ]
     },
@@ -1277,7 +1250,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         }
       ]
     },
@@ -1479,7 +1452,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -1615,7 +1588,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -1690,7 +1663,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -1772,7 +1745,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -1854,7 +1827,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -1924,7 +1897,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -1992,7 +1965,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -2060,7 +2033,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -2128,7 +2101,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -2200,7 +2173,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -2222,12 +2195,16 @@
         "full_stack_lab/gateway/app/core.py"
       ],
       "regression_test_candidates": [
-        "full_stack_lab/tests/managed_enrollment_check.py"
+        "full_stack_lab/tests/managed_enrollment_check.py",
+        "full_stack_lab/tests/bootstrap_self_check"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json"
+        "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/e2e-clean.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "과거 PJ1 Codex 호출 740~742는 실제 호출이지만 제공자 사용량 한도 오류가 한 건 있었다. E01~E13 전체나 새 엔드포인트 로그 작업을 충족하는 근거는 아니다.",
+      "known_gap": "Codex 하네스와 E01~E13 전체 조건은 남았다. Context7은 제공자 익명 할당량 초과를 반환했다.",
       "completion_condition": "승인된 최신 하네스에서 승인 서버를 통해 합성 읽기·쓰기 호출을 수행한다. 모델 버전과 대화, 인자, 게이트웨이 식별자, 엔드포인트 식별자, 제공자 응답, 독립 효과, 정리 결과가 서로 일치해야 한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -2237,33 +2214,38 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-pj1-evidence.json",
-          "scope": "Historical PJ1 managed harness actual calls 740–742; provider quota and no independent receiver caveat apply."
-        }
+        "2026-10-15"
       ],
-      "implementation_assessment": "partial_candidate",
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "official harness 설정·managed endpoint 경로는 있지만 fresh approved harness의 model→MCP→Gateway ID→독립 효과까지 요구된 구현/연결은 완료되지 않았다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "직원 계정의 claude·codex가 관리 계정의 진입 래퍼로 실행된다(PATH에 끼어든 미승인 설치본을 타지 않음).",
+        "regression": "설치기 자체 점검 통과. 하네스 자연어 호출의 격리 회귀는 없다.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "DB·등록 상태를 비운 기기에서 user 신청·root 검토·승인, PJ1 관리 Claude Code 자연어 호출(10-15 17:40~17:49). Claude Code(Sonnet 5.5)로 GitHub·Context7·MarkItDown 자연어 호출 7회. Codex는 로그인 문제로 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0.5,
-        "real_device": 0,
+        "implementation": 1,
+        "regression": 0.5,
+        "deployment": 1,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 20.0,
+      "progress": 60.0,
       "complete": false,
       "priority": "P1",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json",
-          "sha256": "5f668b994b29837889e5f97e1f41e2055a9639eda5a59b9206e1872b8c6124f9"
+          "path": "research/llm-wiki/analysis/wbs-1015/e2e-clean.json",
+          "sha256": "79056e8cfe983f7f59a2d24b92a88dfb6841d13b0b151d4dd2d790b609802ebb"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -2332,7 +2314,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -2460,7 +2442,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -2532,7 +2514,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -2599,7 +2581,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -2781,7 +2763,7 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
-          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+          "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
@@ -2948,13 +2930,13 @@
     },
     {
       "id": "DEV-31",
-      "priority": "P0",
+      "priority": "P1",
       "title": "헬퍼 토큰의 셸 자식 접근",
-      "state": "PJ1 확인 필요",
-      "detail": "bash 자식은 헬퍼·소켓이 없는 별도 프로필로 분리했다. 키트 재설치 뒤 실기기에서 확인한다.",
-      "verification": "자체 점검·AppArmor 구문·교차 리뷰.",
-      "next": "PJ1 키트 재설치 후 하네스 셸에서 헬퍼 실행이 거부되는지 확인.",
-      "evidence": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+      "state": "PJ1 확인",
+      "detail": "하네스 셸에서 header-helper와 sh -c header-helper가 모두 126으로 거부되고 AppArmor 거부가 남았다.",
+      "verification": "PJ1 키트 재설치 후 관리 Claude Code의 Bash 도구로 실행.",
+      "next": "Codex 하네스 셸에서도 같은 결과인지 확인.",
+      "evidence": "research/llm-wiki/analysis/wbs-1015/e2e-clean.json",
       "tasks": [
         "G05.01"
       ]
@@ -2989,22 +2971,22 @@
   "pipeline": [
     {
       "title": "구현",
-      "state": "37.0 / 40",
+      "state": "37.5 / 40",
       "detail": "코드·설정이 저장소에 있는가"
     },
     {
       "title": "회귀 검사",
-      "state": "31.5 / 40",
+      "state": "32.0 / 40",
       "detail": "병합 소스에서 격리 시험이 통과했는가"
     },
     {
       "title": "배포",
-      "state": "32.5 / 40",
+      "state": "33.0 / 40",
       "detail": "솔루션 기기에 배포된 판본에 포함됐는가"
     },
     {
       "title": "실제 환경",
-      "state": "9.5 / 40",
+      "state": "12.5 / 40",
       "detail": "PJ1 실제 하네스·실제 MCP로 확인했는가"
     },
     {
@@ -3014,9 +2996,13 @@
     }
   ],
   "live_sample": {
-    "title": "context7 · resolve-library-id",
-    "scope": "PJ1 관리형 단말에서 공식 MCP SDK로 호출한 실제 원격 MCP. 하네스 자연어 호출이 아니다.",
+    "title": "markitdown · convert_to_markdown",
+    "scope": "PJ1 직원 계정에서 관리 Claude Code에 자연어로 요청. 소스 신청 → 검증 → 승인 → 내부 미러에서 실행 → 등록을 거친 OSS MCP.",
     "values": [
+      [
+        "하네스",
+        "Claude Code · claude-sonnet-5-5"
+      ],
       [
         "판정",
         "Allow"
@@ -3026,42 +3012,30 @@
         "P-AUTHZ-ALLOW-001"
       ],
       [
-        "업스트림 실행",
-        "예"
+        "응답",
+        "masked"
       ],
       [
-        "전체",
-        "797.34 ms"
+        "범위 밖 요청",
+        "2건 실행 전 차단"
       ],
       [
-        "연결",
-        "228.02 ms"
-      ],
-      [
-        "도구 목록",
-        "216.68 ms"
-      ],
-      [
-        "도구 호출",
-        "251.3 ms"
-      ],
-      [
-        "PJ1 왕복 p50",
-        "183.2 ms"
+        "하네스 처리 시간",
+        "10811 ms"
       ]
     ],
     "hashes": [
       [
         "원장 번호",
-        "827"
+        "5"
       ],
       [
-        "기록 시각",
-        "2026-10-15 07:05:17.124357+00:00"
+        "응답 SHA-256",
+        "3c2de0fc178e3a7bc7ddb24e10cfcc5a7c64ac4cd11b6ed0dcb47b0b411eb014"
       ],
       [
         "근거 파일 SHA-256",
-        "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+        "79056e8cfe983f7f59a2d24b92a88dfb6841d13b0b151d4dd2d790b609802ebb"
       ]
     ]
   },
@@ -3076,15 +3050,15 @@
     "snapshot-before-log-fix의 감사 source hash는 당시 확정 이력으로 보존하며 현재 소스와 재대조하지 않음. 이번 근거는 reviewed/prepared/deployed SHA 및 현재 PJ1·DB 결과로 별도 검증.",
     "서브에이전트 브랜치의 시험 결과는 병합 소스에서 다시 돌린 결과(lab-results.jsonl)로만 회귀 점수에 반영했다.",
     "PJ1 공식 MCP SDK 호출은 프로토콜 증거이며 관리 하네스의 자연어 모델 호출이 아니다.",
-    "관리 계정이 로그인되지 않아 하네스 E2E·키트 재설치 후 DEV-31 실기기 확인은 하지 않았다.",
+    "하네스 자연어 E2E는 Claude Code만 했다(Codex 로그인 문제). 원격 MCP 제공자 쪽 실제 변경 효과는 확인 대상이 아니다.",
     "10-15 범위 기록은 사용자가 허락한 root 권한으로 기존 신청 목적을 옮긴 것이며 새 도입 승인이 아니다."
   ],
   "next_actions": [
     {
       "order": 1,
-      "title": "관리 하네스 자연어 E2E",
+      "title": "Codex 하네스와 기록 상관",
       "tasks": "G08.02 · G06.01",
-      "done_when": "PJ1 관리 계정의 실제 하네스가 등록된 실제 MCP를 자연어로 호출하고 원장·엔드포인트 기록이 같은 호출로 이어진다."
+      "done_when": "Codex로 같은 자연어 호출을 하고, 원장·엔드포인트 기록이 같은 호출로 이어진다."
     },
     {
       "order": 2,

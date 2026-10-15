@@ -1,6 +1,12 @@
 # 개발 현황 — 2026-10-15
 
-## 목표 기능 WBS 구현·통합·저지연화 (최신)
+## 클린 기기 E2E · MINT 화면 (최신)
+
+[작업 보고](reports/2026-10-15-clean-e2e.md) · [근거](../analysis/wbs-1015/e2e-clean.json): 기기 DB·등록 상태를 백업 후 비우고, `user` 신청 → `root` 검토·승인 → 등록으로 실제 MCP 3개(GitHub 원격, Context7 원격, Microsoft MarkItDown 소스 신청·내부 미러 실행)를 올렸다. PJ1 직원 계정의 관리 Claude Code가 자연어로 GitHub·MarkItDown을 호출해 결과를 받았고, 범위 밖 요청(`file:///etc/passwd`·미심사 호스트)은 실행 전 차단됐다. DEV-31은 실기기에서 해결 확인. E2E가 찾은 결함 3개(런처 PATH, 소스 등록 범위 부재, 배열 structuredContent)를 고쳐 배포했다(D-107~109, 최종 `83269c1`). 콘솔 글자 125%, 로그인 MINT, 원칙 중심 README, WBS 페이지 구현 진행도 표시. WBS **55.2%→57.5%**.
+
+남은 것: Codex E2E(DEV-39), 승인 OSS 실행 경로(DEV-38), Context7 할당량(DEV-40), 팀원 기기 직접 복사(DEV-36), 기본 비밀번호 변경.
+
+## 목표 기능 WBS 구현·통합·저지연화
 
 [작업 보고](reports/2026-10-15-wbs-implementation.md) · [WBS 재산정](../analysis/development-wbs/README.md) · [근거](../analysis/wbs-1015/README.md) · 작업별 보고 [A 엔드포인트 증거](reports/2026-10-15-endpoint-evidence.md) · [B 도입·신원](reports/2026-10-15-intake-identity.md) · [C 종료·전송 경계](reports/2026-10-15-termination-dispatch.md) · [D 검사 코퍼스](reports/2026-10-15-inspection-corpus.md)
 

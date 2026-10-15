@@ -1,0 +1,295 @@
+{
+ "recorded_at": "2026-10-15T09:00:00+09:00",
+ "reset": {
+  "at": "2026-10-15T17:22+09:00",
+  "backup_on_appliance": "~/mcpgw-reset-backup-20261015-172208",
+  "backed_up": [
+   "pg_dumpall.sql.gz",
+   "vol-field_db_data.tgz",
+   "vol-registry_runtime.tgz",
+   "vol-field_corp_git_data.tgz",
+   "vol-intake_reports.tgz",
+   "vol-intake_work.tgz",
+   "worktree status/patch/files"
+  ],
+  "kept": [
+   "upstream_credentials (operator-provisioned SaaS credentials bound to endpoint and principal)"
+  ],
+  "after": {
+   "mcp_servers": 0,
+   "health": "ok"
+  }
+ },
+ "deploys": [
+  "5610fee",
+  "e6464e6",
+  "50fa4a5",
+  "b6868d2",
+  "83269c1"
+ ],
+ "accounts": {
+  "applicant": "user",
+  "reviewer_approver_activator": "root"
+ },
+ "intakes": [
+  {
+   "name": "GitHub MCP",
+   "kind": "remote-endpoint",
+   "endpoint": "https://api.githubcopilot.com/mcp/readonly",
+   "advertised_tools": 28,
+   "approved_tools": [
+    "get_me",
+    "list_commits",
+    "get_file_contents",
+    "search_repositories",
+    "list_issues"
+   ],
+   "data_class": "nonimportant",
+   "server_id": "github"
+  },
+  {
+   "name": "Context7",
+   "kind": "remote-endpoint",
+   "endpoint": "https://mcp.context7.com/mcp",
+   "advertised_tools": 2,
+   "approved_tools": [
+    "resolve-library-id",
+    "query-docs"
+   ],
+   "data_class": "public",
+   "server_id": "context7"
+  },
+  {
+   "name": "MarkItDown MCP",
+   "kind": "repository",
+   "repository": "https://github.com/microsoft/markitdown",
+   "verified_commit": "4cc9fa17653d695d64fb9eee5b33d4de55ff84e8",
+   "termination_grade": "T3 (risk accepted with reason)",
+   "internal_mirror": "http://100.83.175.111:443/git/mcp/microsoft-markitdown",
+   "hosting": "appliance container mcp-hosted-markitdown built from the mirror at the verified commit, tools network alias markitdown-mcp, read-only rootfs, cap-drop ALL, no published port",
+   "endpoint": "http://markitdown-mcp:3001/mcp",
+   "server_id": "markitdown",
+   "destinations": [
+    "github.com",
+    "learn.microsoft.com",
+    "raw.githubusercontent.com"
+   ]
+  }
+ ],
+ "endpoint": {
+  "device": "managed-6cb9a27c-5600-4740-89b7-d1d4fdbfbf9b",
+  "revoked_superseded": [
+   "managed-f8ec4074-130d-4d2b-b9da-5472929ff7af",
+   "managed-7e8a217a-c2c1-4347-a56b-2adefbc30b90"
+  ],
+  "policy_apply_after_registration_seconds": 53,
+  "during_apply": "ENDPOINT-MANAGED-001 403 (fail closed) until the device applied the new policy"
+ },
+ "defects_found_and_fixed": [
+  {
+   "commit": "e6464e6/50fa4a5",
+   "what": "employee launcher ran bare 'claude'; the managed account's .profile put ~/.local/bin first, where the Claude login had installed an unapproved binary, and AppArmor refused it (exec denied /home/managed-pj1/.local/share/claude/versions/2.1.300). Launcher now names the entry wrapper."
+  },
+  {
+   "commit": "83269c1",
+   "what": "source-intake registrations had no principals or argument scope; with the empty field capability bundle nobody could use them. Scope is now derived: requester, pinned arguments closed, address arguments limited to reviewed destinations over HTTPS."
+  },
+  {
+   "commit": "83269c1",
+   "what": "GitHub MCP returns lists as structuredContent (spec: object); gateway withheld list_commits. Non-object structured part is dropped, the same JSON stays in text, the audit records structured_dropped."
+  }
+ ],
+ "ledger": [
+  {
+   "id": 1,
+   "at_utc": "08:40:00",
+   "server": "github",
+   "tool": "get_me",
+   "decision": "Allow",
+   "policy_id": "P-AUTHZ-ALLOW-001",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "disposition": "returned",
+   "structured_dropped": null,
+   "arguments": {}
+  },
+  {
+   "id": 2,
+   "at_utc": "08:40:05",
+   "server": "github",
+   "tool": "list_commits",
+   "decision": "Block",
+   "policy_id": "MCP-OUTPUT-001",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "disposition": "withheld",
+   "structured_dropped": null,
+   "arguments": {
+    "repo": "mcp-gateway",
+    "owner": "MCP-governance",
+    "perPage": 3
+   }
+  },
+  {
+   "id": 3,
+   "at_utc": "08:40:58",
+   "server": "context7",
+   "tool": "resolve-library-id",
+   "decision": "Allow",
+   "policy_id": "P-AUTHZ-ALLOW-001",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "disposition": "returned",
+   "structured_dropped": null,
+   "arguments": {
+    "query": "Dependency injection with Depends",
+    "libraryName": "FastAPI"
+   }
+  },
+  {
+   "id": 4,
+   "at_utc": "08:48:52",
+   "server": "github",
+   "tool": "list_commits",
+   "decision": "Allow",
+   "policy_id": "P-AUTHZ-ALLOW-001",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "disposition": "masked",
+   "structured_dropped": "list",
+   "arguments": {
+    "repo": "mcp-gateway",
+    "owner": "MCP-governance",
+    "perPage": 3
+   }
+  },
+  {
+   "id": 5,
+   "at_utc": "08:49:13",
+   "server": "markitdown",
+   "tool": "convert_to_markdown",
+   "decision": "Allow",
+   "policy_id": "P-AUTHZ-ALLOW-001",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "disposition": "masked",
+   "structured_dropped": null,
+   "arguments": {
+    "uri": "https://raw.githubusercontent.com/microsoft/markitdown/main/README.md"
+   }
+  },
+  {
+   "id": 6,
+   "at_utc": "08:49:24",
+   "server": "markitdown",
+   "tool": "convert_to_markdown",
+   "decision": "Block",
+   "policy_id": "PAC-01",
+   "upstream_attempted": false,
+   "upstream_executed": false,
+   "disposition": "not_executed",
+   "structured_dropped": null,
+   "arguments": {
+    "uri": "file:///etc/passwd"
+   }
+  },
+  {
+   "id": 7,
+   "at_utc": "08:49:24",
+   "server": "markitdown",
+   "tool": "convert_to_markdown",
+   "decision": "Block",
+   "policy_id": "PAC-01",
+   "upstream_attempted": false,
+   "upstream_executed": false,
+   "disposition": "not_executed",
+   "structured_dropped": null,
+   "arguments": {
+    "uri": "https://example.com"
+   }
+  }
+ ],
+ "harness": {
+  "client": "Claude Code (managed, /opt/mcpgw-approved/claude) launched as `claude -p` from the employee account pj1 on a TTY",
+  "runs": {
+   "context7": {
+    "model": [
+     "claude-sonnet-5-5"
+    ],
+    "turns": 3,
+    "is_error": false,
+    "duration_ms": 13894,
+    "result_sha256": "e388d40b84636068caf7e910c8ea39077afdeffd22d3118bbca7be5804e5203f",
+    "result_head": "Context7 호출이 실패했습니다. 월간 할당량 초과로 `resolve-library-id`가 \"Monthly quota exceeded\"를 반환했습니다. 그래서 FastAPI 공식 문서를 조회하지 못했습니다. 아래 3줄은 Context7 결과가 아니라 제가 알고 있는 내용입니다.\n\n1. `Depends(함수_또는_클래스)`를 경로 함수 매개변수의 기본값으로 선언하면 FastAPI가 요청마다 그 의존성을 호출하고 결과를 인자"
+   },
+   "dev31": {
+    "model": [
+     "claude-sonnet-5-5"
+    ],
+    "turns": 3,
+    "is_error": false,
+    "duration_ms": 12462,
+    "result_sha256": "2eb2325c8a2a7c4339f5048ac073270a66231a096de913e4ffdf562d40f97c4a",
+    "result_head": "두 명령 모두 실패했습니다. 종료 코드는 둘 다 126이고, 출력은 비어 있어서 앞 12자도 없습니다.\n\n| 명령 | 종료 코드 | 출력 앞 12자 |\n|---|---|---|\n| 1) `header-helper` | 126 | (없음) |\n| 2) `sh -c header-helper` | 126 | (없음) |\n\n두 번째로 실행했을 때의 오류 메시지는 `Permission denied`였습니다. 파일 권한은 `-rwxr-x"
+   },
+   "github": {
+    "model": [
+     "claude-sonnet-5-5"
+    ],
+    "turns": 4,
+    "is_error": false,
+    "duration_ms": 19311,
+    "result_sha256": "51603aa7adc1158d4535158260ac048117f925869c23de85f342678d8fc88616",
+    "result_head": "계정은 확인했지만, 커밋 목록은 가져오지 못했습니다.\n\n**계정:** GitHub 로그인 `pokochy`입니다. ID는 202579368이고, 공개 저장소는 13개입니다.\n\n**MCP-governance/mcp-gateway 최근 커밋 3개:** MCP Gateway가 출력 통제(`MCP-OUTPUT-001`)로 결과 반환을 막았습니다. 게이트웨이가 알려 준 사유는 다음과 같습니다.\n\n> upstream 결과가 출력 통제에 "
+   },
+   "github2": {
+    "model": [
+     "claude-sonnet-5-5"
+    ],
+    "turns": 1,
+    "is_error": false,
+    "duration_ms": 6458,
+    "result_sha256": "49940642f5646f551a8eb1e24b4082b0b5e00a0b2a1485722cdfbb38674a2dd1",
+    "result_head": "GitHub MCP 서버가 연결되지 않아서 커밋을 조회하지 못했습니다.\n\n- **오류:** `HEADERS_HELPER_AUTH_REJECTED`. `headersHelper`가 만든 Authorization 헤더를 서버가 HTTP 403으로 거부했습니다.\n- **상세 메시지:** \"엔드포인트 정책이 최신 정책과 달라 연결을 중단했습니다\" (`policy_id: ENDPOINT-MANAGED-001`)\n\n관리형 엔드포인트 정책"
+   },
+   "github3": {
+    "model": [
+     "claude-sonnet-5-5"
+    ],
+    "turns": 3,
+    "is_error": false,
+    "duration_ms": 13854,
+    "result_sha256": "02807b7ce15ccd75a53ad2c712893b609c34f554024cdd98f8bc977862399966",
+    "result_head": "MCP-governance/mcp-gateway의 최근 커밋 3개입니다. 최신순이고, 세 개 모두 pokochy가 2026-10-13에 작성했습니다.\n\n1. **`2e36095`** `docs(v2)`: v2 구현 내용과 어플라이언스 하네스 검증 증거를 문서화했습니다. 대상 기능, 독립 재현, 전체 CI 성공, 배포 환경 측정값, PJ1 ledger 상관관계를 담았고, Claude 쿼터와 Context7 제공자 쿼터의 한계도 "
+   },
+   "mdneg": {
+    "model": [
+     "claude-sonnet-5-5"
+    ],
+    "turns": 4,
+    "is_error": false,
+    "duration_ms": 10097,
+    "result_sha256": "fed86a34bb07cfc989e4bdae39abceb2e8ad833e7f7de62e79db3449fbb08941",
+    "result_head": "두 요청 모두 MCP Gateway가 차단했습니다.\n\n- `file:///etc/passwd`: `[MCP Gateway · 차단 · PAC-01] 승인된 PAC 실행 범위를 충족하지 못했습니다`\n- `https://example.com`: 같은 사유(PAC-01)로 차단됐습니다.\n\n그래서 변환 결과는 없고, `/etc/passwd`의 첫 줄도 보여드릴 수 없습니다. 게이트웨이 정책이 막은 것이라 다른 도구로 같은 파일을 읽어"
+   },
+   "mdpos": {
+    "model": [
+     "claude-sonnet-5-5"
+    ],
+    "turns": 3,
+    "is_error": false,
+    "duration_ms": 10811,
+    "result_sha256": "3c2de0fc178e3a7bc7ddb24e10cfcc5a7c64ac4cd11b6ed0dcb47b0b411eb014",
+    "result_head": "README를 Markdown으로 변환한 결과, MarkItDown이 지원하는 입력 형식 중 5개는 다음과 같습니다.\n\n1. **PDF**\n2. **PowerPoint**\n3. **Word**\n4. **Excel**\n5. **이미지**: EXIF 메타데이터와 OCR을 지원합니다.\n\n이 외에도 오디오, HTML, 텍스트 기반 형식(CSV, JSON, XML), ZIP 파일, YouTube URL, EPub 등을 지원합니다."
+   }
+  }
+ },
+ "dev31": {
+  "bash_header_helper_exit": 126,
+  "sh_c_header_helper_exit": 126,
+  "apparmor": "denied for mcpgw-managed-pj1-claude-tool and -claude profiles"
+ },
+ "provider_limits": {
+  "context7": "gateway Allow and executed; provider answered 'Monthly quota exceeded' (anonymous quota)"
+ }
+}

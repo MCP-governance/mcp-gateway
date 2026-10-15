@@ -219,6 +219,48 @@ CONFIGS = {
 }
 
 
+E2E = E + 'e2e-clean.json'
+CLEAN = 'DB·등록 상태를 비운 기기에서 user 신청·root 검토·승인, PJ1 관리 Claude Code 자연어 호출(10-15 17:40~17:49).'
+E2E_CONFIGS = {
+    'G01.03': item((1, 1, 1, 1, 0), (
+        '도구별 목적·자산·외부 목적지 심사에 더해, 등록 시 고정 계약의 인자만 받고 주소 인자는 심사한 목적지의 HTTPS로 제한하는 범위를 솔루션이 만든다.',
+        '병합 소스 단위 시험(intake_identity_test: file:·유사 도메인·http·내부 주소·추가 인자 거부).', DEPLOYED,
+        CLEAN + ' 소스 신청 MarkItDown에서 file:///etc/passwd와 미심사 호스트가 실행 전 PAC-01로 차단(원장 6·7, 업스트림 시도 없음), 심사한 호스트는 실행.', NO_ACCEPT),
+        '이름이 주소가 아닌 인자에 담긴 주소는 PAC 전송 검사에 맡긴다. 쓰기 도구의 독립 효과 시험은 남았다.',
+        ('intake_identity_test.py',), (E2E, R_MAIN), None),
+    'G02.01': item((1, 1, 1, 1, 0), (
+        '신청자와 검토·승인·활성화 주체가 달라야 하며 기록은 원장에 남는다.',
+        '병합 소스 격리 시험 통과.', DEPLOYED,
+        CLEAN + ' 원격 2건·소스 1건 모두 user 신청, root 검토·승인·등록·범위 심사·엔드포인트 활성화.', NO_ACCEPT),
+        '같은 사람이 승인하려 할 때의 화면 거부는 이번에 확인하지 않았다.',
+        ('intake_identity_test.py',), (E2E,), None),
+    'G02.04': item((1, 1, 1, 1, 0), (
+        '관리형 하네스 설정은 그 사람이 쓸 수 있는 서버만 담는다.',
+        '병합 소스 격리 시험 통과.', DEPLOYED,
+        CLEAN + ' PJ1 managed-mcp.json은 범위가 확정된 서버만 포함했고, MarkItDown은 범위 확정 53초 뒤 추가됐다(그 사이 ENDPOINT-MANAGED-001로 차단).', NO_ACCEPT),
+        'Codex 설정 쪽은 이번에 하네스로 확인하지 않았다.',
+        ('intake_identity_test.py',), (E2E,), None),
+    'G03.03': item((1, 1, 1, 1, 0), (
+        '요청마다 사용자·서버·도구·인자·목적지를 PAC로 다시 판정.',
+        '병합 소스 단위·격리 시험 통과.', DEPLOYED,
+        CLEAN + ' 같은 도구라도 인자가 범위 밖이면 실행 전 차단, 범위 안이면 실행(원장 5~7).', NO_ACCEPT),
+        '쓰기 도구의 독립 효과 0건 확인이 남았다.',
+        ('intake_identity_test.py',), (E2E,), None),
+    'G04.02': item((1, 1, 1, 0.5, 0), (
+        '응답 개인정보·비밀 마스킹, 실행 후 보류, 비규격 structuredContent는 빼고 text로 전달하며 원장에 기록.',
+        '병합 소스 단위 시험(mcp_result_contract_check) 통과.', DEPLOYED,
+        CLEAN + ' GitHub list_commits·MarkItDown 응답이 마스킹 후 반환(disposition masked), GitHub 배열 구조는 structured_dropped=list로 기록.', NO_ACCEPT),
+        '마스킹된 유형별 정탐·오탐 대조는 하지 않았다. 라벨 없는 사업자·계좌 번호는 가리지 않는다.',
+        ('mcp_result_contract_check.py',), (E2E,), None),
+    'G08.02': item((1, 0.5, 1, 0.5, 0), (
+        '직원 계정의 claude·codex가 관리 계정의 진입 래퍼로 실행된다(PATH에 끼어든 미승인 설치본을 타지 않음).',
+        '설치기 자체 점검 통과. 하네스 자연어 호출의 격리 회귀는 없다.', DEPLOYED,
+        CLEAN + ' Claude Code(Sonnet 5.5)로 GitHub·Context7·MarkItDown 자연어 호출 7회. Codex는 로그인 문제로 하지 않았다.', NO_ACCEPT),
+        'Codex 하네스와 E01~E13 전체 조건은 남았다. Context7은 제공자 익명 할당량 초과를 반환했다.',
+        ('bootstrap_self_check',), (E2E,), None),
+}
+SAMPLE_FROM_E2E = True
+
 FINDINGS = [
     ('DEV-35', 'P0', '관리 계정 루프백 허용 범위', '결정 대기',
      '관리 계정의 루프백 차단이 비인가 로컬 MCP를 막지만 하네스 로그인 콜백·내부 통신도 함께 막는다.',
@@ -228,10 +270,10 @@ FINDINGS = [
      '호출마다 업스트림 연결·도구 목록을 다시 받아 원격 MCP 지연의 대부분을 차지한다.',
      '실제 SDK 호출의 구간별 처리 시간(연결·목록·호출).', '주체·서버 결속, TTL, 종료·철회 시 닫기를 지키는 재사용과 계약 재확인 방식 결정.',
      APPLIANCE, ['G07.02', 'G09.02']),
-    ('DEV-31', 'P0', '헬퍼 토큰의 셸 자식 접근', 'PJ1 확인 필요',
-     'bash 자식은 헬퍼·소켓이 없는 별도 프로필로 분리했다. 키트 재설치 뒤 실기기에서 확인한다.',
-     '자체 점검·AppArmor 구문·교차 리뷰.', 'PJ1 키트 재설치 후 하네스 셸에서 헬퍼 실행이 거부되는지 확인.',
-     R_MAIN, ['G05.01']),
+    ('DEV-31', 'P1', '헬퍼 토큰의 셸 자식 접근', 'PJ1 확인',
+     '하네스 셸에서 header-helper와 sh -c header-helper가 모두 126으로 거부되고 AppArmor 거부가 남았다.',
+     'PJ1 키트 재설치 후 관리 Claude Code의 Bash 도구로 실행.', 'Codex 하네스 셸에서도 같은 결과인지 확인.',
+     E2E, ['G05.01']),
     ('DEV-37', 'P2', 'Tailscale 직접 경로', '사용자 결정',
      '솔루션 기기의 Tailscale이 WSL2 NAT 안에 있어 DERP 중계로 통신한다.',
      'PJ1 망 품질 표본(RTT·지터).', 'WSL 미러 네트워킹 또는 호스트 Tailscale로 직접 경로 확인.',
@@ -259,8 +301,8 @@ def page_sections(data, appliance, sample=None):
                          'next': n, 'evidence': e, 'tasks': tasks}
                         for i, p, t, st, d, v, n, e, tasks in FINDINGS]
     data['next_actions'] = [
-        {'order': 1, 'title': '관리 하네스 자연어 E2E', 'tasks': 'G08.02 · G06.01',
-         'done_when': 'PJ1 관리 계정의 실제 하네스가 등록된 실제 MCP를 자연어로 호출하고 원장·엔드포인트 기록이 같은 호출로 이어진다.'},
+        {'order': 1, 'title': 'Codex 하네스와 기록 상관', 'tasks': 'G08.02 · G06.01',
+         'done_when': 'Codex로 같은 자연어 호출을 하고, 원장·엔드포인트 기록이 같은 호출로 이어진다.'},
         {'order': 2, 'title': '루프백 허용 범위 결정', 'tasks': 'G05.02',
          'done_when': '하네스 내부 통신은 동작하고 비인가 로컬 MCP는 독립 효과 0으로 남는다.'},
         {'order': 3, 'title': '업스트림 세션 재사용', 'tasks': 'G07.02 · G09.02',
@@ -268,6 +310,19 @@ def page_sections(data, appliance, sample=None):
         {'order': 4, 'title': '종료 후 잔존 접근 시험', 'tasks': 'G07.03 · G07.04',
          'done_when': '실제 원격 MCP의 자격 폐기 뒤 재접근 실패와 설정·백업 복구 시 재활성화 불가를 확인한다.'},
     ]
+    if sample is None and SAMPLE_FROM_E2E:
+        e2e = read(E2E)
+        row = next(r for r in e2e['ledger'] if r['server'] == 'markitdown' and r['decision'] == 'Allow')
+        blocked = [r for r in e2e['ledger'] if r['server'] == 'markitdown' and r['decision'] == 'Block']
+        run = e2e['harness']['runs']['mdpos']
+        sample = {
+            'title': f"{row['server']} · {row['tool']}",
+            'scope': 'PJ1 직원 계정에서 관리 Claude Code에 자연어로 요청. 소스 신청 → 검증 → 승인 → 내부 미러에서 실행 → 등록을 거친 OSS MCP.',
+            'values': [['하네스', 'Claude Code · ' + ', '.join(run['model'])], ['판정', row['decision']], ['정책', row['policy_id']],
+                       ['응답', row['disposition']], ['범위 밖 요청', f"{len(blocked)}건 실행 전 차단"],
+                       ['하네스 처리 시간', f"{run['duration_ms']} ms"]],
+            'hashes': [['원장 번호', str(row['id'])], ['응답 SHA-256', run['result_sha256']], ['근거 파일 SHA-256', digest(E2E)]],
+        }
     if sample is None:
         call = appliance['sdk_calls'][-1]
         net = appliance['network_samples'][-1]
@@ -348,11 +403,11 @@ def build_after_wbs_1015(extra=None, sample=None):
     data['exclusions'] = list(dict.fromkeys(data.get('exclusions', []) + [
         '서브에이전트 브랜치의 시험 결과는 병합 소스에서 다시 돌린 결과(lab-results.jsonl)로만 회귀 점수에 반영했다.',
         'PJ1 공식 MCP SDK 호출은 프로토콜 증거이며 관리 하네스의 자연어 모델 호출이 아니다.',
-        '관리 계정이 로그인되지 않아 하네스 E2E·키트 재설치 후 DEV-31 실기기 확인은 하지 않았다.',
+        '하네스 자연어 E2E는 Claude Code만 했다(Codex 로그인 문제). 원격 MCP 제공자 쪽 실제 변경 효과는 확인 대상이 아니다.',
         '10-15 범위 기록은 사용자가 허락한 root 권한으로 기존 신청 목적을 옮긴 것이며 새 도입 승인이 아니다.']))
     page_sections(data, appliance, sample)
     return write_outputs(data)
 
 
 if __name__ == '__main__':
-    build_after_wbs_1015()
+    build_after_wbs_1015(extra=E2E_CONFIGS)

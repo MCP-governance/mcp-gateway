@@ -34,3 +34,6 @@
 {"test": "open_endpoints.py", "kind": "local", "rc": 0, "seconds": 0, "tail": "PASS 무인증 1개가 문서와 일치, 인증 필요 70개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\n"}
 {"test": "managed_enforcement_check.py", "kind": "local", "rc": 0, "seconds": 0, "tail": "----------------------------------------------------------------------\nRan 10 tests in 0.241s\n\nOK\nenforcement rule self-check OK\nflakes-ok\n/usr/bin/dash\n/usr/bin\n"}
 {"test": "opa_test", "kind": "local", "rc": 0, "seconds": 0, "tail": "/policy/policy_test.rego:542:\ndata.mcp.authz_test.test_x_without_restrictable_is_alert: PASS (22.067711ms)\n--------------------------------------------------------------------------------\nPASS: 91/91\nrc=0\nPASS: 91/91\n"}
+{"test": "mcp_result_contract_check.py", "kind": "unit", "rc": 0, "seconds": 0, "commit": "83269c1", "tail": "Ran 17 tests in 0.039s\n\nOK\n"}
+{"test": "intake_identity_test.py", "kind": "unit", "rc": 0, "seconds": 0, "commit": "83269c1", "tail": "Ran 19 tests in 0.051s\n\nOK\n"}
+{"test": "bootstrap_self_check", "kind": "local", "rc": 0, "seconds": 0, "commit": "50fa4a5", "tail": "bootstrap self-check OK\n"}
