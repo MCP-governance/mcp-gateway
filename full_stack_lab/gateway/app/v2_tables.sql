@@ -120,6 +120,35 @@ CREATE TABLE IF NOT EXISTS endpoint_os_events (
 );
 CREATE INDEX IF NOT EXISTS endpoint_os_events_received_idx ON endpoint_os_events(received_at DESC);
 
+-- Endpoint evidence: where a stored observation came from and whether the stored form
+-- is the form the agent said it sent. NULL origin/provenance = written before this.
+ALTER TABLE endpoint_inventory ADD COLUMN IF NOT EXISTS origin text CHECK (origin IN ('automatic','manual','os_event'));
+ALTER TABLE endpoint_inventory ADD COLUMN IF NOT EXISTS provenance jsonb;
+ALTER TABLE endpoint_listeners ADD COLUMN IF NOT EXISTS origin text CHECK (origin IN ('automatic','manual','os_event'));
+ALTER TABLE endpoint_listeners ADD COLUMN IF NOT EXISTS provenance jsonb;
+ALTER TABLE endpoint_os_events ADD COLUMN IF NOT EXISTS origin text NOT NULL DEFAULT 'os_event' CHECK (origin IN ('automatic','manual','os_event'));
+ALTER TABLE endpoint_os_events ADD COLUMN IF NOT EXISTS provenance jsonb;
+ALTER TABLE endpoint_os_events ADD COLUMN IF NOT EXISTS raw_sha256 text;
+ALTER TABLE endpoint_os_events ADD COLUMN IF NOT EXISTS denial_class text CHECK (denial_class IN ('harness_startup','blocked_attempt','unknown'));
+CREATE INDEX IF NOT EXISTS endpoint_os_events_raw_idx ON endpoint_os_events(endpoint_id, raw_sha256) WHERE raw_sha256 IS NOT NULL;
+CREATE INDEX IF NOT EXISTS endpoint_os_events_observed_idx ON endpoint_os_events(endpoint_id, observed_at DESC);
+
+-- One row per heartbeat cycle of the managed endpoint service, measured against the
+-- Gateway address that device already uses. Rows older than seven days are removed by
+-- the ingest that adds new ones.
+CREATE TABLE IF NOT EXISTS endpoint_network_samples (
+  endpoint_id text NOT NULL REFERENCES endpoint_agents(endpoint_id) ON DELETE CASCADE,
+  measured_at timestamptz NOT NULL,
+  rtt_p50_ms double precision CHECK (rtt_p50_ms IS NULL OR (rtt_p50_ms >= 0 AND rtt_p50_ms <= 60000)),
+  rtt_p95_ms double precision CHECK (rtt_p95_ms IS NULL OR (rtt_p95_ms >= 0 AND rtt_p95_ms <= 60000)),
+  jitter_ms double precision CHECK (jitter_ms IS NULL OR (jitter_ms >= 0 AND jitter_ms <= 60000)),
+  failure_pct double precision NOT NULL CHECK (failure_pct >= 0 AND failure_pct <= 100),
+  probes integer NOT NULL CHECK (probes BETWEEN 1 AND 32),
+  received_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (endpoint_id, measured_at)
+);
+CREATE INDEX IF NOT EXISTS endpoint_network_samples_time_idx ON endpoint_network_samples(measured_at DESC);
+
 -- An approved call that did not run is not a rejection (docs/architecture/proposals/
 -- runtime-boundaries.md): NOT_EXECUTED = stopped before dispatch, UNCONFIRMED =
 -- dispatched but the result is unknown. Databases created before this get the wider CHECK.

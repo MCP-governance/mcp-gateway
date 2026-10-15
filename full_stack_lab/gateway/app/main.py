@@ -4,11 +4,11 @@ import asyncio
 import json
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime
-from typing import Literal
+from datetime import UTC, datetime, timedelta
+from typing import Annotated, Literal
 
 import httpx
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Path, Query
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
@@ -886,17 +886,27 @@ class EndpointEnroll(StrictModel):
     detail: dict = Field(default_factory=dict)
 
 
+class Provenance(StrictModel):
+    """What the collector says it saw and did to the record before sending it."""
+    raw_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    projection_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    transformations: list[Annotated[str, Field(pattern=r"^[a-z0-9_]{1,40}$")]] = Field(default_factory=list, max_length=8)
+    collector: str | None = Field(default=None, pattern=r"^[a-z0-9_-]{1,40}$")
+
+
 class EndpointEntry(StrictModel):
     config_path: str = Field(min_length=1, max_length=400)
     server_label: str = Field(min_length=1, max_length=200)
     transport: str = Field(min_length=1, max_length=40)
     endpoint_ref: str = Field(default="", max_length=600)
+    provenance: Provenance | None = None
 
 
 class EndpointReport(StrictModel):
     endpoint_id: str = Field(min_length=3, max_length=120)
     entries: list[EndpointEntry] = Field(default_factory=list, max_length=500)
     complete: bool = False
+    origin: Literal["automatic", "manual"] = "manual"
 
 
 class ObservationReport(StrictModel):
@@ -912,6 +922,8 @@ class EndpointOSEvent(StrictModel):
     observed_at: datetime
     kind: Literal["execution-denied", "network-denied"]
     details: dict[str, str | int] = Field(max_length=12)
+    denial_class: Literal["harness_startup", "blocked_attempt", "unknown"] | None = None
+    provenance: Provenance | None = None
 
 
 class EndpointOSReport(StrictModel):
@@ -932,11 +944,34 @@ class HostReport(StrictModel):
     other_accounts: list[HostAccount] = Field(default_factory=list, max_length=64)
 
 
+class NetworkQuality(StrictModel):
+    """Endpoint-to-Gateway probe summary. RTT is the TCP connect time; failures count every probe."""
+    measured_at: datetime
+    rtt_p50_ms: float | None = Field(default=None, ge=0, le=60000, allow_inf_nan=False)
+    rtt_p95_ms: float | None = Field(default=None, ge=0, le=60000, allow_inf_nan=False)
+    jitter_ms: float | None = Field(default=None, ge=0, le=60000, allow_inf_nan=False)
+    failure_pct: float = Field(ge=0, le=100, allow_inf_nan=False)
+    probes: int = Field(ge=1, le=32)
+
+    @model_validator(mode="after")
+    def plausible(self):
+        if (self.rtt_p50_ms is None) != (self.rtt_p95_ms is None) or (
+                self.rtt_p50_ms is not None and self.rtt_p50_ms > self.rtt_p95_ms):
+            raise ValueError("지연 분위수가 맞지 않습니다.")
+        if self.measured_at.tzinfo is None:
+            raise ValueError("측정 시각에 시간대가 필요합니다.")
+        age = datetime.now(UTC) - self.measured_at
+        if age > timedelta(minutes=10) or age < -timedelta(minutes=1):
+            raise ValueError("측정 시각이 허용 범위를 벗어났습니다.")
+        return self
+
+
 class ManagedHeartbeat(StrictModel):
     policy_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     configuration_hashes: dict[str, str] = Field(max_length=4)
     checks: dict[str, bool] = Field(max_length=4)
     host: HostReport | None = None
+    network_quality: dict | None = Field(default=None, max_length=12)
 
 
 class ManagedActivation(StrictModel):
@@ -945,6 +980,7 @@ class ManagedActivation(StrictModel):
 
 
 class ListenerFinding(StrictModel):
+    provenance: Provenance | None = None
     source: Literal["local-socket", "network", "stdio-process"]
     address: str = Field(min_length=1, max_length=200)
     port: int | None = Field(default=None, ge=1, le=65535)
@@ -961,6 +997,7 @@ class ListenerReport(StrictModel):
     findings: list[ListenerFinding] = Field(default_factory=list, max_length=500)
     complete: bool = False
     sources: list[Literal["local-socket", "network", "stdio-process"]] | None = Field(default=None, min_length=1, max_length=3)
+    origin: Literal["automatic", "manual"] = "manual"
 
     @model_validator(mode="after")
     def source_scope(self):
@@ -1033,11 +1070,19 @@ async def endpoint_managed_policy(device: dict = Depends(endpoint_device("enforc
 @app.post("/api/endpoint/heartbeat")
 async def endpoint_heartbeat(request: ManagedHeartbeat,
                              device: dict = Depends(endpoint_device("enforcement"))) -> dict:
+    # A bad measurement is dropped and reported back; it never costs the device its heartbeat.
+    quality, verdict = None, "absent"
+    if request.network_quality is not None:
+        try:
+            quality, verdict = NetworkQuality.model_validate(request.network_quality).model_dump(), "stored"
+        except ValueError:
+            verdict = "rejected"
     try:
-        return await endpoint_plane.heartbeat(device, request.policy_hash, request.configuration_hashes, request.checks,
-                                              request.host.model_dump() if request.host else None)
+        report = await endpoint_plane.heartbeat(device, request.policy_hash, request.configuration_hashes, request.checks,
+                                                request.host.model_dump() if request.host else None, quality)
     except PermissionError as exc:
         raise HTTPException(403, str(exc)) from exc
+    return {**report, "network_quality": verdict}
 
 
 @app.post("/api/endpoint/devices/{endpoint_id}/activate")
@@ -1105,7 +1150,8 @@ async def endpoint_report(request: EndpointReport,
         raise HTTPException(403, "장치 자격과 다른 엔드포인트의 보고는 받지 않습니다.")
     try:
         return await endpoint_plane.ingest(
-            request.endpoint_id, [entry.model_dump() for entry in request.entries], complete=request.complete)
+            request.endpoint_id, [entry.model_dump() for entry in request.entries],
+            complete=request.complete, origin=request.origin)
     except ValueError as exc:
         raise HTTPException(404, str(exc))
 
@@ -1124,7 +1170,7 @@ async def endpoint_listener_report(request: ListenerReport,
     try:
         return await endpoint_plane.ingest_listeners(
             request.endpoint_id, [item.model_dump() for item in request.findings],
-            complete=request.complete, sources=request.sources)
+            complete=request.complete, sources=request.sources, origin=request.origin)
     except ValueError as exc:
         raise HTTPException(404, str(exc))
 
@@ -1144,18 +1190,89 @@ async def endpoint_observation_status(request: ObservationReport,
 @app.get("/api/endpoint/inventory")
 async def endpoint_inventory(classification: str | None = None,
                              user: dict = Depends(admin_caller)) -> dict:
-    if classification and classification not in {"registered", "shadow", "retired-residue"}:
-        raise HTTPException(422, "알 수 없는 분류입니다.")
+    try:
+        endpoint_plane._classes(classification)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    window = endpoint_plane.PAGE_MAX
+    entries = await endpoint_plane.inventory_page(classification, window)
+    listeners = await endpoint_plane.listeners_page(classification, window)
+    events = await endpoint_plane.os_events_page(limit=window)
+    managed = await db.fetch_all("SELECT * FROM endpoint_managed_events ORDER BY id DESC LIMIT 200")
+    managed_total = await db.fetch_one("SELECT count(*) AS n FROM endpoint_managed_events")
     return {
         "coverage": await endpoint_plane.coverage(),
         "agents": await endpoint_plane.agents(),
         "devices": await endpoint_plane.devices(),
-        "entries": await endpoint_plane.inventory(classification),
-        "listeners": await endpoint_plane.listeners(classification),
+        "entries": entries["rows"],
+        "listeners": listeners["rows"],
         "scan_policy": await endpoint_plane.scan_policy(),
-        "os_events": await endpoint_plane.os_events(),
-        "managed_events": await db.fetch_all("SELECT * FROM endpoint_managed_events ORDER BY id DESC LIMIT 200"),
+        "os_events": events["rows"],
+        "managed_events": managed,
+        "pages": {name: {key: page[key] for key in ("total", "limit", "next_cursor")}
+                  for name, page in (("entries", entries), ("listeners", listeners), ("os_events", events))}
+                 | {"managed_events": {"total": int(managed_total["n"] or 0), "limit": 200, "next_cursor": None}},
     }
+
+
+CursorQuery = Annotated[str | None, Query(pattern=r"^\d{1,18}$")]
+LimitQuery = Annotated[int, Query(ge=1, le=200)]
+ClassQuery = Annotated[str | None, Query(pattern=r"^(registered|shadow|retired-residue)(,(registered|shadow|retired-residue))*$")]
+
+
+@app.get("/api/endpoint/inventory/entries")
+async def endpoint_inventory_entries(classification: ClassQuery = None, cursor: CursorQuery = None,
+                                     limit: LimitQuery = 100, user: dict = Depends(admin_caller)) -> dict:
+    return await endpoint_plane.inventory_page(classification, limit, cursor)
+
+
+@app.get("/api/endpoint/inventory/listeners")
+async def endpoint_inventory_listeners(classification: ClassQuery = None, cursor: CursorQuery = None,
+                                       limit: LimitQuery = 100, user: dict = Depends(admin_caller)) -> dict:
+    return await endpoint_plane.listeners_page(classification, limit, cursor)
+
+
+@app.get("/api/endpoint/inventory/os-events")
+async def endpoint_inventory_os_events(kind: Literal["execution-denied", "network-denied"] | None = None,
+                                       denial_class: Literal["harness_startup", "blocked_attempt", "unknown"] | None = None,
+                                       cursor: CursorQuery = None, limit: LimitQuery = 100,
+                                       user: dict = Depends(admin_caller)) -> dict:
+    return await endpoint_plane.os_events_page(kind, denial_class, limit, cursor)
+
+
+@app.get("/api/endpoint/observations")
+async def endpoint_observations(cursor: Annotated[str | None, Query(pattern=r"^[A-Za-z0-9._:-]{1,120}$")] = None,
+                                limit: LimitQuery = 100, user: dict = Depends(admin_caller)) -> dict:
+    return await endpoint_plane.observations_page(limit, cursor)
+
+
+@app.get("/api/endpoint/records/{kind}/{record_id}")
+async def endpoint_record(kind: Literal["config", "listener", "os-event"], record_id: Annotated[int, Path(ge=1, le=2**62)],
+                          user: dict = Depends(admin_caller)) -> dict:
+    found = await endpoint_plane.record_detail(kind, record_id)
+    if not found:
+        raise HTTPException(404, "기록을 찾을 수 없습니다.")
+    return found
+
+
+@app.get("/api/endpoint/correlation")
+async def endpoint_correlation(decision_id: Annotated[int | None, Query(ge=1, le=2**62)] = None,
+                               kind: Literal["config", "listener", "os-event"] | None = None,
+                               record_id: Annotated[int | None, Query(ge=1, le=2**62)] = None,
+                               window_seconds: Annotated[int, Query(ge=10, le=3600)] = 300,
+                               user: dict = Depends(admin_caller)) -> dict:
+    if (decision_id is None) == (kind is None or record_id is None):
+        raise HTTPException(422, "판정 번호 또는 기록 종류와 번호 중 하나만 지정하세요.")
+    found = await endpoint_plane.correlate(decision_id=decision_id, kind=kind, record_id=record_id,
+                                           window_seconds=window_seconds)
+    if not found:
+        raise HTTPException(404, "기록을 찾을 수 없습니다.")
+    return found
+
+
+@app.get("/api/endpoint/network-quality")
+async def endpoint_network_quality(user: dict = Depends(admin_caller)) -> dict:
+    return await endpoint_plane.network_quality()
 
 
 @app.post("/api/endpoint/os-events")

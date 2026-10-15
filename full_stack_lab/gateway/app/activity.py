@@ -60,7 +60,7 @@ def describe(row: dict) -> dict:
         "id": row.get("id"), "at": row.get("created_at"), "decision": decision,
         "decision_ko": DECISION_KO.get(decision, decision), "tone": TONE.get(decision, ""),
         "who": who, "principal": row.get("user_token"), "department": dept, "role": row.get("role"), "workstation": station,
-        "agent": client.get("agent"), "task_id": client.get("task_id"),
+        "agent": client.get("agent"), "task_id": client.get("task_id"), "traceparent": client.get("traceparent"),
         "harness": (client.get("harness") or {}).get("name"),
         "event_kind": client.get("event_kind") or "tools/call",
         "server": server, "tool": tool, "target": target,

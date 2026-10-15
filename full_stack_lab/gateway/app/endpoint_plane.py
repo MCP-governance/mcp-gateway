@@ -23,7 +23,9 @@ from __future__ import annotations
 import hashlib
 import hmac
 import ipaddress
+import json
 import os
+import re
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -65,6 +67,62 @@ def fingerprint(config_path: str, server_label: str, transport: str, endpoint_re
     return hashlib.sha256(
         "\x1f".join([config_path, server_label, transport, normalise(transport, endpoint_ref)]).encode()
     ).hexdigest()
+
+
+# ── 증거 출처 ────────────────────────────────────────────────────────────────
+#
+# 저장된 행이 에이전트가 보냈다고 말한 형태와 같은지를 해시로 남긴다. 에이전트가
+# 보고한 projection 해시와 서버가 저장된 필드만으로 다시 계산한 해시가 다르면
+# 전달 중 또는 저장 중에 형태가 바뀐 것이다. 원본 해시는 서버가 검증할 수 없다
+# (원본은 그 단말에만 있다) — 나중에 단말의 원본과 대조하기 위해 보관만 한다.
+
+ORIGINS = ("automatic", "manual", "os_event")
+RAW_DEDUPE_DAYS = 7
+PAGE_MAX = 200
+INVENTORY_FIELDS = ("config_path", "server_label", "transport", "endpoint_ref")
+LISTENER_FIELDS = ("source", "address", "port", "process_name", "command_line", "mcp_evidence",
+                   "server_name", "server_version", "protocol_version")
+
+
+def canonical_sha256(value: Any) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
+                                     ensure_ascii=False).encode()).hexdigest()
+
+
+def canonical_time(value: datetime) -> str:
+    return value.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def projection_of(row: dict, fields: tuple[str, ...]) -> dict:
+    # An absent text field and an empty one are the same stored value; a port stays null.
+    return {key: row.get(key) if key == "port" else ("" if row.get(key) is None else row.get(key)) for key in fields}
+
+
+def provenance_of(reported: dict | None, projection: dict, server_steps: list[str] | None = None) -> dict:
+    reported = reported or {}
+    server_hash = canonical_sha256(projection)
+    agent_hash = reported.get("projection_sha256")
+    return {
+        "raw_sha256": reported.get("raw_sha256"),
+        "agent_projection_sha256": agent_hash,
+        "server_projection_sha256": server_hash,
+        "state": "unreported" if not agent_hash else "match" if agent_hash == server_hash else "mismatch",
+        "transformations": [*(reported.get("transformations") or []), *("server:" + step for step in server_steps or [])],
+        "collector": reported.get("collector"),
+        "received_at": datetime.now(UTC).isoformat(timespec="seconds"),
+    }
+
+
+def _clip(value: str, size: int, steps: list[str]) -> str:
+    if len(value) > size and "truncate" not in steps:
+        steps.append("truncate")
+    return value[:size]
+
+
+def _origin(value: str) -> str:
+    if value not in ORIGINS[:2]:
+        raise ValueError("알 수 없는 수집 출처입니다.")
+    return value
 
 
 async def enroll(endpoint_id: str, hostname: str, platform: str, agent_version: str,
@@ -171,11 +229,11 @@ if __name__ == "__main__":
     print("PASS registered Gateway routes (incl. drifted) are managed; unknown/disabled/direct routes never count as approved")
 
 
-async def ingest(endpoint_id: str, entries: list[dict], *, complete: bool = False) -> dict:
+async def ingest(endpoint_id: str, entries: list[dict], *, complete: bool = False, origin: str = "manual") -> dict:
     if not isinstance(complete, bool) or len(entries) > 500:
         raise ValueError("알 수 없는 스냅샷 완전성 또는 보고 상한입니다.")
     async with db.transaction() as connection:
-        result = await _ingest_inventory(connection, endpoint_id, entries, complete)
+        result = await _ingest_inventory(connection, endpoint_id, entries, complete, _origin(origin))
     await _link_residue_to_cases(endpoint_id)
     return result
 
@@ -223,7 +281,7 @@ def observation_freshness(status: dict, observed_at, now: datetime | None = None
         return "unknown"
 
 
-async def _ingest_inventory(connection, endpoint_id: str, entries: list[dict], complete: bool) -> dict:
+async def _ingest_inventory(connection, endpoint_id: str, entries: list[dict], complete: bool, origin: str) -> dict:
     """한 엔드포인트가 보고한 설정 목록 전체를 정본으로 교체한다.
 
     누적이 아니라 교체인 이유는, 설정에서 지워진 항목이 관리대장에 남아 있으면
@@ -235,16 +293,31 @@ async def _ingest_inventory(connection, endpoint_id: str, entries: list[dict], c
         raise ValueError("등록되지 않은 엔드포인트입니다. 먼저 enroll 하세요.")
     index = await _registry_index(connection)
 
+    known = {row["fingerprint"]: row["hash"] for row in await (await connection.execute(
+        "SELECT fingerprint, provenance->>'raw_sha256' AS hash FROM endpoint_inventory WHERE endpoint_id=%s",
+        (endpoint_id,))).fetchall()}
     seen: list[str] = []
     counts = {"registered": 0, "shadow": 0, "retired-residue": 0}
-    for raw in entries:
-        config_path = str(raw.get("config_path") or "unknown")[:400]
-        server_label = str(raw.get("server_label") or "unnamed")[:200]
-        transport = str(raw.get("transport") or "stdio")[:40]
+    duplicates = 0
+    for item in entries:
+        raw = {key: value for key, value in item.items() if key != "provenance"}
+        steps: list[str] = []
+        config_path = _clip(str(raw.get("config_path") or "unknown"), 400, steps)
+        server_label = _clip(str(raw.get("server_label") or "unnamed"), 200, steps)
+        transport = _clip(str(raw.get("transport") or "stdio"), 40, steps)
         value = str(raw.get("endpoint_ref") or "")
-        endpoint_ref = (command_digest(value) if transport.lower() == "stdio" and not value.startswith("sha256:")
-                        else safe_endpoint_ref(value))[:600]
+        if transport.lower() == "stdio" and not value.startswith("sha256:"):
+            endpoint_ref = command_digest(value)
+            steps.append("command_sha256")
+        else:
+            endpoint_ref = safe_endpoint_ref(value)
+            if endpoint_ref != value:
+                steps.append("url_sha256")
+        endpoint_ref = _clip(endpoint_ref, 600, steps)
         observed = {**raw, "endpoint_ref": endpoint_ref}
+        provenance = provenance_of(item.get("provenance"), projection_of(
+            {"config_path": config_path, "server_label": server_label, "transport": transport,
+             "endpoint_ref": endpoint_ref}, INVENTORY_FIELDS), steps)
         mark = fingerprint(config_path, server_label, transport, endpoint_ref)
         matched = _match(index, transport, endpoint_ref, server_label)
         if matched is None:
@@ -264,16 +337,18 @@ async def _ingest_inventory(connection, endpoint_id: str, entries: list[dict], c
             registry_match = matched["id"]
         counts[classification] += 1
         seen.append(mark)
+        duplicates += bool(provenance["raw_sha256"]) and known.get(mark) == provenance["raw_sha256"]
         await connection.execute(
             """INSERT INTO endpoint_inventory(
                  endpoint_id, config_path, server_label, transport, endpoint_ref,
-                 fingerprint, registry_match, classification, raw)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                 fingerprint, registry_match, classification, raw, origin, provenance)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                ON CONFLICT (endpoint_id, fingerprint) DO UPDATE SET
                  reported_at=now(), registry_match=EXCLUDED.registry_match,
-                 classification=EXCLUDED.classification, raw=EXCLUDED.raw""",
+                 classification=EXCLUDED.classification, raw=EXCLUDED.raw,
+                 origin=EXCLUDED.origin, provenance=EXCLUDED.provenance""",
             (endpoint_id, config_path, server_label, transport, endpoint_ref,
-             mark, registry_match, classification, Jsonb(observed)),
+             mark, registry_match, classification, Jsonb(observed), origin, Jsonb(provenance)),
         )
     removed = 0
     if complete:
@@ -283,7 +358,7 @@ async def _ingest_inventory(connection, endpoint_id: str, entries: list[dict], c
     await connection.execute("UPDATE endpoint_agents SET last_seen_at=now() WHERE endpoint_id=%s", (endpoint_id,))
     await _record_observation(connection, endpoint_id, "inventory", "success" if complete else "partial", len(entries),
                               "" if complete else "incomplete_snapshot")
-    return {"endpoint_id": endpoint_id, "accepted": len(entries),
+    return {"endpoint_id": endpoint_id, "accepted": len(entries), "duplicates": int(duplicates),
             "removed": removed, "counts": counts, "complete": complete}
 
 
@@ -316,28 +391,63 @@ async def _link_residue_to_cases(endpoint_id: str) -> None:
                          note="엔드포인트 보고로 새로 발견된 잔존 설정")
 
 
-async def inventory(classification: str | None = None, limit: int = 200) -> list[dict]:
-    query = """SELECT i.*, a.hostname, a.platform, a.owner_token, a.last_seen_at,
-                      s.display_name AS registry_name, s.lifecycle
-                 FROM endpoint_inventory i
-                 JOIN endpoint_agents a USING (endpoint_id)
-                 LEFT JOIN mcp_servers s ON s.id = i.registry_match
-                WHERE a.status='active' AND a.agent_version<>'unregistered'"""
-    params: list[Any] = []
-    if classification:
-        query += " AND i.classification=%s"
-        params.append(classification)
-    query += " ORDER BY i.reported_at DESC LIMIT %s"
-    params.append(limit)
-    rows = await db.fetch_all(query, tuple(params))
-    result = []
-    for row in rows:
-        item = dict(row)
-        for key in ("reported_at", "last_seen_at"):
-            if item.get(key):
-                item[key] = item[key].isoformat()
-        result.append(item)
-    return result
+CLASSES = ("registered", "shadow", "retired-residue")
+
+
+def _classes(value: str | None) -> list[str] | None:
+    items = [item for item in (value or "").split(",") if item]
+    if any(item not in CLASSES for item in items):
+        raise ValueError("알 수 없는 분류입니다.")
+    return items or None
+
+
+def _bounds(limit: int, cursor: str | None) -> tuple[int, int | None]:
+    if cursor in (None, ""):
+        after = None
+    elif re.fullmatch(r"\d{1,18}", str(cursor)):
+        after = int(cursor)
+    else:
+        raise ValueError("잘못된 페이지 위치입니다.")
+    return max(1, min(int(limit), PAGE_MAX)), after
+
+
+def _window(rows: list[dict], limit: int) -> tuple[list[dict], str | None]:
+    more = len(rows) > limit
+    rows = rows[:limit]
+    return rows, (str(rows[-1]["id"]) if more and rows else None)
+
+
+def _listed(row: dict, *times: str) -> dict:
+    item = dict(row)
+    for key in times:
+        if item.get(key):
+            item[key] = item[key].isoformat()
+    item["provenance_state"] = (item.pop("provenance", None) or {}).get("state")
+    return item
+
+
+async def inventory_page(classification: str | None = None, limit: int = 100, cursor: str | None = None) -> dict:
+    """전체 건수는 반환 창과 따로 센다. 창이 200건이라고 전체가 200건은 아니다."""
+    limit, after = _bounds(limit, cursor)
+    where, params = ["a.status='active'", "a.agent_version<>'unregistered'"], []
+    if classes := _classes(classification):
+        where.append("i.classification = ANY(%s::text[])")
+        params.append(classes)
+    base = " AND ".join(where)
+    total = await db.fetch_one(
+        "SELECT count(*) AS n FROM endpoint_inventory i JOIN endpoint_agents a USING (endpoint_id) WHERE " + base,
+        tuple(params))
+    rows = await db.fetch_all(
+        """SELECT i.*, a.hostname, a.platform, a.owner_token, a.last_seen_at,
+                  s.display_name AS registry_name, s.lifecycle
+             FROM endpoint_inventory i
+             JOIN endpoint_agents a USING (endpoint_id)
+             LEFT JOIN mcp_servers s ON s.id = i.registry_match
+            WHERE """ + base + (" AND i.id < %s" if after else "") + " ORDER BY i.id DESC LIMIT %s",
+        (*params, *([after] if after else []), limit + 1))
+    rows, next_cursor = _window(rows, limit)
+    return {"rows": [_listed(row, "reported_at", "last_seen_at") for row in rows],
+            "total": int(total["n"] or 0), "limit": limit, "next_cursor": next_cursor}
 
 
 async def agents() -> list[dict]:
@@ -413,20 +523,50 @@ async def coverage() -> dict:
 DEVICE_SCOPES = ("inventory", "netscan", "enforcement")
 
 
+DENIAL_CLASSES = ("harness_startup", "blocked_attempt", "unknown")
+
+
 async def ingest_os_events(endpoint_id: str, events: list[dict]) -> dict:
     accepted = 0
     async with db.transaction() as connection:
         for event in events:
+            denial_class = event.get("denial_class") if event.get("denial_class") in DENIAL_CLASSES else "unknown"
+            provenance = provenance_of(event.get("provenance"), {
+                "event_id": event["event_id"], "observed_at": canonical_time(event["observed_at"]),
+                "kind": event["kind"], "details": event["details"], "denial_class": denial_class})
+            raw_hash = provenance["raw_sha256"]
+            # The same raw record inside the window is a replay (a rewound cursor, a retried batch
+            # under a new key), not a second event.
             accepted += (await connection.execute(
-                """INSERT INTO endpoint_os_events(endpoint_id,event_id,observed_at,kind,details)
-                   VALUES (%s,%s,%s,%s,%s) ON CONFLICT(endpoint_id,event_id) DO NOTHING""",
-                (endpoint_id, event["event_id"], event["observed_at"], event["kind"], Jsonb(event["details"])))).rowcount
+                """INSERT INTO endpoint_os_events(endpoint_id,event_id,observed_at,kind,details,denial_class,provenance,raw_sha256)
+                   SELECT %s,%s,%s,%s,%s,%s,%s,%s
+                    WHERE NOT EXISTS (SELECT 1 FROM endpoint_os_events WHERE endpoint_id=%s AND raw_sha256=%s
+                                         AND received_at > now() - make_interval(days => %s))
+                   ON CONFLICT(endpoint_id,event_id) DO NOTHING""",
+                (endpoint_id, event["event_id"], event["observed_at"], event["kind"], Jsonb(event["details"]),
+                 denial_class, Jsonb(provenance), raw_hash, endpoint_id, raw_hash, RAW_DEDUPE_DAYS))).rowcount
         await _record_observation(connection, endpoint_id, "os", "success", len(events))
-    return {"endpoint_id": endpoint_id, "accepted": accepted, "received": len(events)}
+    return {"endpoint_id": endpoint_id, "accepted": accepted, "received": len(events),
+            "duplicates": len(events) - accepted}
 
 
-async def os_events() -> list[dict]:
-    return await db.fetch_all("SELECT * FROM endpoint_os_events ORDER BY id DESC LIMIT 200")
+async def os_events_page(kind: str | None = None, denial_class: str | None = None,
+                         limit: int = 100, cursor: str | None = None) -> dict:
+    limit, after = _bounds(limit, cursor)
+    where, params = [], []
+    for column, value in (("kind", kind), ("denial_class", denial_class)):
+        if value:
+            where.append(f"e.{column}=%s")
+            params.append(value)
+    base = " AND ".join(where) or "TRUE"
+    total = await db.fetch_one("SELECT count(*) AS n FROM endpoint_os_events e WHERE " + base, tuple(params))
+    rows = await db.fetch_all(
+        "SELECT e.*, a.hostname FROM endpoint_os_events e JOIN endpoint_agents a USING (endpoint_id) WHERE "
+        + base + (" AND e.id < %s" if after else "") + " ORDER BY e.id DESC LIMIT %s",
+        (*params, *([after] if after else []), limit + 1))
+    rows, next_cursor = _window(rows, limit)
+    return {"rows": [_listed(row, "observed_at", "received_at") for row in rows],
+            "total": int(total["n"] or 0), "limit": limit, "next_cursor": next_cursor}
 
 
 def _hash_key(raw: str) -> str:
@@ -535,6 +675,8 @@ async def devices() -> list[dict]:
 # Managed enrollment reuses the device-key boundary. The key stays with the root
 # service; the ordinary user receives only a short-lived, device-bound MCP JWT.
 HEARTBEAT_SECONDS = 180
+HEARTBEAT_INTERVAL = 60
+NETWORK_RETENTION_DAYS = 7
 MANAGED_CHECKS = {"apparmor_enforcing", "nftables_active", "protected_configs", "ordinary_account"}
 MANAGED_CHECKS_BY_PLATFORM = {"linux": MANAGED_CHECKS,
                               "windows": {"firewall_enforcing", "protected_configs", "ordinary_account"}}
@@ -646,7 +788,7 @@ async def managed_policy(device: dict) -> dict:
     policy = {"version": 1, "gateway_url": public, "gateway_ips": addresses, "gateway_port": parsed.port or (443 if parsed.scheme == "https" else 80),
               "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), "servers": servers,
               "local_username": device["local_username"], "local_uid": device["local_uid"],
-              "heartbeat_seconds": 60, "max_heartbeat_age": HEARTBEAT_SECONDS, "files": files}
+              "heartbeat_seconds": HEARTBEAT_INTERVAL, "max_heartbeat_age": HEARTBEAT_SECONDS, "files": files}
     if proxy_port:
         policy["proxy_port"] = proxy_port
         policy["proxy_environment"] = proxy
@@ -662,7 +804,8 @@ def json_document(value) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
 
 
-async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, host: dict | None = None) -> dict:
+async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, host: dict | None = None,
+                    quality: dict | None = None) -> dict:
     policy = await managed_policy(device)
     compliant = (policy_hash == policy["policy_hash"] and hashes == policy["configuration_hashes"]
                  and set(checks) == managed_checks(device) and all(value is True for value in checks.values()))
@@ -671,6 +814,12 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
     # A heartbeat without the report drops the previous one: an old "no other account"
     # must not keep standing in for a check that is no longer made.
     detail = {"host": {**host, "reported_at": datetime.now(UTC).isoformat(timespec="seconds")}} if host else {}
+    # What the Gateway rendered (provider artifact) beside what the device says is installed.
+    detail["install_receipt"] = {
+        "provider_artifact_sha256": policy["configuration_hashes"], "installed_sha256": hashes,
+        "policy_sha256": {"expected": policy["policy_hash"], "installed": policy_hash},
+        "match": policy_hash == policy["policy_hash"] and hashes == policy["configuration_hashes"],
+        "recorded_at": datetime.now(UTC).isoformat(timespec="seconds")}
     async with db.transaction() as connection:
         row = await (await connection.execute(
             """UPDATE endpoint_agents SET heartbeat_at=now(),last_seen_at=now(),policy_hash=%s,
@@ -680,6 +829,14 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
             (policy_hash, Jsonb(hashes), Jsonb(checks), Jsonb(detail), compliant, device["endpoint_id"]))).fetchone()
         if not row:
             raise PermissionError("폐기한 장치는 heartbeat로 복구할 수 없습니다.")
+        if quality:
+            await connection.execute(
+                """INSERT INTO endpoint_network_samples(endpoint_id,measured_at,rtt_p50_ms,rtt_p95_ms,jitter_ms,failure_pct,probes)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (endpoint_id, measured_at) DO NOTHING""",
+                (device["endpoint_id"], quality["measured_at"], quality["rtt_p50_ms"], quality["rtt_p95_ms"],
+                 quality["jitter_ms"], quality["failure_pct"], quality["probes"]))
+            await connection.execute("DELETE FROM endpoint_network_samples WHERE measured_at < now() - make_interval(days => %s)",
+                                     (NETWORK_RETENTION_DAYS,))
         if not compliant or row["managed_state"] != device["managed_state"]:
             await connection.execute(
                 "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'quarantined',%s)",
@@ -688,6 +845,43 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
                  "mismatched_files": sorted(name for name, expected in policy["configuration_hashes"].items()
                                             if hashes.get(name) != expected)})))
     return {"state": row["managed_state"], "compliant": compliant, "policy_hash": policy["policy_hash"]}
+
+
+async def network_quality() -> dict:
+    """엔드포인트에서 게이트웨이까지의 측정값. 오래된 값은 지연으로 보이지 않고 stale로 남는다."""
+    rows = await db.fetch_all(
+        """SELECT DISTINCT ON (a.endpoint_id) a.endpoint_id, a.hostname, s.measured_at, s.rtt_p50_ms,
+                  s.rtt_p95_ms, s.jitter_ms, s.failure_pct
+             FROM endpoint_agents a LEFT JOIN endpoint_network_samples s ON s.endpoint_id = a.endpoint_id
+            WHERE a.status='active' AND a.agent_version<>'unregistered'
+              AND (a.device_epoch IS NOT NULL OR s.endpoint_id IS NOT NULL)
+            ORDER BY a.endpoint_id, s.measured_at DESC NULLS LAST""")
+    now = datetime.now(UTC)
+    devices, fresh = [], []
+    for row in rows:
+        measured = row["measured_at"]
+        state = ("unknown" if measured is None else
+                 "fresh" if 0 <= (now - measured).total_seconds() <= 3 * HEARTBEAT_INTERVAL else "stale")
+        if state == "fresh":
+            fresh.append(row["endpoint_id"])
+        devices.append({
+            "endpoint_id": row["endpoint_id"], "hostname": row["hostname"],
+            "measured_at": measured.isoformat() if measured else None,
+            "rtt_p50_ms": _round(row["rtt_p50_ms"]), "rtt_p95_ms": _round(row["rtt_p95_ms"]),
+            "jitter_ms": _round(row["jitter_ms"]), "failure_pct": _round(row["failure_pct"]), "state": state})
+    total = await db.fetch_one(
+        """SELECT percentile_disc(0.5) WITHIN GROUP (ORDER BY rtt_p50_ms) AS p50,
+                  percentile_disc(0.95) WITHIN GROUP (ORDER BY rtt_p95_ms) AS p95,
+                  sum(failure_pct * probes) / NULLIF(sum(probes), 0) AS failure
+             FROM endpoint_network_samples
+            WHERE endpoint_id = ANY(%s::text[]) AND measured_at > now() - interval '24 hours'""", (fresh,)) or {}
+    return {"devices": devices,
+            "summary": {"p50_ms": _round(total.get("p50")), "p95_ms": _round(total.get("p95")),
+                        "failure_pct": _round(total.get("failure")), "devices": len(fresh)}}
+
+
+def _round(value: Any) -> float | None:
+    return None if value is None else round(float(value), 1)
 
 
 async def activate_managed(endpoint_id: str, actor: str, expected_hash: str, note: str) -> dict:
@@ -798,7 +992,7 @@ def _listener_keys(address: str, port, server_name: str, command_line: str) -> s
 
 
 async def ingest_listeners(endpoint_id: str, findings: list, *, complete: bool = False,
-                           sources: list[str] | None = None) -> dict:
+                           sources: list[str] | None = None, origin: str = "manual") -> dict:
     sources = ["local-socket", "network", "stdio-process"] if sources is None else sources
     if (not isinstance(complete, bool) or len(findings) > 500 or not isinstance(sources, list)
             or not sources or len(set(sources)) != len(sources)
@@ -806,10 +1000,11 @@ async def ingest_listeners(endpoint_id: str, findings: list, *, complete: bool =
             or any(item.get("source", "network") not in sources for item in findings)):
         raise ValueError("알 수 없거나 일치하지 않는 관측 범위입니다.")
     async with db.transaction() as connection:
-        return await _ingest_listeners(connection, endpoint_id, findings, complete, sources)
+        return await _ingest_listeners(connection, endpoint_id, findings, complete, sources, _origin(origin))
 
 
-async def _ingest_listeners(connection, endpoint_id: str, findings: list, complete: bool, sources: list) -> dict:
+async def _ingest_listeners(connection, endpoint_id: str, findings: list, complete: bool, sources: list,
+                            origin: str) -> dict:
     """한 엔드포인트가 관측한 리스너 목록 전체를 정본으로 교체한다.
 
     인벤토리와 같은 이유로 누적이 아니라 교체다. 꺼진 서버가 표에 남으면
@@ -820,26 +1015,40 @@ async def _ingest_listeners(connection, endpoint_id: str, findings: list, comple
         raise ValueError("등록되지 않은 엔드포인트입니다.")
     index = await _registry_index(connection)
 
+    known = {row["fingerprint"]: row["hash"] for row in await (await connection.execute(
+        "SELECT fingerprint, provenance->>'raw_sha256' AS hash FROM endpoint_listeners WHERE endpoint_id=%s",
+        (endpoint_id,))).fetchall()}
     seen = []
     counts = {"registered": 0, "shadow": 0, "retired-residue": 0}
     evidence = {"confirmed": 0, "suspected": 0, "unknown": 0}
-    for raw in findings:
+    duplicates = 0
+    for item in findings:
+        raw = {key: value for key, value in item.items() if key != "provenance"}
+        steps: list[str] = []
         source = str(raw.get("source") or "network")
         if source not in {"local-socket", "network", "stdio-process"}:
             source = "network"
-        address = str(raw.get("address") or "")[:200]
+        address = _clip(str(raw.get("address") or ""), 200, steps)
         port_raw = raw.get("port")
         port = int(port_raw) if str(port_raw).isdigit() else None
         command_line = str(raw.get("command_line") or "")
         if command_line and not command_line.startswith("sha256:"):
             command_line = command_digest(command_line)
-        command_line = command_line[:600]
-        process_name = str(raw.get("process_name") or "")[:120] or None
+            steps.append("command_sha256")
+        command_line = _clip(command_line, 600, steps)
+        process_name = _clip(str(raw.get("process_name") or ""), 120, steps) or None
         mcp_evidence = str(raw.get("mcp_evidence") or "unknown")
         if mcp_evidence not in evidence:
             mcp_evidence = "unknown"
-        server_name = str(raw.get("server_name") or "")[:200] or None
+        server_name = _clip(str(raw.get("server_name") or ""), 200, steps) or None
+        server_version = _clip(str(raw.get("server_version") or ""), 80, steps) or None
+        protocol_version = _clip(str(raw.get("protocol_version") or ""), 40, steps) or None
         mark = listener_fingerprint(source, address, port, command_line)
+        provenance = provenance_of(item.get("provenance"), projection_of(
+            {"source": source, "address": address, "port": port, "process_name": process_name,
+             "command_line": command_line, "mcp_evidence": mcp_evidence, "server_name": server_name,
+             "server_version": server_version, "protocol_version": protocol_version}, LISTENER_FIELDS), steps)
+        duplicates += bool(provenance["raw_sha256"]) and known.get(mark) == provenance["raw_sha256"]
 
         matched = None
         candidates = _listener_keys(address, port, server_name or "", command_line)
@@ -864,18 +1073,19 @@ async def _ingest_listeners(connection, endpoint_id: str, findings: list, comple
             """INSERT INTO endpoint_listeners(
                  endpoint_id, source, address, port, process_name, command_line,
                  mcp_evidence, server_name, server_version, protocol_version,
-                 fingerprint, registry_match, classification, raw)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                 fingerprint, registry_match, classification, raw, origin, provenance)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                ON CONFLICT (endpoint_id, fingerprint) DO UPDATE SET
                  observed_at=now(), mcp_evidence=EXCLUDED.mcp_evidence,
                  server_name=EXCLUDED.server_name, server_version=EXCLUDED.server_version,
                  protocol_version=EXCLUDED.protocol_version,
                  registry_match=EXCLUDED.registry_match,
-                 classification=EXCLUDED.classification, raw=EXCLUDED.raw""",
+                 classification=EXCLUDED.classification, raw=EXCLUDED.raw,
+                 origin=EXCLUDED.origin, provenance=EXCLUDED.provenance""",
             (endpoint_id, source, address, port, process_name, command_line,
-             mcp_evidence, server_name, str(raw.get("server_version") or "")[:80] or None,
-             str(raw.get("protocol_version") or "")[:40] or None,
-             mark, registry_match, classification, Jsonb({**raw, "command_line": command_line})),
+             mcp_evidence, server_name, server_version, protocol_version,
+             mark, registry_match, classification, Jsonb({**raw, "command_line": command_line}),
+             origin, Jsonb(provenance)),
         )
     removed = 0
     if complete:
@@ -891,27 +1101,31 @@ async def _ingest_listeners(connection, endpoint_id: str, findings: list, comple
             count = sum(str(item.get("source") or "network") in reported for item in findings)
             await _record_observation(connection, endpoint_id, channel, "success" if complete else "partial", count,
                                       "" if complete else "incomplete_snapshot", reported)
-    return {"endpoint_id": endpoint_id, "accepted": len(findings), "removed": removed,
+    return {"endpoint_id": endpoint_id, "accepted": len(findings), "duplicates": int(duplicates), "removed": removed,
             "counts": counts, "evidence": evidence, "complete": complete, "sources": sources}
 
 
-async def listeners(classification: str | None = None, limit: int = 200) -> list:
-    query = """SELECT l.*, a.hostname, a.owner_token, p.display_name AS owner_name,
-                      s.display_name AS registry_name, s.lifecycle, a.detail->'observation' AS observation
-                 FROM endpoint_listeners l
-                 JOIN endpoint_agents a USING (endpoint_id)
-                 LEFT JOIN principals p ON p.token = a.owner_token
-                 LEFT JOIN mcp_servers s ON s.id = l.registry_match"""
-    params = []
-    if classification:
-        query += " WHERE l.classification=%s"
-        params.append(classification)
-    query += " ORDER BY l.observed_at DESC LIMIT %s"
-    params.append(limit)
-    rows = await db.fetch_all(query, tuple(params))
+async def listeners_page(classification: str | None = None, limit: int = 100, cursor: str | None = None) -> dict:
+    limit, after = _bounds(limit, cursor)
+    where, params = [], []
+    if classes := _classes(classification):
+        where.append("l.classification = ANY(%s::text[])")
+        params.append(classes)
+    base = " AND ".join(where) or "TRUE"
+    total = await db.fetch_one("SELECT count(*) AS n FROM endpoint_listeners l WHERE " + base, tuple(params))
+    rows = await db.fetch_all(
+        """SELECT l.*, a.hostname, a.owner_token, p.display_name AS owner_name,
+                  s.display_name AS registry_name, s.lifecycle, a.detail->'observation' AS observation
+             FROM endpoint_listeners l
+             JOIN endpoint_agents a USING (endpoint_id)
+             LEFT JOIN principals p ON p.token = a.owner_token
+             LEFT JOIN mcp_servers s ON s.id = l.registry_match
+            WHERE """ + base + (" AND l.id < %s" if after else "") + " ORDER BY l.id DESC LIMIT %s",
+        (*params, *([after] if after else []), limit + 1))
+    rows, next_cursor = _window(rows, limit)
     result = []
     for row in rows:
-        item = dict(row)
+        item = _listed(row)
         channel = "process" if item["source"] == "stdio-process" else "network"
         status = (item.pop("observation", None) or {}).get(channel, {})
         item["scan_source_status"] = status.get("state", "unknown")
@@ -919,7 +1133,128 @@ async def listeners(classification: str | None = None, limit: int = 200) -> list
         if item.get("observed_at"):
             item["observed_at"] = item["observed_at"].isoformat()
         result.append(item)
-    return result
+    return {"rows": result, "total": int(total["n"] or 0), "limit": limit, "next_cursor": next_cursor}
+
+
+OBSERVATION_CHANNELS = ("inventory", "process", "network", "os")
+
+
+async def observations_page(limit: int = 100, cursor: str | None = None) -> dict:
+    """엔드포인트 단위로 넘긴다. 채널 상태와 신선도는 따로 두어 수집 중단이 0건으로 읽히지 않게 한다."""
+    limit = max(1, min(int(limit), PAGE_MAX))
+    if cursor and not re.fullmatch(r"[A-Za-z0-9._:-]{1,120}", cursor):
+        raise ValueError("잘못된 페이지 위치입니다.")
+    base = "status='active' AND agent_version<>'unregistered'"
+    total = await db.fetch_one("SELECT count(*) AS n FROM endpoint_agents WHERE " + base)
+    agents = await db.fetch_all(
+        """SELECT endpoint_id, hostname, last_seen_at, detail->'observation' AS observation
+             FROM endpoint_agents WHERE """ + base + " AND endpoint_id > %s ORDER BY endpoint_id LIMIT %s",
+        (cursor or "", limit + 1))
+    more = len(agents) > limit
+    agents = agents[:limit]
+    now = datetime.now(UTC)
+    rows = []
+    for agent in agents:
+        online = agent["last_seen_at"] is not None and (now - agent["last_seen_at"]).total_seconds() <= 900
+        for channel in OBSERVATION_CHANNELS:
+            status = (agent["observation"] or {}).get(channel, {})
+            reported = status.get("reported_at")
+            try:
+                age = (now - datetime.fromisoformat(str(reported).replace("Z", "+00:00"))).total_seconds()
+            except (TypeError, ValueError):
+                age = None
+            rows.append({
+                "endpoint_id": agent["endpoint_id"], "hostname": agent["hostname"], "channel": channel,
+                "state": status.get("state", "unknown"), "reported_at": reported,
+                "last_success_at": status.get("last_success_at"), "accepted_count": status.get("accepted_count"),
+                "error_code": status.get("error_code") or "",
+                "freshness": "unknown" if age is None or age < 0 else "fresh" if age <= 180 else "stale",
+                "agent_state": "online" if online else "offline"})
+    return {"rows": rows, "total": int(total["n"] or 0), "limit": limit,
+            "next_cursor": agents[-1]["endpoint_id"] if more else None}
+
+
+# kind -> (table, alias, time column). A record keeps its own source and time.
+RECORD_KINDS = {"config": ("endpoint_inventory", "i", "reported_at"),
+                "listener": ("endpoint_listeners", "l", "observed_at"),
+                "os-event": ("endpoint_os_events", "e", "observed_at")}
+
+
+async def record_detail(kind: str, record_id: int) -> dict | None:
+    table, alias, when = RECORD_KINDS[kind]
+    row = await db.fetch_one(
+        f"SELECT {alias}.*, a.hostname, a.owner_token FROM {table} {alias} "
+        f"JOIN endpoint_agents a USING (endpoint_id) WHERE {alias}.id=%s", (record_id,))
+    if not row:
+        return None
+    item = dict(row)
+    item.pop("raw", None)
+    item["record_kind"], item["at"] = kind, item[when].isoformat()
+    for key in ("reported_at", "observed_at", "received_at"):
+        if item.get(key):
+            item[key] = item[key].isoformat()
+    return item
+
+
+def _record(kind: str, row: dict, when: str) -> dict:
+    provenance = row.get("provenance") or {}
+    title = {"os-event": lambda: (row["details"] or {}).get("executable") or (row["details"] or {}).get("destination_ip"),
+             "listener": lambda: f"{row['address']}:{row['port']}" if row.get("port") else row["address"],
+             "config": lambda: row["server_label"]}[kind]()
+    return {"kind": kind, "id": row["id"], "at": row[when].isoformat(), "endpoint_id": row["endpoint_id"],
+            "source": provenance.get("collector"), "origin": row.get("origin"), "title": title,
+            "denial_class": row.get("denial_class"), "provenance_state": provenance.get("state")}
+
+
+async def correlate(*, decision_id: int | None = None, kind: str | None = None, record_id: int | None = None,
+                    window_seconds: int = 300) -> dict | None:
+    """같은 엔드포인트 장치와 같은 사용자의 기록을 시간 창 안에서 따로 늘어놓는다.
+
+    하나의 사건으로 합치지 않는다. 시각이 겹친다는 것은 같은 행위라는 증거가 아니다.
+    traceparent는 기록만 하고 연결의 근거로 쓰지 않는다.
+    """
+    window = max(10, min(int(window_seconds), 3600))
+    span = timedelta(seconds=window)
+    if decision_id is not None:
+        call = await db.fetch_one(
+            """SELECT id, created_at, user_token, decision, policy_id, server_id, tool_name,
+                      client->>'device_id' AS device_id, client->>'traceparent' AS traceparent
+                 FROM decisions WHERE id=%s""", (decision_id,))
+        if not call:
+            return None
+        anchor = {"kind": "decision", "id": call["id"], "at": call["created_at"].isoformat(),
+                  "endpoint_id": call["device_id"], "traceparent": call["traceparent"]}
+        device = await db.fetch_one(
+            "SELECT endpoint_id FROM endpoint_agents WHERE endpoint_id=%s AND owner_token=%s",
+            (call["device_id"], call["user_token"])) if call["device_id"] else None
+        records: list[dict] = []
+        if device:
+            low, high = call["created_at"] - span, call["created_at"] + span
+            for record_kind, (table, alias, when) in RECORD_KINDS.items():
+                for row in await db.fetch_all(
+                        f"SELECT * FROM {table} WHERE endpoint_id=%s AND {when} BETWEEN %s AND %s ORDER BY {when} DESC LIMIT 25",
+                        (device["endpoint_id"], low, high)):
+                    records.append(_record(record_kind, row, when))
+        records.sort(key=lambda item: item["at"], reverse=True)
+        return {"anchor": anchor, "bound": bool(device), "window_seconds": window, "records": records}
+    if kind not in RECORD_KINDS or record_id is None:
+        raise ValueError("알 수 없는 기록 종류입니다.")
+    table, alias, when = RECORD_KINDS[kind]
+    found = await db.fetch_one(
+        f"SELECT {alias}.id, {alias}.{when} AS at, {alias}.endpoint_id, a.owner_token FROM {table} {alias} "
+        f"JOIN endpoint_agents a USING (endpoint_id) WHERE {alias}.id=%s", (record_id,))
+    if not found:
+        return None
+    anchor = {"kind": kind, "id": found["id"], "at": found["at"].isoformat(), "endpoint_id": found["endpoint_id"]}
+    rows = await db.fetch_all(
+        """SELECT d.id, d.created_at, d.decision, d.policy_id, d.server_id, d.tool_name, d.client->>'traceparent' AS traceparent
+             FROM decisions d WHERE d.user_token=%s AND d.client->>'device_id'=%s AND d.created_at BETWEEN %s AND %s
+            ORDER BY d.created_at DESC LIMIT 25""",
+        (found["owner_token"], found["endpoint_id"], found["at"] - span, found["at"] + span)) if found["owner_token"] else []
+    return {"anchor": anchor, "bound": bool(found["owner_token"]), "window_seconds": window,
+            "records": [{"kind": "decision", "id": row["id"], "at": row["created_at"].isoformat(), "endpoint_id": found["endpoint_id"],
+                         "source": "gateway", "decision": row["decision"], "policy_id": row["policy_id"],
+                         "title": f"{row['server_id']}.{row['tool_name']}", "traceparent": row["traceparent"]} for row in rows]}
 
 
 async def shadow_listener_count_for(user_token: str) -> int:
