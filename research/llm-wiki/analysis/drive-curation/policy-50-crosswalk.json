@@ -1,0 +1,1752 @@
+[
+  {
+    "policy_id": "POL-01",
+    "title": "배포물 출처와 무결성 확인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 5,
+    "source_cells": [
+      "A5",
+      "C5",
+      "D5"
+    ],
+    "goal_id": "G01",
+    "backlog_ids": [
+      "DEV-38"
+    ],
+    "code_candidates": [
+      "full_stack_lab/supply_chain/intake_worker.py"
+    ],
+    "required_verification": "고정 소스·의존성·실행 image 동일성",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/supply_chain/intake_worker.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 434,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-02",
+    "title": "도입 범위와 필요 권한 검토",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 6,
+    "source_cells": [
+      "A6",
+      "C6",
+      "D6"
+    ],
+    "goal_id": "G01",
+    "backlog_ids": [
+      "DEV-41"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/review.py"
+    ],
+    "required_verification": "업무 목적·자산·권한·목적지와 법적 근거를 별도 확인",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/review.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 304,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "6a1e0533f5538e2c5cd1e3e089a4fdde0c3eb7f8bbcf6de95f3e31c3be6b816f",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-03",
+    "title": "보안 업데이트 지원 여부 확인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 7,
+    "source_cells": [
+      "A7",
+      "C7",
+      "D7"
+    ],
+    "goal_id": "G01",
+    "backlog_ids": [
+      "DEV-38"
+    ],
+    "code_candidates": [
+      "full_stack_lab/supply_chain/intake_worker.py"
+    ],
+    "required_verification": "EOL·보안 공지·유지보수 중단 시 도입 보류",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/supply_chain/intake_worker.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 434,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-04",
+    "title": "Tool의 악성 지시 검토",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 8,
+    "source_cells": [
+      "A8",
+      "C8",
+      "D8"
+    ],
+    "goal_id": "G04",
+    "backlog_ids": [
+      "DEV-46"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/poisoning.py"
+    ],
+    "required_verification": "설명 오염 탐지와 후속 비승인 효과를 분리",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/poisoning.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 463,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "bb63b3094567f96315bd302c996fe3fbecf0e608f080874ea1a0a19e9857dc96",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-05",
+    "title": "Tool 설명과 실제 동작의 일치 시험",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 9,
+    "source_cells": [
+      "A9",
+      "C9",
+      "D9"
+    ],
+    "goal_id": "G01",
+    "backlog_ids": [
+      "DEV-38"
+    ],
+    "code_candidates": [
+      "full_stack_lab/supply_chain/intake_worker.py"
+    ],
+    "required_verification": "오염된 의존성·스캐너 실패를 통과로 처리하지 않음",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/supply_chain/intake_worker.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 434,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-06",
+    "title": "서버 제공 Prompt 템플릿 검토",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 10,
+    "source_cells": [
+      "A10",
+      "C10",
+      "D10"
+    ],
+    "goal_id": "G01",
+    "backlog_ids": [
+      "DEV-38"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/review.py"
+    ],
+    "required_verification": "검사 판본·미완료·예외 사유와 독립 승인 연결",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/review.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 304,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "6a1e0533f5538e2c5cd1e3e089a4fdde0c3eb7f8bbcf6de95f3e31c3be6b816f",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-07",
+    "title": "외부 제공자의 문서 처리 조건 확인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 11,
+    "source_cells": [
+      "A11",
+      "C11",
+      "D11"
+    ],
+    "goal_id": "G07",
+    "backlog_ids": [
+      "DEV-38"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/decommission.py"
+    ],
+    "required_verification": "제공자 회수·삭제 불가 조건과 위험수용 만료",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/decommission.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 928,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-08",
+    "title": "연결 승인과 사용자 동의 확인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 12,
+    "source_cells": [
+      "A12",
+      "C12",
+      "D12"
+    ],
+    "goal_id": "G02",
+    "backlog_ids": [
+      "DEV-38"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/review.py"
+    ],
+    "required_verification": "신청자/승인자 분리와 사용자 동의 범위",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/review.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 304,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "6a1e0533f5538e2c5cd1e3e089a4fdde0c3eb7f8bbcf6de95f3e31c3be6b816f",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-09",
+    "title": "실행 환경과 시험 데이터 관리",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 13,
+    "source_cells": [
+      "A13",
+      "C13",
+      "D13"
+    ],
+    "goal_id": "G08",
+    "backlog_ids": [
+      "DEV-39"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/endpoint_plane.py"
+    ],
+    "required_verification": "개발/시험/운영 자원 분리와 합성 데이터 원복",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 1278,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "60c725d7176537fc49c90e42d7a0f538032e25d2fabc762ab8a44f076d83c127",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-10",
+    "title": "실제 연결 주소 확인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 14,
+    "source_cells": [
+      "A14",
+      "C14",
+      "D14"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-41"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/upstream.py"
+    ],
+    "required_verification": "DNS·redirect·실제 연결 대상과 임의 HTTPS 거부",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 247,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-11",
+    "title": "서버별 사용 기능 등록",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 15,
+    "source_cells": [
+      "A15",
+      "C15",
+      "D15"
+    ],
+    "goal_id": "G02",
+    "backlog_ids": [
+      "DEV-44"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/mcp_facade.py"
+    ],
+    "required_verification": "도구 allowlist; resources/prompts는 현재 매개 범위 밖",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/mcp_facade.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 222,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "40e668d870e36e5410afbd176d2c7cbd673e0d7abfa8477dd05606fa88ea772c",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-12",
+    "title": "게이트웨이 우회 연결 차단",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 16,
+    "source_cells": [
+      "A16",
+      "C16",
+      "D16"
+    ],
+    "goal_id": "G05",
+    "backlog_ids": [
+      "DEV-42"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/endpoint_plane.py"
+    ],
+    "required_verification": "관리 UID의 직접 연결/실행과 비관리 계정 범위",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 1278,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "60c725d7176537fc49c90e42d7a0f538032e25d2fabc762ab8a44f076d83c127",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-13",
+    "title": "인증 응답과 요청 상태의 일치 확인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 17,
+    "source_cells": [
+      "A17",
+      "C17",
+      "D17"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-39"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/oidc.py"
+    ],
+    "required_verification": "issuer/state/redirect/코드 재사용과 정상 로그인",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/oidc.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 393,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "0bd10e08b577e77d4a1bfd77b6067ca5184be0e5179c2fab74dc922df7fd5663",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-14",
+    "title": "연결 설정의 인증정보 평문 노출 방지",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 18,
+    "source_cells": [
+      "A18",
+      "C18",
+      "D18"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-42"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/upstream.py"
+    ],
+    "required_verification": "설정/환경/인자/오류/훅에 credential 원문 없음",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 247,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-15",
+    "title": "MCP Server별 인증정보 분리",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 19,
+    "source_cells": [
+      "A19",
+      "C19",
+      "D19"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-39"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/upstream.py"
+    ],
+    "required_verification": "서버·resource·principal별 별도 자격과 교차 재사용 거부",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 247,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-16",
+    "title": "원격 MCP 전송 구간 보호",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 20,
+    "source_cells": [
+      "A20",
+      "C20",
+      "D20"
+    ],
+    "goal_id": "G08",
+    "backlog_ids": [
+      "DEV-39"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/upstream.py"
+    ],
+    "required_verification": "현 field HTTP/Tailscale 범위와 조직 운영 TLS를 구분",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 247,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-17",
+    "title": "로컬 서버 실행 명령 검증",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 21,
+    "source_cells": [
+      "A21",
+      "C21",
+      "D21"
+    ],
+    "goal_id": "G05",
+    "backlog_ids": [
+      "DEV-42"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/endpoint_plane.py"
+    ],
+    "required_verification": "고정 실행 경로·인자·환경과 사용자 훅 표면 검증",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 1278,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "60c725d7176537fc49c90e42d7a0f538032e25d2fabc762ab8a44f076d83c127",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-18",
+    "title": "HTTP 요청 출처 검증",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 22,
+    "source_cells": [
+      "A22",
+      "C22",
+      "D22"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-39"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/main.py"
+    ],
+    "required_verification": "Origin·Host 정상/음성 및 무인증 경로 확인",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/main.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 1435,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "bccce9255775abecc9e139ba7c116dcc669ce6358acae7e47692b179af8ec426",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-19",
+    "title": "사용자와 에이전트 신원 확인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 23,
+    "source_cells": [
+      "A23",
+      "C23",
+      "D23"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-43"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/agent_contract.py"
+    ],
+    "required_verification": "transport 신원만 사용; clientInfo를 인가 신원으로 사용하지 않음",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/agent_contract.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 154,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-20",
+    "title": "위임 범위와 유효기간 확인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 24,
+    "source_cells": [
+      "A24",
+      "C24",
+      "D24"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-39"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/pac.py"
+    ],
+    "required_verification": "현재 검증 불가 agent 위임은 거부; 진짜 위임 지원과 구분",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 297,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-21",
+    "title": "OAuth 토큰 검증",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 25,
+    "source_cells": [
+      "A25",
+      "C25",
+      "D25"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-39"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/agent_contract.py"
+    ],
+    "required_verification": "issuer/audience/scope/만료/철회 음성군",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/agent_contract.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 154,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-22",
+    "title": "요청마다 실행 권한 확인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 26,
+    "source_cells": [
+      "A26",
+      "C26",
+      "D26"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-43"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/core.py"
+    ],
+    "required_verification": "실행 직전 인자·주체·승인 상태와 철회 경쟁",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 2071,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-23",
+    "title": "작업별 권한 구분",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 27,
+    "source_cells": [
+      "A27",
+      "C27",
+      "D27"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-41"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/classify.py"
+    ],
+    "required_verification": "r/w/x와 실제 자산 행위, 도구 이름만으로 읽기 추정 금지",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 903,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "a8f61f53f3db250a9ce2466472fc8b196cbea2613cf196951b449cdae1d1880a",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-24",
+    "title": "입력값과 실행 대상 검사",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 28,
+    "source_cells": [
+      "A28",
+      "C28",
+      "D28"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-44"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/review.py"
+    ],
+    "required_verification": "원본 JSON Schema·복합/참조·정규 입력과 권한 제약",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/review.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 304,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "6a1e0533f5538e2c5cd1e3e089a4fdde0c3eb7f8bbcf6de95f3e31c3be6b816f",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-25",
+    "title": "데이터별 접근권한 확인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 29,
+    "source_cells": [
+      "A29",
+      "C29",
+      "D29"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-41"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/classify.py"
+    ],
+    "required_verification": "사용자/자산/분류 교집합; 동적 서버 자산 추출 공백",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 903,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "a8f61f53f3db250a9ce2466472fc8b196cbea2613cf196951b449cdae1d1880a",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-26",
+    "title": "외부 전송 대상과 데이터 확인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 30,
+    "source_cells": [
+      "A30",
+      "C30",
+      "D30"
+    ],
+    "goal_id": "G04",
+    "backlog_ids": [
+      "DEV-41"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/classify.py"
+    ],
+    "required_verification": "수신처·데이터·목적 변경과 서버 outbound",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 903,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "a8f61f53f3db250a9ce2466472fc8b196cbea2613cf196951b449cdae1d1880a",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-27",
+    "title": "민감한 작업의 개별 승인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 31,
+    "source_cells": [
+      "A31",
+      "C31",
+      "D31"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-43"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/dispatch.py"
+    ],
+    "required_verification": "승인 요청 digest·1회 소비·인가 주체; 고영향 법적 의무는 별도 검토",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/dispatch.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 117,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "a7636f4ef8c9c2eaf40fe88a2db9920114fbd0b0ae74050a63596e1824fb3678",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-28",
+    "title": "호출량과 실행 시간 제한",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 32,
+    "source_cells": [
+      "A32",
+      "C32",
+      "D32"
+    ],
+    "goal_id": "G09",
+    "backlog_ids": [
+      "DEV-29"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/core.py"
+    ],
+    "required_verification": "동시성/시간 상한과 대기 종료≠서버 작업 정지",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 2071,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-29",
+    "title": "외부 콘텐츠를 이용한 권한 변경 차단",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 33,
+    "source_cells": [
+      "A33",
+      "C33",
+      "D33"
+    ],
+    "goal_id": "G04",
+    "backlog_ids": [
+      "DEV-46"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/poisoning.py"
+    ],
+    "required_verification": "외부 지시가 새 호출 권한을 만들지 못하게 재인가",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/poisoning.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 463,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "bb63b3094567f96315bd302c996fe3fbecf0e608f080874ea1a0a19e9857dc96",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-30",
+    "title": "응답의 민감정보 노출 제한",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 34,
+    "source_cells": [
+      "A34",
+      "C34",
+      "D34"
+    ],
+    "goal_id": "G04",
+    "backlog_ids": [
+      "DEV-44"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/privacy.py"
+    ],
+    "required_verification": "모든 결과 표현 검사·마스킹·실행 후 보류와 법적 이전 요건 분리",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/privacy.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 209,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-31",
+    "title": "Tool 사용 시  민감정보 제한",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 35,
+    "source_cells": [
+      "A35",
+      "C35",
+      "D35"
+    ],
+    "goal_id": "G04",
+    "backlog_ids": [
+      "DEV-46"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/privacy.py"
+    ],
+    "required_verification": "입력 최소화·한국어 entity·secret 실패 차단",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/privacy.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 209,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-32",
+    "title": "중요 Tool 응답의 출처와 내용 검증",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 36,
+    "source_cells": [
+      "A36",
+      "C36",
+      "D36"
+    ],
+    "goal_id": "G06",
+    "backlog_ids": [
+      "DEV-45"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/provenance.py"
+    ],
+    "required_verification": "실행물 provenance와 문서 내용 출처/진위 증명을 구분",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/provenance.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 114,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "fe416bc807eea410bcaa74ce46edad1fae3ac89f492d325404f5e3ffc40c2897",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-33",
+    "title": "서버 간 데이터 전달 경계 적용",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 37,
+    "source_cells": [
+      "A37",
+      "C37",
+      "D37"
+    ],
+    "goal_id": "G04",
+    "backlog_ids": [
+      "DEV-41"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/pac.py"
+    ],
+    "required_verification": "서버 간 데이터/credential 전달은 별도 승인; 범용 정보흐름 추적은 공백",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 297,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-34",
+    "title": "업무별 Agent 컨텍스트 분리",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 38,
+    "source_cells": [
+      "A38",
+      "C38",
+      "D38"
+    ],
+    "goal_id": "G05",
+    "backlog_ids": [
+      "DEV-42"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/endpoint_plane.py"
+    ],
+    "required_verification": "하네스 업무 컨텍스트·세션 분리까지 Gateway만으로 보증하지 않음",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 1278,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "60c725d7176537fc49c90e42d7a0f538032e25d2fabc762ab8a44f076d83c127",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-35",
+    "title": "단일 조회의 문서 반환 범위 제한",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 39,
+    "source_cells": [
+      "A39",
+      "C39",
+      "D39"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-41"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/pac.py"
+    ],
+    "required_verification": "도구별 자산·조회량/반환량; 전체 폴더 의미의 제한은 별도 구현",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 297,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-36",
+    "title": "변경 작업의 중복 실행 방지",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 40,
+    "source_cells": [
+      "A40",
+      "C40",
+      "D40"
+    ],
+    "goal_id": "G03",
+    "backlog_ids": [
+      "DEV-43"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/dispatch.py"
+    ],
+    "required_verification": "동시 중복·응답 유실·승인 재사용의 독립 쓰기 효과",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/dispatch.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 117,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "a7636f4ef8c9c2eaf40fe88a2db9920114fbd0b0ae74050a63596e1824fb3678",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-37",
+    "title": "구성 변경 검토와 재승인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 41,
+    "source_cells": [
+      "A41",
+      "C41",
+      "D41"
+    ],
+    "goal_id": "G02",
+    "backlog_ids": [
+      "DEV-44"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/core.py"
+    ],
+    "required_verification": "계약 변경·재승인·outputSchema·A→B→A",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 2071,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-38",
+    "title": "호출과 권한 변경 이력 관리",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 42,
+    "source_cells": [
+      "A42",
+      "C42",
+      "D42"
+    ],
+    "goal_id": "G06",
+    "backlog_ids": [
+      "DEV-45"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/audit.py"
+    ],
+    "required_verification": "호출/승인/철회 원장과 민감 본문 제외·접근통제",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/audit.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 84,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "5ad902bc89eb2a5eba832bc850705acf86d9feb90c3e5e42ca36644e5f03c267",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-39",
+    "title": "알려진 취약점의 수정 및 격리",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 43,
+    "source_cells": [
+      "A43",
+      "C43",
+      "D43"
+    ],
+    "goal_id": "G01",
+    "backlog_ids": [
+      "DEV-38"
+    ],
+    "code_candidates": [
+      "full_stack_lab/supply_chain/intake_worker.py"
+    ],
+    "required_verification": "운영 image 재검사·CVE 기한·격리·지원 종료",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/supply_chain/intake_worker.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 434,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-40",
+    "title": "연결 목적지 변경의 재승인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 44,
+    "source_cells": [
+      "A44",
+      "C44",
+      "D44"
+    ],
+    "goal_id": "G02",
+    "backlog_ids": [
+      "DEV-41"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/review.py"
+    ],
+    "required_verification": "승인 endpoint와 MCP 자체 outbound 목적지 변경 구분",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/review.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 304,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "6a1e0533f5538e2c5cd1e3e089a4fdde0c3eb7f8bbcf6de95f3e31c3be6b816f",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-41",
+    "title": "인증정보 교체 후 이전 값 무효화",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 45,
+    "source_cells": [
+      "A45",
+      "C45",
+      "D45"
+    ],
+    "goal_id": "G07",
+    "backlog_ids": [
+      "DEV-39"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/upstream.py"
+    ],
+    "required_verification": "구 credential 풀 축출과 제공자 자원 거부 확인",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 247,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-42",
+    "title": "이상 징후 경보의 동작 확인",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 46,
+    "source_cells": [
+      "A46",
+      "C46",
+      "D46"
+    ],
+    "goal_id": "G06",
+    "backlog_ids": [
+      "DEV-45"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/activity.py"
+    ],
+    "required_verification": "설정 변경 후 경보 정상/음성; 오탐·stale 구분",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/activity.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 273,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "58eb7f991b7d7d04e3776945be3019a3cadacfd39bdeb5baf50400a1e934606c",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-43",
+    "title": "탐지된 위험의 대응",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 47,
+    "source_cells": [
+      "A47",
+      "C47",
+      "D47"
+    ],
+    "goal_id": "G07",
+    "backlog_ids": [
+      "DEV-38"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/decommission.py"
+    ],
+    "required_verification": "중지·격리·조사와 자동 활성화 방지",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/decommission.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 928,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-44",
+    "title": "권한 철회와 연결 해제",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 48,
+    "source_cells": [
+      "A48",
+      "C48",
+      "D48"
+    ],
+    "goal_id": "G07",
+    "backlog_ids": [
+      "DEV-43"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/dispatch.py"
+    ],
+    "required_verification": "주체/서버/승인 철회 cutover와 신규 효과 0",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/dispatch.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 117,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "a7636f4ef8c9c2eaf40fe88a2db9920114fbd0b0ae74050a63596e1824fb3678",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-45",
+    "title": "토큰과 API 키 회수",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 49,
+    "source_cells": [
+      "A49",
+      "C49",
+      "D49"
+    ],
+    "goal_id": "G07",
+    "backlog_ids": [
+      "DEV-38"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/decommission.py"
+    ],
+    "required_verification": "token/refresh/provider 자격별 실제 거부와 공유 자격 영향",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/decommission.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 928,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-46",
+    "title": "잔존 서버 프로세스 종료",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 50,
+    "source_cells": [
+      "A50",
+      "C50",
+      "D50"
+    ],
+    "goal_id": "G07",
+    "backlog_ids": [
+      "DEV-38"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/decommission.py"
+    ],
+    "required_verification": "호스팅 MCP 실행 프로세스 정지·재시작 불가",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/decommission.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 928,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-47",
+    "title": "문서 저장소 권한 회수",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 51,
+    "source_cells": [
+      "A51",
+      "C51",
+      "D51"
+    ],
+    "goal_id": "G07",
+    "backlog_ids": [
+      "DEV-38"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/decommission.py"
+    ],
+    "required_verification": "외부 문서 저장소 서비스 계정/공유 권한 회수는 별도 증거",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/decommission.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 928,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-48",
+    "title": "임시 파일과 캐시 데이터 정리",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 52,
+    "source_cells": [
+      "A52",
+      "C52",
+      "D52"
+    ],
+    "goal_id": "G07",
+    "backlog_ids": [
+      "DEV-38"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/decommission.py"
+    ],
+    "required_verification": "업무 사본·임시 파일·캐시와 법정 보존 구분",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/decommission.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 928,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-49",
+    "title": "외부 제공자의 보유 문서 정리",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 53,
+    "source_cells": [
+      "A53",
+      "C53",
+      "D53"
+    ],
+    "goal_id": "G07",
+    "backlog_ids": [
+      "DEV-38"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/decommission.py"
+    ],
+    "required_verification": "외부 제공자 반환·삭제 확인; 로컬 삭제와 구분",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/decommission.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 928,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  },
+  {
+    "policy_id": "POL-50",
+    "title": "복원 시 폐기된 연결의 \n재활성화 차단",
+    "source_sheet": "(본)정책 최종본",
+    "source_row": 54,
+    "source_cells": [
+      "A54",
+      "C54",
+      "D54"
+    ],
+    "goal_id": "G07",
+    "backlog_ids": [
+      "DEV-38"
+    ],
+    "code_candidates": [
+      "full_stack_lab/gateway/app/registry.py"
+    ],
+    "required_verification": "백업/스냅샷 복원 뒤 폐기 관계·credential 재활성화 거부",
+    "mapping_basis": "manual_control_meaning_not_number_equality",
+    "status": "static_candidate_not_implementation_acceptance",
+    "runtime_policy_id_mapping": null,
+    "legal_compliance_verified": false,
+    "test_executed_in_this_task": false,
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/registry.py",
+        "symbol": "module candidate",
+        "line_start": 1,
+        "line_end": 286,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "18adf944e4256d94fbb3b270b7113555c8e7a18056eba944bdcd8efc7d129fa7",
+        "reading_scope": "candidate_file_anchor_not_full_body_or_runtime_verification"
+      }
+    ]
+  }
+]

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "metadata": {
-    "head": "8723ccea4d5be8a766c028db560089183494433e",
-    "branch": "10/15-wbs-implementation",
+    "head": "1ad6395e9c357195294aa20ed959b2bebf5b8710",
+    "branch": "10/15-wiki-consolidation",
     "scope": "structural_inventory_and_curated_acceptance_conditions",
     "deployment_inferred": false,
     "runtime_test_results_inferred": false
@@ -170,11 +170,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "refresh_catalog",
-          "line_start": 181,
-          "line_end": 319,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 183,
+          "line_end": 321,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -200,11 +200,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "refresh_catalog",
-          "line_start": 181,
-          "line_end": 319,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 183,
+          "line_end": 321,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -230,11 +230,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "refresh_catalog",
-          "line_start": 181,
-          "line_end": 319,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 183,
+          "line_end": 321,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -260,11 +260,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "refresh_catalog",
-          "line_start": 181,
-          "line_end": 319,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 183,
+          "line_end": 321,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -290,11 +290,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "refresh_catalog",
-          "line_start": 181,
-          "line_end": 319,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 183,
+          "line_end": 321,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -620,11 +620,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1600,
-          "line_end": 1860,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1619,
+          "line_end": 1879,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -650,11 +650,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1600,
-          "line_end": 1860,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1619,
+          "line_end": 1879,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -680,11 +680,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1600,
-          "line_end": 1860,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1619,
+          "line_end": 1879,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -710,11 +710,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1600,
-          "line_end": 1860,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1619,
+          "line_end": 1879,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -740,11 +740,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1600,
-          "line_end": 1860,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1619,
+          "line_end": 1879,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -839,7 +839,15 @@
           "symbol_found": true
         }
       ],
-      "test_evidence": [
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요; 2026-10-15 현재 시험 파일 판본이 과거 실행과 달라 이전 통과는 historical_test_evidence에 보존하고 재검수 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ],
+      "historical_test_evidence": [
         {
           "path": "full_stack_lab/tests/mcp_result_contract_check.py",
           "symbol": "test_sensitive_structured_keys_are_withheld_without_renaming_schema",
@@ -856,13 +864,7 @@
           ]
         }
       ],
-      "status": "verified_unit",
-      "priority": "P0",
-      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
-      "source_refs": [
-        "analysis/code-structure.json",
-        "experiments/README.md"
-      ]
+      "current_verification": "revalidation_required_test_source_changed"
     },
     {
       "id": "REQ-06-04",
@@ -936,11 +938,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1363,
-          "line_end": 1388,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1375,
+          "line_end": 1407,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -966,11 +968,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1363,
-          "line_end": 1388,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1375,
+          "line_end": 1407,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -996,11 +998,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1363,
-          "line_end": 1388,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1375,
+          "line_end": 1407,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1026,11 +1028,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1363,
-          "line_end": 1388,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1375,
+          "line_end": 1407,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1056,11 +1058,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1363,
-          "line_end": 1388,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1375,
+          "line_end": 1407,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1236,11 +1238,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1193,
-          "line_end": 1316,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1201,
+          "line_end": 1324,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1266,11 +1268,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1193,
-          "line_end": 1316,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1201,
+          "line_end": 1324,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1296,11 +1298,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1193,
-          "line_end": 1316,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1201,
+          "line_end": 1324,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1326,11 +1328,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1193,
-          "line_end": 1316,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1201,
+          "line_end": 1324,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1356,11 +1358,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1193,
-          "line_end": 1316,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1201,
+          "line_end": 1324,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1395,7 +1397,15 @@
           "symbol_found": true
         }
       ],
-      "test_evidence": [
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요; 2026-10-15 현재 시험 파일 판본이 과거 실행과 달라 이전 통과는 historical_test_evidence에 보존하고 재검수 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ],
+      "historical_test_evidence": [
         {
           "path": "full_stack_lab/tests/mcp_result_contract_check.py",
           "symbol": "test_structured_result_survives_official_sdk_wire_roundtrip",
@@ -1413,13 +1423,7 @@
           ]
         }
       ],
-      "status": "verified_unit",
-      "priority": "P0",
-      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
-      "source_refs": [
-        "analysis/code-structure.json",
-        "experiments/README.md"
-      ]
+      "current_verification": "revalidation_required_test_source_changed"
     },
     {
       "id": "REQ-10-02",
@@ -1442,7 +1446,15 @@
           "symbol_found": true
         }
       ],
-      "test_evidence": [
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요; 2026-10-15 현재 시험 파일 판본이 과거 실행과 달라 이전 통과는 historical_test_evidence에 보존하고 재검수 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ],
+      "historical_test_evidence": [
         {
           "path": "full_stack_lab/tests/mcp_result_contract_check.py",
           "symbol": "test_structured_only_result_has_text_for_older_clients",
@@ -1457,13 +1469,7 @@
           ]
         }
       ],
-      "status": "verified_unit",
-      "priority": "P0",
-      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
-      "source_refs": [
-        "analysis/code-structure.json",
-        "experiments/README.md"
-      ]
+      "current_verification": "revalidation_required_test_source_changed"
     },
     {
       "id": "REQ-10-03",
@@ -1486,7 +1492,15 @@
           "symbol_found": true
         }
       ],
-      "test_evidence": [
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요; 2026-10-15 현재 시험 파일 판본이 과거 실행과 달라 이전 통과는 historical_test_evidence에 보존하고 재검수 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ],
+      "historical_test_evidence": [
         {
           "path": "full_stack_lab/tests/mcp_result_contract_check.py",
           "symbol": "test_withheld_block_and_approval_do_not_release_stale_payload",
@@ -1503,36 +1517,41 @@
           ]
         }
       ],
-      "status": "verified_unit",
-      "priority": "P0",
-      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
-      "source_refs": [
-        "analysis/code-structure.json",
-        "experiments/README.md"
-      ]
+      "current_verification": "revalidation_required_test_source_changed"
     },
     {
       "id": "REQ-10-04",
       "area": "MCP결과",
       "requirement": "결과 형식",
-      "acceptance": "structuredContent는 JSON 객체, 미지원 rich content는 보류",
+      "acceptance": "협상 판본별 structuredContent 타입과 승인 outputSchema를 검증하고 검사·마스킹된 결과를 손실 없이 반환; 미지원 rich content는 명시적으로 보류",
       "negative_cases": [
-        "배열/scalar·image/audio 우회"
+        "modern array/scalar structured result lost",
+        "outputSchema drift",
+        "rich content bypass"
       ],
       "code_evidence": [
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1363,
-          "line_end": 1388,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1375,
+          "line_end": 1407,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
       ],
-      "test_evidence": [
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요; 2026-10-15 현재 시험 파일 판본이 과거 실행과 달라 이전 통과는 historical_test_evidence에 보존하고 재검수 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md",
+        "analysis/review-2026-10-15/README.md"
+      ],
+      "historical_test_evidence": [
         {
           "path": "full_stack_lab/tests/mcp_result_contract_check.py",
           "symbol": "test_structured_shape_is_object",
@@ -1549,12 +1568,16 @@
           ]
         }
       ],
-      "status": "verified_unit",
-      "priority": "P0",
-      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
-      "source_refs": [
-        "analysis/code-structure.json",
-        "experiments/README.md"
+      "current_verification": "revalidation_required_test_source_changed",
+      "acceptance_history": [
+        {
+          "acceptance": "structuredContent는 JSON 객체, 미지원 rich content는 보류",
+          "negative_cases": [
+            "배열/scalar·image/audio 우회"
+          ],
+          "reason": "2026-07-28 JSON result types and D-109 compatibility handling require version-specific criteria",
+          "changed_on": "2026-10-15"
+        }
       ]
     },
     {
@@ -1749,11 +1772,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1425,
-          "line_end": 1504,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1444,
+          "line_end": 1523,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1779,11 +1802,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1425,
-          "line_end": 1504,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1444,
+          "line_end": 1523,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1809,11 +1832,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1425,
-          "line_end": 1504,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1444,
+          "line_end": 1523,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1839,11 +1862,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1425,
-          "line_end": 1504,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1444,
+          "line_end": 1523,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1869,11 +1892,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1425,
-          "line_end": 1504,
-          "sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "head_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
-          "normalized_sha256": "819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01",
+          "line_start": 1444,
+          "line_end": 1523,
+          "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+          "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
           "source_state": "committed_source",
           "symbol_found": true
         }

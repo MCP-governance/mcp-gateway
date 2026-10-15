@@ -1,0 +1,462 @@
+{
+  "old_source": "threats/originals/MCP_보안정책-추가25.xlsm",
+  "old_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+  "new_source": "threats/originals/MCP_보안정책50_2026-10-14.xlsm",
+  "new_sha256": "3319af0c9adb53d8d4f4ea252c2315c1911772b06d6d677e80714cb1b0b90549",
+  "method": "match explicit POL IDs then compare C/D after whitespace removal; references/legal cells not compared",
+  "equal_title_and_body": 50,
+  "changed_title_or_body": 0,
+  "legal_or_standard_validity_verified": false,
+  "records": [
+    {
+      "policy_id": "POL-01",
+      "new_cells": "(본)정책 최종본!A5:D5",
+      "old_row": 5,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-02",
+      "new_cells": "(본)정책 최종본!A6:D6",
+      "old_row": 6,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-03",
+      "new_cells": "(본)정책 최종본!A7:D7",
+      "old_row": 7,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-04",
+      "new_cells": "(본)정책 최종본!A8:D8",
+      "old_row": 8,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-05",
+      "new_cells": "(본)정책 최종본!A9:D9",
+      "old_row": 9,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-06",
+      "new_cells": "(본)정책 최종본!A10:D10",
+      "old_row": 10,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-07",
+      "new_cells": "(본)정책 최종본!A11:D11",
+      "old_row": 11,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-08",
+      "new_cells": "(본)정책 최종본!A12:D12",
+      "old_row": 12,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-09",
+      "new_cells": "(본)정책 최종본!A13:D13",
+      "old_row": 13,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-10",
+      "new_cells": "(본)정책 최종본!A14:D14",
+      "old_row": 14,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-11",
+      "new_cells": "(본)정책 최종본!A15:D15",
+      "old_row": 15,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-12",
+      "new_cells": "(본)정책 최종본!A16:D16",
+      "old_row": 16,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-13",
+      "new_cells": "(본)정책 최종본!A17:D17",
+      "old_row": 17,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-14",
+      "new_cells": "(본)정책 최종본!A18:D18",
+      "old_row": 18,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-15",
+      "new_cells": "(본)정책 최종본!A19:D19",
+      "old_row": 19,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-16",
+      "new_cells": "(본)정책 최종본!A20:D20",
+      "old_row": 20,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-17",
+      "new_cells": "(본)정책 최종본!A21:D21",
+      "old_row": 21,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-18",
+      "new_cells": "(본)정책 최종본!A22:D22",
+      "old_row": 22,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-19",
+      "new_cells": "(본)정책 최종본!A23:D23",
+      "old_row": 23,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-20",
+      "new_cells": "(본)정책 최종본!A24:D24",
+      "old_row": 24,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-21",
+      "new_cells": "(본)정책 최종본!A25:D25",
+      "old_row": 25,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-22",
+      "new_cells": "(본)정책 최종본!A26:D26",
+      "old_row": 26,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-23",
+      "new_cells": "(본)정책 최종본!A27:D27",
+      "old_row": 27,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-24",
+      "new_cells": "(본)정책 최종본!A28:D28",
+      "old_row": 28,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-25",
+      "new_cells": "(본)정책 최종본!A29:D29",
+      "old_row": 29,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-26",
+      "new_cells": "(본)정책 최종본!A30:D30",
+      "old_row": 30,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-27",
+      "new_cells": "(본)정책 최종본!A31:D31",
+      "old_row": 31,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-28",
+      "new_cells": "(본)정책 최종본!A32:D32",
+      "old_row": 32,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-29",
+      "new_cells": "(본)정책 최종본!A33:D33",
+      "old_row": 33,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-30",
+      "new_cells": "(본)정책 최종본!A34:D34",
+      "old_row": 34,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-31",
+      "new_cells": "(본)정책 최종본!A35:D35",
+      "old_row": 35,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-32",
+      "new_cells": "(본)정책 최종본!A36:D36",
+      "old_row": 36,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-33",
+      "new_cells": "(본)정책 최종본!A37:D37",
+      "old_row": 37,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-34",
+      "new_cells": "(본)정책 최종본!A38:D38",
+      "old_row": 38,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-35",
+      "new_cells": "(본)정책 최종본!A39:D39",
+      "old_row": 39,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-36",
+      "new_cells": "(본)정책 최종본!A40:D40",
+      "old_row": 40,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-37",
+      "new_cells": "(본)정책 최종본!A41:D41",
+      "old_row": 41,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-38",
+      "new_cells": "(본)정책 최종본!A42:D42",
+      "old_row": 42,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-39",
+      "new_cells": "(본)정책 최종본!A43:D43",
+      "old_row": 43,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-40",
+      "new_cells": "(본)정책 최종본!A44:D44",
+      "old_row": 44,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-41",
+      "new_cells": "(본)정책 최종본!A45:D45",
+      "old_row": 45,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-42",
+      "new_cells": "(본)정책 최종본!A46:D46",
+      "old_row": 46,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-43",
+      "new_cells": "(본)정책 최종본!A47:D47",
+      "old_row": 47,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-44",
+      "new_cells": "(본)정책 최종본!A48:D48",
+      "old_row": 48,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-45",
+      "new_cells": "(본)정책 최종본!A49:D49",
+      "old_row": 49,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-46",
+      "new_cells": "(본)정책 최종본!A50:D50",
+      "old_row": 50,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-47",
+      "new_cells": "(본)정책 최종본!A51:D51",
+      "old_row": 51,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-48",
+      "new_cells": "(본)정책 최종본!A52:D52",
+      "old_row": 52,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-49",
+      "new_cells": "(본)정책 최종본!A53:D53",
+      "old_row": 53,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    },
+    {
+      "policy_id": "POL-50",
+      "new_cells": "(본)정책 최종본!A54:D54",
+      "old_row": 54,
+      "title_equal_ignoring_whitespace": true,
+      "body_equal_ignoring_whitespace": true,
+      "comparison": "same_title_and_body",
+      "same_policy_meaning_inferred": false
+    }
+  ]
+}

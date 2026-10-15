@@ -600,7 +600,9 @@
     "distribution": "local-only",
     "distribution_reason": "MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다.",
     "provenance": "sources/policy/T02/upstream.json",
-    "page": "papers/T02.md"
+    "page": "papers/T02.md",
+    "development_review_on": "2026-10-15",
+    "development_review_note": "Online Structured Content/Output Schema/Listing Tools sections rechecked for legacy vs modern compatibility; stored original bytes unchanged; see analysis/review-2026-10-15/README.md."
   },
   {
     "id": "T04",

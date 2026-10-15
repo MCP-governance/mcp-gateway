@@ -1,0 +1,115 @@
+{
+  "archived_on": "2026-10-15",
+  "reason": "changed test source; no new execution inferred",
+  "records": [
+    {
+      "requirement_id": "REQ-06-03",
+      "previous_status": "verified_unit",
+      "previous_acceptance": "민감정보가 JSON 키에 있으면 schema를 바꾸지 않고 보류",
+      "test_evidence": [
+        {
+          "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+          "symbol": "test_sensitive_structured_keys_are_withheld_without_renaming_schema",
+          "assertion": "민감정보가 JSON 키에 있으면 schema를 바꾸지 않고 보류",
+          "verification": "verified_unit_only",
+          "run_evidence": "status/reports/2026-10-13-enterprise-unit-results.json",
+          "line_start": 154,
+          "line_end": 161,
+          "normalized_sha256": "3a938e79bbefe789d8f6d31dc112695054edac32850623c236aae16698b6719a",
+          "assertion_lines": [
+            158,
+            160,
+            161
+          ]
+        }
+      ]
+    },
+    {
+      "requirement_id": "REQ-10-01",
+      "previous_status": "verified_unit",
+      "previous_acceptance": "검사·마스킹된 structuredContent를 공식 SDK로 보존",
+      "test_evidence": [
+        {
+          "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+          "symbol": "test_structured_result_survives_official_sdk_wire_roundtrip",
+          "assertion": "검사·마스킹된 structuredContent를 공식 SDK로 보존",
+          "verification": "verified_unit_only",
+          "run_evidence": "status/reports/2026-10-13-enterprise-unit-results.json",
+          "line_start": 25,
+          "line_end": 33,
+          "normalized_sha256": "3a938e79bbefe789d8f6d31dc112695054edac32850623c236aae16698b6719a",
+          "assertion_lines": [
+            30,
+            31,
+            32,
+            33
+          ]
+        }
+      ]
+    },
+    {
+      "requirement_id": "REQ-10-02",
+      "previous_status": "verified_unit",
+      "previous_acceptance": "구조화-only 결과에 동일 안전 JSON의 TextContent 제공",
+      "test_evidence": [
+        {
+          "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+          "symbol": "test_structured_only_result_has_text_for_older_clients",
+          "assertion": "구조화-only 결과에 동일 안전 JSON의 TextContent 제공",
+          "verification": "verified_unit_only",
+          "run_evidence": "status/reports/2026-10-13-enterprise-unit-results.json",
+          "line_start": 35,
+          "line_end": 38,
+          "normalized_sha256": "3a938e79bbefe789d8f6d31dc112695054edac32850623c236aae16698b6719a",
+          "assertion_lines": [
+            38
+          ]
+        }
+      ]
+    },
+    {
+      "requirement_id": "REQ-10-03",
+      "previous_status": "verified_unit",
+      "previous_acceptance": "Block/Approval/withheld/unknown에서는 잔존 payload도 반환하지 않음",
+      "test_evidence": [
+        {
+          "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+          "symbol": "test_withheld_block_and_approval_do_not_release_stale_payload",
+          "assertion": "Block/Approval/withheld/unknown에서는 잔존 payload도 반환하지 않음",
+          "verification": "verified_unit_only",
+          "run_evidence": "status/reports/2026-10-13-enterprise-unit-results.json",
+          "line_start": 46,
+          "line_end": 55,
+          "normalized_sha256": "3a938e79bbefe789d8f6d31dc112695054edac32850623c236aae16698b6719a",
+          "assertion_lines": [
+            53,
+            54,
+            55
+          ]
+        }
+      ]
+    },
+    {
+      "requirement_id": "REQ-10-04",
+      "previous_status": "verified_unit",
+      "previous_acceptance": "structuredContent는 JSON 객체, 미지원 rich content는 보류",
+      "test_evidence": [
+        {
+          "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+          "symbol": "test_structured_shape_is_object",
+          "assertion": "structuredContent는 JSON 객체, 미지원 rich content는 보류",
+          "verification": "verified_unit_only",
+          "run_evidence": "status/reports/2026-10-13-enterprise-unit-results.json",
+          "line_start": 57,
+          "line_end": 64,
+          "normalized_sha256": "3a938e79bbefe789d8f6d31dc112695054edac32850623c236aae16698b6719a",
+          "assertion_lines": [
+            59,
+            61,
+            63
+          ]
+        }
+      ]
+    }
+  ]
+}

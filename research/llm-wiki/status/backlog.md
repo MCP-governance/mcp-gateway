@@ -4,7 +4,7 @@
 
 | ID | 작업 | 근거 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- |
-| WIKI-01 | 개발 위키와 공유 보고 체계 | [위키](../README.md), [협업 콘솔](../../collaboration-console/README.md), [드라이브 산출물](../team-agi-deliverables-2026-10-15.md) | 자료 분류·원본·해시·MD·Claude 규칙·실제 협업 기록·검사 통과 | MD 정본·협업 콘솔 구축, 실제 Claude 분석 수신. 정책 50개·MVP WBS 판본 선별 반영; 정책과 코드·시험의 일대일 대조 및 수정 후 Claude 리뷰 미완료 |
+| WIKI-01 | 개발 위키와 공유 보고 | [통합 검토](../analysis/review-2026-10-15/README.md), [Drive 대조](../analysis/drive-curation/README.md) | 출처·판본·요구·코드·실행 근거·Claude 인계 연결과 검사 | Drive 두 커밋 통합, 정책50 의미 매핑·MVP24 해설·검토10건·README/현황 보강. 정적 매핑이며 실기기 충족 아님. 수정 후 Claude 독립 리뷰는 미완료 |
 | DEV-01 | 실제 관리형 하네스 증거 연결 | [실기기 결과](reports/2026-10-13-development-results.md), [통제 증거](../methodology/control-design.md) | 활성화 상태와 fresh 신원, model→MCP→원장 IDs, 정상/차단의 독립 효과 | 새 PJ1 Codex 세션2개·원장3건 일치. 공급자 quota 응답·PII 차단 확인; 정상 문서·독립 수신 trace는 미완료 |
 | DEV-02 | 계약 변경·오염 탐지 코퍼스 | [분석](../solutions/README.md), [실험](../experiments/README.md), [D 보고](reports/2026-10-15-inspection-corpus.md) | 다국어 정상/공격/인코딩 표본, 오탐·미탐 및 계약 diff, 검사기 장애 차단 | 공개 코퍼스 9,463건(dev/held-out): 결과 오탐 91→0, 계약(MCPTox) 재현율 0.27→0.52, 인코딩 변형 1/182→112/182. 독립 한국어 코퍼스·의미 분류기는 후속 |
 | DEV-03 | 원본 위협표와 구현 추적 검토 | [위협 매핑](../threats/README.md) | 24개 정책의 통제 위치·코드·실험·한계별 리뷰와 근거 | 매핑 초안, 독립 리뷰 필요 |
@@ -45,8 +45,14 @@
 | DEV-35 | 관리 계정 루프백 차단과 하네스 로컬 통신 | [10-15 보고](reports/2026-10-15-wbs-implementation.md) | 하네스 내부 IPC·로그인 콜백 허용 범위 결정, 장치 코드 로그인 안내, 비인가 로컬 MCP 차단 유지 | PJ1 실기기: Codex 로그인 콜백 1455·하네스 임시 포트 쌍의 루프백 연결이 반복 거부됨. 결정 대기 |
 | DEV-36 | 팀원 기기 작업 반영 경로 | [10-15 보고](reports/2026-10-15-wbs-implementation.md) | 팀원 브랜치를 통합 브랜치 위로 옮기고 기기에는 브랜치 배포만 | 10-15 기기 직접 복사 5회 + 이후 2회(17:12·17:36)를 3-way로 반영. 복사본이 매번 통합 브랜치의 지연·엔드포인트 기능을 지운 판이라 팀원 안내 필요 |
 | DEV-37 | Tailscale 직접 경로 | [10-15 보고](reports/2026-10-15-wbs-implementation.md) | 솔루션 Tailscale의 WSL2 이중 NAT 해소 방안과 LAN 노출 검토 후 적용 | 같은 공인 IP 뒤인데 DERP 도쿄 중계(73–125ms). WSL 미러 네트워킹은 WSL 서비스의 LAN 노출을 함께 검토해야 해 사용자 결정 |
-| DEV-38 | 승인된 OSS MCP의 실행 경로 | [클린 E2E](reports/2026-10-15-clean-e2e.md) | 승인한 소스(내부 미러·검증 커밋)를 솔루션이 직접 빌드·실행하고 등록까지 잇는 경로 | 10-15 MarkItDown은 운영자가 기기에서 미러 커밋으로 컨테이너를 띄워 등록(읽기 전용·권한 제거·게시 포트 없음). 제품 기능으로는 없음 |
+| DEV-38 | 승인 OSS MCP 자동 실행 | [실행 설계](../analysis/review-2026-10-15/dev38-runtime-plan.md), [클린 E2E](reports/2026-10-15-clean-e2e.md) | 내부 미러/검증 커밋→레시피/이미지 digest→격리 실행→계약→등록→PJ1, 중복/크래시/철회/종료 검수 | 제품 기능 미구현. 기존 MarkItDown은 수동 실행. 첫 지원 레시피와 권한/수명 경계 제안 보강 |
 | DEV-39 | Codex 하네스 자연어 E2E | [클린 E2E](reports/2026-10-15-clean-e2e.md) | PJ1 관리 계정 Codex 로그인 후 같은 시나리오와 원장·엔드포인트 상관 | Codex 로그인 문제로 10-15에는 Claude Code만 시험 |
 | DEV-40 | Context7 제공자 할당량 | [클린 E2E](reports/2026-10-15-clean-e2e.md) | 조직 API 키를 업스트림 자격으로 둘지 결정 | 게이트웨이 통과·실행, 제공자가 익명 월간 할당량 초과 반환. 사용자 결정: 현 상태 기록 |
 
 변경할 때 작업 보고서를 연결하고 `완료`의 검증 층을 함께 씁니다. 소스·문서 확인만 끝났으면 실행 검증 완료로 올리지 않습니다.
+| DEV-41 | 동적 MCP 목적지/인자/실제 egress | [검토 RV-01](../analysis/review-2026-10-15/README.md) | 빈 목적지·중첩/배열 URL·redirect·DNS·내부 IPv4/IPv6 정상/음성 및 독립 효과 | 정적 허용 범위 문제 확인, 제품 수정/우회 재현 미실행 |
+| DEV-42 | 하네스 훅과 credential helper 경계 | [검토 RV-02](../analysis/review-2026-10-15/README.md) | 사용자 훅·직접 실행·statusLine 등에서 헬퍼 불가, 승인 정상 하네스 유지, 토큰 비보존 | Bash 외 하네스 시작 명령은 우회 후보, 실기기 미재현 |
+| DEV-43 | 계정 철회와 최종 dispatch 경쟁 | [검토 RV-03](../analysis/review-2026-10-15/README.md) | 잠금 대기와 계정 중지 commit 교차의 신규 intent/외부 효과 0, 일관 잠금/실패 처리 | DB 경합 후보, barrier 재현 필요 |
+| DEV-44 | 판본별 계약·JSON Schema·페이지 호환 | [검토 RV-04~06](../analysis/review-2026-10-15/README.md) | 원본 $defs/복합 schema·승인 outputSchema·현대 배열/legacy 객체·전체 tools/list 정상/음성 | 정적 호환성 공백, SDK 페이지 동작/실제 OSS 재시험 필요 |
+| DEV-45 | 실행 ID·근거 최신성·해시 규약 | [검토 RV-08~09](../analysis/review-2026-10-15/README.md) | run/source/image/policy/환경/효과 결박, 원본/정규화 hash와 현재/과거 검수 분리 | 문서 규칙 보강·오래된 분석 근거 정리. 채점기 제품 변경은 미구현 |
+| DEV-46 | 독립 한국어·에이전트 효과 평가 | [검토 RV-10](../analysis/review-2026-10-15/README.md) | 출처/공격 계열 분리, 정상 성공·오탐/미탐·비승인 효과·반복·성능 동시 보고 | 기존 분류 점수를 전체 방어율로 사용하지 않음. 새 독립 평가 미실행 |

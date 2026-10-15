@@ -1,0 +1,2508 @@
+{
+  "recorded_on": "2026-10-15",
+  "source_basis": "83269c1 / e61e43c; Drive 1ad6395",
+  "markdown_count": 300,
+  "catalog_counts": {
+    "endpoint-permission-references": 12,
+    "experiments": 13,
+    "imports": 22,
+    "local-tool-risks": 13,
+    "papers": 167,
+    "solutions": 9,
+    "threats": 24
+  },
+  "scope": {
+    "machine_inventory": "all tracked wiki Markdown categories excluding local-only cache/web/tools",
+    "semantic_review": "listed entry points, selected protocol/runtime references, two imported workbooks, prior code review",
+    "excluded": "full text re-reading of all research papers; complete code audit; current Drive remote listing; legal validity; new runtime tests"
+  },
+  "entry_points_reviewed": [
+    "README.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "status/current.md",
+    "status/backlog.md",
+    "analysis/README.md",
+    "analysis/README-code.md",
+    "papers/README.md",
+    "papers/T02.md",
+    "solutions/README.md",
+    "threats/README.md",
+    "team-agi-deliverables-2026-10-15.md",
+    "experiments/README.md",
+    "integrations/README.md",
+    "integrations/litellm.md",
+    "integrations/secrets.md",
+    "methodology/engineering-workflow.md",
+    "methodology/control-design.md",
+    "methodology/evidence-methodology.md",
+    "methodology/source-protocol.md",
+    "methodology/oss-and-skills.md",
+    "templates/work-report.md",
+    "templates/task-prompt.md"
+  ],
+  "gaps": [
+    {
+      "id": "WG-01",
+      "observation": "No durable Claude handoff for the prior review",
+      "action": "review memo, recommendations, references, next-work and DEV-38 plan",
+      "state": "documented_product_work_pending"
+    },
+    {
+      "id": "WG-02",
+      "observation": "Drive policy names/bodies not compared to the retained version",
+      "action": "50/50 whitespace-normalized match and distinct original SHA; full crosswalk",
+      "state": "resolved_for_title_and_body_only"
+    },
+    {
+      "id": "WG-03",
+      "observation": "Current status mixes old and latest deployment/test claims",
+      "action": "preserve old current as history; write a short current snapshot",
+      "state": "resolved_document_navigation"
+    },
+    {
+      "id": "WG-04",
+      "observation": "Protocol output assumptions do not distinguish 2025 and 2026",
+      "action": "T02, REQ-10-04 history and DEV-44; no implementation change",
+      "state": "documented_product_work_pending"
+    },
+    {
+      "id": "WG-05",
+      "observation": "Integration entry page lacks route and failure boundaries",
+      "action": "LLM/MCP/aggregation/secret/runtime/observability route matrix",
+      "state": "resolved_document_navigation"
+    },
+    {
+      "id": "WG-06",
+      "observation": "53 preexisting analysis hash mismatches",
+      "action": "refresh structural anchors; preserve stale test runs for five conditions",
+      "state": "resolved_static_data_check_runtime_unverified"
+    },
+    {
+      "id": "WG-07",
+      "observation": "Many references but weak next-task reading order",
+      "action": "task-oriented reading guide and 19 official reference records",
+      "state": "resolved_document_navigation"
+    },
+    {
+      "id": "WG-08",
+      "observation": "Run identity/hash kinds/evidence freshness not concrete",
+      "action": "evidence contract; DEV-45; WBS scores left unchanged",
+      "state": "documented_product_work_pending"
+    },
+    {
+      "id": "WG-09",
+      "observation": "Independent Korean/source-family/agent-effect evaluation missing",
+      "action": "DEV-46 and evaluation scope; no new score claims",
+      "state": "open_runtime_research"
+    },
+    {
+      "id": "WG-10",
+      "observation": "DEV-29/35 designs exist outside the used branch",
+      "action": "explicit cross-branch status and D-107 collision note; do not silently merge product decisions",
+      "state": "open_separate_work"
+    }
+  ],
+  "inventory": [
+    {
+      "path": "AGENTS.md",
+      "title": "개발 연구 위키를 사용하는 에이전트 규칙",
+      "lines": 39,
+      "heading_count": 5,
+      "canonical_lf_sha256": "b83111a71e89bdd07fa33511d52e91f4303ee679cf6b36f180b1ab51d695f5f5",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/development-wbs/README.md",
+      "title": "목표 기능 WBS 검수 현황",
+      "lines": 88,
+      "heading_count": 3,
+      "canonical_lf_sha256": "6080363e2687f8838079fdd273a60a59e6a9c880e9314efbadaec7f33c51939b",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/drive-curation/README.md",
+      "title": "Drive 정책·MVP WBS의 개발 연결",
+      "lines": 110,
+      "heading_count": 5,
+      "canonical_lf_sha256": "f7604b2cc2d8d2519d9ba305d2d1721bf956ec31bb4bbbf7194b86af90b43850",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/endpoint-log-audit/static-review.md",
+      "title": "엔드포인트 관측 로그 전달 정적 검토",
+      "lines": 29,
+      "heading_count": 4,
+      "canonical_lf_sha256": "90d698ee5f98558d55d60e23b15372f0a5250600dc52c4308854a7051291dcbc",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/endpoint-log-fix/README.md",
+      "title": "엔드포인트 로그 수정 검증과 확인할 파일",
+      "lines": 19,
+      "heading_count": 1,
+      "canonical_lf_sha256": "3431338f0dde356780a283010c1ff02060a0fd0920d173894e4054aca1c5faaf",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/endpoint-log-fix/review.md",
+      "title": "Endpoint snapshot 회귀 검수",
+      "lines": 39,
+      "heading_count": 4,
+      "canonical_lf_sha256": "3221c3f0b908c86d6060e5f6930bb11f4c5a2201744c7f24e9f3243513a3f82a",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/local-tools/data.md",
+      "title": "Local Git and SQLite tools with actual MCP checks",
+      "lines": 28,
+      "heading_count": 5,
+      "canonical_lf_sha256": "c9cbae9099c734c641ead2eecd29fe45f82150e5d67a4c37719077b0883dbeb7",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/local-tools/desktop.md",
+      "title": "Local desktop and browser MCP candidates",
+      "lines": 43,
+      "heading_count": 5,
+      "canonical_lf_sha256": "de2377d7a08cef54e4980da855f0b0a2f975a19b7c222ca3ed3b3f1a9afef0ec",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/local-tools/permissions-data.md",
+      "title": "Windows 엔드포인트 최소 권한·실행·네트워크 정책 레퍼런스",
+      "lines": 42,
+      "heading_count": 8,
+      "canonical_lf_sha256": "75cbb9d5d355967ca643d8ae5edbf1ee4c9b4a8451ddd77a0b4b1e99abedcedb",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/local-tools/permissions-desktop.md",
+      "title": "Desktop/browser MCP 권한·브리지 참고 조사",
+      "lines": 41,
+      "heading_count": 4,
+      "canonical_lf_sha256": "2d06954fa5abdbfebd735d658ca9ef7a3045da19692f7dea488a3b000d52a492",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/local-tools/permissions-reverse.md",
+      "title": "Linux 권한·실행 통제 레퍼런스: 역공학 엔드포인트 대조",
+      "lines": 55,
+      "heading_count": 8,
+      "canonical_lf_sha256": "1fab87c99ff745bb0c060561b4aee5f6160f5292680cc4031ebc5e19f0681082",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/local-tools/README.md",
+      "title": "로컬 도구·MCP 설치와 엔드포인트 검수",
+      "lines": 57,
+      "heading_count": 5,
+      "canonical_lf_sha256": "a56c5440c9397425cacdddb229af948029f878029b467f890940bb01f85ba0df",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/local-tools/reverse.md",
+      "title": "로컬 역공학 도구 조사: Ghidra + GhidraMCP",
+      "lines": 46,
+      "heading_count": 7,
+      "canonical_lf_sha256": "58fb426ff01fcee803786b38ac15a91fc538b4a381bf1bb0139a818611873668",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/local-tools/tool-capabilities.md",
+      "title": "실제 MCP 스키마의 기능 유형",
+      "lines": 99,
+      "heading_count": 1,
+      "canonical_lf_sha256": "1f4139aa8017cd5d78dd7584154ad6a8f0df7043b1bf2b5844977ce5774d8464",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/pj1-ghidra/README.md",
+      "title": "PJ1 Ghidra 로그 확인 인덱스",
+      "lines": 23,
+      "heading_count": 1,
+      "canonical_lf_sha256": "2511c685a5215300386168dbfa4673ef211e3a1e7fef117b211bab9f1dd990c1",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/pj1-ghidra/report.md",
+      "title": "PJ1 Ghidra + GhidraMCP 설치 및 로그 관측",
+      "lines": 45,
+      "heading_count": 6,
+      "canonical_lf_sha256": "9d41c3ed729a491d9ef585f70f20d463eb6edd8f55b3fc46d37258c7d7d528bc",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/pj1-local-mcp-e13/README.md",
+      "title": "PJ1 비인가 로컬 MCP 자연어 시험 로그 (E13 변형, 2026-10-14)",
+      "lines": 18,
+      "heading_count": 2,
+      "canonical_lf_sha256": "44a065c1af6f43becc45b52392513d35ea811af9b45751ecb1dec1d1429675d3",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/pj1-nine-tools/registration-review.md",
+      "title": "PJ1 9개 도구 시험: 기존 원격 MCP 등록 경로 검토",
+      "lines": 74,
+      "heading_count": 5,
+      "canonical_lf_sha256": "f972e2ceb6171a75030667495ec6a2799a6e13f7478e5f2ee9ef0aaf3757a0a5",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/pj1-nine-tools/runs/README.md",
+      "title": "PJ1 9개 도구 자연어 시험 로그 (2026-10-14) — 무효",
+      "lines": 23,
+      "heading_count": 3,
+      "canonical_lf_sha256": "0f297cd640b53fa53f658cafe242eb5826d5164fc1e3f750e63bdd0794a761ed",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/pj1-nine-tools/runs/run-03-claude/index.md",
+      "title": "9개 도구 자연어 하네스 시험 — run-03-claude",
+      "lines": 27,
+      "heading_count": 3,
+      "canonical_lf_sha256": "a9f7c82391852ef02f5b404175940d4400c3ae74d042588f2a21a5bea042a44c",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/pj1-nine-tools/runs/run-04-claude/index.md",
+      "title": "9개 도구 자연어 하네스 시험 — run-04-claude",
+      "lines": 27,
+      "heading_count": 3,
+      "canonical_lf_sha256": "416864ebe7424570e9ce5bb4b0384388ba4f011109cbccf7a87e82cdc540c0ce",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/pj1-nine-tools/runs/run-05-claude/index.md",
+      "title": "9개 도구 자연어 하네스 시험 — run-05-claude",
+      "lines": 27,
+      "heading_count": 3,
+      "canonical_lf_sha256": "5590811c90fc6330dbebb74c1ae6d2c6ed99daa47a062e892f1b126a8c329950",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/pj1-nine-tools/runs/run-06-claude/index.md",
+      "title": "9개 도구 자연어 하네스 시험 — run-06-claude",
+      "lines": 27,
+      "heading_count": 3,
+      "canonical_lf_sha256": "a2770e059a3023c121f61407d46a480e243596868adb9dce53dc61002e679f37",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/pj1-nine-tools/runs/run-07-claude/index.md",
+      "title": "9개 도구 자연어 하네스 시험 — run-07-claude",
+      "lines": 27,
+      "heading_count": 3,
+      "canonical_lf_sha256": "42ce3068f83d9389de2c24b1a24d28ac02bf6f71319b9c6b094f8191658de703",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/pj1-nine-tools/runs/run-08-claude/index.md",
+      "title": "9개 도구 자연어 하네스 시험 — run-08-claude",
+      "lines": 27,
+      "heading_count": 3,
+      "canonical_lf_sha256": "7f4bd61ce32ce832f598b30530a4c0227efb72242d87f3337193a0069f76c028",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/pj1-nine-tools/runs/run-09-claude-negative/index.md",
+      "title": "승인 범위 밖 요청 3건 — run-09-claude-negative",
+      "lines": 21,
+      "heading_count": 3,
+      "canonical_lf_sha256": "f4aef82f606bcf6815ab2aed2af48540fb8cf308e3cc1185052d04efc7bcdbee",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/pj1-nine-tools/selection.md",
+      "title": "PJ1 9개 도구 자연어 시험 선택 초안",
+      "lines": 39,
+      "heading_count": 4,
+      "canonical_lf_sha256": "69fa492c0f4c8c6b01d89b2eca8699d14db10503b41b59a9dba142ff92a036ad",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/README-code.md",
+      "title": "코드 구조와 실제 호출 경로",
+      "lines": 101,
+      "heading_count": 6,
+      "canonical_lf_sha256": "c2c5b61057c27adde9922d10c1798420db1e70397016c80fdc48c8023b877d3e",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/README.md",
+      "title": "기업 제공 요구사항과 호환성 분석",
+      "lines": 38,
+      "heading_count": 3,
+      "canonical_lf_sha256": "eab28e954cfe558082a059c663ca2f4e51711599358f35557ebd232b08a7c30d",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/review-2026-10-15/claude-next-work.md",
+      "title": "Claude가 다음 작업을 시작할 때",
+      "lines": 28,
+      "heading_count": 4,
+      "canonical_lf_sha256": "58e5d33c87dc4be8fa28c7e2c564979cacf22207cee3aa360ac90ef48318d33f",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/review-2026-10-15/dev38-runtime-plan.md",
+      "title": "DEV-38 승인 소스 MCP 자동 실행 경로 제안",
+      "lines": 51,
+      "heading_count": 6,
+      "canonical_lf_sha256": "fa1adf76c2fdb0b43d4050ebfd03e6f93d11c1dd3e4de4665d0bca225c09e69b",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/review-2026-10-15/README.md",
+      "title": "2026-10-15 통합본 검토와 개선 근거",
+      "lines": 72,
+      "heading_count": 8,
+      "canonical_lf_sha256": "7e98ecbbde55ad8e2ea1f530867cf90ab0673fa8a74e4a9c103b04d41b2a3328",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/risk-scenarios/solution-references.md",
+      "title": "Risk scenario solution references",
+      "lines": 21,
+      "heading_count": 3,
+      "canonical_lf_sha256": "2c4defae58682106dc6c3383ae17794d3b357bc96a7d5737ac0efbeb90844a48",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/risk-scenarios/static-endpoint.md",
+      "title": "Managed Linux endpoint: 정적 위험 시나리오",
+      "lines": 40,
+      "heading_count": 6,
+      "canonical_lf_sha256": "fd01623207b7c6b110a866a5c2a6893ea5e2b99903052ef8fde501e26a5d0906",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/wbs-1015/README.md",
+      "title": "2026-10-15 WBS 재산정 근거",
+      "lines": 13,
+      "heading_count": 1,
+      "canonical_lf_sha256": "dbb9580ebf78de0fa9356c8fc68f804ecc5bf71b04b8da257ee36f76a2bb2cdb",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "analysis/wbs-review/review.md",
+      "title": "G01–G10 목표 기능 기반 40개 원자 WBS 검토안",
+      "lines": 500,
+      "heading_count": 54,
+      "canonical_lf_sha256": "f1a20644cf52a8efd94c9625d34a29fb0f111b25b82dc6c17fa518e97f599992",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "CLAUDE.md",
+      "title": "",
+      "lines": 6,
+      "heading_count": 0,
+      "canonical_lf_sha256": "90aeffe6f5777659d8566216487b87705df195489f35d49553f5e6224776049e",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/E01-approved-read.md",
+      "title": "E01 — 승인된 공개 파일 읽기",
+      "lines": 72,
+      "heading_count": 9,
+      "canonical_lf_sha256": "45cbcf22dae90dc8b168668d88ebe614c6a2317d5a4de32f1df58992c8f6df8c",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/E02-pii-result-masking.md",
+      "title": "E02 — 개인정보 결과 마스킹",
+      "lines": 73,
+      "heading_count": 9,
+      "canonical_lf_sha256": "3468b836d50d258dddf437084cabb5e43dcd14dc24205f66c29d65c41977168d",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/E03-pii-external-egress.md",
+      "title": "E03 — 개인정보 외부 반출 차단",
+      "lines": 77,
+      "heading_count": 9,
+      "canonical_lf_sha256": "2639d5dad81fd5abb8ec8621724228913b3ce9dbd96c4109bb58fec6b4c3d947",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/E04-untrusted-argument.md",
+      "title": "E04 — 비신뢰 인자의 승인 대기",
+      "lines": 77,
+      "heading_count": 9,
+      "canonical_lf_sha256": "178db839a8b3c8e357873f58066f819bca0280d9742d990ffb4ac6bfc8a06f1f",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/E05-ssrf-normalization.md",
+      "title": "E05 — SSRF 목적지 정규화",
+      "lines": 72,
+      "heading_count": 9,
+      "canonical_lf_sha256": "d5fd4ce3e17073ae028ff22a8238b8279d80a28065ed4926215712dc4836765c",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/E06-input-schema.md",
+      "title": "E06 — 승인 입력 스키마 위반",
+      "lines": 70,
+      "heading_count": 9,
+      "canonical_lf_sha256": "e6459f2b98ed9bd314cf9fce310aedbf90d6d145b0898bbfaada3487e859b1d9",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/E07-contract-drift.md",
+      "title": "E07 — 승인 후 도구 계약 변경",
+      "lines": 85,
+      "heading_count": 9,
+      "canonical_lf_sha256": "fb6ac8f515ea7e6231528fcb1621f9929f6261366309d21c6bce737399f86350",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/E08-pdp-failure.md",
+      "title": "E08 — 정책 엔진 실패 시 기본 차단",
+      "lines": 73,
+      "heading_count": 9,
+      "canonical_lf_sha256": "f274a7421ef52b2c2c55e11bd75cd5fafe2d7eb688b66c8e96bc28a1d9eb3417",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/E09-principal-binding.md",
+      "title": "E09 — 승인되지 않은 주체의 서버 호출",
+      "lines": 78,
+      "heading_count": 9,
+      "canonical_lf_sha256": "106a4ff9d17b1dc21e9762663bc430bf915c23948205b36d69e3115de1e617e8",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/E10-concurrent-duplicate.md",
+      "title": "E10 — 동시 중복 호출 억제",
+      "lines": 105,
+      "heading_count": 11,
+      "canonical_lf_sha256": "fba66fdfa5b458787f276443476a2d71f3d5baf0a2a4890a54d9047d501e1099",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/E11-termination-evidence.md",
+      "title": "E11 — 종료 즉시 차단 및 회수 상태 증거",
+      "lines": 74,
+      "heading_count": 9,
+      "canonical_lf_sha256": "c525653a7d6aede1bda5259ff6d1143c62e8abf03cf99db2b88cae763aac50e5",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/E12-managed-admission.md",
+      "title": "E12 — 관리형 활성 상태와 MCP 입구",
+      "lines": 90,
+      "heading_count": 9,
+      "canonical_lf_sha256": "537252db716a5c1559ce054fd2b45cf4ee4e141bc16434637dcc81bd0ea28711",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/E13-local-bypass.md",
+      "title": "E13 — PJ1 로컬 stdio·loopback 우회",
+      "lines": 106,
+      "heading_count": 9,
+      "canonical_lf_sha256": "98508863fefab742b9afd25ea3ecafcb4c254e70d71269ba511498b8040f2c5f",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/preflight.md",
+      "title": "실험 사전 조건 및 증거 규칙",
+      "lines": 39,
+      "heading_count": 6,
+      "canonical_lf_sha256": "51f042544976585eee2ddc2e92459c8681c084a5169e6527e0c699f4f5984108",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/README.md",
+      "title": "세팅 후 실험 자료",
+      "lines": 25,
+      "heading_count": 1,
+      "canonical_lf_sha256": "0a2fded42c80bf50f8075c7d05af030bd14eaca5a1cb6df520a29f5904a4daaa",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/targets.md",
+      "title": "MCP 및 관련 실험 대상",
+      "lines": 56,
+      "heading_count": 6,
+      "canonical_lf_sha256": "aacfd9842d181c3934b128fad9691e0c72a257163d84eb343ab64605973d62c8",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "experiments/test-inventory.md",
+      "title": "기존 솔루션 테스트 지도",
+      "lines": 22,
+      "heading_count": 1,
+      "canonical_lf_sha256": "41308af516bef2dbd06a2be06d0e63f233ee5dba5e66ea6de9d0cef88db7a9e6",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "integrations/lab/openbao.md",
+      "title": "OpenBao 실제 secret 연동 환경",
+      "lines": 44,
+      "heading_count": 5,
+      "canonical_lf_sha256": "105ed3ffb987a61646cdf48d1769913e8ac65d39bbdc333c10a8fe0d35d2b83c",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "integrations/lab/README.md",
+      "title": "LiteLLM 실제 연동 환경 — 구축안",
+      "lines": 58,
+      "heading_count": 5,
+      "canonical_lf_sha256": "8a6066566a06cebcb30299ee377c6db67b7c62273ff1268bfd8dbb33d3f6023b",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "integrations/litellm.md",
+      "title": "LiteLLM 연동 경계와 검증",
+      "lines": 33,
+      "heading_count": 4,
+      "canonical_lf_sha256": "41271817e6c4eff5b3e4821359d29a6f149e6c0c56c20123cabfecc8ca8363be",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "integrations/README.md",
+      "title": "기업 연동의 경로와 검수",
+      "lines": 16,
+      "heading_count": 1,
+      "canonical_lf_sha256": "45d3c240f861578924c22cb33cc901adb3f9ee01ae2e8044b14ea86f3ebccba7",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "integrations/secrets.md",
+      "title": "기업 비밀 저장소 연동",
+      "lines": 18,
+      "heading_count": 1,
+      "canonical_lf_sha256": "167264cc6e176d8a54404098a76362309b4921205ff78184dc2752352aeed8dd",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "methodology/control-design.md",
+      "title": "MCP 통제 설계와 증거 계약",
+      "lines": 47,
+      "heading_count": 5,
+      "canonical_lf_sha256": "ef07c92752f6bc118ec05af8f8ab7eef06ce1610d38407be707631425243170c",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "methodology/engineering-workflow.md",
+      "title": "연구 자료를 구현으로 옮기는 방법",
+      "lines": 38,
+      "heading_count": 6,
+      "canonical_lf_sha256": "529ec119181707f22d03390682f04fb899704d7e46bc2796e45bf3631d5ae394",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "methodology/evidence-contract.md",
+      "title": "시험 실행과 근거의 연결 규칙",
+      "lines": 37,
+      "heading_count": 5,
+      "canonical_lf_sha256": "9a71d2350129752e299f9271d4bf4691877ce5cdeba81c06f8de1075e016eadb",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "methodology/evidence-methodology.md",
+      "title": "실제 MCP와 최신 연구를 이용한 검증 방법",
+      "lines": 33,
+      "heading_count": 4,
+      "canonical_lf_sha256": "f1524305816a9bec3960ed87c34997a3cde42baadac2f7d704518ecf37aa890d",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "methodology/oss-and-skills.md",
+      "title": "공개 스킬과 OSS 우선 활용",
+      "lines": 15,
+      "heading_count": 1,
+      "canonical_lf_sha256": "f5fe966fe1a7004713c4a876435ca86e49692ccf1de19713b685bbc307c05885",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "methodology/source-protocol.md",
+      "title": "자료 확보·출처·갱신 규칙",
+      "lines": 37,
+      "heading_count": 5,
+      "canonical_lf_sha256": "cc4c9a99022937cd9ad02ea549e0213136a8ab301fad1c93e8a65f0ecc1fe520",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/development-reading-guide.md",
+      "title": "개발 작업별 레퍼런스 읽기 지도",
+      "lines": 18,
+      "heading_count": 1,
+      "canonical_lf_sha256": "78a9dc7d03e5be688cbeb7599aa455ff62415b18961c84a626558c5d76d9fa93",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A01.md",
+      "title": "LIB-A01 · SEP-2468: Recommend Issuer (iss) Parameter in MCP Auth Responses",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "84ea91d7544f097b7ebba43cf5df5be73f110281332f7492671457c8110c22ba",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A02.md",
+      "title": "LIB-A02 · RFC 8707: Resource Indicators for OAuth 2.0",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "3a37d93e971382db28f027830d661a7be22c0b606677cbc34715e7d038d7ea0a",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A03.md",
+      "title": "LIB-A03 · RFC 9728: OAuth 2.0 Protected Resource Metadata",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "48d65ef4a3eb11e1b577bea6b7866757f258614fdc00e3b873832a93b18101af",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A04.md",
+      "title": "LIB-A04 · SEP-985: Align OAuth 2.0 Protected Resource Metadata with RFC 9728",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "30bae0b43817cff9ce279c35daf91f2acad71dd66b18ee6d75da2b7286a904c4",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A05.md",
+      "title": "LIB-A05 · GHSA-6qxp-vccf-f47h (CVE-2026-104850): MCP TypeScript SDK: OAuth client could send credentials to an authorization server chosen by the MCP server",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "907745ebc3ab77665ab4117c749b89143446fe7e37f5e019ab7ed02248cf2ae8",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A06.md",
+      "title": "LIB-A06 · SEP-2260: Require Server requests to be associated with a Client request.",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "34af6ca41c980725970c9f13e991d58aea2fffd407740a0cb3923beea59c4508",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A07.md",
+      "title": "LIB-A07 · SEP-1036: URL Mode Elicitation for secure out-of-band interactions",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "28d6322d4ceedbea49c0b016591889c83e4458e3190574fa8f46e5ec7d4f35c0",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A08.md",
+      "title": "LIB-A08 · SEP-1024: MCP Client Security Requirements for Local Server Installation",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "e9c7c7ec6f3930c30ce4035144db2d0445a45acdd2e0a41f7efc1830c236bf04",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A09.md",
+      "title": "LIB-A09 · GHSA-6xpm-ggf7-wc3p (CVE-2025-6514): mcp-remote exposed to OS command injection via untrusted MCP server connections",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "07cf002573fb4ff15d74c0afefa693fba39f2527d25b43556ace8eca20157f68",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A10.md",
+      "title": "LIB-A10 · GHSA-7f8r-222p-6f5g (CVE-2025-49596): MCP Inspector proxy server lacks authentication between the Inspector client and proxy",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "6fb7cb6c3c5f7afbb31c94a9aa0d8427269fb4fc258ccdc1e22f2171af034953",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A11.md",
+      "title": "LIB-A11 · SEP-2322: Multi Round-Trip Requests",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "dd66f36067f822f3bd5b8d54c4e9ecd5be773be90bbe4cff0cfb06510c90312c",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A12.md",
+      "title": "LIB-A12 · SEP-991: Enable URL-based Client Registration using OAuth Client ID Metadata Documents",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "7650eadfe556f18083b031c312083d0ffad7d90b1130d0d434c86a02e50fa03b",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A13.md",
+      "title": "LIB-A13 · RFC 9207: OAuth 2.0 Authorization Server Issuer Identification",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "7f86bb7a9df01f8bb6d52f7d547cec6838fbdfe33220d8e7dd73cc531a8c6370",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A14.md",
+      "title": "LIB-A14 · GHSA-345p-7cg4-v4c7 (CVE-2026-25536): @modelcontextprotocol/sdk has cross-client data leak via shared server/transport instance reuse",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "48fd356065ffb325670cf3d4e84b8d737e548333253f23a1c3cd2fca2d189c59",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A15.md",
+      "title": "LIB-A15 · Model Context Protocol (MCP): Landscape, Security Threats, and Future Research Directions",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "1c543131e3e9a3435b3d5d10dab0ebcfa0d4e967109a26bb77cf13992ebc49f7",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-A16.md",
+      "title": "LIB-A16 · GHSA-8r9q-7v3j-jr4g (CVE-2026-0621): Anthropic's MCP TypeScript SDK has a ReDoS vulnerability",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "b433250fdb5cd6b677bf0a2440d651f4135ce0a82c85e98f76196ab8def019e2",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B01.md",
+      "title": "LIB-B01 · MCP Security Notification: Tool Poisoning Attacks",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "0b5c0888d92389f453096ea62811ef732e997ef8d188df5c80abaf23efebd577",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B02.md",
+      "title": "LIB-B02 · ETDI: Mitigating Tool Squatting and Rug Pull Attacks in Model Context Protocol (MCP) by using OAuth-Enhanced Tool Definitions and Policy-Based Access Control",
+      "lines": 44,
+      "heading_count": 6,
+      "canonical_lf_sha256": "95652800fee79ed2e9818e225e377580ae2faa5b7a9788e761ee080592945557",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B03.md",
+      "title": "LIB-B03 · Prompt Injection Attack to Tool Selection in LLM Agents",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "7323d257e704ae9e593b1b6cde2b1ffc60ee4edde16453a63d3514b368c55d09",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B04.md",
+      "title": "LIB-B04 · MPMA: Preference Manipulation Attack Against Model Context Protocol",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "263248946ee71779c4b39afdeb2de85e3ac06509d62fb8b36f0bf7f021e52939",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B05.md",
+      "title": "LIB-B05 · From Component Manipulation to System Compromise: Understanding and Detecting Malicious MCP Servers",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "430d96723c3c605cc12df7ee185e322c3c5870b4b177d08559078b7167eaa08f",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B06.md",
+      "title": "LIB-B06 · Attractive Metadata Attack: Inducing LLM Agents to Invoke Malicious Tools",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "25025bbfea8e93c7b481b319c17c7226f8f8c02d0449fe57252cfe7b1c104b8a",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B07.md",
+      "title": "LIB-B07 · MindGuard: Intrinsic Decision Inspection for Securing LLM Agents Against Metadata Poisoning",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "d5f2cfcb3f724f8bbb1911169c723630ba004dc7afbb3bb4af46a004ea9a1c7c",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B08.md",
+      "title": "LIB-B08 · Same Name, Different Server: A Security Census of Silent Drift in the Model Context Protocol Ecosystem",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "a7dea656698a01e6d718803d4436b1bb51dd1c512b2ca7dbe2e23636bf2cef24",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B09.md",
+      "title": "LIB-B09 · MCP-Guard: A Multi-Stage Defense-in-Depth Framework for Securing Model Context Protocol in Agentic AI",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "30434ad4b1cb554aade621e52a40a8d3d20f22930e6612226fb7b7f4506f653d",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B10.md",
+      "title": "LIB-B10 · Model Context Protocol Threat Modeling and Analyzing Vulnerabilities to Prompt Injection with Tool Poisoning",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "82ff55bcb43aedd4401f8d75045b6b20ad4ef2959f2b2e0d94af2732bef9f690",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B11.md",
+      "title": "LIB-B11 · MCP-ITP: An Automated Framework for Implicit Tool Poisoning in MCP",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "faa108342ef547f41e59d5d4247753def2418f1be789ed6bd044904d05aff803",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B12.md",
+      "title": "LIB-B12 · TRUSTDESC: Preventing Tool Poisoning in LLM Applications via Trusted Description Generation",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "66a51b8bc3324151ffbac0d88b1a5cd2cda2ede126da7a52e8b0877923ddc504",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B13.md",
+      "title": "LIB-B13 · Machine Learning-Based Detection of MCP Attacks",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "8f5f9407f2736febe2ebd0f52cfad841c996ca81af0c4482140342c8a4639ba0",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B14.md",
+      "title": "LIB-B14 · MCPXKIT: The Unified Toolkit for Analyzing Model Context Protocol Security",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "e1bd1694ac4d253d798f5d0910c5b74b522fbfa18e84da07e8ff5a67b1c200fa",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B15.md",
+      "title": "LIB-B15 · Securing GenAI Multi-Agent Systems Against Tool Squatting: A Zero Trust Registry-Based Approach",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "7d1783a4e6b07aa1ebf3fc039fd030d9dc0bf014d8e91a08f27f7f473ec712ce",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-B16.md",
+      "title": "LIB-B16 · MCP Safety Audit: LLMs with the Model Context Protocol Allow Major Security Exploits",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "517be3a2950b9c25d73d6470042d4f978257721e0eeafa921efe4166f6c023f3",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C01.md",
+      "title": "LIB-C01 · Indirect Prompt Injections: Are Firewalls All You Need, or Stronger Benchmarks?",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "96f20f38d4afd90528de1bf6ac8ebdbc3cabe7f18e34f6a093a56c71754035a9",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C02.md",
+      "title": "LIB-C02 · Defeating Prompt Injections by Design",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "21135a27aed494eaa13b13356bd87a46281a47df5b369ad5109b0b615470b7be",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C03.md",
+      "title": "LIB-C03 · Defending Against Indirect Prompt Injection Attacks With Spotlighting",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "ceeeaa4391193b3eb01c9073d53b344577257a1e936200a9e8d5ed3044e2294f",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C04.md",
+      "title": "LIB-C04 · Adaptive Attacks Break Defenses Against Indirect Prompt Injection Attacks on LLM Agents",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "e7a086cf5e2d84d08d0de4a5d8939c0461d79a663fdfed6613ba70d1ea9c87ac",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C05.md",
+      "title": "LIB-C05 · The Attacker Moves Second: Stronger Adaptive Attacks Bypass Defenses Against Llm Jailbreaks and Prompt Injections",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "c595de67316dee1d26d96a5a5a055ec3a45a414fc5f31cd7b066c32256e2db81",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C06.md",
+      "title": "LIB-C06 · RTBAS: Defending LLM Agents Against Prompt Injection and Privacy Leakage",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "d6cdeeeb32aa8be0da6ff6327c2cbd9a5efd654acb4ae7e2b2405385c1962224",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C07.md",
+      "title": "LIB-C07 · MELON: Provable Defense Against Indirect Prompt Injection Attacks in AI Agents",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "318d4a9d6ae6846da6d613d0872a44e816b931a7d125bc3d9437dbbbd23b46a7",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C08.md",
+      "title": "LIB-C08 · PromptArmor: Simple yet Effective Prompt Injection Defenses",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "f24776adf337bfec3dfc664e4a43fa8aa0075d26656a1b28b95ba7a92fe52dc9",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C09.md",
+      "title": "LIB-C09 · DataSentinel: A Game-Theoretic Detection of Prompt Injection Attacks",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "b3bc563e1f277bc85268ca62715de5a2bfd004903885e7a867e5ebad758b967a",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C10.md",
+      "title": "LIB-C10 · Bypassing LLM Guardrails: An Empirical Analysis of Evasion Attacks against Prompt Injection and Jailbreak Detection Systems",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "a139476454b864aff3a2be73496710d581867cdfad6eca4b3274d7e5d2a3597a",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C11.md",
+      "title": "LIB-C11 · Agent Security Bench (ASB): Formalizing and Benchmarking Attacks and Defenses in LLM-based Agents",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "ddc832b0b3db3942d2328cf9710fb522d27b08b4598ad66c91538880b85cecc2",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C12.md",
+      "title": "LIB-C12 · Your Agent is More Brittle Than You Think: Uncovering Indirect Injection Vulnerabilities in Agentic LLMs",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "a60473df771de589d766ef939411d662584c6b144734013f1400c7b96e745e8f",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C13.md",
+      "title": "LIB-C13 · Not what you've signed up for: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "e85b446aee7c50f13ac191630dff5fdeed0e39ce2ffd697aad173a6b19da53ba",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C14.md",
+      "title": "LIB-C14 · StruQ: Defending Against Prompt Injection with Structured Queries",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "2ad68de9f0b76b11193e368f329d67ef1c8e03072bee4e146a8e8c264bb43a26",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C15.md",
+      "title": "LIB-C15 · SecAlign: Defending Against Prompt Injection with Preference Optimization",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "e05d620e97468c8c9092f31fe9ea878ac7f46f3255091d457136080d65529ea5",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-C16.md",
+      "title": "LIB-C16 · Benchmarking and Defending Against Indirect Prompt Injection Attacks on Large Language Models",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "396f6f3e21ac34af4046c97ed7ecffab6224d340586f73b339b31888a64f4240",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-D01.md",
+      "title": "LIB-D01 · AgentBound: Securing Execution Boundaries of AI Agents",
+      "lines": 45,
+      "heading_count": 6,
+      "canonical_lf_sha256": "2a9d444e3adda1bc7f7b55859f0dcbeef71842ca4a8fe4a4f3182c905a2fef61",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-D02.md",
+      "title": "LIB-D02 · AgentSpec: Customizable Runtime Enforcement for Safe and Reliable LLM Agents",
+      "lines": 46,
+      "heading_count": 6,
+      "canonical_lf_sha256": "89b7caef4a1a88366a877d1b82968d2baa299456ae46c411b00e46ecdc299161",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-D03.md",
+      "title": "LIB-D03 · Formal Policy Enforcement for Agentic Systems",
+      "lines": 35,
+      "heading_count": 5,
+      "canonical_lf_sha256": "92d995f846933f4cd5c999faac9f5da0f26b7b25e43c7e787330e98feab8453c",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-D04.md",
+      "title": "LIB-D04 · AEGIS: Preventing Cross-Domain Resource Abuse in MCP",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "9c761dd069d907638e39e76dd6747bc3ab54fa51c473a55b8208c807cbc12384",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-D05.md",
+      "title": "LIB-D05 · Causality Laundering: Denial-Feedback Leakage in Tool-Calling LLM Agents",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "cf38c3ed898dbbc689ab74414fe6ecb6b56d81d630cf6d90a7bfc94d0abd2fcb",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-D06.md",
+      "title": "LIB-D06 · APPA: Recoverable Information-Flow Control for Real-World LLM Agents",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "6343314ace5267f662e4131bcf3ad17f0d42eefb5ba1fd96fe840147ba4a55d9",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-D07.md",
+      "title": "LIB-D07 · MiniScope: Authorizing Agents with Least-Privilege Permissions",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "82da2adb1f020b0a080bf7cc79b5d188f7556cbe21fcdac85b2f501003131392",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-D08.md",
+      "title": "LIB-D08 · ACE: A Security Architecture for LLM-Integrated App Systems",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "8675ba436bfb768b36457cd3917aa82919d26d0863c62281f9031a18b757b6fa",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-D09.md",
+      "title": "LIB-D09 · AgentArmor: Enforcing Program Analysis on Agent Runtime Trace to Defend Against Prompt Injection",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "f2dbc95346ca1eb521b9d70acd4ca7d1f166426a0355a720ef6e3e5624e35502",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-D10.md",
+      "title": "LIB-D10 · Towards Verifiably Safe Tool Use for LLM Agents",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "791f708ea7132b0deba045fe5d937f1d8674742ae916925539adb71da98cf050",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-D11.md",
+      "title": "LIB-D11 · ShieldAgent: Shielding Agents via Verifiable Safety Policy Reasoning",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "8aae32657f5f2ba7323fcb86db5cb5b8596c6ec005b92a9ff5e4cf747e73cf63",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-D12.md",
+      "title": "LIB-D12 · GuardAgent: Safeguard LLM Agents by a Guard Agent via Knowledge-Enabled Reasoning",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "31c2a7ecf62006d374855b9837904439d01784946a8d5999d632f59001addaee",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-D13.md",
+      "title": "LIB-D13 · IsolateGPT: An Execution Isolation Architecture for LLM-Based Agentic Systems",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "11cd133dc6c5da7038cc70856b6331696b28ce38c48b126418d418784e0f47a9",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-D14.md",
+      "title": "LIB-D14 · Contextual Agent Security: A Policy for Every Purpose",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "9a63c8771c69155b835f553b1d3a1afcf5e282b618c2a5ddd040d576ec044d08",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-E01.md",
+      "title": "LIB-E01 · RFC 9068: JSON Web Token (JWT) Profile for OAuth 2.0 Access Tokens",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "61a54f00172b764ed48dbbb8da26a1478d50b231ae671414ab146b03140dd306",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-E02.md",
+      "title": "LIB-E02 · RFC 9449: OAuth 2.0 Demonstrating Proof of Possession (DPoP)",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "0082dce5ecd7f34afbd17e44f3606eaf51a20363c443b848f18d087d11cfbd06",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-E03.md",
+      "title": "LIB-E03 · The OAuth 2.1 Authorization Framework",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "3495cbe66fc6e10511e3efa641cce279152b28794a8da4f8a51f09197f78b0ac",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-E04.md",
+      "title": "LIB-E04 · Identity Assertion JWT Authorization Grant",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "5b5e7e5208623a2e3aeaa4373ab7db45a3c5d372022a0637f08dc6ea519c874e",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-E05.md",
+      "title": "LIB-E05 · Transaction Tokens",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "cdf1c80091bd0f2592f363cad2339a4c6e98ae4b2ed3008d78547ce67106d1c7",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-E06.md",
+      "title": "LIB-E06 · Identity Management for Agentic AI: The new frontier of authorization, authentication, and security for an AI agent world",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "7aec1bd76998c7c8058c9596aee67ca6a7cf93ee82975eddc6d4c0cd248c9cfa",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-E07.md",
+      "title": "LIB-E07 · OAuth Client ID Metadata Document",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "563d2a05440a38817578f22455150b9778eaff6a65601960a53bd5539a607f3b",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-E08.md",
+      "title": "LIB-E08 · RFC 7591: Dynamic Client Registration Protocol (OAuth 2.0)",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "03c932992d4b0b53695b2a432ab0c1be9838b20fc95dc14fcede4eeef7fb1811",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-E09.md",
+      "title": "LIB-E09 · RFC 7523: JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "de396c5663a6949da3695e6d41140c811eee930ab6e2fab6ac6381c516feec72",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-E10.md",
+      "title": "LIB-E10 · OAuth SPIFFE Client Authentication",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "4cd19431545a070cf6bd48903cd3496b99fbfc53372594272db32eb0f972510c",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-E11.md",
+      "title": "LIB-E11 · OAuth 2.0 Attestation-Based Client Authentication",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "d5995d6dddbfadc1562bf89dc32f472beaaed71b1b352083927ecbfa6691f3f5",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-E12.md",
+      "title": "LIB-E12 · AI Identity Management System",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "1621b0a1d023c6e25de435e78db74c2893d347ccd328aa0a96fcd690a7890bf1",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-E13.md",
+      "title": "LIB-E13 · AIP: Agent Identity Protocol for Verifiable Delegation Across MCP and A2A",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "ac76d853abf36093b0870b05f969f9660492ff713a5d5074f8afc93d717c8080",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-E14.md",
+      "title": "LIB-E14 · Authenticated Delegation and Authorized AI Agents",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "477158956a4a9d7f7f1684dbdb389df34f4018cf9ea78966487ebe8542f6aa12",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-F01.md",
+      "title": "LIB-F01 · LlamaFirewall: An open source guardrail system for building secure AI agents",
+      "lines": 45,
+      "heading_count": 6,
+      "canonical_lf_sha256": "022bb54192d4bdc4ee44eb3247ecd18e7107173c731f12cd75325820ef950119",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-F02.md",
+      "title": "LIB-F02 · Enforcing Temporal Constraints for LLM Agents",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "b20f80bcfabb268d05bd4c8ee26497affa5cd2a6dc7daf8c3d01156297661f9f",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-F03.md",
+      "title": "LIB-F03 · NeMo Guardrails: A Toolkit for Controllable and Safe LLM Applications with Programmable Rails",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "053a9e841dd9ab7d0ea16b7ff3d2aaaa65db5d239b60a8160580b4873071effa",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-F04.md",
+      "title": "LIB-F04 · Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "0a6554a0ecc67e0623f44349719073ed58c688ee68365bba5acd374a0cefa8e6",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-F05.md",
+      "title": "LIB-F05 · AgentSight: System-Level Observability for AI Agents Using eBPF",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "530348b11dea4129e90e8447654bacf9ab95688f59fcc074e7de649f8f6b9567",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-F06.md",
+      "title": "LIB-F06 · TrajAD: Trajectory Anomaly Detection for Trustworthy LLM Agents",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "1629dfcbb8cd86109adc1b6ab4a17ac4ac2e945d55364c14c52132a94bc226a5",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-F07.md",
+      "title": "LIB-F07 · Trajectory Guard -- A Lightweight, Sequence-Aware Model for Real-Time Anomaly Detection in Agentic AI",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "99576cb486ca62512608a3e8df2a615734e176221459952c51c7d71f61146e3f",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-F08.md",
+      "title": "LIB-F08 · WildGuard: Open One-Stop Moderation Tools for Safety Risks, Jailbreaks, and Refusals of LLMs",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "3e22c4b19313c620d85acdf95442bb70e531c9ecbeed4c11508de537191c8c88",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-F09.md",
+      "title": "LIB-F09 · Granite Guardian",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "3f296208e945da850237c106972e49abc1f3a37084c60aade3905eebc0bdbb09",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-F10.md",
+      "title": "LIB-F10 · SentinelAgent: Graph-based Anomaly Detection in Multi-Agent Systems",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "6d9fad139e0c0342a199a68d77838d25afa03747850b3e7611109b220471ceb5",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-G01.md",
+      "title": "LIB-G01 · Rethinking MCP Security: A Large-Scale Study of Runtime MCP Servers and Security Scanner Reliability",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "896d2e1cda42d3c4d70d5a0cdd93cddbf6f9ee2c16810887c661e15f0d19fa96",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-G02.md",
+      "title": "LIB-G02 · Unicode TAG-Block Concealment of Tool-Metadata Payloads in the Model Context Protocol: An Approval-View Fidelity Gap Across Three Independent Server Implementations",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "a5503f39f721237a76d46728f52fa10a3c5502a748e11ce0a7fa00725a05d5e3",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-G03.md",
+      "title": "LIB-G03 · An Empirical Study of Model Context Protocol Applications",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "4f8ca3b999b62f3ee6967b562814a3d08c3e20e7d8b79d35a6086433e6abf6a9",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-G04.md",
+      "title": "LIB-G04 · A First Look at the Security Issues in the Model Context Protocol Ecosystem",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "61010277a7fc28e41e70504d5339174127344244ed3497eb29183fe68f55306b",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-G05.md",
+      "title": "LIB-G05 · Model Context Protocol (MCP) at First Glance: Studying the Security and Maintainability of MCP Servers",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "5a10fdb5a4394b63df5050c8a5e3e00982f0f1ccca5f8e5d46c26f4e2b0d75dc",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-G06.md",
+      "title": "LIB-G06 · Exposed by Design: A Dynamic Security Assessment of Internet-Facing MCP Servers at Scale",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "818982bb2d3004a1c80f6b70a6ecd9caa496e2c6326ce35171a83b2e9ff4e173",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-G07.md",
+      "title": "LIB-G07 · A First Measurement Study on Authentication Security in Real-World Remote MCP Servers",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "827ef0792801f5fcf8a34b37e7957d8e0e9d747f9451dad7ce585184ef0508b9",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-G08.md",
+      "title": "LIB-G08 · Characterizing Network Centralization and Observability in the Remote MCP Ecosystem",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "2063c31fd530797a21b6cb288733027eda6d788b3b55b24abc4585b6b5929121",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-G09.md",
+      "title": "LIB-G09 · FlowGuard: From Signals to Evidence for MCP Security Detection",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "2a15deb47d0c0d3be5fee84061eaebe7be980dce0f6baaa78ea9c4fc87380083",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-G10.md",
+      "title": "LIB-G10 · VIPER-MCP: Detecting and Exploiting Taint-Style Vulnerabilities in Model Context Protocol Servers",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "04d4a33dc876e73691062749c739983b65ca6666955c33efbd55e28a0b8ece33",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-G11.md",
+      "title": "LIB-G11 · Unsafe by Flow: Uncovering Bidirectional Data-Flow Risks in MCP Ecosystem",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "df5399f48744cbe30d95a50e2eb437301ed9abffcf323c780caef825c8b5c92f",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-G12.md",
+      "title": "LIB-G12 · When MCP Servers Attack: Taxonomy, Feasibility, and Mitigation",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "44f45c12659e3fcaa71560ab21d5b5c5191f2980a61ea73323d199c0720677be",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-G13.md",
+      "title": "LIB-G13 · A Measurement Study of Model Context Protocol Ecosystem",
+      "lines": 45,
+      "heading_count": 6,
+      "canonical_lf_sha256": "f72b5dd30eee8730afaaed49e83b4531ee788f7a43d6a0b96a2d5eb2e514e211",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-G14.md",
+      "title": "LIB-G14 · A Large-Scale Evolvable Dataset for Model Context Protocol Ecosystem and Security Analysis",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "9748769732cbb881071e8a4307f501214fbd8deea915a069a5d6a0e689c30fa6",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-H01.md",
+      "title": "LIB-H01 · Microsoft Presidio (GitHub: microsoft/presidio)",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "4858e7ba1e9a1880905992d354955ec8018baabd07a9a1a68238567b610059c5",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-H02.md",
+      "title": "LIB-H02 · GLiNER: Generalist Model for Named Entity Recognition using Bidirectional Transformer",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "3a60587ff8dc0d72404eb093e29859eb569e07fa3c464ddc7803e59df41fa286",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-H03.md",
+      "title": "LIB-H03 · Gitleaks (secret detection tool)",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "7f108a42e415c80a63c9328bd44ba6250450791825a381756227bcf4431813c7",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-H04.md",
+      "title": "LIB-H04 · OWASP Top 10 for LLM Applications 2025: LLM02:2025 Sensitive Information Disclosure",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "0dec7889b040c5c8506dad7b5537c293a9de7c7ac85c2d23abfc165ae098f8ad",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-H05.md",
+      "title": "LIB-H05 · Secret Breach Detection in Source Code with Large Language Models",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "d7b2e11cc906f4052c27d9c1b27ecf8d6453bc7be567a1f51fb36330366a3b4b",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-H06.md",
+      "title": "LIB-H06 · Are Large Pre-Trained Language Models Leaking Your Personal Information?",
+      "lines": 31,
+      "heading_count": 5,
+      "canonical_lf_sha256": "b31c6b2581020399a40941fbd5e1e1288d2184829a7a4de3808971905e5e68d0",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-H07.md",
+      "title": "LIB-H07 · 가명정보 처리 가이드라인(2026.3. 개정)",
+      "lines": 31,
+      "heading_count": 5,
+      "canonical_lf_sha256": "d3d835e7f4deec45d9234ad1ef05e4319ce6ba5a19ba487463b386da278f2f0e",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-H08.md",
+      "title": "LIB-H08 · 개인정보의 안전성 확보조치 기준",
+      "lines": 30,
+      "heading_count": 5,
+      "canonical_lf_sha256": "1f89874f0b130fa33b1c3ea638dceb6fa4ce5d2d065828e5e93d7ed70d582c8f",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I01.md",
+      "title": "LIB-I01 · OWASP Top 10 for Agentic Applications 2026",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "c497c2fd925382cde60c194ae19ae0e3ce72e0990988932771c6bfe2377e9539",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I02.md",
+      "title": "LIB-I02 · Technical Blog: Strengthening AI Agent Hijacking Evaluations",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "f63b14a855a6b1712ec308c4fe9d12fcde3f790a4a3c55c411aef26f69a8fdc3",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I03.md",
+      "title": "LIB-I03 · Security Challenges in AI Agent Deployment: Insights from a Large Scale Public Competition",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "9b2097f28cb474a67e4547badfae53ff76f951de5fc069a5c3d0682f17c1ae06",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I04.md",
+      "title": "LIB-I04 · OWASP Top 10 for LLM Applications 2025",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "863762be67d4198716c7e6cfe11885ddb2f5ad55c3d945cd8410122f593a001d",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I05.md",
+      "title": "LIB-I05 · [Concept Paper] Accelerating the Adoption of Software and AI Agent Identity and Authorization",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "99a284e4ccf0e7c77a78665154c0f9f6785d0444a70d626405c965625c77fa8a",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I06.md",
+      "title": "LIB-I06 · SP 800-53 Control Overlays for Securing AI Systems (COSAiS)",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "32234a80db8a0ea0629e140bd56e64adbf39767a982f0f1b68d99f73b51b1e33",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I07.md",
+      "title": "LIB-I07 · Regulation (EU) 2024/1689 (AI Act), Article 12: Record-keeping",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "ae477295b4131be31fe835f8cdc0857d488c14744c9d2ec5ed2f31c34a001f35",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I08.md",
+      "title": "LIB-I08 · Regulation (EU) 2024/1689 (AI Act), Article 14: Human oversight",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "fb52bde1d3cc46f71c8d38ad2a4ebdeb5d42dd2d2a420343b779297912a3a83d",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I09.md",
+      "title": "LIB-I09 · Regulation (EU) 2024/1689 (AI Act), Article 15: Accuracy, robustness and cybersecurity",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "a3689c308c587b8d7b941ace0fdfa64c47c5837ce2aa6690edcf134d82a289ee",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I10.md",
+      "title": "LIB-I10 · Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and Mitigations (NIST AI 100-2e2025)",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "8186254ba5f7b692dfc7733f73dae69a7ec2388c558e7c5af5f4b59f61e9c656",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I11.md",
+      "title": "LIB-I11 · Artificial Intelligence Risk Management Framework (AI RMF 1.0)",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "41d7471c04e948b790806c774cc635b8ee727a9a05a23fe13b002278de2e6d33",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I12.md",
+      "title": "LIB-I12 · Principles for Secure-by-Design Agentic Systems",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "5044edbbed413305b6ba9db123f738fb6418028b6f59b172e1c5921c09533267",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I13.md",
+      "title": "LIB-I13 · Securing Agentic AI: A Comprehensive Threat Model and Mitigation Framework for Generative AI Agents",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "71aaeff2f4a28706e72f72de7c40ab0f8d6a3346d5f3fed05d1d349441a05f97",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I14.md",
+      "title": "LIB-I14 · Agentic AI Threat Modeling Framework: MAESTRO",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "360ac94dbad0539c2ccd9b2ee1f446c635fd90ec667519b7e65600ffdb4d0f7b",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I15.md",
+      "title": "LIB-I15 · MITRE ATLAS (Adversarial Threat Landscape for AI Systems)",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "5764e91151ceb1b47f2f44bbcc91abbe249cfc54a60855026ed1ec9db9743852",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-I16.md",
+      "title": "LIB-I16 · 인공지능 발전과 신뢰 기반 조성 등에 관한 기본법",
+      "lines": 31,
+      "heading_count": 5,
+      "canonical_lf_sha256": "4febc1db547ae73d57380e78def3bb28de555152d0fea32042d55448fd6e8157",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J01.md",
+      "title": "LIB-J01 · RFC 9943: An Architecture for Trustworthy and Transparent Digital Supply Chains",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "4aeddac650726f7cdf46abe2874251e01bfc721a67c313eec7f199240d568e41",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J02.md",
+      "title": "LIB-J02 · RFC 9162: Certificate Transparency Version 2.0",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "242869419a7cb20d191ec512bc29d27c9f47ab592ab79d13ae196e9640a58bdb",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J03.md",
+      "title": "LIB-J03 · Notarized Agents: Receiver-Attested Confidential Receipts for AI Agent Actions",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "86ae3a58060a874dec612cd4a5e20524e90a6d3ae68de89a21582d3a4adf2118",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J04.md",
+      "title": "LIB-J04 · LLM Agents Can Easily Tamper With Their Own Traces",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "0afed81574436d1072177981376222097df33fe86b4d02f2b974e805cbf236f4",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J05.md",
+      "title": "LIB-J05 · Agent Flight Recorder: Tamper-Evident Audit Trails with On-Chain Anchoring for Long-Horizon Tool-Using Agents",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "e140bc8407ed8e9d56568f88f21e06819f274c61c43b9198902a7199c358b9f3",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J06.md",
+      "title": "LIB-J06 · aiAuthZ: Off-Host, Identity-Bound Authorization for AI Agents",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "8fb6598539617b69be81906829d32838d27e6268a73fc49eed7b9b4b0479dbe5",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J07.md",
+      "title": "LIB-J07 · Behavioral Governance for Autonomous AI Agents: The AgentBound Framework",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "e93cf9ddf0f8c10addead6aa0dcde8aa52f414844c1284854bb7bfaf0de81071",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J08.md",
+      "title": "LIB-J08 · open-telemetry/semantic-conventions-genai (OpenTelemetry generative AI semantic conventions repository)",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "e09597c72d4c21dde570b9695b829238fa07094f68e9830461e8b342f31a1d28",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J09.md",
+      "title": "LIB-J09 · A Taxonomy of Runtime Faults in Model Context Protocol Servers",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "fb4a641e5a9ffcd050b593bee1e0e15e599da8ff30b04f12a19387f86bd91bf9",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J10.md",
+      "title": "LIB-J10 · in-toto Attestation Framework Specification",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "22efc8bad604c03d24030951094f03b42509bb7e5342712d48e451c0b61a28bf",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J11.md",
+      "title": "LIB-J11 · in-toto: Providing farm-to-table guarantees for bits and bytes",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "7f9e08c0b1f03c64bf44239e7d94ec149566cde391adc581a7312807ddcae948",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J12.md",
+      "title": "LIB-J12 · SLSA specification (v1.0)",
+      "lines": 32,
+      "heading_count": 5,
+      "canonical_lf_sha256": "44449c3dc7398c6592730d931d4cb3bc1a101b75c313870a6bb01bd3a94a2828",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J13.md",
+      "title": "LIB-J13 · Taxonomy of Attacks on Open-Source Software Supply Chains",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "ae55355c3b3d1301059517e83e6efd3a5304ff7b98e9defcbf040efd8f982f5b",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J14.md",
+      "title": "LIB-J14 · SoK: Agentic Skills -- Beyond Tool Use in LLM Agents",
+      "lines": 34,
+      "heading_count": 5,
+      "canonical_lf_sha256": "96831953be0d7e9c94773ff87550d9753d77f1257668f11d86d5de1a157c6fb2",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/LIB-J15.md",
+      "title": "LIB-J15 · Building an Open AIBOM Standard in the Wild",
+      "lines": 33,
+      "heading_count": 5,
+      "canonical_lf_sha256": "38b6298e572cbc6220617954d16fc91fbd4b7e258648c1bbd2b6d8a32dc9a8ba",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/P38.md",
+      "title": "P38 · InjecAgent: Benchmarking Indirect Prompt Injections in Tool-Integrated Large Language Model Agents",
+      "lines": 42,
+      "heading_count": 7,
+      "canonical_lf_sha256": "32217f7ca4f0e3ba88ddd3c6510c8cf5632d3d71a6fcff7cb0cbffd571149335",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/P39.md",
+      "title": "P39 · AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM Agents",
+      "lines": 44,
+      "heading_count": 7,
+      "canonical_lf_sha256": "1c36823514d297c394007c6f50ebdecd6da9df55ad50dcef4b1aae6879ade4f7",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/P43.md",
+      "title": "P43 · MCPSecBench: A Systematic Security Benchmark and Playground for Testing Model Context Protocols",
+      "lines": 44,
+      "heading_count": 7,
+      "canonical_lf_sha256": "2ca1e238d877d6d2ee2102ea6950f9664e7018f67bd18ddac5d386fcbf99a533",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/P46.md",
+      "title": "P46 · Systematization of Knowledge: Security and Safety in the Model Context Protocol Ecosystem",
+      "lines": 44,
+      "heading_count": 7,
+      "canonical_lf_sha256": "4b815852bad1f4e20ae5348e8f30cfa53a5dc4c2eec3c56178e91e8f62ab876b",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/P47.md",
+      "title": "P47 · Real Faults in MCP Software: A Comprehensive Taxonomy",
+      "lines": 44,
+      "heading_count": 7,
+      "canonical_lf_sha256": "96922b37cb1df4a66544370fa8e40d90a2eee3609e2ad1383f205f2845acf241",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/P51.md",
+      "title": "P51 · MCP-DPT: A Defense-Placement Taxonomy and Coverage Analysis for Model Context Protocol Security",
+      "lines": 42,
+      "heading_count": 7,
+      "canonical_lf_sha256": "a06fbc811f51dafbc5aa36461af5ba44fbdc52df0b47347c9e075cf7588adc38",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/P54.md",
+      "title": "P54 · Progent: Securing AI Agents with Privilege Control",
+      "lines": 44,
+      "heading_count": 7,
+      "canonical_lf_sha256": "e6db82bbab82fa41fee54bbac53d593db9570cfc8a2270977e3d20d0cbca36c7",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/P55.md",
+      "title": "P55 · Design Patterns for Securing LLM Agents against Prompt Injections",
+      "lines": 42,
+      "heading_count": 7,
+      "canonical_lf_sha256": "992d411fb23b9038e1eb004ffd3dd2b8218c47228f4e8361ed826d558a75655b",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/P57.md",
+      "title": "P57 · Securing AI Agents with Information-Flow Control",
+      "lines": 42,
+      "heading_count": 7,
+      "canonical_lf_sha256": "1309597220de0ee04908b75ab3835b709fcc0f3c4e1e9228d09b8076a4aabe23",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/P58.md",
+      "title": "P58 · Authorization Architectures for Tool-Using AI Agents",
+      "lines": 44,
+      "heading_count": 7,
+      "canonical_lf_sha256": "df3b98e9b2da460af8eab6f42a36468a63d271a443859d1241aad92a6cff19dc",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/P60.md",
+      "title": "P60 · MCPTox: A Benchmark for Tool Poisoning on Real-World MCP Servers",
+      "lines": 44,
+      "heading_count": 7,
+      "canonical_lf_sha256": "807019e18ad53a4ce6ea7b4c69b16cc50647ee6df1dbf368d7ef087d5a69a0b3",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/P63.md",
+      "title": "P63 · How Agents Ask for Permission: User Permissions for AI Agents, from Interfaces to Enforcement",
+      "lines": 44,
+      "heading_count": 7,
+      "canonical_lf_sha256": "297ae079cb9ea893d9ef7fdc04b362aa2e133e010989ff97cb27f81afc7e5806",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/P64.md",
+      "title": "P64 · SafeHarness: Lifecycle-Integrated Security Architecture for LLM-based Agent Deployment",
+      "lines": 42,
+      "heading_count": 7,
+      "canonical_lf_sha256": "2bae9a2988eed002f3df80dd2e58bc780271111850902ec18c322bd0c3a64895",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/README.md",
+      "title": "논문·프로토콜·보안 문서",
+      "lines": 247,
+      "heading_count": 14,
+      "canonical_lf_sha256": "169dbe6e62e7d94848da275c183e5d6a6042ebae820898a7c84df4e0e3712a6d",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/REF-J01.md",
+      "title": "Model Context Protocol (MCP): Landscape, Security Threats, and Future Research Directions",
+      "lines": 22,
+      "heading_count": 4,
+      "canonical_lf_sha256": "27974c3b03f16fa8dab509510ddedc69f75c7ca100b26a8c26e16f54266b1d7b",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/REF-J02.md",
+      "title": "Beyond the Protocol: Unveiling Attack Vectors in the Model Context Protocol (MCP) Ecosystem",
+      "lines": 22,
+      "heading_count": 4,
+      "canonical_lf_sha256": "1b1df7e70a98216ea2c975c5e80176cbabff247b98291eaac4489d4579b4faa4",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/REF-J03.md",
+      "title": "Bridging AI and software security: A comparative vulnerability assessment of LLM agent deployment paradigms",
+      "lines": 22,
+      "heading_count": 4,
+      "canonical_lf_sha256": "2c35976efd9b42f15aba74f53f120adc57abf85acc74accf83da4460bd55cd35",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/T01.md",
+      "title": "T01 · MCP Authorization specification 2026-07-28",
+      "lines": 47,
+      "heading_count": 7,
+      "canonical_lf_sha256": "5236f39584b0f1a6a46f7df5137914f05ba69f7585fba127c5f166db16a8aa96",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/T02.md",
+      "title": "T02 · MCP Tools specification 2026-07-28",
+      "lines": 50,
+      "heading_count": 8,
+      "canonical_lf_sha256": "e8578b1ae018ed3aaf7e540f093d926dbc81f13ae2c1cca0727fea973881dde1",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/T04.md",
+      "title": "T04 · Enterprise-Managed Authorization extension",
+      "lines": 44,
+      "heading_count": 7,
+      "canonical_lf_sha256": "32408395611c49a57ffb0a422cd820ef4091230e3038987f7de798850d01ccb7",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/T08.md",
+      "title": "T08 · OWASP MCP Top 10 project",
+      "lines": 45,
+      "heading_count": 7,
+      "canonical_lf_sha256": "04fd61cb9fccf1821cc75f7355ecbb16a968aef0adade6033f1127fea10ef2c9",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/T10.md",
+      "title": "T10 · RFC 9700 / BCP 240: Best Current Practice for OAuth 2.0 Security",
+      "lines": 43,
+      "heading_count": 7,
+      "canonical_lf_sha256": "ecd8087ac2559c88e19010bd78978f51f3d6f8083c3d2294a59ab553cb005e43",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/T11.md",
+      "title": "T11 · RFC 8693: OAuth 2.0 Token Exchange",
+      "lines": 42,
+      "heading_count": 7,
+      "canonical_lf_sha256": "025323896a8e0370fd6ae712731235aff22056a15f6740281cd9c25b21da30eb",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/T12.md",
+      "title": "T12 · RFC 9396: OAuth 2.0 Rich Authorization Requests",
+      "lines": 43,
+      "heading_count": 7,
+      "canonical_lf_sha256": "942330f5ed51d689e87f84fde130e80539707c5e1f255919995676a9315e1998",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/T15.md",
+      "title": "T15 · CoSAI Model Context Protocol Security v2.0",
+      "lines": 42,
+      "heading_count": 7,
+      "canonical_lf_sha256": "4a3a191f97a8a34b91e31420e8d6c3d6a5d75c113df350ef9b5ed208d044db49",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/T19.md",
+      "title": "T19 · RFC 7009: OAuth 2.0 Token Revocation",
+      "lines": 42,
+      "heading_count": 7,
+      "canonical_lf_sha256": "5e54330bdeaf5ec5e72199a76b30131fafdfd4b8b57e3268197867376fd6d589",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/T20.md",
+      "title": "T20 · RFC 7662: OAuth 2.0 Token Introspection",
+      "lines": 42,
+      "heading_count": 7,
+      "canonical_lf_sha256": "a83481098da577842f645488f65c9b249a0273b9ae5a25d3d279896fa1554f9a",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/T21.md",
+      "title": "T21 · MCP Security Best Practices",
+      "lines": 45,
+      "heading_count": 7,
+      "canonical_lf_sha256": "e4458e967e8d0e79c05823ed62d49e6cbf323178a71fd9a36f93960db1c2468a",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "papers/T22.md",
+      "title": "T22 · MCP Tasks extension",
+      "lines": 44,
+      "heading_count": 7,
+      "canonical_lf_sha256": "2a6347fc8907d34a05a5a98eeec57733b9d3e22aedf366f75593610cccb87427",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "README.md",
+      "title": "MINT 개발 연구 위키",
+      "lines": 50,
+      "heading_count": 6,
+      "canonical_lf_sha256": "00adc0587e7b80c538d8deb23850b3e3aa991211243c8c06ce000d9d8928c9e1",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "solutions/beyondtrust-pathfinder.md",
+      "title": "BeyondTrust Pathfinder MCP — 상용 문서 확인",
+      "lines": 11,
+      "heading_count": 1,
+      "canonical_lf_sha256": "9127c9b3da209097aade22812742eea95f997c41b740a6c1b90cca21714fd145",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "solutions/ibm-contextforge.md",
+      "title": "IBM ContextForge — 실행 훅·PDP·OAuth 위임",
+      "lines": 25,
+      "heading_count": 4,
+      "canonical_lf_sha256": "ae3ef666de1c181397f698e406b0946f394c0904ebc98c097f117f6767291546",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "solutions/ibm-cpex.md",
+      "title": "IBM CPEX — 원자 호출량 처리와 플러그인 경계",
+      "lines": 23,
+      "heading_count": 4,
+      "canonical_lf_sha256": "2a655931f8ce11fb27fc5bc00ad216617feac8c6dc5088d7e00c650f205d2943",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "solutions/kong-ai-gateway.md",
+      "title": "Kong AI Gateway MCP — 상용 문서 확인",
+      "lines": 11,
+      "heading_count": 1,
+      "canonical_lf_sha256": "f3bf8aaa8e17ed45c2861b6195f03f6c888f9df565bc82fbc2fe73f972006b8f",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "solutions/litellm.md",
+      "title": "LiteLLM — MCP 서버 범위가 넓어지지 않는 인가 처리",
+      "lines": 23,
+      "heading_count": 4,
+      "canonical_lf_sha256": "d78cf40eb6bd36510dc3d924e0b68b579a0347d1c304bb5efe59068de53f6060",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "solutions/lunar-mcpx.md",
+      "title": "Lunar MCPX + AI Gateway — 상용 연동 설명 확인",
+      "lines": 11,
+      "heading_count": 1,
+      "canonical_lf_sha256": "7758ba8dc663b90c2cafaf5423133f93ab08f20fa2a6ee3c08c9405f3b3b9286",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "solutions/ms-mcp-gateway.md",
+      "title": "Microsoft MCP Gateway — 소유권·역할 권한 평가",
+      "lines": 23,
+      "heading_count": 4,
+      "canonical_lf_sha256": "400f1cf6869dc5815b7ceb4f38a93757e8b8d00689dcd6feb855200068bb8ebd",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "solutions/ms-wassette.md",
+      "title": "Microsoft Wassette — Wasm/WASI 실행 자원 경계",
+      "lines": 25,
+      "heading_count": 4,
+      "canonical_lf_sha256": "dc163482ab797350126ba5f22d506a1ce65a8eb1f5925814687fdd143f7e15b5",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "solutions/README.md",
+      "title": "상용 솔루션 및 오픈소스 분석",
+      "lines": 31,
+      "heading_count": 4,
+      "canonical_lf_sha256": "727a31bccec0393e140d7f004ae53defe2638a1f8a611c618fd2f4a53d45a6a1",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "solutions/toolhive-runtime.md",
+      "title": "ToolHive 런타임 재사용 검토",
+      "lines": 24,
+      "heading_count": 3,
+      "canonical_lf_sha256": "dc2287be31f6260bda98a6573dbc72e39ebe7791c03ed6cf278ddc39a583b792",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "sources/licenses/CoSAI-CC-BY-4.0.md",
+      "title": "",
+      "lines": 415,
+      "heading_count": 0,
+      "canonical_lf_sha256": "c0382735c38e53cb69aba95d30382117d09809cc62ccb51b25b29b3378bd2fe0",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "sources/live/T10/rfc9700.md",
+      "title": "RFC 9700 / BCP 240: Best Current Practice for OAuth 2.0 Security",
+      "lines": 2580,
+      "heading_count": 1,
+      "canonical_lf_sha256": "20f462be6eed954d310af26f1db62f378c631440a558a7e9a19ce14d2d37326e",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "sources/live/T11/rfc8693.md",
+      "title": "RFC 8693: OAuth 2.0 Token Exchange",
+      "lines": 1418,
+      "heading_count": 1,
+      "canonical_lf_sha256": "259490879b5d567c380c354420160bde51c873dae85ec9bf122f6b8e24580519",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "sources/live/T12/rfc9396.md",
+      "title": "RFC 9396: OAuth 2.0 Rich Authorization Requests",
+      "lines": 1827,
+      "heading_count": 1,
+      "canonical_lf_sha256": "16f7ef07f314cb6c942575833f8976b6a8ac121aad5603ae82a7a3cdf032efea",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "sources/policy/P38/extracts/P38.md",
+      "title": "InjecAgent: Benchmarking Indirect Prompt Injections in Tool-Integrated Large Language Model Agents",
+      "lines": 2052,
+      "heading_count": 71,
+      "canonical_lf_sha256": "70aca5d0f8da61daa641748034f1febaca98bf77f60b8682ee27fa3c3db7eced",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "sources/policy/P51/extracts/P51.md",
+      "title": "MCP-DPT: A Defense-Placement Taxonomy and Coverage Analysis for Model Context Protocol Security",
+      "lines": 1849,
+      "heading_count": 26,
+      "canonical_lf_sha256": "5873fd02fe9b41f62ca510123353d56d42c9da63b7a869ada66d71e1332c5a1d",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "sources/policy/P55/extracts/P55.md",
+      "title": "Design Patterns for Securing LLM Agents against Prompt Injections",
+      "lines": 1846,
+      "heading_count": 33,
+      "canonical_lf_sha256": "deeb4e21f993efd2388a3900219c036a18acb0e32ee9b8b3ba1bd3f99d8c93f7",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "sources/policy/P57/extracts/P57.md",
+      "title": "Securing AI Agents with Information-Flow Control",
+      "lines": 2677,
+      "heading_count": 50,
+      "canonical_lf_sha256": "b1c277e9ecb101f853aaf1087134c33eb23f341c1e1446c6d027b197145142cc",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "sources/policy/P64/extracts/P64.md",
+      "title": "SafeHarness: Lifecycle-Integrated Security Architecture for LLM-based Agent Deployment",
+      "lines": 1814,
+      "heading_count": 27,
+      "canonical_lf_sha256": "a8c5d8ec2c0c9332ea1b82a6c8ad12a17eba7053db3bb16016b39f456304caaf",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "sources/policy/T15/extracts/T15.md",
+      "title": "CoSAI MCP Security — archived original Markdown",
+      "lines": 971,
+      "heading_count": 72,
+      "canonical_lf_sha256": "4e5ff6a19ae10e03c3042a391b2a96a184a01a5219d4d436734c4e19d87fd3e0",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "sources/policy/T15/originals/T15_original.md",
+      "title": "Model Context Protocol (MCP) Security",
+      "lines": 962,
+      "heading_count": 71,
+      "canonical_lf_sha256": "cc023c87995fec63fdadf395a70862dac9c1faf381ab44f9b2fc57124c7b0678",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "sources/policy/T19/extracts/T19_supplement.md",
+      "title": "RFC 7009: OAuth 2.0 Token Revocation",
+      "lines": 639,
+      "heading_count": 1,
+      "canonical_lf_sha256": "bc7334d124c8f85fafff46bb1d182e10470628fc9acc02bf5a962d513e104c2d",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "sources/policy/T20/extracts/T20_supplement.md",
+      "title": "RFC 7662: OAuth 2.0 Token Introspection",
+      "lines": 981,
+      "heading_count": 1,
+      "canonical_lf_sha256": "fa4edad99e6ac646d9ef43ea071242b5db0b49a531f7b6cb70ab8e09da4a3870",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "sources/README.md",
+      "title": "자료 보존과 출처 이력",
+      "lines": 42,
+      "heading_count": 3,
+      "canonical_lf_sha256": "9124eed5d745b89a992119f0988d64e625274f2b55324f0ac8d2579aabd2a112",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/backlog.md",
+      "title": "개발 백로그",
+      "lines": 58,
+      "heading_count": 1,
+      "canonical_lf_sha256": "71caa12f205f4f0c354a2c91b836020101096e0e9c1d78d35483c3dd4170c93f",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/current.md",
+      "title": "개발 현황 — 2026-10-15",
+      "lines": 38,
+      "heading_count": 5,
+      "canonical_lf_sha256": "0f2d191aa6316622a84fad0037876f811cb143fc67cffdbd787c06b17b44d1cb",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/history-2026-10-15.md",
+      "title": "현황 변경 이력 보존 — 2026-10-15",
+      "lines": 89,
+      "heading_count": 14,
+      "canonical_lf_sha256": "486901e647ba3e5daac172d8290c952e9fe0166466f8e6f4b321560442c68a63",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-13-claude-code-review.md",
+      "title": "Claude 독립 코드 검토 원문 — 2026-10-13",
+      "lines": 146,
+      "heading_count": 8,
+      "canonical_lf_sha256": "d99290e9ecf3512fec6b0a181e13132d34c59f45dfaef1d9793c5eba0f7b0bc0",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-13-development-goals.md",
+      "title": "2026-10-13 개발 목표와 검토 기준",
+      "lines": 44,
+      "heading_count": 6,
+      "canonical_lf_sha256": "8c538c29ab5bbc09ce2f96b886780188635956a893b8a95d524a092b51d9da8e",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-13-development-results.md",
+      "title": "코드 분석·보강 구현·실기기 검증 결과 — 2026-10-13",
+      "lines": 67,
+      "heading_count": 8,
+      "canonical_lf_sha256": "bd3499e464d942f1c4d2824001d7eb296e1942cbeffd0afb49bec22010e509a7",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-13-enterprise-claude-review.md",
+      "title": "실제 Claude Sonnet 5.5 독립 검토",
+      "lines": 67,
+      "heading_count": 4,
+      "canonical_lf_sha256": "657f4e55d7894390a9825642a505f69710245afbb4b27c2b3287381c16958f4f",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-13-enterprise-results.md",
+      "title": "기업 품질 기준·연동 분석과 구현 결과",
+      "lines": 62,
+      "heading_count": 6,
+      "canonical_lf_sha256": "6e2a0b0180df229de6286708b16e431f2bce3bfdec5cfdb7f60b10c557d8bf12",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-13-feature-design.md",
+      "title": "현재 기능, 목표 기능과 보강 설계 — 2026-10-13",
+      "lines": 37,
+      "heading_count": 4,
+      "canonical_lf_sha256": "cec62c3a7d5735f1d4bbe873ea2d524b62af760b246c48a92854c8b4d3fdb494",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-13-interop-review.md",
+      "title": "기업 연동 자료와 preflight 독립 검토 — 2026-10-13",
+      "lines": 35,
+      "heading_count": 5,
+      "canonical_lf_sha256": "7cf991d47293518ac662c22a3e11cce24f475011131f5eae879982c726e60c0c",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-13-mcp-validation-plan.md",
+      "title": "팀 개발 브랜치·MCP 후보·검증 및 실패 시 수정 계획",
+      "lines": 115,
+      "heading_count": 8,
+      "canonical_lf_sha256": "1931ffd231aaca3ac8ef17e0c3af29351e0ef3cc08409980999a5caf8788cde0",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-13-result-boundary-review.md",
+      "title": "2026-10-13 결과 반환 경계 독립 검토",
+      "lines": 75,
+      "heading_count": 10,
+      "canonical_lf_sha256": "0d0e3165ec19b2e4033160c98130b5e2eb9638ad39f7bdd8cc5285acc5cf0d83",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-13-wiki-bootstrap.md",
+      "title": "2026-10-13 개발 연구 위키 구축",
+      "lines": 49,
+      "heading_count": 7,
+      "canonical_lf_sha256": "878d03937ec8c8b561a203ac35ca4f7eda3d2d95438264db30bf92323b13735b",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-14-e13-local-mcp-natural-language.md",
+      "title": "2026-10-14 비인가 로컬 MCP의 PJ1 자연어 시험 (E13 변형)",
+      "lines": 93,
+      "heading_count": 11,
+      "canonical_lf_sha256": "0e4d48e1d87c903176eac70c1db5851374b0dceed6b69c9ff339a846952b4bdd",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-14-endpoint-log-wbs.md",
+      "title": "엔드포인트 로그 전달 진단·목표 기능 WBS — 2026-10-14",
+      "lines": 59,
+      "heading_count": 6,
+      "canonical_lf_sha256": "0c1aa4ba6f642614e2e9ea38c28dbe6e6bbe7582dc208afc022bb94911c9b613",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-14-endpoint-telemetry-fix.md",
+      "title": "2026-10-14 엔드포인트 로그 경로 수정·PJ1 Linux 검증",
+      "lines": 70,
+      "heading_count": 8,
+      "canonical_lf_sha256": "055e72110fb655fe92fe96ea936ceaa74f627c13eb39c30aff9b5aee0670ab92",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-14-local-mcp-endpoint.md",
+      "title": "로컬 도구·MCP 설치, 위험매핑과 엔드포인트 개선",
+      "lines": 69,
+      "heading_count": 7,
+      "canonical_lf_sha256": "c32751ee2d1e476470c447223ec0864ada86c8f2d946310c782f0670fb3392e3",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-14-pj1-ghidra-logs.md",
+      "title": "2026-10-14 PJ1 Ghidra·GhidraMCP 설치와 로그 전달 확인",
+      "lines": 40,
+      "heading_count": 6,
+      "canonical_lf_sha256": "818808fef5c0498fd0d311d5386057067598daf85526a9fc023b398e137d26eb",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-14-pj1-nine-tools.md",
+      "title": "2026-10-14 PJ1 9개 도구 자연어 하네스 시험 — 무효 처리",
+      "lines": 104,
+      "heading_count": 11,
+      "canonical_lf_sha256": "c9b7dc1abceef48ee927f2375314b545234ac7c0ce60c645eb80a62dcefd68ff",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-14-reference-fill.md",
+      "title": "2026-10-14 레퍼런스 보강과 정리",
+      "lines": 54,
+      "heading_count": 7,
+      "canonical_lf_sha256": "4869b811c4f185f5a4ef6a9e0f2d0e3e62c7938c1cc069f22b43f7cc550a9526",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-14-risk-scenarios.md",
+      "title": "2026-10-14 위험매핑 기반 3단계 시험과 수정",
+      "lines": 78,
+      "heading_count": 8,
+      "canonical_lf_sha256": "4b773b7b842ea076428ab0d21eb67ea2924eb7db355150fd87c4fd8ba8e3c1ba",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-15-clean-e2e.md",
+      "title": "2026-10-15 클린 기기 E2E · MINT 화면 · 원칙 중심 README",
+      "lines": 55,
+      "heading_count": 6,
+      "canonical_lf_sha256": "e48450fa5406232d2f5ce72d728481792bbc8baac78a18bd00a485198e903288",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-15-drive-deliverables.md",
+      "title": "2026-10-15 Team AGI 드라이브 산출물 선별",
+      "lines": 41,
+      "heading_count": 6,
+      "canonical_lf_sha256": "2e1e8a8bc80f648780e074a3c07285ba22929241e32b24aebfd9cc4b89468b88",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-15-endpoint-evidence.md",
+      "title": "2026-10-15 엔드포인트 증거·완전성·망 품질 (작업 A)",
+      "lines": 62,
+      "heading_count": 6,
+      "canonical_lf_sha256": "3cb2f022e5096d9340b5fd515fddb5f7edd729cd766c526d8c5ec8c4a325598b",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-15-inspection-corpus.md",
+      "title": "2026-10-15 검사 규칙 코퍼스 측정·한국어 개인정보·협업 콘솔 실행 기록 (작업 D)",
+      "lines": 89,
+      "heading_count": 10,
+      "canonical_lf_sha256": "88ab7a0f91c5340545192db040005ebcdc55eeefe23827604dcce48107617d11",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-15-intake-identity.md",
+      "title": "2026-10-15 도입 출처·최소권한·승인자 독립성·위임 미지원 (작업 B)",
+      "lines": 79,
+      "heading_count": 8,
+      "canonical_lf_sha256": "4ec08968f579f209e5bc74e9d89d6a9e035a94e8d59c91ebf1dc6eae5d0e24bc",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-15-termination-dispatch.md",
+      "title": "2026-10-15 호출 예약 원자성·전송 의도·종료 (작업 C)",
+      "lines": 62,
+      "heading_count": 6,
+      "canonical_lf_sha256": "60eac046be2cda31672dfe305564ea0477f030c2ddcd49a541688995222822c4",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-15-wbs-implementation.md",
+      "title": "2026-10-15 목표 기능 WBS 구현·통합·저지연화",
+      "lines": 110,
+      "heading_count": 13,
+      "canonical_lf_sha256": "287da53db90e3bda93d5efdab45842a53dc9527e44a14101fe67661677972f70",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/reports/2026-10-15-wiki-consolidation.md",
+      "title": "2026-10-15 Drive 문서 통합과 개발 위키 보강",
+      "lines": 41,
+      "heading_count": 6,
+      "canonical_lf_sha256": "d01c1c321e496971c9330690ac66f7719f91ec066256b6a3758402048ecf5c72",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "status/repository-snapshot.md",
+      "title": "저장소 코드 스냅샷",
+      "lines": 53,
+      "heading_count": 3,
+      "canonical_lf_sha256": "250dc01c93e79855174227ee452b484afd1053dd30a516481583677b7133ea08",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "team-agi-deliverables-2026-10-15.md",
+      "title": "Team AGI 산출물 선별: 정책, 기술 구현, 실증 및 평가",
+      "lines": 34,
+      "heading_count": 4,
+      "canonical_lf_sha256": "8a9ddf80e3bbf9b0380d72a00c696999f33526dd85902a4e3bd0dcfd233d9ae2",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "templates/task-prompt.md",
+      "title": "Claude/Codex 공통 작업 지시",
+      "lines": 22,
+      "heading_count": 1,
+      "canonical_lf_sha256": "ddfa473bedbf6726c8b9fa69784346472343cd63429ed27c775b41b7e407227a",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "templates/work-report.md",
+      "title": "YYYY-MM-DD 작업명",
+      "lines": 32,
+      "heading_count": 6,
+      "canonical_lf_sha256": "efb9679f010d8497005b2afef73a8468d39b2e0b63266658229b21bec1fa90b1",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "threats/control-map.md",
+      "title": "원본 24개 정책 → 통제·코드 후보 매핑",
+      "lines": 35,
+      "heading_count": 1,
+      "canonical_lf_sha256": "265bd3e65d899dc702c827d77f6e54ed1e63ebe59fe5bbf48429dae3bec665f1",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "threats/extracted/policies.md",
+      "title": "MCP_보안정책-추가25.xlsm — 모든 시트 셀 추출",
+      "lines": 172,
+      "heading_count": 4,
+      "canonical_lf_sha256": "306ff317e8906d90c9c38b9f098c0c59ce72e0e0b1ca98714cda1df8b6698738",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "threats/extracted/wbs.md",
+      "title": "MCP_보안_거버넌스_Policy_as_Code_WBS_V1.5.xlsm — 모든 시트 셀 추출",
+      "lines": 165,
+      "heading_count": 3,
+      "canonical_lf_sha256": "940fcf24624bc2db204ea94e0242f59d30be81baa931967645d0bcc2c82c33bf",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "threats/local-tool-map.md",
+      "title": "로컬 소프트웨어·MCP 위험매핑",
+      "lines": 20,
+      "heading_count": 1,
+      "canonical_lf_sha256": "51962202051145237f4edd84ef45a651ee6080d6f8a890dd4ddeaf4cafc417b1",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "threats/policies-24.md",
+      "title": "정책 최종본 — 24개 정책",
+      "lines": 1337,
+      "heading_count": 25,
+      "canonical_lf_sha256": "363b333c7d427ba87d67c78a3c74061a6f689630c07121383b88c6eceb101eb5",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "threats/policies-50-2026-10-14.md",
+      "title": "2026-10-14 정책 50개 색인",
+      "lines": 60,
+      "heading_count": 1,
+      "canonical_lf_sha256": "1411776cf5895bd5c4a0ac34c2aaf54fc4de54c8456b431de4d5617bfbeb23ed",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "threats/policies-50.md",
+      "title": "(본)정책 최종본 — 50개 정책",
+      "lines": 1740,
+      "heading_count": 51,
+      "canonical_lf_sha256": "94a634ca76a40ce4b57d230f2561dc9315250e2836f5d9949e9bf2d06b9e3f06",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    },
+    {
+      "path": "threats/README.md",
+      "title": "위협·정책 매핑 자료",
+      "lines": 37,
+      "heading_count": 4,
+      "canonical_lf_sha256": "e1741f717510c0bbe91e69a1ca998cc8cb64f6e14172ed16497bfdff34e121f6",
+      "review_scope": "machine_structure_and_link_inventory_not_fulltext_expert_review"
+    }
+  ]
+}

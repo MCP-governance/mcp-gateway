@@ -12,6 +12,7 @@
 | [WBS XLSM](originals/MCP_보안_거버넌스_Policy_as_Code_WBS_V1.5.xlsm) | WBS와 사본 2시트 | 개발 단계·산출물과 연구 작업의 연결 |
 | [WBS 전 시트 MD](extracted/wbs.md) · [셀 JSON](extracted/wbs.json) | 원래 셀·일정·수식·저장 캐시 | 계획 참고; 현재 완료율 증거 아님 |
 | [24개 통제 매핑](control-map.md) · [JSON](../catalogs/threats.json) | 원본 행 → 위협 → 집행 위치 → 런타임 후보 → 코드 SHA | 구현·실험 리뷰 출발점 |
+| [Drive 정책50의 개발 연결](../analysis/drive-curation/README.md) · [JSON](../analysis/drive-curation/policy-50-crosswalk.json) | 원본 셀 → 통제 의미 → G01~10 → 코드 후보 → DEV·검수 질문 | 50개 전체 정적 후보 매핑, 구현 통과 판정 아님 |
 | [로컬 도구·MCP 위험매핑](local-tool-map.md) · [JSON](../catalogs/local-tool-risks.json) | 실제5개 MCP·스키마92개·권한 반례·10개 위험 → 원본 정책 | 로컬 프로토콜·키트 회귀와 실기기 집행을 구분 |
 
 ## 번호와 증거의 차이
@@ -19,6 +20,8 @@
 24개 표의 `PAC07`은 게이트웨이 우회 연결 차단이고 런타임 `PAC-07`은 실제 연결 대상 검증입니다. 숫자가 같다는 이유로 연결하면 잘못된 추적표가 됩니다. [매핑](control-map.md)은 행의 위협·통제 의미로 연결한 정적 후보이며 독립 리뷰와 실제 실험이 남아 있습니다.
 
 50개 확장표와 독스용 표는 같은 계열의 표현·정리 자료입니다. 50+50+24를 124개 독립 위협으로 집계하지 않습니다. 원본 자료를 모두 보존한 정책 행 수가 124라는 뜻입니다.
+
+2026-10-15에 두 정책50 원본의 명칭·본문을 POL ID별로 대조했고 공백 제거 후 50개가 모두 같았습니다. [대조 JSON](../analysis/drive-curation/policy-version-comparison.json)은 원본 SHA와 행을 보존합니다. 법령 근거 셀이나 24개 표의 의미를 자동 동치로 판정하지 않았습니다.
 
 ## 원본 무결성
 

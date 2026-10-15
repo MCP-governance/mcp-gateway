@@ -1,0 +1,373 @@
+[
+  {
+    "id": "RV-01",
+    "backlog_id": "DEV-41",
+    "priority": "P1",
+    "title": "empty destination scope",
+    "verification": "static_confirmed",
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/review.py",
+        "symbol": "derived_constraints",
+        "line_start": 234,
+        "line_end": 252,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "6a1e0533f5538e2c5cd1e3e089a4fdde0c3eb7f8bbcf6de95f3e31c3be6b816f",
+        "verification": "static_read_not_runtime_pass"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "symbol": "classify",
+        "line_start": 711,
+        "line_end": 732,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "a8f61f53f3db250a9ce2466472fc8b196cbea2613cf196951b449cdae1d1880a",
+        "verification": "static_read_not_runtime_pass"
+      }
+    ],
+    "reference_ids": [
+      "R04"
+    ],
+    "goal_ids": [
+      "G01",
+      "G03",
+      "G04"
+    ],
+    "observation": "An empty destinations list generates ^https://; nested URL shapes are not constrained by the top-level string loop.",
+    "proposal": "Deny unreviewed network destinations; constrain supported schema forms and runtime egress.",
+    "acceptance": [
+      "empty destinations does not allow arbitrary HTTPS",
+      "nested/array/anyOf URL negatives",
+      "redirect/DNS/private IPv4/IPv6 with independent receiver effect zero"
+    ],
+    "implementation_changed": false,
+    "runtime_reproduced": false,
+    "reviewed_on": "2026-10-15"
+  },
+  {
+    "id": "RV-02",
+    "backlog_id": "DEV-42",
+    "priority": "P1",
+    "title": "harness initiated commands and helper boundary",
+    "verification": "reproduction_required",
+    "code_evidence": [
+      {
+        "path": "endpoint-agent/enforce-linux.py",
+        "symbol": "profile",
+        "line_start": 83,
+        "line_end": 152,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
+        "verification": "static_read_not_runtime_pass"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+        "symbol": "managed_policy",
+        "line_start": 739,
+        "line_end": 802,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "60c725d7176537fc49c90e42d7a0f538032e25d2fabc762ab8a44f076d83c127",
+        "verification": "static_read_not_runtime_pass"
+      }
+    ],
+    "reference_ids": [
+      "R05"
+    ],
+    "goal_ids": [
+      "G05",
+      "G08"
+    ],
+    "observation": "Bash transitions to tool profile; sh inherits harness profile; managed hook-only setting is absent.",
+    "proposal": "Review managed hooks and command surfaces, then test helper denial without retaining token values.",
+    "acceptance": [
+      "user SessionStart/tool/direct-exec hook cannot obtain helper credential",
+      "normal approved MCP header helper continues to work",
+      "installed harness version and profile transition recorded"
+    ],
+    "implementation_changed": false,
+    "runtime_reproduced": false,
+    "reviewed_on": "2026-10-15"
+  },
+  {
+    "id": "RV-03",
+    "backlog_id": "DEV-43",
+    "priority": "P1",
+    "title": "principal revocation at dispatch",
+    "verification": "race_hypothesis",
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/dispatch.py",
+        "symbol": "record",
+        "line_start": 37,
+        "line_end": 80,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "a7636f4ef8c9c2eaf40fe88a2db9920114fbd0b0ae74050a63596e1824fb3678",
+        "verification": "static_read_not_runtime_pass"
+      }
+    ],
+    "reference_ids": [
+      "R06"
+    ],
+    "goal_ids": [
+      "G03",
+      "G07"
+    ],
+    "observation": "Intent insertion locks mcp_servers but reads principals without a corresponding row lock.",
+    "proposal": "Serialize principal revocation and final dispatch boundary with a consistent locking rule.",
+    "acceptance": [
+      "server row held, record starts, principal suspension commits, server unlocks",
+      "no new post-cutoff intent or external effect",
+      "normal case and deadlock handling"
+    ],
+    "implementation_changed": false,
+    "runtime_reproduced": false,
+    "reviewed_on": "2026-10-15"
+  },
+  {
+    "id": "RV-04",
+    "backlog_id": "DEV-44",
+    "priority": "P2",
+    "title": "authorization schema composition",
+    "verification": "static_compatibility_gap",
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/review.py",
+        "symbol": "derived_constraints",
+        "line_start": 234,
+        "line_end": 252,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "6a1e0533f5538e2c5cd1e3e089a4fdde0c3eb7f8bbcf6de95f3e31c3be6b816f",
+        "verification": "static_read_not_runtime_pass"
+      }
+    ],
+    "reference_ids": [
+      "R07"
+    ],
+    "goal_ids": [
+      "G02",
+      "G03"
+    ],
+    "observation": "Copying only root properties/required drops $defs and root composition context.",
+    "proposal": "Preserve the original schema and validate authorization constraints separately, or explicitly reject unsupported forms.",
+    "acceptance": [
+      "$defs/$ref normal case",
+      "oneOf/allOf and array cases",
+      "pinned schema still validated before dispatch"
+    ],
+    "implementation_changed": false,
+    "runtime_reproduced": false,
+    "reviewed_on": "2026-10-15"
+  },
+  {
+    "id": "RV-05",
+    "backlog_id": "DEV-44",
+    "priority": "P2",
+    "title": "protocol version and output contract",
+    "verification": "static_compatibility_gap",
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "_guarded_result",
+        "line_start": 1375,
+        "line_end": 1407,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+        "verification": "static_read_not_runtime_pass"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "tool_view",
+        "line_start": 199,
+        "line_end": 206,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "verification": "static_read_not_runtime_pass"
+      }
+    ],
+    "reference_ids": [
+      "R01",
+      "R02",
+      "R18"
+    ],
+    "goal_ids": [
+      "G02",
+      "G04"
+    ],
+    "observation": "Non-object structured results are always dropped and outputSchema is omitted from pinned tool view.",
+    "proposal": "Record negotiated version and approve outputSchema; retain modern JSON values through inspection and masking.",
+    "acceptance": [
+      "legacy object and modern array/scalar results",
+      "summary text plus structured detail retained",
+      "output schema drift and privacy/secret failures remain controlled"
+    ],
+    "implementation_changed": false,
+    "runtime_reproduced": false,
+    "reviewed_on": "2026-10-15"
+  },
+  {
+    "id": "RV-06",
+    "backlog_id": "DEV-44",
+    "priority": "P2",
+    "title": "tool list pagination",
+    "verification": "sdk_and_runtime_check_required",
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "discover",
+        "line_start": 209,
+        "line_end": 218,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "verification": "static_read_not_runtime_pass"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "_call_upstream",
+        "line_start": 1201,
+        "line_end": 1324,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+        "verification": "static_read_not_runtime_pass"
+      }
+    ],
+    "reference_ids": [
+      "R02",
+      "R18"
+    ],
+    "goal_ids": [
+      "G01",
+      "G02"
+    ],
+    "observation": "The local discovery and final check consume one list_tools result without an explicit cursor loop.",
+    "proposal": "Confirm SDK page behavior and use one bounded complete-list path if it does not paginate automatically.",
+    "acceptance": [
+      "actual two-page OSS list includes the second-page tool",
+      "contract verification compares full approved set",
+      "repeated cursor/page-size bounds fail closed"
+    ],
+    "implementation_changed": false,
+    "runtime_reproduced": false,
+    "reviewed_on": "2026-10-15"
+  },
+  {
+    "id": "RV-07",
+    "backlog_id": "DEV-38",
+    "priority": "P1",
+    "title": "approved source to executable artifact",
+    "verification": "product_gap",
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "register_server",
+        "line_start": 500,
+        "line_end": 653,
+        "source_commit": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
+        "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+        "verification": "static_read_not_runtime_pass"
+      }
+    ],
+    "reference_ids": [
+      "R08",
+      "R09",
+      "R10",
+      "R11",
+      "R12",
+      "R13"
+    ],
+    "goal_ids": [
+      "G01",
+      "G02",
+      "G07",
+      "G08"
+    ],
+    "observation": "Source/mirror checks exist; E2E hosted MarkItDown was built and run manually.",
+    "proposal": "Implement one supported recipe with source/image/runtime/endpoint linkage and lifecycle recovery.",
+    "acceptance": [
+      "no manual docker commands in the normal path",
+      "digest mismatch, duplicate job, crash and revocation during build",
+      "PJ1 approved normal call, forbidden arguments and termination"
+    ],
+    "implementation_changed": false,
+    "runtime_reproduced": false,
+    "reviewed_on": "2026-10-15"
+  },
+  {
+    "id": "RV-08",
+    "backlog_id": "DEV-45",
+    "priority": "P1",
+    "title": "test run selection",
+    "verification": "static_confirmed",
+    "code_evidence": [],
+    "reference_ids": [
+      "R08"
+    ],
+    "goal_ids": [
+      "G06",
+      "G10"
+    ],
+    "observation": "rescore_1015 selects the last row for a test name and checks rc without a complete run identity.",
+    "proposal": "Select immutable run IDs tied to source/image/environment and preserve prior failures.",
+    "acceptance": [
+      "selected run_id is explicit",
+      "source/image mismatch invalidates current evidence",
+      "failure and corrected rerun remain independently inspectable"
+    ],
+    "implementation_changed": false,
+    "runtime_reproduced": false,
+    "reviewed_on": "2026-10-15"
+  },
+  {
+    "id": "RV-09",
+    "backlog_id": "DEV-45",
+    "priority": "P2",
+    "title": "evidence hash kinds and freshness",
+    "verification": "byte_check",
+    "code_evidence": [],
+    "reference_ids": [
+      "R08",
+      "R14"
+    ],
+    "goal_ids": [
+      "G06",
+      "G10"
+    ],
+    "observation": "Six of seventeen WBS raw evidence hashes differ: five match CRLF expansion, one is a changed generator.",
+    "proposal": "Keep raw and canonical hashes with transformation rules and immutable baseline revisions.",
+    "acceptance": [
+      "original byte hashes preserved",
+      "canonical LF references reproducible across OS",
+      "historical and current validation states distinct"
+    ],
+    "implementation_changed": false,
+    "runtime_reproduced": false,
+    "reviewed_on": "2026-10-15"
+  },
+  {
+    "id": "RV-10",
+    "backlog_id": "DEV-46",
+    "priority": "P1",
+    "title": "independent evaluation",
+    "verification": "methodology_gap",
+    "code_evidence": [],
+    "reference_ids": [
+      "R17",
+      "R16"
+    ],
+    "goal_ids": [
+      "G04",
+      "G06",
+      "G09"
+    ],
+    "observation": "Classification recall and same-source held-out results do not establish full agent attack prevention.",
+    "proposal": "Use independent Korean/source-family splits and measure normal task success and unauthorized effects separately.",
+    "acceptance": [
+      "frozen independent test sources",
+      "model/harness/server versions and repetitions",
+      "false-positive/negative and unauthorized-effect counts",
+      "cold/warm latency and failure/quota outcomes distinct"
+    ],
+    "implementation_changed": false,
+    "runtime_reproduced": false,
+    "reviewed_on": "2026-10-15"
+  }
+]

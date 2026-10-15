@@ -7,6 +7,8 @@ research/llm-wiki/status/current.md와 status/backlog.md를 보고 작업을 이
 이번 목표: <백로그 ID 또는 확인 가능한 문제 하나>
 관련 근거: <논문 / 솔루션 코드 분석 / 원본 위협 ID>
 완료 조건: <입력, 기대 판정, upstream 효과, 필요한 검증 층>
+시작 참고: analysis/review-2026-10-15/claude-next-work.md와 작업별 레퍼런스 지도를 확인해줘.
+새 실행은 run_id·소스 commit·이미지/정책 판본·독립 효과를 연결하고 과거 시험 결과와 구분해줘.
 
 이미 확보한 sources, catalogs, solutions를 먼저 찾아서 재사용해줘.
 확인한 커밋·파일·검증 명령과 원본 증거를 남겨줘.

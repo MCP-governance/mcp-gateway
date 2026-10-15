@@ -12,6 +12,7 @@
 | 상용 | [Kong AI Gateway MCP](kong-ai-gateway.md) | 공식 문서 재확인 | 도구 ACL·토큰 audience·프로토콜 호환성 |
 | 상용 | [BeyondTrust Pathfinder MCP](beyondtrust-pathfinder.md) | 공식 문서 재확인 | 사이트 활성화·기한 있는 사용자 토큰 |
 | 상용+OSS 생태계 | [Lunar MCPX + AI Gateway](lunar-mcpx.md) | 공급자 공식 설명 | MCP 서버가 실행한 외부 API 호출의 별도 통제 |
+| OSS 후보 | [ToolHive runtime](toolhive-runtime.md) | v0.54.0 고정 메타데이터·공식 문서 선별 | DEV-38 수명 관리와 명시적 목적지 제한. 설치·실행 미검증 |
 
 ## 증거 파일을 다시 확인하는 방법
 

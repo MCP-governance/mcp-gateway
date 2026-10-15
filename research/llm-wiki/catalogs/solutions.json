@@ -96,5 +96,19 @@
     "path": "solutions/lunar-mcpx.md",
     "verified_on": "2026-10-13",
     "runtime_verified": false
+  },
+  {
+    "id": "toolhive-runtime",
+    "title": "ToolHive runtime",
+    "kind": "oss",
+    "url": "https://github.com/stacklok/toolhive",
+    "commit": "14c6066a4d62aa07c090b27804d20d190a334a45",
+    "version": "v0.54.0",
+    "verification": "official_docs_and_pinned_metadata_selected_read",
+    "summary": "DEV-38 container lifecycle candidate; explicit network permissions and MINT route preservation required.",
+    "path": "solutions/toolhive-runtime.md",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-15",
+    "runtime_verified": false
   }
 ]

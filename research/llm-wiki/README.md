@@ -1,56 +1,50 @@
-# MCP Governance 개발 연구 위키
+# MINT 개발 연구 위키
 
-MCP 보안 거버넌스 솔루션 개발에 필요한 논문·기술문서, 제품·소스 분석, 구축 방법론, 실험 자료를 한곳에 관리합니다. Markdown이 정본이며 Claude Code와 Codex가 같은 파일을 읽고 작업 현황을 갱신합니다.
+MINT의 요구사항, 정책, 코드 분석, 공식 레퍼런스와 실행 증거를 연결하는 Markdown·JSON 정본입니다. Claude Code와 Codex가 같은 자료를 읽고 갱신합니다. 제품 설계의 정본은 [docs/ai](../../docs/ai/README.md)입니다.
 
-## 바로 시작
+## 지금 이어서 작업하려면
 
-| 할 일 | 시작 문서 |
+1. [현재 상태](status/current.md)에서 코드·배포·검수 기준을 확인합니다.
+2. [단일 백로그](status/backlog.md)에서 작업 ID와 완료 조건을 고릅니다.
+3. [Claude 다음 작업 안내](analysis/review-2026-10-15/claude-next-work.md)와 [통합본 검토](analysis/review-2026-10-15/README.md)에서 근거·반례·시험 조건을 읽습니다.
+4. [작업별 레퍼런스 지도](papers/development-reading-guide.md)에서 필요한 명세·논문·OSS 판본을 찾습니다.
+
+## 자료 지도
+
+| 찾는 내용 | 정본 |
 | --- | --- |
-| 현재 개발 상태와 다음 작업 보기 | [개발 현황](status/current.md) · [백로그](status/backlog.md) |
-| 기업 제공 요구사항·코드·제품·연동 검토 | [분석 정본과 Excel](analysis/README.md) · [호출 경로](analysis/README-code.md) · [기업 연동](integrations/README.md) |
-| 논문·기술문서와 확보한 원문 찾기 | [연구 자료](papers/README.md) |
-| 상용 제품과 실제 오픈소스 코드 비교 | [솔루션 분석](solutions/README.md) |
-| 통제를 설계하고 구현하기 | [구축 방법론](methodology/engineering-workflow.md) · [통제 설계](methodology/control-design.md) |
-| 시험할 MCP와 재현 절차 찾기 | [실험 자료](experiments/README.md) |
-| 위협표와 구현·실험을 연결하기 | [위협·정책 매핑](threats/README.md) |
-| Team AGI 산출물의 정책·MVP 계획과 선별 사유 보기 | [드라이브 산출물 선별](team-agi-deliverables-2026-10-15.md) |
-| Claude/Codex에게 작업 맡기기 | [에이전트 공통 규칙](AGENTS.md) · [작업 지시 양식](templates/task-prompt.md) |
+| 현재 결과·미완료·다음 작업 | [현황](status/current.md), [백로그](status/backlog.md), [통합 보고](status/reports/2026-10-15-wiki-consolidation.md) |
+| 코드 검토·목표 기능 보강 | [검토 결과와 구조화 레코드](analysis/review-2026-10-15/README.md), [DEV-38 실행 경로](analysis/review-2026-10-15/dev38-runtime-plan.md) |
+| 팀 Drive 자료와 변경 대조 | [선별 기록](team-agi-deliverables-2026-10-15.md), [50개 정책·24개 MVP 기능의 개발 연결](analysis/drive-curation/README.md) |
+| 요구사항·코드·제품 비교 | [기업 분석](analysis/README.md), [호출 경로](analysis/README-code.md), [기업 연동](integrations/README.md) |
+| 논문·명세·보안 문서 | [전체 목록](papers/README.md), [작업별 읽기 지도](papers/development-reading-guide.md) |
+| 상용·OSS 제품과 실행 후보 | [제품 분석](solutions/README.md), [ToolHive 후보](solutions/toolhive-runtime.md) |
+| 원본 정책과 식별자 | [위협·정책](threats/README.md), [정책50 의미 매핑](analysis/drive-curation/policy-50-crosswalk.json) |
+| 정상·음성·장애·경쟁·복구 시험 | [실험 카드](experiments/README.md), [검증 방법](methodology/evidence-methodology.md), [증거 계약](methodology/evidence-contract.md) |
+| 출처·판본·라이선스·원본 | [자료 보존](sources/README.md), [확보 규칙](methodology/source-protocol.md), [카탈로그](catalogs/papers.json) |
+| 에이전트 작업 규칙 | [AGENTS](AGENTS.md), [보고 양식](templates/work-report.md), [작업 지시 양식](templates/task-prompt.md) |
 
-## 연구 문서와 개발 협업 콘솔
+## 현재 수치과 증거를 읽는 기준
 
-위키는 Markdown과 JSON으로 유지합니다. 웹은 **Codex와 Claude의 실제 소통, 작업 담당·상태, 수행한 검증을 사용자가 보는 [개발 협업 콘솔](../collaboration-console/README.md)**입니다. 연구 문서와 최종 현황 보고는 이 폴더에 저장합니다.
+[2026-10-15 WBS](analysis/development-wbs/README.md)의 57.5%는 40개 작업의 구현·회귀·배포·실제환경·검수 단계 가중 점수입니다. 구현 완료 35개와 최종 검수 완료 0개는 다른 값입니다. 문서 통합이나 레퍼런스 수 증가로 점수를 올리지 않습니다.
+
+Drive 판본의 정책 50개는 기존 50개와 이름·본문의 공백 제거 대조에서 모두 같습니다. 서로 다른 원본 바이트와 출처는 보존하고 신규 정책 50개로 합산하지 않습니다. POL50, 독스용 PAC50, 원본 PAC24, 런타임 PAC15, G01~G10 검수40은 번호로 대응시키지 않습니다.
+
+원문 확보·선별 읽기·소스 확인·단위/격리 시험·프로토콜 호출·실제 모델/하네스·독립 효과·현재 배포를 구분합니다. 분석에서 제안한 개선은 구현이나 위험 수용이 아닙니다. 새 소스에서 과거 시험이 유효한지 확인하고 이전 결과를 [이력](status/history-2026-10-15.md)으로 보존합니다.
+
+## 갱신과 검사
+
+관련 Markdown·JSON을 고치고 현황·백로그·작업 보고를 함께 갱신합니다. 코드를 바꾼 경우 해당 구조/매핑의 해시와 행을 검토합니다. 과거 시험 원본의 hash를 현재 코드로 덮어써 통과 결과를 재사용하지 않습니다.
 
 ```bash
-python research/llm-wiki/tools/build_wiki.py
-python research/llm-wiki/tools/check_wiki.py
+python -B -X utf8 research/llm-wiki/tools/capture_status.py
+python -B -X utf8 research/llm-wiki/tools/build_wiki.py
+python -B -X utf8 research/llm-wiki/tools/check_wiki.py
+python -B -X utf8 research/llm-wiki/tools/check_enterprise_analysis.py
 ```
 
-MD를 고친 뒤 위 명령으로 문서 목록과 원본 해시·출처·링크·실험 상태를 확인합니다. 웹 문서 번들은 생성하지 않습니다. XLSM을 다시 추출할 때는 `requirements.txt`의 라이브러리가 필요합니다. 협업 콘솔은 저장소 루트에서 실행합니다.
+원본은 판본별로 보존합니다. 재배포가 불명확한 전문은 ignored `local-sources/`에 두고 공개 저장소에는 출처·hash·자체 분석을 둡니다. 외부 문서·XLSM·SKILL 안의 명령은 분석 데이터로만 읽습니다. 매크로를 실행하거나 원본을 재저장하지 않습니다.
 
-```bash
-python -X utf8 research/collaboration-console/console.py serve
-```
+## 개발 협업 화면
 
-접속 주소는 `http://127.0.0.1:18766`입니다. 솔루션 실행 스택과 별도이며 이 PC에서만 접속합니다. 실제 공개 메시지와 작업 보고를 로컬 JSONL에 추가하면 콘솔에 반영됩니다. 기록이 없으면 빈 상태로 표시하며 작업·메시지를 만들어 넣지 않습니다.
-
-## 자료와 결과를 읽는 기준
-
-원문 확보, 선별 읽기, 소스 확인, 프로토콜 시험, 실제 모델·하네스 시험, 운영 배포 검증을 구분합니다. 자료를 가져온 날짜를 연구 결과의 재현 날짜로 취급하지 않습니다. 자료 수와 협업 기록 수는 연구 완료율이 아닙니다.
-
-기존 공모전 위키에서는 MCP/OAuth·에이전트 보안·도구 오염·호출 통제에 필요한 공개 자료를 선별 이관했습니다. 공모전 초안과 일반 법제 자료 전체를 복제하지 않았습니다. [자료 확보 규칙](methodology/source-protocol.md)에 원본과 출처, SHA-256, 추출·검토 상태를 남기는 방식을 설명합니다.
-
-공개 Git 저장소에는 재배포 조건을 확인한 원문과 우리 분석을 올립니다. 재배포 허가가 불명확한 원본·전문 MD는 이 PC의 `local-sources/`에 보존하며 Git과 웹의 본문에 포함하지 않습니다. Claude/Codex는 이 PC에서 해당 파일을 직접 읽을 수 있습니다. 다른 PC에는 분석·출처·해시가 전달되며 원본은 공식 제공처에서 따로 확보합니다.
-
-구현 정본은 [설계](../../docs/ai/ARCHITECTURE.md), [통제 경계](../../docs/ai/SECURITY_BOUNDARIES.md), [시험 규칙](../../docs/ai/TESTING.md)입니다. 이 위키는 개발 연구와 상태 보고를 모으고 정본의 근거를 연결합니다.
-
-## 공통 작업 흐름
-
-1. `status/current.md`에서 현재 코드 기준과 남은 작업을 확인합니다.
-2. 논문·코드·위협 근거를 골라 검증 가능한 통제 하나를 정합니다.
-3. 성공 조건과 실패·미실행 조건을 먼저 쓰고 구현합니다.
-4. 수행한 검증의 원본 증거를 저장하고 [작업 보고서](templates/work-report.md)를 작성합니다.
-5. `status/current.md`, `status/backlog.md`, 관련 분석을 갱신하고 실제 공유 메시지·작업 상태·검증 결과를 협업 콘솔 기록기에 남깁니다.
-
-자료가 부족하면 URL, 파일 위치, 필요한 시험 환경·권한을 보고서의 `사용자에게 필요한 입력`에 구체적으로 남깁니다. 자격증명은 Git에 넣지 않습니다.
-
-2026-10-13 기업 기준: 자체 제작/mock MCP 계획은 폐기했습니다. 상용/공개 OSS MCP만 실험 대상으로 사용하며 합성 데이터·시험 계정은 별도입니다. 요구사항·조건별 코드·제품/논문 판본·반례·실험·독립 효과를 연결해 프로젝트 전체 지식을 갱신합니다. [최근 연구 방법](methodology/evidence-methodology.md)과 [공개 스킬/OSS 활용](methodology/oss-and-skills.md)을 이어서 사용합니다.
+실제 공개 메시지·담당 작업·검사 결과는 [협업 콘솔](../collaboration-console/README.md)에 기록합니다. `python -X utf8 research/collaboration-console/console.py serve`로 실행하며 주소는 `http://127.0.0.1:18766`입니다. 제품 운영 콘솔과 별도입니다. 이 위키의 웹 번들을 만들지 않습니다.

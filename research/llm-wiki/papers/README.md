@@ -1,5 +1,7 @@
 # 논문·프로토콜·보안 문서
 
+다음 구현에 필요한 자료는 [작업별 읽기 지도](development-reading-guide.md)에서 찾는다. [2026-10-15 공식 근거](../analysis/review-2026-10-15/references.json)는 명세 판본·빌드 provenance·하네스 훅·행 잠금·관측·배포 절차를 최근 검토와 연결한다. 별도 19개 링크를 기존 167개 연구 문헌 수에 합산하지 않는다.
+
 2026-10-13 [정식 저널3건·기존 학회/preprint 재검토](../analysis/reference-updates.json)와 [방법론](../methodology/evidence-methodology.md)을 추가했다. 저널의 서지·선별 내용 확인과 전문 정독을 구분하며 새3건의 전문은 확보하지 못했다.
 
 - [TOSEM MCP landscape](REF-J01.md)

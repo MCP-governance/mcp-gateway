@@ -1,0 +1,107 @@
+{
+  "scope": "documentation_and_static_data_only",
+  "recorded_on": "2026-10-15",
+  "checks": [
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/build_wiki.py"
+      ],
+      "exit_code": 0,
+      "result": {
+        "format": "markdown",
+        "pages": 300,
+        "catalogs": {
+          "endpoint-permission-references": 12,
+          "experiments": 13,
+          "imports": 22,
+          "local-tool-risks": 13,
+          "papers": 167,
+          "solutions": 9,
+          "threats": 24
+        },
+        "collaboration_console": "research/collaboration-console/README.md"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_wiki.py"
+      ],
+      "exit_code": 0,
+      "result": {
+        "ok": true,
+        "counts": {
+          "endpoint-permission-references": 12,
+          "experiments": 13,
+          "imports": 22,
+          "local-tool-risks": 13,
+          "papers": 167,
+          "solutions": 9,
+          "threats": 24,
+          "sources_evidence_records": 3,
+          "solutions_evidence_records": 21,
+          "reviewed_local_tools": 92,
+          "markdown_documents": 300
+        },
+        "warnings": [],
+        "errors": []
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_enterprise_analysis.py"
+      ],
+      "exit_code": 0,
+      "result": {
+        "ok": true,
+        "requirements": 80,
+        "comparisons": 21,
+        "integration_conditions": 50,
+        "real_mcp_targets": 14,
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--cached",
+        "--check"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "self_checks": {
+    "official_reference_ids": 19,
+    "recommendations": 10,
+    "policy_ids": 50,
+    "backlog_ids_unique": true,
+    "code_anchors_and_hashes": true,
+    "original_workbook_hashes_unchanged": true,
+    "original_requirements_80_ids_preserved": true,
+    "prior_execution_evidence_preserved_for_5_conditions": true,
+    "integration_50_execution_states_preserved": true,
+    "document_only_diff": true,
+    "new_workbook_bytes_preserved_against_curation_commit": true,
+    "policy_table_50_rows_and_code_hashes": true
+  },
+  "product_runtime_tests_executed": false,
+  "deployment_performed": false,
+  "baseline_errors": {
+    "check_wiki": 0,
+    "check_enterprise_analysis": 53
+  },
+  "all_checks_passed": true
+}

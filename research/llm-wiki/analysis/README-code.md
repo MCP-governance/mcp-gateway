@@ -21,7 +21,7 @@ flowchart LR
 
 | 구조 목록 | 확인 수준 |
 | --- | --- |
-| 40개 모듈·640개 함수 | AST 전수 구조 목록. 동적 호출 해결/전체 본문 감사 아님 |
+| 47개 모듈·794개 함수 | AST 전수 구조 목록. 동적 호출 해결/전체 본문 감사 아님 |
 | 16단계 경로 | 각 심볼·실제 시작/끝 행·hash는 code-structure.json pipeline |
 | 기존 미커밋 파일 | worktree_modified와 HEAD hash를 병기; 배포판으로 추정하지 않음 |
 
