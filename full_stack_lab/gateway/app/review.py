@@ -240,15 +240,32 @@ def derived_constraints(advertised: dict[str, dict], reviews: dict[str, dict]) -
     """
     out = {}
     for name, item in reviews.items():
-        schema = advertised[name].get("input_schema") or {}
-        properties = json.loads(json.dumps(schema.get("properties") or {}))
+        schema = json.loads(json.dumps(advertised[name].get("input_schema") or {}))
         hosts = item.get("destinations") or []
-        for key, prop in properties.items():
-            if prop.get("type") == "string" and (prop.get("format") in ("uri", "url") or _ADDRESS_ARG.search(key)):
-                prop["pattern"] = ("^https://(" + "|".join(re.escape(h) for h in hosts) + r")(:443)?([/?#]|$)"
-                                   if hosts else "^https://")
-        out[name] = {"type": "object", "properties": properties, "additionalProperties": False,
-                     **({"required": schema["required"]} if schema.get("required") else {})}
+        # No reviewed destination means no address at all: an empty list used to admit any HTTPS host.
+        pattern = ("^https://(" + "|".join(re.escape(h) for h in hosts) + r")(:443)?([/?#]|$)" if hosts else "(?!)")
+
+        def pin(node, key=""):
+            # Addresses nest: a list of URLs, an object with a url field, a $defs entry, an anyOf branch.
+            if not isinstance(node, dict):
+                return
+            if node.get("type") == "string" and (node.get("format") in ("uri", "url", "iri") or _ADDRESS_ARG.search(key)):
+                node["pattern"] = pattern
+            for child_key, child in (node.get("properties") or {}).items():
+                pin(child, child_key)
+            for child in (node.get("$defs") or node.get("definitions") or {}).values():
+                pin(child)
+            items = node.get("items")
+            for child in (items if isinstance(items, list) else [items]):
+                pin(child, key)
+            for branch in ("anyOf", "oneOf", "allOf"):
+                for child in node.get(branch) or []:
+                    pin(child, key)
+
+        pin(schema)
+        # Keep $defs so $ref inside the advertised contract still resolves (DEV-44).
+        out[name] = {**{k: v for k, v in schema.items() if k in ("$defs", "definitions", "required", "properties")},
+                     "type": "object", "properties": schema.get("properties") or {}, "additionalProperties": False}
     return out
 
 

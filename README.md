@@ -3,7 +3,48 @@
 직원 PC의 AI 하네스(Claude Code·Codex CLI 등)가 쓰는 MCP 연결을 한곳으로 모아, 도구 호출을 **실행 전에** 판정하고
 모든 판정을 감사 원장에 남기며, MCP 이용 관계를 **끝냈다고 말할 수 있는지**까지 판정하는 게이트웨이입니다.
 
-![구성도](docs/ai/architecture.png)
+## 구성
+
+```mermaid
+flowchart TB
+  subgraph PC["직원 PC · 관리형 엔드포인트"]
+    direction LR
+    EMP["직원 계정<br/>claude · codex"] --> HAR
+    subgraph MANAGED["관리 계정 — AppArmor · UID 방화벽"]
+      direction TB
+      HAR["Claude Code · Codex<br/>승인 바이너리"] --> HELP["헤더 헬퍼"]
+    end
+    SVC["root 서비스<br/>장치 키 · 정책 확인 · OS 관측"] -- "5분 단말·정책 토큰" --> HELP
+  end
+
+  subgraph APP["솔루션 기기 — Tailscale IP에만 게시"]
+    direction LR
+    CADDY["Caddy :443"] --> GW["게이트웨이<br/>/mcp/&lt;서버&gt;/"]
+    CADDY --> CON["콘솔 · 인증 · 도입"]
+    GW --> OPA["OPA · PAC15"]
+    GW --> INS["Presidio · Gitleaks<br/>텍스트 규칙"]
+    GW --> DB[("PostgreSQL<br/>감사 원장")]
+    CON --> IW["도입 검증<br/>Syft · Trivy · Semgrep"] --> GIT["내부 Git<br/>승인 소스 미러"]
+    GW --> HOST["승인 OSS MCP<br/>내부 컨테이너"]
+    MP["모델 프록시"]
+  end
+
+  HAR -- "MCP + 헬퍼 헤더" --> CADDY
+  SVC -- "하트비트 · OS 이벤트" --> CADDY
+  HAR -- "모델 API" --> MP
+  GW -- "운영자 자격 · 직원 토큰 미전달" --> SAAS["원격 MCP<br/>GitHub · Context7"]
+  MP --> LLM["모델 제공자"]
+  ADMIN["관리자 브라우저"] --> CADDY
+```
+
+도구 호출 한 건은 게이트웨이 안에서 아래 순서를 거칩니다. 어느 단계든 판정할 수 없으면 차단하고, 결과는 모두 감사 원장에 남습니다.
+
+```mermaid
+flowchart LR
+  A["신원<br/>전송 토큰"] --> B["자원 분류<br/>경로·URL·SQL"] --> C["입력 계약<br/>승인 스키마"] --> D["입력 검사"] --> E["정책 판정<br/>OPA · PAC"] --> F["예약 · 실행 의도 기록"] --> G["계약 재확인<br/>tools/list"] --> H["업스트림 실행"] --> I["출력 검사 · 마스킹"] --> J["해시 체인 감사"]
+```
+
+예전 실습 스택(BoB Corp·MCP 10종·직원 PC 4대)의 구성도는 [docs/ai/architecture.html](docs/ai/architecture.html)에 이력으로 남아 있습니다.
 
 ## 원칙
 

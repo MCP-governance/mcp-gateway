@@ -164,8 +164,23 @@ class ScopeReviewTest(unittest.TestCase):
                     {"uri": "https://learn.microsoft.com/x", "extra": 1}, {}):
             self.assertFalse(ok(bad), bad)
         self.assertEqual(advertised["convert"]["input_schema"]["properties"]["uri"], {"type": "string"}, "advertised schema mutated")
-        anywhere = review.derived_constraints(advertised, {"convert": {"destinations": []}})["convert"]
-        self.assertFalse(Draft202012Validator(anywhere).is_valid({"uri": "file:///etc/passwd"}))
+        nowhere = review.derived_constraints(advertised, {"convert": {"destinations": []}})["convert"]
+        self.assertFalse(Draft202012Validator(nowhere).is_valid({"uri": "file:///etc/passwd"}))
+        self.assertFalse(Draft202012Validator(nowhere).is_valid({"uri": "https://any.example.com/"}),
+                         "no reviewed destination must not mean any HTTPS host")
+        nested = {"fetch": {"input_schema": {
+            "type": "object", "$defs": {"Target": {"type": "object", "properties": {"url": {"type": "string"}}}},
+            "properties": {"urls": {"type": "array", "items": {"type": "string"}},
+                           "target": {"$ref": "#/$defs/Target"},
+                           "page": {"type": "object", "properties": {"link": {"anyOf": [{"type": "string"}, {"type": "null"}]}}}}}}}
+        scope = review.derived_constraints(nested, {"fetch": {"destinations": ["docs.example.com"]}})["fetch"]
+        ok = Draft202012Validator(scope).is_valid
+        self.assertTrue(ok({"urls": ["https://docs.example.com/a"], "target": {"url": "https://docs.example.com/b"},
+                            "page": {"link": None}}))
+        for bad in ({"urls": ["https://docs.example.com/a", "file:///etc/shadow"]},
+                    {"target": {"url": "http://169.254.169.254/latest"}},
+                    {"page": {"link": "https://evil.example.net/"}}):
+            self.assertFalse(ok(bad), bad)
 
 
 class IndependenceTest(unittest.TestCase):
