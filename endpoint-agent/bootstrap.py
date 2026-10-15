@@ -307,11 +307,11 @@ def replace_launcher(name: str, managed: str, shell: Path) -> str:
     # The harness runs in the managed account's home. Its own working directory is not readable by
     # that account, and starting a child from a directory it cannot search fails - which is how the
     # header helper failed on PJ1. `cd /` keeps that out of the way; the login shell moves to $HOME.
-    # The approved binary by absolute path: the managed account's own ~/.local/bin comes first on its
+    # The entry wrapper by absolute path: the managed account's own ~/.local/bin comes first on its
     # PATH, and a harness installer that ran there at login (PJ1, 10-15) put an unapproved copy in it
-    # that AppArmor then refused. The profile allows the approved file; the launcher has to name it.
+    # that AppArmor then refused. Only the wrapper next to the login shell moves into the harness profile.
     shim.write_text(MARK.decode() + " managed harness launcher\n"
-                    'command="' + str(APPROVED / name) + '"\n'
+                    'command="' + str(shell.parent / name) + '"\n'
                     'for argument in "$@"; do command+=" $(printf %q "$argument")"; done\n'
                     'cd / || exit 1\n'
                     f'exec sudo -n -u {managed} -- "{shell}" -c "cd \\"\\$HOME\\" && $command"\n', encoding="utf-8")
@@ -438,7 +438,7 @@ def self_check() -> None:
         reconstructed = subprocess.run([str(SHIM_DIR / "codex"), "exec", 'say "hi there"'],
                                        capture_output=True, text=True,
                                        env={**os.environ, "PATH": f"{stub}:{os.environ['PATH']}", "HOME": "/managed"})
-        assert reconstructed.stdout.startswith(f'cd "$HOME" && {APPROVED / "codex"} exec '), reconstructed
+        assert reconstructed.stdout.startswith(f'cd "$HOME" && {shell.parent / "codex"} exec '), reconstructed
         split = subprocess.run(["bash", "-c", 'eval "set -- $MCPGW_ARGS"; printf "%s|" "$@"'], capture_output=True,
                                text=True, env={**os.environ, "MCPGW_ARGS": reconstructed.stdout.split("codex ", 1)[1]})
         assert split.stdout == 'exec|say "hi there"|', split
