@@ -48,11 +48,11 @@
 | DEV-38 | 승인 OSS MCP 자동 실행 | [실행 설계](../analysis/review-2026-10-15/dev38-runtime-plan.md), [클린 E2E](reports/2026-10-15-clean-e2e.md) | 내부 미러/검증 커밋→레시피/이미지 digest→격리 실행→계약→등록→PJ1, 중복/크래시/철회/종료 검수 | 제품 기능 미구현. 기존 MarkItDown은 수동 실행. 첫 지원 레시피와 권한/수명 경계 제안 보강 |
 | DEV-39 | Codex 하네스 자연어 E2E | [클린 E2E](reports/2026-10-15-clean-e2e.md) | PJ1 관리 계정 Codex 로그인 후 같은 시나리오와 원장·엔드포인트 상관 | Codex 로그인 문제로 10-15에는 Claude Code만 시험 |
 | DEV-40 | Context7 제공자 할당량 | [클린 E2E](reports/2026-10-15-clean-e2e.md) | 조직 API 키를 업스트림 자격으로 둘지 결정 | 게이트웨이 통과·실행, 제공자가 익명 월간 할당량 초과 반환. 사용자 결정: 현 상태 기록 |
-
-변경할 때 작업 보고서를 연결하고 `완료`의 검증 층을 함께 씁니다. 소스·문서 확인만 끝났으면 실행 검증 완료로 올리지 않습니다.
 | DEV-41 | 동적 MCP 목적지/인자/실제 egress | [검토 RV-01](../analysis/review-2026-10-15/README.md) | 빈 목적지·중첩/배열 URL·redirect·DNS·내부 IPv4/IPv6 정상/음성 및 독립 효과 | 정적 허용 범위 문제 확인, 제품 수정/우회 재현 미실행 |
 | DEV-42 | 하네스 훅과 credential helper 경계 | [검토 RV-02](../analysis/review-2026-10-15/README.md) | 사용자 훅·직접 실행·statusLine 등에서 헬퍼 불가, 승인 정상 하네스 유지, 토큰 비보존 | Bash 외 하네스 시작 명령은 우회 후보, 실기기 미재현 |
 | DEV-43 | 계정 철회와 최종 dispatch 경쟁 | [검토 RV-03](../analysis/review-2026-10-15/README.md) | 잠금 대기와 계정 중지 commit 교차의 신규 intent/외부 효과 0, 일관 잠금/실패 처리 | DB 경합 후보, barrier 재현 필요 |
 | DEV-44 | 판본별 계약·JSON Schema·페이지 호환 | [검토 RV-04~06](../analysis/review-2026-10-15/README.md) | 원본 $defs/복합 schema·승인 outputSchema·현대 배열/legacy 객체·전체 tools/list 정상/음성 | 정적 호환성 공백, SDK 페이지 동작/실제 OSS 재시험 필요 |
 | DEV-45 | 실행 ID·근거 최신성·해시 규약 | [검토 RV-08~09](../analysis/review-2026-10-15/README.md) | run/source/image/policy/환경/효과 결박, 원본/정규화 hash와 현재/과거 검수 분리 | 문서 규칙 보강·오래된 분석 근거 정리. 채점기 제품 변경은 미구현 |
 | DEV-46 | 독립 한국어·에이전트 효과 평가 | [검토 RV-10](../analysis/review-2026-10-15/README.md) | 출처/공격 계열 분리, 정상 성공·오탐/미탐·비승인 효과·반복·성능 동시 보고 | 기존 분류 점수를 전체 방어율로 사용하지 않음. 새 독립 평가 미실행 |
+
+변경할 때 작업 보고서를 연결하고 `완료`의 검증 층을 함께 씁니다. 소스·문서 확인만 끝났으면 실행 검증 완료로 올리지 않습니다.
