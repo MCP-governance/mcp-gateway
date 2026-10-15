@@ -23,3 +23,7 @@ PDP 입력 계약과 사전 실행 훅은 비교 기준으로 유지한다. 새�
 [설정 발췌](evidence/ibm-contextforge/plugins__config.yaml.excerpt.txt), [PDP 발췌](evidence/ibm-contextforge/plugins__unified_pdp__unified_pdp.py.excerpt.txt), [OAuth 발췌](evidence/ibm-contextforge/mcpgateway__services__oauth_manager.py.excerpt.txt), [watchdog 발췌](evidence/ibm-contextforge/plugins__watchdog__watchdog.py.excerpt.txt), [라이선스](evidence/ibm-contextforge/LICENSE.txt). 검토 커밋 루트에 NOTICE 파일은 없다.
 
 실제 플러그인 엔진의 예외 처리·훅 배선·활성 여부, 통합 성능, 사용자별 upstream 권한 회수는 이 정적 검토로 확인하지 못했다. 최신 main 전체의 기능을 대표하지 않는다.
+
+## 업스트림 세션 처리 (2026-10-15 추가)
+
+같은 커밋 `5735c9d`에서 [`upstream_session_registry.py`](https://github.com/IBM/mcp-context-forge/blob/5735c9db7f8f50cd5a55eb7fefe83ecde00b5324/mcpgateway/services/upstream_session_registry.py#L750-L904)와 [ADR-032](https://github.com/IBM/mcp-context-forge/blob/5735c9db7f8f50cd5a55eb7fefe83ecde00b5324/docs/docs/architecture/adr/032-mcp-session-pool.md#L1-L21)를 읽었다. 신원 키 세션 풀이 같은 사용자의 다운스트림 세션 사이로 상태를 흘려(#4205) `(다운스트림 Mcp-Session-Id, gateway_id)` 1:1 레지스트리로 대체됐다. 벽시계 TTL 없이 유휴 60초 뒤 재사용 전 건강 확인, 세션 사용 직렬화, 전송 오류·다운스트림 세션 삭제·게이트웨이 인증 변경 때 축출한다. 호출 경로에는 실행 전 업스트림 `tools/list` 재확인이 없다. 10-14 보고의 "레지스트리 소스 미열람"을 이 확인으로 대체한다. 적용 검토는 [세션 재사용 설계 비교](../analysis/upstream-session-reuse/README.md).

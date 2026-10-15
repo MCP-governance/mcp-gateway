@@ -1,5 +1,9 @@
 # 개발 현황 — 2026-10-15
 
+## 업스트림 MCP 세션 재사용 설계 비교 (DEV-29, 결정 대기)
+
+[설계 비교](../analysis/upstream-session-reuse/README.md) · [작업 보고](reports/2026-10-15-upstream-session-reuse-design.md): 남은 지연의 본체인 업스트림 연결·목록 단계를 줄이는 선택지를 MCP 규격(`86f6e0c`)·SDK 2.2.0·ContextForge·Microsoft mcp-gateway·Lunar MCPX 고정 커밋으로 비교했다. 추천은 ① 카탈로그의 프로토콜 판으로 SDK 연결 모드 고정(경계 변경 없음) → ② `(주체, 다운스트림 세션, 서버, 자격 해시)` 세션 재사용(D-79 개정, 재판정·종료 차단 유지) → ③ 읽기 도구 한정 목록 캐시(≤30초 TOCTOU, 별도 결정). github 한 건 추정 3.0→2.8→2.25→1.0초. 규격 2026-07-28이 세션을 없앴고, SDK 기본 응답 캐시가 세션 재사용 시 재확인을 조용히 낡게 할 수 있음을 찾았다. 제품 코드·배포는 바꾸지 않았고 시험 T1–T12는 미실행이다. `DECISIONS.md`에는 번호 없는 제안으로 기록했다.
+
 ## 목표 기능 WBS 구현·통합·저지연화 (최신)
 
 [작업 보고](reports/2026-10-15-wbs-implementation.md) · [WBS 재산정](../analysis/development-wbs/README.md) · [근거](../analysis/wbs-1015/README.md) · 작업별 보고 [A 엔드포인트 증거](reports/2026-10-15-endpoint-evidence.md) · [B 도입·신원](reports/2026-10-15-intake-identity.md) · [C 종료·전송 경계](reports/2026-10-15-termination-dispatch.md) · [D 검사 코퍼스](reports/2026-10-15-inspection-corpus.md)

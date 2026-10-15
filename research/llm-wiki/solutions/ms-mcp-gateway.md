@@ -21,3 +21,7 @@
 [권한 평가 발췌](evidence/ms-mcp-gateway/dotnet__Microsoft.McpGateway.Management__src__Authorization__SimplePermissionProvider.cs.excerpt.txt), [내장 도구 인가 발췌](evidence/ms-mcp-gateway/dotnet__Microsoft.McpGateway.Management__src__Authorization__BuiltinToolAuthorizer.cs.excerpt.txt), [라이선스](evidence/ms-mcp-gateway/LICENSE.txt), [NOTICE](evidence/ms-mcp-gateway/NOTICE.txt), [해시 목록](evidence/manifest.json).
 
 Microsoft 제품 전체·APIM·Foundry 기능과 혼동하지 않는다. Azure 배포, Entra 토큰 검증, 세션 라우팅, 실제 권한 회수는 실행하지 않았다. endpoint OS 통제가 이 Gateway 코드로 입증되는 것도 아니다.
+
+## 세션 라우팅 키 (2026-10-15 추가)
+
+같은 커밋 `3594c4e`의 [`AdapterSessionRoutingHandler.cs`](https://github.com/microsoft/mcp-gateway/blob/3594c4eee36308ac131aad1c946ea14140b4353d/dotnet/Microsoft.McpGateway.Service/src/Session/AdapterSessionRoutingHandler.cs#L52-L120)는 세션 저장소 키를 `사용자:어댑터:세션ID`로 묶어, 다른 사용자가 세션 ID를 재생하거나 권한이 회수된 어댑터 경로로 재생해도 대상을 찾지 못하게 한다([시험](https://github.com/microsoft/mcp-gateway/blob/3594c4eee36308ac131aad1c946ea14140b4353d/dotnet/Microsoft.McpGateway.Service/test/AdapterSessionRoutingHandlerTests.cs#L135-L160)). 정적 읽기이며 실행하지 않았다. 10-14 보고의 2차 자료 인용을 이 소스로 대체한다. 적용 검토는 [세션 재사용 설계 비교](../analysis/upstream-session-reuse/README.md).
