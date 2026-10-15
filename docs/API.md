@@ -97,6 +97,12 @@
 ### 엔드포인트 평면
 관리자: `POST|GET /api/endpoint/devices`, `DELETE /api/endpoint/devices/{id}`, `GET /api/endpoint/inventory`,
 `GET /api/endpoint/scan-policy/admin`, `PUT /api/endpoint/scan-policy`.
+관리자 목록·조회(D-85–D-88): `GET /api/endpoint/inventory/{entries|listeners|os-events}?cursor=&limit=&classification=`(`rows`·`total`·`limit`·`next_cursor`; 분류는 쉼표 구분),
+`GET /api/endpoint/observations`, `GET /api/endpoint/records/{config|listener|os-event}/{id}`(출처·해시·변환 포함),
+`GET /api/endpoint/correlation?decision_id=` 또는 `?kind=&record_id=`(`window_seconds` 10–3600, 기록을 합치지 않음),
+`GET /api/endpoint/network-quality` → `{devices:[{endpoint_id,hostname,measured_at,rtt_p50_ms,rtt_p95_ms,jitter_ms,failure_pct,state}], summary:{p50_ms,p95_ms,failure_pct,devices}}`.
+`GET /api/endpoint/inventory`는 기존 키에 `pages{entries,listeners,os_events,managed_events}`(`total`·`limit`·`next_cursor`)를 더한다.
+장치 하트비트는 선택 필드 `network_quality`를 받으며 잘못된 값은 버리고 응답에 `rejected`로 알린다.
 장치: `POST /api/endpoint/enroll`, `POST /api/endpoint/inventory`, `POST /api/endpoint/listeners`, `GET /api/endpoint/scan-policy`.
 
 ## 6. 오류의 의미
