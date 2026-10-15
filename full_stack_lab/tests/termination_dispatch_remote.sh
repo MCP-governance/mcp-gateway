@@ -19,6 +19,9 @@ down() {
   docker rm -f $P-pg $P-opa $P-presidio-analyzer $P-presidio-anonymizer $P-gitea $P-mcp-gitea >/dev/null 2>&1
   docker network rm $NET >/dev/null 2>&1
   rm -rf "$LAB"
+  # The self-removal timer of an earlier `up`, with its sleep.
+  for pid in $(pgrep -f "sleep 10800; bash $SRC/tests/termination_dispatch_remote.sh"); do pkill -P "$pid"; kill "$pid"; done 2>/dev/null
+  return 0
 }
 
 wait_for() { # name, seconds, command...

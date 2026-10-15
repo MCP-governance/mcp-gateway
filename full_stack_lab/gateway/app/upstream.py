@@ -10,6 +10,7 @@ import asyncio
 import hashlib
 import os
 import json
+import logging
 import time
 import math
 from collections import OrderedDict
@@ -116,9 +117,14 @@ async def close_pool(endpoint: str | None = None, principal: str | None = None) 
 async def release_pool(endpoint: str | None, principal: str | None, reason: str) -> int:
     """close_pool here, and tell the other gateway processes through the database."""
     closed = await close_pool(endpoint, principal)
-    await db.execute("INSERT INTO upstream_pool_events(endpoint, principal, reason) VALUES (%s,%s,%s)",
-                     (endpoint, principal, reason))
-    await db.execute("DELETE FROM upstream_pool_events WHERE created_at < now() - interval '1 day'")
+    try:
+        await db.execute("INSERT INTO upstream_pool_events(endpoint, principal, reason) VALUES (%s,%s,%s)",
+                         (endpoint, principal, reason))
+        await db.execute("DELETE FROM upstream_pool_events WHERE created_at < now() - interval '1 day'")
+    except Exception:
+        # The announcement is for warm sockets in other processes. The cutover and the revocation
+        # already stand, and the dispatch boundary refuses on its own, so a failed note is logged only.
+        logging.getLogger(__name__).exception("pool closure announcement failed")
     return closed
 
 
