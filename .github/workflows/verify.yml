@@ -91,6 +91,11 @@ jobs:
       - name: 무인증 API 목록과 문서 대조
         run: python3 tests/open_endpoints.py
 
+      # The console is a product screen edited by more than one person; docs/ai/CONSOLE_UI.md
+      # forbids development traces, abbreviations, ~요 style and inline style. Checked here, not on the device.
+      - name: 콘솔 화면 문구 규칙
+        run: python3 tests/console_copy_check.py
+
       # 실기기 배치(field deploy): 키트·렌더러 일반화·Caddy 오버레이. 엔진 없이 된다.
       - name: 실기기 배치 키트·오버레이 검사
         run: |
@@ -169,6 +174,13 @@ jobs:
       # four workstations, the termination judgment, security regression, E1-E3.
       - name: ./console.sh test
         run: ./console.sh test
+
+      # The image's native engines (gitleaks C-ABI library, PCRE2 text rules) must decide
+      # exactly like the gitleaks binary and Python's re they replaced.
+      - name: 네이티브 검사 엔진 동등성
+        run: |
+          docker compose exec -T gateway python - < tests/secret_engine_parity_check.py
+          docker compose exec -T gateway python - < tests/textscan_parity_check.py
 
       # 실기기 배치(README "실제 기기로 배치하기"): 같은 스택에 Caddy를 얹고, 러너를 직원 PC로 삼는다 —
       # loopback HTTP → 키트 setup(합성 계정 로그인) → 실제 Claude Code·Codex CLI가 헬퍼로 서버 10개에 붙는지.
