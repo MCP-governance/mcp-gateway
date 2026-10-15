@@ -1,0 +1,5 @@
+{"type":"thread.started","thread_id":"01a13e37-caf3-7c20-a23d-28fb02f2e4b7"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"Model metadata for `bogus-model-x` not found. Defaulting to fallback metadata; this can degrade performance and cause issues."}}
+{"type":"turn.started"}
+{"type":"error","message":"{\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'bogus-model-x' model is not supported when using Codex with a ChatGPT account.\"}}"}
+{"type":"turn.failed","error":{"message":"{\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'bogus-model-x' model is not supported when using Codex with a ChatGPT account.\"}}"}}
