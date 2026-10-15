@@ -533,12 +533,12 @@ ROUTES.overview = async (_, tab) => {
       tabs: [
         { key: "summary", label: "요약", body: html`<div class="stack">
           ${panel("시스템 상태", html`<div id="system-metrics" aria-live="polite">${metricsCards(null)}</div>`)}
-          ${panel("확인 필요", html`<div class="action-list">
-            <a class="action-link" href="#/approvals"><span>승인 대기</span><b class="n">${o.pending_approvals || 0}</b></a>
-            <a class="action-link" href="#/coverage?t=items&state=bypass_possible"><span>우회 가능 MCP</span><b class="n">${count("bypass_possible")}</b></a>
-            <a class="action-link" href="#/termination"><span>진행 중인 종료</span><b class="n">${term.open_cases || 0}</b></a>
+          ${panel("관리자 조치", html`<div class="action-list">
+            <a class="action-link" href="#/approvals"><span>승인 요청</span><b class="n">${o.pending_approvals || 0}</b></a>
+            <a class="action-link" href="#/intake"><span>도입 조치 필요</span><b class="n">${o.intake_actions || 0}</b></a>
+            <a class="action-link" href="#/termination"><span>기한 초과 종료</span><b class="n">${term.overdue || 0}</b></a>
           </div>`)}
-          ${panel("최근 차단", feed.rows.length ? decisionTable(feed.rows) : empty("차단된 호출 없음"), { flush: true, end: html`<a class="btn sm" href="#/activity?decision=Block">전체</a>` })}
+          ${panel("최근 차단", feed.rows.length ? decisionTable(feed.rows) : empty("차단된 호출 없음"), { flush: true, end: html`<a class="btn sm" href="#/activity?decision=Block">차단 로그 <span aria-hidden="true">→</span></a>` })}
         </div>` },
         { key: "planes", label: "통제 현황", n: count("bypass_possible"), hot: count("bypass_possible") > 0, body: html`<div class="stack"><div class="grid c21">
           ${panel("분류별 통제 상태", items.length ? chartBox("c-ov-matrix", "분류별 통제 상태 항목 수", "lg") : empty("항목 없음"), { sub: `게이트웨이 밖 ${outside}건` })}
