@@ -94,10 +94,11 @@ run() {
   local db=t_$(echo "$test" | tr -c 'a-z0-9\n' '_' | cut -c1-40)_$$
   docker exec $P-pg psql -U mcp -d postgres -qc "CREATE DATABASE $db" || return 1
   docker cp $SRC/db/init.sql $P-pg:/tmp/init.sql && docker exec $P-pg psql -U mcp -d $db -q -f /tmp/init.sql >/dev/null || return 1
-  # The gateway image predates the native engines; the PostgreSQL, OPA, Presidio, Gitea and MCP legs are real.
+  # The PostgreSQL, OPA, Presidio, Gitea and MCP legs are real; the code under test is this tree, mounted read-only.
   docker run --rm --network $NET --tmpfs /registry-runtime:uid=10001,gid=10001 --tmpfs /reports:uid=10001,gid=10001 \
     -v $SRC/gateway/app:/app/app:ro -v $SRC/tests:/tests:ro -v $SRC/registry:/registry:ro -v $SRC/opa:/policy:ro \
-    -v $LAB/secrets:/secrets:ro \
+    -v $LAB/secrets:/secrets:ro -v $SRC/supply_chain:/supply_chain:ro -v $SRC/endpoint-agent:/endpoint-agent:ro \
+    -e AGENT_DIR=/endpoint-agent \
     -e DATABASE_URL=postgresql://mcp:$PG_PASS@$P-pg:5432/$db -e DB_POOL_MAX=24 -e OTEL_SDK_DISABLED=true \
     -e OPA_URL=http://$P-opa:8181/v1/data/mcp/authz/decision -e POLICY_LEDGER_URL=http://$P-opa:8181/v1/data/policy_ledger -e POLICY_PATH=/policy/policy.rego \
     -e REGISTRY_DIR=/registry -e REGISTRY_RUNTIME_DIR=/registry-runtime -e REPORT_DIR=/reports \

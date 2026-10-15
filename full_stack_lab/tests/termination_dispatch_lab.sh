@@ -10,6 +10,7 @@ set -uo pipefail
 HERE=$(cd "$(dirname "$0")/.." && pwd)
 HOST=${LAB_APPLIANCE:-user@100.83.175.111}
 SSH=(ssh -o BatchMode=yes -o ConnectTimeout=15 "$HOST")
-tar czf - --exclude=__pycache__ -C "$HERE" gateway/app tests registry opa db \
+# endpoint-agent sits beside full_stack_lab; tar stores it without the leading ../
+tar czf - --exclude=__pycache__ -C "$HERE" gateway/app tests registry opa db supply_chain ../endpoint-agent \
   | "${SSH[@]}" 'mkdir -p /tmp/wbs-c-src && tar xzf - -C /tmp/wbs-c-src' || exit 1
 "${SSH[@]}" bash /tmp/wbs-c-src/tests/termination_dispatch_remote.sh "$@" </dev/null
