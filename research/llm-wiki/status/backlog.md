@@ -4,7 +4,7 @@
 
 | ID | 작업 | 근거 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- |
-| WIKI-01 | 개발 위키와 공유 보고 체계 | [위키](../README.md), [협업 콘솔](../../collaboration-console/README.md) | 자료 분류·원본·해시·MD·Claude 규칙·실제 협업 기록·검사 통과 | MD 정본·협업 콘솔 구축, 실제 Claude 분석 수신; 수정 후 Claude 리뷰는 계정 한도로 미완료 |
+| WIKI-01 | 개발 위키와 공유 보고 체계 | [위키](../README.md), [협업 콘솔](../../collaboration-console/README.md), [드라이브 산출물](../team-agi-deliverables-2026-10-15.md) | 자료 분류·원본·해시·MD·Claude 규칙·실제 협업 기록·검사 통과 | MD 정본·협업 콘솔 구축, 실제 Claude 분석 수신. 정책 50개·MVP WBS 판본 선별 반영; 정책과 코드·시험의 일대일 대조 및 수정 후 Claude 리뷰 미완료 |
 | DEV-01 | 실제 관리형 하네스 증거 연결 | [실기기 결과](reports/2026-10-13-development-results.md), [통제 증거](../methodology/control-design.md) | 활성화 상태와 fresh 신원, model→MCP→원장 IDs, 정상/차단의 독립 효과 | 새 PJ1 Codex 세션2개·원장3건 일치. 공급자 quota 응답·PII 차단 확인; 정상 문서·독립 수신 trace는 미완료 |
 | DEV-02 | 계약 변경·오염 탐지 코퍼스 | [분석](../solutions/README.md), [실험](../experiments/README.md), [D 보고](reports/2026-10-15-inspection-corpus.md) | 다국어 정상/공격/인코딩 표본, 오탐·미탐 및 계약 diff, 검사기 장애 차단 | 공개 코퍼스 9,463건(dev/held-out): 결과 오탐 91→0, 계약(MCPTox) 재현율 0.27→0.52, 인코딩 변형 1/182→112/182. 독립 한국어 코퍼스·의미 분류기는 후속 |
 | DEV-03 | 원본 위협표와 구현 추적 검토 | [위협 매핑](../threats/README.md) | 24개 정책의 통제 위치·코드·실험·한계별 리뷰와 근거 | 매핑 초안, 독립 리뷰 필요 |

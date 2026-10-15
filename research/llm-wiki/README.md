@@ -13,6 +13,7 @@ MCP 보안 거버넌스 솔루션 개발에 필요한 논문·기술문서, 제�
 | 통제를 설계하고 구현하기 | [구축 방법론](methodology/engineering-workflow.md) · [통제 설계](methodology/control-design.md) |
 | 시험할 MCP와 재현 절차 찾기 | [실험 자료](experiments/README.md) |
 | 위협표와 구현·실험을 연결하기 | [위협·정책 매핑](threats/README.md) |
+| Team AGI 산출물의 정책·MVP 계획과 선별 사유 보기 | [드라이브 산출물 선별](team-agi-deliverables-2026-10-15.md) |
 | Claude/Codex에게 작업 맡기기 | [에이전트 공통 규칙](AGENTS.md) · [작업 지시 양식](templates/task-prompt.md) |
 
 ## 연구 문서와 개발 협업 콘솔

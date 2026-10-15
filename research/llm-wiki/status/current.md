@@ -1,5 +1,9 @@
 # 개발 현황 — 2026-10-15
 
+## Team AGI 산출물 위키 반영
+
+[선별 기록](../team-agi-deliverables-2026-10-15.md)과 [작업 보고](reports/2026-10-15-drive-deliverables.md): 드라이브의 정책, 기술 구현, 실증 및 평가 폴더를 확인해 2026-10-14 정책 50개 원본과 색인, 2026-10-03 MVP WBS 원본을 위키에 판본별로 보존했다. 프레임워크 V3.0은 원문 링크와 개발 적용 요약을 남겼다. 평가 폴더에는 현재 결과 보고서가 없고 이전 구성 그림 한 건만 있어 현행 실증 증거로 반영하지 않았다. 새 자료의 요구사항과 기존 코드·시험의 일대일 대조는 미완료다.
+
 ## 클린 기기 E2E · MINT 화면 (최신)
 
 [작업 보고](reports/2026-10-15-clean-e2e.md) · [근거](../analysis/wbs-1015/e2e-clean.json): 기기 DB·등록 상태를 백업 후 비우고, `user` 신청 → `root` 검토·승인 → 등록으로 실제 MCP 3개(GitHub 원격, Context7 원격, Microsoft MarkItDown 소스 신청·내부 미러 실행)를 올렸다. PJ1 직원 계정의 관리 Claude Code가 자연어로 GitHub·MarkItDown을 호출해 결과를 받았고, 범위 밖 요청(`file:///etc/passwd`·미심사 호스트)은 실행 전 차단됐다. DEV-31은 실기기에서 해결 확인. E2E가 찾은 결함 3개(런처 PATH, 소스 등록 범위 부재, 배열 structuredContent)를 고쳐 배포했다(D-107~109, 최종 `83269c1`). 콘솔 글자 125%, 로그인 MINT, 원칙 중심 README, WBS 페이지 구현 진행도 표시. WBS **55.2%→57.5%**.
