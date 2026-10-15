@@ -464,7 +464,7 @@ ROUTES.overview = async (_, tab) => {
     buckets.reduce((sum, bucket) => sum + Number(bucket[decision] || 0), 0)]));
   const byServer = splitBy(o.flows, "server", (r) => Number(r.n));
   const flowTotal = o.flows.reduce((s, f) => s + Number(f.n || 0), 0);
-  const stations = o.workstations;
+  const stations = (o.workstations || []).filter((station) => Number(station.calls) > 0);
   const abnormalServers = (o.servers || []).filter((s) => !["READY", "DISABLED"].includes(s.status)).length;
   const items = dedupeItems(pl?.items || []);
   const count = (s) => items.filter((i) => i.state === s).length;
@@ -533,14 +533,14 @@ ROUTES.overview = async (_, tab) => {
           ${panel("시간대별 판정", chartBox("c-traffic", "최근 24시간 시간대별 판정 건수", "lg"), { sub: "최근 24시간" })}
           <div class="grid c12">
             ${panel("판정 비율", chartBox("c-share", "최근 24시간 판정 비율", "sm"), { sub: "최근 24시간" })}
-            ${panel("서버별 호출", chartBox("c-servers", "최근 24시간 서버별 호출과 판정", "sm"), { sub: `${byServer.length}개 서버 · 24시간` })}
+            ${panel("MCP 서버별 호출", chartBox("c-servers", "최근 24시간 MCP 서버별 호출과 판정", "sm"), { sub: `MCP 서버 ${byServer.length}개, 최근 24시간` })}
           </div>
-          ${panel("하네스 → MCP 서버 → 판정", flowTotal ? chartBox("c-flow", "하네스에서 서버를 거쳐 판정까지의 호출 흐름", "xl") : empty("최근 24시간 호출 없음"), { sub: `${flowTotal}건 · 24시간` })}
-          ${panel("엔드포인트", html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>하네스</th><th class="num">24시간 호출</th><th>통제 상태</th><th>마지막 호출</th></tr></thead><tbody>
+          ${panel("클라이언트별 호출 흐름", flowTotal ? chartBox("c-flow", "클라이언트에서 MCP 서버를 거쳐 판정까지의 호출 흐름", "xl") : empty("최근 24시간 호출 없음"), { sub: `${flowTotal}건, 최근 24시간` })}
+          ${panel("엔드포인트별 호출", html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>최근 클라이언트</th><th class="num">24시간 호출</th><th>통제 상태</th><th>마지막 호출</th></tr></thead><tbody>
             ${stations.map((w) => html`<tr><td>${entityRef(w.endpoint_id)}</td><td><b>${w.display_name || w.owner_token}</b><span class="sub">${w.department || ""}</span></td>
               <td>${w.harness ? chip("plain", harnessLabel(w.harness)) : NONE}</td><td class="num">${w.calls}</td>
-              <td>${deviceOf[w.endpoint_id] ? statusPair(deviceOf[w.endpoint_id]) : chip("outline", "관찰만")}</td><td class="small">${ago(w.last_call)}</td></tr>`)}
-            </tbody></table>${stations.length ? "" : empty("엔드포인트 없음")}`, { flush: true })}</div>` },
+              <td>${deviceOf[w.endpoint_id] ? statusPair(deviceOf[w.endpoint_id]) : chip("outline", "확인 불가")}</td><td class="small">${ago(w.last_call)}</td></tr>`)}
+            </tbody></table>${stations.length ? "" : empty("최근 24시간 호출 없음")}`, { flush: true })}</div>` },
         { key: "risk", label: "위험종료", body: html`<div class="grid c2">
             ${panel("자주 걸린 정책", o.top_policies.length ? chartBox("c-policies", "최근 24시간 차단·경보가 많은 정책") : empty("최근 24시간 차단·경보 없음"), { sub: "최근 24시간" })}
             ${panel("종료·폐기", chartBox("c-term", "종료·폐기 현황"), { end: html`<a class="btn sm" href="#/termination">열기</a>` })}
