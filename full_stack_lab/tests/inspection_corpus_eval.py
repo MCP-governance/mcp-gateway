@@ -458,8 +458,21 @@ def gates(data: dict[str, bytes]) -> dict:
         classes[resource.data_class] = classes.get(resource.data_class, 0) + 1
         if resource.data_class != "important":
             quiet.append(line)
+    # ordinary paths must keep the class of the prefix they sit under, and a path that leaves it must be graded for
+    # where it lands; the last two are ordinary file names that the evasion pattern reads as an attempt (conservative)
+    controls = [("/shared/public/guide/readme.md", "public"), ("public/readme.md", "public"), ("/shared/team/plan.xlsx", "nonimportant"),
+                ("/shared/confidential/hr/pay.xlsx", "important"), ("/shared/public/../confidential/x.txt", "important"),
+                ("/shared/public/./a/../b.md", "public"), ("/shared/public/한글 문서.docx", "public"), ("/shared/public/a%20b.md", "public"),
+                ("/shared/public/%2e%2e/confidential/x", "important"), ("/shared/public/loading....md", "important"),
+                ("/shared/public/rates%2fnotes.md", "important")]
+    mismatched = []
+    for path, expected in controls:
+        got = classify.path_resource(path, "/shared").data_class
+        if got != expected:
+            mismatched.append({"path": path, "expected": expected, "got": got})
     return {"shapes": {name: gate(arguments) for name, arguments in shapes.items()},
-            "traversal": {"lines": sum(classes.values()), "classes": classes, "not_graded_important": quiet[:10]}}
+            "traversal": {"lines": sum(classes.values()), "classes": classes, "not_graded_important": quiet[:10]},
+            "path_controls": {"checked": len(controls), "mismatched": mismatched}}
 
 
 def summarise(result: dict) -> list[dict]:
@@ -531,6 +544,8 @@ def main() -> int:
             print(n, *key)
         print("samples", len(samples), "dev", sum(s["split"] == "dev" for s in samples))
         return 0
+    if not Path("/registry/catalog.toml").exists():  # a source checkout: classify reads the reviewed catalog from here
+        os.environ.setdefault("REGISTRY_DIR", str(HERE.parent / "registry"))
     samples = [json.loads(line) for line in open(args.samples, encoding="utf-8")]
     result = judge(samples)
     rows, total = summarise(result), None
