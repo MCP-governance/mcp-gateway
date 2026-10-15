@@ -531,12 +531,12 @@ ROUTES.overview = async (_, tab) => {
         { key: "exec", label: "도구 실행 및 응답", body: html`<div class="stack">
           ${panel("도구 호출 흐름", (o.pipeline || []).length ? chartBox("c-ov-pipeline", "오늘 도구 호출의 판정에서 응답 전달까지의 흐름", "xl") : empty("오늘 도구 호출 없음"), { sub: "오늘" })}</div>` },
         { key: "traffic", label: "트래픽", body: html`<div class="stack">
-          ${panel("시간대별 판정", chartBox("c-traffic", "최근 24시간 시간대별 판정 건수", "lg"), { sub: "최근 24시간" })}
-          <div class="grid c12">
+          <div class="grid c31">
+            ${panel("시간대별 판정", chartBox("c-traffic", "최근 24시간 시간대별 판정 건수", "lg"), { sub: "최근 24시간" })}
             ${panel("판정 비율", chartBox("c-share", "최근 24시간 판정 비율", "sm"), { sub: "최근 24시간" })}
-            ${panel("MCP 서버별 호출", chartBox("c-servers", "최근 24시간 MCP 서버별 호출과 판정", "sm"), { sub: `MCP 서버 ${byServer.length}개, 최근 24시간` })}
           </div>
-          ${panel("클라이언트별 호출 흐름", flowTotal ? chartBox("c-flow", "클라이언트에서 MCP 서버를 거쳐 판정까지의 호출 흐름", "xl") : empty("최근 24시간 호출 없음"), { sub: `${flowTotal}건, 최근 24시간` })}
+          ${panel("MCP 서버별 호출", chartBox("c-servers", "최근 24시간 MCP 서버별 호출과 판정", "sm"), { sub: "최근 24시간" })}
+          ${panel("클라이언트별 호출 흐름", flowTotal ? chartBox("c-flow", "클라이언트에서 MCP 서버를 거쳐 판정까지의 호출 흐름", "xl") : empty("최근 24시간 호출 없음"), { sub: `${flowTotal}건 | 최근 24시간` })}
           ${panel("엔드포인트별 호출", html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>최근 클라이언트</th><th class="num">24시간 호출</th><th>통제 상태</th><th>마지막 호출</th></tr></thead><tbody>
             ${stations.map((w) => html`<tr><td>${entityRef(w.endpoint_id)}</td><td><b>${w.display_name || w.owner_token}</b><span class="sub">${w.department || ""}</span></td>
               <td>${w.harness ? chip("plain", harnessLabel(w.harness)) : NONE}</td><td class="num">${w.calls}</td>
