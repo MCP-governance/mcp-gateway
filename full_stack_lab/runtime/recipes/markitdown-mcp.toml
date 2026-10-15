@@ -1,0 +1,13 @@
+# Microsoft MarkItDown MCP (MIT). The repository is a monorepo; the MCP server is packages/markitdown-mcp
+# and depends on packages/markitdown, both installed from the approved commit, not from PyPI.
+[recipe]
+id = "markitdown-mcp"
+repository = "https://github.com/microsoft/markitdown"
+dockerfile = "markitdown-mcp.Dockerfile"
+port = 3001
+path = "/mcp"
+args = ["--http", "--host", "0.0.0.0", "--port", "3001"]
+user = "65534:65534"
+memory = "1g"
+pids = 256
+cpus = "1.0"

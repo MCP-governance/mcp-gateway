@@ -543,6 +543,15 @@ async def register_server(request: dict, actor: str) -> dict:
     row = await db.fetch_one("SELECT lifecycle FROM mcp_servers WHERE id=%s", (server_id,))
     if row and (row["lifecycle"] or "OPERATING") in {"TERMINATING", "RETIRED"}:
         raise ValueError("종료 절차를 거친 서버 id는 다시 쓸 수 없습니다. 새 id로 등록하세요.")
+    runtime = None
+    if intake["intake_kind"] == "repository":
+        # A source the solution runs itself is registered at the address of that run, so the
+        # registration names the image built from the approved commit (DEV-38).
+        runtime = await db.fetch_one(
+            """SELECT id, generation, image_id, source_commit, source_archive_sha256, recipe_id, recipe_sha256, endpoint
+               FROM mcp_runtimes WHERE intake_id=%s AND status='ACTIVE'""", (intake_id,))
+        if runtime and endpoint != runtime["endpoint"]:
+            raise ValueError(f"이 신청은 솔루션이 실행하고 있습니다. 실행 주소로 등록하세요: {runtime['endpoint']}")
     found = await upstream.discover(endpoint)
     if remote_review and (found["version"] != remote_review["version"]
             or found["advertised_name"] != remote_review["advertised_name"]
@@ -597,6 +606,7 @@ async def register_server(request: dict, actor: str) -> dict:
         "poisoning_review": {name: registry.tool_hashes(advertised[name]) for name in flagged}
                             if request.get("poisoning_ack") else {},
         "tool_reviews": tool_reviews, "provenance": intake.get("provenance") or {},
+        "runtime": {key: str(value) for key, value in runtime.items()} if runtime else None,
     }
     contract = {"package": f"{package}@{version}", "server_name": found["advertised_name"],
                 "server_version": found["version"], "protocol_version": found["protocol_version"],

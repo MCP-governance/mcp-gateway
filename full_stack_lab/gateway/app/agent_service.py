@@ -825,11 +825,18 @@ async def intake_rows(user: dict) -> list[dict]:
                       r.status, r.risk_level, r.review_note, r.reviewed_by, r.reviewed_at, r.created_at, r.updated_at,
                       r.commit_sha, r.source_ref, r.evidence, r.validated_at, r.exit_terms, r.internal_repo_url,
                       r.registered_server_id, r.intake_kind, r.endpoint_url, r.provenance,
-                      (r.submitted_by = %s OR p.user_id = %s) AS own
-               FROM mcp_intake_requests r LEFT JOIN principals p ON p.token = r.submitted_by"""
+                      (r.submitted_by = %s OR p.user_id = %s) AS own, rt.runtime, s.endpoint AS registered_endpoint
+               FROM mcp_intake_requests r LEFT JOIN principals p ON p.token = r.submitted_by
+               LEFT JOIN mcp_servers s ON s.id = r.registered_server_id
+               LEFT JOIN LATERAL (SELECT jsonb_build_object('id', id, 'status', status, 'endpoint', endpoint,
+                                         'error', error, 'generation', generation) AS runtime
+                                  FROM mcp_runtimes WHERE intake_id = r.id ORDER BY generation DESC LIMIT 1) rt ON true"""
     me = (user["principal"], user.get("user_id"))
     if "admin" in user["roles"]:
-        return await db.fetch_all(query + " ORDER BY r.created_at DESC LIMIT 100", me)
+        rows = await db.fetch_all(query + " ORDER BY r.created_at DESC LIMIT 100", me)
+        for row in rows:
+            row["runtime_recipe"] = bool(row["intake_kind"] == "repository" and runtime_recipe(row["repository_url"]))
+        return rows
     return await db.fetch_all(query + " WHERE r.submitted_by=%s ORDER BY r.created_at DESC LIMIT 100", (*me, user["principal"]))
 
 
@@ -1057,6 +1064,72 @@ async def intake_report_row(request_id: UUID, authorization: str | None) -> dict
     return row
 
 
+RUNTIME_RECIPES = Path(os.getenv("RUNTIME_RECIPES", "/runtime-recipes"))
+
+
+def runtime_recipe(repository_url: str | None) -> dict | None:
+    """The fixed recipe the runtime worker builds this repository with, and its digest (as the worker
+    computes it). Recipes are files reviewed in this repository; a request cannot supply one."""
+    import tomllib
+    if not repository_url or not RUNTIME_RECIPES.is_dir():
+        return None
+    for path in sorted(RUNTIME_RECIPES.glob("*.toml")):
+        try:
+            recipe = tomllib.loads(path.read_text(encoding="utf-8"))["recipe"]
+            if recipe.get("repository") != repository_url:
+                continue
+            dockerfile = path.with_name(recipe["dockerfile"])
+            return {"id": recipe["id"], "sha256": hashlib.sha256(path.read_bytes() + b"\0" + dockerfile.read_bytes()).hexdigest()}
+        except (OSError, KeyError, ValueError):
+            continue
+    return None
+
+
+@app.post("/api/mcp-requests/{request_id}/runtime")
+async def start_runtime(request_id: UUID, authorization: str | None = Header(default=None)):
+    """Queues one build-and-run of the approved commit (DEV-38). The runtime worker does the rest."""
+    from psycopg.errors import UniqueViolation
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "실행은 관리자만 할 수 있습니다.")
+    row = await db.fetch_one("SELECT * FROM mcp_intake_requests WHERE id=%s", (request_id,))
+    if not row or row["intake_kind"] != "repository" or row["status"] != "APPROVED" or not row["commit_sha"]:
+        raise HTTPException(409, "승인된 소스 신청만 실행할 수 있습니다.")
+    if not row.get("internal_repo_url"):
+        raise HTTPException(409, "내부 저장소 사본이 없습니다.")
+    recipe = runtime_recipe(row["repository_url"])
+    if not recipe:
+        raise HTTPException(409, "이 저장소의 실행 레시피가 없습니다.")
+    try:
+        created = await db.fetch_one(
+            """INSERT INTO mcp_runtimes(id, intake_id, generation, recipe_id, recipe_sha256, source_commit, status, requested_by)
+               SELECT %s, %s, COALESCE(MAX(generation), 0) + 1, %s, %s, %s, 'QUEUED', %s
+               FROM mcp_runtimes WHERE intake_id=%s RETURNING id, generation, status""",
+            (uuid4(), request_id, recipe["id"], recipe["sha256"], row["commit_sha"], user["principal"], request_id))
+    except UniqueViolation as exc:
+        raise HTTPException(409, "이미 실행 중이거나 대기 중입니다.") from exc
+    await review.record_event("runtime-start", "recorded", "intake", request_id, user["principal"],
+                              scope={"runtime": str(created["id"]), "generation": created["generation"],
+                                     "recipe": recipe, "commit": row["commit_sha"]})
+    return {"runtime": created, "message": "실행을 예약했습니다."}
+
+
+@app.post("/api/mcp-requests/{request_id}/runtime/stop")
+async def stop_runtime(request_id: UUID, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "실행 중지는 관리자만 할 수 있습니다.")
+    stopped = await db.fetch_one(
+        """UPDATE mcp_runtimes SET status='STOPPING', error='관리자가 실행을 중지했습니다.', updated_at=now()
+           WHERE intake_id=%s AND status IN ('QUEUED','BUILDING','STARTING','VERIFYING','ACTIVE')
+           RETURNING id, generation""", (request_id,))
+    if not stopped:
+        raise HTTPException(409, "중지할 실행이 없습니다.")
+    await review.record_event("runtime-stop", "recorded", "intake", request_id, user["principal"],
+                              scope={"runtime": str(stopped["id"]), "generation": stopped["generation"]})
+    return {"message": "실행을 중지합니다."}
+
+
 @app.get("/api/mcp-requests/{request_id}/report")
 async def intake_report(request_id: UUID, authorization: str | None = Header(default=None)):
     row = await intake_report_row(request_id, authorization)
@@ -1083,6 +1156,10 @@ async def intake_report(request_id: UUID, authorization: str | None = Header(def
     return {"request": row, "reports": reports, "artifacts": available,
             "exit_terms_discovery": (row.get("evidence") or {}).get("exit_terms_discovery"),
             "gate": await review.intake_gate(row), "events": await review.events_for("intake", request_id),
+            "runtimes": await db.fetch_all(
+                """SELECT id, generation, status, recipe_id, recipe_sha256, source_commit, source_archive_sha256, image_id,
+                          endpoint, error, evidence - 'packages' AS evidence, requested_by, attempts, created_at, updated_at
+                     FROM mcp_runtimes WHERE intake_id=%s ORDER BY generation DESC""", (request_id,)),
             "risk_acceptances": await db.fetch_all(
                 """SELECT id, commit_sha, critical_count, finding_ids, reason, accepted_by, accepted_at, expires_at, revoked_at
                      FROM accepted_risks WHERE intake_id=%s ORDER BY id DESC""", (request_id,))}

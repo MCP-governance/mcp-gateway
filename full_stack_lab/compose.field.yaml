@@ -98,6 +98,7 @@ services:
       - ./field/pc/mcpgw_pc.py:/app/app/agent_static/kit/mcpgw_pc.py:ro
       - ../endpoint-agent:/endpoint-kit:ro
       - ./registry/field:/registry-field:ro
+      - ./runtime/recipes:/runtime-recipes:ro
     environment:
       REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
       ENDPOINT_TAILSCALE_NODE_ID: ${ENDPOINT_TAILSCALE_NODE_ID:-}
@@ -109,6 +110,29 @@ services:
       GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-corpadmin}
       GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD:-corp-admin-lab-only}
       GITEA_PUBLIC_URL: http://${APPLIANCE_BIND}:443/git
+
+  # 승인한 소스 MCP를 고정 레시피로 빌드·실행하는 유일한 프로세스(DEV-38, D-114). 엔진 소켓은 이 컨테이너만
+  # 받는다. 게시 포트 없이 DB(data)와 내부 Git(ops)만 닿고, 실행한 MCP의 망에는 스스로 붙어 응답만 확인한다.
+  runtime-worker:
+    build: {context: ., dockerfile: runtime/Dockerfile}
+    image: mcpgw/runtime-worker:1.0
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
+      REGISTRY_RUNTIME_DIR: /registry-runtime
+      GITEA_ADMIN_URL: http://corp-git:3000
+      GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-corpadmin}
+      GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD:-corp-admin-lab-only}
+      RUNTIME_WORKER_ID: ${RUNTIME_WORKER_ID:-runtime-worker-1}
+    depends_on:
+      db: {condition: service_healthy}
+      corp-git: {condition: service_healthy}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - registry_runtime:/registry-runtime:ro
+    tmpfs: [/work]
+    networks: [data, ops]
+    security_opt: ["no-new-privileges:true"]
 
   # 랩의 컨테이너 직원 PC 4대와 협력사 섀도 PC는 실기기 모드에서 기본으로 뜨지
   # 않는다(실제 PC가 대신한다). 같이 보고 싶으면 `--profile lab-workstations`

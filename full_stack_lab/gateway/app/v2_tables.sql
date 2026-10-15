@@ -281,3 +281,31 @@ CREATE TABLE IF NOT EXISTS upstream_pool_events (
   reason     text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Approved source MCP servers the solution builds and runs itself (DEV-38, D-114). Approval stays on the
+-- intake; a runtime is one build-and-run of its verified commit with a fixed recipe. Only the runtime
+-- worker (the one process with the container engine) moves these rows; attempts is its fencing token.
+CREATE TABLE IF NOT EXISTS mcp_runtimes (
+  id uuid PRIMARY KEY,
+  intake_id uuid NOT NULL REFERENCES mcp_intake_requests(id),
+  generation integer NOT NULL,
+  recipe_id text NOT NULL,
+  recipe_sha256 text NOT NULL,
+  source_commit text NOT NULL,
+  status text NOT NULL CHECK (status IN ('QUEUED','BUILDING','STARTING','VERIFYING','ACTIVE','STOPPING','STOPPED','FAILED')),
+  requested_by text NOT NULL,
+  attempts integer NOT NULL DEFAULT 0,
+  lease_owner text,
+  lease_expires_at timestamptz,
+  source_archive_sha256 text,
+  image_id text,
+  endpoint text,
+  error text,
+  evidence jsonb NOT NULL DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (intake_id, generation)
+);
+-- One live runtime per approval: a second click or a second worker cannot start another.
+CREATE UNIQUE INDEX IF NOT EXISTS mcp_runtimes_one_live ON mcp_runtimes(intake_id)
+  WHERE status NOT IN ('STOPPED', 'FAILED');
