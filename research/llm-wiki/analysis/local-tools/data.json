@@ -134,7 +134,7 @@
     "script": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\research\\llm-wiki\\experiments\\local-tools\\data\\run_mcp_checks.py",
     "script_sha256": "61fc438234f4bfeb8f9bb670c485ee4dcf038186eb0182173a388e4764ad46bd",
     "command": "python -X utf8 research/llm-wiki/experiments/local-tools/data/run_mcp_checks.py",
-    "raw_protocol_evidence": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\data\\log\\protocol-evidence-ec3002dbdc899540.json",
+    "raw_protocol_evidence": "research/llm-wiki/analysis/local-tools/evidence/protocol-evidence-ec3002dbdc899540.json",
     "timestamp_kst": "2026-10-14T13:49:01+09:00",
     "fixture_root": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\data\\app\\fixtures",
     "locks": [

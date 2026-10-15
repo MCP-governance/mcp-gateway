@@ -13,3 +13,4 @@ web/source-text/** -text -diff
 *.pdf binary
 *.xlsm binary
 *.xlsx binary
+analysis/local-tools/evidence/** -text -diff

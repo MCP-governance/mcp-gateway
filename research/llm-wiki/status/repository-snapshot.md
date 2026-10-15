@@ -1,156 +1,51 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-14T21:31:37+09:00
+확인 시각: 2026-10-15T16:49:18+09:00
 
-HEAD: `ab6936c64f3578de8360b840f1928681714fa7bb` · 로컬 브랜치: `10/14-endpoint-telemetry-fix`
+HEAD: `8723ccea4d5be8a766c028db560089183494433e` · 로컬 브랜치: `10/15-wbs-implementation`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M .github/workflows/research-wiki.yml
- M .github/workflows/verify.yml
- M AGENTS.md
- M CLAUDE.md
- M docs/ai/DECISIONS.md
- M docs/ai/PAC_MAPPING.md
- M docs/ai/README.md
- M docs/ai/TESTING.md
- M endpoint-agent/README.md
- M endpoint-agent/agent.py
- M endpoint-agent/bootstrap.py
- M endpoint-agent/enforce-linux.py
- M endpoint-agent/managed-linux.py
- M endpoint-agent/managed-windows.py
- M endpoint-agent/os-observer.py
- M full_stack_lab/gateway/app/agent_service.py
- M full_stack_lab/gateway/app/agent_static/console-state.mjs
- M full_stack_lab/gateway/app/agent_static/console.js
- M full_stack_lab/gateway/app/core.py
- M full_stack_lab/gateway/app/endpoint_plane.py
- M full_stack_lab/gateway/app/main.py
- M full_stack_lab/gateway/app/mcp_facade.py
- M full_stack_lab/gateway/app/poisoning.py
- M full_stack_lab/gateway/app/privacy.py
- M full_stack_lab/registry/catalog.toml
- M full_stack_lab/tests/console-state.test.mjs
+M research/development-status-site/build_snapshot.py
+ M research/development-status-site/dist/data.json
  M research/llm-wiki/.gitattributes
- M research/llm-wiki/AGENTS.md
- M research/llm-wiki/README.md
- M research/llm-wiki/catalogs/experiments.json
- M research/llm-wiki/catalogs/papers.json
+ M research/llm-wiki/analysis/code-structure.json
+ M research/llm-wiki/analysis/development-wbs/README.md
+ M research/llm-wiki/analysis/development-wbs/snapshot.json
+ M research/llm-wiki/analysis/integration-cases.json
+ M research/llm-wiki/analysis/integrations.json
+ M research/llm-wiki/analysis/local-tools/data.json
+ M research/llm-wiki/analysis/local-tools/review.json
+ M research/llm-wiki/analysis/requirements.json
  M research/llm-wiki/catalogs/threats.json
- M research/llm-wiki/experiments/E01-approved-read.md
- M research/llm-wiki/experiments/E02-pii-result-masking.md
- M research/llm-wiki/experiments/E03-pii-external-egress.md
- M research/llm-wiki/experiments/E04-untrusted-argument.md
- M research/llm-wiki/experiments/E05-ssrf-normalization.md
- M research/llm-wiki/experiments/E06-input-schema.md
- M research/llm-wiki/experiments/E07-contract-drift.md
- M research/llm-wiki/experiments/E08-pdp-failure.md
- M research/llm-wiki/experiments/E09-principal-binding.md
- M research/llm-wiki/experiments/E10-concurrent-duplicate.md
- M research/llm-wiki/experiments/E11-termination-evidence.md
- M research/llm-wiki/experiments/E12-managed-admission.md
- M research/llm-wiki/experiments/E13-local-bypass.md
- M research/llm-wiki/experiments/README.md
- M research/llm-wiki/experiments/fixtures/cases.json
- M research/llm-wiki/experiments/targets.md
- M research/llm-wiki/papers/README.md
  M research/llm-wiki/status/backlog.md
  M research/llm-wiki/status/current.md
- M research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md
  M research/llm-wiki/status/repository-snapshot.json
  M research/llm-wiki/status/repository-snapshot.md
- M research/llm-wiki/threats/README.md
  M research/llm-wiki/threats/control-map.md
- M research/llm-wiki/tools/check_wiki.py
- M research/llm-wiki/tools/map_threats.py
-?? docs/ai/BENCHMARK_AGT_2026-10-05.md
-?? docs/ai/REFERENCES_MCP_SECURITY_2026-10-05.md
-?? endpoint-agent/os-observer-windows.py
-?? full_stack_lab/integrations/
-?? full_stack_lab/tests/endpoint_collector_check.py
-?? full_stack_lab/tests/endpoint_inventory_check.py
-?? full_stack_lab/tests/endpoint_snapshot_check.py
-?? full_stack_lab/tests/managed_enforcement_check.py
-?? full_stack_lab/tests/mcp_result_contract_check.py
-?? full_stack_lab/tests/mcp_result_services_check.py
-?? full_stack_lab/tests/protocol_versions_check.py
-?? full_stack_lab/tests/windows_os_observer_check.py
-?? research/development-status-site/
-?? research/llm-wiki/analysis/
-?? research/llm-wiki/catalogs/endpoint-permission-references.json
-?? research/llm-wiki/catalogs/local-tool-risks.json
-?? research/llm-wiki/experiments/endpoint-log-fix/
-?? research/llm-wiki/experiments/local-tools/
-?? research/llm-wiki/experiments/pj1-ghidra/
-?? research/llm-wiki/experiments/risk-scenarios/
-?? research/llm-wiki/integrations/
-?? research/llm-wiki/methodology/evidence-methodology.md
-?? research/llm-wiki/methodology/oss-and-skills.md
-?? research/llm-wiki/papers/REF-J01.md
-?? research/llm-wiki/papers/REF-J02.md
-?? research/llm-wiki/papers/REF-J03.md
-?? research/llm-wiki/status/reports/2026-10-13-current-appliance-readiness.json
-?? research/llm-wiki/status/reports/2026-10-13-enterprise-claude-review.md
-?? research/llm-wiki/status/reports/2026-10-13-enterprise-results.md
-?? research/llm-wiki/status/reports/2026-10-13-enterprise-unit-results.json
-?? research/llm-wiki/status/reports/2026-10-13-interop-review.md
-?? research/llm-wiki/status/reports/2026-10-13-real-inspectors-results.json
-?? research/llm-wiki/status/reports/2026-10-13-result-boundary-review.md
-?? research/llm-wiki/status/reports/2026-10-14-device-reachability.json
-?? research/llm-wiki/status/reports/2026-10-14-e13-local-mcp-natural-language.md
-?? research/llm-wiki/status/reports/2026-10-14-endpoint-log-wbs.md
-?? research/llm-wiki/status/reports/2026-10-14-endpoint-regressions.json
-?? research/llm-wiki/status/reports/2026-10-14-endpoint-telemetry-fix.md
-?? research/llm-wiki/status/reports/2026-10-14-local-mcp-endpoint.md
-?? research/llm-wiki/status/reports/2026-10-14-pj1-endpoint-update.json
-?? research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.json
-?? research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.md
-?? research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md
-?? research/llm-wiki/status/reports/2026-10-14-reference-integrity.json
-?? research/llm-wiki/status/reports/2026-10-14-risk-db-after.jsonl
-?? research/llm-wiki/status/reports/2026-10-14-risk-db-before.jsonl
-?? research/llm-wiki/status/reports/2026-10-14-risk-db-deployed-final.jsonl
-?? research/llm-wiki/status/reports/2026-10-14-risk-db-deployed.jsonl
-?? research/llm-wiki/status/reports/2026-10-14-risk-db-reset.json
-?? research/llm-wiki/status/reports/2026-10-14-risk-deployment.json
-?? research/llm-wiki/status/reports/2026-10-14-risk-implementation.patch
-?? research/llm-wiki/status/reports/2026-10-14-risk-postdeploy-pj1.json
-?? research/llm-wiki/status/reports/2026-10-14-risk-preserve.json
-?? research/llm-wiki/status/reports/2026-10-14-risk-reference-integrity.json
-?? research/llm-wiki/status/reports/2026-10-14-risk-scenarios.json
-?? research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md
-?? research/llm-wiki/status/reports/2026-10-14-solution-deployment.json
-?? research/llm-wiki/status/reports/2026-10-14-solution-source-update.json
-?? research/llm-wiki/threats/local-tool-map.md
-?? research/llm-wiki/tools/.gitignore
-?? research/llm-wiki/tools/build_enterprise_analysis.py
-?? research/llm-wiki/tools/build_enterprise_workbook.mjs
-?? research/llm-wiki/tools/build_integration_matrix.py
-?? research/llm-wiki/tools/build_local_tool_analysis.py
-?? research/llm-wiki/tools/build_pj1_ghidra_log_report.py
-?? research/llm-wiki/tools/build_risk_scenario_report.py
-?? research/llm-wiki/tools/check_appliance_inspectors.py
-?? research/llm-wiki/tools/check_enterprise_analysis.py
-?? research/llm-wiki/tools/register_journal_metadata.py
-?? research/llm-wiki/tools/replace_mock_plans.py
+ M research/llm-wiki/tools/build_local_tool_analysis.py
+?? research/development-status-site/rescore_1015.py
+?? research/llm-wiki/analysis/development-wbs/snapshot-before-wbs-1015.json
+?? research/llm-wiki/analysis/local-tools/evidence/
+?? research/llm-wiki/analysis/wbs-1015/
+?? research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md
 ```
 
 ## 주요 파일 바이트
 
 | 파일 | SHA-256 |
 | --- | --- |
-| `full_stack_lab/gateway/app/core.py` | `39a5d5b4d0df5ba7701bef352ae557e3f7dbe87bb9175dcaac0f5c7e4ec138ca` |
-| `full_stack_lab/gateway/app/pac.py` | `17716e4df9045cce223282853a7ea04e1c9a17bfa65c219a741b0f8cc5414944` |
-| `full_stack_lab/gateway/app/poisoning.py` | `344bdab0e77e38f2a2273ae1a0516a9f63be913983fb0cf7e7cf900fb175a440` |
+| `full_stack_lab/gateway/app/core.py` | `819bcdd65bed6ff7af704488c784ce925348faf127f046ea646468feac4c1f01` |
+| `full_stack_lab/gateway/app/pac.py` | `528ef8dbae0fd436dd54bd10202a32cc7cb3f235e6b059c43d8bcd2d73acd885` |
+| `full_stack_lab/gateway/app/poisoning.py` | `f017ac3f35be002ce7a976e9de547f811c5fbecb8fca72dcadd30018fed7d93b` |
 | `full_stack_lab/gateway/app/idp.py` | `58c296bbad903cfe001e39dded16f538ddcc4308139c77b0f2c276fb12efd6dc` |
-| `full_stack_lab/gateway/app/privacy.py` | `a0366953d4803dab3af3da0c1cc08019b1c202ffbc5a3545bf0d247f8d9b1e6f` |
-| `full_stack_lab/gateway/app/secret_scan.py` | `9ac840a0142a1f6fa11a39449bf69e86abbd1d982956cfcf5bbc5f5e90090610` |
-| `full_stack_lab/opa/pac15.rego` | `fd48e4c3a989ca35e0a489a747dd39d43268c9749e470f7419a4a96c17fedce4` |
+| `full_stack_lab/gateway/app/privacy.py` | `3f67b2151819bbc1d4e6f99a93da7d1309924c7dfe9db5aca99656deeba4f15b` |
+| `full_stack_lab/gateway/app/secret_scan.py` | `b6951eba02d7936ed7e369c1a8ec2bd9c4168d8fdc562801c76061634bdb07a3` |
+| `full_stack_lab/opa/pac15.rego` | `e547eee9696355a96a4b9c5ede0bc8207811015ffa88e7d6b4140b6adce2db32` |
 | `full_stack_lab/opa/decision.rego` | `e52e3ea4de50e8ae9c4727079579bf86ba5967aebdb4921875d2ab1d3791c26e` |
 | `endpoint-agent/bootstrap.py` | `bdbed69d4e7bd6b3505b536d466c3cb35434593e1a3cfc740d11af8a89102397` |
-| `endpoint-agent/managed-linux.py` | `acf548042686d3acf7cd397a203fd9d1a5553216d4f02565f51c8fef985b913d` |
-| `endpoint-agent/enforce-linux.py` | `8ee74b9b62f5acd50ed1c08706f705b8f3c44f661a44425d3cfaba4f6fd6c819` |
+| `endpoint-agent/managed-linux.py` | `58e3a7d66ee7e990bc9f2e9c45797df3e587a47259489ee7a5a8464f2771a14c` |
+| `endpoint-agent/enforce-linux.py` | `d8c672810b95e49858dfd7d5cfb4dc938395c8da67bf22d2f5dbba93d94e5909` |

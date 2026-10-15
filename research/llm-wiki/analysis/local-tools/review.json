@@ -12,18 +12,18 @@
   "manifests": [
     {
       "path": "analysis/local-tools/reverse.json",
-      "sha256": "bae83b2a79a67891b9ccbf38a46d4727a839acbddeeea9d93c58d02c8658745a"
+      "sha256": "2dc945be66b0cca219bc396ff079e635b452011f42438a5bb373b1e1aaf54947"
     },
     {
       "path": "analysis/local-tools/data.json",
-      "sha256": "1e0f48ca51d4427f1b3cbb3b702f75c9d37cff05e083f0a1985f131ac696fadc"
+      "sha256": "6c211e447b66e473eb07c64acea3864403bff1706cf079c156f177056ec067f9"
     },
     {
       "path": "analysis/local-tools/desktop.json",
-      "sha256": "e5e40664abab50c0cf53d4df6118eaeb2bddf61e58fbb21c0ac184ade89e2cf1"
+      "sha256": "4be1e0020568e7401199fdf9e47eb15cd29e615151fee200e1fe35abd46ffd22"
     }
   ],
-  "capability_index_sha256": "2577913a174882af7b8876988743d2820b2ccf610e1c44f1ad78d95a082c7f37",
+  "capability_index_sha256": "e86eb416fe87acae3d12e261d15fb3d6815003ecd9405599f9655aed467842b8",
   "risk_count": 13,
   "all_local_tools_managed_endpoint_verified": false,
   "selected_pj1_kernel_evidence": "status/reports/2026-10-14-pj1-endpoint-update.json",

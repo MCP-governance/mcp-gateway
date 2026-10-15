@@ -20,7 +20,10 @@ def build():
     reverse, data, desktop = (read(ANALYSIS / (name + ".json")) for name in ("reverse", "data", "desktop"))
     ghidra = reverse["tools"][0]
     data_evidence = Path(data["reproduction"]["raw_protocol_evidence"])
+    if not data_evidence.is_absolute():  # kept in the wiki, relative to the repository
+        data_evidence = REPO / data_evidence
     assert data_evidence.is_relative_to(REPO), "Unexpected local protocol path"
+    assert digest(data_evidence) == data["reproduction"]["raw_protocol_evidence_sha256"], "Protocol evidence changed"
     raw_data = read(data_evidence)
     sources = {
         "ghidra": ghidra["protocol_evidence"]["tool_schemas"],
@@ -88,14 +91,14 @@ def build():
                            "source_analysis": "analysis/local-tools/" + paths[server],
                            "verification": "reviewed-schema-and-selected-local-calls",
                            "limitation": "스키마 광고·보수적 권한 상한 분류; 개별 도구 전체 실행 또는 관리 엔드포인트 집행 증거 아님"})
-    (ANALYSIS / "tool-capabilities.json").write_text(json.dumps(output, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (ANALYSIS / "tool-capabilities.json").write_text(json.dumps(output, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     lines = ["# 실제 MCP 스키마의 기능 유형", "",
              "2026-10-14 검수. 태그는 해당 기능의 보수적 권한 상한이며 인자/상태에 따라 달라집니다. readOnlyHint 등 annotation은 권한 보장이 아닙니다.",
              "실제 호출을 확인한 도구와 목록만 확인한 도구를 분리합니다. 정상 read 한 건을 서버의 모든 도구 실행 완료로 집계하지 않습니다.", "",
              "| MCP | 실제 도구 | 기능 유형 | 선택 호출 관측 |", "| --- | --- | --- | --- |"]
     for item in output:
         lines.append(f"| {item['server']} | `{item['name']}` | {', '.join(item['capability_tags'])} | {'확인' if item['call_observed'] else '목록만'} |")
-    (ANALYSIS / "tool-capabilities.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (ANALYSIS / "tool-capabilities.md").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
     risks = read(ROOT / "catalogs/local-tool-risks.json")
     lines = ["# 로컬 소프트웨어·MCP 위험매핑", "",
              "실제 공개 MCP의 로컬 설치·프로토콜 결과와 엔드포인트 코드 회귀를 원본 PAC01~24에 의미로 연결했습니다.",
@@ -104,7 +107,7 @@ def build():
     for risk in risks:
         href = "../" + risk["path"]
         lines.append(f"| {risk['id']} | [{risk['title']}]({href}): {risk['observation']} | {', '.join(risk['source_controls'])} | {risk['boundary']}: {risk['required_control']} | {risk['remaining']} |")
-    (ROOT / "threats/local-tool-map.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (ROOT / "threats/local-tool-map.md").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
     manifest = {"date": "2026-10-14", "verification": "reviewed-local-protocol-evidence",
                 "tool_count": len(output), "counts": {server: len(schemas) for server, schemas in sources.items()},
                 "manifests": [{"path": "analysis/local-tools/" + name + ".json", "sha256": digest(ANALYSIS / (name + ".json"))}
@@ -113,7 +116,7 @@ def build():
                 "risk_count": len(risks), "all_local_tools_managed_endpoint_verified": False,
                 "selected_pj1_kernel_evidence": "status/reports/2026-10-14-pj1-endpoint-update.json",
                 "runtime_registry_changed": False}
-    (ANALYSIS / "review.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (ANALYSIS / "review.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(json.dumps(manifest["counts"], ensure_ascii=False), "reviewed tools", len(output))
 
 
