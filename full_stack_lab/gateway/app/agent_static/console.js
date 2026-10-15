@@ -103,6 +103,7 @@ const VERIFICATION = {
   "gateway-probe": "게이트웨이 차단 확인", "endpoint-report": "엔드포인트 보고", "gitea-token": "조직 직접 확인",
   "provider-attestation": "제공자 증명", stateless: "만료 시각",
 };
+const PROVIDER_SIDE = { rejected: "거부 확인", accepted: "수락함", unverified: "미확인" };
 const TARGET_STATUS = { OUTSTANDING: ["alert", "미회수"], REVOKED: ["allow", "회수됨"], EXPIRED: ["allow", "만료"], UNVERIFIABLE: ["block", "확인 불가"] };
 const COLLECTOR = {
   "config-file": "설정 파일", "proc-socket": "로컬 소켓", "windows-netstat": "로컬 소켓", lsof: "로컬 소켓",
@@ -944,7 +945,7 @@ async function showDecision(id) {
 
 let approvalRows = [];
 ROUTES.approvals = async (_, tab) => {
-  const { approvals, history } = await api("/approvals");
+  const [{ approvals, history }, { rows: unsent }] = await Promise.all([api("/approvals"), gw("dispatch-intents")]);
   approvalRows = approvals;
   const counted = splitBy(history, (h) => (APPROVAL_STATUS[h.status] || ["", h.status])[1]);
   const byServer = splitBy([...approvals, ...history], "server_id");
@@ -953,7 +954,8 @@ ROUTES.approvals = async (_, tab) => {
     html: page({
       head: head("승인 대기"),
       kpis: kpiStrip([["대기", approvals.length, approvals.length ? "approval" : ""],
-        ["가장 오래된 대기", approvals.length ? ago(oldest) : "—"], ["처리 이력", history.length]]),
+        ["가장 오래된 대기", approvals.length ? ago(oldest) : "—"], ["처리 이력", history.length],
+        ["실행 확인 필요", unsent.length, unsent.length ? "alert" : ""]]),
       active: tab || "queue",
       tabs: [
         { key: "queue", label: "대기", n: approvals.length, hot: approvals.length > 0, body: panel("승인 요청", approvals.length ? html`<table class="data">
@@ -967,6 +969,14 @@ ROUTES.approvals = async (_, tab) => {
             <td class="num nowrap"><button class="btn sm danger" data-act="reject" data-id="${a.id}">거부</button>
               ${a.own ? chip("outline", "본인 요청") : html`<button class="btn sm primary" data-act="approve" data-id="${a.id}">승인·실행</button>`}</td></tr>`)}
           </tbody></table>` : empty("대기 중인 요청 없음"), { flush: true }) },
+        { key: "unsent", label: "실행 확인", n: unsent.length, hot: unsent.length > 0, body: panel("실행 확인 필요", unsent.length ? html`<table class="data">
+          <thead><tr><th>사용자</th><th>도구</th><th>행위</th><th>전송</th><th></th></tr></thead><tbody>
+          ${unsent.map((u) => html`<tr><td class="who-cell"><b>${u.display_name || u.user_token}</b></td>
+            <td><code>${u.server_id}.${u.tool_name}</code></td><td>${ACTION[u.action] || u.action}</td>
+            <td class="small">${when(u.attempted_at, { seconds: true })}</td>
+            <td class="num nowrap"><button class="btn sm" data-act="intent-resolve" data-id="${u.request_id}" data-outcome="not_executed">실행 안 됨</button>
+              <button class="btn sm primary" data-act="intent-resolve" data-id="${u.request_id}" data-outcome="executed">실행됨</button></td></tr>`)}
+          </tbody></table>` : empty("확인할 호출 없음"), { flush: true }) },
         { key: "history", label: "처리 이력", n: history.length, body: html`<div class="stack">
           ${panel("이력", history.length ? html`<table class="data"><thead><tr><th>요청자</th><th>도구</th><th>결과</th><th>처리</th><th>검토자</th></tr></thead><tbody>
             ${history.map((h) => html`<tr><td class="who-cell"><b>${h.display_name || h.requested_by}</b><span class="sub">${h.department || ""}</span></td>
@@ -1809,6 +1819,7 @@ function evidenceResult(e) {
   switch (e.kind) {
     case "gateway-denial": return d.blocked ? chip("allow", `실행 전 차단 · ${d.policy_id}`) : chip("block", `차단 안 됨 · ${d.decision} ${d.policy_id || ""}`);
     case "credential-check": return d.present === false ? chip("allow", "자격 없음") : d.present ? chip("block", "자격 남음") : chip("alert", `확인 실패 · HTTP ${d.http_status}`);
+    case "resource-rejection": return d.rejected ? chip("allow", `자원 서버 거부 · ${d.http_status}`) : chip("block", `자원 서버 수락 · ${d.http_status}`);
     case "endpoint-inventory": return d.absent ? chip("allow", "설정 사라짐") : chip("block", `설정 남음 · ${when(d.last_report)}`);
     case "introspection": return d.active === false ? chip("allow", "비활성") : d.active ? chip("block", "활성") : "";
     case "revocation-response": return chip("outline", `처리 응답 ${d.http_status ?? ""}`.trim());
@@ -1837,7 +1848,8 @@ function showTarget(id) {
     { key: "info", label: "대상", body: kv([["종류", TARGET_KIND[t.kind] || t.kind], ["보유 주체", HOLDER[t.holder] || t.holder],
       ["발견 경로", DISCOVERED[t.discovered_by] || t.discovered_by], ["식별자", t.subject_ref ? html`<code>${t.subject_ref}</code>` : ""],
       ["확인 방법", VERIFICATION[t.verification] || t.verification], ["만료", t.expires_at ? when(t.expires_at, { seconds: true }) : ""],
-      ["회수 시각", t.revoked_at ? when(t.revoked_at, { seconds: true }) : ""], ["메모", t.note]]) },
+      ["회수 시각", t.revoked_at ? when(t.revoked_at, { seconds: true }) : ""],
+      ["자원 서버", t.criteria?.provider_side ? PROVIDER_SIDE[t.criteria.provider_side.state] : ""], ["메모", t.note]]) },
     { key: "criteria", label: "기준", body: t.criteria ? html`<div class="crit">${["C1", "C2", "C3", "C4"].map((k) => html`<div class="c"><h4>${k} ${CRITERIA[k]}
       ${chip(t.criteria[k].met ? "allow" : "block", t.criteria[k].met ? "충족" : "미충족")}</h4>
       ${t.criteria[k].gaps.length ? html`<ul>${t.criteria[k].gaps.map((g) => html`<li>${g}</li>`)}</ul>` : ""}</div>`)}</div>` : empty("미판정") },
@@ -2138,6 +2150,13 @@ const ACTIONS = {
     const r = await api(`/approvals/${el.dataset.id}/approve`, { method: "POST" });
     toast(`승인했습니다 · ${DECISION[r.decision]?.[1] || r.decision || "처리됨"}`);
     reload(); refreshBadges();
+  },
+  async "intent-resolve"(el) {
+    const executed = el.dataset.outcome === "executed";
+    const fd = await ask({ title: executed ? "실행됨으로 기록" : "실행 안 됨으로 기록", fields: field.area("note", "확인 내용", 'maxlength="500"'), confirm: "기록" });
+    if (!fd) return;
+    await gw(`dispatch-intents/${el.dataset.id}/resolve`, { method: "POST", body: { outcome: el.dataset.outcome, note: fd.get("note") } });
+    toast("기록했습니다."); reload();
   },
   async reject(el) {
     const fd = await ask({ title: "승인 요청 거부", fields: field.area("note", "사유", 'required maxlength="500"'), confirm: "거부", danger: true });

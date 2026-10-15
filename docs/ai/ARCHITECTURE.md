@@ -132,7 +132,8 @@ OpenCode `--agent bob`. **MCP 경로는 그대로**다: 도구 목록 조회와 
 8. OPA가 판정한다: Allow / Alert / Restrict / Approval / Block(→ [POLICY.md](POLICY.md)). 단말 에이전트가 섀도 설정을
    보고한 PC의 호출은 `MCP-SHADOW-001` 경보가 붙는다.
 9. 실행이면 같은 연결에서 upstream `tools/list`를 다시 받아 계약 해시를 대조한 뒤 호출(`core._call_upstream`), 달라졌으면
-   `MCP-CATALOG-001`.
+   `MCP-CATALOG-001`. 보내기 직전 한 문장으로 전송 의도(`dispatch_intents`)를 적으며 예약·주체·서버 상태를 마지막으로 확인한다.
+   답이 없던 호출은 자동 재시도하지 않고 관리자가 확인할 때까지 같은 쓰기를 막는다(D-96, D-97).
 10. 결과는 크기 제한·주입 표지 검사 뒤 Presidio가 개인정보를 가린다. 판정·정책 입력·클라이언트 정보가 해시 체인 감사
     원장(`decisions`)에 남는다. 하네스는 결과(또는 `[MCP Gateway · 차단 …]` 문장)를 모델에 넘기고, 모델이 직원에게 답한다.
 

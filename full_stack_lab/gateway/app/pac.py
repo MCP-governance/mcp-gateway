@@ -245,7 +245,10 @@ async def build(payload: dict, principal: dict, cls, tool: dict | None, contract
     unresolved = await db.fetch_one(
         """SELECT 1 FROM decisions WHERE user_token=%s AND server_id=%s AND tool_name=%s
            AND upstream_attempted AND NOT upstream_executed AND action IN ('w','x')
-           AND request_payload->'arguments'=%s LIMIT 1""", (principal["token"], server, feature, Jsonb(arguments)))
+           AND request_payload->'arguments'=%s
+           AND NOT EXISTS (SELECT 1 FROM dispatch_intents i WHERE i.decision_id = decisions.id
+                            AND i.state IN ('confirmed_executed','confirmed_not_executed')) LIMIT 1""",
+        (principal["token"], server, feature, Jsonb(arguments)))
     facts = {"trusted": True, "now_ns": now, "approval": a, "approval_workflow_available": True,
              "classification": {"verified": tool is not None, "high_risk": high_risk, "transfer_required": transfer,
                                 "automated": True, "on_behalf_of": delegated["asserted"]},

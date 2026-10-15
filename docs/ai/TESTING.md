@@ -104,6 +104,18 @@ docker compose run --rm --no-deps --entrypoint python -e LAB_GATEWAY_URL=http://
 - workday의 llm 모드는 모델 품질에 좌우된다(기본 `qwen3.5:2b-q4_K_M`). 기대 판정 대조는 scripted 모드로만 한다.
 - 보안 회귀는 OPA와 mcp-git을 잠깐 멈춘다. 다른 사람이 Console을 쓰는 중이면 몇 초간 차단 판정이 난다.
 
+## 격리 랩: 호출 예약·전송 의도·종료·토큰 폐기 (`tests/termination_dispatch_lab.sh`)
+솔루션 기기에 일회용 PostgreSQL·OPA·Presidio·Gitea와 Gitea 프로젝트의 MCP 서버 이미지를 따로 띄워 검사한다(제품 스택은 건드리지 않는다).
+WSL에서 `tests/termination_dispatch_lab.sh up` → `run <검사>` → `down`. 종료 검사는 제공자 토큰을 폐기하므로 `run` 사이에 `reset`을 쓴다.
+`up`은 3시간 뒤 스스로 지운다. 이미지에 Gitleaks 라이브러리가 없어 비밀 검사만 "아무것도 찾지 못함"으로 바꾼다(단위 수준).
+
+| 검사 | 확인하는 것 | 층 |
+| --- | --- | --- |
+| `dispatch_intent_pg_check.py` | 동일 호출 24개·서로 다른 호출 12개 동시 예약, 해제·만료 경쟁, 전송 경계의 거부, 승인 소비, 240건 전송과 종료 cutover 경쟁, 풀 닫기 | 실제 PostgreSQL |
+| `dispatch_effect_lab.py` | 같은 호출 12개·다른 호출 10개 동시 실행, 호출량 상한, 승인 6명 경쟁, 승인 재사용, 답을 잃은 호출, 계정 중지, SIGKILL | 실제 Gitea MCP 서버, 효과는 Gitea 이슈 수로 센다 |
+| `termination_lab.py` | 전송 중 호출과 cutover, 폐기한 토큰의 자원 서버 거부, 물을 수 없을 때, 비밀 값 부재, 자격 파일 재읽기, 폐기 서버 유지 | 실제 Gitea·MCP 서버 |
+| `token_revocation_pg_check.py` | 실제 서명 토큰의 계열 폐기, 폐기와 발급 경쟁, 발급 실패 롤백, 장치 폐기 | 실제 PostgreSQL |
+
 ## 실기기 키트 (`tests/field_kit_check.py`, 16건)
 가짜 IdP·Gateway에 대해 키트 전체를 돌린다. D-51 부분: 실제 VM의 `claude mcp list` 줄(계정 커넥터·플러그인·stdio·SSE·Gateway 서버)을
 보고 항목으로 바꾸고 경로 속 키를 보내지 않는지, 거부가 오면 사용자 설정의 `deniedMcpServers`에 넣되 직원이 직접 넣은 항목은

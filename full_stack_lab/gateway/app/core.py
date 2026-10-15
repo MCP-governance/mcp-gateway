@@ -23,7 +23,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import classify, connections, db, endpoint_plane, pac, poisoning, privacy, registry, secret_scan, upstream
+from . import classify, connections, db, dispatch, endpoint_plane, pac, poisoning, privacy, registry, secret_scan, upstream
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMN_SETS, AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint,
@@ -1024,12 +1024,17 @@ async def _reserve_call(request_id: str, user_token: str, server_id: str, tool: 
         # hashtext() maps the principal onto the advisory lock space; a collision costs
         # two principals a moment of waiting and never a wrong count.
         await connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (user_token,))
+        # An identical write that was sent and never answered counts as still running: its
+        # reservation may be long gone (the process died), the downstream effect may not be.
         cursor = await connection.execute(
-            """SELECT count(*) AS active,
-                      count(*) FILTER (WHERE fingerprint = %s) AS same_call
+            f"""SELECT count(*) AS active,
+                      count(*) FILTER (WHERE fingerprint = %s) AS same_call,
+                      EXISTS (SELECT 1 FROM dispatch_intents i
+                               WHERE i.user_token = %s AND i.fingerprint = %s AND i.action IN ('w','x')
+                                 AND {dispatch.UNSETTLED}) AS unsettled
                  FROM call_reservations
                 WHERE user_token = %s AND released_at IS NULL AND expires_at > now()""",
-            (fingerprint, user_token))
+            (fingerprint, user_token, fingerprint, user_token))
         open_calls = await cursor.fetchone()
         cursor = await connection.execute(
             """SELECT count(*) FILTER (WHERE decision = 'Block'
@@ -1077,18 +1082,28 @@ async def _reserve_call(request_id: str, user_token: str, server_id: str, tool: 
         "concurrency_limit": CONCURRENCY_LIMIT,
         # The identical call is already running. A retry after a timeout is not this:
         # the earlier reservation is released or expired by then.
-        "duplicate_in_flight": int(open_calls["same_call"]) > 0,
+        "duplicate_in_flight": int(open_calls["same_call"]) > 0 or bool(open_calls["unsettled"]),
         "execution_timeout_ms": int(min(upstream.CONNECT_TIMEOUT, RESERVATION_TTL_SECONDS - 10) * 1000),
     }
 
 
-async def _release_call(request_id: str) -> None:
+async def _release_call(request_id: str, decision_id: int | None = None, intent: str | None = None) -> None:
     """Give the place back. Every exit from execute_call passes through here, and a
-    reservation that is somehow never released still expires on its own."""
+    reservation that is somehow never released still expires on its own.
+
+    `intent` is how a sent call ended: "resolved" with a definite answer, "uncertain"
+    without one. An uncertain call keeps its place; the intent row, not the reservation,
+    is what refuses an identical write afterwards. One statement settles both, so the
+    reservation is never freed while the intent still says pending.
+    """
     try:
         await db.execute(
-            "UPDATE call_reservations SET released_at=now() WHERE request_id=%s AND released_at IS NULL",
-            (request_id,))
+            """WITH settled AS (
+                 UPDATE dispatch_intents SET state = %(intent)s, decision_id = %(decision)s, resolved_at = now()
+                  WHERE request_id = %(id)s AND state = 'pending' AND %(intent)s::text IS NOT NULL)
+               UPDATE call_reservations SET released_at = now()
+                WHERE request_id = %(id)s AND released_at IS NULL AND %(intent)s::text IS DISTINCT FROM 'uncertain'""",
+            {"id": request_id, "intent": intent, "decision": decision_id})
     except Exception:
         logging.getLogger(__name__).exception("call reservation release failed for %s", request_id)
 
@@ -1254,6 +1269,21 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                 elif verdict.get("restrictions", {}) != dispatch_state.get("restrictions", {}):
                     problem = "Restrictions changed before dispatch"
         laps.lap("recheck")
+        if problem is None:
+            # The last thing before the send, in one statement with the final look at the
+            # reservation, the principal and the server: past this line a cutover or a
+            # revocation no longer stops this call, so it is on record that it may have gone out.
+            refused = await dispatch.record(dispatch_state["request_id"], dispatch_state["action"], approval_id)
+            if refused == "terminated":
+                problem, blocked_verdict = "Server entered termination before dispatch", local_verdict(
+                    "MCP-DECOMM-001", "Block", "종료·폐기 절차에 들어간 이용 관계입니다. 실행하지 않습니다.")
+            elif refused == "principal":
+                problem = "Principal was revoked before dispatch"
+            elif refused == "approval":
+                problem = "Approval expired or was withdrawn before execution"
+            elif refused:
+                problem = "call reservation expired before dispatch"
+            laps.lap("intent")
         if problem is None:
             dispatch_state["upstream_attempted"] = True
             result = await client.call_tool(tool, arguments)
@@ -1531,9 +1561,12 @@ async def _decision_payload(event: dict, laps: _Laps) -> dict:
     event["timings"] = laps.view()
     decision_id = await _record_decision(event)
     # Keep the reservation until the decision is durably recorded. If persistence
-    # fails, its TTL keeps the unconfirmed call counted instead of allowing a retry.
-    if event.get("request_id") and not (event.get("upstream_attempted") and not event.get("upstream_executed")):
-        await _release_call(event["request_id"])
+    # fails, its TTL keeps the unconfirmed call counted instead of allowing a retry
+    # (and the pending intent turns uncertain once the reservation is gone).
+    if event.get("request_id"):
+        attempted = bool(event.get("upstream_attempted"))
+        await _release_call(event["request_id"], decision_id,
+                            None if not attempted else "resolved" if event.get("upstream_executed") else "uncertain")
     return {**event, "decision_id": decision_id, "latency_ms": int((time.perf_counter() - laps.started) * 1000)}
 
 

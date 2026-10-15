@@ -112,6 +112,13 @@ removed = [e for e in collected.get("collected", []) if e["kind"] == "endpoint-i
 check(removed and all(e["detail"]["absent"] for e in removed), "gitea: real managed settings removed and endpoint observer confirms absence")
 status, graded = api("POST", f"/api/termination/cases/{case_id}/assess")
 check(graded["case"]["grade"] == "T1", "gitea: T1 after revocation with state evidence", f"{graded['case']['grade']} {graded['case']['criteria'].get('notes')}")
+credential_side = next(t for t in graded["targets"] if t["kind"] == "server-held-credential")["criteria"].get("provider_side", {})
+check(credential_side.get("state") in {"rejected", "unverified"}, "gitea: the resource server never accepts the revoked token; without a copy to show it the state is unverified",
+      str(credential_side))
+check(graded["activity"].get("unknown") == 0 and "straddled" in graded["activity"], "gitea: no call is left with an unknown outcome and in-flight calls are counted apart",
+      str(graded["activity"]))
+status, unsent = api("GET", "/api/dispatch-intents")
+check(status == 200 and isinstance(unsent.get("rows"), list), "dispatch intents are listed for administrators", str(status))
 weak = [e for e in graded["evidence"] if e["kind"] == "revocation-response"]
 check(weak and all(not e["meaning"]["state"] for e in weak), "gitea: the DELETE response is recorded as request-only evidence")
 status, closed = api("POST", f"/api/termination/cases/{case_id}/close", {"note": "T1 확인 후 종결"})
