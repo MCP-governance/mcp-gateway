@@ -104,12 +104,12 @@ const ENDPOINT_CLASS = { registered: ["allow", "등록 서버"], shadow: ["block
 // Observed is never shown as blocked.
 const CONTROL_STATE = {
   gateway_enforced: ["allow", "게이트웨이 통제"], endpoint_enforced: ["allow", "엔드포인트 통제"],
-  vendor_enforced: ["restrict", "벤더 통제"], observed_only: ["alert", "관찰만"],
-  unknown_not_enrolled: ["outline", "미등록"], bypass_possible: ["block", "우회 가능"],
+  vendor_enforced: ["brand", "벤더 통제"], observed_only: ["alert", "관찰만"],
+  unknown_not_enrolled: ["outline", "엔드포인트 미등록"], bypass_possible: ["block", "우회 가능"],
 };
 const INTEGRATION_CLASS = {
-  gateway_mcp: "게이트웨이 MCP", gateway_backend_connector: "게이트웨이 경유 SaaS", vendor_native_connector: "벤더 커넥터",
-  local_plugin_or_stdio: "로컬 플러그인", shadow_or_unknown: "미등록 MCP",
+  gateway_mcp: "게이트웨이 MCP", gateway_backend_connector: "게이트웨이 연동 SaaS", vendor_native_connector: "벤더 커넥터",
+  local_plugin_or_stdio: "로컬 MCP", shadow_or_unknown: "미등록 MCP",
 };
 const MANAGED_BY = { gateway: "게이트웨이", endpoint: "엔드포인트", vendor: "벤더", none: "—" };
 const APPROVAL_STATE = {
@@ -461,7 +461,6 @@ ROUTES.overview = async (_, tab) => {
   const count = (s) => items.filter((i) => i.state === s).length;
   const devices = (pl?.devices || []).filter((d) => d.endpoint_id);
   const deviceOf = Object.fromEntries(devices.map((d) => [d.endpoint_id, d]));
-  const outside = items.filter((i) => !i.class.startsWith("gateway_")).length;
   const bypass = items.filter((i) => i.state === "bypass_possible").sort((a, b) => (b.bypass || []).length - (a.bypass || []).length).slice(0, 8);
   // decision -> sent? -> executed? -> response, for today's tool calls.
   const RESP = Object.fromEntries(Object.entries(RESPONSE).map(([k, [, label]]) => [k, label]));
@@ -503,7 +502,7 @@ ROUTES.overview = async (_, tab) => {
           ${panel("최근 차단 10건", feed.rows.length ? decisionTable(feed.rows) : empty("차단된 호출 없음"), { flush: true, end: html`<a class="btn sm" href="#/activity?decision=Block">차단 로그 <span aria-hidden="true">↗</span></a>` })}
         </div>` },
         { key: "planes", label: "통제 현황", body: html`<div class="stack"><div class="grid c21">
-          ${panel("분류별 통제 상태", items.length ? chartBox("c-ov-matrix", "분류별 통제 상태 항목 수", "lg") : empty("항목 없음"), { sub: `게이트웨이 밖 ${outside}건` })}
+          ${panel("연동 유형별 통제 상태", items.length ? chartBox("c-ov-matrix", "연동 유형별 통제 상태 항목 수", "lg") : empty("항목 없음"))}
           ${panel("확인 근거", items.length ? chartBox("c-ov-evidence", "통제 상태의 확인 근거", "sm") : empty("항목 없음"))}</div>
           ${panel("우회 가능 항목", bypass.length ? html`<table class="data"><thead><tr><th>항목</th><th>분류</th><th>상태</th><th class="num">우회 경로</th></tr></thead><tbody>
             ${bypass.map((i) => html`<tr class="clickable" tabindex="0" data-act="goto" data-href="#/coverage?t=items&state=bypass_possible&q=${encodeURIComponent(i.name)}">
@@ -989,7 +988,7 @@ const connectorButtons = (g) => g.decision
 let connectorGroups = [];
 
 // Which control governs each integration and endpoint, with what evidence.
-const STATE_DECISION = { gateway_enforced: "Allow", endpoint_enforced: "Allow", vendor_enforced: "Restrict",
+const STATE_DECISION = { gateway_enforced: "Allow", endpoint_enforced: "Allow", vendor_enforced: "",
   observed_only: "Alert", unknown_not_enrolled: "", bypass_possible: "Block" };
 ROUTES.coverage = async (_, tab, query) => {
   const [p, inv, conn] = await Promise.all([planes(), gw("endpoint/inventory"), api("/api/connectors")]);
@@ -1011,7 +1010,7 @@ ROUTES.coverage = async (_, tab, query) => {
         ["게이트웨이 통제", count("gateway_enforced"), "allow", "#/coverage?t=items&state=gateway_enforced"],
         ["엔드포인트 통제", count("endpoint_enforced"), "allow", "#/coverage?t=items&state=endpoint_enforced"],
         ["벤더 통제", count("vendor_enforced"), "restrict", "#/coverage?t=items&state=vendor_enforced"],
-        ["관찰만·미등록", count("observed_only") + count("unknown_not_enrolled"), "alert", "#/coverage?t=items&state=observed_only"],
+        ["관찰 및 미등록", count("observed_only") + count("unknown_not_enrolled"), "alert", "#/coverage?t=items&state=observed_only"],
         ["우회 가능", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"]]),
       active: tab || "items",
       tabs: [
@@ -1027,8 +1026,8 @@ ROUTES.coverage = async (_, tab, query) => {
             </tbody></table>${rows.length ? "" : empty("조건에 맞는 항목 없음")}`, { flush: true,
             tools: html`<input type="search" data-coverage-search maxlength="80" value="${query.get("q") || ""}" placeholder="이름·대상·사용자" aria-label="항목 검색" />
               ${coverageSelect("state", "상태", CONTROL_STATE, state)}
-              ${coverageSelect("class", "분류", INTEGRATION_CLASS, cls)}<span class="small muted">${rows.length}/${items.length}건</span>` })}<details class="analysis"><summary>통제 상태 분포</summary><div class="grid c21">
-          ${panel("분류별 상태", items.length ? chartBox("c-cov-matrix", "분류별 통제 상태 항목 수", "lg") : empty("항목 없음"))}
+              ${coverageSelect("class", "연동 유형", INTEGRATION_CLASS, cls)}<span class="small muted">${rows.length}/${items.length}건</span>` })}<details class="analysis"><summary>통제 상태 분포</summary><div class="grid c21">
+          ${panel("연동 유형별 통제 상태", items.length ? chartBox("c-cov-matrix", "연동 유형별 통제 상태 항목 수", "lg") : empty("항목 없음"))}
           ${panel("확인 근거", items.length ? chartBox("c-cov-evidence", "항목 상태의 확인 근거 비율", "sm") : empty("항목 없음"))}</div></details></div>` },
         { key: "devices", label: "엔드포인트", n: p.devices.length, hot: p.summary.devices.bypass_possible > 0, body: panel("엔드포인트",
           html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>플랫폼</th><th>상태</th><th>관리 계정</th><th>점검</th><th>우회 경로</th></tr></thead><tbody>
