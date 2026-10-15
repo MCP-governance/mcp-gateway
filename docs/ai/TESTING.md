@@ -19,6 +19,7 @@
 | 7a | 적대적 회귀 | `tests/adversarial_check.py` | 통제를 **우회하는 방법**을 실제 ingress로 보낸다: 내부 주소의 다른 표기(10진·8진·16진·축약·IPv4-mapped·wildcard DNS·FQDN), 텍스트로는 읽기처럼 보이는 SQL(SELECT INTO·CTE DELETE·pg_read_file·COPY TO PROGRAM), 인자에 실린 지시문(영·한·보이지 않는 문자), 경로 회피 표기, 메일·URL로 나가는 자격 증명(GitHub·Slack·`sk-`·JWT). **정상 업무 대조군**(커밋 해시가 든 사내 메일, 창 함수·`extract` 분석 쿼리 포함)으로 오탐을 함께 센다 — 전부 막는 통제는 공격 점수가 만점이어도 쓸 수 없다. 2026-10-01: 공격 42/42 · 정상 16/16 | ~1분 |
 | 7b | 주입 탐지율(요청 시) | `tests/injection_corpus_check.py` | PyRIT 고정 커밋의 garak latent-injection 지시문 시드로 `poisoning` 규칙의 탐지 수를 잰다(26건 중 21, 기준 미달이면 exit 1). 네트워크가 필요해 `console.sh test`에는 넣지 않는다 | 수 초 |
 | 7c | 팀원 PAC-15 초안 검토(요청 시) | `research/pac15-review/run.sh` | 원본과 수정본을 같은 300건으로 — 원본 정상 200/200·결함 59, 수정본 200/200·0 | 수 초 |
+| 7d | 규격 세대 확인(요청 시) | `tests/protocol_versions_check.py` | 실제 facade가 옛 규격(`initialize`+세션 ID, 2025-11-25)과 2026-07-28(`server/discover`, 세션 없음)을 모두 받고, 도구 목록 힌트가 `private`·`ttlMs 0`이며, 공급자가 되묻는 요청(`InputRequiredResult`)에는 답하지 않는다(D-74). gateway 이미지 안에서 loopback으로, DB·정책 대체 | 수 초 |
 | 8 | 정책 재생 | `gateway/app/replay.py` + `tests/replay_check.py` | 기록된 정책 입력을 현재 정책에 다시 넣은 결과(보고)와 합성 라벨 10사례의 공격 미탐·정상 차단 0 | 수 초 |
 | 9 | 논문 실험 | `gateway/app/experiments.py` + `tests/experiments_check.py` | E1·E2·E3 findings가 논문 주장과 같다 | ~30초 |
 

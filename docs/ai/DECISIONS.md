@@ -898,6 +898,83 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **한계**: 하네스 바이너리는 복사본 무결성만 고정하고 공급자 서명은 검증하지 않는다. 관리 계정은 홈이 달라 직원 계정의 파일을
   읽지 못한다. 설치기는 네트워크에서 하네스를 받아오지 않는다 — 공식 설치가 없으면 한 줄로 거부한다.
 
+## D-72 관리자 계정의 터미널에서 친 명령도 관리 계정으로 간다 (2026-10-05)
+
+- **문제**: D-71의 shim은 `/usr/local/bin`에만 있다. 직원 PATH는 `~/.local/bin`이 앞서므로 평소 터미널에서 `claude`·`codex`를 치면
+  직원 소유의 진짜 하네스가 먼저 실행돼 관리형 MCP·판정 로그를 모두 비껴갔다(`Needs authentication`, `headers helper exited with
+  status 1`, 솔루션에 기록 없음). 시험이 SSH 한 줄 명령(비대화형이라 PATH에 `~/.local/bin`이 없다)이어서 가려졌다.
+- **결정**: ① `/etc/profile.d/mcpgw-managed.sh`에 `codex`·`claude` 셸 함수(PATH 조회보다 앞선다)를 두고 `/etc/bash.bashrc`·
+  `/etc/zsh/zshrc`에 표식 블록으로 불러온다(비로그인 터미널까지). **직원 계정에서만 정의한다** — 관리 계정의 로그인 셸도 profile.d를
+  읽는데, 거기서 shim을 부르면 AppArmor가 실행을 거부해 `bad interpreter: Permission denied`로 죽는다. shim이 없으면 원래 명령으로 폴백.
+  제거 시 함수·블록 모두 원복. ② 하네스 탐색에 공식 설치기 위치(`~/.codex/packages/standalone/current/bin`,
+  `~/.local/share/claude/versions`·`~/.local/bin/claude`)를 추가. ③ Codex 0.159+ 대화형 CLI는 공유 백그라운드 서버를 Unix 소켓으로
+  쓰려 하므로(승인 복사본은 패키지 구조가 없고 프로필은 Unix IPC 금지) 래퍼가 `--no-daemon`을 앞에 붙인다(플래그를 모르는 빌드엔 안 붙임).
+  ④ 설치 끝의 모델 로그인을 Codex·Claude 각각 안내(Ctrl+C로 건너뜀, 첫 실행 때 하네스가 다시 묻는다). ⑤ 활성화 전에는 점검 주기를
+  10초로 줄여 활성화 직후 토큰이 몇 초 안에 열린다(관측기는 60초 주기 유지).
+- **시험(PJ1)**: 설치 → 활성화 → 새 PTY 터미널에서 `claude mcp list` 3개 연결, 옵션 없이 친 `codex` TUI에서 `context7.resolve-library-id`
+  호출 → 관리형 장치 ID·codex-mcp-client 0.160.0으로 판정 로그 기록. 시험은 비대화형 SSH가 아니라 **대화형 PTY**로 한다.
+- **한계**: 전체 경로나 `command claude`로 진짜 하네스를 실행하면 우회다(관리자 계정의 원래 권한, 통제 범위 화면의 `우회 가능`).
+  함수는 bash·zsh 대화형 셸에만 걸리고 GUI 실행기·IDE 확장은 shim PATH에 의존한다. 같은 PC의 다른 사용자가 친 명령은 shim으로 가
+  sudo 규칙이 없어 실패한다(직원 1인 1PC 전제).
+
+## D-73 도구 계약의 숨김 기법과 정보 전달용 인자도 등록 때 본다 (2026-10-05)
+
+- **문제**: D-52의 계약 규칙은 지시 문구만 봤다. 관리자 눈에 띄지 않게 둔 문장(마크다운 주석, 빈 줄 아래 꼬리, base64)과 모델이
+  빼낸 정보를 담아 보낼 인자 이름(공개 사례 `sidenote`)은 보지 않았다. `sidenote`는 자체 시험 예시의 스키마에 이미 있었는데도
+  인자 이름은 판정에 쓰이지 않았다. Microsoft agent-governance-toolkit(MIT)의 스캐너를 읽고 우리 규칙과 대조해 찾은 빈 곳이다.
+- **결정**: `poisoning.findings()`(계약)에만 라벨 4개를 더한다. 인자·결과 규칙에는 넣지 않는다 — 웹 페이지·출력에는 HTML 주석,
+  빈 줄, base64가 흔하다. ① `숨긴 주석`(`<!--` 같은 여는 표식, `[//]: #`) ② `공백 아래 숨은 문장`(빈 줄 5개 이상 뒤의 글, CRLF·스키마 안의 `\n`
+  포함) ③ `인코딩된 문장`(40자 이상 base64 중 읽을 수 있는 문장으로 디코딩되는 것, 해시·id는 제외) ④ `정보 전달용 인자`(최상위 인자
+  이름이 `sidenote`·`system_prompt`·`chat_history`·`conversation(_history)`·`callback_url`·`webhook(_url)`·`target_url`과 정확히 일치).
+- **하지 않은 것**: 같은 이름·비슷한 이름의 도구 사칭 검사. 이 Gateway는 서버마다 엔드포인트가 따로라(`/mcp/<서버>/`) 호출은 하네스가
+  연결한 서버로만 가고, Claude Code는 `mcp__<서버>__<도구>`로 서버 이름을 붙이며 통합 엔드포인트는 `<서버>__<도구>`다. 실제 카탈로그에도
+  정확히 같은 이름이 정상으로 있다(`list_branches`: github·supabase, `search_issues`: github·sentry — 이 검사는 둘 다 오탐).
+  비슷한 이름(편집거리 2 이하) 쌍은 0건이었다. 이름을 합치는 다른 하네스(Gemini CLI 등)에서 모델이 헷갈릴 수 있는지는 확인하지 않았다.
+  인자 이름의 부분 문자열 규칙(`command`·`eval`·`exec` 등)도 쓰지 않는다 — Notion의 수정 도구 2개가 enum 인자 `command`를 쓰고
+  `retrieval`에도 `eval`이 들어 있다.
+- **시험**: 기기 DB의 도구 316행(중복 제외 165개, 서버 8개, 비활성 도구 포함)에 새 규칙을 걸어 **새 적중 0건**(기존 1건은 비활성
+  notion 도구). `python -m app.poisoning`에 검출 7건·무음 6건을 더했고, 공개 사례 `sidenote` 예시는 이제 라벨 하나가 늘어난다.
+  garak 주입 코퍼스는 변경 전과 같은 21/26(인자·결과 규칙은 건드리지 않음).
+- **한계**: 새 규칙이 이미 등록된 활성 도구에 적중하면 `poisoning_review`가 없는 한 카탈로그 갱신 때 `unsafe-description`으로 서버가 막힌다.
+  그래서 위 실측을 먼저 했고, 랩 서버(filesystem·git 등)의 도구 원문으로는 재지 못했다. 중첩 객체 속 인자 이름은 보지 않는다(그 설명·기본값은
+  본다). 규칙은 숨김 기법의 흔한 형태만 본다.
+
+## D-74 새 MCP 규격(2026-07-28)과는 코드 변경 없이 맞는다 — 두 세대를 시험으로 고정한다 (2026-10-05)
+
+- **문제**: 2026-07-28 규격은 프로토콜 세션과 `Mcp-Session-Id`를 없애고(`initialize` 제거, 요청마다 `_meta`에 버전·능력·클라이언트 정보),
+  `server/discover`·`ttlMs`/`cacheScope`·`resultType`·다회전 요청(공급자가 사용자 입력을 되묻는 `InputRequiredResult`)을 더했다.
+  Gateway가 두 세대를 다 받는지, principal별로 걸러지는 도구 목록이 공유 캐시에 남지 않는지, 공급자가 되물으면 어떻게 되는지 몰랐다.
+- **확인**(기기에서 실행 중인 gateway 이미지, `mcp==2.2.0`의 최신 규격 2026-07-28·기본 협상 2025-03-26, loopback, DB·정책은 대체):
+  ① 옛 클라이언트(`initialize` 2025-11-25 + 세션 ID)는 그대로 동작하고 하네스 이름이 기록된다. ② 새 클라이언트는 `server/discover`로
+  2026-07-28을 협상하고 `tools/list`·`tools/call`이 동작한다. 목록 결과는 `cacheScope: private`·`ttlMs: 0`이라 공유 캐시가 쥐지 않고,
+  하네스 이름은 `initialize` 없이도 `_meta`의 clientInfo로 남는다. ③ 공급자가 도구 호출에 `InputRequiredResult`("API 키를 붙여 달라")를
+  돌려주면 upstream 클라이언트가 `MCPError: Elicitation not supported`로 실패하고 답하지 않는다. 이 Gateway는 sampling·elicitation·roots
+  능력을 선언하지 않으므로 공급자가 합법적으로 물을 수도 없다.
+- **결정**: 코드는 바꾸지 않는다. 위 세 가지를 `tests/protocol_versions_check.py`로 고정한다(SDK를 올리거나 `build_mcp`를 바꿀 때 돌린다).
+  같은 파일의 기대값을 `(0, "public")`으로 뒤집으면 exit 1로 실패함을 확인했다.
+- **적용되지 않는 변경**: 인가 쪽(Client ID Metadata Document, `iss` 검증, DCR의 `application_type`)은 IdP에 `authorization_endpoint`·DCR가 없고
+  password·refresh·장치 토큰만 있어(`idp.py` 라우트) 해당 없다. Gateway는 상태 핸들을 만들지 않는다(핸들 탈취 방어는 공급자 몫). 세션 ID는
+  판정에 쓰지 않는다 — 요청마다 Bearer 토큰으로 신원을 정한다.
+- **한계·후속**: ① 하네스가 실제로 어느 세대로 붙는지는 확인하지 못했다(결정 원장에 협상 버전이 없다). ② SSE 진입점(`gateway-sse`, 2024-11-05
+  전송)은 이번 규격에서 Deprecated로 분류됐다. 제거는 12개월 이후라 당장 영향은 없으나, 이 진입점을 쓰는 하네스가 있는지 확인해 둘 것.
+  ③ 공급자가 tasks 확장의 작업 핸들을 먼저 돌려주는 경우, stdio 진입점, 도구 인자를 HTTP 헤더로 복사하는 `x-mcp-header`는 시험하지 않았다.
+
+## D-75 도구 텍스트 검사는 길이에 선형이어야 한다 — 정규식 서비스 거부 3곳을 고쳤다 (2026-10-05)
+
+- **문제**: D-73 시험에 아주 긴 입력을 넣다가 `poisoning.py`의 기존 규칙이 입력 길이의 제곱으로 느려지는 것을 찾았다. 줄바꿈이 있는 평범한
+  로그 100 KB를 `result_findings`에 넣으면 16.9초, 50 KB는 4.2초가 걸렸다. 결과 상한 `MAX_RESULT_BYTES`(256 KB)에서는 약 2분(제곱으로 늘려 추정)이고, 인자 상한
+  64 KB에서도 수 초다. 이 검사는 Gateway의 이벤트 루프 안에서 동기로 돌기 때문에 그동안 모든 사용자의 요청이 멈춘다. 정상적으로 큰 결과
+  하나, 또는 악의적인 공급자의 결과 하나로 Gateway 전체가 멈출 수 있다.
+- **원인**(`OVERRIDE_RULES`, 결과·인자·계약 세 곳에 모두 쓰인다): ① 위조 대화 규칙 `(?=.*^…user:)(?=.*^…assistant:)`는 선행 탐색 두 개를 모든
+  위치에서 다시 시작해 전체를 훑는다. ② `숨긴 지시 태그`의 `<\s*/?\s*`는 공백이 두 곳에 겹쳐 맞는다. ③ `^\s*###`는 줄 머리마다 뒤의 공백 전체를 다시 읽는다.
+- **결정**: ① 두 패턴을 각각 한 번씩 찾는 `_Both`로 바꾼다(뜻은 같다). ② `<\s*(/\s*)?`로 바꾼다(받아들이는 문자열이 같다). ③ `^[ \t]*###\s*`로 바꾼다
+  (줄 머리 뒤의 공백이 줄바꿈을 건너 시작해도 마지막 줄 머리에서 시작한 것과 같다). 무작위 입력 6만 건으로 옛 패턴과 새 패턴의 판정이 같음을 확인했다(불일치 0).
+  평범한 100 KB 출력은 39 ms, 256 KB는 43 ms가 됐다.
+- **시험**: `python -m app.poisoning`이 길이 20만 안팎의 병적 입력 6종(여는 표식 반복, 줄바꿈·CRLF·이스케이프된 줄바꿈 연속, 한 글자 반복, 공백 연속)을
+  각 5초 안에 읽는지 본다. 규칙이 다시 제곱으로 느려지면 실패한다. garak 주입 코퍼스는 변경 전과 같은 21/26.
+- **한계**: 병적 입력으로 잰 것은 이 파일의 규칙뿐이다. 다른 모듈의 정규식 16곳(`classify.py`의 DLP·비밀 패턴 포함)은 구조를 읽고 중첩 반복과 겹치는
+  공백 반복이 없음만 확인했다. 파이썬 표준 `re`에는 시간 제한이 없으므로, 앞으로 이 파일에 규칙을 더할 때는 위 병적 입력 검사를 통과해야 한다.
+
 ## D-76 개발 협업 기록과 제품 자원 지표를 분리하고 재현된 경계 결함을 수정한다 (2026-10-13)
 
 - 사용자 정정: 연구 위키는 Markdown 정본이다. 웹은 실제 Codex·Claude 공개 요청/응답·작업·검사를 보는 별도 localhost 협업 콘솔이며 원본 대화·CLI 설정·비밀은 Git에서 제외한다. 제품 Console에 개발 기록을 넣지 않는다.
@@ -907,3 +984,65 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 결과·목적지: JSON 직렬화와 함께 디코딩된 모든 문자열을 검사하여 줄바꿈 기반 지시 규칙을 유지한다. OPA egress 데이터 실패/결측/타입 오류는 거부하고 명시적 빈 목록과 구분한다.
 - 배치 검사: Tailnet Caddy와 모델 프록시의 서비스·주소·게시/대상 포트·프로토콜 정확 집합만 허용한다. 임의 서비스/전체 인터페이스/추가 포트의 음성 시험을 유지한다.
 - 근거·검증·잔여 작업: `research/llm-wiki/status/reports/2026-10-13-feature-design.md`와 현황/작업 보고. 실제 Claude Sonnet5.5 분석은 수신했으나 수정 후 CLI는 계정 세션 한도로 미완료다. 자동 모델 대체 없이 Codex 검증을 계속한다.
+
+## D-77 로컬 앱의 MCP·bridge·OS 권한과 점검 증거를 분리한다 (2026-10-14)
+
+- 실제 공개 GhidraMCP·Git MCP·DBHub·Blender MCP·Playwright MCP를 설치·호출하고 스키마92개, 경로/readonly/bridge 반례와 위험10건을 기존 정책24개에 연결했다. 운영 registry 자동 등록이나 계약 TOFU는 하지 않는다.
+- Linux heartbeat는 정확한 프로필 행을, Windows는 실제3개 프로필과 규칙3개의 이름·활성 상태·방향/Action/Profile/SID·baseline을 대조한다. 불완전한 관찰/설치 snapshot을 정상으로 받아들이지 않는다.
+- 인벤토리 Gateway 경유는 실제 URL로 판단하고 클라이언트 이름만으로 승인하지 않는다. URL userinfo/query/fragment와 legacy stdio 원문은 SHA-256 참조로 수집/저장하며 raw JSON도 원문 자격을 보존하지 않는다. 기존 과거 저장분과 URL path에 든 비밀을 정화했다는 뜻은 아니다.
+- MCP annotation·Git base dir·SQL readonly·Blender safe mode·브라우저 isolated/allowed origins는 OS sandbox를 대신하지 않는다. 직접 앱 bridge의 인증·계정·파일·최종 egress를 독립 통제/검증한다.
+- D-68의 Windows loopback 일반론은 현재 키트에서 Win32/WFP IPv4/IPv6 loopback 효과가 미측정된 한계로 정정한다. App Control/AppLocker와 실행/스크립트 권한은 현재 키트에 미설치다.
+- Linux root service의 privilege 분리/strict unit을 적용할 때는 policy/state 쓰기·journal·nft AF_NETLINK·socket의 필요 권한부터 설계한다. UID peer credential은 공유 계정 경계이며 per-process identity나 remote root attestation이 아니다.
+- 회귀15개·기존 Linux 키트17개, 솔루션 field up/source46개·정책/build hash, PJ1 설치 hash·active/compliant·fresh enforce label·승인 하네스·비승인 Node/loopback 거부를 확인했다. 새 자연어 model→MCP turn이나92개 모두의 managed 집행은 미실행이다.
+- 근거·변경·실패·복구: [2026-10-14 검수 보고](../../research/llm-wiki/status/reports/2026-10-14-local-mcp-endpoint.md). Burp Community desktop MCP와 유료 DAST MCP는 구분한다. DBeaver 사용자 캐시 생성 정황은 보존했고 Windows 제거 경합은 후속으로 남겼다.
+
+## D-78 상태 전이와 감사기록은 함께 commit하며 시험 DB 초기화는 제품 DB와 분리한다 (2026-10-14)
+
+- 위험매핑의 정적 예상 → 실제 PJ1 DB 보존 시험 → task-owned 전용 PostgreSQL DB 실제 초기화 후 선별시험으로 진행한다. static/unit/DB fixture/protocol/kernel/model/upstream 증거를 섞지 않는다.
+- 관리 장치 활성화·철회의 UPDATE와 감사 INSERT를 같은 connection·transaction에 묶는다. PostgreSQL trigger 실패 주입으로 수정 전 부분commit과 수정 후 전체rollback을 독립조회로 검증했다.
+- 감사기록 오류로 철회가 rollback되면 완료되지 않은 요청이다. 오류를 유지하고 재시도가 필요하다고 보고한다. 독립 긴급deny/remote attestation을 추가한 것으로 해석하지 않는다.
+- 운영 DB·이전 interoperability lab은 초기화하지 않는다. 정확한 전용DB명·컨테이너task label·제품mount/공개port부재를 guard하고 reset marker 소멸을 확인한다.
+- [실험·수정·배포·한계](../../research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md), LOCAL-RISK-11, DEV-27로 추적한다.
+
+## D-79 시험 대상 MCP를 에이전트가 승인하지 않는다 — 자가 승인 시험은 무효이며, 호출별 세션은 유지한다 (2026-10-14)
+
+- 위험 매핑이 묻는 것은 비인가 로컬 MCP가 엔드포인트에서 막히는가다. 시험 대상 MCP를 에이전트가 신청·검토·승인해 Gateway에 등록하고 인자를 `const`로 고정해 통과시킨 시험은 거버넌스 증거가 아니다. 그런 1차 시험(원장 744~800)은 무효이며 서버 3건은 `deregister_server`로 철회했다(행은 `DISABLED`로 남음). 계약 승인은 사람이 한다는 불변식은 시험에도 적용한다.
+- 콘솔에 로그가 없던 원인은 Gateway가 아니라 Codex 하네스의 모델 턴이 사용량 한도로 시작 즉시 실패해 `tools/call`이 0건이었던 것이다. `initialize`·`tools/list`는 판정 대상이 아니라 원장에 남지 않는다. 한 하네스가 막히면 다른 실제 하네스(Claude Code)를 쓰되, 시험 대상과 승인 상태는 바꾸지 않는다.
+- Gateway는 `tools/call`마다 업스트림 MCP 세션을 열고 닫는다(`upstream.session`). Playwright MCP는 마지막 세션이 닫히면 탭을 닫아 호출 사이 상태가 사라진다. 호출자 사이 세션 공유는 상태 유출 위험이라 채택하지 않는다(IBM ContextForge는 풀을 폐기하고 세션별 레지스트리로 대체). 세션 바인딩은 별도 결정 사항이다(DEV-29).
+- 근거·한계: [정정된 보고](../../research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md), DEV-28·DEV-29.
+
+## D-80 비인가 로컬 MCP는 겹친 계층이 막지만, 통제 밖 계정은 비가시이고 정상 사용 거부가 잡음이며 헬퍼 토큰이 Bash에 닿는다 (2026-10-14)
+
+- PJ1 관리 계정의 실제 Claude Code에게 등록하지 않은 실제 OSS 로컬 MCP(Git·DBHub·Playwright)를 자연어로 쓰게 했다. 하네스 정책(`allowManagedMcpServersOnly`)·AppArmor exec·nft uid 규칙·모델 프록시가 겹쳐 관리 계정의 사용은 성공 0·수신 서버 요청 0이었다. 시험 대상 서버를 Gateway에 등록·승인하지 않는다(D-79).
+- 같은 PC의 비관리 계정은 같은 요청이 전부 성공했고(9개 도구, `git_commit` 효과 확인) Gateway 원장·엔드포인트 이벤트에 0건이었다. 통제 범위는 관리 계정으로 한정된다고 명시하고, 통제 밖 사용을 막는다고 쓰지 않는다.
+- 관리 프로파일은 `header-helper` 실행(`px`)을 허용하는데 Bash 자식이 같은 프로파일이라 기기 Gateway 토큰을 얻을 수 있다. 모델이 실제로 토큰으로 Gateway에 직접 요청했다(원장 803, 비인가 서버 `Block/MCP-REGISTRY-001`). 헬퍼는 하네스 본체만 실행하도록 분리해야 한다(DEV-31). 이번에는 모델이 토큰을 출력에서 가려 대화에는 남지 않았다.
+- Claude Code가 시작마다 부르는 `git`·`claude` 재실행이 프로파일에 거부돼 정상 사용에서도 "실행 차단" 이벤트가 매번 생긴다(시험 창 62%). 프로파일을 완화해 해결하지 않는다. 이벤트 분류·상세 보강을 별도 결정한다(DEV-30).
+- 모델이 스스로 멈춘 케이스는 통제 증거가 아니다. 명시적으로 허용한 케이스에서 OS 계층이 막은 것만 집행 증거로 센다.
+- 근거·한계·미실행(Codex·Windows·E13 전체 조건): [작업 보고](../../research/llm-wiki/status/reports/2026-10-14-e13-local-mcp-natural-language.md), DEV-28·30·31·32.
+
+## D-81 PJ1 Ghidra의 로컬 SDK·수동 관측·OS 자동 전송·Gateway 원장을 구분한다 (2026-10-14)
+
+- 사용자 설치/로그 확인 요청으로 PJ1의 Ghidra12.1.4/GhidraMCP2.0.0 실제stdio28 schema·합성ELF 읽기를 검증했다. UID1000/unconfined의 로컬 호출은 Gateway 원장0이었다. 이를 관리UID1001의 허용이나 자연어 모델 호출 증거로 세지 않는다.
+- 기본 observer의 NETSCAN0은stdio관측도 끈다. 실제 process scanner1건을 명시적 일회성으로보고했을 때 Console shadow/suspected1 수신했고, 종료후task표식1건만 원복했다. observed process를 confirmed MCP계약·운영승인으로 올리지 않는다.
+- 관리UID1001의 Python실행은 AppArmor가 로딩전 exit126으로거부했다. 별도실제거부는 수동POST/서비스재시작없이 주기수집기만 기다려 약35.84초 후 Console1387에수신했다. 일반interpreter거부와Ghidra전용정책은 구분한다.
+- 디스크여유502MB 때문에 Ghidra/JDK는 RAM1.24GiB task설치로분리하고privatevenv/로그는디스크에보존했다. 영구설치/자동stdio관측은DEV-33 후속이다. 사용자파일·정책·기기자격·무효화된9개시험등록을 변경하지 않았다.
+- [검수·원본·로그](../../research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.md).
+
+## D-82 로그 채널별 전달·수집 상태와 검수 WBS를 분리한다 (2026-10-14)
+
+- 설정 inventory·프로세스/stdio 발견·OS 거부 이벤트·Gateway tools/call 원장은 다른 채널이다. 서비스 active, subprocess exit0, MCP SDK 성공, raw/projection hash 일치를 채널 전체 성공으로 합치지 않는다.
+- PJ1 NETSCAN0과 제공 Console 전용 listener 누락을 확인했다. 부분 snapshot DELETE·stale 집계·Windows producer 공백은 DEV-34 후속이며 실제 손실/Windows 전달 성공은 이번에 재현하지 않았다. 자동 수집 확대나 승인 상태 변경 없이 읽기 전용으로 검수했다.
+- 목표 G01–G10/원본 PAC01–24를 40개 작업에 의미 매핑한다. 구현·회귀·배포·실제환경·검수20%씩, 부분/과거 표본0.5, 해당 단계 충족1. 단계 가중 진척과 5단계 모두 충족한 최종 완료 수를 따로 표시한다. 공수·인증·전체 효과 완료율로 쓰지 않는다.
+- Markdown/JSON을 정본으로 유지하고 웹은 제품 Console과 분리한 owner-private 검수 스냅샷으로 제공한다. 제품 key/token·내부 주소·비밀 raw payload를 사이트에 싣지 않는다. 실시간 API 연동과 자동 점수 갱신은 후속이다.
+- [이번 보고](../../research/llm-wiki/status/reports/2026-10-14-endpoint-log-wbs.md), [정본 산정표](../../research/llm-wiki/analysis/development-wbs/README.md).
+
+## D-83 완전성·관측 source·수집 상태는 별도 계약이며 Linux 주기 전달을 검증한다 (2026-10-14)
+
+- D-82의 로그 공백 후속으로 process-only 자동 수집을 network scan과 분리하고 root 보호 UID/SID 범위만 본다. 실제 Ghidra UID1000은 통제 밖으로 유지한다. name marker는 MCP suspected이며 운영 승인이 아니다.
+- unmarked/partial 보고의 기본 complete는 False다. 명시적 complete에서만 unseen 행 삭제, listener source 범위만 reconciliation, upsert/삭제/observation은 동일 connection transaction. server-managed observation은 enroll detail에서 받아 덮어쓰지 않는다.
+- 채널별 수신 시각·last-success·상태와 fresh/stale/unknown을 보존한다. 미수집/오류를 건강한0으로 바꾸지 않으며 과거 shadow count는 보수적으로 남긴다. 별도 status route도 기존 device scope와 본인 endpoint 경계 안이다.
+- OS batch가 성공해야 cursor/bookmark를 진행하고 중복 event_id는 새 행을 만들지 않는다. collector 실패는 healthy managed credential을 지우지 않는다. 이는 집행 점검 실패를 무시하는 변경이 아니다.
+- Windows는 event-time 관리SID를 요구하며 WFP의 현재 PID 주체를 과거 SID로 추론하지 않는다. audit 정책을 자동 활성화하지 않고 실제 Windows 시험은 Linux 우선 사용자 결정에 따라 남긴다.
+- Linux 자동 marker/다른UID 음성·실제 AppArmor 이벤트·정보원 오류/last-success/cursor/복구, 전용 PG8조건과 배포 image PASS, Console 표시·source SHA/제품DB 보존 확인. 합성 process, 실제 OS, protocol/model 증거를 구분한다.
+- 40개 WBS는3개 작업만 검수 점수 갱신(21.8→24.8%, 최종0/40). 제품 Console은 제품 로그만, 별도 owner-private WBS는 검수 스냅샷만 제공한다. 기존 자가 승인 시험은 복원하지 않는다.
+- [검증·배포·보존·한계](../../research/llm-wiki/status/reports/2026-10-14-endpoint-telemetry-fix.md), DEV-18/33/34, LOCAL-RISK-12/13.
