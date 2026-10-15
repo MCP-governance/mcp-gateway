@@ -20,6 +20,10 @@ observer = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
 SPEC.loader.exec_module(observer)
 
+AGENT_SPEC = importlib.util.spec_from_file_location("sealing_agent", ROOT / "endpoint-agent/agent.py")
+SEALING_AGENT = importlib.util.module_from_spec(AGENT_SPEC)
+AGENT_SPEC.loader.exec_module(SEALING_AGENT)
+
 SID = "S-1-5-21-1-2-3-1001"
 OTHER_SID = "S-1-5-21-1-2-3-1002"
 
@@ -101,6 +105,9 @@ class WindowsOSEventTests(unittest.TestCase):
 
             def validate_gateway(self):
                 return None
+
+            def seal_os_event(self, *args):
+                return SEALING_AGENT.seal_os_event(*args)
 
             def endpoint_id(self):
                 return "endpoint-synthetic"
