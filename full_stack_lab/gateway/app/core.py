@@ -1324,6 +1324,17 @@ def _root_cause(exc: BaseException) -> str:
     return f"{type(exc).__name__}: 요청 처리를 완료하지 못했습니다."
 
 
+def _storable(value: Any) -> Any:
+    """The value with U+0000 replaced by U+FFFD in every string and key (PostgreSQL holds neither)."""
+    if isinstance(value, str):
+        return value.replace("\x00", "�")
+    if isinstance(value, dict):
+        return {_storable(key): _storable(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_storable(item) for item in value]
+    return value
+
+
 def _decoded_strings(payload: Any) -> list[str]:
     strings, pending = [], [payload]
     while pending:
@@ -1444,6 +1455,9 @@ async def _record_decision(event: dict) -> int:
         "privacy_types": event.get("privacy_types") or [],
         "sequence_flags": event.get("sequence_flags") or [],
     }
+    # An upstream answer or error text can carry U+0000, which PostgreSQL refuses: the row would be
+    # lost after the call ran. It is replaced before the fingerprint, so the chain covers what is stored.
+    record = _storable(record)
     async with db.transaction() as connection:
         cursor = await connection.execute("SELECT head_sha256 FROM audit_chain WHERE id=1 FOR UPDATE")
         head = await cursor.fetchone()
@@ -1660,6 +1674,12 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         if len(json.dumps(arguments, ensure_ascii=False).encode()) > MAX_ARGUMENT_BYTES:
             base_event.update(local_verdict(
                 "P-INPUT-SCHEMA-001", "Block", f"도구 인자가 {MAX_ARGUMENT_BYTES // 1024}KB를 넘어 보내지 않았습니다."))
+            return await _decision_payload(base_event, laps)
+        # PostgreSQL text and jsonb cannot hold U+0000: a call carrying it could not be recorded as it was
+        # sent, so it is not sent.
+        if any("\x00" in value for value in _decoded_strings(arguments)):
+            base_event.update(local_verdict(
+                "P-INPUT-SCHEMA-001", "Block", "도구 인자에 기록할 수 없는 NUL 문자가 있어 보내지 않았습니다."))
             return await _decision_payload(base_event, laps)
 
         tool_row = await db.fetch_one("SELECT * FROM mcp_tools WHERE server_id=%s AND name=%s", (server_id, tool))

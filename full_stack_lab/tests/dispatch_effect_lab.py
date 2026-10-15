@@ -307,17 +307,37 @@ async def principal_revoked_in_flight():
     CHECKS.ok("the refused call left no dispatch intent", left["n"] == 0)
 
 
+async def nul_in_arguments_and_answer():
+    token, title = "boundary-e9", f"nul-{uuid.uuid4().hex[:8]}"
+    sent = await call(token, title + "\x00tail")
+    CHECKS.ok("an argument carrying U+0000 is refused before the send (it could not be recorded as sent)",
+              sent["policy_id"] == "P-INPUT-SCHEMA-001" and not sent["upstream_attempted"] and sent.get("decision_id"),
+              outcome=summary([sent]))
+    CHECKS.ok("and the downstream took nothing", [t for t in await issues("nul-") if t.startswith(title)] == [])
+    # An answer is not under the gateway's control: an upstream error text with U+0000 must still leave its row.
+    event = {"request_id": str(uuid.uuid4()), "trace_id": "0" * 32, "user_token": token, "role": "employee",
+             "tool_name": "issue_write", "data_class": "internal", "action": "w", "decision": "Block",
+             "policy_id": "MCP-UPSTREAM-001", "reason": "lab", "upstream_executed": False, "upstream_attempted": True,
+             "server_id": "gitea", "request_payload": {"arguments": {"ti\x00tle": "a\x00b"}}, "error": "upstream said a\x00b"}
+    decision_id = await core._record_decision(event)
+    row = await db.fetch_one("SELECT error, request_payload FROM decisions WHERE id=%s", (decision_id,))
+    CHECKS.ok("an answer carrying U+0000 is recorded with the character replaced",
+              "�" in row["error"] and "\x00" not in str(row["request_payload"]))
+    chain = await core.verify_audit_chain()
+    CHECKS.ok("the audit chain verifies over the stored row", chain.get("intact") is True, chain=chain)
+
+
 async def main():
     signing_keys()
     secret_scan.labels = no_secrets
     await core.bootstrap()
     status = await core.refresh_catalog("gitea")
     CHECKS.ok("the Gitea MCP server answers and its contract matches the reviewed lock", status["status"] == "READY", status=status["status"])
-    for token in ("boundary-e1", "boundary-e3", "boundary-e4", "boundary-e5", "boundary-e6", "boundary-e7", "boundary-e8"):
+    for token in ("boundary-e1", "boundary-e3", "boundary-e4", "boundary-e5", "boundary-e6", "boundary-e7", "boundary-e8", "boundary-e9"):
         await add_principal(token)
     await add_principal(ADMIN, role="admin")
     for case in (identical_concurrent, ceiling_concurrent, rate_ceiling, approval_reuse, in_flight_answer_lost_in_process,
-                 principal_revoked_in_flight, crash_between_intent_and_answer):
+                 principal_revoked_in_flight, crash_between_intent_and_answer, nul_in_arguments_and_answer):
         await CHECKS.case(case.__name__, case())
     stats = await db.fetch_one(
         """SELECT count(*) AS n,
