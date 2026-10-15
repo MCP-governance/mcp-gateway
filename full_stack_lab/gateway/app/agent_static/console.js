@@ -523,16 +523,16 @@ ROUTES.overview = async (_, tab) => {
           ${panel("종료 및 폐기 현황", chartBox("c-term", "종료 및 폐기 현황"), { end: html`<a class="btn sm" href="#/termination">열기</a>` })}
           ${panel("최근 차단 10건", feed.rows.length ? decisionTable(feed.rows) : empty("차단된 호출 없음"), { flush: true, end: html`<a class="btn sm" href="#/activity?decision=Block">차단 로그 <span aria-hidden="true">↗</span></a>` })}
         </div>` },
-        { key: "planes", label: "통제 적용 현황", body: html`<div class="stack">
+        { key: "planes", label: "통제 현황", body: html`<div class="stack">
           ${panel("연동 유형별 통제 상태", items.length ? chartBox("c-ov-matrix", "연동 유형별 통제 상태 항목 수", "lg") : empty("항목 없음"))}
           ${panel("우회 가능 경로", bypass.length ? html`<table class="data"><thead><tr><th>항목</th><th>연동 유형</th><th>영향 범위</th><th>우회 경로</th></tr></thead><tbody>
             ${bypass.map((i) => html`<tr class="clickable" tabindex="0" data-act="goto" data-href="#/coverage?t=items&state=bypass_possible&q=${encodeURIComponent(i.name)}">
               <td><b>${i.name}</b><span class="sub mono">${short(i.target || "", 50)}</span></td><td class="small">${INTEGRATION_CLASS[i.class] || i.class}</td>
               <td class="small">${bypassImpact(i)}</td><td>${bypassPaths(i)}</td></tr>`)}</tbody></table>` : empty("우회 가능 경로 없음"),
             { flush: true, end: html`<a class="btn sm" href="#/coverage?t=items&state=bypass_possible">전체</a>` })}</div>` },
-        { key: "exec", label: "도구 실행 및 응답", body: html`<div class="stack">
+        { key: "exec", label: "도구 호출 흐름", body: html`<div class="stack">
           ${panel("도구 호출 흐름", (o.pipeline || []).length ? chartBox("c-ov-pipeline", "오늘 도구 호출의 판정에서 응답 전달까지의 흐름", "xl") : empty("오늘 도구 호출 없음"), { sub: "오늘" })}</div>` },
-        { key: "traffic", label: "트래픽", body: html`<div class="stack">
+        { key: "traffic", label: "호출 추이", body: html`<div class="stack">
           <div class="grid c31">
             ${panel("시간대별 판정", chartBox("c-traffic", "최근 24시간 시간대별 판정 건수", "lg"), { sub: "최근 24시간" })}
             ${panel("판정 비율", chartBox("c-share", "최근 24시간 판정 비율", "sm"), { sub: "최근 24시간" })}
