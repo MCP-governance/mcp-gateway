@@ -23,6 +23,7 @@ from urllib.parse import urlsplit
 import httpx2
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
+from mcp_types.version import HANDSHAKE_PROTOCOL_VERSIONS
 
 from . import db
 
@@ -184,8 +185,13 @@ async def _dispatch_client(endpoint: str, principal: str, headers: dict, timeout
 
 
 @asynccontextmanager
-async def session(endpoint: str, timeout: float = CONNECT_TIMEOUT, principal: str | None = None):
-    """One MCP session. With a principal (dispatch) the HTTP connection comes from the pool."""
+async def session(endpoint: str, timeout: float = CONNECT_TIMEOUT, principal: str | None = None,
+                  protocol: str | None = None):
+    """One MCP session. With a principal (dispatch) the HTTP connection comes from the pool.
+
+    `protocol` is the version recorded when the contract was approved. A handshake-era server is
+    opened with `initialize` directly instead of first probing `server/discover` (DEV-29 stage 1):
+    one round trip fewer, the session lifetime unchanged. Anything else keeps the SDK's probe."""
     headers = credential_headers(endpoint, principal)
     async with AsyncExitStack() as stack:
         if principal is None:
@@ -193,7 +199,8 @@ async def session(endpoint: str, timeout: float = CONNECT_TIMEOUT, principal: st
         else:
             http_client = await stack.enter_async_context(_dispatch_client(endpoint, principal, headers, timeout))
         yield await stack.enter_async_context(
-            Client(streamable_http_client(endpoint, http_client=http_client), read_timeout_seconds=timeout))
+            Client(streamable_http_client(endpoint, http_client=http_client), read_timeout_seconds=timeout,
+                   mode="legacy" if protocol in HANDSHAKE_PROTOCOL_VERSIONS else "auto"))
 
 
 def tool_view(tool: Any) -> dict:

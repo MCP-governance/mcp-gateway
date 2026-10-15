@@ -401,7 +401,8 @@ def harness_login(account: str, harnesses: list[str]) -> dict[str, bool]:
             # with a connected endpoint and no model. Both ways out, in one line each.
             print(f"모델 로그인은 나중에 해도 됩니다. ChatGPT 보안 설정에서 장치 코드 로그인을 켠 뒤 다시: "
                   f"sudo -u {account} {shell} -c 'codex login --device-auth'")
-            print(f"이 PC의 브라우저로 하려면: sudo -u {account} {shell} -c 'codex login'")
+            # Not the browser sign-in: its callback listener answers from the managed account, and the
+            # loopback rule refuses that reply (DEV-35), so it can never complete on this endpoint.
         elif code:
             print(f"{name} 로그인은 나중에 해도 됩니다. 처음 실행하면 로그인 화면이 나옵니다.")
     return signed
@@ -533,6 +534,8 @@ def main() -> int:
         # A terminal opened before the install has neither the launcher functions nor a fresh PATH.
         print(f"새 터미널을 열어 평소 계정({employee})에서 codex 또는 claude를 실행하세요." if companion
               else "이 계정에서 codex 또는 claude를 실행하세요.")
+        if "codex" in placed and not (result.get("model_signed_in") or {}).get("codex"):
+            print("Codex 로그인 화면에서는 'Sign in with Device Code'를 고르세요. 브라우저 로그인은 이 PC에서 완료되지 않습니다.")
         return 0
     except Failed as exc:
         print(f"\n설치하지 못했습니다: {exc}", file=sys.stderr)

@@ -87,6 +87,13 @@ def catalog_version() -> str:
     return "catalog-" + hashlib.sha256(raw).hexdigest()[:12]
 
 
+def pinned_protocol(server_id: str) -> str | None:
+    """The protocol version recorded with the approved contract (lock first, as in sync)."""
+    catalog()  # reloads the cache when a file changed
+    contract = lock().get("servers", {}).get(server_id) or _cache["runtime"]["contracts"].get(server_id) or {}
+    return contract.get("protocol_version")
+
+
 def runtime_endpoints() -> set[str]:
     """Endpoints an admin approved by registering them; they count as allowed egress (D-49)."""
     catalog()  # reloads the cache when a file changed

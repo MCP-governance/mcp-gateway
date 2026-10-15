@@ -108,7 +108,7 @@ NOT_EXECUTED, 전송했지만 결과를 확인하지 못하면 UNCONFIRMED(외�
 
 증거 열(D-86–D-88): `endpoint_inventory`·`endpoint_listeners`·`endpoint_os_events`에 `origin`(`automatic`/`manual`/`os_event`, 옛 행은 NULL)과 `provenance` jsonb
 (`raw_sha256`, `agent_projection_sha256`, `server_projection_sha256`, `state` match/mismatch/unreported, `transformations`, `collector`, `received_at`)가 있다.
-`endpoint_os_events`는 `raw_sha256`(7일 재전송 중복 판정)·`denial_class`(`harness_startup`/`blocked_attempt`/`unknown`)를 더한다.
+`endpoint_os_events`는 `raw_sha256`(7일 재전송 중복 판정)·`denial_class`(`harness_startup`/`blocked_attempt`/`listener_reply`/`unknown`)를 더한다.
 `endpoint_network_samples(endpoint_id, measured_at, rtt_p50_ms, rtt_p95_ms, jitter_ms, failure_pct, probes, received_at)`는 PK `(endpoint_id, measured_at)`이고
 적재하는 하트비트가 7일 지난 행을 지운다. `endpoint_agents.detail.install_receipt`는 Gateway가 렌더링한 파일 해시(`provider_artifact_sha256`)와
 장치가 보고한 설치 파일 해시(`installed_sha256`)를 따로 둔다. 감사 원장(`decisions`)은 그대로 append-only이며 연관 조회는 읽기만 한다.

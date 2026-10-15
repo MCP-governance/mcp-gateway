@@ -301,7 +301,7 @@ export function timingRows(timings) {
 const ORIGIN = { automatic: "자동 수집", manual: "수동 보고", os_event: "운영체제 이벤트" };
 export const originLabel = (origin) => ORIGIN[origin] || "—";
 
-const DENIAL_CLASS = { harness_startup: ["outline", "하네스 기동"], blocked_attempt: ["block", "차단된 시도"], unknown: ["outline", "확인 불가"] };
+const DENIAL_CLASS = { harness_startup: ["outline", "하네스 기동"], blocked_attempt: ["block", "차단된 시도"], listener_reply: ["outline", "하네스 응답"], unknown: ["outline", "확인 불가"] };
 export const denialClass = (value) => DENIAL_CLASS[value] || DENIAL_CLASS.unknown;
 
 const HEX64 = /^[a-f0-9]{64}$/;

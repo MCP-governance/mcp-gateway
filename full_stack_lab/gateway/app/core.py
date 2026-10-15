@@ -1222,7 +1222,8 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
     # fails is the MCP server's time, not the gateway's.
     stage = "connect"
     try:
-        async with upstream.session(spec["endpoint"], principal=principal) as client:
+        async with upstream.session(spec["endpoint"], principal=principal,
+                                    protocol=registry.pinned_protocol(server_id)) as client:
             laps.lap("connect")
             stage = "list"
             listed = await client.list_tools()

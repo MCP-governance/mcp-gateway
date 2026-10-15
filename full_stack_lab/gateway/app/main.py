@@ -1052,7 +1052,7 @@ class EndpointOSEvent(StrictModel):
     observed_at: datetime
     kind: Literal["execution-denied", "network-denied"]
     details: dict[str, str | int] = Field(max_length=12)
-    denial_class: Literal["harness_startup", "blocked_attempt", "unknown"] | None = None
+    denial_class: Literal["harness_startup", "blocked_attempt", "listener_reply", "unknown"] | None = None
     provenance: Provenance | None = None
 
 
@@ -1364,7 +1364,7 @@ async def endpoint_inventory_listeners(classification: ClassQuery = None, cursor
 
 @app.get("/api/endpoint/inventory/os-events")
 async def endpoint_inventory_os_events(kind: Literal["execution-denied", "network-denied"] | None = None,
-                                       denial_class: Literal["harness_startup", "blocked_attempt", "unknown"] | None = None,
+                                       denial_class: Literal["harness_startup", "blocked_attempt", "listener_reply", "unknown"] | None = None,
                                        cursor: CursorQuery = None, limit: LimitQuery = 100,
                                        user: dict = Depends(admin_caller)) -> dict:
     return await endpoint_plane.os_events_page(kind, denial_class, limit, cursor)

@@ -50,8 +50,15 @@ def event(record: dict, uid: int, profile: str, raw_line: str | None = None) -> 
     steps = ["journal_field_allowlist", "drop_raw_message"]
     if f'MCPGW_DENY uid={uid} ' in message:
         fields = dict(re.findall(r"\b(SRC|DST|PROTO|SPT|DPT)=([^ ]+)", message))
+        flags = sorted(set(re.findall(r"\b(SYN|ACK|FIN|RST|PSH|URG)\b", message)))
         details = {"source_ip": fields.get("SRC", ""), "destination_ip": fields.get("DST", ""),
-                   "protocol": fields.get("PROTO", ""), "destination_port": fields.get("DPT", "")}
+                   "protocol": fields.get("PROTO", ""), "destination_port": fields.get("DPT", ""),
+                   "source_port": fields.get("SPT", ""), "tcp_flags": " ".join(flags)}
+        # A SYN-ACK leaving the managed account answers a connection someone else opened to a
+        # listener the harness runs (Codex's login callback, DEV-35): not a connection attempt.
+        # Without SPT and the flags the 10-15 log read as "connections to ephemeral ports".
+        if "SYN" in flags:
+            denied = "listener_reply" if "ACK" in flags else "blocked_attempt"
         kind, collector = "network-denied", "journal-nft"
     elif 'apparmor="DENIED"' in message and f"fsuid={uid} " in message:
         fields = dict(re.findall(r'(operation|profile|name|denied_mask|comm)="([^"]*)"', message))
@@ -91,6 +98,14 @@ def main() -> None:
         assert denial_class("exec", "/tmp/git", "claude") == "blocked_attempt"
         assert denial_class("exec", "/usr/bin/git", "") == "unknown" and denial_class("file_inherit", "/x", "claude") == "unknown"
         assert event(sample, 1002, "mcpgw-u") is None
+        reply = {**sample, "MESSAGE": "MCPGW_DENY uid=1001 IN= OUT=lo SRC=127.0.0.1 DST=127.0.0.1 PROTO=TCP"
+                                      " SPT=1455 DPT=46846 WINDOW=65483 RES=0x00 ACK SYN URGP=0"}
+        found = event(reply, 1001, "mcpgw-u")
+        assert found["denial_class"] == "listener_reply" and found["details"]["source_port"] == "1455"
+        assert found["details"]["tcp_flags"] == "ACK SYN"
+        attempt = {**reply, "MESSAGE": reply["MESSAGE"].replace("SPT=1455 DPT=46846", "SPT=40000 DPT=3015")
+                                                       .replace("ACK SYN", "SYN")}
+        assert event(attempt, 1001, "mcpgw-u")["denial_class"] == "blocked_attempt"
         assert event(sample, 1001, "mcpgw-v") is None
         print("OS observation parser check OK")
         return

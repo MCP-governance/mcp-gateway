@@ -523,7 +523,7 @@ async def coverage() -> dict:
 DEVICE_SCOPES = ("inventory", "netscan", "enforcement")
 
 
-DENIAL_CLASSES = ("harness_startup", "blocked_attempt", "unknown")
+DENIAL_CLASSES = ("harness_startup", "blocked_attempt", "listener_reply", "unknown")
 
 
 async def ingest_os_events(endpoint_id: str, events: list[dict]) -> dict:
