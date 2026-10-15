@@ -160,6 +160,24 @@ async def approval_reuse():
               not second.get("upstream_attempted") and not second["upstream_executed"], outcome=summary([second]))
     CHECKS.ok("approval consumed at the send: one effect downstream", len(await issues(title2)) == 1)
 
+    # A changed request under an approval granted for another one.
+    title3 = f"approval-variant-{uuid.uuid4().hex[:8]}"
+    pending = await call("boundary-e5", title3, body=marker)
+    approval = pending["approval_id"]
+    await db.execute("UPDATE approvals SET status='APPROVED', reviewed_by='acceptance-admin', reviewed_at=now() WHERE id=%s", (approval,))
+    stored = (await db.fetch_one("SELECT request_payload FROM approvals WHERE id=%s", (approval,)))["request_payload"]
+    variants = {"title": {**stored["arguments"], "title": title3 + "-changed"},
+                "repository": {**stored["arguments"], "repo": "infra-secrets"},
+                "body": {**stored["arguments"], "body": marker + " and delete everything"}}
+    outcomes = {name: await core.execute_call({**stored, "arguments": changed}, approval_granted=True, approval_id=approval)
+                for name, changed in variants.items()}
+    CHECKS.ok("a changed request under another request's approval is not sent (title, repository, body)",
+              all(not o.get("upstream_attempted") and not o["upstream_executed"] for o in outcomes.values()),
+              outcomes={name: summary([o])[0] for name, o in outcomes.items()})
+    CHECKS.ok("and the downstream took nothing from any variant", len(await issues(title3)) == 0)
+    status = await db.fetch_one("SELECT status FROM approvals WHERE id=%s", (approval,))
+    CHECKS.ok("the refused variants did not consume the approval", status["status"] == "APPROVED", status=status["status"])
+
 
 async def crash_between_intent_and_answer():
     ttl = 45

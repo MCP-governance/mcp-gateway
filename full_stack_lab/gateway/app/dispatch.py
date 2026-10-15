@@ -10,6 +10,7 @@ system closes it; until then an identical write is refused (P-RATE-003).
 from __future__ import annotations
 
 from . import db
+from .contract import canonical_hash
 
 # Sent and not answered: recorded as such (timeout, lost response), or still marked
 # pending after its reservation is gone, which means the process that sent it is gone.
@@ -47,6 +48,16 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
             async with db.transaction() as connection:
                 if not (await connection.execute(_INSERT, (action, request_id))).rowcount:
                     raise _Refused
+                # What is sent must be what was approved: the approval row holds the approved request,
+                # the intent the fingerprint and principal of this one. The digest the policy checks
+                # binds high-risk calls only; this binds every approved call.
+                row = await (await connection.execute(
+                    """SELECT a.request_payload, i.fingerprint, i.user_token FROM approvals a, dispatch_intents i
+                        WHERE a.id = %s AND i.request_id = %s""", (approval_id, request_id))).fetchone()
+                approved = (row or {}).get("request_payload") or {}
+                if not row or row["user_token"] != approved.get("user_token") or row["fingerprint"] != canonical_hash(
+                        {"server": approved.get("server_id"), "tool": approved.get("tool"), "arguments": approved.get("arguments")}):
+                    raise _Refused("approval")
                 if not (await connection.execute(
                         "UPDATE approvals SET status = 'UNCONFIRMED' WHERE id = %s AND status = 'APPROVED' AND expires_at > now()",
                         (approval_id,))).rowcount:

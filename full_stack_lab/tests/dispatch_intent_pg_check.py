@@ -9,6 +9,8 @@ import asyncio
 import random
 import uuid
 
+from psycopg.types.json import Jsonb
+
 from app import core, db, decommission, dispatch, upstream
 from termination_lab_support import Checks, add_principal, add_server, apply_schema, reservation, run
 
@@ -159,18 +161,31 @@ async def unsettled_blocks_identical_write():
 async def approval_is_consumed_once():
     await add_principal("u-h")
     approval = str(uuid.uuid4())
+    approved = {"server_id": "srv", "tool": "t", "arguments": {"a": 1}, "user_token": "u-h"}
     await db.execute(
         """INSERT INTO approvals(id, request_fingerprint, request_payload, status, requested_by, expires_at)
-           VALUES (%s,'f','{}','APPROVED','u-h', now() + interval '10 minutes')""", (approval,))
+           VALUES (%s,'f',%s,'APPROVED','u-h', now() + interval '10 minutes')""", (approval, Jsonb(approved)))
     rids = [str(uuid.uuid4()) for _ in range(8)]
     for rid in rids:
-        await reservation(rid, "u-h", "srv", "t", f"f-{rid}")
+        await reservation(rid, "u-h", "srv", "t", fingerprint({"a": 1}))
     outcomes = await asyncio.gather(*[dispatch.record(rid, "w", approval) for rid in rids])
     CHECKS.ok("one approval admits exactly one dispatch", outcomes.count(None) == 1 and outcomes.count("approval") == 7, outcomes=outcomes)
     status = await db.fetch_one("SELECT status FROM approvals WHERE id=%s", (approval,))
     CHECKS.ok("the approval is consumed at the send", status["status"] == "UNCONFIRMED")
     intents = await db.fetch_one("SELECT count(*) AS n FROM dispatch_intents WHERE request_id = ANY(%s::uuid[])", (rids,))
     CHECKS.ok("refused uses leave no intent behind", intents["n"] == 1)
+
+    other = str(uuid.uuid4())
+    await db.execute(
+        """INSERT INTO approvals(id, request_fingerprint, request_payload, status, requested_by, expires_at)
+           VALUES (%s,'f',%s,'APPROVED','u-h', now() + interval '10 minutes')""", (other, Jsonb(approved)))
+    for label, args, who in (("another request", {"a": 2}, "u-h"), ("another principal", {"a": 1}, "u-a")):
+        rid = str(uuid.uuid4())
+        await reservation(rid, who, "srv", "t", fingerprint(args))
+        refused = await dispatch.record(rid, "w", other)
+        left = await db.fetch_one("SELECT status FROM approvals WHERE id=%s", (other,))
+        CHECKS.ok(f"an approval is not spent on {label}, and stays unspent", refused == "approval" and left["status"] == "APPROVED",
+                  refused=refused, status=left["status"])
 
 
 async def cutover_race():
