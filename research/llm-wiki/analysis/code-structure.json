@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "metadata": {
-    "head": "1ad6395e9c357195294aa20ed959b2bebf5b8710",
-    "branch": "10/15-wiki-consolidation",
+    "head": "8906f249707418d900ba335feaafa4ccf9bd0f5d",
+    "branch": "10/15-wbs-implementation",
     "scope": "structural_inventory_and_curated_acceptance_conditions",
     "deployment_inferred": false,
     "runtime_test_results_inferred": false
@@ -13,7 +13,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 951,
-      "sha256": "0245e34c25ba19879b85341b3cc8b981b46683522cdc69a6c66626787959bab9",
+      "sha256": "06c873b811732ce091b8cee587359400b561ad6f0202154a5e6048fd1fceea4a",
       "head_sha256": "06c873b811732ce091b8cee587359400b561ad6f0202154a5e6048fd1fceea4a",
       "normalized_sha256": "06c873b811732ce091b8cee587359400b561ad6f0202154a5e6048fd1fceea4a",
       "source_state": "committed_source",
@@ -782,10 +782,10 @@
       "path": "endpoint-agent/bootstrap.py",
       "symbol": "module/config",
       "line_start": 1,
-      "line_end": 546,
-      "sha256": "830f213634c4981ecc74c57396d991335efba83d7076621402cb2215670bcbe4",
-      "head_sha256": "ee04602a16b7f5570da1dea7eed8d869032470482e625c69029908b98ce975d0",
-      "normalized_sha256": "ee04602a16b7f5570da1dea7eed8d869032470482e625c69029908b98ce975d0",
+      "line_end": 549,
+      "sha256": "e813b91655123ade200eb06d373ec4b8dafa1124b6f0f6ad75bea18cfc2dd4c3",
+      "head_sha256": "e813b91655123ade200eb06d373ec4b8dafa1124b6f0f6ad75bea18cfc2dd4c3",
+      "normalized_sha256": "e813b91655123ade200eb06d373ec4b8dafa1124b6f0f6ad75bea18cfc2dd4c3",
       "source_state": "committed_source",
       "symbol_found": true,
       "imports": [
@@ -1167,7 +1167,7 @@
         {
           "symbol": "harness_login",
           "line_start": 378,
-          "line_end": 407,
+          "line_end": 408,
           "async": false,
           "call_expressions": [
             "(home / credential).is_file",
@@ -1182,8 +1182,8 @@
         },
         {
           "symbol": "self_check",
-          "line_start": 410,
-          "line_end": 483,
+          "line_start": 411,
+          "line_end": 484,
           "async": false,
           "call_expressions": [
             "(SHIM_DIR / 'claude').read_text",
@@ -1233,11 +1233,12 @@
         },
         {
           "symbol": "main",
-          "line_start": 486,
-          "line_end": 542,
+          "line_start": 487,
+          "line_end": 545,
           "async": false,
           "call_expressions": [
             "(SHIM_DIR / 'codex').is_file",
+            "(result.get('model_signed_in') or {}).get",
             "Failed",
             "argparse.ArgumentParser",
             "args.enrollment.is_file",
@@ -1256,6 +1257,7 @@
             "place_harnesses",
             "placed.items",
             "print",
+            "result.get",
             "result.update",
             "rollback",
             "self_check",
@@ -1273,7 +1275,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 339,
-      "sha256": "d8c672810b95e49858dfd7d5cfb4dc938395c8da67bf22d2f5dbba93d94e5909",
+      "sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
       "head_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
       "normalized_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
       "source_state": "committed_source",
@@ -1480,7 +1482,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 135,
-      "sha256": "25bc120382472cb42a46f6643bef5a74cf6b3f842054360418b4f7ce66d9a3e5",
+      "sha256": "3fda8e4ca3299e29096bbedfc5fb22a44f34b85f757e3be24b27db302851f1a9",
       "head_sha256": "3fda8e4ca3299e29096bbedfc5fb22a44f34b85f757e3be24b27db302851f1a9",
       "normalized_sha256": "3fda8e4ca3299e29096bbedfc5fb22a44f34b85f757e3be24b27db302851f1a9",
       "source_state": "committed_source",
@@ -2017,7 +2019,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 713,
-      "sha256": "371dcd8e5b75768d463e2793ef0bcebbcc347153460553c530d9aa1c1ce807c2",
+      "sha256": "4baded24e4ba273d6a7f529a715445e1370a8ec47e0ea30217a24cc8bf7f2836",
       "head_sha256": "4baded24e4ba273d6a7f529a715445e1370a8ec47e0ea30217a24cc8bf7f2836",
       "normalized_sha256": "4baded24e4ba273d6a7f529a715445e1370a8ec47e0ea30217a24cc8bf7f2836",
       "source_state": "committed_source",
@@ -2673,7 +2675,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 371,
-      "sha256": "de52aad66e8fad5b439193d383a1bf57824c63fca90c9a8028f05fa8c62eeae1",
+      "sha256": "a7d56a3a04a5b353e5ee6ee53a7728f0c9ed5d664824ec26fb310774317b4108",
       "head_sha256": "a7d56a3a04a5b353e5ee6ee53a7728f0c9ed5d664824ec26fb310774317b4108",
       "normalized_sha256": "a7d56a3a04a5b353e5ee6ee53a7728f0c9ed5d664824ec26fb310774317b4108",
       "source_state": "committed_source",
@@ -2882,10 +2884,10 @@
       "path": "endpoint-agent/os-observer.py",
       "symbol": "module/config",
       "line_start": 1,
-      "line_end": 142,
-      "sha256": "54dab729ef81ea3e2112548e707fbc55efcd9e8d13805a363937967af36eabfc",
-      "head_sha256": "c44abf8619bc81fc2f2dca85b1e0edc3af1f02e8d0631ad1ce7dbe79b5279534",
-      "normalized_sha256": "c44abf8619bc81fc2f2dca85b1e0edc3af1f02e8d0631ad1ce7dbe79b5279534",
+      "line_end": 157,
+      "sha256": "47f001e966f289601144c5803bff8d4e5f4fc56068392231c3aee10f9d3793a8",
+      "head_sha256": "47f001e966f289601144c5803bff8d4e5f4fc56068392231c3aee10f9d3793a8",
+      "normalized_sha256": "47f001e966f289601144c5803bff8d4e5f4fc56068392231c3aee10f9d3793a8",
       "source_state": "committed_source",
       "symbol_found": true,
       "imports": [
@@ -2927,9 +2929,10 @@
         {
           "symbol": "event",
           "line_start": 46,
-          "line_end": 73,
+          "line_end": 80,
           "async": false,
           "call_expressions": [
+            "' '.join",
             "Path",
             "datetime.fromtimestamp",
             "datetime.fromtimestamp(int(record['__REALTIME_TIMESTAMP']) / 1000000.0, timezone.utc).isoformat",
@@ -2943,14 +2946,16 @@
             "load_agent().seal_os_event",
             "re.findall",
             "record.get",
+            "set",
+            "sorted",
             "steps.append"
           ],
           "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
         },
         {
           "symbol": "main",
-          "line_start": 76,
-          "line_end": 138,
+          "line_start": 83,
+          "line_end": 153,
           "async": false,
           "call_expressions": [
             "Path",
@@ -2983,6 +2988,8 @@
             "parser.error",
             "parser.parse_args",
             "print",
+            "reply['MESSAGE'].replace",
+            "reply['MESSAGE'].replace('SPT=1455 DPT=46846', 'SPT=40000 DPT=3015').replace",
             "result.stdout.splitlines",
             "subprocess.run",
             "temporary.chmod",
@@ -2998,7 +3005,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 1,
-      "sha256": "b86dc609d626e00f8a12584285245416d16946fc0acd706a0d37a62ebe912b70",
+      "sha256": "aad7e433c2e2f3da34b61f0595eaef0a95322f0b87bda4ca02f24281255ff9e5",
       "head_sha256": "aad7e433c2e2f3da34b61f0595eaef0a95322f0b87bda4ca02f24281255ff9e5",
       "normalized_sha256": "aad7e433c2e2f3da34b61f0595eaef0a95322f0b87bda4ca02f24281255ff9e5",
       "source_state": "committed_source",
@@ -3011,7 +3018,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 626,
-      "sha256": "eebadd6ec85848fd7cee0525210f2d9b7143b757955c54504044450c307f490b",
+      "sha256": "211efaa5a10975d7c3c62b37f048077160c51573b5fe004b570bb2584c191a2c",
       "head_sha256": "211efaa5a10975d7c3c62b37f048077160c51573b5fe004b570bb2584c191a2c",
       "normalized_sha256": "211efaa5a10975d7c3c62b37f048077160c51573b5fe004b570bb2584c191a2c",
       "source_state": "committed_source",
@@ -3586,7 +3593,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 273,
-      "sha256": "f1d923fbebfe25d0bab93c8e1c6919dc0fbe60e7dadb86212e0017833cf0b9a4",
+      "sha256": "58eb7f991b7d7d04e3776945be3019a3cadacfd39bdeb5baf50400a1e934606c",
       "head_sha256": "58eb7f991b7d7d04e3776945be3019a3cadacfd39bdeb5baf50400a1e934606c",
       "normalized_sha256": "58eb7f991b7d7d04e3776945be3019a3cadacfd39bdeb5baf50400a1e934606c",
       "source_state": "committed_source",
@@ -5024,7 +5031,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 84,
-      "sha256": "2fb966c811c7407e27b82aa433061f107afd93255263c4faa47d0b0e96b465f2",
+      "sha256": "5ad902bc89eb2a5eba832bc850705acf86d9feb90c3e5e42ca36644e5f03c267",
       "head_sha256": "5ad902bc89eb2a5eba832bc850705acf86d9feb90c3e5e42ca36644e5f03c267",
       "normalized_sha256": "5ad902bc89eb2a5eba832bc850705acf86d9feb90c3e5e42ca36644e5f03c267",
       "source_state": "committed_source",
@@ -5106,7 +5113,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 903,
-      "sha256": "77bf14b1442a9fc82b251759c107c0469bd707748e6792357e4a19d4dc3662bb",
+      "sha256": "a8f61f53f3db250a9ce2466472fc8b196cbea2613cf196951b449cdae1d1880a",
       "head_sha256": "a8f61f53f3db250a9ce2466472fc8b196cbea2613cf196951b449cdae1d1880a",
       "normalized_sha256": "a8f61f53f3db250a9ce2466472fc8b196cbea2613cf196951b449cdae1d1880a",
       "source_state": "committed_source",
@@ -5837,7 +5844,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 253,
-      "sha256": "36569e3285e0e08aee821e0a9af38ba3f10fd742fbf7a1d4273f86eb5843ad76",
+      "sha256": "52238b36db2f2ff7e8477a34da1abe7673289e70c88a1d74c2f5ce23ea776f78",
       "head_sha256": "52238b36db2f2ff7e8477a34da1abe7673289e70c88a1d74c2f5ce23ea776f78",
       "normalized_sha256": "52238b36db2f2ff7e8477a34da1abe7673289e70c88a1d74c2f5ce23ea776f78",
       "source_state": "committed_source",
@@ -6048,7 +6055,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 106,
-      "sha256": "27a05101b3171bdc5d3d26a40d5768ea2f0955237876e50ef7c16c1ada6d6cb2",
+      "sha256": "200a4567e87f95e0df63d855abbe244f01b7336ed4988daf4faf778f2eacd563",
       "head_sha256": "200a4567e87f95e0df63d855abbe244f01b7336ed4988daf4faf778f2eacd563",
       "normalized_sha256": "200a4567e87f95e0df63d855abbe244f01b7336ed4988daf4faf778f2eacd563",
       "source_state": "committed_source",
@@ -6099,10 +6106,10 @@
       "path": "full_stack_lab/gateway/app/core.py",
       "symbol": "module/config",
       "line_start": 1,
-      "line_end": 2071,
-      "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
-      "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
-      "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+      "line_end": 2072,
+      "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
       "source_state": "committed_source",
       "symbol_found": true,
       "imports": [
@@ -6797,7 +6804,7 @@
         {
           "symbol": "_call_upstream",
           "line_start": 1201,
-          "line_end": 1324,
+          "line_end": 1325,
           "async": true,
           "call_expressions": [
             "DispatchRejected",
@@ -6812,7 +6819,6 @@
             "canonical_hash",
             "classify.classify",
             "client.call_tool",
-            "client.list_tools",
             "datetime.now",
             "datetime.now(UTC).isoformat",
             "db.fetch_all",
@@ -6826,8 +6832,10 @@
             "next",
             "pac.build",
             "pac_payload.get",
+            "registry.pinned_protocol",
             "registry.server",
             "upstream.content_items",
+            "upstream.list_all_tools",
             "upstream.session",
             "upstream.tool_view",
             "verdict.get"
@@ -6836,8 +6844,8 @@
         },
         {
           "symbol": "_root_cause",
-          "line_start": 1327,
-          "line_end": 1332,
+          "line_start": 1328,
+          "line_end": 1333,
           "async": false,
           "call_expressions": [
             "isinstance",
@@ -6847,8 +6855,8 @@
         },
         {
           "symbol": "_storable",
-          "line_start": 1335,
-          "line_end": 1343,
+          "line_start": 1336,
+          "line_end": 1344,
           "async": false,
           "call_expressions": [
             "_storable",
@@ -6860,8 +6868,8 @@
         },
         {
           "symbol": "_decoded_strings",
-          "line_start": 1346,
-          "line_end": 1357,
+          "line_start": 1347,
+          "line_end": 1358,
           "async": false,
           "call_expressions": [
             "isinstance",
@@ -6875,8 +6883,8 @@
         },
         {
           "symbol": "_upstream_failure",
-          "line_start": 1360,
-          "line_end": 1368,
+          "line_start": 1361,
+          "line_end": 1369,
           "async": false,
           "call_expressions": [
             "_root_cause",
@@ -6888,8 +6896,8 @@
         },
         {
           "symbol": "body_of",
-          "line_start": 1371,
-          "line_end": 1372,
+          "line_start": 1372,
+          "line_end": 1373,
           "async": false,
           "call_expressions": [
             "json.dumps"
@@ -6898,8 +6906,8 @@
         },
         {
           "symbol": "_guarded_result",
-          "line_start": 1375,
-          "line_end": 1407,
+          "line_start": 1376,
+          "line_end": 1408,
           "async": false,
           "call_expressions": [
             "', '.join",
@@ -6922,8 +6930,8 @@
         },
         {
           "symbol": "_inspected_result",
-          "line_start": 1410,
-          "line_end": 1421,
+          "line_start": 1411,
+          "line_end": 1422,
           "async": true,
           "call_expressions": [
             "', '.join",
@@ -6940,8 +6948,8 @@
         },
         {
           "symbol": "_audit_payload",
-          "line_start": 1424,
-          "line_end": 1438,
+          "line_start": 1425,
+          "line_end": 1439,
           "async": false,
           "call_expressions": [
             "canonical_hash",
@@ -6954,8 +6962,8 @@
         },
         {
           "symbol": "_record_decision",
-          "line_start": 1444,
-          "line_end": 1523,
+          "line_start": 1445,
+          "line_end": 1524,
           "async": true,
           "call_expressions": [
             "(event.get('exception') or {}).get",
@@ -6979,8 +6987,8 @@
         },
         {
           "symbol": "record_connection_denial",
-          "line_start": 1530,
-          "line_end": 1561,
+          "line_start": 1531,
+          "line_end": 1562,
           "async": true,
           "call_expressions": [
             "_record_decision",
@@ -6995,8 +7003,8 @@
         },
         {
           "symbol": "verify_audit_chain",
-          "line_start": 1564,
-          "line_end": 1603,
+          "line_start": 1565,
+          "line_end": 1604,
           "async": true,
           "call_expressions": [
             "', '.join",
@@ -7016,8 +7024,8 @@
         },
         {
           "symbol": "_decision_payload",
-          "line_start": 1606,
-          "line_end": 1616,
+          "line_start": 1607,
+          "line_end": 1617,
           "async": true,
           "call_expressions": [
             "_record_decision",
@@ -7032,8 +7040,8 @@
         },
         {
           "symbol": "execute_call",
-          "line_start": 1619,
-          "line_end": 1879,
+          "line_start": 1620,
+          "line_end": 1880,
           "async": true,
           "call_expressions": [
             "(registry.server(server_id) or {}).get",
@@ -7121,8 +7129,8 @@
         },
         {
           "symbol": "approve_request",
-          "line_start": 1882,
-          "line_end": 1926,
+          "line_start": 1883,
+          "line_end": 1927,
           "async": true,
           "call_expressions": [
             "(await connection.execute(\"UPDATE approvals SET status='APPROVED', reviewed_by=%s, reviewed_at=now()\\n               WHERE id=%s AND status='PENDING' AND expires_at>now() RETURNING *\", (reviewer_token, approval_id))).fetchone",
@@ -7143,8 +7151,8 @@
         },
         {
           "symbol": "_trivy_summary",
-          "line_start": 1929,
-          "line_end": 1950,
+          "line_start": 1930,
+          "line_end": 1951,
           "async": false,
           "call_expressions": [
             "data.get",
@@ -7157,8 +7165,8 @@
         },
         {
           "symbol": "_store_trivy",
-          "line_start": 1953,
-          "line_end": 1960,
+          "line_start": 1954,
+          "line_end": 1961,
           "async": true,
           "call_expressions": [
             "Jsonb",
@@ -7169,8 +7177,8 @@
         },
         {
           "symbol": "supply_chain_coverage",
-          "line_start": 1963,
-          "line_end": 1979,
+          "line_start": 1964,
+          "line_end": 1980,
           "async": true,
           "call_expressions": [
             "db.fetch_all"
@@ -7179,8 +7187,8 @@
         },
         {
           "symbol": "reject_request",
-          "line_start": 1982,
-          "line_end": 2005,
+          "line_start": 1983,
+          "line_end": 2006,
           "async": true,
           "call_expressions": [
             "(await connection.execute(\"UPDATE approvals SET status='REJECTED', reviewed_by=%s, reviewed_at=now(), review_note=%s\\n               WHERE id=%s AND status='PENDING' RETURNING id, requested_by, review_note, request_payload\", (reviewer_token, note.strip(), approval_id))).fetchone",
@@ -7196,8 +7204,8 @@
         },
         {
           "symbol": "import_supply_chain_reports",
-          "line_start": 2008,
-          "line_end": 2071,
+          "line_start": 2009,
+          "line_end": 2072,
           "async": true,
           "call_expressions": [
             "Jsonb",
@@ -7310,8 +7318,8 @@
         },
         {
           "symbol": "shrink",
-          "line_start": 1430,
-          "line_end": 1437,
+          "line_start": 1431,
+          "line_end": 1438,
           "async": false,
           "call_expressions": [
             "canonical_hash",
@@ -7329,7 +7337,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 99,
-      "sha256": "20e441e0521a7a81a86c1406cbe55113dd5b0a71b54e75a6b36f2fd18a5cf545",
+      "sha256": "0ecca90094806ea07d3f6b9a780a5e9cfdaf64173c2024a83d8d818096c3f45c",
       "head_sha256": "0ecca90094806ea07d3f6b9a780a5e9cfdaf64173c2024a83d8d818096c3f45c",
       "normalized_sha256": "0ecca90094806ea07d3f6b9a780a5e9cfdaf64173c2024a83d8d818096c3f45c",
       "source_state": "committed_source",
@@ -7448,7 +7456,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 928,
-      "sha256": "31dc6c7c541c4af3d5a1dd93138df35b89e781627d8f41d995ca0d676b5647fd",
+      "sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
       "head_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
       "normalized_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
       "source_state": "committed_source",
@@ -8028,7 +8036,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 117,
-      "sha256": "ca02bb23c385e83ce9cddd28172073ef97f6e628df916d9f6d9c5043727fba3f",
+      "sha256": "a7636f4ef8c9c2eaf40fe88a2db9920114fbd0b0ae74050a63596e1824fb3678",
       "head_sha256": "a7636f4ef8c9c2eaf40fe88a2db9920114fbd0b0ae74050a63596e1824fb3678",
       "normalized_sha256": "a7636f4ef8c9c2eaf40fe88a2db9920114fbd0b0ae74050a63596e1824fb3678",
       "source_state": "committed_source",
@@ -8100,10 +8108,10 @@
       "path": "full_stack_lab/gateway/app/endpoint_plane.py",
       "symbol": "module/config",
       "line_start": 1,
-      "line_end": 1278,
-      "sha256": "da35427389532cd9e49a2ab4e71ea9fc921b7c843ec0b3aa1c35835527c00c11",
-      "head_sha256": "60c725d7176537fc49c90e42d7a0f538032e25d2fabc762ab8a44f076d83c127",
-      "normalized_sha256": "60c725d7176537fc49c90e42d7a0f538032e25d2fabc762ab8a44f076d83c127",
+      "line_end": 1281,
+      "sha256": "6832e1ea879423e93d82328cd92b523e98be7c22b540ccd46c5f57a742c1fb14",
+      "head_sha256": "6832e1ea879423e93d82328cd92b523e98be7c22b540ccd46c5f57a742c1fb14",
+      "normalized_sha256": "6832e1ea879423e93d82328cd92b523e98be7c22b540ccd46c5f57a742c1fb14",
       "source_state": "committed_source",
       "symbol_found": true,
       "imports": [
@@ -8710,7 +8718,7 @@
         {
           "symbol": "managed_policy",
           "line_start": 739,
-          "line_end": 802,
+          "line_end": 805,
           "async": true,
           "call_expressions": [
             "''.join",
@@ -8750,8 +8758,8 @@
         },
         {
           "symbol": "json_document",
-          "line_start": 805,
-          "line_end": 807,
+          "line_start": 808,
+          "line_end": 810,
           "async": false,
           "call_expressions": [
             "json.dumps"
@@ -8760,8 +8768,8 @@
         },
         {
           "symbol": "heartbeat",
-          "line_start": 810,
-          "line_end": 850,
+          "line_start": 813,
+          "line_end": 853,
           "async": true,
           "call_expressions": [
             "(await connection.execute(\"UPDATE endpoint_agents SET heartbeat_at=now(),last_seen_at=now(),policy_hash=%s,\\n                 configuration_hashes=%s,enforcement_checks=%s, detail=(detail - 'host') || %s,\\n                 managed_state=CASE WHEN %s THEN managed_state ELSE 'quarantined' END\\n               WHERE endpoint_id=%s AND status='active' RETURNING managed_state\", (policy_hash, Jsonb(hashes), Jsonb(checks), Jsonb(detail), compliant, device['endpoint_id']))).fetchone",
@@ -8784,8 +8792,8 @@
         },
         {
           "symbol": "network_quality",
-          "line_start": 853,
-          "line_end": 883,
+          "line_start": 856,
+          "line_end": 886,
           "async": true,
           "call_expressions": [
             "(now - measured).total_seconds",
@@ -8803,8 +8811,8 @@
         },
         {
           "symbol": "_round",
-          "line_start": 886,
-          "line_end": 887,
+          "line_start": 889,
+          "line_end": 890,
           "async": false,
           "call_expressions": [
             "float",
@@ -8814,8 +8822,8 @@
         },
         {
           "symbol": "activate_managed",
-          "line_start": 890,
-          "line_end": 909,
+          "line_start": 893,
+          "line_end": 912,
           "async": true,
           "call_expressions": [
             "Jsonb",
@@ -8830,8 +8838,8 @@
         },
         {
           "symbol": "managed_failure",
-          "line_start": 912,
-          "line_end": 926,
+          "line_start": 915,
+          "line_end": 929,
           "async": true,
           "call_expressions": [
             "(datetime.now(UTC) - device['heartbeat_at']).total_seconds",
@@ -8847,8 +8855,8 @@
         },
         {
           "symbol": "scan_policy",
-          "line_start": 934,
-          "line_end": 943,
+          "line_start": 937,
+          "line_end": 946,
           "async": true,
           "call_expressions": [
             "db.fetch_one",
@@ -8861,8 +8869,8 @@
         },
         {
           "symbol": "set_scan_policy",
-          "line_start": 946,
-          "line_end": 974,
+          "line_start": 949,
+          "line_end": 977,
           "async": true,
           "call_expressions": [
             "', '.join",
@@ -8883,8 +8891,8 @@
         },
         {
           "symbol": "listener_fingerprint",
-          "line_start": 979,
-          "line_end": 982,
+          "line_start": 982,
+          "line_end": 985,
           "async": false,
           "call_expressions": [
             "' '.join",
@@ -8900,8 +8908,8 @@
         },
         {
           "symbol": "_listener_keys",
-          "line_start": 985,
-          "line_end": 994,
+          "line_start": 988,
+          "line_end": 997,
           "async": false,
           "call_expressions": [
             "' '.join",
@@ -8915,8 +8923,8 @@
         },
         {
           "symbol": "ingest_listeners",
-          "line_start": 997,
-          "line_end": 1006,
+          "line_start": 1000,
+          "line_end": 1009,
           "async": true,
           "call_expressions": [
             "ValueError",
@@ -8933,8 +8941,8 @@
         },
         {
           "symbol": "_ingest_listeners",
-          "line_start": 1009,
-          "line_end": 1108,
+          "line_start": 1012,
+          "line_end": 1111,
           "async": true,
           "call_expressions": [
             "(await connection.execute(\"SELECT fingerprint, provenance->>'raw_sha256' AS hash FROM endpoint_listeners WHERE endpoint_id=%s\", (endpoint_id,))).fetchall",
@@ -8968,8 +8976,8 @@
         },
         {
           "symbol": "listeners_page",
-          "line_start": 1111,
-          "line_end": 1139,
+          "line_start": 1114,
+          "line_end": 1142,
           "async": true,
           "call_expressions": [
             "' AND '.join",
@@ -8995,8 +9003,8 @@
         },
         {
           "symbol": "observations_page",
-          "line_start": 1145,
-          "line_end": 1177,
+          "line_start": 1148,
+          "line_end": 1180,
           "async": true,
           "call_expressions": [
             "(agent['observation'] or {}).get",
@@ -9021,8 +9029,8 @@
         },
         {
           "symbol": "record_detail",
-          "line_start": 1186,
-          "line_end": 1199,
+          "line_start": 1189,
+          "line_end": 1202,
           "async": true,
           "call_expressions": [
             "db.fetch_one",
@@ -9036,8 +9044,8 @@
         },
         {
           "symbol": "_record",
-          "line_start": 1202,
-          "line_end": 1209,
+          "line_start": 1205,
+          "line_end": 1212,
           "async": false,
           "call_expressions": [
             "(row['details'] or {}).get",
@@ -9050,8 +9058,8 @@
         },
         {
           "symbol": "correlate",
-          "line_start": 1212,
-          "line_end": 1260,
+          "line_start": 1215,
+          "line_end": 1263,
           "async": true,
           "call_expressions": [
             "RECORD_KINDS.items",
@@ -9074,8 +9082,8 @@
         },
         {
           "symbol": "shadow_listener_count_for",
-          "line_start": 1263,
-          "line_end": 1278,
+          "line_start": 1266,
+          "line_end": 1281,
           "async": true,
           "call_expressions": [
             "db.fetch_one",
@@ -9090,7 +9098,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 233,
-      "sha256": "827aa7a57958dfd683cfd4c99a9197a353103a9e647bc427daf13fd0fcc0b49e",
+      "sha256": "26bf597087830d4d167f30c7c0aac14769112671ddf19537a0360460e3f9a828",
       "head_sha256": "26bf597087830d4d167f30c7c0aac14769112671ddf19537a0360460e3f9a828",
       "normalized_sha256": "26bf597087830d4d167f30c7c0aac14769112671ddf19537a0360460e3f9a828",
       "source_state": "committed_source",
@@ -9282,7 +9290,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 299,
-      "sha256": "58c296bbad903cfe001e39dded16f538ddcc4308139c77b0f2c276fb12efd6dc",
+      "sha256": "4923af424e115db096c688c3d5dc1f0c1285cef63ab1ab4efa39d76375861b5d",
       "head_sha256": "4923af424e115db096c688c3d5dc1f0c1285cef63ab1ab4efa39d76375861b5d",
       "normalized_sha256": "4923af424e115db096c688c3d5dc1f0c1285cef63ab1ab4efa39d76375861b5d",
       "source_state": "committed_source",
@@ -9529,7 +9537,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 340,
-      "sha256": "73f2c354c60963d5cb5c5ae2a41042967b3556afc0688e41e6e9d2d157deaebe",
+      "sha256": "766c5c72b802e1803aed886f03d3dc4d31f71e6784c2ca0eca5d06de21a2af6a",
       "head_sha256": "766c5c72b802e1803aed886f03d3dc4d31f71e6784c2ca0eca5d06de21a2af6a",
       "normalized_sha256": "766c5c72b802e1803aed886f03d3dc4d31f71e6784c2ca0eca5d06de21a2af6a",
       "source_state": "committed_source",
@@ -9720,7 +9728,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 27,
-      "sha256": "a6864f331c6e6997618fde28b9e45abec514a19720efdf94b09a975258d4d7c7",
+      "sha256": "0f536fe8bbf77a761a50f74d738e015523f940065de1bd5b8afc04878531e101",
       "head_sha256": "0f536fe8bbf77a761a50f74d738e015523f940065de1bd5b8afc04878531e101",
       "normalized_sha256": "0f536fe8bbf77a761a50f74d738e015523f940065de1bd5b8afc04878531e101",
       "source_state": "committed_source",
@@ -9756,9 +9764,9 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 1435,
-      "sha256": "bccce9255775abecc9e139ba7c116dcc669ce6358acae7e47692b179af8ec426",
-      "head_sha256": "bccce9255775abecc9e139ba7c116dcc669ce6358acae7e47692b179af8ec426",
-      "normalized_sha256": "bccce9255775abecc9e139ba7c116dcc669ce6358acae7e47692b179af8ec426",
+      "sha256": "6a06fe057518b438ed4b35d339134d3790cefad4eba402987cc37e6467ab362e",
+      "head_sha256": "6a06fe057518b438ed4b35d339134d3790cefad4eba402987cc37e6467ab362e",
+      "normalized_sha256": "6a06fe057518b438ed4b35d339134d3790cefad4eba402987cc37e6467ab362e",
       "source_state": "committed_source",
       "symbol_found": true,
       "imports": [
@@ -11277,10 +11285,10 @@
       "path": "full_stack_lab/gateway/app/oidc.py",
       "symbol": "module/config",
       "line_start": 1,
-      "line_end": 393,
-      "sha256": "0bd10e08b577e77d4a1bfd77b6067ca5184be0e5179c2fab74dc922df7fd5663",
-      "head_sha256": "0bd10e08b577e77d4a1bfd77b6067ca5184be0e5179c2fab74dc922df7fd5663",
-      "normalized_sha256": "0bd10e08b577e77d4a1bfd77b6067ca5184be0e5179c2fab74dc922df7fd5663",
+      "line_end": 395,
+      "sha256": "fa413386d05fd57380db501fc5e203dc27e7d73d242ca81e94fb48793eb0eb63",
+      "head_sha256": "fa413386d05fd57380db501fc5e203dc27e7d73d242ca81e94fb48793eb0eb63",
+      "normalized_sha256": "fa413386d05fd57380db501fc5e203dc27e7d73d242ca81e94fb48793eb0eb63",
       "source_state": "committed_source",
       "symbol_found": true,
       "imports": [
@@ -11439,7 +11447,7 @@
         {
           "symbol": "callback",
           "line_start": 127,
-          "line_end": 177,
+          "line_end": 179,
           "async": true,
           "call_expressions": [
             "ADMIN_MAX.total_seconds",
@@ -11473,8 +11481,8 @@
         },
         {
           "symbol": "session",
-          "line_start": 181,
-          "line_end": 199,
+          "line_start": 183,
+          "line_end": 201,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -11497,8 +11505,8 @@
         },
         {
           "symbol": "_refresh_upstream",
-          "line_start": 202,
-          "line_end": 249,
+          "line_start": 204,
+          "line_end": 251,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -11526,8 +11534,8 @@
         },
         {
           "symbol": "validate_session",
-          "line_start": 252,
-          "line_end": 303,
+          "line_start": 254,
+          "line_end": 305,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -11554,8 +11562,8 @@
         },
         {
           "symbol": "touch_session",
-          "line_start": 306,
-          "line_end": 315,
+          "line_start": 308,
+          "line_end": 317,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -11568,8 +11576,8 @@
         },
         {
           "symbol": "end_session",
-          "line_start": 318,
-          "line_end": 343,
+          "line_start": 320,
+          "line_end": 345,
           "async": true,
           "call_expressions": [
             "bytes",
@@ -11590,8 +11598,8 @@
         },
         {
           "symbol": "end_binding_sessions",
-          "line_start": 346,
-          "line_end": 349,
+          "line_start": 348,
+          "line_end": 351,
           "async": true,
           "call_expressions": [
             "db.fetch_all",
@@ -11602,8 +11610,8 @@
         },
         {
           "symbol": "administrator",
-          "line_start": 357,
-          "line_end": 361,
+          "line_start": 359,
+          "line_end": 363,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -11613,8 +11621,8 @@
         },
         {
           "symbol": "identity",
-          "line_start": 365,
-          "line_end": 369,
+          "line_start": 367,
+          "line_end": 371,
           "async": true,
           "call_expressions": [
             "Header",
@@ -11628,8 +11636,8 @@
         },
         {
           "symbol": "bind",
-          "line_start": 373,
-          "line_end": 385,
+          "line_start": 375,
+          "line_end": 387,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -11645,8 +11653,8 @@
         },
         {
           "symbol": "unbind",
-          "line_start": 389,
-          "line_end": 393,
+          "line_start": 391,
+          "line_end": 395,
           "async": true,
           "call_expressions": [
             "Header",
@@ -11677,7 +11685,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 297,
-      "sha256": "528ef8dbae0fd436dd54bd10202a32cc7cb3f235e6b059c43d8bcd2d73acd885",
+      "sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
       "head_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
       "normalized_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
       "source_state": "committed_source",
@@ -11889,7 +11897,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 463,
-      "sha256": "f017ac3f35be002ce7a976e9de547f811c5fbecb8fca72dcadd30018fed7d93b",
+      "sha256": "bb63b3094567f96315bd302c996fe3fbecf0e608f080874ea1a0a19e9857dc96",
       "head_sha256": "bb63b3094567f96315bd302c996fe3fbecf0e608f080874ea1a0a19e9857dc96",
       "normalized_sha256": "bb63b3094567f96315bd302c996fe3fbecf0e608f080874ea1a0a19e9857dc96",
       "source_state": "committed_source",
@@ -12047,7 +12055,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 209,
-      "sha256": "3f67b2151819bbc1d4e6f99a93da7d1309924c7dfe9db5aca99656deeba4f15b",
+      "sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
       "head_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
       "normalized_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
       "source_state": "committed_source",
@@ -12167,7 +12175,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 114,
-      "sha256": "f00d700cf097385dfb9b8541a77681888bd45c800a4e44e53546a397acd10ac8",
+      "sha256": "fe416bc807eea410bcaa74ce46edad1fae3ac89f492d325404f5e3ffc40c2897",
       "head_sha256": "fe416bc807eea410bcaa74ce46edad1fae3ac89f492d325404f5e3ffc40c2897",
       "normalized_sha256": "fe416bc807eea410bcaa74ce46edad1fae3ac89f492d325404f5e3ffc40c2897",
       "source_state": "committed_source",
@@ -12302,10 +12310,10 @@
       "path": "full_stack_lab/gateway/app/registry.py",
       "symbol": "module/config",
       "line_start": 1,
-      "line_end": 286,
-      "sha256": "7635a93cc4f98bc72e8e62a276e76818f62f67fe15c245ee9b234ff2b81b8f76",
-      "head_sha256": "18adf944e4256d94fbb3b270b7113555c8e7a18056eba944bdcd8efc7d129fa7",
-      "normalized_sha256": "18adf944e4256d94fbb3b270b7113555c8e7a18056eba944bdcd8efc7d129fa7",
+      "line_end": 293,
+      "sha256": "efac4ae0cfc584ee8872cafd5903d97df1bef722c237419e14556939dcf8d933",
+      "head_sha256": "efac4ae0cfc584ee8872cafd5903d97df1bef722c237419e14556939dcf8d933",
+      "normalized_sha256": "efac4ae0cfc584ee8872cafd5903d97df1bef722c237419e14556939dcf8d933",
       "source_state": "committed_source",
       "symbol_found": true,
       "imports": [
@@ -12408,9 +12416,24 @@
           "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
         },
         {
-          "symbol": "runtime_endpoints",
+          "symbol": "pinned_protocol",
           "line_start": 90,
           "line_end": 94,
+          "async": false,
+          "call_expressions": [
+            "_cache['runtime']['contracts'].get",
+            "catalog",
+            "contract.get",
+            "lock",
+            "lock().get",
+            "lock().get('servers', {}).get"
+          ],
+          "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
+        },
+        {
+          "symbol": "runtime_endpoints",
+          "line_start": 97,
+          "line_end": 101,
           "async": false,
           "call_expressions": [
             "_cache['runtime']['servers'].items",
@@ -12422,8 +12445,8 @@
         },
         {
           "symbol": "servers",
-          "line_start": 97,
-          "line_end": 98,
+          "line_start": 104,
+          "line_end": 105,
           "async": false,
           "call_expressions": [
             "catalog",
@@ -12433,8 +12456,8 @@
         },
         {
           "symbol": "server",
-          "line_start": 101,
-          "line_end": 102,
+          "line_start": 108,
+          "line_end": 109,
           "async": false,
           "call_expressions": [
             "servers",
@@ -12444,8 +12467,8 @@
         },
         {
           "symbol": "allowed_principals",
-          "line_start": 105,
-          "line_end": 115,
+          "line_start": 112,
+          "line_end": 122,
           "async": false,
           "call_expressions": [
             "_runtime_spec",
@@ -12455,8 +12478,8 @@
         },
         {
           "symbol": "is_console_registration",
-          "line_start": 118,
-          "line_end": 119,
+          "line_start": 125,
+          "line_end": 126,
           "async": false,
           "call_expressions": [
             "_runtime_spec"
@@ -12465,8 +12488,8 @@
         },
         {
           "symbol": "_runtime_spec",
-          "line_start": 122,
-          "line_end": 125,
+          "line_start": 129,
+          "line_end": 132,
           "async": false,
           "call_expressions": [
             "_cache['runtime']['servers'].get",
@@ -12476,8 +12499,8 @@
         },
         {
           "symbol": "approved_tools",
-          "line_start": 128,
-          "line_end": 129,
+          "line_start": 135,
+          "line_end": 136,
           "async": false,
           "call_expressions": [
             "(server(server_id) or {}).get",
@@ -12488,8 +12511,8 @@
         },
         {
           "symbol": "reviewed_tools",
-          "line_start": 132,
-          "line_end": 137,
+          "line_start": 139,
+          "line_end": 144,
           "async": false,
           "call_expressions": [
             "(server(server_id) or {}).get",
@@ -12502,16 +12525,16 @@
         },
         {
           "symbol": "source_ref",
-          "line_start": 140,
-          "line_end": 142,
+          "line_start": 147,
+          "line_end": 149,
           "async": false,
           "call_expressions": [],
           "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
         },
         {
           "symbol": "lock",
-          "line_start": 145,
-          "line_end": 148,
+          "line_start": 152,
+          "line_end": 155,
           "async": false,
           "call_expressions": [
             "LOCK_PATH.exists",
@@ -12522,8 +12545,8 @@
         },
         {
           "symbol": "lock_digest",
-          "line_start": 151,
-          "line_end": 152,
+          "line_start": 158,
+          "line_end": 159,
           "async": false,
           "call_expressions": [
             "LOCK_PATH.exists",
@@ -12535,8 +12558,8 @@
         },
         {
           "symbol": "usage_relationships",
-          "line_start": 155,
-          "line_end": 156,
+          "line_start": 162,
+          "line_end": 163,
           "async": false,
           "call_expressions": [
             "catalog",
@@ -12547,8 +12570,8 @@
         },
         {
           "symbol": "sync",
-          "line_start": 159,
-          "line_end": 256,
+          "line_start": 166,
+          "line_end": 263,
           "async": true,
           "call_expressions": [
             "(console_reviews or {}).get",
@@ -12581,8 +12604,8 @@
         },
         {
           "symbol": "tool_hashes",
-          "line_start": 259,
-          "line_end": 261,
+          "line_start": 266,
+          "line_end": 268,
           "async": false,
           "call_expressions": [
             "canonical_hash"
@@ -12591,8 +12614,8 @@
         },
         {
           "symbol": "build_lock",
-          "line_start": 264,
-          "line_end": 278,
+          "line_start": 271,
+          "line_end": 285,
           "async": true,
           "call_expressions": [
             "catalog_version",
@@ -12614,7 +12637,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 70,
-      "sha256": "dba234f09ee747138f1b701ee736461718b0410e6572d08f88f281722800aabd",
+      "sha256": "498ef79c49d5f977b2597fcd05a6126e3915c68c447913eea09795e705a35338",
       "head_sha256": "498ef79c49d5f977b2597fcd05a6126e3915c68c447913eea09795e705a35338",
       "normalized_sha256": "498ef79c49d5f977b2597fcd05a6126e3915c68c447913eea09795e705a35338",
       "source_state": "committed_source",
@@ -12702,7 +12725,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 112,
-      "sha256": "20bafa76e5f9c6bf775615e4d5e0cae547c199b136b37e1a1133623219ef88fb",
+      "sha256": "88171fd61d3c8a1e72ee7f81d915dc5e18bc4708dc9f47bc4aed41d69884ad92",
       "head_sha256": "88171fd61d3c8a1e72ee7f81d915dc5e18bc4708dc9f47bc4aed41d69884ad92",
       "normalized_sha256": "88171fd61d3c8a1e72ee7f81d915dc5e18bc4708dc9f47bc4aed41d69884ad92",
       "source_state": "committed_source",
@@ -12793,10 +12816,10 @@
       "path": "full_stack_lab/gateway/app/review.py",
       "symbol": "module/config",
       "line_start": 1,
-      "line_end": 304,
-      "sha256": "581cb4c7ab99167e42715cea1058a59db8ea50fcefd7e3f695745610f8bcbe27",
-      "head_sha256": "6a1e0533f5538e2c5cd1e3e089a4fdde0c3eb7f8bbcf6de95f3e31c3be6b816f",
-      "normalized_sha256": "6a1e0533f5538e2c5cd1e3e089a4fdde0c3eb7f8bbcf6de95f3e31c3be6b816f",
+      "line_end": 321,
+      "sha256": "1595cdf91eb8d630c3b266e071429696eac4f420c5b7ab82b1a87a5b345a9c79",
+      "head_sha256": "1595cdf91eb8d630c3b266e071429696eac4f420c5b7ab82b1a87a5b345a9c79",
+      "normalized_sha256": "1595cdf91eb8d630c3b266e071429696eac4f420c5b7ab82b1a87a5b345a9c79",
       "source_state": "committed_source",
       "symbol_found": true,
       "imports": [
@@ -12998,27 +13021,31 @@
         {
           "symbol": "derived_constraints",
           "line_start": 234,
-          "line_end": 252,
+          "line_end": 269,
           "async": false,
           "call_expressions": [
             "'|'.join",
+            "(node.get('$defs') or node.get('definitions') or {}).values",
+            "(node.get('properties') or {}).items",
             "_ADDRESS_ARG.search",
             "advertised[name].get",
+            "isinstance",
             "item.get",
             "json.dumps",
             "json.loads",
-            "prop.get",
-            "properties.items",
+            "node.get",
+            "pin",
             "re.escape",
             "reviews.items",
-            "schema.get"
+            "schema.get",
+            "schema.items"
           ],
           "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
         },
         {
           "symbol": "annotate",
-          "line_start": 261,
-          "line_end": 281,
+          "line_start": 278,
+          "line_end": 298,
           "async": true,
           "call_expressions": [
             "(await connection.execute(\"INSERT INTO audit_annotations(target_kind, first_id, last_id, reason, created_by)\\n                   VALUES ('decision',%s,%s,%s,%s) RETURNING *\", (first_id, last_id, reason, actor))).fetchone",
@@ -13035,8 +13062,8 @@
         },
         {
           "symbol": "annotations",
-          "line_start": 284,
-          "line_end": 288,
+          "line_start": 301,
+          "line_end": 305,
           "async": true,
           "call_expressions": [
             "(await connection.execute(query)).fetchall",
@@ -13047,8 +13074,8 @@
         },
         {
           "symbol": "mark_invalid",
-          "line_start": 291,
-          "line_end": 304,
+          "line_start": 308,
+          "line_end": 321,
           "async": true,
           "call_expressions": [
             "(await connection.execute(query, params)).fetchall",
@@ -13069,6 +13096,21 @@
           "async": false,
           "call_expressions": [
             "blockers.append"
+          ],
+          "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
+        },
+        {
+          "symbol": "pin",
+          "line_start": 248,
+          "line_end": 263,
+          "async": false,
+          "call_expressions": [
+            "(node.get('$defs') or node.get('definitions') or {}).values",
+            "(node.get('properties') or {}).items",
+            "_ADDRESS_ARG.search",
+            "isinstance",
+            "node.get",
+            "pin"
           ],
           "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
         }
@@ -13177,7 +13219,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 30,
-      "sha256": "99a67db53d116e7c96ef9354eec557eb0386b09a149c3112a20163d15c7bf962",
+      "sha256": "a280c6a1d42c76431cf7cb05bef0ada0ce2178bdddca1764031af589b9f94879",
       "head_sha256": "a280c6a1d42c76431cf7cb05bef0ada0ce2178bdddca1764031af589b9f94879",
       "normalized_sha256": "a280c6a1d42c76431cf7cb05bef0ada0ce2178bdddca1764031af589b9f94879",
       "source_state": "committed_source",
@@ -13212,7 +13254,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 15,
-      "sha256": "88ae502d25df209d2017625ce37908d93c17a553dd81271ce354b4c3d9d14d40",
+      "sha256": "455206b91e595128986c877c52d882ac80ea5445214c2f6fe9893b6e278ecb5a",
       "head_sha256": "455206b91e595128986c877c52d882ac80ea5445214c2f6fe9893b6e278ecb5a",
       "normalized_sha256": "455206b91e595128986c877c52d882ac80ea5445214c2f6fe9893b6e278ecb5a",
       "source_state": "committed_source",
@@ -13243,7 +13285,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 118,
-      "sha256": "be13b1dcd670db4e430e8bd3c70ab41d93bd1ddabdeca8f2e2c54e3065829726",
+      "sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
       "head_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
       "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
       "source_state": "committed_source",
@@ -13627,10 +13669,10 @@
       "path": "full_stack_lab/gateway/app/upstream.py",
       "symbol": "module/config",
       "line_start": 1,
-      "line_end": 247,
-      "sha256": "39c7f768705ff501ce13cd0e1ff89756e98f8f983d4ca1fc18ec5b516235ff49",
-      "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-      "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+      "line_end": 278,
+      "sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+      "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+      "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
       "source_state": "committed_source",
       "symbol_found": true,
       "imports": [
@@ -13651,13 +13693,14 @@
         "import httpx2",
         "from mcp import Client",
         "from mcp.client.streamable_http import streamable_http_client",
+        "from mcp_types.version import HANDSHAKE_PROTOCOL_VERSIONS, MODERN_PROTOCOL_VERSIONS",
         "from . import db"
       ],
       "functions": [
         {
           "symbol": "credential_headers",
-          "line_start": 36,
-          "line_end": 73,
+          "line_start": 37,
+          "line_end": 74,
           "async": false,
           "call_expressions": [
             "CredentialUnavailable",
@@ -13679,8 +13722,8 @@
         },
         {
           "symbol": "_client",
-          "line_start": 92,
-          "line_end": 97,
+          "line_start": 93,
+          "line_end": 98,
           "async": false,
           "call_expressions": [
             "CookieJar",
@@ -13692,8 +13735,8 @@
         },
         {
           "symbol": "close_pool",
-          "line_start": 100,
-          "line_end": 114,
+          "line_start": 101,
+          "line_end": 115,
           "async": true,
           "call_expressions": [
             "_pool.pop",
@@ -13705,8 +13748,8 @@
         },
         {
           "symbol": "release_pool",
-          "line_start": 117,
-          "line_end": 128,
+          "line_start": 118,
+          "line_end": 129,
           "async": true,
           "call_expressions": [
             "close_pool",
@@ -13718,8 +13761,8 @@
         },
         {
           "symbol": "_sweep",
-          "line_start": 135,
-          "line_end": 152,
+          "line_start": 136,
+          "line_end": 153,
           "async": true,
           "call_expressions": [
             "close_pool",
@@ -13731,8 +13774,8 @@
         },
         {
           "symbol": "_dispatch_client",
-          "line_start": 156,
-          "line_end": 183,
+          "line_start": 157,
+          "line_end": 184,
           "async": true,
           "call_expressions": [
             "_Lease",
@@ -13755,14 +13798,15 @@
         },
         {
           "symbol": "session",
-          "line_start": 187,
-          "line_end": 196,
+          "line_start": 188,
+          "line_end": 205,
           "async": true,
           "call_expressions": [
             "AsyncExitStack",
             "Client",
             "_client",
             "_dispatch_client",
+            "connect_mode",
             "credential_headers",
             "stack.enter_async_context",
             "streamable_http_client"
@@ -13770,9 +13814,30 @@
           "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
         },
         {
+          "symbol": "connect_mode",
+          "line_start": 208,
+          "line_end": 211,
+          "async": false,
+          "call_expressions": [],
+          "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
+        },
+        {
+          "symbol": "list_all_tools",
+          "line_start": 217,
+          "line_end": 227,
+          "async": true,
+          "call_expressions": [
+            "ValueError",
+            "client.list_tools",
+            "range",
+            "tools.extend"
+          ],
+          "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
+        },
+        {
           "symbol": "tool_view",
-          "line_start": 199,
-          "line_end": 206,
+          "line_start": 230,
+          "line_end": 237,
           "async": false,
           "call_expressions": [
             "annotations.model_dump",
@@ -13782,11 +13847,11 @@
         },
         {
           "symbol": "discover",
-          "line_start": 209,
-          "line_end": 218,
+          "line_start": 240,
+          "line_end": 249,
           "async": true,
           "call_expressions": [
-            "client.list_tools",
+            "list_all_tools",
             "session",
             "str",
             "tool_view"
@@ -13795,8 +13860,8 @@
         },
         {
           "symbol": "handshake",
-          "line_start": 221,
-          "line_end": 232,
+          "line_start": 252,
+          "line_end": 263,
           "async": true,
           "call_expressions": [
             "session",
@@ -13806,8 +13871,8 @@
         },
         {
           "symbol": "content_items",
-          "line_start": 235,
-          "line_end": 243,
+          "line_start": 266,
+          "line_end": 274,
           "async": false,
           "call_expressions": [
             "item.model_dump",
@@ -13818,8 +13883,8 @@
         },
         {
           "symbol": "text_of",
-          "line_start": 246,
-          "line_end": 247,
+          "line_start": 277,
+          "line_end": 278,
           "async": false,
           "call_expressions": [
             "'\\n'.join",
@@ -13830,8 +13895,8 @@
         },
         {
           "symbol": "__init__",
-          "line_start": 79,
-          "line_end": 80,
+          "line_start": 80,
+          "line_end": 81,
           "async": false,
           "call_expressions": [],
           "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
@@ -13843,7 +13908,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 243,
-      "sha256": "c2eccab9b525d30fe12c17c78796f6b90603bfd2d57f14ac84e748fea060ca35",
+      "sha256": "a5f682a1327b34737fc04b6e4d474eca32efdf4b8139c20225c11e93c74eb789",
       "head_sha256": "a5f682a1327b34737fc04b6e4d474eca32efdf4b8139c20225c11e93c74eb789",
       "normalized_sha256": "a5f682a1327b34737fc04b6e4d474eca32efdf4b8139c20225c11e93c74eb789",
       "source_state": "committed_source",
@@ -13955,7 +14020,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 434,
-      "sha256": "acbb5cea9c62a9409331cf11f9c324ade3d491e91bf00ae6efafd00cbf3c1476",
+      "sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
       "head_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
       "normalized_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
       "source_state": "committed_source",
@@ -14288,7 +14353,7 @@
       "symbol": "module/config",
       "line_start": 1,
       "line_end": 33,
-      "sha256": "9431d97a2a49bd8090c988ddc96d049715ff8f7366a67a8b604683e07157deb9",
+      "sha256": "f8c7e0f78859e00a05372c938b00836421632f5dd508963c1eadf0408d11f83c",
       "head_sha256": "f8c7e0f78859e00a05372c938b00836421632f5dd508963c1eadf0408d11f83c",
       "normalized_sha256": "f8c7e0f78859e00a05372c938b00836421632f5dd508963c1eadf0408d11f83c",
       "source_state": "committed_source",
@@ -14360,9 +14425,9 @@
       "symbol": "caller",
       "line_start": 172,
       "line_end": 179,
-      "sha256": "bccce9255775abecc9e139ba7c116dcc669ce6358acae7e47692b179af8ec426",
-      "head_sha256": "bccce9255775abecc9e139ba7c116dcc669ce6358acae7e47692b179af8ec426",
-      "normalized_sha256": "bccce9255775abecc9e139ba7c116dcc669ce6358acae7e47692b179af8ec426",
+      "sha256": "6a06fe057518b438ed4b35d339134d3790cefad4eba402987cc37e6467ab362e",
+      "head_sha256": "6a06fe057518b438ed4b35d339134d3790cefad4eba402987cc37e6467ab362e",
+      "normalized_sha256": "6a06fe057518b438ed4b35d339134d3790cefad4eba402987cc37e6467ab362e",
       "source_state": "committed_source",
       "symbol_found": true
     },
@@ -14410,11 +14475,11 @@
       "purpose": "execution boundary",
       "path": "full_stack_lab/gateway/app/core.py",
       "symbol": "execute_call",
-      "line_start": 1619,
-      "line_end": 1879,
-      "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
-      "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
-      "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+      "line_start": 1620,
+      "line_end": 1880,
+      "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
       "source_state": "committed_source",
       "symbol_found": true
     },
@@ -14425,7 +14490,7 @@
       "symbol": "classify",
       "line_start": 711,
       "line_end": 732,
-      "sha256": "77bf14b1442a9fc82b251759c107c0469bd707748e6792357e4a19d4dc3662bb",
+      "sha256": "a8f61f53f3db250a9ce2466472fc8b196cbea2613cf196951b449cdae1d1880a",
       "head_sha256": "a8f61f53f3db250a9ce2466472fc8b196cbea2613cf196951b449cdae1d1880a",
       "normalized_sha256": "a8f61f53f3db250a9ce2466472fc8b196cbea2613cf196951b449cdae1d1880a",
       "source_state": "committed_source",
@@ -14438,7 +14503,7 @@
       "symbol": "scope",
       "line_start": 69,
       "line_end": 112,
-      "sha256": "528ef8dbae0fd436dd54bd10202a32cc7cb3f235e6b059c43d8bcd2d73acd885",
+      "sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
       "head_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
       "normalized_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
       "source_state": "committed_source",
@@ -14451,7 +14516,7 @@
       "symbol": "build",
       "line_start": 159,
       "line_end": 297,
-      "sha256": "528ef8dbae0fd436dd54bd10202a32cc7cb3f235e6b059c43d8bcd2d73acd885",
+      "sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
       "head_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
       "normalized_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
       "source_state": "committed_source",
@@ -14464,9 +14529,9 @@
       "symbol": "_policy",
       "line_start": 1187,
       "line_end": 1198,
-      "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
-      "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
-      "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+      "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
       "source_state": "committed_source",
       "symbol_found": true
     },
@@ -14476,10 +14541,10 @@
       "path": "full_stack_lab/gateway/app/core.py",
       "symbol": "_call_upstream",
       "line_start": 1201,
-      "line_end": 1324,
-      "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
-      "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
-      "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+      "line_end": 1325,
+      "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
       "source_state": "committed_source",
       "symbol_found": true
     },
@@ -14488,11 +14553,11 @@
       "purpose": "credential binding",
       "path": "full_stack_lab/gateway/app/upstream.py",
       "symbol": "credential_headers",
-      "line_start": 36,
-      "line_end": 73,
-      "sha256": "39c7f768705ff501ce13cd0e1ff89756e98f8f983d4ca1fc18ec5b516235ff49",
-      "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-      "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+      "line_start": 37,
+      "line_end": 74,
+      "sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+      "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+      "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
       "source_state": "committed_source",
       "symbol_found": true
     },
@@ -14501,11 +14566,11 @@
       "purpose": "official MCP client",
       "path": "full_stack_lab/gateway/app/upstream.py",
       "symbol": "session",
-      "line_start": 187,
-      "line_end": 196,
-      "sha256": "39c7f768705ff501ce13cd0e1ff89756e98f8f983d4ca1fc18ec5b516235ff49",
-      "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-      "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+      "line_start": 188,
+      "line_end": 205,
+      "sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+      "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+      "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
       "source_state": "committed_source",
       "symbol_found": true
     },
@@ -14514,11 +14579,11 @@
       "purpose": "result size/shape/injection",
       "path": "full_stack_lab/gateway/app/core.py",
       "symbol": "_guarded_result",
-      "line_start": 1375,
-      "line_end": 1407,
-      "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
-      "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
-      "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+      "line_start": 1376,
+      "line_end": 1408,
+      "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
       "source_state": "committed_source",
       "symbol_found": true
     },
@@ -14529,7 +14594,7 @@
       "symbol": "mask_payload",
       "line_start": 173,
       "line_end": 209,
-      "sha256": "3f67b2151819bbc1d4e6f99a93da7d1309924c7dfe9db5aca99656deeba4f15b",
+      "sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
       "head_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
       "normalized_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
       "source_state": "committed_source",
@@ -14540,11 +14605,11 @@
       "purpose": "audit append",
       "path": "full_stack_lab/gateway/app/core.py",
       "symbol": "_record_decision",
-      "line_start": 1444,
-      "line_end": 1523,
-      "sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
-      "head_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
-      "normalized_sha256": "b7354464d3e3602fe27b1b707d89c4a18b01350dee7567fdbb04096c3f6262d3",
+      "line_start": 1445,
+      "line_end": 1524,
+      "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
       "source_state": "committed_source",
       "symbol_found": true
     },
@@ -14565,17 +14630,17 @@
   "test_inventory": [
     {
       "path": "full_stack_lab/tests/.gitignore",
-      "sha256": "b4d2c650f3cc06b18f23f932e1d3d084495cd88804d1dad4b84bef869fc99a05",
+      "sha256": "1c466c82a0625782902a8b846952847e10d45b870b1d8201f398a9c9598f9617",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/adversarial_check.py",
-      "sha256": "f323d4b0fa1883251d203994faff18078de907ae43f2f2471a772cc37a9e8cf1",
+      "sha256": "ceb095ead28da789365537e6bf08ead32740e8cd3b36c66f69884ba1d23f53d0",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/catalog_refresh_check.py",
-      "sha256": "be01cd32073827ff3f882de257aea97b70251b983896d76e263ac87cedaccf6d",
+      "sha256": "b8ae0d9fbb6213b059093e4dbf2c38f7b96239c595fe430f0913f21360e856a2",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
@@ -14590,17 +14655,17 @@
     },
     {
       "path": "full_stack_lab/tests/contracts_check.py",
-      "sha256": "9253e91072f991ad2723c7086b329e3db237052175d784877670fe5c241cc0bd",
+      "sha256": "47d2767c13171012c2d53d4ca39dd3610a978555530ace28e473f194d74bc0a5",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/credential_binding_check.py",
-      "sha256": "ebfae4a9a23a68535c334b7cecf8cf108c580e4b563aca81a6008a379af0b6c6",
+      "sha256": "b765cf8e861fa4a90e6906c297e629d209d29c3e34cc01b0c2e7f960896422b2",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/dispatch_crash_child.py",
-      "sha256": "8ce024fc9e0deef596333f56d1c1a328c665a160dfdf30970ab2175750670b38",
+      "sha256": "cd39bbdddabb1fe918bd73d2673ff4feb66a279f5079567d211638ad5af1b110",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
@@ -14610,67 +14675,67 @@
     },
     {
       "path": "full_stack_lab/tests/dispatch_intent_pg_check.py",
-      "sha256": "72301dd6bb724ae517af7bdd4122a781bcae1c17226df540ad75f35a4a8dd00d",
+      "sha256": "367f028c643270035c107283b27d4b12cdd9a315ca2ad2a865a3e8b62b7f89f4",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/endpoint_collector_check.py",
-      "sha256": "15dc57dcee65d993db3864fa103ca58a53bbc582da9cb4f71e5f603cf4d2d8f7",
+      "sha256": "e61bb58deba620c0d06d14c07d76c590c387bac9970ce16e5f0b9025fc980386",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/endpoint_evidence_check.py",
-      "sha256": "7ccdad6548bb11c29abfd52b89bd36141530c71ca255df80111b8f3a4957f079",
+      "sha256": "74d8fbde47a6ac235df2424468547ec08c4209104e39fb12845240fea12baa96",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/endpoint_evidence_pg_check.py",
-      "sha256": "e07d3fb0dfed6e6323138472b9ec3a9718f7b55f46bcd057efef09f20b2988b1",
+      "sha256": "f95f08fe4de5e8c0b8eb884779d6512fbe9b469d9f8fa8664846816e191a4067",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/endpoint_inventory_check.py",
-      "sha256": "1997baa9ca833ea1db265b6e4bf9cd2141aef05325601fc4fa3aead4fe7ef6d7",
+      "sha256": "5a9c1d7c7d263d2acb6b12c8bed3d5e125b9b8b8d055197453181a48761c4997",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/endpoint_snapshot_check.py",
-      "sha256": "ce89a415ed249b2af704697baa64fe412276681a3ead26eda4c867e7c7090460",
+      "sha256": "a74f2e0de23f19ba44d083e8bccc0d75cdeda42c35f0122a985f482f3fa47bda",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/experiments_check.py",
-      "sha256": "3ebf0a6b4bfda5fe3c9984bab3c965ced65d418b616d96e486d188a210873fe9",
+      "sha256": "2f9234de14b317898e24ab7fd314cce78a90942ccba26f46b3ae2e35350f3c93",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/field_account_git_test.py",
-      "sha256": "0fee25ab3bd5b1474c927f7e4d7a0a312774f89fbeb357c34a746ffe3c57fd8b",
+      "sha256": "610dc83617f75de136e39df9e06e25d2844b957ca7cf53ade228d73fff5821c4",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/field_kit_check.py",
-      "sha256": "7c862574e8f1c7e1b092f75dc2cf17443054658c94921ad680b5de9382dd909d",
+      "sha256": "f88e41c5cab8b99fe57206b83b97afb3f632d7d720d5c7d01a7539e8ba5c1b68",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/field_release_check.py",
-      "sha256": "9ab3b5d6407df8ae6281f4ce564ec337ed9f034b019b5bde98b14afb1742b32e",
+      "sha256": "af2457b409f894df0666d1999eeb0da3028b4a7eaaa66ca058424924e09065f1",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/injection_corpus_check.py",
-      "sha256": "77c4fba5f4eec90e3c5b15201e0f8ed42fb01eefe149b3e94f8f22b97ca8834d",
+      "sha256": "a64cd1abca58e49cf8af5adb1ae0e83a52269eeff52da96725d283829dfbcea0",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/inspection_corpus_eval.py",
-      "sha256": "7724dadd0e5386ba7ca749c31db83548d0daee9a4126ce0f761612fbd225eaf5",
+      "sha256": "b4fa0d6224b1c53dd64e0ccf04dd2878f06f4f5f7db40728ca242e96c2c428e6",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/inspection_corpus_manifest.json",
-      "sha256": "d34f4064c40633f50394f23d290e71644f14bf55dd6c716ad13bd009c558086c",
+      "sha256": "761f64071e657830227f40ba2071a097d85860afb0e2f47a9dca986082659f69",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
@@ -14680,27 +14745,27 @@
     },
     {
       "path": "full_stack_lab/tests/intake_identity_test.py",
-      "sha256": "11f66f8342cfea528d96a13002f8c66df8e681f631a3b17374467be976efe4d5",
+      "sha256": "1d5ce888e481da1bfbf54978b5785a68182ecf30d022928f17bbd86c67a702a1",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/intake_register.py",
-      "sha256": "0fc423ae3343496a68a14caa348f962c74485cabaebe171ddb1c6105bad66109",
+      "sha256": "a4d572b645c89312289645aa335def1090ca3ea86021c53f38efdae6451a7cea",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/intake_validation_test.py",
-      "sha256": "15a87533fe1f850b3cc227fac511cf752e3efb2cdc1654263670751301f1cb7e",
+      "sha256": "335c148b65ff54a8faad849a658e9d133895dda48e6d753dc172819eafaec6c8",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/intake_worker_scanners_check.py",
-      "sha256": "dedab004b38a6b6df3c5f46f4cff1b18cface5e6ed96b15653521b8af6b6d927",
+      "sha256": "b0514b51eecc96268ee171a0dff3579fb57de53508098e5bdabb06a97f147bb3",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/korean_pii_eval.py",
-      "sha256": "8e6b26e1dc3dda0004124d54fe8eab8a731805d9540a4894adcb1348565e0616",
+      "sha256": "4c9833299f1ae90d3a77d1fec553688ccfba13aa7120483f9f9459f3075e49f2",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
@@ -14710,147 +14775,147 @@
     },
     {
       "path": "full_stack_lab/tests/managed_enrollment_check.py",
-      "sha256": "6b4a5a67d78365d9485885f944cf50503a0b68bf6a6cb03a6b88fecfa690bd6f",
+      "sha256": "fa34861bc12c4fbdf564c4f17f63507a7689fbc852edf6b36b21446ddf09c8e9",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/managed_kernel_proof.py",
-      "sha256": "215381762e7a5bea792fcb5b811341148ac8c9a7ec00bc6d7ffd525cebd05d6f",
+      "sha256": "f8ee8167968d5e00972ddb71cb91d26519770b1a347c3d948ec89c0c951d5efc",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/mcp_result_contract_check.py",
-      "sha256": "676e0e19c950d96ff2fdee792f7f393963645eb122657c5ab72c39e286802e70",
+      "sha256": "b356b3456853951f31cca54d8c1f1f610604554d9e07fff70ae605c154e482c7",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/mcp_result_services_check.py",
-      "sha256": "38b87102dc14a4c733f393c94527669c8e38b073ce199866a4042d39a285c10d",
+      "sha256": "34c4deb615f20b2f86f90737ecafb6c66e1c20a414d79688e6a8b768fad7acc2",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/native_testbed.Dockerfile",
-      "sha256": "f8f75f0d9cb0001fc4d3583e39c4a017588ae7cc3f7707a64607d4e1b6e06028",
+      "sha256": "2ebdd562974ce77721bb5240767488cb3838f05da8d63183083c6a639ab0d382",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/oauth_rotation_check.py",
-      "sha256": "a1a02d77168a5108581ce934566241fbdaeb2dda2c04b147a1d741018f1ec5b5",
+      "sha256": "110cdbe8d61d5b3b331f0829b2db8a58ba0c7efeadf0fadcf4a4df11f0a72002",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/oauth_rotation_pg_check.py",
-      "sha256": "0bba5319e6186b748de96c747d5d615e00c442fd342de87bc8e601c94c48b7da",
+      "sha256": "d85928a724f687355ba4a29bceb7c1874a1616a514594b9b7b91a48f3adb0362",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/open_endpoints.py",
-      "sha256": "31d34275337a0a03cb1bbaabc7e57807b7bf361d2740ed3ee806f167a25da5a1",
+      "sha256": "b03db1da8a9e9c4c3309c6fe78cdc4ab6573a7dbd1de1984854e6e0dbefab69e",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/oss_audit_test.py",
-      "sha256": "32b1020bc34c89ff59b90b22b3c8531785392b67097b887f58eade2c0451cd5e",
+      "sha256": "3803be35d28efffae3d9369deabe8b4fa6585d31aba1b15ab98ffe3d9b225e41",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/pac_boundary_check.py",
-      "sha256": "62369e7c7b50f801e0d5c23804a5b9b1baae0757130baac0dae07e1adbfa9d8a",
+      "sha256": "e09fb40995fdc56b6ce22f1d1a4c4de7ef2c8761dfe0621c10c51f9db4d2f4d9",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/pac_delegation_check.py",
-      "sha256": "c6bfe2f4fdb5f591ecfc4fb908ced5e15462f2e8e8d990d631891fbee812ed34",
+      "sha256": "52e8df09d1a18dff3f7e46ec3ca42d1433eb9231a4949d155bd1f3605a0b50e9",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/plane_cases_field.json",
-      "sha256": "8f053a52414e86a77d9cdb294dc8c641776c4bde0fdb1d03ea3c2716979449ff",
+      "sha256": "52c0b29c24d998843c78f713de66dca254ba086f8d1cdbc38e82e7452590d5f8",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/plane_cases_field_other_identities.json",
-      "sha256": "2b0ddce86abb90eb8057a63e1d361353a704627906378ef68e7fee296fa11eb7",
+      "sha256": "568f0ad48d87ada9050f76baeacf395eb2b74f6a0e6785716f91d17d54d65f1c",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/plane_cases_field_unmanaged_account.json",
-      "sha256": "c5479133c6a7246a2cac2e6c31fc2b9e0589c90913cbbddb56add4bb722c3607",
+      "sha256": "849371b480013cb11e9575a9e5dc1218a08d17be9dd5a37475260a64f7a74792",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/plane_cases_lab.json",
-      "sha256": "106833cd092d14dd77150cc3a3b4d217c42049352d06a8304ae7f6db94082397",
+      "sha256": "80369a622498a214a6bd3fe82757f74cf8546e1cb49c11ee4985a0f23b7a7be4",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/plane_cases_lab_partner.json",
-      "sha256": "1e98e04960784b7e5700268f7e228b6e738ab57f5731945dca8781674dc507ce",
+      "sha256": "cafddda0d2eaebd816cd455f769453f99e885dfec0100047c55e1059352f747a",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/plane_evidence.py",
-      "sha256": "7b37a7064e3c7d288e947ae922cba39d46d19a7b86af5288d28e165aac72cab0",
+      "sha256": "ec103f317ce0ef8bd7dc20d6f388182ff4c0c249739e54f30da1bc79cd2f70cb",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/plane_sequence.py",
-      "sha256": "e5b919aa7595d7d594679ab38ba83f39edaf042836fda3581fce3ee1ef1d6bcf",
+      "sha256": "898c915f82f7443d46c99381c84ea94db96fa4a6d2fbe1238f7fb1ff9cc3e38e",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/policy_replay_lab_check.py",
-      "sha256": "db45e263e83f7d544c051a1033f1d0782e48b0a91959a58776fb2d766f252ae4",
+      "sha256": "9634653900fb3cf5105eff8a5817a0851e310241062f51c5b2e3bf46ae5e2508",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/protocol_versions_check.py",
-      "sha256": "0e8cce14055b54fd68ccb2a361e311a5637ef9d839ee57e5243bff2cbc41d42a",
+      "sha256": "bdd3bb8d989b17c853da1642ad9712617c6e3e1aceb457de34f5f9ac00d0099f",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/provenance_check.py",
-      "sha256": "bfeb0919d2a96925c0553750206ba7b1a22186f4b58c808a72d58c758fe993ac",
+      "sha256": "67ccc08332395816be99574dd46faecd79f75697a124d947791ff298f000cec9",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/provenance_gitea_check.py",
-      "sha256": "2af1c48fd41d6ed1b3e0b5049dae1a9d2f511a94701a3ec5b51d8357ee5aa1fb",
+      "sha256": "452c44306b79ecad8740a7fc1dcca9d70479021438250656ad10b30f9f0256a9",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/real_mcp_check.py",
-      "sha256": "6791106f94e7aefcac8cb3e65ea08c732f5d78af255be3bfbbe01adc055746ea",
+      "sha256": "f04e143779dc2ab3a116876203d7210fc4c621a185e4e26e3968dca38fa0c142",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/real_mcp_gateway_check.py",
-      "sha256": "9af14a9f0592115ce70cbca3f21b861f5175148b2c7fd4c5a19394c64878d3c7",
+      "sha256": "1a9c63584e21cd2c1a9e1b350ad0465e5c8a0ef32f69acae64e896dea9557a43",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/real_warning_review_check.py",
-      "sha256": "6470cb0441944ea3ca501a63607cc5eaba06344ac6ff503bcbede9990c9a85a4",
+      "sha256": "9387c0f10364ebaaa1c01d19c11f9903c8897816206161bb30b7c42395e7f5bc",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/replay_check.py",
-      "sha256": "c1564e52f5c81ee8bf65e0f8e48f9539e6a7cd5f7168cb206154ba23dd383fa1",
+      "sha256": "9c7e27930b0cdf22a6c17f9b3c9a18381123492d3303aa3474f9685640daa6de",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/reservation_effect_check.py",
-      "sha256": "745f7c349cfdd9980ba03813eac7163209580b4ca03d660afabc4ec744768fd3",
+      "sha256": "6115f0f19a2e5af4f43c92ba7fcefcbe4e0c1b01908cbfcdfc1556dd8d259e65",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/resource-values.test.mjs",
-      "sha256": "340b1880416c82a1616a901f073eb811e9deb05e2b24b7ea270ffe5d21f72f37",
+      "sha256": "ee6dfa34a536c1cba27cead82402ac5d9e8d8579591dde9f24905f3284585f92",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/schema_check.py",
-      "sha256": "35bb03e1e21770aa648534663f36e179cecad96614820e115465532019b17934",
+      "sha256": "127d76b86603fd8cd904dbe871176816fb9e9734be8bdae2e877f63aa52d2d04",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
@@ -14860,7 +14925,7 @@
     },
     {
       "path": "full_stack_lab/tests/security_edges_check.py",
-      "sha256": "fc7f8f9c8b1ccdf960ab2ec1fb5a22241000fd7455f837c275c47053fe0f9ac9",
+      "sha256": "947656cfcc2f92f8dc7eecb6c457e7dd4f6de399208229f3cb24b8b5bdf0d6e9",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
@@ -14870,7 +14935,7 @@
     },
     {
       "path": "full_stack_lab/tests/system_metrics_check.py",
-      "sha256": "ccc7e298fa8fb51a32534773127d1a3ea9421d6c24a3ed7d10d7ad28363aca7d",
+      "sha256": "da909641f325979c5aff6753d612507e07b36fc3f929c7d8389269285e492a06",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
@@ -14880,7 +14945,7 @@
     },
     {
       "path": "full_stack_lab/tests/termination_dispatch_provision.py",
-      "sha256": "66b810180333e20b2454720dd53b22e89c9956cf4465fd6e12024748b11c27ac",
+      "sha256": "7ec7d31553d7dc5f7c3d068ec87422144bce4b1f91d2fb570fbe4c13e2032b1a",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
@@ -14890,12 +14955,12 @@
     },
     {
       "path": "full_stack_lab/tests/termination_flow.py",
-      "sha256": "ae8a3ab9d06c21c113a438d9bdac07894c38fc2d8fd95158d2b41188fc8f62d4",
+      "sha256": "f6784194b842ea5b174316c7370becc7f97793e42daa5375cfec885b71961942",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/termination_lab.py",
-      "sha256": "b360659cbc0cf96d2f4413c517402caa12ff38dc2c2d3b4c4be7757ccb8b7db2",
+      "sha256": "f5bc034fecf1f29781fd8796c126ed14f53f78081388585e5daeb287c7c2a3f4",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
@@ -14905,7 +14970,7 @@
     },
     {
       "path": "full_stack_lab/tests/testbed_network_check.py",
-      "sha256": "0e6b6b16a85af2486010a422e3f896db18b1a80a2e0386aa5afc408a48c6245a",
+      "sha256": "ccd12ba91f5d2419d8a25e53b2c2e96d109310029a0d26439625801d351df77e",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
@@ -14915,17 +14980,17 @@
     },
     {
       "path": "full_stack_lab/tests/token_revocation_pg_check.py",
-      "sha256": "2c3ede9daea0a45b8c27e6b8dc94d47d02cc2ad5562e9b01f1cb1345bf1bf606",
+      "sha256": "7704c541fd6735812a1e491277ea255e0b0bd24d4b58cc4bc60560557f029659",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/tool_scope_review.py",
-      "sha256": "9d0a6e8d14649d89891996b4e2596f0981825d7d08ad10feccc3d7cdc2e789a5",
+      "sha256": "f16a4f4543e5b2778d2591d954632c62f2126570e1b2e934b4f1947d18c35be2",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {
       "path": "full_stack_lab/tests/windows_os_observer_check.py",
-      "sha256": "45c232734c7ed2c024159058132d2440d79a9ec18e36e5b5b46418f323b85e61",
+      "sha256": "726092f8a9b403900762f468fd543046a60778a8b3ad8c46391e8fce79da3212",
       "reading_scope": "file_inventory_not_assertion_execution"
     }
   ]

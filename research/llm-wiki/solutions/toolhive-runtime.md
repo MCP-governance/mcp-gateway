@@ -1,6 +1,6 @@
 # ToolHive 런타임 재사용 검토
 
-확인일 2026-10-15. 고정 판본 `v0.54.0`, 검토 commit `14c6066a4d62aa07c090b27804d20d190a334a45`, Apache-2.0. [공식 릴리스](https://github.com/stacklok/toolhive/releases/tag/v0.54.0), [고정 라이선스](https://github.com/stacklok/toolhive/blob/14c6066a4d62aa07c090b27804d20d190a334a45/LICENSE). 실제 설치·운영 성능·전이 의존성의 전체 라이선스 검수는 하지 않았다.
+확인일 2026-10-15. 고정 판본 `v0.54.0`, 검토 commit `14c6066a4d62aa07c090b27804d20d190a334a45`(10-15 정정: 로컬 v0.54.0 태그 commit은 `1ce13bbbbbe1ed9a3f40fea03ed1a42533f04cea`, [심층 분석 §8](../analysis/oss-deep/toolhive-runtime.md)), Apache-2.0. [공식 릴리스](https://github.com/stacklok/toolhive/releases/tag/v0.54.0), [고정 라이선스](https://github.com/stacklok/toolhive/blob/14c6066a4d62aa07c090b27804d20d190a334a45/LICENSE). 실제 설치·운영 성능·전이 의존성의 전체 라이선스 검수는 하지 않았다.
 
 ## DEV-38에서 검토할 범위
 

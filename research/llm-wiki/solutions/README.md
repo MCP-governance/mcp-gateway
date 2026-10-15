@@ -4,17 +4,19 @@
 
 2026-10-15 [조사 깊이 감사·보완 계획](../analysis/oss-audit/README.md): 확인한 로컬 clone은 10개이며 이 목록과 직접 연결된 clone 카드는 5개다. Azure 예제2개·agent-framework·PyRIT·AGT의 기존 분석은 상세 문서에 흩어져 있다. 아래 제품 요약만으로 전체 OSS 조사 범위나 심층 분석 완료를 판단하지 않는다.
 
+2026-10-15 [심층 코드 분석](../analysis/oss-deep/README.md): 아래 카드의 선택 기능을 고정 commit에서 입구→권한→실행→실패 경로(L3)까지 다시 추적했다. 카드에 없던 5개 클론(Azure AI-Gateway·remote-mcp-apim·agent-framework·PyRIT·AGT)은 [누락 카드](../analysis/oss-deep/legacy-cards.md)에 있다. 카드와 심층 분석이 다르면 심층 분석의 "정정" 절이 우선이다.
+
 | 구분 | 분석 | 확인 수준 | 개발에 참고할 부분 |
 | --- | --- | --- | --- |
-| OSS | [IBM ContextForge](ibm-contextforge.md) | 고정 커밋 코드·설정 | 사전 실행 훅, PDP 입력, OAuth 위임 |
+| OSS | [IBM ContextForge](ibm-contextforge.md) · [훅·오류 처리 심층](../analysis/oss-deep/contextforge-hooks.md) | 고정 커밋 코드·설정 | 사전 실행 훅, PDP 입력, OAuth 위임 |
 | OSS | [IBM CPEX](ibm-cpex.md) | 고정 커밋 Rust 코드 | Redis 원자 호출량 처리, 탐지기와 실행 엔진 구분 |
-| OSS | [Microsoft MCP Gateway](ms-mcp-gateway.md) | 고정 커밋 C# 코드 | 역할·소유권을 함께 보는 권한 평가 |
+| OSS | [Microsoft MCP Gateway](ms-mcp-gateway.md) · [세션·수명 심층](../analysis/oss-deep/ms-mcp-gateway-session.md) | 고정 커밋 C# 코드 | 역할·소유권을 함께 보는 권한 평가 |
 | OSS | [Microsoft Wassette](ms-wassette.md) | 고정 커밋 Rust 코드 | 도구 실행의 Wasm/WASI 자원 경계 |
-| OSS | [LiteLLM](litellm.md) | 고정 커밋 Python 코드 | 명시한 MCP 서버 범위가 넓어지지 않는 처리 |
+| OSS | [LiteLLM](litellm.md) · [MCP 경로 심층](../analysis/oss-deep/litellm-mcp-path.md) | 고정 커밋 Python 코드 | 명시한 MCP 서버 범위가 넓어지지 않는 처리 |
 | 상용 | [Kong AI Gateway MCP](kong-ai-gateway.md) | 공식 문서 재확인 | 도구 ACL·토큰 audience·프로토콜 호환성 |
 | 상용 | [BeyondTrust Pathfinder MCP](beyondtrust-pathfinder.md) | 공식 문서 재확인 | 사이트 활성화·기한 있는 사용자 토큰 |
-| 상용+OSS 생태계 | [Lunar MCPX + AI Gateway](lunar-mcpx.md) | 공급자 공식 설명 | MCP 서버가 실행한 외부 API 호출의 별도 통제 |
-| OSS 후보 | [ToolHive runtime](toolhive-runtime.md) | v0.54.0 고정 메타데이터·공식 문서 선별 | DEV-38 수명 관리와 명시적 목적지 제한. 설치·실행 미검증 |
+| 상용+OSS 생태계 | [Lunar MCPX + AI Gateway](lunar-mcpx.md) · [MCPX·스캐너 심층](../analysis/oss-deep/mcpx-cisco-scanner.md) | 공급자 공식 설명 | MCP 서버가 실행한 외부 API 호출의 별도 통제 |
+| OSS 후보 | [ToolHive runtime](toolhive-runtime.md) · [런타임 심층](../analysis/oss-deep/toolhive-runtime.md) | v0.54.0(`1ce13bbb`) 고정 소스 L3 | DEV-38 수명 관리와 명시적 목적지 제한. 설치·실행 미검증 |
 
 ## 증거 파일을 다시 확인하는 방법
 

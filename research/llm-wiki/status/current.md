@@ -1,14 +1,18 @@
 # 개발 현황 — 2026-10-15
 
+## 최신: OSS 심층 분석과 경계 보강 (10-15 저녁)
+
+[작업 보고](reports/2026-10-15-oss-deep-analysis.md) · [심층 분석 9건](../analysis/oss-deep/README.md) · [목표 기능 재검토](../analysis/oss-deep/redesign-2026-10-15.md): Codex 작업(문서만)을 확인하고 DEV-29·35 서브세션을 통합했다. Sonnet·sol·Haiku로 ToolHive·LiteLLM·MS Gateway·ContextForge/CPEX·MCPX/Cisco·SDK/Authlib/OPA·Presidio/Gitleaks를 고정 commit에서 L3까지 추적하고 메인이 원본 대조로 정정했다. 분석이 찾은 결함 2건(`tools/list` 첫 페이지만 읽음, OIDC `aud` 미확인)과 검토 RV-01·02·04, DEV-29 1단계를 고쳐 배포했다(D-110~113). 신형 서버 연결 구간 660~800 ms→약 4 ms. 원칙은 그대로이고, 재검토가 제안한 변화는 "승인과 실행 분리(DEV-38 자체 실행기)", "목적지 통제 두 층", "계약에 목록 완결성·판본·outputSchema", "결과 4갈래 기록"이다. 결정 대기 3건은 재검토 문서 끝에 있다.
+
 ## 코드·문서·실행 기준
 
 | 구분 | 확인 범위 |
 | --- | --- |
-| 제품 코드 | `83269c1d070d6289911a8d4d0f8622e3c90f6d5c`, 통합 보고 `e61e43c` |
+| 제품 코드 | `8906f24`(10-15 저녁, [OSS 심층 분석·경계 보강](reports/2026-10-15-oss-deep-analysis.md)). 이전 기준 `83269c1` |
 | Drive 문서 | `10/15-drive-wiki-curation`: `c0b6641`·`1ad6395`, 문서 통합 브랜치에 반영 |
 | 이번 위키 보강 | `10/15-wiki-consolidation`, [보고](reports/2026-10-15-wiki-consolidation.md). 제품 코드·DB·정책·배포 변경 없음 |
 | 최근 실제 하네스 | [10-15 클린 E2E](reports/2026-10-15-clean-e2e.md): PJ1 관리 Claude Code, GitHub·MarkItDown 정상, 범위 밖 2건 미시도 |
-| 현재 배포 관측 | 앞선 읽기 전용 health 조회에서 `83269c1`, 구성 요소 6개 정상·정책 일치·MCP 3개 READY. 원문 신규 보존은 없으며 새 하네스 시험 아님 |
+| 현재 배포 관측 | 기기 `/api/health` revision `8906f24`, 구성 요소 6개 정상·정책 일치·MCP 3개 READY. PJ1 관리 Claude로 GitHub·MarkItDown 호출 정상(원장 10~12) |
 | WBS | [스냅샷](../analysis/development-wbs/README.md): 57.5%, 구현 35/40·부분 5/40, 전체 검수 0/40. 이번 문서 작업으로 재산정하지 않음 |
 
 현재 동작과 모든 완료 조건 충족은 다르다. Codex 자연어 E2E·endpoint/원장 상관, 승인 소스 자동 실행, 전체 종료/복구, Windows 실기기는 남아 있다. Context7은 정책 허용 뒤 제공자 할당량 오류가 났고 정상 문서 응답을 확인하지 못했다. 기본 계정 복원 기록은 있으나 이번에 현재 비밀번호를 조회·변경하지 않았다.

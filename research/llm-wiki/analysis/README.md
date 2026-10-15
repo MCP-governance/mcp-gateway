@@ -5,6 +5,7 @@
 | 자료 | 내용·단위 |
 | --- | --- |
 | [OSS 조사 깊이 감사·보완 계획](oss-audit/README.md) | 실제 clone10개·정본 카드 누락5개·보존 근거21파일 대조·종류/경로/요약 품질과 단계별 완료 조건 |
+| [OSS 심층 코드 분석](oss-deep/README.md) · [목표 기능 재검토](oss-deep/redesign-2026-10-15.md) | ToolHive·LiteLLM·MS Gateway·ContextForge/CPEX·MCPX/Cisco·SDK/Authlib/OPA·Presidio/Gitleaks의 선택 기능 L3 경로, 메인 원본 대조·정정, 제품 반영과 재설계 제안 |
 | [통합본 검토·Claude 인계](review-2026-10-15/README.md) | 코드 관찰10건·공식 근거19건·목표10개와 후속 검수. 구현/재현 상태 구분 |
 | [Drive 정책·WBS 대조](drive-curation/README.md) | 정책50 이름/본문 동일성·원본 셀·코드/DEV 후보 매핑, MVP24와 G목표 연결 |
 | [로컬 앱·MCP와 엔드포인트 권한](local-tools/README.md) | 실제 공개 MCP5개 설치·연결, 스키마92개 기능 분류, 권한 반례·10개 위험매핑·키트 회귀 |

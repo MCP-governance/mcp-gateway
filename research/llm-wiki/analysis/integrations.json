@@ -103,8 +103,8 @@
     "auth": "Vault Agent supported workload auto-auth; LiteLLM native AppRole/TLS cert/token; optional Enterprise namespace",
     "capabilities": "KV v2\ndynamic leased credentials\nrevocation\nofficial Agent templates\nLiteLLM native read/write virtual-key storage with Enterprise license",
     "our_code_evidence": [
-      "full_stack_lab/gateway/app/upstream.py:36-73 credential_headers",
-      "full_stack_lab/gateway/app/upstream.py:187-196 session",
+      "full_stack_lab/gateway/app/upstream.py:37-74 credential_headers",
+      "full_stack_lab/gateway/app/upstream.py:188-205 session",
       "full_stack_lab/compose.yaml:114-166 Gateway credential environment and readonly secret-volume mount"
     ],
     "compatibility_status": "candidate_static_only",
@@ -125,20 +125,20 @@
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
         "symbol": "credential_headers",
-        "line_start": 36,
-        "line_end": 73,
-        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-        "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "line_start": 37,
+        "line_end": 74,
+        "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+        "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
         "symbol": "session",
-        "line_start": 187,
-        "line_end": 196,
-        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-        "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "line_start": 188,
+        "line_end": 205,
+        "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+        "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof"
       },
@@ -163,8 +163,8 @@
     "auth": "AppRole/Kubernetes/certificate or configured supported auto-auth; workload token with narrowly scoped secret path, not employee MCP JWT",
     "capabilities": "KV v2\nleased secrets\nofficial Agent renewal\ntemplate render to file\nprocess supervisor",
     "our_code_evidence": [
-      "full_stack_lab/gateway/app/upstream.py:36-73 credential_headers",
-      "full_stack_lab/gateway/app/upstream.py:187-196 session",
+      "full_stack_lab/gateway/app/upstream.py:37-74 credential_headers",
+      "full_stack_lab/gateway/app/upstream.py:188-205 session",
       "full_stack_lab/compose.yaml:114-166 Gateway credential environment and readonly secret-volume mount"
     ],
     "compatibility_status": "candidate_existing_file_contract_static_only",
@@ -185,20 +185,20 @@
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
         "symbol": "credential_headers",
-        "line_start": 36,
-        "line_end": 73,
-        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-        "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "line_start": 37,
+        "line_end": 74,
+        "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+        "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
         "symbol": "session",
-        "line_start": 187,
-        "line_end": 196,
-        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-        "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "line_start": 188,
+        "line_end": 205,
+        "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+        "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof"
       },
@@ -223,8 +223,8 @@
     "auth": "IAM role/IRSA or workload identity; secretsmanager:GetSecretValue and KMS decrypt only for approved resource",
     "capabilities": "versioned secret retrieval\nAWSCURRENT/AWSPREVIOUS\nrotation\nclient-side cache\nCloudTrail audit",
     "our_code_evidence": [
-      "full_stack_lab/gateway/app/upstream.py:36-73 credential_headers",
-      "full_stack_lab/gateway/app/upstream.py:187-196 session",
+      "full_stack_lab/gateway/app/upstream.py:37-74 credential_headers",
+      "full_stack_lab/gateway/app/upstream.py:188-205 session",
       "full_stack_lab/compose.yaml:114-166 Gateway credential environment and readonly secret-volume mount"
     ],
     "compatibility_status": "not_provisioned",
@@ -245,20 +245,20 @@
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
         "symbol": "credential_headers",
-        "line_start": 36,
-        "line_end": 73,
-        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-        "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "line_start": 37,
+        "line_end": 74,
+        "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+        "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
         "symbol": "session",
-        "line_start": 187,
-        "line_end": 196,
-        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-        "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "line_start": 188,
+        "line_end": 205,
+        "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+        "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof"
       },
@@ -283,8 +283,8 @@
     "auth": "Managed Identity/Workload Identity with narrow RBAC and private-endpoint/network policy; production credential chain must be explicit",
     "capabilities": "versioned SecretClient.get_secret\nenabled/disabled secret versions\nRBAC\nmanaged identity\naudit integration",
     "our_code_evidence": [
-      "full_stack_lab/gateway/app/upstream.py:36-73 credential_headers",
-      "full_stack_lab/gateway/app/upstream.py:187-196 session",
+      "full_stack_lab/gateway/app/upstream.py:37-74 credential_headers",
+      "full_stack_lab/gateway/app/upstream.py:188-205 session",
       "full_stack_lab/compose.yaml:114-166 Gateway credential environment and readonly secret-volume mount"
     ],
     "compatibility_status": "not_provisioned",
@@ -305,20 +305,20 @@
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
         "symbol": "credential_headers",
-        "line_start": 36,
-        "line_end": 73,
-        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-        "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "line_start": 37,
+        "line_end": 74,
+        "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+        "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
         "symbol": "session",
-        "line_start": 187,
-        "line_end": 196,
-        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-        "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "line_start": 188,
+        "line_end": 205,
+        "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+        "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof"
       },
@@ -343,8 +343,8 @@
     "auth": "ADC/Workload Identity Federation; secretmanager.versions.access on approved secret and version",
     "capabilities": "version access\nversion disable/destroy\nIAM\nCRC32C integrity checking\naudit logs",
     "our_code_evidence": [
-      "full_stack_lab/gateway/app/upstream.py:36-73 credential_headers",
-      "full_stack_lab/gateway/app/upstream.py:187-196 session",
+      "full_stack_lab/gateway/app/upstream.py:37-74 credential_headers",
+      "full_stack_lab/gateway/app/upstream.py:188-205 session",
       "full_stack_lab/compose.yaml:114-166 Gateway credential environment and readonly secret-volume mount"
     ],
     "compatibility_status": "not_provisioned",
@@ -366,20 +366,20 @@
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
         "symbol": "credential_headers",
-        "line_start": 36,
-        "line_end": 73,
-        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-        "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "line_start": 37,
+        "line_end": 74,
+        "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+        "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
         "symbol": "session",
-        "line_start": 187,
-        "line_end": 196,
-        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-        "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "line_start": 188,
+        "line_end": 205,
+        "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+        "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof"
       },
@@ -404,8 +404,8 @@
     "auth": "provider workload identity; scoped SecretStore preferable to unrestricted ClusterSecretStore; RBAC for controller and workload",
     "capabilities": "AWS/Azure/GCP/Vault providers\nrefresh policies\ntemplate data mapping\nstatus conditions\nKubernetes mounts",
     "our_code_evidence": [
-      "full_stack_lab/gateway/app/upstream.py:36-73 credential_headers",
-      "full_stack_lab/gateway/app/upstream.py:187-196 session",
+      "full_stack_lab/gateway/app/upstream.py:37-74 credential_headers",
+      "full_stack_lab/gateway/app/upstream.py:188-205 session",
       "full_stack_lab/compose.yaml:114-166 Gateway credential environment and readonly secret-volume mount"
     ],
     "compatibility_status": "not_applicable_to_current_compose; candidate_for_kubernetes",
@@ -426,20 +426,20 @@
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
         "symbol": "credential_headers",
-        "line_start": 36,
-        "line_end": 73,
-        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-        "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "line_start": 37,
+        "line_end": 74,
+        "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+        "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
         "symbol": "session",
-        "line_start": 187,
-        "line_end": 196,
-        "normalized_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
-        "head_sha256": "00cb1f0c5845274cb42346a55cd231502568309fe19d758c0878697b53fb7daf",
+        "line_start": 188,
+        "line_end": 205,
+        "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+        "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof"
       },
