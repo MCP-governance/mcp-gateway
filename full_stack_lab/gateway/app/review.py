@@ -228,6 +228,30 @@ def normalize_tool_reviews(tools: dict[str, str], reviews: dict | None, reviewer
     return normalized
 
 
+_ADDRESS_ARG = re.compile(r"(?:^|_)(?:url|uri|href|link|endpoint)s?$", re.I)
+
+
+def derived_constraints(advertised: dict[str, dict], reviews: dict[str, dict]) -> dict[str, dict]:
+    """The argument scope a registration gets without anyone writing JSON Schema.
+
+    Each approved tool takes exactly the arguments its pinned contract advertises (no extras), and an
+    argument that names an address may only point at the destinations the reviewer listed, over HTTPS.
+    That closes the file:, data: and internal-host reads a converter or fetcher would otherwise do.
+    """
+    out = {}
+    for name, item in reviews.items():
+        schema = advertised[name].get("input_schema") or {}
+        properties = json.loads(json.dumps(schema.get("properties") or {}))
+        hosts = item.get("destinations") or []
+        for key, prop in properties.items():
+            if prop.get("type") == "string" and (prop.get("format") in ("uri", "url") or _ADDRESS_ARG.search(key)):
+                prop["pattern"] = ("^https://(" + "|".join(re.escape(h) for h in hosts) + r")(:443)?([/?#]|$)"
+                                   if hosts else "^https://")
+        out[name] = {"type": "object", "properties": properties, "additionalProperties": False,
+                     **({"required": schema["required"]} if schema.get("required") else {})}
+    return out
+
+
 # ── audit annotations: a ledger row that is known to be invalid ───────────────────────
 
 ANNOTATION_MAX_SPAN = 10_000

@@ -1289,7 +1289,7 @@ class IntakeRegistration(StrictModel):
 class RemoteContractReview(IntakeRegistration):
     allowed_principals: list[str] = Field(min_length=1, max_length=100)
     review_note: str = Field(min_length=10, max_length=1000)
-    parameter_constraints: dict[str, dict] = Field(min_length=1, max_length=300)
+    parameter_constraints: dict[str, dict] = Field(default_factory=dict, max_length=300)
 
 
 @app.post("/api/mcp-requests/{request_id}/review-contract")
@@ -1328,6 +1328,10 @@ async def review_remote_contract(request_id: UUID, proposal: RemoteContractRevie
     if any(advertised[name]["warnings"] for name in proposal.tools) and not proposal.poisoning_ack:
         raise HTTPException(409, "선택한 도구의 설명 경고를 읽고 검토 확인을 남기세요.")
     from jsonschema import Draft202012Validator, SchemaError
+    if not proposal.parameter_constraints:
+        # Left blank, the scope comes from the advertised contract and the reviewed destinations.
+        proposal = proposal.model_copy(update={"parameter_constraints": review.derived_constraints(
+            advertised, {name: item.model_dump() for name, item in proposal.tool_reviews.items()})})
     if set(proposal.parameter_constraints) != set(proposal.tools):
         raise HTTPException(422, "선택한 모든 도구의 인자 범위를 JSON Schema로 검토하세요.")
     try:

@@ -2351,7 +2351,7 @@ const ACTIONS = {
         <p class="mono small">${found.endpoint}<br />계약 해시 ${found.catalog_hash}</p>
         <div class="grid c2">${field.select("data_class", "데이터 등급", DATA_CLASS, "nonimportant")}${field.select("valid_days", "사용 기한", VALIDITY, "90")}</div>
         ${el.dataset.review ? html`${field.text("allowed_principals", "허용 사용자 ID (쉼표 구분)", "required", el.dataset.principal)}${field.area("review_note", "검토 내용", 'required minlength="10" maxlength="1000"')}
-          ${field.area("parameter_constraints", "도구별 인자 제한 (JSON Schema)", 'required maxlength="30000"', "{}")}` : ""}
+          ${field.area("parameter_constraints", "도구별 인자 제한 (JSON Schema, 비우면 자동)", 'maxlength="30000"', "")}` : ""}
         ${found.tools.some((t) => t.warnings?.length) ? html`<p class="note warn">도구 설명에 지시문으로 의심되는 문구가 있습니다.</p>` : ""}
         <fieldset class="tool-pick"><legend>도구 ${found.tools.length}</legend>${found.tools.map((t) => html`<label>
           <span><code>${t.name}</code>${(t.warnings || []).map((w) => chip("block", w))}
@@ -2367,7 +2367,7 @@ const ACTIONS = {
     const toolReviews = collectScopes(fd, Object.keys(tools));
     let parameterConstraints;
     if (el.dataset.review) {
-      try { parameterConstraints = JSON.parse(fd.get("parameter_constraints")); }
+      try { parameterConstraints = JSON.parse(fd.get("parameter_constraints").trim() || "{}"); }
       catch { toast("인자 제한은 올바른 JSON이어야 합니다.", true); return; }
     }
     const r = await api(`/api/mcp-requests/${el.dataset.id}/${el.dataset.review ? "review-contract" : "register"}`, { method: "POST", body: {

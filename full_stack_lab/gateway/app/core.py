@@ -113,6 +113,8 @@ def response_evidence(payload: Any, disposition: str, masked_types: list[str] | 
                                      {"text", "image", "audio", "resource", "resource_link"} else "unsupported"
                                      for item in content or [] if isinstance(item, dict) and isinstance(item.get("type"), str)}),
             "structured": bool(isinstance(payload, dict) and payload.get("structured") is not None),
+            **({"structured_dropped": payload["structured_dropped"]}
+               if isinstance(payload, dict) and payload.get("structured_dropped") else {}),
             "masked_types": masked_types or []}
 
 
@@ -585,11 +587,13 @@ async def register_server(request: dict, actor: str) -> dict:
         "valid_until": valid_until, "registered_by": actor,
         "registered_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "intake_id": request.get("intake_id") or None,
-        # A remote service is scoped to the principals its contract review named. A
-        # source-validated server runs inside the organisation and stays policy-scoped
-        # (None) as before D-57, rather than silently becoming the requester's alone.
-        "allowed_principals": remote_review["allowed_principals"] if remote_review else None,
-        "parameter_constraints": remote_review.get("parameter_constraints", {}) if remote_review else {},
+        # A remote service is scoped to the principals its contract review named. A source-validated
+        # server is scoped to the person who asked for it, with arguments derived from its pinned contract
+        # and the reviewed destinations: an administrator enters an address, not JSON Schema (10-15).
+        "allowed_principals": remote_review["allowed_principals"] if remote_review else [intake["submitted_by"]],
+        "parameter_constraints": (remote_review.get("parameter_constraints", {}) if remote_review
+                                  else review.derived_constraints(advertised, tool_reviews)),
+        "constraints_derived": not remote_review,
         "poisoning_review": {name: registry.tool_hashes(advertised[name]) for name in flagged}
                             if request.get("poisoning_ack") else {},
         "tool_reviews": tool_reviews, "provenance": intake.get("provenance") or {},
@@ -683,6 +687,10 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
         await review.require_independent("tool-scope-review", "server", server_id, actor, applicant)
         normalized = review.normalize_tool_reviews({name: spec["tools"][name] for name in reviews}, reviews, actor)
         spec["tool_reviews"] = {**(spec.get("tool_reviews") or {}), **normalized}
+        if spec.get("constraints_derived"):
+            # New destinations move the address patterns with them; the argument set stays the pinned one.
+            spec["parameter_constraints"].update(review.derived_constraints(
+                {name: {"input_schema": spec["parameter_constraints"][name]} for name in normalized}, normalized))
         doc["history"].append({"type": "tool-scope-reviewed", "server_id": server_id, "actor": actor,
                                "at": datetime.now(UTC).isoformat(timespec="seconds"), "tools": sorted(normalized)})
         registry.save_runtime(doc)
@@ -1360,6 +1368,10 @@ def _upstream_failure(exc: Exception, event: dict) -> dict:
                          error=_root_cause(exc))
 
 
+def body_of(value) -> str:
+    return json.dumps(value, ensure_ascii=False, allow_nan=False)
+
+
 def _guarded_result(payload: dict) -> dict:
     """Upstream output is untrusted input too.
 
@@ -1376,7 +1388,14 @@ def _guarded_result(payload: dict) -> dict:
     if not isinstance(content, list) or any(not isinstance(item, dict) for item in content):
         raise ResultRejected("도구 결과의 content 구조가 MCP 형식이 아닙니다.", payload)
     if payload.get("structured") is not None and not isinstance(payload["structured"], dict):
-        raise ResultRejected("구조화 도구 결과가 JSON 객체가 아닙니다.", payload)
+        # structuredContent must be an object; GitHub's MCP sends lists (list_commits, 10-15). The
+        # client gets a conforming result: the text it sent already, or the same JSON as text. The
+        # audit records that the structured part was not passed on.
+        structured = payload["structured"]
+        payload = {key: value for key, value in payload.items() if key != "structured"}
+        if not content:
+            payload["content"] = content = [{"type": "text", "text": body_of(structured)}]
+        payload["structured_dropped"] = type(structured).__name__
     if any(item.get("type") != "text" for item in content):
         raise ResultRejected("반환하지 않는 결과 형식입니다.", payload)
     if any(not isinstance(item.get("text"), str) for item in content):

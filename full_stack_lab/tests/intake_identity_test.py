@@ -152,6 +152,21 @@ class ScopeReviewTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             review.normalize_tool_reviews(self.tools, None, "admin")
 
+    def test_derived_scope_closes_arguments_and_pins_addresses(self):
+        from jsonschema import Draft202012Validator
+        advertised = {"convert": {"input_schema": {"type": "object", "properties": {"uri": {"type": "string"}},
+                                                   "required": ["uri"]}}}
+        scope = review.derived_constraints(advertised, {"convert": {"destinations": ["learn.microsoft.com"]}})["convert"]
+        ok = Draft202012Validator(scope).is_valid
+        self.assertTrue(ok({"uri": "https://learn.microsoft.com/en-us/x"}))
+        for bad in ({"uri": "file:///etc/passwd"}, {"uri": "https://learn.microsoft.com.evil.example/x"},
+                    {"uri": "http://learn.microsoft.com/x"}, {"uri": "https://169.254.169.254/"},
+                    {"uri": "https://learn.microsoft.com/x", "extra": 1}, {}):
+            self.assertFalse(ok(bad), bad)
+        self.assertEqual(advertised["convert"]["input_schema"]["properties"]["uri"], {"type": "string"}, "advertised schema mutated")
+        anywhere = review.derived_constraints(advertised, {"convert": {"destinations": []}})["convert"]
+        self.assertFalse(Draft202012Validator(anywhere).is_valid({"uri": "file:///etc/passwd"}))
+
 
 class IndependenceTest(unittest.TestCase):
     def run_check(self, actor, applicant, **kwargs):
