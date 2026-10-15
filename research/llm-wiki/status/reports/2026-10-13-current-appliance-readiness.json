@@ -1,0 +1,33 @@
+{
+  "http": 200,
+  "readiness": {
+    "status": "ready",
+    "gateway": true,
+    "build": {
+      "console": {
+        "revision": "2e36095bf982ffab29ea81b6cdc24bdc435b184f+dirty",
+        "code_sha256": "48efdeca5518b33f63def19241e780a5db08fc09b515649c1f1e97d5067178c1",
+        "pc_kit_sha256": "444f942d2ab5d8b3262ffbb4175de08f931ffcde49ccca5cf510811088880f78"
+      },
+      "gateway": {
+        "revision": "2e36095bf982ffab29ea81b6cdc24bdc435b184f+dirty",
+        "code_sha256": "48efdeca5518b33f63def19241e780a5db08fc09b515649c1f1e97d5067178c1",
+        "pc_kit_sha256": null
+      },
+      "consistent": true
+    },
+    "policy": {
+      "expected_sha256": "c0d204491c44cbfff601140de2410a05fdf82e7b247983774d3980f5fe3e5c6e",
+      "loaded_sha256": "c0d204491c44cbfff601140de2410a05fdf82e7b247983774d3980f5fe3e5c6e",
+      "expected_data_sha256": "b56dab45df9dd15075af79eccda8f4035b2b1b9667cba47756aba28a359fda64",
+      "loaded_data_sha256": "b56dab45df9dd15075af79eccda8f4035b2b1b9667cba47756aba28a359fda64",
+      "rules_match": true,
+      "data_match": true,
+      "matches": true,
+      "capabilities_sha256": "8d5ae06a530da6885814ec44012467c201d21d997d32066d6c176612bf82b305"
+    },
+    "identity": "synthetic-oauth2",
+    "llm_gateway": false
+  },
+  "new_branch_deployed": false
+}

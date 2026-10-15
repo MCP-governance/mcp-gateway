@@ -101,6 +101,8 @@ jobs:
           python3 tests/catalog_refresh_check.py
           python3 tests/oauth_rotation_check.py
           python3 tests/security_edges_check.py
+          python3 tests/mcp_result_contract_check.py
+          python3 integrations/litellm/check_preflight.py
 
       - name: 망 분리·게시 포트·서명 키 경계
         run: |

@@ -1,18 +1,22 @@
 # E12 — 관리형 활성 상태와 MCP 입구
 
-확인일: 2026-10-13 · 상태: **미실행** · 준비 상태: `pj1_admin_and_test_identity_needed`.
+2026-10-13 실제 상용/OSS MCP만 사용하는 계획으로 정정. **미실행**.
+
+대상 ID: `MCP-GITHUB-REMOTE` · [실제 대상](../analysis/mcp-candidates.json) · [사전 조건](preflight.md)
 
 관리형 device token과 일반 user token, fresh heartbeat를 구분한다.
 
-[공통 사전 조건](preflight.md)을 적용한다. 입력 경로는 lab 또는 전용 fixture 기준이며 실제 field 계약과 일치시키기 전 실행하지 않는다.
+자체 제작/mock MCP를 사용하지 않는다. 합성 입력 데이터·계정·파일은 실제 OSS/상용 서버에서 사용한다.
 
 ## 사전 조건
 
 - PJ1의 실제 설치 collector·커널 규칙·보호 설정·independent reviewer
 - 첫 상태 managed_state=active, 실제 hash/checks·fresh heartbeat
 - 서비스 정지 시험은 해당 전용 identity만; max heartbeat age와 JWT 만료 비교
+- 실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정
+- 독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지
 
-## 시험 입력
+## 입력
 
 ```json
 {
@@ -29,7 +33,7 @@
 }
 ```
 
-위 JSON은 시험 입력 데이터이며 LLM 작업 지시나 실행 명령이 아니다.
+입력은 설계 데이터다. arguments_template는 실제 고정 tools/list로 확정해야 하며 바로 실행할 수 있는 계약이 아니다.
 
 ## 절차
 
@@ -61,7 +65,7 @@
 }
 ```
 
-HTTP 입구 거부라 tools/call 원장이 생기지 않을 수 있다. HTTP 정책 응답과 세션·upstream 0을 증거로 쓴다.
+정확한 policy_id·attempted/executed·응답 상태와 독립 수신/효과를 대조한다. 다른 이유의 차단·provider 오류·증거 부재는 통과가 아니다.
 
 ## 증거
 
@@ -69,17 +73,18 @@ HTTP 입구 거부라 tools/call 원장이 생기지 않을 수 있다. HTTP 정
 - Gateway decision ID와 request/trace ID, policy_id, principal
 - upstream_attempted/upstream_executed 및 upstream 수신 로그
 - 부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash
+- 실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그
 
 ## 원복
 
 - finally로 해당 service·원본 설정 복원 후 fresh heartbeat·입구 정상 확인
 - 시험 identity만 정리; 다른 endpoint service·설정 유지
 
-## 코드·기존 자료
+## 코드 출발점
 
 - [full_stack_lab/tests/managed_kernel_proof.py](../../../full_stack_lab/tests/managed_kernel_proof.py)
 - [full_stack_lab/tests/managed_enrollment_check.py](../../../full_stack_lab/tests/managed_enrollment_check.py)
 
-## 실제 실행 결과
+## 결과
 
-미실행. 실행 시각·증거 파일·판정 ID·성공/실패/미확인을 새 run 보고서에 기록한 뒤 카탈로그를 갱신한다.
+미실행. 실제 판본·하네스·모델·시각·IDs·원본 hash·정상/음성 결과·원복을 runs에 기록한 뒤 상태를 변경한다.

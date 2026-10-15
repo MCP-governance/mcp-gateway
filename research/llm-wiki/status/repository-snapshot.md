@@ -1,15 +1,17 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-13T16:23:24+09:00
+확인 시각: 2026-10-14T13:37:13+09:00
 
-HEAD: `2e36095bf982ffab29ea81b6cdc24bdc435b184f` · 로컬 브랜치: `10/13-mcp-validation`
+HEAD: `ab6936c64f3578de8360b840f1928681714fa7bb` · 로컬 브랜치: `10/13-enterprise-interoperability`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M AGENTS.md
+M .github/workflows/research-wiki.yml
+ M .github/workflows/verify.yml
+ M AGENTS.md
  M CLAUDE.md
  M docs/ai/DECISIONS.md
  M docs/ai/PAC_MAPPING.md
@@ -19,31 +21,217 @@ M AGENTS.md
  M endpoint-agent/bootstrap.py
  M endpoint-agent/enforce-linux.py
  M endpoint-agent/managed-linux.py
+ M full_stack_lab/gateway/app/core.py
+ M full_stack_lab/gateway/app/mcp_facade.py
  M full_stack_lab/gateway/app/poisoning.py
+ M full_stack_lab/gateway/app/privacy.py
+ M full_stack_lab/registry/catalog.toml
+ M research/llm-wiki/.gitattributes
+ M research/llm-wiki/AGENTS.md
+ M research/llm-wiki/README.md
  M research/llm-wiki/catalogs/experiments.json
+ M research/llm-wiki/catalogs/papers.json
+ M research/llm-wiki/catalogs/threats.json
+ M research/llm-wiki/experiments/E01-approved-read.md
+ M research/llm-wiki/experiments/E02-pii-result-masking.md
+ M research/llm-wiki/experiments/E03-pii-external-egress.md
+ M research/llm-wiki/experiments/E04-untrusted-argument.md
+ M research/llm-wiki/experiments/E05-ssrf-normalization.md
+ M research/llm-wiki/experiments/E06-input-schema.md
+ M research/llm-wiki/experiments/E07-contract-drift.md
+ M research/llm-wiki/experiments/E08-pdp-failure.md
+ M research/llm-wiki/experiments/E09-principal-binding.md
+ M research/llm-wiki/experiments/E10-concurrent-duplicate.md
+ M research/llm-wiki/experiments/E11-termination-evidence.md
+ M research/llm-wiki/experiments/E12-managed-admission.md
+ M research/llm-wiki/experiments/E13-local-bypass.md
  M research/llm-wiki/experiments/README.md
  M research/llm-wiki/experiments/fixtures/cases.json
  M research/llm-wiki/experiments/targets.md
- M research/llm-wiki/status/backlog.md
+ M research/llm-wiki/papers/README.md
  M research/llm-wiki/status/current.md
+ M research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md
  M research/llm-wiki/status/repository-snapshot.json
  M research/llm-wiki/status/repository-snapshot.md
 ?? docs/ai/BENCHMARK_AGT_2026-10-05.md
 ?? docs/ai/REFERENCES_MCP_SECURITY_2026-10-05.md
+?? full_stack_lab/integrations/
+?? full_stack_lab/tests/mcp_result_contract_check.py
+?? full_stack_lab/tests/mcp_result_services_check.py
 ?? full_stack_lab/tests/protocol_versions_check.py
-?? research/llm-wiki/experiments/E13-local-bypass.md
-?? research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md
+?? research/llm-wiki/analysis/
+?? research/llm-wiki/integrations/
+?? research/llm-wiki/methodology/evidence-methodology.md
+?? research/llm-wiki/methodology/oss-and-skills.md
+?? research/llm-wiki/papers/LIB-A01.md
+?? research/llm-wiki/papers/LIB-A02.md
+?? research/llm-wiki/papers/LIB-A03.md
+?? research/llm-wiki/papers/LIB-A04.md
+?? research/llm-wiki/papers/LIB-A05.md
+?? research/llm-wiki/papers/LIB-A06.md
+?? research/llm-wiki/papers/LIB-A07.md
+?? research/llm-wiki/papers/LIB-A08.md
+?? research/llm-wiki/papers/LIB-A09.md
+?? research/llm-wiki/papers/LIB-A10.md
+?? research/llm-wiki/papers/LIB-A11.md
+?? research/llm-wiki/papers/LIB-A12.md
+?? research/llm-wiki/papers/LIB-A13.md
+?? research/llm-wiki/papers/LIB-A14.md
+?? research/llm-wiki/papers/LIB-A15.md
+?? research/llm-wiki/papers/LIB-A16.md
+?? research/llm-wiki/papers/LIB-B01.md
+?? research/llm-wiki/papers/LIB-B02.md
+?? research/llm-wiki/papers/LIB-B03.md
+?? research/llm-wiki/papers/LIB-B04.md
+?? research/llm-wiki/papers/LIB-B05.md
+?? research/llm-wiki/papers/LIB-B06.md
+?? research/llm-wiki/papers/LIB-B07.md
+?? research/llm-wiki/papers/LIB-B08.md
+?? research/llm-wiki/papers/LIB-B09.md
+?? research/llm-wiki/papers/LIB-B10.md
+?? research/llm-wiki/papers/LIB-B11.md
+?? research/llm-wiki/papers/LIB-B12.md
+?? research/llm-wiki/papers/LIB-B13.md
+?? research/llm-wiki/papers/LIB-B14.md
+?? research/llm-wiki/papers/LIB-B15.md
+?? research/llm-wiki/papers/LIB-B16.md
+?? research/llm-wiki/papers/LIB-C01.md
+?? research/llm-wiki/papers/LIB-C02.md
+?? research/llm-wiki/papers/LIB-C03.md
+?? research/llm-wiki/papers/LIB-C04.md
+?? research/llm-wiki/papers/LIB-C05.md
+?? research/llm-wiki/papers/LIB-C06.md
+?? research/llm-wiki/papers/LIB-C07.md
+?? research/llm-wiki/papers/LIB-C08.md
+?? research/llm-wiki/papers/LIB-C09.md
+?? research/llm-wiki/papers/LIB-C10.md
+?? research/llm-wiki/papers/LIB-C11.md
+?? research/llm-wiki/papers/LIB-C12.md
+?? research/llm-wiki/papers/LIB-C13.md
+?? research/llm-wiki/papers/LIB-C14.md
+?? research/llm-wiki/papers/LIB-C15.md
+?? research/llm-wiki/papers/LIB-C16.md
+?? research/llm-wiki/papers/LIB-D01.md
+?? research/llm-wiki/papers/LIB-D02.md
+?? research/llm-wiki/papers/LIB-D03.md
+?? research/llm-wiki/papers/LIB-D04.md
+?? research/llm-wiki/papers/LIB-D05.md
+?? research/llm-wiki/papers/LIB-D06.md
+?? research/llm-wiki/papers/LIB-D07.md
+?? research/llm-wiki/papers/LIB-D08.md
+?? research/llm-wiki/papers/LIB-D09.md
+?? research/llm-wiki/papers/LIB-D10.md
+?? research/llm-wiki/papers/LIB-D11.md
+?? research/llm-wiki/papers/LIB-D12.md
+?? research/llm-wiki/papers/LIB-D13.md
+?? research/llm-wiki/papers/LIB-D14.md
+?? research/llm-wiki/papers/LIB-E01.md
+?? research/llm-wiki/papers/LIB-E02.md
+?? research/llm-wiki/papers/LIB-E03.md
+?? research/llm-wiki/papers/LIB-E04.md
+?? research/llm-wiki/papers/LIB-E05.md
+?? research/llm-wiki/papers/LIB-E06.md
+?? research/llm-wiki/papers/LIB-E07.md
+?? research/llm-wiki/papers/LIB-E08.md
+?? research/llm-wiki/papers/LIB-E09.md
+?? research/llm-wiki/papers/LIB-E10.md
+?? research/llm-wiki/papers/LIB-E11.md
+?? research/llm-wiki/papers/LIB-E12.md
+?? research/llm-wiki/papers/LIB-E13.md
+?? research/llm-wiki/papers/LIB-E14.md
+?? research/llm-wiki/papers/LIB-F01.md
+?? research/llm-wiki/papers/LIB-F02.md
+?? research/llm-wiki/papers/LIB-F03.md
+?? research/llm-wiki/papers/LIB-F04.md
+?? research/llm-wiki/papers/LIB-F05.md
+?? research/llm-wiki/papers/LIB-F06.md
+?? research/llm-wiki/papers/LIB-F07.md
+?? research/llm-wiki/papers/LIB-F08.md
+?? research/llm-wiki/papers/LIB-F09.md
+?? research/llm-wiki/papers/LIB-F10.md
+?? research/llm-wiki/papers/LIB-G01.md
+?? research/llm-wiki/papers/LIB-G02.md
+?? research/llm-wiki/papers/LIB-G03.md
+?? research/llm-wiki/papers/LIB-G04.md
+?? research/llm-wiki/papers/LIB-G05.md
+?? research/llm-wiki/papers/LIB-G06.md
+?? research/llm-wiki/papers/LIB-G07.md
+?? research/llm-wiki/papers/LIB-G08.md
+?? research/llm-wiki/papers/LIB-G09.md
+?? research/llm-wiki/papers/LIB-G10.md
+?? research/llm-wiki/papers/LIB-G11.md
+?? research/llm-wiki/papers/LIB-G12.md
+?? research/llm-wiki/papers/LIB-G13.md
+?? research/llm-wiki/papers/LIB-G14.md
+?? research/llm-wiki/papers/LIB-H01.md
+?? research/llm-wiki/papers/LIB-H02.md
+?? research/llm-wiki/papers/LIB-H03.md
+?? research/llm-wiki/papers/LIB-H04.md
+?? research/llm-wiki/papers/LIB-H05.md
+?? research/llm-wiki/papers/LIB-H06.md
+?? research/llm-wiki/papers/LIB-H07.md
+?? research/llm-wiki/papers/LIB-H08.md
+?? research/llm-wiki/papers/LIB-I01.md
+?? research/llm-wiki/papers/LIB-I02.md
+?? research/llm-wiki/papers/LIB-I03.md
+?? research/llm-wiki/papers/LIB-I04.md
+?? research/llm-wiki/papers/LIB-I05.md
+?? research/llm-wiki/papers/LIB-I06.md
+?? research/llm-wiki/papers/LIB-I07.md
+?? research/llm-wiki/papers/LIB-I08.md
+?? research/llm-wiki/papers/LIB-I09.md
+?? research/llm-wiki/papers/LIB-I10.md
+?? research/llm-wiki/papers/LIB-I11.md
+?? research/llm-wiki/papers/LIB-I12.md
+?? research/llm-wiki/papers/LIB-I13.md
+?? research/llm-wiki/papers/LIB-I14.md
+?? research/llm-wiki/papers/LIB-I15.md
+?? research/llm-wiki/papers/LIB-I16.md
+?? research/llm-wiki/papers/LIB-J01.md
+?? research/llm-wiki/papers/LIB-J02.md
+?? research/llm-wiki/papers/LIB-J03.md
+?? research/llm-wiki/papers/LIB-J04.md
+?? research/llm-wiki/papers/LIB-J05.md
+?? research/llm-wiki/papers/LIB-J06.md
+?? research/llm-wiki/papers/LIB-J07.md
+?? research/llm-wiki/papers/LIB-J08.md
+?? research/llm-wiki/papers/LIB-J09.md
+?? research/llm-wiki/papers/LIB-J10.md
+?? research/llm-wiki/papers/LIB-J11.md
+?? research/llm-wiki/papers/LIB-J12.md
+?? research/llm-wiki/papers/LIB-J13.md
+?? research/llm-wiki/papers/LIB-J14.md
+?? research/llm-wiki/papers/LIB-J15.md
+?? research/llm-wiki/papers/REF-J01.md
+?? research/llm-wiki/papers/REF-J02.md
+?? research/llm-wiki/papers/REF-J03.md
+?? research/llm-wiki/status/reports/2026-10-13-current-appliance-readiness.json
+?? research/llm-wiki/status/reports/2026-10-13-enterprise-claude-review.md
+?? research/llm-wiki/status/reports/2026-10-13-enterprise-results.md
+?? research/llm-wiki/status/reports/2026-10-13-enterprise-unit-results.json
+?? research/llm-wiki/status/reports/2026-10-13-interop-review.md
+?? research/llm-wiki/status/reports/2026-10-13-real-inspectors-results.json
+?? research/llm-wiki/status/reports/2026-10-13-result-boundary-review.md
+?? research/llm-wiki/status/reports/2026-10-14-reference-fill.md
+?? research/llm-wiki/tools/.gitignore
+?? research/llm-wiki/tools/build_enterprise_analysis.py
+?? research/llm-wiki/tools/build_enterprise_workbook.mjs
+?? research/llm-wiki/tools/build_integration_matrix.py
+?? research/llm-wiki/tools/check_appliance_inspectors.py
+?? research/llm-wiki/tools/check_enterprise_analysis.py
+?? research/llm-wiki/tools/register_journal_metadata.py
+?? research/llm-wiki/tools/replace_mock_plans.py
 ```
 
 ## 주요 파일 바이트
 
 | 파일 | SHA-256 |
 | --- | --- |
-| `full_stack_lab/gateway/app/core.py` | `0234af0c2cfaedc0522d0a2c71d910bdfe497099aea8e11daa755f8e1cce00aa` |
+| `full_stack_lab/gateway/app/core.py` | `39a5d5b4d0df5ba7701bef352ae557e3f7dbe87bb9175dcaac0f5c7e4ec138ca` |
 | `full_stack_lab/gateway/app/pac.py` | `a2ce5dcc7d5261c2571d10b315434b5a1179ca48243b5d3a5fadbd414c37447c` |
 | `full_stack_lab/gateway/app/poisoning.py` | `344bdab0e77e38f2a2273ae1a0516a9f63be913983fb0cf7e7cf900fb175a440` |
 | `full_stack_lab/gateway/app/idp.py` | `58c296bbad903cfe001e39dded16f538ddcc4308139c77b0f2c276fb12efd6dc` |
-| `full_stack_lab/gateway/app/privacy.py` | `b5b4bd304eb1db081014fb3934db7fe5c7da40bd9f1678bc5b02289295a5f393` |
+| `full_stack_lab/gateway/app/privacy.py` | `a0366953d4803dab3af3da0c1cc08019b1c202ffbc5a3545bf0d247f8d9b1e6f` |
 | `full_stack_lab/gateway/app/secret_scan.py` | `d4e35782a6d0afcea8071057faea979066b7f2254888d586798fda1e462fa052` |
 | `full_stack_lab/opa/pac15.rego` | `fd48e4c3a989ca35e0a489a747dd39d43268c9749e470f7419a4a96c17fedce4` |
 | `full_stack_lab/opa/decision.rego` | `e52e3ea4de50e8ae9c4727079579bf86ba5967aebdb4921875d2ab1d3791c26e` |

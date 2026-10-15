@@ -252,7 +252,7 @@ package = "mcp-email-server"
 version = "1.9.1"
 source_url = "https://github.com/Wh1isper/mcp-email-server"
 supplier = "MailOps (위탁 운영)"
-license = "MIT"
+license = "BSD-3-Clause"
 endpoint = "http://mcp-email:8000/mcp"
 # Operated by an outside provider on the organisation's behalf. It holds the
 # ai-assistant mailbox password; the contract did NOT require disclosure of that

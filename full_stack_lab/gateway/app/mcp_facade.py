@@ -16,6 +16,7 @@ the SDK answers "method not found" (MCP-METHOD-001 in the audit narrative).
 """
 from __future__ import annotations
 
+import json
 import os
 from typing import Any
 from urllib.parse import urlsplit
@@ -138,19 +139,25 @@ def _render(outcome: dict) -> types.CallToolResult:
     }
     header = f"[MCP Gateway · {DECISION_LABEL.get(decision, decision)} · {outcome.get('policy_id')}] {outcome.get('reason', '')}"
     result = outcome.get("result")
-    if outcome.get("upstream_executed") and result:
+    if (outcome.get("upstream_executed") and result and decision in {"Allow", "Alert", "Restrict"}
+            and gateway["response_disposition"] in {"returned", "masked"}):
         # The tool's own output comes first. A notice at the top of an allowed result
         # ("허용·경보 ...") reads like a refusal to small models; they then tell the
         # user the call was blocked when it ran. The note goes last, phrased as done.
         # core._guarded_result passes only text items; anything else was withheld there.
         content = [types.TextContent(type="text", text=item["text"]) for item in result.get("content") or []]
+        structured = result.get("structured")
+        # Both representations use core's inspected payload, including privacy masking.
+        if not content and structured is not None:
+            content = [types.TextContent(type="text", text=json.dumps(structured, ensure_ascii=False, allow_nan=False))]
         if decision != "Allow":
             applied = outcome.get("restrictions_applied") or []
             note = {"Alert": "실행되었으며 보안 경보로 기록되었습니다",
                     "Restrict": "제한을 적용해 실행되었습니다" + (f"({', '.join(applied)})" if applied else "")}.get(decision, "실행되었습니다")
             content.append(types.TextContent(type="text", text=f"\n(MCP Gateway: {note} · {outcome.get('policy_id')})"))
         return types.CallToolResult(content=content or [types.TextContent(type="text", text="(빈 결과)")],
-                                    isError=bool(result.get("is_error")), _meta={"gateway": gateway})
+                                    structuredContent=structured, isError=bool(result.get("is_error")),
+                                    _meta={"gateway": gateway})
     if decision == "Approval":
         text = (f"{header}\n관리자 승인이 필요합니다. 승인 ID {outcome.get('approval_id')} "
                 "(Console → 승인 대기). 승인되면 Gateway가 이 요청을 그대로 실행합니다.")

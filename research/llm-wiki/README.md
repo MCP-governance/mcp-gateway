@@ -7,6 +7,7 @@ MCP 보안 거버넌스 솔루션 개발에 필요한 논문·기술문서, 제�
 | 할 일 | 시작 문서 |
 | --- | --- |
 | 현재 개발 상태와 다음 작업 보기 | [개발 현황](status/current.md) · [백로그](status/backlog.md) |
+| 기업 제공 요구사항·코드·제품·연동 검토 | [분석 정본과 Excel](analysis/README.md) · [호출 경로](analysis/README-code.md) · [기업 연동](integrations/README.md) |
 | 논문·기술문서와 확보한 원문 찾기 | [연구 자료](papers/README.md) |
 | 상용 제품과 실제 오픈소스 코드 비교 | [솔루션 분석](solutions/README.md) |
 | 통제를 설계하고 구현하기 | [구축 방법론](methodology/engineering-workflow.md) · [통제 설계](methodology/control-design.md) |
@@ -50,3 +51,5 @@ python -X utf8 research/collaboration-console/console.py serve
 5. `status/current.md`, `status/backlog.md`, 관련 분석을 갱신하고 실제 공유 메시지·작업 상태·검증 결과를 협업 콘솔 기록기에 남깁니다.
 
 자료가 부족하면 URL, 파일 위치, 필요한 시험 환경·권한을 보고서의 `사용자에게 필요한 입력`에 구체적으로 남깁니다. 자격증명은 Git에 넣지 않습니다.
+
+2026-10-13 기업 기준: 자체 제작/mock MCP 계획은 폐기했습니다. 상용/공개 OSS MCP만 실험 대상으로 사용하며 합성 데이터·시험 계정은 별도입니다. 요구사항·조건별 코드·제품/논문 판본·반례·실험·독립 효과를 연결해 프로젝트 전체 지식을 갱신합니다. [최근 연구 방법](methodology/evidence-methodology.md)과 [공개 스킬/OSS 활용](methodology/oss-and-skills.md)을 이어서 사용합니다.

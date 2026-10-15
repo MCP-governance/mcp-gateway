@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import math
 import os
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -46,6 +47,9 @@ SERVER_CHECK_TIMEOUT_SECONDS = float(os.getenv("SERVER_CHECK_TIMEOUT_SECONDS", "
 # the way out, results on the way back. The gateway used to keep a shorter pattern of
 # its own here, so the weakest check ran on the least trusted content.
 MAX_RESULT_BYTES = int(os.getenv("MAX_RESULT_BYTES", "262144"))
+OUTPUT_INSPECTION_TIMEOUT_SECONDS = float(os.getenv("OUTPUT_INSPECTION_TIMEOUT_SECONDS", "30"))
+if not math.isfinite(OUTPUT_INSPECTION_TIMEOUT_SECONDS) or OUTPUT_INSPECTION_TIMEOUT_SECONDS <= 0:
+    raise ValueError("OUTPUT_INSPECTION_TIMEOUT_SECONDS must be finite and positive")
 DEFAULT_ENFORCEMENT = os.getenv("GATEWAY_ENFORCEMENT", "enforce")
 # Integrity failures are not opinions. A drifted catalog, an unregistered tool, a
 # critical supply-chain finding or an unavailable policy engine stay enforced even
@@ -102,7 +106,9 @@ def response_evidence(payload: Any, disposition: str, masked_types: list[str] | 
     content = payload.get("content") if isinstance(payload, dict) else None
     return {"disposition": disposition, "sha256": canonical_hash(payload),
             "bytes": len(json.dumps(payload, ensure_ascii=False).encode()),
-            "content_types": sorted({str(item.get("type")) for item in content or [] if isinstance(item, dict)}),
+            "content_types": sorted({item.get("type") if item.get("type") in
+                                     {"text", "image", "audio", "resource", "resource_link"} else "unsupported"
+                                     for item in content or [] if isinstance(item, dict) and isinstance(item.get("type"), str)}),
             "structured": bool(isinstance(payload, dict) and payload.get("structured") is not None),
             "masked_types": masked_types or []}
 
@@ -1151,6 +1157,9 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
         if problem is None:
             dispatch_state["upstream_attempted"] = True
             result = await client.call_tool(tool, arguments)
+            # A definite MCP response was received. Later conversion/teardown failure
+            # withholds that response rather than erasing the known execution state.
+            dispatch_state["upstream_executed"] = True
             payload = {"content": upstream.content_items(result), "is_error": bool(result.is_error)}
             if result.structured_content is not None:
                 payload["structured"] = result.structured_content
@@ -1162,7 +1171,34 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
 def _root_cause(exc: BaseException) -> str:
     while isinstance(exc, BaseExceptionGroup) and exc.exceptions:
         exc = exc.exceptions[0]
-    return f"{type(exc).__name__}: {str(exc)[:400]}"
+    # SDK/provider/schema exceptions may quote response values or credentials.
+    # Public MCP responses, audit rows and diagnostics retain the type only.
+    return f"{type(exc).__name__}: 요청 처리를 완료하지 못했습니다."
+
+
+def _decoded_strings(payload: Any) -> list[str]:
+    strings, pending = [], [payload]
+    while pending:
+        item = pending.pop()
+        if isinstance(item, str):
+            strings.append(item)
+        elif isinstance(item, dict):
+            pending.extend(item.keys())
+            pending.extend(item.values())
+        elif isinstance(item, list):
+            pending.extend(item)
+    return strings
+
+
+def _upstream_failure(exc: Exception, event: dict) -> dict:
+    executed = bool(event.get("upstream_executed"))
+    attempted = bool(event.get("upstream_attempted"))
+    return local_verdict("MCP-UPSTREAM-001", "Block",
+                         "허용 후 MCP 처리를 완료하지 못했습니다. 실제 실행 여부는 하위 시스템 증거와 함께 확인해야 합니다.",
+                         restrictions=event.get("restrictions") or {}, exception=event.get("exception"),
+                         upstream_executed=executed, upstream_attempted=attempted, result=None,
+                         result_evidence={"disposition": "withheld" if executed else "unknown" if attempted else "not_executed"},
+                         error=_root_cause(exc))
 
 
 def _guarded_result(payload: dict) -> dict:
@@ -1171,30 +1207,40 @@ def _guarded_result(payload: dict) -> dict:
     A pinned description and schema say nothing about what a server returns at
     runtime, and that is where an injected instruction or an oversized blob arrives.
     """
-    body = json.dumps(payload, ensure_ascii=False)
+    try:
+        body = json.dumps(payload, ensure_ascii=False, allow_nan=False)
+    except (TypeError, ValueError) as exc:
+        raise ResultRejected("도구 결과가 유효한 JSON이 아닙니다.") from exc
     if len(body.encode()) > MAX_RESULT_BYTES:
         raise ResultRejected(f"도구 결과가 {MAX_RESULT_BYTES} byte 상한을 넘었습니다.", payload)
     content = payload.get("content")
     if not isinstance(content, list) or any(not isinstance(item, dict) for item in content):
         raise ResultRejected("도구 결과의 content 구조가 MCP 형식이 아닙니다.", payload)
-    if unexpected := sorted({str(item.get("type")) for item in content} - RESULT_CONTENT_TYPES):
-        raise ResultRejected(f"반환하지 않는 결과 형식입니다: {', '.join(unexpected)}", payload)
+    if payload.get("structured") is not None and not isinstance(payload["structured"], dict):
+        raise ResultRejected("구조화 도구 결과가 JSON 객체가 아닙니다.", payload)
+    if any(item.get("type") != "text" for item in content):
+        raise ResultRejected("반환하지 않는 결과 형식입니다.", payload)
     if any(not isinstance(item.get("text"), str) for item in content):
         raise ResultRejected("text 결과에 문자열 본문이 없습니다.", payload)
     # JSON escapes newlines; inspect decoded strings too so line-boundary rules survive serialization.
-    text = [body]
-    pending = [payload]
-    while pending:
-        value = pending.pop()
-        if isinstance(value, str):
-            text.append(value)
-        elif isinstance(value, dict):
-            pending.extend(value.values())
-        elif isinstance(value, list):
-            pending.extend(reversed(value))
+    text = [body, *_decoded_strings(payload)]
     if reasons := poisoning.result_findings("\n".join(text)):
         raise ResultRejected(f"도구 결과에 모델을 조종하는 지시가 포함되어 있습니다: {', '.join(reasons)}", payload)
     return payload
+
+
+async def _inspected_result(payload: dict, ignore: privacy.Ignore | None = None) -> tuple[dict, list[str]]:
+    """Inspect every representation that the MCP facade can release."""
+    try:
+        async with asyncio.timeout(OUTPUT_INSPECTION_TIMEOUT_SECONDS):
+            result, kinds = await privacy.mask_payload(payload, ignore)
+            # Assignment rules need key/value context and line rules decoded text.
+            scan = "\n".join([json.dumps(result, ensure_ascii=False, allow_nan=False), *_decoded_strings(result)])
+            if remaining := await secret_scan.labels(scan):
+                raise ResultRejected("응답에 마스킹되지 않은 Secret이 있어 보류했습니다: " + ", ".join(remaining), payload)
+            return result, kinds
+    except TimeoutError as exc:
+        raise privacy.InspectionUnavailable("출력 검사의 전체 대기·처리 기한을 초과했습니다.") from exc
 
 
 def _audit_payload(payload: dict) -> dict:
@@ -1397,7 +1443,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
     tool = str(payload.get("tool") or "")
     arguments = payload.get("arguments") if isinstance(payload.get("arguments"), dict) else {}
     user_token = str(payload.get("user_token") or "")
-    with tracer.start_as_current_span("mcp.gateway.call") as span:
+    with tracer.start_as_current_span("mcp.gateway.call", record_exception=False, set_status_on_exception=False) as span:
         trace_id = f"{span.get_span_context().trace_id:032x}"
         principal = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (user_token,))
         cls = classify.classify(server_id, tool, arguments, user_token)
@@ -1531,7 +1577,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             result = await _policy(policy_input)
         except Exception as exc:
             result = local_verdict("P-CONTROL-FAIL-CLOSED", "Block", "OPA 정책 결정에 실패하여 기본 차단했습니다.")
-            base_event["error"] = str(exc)[:500]
+            base_event["error"] = _root_cause(exc)
 
         mode = await enforcement_mode()
         base_event["enforcement"] = mode
@@ -1571,26 +1617,26 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             effective, applied = classify.apply_restrictions(cls, arguments, result.get("restrictions") or {})
             base_event["restrictions_applied"] = applied
             try:
-                with tracer.start_as_current_span("mcp.upstream.call") as upstream_span:
+                with tracer.start_as_current_span("mcp.upstream.call", record_exception=False, set_status_on_exception=False) as upstream_span:
                     upstream_span.set_attribute("mcp.server", server_id)
                     upstream_span.set_attribute("mcp.transport", "streamable-http")
                     renewed = await db.execute(
                         """UPDATE call_reservations SET expires_at=now()+make_interval(secs => %s)
                            WHERE request_id=%s AND released_at IS NULL AND expires_at > now()""",
                         (RESERVATION_TTL_SECONDS, request_id))
-                    if not renewed or RESERVATION_TTL_SECONDS <= 10:
+                    dispatch_budget = min(upstream.CONNECT_TIMEOUT,
+                                          RESERVATION_TTL_SECONDS - OUTPUT_INSPECTION_TIMEOUT_SECONDS - 10)
+                    if not renewed or dispatch_budget <= 0:
                         raise DispatchRejected("call reservation expired before dispatch")
                     # Bound discovery + dispatch together; per-message timeouts alone
-                    # let a slow session outlive the reservation. Response loss stays unknown.
-                    async with asyncio.timeout(min(upstream.CONNECT_TIMEOUT, RESERVATION_TTL_SECONDS - 10)):
+                    # let a slow session outlive the reservation. Reserve the output
+                    # inspection budget and a margin too. Response loss stays unknown.
+                    async with asyncio.timeout(dispatch_budget):
                         raw_result = await _call_upstream(server_id, tool, effective, approval_id, user_token,
                                                          dispatch_state=base_event, pac_payload=payload)
                 base_event["upstream_executed"] = True
                 try:
-                    base_event["result"], output_types = await privacy.mask_payload(raw_result, ignore)
-                    remaining_secrets = await secret_scan.labels(upstream.text_of(base_event["result"]["content"]))
-                    if remaining_secrets:
-                        raise ResultRejected("응답에 마스킹되지 않은 Secret이 있어 보류했습니다: " + ", ".join(remaining_secrets), raw_result)
+                    base_event["result"], output_types = await _inspected_result(raw_result, ignore)
                 except privacy.InspectionUnavailable as exc:
                     # Executed, answer withheld: MCP-OUTPUT-001 below records exactly that.
                     raise ResultRejected(f"출력 검사 실패: {exc}", raw_result) from exc
@@ -1610,7 +1656,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     "실행 직전 계약 또는 승인 재검증에 실패하여 도구 호출을 전달하지 않았습니다.",
                     upstream_attempted=False, error=str(exc),
                 ))
-                span.record_exception(exc)
+                span.record_exception(RuntimeError(_root_cause(exc)))
                 # Record the drift now so the next call is refused up front.
                 try:
                     await refresh_catalog(server_id)
@@ -1626,16 +1672,10 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     upstream_executed=True, result=None, error=str(exc)[:500],
                     result_evidence=exc.evidence or {"disposition": "withheld"},
                 ))
-                span.record_exception(exc)
+                span.record_exception(RuntimeError(_root_cause(exc)))
             except Exception as exc:
-                base_event.update(local_verdict(
-                    "MCP-UPSTREAM-001", "Block",
-                    "허용 후 MCP 통신이 실패했습니다. 실제 실행 여부는 하위 시스템에서 확인해야 합니다.",
-                    restrictions=base_event.get("restrictions") or {},
-                    exception=base_event.get("exception"),
-                    error=_root_cause(exc),
-                ))
-                span.record_exception(exc)
+                base_event.update(_upstream_failure(exc, base_event))
+                span.record_exception(RuntimeError(_root_cause(exc)))
 
         return await _decision_payload(base_event, before)
 

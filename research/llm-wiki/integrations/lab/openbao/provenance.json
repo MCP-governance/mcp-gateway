@@ -1,0 +1,38 @@
+{
+  "verified_on": "2026-10-13",
+  "version": "2.7.1",
+  "release_date": "2026-10-01T14:03:19Z",
+  "source_commit": "a5db72cef75c24b920ade02065b18dd8eb666bac",
+  "source_url": "https://github.com/openbao/openbao/releases/tag/v2.7.1",
+  "license": "MPL-2.0",
+  "image": "ghcr.io/openbao/openbao:2.7.1",
+  "index_digest": "sha256:6d2b93856e3fcf7b18ad855a0b51eaba474dc8b79cf554379ea32034797d2acf",
+  "linux_amd64_manifest_digest": "sha256:a36ea8c27f0dcff5757664ad080425f96d3b6b2f33db3e76c4e2d3112fb17005",
+  "registry_bytes_hash_verified": true,
+  "image_signature_verified": false,
+  "appliance_metadata_only_check": {
+    "command": "one-shot image id openbao, network none; no secrets/server",
+    "default_uid": 100,
+    "default_gid": 1000,
+    "source": "user@100.83.175.111 actual Docker image CLI"
+  },
+  "server_deployed": false,
+  "sdk_executed": false,
+  "selected_runtime_uid": 10000,
+  "selected_runtime_gid": 10000,
+  "storage": "pebbledb, no HA, file backend removed2.7",
+  "evidence": [
+    {
+      "url": "https://raw.githubusercontent.com/openbao/openbao/a5db72cef75c24b920ade02065b18dd8eb666bac/LICENSE",
+      "file": "evidence/LICENSE.raw.txt",
+      "sha256": "d6b1a865f1c8c697d343bd4e0ce61025f91898486a1f00d727f32e8644af77d3",
+      "scope": "full LICENSE; selected Docker packaging/default entrypoint/user instructions, no server execution"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openbao/openbao/a5db72cef75c24b920ade02065b18dd8eb666bac/Dockerfile",
+      "file": "evidence/Dockerfile.raw.txt",
+      "sha256": "2aab522e524ca90e3342cb31f53668d6ff517e920c609732477c4e3e6c7cc826",
+      "scope": "full LICENSE; selected Docker packaging/default entrypoint/user instructions, no server execution"
+    }
+  ]
+}

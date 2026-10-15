@@ -21,7 +21,9 @@ unzip mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.
 
 `install.sh`는 `bootstrap.py`를 sudo로 한 번 올리고, 그 안에서 필수 구성요소 설치 → 승인 하네스 배치(SHA-256 기록) →
 관리 계정 결정 → `managed-linux.py install` → 실행 연결(관리자 계정일 때) → 모델 로그인을 순서대로 합니다(D-71).
-이미 설치된 장치면 먼저 `rollback`을 돌리고 다시 설치합니다. `--remove`는 이 PC의 연결만 제거합니다.
+실행 연결은 `/usr/local/bin`의 shim과, PATH 앞쪽 `~/.local/bin`의 하네스를 이기도록 직원 계정에만 정의되는 셸 함수
+(`/etc/profile.d/mcpgw-managed.sh`, `/etc/bash.bashrc`·`/etc/zsh/zshrc`의 표식 블록)입니다(D-72). 설치 뒤 **새 터미널**에서 실행합니다.
+이미 설치된 장치면 먼저 `rollback`을 돌리고 다시 설치합니다. `--remove`는 이 PC의 연결만 제거합니다(함수·블록 포함).
 아래 수동 경로는 그 단계들을 따로 돌릴 때만 씁니다.
 
 4. 설치기는 단말 키를 생성하여 한 번 등록하고, `/var/lib/mcpgw-managed/<계정>/config.json`(root 600)에만 저장합니다.
@@ -30,7 +32,7 @@ unzip mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.
 5. 다른 관리자가 **단말 → 활성화**에서 실제 호스트의 일반 계정·AppArmor enforce·nft UID 규칙·보호된 설정을 확인합니다.
    자체 보고는 원격 하드웨어 attestation이 아닙니다. 확인 없이 자동 활성화하거나 자기 장치를 승인하지 않습니다.
 
-root 서비스 `mcpgw-managed-<계정>.service`는 60초마다 실제 커널 규칙과 파일 해시를 보고합니다.
+root 서비스 `mcpgw-managed-<계정>.service`는 실제 커널 규칙과 파일 해시를 활성화 전에는 10초, 활성화 뒤에는 60초마다 보고합니다.
 `mcpgw-egress-<계정>.service`는 부팅 후에도 UID별 방화벽을 유지합니다. 180초 heartbeat 만료·격리·폐기는
 아직 만료되지 않은 JWT도 Gateway에서 거부합니다. 설정이 복구돼도 독립 관리자 활성화가 다시 필요합니다.
 단말 키 대신 짧은 JWT만 UID가 일치하는 로컬 인증 헬퍼에 전달하며, 시스템 설정·argv·환경에 토큰을 넣지 않습니다.
@@ -40,7 +42,8 @@ root 서비스 `mcpgw-managed-<계정>.service`는 60초마다 실제 커널 규
 하네스 실행기는 `HTTPS_PROXY`·`HTTP_PROXY`를 프록시로, `NO_PROXY`를 게이트웨이 주소로 고정합니다. 프록시는
 `full_stack_lab/model-proxy/model-domains.txt`의 모델 도메인만 허용하고(TLS 터널은 443만), 임의 외부 주소를 열지 않습니다.
 프록시 이전에 설치한 장치는 그대로 동작하지만 모델에 닿지 않습니다. 자격 폐기 → 롤백 → 새 키트로 재설치합니다.
-관리 계정의 하네스 모델 로그인(`codex login --device-auth`, `claude` 첫 실행)은 직원이 그 계정에서 한 번 합니다.
+관리 계정의 하네스 모델 로그인은 직원이 한 번 합니다. 설치 끝에 `codex login --device-auth`와 `claude auth login`을
+안내하고(Ctrl+C로 건너뜀), 건너뛰면 첫 실행 때 하네스가 묻습니다.
 
 ## 가입자용 관리형 Windows 설치 (D-68)
 

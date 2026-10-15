@@ -12,3 +12,4 @@ threats/originals/** -text -diff
 web/source-text/** -text -diff
 *.pdf binary
 *.xlsm binary
+*.xlsx binary

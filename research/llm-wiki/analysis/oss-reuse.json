@@ -1,0 +1,241 @@
+[
+  {
+    "id": "OSS-01",
+    "title": "policy evaluation",
+    "repository": "open-policy-agent/opa",
+    "source_url": "https://github.com/open-policy-agent/opa",
+    "commit": "d769d36c8c090d6df7fc5b75c0a95d92428f8c36",
+    "stars": 12356,
+    "measured_on": "2026-10-13",
+    "license": "Apache-2.0",
+    "existing_source_path": "full_stack_lab/opa/policy.rego",
+    "status": "existing_integration",
+    "implementation_guidance": "정책언어/PDP를기존OPA로유지. allow와failclosed·timeout·잘못된JSON을분리시험. 자체정책엔진재작성안함",
+    "experiment_ids": [
+      "E08"
+    ],
+    "verification": "official_repository_metadata_and_selected_existing_integration_checked",
+    "executed_in_this_task": false,
+    "selection_gate": [
+      "fixed_release_or_commit_and_dependency_lock",
+      "component_license_and_NOTICE",
+      "official_security_advisories_and_SBOM",
+      "fit_to_existing_auth/timeout/failclosed_contract",
+      "independent_effect_and_normal_control",
+      "retain_vulnerable_scope_as_unconfirmed_not_absent"
+    ],
+    "commit_scope": "reviewed repository head; not installed release or deployed image digest"
+  },
+  {
+    "id": "OSS-02",
+    "title": "protocol interoperability inspection",
+    "repository": "modelcontextprotocol/inspector",
+    "source_url": "https://github.com/modelcontextprotocol/inspector",
+    "commit": "0d2bc1d91ce177ea8d497ee3efe91bcc59e40a1c",
+    "stars": 11060,
+    "measured_on": "2026-10-13",
+    "license": "NOASSERTION",
+    "existing_source_path": "full_stack_lab/tests/real_mcp_gateway_check.py",
+    "status": "evaluation_candidate",
+    "implementation_guidance": "공식Inspector로initialize/list/call/schema·transport결과를교차확인. Inspector성공을자연어실기기시험으로세지않음",
+    "experiment_ids": [
+      "E01",
+      "E06",
+      "E12"
+    ],
+    "verification": "official_repository_metadata_only; no implementation or SDK integration traced",
+    "executed_in_this_task": false,
+    "selection_gate": [
+      "fixed_release_or_commit_and_dependency_lock",
+      "component_license_and_NOTICE",
+      "official_security_advisories_and_SBOM",
+      "fit_to_existing_auth/timeout/failclosed_contract",
+      "independent_effect_and_normal_control",
+      "retain_vulnerable_scope_as_unconfirmed_not_absent"
+    ],
+    "commit_scope": "reviewed repository head; not installed release or deployed image digest"
+  },
+  {
+    "id": "OSS-03",
+    "title": "PII analysis/anonymization",
+    "repository": "microsoft/presidio",
+    "source_url": "https://github.com/data-privacy-stack/presidio",
+    "commit": "2523c7b74a469270c5c78bb253f140eafca21e31",
+    "stars": 11298,
+    "measured_on": "2026-10-13",
+    "license": "MIT",
+    "existing_source_path": "full_stack_lab/gateway/app/privacy.py",
+    "status": "existing_integration",
+    "implementation_guidance": "기존Presidio에한국어recognizer/평가자료확장. 모델지원언어·score·offset·UTF8·scanner오류계약검증",
+    "experiment_ids": [
+      "E02",
+      "E03"
+    ],
+    "verification": "official_repository_metadata_and_selected_existing_integration_checked",
+    "executed_in_this_task": false,
+    "selection_gate": [
+      "fixed_release_or_commit_and_dependency_lock",
+      "component_license_and_NOTICE",
+      "official_security_advisories_and_SBOM",
+      "fit_to_existing_auth/timeout/failclosed_contract",
+      "independent_effect_and_normal_control",
+      "retain_vulnerable_scope_as_unconfirmed_not_absent"
+    ],
+    "commit_scope": "reviewed repository head; not installed release or deployed image digest"
+  },
+  {
+    "id": "OSS-04",
+    "title": "secret scanning",
+    "repository": "gitleaks/gitleaks",
+    "source_url": "https://github.com/gitleaks/gitleaks",
+    "commit": "b58d3f102cf3a2c84cb7f923d05c25c9b1aed84b",
+    "stars": 29883,
+    "measured_on": "2026-10-13",
+    "license": "MIT",
+    "existing_source_path": "full_stack_lab/supply_chain/intake_worker.py",
+    "status": "existing_intake_integration",
+    "implementation_guidance": "기존Gitleaks운영자rule/ignore차단유지. secret형식·redact·scanner실패정밀검증. 런타임방어로자동확대주장안함",
+    "experiment_ids": [
+      "E02",
+      "E03"
+    ],
+    "verification": "official_repository_metadata_and_selected_existing_integration_checked",
+    "executed_in_this_task": false,
+    "selection_gate": [
+      "fixed_release_or_commit_and_dependency_lock",
+      "component_license_and_NOTICE",
+      "official_security_advisories_and_SBOM",
+      "fit_to_existing_auth/timeout/failclosed_contract",
+      "independent_effect_and_normal_control",
+      "retain_vulnerable_scope_as_unconfirmed_not_absent"
+    ],
+    "commit_scope": "reviewed repository head; not installed release or deployed image digest"
+  },
+  {
+    "id": "OSS-05",
+    "title": "OIDC/OAuth validation",
+    "repository": "authlib/authlib",
+    "source_url": "https://github.com/authlib/authlib",
+    "commit": "794b45b21fdf3b25733d4dc982c825b898fcce35",
+    "stars": 5431,
+    "measured_on": "2026-10-13",
+    "license": "BSD-3-Clause",
+    "existing_source_path": "full_stack_lab/gateway/app/oidc.py",
+    "status": "existing_oidc_integration",
+    "implementation_guidance": "state/nonce/issuer/audience/JWKS검증은Authlib기능과현재호출경로를추적. 로컬syntheticIdP를엔터프라이즈IdP증거로쓰지않음",
+    "experiment_ids": [
+      "E09",
+      "E11",
+      "E12"
+    ],
+    "verification": "official_repository_metadata_and_selected_existing_integration_checked",
+    "executed_in_this_task": false,
+    "selection_gate": [
+      "fixed_release_or_commit_and_dependency_lock",
+      "component_license_and_NOTICE",
+      "official_security_advisories_and_SBOM",
+      "fit_to_existing_auth/timeout/failclosed_contract",
+      "independent_effect_and_normal_control",
+      "retain_vulnerable_scope_as_unconfirmed_not_absent"
+    ],
+    "commit_scope": "reviewed repository head; not installed release or deployed image digest"
+  },
+  {
+    "id": "OSS-06",
+    "title": "deterministic real-service network faults",
+    "repository": "Shopify/toxiproxy",
+    "source_url": "https://github.com/Shopify/toxiproxy",
+    "commit": "94adfebb88bb6db251dea8aea4b23513e6aad084",
+    "stars": 12408,
+    "measured_on": "2026-10-13",
+    "license": "MIT",
+    "existing_source_path": null,
+    "status": "evaluation_candidate",
+    "implementation_guidance": "자체MCPfaultserver대신실제OSS MCP/OPA/DB앞TCP지연·단절·대역폭제약을전용프록시로재현. 개별testconnection만원복",
+    "experiment_ids": [
+      "E08",
+      "E10"
+    ],
+    "verification": "official_repository_metadata_and_selected_pinned_README_checked; no installation/execution",
+    "executed_in_this_task": false,
+    "selection_gate": [
+      "fixed_release_or_commit_and_dependency_lock",
+      "component_license_and_NOTICE",
+      "official_security_advisories_and_SBOM",
+      "fit_to_existing_auth/timeout/failclosed_contract",
+      "independent_effect_and_normal_control",
+      "retain_vulnerable_scope_as_unconfirmed_not_absent"
+    ],
+    "commit_scope": "reviewed repository head; not installed release or deployed image digest",
+    "source_evidence": {
+      "url": "https://raw.githubusercontent.com/Shopify/toxiproxy/94adfebb88bb6db251dea8aea4b23513e6aad084/README.md",
+      "path": "analysis/evidence/packages/toxiproxy-reviewed-source/README.raw.txt",
+      "sha256": "53e28af38458b8afac21f1467981c5386130d24b74a03bbf12e9973d54c20a43",
+      "verified_on": "2026-10-13",
+      "reading_scope": "selected latency386-398, down400-404, bandwidth406-412, timeout422-430, reset_peer432-439; no installed service"
+    },
+    "license_evidence": {
+      "url": "https://raw.githubusercontent.com/Shopify/toxiproxy/94adfebb88bb6db251dea8aea4b23513e6aad084/LICENSE",
+      "path": "analysis/evidence/packages/toxiproxy-reviewed-source/LICENSE.txt",
+      "sha256": "c305a1ef46fe6a38b357a943945191184df3cdef9ed833e171c5d811d560ad8f",
+      "verified_on": "2026-10-13",
+      "reading_scope": "entire MIT license for the selected source commit"
+    }
+  },
+  {
+    "id": "OSS-07",
+    "title": "HashiCorp Vault Python integration",
+    "repository": "hvac/hvac",
+    "source_url": "https://github.com/hvac/hvac",
+    "commit": "09902dea41c2c6313cd7844be4d984c1514bd822",
+    "stars": 1319,
+    "measured_on": "2026-10-13",
+    "license": "Apache-2.0",
+    "existing_source_path": null,
+    "status": "implementation_candidate",
+    "implementation_guidance": "Vault lease/KVv2/AppRole/workload신원은검토된SDK를우선선정. 읽기/갱신/폐기·비밀로그노출·캐시TTL·에러시차단을구현전에확정",
+    "experiment_ids": [
+      "E09",
+      "E11"
+    ],
+    "verification": "official_repository_metadata_only; no implementation or SDK integration traced",
+    "executed_in_this_task": false,
+    "selection_gate": [
+      "fixed_release_or_commit_and_dependency_lock",
+      "component_license_and_NOTICE",
+      "official_security_advisories_and_SBOM",
+      "fit_to_existing_auth/timeout/failclosed_contract",
+      "independent_effect_and_normal_control",
+      "retain_vulnerable_scope_as_unconfirmed_not_absent"
+    ],
+    "commit_scope": "reviewed repository head; not installed release or deployed image digest"
+  },
+  {
+    "id": "OSS-08",
+    "title": "AWS Secrets Manager integration",
+    "repository": "boto/boto3",
+    "source_url": "https://github.com/boto/boto3",
+    "commit": "f5581ba376ab8f3b077899ad7856810ed8a42a36",
+    "stars": 9909,
+    "measured_on": "2026-10-13",
+    "license": "Apache-2.0",
+    "existing_source_path": null,
+    "status": "implementation_candidate",
+    "implementation_guidance": "공식SDK의IAMrole·SecretId/versionstage·회전·재시도·에러분류를재사용. 장기정적AWSkey발급을기본으로두지않음",
+    "experiment_ids": [
+      "E09",
+      "E11"
+    ],
+    "verification": "official_repository_metadata_only; no implementation or SDK integration traced",
+    "executed_in_this_task": false,
+    "selection_gate": [
+      "fixed_release_or_commit_and_dependency_lock",
+      "component_license_and_NOTICE",
+      "official_security_advisories_and_SBOM",
+      "fit_to_existing_auth/timeout/failclosed_contract",
+      "independent_effect_and_normal_control",
+      "retain_vulnerable_scope_as_unconfirmed_not_absent"
+    ],
+    "commit_scope": "reviewed repository head; not installed release or deployed image digest"
+  }
+]

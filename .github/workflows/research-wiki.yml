@@ -15,4 +15,5 @@ jobs:
         with:
           python-version: '3.12'
       - run: python research/llm-wiki/tools/check_wiki.py
+      - run: python research/llm-wiki/tools/check_enterprise_analysis.py
       - run: python research/collaboration-console/test_console.py

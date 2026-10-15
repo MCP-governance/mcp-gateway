@@ -1,6 +1,6 @@
 # 세팅 후 실험 자료
 
-확인일: 2026-10-13. 아래 13개 카드는 **설계·미실행**이다. 최초 위키 구축 시 12개를 만들었고 팀 개발 계획에서 PJ1 로컬 stdio·loopback 우회 E13을 추가했다. 이후 제품 배포와 PJ1 실제 호출 표본은 [실기기 보고](../status/reports/2026-10-13-development-results.md)에 별도로 기록했다. 해당 표본은 이 카드의 입력·완료 조건 전체를 충족하지 않아 카드 상태를 통과로 바꾸지 않는다.
+확인일: 2026-10-13. 아래 13개 카드는 **설계·미실행**이다. 사용자 기업 기준에 따라 자체/mock MCP 계획은 폐기하고 실제 상용/OSS MCP로 모두 정정했다. [후보14개](../analysis/mcp-candidates.json), [근거 방법론](../methodology/evidence-methodology.md), [연동50조건](../analysis/integration-cases.json)을 연결했다. 이전 PJ1 표본은 [실기기 보고](../status/reports/2026-10-13-development-results.md)에 보존하며 이 카드 전체 통과로 바꾸지 않는다.
 
 먼저 [사전 조건 및 증거 규칙](preflight.md), [시험 대상](targets.md), [기존 테스트 지도](test-inventory.md)를 읽는다. 입력은 [cases.json](fixtures/cases.json)에 기계가 읽을 수 있게 저장했다. `catalogs/experiments.json`이 카드의 목록이다.
 
@@ -12,10 +12,10 @@
 | [E04](E04-untrusted-argument.md) | 인자의 주입 표지와 승인 대기 | 기존 입력 재사용 | 미실행 |
 | [E05](E05-ssrf-normalization.md) | IP 표기 우회·내부 목적지 차단 | 기존 입력 재사용 | 미실행 |
 | [E06](E06-input-schema.md) | 승인 입력 스키마 위반 | 입력 준비 | 미실행 |
-| [E07](E07-contract-drift.md) | 승인 후 도구 설명·스키마 변경 | 격리 mock 서버 준비 필요 | 미실행 |
+| [E07](E07-contract-drift.md) | 승인 후 도구 설명·스키마 변경 | 공식 GitHub MCP toolset/override 시험 인스턴스 | 미실행 |
 | [E08](E08-pdp-failure.md) | 정책 엔진 실패 시 차단 | 격리 장애 주입 준비 필요 | 미실행 |
 | [E09](E09-principal-binding.md) | 승인되지 않은 주체의 공급자 서버 호출 | 시험 계정 준비 필요 | 미실행 |
-| [E10](E10-concurrent-duplicate.md) | 동시 중복 호출의 실행 억제 | 지연 mock 서버 준비 필요 | 미실행 |
+| [E10](E10-concurrent-duplicate.md) | 동시 중복 호출의 실행 억제 | 실제 Gitea 시험 repo·Toxiproxy·독립 효과 | 미실행 |
 | [E11](E11-termination-evidence.md) | 종료 즉시 차단 및 회수 증거 판정 | 전용 이용 관계 준비 필요 | 미실행 |
 | [E12](E12-managed-admission.md) | 관리형 활성 상태와 MCP 입구 인가 | PJ1 관리자·시험 계정 필요 | 미실행 |
 | [E13](E13-local-bypass.md) | PJ1 로컬 stdio·loopback 우회 | 전용 무해 fixture·실제 보호 launcher 필요 | 미실행 |

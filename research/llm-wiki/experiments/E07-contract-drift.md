@@ -1,38 +1,43 @@
 # E07 — 승인 후 도구 계약 변경
 
-확인일: 2026-10-13 · 상태: **미실행** · 준비 상태: `isolated_fixture_needed`.
+2026-10-13 실제 상용/OSS MCP만 사용하는 계획으로 정정. **미실행**.
+
+대상 ID: `MCP-GITHUB-LOCAL` · [실제 대상](../analysis/mcp-candidates.json) · [사전 조건](preflight.md)
 
 승인된 도구 설명 또는 schema가 바뀌면 실제 실행을 막는다.
 
-[공통 사전 조건](preflight.md)을 적용한다. 입력 경로는 lab 또는 전용 fixture 기준이며 실제 field 계약과 일치시키기 전 실행하지 않는다.
+자체 제작/mock MCP를 사용하지 않는다. 합성 입력 데이터·계정·파일은 실제 OSS/상용 서버에서 사용한다.
 
 ## 사전 조건
 
-- 전용 mock MCP·echo r/public 분류·schema를 사람이 승인
 - 원본 description/schema hash와 계약 lock 기록
-- mock에서 description만 변경; lock 자동 승인/갱신 금지
+- 실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정
+- 독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지
+- 공식 GitHub MCP의 전용 자기 소유 시험 repo/인스턴스·read-only toolsets
+- 공식 toolset/description override 설정으로 A→B→A 변경; MCP 소스 수정 금지
 
-## 시험 입력
+## 입력
 
 ```json
 {
-  "server": "wiki-fixture",
-  "tool": "echo",
+  "server": "github-contract-test",
+  "tool": "list_commits",
   "arguments": {
-    "run_id": "E07-synthetic"
+    "owner": "test-owner",
+    "repo": "test-repo",
+    "perPage": 1
   }
 }
 ```
 
-위 JSON은 시험 입력 데이터이며 LLM 작업 지시나 실행 명령이 아니다.
+입력은 설계 데이터다. arguments_template는 실제 고정 tools/list로 확정해야 하며 바로 실행할 수 있는 계약이 아니다.
 
 ## 절차
 
-1. 변경 전 정상 호출로 기준선 확보
-2. A: 도구 설명 변경 후 catalog 관찰 상태만 갱신하고 같은 인자로 실제 하네스 호출; 승인 lock은 유지
-3. A 기대 MCP-CATALOG-001 확인 후 mock·관찰 상태 원복
-4. B: 다음 실행 직전 discovery에만 변경을 노출해 dispatch 재검증에서 차단; P-CONTROL-FAIL-CLOSED 확인
-5. 각 단계 변경 hash, 원장 ID 및 tools/call 수신 0을 따로 기록
+1. repos toolset 정상군과 승인 hash를 기록
+2. 공식 toolset repos→issues 또는 description override로 계약 변경; lock 유지
+3. catalog refresh 전/후 실제 하네스 호출을 나눠 각 policy_id·도구 미수신 확인
+4. A 설정으로 복귀 후 최신 관찰·재승인 내용 A 확인; 시험 인스턴스만 복구
 
 ## 기대 결과
 
@@ -54,7 +59,7 @@
 }
 ```
 
-현재 코드의 초기 정책 검사와 실행 직전 계약 재검증은 정책 식별자가 다르다. `core.py:1093–1108,1592–1596`의 dispatch-only drift는 P-CONTROL-FAIL-CLOSED로 기록한다. 두 단계를 구분하지 않고 모든 drift가 MCP-CATALOG-001이라고 단정하지 않는다.
+정확한 policy_id·attempted/executed·응답 상태와 독립 수신/효과를 대조한다. 다른 이유의 차단·provider 오류·증거 부재는 통과가 아니다.
 
 ## 증거
 
@@ -62,18 +67,19 @@
 - Gateway decision ID와 request/trace ID, policy_id, principal
 - upstream_attempted/upstream_executed 및 upstream 수신 로그
 - 부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash
+- catalog 사전 관찰과 dispatch 시점 재관찰을 구분한 시각·DB observed hash·승인 hash
+- 실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그
 
 ## 원복
 
-- mock의 원본 계약 복원·hash 대조; 전용 등록만 제거
-- 공유 contracts.lock.json이나 타 이용 관계의 승인 변경 금지
+- 공식 서버의 원래 toolset/override 설정과 hash 복원; 전용 등록만 정리
 
-## 코드·기존 자료
+## 코드 출발점
 
 - [full_stack_lab/tests/contracts_check.py](../../../full_stack_lab/tests/contracts_check.py)
 - [full_stack_lab/gateway/app/core.py](../../../full_stack_lab/gateway/app/core.py)
 - [full_stack_lab/opa/policy.rego](../../../full_stack_lab/opa/policy.rego)
 
-## 실제 실행 결과
+## 결과
 
-미실행. 실행 시각·증거 파일·판정 ID·성공/실패/미확인을 새 run 보고서에 기록한 뒤 카탈로그를 갱신한다.
+미실행. 실제 판본·하네스·모델·시각·IDs·원본 hash·정상/음성 결과·원복을 runs에 기록한 뒤 상태를 변경한다.

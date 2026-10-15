@@ -1,0 +1,40 @@
+services:
+  openbao:
+    image: ghcr.io/openbao/openbao:2.7.1@sha256:6d2b93856e3fcf7b18ad855a0b51eaba474dc8b79cf554379ea32034797d2acf
+    user: "10000:10000"
+    entrypoint: ["/usr/bin/bao"]
+    command: ["server", "-config=/openbao/config/server.hcl"]
+    restart: unless-stopped
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1.0
+    environment:
+      BAO_ADDR: https://127.0.0.1:8200
+      BAO_CACERT: /openbao/tls/ca.pem
+    ports:
+      - "127.0.0.1:${OPENBAO_HOST_PORT:-18200}:8200"
+    volumes:
+      - ${OPENBAO_CONFIG_DIR:?set the absolute lab openbao config directory}/server.hcl:/openbao/config/server.hcl:ro
+      - ${OPENBAO_RUNTIME_DIR:?set protected runtime directory}/tls:/openbao/tls:ro
+      - ${OPENBAO_RUNTIME_DIR:?set protected runtime directory}/data:/openbao/data
+      - ${OPENBAO_RUNTIME_DIR:?set protected runtime directory}/logs:/openbao/logs
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m
+    healthcheck:
+      test: ["CMD", "/usr/bin/bao", "status", "-format=json"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks: [secret_edge]
+
+  caddy:
+    volumes:
+      - ${OPENBAO_RUNTIME_DIR:?set protected runtime directory}/tls/ca.pem:/etc/caddy/openbao-ca.crt:ro
+
+networks:
+  secret_edge:
+    internal: true

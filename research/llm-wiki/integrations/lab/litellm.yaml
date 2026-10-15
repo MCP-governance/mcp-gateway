@@ -1,0 +1,36 @@
+model_list:
+  - model_name: interop-qwen3-small
+    litellm_params:
+      model: openai/qwen3:0.6b
+      api_base: http://ollama:11434/v1
+      # Ollama ignores this required OpenAI-client field. Network isolation is
+      # the provider boundary; this literal is not an authentication credential.
+      api_key: not-used-by-ollama
+      reasoning_effort: none
+      timeout: 60
+    model_info:
+      supports_function_calling: true
+
+mcp_servers:
+  microsoft_learn:
+    url: https://learn.microsoft.com/api/mcp
+    transport: http
+    auth_type: none
+    allowed_tools:
+      - microsoft_docs_search
+      - microsoft_docs_fetch
+      - microsoft_code_sample_search
+
+litellm_settings:
+  drop_params: false
+  telemetry: false
+  request_timeout: 60
+
+router_settings:
+  num_retries: 0
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
+  allow_user_auth: false
+  require_key_mcp_access_defined: true

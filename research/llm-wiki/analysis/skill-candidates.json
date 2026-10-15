@@ -1,0 +1,167 @@
+[
+  {
+    "id": "SKILL-01",
+    "title": "wiki-researcher",
+    "repository": "microsoft/skills",
+    "source_url": "https://github.com/microsoft/skills",
+    "commit": "91ec09549ca16bd6c44e6ccdef26d61eb2082f07",
+    "stars": 3106,
+    "stars_measured_on": "2026-10-13",
+    "stars_source_url": "https://api.github.com/repos/microsoft/skills",
+    "license": "MIT",
+    "license_evidence": {
+      "url": "https://raw.githubusercontent.com/microsoft/skills/91ec09549ca16bd6c44e6ccdef26d61eb2082f07/LICENSE",
+      "sha256": "d9a1b1e30d633d5732ea18e3cba9538d293ebc53e1a9e4e96ab739e0c5c4f1cb",
+      "path": "analysis/evidence/skills/microsoft-skills/LICENSE.txt",
+      "verified_on": "2026-10-13",
+      "reading_scope": "entire selected file; no referenced executable helper executed"
+    },
+    "source_evidence": {
+      "url": "https://raw.githubusercontent.com/microsoft/skills/91ec09549ca16bd6c44e6ccdef26d61eb2082f07/.github/plugins/deep-wiki/skills/wiki-researcher/SKILL.md",
+      "sha256": "3793d737ccb3e2c24d2de919f19ef59c35cc73598be8fdc8eb69693820ae29b5",
+      "path": "analysis/evidence/skills/microsoft-skills/wiki-researcher.SKILL.raw.txt",
+      "verified_on": "2026-10-13",
+      "reading_scope": "entire selected file; no referenced executable helper executed"
+    },
+    "verification": "full_selected_SKILL_read_and_sha256_checked",
+    "status": "reviewed_evidence_workflow_applied_not_installed",
+    "applied_in_this_task": true,
+    "installed": false,
+    "reuse_plan": "소스 이름을 추측하지 않고 입구→호출 함수→DB/외부 요청→감사를 추적한다. 구조·데이터·연동·예외 경로·종합의 다섯 관점을 분석표로 남긴다.; root adopted source/function trace and hierarchical knowledge links; no helper execution/full plugin installation",
+    "review_notes": "repo URL과현재branch는이미확인되어중복질문불필요. 변경가능branch인용대신고정commit+함수+줄을쓴다. 5회분석/도식권고를읽기미완료상태의그림으로채우지않는다.",
+    "confidence": "high_for_selected_file_only",
+    "unreviewed_scope": "repository hooks, executable helpers, commands, agents, linked resources and transitive packages"
+  },
+  {
+    "id": "SKILL-02",
+    "title": "wiki-architect",
+    "repository": "microsoft/skills",
+    "source_url": "https://github.com/microsoft/skills",
+    "commit": "91ec09549ca16bd6c44e6ccdef26d61eb2082f07",
+    "stars": 3106,
+    "stars_measured_on": "2026-10-13",
+    "stars_source_url": "https://api.github.com/repos/microsoft/skills",
+    "license": "MIT",
+    "license_evidence": {
+      "url": "https://raw.githubusercontent.com/microsoft/skills/91ec09549ca16bd6c44e6ccdef26d61eb2082f07/LICENSE",
+      "sha256": "d9a1b1e30d633d5732ea18e3cba9538d293ebc53e1a9e4e96ab739e0c5c4f1cb",
+      "path": "analysis/evidence/skills/microsoft-skills/LICENSE.txt",
+      "verified_on": "2026-10-13",
+      "reading_scope": "entire selected file; no referenced executable helper executed"
+    },
+    "source_evidence": {
+      "url": "https://raw.githubusercontent.com/microsoft/skills/91ec09549ca16bd6c44e6ccdef26d61eb2082f07/.github/plugins/deep-wiki/skills/wiki-architect/SKILL.md",
+      "sha256": "e439354d8a650cf147ef008222b80e28414c1e295381616639890f901a653226",
+      "path": "analysis/evidence/skills/microsoft-skills/wiki-architect.SKILL.raw.txt",
+      "verified_on": "2026-10-13",
+      "reading_scope": "entire selected file; no referenced executable helper executed"
+    },
+    "verification": "full_selected_SKILL_read_and_sha256_checked",
+    "status": "reviewed_evidence_workflow_applied_not_installed",
+    "applied_in_this_task": true,
+    "installed": false,
+    "reuse_plan": "실제 소스의 표현·업무·데이터·인프라 층과 진입점을 지식 구조로 만들고 역할별 읽기 경로를 제공한다.; root adopted source/function trace and hierarchical knowledge links; no helper execution/full plugin installation",
+    "review_notes": "Git현재branch를원격default로오인하지않는다. 위키웹생성/모든40개용어등분량강제는사용자요청과실제규모에맞춰정본MD환경에서조정한다.",
+    "confidence": "high_for_selected_file_only",
+    "unreviewed_scope": "repository hooks, executable helpers, commands, agents, linked resources and transitive packages"
+  },
+  {
+    "id": "SKILL-03",
+    "title": "spec-to-code-compliance",
+    "repository": "trailofbits/skills",
+    "source_url": "https://github.com/trailofbits/skills",
+    "commit": "442fc9d6c89b1e937e6f7a477e7071ea75fcbea4",
+    "stars": 7502,
+    "stars_measured_on": "2026-10-13",
+    "stars_source_url": "https://api.github.com/repos/trailofbits/skills",
+    "license": "CC-BY-SA-4.0",
+    "license_evidence": {
+      "url": "https://raw.githubusercontent.com/trailofbits/skills/442fc9d6c89b1e937e6f7a477e7071ea75fcbea4/LICENSE",
+      "sha256": "7abe19ec9bb73b36141b999b861d24ad855e808bafe0f81e84cce28556f6c297",
+      "path": "analysis/evidence/skills/trailofbits-skills/LICENSE.txt",
+      "verified_on": "2026-10-13",
+      "reading_scope": "entire selected file; no referenced executable helper executed"
+    },
+    "source_evidence": {
+      "url": "https://raw.githubusercontent.com/trailofbits/skills/442fc9d6c89b1e937e6f7a477e7071ea75fcbea4/plugins/spec-to-code-compliance/skills/spec-to-code-compliance/SKILL.md",
+      "sha256": "eb0d91b50a9c06f50baf8763d1e23566897b9fa3e7ffcf13134eee4e1ccaefe5",
+      "path": "analysis/evidence/skills/trailofbits-skills/spec-to-code-compliance.SKILL.raw.txt",
+      "verified_on": "2026-10-13",
+      "reading_scope": "entire selected file; no referenced executable helper executed"
+    },
+    "verification": "full_selected_SKILL_read_and_sha256_checked",
+    "status": "workflow_adoption_candidate_not_installed",
+    "applied_in_this_task": false,
+    "installed": false,
+    "reuse_plan": "요구사항별 구현·부분·모순·초과·부재·판정불가와 읽은 호출경로·반증·미확인 범위를 분리한다.",
+    "review_notes": "전체workflow/command/agent/resources미검토. SKILL만복사해plugin실행완료로보고하지않는다. 분리된원문과같은라이선스/출처를유지하고향후workflow를핀검토한다.",
+    "confidence": "high_for_selected_file_only",
+    "unreviewed_scope": "repository hooks, executable helpers, commands, agents, linked resources and transitive packages"
+  },
+  {
+    "id": "SKILL-04",
+    "title": "webapp-testing",
+    "repository": "anthropics/skills",
+    "source_url": "https://github.com/anthropics/skills",
+    "commit": "dbd4588f9e1033efb41dad4bef2f7947c8993d44",
+    "stars": 180801,
+    "stars_measured_on": "2026-10-13",
+    "stars_source_url": "https://api.github.com/repos/anthropics/skills",
+    "license": "Apache-2.0",
+    "license_evidence": {
+      "url": "https://raw.githubusercontent.com/anthropics/skills/dbd4588f9e1033efb41dad4bef2f7947c8993d44/skills/webapp-testing/LICENSE.txt",
+      "sha256": "bc6b3af2f331cbc7fb0da1344efb2cbe5877a31498b4d70dbc7000f3405a1362",
+      "path": "analysis/evidence/skills/anthropics-skills/LICENSE.txt",
+      "verified_on": "2026-10-13",
+      "reading_scope": "entire selected file; no referenced executable helper executed"
+    },
+    "source_evidence": {
+      "url": "https://raw.githubusercontent.com/anthropics/skills/dbd4588f9e1033efb41dad4bef2f7947c8993d44/skills/webapp-testing/SKILL.md",
+      "sha256": "51b7349e77ec63b7744a6f63647e7566a0b4d2e301121cc10e8c2113af6556a2",
+      "path": "analysis/evidence/skills/anthropics-skills/webapp-testing.SKILL.raw.txt",
+      "verified_on": "2026-10-13",
+      "reading_scope": "entire selected file; no referenced executable helper executed"
+    },
+    "verification": "full_selected_SKILL_read_and_sha256_checked",
+    "status": "deferred_conflicting_helper_instructions",
+    "applied_in_this_task": false,
+    "installed": false,
+    "reuse_plan": "제품 화면의 실제 DOM·스크린샷·브라우저 로그를 함께 확인하는 접근을 참고한다.",
+    "review_notes": "helper소스검토전블랙박스실행및로컬서버기동지시는우리owner배포룰과충돌. helper미실행·자동설치없음. 활성화전script검토와이미기동된실기기접속으로수정필요.",
+    "confidence": "high_for_selected_file_only",
+    "unreviewed_scope": "repository hooks, executable helpers, commands, agents, linked resources and transitive packages"
+  },
+  {
+    "id": "SKILL-05",
+    "title": "azure-keyvault-py",
+    "repository": "microsoft/skills",
+    "source_url": "https://github.com/microsoft/skills",
+    "commit": "91ec09549ca16bd6c44e6ccdef26d61eb2082f07",
+    "stars": 3106,
+    "stars_measured_on": "2026-10-13",
+    "stars_source_url": "https://api.github.com/repos/microsoft/skills",
+    "license": "MIT",
+    "license_evidence": {
+      "url": "https://raw.githubusercontent.com/microsoft/skills/91ec09549ca16bd6c44e6ccdef26d61eb2082f07/LICENSE",
+      "sha256": "d9a1b1e30d633d5732ea18e3cba9538d293ebc53e1a9e4e96ab739e0c5c4f1cb",
+      "path": "analysis/evidence/skills/microsoft-skills/LICENSE.txt",
+      "verified_on": "2026-10-13",
+      "reading_scope": "entire selected file; no referenced executable helper executed"
+    },
+    "source_evidence": {
+      "url": "https://raw.githubusercontent.com/microsoft/skills/91ec09549ca16bd6c44e6ccdef26d61eb2082f07/.github/plugins/azure-sdk-python/skills/azure-keyvault-py/SKILL.md",
+      "sha256": "5300434b6d8025604bfb4e16514b27d1e380255f0a587c65d000cbdf59248ce1",
+      "path": "analysis/evidence/skills/microsoft-skills/azure-keyvault-py.SKILL.raw.txt",
+      "verified_on": "2026-10-13",
+      "reading_scope": "entire selected file; no referenced executable helper executed"
+    },
+    "verification": "full_selected_SKILL_read_and_sha256_checked",
+    "status": "selective_sdk_reference_only",
+    "applied_in_this_task": false,
+    "installed": false,
+    "reuse_plan": "공식SecretClient·관리형/workload신원·비동기수명주기·버전조회/회전을Secret연동설계에참고한다.",
+    "review_notes": "secret.value및인증정보를print하는예시는채택금지. purge/delete예시는전용testvault외실행금지. SDK샘플실행/설치없음.",
+    "confidence": "high_for_selected_file_only",
+    "unreviewed_scope": "repository hooks, executable helpers, commands, agents, linked resources and transitive packages"
+  }
+]

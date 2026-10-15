@@ -1,0 +1,8 @@
+runtime/
+__pycache__/
+*.pyc
+*.env
+*.key
+operator.json
+init-operator.json
+app-credentials.json

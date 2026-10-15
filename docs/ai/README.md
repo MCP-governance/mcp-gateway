@@ -17,6 +17,8 @@
 | [PAC_MAPPING.md](PAC_MAPPING.md) | PAC-01~15의 집행 위치와 남은 경계 | 정책 초안과 실제 구현을 대조할 때 |
 | [BENCHMARK_IBM_CONTEXTFORGE.md](BENCHMARK_IBM_CONTEXTFORGE.md) | IBM ContextForge·공개 CPEX 소스 분석 정정본 | IBM 비교·플러그인·호출량 통제 검토 |
 | [BENCHMARK_MICROSOFT.md](BENCHMARK_MICROSOFT.md) | MS Gateway·Wassette의 코드 근거와 비교 한계 | Microsoft·실행 경계 검토 |
+| [BENCHMARK_AGT_2026-10-05.md](BENCHMARK_AGT_2026-10-05.md) | microsoft/agent-governance-toolkit(MIT)의 OWASP MCP Top 10 자체 평가와 소스를 우리 통제와 대조, 가져올 것 2가지·가져오지 않을 것 | 도구 설명 검사·MCP Top 10 대응을 바꿀 때 |
+| [REFERENCES_MCP_SECURITY_2026-10-05.md](REFERENCES_MCP_SECURITY_2026-10-05.md) | MCP 보안·거버넌스 표준·연구·오픈소스 12건(확인 수준·라이선스 표시)과 다음 작업 연결 | 새 탐지·정책·시험 코퍼스를 찾기 전 |
 | [architecture.html](architecture.html) · [architecture.png](architecture.png) | 구성도(archify로 생성, HTML은 브라우저로 — 확대·경로 추적·가이드 뷰) | 그림이 필요할 때 |
 | [DECISIONS.md](DECISIONS.md) | 설계 결정 D-01~ 과 이유, 되돌릴 조건(실기기 배치·도입 자동 검증은 D-42~D-46) | "왜 이렇게 했지?" |
 | [RUNBOOK.md](RUNBOOK.md) | 환경(WSL·포트·비밀번호 1111), `console.sh` 명령(field 포함), 계정, 자주 하는 일, PC에서 하네스를 손으로 쓰는 법 | 띄우고 돌릴 때 |

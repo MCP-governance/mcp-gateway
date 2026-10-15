@@ -3,6 +3,7 @@
 @research/llm-wiki/AGENTS.md
 
 개발 조사와 현황 보고는 [개발 연구 위키](research/llm-wiki/README.md)를 사용합니다.
+기업 제공 품질·상용/OSS MCP만 사용하는 실험·LiteLLM/비밀 저장소 연동·공개 스킬/OSS 우선·논문 방법론은 `AGENTS.md`의 2026-10-13 기준을 따릅니다.
 작업 시작 시 `research/llm-wiki/status/current.md`와 백로그를 읽고, 종료 시 Markdown 현황·작업 보고서를 갱신합니다.
 Codex와의 공개 대화·담당 작업·검증 기록은 `research/collaboration-console`에 남깁니다. 개발 협업 화면은 제품 운영 화면과 별도입니다.
 

@@ -1,0 +1,315 @@
+{
+  "schema_version": 1,
+  "metadata": {
+    "head": "ab6936c64f3578de8360b840f1928681714fa7bb",
+    "branch": "10/13-enterprise-interoperability",
+    "scope": "structural_inventory_and_curated_acceptance_conditions",
+    "deployment_inferred": false,
+    "runtime_test_results_inferred": false
+  },
+  "records": [
+    {
+      "id": "CMP-001",
+      "requirement_id": "REQ-09-02",
+      "product": "IBM ContextForge",
+      "version_or_commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+      "feature": "PDP default deny and 60-second decision cache; expiry/revocation cache test still required",
+      "evidence_url": "https://github.com/IBM/mcp-context-forge/blob/5735c9db7f8f50cd5a55eb7fefe83ecde00b5324/plugins/unified_pdp/unified_pdp.py#L1",
+      "evidence_paths": [
+        "solutions/evidence/ibm-contextforge/plugins__unified_pdp__unified_pdp.py.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "호출량·동시성·TTL의 경계 시각과 다중 worker를 검증: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/ibm-contextforge.md"
+    },
+    {
+      "id": "CMP-002",
+      "requirement_id": "REQ-03-05",
+      "product": "IBM ContextForge",
+      "version_or_commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+      "feature": "RFC8693 subject token/audience/scope construction; our OBO is not implemented by this fact",
+      "evidence_url": "https://github.com/IBM/mcp-context-forge/blob/5735c9db7f8f50cd5a55eb7fefe83ecde00b5324/mcpgateway/services/oauth_manager.py#L1",
+      "evidence_paths": [
+        "solutions/evidence/ibm-contextforge/mcpgateway__services__oauth_manager.py.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "프록시의 agent 위임은 검증된 사용자·audience·권한 교집합에 결합: 조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/ibm-contextforge.md"
+    },
+    {
+      "id": "CMP-003",
+      "requirement_id": "REQ-06-02",
+      "product": "IBM ContextForge",
+      "version_or_commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+      "feature": "PII plugin mode enforce, block_on_detection false; masking is not blanket blocking",
+      "evidence_url": "https://github.com/IBM/mcp-context-forge/blob/5735c9db7f8f50cd5a55eb7fefe83ecde00b5324/plugins/config.yaml#L88",
+      "evidence_paths": [
+        "solutions/evidence/ibm-contextforge/plugins__config.yaml.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "중첩 배열/JSON 값까지 공식 Presidio로 검사·마스킹: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/ibm-contextforge.md"
+    },
+    {
+      "id": "CMP-004",
+      "requirement_id": "REQ-09-03",
+      "product": "IBM ContextForge",
+      "version_or_commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+      "feature": "pre/post elapsed-time inspection; active-process interruption is not proven",
+      "evidence_url": "https://github.com/IBM/mcp-context-forge/blob/5735c9db7f8f50cd5a55eb7fefe83ecde00b5324/plugins/watchdog/watchdog.py#L1",
+      "evidence_paths": [
+        "solutions/evidence/ibm-contextforge/plugins__watchdog__watchdog.py.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "dispatch 전 durable intent와 사망 뒤 uncertain을 보존: 조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/ibm-contextforge.md"
+    },
+    {
+      "id": "CMP-005",
+      "requirement_id": "REQ-07-04",
+      "product": "IBM ContextForge",
+      "version_or_commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+      "feature": "tool_pre_invoke PDP deny stops processing; not equivalent to contract drift detection",
+      "evidence_url": "https://github.com/IBM/mcp-context-forge/blob/5735c9db7f8f50cd5a55eb7fefe83ecde00b5324/plugins/unified_pdp/unified_pdp.py#L1",
+      "evidence_paths": [
+        "solutions/evidence/ibm-contextforge/plugins__unified_pdp__unified_pdp.py.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "공식 OSS 설정의 설명 override 변경을 계약 차이로 검증: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/ibm-contextforge.md"
+    },
+    {
+      "id": "CMP-006",
+      "requirement_id": "REQ-09-02",
+      "product": "IBM CPEX",
+      "version_or_commit": "ae26938128cb438a268e7f3217603bc39b9dd18f",
+      "feature": "Redis Lua batches counter/TTL operations atomically for rate windows",
+      "evidence_url": "https://github.com/IBM/cpex-plugins/blob/ae26938128cb438a268e7f3217603bc39b9dd18f/plugins/rust/python-package/rate_limiter/src/redis_backend.rs#L1",
+      "evidence_paths": [
+        "solutions/evidence/ibm-cpex/plugins__rust__python-package__rate_limiter__src__redis_backend.rs.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "호출량·동시성·TTL의 경계 시각과 다중 worker를 검증: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/ibm-cpex.md"
+    },
+    {
+      "id": "CMP-007",
+      "requirement_id": "REQ-06-04",
+      "product": "IBM CPEX",
+      "version_or_commit": "ae26938128cb438a268e7f3217603bc39b9dd18f",
+      "feature": "external cpex.framework import; public plugin code is not whole exception contract",
+      "evidence_url": "https://github.com/IBM/cpex-plugins/blob/ae26938128cb438a268e7f3217603bc39b9dd18f/crates/framework_bridge/src/lib.rs#L1",
+      "evidence_paths": [
+        "solutions/evidence/ibm-cpex/crates__framework_bridge__src__lib.rs.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "검사기 오류·잘못된 결과·미완전 anonymizer는 보류/차단: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/ibm-cpex.md"
+    },
+    {
+      "id": "CMP-008",
+      "requirement_id": "REQ-04-02",
+      "product": "Microsoft MCP Gateway",
+      "version_or_commit": "3594c4eee36308ac131aad1c946ea14140b4353d",
+      "feature": "management read owner/admin/RequiredRoles; write owner/admin; empty required roles do not permit general user",
+      "evidence_url": "https://github.com/microsoft/mcp-gateway/blob/3594c4eee36308ac131aad1c946ea14140b4353d/dotnet/Microsoft.McpGateway.Management/src/Authorization/SimplePermissionProvider.cs#L1",
+      "evidence_paths": [
+        "solutions/evidence/ms-mcp-gateway/dotnet__Microsoft.McpGateway.Management__src__Authorization__SimplePermissionProvider.cs.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "조직·사용자·자산 소유권·행위 권한의 교집합 적용: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/ms-mcp-gateway.md"
+    },
+    {
+      "id": "CMP-009",
+      "requirement_id": "REQ-04-01",
+      "product": "Microsoft MCP Gateway",
+      "version_or_commit": "3594c4eee36308ac131aad1c946ea14140b4353d",
+      "feature": "built-in tool authorization checks ClaimsPrincipal roles with admin/configured roles",
+      "evidence_url": "https://github.com/microsoft/mcp-gateway/blob/3594c4eee36308ac131aad1c946ea14140b4353d/dotnet/Microsoft.McpGateway.Management/src/Authorization/BuiltinToolAuthorizer.cs#L1",
+      "evidence_paths": [
+        "solutions/evidence/ms-mcp-gateway/dotnet__Microsoft.McpGateway.Management__src__Authorization__BuiltinToolAuthorizer.cs.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "tools/list와 실제 tools/call의 승인 서버/도구 범위 일치: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/ms-mcp-gateway.md"
+    },
+    {
+      "id": "CMP-010",
+      "requirement_id": "REQ-08-05",
+      "product": "Microsoft Wassette",
+      "version_or_commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+      "feature": "component HTTP URI host/scheme allowlist with HttpRequestDenied",
+      "evidence_url": "https://github.com/microsoft/wassette/blob/742ebb7236273dad2d88c415eabe872d3b95dff9/crates/wassette/src/http.rs#L1",
+      "evidence_paths": [
+        "solutions/evidence/ms-wassette/crates__wassette__src__http.rs.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "MCP 서버→외부 API의 별도 목적지·자격·효과를 관찰·집행: 조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/ms-wassette.md"
+    },
+    {
+      "id": "CMP-011",
+      "requirement_id": "REQ-11-02",
+      "product": "Microsoft Wassette",
+      "version_or_commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+      "feature": "WASI preopened directories and no inherited network; not employee-wide process control",
+      "evidence_url": "https://github.com/microsoft/wassette/blob/742ebb7236273dad2d88c415eabe872d3b95dff9/crates/wassette/src/wasistate.rs#L1",
+      "evidence_paths": [
+        "solutions/evidence/ms-wassette/crates__wassette__src__wasistate.rs.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "비승인 공식 OSS stdio 실행의 실제 시도·OS 거부 확인: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/ms-wassette.md"
+    },
+    {
+      "id": "CMP-012",
+      "requirement_id": "REQ-01-02",
+      "product": "Microsoft Wassette",
+      "version_or_commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+      "feature": "Wasmtime component model and explicit WASI/HTTP/config linker assembly",
+      "evidence_url": "https://github.com/microsoft/wassette/blob/742ebb7236273dad2d88c415eabe872d3b95dff9/crates/wassette/src/runtime_context.rs#L1",
+      "evidence_paths": [
+        "solutions/evidence/ms-wassette/crates__wassette__src__runtime_context.rs.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "검사 과정의 파일/망/CPU/시간 권한을 시험 자원에 한정: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/ms-wassette.md"
+    },
+    {
+      "id": "CMP-013",
+      "requirement_id": "REQ-04-04",
+      "product": "LiteLLM",
+      "version_or_commit": "f8e456d105af921213267d0ef801ca08b8fdbc0b",
+      "feature": "explicit unresolved MCP server names return empty list, not all allowed servers",
+      "evidence_url": "https://github.com/BerriAI/litellm/blob/f8e456d105af921213267d0ef801ca08b8fdbc0b/litellm/proxy/_experimental/mcp_server/server.py#L1521",
+      "evidence_paths": [
+        "solutions/evidence/litellm/litellm__proxy___experimental__mcp_server__server.py.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "철회·조직 이동·빈/누락 범위는 권한 확대 없이 반영: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/litellm.md"
+    },
+    {
+      "id": "CMP-014",
+      "requirement_id": "REQ-03-05",
+      "product": "LiteLLM",
+      "version_or_commit": "f8e456d105af921213267d0ef801ca08b8fdbc0b",
+      "feature": "session resource scope caps explicitly scoped credentials and submitted server union",
+      "evidence_url": "https://github.com/BerriAI/litellm/blob/f8e456d105af921213267d0ef801ca08b8fdbc0b/litellm/proxy/_experimental/mcp_server/mcp_server_manager.py#L3169",
+      "evidence_paths": [
+        "solutions/evidence/litellm/litellm__proxy___experimental__mcp_server__mcp_server_manager.py.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "프록시의 agent 위임은 검증된 사용자·audience·권한 교집합에 결합: 조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/litellm.md"
+    },
+    {
+      "id": "CMP-015",
+      "requirement_id": "REQ-14-03",
+      "product": "LiteLLM",
+      "version_or_commit": "f8e456d105af921213267d0ef801ca08b8fdbc0b",
+      "feature": "MCP aggregation path exists in pinned source; our current config lacks mcp_servers",
+      "evidence_url": "https://github.com/BerriAI/litellm/blob/f8e456d105af921213267d0ef801ca08b8fdbc0b/litellm/proxy/_experimental/mcp_server/server.py#L1521",
+      "evidence_paths": [
+        "solutions/evidence/litellm/litellm__proxy___experimental__mcp_server__server.py.excerpt.txt"
+      ],
+      "evidence_kind": "pinned_source",
+      "our_gap": "하네스 병렬경로와 LiteLLM MCP aggregation 실행을 구분: 조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/litellm.md"
+    },
+    {
+      "id": "CMP-016",
+      "requirement_id": "REQ-04-01",
+      "product": "Kong AI Gateway",
+      "version_or_commit": "official_document_2026-10-13",
+      "feature": "documented MCP proxy/tool ACL; actual configured deny/list/call behavior untested",
+      "evidence_url": "https://developer.konghq.com/plugins/ai-mcp-proxy/",
+      "evidence_paths": [],
+      "evidence_kind": "vendor_documentation",
+      "our_gap": "tools/list와 실제 tools/call의 승인 서버/도구 범위 일치: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/kong-ai-gateway.md"
+    },
+    {
+      "id": "CMP-017",
+      "requirement_id": "REQ-03-01",
+      "product": "Kong AI Gateway",
+      "version_or_commit": "official_document_2026-10-13",
+      "feature": "documented OAuth integration; deployment issuer/audience validation requires real tests",
+      "evidence_url": "https://developer.konghq.com/plugins/ai-mcp-proxy/",
+      "evidence_paths": [],
+      "evidence_kind": "vendor_documentation",
+      "our_gap": "transport 토큰의 signature·issuer·audience·시간 검증: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/kong-ai-gateway.md"
+    },
+    {
+      "id": "CMP-018",
+      "requirement_id": "REQ-05-04",
+      "product": "BeyondTrust Pathfinder",
+      "version_or_commit": "official_document_2026-10-13",
+      "feature": "site enable/read-only/per-user token expiry; not arbitrary MCP per-call approval",
+      "evidence_url": "https://docs.beyondtrust.com/bt-docs/docs/configure-pathfinder-mcp",
+      "evidence_paths": [],
+      "evidence_kind": "vendor_documentation",
+      "our_gap": "승인 실행 시 새 요청자 인증과 현재 권한·철회 재검증: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/beyondtrust-pathfinder.md"
+    },
+    {
+      "id": "CMP-019",
+      "requirement_id": "REQ-13-02",
+      "product": "BeyondTrust Pathfinder",
+      "version_or_commit": "official_document_2026-10-13",
+      "feature": "token revoke vs expired-token delete; site off disconnects existing tokens per docs",
+      "evidence_url": "https://docs.beyondtrust.com/bt-docs/docs/configure-pathfinder-mcp",
+      "evidence_paths": [],
+      "evidence_kind": "vendor_documentation",
+      "our_gap": "PAT/refresh/access/session별 실제 provider 재접근 검증: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/beyondtrust-pathfinder.md"
+    },
+    {
+      "id": "CMP-020",
+      "requirement_id": "REQ-08-05",
+      "product": "Lunar MCPX",
+      "version_or_commit": "official_document_2026-10-13",
+      "feature": "MCPX plus separate Gateway mediates server outbound API paths; bypass coverage unproven",
+      "evidence_url": "https://www.lunar.dev/post/safely-running-untrusted-mcp-servers-with-lunar-mcpx-and-gateway-integration",
+      "evidence_paths": [],
+      "evidence_kind": "vendor_documentation",
+      "our_gap": "MCP 서버→외부 API의 별도 목적지·자격·효과를 관찰·집행: 조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/lunar-mcpx.md"
+    },
+    {
+      "id": "CMP-021",
+      "requirement_id": "REQ-04-01",
+      "product": "Lunar MCPX",
+      "version_or_commit": "official_document_2026-10-13",
+      "feature": "global/consumer/service/tool ACL; consumer-tag example is not cryptographically verified employee identity",
+      "evidence_url": "https://www.lunar.dev/post/mcp-gateway-access-controls-defining-permissions-for-llm-agents",
+      "evidence_paths": [],
+      "evidence_kind": "vendor_documentation",
+      "our_gap": "tools/list와 실제 tools/call의 승인 서버/도구 범위 일치: 실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "verification": "source_pattern_partial_condition_not_equivalent_tested",
+      "analysis_page": "solutions/lunar-mcpx.md"
+    }
+  ]
+}

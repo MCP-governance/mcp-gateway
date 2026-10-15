@@ -14,6 +14,7 @@ Ported from origin/main cc086e5 (PDF integration) to v2's real tools. Two change
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 from collections.abc import Callable
 
@@ -47,7 +48,7 @@ RECOGNIZERS = [
          {"name": "mobile", "regex": r"\b01[016789]-?\d{3,4}-?\d{4}\b", "score": 0.8}]},
     {"name": "Assigned credential", "supported_language": "en",
      "supported_entity": "CREDENTIAL", "patterns": [
-         {"name": "assignment", "regex": r"(?i)\b(?:api[_-]?key|access[_-]?token|password)\s*[:=]\s*[A-Za-z0-9._-]{8,}\b", "score": 0.85}]},
+         {"name": "assignment", "regex": r"(?i)\b(?:api[_-]?key|access[_-]?token|password|client[_-]?secret|aws[_-]?secret[_-]?access[_-]?key|secret[_-]?key|private[_-]?key)\s*[:=]\s*[A-Za-z0-9._-]{8,}\b", "score": 0.85}]},
     # Issuer-prefixed tokens (classify.SECRET_PATTERNS). A tool result that carries one is
     # masked before the model sees it; the model never needs the value to do the work.
     {"name": "Issuer-prefixed secret", "supported_language": "en",
@@ -120,13 +121,38 @@ async def mask_text(text: str, ignore: Ignore | None = None) -> tuple[str, list[
 
 async def mask_payload(value: object, ignore: Ignore | None = None) -> tuple[object, list[str]]:
     """Mask text leaves and preserve the MCP result's JSON shape."""
-    if isinstance(value, str):
-        return await mask_text(value, ignore)
-    if isinstance(value, list):
-        converted = [await mask_payload(item, ignore) for item in value]
-        return [item for item, _ in converted], sorted({kind for _, kinds in converted for kind in kinds})
-    if isinstance(value, dict):
-        converted = {key: await mask_payload(item, ignore) for key, item in value.items()}
-        return ({key: item for key, (item, _) in converted.items()},
-                sorted({kind for _, kinds in converted.values() for kind in kinds}))
-    return value, []
+    keys, numbers, assignments, pending = set(), [], [], [value]
+    while pending:
+        item = pending.pop()
+        if isinstance(item, dict):
+            keys.update(item)
+            pending.extend(item.values())
+            assignments.extend(f"{key}={child}" for key, child in item.items() if isinstance(child, str))
+        elif isinstance(item, list):
+            pending.extend(item)
+        elif isinstance(item, (int, float)) and not isinstance(item, bool):
+            numbers.append(item)
+    # Keys and numeric identifiers cannot be redacted without changing the schema.
+    # Inspect them together once, including numbers which string-leaf masking skips.
+    immutable = {"keys": sorted(keys), "numbers": numbers}
+    if (keys or numbers) and await analyze(json.dumps(immutable, ensure_ascii=False, allow_nan=False), ignore):
+        raise InspectionUnavailable("PII in result keys or numbers cannot be masked while preserving the JSON schema")
+    # Low-entropy passwords can evade Gitleaks. Preserve assignment context for
+    # Presidio's credential recognizer rather than inspect the value in isolation.
+    if assignments and any(f["entity_type"] in {"CREDENTIAL", "SECRET_TOKEN"}
+                           for f in await analyze("\n".join(assignments), ignore)):
+        raise InspectionUnavailable("Credential in structured key/value context is withheld")
+
+    async def convert(item: object) -> tuple[object, list[str]]:
+        if isinstance(item, str):
+            return await mask_text(item, ignore)
+        if isinstance(item, list):
+            converted = [await convert(child) for child in item]
+            return [child for child, _ in converted], sorted({kind for _, kinds in converted for kind in kinds})
+        if isinstance(item, dict):
+            converted = {key: await convert(child) for key, child in item.items()}
+            return ({key: child for key, (child, _) in converted.items()},
+                    sorted({kind for _, kinds in converted.values() for kind in kinds}))
+        return item, []
+
+    return await convert(value)

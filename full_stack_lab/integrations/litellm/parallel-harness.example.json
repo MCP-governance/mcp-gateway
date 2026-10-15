@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "mode": "parallel_harness",
+  "litellm_version": "1.102.1",
+  "llm_base_url": "https://llm.example.invalid",
+  "mcp_url": "https://mcp.example.invalid/mcp/github/",
+  "model": "customer-approved-model",
+  "llm_key_file": "/run/user/1001/litellm-virtual-key",
+  "mcp_token_file": "/run/user/1001/mcpgw-mcp-token",
+  "routes": ["chat", "responses", "messages"],
+  "timeout_seconds": 30
+}
