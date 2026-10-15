@@ -172,7 +172,9 @@ def attach(network: str, container: str) -> None:
 def remove_runtime_resources(runtime: dict, context: dict | None) -> int:
     """Containers and the network go; the image stays as evidence. Returns what is left behind."""
     n = names(runtime)
-    for name in (n["container"], n["egress"]):
+    # By name, and by label: a helper run from the built image (pip freeze) inherits the image's labels.
+    labelled = docker("ps", "-aq", "--filter", f"label=mcpgw.runtime={runtime['id']}", check=False).stdout.split()
+    for name in (n["container"], n["egress"], *labelled):
         docker("rm", "-f", name, check=False)
     if inspect("network", n["network"]):
         for container in ([*context["gateways"], context["self"]] if context else []):
