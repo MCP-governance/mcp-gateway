@@ -268,6 +268,15 @@ async def main():
     for case in (identical_concurrent, ceiling_concurrent, rate_ceiling, approval_reuse, in_flight_answer_lost_in_process,
                  crash_between_intent_and_answer):
         await CHECKS.case(case.__name__, case())
+    stats = await db.fetch_one(
+        """SELECT count(*) AS n,
+                  percentile_cont(0.5) WITHIN GROUP (ORDER BY (timings->>'intent')::float8) AS intent_p50,
+                  percentile_cont(0.95) WITHIN GROUP (ORDER BY (timings->>'intent')::float8) AS intent_p95,
+                  percentile_cont(0.5) WITHIN GROUP (ORDER BY (timings->>'reserve')::float8) AS reserve_p50,
+                  percentile_cont(0.5) WITHIN GROUP (ORDER BY (timings->>'total')::float8) AS total_p50
+             FROM decisions WHERE timings ? 'intent'""")
+    CHECKS.ok("cost of the intent write in the call path (ms, over the dispatched calls of this run)", stats["n"] > 0,
+              **{k: (round(v, 2) if isinstance(v, float) else v) for k, v in stats.items()})
     return CHECKS.finish()
 
 

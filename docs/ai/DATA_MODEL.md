@@ -38,6 +38,21 @@ UNCONFIRMED, 또는 REJECTED/EXPIRED), 만료 `APPROVAL_TTL_MINUTES`, `executed_
 NOT_EXECUTED, 전송했지만 결과를 확인하지 못하면 UNCONFIRMED(외부 효과가 있었을 수 있음). REJECTED는 사람의
 거부와 요청 무결성 실패뿐이다(D-27).
 
+### `dispatch_intents` — 보내기 직전의 기록 (D-96)
+`request_id`(PK), `user_token`, `server_id`, `tool_name`, `action`, `fingerprint`(예약과 같은 지문), `attempted_at`,
+`state`(pending → resolved | uncertain, 관리자 확인 후 confirmed_executed | confirmed_not_executed), `decision_id`,
+`resolved_at/by`, `note`. 판정 원장(`decisions`)과 별개 표이며 원장은 그대로 append-only다. 전송 직전 한 문장에서
+예약·주체·서버를 확인하며 쓰고(`dispatch.record`), 판정을 기록한 뒤 예약 해제와 같은 문장에서 닫는다.
+`uncertain` 또는 예약이 사라진 `pending`은 같은 쓰기 호출(`w`/`x`)을 `P-RATE-003`으로 막는다. 읽기는 막지 않는다.
+
+### `call_reservations`
+진행 중 호출의 자리. 주체별 advisory lock 안에서 세고 쓴다. TTL로 스스로 만료한다. 전송이 확인되지 않은 호출의 자리는
+풀지 않고, 막는 근거는 `dispatch_intents`가 가진다.
+
+### `upstream_pool_events`
+`endpoint`·`principal`(NULL이면 전체)·`reason`. 종료 개시·계정 중지/삭제가 남기고, 다른 게이트웨이 프로세스가
+풀 연결을 사용하기 직전(2초 간격 이내)에 읽어 닫는다.
+
 ## 2. 레지스트리와 계약
 
 ### `mcp_servers`
@@ -67,6 +82,7 @@ NOT_EXECUTED, 전송했지만 결과를 확인하지 못하면 UNCONFIRMED(외�
 - `revocation_targets`: `kind`, `label`, `holder`, `discovered_by`, `status`(OUTSTANDING/REVOKED/EXPIRED/UNVERIFIABLE),
   `revoked_at/by`, `subject_ref`(주체 토큰·지문·자격 JSON), `expires_at`, `verification`, `criteria`, `grade`.
 - `termination_evidence`: `kind`, `subject`, `source`, `detail`, `observed_at`, `target_id`, `sha256`, `recorded_by/at`.
+- 증거 종류에 `resource-rejection`(보호 자원이 이전 토큰을 거부/수락한 응답)이 있다. 대상 `criteria`에는 서버 보유 자격에 한해 `provider_side`(`rejected`/`accepted`/`unverified`, `expires_at`)가 붙는다.
 - CHECK 제약(`revocation_targets_kind_check`, `termination_evidence_kind_check`)은 `v2_tables.sql`이 새 종류로 다시 만든다.
 → 규칙은 [TERMINATION_MODEL.md](TERMINATION_MODEL.md).
 

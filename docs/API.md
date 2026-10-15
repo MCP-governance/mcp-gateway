@@ -43,7 +43,7 @@
 
 | 경로 | 인증 | 설명 |
 | --- | --- | --- |
-| `GET/POST/PUT/DELETE /gw/<path>` | 사용자 | Gateway `/api/<path>` 프록시. 관리자: `overview, activity, registry, health, termination/, approvals/, catalog/, enforcement, monitor/, audit/, policy/, endpoint/, supply-chain/, risk-catalog, lab/` · 그 외: `activity, health`만 |
+| `GET/POST/PUT/DELETE /gw/<path>` | 사용자 | Gateway `/api/<path>` 프록시. 관리자: `overview, activity, registry, health, termination/, approvals/, catalog/, enforcement, monitor/, audit/, policy/, endpoint/, supply-chain/, risk-catalog, lab/, dispatch-intents` · 그 외: `activity, health`만 |
 | `GET /approvals` · `POST /approvals/{id}/approve|reject` | 관리자 | `{approvals, history}` — 대기 중(요청자·도구·인자·판정 맥락)과 처리·만료된 최근 50건 |
 | `GET /api/accounts` · `PUT /api/accounts/{user_id}/status` | 관리자 | 신원 관리대장, 계정 사용/중지/잠금 |
 | `GET /api/identity` · `POST /api/identity/bindings` · `DELETE /api/identity/bindings/{id}` | 관리자(Console scope) | SSO 공급자 설정과 명시 issuer-sub 연결. `{principal,subject}`는 기존 활성 주체에만 연결. 해제는 해당 Console 세션을 차단하며 단말 키 회수는 별도 |
@@ -77,6 +77,8 @@
 | `POST /api/registry/servers` | 관리자 | 승인된 도입 신청(`intake_id`)의 활성화만 받는다 — Console은 `POST /api/mcp-requests/{id}/register`로 부른다. 신청 없음·신청자=승인자·승인과 다른 범위·이미 다른 id로 등록한 승인·운영 중인 다른 서버 id·`catalog_hash` 불일치는 409(D-57·D-59). 결과 `status`·`valid_until`·`gateway_path` |
 | `DELETE /api/registry/servers/{id}` | 관리자 | 등록 해제(서버는 DISABLED로 남음). Console 등록 서버만. 기한 연장은 없다 — 새 도입 신청(D-59) |
 | `POST /api/approvals/{id}/approve|reject` | 관리자 | 승인 → 1회 실행 |
+| `GET /api/dispatch-intents` | 관리자 | `{rows}` — 보냈지만 답을 확인하지 못한 호출(요청 id·사용자·서버.도구·행위·전송 시각). 게이트웨이는 자동 재시도하지 않는다 |
+| `POST /api/dispatch-intents/{request_id}/resolve {outcome: executed\|not_executed, note}` | 관리자 | 하위 시스템을 확인한 결과를 기록한다. 기록 뒤에야 같은 쓰기 호출을 다시 받는다. 이미 처리된 건은 409 |
 | `GET /api/policy/matrix` · `GET /api/policy/ledger` | 사용자 | 역할×등급×행위 27칸을 지금 배포된 번들로 OPA에 질의한 결과 / 관리대장·예외·`authorization`(권한 번들)·`deployed_rego`(배포 정책 묶음 digest) |
 | `GET/PUT /api/enforcement` | 사용자/관리자 | 집행·관찰 모드 |
 | `GET /api/monitor/summary?hours` | 관리자 | 관찰 모드에서 "집행했다면" 통계 |

@@ -3,7 +3,7 @@
 > 근거 논문: CISC-W'26 「원격 MCP 서비스 종료 시 권한 회수의 구조적 한계 및 종료 판정 기준 제안」.
 > 코드 정본: `full_stack_lab/gateway/app/decommission.py`(판정), `experiments.py`(E1~E3),
 > `main.py`의 `/api/termination/*`, Console `#/termination`. 끝에서 끝까지의 검증은
-> `full_stack_lab/tests/termination_flow.py`(21개 확인).
+> `full_stack_lab/tests/termination_flow.py`(라이브 스택, 24개 확인)와 격리 랩 `tests/termination_lab.py`·`dispatch_effect_lab.py`·`dispatch_intent_pg_check.py`·`token_revocation_pg_check.py`.
 
 ## 1. 핵심 주장 (왜 "껐다"가 "끝났다"가 아닌가)
 
@@ -36,6 +36,7 @@
 | gateway-denial | ✓ | 강제 경로가 이 주체의 호출을 실행 전에 막았다 | 강제 경로 밖의 다른 경로 |
 | introspection | ✓ | 인가 서버가 판단하는 토큰 활성 상태 | 자원 서버가 그 상태를 반영하는지 |
 | credential-check | ✓ | 하위 시스템에 그 자격이 (없다/있다) | 이미 복제·발급된 다른 자격 |
+| resource-rejection | ✓ | 보호 자원이 이전 토큰을 거부했다(401/403) 또는 수락했다(2xx) | 다른 자원 서버·이미 복제된 다른 자격 |
 | provider-attestation | ✓ | 제공자가 대상·시점을 특정해 진술 | 진술의 진위 |
 | endpoint-inventory | ✓ | 보고 시점에 단말 설정에서 사라졌다(또는 남았다) | 보고 이후 재설치 |
 | revocation-response | ✗ | 폐기 요청이 처리되었다 | 대상이 그때 유효했는지(200은 무효 토큰에도) |
@@ -44,8 +45,8 @@
 | operator-statement | ✗ | 담당자가 조치했다고 진술 | 대상의 상태 |
 
 대상 종류별로 C4에 쓰이는 상태 증거(`STATE_EVIDENCE_FOR`): gateway-route/access → gateway-denial,
-server-held-credential → credential-check·provider-attestation, endpoint-config → endpoint-inventory,
-토큰류 → introspection·credential-check·provider-attestation.
+server-held-credential → credential-check·provider-attestation·resource-rejection, endpoint-config → endpoint-inventory,
+토큰류 → introspection·credential-check·provider-attestation·resource-rejection.
 
 ## 3. 절차 (Console의 7단계 = API)
 
@@ -78,6 +79,10 @@ server-held-credential → credential-check·provider-attestation, endpoint-conf
   확인된 차단이면 대상 REVOKED, 회수 시각은 **cutover**로 고정.
 - `endpoint`: 인벤토리에서 지문이 사라졌는지. 사라졌으면 REVOKED, 회수 시각은 관찰 시각.
 - `credentials`: Gitea 관리 API(Sudo)로 토큰 존재 확인. 없으면 REVOKED. **있으면 그 사실도 상태 증거**.
+  조직이 제공자에게 준 토큰 값의 사본을 갖고 있으면(`GITEA_PROBE_TOKEN_FILE` 또는 자격별 `probe_token_file`) 그 토큰을 보호 자원
+  (`GET /api/v1/user`)에 **직접 보여** 거부(401/403)·수락 여부를 `resource-rejection`으로 기록한다. 이 응답이 있으면 목록 부재보다
+  우선한다. 값은 어디에도 기록하지 않고 상태 코드만 남긴다. 폐기 직전에 같은 값이 수락되었는지도 함께 남겨(`accepted_before_revocation`)
+  거부가 이 폐기 때문임을 보인다.
 - `liveness`/`session`: 처리 증거(C4 불충족). E2 측정을 증거로 남긴다.
 
 ## 4. 판정 규칙 (`_judge_target`)
@@ -92,7 +97,9 @@ server-held-credential → credential-check·provider-attestation, endpoint-conf
   **제공자 증명** 또는 **조직의 직접 확인(credential-check, 조직이 확인 수단을 가진 경우)**이 회수를
   보여야 충족.
 - **C3 연속성**: Gateway 경로·접근 대상은 cutover 이후 **실행된 호출**이나 **실행 여부 미확인 호출**이
-  있으면 미충족. 상태 비저장 토큰은 회수 시각부터 만료까지의 공백(초)을 기록(E1). 회수됐지만
+  있으면 미충족. 실행 여부 미확인에는 보냈지만 판정 원장에 남지 못한 호출(전송 의도가 `uncertain`이고 `decision_id`가 없는 것)도 센다.
+  cutover 전에 보내 cutover 뒤에 답한 호출은 실행된 호출로 그대로 세되 `straddled`로 따로 보인다. 서버 보유 자격은
+  폐기 뒤에도 자원 서버가 수락한 증거(`resource-rejection`의 `rejected=false`)가 있으면 미충족이고 목록의 부재는 인정하지 않는다. 상태 비저장 토큰은 회수 시각부터 만료까지의 공백(초)을 기록(E1). 회수됐지만
   무효를 확인한 증거가 없으면 "전파 완료 미확인". 회수 전이면 판단 불가로 미충족.
 
 등급: **C1 또는 C4 미충족 → T3**(잔존 범위 산정 불가), 아니면 **C2 또는 C3 미충족 → T2**(상한만
@@ -104,6 +111,9 @@ server-held-credential → credential-check·provider-attestation, endpoint-conf
 | T1 | 종료 | 모든 대상이 네 기준 충족. 종료를 진술할 수 있다 |
 | T2 | 부분 종료 | 모집단·증거는 확정, 회수나 전파가 미완. 잔존 범위의 상한을 말할 수 있다 |
 | T3 | 판단 불가 | 모집단을 열거 못 했거나 상태 증거가 없다. 잔존 범위를 산정할 수 없다 |
+
+서버 보유 자격 대상의 `criteria.provider_side`는 자원 서버가 이전 자격을 `rejected`(거부 확인)·`accepted`(수락함)·`unverified`
+(물어볼 수 없어 미확인)로 보인다. 미확인이면 만료 시각만 `expires_at`에 남기고 다른 근거를 만들어 채우지 않는다.
 
 ### 종료 준비도 드릴 (`drill`) — 들일 때 묻는 질문
 - 제공자 배치인데 자격 고지 조항이 없으면 최선 **T3**("C1 성립 불가").
@@ -135,7 +145,27 @@ server-held-credential → credential-check·provider-attestation, endpoint-conf
 - **UR-EMAIL-ASSIST**(고지 없음): 개시 → UNVERIFIABLE 대상 → 판정 **T3** → 위험 수용 없는 종결 거부 →
   고지 요청서 생성 → 위험 수용과 함께 종결 → 복원.
 
-## 7. 구현 함정
+## 7. 진행 중 호출·연결·자격 제거 (D-96~D-99)
+
+차단 시각(cutover)은 DB가 정한다. 개시 트랜잭션이 서버 행을 잠근 뒤 `clock_timestamp()`를 읽고, 모든 전송은 같은 행을 공유 잠금으로
+확인하며 의도를 적는다(`dispatch.record`). 그래서 어느 호출이든 cutover 전에 기록됐거나 이후에 거부된다.
+
+| 상황 | 결과 | 기록되는 증거 | 기준 |
+| --- | --- | --- | --- |
+| cutover 때 최종 검사를 마친 호출 | 전송하지 않음, `MCP-DECOMM-001`, `upstream_attempted=false`, 의도 없음 | `gateway-denial` | C3(차단 후 실행 0), C4 |
+| cutover 뒤 새 호출 | 정책에서 `MCP-DECOMM-001` | `gateway-denial` | C3, C4 |
+| 이 서버·주체의 따뜻한 업스트림 연결 | 개시 즉시 풀에서 제거, 쓰는 중이면 호출이 끝나는 대로 닫음 | `upstream_pool_events` 행(증거 종류 아님) | 새 전송 불가는 위 두 줄이 보증 |
+| 보내고 답이 없던 호출(시간 초과·프로세스 사망) | 의도가 `uncertain`, 같은 쓰기는 `P-RATE-003`, 자동 재시도 없음 | 판정 원장에 없으면 `unknown`에 가산 | C3 미충족 → 케이스 T3 |
+| 폐기한 토큰을 자원 서버에 제시 | 401 | `resource-rejection` | C4, C3(전파 완료) |
+| 자원 서버가 수락 | `accepted`, 케이스는 T1이 될 수 없음 | `resource-rejection` | C3 미충족 → T2 |
+| 자원 서버에 물을 수 없음 | `unverified`, 만료 시각만 기록 | 없음 | 등급 변화 없음, 화면에 미확인 |
+
+자격 제거: 게이트웨이는 자격 파일을 호출마다 다시 읽고 어디에도 쓰지 않는다. 풀의 클라이언트는 만든 때의 헤더를 쥐고 있으므로
+자격이 바뀌거나 빠지면(키 변경) 같은 (엔드포인트, 주체)의 이전 클라이언트를 즉시 닫고, 종료·계정 중지·삭제 때도 닫는다.
+증거·원장·판정서·고지 요청서에는 토큰 값과 끝 8자리가 들어가지 않는다(`tests/termination_lab.py`가 모든 관련 표를 훑는다).
+사용자 PC의 작업 백업·캐시는 게이트웨이가 통제하는 범위가 아니라 검증하지 않았다(엔드포인트 에이전트 영역).
+
+## 8. 구현 함정
 
 - 증거가 회수 시각보다 **앞서** 기록되면 C4가 인정하지 않는다. `revoke_target(at=…)`로 회수 시각을
   cutover(게이트웨이 경로) 또는 관찰 시각(단말·하위 시스템)에 맞춘다.
