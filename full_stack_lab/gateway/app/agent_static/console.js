@@ -6,7 +6,8 @@
  * a menu here is convenience only.
  */
 import { mergeRows, searchRows, liveLabel, hourBuckets, splitBy, sankeyData, harnessLabel, DECISIONS,
-  statusView, dedupeItems, pipelineOf, EVIDENCE, resourceValues, observationRows, listenerCoverage } from "./console-state.mjs";
+  statusView, dedupeItems, pipelineOf, EVIDENCE, resourceValues, observationRows, listenerCoverage,
+  originLabel, denialClass, provenanceView, countView, pager, networkCells, denialCount } from "./console-state.mjs";
 import * as charts from "./charts.mjs";
 
 const { DECISION_LABEL } = charts;
@@ -91,6 +92,18 @@ const VERIFICATION = {
   "provider-attestation": "제공자 증명", stateless: "만료 시각",
 };
 const TARGET_STATUS = { OUTSTANDING: ["alert", "미회수"], REVOKED: ["allow", "회수됨"], EXPIRED: ["allow", "만료"], UNVERIFIABLE: ["block", "확인 불가"] };
+const COLLECTOR = {
+  "config-file": "설정 파일", "proc-socket": "로컬 소켓", "windows-netstat": "로컬 소켓", lsof: "로컬 소켓",
+  "network-probe": "네트워크 탐색", "process-table": "프로세스 표", "journal-apparmor": "커널 로그 · 실행",
+  "journal-nft": "커널 로그 · 네트워크", "windows-event-log": "Windows 이벤트 로그", gateway: "게이트웨이",
+};
+const TRANSFORM = {
+  command_sha256: "명령 해시화", url_sha256: "주소 해시화", drop_env_headers: "환경변수·헤더 제외", truncate: "길이 제한",
+  path_to_basename: "파일명만 유지", journal_field_allowlist: "허용 필드만 추출", drop_raw_message: "원문 제외",
+  event_xml_allowlist: "허용 필드만 추출",
+};
+const transformLabel = (step) => (step.startsWith("server:") ? "서버 · " : "") + (TRANSFORM[step.replace(/^server:/, "")] || step);
+const RECORD_KIND = { config: "MCP 설정", listener: "수신기", "os-event": "엔드포인트 차단", decision: "도구 호출" };
 const ENDPOINT_CLASS = { registered: ["allow", "등록 서버"], shadow: ["block", "미등록 MCP"], "retired-residue": ["alert", "폐기 잔존"] };
 // Observed is never shown as blocked.
 const CONTROL_STATE = {
@@ -376,6 +389,7 @@ async function route() {
   if (view.dataset.page !== id) view.innerHTML = '<p class="skeleton">불러오는 중…</p>';
   view.dataset.page = id;
   const moved = view.dataset.at !== `${id}/${at.arg}`;
+  if (moved && id === "coverage") resetCoveragePaging();
   view.dataset.at = `${id}/${at.arg}`;
   try {
     const out = await ROUTES[id](at.arg, at.query.get("t") || "", at.query);
@@ -801,9 +815,22 @@ ROUTES.activity = async (_, tab, query) => {
   };
 };
 
+const MCP_EVIDENCE_LABEL = { confirmed: "MCP 응답 확인", suspected: "MCP로 추정", unknown: "MCP 여부 미확인" };
+function relatedBody(related) {
+  if (!related) return empty("확인 불가");
+  if (!related.bound) return empty("연결된 엔드포인트 없음");
+  if (!related.records.length) return empty("연관 기록 없음");
+  return html`<table class="data"><thead><tr><th>시각</th><th>종류</th><th>내용</th><th>출처</th></tr></thead><tbody>
+    ${related.records.map((x) => html`<tr><td class="small">${when(x.at, { seconds: true })}</td><td>${chip("outline", RECORD_KIND[x.kind] || x.kind)}</td>
+      <td class="small">${x.kind === "decision" ? html`${decisionChip(x.decision)} <code>${x.title}</code>` : html`${x.denial_class ? chip(...denialClass(x.denial_class)) : ""} ${x.title || "—"}`}</td>
+      <td class="small">${COLLECTOR[x.source] || x.source || "—"}<span class="sub">${x.origin ? originLabel(x.origin) : ""}</span></td></tr>`)}
+    </tbody></table><span class="small muted">±${Math.round(related.window_seconds / 60)}분</span>`;
+}
+
 async function showDecision(id) {
   const r = feed.rows.find((row) => String(row.id) === String(id));
   if (!r) return;
+  const related = viewer.admin && r.device_id ? await gw(`endpoint/correlation?decision_id=${encodeURIComponent(r.id)}`).catch(() => null) : null;
   // The device's current state, beside (never instead of) what the call itself carried.
   const device = viewer.admin && r.device_id ? (await planes().catch(() => null))?.devices.find((d) => d.endpoint_id === r.device_id) : null;
   const conflictChip = (c) => chip((DECISION[c.decision] || [""])[0], `${(DECISION[c.decision] || [, c.decision])[1]} ${c.policy_id}`);
@@ -834,7 +861,9 @@ async function showDecision(id) {
       ["응답 해시", r.response_sha256 ? html`<code>${r.response_sha256}</code>` : ""],
       ["오류", r.error]])}<h3 class="detail-section-title">추적 정보</h3>${kv([
       ["감사 해시", r.evidence_sha256 ? html`<code>${r.evidence_sha256}</code>` : ""],
-      ["Trace ID", r.trace_id ? html`<code>${r.trace_id}</code>` : ""], ["작업 ID", r.task_id]])}` },
+      ["Trace ID", r.trace_id ? html`<code>${r.trace_id}</code>` : ""], ["W3C 추적 헤더", r.traceparent ? html`<code>${r.traceparent}</code>` : ""],
+      ["작업 ID", r.task_id]])}` },
+    ...(viewer.admin && r.device_id ? [{ key: "related", label: "연관 기록", n: related ? related.records.length : undefined, body: relatedBody(related) }] : []),
   ]);
 }
 
@@ -1030,8 +1059,30 @@ let connectorGroups = [];
 // Which control governs each integration and endpoint, with what evidence.
 const STATE_DECISION = { gateway_enforced: "Allow", endpoint_enforced: "Allow", vendor_enforced: "Restrict",
   observed_only: "Alert", unknown_not_enrolled: "", bypass_possible: "Block" };
+const COV_LISTS = { entries: "entries", listeners: "listeners", os_events: "os-events" };
+const covPaging = Object.fromEntries(Object.keys(COV_LISTS).map((key) => [key, { cursors: [null], index: 0, next: null }]));
+const resetCoveragePaging = () => Object.values(covPaging).forEach((state) => Object.assign(state, { cursors: [null], index: 0, next: null }));
+async function covPage(inv, list) {
+  const state = covPaging[list], first = { ...inv.pages[list], rows: inv[list] };
+  const page = !state.index ? first : await gw(`endpoint/inventory/${COV_LISTS[list]}?${new URLSearchParams({
+    limit: first.limit, cursor: state.cursors[state.index], ...(list === "os_events" ? {} : { classification: "shadow,retired-residue" }) })}`);
+  state.next = page.next_cursor;
+  return page;
+}
+const covPager = (list, page) => {
+  const p = pager(covPaging[list], page);
+  return p.count > 1 || p.hasPrev ? html`<div class="pager"><button class="pager-button" type="button" data-act="cov-page" data-list="${list}" data-dir="-1" aria-label="이전 페이지" title="이전 페이지" ${p.hasPrev ? "" : raw("disabled")}>‹</button>
+    <span>${p.number} / ${p.count}</span>
+    <button class="pager-button" type="button" data-act="cov-page" data-list="${list}" data-dir="1" aria-label="다음 페이지" title="다음 페이지" ${p.hasNext ? "" : raw("disabled")}>›</button></div>` : "";
+};
+const covCount = (page, shown) => { const c = countView(page, shown); return { sub: c.label, end: c.truncated ? chip("alert", `일부 표시 ${c.shown}건`) : "" }; };
+const evidenceChip = (state) => { const v = provenanceView({ state }); return v.state === "unreported" ? NONE : chip(v.tone, v.label); };
+const recordRow = (kind, id, cells) => html`<tr class="clickable" tabindex="0" data-act="endpoint-record" data-kind="${kind}" data-id="${id}">${cells}</tr>`;
 ROUTES.coverage = async (_, tab, query) => {
-  const [p, inv, conn] = await Promise.all([planes(), gw("endpoint/inventory"), api("/api/connectors")]);
+  const [p, inv, conn, quality] = await Promise.all([planes(), gw("endpoint/inventory?classification=shadow,retired-residue"), api("/api/connectors"),
+    gw("endpoint/network-quality").catch(() => null)]);
+  const [entriesPage, listenersPage, eventsPage] = await Promise.all([covPage(inv, "entries"), covPage(inv, "listeners"), covPage(inv, "os_events")]);
+  const sampleOf = Object.fromEntries((quality?.devices || []).map((d) => [d.endpoint_id, d]));
   connectorGroups = conn.items;
   const items = dedupeItems(p.items);
   integrationItems = items;
@@ -1042,10 +1093,11 @@ ROUTES.coverage = async (_, tab, query) => {
   const review = conn.summary.pending + conn.summary.expired;
   const coverageSelect = (key, label, choices, cur) => html`<label class="list-search">${label}<select data-coverage-filter="${key}" aria-label="${label}">
     <option value="">전체</option>${Object.entries(choices).map(([k,v]) => html`<option value="${k}" ${k === cur ? raw("selected") : ""}>${Array.isArray(v) ? v[1] : v}</option>`)}</select></label>`;
-  const shadowRows = inv.entries.filter((e) => e.classification !== "registered");
-  const listenerView = listenerCoverage(inv.listeners);
+  const shadowRows = entriesPage.rows.filter((e) => e.classification !== "registered");
+  const listenerView = listenerCoverage(listenersPage.rows);
   const observations = observationRows(inv.agents);
-  const osEvents = inv.os_events || [];
+  const osEvents = eventsPage.rows;
+  const shadowTotal = entriesPage.total + listenersPage.total + eventsPage.total;
   return {
     html: page({
       head: head("통제 범위", { actions: html`<button class="btn" type="button" data-act="connector-policy">커넥터 정책 내보내기</button>` }),
@@ -1073,47 +1125,48 @@ ROUTES.coverage = async (_, tab, query) => {
           ${panel("분류별 상태", items.length ? chartBox("c-cov-matrix", "분류별 통제 상태 항목 수", "lg") : empty("항목 없음"))}
           ${panel("확인 근거", items.length ? chartBox("c-cov-evidence", "항목 상태의 확인 근거 비율", "sm") : empty("항목 없음"))}</div></details></div>` },
         { key: "devices", label: "엔드포인트", n: p.devices.length, hot: p.summary.devices.bypass_possible > 0, body: panel("엔드포인트",
-          html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>플랫폼</th><th>상태</th><th>관리 계정</th><th>점검</th><th>우회 경로</th></tr></thead><tbody>
+          html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>플랫폼</th><th>상태</th><th>관리 계정</th><th>점검</th><th class="num">지연</th><th class="num">실패율</th><th>우회 경로</th></tr></thead><tbody>
             ${p.devices.map((d) => html`<tr><td>${d.endpoint_id ? entityRef(d.endpoint_id) : NONE}<span class="sub">${d.hostname || ""}${d.account ? ` · ${d.account}` : ""}</span></td>
               <td>${d.owner || "—"}</td><td>${PLATFORM[d.platform] || d.platform || "—"}</td><td>${statusPair(d)}</td>
               <td>${d.account_state ? controlChip(d.account_state) : NONE}</td>
               <td>${checksChip(d.checks)}</td>
+              <td class="num nowrap">${networkCells(sampleOf[d.endpoint_id]).latency}</td><td class="num nowrap">${networkCells(sampleOf[d.endpoint_id]).failure}</td>
               <td class="small">${(d.bypass || []).length ? html`<div class="pill-list">${d.bypass.map((b) => chip("block", b))}</div>` : NONE}
-                ${d.kernel_denials_24h ? html`<span class="sub">엔드포인트 차단 24시간 ${d.kernel_denials_24h}건</span>` : ""}</td></tr>`)}
+                ${denialCount(d) ? html`<span class="sub">엔드포인트 차단 24시간 ${denialCount(d)}</span>` : ""}</td></tr>`)}
             </tbody></table>${p.devices.length ? "" : empty("엔드포인트 없음")}`, { flush: true }) },
-        { key: "shadow", label: "미등록·잔존", n: shadowRows.length + listenerView.total + osEvents.length,
-          hot: shadowRows.length + listenerView.total > 0, body: html`<div class="stack">
-          ${panel("발견·차단", (shadowRows.length || listenerView.total || osEvents.length)
+        { key: "shadow", label: "미등록·잔존", n: shadowTotal,
+          hot: entriesPage.total + listenersPage.total > 0, body: html`<div class="stack">
+          ${panel("발견·차단", shadowTotal
             ? chartBox("c-cov-shadow", "엔드포인트별 미등록 설정, 수신기 관측, 차단 기록", "sm") : empty("발견·차단 없음"),
-            { sub: `설정 ${shadowRows.length}건 · 수신기 ${listenerView.total}건 · 차단 ${osEvents.length}건` })}
-          ${panel("엔드포인트 MCP 설정", html`<table class="data"><thead><tr><th>엔드포인트</th><th>설정 파일</th><th>서버</th><th>연결</th><th>분류</th></tr></thead><tbody>
-            ${shadowRows.map((e) => html`<tr><td>${entityRef(e.endpoint_id)}</td><td class="small mono">${e.config_path}</td>
+            { sub: `설정 ${entriesPage.total}건 · 수신기 ${listenersPage.total}건 · 차단 ${eventsPage.total}건` })}
+          ${panel("엔드포인트 MCP 설정", html`<table class="data"><thead><tr><th>엔드포인트</th><th>설정 파일</th><th>서버</th><th>연결</th><th>분류</th><th>출처</th><th>증거</th></tr></thead><tbody>
+            ${shadowRows.map((e) => recordRow("config", e.id, html`<td>${entityRef(e.endpoint_id)}</td><td class="small mono">${e.config_path}</td>
               <td><b>${e.server_label}</b>${e.registry_name ? html`<span class="sub">${e.registry_name}</span>` : ""}</td>
-              <td class="small mono clip">${e.transport} ${short(e.endpoint_ref, 60)}</td><td>${chip(...(ENDPOINT_CLASS[e.classification] || ["outline", "확인 불가"]))}</td></tr>`)}
-            </tbody></table>${shadowRows.length ? "" : empty("미등록·잔존 설정 없음")}`, { flush: true,
-            sub: `최근 수신 최대 200건 · ${shadowRows.length}건` })}
-          ${panel("엔드포인트 수신기", html`<table class="data"><thead><tr><th>시각</th><th>엔드포인트</th><th>출처</th><th>주소·프로세스</th><th>MCP 여부</th><th>분류</th><th>신선도</th></tr></thead><tbody>
-            ${listenerView.rows.map((l) => html`<tr><td class="small">${when(l.observedAt)}</td><td>${entityRef(l.endpointId)}<span class="sub">${l.hostname}</span></td>
-              <td>${l.source}${l.scanStatusLabel ? html`<span class="sub">수집 ${l.scanStatusLabel}</span>` : ""}</td>
+              <td class="small mono clip">${e.transport} ${short(e.endpoint_ref, 60)}</td><td>${chip(...(ENDPOINT_CLASS[e.classification] || ["outline", "확인 불가"]))}</td>
+              <td class="small">${originLabel(e.origin)}</td><td>${evidenceChip(e.provenance_state)}</td>`))}
+            </tbody></table>${shadowRows.length ? "" : empty("미등록·잔존 설정 없음")}${covPager("entries", entriesPage)}`, { flush: true, ...covCount(entriesPage, shadowRows.length) })}
+          ${panel("엔드포인트 수신기", html`<table class="data"><thead><tr><th>시각</th><th>엔드포인트</th><th>출처</th><th>주소·프로세스</th><th>MCP 여부</th><th>분류</th><th>신선도</th><th>증거</th></tr></thead><tbody>
+            ${listenerView.rows.map((l) => recordRow("listener", l.id, html`<td class="small">${when(l.observedAt)}</td><td>${entityRef(l.endpointId)}<span class="sub">${l.hostname}</span></td>
+              <td>${l.source}<span class="sub">${l.origin}</span>${l.scanStatusLabel ? html`<span class="sub">수집 ${l.scanStatusLabel}</span>` : ""}</td>
               <td class="small mono">${l.address}${l.port ? `:${l.port}` : ""}${l.processName !== "—" ? html`<span class="sub">${l.processName}</span>` : ""}${l.serverName !== "—" ? html`<span class="sub">${l.serverName}</span>` : ""}</td>
               <td>${chip(l.evidence === "MCP 응답 확인" ? "plain" : l.evidence === "MCP로 추정" ? "alert" : "outline", l.evidence)}</td>
               <td>${chip(l.classification === "폐기 잔존" ? "alert" : l.classification === "미등록" ? "block" : "outline", l.classification)}</td>
-              <td>${chip(l.freshness === "stale" ? "alert" : l.freshness === "fresh" ? "plain" : "outline", l.freshnessLabel)}</td></tr>`)}
-            </tbody></table>${listenerView.total ? "" : empty("수신기 관측 없음")}`, { flush: true,
-            sub: `최근 수신 최대 200건 · ${listenerView.total}건` })}
+              <td>${chip(l.freshness === "stale" ? "alert" : l.freshness === "fresh" ? "plain" : "outline", l.freshnessLabel)}</td><td>${evidenceChip(l.provenance)}</td>`))}
+            </tbody></table>${listenerView.total ? "" : empty("수신기 관측 없음")}${covPager("listeners", listenersPage)}`, { flush: true, ...covCount(listenersPage, listenerView.total) })}
           ${panel("관측 수집 상태", html`<table class="data"><thead><tr><th>엔드포인트</th><th>관측 범위</th><th>상태</th><th>신선도</th><th>보고 시각</th><th>마지막 성공</th><th class="num">수신 건수</th><th>오류</th></tr></thead><tbody>
             ${observations.map((o) => html`<tr><td>${entityRef(o.endpointId)}</td><td>${o.channelLabel}<span class="sub">엔드포인트 보고</span></td>
               <td>${chip(o.tone, o.stateLabel)}</td><td>${chip(o.freshness === "stale" ? "alert" : o.freshness === "fresh" ? "plain" : "outline", o.freshnessLabel)}</td>
               <td class="small">${when(o.reportedAt, { seconds: true })}</td><td class="small">${when(o.lastSuccessAt, { seconds: true })}</td>
               <td class="num">${o.acceptedCount ?? "—"}</td><td>${o.hasError ? chip("alert", "오류 있음") : NONE}</td></tr>`)}
             </tbody></table>${observations.length ? "" : empty("수집 상태 없음")}`, { flush: true,
-            sub: "최근 보고 180초" })}
-          ${panel("엔드포인트 차단", html`<table class="data"><thead><tr><th>시각</th><th>엔드포인트</th><th>종류</th><th>대상</th></tr></thead><tbody>
-            ${osEvents.map((e) => html`<tr><td>${when(e.observed_at)}</td><td>${entityRef(e.endpoint_id)}</td>
+            sub: `전체 ${observations.length}건` })}
+          ${panel("엔드포인트 차단", html`<table class="data"><thead><tr><th>시각</th><th>엔드포인트</th><th>종류</th><th>분류</th><th>대상</th><th>증거</th></tr></thead><tbody>
+            ${osEvents.map((e) => recordRow("os-event", e.id, html`<td>${when(e.observed_at)}</td><td>${entityRef(e.endpoint_id)}</td>
               <td>${chip("block", e.kind === "network-denied" ? "네트워크 차단" : e.kind === "execution-denied" ? "실행 차단" : "차단 기록")}</td>
-              <td class="mono small">${osEventTarget(e)}</td></tr>`)}
-            </tbody></table>${osEvents.length ? "" : empty("수신된 차단 기록 없음")}`, { flush: true,
-            sub: `최근 수신 최대 200건 · ${osEvents.length}건` })}</div>` },
+              <td>${chip(...denialClass(e.denial_class))}</td>
+              <td class="mono small">${osEventTarget(e)}${e.details?.parent_executable ? html`<span class="sub">${e.details.parent_executable}</span>` : ""}</td>
+              <td>${evidenceChip(e.provenance_state)}</td>`))}
+            </tbody></table>${osEvents.length ? "" : empty("수신된 차단 기록 없음")}${covPager("os_events", eventsPage)}`, { flush: true, ...covCount(eventsPage, osEvents.length) })}</div>` },
         { key: "vendor", label: "벤더 커넥터", n: review, hot: review > 0, body: panel("하네스 커넥터·앱·기능",
           conn.items.length ? html`<table class="data"><thead><tr><th>이름</th><th>하네스</th><th>종류</th><th class="num">사용 PC</th><th>승인</th><th>벤더 콘솔</th><th></th></tr></thead><tbody>
             ${conn.items.map((g) => { const vendor = items.find((i) => i.item_key === g.key)?.vendor_control; return html`<tr class="clickable" tabindex="0" data-act="connector" data-key="${g.key}">
@@ -1140,7 +1193,7 @@ ROUTES.coverage = async (_, tab, query) => {
         return charts.stacked(ids.map((id) => id.slice(0, 18)), [
           { name: "미등록·잔존 설정", color: charts.color("Alert"), data: ids.map((id) => shadowRows.filter((e) => e.endpoint_id === id).length) },
           { name: "수신기 관측", color: charts.color("Restrict"), data: ids.map((id) => listenerView.byEndpoint.find((e) => e.endpointId === id)?.count || 0) },
-          { name: "차단 기록 · 최근 수신 최대 200건", color: charts.color("Block"), data: ids.map((id) => osEvents.filter((e) => e.endpoint_id === id).length) }],
+          { name: "차단 기록", color: charts.color("Block"), data: ids.map((id) => osEvents.filter((e) => e.endpoint_id === id).length) }],
           { horizontal: true }); },
     },
   };
@@ -1829,6 +1882,42 @@ const ACTIONS = {
     reload();
   },
   goto(el) { location.hash = el.dataset.href; },
+  "cov-page"(el) {
+    const state = covPaging[el.dataset.list];
+    if (Number(el.dataset.dir) > 0) {
+      if (!state.next) return;
+      state.cursors[state.index + 1] = state.next;
+      state.index += 1;
+    } else if (state.index) state.index -= 1;
+    reload();
+  },
+  async "endpoint-record"(el) {
+    const [record, related] = await Promise.all([gw(`endpoint/records/${el.dataset.kind}/${el.dataset.id}`),
+      gw(`endpoint/correlation?kind=${el.dataset.kind}&record_id=${el.dataset.id}`).catch(() => null)]);
+    const view = provenanceView(record.provenance);
+    const details = record.details || {};
+    openDrawer(`${RECORD_KIND[record.record_kind]} #${record.id}`, html`<div class="drawer-summary">${record.record_kind === "os-event" ? chip(...denialClass(record.denial_class)) : ""}
+      ${chip("outline", originLabel(record.origin))}<span class="muted small">${when(record.at, { seconds: true })}</span></div>`, [
+      { key: "record", label: "기록", body: kv(record.record_kind === "os-event" ? [
+        ["엔드포인트", record.endpoint_id], ["호스트", record.hostname], ["종류", record.kind === "network-denied" ? "네트워크 차단" : "실행 차단"],
+        ["대상", osEventTarget(record)], ["실행 시도 프로세스", details.parent_executable], ["프로파일", details.profile],
+        ["작업", details.operation], ["발생", when(record.observed_at, { seconds: true })], ["수신", when(record.received_at, { seconds: true })]]
+        : record.record_kind === "listener" ? [
+        ["엔드포인트", record.endpoint_id], ["호스트", record.hostname], ["주소", `${record.address}${record.port ? `:${record.port}` : ""}`],
+        ["프로세스", record.process_name], ["서버", record.server_name], ["MCP 여부", MCP_EVIDENCE_LABEL[record.mcp_evidence]],
+        ["분류", (ENDPOINT_CLASS[record.classification] || [, ""])[1]], ["관측", when(record.observed_at, { seconds: true })]]
+        : [["엔드포인트", record.endpoint_id], ["호스트", record.hostname], ["설정 파일", record.config_path], ["서버", record.server_label],
+        ["연결", `${record.transport} ${short(record.endpoint_ref, 80)}`], ["분류", (ENDPOINT_CLASS[record.classification] || [, ""])[1]],
+        ["보고", when(record.reported_at, { seconds: true })]]) },
+      { key: "source", label: "출처", body: kv([
+        ["출처", originLabel(record.origin)], ["수집기", COLLECTOR[record.provenance?.collector] || record.provenance?.collector],
+        ["수신", when(record.provenance?.received_at, { seconds: true })], ["원본 해시", view.raw === "—" ? "" : html`<code>${view.raw}</code>`],
+        ["보고 해시", view.agent === "—" ? "" : html`<code>${view.agent}</code>`], ["저장 해시", view.server === "—" ? "" : html`<code>${view.server}</code>`],
+        ["대조", view.state === "unreported" ? "" : chip(view.tone, view.label)],
+        ["변환", view.steps.length ? html`<div class="pill-list">${view.steps.map((s) => chip("outline", transformLabel(s)))}</div>` : ""]]) },
+      { key: "related", label: "연관 기록", n: related ? related.records.length : undefined, body: relatedBody(related) },
+    ]);
+  },
   "coverage-filter"(el) {
     const q = new URLSearchParams(current.query);
     if (el.dataset.value) q.set(el.dataset.key, el.dataset.value); else q.delete(el.dataset.key);

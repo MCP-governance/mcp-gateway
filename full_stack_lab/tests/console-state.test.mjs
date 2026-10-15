@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   FEED_LIMIT, mergeRows, searchRows, liveLabel, hourBuckets, splitBy, sankeyData, harnessLabel,
-  observationRows, listenerCoverage,
+  observationRows, listenerCoverage, originLabel, denialClass, provenanceView, countView, pager, networkCells, denialCount,
 } from "../gateway/app/agent_static/console-state.mjs";
 
 const row = (id, fields = {}) => ({
@@ -167,4 +167,46 @@ test("enforced is green only with fresh evidence of a ledger row or a kernel hea
   assert.deepEqual(refused.map((n) => n.state), ["reported", "refused-connection", "none", "not_sent", "not_executed"]);
   const withheld = pipelineOf({ device_id: "d", planes: ["gateway", "endpoint"], attempted: true, executed: true, response: "withheld" });
   assert.deepEqual(withheld.map((n) => n.state), ["signed", "decided", "bound", "executed", "withheld"]);
+});
+
+test("endpoint evidence labels never turn a missing value into a good one", () => {
+  assert.equal(originLabel("automatic"), "자동 수집");
+  assert.equal(originLabel("manual"), "수동 보고");
+  assert.equal(originLabel("os_event"), "운영체제 이벤트");
+  assert.equal(originLabel(null), "—");
+  assert.equal(denialClass("harness_startup")[1], "하네스 기동");
+  assert.equal(denialClass("blocked_attempt")[1], "차단된 시도");
+  assert.equal(denialClass("anything else")[1], "확인 불가");
+
+  const hash = "a".repeat(64);
+  const match = provenanceView({ state: "match", raw_sha256: hash, agent_projection_sha256: hash, server_projection_sha256: hash, transformations: ["command_sha256"] });
+  assert.deepEqual([match.label, match.tone, match.raw, match.steps], ["일치", "allow", "a".repeat(12), ["command_sha256"]]);
+  assert.deepEqual([provenanceView({ state: "mismatch" }).label, provenanceView({ state: "mismatch" }).tone], ["불일치", "block"]);
+  assert.equal(provenanceView(undefined).label, "—");
+  assert.equal(provenanceView({ state: "match", raw_sha256: "not-a-hash" }).raw, "—");
+});
+
+test("totals are reported apart from the window and page navigation follows the cursor", () => {
+  const view = countView({ total: 1234 }, 200);
+  assert.equal(view.label, "전체 1,234건");
+  assert.equal(view.truncated, true);
+  assert.equal(countView({ total: 5 }, 5).truncated, false);
+  assert.equal(countView(undefined, 3).label, "전체 3건");
+  const page = { total: 450, limit: 200, next_cursor: "90" };
+  assert.deepEqual(pager({ index: 0 }, page), { number: 1, count: 3, hasPrev: false, hasNext: true });
+  assert.deepEqual(pager({ index: 2 }, { ...page, next_cursor: null }), { number: 3, count: 3, hasPrev: true, hasNext: false });
+});
+
+test("latency and failure show only a fresh sample and a denial count only a collected channel", () => {
+  assert.deepEqual(networkCells({ state: "fresh", rtt_p50_ms: 12.4, failure_pct: 0 }), { latency: "12 ms", failure: "0%" });
+  assert.deepEqual(networkCells({ state: "fresh", rtt_p50_ms: 3.26, failure_pct: 16.67 }), { latency: "3.3 ms", failure: "16.7%" });
+  for (const sample of [{ state: "stale", rtt_p50_ms: 5, failure_pct: 0 }, { state: "unknown" }, { state: "fresh", rtt_p50_ms: null, failure_pct: 100 }, undefined]) {
+    assert.equal(networkCells(sample).latency, "—");
+  }
+  assert.equal(networkCells({ state: "fresh", rtt_p50_ms: null, failure_pct: 100 }).failure, "100%");
+  assert.equal(networkCells({ state: "fresh", rtt_p50_ms: -1, failure_pct: Number.NaN }).failure, "—");
+  assert.equal(denialCount({ kernel_denials_state: "fresh", kernel_denials_24h: 0 }), "0건");
+  assert.equal(denialCount({ kernel_denials_state: "stale", kernel_denials_24h: 0 }), "수집 중단");
+  assert.equal(denialCount({ kernel_denials_state: "failed", kernel_denials_24h: 0 }), "수집 중단");
+  assert.equal(denialCount({ kernel_denials_state: "unknown", kernel_denials_24h: 0 }), null);
 });
