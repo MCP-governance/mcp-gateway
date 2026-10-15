@@ -26,6 +26,7 @@ CHECKS = Checks("side effects at the dispatch boundary (real Gitea MCP server)")
 GITEA = os.environ["GITEA_ADMIN_URL"].rstrip("/") + "/api/v1"
 AUTH = (os.environ["GITEA_ADMIN_USER"], os.environ["GITEA_ADMIN_PASSWORD"])
 DUPLICATE_OR_CEILING = {"P-RATE-002", "P-RATE-003"}
+ADMIN = "acceptance-admin"
 
 
 async def no_secrets(text):
@@ -256,17 +257,46 @@ async def in_flight_answer_lost_in_process():
     await dispatch.resolve(first["request_id"], "executed", "acceptance-admin", "checked")
 
 
+async def principal_revoked_in_flight():
+    token, title = "boundary-e8", f"revoked-{uuid.uuid4().hex[:8]}"
+    from app import agent_service, upstream
+    header, _ = mint(ADMIN, client_id="console")
+    first = await call(token, f"{title}-warm")
+    CHECKS.ok("before the revocation the principal's call executes and leaves a warm connection",
+              first["upstream_executed"] and any(k[1] == token for k in upstream._pool), outcome=summary([first]))
+    real = dispatch.record
+
+    async def revoke_then_record(*args, **kwargs):
+        dispatch.record = real
+        await agent_service.set_account_status(token, agent_service.AccountStatus(status="disabled"), authorization=header)
+        return await real(*args, **kwargs)
+
+    dispatch.record = revoke_then_record
+    try:
+        outcome = await call(token, title)
+    finally:
+        dispatch.record = real
+    CHECKS.ok("a call already past its final checks when the principal is disabled is not sent",
+              outcome["decision"] == "Block" and not outcome["upstream_attempted"], outcome=summary([outcome]))
+    CHECKS.ok("the downstream took nothing from it", [t for t in await issues(title) if t == title] == [])
+    CHECKS.ok("no warm connection for the principal survives", not [k for k in upstream._pool if k[1] == token])
+    later = await call(token, f"{title}-later")
+    CHECKS.ok("a later call by the disabled principal is refused", later["policy_id"] == "P-INPUT-001" and not later["upstream_attempted"], outcome=summary([later]))
+    left = await db.fetch_one("SELECT count(*) AS n FROM dispatch_intents WHERE request_id=%s", (outcome["request_id"],))
+    CHECKS.ok("the refused call left no dispatch intent", left["n"] == 0)
+
+
 async def main():
     signing_keys()
     secret_scan.labels = no_secrets
     await core.bootstrap()
     status = await core.refresh_catalog("gitea")
     CHECKS.ok("the Gitea MCP server answers and its contract matches the reviewed lock", status["status"] == "READY", status=status["status"])
-    for token in ("boundary-e1", "boundary-e3", "boundary-e4", "boundary-e5", "boundary-e6", "boundary-e7"):
+    for token in ("boundary-e1", "boundary-e3", "boundary-e4", "boundary-e5", "boundary-e6", "boundary-e7", "boundary-e8"):
         await add_principal(token)
-    await add_principal("acceptance-admin", role="admin")
+    await add_principal(ADMIN, role="admin")
     for case in (identical_concurrent, ceiling_concurrent, rate_ceiling, approval_reuse, in_flight_answer_lost_in_process,
-                 crash_between_intent_and_answer):
+                 principal_revoked_in_flight, crash_between_intent_and_answer):
         await CHECKS.case(case.__name__, case())
     stats = await db.fetch_one(
         """SELECT count(*) AS n,

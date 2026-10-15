@@ -103,6 +103,10 @@ async def provider_side():
     collected = await decommission.collect(case, ["gateway"], ADMIN)
     CHECKS.ok("gateway denial evidence is collected for the route and the caller",
               sum(1 for e in collected["collected"] if e["kind"] == "gateway-denial" and e["detail"]["blocked"]) == 2)
+    sessions = await decommission.collect(case, ["session"], ADMIN)
+    session = next(e for e in sessions["collected"] if e["kind"] == "session-termination")
+    CHECKS.ok("the server issues no session to terminate and the request is recorded as request-only evidence",
+              session["detail"]["session_issued"] is False and not decommission.EVIDENCE_KINDS[session["kind"]]["state"], detail=session["detail"])
     target = STATE["targets"]["server-held-credential"]
     token_file = os.environ["GITEA_PROBE_TOKEN_FILE"]
     before = await decommission._resource_verdict()

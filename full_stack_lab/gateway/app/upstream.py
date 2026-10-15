@@ -118,6 +118,7 @@ async def release_pool(endpoint: str | None, principal: str | None, reason: str)
     closed = await close_pool(endpoint, principal)
     await db.execute("INSERT INTO upstream_pool_events(endpoint, principal, reason) VALUES (%s,%s,%s)",
                      (endpoint, principal, reason))
+    await db.execute("DELETE FROM upstream_pool_events WHERE created_at < now() - interval '1 day'")
     return closed
 
 
