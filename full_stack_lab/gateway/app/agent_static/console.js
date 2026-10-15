@@ -462,6 +462,16 @@ ROUTES.overview = async (_, tab) => {
   const devices = (pl?.devices || []).filter((d) => d.endpoint_id);
   const deviceOf = Object.fromEntries(devices.map((d) => [d.endpoint_id, d]));
   const bypass = items.filter((i) => i.state === "bypass_possible").sort((a, b) => (b.bypass || []).length - (a.bypass || []).length).slice(0, 8);
+  const bypassImpact = (item) => {
+    const users = new Set((item.owners || [item.owner]).filter(Boolean)).size;
+    const endpoints = Number(item.pcs) || (item.device ? 1 : 0);
+    return [users ? `사용자 ${users}명` : "", endpoints ? `엔드포인트 ${endpoints}대` : ""].filter(Boolean).join(", ") || "—";
+  };
+  const bypassPaths = (item) => {
+    const paths = item.bypass || [];
+    return html`<div class="pill-list">${paths.slice(0, 2).map((path) => chip("block", path))}
+      ${paths.length > 2 ? chip("outline", `외 ${paths.length - 2}개`) : ""}</div>`;
+  };
   // decision -> sent? -> executed? -> response, for today's tool calls.
   const RESP = Object.fromEntries(Object.entries(RESPONSE).map(([k, [, label]]) => [k, label]));
   const pipe = { nodes: new Map(), links: new Map() };
@@ -487,7 +497,7 @@ ROUTES.overview = async (_, tab) => {
           ["실행 미확인", x.unknown, "alert", "#/activity?execution=unknown"]])}</section>
         <section><h2>현재 상태</h2>${kpiStrip([
         ["통제 적용 기기", devices.filter((d) => d.account_state === "endpoint_enforced").length, "", "#/coverage?t=devices"],
-        ["우회 가능 MCP", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"],
+        ["우회 가능 경로", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"],
           ["종료 조치 필요", term.unresolved_grades, "alert", "#/termination"],
           ["운영 이상 MCP", abnormalServers, "alert", "#/servers"]])}</section>
       </div>`,
@@ -501,13 +511,12 @@ ROUTES.overview = async (_, tab) => {
           </div>`)}
           ${panel("최근 차단 10건", feed.rows.length ? decisionTable(feed.rows) : empty("차단된 호출 없음"), { flush: true, end: html`<a class="btn sm" href="#/activity?decision=Block">차단 로그 <span aria-hidden="true">↗</span></a>` })}
         </div>` },
-        { key: "planes", label: "통제 현황", body: html`<div class="stack"><div class="grid c21">
+        { key: "planes", label: "통제 적용 현황", body: html`<div class="stack">
           ${panel("연동 유형별 통제 상태", items.length ? chartBox("c-ov-matrix", "연동 유형별 통제 상태 항목 수", "lg") : empty("항목 없음"))}
-          ${panel("확인 근거", items.length ? chartBox("c-ov-evidence", "통제 상태의 확인 근거", "sm") : empty("항목 없음"))}</div>
-          ${panel("우회 가능 항목", bypass.length ? html`<table class="data"><thead><tr><th>항목</th><th>분류</th><th>상태</th><th class="num">우회 경로</th></tr></thead><tbody>
+          ${panel("우회 가능 경로", bypass.length ? html`<table class="data"><thead><tr><th>항목</th><th>연동 유형</th><th>영향 범위</th><th>우회 경로</th></tr></thead><tbody>
             ${bypass.map((i) => html`<tr class="clickable" tabindex="0" data-act="goto" data-href="#/coverage?t=items&state=bypass_possible&q=${encodeURIComponent(i.name)}">
               <td><b>${i.name}</b><span class="sub mono">${short(i.target || "", 50)}</span></td><td class="small">${INTEGRATION_CLASS[i.class] || i.class}</td>
-              <td>${statusPair(i)}</td><td class="num bad-text">${(i.bypass || []).length}</td></tr>`)}</tbody></table>` : empty("우회 가능 항목 없음"),
+              <td class="small">${bypassImpact(i)}</td><td>${bypassPaths(i)}</td></tr>`)}</tbody></table>` : empty("우회 가능 경로 없음"),
             { flush: true, end: html`<a class="btn sm" href="#/coverage?t=items&state=bypass_possible">전체</a>` })}</div>` },
         { key: "exec", label: "실행응답", n: x.withheld, hot: x.withheld > 0, body: html`<div class="stack">
           ${panel("판정에서 응답까지", (o.pipeline || []).length ? chartBox("c-ov-pipeline", "오늘 도구 호출의 판정에서 응답 처리까지의 흐름", "xl") : empty("오늘 도구 호출 없음"), { sub: "오늘" })}
@@ -536,9 +545,6 @@ ROUTES.overview = async (_, tab) => {
           data: Object.keys(INTEGRATION_CLASS).map((c) => items.filter((i) => i.class === c && i.state === k).length) })),
         { horizontal: true, onClick: (e) => { const c = Object.keys(INTEGRATION_CLASS)[e.dataIndex]; const st = Object.keys(CONTROL_STATE)[e.seriesIndex];
           if (c && st) location.hash = `#/coverage?t=items&class=${c}&state=${st}`; } }),
-      "c-ov-evidence": () => charts.donut(Object.entries(EVIDENCE).map(([k, ev]) => ({ name: ev.label,
-        value: items.filter((i) => (i.evidence_kind || "none") === k).length,
-        color: charts.color(["", "Alert", "Restrict", "Allow", "Allow"][ev.level]) })).filter((g) => g.value)),
       "c-ov-pipeline": () => charts.sankey({ nodes: [...pipe.nodes.values()], links: [...pipe.links.values()] }),
       "c-ov-response": () => charts.donut([
         { name: "응답 반환", value: Math.max(0, x.executed - x.masked - x.withheld), color: charts.color("Allow") },
