@@ -150,11 +150,14 @@ pac04 if {
     input.request.session_id == i.session_id
 }
 
-# PAC-05: delegated execution uses the intersection of user and agent rights.
+# PAC-05: delegated execution uses the intersection of user and agent rights, and only when the agent
+# is an identity the transport verified. A caller's clientInfo or User-Agent is not that identity, so a
+# call that asserts delegation without one is refused as unsupported, not judged on what it claims.
 pac05 if { input.request.on_behalf_of == false }
 pac05 if {
     input.request.on_behalf_of == true
     d := input.facts.delegation
+    d.actor_verified == true
     d.verified == true
     d.user_id == input.facts.identity.user_id
     d.agent_id == input.facts.identity.agent_id
@@ -391,7 +394,15 @@ deny contains "PAC-01" if { not pac01 }
 deny contains "PAC-02" if { not pac02 }
 deny contains "PAC-03" if { not pac03 }
 deny contains "PAC-04" if { not pac04 }
-deny contains "PAC-05" if { not pac05 }
+delegation_unsupported if {
+    input.request.on_behalf_of == true
+    object.get(input.facts, ["delegation", "actor_verified"], false) != true
+}
+deny contains "PAC-05" if {
+    not pac05
+    not delegation_unsupported
+}
+deny contains "PAC-05-DELEGATION-UNSUPPORTED" if { delegation_unsupported }
 deny contains "PAC-06" if { not pac06 }
 deny contains "PAC-07" if { not pac07 }
 deny contains "PAC-08" if { not pac08 }

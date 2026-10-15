@@ -100,6 +100,11 @@ NOT_EXECUTED, 전송했지만 결과를 확인하지 못하면 UNCONFIRMED(외�
 `internal_repo_url`은 Gitea `mcp` 조직의 사본, `registered_server_id`는 Gateway에 등록한 서버 id, D-48·D-49), `scan_jobs`(과거 코드 감사 작업 기록, 새 작업 없음), `supply_chain_reports`,
 `worker_heartbeats`, `aig_risk_catalog`(AI-Infra-Guard 위험 범주 ↔ 통제 매핑).
 
+D-90~D-92에서 더한 것(`v2_tables.sql`, 모두 멱등): `mcp_intake_requests.provenance`(출처 기록 — 공급 주소·고정 버전·라이선스·배포 파일 해시·사본 대조 결과; 제공자 운영 서비스는 `kind=provider-hosted`와 "해당 없음"),
+`supply_chain_reports.vuln_db_updated_at`(그 검사가 쓴 취약점 DB의 갱신 시각), `accepted_risks`(치명적 발견의 기한부 수용: 신청·커밋·발견 id·사유·수용자·만료),
+`mcp_tools.scope_review`(도구별 목적·자산·행위·외부 목적지), `approval_events`(승인·거부·보류·수용·등록 기록, append-only),
+`audit_annotations`(`decisions.id` 범위의 무효 처리 표시, append-only). Console 등록 서버의 `servers.json` 항목에는 `tool_reviews`와 `provenance`가 들어간다.
+
 Console 등록 서버(D-49)는 DB가 아니라 `REGISTRY_RUNTIME_DIR/servers.json`에 있다 — `servers`(catalog.toml과 같은 모양 +
 `valid_until`·`intake_id`·`registered_by`), `contracts`(등록 때 고정한 도구 해시), `usage_relationships`(`UR-<ID>`), `history`(등록·연장·해제).
 `registry.sync()`가 이 파일을 카탈로그와 함께 `mcp_servers`·`mcp_tools`(`approval_valid_until` = 사용 기한)·`usage_relationships`로 옮긴다.

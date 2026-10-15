@@ -20,6 +20,24 @@ from .contract import canonical_hash
 
 VERSION = "pac15-v1"
 BROKER = "mcp-governance-gateway-broker"
+# Token claims and request headers by which a caller says "I act for someone else" (RFC 8693 act /
+# may_act and the usual spellings). The Gateway has no verified actor identity to judge them with,
+# so any of them makes PAC-05 refuse the call as unsupported (D-94).
+DELEGATION_CLAIMS = ("act", "may_act", "on_behalf_of", "actor", "delegated_by")
+DELEGATION_HEADERS = ("x-on-behalf-of", "x-act-as", "x-delegated-user")
+
+
+def delegation(payload: dict) -> dict:
+    """Whether the call asserts delegation, and what identity an agent could be judged by.
+    The harness name from clientInfo or User-Agent is caller-reported: it is recorded as the
+    source of the agent identity, never as a verified one."""
+    claims, client = payload.get("transport_claims") or {}, payload.get("client") or {}
+    sources = [f"claim:{key}" for key in DELEGATION_CLAIMS if key in claims]
+    sources += [f"header:{name}" for name in client.get("delegation_headers") or [] if name in DELEGATION_HEADERS]
+    harness = client.get("harness") or {}
+    reported = "client_info" if harness.get("name") else "user_agent" if harness.get("user_agent") else "none"
+    return {"asserted": bool(sources), "sources": sources, "verified": False, "actor_verified": False,
+            "agent_identity": {"source": reported, "verified": False}}
 
 
 def ns(value) -> int:
@@ -30,8 +48,18 @@ def ns(value) -> int:
     return int(value * 1_000_000_000) if type(value) in (int, float) else 0
 
 
+_capabilities: dict = {"key": None, "document": None}
+
+
 def capabilities() -> dict:
-    return json.loads((registry.REGISTRY_DIR / "capabilities.json").read_text())
+    """capabilities.json, re-read only when the file changed: the managed-configuration check asks
+    for every server's scope on each connection of a managed device."""
+    path = registry.REGISTRY_DIR / "capabilities.json"
+    status = path.stat()
+    key = (str(path), status.st_mtime_ns, status.st_size)
+    if _capabilities["key"] != key:
+        _capabilities.update(key=key, document=json.loads(path.read_text()))
+    return _capabilities["document"]
 
 
 def under(value: str, prefixes: list[str]) -> bool:
@@ -84,6 +112,28 @@ def scope(principal: dict, server: str, tool: str, action: str, resources: list,
             "valid_from": None, "valid_until": None, "commands": [], "transfer_destinations": []}
 
 
+def visible(principal: dict, server_id: str, tool: str, action: str) -> bool:
+    """Whether tools/list may show this tool to this person. SQL's effective action depends on its
+    parsed statement; other tools keep their reviewed action, because testing every action would
+    expose writes through a read-only capability."""
+    actions = {"r", "w", "x"} if (server_id, tool) == ("postgres", "execute_sql") else {action}
+    return any(scope(principal, server_id, tool, candidate, [])["allowed"] for candidate in actions)
+
+
+def servers_for(principal: dict) -> list[str]:
+    """Servers this person has at least one reviewed, permitted tool on: what tools/list would show
+    them and what a managed harness configuration may carry (D-93)."""
+    usable = []
+    for server_id, spec in sorted(registry.servers().items()):
+        allowed = registry.allowed_principals(server_id)
+        if allowed is not None and principal["token"] not in allowed:
+            continue
+        if any(visible(principal, server_id, tool, action)
+               for tool, action in spec.get("tools", {}).items() if tool in registry.reviewed_tools(server_id)):
+            usable.append(server_id)
+    return usable
+
+
 def leaves(value, path=()):
     if isinstance(value, dict):
         for key, item in value.items():
@@ -114,6 +164,7 @@ async def build(payload: dict, principal: dict, cls, tool: dict | None, contract
     approved = scope(principal, server, feature, cls.action, cls.resources, payload["arguments"])
     execution_profile = capabilities().get("execution_profile", {})
     claims = payload.get("transport_claims") or {}
+    delegated = delegation(payload)
     revoked = bool(claims.get("jti") and await db.fetch_one(
         "SELECT jti FROM agent_revoked_tokens WHERE jti=%s", (claims["jti"],)))
     auth_ok = (claims.get("sub") == principal["user_id"] and claims.get("iss") == ISSUER
@@ -190,14 +241,15 @@ async def build(payload: dict, principal: dict, cls, tool: dict | None, contract
                "action": cls.action, "arguments": arguments, "environment": environment, "targets": targets,
                "data": {"asset_id": cls.primary.id, "grade": cls.data_class},
                "transfer": {"enabled": transfer, "destination_id": destination}, "high_risk": high_risk,
-               "automated": True, "on_behalf_of": False}
+               "automated": True, "on_behalf_of": delegated["asserted"]}
     unresolved = await db.fetch_one(
         """SELECT 1 FROM decisions WHERE user_token=%s AND server_id=%s AND tool_name=%s
            AND upstream_attempted AND NOT upstream_executed AND action IN ('w','x')
            AND request_payload->'arguments'=%s LIMIT 1""", (principal["token"], server, feature, Jsonb(arguments)))
     facts = {"trusted": True, "now_ns": now, "approval": a, "approval_workflow_available": True,
              "classification": {"verified": tool is not None, "high_risk": high_risk, "transfer_required": transfer,
-                                "automated": True, "on_behalf_of": False},
+                                "automated": True, "on_behalf_of": delegated["asserted"]},
+             "delegation": delegated,
              "baseline": {"server_version": (tool or {}).get("observed_server_version", ""),
                           "feature_definition_hash": (tool or {}).get("observed_description_hash", ""),
                           "schema_hash": (tool or {}).get("observed_schema_hash", ""),

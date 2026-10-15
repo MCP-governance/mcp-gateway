@@ -2382,6 +2382,61 @@
         "PAC-05"
       ]
     },
+    "PAC-05-DELEGATION-UNSUPPORTED": {
+      "name": "위임 실행 미지원 차단",
+      "purpose": "에이전트가 사용자를 대신한다고 주장하는 호출은 전송 계층에서 검증한 에이전트 신원이 없으면 실행하지 않는다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-08",
+        "RSK-20"
+      ],
+      "requirement_ids": [
+        "REQ-09",
+        "REQ-21"
+      ],
+      "control_ids": [
+        "CTL-09",
+        "CTL-21"
+      ],
+      "principle_ids": [
+        "PRN-04"
+      ],
+      "owner": "서비스 소유자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "검증된 Gateway PAC 입력",
+      "environments": [
+        "dev",
+        "stage",
+        "prod",
+        "test"
+      ],
+      "inputs": [
+        "pac.request",
+        "pac.facts"
+      ],
+      "condition": "대리 실행을 주장하는데 검증 가능한 전송 계층 에이전트 신원이 없다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 80,
+      "automation": "자동화",
+      "version": "pac15-v1",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-01T00:00:00+09:00",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "opa/policy_test.rego",
+        "tests/pac_delegation_check.py"
+      ],
+      "pac_candidate_id": "PAC-CAND-07",
+      "pac_ids": [
+        "PAC-05"
+      ]
+    },
     "PAC-06": {
       "name": "인증 토큰 검증",
       "purpose": "유효한 토큰으로만 실행한다.",

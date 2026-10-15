@@ -459,7 +459,8 @@ async def console_registration_expires() -> str:
         review = found.json()
         expect([tool["name"] for tool in review["tools"]] == ["fetch"], f"도구 불러오기: {review['tools']}")
         body = {"server_id": server_id, "display_name": "Acceptance fetch", "endpoint": endpoint,
-                "catalog_hash": review["catalog_hash"], "tools": {"fetch": "r"}, "data_class": "public", "valid_days": 1}
+                "catalog_hash": review["catalog_hash"], "tools": {"fetch": "r"}, "data_class": "public", "valid_days": 1,
+                "tool_reviews": {"fetch": {"purpose": "intranet 공개 자료 읽기", "asset": "intranet.bob.local", "destinations": []}}}
         bypass = await client.post(API + "/api/registry/servers", json=body)
         expect(bypass.status_code == 409 and "도입 신청" in bypass.text, f"관리자 직접 등록이 도입 신청을 우회함: {bypass.text[:160]}")
         console = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
@@ -487,11 +488,12 @@ async def console_registration_expires() -> str:
             "intake_kind": "remote-endpoint", "endpoint_url": endpoint, "requested_transport": "streamable-http",
             "purpose": "관리자 본인 신청은 본인이 승인할 수 없는지 확인합니다."})
         own.raise_for_status(); own_id = own.json()["request"]["id"]
-        (await client.post(console + f"/api/mcp-requests/{own_id}/review-contract", json={**scope,
+        self_reviewed = await client.post(console + f"/api/mcp-requests/{own_id}/review-contract", json={**scope,
             "server_id": "acceptance-self", "allowed_principals": [PRINCIPAL['admin']],
             "parameter_constraints": {"fetch": {"type": "object", "additionalProperties": False,
                 "required": ["url", "max_length"], "properties": {"url": {"const": "http://intranet.bob.local/"}, "max_length": {"const": 200}}}},
-            "review_note": "자기 승인 금지를 확인하기 위한 검토 기록입니다."})).raise_for_status()
+            "review_note": "자기 승인 금지를 확인하기 위한 검토 기록입니다."})
+        expect(self_reviewed.status_code == 403, f"신청자 본인이 계약을 검토함: {self_reviewed.status_code}")
         self_approved = await client.post(console + f"/api/mcp-requests/{own_id}/approve",
                                           json={"risk_acceptance": "자기 승인 금지를 확인하는 시험입니다."})
         expect(self_approved.status_code == 403, f"신청자 본인이 승인함: {self_approved.status_code}")

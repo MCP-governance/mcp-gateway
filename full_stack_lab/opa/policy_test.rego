@@ -159,6 +159,7 @@ pac_fixture := {
     },
     "delegation": {
       "verified": true,
+      "actor_verified": true,
       "user_id": "user-1",
       "agent_id": "agent-1",
       "valid_from_ns": 1700000000000000000,
@@ -680,6 +681,55 @@ test_pac_scope_denies_unapproved_action if {
     violation.policy_id == "PAC-09"
 }
 
+
+# ── PAC-05 위임 실행: 검증한 에이전트 신원이 없으면 지원하지 않는다 ───────────
+
+delegated_request(delegation) := object.union(base, {"pac": {
+    "request": pac_fixture.request,
+    "facts": object.union(pac_fixture.facts, {"delegation": delegation})}})
+
+test_delegation_with_verified_actor_still_uses_the_intersection if {
+    result := decision with input as delegated_request(pac_fixture.facts.delegation)
+    result.decision == "Allow"
+    narrowed := object.union(pac_fixture.facts.delegation, {"delegated_actions": ["LIST"]})
+    blocked := decision with input as delegated_request(narrowed)
+    blocked.decision == "Block"
+    blocked.policy_id == "PAC-05"
+}
+
+test_delegation_from_client_reported_agent_is_unsupported if {
+    claimed := object.union(pac_fixture.facts.delegation, {"actor_verified": false,
+        "agent_identity": {"source": "client_info", "verified": false}})
+    result := decision with input as delegated_request(claimed)
+    result.decision == "Block"
+    result.policy_id == "PAC-05-DELEGATION-UNSUPPORTED"
+}
+
+test_delegation_without_any_actor_fact_is_unsupported if {
+    # object.union merges deeply, so the pac document is replaced, not patched.
+    request := object.union(object.remove(base, {"pac"}), {"pac": {"request": pac_fixture.request,
+        "facts": object.remove(pac_fixture.facts, {"delegation"})}})
+    result := decision with input as request
+    result.decision == "Block"
+    result.policy_id == "PAC-05-DELEGATION-UNSUPPORTED"
+}
+
+test_call_that_asserts_no_delegation_is_not_affected if {
+    request := object.union(base, {"pac": {
+        "request": object.union(pac_fixture.request, {"on_behalf_of": false}),
+        "facts": object.union(pac_fixture.facts, {
+            "classification": object.union(pac_fixture.facts.classification, {"on_behalf_of": false}),
+            "delegation": {"verified": false, "actor_verified": false}})}})
+    result := decision with input as request
+    result.decision == "Allow"
+}
+
+test_unsupported_delegation_is_not_relaxed_by_observation if {
+    claimed := object.union(pac_fixture.facts.delegation, {"actor_verified": false})
+    result := decision with input as delegated_request(claimed)
+    result.policy_id == "PAC-05-DELEGATION-UNSUPPORTED"
+    startswith(result.policy_id, "PAC-")
+}
 
 # ── T-LEDGER 관리대장 자체의 정합성 (§12.3) ─────────────────────────────────
 

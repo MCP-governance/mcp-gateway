@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import sys
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 import psycopg
@@ -23,6 +24,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from exit_terms import conclude, investigate, readme
+from provenance import tree_digest
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://mcp:demo-only-change-me@db:5432/mcp_governance")
 WORK_DIR = Path(os.getenv("INTAKE_WORK_DIR", "/work"))
@@ -197,15 +199,42 @@ def sbom_inventory(report: Path) -> dict:
 
 
 def store_report(connection, scanner: str, version: str, source_ref: str, path: Path,
-                 counts: dict[str, int], summary: dict) -> None:
+                 counts: dict[str, int], summary: dict, vuln_db_updated_at: datetime | None = None) -> None:
     connection.execute(
         """INSERT INTO supply_chain_reports(
              scanner, scanner_version, source_ref, report_path, status,
-             critical_count, high_count, medium_count, summary)
-           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+             critical_count, high_count, medium_count, vuln_db_updated_at, summary)
+           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
         (scanner, version, source_ref, str(path), "IMPORTED",
-         counts.get("CRITICAL", 0), counts.get("HIGH", 0), counts.get("MEDIUM", 0), Jsonb(summary)),
+         counts.get("CRITICAL", 0), counts.get("HIGH", 0), counts.get("MEDIUM", 0), vuln_db_updated_at, Jsonb(summary)),
     )
+
+
+def trivy_database() -> datetime | None:
+    """When the vulnerability database behind this scan was built. Unknown stays unknown: the
+    Gateway reads a missing timestamp as a stale scan, never as a fresh one."""
+    result = run(["trivy", "version", "--format", "json"], timeout=60)
+    try:
+        return datetime.fromisoformat(json.loads(result.stdout)["VulnerabilityDB"]["UpdatedAt"]).astimezone(UTC)
+    except (ValueError, KeyError, TypeError, AttributeError):
+        return None
+
+
+def repository_license(report: Path) -> dict | None:
+    """The licence files at the repository root, as Trivy's licence classifier names them."""
+    try:
+        results = json.loads(report.read_text(encoding="utf-8")).get("Results") or []
+    except (OSError, ValueError, AttributeError):
+        return None
+    found = {}
+    for result in results:
+        if result.get("Class") != "license-file":
+            continue
+        for item in result.get("Licenses") or []:
+            path = str(item.get("FilePath") or "")
+            if item.get("Name") and not item.get("PkgName") and "/" not in path:
+                found.setdefault(str(item["Name"]), path)
+    return {"spdx": " AND ".join(sorted(found)), "files": sorted(set(found.values())), "source": "trivy"} if found else None
 
 
 def validate(connection, request: dict) -> None:
@@ -217,6 +246,7 @@ def validate(connection, request: dict) -> None:
     log(f"{request_id} 검증 시작: {url}")
     commit = clone(url, checkout)
     source_ref = f"intake:{owner_repo}@{commit[:12]}"
+    artifact = {"applicable": True, "kind": "source-tree", **tree_digest(checkout)}
     sbom = REPORT_DIR / f"intake-{request_id}-sbom.cdx.json"
     trivy = REPORT_DIR / f"intake-{request_id}-trivy.json"
     semgrep = REPORT_DIR / f"intake-{request_id}-semgrep.json"
@@ -242,7 +272,7 @@ def validate(connection, request: dict) -> None:
         "syft": (sbom, ["syft", f"dir:{checkout}", "--source-name", owner_repo,
                         "--source-version", commit[:12], "-o", f"cyclonedx-json={sbom}"]),
         "trivy": (trivy, ["trivy", "fs", "--scanners", "vuln,misconfig,secret,license",
-                          "--format", "json", "--output", str(trivy), "--exit-code", "0", str(checkout)]),
+                          "--license-full", "--format", "json", "--output", str(trivy), "--exit-code", "0", str(checkout)]),
         "semgrep": (semgrep, ["semgrep", "scan", "--config", str(RULES), "--json",
                               "--output", str(semgrep), "--metrics", "off", "--quiet", str(checkout)]),
         "gitleaks": (gitleaks, ["gitleaks", "dir", str(checkout), "--no-banner", "--redact=100", "--exit-code=0",
@@ -252,6 +282,7 @@ def validate(connection, request: dict) -> None:
     failures = []
     counts = {level: 0 for level in SEVERITY_ORDER}
     components = 0
+    database = None
     for name, (path, command) in scans.items():
         # An old output must not make a retried failed scanner look successful.
         path.unlink(missing_ok=True)
@@ -278,7 +309,10 @@ def validate(connection, request: dict) -> None:
                                 "semgrep": ("Semgrep", "1.172.0"), "gitleaks": ("Gitleaks", "8.30.1")}[name]
             connection.execute("DELETE FROM supply_chain_reports WHERE source_ref=%s AND report_path=%s",
                                (source_ref, str(path)))
-            store_report(connection, scanner, version, source_ref, path, levels, summary)
+            if name == "trivy":
+                database = trivy_database()
+            store_report(connection, scanner, version, source_ref, path, levels, summary,
+                         database if name == "trivy" else None)
             for level in counts:
                 counts[level] += levels[level]
             evidence["reports"].append(path.name)
@@ -294,11 +328,17 @@ def validate(connection, request: dict) -> None:
         connection.commit()
     critical, high, medium = counts["CRITICAL"], counts["HIGH"], counts["MEDIUM"]
     risk = "UNASSESSED" if failures else "CRITICAL" if critical else "HIGH" if high else "MEDIUM" if medium else "LOW"
-    status = "FAILED" if failures else "REJECTED" if critical else "VALIDATED"
+    # A critical finding holds the request: an operator rejects it or accepts the risk for a limited time.
+    status = "FAILED" if failures else "HOLD" if critical else "VALIDATED"
+    connection.execute(
+        "UPDATE mcp_intake_requests SET provenance=%s WHERE id=%s AND status='VALIDATING'",
+        (Jsonb({"kind": "source", "source_url": url, "version": commit, "version_immutable": True,
+                "license": repository_license(trivy), "artifact": artifact,
+                "recorded_at": datetime.now(UTC).isoformat(timespec="seconds")}), request["id"]))
     note = (f"격리 검증 완료 · SBOM 구성요소 {components}개 · "
             f"Critical {critical} / High {high} / Medium {medium} · commit {commit[:12]}")
     if critical and not failures:
-        note += " · 치명적 발견이 있어 자동 거부했습니다."
+        note += " · 치명적 발견이 있어 보류했습니다. 위험 수용 또는 거부가 필요합니다."
     if failures:
         note = "격리 검증 미완료 · " + " · ".join(failures)
     connection.execute(
@@ -340,7 +380,7 @@ def reclaim_intake(connection) -> None:
            SET status=CASE WHEN validation_attempts >= %s THEN 'FAILED' ELSE 'VALIDATION_QUEUED' END,
                validation_lease_expires_at=NULL, updated_at=now(),
                commit_sha=NULL, source_ref=NULL, evidence='{}', validated_at=NULL,
-               risk_level='UNASSESSED',
+               risk_level='UNASSESSED', provenance='{}',
                review_note='검증 워커 lease가 만료되었습니다. 자동 재예약 또는 수동 재검증이 필요합니다.'
            WHERE status='VALIDATING' AND
                  (validation_lease_expires_at IS NULL OR validation_lease_expires_at < now())""",

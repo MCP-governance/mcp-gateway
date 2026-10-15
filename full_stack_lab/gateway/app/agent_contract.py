@@ -9,7 +9,7 @@ from uuid import uuid4
 import jwt
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from . import db
 
@@ -24,6 +24,13 @@ ALGORITHM = "EdDSA"
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+class ToolReview(StrictModel):
+    """What a person approved one tool for: why, on which asset, reaching which outside hosts."""
+    purpose: str = Field(min_length=4, max_length=200)
+    asset: str = Field(min_length=2, max_length=200)
+    destinations: list[str] = Field(default_factory=list, max_length=10)
 
 
 def _key_material(name: str) -> bytes:

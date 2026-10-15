@@ -164,3 +164,75 @@ END $$;
 -- Per-stage wall time of a tools/call in ms (core._Laps). Operational data outside the
 -- audit fingerprint: it says how long the gateway took, not what it decided.
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS timings jsonb;
+
+-- Intake provenance and supply-chain freshness (D-90). The intake worker records where the
+-- code came from and what it hashed to; the vulnerability database timestamp makes a stale
+-- scan visible instead of silently green.
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS provenance jsonb NOT NULL DEFAULT '{}';
+ALTER TABLE supply_chain_reports ADD COLUMN IF NOT EXISTS vuln_db_updated_at timestamptz;
+
+-- A critical finding blocks until an operator accepts it for a limited time (D-90). The row is
+-- the record; an acceptance past expires_at no longer counts and the request returns to hold.
+CREATE TABLE IF NOT EXISTS accepted_risks (
+  id bigserial PRIMARY KEY,
+  intake_id uuid NOT NULL,
+  commit_sha text NOT NULL,
+  critical_count integer NOT NULL,
+  finding_ids jsonb NOT NULL DEFAULT '[]',
+  reason text NOT NULL,
+  accepted_by text NOT NULL,
+  accepted_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL,
+  revoked_at timestamptz,
+  revoked_by text
+);
+CREATE INDEX IF NOT EXISTS accepted_risks_intake_idx ON accepted_risks(intake_id, expires_at DESC);
+
+-- Human-approved scope of every tool a Console registration serves (D-91): purpose, asset,
+-- action and external destinations. A tool without one is not enabled.
+ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS scope_review jsonb;
+
+-- Who approved what, for whom and why (D-92). Append-only like decisions: a correction is a new
+-- event, never an edit.
+CREATE TABLE IF NOT EXISTS approval_events (
+  id bigserial PRIMARY KEY,
+  kind text NOT NULL,
+  outcome text NOT NULL CHECK (outcome IN ('recorded', 'approved', 'rejected', 'refused', 'held')),
+  target_kind text NOT NULL,
+  target_id text NOT NULL,
+  actor text NOT NULL,
+  applicant text,
+  reason text,
+  scope jsonb NOT NULL DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS approval_events_target_idx ON approval_events(target_kind, target_id, id);
+
+-- A decision row that is known to be invalid stays in the ledger (its hash chain must not
+-- change); an annotation says so next to it. first_id..last_id are decisions.id.
+CREATE TABLE IF NOT EXISTS audit_annotations (
+  id bigserial PRIMARY KEY,
+  target_kind text NOT NULL CHECK (target_kind IN ('decision')),
+  first_id bigint NOT NULL,
+  last_id bigint NOT NULL,
+  reason text NOT NULL,
+  created_by text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CHECK (first_id <= last_id),
+  UNIQUE (target_kind, first_id, last_id)
+);
+CREATE INDEX IF NOT EXISTS audit_annotations_range_idx ON audit_annotations(target_kind, first_id, last_id);
+
+CREATE OR REPLACE FUNCTION reject_record_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION '% is append-only', TG_TABLE_NAME;
+END;
+$$;
+DROP TRIGGER IF EXISTS approval_events_append_only ON approval_events;
+CREATE TRIGGER approval_events_append_only
+  BEFORE UPDATE OR DELETE ON approval_events
+  FOR EACH ROW EXECUTE FUNCTION reject_record_mutation();
+DROP TRIGGER IF EXISTS audit_annotations_append_only ON audit_annotations;
+CREATE TRIGGER audit_annotations_append_only
+  BEFORE UPDATE OR DELETE ON audit_annotations
+  FOR EACH ROW EXECUTE FUNCTION reject_record_mutation();

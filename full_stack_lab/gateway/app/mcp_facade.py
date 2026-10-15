@@ -99,6 +99,7 @@ def _client_context(ctx: Any, user: dict) -> dict:
         "oauth_client": claims.get("client_id"),
         "device_id": claims.get("device_id"),
         "traceparent": _traceparent(headers),
+        "delegation_headers": [name for name in pac.DELEGATION_HEADERS if name in headers],
     }
 
 
@@ -117,11 +118,9 @@ async def _approved_tools(role: str, server: str | None = None, principal: str =
         allowed = registry.allowed_principals(row["server_id"])
         if allowed is not None and principal not in allowed:
             continue
-        # SQL's effective action depends on its parsed statement. Other tools keep
-        # their reviewed action; testing every action would expose writes to a
-        # read-only capability.
-        actions = {"r", "w", "x"} if (row["server_id"], row["name"]) == ("postgres", "execute_sql") else {row["action"]}
-        if not person or not any(pac.scope(person, row["server_id"], row["name"], action, [])["allowed"] for action in actions):
+        if row["name"] not in registry.reviewed_tools(row["server_id"]):
+            continue  # a tool nobody scoped is neither listed here nor callable (D-91)
+        if not person or not pac.visible(person, row["server_id"], row["name"], row["action"]):
             continue
         if server:
             # A per-server endpoint is the server as the harness would see it directly:

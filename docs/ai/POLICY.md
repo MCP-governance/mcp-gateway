@@ -2,7 +2,7 @@
 
 > 파일: `full_stack_lab/opa/`
 > - `policy.rego` — 규칙 (`package mcp.authz`, 결과는 `data.mcp.authz.decision`)
-> - `policy_test.rego` — 단위 시험(86건)
+> - `policy_test.rego` — 단위 시험(91건)
 > - `policy_ledger.json` — 정책 목록(정책마다 이름·목적·우선순위·결과·상태·버전·위험/통제 id·의무)
 > - `data.json` — 운영 제한과 자주 바뀌는 값(제한 실행 값, egress 허용 호스트)
 >
@@ -44,6 +44,7 @@
 | 72 | P-RATE-003 | 차단 | 같은 인자의 같은 호출이 아직 실행 중(중복·재생) |
 | 78 | P-DLP-001 | 차단 | 민감정보(주민번호·카드 등) 외부 전송 |
 | 79~89 | INPUT_CONTRACT, POLICY_BUNDLE, PAC-01~15 | 차단·승인 | 사실 계약·정책 버전·승인 실행 범위 검사 |
+| 80 | PAC-05-DELEGATION-UNSUPPORTED | 차단 | 대리 실행을 주장하는데 전송 계층에서 검증한 에이전트 신원이 없음(D-94). Console에는 "지원 안 함"으로 표시 |
 | 90 | P-X-APPROVAL-001 | 승인 | 중요정보의 고위험 실행(x) — 내부 목적지. 외부 반출은 MCP-DATA-EGRESS-001이 먼저 막는다 |
 | 95 | P-UNTRUSTED-CONTENT-001 | 승인 | 비신뢰 콘텐츠 기반 고위험 실행 |
 | 100 | P-VOLUME-001 | 승인 | 중요정보 누적 접근 |
@@ -80,6 +81,9 @@ OPA 입력의 개인정보 관련 필드: `request.pii_types`(Presidio 엔터티
 `opa/pac15.rego`·`decision.rego`의 실행 조건을 `policy.rego`가 Gateway 판정으로 수집합니다.
 `INPUT_CONTRACT`와 `POLICY_BUNDLE`도 집행하며, PAC 차단은 monitor·예외로 완화하지 않습니다.
 `registry/capabilities.json`은 주체·서버·행위·자원·환경·기한을 명시한 제한적 랩 권한입니다.
+Console 등록 서버는 도구마다 사람이 승인한 범위(목적·자산·행위·외부 목적지)가 있어야 켜지고(D-91), 범위가 없는 도구는
+`MCP-REGISTRY-002`로 거부됩니다. 승인 기한 만료·철회·계약 변경은 각각 `P-APPROVAL-EXPIRY-001`·`MCP-REGISTRY-001`·
+`MCP-CATALOG-001`이며 자동 연장은 근거가 그대로일 때만 합니다(D-93).
 원격 도입은 독립 검토·승인을 받은 도구별 `parameter_constraints`가 필요합니다.
 정적 grant의 역할명이나 관리자 지위로 범위를 넓히지 않습니다.
 

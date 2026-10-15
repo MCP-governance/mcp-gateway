@@ -6,7 +6,7 @@ import json
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
 
-from . import db
+from . import db, review
 
 DECISIONS = {"Allow", "Alert", "Restrict", "Approval", "Block"}
 EXECUTIONS = {"executed", "not-sent", "unknown", "withheld"}
@@ -57,7 +57,7 @@ async def events(limit: int = 100, connection=None, **filters) -> dict:
     else:
         rows = await db.fetch_all(query, params)
     more = len(rows) > limit
-    rows = rows[:limit]
+    rows = await review.mark_invalid(rows[:limit], connection=connection)
     return {"events": rows, "has_more": more, "next_before": rows[-1]["id"] if more else None,
             "source": "postgresql/decisions", "projection": "redacted", "filters": filters}
 
@@ -66,7 +66,7 @@ async def detail(event_id: int) -> dict:
     row = await db.fetch_one(f"SELECT {PROJECTION} FROM decisions WHERE id=%s", (event_id,))
     if not row:
         raise HTTPException(404, "감사 이벤트가 없습니다.")
-    return row
+    return (await review.mark_invalid([row]))[0]
 
 
 async def export(limit: int, **filters) -> dict:
