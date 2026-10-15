@@ -278,7 +278,10 @@ async def in_flight_answer_lost_in_process():
 async def principal_revoked_in_flight():
     token, title = "boundary-e8", f"revoked-{uuid.uuid4().hex[:8]}"
     from app import agent_service, upstream
-    header, _ = mint(ADMIN, client_id="console")
+    header, claims = mint(ADMIN, client_id="console")
+    # A Console sign-in records its server-side session; a console token without one is refused.
+    await db.execute("INSERT INTO console_sessions(jti, user_id, expires_at) VALUES (%s, %s, now() + interval '10 minutes')",
+                     (claims["jti"], ADMIN))
     first = await call(token, f"{title}-warm")
     CHECKS.ok("before the revocation the principal's call executes and leaves a warm connection",
               first["upstream_executed"] and any(k[1] == token for k in upstream._pool), outcome=summary([first]))
