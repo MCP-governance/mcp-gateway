@@ -31,7 +31,7 @@
 | PAC-02 | 승인 기준상태 | `MCP-CATALOG-001` — 설명·스키마·서버 버전 해시를 `contracts.lock.json`에 고정하고 **호출 직전 같은 연결에서 다시 대조**(`core._call_upstream`) | 집행 |
 | PAC-03 | 사용 환경 | 관리대장의 `environments`와 `GATEWAY_ENVIRONMENT`를 `in_force()`가 대조 — 환경 밖 정책은 집행되지 않는다 | 집행 |
 | PAC-04 | 요청 주체 | 신원은 **transport 토큰에서만** 온다(`agent_contract.authenticated_user`). 역할·상태는 토큰이 아니라 관리대장에서 읽으므로 계정 정지가 즉시 듣는다. `P-INPUT-001` | 집행 |
-| PAC-05 | 대리 실행 = 사용자 ∩ Agent ∩ 위임 | **구조상 없음.** 이 배치에서 하네스는 인증된 주체가 아니다 — `clientInfo`·User-Agent는 자기 신고라 기록만 하고 판정에 넣지 않는다([SECURITY_BOUNDARIES.md](SECURITY_BOUNDARIES.md) §4). 위임을 판정에 쓰려면 하네스에 장치/앱 증명이 먼저 있어야 한다 | 미구현(의도) |
+| PAC-05 | 대리 실행 = 사용자 ∩ Agent ∩ 위임 | **지원 안 함을 명시(D-94).** 이 배치에서 하네스는 인증된 주체가 아니다 — `clientInfo`·User-Agent는 자기 신고라 "검증 안 된 출처"로 기록만 하고 판정에 넣지 않는다([SECURITY_BOUNDARIES.md](SECURITY_BOUNDARIES.md) §4). `act`·`on_behalf_of` 클레임이나 위임 헤더로 대리 실행을 주장하는 호출은 `PAC-05-DELEGATION-UNSUPPORTED`로 거부한다. 위임을 허용하려면 검증된 에이전트 주체(`facts.delegation.actor_verified`)가 먼저 있어야 한다 | 미지원(거부 집행) |
 | PAC-06 | 토큰 발급자·대상·기간·scope | Ed25519 서명 + `iss`/`aud`/`exp`/`jti` 필수 + 폐기목록 + 관리대장 조회. **2026-09-30 추가**: scope 분리 — PC에 놓이는 `mcp` 토큰으로는 관리 API를 쓸 수 없다 | 집행(강화) |
 | PAC-07 | 서버·Endpoint·최종 접속 대상 조합 | endpoint는 레지스트리가 고정하고 `MCP-EGRESS-001`이 허용 목록과 대조, `MCP-TRANSPORT-001`이 평문 차단. 최종 대상은 `upstream.session`이 **리디렉션을 따르지 않아서**(`follow_redirects=False`) 등록된 곳 외로 가지 않는다 | 집행 |
 | PAC-08 | 기능(서버+유형+ID+정의 해시) 허용목록 | 카탈로그에 없는 도구는 목록에 나오지 않고 호출하면 `MCP-REGISTRY-002`. 정의 해시는 PAC-02와 같은 경로 | 집행 |
@@ -137,7 +137,8 @@ DNS는 조회하지 않는다 — 조회하면 판정과 실제 연결 사이에
 
 ## 4. 아직 아닌 것
 
-- **PAC-05(대리 실행)**: 하네스가 인증된 주체가 아니므로 "사용자 권한 ∩ Agent 권한"을 판정할 근거가 없다.
+- **PAC-05(대리 실행)**: 하네스가 인증된 주체가 아니므로 "사용자 권한 ∩ Agent 권한"을 판정할 근거가 없다. 위임을 주장하는 호출은
+  조용히 무시하지 않고 `PAC-05-DELEGATION-UNSUPPORTED`로 거부한다(2026-10-15).
   헤더로 자기소개한 하네스를 인가 근거로 쓰지 않는다는 기존 결정([BENCHMARK_GATEWAYS.md](BENCHMARK_GATEWAYS.md) §7)을 유지한다.
 - **PAC-13의 승인 다이제스트에 환경·자동 실행·대리 실행을 묶는 것**: 팀원 초안도 이 세 가지를 다이제스트에
   넣지 않아 승인 재사용이 가능하다(시험에서 9건 확인). 우리 `request_fingerprint`는 server·tool·arguments·

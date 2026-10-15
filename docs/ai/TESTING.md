@@ -131,3 +131,14 @@ PC 키트의 관리형 정책을 배포하고 같은 직접 연결이 사라지�
 `./console.sh test`에 `tests/intake_validation_test.py`를 포함한다. Gateway 이미지의 의존성을 사용하지만 네트워크가 없는 별도 컨테이너에서 실행한다. 자동 대기열 등록, 문서의 commit 고정·범위 제한·symlink 제외, 부분 검사 실패 시 증적 보존, 치명점 자동 거부, 관리자 전용 보고서·파일 allowlist, 문서 조사로 원격 승인 게이트를 우회할 수 없는지를 검증한다. 스캐너 단위 회귀의 출력은 fixture이며 실제 공급망 검사 결과와 구분한다.
 
 보안 회귀의 가상 도입 요청은 워커를 잠시 멈춘 상태에서 승인 경계를 시험하고 원복한다. 존재하지 않는 테스트 저장소가 자동 워커에 잡히는 경쟁을 방지한다.
+
+## 승인·출처 회귀 (D-90~D-94, 2026-10-15)
+- 로컬 단위: `tests/provenance_check.py`(해시 두 구현의 일치·조작 탐지·출처 누락), `tests/intake_identity_test.py`(검사 신선도·치명 수용·범위 심사·독립성),
+  `tests/pac_delegation_check.py`, `tests/intake_validation_test.py`(워커·승인 경로). 모두 DB·네트워크를 대역으로 둔 단위 수준이다.
+- Rego: `opa test`(91건) — 위임 4경우(검증됨·클라이언트 보고·사실 없음·위임 아님)를 포함한다.
+- 격리 DB 시험(솔루션 기기, 운영 DB·컨테이너를 건드리지 않음): 새 PostgreSQL 18 + 이 저장소의 `opa/`를 서빙하는 OPA + Gateway 이미지.
+  `tests/intake_identity_pg_check.py`가 실제 SQL·트리거·정책 판정으로 27건을 확인한다 — 독립성 거부 기록, 출처·검사 신선도 보류, 위험 수용 만료,
+  만료·철회·계약 변경 뒤 거부와 갱신 불가, 범위 없는 도구 제외, 하네스 설정의 서버 집합, 위임 거부, 무효 처리와 append-only.
+  MCP 서버(tools/list·최종 전달)·PII 분석기·내부 Git 호출·워커 산출물은 대역이므로 실환경 증거가 아니다.
+- 임시 Gitea 컨테이너 시험: `tests/provenance_gitea_check.py` — 실제 Gitea 1.27.3이 내주는 보관본의 해시가 Git 객체에서 계산한 해시와 같은지.
+- 재생: `tests/policy_replay_lab_check.py`가 `replay_cases_pac15.json`을 격리 OPA에 돌린다.
