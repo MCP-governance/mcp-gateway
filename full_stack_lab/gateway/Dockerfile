@@ -4,9 +4,18 @@ FROM golang:1.24.13-bookworm AS native-go
 WORKDIR /src/gitleaks
 COPY native/gitleaks/ ./
 RUN CGO_ENABLED=1 go build -trimpath -buildmode=c-shared -o /out/libmcpgw_gitleaks.so .
+FROM python:3.12-slim AS native-c
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev libpcre2-dev \
+    && rm -rf /var/lib/apt/lists/*
+COPY native/textscan/textscan.c /src/
+# PCRE2 is linked statically, so the runtime image needs no extra package.
+RUN mkdir /out && gcc -O2 -fPIC -shared -Wall -Wextra -Werror -Wno-unused-parameter -Wno-missing-field-initializers \
+      $(python3-config --includes) /src/textscan.c -o /out/mcpgw_textscan$(python3-config --extension-suffix) \
+      -Wl,-Bstatic -lpcre2-32 -Wl,-Bdynamic
 FROM python:3.12-slim
 COPY --from=secrets /usr/bin/gitleaks /usr/local/bin/gitleaks
 COPY --from=native-go /out/libmcpgw_gitleaks.so /usr/local/lib/
+COPY --from=native-c /out/ /usr/local/lib/python3.12/site-packages/
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY requirements.txt .

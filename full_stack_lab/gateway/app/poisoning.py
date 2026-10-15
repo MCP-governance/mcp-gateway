@@ -33,6 +33,11 @@ import base64
 import json
 import re
 
+try:
+    from .textscan import Scanner
+except ImportError:  # run as a script for the self-check below
+    from textscan import Scanner
+
 class _Both:
     """Every pattern matches somewhere in the text. The same test written as one lookahead per pattern is retried
     from every position, which is quadratic: 100 KB of ordinary tool output took 17 seconds in the event loop."""
@@ -127,13 +132,23 @@ RULES = CATALOG_RULES
 INVISIBLE = re.compile("[​-‏‪-‮⁠-⁤⁦-⁩﻿\U000e0000-\U000e007f]")
 
 
+# One native engine for all three rulesets (each is a prefix of the catalog set) plus the
+# invisible-character rule; it answers exactly as re would (app/textscan.py).
+_ALL = (*CATALOG_RULES, ("보이지 않는 문자", INVISIBLE))
+_SCANNER = Scanner([rule for _, rule in _ALL])
+
+
 def _scan(text: str, rules: tuple) -> list[str]:
+    if rules == CATALOG_RULES[:len(rules)]:
+        which = [*range(len(rules)), len(_ALL) - 1]
+        hits = _SCANNER.hits(text, which)
+        checks = [(label, hits[index]) for index, (label, _) in zip(which, (*rules, _ALL[-1]))]
+    else:
+        checks = [(label, bool(rule.search(text))) for label, rule in (*rules, _ALL[-1])]
     found = []
-    for label, rule in rules:
-        if label not in found and rule.search(text):
+    for label, hit in checks:
+        if hit and label not in found:
             found.append(label)
-    if INVISIBLE.search(text):
-        found.append("보이지 않는 문자")
     return found
 
 
