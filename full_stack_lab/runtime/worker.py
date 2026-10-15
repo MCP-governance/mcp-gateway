@@ -231,6 +231,23 @@ def reclaim(connection) -> None:
     connection.commit()
 
 
+def recover_own(connection, context: dict) -> None:
+    """At start nothing of this worker is running, so a job it still holds was cut off mid-way: its
+    containers go and it returns to the queue now rather than when the lease runs out."""
+    rows = connection.execute(
+        """SELECT * FROM mcp_runtimes WHERE lease_owner=%s AND status IN ('BUILDING','STARTING','VERIFYING')""",
+        (WORKER_ID,)).fetchall()
+    for runtime in rows:
+        left = remove_runtime_resources(runtime, context)
+        connection.execute(
+            """UPDATE mcp_runtimes SET status=CASE WHEN attempts >= %s THEN 'FAILED' ELSE 'QUEUED' END,
+                      error='작업 도중 실행기가 다시 시작되었습니다.', lease_owner=NULL, lease_expires_at=NULL, updated_at=now()
+               WHERE id=%s AND lease_owner=%s AND attempts=%s""",
+            (MAX_ATTEMPTS, runtime["id"], WORKER_ID, runtime["attempts"]))
+        connection.commit()
+        log(f"recovered {runtime['id']} left={left}")
+
+
 def heartbeat(connection) -> None:
     connection.execute(
         """INSERT INTO worker_heartbeats(worker, role, seen_at, detail) VALUES (%s, 'runtime', now(), %s)
@@ -242,7 +259,7 @@ def heartbeat(connection) -> None:
 def approval_problem(connection, runtime: dict, recipes: dict, *, recipe_fixed: bool = True) -> str | None:
     """Why this approval may no longer run, re-read from the database every time it matters."""
     row = connection.execute(
-        """SELECT r.status, r.intake_kind, r.commit_sha, r.repository_url, s.lifecycle
+        """SELECT r.status, r.intake_kind, r.commit_sha, r.repository_url, s.lifecycle, s.status AS server_status
            FROM mcp_intake_requests r LEFT JOIN mcp_servers s ON s.id = r.registered_server_id
            WHERE r.id=%s""", (runtime["intake_id"],)).fetchone()
     if not row or row["status"] != "APPROVED" or row["intake_kind"] != "repository":
@@ -255,6 +272,8 @@ def approval_problem(connection, runtime: dict, recipes: dict, *, recipe_fixed: 
         return "실행 레시피가 예약 이후 바뀌었습니다."
     if row["lifecycle"] in ("TERMINATING", "RETIRED"):
         return "종료 절차가 시작된 이용 관계입니다."
+    if row["server_status"] == "DISABLED":
+        return "게이트웨이 등록이 해제된 신청입니다."
     return None
 
 
@@ -429,12 +448,7 @@ def reconcile(connection, recipes: dict, context: dict) -> None:
     rows = connection.execute("SELECT * FROM mcp_runtimes WHERE status IN ('ACTIVE','STOPPING')").fetchall()
     for runtime in rows:
         if runtime["status"] == "ACTIVE":
-            server = connection.execute(
-                """SELECT s.status, s.lifecycle FROM mcp_intake_requests r JOIN mcp_servers s ON s.id=r.registered_server_id
-                   WHERE r.id=%s""", (runtime["intake_id"],)).fetchone()
             reason = approval_problem(connection, runtime, recipes, recipe_fixed=False)
-            if not reason and server and server["status"] == "DISABLED":
-                reason = "게이트웨이 등록이 해제되었습니다."
             n = names(runtime)
             current = inspect("container", n["container"])
             if not reason and (not current or current["Image"] != runtime["image_id"]):
@@ -466,6 +480,7 @@ def main() -> int:
     while True:
         try:
             with psycopg.connect(DATABASE_URL, row_factory=dict_row, autocommit=False) as connection:
+                recover_own(connection, compose_context())
                 while True:
                     heartbeat(connection)
                     reclaim(connection)

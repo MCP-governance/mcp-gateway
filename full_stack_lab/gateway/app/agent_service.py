@@ -1097,6 +1097,9 @@ async def start_runtime(request_id: UUID, authorization: str | None = Header(def
         raise HTTPException(409, "승인된 소스 신청만 실행할 수 있습니다.")
     if not row.get("internal_repo_url"):
         raise HTTPException(409, "내부 저장소 사본이 없습니다.")
+    server = await db.fetch_one("SELECT status, lifecycle FROM mcp_servers WHERE id=%s", (row.get("registered_server_id"),))
+    if server and (server["status"] == "DISABLED" or server["lifecycle"] in ("TERMINATING", "RETIRED")):
+        raise HTTPException(409, "등록을 해제했거나 종료 중인 신청입니다. 새 도입 신청이 필요합니다.")
     recipe = runtime_recipe(row["repository_url"])
     if not recipe:
         raise HTTPException(409, "이 저장소의 실행 레시피가 없습니다.")

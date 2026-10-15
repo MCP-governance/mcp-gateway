@@ -52,6 +52,35 @@ class Containers(unittest.TestCase):
         self.assertEqual(args[-2:], ["sha256:" + "0" * 64, "--http"], "runs the exact image it built")
 
 
+class FakeConnection:
+    def __init__(self, row):
+        self.row = row
+
+    def execute(self, *_):
+        return self
+
+    def fetchone(self):
+        return self.row
+
+
+class Approval(unittest.TestCase):
+    def test_every_reason_to_stop_a_build(self):
+        recipes = worker.load_recipes(ROOT / "runtime" / "recipes")
+        recipe = recipes["https://github.com/microsoft/markitdown"]
+        job = {**RUNTIME, "source_commit": "c" * 40, "recipe_id": recipe["id"], "recipe_sha256": recipe["sha256"]}
+        ok = {"status": "APPROVED", "intake_kind": "repository", "commit_sha": "c" * 40,
+              "repository_url": recipe["repository"], "lifecycle": "OPERATING", "server_status": "READY"}
+        self.assertIsNone(worker.approval_problem(FakeConnection(ok), job, recipes))
+        for change in ({"status": "HOLD"}, {"commit_sha": "d" * 40}, {"lifecycle": "TERMINATING"},
+                       {"server_status": "DISABLED"}, {"intake_kind": "remote-endpoint"}):
+            self.assertTrue(worker.approval_problem(FakeConnection({**ok, **change}), job, recipes), change)
+        self.assertTrue(worker.approval_problem(FakeConnection(None), job, recipes))
+        moved = {**job, "recipe_sha256": "0" * 64}
+        self.assertTrue(worker.approval_problem(FakeConnection(ok), moved, recipes), "a build follows the queued recipe")
+        self.assertIsNone(worker.approval_problem(FakeConnection(ok), moved, recipes, recipe_fixed=False),
+                          "a running image is not stopped because the recipe file changed")
+
+
 class Egress(unittest.TestCase):
     def test_no_destination_lets_nothing_out(self):
         allow = worker.egress_filter([])
