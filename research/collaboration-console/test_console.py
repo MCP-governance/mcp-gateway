@@ -1,8 +1,9 @@
 import concurrent.futures
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import tempfile
 import threading
@@ -163,6 +164,218 @@ class ConsoleTests(unittest.TestCase):
                 self.assertNotIn("innerHTML", source)
                 self.assertIn("element.textContent = text", source)
             self.assertEqual(server.server_address[0], "127.0.0.1")
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+
+
+FIXTURES = Path(__file__).with_name("fixtures")
+E13 = Path(__file__).resolve().parents[1] / "llm-wiki/analysis/pj1-local-mcp-e13/runs/e13-control-03/C1-stdio-direct.events.jsonl"
+NATIVE = "fce4ba17-77ff-4039-b963-0a810e681142"
+
+
+def fixture_lines(name):
+    return [line for line in (FIXTURES / name).read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+class RunRecordTests(unittest.TestCase):
+    """What the console shows per run comes from the CLI's own output: requested model and effort, the model the provider
+    answered with, a turn error, a usage-limit error, a task failure, zero tool calls, and what the gateway holds.
+    claude-auth-failure.jsonl and codex-model-rejected.jsonl are real CLI output (captured 2026-10-15; the first has its
+    init record trimmed to four keys and the hook records dropped). The usage-limit streams and the Codex success
+    streams are built from the field names of real records and say so."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        self.prompt = self.dir / "request.txt"
+        self.prompt.write_text("Review the current code", encoding="utf-8")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def fake_cli(self, lines, exit_code=0, name="cli"):
+        script = self.dir / f"{name}.py"
+        script.write_text("import json, sys\nsys.stdin.read()\nopen(%r, 'w').write(json.dumps(sys.argv[1:]))\n"
+                          "for line in json.loads(%r):\n    print(line, flush=True)\nraise SystemExit(%d)\n"
+                          % (str(self.dir / f"{name}.argv"), json.dumps(lines), exit_code), encoding="utf-8")
+        prefix = self.dir / f"{name}.json"
+        prefix.write_text(json.dumps([sys.executable, str(script)]), encoding="utf-8")
+        return prefix
+
+    def args(self, prefix, **extra):
+        values = dict(log=str(self.dir / "events.jsonl"), prompt_file=str(self.prompt), prefix_file=str(prefix), executable=None,
+                      task_id="run-check", resume=None, allowed_tools="Read,Grep,Glob", max_turns=15, permission_mode="plan",
+                      cwd=self.tmp.name, model="gpt-test-model", effort="high", sandbox="read-only")
+        values.update(extra)
+        return SimpleNamespace(**values)
+
+    def run_agent(self, runner, prefix, **extra):
+        with redirect_stdout(io.StringIO()):
+            code = runner(self.args(prefix, **extra))
+        runs = console.RunLog(self.dir / "runs.jsonl").snapshot()["runs"]
+        return code, runs[-1]
+
+    def test_real_claude_authentication_failure_is_a_turn_error_without_a_model_or_tool_call(self):
+        code, run = self.run_agent(console.run_claude, self.fake_cli(fixture_lines("claude-auth-failure.jsonl")))
+        self.assertEqual(code, 1)
+        self.assertEqual((run["outcome"], run["error"]["kind"], run["error"]["code"]), ("turn_error", "turn_error", "authentication_failed"))
+        self.assertEqual(run["requested"], {"model": console.MODEL, "effort": console.EFFORT})
+        self.assertEqual(run["observed"]["models"], [])
+        self.assertEqual(run["model_check"], "unreported")
+        self.assertEqual(run["cli_model"], "bogus-model-x")  # what the CLI echoed; never promoted to a provider answer
+        self.assertEqual((run["tool_calls"], run["no_tool_call"]), (0, True))
+        self.assertEqual(run["gateway"]["state"], "unverified")
+        self.assertNotIn("제공자 응답 모델 확인", self.dir.joinpath("events.jsonl").read_text(encoding="utf-8"))
+
+    def test_the_model_the_cli_echoes_at_init_is_not_a_provider_answer(self):
+        lines = fixture_lines("claude-auth-failure.jsonl")
+        lines[0] = json.dumps({"type": "system", "subtype": "init", "model": console.MODEL, "session_id": NATIVE})
+        code, run = self.run_agent(console.run_claude, self.fake_cli(lines))
+        self.assertEqual((run["cli_model"], run["model_check"], run["observed"]["models"]), (console.MODEL, "unreported", []))
+        self.assertNotIn("제공자 응답 모델 확인", self.dir.joinpath("events.jsonl").read_text(encoding="utf-8"))
+
+    def test_real_claude_success_log_confirms_the_model_from_the_provider_answer_and_counts_tool_calls(self):
+        if not E13.exists():
+            self.skipTest("real PJ1 log not in this checkout")
+        run = console.Run("Claude", "t", "t:1", console.MODEL, console.EFFORT)
+        for line in E13.read_text(encoding="utf-8", errors="replace").splitlines():
+            if line.strip().startswith("{"):
+                run.observe_claude(json.loads(line))
+        run.finish(0)
+        record = run.record("final")
+        self.assertEqual((record["outcome"], record["model_check"]), ("completed", "confirmed"))
+        self.assertIn(console.MODEL, record["observed"]["models"])
+        self.assertEqual(record["observed"]["source"], "assistant.message.model")
+        self.assertGreater(record["tool_calls"], 0)
+        self.assertFalse(record["no_tool_call"])
+        self.assertEqual(record["rate_limit"]["status"], "allowed_warning")  # a warning is not a limit error
+        self.assertGreater(record["usage"]["output_tokens"], 0)
+
+    def test_a_provider_answer_from_another_model_is_a_mismatch_not_a_confirmation(self):
+        lines = [json.dumps({"type": "assistant", "message": {"id": "m1", "model": "claude-other-model", "content": [{"type": "text", "text": "hi"}]}})]
+        code, run = self.run_agent(console.run_claude, self.fake_cli(lines))
+        self.assertEqual((code, run["outcome"], run["model_check"]), (1, "model_mismatch", "mismatch"))
+        self.assertEqual(run["observed"]["models"], ["claude-other-model"])
+
+    def test_usage_limit_is_told_apart_from_other_turn_errors(self):
+        notice = {"type": "assistant", "message": {"id": "m", "model": "<synthetic>", "content": [{"type": "text", "text": "You've hit your usage limit. Try again at 9:01 PM."}]},
+                  "error": "rate_limit", "is_api_error_message": True}
+        failed = {"type": "result", "subtype": "success", "is_error": True, "api_error_status": 429, "terminal_reason": "api_error",
+                  "result": "You've hit your usage limit. Try again at 9:01 PM.", "modelUsage": {}}
+        cases = {
+            "assistant error rate_limit": [notice, {**failed, "api_error_status": None}],
+            "status 429 on the result": [{**notice, "error": "unknown"}, failed],
+            "rejected rate-limit event": [{"type": "rate_limit_event", "rate_limit_info": {"status": "rejected", "rateLimitType": "five_hour"}},
+                                          {**failed, "api_error_status": None, "result": "stopped"}],
+        }
+        for name, records in cases.items():
+            with self.subTest(name):
+                code, run = self.run_agent(console.run_claude, self.fake_cli([json.dumps(r) for r in records], name="limit"))
+                self.assertEqual((code, run["outcome"], run["error"]["kind"]), (1, "usage_limit", "usage_limit"))
+                self.assertEqual(run["model_check"], "unreported")
+                self.assertTrue(run["no_tool_call"])
+
+    def test_task_failure_means_the_process_failed_without_a_provider_error(self):
+        code, run = self.run_agent(console.run_claude, self.fake_cli(["not json at all"], exit_code=3))
+        self.assertEqual((code, run["outcome"], run["error"]["code"]), (3, "task_failed", "3"))
+        missing = self.dir / "missing.json"
+        missing.write_text(json.dumps([str(self.dir / "no-such-cli")]), encoding="utf-8")
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            self.assertEqual(console.run_claude(self.args(missing)), 1)
+        self.assertEqual(console.RunLog(self.dir / "runs.jsonl").snapshot()["runs"][-1]["outcome"], "task_failed")
+
+    def test_real_codex_model_rejection_is_a_turn_error_and_reports_no_provider_model(self):
+        code, run = self.run_agent(console.run_codex, self.fake_cli(fixture_lines("codex-model-rejected.jsonl"), exit_code=1, name="codex"))
+        self.assertEqual(code, 1)
+        self.assertEqual((run["outcome"], run["error"]["kind"], run["requested"]), ("turn_error", "turn_error", {"model": "gpt-test-model", "effort": "high"}))
+        self.assertEqual((run["observed"]["models"], run["model_check"]), ([], "unreported"))
+        self.assertTrue(any("Model metadata" in warning for warning in run["warnings"]))
+        self.assertEqual((run["tool_calls"], run["no_tool_call"], run["native_session_id"]), (0, True, "01a13e37-caf3-7c20-a23d-28fb02f2e4b7"))
+        argv = json.loads((self.dir / "codex.argv").read_text())
+        self.assertEqual(argv[:3], ["exec", "--json", "--skip-git-repo-check"])
+        self.assertEqual(argv[argv.index("-m") + 1], "gpt-test-model")
+        self.assertEqual(argv[argv.index("-c") + 1], "model_reasoning_effort=high")
+        self.assertEqual((argv[argv.index("-s") + 1], argv[-1]), ("read-only", "-"))
+
+    def test_codex_usage_limit_and_success_streams(self):
+        failure = lambda info: [{"type": "thread.started", "thread_id": "01a13e37-0000-0000-0000-000000000001"}, {"type": "turn.started"},
+                                {"type": "turn.failed", "error": {"message": "You've hit your usage limit. Try again at 9:01 PM.", **info}}]
+        for info in ({"codex_error_info": "usage_limit_exceeded"}, {}):
+            with self.subTest(info=info):
+                code, run = self.run_agent(console.run_codex, self.fake_cli([json.dumps(r) for r in failure(info)], exit_code=1, name="codex"))
+                self.assertEqual((run["outcome"], run["error"]["kind"]), ("usage_limit", "usage_limit"))
+        item = lambda kind, identifier, **fields: {"type": "item.completed", "item": {"id": identifier, "type": kind, **fields}}
+        done = {"type": "turn.completed", "usage": {"input_tokens": 100, "cached_input_tokens": 50, "output_tokens": 7}}
+        with_tool = [{"type": "thread.started", "thread_id": "01a13e37-0000-0000-0000-000000000002"}, {"type": "turn.started"},
+                     {"type": "item.started", "item": {"id": "item_1", "type": "command_execution"}},
+                     item("command_execution", "item_1", command="echo hi", exit_code=0), item("agent_message", "item_2", text="done"), done]
+        code, run = self.run_agent(console.run_codex, self.fake_cli([json.dumps(r) for r in with_tool], name="codex"))
+        self.assertEqual((code, run["outcome"], run["tool_calls"], run["no_tool_call"], run["usage"]["output_tokens"]), (0, "completed", 1, False, 7))
+        self.assertEqual((run["observed"]["models"], run["model_check"]), ([], "unreported"))  # exec --json never names a model
+        no_tool = [with_tool[0], with_tool[1], item("agent_message", "item_0", text="nothing to run"), done]
+        code, run = self.run_agent(console.run_codex, self.fake_cli([json.dumps(r) for r in no_tool], name="codex"))
+        self.assertEqual((code, run["outcome"], run["tool_calls"], run["no_tool_call"]), (0, "completed", 0, True))
+
+    def test_codex_applied_values_come_from_its_own_session_file_and_only_for_a_valid_thread(self):
+        thread = "01a13e37-caf3-7c20-a23d-28fb02f2e4b7"
+        sessions = self.dir / "sessions" / "2026" / "10" / "15"
+        sessions.mkdir(parents=True)
+        (sessions / f"rollout-2026-10-15T15-20-06-{thread}.jsonl").write_text(
+            json.dumps({"type": "session_meta", "payload": {"id": thread}}) + "\n" +
+            json.dumps({"type": "turn_context", "payload": {"model": "gpt-test-model", "effort": "high", "cwd": "C:/private/path"}}) + "\n", encoding="utf-8")
+        previous = os.environ.get("CODEX_HOME")
+        os.environ["CODEX_HOME"] = str(self.dir)
+        try:
+            self.assertEqual(console.codex_applied(thread), {"model": "gpt-test-model", "effort": "high"})  # no path, no content
+            self.assertIsNone(console.codex_applied("00000000-0000-0000-0000-000000000000"))
+            self.assertIsNone(console.codex_applied("../" * 8))
+        finally:
+            if previous is None:
+                os.environ.pop("CODEX_HOME")
+            else:
+                os.environ["CODEX_HOME"] = previous
+
+    def test_gateway_record_state_comes_only_from_a_counted_query(self):
+        code, run = self.run_agent(console.run_claude, self.fake_cli(fixture_lines("claude-auth-failure.jsonl")))
+        runs = console.RunLog(self.dir / "runs.jsonl")
+        self.assertEqual(run["gateway"], {"state": "unverified", "count": None, "source": None})
+        self.assertEqual(runs.set_gateway(run["run_id"], 0, "decisions id 801-805, window of the run")["gateway"]["state"], "none")
+        self.assertEqual(runs.set_gateway(run["run_id"], 3, "decisions id 806-808")["gateway"], {"state": "recorded", "count": 3, "source": "decisions id 806-808"})
+        for bad in (("no-such-run", 0), (run["run_id"], -1)):
+            with self.assertRaises(ValueError):
+                runs.set_gateway(bad[0], bad[1], "x")
+        self.assertEqual(len(runs.snapshot()["runs"]), 1)  # updates replace the run's state, history stays in the file
+
+    def test_raw_output_stays_private_and_run_records_are_redacted_on_the_way_out(self):
+        lines = fixture_lines("claude-auth-failure.jsonl")
+        code, run = self.run_agent(console.run_claude, self.fake_cli(lines))
+        raw = list((self.dir / "raw").glob("*.jsonl"))
+        self.assertEqual(len(raw), 1)
+        self.assertEqual(raw[0].read_text(encoding="utf-8").splitlines(), lines)
+        log = console.EventLog(self.dir / "events.jsonl")
+        record = console.Run("Claude", "t", "t:secret", console.MODEL, console.EFFORT)
+        record.finish(1, failure="failure with TOKEN=very-secret-value")
+        stored = record.record("final")
+        stored["error"] = {**stored["error"], "message": "failure with TOKEN=very-secret-value"}
+        console.RunLog(self.dir / "runs.jsonl").append(stored)
+        server = console.make_server(0, log)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        base = f"http://127.0.0.1:{server.server_port}"
+        try:
+            with urlopen(base + "/api/runs") as response:
+                body = response.read().decode()
+            self.assertNotIn("very-secret-value", body)
+            self.assertEqual({item["agent"] for item in json.loads(body)["runs"]}, {"Claude"})
+            for path in ("/runtime/raw/" + raw[0].name, "/raw/" + raw[0].name):
+                with self.assertRaises(HTTPError) as error:
+                    urlopen(base + path)
+                self.assertEqual(error.exception.code, 404)
+            with self.assertRaises(HTTPError) as error:
+                urlopen(Request(base + "/api/runs", headers={"Host": "evil.example"}))
+            self.assertEqual(error.exception.code, 403)
         finally:
             server.shutdown()
             server.server_close()

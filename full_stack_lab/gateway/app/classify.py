@@ -108,27 +108,37 @@ class Classification:
 # every git commit and SHA-256 digest a developer mails, so they are not.
 # The same strings feed the Presidio recognizer that masks them in tool results.
 SECRET_PATTERNS = {
-    "aws-access-key": r"\bAKIA[0-9A-Z]{16}\b",
-    "aws-secret-key": r"(?i)aws.{0,20}(?:secret|access).{0,20}[:=]\s*[\"']?[A-Za-z0-9/+=]{40}\b",
-    "github-token": r"\b(?:gh[opusr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{20,})\b",
-    "gitlab-token": r"\bglpat-[0-9A-Za-z_\-]{20,}\b",
-    "slack-token": r"\bxox[abpqr]-[0-9A-Za-z\-]{10,80}\b",
-    "google-api-key": r"\bAIza[0-9A-Za-z\-_]{35}\b",
-    "stripe-key": r"\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}\b",
+    "aws-access-key": r"(?<![0-9A-Za-z])AKIA[0-9A-Z]{16}(?![0-9A-Za-z])",
+    "aws-secret-key": r"(?i)aws.{0,20}(?:secret|access).{0,20}[:=]\s*[\"']?[A-Za-z0-9/+=]{40}(?![0-9A-Za-z])",
+    "github-token": r"(?<![0-9A-Za-z])(?:gh[opusr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{20,})(?![0-9A-Za-z])",
+    "gitlab-token": r"(?<![0-9A-Za-z])glpat-[0-9A-Za-z_\-]{20,}(?![0-9A-Za-z])",
+    "slack-token": r"(?<![0-9A-Za-z])xox[abpqr]-[0-9A-Za-z\-]{10,80}(?![0-9A-Za-z])",
+    "google-api-key": r"(?<![0-9A-Za-z])AIza[0-9A-Za-z\-_]{35}(?![0-9A-Za-z])",
+    "stripe-key": r"(?<![0-9A-Za-z])(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}(?![0-9A-Za-z])",
     # OpenAI keys and the LiteLLM virtual keys this lab issues share the `sk-` form.
-    "sk-api-key": r"\bsk-(?!ant-)(?:proj-|svcacct-|admin-)?[A-Za-z0-9_\-]{20,}\b",
-    "anthropic-key": r"\bsk-ant-(?:api|admin)\d{2}-[A-Za-z0-9_\-]{40,}\b",
-    "jwt": r"\beyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\b",
+    "sk-api-key": r"(?<![0-9A-Za-z])sk-(?!ant-)(?:proj-|svcacct-|admin-)?[A-Za-z0-9_\-]{20,}(?![0-9A-Za-z])",
+    "anthropic-key": r"(?<![0-9A-Za-z])sk-ant-(?:api|admin)\d{2}-[A-Za-z0-9_\-]{40,}(?![0-9A-Za-z])",
+    "jwt": r"(?<![0-9A-Za-z])eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}(?![0-9A-Za-z])",
     "private-key": r"-----BEGIN [A-Z ]*PRIVATE KEY-----",
-    "api-key-assignment": r"(?i)\b(?:(?:x[-_])?api[-_]?key|apikey|api[_-]?token|access[_-]?token|auth[_-]?token"
-                          r"|bearer[_-]?token|client[_-]?secret)\b\s*[:=]\s*[\"']?[A-Za-z0-9_\-./+]{20,}",
+    "api-key-assignment": r"(?i)(?<![0-9A-Za-z])(?:(?:x[-_])?api[-_]?key|apikey|api[_-]?token|access[_-]?token|auth[_-]?token"
+                          r"|bearer[_-]?token|client[_-]?secret)(?![0-9A-Za-z])\s*[:=]\s*[\"']?[A-Za-z0-9_\-./+]{20,}",
 }
+# Korean glues particles to a number or a word ("010-1234-5678입니다"), and \b treats Hangul as a word character, so
+# none of the patterns below may rely on it: a number followed by a particle was invisible to the outbound check
+# (tests/korean_pii_eval.py measured it on synthetic samples).
 DLP_PATTERNS = {
-    "kr-rrn": re.compile(r"\b\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])-?[1-4]\d{6}\b"),
-    "card-number": re.compile(r"\b(?:\d{4}[- ]?){3}\d{4}\b"),
-    "kr-mobile": re.compile(r"\b01[016789]-?\d{3,4}-?\d{4}\b"),
+    "kr-rrn": re.compile(r"(?<![0-9A-Za-z])\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[- ]?[1-8]\d{6}(?![0-9])"),
+    "card-number": re.compile(r"(?<![0-9A-Za-z])(?:\d{4}[- ]?){3}\d{4}(?![0-9])"),
+    "kr-mobile": re.compile(r"(?<![0-9A-Za-z])(?<![0-9A-Za-z]-)(?:\+?82[-. ]?(?:\(0\)|0)?[-. ]?|\(?0)1[016789]\)?[-. ]?\d{3,4}[-. ]?\d{4}(?![0-9])"),
     **{label: re.compile(pattern) for label, pattern in SECRET_PATTERNS.items()},
-    "password-assignment": re.compile(r"(?i)\b(password|passwd|pwd|secret)\s*[=:]\s*\S{6,}"),
+    "password-assignment": re.compile(r"(?i)(?<![A-Za-z0-9])(?:[A-Za-z0-9]+[_-]){0,4}(?:password|passwd|pwd|secret)\s*[=:]\s*\S{6,}"
+                                      r"|(?<![A-Za-z0-9])(?:비밀번호|패스워드|암호|비번)(?:\s*[:：=]\s*|(?:는|은|이|가)\s*)[A-Za-z0-9!-/:-@\[-`{-~]\S{5,}"),
+    # Identifiers with no shape of their own are labelled only behind the word that names them.
+    "kr-business-number": re.compile(r"(?:사업자\s*(?:등록\s*)?번호|biz[_ ]?(?:no|number))[\"']?\s*(?:는|은|이|가)?\s*[:：=]?\s*[\"']?\s*\d{3}-?\d{2}-?\d{5}(?![0-9])", re.IGNORECASE),
+    "kr-account": re.compile(r"(?:계좌\s*번호|계좌|입금\s*계좌|환불\s*계좌)[^\d\n]{0,14}(?!(?:19|20)\d{2}-\d{2}-\d{2}(?![0-9]))\d{2,6}(?:-\d{2,8}){1,3}(?![0-9])"
+                             r"|(?:account[_ ]?(?:no|number)|account(?=[\"']?\s*[:：=]))[\"']?\s*[:：=]?\s*[\"']?\s*(?!(?:19|20)\d{2}-\d{2}-\d{2}(?![0-9]))\d{2,6}(?:-\d{2,8}){1,3}(?![0-9])", re.IGNORECASE),
+    "kr-passport": re.compile(r"(?:여권\s*번호|passport[_ ]?(?:no\.?|number)?)[\"']?\s*(?:는|은|이|가)?\s*[:：=]?\s*[\"']?\s*[A-Z]\d{3}[A-Z0-9]\d{4}(?![0-9A-Za-z])", re.IGNORECASE),
+    "kr-driver-license": re.compile(r"(?<![0-9])\d{2}-\d{2}-\d{6}-\d{2}(?![0-9])"),
     "confidential-marker": re.compile(r"대외비|\bCONFIDENTIAL\b|기밀|급여|salary", re.IGNORECASE),
 }
 
@@ -855,6 +865,16 @@ if __name__ == "__main__":
                         ("aws-secret-key", "aws_secret_access_key = " + fake),
                         ("api-key-assignment", "client_secret: " + fake)):
         assert label in dlp_scan(text), (label, dlp_scan(text))
+    # Korean glues a particle to the value; \b is not a boundary there (tests/korean_pii_eval.py).
+    for label, text in (("kr-rrn", "주민번호는991231-3123456입니다"), ("kr-mobile", "연락처는 010-0000-1234이며"),
+                        ("kr-mobile", "+82 10-0000-1234"), ("kr-business-number", "사업자등록번호: 251-55-79895"),
+                        ("kr-account", "국민은행 계좌번호는 799604-52-4520입니다"), ("kr-passport", "여권번호: M75620909"),
+                        ("kr-driver-license", "운전면허번호 13-37-328861-65"), ("password-assignment", "비밀번호는 Pw1234abcd!입니다"),
+                        ("password-assignment", "DB_PASSWORD=hunter2hunter"), ("aws-access-key", "키는AKIA" + "A1B2C3D4E5F6G7H8" + "입니다")):
+        assert label in dlp_scan(text), (label, dlp_scan(text))
+    for ordinary in ("주문번호 20261015-0001234 출고", "SKU-010-1234-5678 재고", "계좌 개설일 2026-10-15", "회원번호 M12345678",
+                     "비밀번호는 영문과숫자를조합해야 합니다", "연락처를 남겨 주세요 (예: 010-xxxx-xxxx)", "서버 02-12-2026 점검"):
+        assert dlp_scan(ordinary) == [], (ordinary, dlp_scan(ordinary))
     # What a developer mails every day must not read as a credential.
     for ordinary in ("commit 9f1c2ab34de56f7890a1b2c3d4e5f60718293a4b merged",
                      "sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",

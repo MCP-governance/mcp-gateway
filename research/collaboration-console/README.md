@@ -36,8 +36,45 @@ EventLog().append("Codex", "check", "solution-audit", "passed", "수행한 검�
 python -X utf8 research/collaboration-console/console.py claude --task-id claude-audit --prompt-file research/collaboration-console/runtime/claude-request.txt --executable claude --allowed-tools Read,Grep,Glob --permission-mode plan --max-turns 30
 ```
 
-현재 요청 모델은 **`claude-sonnet-5-5`**, effort는 **`xhigh`**로 고정되어 있습니다. 사용자가 다른 모델을 지정하면 이 설정을 먼저 바꿉니다. 지원되지 않거나 CLI가 다른 모델을 반환하면 실패로 기록하고 자동 대체하지 않습니다. CLI `system.model` 또는 `assistant.message.model`이 요청과 일치하면 모델 확인 결과를 기록합니다. effort의 서버 적용 여부는 해당 필드 없이 독립적으로 확인할 수 없습니다. API의 보조 모델 사용량은 주 모델 확인과 구분합니다.
+현재 요청 모델은 **`claude-sonnet-5-5`**, effort는 **`xhigh`**로 고정되어 있습니다. 사용자가 다른 모델을 지정하면 이 설정을 먼저 바꿉니다. 지원되지 않거나 CLI가 다른 모델을 반환하면 실패로 기록하고 자동 대체하지 않습니다. **응답 모델은 제공자 응답이 실어 온 값만 인정합니다**: `assistant.message.model`(실제 응답)과 `result.modelUsage`의 모델 이름. `system.init.model`은 CLI가 해석한 요청 값을 되돌려 줄 뿐이라(존재하지 않는 모델을 요청해도 그대로 돌아옵니다) `cli_model`로만 남기고 확인으로 세지 않습니다. effort의 서버 적용 여부는 해당 필드 없이 독립적으로 확인할 수 없습니다. `modelUsage`에 요청과 다른 보조 모델이 있어도 주 모델 확인과 구분합니다.
 Claude Code 자체가 만드는 로컬 알림의 모델 필드 `<synthetic>`는 실제 제공자 모델이 아니므로 모델 비교에서만 제외합니다. 해당 알림의 공개 본문은 그대로 기록하며 다른 실제 모델 이름은 계속 거부합니다.
+
+## 실행 기록 (실행마다 한 줄)
+
+`runtime/runs.jsonl`은 Claude·Codex 실행마다 추가만 하는 기록이며 마지막 레코드가 그 실행의 현재 상태입니다. 화면의 **실행 기록**과 `GET /api/runs`가 이 값을 보여 줍니다. 모든 값은 CLI의 실제 출력에서만 채웁니다. 요청한 값으로 응답 모델을 채우거나 없는 오류를 만들지 않습니다.
+
+| 항목 | 값 | 출처 |
+| --- | --- | --- |
+| 요청 모델·강도 | `requested` | 실행에 넘긴 인자 |
+| 응답 모델 | `observed.models`, `observed.usage_models`, `model_check` = `confirmed`·`mismatch`·`unreported` | Claude: 위 두 필드. Codex `exec --json`은 응답 모델을 보고하지 않으므로 항상 `unreported`(공개 이슈 openai/codex#14736) |
+| 턴에 적용된 값 | `applied` | Codex 세션 파일의 `turn_context`(요청 쪽 값이며 응답이 아님, 모델·강도 두 키만 읽음) |
+| 결과 | `outcome` = `completed`·`turn_error`·`usage_limit`·`task_failed`·`model_mismatch`·`cancelled`·`running` | 아래 |
+| 도구 호출 | `tool_calls`, `no_tool_call`(끝난 실행이 0건일 때) | Claude `tool_use` 블록, Codex `command_execution`·`mcp_tool_call`·`file_change`·`web_search` 항목 |
+| 게이트웨이 기록 | `gateway.state` = `unverified`·`none`·`recorded` | 아래 |
+
+- **턴 오류**: 제공자·CLI가 턴을 오류로 끝냈다. Claude는 `assistant.error`(예: `authentication_failed`)나 `result.is_error`·`error_*` 유형, Codex는 `turn.failed`·`error`.
+- **사용량 한도**: 위 오류 중 한도 신호가 있는 것. `assistant.error = rate_limit`, `result.api_error_status = 429`, `rate_limit_event.status = rejected`, Codex `codex_error_info = usage_limit_exceeded`, 또는 오류 본문의 한도 문구. `rate_limit_event`의 `allowed_warning`은 한도 오류가 아니다(실행의 `rate_limit`에 값만 남긴다).
+- **작업 실패**: 제공자 오류 없이 프로세스가 실패했다(종료 코드 0이 아님, 완료 결과 레코드 없음, CLI를 시작하지 못함).
+- **도구 호출 0건**: 오류든 정상이든 도구 호출이 0건인 끝난 실행에 붙는 표지. 한도 오류로 시작도 못 한 실행이 게이트웨이에 기록이 없는 것은 게이트웨이 결함이 아니다.
+- **게이트웨이 기록**: 콘솔은 게이트웨이를 조회하지 않는다. 기본은 `unverified`다. 실행 시간대의 게이트웨이 판정 기록을 실제로 조회한 사람이 건수를 넘긴다.
+
+```powershell
+python -X utf8 research/collaboration-console/console.py gateway-records --run-id <CLAUDE_SESSION 또는 CODEX_SESSION 값> --count 0 --source "decisions id 801-805 조회"
+```
+
+`--count 0`은 `none`, 1 이상은 `recorded`로 남고 화면은 도구 호출 수와 함께 읽습니다("호출 자체가 없음"과 "호출은 있었으나 기록 없음"을 구분).
+
+원시 CLI 출력은 `runtime/raw/<실행 ID>.jsonl`에 마스킹 없이 그대로 보관하며 Git에 올리지 않고 HTTP로 제공하지 않습니다. 화면·`/api/runs`·이벤트 기록은 마스킹한 값만 씁니다.
+
+한계: 사용량 한도 분류는 실제 출력에서 본 필드(`rate_limit_event`, `assistant.error`, Codex 세션 파일의 `usage_limit_exceeded`)와 문구에 기댄다. Claude의 한도 거부 출력은 이 PC에서 직접 재현하지 못했고, 시험은 실제 레코드의 필드 이름으로 만든 스트림을 쓴다(시험 파일에 표시). Codex 성공 스트림은 공개 문서의 항목 유형(`agent_message`, `command_execution`, `turn.completed`)을 따르며 이 PC의 Codex가 모델 미지원 오류를 내서 성공 실행을 직접 받지 못했다.
+
+## Codex CLI 공개 출력 연결
+
+```powershell
+python -X utf8 research/collaboration-console/console.py codex --task-id codex-audit --prompt-file research/collaboration-console/runtime/codex-request.txt --model <요청 모델> --effort <강도> --sandbox read-only
+```
+
+요청은 `codex exec --json --skip-git-repo-check -s <sandbox> -m <model> -c model_reasoning_effort=<effort> -`의 stdin으로 전달합니다. 공개 `agent_message` 본문과 도구 호출의 **종류**만 이벤트 기록에 남기고 명령·결과는 남기지 않습니다. WSL의 Codex를 쓰면 `--prefix-file`에 인자 배열을 저장합니다(Claude와 같음).
 
 WSL CLI를 쓸 때 `runtime/claude-prefix.json`에 **인자 배열**을 저장합니다. `--cd` 경로는 실제 저장소 WSL 경로로 바꿉니다.
 
@@ -68,4 +105,4 @@ python -X utf8 research/collaboration-console/test_console.py
 python -X utf8 research/llm-wiki/tools/check_wiki.py
 ```
 
-검사는 다중 작성 보존, 잘못된 이벤트, 비밀·내부 사고 제외, HTTP 읽기 전용·localhost 제한·경로 탐색 차단과 안전한 화면 렌더링을 확인합니다. 실제 브라우저와 실제 Claude CLI 호출은 별도 검증 결과를 기록합니다.
+검사는 다중 작성 보존, 잘못된 이벤트, 비밀·내부 사고 제외, HTTP 읽기 전용·localhost 제한·경로 탐색 차단과 안전한 화면 렌더링을 확인합니다. 실행 기록은 실제 CLI 출력(`fixtures/`의 Claude 인증 실패·Codex 모델 거부, 저장소에 보존된 PJ1 성공 로그)으로 요청 대비 응답 모델, 턴 오류·사용량 한도·작업 실패의 구분, 도구 호출 0건, 게이트웨이 기록 상태, 원시 출력의 비공개를 확인합니다. 실제 브라우저와 실제 Claude CLI 호출은 별도 검증 결과를 기록합니다.

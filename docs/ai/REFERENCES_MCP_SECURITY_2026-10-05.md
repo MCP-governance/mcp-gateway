@@ -19,7 +19,7 @@
 
 | # | 자료 | 확인 | 내용 | 쓸 곳 |
 | --- | --- | --- | --- | --- |
-| 4 | [MCPTox (arXiv 2508.14925)](https://arxiv.org/abs/2508.14925) | ○ | 실제 MCP 서버 45개·도구 353개 기반 도구 오염 시험 1,312건, 10개 위험 범주. 모델 20종 중 최고 성공률 72.8%, 거부율 3% 미만 | `poisoning.py` 탐지율을 재는 **시험 코퍼스** 후보(지금은 garak latent-injection으로 쟀음). 데이터 공개 여부·라이선스 확인 필요 |
+| 4 | [MCPTox (arXiv 2508.14925)](https://arxiv.org/abs/2508.14925) | ○ | 실제 MCP 서버 45개·도구 353개 기반 도구 오염 시험 1,312건, 10개 위험 범주. 모델 20종 중 최고 성공률 72.8%, 거부율 3% 미만 | `poisoning.py` 탐지율을 재는 **시험 코퍼스** 후보(지금은 garak latent-injection으로 쟀음). 2026-10-15 확인: 공개 저장소 `zhiqiangwang4/MCPTox-Benchmark`(커밋 f85189f, 라이선스 파일 없음 → 읽기만 하고 재배포하지 않음)에 오염 설명 485건과 정상 서버 45개의 정상 설명 342건이 있어 `tests/inspection_corpus_eval.py`가 계약 규칙을 잰다(탐지 0.272 → 0.524, 정상 오탐 0/342, D-100) |
 | 5 | [MCP Security Bench (arXiv 2510.15994)](https://arxiv.org/html/2510.15994v1) | ○ | MCP 대상 공격 벤치마크 | 공격 분류 체계 비교 |
 | 6 | [CASCADE (arXiv 2604.17125)](https://arxiv.org/pdf/2604.17125) | ○ | MCP 시스템용 **계층형 로컬 방어**의 구성요소 제거 실험과 코퍼스 감사 | 우리 다층 구조(계약 해시→poisoning→PAC→DLP)의 계층별 기여도를 같은 방식으로 재는 설계 참고 |
 | 7 | [Five-Plane Reference Architecture (arXiv 2606.12320)](https://arxiv.org/pdf/2606.12320) | ○ | 운영 AI 에이전트 런타임 거버넌스 5평면 참조 구조 | 우리 "평면" 설계([CONTROL_PLANES](CONTROL_PLANES_2026-10-01.md))와 용어·분할 비교 |
