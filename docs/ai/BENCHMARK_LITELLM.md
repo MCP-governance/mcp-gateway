@@ -1,5 +1,7 @@
 # LiteLLM MCP 게이트웨이 벤치마킹 (2026-09-26)
 
+> **2026-10-15 읽기 기준:** 아래 1.89.4 설치 소스와 당시 MINT 대조는 과거 기록이다. [1.102.0 고정 소스 요약](../../research/llm-wiki/solutions/litellm.md)·Compose 1.102.1·평가 후보 1.105.0을 한 판본으로 합치지 않는다. [OSS 분석 감사·보완 계획](../../research/llm-wiki/analysis/oss-audit/README.md)에 resolver 전체 경로·세션/회수·오류 fallback의 후속 범위를 정리했다. 아래 “앞섬/동등”은 현재 제품의 동등 조건 비교 검증을 뜻하지 않는다.
+
 > 이 랩이 LLM 게이트웨이로 쓰는 LiteLLM에는 **MCP 게이트웨이 기능**이 따로 있다. v1~v3를 설계하면서 이 기능을 비교하지
 > 않았고, 이 문서가 그 비교다. 반영한 것은 D-39·D-40, 다음 후보는 [ROADMAP.md](ROADMAP.md) 1절에 옮겼다. 1.104 재조사와 다른 제품은 [BENCHMARK_GATEWAYS.md](BENCHMARK_GATEWAYS.md).
 >

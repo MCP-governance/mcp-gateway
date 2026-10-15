@@ -1,5 +1,7 @@
 # Microsoft MCP 관련 공개 소스 분석 — 2026-09-30 정정·상세본
 
+> **2026-10-15 읽기 기준:** [OSS 분석 감사·보완 계획](../../research/llm-wiki/analysis/oss-audit/README.md)에서 clone·읽은 범위·미확인 경로를 정리했다. 아래는 선택 소스의 과거 관찰이며, “없음/우위”를 Microsoft 전체나 현재 판본의 기능/성능 결론으로 쓰지 않는다. 현재 고정 근거는 [Gateway](../../research/llm-wiki/solutions/ms-mcp-gateway.md)·[Wassette](../../research/llm-wiki/solutions/ms-wassette.md) 요약을 함께 읽는다. 전체 본문 재검증·동등 실행 비교는 남아 있다.
+
 ## 범위와 결론
 
 [microsoft/mcp-gateway](https://github.com/microsoft/mcp-gateway/tree/3594c4eee36308ac131aad1c946ea14140b4353d)의

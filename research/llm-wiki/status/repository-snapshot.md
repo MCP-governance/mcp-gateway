@@ -1,39 +1,25 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-15T19:23:12+09:00
+확인 시각: 2026-10-15T19:54:27+09:00
 
-HEAD: `1ad6395e9c357195294aa20ed959b2bebf5b8710` · 로컬 브랜치: `10/15-wiki-consolidation`
+HEAD: `f84796dbd958a5ae44c54628b35e7e4a36628a50` · 로컬 브랜치: `10/15-oss-analysis-audit`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M README.md
- M research/llm-wiki/CLAUDE.md
+M docs/ai/BENCHMARK_AGT_2026-10-05.md
+ M docs/ai/BENCHMARK_IBM_CONTEXTFORGE.md
+ M docs/ai/BENCHMARK_LITELLM.md
+ M docs/ai/BENCHMARK_MICROSOFT.md
  M research/llm-wiki/README.md
- M research/llm-wiki/analysis/README-code.md
  M research/llm-wiki/analysis/README.md
- M research/llm-wiki/analysis/code-structure.json
- M research/llm-wiki/analysis/integration-cases.json
- M research/llm-wiki/analysis/requirements.json
- M research/llm-wiki/catalogs/solutions.json
- M research/llm-wiki/integrations/README.md
- M research/llm-wiki/papers/README.md
- M research/llm-wiki/papers/T02.md
  M research/llm-wiki/solutions/README.md
  M research/llm-wiki/status/backlog.md
  M research/llm-wiki/status/current.md
- M research/llm-wiki/team-agi-deliverables-2026-10-15.md
- M research/llm-wiki/threats/README.md
- M research/llm-wiki/threats/policies-50-2026-10-14.md
-?? research/llm-wiki/analysis/drive-curation/
-?? research/llm-wiki/analysis/review-2026-10-15/
-?? research/llm-wiki/methodology/evidence-contract.md
-?? research/llm-wiki/papers/development-reading-guide.md
-?? research/llm-wiki/solutions/toolhive-runtime.md
-?? research/llm-wiki/status/history-2026-10-15.md
-?? research/llm-wiki/status/reports/2026-10-15-wiki-consolidation.md
+?? research/llm-wiki/analysis/oss-audit/
+?? research/llm-wiki/status/reports/2026-10-15-oss-analysis-audit.md
 ```
 
 ## 주요 파일 바이트

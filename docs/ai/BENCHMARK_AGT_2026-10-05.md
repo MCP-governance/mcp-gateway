@@ -1,5 +1,7 @@
 # microsoft/agent-governance-toolkit(AGT) 비교 — 2026-10-05
 
+> **2026-10-15 읽기 기준:** 과거 규칙 후보·부분 채택 기록과 아래 제품 우열 표를 분리한다. “동등 이상/우리가 앞섬”은 같은 조건의 실행 비교로 입증하지 않았다. 서명/HMAC/해시·발견/집행은 보장과 전제가 달라 재판정 대상이다. 현재 상태는 [OSS 분석 감사·보완 계획](../../research/llm-wiki/analysis/oss-audit/README.md)을 따른다. 과거 본문과 당시 결과는 보존하며 이번에 AGT를 실행하지 않았다.
+
 > 대상: `microsoft/agent-governance-toolkit` `5233029`(2026-10-05, v5.0.0, MIT)을 `ref-src/ms-agent-governance-toolkit`에 얕은 복제로 받아 읽었다.
 > 입력 문서는 AGT의 [`docs/compliance/mcp-owasp-top10-mapping.md`](https://github.com/microsoft/agent-governance-toolkit/blob/main/docs/compliance/mcp-owasp-top10-mapping.md)(자체 평가, 2026-04 검토, OWASP MCP Top 10 v0.1 beta).
 > AGT를 실행하거나 시험하지 않았다. 아래 AGT 쪽 서술은 소스 정적 관찰이고, 우리 쪽 서술은 이 저장소의 코드·문서 근거다.

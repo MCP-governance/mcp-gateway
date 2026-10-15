@@ -1,0 +1,42 @@
+{
+  "scope": "documentation and retained-source audit only",
+  "status": "passed",
+  "base_commit": "f84796dbd958a5ae44c54628b35e7e4a36628a50",
+  "checks": [
+    {
+      "id": "wiki_inventory",
+      "command": "python -B -X utf8 research/llm-wiki/tools/build_wiki.py",
+      "exit_code": 0,
+      "output": "{\"format\": \"markdown\", \"pages\": 302, \"catalogs\": {\"endpoint-permission-references\": 12, \"experiments\": 13, \"imports\": 22, \"local-tool-risks\": 13, \"papers\": 167, \"solutions\": 9, \"threats\": 24}, \"collaboration_console\": \"research/collaboration-console/README.md\"}\r\n"
+    },
+    {
+      "id": "wiki_checks",
+      "command": "python -B -X utf8 research/llm-wiki/tools/check_wiki.py",
+      "exit_code": 0,
+      "output": "{\r\n  \"ok\": true,\r\n  \"counts\": {\r\n    \"endpoint-permission-references\": 12,\r\n    \"experiments\": 13,\r\n    \"imports\": 22,\r\n    \"local-tool-risks\": 13,\r\n    \"papers\": 167,\r\n    \"solutions\": 9,\r\n    \"threats\": 24,\r\n    \"sources_evidence_records\": 3,\r\n    \"solutions_evidence_records\": 21,\r\n    \"reviewed_local_tools\": 92,\r\n    \"markdown_documents\": 302\r\n  },\r\n  \"warnings\": [],\r\n  \"errors\": []\r\n}\r\n"
+    },
+    {
+      "id": "enterprise_checks",
+      "command": "python -B -X utf8 research/llm-wiki/tools/check_enterprise_analysis.py",
+      "exit_code": 0,
+      "output": "{\r\n  \"ok\": true,\r\n  \"requirements\": 80,\r\n  \"comparisons\": 21,\r\n  \"integration_conditions\": 50,\r\n  \"real_mcp_targets\": 14,\r\n  \"errors\": [],\r\n  \"warnings\": []\r\n}\r\n"
+    },
+    {
+      "id": "diff_whitespace",
+      "command": "git diff --check",
+      "exit_code": 0,
+      "output": "warning: in the working copy of 'research/llm-wiki/status/repository-snapshot.json', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'research/llm-wiki/status/repository-snapshot.md', CRLF will be replaced by LF the next time Git touches it\n"
+    },
+    {
+      "id": "read_only_source_preservation",
+      "command": "Inline Python assertions: clone/source manifest counts and hashes; git diff scoped to docs/wiki; requirements/comparison/integration JSON equal base",
+      "exit_code": 0,
+      "output": "10 clean clones; 21 matching retained source checks; 14 source/settings/version excerpts; product diff false; requirement/comparison/integration records unchanged"
+    }
+  ],
+  "limitations": [
+    "No new upstream/runtime tests executed",
+    "Metadata/hash/link checks are not a semantic security audit",
+    "Full clone/license/security-advisory freshness review remains planned"
+  ]
+}

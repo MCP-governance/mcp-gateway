@@ -17,6 +17,7 @@ MINT의 요구사항, 정책, 코드 분석, 공식 레퍼런스와 실행 증�
 | 코드 검토·목표 기능 보강 | [검토 결과와 구조화 레코드](analysis/review-2026-10-15/README.md), [DEV-38 실행 경로](analysis/review-2026-10-15/dev38-runtime-plan.md) |
 | 팀 Drive 자료와 변경 대조 | [선별 기록](team-agi-deliverables-2026-10-15.md), [50개 정책·24개 MVP 기능의 개발 연결](analysis/drive-curation/README.md) |
 | 요구사항·코드·제품 비교 | [기업 분석](analysis/README.md), [호출 경로](analysis/README-code.md), [기업 연동](integrations/README.md) |
+| OSS 조사가 충분한지·다음 분석 순서 | [클론·분석 깊이 감사와 보완 계획](analysis/oss-audit/README.md) |
 | 논문·명세·보안 문서 | [전체 목록](papers/README.md), [작업별 읽기 지도](papers/development-reading-guide.md) |
 | 상용·OSS 제품과 실행 후보 | [제품 분석](solutions/README.md), [ToolHive 후보](solutions/toolhive-runtime.md) |
 | 원본 정책과 식별자 | [위협·정책](threats/README.md), [정책50 의미 매핑](analysis/drive-curation/policy-50-crosswalk.json) |

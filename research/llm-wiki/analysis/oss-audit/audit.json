@@ -1,0 +1,650 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-10-15T19:53:13+09:00",
+  "task_id": "DEV-47",
+  "base_commit": "f84796dbd958a5ae44c54628b35e7e4a36628a50",
+  "branch": "10/15-oss-analysis-audit",
+  "scope": "Retained research quality and selected-source audit; no new clone or upstream/runtime execution",
+  "inventory_roots": [
+    "C:\\Users\\bobysg\\bob\\프로젝트\\ref-src",
+    "C:\\Users\\bobysg\\bob\\프로젝트\\분석_litellm"
+  ],
+  "limitations": [
+    "Other worktrees, WSL, remote machines and caches are not exhaustively enumerated",
+    "Not every legacy claim or source function has been re-reviewed",
+    "No source release freshness or vulnerability clearance inferred",
+    "Existing MINT runtime tests are distinct from upstream comparative tests"
+  ],
+  "counts": {
+    "clones": 10,
+    "shallow": 9,
+    "clean": 10,
+    "canonical_clone_cards": 5,
+    "catalog_items": 9,
+    "retained_manifest_files": 21,
+    "source_setting_version_excerpts": 14,
+    "retained_selected_line_sum": 982,
+    "git_blob_mismatches": 0,
+    "retained_hash_mismatches": 0,
+    "comparison_records": 21,
+    "comparison_products": 8,
+    "integration_cases": 50,
+    "integration_states": {
+      "not_run": 50
+    },
+    "reuse_inventory": 8
+  },
+  "clones": [
+    {
+      "name": "IBM ContextForge",
+      "category": "gateway",
+      "local_path": "C:\\Users\\bobysg\\bob\\프로젝트\\ref-src\\ibm-contextforge",
+      "origin": "https://github.com/IBM/mcp-context-forge.git",
+      "commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+      "shallow": true,
+      "worktree_clean": true,
+      "tracked_file_count": 2940,
+      "count_scope": "tracked files only; not files read",
+      "license_notice_paths": [
+        "LICENSE"
+      ],
+      "legacy_analysis": "docs/ai/BENCHMARK_IBM_CONTEXTFORGE.md",
+      "canonical_solution_page": "solutions/ibm-contextforge.md",
+      "depth_assessment": "L2_partial_L3",
+      "depth_scope": "selected features from retained analysis; not whole-product certification",
+      "upstream_execution_in_this_audit": false
+    },
+    {
+      "name": "IBM CPEX",
+      "category": "plugin_detectors_and_counters",
+      "local_path": "C:\\Users\\bobysg\\bob\\프로젝트\\ref-src\\ibm-cpex-plugins",
+      "origin": "https://github.com/IBM/cpex-plugins.git",
+      "commit": "ae26938128cb438a268e7f3217603bc39b9dd18f",
+      "shallow": true,
+      "worktree_clean": true,
+      "tracked_file_count": 229,
+      "count_scope": "tracked files only; not files read",
+      "license_notice_paths": [
+        "LICENSE"
+      ],
+      "legacy_analysis": "docs/ai/BENCHMARK_IBM_CONTEXTFORGE.md",
+      "canonical_solution_page": "solutions/ibm-cpex.md",
+      "depth_assessment": "L2",
+      "depth_scope": "selected features from retained analysis; not whole-product certification",
+      "upstream_execution_in_this_audit": false
+    },
+    {
+      "name": "Microsoft agent-framework",
+      "category": "agent_sdk",
+      "local_path": "C:\\Users\\bobysg\\bob\\프로젝트\\ref-src\\ms-agent-framework",
+      "origin": "https://github.com/microsoft/agent-framework",
+      "commit": "4b1c231b4fa42daa1a71f7e89bf3b9dc31fa2398",
+      "shallow": true,
+      "worktree_clean": true,
+      "tracked_file_count": 5446,
+      "count_scope": "tracked files only; not files read",
+      "license_notice_paths": [
+        "LICENSE"
+      ],
+      "legacy_analysis": "docs/ai/BENCHMARK_MICROSOFT.md",
+      "canonical_solution_page": null,
+      "depth_assessment": "L2_narrow",
+      "depth_scope": "selected features from retained analysis; not whole-product certification",
+      "upstream_execution_in_this_audit": false
+    },
+    {
+      "name": "Microsoft AGT",
+      "category": "harness_hooks_and_security_library",
+      "local_path": "C:\\Users\\bobysg\\bob\\프로젝트\\ref-src\\ms-agent-governance-toolkit",
+      "origin": "https://github.com/microsoft/agent-governance-toolkit",
+      "commit": "5233029078c6d90ed2d9e4bc6875e87e504291dd",
+      "shallow": true,
+      "worktree_clean": true,
+      "tracked_file_count": 4966,
+      "count_scope": "tracked files only; not files read",
+      "license_notice_paths": [
+        "LICENSE",
+        "NOTICE"
+      ],
+      "legacy_analysis": "docs/ai/BENCHMARK_AGT_2026-10-05.md",
+      "canonical_solution_page": null,
+      "depth_assessment": "L2_selected",
+      "depth_scope": "selected features from retained analysis; not whole-product certification",
+      "upstream_execution_in_this_audit": false
+    },
+    {
+      "name": "Azure AI-Gateway",
+      "category": "managed_gateway_policy_samples",
+      "local_path": "C:\\Users\\bobysg\\bob\\프로젝트\\ref-src\\ms-AI-Gateway",
+      "origin": "https://github.com/Azure-Samples/AI-Gateway",
+      "commit": "1679e3137d2fe7592d2a668d77ff71550d35b69e",
+      "shallow": true,
+      "worktree_clean": true,
+      "tracked_file_count": 982,
+      "count_scope": "tracked files only; not files read",
+      "license_notice_paths": [
+        "LICENSE.md"
+      ],
+      "legacy_analysis": "docs/ai/BENCHMARK_MICROSOFT.md",
+      "canonical_solution_page": null,
+      "depth_assessment": "L2_selected",
+      "depth_scope": "selected features from retained analysis; not whole-product certification",
+      "upstream_execution_in_this_audit": false
+    },
+    {
+      "name": "Microsoft MCP Gateway",
+      "category": "gateway",
+      "local_path": "C:\\Users\\bobysg\\bob\\프로젝트\\ref-src\\ms-mcp-gateway",
+      "origin": "https://github.com/microsoft/mcp-gateway",
+      "commit": "3594c4eee36308ac131aad1c946ea14140b4353d",
+      "shallow": true,
+      "worktree_clean": true,
+      "tracked_file_count": 185,
+      "count_scope": "tracked files only; not files read",
+      "license_notice_paths": [
+        "LICENSE",
+        "NOTICE"
+      ],
+      "legacy_analysis": "docs/ai/BENCHMARK_MICROSOFT.md",
+      "canonical_solution_page": "solutions/ms-mcp-gateway.md",
+      "depth_assessment": "L2_partial_L3",
+      "depth_scope": "selected features from retained analysis; not whole-product certification",
+      "upstream_execution_in_this_audit": false
+    },
+    {
+      "name": "Microsoft PyRIT",
+      "category": "red_team",
+      "local_path": "C:\\Users\\bobysg\\bob\\프로젝트\\ref-src\\ms-PyRIT",
+      "origin": "https://github.com/microsoft/PyRIT.git",
+      "commit": "ea9d0b43d71c971f82567de499a8e2f82f1f0e15",
+      "shallow": true,
+      "worktree_clean": true,
+      "tracked_file_count": 3226,
+      "count_scope": "tracked files only; not files read",
+      "license_notice_paths": [
+        "LICENSE",
+        "NOTICE.txt",
+        "THIRD_PARTY_NOTICES.txt"
+      ],
+      "legacy_analysis": "docs/ai/BENCHMARK_MICROSOFT.md",
+      "canonical_solution_page": null,
+      "depth_assessment": "L2_narrow",
+      "depth_scope": "selected features from retained analysis; not whole-product certification",
+      "upstream_execution_in_this_audit": false
+    },
+    {
+      "name": "Azure remote-mcp-apim",
+      "category": "managed_gateway_policy_samples",
+      "local_path": "C:\\Users\\bobysg\\bob\\프로젝트\\ref-src\\ms-remote-mcp-apim",
+      "origin": "https://github.com/Azure-Samples/remote-mcp-apim-functions-python",
+      "commit": "130c553e12bca6d5287e3cd7df5585846b1da55a",
+      "shallow": true,
+      "worktree_clean": true,
+      "tracked_file_count": 60,
+      "count_scope": "tracked files only; not files read",
+      "license_notice_paths": [
+        "LICENSE.md"
+      ],
+      "legacy_analysis": "docs/ai/BENCHMARK_MICROSOFT.md",
+      "canonical_solution_page": null,
+      "depth_assessment": "L2_selected",
+      "depth_scope": "selected features from retained analysis; not whole-product certification",
+      "upstream_execution_in_this_audit": false
+    },
+    {
+      "name": "Microsoft Wassette",
+      "category": "wasm_runtime",
+      "local_path": "C:\\Users\\bobysg\\bob\\프로젝트\\ref-src\\ms-wassette",
+      "origin": "https://github.com/microsoft/wassette",
+      "commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+      "shallow": true,
+      "worktree_clean": true,
+      "tracked_file_count": 484,
+      "count_scope": "tracked files only; not files read",
+      "license_notice_paths": [
+        "LICENSE",
+        "NOTICE"
+      ],
+      "legacy_analysis": "docs/ai/BENCHMARK_MICROSOFT.md",
+      "canonical_solution_page": "solutions/ms-wassette.md",
+      "depth_assessment": "L2",
+      "depth_scope": "selected features from retained analysis; not whole-product certification",
+      "upstream_execution_in_this_audit": false
+    },
+    {
+      "name": "LiteLLM",
+      "category": "llm_and_mcp_gateway",
+      "local_path": "C:\\Users\\bobysg\\bob\\프로젝트\\분석_litellm\\litellm",
+      "origin": "https://github.com/BerriAI/litellm",
+      "commit": "f8e456d105af921213267d0ef801ca08b8fdbc0b",
+      "shallow": false,
+      "worktree_clean": true,
+      "tracked_file_count": 10658,
+      "count_scope": "tracked files only; not files read",
+      "license_notice_paths": [
+        "LICENSE"
+      ],
+      "legacy_analysis": "docs/ai/BENCHMARK_LITELLM.md",
+      "canonical_solution_page": "solutions/litellm.md",
+      "depth_assessment": "L2_partial_L3",
+      "depth_scope": "selected features from retained analysis; not whole-product certification",
+      "upstream_execution_in_this_audit": false
+    }
+  ],
+  "source_checks": [
+    {
+      "solution_id": "ibm-contextforge",
+      "commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+      "source_path": "plugins/config.yaml",
+      "expected_source_sha256": "955c919a421d299ffbc754dd165290ffc533d6e969f7d36a56f73169fa6bf377",
+      "actual_git_blob_sha256": "955c919a421d299ffbc754dd165290ffc533d6e969f7d36a56f73169fa6bf377",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ibm-contextforge/plugins__config.yaml.excerpt.txt",
+      "retained_excerpt_sha256": "506b95f389b5bc5a14c53aa1647dbf01e9478f2be3e1d570e87a4e1ea2f8244d",
+      "retained_file_matches": true,
+      "line_ranges": [
+        [
+          88,
+          115
+        ],
+        [
+          1259,
+          1303
+        ]
+      ]
+    },
+    {
+      "solution_id": "ibm-contextforge",
+      "commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+      "source_path": "plugins/unified_pdp/unified_pdp.py",
+      "expected_source_sha256": "6fe60477da84f9451af75912f10c7563c75a31f6aff67b5f6a4cc1e678f9c4d4",
+      "actual_git_blob_sha256": "6fe60477da84f9451af75912f10c7563c75a31f6aff67b5f6a4cc1e678f9c4d4",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ibm-contextforge/plugins__unified_pdp__unified_pdp.py.excerpt.txt",
+      "retained_excerpt_sha256": "a32acd0c08748b12b9727854c76d2c8281e69a150267ce3d1141c48c0b475ac6",
+      "retained_file_matches": true,
+      "line_ranges": [
+        [
+          1,
+          7
+        ],
+        [
+          123,
+          164
+        ],
+        [
+          234,
+          312
+        ]
+      ]
+    },
+    {
+      "solution_id": "ibm-contextforge",
+      "commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+      "source_path": "mcpgateway/services/oauth_manager.py",
+      "expected_source_sha256": "8143266e10cdf957a4adb2a4e1e0bddef35d462851467464da43dc1af17f87b0",
+      "actual_git_blob_sha256": "8143266e10cdf957a4adb2a4e1e0bddef35d462851467464da43dc1af17f87b0",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ibm-contextforge/mcpgateway__services__oauth_manager.py.excerpt.txt",
+      "retained_excerpt_sha256": "781b4d46a01aca8ee2199574e2b56ba38d07013c43120a5ffed1c46aa5d95d7b",
+      "retained_file_matches": true,
+      "line_ranges": [
+        [
+          1,
+          7
+        ],
+        [
+          771,
+          852
+        ]
+      ]
+    },
+    {
+      "solution_id": "ibm-contextforge",
+      "commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+      "source_path": "plugins/watchdog/watchdog.py",
+      "expected_source_sha256": "24ac41c11b1bca72afad92d17889262da16ed3ca706df747aa85bb2460598659",
+      "actual_git_blob_sha256": "24ac41c11b1bca72afad92d17889262da16ed3ca706df747aa85bb2460598659",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ibm-contextforge/plugins__watchdog__watchdog.py.excerpt.txt",
+      "retained_excerpt_sha256": "ed5c2a17164ec02cea8019e5c75079dfd6e1eae9c364aeca5f0179d9dbdccd01",
+      "retained_file_matches": true,
+      "line_ranges": [
+        [
+          1,
+          7
+        ],
+        [
+          77,
+          116
+        ]
+      ]
+    },
+    {
+      "solution_id": "ibm-contextforge",
+      "commit": "5735c9db7f8f50cd5a55eb7fefe83ecde00b5324",
+      "source_path": "LICENSE",
+      "expected_source_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "actual_git_blob_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ibm-contextforge/LICENSE.txt",
+      "retained_excerpt_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "retained_file_matches": true,
+      "line_ranges": []
+    },
+    {
+      "solution_id": "ibm-cpex",
+      "commit": "ae26938128cb438a268e7f3217603bc39b9dd18f",
+      "source_path": "plugins/rust/python-package/rate_limiter/src/redis_backend.rs",
+      "expected_source_sha256": "341d322283c892a88120fb1b91fac9b198efbb7c705eddb7bcd7c5b6666a421a",
+      "actual_git_blob_sha256": "341d322283c892a88120fb1b91fac9b198efbb7c705eddb7bcd7c5b6666a421a",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ibm-cpex/plugins__rust__python-package__rate_limiter__src__redis_backend.rs.excerpt.txt",
+      "retained_excerpt_sha256": "0eebf65e5dc1219683679670216e6c9606f9aaecf45906a33b2a7c6a91472df0",
+      "retained_file_matches": true,
+      "line_ranges": [
+        [
+          1,
+          110
+        ]
+      ]
+    },
+    {
+      "solution_id": "ibm-cpex",
+      "commit": "ae26938128cb438a268e7f3217603bc39b9dd18f",
+      "source_path": "crates/framework_bridge/src/lib.rs",
+      "expected_source_sha256": "a6b004a2cf55df2d646ee78ad69355f62fc88a718f715ec31c565ccc5c547bd6",
+      "actual_git_blob_sha256": "a6b004a2cf55df2d646ee78ad69355f62fc88a718f715ec31c565ccc5c547bd6",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ibm-cpex/crates__framework_bridge__src__lib.rs.excerpt.txt",
+      "retained_excerpt_sha256": "0abd0392043ea09737f0b77ef6635a9d2fc01ed67f6ccaf932917b2e36e78e3b",
+      "retained_file_matches": true,
+      "line_ranges": [
+        [
+          1,
+          48
+        ]
+      ]
+    },
+    {
+      "solution_id": "ibm-cpex",
+      "commit": "ae26938128cb438a268e7f3217603bc39b9dd18f",
+      "source_path": "LICENSE",
+      "expected_source_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "actual_git_blob_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ibm-cpex/LICENSE.txt",
+      "retained_excerpt_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "retained_file_matches": true,
+      "line_ranges": []
+    },
+    {
+      "solution_id": "ms-mcp-gateway",
+      "commit": "3594c4eee36308ac131aad1c946ea14140b4353d",
+      "source_path": "dotnet/Microsoft.McpGateway.Management/src/Authorization/SimplePermissionProvider.cs",
+      "expected_source_sha256": "105662e8677b2e3b595623a9ea248fbd171f430f27267e1f7c544febbc5f1cc0",
+      "actual_git_blob_sha256": "105662e8677b2e3b595623a9ea248fbd171f430f27267e1f7c544febbc5f1cc0",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ms-mcp-gateway/dotnet__Microsoft.McpGateway.Management__src__Authorization__SimplePermissionProvider.cs.excerpt.txt",
+      "retained_excerpt_sha256": "916777529f9a5a41c9f42803b92aee03ded3fe9bc8d2137d3f9ab6c60fd6b280",
+      "retained_file_matches": true,
+      "line_ranges": [
+        [
+          1,
+          96
+        ]
+      ]
+    },
+    {
+      "solution_id": "ms-mcp-gateway",
+      "commit": "3594c4eee36308ac131aad1c946ea14140b4353d",
+      "source_path": "dotnet/Microsoft.McpGateway.Management/src/Authorization/BuiltinToolAuthorizer.cs",
+      "expected_source_sha256": "8b64e8ece47bdb12f5d9e2a539082b8d86e5acc546104e01378f2bfbfab29bc6",
+      "actual_git_blob_sha256": "8b64e8ece47bdb12f5d9e2a539082b8d86e5acc546104e01378f2bfbfab29bc6",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ms-mcp-gateway/dotnet__Microsoft.McpGateway.Management__src__Authorization__BuiltinToolAuthorizer.cs.excerpt.txt",
+      "retained_excerpt_sha256": "112d73c78be19ae1dc6bbdd54bba27b599b63d7102aa13e69f81bdfff15e3434",
+      "retained_file_matches": true,
+      "line_ranges": [
+        [
+          1,
+          42
+        ]
+      ]
+    },
+    {
+      "solution_id": "ms-mcp-gateway",
+      "commit": "3594c4eee36308ac131aad1c946ea14140b4353d",
+      "source_path": "LICENSE",
+      "expected_source_sha256": "98a96c38494df4963951e32b81ec4effebe4c8a812ab8d9e7d185d59e86fe2fc",
+      "actual_git_blob_sha256": "98a96c38494df4963951e32b81ec4effebe4c8a812ab8d9e7d185d59e86fe2fc",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ms-mcp-gateway/LICENSE.txt",
+      "retained_excerpt_sha256": "98a96c38494df4963951e32b81ec4effebe4c8a812ab8d9e7d185d59e86fe2fc",
+      "retained_file_matches": true,
+      "line_ranges": []
+    },
+    {
+      "solution_id": "ms-mcp-gateway",
+      "commit": "3594c4eee36308ac131aad1c946ea14140b4353d",
+      "source_path": "NOTICE",
+      "expected_source_sha256": "5d5d83e02fbd6f9fcd954e3d33192f2cb2b654e4cb21d805b239b52352731b28",
+      "actual_git_blob_sha256": "5d5d83e02fbd6f9fcd954e3d33192f2cb2b654e4cb21d805b239b52352731b28",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ms-mcp-gateway/NOTICE.txt",
+      "retained_excerpt_sha256": "5d5d83e02fbd6f9fcd954e3d33192f2cb2b654e4cb21d805b239b52352731b28",
+      "retained_file_matches": true,
+      "line_ranges": []
+    },
+    {
+      "solution_id": "ms-wassette",
+      "commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+      "source_path": "crates/wassette/src/http.rs",
+      "expected_source_sha256": "ac475968caea12155e386f266164362a8b83b860c88acb9f9cc5cfd9653a3803",
+      "actual_git_blob_sha256": "ac475968caea12155e386f266164362a8b83b860c88acb9f9cc5cfd9653a3803",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ms-wassette/crates__wassette__src__http.rs.excerpt.txt",
+      "retained_excerpt_sha256": "a8f5e38a1281aed069bf9e506ecc07846fa7d9b52f545acdce0f144a5bfce991",
+      "retained_file_matches": true,
+      "line_ranges": [
+        [
+          1,
+          7
+        ],
+        [
+          73,
+          146
+        ]
+      ]
+    },
+    {
+      "solution_id": "ms-wassette",
+      "commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+      "source_path": "crates/wassette/src/wasistate.rs",
+      "expected_source_sha256": "ef50c793ca8c2b6157900b6134cb2c8e093e5b0f46dffd2600363d2d27590a62",
+      "actual_git_blob_sha256": "ef50c793ca8c2b6157900b6134cb2c8e093e5b0f46dffd2600363d2d27590a62",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ms-wassette/crates__wassette__src__wasistate.rs.excerpt.txt",
+      "retained_excerpt_sha256": "23106e20fe6c6e43a4b859af592fe3b4e800c09bc1d7787ec67a4bc7289d70ca",
+      "retained_file_matches": true,
+      "line_ranges": [
+        [
+          1,
+          7
+        ],
+        [
+          96,
+          146
+        ]
+      ]
+    },
+    {
+      "solution_id": "ms-wassette",
+      "commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+      "source_path": "crates/wassette/src/runtime_context.rs",
+      "expected_source_sha256": "1fad725d537725f416fc2cba7ae8e5f7b1447bbde2ff8dd9147d4797271e124c",
+      "actual_git_blob_sha256": "1fad725d537725f416fc2cba7ae8e5f7b1447bbde2ff8dd9147d4797271e124c",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ms-wassette/crates__wassette__src__runtime_context.rs.excerpt.txt",
+      "retained_excerpt_sha256": "469687e76563b013712c0df165639889b99feecd8229309f6105097f9952cf3c",
+      "retained_file_matches": true,
+      "line_ranges": [
+        [
+          1,
+          51
+        ]
+      ]
+    },
+    {
+      "solution_id": "ms-wassette",
+      "commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+      "source_path": "LICENSE",
+      "expected_source_sha256": "fd532481d828e13a0b13ccb598e02338a3617740675a862ee6bdc1541b68e93d",
+      "actual_git_blob_sha256": "fd532481d828e13a0b13ccb598e02338a3617740675a862ee6bdc1541b68e93d",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ms-wassette/LICENSE.txt",
+      "retained_excerpt_sha256": "fd532481d828e13a0b13ccb598e02338a3617740675a862ee6bdc1541b68e93d",
+      "retained_file_matches": true,
+      "line_ranges": []
+    },
+    {
+      "solution_id": "ms-wassette",
+      "commit": "742ebb7236273dad2d88c415eabe872d3b95dff9",
+      "source_path": "NOTICE",
+      "expected_source_sha256": "be3a33ec4f4ffa0d2dae1670570dc81b16777dfa30133d8d666ff6d642fa927c",
+      "actual_git_blob_sha256": "be3a33ec4f4ffa0d2dae1670570dc81b16777dfa30133d8d666ff6d642fa927c",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/ms-wassette/NOTICE.txt",
+      "retained_excerpt_sha256": "be3a33ec4f4ffa0d2dae1670570dc81b16777dfa30133d8d666ff6d642fa927c",
+      "retained_file_matches": true,
+      "line_ranges": []
+    },
+    {
+      "solution_id": "litellm",
+      "commit": "f8e456d105af921213267d0ef801ca08b8fdbc0b",
+      "source_path": "litellm/proxy/_experimental/mcp_server/server.py",
+      "expected_source_sha256": "d739d56fed737efc756d9b871e8187325ffa0f374d46cc761f70edfd12a252ee",
+      "actual_git_blob_sha256": "d739d56fed737efc756d9b871e8187325ffa0f374d46cc761f70edfd12a252ee",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/litellm/litellm__proxy___experimental__mcp_server__server.py.excerpt.txt",
+      "retained_excerpt_sha256": "901fd14fbdf55668a1f0c3a8a50aad8bc15bacd5ef8b125807fac842b297032c",
+      "retained_file_matches": true,
+      "line_ranges": [
+        [
+          1521,
+          1574
+        ]
+      ]
+    },
+    {
+      "solution_id": "litellm",
+      "commit": "f8e456d105af921213267d0ef801ca08b8fdbc0b",
+      "source_path": "litellm/proxy/_experimental/mcp_server/mcp_server_manager.py",
+      "expected_source_sha256": "a79480a3d44bd3d5daaa768a738534bea18727ed97180d67f2db4d354a259735",
+      "actual_git_blob_sha256": "a79480a3d44bd3d5daaa768a738534bea18727ed97180d67f2db4d354a259735",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/litellm/litellm__proxy___experimental__mcp_server__mcp_server_manager.py.excerpt.txt",
+      "retained_excerpt_sha256": "b16d09e3e8457cbb1c2dcdbc5a8424a14fe7212a2e365e91d57f3bcc6d71a638",
+      "retained_file_matches": true,
+      "line_ranges": [
+        [
+          3169,
+          3207
+        ],
+        [
+          3210,
+          3260
+        ]
+      ]
+    },
+    {
+      "solution_id": "litellm",
+      "commit": "f8e456d105af921213267d0ef801ca08b8fdbc0b",
+      "source_path": "pyproject.toml",
+      "expected_source_sha256": "fa037c5325bc3aea08966b9e03016d285f321ef1c8a22fc6a6a95b3b045356f8",
+      "actual_git_blob_sha256": "fa037c5325bc3aea08966b9e03016d285f321ef1c8a22fc6a6a95b3b045356f8",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/litellm/pyproject.toml.excerpt.txt",
+      "retained_excerpt_sha256": "577cda236f576d2912b66fcdcbb7aa4d536a1e924eb6e7f94900448c4146ed5f",
+      "retained_file_matches": true,
+      "line_ranges": [
+        [
+          1,
+          15
+        ]
+      ]
+    },
+    {
+      "solution_id": "litellm",
+      "commit": "f8e456d105af921213267d0ef801ca08b8fdbc0b",
+      "source_path": "LICENSE",
+      "expected_source_sha256": "b170d6bf8e8835dd357e011681db028f4d51e2fb0ea892058f56e01fb39b8273",
+      "actual_git_blob_sha256": "b170d6bf8e8835dd357e011681db028f4d51e2fb0ea892058f56e01fb39b8273",
+      "match": true,
+      "retained_excerpt": "solutions/evidence/litellm/LICENSE.txt",
+      "retained_excerpt_sha256": "b170d6bf8e8835dd357e011681db028f4d51e2fb0ea892058f56e01fb39b8273",
+      "retained_file_matches": true,
+      "line_ranges": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "OSS-A01",
+      "finding": "10 clones exist, 5 are linked from the current solutions catalogue",
+      "priority": "P1",
+      "next": "Add and reconcile missing Azure/SDK/PyRIT/AGT cards; preserve old evidence"
+    },
+    {
+      "id": "OSS-A02",
+      "finding": "Selected function source reads do not establish complete failure, revocation and recovery paths",
+      "priority": "P1",
+      "next": "L3 path analysis before reuse decisions"
+    },
+    {
+      "id": "OSS-A03",
+      "finding": "Legacy IBM all-disabled claim contradicts pinned config line 99 and the current solution card",
+      "priority": "P1",
+      "next": "Entry correction now; complete claim reconciliation remains"
+    },
+    {
+      "id": "OSS-A04",
+      "finding": "Legacy product absence and superiority claims lack equivalent scope and comparative runs",
+      "priority": "P1",
+      "next": "Re-evaluate each claim under matching boundaries and versions"
+    },
+    {
+      "id": "OSS-A05",
+      "finding": "Runtime lifecycle and independent scanner source coverage are weak in inspected corpus",
+      "priority": "P1",
+      "next": "Prioritize ToolHive, MCPX, Cisco; gate Snyk source review on service/data boundaries"
+    },
+    {
+      "id": "OSS-A06",
+      "finding": "Reuse inventory is metadata or selected local integration review for 8 dependencies/candidates",
+      "priority": "P2",
+      "next": "Trace actual installed APIs and failure contracts; no whole-platform rewrite"
+    },
+    {
+      "id": "OSS-A07",
+      "finding": "Version, clone source, deployed image and security advisory history are not uniformly bound",
+      "priority": "P1",
+      "next": "Record target release/package/image and review relevant changes only"
+    }
+  ],
+  "plan_document": "README.md",
+  "official_web_read_scope": "Official repository landing pages/README and governance guides; not complete pinned-source review",
+  "official_sources": [
+    "https://github.com/stacklok/toolhive",
+    "https://github.com/TheLunarCompany/lunar",
+    "https://docs.lunar.dev/mcpx/access_control_list/",
+    "https://github.com/cisco-ai-defense/mcp-scanner",
+    "https://github.com/snyk/agent-scan",
+    "https://docs.mcppipe.dev/guides/governance/",
+    "https://github.com/modelcontextprotocol/python-sdk",
+    "https://github.com/open-policy-agent/opa",
+    "https://github.com/openbao/openbao"
+  ],
+  "web_fetch_limitations": [
+    "ToolHive pinned tree and MCPX subtree failed to open via web tool; no source read inferred"
+  ]
+}

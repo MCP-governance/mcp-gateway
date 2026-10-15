@@ -1,5 +1,7 @@
 # IBM ContextForge와 CPEX 소스 분석 — 2026-09-30 정정·상세본
 
+> **2026-10-15 추가 정정:** 아래 “기본값 전 항목 disabled”는 같은 고정 commit의 `plugins/config.yaml:99`에 있는 PII `enforce`와 모순되어 철회한다. 최신 [IBM 요약](../../research/llm-wiki/solutions/ibm-contextforge.md)과 [OSS 분석 감사](../../research/llm-wiki/analysis/oss-audit/README.md)를 우선한다. 아래 상세 본문은 과거 분석 이력이며 전체를 재검증하지 않았다. 검색 미발견·“우리만/우위” 서술은 제품 전체의 부재나 동등 비교 결과로 사용하지 않는다.
+
 이 문서는 Gateway 저장소 하나를 검색한 결과를 IBM 전체 제품의 부재로 해석하지 않는다.
 아래는 다운로드한 공개 소스의 정적 분석이다. IBM 스택을 띄운 통합·부하 시험 결과가 아니며,
 플러그인이 존재한다는 사실과 실제 배포에서 enforce로 활성화되었다는 사실을 구분한다.
