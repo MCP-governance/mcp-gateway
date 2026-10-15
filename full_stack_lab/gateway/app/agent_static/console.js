@@ -327,16 +327,16 @@ const chartBox = (id, label, size = "") => html`<div class="chart ${size}" id="$
 
 // ── routing ──────────────────────────────────────────────────────────────────
 const PAGES = [
-  { id: "overview", label: "대시보드", group: "모니터링" },
-  { id: "activity", label: "도구 호출 로그", group: "모니터링" },
-  { id: "audit", label: "감사 기록", group: "모니터링" },
-  { id: "approvals", label: "승인 대기", group: "모니터링", badge: "approvals" },
-  { id: "coverage", label: "통제 범위", group: "접근·통제", badge: "coverage" },
-  { id: "servers", label: "MCP 서버", group: "접근·통제" },
-  { id: "people", label: "사용자·엔드포인트", group: "접근·통제" },
-  { id: "intake", label: "도입 신청", group: "수명주기" },
-  { id: "termination", label: "종료·폐기", group: "수명주기", badge: "termination" },
-  { id: "policy", label: "정책", group: "수명주기" },
+  { id: "overview", label: "대시보드", group: "운영" },
+  { id: "activity", label: "도구 호출 로그", group: "운영" },
+  { id: "audit", label: "감사 기록", group: "운영" },
+  { id: "approvals", label: "승인 대기", group: "운영", badge: "approvals" },
+  { id: "coverage", label: "통제 범위", group: "접근 통제", badge: "coverage" },
+  { id: "servers", label: "MCP 서버", group: "접근 통제" },
+  { id: "people", label: "사용자·엔드포인트", group: "접근 통제" },
+  { id: "policy", label: "정책", group: "접근 통제" },
+  { id: "intake", label: "도입 신청", group: "도입 및 종료" },
+  { id: "termination", label: "종료·폐기", group: "도입 및 종료", badge: "termination" },
 ];
 let viewer = null;
 let routeSeq = 0;
@@ -351,7 +351,7 @@ function renderNav(active) {
   }
   const shortcuts = [
     viewer.git_url && html`<a href="${viewer.git_url}" target="_blank" rel="noopener" aria-label="내부 저장소 (새 탭)" title="내부 저장소">${icon("git")}<span>내부 저장소</span><span class="ext" aria-hidden="true">↗</span></a>`,
-    viewer.kit && html`<a href="#" data-act="pc-kit" aria-label="내 PC 연결" title="내 PC 연결">${icon("plug")}<span>내 PC 연결</span></a>`,
+    viewer.kit && html`<a href="#" data-act="pc-kit" aria-label="PC 연결 설정" title="PC 연결 설정">${icon("plug")}<span>PC 연결 설정</span></a>`,
   ].filter(Boolean);
   $("#nav").innerHTML = String(html`${[...groups].map(([group, pages]) => html`<div class="group">${group}</div>${pages.map((p) => html`
     <a href="#/${p.id}" title="${p.label}" aria-label="${p.label}" ${active === p.id ? raw('aria-current="page"') : ""}>${icon(p.id)}<span>${p.label}</span>
