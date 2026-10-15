@@ -106,7 +106,8 @@ func scan(data []byte) (result outcome) {
 //
 //export mcpgw_gitleaks_scan
 func mcpgw_gitleaks_scan(data *C.char, size C.longlong) *C.char {
-	if size < 0 || (size > 0 && data == nil) {
+	// C.GoBytes takes a C int; the Gateway's inputs are capped far below this.
+	if size < 0 || size > 1<<30 || (size > 0 && data == nil) {
 		return C.CString(`{"rules":[],"error":"invalid input"}`)
 	}
 	body, err := json.Marshal(scan(C.GoBytes(unsafe.Pointer(data), C.int(size))))

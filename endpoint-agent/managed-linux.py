@@ -144,20 +144,19 @@ def host_report(config):
 def forget_stale_sign_in(home: str) -> None:
     """Claude Code keeps "needs sign-in" marks for MCP servers in the account's home, and the home
     outlives a reinstall. The managed servers sign in with this device's helper, so a mark left by
-    an earlier device hides them as unauthenticated. Opened without following links: the folder
-    belongs to the employee's managed account, this runs as root."""
+    an earlier device hides them as unauthenticated. Every path component is opened without
+    following links: the folders belong to the employee's managed account, this runs as root."""
+    folder = os.open("/", os.O_RDONLY | os.O_DIRECTORY)
     try:
-        top = os.open(home, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-        try:
-            folder = os.open(".claude", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=top)
-        finally:
-            os.close(top)
-        try:
-            os.unlink("mcp-needs-auth-cache.json", dir_fd=folder)
-        finally:
+        for part in (*Path(home).parts[1:], ".claude"):
+            inner = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=folder)
             os.close(folder)
+            folder = inner
+        os.unlink("mcp-needs-auth-cache.json", dir_fd=folder)
     except FileNotFoundError:
         pass
+    finally:
+        os.close(folder)
 
 
 def install(args):

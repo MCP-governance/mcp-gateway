@@ -49,7 +49,6 @@ def atom_check(scanner: textscan.Scanner) -> list[dict]:
     problems, checked = [], 0
     views = {False: scanner.engine.canonical(ALL, False), True: scanner.engine.canonical(ALL, True)}
     translators: dict = {}
-    alphabet = None
     for index, rule in enumerate(scanner.rules):
         if index not in scanner.native:
             continue
@@ -58,14 +57,8 @@ def atom_check(scanner: textscan.Scanner) -> list[dict]:
             tree = _parser.parse(pattern.pattern, pattern.flags)
             found: set = set()
             atoms(tree, found)
-            if alphabet is None:
-                named: set[int] = set(range(128))
-                for r in scanner.rules:
-                    for p in textscan._parts(r):
-                        textscan._named(_parser.parse(p.pattern, p.flags), named)
-                alphabet = frozenset(named | {textscan._fold(c) for c in named})
             key = (folded, pattern.flags & (re.I | re.S | re.M))
-            translator = translators.setdefault(key, textscan._Translator(alphabet, folded, pattern.flags))
+            translator = translators.setdefault(key, textscan._Translator(scanner.alphabet, folded, pattern.flags))
             for op, av in sorted(found, key=repr):
                 source = textscan._atom_source(op, list(av) if op is C.IN else av)
                 compiled = textscan._atom(source, pattern.flags)
@@ -80,7 +73,36 @@ def atom_check(scanner: textscan.Scanner) -> list[dict]:
                     diff = [i for i, (a, b) in enumerate(zip(native.encode(), python)) if a != b][:8]
                     problems.append({"rule": index, "atom": source, "flags": pattern.flags,
                                      "code_points": [hex(c) for c in diff]})
+    # \b and \B read the subject's own character, folded or not: the symbol a code point
+    # becomes must be a word symbol exactly when re calls the character itself one.
+    word = bytearray(b"0" * len(ALL))
+    for match in re.finditer(r"\w", ALL):
+        word[match.start()] = 0x31
+    is_word = textscan._atom(r"\w", re.U)
+    for folded in (False, True):
+        translator = textscan._Translator(scanner.alphabet, folded, re.I if folded else 0)
+        table = {s: "1" if is_word.fullmatch(translator.sample(s)) else "0" for s in translator.universe}
+        native = views[folded].translate(table).encode()
+        checked += 1
+        if native != bytes(word):
+            diff = [i for i, (a, b) in enumerate(zip(native, word)) if a != b][:8]
+            problems.append({"atom": "word boundary", "folded": folded, "code_points": [hex(c) for c in diff]})
     print(f"atoms checked: {checked}", file=sys.stderr)
+    return problems
+
+
+def edge_check() -> list[dict]:
+    """Rules outside the production set that once decided differently from re."""
+    rules = [re.compile(r"\bι\b", re.I), re.compile(r"\Bι", re.I), re.compile(r"\w+ ι", re.I),
+             re.compile(r"[^\W\d]", re.I), re.compile(r"\w", re.A)]
+    scanner = textscan.Scanner(rules)
+    problems = [{"rule": 4, "error": "ASCII rule left re"}] if 4 in scanner.native else []
+    if len(scanner.native) != len(rules) - 1:
+        problems.append({"error": "edge rules not on the engine", "native": sorted(scanner.native)})
+    for text in ["ι", "Ι", "ι", "ͅ", "aͅ", "ιι", "x ι", "é", "_", "٣", "ΙΙ ι", " ι ", "ͅι"]:
+        for index, hit in scanner.hits(text).items():
+            if hit != bool(rules[index].search(text)):
+                problems.append({"rule": index, "text": text, "native": hit})
     return problems
 
 
@@ -146,7 +168,7 @@ def main() -> int:
         print(json.dumps({"error": "native engine not active"}))
         return 1
     on_re = [i for i in range(len(scanner.rules)) if i not in scanner.native]
-    atom_problems = atom_check(scanner)
+    atom_problems = atom_check(scanner) + edge_check()
     rng = random.Random(20261015)
     subjects = corpus(rng, 60_000)
     fuzz_problems = fuzz(scanner, subjects)

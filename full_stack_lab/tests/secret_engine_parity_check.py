@@ -102,7 +102,37 @@ def old_path(scan: str) -> list[str]:
         return sorted({f["RuleID"] for f in json.loads(report.read_text())})
 
 
+def slot_check() -> dict:
+    """A scan past its time limit keeps its slot until its thread ends; a fifth one waits."""
+    import asyncio
+    import threading
+    gate = threading.Event()
+    real, limit = secret_scan.rule_ids, secret_scan.TIMEOUT_SECONDS
+    secret_scan.rule_ids, secret_scan.TIMEOUT_SECONDS = (lambda data: gate.wait(10) and []), 0.05
+
+    async def run() -> dict:
+        outcomes = await asyncio.gather(*(secret_scan.labels("x" * 10) for _ in range(4)), return_exceptions=True)
+        held = secret_scan._slots._value
+        try:
+            await asyncio.wait_for(secret_scan.labels("x" * 10), 0.2)
+            waited = False
+        except asyncio.TimeoutError:
+            waited = True
+        except secret_scan.InspectionUnavailable:
+            waited = False
+        gate.set()
+        await asyncio.sleep(0.3)
+        return {"timed_out": sum(isinstance(o, secret_scan.InspectionUnavailable) for o in outcomes),
+                "free_while_running": held, "fifth_waited": waited, "free_after": secret_scan._slots._value}
+    try:
+        return asyncio.run(run())
+    finally:
+        secret_scan.rule_ids, secret_scan.TIMEOUT_SECONDS = real, limit
+
+
 def main() -> int:
+    slots = slot_check()
+    slots_ok = slots == {"timed_out": 4, "free_while_running": 0, "fifth_waited": True, "free_after": 4}
     samples = corpus()
     differences, detected, old_ms, new_ms = [], 0, [], []
     for index, text in enumerate(samples):
@@ -129,9 +159,10 @@ def main() -> int:
                 "p95_ms": round(ordered[int(len(ordered) * 0.95) - 1], 2), "max_ms": round(ordered[-1], 2)}
 
     print(json.dumps({"samples": len(samples), "with_findings": detected, "differences": differences,
-                      "binary": stats(old_ms), "library": stats(new_ms), "non_utf8_input_scanned": broken_input_ok},
+                      "binary": stats(old_ms), "library": stats(new_ms), "non_utf8_input_scanned": broken_input_ok,
+                      "slots": slots},
                      ensure_ascii=False, indent=1))
-    return 1 if differences or not detected else 0
+    return 1 if differences or not detected or not slots_ok else 0
 
 
 if __name__ == "__main__":

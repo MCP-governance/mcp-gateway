@@ -270,6 +270,11 @@ def main() -> None:
         parser.error("프록시 환경 변수가 올바르지 않습니다")
     if not Path("/sys/module/apparmor/parameters/enabled").read_text().strip().startswith("Y"):
         parser.error("이 시스템에서 AppArmor 집행을 사용할 수 없어 설치를 중단합니다")
+    # The profiles tell the harness's `sh -c` (the header helper) from the model's bash by binary.
+    # Where sh is bash, or /bin is not /usr/bin, that line cannot be drawn: refuse, do not weaken it.
+    if (args.helper_source or args.managed_agent) and (
+            Path("/bin").resolve() != Path("/usr/bin") or Path("/bin/sh").resolve().name != "dash"):
+        parser.error("/bin/sh가 dash인 /usr 통합 시스템에서만 인증 헬퍼를 셸 명령과 분리할 수 있어 설치를 중단합니다")
     if run("pgrep", "-u", str(person.pw_uid), capture_output=True, check=False).returncode == 0:
         parser.error("해당 계정의 기존 프로세스를 먼저 종료하세요. 실행 중인 비관리 세션을 남기지 않습니다")
     binaries = {}

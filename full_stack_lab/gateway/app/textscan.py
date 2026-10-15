@@ -43,8 +43,21 @@ class Unsupported(ValueError):
     pass
 
 
-def _groups() -> dict[int, int]:
-    """The extra IGNORECASE equivalences _sre applies (i/ı, s/ſ, ...): each to its smallest member."""
+def _kind(code: int) -> int:
+    """The category the engine keeps apart (word+decimal, word, space, other), as _sre tests it."""
+    char = chr(code)
+    if char.isalnum() or char == "_":
+        return 0 if char.isdecimal() else 1
+    return 2 if char.isspace() else 3
+
+
+def _groups() -> tuple[dict[int, int], dict[int, frozenset[int]]]:
+    """The extra IGNORECASE equivalences _sre applies (i/ı, s/ſ, ...).
+
+    Each member folds onto the smallest member of its own category: \\b, \\w, \\d and \\s
+    read the subject's own character, and one group joins a combining mark with letters
+    (U+0345 with iota). The second table gives every such representative of a member's group.
+    """
     try:  # 3.11+: generated table used by re._compiler
         from re._casefix import _EXTRA_CASES as fixes
     except ImportError:  # older layout
@@ -52,20 +65,30 @@ def _groups() -> dict[int, int]:
         fixes = getattr(_compiler, "_ignorecase_fixes", None)
     if not fixes:
         raise ImportError("re case-fold table not found")
-    groups = {}
+    groups, classes = {}, {}
     for low, others in fixes.items():
-        members = (low, *others)
-        for member in members:
-            groups[member] = min(members)
-    return groups
+        kinds: dict[int, list[int]] = {}
+        for member in (low, *others):
+            kinds.setdefault(_kind(member), []).append(member)
+        representatives = frozenset(min(members) for members in kinds.values())
+        for members in kinds.values():
+            for member in members:
+                groups[member], classes[member] = min(members), representatives
+    return groups, classes
 
 
-GROUPS = _groups()
+GROUPS, CLASSES = _groups()
 
 
 def _fold(code: int) -> int:
     low = _tolower(code)
     return GROUPS.get(low, low)
+
+
+def alphabet(named: set[int]) -> frozenset[int]:
+    """The named characters and every symbol a folded subject character can become."""
+    folds = {code for named_code in named for code in CLASSES.get(_tolower(named_code), (_fold(named_code),))}
+    return frozenset(named | folds)
 
 
 def _class_source(items: list) -> str:
@@ -225,7 +248,7 @@ class Scanner:
     def __init__(self, rules: list) -> None:
         self.rules = list(rules)
         self.native: dict[int, list[int]] = {}
-        self.engine = None
+        self.engine, self.alphabet = None, frozenset()
         if mcpgw_textscan is None or _tolower is None:
             return
         try:
@@ -237,15 +260,16 @@ class Scanner:
                     for pattern, tree in trees:
                         if not isinstance(pattern.pattern, str):
                             raise Unsupported("bytes pattern")
+                        if pattern.flags & re.ASCII:
+                            raise Unsupported("ASCII classes")
                         _named(tree, named)
                     parsed[index] = trees
                 except (Unsupported, re.error) as exc:
                     log.info("rule %d stays on re: %s", index, exc)
-            # Every symbol a folded subject can contain must be in the alphabet as well.
-            alphabet = frozenset(named | {_fold(code) for code in named})
-            if any(code in alphabet for code in STANDINS) or any(ord(s) in alphabet for s in SAMPLES.values()):
+            symbols = alphabet(named)
+            if any(code in symbols for code in STANDINS) or any(ord(s) in symbols for s in SAMPLES.values()):
                 raise Unsupported("stand-in collides with a named character")
-            engine = mcpgw_textscan.Engine("".join(map(chr, sorted(alphabet))),
+            engine = mcpgw_textscan.Engine("".join(map(chr, sorted(symbols))),
                                            "".join(map(chr, STANDINS)), dict(GROUPS))
             translators = {}
             for index, trees in parsed.items():
@@ -255,12 +279,12 @@ class Scanner:
                         folded = bool(pattern.flags & re.I)
                         key = (folded, pattern.flags & (re.I | re.S | re.M))
                         translator = translators.get(key) or translators.setdefault(
-                            key, _Translator(alphabet, folded, pattern.flags))
+                            key, _Translator(symbols, folded, pattern.flags))
                         ids.append(engine.add(translator.emit(tree), folded))
                     self.native[index] = ids
                 except (Unsupported, ValueError) as exc:
                     log.info("rule %d stays on re: %s", index, exc)
-            self.engine = engine
+            self.engine, self.alphabet = engine, symbols
         except (Unsupported, ValueError, MemoryError) as exc:
             log.warning("native text rules disabled: %s", exc)
             self.native, self.engine = {}, None

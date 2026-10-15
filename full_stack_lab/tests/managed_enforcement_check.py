@@ -128,6 +128,13 @@ class StaleSignIn(unittest.TestCase):
             with self.assertRaises(OSError):
                 linux.forget_stale_sign_in(str(other))
             self.assertTrue((outside / "mcp-needs-auth-cache.json").exists())
+            # A link higher up the home path is not followed either.
+            (outside / ".claude").mkdir()
+            (outside / ".claude" / "mcp-needs-auth-cache.json").write_text("keep")
+            (Path(raw) / "parent").symlink_to(Path(raw), target_is_directory=True)
+            with self.assertRaises(OSError):
+                linux.forget_stale_sign_in(str(Path(raw) / "parent" / "outside"))
+            self.assertTrue((outside / ".claude" / "mcp-needs-auth-cache.json").exists())
 
 
 if __name__ == "__main__":

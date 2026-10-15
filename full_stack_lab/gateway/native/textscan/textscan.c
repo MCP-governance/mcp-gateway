@@ -59,6 +59,10 @@ static uint32_t category(Py_UCS4 c, const uint32_t reps[4]) {
 /* Engine(alphabet: str, representatives: str of 4, groups: dict[int, int]) */
 static int engine_init(Engine *self, PyObject *args, PyObject *kwds) {
     PyObject *alphabet, *reps_obj, *groups;
+    if (self->exact || self->folded || self->count) {
+        PyErr_SetString(PyExc_RuntimeError, "Engine is already initialised");
+        return -1;
+    }
     if (!PyArg_ParseTuple(args, "UUO!", &alphabet, &reps_obj, &PyDict_Type, &groups)) return -1;
     if (PyUnicode_GET_LENGTH(reps_obj) != 4) {
         PyErr_SetString(PyExc_ValueError, "four representatives required");
@@ -66,15 +70,14 @@ static int engine_init(Engine *self, PyObject *args, PyObject *kwds) {
     }
     uint32_t reps[4];
     for (int i = 0; i < 4; i++) reps[i] = PyUnicode_READ_CHAR(reps_obj, i);
+    /* Built in locals and kept only when complete, so a failed call leaves no half-made tables. */
     uint8_t *member = PyMem_Calloc(CODEPOINTS, 1);
     uint32_t *group = PyMem_Malloc(sizeof(uint32_t) * CODEPOINTS);
-    self->exact = PyMem_Malloc(sizeof(uint32_t) * CODEPOINTS);
-    self->folded = PyMem_Malloc(sizeof(uint32_t) * CODEPOINTS);
-    if (!member || !group || !self->exact || !self->folded) {
-        PyMem_Free(member);
-        PyMem_Free(group);
+    uint32_t *exact = PyMem_Malloc(sizeof(uint32_t) * CODEPOINTS);
+    uint32_t *folded = PyMem_Malloc(sizeof(uint32_t) * CODEPOINTS);
+    if (!member || !group || !exact || !folded) {
         PyErr_NoMemory();
-        return -1;
+        goto fail;
     }
     Py_ssize_t n = PyUnicode_GET_LENGTH(alphabet);
     for (Py_ssize_t i = 0; i < n; i++) member[PyUnicode_READ_CHAR(alphabet, i)] = 1;
@@ -84,20 +87,45 @@ static int engine_init(Engine *self, PyObject *args, PyObject *kwds) {
     while (PyDict_Next(groups, &pos, &key, &value)) {
         unsigned long k = PyLong_AsUnsignedLong(key), v = PyLong_AsUnsignedLong(value);
         if (PyErr_Occurred() || k >= CODEPOINTS || v >= CODEPOINTS) {
-            PyMem_Free(member);
-            PyMem_Free(group);
             if (!PyErr_Occurred()) PyErr_SetString(PyExc_ValueError, "group outside Unicode");
-            return -1;
+            goto fail;
         }
         group[k] = (uint32_t)v;
     }
     for (uint32_t c = 0; c < CODEPOINTS; c++) {
-        self->exact[c] = member[c] ? c : category(c, reps);
+        exact[c] = member[c] ? c : category(c, reps);
         uint32_t low = group[(uint32_t)Py_UNICODE_TOLOWER(c)];
-        self->folded[c] = member[low] ? low : category(c, reps);
+        /* \b, \w, \d and \s read the subject's own character, so a fold onto a symbol of
+           another category would change them (U+0345 folds with the letter iota). */
+        if (member[low] && category(low, reps) != category(c, reps)) {
+            PyErr_Format(PyExc_ValueError, "fold of U+%04X crosses a character category", (unsigned)c);
+            goto fail;
+        }
+        folded[c] = member[low] ? low : category(c, reps);
     }
     PyMem_Free(member);
     PyMem_Free(group);
+    self->exact = exact;
+    self->folded = folded;
+    return 0;
+fail:
+    PyMem_Free(member);
+    PyMem_Free(group);
+    PyMem_Free(exact);
+    PyMem_Free(folded);
+    return -1;
+}
+
+static int engine_ready(Engine *self) {
+    if (self->exact && self->folded) return 1;
+    PyErr_SetString(PyExc_RuntimeError, "Engine is not initialised");
+    return 0;
+}
+
+/* The canonical view holds one 32-bit unit per character. */
+static int length_fits(Py_ssize_t length) {
+    if ((size_t)length <= PY_SSIZE_T_MAX / sizeof(uint32_t)) return 1;
+    PyErr_NoMemory();
     return 0;
 }
 
@@ -144,22 +172,28 @@ static PyObject *engine_add(Engine *self, PyObject *args) {
 static PyObject *engine_search(Engine *self, PyObject *args) {
     PyObject *text, *indexes;
     if (!PyArg_ParseTuple(args, "UO", &text, &indexes)) return NULL;
+    if (!engine_ready(self) || !length_fits(PyUnicode_GET_LENGTH(text))) return NULL;
     PyObject *seq = PySequence_Fast(indexes, "indexes must be a sequence");
     if (!seq) return NULL;
     Py_ssize_t wanted = PySequence_Fast_GET_SIZE(seq);
-    Py_ssize_t *which = PyMem_Malloc(sizeof(Py_ssize_t) * (wanted ? wanted : 1));
-    if (!which) { Py_DECREF(seq); return PyErr_NoMemory(); }
+    /* The compiled rules this call uses, copied while the GIL is held: add() may grow
+       (move) the engine's arrays from another thread while this one matches. */
+    pcre2_code **which = PyMem_Malloc(sizeof(pcre2_code *) * (wanted ? wanted : 1));
+    int *folds = PyMem_Malloc(sizeof(int) * (wanted ? wanted : 1));
+    if (!which || !folds) { PyMem_Free(which); PyMem_Free(folds); Py_DECREF(seq); return PyErr_NoMemory(); }
     int need_exact = 0, need_folded = 0;
     for (Py_ssize_t i = 0; i < wanted; i++) {
         Py_ssize_t index = PyLong_AsSsize_t(PySequence_Fast_GET_ITEM(seq, i));
         if (index < 0 || index >= self->count) {
             PyMem_Free(which);
+            PyMem_Free(folds);
             Py_DECREF(seq);
             if (!PyErr_Occurred()) PyErr_SetString(PyExc_IndexError, "unknown rule");
             return NULL;
         }
-        which[i] = index;
-        if (self->ignorecase[index]) need_folded = 1; else need_exact = 1;
+        which[i] = self->codes[index];
+        folds[i] = self->ignorecase[index];
+        if (folds[i]) need_folded = 1; else need_exact = 1;
     }
     Py_DECREF(seq);
     Py_ssize_t length = PyUnicode_GET_LENGTH(text);
@@ -172,6 +206,7 @@ static PyObject *engine_search(Engine *self, PyObject *args) {
         PyMem_RawFree(exact);
         PyMem_RawFree(folded);
         PyMem_Free(which);
+        PyMem_Free(folds);
         PyMem_Free(hits);
         return PyErr_NoMemory();
     }
@@ -187,10 +222,10 @@ static PyObject *engine_search(Engine *self, PyObject *args) {
     if (!context || !stack) failure = PCRE2_ERROR_NOMEMORY;
     else pcre2_jit_stack_assign(context, NULL, stack);
     for (Py_ssize_t i = 0; i < wanted && !failure; i++) {
-        pcre2_code *code = self->codes[which[i]];
+        pcre2_code *code = which[i];
         pcre2_match_data *match = pcre2_match_data_create_from_pattern(code, NULL);
         if (!match) { failure = PCRE2_ERROR_NOMEMORY; break; }
-        const uint32_t *subject = self->ignorecase[which[i]] ? folded : exact;
+        const uint32_t *subject = folds[i] ? folded : exact;
         int rc = pcre2_match(code, (PCRE2_SPTR)subject, (PCRE2_SIZE)length, 0, 0, match, context);
         pcre2_match_data_free(match);
         if (rc >= 0) hits[i] = 1;
@@ -203,6 +238,7 @@ static PyObject *engine_search(Engine *self, PyObject *args) {
     PyMem_RawFree(exact);
     PyMem_RawFree(folded);
     PyMem_Free(which);
+    PyMem_Free(folds);
     if (failure) {
         PyMem_Free(hits);
         return PyErr_Format(PyExc_ValueError, "pcre2 match failed: %d", failure);
@@ -225,6 +261,7 @@ static PyObject *engine_canonical(Engine *self, PyObject *args) {
     int ignorecase;
     if (!PyArg_ParseTuple(args, "Up", &text, &ignorecase)) return NULL;
     Py_ssize_t length = PyUnicode_GET_LENGTH(text);
+    if (!engine_ready(self) || !length_fits(length)) return NULL;
     Py_UCS4 *out = PyMem_Malloc(sizeof(Py_UCS4) * (length ? length : 1));
     if (!out) return PyErr_NoMemory();
     for (Py_ssize_t i = 0; i < length; i++) {

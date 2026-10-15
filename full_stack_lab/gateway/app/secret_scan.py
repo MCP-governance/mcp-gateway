@@ -64,12 +64,23 @@ def scan_text(text: str) -> str:
     return "\n".join([text, *query_values])
 
 
+def _finished(scan: asyncio.Future) -> None:
+    _slots.release()
+    if not scan.cancelled():
+        scan.exception()  # read here, so a scan that outlived its caller is not reported as unhandled
+
+
 async def labels(text: str) -> list[str]:
     if len(text) < 6:
         return []
-    async with _slots:
-        try:
-            rules = await asyncio.wait_for(asyncio.to_thread(rule_ids, scan_text(text).encode()), timeout=TIMEOUT_SECONDS)
-        except (OSError, ValueError, TypeError, AttributeError, asyncio.TimeoutError) as exc:
-            raise InspectionUnavailable("Gitleaks Secret 검사를 완료하지 못했습니다.") from exc
+    try:
+        data = scan_text(text).encode()
+        await _slots.acquire()
+        # A thread cannot be cancelled: a scan past its time limit keeps running, so its
+        # slot is returned when the scan ends, not when the caller stops waiting.
+        scan = asyncio.ensure_future(asyncio.to_thread(rule_ids, data))
+        scan.add_done_callback(_finished)
+        rules = await asyncio.wait_for(asyncio.shield(scan), timeout=TIMEOUT_SECONDS)
+    except (OSError, ValueError, TypeError, AttributeError, asyncio.TimeoutError) as exc:
+        raise InspectionUnavailable("Gitleaks Secret 검사를 완료하지 못했습니다.") from exc
     return sorted({"gitleaks:" + rule for rule in rules})
