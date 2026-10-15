@@ -140,5 +140,6 @@ PC 키트의 관리형 정책을 배포하고 같은 직접 연결이 사라지�
   `tests/intake_identity_pg_check.py`가 실제 SQL·트리거·정책 판정으로 27건을 확인한다 — 독립성 거부 기록, 출처·검사 신선도 보류, 위험 수용 만료,
   만료·철회·계약 변경 뒤 거부와 갱신 불가, 범위 없는 도구 제외, 하네스 설정의 서버 집합, 위임 거부, 무효 처리와 append-only.
   MCP 서버(tools/list·최종 전달)·PII 분석기·내부 Git 호출·워커 산출물은 대역이므로 실환경 증거가 아니다.
+- 실제 스캐너 시험: `tests/intake_worker_scanners_check.py` — 기기의 `intake-worker` 이미지(네트워크 없음, Trivy 캐시 사본)에서 워커 `validate()`를 실제 Syft·Trivy·Semgrep·Gitleaks로 합성 소스 트리에 돌린다. clone만 대역이다.
 - 임시 Gitea 컨테이너 시험: `tests/provenance_gitea_check.py` — 실제 Gitea 1.27.3이 내주는 보관본의 해시가 Git 객체에서 계산한 해시와 같은지.
 - 재생: `tests/policy_replay_lab_check.py`가 `replay_cases_pac15.json`을 격리 OPA에 돌린다.
