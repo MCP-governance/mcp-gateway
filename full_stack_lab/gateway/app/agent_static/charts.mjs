@@ -54,10 +54,18 @@ export function mountVisible(root = document) {
 const values = (option) => (option.series || []).flatMap((s) => [...(s.data || []), ...(s.links || [])])
   .map((d) => (Array.isArray(d) ? d.at(-1) : d && typeof d === "object" ? d.value : d));
 
+function chartOption(build) {
+  const { onClick, ...option } = build();
+  // ECharts defaults data marks to a hand cursor, even when the chart has no click action.
+  if (option.series) option.series = option.series.map((series) => ({ ...series, cursor: onClick ? "pointer" : "default" }));
+  return { onClick, option };
+}
+
 function draw(el, build) {
   const echarts = globalThis.echarts;
   if (!echarts) { el.textContent = "차트를 불러오지 못했습니다."; return; }
-  const { onClick, ...option } = build();
+  const { onClick, option } = chartOption(build);
+  el.classList.toggle("chart-interactive", Boolean(onClick));
   // A chart of zeros reads as a broken chart. Say there is nothing yet; redraw() replaces it when data comes.
   if (!values(option).some((v) => Number(v) > 0)) {
     el.classList.add("is-empty");
@@ -100,7 +108,7 @@ export function update(id, build) {
       entry.observer?.disconnect(); entry.chart?.dispose(); live.delete(el);
       break;
     }
-    const { onClick, ...option } = build();
+    const { onClick, option } = chartOption(build);
     // An empty state has no canvas to update, and a chart whose data went to zeros becomes one: draw anew.
     if (!entry.chart || !values(option).some((v) => Number(v) > 0)) {
       entry.observer?.disconnect(); entry.chart?.dispose(); live.delete(el);

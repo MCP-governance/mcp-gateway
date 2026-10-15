@@ -480,8 +480,9 @@ ROUTES.overview = async (_, tab) => {
   };
   const bypassPaths = (item) => {
     const paths = item.bypass || [];
-    return html`<div class="pill-list">${paths.slice(0, 2).map((path) => chip("block", path))}
-      ${paths.length > 2 ? chip("outline", `외 ${paths.length - 2}개`) : ""}</div>`;
+    const details = [...paths.slice(0, 2), ...(paths.length > 2 ? [`외 ${paths.length - 2}개`] : [])];
+    return html`<span class="pair">${controlChip("bypass_possible")}
+      ${details.length ? html`<span class="ev">${details.join(", ")}</span>` : ""}</span>`;
   };
   // decision -> sent? -> executed? -> response, for today's tool calls.
   const responseLabel = Object.fromEntries(Object.entries(RESPONSE).map(([key, [, label]]) => [key, label]));
