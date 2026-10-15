@@ -103,5 +103,32 @@ class ManagedChecks(unittest.TestCase):
         self.assertFalse(self.linux_health(profiles.replace("mcpgw-unit-codex (enforce)", "mcpgw-unit-codex (complain)")))
 
 
+class StaleSignIn(unittest.TestCase):
+    """A reinstall clears the harness's needs-sign-in marks without following links."""
+
+    def test_mark_removed_and_links_not_followed(self):
+        linux = load("managed-linux")
+        with tempfile.TemporaryDirectory(prefix="mcpgw-signin-") as raw:
+            home = Path(raw) / "home"
+            (home / ".claude").mkdir(parents=True)
+            mark = home / ".claude" / "mcp-needs-auth-cache.json"
+            mark.write_text("{}")
+            linux.forget_stale_sign_in(str(home))
+            self.assertFalse(mark.exists())
+            linux.forget_stale_sign_in(str(home))  # already gone: nothing to do
+            outside = Path(raw) / "outside"
+            outside.mkdir()
+            (outside / "mcp-needs-auth-cache.json").write_text("keep")
+            other = Path(raw) / "other"
+            other.mkdir()
+            try:
+                (other / ".claude").symlink_to(outside, target_is_directory=True)
+            except OSError:
+                self.skipTest("symbolic links are not available here")
+            with self.assertRaises(OSError):
+                linux.forget_stale_sign_in(str(other))
+            self.assertTrue((outside / "mcp-needs-auth-cache.json").exists())
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

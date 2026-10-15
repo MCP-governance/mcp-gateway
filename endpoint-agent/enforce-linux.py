@@ -77,9 +77,13 @@ def nft_rules(uid: int, addresses: list[str], port: int, proxy_port: int | None 
             f"meta skuid {uid} counter reject with icmpx type admin-prohibited\n }}\n}}\n")
 
 
+TOOLS = "cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,uname,date,timeout,sleep,true,false,tr,locale,locale-check,getconf"
+
+
 def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper: bool, managed: bool = False,
             extras: dict[str, list[Path]] | None = None) -> str:
-    common = f"""
+    def common(shells: str) -> str:
+        return f"""
   #include <abstractions/base>
   /etc/** r,
   /usr/** mr,
@@ -98,15 +102,19 @@ def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper
   network inet stream,
   network inet6 stream,
   signal (receive, send) peer={name}*,
-  /usr/{{bin,sbin}}/{{bash,dash,sh,cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,uname,date,timeout,sleep,true,false,tr,locale,locale-check,getconf}} ix,
+  /usr/{{bin,sbin}}/{{{shells}{TOOLS}}} ix,
   # No general interpreter, package manager, git, downloaded executable or Unix IPC.
 """
     clients = "".join(f"  {BASE}/{name}/{key} px -> {name}-{key}-entry,\n" for key in binaries)
     credential = f"  {BASE}/{name}/header-helper px -> {name}-credential,\n" if helper else ""
-    text = f"#include <tunables/global>\nprofile {name} {shell} {{\n{common}\n{clients}}}\n"
+    text = f"#include <tunables/global>\nprofile {name} {shell} {{\n{common('bash,dash,sh,')}\n{clients}}}\n"
     # A companion runs under the harness's own profile (ix): same network and execution limits.
     allowed = {key: "".join(f"  {extra} mrix,\n" for extra in (extras or {}).get(key, [])) for key in binaries}
     for key, binary in binaries.items():
+        # Both harnesses start the header helper with `sh -c` (dash); the model's shell tool
+        # runs bash. bash therefore moves to a -tool profile that has everything the harness
+        # has except the helper and its socket, so a command the model writes cannot fetch
+        # the device token (DEV-31). Anything bash starts, sh included, stays in -tool.
         text += f"""profile {name}-{key}-entry {{
   #include <abstractions/base>
   /usr/** mr,
@@ -115,11 +123,15 @@ def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper
   {binary} px -> {name}-{key},
 }}
 profile {name}-{key} {{
-{common}
+{common('dash,sh,')}
+  /usr/bin/bash px -> {name}-{key}-tool,
   {binary} mr,
 {allowed[key]}{credential}
   {f'unix (send, receive) type=stream peer=(label={name}-credential),' if managed else ''}
 }}
+profile {name}-{key}-tool {{
+{common('bash,dash,sh,')}
+{allowed[key]}}}
 """
     if helper:
         python = Path("/usr/bin/python3").resolve()
@@ -199,7 +211,17 @@ def main() -> None:
         assert "tcp dport { 443, 3128 } accept" in nft_rules(1234, ["100.83.175.111"], 443, 3128)
         confined = profile("mcpgw-u", Path("/x/login-shell"), "/home/u", {"codex": Path("/opt/a/codex"), "claude": Path("/opt/a/claude")},
                            True, True, {"codex": [Path("/opt/a/codex-code-mode-host")], "claude": []})
-        assert confined.count("/opt/a/codex-code-mode-host mrix,") == 1  # only inside the codex profile
+        # only inside the codex harness profile and its tool profile
+        assert confined.count("/opt/a/codex-code-mode-host mrix,") == 2
+        blocks = dict(re.findall(r"profile (\S+)[^{]*\{(.*?)\n\}", confined, re.S))
+        for key in ("codex", "claude"):
+            harness, tool = blocks[f"mcpgw-u-{key}"], blocks[f"mcpgw-u-{key}-tool"]
+            # The helper is started with `sh -c`: dash stays in the harness profile with the helper.
+            assert "header-helper px -> mcpgw-u-credential" in harness and "{dash,sh," in harness
+            assert "/usr/bin/bash px -> mcpgw-u-" + key + "-tool," in harness and "{bash," not in harness
+            # What bash runs - sh, the helper path, the socket - never reaches the token.
+            assert "header-helper" not in tool and "unix" not in tool and "credential" not in tool
+            assert "{bash,dash,sh," in tool
         with tempfile.TemporaryDirectory(prefix="mcpgw-selfcheck-") as folder:
             fake = Path(folder) / "codex"
             fake.write_bytes(b"\x7fELF--no-daemon cannot be used with --remote.")

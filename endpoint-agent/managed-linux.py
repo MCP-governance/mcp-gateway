@@ -141,6 +141,25 @@ def host_report(config):
             "other_accounts": accounts[:64]}
 
 
+def forget_stale_sign_in(home: str) -> None:
+    """Claude Code keeps "needs sign-in" marks for MCP servers in the account's home, and the home
+    outlives a reinstall. The managed servers sign in with this device's helper, so a mark left by
+    an earlier device hides them as unauthenticated. Opened without following links: the folder
+    belongs to the employee's managed account, this runs as root."""
+    try:
+        top = os.open(home, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            folder = os.open(".claude", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=top)
+        finally:
+            os.close(top)
+        try:
+            os.unlink("mcp-needs-auth-cache.json", dir_fd=folder)
+        finally:
+            os.close(folder)
+    except FileNotFoundError:
+        pass
+
+
 def install(args):
     if os.geteuid() != 0:
         raise ValueError("조직 관리자가 root로 설치해야 합니다")
@@ -202,6 +221,7 @@ def install(args):
         if target.exists():
             private_write(folder / (target.name + ".backup"), target.read_text())
     apply_policy(policy)
+    forget_stale_sign_in(person.pw_dir)
     subprocess.run([sys.executable, str(PROGRAMS / "enforce-linux.py"), "--user", args.user,
                     "--gateway-port", str(policy["gateway_port"]),
                     *(["--proxy-port", str(policy["proxy_port"]), "--proxy-env", json.dumps(policy["proxy_environment"])]
