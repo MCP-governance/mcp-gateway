@@ -36,7 +36,8 @@ def login(base: str, identity: dict) -> str:
 
 def register(base: str, requester: str, approver: str, *, endpoint: str, server_id: str, name: str,
              tools: dict[str, str], data_class: str, valid_days: int, allowed: list[str], purpose: str,
-             review_note: str, risk_acceptance: str, parameter_constraints: dict, ack_warnings: bool = False) -> dict:
+             review_note: str, risk_acceptance: str, parameter_constraints: dict, ack_warnings: bool = False,
+             tool_reviews: dict | None = None) -> dict:
     if set(parameter_constraints) != set(tools):
         raise ValueError("Every selected tool needs an explicitly reviewed parameter constraint")
     found = _call(base, "POST", "/gw/registry/discover", approver, {"endpoint": endpoint})
@@ -50,8 +51,11 @@ def register(base: str, requester: str, approver: str, *, endpoint: str, server_
     request = _call(base, "POST", "/api/mcp-requests", requester, {
         "display_name": name, "intake_kind": "remote-endpoint", "endpoint_url": endpoint,
         "requested_transport": "streamable-http", "purpose": purpose})["request"]
+    # Every approved tool carries a person's scope: why, on which asset, reaching which outside hosts.
+    reviews = tool_reviews or {name: {"purpose": purpose[:200], "asset": endpoint.split("/")[2], "destinations": []}
+                               for name in tools}
     scope = {"server_id": server_id, "endpoint": endpoint, "catalog_hash": found["catalog_hash"], "tools": tools,
-             "data_class": data_class, "valid_days": valid_days, "poisoning_ack": bool(flagged)}
+             "data_class": data_class, "valid_days": valid_days, "poisoning_ack": bool(flagged), "tool_reviews": reviews}
     _call(base, "POST", f"/api/mcp-requests/{request['id']}/review-contract", approver,
           {**scope, "allowed_principals": allowed, "review_note": review_note,
            "parameter_constraints": parameter_constraints})

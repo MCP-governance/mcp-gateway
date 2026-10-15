@@ -48,8 +48,18 @@ def ns(value) -> int:
     return int(value * 1_000_000_000) if type(value) in (int, float) else 0
 
 
+_capabilities: dict = {"key": None, "document": None}
+
+
 def capabilities() -> dict:
-    return json.loads((registry.REGISTRY_DIR / "capabilities.json").read_text())
+    """capabilities.json, re-read only when the file changed: the managed-configuration check asks
+    for every server's scope on each connection of a managed device."""
+    path = registry.REGISTRY_DIR / "capabilities.json"
+    status = path.stat()
+    key = (str(path), status.st_mtime_ns, status.st_size)
+    if _capabilities["key"] != key:
+        _capabilities.update(key=key, document=json.loads(path.read_text()))
+    return _capabilities["document"]
 
 
 def under(value: str, prefixes: list[str]) -> bool:

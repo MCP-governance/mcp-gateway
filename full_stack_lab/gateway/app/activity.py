@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from . import db
+from . import db, review
 
 DECISION_KO = {"Allow": "허용", "Alert": "허용·경보", "Restrict": "제한 실행", "Approval": "승인 대기", "Block": "차단"}
 ACTION_KO = {"r": "읽기", "w": "쓰기", "x": "외부전송·실행", "connect": "연결"}
@@ -144,7 +144,7 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
               FROM decisions d LEFT JOIN principals p ON p.token = d.user_token
              WHERE {' AND '.join(clauses) or 'true'} ORDER BY d.id {order} LIMIT %s OFFSET %s""",
         (*params, page_size, offset))
-    described = [describe(dict(row)) for row in rows]
+    described = await review.mark_invalid([describe(dict(row)) for row in rows])
     if not after:
         described.reverse()
     cursor = max([after] + [int(r["id"]) for r in described])

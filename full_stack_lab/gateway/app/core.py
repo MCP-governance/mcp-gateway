@@ -28,6 +28,8 @@ from .contract import (  # re-exported: older callers import these from core
     audit_fingerprint as _audit_fingerprint,
 )
 
+from . import review  # noqa: E402  (approval records, intake gate; see review.py)
+
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/mcp/authz/decision")
 # 정책 관리대장(§11.8 / §12.5)은 정책 코드와 함께 배포되고 OPA가 그 정본이다.
 # Gateway가 별도 사본을 들면 "승인된 정책"이 둘이 된다.
@@ -349,23 +351,26 @@ async def approve_contract(server_id: str, actor: str, note: str) -> dict:
         return {"server_id": server_id, "changed": [], "status": server["status"],
                 "note": "승인본과 관측값이 이미 같습니다."}
 
-    await db.execute(
-        """UPDATE mcp_tools SET
-             approved_description_hash = COALESCE(observed_description_hash, approved_description_hash),
-             approved_schema_hash = COALESCE(observed_schema_hash, approved_schema_hash),
-             approved_server_version = COALESCE(observed_server_version, approved_server_version)
-           WHERE server_id=%s""", (server_id,))
-    # 재승인 자체가 기록이다. 무엇을 무엇으로 바꿨는지가 없으면 나중에 "그때
-    # 승인한 것이 지금 도는 것과 같은가"에 답할 수 없다.
-    await db.execute(
-        """INSERT INTO catalog_snapshots(server_id, server_version, catalog_hash, tool_count,
-                                         exact_match, findings)
-           VALUES (%s,%s,%s,%s,true,%s)""",
-        (server_id, rows[0]["observed_server_version"] if rows else None,
-         canonical_hash(changes), len(rows),
-         Jsonb([{"type": "contract-reapproved", "actor": actor, "note": note,
-                 "changes": changes}])),
-    )
+    async with db.transaction() as connection:
+        await connection.execute(
+            """UPDATE mcp_tools SET
+                 approved_description_hash = COALESCE(observed_description_hash, approved_description_hash),
+                 approved_schema_hash = COALESCE(observed_schema_hash, approved_schema_hash),
+                 approved_server_version = COALESCE(observed_server_version, approved_server_version)
+               WHERE server_id=%s""", (server_id,))
+        # 재승인 자체가 기록이다. 무엇을 무엇으로 바꿨는지가 없으면 나중에 "그때
+        # 승인한 것이 지금 도는 것과 같은가"에 답할 수 없다.
+        await connection.execute(
+            """INSERT INTO catalog_snapshots(server_id, server_version, catalog_hash, tool_count,
+                                             exact_match, findings)
+               VALUES (%s,%s,%s,%s,true,%s)""",
+            (server_id, rows[0]["observed_server_version"] if rows else None,
+             canonical_hash(changes), len(rows),
+             Jsonb([{"type": "contract-reapproved", "actor": actor, "note": note,
+                     "changes": changes}])),
+        )
+        await review.record_event("contract-reapprove", "approved", "server", server_id, actor, reason=note,
+                                  scope={"tools": [change["tool"] for change in changes]}, connection=connection)
     # 재대조해서 상태를 READY로 되돌린다. 승인만 하고 status가 DRIFT로 남으면
     # 화면은 여전히 변조를 말하고 정책은 통과시킨다 - 둘 중 하나가 거짓말이다.
     refreshed = await refresh_catalog(server_id)
@@ -478,8 +483,13 @@ async def register_server(request: dict, actor: str) -> dict:
     intake = await db.fetch_one("SELECT * FROM mcp_intake_requests WHERE id=%s", (intake_id,))
     if not intake or intake["status"] != "APPROVED" or not intake.get("reviewed_by"):
         raise ValueError("승인된 도입 신청만 등록할 수 있습니다.")
-    if intake["submitted_by"] == intake["reviewed_by"]:
+    if await review.same_person(intake["submitted_by"], intake["reviewed_by"]):
         raise ValueError("신청자와 승인자가 같아 등록할 수 없습니다.")
+    # Registration repeats the checks approval made: provenance recorded and compared with the copy in
+    # use, every scan finished and fresh, no critical finding without a live acceptance (D-90).
+    gate = await review.intake_gate(intake, verified=True)
+    if gate["blockers"]:
+        raise ValueError("등록할 수 없습니다: " + " / ".join(item["message"] for item in gate["blockers"]))
     remote_review = None
     if intake["intake_kind"] == "remote-endpoint":
         remote_review = (intake.get("evidence") or {}).get("remote_contract") or {}
@@ -529,6 +539,8 @@ async def register_server(request: dict, actor: str) -> dict:
         raise ValueError("도구 설명에 모델을 조종하는 문구로 보이는 부분이 있습니다: "
                          + ", ".join(f"{name}({'·'.join(reasons)})" for name, reasons in sorted(flagged.items()))
                          + ". 내용을 읽고 확인했다고 표시해야 등록할 수 있습니다.")
+    # What a person scoped, tool by tool; a tool without it is registered but not enabled (D-91).
+    tool_reviews = review.normalize_tool_reviews(request["tools"], request.get("tool_reviews"), actor)
     host = urlsplit(endpoint).hostname or ""
     source_url = request.get("source_url") or ""
     commit = request.get("commit_sha") or ""
@@ -543,7 +555,7 @@ async def register_server(request: dict, actor: str) -> dict:
     spec = {
         "display_name": request["display_name"], "package": package, "version": version,
         "source_url": source_url or endpoint, "supplier": request.get("supplier") or host,
-        "license": None, "endpoint": endpoint,
+        "license": ((intake.get("provenance") or {}).get("license") or {}).get("spdx"), "endpoint": endpoint,
         # A dotless host is a service on this Docker host; anything else is run by its provider.
         "deployment": "internal" if "." not in host else "provider",
         "downstream": request.get("downstream") or None, "data_class": request["data_class"],
@@ -558,6 +570,7 @@ async def register_server(request: dict, actor: str) -> dict:
         "parameter_constraints": remote_review.get("parameter_constraints", {}) if remote_review else {},
         "poisoning_review": {name: registry.tool_hashes(advertised[name]) for name in flagged}
                             if request.get("poisoning_ack") else {},
+        "tool_reviews": tool_reviews, "provenance": intake.get("provenance") or {},
     }
     contract = {"package": f"{package}@{version}", "server_name": found["advertised_name"],
                 "server_version": found["version"], "protocol_version": found["protocol_version"],
@@ -575,6 +588,18 @@ async def register_server(request: dict, actor: str) -> dict:
                                "at": spec["registered_at"], "valid_until": valid_until})
         registry.save_runtime(doc)
         await registry.sync()
+    if intake["intake_kind"] == "repository":
+        # The scan evidence follows the release it approved: the Gateway reads criticals under the
+        # server's own source_ref, and an accepted risk that lapses must bite there (D-90).
+        linked, pattern = registry.source_ref(spec), f"%/intake-{intake_id}-%"
+        await db.execute("DELETE FROM supply_chain_reports WHERE source_ref=%s AND report_path LIKE %s", (linked, pattern))
+        await db.execute(
+            """INSERT INTO supply_chain_reports(scanner, scanner_version, source_ref, report_path, status, critical_count,
+                                                high_count, medium_count, vuln_db_updated_at, summary)
+               SELECT scanner, scanner_version, %s, report_path, status, critical_count, high_count, medium_count,
+                      vuln_db_updated_at, summary
+                 FROM supply_chain_reports WHERE source_ref=%s AND report_path LIKE %s""",
+            (linked, intake["source_ref"], pattern))
     # Re-registering an id (after a deregistration) starts from what was approved now.
     for name, hashes in contract["tools"].items():
         await db.execute(
@@ -592,12 +617,17 @@ async def register_server(request: dict, actor: str) -> dict:
          Jsonb([{"type": "console-registered", "actor": actor, "endpoint": endpoint, "intake_id": spec["intake_id"],
                  "approved_tools": spec["tools"], "valid_until": valid_until,
                  "poisoning_review": spec["poisoning_review"]}])))
+    await review.record_event(
+        "server-register", "approved", "server", server_id, actor, applicant=intake["submitted_by"],
+        reason=request.get("purpose") or request["display_name"],
+        scope={"intake": str(intake_id), "tools": spec["tools"], "valid_until": valid_until, "data_class": request["data_class"],
+               "artifact_sha256": ((spec["provenance"].get("artifact") or {}).get("sha256")), "version": spec["provenance"].get("version")})
     refreshed = await refresh_catalog(server_id)
     return {"server_id": server_id, "status": refreshed["status"], "valid_until": valid_until,
             "tools": spec["tools"], "relationship_id": relationship["id"], "gateway_path": f"/mcp/{server_id}/"}
 
 
-async def deregister_server(server_id: str, actor: str) -> dict:
+async def deregister_server(server_id: str, actor: str, reason: str | None = None) -> dict:
     """Takes a Console registration back out. The rows stay (DISABLED) for the audit trail."""
     async with REGISTER_LOCK:
         doc = registry.runtime()
@@ -610,7 +640,36 @@ async def deregister_server(server_id: str, actor: str) -> dict:
                                "at": datetime.now(UTC).isoformat(timespec="seconds")})
         registry.save_runtime(doc)
         await registry.sync()
+    await review.record_event("server-deregister", "recorded", "server", server_id, actor, reason=reason)
     return {"server_id": server_id, "status": "DISABLED"}
+
+
+async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
+    """Adds scope reviews (purpose, asset, external destinations) to tools of an existing Console
+    registration, for registrations made before every tool carried one. The action is the one the
+    registration already approved; the reviewer is never the person who asked for the server (D-91)."""
+    async with REGISTER_LOCK:
+        doc = registry.runtime()
+        spec = doc["servers"].get(server_id)
+        if not spec or not spec.get("intake_id"):
+            raise LookupError(server_id)
+        unknown = sorted(set(reviews) - set(spec["tools"]))
+        if unknown:
+            raise ValueError("등록에서 승인하지 않은 도구입니다: " + ", ".join(unknown))
+        intake = await db.fetch_one("SELECT submitted_by FROM mcp_intake_requests WHERE id=%s::uuid", (spec["intake_id"],))
+        applicant = intake["submitted_by"] if intake else None
+        await review.require_independent("tool-scope-review", "server", server_id, actor, applicant)
+        normalized = review.normalize_tool_reviews({name: spec["tools"][name] for name in reviews}, reviews, actor)
+        spec["tool_reviews"] = {**(spec.get("tool_reviews") or {}), **normalized}
+        doc["history"].append({"type": "tool-scope-reviewed", "server_id": server_id, "actor": actor,
+                               "at": datetime.now(UTC).isoformat(timespec="seconds"), "tools": sorted(normalized)})
+        registry.save_runtime(doc)
+        await registry.sync()
+    await review.record_event("tool-scope-review", "approved", "server", server_id, actor, applicant=applicant,
+                              scope={"tools": {name: item["action"] for name, item in normalized.items()},
+                                     "destinations": {name: item["destinations"] for name, item in normalized.items()}})
+    return {"server_id": server_id, "reviewed": sorted(normalized),
+            "unreviewed": sorted(set(spec["tools"]) - set(spec["tool_reviews"]))}
 
 
 RENEW_WINDOW_DAYS = int(os.getenv("APPROVAL_RENEW_WINDOW_DAYS", "7"))
@@ -642,6 +701,12 @@ async def renew_approvals(now: datetime | None = None) -> list[dict]:
             if not contracts or not all(c.get(key) is True for c in contracts for key in RENEW_CONTRACT) \
                     or any(c.get("critical_vulnerabilities") for c in contracts):
                 continue
+            # The approval also rests on the intake still standing and on every served tool keeping its
+            # scope review: a request sent back to hold (a lapsed risk acceptance) or a tool whose scope
+            # was withdrawn needs a person again, not a quiet extension (D-94).
+            intake = await db.fetch_one("SELECT status FROM mcp_intake_requests WHERE id=%s::uuid", (spec.get("intake_id"),))
+            if not intake or intake["status"] != "APPROVED" or set(spec.get("tools", {})) - registry.reviewed_tools(server_id):
+                continue
             days = int(spec.get("approval_days")
                        or max(1, round((until - datetime.fromisoformat(spec["registered_at"])).total_seconds() / 86400)))
             spec.update(valid_until=(until + timedelta(days=days)).isoformat(timespec="seconds"), approval_days=days)
@@ -663,6 +728,7 @@ async def catalog_watch() -> None:
     while True:
         try:
             await refresh_all_catalogs()
+            await review.lapse_expired_acceptances()
             await renew_approvals()  # after the refresh: renewal reads the contract it just checked
         except Exception:
             pass
@@ -692,14 +758,19 @@ async def _contract(server_id: str, tool_name: str) -> dict:
     latest = await db.fetch_one(
         "SELECT * FROM catalog_snapshots WHERE server_id=%s ORDER BY id DESC LIMIT 1", (server_id,)
     )
+    # An operator's time-limited acceptance of the intake's critical findings counts while it lasts
+    # (D-90); when it runs out the raw count is what the policy sees again.
     critical = await db.fetch_one(
-        """SELECT COALESCE(sum(critical_count),0) AS critical_count FROM
+        """SELECT COALESCE(sum(critical_count),0) AS critical_count,
+                  (SELECT COALESCE(max(a.critical_count),0) FROM accepted_risks a WHERE a.intake_id=%s::uuid
+                      AND a.expires_at>now() AND a.revoked_at IS NULL) AS accepted FROM
            (SELECT DISTINCT ON (scanner, COALESCE(summary->>'evidence_mode', 'live'))
                    critical_count FROM supply_chain_reports
             WHERE source_ref=%s AND scanner <> 'AI-Infra-Guard mcp-scan'
             ORDER BY scanner, COALESCE(summary->>'evidence_mode', 'live'), id DESC) latest_per_scanner""",
-        (server["source_ref"],),
+        ((registry.server(server_id) or {}).get("intake_id"), server["source_ref"]),
     )
+    raw_critical = int(critical["critical_count"]) if critical else 0
     return {
         "registered": True,
         "enabled": bool(tool["enabled"] and server["status"] != "DISABLED"),
@@ -709,7 +780,8 @@ async def _contract(server_id: str, tool_name: str) -> dict:
         "known_tools_only": bool(latest and latest["exact_match"]),
         "metadata_safe": not bool(latest and any(item.get("type") == "unsafe-description" for item in latest["findings"])),
         "supplier_approved": server["status"] != "BLOCKED_SUPPLY_CHAIN",
-        "critical_vulnerabilities": int(critical["critical_count"]) if critical else 0,
+        "critical_vulnerabilities": 0 if raw_critical <= int(critical["accepted"] or 0) else raw_critical,
+        "critical_accepted": raw_critical if 0 < raw_critical <= int(critical["accepted"] or 0) else 0,
         # 승인은 영구가 아니다(§11.4.1). 기한은 Registry가 들고, 만료 판단은 정책이 한다.
         "approval_valid_until": tool["approval_valid_until"].isoformat()
         if tool.get("approval_valid_until")
@@ -1680,7 +1752,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         return await _decision_payload(base_event, before)
 
 
-async def approve_request(approval_id: str, reviewer_token: str) -> dict:
+async def approve_request(approval_id: str, reviewer_token: str, reason: str | None = None) -> dict:
     reviewer = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (reviewer_token,))
     if not reviewer or reviewer["role"] != "admin" or reviewer["status"] != "active":
         raise ValueError("합성 관리자만 승인할 수 있습니다.")
@@ -1691,17 +1763,23 @@ async def approve_request(approval_id: str, reviewer_token: str) -> dict:
     # (requested_by != approved_by). The same rule has to hold for the per-call approval
     # an administrator raises for their own high-risk call, or the control is one click
     # by one person - which is the thing an approval step exists to prevent.
-    if row["requested_by"] == reviewer_token:
-        raise ValueError("자기가 요청한 호출은 자기가 승인할 수 없습니다. 다른 승인자가 처리해야 합니다.")
+    call = {"server": row["request_payload"].get("server_id"), "tool": row["request_payload"].get("tool")}
+    try:
+        await review.require_independent("call-approve", "approval", approval_id, reviewer_token, row["requested_by"], call)
+    except review.NotIndependent as exc:
+        raise ValueError("자기가 요청한 호출은 자기가 승인할 수 없습니다. 다른 승인자가 처리해야 합니다.") from exc
     if row["expires_at"] <= datetime.now(UTC):
         await db.execute("UPDATE approvals SET status='EXPIRED' WHERE id=%s AND status='PENDING'", (approval_id,))
         raise ValueError("승인 요청의 10분 유효시간이 지났습니다.")
 
-    claimed = await db.fetch_one(
-        """UPDATE approvals SET status='APPROVED', reviewed_by=%s, reviewed_at=now()
-           WHERE id=%s AND status='PENDING' AND expires_at>now() RETURNING *""",
-        (reviewer_token, approval_id),
-    )
+    async with db.transaction() as connection:
+        claimed = await (await connection.execute(
+            """UPDATE approvals SET status='APPROVED', reviewed_by=%s, reviewed_at=now()
+               WHERE id=%s AND status='PENDING' AND expires_at>now() RETURNING *""",
+            (reviewer_token, approval_id))).fetchone()
+        if claimed:
+            await review.record_event("call-approve", "approved", "approval", approval_id, reviewer_token,
+                                      applicant=claimed["requested_by"], reason=reason, scope=call, connection=connection)
     if not claimed:
         raise ValueError("다른 승인자가 먼저 처리했습니다.")
     payload = claimed["request_payload"]
@@ -1765,7 +1843,9 @@ async def supply_chain_coverage() -> list[dict]:
         """SELECT s.id AS server_id, s.source_ref, s.scan_path,
                   count(r.id) AS reports,
                   COALESCE(sum(r.critical_count), 0) AS critical_count,
-                  max(r.imported_at) AS last_scanned_at
+                  max(r.imported_at) AS last_scanned_at,
+                  min(r.vuln_db_updated_at) FILTER (WHERE r.scanner = 'Trivy') AS vuln_db_updated_at,
+                  string_agg(DISTINCT r.scanner || ' ' || COALESCE(r.scanner_version, '—'), ', ') AS scanners
            FROM mcp_servers s
            LEFT JOIN supply_chain_reports r ON r.source_ref = s.source_ref
            GROUP BY s.id, s.source_ref, s.scan_path ORDER BY s.id"""
@@ -1783,11 +1863,15 @@ async def reject_request(approval_id: str, reviewer_token: str, note: str) -> di
         raise ValueError("합성 관리자만 승인 요청을 처리할 수 있습니다.")
     if not note.strip():
         raise ValueError("거부 사유는 비워둘 수 없습니다.")
-    claimed = await db.fetch_one(
-        """UPDATE approvals SET status='REJECTED', reviewed_by=%s, reviewed_at=now(), review_note=%s
-           WHERE id=%s AND status='PENDING' RETURNING id, requested_by, review_note""",
-        (reviewer_token, note.strip(), approval_id),
-    )
+    async with db.transaction() as connection:
+        claimed = await (await connection.execute(
+            """UPDATE approvals SET status='REJECTED', reviewed_by=%s, reviewed_at=now(), review_note=%s
+               WHERE id=%s AND status='PENDING' RETURNING id, requested_by, review_note, request_payload""",
+            (reviewer_token, note.strip(), approval_id))).fetchone()
+        if claimed:
+            await review.record_event("call-reject", "rejected", "approval", approval_id, reviewer_token, applicant=claimed["requested_by"],
+                                      reason=note.strip(), scope={"server": claimed["request_payload"].get("server_id"),
+                                                                  "tool": claimed["request_payload"].get("tool")}, connection=connection)
     if not claimed:
         raise ValueError("대기 중인 승인 요청이 아닙니다.")
     return {"approval_id": approval_id, "status": "REJECTED", "reviewed_by": reviewer_token,

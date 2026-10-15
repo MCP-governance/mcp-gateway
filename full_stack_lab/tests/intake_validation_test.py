@@ -8,13 +8,15 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from contextlib import asynccontextmanager
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 LAB = Path(__file__).resolve().parent.parent
 sys.path[:0] = [str(LAB / "supply_chain"), str(LAB / "gateway")]
 from exit_terms import conclude, investigate
-from app import agent_service, core
+from app import agent_service, core, review
 from fastapi.testclient import TestClient
 import intake_worker as worker
 
@@ -73,9 +75,13 @@ class Connection:
 
 
 class ValidationTest(unittest.TestCase):
+    def provenance(self):
+        self.validate()
+        return [args for sql, args in self.connection.calls if "SET provenance=%s" in sql][-1][0].obj
+
     def validate(self, fail=None, critical=False):
         request_id = uuid4()
-        connection = Connection()
+        connection = self.connection = Connection()
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             work, reports = root / "work", root / "reports"
@@ -134,9 +140,17 @@ class ValidationTest(unittest.TestCase):
         self.assertEqual(final[0:2], ("FAILED", "UNASSESSED"))
         self.assertEqual(evidence["scanners"]["gitleaks"]["status"], "FAILED")
 
-    def test_critical_is_rejected(self):
+    def test_critical_holds_the_request_for_a_person(self):
         final, _, _ = self.validate(critical=True)
-        self.assertEqual(final[0], "REJECTED")
+        self.assertEqual(final[0:2], ("HOLD", "CRITICAL"))
+
+    def test_provenance_records_source_commit_and_artifact_digest(self):
+        record = self.provenance()
+        self.assertEqual((record["kind"], record["source_url"], record["version"]),
+                         ("source", "https://github.com/example/server", "d" * 40))
+        self.assertTrue(record["artifact"]["applicable"])
+        self.assertRegex(record["artifact"]["sha256"], r"^[0-9a-f]{64}$")
+        self.assertEqual(record["artifact"]["files"], 1)
 
 
 class ApiTest(unittest.TestCase):
@@ -147,28 +161,52 @@ class ApiTest(unittest.TestCase):
         self.client = TestClient(agent_service.app)
 
     def identity(self, role):
-        return patch.object(agent_service, "current_identity", AsyncMock(return_value={"roles": [role], "principal": "test-user"}))
+        return patch.object(agent_service, "current_identity",
+                            AsyncMock(return_value={"roles": [role], "principal": "test-user", "user_id": "user-test"}))
+
+    @staticmethod
+    def transaction(answers):
+        """Unit-level double for a database transaction: statements are recorded, rows come from `answers`
+        by the first statement fragment they contain."""
+        statements = []
+
+        async def execute(sql, params=None):
+            statements.append((sql, params))
+            row = next((row for fragment, row in answers.items() if fragment in sql), None)
+            return SimpleNamespace(fetchone=AsyncMock(return_value=row), fetchall=AsyncMock(return_value=[]))
+
+        @asynccontextmanager
+        async def manager():
+            yield SimpleNamespace(execute=execute)
+        return patch.object(agent_service.db, "transaction", manager), statements
 
     def test_submission_enters_queue_atomically(self):
-        db = AsyncMock(side_effect=[None, {"id": str(self.id), "status": "VALIDATION_QUEUED"}])
-        with self.identity("employee"), patch.object(agent_service.db, "fetch_one", db):
+        db = AsyncMock(side_effect=[None])
+        transaction, statements = self.transaction({"INSERT INTO mcp_intake_requests": {"id": str(self.id), "status": "VALIDATION_QUEUED"},
+                                                    "INSERT INTO approval_events": {"id": 1}})
+        with self.identity("employee"), patch.object(agent_service.db, "fetch_one", db), transaction:
             response = self.client.post("/api/mcp-requests", json={
                 "display_name": "Example", "repository_url": "https://github.com/example/server",
                 "requested_transport": "stdio", "purpose": "use repository MCP safely"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["request"]["status"], "VALIDATION_QUEUED")
-        self.assertIn("VALIDATION_QUEUED", db.call_args.args[1])
+        self.assertIn("VALIDATION_QUEUED", statements[0][1])
+        # The applicant's own consent is recorded in the same transaction, apart from any approval.
+        self.assertEqual(statements[1][1][:2], ("user-consent", "recorded"))
 
     def test_public_origin_can_submit_but_other_origin_cannot(self):
         body = {"display_name": "Example", "repository_url": "https://github.com/example/server",
                 "requested_transport": "stdio", "purpose": "use repository MCP safely"}
-        db = AsyncMock(side_effect=[None, {"id": str(self.id), "status": "VALIDATION_QUEUED"}])
-        with patch.dict(os.environ, {"IDP_ISSUER": "https://mcp-gw.internal"}), self.identity("employee"), patch.object(agent_service.db, "fetch_one", db):
+        db = AsyncMock(side_effect=[None])
+        transaction, _ = self.transaction({"INSERT INTO mcp_intake_requests": {"id": str(self.id), "status": "VALIDATION_QUEUED"},
+                                           "INSERT INTO approval_events": {"id": 1}})
+        with patch.dict(os.environ, {"IDP_ISSUER": "https://mcp-gw.internal"}), self.identity("employee"), \
+             patch.object(agent_service.db, "fetch_one", db), transaction:
             allowed = self.client.post("/api/mcp-requests", json=body, headers={"origin": "https://mcp-gw.internal"})
             blocked = self.client.post("/api/mcp-requests", json=body, headers={"origin": "https://elsewhere.invalid"})
         self.assertEqual(allowed.status_code, 200)
         self.assertEqual(blocked.status_code, 403)
-        self.assertEqual(db.await_count, 2)
+        self.assertEqual(db.await_count, 1)
 
     def test_reports_are_admin_only(self):
         with self.identity("employee"):
@@ -192,10 +230,12 @@ class ApiTest(unittest.TestCase):
             self.assertEqual(self.client.get(f"/api/mcp-requests/{self.id}/artifacts/sbom").status_code, 404)
 
     def test_discovery_does_not_bypass_remote_approval(self):
-        row = {"status": "VALIDATED", "commit_sha": "d" * 40, "submitted_by": "requester", "intake_kind": "repository",
+        row = {"status": "VALIDATED", "commit_sha": "d" * 40, "submitted_by": "requester", "submitter_user_id": "user-req",
+               "display_name": "Example", "intake_kind": "repository",
                "requested_transport": "streamable-http", "exit_terms": {},
                "evidence": {"exit_terms_discovery": {"status": "REVIEW_REQUIRED"}}}
-        with self.identity("admin"), patch.object(agent_service.db, "fetch_one", AsyncMock(return_value=row)):
+        with self.identity("admin"), patch.object(agent_service.db, "fetch_one", AsyncMock(return_value=row)), \
+             patch.object(review, "lapse_expired_acceptances", AsyncMock(return_value=[])):
             response = self.client.post(f"/api/mcp-requests/{self.id}/approve")
         self.assertEqual(response.status_code, 409)
         self.assertIn("증거 문서", response.json()["detail"])
@@ -208,18 +248,23 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(response.json()["status"], "pending")
 
     def test_approval_publishes_verified_commit_before_state_change(self):
-        pending = {"id": self.id, "status": "VALIDATED", "commit_sha": "d" * 40, "submitted_by": "requester", "intake_kind": "repository",
-                   "requested_transport": "stdio", "exit_terms": {},
+        pending = {"id": self.id, "status": "VALIDATED", "commit_sha": "d" * 40, "submitted_by": "requester", "submitter_user_id": "user-req",
+                   "display_name": "Example", "intake_kind": "repository",
+                   "requested_transport": "stdio", "exit_terms": {}, "provenance": {"kind": "source"},
                    "repository_url": "https://github.com/example/server"}
         approved = {"id": self.id, "status": "APPROVED", "internal_repo_url": "http://internal/git/corpadmin/mcp-test"}
-        db = AsyncMock(side_effect=[pending, approved])
-        publisher = AsyncMock(return_value=approved["internal_repo_url"])
-        with self.identity("admin"), patch.object(agent_service.db, "fetch_one", db), \
-             patch.object(agent_service, "publish_internal_repo", publisher):
+        db = AsyncMock(side_effect=[pending])
+        publisher = AsyncMock(return_value=(approved["internal_repo_url"], {"match": True, "sha256": "e" * 64}))
+        gate = AsyncMock(return_value={"blockers": [], "critical": None, "vuln_db": None})
+        transaction, statements = self.transaction({"UPDATE mcp_intake_requests": approved, "INSERT INTO approval_events": {"id": 1}})
+        with self.identity("admin"), patch.object(agent_service.db, "fetch_one", db), transaction, \
+             patch.object(agent_service, "publish_internal_repo", publisher), patch.object(review, "intake_gate", gate), \
+             patch.object(review, "lapse_expired_acceptances", AsyncMock(return_value=[])):
             response = self.client.post(f"/api/mcp-requests/{self.id}/approve")
         self.assertEqual(response.status_code, 200)
-        publisher.assert_awaited_once_with(pending)
-        self.assertIn("internal_repo_url", db.await_args.args[0])
+        publisher.assert_awaited_once()
+        self.assertIn("internal_repo_url", statements[0][0])
+        self.assertEqual(statements[1][1][:2], ("intake-approve", "approved"))
 
 
 class AnomalyRecordTest(unittest.TestCase):

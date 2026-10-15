@@ -9,6 +9,8 @@ import io
 import os
 import re
 import secrets
+import tarfile
+import tempfile
 import time
 import zipfile
 from collections import defaultdict
@@ -26,10 +28,10 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from psycopg.types.json import Jsonb
 
-from . import core, db, oidc
+from . import core, db, oidc, provenance, review
 from .release import build_info
 from .system_metrics import SystemMetrics
-from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, authenticate,
+from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, ToolReview, authenticate,
                              authenticated_user, issue_token, private_key)
 from .connectors import router as connectors_router
 from .integrations import router as integrations_router
@@ -801,14 +803,17 @@ def console_user(user: dict) -> dict:
 
 
 async def intake_rows(user: dict) -> list[dict]:
-    query = """SELECT id, submitted_by, display_name, repository_url, requested_transport, purpose,
-                      status, risk_level, review_note, reviewed_by, reviewed_at, created_at, updated_at,
-                      commit_sha, source_ref, evidence, validated_at, exit_terms, internal_repo_url,
-                      registered_server_id, intake_kind, endpoint_url
-               FROM mcp_intake_requests"""
+    await review.lapse_expired_acceptances()
+    query = """SELECT r.id, r.submitted_by, r.display_name, r.repository_url, r.requested_transport, r.purpose,
+                      r.status, r.risk_level, r.review_note, r.reviewed_by, r.reviewed_at, r.created_at, r.updated_at,
+                      r.commit_sha, r.source_ref, r.evidence, r.validated_at, r.exit_terms, r.internal_repo_url,
+                      r.registered_server_id, r.intake_kind, r.endpoint_url, r.provenance,
+                      (r.submitted_by = %s OR p.user_id = %s) AS own
+               FROM mcp_intake_requests r LEFT JOIN principals p ON p.token = r.submitted_by"""
+    me = (user["principal"], user.get("user_id"))
     if "admin" in user["roles"]:
-        return await db.fetch_all(query + " ORDER BY created_at DESC LIMIT 100")
-    return await db.fetch_all(query + " WHERE submitted_by=%s ORDER BY created_at DESC LIMIT 100", (user["principal"],))
+        return await db.fetch_all(query + " ORDER BY r.created_at DESC LIMIT 100", me)
+    return await db.fetch_all(query + " WHERE r.submitted_by=%s ORDER BY r.created_at DESC LIMIT 100", (*me, user["principal"]))
 
 
 @app.get("/api/mcp-requests")
@@ -860,11 +865,33 @@ async def repo_head(client: httpx.AsyncClient, path: str, info: dict) -> str:
     return head.json().get("commit", {}).get("id") or ""
 
 
-async def publish_internal_repo(row: dict) -> str:
+async def internal_archive_digest(client: httpx.AsyncClient, path: str, commit: str) -> dict:
+    """Digest of the commit as the internal repository would hand it to an employee (D-90)."""
+    spool = tempfile.SpooledTemporaryFile(max_size=32 << 20)
+    try:
+        async with client.stream("GET", f"{path}/archive/{commit}.tar.gz") as response:
+            if not response.is_success:
+                raise HTTPException(502, f"내부 저장소 보관본을 받지 못했습니다 (Gitea {response.status_code}).")
+            total = 0
+            async for block in response.aiter_bytes():
+                total += len(block)
+                if total > provenance.MAX_ARCHIVE_BYTES:
+                    raise ProvenanceMismatch("내부 저장소 보관본이 크기 상한을 넘었습니다.")
+                spool.write(block)
+        spool.seek(0)
+        return await asyncio.to_thread(provenance.archive_digest, spool)
+    except (tarfile.TarError, EOFError, ValueError) as exc:
+        raise ProvenanceMismatch(f"내부 저장소 보관본을 읽지 못했습니다: {exc}") from exc
+    finally:
+        spool.close()
+
+
+async def publish_internal_repo(row: dict) -> tuple[str, dict]:
     """검증한 공개 GitHub 저장소를 이 기기의 Gitea `mcp` 조직으로 가져온다(D-48).
 
     조직은 limited — 로그인한 사용자만 본다. 직원은 읽기·클론·이슈, 관리자는 Gitea 관리자다.
     풀 리퀘스트는 끈다: 이 저장소는 검증한 커밋의 사본이고, 고친 코드는 도입 신청을 다시 거친다.
+    직원에게 보이기 전에, 이 사본의 파일 해시가 검증 때 기록한 것과 같은지 대조한다(D-90).
     """
     org = GITEA_ORG
     name = internal_repo_name(row["repository_url"])
@@ -895,6 +922,12 @@ async def publish_internal_repo(row: dict) -> str:
                 raise HTTPException(502, f"내부 저장소 확인 실패 (Gitea {existing.status_code}).")
             if await repo_head(client, path, info) != row["commit_sha"]:
                 raise HTTPException(409, "검증한 커밋과 현재 원격 저장소의 기본 브랜치가 달라졌습니다. 재검증하세요.")
+            recorded = ((row.get("provenance") or {}).get("artifact") or {}).get("sha256")
+            actual = await internal_archive_digest(client, path, row["commit_sha"])
+            if actual["sha256"] != recorded:
+                raise ProvenanceMismatch(f"기록한 해시 {str(recorded)[:12]} · 사본 해시 {actual['sha256'][:12]}")
+            checked = {"match": True, "source": "internal-repo-archive", "sha256": actual["sha256"],
+                       "files": actual["files"], "bytes": actual["bytes"]}
             published = await client.patch(path, json={
                 "private": False, "has_issues": True, "has_pull_requests": False, "has_wiki": False,
                 "website": row["repository_url"],
@@ -904,7 +937,7 @@ async def publish_internal_repo(row: dict) -> str:
     except httpx.HTTPError as exc:
         raise HTTPException(502, f"내부 저장소에 연결하지 못했습니다: {type(exc).__name__}") from exc
     public = os.getenv("GITEA_PUBLIC_URL", "http://localhost:3000").rstrip("/")
-    return f"{public}/{org}/{name}"
+    return f"{public}/{org}/{name}", checked
 
 
 @app.post("/api/mcp-requests")
@@ -931,17 +964,24 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
     )
     if existing:
         raise HTTPException(409, "같은 대상의 신청이 이미 진행 중입니다.")
-    row = await db.fetch_one(
-        """INSERT INTO mcp_intake_requests(
-                 id, submitted_by, display_name, repository_url, requested_transport,
-                 purpose, exit_terms, status, intake_kind, endpoint_url
-             ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-             RETURNING id, display_name, repository_url, requested_transport, purpose,
-                       status, risk_level, exit_terms, created_at, intake_kind, endpoint_url""",
-        (uuid4(), user["principal"], request.display_name.strip(), repository_url,
-         request.requested_transport, request.purpose.strip(), Jsonb({}),
-         "HOLD" if endpoint else "VALIDATION_QUEUED", request.intake_kind, endpoint),
-    )
+    # Submitting is the applicant's own consent to use this service for this purpose; it is recorded as
+    # such, apart from the operator approval that may follow (D-92).
+    async with db.transaction() as connection:
+        row = await (await connection.execute(
+            """INSERT INTO mcp_intake_requests(
+                     id, submitted_by, display_name, repository_url, requested_transport,
+                     purpose, exit_terms, status, intake_kind, endpoint_url
+                 ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                 RETURNING id, display_name, repository_url, requested_transport, purpose,
+                           status, risk_level, exit_terms, created_at, intake_kind, endpoint_url""",
+            (uuid4(), user["principal"], request.display_name.strip(), repository_url,
+             request.requested_transport, request.purpose.strip(), Jsonb({}),
+             "HOLD" if endpoint else "VALIDATION_QUEUED", request.intake_kind, endpoint))).fetchone()
+        if row:
+            await review.record_event("user-consent", "recorded", "intake", row["id"], user["principal"],
+                                      applicant=user["principal"], reason=request.purpose.strip(),
+                                      scope={"kind": request.intake_kind, "target": endpoint or repository_url,
+                                             "transport": request.requested_transport}, connection=connection)
     return {"request": row, "message": "신청했습니다."}
 
 
@@ -979,7 +1019,7 @@ async def queue_validation(request_id: UUID, authorization: str | None = Header(
         """UPDATE mcp_intake_requests
            SET status='VALIDATION_QUEUED', reviewed_by=%s, reviewed_at=now(), updated_at=now(),
                validation_lease_expires_at=NULL, validation_attempts=0,
-               commit_sha=NULL, source_ref=NULL, evidence='{}', validated_at=NULL,
+               commit_sha=NULL, source_ref=NULL, evidence='{}', provenance='{}', validated_at=NULL,
                risk_level='UNASSESSED', review_note=NULL
            WHERE id=%s AND status IN ('HOLD','FAILED','VALIDATED')
            RETURNING id, status, reviewed_by, reviewed_at""",
@@ -1024,7 +1064,11 @@ async def intake_report(request_id: UUID, authorization: str | None = Header(def
             available.append({"kind": kind, "filename": name,
                               "url": f"/api/mcp-requests/{request_id}/artifacts/{kind}"})
     return {"request": row, "reports": reports, "artifacts": available,
-            "exit_terms_discovery": (row.get("evidence") or {}).get("exit_terms_discovery")}
+            "exit_terms_discovery": (row.get("evidence") or {}).get("exit_terms_discovery"),
+            "gate": await review.intake_gate(row), "events": await review.events_for("intake", request_id),
+            "risk_acceptances": await db.fetch_all(
+                """SELECT id, commit_sha, critical_count, finding_ids, reason, accepted_by, accepted_at, expires_at, revoked_at
+                     FROM accepted_risks WHERE intake_id=%s ORDER BY id DESC""", (request_id,))}
 
 
 @app.get("/api/mcp-requests/{request_id}/artifacts/{kind}")
@@ -1064,6 +1108,21 @@ def exit_term_flags(row: dict) -> dict[str, bool]:
 
 class IntakeApproval(StrictModel):
     risk_acceptance: str = Field(default="", max_length=1000)
+    license: str = Field(default="", max_length=60)
+
+
+class ProvenanceMismatch(Exception):
+    """The copy employees would use is not the artifact that was scanned."""
+
+
+async def hold_intake(request_id: UUID, row: dict, user: dict, messages: list[str], kind: str = "intake-hold") -> None:
+    """A request whose evidence does not hold up goes back to hold with the reasons, never forward."""
+    note = "보류: " + " / ".join(messages)[:400]
+    await review.transition(
+        """UPDATE mcp_intake_requests SET status='HOLD', review_note=%s, updated_at=now()
+           WHERE id=%s AND status IN ('VALIDATED', 'REMOTE_REVIEWED') RETURNING id""", (note, request_id),
+        kind=kind, outcome="held", target_kind="intake", target_id=request_id, actor=user["principal"],
+        applicant=row["submitted_by"], reason=note, scope={"was": row["status"]})
 
 
 @app.post("/api/mcp-requests/{request_id}/approve")
@@ -1078,13 +1137,19 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "도입 승인은 관리자만 할 수 있습니다.")
-    remote = await db.fetch_one("SELECT * FROM mcp_intake_requests WHERE id=%s", (request_id,))
-    if remote and remote["submitted_by"] == user["principal"]:
-        raise HTTPException(403, "본인이 신청한 서비스는 본인이 승인할 수 없습니다.")
+    await review.lapse_expired_acceptances()
+    remote = await db.fetch_one(
+        """SELECT r.*, p.user_id AS submitter_user_id FROM mcp_intake_requests r
+           LEFT JOIN principals p ON p.token = r.submitted_by WHERE r.id=%s""", (request_id,))
+    if remote:
+        try:
+            await review.require_independent("intake-approve", "intake", request_id, user["principal"], remote["submitted_by"],
+                                             {"name": remote["display_name"]}, actor_user=user.get("user_id"),
+                                             applicant_user=remote.get("submitter_user_id"))
+        except review.NotIndependent as exc:
+            raise HTTPException(403, str(exc)) from exc
     if remote and remote.get("intake_kind") == "remote-endpoint":
         reviewed = (remote.get("evidence") or {}).get("remote_contract") or {}
-        if remote["submitted_by"] == user["principal"]:
-            raise HTTPException(403, "본인이 신청한 서비스는 본인이 승인할 수 없습니다.")
         if remote["status"] != "REMOTE_REVIEWED" or not reviewed.get("reviewed_by"):
             raise HTTPException(409, "실제 도구 계약과 접근 범위를 검토한 뒤 승인하세요.")
         risk = approval.risk_acceptance.strip() if approval else ""
@@ -1092,6 +1157,10 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
             raise HTTPException(409, "제공자 종료 조건 증거 또는 10자 이상의 위험 수용 사유가 필요합니다.")
         if datetime.fromisoformat(reviewed["valid_until"]) <= datetime.now(UTC):
             raise HTTPException(409, "검토한 사용 기한이 지났습니다. 다시 검토하세요.")
+        gate = await review.intake_gate(remote)
+        if gate["blockers"]:
+            await hold_intake(request_id, remote, user, [item["message"] for item in gate["blockers"]])
+            raise HTTPException(409, "출처 정보를 확인하지 못해 보류했습니다: " + " / ".join(item["message"] for item in gate["blockers"]))
         found = await gateway_proxy("/api/registry/discover", authorization, "POST",
                                     {"endpoint": remote["endpoint_url"]}, timeout=45)
         if (found["catalog_hash"] != reviewed["registration"]["catalog_hash"]
@@ -1103,11 +1172,16 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
             "actor": user["principal"], "at": datetime.now(UTC).isoformat(),
             "review_digest": core.canonical_hash(reviewed), "risk_acceptance": risk,
             "code_scan_performed": False}}
-        row = await db.fetch_one("""UPDATE mcp_intake_requests SET status='APPROVED', evidence=%s,
+        row = await review.transition("""UPDATE mcp_intake_requests SET status='APPROVED', evidence=%s,
                 reviewed_by=%s, reviewed_at=now(), updated_at=now()
                 WHERE id=%s AND status='REMOTE_REVIEWED' AND evidence=%s
                 RETURNING id,status,reviewed_by,reviewed_at""",
-                (Jsonb(evidence), user["principal"], request_id, Jsonb(remote["evidence"])))
+                (Jsonb(evidence), user["principal"], request_id, Jsonb(remote["evidence"])),
+                kind="intake-approve", outcome="approved", target_kind="intake", target_id=request_id,
+                actor=user["principal"], applicant=remote["submitted_by"], reason=risk or reviewed.get("review_note"),
+                scope={"endpoint": remote["endpoint_url"], "tools": reviewed["registration"]["tools"],
+                       "data_class": reviewed["registration"]["data_class"], "valid_until": reviewed["valid_until"],
+                       "allowed_principals": reviewed["allowed_principals"], "contract_sha256": reviewed["registration"]["catalog_hash"]})
         if not row:
             raise HTTPException(409, "요청 상태가 변경되어 승인하지 않았습니다.")
         return {"request": row, "message": "승인했습니다."}
@@ -1127,18 +1201,61 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
     if risk and pending["requested_transport"] != "stdio" and not manual_terms_verified(terms):
         terms = {**terms, "risk_acceptance": risk, "risk_accepted_by": user["principal"],
                  "risk_accepted_at": datetime.now(UTC).isoformat(), "conclusion_grade": conclusion.get("grade")}
-    internal_repo_url = await publish_internal_repo(pending)
-    row = await db.fetch_one(
+    # D-90: where the code came from, what it hashed to, whether the scan is whole and recent. A licence
+    # the scanner could not read may be attested by the approver; it is recorded as theirs.
+    record = dict(pending.get("provenance") or {})
+    declared = approval.license.strip() if approval else ""
+    if declared and record and not (record.get("license") or {}).get("spdx"):
+        record["license"] = {"spdx": declared, "source": "operator", "by": user["principal"]}
+    pending = {**pending, "provenance": record}
+    gate = await review.intake_gate(pending)
+    if gate["blockers"]:
+        await hold_intake(request_id, pending, user, [item["message"] for item in gate["blockers"]])
+        raise HTTPException(409, "승인할 수 없어 보류했습니다: " + " / ".join(item["message"] for item in gate["blockers"]))
+    try:
+        internal_repo_url, checked = await publish_internal_repo(pending)
+    except ProvenanceMismatch as exc:
+        await hold_intake(request_id, pending, user, [str(exc)], kind="provenance-mismatch")
+        raise HTTPException(409, f"배포 파일이 검증한 것과 달라 보류했습니다: {exc}") from exc
+    record["verification"] = {**checked, "by": user["principal"], "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    critical = gate["critical"] or {}
+    row = await review.transition(
         """UPDATE mcp_intake_requests
            SET status='APPROVED', internal_repo_url=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now(),
-               exit_terms=%s
+               exit_terms=%s, provenance=%s
            WHERE id=%s AND status='VALIDATED'
            RETURNING id, status, internal_repo_url, reviewed_by, reviewed_at, source_ref, exit_terms""",
-        (internal_repo_url, user["principal"], Jsonb(terms), request_id),
-    )
+        (internal_repo_url, user["principal"], Jsonb(terms), Jsonb(record), request_id),
+        kind="intake-approve", outcome="approved", target_kind="intake", target_id=request_id,
+        actor=user["principal"], applicant=pending["submitted_by"], reason=risk or None,
+        scope={"source": pending["repository_url"], "commit": pending["commit_sha"],
+               "license": (record.get("license") or {}).get("spdx"),
+               "artifact_sha256": (record.get("artifact") or {}).get("sha256"), "verified_sha256": checked["sha256"],
+               "critical_accepted": critical.get("count", 0) if critical.get("covered") else 0,
+               "vuln_db_updated_at": gate["vuln_db"] and gate["vuln_db"]["updated_at"]})
     if not row:
         raise HTTPException(409, "격리 검증을 통과한 요청만 승인할 수 있습니다.")
     return {"request": row, "message": "승인하고 사내 저장소에 게시했습니다."}
+
+
+class RiskAcceptance(StrictModel):
+    reason: str = Field(min_length=10, max_length=1000)
+    days: int = Field(ge=1, le=review.RISK_ACCEPTANCE_MAX_DAYS)
+
+
+@app.post("/api/mcp-requests/{request_id}/accept-risk")
+async def accept_intake_risk(request_id: UUID, request: RiskAcceptance, authorization: str | None = Header(default=None)):
+    """치명적 발견을 기한을 두고 수용한다. 기한이 지나면 요청은 다시 보류된다."""
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "위험 수용은 관리자만 기록할 수 있습니다.")
+    try:
+        accepted = await review.accept_risk(request_id, user["principal"], request.reason, request.days)
+    except review.NotIndependent as exc:
+        raise HTTPException(403, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return {"acceptance": accepted, "message": f"{accepted['expires_at'].date()}까지 위험 수용을 기록했습니다."}
 
 
 class IntakeRegistration(StrictModel):
@@ -1149,6 +1266,7 @@ class IntakeRegistration(StrictModel):
     data_class: Literal["public", "nonimportant", "important"]
     valid_days: int = Field(ge=1, le=365)
     poisoning_ack: bool = False
+    tool_reviews: dict[str, ToolReview] = Field(min_length=1, max_length=300)
 
 
 class RemoteContractReview(IntakeRegistration):
@@ -1158,56 +1276,75 @@ class RemoteContractReview(IntakeRegistration):
 
 
 @app.post("/api/mcp-requests/{request_id}/review-contract")
-async def review_remote_contract(request_id: UUID, review: RemoteContractReview,
+async def review_remote_contract(request_id: UUID, proposal: RemoteContractReview,
                                  authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "도구 계약 검토는 관리자만 할 수 있습니다.")
-    row = await db.fetch_one("SELECT * FROM mcp_intake_requests WHERE id=%s", (request_id,))
+    row = await db.fetch_one(
+        """SELECT r.*, p.user_id AS submitter_user_id FROM mcp_intake_requests r
+           LEFT JOIN principals p ON p.token = r.submitted_by WHERE r.id=%s""", (request_id,))
     if not row or row["intake_kind"] != "remote-endpoint" or row["status"] not in {"HOLD", "REMOTE_REVIEWED"}:
         raise HTTPException(409, "승인 전 원격 신청만 계약을 검토할 수 있습니다.")
-    if review.endpoint != row["endpoint_url"]:
+    try:
+        await review.require_independent("contract-review", "intake", request_id, user["principal"], row["submitted_by"],
+                                         {"endpoint": row["endpoint_url"]}, actor_user=user.get("user_id"),
+                                         applicant_user=row.get("submitter_user_id"))
+    except review.NotIndependent as exc:
+        raise HTTPException(403, str(exc)) from exc
+    if proposal.endpoint != row["endpoint_url"]:
         raise HTTPException(409, "신청한 엔드포인트와 검토 대상이 다릅니다.")
     # The Console asks for login ids; the ledger and the Gateway work in principal tokens.
     principals = await db.fetch_all(
         "SELECT token, user_id FROM principals WHERE status='active' AND (token=ANY(%s::text[]) OR user_id=ANY(%s::text[]))",
-        (review.allowed_principals, review.allowed_principals))
+        (proposal.allowed_principals, proposal.allowed_principals))
     named = {p["token"] for p in principals} | {p["user_id"] for p in principals}
-    missing = sorted(set(review.allowed_principals) - named)
+    missing = sorted(set(proposal.allowed_principals) - named)
     if missing:
         raise HTTPException(422, f"활성 계정이 아닌 사용자: {', '.join(missing)}")
-    review = review.model_copy(update={"allowed_principals": sorted({p["token"] for p in principals})})
+    proposal = proposal.model_copy(update={"allowed_principals": sorted({p["token"] for p in principals})})
     found = await gateway_proxy("/api/registry/discover", authorization, "POST",
-                                {"endpoint": review.endpoint}, timeout=45)
+                                {"endpoint": proposal.endpoint}, timeout=45)
     advertised = {tool["name"]: tool for tool in found["tools"]}
-    if review.catalog_hash != found["catalog_hash"] or not set(review.tools) <= set(advertised):
+    if proposal.catalog_hash != found["catalog_hash"] or not set(proposal.tools) <= set(advertised):
         raise HTTPException(409, "실제 공급자 계약과 검토 내용이 다릅니다.")
-    if any(advertised[name]["warnings"] for name in review.tools) and not review.poisoning_ack:
+    if any(advertised[name]["warnings"] for name in proposal.tools) and not proposal.poisoning_ack:
         raise HTTPException(409, "선택한 도구의 설명 경고를 읽고 검토 확인을 남기세요.")
     from jsonschema import Draft202012Validator, SchemaError
-    if set(review.parameter_constraints) != set(review.tools):
+    if set(proposal.parameter_constraints) != set(proposal.tools):
         raise HTTPException(422, "선택한 모든 도구의 인자 범위를 JSON Schema로 검토하세요.")
     try:
-        for constraint in review.parameter_constraints.values():
+        for constraint in proposal.parameter_constraints.values():
             Draft202012Validator.check_schema(constraint)
             if constraint.get("type") != "object" or constraint.get("additionalProperties") is not False:
                 raise ValueError("명시적 object 형식과 additionalProperties=false가 필요합니다")
     except (SchemaError, ValueError) as exc:
         raise HTTPException(422, "인자 범위 검토 형식이 올바르지 않습니다.") from exc
     from datetime import timedelta
-    contract = {"registration": review.model_dump(exclude={"allowed_principals", "review_note", "parameter_constraints"}),
-                "parameter_constraints": review.parameter_constraints,
-                "allowed_principals": sorted(set(review.allowed_principals)), "review_note": review.review_note,
+    contract = {"registration": proposal.model_dump(exclude={"allowed_principals", "review_note", "parameter_constraints"}),
+                "parameter_constraints": proposal.parameter_constraints,
+                "allowed_principals": sorted(set(proposal.allowed_principals)), "review_note": proposal.review_note,
                 "reviewed_by": user["principal"], "reviewed_at": datetime.now(UTC).isoformat(),
-                "valid_until": (datetime.now(UTC) + timedelta(days=review.valid_days)).isoformat(),
+                "valid_until": (datetime.now(UTC) + timedelta(days=proposal.valid_days)).isoformat(),
                 "advertised_name": found["server_name"], "version": found["version"],
                 "protocol_version": found["protocol_version"],
-                "tools": {name: advertised[name] for name in review.tools}, "code_scan_performed": False}
+                "tools": {name: advertised[name] for name in proposal.tools}, "code_scan_performed": False}
     evidence = {**row["evidence"], "remote_contract": contract}
-    changed = await db.fetch_one("""UPDATE mcp_intake_requests SET status='REMOTE_REVIEWED', evidence=%s,
+    # A hosted service has no artifact to hash: the record says so and names the endpoint (D-90).
+    source = {"kind": "provider-hosted", "source_url": row["endpoint_url"], "version": found["version"], "version_immutable": False,
+              "license": {"spdx": None, "applicable": False},
+              "artifact": {"applicable": False, "reason": provenance.NOT_APPLICABLE, "endpoint": row["endpoint_url"]},
+              "contract_sha256": found["catalog_hash"], "recorded_at": datetime.now(UTC).isoformat(timespec="seconds")}
+    changed = await review.transition("""UPDATE mcp_intake_requests SET status='REMOTE_REVIEWED', evidence=%s, provenance=%s,
               updated_at=now() WHERE id=%s AND status IN ('HOLD','REMOTE_REVIEWED') AND evidence=%s
               RETURNING id,status,evidence""",
-              (Jsonb(evidence), request_id, Jsonb(row["evidence"])))
+              (Jsonb(evidence), Jsonb(source), request_id, Jsonb(row["evidence"])),
+              kind="contract-review", outcome="recorded", target_kind="intake", target_id=request_id,
+              actor=user["principal"], applicant=row["submitted_by"], reason=proposal.review_note,
+              scope={"endpoint": row["endpoint_url"], "tools": proposal.tools, "data_class": proposal.data_class,
+                     "valid_until": contract["valid_until"], "allowed_principals": contract["allowed_principals"],
+                     "tool_reviews": {name: {"asset": item.asset, "destinations": item.destinations}
+                                      for name, item in proposal.tool_reviews.items()}})
     if not changed:
         raise HTTPException(409, "검토 도중 요청 상태가 변경되었습니다.")
     return {"request": changed, "message": "검토를 기록했습니다."}
@@ -1251,12 +1388,14 @@ async def reject_mcp_request(request_id: UUID, request: IntakeRejection, authori
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "요청 거부는 관리자만 할 수 있습니다.")
-    row = await db.fetch_one(
+    row = await review.transition(
         """UPDATE mcp_intake_requests
            SET status='REJECTED', review_note=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now()
            WHERE id=%s AND status IN ('HOLD','VALIDATION_QUEUED','VALIDATED','REMOTE_REVIEWED','FAILED')
-           RETURNING id, status, review_note, reviewed_by, reviewed_at""",
+           RETURNING id, status, review_note, reviewed_by, reviewed_at, submitted_by""",
         (request.note.strip(), user["principal"], request_id),
+        kind="intake-reject", outcome="rejected", target_kind="intake", target_id=request_id,
+        actor=user["principal"], reason=request.note.strip(),
     )
     if not row:
         raise HTTPException(409, "승인 전(보류·검증 대기·검증 완료·검증 실패) 요청만 거부할 수 있습니다.")
@@ -1282,6 +1421,7 @@ async def approvals(authorization: str | None = Header(default=None)):
         raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
     pending, history = await asyncio.gather(db.fetch_all(
         """SELECT a.id, a.requested_by, a.created_at, a.expires_at,
+                  (a.requested_by = %s OR p.user_id = %s) AS own,
                   a.request_payload->>'server_id' AS server_id, a.request_payload->>'tool' AS tool,
                   a.request_payload->'arguments' AS arguments, a.request_payload->'client' AS client,
                   p.display_name, p.department, d.summary, d.policy_id, d.reason, d.data_class, d.action
@@ -1289,7 +1429,8 @@ async def approvals(authorization: str | None = Header(default=None)):
              LEFT JOIN principals p ON p.token = a.requested_by
              LEFT JOIN LATERAL (SELECT summary, policy_id, reason, data_class, action FROM decisions
                                  WHERE approval_id = a.id ORDER BY id LIMIT 1) d ON true
-            WHERE a.status='PENDING' AND a.expires_at>now() ORDER BY a.created_at DESC LIMIT 30"""),
+            WHERE a.status='PENDING' AND a.expires_at>now() ORDER BY a.created_at DESC LIMIT 30""",
+        (user["principal"], user.get("user_id"))),
         # Decided (or lapsed) requests: what the queue turned into.
         db.fetch_all(
         """SELECT a.id, a.requested_by, a.created_at, a.reviewed_at, a.reviewed_by,

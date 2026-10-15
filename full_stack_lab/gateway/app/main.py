@@ -29,9 +29,9 @@ from .core import (
     verify_audit_chain,
 )
 from .mcp_facade import build_mcp, transport_security
-from .agent_contract import CONSOLE_SCOPE, authenticate, authenticated_user
+from .agent_contract import CONSOLE_SCOPE, ToolReview, authenticate, authenticated_user
 from .release import build_info, policy_info
-from . import activity, audit, registry
+from . import activity, audit, registry, review
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 # "오늘" is the operator's day. The DB session runs in UTC, so date_trunc('day', now())
@@ -280,8 +280,9 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
             "servers": [row for row in servers if row["id"] in catalog_servers],
             "tools": tools, "usage_relationships": relationships,
             # D-49: which servers came from a Console registration, and until when they may be used.
-            "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by",
-                                                                    "registered_at", "data_class")}
+            "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by", "registered_at",
+                                                                    "data_class", "tools", "tool_reviews", "provenance",
+                                                                    "allowed_principals")}
                               for sid, spec in console.items() if sid not in registry.reviewed_servers()}}
 
 
@@ -512,6 +513,8 @@ class RegistryDiscover(StrictModel):
     endpoint: str = Field(min_length=8, max_length=500)
 
 
+
+
 class RegistryRegister(StrictModel):
     server_id: str = Field(pattern=r"^[a-z][a-z0-9-]{1,30}$")
     display_name: str = Field(min_length=2, max_length=80)
@@ -528,6 +531,7 @@ class RegistryRegister(StrictModel):
     intake_id: str = Field(default="", max_length=64)
     exit_terms: dict[str, bool] = Field(default_factory=dict)
     poisoning_ack: bool = False  # D-52: the admin read the flagged tool text and approves it anyway
+    tool_reviews: dict[str, ToolReview] = Field(min_length=1, max_length=300)  # D-91: a person scoped every approved tool
 
 
 @app.post("/api/registry/discover")
@@ -551,6 +555,22 @@ async def registry_register(request: RegistryRegister, user: dict = Depends(admi
         raise HTTPException(503, str(exc)) from exc
     except Exception as exc:
         raise HTTPException(502, f"MCP 서버에 연결하지 못했습니다: {core._root_cause(exc)}") from exc
+
+
+class ToolReviews(StrictModel):
+    reviews: dict[str, ToolReview] = Field(min_length=1, max_length=300)
+
+
+@app.post("/api/registry/servers/{server_id}/tool-reviews")
+async def registry_tool_reviews(server_id: str, request: ToolReviews, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await core.review_tool_scopes(server_id, request.model_dump()["reviews"], user["principal"])
+    except LookupError as exc:
+        raise HTTPException(404, "도입 승인으로 Console에서 등록한 서버가 아닙니다.") from exc
+    except review.NotIndependent as exc:
+        raise HTTPException(403, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
 
 
 @app.delete("/api/registry/servers/{server_id}")
@@ -601,6 +621,26 @@ async def monitor(hours: int = 168, user: dict = Depends(admin_caller)) -> dict:
 async def audit_verify(user: dict = Depends(admin_caller)) -> dict:
     """Answers "감사 로그가 위변조됐나요?" with a row id instead of an assurance."""
     return await verify_audit_chain()
+
+
+class AuditAnnotation(StrictModel):
+    first_id: int = Field(ge=1)
+    last_id: int = Field(ge=1)
+    reason: str = Field(min_length=10, max_length=1000)
+
+
+@app.post("/api/audit/annotations", status_code=201)
+async def audit_annotate(request: AuditAnnotation, user: dict = Depends(admin_caller)) -> dict:
+    """Marks a range of decisions as invalid. The ledger rows are not changed."""
+    try:
+        return await review.annotate(request.first_id, request.last_id, request.reason, user["principal"])
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@app.get("/api/audit/annotations")
+async def audit_annotation_list(user: dict = Depends(admin_caller)) -> dict:
+    return {"annotations": await review.annotations()}
 
 
 def audit_filters(before: int = Query(0, ge=0), decision: str | None = Query(None, max_length=20),
