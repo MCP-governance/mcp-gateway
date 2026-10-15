@@ -271,6 +271,18 @@ export function pctText(value) {
     ? `${value < 10 && value % 1 ? value.toFixed(1) : Math.round(value)}%` : "—";
 }
 
+/** What the masking found, as an administrator reads it; an unlisted kind never shows its raw name. */
+export const PRIVACY_TYPE = {
+  EMAIL_ADDRESS: "이메일", KR_RRN: "주민등록번호", KR_PHONE: "전화번호", KR_BRN: "사업자등록번호",
+  KR_ACCOUNT: "계좌번호", KR_PASSPORT: "여권번호", KR_DRIVER_LICENSE: "운전면허번호", CARD_NUMBER: "카드번호",
+  CREDIT_CARD: "카드번호", IBAN_CODE: "국제 계좌번호", US_SSN: "미국 사회보장번호", CREDENTIAL: "자격 정보",
+  SECRET_TOKEN: "비밀 토큰",
+};
+
+export function privacyText(kinds) {
+  return [...new Set((kinds || []).map((kind) => PRIVACY_TYPE[kind] || "기타 개인정보"))].join(", ");
+}
+
 export const LATENCY_STAGE = {
   identity: "신원 확인", reserve: "호출 예약", schema: "입력 형식", inspect_in: "입력 검사", context: "정책 입력",
   policy: "정책 판정", dispatch: "전송 준비", connect: "서버 연결", list: "계약 재확인", recheck: "실행 전 재판정",

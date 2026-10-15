@@ -7,7 +7,7 @@
  */
 import { mergeRows, searchRows, liveLabel, hourBuckets, splitBy, sankeyData, harnessLabel, DECISIONS,
   statusView, dedupeItems, pipelineOf, EVIDENCE, resourceValues, observationRows, listenerCoverage,
-  msText, pctText, LATENCY_STAGE, timingRows,
+  msText, pctText, LATENCY_STAGE, timingRows, privacyText,
   originLabel, denialClass, provenanceView, countView, pager, networkCells, denialCount } from "./console-state.mjs";
 import * as charts from "./charts.mjs";
 
@@ -923,7 +923,7 @@ async function showDecision(id) {
         ["실행 권한 위반", (r.pac_failures || []).length ? html`${r.pac_failures.map((x) => chip("block", x))}` : "없음"],
         ["함께 해당한 정책", (r.conflicts || []).length ? html`${r.conflicts.map(conflictChip)}` : "없음"],
         ["행위", r.action_ko || ACTION[r.action] || "—"], ["데이터 등급", r.data_class_ko], ["분류 근거", r.summary],
-        ["개인정보", (r.privacy_types || []).join(", ")], ["연쇄 탐지", (r.sequence_flags || []).join(", ")],
+        ["개인정보", privacyText(r.privacy_types)], ["연쇄 탐지", (r.sequence_flags || []).join(", ")],
         ["무효 처리", r.invalid ? `${r.invalid.reason} · ${r.invalid.by} · ${when(r.invalid.at)}` : ""],
         ["승인 요청", r.approval_id], ["집행 모드", r.enforcement === "monitor" ? "관찰" : r.enforcement === "enforce" ? "집행" : r.enforcement],
         ["관찰 판정", r.would_decision ? (DECISION[r.would_decision]?.[1] || r.would_decision) : ""]])}` },

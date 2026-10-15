@@ -4,7 +4,14 @@ import assert from "node:assert/strict";
 import {
   FEED_LIMIT, mergeRows, searchRows, liveLabel, hourBuckets, splitBy, sankeyData, harnessLabel,
   observationRows, listenerCoverage, originLabel, denialClass, provenanceView, countView, pager, networkCells, denialCount,
+  privacyText,
 } from "../gateway/app/agent_static/console-state.mjs";
+
+test("masked kinds read in Korean and an unknown kind never shows its raw name", () => {
+  assert.equal(privacyText(["KR_RRN", "CARD_NUMBER", "CREDIT_CARD", "KR_ACCOUNT"]), "주민등록번호, 카드번호, 계좌번호");
+  assert.equal(privacyText(["SOME_NEW_ENTITY"]), "기타 개인정보");
+  assert.equal(privacyText(null), "");
+});
 
 const row = (id, fields = {}) => ({
   id, decision: "Allow", who: "양승권", department: "플랫폼개발팀", workstation: "ws-ysg", harness: "claude-code",
