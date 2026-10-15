@@ -1,0 +1,59 @@
+{
+ "commit": "8723cce",
+ "subject": "fix: 클릭할 수 없는 차트에는 손가락 커서를 보이지 않음",
+ "started": "20261015-163544",
+ "done": "16:37:13",
+ "audited_at": "2026-10-15T07:37:13+00:00",
+ "field_up_rc": 0,
+ "teammate_backup": "/home/user/mcpgw-worktree-backup-20261015-163544",
+ "teammate_backup_paths": 2,
+ "native_engines_present": true,
+ "analyzer_image_created": "2026-10-15T16:35:48.84069682+09:00",
+ "merges": {
+  "A": "b0bfa2d",
+  "B": "8535c80",
+  "C": "9ee2fb3",
+  "D": "e3e0b6f"
+ },
+ "parity": [
+  {
+   "samples": 132,
+   "with_findings": 123,
+   "differences": [],
+   "binary": {
+    "p50_ms": 65.55,
+    "p95_ms": 66.2,
+    "max_ms": 66.87
+   },
+   "library": {
+    "p50_ms": 1.83,
+    "p95_ms": 3.25,
+    "max_ms": 34.83
+   },
+   "non_utf8_input_scanned": true,
+   "slots": {
+    "timed_out": 4,
+    "free_while_running": 0,
+    "fifth_waited": true,
+    "free_after": 4
+   }
+  },
+  {
+   "rules": 31,
+   "native_rules": 31,
+   "rules_on_re": [],
+   "atom_differences": [],
+   "fuzz_subjects": 60000,
+   "fuzz_differences": [],
+   "median_ms": {
+    "re_2000": 0.854,
+    "native_2000": 0.089,
+    "re_20000": 7.912,
+    "native_20000": 0.695,
+    "re_200000": 74.445,
+    "native_200000": 6.593
+   }
+  }
+ ],
+ "previous": "deploy-stage2.json"
+}

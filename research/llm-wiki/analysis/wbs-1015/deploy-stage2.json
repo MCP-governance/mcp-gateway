@@ -1,0 +1,37 @@
+{
+ "commit": "05e4bd9",
+ "subject": "feat: 대시보드 탭 이름 정리(통제 현황, 도구 호출 흐름, 호출 추이)",
+ "started": "20261015-155826",
+ "done": "16:00:06",
+ "field_up_rc": 0,
+ "teammate_backup": "/home/user/mcpgw-worktree-backup-20261015-155826",
+ "teammate_backup_paths": 16,
+ "native_engines_present": true,
+ "parity": [
+  {
+   "rules": 21,
+   "native_rules": 21,
+   "rules_on_re": [],
+   "atom_differences": [],
+   "fuzz_subjects": 60000,
+   "fuzz_differences": [],
+   "median_ms": {
+    "re_2000": 0.415,
+    "native_2000": 0.043,
+    "re_20000": 3.791,
+    "native_20000": 0.274,
+    "re_200000": 35.81,
+    "native_200000": 2.553
+   }
+  }
+ ],
+ "secret_parity_rerun": {
+  "samples": 132,
+  "with_findings": 123,
+  "differences": [],
+  "binary_p50_ms": 65.51,
+  "library_p50_ms": 1.85,
+  "library_p95_ms": 3.32,
+  "note": "re-run in the deployed gateway image after the deploy; the deploy log printed only the tail"
+ }
+}

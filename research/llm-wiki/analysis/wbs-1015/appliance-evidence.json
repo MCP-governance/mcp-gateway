@@ -1,0 +1,786 @@
+{
+ "device": "managed-8eea9cf7-ff2f-450f-8100-2bf20ac8126c",
+ "sdk_calls": [
+  {
+   "id": 816,
+   "created_at": "2026-10-15 07:04:59.253805+00:00",
+   "server_id": "github",
+   "tool_name": "get_me",
+   "decision": "Alert",
+   "policy_id": "P-IMPORTANT-ALERT-001",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "client": "mcpgw-latency-check",
+   "timings": {
+    "call": 858.73,
+    "list": 1578.98,
+    "close": 0.6,
+    "total": 3445.5,
+    "intent": 6.48,
+    "policy": 7.19,
+    "schema": 1.43,
+    "connect": 758.51,
+    "context": 12.53,
+    "recheck": 19.79,
+    "reserve": 12.51,
+    "dispatch": 5.68,
+    "identity": 4.27,
+    "inspect_in": 0.21,
+    "inspect_out": 178.48
+   }
+  },
+  {
+   "id": 817,
+   "created_at": "2026-10-15 07:04:59.766132+00:00",
+   "server_id": "github",
+   "tool_name": "list_commits",
+   "decision": "Block",
+   "policy_id": "PAC-01",
+   "upstream_attempted": false,
+   "upstream_executed": false,
+   "client": "mcpgw-latency-check",
+   "timings": {
+    "total": 47.68,
+    "policy": 4.1,
+    "schema": 1.65,
+    "context": 12.67,
+    "reserve": 9.83,
+    "identity": 3.65,
+    "inspect_in": 15.03
+   }
+  },
+  {
+   "id": 818,
+   "created_at": "2026-10-15 07:05:01.544818+00:00",
+   "server_id": "context7",
+   "tool_name": "resolve-library-id",
+   "decision": "Allow",
+   "policy_id": "P-AUTHZ-ALLOW-001",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "client": "mcpgw-latency-check",
+   "timings": {
+    "call": 243.57,
+    "list": 229.2,
+    "close": 0.48,
+    "total": 1330.08,
+    "intent": 5.03,
+    "policy": 4.32,
+    "schema": 1.11,
+    "connect": 738.54,
+    "context": 13.1,
+    "recheck": 20.68,
+    "reserve": 10.41,
+    "dispatch": 5.71,
+    "identity": 3.36,
+    "inspect_in": 13.18,
+    "inspect_out": 41.31
+   }
+  },
+  {
+   "id": 819,
+   "created_at": "2026-10-15 07:05:04.932900+00:00",
+   "server_id": "github",
+   "tool_name": "get_me",
+   "decision": "Alert",
+   "policy_id": "P-IMPORTANT-ALERT-001",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "client": "mcpgw-latency-check",
+   "timings": {
+    "call": 857.06,
+    "list": 1268.32,
+    "close": 0.59,
+    "total": 2924.55,
+    "intent": 5.32,
+    "policy": 4.1,
+    "schema": 1.12,
+    "connect": 656.64,
+    "context": 13.24,
+    "recheck": 14.46,
+    "reserve": 9.28,
+    "dispatch": 5.49,
+    "identity": 4.48,
+    "inspect_in": 0.23,
+    "inspect_out": 84.13
+   }
+  },
+  {
+   "id": 820,
+   "created_at": "2026-10-15 07:05:05.397702+00:00",
+   "server_id": "github",
+   "tool_name": "list_commits",
+   "decision": "Block",
+   "policy_id": "PAC-01",
+   "upstream_attempted": false,
+   "upstream_executed": false,
+   "client": "mcpgw-latency-check",
+   "timings": {
+    "total": 43.32,
+    "policy": 3.99,
+    "schema": 1.04,
+    "context": 10.77,
+    "reserve": 10.87,
+    "identity": 3.29,
+    "inspect_in": 12.69
+   }
+  },
+  {
+   "id": 821,
+   "created_at": "2026-10-15 07:05:06.614814+00:00",
+   "server_id": "context7",
+   "tool_name": "resolve-library-id",
+   "decision": "Allow",
+   "policy_id": "P-AUTHZ-ALLOW-001",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "client": "mcpgw-latency-check",
+   "timings": {
+    "call": 237.75,
+    "list": 214.42,
+    "close": 0.53,
+    "total": 764.15,
+    "intent": 3.82,
+    "policy": 3.82,
+    "schema": 1.07,
+    "connect": 210.89,
+    "context": 9.96,
+    "recheck": 17.48,
+    "reserve": 7.04,
+    "dispatch": 4.67,
+    "identity": 3.34,
+    "inspect_in": 11.07,
+    "inspect_out": 38.23
+   }
+  },
+  {
+   "id": 822,
+   "created_at": "2026-10-15 07:05:09.958781+00:00",
+   "server_id": "github",
+   "tool_name": "get_me",
+   "decision": "Alert",
+   "policy_id": "P-IMPORTANT-ALERT-001",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "client": "mcpgw-latency-check",
+   "timings": {
+    "call": 865.91,
+    "list": 1232.47,
+    "close": 0.56,
+    "total": 2912.44,
+    "intent": 5.79,
+    "policy": 3.91,
+    "schema": 1.24,
+    "connect": 678.57,
+    "context": 11.19,
+    "recheck": 14.72,
+    "reserve": 6.49,
+    "dispatch": 4.18,
+    "identity": 3.86,
+    "inspect_in": 0.14,
+    "inspect_out": 83.31
+   }
+  },
+  {
+   "id": 823,
+   "created_at": "2026-10-15 07:05:10.458631+00:00",
+   "server_id": "github",
+   "tool_name": "list_commits",
+   "decision": "Block",
+   "policy_id": "PAC-01",
+   "upstream_attempted": false,
+   "upstream_executed": false,
+   "client": "mcpgw-latency-check",
+   "timings": {
+    "total": 41.6,
+    "policy": 4.02,
+    "schema": 1.24,
+    "context": 10.27,
+    "reserve": 7.66,
+    "identity": 3.56,
+    "inspect_in": 14.13
+   }
+  },
+  {
+   "id": 824,
+   "created_at": "2026-10-15 07:05:11.615043+00:00",
+   "server_id": "context7",
+   "tool_name": "resolve-library-id",
+   "decision": "Allow",
+   "policy_id": "P-AUTHZ-ALLOW-001",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "client": "mcpgw-latency-check",
+   "timings": {
+    "call": 238.89,
+    "list": 215.33,
+    "close": 0.38,
+    "total": 761.86,
+    "intent": 3.55,
+    "policy": 3.91,
+    "schema": 0.97,
+    "connect": 213.5,
+    "context": 10.05,
+    "recheck": 16.49,
+    "reserve": 5.46,
+    "dispatch": 3.95,
+    "identity": 3.17,
+    "inspect_in": 10.95,
+    "inspect_out": 35.2
+   }
+  },
+  {
+   "id": 825,
+   "created_at": "2026-10-15 07:05:15.477352+00:00",
+   "server_id": "github",
+   "tool_name": "get_me",
+   "decision": "Alert",
+   "policy_id": "P-IMPORTANT-ALERT-001",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "client": "mcpgw-latency-check",
+   "timings": {
+    "call": 925.37,
+    "list": 1324.55,
+    "close": 0.58,
+    "total": 3333.35,
+    "intent": 5.49,
+    "policy": 4.03,
+    "schema": 1.03,
+    "connect": 945.23,
+    "context": 13.45,
+    "recheck": 14.72,
+    "reserve": 8.37,
+    "dispatch": 4.3,
+    "identity": 3.85,
+    "inspect_in": 0.17,
+    "inspect_out": 82.13
+   }
+  },
+  {
+   "id": 826,
+   "created_at": "2026-10-15 07:05:15.923951+00:00",
+   "server_id": "github",
+   "tool_name": "list_commits",
+   "decision": "Block",
+   "policy_id": "PAC-01",
+   "upstream_attempted": false,
+   "upstream_executed": false,
+   "client": "mcpgw-latency-check",
+   "timings": {
+    "total": 40.16,
+    "policy": 4.98,
+    "schema": 1.71,
+    "context": 10.24,
+    "reserve": 7.44,
+    "identity": 3.01,
+    "inspect_in": 11.89
+   }
+  },
+  {
+   "id": 827,
+   "created_at": "2026-10-15 07:05:17.124357+00:00",
+   "server_id": "context7",
+   "tool_name": "resolve-library-id",
+   "decision": "Allow",
+   "policy_id": "P-AUTHZ-ALLOW-001",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "client": "mcpgw-latency-check",
+   "timings": {
+    "call": 251.3,
+    "list": 216.68,
+    "close": 0.44,
+    "total": 797.34,
+    "intent": 7.76,
+    "policy": 4.15,
+    "schema": 1.22,
+    "connect": 228.02,
+    "context": 10.39,
+    "recheck": 16.96,
+    "reserve": 6.33,
+    "dispatch": 4.41,
+    "identity": 3.21,
+    "inspect_in": 11.52,
+    "inspect_out": 34.89
+   }
+  }
+ ],
+ "dispatch_intents": [
+  {
+   "state": "resolved",
+   "action": "r",
+   "decision_id": 816
+  },
+  {
+   "state": "resolved",
+   "action": "r",
+   "decision_id": 818
+  },
+  {
+   "state": "resolved",
+   "action": "r",
+   "decision_id": 819
+  },
+  {
+   "state": "resolved",
+   "action": "r",
+   "decision_id": 821
+  },
+  {
+   "state": "resolved",
+   "action": "r",
+   "decision_id": 822
+  },
+  {
+   "state": "resolved",
+   "action": "r",
+   "decision_id": 824
+  },
+  {
+   "state": "resolved",
+   "action": "r",
+   "decision_id": 825
+  },
+  {
+   "state": "resolved",
+   "action": "r",
+   "decision_id": 827
+  }
+ ],
+ "network_samples": [
+  {
+   "measured_at": "2026-10-15 06:01:49.364467+00:00",
+   "rtt_p50_ms": 142.0,
+   "rtt_p95_ms": 151.7,
+   "jitter_ms": 37.5,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 06:02:03.096567+00:00",
+   "rtt_p50_ms": 138.0,
+   "rtt_p95_ms": 173.5,
+   "jitter_ms": 43.9,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 06:02:14.908616+00:00",
+   "rtt_p50_ms": 123.0,
+   "rtt_p95_ms": 215.2,
+   "jitter_ms": 90.3,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 06:02:26.587790+00:00",
+   "rtt_p50_ms": 152.1,
+   "rtt_p95_ms": 189.6,
+   "jitter_ms": 59.8,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 06:02:38.251332+00:00",
+   "rtt_p50_ms": 105.4,
+   "rtt_p95_ms": 147.6,
+   "jitter_ms": 26.4,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 06:02:49.935035+00:00",
+   "rtt_p50_ms": 132.7,
+   "rtt_p95_ms": 158.9,
+   "jitter_ms": 30.4,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 06:03:03.654908+00:00",
+   "rtt_p50_ms": 151.0,
+   "rtt_p95_ms": 157.1,
+   "jitter_ms": 40.3,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 06:04:05.663717+00:00",
+   "rtt_p50_ms": 161.0,
+   "rtt_p95_ms": 161.9,
+   "jitter_ms": 16.5,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 06:05:10.157089+00:00",
+   "rtt_p50_ms": 145.6,
+   "rtt_p95_ms": 189.6,
+   "jitter_ms": 52.0,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 06:06:15.447785+00:00",
+   "rtt_p50_ms": 149.0,
+   "rtt_p95_ms": 159.4,
+   "jitter_ms": 26.2,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 06:07:20.363386+00:00",
+   "rtt_p50_ms": 150.6,
+   "rtt_p95_ms": 553.9,
+   "jitter_ms": 209.8,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 06:08:24.636408+00:00",
+   "rtt_p50_ms": 111.0,
+   "rtt_p95_ms": 132.3,
+   "jitter_ms": 20.6,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 06:09:34.694342+00:00",
+   "rtt_p50_ms": 149.7,
+   "rtt_p95_ms": 159.1,
+   "jitter_ms": 20.1,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 06:59:54.576999+00:00",
+   "rtt_p50_ms": 103.3,
+   "rtt_p95_ms": 161.9,
+   "jitter_ms": 37.7,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 07:01:00.312154+00:00",
+   "rtt_p50_ms": 150.1,
+   "rtt_p95_ms": 162.7,
+   "jitter_ms": 31.4,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 07:02:04.458915+00:00",
+   "rtt_p50_ms": 115.1,
+   "rtt_p95_ms": 208.8,
+   "jitter_ms": 66.3,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 07:03:09.282586+00:00",
+   "rtt_p50_ms": 151.8,
+   "rtt_p95_ms": 219.9,
+   "jitter_ms": 36.4,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 07:04:13.592286+00:00",
+   "rtt_p50_ms": 158.9,
+   "rtt_p95_ms": 204.7,
+   "jitter_ms": 52.4,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 07:05:18.463857+00:00",
+   "rtt_p50_ms": 145.4,
+   "rtt_p95_ms": 152.9,
+   "jitter_ms": 26.6,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 07:06:23.173639+00:00",
+   "rtt_p50_ms": 145.1,
+   "rtt_p95_ms": 171.7,
+   "jitter_ms": 43.9,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 07:07:28.451877+00:00",
+   "rtt_p50_ms": 204.3,
+   "rtt_p95_ms": 227.9,
+   "jitter_ms": 60.8,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 07:08:35.846478+00:00",
+   "rtt_p50_ms": 160.2,
+   "rtt_p95_ms": 389.2,
+   "jitter_ms": 137.8,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 07:09:52.409211+00:00",
+   "rtt_p50_ms": 159.2,
+   "rtt_p95_ms": 165.7,
+   "jitter_ms": 14.3,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 07:11:00.572294+00:00",
+   "rtt_p50_ms": 167.4,
+   "rtt_p95_ms": 194.3,
+   "jitter_ms": 33.0,
+   "failure_pct": 0.0,
+   "probes": 6
+  },
+  {
+   "measured_at": "2026-10-15 07:12:15.552847+00:00",
+   "rtt_p50_ms": 183.2,
+   "rtt_p95_ms": 252.5,
+   "jitter_ms": 53.4,
+   "failure_pct": 0.0,
+   "probes": 6
+  }
+ ],
+ "provenance": {
+  "endpoint_inventory": [
+   {
+    "origin": "automatic",
+    "hash_state": "match",
+    "n": 4
+   }
+  ],
+  "endpoint_listeners": [],
+  "endpoint_os_events": [
+   {
+    "origin": "os_event",
+    "hash_state": "match",
+    "n": 338
+   }
+  ]
+ },
+ "os_event_classes": [
+  {
+   "kind": "network-denied",
+   "denial_class": "unknown",
+   "profile": "",
+   "dst": "127.0.0.1",
+   "n": 309,
+   "first": "2026-10-15 06:08:57.376941+00:00",
+   "last": "2026-10-15 07:10:23.275572+00:00"
+  },
+  {
+   "kind": "execution-denied",
+   "denial_class": "blocked_attempt",
+   "profile": "mcpgw-managed-pj1-codex",
+   "dst": null,
+   "n": 26,
+   "first": "2026-10-15 06:07:56.619513+00:00",
+   "last": "2026-10-15 07:07:19.186777+00:00"
+  },
+  {
+   "kind": "execution-denied",
+   "denial_class": "harness_startup",
+   "profile": "mcpgw-managed-pj1-claude",
+   "dst": null,
+   "n": 2,
+   "first": "2026-10-15 07:07:57.514587+00:00",
+   "last": "2026-10-15 07:07:57.681572+00:00"
+  },
+  {
+   "kind": "execution-denied",
+   "denial_class": "unknown",
+   "profile": "mcpgw-managed-pj1-claude",
+   "dst": null,
+   "n": 1,
+   "first": "2026-10-15 07:07:57.688472+00:00",
+   "last": "2026-10-15 07:07:57.688472+00:00"
+  }
+ ],
+ "loopback_denials": [
+  {
+   "port": "46846",
+   "n": 22,
+   "first": "2026-10-15 06:08:57.376941+00:00",
+   "last": "2026-10-15 06:10:06.508647+00:00"
+  },
+  {
+   "port": "46862",
+   "n": 22,
+   "first": "2026-10-15 06:08:57.630519+00:00",
+   "last": "2026-10-15 06:10:07.019823+00:00"
+  },
+  {
+   "port": "47676",
+   "n": 22,
+   "first": "2026-10-15 06:10:28.078573+00:00",
+   "last": "2026-10-15 06:11:37.130797+00:00"
+  },
+  {
+   "port": "47688",
+   "n": 22,
+   "first": "2026-10-15 06:10:28.328664+00:00",
+   "last": "2026-10-15 06:11:37.646155+00:00"
+  },
+  {
+   "port": "1455",
+   "n": 5,
+   "first": "2026-10-15 06:16:13.274655+00:00",
+   "last": "2026-10-15 06:27:54.091057+00:00"
+  },
+  {
+   "port": "45298",
+   "n": 20,
+   "first": "2026-10-15 06:16:43.883547+00:00",
+   "last": "2026-10-15 06:17:20.683589+00:00"
+  },
+  {
+   "port": "45314",
+   "n": 20,
+   "first": "2026-10-15 06:16:44.130518+00:00",
+   "last": "2026-10-15 06:17:21.196473+00:00"
+  },
+  {
+   "port": "48174",
+   "n": 22,
+   "first": "2026-10-15 06:18:21.281882+00:00",
+   "last": "2026-10-15 06:19:30.219488+00:00"
+  },
+  {
+   "port": "48180",
+   "n": 22,
+   "first": "2026-10-15 06:18:21.532823+00:00",
+   "last": "2026-10-15 06:19:30.731542+00:00"
+  },
+  {
+   "port": "48716",
+   "n": 22,
+   "first": "2026-10-15 06:19:51.866650+00:00",
+   "last": "2026-10-15 06:21:00.843524+00:00"
+  },
+  {
+   "port": "48720",
+   "n": 22,
+   "first": "2026-10-15 06:19:52.112555+00:00",
+   "last": "2026-10-15 06:21:01.355586+00:00"
+  },
+  {
+   "port": "57492",
+   "n": 22,
+   "first": "2026-10-15 07:07:43.178122+00:00",
+   "last": "2026-10-15 07:08:52.142859+00:00"
+  },
+  {
+   "port": "57506",
+   "n": 22,
+   "first": "2026-10-15 07:07:43.430822+00:00",
+   "last": "2026-10-15 07:08:52.651507+00:00"
+  },
+  {
+   "port": "50654",
+   "n": 22,
+   "first": "2026-10-15 07:09:14.104731+00:00",
+   "last": "2026-10-15 07:10:23.275379+00:00"
+  },
+  {
+   "port": "50662",
+   "n": 22,
+   "first": "2026-10-15 07:09:14.353482+00:00",
+   "last": "2026-10-15 07:10:23.275572+00:00"
+  }
+ ],
+ "tool_scope_reviews": [
+  {
+   "id": 1,
+   "kind": "tool-scope-review",
+   "outcome": "approved",
+   "target_kind": "server",
+   "target_id": "github",
+   "actor": "root",
+   "applicant": "user",
+   "scope": {
+    "tools": {
+     "get_me": "r",
+     "list_commits": "r"
+    },
+    "destinations": {
+     "get_me": [
+      "api.githubcopilot.com"
+     ],
+     "list_commits": [
+      "api.githubcopilot.com"
+     ]
+    }
+   },
+   "created_at": "2026-10-15 07:02:06.949845+00:00"
+  },
+  {
+   "id": 2,
+   "kind": "tool-scope-review",
+   "outcome": "approved",
+   "target_kind": "server",
+   "target_id": "context7",
+   "actor": "root",
+   "applicant": "user",
+   "scope": {
+    "tools": {
+     "resolve-library-id": "r"
+    },
+    "destinations": {
+     "resolve-library-id": [
+      "mcp.context7.com"
+     ]
+    }
+   },
+   "created_at": "2026-10-15 07:02:07.316643+00:00"
+  },
+  {
+   "id": 3,
+   "kind": "tool-scope-review",
+   "outcome": "approved",
+   "target_kind": "server",
+   "target_id": "figma",
+   "actor": "root",
+   "applicant": "user",
+   "scope": {
+    "tools": {
+     "whoami": "r"
+    },
+    "destinations": {
+     "whoami": [
+      "mcp.figma.com"
+     ]
+    }
+   },
+   "created_at": "2026-10-15 07:02:07.689741+00:00"
+  }
+ ],
+ "audit_annotations": [
+  {
+   "id": 1,
+   "target_kind": "decision",
+   "first_id": 744,
+   "last_id": 800,
+   "reason": "시험 대상 MCP를 시험 수행자가 직접 승인한 호출이라 시험 결과로 쓰지 않음",
+   "created_by": "root",
+   "created_at": "2026-10-15 07:02:07.694786+00:00"
+  },
+  {
+   "id": 2,
+   "target_kind": "decision",
+   "first_id": 803,
+   "last_id": 803,
+   "reason": "시험 대상 MCP를 시험 수행자가 직접 승인한 호출이라 시험 결과로 쓰지 않음",
+   "created_by": "root",
+   "created_at": "2026-10-15 07:02:07.699810+00:00"
+  }
+ ]
+}

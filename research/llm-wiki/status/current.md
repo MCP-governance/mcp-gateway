@@ -1,6 +1,14 @@
-# 개발 현황 — 2026-10-14
+# 개발 현황 — 2026-10-15
 
-## 엔드포인트 로그 수정·PJ1 Linux 검증 (최신)
+## 목표 기능 WBS 구현·통합·저지연화 (최신)
+
+[작업 보고](reports/2026-10-15-wbs-implementation.md) · [WBS 재산정](../analysis/development-wbs/README.md) · [근거](../analysis/wbs-1015/README.md) · 작업별 보고 [A 엔드포인트 증거](reports/2026-10-15-endpoint-evidence.md) · [B 도입·신원](reports/2026-10-15-intake-identity.md) · [C 종료·전송 경계](reports/2026-10-15-termination-dispatch.md) · [D 검사 코퍼스](reports/2026-10-15-inspection-corpus.md)
+
+Codex 10-13~14 작업·팀원 디자인(기기 직접 수정 5회 포함)·서브에이전트 A–D를 통합 브랜치 `10/15-wbs-implementation`으로 모아 솔루션 기기에 3번 배포했다(최종 `8723cce`, 16:37). 도구 호출 구간별 처리 시간·지연 탭·엔드포인트 망 품질을 화면에 넣었고, 검사 엔진을 프로세스 안 네이티브 코드로 옮겼다(Gitleaks 65.5→1.85 ms, 텍스트 규칙 31개 PCRE2 JIT로 200 KB 74→6.6 ms, re·바이너리와 판정 차이 0). Codex 교차 리뷰 9건과 D가 찾은 U+0000 감사 누락을 고쳤다. 병합본에서 격리 PostgreSQL·실제 Gitea MCP·실제 Presidio 포함 회귀 31건과 로컬 7건이 통과했고, PJ1 실데이터(망 품질 22표본·해시 일치 251건·실제 SDK 호출)로 WBS를 **24.8%→55.2%**(구현 완료 16→34개, 최종 완료 0/40)로 다시 산정했다.
+
+남은 것: 관리 계정 미로그인으로 하네스 자연어 E2E·PJ1 키트 재설치(D-104·D-105) 미실행, 지연의 대부분은 업스트림 SaaS와 Tailscale DERP 중계(솔루션 Tailscale이 WSL2 NAT 안, DEV-37), 관리 계정 루프백 차단이 하네스 로그인 콜백과 충돌(DEV-35), MCP 세션 재사용 결정(DEV-29), 팀원 작업 반영 경로(DEV-36).
+
+## 엔드포인트 로그 수정·PJ1 Linux 검증
 
 [수정 보고](reports/2026-10-14-endpoint-telemetry-fix.md) · [직접 확인할 로그](../analysis/endpoint-log-fix/README.md) · [웹 WBS](https://mcpgw-status-20261014.sleek-stoat-4347.chatgpt.site): process-only 수집을 network scan과 분리, 채널 상태/last-success·부분 snapshot 보존·listener 상세·freshness·Windows producer를 구현해 솔루션/PJ1에 배포했다. Linux UID1001 합성 process 자동 수신/UID1000 제외/종료 후 자동 정리, 실제 AppArmor 이벤트1388 자동 수신(9.43초), journal 오류 시 last-success/cursor·broker 보존과 원복 후 주기 복구를 확인했다. 전용 새 PG schema8조건·배포 image8조건 PASS, 제품 DB/registry 보존과 실행 SHA 일치. WBS는3개 작업만 재검수하여21.8→24.8%, 전체 완료0/40이다.
 

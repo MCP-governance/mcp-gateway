@@ -22,9 +22,9 @@ def digest(path):
 
 def write_outputs(data):
     out=WIKI/'analysis/development-wbs';out.mkdir(parents=True,exist_ok=True)
-    (out/'snapshot.json').write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    (out/'snapshot.json').write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
     (HERE/'dist').mkdir(exist_ok=True)
-    (HERE/'dist/data.json').write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    (HERE/'dist/data.json').write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
     lines=['# 목표 기능 WBS 검수 현황', '', f"기준 시각: {data['as_of']} / 현장 읽기: {data['audit_as_of']}", '',
         f"단계 가중 진척 **{data['summary']['progress']}%**. 최종 완료 **{data['summary']['complete']}/40**. 구현 완료 {data['summary']['implementation_full']}개, 부분 {data['summary']['implementation_partial']}개, 미구현 {data['summary']['implementation_missing']}개.", '',
         data['rubric']['formula'], '', data['rubric']['complete_rule'], '',
@@ -34,7 +34,7 @@ def write_outputs(data):
     lines += ['', '## 원자 작업', '', '| ID | 작업 | 진척 | 구현/회귀/배포/실제환경/검수 |','| --- | --- | ---: | --- |']
     lines += [f"| {r['id']} | {r['title']} | {r['progress']}% | {' / '.join(str(r['stage_scores'][s]) for s in STAGES)} |" for r in data['items']]
     lines += ['', '각 작업의 원본 PAC 번호·코드·함수·완료조건·남은 공백·증거 SHA는 [JSON 정본](snapshot.json)에 있다. 원본 PAC01–24와 런타임 PAC-01–15는 별도 번호 체계다.', '', '## 점수에서 제외한 범위','']+[f'- {e}' for e in data['exclusions']]
-    (out/'README.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
+    (out/'README.md').write_text('\n'.join(lines)+'\n',encoding='utf-8',newline='\n')
     print(json.dumps(data['summary'],ensure_ascii=False))
     return data
 

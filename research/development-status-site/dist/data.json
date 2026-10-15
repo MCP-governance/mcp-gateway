@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "title": "MCP 목표 기능 · WBS 현황",
-  "as_of": "2026-10-14T12:33:21.918770+00:00",
-  "audit_as_of": "2026-10-14T12:12:08.623471+00:00",
-  "basis_head": "ab6936c64f3578de8360b840f1928681714fa7bb",
-  "branch": "10/14-endpoint-telemetry-fix",
+  "as_of": "2026-10-15T07:49:18.065077+00:00",
+  "audit_as_of": "2026-10-15T07:37:13+00:00",
+  "basis_head": "8723ccea4d5be8a766c028db560089183494433e",
+  "branch": "10/15-wbs-implementation",
   "snapshot": true,
   "rubric": {
     "stage_labels": {
@@ -25,88 +25,88 @@
     "complete_rule": "5단계가 모두 1인 작업만 최종 완료. 신규 WBS의 현재 검수 기준이며 과거 실험 카드 완료를 변경하지 않음."
   },
   "summary": {
-    "progress": 24.8,
+    "progress": 55.2,
     "complete": 0,
     "total": 40,
     "stage_equivalent_counts": {
-      "implementation": 27.5,
-      "regression": 6.5,
-      "deployment": 10.5,
-      "real_device": 5.0,
+      "implementation": 37.0,
+      "regression": 31.5,
+      "deployment": 32.5,
+      "real_device": 9.5,
       "acceptance_complete": 0
     },
-    "implementation_full": 16,
-    "implementation_partial": 23,
-    "implementation_missing": 1
+    "implementation_full": 34,
+    "implementation_partial": 6,
+    "implementation_missing": 0
   },
   "goals": [
     {
       "id": "G01",
       "title": "도입·공급망 검증",
-      "progress": 10.0,
+      "progress": 67.5,
       "complete": 0,
       "total": 4
     },
     {
       "id": "G02",
       "title": "승인·계약 관리",
-      "progress": 15.0,
+      "progress": 65.0,
       "complete": 0,
       "total": 4
     },
     {
       "id": "G03",
       "title": "신원·호출 권한",
-      "progress": 17.5,
+      "progress": 67.5,
       "complete": 0,
       "total": 4
     },
     {
       "id": "G04",
       "title": "데이터·비신뢰 결과 보호",
-      "progress": 15.0,
+      "progress": 60.0,
       "complete": 0,
       "total": 4
     },
     {
       "id": "G05",
       "title": "엔드포인트 집행",
-      "progress": 45.0,
+      "progress": 47.5,
       "complete": 0,
       "total": 4
     },
     {
       "id": "G06",
       "title": "감사·로그 전달",
-      "progress": 40.0,
+      "progress": 62.5,
       "complete": 0,
       "total": 4
     },
     {
       "id": "G07",
       "title": "종료·폐기",
-      "progress": 12.5,
+      "progress": 52.5,
       "complete": 0,
       "total": 4
     },
     {
       "id": "G08",
       "title": "가입·설치·하네스 운영",
-      "progress": 17.5,
+      "progress": 32.5,
       "complete": 0,
       "total": 4
     },
     {
       "id": "G09",
       "title": "자원·연결 지표",
-      "progress": 47.5,
+      "progress": 62.5,
       "complete": 0,
       "total": 4
     },
     {
       "id": "G10",
       "title": "개발 협업·근거 관리",
-      "progress": 27.5,
+      "progress": 35.0,
       "complete": 0,
       "total": 4
     }
@@ -124,14 +124,19 @@
         "full_stack_lab/supply_chain/"
       ],
       "regression_test_candidates": [
-        "full_stack_lab/tests/intake_validation_test.py"
+        "full_stack_lab/tests/intake_validation_test.py",
+        "full_stack_lab/tests/intake_identity_pg_check.py",
+        "full_stack_lab/tests/provenance_check.py"
       ],
       "actual_evidence_paths": [
         "research/llm-wiki/analysis/local-tools/data.json",
         "research/llm-wiki/analysis/local-tools/desktop.json",
-        "research/llm-wiki/analysis/pj1-ghidra/report.json"
+        "research/llm-wiki/analysis/pj1-ghidra/report.json",
+        "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "현재 공개 MCP 산출물의 해시 보존은 개별 조사에만 적용되어 있다. 모든 도입 요청과 실행 산출물을 연결하고 독립적으로 재검증하는 절차는 아직 범위에 없다.",
+      "known_gap": "실제 도입 요청으로 보관본 해시 대조·보류를 기기에서 확인해야 한다. 패키지 레지스트리 도입물은 경로가 없다.",
       "completion_condition": "새 도구를 승인할 때마다 공급 URL, 변경 불가능한 버전 또는 커밋, 라이선스, 배포 파일의 SHA-256을 저장하고 실제 배포 파일과 대조한다. 값이 누락되거나 일치하지 않으면 등록을 보류한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -140,37 +145,39 @@
         "real_device": 0.2,
         "acceptance_complete": 0.2
       },
-      "evidence_as_of": [],
-      "implementation_assessment": "partial_candidate",
+      "evidence_as_of": [
+        "2026-10-15"
+      ],
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "intake 및 supply-chain 경로는 있으나 모든 승인에서 공급 URL, immutable version, license, 실제 배포 artifact hash를 묶고 mismatch를 보류하는 동작 전체는 현재 근거로 확인되지 않았다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "도입 승인마다 고정 커밋·파일 해시 목록·라이선스를 기록하고 내부 Git 보관본을 다시 해시해 대조, 누락·불일치는 보류. 제공자 운영 원격 서비스는 해시 대신 엔드포인트·광고 버전·계약 해시.",
+        "regression": "병합 소스에서 격리 PostgreSQL+OPA 도입·신원 시험과 출처 단위 시험 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "오늘 기기에서 실제 공개 MCP 저장소의 새 도입 승인을 수행하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 60,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/analysis/local-tools/data.json",
-          "sha256": "1e0f48ca51d4427f1b3cbb3b702f75c9d37cff05e083f0a1985f131ac696fadc"
+          "path": "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+          "sha256": "4ec08968f579f209e5bc74e9d89d6a9e035a94e8d59c91ebf1dc6eae5d0e24bc"
         },
         {
-          "path": "research/llm-wiki/analysis/local-tools/desktop.json",
-          "sha256": "e5e40664abab50c0cf53d4df6118eaeb2bddf61e58fbb21c0ac184ade89e2cf1"
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
         },
         {
-          "path": "research/llm-wiki/analysis/pj1-ghidra/report.json",
-          "sha256": "4a808d9a967c03922f795a7cfdbfba3a0dd65df8d6032a3da0bd972e47e98aaa"
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -189,12 +196,18 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/intake_validation_test.py",
-        "full_stack_lab/tests/intake_register.py"
+        "full_stack_lab/tests/intake_register.py",
+        "full_stack_lab/tests/intake_identity_pg_check.py",
+        "full_stack_lab/tests/provenance_check.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/backlog.md#DEV-02"
+        "research/llm-wiki/status/backlog.md#DEV-02",
+        "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "최신 취약점 정보의 수집 시각, 오탐 승인, 재검토 기한, 격리된 검사기의 실패 시 차단 동작이 현재 보고서에서 확인되지 않았다.",
+      "known_gap": "실제 도입 검사에서 신선도·치명 발견 보류를 확인해야 한다.",
       "completion_condition": "각 SBOM 구성요소의 라이선스·취약점 현황과 출처 확인 시각을 승인된 릴리스에 연결한다. 검사기 장애나 치명적 취약점 발견 시 배포를 차단하고, 취약점 데이터베이스가 오래된 경우도 검증한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -203,29 +216,43 @@
         "real_device": 0.2,
         "acceptance_complete": 0.2
       },
-      "evidence_as_of": [],
-      "implementation_assessment": "partial_candidate",
+      "evidence_as_of": [
+        "2026-10-15"
+      ],
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "SBOM·공급망 보고서 import/coverage는 있으나 최신 취약점 시각·stale DB·scanner outage/critical 결과 fail-closed까지 충족하지 않는다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "검사기·판본·Trivy DB 갱신 시각을 보고서마다 저장, 검사 실패·누락·DB 7일 초과는 보류, 치명 발견은 다른 관리자의 기한부 위험 수용으로만 통과하고 만료 시 보류 복귀.",
+        "regression": "병합 소스에서 격리 시험·단위 시험 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "기기 도입 워커의 Trivy DB를 실제로 갱신(10-06→10-15)해 신선도 경로를 확인했다. 실제 도입 검사 실행은 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/backlog.md#DEV-02",
-          "sha256": "f3dea9cd1fabfd8399695eb11b7dca7cb3ea1f5e63872094b9f46102f4fa5fe7"
+          "path": "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+          "sha256": "4ec08968f579f209e5bc74e9d89d6a9e035a94e8d59c91ebf1dc6eae5d0e24bc"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -245,12 +272,18 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/catalog_refresh_check.py",
-        "full_stack_lab/tests/schema_check.py"
+        "full_stack_lab/tests/schema_check.py",
+        "full_stack_lab/tests/intake_identity_pg_check.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-13-feature-design.md"
+        "research/llm-wiki/status/reports/2026-10-13-feature-design.md",
+        "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+        "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "원본 정책의 PAC 번호와 런타임 PAC-01~15는 서로 다른 체계다. 기존 권한 분류가 제품별 실제 자원에 미치는 효과와 모두 일치하는지는 별도 시험이 필요하다.",
+      "known_gap": "외부 목적지는 기록·표시만 하며 집행은 PAC 전송 검사에 맡긴다. 독립 효과로 범위 준수를 보는 시험이 남았다.",
       "completion_condition": "각 도구의 목적·자산·읽기·변경·실행 권한·외부 목적지를 사람이 승인한 범위로 제한한다. 검토하지 않은 도구는 검색과 호출을 모두 막고, 독립적인 효과 확인으로 범위가 지켜졌는지 검증한다. 시험 환경은 운영 경로와 분리하고 합성 데이터·지정된 격리 자원으로 검증한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -260,33 +293,46 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-feature-design.md",
-          "scope": "2026-10-13 static design/source analysis, not behavior validation."
-        }
+        "2026-10-15"
       ],
-      "implementation_assessment": "partial_candidate",
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "registry와 PAC 권한 분류는 있지만 모든 기능별 승인 범위 잠금과 미검토 도구의 discover/call 차단이 요구 범위 전체로 연결됐는지 확인되지 않았다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "도구마다 사람이 적은 목적·자산·행위·외부 목적지, 범위 없는 도구는 tools/list 제외·호출 MCP-REGISTRY-002.",
+        "regression": "병합 소스 격리 시험에서 목록·호출 양쪽 제외 확인.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "배포 직후 범위 없는 도구가 실제로 꺼졌고, 기존 신청 목적대로 범위를 기록한 4개 읽기 도구만 PJ1 SDK 호출에서 목록·실행됐다. 독립 효과 기반 범위 준수 시험은 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-feature-design.md",
-          "sha256": "cec62c3a7d5735f1d4bbe873ea2d524b62af760b246c48a92854c8b4d3fdb494"
+          "path": "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+          "sha256": "4ec08968f579f209e5bc74e9d89d6a9e035a94e8d59c91ebf1dc6eae5d0e24bc"
+        },
+        {
+          "path": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+          "sha256": "287da53db90e3bda93d5efdab45842a53dc9527e44a14101fe67661677972f70"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -303,12 +349,18 @@
         "research/llm-wiki/tools/build_pj1_ghidra_log_report.py"
       ],
       "regression_test_candidates": [
-        "research/llm-wiki/experiments/pj1-ghidra/check_automatic_os_event.py"
+        "research/llm-wiki/experiments/pj1-ghidra/check_automatic_os_event.py",
+        "full_stack_lab/tests/endpoint_evidence_pg_check.py",
+        "full_stack_lab/tests/endpoint_evidence_check.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.json"
+        "research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.json",
+        "research/llm-wiki/status/reports/2026-10-15-endpoint-evidence.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "현재 Ghidra 설치는 휘발성 경로인 `/dev/shm`에 있고 MCP 표준입출력 자동 수집은 설정되지 않았다. 보고서의 해시 일치를 전체 수신 경로의 자동 무결성 증거로 확대 해석해서는 안 된다.",
+      "known_gap": "서버는 원본 바이트를 검증할 수 없다(침해된 root에는 증명이 아님). 설치 파일 해시 사슬의 실기기 대조가 남았다.",
       "completion_condition": "공급자 원본 해시, 기기 설치 파일 해시, 수신 원본 자료 해시, 비밀을 제거한 투영 자료 해시를 각각의 역할에 맞춰 보존한다. 원본 전달물과 기기 이벤트의 일치 여부 및 정규화 규칙을 독립 검증한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -318,33 +370,42 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-14-pj1-ghidra-logs.json",
-          "scope": "2026-10-14 19:13:55 KST actual SDK read and separate manual/automatic log-channel evidence."
-        }
+        "2026-10-15"
       ],
-      "implementation_assessment": "partial_candidate",
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "연구 보고서 hash 생성 도구와 개별 artifact hash는 있다. 제품의 설치→raw event→수신 payload→정규화 projection hash chain은 구현 증거가 없다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "공급자 원본(B 도입 해시)·설치 해시(하트비트)·수신 원본 해시·비밀 제거 projection 해시와 변환 이름·수집기를 기록하고 서버가 저장 필드로 재계산해 일치/불일치/미보고.",
+        "regression": "병합 소스에서 격리 PostgreSQL 증거 시험·단위 시험 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "PJ1 실데이터: 설정 4건·OS 이벤트 247건이 모두 서버 재계산 해시와 일치. 바이트 변조 탐지는 격리 시험에서만 확인.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.json",
-          "sha256": "10a21faa659790f63e258779597c1e809cfac6b630243195b79531528e691874"
+          "path": "research/llm-wiki/status/reports/2026-10-15-endpoint-evidence.md",
+          "sha256": "3cb2f022e5096d9340b5fd515fddb5f7edd729cd766c526d8c5ec8c4a325598b"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -362,12 +423,19 @@
         "docs/ai/DECISIONS.md#D-79"
       ],
       "regression_test_candidates": [
-        "full_stack_lab/tests/managed_enrollment_check.py"
+        "full_stack_lab/tests/managed_enrollment_check.py",
+        "full_stack_lab/tests/intake_identity_pg_check.py",
+        "full_stack_lab/tests/intake_identity_test.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md"
+        "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md",
+        "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+        "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "D-79에 따라 무효 처리된 PJ1 자기 승인 도구 9개의 원장 행 744~800은 유효한 시험 근거가 아니므로 성공 증거로 계산해서는 안 된다.",
+      "known_gap": "실제 운영에서 신청자=승인자 거부 화면 흐름은 확인하지 않았다.",
       "completion_condition": "신청자와 검토자가 같을 수 없도록 강제하고 위험 수준별 사람 승인을 적용한다. 승인 주체·근거·검토 범위를 기록하며, 무효 처리된 자기 승인 사례는 감사용 비활성 기록으로만 보존한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -377,33 +445,46 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-14-pj1-nine-tools.md",
-          "scope": "2026-10-14 D-79 invalidated self-approved run; not positive test evidence."
-        }
+        "2026-10-15"
       ],
-      "implementation_assessment": "partial_candidate",
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "signup/admin approval 경로는 있으나 risk-level 사람 승인, 신청자·검토자 독립성 및 agent가 사람 승인자인 척할 수 없는 보장은 완결되지 않았다. D-79 무효 run은 긍정 근거가 아니다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "도입 승인·원격 계약 검토·위험 수용·도구 범위 심사·건별 호출 승인에서 신청자=승인자 거부와 시도 기록, append-only 승인 기록과 무효 주석.",
+        "regression": "병합 소스 격리 시험에서 독립성 거부·append-only 트리거 확인.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "기기 원장: 범위 심사 3건이 신청자와 다른 root 명의로 기록, 에이전트 자가 승인 시험 58건(744–800·803)에 무효 주석.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md",
-          "sha256": "c9b7dc1abceef48ee927f2375314b545234ac7c0ce60c645eb80a62dcefd68ff"
+          "path": "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+          "sha256": "4ec08968f579f209e5bc74e9d89d6a9e035a94e8d59c91ebf1dc6eae5d0e24bc"
+        },
+        {
+          "path": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+          "sha256": "287da53db90e3bda93d5efdab45842a53dc9527e44a14101fe67661677972f70"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -426,9 +507,13 @@
         "full_stack_lab/tests/schema_check.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-13-development-results.md"
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md",
+        "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "보고된 A→B→A 4회 시험은 당시 구현과 회귀를 확인한 결과다. 현재 소스나 새로 등록된 모든 PJ1 도구까지 검증한 결과는 아니다.",
+      "known_gap": "실서버 계약 변경 사례와 재시작 경계 확인이 남았다.",
       "completion_condition": "등록·승인된 설명, 입력 스키마, 서버 버전 해시가 재시작·재탐색·동일 이름 도구 상황에서도 일치해야 한다. B 버전의 변경은 전달 전에 차단하고, A 버전으로 되돌렸을 때 A가 다시 관찰되는지 확인한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -438,33 +523,42 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-development-results.md",
-          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
-        }
+        "2026-10-15"
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "등록 계약의 description/schema hash와 catalog 재발견 drift를 비교하고 승인 계약과 불일치하면 차단하는 경로가 있다. 현재 회귀 플래그는 별도 source/test hash 증거가 없어 false 유지.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "등록·승인된 설명·입력 스키마 해시를 잠그고 실행 직전 tools/list로 다시 대조, B 변경은 전달 전 MCP-CATALOG-001, A 복귀 시 A 관찰.",
+        "regression": "병합 소스에서 계약 A→B→A 회귀와 기동마다 재적용되는 CHECK 제약 일치 시험 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "오늘 PJ1 실제 호출의 계약 재확인(list) 구간이 매 호출 실행됐다. 실제 서버의 B 변경 차단은 관찰하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
-        "regression": 0,
-        "deployment": 0.5,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 30.0,
+      "progress": 60,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-development-results.md",
-          "sha256": "bd3499e464d942f1c4d2824001d7eb296e1942cbeffd0afb49bec22010e509a7"
+          "path": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+          "sha256": "287da53db90e3bda93d5efdab45842a53dc9527e44a14101fe67661677972f70"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -483,12 +577,16 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/managed_enrollment_check.py",
-        "full_stack_lab/tests/termination_flow.py"
+        "full_stack_lab/tests/termination_flow.py",
+        "full_stack_lab/tests/intake_identity_pg_check.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/experiments/E12-managed-admission.md"
+        "research/llm-wiki/experiments/E12-managed-admission.md",
+        "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "E12 시험 카드는 아직 실행되지 않았다. 현재 등록소의 만료 시간과 사용자 동의가 실제 호출까지 적용되는지 종단 간 확인하지 않았다.",
+      "known_gap": "실제 하네스 E2E가 남았다. 철회 뒤 같은 승인으로 다시 등록할 수 있는 기존 경로는 결정 대기.",
       "completion_condition": "만료·철회·계약 변경 후에는 기존 설정이나 새 도구 호출이 전달되지 않아야 한다. 실제 하네스에서 사용자 동의와 운영자 승인이 각각 별도로 기록되는지 확인한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -497,29 +595,39 @@
         "real_device": 0.2,
         "acceptance_complete": 0.2
       },
-      "evidence_as_of": [],
-      "implementation_assessment": "partial_candidate",
+      "evidence_as_of": [
+        "2026-10-15"
+      ],
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "TTL, decommission 및 중지 코드 경로는 있으나 사용자 동의와 운영자 승인을 분리한 fresh harness 재승인 전체 흐름은 미완료/미검증이다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "만료→P-APPROVAL-EXPIRY-001, 철회→MCP-REGISTRY-001+목록 제외, 계약 변경→MCP-CATALOG-001, 연장은 계약 일치·신청 승인·전 도구 범위 심사 때만.",
+        "regression": "병합 소스 격리 시험 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "실제 하네스에서 사용자 동의와 운영자 승인을 따로 기록하는 흐름은 하지 않았다(관리 계정 미로그인).",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 60,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/experiments/E12-managed-admission.md",
-          "sha256": "b311f9a2bb759a92824e443dd4f4c4e020a22ccf55e387ea76d4b43db801dce5"
+          "path": "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+          "sha256": "4ec08968f579f209e5bc74e9d89d6a9e035a94e8d59c91ebf1dc6eae5d0e24bc"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -539,12 +647,17 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/endpoint_inventory_check.py",
-        "full_stack_lab/tests/field_kit_check.py"
+        "full_stack_lab/tests/field_kit_check.py",
+        "full_stack_lab/tests/intake_identity_pg_check.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-14-pj1-endpoint-update.json"
+        "research/llm-wiki/status/reports/2026-10-14-pj1-endpoint-update.json",
+        "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "선택된 Codex·Claude 버전과 해시의 일치, 정상적인 설정 전달만으로 등록된 도구 전체에 대한 인가나 사용자 동의가 자동으로 증명되지는 않는다.",
+      "known_gap": "하네스 모델 호출로 최소 집합을 확인해야 한다.",
       "completion_condition": "새로 승인된 하네스에는 허용된 서버만 표시되고, 등록이 철회된 서버는 목록과 호출에서 모두 제외되어야 한다. 모델에서 MCP 서버, 판정 기록까지 이어지는 연결을 확인한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -554,33 +667,42 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-14-pj1-endpoint-update.json",
-          "scope": "2026-10-14 selected PJ1 account/kernel checks; scope is the tested managed UID/profile."
-        }
+        "2026-10-15"
       ],
-      "implementation_assessment": "partial_candidate",
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "registry는 Gateway에서 허용 서버·도구를 제한하고 managed-linux/windows는 Claude managed-mcp.json·Codex 설정 배치 경로를 가진다. 하지만 per-harness 승인 집합 동기화, 철회 후 목록/호출 차단 및 모델→MCP→decision 연결 전체는 증명되지 않았다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "관리형 정책 파일의 서버 집합과 tools/list가 같은 판단(pac.servers_for)을 쓰고 허용 안 된 사용자·철회·범위 미심사 서버를 뺀다.",
+        "regression": "병합 소스 격리 시험에서 렌더링 파일 직접 확인.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "PJ1 장치 정책이 사용자가 볼 수 있는 3개 서버만 담고 서버 계산 해시와 일치. 모델→MCP→판정 연결은 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-14-pj1-endpoint-update.json",
-          "sha256": "82f9f1e650678aec921161c7bfe522befdec9cba265f721c89f62e8397000385"
+          "path": "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+          "sha256": "4ec08968f579f209e5bc74e9d89d6a9e035a94e8d59c91ebf1dc6eae5d0e24bc"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -599,12 +721,18 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/managed_enrollment_check.py",
-        "full_stack_lab/tests/oauth_rotation_pg_check.py"
+        "full_stack_lab/tests/oauth_rotation_pg_check.py",
+        "full_stack_lab/tests/token_revocation_pg_check.py",
+        "full_stack_lab/tests/oauth_rotation_check.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-13-development-results.md"
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md",
+        "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "보고된 PostgreSQL 경쟁 시험 3건은 해당 시점의 운영 IdP 연동, 모든 발급자의 대상·권한 범위 생명주기를 입증하지 않는다.",
+      "known_gap": "하네스 경로의 audience·scope 반례 실기기 시험이 남았다.",
       "completion_condition": "발급자가 다르거나 대상·권한 범위가 잘못된 자격, 만료·철회된 자격은 업스트림 호출을 시도하기 전에 차단한다. 호출자 주체는 전송 계층의 인증 정보만으로 정하고, 프롬프트나 헤더의 자기 주장으로 권한을 바꾸지 않는다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -614,33 +742,42 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-development-results.md",
-          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
-        }
+        "2026-10-15"
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "transport identity 검증은 발급자·audience·필수 JWT 시간/ID claims와 MCP scope, revoked jti 경로를 확인한다. 외부 공급자별 운영 배선은 deployment/acceptance 단계에 남는다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "전송 계층 토큰만으로 주체를 정하고 발급자·대상·범위·만료·철회·장치 정책을 업스트림 전에 검사.",
+        "regression": "병합 소스에서 refresh 계열 철회·경쟁(PostgreSQL)과 단위 시험 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "PJ1 장치 토큰이 정책 불일치 동안 진입점에서 403(ENDPOINT-MANAGED-001)으로 거부되고 동기화 뒤 허용됨. 다른 발급자·대상 토큰의 실기기 시험은 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
-        "regression": 0,
-        "deployment": 0.5,
-        "real_device": 0,
+        "regression": 1,
+        "deployment": 1,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 30.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-development-results.md",
-          "sha256": "bd3499e464d942f1c4d2824001d7eb296e1942cbeffd0afb49bec22010e509a7"
+          "path": "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+          "sha256": "60eac046be2cda31672dfe305564ea0477f030c2ddcd49a541688995222822c4"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -657,12 +794,17 @@
       ],
       "regression_test_candidates": [
         "docs/ai/SECURITY_BOUNDARIES.md",
-        "full_stack_lab/tests/pac_boundary_check.py"
+        "full_stack_lab/tests/pac_boundary_check.py",
+        "full_stack_lab/tests/pac_delegation_check.py",
+        "full_stack_lab/tests/intake_identity_pg_check.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/backlog.md#DEV-17"
+        "research/llm-wiki/status/backlog.md#DEV-17",
+        "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "PAC-05 에이전트·사용자 위임은 하네스 인증 근거가 없어 의도적으로 구현하지 않았다. 하네스의 `clientInfo`는 호출자가 제공하는 값이므로 이를 완료 근거로 삼아서는 안 된다.",
+      "known_gap": "위임 활성화는 하지 않았다. 검증 가능한 에이전트 신원이 생기면 교집합 구현이 필요하다.",
       "completion_condition": "PAC-05 위임을 활성화하려면 검증 가능한 전송 계층 신원으로 사용자와 에이전트 주체를 각각 확인하고, 승인된 권한·만료·철회 상태의 교집합만 허용한다. `clientInfo`나 `User-Agent`처럼 호출자가 주장하는 에이전트 식별자는 권한 근거로 거부한다. 신뢰할 에이전트 신원을 확인할 수 없으면 위임 호출을 거부하고 미지원 상태를 표시한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -671,29 +813,39 @@
         "real_device": 0.2,
         "acceptance_complete": 0.2
       },
-      "evidence_as_of": [],
-      "implementation_assessment": "not_implemented",
+      "evidence_as_of": [
+        "2026-10-15"
+      ],
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "SECURITY_BOUNDARIES와 backlog는 PAC-05 delegation을 의도적 미구현으로 둔다. harness clientInfo 같은 self-reported agent ID를 신뢰할 인증 근거가 없다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "신뢰할 에이전트 신원 확인 수단이 없으므로 act·may_act·on_behalf_of·위임 헤더로 대리 실행을 주장하는 호출을 PAC-05-DELEGATION-UNSUPPORTED로 거부(관찰 모드 포함)하고 Console 정책 목록에 \"지원 안 함\". clientInfo·User-Agent는 출처 미검증 기록만.",
+        "regression": "병합 소스 Rego 91건(위임 4건)과 위임 단위·격리 시험 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "실제 위임 시도는 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0,
-        "regression": 0,
-        "deployment": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 0,
+      "progress": 60,
       "complete": false,
       "priority": "P0",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/backlog.md#DEV-17",
-          "sha256": "f3dea9cd1fabfd8399695eb11b7dca7cb3ea1f5e63872094b9f46102f4fa5fe7"
+          "path": "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+          "sha256": "4ec08968f579f209e5bc74e9d89d6a9e035a94e8d59c91ebf1dc6eae5d0e24bc"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -715,12 +867,17 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/security_edges_check.py",
-        "full_stack_lab/tests/reservation_effect_check.py"
+        "full_stack_lab/tests/reservation_effect_check.py",
+        "full_stack_lab/tests/dispatch_effect_lab.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-13-development-results.md"
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md",
+        "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "새 로그 근거에는 게이트웨이 판정이 한 건도 없을 수 있다. 감사 원장에 행이 없다는 사실만으로 로컬 MCP 호출도 없었다고 증명할 수는 없다.",
+      "known_gap": "하네스 경로와 쓰기 도구의 독립 효과 0건 실기기 확인이 남았다.",
       "completion_condition": "같은 도구라도 SQL·경로·수신자·자산이 바뀌면 매 호출마다 다시 분류한다. 정규화된 차단은 요청 전 적용되어야 하며, 독립된 대상에서 실제 효과가 0건인지 확인한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -730,33 +887,42 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-development-results.md",
-          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
-        }
+        "2026-10-15"
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "각 call에서 tool schema, action, normalized targets/resources, recipient/domain 등을 재평가하고 core 실행 전에 PAC 결과를 적용한다. 독립 효과 검증은 regression/acceptance 단계다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 배포 근거만 부분 인정. 이번 실제 image core.py SHA와 현재 working-tree LF SHA가 달라 현재 코드 배포로 인정하지 않음.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "요청마다 행위·인자·자산·목적지를 다시 분류하고 실행 직전 재판정.",
+        "regression": "병합 소스에서 보안 경계 시험과 실제 Gitea MCP 부수효과 시험(인자 변형 0건) 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "PJ1 SDK 호출에서 승인 인자 밖 list_commits가 업스트림 전 PAC-01로 차단(전송 의도 기록 없음).",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
-        "regression": 0,
-        "deployment": 0.5,
-        "real_device": 0,
+        "regression": 1,
+        "deployment": 1,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 30.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-development-results.md",
-          "sha256": "bd3499e464d942f1c4d2824001d7eb296e1942cbeffd0afb49bec22010e509a7"
+          "path": "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+          "sha256": "60eac046be2cda31672dfe305564ea0477f030c2ddcd49a541688995222822c4"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -774,12 +940,18 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/reservation_effect_check.py",
-        "full_stack_lab/tests/managed_enrollment_check.py"
+        "full_stack_lab/tests/managed_enrollment_check.py",
+        "full_stack_lab/tests/dispatch_intent_pg_check.py",
+        "full_stack_lab/tests/dispatch_effect_lab.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md"
+        "research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md",
+        "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "전용 PostgreSQL 환경에서 보고된 경쟁 시나리오 5건은 엔드포인트 등록 데이터베이스 효과를 시험한 것이다. MCP 호출자 인가나 예약 경쟁을 확인한 결과와는 다르다.",
+      "known_gap": "실기기 동시성·중단 시험과 상태 의존 서버(DEV-29)가 남았다.",
       "completion_condition": "경계 조건에서 허용되는 부수효과는 정확히 1회여야 하고, 중복 요청이나 승인을 재사용한 요청은 0회여야 한다. 프로세스가 중단된 경우 실행 여부가 불확실한 상태로 남기고 자동 재시도하지 않는다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -789,33 +961,42 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-14-risk-scenarios.md",
-          "scope": "2026-10-14 dedicated PostgreSQL application-state scenarios; not OS kernel proof."
-        }
+        "2026-10-15"
       ],
-      "implementation_assessment": "partial_candidate",
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "call reservation과 DB serialization 경로는 존재하나 crash-uncertain 처리 및 caller authorization/중복 승인 재사용 요구 전체를 같은 대상으로 확인하는 증거가 없다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "예약 원자성, 전송 직전 durable intent(같은 문장에서 예약·주체·서버 재확인), 답 없는 쓰기의 자동 재시도 금지·중복 거부·관리자 확인, 승인은 승인한 요청에 1회.",
+        "regression": "병합 소스: intent·예약 PostgreSQL 47건, 실제 Gitea MCP 부수효과 45건(동시 동일 12건→1, 프로세스 SIGKILL 후 미재시도) 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "PJ1 실제 호출 8건의 전송 의도가 모두 resolved로 정산. 실기기 경쟁 시험은 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md",
-          "sha256": "317f2f57db88bf0c3179c8dda5cb2038f31c6417fd0e3744967d598dd4354615"
+          "path": "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+          "sha256": "60eac046be2cda31672dfe305564ea0477f030c2ddcd49a541688995222822c4"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -834,12 +1015,17 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/security_edges_check.py",
-        "full_stack_lab/tests/injection_corpus_check.py"
+        "full_stack_lab/tests/injection_corpus_check.py",
+        "full_stack_lab/tests/dispatch_effect_lab.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md"
+        "research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md",
+        "research/llm-wiki/status/reports/2026-10-15-inspection-corpus.md",
+        "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "과거 실행에서는 고정 seed의 PyRIT 삽입 시도 26건 중 21건을 탐지했다. 이는 당시 결과이며, 탐지하지 못한 5건과 의미 기반 미탐 가능성은 남아 있다.",
+      "known_gap": "경로·인코딩 게이트의 실기기 반례 시험이 남았다.",
       "completion_condition": "스키마·경로·인코딩·크기와 프롬프트 삽입 시험 자료를 정상 대조군과 함께 실행한다. 정확한 정책 식별자, 도구 전달 여부, 오탐·미탐 건수를 기록한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -849,33 +1035,42 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-mcp-validation-plan.md",
-          "scope": "2026-10-13 experiment plan; listed cases were not run by that planning report."
-        }
+        "2026-10-15"
       ],
-      "implementation_assessment": "partial_candidate",
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "schema·size·path 검사와 injection string 분류 코드는 있으나 corpus 전체의 정상 대조, 오탐/미탐 측정 및 요구된 coverage가 미완료다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "64 KiB 초과·형식 오류·__proto__·필수 누락은 P-INPUT-SCHEMA-001, 지시 표지는 쓰기·실행 승인/읽기 경보, U+0000 인자는 전송 전 차단하고 기록 경계에서 치환.",
+        "regression": "병합 소스에서 실제 Gitea MCP 실험의 NUL 사례(인자 차단·효과 0·답 기록·해시 사슬)와 보안 경계 시험 통과. 코퍼스 게이트 측정(오탐·미탐·정책 식별자)은 D 실행 결과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "실기기에서 입력 게이트 반례를 보내지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 60,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md",
-          "sha256": "1931ffd231aaca3ac8ef17e0c3af29351e0ef3cc08409980999a5caf8788cde0"
+          "path": "research/llm-wiki/status/reports/2026-10-15-inspection-corpus.md",
+          "sha256": "88ab7a0f91c5340545192db040005ebcdc55eeefe23827604dcce48107617d11"
+        },
+        {
+          "path": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+          "sha256": "287da53db90e3bda93d5efdab45842a53dc9527e44a14101fe67661677972f70"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -894,12 +1089,16 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/mcp_result_contract_check.py",
-        "full_stack_lab/tests/mcp_result_services_check.py"
+        "full_stack_lab/tests/mcp_result_services_check.py",
+        "full_stack_lab/tests/korean_pii_eval.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json"
+        "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json",
+        "research/llm-wiki/status/reports/2026-10-15-inspection-corpus.md",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "원장 742의 차단은 요청 전 차단이었지만 출력 보류는 업스트림 도구가 이미 실행됐을 수 있다. 업스트림 실행 여부와 사용자에게 결과를 공개했는지를 분리해야 한다.",
+      "known_gap": "합성 표본은 규칙을 읽은 같은 작성자가 썼다. 라벨 없는 사업자·계좌 번호는 가리지 않는다.",
       "completion_condition": "합성 비밀이 모델에 전달되는 원문이나 구조화된 결과에 남지 않아야 한다. 업스트림 요청 시도·실행 여부와 결과를 가리거나 보류·공개한 상태를 각각 구분해 표시한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -909,33 +1108,38 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-pj1-evidence.json",
-          "scope": "Historical PJ1 managed harness actual calls 740–742; provider quota and no independent receiver caveat apply."
-        }
+        "2026-10-15"
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "privacy/secret scan과 응답 masking·withholding 경로가 upstream 실행상태와 노출결과를 구분한다. 출력 hold 사례의 실제 모델 비노출은 별도 acceptance 증거다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "한국어 조사가 붙은 식별자까지 18개 분류를 마스킹(라틴 문자·숫자 경계), 카드 Luhn 검증, 출력 보류·가림과 업스트림 시도·실행을 따로 표시.",
+        "regression": "병합 소스에서 한국어 PII 평가(재빌드한 분석기)·결과 계약·실제 Presidio/Gitleaks 시험 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함). 분석기 이미지도 이번 배포에서 저장소 Dockerfile로 다시 빌드.",
+        "real_device": "실기기 응답에 합성 식별자를 넣는 시험은 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
-        "regression": 0,
-        "deployment": 0,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 20,
+      "progress": 60,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json",
-          "sha256": "5f668b994b29837889e5f97e1f41e2055a9639eda5a59b9206e1872b8c6124f9"
+          "path": "research/llm-wiki/status/reports/2026-10-15-inspection-corpus.md",
+          "sha256": "88ab7a0f91c5340545192db040005ebcdc55eeefe23827604dcce48107617d11"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -953,12 +1157,16 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/injection_corpus_check.py",
-        "full_stack_lab/tests/mcp_result_contract_check.py"
+        "full_stack_lab/tests/mcp_result_contract_check.py",
+        "full_stack_lab/tests/self_checks"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md"
+        "research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md",
+        "research/llm-wiki/status/reports/2026-10-15-inspection-corpus.md",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl"
       ],
-      "known_gap": "문자열 규칙이 의미 기반 삽입 공격을 이해한다는 뜻은 아니다. 사용자는 과거의 탐지 건수를 현재 소스의 결과로 받아들여서는 안 된다.",
+      "known_gap": "명령형 도구 응답·설득문·다국어 의역·rot13류는 다루지 않는다. 한국어 표본은 같은 작성자다.",
       "completion_condition": "영어·한국어·인코딩 정상 자료와 공격 자료를 현재 소스와 일치하는 환경에서 다시 시험한다. 오탐과 미탐을 공개하고, 응답을 보류한 것을 업스트림 실행 방지로 표현하지 않는다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -968,33 +1176,38 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-mcp-validation-plan.md",
-          "scope": "2026-10-13 experiment plan; listed cases were not run by that planning report."
-        }
+        "2026-10-15"
       ],
-      "implementation_assessment": "partial_candidate",
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "poisoning text rules와 결과 보류 경로는 있으나 다국어/encoding benign 및 공격 corpus를 충족하는 일반적인 의미 분석은 구현되지 않았고 기존 누락도 남는다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "공개 코퍼스 9,463건(dev/held-out)으로 결과·인자·계약 규칙을 재고 정상 결과 오탐 91→0, 인코딩 변형을 풀어 다시 읽음. 결과 보류는 실행 방지가 아니라 응답 보류로 표기.",
+        "regression": "배포 이미지에서 31개 규칙 모두 네이티브·원자/퍼징 차이 0, 규칙 자체 점검(선형 시간) 통과. 코퍼스 오탐·미탐 수치는 D 실행 결과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "실기기 도구 결과로 주입 문장을 받은 사례는 없다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 60,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md",
-          "sha256": "1931ffd231aaca3ac8ef17e0c3af29351e0ef3cc08409980999a5caf8788cde0"
+          "path": "research/llm-wiki/status/reports/2026-10-15-inspection-corpus.md",
+          "sha256": "88ab7a0f91c5340545192db040005ebcdc55eeefe23827604dcce48107617d11"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
         }
       ]
     },
@@ -1014,12 +1227,16 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/mcp_result_services_check.py",
-        "full_stack_lab/tests/security_edges_check.py"
+        "full_stack_lab/tests/security_edges_check.py",
+        "full_stack_lab/tests/oss_audit_test.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-13-real-inspectors-results.json"
+        "research/llm-wiki/status/reports/2026-10-13-real-inspectors-results.json",
+        "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl"
       ],
-      "known_gap": "단위 수준의 오류 주입이나 과거 시험의 통과 결과만으로 배포 환경에서 서비스가 정상 가용하다고 보장할 수 없다.",
+      "known_gap": "독립 수신 측에서 요청 0건을 보는 실기기 장애 시험이 남았다.",
       "completion_condition": "검사기·정책 판정기·도구 목록의 누락 또는 잘못된 형식은 업스트림 호출 전에 차단한다. 명시적으로 비어 있는 허용 목록과 오류를 구분하고, 독립 수신 측에서 요청이 없었는지 확인한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -1029,33 +1246,38 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-real-inspectors-results.json",
-          "scope": "Historical local inspector tests; source/current deployment hash needs matching."
-        }
+        "2026-10-15"
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "필수 scanner/PDP/catalog 자료가 없거나 잘못된 타입인 경우 deny 경로가 구현되어 있다. 배포 runtime 및 독립 receiver 효과는 구현 상태와 별도다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "검사기·PDP·목록 누락과 형식 오류는 업스트림 전 차단. 네이티브 Gitleaks 실패는 예외(보류)로 처리하고 시간초과 검사는 슬롯을 끝까지 점유.",
+        "regression": "병합 소스 보안 경계 시험 통과, 배포 이미지에서 Gitleaks 실패 입력·슬롯 회귀 확인.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "실기기에서 검사기 장애를 일으키는 시험은 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
-        "regression": 0,
-        "deployment": 0,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 20,
+      "progress": 60,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-real-inspectors-results.json",
-          "sha256": "37064d98ead7e932af94365c94f1e6afeadf10309f071d9b09b816d14064261f"
+          "path": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+          "sha256": "287da53db90e3bda93d5efdab45842a53dc9527e44a14101fe67661677972f70"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
         }
       ]
     },
@@ -1197,7 +1419,9 @@
         "full_stack_lab/gateway/app/endpoint_plane.py"
       ],
       "regression_test_candidates": [
-        "full_stack_lab/tests/endpoint_inventory_check.py"
+        "full_stack_lab/tests/endpoint_inventory_check.py",
+        "full_stack_lab/tests/endpoint_evidence_pg_check.py",
+        "full_stack_lab/tests/endpoint_evidence_check.py"
       ],
       "actual_evidence_paths": [
         "research/llm-wiki/analysis/endpoint-log-fix/source-reviewed.json",
@@ -1208,9 +1432,13 @@
         "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/automatic-check.jsonl",
         "research/llm-wiki/analysis/endpoint-log-fix/pg-snapshot-deployed.jsonl",
         "research/llm-wiki/analysis/endpoint-log-fix/review.md",
-        "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/replay-result.json"
+        "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/replay-result.json",
+        "research/llm-wiki/status/reports/2026-10-15-endpoint-evidence.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "PJ1 Linux 관리 UID에서 합성 marker 프로세스의 자동 발견·전달과 별도 실제 AppArmor 거부 이벤트 전달을 확인했다. 사용자 실제 MCP 프로세스, Windows, 다른 UID, 자연어/모델 호출은 확인하지 않았다.",
+      "known_gap": "실제 MCP 앱 프로세스 식별·다른 OS와 실기기 오프라인/중복 시험이 남았다. 출처 라벨은 장치 키 소유자의 자기 신고다.",
       "completion_condition": "프로세스 관측 자료는 출처가 자동임을 나타내고 원본 해시와 이벤트 시각을 포함해 자동으로 솔루션에 도달해야 한다. 수동 보조 업로드와 운영체제 이벤트 자동 전달은 구분하며, 수집기 신선도·오프라인 상황과 중복 방지도 시험한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -1220,65 +1448,42 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-14-pj1-ghidra-logs.json",
-          "scope": "2026-10-14 19:13:55 KST actual SDK read and separate manual/automatic log-channel evidence."
-        }
+        "2026-10-15"
       ],
-      "implementation_assessment": "partial_candidate",
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "관리 Linux UID의 프로세스·stdio 관측 및 자동 전송 경로가 있고 네트워크 탐색은 비활성이다. 실사용 MCP 식별이나 전체 OS 범위는 미완료.",
-        "regression": "현재 관리형 검사기 9개, Node 14개, endpoint observation/auth 검증과 격리 PostgreSQL 8개 조건 PASS. 전부 정의된 Linux 수집·표시 범위이며 실제 Windows 집행은 포함하지 않는다.",
-        "deployment": "PJ1에 검수된 agent/managed-linux/os-observer 및 서버 경로를 배포했고, 확인 가능한 파일은 manifest·배포 SHA와 일치한다. 별도 Windows 실제기기 배포 증거가 아니다.",
-        "real_device": "Linux UID 한정 PJ1에서 합성 marker 프로세스 자동 전송과 실제 OS 차단 이벤트를 확인. 실제 사용자 MCP 프로세스·다른 UID·Windows는 미검증.",
-        "acceptance_complete": "지원 OS·수집 범위 전체 및 실제 MCP 앱 연동, 운영 중 offline/retry 범위를 검수해야 한다."
+        "implementation": "자동·수동·OS 이벤트 출처 라벨, 원본 해시·시각, 7일 내 같은 원본 해시 중복 방지, 기존 채널 신선도·last success.",
+        "regression": "병합 소스 격리 PostgreSQL 증거 시험과 엔드포인트 단위 시험 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "PJ1 실데이터에서 자동 수집 설정 기록과 OS 이벤트가 라벨·해시 일치로 도착. 오프라인·중복 실기기 시험은 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
+        "implementation": 1,
         "regression": 1,
         "deployment": 1,
         "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 60.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P0",
       "evidence": [
         {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/source-reviewed.json",
-          "sha256": "96c5f65d4701ffe7728614c5eb67bb6fb68e86386fae7e0236e13076bdeda9af"
+          "path": "research/llm-wiki/status/reports/2026-10-15-endpoint-evidence.md",
+          "sha256": "3cb2f022e5096d9340b5fd515fddb5f7edd729cd766c526d8c5ec8c4a325598b"
         },
         {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/deploy-manifest.json",
-          "sha256": "dbd32564b451976170467fa507c40ac88a8d3edbb664b7b261f728f51a593a7a"
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
         },
         {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/deployment.json",
-          "sha256": "cd595d8d63070676e887123640cc58283a2ae366ce33703aeff6943f853045bf"
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
         },
         {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/result.json",
-          "sha256": "f5189f75b9b5a4f54341b3e4c2d67138ab614b6f2bd607337f4db4ecbd24e569"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/delivered.json",
-          "sha256": "5cc695717c76bd20edb265e95638861d7aab2e67fd5bbd301b585cb2ba4e07c9"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/automatic-check.jsonl",
-          "sha256": "5de2bf406a8bdcdec8f1ac6c7921f8acfa5c5c22f4a4273a9faab407643d22ef"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pg-snapshot-deployed.jsonl",
-          "sha256": "15af674d616659811c3580404d9f5ebc598c8e682c1ae6a46f42e5f781497bef"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/review.md",
-          "sha256": "3221c3f0b908c86d6060e5f6930bb11f4c5a2201744c7f24e9f3243513a3f82a"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/replay-result.json",
-          "sha256": "e11f64acc5d9bbe6dcbdf39ed1921ef04fe8f8ff2a9cd86231a8332fe3f5d584"
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ],
       "implementation_review_note": "Linux managed 범위의 프로세스·stdio 자동 관측과 전달이 추가됐지만, 네트워크 탐색은 비활성이고 실제 MCP 앱 프로세스/다른 OS는 확인하지 않았다."
@@ -1364,12 +1569,16 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/oss_audit_test.py",
-        "full_stack_lab/tests/endpoint_inventory_check.py"
+        "full_stack_lab/tests/endpoint_inventory_check.py",
+        "full_stack_lab/tests/endpoint_evidence_pg_check.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json"
+        "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json",
+        "research/llm-wiki/status/reports/2026-10-15-endpoint-evidence.md",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "로컬 표준입출력 우회 호출은 게이트웨이의 `tools/call` 판정을 만들지 않는다. 텔레메트리 POST도 MCP 판정이 아니므로 감사 기록이 없다는 이유만으로 로컬 동작이 없었다고 볼 수 없다.",
+      "known_gap": "하네스 이벤트와 독립 수신기 시각 연결이 남았다.",
       "completion_condition": "한 번의 실행에서 하네스 이벤트, 엔드포인트 프로세스·이벤트 식별자, 요청 추적 식별자, 정책 판정, 업스트림 시도·결과, 독립 수신기 시각을 연결한다. 서로 다른 로그를 같은 기록처럼 합치지 않는다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -1379,33 +1588,38 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-pj1-evidence.json",
-          "scope": "Historical PJ1 managed harness actual calls 740–742; provider quota and no independent receiver caveat apply."
-        }
+        "2026-10-15"
       ],
       "implementation_assessment": "partial_candidate",
       "stage_notes": {
-        "implementation": "audit/request 및 endpoint event ID 필드는 각각 존재하지만 하나의 MCP run에서 harness→endpoint→request/decision→receiver 전 과정을 묶는 correlation 구현은 확인되지 않았다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "호출↔엔드포인트 기록 연관 API(장치·사용자 둘 다 일치, 시간 창), traceparent 형식 검증 기록. 하네스 이벤트·독립 수신기 시각은 연결하지 않는다.",
+        "regression": "격리 PostgreSQL 시험이 연관 규칙을 확인.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "하네스 실행이 없어 실기기 연결 사례가 없다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0.5,
+        "regression": 0.5,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 20.0,
+      "progress": 40.0,
       "complete": false,
       "priority": "P1",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json",
-          "sha256": "5f668b994b29837889e5f97e1f41e2055a9639eda5a59b9206e1872b8c6124f9"
+          "path": "research/llm-wiki/status/reports/2026-10-15-endpoint-evidence.md",
+          "sha256": "3cb2f022e5096d9340b5fd515fddb5f7edd729cd766c526d8c5ec8c4a325598b"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -1425,12 +1639,17 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/mcp_result_contract_check.py",
-        "full_stack_lab/tests/security_edges_check.py"
+        "full_stack_lab/tests/security_edges_check.py",
+        "full_stack_lab/tests/dispatch_effect_lab.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json"
+        "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json",
+        "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "원장 741은 경고 후 업스트림이 실행됐고 742는 차단되어 실행되지 않았다. 두 사례는 이 차이를 보여 주지만 모든 결과 가림 상황까지 검증한 것은 아니다.",
+      "known_gap": "독립 수신기 성공 효과를 화면에서 대조하는 실기기 시험이 남았다.",
       "completion_condition": "화면은 요청 전 차단, 허용 후 실행, 업스트림 오류, 출력 보류·가림, 독립 수신기에서 확인된 성공 효과를 구분한다. 업스트림 시도·실행 표시가 수신기 결과와 일치하는지 확인한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -1440,33 +1659,42 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-pj1-evidence.json",
-          "scope": "Historical PJ1 managed harness actual calls 740–742; provider quota and no independent receiver caveat apply."
-        }
+        "2026-10-15"
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "audit outcome은 attempted/executed와 returned/masked/withheld/unknown/not_executed를 분리한다. 모든 결과 유형과 receiver 효과의 독립 증명은 남는다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "요청 전 차단·허용 후 실행·업스트림 오류·출력 보류·실행 확인 필요(전송 의도 미정산)를 따로 표시.",
+        "regression": "병합 소스에서 실제 Gitea MCP 부수효과 수와 원장 시도·실행 표시 대조 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "이전 실기기 표본 유지. 오늘 PJ1 호출의 실행·차단이 원장·전송 의도와 일치.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
-        "regression": 0,
-        "deployment": 0.5,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 40.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P1",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json",
-          "sha256": "5f668b994b29837889e5f97e1f41e2055a9639eda5a59b9206e1872b8c6124f9"
+          "path": "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+          "sha256": "60eac046be2cda31672dfe305564ea0477f030c2ddcd49a541688995222822c4"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -1484,7 +1712,9 @@
         "full_stack_lab/gateway/app/agent_service.py"
       ],
       "regression_test_candidates": [
-        "full_stack_lab/tests/endpoint_inventory_check.py"
+        "full_stack_lab/tests/endpoint_inventory_check.py",
+        "full_stack_lab/tests/endpoint_evidence_pg_check.py",
+        "full_stack_lab/tests/endpoint_snapshot_check.py"
       ],
       "actual_evidence_paths": [
         "research/llm-wiki/analysis/endpoint-log-fix/source-reviewed.json",
@@ -1495,9 +1725,13 @@
         "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/automatic-check.jsonl",
         "research/llm-wiki/analysis/endpoint-log-fix/pg-snapshot-deployed.jsonl",
         "research/llm-wiki/analysis/endpoint-log-fix/review.md",
-        "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/replay-result.json"
+        "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/replay-result.json",
+        "research/llm-wiki/status/reports/2026-10-15-endpoint-evidence.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "채널별 상태·신선도와 listener 상세는 이번에 보강했다. 최근 200건 조회를 넘는 페이지 이동·전체 누적집계, 모든 정보원 장애·장기 오프라인 조건은 미검증이다.",
+      "known_gap": "200건 초과 실기기 데이터의 페이지 이동 확인이 남았다.",
       "completion_condition": "화면에서 최근 수신 목록과 전체 항목 수를 구분하고, 이미 제공되는 24시간 전체 거부 집계를 유지·확인한다. 마지막 성공 수집 시각과 수집기 신선도·오프라인·오류 상태를 표시해 텔레메트리 누락을 거부 0건으로 오인하지 않게 한다. listener 전용 상세·집계에서 누락된 항목을 확인하고, 200건 조회 상한에 닿으면 페이지 이동 또는 잘림 표시로 결과 범위를 드러낸다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -1507,65 +1741,42 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-development-results.md",
-          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
-        }
+        "2026-10-15"
       ],
-      "implementation_assessment": "partial_candidate",
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "기존 24시간 전체 거부 집계를 유지하며 collector 상태·신선도와 listener 전용 상세를 추가했다. 최근 200건 조회에 한정되며 페이지 이동/전체 누적 분포는 미완료.",
-        "regression": "UI/상태 및 endpoint 수집 회귀가 통과했지만, UI 상한을 넘는 페이지 이동·전체 누적집계와 모든 channel failure 경계는 완전 검수하지 않았다.",
-        "deployment": "솔루션에 Console/receiver, PJ1에 agent/observer를 배포하고 각각 source/deployed hash를 대조했다.",
-        "real_device": "Linux managed endpoint에서 상태·자동 process/OS event를 확인했다. 200건을 초과하는 페이지 이동이나 Windows 운영 상태는 확인하지 않았다.",
-        "acceptance_complete": "200행 표시 상한의 안내만으로 전체 목록/집계 조건을 충족하지 않으며 페이지 이동과 수집 상태 경계 전반을 검수해야 한다."
+        "implementation": "목록마다 전체 건수·반환 창·커서, 일부 표시 표식, 채널 상태·last success·신선도, listener 상세.",
+        "regression": "병합 소스 격리 PostgreSQL에서 450/260/230건을 200건 창으로 겹침·누락 없이 끝까지 확인.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "PJ1 실데이터는 200건을 넘지 않아 페이지 이동을 실기기로 보지 못했다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0.5,
+        "implementation": 1,
+        "regression": 1,
         "deployment": 1,
         "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 50.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P0",
       "evidence": [
         {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/source-reviewed.json",
-          "sha256": "96c5f65d4701ffe7728614c5eb67bb6fb68e86386fae7e0236e13076bdeda9af"
+          "path": "research/llm-wiki/status/reports/2026-10-15-endpoint-evidence.md",
+          "sha256": "3cb2f022e5096d9340b5fd515fddb5f7edd729cd766c526d8c5ec8c4a325598b"
         },
         {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/deploy-manifest.json",
-          "sha256": "dbd32564b451976170467fa507c40ac88a8d3edbb664b7b261f728f51a593a7a"
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
         },
         {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/deployment.json",
-          "sha256": "cd595d8d63070676e887123640cc58283a2ae366ce33703aeff6943f853045bf"
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
         },
         {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/result.json",
-          "sha256": "f5189f75b9b5a4f54341b3e4c2d67138ab614b6f2bd607337f4db4ecbd24e569"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/delivered.json",
-          "sha256": "5cc695717c76bd20edb265e95638861d7aab2e67fd5bbd301b585cb2ba4e07c9"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/automatic-check.jsonl",
-          "sha256": "5de2bf406a8bdcdec8f1ac6c7921f8acfa5c5c22f4a4273a9faab407643d22ef"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pg-snapshot-deployed.jsonl",
-          "sha256": "15af674d616659811c3580404d9f5ebc598c8e682c1ae6a46f42e5f781497bef"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/review.md",
-          "sha256": "3221c3f0b908c86d6060e5f6930bb11f4c5a2201744c7f24e9f3243513a3f82a"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/replay-result.json",
-          "sha256": "e11f64acc5d9bbe6dcbdf39ed1921ef04fe8f8ff2a9cd86231a8332fe3f5d584"
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ],
       "implementation_review_note": "24시간 전체 거부 집계는 이미 제공된다. 채널별 수집 상태·신선도·listener 상세와 최근 200행 범위 구분을 보강했지만 페이지네이션과 전 구간 집계는 미완료."
@@ -1583,7 +1794,9 @@
         "research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.json"
       ],
       "regression_test_candidates": [
-        "research/llm-wiki/experiments/pj1-ghidra/observe_pj1_logs.py"
+        "research/llm-wiki/experiments/pj1-ghidra/observe_pj1_logs.py",
+        "full_stack_lab/tests/endpoint_evidence_pg_check.py",
+        "full_stack_lab/tests/endpoint_evidence_check.py"
       ],
       "actual_evidence_paths": [
         "research/llm-wiki/analysis/endpoint-log-fix/source-reviewed.json",
@@ -1594,9 +1807,13 @@
         "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/automatic-check.jsonl",
         "research/llm-wiki/analysis/endpoint-log-fix/pg-snapshot-deployed.jsonl",
         "research/llm-wiki/analysis/endpoint-log-fix/review.md",
-        "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/replay-result.json"
+        "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/replay-result.json",
+        "research/llm-wiki/status/reports/2026-10-15-endpoint-evidence.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "새 PJ1 OS 표본 1388의 보존 이벤트와 전달 결과 projection이 일치한 범위를 확인했다. 원본 raw HTTP 전체, 전 이벤트 무손실 보존, 바이트 단위 보존은 확인하지 않았다.",
+      "known_gap": "원본 바이트 자체는 서버가 검증할 수 없다.",
       "completion_condition": "전달 자료마다 원본 해시, 출처 파일·바이트 해시, 비밀 제거 후 투영 자료 해시, 변환 내역, 수신 시각을 남긴다. 비밀 원문을 보존하지 않으면서 바이트가 달라진 경우를 탐지하는지 시험한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -1605,61 +1822,43 @@
         "real_device": 0.2,
         "acceptance_complete": 0.2
       },
-      "evidence_as_of": [],
-      "implementation_assessment": "partial_candidate",
+      "evidence_as_of": [
+        "2026-10-15"
+      ],
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "일부 표본의 source/deployed hash 및 projection 검증 근거가 있다. 모든 이벤트에 대한 원본/수신 manifest와 mismatch 처리 pipeline은 미완료.",
-        "regression": "현재 source/deployment hash, projection 대조와 격리 DB 8개 상태조건을 검증했다. 전체 이벤트를 대상으로 한 무손실·원본 바이트 검증은 없다.",
-        "deployment": "검수된 PJ1 배포 source hash 및 observer/receiver 파일 hash를 대조했다.",
-        "real_device": "PJ1의 새 OS 표본 1388 projection이 보존 수신자료와 일치했다. raw HTTP 전체 및 원본 전체 event collection은 확인하지 않았다.",
-        "acceptance_complete": "모든 이벤트의 출처 raw digest, 안전한 projection digest, 변환 및 수신 기록과 손실 경계 검증이 필요하다."
+        "implementation": "전달 자료마다 원본·projection 해시·변환 이름·수집기·수신 시각, 서버 재계산으로 일치/불일치/미보고.",
+        "regression": "병합 소스 격리 시험에서 일치·변조 불일치·옛 보고 미보고 확인.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "PJ1 실데이터 251건 모두 일치. 실기기 변조 탐지는 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0.5,
+        "implementation": 1,
+        "regression": 1,
         "deployment": 1,
         "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 50.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P0",
       "evidence": [
         {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/source-reviewed.json",
-          "sha256": "96c5f65d4701ffe7728614c5eb67bb6fb68e86386fae7e0236e13076bdeda9af"
+          "path": "research/llm-wiki/status/reports/2026-10-15-endpoint-evidence.md",
+          "sha256": "3cb2f022e5096d9340b5fd515fddb5f7edd729cd766c526d8c5ec8c4a325598b"
         },
         {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/deploy-manifest.json",
-          "sha256": "dbd32564b451976170467fa507c40ac88a8d3edbb664b7b261f728f51a593a7a"
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
         },
         {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/deployment.json",
-          "sha256": "cd595d8d63070676e887123640cc58283a2ae366ce33703aeff6943f853045bf"
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
         },
         {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/result.json",
-          "sha256": "f5189f75b9b5a4f54341b3e4c2d67138ab614b6f2bd607337f4db4ecbd24e569"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/delivered.json",
-          "sha256": "5cc695717c76bd20edb265e95638861d7aab2e67fd5bbd301b585cb2ba4e07c9"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/automatic-check.jsonl",
-          "sha256": "5de2bf406a8bdcdec8f1ac6c7921f8acfa5c5c22f4a4273a9faab407643d22ef"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pg-snapshot-deployed.jsonl",
-          "sha256": "15af674d616659811c3580404d9f5ebc598c8e682c1ae6a46f42e5f781497bef"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/review.md",
-          "sha256": "3221c3f0b908c86d6060e5f6930bb11f4c5a2201744c7f24e9f3243513a3f82a"
-        },
-        {
-          "path": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/replay-result.json",
-          "sha256": "e11f64acc5d9bbe6dcbdf39ed1921ef04fe8f8ff2a9cd86231a8332fe3f5d584"
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ],
       "implementation_review_note": "기존 표본과 새 OS 이벤트의 안전한 projection/hash 증거가 있으며 deploy/source hash를 대조한다. 모든 전달 원본의 raw byte·무손실 보존 pipeline은 없다."
@@ -1679,12 +1878,16 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/oauth_rotation_pg_check.py",
-        "full_stack_lab/tests/oauth_rotation_check.py"
+        "full_stack_lab/tests/oauth_rotation_check.py",
+        "full_stack_lab/tests/token_revocation_pg_check.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-13-development-results.md"
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md",
+        "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "OAuth 시험은 당시 버전의 격리된 PostgreSQL 경쟁 사례 3건을 확인했지만 제공자 측 철회나 발급된 모든 전달자 토큰의 재사용까지 증명하지 않았다.",
+      "known_gap": "실기기 폐기·제공자 측 자원 자격은 G07.03에서 따로 본다.",
       "completion_condition": "새 보호 API 요청과 MCP 호출에서 철회된 토큰 및 그 파생 토큰이 모두 거부되어야 한다. 발급과 철회를 경쟁시켜 데이터베이스 트랜잭션이 원자적으로 롤백되는지 확인하고, 제공자 측 자원 자격의 철회는 별도로 증명한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -1694,33 +1897,38 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-development-results.md",
-          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
-        }
+        "2026-10-15"
       ],
-      "implementation_assessment": "partial_candidate",
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "local token/refresh family invalidation과 decommission 경로는 있으나 모든 descendant fresh-call 거부 및 provider credential revoke까지는 한 구현 요구로 완료되지 않았다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "refresh 계열 철회 시 파생 접근 토큰 거부, 회전 재사용 시 계열 폐기, 발급·철회 경쟁 원자성, 장치 회수 시 기존 장치 토큰 거부. 접근 토큰 하나의 폐기는 그 토큰만(D-99).",
+        "regression": "병합 소스 토큰 폐기 PostgreSQL 22건·회전 3건·단위 시험 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "오늘 실기기 폐기 시험은 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0.5,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 20.0,
+      "progress": 60,
       "complete": false,
       "priority": "P1",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-development-results.md",
-          "sha256": "bd3499e464d942f1c4d2824001d7eb296e1942cbeffd0afb49bec22010e509a7"
+          "path": "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+          "sha256": "60eac046be2cda31672dfe305564ea0477f030c2ddcd49a541688995222822c4"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -1737,12 +1945,17 @@
         "docs/ai/TERMINATION_MODEL.md"
       ],
       "regression_test_candidates": [
-        "full_stack_lab/tests/termination_flow.py"
+        "full_stack_lab/tests/termination_flow.py",
+        "full_stack_lab/tests/termination_lab.py",
+        "full_stack_lab/tests/dispatch_intent_pg_check.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/backlog.md#DEV-08"
+        "research/llm-wiki/status/backlog.md#DEV-08",
+        "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "게이트웨이는 호출 단위 세션을 열고 닫지만, 모든 업스트림 서버에서 지속 세션·자원 동작까지 검증한 것은 아니다.",
+      "known_gap": "상태 의존 서버(email·Playwright)의 오래된 세션 재접근 시험이 남았다.",
       "completion_condition": "새 세션과 기존 세션에서 C1~C4의 종료 조건을 각각 확인한다. 오래된 세션이 다시 데이터를 가져오지 못해야 하며 T1~T3 증거도 기록한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -1751,29 +1964,39 @@
         "real_device": 0.2,
         "acceptance_complete": 0.2
       },
-      "evidence_as_of": [],
+      "evidence_as_of": [
+        "2026-10-15"
+      ],
       "implementation_assessment": "partial_candidate",
       "stage_notes": {
-        "implementation": "call-scoped upstream 종료와 decommission evidence workflow는 있으나 downstream MCP server durable session/resource 회수 및 stale session 재접근 차단이 보편 구현되지 않았다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "DB 시각·서버 행 잠금으로 차단 시각을 정하고 전송 경계가 그 뒤 호출을 거부, 종료·계정 중지 시 따뜻한 연결을 닫고 다른 프로세스에 알림. MCP 세션은 호출마다 열고 닫아 상태 의존 서버의 세션 결속은 없다(DEV-29).",
+        "regression": "병합 소스 종료 시험 38건과 240회 경쟁 시험 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "실기기 종료 시험은 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 50.0,
       "complete": false,
       "priority": "P1",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/backlog.md#DEV-08",
-          "sha256": "f3dea9cd1fabfd8399695eb11b7dca7cb3ea1f5e63872094b9f46102f4fa5fe7"
+          "path": "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+          "sha256": "60eac046be2cda31672dfe305564ea0477f030c2ddcd49a541688995222822c4"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -1791,12 +2014,16 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/termination_flow.py",
-        "full_stack_lab/tests/oauth_rotation_pg_check.py"
+        "full_stack_lab/tests/oauth_rotation_pg_check.py",
+        "full_stack_lab/tests/termination_lab.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/backlog.md#DEV-08"
+        "research/llm-wiki/status/backlog.md#DEV-08",
+        "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "제공자가 삭제·철회를 확인해 줬다는 사실만으로 자원 서버가 토큰을 거부한다고 볼 수 없다. 자원 서버의 수락 여부, 토큰 만료 시간, 캐시가 로컬 설정보다 오래 남을 수 있다.",
+      "known_gap": "조직이 제공자 토큰 사본을 보관할 위치에 대한 사용자 결정이 필요하다.",
       "completion_condition": "로컬 설정을 삭제한 뒤 제공자의 보호 자원에서 이전 토큰·세션이 실제로 거부되는지 확인한다. 확인할 수 없다면 제공자 측 폐기는 미검증으로 표시하고 만료 시간만 기록한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -1805,29 +2032,39 @@
         "real_device": 0.2,
         "acceptance_complete": 0.2
       },
-      "evidence_as_of": [],
-      "implementation_assessment": "partial_candidate",
+      "evidence_as_of": [
+        "2026-10-15"
+      ],
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "provider 잔존 접근을 수집할 lifecycle evidence 구조는 있지만 실제 resource server가 이전 token/session을 거부하는 자동 검증은 구현되지 않았다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "보호 자원이 이전 토큰을 실제로 거부하는지(resource-rejection) 증거로 제공자 측 폐기를 판정, 확인 못 하면 미확인·만료 시각만.",
+        "regression": "병합 소스에서 실제 Gitea로 폐기 전 200·후 401과 운영자 표시만 한 토큰의 잔존 수락(T2) 확인.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "제품 스택에는 제공자 토큰 사본이 없어 provider_side=unverified로 남는다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 60,
       "complete": false,
       "priority": "P1",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/backlog.md#DEV-08",
-          "sha256": "f3dea9cd1fabfd8399695eb11b7dca7cb3ea1f5e63872094b9f46102f4fa5fe7"
+          "path": "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+          "sha256": "60eac046be2cda31672dfe305564ea0477f030c2ddcd49a541688995222822c4"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -1845,12 +2082,16 @@
       ],
       "regression_test_candidates": [
         "full_stack_lab/tests/termination_flow.py",
-        "full_stack_lab/tests/endpoint_inventory_check.py"
+        "full_stack_lab/tests/endpoint_inventory_check.py",
+        "full_stack_lab/tests/termination_lab.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/backlog.md#DEV-08"
+        "research/llm-wiki/status/backlog.md#DEV-08",
+        "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "설정 삭제가 외부 토큰·백업·캐시·내보낸 로그까지 지운다는 증거는 없다. 사용자 프로필에 대한 파괴적인 작업은 피해야 한다.",
+      "known_gap": "직원 PC의 task 백업·캐시·내보낸 파일에서의 복구 시험이 남았다.",
       "completion_condition": "격리 시험 자격을 연결 해제하고 철회한 뒤 task 백업이나 캐시에서 다시 복구되지 않는지 확인한다. 비밀 원문은 남기지 않으면서 감사 추적을 보존하고 무관한 파일을 삭제하지 않는다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -1859,29 +2100,39 @@
         "real_device": 0.2,
         "acceptance_complete": 0.2
       },
-      "evidence_as_of": [],
+      "evidence_as_of": [
+        "2026-10-15"
+      ],
       "implementation_assessment": "partial_candidate",
       "stage_notes": {
-        "implementation": "설정/credential 제거 경로 일부는 있으나 cache·backup 재복원 차단과 잔존 데이터 확인 전체는 구현·증거가 없다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "자격 파일 제거 후 헤더 없음, 풀에 남던 이전 자격 헤더를 닫음, 종료 기록·원장·전송 의도에 토큰 원문 없음.",
+        "regression": "병합 소스 종료 시험의 게이트웨이 측 범위 통과. 엔드포인트 백업·캐시 복구 시험은 없다.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "실기기 시험은 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0,
+        "regression": 0.5,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 40.0,
       "complete": false,
       "priority": "P1",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/backlog.md#DEV-08",
-          "sha256": "f3dea9cd1fabfd8399695eb11b7dca7cb3ea1f5e63872094b9f46102f4fa5fe7"
+          "path": "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+          "sha256": "60eac046be2cda31672dfe305564ea0477f030c2ddcd49a541688995222822c4"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -1902,9 +2153,13 @@
         "full_stack_lab/tests/managed_enrollment_check.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md"
+        "research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md",
+        "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "전용 PostgreSQL 실행은 합성 데이터 환경에서 애플리케이션 상태 시나리오 5건을 확인했다. 호스트 커널이나 전체 사용자 경험을 확인한 것은 아니다.",
+      "known_gap": "Windows 실기기와 격리 환경 enrollment 회귀가 남았다.",
       "completion_condition": "격리된 Linux와 Windows 설치를 같은 절차로 시험한다. 등록 대기 상태는 거부되고, 올바른 소유자는 활성화되며, 잘못되거나 오래된 heartbeat는 격리되어야 한다. 기기 데이터베이스 조회와 관리형 사용자 흐름으로 결과를 각각 확인한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -1914,33 +2169,42 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-14-risk-scenarios.md",
-          "scope": "2026-10-14 dedicated PostgreSQL application-state scenarios; not OS kernel proof."
-        }
+        "2026-10-15"
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "endpoint admission state machine은 pending/active, heartbeat quarantine, revoke epoch를 처리한다. dedicated DB 결과는 그 애플리케이션 상태 경로 증거이며 OS kernel/전체 UX 증거는 아니다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "가입·등록 대기 거부·소유자 활성화·heartbeat 신선도.",
+        "regression": "병합 소스에서 managed_enrollment_check를 돌리지 않았다(제품 계정에 시험 행을 만드는 시험).",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "10-15 PJ1 Linux 재설치·관리자 활성화·heartbeat·정책 동기화 확인. Windows는 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
         "regression": 0,
-        "deployment": 0.5,
-        "real_device": 0,
+        "deployment": 1,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 30.0,
+      "progress": 50.0,
       "complete": false,
       "priority": "P1",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md",
-          "sha256": "317f2f57db88bf0c3179c8dda5cb2038f31c6417fd0e3744967d598dd4354615"
+          "path": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+          "sha256": "287da53db90e3bda93d5efdab45842a53dc9527e44a14101fe67661677972f70"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -2017,12 +2281,17 @@
         "docs/ai/DECISIONS.md#D-79"
       ],
       "regression_test_candidates": [
-        "full_stack_lab/tests/managed_enrollment_check.py"
+        "full_stack_lab/tests/managed_enrollment_check.py",
+        "full_stack_lab/tests/intake_identity_pg_check.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md"
+        "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md",
+        "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+        "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "도구 9개의 자기 승인 시험은 무효 처리됐다. 사용자 동의와 운영자 승인은 별도로 확인해야 한다.",
+      "known_gap": "실제 등록 요청을 사람 계정으로 처리하는 확인이 남았다.",
       "completion_condition": "새 등록 요청에서 데이터와 기능 범위를 보여 주고 독립적인 사람 승인을 요구한다. 에이전트가 스스로 대상을 승인한 시험 기록은 성공 근거로 사용하지 않는다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -2032,33 +2301,42 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-14-pj1-nine-tools.md",
-          "scope": "2026-10-14 D-79 invalidated self-approved run; not positive test evidence."
-        }
+        "2026-10-15"
       ],
-      "implementation_assessment": "partial_candidate",
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "intake/admin approval UI/API 경로는 있으나 사용자 동의와 독립 사람 승인을 분리하고 agent self-approval을 신뢰 경계에서 배제하는 보장은 부족하다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "신청자에게 승인 버튼 없음(서버도 거부), 요청 상세의 범위·출처·승인 기록(사용자 동의/운영자 승인 분리)·검사 기준·위험 수용, 등록 때 도구별 범위 입력. 자가 승인 시험 원장은 무효 주석.",
+        "regression": "서버 측 거부는 격리 시험, 화면은 고정 응답 렌더링으로만 확인.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "실제 등록 요청 화면 흐름은 하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0,
+        "implementation": 1,
+        "regression": 0.5,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 50.0,
       "complete": false,
       "priority": "P1",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md",
-          "sha256": "c9b7dc1abceef48ee927f2375314b545234ac7c0ce60c645eb80a62dcefd68ff"
+          "path": "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+          "sha256": "4ec08968f579f209e5bc74e9d89d6a9e035a94e8d59c91ebf1dc6eae5d0e24bc"
+        },
+        {
+          "path": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+          "sha256": "287da53db90e3bda93d5efdab45842a53dc9527e44a14101fe67661677972f70"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -2140,9 +2418,12 @@
       ],
       "actual_evidence_paths": [
         "research/llm-wiki/status/reports/2026-10-13-development-results.md",
-        "research/llm-wiki/analysis/wbs-review/current-checks.json"
+        "research/llm-wiki/analysis/wbs-review/current-checks.json",
+        "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "`/proc`에서 얻은 값은 호스트나 가상 머신에서 보이는 정보이며 실제 Windows 기기나 컨테이너별 자원 한도를 뜻하지 않는다. 과거 배포 코드와 현재 작업 트리의 버전도 다르다.",
+      "known_gap": "Chrome 실표시 재확인이 남았다.",
       "completion_condition": "관리자에게 CPU 사용량 차이와 `MemTotal-MemAvailable` 값을 단위·자료 범위(Linux 호스트 또는 가상 머신)·측정 시각·누락 상태와 함께 제공한다. 셸 실행이나 Docker 소켓은 요구하지 않는다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -2152,37 +2433,38 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-development-results.md",
-          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
-        }
+        "2026-10-15"
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "CPU delta와 memory 계산에 단위·linux_host scope·sample/failure 상태를 제공한다. 이는 host/VM 관측이며 물리 Windows/per-container 값은 아니다.",
-        "regression": "현재 표시 로직 4개 회귀 통과: 0·미측정·오래된 값·실패·잘못된 범위 구분. backend/권한 통합 회귀는 환경 의존성 미충족으로 미실행.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "CPU 사용량 차이·MemTotal−MemAvailable를 단위·범위·시각·누락 상태와 함께, 셸·Docker 소켓 없이.",
+        "regression": "병합 소스 지표 시험과 Console 상태 시험 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "이전 실기기 표본 유지(오늘 Chrome 재확인 없음).",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
-        "regression": 0.5,
-        "deployment": 0.5,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 50.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-development-results.md",
-          "sha256": "bd3499e464d942f1c4d2824001d7eb296e1942cbeffd0afb49bec22010e509a7"
+          "path": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+          "sha256": "287da53db90e3bda93d5efdab45842a53dc9527e44a14101fe67661677972f70"
         },
         {
-          "path": "research/llm-wiki/analysis/wbs-review/current-checks.json",
-          "sha256": "40048082f49d396c6f74061ca5efe6d0d3b984b7b2f90cedcba89637584352ec"
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -2203,9 +2485,13 @@
       ],
       "actual_evidence_paths": [
         "research/llm-wiki/status/reports/2026-10-13-development-results.md",
-        "research/llm-wiki/analysis/wbs-review/current-checks.json"
+        "research/llm-wiki/analysis/wbs-review/current-checks.json",
+        "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+        "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "이 지표는 운영 Console에서 게이트웨이까지의 내부 DNS·TCP 연결 시간이다. PC에서 솔루션까지의 Tailnet 왕복 시간이나 패킷 손실률은 아니다.",
+      "known_gap": "Console 실표시 재확인이 남았다.",
       "completion_condition": "고정된 대상의 DNS 조회와 TCP 연결 시간을 밀리초로 표시하고, 시험 실패·시간 초과·측정 대상의 의미를 설명한다. 이를 사용자 기기의 왕복 지연 시간으로 표시하지 않는다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -2215,37 +2501,42 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-development-results.md",
-          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
-        }
+        "2026-10-15"
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "Console→고정 Gateway DNS/TCP connect 지표가 ms 및 target/scope로 구현되어 user-device RTT와 구분된다.",
-        "regression": "현재 표시 로직 4개 회귀 통과: 0·미측정·오래된 값·실패·잘못된 범위 구분. backend/권한 통합 회귀는 환경 의존성 미충족으로 미실행.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "고정 Gateway의 DNS·TCP 시간(ms). 엔드포인트→게이트웨이 망 품질은 따로 표시하고 사용자 기기 왕복으로 부르지 않는다.",
+        "regression": "병합 소스 지표 시험과 Console 상태 시험 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "PJ1 망 품질 표본 22건(p50 147ms·최대 p95 554ms·지터 53ms·실패 0%)이 기기에 쌓였다. Console 표시는 오늘 재확인하지 않았다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
-        "regression": 0.5,
-        "deployment": 0.5,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 50.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-development-results.md",
-          "sha256": "bd3499e464d942f1c4d2824001d7eb296e1942cbeffd0afb49bec22010e509a7"
+          "path": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+          "sha256": "287da53db90e3bda93d5efdab45842a53dc9527e44a14101fe67661677972f70"
         },
         {
-          "path": "research/llm-wiki/analysis/wbs-review/current-checks.json",
-          "sha256": "40048082f49d396c6f74061ca5efe6d0d3b984b7b2f90cedcba89637584352ec"
+          "path": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
+          "sha256": "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -2266,9 +2557,12 @@
       ],
       "actual_evidence_paths": [
         "research/llm-wiki/status/reports/2026-10-13-development-results.md",
-        "research/llm-wiki/analysis/wbs-review/current-checks.json"
+        "research/llm-wiki/analysis/wbs-review/current-checks.json",
+        "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "보고서에는 첫 측정이나 30초가 지난 CPU 값, 오래된 값, 오류에서 `—`를 표시한다고 되어 있지만 이번 WBS 검토에서 현재 소스의 시험을 다시 실행하지는 않았다.",
+      "known_gap": "Chrome 실표시 재확인이 남았다.",
       "completion_condition": "첫 측정 전, 30초를 넘긴 오래된 측정, 시간 초과, 알 수 없는 상태, 실제 0을 화면에서 구분한다. 오래된 캐시 측정치를 현재 값처럼 표시하지 않는다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -2278,37 +2572,38 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-13-development-results.md",
-          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
-        }
+        "2026-10-15"
       ],
       "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "first/stale/error/unknown/zero 표시 상태와 freshness 경로가 구현되어 있다. 현재 source 회귀 재실행은 이 검토에서 하지 않았다.",
-        "regression": "현재 표시 로직 4개 회귀 통과: 0·미측정·오래된 값·실패·잘못된 범위 구분. backend/권한 통합 회귀는 환경 의존성 미충족으로 미실행.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "첫 측정 전·30초 초과·시간 초과·알 수 없음·실제 0을 구분하고 오래된 값은 현재 값처럼 보이지 않음(망 품질은 fresh/stale/확인 불가).",
+        "regression": "병합 소스 지표 시험과 Console 상태 시험 통과.",
+        "deployment": "통합 브랜치를 솔루션 기기에 field up으로 배포한 판본에 포함(배포 기록의 commit이 병합 commit을 포함).",
+        "real_device": "이전 실기기 표본 유지.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
         "implementation": 1,
-        "regression": 0.5,
-        "deployment": 0.5,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 50.0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-13-development-results.md",
-          "sha256": "bd3499e464d942f1c4d2824001d7eb296e1942cbeffd0afb49bec22010e509a7"
+          "path": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+          "sha256": "287da53db90e3bda93d5efdab45842a53dc9527e44a14101fe67661677972f70"
         },
         {
-          "path": "research/llm-wiki/analysis/wbs-review/current-checks.json",
-          "sha256": "40048082f49d396c6f74061ca5efe6d0d3b984b7b2f90cedcba89637584352ec"
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -2440,12 +2735,16 @@
         "research/collaboration-console/"
       ],
       "regression_test_candidates": [
-        "research/collaboration-console/test_console.py"
+        "research/collaboration-console/test_console.py",
+        "full_stack_lab/tests/test_console.py"
       ],
       "actual_evidence_paths": [
-        "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md"
+        "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md",
+        "research/llm-wiki/status/reports/2026-10-15-inspection-corpus.md",
+        "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+        "research/llm-wiki/analysis/wbs-1015/deploy.json"
       ],
-      "known_gap": "PJ1 Codex 작업은 사용량 한도 때문에 도구 호출 전에 거부됐다. 게이트웨이 로그가 없다는 사실은 게이트웨이 로깅 오류가 아니었다. 합성되거나 선언만 된 모델 이름을 실제 사용 모델로 표시해서는 안 된다.",
+      "known_gap": "실제 한도 거부 스트림 확인이 남았다.",
       "completion_condition": "화면에서 요청한 모델·추론 강도, 실제 응답 모델, 사용량 한도 오류, 작업 실패, 도구 호출 0건, 게이트웨이 기록 없음 상태를 구분한다. 원본 대화 내용은 비공개로 유지한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -2455,33 +2754,38 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
-        {
-          "path": "2026-10-14-pj1-nine-tools.md",
-          "scope": "2026-10-14 D-79 invalidated self-approved run; not positive test evidence."
-        }
+        "2026-10-15"
       ],
-      "implementation_assessment": "partial_candidate",
+      "implementation_assessment": "complete",
       "stage_notes": {
-        "implementation": "협업 Console은 task state와 CLI 응답 일부를 기록하지만 requested/actual model, quota/turn failure, zero tool call, Gateway silence의 모든 구분을 현재 source에서 완전 충족했는지 확인되지 않았다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
-        "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
+        "implementation": "실행마다 요청 모델·추론 강도, 제공자가 응답에 실어 온 모델만 응답 모델로 인정, 턴 오류·사용량 한도·작업 실패·모델 불일치·중단·도구 호출 0건·게이트웨이 기록 상태 구분, 원본은 비공개 runtime.",
+        "regression": "병합 소스에서 협업 콘솔 시험 18건 통과(실제 캡처 CLI 출력 포함).",
+        "deployment": "협업 콘솔은 로컬 개발 화면이라 기기 배포 대상이 아니다.",
+        "real_device": "실제 한도 거부·성공한 codex exec --json 출력은 얻지 못했다.",
+        "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 0.5,
-        "regression": 0,
+        "implementation": 1,
+        "regression": 1,
         "deployment": 0,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 10.0,
+      "progress": 40,
       "complete": false,
       "priority": "P2",
       "evidence": [
         {
-          "path": "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md",
-          "sha256": "c9b7dc1abceef48ee927f2375314b545234ac7c0ce60c645eb80a62dcefd68ff"
+          "path": "research/llm-wiki/status/reports/2026-10-15-inspection-corpus.md",
+          "sha256": "88ab7a0f91c5340545192db040005ebcdc55eeefe23827604dcce48107617d11"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
+          "sha256": "295b4d0977da1503a983e697277776888deeb00421f31ff0eca5a6edfc8127bd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
+          "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ]
     },
@@ -2762,7 +3066,11 @@
     "OS 표본 1388의 projection 일치는 raw HTTP 전체, 모든 원본 이벤트 수집, 무손실 보존을 증명하지 않음.",
     "최근 200건 목록은 전체 누적 건수나 완전한 페이지 이동이 아님. 이미 제공되는 24시간 전체 거부 집계의 존재를 부정하지 않음.",
     "Windows 신규 collector는 코드·합성 단위검사만 확인했고 실제 Windows 기기 수집은 미검증.",
-    "snapshot-before-log-fix의 감사 source hash는 당시 확정 이력으로 보존하며 현재 소스와 재대조하지 않음. 이번 근거는 reviewed/prepared/deployed SHA 및 현재 PJ1·DB 결과로 별도 검증."
+    "snapshot-before-log-fix의 감사 source hash는 당시 확정 이력으로 보존하며 현재 소스와 재대조하지 않음. 이번 근거는 reviewed/prepared/deployed SHA 및 현재 PJ1·DB 결과로 별도 검증.",
+    "서브에이전트 브랜치의 시험 결과는 병합 소스에서 다시 돌린 결과(lab-results.jsonl)로만 회귀 점수에 반영했다.",
+    "PJ1 공식 MCP SDK 호출은 프로토콜 증거이며 관리 하네스의 자연어 모델 호출이 아니다.",
+    "관리 계정이 로그인되지 않아 하네스 E2E·키트 재설치 후 DEV-31 실기기 확인은 하지 않았다.",
+    "10-15 범위 기록은 사용자가 허락한 root 권한으로 기존 신청 목적을 옮긴 것이며 새 도입 승인이 아니다."
   ],
   "next_actions": [
     {
@@ -2791,9 +3099,9 @@
     }
   ],
   "source_snapshot": {
-    "path": "research/llm-wiki/analysis/development-wbs/snapshot-before-log-fix.json",
-    "as_of": "2026-10-14T11:01:28.649247+00:00",
-    "historical_progress": 21.8,
-    "note": "보존된 사전 스냅샷은 해당 시점의 확정 이력으로 취급했다. 그 시점의 audit source hash를 현재 파일과 재비교하지 않았다."
+    "path": "research/llm-wiki/analysis/development-wbs/snapshot-before-wbs-1015.json",
+    "as_of": "2026-10-14T12:33:21.918770+00:00",
+    "historical_progress": 24.8,
+    "note": "10-14 로그 수정 뒤 스냅샷을 이력으로 보존하고, 새 근거가 있는 작업만 다시 산정했다."
   }
 }
