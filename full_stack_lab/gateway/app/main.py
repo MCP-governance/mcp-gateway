@@ -288,7 +288,7 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
 @app.get("/api/overview")
 async def overview(user: dict = Depends(admin_caller)) -> dict:
     """Everything the first Console screen shows, in one round trip."""
-    today, per_server, stations, alerts, approvals, cases, series, flows, execution = await asyncio.gather(
+    today, per_server, stations, alerts, approvals, intake_actions, cases, series, flows, execution = await asyncio.gather(
         db.fetch_all(f"""SELECT decision, count(*) AS n FROM decisions d
                           WHERE created_at > {TODAY} AND {decommission.REAL_CALL} GROUP BY decision"""),
         db.fetch_all(f"""SELECT s.id, s.display_name, s.status, s.lifecycle, s.deployment, s.status_reason,
@@ -314,6 +314,9 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
                             AND {decommission.REAL_CALL}
                          GROUP BY decision, policy_id ORDER BY n DESC LIMIT 8"""),
         db.fetch_one("SELECT count(*) AS n FROM approvals WHERE status='PENDING' AND expires_at > now()"),
+        db.fetch_one("""SELECT count(*) AS n FROM mcp_intake_requests
+                          WHERE status IN ('HOLD','VALIDATED','REMOTE_REVIEWED','FAILED')
+                             OR (status='APPROVED' AND registered_server_id IS NULL)"""),
         decommission.summary(),
         # Charts: calls per hour by decision, and who called what (harness -> server -> decision).
         db.fetch_all(f"""SELECT date_trunc('hour', created_at) AS hour, decision, count(*) AS n FROM decisions d
@@ -350,7 +353,8 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
     return {
         "today": {"total": sum(counts.values()), **{k: counts.get(k, 0) for k in ("Allow", "Alert", "Restrict", "Approval", "Block")}},
         "servers": per_server, "workstations": stations, "top_policies": alerts,
-        "pending_approvals": int(approvals["n"] or 0), "termination": cases,
+        "pending_approvals": int(approvals["n"] or 0),
+        "intake_actions": int(intake_actions["n"] or 0), "termination": cases,
         "series": series, "flows": flows, "execution": execution, "pipeline": pipeline,
         "enforcement": await enforcement_mode(), "catalog_version": registry.catalog_version(),
     }
