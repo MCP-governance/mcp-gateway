@@ -5,7 +5,7 @@
  * the signed-in user's token and the server decides what that user may see, so hiding
  * a menu here is convenience only.
  */
-import { mergeRows, searchRows, liveLabel, hourBuckets, splitBy, sankeyData, harnessLabel, DECISIONS,
+import { mergeRows, searchRows, hourBuckets, splitBy, sankeyData, harnessLabel, DECISIONS,
   statusView, dedupeItems, pipelineOf, EVIDENCE } from "./console-state.mjs";
 import * as charts from "./charts.mjs";
 
@@ -616,10 +616,7 @@ function renderFeedStatus() {
   const range = feed.query ? `${start}–${end} / 검색 ${feed.filteredTotal}건 · 전체 ${feed.total}건`
     : Object.values(feed.filters).some(Boolean) ? `${start}–${end} / 필터 ${feed.filteredTotal}건 · 전체 ${feed.total}건`
       : `${start}–${end} / 전체 ${feed.total}건`;
-  status.innerHTML = String(html`${range} · ${liveLabel({ ...feed, pending: feed.pending.length })}
-    ${feed.pending.length ? html`<button class="btn sm" type="button" data-act="feed-new">새 로그 ${feed.pending.length}건</button>` : ""}`);
-  const statusParts = status.textContent.split(" \u00b7 ");
-  status.textContent = statusParts.shift() || "";
+  status.textContent = range;
   $("#feed-live-state").textContent = feed.failing ? "갱신 실패" : feed.live ? "실시간" : "일시정지";
   $("#feed-live-time").textContent = feed.lastOk
     ? new Date(feed.lastOk).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
@@ -697,8 +694,19 @@ function startLive() {
       feed.cursor = Math.max(feed.cursor, data.cursor || 0);
       feed.lastOk = Date.now();
       feed.failing = false;
-      feed.pending = mergeRows(feed.pending, data.rows);
-      renderFeedStatus();
+      if (feed.live && feed.page === 1 && data.rows.length) {
+        const existing = new Set(feed.rows.map((row) => String(row.id)));
+        const fresh = data.rows.filter((row) => !existing.has(String(row.id)));
+        if (fresh.length) {
+          feed.rows = mergeRows(feed.rows, data.rows, feed.pageSize);
+          feed.filteredTotal += fresh.length;
+          if (!feed.query && !Object.values(feed.filters).some(Boolean)) feed.total += fresh.length;
+          renderFeed(fresh.map((row) => row.id));
+        } else renderFeedStatus();
+      } else {
+        feed.pending = mergeRows(feed.pending, data.rows);
+        renderFeedStatus();
+      }
     } catch {
       // A failed poll must not end the live view, and must not look like a quiet one.
       if (gen === feed.gen) { feed.failing = true; renderFeedStatus(); }
@@ -1747,7 +1755,13 @@ const ACTIONS = {
     el.setAttribute("aria-label", feed.live ? "일시정지" : "실시간 재개");
     el.title = feed.live ? "일시정지" : "실시간 재개";
     el.setAttribute("aria-pressed", String(!feed.live));
-    renderFeedStatus();
+    if (feed.live && feed.pending.length) {
+      feed.highlight = feed.pending.map((row) => row.id);
+      feed.pending = [];
+      feed.page = 1;
+      feed.analysisAt = 0;
+      reload();
+    } else renderFeedStatus();
   },
   async "analysis-refresh"() {
     const extra = feed.query ? { q: feed.query } : {};
@@ -1763,14 +1777,12 @@ const ACTIONS = {
       if ($(`#${id}`)) charts.redraw(id, build);
     }
   },
-  "feed-new"() {
-    feed.highlight = feed.pending.map((row) => row.id);
-    feed.page = 1;
-    feed.analysisAt = 0;
-    reload();
-  },
   "feed-page"(el) {
     feed.page = Math.max(1, Number(el.dataset.page) || 1);
+    if (feed.page === 1 && feed.pending.length) {
+      feed.highlight = feed.pending.map((row) => row.id);
+      feed.pending = [];
+    }
     reload();
   },
   "feed-reset"() {

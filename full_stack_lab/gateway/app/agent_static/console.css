@@ -240,7 +240,7 @@ details.analysis[open]{padding-bottom:20px}
 @media(forced-colors:active){.chip,.btn,.dot,.kpi,.panel,.tab[aria-selected="true"],.pipe .step-no{border:1px solid CanvasText}.nav a[aria-current="page"]{outline:2px solid Highlight}}
 @keyframes new-call-fade {
   from { background-color: var(--new-call-bg); }
-  to { background-color: transparent; }
+  to { background-color: var(--panel); }
 }
 
 .call-table tbody tr.new-call > td {
