@@ -1,0 +1,100 @@
+{
+  "verified_at": "2026-10-14T19:13:55+09:00",
+  "branch": "10/14-pj1-ghidra-logs",
+  "basis_head": "ab6936c64f3578de8360b840f1928681714fa7bb",
+  "product_code_changed": false,
+  "tool_registration_approval_performed": false,
+  "runtime_installation": "PJ1 user space; Ghidra/JDK in volatile /dev/shm; venv/jar/logs persistent",
+  "actual_sdk": {
+    "protocol": "2025-06-18",
+    "advertised_server": {
+      "name": "ghidra-mcp",
+      "version": "1.30.0"
+    },
+    "package_version": "GhidraMCP 2.0.0",
+    "tool_schemas": 28,
+    "tool_called": "get_program_info",
+    "read_success": true,
+    "uid": 1000,
+    "profile": "unconfined",
+    "target_executed": false,
+    "natural_language_harness": false
+  },
+  "automated_stdio_forwarding": false,
+  "manual_stdio_forwarding": {
+    "accepted": 1,
+    "classification": "shadow",
+    "evidence": "suspected",
+    "snapshot_removed_after_exit": true
+  },
+  "managed_python_launch_denied": true,
+  "automatic_kernel_event_forwarding": {
+    "console_ids": [
+      1387
+    ],
+    "elapsed_seconds": 35.84,
+    "manual_report_sent": false
+  },
+  "gateway_tools_call_decisions_in_sdk_window": 0,
+  "ledger_max_at_read": 803,
+  "observation_test_complete": true,
+  "reboot_persistent_ghidra_runtime": false,
+  "evidence": [
+    {
+      "path": "analysis/pj1-ghidra/automatic-os-event.json",
+      "sha256": "e6cd1b57fdd955f194334138297f9f755ac836342101b2864413fc22222c7972"
+    },
+    {
+      "path": "analysis/pj1-ghidra/finish-and-managed-denial.json",
+      "sha256": "37e4c15c1cb7ab65a0fec150b2298ba7b07c95f4f58cd9b619e00c4fcd3481d3"
+    },
+    {
+      "path": "analysis/pj1-ghidra/gateway-window.json",
+      "sha256": "ed25365a19dc62ce890d471309dd00ef41fbc2d1ab325f48144945ad7a0fa025"
+    },
+    {
+      "path": "analysis/pj1-ghidra/live-observation.json",
+      "sha256": "3385d0018bba7bd467cf04e471883511195a3d2c1b25ff2135d057b26c2d2a0f"
+    },
+    {
+      "path": "analysis/pj1-ghidra/mcp-probe.json",
+      "sha256": "7f593299b9c2c190c1ed99da764d530757fceddbf227703fd97fb5cd5b18fde3"
+    },
+    {
+      "path": "analysis/pj1-ghidra/report.json",
+      "sha256": "4a808d9a967c03922f795a7cfdbfba3a0dd65df8d6032a3da0bd972e47e98aaa"
+    },
+    {
+      "path": "experiments/pj1-ghidra/build_report.py",
+      "sha256": "2876b5d97b85e297d2f525256180c4583802536a671e56a5557df3bf0ad3c606"
+    },
+    {
+      "path": "experiments/pj1-ghidra/check_automatic_os_event.py",
+      "sha256": "609e4705fb0d8b4502d6446f2bae01bbc25bce8381d75ca0d58d1159eda40c85"
+    },
+    {
+      "path": "experiments/pj1-ghidra/finish_pj1_observation.py",
+      "sha256": "8327a7212d4b94172493618c72b0ad619bfaed024b9762de1afa6bf4c4d7e6c0"
+    },
+    {
+      "path": "experiments/pj1-ghidra/observe_pj1_logs.py",
+      "sha256": "cddf33a06bba7c1890b55ee9b0cad02703aa43592a55d29c7467b5da8ec60749"
+    },
+    {
+      "path": "experiments/pj1-ghidra/probe_pj1_ghidra_mcp.py",
+      "sha256": "ffe96655ac2dbd06eb1405b8eaeb41d7dda1492c51297f1f38faa41615b3e977"
+    },
+    {
+      "path": "experiments/pj1-ghidra/continue_pj1_venv_with_uv.sh",
+      "sha256": "1781b7e7b0bff24e2a1fb967c329af154263865cd5c6f7d92df9d86e2b6d22ad"
+    },
+    {
+      "path": "experiments/pj1-ghidra/install_pj1_runtime.sh",
+      "sha256": "df47867c0032ede8f424323419df1a5aab232e05fcd6b3ca02026202307aa938"
+    },
+    {
+      "path": "experiments/pj1-ghidra/restore_ghidra_modes.sh",
+      "sha256": "b6cd6e04d8936ea81679da5430032f1bcb0cbee0235c91b28384071dca9f0b47"
+    }
+  ]
+}

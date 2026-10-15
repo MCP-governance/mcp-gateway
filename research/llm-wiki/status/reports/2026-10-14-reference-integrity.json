@@ -1,0 +1,28 @@
+{
+  "permission_snapshots_verified": 22,
+  "paths": [
+    ".task-local-20261014\\reverse\\permissions\\apparmor-techdoc-apparmor-4.0.tex",
+    ".task-local-20261014\\reverse\\permissions\\apparmor-3.0-man.html",
+    ".task-local-20261014\\reverse\\permissions\\nftables-manpage-2026-07-02.html",
+    ".task-local-20261014\\reverse\\permissions\\systemd.exec-195a17c59b22f5b0fa626fdb4917107cdc281bac.xml",
+    ".task-local-20261014\\reverse\\permissions\\unix.7-ae6b221882ce71ba82fcdbe02419a225111502f0",
+    ".task-local-20261014\\data\\permissions\\app-control.html",
+    ".task-local-20261014\\data\\permissions\\app-control-feature-availability.html",
+    ".task-local-20261014\\data\\permissions\\applocker-overview.html",
+    ".task-local-20261014\\data\\permissions\\applocker-rules.html",
+    ".task-local-20261014\\data\\permissions\\app-control-feature-availability.html",
+    ".task-local-20261014\\data\\permissions\\new-netfirewallrule.html",
+    ".task-local-20261014\\data\\permissions\\wfp-ale.html",
+    ".task-local-20261014\\data\\permissions\\uwp-loopback.html",
+    ".task-local-20261014\\data\\permissions\\sio-loopback-fast-path.html",
+    ".task-local-20261014\\data\\permissions\\create-restricted-token.html",
+    ".task-local-20261014\\desktop\\permissions\\originals\\mcp-authorization-2026-07-28.html",
+    ".task-local-20261014\\desktop\\permissions\\originals\\mcp-tools-2026-07-28.html",
+    ".task-local-20261014\\desktop\\permissions\\originals\\mcp-security-best-practices-2026-07-28.html",
+    ".task-local-20261014\\desktop\\sources\\playwright-mcp\\README.md",
+    ".task-local-20261014\\desktop\\permissions\\originals\\playwright-mcp-0.0.83-readme.md",
+    ".task-local-20261014\\desktop\\permissions\\originals\\chromium-process-sandbox-f68f02e.md",
+    ".task-local-20261014\\desktop\\permissions\\originals\\blender-security-5.2.html"
+  ],
+  "data_script_and_protocol_hashes_match": true
+}

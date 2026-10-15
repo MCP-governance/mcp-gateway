@@ -1,0 +1,22 @@
+{
+  "source_updated": [
+    {
+      "path": "endpoint-agent/managed-linux.py",
+      "sha256": "817b69289cdef06d5239028ce7f41260ac13fb0696c2af3abebb1c56b1859478"
+    },
+    {
+      "path": "endpoint-agent/managed-windows.py",
+      "sha256": "1bfca191471207bb7c691674adc6da579a68d1c9aac1e9a34875a7d6f512da73"
+    },
+    {
+      "path": "endpoint-agent/agent.py",
+      "sha256": "cd52ed5dc41699aa2d63d54171c1639a91d94a50162b80ba049fd747ac0f89dc"
+    },
+    {
+      "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+      "sha256": "5383f864130acf6acabec0e78446a82372807c41e6709c5cd42b4a13b571de14"
+    }
+  ],
+  "backup": "/home/user/mcp-gateway/full_stack_lab/reports/local-mcp-endpoint-20261014/source-before",
+  "services_restarted": false
+}

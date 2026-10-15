@@ -1,0 +1,139 @@
+{
+  "date": "2026-10-14",
+  "branch": "10/14-endpoint-log-wbs",
+  "basis_head": "ab6936c64f3578de8360b840f1928681714fa7bb",
+  "review_type": "read-only static path audit",
+  "scope": [
+    "endpoint-agent/agent.py",
+    "endpoint-agent/managed-linux.py",
+    "endpoint-agent/os-observer.py",
+    "endpoint-agent/managed-windows.py",
+    "full_stack_lab/gateway/app/main.py",
+    "full_stack_lab/gateway/app/endpoint_plane.py",
+    "full_stack_lab/gateway/app/integrations.py",
+    "full_stack_lab/gateway/app/agent_static/console.js"
+  ],
+  "source_sha256": {
+    "endpoint-agent/agent.py": "c274dcf53f9d486fd38032932a55929cd81424d26b3fd1c6e026facf6c677647",
+    "endpoint-agent/managed-linux.py": "22735c5a9605d3f412ca08d820255d22eb24775c5bde85ea50ea588d809f5517",
+    "endpoint-agent/os-observer.py": "bb24ea5883271a102d1006a2f5d8c639305c9066298e0990332d7b107d84a606",
+    "endpoint-agent/managed-windows.py": "9f6dba0f3e42276ee0a12c3f0e13451c702677630943cfc4d0720f5a352ac46a",
+    "full_stack_lab/gateway/app/endpoint_plane.py": "8d7276182c383227f705cd2999cfed75f071bfc07653913f6e14cd5301845154",
+    "full_stack_lab/gateway/app/main.py": "dd2e29c4352017d89f61c4b221b78e396d781303444bcdec97e25d37afa47fbf",
+    "full_stack_lab/gateway/app/integrations.py": "5c70925b0c561ad7ef4110b7d024b0193821c6bb49099494ef2aa32e9c3e7241",
+    "full_stack_lab/gateway/app/agent_static/console.js": "a3cc7f8ced4a821660f8865b014fada938746b74951625c22aee131674342214"
+  },
+  "evidence_boundaries": {
+    "ghidra_probe_scope": "Previous PJ1 test proved one UID 1000 GhidraMCP stdio process was detected after explicit user-directed one-off collection, accepted once as shadow/suspected, then its empty post-exit snapshot removed that row. It did not prove automatic stdio collection or a Gateway MCP call.",
+    "ghidra_probe_source": {"path": "research/llm-wiki/analysis/pj1-ghidra/report.json", "sha256": "4a808d9a967c03922f795a7cfdbfba3a0dd65df8d6032a3da0bd972e47e98aaa", "claim_scope": "SDK initialize/tools-list/read call and manual listener observation are separate; protocol success itself is not endpoint delivery evidence."},
+    "manual_listener_source": {"path": "research/llm-wiki/analysis/pj1-ghidra/live-observation.json", "sha256": "3385d0018bba7bd467cf04e471883511195a3d2c1b25ff2135d057b26c2d2a0f", "claim_scope": "One manual stdio-process snapshot: one process detected, endpoint accepted one, Console shadow/suspected one; automatic scan disabled."},
+    "post_exit_cleanup_source": {"path": "research/llm-wiki/analysis/pj1-ghidra/finish-and-managed-denial.json", "sha256": "37e4c15c1cb7ab65a0fec150b2298ba7b07c95f4f58cd9b619e00c4fcd3481d3", "claim_scope": "Process exited and one stale listener row was removed, returning shadow count to zero; separate UID 1001 interpreter launch denied before GhidraMCP loaded."},
+    "automatic_kernel_event_scope": "Previous PJ1 report records one Linux execution-denied event (Console id 1387) received about 35.84 seconds later by the existing periodic observer without a manual POST or service restart. This proves that one kernel-event path only, not listener scan delivery or every event.",
+    "automatic_kernel_event_source": {"path": "research/llm-wiki/analysis/pj1-ghidra/automatic-os-event.json", "sha256": "e6cd1b57fdd955f194334138297f9f755ac836342101b2864413fc22222c7972", "claim_scope": "One AppArmor execution-denied event for python3.12 on profile mcpgw-managed-pj1; manual_report_sent=false; periodic_service_not_restarted=true; Console id 1387 received."},
+    "not_tested_here": ["No PJ1/device runtime, credentials, active service settings, Gateway database, or Console was read or changed.", "No code, policy, endpoint registration, or task-local runtime configuration was changed.", "This report states predicted tests only; no runtime or regression execution was performed by this static review."]
+  },
+  "findings": [
+    {
+      "id": "ELA-01",
+      "severity": "P2",
+      "title": "NETSCAN-disabled or scope-denied listener observation is reported as observer success",
+      "code_targets": [
+        {"path": "endpoint-agent/agent.py", "lines": "634-648,651-667", "symbol": "report_listeners, once", "cause": "NETSCAN=0, HTTP 401/403, or enabled=false returns None without a listener POST; once logs a combined 'no scan (no permission or policy off)' and returns normally."},
+        {"path": "endpoint-agent/managed-linux.py", "lines": "248-251,294-307", "symbol": "serve", "cause": "observer.json hard-codes ENDPOINT_NETSCAN=0; any successful --once subprocess is written to observers['agent.py']='ok', although that command intentionally skipped listener inventory."},
+        {"path": "endpoint-agent/managed-windows.py", "lines": "553-559,593-599", "symbol": "serve", "cause": "Windows observer config also hard-codes NETSCAN=0 and records the successful --once command as observer='ok'."}
+      ],
+      "impact": "A healthy configuration inventory subprocess is indistinguishable in its parent status from a listener/process observation. Operators can read 'ok' as discovery success although no listener snapshot was sent. In the observed PJ1 setup, process detection exists in code but automatic stdio reporting is disabled.",
+      "minimal_fix_choices": ["Return a structured observation result with separate config_inventory and listener_scan states: disabled, unauthorized, policy_disabled, success, partial, failed.", "Have the managed supervisor parse that result and log disabled/unauthorized separately from success; do not change NETSCAN authorization or scope as a side effect.", "If process-only auto-observation is wanted, design a separate scope/report switch from network CIDR scanning rather than enabling netscan wholesale."] ,
+      "verification": {
+        "positive": "With NETSCAN enabled, netscan scope present, policy enabled, and a harmless synthetic stdio marker process, expect a listeners POST and listener_scan=success.",
+        "negative": "With NETSCAN=0, missing scope (401/403), or policy disabled, expect listener_scan=disabled/unauthorized/policy_disabled, zero POSTs, and parent observer state not equal to full discovery success; config inventory may still independently succeed.",
+        "runtime_evidence_limit": "Static path only; existing PJ1 log evidence confirmed NETSCAN=0 automatic listener report=None and a separate manual one-off report accepted once."
+      }
+    },
+    {
+      "id": "ELA-02",
+      "severity": "P1",
+      "title": "Snapshot replacement deletes records without a completeness signal, including silently partial or truncated scans",
+      "code_targets": [
+        {"path": "endpoint-agent/agent.py", "lines": "169-185,247-263", "symbol": "candidate_files, collect_configs", "cause": "Missing roots are skipped and individual unreadable/malformed files are caught and skipped; the posted entries list has no completeness/error metadata."},
+        {"path": "endpoint-agent/agent.py", "lines": "270-276,279-338,341-355,375-388", "symbol": "_run, _linux_listeners, _windows_processes, _windows_listeners, _bsd_listeners", "cause": "Several source errors collapse to empty rows/maps; missing proc tables are skipped. Callers cannot distinguish 'none found' from 'could not observe'."},
+        {"path": "endpoint-agent/agent.py", "lines": "634-648", "symbol": "report_listeners", "cause": "The full findings set is silently cut to findings[:500] and then sent as if it were a complete snapshot."},
+        {"path": "full_stack_lab/gateway/app/main.py", "lines": "873-876,915-930,1052-1085", "symbol": "EndpointReport, ListenerReport, endpoint_report, endpoint_listener_report", "cause": "Request models permit up to 500 items but have no completeness/truncated marker; successful empty bodies are accepted."},
+        {"path": "full_stack_lab/gateway/app/endpoint_plane.py", "lines": "175-236,747-820", "symbol": "ingest, ingest_listeners", "cause": "After upserts, each routine deletes every existing endpoint row whose fingerprint is not in the submitted list, including when the list is empty or was truncated upstream."}
+      ],
+      "impact": "A transient permission/source error or a valid collection with over 500 listener findings can erase previously known config/listener rows that were merely unobserved. The resulting zero count can understate shadow inventory and policy inputs. The delete semantics are reasonable only if each request is a proven complete snapshot.",
+      "minimal_fix_choices": ["Add explicit complete/truncated/source-status metadata and only reconcile-delete after a complete scan; keep incomplete observations separate from authoritative snapshots.", "For >500 results, paginate with snapshot id and finalize only after all pages arrive, or reject/mark the snapshot incomplete without deleting prior rows.", "Record per-source collection errors so a readable config subset cannot imply that every configured search root was covered."] ,
+      "verification": {
+        "positive": "A complete non-empty snapshot upserts all rows and removes a row known to have been removed at source; a complete empty snapshot explicitly clears the endpoint snapshot.",
+        "negative": "Inject an unreadable config root, unavailable proc/netstat/CIM source, or >500 findings and verify the old rows remain marked stale/incomplete rather than being deleted; then deliver the next complete snapshot and verify reconciliation.",
+        "failure_retry": "Fail a POST before Gateway ingest and verify no cleanup occurs; retry a completed OS-event batch at the same cursor and verify existing (endpoint_id,event_id) uniqueness prevents duplicate rows.",
+        "runtime_evidence_limit": "Delete risk is a code-path inference; no partial-observation or >500-item runtime reproduction was run."
+      }
+    },
+    {
+      "id": "ELA-03",
+      "severity": "P2",
+      "title": "Disabling netscan leaves old listener findings in current policy counts with no freshness cutoff",
+      "code_targets": [
+        {"path": "endpoint-agent/agent.py", "lines": "634-648", "symbol": "report_listeners", "cause": "NETSCAN=0, missing scope, and disabled policy return without a new report or a state/last-success event."},
+        {"path": "full_stack_lab/gateway/app/endpoint_plane.py", "lines": "747-820,846-860", "symbol": "ingest_listeners, shadow_listener_count_for", "cause": "Rows are retained until a later posted snapshot; policy input counts every shadow confirmed/suspected listener without observed_at/last_scan_at freshness filtering."},
+        {"path": "full_stack_lab/gateway/app/endpoint_plane.py", "lines": "456-468", "symbol": "devices", "cause": "last_scan_at is available as a timestamp, but the listener count itself is not qualified by freshness."}
+      ],
+      "impact": "This avoids destructive clearing when observation is intentionally disabled, but can keep an old suspected/confirmed listener as a present bypass/policy signal indefinitely. The UI integration row exposes its old discovery time, yet the policy count does not expire it.",
+      "minimal_fix_choices": ["Preserve last-seen records for audit but expose collection mode, last successful full scan, and freshness as separate fields.", "Exclude stale listener observations from current policy inputs after a defined TTL while retaining historical evidence; do not treat disabled scanning as a clean empty snapshot.", "Surface disabled/stale state next to endpoint status so a missing current report cannot read as zero findings."] ,
+      "verification": {
+        "positive": "Fresh confirmed/suspected shadow listener contributes to the current policy count; a fresh complete scan refreshes its timestamp.",
+        "negative": "Disable scanning or remove scope; verify no false empty snapshot is created, the record becomes stale after the documented TTL, and the live policy count stops treating it as current while audit history remains.",
+        "runtime_evidence_limit": "Freshness behavior is inferred from the query and data retention code; no policy decision was run."
+      }
+    },
+    {
+      "id": "ELA-04",
+      "severity": "P2",
+      "title": "The dedicated 'unregistered/residue' coverage tab omits listener-derived shadow rows",
+      "code_targets": [
+        {"path": "full_stack_lab/gateway/app/main.py", "lines": "1088-1101", "symbol": "endpoint_inventory", "cause": "The endpoint view returns both entries and listeners, plus only the newest 200 OS events."},
+        {"path": "full_stack_lab/gateway/app/agent_static/console.js", "lines": "957-970,1005-1016,1039-1043", "symbol": "ROUTES.coverage", "cause": "shadowRows is derived only from inv.entries; shadow-tab count/chart and endpoint settings table use config entries and OS events, never inv.listeners."},
+        {"path": "full_stack_lab/gateway/app/integrations.py", "lines": "221-243", "symbol": "snapshot", "cause": "The broad MCP/connectors inventory does include endpoint_listeners as integration items, so listener rows are not globally absent from the UI; the omission is specific to the dedicated shadow/residue details and counts."}
+      ],
+      "impact": "A process-only Ghidra stdio finding can appear in the broad coverage inventory while the focused shadow/residue tab's count, chart, and config table show no corresponding listener. This matches a plausible 'logs arrived but I cannot find them in the endpoint log view' report.",
+      "minimal_fix_choices": ["Render listener-derived rows in the dedicated tab and include them in its counts/charts, keeping config and listener source labels distinct.", "Alternatively rename and label the current panels explicitly as config-only, and add a separate listener panel using inv.listeners."] ,
+      "verification": {
+        "positive": "A synthetic stdio-process shadow listener appears in the focused listener table and increments its source-specific count/chart as well as the broad inventory.",
+        "negative": "A registered listener does not appear in the shadow subset; an empty listener response does not change config counts; OS denial events remain in their separate table.",
+        "runtime_evidence_limit": "UI behavior follows static rendering inputs; no browser or Console session was used."
+      }
+    },
+    {
+      "id": "ELA-05",
+      "severity": "P2",
+      "title": "The periodic OS-denial observer is Linux-only; the Windows managed loop has no equivalent event collector",
+      "code_targets": [
+        {"path": "endpoint-agent/managed-linux.py", "lines": "294-305", "symbol": "serve", "cause": "The periodic managed loop invokes both agent.py and os-observer.py."},
+        {"path": "endpoint-agent/os-observer.py", "lines": "53-84", "symbol": "main", "cause": "The collector requires root and reads Linux kernel journal via journalctl -k; it reports AppArmor/nft events."},
+        {"path": "endpoint-agent/managed-windows.py", "lines": "593-599", "symbol": "serve", "cause": "The Windows managed loop invokes agent.py only; no Windows firewall/security event collector or OS-event POST is called."},
+        {"path": "full_stack_lab/gateway/app/main.py", "lines": "1105-1112", "symbol": "endpoint_os_report", "cause": "The receiving API supports execution/network denial records without a platform restriction, but that alone does not supply a Windows producer."}
+      ],
+      "impact": "Linux Console id1387 evidence must not be generalized to Windows managed endpoints. Windows Firewall enforcement may be active while denied-attempt event telemetry remains absent through this managed service path.",
+      "minimal_fix_choices": ["Mark Windows denial telemetry as unsupported/not collected in coverage state until a source is selected.", "If parity is required, add a Windows-specific, least-privilege event source/cursor and map it to the existing bounded EndpointOSReport shape; do not infer firewall denial from the rule existing."],
+      "verification": {
+        "positive": "For a supported Windows denial source, generate one harmless synthetic deny and confirm stable event id, endpoint binding, POST, deduplication, and Console display.",
+        "negative": "With source unavailable/disabled, show unsupported or stale status rather than a zero-denial success; Linux AppArmor/nft tests remain separate.",
+        "runtime_evidence_limit": "Static platform-path comparison only; no Windows endpoint was accessed or changed."
+      }
+    }
+  ],
+  "confirmed_non_findings_and_limits": [
+    "The Linux OS observer advances its journal cursor only after all batches are accepted; on retry, Gateway event insertion uses ON CONFLICT(endpoint_id,event_id) DO NOTHING. This is a sound retry/idempotency shape, subject to journal availability and the source process not being compromised.",
+    "The Console exposes the newest 200 OS events globally and labels the chart '최근 수신 200건 내 차단'. The per-device 24-hour denial count is a separate unbounded count query over endpoint_os_events, so the visible event list cap is not the 24-hour aggregate cap.",
+    "Inventory/listener snapshot delete statements intentionally support true disappearance reconciliation. The defect is the missing completeness contract and the producer truncation/error-to-empty behavior, not snapshot replacement itself.",
+    "The prior PJ1 Ghidra exercise found one stdio process only after an explicitly requested one-off netscan report; the default managed agent was configured with NETSCAN=0. The later OS denial id1387 is a separate AppArmor event from the interpreter-denial attempt, not Ghidra process-scan evidence, automatic stdio reporting, a natural-language tool call, or a Gateway MCP decision."
+  ],
+  "wbs": [
+    {"sequence": 1, "task": "Split observer outcomes into source-level status and coverage freshness; distinguish config inventory from listener/process scan success.", "depends_on": [], "success": "Disabled, unauthorized, failed, partial, and successful collection are separately observable on Linux and Windows."},
+    {"sequence": 2, "task": "Add complete/truncated snapshot semantics and pagination or safe incomplete handling for config/listener inventory.", "depends_on": [1], "success": "Only complete snapshots can delete missing rows; source errors and >500 findings cannot silently shrink the inventory."},
+    {"sequence": 3, "task": "Define listener freshness semantics for stale policy/UI rows.", "depends_on": [1, 2], "success": "Current policy inputs filter or qualify old observations without deleting historical evidence; disabled scans are not reported as clean."},
+    {"sequence": 4, "task": "Expose listener-source findings in the focused Console shadow/residue view and show coverage/last successful scan status.", "depends_on": [1, 2, 3], "success": "Process-only and socket/network listener findings are discoverable with source, age, evidence confidence, and capped-list indication."},
+    {"sequence": 5, "task": "Decide and implement Windows denial-event parity or explicitly mark it unsupported; test on PJ1/Windows in separate authorized runs.", "depends_on": [1], "success": "Supported platforms report event-source freshness, or unsupported platforms show an explicit nonzero-coverage limitation."}
+  ]
+}

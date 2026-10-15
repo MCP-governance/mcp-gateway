@@ -1,0 +1,244 @@
+{
+  "ok": true,
+  "at": 1791979487.738459,
+  "product_database_reset": false,
+  "before": {
+    "database": "mcp_governance",
+    "started": "2026-10-13 04:45:55.750024+00",
+    "principals": 10,
+    "devices": 12,
+    "grants": 14,
+    "registry": [
+      {
+        "id": "context7",
+        "status": "READY",
+        "status_reason": "\uc2b9\uc778 \uacc4\uc57d\uacfc \uc77c\uce58"
+      },
+      {
+        "id": "figma",
+        "status": "DRIFT",
+        "status_reason": "\ub3c4\uad6c \uacc4\uc57d \ubcc0\ud654\uac00 \ud0d0\uc9c0\ub428"
+      },
+      {
+        "id": "github",
+        "status": "READY",
+        "status_reason": "\uc2b9\uc778 \uacc4\uc57d\uacfc \uc77c\uce58"
+      },
+      {
+        "id": "ms-learn",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "notion",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-log-context7",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-log-figma",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-log-github",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-log-notion",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-log-sentry",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-log-supabase",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-log-zapier",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-nine-browser",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-nine-git",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-nine-sqlite",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "supabase",
+        "status": "DISABLED",
+        "status_reason": "\ud3d0\uae30 \uc885\uacb0(T3) \u00b7 assssssssssss"
+      },
+      {
+        "id": "zapier",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      }
+    ]
+  },
+  "after": {
+    "database": "mcp_governance",
+    "started": "2026-10-13 04:45:55.750024+00",
+    "principals": 10,
+    "devices": 12,
+    "grants": 14,
+    "registry": [
+      {
+        "id": "context7",
+        "status": "READY",
+        "status_reason": "\uc2b9\uc778 \uacc4\uc57d\uacfc \uc77c\uce58"
+      },
+      {
+        "id": "figma",
+        "status": "DRIFT",
+        "status_reason": "\ub3c4\uad6c \uacc4\uc57d \ubcc0\ud654\uac00 \ud0d0\uc9c0\ub428"
+      },
+      {
+        "id": "github",
+        "status": "READY",
+        "status_reason": "\uc2b9\uc778 \uacc4\uc57d\uacfc \uc77c\uce58"
+      },
+      {
+        "id": "ms-learn",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "notion",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-log-context7",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-log-figma",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-log-github",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-log-notion",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-log-sentry",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-log-supabase",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-log-zapier",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-nine-browser",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-nine-git",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "pj1-nine-sqlite",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      },
+      {
+        "id": "supabase",
+        "status": "DISABLED",
+        "status_reason": "\ud3d0\uae30 \uc885\uacb0(T3) \u00b7 assssssssssss"
+      },
+      {
+        "id": "zapier",
+        "status": "DISABLED",
+        "status_reason": "\uce74\ud0c8\ub85c\uadf8\uc5d0\uc11c \uc81c\uac70\ub41c \uc11c\ubc84"
+      }
+    ]
+  },
+  "source_hashes": {
+    "gateway": {
+      "/app/app/main.py": "4a2692d8337f6d2b5ac16a5f70ab8b1062a34c8cb6f58f1fa1a1b76e5c4b7584",
+      "/app/app/endpoint_plane.py": "f0c516f945486ec92dc0eedb2ca3c8da6595d560a038e0aa10a7c5a24cddf7f3",
+      "/app/app/agent_service.py": "5b5b36d2faff4e4e59e320f710152ede463fa773e9af3d2dc3dd06ab6e2afcf4",
+      "/app/app/agent_static/console.js": "5c46a6632126e48dfb94aa698839e6e97a1ff87e10cf887ebd24fc44015d1601",
+      "/app/app/agent_static/console-state.mjs": "c4030c37ed122f76980399867bf708f7dda5d0c05cccb0a1b2f3f1ef90f89ba2"
+    },
+    "agent-service": {
+      "/endpoint-kit/agent.py": "ce87ed33861295b66fa99520fd898eefca82df22cd9f0b912fb9a9625199f7d1",
+      "/endpoint-kit/managed-linux.py": "2107a6431b2d35d18cf450678314b287dacd07beb0fb2af8cf7f168cf238fb18",
+      "/endpoint-kit/os-observer.py": "93e91ba60df67631824d1607d6eef33557a58122d2dadc35ae890638292e5fa6",
+      "/endpoint-kit/managed-windows.py": "0aa273e4c418379ba19a9473741b1c671e4ddd343e3459ab54a1ddffab797878",
+      "/endpoint-kit/os-observer-windows.py": "3345edfd830c32549a1b706698f9d334661e7b3a87e380c327b50d5bdecbf870",
+      "/app/app/main.py": "4a2692d8337f6d2b5ac16a5f70ab8b1062a34c8cb6f58f1fa1a1b76e5c4b7584",
+      "/app/app/endpoint_plane.py": "f0c516f945486ec92dc0eedb2ca3c8da6595d560a038e0aa10a7c5a24cddf7f3",
+      "/app/app/agent_service.py": "5b5b36d2faff4e4e59e320f710152ede463fa773e9af3d2dc3dd06ab6e2afcf4",
+      "/app/app/agent_static/console.js": "5c46a6632126e48dfb94aa698839e6e97a1ff87e10cf887ebd24fc44015d1601",
+      "/app/app/agent_static/console-state.mjs": "c4030c37ed122f76980399867bf708f7dda5d0c05cccb0a1b2f3f1ef90f89ba2"
+    }
+  },
+  "readiness": {
+    "status": "ready",
+    "gateway": true,
+    "build": {
+      "console": {
+        "revision": "2e36095bf982ffab29ea81b6cdc24bdc435b184f+dirty",
+        "code_sha256": "1899fb3b217e00d6174bcca715550d7ebd8e67ff63c44c52fff269e37a4617f9",
+        "pc_kit_sha256": "444f942d2ab5d8b3262ffbb4175de08f931ffcde49ccca5cf510811088880f78"
+      },
+      "gateway": {
+        "revision": "2e36095bf982ffab29ea81b6cdc24bdc435b184f+dirty",
+        "code_sha256": "1899fb3b217e00d6174bcca715550d7ebd8e67ff63c44c52fff269e37a4617f9",
+        "pc_kit_sha256": null
+      },
+      "consistent": true
+    },
+    "policy": {
+      "expected_sha256": "c0d204491c44cbfff601140de2410a05fdf82e7b247983774d3980f5fe3e5c6e",
+      "loaded_sha256": "c0d204491c44cbfff601140de2410a05fdf82e7b247983774d3980f5fe3e5c6e",
+      "expected_data_sha256": "b56dab45df9dd15075af79eccda8f4035b2b1b9667cba47756aba28a359fda64",
+      "loaded_data_sha256": "b56dab45df9dd15075af79eccda8f4035b2b1b9667cba47756aba28a359fda64",
+      "rules_match": true,
+      "data_match": true,
+      "matches": true,
+      "capabilities_sha256": "8d5ae06a530da6885814ec44012467c201d21d997d32066d6c176612bf82b305"
+    },
+    "identity": "synthetic-oauth2",
+    "llm_gateway": false
+  },
+  "scope": "10 guarded task paths; remote activity/overview preserved"
+}

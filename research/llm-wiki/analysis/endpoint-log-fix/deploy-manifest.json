@@ -1,0 +1,71 @@
+[
+  {
+    "path": "endpoint-agent/agent.py",
+    "sha256": "cd52ed5dc41699aa2d63d54171c1639a91d94a50162b80ba049fd747ac0f89dc",
+    "normalized_sha256": "cd52ed5dc41699aa2d63d54171c1639a91d94a50162b80ba049fd747ac0f89dc",
+    "new_sha256": "ce87ed33861295b66fa99520fd898eefca82df22cd9f0b912fb9a9625199f7d1",
+    "prepared_source": ".task-local-20261014/log-fix-deploy-source/endpoint-agent/agent.py"
+  },
+  {
+    "path": "endpoint-agent/managed-linux.py",
+    "sha256": "817b69289cdef06d5239028ce7f41260ac13fb0696c2af3abebb1c56b1859478",
+    "normalized_sha256": "817b69289cdef06d5239028ce7f41260ac13fb0696c2af3abebb1c56b1859478",
+    "new_sha256": "2107a6431b2d35d18cf450678314b287dacd07beb0fb2af8cf7f168cf238fb18",
+    "prepared_source": ".task-local-20261014/log-fix-deploy-source/endpoint-agent/managed-linux.py"
+  },
+  {
+    "path": "endpoint-agent/os-observer.py",
+    "sha256": "48f46d54d210bd4e56754270a4b656634b0358abe7d959cbf4d1245717261ed2",
+    "normalized_sha256": "48f46d54d210bd4e56754270a4b656634b0358abe7d959cbf4d1245717261ed2",
+    "new_sha256": "93e91ba60df67631824d1607d6eef33557a58122d2dadc35ae890638292e5fa6",
+    "prepared_source": ".task-local-20261014/log-fix-deploy-source/endpoint-agent/os-observer.py"
+  },
+  {
+    "path": "endpoint-agent/managed-windows.py",
+    "sha256": "1bfca191471207bb7c691674adc6da579a68d1c9aac1e9a34875a7d6f512da73",
+    "normalized_sha256": "1bfca191471207bb7c691674adc6da579a68d1c9aac1e9a34875a7d6f512da73",
+    "new_sha256": "0aa273e4c418379ba19a9473741b1c671e4ddd343e3459ab54a1ddffab797878",
+    "prepared_source": ".task-local-20261014/log-fix-deploy-source/endpoint-agent/managed-windows.py"
+  },
+  {
+    "path": "endpoint-agent/os-observer-windows.py",
+    "sha256": null,
+    "new_sha256": "0fed6d3408f7f49cdf8d2fd576d28b3a2bbff99ee48c547f12d05c202822f829",
+    "prepared_source": ".task-local-20261014/log-fix-deploy-source/endpoint-agent/os-observer-windows.py"
+  },
+  {
+    "path": "full_stack_lab/gateway/app/main.py",
+    "sha256": "1e3ba0750d5161bb868ee2436bedcdaa1d799ad11f42c884dcb6cd5fdf41dd84",
+    "normalized_sha256": "58e8800d80315a3941d8f6c5760af63fe05571aba05e0b7dd74d57cf29938bfd",
+    "new_sha256": "4a2692d8337f6d2b5ac16a5f70ab8b1062a34c8cb6f58f1fa1a1b76e5c4b7584",
+    "prepared_source": ".task-local-20261014/log-fix-deploy-source/full_stack_lab/gateway/app/main.py"
+  },
+  {
+    "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+    "sha256": "4745a3c2deb85d3df90b6e831207aef26b56c5901ddbcfc9b1796d4d049800f0",
+    "normalized_sha256": "4745a3c2deb85d3df90b6e831207aef26b56c5901ddbcfc9b1796d4d049800f0",
+    "new_sha256": "f0c516f945486ec92dc0eedb2ca3c8da6595d560a038e0aa10a7c5a24cddf7f3",
+    "prepared_source": ".task-local-20261014/log-fix-deploy-source/full_stack_lab/gateway/app/endpoint_plane.py"
+  },
+  {
+    "path": "full_stack_lab/gateway/app/agent_service.py",
+    "sha256": "9ef02f84670f2b2eb1ad728ed54b6869c4f2012cebc408a63805ed4aa676986b",
+    "normalized_sha256": "9ef02f84670f2b2eb1ad728ed54b6869c4f2012cebc408a63805ed4aa676986b",
+    "new_sha256": "5b5b36d2faff4e4e59e320f710152ede463fa773e9af3d2dc3dd06ab6e2afcf4",
+    "prepared_source": ".task-local-20261014/log-fix-deploy-source/full_stack_lab/gateway/app/agent_service.py"
+  },
+  {
+    "path": "full_stack_lab/gateway/app/agent_static/console.js",
+    "sha256": "6176f2b49684aa570c8917394dfc713a87239451fcb567ecace97ba794d50f38",
+    "normalized_sha256": "cd885ab6d6dbf4e3e45d6c001af912375d5cab08f6dbfaa2087b8ac3991aa0b0",
+    "new_sha256": "5c46a6632126e48dfb94aa698839e6e97a1ff87e10cf887ebd24fc44015d1601",
+    "prepared_source": ".task-local-20261014/log-fix-deploy-source/full_stack_lab/gateway/app/agent_static/console.js"
+  },
+  {
+    "path": "full_stack_lab/gateway/app/agent_static/console-state.mjs",
+    "sha256": "561d4b9d428759003ab35bac84516ed2d93b77eb88950cb947ccc8ebe40fdb34",
+    "normalized_sha256": "561d4b9d428759003ab35bac84516ed2d93b77eb88950cb947ccc8ebe40fdb34",
+    "new_sha256": "c4030c37ed122f76980399867bf708f7dda5d0c05cccb0a1b2f3f1ef90f89ba2",
+    "prepared_source": ".task-local-20261014/log-fix-deploy-source/full_stack_lab/gateway/app/agent_static/console-state.mjs"
+  }
+]

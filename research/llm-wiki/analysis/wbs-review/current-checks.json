@@ -1,0 +1,68 @@
+{
+  "captured_at": "2026-10-14T10:44:16.185430+00:00",
+  "scope": "existing offline regression suites on this source; no product DB, live model, independent provider effects or endpoint Windows enforcement",
+  "checks": [
+    {
+      "name": "managed-health",
+      "command": [
+        "wsl.exe",
+        "-d",
+        "kali-linux",
+        "--",
+        "python3",
+        "/mnt/c/Users/bobysg/bob/프로젝트/mcp-gateway-local-mcp-endpoint/full_stack_lab/tests/managed_enforcement_check.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_linux_complain_profile_fails_closed (__main__.ManagedChecks.test_linux_complain_profile_fails_closed) ... ok\ntest_linux_different_profiles_cannot_impersonate_account (__main__.ManagedChecks.test_linux_different_profiles_cannot_impersonate_account) ... ok\ntest_linux_exact_enforcing_profiles (__main__.ManagedChecks.test_linux_exact_enforcing_profiles) ... ok\ntest_windows_disabled_rule_even_in_baseline_fail_closed (__main__.ManagedChecks.test_windows_disabled_rule_even_in_baseline_fail_closed) ... ok\ntest_windows_empty_profiles_fail_closed (__main__.ManagedChecks.test_windows_empty_profiles_fail_closed) ... ok\ntest_windows_foreign_account_rule_fail_closed (__main__.ManagedChecks.test_windows_foreign_account_rule_fail_closed) ... ok\ntest_windows_healthy (__main__.ManagedChecks.test_windows_healthy) ... ok\ntest_windows_missing_rules_even_in_baseline_fail_closed (__main__.ManagedChecks.test_windows_missing_rules_even_in_baseline_fail_closed) ... ok\ntest_windows_unknown_profile_values_fail_closed (__main__.ManagedChecks.test_windows_unknown_profile_values_fail_closed) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 0.268s\n\nOK\n"
+    },
+    {
+      "name": "system-metrics",
+      "command": [
+        "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\main-venv\\Scripts\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/system_metrics_check.py"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\full_stack_lab\\tests\\system_metrics_check.py\", line 12, in <module>\n    from fastapi.testclient import TestClient\nModuleNotFoundError: No module named 'fastapi'\n"
+    },
+    {
+      "name": "security-edges",
+      "command": [
+        "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\main-venv\\Scripts\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/security_edges_check.py"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\full_stack_lab\\tests\\security_edges_check.py\", line 12, in <module>\n    from app import contract, core\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\full_stack_lab\\gateway\\app\\contract.py\", line 13, in <module>\n    from jsonschema import Draft202012Validator\nModuleNotFoundError: No module named 'jsonschema'\n"
+    },
+    {
+      "name": "resource-display",
+      "command": [
+        "node",
+        "--test",
+        "full_stack_lab/tests/resource-values.test.mjs"
+      ],
+      "exit_code": 0,
+      "stdout": "✔ resource values retain a real zero CPU and show measured memory and TCP latency (1.9942ms)\n✔ missing, stale and invalid timestamps never become healthy zero values (0.2229ms)\n✔ failed network and unavailable CPU preserve independently valid memory (0.3024ms)\n✔ unknown scopes, wrong types, negative or out-of-range values are not presented as measurements (0.182ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 136.1115\n",
+      "stderr": ""
+    }
+  ],
+  "source_sha256": {
+    "endpoint-agent/managed-linux.py": "22735c5a9605d3f412ca08d820255d22eb24775c5bde85ea50ea588d809f5517",
+    "endpoint-agent/managed-windows.py": "9f6dba0f3e42276ee0a12c3f0e13451c702677630943cfc4d0720f5a352ac46a",
+    "full_stack_lab/gateway/app/core.py": "39a5d5b4d0df5ba7701bef352ae557e3f7dbe87bb9175dcaac0f5c7e4ec138ca",
+    "full_stack_lab/gateway/app/contract.py": "27a05101b3171bdc5d3d26a40d5768ea2f0955237876e50ef7c16c1ada6d6cb2",
+    "full_stack_lab/gateway/app/system_metrics.py": "be13b1dcd670db4e430e8bd3c70ab41d93bd1ddabdeca8f2e2c54e3065829726",
+    "full_stack_lab/gateway/app/agent_service.py": "619fc68266a2d1904519b59b9565457b53c97bfa52038414bf86aaf8da396f2b",
+    "full_stack_lab/gateway/app/agent_static/console-state.mjs": "b2fb90edf953005b2f6898551233ed0716b38a339c98c6c755b06962f5c0142e",
+    "full_stack_lab/tests/managed_enforcement_check.py": "078307e7870e519d320bf3cf15152573cac92b3bbb09757f2c4f69ff25c48474",
+    "full_stack_lab/tests/system_metrics_check.py": "ccc7e298fa8fb51a32534773127d1a3ea9421d6c24a3ed7d10d7ad28363aca7d",
+    "full_stack_lab/tests/security_edges_check.py": "fc7f8f9c8b1ccdf960ab2ec1fb5a22241000fd7455f837c275c47053fe0f9ac9",
+    "full_stack_lab/tests/resource-values.test.mjs": "340b1880416c82a1616a901f073eb811e9deb05e2b24b7ea270ffe5d21f72f37"
+  }
+}

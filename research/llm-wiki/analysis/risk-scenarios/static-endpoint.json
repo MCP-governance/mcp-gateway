@@ -1,0 +1,102 @@
+{
+  "date": "2026-10-14",
+  "timezone": "Asia/Seoul",
+  "scope": "Static-only source audit of managed Linux bearer delivery, endpoint revocation, heartbeat, activation, and principal/device binding. No code changes, tests, database access, or kernel/device changes were made.",
+  "revision": {
+    "branch": "10/14-risk-scenarios",
+    "head": "ab6936c64f3578de8360b840f1928681714fa7bb",
+    "dirty_baseline_note": "Shared checkout contains pre-existing dirty files; findings refer to the current working-tree content."
+  },
+  "existing_risk_map": [
+    {
+      "id": "LOCAL-RISK-08",
+      "title": "관리형 heartbeat 점검의 불완전한 정상 판정",
+      "current_relation": "Linux checks() now uses exact AppArmor profile rows and compares the normalized active nftables table with the retained install baseline; heartbeat requires the exact platform check-key set and true values. This report does not re-test the prior regression."
+    },
+    {
+      "id": "LOCAL-RISK-09",
+      "title": "인벤토리 이름 위장과 URL/legacy stdio 자격정보 노출",
+      "current_relation": "Inventory fingerprint/credential handling is outside this subtask; no new finding."
+    },
+    {
+      "id": "LOCAL-RISK-10",
+      "title": "로컬 MCP 프로세스 관측은 이름 패턴에 의존",
+      "current_relation": "Process/listener discovery is outside this subtask; no new finding."
+    }
+  ],
+  "source_files": [
+    {"path": "endpoint-agent/managed-linux.py", "sha256": "22735C5A9605D3F412CA08D820255D22EB24775C5BDE85EA50EA588D809F5517"},
+    {"path": "endpoint-agent/enforce-linux.py", "sha256": "8EE74B9B62F5ACD50ED1C08706F705B8F3C44F661A44425D3CFABA4F6FD6C819"},
+    {"path": "full_stack_lab/gateway/app/endpoint_plane.py", "sha256": "1794081AAE98198B19F5B49DDC7AACE45371F07B3DC8BBE89DE93DBBE4EDAFDC"},
+    {"path": "full_stack_lab/gateway/app/main.py", "sha256": "DD2E29C4352017D89F61C4B221B78E396D781303444BCDEC97E25D37AFA47FBF"},
+    {"path": "full_stack_lab/gateway/app/idp.py", "sha256": "58C296BBAD903CFE001E39DDED16F538DDCC4308139C77B0F2C276FB12EFD6DC"},
+    {"path": "full_stack_lab/gateway/app/agent_contract.py", "sha256": "3FDF8BD6ED8CC00E5B1BC5316E02B67DF9F258625D4584CA6D84EE6D3049F1CA"}
+  ],
+  "findings": [
+    {
+      "id": "STATIC-ENDPOINT-01",
+      "classification": "conditional design-gap candidate; static only; no confirmed Gateway authorization bypass",
+      "title": "Device revocation does not synchronously invalidate the Linux helper's cached bearer",
+      "severity": "Low if Gateway-side rejection is the contract; higher only if local bearer delivery must stop immediately",
+      "trigger": "A device is revoked after managed-linux.py has fetched a device-bound access token and before its next successful service loop. A process running as the enrolled UID connects to the local Unix socket during the remaining cache lifetime.",
+      "static_evidence": [
+        {"path": "endpoint-agent/managed-linux.py", "lines": "231-240", "symbol": "serve.Header.handle", "evidence": "The local socket authorizes only by SO_PEERCRED UID and cache.until; it does not consult device status, activation, or a revocation signal before returning the cached Authorization header."},
+        {"path": "endpoint-agent/managed-linux.py", "lines": "257-290", "symbol": "serve loop", "evidence": "An active compliant heartbeat fetches a bearer, caches it for 120 seconds, and then selects a 60-second pause. The observer work follows token fetch and can take up to two 40-second subprocess timeouts."},
+        {"path": "endpoint-agent/managed-linux.py", "lines": "308-313", "symbol": "serve exception path", "evidence": "Cache is cleared when the next loop detects an error, not when the remote admin invokes revocation."},
+        {"path": "full_stack_lab/gateway/app/endpoint_plane.py", "lines": "420-430", "symbol": "revoke_device", "evidence": "Revocation sets endpoint_agents.status='revoked' and records an event; there is no local push/channel to the Linux service."},
+        {"path": "full_stack_lab/gateway/app/endpoint_plane.py", "lines": "433-446", "symbol": "authenticate_device", "evidence": "Subsequent device-key requests require status='active', so the next managed-policy/token request is rejected after revocation."},
+        {"path": "full_stack_lab/gateway/app/idp.py", "lines": "182-205", "symbol": "device_token", "evidence": "Fresh token minting re-authenticates the device and invokes managed_failure before issuing a five-minute token."},
+        {"path": "full_stack_lab/gateway/app/endpoint_plane.py", "lines": "657-670", "symbol": "managed_failure", "evidence": "Device-bound access checks re-read current device status, owner_token, managed_state, device_epoch, heartbeat freshness, and policy hash."},
+        {"path": "full_stack_lab/gateway/app/agent_contract.py", "lines": "117-140", "symbol": "agent contract authentication", "evidence": "The user/MCP contract checks call managed_failure before the request proceeds."},
+        {"path": "full_stack_lab/gateway/app/core.py", "lines": "1470-1483", "symbol": "MCP dispatch preflight", "evidence": "The protocol dispatch path also blocks on managed_failure before policy/dispatch."}
+      ],
+      "expected_control": "If revocation semantics include immediate local credential non-delivery, the socket should stop returning a bearer as soon as revocation is committed. Existing Gateway-side checks appear to stop protected use after the DB status changes.",
+      "reproducible_static_scenario": "With synthetic endpoint/principal records only: establish active+compliant state and a cached token; apply endpoint status=revoked; request a header from the same enrolled UID before cache.until; separately trace the same token through the Gateway auth/dispatch checks. Expected source-derived result: local helper can return the cached header while Gateway-managed_failure rejects protected use. This scenario was not executed.",
+      "normal_cases": [
+        "Active endpoint, exact enrolled UID, unexpired cache: helper returns Authorization; Gateway accepts only if current DB state and policy remain valid.",
+        "Active endpoint, wrong UID: SO_PEERCRED check returns activation-required error and no Authorization header."
+      ],
+      "boundary_cases": [
+        "Revocation immediately after a token fetch: same-UID local helper may still return that bearer until its cache expiry or next loop error clears the cache; the upper cache bound from fetch is 120 seconds, with service polling cadence/observer delays affecting detection timing.",
+        "Same UID is the local principal boundary: any process under that UID can request the helper's bearer, regardless of process identity. Socket mode 0600 and SO_PEERCRED UID do not provide per-process separation; this is a design boundary, not a demonstrated cross-user bypass.",
+        "A request handler that copied the token under the lock may send it after a concurrent cache.clear(); the send is outside the lock. This is a narrow local delivery race; Gateway-side authorization still must be evaluated independently."
+      ],
+      "fix_direction_for_later_review": "Decide and document whether endpoint revocation promises immediate helper-side bearer withdrawal or only Gateway-side denial. If immediate local withdrawal is required, use a revocation/lease design with a bounded and explicit stale window; a periodic heartbeat alone cannot provide instantaneous local invalidation. Preserve a no-network/no-database local helper path if required by the trust model, and keep Gateway authorization checks as the authoritative backstop.",
+      "validation_plan_not_run": {
+        "positive": "Synthetic DB: active device, matching principal/device_epoch/device_policy, recent heartbeat; local helper returns header and Gateway accepts only valid request.",
+        "negative": "Revoke device then request at the local socket and at Gateway; record helper response and independently assert Gateway auth denial/no dispatch.",
+        "boundary": "Run local requests at revoke+0, revoke+TTL-ε, revoke+TTL+ε; race cache.clear against one socket handler; assert no Gateway effect from stale token.",
+        "evidence_required": "Separate DB transaction timestamps, helper socket response class (never bearer value), Gateway HTTP/auth result, decision/dispatch ledger, monotonic cache expiry, and source revision. Use synthetic tokens/data only."
+      },
+      "status": "static_source_inference_only; no unit test, DB-preserving run, isolated DB test, local socket probe, or kernel evidence performed"
+    }
+  ],
+  "scenario_matrix": [
+    {"id": "STATIC-EP-NORMAL-01", "class": "normal", "condition": "Active+compliant device, fresh heartbeat, current policy, correct enrolled UID", "expected": "Cached local header may be returned; current Gateway principal/device/epoch/policy checks permit the request."},
+    {"id": "STATIC-EP-NEG-01", "class": "negative", "condition": "Wrong local UID connects to token socket", "expected": "No Authorization header; helper returns activation-required error."},
+    {"id": "STATIC-EP-BOUNDARY-01", "class": "boundary", "condition": "Admin revokes device while previously cached token remains unexpired", "expected": "Local helper may deliver stale bearer until local expiry/next failed poll; fresh mint and Gateway protected use should fail based on revoked status."},
+    {"id": "STATIC-EP-RACE-01", "class": "race", "condition": "Header handler copies token while service thread clears cache after a failure", "expected": "One copied response can still be sent; evaluate as stale local delivery only, then assert Gateway denies it."},
+    {"id": "STATIC-EP-ACT-01", "class": "activation-normal", "condition": "Admin activates a recently compliant device using displayed expected policy hash", "expected": "CAS update requires active device, current policy hash, recent heartbeat, exact config hashes, and every platform check true; owner cannot activate own device."},
+    {"id": "STATIC-EP-ACT-NEG-01", "class": "activation-negative", "condition": "Stale/mismatched policy hash, stale heartbeat, or any missing/false check", "expected": "Activation update affects no row and returns conflict."}
+  ],
+  "control_flow_notes": [
+    "LOCAL-RISK-08's intended chain is present in source: managed-linux checks health, endpoint_plane.heartbeat quarantines noncompliant devices without self-reactivation, the Linux loop clears cache for non-active/noncompliant reports, activate_managed requires an independent admin action, and managed_failure gates mint/use paths.",
+    "heartbeat() writes a fresh heartbeat timestamp even when noncompliant but sets/retains managed_state as quarantined; activate_managed() independently checks a recent heartbeat, current policy hash, exact configuration hashes, and all true required checks.",
+    "consume_enrollment() binds owner token, endpoint ID, device_epoch, local username/UID and sets the principal's managed_required flag transactionally; managed_failure() checks owner_token against the authenticated principal and validates epoch/policy.",
+    "revoke_device() changes device status. Device token minting rejects inactive status; protected resource-side paths shown above re-read device status. Local cache delivery is a distinct boundary from Gateway authorization."
+  ],
+  "execution_and_kernel_evidence": {
+    "source_review": "performed",
+    "unit_tests": "not run",
+    "database_preserving_dynamic_tests": "not run",
+    "isolated_database_scenarios": "not run",
+    "real_local_socket_probe": "not run",
+    "kernel_nftables_or_apparmor_evidence": "not collected",
+    "real_target_or_external_system": "not used"
+  },
+  "limitations": [
+    "The stale bearer candidate is conditional on the desired contract: Gateway-side denial is evident in the inspected source; immediate local helper withdrawal is not implemented. No successful MCP tool execution with a revoked token is evidenced.",
+    "The source audit cannot establish deployed code equality, DB isolation/transaction timing, systemd scheduling, actual SO_PEERCRED behavior, AppArmor attachment, nftables enforcement, or the measured duration of the stale-delivery window.",
+    "No changes were made to managed-linux.py, enforce-linux.py, endpoint_plane.py, or any other implementation file. No tests or environment/system changes were performed."
+  ]
+}

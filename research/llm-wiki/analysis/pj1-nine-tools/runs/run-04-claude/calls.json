@@ -1,0 +1,193 @@
+[
+  {
+    "number": 1,
+    "server": "pj1-nine-git",
+    "tool": "git_status",
+    "expected_arguments": {
+      "path": "/fixtures/repo",
+      "includeUntracked": true
+    },
+    "called": [
+      {
+        "id": "toolu_01EyD4htjCxpGkqY9xRuWe7j",
+        "tool": "mcp__pj1-nine-git__git_status",
+        "input": {
+          "path": "/fixtures/repo",
+          "includeUntracked": true
+        },
+        "is_error": false,
+        "excerpt": "{\n  \"success\": true,\n  \"currentBranch\": \"master\",\n  \"isClean\": false,\n  \"stagedChanges\": {},\n  \"unstagedChanges\": {},\n  \"untrackedFiles\": [\n    \"notes.md\"\n  ],\n  \"conflictedFiles\": []\n}"
+      }
+    ]
+  },
+  {
+    "number": 2,
+    "server": "pj1-nine-git",
+    "tool": "git_log",
+    "expected_arguments": {
+      "path": "/fixtures/repo",
+      "maxCount": 3,
+      "oneline": true
+    },
+    "called": [
+      {
+        "id": "toolu_019FsWNdYDPBZpYURGg18jyr",
+        "tool": "mcp__pj1-nine-git__git_log",
+        "input": {
+          "path": "/fixtures/repo",
+          "maxCount": 3,
+          "oneline": true
+        },
+        "is_error": false,
+        "excerpt": "{\n  \"success\": true,\n  \"commits\": [\n    {\n      \"hash\": \"216a1a1aaa6e054b9d1147aed71657b88c7c96df\",\n      \"shortHash\": \"216a1a1\",\n      \"subject\": \"fixture baseline\"\n    }\n  ],\n  \"totalCount\": 1\n}"
+      }
+    ]
+  },
+  {
+    "number": 3,
+    "server": "pj1-nine-git",
+    "tool": "git_add",
+    "expected_arguments": {
+      "path": "/fixtures/repo",
+      "paths": [
+        "notes.md"
+      ]
+    },
+    "called": [
+      {
+        "id": "toolu_01JCnxnGCbxMEkkLeFar2RQ7",
+        "tool": "mcp__pj1-nine-git__git_add",
+        "input": {
+          "path": "/fixtures/repo",
+          "paths": [
+            "notes.md"
+          ]
+        },
+        "is_error": false,
+        "excerpt": "{\n  \"success\": true,\n  \"stagedFiles\": [\n    \"notes.md\"\n  ],\n  \"totalFiles\": 1,\n  \"status\": {\n    \"current_branch\": \"master\",\n    \"is_clean\": false,\n    \"staged_changes\": {\n      \"added\": [\n        \"notes.md\"\n      ]\n    },\n    \"unstaged_changes\": {},\n    \"untracked_files\": [],\n    \"conflicted_files\": []\n  }\n}"
+      }
+    ]
+  },
+  {
+    "number": 4,
+    "server": "pj1-nine-git",
+    "tool": "git_commit",
+    "expected_arguments": {
+      "path": "/fixtures/repo",
+      "message": "test: PJ1 synthetic MCP harness",
+      "amend": false,
+      "allowEmpty": false,
+      "noVerify": false
+    },
+    "called": [
+      {
+        "id": "toolu_01SeHwxi7vdBbay7XcsDHhbZ",
+        "tool": "mcp__pj1-nine-git__git_commit",
+        "input": {
+          "path": "/fixtures/repo",
+          "message": "test: PJ1 synthetic MCP harness",
+          "amend": false,
+          "allowEmpty": false,
+          "noVerify": false
+        },
+        "is_error": false,
+        "excerpt": "{\n  \"success\": true,\n  \"commitHash\": \"ccb1de00ee40021840d8743c5e18bf913accedec\",\n  \"message\": \"test: PJ1 synthetic MCP harness\",\n  \"author\": \"PJ1 Synthetic\",\n  \"timestamp\": 1791958131,\n  \"filesChanged\": 1,\n  \"insertions\": null,\n  \"deletions\": null,\n  \"committedFiles\": [\n    \"notes.md\"\n  ],\n  \"signed\": false,\n  \"signingWarning\": \"GIT_SIGN_COMMITS is enabled but signing failed; commit created unsigned. Check signing key availability (gpg-agent running, SSH key accessible). Underlying error: Git co"
+      }
+    ]
+  },
+  {
+    "number": 5,
+    "server": "pj1-nine-sqlite",
+    "tool": "search_objects",
+    "expected_arguments": {
+      "object_type": "table",
+      "detail_level": "names",
+      "limit": 20
+    },
+    "called": [
+      {
+        "id": "toolu_013pkc6fwBHSoy9tZp4MMCdk",
+        "tool": "mcp__pj1-nine-sqlite__search_objects",
+        "input": {
+          "object_type": "table",
+          "detail_level": "names",
+          "limit": 20
+        },
+        "is_error": false,
+        "excerpt": "{\n  \"success\": true,\n  \"data\": {\n    \"object_type\": \"table\",\n    \"pattern\": \"%\",\n    \"detail_level\": \"names\",\n    \"count\": 1,\n    \"results\": [\n      {\n        \"name\": \"demo_items\",\n        \"schema\": \"main\"\n      }\n    ],\n    \"truncated\": false\n  }\n}"
+      }
+    ]
+  },
+  {
+    "number": 6,
+    "server": "pj1-nine-sqlite",
+    "tool": "execute_sql",
+    "expected_arguments": {
+      "sql": "SELECT id, label FROM demo_items ORDER BY id LIMIT 10"
+    },
+    "called": [
+      {
+        "id": "toolu_01L4V4Jo5RSmex88ZAPmddxY",
+        "tool": "mcp__pj1-nine-sqlite__execute_sql",
+        "input": {
+          "sql": "SELECT id, label FROM demo_items ORDER BY id LIMIT 10"
+        },
+        "is_error": false,
+        "excerpt": "{\n  \"success\": true,\n  \"data\": {\n    \"statements\": [\n      {\n        \"sql\": \"SELECT id, label FROM demo_items ORDER BY id LIMIT 10\",\n        \"rows\": [\n          {\n            \"id\": 1,\n            \"label\": \"alpha\"\n          },\n          {\n            \"id\": 2,\n            \"label\": \"beta\"\n          }\n        ],\n        \"count\": 2\n      }\n    ],\n    \"source_id\": \"default\"\n  }\n}"
+      }
+    ]
+  },
+  {
+    "number": 7,
+    "server": "pj1-nine-browser",
+    "tool": "browser_navigate",
+    "expected_arguments": {
+      "url": "http://pj1-nine-fixture:8080/index.html"
+    },
+    "called": [
+      {
+        "id": "toolu_01JgFuxfKgwsHRoewxU7D6m7",
+        "tool": "mcp__pj1-nine-browser__browser_navigate",
+        "input": {
+          "url": "http://pj1-nine-fixture:8080/index.html"
+        },
+        "is_error": false,
+        "excerpt": "### Ran Playwright code\n```js\nawait page.goto('http://pj1-nine-fixture:8080/index.html');\n```\n### Page\n- Page URL: http://pj1-nine-fixture:8080/index.html\n- Page Title: PJ1 Harness Fixture\n- Console: 1 errors, 0 warnings\n### Snapshot\n- [Snapshot](../../tmp/nine-browser/page-2026-10-14T06-08-59-075Z.yml)\n### Events\n- New console entries: ../../tmp/nine-browser/console-2026-10-14T06-08-58-996Z.log#L1"
+      }
+    ]
+  },
+  {
+    "number": 8,
+    "server": "pj1-nine-browser",
+    "tool": "browser_snapshot",
+    "expected_arguments": {},
+    "called": [
+      {
+        "id": "toolu_01CvZYnuR6ax64DyKvFQUscM",
+        "tool": "mcp__pj1-nine-browser__browser_snapshot",
+        "input": {},
+        "is_error": false,
+        "excerpt": "### Page\n- Page URL: about:blank\n### Snapshot\n```yaml\n\n```"
+      }
+    ]
+  },
+  {
+    "number": 9,
+    "server": "pj1-nine-browser",
+    "tool": "browser_evaluate",
+    "expected_arguments": {
+      "function": "() => ({ title: document.title, text: document.body.innerText })"
+    },
+    "called": [
+      {
+        "id": "toolu_01XpQGcsQ2FTaRSDJRWQBAAV",
+        "tool": "mcp__pj1-nine-browser__browser_evaluate",
+        "input": {
+          "function": "() => ({ title: document.title, text: document.body.innerText })"
+        },
+        "is_error": false,
+        "excerpt": "### Result\n{\n  \"title\": \"\",\n  \"text\": \"\"\n}\n### Ran Playwright code\n```js\nawait page.evaluate('() => ({ title: document.title, text: document.body.innerText })');\n```\n### Page\n- Page URL: about:blank"
+      }
+    ]
+  }
+]

@@ -1,0 +1,77 @@
+{
+  "checked_on": "2026-10-13",
+  "registry_inspection_only": true,
+  "deployment_verified": false,
+  "artifacts": [
+    {
+      "name": "LiteLLM database image",
+      "tag": "ghcr.io/berriai/litellm-database:v1.105.0",
+      "index_digest": "sha256:f99e4cc55ce8a1c6888504ac6eff147868979d37363a7246cf804bbabdc27e88",
+      "linux_amd64_digest": "sha256:2dfb43c2b48cef2c1a0a01b774881bd94b93c7553abd209be3922973e557e8b5",
+      "config_digest": "sha256:d5bb5dd1dd48eb180644d048a91425ec2b0fe2131a43b83c4aa7e37cc759e74e",
+      "source_commit": "80b9556dd312d18c535ae06884faa97d1fdb8f46",
+      "oci_revision_matches_source_commit": true,
+      "compressed_layers_bytes": 403469611,
+      "entrypoint": ["docker/prod_entrypoint.sh"],
+      "license": "MIT core; enterprise/ license separate; native secret managers Enterprise",
+      "source_url": "https://github.com/BerriAI/litellm/releases/tag/v1.105.0",
+      "registry_url": "https://ghcr.io/v2/berriai/litellm-database/manifests/v1.105.0",
+      "signature_or_attestation_verified": false
+    },
+    {
+      "name": "Ollama",
+      "tag": "ollama/ollama:0.40.3",
+      "index_digest": "sha256:adca95a12c2b386a8f9a995e7fa0600e187e3323b5e5522f5a6c3b1ec73eff99",
+      "linux_amd64_digest": "sha256:44833c52df2a164cc1238a96ce100123c8e54082b85c5e235a9cb5a7adc55f27",
+      "source_commit": "eab97e9f92b9a25c2d52d2cc6c1b1c99bd9fae21",
+      "latest_stable_release_published_at": "2026-10-11T01:39:04Z",
+      "license": "MIT",
+      "source_url": "https://github.com/ollama/ollama/releases/tag/v0.40.3",
+      "registry_url": "https://registry-1.docker.io/v2/ollama/ollama/manifests/0.40.3",
+      "signature_or_attestation_verified": false
+    },
+    {
+      "name": "Qwen3 0.6B model",
+      "tag": "qwen3:0.6b",
+      "registry_manifest_sha256": "7df6b6e09427a769808717c0a93cadc4ae99ed4eb8bf5ca557c90846becea435",
+      "model_layer_digest": "sha256:7f4030143c1c477224c5434f8272c662a8b042079a0a584f0a27a1684fe2e1fa",
+      "model_layer_bytes": 522640096,
+      "license_layer_digest": "sha256:d18a5cc71b84bc4af394a31116bd3932b42241de70c77d2b76d69a314ec8aa12",
+      "license": "Apache-2.0",
+      "source_url": "https://ollama.com/library/qwen3:0.6b",
+      "registry_url": "https://registry.ollama.ai/v2/library/qwen3/manifests/0.6b",
+      "evaluation_scope": "small real model for protocol and tool compatibility baseline; no representative enterprise security/quality claim"
+    },
+    {
+      "name": "Caddy",
+      "tag": "caddy:2.11.7-alpine",
+      "index_digest": "sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f",
+      "linux_amd64_digest": "sha256:173b26306d711395accaeba8b67afcaad2a085ccb1e6bf26010bfe8c095a5229",
+      "license": "Apache-2.0",
+      "source_url": "https://github.com/caddyserver/caddy/releases/tag/v2.11.7",
+      "registry_url": "https://registry-1.docker.io/v2/library/caddy/manifests/2.11.7-alpine",
+      "signature_or_attestation_verified": false
+    },
+    {
+      "name": "PostgreSQL",
+      "tag": "postgres:18.4-alpine",
+      "index_digest": "sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15",
+      "linux_amd64_digest": "sha256:b6a16ed0eb96e2c362811f7eeb951eac8b459e7b40be4149ea5444aa7c65569b",
+      "license": "PostgreSQL License; official container dependencies separately licensed",
+      "source_url": "https://hub.docker.com/_/postgres",
+      "registry_url": "https://registry-1.docker.io/v2/library/postgres/manifests/18.4-alpine",
+      "signature_or_attestation_verified": false
+    }
+  ],
+  "official_mcp": {
+    "local_alias": "microsoft_learn",
+    "endpoint": "https://learn.microsoft.com/api/mcp",
+    "transport": "streamable_http",
+    "authentication": "none required for public Learn documentation",
+    "tool_names_documented": ["microsoft_docs_search", "microsoft_docs_fetch", "microsoft_code_sample_search"],
+    "documentation_url": "https://learn.microsoft.com/en-us/training/support/mcp-developer-reference",
+    "terms_url": "https://learn.microsoft.com/en-us/legal/termsofuse",
+    "runtime_tools_list_collected": false,
+    "scope": "isolated LiteLLM lab only; no production Gateway registration or human contract approval implied"
+  }
+}

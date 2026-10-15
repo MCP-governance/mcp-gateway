@@ -1,0 +1,28 @@
+{
+  "format": "xlsx",
+  "sheets": [
+    "현황",
+    "요구사항",
+    "코드구조",
+    "기능대조",
+    "연동대상",
+    "연동시험",
+    "MCP대상",
+    "실험계획",
+    "연구근거",
+    "OSS스킬"
+  ],
+  "requirements": 80,
+  "functions": 640,
+  "comparisons": 21,
+  "integration_conditions": 50,
+  "real_mcp_candidates": 14,
+  "output_path": "analysis/outputs/01a13365-enterprise/MCP_기업호환성_검증대장.xlsx",
+  "summary_counts": [
+    56,
+    19,
+    5,
+    0
+  ],
+  "source_head": "ab6936c64f3578de8360b840f1928681714fa7bb"
+}

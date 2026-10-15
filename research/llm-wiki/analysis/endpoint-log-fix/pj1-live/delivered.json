@@ -1,0 +1,89 @@
+{
+  "listener": {
+    "id": 2,
+    "endpoint_id": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+    "observed_at": "2026-10-14T12:08:53.983227+00:00",
+    "source": "stdio-process",
+    "address": "local-process",
+    "port": null,
+    "process_name": "ghidramcp-telemetry-managed-ea472c80fae8",
+    "command_line": "sha256:134996b3d920069087ced97cd56814b368e772e4cc9f2b6521ae8df213be4a0b",
+    "mcp_evidence": "suspected",
+    "server_name": null,
+    "server_version": null,
+    "protocol_version": null,
+    "fingerprint": "33b87e9f987c75598b9b857d0da9f25f2948577c876be5b37145a853359d149d",
+    "registry_match": null,
+    "classification": "shadow",
+    "raw": {
+      "port": null,
+      "source": "stdio-process",
+      "address": "local-process",
+      "server_name": "",
+      "command_line": "sha256:134996b3d920069087ced97cd56814b368e772e4cc9f2b6521ae8df213be4a0b",
+      "mcp_evidence": "suspected",
+      "process_name": "ghidramcp-telemetry-managed-ea472c80fae8",
+      "server_version": "",
+      "protocol_version": ""
+    },
+    "hostname": "pj1",
+    "owner_token": "user",
+    "owner_name": "user",
+    "registry_name": null,
+    "lifecycle": null,
+    "scan_source_status": "success",
+    "freshness": "fresh"
+  },
+  "os_event": {
+    "id": 1388,
+    "endpoint_id": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+    "event_id": "24e05a888b764c4480e2e5734498973f:s=c869ce7c1b32474fa1fc9b94ca40a1d9;i=43f61;b=24e05a888b764c4480e2e5734498973f;m=6bdfa2156;t=65dcbcafd7062;x=8a1fc37f778a9df0",
+    "observed_at": "2026-10-14T12:08:45.615202Z",
+    "received_at": "2026-10-14T12:08:55.047985Z",
+    "kind": "execution-denied",
+    "details": {
+      "profile": "mcpgw-managed-pj1",
+      "operation": "exec",
+      "executable": "python3.12",
+      "denied_mask": "x"
+    }
+  },
+  "agent": {
+    "endpoint_id": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+    "managed_state": "active",
+    "agent_version": "3.1.0",
+    "observation": {
+      "os": {
+        "state": "success",
+        "error_code": "",
+        "reported_at": "2026-10-14T12:08:55.387785+00:00",
+        "accepted_count": 1,
+        "last_success_at": "2026-10-14T12:08:55.387785+00:00"
+      },
+      "network": {
+        "state": "disabled",
+        "error_code": "",
+        "reported_at": "2026-10-14T12:08:54.657301+00:00",
+        "accepted_count": 0,
+        "last_success_at": null
+      },
+      "process": {
+        "state": "success",
+        "sources": [
+          "stdio-process"
+        ],
+        "error_code": "",
+        "reported_at": "2026-10-14T12:08:54.318856+00:00",
+        "accepted_count": 1,
+        "last_success_at": "2026-10-14T12:08:54.318856+00:00"
+      },
+      "inventory": {
+        "state": "success",
+        "error_code": "",
+        "reported_at": "2026-10-14T12:08:53.643562+00:00",
+        "accepted_count": 4,
+        "last_success_at": "2026-10-14T12:08:53.643562+00:00"
+      }
+    }
+  }
+}

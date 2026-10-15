@@ -1,0 +1,57 @@
+--- a/full_stack_lab/gateway/app/endpoint_plane.py
++++ b/full_stack_lab/gateway/app/endpoint_plane.py
+@@ -418,15 +418,17 @@
+ 
+ 
+ async def revoke_device(endpoint_id: str, actor: str) -> dict:
+-    changed = await db.execute(
+-        "UPDATE endpoint_agents SET status='revoked', issued_by=%s WHERE endpoint_id=%s",
+-        (actor, endpoint_id),
+-    )
+-    if not changed:
+-        raise ValueError("등록되지 않은 엔드포인트입니다.")
+-    row = await db.fetch_one("SELECT owner_token FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
+-    if row and row["owner_token"]:
+-        await managed_event(endpoint_id, row["owner_token"], "revoked", {"actor": actor})
++    # A failed journal append must not leave an unrecorded committed transition.
++    async with db.transaction() as connection:
++        row = await (await connection.execute(
++            "UPDATE endpoint_agents SET status='revoked', issued_by=%s WHERE endpoint_id=%s RETURNING owner_token",
++            (actor, endpoint_id))).fetchone()
++        if not row:
++            raise ValueError("등록되지 않은 엔드포인트입니다.")
++        if row["owner_token"]:
++            await connection.execute(
++                "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'revoked',%s)",
++                (endpoint_id, row["owner_token"], Jsonb({"actor": actor})))
+     return {"endpoint_id": endpoint_id, "status": "revoked"}
+ 
+ 
+@@ -642,15 +644,18 @@
+     if not device or device["owner_token"] == actor:
+         raise ValueError("등록 장치가 없거나 자기 소유 장치는 스스로 활성화할 수 없습니다.")
+     policy = await managed_policy(device)
+-    changed = await db.execute(
+-        """UPDATE endpoint_agents SET managed_state='active',activated_by=%s,activated_at=now()
+-           WHERE endpoint_id=%s AND status='active' AND policy_hash=%s AND policy_hash=%s
+-             AND heartbeat_at>now()-interval '180 seconds' AND configuration_hashes=%s AND enforcement_checks=%s""",
+-        (actor, endpoint_id, expected_hash, policy["policy_hash"], Jsonb(policy["configuration_hashes"]),
+-         Jsonb({key: True for key in managed_checks(device)})))
+-    if not changed:
+-        raise ValueError("최근 정상 설치 증거가 없거나 검토한 정책이 바뀌었습니다. 장치 설치를 확인하세요.")
+-    await managed_event(endpoint_id, device["owner_token"], "activated", {"actor": actor, "note": note, "policy_hash": expected_hash})
++    async with db.transaction() as connection:
++        changed = await connection.execute(
++            """UPDATE endpoint_agents SET managed_state='active',activated_by=%s,activated_at=now()
++               WHERE endpoint_id=%s AND status='active' AND policy_hash=%s AND policy_hash=%s
++                 AND heartbeat_at>now()-interval '180 seconds' AND configuration_hashes=%s AND enforcement_checks=%s""",
++            (actor, endpoint_id, expected_hash, policy["policy_hash"], Jsonb(policy["configuration_hashes"]),
++             Jsonb({key: True for key in managed_checks(device)})))
++        if not changed.rowcount:
++            raise ValueError("최근 정상 설치 증거가 없거나 검토한 정책이 바뀌었습니다. 장치 설치를 확인하세요.")
++        await connection.execute(
++            "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'activated',%s)",
++            (endpoint_id, device["owner_token"], Jsonb({"actor": actor, "note": note, "policy_hash": expected_hash})))
+     return {"endpoint_id": endpoint_id, "managed_state": "active"}
+ 
+ 

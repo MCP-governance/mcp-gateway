@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "product_database_reset": false,
+  "before": {
+    "database": "mcp_governance",
+    "started": "2026-10-13 04:45:55.750024+00",
+    "principals": 10,
+    "devices": 12,
+    "grants": 14
+  },
+  "after": {
+    "database": "mcp_governance",
+    "started": "2026-10-13 04:45:55.750024+00",
+    "principals": 10,
+    "devices": 12,
+    "grants": 14
+  },
+  "deployed_sha256": "4745a3c2deb85d3df90b6e831207aef26b56c5901ddbcfc9b1796d4d049800f0",
+  "source_before_sha256": "1794081aae98198b19f5b49ddc7aace45371f07b3dc8bbe89de93dbbe4edafdc",
+  "branch_scope": "single endpoint_plane file delta",
+  "at": 1791955068.0117168
+}

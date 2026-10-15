@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "started_at": 1791972255.0940356,
+  "finished_at": 1791972290.9387777,
+  "managed_python_exit": 126,
+  "kernel_events": [
+    {
+      "event_id": "24e05a888b764c4480e2e5734498973f:s=c869ce7c1b32474fa1fc9b94ca40a1d9;i=43a1c;b=24e05a888b764c4480e2e5734498973f;m=500b36c0e;t=65dca0db6bb1b;x=3bb9adb6e2a549c8",
+      "observed_at": "2026-10-14T10:04:15.120155+00:00",
+      "kind": "execution-denied",
+      "details": {
+        "operation": "exec",
+        "profile": "mcpgw-managed-pj1",
+        "executable": "python3.12",
+        "denied_mask": "x"
+      }
+    }
+  ],
+  "console_os_events": [
+    {
+      "id": 1387,
+      "endpoint_id": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+      "event_id": "24e05a888b764c4480e2e5734498973f:s=c869ce7c1b32474fa1fc9b94ca40a1d9;i=43a1c;b=24e05a888b764c4480e2e5734498973f;m=500b36c0e;t=65dca0db6bb1b;x=3bb9adb6e2a549c8",
+      "observed_at": "2026-10-14T10:04:15.120155Z",
+      "received_at": "2026-10-14T10:04:47.543552Z",
+      "kind": "execution-denied",
+      "details": {
+        "profile": "mcpgw-managed-pj1",
+        "operation": "exec",
+        "executable": "python3.12",
+        "denied_mask": "x"
+      }
+    }
+  ],
+  "manual_report_sent": false,
+  "periodic_service_not_restarted": true,
+  "registry_approval_performed": false
+}

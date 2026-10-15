@@ -1,0 +1,20 @@
+{"observation": "before", "db": "risk_scenarios_20261014", "schema": "risk_snapshot_733b4403b0de45e885edf992c9ae4dac", "inventory": 1, "listeners": 3, "local_socket": 1, "network": 1, "stdio_process": 1, "listener_fingerprints": ["listener-local", "listener-network", "listener-stdio"], "detail": {}, "status_jsonb": {}}
+{"observation": "inventory-incomplete", "db": "risk_scenarios_20261014", "schema": "risk_snapshot_733b4403b0de45e885edf992c9ae4dac", "inventory": 2, "listeners": 3, "local_socket": 1, "network": 1, "stdio_process": 1, "listener_fingerprints": ["listener-local", "listener-network", "listener-stdio"], "detail": {"observation": {"inventory": {"state": "partial", "error_code": "incomplete_snapshot", "reported_at": "2026-10-14T11:39:30.176138+00:00", "accepted_count": 1, "last_success_at": null}}}, "status_jsonb": {}}
+{"observation": "inventory-legacy-complete", "db": "risk_scenarios_20261014", "schema": "risk_snapshot_733b4403b0de45e885edf992c9ae4dac", "inventory": 0, "listeners": 3, "local_socket": 1, "network": 1, "stdio_process": 1, "listener_fingerprints": ["listener-local", "listener-network", "listener-stdio"], "detail": {"observation": {"inventory": {"state": "success", "error_code": "", "reported_at": "2026-10-14T11:39:30.203893+00:00", "accepted_count": 0, "last_success_at": "2026-10-14T11:39:30.203893+00:00"}}}, "status_jsonb": {}}
+{"observation": "listener-before-invalid", "db": "risk_scenarios_20261014", "schema": "risk_snapshot_733b4403b0de45e885edf992c9ae4dac", "inventory": 0, "listeners": 3, "local_socket": 1, "network": 1, "stdio_process": 1, "listener_fingerprints": ["listener-local", "listener-network", "listener-stdio"], "detail": {"observation": {"inventory": {"state": "success", "error_code": "", "reported_at": "2026-10-14T11:39:30.203893+00:00", "accepted_count": 0, "last_success_at": "2026-10-14T11:39:30.203893+00:00"}}}, "status_jsonb": {}}
+{"observation": "listener-after-invalid", "db": "risk_scenarios_20261014", "schema": "risk_snapshot_733b4403b0de45e885edf992c9ae4dac", "inventory": 0, "listeners": 3, "local_socket": 1, "network": 1, "stdio_process": 1, "listener_fingerprints": ["listener-local", "listener-network", "listener-stdio"], "detail": {"observation": {"inventory": {"state": "success", "error_code": "", "reported_at": "2026-10-14T11:39:30.203893+00:00", "accepted_count": 0, "last_success_at": "2026-10-14T11:39:30.203893+00:00"}}}, "status_jsonb": {}}
+{"observation": "schema-dropped", "schema": "risk_snapshot_733b4403b0de45e885edf992c9ae4dac"}
+Traceback (most recent call last):
+  File "<stdin>", line 287, in <module>
+  File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "<stdin>", line 275, in main
+  File "<stdin>", line 226, in run_cases
+AssertionError: 4

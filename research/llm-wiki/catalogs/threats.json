@@ -21,9 +21,12 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "라이선스·배포처·SBOM·취약점과 실제 도입 승인 증거 필요",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-07"
+    ]
   },
   {
     "id": "TH-02",
@@ -41,23 +44,31 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "619fc68266a2d1904519b59b9565457b53c97bfa52038414bf86aaf8da396f2b",
+        "sha256": "f0b526d23176acbffc889ff6f6077a12afbdd68fd84565a14c9738eb134e6fac",
         "committed_sha256": "9ef02f84670f2b2eb1ad728ed54b6869c4f2012cebc408a63805ed4aa676986b",
-        "normalized_sha256": "9ef02f84670f2b2eb1ad728ed54b6869c4f2012cebc408a63805ed4aa676986b",
-        "worktree_modified": false
+        "normalized_sha256": "5b5b36d2faff4e4e59e320f710152ede463fa773e9af3d2dc3dd06ab6e2afcf4",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
-        "sha256": "a2ce5dcc7d5261c2571d10b315434b5a1179ca48243b5d3a5fadbd414c37447c",
+        "sha256": "17716e4df9045cce223282853a7ea04e1c9a17bfa65c219a741b0f8cc5414944",
         "committed_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
         "normalized_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
         "worktree_modified": false
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "도구 계약과 실제 자원·인자의 승인 범위 독립 검토",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-01",
+      "LOCAL-RISK-02",
+      "LOCAL-RISK-03",
+      "LOCAL-RISK-04",
+      "LOCAL-RISK-05",
+      "LOCAL-RISK-07"
+    ]
   },
   {
     "id": "TH-03",
@@ -75,16 +86,20 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "0234af0c2cfaedc0522d0a2c71d910bdfe497099aea8e11daa755f8e1cce00aa",
+        "sha256": "39a5d5b4d0df5ba7701bef352ae557e3f7dbe87bb9175dcaac0f5c7e4ec138ca",
         "committed_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "normalized_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "worktree_modified": false
+        "normalized_sha256": "f4550ae9d3cf7374cf66a47b0af9ad2e18a0613f3f23b5e599251f6dc28b8bbe",
+        "worktree_modified": true
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "사용자 동의와 서버 사용 승인은 별도 증거",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-08",
+      "LOCAL-RISK-11"
+    ]
   },
   {
     "id": "TH-04",
@@ -108,9 +123,13 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "환경 사실 입력과 실기기 관찰값 결합 검증",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-01",
+      "LOCAL-RISK-08"
+    ]
   },
   {
     "id": "TH-05",
@@ -135,16 +154,21 @@
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
-        "sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "sha256": "e3c5b1b7c88ab8b8ec66ba546443cb217d3606dee3261ed42770eda20c7f653c",
         "committed_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
         "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
         "worktree_modified": false
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "OAuth discovery·DNS 재결합 등 최종 접속 대상의 별도 경계",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-02",
+      "LOCAL-RISK-03",
+      "LOCAL-RISK-06"
+    ]
   },
   {
     "id": "TH-06",
@@ -169,16 +193,19 @@
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "0234af0c2cfaedc0522d0a2c71d910bdfe497099aea8e11daa755f8e1cce00aa",
+        "sha256": "39a5d5b4d0df5ba7701bef352ae557e3f7dbe87bb9175dcaac0f5c7e4ec138ca",
         "committed_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "normalized_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "worktree_modified": false
+        "normalized_sha256": "f4550ae9d3cf7374cf66a47b0af9ad2e18a0613f3f23b5e599251f6dc28b8bbe",
+        "worktree_modified": true
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "동명 도구·설명·스키마 변경과 승인 이후 변형 시험",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-05"
+    ]
   },
   {
     "id": "TH-07",
@@ -190,7 +217,8 @@
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
     "boundary": "엔드포인트 우회",
     "runtime_candidates": [
-      "MCP-SHADOW-*"
+      "MCP-SHADOW-*",
+      "ENDPOINT-MANAGED-001"
     ],
     "code_candidates": [
       {
@@ -202,16 +230,50 @@
       },
       {
         "path": "endpoint-agent/managed-linux.py",
-        "sha256": "76c3d24edc8d36170e0eb00b7af72ba52a9c1bf6a10777e0a66c5ed5405deef4",
+        "sha256": "acf548042686d3acf7cd397a203fd9d1a5553216d4f02565f51c8fef985b913d",
         "committed_sha256": "2a312bad0a1d11b50294987f3b02d2cce853299a4b74449eff1f8a4dab892de9",
-        "normalized_sha256": "b8912408bccd2b8253dd8f13c628da762fee43220a0504338437d3d48e118671",
+        "normalized_sha256": "2107a6431b2d35d18cf450678314b287dacd07beb0fb2af8cf7f168cf238fb18",
+        "worktree_modified": true
+      },
+      {
+        "path": "endpoint-agent/managed-windows.py",
+        "sha256": "bb0d1d82e2f4725bd6ed5f75f0a216f7b0a27fcc4a073439bfbbcb1117af00da",
+        "committed_sha256": "849cd8bb4b2e0e1a210b7cc869e33934226eff168a18a0512fa47f63a9311219",
+        "normalized_sha256": "0aa273e4c418379ba19a9473741b1c671e4ddd343e3459ab54a1ddffab797878",
+        "worktree_modified": true
+      },
+      {
+        "path": "endpoint-agent/agent.py",
+        "sha256": "cd4e4173238b15faac6d12ecb51189cadc1b4c75b2747ab228601ffa039fe35e",
+        "committed_sha256": "02cb30f3c2fbd4444fee04e044ee76fa0bc8613f9f31fa8f64977aacca445697",
+        "normalized_sha256": "ce87ed33861295b66fa99520fd898eefca82df22cd9f0b912fb9a9625199f7d1",
+        "worktree_modified": true
+      },
+      {
+        "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+        "sha256": "d2c6e333b9cdd72ad6561a6e3192ebeb16b3156192ab53906737f5073961c4ad",
+        "committed_sha256": "639fbabc56c8bb02462a5027cd7a67c73b79b90a951f28040f17924ca02630f1",
+        "normalized_sha256": "f0c516f945486ec92dc0eedb2ca3c8da6595d560a038e0aa10a7c5a24cddf7f3",
         "worktree_modified": true
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
-    "limitations": "파일 설정만으로 차단을 주장하지 않음; 현재 기기의 실제 OS 집행 미확인",
-    "experiment_index": "experiments/README.md"
+    "verified_on": "2026-10-14",
+    "limitations": "로컬 MCP 실험·코드 회귀와 현재 관리 기기의 OS 집행을 구분; Windows loopback·실행 통제 공백 유지",
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-01",
+      "LOCAL-RISK-02",
+      "LOCAL-RISK-03",
+      "LOCAL-RISK-04",
+      "LOCAL-RISK-06",
+      "LOCAL-RISK-08",
+      "LOCAL-RISK-09",
+      "LOCAL-RISK-10",
+      "LOCAL-RISK-11",
+      "LOCAL-RISK-12",
+      "LOCAL-RISK-13"
+    ]
   },
   {
     "id": "TH-08",
@@ -235,16 +297,20 @@
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "0234af0c2cfaedc0522d0a2c71d910bdfe497099aea8e11daa755f8e1cce00aa",
+        "sha256": "39a5d5b4d0df5ba7701bef352ae557e3f7dbe87bb9175dcaac0f5c7e4ec138ca",
         "committed_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "normalized_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "worktree_modified": false
+        "normalized_sha256": "f4550ae9d3cf7374cf66a47b0af9ad2e18a0613f3f23b5e599251f6dc28b8bbe",
+        "worktree_modified": true
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "transport 신원과 사용자 자기 선언 필드 분리",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-08",
+      "LOCAL-RISK-09"
+    ]
   },
   {
     "id": "TH-09",
@@ -261,7 +327,7 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/pac.py",
-        "sha256": "a2ce5dcc7d5261c2571d10b315434b5a1179ca48243b5d3a5fadbd414c37447c",
+        "sha256": "17716e4df9045cce223282853a7ea04e1c9a17bfa65c219a741b0f8cc5414944",
         "committed_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
         "normalized_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
         "worktree_modified": false
@@ -275,9 +341,10 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "위임 근거·교집합·철회·만료 시험; 하네스 이름은 인증 근거 아님",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": []
   },
   {
     "id": "TH-10",
@@ -301,16 +368,20 @@
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
-        "sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "sha256": "e3c5b1b7c88ab8b8ec66ba546443cb217d3606dee3261ed42770eda20c7f653c",
         "committed_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
         "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
         "worktree_modified": false
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "audience·scope·issuer·만료·직원 토큰 미전달의 독립 검증",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-07",
+      "LOCAL-RISK-09"
+    ]
   },
   {
     "id": "TH-11",
@@ -327,10 +398,10 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "0234af0c2cfaedc0522d0a2c71d910bdfe497099aea8e11daa755f8e1cce00aa",
+        "sha256": "39a5d5b4d0df5ba7701bef352ae557e3f7dbe87bb9175dcaac0f5c7e4ec138ca",
         "committed_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "normalized_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "worktree_modified": false
+        "normalized_sha256": "f4550ae9d3cf7374cf66a47b0af9ad2e18a0613f3f23b5e599251f6dc28b8bbe",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/opa/pac15.rego",
@@ -341,9 +412,15 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "이전 허용·캐시 결과를 범위가 다른 요청에 재사용하는지 시험",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-01",
+      "LOCAL-RISK-04",
+      "LOCAL-RISK-05",
+      "LOCAL-RISK-08"
+    ]
   },
   {
     "id": "TH-12",
@@ -367,9 +444,16 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "도구 이름이 아닌 실제 SQL·명령·수신자 효과로 분류",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-02",
+      "LOCAL-RISK-03",
+      "LOCAL-RISK-04",
+      "LOCAL-RISK-05",
+      "LOCAL-RISK-06"
+    ]
   },
   {
     "id": "TH-13",
@@ -387,10 +471,10 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "0234af0c2cfaedc0522d0a2c71d910bdfe497099aea8e11daa755f8e1cce00aa",
+        "sha256": "39a5d5b4d0df5ba7701bef352ae557e3f7dbe87bb9175dcaac0f5c7e4ec138ca",
         "committed_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "normalized_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "worktree_modified": false
+        "normalized_sha256": "f4550ae9d3cf7374cf66a47b0af9ad2e18a0613f3f23b5e599251f6dc28b8bbe",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/classify.py",
@@ -401,9 +485,14 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "정책 전과 실행 직전 입력 검사 및 정규화 우회 시험",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-03",
+      "LOCAL-RISK-04",
+      "LOCAL-RISK-05"
+    ]
   },
   {
     "id": "TH-14",
@@ -428,16 +517,22 @@
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
-        "sha256": "a2ce5dcc7d5261c2571d10b315434b5a1179ca48243b5d3a5fadbd414c37447c",
+        "sha256": "17716e4df9045cce223282853a7ea04e1c9a17bfa65c219a741b0f8cc5414944",
         "committed_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
         "normalized_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
         "worktree_modified": false
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "미분류를 낮은 등급으로 허용하지 않는지 확인",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-01",
+      "LOCAL-RISK-04",
+      "LOCAL-RISK-05",
+      "LOCAL-RISK-06"
+    ]
   },
   {
     "id": "TH-15",
@@ -462,16 +557,20 @@
       },
       {
         "path": "full_stack_lab/gateway/app/privacy.py",
-        "sha256": "b5b4bd304eb1db081014fb3934db7fe5c7da40bd9f1678bc5b02289295a5f393",
+        "sha256": "a0366953d4803dab3af3da0c1cc08019b1c202ffbc5a3545bf0d247f8d9b1e6f",
         "committed_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
-        "normalized_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
-        "worktree_modified": false
+        "normalized_sha256": "1fdbafb565c0d66ff39431732d3a6c461752cf0fccab6eecd7230569b9500370",
+        "worktree_modified": true
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "실제 최종 목적지·데이터 조합과 프롬프트/모델 경로는 따로 검증",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-06",
+      "LOCAL-RISK-07"
+    ]
   },
   {
     "id": "TH-16",
@@ -488,10 +587,10 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "0234af0c2cfaedc0522d0a2c71d910bdfe497099aea8e11daa755f8e1cce00aa",
+        "sha256": "39a5d5b4d0df5ba7701bef352ae557e3f7dbe87bb9175dcaac0f5c7e4ec138ca",
         "committed_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "normalized_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "worktree_modified": false
+        "normalized_sha256": "f4550ae9d3cf7374cf66a47b0af9ad2e18a0613f3f23b5e599251f6dc28b8bbe",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/tests/reservation_effect_check.py",
@@ -502,9 +601,13 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "nonce·canonical fingerprint·자가 승인·동시 승인 재사용 시험",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-02",
+      "LOCAL-RISK-03"
+    ]
   },
   {
     "id": "TH-17",
@@ -523,10 +626,10 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "0234af0c2cfaedc0522d0a2c71d910bdfe497099aea8e11daa755f8e1cce00aa",
+        "sha256": "39a5d5b4d0df5ba7701bef352ae557e3f7dbe87bb9175dcaac0f5c7e4ec138ca",
         "committed_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "normalized_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "worktree_modified": false
+        "normalized_sha256": "f4550ae9d3cf7374cf66a47b0af9ad2e18a0613f3f23b5e599251f6dc28b8bbe",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/tests/reservation_effect_check.py",
@@ -537,9 +640,10 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "호출량 상한과 모든 upstream의 실행 시간 제한을 동일시하지 않음",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": []
   },
   {
     "id": "TH-18",
@@ -564,9 +668,12 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "패턴 검사와 의미적 주입 탐지 구분; 정상 대조군·다국어 표본 필요",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-06"
+    ]
   },
   {
     "id": "TH-19",
@@ -583,23 +690,28 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/privacy.py",
-        "sha256": "b5b4bd304eb1db081014fb3934db7fe5c7da40bd9f1678bc5b02289295a5f393",
+        "sha256": "a0366953d4803dab3af3da0c1cc08019b1c202ffbc5a3545bf0d247f8d9b1e6f",
         "committed_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
-        "normalized_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
-        "worktree_modified": false
+        "normalized_sha256": "1fdbafb565c0d66ff39431732d3a6c461752cf0fccab6eecd7230569b9500370",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/secret_scan.py",
-        "sha256": "d4e35782a6d0afcea8071057faea979066b7f2254888d586798fda1e462fa052",
+        "sha256": "9ac840a0142a1f6fa11a39449bf69e86abbd1d982956cfcf5bbc5f5e90090610",
         "committed_sha256": "d4e35782a6d0afcea8071057faea979066b7f2254888d586798fda1e462fa052",
         "normalized_sha256": "d4e35782a6d0afcea8071057faea979066b7f2254888d586798fda1e462fa052",
         "worktree_modified": false
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "불필요 수집 제한과 탐지 성공은 다른 통제; scanner 장애 시험",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-06",
+      "LOCAL-RISK-07",
+      "LOCAL-RISK-09"
+    ]
   },
   {
     "id": "TH-20",
@@ -616,23 +728,26 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "0234af0c2cfaedc0522d0a2c71d910bdfe497099aea8e11daa755f8e1cce00aa",
+        "sha256": "39a5d5b4d0df5ba7701bef352ae557e3f7dbe87bb9175dcaac0f5c7e4ec138ca",
         "committed_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "normalized_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "worktree_modified": false
+        "normalized_sha256": "f4550ae9d3cf7374cf66a47b0af9ad2e18a0613f3f23b5e599251f6dc28b8bbe",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/privacy.py",
-        "sha256": "b5b4bd304eb1db081014fb3934db7fe5c7da40bd9f1678bc5b02289295a5f393",
+        "sha256": "a0366953d4803dab3af3da0c1cc08019b1c202ffbc5a3545bf0d247f8d9b1e6f",
         "committed_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
-        "normalized_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
-        "worktree_modified": false
+        "normalized_sha256": "1fdbafb565c0d66ff39431732d3a6c461752cf0fccab6eecd7230569b9500370",
+        "worktree_modified": true
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "응답 보류·마스킹은 upstream 미실행을 뜻하지 않음",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-06"
+    ]
   },
   {
     "id": "TH-21",
@@ -657,16 +772,17 @@
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "0234af0c2cfaedc0522d0a2c71d910bdfe497099aea8e11daa755f8e1cce00aa",
+        "sha256": "39a5d5b4d0df5ba7701bef352ae557e3f7dbe87bb9175dcaac0f5c7e4ec138ca",
         "committed_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "normalized_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
-        "worktree_modified": false
+        "normalized_sha256": "f4550ae9d3cf7374cf66a47b0af9ad2e18a0613f3f23b5e599251f6dc28b8bbe",
+        "worktree_modified": true
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "자동 최초 신뢰 금지; 사람이 승인한 계약과 호출 시 관찰 해시 대조",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": []
   },
   {
     "id": "TH-22",
@@ -683,23 +799,38 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/audit.py",
-        "sha256": "414e1412303e1d1e6a183c98aa1fb07ad826f44c227343a26d6d0d447e124c9d",
+        "sha256": "c752108db81e5ea1d72212e2b8f291258d51c1dcca2a9bbb33829dbcb9df668e",
         "committed_sha256": "414e1412303e1d1e6a183c98aa1fb07ad826f44c227343a26d6d0d447e124c9d",
         "normalized_sha256": "414e1412303e1d1e6a183c98aa1fb07ad826f44c227343a26d6d0d447e124c9d",
         "worktree_modified": false
       },
       {
         "path": "full_stack_lab/tests/oss_audit_test.py",
-        "sha256": "5ba6b7b9831108b8f829c5ed9cdd714872008ef624366135c708210821b3b902",
+        "sha256": "c9d219fbd42473eee9e7d1b3dd04cade89f3e1d0b7805ea46e9b9e0897fdf7cc",
         "committed_sha256": "5ba6b7b9831108b8f829c5ed9cdd714872008ef624366135c708210821b3b902",
         "normalized_sha256": "5ba6b7b9831108b8f829c5ed9cdd714872008ef624366135c708210821b3b902",
         "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+        "sha256": "d2c6e333b9cdd72ad6561a6e3192ebeb16b3156192ab53906737f5073961c4ad",
+        "committed_sha256": "639fbabc56c8bb02462a5027cd7a67c73b79b90a951f28040f17924ca02630f1",
+        "normalized_sha256": "f0c516f945486ec92dc0eedb2ca3c8da6595d560a038e0aa10a7c5a24cddf7f3",
+        "worktree_modified": true
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
-    "limitations": "체인 검증과 DB 소유자의 변조 가능성·보존 정책은 별도",
-    "experiment_index": "experiments/README.md"
+    "verified_on": "2026-10-14",
+    "limitations": "체인 검증과 장치 상태/감사 이벤트의 transaction 원자성·DB 소유자 변조·보존 정책은 별도",
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-08",
+      "LOCAL-RISK-09",
+      "LOCAL-RISK-10",
+      "LOCAL-RISK-11",
+      "LOCAL-RISK-12",
+      "LOCAL-RISK-13"
+    ]
   },
   {
     "id": "TH-23",
@@ -724,16 +855,24 @@
       },
       {
         "path": "full_stack_lab/tests/termination_flow.py",
-        "sha256": "ab0635a5ad14f6724eef6ba49ed2d114bc2e1b4386a586e83ef8e563f8c4fa69",
+        "sha256": "c38880d3f5e92be522c5ec3320094ecaf239c213e0559c62d4fe85efc46796c3",
         "committed_sha256": "ab0635a5ad14f6724eef6ba49ed2d114bc2e1b4386a586e83ef8e563f8c4fa69",
         "normalized_sha256": "ab0635a5ad14f6724eef6ba49ed2d114bc2e1b4386a586e83ef8e563f8c4fa69",
         "worktree_modified": false
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "C1~C4와 자원 서버 재접근의 현재 증거 필요",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-02",
+      "LOCAL-RISK-09",
+      "LOCAL-RISK-10",
+      "LOCAL-RISK-11",
+      "LOCAL-RISK-12",
+      "LOCAL-RISK-13"
+    ]
   },
   {
     "id": "TH-24",
@@ -765,8 +904,14 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-13",
+    "verified_on": "2026-10-14",
     "limitations": "설정 삭제는 외부 토큰·키 회수 증거 아님",
-    "experiment_index": "experiments/README.md"
+    "experiment_index": "experiments/README.md",
+    "local_tool_risk_ids": [
+      "LOCAL-RISK-07",
+      "LOCAL-RISK-11",
+      "LOCAL-RISK-12",
+      "LOCAL-RISK-13"
+    ]
   }
 ]

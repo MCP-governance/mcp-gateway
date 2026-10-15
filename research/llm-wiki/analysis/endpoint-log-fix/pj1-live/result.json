@@ -1,0 +1,20 @@
+{
+  "scope": "Linux managed UID1001; synthetic marker processes, actual AppArmor denial; no MCP/model call",
+  "manual_telemetry_post": false,
+  "registry_approval": false,
+  "product_database_reset": false,
+  "ok": true,
+  "automatic_process": true,
+  "other_uid_excluded": true,
+  "actual_os_event_received": true,
+  "scoped_empty_reconciliation": true,
+  "collector_fault_visible": true,
+  "last_success_preserved": true,
+  "cursor_no_advance_on_failure": true,
+  "broker_survived_observer_failure": true,
+  "recovery": true,
+  "duplicate_event_rows": 1,
+  "endpoint_id": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+  "run_id": "ea472c80fae8",
+  "logs": "/home/pj1/mcpgw-telemetry-fix-20261014/logs/ea472c80fae8"
+}

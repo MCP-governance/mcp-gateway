@@ -1,0 +1,27 @@
+{
+  "checked_at": "2026-10-13T12:06:34.139066+00:00",
+  "branch": "10/13-enterprise-interoperability",
+  "scope": "declared_dependencies_unit_and_official_sdk_serialization_only",
+  "actual_mcp_server_experiment": false,
+  "deployment_verified": false,
+  "records": [
+    {
+      "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+      "exit_code": 0,
+      "output": ".................\n----------------------------------------------------------------------\nRan 17 tests in 0.171s\n\nOK\n",
+      "source_normalized_sha256": "3a938e79bbefe789d8f6d31dc112695054edac32850623c236aae16698b6719a"
+    },
+    {
+      "path": "full_stack_lab/tests/security_edges_check.py",
+      "exit_code": 0,
+      "output": "......\n----------------------------------------------------------------------\nRan 6 tests in 0.078s\n\nOK\n",
+      "source_normalized_sha256": "947656cfcc2f92f8dc7eecb6c457e7dd4f6de399208229f3cb24b8b5bdf0d6e9"
+    },
+    {
+      "path": "full_stack_lab/integrations/litellm/check_preflight.py",
+      "exit_code": 0,
+      "output": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.128s\n\nOK\n",
+      "source_normalized_sha256": "54c4a22a0e7ec11aa0a823b702e84241fe8a0a41be99b65c91e6088d99d1a5f5"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-14T12:32:11.084Z",
+  "complete": "0 / 40",
+  "invalidDate": false,
+  "loadError": false,
+  "progress": "24.8%",
+  "rows": 40,
+  "sample": "실행 차단 이벤트 #1388",
+  "sampleValues": "서비스 상태\n실행 중\n프로세스 자동 관측\n관리 UID에서 활성\n네트워크 탐색\n중지\n주기 수집 후 조회 확인\n9.46초\n표본 발생 → 수신\n9.43초\n표본 정규화 내용\n일치\n오류 원복 후 수집\n복구 확인",
+  "undefinedText": false,
+  "detail_opens": true,
+  "scope": "Actual local Site preview after telemetry fix; values, 40 rows, sample1388 and G06.03 evidence dialog. Product Console delivery inspected separately."
+}

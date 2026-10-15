@@ -1,0 +1,1881 @@
+{
+  "time_kst_started": "2026-10-14T18:59:34.284551+09:00",
+  "device_user_uid": 1000,
+  "device_apparmor_profile": "unconfined",
+  "ghidra": "12.1.4",
+  "ghidra_source_commit": "8b6bbb857accdfa20dc5b2f5dea471178c2e9fbc",
+  "ghidramcp": "2.0.0",
+  "ghidramcp_source_commit": "1e980252087b2479a21b9ca6d82d5829538651a7",
+  "jdk": "Temurin 21.0.12.1+1",
+  "python": "3.12.3",
+  "mcp_sdk": "1.30.0",
+  "pyghidra": "3.1.0",
+  "jpype1": "1.5.2",
+  "ghidra_runtime_root": "/dev/shm/mcpgw-ghidra-20261014/runtime/ghidra",
+  "java_home": "/dev/shm/mcpgw-ghidra-20261014/runtime/jdk",
+  "extension_jar_sha256": "1d41bd86c33879f0e42658cd5e06bb57c5f3a128e5500dd76ab37b2b9db481f1",
+  "command": [
+    "/home/pj1/mcpgw-ghidra-20261014/venv/bin/python",
+    "-m",
+    "ghidra_mcp",
+    "--headless",
+    "--binary",
+    "/home/pj1/mcpgw-ghidra-20261014/artifacts/run/synthetic_return_42.elf",
+    "--ghidra-install-dir",
+    "/dev/shm/mcpgw-ghidra-20261014/runtime/ghidra",
+    "--extension-jar",
+    "/home/pj1/mcpgw-ghidra-20261014/artifacts/GhidraMCP.jar"
+  ],
+  "binary_path": "/home/pj1/mcpgw-ghidra-20261014/artifacts/run/synthetic_return_42.elf",
+  "binary_sha256": "0a64fc68cccfb67b816011fe7a6b58c4deb566c234516520a409dbfc6b2ea8ba",
+  "stdio_pid": 29514,
+  "stdio_uid": 1000,
+  "messages": [
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "protocolVersion": "2025-06-18",
+        "capabilities": {
+          "experimental": {},
+          "prompts": {
+            "listChanged": false
+          },
+          "resources": {
+            "subscribe": false,
+            "listChanged": false
+          },
+          "tools": {
+            "listChanged": false
+          }
+        },
+        "serverInfo": {
+          "name": "ghidra-mcp",
+          "version": "1.30.0"
+        },
+        "instructions": "Tools for reverse engineering the program open in Ghidra. Call get_program_info first to confirm\nwhich binary you are working on. Addresses are hex strings such as \"0x401000\". List tools are\npaginated: pass offset/limit and check has_more. Prefer the address-based tools for modifications,\nsince function names can be ambiguous.\n"
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 2,
+      "result": {
+        "tools": [
+          {
+            "name": "get_program_info",
+            "description": "Identify the target program: name, format, language/architecture, compiler spec,\n        image base, address range, size, entry points, and hashes.",
+            "inputSchema": {
+              "properties": {},
+              "title": "get_program_infoArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "get_program_infoDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_functions",
+            "description": "List functions (name and entry address), optionally filtered by a case-insensitive\n        substring of the name.",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                },
+                "filter": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Filter"
+                }
+              },
+              "title": "list_functionsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_functionsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_methods",
+            "description": "Deprecated: use list_functions. Lists function names only.",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "list_methodsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Result",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "list_methodsOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "search_functions_by_name",
+            "description": "Search for functions whose name contains the given substring (case-insensitive).",
+            "inputSchema": {
+              "properties": {
+                "query": {
+                  "title": "Query",
+                  "type": "string"
+                },
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "title": "search_functions_by_nameArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "search_functions_by_nameDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_classes",
+            "description": "List class namespaces (fully qualified names).",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "list_classesArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_classesDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_namespaces",
+            "description": "List all non-global namespaces (fully qualified names).",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "list_namespacesArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_namespacesDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_segments",
+            "description": "List memory blocks with address range, size, and permissions.",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "list_segmentsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_segmentsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_imports",
+            "description": "List imported (external) symbols and their libraries.",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "list_importsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_importsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_exports",
+            "description": "List exported symbols / entry points.",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "list_exportsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_exportsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_data_items",
+            "description": "List defined data with address, label, type, and value.",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "list_data_itemsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_data_itemsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_strings",
+            "description": "List defined strings with their addresses, optionally filtered by a case-insensitive\n        substring of the content.",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 200,
+                  "title": "Limit",
+                  "type": "integer"
+                },
+                "filter": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Filter"
+                }
+              },
+              "title": "list_stringsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_stringsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_function_by_address",
+            "description": "Get the function at or containing an address: name, signature, body range,\n        calling convention.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "address"
+              ],
+              "title": "get_function_by_addressArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "get_function_by_addressDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "decompile_function",
+            "description": "Decompile a function by name and return C pseudocode. Fails if the name is ambiguous;\n        use decompile_function_by_address in that case.",
+            "inputSchema": {
+              "properties": {
+                "name": {
+                  "title": "Name",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "title": "decompile_functionArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "decompile_functionDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "decompile_function_by_address",
+            "description": "Decompile the function at or containing an address and return C pseudocode.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "address"
+              ],
+              "title": "decompile_function_by_addressArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "decompile_function_by_addressDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "disassemble_function",
+            "description": "Disassemble the instructions in a function's body (address, bytes, instruction,\n        end-of-line comment).",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 500,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "address"
+              ],
+              "title": "disassemble_functionArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "disassemble_functionDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_xrefs_to",
+            "description": "List references to an address, with the function each reference comes from.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "address"
+              ],
+              "title": "get_xrefs_toArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "get_xrefs_toDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_xrefs_from",
+            "description": "List references from a single instruction or data address.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "address"
+              ],
+              "title": "get_xrefs_fromArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "get_xrefs_fromDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_function_xrefs",
+            "description": "List references to a function's entry point, by name or (preferably) address.",
+            "inputSchema": {
+              "properties": {
+                "name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Name"
+                },
+                "address": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Address"
+                },
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "get_function_xrefsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "get_function_xrefsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_function_calls",
+            "description": "Function-level call graph, one level deep. Callers are call sites that reach this\n        function; callees are calls made from anywhere in its body, including indirect calls\n        (direct=false). offset/limit apply to each list separately.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "direction": {
+                  "default": "both",
+                  "enum": [
+                    "both",
+                    "callers",
+                    "callees"
+                  ],
+                  "title": "Direction",
+                  "type": "string"
+                },
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "address"
+              ],
+              "title": "get_function_callsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "get_function_callsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "read_memory",
+            "description": "Read up to 4096 bytes of program memory as hex and ASCII. Unmapped or uninitialized\n        bytes are shown as '??' and listed in `gaps`.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "length": {
+                  "default": 64,
+                  "title": "Length",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "address"
+              ],
+              "title": "read_memoryArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "read_memoryDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "rename_function_by_address",
+            "description": "Rename the function at or containing an address.",
+            "inputSchema": {
+              "properties": {
+                "function_address": {
+                  "title": "Function Address",
+                  "type": "string"
+                },
+                "new_name": {
+                  "title": "New Name",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "function_address",
+                "new_name"
+              ],
+              "title": "rename_function_by_addressArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "rename_function_by_addressDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "rename_function",
+            "description": "Rename a function by its current name. Fails if the name is ambiguous; prefer\n        rename_function_by_address.",
+            "inputSchema": {
+              "properties": {
+                "old_name": {
+                  "title": "Old Name",
+                  "type": "string"
+                },
+                "new_name": {
+                  "title": "New Name",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "old_name",
+                "new_name"
+              ],
+              "title": "rename_functionArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "rename_functionDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "rename_data",
+            "description": "Rename the label of defined data (or an existing symbol) at an address.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "new_name": {
+                  "title": "New Name",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "address",
+                "new_name"
+              ],
+              "title": "rename_dataArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "rename_dataDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "rename_variable",
+            "description": "Rename a local variable or parameter as shown in the decompiler. Identify the function\n        by function_address (preferred) or function_name.",
+            "inputSchema": {
+              "properties": {
+                "old_name": {
+                  "title": "Old Name",
+                  "type": "string"
+                },
+                "new_name": {
+                  "title": "New Name",
+                  "type": "string"
+                },
+                "function_address": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Function Address"
+                },
+                "function_name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Function Name"
+                }
+              },
+              "required": [
+                "old_name",
+                "new_name"
+              ],
+              "title": "rename_variableArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "rename_variableDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "set_function_prototype",
+            "description": "Set a function's signature from a C prototype, e.g. \"int foo(char *buf, int len)\".",
+            "inputSchema": {
+              "properties": {
+                "function_address": {
+                  "title": "Function Address",
+                  "type": "string"
+                },
+                "prototype": {
+                  "title": "Prototype",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "function_address",
+                "prototype"
+              ],
+              "title": "set_function_prototypeArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "set_function_prototypeDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "set_local_variable_type",
+            "description": "Set the data type of a decompiler variable, e.g. \"char *\", \"DWORD\", \"MY_STRUCT *\".",
+            "inputSchema": {
+              "properties": {
+                "function_address": {
+                  "title": "Function Address",
+                  "type": "string"
+                },
+                "variable_name": {
+                  "title": "Variable Name",
+                  "type": "string"
+                },
+                "new_type": {
+                  "title": "New Type",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "function_address",
+                "variable_name",
+                "new_type"
+              ],
+              "title": "set_local_variable_typeArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "set_local_variable_typeDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "set_decompiler_comment",
+            "description": "Set the pre-comment at an address (shown in the decompiler). An empty comment clears\n        it.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "comment": {
+                  "title": "Comment",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "address",
+                "comment"
+              ],
+              "title": "set_decompiler_commentArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "set_decompiler_commentDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "set_disassembly_comment",
+            "description": "Set the end-of-line comment at an address (shown in the disassembly). An empty comment\n        clears it.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "comment": {
+                  "title": "Comment",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "address",
+                "comment"
+              ],
+              "title": "set_disassembly_commentArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "set_disassembly_commentDictOutput",
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 3,
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"name\": \"synthetic_return_42.elf\",\n  \"project_path\": \"/synthetic_return_42.elf\",\n  \"executable_path\": \"/home/pj1/mcpgw-ghidra-20261014/artifacts/run/synthetic_return_42.elf\",\n  \"executable_format\": \"Executable and Linking Format (ELF)\",\n  \"language_id\": \"x86:LE:64:default\",\n  \"compiler_spec\": \"gcc\",\n  \"processor\": \"x86\",\n  \"endian\": \"little\",\n  \"pointer_size\": 8,\n  \"image_base\": \"00400000\",\n  \"min_address\": \"00400000\",\n  \"max_address\": \"0040007d\",\n  \"memory_size\": 126,\n  \"function_count\": 1,\n  \"external_function_count\": 0,\n  \"entry_points\": [\n    \"00400078\"\n  ],\n  \"md5\": \"c4c328a6c2c0b70769eb285c63f9c72f\",\n  \"sha256\": \"0a64fc68cccfb67b816011fe7a6b58c4deb566c234516520a409dbfc6b2ea8ba\"\n}"
+          }
+        ],
+        "structuredContent": {
+          "name": "synthetic_return_42.elf",
+          "project_path": "/synthetic_return_42.elf",
+          "executable_path": "/home/pj1/mcpgw-ghidra-20261014/artifacts/run/synthetic_return_42.elf",
+          "executable_format": "Executable and Linking Format (ELF)",
+          "language_id": "x86:LE:64:default",
+          "compiler_spec": "gcc",
+          "processor": "x86",
+          "endian": "little",
+          "pointer_size": 8,
+          "image_base": "00400000",
+          "min_address": "00400000",
+          "max_address": "0040007d",
+          "memory_size": 126,
+          "function_count": 1,
+          "external_function_count": 0,
+          "entry_points": [
+            "00400078"
+          ],
+          "md5": "c4c328a6c2c0b70769eb285c63f9c72f",
+          "sha256": "0a64fc68cccfb67b816011fe7a6b58c4deb566c234516520a409dbfc6b2ea8ba"
+        },
+        "isError": false
+      }
+    }
+  ],
+  "initialize": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "protocolVersion": "2025-06-18",
+      "capabilities": {
+        "experimental": {},
+        "prompts": {
+          "listChanged": false
+        },
+        "resources": {
+          "subscribe": false,
+          "listChanged": false
+        },
+        "tools": {
+          "listChanged": false
+        }
+      },
+      "serverInfo": {
+        "name": "ghidra-mcp",
+        "version": "1.30.0"
+      },
+      "instructions": "Tools for reverse engineering the program open in Ghidra. Call get_program_info first to confirm\nwhich binary you are working on. Addresses are hex strings such as \"0x401000\". List tools are\npaginated: pass offset/limit and check has_more. Prefer the address-based tools for modifications,\nsince function names can be ambiguous.\n"
+    }
+  },
+  "tools_list": {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "result": {
+      "tools": [
+        {
+          "name": "get_program_info",
+          "description": "Identify the target program: name, format, language/architecture, compiler spec,\n        image base, address range, size, entry points, and hashes.",
+          "inputSchema": {
+            "properties": {},
+            "title": "get_program_infoArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "get_program_infoDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "list_functions",
+          "description": "List functions (name and entry address), optionally filtered by a case-insensitive\n        substring of the name.",
+          "inputSchema": {
+            "properties": {
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 100,
+                "title": "Limit",
+                "type": "integer"
+              },
+              "filter": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Filter"
+              }
+            },
+            "title": "list_functionsArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "list_functionsDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "list_methods",
+          "description": "Deprecated: use list_functions. Lists function names only.",
+          "inputSchema": {
+            "properties": {
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 100,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "title": "list_methodsArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "properties": {
+              "result": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Result",
+                "type": "array"
+              }
+            },
+            "required": [
+              "result"
+            ],
+            "title": "list_methodsOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "search_functions_by_name",
+          "description": "Search for functions whose name contains the given substring (case-insensitive).",
+          "inputSchema": {
+            "properties": {
+              "query": {
+                "title": "Query",
+                "type": "string"
+              },
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 100,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "title": "search_functions_by_nameArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "search_functions_by_nameDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "list_classes",
+          "description": "List class namespaces (fully qualified names).",
+          "inputSchema": {
+            "properties": {
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 100,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "title": "list_classesArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "list_classesDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "list_namespaces",
+          "description": "List all non-global namespaces (fully qualified names).",
+          "inputSchema": {
+            "properties": {
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 100,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "title": "list_namespacesArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "list_namespacesDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "list_segments",
+          "description": "List memory blocks with address range, size, and permissions.",
+          "inputSchema": {
+            "properties": {
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 100,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "title": "list_segmentsArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "list_segmentsDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "list_imports",
+          "description": "List imported (external) symbols and their libraries.",
+          "inputSchema": {
+            "properties": {
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 100,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "title": "list_importsArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "list_importsDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "list_exports",
+          "description": "List exported symbols / entry points.",
+          "inputSchema": {
+            "properties": {
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 100,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "title": "list_exportsArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "list_exportsDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "list_data_items",
+          "description": "List defined data with address, label, type, and value.",
+          "inputSchema": {
+            "properties": {
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 100,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "title": "list_data_itemsArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "list_data_itemsDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "list_strings",
+          "description": "List defined strings with their addresses, optionally filtered by a case-insensitive\n        substring of the content.",
+          "inputSchema": {
+            "properties": {
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 200,
+                "title": "Limit",
+                "type": "integer"
+              },
+              "filter": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Filter"
+              }
+            },
+            "title": "list_stringsArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "list_stringsDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "get_function_by_address",
+          "description": "Get the function at or containing an address: name, signature, body range,\n        calling convention.",
+          "inputSchema": {
+            "properties": {
+              "address": {
+                "title": "Address",
+                "type": "string"
+              }
+            },
+            "required": [
+              "address"
+            ],
+            "title": "get_function_by_addressArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "get_function_by_addressDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "decompile_function",
+          "description": "Decompile a function by name and return C pseudocode. Fails if the name is ambiguous;\n        use decompile_function_by_address in that case.",
+          "inputSchema": {
+            "properties": {
+              "name": {
+                "title": "Name",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "title": "decompile_functionArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "decompile_functionDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "decompile_function_by_address",
+          "description": "Decompile the function at or containing an address and return C pseudocode.",
+          "inputSchema": {
+            "properties": {
+              "address": {
+                "title": "Address",
+                "type": "string"
+              }
+            },
+            "required": [
+              "address"
+            ],
+            "title": "decompile_function_by_addressArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "decompile_function_by_addressDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "disassemble_function",
+          "description": "Disassemble the instructions in a function's body (address, bytes, instruction,\n        end-of-line comment).",
+          "inputSchema": {
+            "properties": {
+              "address": {
+                "title": "Address",
+                "type": "string"
+              },
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 500,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "address"
+            ],
+            "title": "disassemble_functionArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "disassemble_functionDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "get_xrefs_to",
+          "description": "List references to an address, with the function each reference comes from.",
+          "inputSchema": {
+            "properties": {
+              "address": {
+                "title": "Address",
+                "type": "string"
+              },
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 100,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "address"
+            ],
+            "title": "get_xrefs_toArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "get_xrefs_toDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "get_xrefs_from",
+          "description": "List references from a single instruction or data address.",
+          "inputSchema": {
+            "properties": {
+              "address": {
+                "title": "Address",
+                "type": "string"
+              },
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 100,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "address"
+            ],
+            "title": "get_xrefs_fromArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "get_xrefs_fromDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "get_function_xrefs",
+          "description": "List references to a function's entry point, by name or (preferably) address.",
+          "inputSchema": {
+            "properties": {
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Name"
+              },
+              "address": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Address"
+              },
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 100,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "title": "get_function_xrefsArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "get_function_xrefsDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "get_function_calls",
+          "description": "Function-level call graph, one level deep. Callers are call sites that reach this\n        function; callees are calls made from anywhere in its body, including indirect calls\n        (direct=false). offset/limit apply to each list separately.",
+          "inputSchema": {
+            "properties": {
+              "address": {
+                "title": "Address",
+                "type": "string"
+              },
+              "direction": {
+                "default": "both",
+                "enum": [
+                  "both",
+                  "callers",
+                  "callees"
+                ],
+                "title": "Direction",
+                "type": "string"
+              },
+              "offset": {
+                "default": 0,
+                "title": "Offset",
+                "type": "integer"
+              },
+              "limit": {
+                "default": 100,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "address"
+            ],
+            "title": "get_function_callsArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "get_function_callsDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "read_memory",
+          "description": "Read up to 4096 bytes of program memory as hex and ASCII. Unmapped or uninitialized\n        bytes are shown as '??' and listed in `gaps`.",
+          "inputSchema": {
+            "properties": {
+              "address": {
+                "title": "Address",
+                "type": "string"
+              },
+              "length": {
+                "default": 64,
+                "title": "Length",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "address"
+            ],
+            "title": "read_memoryArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "read_memoryDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "rename_function_by_address",
+          "description": "Rename the function at or containing an address.",
+          "inputSchema": {
+            "properties": {
+              "function_address": {
+                "title": "Function Address",
+                "type": "string"
+              },
+              "new_name": {
+                "title": "New Name",
+                "type": "string"
+              }
+            },
+            "required": [
+              "function_address",
+              "new_name"
+            ],
+            "title": "rename_function_by_addressArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "rename_function_by_addressDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "rename_function",
+          "description": "Rename a function by its current name. Fails if the name is ambiguous; prefer\n        rename_function_by_address.",
+          "inputSchema": {
+            "properties": {
+              "old_name": {
+                "title": "Old Name",
+                "type": "string"
+              },
+              "new_name": {
+                "title": "New Name",
+                "type": "string"
+              }
+            },
+            "required": [
+              "old_name",
+              "new_name"
+            ],
+            "title": "rename_functionArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "rename_functionDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "rename_data",
+          "description": "Rename the label of defined data (or an existing symbol) at an address.",
+          "inputSchema": {
+            "properties": {
+              "address": {
+                "title": "Address",
+                "type": "string"
+              },
+              "new_name": {
+                "title": "New Name",
+                "type": "string"
+              }
+            },
+            "required": [
+              "address",
+              "new_name"
+            ],
+            "title": "rename_dataArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "rename_dataDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "rename_variable",
+          "description": "Rename a local variable or parameter as shown in the decompiler. Identify the function\n        by function_address (preferred) or function_name.",
+          "inputSchema": {
+            "properties": {
+              "old_name": {
+                "title": "Old Name",
+                "type": "string"
+              },
+              "new_name": {
+                "title": "New Name",
+                "type": "string"
+              },
+              "function_address": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Function Address"
+              },
+              "function_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Function Name"
+              }
+            },
+            "required": [
+              "old_name",
+              "new_name"
+            ],
+            "title": "rename_variableArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "rename_variableDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "set_function_prototype",
+          "description": "Set a function's signature from a C prototype, e.g. \"int foo(char *buf, int len)\".",
+          "inputSchema": {
+            "properties": {
+              "function_address": {
+                "title": "Function Address",
+                "type": "string"
+              },
+              "prototype": {
+                "title": "Prototype",
+                "type": "string"
+              }
+            },
+            "required": [
+              "function_address",
+              "prototype"
+            ],
+            "title": "set_function_prototypeArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "set_function_prototypeDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "set_local_variable_type",
+          "description": "Set the data type of a decompiler variable, e.g. \"char *\", \"DWORD\", \"MY_STRUCT *\".",
+          "inputSchema": {
+            "properties": {
+              "function_address": {
+                "title": "Function Address",
+                "type": "string"
+              },
+              "variable_name": {
+                "title": "Variable Name",
+                "type": "string"
+              },
+              "new_type": {
+                "title": "New Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "function_address",
+              "variable_name",
+              "new_type"
+            ],
+            "title": "set_local_variable_typeArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "set_local_variable_typeDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "set_decompiler_comment",
+          "description": "Set the pre-comment at an address (shown in the decompiler). An empty comment clears\n        it.",
+          "inputSchema": {
+            "properties": {
+              "address": {
+                "title": "Address",
+                "type": "string"
+              },
+              "comment": {
+                "title": "Comment",
+                "type": "string"
+              }
+            },
+            "required": [
+              "address",
+              "comment"
+            ],
+            "title": "set_decompiler_commentArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "set_decompiler_commentDictOutput",
+            "type": "object"
+          }
+        },
+        {
+          "name": "set_disassembly_comment",
+          "description": "Set the end-of-line comment at an address (shown in the disassembly). An empty comment\n        clears it.",
+          "inputSchema": {
+            "properties": {
+              "address": {
+                "title": "Address",
+                "type": "string"
+              },
+              "comment": {
+                "title": "Comment",
+                "type": "string"
+              }
+            },
+            "required": [
+              "address",
+              "comment"
+            ],
+            "title": "set_disassembly_commentArguments",
+            "type": "object"
+          },
+          "outputSchema": {
+            "additionalProperties": true,
+            "title": "set_disassembly_commentDictOutput",
+            "type": "object"
+          }
+        }
+      ]
+    }
+  },
+  "read_call": {
+    "jsonrpc": "2.0",
+    "id": 3,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"name\": \"synthetic_return_42.elf\",\n  \"project_path\": \"/synthetic_return_42.elf\",\n  \"executable_path\": \"/home/pj1/mcpgw-ghidra-20261014/artifacts/run/synthetic_return_42.elf\",\n  \"executable_format\": \"Executable and Linking Format (ELF)\",\n  \"language_id\": \"x86:LE:64:default\",\n  \"compiler_spec\": \"gcc\",\n  \"processor\": \"x86\",\n  \"endian\": \"little\",\n  \"pointer_size\": 8,\n  \"image_base\": \"00400000\",\n  \"min_address\": \"00400000\",\n  \"max_address\": \"0040007d\",\n  \"memory_size\": 126,\n  \"function_count\": 1,\n  \"external_function_count\": 0,\n  \"entry_points\": [\n    \"00400078\"\n  ],\n  \"md5\": \"c4c328a6c2c0b70769eb285c63f9c72f\",\n  \"sha256\": \"0a64fc68cccfb67b816011fe7a6b58c4deb566c234516520a409dbfc6b2ea8ba\"\n}"
+        }
+      ],
+      "structuredContent": {
+        "name": "synthetic_return_42.elf",
+        "project_path": "/synthetic_return_42.elf",
+        "executable_path": "/home/pj1/mcpgw-ghidra-20261014/artifacts/run/synthetic_return_42.elf",
+        "executable_format": "Executable and Linking Format (ELF)",
+        "language_id": "x86:LE:64:default",
+        "compiler_spec": "gcc",
+        "processor": "x86",
+        "endian": "little",
+        "pointer_size": 8,
+        "image_base": "00400000",
+        "min_address": "00400000",
+        "max_address": "0040007d",
+        "memory_size": 126,
+        "function_count": 1,
+        "external_function_count": 0,
+        "entry_points": [
+          "00400078"
+        ],
+        "md5": "c4c328a6c2c0b70769eb285c63f9c72f",
+        "sha256": "0a64fc68cccfb67b816011fe7a6b58c4deb566c234516520a409dbfc6b2ea8ba"
+      },
+      "isError": false
+    }
+  },
+  "stage": "mcp_connected_read_call_success_hold_started",
+  "process_tree": [
+    {
+      "pid": 29514,
+      "comm": "python",
+      "uid_line": "Uid:\t1000\t1000\t1000\t1000",
+      "profile": "unconfined",
+      "cmdline": [
+        "/home/pj1/mcpgw-ghidra-20261014/venv/bin/python",
+        "-m",
+        "ghidra_mcp",
+        "--headless",
+        "--binary",
+        "/home/pj1/mcpgw-ghidra-20261014/artifacts/run/synthetic_return_42.elf",
+        "--ghidra-install-dir",
+        "/dev/shm/mcpgw-ghidra-20261014/runtime/ghidra",
+        "--extension-jar",
+        "/home/pj1/mcpgw-ghidra-20261014/artifacts/GhidraMCP.jar"
+      ]
+    },
+    {
+      "pid": 29639,
+      "comm": "demangler_gnu_v",
+      "uid_line": "Uid:\t1000\t1000\t1000\t1000",
+      "profile": "unconfined",
+      "cmdline": [
+        "/dev/shm/mcpgw-ghidra-20261014/runtime/ghidra/Ghidra/../GPL/DemanglerGnu/os/linux_x86_64/demangler_gnu_v2_41"
+      ]
+    }
+  ],
+  "owned_listeners": [
+    "LISTEN 0      50              [::ffff:127.0.0.1]:35673       *:* users:((\"python\",pid=29514,fd=183))"
+  ],
+  "stderr": [
+    "INFO:ghidra_mcp.headless:Starting Ghidra from /dev/shm/mcpgw-ghidra-20261014/runtime/ghidra",
+    "Picked up JAVA_TOOL_OPTIONS: -Xmx512m -Dfile.encoding=UTF-8 -Duser.home=/home/pj1/mcpgw-ghidra-20261014/artifacts/java-home",
+    "Picked up JAVA_TOOL_OPTIONS: -Xmx512m -Dfile.encoding=UTF-8 -Duser.home=/home/pj1/mcpgw-ghidra-20261014/artifacts/java-home",
+    "INFO:ghidra_mcp.headless:Using GhidraMCP classes from /home/pj1/mcpgw-ghidra-20261014/artifacts/GhidraMCP.jar",
+    "INFO:mcp.server.lowlevel.server:Processing request of type ListToolsRequest",
+    "INFO:mcp.server.lowlevel.server:Processing request of type CallToolRequest",
+    "INFO:ghidra_mcp.headless:Importing /home/pj1/mcpgw-ghidra-20261014/artifacts/run/synthetic_return_42.elf",
+    "INFO:ghidra_mcp.headless:Analyzing synthetic_return_42.elf (this can take a while)",
+    "INFO:ghidra_mcp.headless:Serving synthetic_return_42.elf on http://127.0.0.1:35673/",
+    "INFO:ghidra_mcp.headless:Discarding unsaved changes to synthetic_return_42.elf"
+  ],
+  "hold_completed": true,
+  "process_exit_code": 0,
+  "time_kst_finished": "2026-10-14T19:01:14.651812+09:00"
+}

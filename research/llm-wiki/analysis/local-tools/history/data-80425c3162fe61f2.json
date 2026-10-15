@@ -1,0 +1,183 @@
+{
+  "category": "local developer and database tools / public MCP integrations",
+  "date": "2026-10-14T13:16:45+09:00",
+  "tools": [
+    {
+      "id": "git-cli",
+      "name": "Git for Windows",
+      "category": "Local version control",
+      "version": "2.55.0.windows.2",
+      "license": "GPL-2.0-or-later (upstream Git)",
+      "free_scope": "Free/open source",
+      "state": "Existing system installation; not installed or added to PATH during this task",
+      "capabilities": {
+        "read": [
+          "repository status, log, diff, show"
+        ],
+        "write": [
+          "stage, commit, reset, branch, checkout, clean"
+        ],
+        "network": [
+          "clone, fetch, pull, push"
+        ],
+        "filesystem": "Runs with the caller OS account's filesystem permissions",
+        "credentials": "Normal installations may use Git config, credential helpers, SSH agents, or environment; probe removed credential-like variables and used synthetic identity."
+      },
+      "evidence": "Synthetic MCP commit changed HEAD; reset --hard restored original HEAD and clean status.",
+      "source": "https://git-scm.com/"
+    },
+    {
+      "id": "git-mcp-server",
+      "name": "@cyanheads/git-mcp-server",
+      "category": "Public Git MCP",
+      "version": "2.15.3",
+      "commit": "1786d570a1340b4fbba84fab641b8ff0be10c46e",
+      "commit_date": "2026-08-24T14:54:40-07:00",
+      "license": "Apache-2.0",
+      "state": "Installed in task-local npm directory; Node v24.21.0; stdio initialize succeeded (protocol 2025-11-25), tools/list returned 28 tools; raw schemas saved in protocol evidence.",
+      "capabilities": {
+        "read": "Git status/content/history/remotes",
+        "write": "Git add/commit/reset/branch/checkout/clean; synthetic add+commit effect independently verified and reverted",
+        "execute": "Runs Git subprocesses",
+        "network": "Clone/fetch/pull/push available. No remote network was called; the outside-base clone used only a synthetic local file repository.",
+        "filesystem": "GIT_BASE_DIR constrains common handlers but is not an OS sandbox. Tested git_set_working_dir can read outside-root status/history metadata, and git_clone can write/clone outside-root destinations; both are source-marked skipPathResolution. Ordinary git_status outside root was denied. OS account ACL remains final filesystem boundary.",
+        "credentials": "Probe stripped credential-like env and used synthetic commit identity; ordinary launch may inherit ambient auth configuration."
+      },
+      "base_dir_check": {
+        "inside_sibling_repo": "Accepted: base dir permits multiple repos, not one pinned repo.",
+        "outside_set_working_dir": "Accepted and returned outside synthetic repo status/recent commit snapshot.",
+        "outside_followup_git_status": "Both implicit and explicit path calls rejected: Path traversal detected.",
+        "source_explanation": "git_set_working_dir and git_clone declare skipPathResolution:true. The setter directly validates/stores a repository path and returns repository metadata snapshot; git_clone uses the supplied destination directly. Most normal Git handlers use common GIT_BASE_DIR path resolution, and tested git_status outside the root was rejected with Path traversal detected. GIT_BASE_DIR is not an OS sandbox.",
+        "outside_git_clone": "git_clone with a local synthetic source succeeded; destination was outside GIT_BASE_DIR; cloned HEAD independently matched source HEAD.",
+        "outside_git_clone_head_match": true,
+        "clone_cleanup": "Stopped the MCP process first, verified task-owned destination origin, HEAD and exact expected contents, then removed it; raw evidence confirms server_process_exited=true and clone_destination_removed=true."
+      },
+      "source_checkout": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\data\\source\\git-mcp-server",
+      "package_path": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\data\\app\\git\\node_modules\\@cyanheads\\git-mcp-server",
+      "lockfile": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\data\\app\\git\\package-lock.json",
+      "lockfile_sha256": "881A3B49A8A56466EF4BAAEBC36AF186A34029ABABA688D60402DADE5EA6A8F5",
+      "source": "https://github.com/cyanheads/git-mcp-server",
+      "npm": "https://www.npmjs.com/package/@cyanheads/git-mcp-server"
+    },
+    {
+      "id": "dbeaver-ce",
+      "name": "DBeaver Community Edition",
+      "category": "Local database GUI, not MCP",
+      "version": "26.2.2 Windows x64",
+      "license": "Apache-2.0",
+      "free_scope": "Free Community Edition; official SQLite driver docs list Community support",
+      "state": "Official ZIP downloaded, SHA256 verified and extracted task-locally. GUI process launched but no targetable window appeared; no connection profile or DB query was configured. Startup debug log stopped at Sample Database bundle; root cause unknown.",
+      "capabilities": {
+        "intended": "Direct SQLite/database connection and query/edit GUI; direct access can bypass MCP/Gateway path if user connects to the database."
+      },
+      "archive": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\data\\app\\dbeaver-ce-26.2.2-windows-x86_64.zip",
+      "archive_sha256": "EA6F4C7CC864D15FC5CE64E4142E1C785ACF2699B198BF9A3B0E9DB93ADB909C",
+      "startup_log": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\data\\app\\dbeaver\\workspace\\.metadata\\dbeaver-debug.log",
+      "sources": [
+        "https://dbeaver.io/download/",
+        "https://github.com/dbeaver/dbeaver/releases/tag/26.2.2",
+        "https://dbeaver.com/docs/dbeaver/Database-driver-SQLite/"
+      ]
+    },
+    {
+      "id": "dbhub-sqlite",
+      "name": "@bytebase/dbhub (SQLite)",
+      "category": "Public SQLite MCP",
+      "version": "1.5.0",
+      "commit": "116cfdd2c29133eca097e9fef139875c6e1376b9",
+      "commit_date": "2026-10-09T09:28:08Z",
+      "license": "MIT",
+      "state": "Task-local npm install; Node >=22.5; stdio initialize succeeded (protocol 2025-11-25); default tools/list returned execute_sql and search_objects; all schemas retained in protocol evidence.",
+      "capabilities": {
+        "read": "SELECT from synthetic people table returned Ada and Grace",
+        "write": "Default execute_sql INSERT independently observed then DELETE restored table",
+        "execute": "Arbitrary SQL tool; per-tool readonly=true limits SQL policy",
+        "network": "Local stdio SQLite used; no network calls made",
+        "filesystem": "SQLite process runs under current OS account; readonly config is not an OS filesystem sandbox",
+        "credentials": "Local SQLite DSN, no external credentials; probe stripped credential-like env."
+      },
+      "readonly_tests": {
+        "INSERT": "Rejected READONLY_VIOLATION; no mutation",
+        "ATTACH": "ATTACH DATABASE to synthetic path rejected READONLY_VIOLATION; target file absent",
+        "load_extension": "SELECT load_extension(synthetic missing DLL path) failed not authorized; file absent",
+        "source": "DBHub readonly policy denies non-read/unknown classes; SQLite connector sets PRAGMA query_only=ON around execution. Observed SQLite engine denial for extension loading in this build. This does not establish OS file isolation."
+      },
+      "source_checkout": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\data\\source\\dbhub",
+      "package_path": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\data\\app\\dbhub\\node_modules\\@bytebase\\dbhub",
+      "lockfile": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\data\\app\\dbhub\\package-lock.json",
+      "lockfile_sha256": "4FD9EDD21E76BBD72FBB81B3BE908E9B9774C18B91BEF5975C3B5CDFEDE1FC6F",
+      "source": "https://github.com/bytebase/dbhub",
+      "docs": "https://dbhub.ai/",
+      "npm": "https://www.npmjs.com/package/@bytebase/dbhub"
+    }
+  ],
+  "sources": [
+    "https://github.com/cyanheads/git-mcp-server",
+    "https://www.npmjs.com/package/@cyanheads/git-mcp-server",
+    "https://github.com/bytebase/dbhub",
+    "https://dbhub.ai/",
+    "https://www.npmjs.com/package/@bytebase/dbhub",
+    "https://dbeaver.io/download/",
+    "https://github.com/dbeaver/dbeaver/releases/tag/26.2.2",
+    "https://dbeaver.com/docs/dbeaver/Database-driver-SQLite/",
+    "https://git-scm.com/"
+  ],
+  "limitations": [
+    "DBeaver launch did not expose a UI window; no actual GUI connection/query is claimed.",
+    "All calls used disposable synthetic Git and SQLite data; no user data or credentials were used.",
+    "Read-only and path checks prove only the tested source/build behavior; process OS account permissions remain the final filesystem boundary.",
+    "Direct stdio MCP evidence is not Gateway-routed or managed-endpoint evidence.",
+    "git_clone outside GIT_BASE_DIR succeeded from a synthetic local source and independently produced matching HEAD; guarded cleanup followed MCP process exit. This is distinct from the outside git_set_working_dir metadata snapshot and the denied outside git_status call.",
+    "A DBeaver GUI probe ran without the task-local workspace environment. Read-only inspection at 2026-10-14T13:23:57+09:00 found the user-profile WebView cache directory at C:\\Users\\bobysg\\AppData\\Roaming\\DBeaverData\\workspace6\\.metadata\\.plugins\\org.eclipse.swt\\EBWebView (directory timestamps: creation 13:10:07, last write/access 13:13:12 KST). No pre-run inventory/hash exists, so whether any existing user files were overwritten or modified is unconfirmed. The directory was preserved; this follow-up made no app/profile changes."
+  ],
+  "reproduction": {
+    "script": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\research\\llm-wiki\\experiments\\local-tools\\data\\run_mcp_checks.py",
+    "script_sha256": "A2E0DF2B4BBD8A9E5BF1611D18742DE2F90B59EAFFDCADAD2582649E8196D087",
+    "command": "python -X utf8 research/llm-wiki/experiments/local-tools/data/run_mcp_checks.py",
+    "raw_protocol_evidence": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\data\\log\\protocol-evidence.json",
+    "timestamp_kst": "2026-10-14T13:16:45+09:00",
+    "fixture_root": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\data\\app\\fixtures",
+    "locks": [
+      {
+        "path": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\data\\app\\git\\package-lock.json",
+        "sha256": "881A3B49A8A56466EF4BAAEBC36AF186A34029ABABA688D60402DADE5EA6A8F5"
+      },
+      {
+        "path": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\data\\app\\dbhub\\package-lock.json",
+        "sha256": "4FD9EDD21E76BBD72FBB81B3BE908E9B9774C18B91BEF5975C3B5CDFEDE1FC6F"
+      }
+    ],
+    "raw_protocol_evidence_sha256": "A2BF2629A02DFF02B5D5B883E3C28D446BF8E023233E7AB527627C1814FA22D4"
+  },
+  "dbeaver_profile_observation": {
+    "observed_at_kst": "2026-10-14T13:23:57+09:00",
+    "path": "C:\\Users\\bobysg\\AppData\\Roaming\\DBeaverData\\workspace6\\.metadata\\.plugins\\org.eclipse.swt\\EBWebView",
+    "confirmation_method": "Read-only PowerShell Get-Item and Get-ChildItem -Force inspection of the exact directory; Get-Item read CreationTime/LastWriteTime/LastAccessTime/Attributes and child directory names/timestamps. No new DBeaver process was launched for this check.",
+    "observed_metadata": {
+      "directory_creation_time_kst": "2026-10-14 13:10:07",
+      "directory_last_write_time_kst": "2026-10-14 13:13:12",
+      "directory_last_access_time_kst": "2026-10-14 13:13:12",
+      "attributes": "Directory"
+    },
+    "observed_children_sample": [
+      "AutoLaunchProtocolsComponent",
+      "CertificateRevocation",
+      "component_crx_cache",
+      "Crashpad",
+      "Default",
+      "extensions_crx_cache",
+      "GPUPersistentCache",
+      "GrShaderCache",
+      "hyphen-data",
+      "MEIPreload",
+      "OriginTrials",
+      "PKIMetadata",
+      "ShaderCache",
+      "SmartScreen",
+      "Speech Recognition"
+    ],
+    "context": "Earlier GUI probe launched a DBeaver process without the task-local workspace environment. This profile path is the default user-profile location; the timestamps are current filesystem metadata, not a process audit record.",
+    "preexisting_or_modified_files": "Unconfirmed: there was no pre-launch inventory or content hash baseline for this user-profile directory. Current inspection cannot distinguish preexisting files from files created/modified by the DBeaver process.",
+    "handling": "Preserved in place. No files or directories were deleted or modified during this follow-up."
+  }
+}

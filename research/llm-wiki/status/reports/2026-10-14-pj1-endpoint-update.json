@@ -1,0 +1,59 @@
+{
+  "endpoint_state": "active",
+  "compliant": true,
+  "kernel_checks": {
+    "apparmor_enforcing": true,
+    "nftables_active": true,
+    "protected_configs": true,
+    "ordinary_account": true
+  },
+  "configuration_hashes_match_policy": true,
+  "source_after": {
+    "managed-linux.py": "817b69289cdef06d5239028ce7f41260ac13fb0696c2af3abebb1c56b1859478",
+    "agent.py": "cd52ed5dc41699aa2d63d54171c1639a91d94a50162b80ba049fd747ac0f89dc"
+  },
+  "backup": "/var/lib/mcpgw-managed/managed-pj1/task-backups-20261014",
+  "fresh_shell_label": {
+    "exit": 0,
+    "stdout": "mcpgw-managed-pj1 (enforce)\n",
+    "stderr": ""
+  },
+  "approved_harness_versions": {
+    "codex": {
+      "exit": 0,
+      "stdout": "codex-cli 0.160.0\n",
+      "stderr": ""
+    },
+    "claude": {
+      "exit": 0,
+      "stdout": "2.1.288 (Claude Code)\n",
+      "stderr": ""
+    }
+  },
+  "unapproved_node_denied": {
+    "exit": 126,
+    "stdout": "",
+    "stderr": "-bash: line 1: /usr/bin/node: Permission denied\n"
+  },
+  "approved_gateway_tcp": {
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "loopback_ssh_denied": {
+    "127.0.0.1": {
+      "unconfined_receiver_reachable": true,
+      "exit": 1,
+      "stdout": "",
+      "stderr": "-bash: connect: No route to host\n-bash: line 1: /dev/tcp/127.0.0.1/22: No route to host\n"
+    },
+    "::1": {
+      "unconfined_receiver_reachable": true,
+      "exit": 1,
+      "stdout": "",
+      "stderr": "-bash: connect: Permission denied\n-bash: line 1: /dev/tcp/::1/22: Permission denied\n"
+    }
+  },
+  "scope": "Actual kernel/account checks and fresh confined processes; not model turns or MCP tool-call proof",
+  "approved_update_program_sha256": "c52305d365735ccafdefbe8bdf1a6a0ea83e8afccab4ccdd1dc9bcc5ed80a3ea"
+}

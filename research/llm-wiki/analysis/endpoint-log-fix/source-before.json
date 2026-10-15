@@ -1,0 +1,51 @@
+[
+  {
+    "path": "endpoint-agent/agent.py",
+    "sha256": "cd52ed5dc41699aa2d63d54171c1639a91d94a50162b80ba049fd747ac0f89dc",
+    "normalized_sha256": "cd52ed5dc41699aa2d63d54171c1639a91d94a50162b80ba049fd747ac0f89dc"
+  },
+  {
+    "path": "endpoint-agent/managed-linux.py",
+    "sha256": "817b69289cdef06d5239028ce7f41260ac13fb0696c2af3abebb1c56b1859478",
+    "normalized_sha256": "817b69289cdef06d5239028ce7f41260ac13fb0696c2af3abebb1c56b1859478"
+  },
+  {
+    "path": "endpoint-agent/os-observer.py",
+    "sha256": "48f46d54d210bd4e56754270a4b656634b0358abe7d959cbf4d1245717261ed2",
+    "normalized_sha256": "48f46d54d210bd4e56754270a4b656634b0358abe7d959cbf4d1245717261ed2"
+  },
+  {
+    "path": "endpoint-agent/managed-windows.py",
+    "sha256": "1bfca191471207bb7c691674adc6da579a68d1c9aac1e9a34875a7d6f512da73",
+    "normalized_sha256": "1bfca191471207bb7c691674adc6da579a68d1c9aac1e9a34875a7d6f512da73"
+  },
+  {
+    "path": "endpoint-agent/os-observer-windows.py",
+    "sha256": null
+  },
+  {
+    "path": "full_stack_lab/gateway/app/main.py",
+    "sha256": "1e3ba0750d5161bb868ee2436bedcdaa1d799ad11f42c884dcb6cd5fdf41dd84",
+    "normalized_sha256": "58e8800d80315a3941d8f6c5760af63fe05571aba05e0b7dd74d57cf29938bfd"
+  },
+  {
+    "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+    "sha256": "4745a3c2deb85d3df90b6e831207aef26b56c5901ddbcfc9b1796d4d049800f0",
+    "normalized_sha256": "4745a3c2deb85d3df90b6e831207aef26b56c5901ddbcfc9b1796d4d049800f0"
+  },
+  {
+    "path": "full_stack_lab/gateway/app/agent_service.py",
+    "sha256": "9ef02f84670f2b2eb1ad728ed54b6869c4f2012cebc408a63805ed4aa676986b",
+    "normalized_sha256": "9ef02f84670f2b2eb1ad728ed54b6869c4f2012cebc408a63805ed4aa676986b"
+  },
+  {
+    "path": "full_stack_lab/gateway/app/agent_static/console.js",
+    "sha256": "6176f2b49684aa570c8917394dfc713a87239451fcb567ecace97ba794d50f38",
+    "normalized_sha256": "cd885ab6d6dbf4e3e45d6c001af912375d5cab08f6dbfaa2087b8ac3991aa0b0"
+  },
+  {
+    "path": "full_stack_lab/gateway/app/agent_static/console-state.mjs",
+    "sha256": "561d4b9d428759003ab35bac84516ed2d93b77eb88950cb947ccc8ebe40fdb34",
+    "normalized_sha256": "561d4b9d428759003ab35bac84516ed2d93b77eb88950cb947ccc8ebe40fdb34"
+  }
+]

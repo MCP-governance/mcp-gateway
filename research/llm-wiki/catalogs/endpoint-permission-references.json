@@ -1,0 +1,639 @@
+[
+  {
+    "id": "APPARMOR-EXEC-POLICY",
+    "title": "AppArmor Technical Documentation and apparmor.d(5)",
+    "url": "https://gitlab.com/apparmor/apparmor/-/raw/apparmor-4.0/parser/techdoc.tex",
+    "related_official_document": "https://apparmor.net/man/3.0/apparmor.d/",
+    "version": "AppArmor upstream tag apparmor-4.0 technical documentation; related rendered manual 3.0",
+    "obtained": "2026-10-14",
+    "sha256": "f67fa88cc82ba46a689b8306016379d3f86bb9aa67791320e86507a38a544128",
+    "related_sha256": "af8d183b83ba7302a06e47555175044d68b33225ab4f27a4a63de1fbc8396470",
+    "original_files": [
+      ".task-local-20261014/reverse/permissions/apparmor-techdoc-apparmor-4.0.tex",
+      ".task-local-20261014/reverse/permissions/apparmor-3.0-man.html"
+    ],
+    "read_scope": [
+      "techdoc.tex:357-372 execution permissions ix/px/ux",
+      "techdoc.tex:754-775 securityfs loaded profile list and mode",
+      "apparmor.d(5):3625-3630 px behavior and environment warning",
+      "apparmor.d(5):618-647 transition/fallback semantics"
+    ],
+    "official_claim": [
+      "ix executes while inheriting the current profile; px requires a discrete target profile and forces a domain transition.",
+      "px does not scrub LD_PRELOAD-like environment variables; the secure Px variant scrubs environment.",
+      "The securityfs profiles interface reports loaded profile names and whether each is enforce or complain; it does not report a digest of the compiled active rule set.",
+      "Profiles without an attachment are not automatically applied and must be reached by an explicit transition (per upstream policy reference)."
+    ],
+    "application": "The generated endpoint profile uses px transitions for shell-to-client/client-entry/client-to-credential, ix for a small utility allowlist, and mrix for the Codex companion host. The generated C wrapper independently calls clearenv before exec. Health checks read /sys/kernel/security/apparmor/profiles and require expected names suffixed by (enforce). That proves visible loaded label/mode at check time, not content equivalence between /etc/apparmor.d source and the kernel's compiled active policy.",
+    "limitations": [
+      "AppArmor does not defend against hostile root or a privileged process able to replace policy/kernel state.",
+      "The securityfs list is a state signal, not a cryptographic policy fingerprint or proof that a particular PID is running under the intended label."
+    ],
+    "code_targets": [
+      {
+        "file": "endpoint-agent/enforce-linux.py",
+        "lines": "80-138",
+        "symbols": [
+          "profile",
+          "wrapper"
+        ],
+        "observation": "px/ix/mrix rules and separate environment clearing in native wrapper"
+      },
+      {
+        "file": "endpoint-agent/managed-linux.py",
+        "lines": "98-119",
+        "symbols": [
+          "checks"
+        ],
+        "observation": "name+enforce listing check; FILES configuration hashes do not include generated AppArmor policy or kernel policy contents"
+      }
+    ],
+    "category": "reverse",
+    "path": "analysis/local-tools/permissions-reverse.md",
+    "verification": "primary-source-and-code-review",
+    "verified_on": "2026-10-14",
+    "runtime_verified": false
+  },
+  {
+    "id": "NFT-SKUID-EGRESS",
+    "title": "nftables manual: UID socket metadata and output hooks",
+    "url": "https://netfilter.org/projects/nftables/manpage.html",
+    "version": "Upstream nftables manual, page states Updated 07/02/2026",
+    "obtained": "2026-10-14",
+    "sha256": "7d67d796be481dfe1d64ded4207fcff045cf3367c0a7ecc6da648e69b414cb5e",
+    "original_files": [
+      ".task-local-20261014/reverse/permissions/nftables-manpage-2026-07-02.html"
+    ],
+    "read_scope": [
+      "META EXPRESSIONS / Table 28: skuid is UID associated with originating socket",
+      "HOOKS: output handles packets sent by local processes",
+      "inet family supports IPv4/IPv6 at the same hook; ip/ip6 qualifiers",
+      "REJECT statement: terminating verdict in output hook"
+    ],
+    "official_claim": [
+      "meta skuid matches the UID associated with the originating socket.",
+      "Packets sent by local processes traverse the output hook.",
+      "The inet family supports IPv4 and IPv6 filtering; nft's UID metadata has type uid.",
+      "A reject statement in an output base chain is terminal for the matched packet."
+    ],
+    "application": "nft_rules emits one exact numeric UID match per approved literal IPv4 or IPv6 destination, TCP port(s), then a UID-scoped rate-limited log and reject. The table is inet/output. It does not currently generate a UID range. 127.0.0.1 and ::1 are ordinary literal destinations: they are denied by the final UID reject unless explicitly included in the trusted allowed address list. Managed policy can include addresses supplied by the Gateway, and the endpoint validator permits loopback Gateway URLs, so local Gateway use must be an explicit tested case rather than an assumed deny. This table scopes the ordinary client UID; the root managed service's own egress is not matched by that client UID rule.",
+    "limitations": [
+      "This is local process egress at the output hook, not an ingress/forward filter or application identity within a shared UID.",
+      "No nft command, packet, loopback route, UID range, or running kernel ruleset was exercised for this reference review.",
+      "The separately fetched Netfilter wiki quick-reference could not be preserved because its TLS certificate hostname did not validate; no claim in this report relies on it."
+    ],
+    "code_targets": [
+      {
+        "file": "endpoint-agent/enforce-linux.py",
+        "lines": "67-78",
+        "symbols": [
+          "nft_rules"
+        ],
+        "observation": "exact UID + family-qualified address + TCP ports, then UID-scoped reject"
+      },
+      {
+        "file": "endpoint-agent/enforce-linux.py",
+        "lines": "190-200",
+        "symbols": [
+          "main --self-check"
+        ],
+        "observation": "text generation assertions cover sample IPv4/IPv6 and ports but not UID ranges or loopback destinations"
+      },
+      {
+        "file": "endpoint-agent/managed-linux.py",
+        "lines": "98-119",
+        "symbols": [
+          "checks"
+        ],
+        "observation": "kernel nft JSON is normalized and compared to an installation baseline"
+      }
+    ],
+    "category": "reverse",
+    "path": "analysis/local-tools/permissions-reverse.md",
+    "verification": "primary-source-and-code-review",
+    "verified_on": "2026-10-14",
+    "runtime_verified": false
+  },
+  {
+    "id": "SYSTEMD-SERVICE-HARDENING",
+    "title": "systemd.exec(5): filesystem, privilege, temporary storage, and address-family sandbox controls",
+    "url": "https://github.com/systemd/systemd/blob/195a17c59b22f5b0fa626fdb4917107cdc281bac/man/systemd.exec.xml",
+    "version": "systemd upstream main source pinned at commit 195a17c59b22f5b0fa626fdb4917107cdc281bac",
+    "obtained": "2026-10-14",
+    "sha256": "10b21a8bd7ba789ac7e67dacad6e5a805ba9bc7ba80c264f5f0bd5afee524ffd",
+    "original_files": [
+      ".task-local-20261014/reverse/permissions/systemd.exec-195a17c59b22f5b0fa626fdb4917107cdc281bac.xml"
+    ],
+    "read_scope": [
+      "systemd.exec.xml:928-960 NoNewPrivileges",
+      "1497-1544 ProtectSystem/ProtectHome",
+      "1919 onward PrivateTmp",
+      "2452 onward RestrictAddressFamilies",
+      "filesystem path restrictions do not block AF_UNIX communication",
+      "address family restrictions do not constrain inherited sockets/socketpair/io_uring"
+    ],
+    "official_claim": [
+      "ProtectSystem=strict makes the filesystem hierarchy read-only except API filesystems; ReadWritePaths or managed directories can carve out writes, and the feature can be unavailable when the kernel/service manager lacks required namespacing.",
+      "ProtectHome=yes/read-only/tmpfs hides or restricts home directories; choose according to the service's required home access.",
+      "PrivateTmp gives a private /tmp and /var/tmp view.",
+      "NoNewPrivileges prevents the unit process tree from gaining privileges through execve (e.g. SUID/file capabilities); it does not control external IPC services invoked on request.",
+      "RestrictAddressFamilies is an allowlist for socket() calls; passed/inherited sockets, socketpair and io_uring sockets are caveats. AF_UNIX often remains necessary."
+    ],
+    "application": "The generated mcpgw-managed-<user>.service has no User=/Group= or sandbox directives; absent User=, a system service runs as root. It has Restart=always, RestartSec=10, UMask=0077. It reads the root-managed device config, writes observer/config state under /var/lib/mcpgw-managed, creates a runtime socket under /run, and spawns observers that inspect user configuration, so hardening requires explicit writable-path and narrow read-only home access design. NoNewPrivileges alone would not drop its root identity. The nft one-shot service is also a root system service but performs a narrow rule-load operation.",
+    "limitations": [
+      "systemd directives depend on systemd build, kernel features, mount namespace support, and unit context; unit text does not prove effective sandbox state.",
+      "RestrictAddressFamilies does not replace nftables and cannot block every socket already passed to a process.",
+      "The current root-service key custody and socket ownership architecture may need redesign before changing User=/Group=; no unit was edited."
+    ],
+    "code_targets": [
+      {
+        "file": "endpoint-agent/managed-linux.py",
+        "lines": "215-220",
+        "symbols": [
+          "install"
+        ],
+        "observation": "managed service unit has no User= or hardening properties"
+      },
+      {
+        "file": "endpoint-agent/managed-linux.py",
+        "lines": "226-252",
+        "symbols": [
+          "serve"
+        ],
+        "observation": "root check, root config read, Unix socket and observer setup"
+      },
+      {
+        "file": "endpoint-agent/enforce-linux.py",
+        "lines": "295-299",
+        "symbols": [
+          "main"
+        ],
+        "observation": "root nftables oneshot unit has no sandbox properties"
+      }
+    ],
+    "category": "reverse",
+    "path": "analysis/local-tools/permissions-reverse.md",
+    "verification": "primary-source-and-code-review",
+    "verified_on": "2026-10-14",
+    "runtime_verified": false
+  },
+  {
+    "id": "UNIX-SOCKET-PEER-CREDENTIALS",
+    "title": "Linux man-pages unix(7): pathname socket permissions and SO_PEERCRED",
+    "url": "https://github.com/mkerrisk/man-pages/blob/ae6b221882ce71ba82fcdbe02419a225111502f0/man7/unix.7",
+    "version": "Linux man-pages upstream repository, commit ae6b221882ce71ba82fcdbe02419a225111502f0",
+    "obtained": "2026-10-14",
+    "sha256": "b7f555f00c97f379b5d1debdf674e786b102dace392a4a72f4b7f07034750b09",
+    "original_files": [
+      ".task-local-20261014/reverse/permissions/unix.7-ae6b221882ce71ba82fcdbe02419a225111502f0"
+    ],
+    "read_scope": [
+      "unix.7:224-255 pathname socket ownership/permissions and umask",
+      "328-342 SO_PEERCRED semantics and supported connected AF_UNIX sockets"
+    ],
+    "official_claim": [
+      "Linux pathname sockets honor directory and socket-file permission checks; ownership/permissions follow normal rules and umask, although POSIX does not require all systems to honor socket file mode.",
+      "SO_PEERCRED on connected AF_UNIX stream sockets returns peer credentials that were in effect at connect/listen/socketpair time; it is a read-only peer-credential snapshot."
+    ],
+    "application": "The root service binds /run/mcpgw-<user>.sock, chowns it to the enrolled user's UID/GID, chmods it 0600, and checks the peer UID on each request before returning a cached Authorization header. The client helper connects through AF_UNIX stream. The server ignores peer PID and GID and does not inspect SO_PEERSEC/AppArmor label; AppArmor's managed profile separately restricts which confined client profile may use the Unix socket. Same-UID access is intentionally a shared principal, not per-process authentication.",
+    "limitations": [
+      "SO_PEERCRED proves a kernel-reported UID at connection time, not executable identity, profile, intent, or trustworthiness of every same-UID process.",
+      "Filesystem socket modes are Linux behavior; do not generalize this enforcement property to non-Linux platforms.",
+      "The documented check alone is not protection from root or from hostile processes running under the enrolled UID and permitted AppArmor label."
+    ],
+    "code_targets": [
+      {
+        "file": "endpoint-agent/managed-linux.py",
+        "lines": "226-247",
+        "symbols": [
+          "serve.Header.handle",
+          "serve"
+        ],
+        "observation": "SO_PEERCRED UID comparison, cached-token condition, root-created Unix stream socket chmod 0600"
+      },
+      {
+        "file": "endpoint-agent/managed-linux.py",
+        "lines": "343-350",
+        "symbols": [
+          "header"
+        ],
+        "observation": "helper connects to the pathname Unix socket and reads the response"
+      },
+      {
+        "file": "endpoint-agent/enforce-linux.py",
+        "lines": "104-138",
+        "symbols": [
+          "profile"
+        ],
+        "observation": "AppArmor-managed client-to-credential peer-label rule and socket-path allowance"
+      }
+    ],
+    "category": "reverse",
+    "path": "analysis/local-tools/permissions-reverse.md",
+    "verification": "primary-source-and-code-review",
+    "verified_on": "2026-10-14",
+    "runtime_verified": false
+  },
+  {
+    "id": "win-app-control-business",
+    "title": "App Control for Windows and feature availability",
+    "url": "https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/appcontrol",
+    "read_scope": "Microsoft Learn App Control article and feature availability table, read in full. The companion table covers OS support, editions, device-wide versus per-user scope, and enforceable file types.",
+    "sha256": "b91d41486180b0c391951e9b15860a2b291f6e86701235bcddaacf6bcf30d16f",
+    "snapshots": [
+      {
+        "url": "https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/appcontrol",
+        "path": ".task-local-20261014/data/permissions/app-control.html",
+        "sha256": "b91d41486180b0c391951e9b15860a2b291f6e86701235bcddaacf6bcf30d16f"
+      },
+      {
+        "url": "https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/feature-availability",
+        "path": ".task-local-20261014/data/permissions/app-control-feature-availability.html",
+        "sha256": "709fc3db9e528efdfab2060db104f7317b7fed18b065b4fc4137aac50d6014be"
+      }
+    ],
+    "official_claim": "Supported on Windows 10/11 and Windows Server 2016+. Policies are effective on all editions, though PowerShell management cmdlets are unavailable on Home. App Control policies are device-wide, not per-user. It can control executable, DLL, installer, and script files; Microsoft says it does not replace antivirus.",
+    "application": "P1 candidate: use organization-managed allow policies for approved binaries/scripts and report effective policy state. Consider adding a check in endpoint-agent/managed-windows.py checks() and the Windows check mapping in full_stack_lab/gateway/app/integrations.py. Do not have the kit silently author/deploy a machine policy.",
+    "limitations": "Device-wide scope cannot isolate an MCP or individual user. Bad policy can block business software or allow unintended code; audit, compatibility, rollback, and administrator/MDM/GPO deployment are required. App execution control is not data/network sandboxing or antivirus. No policy was installed or tested here.",
+    "code_targets": [
+      "endpoint-agent/managed-windows.py:319-331 checks()",
+      "endpoint-agent/managed-windows.py:476-534 install()",
+      "full_stack_lab/gateway/app/integrations.py: Windows managed-state mapping"
+    ],
+    "policy_privilege_os": "Windows 10/11, Server 2016+; all editions can enforce policies, but Home lacks PowerShell cmdlets. Deployment requires an administrator or organization management authority. No system policy was changed.",
+    "validation_needed": "Supported edition/build, effective state after reboot, audit-to-enforce, approved and denied harness/MCP binaries/scripts/DLLs, normal updates, rollback, policy tampering, actual MCP launch and event evidence.",
+    "category": "data",
+    "path": "analysis/local-tools/permissions-data.md",
+    "verification": "primary-source-and-code-review",
+    "verified_on": "2026-10-14",
+    "runtime_verified": false
+  },
+  {
+    "id": "win-applocker",
+    "title": "AppLocker overview and rule collections",
+    "url": "https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/applocker/applocker-overview",
+    "read_scope": "Microsoft Learn overview and rules articles, read in full: security strength, user/SYSTEM scope, administration, Application Identity service, audit mode, collections, DLL default and coverage.",
+    "sha256": "dca3e7a628d57b67ad4d6ddb1c06f9eedbd3020d0e07c61bd917f327ad6868ac",
+    "snapshots": [
+      {
+        "url": "https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/applocker/applocker-overview",
+        "path": ".task-local-20261014/data/permissions/applocker-overview.html",
+        "sha256": "dca3e7a628d57b67ad4d6ddb1c06f9eedbd3020d0e07c61bd917f327ad6868ac"
+      },
+      {
+        "url": "https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/applocker/working-with-applocker-rules",
+        "path": ".task-local-20261014/data/permissions/applocker-rules.html",
+        "sha256": "fa7bbb7a696cf89009a13080adedbdccb152b049b13c8e0f41d800e1b1e87346"
+      },
+      {
+        "url": "https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/feature-availability",
+        "path": ".task-local-20261014/data/permissions/app-control-feature-availability.html",
+        "sha256": "709fc3db9e528efdfab2060db104f7317b7fed18b065b4fc4137aac50d6014be"
+      }
+    ],
+    "official_claim": "AppLocker is available on Windows 8+. Windows 10 v2004+ with KB5024351 supports policies on all editions; older versions and Server 2019 have GP edition restrictions while MDM supports all editions. Per-user/group rules are available. EXE/PE, scripts, installers, packaged apps and DLL collections exist. DLL rules are off by default. Microsoft calls AppLocker defense-in-depth and recommends App Control for robust protection.",
+    "application": "P2 candidate: per-user rules could constrain approved companion-account tools. Examine policy/effective-state reporting in managed_user(), install(), and checks() in managed-windows.py. Include Application Identity service and script/DLL collection status.",
+    "limitations": "Not a standalone strong security boundary per Microsoft. DLL rules require coverage of every DLL loaded by allowed applications and can affect performance. Policy administration needs local admin or GPO rights and appidsvc. Not installed or tested on a real device.",
+    "code_targets": [
+      "endpoint-agent/managed-windows.py:429-440 managed_user()",
+      "endpoint-agent/managed-windows.py:476-534 install()",
+      "endpoint-agent/managed-windows.py:319-331 checks()",
+      "endpoint-agent/install-windows.ps1:37-43 RunLevel Limited task"
+    ],
+    "policy_privilege_os": "Windows 8+; target Windows 10 v2004+ with KB5024351 unless deployment tests establish another edition path. GP/MDM and older edition support differ. Requires admin or GPO/MDM authority and Application Identity service.",
+    "validation_needed": "Companion-user rules, script/EXE/DLL audit and enforcement, SYSTEM scope, renamed PE, runtime/package updates, DLL coverage/performance, event log and rollback on supported Windows.",
+    "category": "data",
+    "path": "analysis/local-tools/permissions-data.md",
+    "verification": "primary-source-and-code-review",
+    "verified_on": "2026-10-14",
+    "runtime_verified": false
+  },
+  {
+    "id": "win-firewall-wfp-sid-loopback",
+    "title": "Windows Firewall LocalUser SID, WFP ALE, and loopback scope",
+    "url": "https://learn.microsoft.com/en-us/powershell/module/netsecurity/new-netfirewallrule?view=windowsserver2025-ps",
+    "read_scope": "Microsoft Learn New-NetFirewallRule LocalUser, RemoteAddress and RemotePort sections; WFP ALE identity filtering; UWP loopback exception and WFP capture; loopback fast-path article.",
+    "sha256": "93f9736b88b79324d4f5d4e0fa42c6e28da2fda30165d759ee42fe78f438eaf9",
+    "snapshots": [
+      {
+        "url": "https://learn.microsoft.com/en-us/powershell/module/netsecurity/new-netfirewallrule?view=windowsserver2025-ps",
+        "path": ".task-local-20261014/data/permissions/new-netfirewallrule.html",
+        "sha256": "93f9736b88b79324d4f5d4e0fa42c6e28da2fda30165d759ee42fe78f438eaf9"
+      },
+      {
+        "url": "https://learn.microsoft.com/en-us/windows/win32/fwp/application-layer-enforcement--ale-",
+        "path": ".task-local-20261014/data/permissions/wfp-ale.html",
+        "sha256": "b731a0d6cb6738c97ae539d6a3e249083031055899cb4927f4b51024aff6ced2"
+      },
+      {
+        "url": "https://learn.microsoft.com/en-us/windows/security/operating-system-security/network-security/windows-firewall/troubleshooting-uwp-firewall",
+        "path": ".task-local-20261014/data/permissions/uwp-loopback.html",
+        "sha256": "db790b2109986b7cfa80b16aac89b5eecfd9295ab766895c2540b6efc8a9e9fe"
+      },
+      {
+        "url": "https://learn.microsoft.com/en-us/windows/win32/winsock/sio-loopback-fast-path",
+        "path": ".task-local-20261014/data/permissions/sio-loopback-fast-path.html",
+        "sha256": "f85c05de1fc78660733b35c5ac120095f1fe0f2cf73667907fbca202457e7384"
+      }
+    ],
+    "official_claim": "New-NetFirewallRule -LocalUser uses an SDDL SID principal and matches traffic authenticated as coming from or going to that principal; combine with RemoteAddress/RemotePort. WFP ALE authorizes connection creation/listen/raw socket and supports application/user identity filters. The UWP page describes loopback exemptions for packaged apps; it does not establish general native Win32 behavior.",
+    "application": "P1 evidence/code review: managed-windows.py:96-113 already sets account-SID egress rules against gateway addresses/ports; this is account scope, not application sandbox. checks() at 302-331 compares baseline but does not collect loopback/WFP outcomes. Limit README:65-75 and D-68:850-858 wording to the current kit's unverified behavior; validate real Windows before any OS-wide claim.",
+    "limitations": "LocalUser is not process-path-specific; admin/SYSTEM can change policy. UWP loopback docs do not prove general native Win32 behavior. ALE capability does not mean the kit configures or audits ALE. IPv4 ALE can miss true dual-IP sockets; inspect IPv6-mapped flows. Do not transfer Windows results to Linux/macOS.",
+    "code_targets": [
+      "endpoint-agent/managed-windows.py:96-125 firewall_rules()/APPLY_RULES",
+      "endpoint-agent/managed-windows.py:302-331 firewall_enforcing()/checks()",
+      "endpoint-agent/agent.py:555-575 network_findings()",
+      "endpoint-agent/README.md:65-75",
+      "docs/ai/DECISIONS.md:850-858"
+    ],
+    "policy_privilege_os": "Windows Firewall/NetSecurity/WFP; adding/changing machine rules requires elevation or enterprise policy authority. Exact kit build coverage not tested. No firewall change was made.",
+    "validation_needed": "On supported Windows: 127.0.0.1, ::1, mapped IPv4; ordinary Win32 versus UWP; same/different SID; gateway allow vs other target deny. Run netsh wfp capture during repro and correlate allow/drop appId, userId and filter; test VPN/proxy/interface and policy precedence.",
+    "category": "data",
+    "path": "analysis/local-tools/permissions-data.md",
+    "verification": "primary-source-and-code-review",
+    "verified_on": "2026-10-14",
+    "runtime_verified": false
+  },
+  {
+    "id": "win-restricted-token",
+    "title": "CreateRestrictedToken function",
+    "url": "https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-createrestrictedtoken",
+    "read_scope": "Microsoft Win32 API article, read in full: deny-only SID, privilege removal, restricting SID access checks, CreateProcessAsUser, desktop warning, requirements.",
+    "sha256": "aab060daa1fe21c712b1d9513a7a2b7325c4a12a1f8283bdeebc66a8ed5894fd",
+    "snapshots": [
+      {
+        "url": "https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-createrestrictedtoken",
+        "path": ".task-local-20261014/data/permissions/create-restricted-token.html",
+        "sha256": "aab060daa1fe21c712b1d9513a7a2b7325c4a12a1f8283bdeebc66a8ed5894fd"
+      }
+    ],
+    "official_claim": "The API can make SIDs deny-only, remove privileges and add restricting SIDs. Access requires both enabled-SID and restricting-SID checks to allow. CreateProcessAsUser can launch the restricted process. Microsoft warns to run it on a desktop other than the default desktop.",
+    "application": "P2 design candidate: a native launcher could start user-launched MCP/harness processes with reduced privileges/restricting SID and workspace-only ACLs. Current install-windows.ps1:37-43 RunLevel Limited configures a scheduled task; it is not a restricted MCP child token. managed-windows.py:345+ brokers a short-lived header, not process isolation.",
+    "limitations": "Not implemented/tested. A restricted token is not a complete sandbox; handle inheritance, object ACLs, UI desktop, child token inheritance, COM/brokered APIs and tool compatibility need tests. Requires a native process launcher and matching ACL changes.",
+    "code_targets": [
+      "endpoint-agent/install-windows.ps1:37-43 task principal/run level",
+      "endpoint-agent/managed-windows.py:345-420 serve_pipe()",
+      "endpoint-agent/managed-windows.py:476-534 install()"
+    ],
+    "policy_privilege_os": "Windows desktop API; docs list XP desktop/Server 2003 minimum, but any adopted work must target the kit's supported Windows 10/11 builds. Token/process rights and ACL setup required. No change made.",
+    "validation_needed": "Disposable Windows VM: inspect token groups/privileges; verify process creation, default desktop, profile/secrets write denial, allowed workspace access, child handles/tokens, registry/device/network use, real harness/MCP compatibility, fail-closed launch and recovery.",
+    "category": "data",
+    "path": "analysis/local-tools/permissions-data.md",
+    "verification": "primary-source-and-code-review",
+    "verified_on": "2026-10-14",
+    "runtime_verified": false
+  },
+  {
+    "id": "MCP-TRANSPORT-AND-TOOL-TRUST",
+    "title": "MCP Authorization 2026-07-28; Tools 2026-07-28; Security Best Practices 2026-07-28",
+    "organization": "Model Context Protocol / Linux Foundation",
+    "urls": [
+      "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization",
+      "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+      "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices"
+    ],
+    "version": "Fixed official documentation version 2026-07-28",
+    "license": "Protocol/specification reference; no executable package license asserted",
+    "obtained": "2026-10-14",
+    "sha256": {
+      "authorization_snapshot": "B4DD9BC6ABD5CF55DBCAD3823D1D8234E00E187ABC39AB49C412646C2AB57C7C",
+      "tools_snapshot": "51D7A3C6A8A6ED2963EAA3478E5C933FDDE89FCEB7468823A6A7DE438D6C4BAB",
+      "security_best_practices_snapshot": "5B0515A19557266E47A276D03D6E86D91618CD9827FEB6191DB7E627DD0B8E42"
+    },
+    "original_files": [
+      ".task-local-20261014/desktop/permissions/originals/mcp-authorization-2026-07-28.html",
+      ".task-local-20261014/desktop/permissions/originals/mcp-tools-2026-07-28.html",
+      ".task-local-20261014/desktop/permissions/originals/mcp-security-best-practices-2026-07-28.html"
+    ],
+    "read_scope": [
+      "Authorization: Purpose and Scope; Protocol Requirements; Scope Selection Strategy; canonical resource URI; bearer token requirements and audience/scope validation; HTTP 401/403 and insufficient-scope guidance.",
+      "Tools: User Interaction Model; tool definition annotations; statement that clients MUST treat tool annotations as untrusted unless from trusted servers; Security Considerations.",
+      "Security Best Practices: Local MCP Server Compromise; risks of arbitrary code under MCP-client privileges; recommends least-privilege sandboxing; says stdio limits access to MCP client and HTTP should use auth tokens or restricted IPC."
+    ],
+    "official_claim": [
+      "Authorization is optional. If an MCP implementation uses HTTP, it SHOULD follow the authorization specification; stdio implementations SHOULD NOT follow that HTTP OAuth flow and should instead obtain credentials from the environment.",
+      "For HTTP OAuth, the client sends a bearer token on each request; the MCP resource server validates that the token is intended for its resource/audience and enforces scope. A loopback address alone is not a bearer identity or per-tool permission model.",
+      "Tool annotations are descriptive metadata; clients MUST consider them untrusted unless the server is trusted. The tools page recommends user confirmation for sensitive tool operations.",
+      "The local-server security guide warns that a local server may access the user system and may be accessible to other local processes; it describes execution with the MCP client’s privileges and recommends sandboxing, least privilege, stdio or authenticated/restricted local IPC."
+    ],
+    "application": "For this kit, record transport and OS identity separately: `endpoint-agent/agent.py::describe` marks local configured command servers as stdio and hashes their command, while HTTP endpoints are represented by a redacted endpoint reference; `probe_mcp` sends only one initialize request to an HTTP candidate. These are inventory/probe functions, not a process sandbox or a per-tool authorization layer. Classify actual effects from the pinned server source and observed socket/process/filesystem reach, never from `readOnlyHint` or tool text alone. The Windows named-pipe broker has a per-enrolled-account DACL for header forwarding, but it is distinct from restricting an MCP server’s own process capabilities.",
+    "limitations": [
+      "The fixed protocol text defines requirements and recommendations but does not prove that a particular MCP client/server implements them.",
+      "The JSON-RPC stdio transport narrows which client speaks the protocol; it does not restrict the child process’s file, network, registry, or process privileges.",
+      "An OAuth resource/audience/scope check applies only where the HTTP MCP server implements it. It does not automatically mediate a desktop plugin’s separate raw loopback bridge."
+    ],
+    "code_targets": [
+      {
+        "file": "endpoint-agent/agent.py",
+        "lines": "222-244",
+        "symbols": [
+          "describe",
+          "command_digest"
+        ],
+        "observation": "Transport classification distinguishes configured HTTP from local stdio but does not show effective process containment or token/tool scope."
+      },
+      {
+        "file": "endpoint-agent/agent.py",
+        "lines": "452-470",
+        "symbols": [
+          "INITIALIZE",
+          "probe_mcp"
+        ],
+        "observation": "HTTP detector deliberately sends one initialize request; it is not a tools/list or tools/call authorization check."
+      },
+      {
+        "file": "endpoint-agent/managed-windows.py",
+        "lines": "343-377",
+        "symbols": [
+          "serve_pipe"
+        ],
+        "observation": "Named pipe DACL limits credential-header broker access to the enrolled account plus SYSTEM/owner; this is not the child MCP server sandbox."
+      }
+    ],
+    "category": "desktop",
+    "path": "analysis/local-tools/permissions-desktop.md",
+    "verification": "primary-source-and-code-review",
+    "verified_on": "2026-10-14",
+    "runtime_verified": false,
+    "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization"
+  },
+  {
+    "id": "PLAYWRIGHT-MCP-0.0.83-SECURITY-OPTIONS",
+    "title": "Microsoft Playwright MCP README and tool documentation",
+    "url": "https://github.com/microsoft/playwright-mcp/blob/b8b4183e099f136cbec0388a6088d4aa2f6b9685/README.md",
+    "version": "@playwright/mcp 0.0.83; upstream repository commit b8b4183e099f136cbec0388a6088d4aa2f6b9685",
+    "commit": "b8b4183e099f136cbec0388a6088d4aa2f6b9685",
+    "commit_date": "2026-10-08T10:51:55-07:00",
+    "license": "Apache-2.0",
+    "obtained": "2026-10-14",
+    "sha256": {
+      "pinned_checkout_readme": "15E4C95790E7B56685CCB2E558DAC19858CAC2BEC7C80AAB616ECE2892A317C6",
+      "task_local_download_snapshot": "B33AA71A13D655E96E6B736D0C9DE1E5DDEA52F205916CA20B876387FF830E87"
+    },
+    "original_files": [
+      ".task-local-20261014/desktop/sources/playwright-mcp/README.md",
+      ".task-local-20261014/desktop/permissions/originals/playwright-mcp-0.0.83-readme.md"
+    ],
+    "read_scope": [
+      "Pinned README lines 410-411: --allowed-origins is not a security boundary and does not constrain redirects; unrestricted file-access switch and default workspace-root/CWD restriction; file:// navigation default blocked.",
+      "Pinned README line 435 and session documentation around lines 464-489: isolated in-memory profile option and profile/session behavior.",
+      "Pinned README lines 1074-1080: browser_run_code_unsafe executes arbitrary JS in the Playwright MCP server process and is RCE-equivalent.",
+      "Pinned README tool table: browser navigation and UI actions; filesystem upload/drop; page JavaScript and network request metadata tools."
+    ],
+    "official_claim": [
+      "--allowed-origins is a browser-request filter, not a security boundary; redirects are not constrained by it.",
+      "By default, local file access is limited to workspace roots (or current working directory if no roots are configured), and file:// navigation is blocked; --allow-unrestricted-file-access removes that restriction.",
+      "--isolated keeps browser profile state in memory; it describes profile persistence, not a separate Windows identity or OS sandbox.",
+      "browser_run_code_unsafe executes arbitrary code in the MCP server process; page evaluation and upload/drop also create distinct page and host-file access surfaces."
+    ],
+    "application": "The validated Playwright runner uses stdio, headless Chromium, a task-local profile, and an exact random loopback origin in `run-playwright-mcp.mjs`. That verifies local fixture navigation/read only. It does not test redirects, arbitrary file access, browser_run_code_unsafe, or OS sandboxing. Keep unrestricted-file-access absent; deny file tools and unsafe-code tool at the client policy boundary unless explicitly needed; add a redirect-to-second-origin negative test to verify whether policy lives in the client/MCP route rather than assuming the origin option enforces it.",
+    "limitations": [
+      "The README documents intended CLI behavior but does not prove the current client’s tool allow/deny policy or Chromium’s runtime sandbox state.",
+      "Origin filters do not restrict direct API/network calls made by page code or the MCP process, and the documentation explicitly excludes redirect enforcement.",
+      "Headless mode and an in-memory profile are not an operating-system account, network, or filesystem sandbox."
+    ],
+    "code_targets": [
+      {
+        "file": "research/llm-wiki/experiments/local-tools/desktop/run-playwright-mcp.mjs",
+        "lines": "32-42",
+        "symbols": [
+          "localServer.listen",
+          "StdioClientTransport"
+        ],
+        "observation": "Runner binds its fixture to loopback and allows only its exact origin; this is test scope, not a policy boundary for all targets."
+      },
+      {
+        "file": "research/llm-wiki/analysis/local-tools/desktop.json",
+        "lines": "browser security entry",
+        "symbols": [
+          "browser_run_code_unsafe",
+          "browser_file_upload",
+          "browser_drop"
+        ],
+        "observation": "Tool effect inventory records execute/read/write/network capability per actual advertised schema."
+      }
+    ],
+    "category": "desktop",
+    "path": "analysis/local-tools/permissions-desktop.md",
+    "verification": "primary-source-and-code-review",
+    "verified_on": "2026-10-14",
+    "runtime_verified": false
+  },
+  {
+    "id": "CHROMIUM-PROCESS-SANDBOX",
+    "title": "Chromium: Unsandboxed Processes by Platform",
+    "url": "https://chromium.googlesource.com/chromium/src/+/f68f02e31715f9fd8b54fc45d46f94e1e56d2985/docs/security/process-sandboxes-by-platform.md",
+    "version": "Chromium source commit f68f02e31715f9fd8b54fc45d46f94e1e56d2985; document states table last updated for M128",
+    "commit": "f68f02e31715f9fd8b54fc45d46f94e1e56d2985",
+    "license": "Chromium source repository BSD-style license",
+    "obtained": "2026-10-14",
+    "sha256": "3312A97BDBC74F1C3872A9B01F867A75DAF2B446EF5ABF77934920FCFFE12BB0",
+    "original_files": [
+      ".task-local-20261014/desktop/permissions/originals/chromium-process-sandbox-f68f02e.md"
+    ],
+    "read_scope": [
+      "Lines 1-8 scope and statement that table tracks default Stable channel and is last updated for M128; lines 20-27 Browser/Network sandbox status; lines 41-44 renderer sandbox status."
+    ],
+    "official_claim": [
+      "The cited table marks the Browser process unsandboxed on all platforms and the Network process unsandboxed on Windows; it marks renderer, extensions, and PDF renderer processes sandboxed.",
+      "The source states that its process table was last updated for milestone 128; it is a process-boundary reference, not proof of sandbox status for the bundled Chromium 155.0.8059.12 runtime."
+    ],
+    "application": "Do not treat a sandboxed Chromium renderer as containment for the Playwright MCP Node server, Burp extension, Blender MCP process, or browser process. The task uses Windows; independently inspect runtime process flags/token/job/AppContainer state before claiming a Chromium OS boundary. The endpoint kit’s per-account egress firewall can reduce outbound network access, but its README explicitly notes loopback is not filtered and its Windows kit does not install App Control/AppLocker policies.",
+    "limitations": [
+      "The document’s process table is dated M128 despite a later source commit; the actual tested browser is Chromium 155.0.8059.12, so current runtime process sandbox state remains unverified.",
+      "This source describes Chromium child-process sandbox categories, not a guarantee about every browser process, Playwright MCP process, profile option, plugin, or desktop bridge.",
+      "No token, AppContainer, job-object, or browser command-line sandbox inspection was run in this read-only review."
+    ],
+    "code_targets": [
+      {
+        "file": "endpoint-agent/README.md",
+        "lines": "66-79",
+        "symbols": [
+          "Windows enforcement limitations"
+        ],
+        "observation": "Account-scoped egress/firewall and named-pipe controls are documented; loopback is not blocked and App Control/AppLocker is not installed."
+      },
+      {
+        "file": "endpoint-agent/agent.py",
+        "lines": "409-447",
+        "symbols": [
+          "stdio_processes"
+        ],
+        "observation": "Process inventory detects local stdio servers; detection is not containment."
+      },
+      {
+        "file": "research/llm-wiki/experiments/local-tools/desktop/run-playwright-mcp.mjs",
+        "lines": "34-42",
+        "symbols": [
+          "StdioClientTransport",
+          "PLAYWRIGHT_BROWSERS_PATH"
+        ],
+        "observation": "Node MCP child process shares launcher identity unless an OS boundary is separately configured."
+      }
+    ],
+    "category": "desktop",
+    "path": "analysis/local-tools/permissions-desktop.md",
+    "verification": "primary-source-and-code-review",
+    "verified_on": "2026-10-14",
+    "runtime_verified": false
+  },
+  {
+    "id": "BLENDER-5.2-SCRIPT-SECURITY",
+    "title": "Blender 5.2 LTS Manual: Scripting & Security",
+    "url": "https://docs.blender.org/manual/en/5.2/advanced/scripting/security.html",
+    "version": "Blender manual version 5.2 LTS; Blender application actually tested at 5.2.2 LTS",
+    "license": "CC BY-SA 4.0 documentation",
+    "obtained": "2026-10-14",
+    "sha256": "1A5935FB6AAEB2075AE55B756FFBEADB7DAA1D6B46670AA47C898245561652AE",
+    "original_files": [
+      ".task-local-20261014/desktop/permissions/originals/blender-security-5.2.html"
+    ],
+    "read_scope": [
+      "HTML section Scripting & Security and its Auto Execution / Manual Execution headings; `-Y` and `--disable-autoexec` option text."
+    ],
+    "official_claim": [
+      "Blender Python does not restrict what a script can do; only scripts from known and trusted sources should be run.",
+      "Automatic execution of scripts in blend files is disabled by default; registered text blocks and animation drivers are described as auto-execution paths.",
+      "Auto-run can be disabled by `-Y` or `--disable-autoexec`, but interactive/manual scripting such as the text editor remains an execution path."
+    ],
+    "application": "The tested Blender add-on bridge is a raw TCP listener observed at 127.0.0.1:9876 without authentication or Origin checks; its `execute_code` path reaches unrestricted Python `exec`. Blender’s autoexec default protects against auto-running embedded .blend scripts; it does not constrain explicit MCP/bridge Python execution. The current task-local launcher uses `--factory-startup` but omits `--disable-autoexec`; add that switch for any future validation that opens untrusted .blend files, while retaining the understanding that the MCP code tool remains arbitrary code execution with the process token’s permissions.",
+    "limitations": [
+      "The manual is guidance, not proof of the installed preference or process command-line flags; this report did not inspect or alter global Blender preferences.",
+      "The manual’s auto-execution control does not sandbox explicitly invoked add-on or MCP Python.",
+      "The observed loopback bridge had no per-caller authentication; loopback limits remote routability, not access by other local processes."
+    ],
+    "code_targets": [
+      {
+        "file": "research/llm-wiki/experiments/local-tools/desktop/start-blender.ps1",
+        "lines": "27-29",
+        "symbols": [
+          "Start-Process"
+        ],
+        "observation": "Portable Blender launches hidden with factory startup and the task profile; future untrusted-file runs should add `--disable-autoexec`."
+      },
+      {
+        "file": "research/llm-wiki/experiments/local-tools/desktop/run-blender-mcp.mjs",
+        "lines": "50-62",
+        "symbols": [
+          "execute_blender_code_synthetic_write"
+        ],
+        "observation": "Actual accepted call executed arbitrary Python to add a synthetic sphere and changed the scene from one mesh to two."
+      },
+      {
+        "file": "research/llm-wiki/analysis/local-tools/desktop.json",
+        "lines": "Blender bridge entry",
+        "symbols": [
+          "bridge.observed_bind",
+          "bridge.authentication",
+          "bridge.allowed_call_surface"
+        ],
+        "observation": "Observed address, missing auth/Origin checks, safe-mode route limit, and unrestricted socket command are recorded separately."
+      }
+    ],
+    "category": "desktop",
+    "path": "analysis/local-tools/permissions-desktop.md",
+    "verification": "primary-source-and-code-review",
+    "verified_on": "2026-10-14",
+    "runtime_verified": false
+  }
+]

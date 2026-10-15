@@ -1,0 +1,40 @@
+{
+ "window": [
+  "2026-10-14T06:47:31Z",
+  "2026-10-14T06:47:55Z"
+ ],
+ "receivers": {
+  "e13-git": {
+   "log_lines": 0,
+   "request_like_lines": 0,
+   "sample": []
+  },
+  "e13-dbhub": {
+   "log_lines": 0,
+   "request_like_lines": 0,
+   "sample": []
+  },
+  "e13-playwright": {
+   "log_lines": 0,
+   "request_like_lines": 0,
+   "sample": []
+  }
+ },
+ "os_events": 7,
+ "os_event_groups": [
+  {
+   "kind": "execution-denied",
+   "key": {
+    "operation": "exec",
+    "profile": "mcpgw-managed-pj1-claude"
+   },
+   "count": 7
+  }
+ ],
+ "ledger_rows": [],
+ "receiver_fixture": {
+  "git_head": "9fd12fcdffc80519c32a1c5fc13622f375d53366",
+  "git_status": "(clean)",
+  "sqlite_sha256": "bb1b0690a51806542736ffdf920808916eb0f31224d6a2d7ffe7471d73d69f2c"
+ }
+}

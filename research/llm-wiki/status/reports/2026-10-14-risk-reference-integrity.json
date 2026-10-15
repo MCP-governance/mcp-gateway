@@ -1,0 +1,26 @@
+{
+  "ok": true,
+  "references": [
+    {
+      "id": "REF-RISK-K8S-LEASE-135",
+      "verified_sha256": "7fa57a4d60ec84df968e3d79ae59797d5dbbce4d0b1a765c3c710745c1357df0",
+      "raw_url": "https://raw.githubusercontent.com/kubernetes/kubernetes/66452049f3d692768c39c797b21b793dce80314e/pkg/kubelet/util/nodelease.go"
+    },
+    {
+      "id": "REF-RISK-SPIRE-AGENT-1153",
+      "verified_sha256": "85f9f25eb1afee90dc10bbc551db6ba2755590a3426a13b483b39771a5d54201",
+      "raw_url": "https://raw.githubusercontent.com/spiffe/spire/2f7861ae3923caf1f57eb087fc2928d58c0fb1d2/doc/spire_agent.md"
+    },
+    {
+      "id": "REF-RISK-ETCD-TXN-367",
+      "verified_sha256": "c57117e8f4764667be927d862f4fb01fbf1faaf0f725bf2eecc3a523e12aacc6",
+      "raw_url": "https://raw.githubusercontent.com/etcd-io/etcd/e838ef116fc368b321ddf2e424167b15174fb80d/api/etcdserverpb/rpc.proto"
+    },
+    {
+      "id": "REF-RISK-POSTGRES-17-LOCKS",
+      "verified_sha256": "b0dafb2a3fd2d9204deb075ed2cb2d74b6496523bb5d4867a2f4a3d9758a6314",
+      "raw_url": "https://raw.githubusercontent.com/postgres/postgres/083ac033419f690758508e08c1736089384bbee8/doc/src/sgml/mvcc.sgml"
+    }
+  ],
+  "diff_check_exit": 0
+}

@@ -1,0 +1,17 @@
+{
+  "reviewed_at": "2026-10-14",
+  "read_mode": "docker exec sha256sum; read-only; product not modified",
+  "normalization": "local CRLF converted to LF only; raw Linux runtime hash",
+  "image_file_sha256": {
+    "agent_service_console.js": "6176f2b49684aa570c8917394dfc713a87239451fcb567ecace97ba794d50f38",
+    "system_metrics.py": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+    "agent_service.py": "9ef02f84670f2b2eb1ad728ed54b6869c4f2012cebc408a63805ed4aa676986b",
+    "endpoint_plane.py": "4745a3c2deb85d3df90b6e831207aef26b56c5901ddbcfc9b1796d4d049800f0",
+    "core.py": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+    "contract.py": "200a4567e87f95e0df63d855abbe244f01b7336ed4988daf4faf778f2eacd563"
+  },
+  "current_local_LF_mismatches": [
+    "console.js",
+    "core.py"
+  ]
+}

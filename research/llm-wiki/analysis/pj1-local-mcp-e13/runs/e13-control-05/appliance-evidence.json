@@ -1,0 +1,35 @@
+{
+ "window": [
+  "2026-10-14T06:47:55Z",
+  "2026-10-14T06:48:29Z"
+ ],
+ "receivers": {
+  "e13-git": {
+   "log_lines": 121,
+   "request_like_lines": 3,
+   "sample": [
+    "{\"level\":20,\"time\":1791960483731,\"env\":\"production\",\"version\":\"2.15.3\",\"pid\":1,\"requestId\":\"IB2J9-AI5ID\",\"timestamp\":\"2026-10-14T06:48:03.728Z\",\"operation\":\"ToolRegistry.registerAll\",\"msg\":\"tools/list handler installed (JSON Schema 2020-12 ",
+    "{\"level\":20,\"time\":1791960483732,\"env\":\"production\",\"version\":\"2.15.3\",\"pid\":1,\"requestId\":\"PD9K1-VHH5I\",\"timestamp\":\"2026-10-14T06:48:03.732Z\",\"operation\":\"SessionManager.createSession\",\"sessionId\":\"41a11588-9a59-40bd-bb75-c72d3ad2f436\",\"t",
+    "{\"level\":20,\"time\":1791960483732,\"env\":\"production\",\"version\":\"2.15.3\",\"pid\":1,\"transport\":\"http\",\"requestId\":\"R5NBN-9ARUY\",\"timestamp\":\"2026-10-14T06:32:38.374Z\",\"operation\":\"TransportManager.start\",\"component\":\"HttpTransportSetup\",\"sessio"
+   ]
+  },
+  "e13-dbhub": {
+   "log_lines": 0,
+   "request_like_lines": 0,
+   "sample": []
+  },
+  "e13-playwright": {
+   "log_lines": 0,
+   "request_like_lines": 0,
+   "sample": []
+  }
+ },
+ "os_events": 0,
+ "os_event_groups": [],
+ "ledger_rows": [],
+ "receiver_fixture": {
+  "git_head": "9fd12fcdffc80519c32a1c5fc13622f375d53366",
+  "git_status": "(clean)",
+  "sqlite_sha256": "bb1b0690a51806542736ffdf920808916eb0f31224d6a2d7ffe7471d73d69f2c"
+ }
+}

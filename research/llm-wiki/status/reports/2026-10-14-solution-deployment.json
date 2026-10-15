@@ -1,0 +1,223 @@
+{
+  "checked_at": "2026-10-14T13:36:32.380661+09:00",
+  "field_up_exit": 0,
+  "running_app_mismatches": [],
+  "running_endpoint_plane_sha256": "5383f864130acf6acabec0e78446a82372807c41e6709c5cd42b4a13b571de14",
+  "source_files": 46,
+  "/api/health": {
+    "status_code": 200,
+    "result": {
+      "status": "ok",
+      "build": {
+        "revision": "2e36095bf982ffab29ea81b6cdc24bdc435b184f+dirty",
+        "code_sha256": "6e2920c8a4922a3942a0ad8856050c70466308721c443756652a65ff9dd88f7d",
+        "pc_kit_sha256": null
+      },
+      "policy": {
+        "expected_sha256": "c0d204491c44cbfff601140de2410a05fdf82e7b247983774d3980f5fe3e5c6e",
+        "loaded_sha256": "c0d204491c44cbfff601140de2410a05fdf82e7b247983774d3980f5fe3e5c6e",
+        "expected_data_sha256": "b56dab45df9dd15075af79eccda8f4035b2b1b9667cba47756aba28a359fda64",
+        "loaded_data_sha256": "b56dab45df9dd15075af79eccda8f4035b2b1b9667cba47756aba28a359fda64",
+        "rules_match": true,
+        "data_match": true,
+        "matches": true,
+        "capabilities_sha256": "8d5ae06a530da6885814ec44012467c201d21d997d32066d6c176612bf82b305"
+      }
+    }
+  },
+  "/api/readiness": {
+    "status_code": 200,
+    "result": {
+      "status": "ready",
+      "build": {
+        "console": {
+          "revision": "2e36095bf982ffab29ea81b6cdc24bdc435b184f+dirty",
+          "code_sha256": "6e2920c8a4922a3942a0ad8856050c70466308721c443756652a65ff9dd88f7d",
+          "pc_kit_sha256": "444f942d2ab5d8b3262ffbb4175de08f931ffcde49ccca5cf510811088880f78"
+        },
+        "gateway": {
+          "revision": "2e36095bf982ffab29ea81b6cdc24bdc435b184f+dirty",
+          "code_sha256": "6e2920c8a4922a3942a0ad8856050c70466308721c443756652a65ff9dd88f7d",
+          "pc_kit_sha256": null
+        },
+        "consistent": true
+      },
+      "policy": {
+        "expected_sha256": "c0d204491c44cbfff601140de2410a05fdf82e7b247983774d3980f5fe3e5c6e",
+        "loaded_sha256": "c0d204491c44cbfff601140de2410a05fdf82e7b247983774d3980f5fe3e5c6e",
+        "expected_data_sha256": "b56dab45df9dd15075af79eccda8f4035b2b1b9667cba47756aba28a359fda64",
+        "loaded_data_sha256": "b56dab45df9dd15075af79eccda8f4035b2b1b9667cba47756aba28a359fda64",
+        "rules_match": true,
+        "data_match": true,
+        "matches": true,
+        "capabilities_sha256": "8d5ae06a530da6885814ec44012467c201d21d997d32066d6c176612bf82b305"
+      }
+    }
+  },
+  "/api/endpoint/devices": {
+    "status_code": 200,
+    "result": [
+      {
+        "endpoint_id": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+        "hostname": "pj1",
+        "local_username": "managed-pj1",
+        "managed_state": "active",
+        "heartbeat_at": "2026-10-14T04:36:22.704906+00:00",
+        "enforcement_checks": {
+          "nftables_active": true,
+          "ordinary_account": true,
+          "protected_configs": true,
+          "apparmor_enforcing": true
+        }
+      },
+      {
+        "endpoint_id": "managed-dfc72749-4dc4-4de2-ab17-c6bec38f0bef",
+        "hostname": "pj1",
+        "local_username": "managed-pj1",
+        "managed_state": "active",
+        "heartbeat_at": "2026-10-05T04:32:25.547713+00:00",
+        "enforcement_checks": {
+          "nftables_active": true,
+          "ordinary_account": true,
+          "protected_configs": true,
+          "apparmor_enforcing": true
+        }
+      },
+      {
+        "endpoint_id": "managed-aad752bd-3171-409a-8192-3912942dc660",
+        "hostname": "pj1",
+        "local_username": "managed-pj1",
+        "managed_state": "active",
+        "heartbeat_at": "2026-10-05T04:24:16.782242+00:00",
+        "enforcement_checks": {
+          "nftables_active": true,
+          "ordinary_account": true,
+          "protected_configs": true,
+          "apparmor_enforcing": true
+        }
+      },
+      {
+        "endpoint_id": "managed-0cec9ec1-c1c0-4864-a330-18fc5e6d5f8e",
+        "hostname": "pj1",
+        "local_username": "managed-pj1",
+        "managed_state": "active",
+        "heartbeat_at": "2026-10-05T04:17:18.161594+00:00",
+        "enforcement_checks": {
+          "nftables_active": true,
+          "ordinary_account": true,
+          "protected_configs": true,
+          "apparmor_enforcing": true
+        }
+      },
+      {
+        "endpoint_id": "managed-204dee27-2a87-41b0-8bdc-59b090016a42",
+        "hostname": "pj1",
+        "local_username": "managed-pj1",
+        "managed_state": "active",
+        "heartbeat_at": "2026-10-04T11:09:59.130167+00:00",
+        "enforcement_checks": {
+          "nftables_active": true,
+          "ordinary_account": true,
+          "protected_configs": true,
+          "apparmor_enforcing": true
+        }
+      },
+      {
+        "endpoint_id": "managed-b8a5a84a-c1df-437e-be46-7037960df8a3",
+        "hostname": "pj1",
+        "local_username": "managed-pj1",
+        "managed_state": "active",
+        "heartbeat_at": "2026-10-04T10:32:03.460233+00:00",
+        "enforcement_checks": {
+          "nftables_active": true,
+          "ordinary_account": true,
+          "protected_configs": true,
+          "apparmor_enforcing": true
+        }
+      },
+      {
+        "endpoint_id": "managed-3e50a38a-f8fc-4ecf-8d4e-a9dba00c980a",
+        "hostname": "pj1",
+        "local_username": "managed-pj1",
+        "managed_state": "pending",
+        "heartbeat_at": "2026-10-04T10:24:46.361790+00:00",
+        "enforcement_checks": {
+          "nftables_active": true,
+          "ordinary_account": true,
+          "protected_configs": true,
+          "apparmor_enforcing": true
+        }
+      },
+      {
+        "endpoint_id": "managed-1d77e97b-1000-47ca-8de5-024e91c2c0ee",
+        "hostname": "pj1",
+        "local_username": "managed-pj1",
+        "managed_state": "active",
+        "heartbeat_at": "2026-10-04T10:19:31.085205+00:00",
+        "enforcement_checks": {
+          "nftables_active": true,
+          "ordinary_account": true,
+          "protected_configs": true,
+          "apparmor_enforcing": true
+        }
+      },
+      {
+        "endpoint_id": "managed-91177eac-bbeb-46e9-a35c-22766e4b4329",
+        "hostname": "pj1",
+        "local_username": "managed-pj1",
+        "managed_state": "active",
+        "heartbeat_at": "2026-10-04T08:40:02.298140+00:00",
+        "enforcement_checks": {
+          "nftables_active": true,
+          "ordinary_account": true,
+          "protected_configs": true,
+          "apparmor_enforcing": true
+        }
+      },
+      {
+        "endpoint_id": "managed-b599e11d-b433-4a4c-bed1-b834bdc58c1a",
+        "hostname": "pj1",
+        "local_username": "managed-pj1",
+        "managed_state": "active",
+        "heartbeat_at": "2026-10-04T08:26:21.357338+00:00",
+        "enforcement_checks": {
+          "nftables_active": true,
+          "ordinary_account": true,
+          "protected_configs": true,
+          "apparmor_enforcing": true
+        }
+      },
+      {
+        "endpoint_id": "managed-0e956f95-6222-4224-8071-cfc4cae5cdf2",
+        "hostname": "pj1",
+        "local_username": "managed-pj1",
+        "managed_state": "active",
+        "heartbeat_at": "2026-10-01T08:54:44.635457+00:00",
+        "enforcement_checks": {
+          "nftables_active": true,
+          "ordinary_account": true,
+          "protected_configs": true,
+          "apparmor_enforcing": true
+        }
+      },
+      {
+        "endpoint_id": "managed-e7e40b22-ea02-4699-9139-113ebfa09b45",
+        "hostname": "pj1",
+        "local_username": "managed-pj1",
+        "managed_state": "active",
+        "heartbeat_at": "2026-10-01T08:35:04.308024+00:00",
+        "enforcement_checks": {
+          "nftables_active": true,
+          "ordinary_account": true,
+          "protected_configs": true,
+          "apparmor_enforcing": true
+        }
+      }
+    ]
+  },
+  "download_kit_source": {
+    "managed-linux.py": "817b69289cdef06d5239028ce7f41260ac13fb0696c2af3abebb1c56b1859478",
+    "managed-windows.py": "1bfca191471207bb7c691674adc6da579a68d1c9aac1e9a34875a7d6f512da73",
+    "agent.py": "cd52ed5dc41699aa2d63d54171c1639a91d94a50162b80ba049fd747ac0f89dc"
+  }
+}

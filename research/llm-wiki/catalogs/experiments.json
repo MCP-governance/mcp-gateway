@@ -13,7 +13,9 @@
     "prerequisites": [
       "preflight.md의 실제 배포·정책·관리형 조건 충족",
       "employee r 권한, 승인 계약, public fixture 존재",
-      "최근 상한·중복·차단 누적·shadow 표지 없음; 다른 우선 정책 없음"
+      "최근 상한·중복·차단 누적·shadow 표지 없음; 다른 우선 정책 없음",
+      "실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정",
+      "독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지"
     ],
     "steps": [
       "실제 하네스에 지정 fixture를 읽으라는 자연어 지시를 한 번 입력",
@@ -41,14 +43,18 @@
       "fresh 하네스의 원본 tool-call 이벤트와 모델·하네스 버전",
       "Gateway decision ID와 request/trace ID, policy_id, principal",
       "upstream_attempted/upstream_executed 및 upstream 수신 로그",
-      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash"
+      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash",
+      "실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그"
     ],
     "source_paths": [
       "full_stack_lab/tests/plane_cases_lab.json",
       "full_stack_lab/opa/policy.rego"
     ],
     "executed_on": null,
-    "result": null
+    "result": null,
+    "target_id": "MCP-FILESYSTEM",
+    "self_written_mcp": false,
+    "plan_revision": "2026-10-13-real-commercial-oss-only"
   },
   {
     "id": "E02",
@@ -64,7 +70,9 @@
     "prerequisites": [
       "employee important r 권한과 승인된 fixture",
       "fresh 주체로 volume/chain/anomaly 정책이 먼저 적용되지 않음",
-      "Presidio 실제 활성·건강 상태 확인; fixture의 개인정보 위치 기록"
+      "Presidio 실제 활성·건강 상태 확인; fixture의 개인정보 위치 기록",
+      "실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정",
+      "독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지"
     ],
     "steps": [
       "실제 하네스로 fixture를 읽는다",
@@ -92,7 +100,8 @@
       "fresh 하네스의 원본 tool-call 이벤트와 모델·하네스 버전",
       "Gateway decision ID와 request/trace ID, policy_id, principal",
       "upstream_attempted/upstream_executed 및 upstream 수신 로그",
-      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash"
+      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash",
+      "실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그"
     ],
     "source_paths": [
       "full_stack_lab/tests/plane_cases_lab.json",
@@ -100,7 +109,10 @@
       "full_stack_lab/opa/policy.rego"
     ],
     "executed_on": null,
-    "result": null
+    "result": null,
+    "target_id": "MCP-FILESYSTEM",
+    "self_written_mcp": false,
+    "plan_revision": "2026-10-13-real-commercial-oss-only"
   },
   {
     "id": "E03",
@@ -116,7 +128,9 @@
     "prerequisites": [
       "합성 입력 전용 mail sink와 외부 수신자 분류",
       "fresh 주체·일반 메일 쓰기 허용; 다른 차단 선행 없음",
-      "현재 schema의 account_name/recipients/body 확인"
+      "현재 schema의 account_name/recipients/body 확인",
+      "실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정",
+      "독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지"
     ],
     "steps": [
       "하네스에 시험 수신자·합성 내용의 메일 전송을 지시",
@@ -149,14 +163,18 @@
       "fresh 하네스의 원본 tool-call 이벤트와 모델·하네스 버전",
       "Gateway decision ID와 request/trace ID, policy_id, principal",
       "upstream_attempted/upstream_executed 및 upstream 수신 로그",
-      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash"
+      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash",
+      "실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그"
     ],
     "source_paths": [
       "full_stack_lab/tests/plane_cases_lab.json",
       "full_stack_lab/tests/adversarial_check.py"
     ],
     "executed_on": null,
-    "result": null
+    "result": null,
+    "target_id": "MCP-EMAIL",
+    "self_written_mcp": false,
+    "plan_revision": "2026-10-13-real-commercial-oss-only"
   },
   {
     "id": "E04",
@@ -172,7 +190,9 @@
     "prerequisites": [
       "내부 시험 mail sink·일반 메일 쓰기 권한",
       "본문은 시험 데이터로 제공; 실제 작업 지시로 취급하지 않음",
-      "기존 승인 grant 없음·fresh 주체"
+      "기존 승인 grant 없음·fresh 주체",
+      "실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정",
+      "독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지"
     ],
     "steps": [
       "비신뢰 본문 문자열을 원문으로 메일에 넣으라는 시험 지시",
@@ -205,14 +225,18 @@
       "fresh 하네스의 원본 tool-call 이벤트와 모델·하네스 버전",
       "Gateway decision ID와 request/trace ID, policy_id, principal",
       "upstream_attempted/upstream_executed 및 upstream 수신 로그",
-      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash"
+      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash",
+      "실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그"
     ],
     "source_paths": [
       "full_stack_lab/tests/adversarial_check.py",
       "full_stack_lab/opa/policy.rego"
     ],
     "executed_on": null,
-    "result": null
+    "result": null,
+    "target_id": "MCP-EMAIL",
+    "self_written_mcp": false,
+    "plan_revision": "2026-10-13-real-commercial-oss-only"
   },
   {
     "id": "E05",
@@ -228,7 +252,9 @@
     "prerequisites": [
       "외부 fetch 기준선 E01과 별도 정상 fetch가 가능",
       "전용 시험 서버·fresh 주체; 주소 표기는 데이터",
-      "내부 접근 성공을 목표로 네트워크 변경하지 않음"
+      "내부 접근 성공을 목표로 네트워크 변경하지 않음",
+      "실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정",
+      "독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지"
     ],
     "steps": [
       "자연어 지시로 해당 URL fetch를 한 번 요청",
@@ -256,14 +282,18 @@
       "fresh 하네스의 원본 tool-call 이벤트와 모델·하네스 버전",
       "Gateway decision ID와 request/trace ID, policy_id, principal",
       "upstream_attempted/upstream_executed 및 upstream 수신 로그",
-      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash"
+      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash",
+      "실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그"
     ],
     "source_paths": [
       "full_stack_lab/tests/adversarial_check.py",
       "full_stack_lab/gateway/app/classify.py"
     ],
     "executed_on": null,
-    "result": null
+    "result": null,
+    "target_id": "MCP-FETCH",
+    "self_written_mcp": false,
+    "plan_revision": "2026-10-13-real-commercial-oss-only"
   },
   {
     "id": "E06",
@@ -279,7 +309,9 @@
     "prerequisites": [
       "현재 승인 schema에서 path 필수 확인",
       "실제 관리형 identity와 같은 endpoint에 연결한 프로토콜 시험",
-      "모델이 인자를 보정할 수 있어 이 카드는 protocol 시험으로 구분"
+      "모델이 인자를 보정할 수 있어 이 카드는 protocol 시험으로 구분",
+      "실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정",
+      "독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지"
     ],
     "steps": [
       "Inspector/기존 protocol client로 initialize·tools/list 수행",
@@ -305,7 +337,8 @@
       "fresh 하네스의 원본 tool-call 이벤트와 모델·하네스 버전",
       "Gateway decision ID와 request/trace ID, policy_id, principal",
       "upstream_attempted/upstream_executed 및 upstream 수신 로그",
-      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash"
+      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash",
+      "실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그"
     ],
     "source_paths": [
       "full_stack_lab/gateway/app/core.py",
@@ -313,7 +346,10 @@
     ],
     "executed_on": null,
     "result": null,
-    "execution_layer": "protocol_not_model"
+    "execution_layer": "protocol_not_model",
+    "target_id": "MCP-FILESYSTEM",
+    "self_written_mcp": false,
+    "plan_revision": "2026-10-13-real-commercial-oss-only"
   },
   {
     "id": "E07",
@@ -325,24 +361,27 @@
     "summary": "승인된 도구 설명 또는 schema가 바뀌면 실제 실행을 막는다.",
     "path": "experiments/E07-contract-drift.md",
     "status": "not_run",
-    "readiness": "isolated_fixture_needed",
+    "readiness": "official_github_test_instance_needed",
     "prerequisites": [
-      "전용 mock MCP·echo r/public 분류·schema를 사람이 승인",
       "원본 description/schema hash와 계약 lock 기록",
-      "mock에서 description만 변경; lock 자동 승인/갱신 금지"
+      "실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정",
+      "독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지",
+      "공식 GitHub MCP의 전용 자기 소유 시험 repo/인스턴스·read-only toolsets",
+      "공식 toolset/description override 설정으로 A→B→A 변경; MCP 소스 수정 금지"
     ],
     "steps": [
-      "변경 전 정상 호출로 기준선 확보",
-      "A: 도구 설명 변경 후 catalog 관찰 상태만 갱신하고 같은 인자로 실제 하네스 호출; 승인 lock은 유지",
-      "A 기대 MCP-CATALOG-001 확인 후 mock·관찰 상태 원복",
-      "B: 다음 실행 직전 discovery에만 변경을 노출해 dispatch 재검증에서 차단; P-CONTROL-FAIL-CLOSED 확인",
-      "각 단계 변경 hash, 원장 ID 및 tools/call 수신 0을 따로 기록"
+      "repos toolset 정상군과 승인 hash를 기록",
+      "공식 toolset repos→issues 또는 description override로 계약 변경; lock 유지",
+      "catalog refresh 전/후 실제 하네스 호출을 나눠 각 policy_id·도구 미수신 확인",
+      "A 설정으로 복귀 후 최신 관찰·재승인 내용 A 확인; 시험 인스턴스만 복구"
     ],
     "input": {
-      "server": "wiki-fixture",
-      "tool": "echo",
+      "server": "github-contract-test",
+      "tool": "list_commits",
       "arguments": {
-        "run_id": "E07-synthetic"
+        "owner": "test-owner",
+        "repo": "test-repo",
+        "perPage": 1
       }
     },
     "expected": {
@@ -361,15 +400,15 @@
       "effect": "tools/list 재관찰은 가능하나 tools/call 실행 수신 0"
     },
     "cleanup": [
-      "mock의 원본 계약 복원·hash 대조; 전용 등록만 제거",
-      "공유 contracts.lock.json이나 타 이용 관계의 승인 변경 금지"
+      "공식 서버의 원래 toolset/override 설정과 hash 복원; 전용 등록만 정리"
     ],
     "evidence": [
       "fresh 하네스의 원본 tool-call 이벤트와 모델·하네스 버전",
       "Gateway decision ID와 request/trace ID, policy_id, principal",
       "upstream_attempted/upstream_executed 및 upstream 수신 로그",
       "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash",
-      "catalog 사전 관찰과 dispatch 시점 재관찰을 구분한 시각·DB observed hash·승인 hash"
+      "catalog 사전 관찰과 dispatch 시점 재관찰을 구분한 시각·DB observed hash·승인 hash",
+      "실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그"
     ],
     "source_paths": [
       "full_stack_lab/tests/contracts_check.py",
@@ -377,7 +416,10 @@
       "full_stack_lab/opa/policy.rego"
     ],
     "executed_on": null,
-    "result": null
+    "result": null,
+    "target_id": "MCP-GITHUB-LOCAL",
+    "self_written_mcp": false,
+    "plan_revision": "2026-10-13-real-commercial-oss-only"
   },
   {
     "id": "E08",
@@ -393,18 +435,21 @@
     "prerequisites": [
       "솔루션 기기의 격리 시험 Gateway/PDP 경로 준비",
       "정상 echo r/public 계약·권한; production OPA 정지 금지",
-      "PDP timeout 또는 비정상 JSON을 test-only 경로에만 주입"
+      "PDP timeout 또는 비정상 JSON을 test-only 경로에만 주입",
+      "실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정",
+      "독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지"
     ],
     "steps": [
-      "장애 전 정상 호출 확인",
-      "정책 timeout과 비정상 JSON 두 조건을 각각 요청",
-      "오류를 숨긴 허용·무원장 통과가 없고 upstream 0 확인"
+      "실제 filesystem 정상 기준선 확인",
+      "전용 요청/격리 환경의 실제 OPA 통신에 Toxiproxy 장애·timeout 주입",
+      "P-CONTROL-FAIL-CLOSED와 filesystem 도구 수신0을 대조",
+      "전용 toxic 제거 후 정상군 복구"
     ],
     "input": {
-      "server": "wiki-fixture",
-      "tool": "echo",
+      "server": "filesystem",
+      "tool": "read_text_file",
       "arguments": {
-        "run_id": "E08-synthetic"
+        "path": "/shared/public/company-intro.md"
       }
     },
     "expected": {
@@ -415,21 +460,24 @@
       "effect": "OPA 장애 증거·tools/call 수신 0"
     },
     "cleanup": [
-      "finally로 시험 PDP 경로·설정 복원·정상 control call 확인",
-      "운영 서비스·다른 실험의 OPA를 멈추지 않는다"
+      "시험용 Toxiproxy toxic·전용 경로만 복구; 공유 OPA/기존 업무 서비스 중단 금지"
     ],
     "evidence": [
       "fresh 하네스의 원본 tool-call 이벤트와 모델·하네스 버전",
       "Gateway decision ID와 request/trace ID, policy_id, principal",
       "upstream_attempted/upstream_executed 및 upstream 수신 로그",
-      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash"
+      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash",
+      "실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그"
     ],
     "source_paths": [
       "full_stack_lab/gateway/app/core.py",
       "full_stack_lab/opa/policy_test.rego"
     ],
     "executed_on": null,
-    "result": null
+    "result": null,
+    "target_id": "MCP-FILESYSTEM",
+    "self_written_mcp": false,
+    "plan_revision": "2026-10-13-real-commercial-oss-only"
   },
   {
     "id": "E09",
@@ -445,7 +493,9 @@
     "prerequisites": [
       "승인된 github 등록의 allowed principal 목록 확인",
       "그 목록에 없는 전용 시험 계정과 실제 관리형 identity",
-      "고정 공개 시험 repo; 현재 tools/list와 schema 확인"
+      "고정 공개 시험 repo; 현재 tools/list와 schema 확인",
+      "실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정",
+      "독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지"
     ],
     "steps": [
       "각 계정이 별도 로그인한 fresh 실제 하네스에서 같은 읽기 요청",
@@ -479,14 +529,18 @@
       "fresh 하네스의 원본 tool-call 이벤트와 모델·하네스 버전",
       "Gateway decision ID와 request/trace ID, policy_id, principal",
       "upstream_attempted/upstream_executed 및 upstream 수신 로그",
-      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash"
+      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash",
+      "실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그"
     ],
     "source_paths": [
       "full_stack_lab/tests/plane_cases_field_other_identities.json",
       "full_stack_lab/tests/credential_binding_check.py"
     ],
     "executed_on": null,
-    "result": null
+    "result": null,
+    "target_id": "MCP-GITHUB-REMOTE",
+    "self_written_mcp": false,
+    "plan_revision": "2026-10-13-real-commercial-oss-only"
   },
   {
     "id": "E10",
@@ -498,24 +552,36 @@
     "summary": "첫 호출이 실행 중인 동안 동일 호출의 두 번째 부수효과를 차단한다.",
     "path": "experiments/E10-concurrent-duplicate.md",
     "status": "not_run",
-    "readiness": "delayed_fixture_needed",
+    "readiness": "real_gitea_repo_and_toxiproxy_needed",
     "prerequisites": [
-      "전용 mock slow_echo r/public 승인·2초 지연",
       "동일 검증 principal·서버·도구·인자, 일반 rate/concurrency 상한 미도달",
-      "두 호출이 겹쳤음을 시각·reservation으로 증명"
+      "두 호출이 겹쳤음을 시각·reservation으로 증명",
+      "실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정",
+      "독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지",
+      "실제1.7.0 tools/list로 issue_write 입력 필드 확인; 전용 쓰기 권한·공개 시험 repo 승인",
+      "고정 Gitea1.7.0 source issue_write 정의는 확인했으나 실제 tools/list·서버 인자·승인 hash를 별도 확정",
+      "전용 proxy와 run UUID를 사용해 latency upstream1000ms/jitter0/toxicity1로 준비; source/destination/원래 설정을 보존",
+      "pilot에서 첫 reservation 활성 뒤 중복 요청이 도착하고 첫 정상 호출이 timeout 없이 완료됨을 확인; 겹침 실패·초기화 오류는 시험 부적합"
     ],
     "steps": [
-      "실제 하네스 이벤트로 첫 도구 호출을 시작",
-      "첫 실행 완료 전 같은 주체의 protocol client로 동일 호출",
-      "각 원장 ID와 수신 count=1·예약 최종 상태 확인"
+      "무장애 정상군에서 같은 실제 Gitea 도구·principal·repo의 성공/수신/issue 효과를 확인하고 전용 시험 효과만 정리",
+      "Toxiproxy upstream latency를 한 쌍의 run 동안 적용하고 실제 하네스의 첫 issue 생성 요청·reservation·도구 전송 시각을 포착",
+      "첫 reservation 활성 상태에서 같은 principal·서버·도구·정규 인자의 두 번째 protocol 요청을 한 번 보내고 시각·IDs를 기록",
+      "첫 Allow/P-AUTHZ-ALLOW-001과 두 번째 Block/P-RATE-003, 독립 MCP 수신 기록과 Gitea API/UUID issue 생성1을 각각 대조",
+      "효과1이 실행1을 증명한다고 가정하지 않음; MCP 수신 증거가 없거나 다른 정책/timeout이 개입하면 미확인/실패로 기록",
+      "쓰기 자동 재시도 없이 finally 원복하고 toxic/proxy·시험 issue 상태와 정상 읽기 대조군 복구를 확인"
     ],
     "input": {
-      "server": "wiki-fixture",
-      "tool": "slow_echo",
-      "arguments": {
-        "run_id": "E10-synthetic",
-        "delay_ms": 2000
-      }
+      "server": "gitea-test",
+      "tool": "issue_write",
+      "arguments_template": {
+        "method": "create",
+        "owner": "test-owner",
+        "repo": "test-repo",
+        "title": "E10-unique-run-id",
+        "body": "public synthetic test data"
+      },
+      "schema_confirmation_required": true
     },
     "expected": {
       "first": {
@@ -530,17 +596,22 @@
         "upstream_attempted": false,
         "upstream_executed": false
       },
-      "effect": "동일 인자 tools/call 실제 수신 1"
+      "effect": "실제 도구 수신1과 전용 repo의 비멱등 issue 생성1; 각각 독립 확인"
     },
     "cleanup": [
-      "시험 mock만 제거; 종료되지 않은 reservation 있으면 원인·복구 기록",
-      "원장/예약을 수동 삭제해 통과시키지 않음"
+      "finally에서 run UUID로 만든 자기 proxy/toxic만 제거하고 원래 endpoint·설정·원래 연결 품질 확인",
+      "이번 run에서 생성한 자기 issue만 닫거나 전용 repo의 승인된 정리 절차 수행; 공유 repo/기존 issue/계정 건드리지 않음",
+      "원장/예약 수동 삭제와 쓰기 자동 재시도 금지; 첫 결과가 불명확하면 효과를 독립 조회하고 uncertain 상태로 보존"
     ],
     "evidence": [
       "fresh 하네스의 원본 tool-call 이벤트와 모델·하네스 버전",
       "Gateway decision ID와 request/trace ID, policy_id, principal",
       "upstream_attempted/upstream_executed 및 upstream 수신 로그",
-      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash"
+      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash",
+      "실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그",
+      "Toxiproxy version/image digest·proxy/toxic JSON 전후·방향·latency/jitter/toxicity·추가/제거 시각",
+      "동일 request fingerprint와 첫 reservation 활성/둘째 도착의 겹침 증거; MCP 수신·Gitea HTTP 쓰기·issue UUID는 별도 계수",
+      "source 정의의 입력 필드 확인과 실제 tools/list·계약 hash의 별도 캡처; 원복 뒤 정상군"
     ],
     "source_paths": [
       "full_stack_lab/opa/policy.rego",
@@ -549,7 +620,52 @@
     ],
     "executed_on": null,
     "result": null,
-    "execution_layer": "model_plus_protocol_concurrency"
+    "execution_layer": "model_plus_protocol_concurrency",
+    "target_id": "MCP-GITEA",
+    "self_written_mcp": false,
+    "plan_revision": "2026-10-13-real-commercial-oss-only",
+    "schema_source_evidence": {
+      "url": "https://gitea.com/gitea/gitea-mcp/raw/commit/bfe0d4c9b06e71a60d22b7ce81a55f01ee0157b0/operation/issue/issue.go",
+      "path": "analysis/evidence/packages/gitea-1.7.0/issue.go.raw.txt",
+      "sha256": "400e57535f3f78030aa5c44559e3b7c84fac4e27e9493b59cf4001f6aacbf343",
+      "verified_on": "2026-10-13",
+      "reading_scope": "selected issue_write definition lines66-85; dispatch120-127; create216-259; source-only, no server execution",
+      "license_evidence": {
+        "url": "https://gitea.com/gitea/gitea-mcp/raw/commit/bfe0d4c9b06e71a60d22b7ce81a55f01ee0157b0/LICENSE",
+        "path": "analysis/evidence/packages/gitea-1.7.0/LICENSE.txt",
+        "sha256": "caca43fdf8482475c4faedf93dcd21fbeb3359376d9560a08599e43b75455714",
+        "verified_on": "2026-10-13",
+        "reading_scope": "entire MIT license for the selected release-source commit"
+      },
+      "input_fields": [
+        "method=create",
+        "owner",
+        "repo",
+        "title",
+        "body"
+      ],
+      "runtime_confirmation_required": true
+    },
+    "fault_injection": {
+      "tool": "Shopify/toxiproxy",
+      "source_commit": "94adfebb88bb6db251dea8aea4b23513e6aad084",
+      "proxy_scope": "one dedicated gateway-to-Gitea-MCP test endpoint; no shared workload rerouting",
+      "toxic_type": "latency",
+      "stream": "upstream",
+      "latency_ms": 1000,
+      "jitter_ms": 0,
+      "toxicity": 1.0,
+      "timing_gate": "pilot must show first request reservation active before duplicate; client/server timeouts unchanged and first call must complete normally",
+      "lifetime": "one paired run; unique proxy/toxic name and run UUID; remove in finally and verify configuration restored",
+      "limitations": "default downstream affects responses only; chosen upstream delay is explicit and may affect initialization/discovery too; no claimed symmetric RTT or in-handler execution overlap",
+      "source_evidence": {
+        "url": "https://raw.githubusercontent.com/Shopify/toxiproxy/94adfebb88bb6db251dea8aea4b23513e6aad084/README.md",
+        "path": "analysis/evidence/packages/toxiproxy-reviewed-source/README.raw.txt",
+        "sha256": "53e28af38458b8afac21f1467981c5386130d24b74a03bbf12e9973d54c20a43",
+        "verified_on": "2026-10-13",
+        "reading_scope": "selected latency386-398, down400-404, bandwidth406-412, timeout422-430, reset_peer432-439; no installed service"
+      }
+    }
   },
   {
     "id": "E11",
@@ -565,7 +681,10 @@
     "prerequisites": [
       "전용 이용 관계와 시험 token·managed config target 등록",
       "서버·endpoint·provider-held credential 회수 대상 목록 작성",
-      "다른 사용자의 종료 케이스·자격을 건드리지 않음"
+      "다른 사용자의 종료 케이스·자격을 건드리지 않음",
+      "실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정",
+      "독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지",
+      "공식 Gitea MCP·전용 계정/repo/PAT·이용 관계·provider access evidence 준비"
     ],
     "steps": [
       "정상 기준선 후 전용 관계 종료 케이스 생성",
@@ -574,11 +693,9 @@
       "C1~C4 target별 충족과 전체 최소 등급·report 대조"
     ],
     "input": {
-      "server": "wiki-fixture",
-      "tool": "echo",
-      "arguments": {
-        "run_id": "E11-synthetic"
-      }
+      "server": "gitea-test",
+      "tool": "list_my_repos",
+      "arguments": {}
     },
     "expected": {
       "decision": "Block",
@@ -595,7 +712,8 @@
       "fresh 하네스의 원본 tool-call 이벤트와 모델·하네스 버전",
       "Gateway decision ID와 request/trace ID, policy_id, principal",
       "upstream_attempted/upstream_executed 및 upstream 수신 로그",
-      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash"
+      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash",
+      "실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그"
     ],
     "source_paths": [
       "full_stack_lab/tests/termination_flow.py",
@@ -603,7 +721,10 @@
       "full_stack_lab/opa/policy.rego"
     ],
     "executed_on": null,
-    "result": null
+    "result": null,
+    "target_id": "MCP-GITEA",
+    "self_written_mcp": false,
+    "plan_revision": "2026-10-13-real-commercial-oss-only"
   },
   {
     "id": "E12",
@@ -619,7 +740,9 @@
     "prerequisites": [
       "PJ1의 실제 설치 collector·커널 규칙·보호 설정·independent reviewer",
       "첫 상태 managed_state=active, 실제 hash/checks·fresh heartbeat",
-      "서비스 정지 시험은 해당 전용 identity만; max heartbeat age와 JWT 만료 비교"
+      "서비스 정지 시험은 해당 전용 identity만; max heartbeat age와 JWT 만료 비교",
+      "실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정",
+      "독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지"
     ],
     "steps": [
       "기존 managed_kernel_proof의 admission 순서를 실제 기기에 적용",
@@ -665,7 +788,8 @@
       "fresh 하네스의 원본 tool-call 이벤트와 모델·하네스 버전",
       "Gateway decision ID와 request/trace ID, policy_id, principal",
       "upstream_attempted/upstream_executed 및 upstream 수신 로그",
-      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash"
+      "부수효과 전후 비교와 원복 결과, 비밀 제거한 파일 hash",
+      "실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그"
     ],
     "source_paths": [
       "full_stack_lab/tests/managed_kernel_proof.py",
@@ -674,7 +798,10 @@
     "executed_on": null,
     "result": null,
     "execution_layer": "actual_device_protocol_admission",
-    "note": "HTTP 입구 거부라 tools/call 원장이 생기지 않을 수 있다. HTTP 정책 응답과 세션·upstream 0을 증거로 쓴다."
+    "note": "HTTP 입구 거부라 tools/call 원장이 생기지 않을 수 있다. HTTP 정책 응답과 세션·upstream 0을 증거로 쓴다.",
+    "target_id": "MCP-GITHUB-REMOTE",
+    "self_written_mcp": false,
+    "plan_revision": "2026-10-13-real-commercial-oss-only"
   },
   {
     "id": "E13",
@@ -691,7 +818,11 @@
       "PJ1의 fresh 실제 관리형 launcher·UID·AppArmor profile·설정 hash·active heartbeat 확인",
       "다운로드 없는 고정 stdio marker fixture와 IPv4/IPv6 localhost HTTP fixture 준비",
       "일반 계정 대조군에서 실제 수신·marker 효과를 먼저 확인",
-      "시험 identity 또는 기존 작업과 충돌하지 않는 전용 세션; root/admin 침해는 범위 밖"
+      "시험 identity 또는 기존 작업과 충돌하지 않는 전용 세션; root/admin 침해는 범위 밖",
+      "실제 공개 OSS/상용 MCP의 판본·라이선스·tools/list·승인 계약 고정",
+      "독립 수신/효과 증거와 정상/음성/경계·원복 조건을 기록; 미확인은 통과 금지",
+      "공식 filesystem 실제 고정 배포판을 일반 계정 대조군에 설치·hash 확인; 자체 MCP 작성 금지",
+      "localhost는 공식 mcp-proxy 뒤 같은 실제 filesystem을 사용"
     ],
     "steps": [
       "일반 계정 대조군의 정상 protocol·파일 효과를 기록하고 fixture 초기화",
@@ -706,7 +837,13 @@
         "loopback_ipv6",
         "unmanaged_control"
       ],
-      "fixture": "disposable-marker-only",
+      "package": "@modelcontextprotocol/server-filesystem@2026.8.31",
+      "tools": [
+        "read_text_file",
+        "write_file"
+      ],
+      "data": "public synthetic marker in disposable directory",
+      "http_bridge": "mcp-proxy==0.12.0",
       "managed_launcher_required": true,
       "expected_gateway_tool_ledger": false
     },
@@ -740,7 +877,8 @@
       "fresh 관리 하네스 버전·실제 도구 시도·설치 실행 파일 hash·UID/PID/profile",
       "엔드포인트 OS 거부 이벤트·collector 마지막 성공/실패와 시험 시각 상관관계",
       "stdio/localhost fixture의 독립 수신 로그·marker 전후 상태",
-      "승인 Gateway 정상 대조군의 request/trace·policy_id·attempted/executed 및 원복 결과"
+      "승인 Gateway 정상 대조군의 request/trace·policy_id·attempted/executed 및 원복 결과",
+      "실제 서버 package/image digest·provider 판본 및 독립 접속/효과 로그"
     ],
     "source_paths": [
       "endpoint-agent/enforce-linux.py",
@@ -749,6 +887,9 @@
       "full_stack_lab/mcp/run-server.sh"
     ],
     "executed_on": null,
-    "result": null
+    "result": null,
+    "target_id": "MCP-FILESYSTEM",
+    "self_written_mcp": false,
+    "plan_revision": "2026-10-13-real-commercial-oss-only"
   }
 ]

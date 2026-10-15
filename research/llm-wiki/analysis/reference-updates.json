@@ -1,0 +1,185 @@
+[
+  {
+    "id": "REF-J01",
+    "existing_catalog_id": null,
+    "title": "Model Context Protocol (MCP): Landscape, Security Threats, and Future Research Directions",
+    "doi": "10.1145/3796519",
+    "source_url": "https://doi.org/10.1145/3796519",
+    "publication_status": "journal_published",
+    "venue": "ACM Transactions on Software Engineering and Methodology",
+    "published_on": "2026-09-16",
+    "issue_or_version": "2026-10 issue (Crossref print 2026-10-31, future as of verification)",
+    "verified_on": "2026-10-13",
+    "license": "CC-BY-ND-4.0; full translation/modified redistribution not permitted by this license",
+    "reading_scope": "publisher metadata/Crossref verified; publisher-indexed selected lifecycle/security excerpts read; full publisher fetch 403; arXiv version kept separate",
+    "original_downloaded_in_this_task": false,
+    "fulltext_reproduced": false,
+    "metadata_evidence": {
+      "url": "https://api.crossref.org/works/10.1145%2F3796519",
+      "sha256": "bf52fb1367483bc5e07d3fc19a0ba384f25e153846318d2a916174f92e40e138",
+      "path": "analysis/evidence/references/REF-J01.crossref.json",
+      "verified_on": "2026-10-13",
+      "reading_scope": "publisher-deposited Crossref bibliographic metadata; not full paper text"
+    },
+    "adoption_status": "methodology_design_not_empirical_validation",
+    "methodology_adaptation": "도입·배치·운영·유지보수의활동별공급자/자산/신원/통제/증거/예외경로를요구사항으로나눠누락을찾는다. 종료·회수는우리추가요구로명시하고논문단계인것처럼재명명하지않는다.",
+    "experiment_ids": [
+      "E07",
+      "E11",
+      "E12",
+      "E13"
+    ],
+    "impact_factor": null,
+    "impact_factor_status": "not verified; no invented ranking",
+    "limitations": [
+      "selected reading is not full paper review or artifact replication",
+      "publication venue prestige is not product assurance/certification",
+      "publication/model/deployment dates preserved separately"
+    ],
+    "verification": "primary_metadata_and_selected_source_read"
+  },
+  {
+    "id": "REF-J02",
+    "existing_catalog_id": null,
+    "title": "Beyond the Protocol: Unveiling Attack Vectors in the Model Context Protocol (MCP) Ecosystem",
+    "doi": "10.1109/tse.2026.3694876",
+    "source_url": "https://ieeexplore.ieee.org/document/11528180/",
+    "publication_status": "journal_published",
+    "venue": "IEEE Transactions on Software Engineering",
+    "published_on": "2026-08",
+    "issue_or_version": "52(8)",
+    "verified_on": "2026-10-13",
+    "license": "IEEE VOR license; arXiv distribution license separate; no public fulltext copy",
+    "reading_scope": "publisher/Crossref metadata verified; IEEE body robot check; corresponding arXiv v4 abstract selected; journal body/version parity unverified",
+    "original_downloaded_in_this_task": false,
+    "fulltext_reproduced": false,
+    "metadata_evidence": {
+      "url": "https://api.crossref.org/works?query.title=Beyond%20the%20Protocol%20Unveiling%20Attack%20Vectors%20in%20the%20Model%20Context%20Protocol%20Ecosystem&rows=2",
+      "sha256": "4330ec604d45348f22155fe5f811c6f430ff2fd9550ddd45bbd820db48c1b957",
+      "path": "analysis/evidence/references/REF-J02.crossref.json",
+      "verified_on": "2026-10-13",
+      "reading_scope": "publisher-deposited Crossref bibliographic metadata; not full paper text"
+    },
+    "adoption_status": "methodology_design_not_empirical_validation",
+    "methodology_adaptation": "메타데이터변경·승인후변경·외부콘텐츠·로컬효과를분리하고실제OSS서버의공식설정및시험자원으로재현한다. 논문의악성MCP작성/공개market업로드방법은사용자지시와배포안전범위에맞지않아채택하지않는다.",
+    "experiment_ids": [
+      "E04",
+      "E07",
+      "E13"
+    ],
+    "impact_factor": null,
+    "impact_factor_status": "not verified; no invented ranking",
+    "limitations": [
+      "selected reading is not full paper review or artifact replication",
+      "publication venue prestige is not product assurance/certification",
+      "publication/model/deployment dates preserved separately"
+    ],
+    "verification": "primary_metadata_and_selected_source_read"
+  },
+  {
+    "id": "REF-J03",
+    "existing_catalog_id": null,
+    "title": "Bridging AI and software security: A comparative vulnerability assessment of LLM agent deployment paradigms",
+    "doi": "10.1016/j.ins.2026.123231",
+    "source_url": "https://www.sciencedirect.com/science/article/pii/S0020025526001623",
+    "publication_status": "journal_published",
+    "venue": "Information Sciences",
+    "published_on": "2026-06-05",
+    "issue_or_version": "740,123231",
+    "verified_on": "2026-10-13",
+    "license": "publisher restricted fulltext/TDM terms; no public fulltext copy",
+    "reading_scope": "publisher abstract/introduction/section snippets selected; Crossref metadata verified; methods fulltext inaccessible",
+    "original_downloaded_in_this_task": false,
+    "fulltext_reproduced": false,
+    "metadata_evidence": {
+      "url": "https://api.crossref.org/works/10.1016%2Fj.ins.2026.123231",
+      "sha256": "099c85f25aa1aad60644a6f681db29f184f7349709cd34ab5ee1c70e86be8422",
+      "path": "analysis/evidence/references/REF-J03.crossref.json",
+      "verified_on": "2026-10-13",
+      "reading_scope": "publisher-deposited Crossref bibliographic metadata; not full paper text"
+    },
+    "adoption_status": "methodology_design_not_empirical_validation",
+    "methodology_adaptation": "단일공격→한표면내복합공격→구성요소간연쇄공격을분리하여동일업무/모델/자격/OSS서버조건으로대조한다. 논문수치는우리제품의성공률로사용하지않는다.",
+    "experiment_ids": [
+      "E03",
+      "E04",
+      "E05",
+      "E06",
+      "E10"
+    ],
+    "impact_factor": null,
+    "impact_factor_status": "not verified; no invented ranking",
+    "limitations": [
+      "selected reading is not full paper review or artifact replication",
+      "publication venue prestige is not product assurance/certification",
+      "publication/model/deployment dates preserved separately"
+    ],
+    "verification": "primary_metadata_and_selected_source_read"
+  },
+  {
+    "id": "REF-C01",
+    "existing_catalog_id": "P60",
+    "title": "MCPTox: A Benchmark for Tool Poisoning on Real-World MCP Servers",
+    "doi": "10.1609/aaai.v40i42.40895",
+    "source_url": "https://ojs.aaai.org/index.php/AAAI/article/view/40895",
+    "publication_status": "conference_published",
+    "venue": "AAAI-26 Technical Track",
+    "published_on": "2026-03-14",
+    "issue_or_version": "40(42),35811–35819",
+    "verified_on": "2026-10-13",
+    "license": "AAAI republication permission required; existing original remains local-only",
+    "reading_scope": "existing wiki original/extract reused; current official publication page/abstract checked, no re-download",
+    "original_downloaded_in_this_task": false,
+    "fulltext_reproduced": false,
+    "metadata_evidence": null,
+    "adoption_status": "methodology_design_not_empirical_validation",
+    "methodology_adaptation": "실제서버/도구범주기반으로선별하고등록메타데이터의공격과실제도구호출/외부효과성공을분리한다. 모델별수치를우리제품수치로전이하지않고정상/공격pairedcase와정확한tool-schema/계약hash를기록한다.",
+    "experiment_ids": [
+      "E04",
+      "E07",
+      "E09"
+    ],
+    "impact_factor": null,
+    "impact_factor_status": "not verified; no invented ranking",
+    "limitations": [
+      "selected reading is not full paper review or artifact replication",
+      "publication venue prestige is not product assurance/certification",
+      "publication/model/deployment dates preserved separately"
+    ],
+    "verification": "primary_metadata_and_selected_source_read"
+  },
+  {
+    "id": "REF-P01",
+    "existing_catalog_id": "P47",
+    "title": "Real Faults in Model Context Protocol (MCP) Software: a Comprehensive Taxonomy",
+    "doi": "10.48550/arXiv.2603.05637",
+    "source_url": "https://arxiv.org/abs/2603.05637v2",
+    "publication_status": "preprint_venue_unconfirmed",
+    "venue": "arXiv cs.SE",
+    "published_on": "2026-03-05",
+    "issue_or_version": "v2 revised2026-08-03; author says following peer review, venue not verified",
+    "verified_on": "2026-10-13",
+    "license": "arXiv perpetual non-exclusive distribution; existing local-only original reused",
+    "reading_scope": "current arXiv v2 Sections3 and4.4 selected HTML read; Section6 heading present but body absent in available HTML; venue not inferred from author peer-review comment",
+    "original_downloaded_in_this_task": false,
+    "fulltext_reproduced": false,
+    "metadata_evidence": null,
+    "adoption_status": "methodology_design_not_empirical_validation",
+    "methodology_adaptation": "이슈label을그대로정답으로쓰지않고버전·증상·호출경로·원인·원복·독립검토를붙인다. 서버설정/도구설정/host연동/문서/일반프로그래밍분류를활용하되Python영문이슈표본선택편향을기록한다.",
+    "experiment_ids": [
+      "E06",
+      "E07",
+      "E08",
+      "E12"
+    ],
+    "impact_factor": null,
+    "impact_factor_status": "not verified; no invented ranking",
+    "limitations": [
+      "selected reading is not full paper review or artifact replication",
+      "publication venue prestige is not product assurance/certification",
+      "publication/model/deployment dates preserved separately",
+      "Python/English issue selection bias is grounded in Section3 sampling; Section6 body not reviewed"
+    ],
+    "verification": "primary_metadata_and_selected_source_read"
+  }
+]

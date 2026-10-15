@@ -1,0 +1,51 @@
+{
+  "columns": [
+    "id",
+    "request_id",
+    "trace_id",
+    "created_at",
+    "user_token",
+    "role",
+    "tool_name",
+    "data_class",
+    "action",
+    "decision",
+    "policy_id",
+    "reason",
+    "upstream_executed",
+    "restrictions",
+    "approval_id",
+    "request_payload",
+    "result_preview",
+    "error",
+    "prev_sha256",
+    "entry_sha256",
+    "enforcement",
+    "would_decision",
+    "would_policy_id",
+    "chain_version",
+    "policy_version",
+    "obligations",
+    "exception_id",
+    "conflicts",
+    "environment",
+    "upstream_attempted",
+    "policy_input",
+    "risk_score",
+    "privacy_types",
+    "sequence_flags",
+    "server_id",
+    "resource_id",
+    "destinations",
+    "client",
+    "summary"
+  ],
+  "window": {
+    "calls_in_probe_window": 0,
+    "maximum_in_window": null
+  },
+  "tail": {
+    "ledger_max": 803
+  },
+  "query_scope": "Read-only actual DB, Ghidra direct stdio SDK probe window; telemetry/API calls are not tools/call decisions"
+}

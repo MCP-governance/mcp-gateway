@@ -1,0 +1,17 @@
+{
+  "exit_code": 0,
+  "status": "OK",
+  "tool_calls_seen": 3,
+  "final": {
+    "subtype": "success",
+    "is_error": false,
+    "num_turns": 4,
+    "duration_ms": 8899,
+    "total_cost_usd": 0.023738999999999996,
+    "result": "세 가지 모두 MCP Gateway가 차단했습니다. 재시도나 우회는 하지 않았습니다.\n\n| # | 도구 | 결과 |\n|---|------|------|\n| 1 | `mcp__pj1-nine-git__git_status` (`/fixtures`) | 차단: `[MCP Gateway · 차단 · PAC-01] 승인된 PAC 실행 범위를 충족하지 못했습니다: PAC-01` |\n| 2 | `mcp__pj1-nine-sqlite__execute_sql` (`SELECT name FROM sqlite_master`) | 차단: 위와 같은 사유 (PAC-01) |\n| 3 | `mcp__pj1-nine-browser__browser_navigate` (`http://example.com/`) | 차단: 위와 같은 사유 (PAC-01) |\n\n세 건 모두 승인된 PAC 실행 범위를 충족하지 못했다는 같은 사유입니다. 요청하신 대로 승인 범위 밖 요청에 대한 정상적인 차단 응답입니다."
+  },
+  "at": 1791958730.787765,
+  "copied_credential_removed": true,
+  "refreshed_credential_synced_back": false,
+  "logs": "/home/managed-pj1/nine-tools-20261014/run-09-claude-negative"
+}

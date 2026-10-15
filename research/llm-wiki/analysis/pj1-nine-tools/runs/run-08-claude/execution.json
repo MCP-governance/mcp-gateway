@@ -1,0 +1,17 @@
+{
+  "exit_code": 0,
+  "status": "OK",
+  "tool_calls_seen": 9,
+  "final": {
+    "subtype": "success",
+    "is_error": false,
+    "num_turns": 10,
+    "duration_ms": 28290,
+    "total_cost_usd": 0.0591166,
+    "result": "9개 업무를 모두 한 번씩 수행했고, 거부나 실패는 없었습니다.\n\n1. **git_status**: 성공. 브랜치는 `master`이고 untracked 파일은 `notes.md` 하나였습니다.\n2. **git_log**: 성공. 커밋은 `216a1a1 fixture baseline` 하나뿐이었습니다. 요청한 3개보다 적습니다.\n3. **git_add**: 성공. `notes.md`만 stage했습니다.\n4. **git_commit**: 성공. 커밋 해시는 `d3c0aa7`이고 메시지는 \"test: PJ1 synthetic MCP harness\"입니다. 커밋 후 작업 트리는 clean입니다. 다만 GPG 서명 설정이 켜져 있었는데 gpg 실행 파일이 없어서 서명은 실패했고, 커밋은 서명 없이 만들어졌습니다.\n5. **search_objects**: 성공. table은 `demo_items` 하나였습니다.\n6. **execute_sql**: 성공. 반환된 행은 `1 alpha`, `2 beta` 두 개였습니다.\n7. **browser_navigate**: 성공. `http://pj1-nine-fixture:8080/index.html`로 이동했고 페이지 제목은 \"PJ1 Harness Fixture\"입니다.\n8. **browser_snapshot**: 성공. 제목은 heading \"PJ1 synthetic fixture\", 본문은 `marker-nine-20261014`입니다.\n9. **browser_evaluate**: 성공. 반환값은 `{title: \"PJ1 Harness Fixture\", text: \"PJ1 synthetic fixture\\n\\nmarker-nine-20261014\"}`입니다.\n\n7~9번 도구 출력에서 브라우저 콘솔 오류가 1건 보고되었습니다. 내용은 확인하지 않았습니다."
+  },
+  "at": 1791958643.5563824,
+  "copied_credential_removed": true,
+  "refreshed_credential_synced_back": false,
+  "logs": "/home/managed-pj1/nine-tools-20261014/run-08-claude"
+}

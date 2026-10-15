@@ -1,0 +1,16 @@
+{
+  "viewport_1280x900": {
+    "width": 1280,
+    "document_scroll_width": 1265
+  },
+  "default_narrow_width_observed": 304,
+  "all_rows": 40,
+  "goal_G06_rows": 4,
+  "search_last_success_rows": 1,
+  "complete_filter_rows": 0,
+  "empty_state": true,
+  "detail_opens": true,
+  "detail_close": true,
+  "browser_console_errors": 0,
+  "scope": "Actual in-app browser local preview; desktop and narrow responsive layout, filter/search/detail/empty states. Not product Console/API end-to-end verification."
+}

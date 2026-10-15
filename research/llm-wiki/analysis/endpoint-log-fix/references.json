@@ -1,0 +1,38 @@
+[
+  {
+    "title": "OpenTelemetry Collector resiliency",
+    "url": "https://opentelemetry.io/docs/collector/resiliency/",
+    "read_scope": "sending queue, persistent storage, loss circumstances, recommendations",
+    "finding": "Queue/retry and durable file storage are separate choices; timeout, capacity and disk limits can still lose data.",
+    "application": "Current Linux journal cursor advances only after event POSTs succeed; dedicated spool capacity/retention and prolonged outage are still unverified.",
+    "retrieved_on": "2026-10-14",
+    "verification": "official-page-content-read",
+    "legal_status": "technical guidance, not legal requirement",
+    "redistribution": "link and brief analysis only; original document not redistributed",
+    "installed_as_dependency": false
+  },
+  {
+    "title": "OpenTelemetry Collector internal telemetry",
+    "url": "https://opentelemetry.io/docs/collector/internal-telemetry/",
+    "read_scope": "Collector monitoring: queue length, receive failures, data flow",
+    "finding": "Collector own health, received data, exporter failure and queue state require separate observations.",
+    "application": "Inventory/process/network/os report separate state, server receive time, last-success and bounded count. Service active is not delivery success.",
+    "retrieved_on": "2026-10-14",
+    "verification": "official-page-content-read",
+    "legal_status": "technical guidance, not legal requirement",
+    "redistribution": "link and brief analysis only; original document not redistributed",
+    "installed_as_dependency": false
+  },
+  {
+    "title": "Fluent Bit 4.2 backpressure",
+    "url": "https://docs.fluentbit.io/manual/4.2/administration/backpressure",
+    "read_scope": "memory and filesystem buffering; input pause/resume; limits",
+    "finding": "Backpressure and input pause/resume depend on configured buffers and limits.",
+    "application": "A 500-item cap or partial scan must not mean full reconciliation. Source-scoped complete reports alone may remove unseen rows.",
+    "retrieved_on": "2026-10-14",
+    "verification": "official-page-content-read",
+    "legal_status": "technical guidance, not legal requirement",
+    "redistribution": "link and brief analysis only; original document not redistributed",
+    "installed_as_dependency": false
+  }
+]

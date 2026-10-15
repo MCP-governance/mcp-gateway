@@ -1,0 +1,12 @@
+{
+  "database_reset": true,
+  "database_name": "risk_scenarios_20261014",
+  "container": "mcpgw-risk-20261014-postgres",
+  "container_task_label": "mcpgw-risk-20261014",
+  "marker_count_before": 1,
+  "marker_absent_after": true,
+  "published_ports": false,
+  "product_mounts": false,
+  "pg_image": "sha256:c293117fcecda7344b5480222e813b9f673d7abd69b1dd95eff239b768b04f59",
+  "at": 1791954874.955832
+}

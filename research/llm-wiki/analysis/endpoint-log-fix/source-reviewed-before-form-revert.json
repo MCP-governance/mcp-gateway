@@ -1,0 +1,30 @@
+{
+  "at": 1791980124.5311553,
+  "branch": "10/14-endpoint-telemetry-fix",
+  "source_sha256": {
+    "endpoint-agent/agent.py": "cd4e4173238b15faac6d12ecb51189cadc1b4c75b2747ab228601ffa039fe35e",
+    "endpoint-agent/managed-linux.py": "acf548042686d3acf7cd397a203fd9d1a5553216d4f02565f51c8fef985b913d",
+    "endpoint-agent/os-observer.py": "97c2c65adad9925dfcd47d52fa6533bedac0e19dd31d08ce1ab3e288049597d8",
+    "endpoint-agent/managed-windows.py": "bb0d1d82e2f4725bd6ed5f75f0a216f7b0a27fcc4a073439bfbbcb1117af00da",
+    "endpoint-agent/os-observer-windows.py": "0fed6d3408f7f49cdf8d2fd576d28b3a2bbff99ee48c547f12d05c202822f829",
+    "full_stack_lab/gateway/app/main.py": "d96c071a2f531c96c39680b56370408c0154ba64bb1174df28c607c8d8e97346",
+    "full_stack_lab/gateway/app/endpoint_plane.py": "d2c6e333b9cdd72ad6561a6e3192ebeb16b3156192ab53906737f5073961c4ad",
+    "full_stack_lab/gateway/app/agent_service.py": "f0b526d23176acbffc889ff6f6077a12afbdd68fd84565a14c9738eb134e6fac",
+    "full_stack_lab/gateway/app/agent_static/console.js": "1c7a542ed9f17c0a78a25681d2e0b967ed47bc951a4b0613c2bc3ea225df0759",
+    "full_stack_lab/gateway/app/agent_static/console-state.mjs": "1b73cf230b06bea349525763590e9bd2ea0bb89759af29cf4b845f065e1a174b"
+  },
+  "prepared_sha256": {
+    "endpoint-agent/agent.py": "ce87ed33861295b66fa99520fd898eefca82df22cd9f0b912fb9a9625199f7d1",
+    "endpoint-agent/managed-linux.py": "2107a6431b2d35d18cf450678314b287dacd07beb0fb2af8cf7f168cf238fb18",
+    "endpoint-agent/os-observer.py": "93e91ba60df67631824d1607d6eef33557a58122d2dadc35ae890638292e5fa6",
+    "endpoint-agent/managed-windows.py": "0aa273e4c418379ba19a9473741b1c671e4ddd343e3459ab54a1ddffab797878",
+    "endpoint-agent/os-observer-windows.py": "0fed6d3408f7f49cdf8d2fd576d28b3a2bbff99ee48c547f12d05c202822f829",
+    "full_stack_lab/gateway/app/main.py": "4a2692d8337f6d2b5ac16a5f70ab8b1062a34c8cb6f58f1fa1a1b76e5c4b7584",
+    "full_stack_lab/gateway/app/endpoint_plane.py": "f0c516f945486ec92dc0eedb2ca3c8da6595d560a038e0aa10a7c5a24cddf7f3",
+    "full_stack_lab/gateway/app/agent_service.py": "5b5b36d2faff4e4e59e320f710152ede463fa773e9af3d2dc3dd06ab6e2afcf4",
+    "full_stack_lab/gateway/app/agent_static/console.js": "5c46a6632126e48dfb94aa698839e6e97a1ff87e10cf887ebd24fc44015d1601",
+    "full_stack_lab/gateway/app/agent_static/console-state.mjs": "c4030c37ed122f76980399867bf708f7dda5d0c05cccb0a1b2f3f1ef90f89ba2"
+  },
+  "deployment_evidence": "research/llm-wiki/analysis/endpoint-log-fix/deployment.json",
+  "scope": "Source-reviewed task paths; prepared main/console preserve remote unrelated activity and overview"
+}

@@ -1,5 +1,11 @@
 # 논문·프로토콜·보안 문서
 
+2026-10-13 [정식 저널3건·기존 학회/preprint 재검토](../analysis/reference-updates.json)와 [방법론](../methodology/evidence-methodology.md)을 추가했다. 저널의 서지·선별 내용 확인과 전문 정독을 구분하며 새3건의 전문은 확보하지 못했다.
+
+- [TOSEM MCP landscape](REF-J01.md)
+- [IEEE TSE Beyond the Protocol](REF-J02.md)
+- [Information Sciences 비교 취약점 연구](REF-J03.md)
+
 개발에 직접 필요한 공개 자료를 선별했다. 각 페이지는 원본·전체 추출 MD·이전 위키 provenance·SHA-256 경로로 이어진다. 재배포가 확인되지 않은 원본·전체 MD는 로컬 캐시에만 보존하며 공개 Git과 웹 본문에서 제외한다.
 
 보존 자료는 재현용 스냅숏이다. 요약의 적용 제안은 아직 검증되지 않은 개발 후보이며 현재 배포의 통제 증거를 대신하지 않는다.

@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "manual_telemetry_post": false,
+  "periodic_replay_confirmed": true,
+  "event_id": "24e05a888b764c4480e2e5734498973f:s=c869ce7c1b32474fa1fc9b94ca40a1d9;i=43f61;b=24e05a888b764c4480e2e5734498973f;m=6bdfa2156;t=65dcbcafd7062;x=8a1fc37f778a9df0",
+  "existing_row_id": 1388,
+  "rows_after": 1,
+  "received_at_unchanged": true,
+  "os_status": {
+    "state": "success",
+    "error_code": "",
+    "reported_at": "2026-10-14T12:24:42.029004+00:00",
+    "accepted_count": 1,
+    "last_success_at": "2026-10-14T12:24:42.029004+00:00"
+  }
+}

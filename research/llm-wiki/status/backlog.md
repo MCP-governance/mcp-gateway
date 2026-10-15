@@ -22,10 +22,25 @@
 | DEV-15 | 목적지 정책 데이터 실패 차단 | [회귀](../../../full_stack_lab/tests/security_edges_check.py) | None/결측/잘못된 타입은 거부, 명시적 빈 목록·허용 호스트 정상군 | 수정 전 잘못된 허용 재현, 수정 후 통과 |
 | DEV-16 | refresh 회전·계열 철회 경쟁 | [실기기 결과](reports/2026-10-13-development-results.md), [Claude 후보 B5](reports/2026-10-13-claude-code-review.md) | 동일 계열의 회전·발급·재사용/철회를 트랜잭션 안에서 직렬화, 실패 롤백 | 수정·단위7건·솔루션 실제 PostgreSQL3건·전체CI 통과 |
 | DEV-17 | 승인 후 신선한 요청자 인증 | [Claude 후보 B2](reports/2026-10-13-claude-code-review.md) | 만료 검증을 완화하지 않고 승인과 새 요청자의 실행을 연결, 현재 권한·철회 재검증 | 설계; 만료 토큰 거부는 유지 |
-| DEV-18 | 엔드포인트 수집 신선도·전체 집계 | [Claude 후보 B7](reports/2026-10-13-claude-code-review.md) | 최근 200건 목록과 전체 집계를 구분, 수집기 마지막 성공·실패·감사 경로 표시 | 목록·범례를 수신/최근 200건으로 수정; 전체 집계·수집 신선도는 후속 |
+| DEV-18 | 엔드포인트 수집 신선도·전체 집계 | [최신 수정](reports/2026-10-14-endpoint-telemetry-fix.md) | 최근200건/전체 집계 구분, 채널 last-success·실패·freshness·감사 경로 | 채널 상태·freshness·listener 상세 및 Linux 오류/복구 검증; 전체 누적집계·페이지 이동·장기 offline는 후속 |
 | DEV-19 | PJ1 로컬 stdio·loopback 우회 | [E13](../experiments/E13-local-bypass.md) | 관리형 실제 시도·UID/profile 거부·독립 수신/효과0와 승인 정상군; IPv4/IPv6 구분 | 전용 카드·통과/실패 기준 설계, 미실행 |
 | DEV-20 | MCP 서버의 외부 API 통신 | [Lunar 분석](../solutions/lunar-mcpx.md), [팀 시험 계획](reports/2026-10-13-mcp-validation-plan.md) | 서버 egress의 목적지·자격·재시도·허용/차단과 독립 외부 효과 연결 | 관측·집행 범위 설계, 미실행 |
 | DEV-21 | 크래시 실행 의도·불확실성 기록 | [CPEX 분석](../solutions/ibm-cpex.md), [팀 시험 계획](reports/2026-10-13-mcp-validation-plan.md) | dispatch 전 durable intent, worker 사망 시 uncertain 보존, 중복 쓰기 자동 재시도 금지와 효과 대조 | 설계, 미실행 |
 | DEV-22 | PJ1→솔루션 연결 품질 | [팀 시험 계획](reports/2026-10-13-mcp-validation-plan.md) | 고정 Gateway 대상의 endpoint 측정 ms·jitter·접속 실패율·신선도·권한, packet loss는 별도 실제 측정일 때만 표기 | 현재 내부 DNS/TCP 지표와 구분한 후속 설계 |
+| DEV-23 | 실제 로컬 앱·MCP 권한 경계 | [2026-10-14 결과](reports/2026-10-14-local-mcp-endpoint.md) | 공개MCP 설치·실제 schema·read/write 효과·권한 반례·위험표·원복 | 5개 설치/연결·92개 스키마·위험10건 완료; 도구 전부의 managed 실행·Burp UI 활성화·DBeaver GUI는 후속 |
+| DEV-24 | 엔드포인트 정상 점검·인벤토리 최소정보 | [수정·배포](reports/2026-10-14-local-mcp-endpoint.md) | 정확한 Linux profile·Windows 규칙/SID·Gateway URL 경유·민감 ref hash·새 marker의 양/음성 | 신규 회귀15개·Linux 키트17개·솔루션/PJ1 배포·선택 Linux 실제 경계 통과 |
+| DEV-25 | Windows 실행/loopback·root broker 격리 | [권한 레퍼런스](../catalogs/endpoint-permission-references.json) | 격리 Windows 실기기 WFP·실행 정책·file scope, Linux unit/AF_NETLINK/observer/loaded policy 검증 | 공식12개 주제·적용조건 수집; 새 정책 집행 미실행 |
+| DEV-26 | 사용자 PC 키트 Windows 제거 경합 | [관찰한 실패](reports/2026-10-14-local-mcp-endpoint.md) | background report의 종료/제거 잠금, WinError32 및 늦은 설정 재생성 회귀 | Windows17개 회귀 중 report.log 경합1개 관찰; Linux 통과와 분리해 후속 |
+
+| DEV-27 | 관리 장치 상태·감사기록 원자성 | [3단계 시험·배포](reports/2026-10-14-risk-scenarios.md) | 활성화/철회의 기록 실패 주입, 독립 상태·이벤트 확인, 정상군·경합·원복 | 부분 commit2경로 재현·단일transaction 수정·실제PG/재빌드image각5개 통과·배포. 감사장애시철회실패/재시도, 별도긴급deny는 후속 |
+| DEV-28 | 비인가 로컬 MCP의 PJ1 자연어 시험 (E13 변형) | [작업 보고](reports/2026-10-14-e13-local-mcp-natural-language.md), [로그](../analysis/pj1-local-mcp-e13/README.md), [무효 처리한 1차](reports/2026-10-14-pj1-nine-tools.md) | 등록하지 않은 실제 OSS 로컬 MCP를 관리 계정으로 시도해 막는 계층·독립 수신0·대조군·원장/이벤트를 대조 | Claude Code로 관리15·대조12건 실행: 관리 성공0·수신0, 대조 9개 도구 전부 성공(통제 밖 비가시). Codex 하네스·E13 전체 조건(공식 filesystem·실제 stdio)·Windows·반복은 미실행 |
+| DEV-29 | 상태 의존 MCP의 업스트림 세션 | [보고 문제 파악](reports/2026-10-14-pj1-nine-tools.md), [upstream.py](../../../full_stack_lab/gateway/app/upstream.py) | 세션 바인딩(주체·다운스트림 세션·서버, TTL, 철회·종료 시 닫기)·경고·미지원 중 결정, 목록 화면에서 도구 오류 구분 | Playwright 탭 유실을 Gateway 호출별 세션으로 재현·원인 분리. 설계 결정 대기(코드 미변경) |
+| DEV-30 | 정상 사용 거부 이벤트 잡음 | [보고 문제 3·4](reports/2026-10-14-e13-local-mcp-natural-language.md), [os-observer.py](../../../endpoint-agent/os-observer.py) | 하네스 기동 거부(`git`·`claude`)를 정상 사용과 구분, 이벤트에 프로세스 정보, 우회 시도는 그대로 노출 | 시험 창 68건 중 62%가 잡음 재현. 설계 결정 대기(프로파일 완화 아님) |
+| DEV-31 | 헬퍼 토큰의 Bash 자식 접근 | [보고 문제 1](reports/2026-10-14-e13-local-mcp-natural-language.md), [enforce-linux.py](../../../endpoint-agent/enforce-linux.py) | Bash 자식이 `header-helper`를 실행하지 못하게 분리, 대화·로그에 토큰이 남지 않음을 시험 | Bash 자식의 헬퍼 실행·토큰 획득·Gateway 직접 요청 재현. 수정 대기 |
+| DEV-32 | 통제 밖 계정·PC의 로컬 MCP 가시성 | [보고 문제 2](reports/2026-10-14-e13-local-mcp-natural-language.md) | 범위 명시, 리스너 발견(`ENDPOINT_NETSCAN`) 활용 여부 결정 | 대조군에서 쓰기 포함 성공·원장/이벤트 0 재현. 범위 결정 대기 |
+
+| DEV-33 | PJ1 Ghidra 설치 지속성과 process-only 자동 관측 | [설치 이력](reports/2026-10-14-pj1-ghidra-logs.md), [자동 수집 수정](reports/2026-10-14-endpoint-telemetry-fix.md) | 영구디스크확보·process/network 분리·UID귀속·실제MCP 검증 | 관리UID process-only 자동 수집/대조군 제외 확인. Ghidra UID1000은 통제 밖이며 영구설치/실제관리형Ghidra/자연어는 미완료 |
+
+| DEV-34 | 엔드포인트 로그 수집·표시 계약 및 검수 WBS | [최신 수정](reports/2026-10-14-endpoint-telemetry-fix.md), [40개 산정표](../analysis/development-wbs/README.md) | 채널 상태·신선도·listener 표/집계·complete만 삭제·process scope·지원OS 전달 | 솔루션/PJ1 Linux 수정 배포·자동 수신/실패/원복 복구·PG8조건 PASS. WBS24.8%/전체0개. Windows 실기기·전체집계·실제MCP 자동관측/장기offline 후속 |
 
 변경할 때 작업 보고서를 연결하고 `완료`의 검증 층을 함께 씁니다. 소스·문서 확인만 끝났으면 실행 검증 완료로 올리지 않습니다.

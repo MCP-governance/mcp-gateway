@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "at": 1791979667.3387883,
+  "endpoint_id": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+  "uid": 1001,
+  "checks": {
+    "apparmor_enforcing": true,
+    "nftables_active": true,
+    "protected_configs": true,
+    "ordinary_account": true
+  },
+  "configurations_unchanged": true,
+  "network_scan": "disabled",
+  "process_scan": "managed_uid_only",
+  "source_hashes": {
+    "agent.py": "ce87ed33861295b66fa99520fd898eefca82df22cd9f0b912fb9a9625199f7d1",
+    "managed-linux.py": "2107a6431b2d35d18cf450678314b287dacd07beb0fb2af8cf7f168cf238fb18",
+    "os-observer.py": "93e91ba60df67631824d1607d6eef33557a58122d2dadc35ae890638292e5fa6"
+  },
+  "backup": "/var/lib/mcpgw-managed/managed-pj1/telemetry-backups-20261014",
+  "service_restarted_for_code_update": true
+}

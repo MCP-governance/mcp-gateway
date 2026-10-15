@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "counts": {
+    "endpoint-permission-references": 12,
+    "experiments": 13,
+    "imports": 22,
+    "local-tool-risks": 13,
+    "papers": 28,
+    "solutions": 8,
+    "threats": 24,
+    "sources_evidence_records": 3,
+    "solutions_evidence_records": 21,
+    "reviewed_local_tools": 92,
+    "markdown_documents": 141
+  },
+  "warnings": [],
+  "errors": []
+}

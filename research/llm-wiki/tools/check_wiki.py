@@ -106,6 +106,30 @@ def check():
                 else:
                     require(matches_observation,
                             f"Code changed after mapping: {evidence['path']}; review and run map_threats.py")
+        risk_ids = {risk["id"] for risk in catalogs.get("local-tool-risks", [])}
+        require(set(record.get("local_tool_risk_ids", [])) <= risk_ids,
+                f"Unknown local tool risk link: {record['id']}")
+    policy_ids = {record["source_id"] for record in catalogs.get("threats", [])}
+    for risk in catalogs.get("local-tool-risks", []):
+        require(bool(risk.get("observation")) and bool(risk.get("required_control")) and bool(risk.get("remaining")),
+                f"Local tool risk lacks evidence/control/limit: {risk.get('id')}")
+        require(set(risk.get("source_controls", [])) <= policy_ids,
+                f"Unknown source policy in local tool risk: {risk.get('id')}")
+    review_path = ROOT / "analysis/local-tools/review.json"
+    if review_path.is_file():
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        capabilities = json.loads(local_path("analysis/local-tools/tool-capabilities.json").read_text(encoding="utf-8"))
+        require(len(capabilities) == review["tool_count"] == sum(review["counts"].values()), "Local tool count mismatch")
+        require(len({item["id"] for item in capabilities}) == len(capabilities), "Duplicate local tool capability")
+        for manifest in review["manifests"]:
+            path = local_path(manifest["path"])
+            require(hashlib.sha256(path.read_bytes()).hexdigest() == manifest["sha256"],
+                    f"Local tool source changed after review: {manifest['path']}")
+        for item in capabilities:
+            canonical = json.dumps(item["schema"], ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+            require(hashlib.sha256(canonical).hexdigest() == item["schema_sha256"], f"Tool schema hash mismatch: {item['id']}")
+            require(bool(item["capability_tags"]) and isinstance(item["call_observed"], bool), f"Missing capability/call status: {item['id']}")
+        totals["reviewed_local_tools"] = len(capabilities)
 
     # Raw copied source/extract links remain historical data, not wiki navigation.
     for file in ROOT.rglob("*.md"):

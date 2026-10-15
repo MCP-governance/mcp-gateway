@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-14",
+  "verification": "reviewed-local-protocol-evidence",
+  "tool_count": 92,
+  "counts": {
+    "ghidra": 28,
+    "git": 28,
+    "sqlite": 2,
+    "blender": 9,
+    "playwright": 25
+  },
+  "manifests": [
+    {
+      "path": "analysis/local-tools/reverse.json",
+      "sha256": "bae83b2a79a67891b9ccbf38a46d4727a839acbddeeea9d93c58d02c8658745a"
+    },
+    {
+      "path": "analysis/local-tools/data.json",
+      "sha256": "1e0f48ca51d4427f1b3cbb3b702f75c9d37cff05e083f0a1985f131ac696fadc"
+    },
+    {
+      "path": "analysis/local-tools/desktop.json",
+      "sha256": "e5e40664abab50c0cf53d4df6118eaeb2bddf61e58fbb21c0ac184ade89e2cf1"
+    }
+  ],
+  "capability_index_sha256": "2577913a174882af7b8876988743d2820b2ccf610e1c44f1ad78d95a082c7f37",
+  "risk_count": 13,
+  "all_local_tools_managed_endpoint_verified": false,
+  "selected_pj1_kernel_evidence": "status/reports/2026-10-14-pj1-endpoint-update.json",
+  "runtime_registry_changed": false
+}

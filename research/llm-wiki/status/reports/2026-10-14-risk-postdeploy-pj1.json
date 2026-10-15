@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "at": 1791955494.1393204,
+  "active": true,
+  "compliant": true,
+  "service_active": true,
+  "managed_mcp_initialize_status": 200,
+  "policy_hash": "1dd82f62084f71e650c4592e1146811a9e4540f09fc0d8ba7eec64676da3dfa0",
+  "scope": "fresh managed protocol after solution deployment",
+  "program_sha256": "ac02df9cb039a32f3ebf9853a73a1376a574ac29c4bb105892be7c404c8d68c7"
+}

@@ -1002,5 +1002,86 @@
     "distribution_reason": "MCP 규격 소스와 별도로 웹 HTML의 렌더링 코드·콘텐츠 전체에 적용되는 재배포 범위를 확인하지 못해 원본 HTML과 전체 추출을 로컬에만 보존한다.",
     "provenance": "sources/policy/T22/upstream.json",
     "page": "papers/T22.md"
+  },
+  {
+    "id": "REF-J01",
+    "title": "Model Context Protocol (MCP): Landscape, Security Threats, and Future Research Directions",
+    "kind": "journal_metadata",
+    "url": "https://doi.org/10.1145/3796519",
+    "verified_on": "2026-10-13",
+    "verification": "primary_metadata_and_selected_source_read",
+    "publication_status": "journal_published",
+    "originals": [],
+    "extracts": [],
+    "summary": "도입·배치·운영·유지보수의활동별공급자/자산/신원/통제/증거/예외경로를요구사항으로나눠누락을찾는다. 종료·회수는우리추가요구로명시하고논문단계인것처럼재명명하지않는다.",
+    "engineering_use": [
+      "도입·배치·운영·유지보수의활동별공급자/자산/신원/통제/증거/예외경로를요구사항으로나눠누락을찾는다. 종료·회수는우리추가요구로명시하고논문단계인것처럼재명명하지않는다."
+    ],
+    "limitations": "publisher metadata/Crossref verified; publisher-indexed selected lifecycle/security excerpts read; full publisher fetch 403; arXiv version kept separate",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "CC-BY-ND-4.0; full translation/modified redistribution not permitted by this license",
+    "page": "papers/REF-J01.md",
+    "metadata_evidence": {
+      "url": "https://api.crossref.org/works/10.1145%2F3796519",
+      "sha256": "bf52fb1367483bc5e07d3fc19a0ba384f25e153846318d2a916174f92e40e138",
+      "path": "analysis/evidence/references/REF-J01.crossref.json",
+      "verified_on": "2026-10-13",
+      "reading_scope": "entire selected file; no referenced executable helper executed"
+    }
+  },
+  {
+    "id": "REF-J02",
+    "title": "Beyond the Protocol: Unveiling Attack Vectors in the Model Context Protocol (MCP) Ecosystem",
+    "kind": "journal_metadata",
+    "url": "https://ieeexplore.ieee.org/document/11528180/",
+    "verified_on": "2026-10-13",
+    "verification": "primary_metadata_and_selected_source_read",
+    "publication_status": "journal_published",
+    "originals": [],
+    "extracts": [],
+    "summary": "메타데이터변경·승인후변경·외부콘텐츠·로컬효과를분리하고실제OSS서버의공식설정및시험자원으로재현한다. 논문의악성MCP작성/공개market업로드방법은사용자지시와배포안전범위에맞지않아채택하지않는다.",
+    "engineering_use": [
+      "메타데이터변경·승인후변경·외부콘텐츠·로컬효과를분리하고실제OSS서버의공식설정및시험자원으로재현한다. 논문의악성MCP작성/공개market업로드방법은사용자지시와배포안전범위에맞지않아채택하지않는다."
+    ],
+    "limitations": "publisher/Crossref metadata verified; IEEE body robot check; corresponding arXiv v4 abstract selected; journal body/version parity unverified",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "IEEE VOR license; arXiv distribution license separate; no public fulltext copy",
+    "page": "papers/REF-J02.md",
+    "metadata_evidence": {
+      "url": "https://api.crossref.org/works?query.title=Beyond%20the%20Protocol%20Unveiling%20Attack%20Vectors%20in%20the%20Model%20Context%20Protocol%20Ecosystem&rows=2",
+      "sha256": "4330ec604d45348f22155fe5f811c6f430ff2fd9550ddd45bbd820db48c1b957",
+      "path": "analysis/evidence/references/REF-J02.crossref.json",
+      "verified_on": "2026-10-13",
+      "reading_scope": "entire selected file; no referenced executable helper executed"
+    }
+  },
+  {
+    "id": "REF-J03",
+    "title": "Bridging AI and software security: A comparative vulnerability assessment of LLM agent deployment paradigms",
+    "kind": "journal_metadata",
+    "url": "https://www.sciencedirect.com/science/article/pii/S0020025526001623",
+    "verified_on": "2026-10-13",
+    "verification": "primary_metadata_and_selected_source_read",
+    "publication_status": "journal_published",
+    "originals": [],
+    "extracts": [],
+    "summary": "단일공격→한표면내복합공격→구성요소간연쇄공격을분리하여동일업무/모델/자격/OSS서버조건으로대조한다. 논문수치는우리제품의성공률로사용하지않는다.",
+    "engineering_use": [
+      "단일공격→한표면내복합공격→구성요소간연쇄공격을분리하여동일업무/모델/자격/OSS서버조건으로대조한다. 논문수치는우리제품의성공률로사용하지않는다."
+    ],
+    "limitations": "publisher abstract/introduction/section snippets selected; Crossref metadata verified; methods fulltext inaccessible",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "publisher restricted fulltext/TDM terms; no public fulltext copy",
+    "page": "papers/REF-J03.md",
+    "metadata_evidence": {
+      "url": "https://api.crossref.org/works/10.1016%2Fj.ins.2026.123231",
+      "sha256": "099c85f25aa1aad60644a6f681db29f184f7349709cd34ab5ee1c70e86be8422",
+      "path": "analysis/evidence/references/REF-J03.crossref.json",
+      "verified_on": "2026-10-13",
+      "reading_scope": "entire selected file; no referenced executable helper executed"
+    }
   }
 ]

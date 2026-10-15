@@ -1,4 +1,41 @@
-# 개발 현황 — 2026-10-13
+# 개발 현황 — 2026-10-14
+
+## 엔드포인트 로그 수정·PJ1 Linux 검증 (최신)
+
+[수정 보고](reports/2026-10-14-endpoint-telemetry-fix.md) · [직접 확인할 로그](../analysis/endpoint-log-fix/README.md) · [웹 WBS](https://mcpgw-status-20261014.sleek-stoat-4347.chatgpt.site): process-only 수집을 network scan과 분리, 채널 상태/last-success·부분 snapshot 보존·listener 상세·freshness·Windows producer를 구현해 솔루션/PJ1에 배포했다. Linux UID1001 합성 process 자동 수신/UID1000 제외/종료 후 자동 정리, 실제 AppArmor 이벤트1388 자동 수신(9.43초), journal 오류 시 last-success/cursor·broker 보존과 원복 후 주기 복구를 확인했다. 전용 새 PG schema8조건·배포 image8조건 PASS, 제품 DB/registry 보존과 실행 SHA 일치. WBS는3개 작업만 재검수하여21.8→24.8%, 전체 완료0/40이다.
+
+Windows는 코드·합성 단위/PowerShell syntax만 확인하고 실기기는 사용자의 Linux 우선 결정에 따라 미검증이다. 실제 Ghidra UID1000, 자연어 MCP call/92개 전체, 장기 offline·rotation·diskfull 무손실, 전체 누적집계/페이지 이동과 DEV29~32는 미완료다. 아래 읽기전용 진단·21.8%와 NETSCAN 때문에 stdio가 꺼진 기록은 수정 전 이력이다.
+
+
+## 엔드포인트 로그 진단·목표 기능 WBS
+
+[검수 보고](reports/2026-10-14-endpoint-log-wbs.md) · [40개 산정표](../analysis/development-wbs/README.md) · [별도 웹 현황판](../../development-status-site/README.md): G01–G10/원본 PAC01–24를 40개 작업에 의미 매핑해 5단계 동일 가중 진척 **21.8%**를 산정했다(부분/과거 근거0.5, 전체 단계 검수 완료0/40). 구현16개·부분23·미구현1이며 기능 전체가 0이라는 뜻은 아니다. PJ1 현재 NETSCAN0·active service·표본1387 수신 유지·원본/수신 projection SHA 일치, 실제 제공 Console JS의 전용 listener 누락을 확인했다. 6개 로그 공백을 DEV-34에 연결했고 제품 코드/설정/승인/DB는 이번에 변경하지 않았다. 웹은 실시간 제품 로그가 아닌 날짜가 있는 검수 스냅샷이다.
+
+## PJ1 Ghidra 설치·로그 전달 확인
+
+[검수 보고](reports/2026-10-14-pj1-ghidra-logs.md) · [확인할 로그](../analysis/pj1-ghidra/README.md): PJ1에 Ghidra12.1.4/GhidraMCP2.0.0을 task 범위로 구성해 실제stdio initialize·schema28·합성ELF get_program_info를 확인했다(UID1000/unconfined, SDK시험). 기본stdio 관측은 NETSCAN0으로 자동전송0이었고, 명시적 일회성 실제프로세스 보고는 Console shadow/suspected1 수신 후 종료/원복했다. 관리UID1001 Python실행은 exit126, 별도OS거부는 수동전송없이 기존 주기수집기로 약35.84초 뒤 Console1387 수신. 로컬SDK창 Gateway 원장0. Ghidra/JDK는 디스크부족으로 RAM1.24GiB 임시설치라 재부팅시 소실; privatevenv/로그는디스크보존. MCP등록승인·제품정책변경·자연어Ghidra하네스는 수행하지 않았다.
+
+
+## 비인가 로컬 MCP의 PJ1 자연어 시험 (E13 변형)
+
+[작업 보고](reports/2026-10-14-e13-local-mcp-natural-language.md) · [로그](../analysis/pj1-local-mcp-e13/README.md): 등록하지 않은 실제 OSS MCP(Git·DBHub·Playwright 9개 도구)를 PJ1 관리 계정의 실제 Claude Code(Sonnet 5.5)에게 자연어로 쓰게 했다. 관리 계정은 하네스 정책·AppArmor exec·nft·모델 프록시가 겹쳐 로컬 MCP 사용이 한 건도 성공하지 않았고 수신 서버 요청은 0이었다. 비인가 서버 경로는 Gateway가 `MCP-REGISTRY-001`로 막고 기록했다. 문제: 관리 계정의 Bash가 `header-helper`로 기기 토큰을 얻을 수 있고(DEV-31), 같은 PC의 비관리 계정은 9개 도구 쓰기까지 성공하면서 Gateway·엔드포인트에 0건이며(DEV-32), 정상 사용 거부 이벤트가 62%를 차지한다(DEV-30). Codex 하네스·E13 전체 조건·Windows는 미실행, 제품 코드는 바꾸지 않았다.
+
+같은 날 먼저 한 [9개 도구 1차 시험](reports/2026-10-14-pj1-nine-tools.md)은 에이전트가 시험 대상 서버를 스스로 승인해 등록한 **무효 시험**이라 철회하고 대체했다(D-79). 콘솔에 로그가 없던 원인은 Codex 모델 턴이 사용량 한도로 시작 즉시 실패한 것이었다.
+
+## 위험매핑 3단계 시험·수정
+
+[3단계 보고서](reports/2026-10-14-risk-scenarios.md) · [정본 JSON](reports/2026-10-14-risk-scenarios.json): 정적 검토와 PJ1 DB 보존 동적5개, 전용 PostgreSQL 실제 초기화 후 선별5개를 수행했다. 활성화·철회의 감사 INSERT 실패 시 상태만 commit되는 두 경로를 재현해 같은 transaction으로 수정했다. 수정 코드와 실제 재빌드 image에서 각각5개 통과, 솔루션 배포·운영 DB 시작시각/계정10·장치12·설치grant14 보존 확인. 실제188.91초 heartbeat 만료 뒤 미만료 JWT/새 발급403, 서비스 복구 후200을 확인했다. 새 LOCAL-RISK-11 추가; 실패한 철회는 rollback되므로 재시도가 필요하다. 자연어 하네스 호출·92개 전체 도구·Windows 실기기 시험은 새로 수행하지 않았다.
+
+
+## 로컬 도구·MCP와 엔드포인트 권한 검수
+
+Luna3개 분업과 Codex 검수로 실제 Ghidra·Git·SQLite·Blender·Playwright MCP5개를 설치·연결하고 광고 스키마92개를 기능 유형별로 보존했다. 권한 반례를 [위험매핑10건](../threats/local-tool-map.md)과 원본24개 정책에 연결했고 [공식 권한 레퍼런스12개 주제](../catalogs/endpoint-permission-references.json)를 추가했다. [설치·기능 정본](../analysis/local-tools/README.md)과 [작업 결과](reports/2026-10-14-local-mcp-endpoint.md)를 읽는다.
+
+Linux 프로필 점검, Windows 방화벽 불완전 상태, Gateway 이름 위장, URL/legacy stdio 비밀 저장과 로컬 MCP 발견을 수정했다. 새 회귀15개와 Linux 키트17개를 통과했고 솔루션 field up 배포의 실제 코드46개/정책/build hash 일치를 확인했다. PJ1도 수정·active/compliant·fresh profile·승인 하네스 실행·비승인 Node·IPv4/IPv6 loopback 거부와 승인 Gateway TCP를 확인했다. 이것은92개 도구 전체의 관리 집행이나 새 자연어 모델 turn을 의미하지 않는다.
+
+Blender disable-autoexec·ambient 자격 제거는 로컬 실제 MCP 재시험을 통과했다. DBeaver GUI 세팅, Burp 공식 MCP UI 활성화, Windows 실제 실행/loopback 통제, root 서비스 권한 분리 및 Windows 사용자 키트 제거 경합은 미완료다. DBeaver 사용자 AppData 캐시 생성 정황은 경로·시각과 기존 변경 미확인 범위를 별도로 보존했다.
+
+아래2026-10-13 결과는 과거 작업 근거로 유지한다. 현재 작업은 `10/14-local-mcp-endpoint`, 기준 `ab6936c+기존 dirty132파일`이며 원본 작업트리를 보존했다.
 
 연구 정본은 Markdown이고 웹은 [Codex × Claude 개발 협업 콘솔](../../collaboration-console/README.md)입니다. 실제 공개 소통·담당 작업·진행·검사 결과를 http://127.0.0.1:18766 에서 확인합니다. 원본 대화·CLI 설정·비밀은 로컬 ignored runtime에만 남깁니다.
 

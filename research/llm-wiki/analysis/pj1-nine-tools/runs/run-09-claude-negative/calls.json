@@ -1,0 +1,61 @@
+[
+  {
+    "number": 1,
+    "server": "pj1-nine-git",
+    "tool": "git_status",
+    "expected_arguments": {
+      "path": "/fixtures",
+      "includeUntracked": true
+    },
+    "called": [
+      {
+        "id": "toolu_01BedKv7kq1C39J6gDzs9d5r",
+        "tool": "mcp__pj1-nine-git__git_status",
+        "input": {
+          "path": "/fixtures",
+          "includeUntracked": true
+        },
+        "is_error": true,
+        "excerpt": "[MCP Gateway · 차단 · PAC-01] 승인된 PAC 실행 범위를 충족하지 못했습니다: PAC-01"
+      }
+    ]
+  },
+  {
+    "number": 2,
+    "server": "pj1-nine-sqlite",
+    "tool": "execute_sql",
+    "expected_arguments": {
+      "sql": "SELECT name FROM sqlite_master"
+    },
+    "called": [
+      {
+        "id": "toolu_01CpCnefbBMAA9GCuC9TWEMQ",
+        "tool": "mcp__pj1-nine-sqlite__execute_sql",
+        "input": {
+          "sql": "SELECT name FROM sqlite_master"
+        },
+        "is_error": true,
+        "excerpt": "[MCP Gateway · 차단 · PAC-01] 승인된 PAC 실행 범위를 충족하지 못했습니다: PAC-01"
+      }
+    ]
+  },
+  {
+    "number": 3,
+    "server": "pj1-nine-browser",
+    "tool": "browser_navigate",
+    "expected_arguments": {
+      "url": "http://example.com/"
+    },
+    "called": [
+      {
+        "id": "toolu_01GyyeHEQcFRSb7gfkzPnKt5",
+        "tool": "mcp__pj1-nine-browser__browser_navigate",
+        "input": {
+          "url": "http://example.com/"
+        },
+        "is_error": true,
+        "excerpt": "[MCP Gateway · 차단 · PAC-01] 승인된 PAC 실행 범위를 충족하지 못했습니다: PAC-01"
+      }
+    ]
+  }
+]

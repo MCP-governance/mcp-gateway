@@ -1,0 +1,38 @@
+{
+  "at": 1791958612.4871676,
+  "harness": "claude-code",
+  "uid": 1001,
+  "device_id": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+  "installed_kernel_checks": {
+    "apparmor_enforcing": true,
+    "nftables_active": true,
+    "protected_configs": true,
+    "ordinary_account": true
+  },
+  "policy_hash": "8a9d4eb1b4aa2fb978132dacdcd2be0953a995f0c3c29608872d4bc066121248",
+  "configuration_hashes_match": true,
+  "selected_tools_list": {
+    "pj1-nine-git": [
+      "git_add",
+      "git_commit",
+      "git_log",
+      "git_status"
+    ],
+    "pj1-nine-sqlite": [
+      "execute_sql",
+      "search_objects"
+    ],
+    "pj1-nine-browser": [
+      "browser_evaluate",
+      "browser_navigate",
+      "browser_snapshot"
+    ]
+  },
+  "binary": "/opt/mcpgw-approved/claude",
+  "binary_sha256": "0298068b686e7fdbaf9402a7a587bb7f49c0b0e084de09f69145a0719207640c",
+  "model": "claude-sonnet-5-5",
+  "effort": "high",
+  "model_route": "pj1 Claude login (temporary copy) through approved model proxy 100.83.175.111:3128",
+  "launch": "root -> runuser managed-pj1 (uid 1001) -> aa-exec installed Claude profile -> approved native binary",
+  "prompt_sha256": "cfd0c4d55a10b94fa1086ad34e7de3028b4585acd158c19b54b81caca82317d9"
+}

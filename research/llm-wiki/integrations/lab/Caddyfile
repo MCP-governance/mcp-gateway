@@ -1,0 +1,19 @@
+{
+    admin off
+    auto_https disable_redirects
+    skip_install_trust
+}
+
+https://{$INTEROP_BIND}:8448 {
+    tls internal
+    reverse_proxy litellm:4000
+}
+
+https://{$INTEROP_BIND}:8449 {
+    tls internal
+    reverse_proxy https://openbao:8200 {
+        transport http {
+            tls_trust_pool file /etc/caddy/openbao-ca.crt
+        }
+    }
+}

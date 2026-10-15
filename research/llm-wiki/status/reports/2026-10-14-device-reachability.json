@@ -1,0 +1,30 @@
+{
+  "checked_at": "2026-10-14T13:24:01.145821+09:00",
+  "tailscale_status_exit": 0,
+  "selected_peers": [
+    {
+      "HostName": "pj1",
+      "DNSName": "pj1.tail52e3ea.ts.net.",
+      "TailscaleIPs": [
+        "100.110.81.60",
+        "fd7a:115c:a1e0::f732:513d"
+      ],
+      "Online": true,
+      "LastSeen": "0001-01-01T00:00:00Z",
+      "Active": false
+    },
+    {
+      "HostName": "laptop",
+      "DNSName": "solution.tail52e3ea.ts.net.",
+      "TailscaleIPs": [
+        "100.83.175.111",
+        "fd7a:115c:a1e0::1932:af70"
+      ],
+      "Online": true,
+      "LastSeen": "0001-01-01T00:00:00Z",
+      "Active": false
+    }
+  ],
+  "pj1_ssh": "100.110.81.60:22 timed out with BatchMode/ConnectTimeout=8",
+  "solution_ssh": "100.83.175.111:22 succeeded; running product containers observed; no deployment performed"
+}

@@ -1,0 +1,80 @@
+{
+  "at": 1791972048.154358,
+  "endpoint_id": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+  "processes": [
+    {
+      "pid": 29514,
+      "uid": 1000,
+      "profile": "unconfined",
+      "command_digest": "sha256:e67c587400ce8c8f491e3d43125053d72f67f11d1bcd7a4d6896e5c78e2941b9"
+    }
+  ],
+  "collector_sha256": "cd52ed5dc41699aa2d63d54171c1639a91d94a50162b80ba049fd747ac0f89dc",
+  "automatic_scan_enabled": false,
+  "automatic_report": null,
+  "automatic_listener_rows": 0,
+  "manual_collection": true,
+  "listener_findings": [
+    {
+      "source": "stdio-process",
+      "address": "local-process",
+      "port": null,
+      "process_name": "python",
+      "command_line": "sha256:e67c587400ce8c8f491e3d43125053d72f67f11d1bcd7a4d6896e5c78e2941b9",
+      "mcp_evidence": "suspected"
+    }
+  ],
+  "receiver_result": {
+    "endpoint_id": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+    "accepted": 1,
+    "removed": 0,
+    "counts": {
+      "registered": 0,
+      "shadow": 1,
+      "retired-residue": 0
+    },
+    "evidence": {
+      "confirmed": 0,
+      "suspected": 1,
+      "unknown": 0
+    }
+  },
+  "console_listener_rows": [
+    {
+      "id": 1,
+      "endpoint_id": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+      "observed_at": "2026-10-14T10:00:47.675455+00:00",
+      "source": "stdio-process",
+      "address": "local-process",
+      "port": null,
+      "process_name": "python",
+      "command_line": "sha256:e67c587400ce8c8f491e3d43125053d72f67f11d1bcd7a4d6896e5c78e2941b9",
+      "mcp_evidence": "suspected",
+      "server_name": null,
+      "server_version": null,
+      "protocol_version": null,
+      "fingerprint": "f30999214c17c656110fe938331b58b4268b05d3c798e1eb1848a1e2ceb1fc45",
+      "registry_match": null,
+      "classification": "shadow",
+      "raw": {
+        "port": null,
+        "source": "stdio-process",
+        "address": "local-process",
+        "server_name": "",
+        "command_line": "sha256:e67c587400ce8c8f491e3d43125053d72f67f11d1bcd7a4d6896e5c78e2941b9",
+        "mcp_evidence": "suspected",
+        "process_name": "python",
+        "server_version": "",
+        "protocol_version": ""
+      },
+      "hostname": "pj1",
+      "owner_token": "user",
+      "owner_name": "user",
+      "registry_name": null,
+      "lifecycle": null
+    }
+  ],
+  "prior_listener_rows": 0,
+  "registry_approval_performed": false,
+  "raw_command_or_credentials_logged": false
+}

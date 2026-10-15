@@ -1,0 +1,417 @@
+{
+  "date": "2026-10-14T14:27:05+09:00",
+  "branch": "10/14-risk-scenarios",
+  "baseline_head": "ab6936c64f3578de8360b840f1928681714fa7bb",
+  "preserved_dirty_baseline": true,
+  "stage1": {
+    "type": "static",
+    "report": "analysis/risk-scenarios/static-endpoint.md",
+    "static_scenarios": 6,
+    "predicted_issues": [
+      "conditional local cached bearer delivery",
+      "state/event partial commit"
+    ]
+  },
+  "stage2": {
+    "result": "passed",
+    "evidence": [
+      {
+        "case": "D01-active-protocol-admission",
+        "at": 1791954762.2181175,
+        "status": 200,
+        "kernel_checks": true
+      },
+      {
+        "case": "D02-executable-boundary",
+        "at": 1791954762.380849,
+        "profile": "mcpgw-managed-pj1 (enforce)",
+        "gateway_exit": 0,
+        "node_exit": 126
+      },
+      {
+        "case": "D03-loopback-boundary",
+        "at": 1791954763.4265122,
+        "root_receiver_reachable": true,
+        "managed_exit": 1
+      },
+      {
+        "case": "D04-stale-heartbeat",
+        "at": 1791954952.373222,
+        "waited_seconds": 188.91,
+        "token_unexpired": true,
+        "admission": 403,
+        "policy_id": "ENDPOINT-MANAGED-001",
+        "mint_status": 403
+      },
+      {
+        "case": "D05-recovery",
+        "at": 1791954953.3601835,
+        "admission": 200,
+        "service_restored": true
+      }
+    ],
+    "database_reset": false,
+    "program_sha256": "9deefd48b16182984d28de0b245d3a709098383925e58a3b5c5528aa3d7ca16d",
+    "raw_capture_sha256": "944b16bff2e9120c2ad3100aaa6ea71f1e40356ebfc93c429b4c162a0bb303c6",
+    "raw_capture": ".task-local-20261014\\risk-scenarios-preserve-output.jsonl"
+  },
+  "stage3": {
+    "reset": {
+      "database_reset": true,
+      "database_name": "risk_scenarios_20261014",
+      "container": "mcpgw-risk-20261014-postgres",
+      "container_task_label": "mcpgw-risk-20261014",
+      "marker_count_before": 1,
+      "marker_absent_after": true,
+      "published_ports": false,
+      "product_mounts": false,
+      "pg_image": "sha256:c293117fcecda7344b5480222e813b9f673d7abd69b1dd95eff239b768b04f59",
+      "at": 1791954874.955832
+    },
+    "before": {
+      "ok": true,
+      "expect_atomic": false,
+      "db_name": "risk_scenarios_20261014",
+      "scratch_schema": "risk_endpoint_b37ec0dfe002435bb929bbfe129c67a8",
+      "expected_case_count": 5,
+      "completed_case_count": 5,
+      "schema_created_by_this_process": true,
+      "schema_removed": true,
+      "reset_before": {
+        "principals": 0,
+        "devices": 0,
+        "grants": 0,
+        "events": 0
+      },
+      "reset_after_before_drop": {
+        "principals": 9,
+        "devices": 5,
+        "grants": 5,
+        "events": 14
+      },
+      "cases": [
+        {
+          "case": "admit_activate_stale_revoke",
+          "endpoint_id": "managed-c4d2cfdf-5cc0-462a-92d9-aa5bd301018e",
+          "pending_denied": true,
+          "active_effect_independently_observed": true,
+          "stale_heartbeat_denied": true,
+          "wrong_epoch_denied": true,
+          "revoke_effect_independently_observed": true,
+          "epoch_preserved_on_revoke": true,
+          "event_kinds": [
+            "enrolled",
+            "activated",
+            "revoked"
+          ]
+        },
+        {
+          "case": "invalid_heartbeat_quarantines",
+          "endpoint_id": "managed-0688ce69-3e7a-438e-883a-14787c7e45aa",
+          "persisted_state": "quarantined",
+          "event_count": 1
+        },
+        {
+          "case": "stale_activation_race",
+          "endpoint_id": "managed-7d40eb76-2311-4ca5-b1b8-ce4db3392328",
+          "activation_rejected": true,
+          "persisted_state": "pending",
+          "independent_configuration_hashes": {}
+        },
+        {
+          "case": "activation_journal_failure",
+          "endpoint_id": "managed-cd9bc9dd-5aef-447d-ac14-b3bd0dd4c868",
+          "expect_atomic": false,
+          "event_insert_failed": true,
+          "state_after_failure": "active",
+          "activation_event_count": 0,
+          "known_finding_exposed": true
+        },
+        {
+          "case": "revoke_journal_failure",
+          "endpoint_id": "managed-3be4b8cd-f679-4746-aaa0-22090e706e60",
+          "expect_atomic": false,
+          "event_insert_failed": true,
+          "status_after_failure": "revoked",
+          "revocation_event_count": 0,
+          "known_finding_exposed": true
+        }
+      ]
+    },
+    "after": {
+      "ok": true,
+      "expect_atomic": true,
+      "db_name": "risk_scenarios_20261014",
+      "scratch_schema": "risk_endpoint_ce3cef0d4aee47febfed4dbd2874e088",
+      "expected_case_count": 5,
+      "completed_case_count": 5,
+      "schema_created_by_this_process": true,
+      "schema_removed": true,
+      "reset_before": {
+        "principals": 0,
+        "devices": 0,
+        "grants": 0,
+        "events": 0
+      },
+      "reset_after_before_drop": {
+        "principals": 9,
+        "devices": 5,
+        "grants": 5,
+        "events": 14
+      },
+      "cases": [
+        {
+          "case": "admit_activate_stale_revoke",
+          "endpoint_id": "managed-481e3682-c97d-44e8-bc1a-bf24281efe5d",
+          "pending_denied": true,
+          "active_effect_independently_observed": true,
+          "stale_heartbeat_denied": true,
+          "wrong_epoch_denied": true,
+          "revoke_effect_independently_observed": true,
+          "epoch_preserved_on_revoke": true,
+          "event_kinds": [
+            "enrolled",
+            "activated",
+            "revoked"
+          ]
+        },
+        {
+          "case": "invalid_heartbeat_quarantines",
+          "endpoint_id": "managed-79abff1d-bb1e-49f9-a840-5d5219825041",
+          "persisted_state": "quarantined",
+          "event_count": 1
+        },
+        {
+          "case": "stale_activation_race",
+          "endpoint_id": "managed-0e1c9ad9-c2ce-48cd-9644-1d1c1d5c5350",
+          "activation_rejected": true,
+          "persisted_state": "pending",
+          "independent_configuration_hashes": {}
+        },
+        {
+          "case": "activation_journal_failure",
+          "endpoint_id": "managed-f218a7d5-28f6-4a68-8e3b-6442618c08ad",
+          "expect_atomic": true,
+          "event_insert_failed": true,
+          "state_after_failure": "pending",
+          "activation_event_count": 0,
+          "known_finding_exposed": false
+        },
+        {
+          "case": "revoke_journal_failure",
+          "endpoint_id": "managed-c146a69e-0ea4-43d8-b00c-278b43973412",
+          "expect_atomic": true,
+          "event_insert_failed": true,
+          "status_after_failure": "active",
+          "revocation_event_count": 0,
+          "known_finding_exposed": false
+        }
+      ]
+    },
+    "deployed_image": {
+      "ok": true,
+      "expect_atomic": true,
+      "db_name": "risk_scenarios_20261014",
+      "scratch_schema": "risk_endpoint_76667808bf554fa592420f3ec4c7c3b7",
+      "expected_case_count": 5,
+      "completed_case_count": 5,
+      "schema_created_by_this_process": true,
+      "schema_removed": true,
+      "reset_before": {
+        "principals": 0,
+        "devices": 0,
+        "grants": 0,
+        "events": 0
+      },
+      "reset_after_before_drop": {
+        "principals": 9,
+        "devices": 5,
+        "grants": 5,
+        "events": 14
+      },
+      "cases": [
+        {
+          "case": "admit_activate_stale_revoke",
+          "endpoint_id": "managed-27527f57-9678-46df-a811-006c6f273d41",
+          "pending_denied": true,
+          "active_effect_independently_observed": true,
+          "stale_heartbeat_denied": true,
+          "wrong_epoch_denied": true,
+          "revoke_effect_independently_observed": true,
+          "epoch_preserved_on_revoke": true,
+          "event_kinds": [
+            "enrolled",
+            "activated",
+            "revoked"
+          ]
+        },
+        {
+          "case": "invalid_heartbeat_quarantines",
+          "endpoint_id": "managed-3cfe9792-6950-4d32-802c-a35cdbfff9ef",
+          "persisted_state": "quarantined",
+          "event_count": 1
+        },
+        {
+          "case": "stale_activation_race",
+          "endpoint_id": "managed-2c50e809-2873-432b-8cce-02e6cf73bd4c",
+          "activation_rejected": true,
+          "persisted_state": "pending",
+          "independent_configuration_hashes": {}
+        },
+        {
+          "case": "activation_journal_failure",
+          "endpoint_id": "managed-53b3d641-642b-48a2-9c07-2b22e2c0060e",
+          "expect_atomic": true,
+          "event_insert_failed": true,
+          "state_after_failure": "pending",
+          "activation_event_count": 0,
+          "known_finding_exposed": false
+        },
+        {
+          "case": "revoke_journal_failure",
+          "endpoint_id": "managed-70eabb72-afce-4d89-bf9d-fa4a8c642641",
+          "expect_atomic": true,
+          "event_insert_failed": true,
+          "status_after_failure": "active",
+          "revocation_event_count": 0,
+          "known_finding_exposed": false
+        }
+      ]
+    }
+  },
+  "deployment": {
+    "ok": true,
+    "product_database_reset": false,
+    "before": {
+      "database": "mcp_governance",
+      "started": "2026-10-13 04:45:55.750024+00",
+      "principals": 10,
+      "devices": 12,
+      "grants": 14
+    },
+    "after": {
+      "database": "mcp_governance",
+      "started": "2026-10-13 04:45:55.750024+00",
+      "principals": 10,
+      "devices": 12,
+      "grants": 14
+    },
+    "deployed_sha256": "4745a3c2deb85d3df90b6e831207aef26b56c5901ddbcfc9b1796d4d049800f0",
+    "source_before_sha256": "1794081aae98198b19f5b49ddc7aace45371f07b3dc8bbe89de93dbbe4edafdc",
+    "branch_scope": "single endpoint_plane file delta",
+    "at": 1791955068.0117168
+  },
+  "postdeploy": {
+    "ok": true,
+    "at": 1791955494.1393204,
+    "active": true,
+    "compliant": true,
+    "service_active": true,
+    "managed_mcp_initialize_status": 200,
+    "policy_hash": "1dd82f62084f71e650c4592e1146811a9e4540f09fc0d8ba7eec64676da3dfa0",
+    "scope": "fresh managed protocol after solution deployment",
+    "program_sha256": "ac02df9cb039a32f3ebf9853a73a1376a574ac29c4bb105892be7c404c8d68c7"
+  },
+  "reference_integrity": {
+    "ok": true,
+    "references": [
+      {
+        "id": "REF-RISK-K8S-LEASE-135",
+        "verified_sha256": "7fa57a4d60ec84df968e3d79ae59797d5dbbce4d0b1a765c3c710745c1357df0",
+        "raw_url": "https://raw.githubusercontent.com/kubernetes/kubernetes/66452049f3d692768c39c797b21b793dce80314e/pkg/kubelet/util/nodelease.go"
+      },
+      {
+        "id": "REF-RISK-SPIRE-AGENT-1153",
+        "verified_sha256": "85f9f25eb1afee90dc10bbc551db6ba2755590a3426a13b483b39771a5d54201",
+        "raw_url": "https://raw.githubusercontent.com/spiffe/spire/2f7861ae3923caf1f57eb087fc2928d58c0fb1d2/doc/spire_agent.md"
+      },
+      {
+        "id": "REF-RISK-ETCD-TXN-367",
+        "verified_sha256": "c57117e8f4764667be927d862f4fb01fbf1faaf0f725bf2eecc3a523e12aacc6",
+        "raw_url": "https://raw.githubusercontent.com/etcd-io/etcd/e838ef116fc368b321ddf2e424167b15174fb80d/api/etcdserverpb/rpc.proto"
+      },
+      {
+        "id": "REF-RISK-POSTGRES-17-LOCKS",
+        "verified_sha256": "b0dafb2a3fd2d9204deb075ed2cb2d74b6496523bb5d4867a2f4a3d9758a6314",
+        "raw_url": "https://raw.githubusercontent.com/postgres/postgres/083ac033419f690758508e08c1736089384bbee8/doc/src/sgml/mvcc.sgml"
+      }
+    ],
+    "diff_check_exit": 0
+  },
+  "risk_scope": [
+    "LOCAL-RISK-01",
+    "LOCAL-RISK-08",
+    "LOCAL-RISK-11"
+  ],
+  "actual_model_harness_run": false,
+  "new_local_tool_calls": false,
+  "all_92_tools_tested": false,
+  "limitations": [
+    "PostgreSQL fixture schema and controlled failure/race injection, not real kernel attestation.",
+    "Revocation journal failure returns an error and rolls back revocation; the caller must retry. No emergency deny store was added.",
+    "Root/admin tampering, Windows kernel enforcement and arbitrary local bridges are outside the live test scope.",
+    "Managed Unix socket cached bearer can remain locally deliverable until cache expiry; Gateway current-state validation is a separate boundary."
+  ],
+  "evidence": [
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-risk-db-after.jsonl",
+      "sha256": "9768be2db4c0533f13e4dfd2fdcd96ef49c42f2e9d668ad782101c4fa730da07"
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-risk-db-before.jsonl",
+      "sha256": "43dde12ea4932270c8942e87c26f0b40d5cd8a9e1d627cf96ca6d92b24b09c86"
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-risk-db-deployed-final.jsonl",
+      "sha256": "643dbe9971a5cfd0e2afddef84f3f7f9c2df465859d1f74f4fecb9cda40ba9a7"
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-risk-db-deployed.jsonl",
+      "sha256": "1ebb0781a905f5c1f32aff61adbe3ac1e2755a038874f13475288d2a1a91ff04"
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-risk-db-reset.json",
+      "sha256": "59ed0ca902858de68c758f30bce82602fc2a0757ea3bee5ec523e71a66b4ab68"
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-risk-deployment.json",
+      "sha256": "36f43d7a2766cbc3d3a60623d93e508b4aad061d197084c1607ef986b4060899"
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-risk-implementation.patch",
+      "sha256": "0baf37035b6b1318bae2b18427ca9c9b8764ba60bc906d8cc3a2c618e9a177f8"
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-risk-postdeploy-pj1.json",
+      "sha256": "70a7dde01e9341235c33458c00df855f205dca9d804f82e562426d4188a37280"
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-risk-preserve.json",
+      "sha256": "c92a1db77dc2ba045e7f98bd980e79909f12e6629ee9dea954a31ae03336eac0"
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-risk-reference-integrity.json",
+      "sha256": "634b9aa27117790d80b7b0a90c134e21621c4dd774abfc57cd45c7c80234729c"
+    },
+    {
+      "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+      "sha256": "8d7276182c383227f705cd2999cfed75f071bfc07653913f6e14cd5301845154"
+    },
+    {
+      "path": "research/llm-wiki/experiments/risk-scenarios/pj1_preserve_check.py",
+      "sha256": "9deefd48b16182984d28de0b245d3a709098383925e58a3b5c5528aa3d7ca16d"
+    },
+    {
+      "path": "research/llm-wiki/experiments/risk-scenarios/stateful_endpoint_check.py",
+      "sha256": "5c782c0646c8ee461d5792734b88795e04ad9d622aacac8ec1dbe9bf4ed16aac"
+    },
+    {
+      "path": "research/llm-wiki/analysis/risk-scenarios/static-endpoint.json",
+      "sha256": "883677456458fb40469650b1cda67870c65f387537e8cde352c811754bdd5b47"
+    },
+    {
+      "path": "research/llm-wiki/analysis/risk-scenarios/solution-references.json",
+      "sha256": "ba6817dd05cf5dacc4fdce2ec28ace62aee8fe73fe71bfd29a3e2f228135bede"
+    }
+  ]
+}

@@ -1,0 +1,458 @@
+[
+  {
+    "id": "INT-01",
+    "product": "LiteLLM",
+    "category": "LLM gateway and MCP gateway",
+    "version_or_commit": "local config v1.102.1/d09bbae1c6df463e425558f60d460437193635da; reviewed release v1.105.0/80b9556dd312d18c535ae06884faa97d1fdb8f46",
+    "route": "A: official managed harness -> customer LiteLLM LLM API, separately -> our Gateway MCP; B: LiteLLM -> our Gateway MCP requires delegated transport identity, currently not_ready",
+    "auth": "employee virtual key to LiteLLM; separately scoped managed employee MCP JWT to our Gateway; independent bound upstream SaaS credential",
+    "capabilities": "OpenAI ChatCompletions\nOpenAI Responses\nAnthropic Messages\nGemini generation\nMCP StreamableHTTP/SSE/stdio\nkey/team/tool permissions\nOAuth and scoped upstream headers",
+    "our_code_evidence": [
+      "full_stack_lab/llm/litellm.yaml:1-33 model_list",
+      "full_stack_lab/compose.yaml:299-328 llm-gateway service",
+      "full_stack_lab/console.sh:246-298 field_up",
+      "full_stack_lab/workstation/provision_keys.py:32-61 main",
+      "full_stack_lab/gateway/app/agent_contract.py:106-145 authenticated_user",
+      "full_stack_lab/integrations/litellm/preflight.py:126-177 probe"
+    ],
+    "compatibility_status": "partial_configured_not_active_in_field; delegated_MCP_not_ready",
+    "gap": "field default lacks llm profile; no mcp_servers; fixed bob-assistant and internal URLs; customer hostname absent from model proxy; no verified end-to-end LiteLLM tool evidence; streaming/cancellation/usage/rotation cases unrun; preflight trust_env=False ignores HTTPS_PROXY/SSL_CERT_FILE; customer proxy/private CA require explicit configuration",
+    "source_url": "https://docs.litellm.ai/docs/mcp_config_reference",
+    "license": "MIT outside enterprise/; Enterprise license and activation apply to native secret-manager features",
+    "github_stars_observed": 61115,
+    "checked_at": "2026-10-13",
+    "analysis_base_commit": "ab6936c64f3578de8360b840f1928681714fa7bb",
+    "runtime_evidence": [],
+    "source_refs": [
+      "https://docs.litellm.ai/docs/mcp_config_reference",
+      "https://docs.litellm.ai/docs/harness/gateway",
+      "https://docs.litellm.ai/docs/mcp_control",
+      "https://docs.litellm.ai/docs/secret_managers/overview",
+      "https://github.com/BerriAI/litellm/tree/80b9556dd312d18c535ae06884faa97d1fdb8f46"
+    ],
+    "metadata_observed_at": "2026-10-13T16:48:00+09:00",
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/llm/litellm.yaml",
+        "symbol": "model_list",
+        "line_start": 1,
+        "line_end": 33,
+        "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
+        "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/compose.yaml",
+        "symbol": "llm-gateway service",
+        "line_start": 299,
+        "line_end": 328,
+        "normalized_sha256": "49d48d5adaca455bed3762f666f9b0404c4a7e747b0f1c97c8f66e67b907ccc1",
+        "head_sha256": "49d48d5adaca455bed3762f666f9b0404c4a7e747b0f1c97c8f66e67b907ccc1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/console.sh",
+        "symbol": "field_up",
+        "line_start": 246,
+        "line_end": 298,
+        "normalized_sha256": "9f5b7dc959d6481d4269c1794296f4a759c3dd727bbe8a92342d46d306d229f9",
+        "head_sha256": "9f5b7dc959d6481d4269c1794296f4a759c3dd727bbe8a92342d46d306d229f9",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/workstation/provision_keys.py",
+        "symbol": "main",
+        "line_start": 32,
+        "line_end": 61,
+        "normalized_sha256": "f9e1b40efaf5a0f65e001bbfc45fefcea47f365908e752ec15cb53307774f9d7",
+        "head_sha256": "f9e1b40efaf5a0f65e001bbfc45fefcea47f365908e752ec15cb53307774f9d7",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/agent_contract.py",
+        "symbol": "authenticated_user",
+        "line_start": 106,
+        "line_end": 145,
+        "normalized_sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+        "head_sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/integrations/litellm/preflight.py",
+        "symbol": "probe",
+        "line_start": 126,
+        "line_end": 177,
+        "normalized_sha256": "c75d16b76164be5549d9947059f6c3295658a570becd31e95394291bf943e4ce",
+        "head_sha256": null,
+        "source_state": "worktree_added",
+        "scope": "local source inspection, not runtime proof"
+      }
+    ]
+  },
+  {
+    "id": "INT-02",
+    "product": "HashiCorp Vault",
+    "category": "source-available/commercial secrets manager",
+    "version_or_commit": "fdd82cfd09d5f905f29aa98d9fea6d2a77fd5eda (main metadata pin; runtime not provisioned)",
+    "route": "official Vault Agent template -> protected existing file; or licensed LiteLLM native Vault integration for LLM provider keys",
+    "auth": "Vault Agent supported workload auto-auth; LiteLLM native AppRole/TLS cert/token; optional Enterprise namespace",
+    "capabilities": "KV v2\ndynamic leased credentials\nrevocation\nofficial Agent templates\nLiteLLM native read/write virtual-key storage with Enterprise license",
+    "our_code_evidence": [
+      "full_stack_lab/gateway/app/upstream.py:29-66 credential_headers",
+      "full_stack_lab/gateway/app/upstream.py:70-77 session",
+      "full_stack_lab/compose.yaml:114-166 Gateway credential environment and readonly secret-volume mount"
+    ],
+    "compatibility_status": "candidate_static_only",
+    "gap": "no Vault provisioned; Vault >=1.15 uses BSL-1.1 rather than OSI OSS; native LiteLLM plugin Enterprise licensing; cache/revocation bounds must be measured; current missing credential-file configuration or unmatched endpoint returns anonymous headers; expires_at=0 permits indefinite credentials; required-credential registration/freshness gate not implemented",
+    "source_url": "https://docs.litellm.ai/docs/secret_managers/hashicorp_vault",
+    "license": "BSL-1.1 for current Vault source; commercial Enterprise terms separate",
+    "github_stars_observed": 36383,
+    "checked_at": "2026-10-13",
+    "analysis_base_commit": "ab6936c64f3578de8360b840f1928681714fa7bb",
+    "runtime_evidence": [],
+    "source_refs": [
+      "https://docs.litellm.ai/docs/secret_managers/hashicorp_vault",
+      "https://developer.hashicorp.com/vault/docs/agent-and-proxy/agent/template",
+      "https://github.com/hashicorp/vault/blob/fdd82cfd09d5f905f29aa98d9fea6d2a77fd5eda/LICENSE"
+    ],
+    "metadata_observed_at": "2026-10-13T16:48:00+09:00",
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "credential_headers",
+        "line_start": 29,
+        "line_end": 66,
+        "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "session",
+        "line_start": 70,
+        "line_end": 77,
+        "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/compose.yaml",
+        "symbol": "Gateway credential environment and readonly secret-volume mount",
+        "line_start": 114,
+        "line_end": 166,
+        "normalized_sha256": "49d48d5adaca455bed3762f666f9b0404c4a7e747b0f1c97c8f66e67b907ccc1",
+        "head_sha256": "49d48d5adaca455bed3762f666f9b0404c4a7e747b0f1c97c8f66e67b907ccc1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      }
+    ]
+  },
+  {
+    "id": "INT-03",
+    "product": "OpenBao",
+    "category": "OSS secrets manager",
+    "version_or_commit": "c760347ffecea6b9baf33345b01ff125b28e73f5 (main metadata pin; docs 2.7.x)",
+    "route": "official OpenBao Agent auto-auth + template -> protected rotating JSON file -> existing MCP_UPSTREAM_CREDENTIALS_FILE; prefer this to a custom provider implementation",
+    "auth": "AppRole/Kubernetes/certificate or configured supported auto-auth; workload token with narrowly scoped secret path, not employee MCP JWT",
+    "capabilities": "KV v2\nleased secrets\nofficial Agent renewal\ntemplate render to file\nprocess supervisor",
+    "our_code_evidence": [
+      "full_stack_lab/gateway/app/upstream.py:29-66 credential_headers",
+      "full_stack_lab/gateway/app/upstream.py:70-77 session",
+      "full_stack_lab/compose.yaml:114-166 Gateway credential environment and readonly secret-volume mount"
+    ],
+    "compatibility_status": "candidate_existing_file_contract_static_only",
+    "gap": "no Agent deployment/policy/template currently; must map actual lease end to expires_at>0 and enforce file freshness/revocation; no assumption of drop-in LiteLLM Vault provider support; current missing credential-file configuration or unmatched endpoint returns anonymous headers; expires_at=0 permits indefinite credentials; required-credential registration/freshness gate not implemented",
+    "source_url": "https://openbao.org/docs/agent-and-proxy/agent/template/",
+    "license": "MPL-2.0",
+    "github_stars_observed": 8410,
+    "checked_at": "2026-10-13",
+    "analysis_base_commit": "ab6936c64f3578de8360b840f1928681714fa7bb",
+    "runtime_evidence": [],
+    "source_refs": [
+      "https://openbao.org/docs/agent-and-proxy/agent/template/",
+      "https://openbao.org/docs/agent-and-proxy/agent/",
+      "https://github.com/openbao/openbao/blob/c760347ffecea6b9baf33345b01ff125b28e73f5/LICENSE"
+    ],
+    "metadata_observed_at": "2026-10-13T16:48:00+09:00",
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "credential_headers",
+        "line_start": 29,
+        "line_end": 66,
+        "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "session",
+        "line_start": 70,
+        "line_end": 77,
+        "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/compose.yaml",
+        "symbol": "Gateway credential environment and readonly secret-volume mount",
+        "line_start": 114,
+        "line_end": 166,
+        "normalized_sha256": "49d48d5adaca455bed3762f666f9b0404c4a7e747b0f1c97c8f66e67b907ccc1",
+        "head_sha256": "49d48d5adaca455bed3762f666f9b0404c4a7e747b0f1c97c8f66e67b907ccc1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      }
+    ]
+  },
+  {
+    "id": "INT-04",
+    "product": "AWS Secrets Manager",
+    "category": "managed enterprise secrets service",
+    "version_or_commit": "service API; boto3 f5581ba376ab8f3b077899ad7856810ed8a42a36 metadata pin; installed SDK not confirmed",
+    "route": "official SDK boto3 or official ESO provider/workload identity -> existing protected credential file; native LiteLLM Enterprise alternative for LLM keys",
+    "auth": "IAM role/IRSA or workload identity; secretsmanager:GetSecretValue and KMS decrypt only for approved resource",
+    "capabilities": "versioned secret retrieval\nAWSCURRENT/AWSPREVIOUS\nrotation\nclient-side cache\nCloudTrail audit",
+    "our_code_evidence": [
+      "full_stack_lab/gateway/app/upstream.py:29-66 credential_headers",
+      "full_stack_lab/gateway/app/upstream.py:70-77 session",
+      "full_stack_lab/compose.yaml:114-166 Gateway credential environment and readonly secret-volume mount"
+    ],
+    "compatibility_status": "not_provisioned",
+    "gap": "no AWS tenant/role/SDK/provider connection; rotation must revoke actual downstream token, and cached old versions must expire within contract; current missing credential-file configuration or unmatched endpoint returns anonymous headers; expires_at=0 permits indefinite credentials; required-credential registration/freshness gate not implemented",
+    "source_url": "https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieving-secrets-python-sdk.html",
+    "license": "AWS service terms; boto3 Apache-2.0",
+    "github_stars_observed": 9909,
+    "checked_at": "2026-10-13",
+    "analysis_base_commit": "ab6936c64f3578de8360b840f1928681714fa7bb",
+    "runtime_evidence": [],
+    "source_refs": [
+      "https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieving-secrets-python-sdk.html",
+      "https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotating-secrets.html",
+      "https://github.com/boto/boto3/blob/f5581ba376ab8f3b077899ad7856810ed8a42a36/LICENSE"
+    ],
+    "metadata_observed_at": "2026-10-13T16:48:00+09:00",
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "credential_headers",
+        "line_start": 29,
+        "line_end": 66,
+        "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "session",
+        "line_start": 70,
+        "line_end": 77,
+        "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/compose.yaml",
+        "symbol": "Gateway credential environment and readonly secret-volume mount",
+        "line_start": 114,
+        "line_end": 166,
+        "normalized_sha256": "49d48d5adaca455bed3762f666f9b0404c4a7e747b0f1c97c8f66e67b907ccc1",
+        "head_sha256": "49d48d5adaca455bed3762f666f9b0404c4a7e747b0f1c97c8f66e67b907ccc1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      }
+    ]
+  },
+  {
+    "id": "INT-05",
+    "product": "Azure Key Vault",
+    "category": "managed enterprise secrets service",
+    "version_or_commit": "service API; Azure SDK 385e07bb742d6e8cea4ecad34d6d403d2387fb8b metadata pin; installed package not confirmed",
+    "route": "official azure-keyvault-secrets + azure-identity, CSI/ESO file mount; licensed LiteLLM native provider alternative",
+    "auth": "Managed Identity/Workload Identity with narrow RBAC and private-endpoint/network policy; production credential chain must be explicit",
+    "capabilities": "versioned SecretClient.get_secret\nenabled/disabled secret versions\nRBAC\nmanaged identity\naudit integration",
+    "our_code_evidence": [
+      "full_stack_lab/gateway/app/upstream.py:29-66 credential_headers",
+      "full_stack_lab/gateway/app/upstream.py:70-77 session",
+      "full_stack_lab/compose.yaml:114-166 Gateway credential environment and readonly secret-volume mount"
+    ],
+    "compatibility_status": "not_provisioned",
+    "gap": "tenant/vault/private endpoint/role missing; latest vs pinned version and disabled cached secret behavior untested; current missing credential-file configuration or unmatched endpoint returns anonymous headers; expires_at=0 permits indefinite credentials; required-credential registration/freshness gate not implemented",
+    "source_url": "https://learn.microsoft.com/en-us/azure/key-vault/secrets/quick-create-python",
+    "license": "Azure service terms; official SDK MIT",
+    "github_stars_observed": 5618,
+    "checked_at": "2026-10-13",
+    "analysis_base_commit": "ab6936c64f3578de8360b840f1928681714fa7bb",
+    "runtime_evidence": [],
+    "source_refs": [
+      "https://learn.microsoft.com/en-us/azure/key-vault/secrets/quick-create-python",
+      "https://docs.litellm.ai/docs/secret_managers/azure_key_vault",
+      "https://github.com/Azure/azure-sdk-for-python/blob/385e07bb742d6e8cea4ecad34d6d403d2387fb8b/LICENSE.txt"
+    ],
+    "metadata_observed_at": "2026-10-13T16:48:00+09:00",
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "credential_headers",
+        "line_start": 29,
+        "line_end": 66,
+        "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "session",
+        "line_start": 70,
+        "line_end": 77,
+        "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/compose.yaml",
+        "symbol": "Gateway credential environment and readonly secret-volume mount",
+        "line_start": 114,
+        "line_end": 166,
+        "normalized_sha256": "49d48d5adaca455bed3762f666f9b0404c4a7e747b0f1c97c8f66e67b907ccc1",
+        "head_sha256": "49d48d5adaca455bed3762f666f9b0404c4a7e747b0f1c97c8f66e67b907ccc1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      }
+    ]
+  },
+  {
+    "id": "INT-06",
+    "product": "Google Secret Manager",
+    "category": "managed enterprise secrets service",
+    "version_or_commit": "service API; google-cloud-python 1de2e3f0831fa0b24b2a458956b3d96739bd191c metadata pin; installed package not confirmed",
+    "route": "official google-cloud-secret-manager SDK or ESO Workload Identity -> existing protected file; LiteLLM Enterprise native provider alternative",
+    "auth": "ADC/Workload Identity Federation; secretmanager.versions.access on approved secret and version",
+    "capabilities": "version access\nversion disable/destroy\nIAM\nCRC32C integrity checking\naudit logs",
+    "our_code_evidence": [
+      "full_stack_lab/gateway/app/upstream.py:29-66 credential_headers",
+      "full_stack_lab/gateway/app/upstream.py:70-77 session",
+      "full_stack_lab/compose.yaml:114-166 Gateway credential environment and readonly secret-volume mount"
+    ],
+    "compatibility_status": "not_provisioned",
+    "gap": "project/service account/identity federation missing; payload CRC32C/version/revocation propagation unverified; current missing credential-file configuration or unmatched endpoint returns anonymous headers; expires_at=0 permits indefinite credentials; required-credential registration/freshness gate not implemented",
+    "source_url": "https://docs.cloud.google.com/secret-manager/docs/access-secret-version",
+    "license": "Google Cloud service terms; official SDK Apache-2.0",
+    "github_stars_observed": 5408,
+    "checked_at": "2026-10-13",
+    "analysis_base_commit": "ab6936c64f3578de8360b840f1928681714fa7bb",
+    "runtime_evidence": [],
+    "source_refs": [
+      "https://docs.cloud.google.com/secret-manager/docs/access-secret-version",
+      "https://docs.cloud.google.com/secret-manager/docs/disable-secret-version",
+      "https://docs.litellm.ai/docs/secret_managers/google_secret_manager",
+      "https://github.com/googleapis/google-cloud-python/blob/1de2e3f0831fa0b24b2a458956b3d96739bd191c/LICENSE"
+    ],
+    "metadata_observed_at": "2026-10-13T16:48:00+09:00",
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "credential_headers",
+        "line_start": 29,
+        "line_end": 66,
+        "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "session",
+        "line_start": 70,
+        "line_end": 77,
+        "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/compose.yaml",
+        "symbol": "Gateway credential environment and readonly secret-volume mount",
+        "line_start": 114,
+        "line_end": 166,
+        "normalized_sha256": "49d48d5adaca455bed3762f666f9b0404c4a7e747b0f1c97c8f66e67b907ccc1",
+        "head_sha256": "49d48d5adaca455bed3762f666f9b0404c4a7e747b0f1c97c8f66e67b907ccc1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      }
+    ]
+  },
+  {
+    "id": "INT-07",
+    "product": "External Secrets Operator",
+    "category": "OSS Kubernetes integration controller",
+    "version_or_commit": "4aaa3159078da3550164e59de02e1438eea3af5f (main metadata pin; no chart installed)",
+    "route": "official SecretStore/ExternalSecret provider -> Kubernetes Secret -> volume; compose appliance uses Agent/official SDK instead unless Kubernetes is actually selected",
+    "auth": "provider workload identity; scoped SecretStore preferable to unrestricted ClusterSecretStore; RBAC for controller and workload",
+    "capabilities": "AWS/Azure/GCP/Vault providers\nrefresh policies\ntemplate data mapping\nstatus conditions\nKubernetes mounts",
+    "our_code_evidence": [
+      "full_stack_lab/gateway/app/upstream.py:29-66 credential_headers",
+      "full_stack_lab/gateway/app/upstream.py:70-77 session",
+      "full_stack_lab/compose.yaml:114-166 Gateway credential environment and readonly secret-volume mount"
+    ],
+    "compatibility_status": "not_applicable_to_current_compose; candidate_for_kubernetes",
+    "gap": "Kubernetes projected secret default modes/owner must meet current 0600-or-0400-style owner-only permission check; refresh failure does not by itself erase a previously mounted secret; current missing credential-file configuration or unmatched endpoint returns anonymous headers; expires_at=0 permits indefinite credentials; required-credential registration/freshness gate not implemented",
+    "source_url": "https://external-secrets.io/latest/provider/hashicorp-vault/",
+    "license": "Apache-2.0",
+    "github_stars_observed": 6897,
+    "checked_at": "2026-10-13",
+    "analysis_base_commit": "ab6936c64f3578de8360b840f1928681714fa7bb",
+    "runtime_evidence": [],
+    "source_refs": [
+      "https://external-secrets.io/latest/provider/hashicorp-vault/",
+      "https://external-secrets.io/latest/introduction/",
+      "https://github.com/external-secrets/external-secrets/blob/4aaa3159078da3550164e59de02e1438eea3af5f/LICENSE"
+    ],
+    "metadata_observed_at": "2026-10-13T16:48:00+09:00",
+    "code_evidence": [
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "credential_headers",
+        "line_start": 29,
+        "line_end": 66,
+        "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "session",
+        "line_start": 70,
+        "line_end": 77,
+        "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      },
+      {
+        "path": "full_stack_lab/compose.yaml",
+        "symbol": "Gateway credential environment and readonly secret-volume mount",
+        "line_start": 114,
+        "line_end": 166,
+        "normalized_sha256": "49d48d5adaca455bed3762f666f9b0404c4a7e747b0f1c97c8f66e67b907ccc1",
+        "head_sha256": "49d48d5adaca455bed3762f666f9b0404c4a7e747b0f1c97c8f66e67b907ccc1",
+        "source_state": "committed_source",
+        "scope": "local source inspection, not runtime proof"
+      }
+    ]
+  }
+]

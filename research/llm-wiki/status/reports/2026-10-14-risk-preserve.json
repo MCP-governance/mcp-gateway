@@ -1,0 +1,43 @@
+{
+  "result": "passed",
+  "evidence": [
+    {
+      "case": "D01-active-protocol-admission",
+      "at": 1791954762.2181175,
+      "status": 200,
+      "kernel_checks": true
+    },
+    {
+      "case": "D02-executable-boundary",
+      "at": 1791954762.380849,
+      "profile": "mcpgw-managed-pj1 (enforce)",
+      "gateway_exit": 0,
+      "node_exit": 126
+    },
+    {
+      "case": "D03-loopback-boundary",
+      "at": 1791954763.4265122,
+      "root_receiver_reachable": true,
+      "managed_exit": 1
+    },
+    {
+      "case": "D04-stale-heartbeat",
+      "at": 1791954952.373222,
+      "waited_seconds": 188.91,
+      "token_unexpired": true,
+      "admission": 403,
+      "policy_id": "ENDPOINT-MANAGED-001",
+      "mint_status": 403
+    },
+    {
+      "case": "D05-recovery",
+      "at": 1791954953.3601835,
+      "admission": 200,
+      "service_restored": true
+    }
+  ],
+  "database_reset": false,
+  "program_sha256": "9deefd48b16182984d28de0b245d3a709098383925e58a3b5c5528aa3d7ca16d",
+  "raw_capture_sha256": "944b16bff2e9120c2ad3100aaa6ea71f1e40356ebfc93c429b4c162a0bb303c6",
+  "raw_capture": ".task-local-20261014\\risk-scenarios-preserve-output.jsonl"
+}

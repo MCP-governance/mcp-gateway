@@ -1,0 +1,27 @@
+{
+  "checked_at": "2026-10-13T12:06:28.487117+00:00",
+  "host": "100.83.175.111",
+  "scope": "isolated_process_with_real_appliance_presidio_and_gitleaks",
+  "services_or_deployed_code_modified": false,
+  "actual_mcp_server_experiment": false,
+  "source_files": [
+    {
+      "path": "full_stack_lab/gateway/app/privacy.py",
+      "normalized_sha256": "1fdbafb565c0d66ff39431732d3a6c461752cf0fccab6eecd7230569b9500370"
+    },
+    {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba"
+    },
+    {
+      "path": "full_stack_lab/gateway/app/mcp_facade.py",
+      "normalized_sha256": "1dbd568cc05d491b65cc40ba6cc32d133b8da1a9d735a280a8a4f516fddc2e39"
+    },
+    {
+      "path": "full_stack_lab/tests/mcp_result_services_check.py",
+      "normalized_sha256": "34c4deb615f20b2f86f90737ecafb6c66e1c20a414d79688e6a8b768fad7acc2"
+    }
+  ],
+  "exit_code": 0,
+  "output": ".....\n----------------------------------------------------------------------\nRan 5 tests in 1.346s\n\nOK\n"
+}

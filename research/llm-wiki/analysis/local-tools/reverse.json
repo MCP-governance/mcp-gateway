@@ -1,0 +1,1086 @@
+{
+  "category": "local reverse engineering and binary analysis",
+  "date": "2026-10-14",
+  "tools": [
+    {
+      "name": "Ghidra with GhidraMCP",
+      "role": "reverse engineering and binary analysis",
+      "selection": "required Ghidra integration",
+      "status": "installed_and_mcp_connected",
+      "license": {
+        "ghidra": "Apache-2.0",
+        "ghidramcp": "Apache-2.0",
+        "jdk": "GPL-2.0-with-classpath-exception (Temurin/OpenJDK)",
+        "free_use_scope": "free/open-source components; no paid key used"
+      },
+      "versions": {
+        "ghidra": "12.1.4",
+        "ghidra_release_tag": "Ghidra_12.1.4_build",
+        "ghidra_commit": "8b6bbb857accdfa20dc5b2f5dea471178c2e9fbc",
+        "ghidramcp": "2.0.0",
+        "ghidramcp_commit": "1e980252087b2479a21b9ca6d82d5829538651a7",
+        "java": "Temurin 21.0.12.1+1",
+        "python": "3.12.10",
+        "mcp_sdk": "1.30.0",
+        "pyghidra": "3.1.0",
+        "jpype1": "1.5.2"
+      },
+      "maintenance_observation": "As checked 2026-10-14, GitHub marked Ghidra 12.1.4 and GhidraMCP 2.0 as Latest; GhidraMCP release was published 2026-10-10 and the release commit showed GitHub Verified signature. This is a point-in-time observation, not a support/SLA claim.",
+      "installation": {
+        "scope": "task-local ignored directory only; no system install, PATH, firewall, harness, or compose changes",
+        "root": ".task-local-20261014/reverse/",
+        "ghidra_dir": ".task-local-20261014/reverse/ghidra/ghidra_12.1.4_PUBLIC",
+        "jdk_dir": ".task-local-20261014/reverse/jdk21/jdk-21.0.12.1+1",
+        "ghidramcp_source_dir": ".task-local-20261014/reverse/GhidraMCP-src",
+        "venv_dir": ".task-local-20261014/reverse/venv",
+        "ghidra_archive_sha256": "ddac49f903da9d5bac833e5cc79395098b9c33cfd3279be5f31bd00387d2d4db",
+        "ghidramcp_release_archive_sha256": "ebf904fd6782e429e95a60a24fe0724b20c0acb2dedb304135a5281f6b5f2e72",
+        "ghidramcp_wheel_sha256": "af9818966da24afbd0a66824081f0486001c64614091caec3fa0e39d07367e8e",
+        "temurin_archive_sha256": "f9d6e191ab098c0d416e7d588a24420a8621cd2f4720dab2459b8b7b2d2d8b4e"
+      },
+      "transport": {
+        "mcp_client_to_server": "stdio",
+        "mcp_server_to_ghidra_backend": "ephemeral HTTP on 127.0.0.1",
+        "authentication": "none on the local bridge; no auth challenge observed",
+        "origin_host_controls": "source rejects requests containing Origin and limits Host to 127.0.0.1, localhost, [::1]",
+        "http_transport_option": "CLI supports HTTP mode, --mcp-host defaults to 127.0.0.1; not used for MCP in this test"
+      },
+      "protocol_evidence": {
+        "run_time_local": "2026-10-14T13:12:02+09:00",
+        "evidence_file_ignored": ".task-local-20261014/reverse/run21/mcp-evidence.json",
+        "initialize": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": {
+            "protocolVersion": "2025-06-18",
+            "capabilities": {
+              "experimental": {},
+              "prompts": {
+                "listChanged": false
+              },
+              "resources": {
+                "subscribe": false,
+                "listChanged": false
+              },
+              "tools": {
+                "listChanged": false
+              }
+            },
+            "serverInfo": {
+              "name": "ghidra-mcp",
+              "version": "1.30.0"
+            },
+            "instructions": "Tools for reverse engineering the program open in Ghidra. Call get_program_info first to confirm\nwhich binary you are working on. Addresses are hex strings such as \"0x401000\". List tools are\npaginated: pass offset/limit and check has_more. Prefer the address-based tools for modifications,\nsince function names can be ambiguous.\n"
+          }
+        },
+        "tools_list_request_id": 2,
+        "tool_count": 28,
+        "tool_schemas": [
+          {
+            "name": "get_program_info",
+            "description": "Identify the target program: name, format, language/architecture, compiler spec,\n        image base, address range, size, entry points, and hashes.",
+            "inputSchema": {
+              "properties": {},
+              "title": "get_program_infoArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "get_program_infoDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_functions",
+            "description": "List functions (name and entry address), optionally filtered by a case-insensitive\n        substring of the name.",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                },
+                "filter": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Filter"
+                }
+              },
+              "title": "list_functionsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_functionsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_methods",
+            "description": "Deprecated: use list_functions. Lists function names only.",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "list_methodsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Result",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "list_methodsOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "search_functions_by_name",
+            "description": "Search for functions whose name contains the given substring (case-insensitive).",
+            "inputSchema": {
+              "properties": {
+                "query": {
+                  "title": "Query",
+                  "type": "string"
+                },
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "title": "search_functions_by_nameArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "search_functions_by_nameDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_classes",
+            "description": "List class namespaces (fully qualified names).",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "list_classesArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_classesDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_namespaces",
+            "description": "List all non-global namespaces (fully qualified names).",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "list_namespacesArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_namespacesDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_segments",
+            "description": "List memory blocks with address range, size, and permissions.",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "list_segmentsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_segmentsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_imports",
+            "description": "List imported (external) symbols and their libraries.",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "list_importsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_importsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_exports",
+            "description": "List exported symbols / entry points.",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "list_exportsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_exportsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_data_items",
+            "description": "List defined data with address, label, type, and value.",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "list_data_itemsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_data_itemsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "list_strings",
+            "description": "List defined strings with their addresses, optionally filtered by a case-insensitive\n        substring of the content.",
+            "inputSchema": {
+              "properties": {
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 200,
+                  "title": "Limit",
+                  "type": "integer"
+                },
+                "filter": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Filter"
+                }
+              },
+              "title": "list_stringsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "list_stringsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_function_by_address",
+            "description": "Get the function at or containing an address: name, signature, body range,\n        calling convention.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "address"
+              ],
+              "title": "get_function_by_addressArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "get_function_by_addressDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "decompile_function",
+            "description": "Decompile a function by name and return C pseudocode. Fails if the name is ambiguous;\n        use decompile_function_by_address in that case.",
+            "inputSchema": {
+              "properties": {
+                "name": {
+                  "title": "Name",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "title": "decompile_functionArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "decompile_functionDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "decompile_function_by_address",
+            "description": "Decompile the function at or containing an address and return C pseudocode.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "address"
+              ],
+              "title": "decompile_function_by_addressArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "decompile_function_by_addressDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "disassemble_function",
+            "description": "Disassemble the instructions in a function's body (address, bytes, instruction,\n        end-of-line comment).",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 500,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "address"
+              ],
+              "title": "disassemble_functionArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "disassemble_functionDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_xrefs_to",
+            "description": "List references to an address, with the function each reference comes from.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "address"
+              ],
+              "title": "get_xrefs_toArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "get_xrefs_toDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_xrefs_from",
+            "description": "List references from a single instruction or data address.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "address"
+              ],
+              "title": "get_xrefs_fromArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "get_xrefs_fromDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_function_xrefs",
+            "description": "List references to a function's entry point, by name or (preferably) address.",
+            "inputSchema": {
+              "properties": {
+                "name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Name"
+                },
+                "address": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Address"
+                },
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "get_function_xrefsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "get_function_xrefsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_function_calls",
+            "description": "Function-level call graph, one level deep. Callers are call sites that reach this\n        function; callees are calls made from anywhere in its body, including indirect calls\n        (direct=false). offset/limit apply to each list separately.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "direction": {
+                  "default": "both",
+                  "enum": [
+                    "both",
+                    "callers",
+                    "callees"
+                  ],
+                  "title": "Direction",
+                  "type": "string"
+                },
+                "offset": {
+                  "default": 0,
+                  "title": "Offset",
+                  "type": "integer"
+                },
+                "limit": {
+                  "default": 100,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "address"
+              ],
+              "title": "get_function_callsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "get_function_callsDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "read_memory",
+            "description": "Read up to 4096 bytes of program memory as hex and ASCII. Unmapped or uninitialized\n        bytes are shown as '??' and listed in `gaps`.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "length": {
+                  "default": 64,
+                  "title": "Length",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "address"
+              ],
+              "title": "read_memoryArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "read_memoryDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "rename_function_by_address",
+            "description": "Rename the function at or containing an address.",
+            "inputSchema": {
+              "properties": {
+                "function_address": {
+                  "title": "Function Address",
+                  "type": "string"
+                },
+                "new_name": {
+                  "title": "New Name",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "function_address",
+                "new_name"
+              ],
+              "title": "rename_function_by_addressArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "rename_function_by_addressDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "rename_function",
+            "description": "Rename a function by its current name. Fails if the name is ambiguous; prefer\n        rename_function_by_address.",
+            "inputSchema": {
+              "properties": {
+                "old_name": {
+                  "title": "Old Name",
+                  "type": "string"
+                },
+                "new_name": {
+                  "title": "New Name",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "old_name",
+                "new_name"
+              ],
+              "title": "rename_functionArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "rename_functionDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "rename_data",
+            "description": "Rename the label of defined data (or an existing symbol) at an address.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "new_name": {
+                  "title": "New Name",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "address",
+                "new_name"
+              ],
+              "title": "rename_dataArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "rename_dataDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "rename_variable",
+            "description": "Rename a local variable or parameter as shown in the decompiler. Identify the function\n        by function_address (preferred) or function_name.",
+            "inputSchema": {
+              "properties": {
+                "old_name": {
+                  "title": "Old Name",
+                  "type": "string"
+                },
+                "new_name": {
+                  "title": "New Name",
+                  "type": "string"
+                },
+                "function_address": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Function Address"
+                },
+                "function_name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Function Name"
+                }
+              },
+              "required": [
+                "old_name",
+                "new_name"
+              ],
+              "title": "rename_variableArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "rename_variableDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "set_function_prototype",
+            "description": "Set a function's signature from a C prototype, e.g. \"int foo(char *buf, int len)\".",
+            "inputSchema": {
+              "properties": {
+                "function_address": {
+                  "title": "Function Address",
+                  "type": "string"
+                },
+                "prototype": {
+                  "title": "Prototype",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "function_address",
+                "prototype"
+              ],
+              "title": "set_function_prototypeArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "set_function_prototypeDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "set_local_variable_type",
+            "description": "Set the data type of a decompiler variable, e.g. \"char *\", \"DWORD\", \"MY_STRUCT *\".",
+            "inputSchema": {
+              "properties": {
+                "function_address": {
+                  "title": "Function Address",
+                  "type": "string"
+                },
+                "variable_name": {
+                  "title": "Variable Name",
+                  "type": "string"
+                },
+                "new_type": {
+                  "title": "New Type",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "function_address",
+                "variable_name",
+                "new_type"
+              ],
+              "title": "set_local_variable_typeArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "set_local_variable_typeDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "set_decompiler_comment",
+            "description": "Set the pre-comment at an address (shown in the decompiler). An empty comment clears\n        it.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "comment": {
+                  "title": "Comment",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "address",
+                "comment"
+              ],
+              "title": "set_decompiler_commentArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "set_decompiler_commentDictOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "set_disassembly_comment",
+            "description": "Set the end-of-line comment at an address (shown in the disassembly). An empty comment\n        clears it.",
+            "inputSchema": {
+              "properties": {
+                "address": {
+                  "title": "Address",
+                  "type": "string"
+                },
+                "comment": {
+                  "title": "Comment",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "address",
+                "comment"
+              ],
+              "title": "set_disassembly_commentArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "additionalProperties": true,
+              "title": "set_disassembly_commentDictOutput",
+              "type": "object"
+            }
+          }
+        ],
+        "successful_read_call": {
+          "request": {
+            "method": "tools/call",
+            "name": "get_program_info",
+            "arguments": {}
+          },
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\n  \"name\": \"synthetic_return_42.elf\",\n  \"project_path\": \"/synthetic_return_42.elf\",\n  \"executable_path\": \"/C:/Users/bobysg/bob/프로젝트/mcp-gateway-local-mcp-endpoint/.task-local-20261014/reverse/run21/synthetic_return_42.elf\",\n  \"executable_format\": \"Executable and Linking Format (ELF)\",\n  \"language_id\": \"x86:LE:64:default\",\n  \"compiler_spec\": \"gcc\",\n  \"processor\": \"x86\",\n  \"endian\": \"little\",\n  \"pointer_size\": 8,\n  \"image_base\": \"00400000\",\n  \"min_address\": \"00400000\",\n  \"max_address\": \"0040007d\",\n  \"memory_size\": 126,\n  \"function_count\": 1,\n  \"external_function_count\": 0,\n  \"entry_points\": [\n    \"00400078\"\n  ],\n  \"md5\": \"c4c328a6c2c0b70769eb285c63f9c72f\",\n  \"sha256\": \"0a64fc68cccfb67b816011fe7a6b58c4deb566c234516520a409dbfc6b2ea8ba\"\n}"
+                }
+              ],
+              "structuredContent": {
+                "name": "synthetic_return_42.elf",
+                "project_path": "/synthetic_return_42.elf",
+                "executable_path": "/C:/Users/bobysg/bob/프로젝트/mcp-gateway-local-mcp-endpoint/.task-local-20261014/reverse/run21/synthetic_return_42.elf",
+                "executable_format": "Executable and Linking Format (ELF)",
+                "language_id": "x86:LE:64:default",
+                "compiler_spec": "gcc",
+                "processor": "x86",
+                "endian": "little",
+                "pointer_size": 8,
+                "image_base": "00400000",
+                "min_address": "00400000",
+                "max_address": "0040007d",
+                "memory_size": 126,
+                "function_count": 1,
+                "external_function_count": 0,
+                "entry_points": [
+                  "00400078"
+                ],
+                "md5": "c4c328a6c2c0b70769eb285c63f9c72f",
+                "sha256": "0a64fc68cccfb67b816011fe7a6b58c4deb566c234516520a409dbfc6b2ea8ba"
+              },
+              "isError": false
+            }
+          }
+        },
+        "process_exit_code": 0,
+        "loopback_observation": "INFO:ghidra_mcp.headless:Serving synthetic_return_42.elf on http://127.0.0.1:58794/"
+      },
+      "permissions": {
+        "schema_classification": {
+          "read": 20,
+          "project_write": 8
+        },
+        "read_tools": [
+          "decompile_function",
+          "decompile_function_by_address",
+          "disassemble_function",
+          "get_function_by_address",
+          "get_function_calls",
+          "get_function_xrefs",
+          "get_program_info",
+          "get_xrefs_from",
+          "get_xrefs_to",
+          "list_classes",
+          "list_data_items",
+          "list_exports",
+          "list_functions",
+          "list_imports",
+          "list_methods",
+          "list_namespaces",
+          "list_segments",
+          "list_strings",
+          "read_memory",
+          "search_functions_by_name"
+        ],
+        "write_tools": [
+          "rename_function_by_address",
+          "rename_function",
+          "rename_data",
+          "rename_variable",
+          "set_function_prototype",
+          "set_local_variable_type",
+          "set_decompiler_comment",
+          "set_disassembly_comment"
+        ],
+        "execute_or_script_tool_exposed": false,
+        "execution_note": "The selected binary was imported and analyzed by Ghidra; it was not launched as a process.",
+        "reachable_paths": "The launcher accepts caller-selected --binary and optional --project filesystem paths; analysis/process inherits current OS user rights. MCP tools operate on the active loaded program/project.",
+        "persistence": "No --project was supplied. Ghidra used a temporary project and logged Discarding unsaved changes at shutdown.",
+        "plugin_surface": "The GhidraMCP extension is installed/loaded for headless mode. GUI-only capabilities may expose a different schema; this test covers the headless mode only."
+      },
+      "test_input": {
+        "kind": "synthetic ELF64 x86-64; mov eax,42; ret; one executable load segment",
+        "path_ignored": "R:\\reverse\\run21\\synthetic_return_42.elf",
+        "sha256": "0a64fc68cccfb67b816011fe7a6b58c4deb566c234516520a409dbfc6b2ea8ba",
+        "reported_program_sha256": "0a64fc68cccfb67b816011fe7a6b58c4deb566c234516520a409dbfc6b2ea8ba",
+        "reported_function_count": 1,
+        "result": "read call successful; one function detected"
+      },
+      "reproduction": {
+        "script": "research/llm-wiki/experiments/local-tools/reverse/run_probe.ps1",
+        "protocol_driver": "research/llm-wiki/experiments/local-tools/reverse/probe_ghidra_mcp.py",
+        "report_builder": "research/llm-wiki/experiments/local-tools/reverse/build_report.py",
+        "requirements": "task-local ignored installation described above"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "kind": "official_release",
+      "url": "https://github.com/NationalSecurityAgency/ghidra/releases/tag/Ghidra_12.1.4_build",
+      "commit_or_tag": "Ghidra_12.1.4_build / 8b6bbb857accdfa20dc5b2f5dea471178c2e9fbc",
+      "as_of": "2026-10-14",
+      "latest_label_observed": true,
+      "verified": [
+        "release version",
+        "official archive SHA-256",
+        "Apache-2.0",
+        "minimum JDK 21"
+      ]
+    },
+    {
+      "kind": "official_docs",
+      "url": "https://github.com/NationalSecurityAgency/ghidra/blob/Ghidra_12.1.4_build/GhidraDocs/GettingStarted.md",
+      "verified": [
+        "headless use and installation guidance"
+      ]
+    },
+    {
+      "kind": "upstream_mcp_release",
+      "url": "https://github.com/LaurieWired/GhidraMCP/releases/tag/2.0",
+      "commit_or_tag": "2.0 / 1e980252087b2479a21b9ca6d82d5829538651a7",
+      "published": "2026-10-10",
+      "as_of": "2026-10-14",
+      "latest_label_observed": true,
+      "github_signature": "Verified",
+      "verified": [
+        "release bundle SHA-256",
+        "Apache-2.0",
+        "Ghidra 12.1.4 compatibility",
+        "headless PyGhidra and stdio"
+      ]
+    },
+    {
+      "kind": "upstream_source",
+      "url": "https://github.com/LaurieWired/GhidraMCP/tree/1e980252087b2479a21b9ca6d82d5829538651a7",
+      "files": [
+        "src/ghidra_mcp/server.py",
+        "src/ghidra_mcp/headless.py",
+        "src/ghidra_mcp/cli.py",
+        "src/ghidra_mcp/backend.py",
+        "extension/src/main/java/com/lauriewired/ghidramcp/http/BackendHttpServer.java"
+      ],
+      "verified": [
+        "tool declarations and schemas",
+        "loopback binding",
+        "Origin/Host checks",
+        "HTTP routes and absence of arbitrary shell/script tool"
+      ]
+    },
+    {
+      "kind": "official_runtime_api",
+      "url": "https://api.adoptium.net/v3/assets/latest/21/hotspot?architecture=x64&image_type=jdk&os=windows&vendor=eclipse",
+      "verified": [
+        "Temurin JDK 21 distribution metadata and archive digest"
+      ]
+    }
+  ],
+  "limitations": [
+    "Second candidate (radare2/rizin) was not installed; parent prioritized completion of actual Ghidra integration. No comparative runtime result is claimed.",
+    "Only the headless stdio configuration was exercised. GUI mode and optional remote HTTP MCP mode were not run.",
+    "The successful tools/call was read-only. The 8 project-edit tools were enumerated but not invoked; their write capability is established by schema/source, not a mutation test.",
+    "No authentication is present on the internal loopback bridge. Origin/Host checks are not authentication; there is no evidence here for resistance to local same-user processes.",
+    "Paths are process-user reachable; no sandbox or per-project authorization enforcement was demonstrated. Arbitrary --binary/--project selection is a launcher capability.",
+    "No real-world or untrusted binary, network target, external MCP client, gateway route, managed harness, or endpoint policy was tested.",
+    "On this Korean Windows path PyGhidra child output hit a UTF-8 decoding issue using the native path; the successful run used a temporary drive alias. Runner removes the alias on exit. No persistent project was retained.",
+    "Early failed attempts (incorrect cli module entry point, JDK 25, and an explicit project path inside a dot-prefixed directory) are excluded from successful evidence; only the preserved successful run counts."
+  ]
+}

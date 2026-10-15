@@ -1,0 +1,159 @@
+{
+  "date": "2026-10-14",
+  "accessed_at": "2026-10-14T14:14:54+09:00",
+  "duplicate_check": {
+    "checked": [
+      "research/llm-wiki/catalogs/endpoint-permission-references.json",
+      "research/llm-wiki/catalogs/local-tool-risks.json",
+      "research/llm-wiki/analysis/local-tools/permissions-reverse.md",
+      "research/llm-wiki/experiments/E12-managed-admission.md",
+      "research/llm-wiki/experiments/E13-local-bypass.md"
+    ],
+    "existing_coverage": [
+      "SO_PEERCRED returns connection-time peer credentials and does not identify executable or distinguish same-UID processes.",
+      "MCP tool annotations are untrusted unless the server itself is trusted; HTTP transport authorization guidance is already catalogued.",
+      "E12 already distinguishes managed enrollment, active status, actual checks, and heartbeat freshness; E13 covers endpoint-local bypass."
+    ],
+    "new_scope": "Use official upstream designs to compare client-reported heartbeat trust, Unix-socket workload identity, atomic epoch/CAS updates, and database transaction races. This is reference analysis, not a claim that those components are implemented here."
+  },
+  "references": [
+    {
+      "id": "REF-RISK-K8S-LEASE-135",
+      "title": "Kubernetes Leases and node heartbeat design",
+      "url": "https://v1-35.docs.kubernetes.io/docs/concepts/architecture/leases/",
+      "source_url": "https://github.com/kubernetes/kubernetes/blob/66452049f3d692768c39c797b21b793dce80314e/pkg/kubelet/util/nodelease.go",
+      "version": "Kubernetes v1.35.0",
+      "commit": "66452049f3d692768c39c797b21b793dce80314e",
+      "license": "Apache-2.0",
+      "read_scope": "Versioned Kubernetes Lease concept page: node heartbeat renewTime and control-plane availability interpretation; pinned kubelet nodelease helper source reviewed for how node Lease renewal is issued.",
+      "sha256": "7fa57a4d60ec84df968e3d79ae59797d5dbbce4d0b1a765c3c710745c1357df0",
+      "sha256_scope": "UTF-8 bytes returned by raw.githubusercontent.com for pkg/kubelet/util/nodelease.go at the pinned commit; docs page itself was read in the browser and was not locally archived.",
+      "official_claim": "Kubernetes represents node heartbeat with a coordination.k8s.io Lease; kubelet updates spec.renewTime and the control plane uses that timestamp to assess Node availability. The Lease is a liveness signal in a control plane that also has node identity and authorization boundaries.",
+      "application": "For LOCAL-RISK-08 and E12, keep liveness freshness as an independently expiring admission condition, but do not treat a recent client heartbeat as proof that local firewall/profile checks are true. Bind accepted updates to the enrolled device identity and expected policy/configuration generation; test stale/replayed heartbeats and a healthy timestamp paired with failed or missing checks. Compare evidence from the server-side stored observation with the client claim.",
+      "limitations": "Kubernetes Lease semantics are not an endpoint attestation mechanism. A recent Lease proves a recent accepted update under Kubernetes API identity/authorization, not measurement of kernel policy or binary integrity. Kubernetes NodeRestriction and its control-plane model are not present by merely copying the renewTime pattern."
+    },
+    {
+      "id": "REF-RISK-SPIRE-AGENT-1153",
+      "title": "SPIRE agent Workload API and peer-credential attestation",
+      "url": "https://github.com/spiffe/spire/blob/2f7861ae3923caf1f57eb087fc2928d58c0fb1d2/doc/spire_agent.md",
+      "version": "SPIRE v1.15.3",
+      "commit": "2f7861ae3923caf1f57eb087fc2928d58c0fb1d2",
+      "license": "Apache-2.0",
+      "read_scope": "Pinned agent documentation: Workload API is served through a configured Unix socket; workload is implicitly attested through socket peer credentials; contrasted with delegated identity and experimental broker APIs, including their distinct authentication/configuration boundaries.",
+      "sha256": "85f9f25eb1afee90dc10bbc551db6ba2755590a3426a13b483b39771a5d54201",
+      "sha256_scope": "UTF-8 bytes returned by raw.githubusercontent.com for doc/spire_agent.md at the pinned commit.",
+      "official_claim": "SPIRE documents peer credentials as part of Workload API caller attestation. Its separate broker endpoint uses mTLS with an allowlist and allowed reference types; the document explicitly identifies that broker API as experimental in this release line.",
+      "application": "For LOCAL-RISK-10 and the Unix SO_PEERCRED boundary, use this as a comparator for an identity chain: socket peer credentials are an input to an attestor/selector decision, not a raw UID equality check that grants all same-UID processes the same assurance. A test design can vary PID/UID/registered selector and confirm identity issuance or denial, then separately test revocation/expiry of issued identity before admission. Keep privileged service identity and caller identity distinct.",
+      "limitations": "SPIRE requires a configured trust domain, registration entries, attestor plugins, agent server, and identity lifecycle; it is not a drop-in local MCP sandbox. The cited claim does not make Linux peer credentials proof against a privileged host/root attacker or prove arbitrary executable integrity. Experimental broker API guidance must not be generalized as stable Workload API behavior."
+    },
+    {
+      "id": "REF-RISK-ETCD-TXN-367",
+      "title": "etcd transaction compare-and-swap API",
+      "url": "https://etcd.io/docs/v3.6/learning/api/",
+      "source_url": "https://github.com/etcd-io/etcd/blob/e838ef116fc368b321ddf2e424167b15174fb80d/api/etcdserverpb/rpc.proto",
+      "version": "etcd v3.6.7",
+      "commit": "e838ef116fc368b321ddf2e424167b15174fb80d",
+      "license": "Apache-2.0",
+      "read_scope": "Versioned transaction API explanation: atomic If/Then/Else operations and compare predicates; pinned RPC schema reviewed for TxnRequest compare/success/failure structure and lease/transaction API boundaries.",
+      "sha256": "c57117e8f4764667be927d862f4fb01fbf1faaf0f725bf2eecc3a523e12aacc6",
+      "sha256_scope": "UTF-8 bytes returned by raw.githubusercontent.com for api/etcdserverpb/rpc.proto at the pinned commit.",
+      "official_claim": "etcd Txn evaluates comparisons and executes one of the success or failure operation lists atomically. The revision/version comparison model can guard a state transition against a concurrent writer.",
+      "application": "For admission freshness, epoch/revoke, and database-race scenarios, derive a concurrency test pattern: compare the observed device or credential generation and update/revoke it in one atomic transaction; race issue/refresh against revoke and require exactly one valid post-race state. If the current PostgreSQL store remains authoritative, implement the equivalent in its transaction/conditional-update semantics rather than adding etcd as a dependency.",
+      "limitations": "This documents an etcd primitive, not an authorization policy or a guarantee that the current solution uses etcd. Compare-and-swap is only effective if all relevant writers share the same key/revision discipline and failure path; it does not itself expire cached credentials or invalidate tokens at downstream consumers."
+    },
+    {
+      "id": "REF-RISK-POSTGRES-17-LOCKS",
+      "title": "PostgreSQL explicit row locking and application consistency",
+      "url": "https://www.postgresql.org/docs/17/explicit-locking.html",
+      "secondary_url": "https://www.postgresql.org/docs/17/applevel-consistency.html",
+      "source_url": "https://github.com/postgres/postgres/blob/083ac033419f690758508e08c1736089384bbee8/doc/src/sgml/mvcc.sgml",
+      "version": "PostgreSQL 17.11 source tag REL_17_11; PostgreSQL 17 versioned documentation",
+      "commit": "083ac033419f690758508e08c1736089384bbee8",
+      "license": "PostgreSQL License",
+      "read_scope": "Versioned docs: SELECT FOR UPDATE row-lock behavior, concurrent writer wait/re-read behavior, lock duration, and application consistency caveats. Pinned MVCC documentation source reviewed for transaction isolation and write-conflict semantics.",
+      "sha256": "b0dafb2a3fd2d9204deb075ed2cb2d74b6496523bb5d4867a2f4a3d9758a6314",
+      "sha256_scope": "UTF-8 bytes returned by raw.githubusercontent.com for doc/src/sgml/mvcc.sgml at the pinned commit.",
+      "official_claim": "PostgreSQL row-level FOR UPDATE locks conflict with updates/deletes/other row locks until the transaction ends; a blocked command can continue against an updated row. Application consistency guidance warns that locking alone does not permanently prevent a later update after the lock holder commits; a required state transition must be performed while holding the lock, or otherwise use a correctly scoped atomic write.",
+      "application": "The solution uses PostgreSQL for OAuth refresh-token and managed endpoint state. Add race cases around the actual transaction boundary: two concurrent issue/refresh requests versus refresh-family revocation or managed device epoch change; ensure a stale generation cannot commit after revocation, both requests cannot consume the same one-time refresh state, and rollback leaves no partial token-family update. Inspect the existing advisory family lock and row lock in full_stack_lab/gateway/app/idp.py, then assert committed rows and downstream managed_failure behavior rather than response codes alone.",
+      "limitations": "A row lock is not a process or endpoint boundary, and does not automatically bind authorization to the row being locked. Correctness still depends on every writer using the same transaction protocol, handling serialization/deadlock errors, and keeping external side effects outside or idempotent around the database commit."
+    }
+  ],
+  "findings": [
+    {
+      "finding": "Freshness and truth are separate properties.",
+      "risk_ids": [
+        "LOCAL-RISK-08"
+      ],
+      "reference_ids": [
+        "REF-RISK-K8S-LEASE-135"
+      ],
+      "application_targets": [
+        "full_stack_lab/gateway/app/endpoint_plane.py::managed_checks",
+        "full_stack_lab/gateway/app/endpoint_plane.py::managed_failure",
+        "full_stack_lab/gateway/app/endpoint_plane.py::heartbeat",
+        "research/llm-wiki/experiments/E12-managed-admission.md"
+      ],
+      "verification": "Normal: active enrolled device, fresh heartbeat, matching device epoch and current policy hash pass managed admission. Negative: stale heartbeat, replayed older epoch, malformed/missing checks, or fresh heartbeat paired with a failed enforcement check is denied or quarantined; explicitly test whether the current server actually rejects that reported failed check rather than infer it from freshness. Independent effect: wait past heartbeat TTL while token expiry remains later and verify managed admission fails."
+    },
+    {
+      "finding": "Kernel-reported peer credentials are useful only when consumed by an identity/attestation policy; UID-only comparison remains a shared-UID trust boundary.",
+      "risk_ids": [
+        "LOCAL-RISK-10",
+        "E13-local-bypass"
+      ],
+      "reference_ids": [
+        "REF-RISK-SPIRE-AGENT-1153"
+      ],
+      "application_targets": [
+        "endpoint-agent/managed-linux.py::serve_user_broker",
+        "endpoint-agent/managed-linux.py::checks",
+        "research/llm-wiki/analysis/local-tools/permissions-reverse.md"
+      ],
+      "verification": "Normal: enrolled user process connects through the intended socket and receives only its own bound credential context. Negative: wrong UID, unauthorized PID/selector, stale/revoked workload identity, or same-UID unauthorized process is not elevated by the socket check alone. Independent effect: verify OS socket mode/owner and AppArmor/service restrictions separately; do not infer process isolation from SO_PEERCRED."
+    },
+    {
+      "finding": "Revocation epochs and freshness checks need a single atomic compare-and-transition boundary; otherwise concurrent refresh/issue can race revocation.",
+      "risk_ids": [
+        "E12-managed-admission",
+        "DEV-16 refresh rotation/reuse/revocation race"
+      ],
+      "reference_ids": [
+        "REF-RISK-ETCD-TXN-367",
+        "REF-RISK-POSTGRES-17-LOCKS"
+      ],
+      "application_targets": [
+        "full_stack_lab/gateway/app/idp.py::token_endpoint refresh_token branch",
+        "full_stack_lab/gateway/app/idp.py::_revoke_family",
+        "full_stack_lab/gateway/app/endpoint_plane.py::revoke_device",
+        "full_stack_lab/gateway/app/endpoint_plane.py::managed_failure",
+        "research/llm-wiki/experiments/E12-managed-admission.md"
+      ],
+      "verification": "Normal: generation-matched refresh and policy checks commit under their intended locks. Negative: race refresh/reuse with family revoke, or managed admission with device revoke/epoch change; stale-generation requests must not remain usable after the revoke boundary. Independent effect: assert one refresh winner, old family rows revoked, device state/epoch reflected by the next managed_failure check, no partial successor rows, and repeat after injected rollback/deadlock/serialization retry. The source already contains a family advisory lock and refresh-row FOR UPDATE; this is a proposal to verify interactions and revoke/admission ordering, not a statement that the lock is absent."
+    },
+    {
+      "finding": "Tool/process inventory, health claims, and protocol metadata are evidence inputs rather than enforcement boundaries.",
+      "risk_ids": [
+        "LOCAL-RISK-08",
+        "LOCAL-RISK-09",
+        "LOCAL-RISK-10"
+      ],
+      "reference_ids": [
+        "REF-RISK-K8S-LEASE-135",
+        "REF-RISK-SPIRE-AGENT-1153"
+      ],
+      "application_targets": [
+        "endpoint-agent/agent.py::describe",
+        "endpoint-agent/agent.py::probe_mcp",
+        "full_stack_lab/gateway/app/endpoint_plane.py::managed_checks",
+        "full_stack_lab/gateway/app/endpoint_plane.py::managed_failure"
+      ],
+      "verification": "Confirm that a matching process name, claimed healthy status, or recent heartbeat alone cannot activate managed privileges. Verify a separately enforced identity, policy hash, fresh generation, and OS boundary; preserve explicit unknown/unverified state where those proofs are absent."
+    }
+  ],
+  "limitations": [
+    "No software was installed, started, or configured for this reference task.",
+    "These references provide design and test comparators only; they do not prove the local solution has implemented any corresponding guarantee.",
+    "The existing Linux SO_PEERCRED reference, MCP annotation trust guidance, and E12/E13 scenarios were already present in the wiki and are not duplicated here.",
+    "The official Kubernetes and PostgreSQL documentation pages are versioned official documentation; their corresponding repository source commits and file hashes are recorded separately. The browser-rendered documentation HTML was not archived locally."
+  ]
+}

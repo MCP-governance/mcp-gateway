@@ -1,5 +1,7 @@
 # 팀 개발 브랜치·MCP 후보·검증 및 실패 시 수정 계획
 
+> 이전 계획 기록입니다. 사용자 상용/OSS 전용 지시에 따라 자체/mock MCP 계획을 폐기했습니다. 현재 정본은 [기업 품질·연동 작업 보고](2026-10-13-enterprise-results.md), [실제 대상](../../experiments/targets.md), [13개 실험](../../experiments/README.md)입니다. 아래 과거 fixture 서버 계획은 실행하지 않습니다.
+
 - 작업자: Codex
 - 기준: 원격 기본 HEAD `2e36095bf982ffab29ea81b6cdc24bdc435b184f`, 2026-10-13 확인.
 - 작업 브랜치: `10/13-mcp-validation`. 팀원 합류 이후 작업별 브랜치 규칙을 AGENTS.md·CLAUDE.md에 반영했다.

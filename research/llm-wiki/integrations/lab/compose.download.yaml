@@ -1,0 +1,7 @@
+# Apply only while the dedicated lab Ollama downloads its pinned model, then
+# recreate that lab service with compose.yaml alone to remove outbound access.
+services:
+  ollama:
+    networks: [model, model_download]
+networks:
+  model_download: {}

@@ -1,0 +1,1182 @@
+{
+  "date": "2026-10-14",
+  "purpose": "PJ1 actual managed harness natural-language call selection draft; no runtime call evidence is claimed here.",
+  "source": {
+    "path": "research/llm-wiki/analysis/local-tools/tool-capabilities.json",
+    "advertised_tool_count": 92,
+    "sha256": "2577913a174882af7b8876988743d2820b2ccf610e1c44f1ad78d95a082c7f37",
+    "schema_semantics": "canonical copies are the exact selected schema objects from this index; IDs are server:name."
+  },
+  "selection": {
+    "rationale": "Nine tools span read-only discovery/history, repository mutations with independently observable effects, SQLite catalog/query, and browser navigation/content/evaluation. It exercises different transport and authority categories without calling every advertised tool.",
+    "coverage_limit": "Only these nine calls are proposed. Selection is not evidence that all 92 schemas work, that Gateway policy approved them, or that endpoint enforcement blocked bypass.",
+    "alias_resolution": [
+      {
+        "label": "Git MCP",
+        "server_id": "git",
+        "ids": [
+          "git:git_status",
+          "git:git_log",
+          "git:git_add",
+          "git:git_commit"
+        ]
+      },
+      {
+        "label": "DBHub (@bytebase/dbhub)",
+        "advertised_server_id": "sqlite",
+        "ids": [
+          "sqlite:search_objects",
+          "sqlite:execute_sql"
+        ],
+        "note": "The product identity is DBHub, but canonical tool IDs use server ID sqlite. PJ1 must match this actual configured server ID; do not rename IDs to dbhub without fresh tools/list evidence."
+      },
+      {
+        "label": "Playwright MCP",
+        "server_id": "playwright",
+        "ids": [
+          "playwright:browser_navigate",
+          "playwright:browser_snapshot",
+          "playwright:browser_evaluate"
+        ]
+      }
+    ],
+    "alternatives_and_selection": "Git add+commit exercise real write behavior, unlike selecting four read-only Git tools. execute_sql is intentionally selected despite its write-capable/raw SQL contract because it is a high-value authority check; the prompt restricts the call to a single SELECT and uses only the isolated synthetic SQLite. browser_evaluate exposes arbitrary page JavaScript, so the proposed call returns only synthetic fixture title/text; this remains a high-risk capability and must not run against any non-fixture page."
+  },
+  "prompts": [
+    {
+      "id": "P1",
+      "tool_id": "git:git_status",
+      "text": "합성 시험 저장소의 현재 상태를 확인해줘. 변경 파일, staged/unstaged/untracked 항목과 clean 여부만 요약해줘. 실제 프로젝트나 다른 저장소는 열지 마.",
+      "expected_arguments": {
+        "includeUntracked": true
+      },
+      "effect_and_recovery": "Read-only; no restoration required."
+    },
+    {
+      "id": "P2",
+      "tool_id": "git:git_log",
+      "text": "같은 합성 시험 저장소에서 최근 커밋 3개를 한 줄 형식으로 보여줘. patch나 서명 상세는 요청하지 마.",
+      "expected_arguments": {
+        "maxCount": 3,
+        "oneline": true
+      },
+      "effect_and_recovery": "Read-only; no restoration required."
+    },
+    {
+      "id": "P3",
+      "tool_id": "git:git_add",
+      "text": "합성 시험 저장소의 사전 준비된 notes.md 파일 하나만 stage해줘. 전체 파일, ignored 파일, 다른 경로는 추가하지 마.",
+      "expected_arguments": {
+        "paths": [
+          "notes.md"
+        ]
+      },
+      "effect_and_recovery": "If the run stops before commit, verify only the task-local index contains notes.md, then discard/recreate the disposable task repo to its recorded baseline. Do not reset any other repo."
+    },
+    {
+      "id": "P4",
+      "tool_id": "git:git_commit",
+      "text": "방금 stage한 합성 notes.md만 커밋해줘. 메시지는 \"test: PJ1 synthetic MCP harness\"로 하고 amend, allow-empty, hook 우회는 사용하지 마. 실제 프로젝트에는 커밋하지 마.",
+      "expected_arguments": {
+        "message": "test: PJ1 synthetic MCP harness",
+        "amend": false,
+        "allowEmpty": false,
+        "noVerify": false
+      },
+      "effect_and_recovery": "Capture new HEAD and committed path with independent git log/status; then stop the test server and remove/recreate only the verified task-owned disposable repo. Record cleanup outcome. Do not amend, revert, or reset any non-fixture repo."
+    },
+    {
+      "id": "P5",
+      "tool_id": "sqlite:search_objects",
+      "text": "격리된 합성 SQLite 데이터베이스에서 table 객체 이름만 찾아줘. 상세 내용은 names 수준, 최대 20개로 제한하고 업무 DB에는 연결하지 마.",
+      "expected_arguments": {
+        "object_type": "table",
+        "detail_level": "names",
+        "limit": 20
+      },
+      "effect_and_recovery": "Read-only metadata query; no restoration required."
+    },
+    {
+      "id": "P6",
+      "tool_id": "sqlite:execute_sql",
+      "text": "격리된 합성 SQLite DB에서 SELECT id, label FROM demo_items ORDER BY id LIMIT 10 만 실행해줘. 변경·다중 SQL문·ATTACH·파일이나 확장 기능은 사용하지 마.",
+      "expected_arguments": {
+        "sql": "SELECT id, label FROM demo_items ORDER BY id LIMIT 10"
+      },
+      "effect_and_recovery": "Single SELECT; compare result with independent SQLite query; no DB change expected, verify table row count unchanged."
+    },
+    {
+      "id": "P7",
+      "tool_id": "playwright:browser_navigate",
+      "text": "하네스가 제공한 정확한 task-local loopback 합성 fixture URL {{PLAYWRIGHT_FIXTURE_URL}} 로만 이동해줘. 다른 URL로 이동하거나 폼 제출, 링크 클릭은 하지 마.",
+      "expected_arguments": {
+        "url": "<exact pre-provisioned task-local loopback fixture URL>"
+      },
+      "effect_and_recovery": "Navigation changes browser state; after recording exact origin/result, navigate back to the fixture start or close the isolated task profile."
+    },
+    {
+      "id": "P8",
+      "tool_id": "playwright:browser_snapshot",
+      "text": "현재 열린 합성 fixture 페이지의 접근성 snapshot을 응답으로 반환해줘. filename은 지정하지 말고 로컬에 파일을 저장하지 마.",
+      "expected_arguments": {},
+      "effect_and_recovery": "Response-only snapshot; filename omitted so no file recovery required."
+    },
+    {
+      "id": "P9",
+      "tool_id": "playwright:browser_evaluate",
+      "text": "현재 합성 fixture 페이지에서 읽기 전용으로 document.title과 document.body.innerText만 반환해줘. DOM 수정, 이벤트 발생, 네트워크 요청, 파일 저장은 하지 마.",
+      "expected_arguments": {
+        "function": "() => ({ title: document.title, text: document.body.innerText })"
+      },
+      "effect_and_recovery": "No state mutation is intended; compare returned values to the fixture and confirm no filename/network side effect."
+    }
+  ],
+  "tools": [
+    {
+      "id": "git:git_status",
+      "server": "git",
+      "name": "git_status",
+      "capability_tags": [
+        "read",
+        "git-subprocess"
+      ],
+      "schema": {
+        "name": "git_status",
+        "title": "Git Status",
+        "description": "Show the working tree status including staged, unstaged, and untracked files.",
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "path": {
+              "default": ".",
+              "description": "Path to the Git repository. Defaults to session working directory set via git_set_working_dir.",
+              "type": "string"
+            },
+            "includeUntracked": {
+              "default": true,
+              "description": "Include untracked files in the output.",
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "description": "Indicates if the operation was successful."
+            },
+            "currentBranch": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Current branch name."
+            },
+            "upstream": {
+              "description": "Upstream ref the current branch is tracking (if any).",
+              "type": "string"
+            },
+            "ahead": {
+              "description": "Commits ahead of upstream (if tracking).",
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "behind": {
+              "description": "Commits behind upstream (if tracking).",
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "isClean": {
+              "type": "boolean",
+              "description": "True if working directory is clean (no staged, unstaged, or untracked changes). When includeUntracked is false, untracked files are excluded from this check."
+            },
+            "stagedChanges": {
+              "type": "object",
+              "properties": {
+                "added": {
+                  "description": "Files added to the index (staged).",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "modified": {
+                  "description": "Files modified and staged.",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "deleted": {
+                  "description": "Files deleted and staged.",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "renamed": {
+                  "description": "Files renamed and staged.",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "copied": {
+                  "description": "Files copied and staged.",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false,
+              "description": "Changes that have been staged for the next commit."
+            },
+            "unstagedChanges": {
+              "type": "object",
+              "properties": {
+                "added": {
+                  "description": "Files added but not staged.",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "modified": {
+                  "description": "Files modified but not staged.",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "deleted": {
+                  "description": "Files deleted but not staged.",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false,
+              "description": "Changes in the working directory that have not been staged."
+            },
+            "untrackedFiles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Files in the working directory not tracked by git."
+            },
+            "conflictedFiles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Files with merge conflicts that need resolution."
+            }
+          },
+          "required": [
+            "success",
+            "currentBranch",
+            "isClean",
+            "stagedChanges",
+            "unstagedChanges",
+            "untrackedFiles",
+            "conflictedFiles"
+          ],
+          "additionalProperties": false
+        },
+        "annotations": {
+          "readOnlyHint": true
+        }
+      },
+      "schema_sha256": "a5784f2ac10910831c9e87dc9b2b1f77576aac93aa321c608ce2c02ea921ef18",
+      "call_observed": true,
+      "source_analysis": "analysis/local-tools/data.md",
+      "verification": "reviewed-schema-and-selected-local-calls",
+      "limitation": "스키마 광고·보수적 권한 상한 분류; 개별 도구 전체 실행 또는 관리 엔드포인트 집행 증거 아님",
+      "risk_ids": [
+        "LOCAL-RISK-04"
+      ]
+    },
+    {
+      "id": "git:git_log",
+      "server": "git",
+      "name": "git_log",
+      "capability_tags": [
+        "read",
+        "git-subprocess"
+      ],
+      "schema": {
+        "name": "git_log",
+        "title": "Git Log",
+        "description": "View commit history with optional filtering by author, date range, file path, or commit message pattern.",
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "path": {
+              "default": ".",
+              "description": "Path to the Git repository. Defaults to session working directory set via git_set_working_dir.",
+              "type": "string"
+            },
+            "maxCount": {
+              "default": 10,
+              "description": "Maximum number of items to return (1-1000).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "skip": {
+              "description": "Number of items to skip for pagination.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "since": {
+              "description": "Show commits more recent than a specific date (ISO 8601 format).",
+              "type": "string"
+            },
+            "until": {
+              "description": "Show commits older than a specific date (ISO 8601 format).",
+              "type": "string"
+            },
+            "author": {
+              "description": "Filter commits by author name or email pattern.",
+              "type": "string"
+            },
+            "grep": {
+              "description": "Filter commits by message pattern (regex supported).",
+              "type": "string"
+            },
+            "branch": {
+              "description": "Show commits from a specific branch or ref (defaults to current branch).",
+              "type": "string",
+              "minLength": 1
+            },
+            "filePath": {
+              "description": "Show commits that affected a specific file path. Must not start with \"-\".",
+              "type": "string",
+              "minLength": 1
+            },
+            "oneline": {
+              "default": false,
+              "description": "Abbreviated output: return only hash, shortHash, and subject per commit. Significantly reduces response size.",
+              "type": "boolean"
+            },
+            "stat": {
+              "default": false,
+              "description": "Include file change statistics for each commit.",
+              "type": "boolean"
+            },
+            "patch": {
+              "default": false,
+              "description": "Include the full diff patch for each commit.",
+              "type": "boolean"
+            },
+            "showSignature": {
+              "default": false,
+              "description": "Show GPG signature verification information for each commit.",
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "description": "Indicates if the operation was successful."
+            },
+            "commits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "hash": {
+                    "type": "string",
+                    "description": "Full commit SHA-1 hash."
+                  },
+                  "shortHash": {
+                    "type": "string",
+                    "description": "Abbreviated commit hash (7 characters)."
+                  },
+                  "author": {
+                    "description": "Commit author name.",
+                    "type": "string"
+                  },
+                  "authorEmail": {
+                    "description": "Commit author email.",
+                    "type": "string"
+                  },
+                  "timestamp": {
+                    "description": "Commit timestamp (Unix timestamp).",
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "subject": {
+                    "type": "string",
+                    "description": "First line of the commit message."
+                  },
+                  "body": {
+                    "description": "Commit message body (if present).",
+                    "type": "string"
+                  },
+                  "parents": {
+                    "description": "Parent commit hashes.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "refs": {
+                    "description": "References (branches, tags) pointing to this commit.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "stat": {
+                    "description": "File change statistics (when stat option is used).",
+                    "type": "string"
+                  },
+                  "patch": {
+                    "description": "Full diff patch (when patch option is used).",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "hash",
+                  "shortHash",
+                  "subject"
+                ],
+                "additionalProperties": false
+              },
+              "description": "Array of commit objects."
+            },
+            "totalCount": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "description": "Total number of commits returned (may be limited by maxCount)."
+            },
+            "note": {
+              "description": "Set when filters returned zero commits. Echoes the criteria and suggests broadening so callers can self-correct without inspecting the request.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "success",
+            "commits",
+            "totalCount"
+          ],
+          "additionalProperties": false
+        },
+        "annotations": {
+          "readOnlyHint": true
+        }
+      },
+      "schema_sha256": "25dccef1c3c2a11ea0729d8425b384c2ff87c818cd2b54c550c96e04d2d44d14",
+      "call_observed": false,
+      "source_analysis": "analysis/local-tools/data.md",
+      "verification": "reviewed-schema-and-selected-local-calls",
+      "limitation": "스키마 광고·보수적 권한 상한 분류; 개별 도구 전체 실행 또는 관리 엔드포인트 집행 증거 아님",
+      "risk_ids": [
+        "LOCAL-RISK-04"
+      ]
+    },
+    {
+      "id": "git:git_add",
+      "server": "git",
+      "name": "git_add",
+      "capability_tags": [
+        "read",
+        "repository-write",
+        "git-subprocess"
+      ],
+      "schema": {
+        "name": "git_add",
+        "title": "Git Add",
+        "description": "Stage files for commit. Add file contents to the staging area (index) to prepare for the next commit.",
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "path": {
+              "default": ".",
+              "description": "Path to the Git repository. Defaults to session working directory set via git_set_working_dir.",
+              "type": "string"
+            },
+            "paths": {
+              "default": [],
+              "description": "Array of file or directory paths to stage (relative to repository root). Use [\".\"] to stage all changes. Paths must not start with \"-\" — use \"./-name\" for filenames starting with a dash. Can be omitted when all or update is true.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "description": "File path (must not start with \"-\")."
+              }
+            },
+            "update": {
+              "default": false,
+              "description": "Stage only modified and deleted files (skip untracked files).",
+              "type": "boolean"
+            },
+            "all": {
+              "default": false,
+              "description": "Include all items (varies by operation).",
+              "type": "boolean"
+            },
+            "force": {
+              "default": false,
+              "description": "Allow adding otherwise ignored files.",
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "description": "Indicates if the operation was successful."
+            },
+            "stagedFiles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Files that were successfully staged."
+            },
+            "totalFiles": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "description": "Total number of files staged."
+            },
+            "status": {
+              "type": "object",
+              "properties": {
+                "current_branch": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Current branch name after staging."
+                },
+                "staged_changes": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {},
+                  "description": "All staged changes after this operation."
+                },
+                "unstaged_changes": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {},
+                  "description": "Remaining unstaged changes."
+                },
+                "untracked_files": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Remaining untracked files."
+                },
+                "conflicted_files": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Files with conflicts."
+                },
+                "is_clean": {
+                  "type": "boolean",
+                  "description": "Whether working directory is clean (ready to commit)."
+                }
+              },
+              "required": [
+                "current_branch",
+                "staged_changes",
+                "unstaged_changes",
+                "untracked_files",
+                "conflicted_files",
+                "is_clean"
+              ],
+              "additionalProperties": false,
+              "description": "Repository status after staging files."
+            }
+          },
+          "required": [
+            "success",
+            "stagedFiles",
+            "totalFiles",
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        "annotations": {
+          "readOnlyHint": false
+        }
+      },
+      "schema_sha256": "0ed5bb967b32decbd7947dcdde516288029b72b20401522c8da2845b948e9ca3",
+      "call_observed": true,
+      "source_analysis": "analysis/local-tools/data.md",
+      "verification": "reviewed-schema-and-selected-local-calls",
+      "limitation": "스키마 광고·보수적 권한 상한 분류; 개별 도구 전체 실행 또는 관리 엔드포인트 집행 증거 아님",
+      "risk_ids": [
+        "LOCAL-RISK-04"
+      ]
+    },
+    {
+      "id": "git:git_commit",
+      "server": "git",
+      "name": "git_commit",
+      "capability_tags": [
+        "read",
+        "repository-write",
+        "git-subprocess"
+      ],
+      "schema": {
+        "name": "git_commit",
+        "title": "Git Commit",
+        "description": "Create a new commit with staged changes in the repository. Records a snapshot of the staging area with a commit message.\n\n**Commit Message Format:**\nPass commit messages as JSON string parameters. Multi-line messages are supported using standard JSON string escaping.\n\n**Examples:**\n- Single line: { \"message\": \"feat: add user authentication\" }\n- Multi-line: { \"message\": \"feat: add user authentication\\n\\nImplemented OAuth2 flow with JWT tokens.\\nAdded tests for login and logout.\" }\n\nNote: Do not use bash heredoc syntax. Literal escape sequences (\\n, \\t) in the message string are automatically normalized to their actual characters.",
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "path": {
+              "default": ".",
+              "description": "Path to the Git repository. Defaults to session working directory set via git_set_working_dir.",
+              "type": "string"
+            },
+            "message": {
+              "description": "Commit message.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 10000
+            },
+            "author": {
+              "description": "Override commit author (defaults to git config).",
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Author's name"
+                },
+                "email": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Author's email address (e.g. user@example.com)."
+                }
+              },
+              "required": [
+                "name",
+                "email"
+              ]
+            },
+            "amend": {
+              "default": false,
+              "description": "Amend the previous commit instead of creating a new one. Use with caution.",
+              "type": "boolean"
+            },
+            "allowEmpty": {
+              "default": false,
+              "description": "Allow creating a commit with no changes.",
+              "type": "boolean"
+            },
+            "noVerify": {
+              "default": false,
+              "description": "Bypass pre-commit and commit-msg hooks.",
+              "type": "boolean"
+            },
+            "filesToStage": {
+              "description": "File paths to stage before committing (atomic stage+commit operation). Entries must not start with \"-\".",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "description": "File path (must not start with \"-\")."
+              }
+            }
+          },
+          "required": [
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "description": "Indicates if the operation was successful."
+            },
+            "commitHash": {
+              "type": "string",
+              "description": "SHA-1 hash of the created commit."
+            },
+            "message": {
+              "type": "string",
+              "description": "The commit message."
+            },
+            "author": {
+              "type": "string",
+              "description": "Author of the commit."
+            },
+            "timestamp": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "description": "Unix timestamp when the commit was created."
+            },
+            "filesChanged": {
+              "description": "Number of files changed in this commit.",
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "committedFiles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "List of files that were committed."
+            },
+            "insertions": {
+              "description": "Number of line insertions.",
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "deletions": {
+              "description": "Number of line deletions.",
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "signed": {
+              "type": "boolean",
+              "description": "Whether the commit was signed. False when GIT_SIGN_COMMITS=false or when signing was attempted and fell back to unsigned on failure."
+            },
+            "signingWarning": {
+              "description": "Populated only when signing was requested but failed, and the commit was created unsigned as a fallback.",
+              "type": "string"
+            },
+            "status": {
+              "type": "object",
+              "properties": {
+                "current_branch": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Current branch name after commit."
+                },
+                "staged_changes": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {},
+                  "description": "Remaining staged changes after commit."
+                },
+                "unstaged_changes": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {},
+                  "description": "Unstaged changes after commit."
+                },
+                "untracked_files": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Untracked files after commit."
+                },
+                "conflicted_files": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Conflicted files after commit."
+                },
+                "is_clean": {
+                  "type": "boolean",
+                  "description": "Whether working directory is clean."
+                }
+              },
+              "required": [
+                "current_branch",
+                "staged_changes",
+                "unstaged_changes",
+                "untracked_files",
+                "conflicted_files",
+                "is_clean"
+              ],
+              "additionalProperties": false,
+              "description": "Repository status after the commit."
+            }
+          },
+          "required": [
+            "success",
+            "commitHash",
+            "message",
+            "author",
+            "timestamp",
+            "committedFiles",
+            "signed",
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        "annotations": {
+          "readOnlyHint": false
+        }
+      },
+      "schema_sha256": "2d3f2e5842728020e7e13b032b92445b45a8c5e06e2a9e293459887a6e307bb4",
+      "call_observed": true,
+      "source_analysis": "analysis/local-tools/data.md",
+      "verification": "reviewed-schema-and-selected-local-calls",
+      "limitation": "스키마 광고·보수적 권한 상한 분류; 개별 도구 전체 실행 또는 관리 엔드포인트 집행 증거 아님",
+      "risk_ids": [
+        "LOCAL-RISK-04"
+      ]
+    },
+    {
+      "id": "sqlite:search_objects",
+      "server": "sqlite",
+      "name": "search_objects",
+      "capability_tags": [
+        "read"
+      ],
+      "schema": {
+        "name": "search_objects",
+        "description": "Search and list database objects on the sqlite database",
+        "inputSchema": {
+          "type": "object",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "properties": {
+            "object_type": {
+              "type": "string",
+              "enum": [
+                "schema",
+                "table",
+                "view",
+                "column",
+                "procedure",
+                "function",
+                "index"
+              ],
+              "description": "Object type to search"
+            },
+            "pattern": {
+              "default": "%",
+              "description": "LIKE pattern (% = any chars, _ = one char)",
+              "type": "string"
+            },
+            "schema": {
+              "description": "Filter to schema",
+              "type": "string"
+            },
+            "table": {
+              "description": "Filter to table (requires schema; column/index only)",
+              "type": "string"
+            },
+            "detail_level": {
+              "default": "names",
+              "description": "Detail: names (minimal), summary (metadata), full (all)",
+              "type": "string",
+              "enum": [
+                "names",
+                "summary",
+                "full"
+              ]
+            },
+            "limit": {
+              "default": 100,
+              "description": "Max results",
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 1000
+            }
+          },
+          "required": [
+            "object_type"
+          ]
+        },
+        "annotations": {
+          "title": "Search Database Objects (sqlite)",
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      "schema_sha256": "457147f2b6b8edcebc35c3ff3643c78c0b4fbd6e20e8578895369c0ef9819b1c",
+      "call_observed": false,
+      "source_analysis": "analysis/local-tools/data.md",
+      "verification": "reviewed-schema-and-selected-local-calls",
+      "limitation": "스키마 광고·보수적 권한 상한 분류; 개별 도구 전체 실행 또는 관리 엔드포인트 집행 증거 아님",
+      "risk_ids": [
+        "LOCAL-RISK-05"
+      ]
+    },
+    {
+      "id": "sqlite:execute_sql",
+      "server": "sqlite",
+      "name": "execute_sql",
+      "capability_tags": [
+        "read",
+        "database-write",
+        "sql-execution"
+      ],
+      "schema": {
+        "name": "execute_sql",
+        "description": "Execute SQL queries on the sqlite database",
+        "inputSchema": {
+          "type": "object",
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "properties": {
+            "sql": {
+              "type": "string",
+              "description": "SQL to execute (multiple statements separated by ;)"
+            }
+          },
+          "required": [
+            "sql"
+          ]
+        },
+        "annotations": {
+          "title": "Execute SQL (sqlite)",
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": false
+        }
+      },
+      "schema_sha256": "3d2d8aa9f0bbc69f993af0113d99e76c5b13a77adbeffbb3cf152c7477c1def5",
+      "call_observed": true,
+      "source_analysis": "analysis/local-tools/data.md",
+      "verification": "reviewed-schema-and-selected-local-calls",
+      "limitation": "스키마 광고·보수적 권한 상한 분류; 개별 도구 전체 실행 또는 관리 엔드포인트 집행 증거 아님",
+      "risk_ids": [
+        "LOCAL-RISK-05"
+      ]
+    },
+    {
+      "id": "playwright:browser_navigate",
+      "server": "playwright",
+      "name": "browser_navigate",
+      "capability_tags": [
+        "read",
+        "browser-write",
+        "network"
+      ],
+      "schema": {
+        "name": "browser_navigate",
+        "description": "Navigate to a URL",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "The URL to navigate to"
+            }
+          },
+          "required": [
+            "url"
+          ],
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "additionalProperties": false
+        },
+        "annotations": {
+          "title": "Navigate to a URL",
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": true
+        },
+        "scope": [
+          "network: navigates browser to requested URL",
+          "write: changes page/browser state"
+        ]
+      },
+      "schema_sha256": "e89042d82d0b205c0e2c37b00bb788ee7bbd954bedecbf186a1e7bd62cace273",
+      "call_observed": true,
+      "source_analysis": "analysis/local-tools/desktop.md",
+      "verification": "reviewed-schema-and-selected-local-calls",
+      "limitation": "스키마 광고·보수적 권한 상한 분류; 개별 도구 전체 실행 또는 관리 엔드포인트 집행 증거 아님",
+      "risk_ids": [
+        "LOCAL-RISK-06"
+      ]
+    },
+    {
+      "id": "playwright:browser_snapshot",
+      "server": "playwright",
+      "name": "browser_snapshot",
+      "capability_tags": [
+        "read",
+        "host-write"
+      ],
+      "schema": {
+        "name": "browser_snapshot",
+        "description": "Capture accessibility snapshot of the current page, this is better than screenshot",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "target": {
+              "description": "Exact target element reference from the page snapshot, or a unique element selector",
+              "type": "string"
+            },
+            "filename": {
+              "description": "Save snapshot to a file instead of returning it in the response. Relative file names are resolved against the workspace root.",
+              "type": "string"
+            },
+            "depth": {
+              "description": "Limit the depth of the snapshot tree",
+              "type": "number"
+            },
+            "boxes": {
+              "description": "Include each element's bounding box as [box=x,y,width,height] in the snapshot. Coordinates are viewport-relative, in CSS pixels (Element.getBoundingClientRect)",
+              "type": "boolean"
+            }
+          },
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "additionalProperties": false
+        },
+        "annotations": {
+          "title": "Page snapshot",
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "openWorldHint": true
+        },
+        "scope": [
+          "read: accessibility tree/page content"
+        ]
+      },
+      "schema_sha256": "101f367a26230328d6e20a8fc2dca911cf5d633edae15ca564ebb7f1c7c8c6f4",
+      "call_observed": true,
+      "source_analysis": "analysis/local-tools/desktop.md",
+      "verification": "reviewed-schema-and-selected-local-calls",
+      "limitation": "스키마 광고·보수적 권한 상한 분류; 개별 도구 전체 실행 또는 관리 엔드포인트 집행 증거 아님",
+      "risk_ids": [
+        "LOCAL-RISK-06"
+      ]
+    },
+    {
+      "id": "playwright:browser_evaluate",
+      "server": "playwright",
+      "name": "browser_evaluate",
+      "capability_tags": [
+        "read",
+        "browser-write",
+        "page-javascript"
+      ],
+      "schema": {
+        "name": "browser_evaluate",
+        "description": "Evaluate JavaScript expression on page or element",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "element": {
+              "description": "Human-readable element description used to obtain permission to interact with the element",
+              "type": "string"
+            },
+            "target": {
+              "description": "Exact target element reference from the page snapshot, or a unique element selector",
+              "type": "string"
+            },
+            "function": {
+              "type": "string",
+              "description": "() => { /* code */ } or (element) => { /* code */ } when element is provided"
+            },
+            "filename": {
+              "description": "File name to save the result to. Relative file names are resolved against the workspace root. If not provided, result is returned as text.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "function"
+          ],
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "additionalProperties": false
+        },
+        "annotations": {
+          "title": "Evaluate JavaScript",
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "openWorldHint": true
+        },
+        "scope": [
+          "execute: arbitrary page JavaScript"
+        ]
+      },
+      "schema_sha256": "275628f73ba2e38228db7c8ccc84b13ba8520022aac83effb3ee9f44c1c2ddf8",
+      "call_observed": false,
+      "source_analysis": "analysis/local-tools/desktop.md",
+      "verification": "reviewed-schema-and-selected-local-calls",
+      "limitation": "스키마 광고·보수적 권한 상한 분류; 개별 도구 전체 실행 또는 관리 엔드포인트 집행 증거 아님",
+      "risk_ids": [
+        "LOCAL-RISK-06"
+      ]
+    }
+  ],
+  "preconditions_for_live_run": [
+    "Use only the newly provisioned PJ1 managed harness and exact advertised server/tool IDs; confirm fresh harness identity and managed active/compliant state before calls.",
+    "Before P1-P4, confirm Git session working directory points to a task-owned synthetic repo with expected baseline and notes.md; do not infer a safe scope from GIT_BASE_DIR. P3/P4 effects are intended and durable inside that disposable fixture, and must be independently observed via HEAD/status/log.",
+    "Before P5-P6, confirm the configured sqlite/DBHub DSN is the task-local synthetic database, expected table demo_items exists, and no production/employee database URL is in use.",
+    "Before P7-P9, replace {{PLAYWRIGHT_FIXTURE_URL}} with the exact loopback URL of the task-owned fixture. Confirm the current page remains that fixture before browser_evaluate.",
+    "Use fresh natural-language turns in the managed harness; parent/operator reviews Gateway decisions and ledger/log correlation. A protocol-only or local direct call does not count as this PJ1 test."
+  ],
+  "known_schema_mismatches": [
+    {
+      "tool_id": "git:git_log",
+      "fact": "Canonical tools/list input uses maxCount (camelCase), not historical helper name max_count. The prompt avoids raw arguments, but parent should validate model-generated arguments against this schema."
+    },
+    {
+      "tool_id": "sqlite:execute_sql",
+      "fact": "DBHub implementation is identified as server sqlite in the selected schema index. Match the configured alias and schema; the product label DBHub is not the protocol server ID."
+    },
+    {
+      "tool_id": "playwright:browser_navigate",
+      "fact": "Schema requires url string but gives no fixture-origin restriction. The natural-language prompt alone is not a security boundary; actual PJ1 runtime must constrain target/profile and operator must confirm the URL."
+    }
+  ],
+  "execution_status": "draft_only_not_executed",
+  "limitations": [
+    "Input schemas and risk IDs are copied from a previously captured schema inventory; actual PJ1 tools/list and contract approval may differ and must be checked immediately before execution.",
+    "Natural-language wording cannot prove which tool/model arguments were generated; inspect the actual tool invocation and Gateway decision logs.",
+    "The 92-tool inventory is a schema inventory, not 92 verified calls. E12/E13 remain in their prior status; this selection does not mark them complete."
+  ]
+}

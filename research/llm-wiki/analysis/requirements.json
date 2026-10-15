@@ -1,0 +1,2491 @@
+{
+  "schema_version": 1,
+  "metadata": {
+    "head": "ab6936c64f3578de8360b840f1928681714fa7bb",
+    "branch": "10/13-enterprise-interoperability",
+    "scope": "structural_inventory_and_curated_acceptance_conditions",
+    "deployment_inferred": false,
+    "runtime_test_results_inferred": false
+  },
+  "records": [
+    {
+      "id": "REQ-01-01",
+      "area": "도입",
+      "requirement": "고정 출처",
+      "acceptance": "서버·패키지·직접/전이 의존성을 고정 digest로 연결",
+      "negative_cases": [
+        "moving tag·출처 불일치"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/supply_chain/intake_worker.py",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 394,
+          "sha256": "5016a3211fd6d5b51dda60f887b082a33bbfba460b390927d2040168c7d540a9",
+          "head_sha256": "0be0b15651c145189a38e0edb84a2df81d28475179982cc22194990a9768f6c0",
+          "normalized_sha256": "0be0b15651c145189a38e0edb84a2df81d28475179982cc22194990a9768f6c0",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-01-02",
+      "area": "도입",
+      "requirement": "검사 격리",
+      "acceptance": "검사 과정의 파일/망/CPU/시간 권한을 시험 자원에 한정",
+      "negative_cases": [
+        "검사 스크립트의 외부 통신"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/supply_chain/intake_worker.py",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 394,
+          "sha256": "5016a3211fd6d5b51dda60f887b082a33bbfba460b390927d2040168c7d540a9",
+          "head_sha256": "0be0b15651c145189a38e0edb84a2df81d28475179982cc22194990a9768f6c0",
+          "normalized_sha256": "0be0b15651c145189a38e0edb84a2df81d28475179982cc22194990a9768f6c0",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-01-03",
+      "area": "도입",
+      "requirement": "검사 실패",
+      "acceptance": "스캐너 오류·미완료·timeout은 도입 실패로 남김",
+      "negative_cases": [
+        "빈 리포트를 취약점0으로 처리"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/supply_chain/intake_worker.py",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 394,
+          "sha256": "5016a3211fd6d5b51dda60f887b082a33bbfba460b390927d2040168c7d540a9",
+          "head_sha256": "0be0b15651c145189a38e0edb84a2df81d28475179982cc22194990a9768f6c0",
+          "normalized_sha256": "0be0b15651c145189a38e0edb84a2df81d28475179982cc22194990a9768f6c0",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-01-04",
+      "area": "도입",
+      "requirement": "라이선스",
+      "acceptance": "실제 배포 판본의 라이선스·NOTICE·재배포 조건 확인",
+      "negative_cases": [
+        "현재 main 라이선스를 과거 판본에 전이"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/supply_chain/intake_worker.py",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 394,
+          "sha256": "5016a3211fd6d5b51dda60f887b082a33bbfba460b390927d2040168c7d540a9",
+          "head_sha256": "0be0b15651c145189a38e0edb84a2df81d28475179982cc22194990a9768f6c0",
+          "normalized_sha256": "0be0b15651c145189a38e0edb84a2df81d28475179982cc22194990a9768f6c0",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-01-05",
+      "area": "도입",
+      "requirement": "재검사",
+      "acceptance": "소스/의존 변경은 이전 승인과 분리하고 다시 검사",
+      "negative_cases": [
+        "승인 이후 dependency 변경"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/supply_chain/intake_worker.py",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 394,
+          "sha256": "5016a3211fd6d5b51dda60f887b082a33bbfba460b390927d2040168c7d540a9",
+          "head_sha256": "0be0b15651c145189a38e0edb84a2df81d28475179982cc22194990a9768f6c0",
+          "normalized_sha256": "0be0b15651c145189a38e0edb84a2df81d28475179982cc22194990a9768f6c0",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-02-01",
+      "area": "계약",
+      "requirement": "최초 승인",
+      "acceptance": "첫 관찰은 자동 승인하지 않고 독립 검토자 승인 필요",
+      "negative_cases": [
+        "TOFU 자동 허용"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "refresh_catalog",
+          "line_start": 158,
+          "line_end": 296,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-02-02",
+      "area": "계약",
+      "requirement": "입력 schema",
+      "acceptance": "description·inputSchema의 승인 hash와 실행 전 관찰 hash 일치",
+      "negative_cases": [
+        "동명 도구의 인자 형식 변경"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "refresh_catalog",
+          "line_start": 158,
+          "line_end": 296,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-02-03",
+      "area": "계약",
+      "requirement": "계약 복귀",
+      "acceptance": "A→B→A 최신 관찰·재승인 내용도 A로 복귀",
+      "negative_cases": [
+        "과거 hash 존재로 관찰 B 잔존"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "refresh_catalog",
+          "line_start": 158,
+          "line_end": 296,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-02-04",
+      "area": "계약",
+      "requirement": "실행 직전",
+      "acceptance": "discovery 후 승인·도구·권한 변경을 dispatch 전에 재검증",
+      "negative_cases": [
+        "tools/list 후 도구 설명 변경"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "refresh_catalog",
+          "line_start": 158,
+          "line_end": 296,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-02-05",
+      "area": "계약",
+      "requirement": "출력 schema",
+      "acceptance": "outputSchema를 독립 승인·잠금·결과 검증과 연결",
+      "negative_cases": [
+        "미승인 출력 schema 광고"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "refresh_catalog",
+          "line_start": 158,
+          "line_end": 296,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P1",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-03-01",
+      "area": "신원",
+      "requirement": "서명",
+      "acceptance": "transport 토큰의 signature·issuer·audience·시간 검증",
+      "negative_cases": [
+        "다른 issuer/audience·만료·변조"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/agent_contract.py",
+          "symbol": "authenticated_user",
+          "line_start": 106,
+          "line_end": 145,
+          "sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "head_sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "normalized_sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-03-02",
+      "area": "신원",
+      "requirement": "scope",
+      "acceptance": "Console 토큰과 MCP 토큰의 사용처를 구분",
+      "negative_cases": [
+        "관리자 role만으로 MCP scope 대체"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/agent_contract.py",
+          "symbol": "authenticated_user",
+          "line_start": 106,
+          "line_end": 145,
+          "sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "head_sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "normalized_sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-03-03",
+      "area": "신원",
+      "requirement": "상태",
+      "acceptance": "현재 계정·세션·기기 철회를 호출 시 재검증",
+      "negative_cases": [
+        "유효 JWT를 가진 폐기 기기"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/agent_contract.py",
+          "symbol": "authenticated_user",
+          "line_start": 106,
+          "line_end": 145,
+          "sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "head_sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "normalized_sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-03-04",
+      "area": "신원",
+      "requirement": "자기 선언",
+      "acceptance": "인자/header/clientInfo의 사용자·agent 값은 신원에 사용하지 않음",
+      "negative_cases": [
+        "x-user/principal 인자 위조"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/agent_contract.py",
+          "symbol": "authenticated_user",
+          "line_start": 106,
+          "line_end": 145,
+          "sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "head_sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "normalized_sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-03-05",
+      "area": "신원",
+      "requirement": "OBO",
+      "acceptance": "프록시의 agent 위임은 검증된 사용자·audience·권한 교집합에 결합",
+      "negative_cases": [
+        "공유 서비스 토큰으로 전체 사용자 대체"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/agent_contract.py",
+          "symbol": "authenticated_user",
+          "line_start": 106,
+          "line_end": 145,
+          "sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "head_sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "normalized_sha256": "2992b2e886774d609ef962c3eb8182ad4b6702ced7e258c721f445a769523eb9",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P0",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-04-01",
+      "area": "권한",
+      "requirement": "도구 목록",
+      "acceptance": "tools/list와 실제 tools/call의 승인 서버/도구 범위 일치",
+      "negative_cases": [
+        "목록 숨김만 적용하고 직접 호출 허용"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/pac.py",
+          "symbol": "scope",
+          "line_start": 41,
+          "line_end": 84,
+          "sha256": "a2ce5dcc7d5261c2571d10b315434b5a1179ca48243b5d3a5fadbd414c37447c",
+          "head_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+          "normalized_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-04-02",
+      "area": "권한",
+      "requirement": "자산",
+      "acceptance": "조직·사용자·자산 소유권·행위 권한의 교집합 적용",
+      "negative_cases": [
+        "타 repo/table/key 접근"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/pac.py",
+          "symbol": "scope",
+          "line_start": 41,
+          "line_end": 84,
+          "sha256": "a2ce5dcc7d5261c2571d10b315434b5a1179ca48243b5d3a5fadbd414c37447c",
+          "head_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+          "normalized_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-04-03",
+      "area": "권한",
+      "requirement": "SQL 효과",
+      "acceptance": "읽기 도구 이름이 아닌 SQL AST의 실제 읽기/쓰기/실행 분류",
+      "negative_cases": [
+        "CTE·함수·읽기 위장 쓰기"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/pac.py",
+          "symbol": "scope",
+          "line_start": 41,
+          "line_end": 84,
+          "sha256": "a2ce5dcc7d5261c2571d10b315434b5a1179ca48243b5d3a5fadbd414c37447c",
+          "head_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+          "normalized_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-04-04",
+      "area": "권한",
+      "requirement": "캐시",
+      "acceptance": "철회·조직 이동·빈/누락 범위는 권한 확대 없이 반영",
+      "negative_cases": [
+        "unknown alias가 전체 목록으로 fallback"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/pac.py",
+          "symbol": "scope",
+          "line_start": 41,
+          "line_end": 84,
+          "sha256": "a2ce5dcc7d5261c2571d10b315434b5a1179ca48243b5d3a5fadbd414c37447c",
+          "head_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+          "normalized_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-04-05",
+      "area": "권한",
+      "requirement": "입력",
+      "acceptance": "승인 schema와 정규 인자를 정책 전/dispatch 전에 검사",
+      "negative_cases": [
+        "추가 필드·잘못된 타입·동등 인자 우회"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/pac.py",
+          "symbol": "scope",
+          "line_start": 41,
+          "line_end": 84,
+          "sha256": "a2ce5dcc7d5261c2571d10b315434b5a1179ca48243b5d3a5fadbd414c37447c",
+          "head_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+          "normalized_sha256": "c561920e3e1b07464138d43862fccc0e057e67225a6496cc35cfbbf4f3f30b1e",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-05-01",
+      "area": "승인",
+      "requirement": "효과 전",
+      "acceptance": "Approval 상태에서는 수신/쓰기/전송 효과0",
+      "negative_cases": [
+        "승인 대기 중 선실행"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "execute_call",
+          "line_start": 1433,
+          "line_end": 1677,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-05-02",
+      "area": "승인",
+      "requirement": "인자 결합",
+      "acceptance": "승인은 principal·도구·정규 인자 digest·nonce에 결합",
+      "negative_cases": [
+        "다른 수신자·본문으로 승인 재사용"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "execute_call",
+          "line_start": 1433,
+          "line_end": 1677,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-05-03",
+      "area": "승인",
+      "requirement": "독립 검토",
+      "acceptance": "신청자가 자신의 중요 실행을 승인하지 않음",
+      "negative_cases": [
+        "자가 승인·역할 위조"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "execute_call",
+          "line_start": 1433,
+          "line_end": 1677,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-05-04",
+      "area": "승인",
+      "requirement": "fresh 인증",
+      "acceptance": "승인 실행 시 새 요청자 인증과 현재 권한·철회 재검증",
+      "negative_cases": [
+        "만료 bearer를 승인됐다는 이유로 허용"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "execute_call",
+          "line_start": 1433,
+          "line_end": 1677,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-05-05",
+      "area": "승인",
+      "requirement": "경쟁",
+      "acceptance": "동시 승인·철회·재사용에서도 승인당 허용 효과 상한 유지",
+      "negative_cases": [
+        "승인 실행 중 다른 worker 재실행"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "execute_call",
+          "line_start": 1433,
+          "line_end": 1677,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-06-01",
+      "area": "데이터",
+      "requirement": "입력 PII",
+      "acceptance": "MCP 인자의 합성 한국어 개인정보·secret 외부 반출 검사",
+      "negative_cases": [
+        "주민번호 하이픈·인코딩 변형"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/privacy.py",
+          "symbol": "mask_payload",
+          "line_start": 122,
+          "line_end": 158,
+          "sha256": "a0366953d4803dab3af3da0c1cc08019b1c202ffbc5a3545bf0d247f8d9b1e6f",
+          "head_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
+          "normalized_sha256": "1fdbafb565c0d66ff39431732d3a6c461752cf0fccab6eecd7230569b9500370",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-06-02",
+      "area": "데이터",
+      "requirement": "결과 값",
+      "acceptance": "중첩 배열/JSON 값까지 공식 Presidio로 검사·마스킹",
+      "negative_cases": [
+        "structured 값의 PII 원문 노출"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/privacy.py",
+          "symbol": "mask_payload",
+          "line_start": 122,
+          "line_end": 158,
+          "sha256": "a0366953d4803dab3af3da0c1cc08019b1c202ffbc5a3545bf0d247f8d9b1e6f",
+          "head_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
+          "normalized_sha256": "1fdbafb565c0d66ff39431732d3a6c461752cf0fccab6eecd7230569b9500370",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-06-03",
+      "area": "데이터",
+      "requirement": "결과 키",
+      "acceptance": "민감정보가 JSON 키에 있으면 schema를 바꾸지 않고 보류",
+      "negative_cases": [
+        "이메일/토큰을 객체 key로 반환"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/privacy.py",
+          "symbol": "mask_payload",
+          "line_start": 122,
+          "line_end": 158,
+          "sha256": "a0366953d4803dab3af3da0c1cc08019b1c202ffbc5a3545bf0d247f8d9b1e6f",
+          "head_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
+          "normalized_sha256": "1fdbafb565c0d66ff39431732d3a6c461752cf0fccab6eecd7230569b9500370",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [
+        {
+          "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+          "symbol": "test_sensitive_structured_keys_are_withheld_without_renaming_schema",
+          "assertion": "민감정보가 JSON 키에 있으면 schema를 바꾸지 않고 보류",
+          "verification": "verified_unit_only",
+          "run_evidence": "status/reports/2026-10-13-enterprise-unit-results.json",
+          "line_start": 154,
+          "line_end": 161,
+          "normalized_sha256": "3a938e79bbefe789d8f6d31dc112695054edac32850623c236aae16698b6719a",
+          "assertion_lines": [
+            158,
+            160,
+            161
+          ]
+        }
+      ],
+      "status": "verified_unit",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-06-04",
+      "area": "데이터",
+      "requirement": "검사 장애",
+      "acceptance": "검사기 오류·잘못된 결과·미완전 anonymizer는 보류/차단",
+      "negative_cases": [
+        "timeout을 탐지0으로 처리"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/privacy.py",
+          "symbol": "mask_payload",
+          "line_start": 122,
+          "line_end": 158,
+          "sha256": "a0366953d4803dab3af3da0c1cc08019b1c202ffbc5a3545bf0d247f8d9b1e6f",
+          "head_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
+          "normalized_sha256": "1fdbafb565c0d66ff39431732d3a6c461752cf0fccab6eecd7230569b9500370",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-06-05",
+      "area": "데이터",
+      "requirement": "코퍼스",
+      "acceptance": "정상/공격·한국어/다국어별 오탐·미탐과 성능을 함께 측정",
+      "negative_cases": [
+        "정상 이메일·코드·로그 과잉 차단"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/privacy.py",
+          "symbol": "mask_payload",
+          "line_start": 122,
+          "line_end": 158,
+          "sha256": "a0366953d4803dab3af3da0c1cc08019b1c202ffbc5a3545bf0d247f8d9b1e6f",
+          "head_sha256": "5e5ca370faf0c81e2edb3017a49339fcce49f203d6982b67891253311ebb0113",
+          "normalized_sha256": "1fdbafb565c0d66ff39431732d3a6c461752cf0fccab6eecd7230569b9500370",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-07-01",
+      "area": "주입",
+      "requirement": "출처",
+      "acceptance": "도구 설명·외부 콘텐츠를 권한 지시와 구분",
+      "negative_cases": [
+        "외부 문서가 관리자 명령으로 승격"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_guarded_result",
+          "line_start": 1204,
+          "line_end": 1229,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-07-02",
+      "area": "주입",
+      "requirement": "decoded 문자열",
+      "acceptance": "text/structuredContent의 실제 줄바꿈과 중첩 문자열 검사",
+      "negative_cases": [
+        "JSON escape로 위조 대화록 누락"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_guarded_result",
+          "line_start": 1204,
+          "line_end": 1229,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-07-03",
+      "area": "주입",
+      "requirement": "정상군",
+      "acceptance": "문서·로그의 동일 표지가 실제 정상 업무를 방해하는지 대조",
+      "negative_cases": [
+        "공격 표지만으로 모든 읽기 차단"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_guarded_result",
+          "line_start": 1204,
+          "line_end": 1229,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-07-04",
+      "area": "주입",
+      "requirement": "승인 후 변경",
+      "acceptance": "공식 OSS 설정의 설명 override 변경을 계약 차이로 검증",
+      "negative_cases": [
+        "승인 뒤 공격 설명으로 교체"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_guarded_result",
+          "line_start": 1204,
+          "line_end": 1229,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-07-05",
+      "area": "주입",
+      "requirement": "대형 결과",
+      "acceptance": "크기 상한과 병적 regex/JSON 처리 시간의 전체 deadline 검증",
+      "negative_cases": [
+        "긴 공백/줄바꿈으로 이벤트루프 정지"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_guarded_result",
+          "line_start": 1204,
+          "line_end": 1229,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P1",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-08-01",
+      "area": "외부통신",
+      "requirement": "목적지",
+      "acceptance": "정규 URL·IP·DNS·redirect의 최종 승인 대상 검사",
+      "negative_cases": [
+        "loopback·IPv6·내부 IP 표기 우회"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/upstream.py",
+          "symbol": "session",
+          "line_start": 70,
+          "line_end": 77,
+          "sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-08-02",
+      "area": "외부통신",
+      "requirement": "자격",
+      "acceptance": "직원 JWT를 upstream으로 전달하지 않고 별도 자격 사용",
+      "negative_cases": [
+        "직원 Authorization 재전달"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/upstream.py",
+          "symbol": "session",
+          "line_start": 70,
+          "line_end": 77,
+          "sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-08-03",
+      "area": "외부통신",
+      "requirement": "바인딩",
+      "acceptance": "공급자 자격은 정확한 HTTPS endpoint·principal·기한에 결합",
+      "negative_cases": [
+        "다른 host/principal·만료 자격"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/upstream.py",
+          "symbol": "session",
+          "line_start": 70,
+          "line_end": 77,
+          "sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-08-04",
+      "area": "외부통신",
+      "requirement": "조회 장애",
+      "acceptance": "목적지 정책 데이터 결측/타입 오류는 거부",
+      "negative_cases": [
+        "None을 빈 allow 목록으로 취급"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/upstream.py",
+          "symbol": "session",
+          "line_start": 70,
+          "line_end": 77,
+          "sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-08-05",
+      "area": "외부통신",
+      "requirement": "서버 egress",
+      "acceptance": "MCP 서버→외부 API의 별도 목적지·자격·효과를 관찰·집행",
+      "negative_cases": [
+        "승인 MCP가 Gateway 밖으로 재전송"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/upstream.py",
+          "symbol": "session",
+          "line_start": 70,
+          "line_end": 77,
+          "sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P0",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-09-01",
+      "area": "실행",
+      "requirement": "중복",
+      "acceptance": "동일 principal/도구/정규 인자의 중복 효과를 실행 전 제한",
+      "negative_cases": [
+        "동시 중복 호출"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_call_upstream",
+          "line_start": 1083,
+          "line_end": 1168,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-09-02",
+      "area": "실행",
+      "requirement": "상한",
+      "acceptance": "호출량·동시성·TTL의 경계 시각과 다중 worker를 검증",
+      "negative_cases": [
+        "창 경계·reservation 만료 경합"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_call_upstream",
+          "line_start": 1083,
+          "line_end": 1168,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-09-03",
+      "area": "실행",
+      "requirement": "사망",
+      "acceptance": "dispatch 전 durable intent와 사망 뒤 uncertain을 보존",
+      "negative_cases": [
+        "응답 미수신을 미실행으로 오판"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_call_upstream",
+          "line_start": 1083,
+          "line_end": 1168,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P0",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-09-04",
+      "area": "실행",
+      "requirement": "재시도",
+      "acceptance": "쓰기의 무조건 자동 재시도로 부수효과를 중복하지 않음",
+      "negative_cases": [
+        "네트워크 응답 손실 후 두 번째 발송"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_call_upstream",
+          "line_start": 1083,
+          "line_end": 1168,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-09-05",
+      "area": "실행",
+      "requirement": "효과 증거",
+      "acceptance": "하네스→요청→원장→독립 서버 수신/실제 효과를 연결",
+      "negative_cases": [
+        "동일 내용 덮어쓰기1을 실행1로 추정"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_call_upstream",
+          "line_start": 1083,
+          "line_end": 1168,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P0",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-10-01",
+      "area": "MCP결과",
+      "requirement": "구조화 보존",
+      "acceptance": "검사·마스킹된 structuredContent를 공식 SDK로 보존",
+      "negative_cases": [
+        "결과를 text만 반환해 데이터 손실"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/mcp_facade.py",
+          "symbol": "_render",
+          "line_start": 126,
+          "line_end": 170,
+          "sha256": "53d75cdec1607253c14992cc2c27a58beb8af03dfe4a30f1b1a311609a2ead16",
+          "head_sha256": "a7a2aca99e44cc499ab20eea2770cce090478c747b53f336e37c4091f705670e",
+          "normalized_sha256": "1dbd568cc05d491b65cc40ba6cc32d133b8da1a9d735a280a8a4f516fddc2e39",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [
+        {
+          "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+          "symbol": "test_structured_result_survives_official_sdk_wire_roundtrip",
+          "assertion": "검사·마스킹된 structuredContent를 공식 SDK로 보존",
+          "verification": "verified_unit_only",
+          "run_evidence": "status/reports/2026-10-13-enterprise-unit-results.json",
+          "line_start": 25,
+          "line_end": 33,
+          "normalized_sha256": "3a938e79bbefe789d8f6d31dc112695054edac32850623c236aae16698b6719a",
+          "assertion_lines": [
+            30,
+            31,
+            32,
+            33
+          ]
+        }
+      ],
+      "status": "verified_unit",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-10-02",
+      "area": "MCP결과",
+      "requirement": "구형 호환",
+      "acceptance": "구조화-only 결과에 동일 안전 JSON의 TextContent 제공",
+      "negative_cases": [
+        "구형 client가 빈 결과로 인식"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/mcp_facade.py",
+          "symbol": "_render",
+          "line_start": 126,
+          "line_end": 170,
+          "sha256": "53d75cdec1607253c14992cc2c27a58beb8af03dfe4a30f1b1a311609a2ead16",
+          "head_sha256": "a7a2aca99e44cc499ab20eea2770cce090478c747b53f336e37c4091f705670e",
+          "normalized_sha256": "1dbd568cc05d491b65cc40ba6cc32d133b8da1a9d735a280a8a4f516fddc2e39",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [
+        {
+          "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+          "symbol": "test_structured_only_result_has_text_for_older_clients",
+          "assertion": "구조화-only 결과에 동일 안전 JSON의 TextContent 제공",
+          "verification": "verified_unit_only",
+          "run_evidence": "status/reports/2026-10-13-enterprise-unit-results.json",
+          "line_start": 35,
+          "line_end": 38,
+          "normalized_sha256": "3a938e79bbefe789d8f6d31dc112695054edac32850623c236aae16698b6719a",
+          "assertion_lines": [
+            38
+          ]
+        }
+      ],
+      "status": "verified_unit",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-10-03",
+      "area": "MCP결과",
+      "requirement": "보류 경계",
+      "acceptance": "Block/Approval/withheld/unknown에서는 잔존 payload도 반환하지 않음",
+      "negative_cases": [
+        "상태와 result가 모순돼 데이터 노출"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/mcp_facade.py",
+          "symbol": "_render",
+          "line_start": 126,
+          "line_end": 170,
+          "sha256": "53d75cdec1607253c14992cc2c27a58beb8af03dfe4a30f1b1a311609a2ead16",
+          "head_sha256": "a7a2aca99e44cc499ab20eea2770cce090478c747b53f336e37c4091f705670e",
+          "normalized_sha256": "1dbd568cc05d491b65cc40ba6cc32d133b8da1a9d735a280a8a4f516fddc2e39",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [
+        {
+          "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+          "symbol": "test_withheld_block_and_approval_do_not_release_stale_payload",
+          "assertion": "Block/Approval/withheld/unknown에서는 잔존 payload도 반환하지 않음",
+          "verification": "verified_unit_only",
+          "run_evidence": "status/reports/2026-10-13-enterprise-unit-results.json",
+          "line_start": 46,
+          "line_end": 55,
+          "normalized_sha256": "3a938e79bbefe789d8f6d31dc112695054edac32850623c236aae16698b6719a",
+          "assertion_lines": [
+            53,
+            54,
+            55
+          ]
+        }
+      ],
+      "status": "verified_unit",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-10-04",
+      "area": "MCP결과",
+      "requirement": "결과 형식",
+      "acceptance": "structuredContent는 JSON 객체, 미지원 rich content는 보류",
+      "negative_cases": [
+        "배열/scalar·image/audio 우회"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_guarded_result",
+          "line_start": 1204,
+          "line_end": 1229,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [
+        {
+          "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+          "symbol": "test_structured_shape_is_object",
+          "assertion": "structuredContent는 JSON 객체, 미지원 rich content는 보류",
+          "verification": "verified_unit_only",
+          "run_evidence": "status/reports/2026-10-13-enterprise-unit-results.json",
+          "line_start": 57,
+          "line_end": 64,
+          "normalized_sha256": "3a938e79bbefe789d8f6d31dc112695054edac32850623c236aae16698b6719a",
+          "assertion_lines": [
+            59,
+            61,
+            63
+          ]
+        }
+      ],
+      "status": "verified_unit",
+      "priority": "P0",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-10-05",
+      "area": "MCP결과",
+      "requirement": "확장 기능",
+      "acceptance": "resources/prompts/sampling/tasks 지원/거부 범위를 명시",
+      "negative_cases": [
+        "MCP 전체 명세 지원으로 오인"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/mcp_facade.py",
+          "symbol": "_render",
+          "line_start": 126,
+          "line_end": 170,
+          "sha256": "53d75cdec1607253c14992cc2c27a58beb8af03dfe4a30f1b1a311609a2ead16",
+          "head_sha256": "a7a2aca99e44cc499ab20eea2770cce090478c747b53f336e37c4091f705670e",
+          "normalized_sha256": "1dbd568cc05d491b65cc40ba6cc32d133b8da1a9d735a280a8a4f516fddc2e39",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P0",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-11-01",
+      "area": "엔드포인트",
+      "requirement": "실제 launcher",
+      "acceptance": "fresh 하네스의 UID·실행 파일·AppArmor 전이를 확인",
+      "negative_cases": [
+        "일반 pj1 CLI를 managed 증거로 사용"
+      ],
+      "code_evidence": [
+        {
+          "path": "endpoint-agent/enforce-linux.py",
+          "symbol": "profile",
+          "line_start": 80,
+          "line_end": 140,
+          "sha256": "8ee74b9b62f5acd50ed1c08706f705b8f3c44f661a44425d3cfaba4f6fd6c819",
+          "head_sha256": "8cc565afd96bbc8deac18a1ad590c4e7a57d99cbb5be8344ab31758681462283",
+          "normalized_sha256": "f1da8e6ab666f83e011f80a5e8c44a14c23b0be919f2d71cbe2a395ae476d85d",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-11-02",
+      "area": "엔드포인트",
+      "requirement": "직접 stdio",
+      "acceptance": "비승인 공식 OSS stdio 실행의 실제 시도·OS 거부 확인",
+      "negative_cases": [
+        "모델이 실행 안 했는데 차단으로 집계"
+      ],
+      "code_evidence": [
+        {
+          "path": "endpoint-agent/enforce-linux.py",
+          "symbol": "profile",
+          "line_start": 80,
+          "line_end": 140,
+          "sha256": "8ee74b9b62f5acd50ed1c08706f705b8f3c44f661a44425d3cfaba4f6fd6c819",
+          "head_sha256": "8cc565afd96bbc8deac18a1ad590c4e7a57d99cbb5be8344ab31758681462283",
+          "normalized_sha256": "f1da8e6ab666f83e011f80a5e8c44a14c23b0be919f2d71cbe2a395ae476d85d",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-11-03",
+      "area": "엔드포인트",
+      "requirement": "localhost",
+      "acceptance": "IPv4/IPv6 loopback 직접 MCP 접속의 수신0 확인",
+      "negative_cases": [
+        "127.0.0.1만 막고 ::1 우회"
+      ],
+      "code_evidence": [
+        {
+          "path": "endpoint-agent/enforce-linux.py",
+          "symbol": "profile",
+          "line_start": 80,
+          "line_end": 140,
+          "sha256": "8ee74b9b62f5acd50ed1c08706f705b8f3c44f661a44425d3cfaba4f6fd6c819",
+          "head_sha256": "8cc565afd96bbc8deac18a1ad590c4e7a57d99cbb5be8344ab31758681462283",
+          "normalized_sha256": "f1da8e6ab666f83e011f80a5e8c44a14c23b0be919f2d71cbe2a395ae476d85d",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-11-04",
+      "area": "엔드포인트",
+      "requirement": "기기 입구",
+      "acceptance": "active·fresh heartbeat·hash·checks와 독립 활성화 확인",
+      "negative_cases": [
+        "설치/pending을 활성 통과로 처리"
+      ],
+      "code_evidence": [
+        {
+          "path": "endpoint-agent/enforce-linux.py",
+          "symbol": "profile",
+          "line_start": 80,
+          "line_end": 140,
+          "sha256": "8ee74b9b62f5acd50ed1c08706f705b8f3c44f661a44425d3cfaba4f6fd6c819",
+          "head_sha256": "8cc565afd96bbc8deac18a1ad590c4e7a57d99cbb5be8344ab31758681462283",
+          "normalized_sha256": "f1da8e6ab666f83e011f80a5e8c44a14c23b0be919f2d71cbe2a395ae476d85d",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-11-05",
+      "area": "엔드포인트",
+      "requirement": "관측 공백",
+      "acceptance": "collector 마지막 성공/실패·전체 집계를 구분",
+      "negative_cases": [
+        "최근200건/무수신을 전체 차단0으로 표시"
+      ],
+      "code_evidence": [
+        {
+          "path": "endpoint-agent/enforce-linux.py",
+          "symbol": "profile",
+          "line_start": 80,
+          "line_end": 140,
+          "sha256": "8ee74b9b62f5acd50ed1c08706f705b8f3c44f661a44425d3cfaba4f6fd6c819",
+          "head_sha256": "8cc565afd96bbc8deac18a1ad590c4e7a57d99cbb5be8344ab31758681462283",
+          "normalized_sha256": "f1da8e6ab666f83e011f80a5e8c44a14c23b0be919f2d71cbe2a395ae476d85d",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P1",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-12-01",
+      "area": "감사",
+      "requirement": "상태 분리",
+      "acceptance": "attempted/executed/response disposition과 원인 정책을 별도 기록",
+      "negative_cases": [
+        "Block만으로 미실행 주장"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_record_decision",
+          "line_start": 1266,
+          "line_end": 1341,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-12-02",
+      "area": "감사",
+      "requirement": "append-only",
+      "acceptance": "신규 기록 추가·검증 유지하고 기존 원장 변경 금지",
+      "negative_cases": [
+        "시험 후 원장 삭제로 초기화"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_record_decision",
+          "line_start": 1266,
+          "line_end": 1341,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-12-03",
+      "area": "감사",
+      "requirement": "시각",
+      "acceptance": "v7 created_at UTC canonical·변조검출과 이전 체인 검증 유지",
+      "negative_cases": [
+        "시각만 바꿔도 검증 통과"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_record_decision",
+          "line_start": 1266,
+          "line_end": 1341,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-12-04",
+      "area": "감사",
+      "requirement": "외부 anchor",
+      "acceptance": "관리자 DB 변경과 원장 head 외부 보존/검증을 구분",
+      "negative_cases": [
+        "동일DB head 재작성 가능성 무시"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_record_decision",
+          "line_start": 1266,
+          "line_end": 1341,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P1",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-12-05",
+      "area": "감사",
+      "requirement": "비밀 최소화",
+      "acceptance": "토큰·원본 민감본문을 공개 원장/로그/Excel에서 제외",
+      "negative_cases": [
+        "exception/vendor 응답에 자격 노출"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "_record_decision",
+          "line_start": 1266,
+          "line_end": 1341,
+          "sha256": "6b73f4588a8aff023221924881b1f312b7086825738994971d726add0275721b",
+          "head_sha256": "f403047dcd39430da3f6cebe4de656fd31dbf85361e3f377e4eb42df78f76d77",
+          "normalized_sha256": "5bf0f17d55a6779e8632b6e8383cc7723909667d2a5bddfd4ce91db41a08fdba",
+          "source_state": "worktree_modified",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-13-01",
+      "area": "종료",
+      "requirement": "즉시 거부",
+      "acceptance": "종료 시작 이후 Gateway 신규 실행은 즉시 거부",
+      "negative_cases": [
+        "설정 삭제 완료까지 실행 허용"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/decommission.py",
+          "symbol": "assess",
+          "line_start": 626,
+          "line_end": 671,
+          "sha256": "4cb9115269303adbae898ec12021d60d68edb1a662fbfe21bea5150ec69abb07",
+          "head_sha256": "e4e082f9f41b6cad7500638cd20436defdba01c5d0b87f3c2c20ec6847068d4e",
+          "normalized_sha256": "e4e082f9f41b6cad7500638cd20436defdba01c5d0b87f3c2c20ec6847068d4e",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-13-02",
+      "area": "종료",
+      "requirement": "회수",
+      "acceptance": "PAT/refresh/access/session별 실제 provider 재접근 검증",
+      "negative_cases": [
+        "삭제 API200만으로 권한 철회 판단"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/decommission.py",
+          "symbol": "assess",
+          "line_start": 626,
+          "line_end": 671,
+          "sha256": "4cb9115269303adbae898ec12021d60d68edb1a662fbfe21bea5150ec69abb07",
+          "head_sha256": "e4e082f9f41b6cad7500638cd20436defdba01c5d0b87f3c2c20ec6847068d4e",
+          "normalized_sha256": "e4e082f9f41b6cad7500638cd20436defdba01c5d0b87f3c2c20ec6847068d4e",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-13-03",
+      "area": "종료",
+      "requirement": "잔존",
+      "acceptance": "사용자 설정·자격·MCP 저장 데이터의 잔존 목록 확인",
+      "negative_cases": [
+        "설정 제거를 모든 데이터 폐기로 주장"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/decommission.py",
+          "symbol": "assess",
+          "line_start": 626,
+          "line_end": 671,
+          "sha256": "4cb9115269303adbae898ec12021d60d68edb1a662fbfe21bea5150ec69abb07",
+          "head_sha256": "e4e082f9f41b6cad7500638cd20436defdba01c5d0b87f3c2c20ec6847068d4e",
+          "normalized_sha256": "e4e082f9f41b6cad7500638cd20436defdba01c5d0b87f3c2c20ec6847068d4e",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-13-04",
+      "area": "종료",
+      "requirement": "증거 수준",
+      "acceptance": "C1~C4 조건별 증거와 T1~T3 최소 상태를 연결",
+      "negative_cases": [
+        "증거 없는 provider 보유 상태를 완료"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/decommission.py",
+          "symbol": "assess",
+          "line_start": 626,
+          "line_end": 671,
+          "sha256": "4cb9115269303adbae898ec12021d60d68edb1a662fbfe21bea5150ec69abb07",
+          "head_sha256": "e4e082f9f41b6cad7500638cd20436defdba01c5d0b87f3c2c20ec6847068d4e",
+          "normalized_sha256": "e4e082f9f41b6cad7500638cd20436defdba01c5d0b87f3c2c20ec6847068d4e",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-13-05",
+      "area": "종료",
+      "requirement": "공유 환경",
+      "acceptance": "시험 관계/자격만 원복하고 다른 사용자의 종료 관계 유지",
+      "negative_cases": [
+        "전체lab reset·기존 PAT 폐기"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/decommission.py",
+          "symbol": "assess",
+          "line_start": 626,
+          "line_end": 671,
+          "sha256": "4cb9115269303adbae898ec12021d60d68edb1a662fbfe21bea5150ec69abb07",
+          "head_sha256": "e4e082f9f41b6cad7500638cd20436defdba01c5d0b87f3c2c20ec6847068d4e",
+          "normalized_sha256": "e4e082f9f41b6cad7500638cd20436defdba01c5d0b87f3c2c20ec6847068d4e",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-14-01",
+      "area": "LiteLLM",
+      "requirement": "배치",
+      "acceptance": "lab profile 존재와 실제 field 활성 상태를 별도 검증",
+      "negative_cases": [
+        "이미지/config 존재만으로 연동 완료"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/llm/litellm.yaml",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 33,
+          "sha256": "ba76271df70dfe0be456052f57b6c80202cfc98f1f7245e4d5bb2a69ec11cbac",
+          "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
+          "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-14-02",
+      "area": "LiteLLM",
+      "requirement": "API",
+      "acceptance": "ChatCompletions/Responses/Anthropic messages 정상·streaming·오류 검증",
+      "negative_cases": [
+        "health200을 실제 모델 응답으로 대체"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/llm/litellm.yaml",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 33,
+          "sha256": "ba76271df70dfe0be456052f57b6c80202cfc98f1f7245e4d5bb2a69ec11cbac",
+          "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
+          "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-14-03",
+      "area": "LiteLLM",
+      "requirement": "MCP 경로",
+      "acceptance": "하네스 병렬경로와 LiteLLM MCP aggregation 실행을 구분",
+      "negative_cases": [
+        "따로 성공한 discovery/model을 E2E로 집계"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/llm/litellm.yaml",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 33,
+          "sha256": "ba76271df70dfe0be456052f57b6c80202cfc98f1f7245e4d5bb2a69ec11cbac",
+          "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
+          "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P1",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-14-04",
+      "area": "LiteLLM",
+      "requirement": "프록시 신원",
+      "acceptance": "LiteLLM 집계에서 verified user/device/위임 범위를 보존",
+      "negative_cases": [
+        "shared token·untrusted x-user 대체"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/llm/litellm.yaml",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 33,
+          "sha256": "ba76271df70dfe0be456052f57b6c80202cfc98f1f7245e4d5bb2a69ec11cbac",
+          "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
+          "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P1",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-14-05",
+      "area": "LiteLLM",
+      "requirement": "private host",
+      "acceptance": "고객 private LiteLLM host/TLS/CA/CONNECT를 명시 승인",
+      "negative_cases": [
+        "OpenAI/Anthropic 도메인 allow만으로 호환 주장"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/llm/litellm.yaml",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 33,
+          "sha256": "ba76271df70dfe0be456052f57b6c80202cfc98f1f7245e4d5bb2a69ec11cbac",
+          "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
+          "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P1",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-15-01",
+      "area": "비밀저장소",
+      "requirement": "공식 SDK",
+      "acceptance": "Vault/OpenBao/AWS/Azure/GCP 공식 SDK·배포 라이선스 구분",
+      "negative_cases": [
+        "Enterprise 전용 연동을 OSS 기능으로 기재"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/upstream.py",
+          "symbol": "credential_headers",
+          "line_start": 29,
+          "line_end": 66,
+          "sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P1",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-15-02",
+      "area": "비밀저장소",
+      "requirement": "workload 신원",
+      "acceptance": "AppRole/IAM/ManagedIdentity/WorkloadIdentity의 최소 권한 적용",
+      "negative_cases": [
+        "장기 root/master key 공유"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/upstream.py",
+          "symbol": "credential_headers",
+          "line_start": 29,
+          "line_end": 66,
+          "sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P1",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-15-03",
+      "area": "비밀저장소",
+      "requirement": "회전",
+      "acceptance": "회전·철회·lease 만료·캐시 TTL과 실행 직전 상태 대조",
+      "negative_cases": [
+        "회전 뒤 기존 credential 무기한 캐시"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/upstream.py",
+          "symbol": "credential_headers",
+          "line_start": 29,
+          "line_end": 66,
+          "sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P1",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-15-04",
+      "area": "비밀저장소",
+      "requirement": "장애",
+      "acceptance": "secret 조회 실패·TLS/CA 실패는 anonymous fallback 금지",
+      "negative_cases": [
+        "secret 오류 후 무자격 실행"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/upstream.py",
+          "symbol": "credential_headers",
+          "line_start": 29,
+          "line_end": 66,
+          "sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P1",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-15-05",
+      "area": "비밀저장소",
+      "requirement": "전달",
+      "acceptance": "공급자 자격만 readonly mount·TTL·로그 최소화로 전달",
+      "negative_cases": [
+        "secret.value/JWT를 대화·설정·Excel에 출력"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/upstream.py",
+          "symbol": "credential_headers",
+          "line_start": 29,
+          "line_end": 66,
+          "sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "head_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "normalized_sha256": "eb6bd99f74e6cef001a4f7b8007b544d1f4a8d67696822a70541bfadd42e84d1",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P1",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-16-01",
+      "area": "운영",
+      "requirement": "자원 범위",
+      "acceptance": "CPU/메모리 Linux VM·container quota·물리 PC 범위 구분",
+      "negative_cases": [
+        "미측정 CPU를0으로 표시"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/system_metrics.py",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 118,
+          "sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "head_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-16-02",
+      "area": "운영",
+      "requirement": "연결 범위",
+      "acceptance": "내부 TCP ms·endpoint RTT·jitter·실패율/패킷손실 구분",
+      "negative_cases": [
+        "HTTP health 처리 시간을 network RTT로 표시"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/system_metrics.py",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 118,
+          "sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "head_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-16-03",
+      "area": "운영",
+      "requirement": "게시",
+      "acceptance": "Tailnet Caddy·모델 proxy의 정확한 주소/포트/프로토콜만 게시",
+      "negative_cases": [
+        "wildcard·DB·추가 포트 노출"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/system_metrics.py",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 118,
+          "sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "head_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "source_only",
+      "priority": "P1",
+      "gap": "실제 상용/OSS MCP와 독립 효과·정상/음성/경계·복구 조건의 실기기 검증 필요",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-16-04",
+      "area": "운영",
+      "requirement": "복구",
+      "acceptance": "backup/restore·DB migration·rollback·서비스 장애 복구 검증",
+      "negative_cases": [
+        "health 정상만으로 복구 성공"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/system_metrics.py",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 118,
+          "sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "head_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P1",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    },
+    {
+      "id": "REQ-16-05",
+      "area": "운영",
+      "requirement": "HA",
+      "acceptance": "다중 replica 예약·세션·원장·policy版本 일관성 검증",
+      "negative_cases": [
+        "단일기기 통과를 기업 HA 완료로 기재"
+      ],
+      "code_evidence": [
+        {
+          "path": "full_stack_lab/gateway/app/system_metrics.py",
+          "symbol": "module/config",
+          "line_start": 1,
+          "line_end": 118,
+          "sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "head_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
+          "source_state": "committed_source",
+          "symbol_found": true
+        }
+      ],
+      "test_evidence": [],
+      "status": "gap",
+      "priority": "P1",
+      "gap": "조건 전체 구현/운영 연결은 현재 증거로 충족하지 못함",
+      "source_refs": [
+        "analysis/code-structure.json",
+        "experiments/README.md"
+      ]
+    }
+  ]
+}

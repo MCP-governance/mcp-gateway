@@ -1,0 +1,171 @@
+{
+  "executed_on": "2026-10-14T13:09:27.856208+09:00",
+  "scope": "offline regressions and local static checks; not deployed kernel or real model harness proof",
+  "checks": [
+    {
+      "name": "managed-before",
+      "command": [
+        "wsl.exe",
+        "-d",
+        "kali-linux",
+        "--",
+        "python3",
+        "/mnt/c/Users/bobysg/bob/프로젝트/mcp-gateway-local-mcp-endpoint/.task-local-20261014/baseline-source/full_stack_lab/tests/managed_enforcement_check.py"
+      ],
+      "expected_exit": 1,
+      "exit": 1,
+      "expected_result_observed": true,
+      "stdout": "",
+      "stderr": "test_linux_complain_profile_fails_closed (__main__.ManagedChecks.test_linux_complain_profile_fails_closed) ... ok\ntest_linux_different_profiles_cannot_impersonate_account (__main__.ManagedChecks.test_linux_different_profiles_cannot_impersonate_account) ... FAIL\ntest_linux_exact_enforcing_profiles (__main__.ManagedChecks.test_linux_exact_enforcing_profiles) ... ok\ntest_windows_disabled_rule_even_in_baseline_fail_closed (__main__.ManagedChecks.test_windows_disabled_rule_even_in_baseline_fail_closed) ... FAIL\ntest_windows_empty_profiles_fail_closed (__main__.ManagedChecks.test_windows_empty_profiles_fail_closed) ... FAIL\ntest_windows_foreign_account_rule_fail_closed (__main__.ManagedChecks.test_windows_foreign_account_rule_fail_closed) ... FAIL\ntest_windows_healthy (__main__.ManagedChecks.test_windows_healthy) ... ok\ntest_windows_missing_rules_even_in_baseline_fail_closed (__main__.ManagedChecks.test_windows_missing_rules_even_in_baseline_fail_closed) ... FAIL\ntest_windows_unknown_profile_values_fail_closed (__main__.ManagedChecks.test_windows_unknown_profile_values_fail_closed) ... FAIL\n\n======================================================================\nFAIL: test_linux_different_profiles_cannot_impersonate_account (__main__.ManagedChecks.test_linux_different_profiles_cannot_impersonate_account)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/mnt/c/Users/bobysg/bob/프로젝트/mcp-gateway-local-mcp-endpoint/.task-local-20261014/baseline-source/full_stack_lab/tests/managed_enforcement_check.py\", line 99, in test_linux_different_profiles_cannot_impersonate_account\n    self.assertFalse(self.linux_health(profiles))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_windows_disabled_rule_even_in_baseline_fail_closed (__main__.ManagedChecks.test_windows_disabled_rule_even_in_baseline_fail_closed)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/mnt/c/Users/bobysg/bob/프로젝트/mcp-gateway-local-mcp-endpoint/.task-local-20261014/baseline-source/full_stack_lab/tests/managed_enforcement_check.py\", line 67, in test_windows_disabled_rule_even_in_baseline_fail_closed\n    self.assertFalse(self.windows_health(state))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_windows_empty_profiles_fail_closed (__main__.ManagedChecks.test_windows_empty_profiles_fail_closed)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/mnt/c/Users/bobysg/bob/프로젝트/mcp-gateway-local-mcp-endpoint/.task-local-20261014/baseline-source/full_stack_lab/tests/managed_enforcement_check.py\", line 52, in test_windows_empty_profiles_fail_closed\n    self.assertFalse(self.windows_health(state))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_windows_foreign_account_rule_fail_closed (__main__.ManagedChecks.test_windows_foreign_account_rule_fail_closed)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/mnt/c/Users/bobysg/bob/프로젝트/mcp-gateway-local-mcp-endpoint/.task-local-20261014/baseline-source/full_stack_lab/tests/managed_enforcement_check.py\", line 72, in test_windows_foreign_account_rule_fail_closed\n    self.assertFalse(self.windows_health(state))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_windows_missing_rules_even_in_baseline_fail_closed (__main__.ManagedChecks.test_windows_missing_rules_even_in_baseline_fail_closed)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/mnt/c/Users/bobysg/bob/프로젝트/mcp-gateway-local-mcp-endpoint/.task-local-20261014/baseline-source/full_stack_lab/tests/managed_enforcement_check.py\", line 62, in test_windows_missing_rules_even_in_baseline_fail_closed\n    self.assertFalse(self.windows_health(state))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_windows_unknown_profile_values_fail_closed (__main__.ManagedChecks.test_windows_unknown_profile_values_fail_closed)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/mnt/c/Users/bobysg/bob/프로젝트/mcp-gateway-local-mcp-endpoint/.task-local-20261014/baseline-source/full_stack_lab/tests/managed_enforcement_check.py\", line 57, in test_windows_unknown_profile_values_fail_closed\n    self.assertFalse(self.windows_health(state))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 9 tests in 0.329s\n\nFAILED (failures=6)\n"
+    },
+    {
+      "name": "inventory-before",
+      "command": [
+        "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\main-venv\\Scripts\\python.exe",
+        "-X",
+        "utf8",
+        "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\baseline-source\\full_stack_lab\\tests\\endpoint_inventory_check.py"
+      ],
+      "expected_exit": 1,
+      "exit": 1,
+      "expected_result_observed": true,
+      "stdout": "",
+      "stderr": "test_collector_hides_url_credentials (__main__.Inventory.test_collector_hides_url_credentials) ... \n  test_collector_hides_url_credentials (__main__.Inventory.test_collector_hides_url_credentials) (url='https://user:synthetic-password@vendor.example/mcp') ... FAIL\n  test_collector_hides_url_credentials (__main__.Inventory.test_collector_hides_url_credentials) (url='http://127.0.0.1:8000/mcp?token=synthetic-secret') ... FAIL\n  test_collector_hides_url_credentials (__main__.Inventory.test_collector_hides_url_credentials) (url='https://vendor.example/mcp#synthetic-secret') ... FAIL\ntest_gateway_name_cannot_approve_external_url (__main__.Inventory.test_gateway_name_cannot_approve_external_url) ... FAIL\ntest_gateway_name_cannot_approve_stdio (__main__.Inventory.test_gateway_name_cannot_approve_stdio) ... FAIL\ntest_real_gateway_routes_and_direct_registered_server (__main__.Inventory.test_real_gateway_routes_and_direct_registered_server) ... ok\ntest_receiver_does_not_persist_legacy_url_secrets (__main__.Inventory.test_receiver_does_not_persist_legacy_url_secrets) ... FAIL\ntest_receiver_hides_legacy_stdio_arguments (__main__.Inventory.test_receiver_hides_legacy_stdio_arguments) ... FAIL\n\n======================================================================\nFAIL: test_collector_hides_url_credentials (__main__.Inventory.test_collector_hides_url_credentials) (url='https://user:synthetic-password@vendor.example/mcp')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\baseline-source\\full_stack_lab\\tests\\endpoint_inventory_check.py\", line 43, in test_collector_hides_url_credentials\n    self.assertTrue(ref.startswith(\"sha256:\"))\nAssertionError: False is not true\n\n======================================================================\nFAIL: test_collector_hides_url_credentials (__main__.Inventory.test_collector_hides_url_credentials) (url='http://127.0.0.1:8000/mcp?token=synthetic-secret')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\baseline-source\\full_stack_lab\\tests\\endpoint_inventory_check.py\", line 43, in test_collector_hides_url_credentials\n    self.assertTrue(ref.startswith(\"sha256:\"))\nAssertionError: False is not true\n\n======================================================================\nFAIL: test_collector_hides_url_credentials (__main__.Inventory.test_collector_hides_url_credentials) (url='https://vendor.example/mcp#synthetic-secret')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\baseline-source\\full_stack_lab\\tests\\endpoint_inventory_check.py\", line 43, in test_collector_hides_url_credentials\n    self.assertTrue(ref.startswith(\"sha256:\"))\nAssertionError: False is not true\n\n======================================================================\nFAIL: test_gateway_name_cannot_approve_external_url (__main__.Inventory.test_gateway_name_cannot_approve_external_url)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\baseline-source\\full_stack_lab\\tests\\endpoint_inventory_check.py\", line 26, in test_gateway_name_cannot_approve_external_url\n    self.assertIsNone(endpoint_plane._match([self.gateway, self.server], \"streamable-http\",\nAssertionError: {'id': '__gateway__', 'lifecycle': 'OPERATING', 'status': 'READY', 'keys': {'mcp-governance-security-gateway', 'https://gateway.example/mcp'}, 'bases': {'https://gateway.example/mcp'}} is not None\n\n======================================================================\nFAIL: test_gateway_name_cannot_approve_stdio (__main__.Inventory.test_gateway_name_cannot_approve_stdio)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\baseline-source\\full_stack_lab\\tests\\endpoint_inventory_check.py\", line 30, in test_gateway_name_cannot_approve_stdio\n    self.assertIsNone(endpoint_plane._match([self.gateway, self.server], \"stdio\",\nAssertionError: {'id': '__gateway__', 'lifecycle': 'OPERATING', 'status': 'READY', 'keys': {'mcp-governance-security-gateway', 'https://gateway.example/mcp'}, 'bases': {'https://gateway.example/mcp'}} is not None\n\n======================================================================\nFAIL: test_receiver_does_not_persist_legacy_url_secrets (__main__.Inventory.test_receiver_does_not_persist_legacy_url_secrets)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\bobysg\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\baseline-source\\full_stack_lab\\tests\\endpoint_inventory_check.py\", line 69, in test_receiver_does_not_persist_legacy_url_secrets\n    self.assertTrue(inserted[4].startswith(\"sha256:\"))\nAssertionError: False is not true\n\n======================================================================\nFAIL: test_receiver_hides_legacy_stdio_arguments (__main__.Inventory.test_receiver_hides_legacy_stdio_arguments)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\bobysg\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\baseline-source\\full_stack_lab\\tests\\endpoint_inventory_check.py\", line 56, in test_receiver_hides_legacy_stdio_arguments\n    self.assertTrue(inserted[4].startswith(\"sha256:\"))\nAssertionError: False is not true\n\n----------------------------------------------------------------------\nRan 6 tests in 0.173s\n\nFAILED (failures=7)\n"
+    },
+    {
+      "name": "managed-after",
+      "command": [
+        "wsl.exe",
+        "-d",
+        "kali-linux",
+        "--",
+        "python3",
+        "/mnt/c/Users/bobysg/bob/프로젝트/mcp-gateway-local-mcp-endpoint/full_stack_lab/tests/managed_enforcement_check.py"
+      ],
+      "expected_exit": 0,
+      "exit": 0,
+      "expected_result_observed": true,
+      "stdout": "",
+      "stderr": "test_linux_complain_profile_fails_closed (__main__.ManagedChecks.test_linux_complain_profile_fails_closed) ... ok\ntest_linux_different_profiles_cannot_impersonate_account (__main__.ManagedChecks.test_linux_different_profiles_cannot_impersonate_account) ... ok\ntest_linux_exact_enforcing_profiles (__main__.ManagedChecks.test_linux_exact_enforcing_profiles) ... ok\ntest_windows_disabled_rule_even_in_baseline_fail_closed (__main__.ManagedChecks.test_windows_disabled_rule_even_in_baseline_fail_closed) ... ok\ntest_windows_empty_profiles_fail_closed (__main__.ManagedChecks.test_windows_empty_profiles_fail_closed) ... ok\ntest_windows_foreign_account_rule_fail_closed (__main__.ManagedChecks.test_windows_foreign_account_rule_fail_closed) ... ok\ntest_windows_healthy (__main__.ManagedChecks.test_windows_healthy) ... ok\ntest_windows_missing_rules_even_in_baseline_fail_closed (__main__.ManagedChecks.test_windows_missing_rules_even_in_baseline_fail_closed) ... ok\ntest_windows_unknown_profile_values_fail_closed (__main__.ManagedChecks.test_windows_unknown_profile_values_fail_closed) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 0.187s\n\nOK\n"
+    },
+    {
+      "name": "inventory-after",
+      "command": [
+        "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-local-mcp-endpoint\\.task-local-20261014\\main-venv\\Scripts\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/endpoint_inventory_check.py"
+      ],
+      "expected_exit": 0,
+      "exit": 0,
+      "expected_result_observed": true,
+      "stdout": "",
+      "stderr": "test_collector_hides_url_credentials (__main__.Inventory.test_collector_hides_url_credentials) ... ok\ntest_gateway_name_cannot_approve_external_url (__main__.Inventory.test_gateway_name_cannot_approve_external_url) ... ok\ntest_gateway_name_cannot_approve_stdio (__main__.Inventory.test_gateway_name_cannot_approve_stdio) ... ok\ntest_real_gateway_routes_and_direct_registered_server (__main__.Inventory.test_real_gateway_routes_and_direct_registered_server) ... ok\ntest_receiver_does_not_persist_legacy_url_secrets (__main__.Inventory.test_receiver_does_not_persist_legacy_url_secrets) ... ok\ntest_receiver_hides_legacy_stdio_arguments (__main__.Inventory.test_receiver_hides_legacy_stdio_arguments) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.175s\n\nOK\n"
+    },
+    {
+      "name": "windows-rule-selfcheck",
+      "command": [
+        "C:\\Users\\bobysg\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-X",
+        "utf8",
+        "endpoint-agent/managed-windows.py",
+        "self-check"
+      ],
+      "expected_exit": 0,
+      "exit": 0,
+      "expected_result_observed": true,
+      "stdout": "managed-windows self-check OK\n",
+      "stderr": ""
+    },
+    {
+      "name": "inventory-selfcheck",
+      "command": [
+        "C:\\Users\\bobysg\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-X",
+        "utf8",
+        "endpoint-agent/agent.py",
+        "--self-check"
+      ],
+      "expected_exit": 0,
+      "exit": 0,
+      "expected_result_observed": true,
+      "stdout": "endpoint-agent self-check OK\n",
+      "stderr": ""
+    },
+    {
+      "name": "authentication-surface",
+      "command": [
+        "C:\\Users\\bobysg\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "expected_exit": 0,
+      "exit": 0,
+      "expected_result_observed": true,
+      "stdout": "PASS 무인증 1개가 문서와 일치, 인증 필요 55개 (그중 장치 자격 7개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/os-events)\n",
+      "stderr": ""
+    },
+    {
+      "name": "field-kit-wsl",
+      "command": [
+        "wsl.exe",
+        "-d",
+        "kali-linux",
+        "--",
+        "python3",
+        "/mnt/c/Users/bobysg/bob/프로젝트/mcp-gateway-local-mcp-endpoint/full_stack_lab/tests/field_kit_check.py"
+      ],
+      "expected_exit": 0,
+      "exit": 0,
+      "expected_result_observed": true,
+      "stdout": "  Codex CLI: /tmp/field kit yr34nzgf/codex/config.toml (git)\n",
+      "stderr": "test_address_rules (__main__.KitTest.test_address_rules) ... ok\ntest_codex_app_denies_live_in_the_block_and_leave_with_uninstall (__main__.KitTest.test_codex_app_denies_live_in_the_block_and_leave_with_uninstall) ... ok\ntest_concurrent_helpers_refresh_once_without_reuse (__main__.KitTest.test_concurrent_helpers_refresh_once_without_reuse) ... ok\ntest_conflicts_are_found_before_anything_is_written (__main__.KitTest.test_conflicts_are_found_before_anything_is_written) ... ok\ntest_doctor_and_uninstall_against_the_fake (__main__.KitTest.test_doctor_and_uninstall_against_the_fake) ... <frozen importlib._bootstrap_external>:781: ResourceWarning: unclosed <socket.socket fd=3, family=2, type=1, proto=0, laddr=('127.0.0.1', 35693)>\nResourceWarning: Enable tracemalloc to get the object allocation traceback\nok\ntest_header_starts_a_background_report_at_most_every_six_hours (__main__.KitTest.test_header_starts_a_background_report_at_most_every_six_hours) ... ok\ntest_kit_parses_as_python_3_9 (__main__.KitTest.test_kit_parses_as_python_3_9) ... ok\ntest_managed_files_carry_no_secret (__main__.KitTest.test_managed_files_carry_no_secret) ... ok\ntest_managed_files_take_the_console_connector_policy (__main__.KitTest.test_managed_files_take_the_console_connector_policy) ... ok\ntest_report_lists_vendor_connectors_and_applies_only_its_own_denies (__main__.KitTest.test_report_lists_vendor_connectors_and_applies_only_its_own_denies) ... ok\ntest_setup_writes_helpers_keeps_user_config_and_is_idempotent (__main__.KitTest.test_setup_writes_helpers_keeps_user_config_and_is_idempotent) ... ok\ntest_wrong_password_is_reported_and_nothing_is_registered (__main__.KitTest.test_wrong_password_is_reported_and_nothing_is_registered) ... <frozen importlib._bootstrap_external>:781: ResourceWarning: unclosed <socket.socket fd=3, family=2, type=1, proto=0, laddr=('127.0.0.1', 36793)>\nResourceWarning: Enable tracemalloc to get the object allocation traceback\n<frozen importlib._bootstrap_external>:781: ResourceWarning: unclosed <socket.socket fd=4, family=2, type=1, proto=0, laddr=('127.0.0.1', 35797)>\nResourceWarning: Enable tracemalloc to get the object allocation traceback\n<frozen importlib._bootstrap_external>:781: ResourceWarning: unclosed <socket.socket fd=6, family=2, type=1, proto=0, laddr=('127.0.0.1', 36021)>\nResourceWarning: Enable tracemalloc to get the object allocation traceback\nok\ntest_caddyfile_routes (__main__.OverlayTest.test_caddyfile_routes) ... ok\ntest_experiments_use_the_internal_idp_address (__main__.OverlayTest.test_experiments_use_the_internal_idp_address) ... ok\ntest_field_publications_reject_wildcard_other_service_wrong_port_and_protocol (__main__.OverlayTest.test_field_publications_reject_wildcard_other_service_wrong_port_and_protocol) ... ok\ntest_mcp_facade_accepts_only_the_configured_public_host (__main__.OverlayTest.test_mcp_facade_accepts_only_the_configured_public_host) ... ok\ntest_overlay_publishes_only_caddy_and_model_proxy_on_the_tailnet_address (__main__.OverlayTest.test_overlay_publishes_only_caddy_and_model_proxy_on_the_tailnet_address) ... ok\n\n----------------------------------------------------------------------\nRan 17 tests in 5.550s\n\nOK\n"
+    },
+    {
+      "name": "lint",
+      "command": [
+        "C:\\Users\\bobysg\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-m",
+        "pyflakes",
+        "endpoint-agent/managed-linux.py",
+        "endpoint-agent/managed-windows.py",
+        "endpoint-agent/agent.py",
+        "full_stack_lab/gateway/app/endpoint_plane.py",
+        "full_stack_lab/tests/managed_enforcement_check.py",
+        "full_stack_lab/tests/endpoint_inventory_check.py"
+      ],
+      "expected_exit": 0,
+      "exit": 0,
+      "expected_result_observed": true,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "source_sha256": {
+    "endpoint-agent/managed-linux.py": "22735c5a9605d3f412ca08d820255d22eb24775c5bde85ea50ea588d809f5517",
+    "endpoint-agent/managed-windows.py": "9f6dba0f3e42276ee0a12c3f0e13451c702677630943cfc4d0720f5a352ac46a",
+    "endpoint-agent/agent.py": "c274dcf53f9d486fd38032932a55929cd81424d26b3fd1c6e026facf6c677647",
+    "full_stack_lab/gateway/app/endpoint_plane.py": "1794081aae98198b19f5b49ddc7aace45371f07b3dc8bbe89de93dbbe4edafdc"
+  },
+  "additional_limitations": [
+    "Windows field_kit_check failed on report.log WinError 32 during background report/uninstall; WSL17 independent pass does not repair Windows race.",
+    "Initial PJ1 SSH timeout recovered; subsequent source update and selected actual kernel/account tests are in 2026-10-14-pj1-endpoint-update.json.",
+    "No new natural-language model/MCP turn or complete 92-tool managed boundary proof."
+  ],
+  "final_validation_at": "2026-10-14T14:01:59.868352+09:00",
+  "final_selected_checks": {
+    "managed_regressions": {
+      "tests": 9,
+      "result": "passed"
+    },
+    "inventory_regressions": {
+      "tests": 6,
+      "result": "passed"
+    },
+    "collector_selfcheck": "passed",
+    "changed_python_and_reproduction_lint": "passed",
+    "node_probe_syntax": "passed",
+    "blender_caller_environment_preservation": "passed after replacing a premature 3-second fixture wait with bounded readiness polling"
+  }
+}

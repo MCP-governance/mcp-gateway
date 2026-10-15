@@ -1,0 +1,1940 @@
+{
+  "date": "2026-10-14",
+  "branch_observed": "10/14-endpoint-log-wbs",
+  "purpose": "Read-only WBS review proposal based on G01-G10 goals, PAC01-PAC24 source policy crosswalk, latest reports/backlog/experiment cards. Parent computes final completion percentage.",
+  "source_basis": [
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-13-development-goals.md",
+      "read_scope": "G01-G10 goal statements and original success conditions."
+    },
+    {
+      "path": "research/llm-wiki/threats/policies-24.md",
+      "read_scope": "Source PAC01-PAC24; source numbering differs from runtime PAC-01..15."
+    },
+    {
+      "path": "research/llm-wiki/threats/control-map.md",
+      "read_scope": "PAC source-to-runtime/code candidate crosswalk; static map, not proof."
+    },
+    {
+      "path": "research/llm-wiki/status/backlog.md",
+      "read_scope": "Latest DEV-01..33 states and explicit unresolved gaps."
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-13-development-results.md",
+      "read_scope": "Historical unit/regression/deployment/PJ1 evidence and precise measurement limitations."
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-endpoint-regressions.json",
+      "read_scope": "Offline reported baseline/final tests; final selected checks and Windows report.log WinError32 limitation."
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-pj1-endpoint-update.json",
+      "read_scope": "Specific PJ1 managed identity, active/compliant, exact Linux profile/kernel checks, Node denial, approved Gateway TCP and IPv4/IPv6 loopback attempts."
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-e13-local-mcp-natural-language.md",
+      "read_scope": "E13-variant actual Claude managed/unmanaged test; logs, invalid scope, missing true stdio call, model self restraint, protocol/event gaps."
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md",
+      "read_scope": "D-79 self-approval invalidation; ledger 744-800 excluded as governance success."
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.md",
+      "read_scope": "Actual SDK read, one manual shadow upload, automatic OS event delivery, no automatic stdio forwarding, managed UID/unconfined scope and evidence hashes."
+    },
+    {
+      "path": "research/llm-wiki/experiments/E12-managed-admission.md",
+      "read_scope": "E12 definition; status not_run."
+    },
+    {
+      "path": "research/llm-wiki/experiments/E13-local-bypass.md",
+      "read_scope": "E13 required direct stdio, IPv4/IPv6, unmanaged control and independent effect; status not_run."
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md",
+      "read_scope": "Five application/DB state scenarios and dedicated database evidence; not host kernel proof."
+    }
+  ],
+  "mapping_rules": {
+    "pac_ids": "Use original PAC01-PAC24 as source policy IDs. Runtime PAC-01..15 are a different namespace; do not numeric-join without documented semantic crosswalk.",
+    "subtasks": "Exactly four proposed atomic tasks per each G01-G10; acceptance is scoped to that task.",
+    "stage_weights": {
+      "implementation": 0.2,
+      "regression": 0.2,
+      "deployment": 0.2,
+      "real_device": 0.2,
+      "acceptance_complete": 0.2
+    },
+    "booleans": "These are evidence-bounded suggested booleans from read-only report/source review only. `regression` is false because prior PASS was not rerun against a source hash matched to this WBS review; parent may independently compare report commit/source hash. `acceptance_complete` remains false for all proposed WBS items.",
+    "historical_evidence": "Report PASS is retained with its own date, source SHA/version and precise target. Do not describe as current-code PASS unless source hash/version matches. Static/source presence never equals test success.",
+    "endpoint_scope": "Managed UID/profile/kernel evidence applies to tested PJ1 account only; it does not establish all account, Windows, administrator or arbitrary-app control.",
+    "telemetry": "Manual process report, automatic kernel denial event and automated MCP stdio inventory are different channels. Current evidence: manual upload was received as shadow/suspected; kernel OS event auto-arrived; automatic stdio forwarding was false.",
+    "invalid_evidence": "D-79 self-approved 9-tool test is invalid as positive governance evidence; preserve for audit only. E13 card remains not_run and its variant is partial.",
+    "hash_policy": "Preserve source raw SHA-256 and sanitized projection SHA-256 separately. A hash of a report artifact is not proof that the live payload bytes exactly match the endpoint source without direct byte/hash comparison.",
+    "evidence_dates": "Evidence dates are attached only to the cited report or design artifact. Historical report PASS is not current-source PASS unless source SHA/revision matches this review branch.",
+    "implementation_assessment": "Each row has complete, partial_candidate, or not_implemented. Only complete maps to implementation=true; path/symbol existence alone is insufficient."
+  },
+  "items": [
+    {
+      "id": "G01.01",
+      "goal_id": "G01",
+      "title": "도입물 출처·버전·원본 해시 등록",
+      "source_pac_ids": [
+        "PAC01"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/agent_service.py::intake*",
+        "full_stack_lab/supply_chain/"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/intake_validation_test.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/analysis/local-tools/data.json",
+        "research/llm-wiki/analysis/local-tools/desktop.json",
+        "research/llm-wiki/analysis/pj1-ghidra/report.json"
+      ],
+      "known_gap": "현재 공개 MCP 아티팩트 hash 보존은 개별 연구에 있고, 모든 도입 요청과 실행 artifact 연결·독립 재검증은 범위 밖.",
+      "completion_condition": "신규 승인마다 공급 URL·immutable version/commit·license·artifact SHA-256이 저장되고 배포 파일과 일치하며, 누락 또는 mismatch는 등록 보류된다.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "intake 및 supply-chain 경로는 있으나 모든 승인에서 공급 URL, immutable version, license, 실제 배포 artifact hash를 묶고 mismatch를 보류하는 동작 전체는 현재 근거로 확인되지 않았다."
+    },
+    {
+      "id": "G01.02",
+      "goal_id": "G01",
+      "title": "SBOM·취약점·라이선스 검사와 재평가 연결",
+      "source_pac_ids": [
+        "PAC01",
+        "PAC02"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/supply_chain/",
+        "full_stack_lab/gateway/app/core.py::import_supply_chain_reports",
+        "full_stack_lab/gateway/app/core.py::supply_chain_coverage"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/intake_validation_test.py",
+        "full_stack_lab/tests/intake_register.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/backlog.md#DEV-02"
+      ],
+      "known_gap": "최신 취약점 정보의 수집시각·오탐 승인·재검토 SLA·실제 격리 scanner fail-closed가 현재 보고에서 미확인.",
+      "completion_condition": "SBOM 각 component·license·vulnerability snapshot 및 source timestamp가 승인된 release와 묶이고 scanner outage/critical finding은 fail-closed; stale database case도 증명한다.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "SBOM·공급망 보고서 import/coverage는 있으나 최신 취약점 시각·stale DB·scanner outage/critical 결과 fail-closed까지 충족하지 않는다."
+    },
+    {
+      "id": "G01.03",
+      "goal_id": "G01",
+      "title": "도입 범위·기능별 최소권한 사전 심사",
+      "source_pac_ids": [
+        "PAC02",
+        "PAC07"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/agent_service.py",
+        "full_stack_lab/gateway/app/pac.py",
+        "full_stack_lab/registry/catalog.toml"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/catalog_refresh_check.py",
+        "full_stack_lab/tests/schema_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-feature-design.md"
+      ],
+      "known_gap": "PAC 번호는 source policies와 runtime PAC-01~15가 다른 체계. 기존 권한 분류가 제품별 실제 자원 효과와 모두 일치하는지는 별도시험.",
+      "completion_condition": "각 도구별 목적·자산·읽기/변경/실행·외부 목적지가 사람이 승인한 범위로 잠기고 미검토 도구는 discover/call 불가; 독립 효과로 범위를 확인한다.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-feature-design.md",
+          "scope": "2026-10-13 static design/source analysis, not behavior validation."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "registry와 PAC 권한 분류는 있지만 모든 기능별 승인 범위 잠금과 미검토 도구의 discover/call 차단이 요구 범위 전체로 연결됐는지 확인되지 않았다."
+    },
+    {
+      "id": "G01.04",
+      "goal_id": "G01",
+      "title": "설치·로그 수신물의 원본/정규화 hash 사슬",
+      "source_pac_ids": [
+        "PAC01",
+        "PAC22"
+      ],
+      "code_symbols_files": [
+        "research/llm-wiki/analysis/pj1-ghidra/report.json",
+        "research/llm-wiki/tools/build_pj1_ghidra_log_report.py"
+      ],
+      "regression_test_candidates": [
+        "research/llm-wiki/experiments/pj1-ghidra/check_automatic_os_event.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.json"
+      ],
+      "known_gap": "현재 Ghidra 설치는 /dev/shm volatile, 자동 MCP stdio 수집 미설정. 보고 해시 일치 확인을 전체 수신 경로의 자동 무결성으로 일반화 금지.",
+      "completion_condition": "공급자 원본 hash·기기 설치 hash·수신 payload raw hash·비밀 제거 projection hash를 역할별로 남기고 raw 전달물과 기기 이벤트의 일치/정규화 규칙을 독립 검증한다.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-14-pj1-ghidra-logs.json",
+          "scope": "2026-10-14 19:13:55 KST actual SDK read and separate manual/automatic log-channel evidence."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "연구 보고서 hash 생성 도구와 개별 artifact hash는 있다. 제품의 설치→raw event→수신 payload→정규화 projection hash chain은 구현 증거가 없다."
+    },
+    {
+      "id": "G02.01",
+      "goal_id": "G02",
+      "title": "신청자와 승인자 독립성·승인 기록 보호",
+      "source_pac_ids": [
+        "PAC03",
+        "PAC16"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/agent_service.py",
+        "full_stack_lab/gateway/app/core.py",
+        "docs/ai/DECISIONS.md#D-79"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/managed_enrollment_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md"
+      ],
+      "known_gap": "D-79에 의해 자가 승인된 PJ1 nine-tools의 rows 744–800은 무효 시험 근거이며 긍정 증거로 계상 금지.",
+      "completion_condition": "신청자≠검토자 강제, risk-level별 사람 승인, 승인 provenance/검토 범위 기록; 무효된 self-approval fixture는 disabled 감사 상태로만 보존한다.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-14-pj1-nine-tools.md",
+          "scope": "2026-10-14 D-79 invalidated self-approved run; not positive test evidence."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "signup/admin approval 경로는 있으나 risk-level 사람 승인, 신청자·검토자 독립성 및 agent가 사람 승인자인 척할 수 없는 보장은 완결되지 않았다. D-79 무효 run은 긍정 근거가 아니다."
+    },
+    {
+      "id": "G02.02",
+      "goal_id": "G02",
+      "title": "도구 이름·설명·schema·버전 계약 해시 잠금",
+      "source_pac_ids": [
+        "PAC06",
+        "PAC21"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/core.py::refresh_catalog",
+        "approve_contract",
+        "full_stack_lab/gateway/app/contract.py",
+        "full_stack_lab/registry/contracts.lock.json"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/catalog_refresh_check.py",
+        "full_stack_lab/tests/schema_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md"
+      ],
+      "known_gap": "보고된 A→B→A 4/4는 당시 구현/회귀 증거; 현재 source와 새 PJ1 도구 전부에 대한 검증은 아님.",
+      "completion_condition": "등록/승인된 description+input schema+server version hashes가 재시작/재발견/동명 도구에도 일치하고 B drift는 전달 전에 차단, A 복귀 시 A가 관찰된다.",
+      "stage_booleans": {
+        "implementation": true,
+        "regression": false,
+        "deployment": true,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=complete: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-development-results.md",
+          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
+        }
+      ],
+      "implementation_assessment": "complete",
+      "implementation_review_note": "등록 계약의 description/schema hash와 catalog 재발견 drift를 비교하고 승인 계약과 불일치하면 차단하는 경로가 있다. 현재 회귀 플래그는 별도 source/test hash 증거가 없어 false 유지."
+    },
+    {
+      "id": "G02.03",
+      "goal_id": "G02",
+      "title": "승인 만료·중지·변경 후 재승인",
+      "source_pac_ids": [
+        "PAC03",
+        "PAC21",
+        "PAC23"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/decommission.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/managed_enrollment_check.py",
+        "full_stack_lab/tests/termination_flow.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/experiments/E12-managed-admission.md"
+      ],
+      "known_gap": "E12 카드 자체는 미실행. 현재 시행중인 registry TTL/user consent end-to-end 확인은 이 검토에서 없음.",
+      "completion_condition": "만료/철회/계약변경 뒤 기존 설정과 fresh tool-call이 전달되지 않고 사용자 동의와 운영자 승인이 별도로 기록됨을 실제 하네스에서 확인한다.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "TTL, decommission 및 중지 코드 경로는 있으나 사용자 동의와 운영자 승인을 분리한 fresh harness 재승인 전체 흐름은 미완료/미검증이다."
+    },
+    {
+      "id": "G02.04",
+      "goal_id": "G02",
+      "title": "승인 서버 설정을 하네스별 최소 집합으로 배포",
+      "source_pac_ids": [
+        "PAC03",
+        "PAC06",
+        "PAC07"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/registry/catalog.toml",
+        "full_stack_lab/gateway/app/agent_service.py",
+        "endpoint-agent/agent.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/endpoint_inventory_check.py",
+        "full_stack_lab/tests/field_kit_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-14-pj1-endpoint-update.json"
+      ],
+      "known_gap": "선택된 Codex/Claude version·hash 일치와 정상 설정 전달을 보여도 등록 도구 전체 인가/사용자 동의를 자동 증명하지 않음.",
+      "completion_condition": "fresh approved harness는 허용된 서버만 보며 등록 철회 서버는 목록·호출 모두 불가; 모델→MCP→decision을 연결한다.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-14-pj1-endpoint-update.json",
+          "scope": "2026-10-14 selected PJ1 account/kernel checks; scope is the tested managed UID/profile."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "registry는 Gateway에서 허용 서버·도구를 제한하고 managed-linux/windows는 Claude managed-mcp.json·Codex 설정 배치 경로를 가진다. 하지만 per-harness 승인 집합 동기화, 철회 후 목록/호출 차단 및 모델→MCP→decision 연결 전체는 증명되지 않았다."
+    },
+    {
+      "id": "G03.01",
+      "goal_id": "G03",
+      "title": "transport 인증 주체·audience·scope·만료 검증",
+      "source_pac_ids": [
+        "PAC08",
+        "PAC10"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/idp.py",
+        "full_stack_lab/gateway/app/agent_contract.py",
+        "full_stack_lab/gateway/app/core.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/managed_enrollment_check.py",
+        "full_stack_lab/tests/oauth_rotation_pg_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md"
+      ],
+      "known_gap": "보고된 3개 PG 경쟁 시나리오는 운영 IdP 외부 배선·모든 공급자 audience/scope lifecycle 증거가 아님.",
+      "completion_condition": "wrong issuer/audience/scope, expired/revoked token은 upstream attempted=false로 차단; transport principal만 사용하고 prompt/header self-claim은 권한에 영향 없음.",
+      "stage_booleans": {
+        "implementation": true,
+        "regression": false,
+        "deployment": true,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=complete: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-development-results.md",
+          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
+        }
+      ],
+      "implementation_assessment": "complete",
+      "implementation_review_note": "transport identity 검증은 발급자·audience·필수 JWT 시간/ID claims와 MCP scope, revoked jti 경로를 확인한다. 외부 공급자별 운영 배선은 deployment/acceptance 단계에 남는다."
+    },
+    {
+      "id": "G03.02",
+      "goal_id": "G03",
+      "title": "PAC-05 agent delegation 교집합 상태를 명시",
+      "source_pac_ids": [
+        "PAC09"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/pac.py",
+        "docs/ai/SECURITY_BOUNDARIES.md"
+      ],
+      "regression_test_candidates": [
+        "docs/ai/SECURITY_BOUNDARIES.md",
+        "full_stack_lab/tests/pac_boundary_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/backlog.md#DEV-17"
+      ],
+      "known_gap": "PAC-05 agent/user delegation은 하네스 인증 근거 부재로 의도적 미구현; harness clientInfo는 self-reported. 이를 완료 처리하지 말 것.",
+      "completion_condition": "PAC-05 delegation을 켜려면 검증 가능한 transport identity에서 사용자와 agent 주체를 각각 확인하고 승인 scope·만료·철회 상태의 교집합만 허용한다. clientInfo/User-Agent 등 self-reported agent 식별자는 권한 근거로 거부하며, 신뢰된 agent identity를 제공하지 못하면 delegation 호출을 거부하고 미지원 상태를 표시한다.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=not_implemented: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [],
+      "implementation_assessment": "not_implemented",
+      "implementation_review_note": "SECURITY_BOUNDARIES와 backlog는 PAC-05 delegation을 의도적 미구현으로 둔다. harness clientInfo 같은 self-reported agent ID를 신뢰할 인증 근거가 없다."
+    },
+    {
+      "id": "G03.03",
+      "goal_id": "G03",
+      "title": "요청별 행위·인자·자산·목적지 권한 재판정",
+      "source_pac_ids": [
+        "PAC11",
+        "PAC12",
+        "PAC13",
+        "PAC14",
+        "PAC15"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/classify.py",
+        "full_stack_lab/gateway/app/pac.py",
+        "full_stack_lab/gateway/app/core.py::execute_call"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/security_edges_check.py",
+        "full_stack_lab/tests/reservation_effect_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md"
+      ],
+      "known_gap": "새 로그 evidence는 Gateway decision 0건일 수 있음; absent ledger alone은 local MCP call absent 증명이 아님.",
+      "completion_condition": "same tool with changed SQL/path/recipient/asset must be reclassified on every call; normalized deny occurs pre-send and independent target confirms effect 0.",
+      "stage_booleans": {
+        "implementation": true,
+        "regression": false,
+        "deployment": true,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=complete: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-development-results.md",
+          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
+        }
+      ],
+      "implementation_assessment": "complete",
+      "implementation_review_note": "각 call에서 tool schema, action, normalized targets/resources, recipient/domain 등을 재평가하고 core 실행 전에 PAC 결과를 적용한다. 독립 효과 검증은 regression/acceptance 단계다."
+    },
+    {
+      "id": "G03.04",
+      "goal_id": "G03",
+      "title": "동일 호출·동시 실행·승인 재사용 예약의 원자성",
+      "source_pac_ids": [
+        "PAC16",
+        "PAC17"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/core.py::execute_call",
+        "call_reservations"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/reservation_effect_check.py",
+        "full_stack_lab/tests/managed_enrollment_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md"
+      ],
+      "known_gap": "전용 PG stage에서 보고된 5 cases는 endpoint-agent admission DB 효과이며 MCP caller authorization/reservation races와 다른 대상.",
+      "completion_condition": "경계조건에서 허용 effect가 정확히 1, 중복/승인 재사용은 0; process crash는 uncertain으로 남고 자동 재시도하지 않는다.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-14-risk-scenarios.md",
+          "scope": "2026-10-14 dedicated PostgreSQL application-state scenarios; not OS kernel proof."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "call reservation과 DB serialization 경로는 존재하나 crash-uncertain 처리 및 caller authorization/중복 승인 재사용 요구 전체를 같은 대상으로 확인하는 증거가 없다."
+    },
+    {
+      "id": "G04.01",
+      "goal_id": "G04",
+      "title": "입력 schema·크기·경로 검사 및 injection 분류",
+      "source_pac_ids": [
+        "PAC13",
+        "PAC18"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/poisoning.py",
+        "full_stack_lab/gateway/app/classify.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/security_edges_check.py",
+        "full_stack_lab/tests/injection_corpus_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md"
+      ],
+      "known_gap": "현 보고상 PyRIT 고정 seed 26 injection attempts 중 21 탐지 (historical); 누락 5와 의미적 미탐은 남음.",
+      "completion_condition": "schema/path/encoding/size and injection corpus are tested with normal controls, exact policy ID, tool transmission status, false-positive/false-negative counts.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-mcp-validation-plan.md",
+          "scope": "2026-10-13 experiment plan; listed cases were not run by that planning report."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "schema·size·path 검사와 injection string 분류 코드는 있으나 corpus 전체의 정상 대조, 오탐/미탐 측정 및 요구된 coverage가 미완료다."
+    },
+    {
+      "id": "G04.02",
+      "goal_id": "G04",
+      "title": "응답 PII/secret 마스킹·hold/release 경계",
+      "source_pac_ids": [
+        "PAC19",
+        "PAC20"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/privacy.py",
+        "full_stack_lab/gateway/app/secret_scan.py",
+        "full_stack_lab/gateway/app/core.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/mcp_result_contract_check.py",
+        "full_stack_lab/tests/mcp_result_services_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json"
+      ],
+      "known_gap": "원장742 Block pre-send와 달리 output hold는 이미 upstream가 실행됐을 수 있어 upstream execution과 사용자 노출을 분리해야 함.",
+      "completion_condition": "synthetic secrets are absent from model-facing raw text/structuredContent; original upstream attempted/executed and masked/held/released outcome shown separately.",
+      "stage_booleans": {
+        "implementation": true,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=complete: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-pj1-evidence.json",
+          "scope": "Historical PJ1 managed harness actual calls 740–742; provider quota and no independent receiver caveat apply."
+        }
+      ],
+      "implementation_assessment": "complete",
+      "implementation_review_note": "privacy/secret scan과 응답 masking·withholding 경로가 upstream 실행상태와 노출결과를 구분한다. 출력 hold 사례의 실제 모델 비노출은 별도 acceptance 증거다."
+    },
+    {
+      "id": "G04.03",
+      "goal_id": "G04",
+      "title": "도구 결과의 비신뢰 지시 보류와 정상 언어 대조",
+      "source_pac_ids": [
+        "PAC18",
+        "PAC20"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/poisoning.py::text_findings",
+        "OVERRIDE_RULES"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/injection_corpus_check.py",
+        "full_stack_lab/tests/mcp_result_contract_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md"
+      ],
+      "known_gap": "string rules do not equal semantic injection understanding; user must not take historic exact counts as present-source result.",
+      "completion_condition": "EN/KR/encoding benign and attack corpus is rerun against matched source; false positives and misses are disclosed; held responses are not called upstream prevention.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-mcp-validation-plan.md",
+          "scope": "2026-10-13 experiment plan; listed cases were not run by that planning report."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "poisoning text rules와 결과 보류 경로는 있으나 다국어/encoding benign 및 공격 corpus를 충족하는 일반적인 의미 분석은 구현되지 않았고 기존 누락도 남는다."
+    },
+    {
+      "id": "G04.04",
+      "goal_id": "G04",
+      "title": "검사기·PDP·목적지 자료 누락은 fail-closed",
+      "source_pac_ids": [
+        "PAC05",
+        "PAC15",
+        "PAC19"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/privacy.py",
+        "full_stack_lab/gateway/app/classify.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/mcp_result_services_check.py",
+        "full_stack_lab/tests/security_edges_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-real-inspectors-results.json"
+      ],
+      "known_gap": "단위 failure injection 및 historical test PASS는 deployment runtime availability를 보장하지 않음.",
+      "completion_condition": "missing/wrong-type scanner/PDP/catalog result denies before upstream; explicit empty allow set is distinguished from error; independent receivers see no request.",
+      "stage_booleans": {
+        "implementation": true,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=complete: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-real-inspectors-results.json",
+          "scope": "Historical local inspector tests; source/current deployment hash needs matching."
+        }
+      ],
+      "implementation_assessment": "complete",
+      "implementation_review_note": "필수 scanner/PDP/catalog 자료가 없거나 잘못된 타입인 경우 deny 경로가 구현되어 있다. 배포 runtime 및 독립 receiver 효과는 구현 상태와 별도다."
+    },
+    {
+      "id": "G05.01",
+      "goal_id": "G05",
+      "title": "관리형 UID/profile/kernel 건강상태를 exact-bound 검증",
+      "source_pac_ids": [
+        "PAC07",
+        "PAC08"
+      ],
+      "code_symbols_files": [
+        "endpoint-agent/managed-linux.py",
+        "endpoint-agent/managed-windows.py",
+        "endpoint-agent/enforce-linux.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/managed_enforcement_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-14-endpoint-regressions.json"
+      ],
+      "known_gap": "9 Linux/Windows synthetic regressions passed on reported source; Windows OS device enforcement still unverified. Linux PJ1 exact check is one managed identity only.",
+      "completion_condition": "only exact UID/profile/rule names/SID/config hashes and current enforcing state counts compliant; disabled, missing, foreign-account, complain-mode cases deny.",
+      "stage_booleans": {
+        "implementation": true,
+        "regression": false,
+        "deployment": true,
+        "real_device": true,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=complete: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-14-endpoint-regressions.json",
+          "scope": "2026-10-14 14:01 KST offline regression report; does not imply current source hash or Windows real-device enforcement."
+        }
+      ],
+      "implementation_assessment": "complete",
+      "implementation_review_note": "managed health code는 exact account/profile/rule/config 조건과 enforcing state를 검사한다. 이 판정은 코드 능력만 뜻하고 PJ1 한 계정 이외 실기기 범위로 확장하지 않는다."
+    },
+    {
+      "id": "G05.02",
+      "goal_id": "G05",
+      "title": "비인가 stdio·IPv4/IPv6 loopback을 독립 효과 0으로 확인",
+      "source_pac_ids": [
+        "PAC07"
+      ],
+      "code_symbols_files": [
+        "endpoint-agent/enforce-linux.py",
+        "endpoint-agent/managed-linux.py",
+        "research/llm-wiki/experiments/E13-local-bypass.md"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/managed_kernel_proof.py",
+        "research/llm-wiki/experiments/E13-local-bypass.md"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-14-pj1-endpoint-update.json"
+      ],
+      "known_gap": "E13 is NOT completed: selected actual block tests targeted Node/interpreter and ssh loopback, not actual filesystem MCP stdio. Admin/root and other unconfined accounts out of scope.",
+      "completion_condition": "fresh managed official filesystem MCP actually attempts direct stdio and IPv4+IPv6 marker receivers; independent listener/data effect 0 under enforced profile, exact denial layer retained; approved Gateway control succeeds.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": true,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-14-pj1-endpoint-update.json",
+          "scope": "2026-10-14 selected PJ1 account/kernel checks; scope is the tested managed UID/profile."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "Linux profile/nft 및 process 제한 구현은 있으나 실제 공식 filesystem MCP의 direct stdio 호출에서 효과 0을 보인 것은 아니다. E13은 not_run이다."
+    },
+    {
+      "id": "G05.03",
+      "goal_id": "G05",
+      "title": "프로세스·MCP 발견자료를 자동·수동 전송 종류별로 구분",
+      "source_pac_ids": [
+        "PAC07",
+        "PAC22"
+      ],
+      "code_symbols_files": [
+        "endpoint-agent/managed-linux.py::serve",
+        "endpoint-agent/os-observer.py",
+        "endpoint-agent/agent.py",
+        "full_stack_lab/gateway/app/endpoint_plane.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/endpoint_inventory_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.json"
+      ],
+      "known_gap": "Critical: automatic stdio process observation/forwarding=false (NETSCAN=0). Manual one-off report accepted as shadow/suspected; automated kernel-denial event arrived independently after ~35.84 seconds. These are separate channels.",
+      "completion_condition": "process-only inventory must reach solution automatically with origin=automatic, source hash and event time; explicitly distinguish manual shadow upload and kernel OS-event auto forwarding, test collector stale/offline cases and duplicate prevention.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-14-pj1-ghidra-logs.json",
+          "scope": "2026-10-14 19:13:55 KST actual SDK read and separate manual/automatic log-channel evidence."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "inventory/event collection 경로는 있지만 managed-linux serve의 NETSCAN=0이라 process/stdio MCP 자동 forwarding이 꺼져 있다. 현재 구현은 요구된 자동 전달을 완료하지 않는다."
+    },
+    {
+      "id": "G05.04",
+      "goal_id": "G05",
+      "title": "통제 밖 UID·사용자 PC·Windows scope 명시",
+      "source_pac_ids": [
+        "PAC07"
+      ],
+      "code_symbols_files": [
+        "endpoint-agent/managed-linux.py",
+        "endpoint-agent/managed-windows.py",
+        "research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.json"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/endpoint_inventory_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-14-pj1-endpoint-update.json",
+        "research/llm-wiki/status/reports/2026-10-14-e13-local-mcp-natural-language.md"
+      ],
+      "known_gap": "Unconfined UID1000 actually called GhidraMCP read; managed UID1001 denied unapproved Python. This is account-specific. Windows OS direct enforcement is not evidenced.",
+      "completion_condition": "unmanaged account can be classified as outside enforcement scope; demonstrate observed coverage by UID/profile and no claim that all local apps/accounts are blocked; run isolated Windows acceptance before claiming Windows support.",
+      "stage_booleans": {
+        "implementation": true,
+        "regression": false,
+        "deployment": false,
+        "real_device": true,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=complete: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-14-pj1-endpoint-update.json",
+          "scope": "2026-10-14 selected PJ1 account/kernel checks; scope is the tested managed UID/profile."
+        },
+        {
+          "path": "2026-10-14-e13-local-mcp-natural-language.md",
+          "scope": "2026-10-14 partial E13-variant Claude test; canonical E13 card remains not_run."
+        }
+      ],
+      "implementation_assessment": "complete",
+      "implementation_review_note": "보고/위협 문서와 managed agent evidence는 UID/profile별 관측 및 통제 밖 account·Windows 범위를 분리한다. 이 범위 설명은 모든 OS 차단을 뜻하지 않는다."
+    },
+    {
+      "id": "G06.01",
+      "goal_id": "G06",
+      "title": "MCP request·Gateway decision·endpoint event ID 상관관계",
+      "source_pac_ids": [
+        "PAC22"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/audit.py",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/endpoint_plane.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/oss_audit_test.py",
+        "full_stack_lab/tests/endpoint_inventory_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json"
+      ],
+      "known_gap": "Local stdio bypass creates no Gateway tools/call decision; telemetry POST is not a MCP decision. Missing ledger rows cannot prove no local action.",
+      "completion_condition": "one run joins harness event, endpoint process/event IDs, request/trace, policy decision, upstream attempt/result and independent receiver timestamps without merging distinct logs.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": true,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-pj1-evidence.json",
+          "scope": "Historical PJ1 managed harness actual calls 740–742; provider quota and no independent receiver caveat apply."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "audit/request 및 endpoint event ID 필드는 각각 존재하지만 하나의 MCP run에서 harness→endpoint→request/decision→receiver 전 과정을 묶는 correlation 구현은 확인되지 않았다."
+    },
+    {
+      "id": "G06.02",
+      "goal_id": "G06",
+      "title": "시도·판정·실행·응답 효과를 별도 표현",
+      "source_pac_ids": [
+        "PAC11",
+        "PAC19",
+        "PAC20"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/audit.py",
+        "full_stack_lab/gateway/app/agent_service.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/mcp_result_contract_check.py",
+        "full_stack_lab/tests/security_edges_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json"
+      ],
+      "known_gap": "Ledger 741 Alert executed upstream; 742 Block did not. They establish distinction but not all result redaction cases.",
+      "completion_condition": "dashboard distinguishes Block-before-send, Alert-and-execute, upstream error, output held/masked, and successful independent effect; exact attempted/executed bits agree with receiver.",
+      "stage_booleans": {
+        "implementation": true,
+        "regression": false,
+        "deployment": true,
+        "real_device": true,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=complete: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-pj1-evidence.json",
+          "scope": "Historical PJ1 managed harness actual calls 740–742; provider quota and no independent receiver caveat apply."
+        }
+      ],
+      "implementation_assessment": "complete",
+      "implementation_review_note": "audit outcome은 attempted/executed와 returned/masked/withheld/unknown/not_executed를 분리한다. 모든 결과 유형과 receiver 효과의 독립 증명은 남는다."
+    },
+    {
+      "id": "G06.03",
+      "goal_id": "G06",
+      "title": "수집 성공·실패·last success·전체집계 표시",
+      "source_pac_ids": [
+        "PAC22"
+      ],
+      "code_symbols_files": [
+        "endpoint-agent/agent.py",
+        "endpoint-agent/managed-linux.py",
+        "full_stack_lab/gateway/app/endpoint_plane.py",
+        "full_stack_lab/gateway/app/agent_service.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/endpoint_inventory_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md"
+      ],
+      "known_gap": "Development results say event list is recent received 200 only; aggregate count and collector freshness remain follow-up.",
+      "completion_condition": "UI says received/latest N, separate all-time aggregate and last successful collection timestamp, stale/offline/error, and cannot label missing telemetry as zero denials.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-development-results.md",
+          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "최근 수신 이벤트 목록은 있으나 전체 집계, last-success timestamp, stale/offline/error 구분이 요구대로 완성되지 않았다."
+    },
+    {
+      "id": "G06.04",
+      "goal_id": "G06",
+      "title": "원본 event와 솔루션 보관본의 hash/projection 일치",
+      "source_pac_ids": [
+        "PAC01",
+        "PAC22"
+      ],
+      "code_symbols_files": [
+        "research/llm-wiki/analysis/pj1-ghidra/report.json",
+        "research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.json"
+      ],
+      "regression_test_candidates": [
+        "research/llm-wiki/experiments/pj1-ghidra/observe_pj1_logs.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/analysis/pj1-ghidra/automatic-os-event.json"
+      ],
+      "known_gap": "Hash claims are per evidence artifact and projection; report does not imply every raw payload is losslessly retained at solution.",
+      "completion_condition": "for every forwarded sample retain raw hash, source file/bytes hash, sanitized projection hash, transformation manifest and received timestamp; test mismatched bytes are detected without retaining secrets.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "보고서 및 PJ1 연구 artifact별 hash/projection은 있으나 제품 forwarding마다 source raw hash·수신 raw hash·projection manifest를 묶고 mismatch를 탐지하는 파이프라인은 없다."
+    },
+    {
+      "id": "G07.01",
+      "goal_id": "G07",
+      "title": "사용자·device token·refresh family 즉시 폐기",
+      "source_pac_ids": [
+        "PAC10",
+        "PAC23",
+        "PAC24"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/idp.py",
+        "full_stack_lab/gateway/app/decommission.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/oauth_rotation_pg_check.py",
+        "full_stack_lab/tests/oauth_rotation_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md"
+      ],
+      "known_gap": "OAuth test proves 3 isolated PostgreSQL concurrency cases at that revision; provider-side revocation and all issued bearer reuse are not proven.",
+      "completion_condition": "revoked token and all descendants fail on fresh protected API and MCP call; race issuance/revocation transaction rolls back atomically; provider resource credential revocation separately evidenced.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": true,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-development-results.md",
+          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "local token/refresh family invalidation과 decommission 경로는 있으나 모든 descendant fresh-call 거부 및 provider credential revoke까지는 한 구현 요구로 완료되지 않았다."
+    },
+    {
+      "id": "G07.02",
+      "goal_id": "G07",
+      "title": "활성 세션·MCP server session 종료와 재접근 차단",
+      "source_pac_ids": [
+        "PAC23"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/decommission.py",
+        "full_stack_lab/gateway/app/upstream.py",
+        "docs/ai/TERMINATION_MODEL.md"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/termination_flow.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/backlog.md#DEV-08"
+      ],
+      "known_gap": "Gateway opens/closes call-scoped session, but downstream server-specific durable session/resource behavior is not universally validated.",
+      "completion_condition": "C1-C4 exact termination predicates verified against fresh sessions and existing sessions; stale session cannot reacquire data; record T1-T3 evidence.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "call-scoped upstream 종료와 decommission evidence workflow는 있으나 downstream MCP server durable session/resource 회수 및 stale session 재접근 차단이 보편 구현되지 않았다."
+    },
+    {
+      "id": "G07.03",
+      "goal_id": "G07",
+      "title": "외부 provider·resource server 잔존 접근 확인",
+      "source_pac_ids": [
+        "PAC23",
+        "PAC24"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/decommission.py",
+        "full_stack_lab/gateway/app/idp.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/termination_flow.py",
+        "full_stack_lab/tests/oauth_rotation_pg_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/backlog.md#DEV-08"
+      ],
+      "known_gap": "Provider-claimed delete/revoke is not resource-server proof; downstream token acceptance/TTL/cache can outlive local settings.",
+      "completion_condition": "after local removal, actual provider protected resource rejects previous token/session; otherwise mark provider-side disposal unverified and report expiry/TTL only.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "provider 잔존 접근을 수집할 lifecycle evidence 구조는 있지만 실제 resource server가 이전 token/session을 거부하는 자동 검증은 구현되지 않았다."
+    },
+    {
+      "id": "G07.04",
+      "goal_id": "G07",
+      "title": "설정·credential 제거 후 잔존/백업 복구 테스트",
+      "source_pac_ids": [
+        "PAC24"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/decommission.py",
+        "full_stack_lab/gateway/app/idp.py",
+        "endpoint-agent/agent.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/termination_flow.py",
+        "full_stack_lab/tests/endpoint_inventory_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/backlog.md#DEV-08"
+      ],
+      "known_gap": "No evidence that setting deletion wipes external tokens, backups, caches, or exported logs; preserve evidence and avoid destructive operations against user profile.",
+      "completion_condition": "isolated test credential is unlinked, revoked, cannot be rehydrated from task backups/cache; cleanup proof preserves raw audit lineage and no unrelated files are deleted.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "설정/credential 제거 경로 일부는 있으나 cache·backup 재복원 차단과 잔존 데이터 확인 전체는 구현·증거가 없다."
+    },
+    {
+      "id": "G08.01",
+      "goal_id": "G08",
+      "title": "조직가입·장치 enrollment·활성화·재접속 경로",
+      "source_pac_ids": [
+        "PAC03",
+        "PAC07",
+        "PAC08"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/endpoint_plane.py",
+        "full_stack_lab/tests/managed_enrollment_check.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/managed_enrollment_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md"
+      ],
+      "known_gap": "Dedicated PostgreSQL run validates 5 application state scenarios in synthetic DB, not host kernel or complete UX.",
+      "completion_condition": "pending denied, correct owner activates, invalid/stale heartbeat quarantines, revoke epoch advances; independent DB query and managed user flow confirm expected user feedback.",
+      "stage_booleans": {
+        "implementation": true,
+        "regression": false,
+        "deployment": true,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=complete: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-14-risk-scenarios.md",
+          "scope": "2026-10-14 dedicated PostgreSQL application-state scenarios; not OS kernel proof."
+        }
+      ],
+      "implementation_assessment": "complete",
+      "implementation_review_note": "endpoint admission state machine은 pending/active, heartbeat quarantine, revoke epoch를 처리한다. dedicated DB 결과는 그 애플리케이션 상태 경로 증거이며 OS kernel/전체 UX 증거는 아니다."
+    },
+    {
+      "id": "G08.02",
+      "goal_id": "G08",
+      "title": "지원 공식 harness에서 fresh model→MCP call 검증",
+      "source_pac_ids": [
+        "PAC03",
+        "PAC07"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/registry/catalog.toml",
+        "endpoint-agent/agent.py",
+        "full_stack_lab/gateway/app/core.py"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/managed_enrollment_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-pj1-evidence.json"
+      ],
+      "known_gap": "Historical PJ1 Codex calls 740–742 are actual calls but one provider quota failure; they do not satisfy all E01–E13 cases or this new endpoint-log work.",
+      "completion_condition": "approved current harness calls synthetic read/write through approved server; model version/thread, arguments, Gateway IDs, endpoint ID, provider response, independent effect and cleanup agree.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": true,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-pj1-evidence.json",
+          "scope": "Historical PJ1 managed harness actual calls 740–742; provider quota and no independent receiver caveat apply."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "official harness 설정·managed endpoint 경로는 있지만 fresh approved harness의 model→MCP→Gateway ID→독립 효과까지 요구된 구현/연결은 완료되지 않았다."
+    },
+    {
+      "id": "G08.03",
+      "goal_id": "G08",
+      "title": "사용자 승인/연결/등록 UI에 운영자 승인과 자가승인 분리",
+      "source_pac_ids": [
+        "PAC03",
+        "PAC06",
+        "PAC16"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/agent_service.py::intake*",
+        "docs/ai/DECISIONS.md#D-79"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/managed_enrollment_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md"
+      ],
+      "known_gap": "The 9-tool self-approved test was invalidated; user consent and operator approval remain separate.",
+      "completion_condition": "fresh enrollment request shows data/functions and needs independent human approval; test logs cannot be used as success if agent approved its own target.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-14-pj1-nine-tools.md",
+          "scope": "2026-10-14 D-79 invalidated self-approved run; not positive test evidence."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "intake/admin approval UI/API 경로는 있으나 사용자 동의와 독립 사람 승인을 분리하고 agent self-approval을 신뢰 경계에서 배제하는 보장은 부족하다."
+    },
+    {
+      "id": "G08.04",
+      "goal_id": "G08",
+      "title": "설치·업데이트·오류 원인 및 재시도 사용성",
+      "source_pac_ids": [
+        "PAC02",
+        "PAC03"
+      ],
+      "code_symbols_files": [
+        "endpoint-agent/bootstrap.py",
+        "endpoint-agent/managed-linux.py",
+        "endpoint-agent/managed-windows.py",
+        "research/llm-wiki/status/backlog.md#DEV-26"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/field_kit_check.py",
+        "full_stack_lab/tests/managed_enforcement_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-14-endpoint-regressions.json"
+      ],
+      "known_gap": "Windows report.log WinError32 race remains in report; WSL Linux kit 17 pass does not clear the Windows concurrency issue.",
+      "completion_condition": "isolated Linux and Windows installs/uninstalls are idempotent, report lock race resolved, user files preserved, and actual update rollback/heartbeat recovery evidenced.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-14-endpoint-regressions.json",
+          "scope": "2026-10-14 14:01 KST offline regression report; does not imply current source hash or Windows real-device enforcement."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "bootstrap/install/update/error recovery 경로는 존재하지만 Windows report.log WinError32가 남고 idempotent rollback 및 user-file preservation 전체를 만족하지 않는다."
+    },
+    {
+      "id": "G09.01",
+      "goal_id": "G09",
+      "title": "CPU·메모리 값의 측정 범위·출처를 정확히 표기",
+      "source_pac_ids": [
+        "PAC22"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/system_metrics.py",
+        "full_stack_lab/gateway/app/agent_service.py::system_metrics"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/system_metrics_check.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md"
+      ],
+      "known_gap": "Measured /proc is host/VM visible data, not physical Windows or per-container quota. Historical deployed code rev differs from present worktree.",
+      "completion_condition": "admin obtains CPU delta and MemTotal-MemAvailable with units, source scope (Linux host/VM), sample time and missing state; no shell/docker socket needed.",
+      "stage_booleans": {
+        "implementation": true,
+        "regression": false,
+        "deployment": true,
+        "real_device": true,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=complete: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-development-results.md",
+          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
+        }
+      ],
+      "implementation_assessment": "complete",
+      "implementation_review_note": "CPU delta와 memory 계산에 단위·linux_host scope·sample/failure 상태를 제공한다. 이는 host/VM 관측이며 물리 Windows/per-container 값은 아니다."
+    },
+    {
+      "id": "G09.02",
+      "goal_id": "G09",
+      "title": "Console→고정 Gateway DNS/TCP 지연(ms) 표시 범위",
+      "source_pac_ids": [
+        "PAC22"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/system_metrics.py",
+        "full_stack_lab/gateway/app/agent_static/console.js"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/system_metrics_check.py",
+        "full_stack_lab/tests/console-state.test.mjs"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md"
+      ],
+      "known_gap": "The metric is internal Console→Gateway DNS/TCP connect, not PC→solution tailnet round-trip or packet loss.",
+      "completion_condition": "fixed endpoint measurement shows DNS+TCP connect latency in ms and test failure/timeout/target semantics; do not label as user-device RTT.",
+      "stage_booleans": {
+        "implementation": true,
+        "regression": false,
+        "deployment": true,
+        "real_device": true,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=complete: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-development-results.md",
+          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
+        }
+      ],
+      "implementation_assessment": "complete",
+      "implementation_review_note": "Console→고정 Gateway DNS/TCP connect 지표가 ms 및 target/scope로 구현되어 user-device RTT와 구분된다."
+    },
+    {
+      "id": "G09.03",
+      "goal_id": "G09",
+      "title": "미측정·실패·오래된 데이터의 신선도 표현",
+      "source_pac_ids": [
+        "PAC22"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/system_metrics.py",
+        "full_stack_lab/gateway/app/agent_static/console.js"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/system_metrics_check.py",
+        "full_stack_lab/tests/console-state.test.mjs"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md"
+      ],
+      "known_gap": "Report says initial/30s-old CPU and stale/failure show —, but this design WBS does not independently rerun tests on current source.",
+      "completion_condition": "first sample, stale >30s, timeout, unknown and zero are visually distinct; no stale cached measurement is presented as current.",
+      "stage_booleans": {
+        "implementation": true,
+        "regression": false,
+        "deployment": true,
+        "real_device": true,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=complete: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-development-results.md",
+          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
+        }
+      ],
+      "implementation_assessment": "complete",
+      "implementation_review_note": "first/stale/error/unknown/zero 표시 상태와 freshness 경로가 구현되어 있다. 현재 source 회귀 재실행은 이 검토에서 하지 않았다."
+    },
+    {
+      "id": "G09.04",
+      "goal_id": "G09",
+      "title": "관리자 scope·화면 갱신·Chrome 실제 표시 확인",
+      "source_pac_ids": [
+        "PAC08",
+        "PAC22"
+      ],
+      "code_symbols_files": [
+        "full_stack_lab/gateway/app/agent_service.py::system_metrics",
+        "full_stack_lab/gateway/app/agent_static/console.js"
+      ],
+      "regression_test_candidates": [
+        "full_stack_lab/tests/open_endpoints.py",
+        "full_stack_lab/tests/console-state.test.mjs"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md"
+      ],
+      "known_gap": "Chrome product display was observed, but raster capture timed out; unauthorized/session-expired behavior was browser-specific.",
+      "completion_condition": "unauthenticated, employee MCP scope, wrong role denied; admin console token sees current values, refresh cadence and stale states on actual supported Chrome.",
+      "stage_booleans": {
+        "implementation": true,
+        "regression": false,
+        "deployment": true,
+        "real_device": true,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=complete: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-development-results.md",
+          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
+        }
+      ],
+      "implementation_assessment": "complete",
+      "implementation_review_note": "관리자 system_metrics scope 및 Console 갱신/UI 코드가 있다. Chrome raster capture timeout은 device acceptance 증거를 제한하지만 기능 경로 자체는 구현되어 있다."
+    },
+    {
+      "id": "G10.01",
+      "goal_id": "G10",
+      "title": "개발 협업 현황 웹에서 공개 요청·응답·작업·검사 열람",
+      "source_pac_ids": [
+        "PAC22"
+      ],
+      "code_symbols_files": [
+        "research/collaboration-console/",
+        "research/collaboration-console/console.py"
+      ],
+      "regression_test_candidates": [
+        "research/collaboration-console/test_console.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md"
+      ],
+      "known_gap": "Console is local development collaboration UI, not product operations Console; actual coverage limited to emitted public events.",
+      "completion_condition": "actual request/response/task/check events render with links; raw conversation and secrets stay in ignored runtime; product operator view remains separate.",
+      "stage_booleans": {
+        "implementation": true,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=complete: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-development-results.md",
+          "scope": "2026-10-13 historical report; deployed implementation rev 6178dd3; not a rerun on this review branch."
+        }
+      ],
+      "implementation_assessment": "complete",
+      "implementation_review_note": "개발 협업 Console은 공개 task/request/response/check event를 읽고 표시하는 로컬 기능을 구현한다. 제품 운영 Console로 해석하지 않는다."
+    },
+    {
+      "id": "G10.02",
+      "goal_id": "G10",
+      "title": "모델 요청값·실응답 모델·turn error/NO_TOOL_CALL 구분",
+      "source_pac_ids": [
+        "PAC22"
+      ],
+      "code_symbols_files": [
+        "research/collaboration-console/console.py",
+        "research/collaboration-console/"
+      ],
+      "regression_test_candidates": [
+        "research/collaboration-console/test_console.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md"
+      ],
+      "known_gap": "PJ1 Codex turn was refused before tool call due usage limit; absence of Gateway log was correctly not a Gateway logging bug. Synthetic/declared model labels must not be presented as server-used model.",
+      "completion_condition": "viewer distinguishes requested model/effort, actual response model, quota error, turn failed, zero calls and gateway silence; raw transcripts remain private.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=partial_candidate: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-14-pj1-nine-tools.md",
+          "scope": "2026-10-14 D-79 invalidated self-approved run; not positive test evidence."
+        }
+      ],
+      "implementation_assessment": "partial_candidate",
+      "implementation_review_note": "협업 Console은 task state와 CLI 응답 일부를 기록하지만 requested/actual model, quota/turn failure, zero tool call, Gateway silence의 모든 구분을 현재 source에서 완전 충족했는지 확인되지 않았다."
+    },
+    {
+      "id": "G10.03",
+      "goal_id": "G10",
+      "title": "WBS 40 원자항목의 목표·PAC·근거·단계 상태 추적",
+      "source_pac_ids": [
+        "PAC01",
+        "PAC02",
+        "PAC22"
+      ],
+      "code_symbols_files": [
+        "research/llm-wiki/analysis/wbs-review/suggestions.json",
+        "research/llm-wiki/tools/check_wiki.py"
+      ],
+      "regression_test_candidates": [
+        "research/llm-wiki/tools/check_wiki.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-13-development-goals.md"
+      ],
+      "known_gap": "This requested WBS is a proposal. Parent calculates completion rate; do not claim tests/report dated PASS apply to current sources unless source hash matches.",
+      "completion_condition": "each G01-G10 contains exactly four unique atomic tasks; every task links PAC source, code/tests, exact evidence, gap, five equal 20% stage flags; current-source review gates regression.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=not_implemented: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-13-development-goals.md",
+          "scope": "2026-10-13 goal definition, not implementation proof."
+        }
+      ],
+      "implementation_assessment": "not_implemented",
+      "implementation_review_note": "현재 제안 문서는 코드에 연결된 제품 WBS 추적기/대시보드가 아니라 review artifact다."
+    },
+    {
+      "id": "G10.04",
+      "goal_id": "G10",
+      "title": "보고·증거 원본 hash·상태변경·완료율 공개 기준",
+      "source_pac_ids": [
+        "PAC22"
+      ],
+      "code_symbols_files": [
+        "research/llm-wiki/analysis/wbs-review/",
+        "research/llm-wiki/status/current.md",
+        "research/llm-wiki/status/backlog.md"
+      ],
+      "regression_test_candidates": [
+        "research/llm-wiki/tools/check_wiki.py"
+      ],
+      "actual_evidence_paths": [
+        "research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.json"
+      ],
+      "known_gap": "D-79 invalid runs and partial E13/automatic-vs-manual logs must retain separate statuses; summary must not flatten as complete.",
+      "completion_condition": "web view links immutable evidence and raw/source hashes, states report date and proof layer, preserves invalid/superseded history, and never counts manual telemetry as automatic collection.",
+      "stage_booleans": {
+        "implementation": false,
+        "regression": false,
+        "deployment": false,
+        "real_device": false,
+        "acceptance_complete": false
+      },
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_bound_note": "implementation=not_implemented: source review only; `partial_candidate` is not completion. Regression remains false unless a cited historical report and its relevant source/test hashes match; deployment/device and acceptance require their own evidence.",
+      "evidence_as_of": [
+        {
+          "path": "2026-10-14-pj1-ghidra-logs.json",
+          "scope": "2026-10-14 19:13:55 KST actual SDK read and separate manual/automatic log-channel evidence."
+        }
+      ],
+      "implementation_assessment": "not_implemented",
+      "implementation_review_note": "정본 보고 기준과 hash-bound status dashboard는 아직 제안된 목표이며 현재 product feature로 구현되지 않았다."
+    }
+  ],
+  "top_risks": [
+    {
+      "id": "R1",
+      "risk": "E13/endpoint boundary overclaim",
+      "fact": "Real PJ1 evidence proves selected Linux UID/profile kernel checks, unapproved Node/interpreter denial and loopback attempts; it does not prove an actual official filesystem stdio tool-call denial. E13 remains not_run; managed account only."
+    },
+    {
+      "id": "R2",
+      "risk": "Detection forwarding gap",
+      "fact": "GhidraMCP stdio process auto-forwarding is disabled (NETSCAN=0). A one-time manual report was accepted as shadow/suspected. Separately an OS kernel denial event auto-forwarded in about 35.84 seconds. Manual and automatic channels must not be merged."
+    },
+    {
+      "id": "R3",
+      "risk": "Invalid self-approved success history",
+      "fact": "D-79 invalidated the earlier 9-tool self-approval test; do not count ledger IDs 744-800 or its “9/9” as governance completion."
+    },
+    {
+      "id": "R4",
+      "risk": "Regression evidence may not match current sources",
+      "fact": "Offline report contains baseline/final PASS but this WBS review did not rerun tests or establish current working-tree hashes equal to report hashes. Keep regression stage false pending hash match or rerun."
+    },
+    {
+      "id": "R5",
+      "risk": "Telemetry false zero/false coverage",
+      "fact": "No endpoint event or Gateway decision can mean no event, disabled forwarding, unsupported account or outside-control path. Show last-success/freshness, received-vs-all counts and explicit unsupported scope."
+    },
+    {
+      "id": "R6",
+      "risk": "Raw evidence integrity/privacy",
+      "fact": "Do not replace source raw hashes with hashes of sanitized/report JSON. Keep raw hash, projection hash, redaction map, event timestamp and receiver hash bound while never publishing secret raw payload."
+    },
+    {
+      "id": "R7",
+      "risk": "Scope namespace mismatch",
+      "fact": "PAC01-PAC24 from original source and runtime PAC-01..15 are different ID namespaces. Maintain explicit semantic mapping."
+    }
+  ],
+  "review_execution": {
+    "mode": "read-only document/source inventory review",
+    "tests_run": false,
+    "product_code_changed": false,
+    "operational_state_changed": false,
+    "goal": "recommendation only; parent owns completion rate and any final WBS/dashboard authoring"
+  },
+  "source_hash_regression_review": {
+    "report": "research/llm-wiki/status/reports/2026-10-14-endpoint-regressions.json",
+    "report_time": "2026-10-14T13:09:27.856208+09:00",
+    "comparison": "SHA-256 over current raw file bytes vs report.source_sha256; read-only comparison, no tests executed.",
+    "matches": [
+      {
+        "path": "endpoint-agent/managed-linux.py",
+        "sha256": "22735c5a9605d3f412ca08d820255d22eb24775c5bde85ea50ea588d809f5517",
+        "rows": [
+          "G05.01"
+        ],
+        "report_check": "final_selected_checks.managed_regressions (9 tests passed)",
+        "bound": "Historical managed-health regression is a narrow candidate for the validator code only; the report does not hash the test source, and this does not establish E13/direct stdio, all accounts, or Windows OS enforcement."
+      },
+      {
+        "path": "endpoint-agent/managed-windows.py",
+        "sha256": "9f6dba0f3e42276ee0a12c3f0e13451c702677630943cfc4d0720f5a352ac46a",
+        "rows": [
+          "G05.01"
+        ],
+        "report_check": "final_selected_checks.managed_regressions (9 tests passed)",
+        "bound": "Same scope limitation: no test-source hash and no Windows OS/device enforcement proof."
+      },
+      {
+        "path": "endpoint-agent/agent.py",
+        "sha256": "c274dcf53f9d486fd38032932a55929cd81424d26b3fd1c6e026facf6c677647",
+        "rows": [],
+        "report_check": "final_selected_checks.inventory_regressions (6 tests passed), collector_selfcheck passed",
+        "bound": "No WBS row is promoted: matching source is insufficient because cited report checks do not establish the corresponding completion condition (automatic process forwarding remains disabled)."
+      }
+    ],
+    "mismatch": {
+      "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+      "report_sha256": "1794081aae98198b19f5b49ddc7aace45371f07b3dc8bbe89de93dbbe4edafdc",
+      "current_sha256": "8d7276182c383227f705cd2999cfed75f071bfc07653913f6e14cd5301845154",
+      "rows": [
+        "G06.01",
+        "G06.03"
+      ],
+      "bound": "Do not associate the historical report with current endpoint-plane source."
+    },
+    "decision": "All regression booleans remain false. The matched G05.01 report is a row-scoped historical regression candidate only; relevant test-source hashes are absent and no tests were rerun."
+  }
+}

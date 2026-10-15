@@ -1,0 +1,63 @@
+{
+  "at": 1791972179.3869753,
+  "ghidra_process_exited": true,
+  "listener_snapshot_cleanup": {
+    "endpoint_id": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+    "accepted": 0,
+    "removed": 1,
+    "counts": {
+      "registered": 0,
+      "shadow": 0,
+      "retired-residue": 0
+    },
+    "evidence": {
+      "confirmed": 0,
+      "suspected": 0,
+      "unknown": 0
+    }
+  },
+  "managed_launch": {
+    "uid": 1001,
+    "command": "/usr/bin/python3 -m ghidra_mcp --headless --binary /home/pj1/mcpgw-ghidra-20261014/artifacts/run/synthetic_return_42.elf",
+    "exit": 126,
+    "stderr": "-bash: line 1: /usr/bin/python3: Permission denied",
+    "boundary": "AppArmor denied general Python interpreter before loading GhidraMCP; not a Ghidra-specific signature"
+  },
+  "kernel_events": [
+    {
+      "event_id": "24e05a888b764c4480e2e5734498973f:s=c869ce7c1b32474fa1fc9b94ca40a1d9;i=439e2;b=24e05a888b764c4480e2e5734498973f;m=4fc1c5786;t=65dca091fa692;x=6ea04a9589c42ea7",
+      "observed_at": "2026-10-14T10:02:58.110098+00:00",
+      "kind": "execution-denied",
+      "details": {
+        "operation": "exec",
+        "profile": "mcpgw-managed-pj1",
+        "executable": "python3.12",
+        "denied_mask": "x"
+      }
+    }
+  ],
+  "receiver_os_event_result": {
+    "endpoint_id": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+    "accepted": 1,
+    "received": 1
+  },
+  "console_os_events": [
+    {
+      "id": 1385,
+      "endpoint_id": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+      "event_id": "24e05a888b764c4480e2e5734498973f:s=c869ce7c1b32474fa1fc9b94ca40a1d9;i=439e2;b=24e05a888b764c4480e2e5734498973f;m=4fc1c5786;t=65dca091fa692;x=6ea04a9589c42ea7",
+      "observed_at": "2026-10-14T10:02:58.110098Z",
+      "received_at": "2026-10-14T10:02:59.603937Z",
+      "kind": "execution-denied",
+      "details": {
+        "profile": "mcpgw-managed-pj1",
+        "operation": "exec",
+        "executable": "python3.12",
+        "denied_mask": "x"
+      }
+    }
+  ],
+  "managed_service_active": true,
+  "registry_approval_performed": false,
+  "scan_setting_unchanged": true
+}

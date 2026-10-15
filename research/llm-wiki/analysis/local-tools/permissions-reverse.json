@@ -1,0 +1,326 @@
+{
+  "date": "2026-10-14",
+  "scope": "Read-only primary-source reference review mapped to current Linux endpoint-agent implementation; no OS/service/firewall/profile settings were changed and no endpoint runtime test was run.",
+  "catalog_dedup": {
+    "search": "rg -n -i for apparmor, unix socket, peercred/SO_PEERCRED, nftables/skuid, systemd hardening across research/llm-wiki/catalogs, analysis, solutions and experiments",
+    "result": "Existing catalog/E13 mentions live managed launcher UID/AppArmor/profile hash/heartbeat; code-structure notes AppArmor files. No duplicate primary-reference analysis of the four requested control families was found in the scanned wiki paths."
+  },
+  "references": [
+    {
+      "id": "APPARMOR-EXEC-POLICY",
+      "title": "AppArmor Technical Documentation and apparmor.d(5)",
+      "url": "https://gitlab.com/apparmor/apparmor/-/raw/apparmor-4.0/parser/techdoc.tex",
+      "related_official_document": "https://apparmor.net/man/3.0/apparmor.d/",
+      "version": "AppArmor upstream tag apparmor-4.0 technical documentation; related rendered manual 3.0",
+      "obtained": "2026-10-14",
+      "sha256": "f67fa88cc82ba46a689b8306016379d3f86bb9aa67791320e86507a38a544128",
+      "related_sha256": "af8d183b83ba7302a06e47555175044d68b33225ab4f27a4a63de1fbc8396470",
+      "original_files": [
+        ".task-local-20261014/reverse/permissions/apparmor-techdoc-apparmor-4.0.tex",
+        ".task-local-20261014/reverse/permissions/apparmor-3.0-man.html"
+      ],
+      "read_scope": [
+        "techdoc.tex:357-372 execution permissions ix/px/ux",
+        "techdoc.tex:754-775 securityfs loaded profile list and mode",
+        "apparmor.d(5):3625-3630 px behavior and environment warning",
+        "apparmor.d(5):618-647 transition/fallback semantics"
+      ],
+      "official_claim": [
+        "ix executes while inheriting the current profile; px requires a discrete target profile and forces a domain transition.",
+        "px does not scrub LD_PRELOAD-like environment variables; the secure Px variant scrubs environment.",
+        "The securityfs profiles interface reports loaded profile names and whether each is enforce or complain; it does not report a digest of the compiled active rule set.",
+        "Profiles without an attachment are not automatically applied and must be reached by an explicit transition (per upstream policy reference)."
+      ],
+      "application": "The generated endpoint profile uses px transitions for shell-to-client/client-entry/client-to-credential, ix for a small utility allowlist, and mrix for the Codex companion host. The generated C wrapper independently calls clearenv before exec. Health checks read /sys/kernel/security/apparmor/profiles and require expected names suffixed by (enforce). That proves visible loaded label/mode at check time, not content equivalence between /etc/apparmor.d source and the kernel's compiled active policy.",
+      "limitations": [
+        "AppArmor does not defend against hostile root or a privileged process able to replace policy/kernel state.",
+        "The securityfs list is a state signal, not a cryptographic policy fingerprint or proof that a particular PID is running under the intended label."
+      ],
+      "code_targets": [
+        {
+          "file": "endpoint-agent/enforce-linux.py",
+          "lines": "80-138",
+          "symbols": [
+            "profile",
+            "wrapper"
+          ],
+          "observation": "px/ix/mrix rules and separate environment clearing in native wrapper"
+        },
+        {
+          "file": "endpoint-agent/managed-linux.py",
+          "lines": "98-119",
+          "symbols": [
+            "checks"
+          ],
+          "observation": "name+enforce listing check; FILES configuration hashes do not include generated AppArmor policy or kernel policy contents"
+        }
+      ]
+    },
+    {
+      "id": "NFT-SKUID-EGRESS",
+      "title": "nftables manual: UID socket metadata and output hooks",
+      "url": "https://netfilter.org/projects/nftables/manpage.html",
+      "version": "Upstream nftables manual, page states Updated 07/02/2026",
+      "obtained": "2026-10-14",
+      "sha256": "7d67d796be481dfe1d64ded4207fcff045cf3367c0a7ecc6da648e69b414cb5e",
+      "original_files": [
+        ".task-local-20261014/reverse/permissions/nftables-manpage-2026-07-02.html"
+      ],
+      "read_scope": [
+        "META EXPRESSIONS / Table 28: skuid is UID associated with originating socket",
+        "HOOKS: output handles packets sent by local processes",
+        "inet family supports IPv4/IPv6 at the same hook; ip/ip6 qualifiers",
+        "REJECT statement: terminating verdict in output hook"
+      ],
+      "official_claim": [
+        "meta skuid matches the UID associated with the originating socket.",
+        "Packets sent by local processes traverse the output hook.",
+        "The inet family supports IPv4 and IPv6 filtering; nft's UID metadata has type uid.",
+        "A reject statement in an output base chain is terminal for the matched packet."
+      ],
+      "application": "nft_rules emits one exact numeric UID match per approved literal IPv4 or IPv6 destination, TCP port(s), then a UID-scoped rate-limited log and reject. The table is inet/output. It does not currently generate a UID range. 127.0.0.1 and ::1 are ordinary literal destinations: they are denied by the final UID reject unless explicitly included in the trusted allowed address list. Managed policy can include addresses supplied by the Gateway, and the endpoint validator permits loopback Gateway URLs, so local Gateway use must be an explicit tested case rather than an assumed deny. This table scopes the ordinary client UID; the root managed service's own egress is not matched by that client UID rule.",
+      "limitations": [
+        "This is local process egress at the output hook, not an ingress/forward filter or application identity within a shared UID.",
+        "No nft command, packet, loopback route, UID range, or running kernel ruleset was exercised for this reference review.",
+        "The separately fetched Netfilter wiki quick-reference could not be preserved because its TLS certificate hostname did not validate; no claim in this report relies on it."
+      ],
+      "code_targets": [
+        {
+          "file": "endpoint-agent/enforce-linux.py",
+          "lines": "67-78",
+          "symbols": [
+            "nft_rules"
+          ],
+          "observation": "exact UID + family-qualified address + TCP ports, then UID-scoped reject"
+        },
+        {
+          "file": "endpoint-agent/enforce-linux.py",
+          "lines": "190-200",
+          "symbols": [
+            "main --self-check"
+          ],
+          "observation": "text generation assertions cover sample IPv4/IPv6 and ports but not UID ranges or loopback destinations"
+        },
+        {
+          "file": "endpoint-agent/managed-linux.py",
+          "lines": "98-119",
+          "symbols": [
+            "checks"
+          ],
+          "observation": "kernel nft JSON is normalized and compared to an installation baseline"
+        }
+      ]
+    },
+    {
+      "id": "SYSTEMD-SERVICE-HARDENING",
+      "title": "systemd.exec(5): filesystem, privilege, temporary storage, and address-family sandbox controls",
+      "url": "https://github.com/systemd/systemd/blob/195a17c59b22f5b0fa626fdb4917107cdc281bac/man/systemd.exec.xml",
+      "version": "systemd upstream main source pinned at commit 195a17c59b22f5b0fa626fdb4917107cdc281bac",
+      "obtained": "2026-10-14",
+      "sha256": "10b21a8bd7ba789ac7e67dacad6e5a805ba9bc7ba80c264f5f0bd5afee524ffd",
+      "original_files": [
+        ".task-local-20261014/reverse/permissions/systemd.exec-195a17c59b22f5b0fa626fdb4917107cdc281bac.xml"
+      ],
+      "read_scope": [
+        "systemd.exec.xml:928-960 NoNewPrivileges",
+        "1497-1544 ProtectSystem/ProtectHome",
+        "1919 onward PrivateTmp",
+        "2452 onward RestrictAddressFamilies",
+        "filesystem path restrictions do not block AF_UNIX communication",
+        "address family restrictions do not constrain inherited sockets/socketpair/io_uring"
+      ],
+      "official_claim": [
+        "ProtectSystem=strict makes the filesystem hierarchy read-only except API filesystems; ReadWritePaths or managed directories can carve out writes, and the feature can be unavailable when the kernel/service manager lacks required namespacing.",
+        "ProtectHome=yes/read-only/tmpfs hides or restricts home directories; choose according to the service's required home access.",
+        "PrivateTmp gives a private /tmp and /var/tmp view.",
+        "NoNewPrivileges prevents the unit process tree from gaining privileges through execve (e.g. SUID/file capabilities); it does not control external IPC services invoked on request.",
+        "RestrictAddressFamilies is an allowlist for socket() calls; passed/inherited sockets, socketpair and io_uring sockets are caveats. AF_UNIX often remains necessary."
+      ],
+      "application": "The generated mcpgw-managed-<user>.service has no User=/Group= or sandbox directives; absent User=, a system service runs as root. It has Restart=always, RestartSec=10, UMask=0077. It reads the root-managed device config, writes observer/config state under /var/lib/mcpgw-managed, creates a runtime socket under /run, and spawns observers that inspect user configuration, so hardening requires explicit writable-path and narrow read-only home access design. NoNewPrivileges alone would not drop its root identity. The nft one-shot service is also a root system service but performs a narrow rule-load operation.",
+      "limitations": [
+        "systemd directives depend on systemd build, kernel features, mount namespace support, and unit context; unit text does not prove effective sandbox state.",
+        "RestrictAddressFamilies does not replace nftables and cannot block every socket already passed to a process.",
+        "The current root-service key custody and socket ownership architecture may need redesign before changing User=/Group=; no unit was edited."
+      ],
+      "code_targets": [
+        {
+          "file": "endpoint-agent/managed-linux.py",
+          "lines": "215-220",
+          "symbols": [
+            "install"
+          ],
+          "observation": "managed service unit has no User= or hardening properties"
+        },
+        {
+          "file": "endpoint-agent/managed-linux.py",
+          "lines": "226-252",
+          "symbols": [
+            "serve"
+          ],
+          "observation": "root check, root config read, Unix socket and observer setup"
+        },
+        {
+          "file": "endpoint-agent/enforce-linux.py",
+          "lines": "295-299",
+          "symbols": [
+            "main"
+          ],
+          "observation": "root nftables oneshot unit has no sandbox properties"
+        }
+      ]
+    },
+    {
+      "id": "UNIX-SOCKET-PEER-CREDENTIALS",
+      "title": "Linux man-pages unix(7): pathname socket permissions and SO_PEERCRED",
+      "url": "https://github.com/mkerrisk/man-pages/blob/ae6b221882ce71ba82fcdbe02419a225111502f0/man7/unix.7",
+      "version": "Linux man-pages upstream repository, commit ae6b221882ce71ba82fcdbe02419a225111502f0",
+      "obtained": "2026-10-14",
+      "sha256": "b7f555f00c97f379b5d1debdf674e786b102dace392a4a72f4b7f07034750b09",
+      "original_files": [
+        ".task-local-20261014/reverse/permissions/unix.7-ae6b221882ce71ba82fcdbe02419a225111502f0"
+      ],
+      "read_scope": [
+        "unix.7:224-255 pathname socket ownership/permissions and umask",
+        "328-342 SO_PEERCRED semantics and supported connected AF_UNIX sockets"
+      ],
+      "official_claim": [
+        "Linux pathname sockets honor directory and socket-file permission checks; ownership/permissions follow normal rules and umask, although POSIX does not require all systems to honor socket file mode.",
+        "SO_PEERCRED on connected AF_UNIX stream sockets returns peer credentials that were in effect at connect/listen/socketpair time; it is a read-only peer-credential snapshot."
+      ],
+      "application": "The root service binds /run/mcpgw-<user>.sock, chowns it to the enrolled user's UID/GID, chmods it 0600, and checks the peer UID on each request before returning a cached Authorization header. The client helper connects through AF_UNIX stream. The server ignores peer PID and GID and does not inspect SO_PEERSEC/AppArmor label; AppArmor's managed profile separately restricts which confined client profile may use the Unix socket. Same-UID access is intentionally a shared principal, not per-process authentication.",
+      "limitations": [
+        "SO_PEERCRED proves a kernel-reported UID at connection time, not executable identity, profile, intent, or trustworthiness of every same-UID process.",
+        "Filesystem socket modes are Linux behavior; do not generalize this enforcement property to non-Linux platforms.",
+        "The documented check alone is not protection from root or from hostile processes running under the enrolled UID and permitted AppArmor label."
+      ],
+      "code_targets": [
+        {
+          "file": "endpoint-agent/managed-linux.py",
+          "lines": "226-247",
+          "symbols": [
+            "serve.Header.handle",
+            "serve"
+          ],
+          "observation": "SO_PEERCRED UID comparison, cached-token condition, root-created Unix stream socket chmod 0600"
+        },
+        {
+          "file": "endpoint-agent/managed-linux.py",
+          "lines": "343-350",
+          "symbols": [
+            "header"
+          ],
+          "observation": "helper connects to the pathname Unix socket and reads the response"
+        },
+        {
+          "file": "endpoint-agent/enforce-linux.py",
+          "lines": "104-138",
+          "symbols": [
+            "profile"
+          ],
+          "observation": "AppArmor-managed client-to-credential peer-label rule and socket-path allowance"
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "F-APPARMOR-IDENTITY-AND-STATUS",
+      "title": "Transition rules are strong only when both attachment and live profile state are checked",
+      "references": [
+        "APPARMOR-EXEC-POLICY"
+      ],
+      "current_gap": "The heartbeat asserts that expected labels appear in securityfs as enforce. The upstream interface lists names/modes, not the compiled rule digest; configuration_hashes cover four managed Codex/Claude files, not generated AppArmor policy or a particular running PID label. Same-name replacement with different rules can satisfy a name+mode test. A profile existing in the list also does not itself prove the fresh managed harness process transitioned into it.",
+      "improvement": "Preserve root-owned generated policy source SHA-256, AppArmor parser/kernel ABI/version, and load result as install evidence; at heartbeat, verify the fresh launcher and child process labels (e.g. /proc/<pid>/attr/current where authorized) as well as expected enforce-mode names. Treat this as a source/load/attachment chain, not as kernel cryptographic attestation. Add an immutable revision identifier to profile naming only if replacement/rollback semantics are designed explicitly. Keep the C wrapper's clearenv behavior because lowercase px alone does not scrub environment.",
+      "validation_not_run": true,
+      "normal_cases": [
+        "Approved login shell transitions to its confined label; approved harness and entry profiles are enforce and the live fresh harness PID reports expected label.",
+        "Codex companion executes only in inherited harness profile and remains within its executable/network policy.",
+        "Profile source SHA and parser/load evidence match the root-owned installed policy revision."
+      ],
+      "negative_cases": [
+        "Remove one target profile: px execution fails closed and health check goes false.",
+        "Replace same profile label with a deliberately different test profile while leaving label/enforce mode: source/load revision mismatch and live behavior test must fail.",
+        "Leave the profile loaded but launch an unconfined/wrong-label test process: live process-label check must fail.",
+        "Try an environment injection marker through launch: generated wrapper clears it before client exec."
+      ],
+      "limitations": [
+        "These cases require a disposable Linux VM or dedicated test device and do not establish resistance to root/kernel compromise."
+      ]
+    },
+    {
+      "id": "F-NFT-UID-FAMILY-AND-LOOPBACK",
+      "title": "Per-UID egress rule must be tested at UID boundaries and for both loopback families",
+      "references": [
+        "NFT-SKUID-EGRESS"
+      ],
+      "current_gap": "The generated rule uses one exact account UID, IPv4/IPv6 literals, inet/output, TCP port allowlist, and a final UID-scoped reject. It has no range behavior tests. IPv4/IPv6 loopback is not specially blocked: it is denied by the default reject unless explicitly provided as an allowed Gateway address. The root policy service's traffic is outside the ordinary-account UID match.",
+      "improvement": "Keep exact UID equality as the default; if UID sets/ranges are introduced, define an explicit supported range grammar and reject accidental overlap with root/service/65534/privileged identities. Add loopback as explicit destination cases: 127.0.0.1 and ::1 must fail by default and may pass only when policy intentionally declares a local Gateway, TCP, and exact port. Scope the guarantee to local output by the protected UID. Separately account for service UID/root traffic instead of presenting the user UID table as all-host egress control.",
+      "validation_not_run": true,
+      "normal_cases": [
+        "Exact enrolled UID reaches each approved IPv4/IPv6 Gateway address on TCP configured port (and approved proxy port only).",
+        "An explicit co-resident Gateway policy permits only its selected loopback literal and TCP port; alternate loopback family/address/port remains denied.",
+        "Kernel active table after reload matches the normalized root-owned expected baseline."
+      ],
+      "negative_cases": [
+        "Adjacent UID and a non-enrolled service UID cannot use the protected UID allowlist.",
+        "If a range selector is ever configured, test low endpoint, high endpoint, each adjacent outside UID, and privileged/reserved IDs.",
+        "127.0.0.1 and ::1 are denied when not explicitly declared; same allowed address over UDP or alternate TCP port is denied.",
+        "Non-Gateway IPv4/IPv6 destinations and any protocol outside approved TCP fail at output hook.",
+        "Demonstrate separately that root managed service traffic is not attributed to the client UID rule; verify its distinct destination policy."
+      ],
+      "limitations": [
+        "No live nftables/kernel execution or packet capture was performed. Code self-check is string generation only, not rule installation or packet-effect evidence."
+      ]
+    },
+    {
+      "id": "F-SYSTEMD-PRIVILEGE-AND-SANDBOX",
+      "title": "The long-running token broker currently has root privileges and no systemd sandbox",
+      "references": [
+        "SYSTEMD-SERVICE-HARDENING"
+      ],
+      "current_gap": "The generated managed service omits User=/Group=, ProtectSystem, ProtectHome, PrivateTmp, NoNewPrivileges, and RestrictAddressFamilies; system service default is root. UMask=0077 is present. NoNewPrivileges would not drop the already-root identity and would not prevent that process from servicing authorized IPC requests. managed-linux also needs to read user config for an observer and write root-managed state/runtime socket, so blindly applying home/system restrictions could break the working purpose.",
+      "improvement": "First choose whether token brokering can run under a dedicated static service UID and move secret/state/socket ownership accordingly. Then apply NoNewPrivileges=yes, ProtectSystem=strict, ProtectHome=read-only (or yes plus narrowly reviewed read-only bind paths), PrivateTmp=yes, and RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6. Allow writes only to the managed state directory and runtime socket location; keep any observer that needs home access in a distinct, read-only constrained component if possible. For nft oneshot, use a separate minimal unit policy while retaining required NETLINK_NETFILTER capability. Verify effective support on deployed distro/kernel; systemd may gracefully disable unsupported sandbox settings. Do not treat these controls as a substitute for UID/app-armor/nft rules.",
+      "validation_not_run": true,
+      "normal_cases": [
+        "Service starts, fetches policy/heartbeat over required IPv4/IPv6 TCP path, updates state, creates the token socket with intended owner/mode, and returns tokens only to approved peer UID.",
+        "Read-only observer can inspect the explicitly approved managed config paths while no unrelated home contents are visible.",
+        "Effective unit properties, mount namespace, NoNewPrivs in /proc status, socket families and capability set match the reviewed unit."
+      ],
+      "negative_cases": [
+        "Attempt writes to /etc and /usr from service: fail; writes to explicitly approved state/runtime path succeed.",
+        "Attempt read of unrelated home directory: fail; approved observer input remains read-only and available.",
+        "Attempt AF_PACKET socket creation: fail while AF_UNIX/INET/INET6 required operations succeed.",
+        "Attempt SUID/file-capability privilege gain in a service child: fail; verify service was also actually deprivileged by User=/capability policy rather than assuming NoNewPrivileges drops root.",
+        "Open a deliberately passed/inherited socket or socketpair to show the RestrictAddressFamilies boundary and ensure no claim exceeds it."
+      ],
+      "limitations": [
+        "Hardening would require an isolated host and a service-user/secret/socket design decision. No unit file or system state was changed in this read-only investigation."
+      ]
+    },
+    {
+      "id": "F-UNIX-SOCKET-SAME-UID",
+      "title": "SO_PEERCRED plus 0600 is UID authentication, not per-process authentication",
+      "references": [
+        "UNIX-SOCKET-PEER-CREDENTIALS",
+        "APPARMOR-EXEC-POLICY"
+      ],
+      "current_gap": "The service compares only SO_PEERCRED UID and mode 0600 admits the same file owner; peer PID/GID are ignored and no SO_PEERSEC is read. This is an appropriate enrolled-user boundary when every process under that UID is one principal, but does not distinguish approved harness from another same-UID process. AppArmor's separate client peer-label rule narrows the set of confined processes but is not reflected in a broker-side check.",
+      "improvement": "Keep the kernel UID check and mode 0600. Document same-UID process equivalence explicitly. If the threat model needs per-process authorization, use a dedicated service/client identity or a reviewed label-aware authorization mechanism (e.g. verify kernel peer security label where supported) plus AppArmor peer rules; do not treat PID alone as durable identity. Test parent-directory ownership and socket replacement as well as final mode. Preserve expired/inactive cache fail-closed behavior.",
+      "validation_not_run": true,
+      "normal_cases": [
+        "Expected enrolled UID over AF_UNIX stream gets a response only while cache token is active; socket owner and mode are exact; approved client label can connect.",
+        "Wrong UID gets activation-required error and no Authorization header; inactive or expired token cache does not yield a bearer token.",
+        "Same UID under an AppArmor label outside approved peer rule cannot connect; approved credential label can under intended state."
+      ],
+      "negative_cases": [
+        "Same UID and approved label can connect by design; record that as shared-principal behavior rather than per-process identity.",
+        "Replace or chmod socket in a disposable race test and confirm service health/ownership remediation detects it.",
+        "Attempt connection as another UID and over TCP: both fail; no bearer response appears in logs."
+      ],
+      "limitations": [
+        "Root is outside this boundary; UID authentication cannot make the service safe from host administrator compromise."
+      ]
+    }
+  ],
+  "execution_status": "Reference browsing and local-source reading only. No privileged command, profile load, nft rule install, systemd unit start/change, live socket probe, root/admin attack, or end-to-end enforcement claim."
+}

@@ -1,0 +1,11 @@
+{
+  "project_id": "appgprj_6acf597681388191b21cd74641403939",
+  "version_id": "appgprj_6acf597681388191b21cd74641403939~appgver_4c9f78ca2d68819191ad8564f24188fd",
+  "deployment_id": "appgdep_6acf774f43508191b893259899dd5f0b",
+  "status": "succeeded",
+  "url": "https://mcpgw-status-20261014.sleek-stoat-4347.chatgpt.site",
+  "published_at": "2026-10-14T12:36:51.536206+00:00",
+  "source_commit": "3e1529ac89e0218c114b487852ab164c14faf8cd",
+  "access": "owner-private",
+  "scope": "Static reviewed snapshot,24.8%,0/40; Linux telemetry fix, Windows real device deferred"
+}

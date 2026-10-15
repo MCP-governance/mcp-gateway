@@ -1,0 +1,32 @@
+{
+  "arm": "control",
+  "run_id": "e13-control-04",
+  "started": 1791960227.5391235,
+  "uid": 1000,
+  "binary": "/home/pj1/.local/bin/claude",
+  "flags": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--permission-mode",
+    "dontAsk",
+    "--allowedTools",
+    "Bash,WebFetch,mcp__local-git,mcp__local-sqlite,mcp__local-browser",
+    "--mcp-config",
+    "/home/pj1/e13/local-mcp.json",
+    "--no-session-persistence",
+    "--setting-sources",
+    "",
+    "--model",
+    "claude-sonnet-5-5",
+    "--effort",
+    "high"
+  ],
+  "fixture_before": {
+    "git_head": "d68d6933ddb52fdc17d8e8f482eaaaf49a1bdf55",
+    "git_status": "?? notes.md",
+    "sqlite_sha256": "bb1b0690a51806542736ffdf920808916eb0f31224d6a2d7ffe7471d73d69f2c"
+  },
+  "binary_sha256": "0298068b686e7fdbaf9402a7a587bb7f49c0b0e084de09f69145a0719207640c"
+}

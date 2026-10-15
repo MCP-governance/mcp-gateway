@@ -11,7 +11,7 @@
 
 현재 field 레지스트리는 이 10종 lab 레지스트리와 별도다. [기존 실기기 보고](../status/reports/2026-10-13-development-results.md)는 Context7 실제 호출을 기록했지만 공급자 quota로 정상 문서 조회는 미완료였다. 로컬 10종이 모두 설치·활성화·통과했다는 결과는 없다.
 
-먼저 **수신 횟수·파일/DB 효과를 직접 확인할 수 있는 격리 mock, filesystem, fetch, email sink**를 준비한다. 다음으로 git·postgres·redis·memory, 마지막으로 desktop·playwright·gitea와 원격 OAuth 후보를 진행한다. 패키지와 schema는 후보 목록의 판본을 설치 시 재확인하고 승인 계약을 고정한다. 취약 판본은 도입 거부 메타데이터 fixture로만 사용한다.
+먼저 **실제 공개 OSS filesystem·fetch·email과 공식 Gitea/GitHub의 시험 자원**을 준비한다. 자체/mock MCP는 만들지 않는다. 다음으로 git·postgres·redis·memory, 마지막으로 desktop·playwright와 원격 OAuth 후보를 진행한다. [후보14개·출처·Registry metadata hash·라이선스](../analysis/mcp-candidates.json)를 재사용하고 설치 아티팩트/schema는 별도 검증·승인한다. 취약 판본은 도입 거부 메타데이터 fixture로만 사용한다.
 
 솔루션 스택과 자체 운영 fixture는 솔루션 기기에만 배치하고, 실제 하네스는 PJ1에서 실행한다. 사용자 노트북에서 제품 Compose를 기동하지 않는다. 공유 field의 기존 계약·계정·종료 관계는 교체하지 않고 시험용 대상만 별도로 등록한다.
 
@@ -47,4 +47,10 @@ Cloudflare 공식 문서는 현재 `/mcp` Streamable HTTP 연결과 transport �
 
 [기존 FIELD 후보 문서](../../../docs/ai/FIELD_MCP_CANDIDATES.md)의 `@modelcontextprotocol/server-filesystem@0.6.2`와 `mcp-server-git==2025.11.25`는 도입·취약 버전 차단 fixture 후보로 이관했다. 2026-10-13에 [filesystem advisory](https://github.com/modelcontextprotocol/servers/security/advisories/GHSA-q66q-fx2p-7w4m)와 [git advisory](https://github.com/advisories/GHSA-j22h-9j4x-23w5)를 다시 읽었다. git 공지는 `<2025.12.18` 영향·`2025.12.18` 수정이다. filesystem 공지는 여러 버전 계열과 권고 버전 표기가 함께 있으므로 `0.6.3 이상 전부 안전`으로 단순화하지 않고 공지 원문 범위를 fixture에 보존한다. 취약 패키지는 설치·실행하지 않았다.
 
-악성 도구 설명·지연·schema drift는 임의 공개 서버를 공격하지 않고 전용 mock MCP fixture로 만든다. 계약 변경 전에 승인한 hash와 변경 후 hash, upstream 수신 횟수·효과를 함께 남긴다.
+도구 설명·schema drift는 공식 GitHub MCP의 toolset/description override를 자기 소유 시험 인스턴스에 적용한다. 지연/통신 장애는 Toxiproxy 같은 기존 OSS로 전용 경로에 주입하며 MCP 자체를 구현하지 않는다. 승인 전후 hash, 독립 수신/효과·원복을 남기고 공개 타인 서버를 변경하지 않는다.
+
+## 고정 배포물의 라이선스·provenance 정정
+
+`mcp-email-server1.9.1`의 공식 PyPI wheel byte hash와 내장 BSD-3-Clause LICENSE를 확인해 registry의 MIT 오기를 정정했다. [확보한 LICENSE](../analysis/evidence/packages/email-1.9.1/LICENSE.txt)와 원본 archive/member/hash는 후보 JSON에 보존한다. archive는 메모리에서 검사했고 설치·실행하지 않았다.
+
+filesystem/memory2026.8.31은 npm SRI와 tarball hash·npm gitHead a40bc270fb5ece62673f8a1196f57116d885c5eb를 확인했다. [그 source 판본 LICENSE](../analysis/evidence/packages/mcp-servers-2026.8.31/LICENSE.txt)는 Apache-2.0/MIT 기여분 전환을 명시하며 tarball에는 LICENSE/NOTICE 파일이 없다. 일괄 MIT로 해석하지 않고 구성요소·고지 보존을 도입 gate로 유지한다. npm provenance bundle은 확보했지만 암호학적 서명 검증은 미실시다. 다른 repository HEAD는 검토 판본이며 고정 package의 source commit이나 현재 실행 image digest와 같다고 가정하지 않는다.

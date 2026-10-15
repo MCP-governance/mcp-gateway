@@ -1,0 +1,81 @@
+{
+  "date": "2026-10-14",
+  "references": [
+    {
+      "id": "win-app-control-business",
+      "title": "App Control for Windows and feature availability",
+      "url": "https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/appcontrol",
+      "read_scope": "Microsoft Learn App Control article and feature availability table, read in full. The companion table covers OS support, editions, device-wide versus per-user scope, and enforceable file types.",
+      "sha256": "b91d41486180b0c391951e9b15860a2b291f6e86701235bcddaacf6bcf30d16f",
+      "snapshots": [
+        {"url":"https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/appcontrol","path":".task-local-20261014/data/permissions/app-control.html","sha256":"b91d41486180b0c391951e9b15860a2b291f6e86701235bcddaacf6bcf30d16f"},
+        {"url":"https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/feature-availability","path":".task-local-20261014/data/permissions/app-control-feature-availability.html","sha256":"709fc3db9e528efdfab2060db104f7317b7fed18b065b4fc4137aac50d6014be"}
+      ],
+      "official_claim": "Supported on Windows 10/11 and Windows Server 2016+. Policies are effective on all editions, though PowerShell management cmdlets are unavailable on Home. App Control policies are device-wide, not per-user. It can control executable, DLL, installer, and script files; Microsoft says it does not replace antivirus.",
+      "application": "P1 candidate: use organization-managed allow policies for approved binaries/scripts and report effective policy state. Consider adding a check in endpoint-agent/managed-windows.py checks() and the Windows check mapping in full_stack_lab/gateway/app/integrations.py. Do not have the kit silently author/deploy a machine policy.",
+      "limitations": "Device-wide scope cannot isolate an MCP or individual user. Bad policy can block business software or allow unintended code; audit, compatibility, rollback, and administrator/MDM/GPO deployment are required. App execution control is not data/network sandboxing or antivirus. No policy was installed or tested here.",
+      "code_targets": ["endpoint-agent/managed-windows.py:319-331 checks()", "endpoint-agent/managed-windows.py:476-534 install()", "full_stack_lab/gateway/app/integrations.py: Windows managed-state mapping"],
+      "policy_privilege_os": "Windows 10/11, Server 2016+; all editions can enforce policies, but Home lacks PowerShell cmdlets. Deployment requires an administrator or organization management authority. No system policy was changed.",
+      "validation_needed": "Supported edition/build, effective state after reboot, audit-to-enforce, approved and denied harness/MCP binaries/scripts/DLLs, normal updates, rollback, policy tampering, actual MCP launch and event evidence."
+    },
+    {
+      "id": "win-applocker",
+      "title": "AppLocker overview and rule collections",
+      "url": "https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/applocker/applocker-overview",
+      "read_scope": "Microsoft Learn overview and rules articles, read in full: security strength, user/SYSTEM scope, administration, Application Identity service, audit mode, collections, DLL default and coverage.",
+      "sha256": "dca3e7a628d57b67ad4d6ddb1c06f9eedbd3020d0e07c61bd917f327ad6868ac",
+      "snapshots": [
+        {"url":"https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/applocker/applocker-overview","path":".task-local-20261014/data/permissions/applocker-overview.html","sha256":"dca3e7a628d57b67ad4d6ddb1c06f9eedbd3020d0e07c61bd917f327ad6868ac"},
+        {"url":"https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/applocker/working-with-applocker-rules","path":".task-local-20261014/data/permissions/applocker-rules.html","sha256":"fa7bbb7a696cf89009a13080adedbdccb152b049b13c8e0f41d800e1b1e87346"},
+        {"url":"https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/feature-availability","path":".task-local-20261014/data/permissions/app-control-feature-availability.html","sha256":"709fc3db9e528efdfab2060db104f7317b7fed18b065b4fc4137aac50d6014be"}
+      ],
+      "official_claim": "AppLocker is available on Windows 8+. Windows 10 v2004+ with KB5024351 supports policies on all editions; older versions and Server 2019 have GP edition restrictions while MDM supports all editions. Per-user/group rules are available. EXE/PE, scripts, installers, packaged apps and DLL collections exist. DLL rules are off by default. Microsoft calls AppLocker defense-in-depth and recommends App Control for robust protection.",
+      "application": "P2 candidate: per-user rules could constrain approved companion-account tools. Examine policy/effective-state reporting in managed_user(), install(), and checks() in managed-windows.py. Include Application Identity service and script/DLL collection status.",
+      "limitations": "Not a standalone strong security boundary per Microsoft. DLL rules require coverage of every DLL loaded by allowed applications and can affect performance. Policy administration needs local admin or GPO rights and appidsvc. Not installed or tested on a real device.",
+      "code_targets": ["endpoint-agent/managed-windows.py:429-440 managed_user()", "endpoint-agent/managed-windows.py:476-534 install()", "endpoint-agent/managed-windows.py:319-331 checks()", "endpoint-agent/install-windows.ps1:37-43 RunLevel Limited task"],
+      "policy_privilege_os": "Windows 8+; target Windows 10 v2004+ with KB5024351 unless deployment tests establish another edition path. GP/MDM and older edition support differ. Requires admin or GPO/MDM authority and Application Identity service.",
+      "validation_needed": "Companion-user rules, script/EXE/DLL audit and enforcement, SYSTEM scope, renamed PE, runtime/package updates, DLL coverage/performance, event log and rollback on supported Windows."
+    },
+    {
+      "id": "win-firewall-wfp-sid-loopback",
+      "title": "Windows Firewall LocalUser SID, WFP ALE, and loopback scope",
+      "url": "https://learn.microsoft.com/en-us/powershell/module/netsecurity/new-netfirewallrule?view=windowsserver2025-ps",
+      "read_scope": "Microsoft Learn New-NetFirewallRule LocalUser, RemoteAddress and RemotePort sections; WFP ALE identity filtering; UWP loopback exception and WFP capture; loopback fast-path article.",
+      "sha256": "93f9736b88b79324d4f5d4e0fa42c6e28da2fda30165d759ee42fe78f438eaf9",
+      "snapshots": [
+        {"url":"https://learn.microsoft.com/en-us/powershell/module/netsecurity/new-netfirewallrule?view=windowsserver2025-ps","path":".task-local-20261014/data/permissions/new-netfirewallrule.html","sha256":"93f9736b88b79324d4f5d4e0fa42c6e28da2fda30165d759ee42fe78f438eaf9"},
+        {"url":"https://learn.microsoft.com/en-us/windows/win32/fwp/application-layer-enforcement--ale-","path":".task-local-20261014/data/permissions/wfp-ale.html","sha256":"b731a0d6cb6738c97ae539d6a3e249083031055899cb4927f4b51024aff6ced2"},
+        {"url":"https://learn.microsoft.com/en-us/windows/security/operating-system-security/network-security/windows-firewall/troubleshooting-uwp-firewall","path":".task-local-20261014/data/permissions/uwp-loopback.html","sha256":"db790b2109986b7cfa80b16aac89b5eecfd9295ab766895c2540b6efc8a9e9fe"},
+        {"url":"https://learn.microsoft.com/en-us/windows/win32/winsock/sio-loopback-fast-path","path":".task-local-20261014/data/permissions/sio-loopback-fast-path.html","sha256":"f85c05de1fc78660733b35c5ac120095f1fe0f2cf73667907fbca202457e7384"}
+      ],
+      "official_claim": "New-NetFirewallRule -LocalUser uses an SDDL SID principal and matches traffic authenticated as coming from or going to that principal; combine with RemoteAddress/RemotePort. WFP ALE authorizes connection creation/listen/raw socket and supports application/user identity filters. The UWP page describes loopback exemptions for packaged apps; it does not establish general native Win32 behavior.",
+      "application": "P1 evidence/code review: managed-windows.py:96-113 already sets account-SID egress rules against gateway addresses/ports; this is account scope, not application sandbox. checks() at 302-331 compares baseline but does not collect loopback/WFP outcomes. Limit README:65-75 and D-68:850-858 wording to the current kit's unverified behavior; validate real Windows before any OS-wide claim.",
+      "limitations": "LocalUser is not process-path-specific; admin/SYSTEM can change policy. UWP loopback docs do not prove general native Win32 behavior. ALE capability does not mean the kit configures or audits ALE. IPv4 ALE can miss true dual-IP sockets; inspect IPv6-mapped flows. Do not transfer Windows results to Linux/macOS.",
+      "code_targets": ["endpoint-agent/managed-windows.py:96-125 firewall_rules()/APPLY_RULES", "endpoint-agent/managed-windows.py:302-331 firewall_enforcing()/checks()", "endpoint-agent/agent.py:555-575 network_findings()", "endpoint-agent/README.md:65-75", "docs/ai/DECISIONS.md:850-858"],
+      "policy_privilege_os": "Windows Firewall/NetSecurity/WFP; adding/changing machine rules requires elevation or enterprise policy authority. Exact kit build coverage not tested. No firewall change was made.",
+      "validation_needed": "On supported Windows: 127.0.0.1, ::1, mapped IPv4; ordinary Win32 versus UWP; same/different SID; gateway allow vs other target deny. Run netsh wfp capture during repro and correlate allow/drop appId, userId and filter; test VPN/proxy/interface and policy precedence."
+    },
+    {
+      "id": "win-restricted-token",
+      "title": "CreateRestrictedToken function",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-createrestrictedtoken",
+      "read_scope": "Microsoft Win32 API article, read in full: deny-only SID, privilege removal, restricting SID access checks, CreateProcessAsUser, desktop warning, requirements.",
+      "sha256": "aab060daa1fe21c712b1d9513a7a2b7325c4a12a1f8283bdeebc66a8ed5894fd",
+      "snapshots": [{"url":"https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-createrestrictedtoken","path":".task-local-20261014/data/permissions/create-restricted-token.html","sha256":"aab060daa1fe21c712b1d9513a7a2b7325c4a12a1f8283bdeebc66a8ed5894fd"}],
+      "official_claim": "The API can make SIDs deny-only, remove privileges and add restricting SIDs. Access requires both enabled-SID and restricting-SID checks to allow. CreateProcessAsUser can launch the restricted process. Microsoft warns to run it on a desktop other than the default desktop.",
+      "application": "P2 design candidate: a native launcher could start user-launched MCP/harness processes with reduced privileges/restricting SID and workspace-only ACLs. Current install-windows.ps1:37-43 RunLevel Limited configures a scheduled task; it is not a restricted MCP child token. managed-windows.py:345+ brokers a short-lived header, not process isolation.",
+      "limitations": "Not implemented/tested. A restricted token is not a complete sandbox; handle inheritance, object ACLs, UI desktop, child token inheritance, COM/brokered APIs and tool compatibility need tests. Requires a native process launcher and matching ACL changes.",
+      "code_targets": ["endpoint-agent/install-windows.ps1:37-43 task principal/run level", "endpoint-agent/managed-windows.py:345-420 serve_pipe()", "endpoint-agent/managed-windows.py:476-534 install()"],
+      "policy_privilege_os": "Windows desktop API; docs list XP desktop/Server 2003 minimum, but any adopted work must target the kit's supported Windows 10/11 builds. Token/process rights and ACL setup required. No change made.",
+      "validation_needed": "Disposable Windows VM: inspect token groups/privileges; verify process creation, default desktop, profile/secrets write denial, allowed workspace access, child handles/tokens, registry/device/network use, real harness/MCP compatibility, fail-closed launch and recovery."
+    }
+  ],
+  "findings": [
+    {"id":"priority-1","finding":"Current Windows control is account-SID egress, not an app sandbox. First collect effective firewall/WFP and loopback evidence on real Windows.","code_targets":["endpoint-agent/managed-windows.py:96-125,302-331","endpoint-agent/agent.py:555-575"],"platform_boundary":"WFP/Firewall evidence is Windows-specific; Linux UID/AppArmor/nft evidence is separate."},
+    {"id":"priority-2","finding":"App Control is device-wide; AppLocker supports user rules but Microsoft frames it as defense-in-depth. Design organization policy, effective-state reporting, audit and rollback before code deployment.","code_targets":["endpoint-agent/managed-windows.py:319-331,429-440,476-534","endpoint-agent/install-windows.ps1:37-43"]},
+    {"id":"priority-3","finding":"RunLevel Limited and ACLs do not prove that MCP child processes use restricted tokens. A native launcher and matched ACLs require a disposable-VM prototype.","code_targets":["endpoint-agent/install-windows.ps1:18-28,37-43","endpoint-agent/managed-windows.py:169-186,345-420"]},
+    {"id":"loopback-scope","finding":"D-68/README loopback text is a current-kit limitation to verify, not a general Windows claim. UWP exception is narrow; WFP ALE supports connection authorization. Require actual IPv4/IPv6 WFP traces before broad conclusions.","code_targets":["docs/ai/DECISIONS.md:858","endpoint-agent/README.md:75","endpoint-agent/managed-windows.py:96-125"]},
+    {"id":"verification-state","finding":"Official-source and code-location review only. No App Control/AppLocker deployment, firewall change, restricted token, WFP trace or real Windows enforcement test was performed.","code_targets":[]}
+  ],
+  "capture": {"captured_kst":"2026-10-14T13:19:32+09:00","scope":"Read-only official Microsoft Learn research; nine raw HTML snapshots stored in task-local ignored data/permissions with URLs and SHA-256."}
+}

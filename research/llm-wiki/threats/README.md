@@ -11,6 +11,7 @@
 | [WBS XLSM](originals/MCP_보안_거버넌스_Policy_as_Code_WBS_V1.5.xlsm) | WBS와 사본 2시트 | 개발 단계·산출물과 연구 작업의 연결 |
 | [WBS 전 시트 MD](extracted/wbs.md) · [셀 JSON](extracted/wbs.json) | 원래 셀·일정·수식·저장 캐시 | 계획 참고; 현재 완료율 증거 아님 |
 | [24개 통제 매핑](control-map.md) · [JSON](../catalogs/threats.json) | 원본 행 → 위협 → 집행 위치 → 런타임 후보 → 코드 SHA | 구현·실험 리뷰 출발점 |
+| [로컬 도구·MCP 위험매핑](local-tool-map.md) · [JSON](../catalogs/local-tool-risks.json) | 실제5개 MCP·스키마92개·권한 반례·10개 위험 → 원본 정책 | 로컬 프로토콜·키트 회귀와 실기기 집행을 구분 |
 
 ## 번호와 증거의 차이
 

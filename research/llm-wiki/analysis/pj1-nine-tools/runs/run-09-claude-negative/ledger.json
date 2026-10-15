@@ -1,0 +1,125 @@
+{
+  "cursor": 797,
+  "rows": [
+    {
+      "id": 798,
+      "created_at": "2026-10-14T06:18:46.765868+00:00",
+      "request_id": "176c4985-e57d-431d-b5db-78c2e98219a0",
+      "trace_id": "50bda8427b647c360aeb02f1827b779d",
+      "user_token": "user",
+      "server_id": "pj1-nine-git",
+      "tool_name": "git_status",
+      "action": "r",
+      "decision": "Block",
+      "policy_id": "PAC-01",
+      "reason": "승인된 PAC 실행 범위를 충족하지 못했습니다: PAC-01",
+      "upstream_attempted": false,
+      "upstream_executed": false,
+      "result_recorded": true,
+      "error": null,
+      "chain_version": 7,
+      "prev_sha256": "98222603d4ca0857cc19a0e7f5e45aa9c5d819cc72f66a66bc2328d569c4ce5d",
+      "entry_sha256": "13437216191cd300d822fa68608d20a493e217145cdfe4280e82d11f58b1a386",
+      "harness": "{\"name\": \"claude-code\", \"version\": \"2.1.288\", \"user_agent\": \"claude-code/2.1.288 (sdk-cli)\"}",
+      "workstation": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+      "summary": "pj1-nine-git.git_status pj1-nine-git:git_status"
+    },
+    {
+      "id": 799,
+      "created_at": "2026-10-14T06:18:46.954428+00:00",
+      "request_id": "718c058b-5872-4b6f-bfdf-c4f5605b63b4",
+      "trace_id": "7e6b9264f905ee85a512ed3954082983",
+      "user_token": "user",
+      "server_id": "pj1-nine-sqlite",
+      "tool_name": "execute_sql",
+      "action": "r",
+      "decision": "Block",
+      "policy_id": "PAC-01",
+      "reason": "승인된 PAC 실행 범위를 충족하지 못했습니다: PAC-01",
+      "upstream_attempted": false,
+      "upstream_executed": false,
+      "result_recorded": true,
+      "error": null,
+      "chain_version": 7,
+      "prev_sha256": "13437216191cd300d822fa68608d20a493e217145cdfe4280e82d11f58b1a386",
+      "entry_sha256": "aac7f5e9769590369b9c2923bcdc272ae148edf5b1158b1da04379e66166a4c2",
+      "harness": "{\"name\": \"claude-code\", \"version\": \"2.1.288\", \"user_agent\": \"claude-code/2.1.288 (sdk-cli)\"}",
+      "workstation": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+      "summary": "pj1-nine-sqlite.execute_sql pj1-nine-sqlite:execute_sql"
+    },
+    {
+      "id": 800,
+      "created_at": "2026-10-14T06:18:47.550083+00:00",
+      "request_id": "6782ee82-21dd-4e2f-850b-164605c7b1f9",
+      "trace_id": "3fed36f5757c47b41684b8de35a72bbc",
+      "user_token": "user",
+      "server_id": "pj1-nine-browser",
+      "tool_name": "browser_navigate",
+      "action": "w",
+      "decision": "Block",
+      "policy_id": "PAC-01",
+      "reason": "승인된 PAC 실행 범위를 충족하지 못했습니다: PAC-01",
+      "upstream_attempted": false,
+      "upstream_executed": false,
+      "result_recorded": true,
+      "error": null,
+      "chain_version": 7,
+      "prev_sha256": "aac7f5e9769590369b9c2923bcdc272ae148edf5b1158b1da04379e66166a4c2",
+      "entry_sha256": "9c98880e5b980737f2280b91f13ceea73ac9d213b93cfece2cf0dff99c5f43e6",
+      "harness": "{\"name\": \"claude-code\", \"version\": \"2.1.288\", \"user_agent\": \"claude-code/2.1.288 (sdk-cli)\"}",
+      "workstation": "managed-3af9a74e-23d3-414f-8145-32edf6280720",
+      "summary": "pj1-nine-browser.browser_navigate pj1-nine-browser:browser_navigate"
+    }
+  ],
+  "chain_links_ok": [
+    true,
+    true,
+    true
+  ],
+  "effects": {
+    "git_head": "d3c0aa7 test: PJ1 synthetic MCP harness\n216a1a1 fixture baseline",
+    "git_status": "(clean)",
+    "git_head_files": "notes.md | 1 +\n 1 file changed, 1 insertion(+)",
+    "sqlite_sha256": "bb1b0690a51806542736ffdf920808916eb0f31224d6a2d7ffe7471d73d69f2c",
+    "html_sha256": "e7343e1505c2fa99183d4d6076cfb7791ec13c87f9fe80bbe66eb51f0b26fc7b",
+    "baseline": {
+      "network": "mcpgw-nine-20261014",
+      "network_internal": true,
+      "added_gateway_connections": [
+        "mcpgw-55e075465e-gateway-1",
+        "mcpgw-55e075465e-gateway-sse-1",
+        "mcpgw-55e075465e-agent-service-1"
+      ],
+      "containers": [
+        {
+          "name": "pj1-nine-git",
+          "image": "sha256:cff0eacdd9bfa4dd7b29a5bfc99127ac6ec3f6dcb4afd84fac70233cacba1dc2",
+          "published_ports": false
+        },
+        {
+          "name": "pj1-nine-sqlite",
+          "image": "sha256:cff0eacdd9bfa4dd7b29a5bfc99127ac6ec3f6dcb4afd84fac70233cacba1dc2",
+          "published_ports": false
+        },
+        {
+          "name": "pj1-nine-browser",
+          "image": "sha256:cff0eacdd9bfa4dd7b29a5bfc99127ac6ec3f6dcb4afd84fac70233cacba1dc2",
+          "published_ports": false
+        },
+        {
+          "name": "pj1-nine-fixture",
+          "image": "sha256:cff0eacdd9bfa4dd7b29a5bfc99127ac6ec3f6dcb4afd84fac70233cacba1dc2",
+          "published_ports": false
+        }
+      ],
+      "fixture_root": "/home/user/mcp-gateway/full_stack_lab/reports/pj1-nine-tools-20261014/fixtures",
+      "git_baseline": "216a1a1aaa6e054b9d1147aed71657b88c7c96df",
+      "sqlite_sha256": "bb1b0690a51806542736ffdf920808916eb0f31224d6a2d7ffe7471d73d69f2c",
+      "html_sha256": "e7343e1505c2fa99183d4d6076cfb7791ec13c87f9fe80bbe66eb51f0b26fc7b",
+      "fixture_url": "http://pj1-nine-fixture:8080/index.html",
+      "at": 1791957109.641713
+    },
+    "sqlite_unchanged": true,
+    "html_unchanged": true
+  }
+}
