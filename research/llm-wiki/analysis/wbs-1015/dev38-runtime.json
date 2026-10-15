@@ -1,0 +1,646 @@
+{
+ "recorded_at": "2026-10-15T21:17:00+09:00",
+ "code": {
+  "runtime_worker": "0fa5b7c",
+  "fixes": [
+   "ac88c92",
+   "b639432"
+  ],
+  "deployed": "b639432"
+ },
+ "intake": "8f67e854-aba9-4326-8769-770effe5f747",
+ "recipe": "full_stack_lab/runtime/recipes/markitdown-mcp.toml",
+ "runtimes": [
+  {
+   "id": "8b950b46-98da-4b80-af90-9b094aa6da87",
+   "generation": 5,
+   "status": "ACTIVE",
+   "recipe_id": "markitdown-mcp",
+   "recipe_sha256": "a16e00714a163285546e9f8d807c2bc7cd6799b195c1c7982856acf5466492b8",
+   "source_commit": "4cc9fa17653d695d64fb9eee5b33d4de55ff84e8",
+   "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a",
+   "image_id": "sha256:b9a31edb638c0f03e574703422aa7bf864cb6cb80ff0c4c1418b8e8a12e4daa0",
+   "endpoint": "http://mcpgw-mcp-8f67e854:3001/mcp",
+   "error": null,
+   "evidence": {
+    "top": "microsoft-markitdown",
+    "files": 195,
+    "answered": {
+     "server": "markitdown",
+     "protocol_version": "2025-11-25"
+    },
+    "image_id": "sha256:b9a31edb638c0f03e574703422aa7bf864cb6cb80ff0c4c1418b8e8a12e4daa0",
+    "container": "mcpgw-rt-8b950b46",
+    "base_image": "python:3.13-slim-trixie@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f",
+    "build_seconds": 2.0,
+    "packages_sha256": "13ba08f895e3671fdeac031cfdfe4f9c9212c49a90e4163288ab72b89858e31a",
+    "build_log_sha256": "1dca93abe58beaf1d0d508cf5ea772d7db032fed938213dc76411cc323222b34",
+    "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a"
+   },
+   "requested_by": "root",
+   "attempts": 1,
+   "created_at": "2026-10-15T12:13:09.345564+00:00",
+   "updated_at": "2026-10-15T12:13:16.877793+00:00"
+  },
+  {
+   "id": "6bfdea01-bc08-4584-9a11-4012ddcc3ea2",
+   "generation": 4,
+   "status": "STOPPED",
+   "recipe_id": "markitdown-mcp",
+   "recipe_sha256": "a16e00714a163285546e9f8d807c2bc7cd6799b195c1c7982856acf5466492b8",
+   "source_commit": "4cc9fa17653d695d64fb9eee5b33d4de55ff84e8",
+   "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a",
+   "image_id": "sha256:a40bef9d69f1546bdbfdb80c4147d743b7d8a3da140314b3b78e80bec9ba5993",
+   "endpoint": "http://mcpgw-mcp-8f67e854:3001/mcp",
+   "error": "실행 중인 컨테이너가 승인한 이미지와 다르거나 없습니다.",
+   "evidence": {
+    "top": "microsoft-markitdown",
+    "files": 195,
+    "answered": {
+     "server": "markitdown",
+     "protocol_version": "2025-11-25"
+    },
+    "image_id": "sha256:a40bef9d69f1546bdbfdb80c4147d743b7d8a3da140314b3b78e80bec9ba5993",
+    "container": "mcpgw-rt-6bfdea01",
+    "base_image": "python:3.13-slim-trixie@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f",
+    "build_seconds": 1.2,
+    "packages_sha256": "13ba08f895e3671fdeac031cfdfe4f9c9212c49a90e4163288ab72b89858e31a",
+    "build_log_sha256": "7ea353ca21c00ff5739e3b7e98224883a640bfff1a26be4e635bfb765a44612c",
+    "stopped_left_behind": 0,
+    "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a"
+   },
+   "requested_by": "root",
+   "attempts": 2,
+   "created_at": "2026-10-15T12:11:41.809622+00:00",
+   "updated_at": "2026-10-15T12:12:16.195324+00:00"
+  },
+  {
+   "id": "d15e4c01-f9c1-4868-bdcd-f6b0436a9cfb",
+   "generation": 3,
+   "status": "STOPPED",
+   "recipe_id": "markitdown-mcp",
+   "recipe_sha256": "a16e00714a163285546e9f8d807c2bc7cd6799b195c1c7982856acf5466492b8",
+   "source_commit": "4cc9fa17653d695d64fb9eee5b33d4de55ff84e8",
+   "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a",
+   "image_id": "sha256:454484abb4385dd131b67710c7ec9aa31f8937ef25c13eec7fc178998958f25c",
+   "endpoint": "http://mcpgw-mcp-8f67e854:3001/mcp",
+   "error": "관리자가 실행을 중지했습니다.",
+   "evidence": {
+    "top": "microsoft-markitdown",
+    "files": 195,
+    "answered": {
+     "server": "markitdown",
+     "protocol_version": "2025-11-25"
+    },
+    "image_id": "sha256:454484abb4385dd131b67710c7ec9aa31f8937ef25c13eec7fc178998958f25c",
+    "container": "mcpgw-rt-d15e4c01",
+    "base_image": "python:3.13-slim-trixie@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f",
+    "build_seconds": 2.0,
+    "packages_sha256": "13ba08f895e3671fdeac031cfdfe4f9c9212c49a90e4163288ab72b89858e31a",
+    "build_log_sha256": "332248dbff189e6c69be4b5b8faadf490595dc54589ebcacb8551b5422b93d0f",
+    "stopped_left_behind": 0,
+    "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a"
+   },
+   "requested_by": "root",
+   "attempts": 1,
+   "created_at": "2026-10-15T12:11:05.085953+00:00",
+   "updated_at": "2026-10-15T12:11:36.417782+00:00"
+  },
+  {
+   "id": "b4518370-ae7a-4ad8-9c3d-02c382c4735b",
+   "generation": 2,
+   "status": "STOPPED",
+   "recipe_id": "markitdown-mcp",
+   "recipe_sha256": "a16e00714a163285546e9f8d807c2bc7cd6799b195c1c7982856acf5466492b8",
+   "source_commit": "4cc9fa17653d695d64fb9eee5b33d4de55ff84e8",
+   "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a",
+   "image_id": "sha256:e3ebdff10f639f53985aef2bb5427deb8ee4c8f4262b1a7b0239a3d01b72eeb7",
+   "endpoint": "http://mcpgw-mcp-8f67e854:3001/mcp",
+   "error": "관리자가 실행을 중지했습니다.",
+   "evidence": {
+    "top": "microsoft-markitdown",
+    "files": 195,
+    "answered": {
+     "server": "markitdown",
+     "protocol_version": "2025-11-25"
+    },
+    "image_id": "sha256:e3ebdff10f639f53985aef2bb5427deb8ee4c8f4262b1a7b0239a3d01b72eeb7",
+    "container": "mcpgw-rt-b4518370",
+    "base_image": "python:3.13-slim-trixie@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f",
+    "build_seconds": 2.0,
+    "packages_sha256": "13ba08f895e3671fdeac031cfdfe4f9c9212c49a90e4163288ab72b89858e31a",
+    "build_log_sha256": "7bb445716e5c69bc69c50f28068964491342003c8b719217b7a821c442d1f91f",
+    "stopped_left_behind": 0,
+    "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a"
+   },
+   "requested_by": "root",
+   "attempts": 1,
+   "created_at": "2026-10-15T12:10:09.337201+00:00",
+   "updated_at": "2026-10-15T12:10:57.368687+00:00"
+  },
+  {
+   "id": "d467e352-5232-43ec-b397-bca0f2f88307",
+   "generation": 1,
+   "status": "STOPPED",
+   "recipe_id": "markitdown-mcp",
+   "recipe_sha256": "a16e00714a163285546e9f8d807c2bc7cd6799b195c1c7982856acf5466492b8",
+   "source_commit": "4cc9fa17653d695d64fb9eee5b33d4de55ff84e8",
+   "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a",
+   "image_id": "sha256:c76463a82234da3befbd12a078524bd547c0355c5525d49be06ff98df26accdc",
+   "endpoint": "http://mcpgw-mcp-8f67e854:3001/mcp",
+   "error": "관리자가 실행을 중지했습니다.",
+   "evidence": {
+    "top": "microsoft-markitdown",
+    "files": 195,
+    "answered": {
+     "server": "markitdown",
+     "protocol_version": "2025-11-25"
+    },
+    "image_id": "sha256:c76463a82234da3befbd12a078524bd547c0355c5525d49be06ff98df26accdc",
+    "container": "mcpgw-rt-d467e352",
+    "base_image": "python:3.13-slim-trixie@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f",
+    "build_seconds": 92.1,
+    "packages_sha256": "13ba08f895e3671fdeac031cfdfe4f9c9212c49a90e4163288ab72b89858e31a",
+    "build_log_sha256": "95fed869f79ec30ba1b901013a95f55e0e2137415de08c906f743ac2495d3f5c",
+    "stopped_left_behind": 0,
+    "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a"
+   },
+   "requested_by": "root",
+   "attempts": 1,
+   "created_at": "2026-10-15T12:04:24.765676+00:00",
+   "updated_at": "2026-10-15T12:09:38.450118+00:00"
+  }
+ ],
+ "events": [
+  {
+   "id": 14,
+   "kind": "runtime-start",
+   "outcome": "recorded",
+   "actor": "root",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "commit": "4cc9fa17653d695d64fb9eee5b33d4de55ff84e8",
+    "recipe": {
+     "id": "markitdown-mcp",
+     "sha256": "a16e00714a163285546e9f8d807c2bc7cd6799b195c1c7982856acf5466492b8"
+    },
+    "runtime": "d467e352-5232-43ec-b397-bca0f2f88307",
+    "generation": 1
+   },
+   "created_at": "2026-10-15T12:04:24.773343+00:00"
+  },
+  {
+   "id": 15,
+   "kind": "runtime-built",
+   "outcome": "recorded",
+   "actor": "runtime-worker-1",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "runtime": "d467e352-5232-43ec-b397-bca0f2f88307",
+    "image_id": "sha256:c76463a82234da3befbd12a078524bd547c0355c5525d49be06ff98df26accdc",
+    "base_image": "python:3.13-slim-trixie@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f",
+    "generation": 1,
+    "build_seconds": 92.1,
+    "packages_sha256": "13ba08f895e3671fdeac031cfdfe4f9c9212c49a90e4163288ab72b89858e31a",
+    "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a"
+   },
+   "created_at": "2026-10-15T12:05:58.724915+00:00"
+  },
+  {
+   "id": 16,
+   "kind": "runtime-active",
+   "outcome": "recorded",
+   "actor": "runtime-worker-1",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "server": "markitdown",
+    "runtime": "d467e352-5232-43ec-b397-bca0f2f88307",
+    "endpoint": "http://mcpgw-mcp-8f67e854:3001/mcp",
+    "image_id": "sha256:c76463a82234da3befbd12a078524bd547c0355c5525d49be06ff98df26accdc",
+    "generation": 1,
+    "protocol_version": "2025-11-25"
+   },
+   "created_at": "2026-10-15T12:06:03.749327+00:00"
+  },
+  {
+   "id": 18,
+   "kind": "runtime-stop",
+   "outcome": "recorded",
+   "actor": "root",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "runtime": "d467e352-5232-43ec-b397-bca0f2f88307",
+    "generation": 1
+   },
+   "created_at": "2026-10-15T12:09:35.196566+00:00"
+  },
+  {
+   "id": 19,
+   "kind": "runtime-stopped",
+   "outcome": "recorded",
+   "actor": "runtime-worker-1",
+   "applicant": null,
+   "reason": "관리자가 실행을 중지했습니다.",
+   "scope": {
+    "left": 0,
+    "runtime": "d467e352-5232-43ec-b397-bca0f2f88307",
+    "generation": 1
+   },
+   "created_at": "2026-10-15T12:09:38.450118+00:00"
+  },
+  {
+   "id": 20,
+   "kind": "runtime-start",
+   "outcome": "recorded",
+   "actor": "root",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "commit": "4cc9fa17653d695d64fb9eee5b33d4de55ff84e8",
+    "recipe": {
+     "id": "markitdown-mcp",
+     "sha256": "a16e00714a163285546e9f8d807c2bc7cd6799b195c1c7982856acf5466492b8"
+    },
+    "runtime": "b4518370-ae7a-4ad8-9c3d-02c382c4735b",
+    "generation": 2
+   },
+   "created_at": "2026-10-15T12:10:09.341517+00:00"
+  },
+  {
+   "id": 21,
+   "kind": "runtime-built",
+   "outcome": "recorded",
+   "actor": "runtime-worker-1",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "runtime": "b4518370-ae7a-4ad8-9c3d-02c382c4735b",
+    "image_id": "sha256:e3ebdff10f639f53985aef2bb5427deb8ee4c8f4262b1a7b0239a3d01b72eeb7",
+    "base_image": "python:3.13-slim-trixie@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f",
+    "generation": 2,
+    "build_seconds": 2.0,
+    "packages_sha256": "13ba08f895e3671fdeac031cfdfe4f9c9212c49a90e4163288ab72b89858e31a",
+    "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a"
+   },
+   "created_at": "2026-10-15T12:10:16.466103+00:00"
+  },
+  {
+   "id": 22,
+   "kind": "runtime-active",
+   "outcome": "recorded",
+   "actor": "runtime-worker-1",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "server": "markitdown",
+    "runtime": "b4518370-ae7a-4ad8-9c3d-02c382c4735b",
+    "endpoint": "http://mcpgw-mcp-8f67e854:3001/mcp",
+    "image_id": "sha256:e3ebdff10f639f53985aef2bb5427deb8ee4c8f4262b1a7b0239a3d01b72eeb7",
+    "generation": 2,
+    "protocol_version": "2025-11-25"
+   },
+   "created_at": "2026-10-15T12:10:19.462798+00:00"
+  },
+  {
+   "id": 23,
+   "kind": "runtime-stop",
+   "outcome": "recorded",
+   "actor": "root",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "runtime": "b4518370-ae7a-4ad8-9c3d-02c382c4735b",
+    "generation": 2
+   },
+   "created_at": "2026-10-15T12:10:52.531249+00:00"
+  },
+  {
+   "id": 24,
+   "kind": "runtime-stopped",
+   "outcome": "recorded",
+   "actor": "runtime-worker-1",
+   "applicant": null,
+   "reason": "관리자가 실행을 중지했습니다.",
+   "scope": {
+    "left": 0,
+    "runtime": "b4518370-ae7a-4ad8-9c3d-02c382c4735b",
+    "generation": 2
+   },
+   "created_at": "2026-10-15T12:10:57.368687+00:00"
+  },
+  {
+   "id": 25,
+   "kind": "runtime-start",
+   "outcome": "recorded",
+   "actor": "root",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "commit": "4cc9fa17653d695d64fb9eee5b33d4de55ff84e8",
+    "recipe": {
+     "id": "markitdown-mcp",
+     "sha256": "a16e00714a163285546e9f8d807c2bc7cd6799b195c1c7982856acf5466492b8"
+    },
+    "runtime": "d15e4c01-f9c1-4868-bdcd-f6b0436a9cfb",
+    "generation": 3
+   },
+   "created_at": "2026-10-15T12:11:05.091875+00:00"
+  },
+  {
+   "id": 26,
+   "kind": "runtime-built",
+   "outcome": "recorded",
+   "actor": "runtime-worker-1",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "runtime": "d15e4c01-f9c1-4868-bdcd-f6b0436a9cfb",
+    "image_id": "sha256:454484abb4385dd131b67710c7ec9aa31f8937ef25c13eec7fc178998958f25c",
+    "base_image": "python:3.13-slim-trixie@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f",
+    "generation": 3,
+    "build_seconds": 2.0,
+    "packages_sha256": "13ba08f895e3671fdeac031cfdfe4f9c9212c49a90e4163288ab72b89858e31a",
+    "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a"
+   },
+   "created_at": "2026-10-15T12:11:11.310064+00:00"
+  },
+  {
+   "id": 27,
+   "kind": "runtime-active",
+   "outcome": "recorded",
+   "actor": "runtime-worker-1",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "server": "markitdown",
+    "runtime": "d15e4c01-f9c1-4868-bdcd-f6b0436a9cfb",
+    "endpoint": "http://mcpgw-mcp-8f67e854:3001/mcp",
+    "image_id": "sha256:454484abb4385dd131b67710c7ec9aa31f8937ef25c13eec7fc178998958f25c",
+    "generation": 3,
+    "protocol_version": "2025-11-25"
+   },
+   "created_at": "2026-10-15T12:11:14.336855+00:00"
+  },
+  {
+   "id": 28,
+   "kind": "runtime-stop",
+   "outcome": "recorded",
+   "actor": "root",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "runtime": "d15e4c01-f9c1-4868-bdcd-f6b0436a9cfb",
+    "generation": 3
+   },
+   "created_at": "2026-10-15T12:11:34.828768+00:00"
+  },
+  {
+   "id": 29,
+   "kind": "runtime-stopped",
+   "outcome": "recorded",
+   "actor": "runtime-worker-1",
+   "applicant": null,
+   "reason": "관리자가 실행을 중지했습니다.",
+   "scope": {
+    "left": 0,
+    "runtime": "d15e4c01-f9c1-4868-bdcd-f6b0436a9cfb",
+    "generation": 3
+   },
+   "created_at": "2026-10-15T12:11:36.417782+00:00"
+  },
+  {
+   "id": 30,
+   "kind": "runtime-start",
+   "outcome": "recorded",
+   "actor": "root",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "commit": "4cc9fa17653d695d64fb9eee5b33d4de55ff84e8",
+    "recipe": {
+     "id": "markitdown-mcp",
+     "sha256": "a16e00714a163285546e9f8d807c2bc7cd6799b195c1c7982856acf5466492b8"
+    },
+    "runtime": "6bfdea01-bc08-4584-9a11-4012ddcc3ea2",
+    "generation": 4
+   },
+   "created_at": "2026-10-15T12:11:41.813897+00:00"
+  },
+  {
+   "id": 31,
+   "kind": "runtime-built",
+   "outcome": "recorded",
+   "actor": "runtime-worker-1",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "runtime": "6bfdea01-bc08-4584-9a11-4012ddcc3ea2",
+    "image_id": "sha256:a40bef9d69f1546bdbfdb80c4147d743b7d8a3da140314b3b78e80bec9ba5993",
+    "base_image": "python:3.13-slim-trixie@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f",
+    "generation": 4,
+    "build_seconds": 1.2,
+    "packages_sha256": "13ba08f895e3671fdeac031cfdfe4f9c9212c49a90e4163288ab72b89858e31a",
+    "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a"
+   },
+   "created_at": "2026-10-15T12:11:47.015083+00:00"
+  },
+  {
+   "id": 32,
+   "kind": "runtime-active",
+   "outcome": "recorded",
+   "actor": "runtime-worker-1",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "server": "markitdown",
+    "runtime": "6bfdea01-bc08-4584-9a11-4012ddcc3ea2",
+    "endpoint": "http://mcpgw-mcp-8f67e854:3001/mcp",
+    "image_id": "sha256:a40bef9d69f1546bdbfdb80c4147d743b7d8a3da140314b3b78e80bec9ba5993",
+    "generation": 4,
+    "protocol_version": "2025-11-25"
+   },
+   "created_at": "2026-10-15T12:11:50.002864+00:00"
+  },
+  {
+   "id": 33,
+   "kind": "runtime-stopped",
+   "outcome": "recorded",
+   "actor": "runtime-worker-1",
+   "applicant": null,
+   "reason": "실행 중인 컨테이너가 승인한 이미지와 다르거나 없습니다.",
+   "scope": {
+    "left": 0,
+    "runtime": "6bfdea01-bc08-4584-9a11-4012ddcc3ea2",
+    "generation": 4
+   },
+   "created_at": "2026-10-15T12:12:16.195324+00:00"
+  },
+  {
+   "id": 34,
+   "kind": "runtime-start",
+   "outcome": "recorded",
+   "actor": "root",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "commit": "4cc9fa17653d695d64fb9eee5b33d4de55ff84e8",
+    "recipe": {
+     "id": "markitdown-mcp",
+     "sha256": "a16e00714a163285546e9f8d807c2bc7cd6799b195c1c7982856acf5466492b8"
+    },
+    "runtime": "8b950b46-98da-4b80-af90-9b094aa6da87",
+    "generation": 5
+   },
+   "created_at": "2026-10-15T12:13:09.350800+00:00"
+  },
+  {
+   "id": 35,
+   "kind": "runtime-built",
+   "outcome": "recorded",
+   "actor": "runtime-worker-1",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "runtime": "8b950b46-98da-4b80-af90-9b094aa6da87",
+    "image_id": "sha256:b9a31edb638c0f03e574703422aa7bf864cb6cb80ff0c4c1418b8e8a12e4daa0",
+    "base_image": "python:3.13-slim-trixie@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f",
+    "generation": 5,
+    "build_seconds": 2.0,
+    "packages_sha256": "13ba08f895e3671fdeac031cfdfe4f9c9212c49a90e4163288ab72b89858e31a",
+    "source_archive_sha256": "f373a04743460eef26809ac8e3b5046d119da3c6e634f01e95f2382ba9cd043a"
+   },
+   "created_at": "2026-10-15T12:13:13.877068+00:00"
+  },
+  {
+   "id": 36,
+   "kind": "runtime-active",
+   "outcome": "recorded",
+   "actor": "runtime-worker-1",
+   "applicant": null,
+   "reason": null,
+   "scope": {
+    "server": "markitdown",
+    "runtime": "8b950b46-98da-4b80-af90-9b094aa6da87",
+    "endpoint": "http://mcpgw-mcp-8f67e854:3001/mcp",
+    "image_id": "sha256:b9a31edb638c0f03e574703422aa7bf864cb6cb80ff0c4c1418b8e8a12e4daa0",
+    "generation": 5,
+    "protocol_version": "2025-11-25"
+   },
+   "created_at": "2026-10-15T12:13:16.882334+00:00"
+  }
+ ],
+ "confinement": {
+  "mcp": {
+   "read_only": true,
+   "cap_drop": [
+    "ALL"
+   ],
+   "user": "65534:65534",
+   "no_new_privileges": true,
+   "published_ports": {},
+   "pids_limit": 256,
+   "memory": 1073741824
+  },
+  "network": "own internal network shared with gateway, gateway-sse and the worker; egress only via allowlist proxy"
+ },
+ "egress_probes_from_inside_runtime": [
+  {
+   "case": "reviewed host via proxy",
+   "url": "https://learn.microsoft.com/en-us/",
+   "result": "200"
+  },
+  {
+   "case": "unreviewed host via proxy",
+   "url": "https://example.com/",
+   "result": "403 Filtered"
+  },
+  {
+   "case": "metadata address via proxy",
+   "url": "http://169.254.169.254/latest/meta-data/",
+   "result": "403 Filtered"
+  },
+  {
+   "case": "direct, bypassing proxy",
+   "url": "https://1.1.1.1/",
+   "result": "Network is unreachable"
+  },
+  {
+   "case": "direct to reviewed host",
+   "url": "https://learn.microsoft.com/en-us/",
+   "result": "name resolution failure (no route out)"
+  }
+ ],
+ "registration": {
+  "old_manual_endpoint": "http://markitdown-mcp:3001/mcp → 409 while runtime active",
+  "runtime_endpoint": "http://mcpgw-mcp-8f67e854:3001/mcp → 200, same catalog hash",
+  "manual_container": "mcp-hosted-markitdown removed"
+ },
+ "scenarios": [
+  {
+   "case": "duplicate start while active",
+   "result": "409"
+  },
+  {
+   "case": "two simultaneous starts",
+   "result": "one 200, one 409 (three repetitions)"
+  },
+  {
+   "case": "admin stop",
+   "result": "STOPPED within 5 s, containers 0, runtime networks 0; next PJ1 call MCP-UPSTREAM-001 not executed (ledger 15)"
+  },
+  {
+   "case": "restart with same alias",
+   "result": "gen 2–5 ACTIVE at the same endpoint, no re-registration needed"
+  },
+  {
+   "case": "worker SIGKILL during BUILDING",
+   "result": "restarted worker requeued its own job (attempts 2), ACTIVE, exactly 2 labelled containers"
+  },
+  {
+   "case": "container replaced by another image",
+   "result": "reconcile stopped the runtime within one poll, impostor and network removed, reason recorded"
+  }
+ ],
+ "ledger": [
+  {
+   "id": 13,
+   "tool": "convert_to_markdown",
+   "decision": "Allow",
+   "executed": true,
+   "uri": "https://raw.githubusercontent.com/microsoft/markitdown/main/README.md"
+  },
+  {
+   "id": 14,
+   "tool": "convert_to_markdown",
+   "decision": "Block",
+   "policy": "PAC-01",
+   "executed": false,
+   "uri": "file:///etc/hostname"
+  },
+  {
+   "id": 15,
+   "tool": "convert_to_markdown",
+   "decision": "Block",
+   "policy": "MCP-UPSTREAM-001",
+   "executed": false,
+   "note": "runtime stopped"
+  },
+  {
+   "id": 16,
+   "tool": "convert_to_markdown",
+   "decision": "Allow",
+   "executed": true,
+   "uri": "https://learn.microsoft.com/en-us/training/support/mcp"
+  }
+ ],
+ "harness": "PJ1 employee account pj1, managed Claude Code (Sonnet 5.5), claude -p on a TTY",
+ "not_run": [
+  "deregistration and termination stopping a live runtime on the appliance (unit-checked only)",
+  "approval revoked during a build on the appliance (unit-checked only)",
+  "redirect from a reviewed host to an unreviewed one through a real MCP call (proxy blocks the second host by construction; not exercised)"
+ ]
+}

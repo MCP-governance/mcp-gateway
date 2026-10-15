@@ -57,8 +57,8 @@
         "symbol": "field_up",
         "line_start": 246,
         "line_end": 298,
-        "normalized_sha256": "9c3b89d007ac547953671ce994cc207fb3d3f162a0c56ae624123394f38f400b",
-        "head_sha256": "9c3b89d007ac547953671ce994cc207fb3d3f162a0c56ae624123394f38f400b",
+        "normalized_sha256": "157392e6414781ea510644f0f2e6b16572840b250bac979a8a69a92d4d5e7e8f",
+        "head_sha256": "157392e6414781ea510644f0f2e6b16572840b250bac979a8a69a92d4d5e7e8f",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof"
       },

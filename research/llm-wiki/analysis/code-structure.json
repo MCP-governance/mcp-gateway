@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "metadata": {
-    "head": "8906f249707418d900ba335feaafa4ccf9bd0f5d",
+    "head": "b63943272081338ae454eeaff4821b931ea36df9",
     "branch": "10/15-wbs-implementation",
     "scope": "structural_inventory_and_curated_acceptance_conditions",
     "deployment_inferred": false,
@@ -3834,10 +3834,10 @@
       "path": "full_stack_lab/gateway/app/agent_service.py",
       "symbol": "module/config",
       "line_start": 1,
-      "line_end": 1528,
-      "sha256": "d058771176b99b75b397d903315c8fc4bd2418c34b26d58e581d133d9de01e02",
-      "head_sha256": "d058771176b99b75b397d903315c8fc4bd2418c34b26d58e581d133d9de01e02",
-      "normalized_sha256": "d058771176b99b75b397d903315c8fc4bd2418c34b26d58e581d133d9de01e02",
+      "line_end": 1608,
+      "sha256": "836186933e6b1ab29d18fa527fd56109c2c4b9f6ed419e53c5c7e7be8f722743",
+      "head_sha256": "836186933e6b1ab29d18fa527fd56109c2c4b9f6ed419e53c5c7e7be8f722743",
+      "normalized_sha256": "836186933e6b1ab29d18fa527fd56109c2c4b9f6ed419e53c5c7e7be8f722743",
       "source_state": "committed_source",
       "symbol_found": true,
       "imports": [
@@ -4535,19 +4535,21 @@
         {
           "symbol": "intake_rows",
           "line_start": 822,
-          "line_end": 833,
+          "line_end": 840,
           "async": true,
           "call_expressions": [
+            "bool",
             "db.fetch_all",
             "review.lapse_expired_acceptances",
+            "runtime_recipe",
             "user.get"
           ],
           "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
         },
         {
           "symbol": "list_mcp_requests",
-          "line_start": 837,
-          "line_end": 840,
+          "line_start": 844,
+          "line_end": 847,
           "async": true,
           "call_expressions": [
             "Header",
@@ -4559,8 +4561,8 @@
         },
         {
           "symbol": "search_catalog",
-          "line_start": 844,
-          "line_end": 866,
+          "line_start": 851,
+          "line_end": 873,
           "async": true,
           "call_expressions": [
             "Header",
@@ -4573,8 +4575,8 @@
         },
         {
           "symbol": "internal_repo_name",
-          "line_start": 869,
-          "line_end": 872,
+          "line_start": 876,
+          "line_end": 879,
           "async": false,
           "call_expressions": [
             "f'{owner}-{repo}'.lower",
@@ -4588,8 +4590,8 @@
         },
         {
           "symbol": "repo_head",
-          "line_start": 875,
-          "line_end": 882,
+          "line_start": 882,
+          "line_end": 889,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -4604,8 +4606,8 @@
         },
         {
           "symbol": "internal_archive_digest",
-          "line_start": 885,
-          "line_end": 903,
+          "line_start": 892,
+          "line_end": 910,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -4623,8 +4625,8 @@
         },
         {
           "symbol": "publish_internal_repo",
-          "line_start": 906,
-          "line_end": 957,
+          "line_start": 913,
+          "line_end": 964,
           "async": true,
           "call_expressions": [
             "((row.get('provenance') or {}).get('artifact') or {}).get",
@@ -4652,8 +4654,8 @@
         },
         {
           "symbol": "create_mcp_request",
-          "line_start": 961,
-          "line_end": 1002,
+          "line_start": 968,
+          "line_end": 1009,
           "async": true,
           "call_expressions": [
             "(await connection.execute('INSERT INTO mcp_intake_requests(\\n                     id, submitted_by, display_name, repository_url, requested_transport,\\n                     purpose, exit_terms, status, intake_kind, endpoint_url\\n                 ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)\\n                 RETURNING id, display_name, repository_url, requested_transport, purpose,\\n                           status, risk_level, exit_terms, created_at, intake_kind, endpoint_url', (uuid4(), user['principal'], request.display_name.strip(), repository_url, request.requested_transport, request.purpose.strip(), Jsonb({}), 'HOLD' if endpoint else 'VALIDATION_QUEUED', request.intake_kind, endpoint))).fetchone",
@@ -4678,8 +4680,8 @@
         },
         {
           "symbol": "review_exit_terms",
-          "line_start": 1006,
-          "line_end": 1024,
+          "line_start": 1013,
+          "line_end": 1031,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -4698,8 +4700,8 @@
         },
         {
           "symbol": "queue_validation",
-          "line_start": 1028,
-          "line_end": 1047,
+          "line_start": 1035,
+          "line_end": 1054,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -4712,8 +4714,8 @@
         },
         {
           "symbol": "intake_report_row",
-          "line_start": 1050,
-          "line_end": 1057,
+          "line_start": 1057,
+          "line_end": 1064,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -4723,9 +4725,64 @@
           "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
         },
         {
+          "symbol": "runtime_recipe",
+          "line_start": 1070,
+          "line_end": 1085,
+          "async": false,
+          "call_expressions": [
+            "RUNTIME_RECIPES.glob",
+            "RUNTIME_RECIPES.is_dir",
+            "dockerfile.read_bytes",
+            "hashlib.sha256",
+            "hashlib.sha256(path.read_bytes() + b'\\x00' + dockerfile.read_bytes()).hexdigest",
+            "path.read_bytes",
+            "path.read_text",
+            "path.with_name",
+            "recipe.get",
+            "sorted",
+            "tomllib.loads"
+          ],
+          "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
+        },
+        {
+          "symbol": "start_runtime",
+          "line_start": 1089,
+          "line_end": 1117,
+          "async": true,
+          "call_expressions": [
+            "HTTPException",
+            "Header",
+            "app.post",
+            "current_identity",
+            "db.fetch_one",
+            "review.record_event",
+            "row.get",
+            "runtime_recipe",
+            "str",
+            "uuid4"
+          ],
+          "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
+        },
+        {
+          "symbol": "stop_runtime",
+          "line_start": 1121,
+          "line_end": 1133,
+          "async": true,
+          "call_expressions": [
+            "HTTPException",
+            "Header",
+            "app.post",
+            "current_identity",
+            "db.fetch_one",
+            "review.record_event",
+            "str"
+          ],
+          "analysis_scope": "AST_body_calls_not_dynamic_dispatch_resolution"
+        },
+        {
           "symbol": "intake_report",
-          "line_start": 1061,
-          "line_end": 1088,
+          "line_start": 1137,
+          "line_end": 1168,
           "async": true,
           "call_expressions": [
             "(row.get('evidence') or {}).get",
@@ -4746,8 +4803,8 @@
         },
         {
           "symbol": "intake_artifact",
-          "line_start": 1092,
-          "line_end": 1107,
+          "line_start": 1172,
+          "line_end": 1187,
           "async": true,
           "call_expressions": [
             "(row.get('evidence') or {}).get",
@@ -4767,8 +4824,8 @@
         },
         {
           "symbol": "manual_terms_verified",
-          "line_start": 1113,
-          "line_end": 1114,
+          "line_start": 1193,
+          "line_end": 1194,
           "async": false,
           "call_expressions": [
             "all",
@@ -4779,8 +4836,8 @@
         },
         {
           "symbol": "exit_term_flags",
-          "line_start": 1117,
-          "line_end": 1123,
+          "line_start": 1197,
+          "line_end": 1203,
           "async": false,
           "call_expressions": [
             "((row.get('evidence') or {}).get('exit_terms_conclusion') or {}).get",
@@ -4794,8 +4851,8 @@
         },
         {
           "symbol": "hold_intake",
-          "line_start": 1135,
-          "line_end": 1142,
+          "line_start": 1215,
+          "line_end": 1222,
           "async": true,
           "call_expressions": [
             "' / '.join",
@@ -4805,8 +4862,8 @@
         },
         {
           "symbol": "approve_mcp_request",
-          "line_start": 1146,
-          "line_end": 1255,
+          "line_start": 1226,
+          "line_end": 1335,
           "async": true,
           "call_expressions": [
             "' / '.join",
@@ -4850,8 +4907,8 @@
         },
         {
           "symbol": "accept_intake_risk",
-          "line_start": 1264,
-          "line_end": 1275,
+          "line_start": 1344,
+          "line_end": 1355,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -4866,8 +4923,8 @@
         },
         {
           "symbol": "review_remote_contract",
-          "line_start": 1296,
-          "line_end": 1371,
+          "line_start": 1376,
+          "line_end": 1451,
           "async": true,
           "call_expressions": [
             "', '.join",
@@ -4905,8 +4962,8 @@
         },
         {
           "symbol": "register_mcp_request",
-          "line_start": 1375,
-          "line_end": 1404,
+          "line_start": 1455,
+          "line_end": 1484,
           "async": true,
           "call_expressions": [
             "(row.get('evidence') or {}).get",
@@ -4928,8 +4985,8 @@
         },
         {
           "symbol": "reject_mcp_request",
-          "line_start": 1408,
-          "line_end": 1423,
+          "line_start": 1488,
+          "line_end": 1503,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -4943,8 +5000,8 @@
         },
         {
           "symbol": "risk_catalog",
-          "line_start": 1427,
-          "line_end": 1435,
+          "line_start": 1507,
+          "line_end": 1515,
           "async": true,
           "call_expressions": [
             "Header",
@@ -4956,8 +5013,8 @@
         },
         {
           "symbol": "approvals",
-          "line_start": 1439,
-          "line_end": 1464,
+          "line_start": 1519,
+          "line_end": 1544,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -4972,8 +5029,8 @@
         },
         {
           "symbol": "reject",
-          "line_start": 1472,
-          "line_end": 1481,
+          "line_start": 1552,
+          "line_end": 1561,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -4988,8 +5045,8 @@
         },
         {
           "symbol": "approve",
-          "line_start": 1485,
-          "line_end": 1493,
+          "line_start": 1565,
+          "line_end": 1573,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -5004,8 +5061,8 @@
         },
         {
           "symbol": "gateway_passthrough",
-          "line_start": 1510,
-          "line_end": 1528,
+          "line_start": 1590,
+          "line_end": 1608,
           "async": true,
           "call_expressions": [
             "HTTPException",
@@ -6106,10 +6163,10 @@
       "path": "full_stack_lab/gateway/app/core.py",
       "symbol": "module/config",
       "line_start": 1,
-      "line_end": 2072,
-      "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-      "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-      "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "line_end": 2082,
+      "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+      "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+      "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
       "source_state": "committed_source",
       "symbol_found": true,
       "imports": [
@@ -6362,7 +6419,7 @@
         {
           "symbol": "register_server",
           "line_start": 500,
-          "line_end": 653,
+          "line_end": 663,
           "async": true,
           "call_expressions": [
             "' / '.join",
@@ -6409,6 +6466,7 @@
             "review.normalize_tool_reviews",
             "review.record_event",
             "review.same_person",
+            "runtime.items",
             "server_id.upper",
             "set",
             "sorted",
@@ -6425,8 +6483,8 @@
         },
         {
           "symbol": "deregister_server",
-          "line_start": 656,
-          "line_end": 670,
+          "line_start": 666,
+          "line_end": 680,
           "async": true,
           "call_expressions": [
             "LookupError",
@@ -6443,8 +6501,8 @@
         },
         {
           "symbol": "review_tool_scopes",
-          "line_start": 673,
-          "line_end": 702,
+          "line_start": 683,
+          "line_end": 712,
           "async": true,
           "call_expressions": [
             "', '.join",
@@ -6472,8 +6530,8 @@
         },
         {
           "symbol": "renew_approvals",
-          "line_start": 710,
-          "line_end": 751,
+          "line_start": 720,
+          "line_end": 761,
           "async": true,
           "call_expressions": [
             "(until + timedelta(days=days)).isoformat",
@@ -6508,8 +6566,8 @@
         },
         {
           "symbol": "catalog_watch",
-          "line_start": 754,
-          "line_end": 765,
+          "line_start": 764,
+          "line_end": 775,
           "async": true,
           "call_expressions": [
             "asyncio.sleep",
@@ -6521,8 +6579,8 @@
         },
         {
           "symbol": "_contract",
-          "line_start": 768,
-          "line_end": 826,
+          "line_start": 778,
+          "line_end": 836,
           "async": true,
           "call_expressions": [
             "(registry.server(server_id) or {}).get",
@@ -6542,8 +6600,8 @@
         },
         {
           "symbol": "enforcement_mode",
-          "line_start": 829,
-          "line_end": 837,
+          "line_start": 839,
+          "line_end": 847,
           "async": true,
           "call_expressions": [
             "db.fetch_one"
@@ -6552,8 +6610,8 @@
         },
         {
           "symbol": "set_enforcement_mode",
-          "line_start": 840,
-          "line_end": 848,
+          "line_start": 850,
+          "line_end": 858,
           "async": true,
           "call_expressions": [
             "ValueError",
@@ -6563,8 +6621,8 @@
         },
         {
           "symbol": "monitor_summary",
-          "line_start": 851,
-          "line_end": 871,
+          "line_start": 861,
+          "line_end": 881,
           "async": true,
           "call_expressions": [
             "db.fetch_all",
@@ -6577,8 +6635,8 @@
         },
         {
           "symbol": "untrusted_markers",
-          "line_start": 877,
-          "line_end": 884,
+          "line_start": 887,
+          "line_end": 894,
           "async": false,
           "call_expressions": [
             "(arguments or {}).items",
@@ -6593,8 +6651,8 @@
         },
         {
           "symbol": "_endpoint_host",
-          "line_start": 893,
-          "line_end": 900,
+          "line_start": 903,
+          "line_end": 910,
           "async": false,
           "call_expressions": [
             "(endpoint or '').strip",
@@ -6606,8 +6664,8 @@
         },
         {
           "symbol": "transport_secure",
-          "line_start": 903,
-          "line_end": 911,
+          "line_start": 913,
+          "line_end": 921,
           "async": false,
           "call_expressions": [
             "(endpoint or '').strip",
@@ -6619,8 +6677,8 @@
         },
         {
           "symbol": "egress_allowed",
-          "line_start": 914,
-          "line_end": 940,
+          "line_start": 924,
+          "line_end": 950,
           "async": true,
           "call_expressions": [
             "(allowed or {}).get",
@@ -6638,8 +6696,8 @@
         },
         {
           "symbol": "_outbound_text",
-          "line_start": 943,
-          "line_end": 958,
+          "line_start": 953,
+          "line_end": 968,
           "async": false,
           "call_expressions": [
             "'\\n'.join",
@@ -6652,8 +6710,8 @@
         },
         {
           "symbol": "_privacy_ignore",
-          "line_start": 961,
-          "line_end": 971,
+          "line_start": 971,
+          "line_end": 981,
           "async": false,
           "call_expressions": [
             "d.value.lower",
@@ -6669,8 +6727,8 @@
         },
         {
           "symbol": "_sequence_flags",
-          "line_start": 974,
-          "line_end": 984,
+          "line_start": 984,
+          "line_end": 994,
           "async": true,
           "call_expressions": [
             "any",
@@ -6680,8 +6738,8 @@
         },
         {
           "symbol": "_relationship_scope",
-          "line_start": 987,
-          "line_end": 1001,
+          "line_start": 997,
+          "line_end": 1011,
           "async": true,
           "call_expressions": [
             "classify.outside_scope",
@@ -6692,8 +6750,8 @@
         },
         {
           "symbol": "_risk_score",
-          "line_start": 1004,
-          "line_end": 1011,
+          "line_start": 1014,
+          "line_end": 1021,
           "async": false,
           "call_expressions": [
             "min"
@@ -6702,8 +6760,8 @@
         },
         {
           "symbol": "_reserve_call",
-          "line_start": 1014,
-          "line_end": 1096,
+          "line_start": 1024,
+          "line_end": 1106,
           "async": true,
           "call_expressions": [
             "bool",
@@ -6719,8 +6777,8 @@
         },
         {
           "symbol": "_release_call",
-          "line_start": 1099,
-          "line_end": 1117,
+          "line_start": 1109,
+          "line_end": 1127,
           "async": true,
           "call_expressions": [
             "db.execute",
@@ -6731,8 +6789,8 @@
         },
         {
           "symbol": "_opa",
-          "line_start": 1124,
-          "line_end": 1125,
+          "line_start": 1134,
+          "line_end": 1135,
           "async": false,
           "call_expressions": [
             "connections.shared",
@@ -6742,8 +6800,8 @@
         },
         {
           "symbol": "opa_document",
-          "line_start": 1128,
-          "line_end": 1135,
+          "line_start": 1138,
+          "line_end": 1145,
           "async": true,
           "call_expressions": [
             "_opa",
@@ -6756,8 +6814,8 @@
         },
         {
           "symbol": "policy_ledger",
-          "line_start": 1138,
-          "line_end": 1156,
+          "line_start": 1148,
+          "line_end": 1166,
           "async": true,
           "call_expressions": [
             "_ledger_cache.clear",
@@ -6773,8 +6831,8 @@
         },
         {
           "symbol": "local_verdict",
-          "line_start": 1159,
-          "line_end": 1184,
+          "line_start": 1169,
+          "line_end": 1194,
           "async": false,
           "call_expressions": [
             "_ledger_cache.get",
@@ -6784,8 +6842,8 @@
         },
         {
           "symbol": "_policy",
-          "line_start": 1187,
-          "line_end": 1198,
+          "line_start": 1197,
+          "line_end": 1208,
           "async": true,
           "call_expressions": [
             "POLICY_RESULT.is_valid",
@@ -6803,8 +6861,8 @@
         },
         {
           "symbol": "_call_upstream",
-          "line_start": 1201,
-          "line_end": 1325,
+          "line_start": 1211,
+          "line_end": 1335,
           "async": true,
           "call_expressions": [
             "DispatchRejected",
@@ -6844,8 +6902,8 @@
         },
         {
           "symbol": "_root_cause",
-          "line_start": 1328,
-          "line_end": 1333,
+          "line_start": 1338,
+          "line_end": 1343,
           "async": false,
           "call_expressions": [
             "isinstance",
@@ -6855,8 +6913,8 @@
         },
         {
           "symbol": "_storable",
-          "line_start": 1336,
-          "line_end": 1344,
+          "line_start": 1346,
+          "line_end": 1354,
           "async": false,
           "call_expressions": [
             "_storable",
@@ -6868,8 +6926,8 @@
         },
         {
           "symbol": "_decoded_strings",
-          "line_start": 1347,
-          "line_end": 1358,
+          "line_start": 1357,
+          "line_end": 1368,
           "async": false,
           "call_expressions": [
             "isinstance",
@@ -6883,8 +6941,8 @@
         },
         {
           "symbol": "_upstream_failure",
-          "line_start": 1361,
-          "line_end": 1369,
+          "line_start": 1371,
+          "line_end": 1379,
           "async": false,
           "call_expressions": [
             "_root_cause",
@@ -6896,8 +6954,8 @@
         },
         {
           "symbol": "body_of",
-          "line_start": 1372,
-          "line_end": 1373,
+          "line_start": 1382,
+          "line_end": 1383,
           "async": false,
           "call_expressions": [
             "json.dumps"
@@ -6906,8 +6964,8 @@
         },
         {
           "symbol": "_guarded_result",
-          "line_start": 1376,
-          "line_end": 1408,
+          "line_start": 1386,
+          "line_end": 1418,
           "async": false,
           "call_expressions": [
             "', '.join",
@@ -6930,8 +6988,8 @@
         },
         {
           "symbol": "_inspected_result",
-          "line_start": 1411,
-          "line_end": 1422,
+          "line_start": 1421,
+          "line_end": 1432,
           "async": true,
           "call_expressions": [
             "', '.join",
@@ -6948,8 +7006,8 @@
         },
         {
           "symbol": "_audit_payload",
-          "line_start": 1425,
-          "line_end": 1439,
+          "line_start": 1435,
+          "line_end": 1449,
           "async": false,
           "call_expressions": [
             "canonical_hash",
@@ -6962,8 +7020,8 @@
         },
         {
           "symbol": "_record_decision",
-          "line_start": 1445,
-          "line_end": 1524,
+          "line_start": 1455,
+          "line_end": 1534,
           "async": true,
           "call_expressions": [
             "(event.get('exception') or {}).get",
@@ -6987,8 +7045,8 @@
         },
         {
           "symbol": "record_connection_denial",
-          "line_start": 1531,
-          "line_end": 1562,
+          "line_start": 1541,
+          "line_end": 1572,
           "async": true,
           "call_expressions": [
             "_record_decision",
@@ -7003,8 +7061,8 @@
         },
         {
           "symbol": "verify_audit_chain",
-          "line_start": 1565,
-          "line_end": 1604,
+          "line_start": 1575,
+          "line_end": 1614,
           "async": true,
           "call_expressions": [
             "', '.join",
@@ -7024,8 +7082,8 @@
         },
         {
           "symbol": "_decision_payload",
-          "line_start": 1607,
-          "line_end": 1617,
+          "line_start": 1617,
+          "line_end": 1627,
           "async": true,
           "call_expressions": [
             "_record_decision",
@@ -7040,8 +7098,8 @@
         },
         {
           "symbol": "execute_call",
-          "line_start": 1620,
-          "line_end": 1880,
+          "line_start": 1630,
+          "line_end": 1890,
           "async": true,
           "call_expressions": [
             "(registry.server(server_id) or {}).get",
@@ -7129,8 +7187,8 @@
         },
         {
           "symbol": "approve_request",
-          "line_start": 1883,
-          "line_end": 1927,
+          "line_start": 1893,
+          "line_end": 1937,
           "async": true,
           "call_expressions": [
             "(await connection.execute(\"UPDATE approvals SET status='APPROVED', reviewed_by=%s, reviewed_at=now()\\n               WHERE id=%s AND status='PENDING' AND expires_at>now() RETURNING *\", (reviewer_token, approval_id))).fetchone",
@@ -7151,8 +7209,8 @@
         },
         {
           "symbol": "_trivy_summary",
-          "line_start": 1930,
-          "line_end": 1951,
+          "line_start": 1940,
+          "line_end": 1961,
           "async": false,
           "call_expressions": [
             "data.get",
@@ -7165,8 +7223,8 @@
         },
         {
           "symbol": "_store_trivy",
-          "line_start": 1954,
-          "line_end": 1961,
+          "line_start": 1964,
+          "line_end": 1971,
           "async": true,
           "call_expressions": [
             "Jsonb",
@@ -7177,8 +7235,8 @@
         },
         {
           "symbol": "supply_chain_coverage",
-          "line_start": 1964,
-          "line_end": 1980,
+          "line_start": 1974,
+          "line_end": 1990,
           "async": true,
           "call_expressions": [
             "db.fetch_all"
@@ -7187,8 +7245,8 @@
         },
         {
           "symbol": "reject_request",
-          "line_start": 1983,
-          "line_end": 2006,
+          "line_start": 1993,
+          "line_end": 2016,
           "async": true,
           "call_expressions": [
             "(await connection.execute(\"UPDATE approvals SET status='REJECTED', reviewed_by=%s, reviewed_at=now(), review_note=%s\\n               WHERE id=%s AND status='PENDING' RETURNING id, requested_by, review_note, request_payload\", (reviewer_token, note.strip(), approval_id))).fetchone",
@@ -7204,8 +7262,8 @@
         },
         {
           "symbol": "import_supply_chain_reports",
-          "line_start": 2009,
-          "line_end": 2072,
+          "line_start": 2019,
+          "line_end": 2082,
           "async": true,
           "call_expressions": [
             "Jsonb",
@@ -7294,8 +7352,8 @@
         },
         {
           "symbol": "walk",
-          "line_start": 947,
-          "line_end": 955,
+          "line_start": 957,
+          "line_end": 965,
           "async": false,
           "call_expressions": [
             "isinstance",
@@ -7307,8 +7365,8 @@
         },
         {
           "symbol": "ignore",
-          "line_start": 968,
-          "line_end": 970,
+          "line_start": 978,
+          "line_end": 980,
           "async": false,
           "call_expressions": [
             "value.endswith",
@@ -7318,8 +7376,8 @@
         },
         {
           "symbol": "shrink",
-          "line_start": 1431,
-          "line_end": 1438,
+          "line_start": 1441,
+          "line_end": 1448,
           "async": false,
           "call_expressions": [
             "canonical_hash",
@@ -14475,11 +14533,11 @@
       "purpose": "execution boundary",
       "path": "full_stack_lab/gateway/app/core.py",
       "symbol": "execute_call",
-      "line_start": 1620,
-      "line_end": 1880,
-      "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-      "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-      "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "line_start": 1630,
+      "line_end": 1890,
+      "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+      "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+      "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
       "source_state": "committed_source",
       "symbol_found": true
     },
@@ -14527,11 +14585,11 @@
       "purpose": "PDP",
       "path": "full_stack_lab/gateway/app/core.py",
       "symbol": "_policy",
-      "line_start": 1187,
-      "line_end": 1198,
-      "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-      "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-      "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "line_start": 1197,
+      "line_end": 1208,
+      "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+      "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+      "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
       "source_state": "committed_source",
       "symbol_found": true
     },
@@ -14540,11 +14598,11 @@
       "purpose": "final contract/admission/policy",
       "path": "full_stack_lab/gateway/app/core.py",
       "symbol": "_call_upstream",
-      "line_start": 1201,
-      "line_end": 1325,
-      "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-      "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-      "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "line_start": 1211,
+      "line_end": 1335,
+      "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+      "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+      "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
       "source_state": "committed_source",
       "symbol_found": true
     },
@@ -14579,11 +14637,11 @@
       "purpose": "result size/shape/injection",
       "path": "full_stack_lab/gateway/app/core.py",
       "symbol": "_guarded_result",
-      "line_start": 1376,
-      "line_end": 1408,
-      "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-      "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-      "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "line_start": 1386,
+      "line_end": 1418,
+      "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+      "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+      "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
       "source_state": "committed_source",
       "symbol_found": true
     },
@@ -14605,11 +14663,11 @@
       "purpose": "audit append",
       "path": "full_stack_lab/gateway/app/core.py",
       "symbol": "_record_decision",
-      "line_start": 1445,
-      "line_end": 1524,
-      "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-      "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-      "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+      "line_start": 1455,
+      "line_end": 1534,
+      "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+      "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+      "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
       "source_state": "committed_source",
       "symbol_found": true
     },
@@ -14911,6 +14969,11 @@
     {
       "path": "full_stack_lab/tests/resource-values.test.mjs",
       "sha256": "ee6dfa34a536c1cba27cead82402ac5d9e8d8579591dde9f24905f3284585f92",
+      "reading_scope": "file_inventory_not_assertion_execution"
+    },
+    {
+      "path": "full_stack_lab/tests/runtime_worker_check.py",
+      "sha256": "40076e9dc348e414fd874cf6d7fe839f24998a2a43a2d8fc0ee9ee93e6b12b56",
       "reading_scope": "file_inventory_not_assertion_execution"
     },
     {

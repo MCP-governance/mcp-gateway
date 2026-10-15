@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "metadata": {
-    "head": "8906f249707418d900ba335feaafa4ccf9bd0f5d",
+    "head": "b63943272081338ae454eeaff4821b931ea36df9",
     "branch": "10/15-wbs-implementation",
     "scope": "structural_inventory_and_curated_acceptance_conditions",
     "deployment_inferred": false,
@@ -172,9 +172,9 @@
           "symbol": "refresh_catalog",
           "line_start": 183,
           "line_end": 321,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -202,9 +202,9 @@
           "symbol": "refresh_catalog",
           "line_start": 183,
           "line_end": 321,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -232,9 +232,9 @@
           "symbol": "refresh_catalog",
           "line_start": 183,
           "line_end": 321,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -262,9 +262,9 @@
           "symbol": "refresh_catalog",
           "line_start": 183,
           "line_end": 321,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -292,9 +292,9 @@
           "symbol": "refresh_catalog",
           "line_start": 183,
           "line_end": 321,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -620,11 +620,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1620,
-          "line_end": 1880,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1630,
+          "line_end": 1890,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -650,11 +650,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1620,
-          "line_end": 1880,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1630,
+          "line_end": 1890,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -680,11 +680,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1620,
-          "line_end": 1880,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1630,
+          "line_end": 1890,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -710,11 +710,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1620,
-          "line_end": 1880,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1630,
+          "line_end": 1890,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -740,11 +740,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1620,
-          "line_end": 1880,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1630,
+          "line_end": 1890,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -938,11 +938,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1376,
-          "line_end": 1408,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1386,
+          "line_end": 1418,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -968,11 +968,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1376,
-          "line_end": 1408,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1386,
+          "line_end": 1418,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -998,11 +998,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1376,
-          "line_end": 1408,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1386,
+          "line_end": 1418,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1028,11 +1028,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1376,
-          "line_end": 1408,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1386,
+          "line_end": 1418,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1058,11 +1058,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1376,
-          "line_end": 1408,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1386,
+          "line_end": 1418,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1238,11 +1238,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1201,
-          "line_end": 1325,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1211,
+          "line_end": 1335,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1268,11 +1268,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1201,
-          "line_end": 1325,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1211,
+          "line_end": 1335,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1298,11 +1298,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1201,
-          "line_end": 1325,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1211,
+          "line_end": 1335,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1328,11 +1328,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1201,
-          "line_end": 1325,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1211,
+          "line_end": 1335,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1358,11 +1358,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1201,
-          "line_end": 1325,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1211,
+          "line_end": 1335,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1533,11 +1533,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1376,
-          "line_end": 1408,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1386,
+          "line_end": 1418,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1772,11 +1772,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1445,
-          "line_end": 1524,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1455,
+          "line_end": 1534,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1802,11 +1802,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1445,
-          "line_end": 1524,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1455,
+          "line_end": 1534,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1832,11 +1832,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1445,
-          "line_end": 1524,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1455,
+          "line_end": 1534,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1862,11 +1862,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1445,
-          "line_end": 1524,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1455,
+          "line_end": 1534,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
@@ -1892,11 +1892,11 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1445,
-          "line_end": 1524,
-          "sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "head_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
-          "normalized_sha256": "b25ac5bc18bf7af8f7794502e7080d4368170ef4d46da45d476b2367382025a1",
+          "line_start": 1455,
+          "line_end": 1534,
+          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
           "source_state": "committed_source",
           "symbol_found": true
         }
