@@ -159,9 +159,10 @@ async def _dispatch_client(endpoint: str, principal: str, headers: dict, timeout
     key = (endpoint, principal, timeout, hashlib.sha256(json.dumps(headers, sort_keys=True).encode()).hexdigest())
     lease = _pool.get(key)
     if lease is None or lease.loop is not loop or lease.client.is_closed:
-        # A rotated or removed credential changes the key; the client built with the old
-        # one must not stay behind holding it.
-        for stale in [k for k in _pool if k[:2] == key[:2] and k != key]:
+        # A rotated or removed credential changes the key, another event loop or a closed client
+        # replaces the entry: the client built before must not stay behind holding the credential.
+        # One still in use on its own loop is closed there by its last user.
+        for stale in [k for k in _pool if k[:2] == key[:2]]:
             old = _pool.pop(stale)
             old.evicted = True
             if not old.users and old.loop is loop:

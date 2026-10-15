@@ -407,8 +407,8 @@ async def latency(hours: int = Query(24, ge=1, le=168), user: dict = Depends(adm
         db.fetch_all(f"""SELECT d.server_id, count(*) AS n,
                                 percentile_cont(0.5) WITHIN GROUP (ORDER BY {upstream_ms}) AS p50,
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY {upstream_ms}) AS p95,
-                                count(*) FILTER (WHERE d.upstream_attempted AND d.policy_id = 'MCP-UPSTREAM-001') AS failed
-                           {window} AND d.timings ? 'call' GROUP BY d.server_id ORDER BY n DESC LIMIT 12""", (hours,)),
+                                count(*) FILTER (WHERE d.policy_id = 'MCP-UPSTREAM-001') AS failed
+                           {window} AND d.timings ? 'connect' GROUP BY d.server_id ORDER BY n DESC LIMIT 12""", (hours,)),
         db.fetch_all(f"""WITH t AS (SELECT date_trunc('hour', d.created_at) AS hour,
                                           (d.timings->>'total')::float8 - ({upstream_ms}) AS gateway {window})
                          SELECT hour, count(*) AS n,

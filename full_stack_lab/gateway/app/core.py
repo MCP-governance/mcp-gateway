@@ -1209,91 +1209,103 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
     payload: dict | None = None
     laps = laps or _Laps()
     laps.lap("dispatch")
-    async with upstream.session(spec["endpoint"], principal=principal) as client:
-        laps.lap("connect")
-        listed = await client.list_tools()
-        registered = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s", (server_id,))
-        observed = {t.name: upstream.tool_view(t) for t in listed.tools}
-        # Same rule as refresh_catalog (D-69): the reviewed contract is what a client can reach — the
-        # enabled tools' descriptions and schemas. Hosted servers answer from pods with different build
-        # ids, so the version string is not part of it; unexposed helpers may change without blocking.
-        enabled_rows = [row for row in registered if row["enabled"]]
-        if tool not in observed or any(row["name"] not in observed for row in enabled_rows):
-            problem = "MCP catalog changed before execution"
-        else:
-            for row in enabled_rows:
-                item = observed[row["name"]]
-                if (canonical_hash(item["description"]) != row["approved_description_hash"]
-                        or canonical_hash(item["input_schema"]) != row["approved_schema_hash"]):
-                    problem = "MCP contract changed before execution"
-                    break
-        if problem is None and not Draft202012Validator(observed[tool]["input_schema"]).is_valid(arguments):
-            problem = "Arguments do not match the approved input schema"
-        laps.lap("list")
-        if problem is None and approval_id is not None:
-            # Discovery may take longer than the remaining approval lifetime.
-            approval = await db.fetch_one("SELECT status, expires_at FROM approvals WHERE id=%s", (approval_id,))
-            if (not approval or approval["status"] != "APPROVED"
-                    or approval["expires_at"] <= datetime.now(UTC)):
-                problem = "Approval expired or was withdrawn before execution"
-        if problem is None:
-            person = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (principal,))
-            from .endpoint_plane import managed_failure
-            failure = await managed_failure(person or {}, pac_payload.get("transport_claims") or {})
-            if failure:
-                problem = failure
-                blocked_verdict = local_verdict("ENDPOINT-MANAGED-001", "Block", failure)
-            if not person or person["status"] != "active":
-                problem = "Principal was revoked before dispatch"
-            elif not failure:
-                final_input = dict(dispatch_state["policy_input"])
-                final_input["now"] = datetime.now(UTC).isoformat()
-                live = next(row for row in registered if row["name"] == tool)
-                # The description and schema were just matched above; the build id this connection
-                # happened to report is not part of the reviewed contract (D-69).
-                live = {**live, "observed_server_version": live["approved_server_version"],
-                        "observed_description_hash": canonical_hash(observed[tool]["description"]),
-                        "observed_schema_hash": canonical_hash(observed[tool]["input_schema"])}
-                original = pac_payload["arguments"]
-                final_input["pac"] = await pac.build(
-                    pac_payload, person, classify.classify(server_id, tool, original, principal), live,
-                    await _contract(server_id, tool), final_input["context"], dispatch_state["request_id"],
-                    GATEWAY_ENVIRONMENT, approval_id)
-                dispatch_state["policy_input"] = final_input
-                try:
-                    verdict = await _policy(final_input)
-                except Exception:
-                    verdict = local_verdict("P-CONTROL-FAIL-CLOSED", "Block", "실행 직전 PAC 재검증에 실패했습니다.")
-                if verdict["decision"] not in {"Allow", "Alert", "Restrict"}:
-                    problem, blocked_verdict = "PAC changed before dispatch", verdict
-                elif verdict.get("restrictions", {}) != dispatch_state.get("restrictions", {}):
-                    problem = "Restrictions changed before dispatch"
-        laps.lap("recheck")
-        if problem is None:
-            # The last thing before the send, in one statement with the final look at the
-            # reservation, the principal and the server: past this line a cutover or a
-            # revocation no longer stops this call, so it is on record that it may have gone out.
-            refused = await dispatch.record(dispatch_state["request_id"], dispatch_state["action"], approval_id)
-            if refused == "terminated":
-                problem, blocked_verdict = "Server entered termination before dispatch", local_verdict(
-                    "MCP-DECOMM-001", "Block", "종료·폐기 절차에 들어간 이용 관계입니다. 실행하지 않습니다.")
-            elif refused == "principal":
-                problem = "Principal was revoked before dispatch"
-            elif refused == "approval":
-                problem = "Approval expired or was withdrawn before execution"
-            elif refused:
-                problem = "call reservation expired before dispatch"
-            laps.lap("intent")
-        if problem is None:
-            dispatch_state["upstream_attempted"] = True
-            result = await client.call_tool(tool, arguments)
-            laps.lap("call")
-            # A definite MCP response was received. Later conversion/teardown failure
-            # withholds that response rather than erasing the known execution state.
-            dispatch_state["upstream_executed"] = True
-            payload = {"content": upstream.content_items(result), "is_error": bool(result.is_error)}
-            if result.structured_content is not None:
-                payload["structured"] = result.structured_content
+    # The stage an exception interrupts gets the time up to it: a connect, listing or call that
+    # fails is the MCP server's time, not the gateway's.
+    stage = "connect"
+    try:
+        async with upstream.session(spec["endpoint"], principal=principal) as client:
+            laps.lap("connect")
+            stage = "list"
+            listed = await client.list_tools()
+            registered = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s", (server_id,))
+            observed = {t.name: upstream.tool_view(t) for t in listed.tools}
+            # Same rule as refresh_catalog (D-69): the reviewed contract is what a client can reach — the
+            # enabled tools' descriptions and schemas. Hosted servers answer from pods with different build
+            # ids, so the version string is not part of it; unexposed helpers may change without blocking.
+            enabled_rows = [row for row in registered if row["enabled"]]
+            if tool not in observed or any(row["name"] not in observed for row in enabled_rows):
+                problem = "MCP catalog changed before execution"
+            else:
+                for row in enabled_rows:
+                    item = observed[row["name"]]
+                    if (canonical_hash(item["description"]) != row["approved_description_hash"]
+                            or canonical_hash(item["input_schema"]) != row["approved_schema_hash"]):
+                        problem = "MCP contract changed before execution"
+                        break
+            if problem is None and not Draft202012Validator(observed[tool]["input_schema"]).is_valid(arguments):
+                problem = "Arguments do not match the approved input schema"
+            laps.lap("list")
+            stage = "recheck"
+            if problem is None and approval_id is not None:
+                # Discovery may take longer than the remaining approval lifetime.
+                approval = await db.fetch_one("SELECT status, expires_at FROM approvals WHERE id=%s", (approval_id,))
+                if (not approval or approval["status"] != "APPROVED"
+                        or approval["expires_at"] <= datetime.now(UTC)):
+                    problem = "Approval expired or was withdrawn before execution"
+            if problem is None:
+                person = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (principal,))
+                from .endpoint_plane import managed_failure
+                failure = await managed_failure(person or {}, pac_payload.get("transport_claims") or {})
+                if failure:
+                    problem = failure
+                    blocked_verdict = local_verdict("ENDPOINT-MANAGED-001", "Block", failure)
+                if not person or person["status"] != "active":
+                    problem = "Principal was revoked before dispatch"
+                elif not failure:
+                    final_input = dict(dispatch_state["policy_input"])
+                    final_input["now"] = datetime.now(UTC).isoformat()
+                    live = next(row for row in registered if row["name"] == tool)
+                    # The description and schema were just matched above; the build id this connection
+                    # happened to report is not part of the reviewed contract (D-69).
+                    live = {**live, "observed_server_version": live["approved_server_version"],
+                            "observed_description_hash": canonical_hash(observed[tool]["description"]),
+                            "observed_schema_hash": canonical_hash(observed[tool]["input_schema"])}
+                    original = pac_payload["arguments"]
+                    final_input["pac"] = await pac.build(
+                        pac_payload, person, classify.classify(server_id, tool, original, principal), live,
+                        await _contract(server_id, tool), final_input["context"], dispatch_state["request_id"],
+                        GATEWAY_ENVIRONMENT, approval_id)
+                    dispatch_state["policy_input"] = final_input
+                    try:
+                        verdict = await _policy(final_input)
+                    except Exception:
+                        verdict = local_verdict("P-CONTROL-FAIL-CLOSED", "Block", "실행 직전 PAC 재검증에 실패했습니다.")
+                    if verdict["decision"] not in {"Allow", "Alert", "Restrict"}:
+                        problem, blocked_verdict = "PAC changed before dispatch", verdict
+                    elif verdict.get("restrictions", {}) != dispatch_state.get("restrictions", {}):
+                        problem = "Restrictions changed before dispatch"
+            laps.lap("recheck")
+            if problem is None:
+                stage = "intent"
+                # The last thing before the send, in one statement with the final look at the
+                # reservation, the principal and the server: past this line a cutover or a
+                # revocation no longer stops this call, so it is on record that it may have gone out.
+                refused = await dispatch.record(dispatch_state["request_id"], dispatch_state["action"], approval_id)
+                if refused == "terminated":
+                    problem, blocked_verdict = "Server entered termination before dispatch", local_verdict(
+                        "MCP-DECOMM-001", "Block", "종료·폐기 절차에 들어간 이용 관계입니다. 실행하지 않습니다.")
+                elif refused == "principal":
+                    problem = "Principal was revoked before dispatch"
+                elif refused == "approval":
+                    problem = "Approval expired or was withdrawn before execution"
+                elif refused:
+                    problem = "call reservation expired before dispatch"
+                laps.lap("intent")
+            if problem is None:
+                stage = "call"
+                dispatch_state["upstream_attempted"] = True
+                result = await client.call_tool(tool, arguments)
+                laps.lap("call")
+                # A definite MCP response was received. Later conversion/teardown failure
+                # withholds that response rather than erasing the known execution state.
+                dispatch_state["upstream_executed"] = True
+                payload = {"content": upstream.content_items(result), "is_error": bool(result.is_error)}
+                if result.structured_content is not None:
+                    payload["structured"] = result.structured_content
+            stage = "close"
+    except BaseException:
+        laps.lap(stage)
+        raise
     laps.lap("close")
     if problem:
         raise DispatchRejected(problem, blocked_verdict)
