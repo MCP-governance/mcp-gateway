@@ -163,5 +163,137 @@
     "review_notes": "secret.value및인증정보를print하는예시는채택금지. purge/delete예시는전용testvault외실행금지. SDK샘플실행/설치없음.",
     "confidence": "high_for_selected_file_only",
     "unreviewed_scope": "repository hooks, executable helpers, commands, agents, linked resources and transitive packages"
+  },
+  {
+    "id": "SKILL-06",
+    "title": "c-review",
+    "repository": "trailofbits/skills",
+    "source_url": "https://github.com/trailofbits/skills",
+    "commit": "e1f86a390d4caf28bf1c377a7d86707b2898669c",
+    "stars": 7546,
+    "stars_measured_on": "2026-10-15",
+    "stars_source_url": "https://api.github.com/repos/trailofbits/skills",
+    "license": "CC-BY-SA-4.0",
+    "license_evidence": {
+      "url": "https://raw.githubusercontent.com/trailofbits/skills/e1f86a390d4caf28bf1c377a7d86707b2898669c/LICENSE",
+      "sha256": "7abe19ec9bb73b36141b999b861d24ad855e808bafe0f81e84cce28556f6c297",
+      "path": "analysis/evidence/skills/trailofbits-skills/LICENSE.txt",
+      "verified_on": "2026-10-15",
+      "reading_scope": "same bytes as the 2026-10-13 copy at 442fc9d; blob hash rechecked at this commit"
+    },
+    "source_evidence": {
+      "url": "https://raw.githubusercontent.com/trailofbits/skills/e1f86a390d4caf28bf1c377a7d86707b2898669c/plugins/c-review/skills/c-review/SKILL.md",
+      "sha256": "3fc2fc7f3dba9decd2dd9e449150395cf62ee156c8dd1c48d09a233318f4dc69",
+      "path": "analysis/evidence/skills/trailofbits-skills/c-review.SKILL.raw.txt",
+      "verified_on": "2026-10-15",
+      "reading_scope": "entire selected file; no referenced executable helper, workflow or agent executed"
+    },
+    "verification": "full_selected_SKILL_read_and_sha256_checked",
+    "status": "checklist_applied_workflow_not_run",
+    "applied_in_this_task": true,
+    "installed": false,
+    "reuse_plan": "네이티브 확장(textscan.c)과 cgo 경계 검토에 메모리 안전·정수 overflow·경합·오류 경로 분류를 점검 목록으로 적용한다.",
+    "review_notes": "원 스킬은 4~14개 에이전트 Workflow와 uv로 외부 스크립트(enumerate_units.py·assemble_findings.py)를 실행한다. 서브에이전트 예산과 외부 스크립트 무검토 실행 금지 규칙 때문에 실행하지 않았다. 판정자(judge) 없이 검토자 심각도만 내므로 결과를 확정 판정으로 쓰지 않는다.",
+    "confidence": "high_for_selected_file_only",
+    "unreviewed_scope": "workflows/*.js, scripts, agents, references and transitive packages"
+  },
+  {
+    "id": "SKILL-07",
+    "title": "insecure-defaults",
+    "repository": "trailofbits/skills",
+    "source_url": "https://github.com/trailofbits/skills",
+    "commit": "e1f86a390d4caf28bf1c377a7d86707b2898669c",
+    "stars": 7546,
+    "stars_measured_on": "2026-10-15",
+    "stars_source_url": "https://api.github.com/repos/trailofbits/skills",
+    "license": "CC-BY-SA-4.0",
+    "license_evidence": {
+      "url": "https://raw.githubusercontent.com/trailofbits/skills/e1f86a390d4caf28bf1c377a7d86707b2898669c/LICENSE",
+      "sha256": "7abe19ec9bb73b36141b999b861d24ad855e808bafe0f81e84cce28556f6c297",
+      "path": "analysis/evidence/skills/trailofbits-skills/LICENSE.txt",
+      "verified_on": "2026-10-15",
+      "reading_scope": "same bytes as the 2026-10-13 copy at 442fc9d; blob hash rechecked at this commit"
+    },
+    "source_evidence": {
+      "url": "https://raw.githubusercontent.com/trailofbits/skills/e1f86a390d4caf28bf1c377a7d86707b2898669c/plugins/insecure-defaults/README.md",
+      "sha256": "999d8d5fcb7153eedd3d31a0826f4f72183a427836f585a357a4cdf1f1ce254f",
+      "path": "analysis/evidence/skills/trailofbits-skills/insecure-defaults.README.raw.txt",
+      "verified_on": "2026-10-15",
+      "reading_scope": "README only; commands/audit.md, workflows/audit.js and references/* not read"
+    },
+    "verification": "full_selected_SKILL_read_and_sha256_checked",
+    "status": "checklist_applied_workflow_not_run",
+    "applied_in_this_task": true,
+    "installed": false,
+    "reuse_plan": "fallback secret·기본 자격·fail-open 스위치·약한 암호·과도한 권한·디버그 노출 6분류로 Gateway 설정과 실패 경로를 점검한다.",
+    "review_notes": "README만 읽었다. references/*.md·*.json 말뭉치와 audit workflow는 미검토·미실행. 10-15 점검에서 compose의 GITEA_ADMIN_PASSWORD·MOCK_SSO_PASSWORD 실습 기본값을 확인했고, field 경로는 console.sh가 무작위 값을 생성해 기본값에 닿지 않는다.",
+    "confidence": "high_for_selected_file_only",
+    "unreviewed_scope": "workflows/*.js, scripts, agents, references and transitive packages"
+  },
+  {
+    "id": "SKILL-08",
+    "title": "sharp-edges",
+    "repository": "trailofbits/skills",
+    "source_url": "https://github.com/trailofbits/skills",
+    "commit": "e1f86a390d4caf28bf1c377a7d86707b2898669c",
+    "stars": 7546,
+    "stars_measured_on": "2026-10-15",
+    "stars_source_url": "https://api.github.com/repos/trailofbits/skills",
+    "license": "CC-BY-SA-4.0",
+    "license_evidence": {
+      "url": "https://raw.githubusercontent.com/trailofbits/skills/e1f86a390d4caf28bf1c377a7d86707b2898669c/LICENSE",
+      "sha256": "7abe19ec9bb73b36141b999b861d24ad855e808bafe0f81e84cce28556f6c297",
+      "path": "analysis/evidence/skills/trailofbits-skills/LICENSE.txt",
+      "verified_on": "2026-10-15",
+      "reading_scope": "same bytes as the 2026-10-13 copy at 442fc9d; blob hash rechecked at this commit"
+    },
+    "source_evidence": {
+      "url": "https://raw.githubusercontent.com/trailofbits/skills/e1f86a390d4caf28bf1c377a7d86707b2898669c/plugins/sharp-edges/skills/sharp-edges/SKILL.md",
+      "sha256": "3b69a709c2f8f0cfcf57d40a3186e166f307865cc8ed924be4098e549a121e9c",
+      "path": "analysis/evidence/skills/trailofbits-skills/sharp-edges.SKILL.raw.txt",
+      "verified_on": "2026-10-15",
+      "reading_scope": "entire selected file; no referenced executable helper, workflow or agent executed"
+    },
+    "verification": "full_selected_SKILL_read_and_sha256_checked",
+    "status": "checklist_applied_not_installed",
+    "applied_in_this_task": true,
+    "installed": false,
+    "reuse_plan": "0·빈 값·음수 설정, 조용한 실패, 문자열로 된 보안 결정을 새 API(풀 크기·검사 시간 제한·실행 기록 확인)에 적용한다.",
+    "review_notes": "sharp-edges-analyzer 에이전트와 언어별 참고 문서는 미검토. 원문 스킬의 판단 기준만 사용했다.",
+    "confidence": "high_for_selected_file_only",
+    "unreviewed_scope": "workflows/*.js, scripts, agents, references and transitive packages"
+  },
+  {
+    "id": "SKILL-09",
+    "title": "differential-review",
+    "repository": "trailofbits/skills",
+    "source_url": "https://github.com/trailofbits/skills",
+    "commit": "e1f86a390d4caf28bf1c377a7d86707b2898669c",
+    "stars": 7546,
+    "stars_measured_on": "2026-10-15",
+    "stars_source_url": "https://api.github.com/repos/trailofbits/skills",
+    "license": "CC-BY-SA-4.0",
+    "license_evidence": {
+      "url": "https://raw.githubusercontent.com/trailofbits/skills/e1f86a390d4caf28bf1c377a7d86707b2898669c/LICENSE",
+      "sha256": "7abe19ec9bb73b36141b999b861d24ad855e808bafe0f81e84cce28556f6c297",
+      "path": "analysis/evidence/skills/trailofbits-skills/LICENSE.txt",
+      "verified_on": "2026-10-15",
+      "reading_scope": "same bytes as the 2026-10-13 copy at 442fc9d; blob hash rechecked at this commit"
+    },
+    "source_evidence": {
+      "url": "https://raw.githubusercontent.com/trailofbits/skills/e1f86a390d4caf28bf1c377a7d86707b2898669c/plugins/differential-review/skills/differential-review/SKILL.md",
+      "sha256": "f9af6a8193fc1a9f8ca3c54bb8d19095a5f20c9472ca6d014488bbde50b67da0",
+      "path": "analysis/evidence/skills/trailofbits-skills/differential-review.SKILL.raw.txt",
+      "verified_on": "2026-10-15",
+      "reading_scope": "entire selected file; no referenced executable helper, workflow or agent executed"
+    },
+    "verification": "full_selected_SKILL_read_and_sha256_checked",
+    "status": "checklist_applied_not_installed",
+    "applied_in_this_task": true,
+    "installed": false,
+    "reuse_plan": "서브에이전트 브랜치 병합 전 위험도 분류(인증·외부 호출·검증 제거), 제거된 보안 코드 이력, 호출자 수, 시험 범위, 구체 공격 시나리오를 확인한다.",
+    "review_notes": "methodology.md·adversarial.md·patterns.md와 adversarial-modeler 에이전트는 미검토·미실행.",
+    "confidence": "high_for_selected_file_only",
+    "unreviewed_scope": "workflows/*.js, scripts, agents, references and transitive packages"
   }
 ]
