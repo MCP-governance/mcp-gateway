@@ -473,7 +473,7 @@ ROUTES.overview = async (_, tab) => {
       ${paths.length > 2 ? chip("outline", `외 ${paths.length - 2}개`) : ""}</div>`;
   };
   // decision -> sent? -> executed? -> response, for today's tool calls.
-  const RESP = Object.fromEntries(Object.entries(RESPONSE).map(([k, [, label]]) => [k, label]));
+  const responseLabel = Object.fromEntries(Object.entries(RESPONSE).map(([key, [, label]]) => [key, label]));
   const pipe = { nodes: new Map(), links: new Map() };
   const node = (name) => { if (!pipe.nodes.has(name)) pipe.nodes.set(name, { name }); return name; };
   const link = (a, b, n) => { const k = `${a}|${b}`; pipe.links.set(k, { source: a, target: b, value: (pipe.links.get(k)?.value || 0) + n }); };
@@ -484,7 +484,7 @@ ROUTES.overview = async (_, tab) => {
     if (!r.attempted) continue;
     const ran = node(r.executed ? "실행됨" : "실행 미확인");
     link(sent, ran, n);
-    if (r.executed) link(ran, node(RESP[r.response] || r.response), n);
+    if (r.executed) link(ran, node(responseLabel[r.response] || r.response), n);
   }
   return {
     html: page({
@@ -518,9 +518,8 @@ ROUTES.overview = async (_, tab) => {
               <td><b>${i.name}</b><span class="sub mono">${short(i.target || "", 50)}</span></td><td class="small">${INTEGRATION_CLASS[i.class] || i.class}</td>
               <td class="small">${bypassImpact(i)}</td><td>${bypassPaths(i)}</td></tr>`)}</tbody></table>` : empty("우회 가능 경로 없음"),
             { flush: true, end: html`<a class="btn sm" href="#/coverage?t=items&state=bypass_possible">전체</a>` })}</div>` },
-        { key: "exec", label: "실행응답", body: html`<div class="stack">
-          ${panel("판정에서 응답까지", (o.pipeline || []).length ? chartBox("c-ov-pipeline", "오늘 도구 호출의 판정에서 응답 처리까지의 흐름", "xl") : empty("오늘 도구 호출 없음"), { sub: "오늘" })}
-          ${panel("응답 처리", chartBox("c-ov-response", "오늘 실행된 호출의 응답 처리 비율", "sm"), { sub: `마스킹 ${x.masked} / 보류 ${x.withheld}` })}</div>` },
+        { key: "exec", label: "도구 실행 및 응답", body: html`<div class="stack">
+          ${panel("도구 호출 흐름", (o.pipeline || []).length ? chartBox("c-ov-pipeline", "오늘 도구 호출의 판정에서 응답 전달까지의 흐름", "xl") : empty("오늘 도구 호출 없음"), { sub: "오늘" })}</div>` },
         { key: "traffic", label: "트래픽", body: html`<div class="stack">
           ${panel("시간대별 판정", chartBox("c-traffic", "최근 24시간 시간대별 판정 건수", "lg"), { sub: "최근 24시간" })}
           <div class="grid c12">
@@ -546,10 +545,6 @@ ROUTES.overview = async (_, tab) => {
         { horizontal: true, onClick: (e) => { const c = Object.keys(INTEGRATION_CLASS)[e.dataIndex]; const st = Object.keys(CONTROL_STATE)[e.seriesIndex];
           if (c && st) location.hash = `#/coverage?t=items&class=${c}&state=${st}`; } }),
       "c-ov-pipeline": () => charts.sankey({ nodes: [...pipe.nodes.values()], links: [...pipe.links.values()] }),
-      "c-ov-response": () => charts.donut([
-        { name: "응답 반환", value: Math.max(0, x.executed - x.masked - x.withheld), color: charts.color("Allow") },
-        { name: "마스킹 반환", value: Number(x.masked), color: charts.color("Restrict") },
-        { name: "응답 보류", value: Number(x.withheld), color: charts.color("Block") }].filter((g) => g.value)),
       "c-traffic": () => charts.decisionColumns(buckets.map((b) => b.label), buckets),
       "c-share": () => charts.donut(DECISIONS.map((d) => ({ name: DECISION_LABEL[d], value: t[d], color: charts.color(d) }))),
       "c-servers": () => charts.decisionColumns(byServer.map((g) => g.key), byServer, {
