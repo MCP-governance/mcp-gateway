@@ -23,7 +23,7 @@ from urllib.parse import urlsplit
 import httpx2
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
-from mcp_types.version import HANDSHAKE_PROTOCOL_VERSIONS
+from mcp_types.version import HANDSHAKE_PROTOCOL_VERSIONS, MODERN_PROTOCOL_VERSIONS
 
 from . import db
 
@@ -189,9 +189,11 @@ async def session(endpoint: str, timeout: float = CONNECT_TIMEOUT, principal: st
                   protocol: str | None = None):
     """One MCP session. With a principal (dispatch) the HTTP connection comes from the pool.
 
-    `protocol` is the version recorded when the contract was approved. A handshake-era server is
-    opened with `initialize` directly instead of first probing `server/discover` (DEV-29 stage 1):
-    one round trip fewer, the session lifetime unchanged. Anything else keeps the SDK's probe."""
+    `protocol` is the version recorded when the contract was approved (DEV-29 stage 1). A handshake-era
+    server is opened with `initialize` directly instead of first probing `server/discover`; a 2026-era
+    server is spoken to in that version with no discovery round trip at all. A server that moved to
+    another version fails the call (closed) and shows up as drift in the catalog check. Unrecorded
+    versions keep the SDK's probe."""
     headers = credential_headers(endpoint, principal)
     async with AsyncExitStack() as stack:
         if principal is None:
@@ -200,7 +202,13 @@ async def session(endpoint: str, timeout: float = CONNECT_TIMEOUT, principal: st
             http_client = await stack.enter_async_context(_dispatch_client(endpoint, principal, headers, timeout))
         yield await stack.enter_async_context(
             Client(streamable_http_client(endpoint, http_client=http_client), read_timeout_seconds=timeout,
-                   mode="legacy" if protocol in HANDSHAKE_PROTOCOL_VERSIONS else "auto"))
+                   mode=connect_mode(protocol)))
+
+
+def connect_mode(protocol: str | None) -> str:
+    if protocol in HANDSHAKE_PROTOCOL_VERSIONS:
+        return "legacy"
+    return protocol if protocol in MODERN_PROTOCOL_VERSIONS else "auto"
 
 
 def tool_view(tool: Any) -> dict:
