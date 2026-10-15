@@ -1,6 +1,15 @@
 -- v2 schema additions. Idempotent; runs at every Gateway start after agent_tables.sql
 -- and lifecycle_tables.sql. See docs/ai/DATA_MODEL.md.
 
+CREATE TABLE IF NOT EXISTS console_sessions (
+  jti uuid PRIMARY KEY,
+  user_id text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  last_activity_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS console_sessions_expiry_idx ON console_sessions(expires_at);
+
 -- Registry rows now come from registry/catalog.toml (registry.sync()).
 ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS package text;
 ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS version text;

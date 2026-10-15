@@ -22,6 +22,10 @@ from .agent_contract import CONSOLE_SCOPE, StrictModel, authenticated_user, issu
 router = APIRouter()
 oauth = OAuth()
 HANDOFF_COOKIE = "mcpgw_oidc_handoff"
+ADMIN_IDLE = timedelta(minutes=30)
+ADMIN_MAX = timedelta(hours=8)
+TOKEN_LOGOUT_GRACE = timedelta(minutes=2)
+REFRESH_EARLY_SECONDS = 60
 
 
 class RedactCallbackQuery(logging.Filter):
@@ -131,20 +135,35 @@ async def callback(request: Request):
         if identity.get("iss") != config["issuer"] or not identity.get("sub") or not result.get("access_token"):
             raise ValueError("missing validated identity")
         row = await db.fetch_one(
-            """SELECT b.id, b.principal, p.user_id, p.status FROM oidc_bindings b
+            """SELECT b.id, b.principal, p.user_id, p.status, p.role FROM oidc_bindings b
                JOIN principals p ON p.token=b.principal WHERE b.issuer=%s AND b.subject=%s""",
             (config["issuer"], identity["sub"]))
         if not row or row["status"] != "active":
             return RedirectResponse("/login?sso_error=unbound", status_code=303)
+        refresh_token = result.get("refresh_token")
+        if row["role"] == "admin" and not refresh_token:
+            request.session.clear()
+            return RedirectResponse("/login?sso_error=refresh_unavailable", status_code=303)
         handoff = secrets.token_urlsafe(32)
-        lifetime = min(int(result.get("expires_in", 300)), 1800)
-        if lifetime <= 0:
+        upstream_lifetime = int(result.get("expires_in", 300))
+        if upstream_lifetime <= 0:
             raise ValueError("expired upstream token")
-        await db.execute(
-            """INSERT INTO oidc_sessions(jti,binding_id,upstream_token,expires_at,handoff_hash,handoff_expires_at)
-               VALUES (%s,%s,%s,%s,%s,now()+interval '60 seconds')""",
-            (uuid4(), row["id"], seal(result["access_token"]), datetime.now(UTC)+timedelta(seconds=lifetime),
-             hashlib.sha256(handoff.encode()).hexdigest()))
+        now = datetime.now(UTC)
+        lifetime = int(ADMIN_MAX.total_seconds()) if row["role"] == "admin" else min(upstream_lifetime, 1800)
+        expires_at = now + timedelta(seconds=lifetime)
+        upstream_expires_at = now + timedelta(seconds=upstream_lifetime)
+        jti = uuid4()
+        async with db.transaction() as connection:
+            await connection.execute(
+                """INSERT INTO oidc_sessions(jti,binding_id,upstream_token,expires_at,handoff_hash,handoff_expires_at,
+                       upstream_refresh_token,upstream_expires_at)
+                   VALUES (%s,%s,%s,%s,%s,now()+interval '60 seconds',%s,%s)""",
+                (jti, row["id"], seal(result["access_token"]), expires_at,
+                 hashlib.sha256(handoff.encode()).hexdigest(), seal(refresh_token) if refresh_token else None,
+                 upstream_expires_at))
+            await connection.execute(
+                "INSERT INTO console_sessions(jti,user_id,expires_at) VALUES (%s,%s,%s)",
+                (jti, row["user_id"], expires_at))
         request.session.clear()
         response = RedirectResponse("/login?sso=complete", status_code=303)
         response.set_cookie(HANDOFF_COOKIE, handoff, max_age=60, path="/auth/oidc/session", httponly=True,
@@ -168,9 +187,11 @@ async def session(request: Request):
            RETURNING s.jti,s.binding_id,s.expires_at,p.user_id""", (hashlib.sha256(handoff.encode()).hexdigest(),))
     if not handoff or not row:
         raise HTTPException(401, "SSO 로그인 결과가 없거나 이미 사용됐습니다.")
+    await db.execute("DELETE FROM console_sessions WHERE expires_at<now()")
     await db.execute("DELETE FROM oidc_sessions WHERE expires_at<now()")
     token, _ = issue_token({"user_id": row["user_id"]}, extra={"scope": CONSOLE_SCOPE,
-                          "jti": str(row["jti"]), "exp": row["expires_at"], "identity_binding": str(row["binding_id"])})
+                          "jti": str(row["jti"]), "exp": row["expires_at"] + TOKEN_LOGOUT_GRACE,
+                          "identity_binding": str(row["binding_id"])})
     response = JSONResponse({"access_token": token, "token_type": "bearer"})
     response.delete_cookie(HANDOFF_COOKIE, path="/auth/oidc/session")
     response.set_cookie("mcpgw_git", token, max_age=300, path="/git", httponly=True, samesite="lax",
@@ -178,16 +199,93 @@ async def session(request: Request):
     return response
 
 
+async def _refresh_upstream(claims: dict) -> dict | None:
+    """Refresh an admin's online OIDC token under a row lock so rotation is single-use."""
+    try:
+        metadata = await client().load_server_metadata()
+        async with db.transaction() as connection:
+            cursor = await connection.execute(
+                """SELECT s.upstream_token,s.upstream_refresh_token,s.upstream_expires_at,s.expires_at,
+                          cs.last_activity_at,cs.user_id,p.status
+                     FROM oidc_sessions s JOIN console_sessions cs ON cs.jti=s.jti
+                     JOIN principals p ON p.user_id=cs.user_id
+                    WHERE s.jti=%s AND s.binding_id=%s FOR UPDATE OF s""",
+                (claims["jti"], claims["identity_binding"]))
+            row = await cursor.fetchone()
+            now = datetime.now(UTC)
+            if (not row or row["status"] != "active" or row["expires_at"] <= now
+                    or row["last_activity_at"] <= now - ADMIN_IDLE):
+                return None
+            upstream_expiry = row["upstream_expires_at"]
+            if upstream_expiry and upstream_expiry > now + timedelta(seconds=REFRESH_EARLY_SECONDS):
+                return {"upstream_token": row["upstream_token"], "issuer": settings()["issuer"]}
+            if not row["upstream_refresh_token"]:
+                await connection.execute("UPDATE console_sessions SET expires_at=now() WHERE jti=%s", (claims["jti"],))
+                return None
+            refresh_token = unseal(bytes(row["upstream_refresh_token"]))
+            async with httpx.AsyncClient(timeout=10, trust_env=False) as http:
+                response = await http.post(metadata["token_endpoint"],
+                    auth=(settings()["client_id"], os.environ["OIDC_CLIENT_SECRET"]),
+                    data={"grant_type": "refresh_token", "refresh_token": refresh_token})
+            if response.status_code == 400 and response.json().get("error") == "invalid_grant":
+                await connection.execute("UPDATE console_sessions SET expires_at=now() WHERE jti=%s", (claims["jti"],))
+                await connection.execute("UPDATE oidc_sessions SET upstream_refresh_token=NULL WHERE jti=%s", (claims["jti"],))
+                return None
+            response.raise_for_status()
+            refreshed = response.json()
+            access_token = refreshed.get("access_token")
+            expires_in = int(refreshed.get("expires_in", 0))
+            if not access_token or expires_in <= 0:
+                raise ValueError("invalid token refresh response")
+            replacement = refreshed.get("refresh_token") or refresh_token
+            await connection.execute(
+                """UPDATE oidc_sessions SET upstream_token=%s,upstream_refresh_token=%s,upstream_expires_at=%s
+                    WHERE jti=%s""",
+                (seal(access_token), seal(replacement), now + timedelta(seconds=expires_in), claims["jti"]))
+            return {"upstream_token": seal(access_token), "issuer": settings()["issuer"]}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(503, "인증 제공자에서 세션을 갱신하지 못해 접근을 보류했습니다.") from exc
+
+
 async def validate_session(claims: dict) -> None:
-    if not claims.get("identity_binding"):
+    scopes = claims.get("scope", "")
+    if not isinstance(scopes, str) or CONSOLE_SCOPE not in scopes.split():
         if settings()["provider"] == "oidc" and not claims.get("device_id"):
             raise HTTPException(401, "SSO로 다시 로그인하세요.")
         return
+    session = await db.fetch_one(
+        """SELECT cs.expires_at,cs.last_activity_at,cs.user_id,p.role,p.status
+             FROM console_sessions cs JOIN principals p ON p.user_id=cs.user_id
+            WHERE cs.jti=%s AND cs.user_id=%s""", (claims["jti"], claims["sub"]))
+    now = datetime.now(UTC)
+    if not session or session["status"] != "active" or session["expires_at"] <= now:
+        if session:
+            await end_session(claims)
+        raise HTTPException(401, "로그인 세션이 만료됐습니다.")
+    if session["role"] == "admin" and session["last_activity_at"] <= now - ADMIN_IDLE:
+        await end_session(claims)
+        raise HTTPException(401, "30분 동안 활동이 없어 로그아웃됐습니다.")
+    if not claims.get("identity_binding"):
+        if settings()["provider"] == "oidc":
+            raise HTTPException(401, "SSO로 다시 로그인하세요.")
+        return
     row = await db.fetch_one(
-        """SELECT s.upstream_token,b.issuer FROM oidc_sessions s JOIN oidc_bindings b ON b.id=s.binding_id
-           WHERE s.jti=%s AND s.binding_id=%s AND s.expires_at>now()""", (claims["jti"], claims["identity_binding"]))
+        """SELECT s.upstream_token,s.upstream_refresh_token,s.upstream_expires_at,b.issuer
+             FROM oidc_sessions s JOIN oidc_bindings b ON b.id=s.binding_id
+            WHERE s.jti=%s AND s.binding_id=%s AND s.expires_at>now()""",
+        (claims["jti"], claims["identity_binding"]))
     if not row or row["issuer"] != settings()["issuer"]:
         raise HTTPException(401, "SSO 연결이 해제되었거나 만료됐습니다.")
+    upstream_expiry = row["upstream_expires_at"]
+    if (session["role"] == "admin" and
+            (not upstream_expiry or upstream_expiry <= now + timedelta(seconds=REFRESH_EARLY_SECONDS))):
+        refreshed = await _refresh_upstream(claims)
+        if not refreshed:
+            await end_session(claims)
+            raise HTTPException(401, "SSO 세션이 만료됐습니다. 다시 로그인하세요.")
+        row = refreshed
     try:
         metadata = await client().load_server_metadata()
         async with httpx.AsyncClient(timeout=10, trust_env=False) as http:
@@ -199,7 +297,54 @@ async def validate_session(claims: dict) -> None:
     except Exception as exc:
         raise HTTPException(503, "SSO 세션 상태를 확인하지 못해 접근을 보류했습니다.") from exc
     if not active:
+        await end_session(claims)
         raise HTTPException(401, "조직 SSO 세션이 만료되거나 폐기됐습니다.")
+
+
+async def touch_session(claims: dict) -> None:
+    if not isinstance(claims.get("scope"), str) or CONSOLE_SCOPE not in claims["scope"].split():
+        return
+    changed = await db.execute(
+        """UPDATE console_sessions SET last_activity_at=now()
+             WHERE jti=%s AND user_id=%s AND expires_at>now()
+               AND last_activity_at>now()-interval '30 minutes'""",
+        (claims["jti"], claims["sub"]))
+    if changed != 1:
+        raise HTTPException(401, "로그인 세션이 만료됐습니다.")
+
+
+async def end_session(claims: dict) -> None:
+    jti = claims.get("jti")
+    row = None
+    if claims.get("identity_binding"):
+        row = await db.fetch_one(
+            """SELECT s.upstream_token,s.upstream_refresh_token,b.issuer
+                 FROM oidc_sessions s JOIN oidc_bindings b ON b.id=s.binding_id
+                WHERE s.jti=%s AND s.binding_id=%s""", (jti, claims["identity_binding"]))
+    await db.execute("DELETE FROM console_sessions WHERE jti=%s", (jti,))
+    await db.execute("DELETE FROM oidc_sessions WHERE jti=%s", (jti,))
+    if not row:
+        return
+    try:
+        metadata = await client().load_server_metadata()
+        endpoint = metadata.get("revocation_endpoint")
+        if not endpoint:
+            return
+        async with httpx.AsyncClient(timeout=10, trust_env=False) as http:
+            for encrypted, token_type in ((row["upstream_refresh_token"], "refresh_token"),
+                                          (row["upstream_token"], "access_token")):
+                if not encrypted:
+                    continue
+                await http.post(endpoint, auth=(settings()["client_id"], os.environ["OIDC_CLIENT_SECRET"]),
+                    data={"token": unseal(bytes(encrypted)), "token_type_hint": token_type})
+    except Exception:
+        logging.getLogger(__name__).warning("SSO token revocation failed during logout")
+
+
+async def end_binding_sessions(binding_id: UUID) -> None:
+    rows = await db.fetch_all("SELECT jti FROM oidc_sessions WHERE binding_id=%s", (binding_id,))
+    for row in rows:
+        await end_session({"jti": row["jti"], "identity_binding": str(binding_id)})
 
 
 class Binding(StrictModel):
@@ -241,5 +386,6 @@ async def bind(body: Binding, authorization: str | None = Header(default=None)):
 @router.delete("/api/identity/bindings/{binding_id}")
 async def unbind(binding_id: UUID, authorization: str | None = Header(default=None)):
     await administrator(authorization)
+    await end_binding_sessions(binding_id)
     await db.execute("DELETE FROM oidc_bindings WHERE id=%s", (binding_id,))
     return {"message": "SSO 연결을 해제했습니다."}

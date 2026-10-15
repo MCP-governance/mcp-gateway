@@ -15,3 +15,6 @@ CREATE TABLE IF NOT EXISTS oidc_sessions (
     handoff_hash text UNIQUE,
     handoff_expires_at timestamptz NOT NULL
 );
+ALTER TABLE oidc_sessions ADD COLUMN IF NOT EXISTS upstream_refresh_token bytea;
+ALTER TABLE oidc_sessions ADD COLUMN IF NOT EXISTS upstream_expires_at timestamptz;
+UPDATE oidc_sessions SET upstream_expires_at=expires_at WHERE upstream_expires_at IS NULL;

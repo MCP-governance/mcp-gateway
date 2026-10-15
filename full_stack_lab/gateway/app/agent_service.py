@@ -280,13 +280,18 @@ async def login(request: Login, http_request: Request):
     row = await password_principal(request.email, request.password, caller)
     user = {"user_id": row["user_id"], "principal": row["token"], "name": row["display_name"],
             "department": row["department"] or "미지정", "roles": [row["role"]], "email": row["email"]}
-    token, _claims = issue_token(user, extra={"scope": CONSOLE_SCOPE})
-    response = JSONResponse({"access_token": token, "token_type": "bearer", "expires_in": 1800,
+    lifetime = 28800 if "admin" in user["roles"] else 1800
+    session_expires = datetime.now(UTC) + timedelta(seconds=lifetime)
+    token, claims = issue_token(user, minutes=lifetime // 60,
+                                extra={"scope": CONSOLE_SCOPE, "exp": session_expires + timedelta(minutes=2)})
+    await db.execute("INSERT INTO console_sessions(jti,user_id,expires_at) VALUES (%s,%s,%s)",
+                     (claims["jti"], user["user_id"], session_expires))
+    response = JSONResponse({"access_token": token, "token_type": "bearer", "expires_in": lifetime,
             "user": {k: v for k, v in {**user, "job_title": row["job_title"], "synthetic": os.getenv("MCP_FIELD_MODE") != "1"}.items()
                      if k != "principal"}})
     # 같은 토큰을 내부 Gitea(/git) 전용 쿠키로도 준다. Console API는 계속 Bearer만 받으므로 이 쿠키로는
     # Console을 조작할 수 없고, 스크립트도 읽지 못한다(HttpOnly).
-    response.set_cookie(GIT_COOKIE, token, max_age=1800, path="/git", httponly=True, samesite="lax")
+    response.set_cookie(GIT_COOKIE, token, max_age=lifetime, path="/git", httponly=True, samesite="lax")
     return response
 
 
@@ -380,6 +385,7 @@ async def download_managed_kit(platform: Literal["linux", "windows"] = "linux",
 async def logout(authorization: str | None = Header(default=None)):
     _, claims = authenticate(authorization)
     await db.execute("INSERT INTO agent_revoked_tokens(jti,expires_at) VALUES (%s,%s) ON CONFLICT DO NOTHING", (claims["jti"], datetime.fromtimestamp(claims["exp"], UTC)))
+    await oidc.end_session(claims)
     # Rows are only ever added here, so purging here bounds the table by the number
     # of logouts inside one token lifetime. A revoked token past its own expiry is
     # already rejected by the signature check.
@@ -387,6 +393,13 @@ async def logout(authorization: str | None = Header(default=None)):
     response = JSONResponse({"status": "logged_out"})
     response.delete_cookie(GIT_COOKIE, path="/git")
     return response
+
+
+@app.post("/auth/session/activity")
+async def session_activity(authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    await oidc.touch_session(user["claims"])
+    return {"status": "active"}
 
 
 # ── 내부 Gitea의 신원과 권한(D-48) ──────────────────────────────────────────────

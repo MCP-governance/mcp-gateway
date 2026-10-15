@@ -1154,3 +1154,9 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 결정: 관리형 설치(`managed-linux.py install`)가 관리 계정의 `~/.claude/mcp-needs-auth-cache.json`을 링크를 따라가지 않고 지운다.
 - 이유: 관리 계정의 홈은 재설치 뒤에도 남는다. 이전 장치 시절의 401로 Claude Code가 남긴 표시 때문에 새 장치의 github·context7이 "인증 필요"로 숨겨졌다(2026-10-15 PJ1 재현). 관리 서버는 장치 헬퍼로 인증하므로 이 표시는 쓸모가 없다.
 
+## D-106 관리자 Console 세션은 서버에서 유휴와 절대 만료를 함께 강제한다 (2026-10-15)
+
+- **문제**: SSO access token 만료가 관리자 Console 세션을 30분으로 제한했고, 브라우저의 유휴 타이머만으로는 서버 측 세션 만료를 보장하지 못했다.
+- **결정**: 관리자는 유휴 30분 또는 로그인 후 8시간 중 먼저 도달할 때 종료한다. OIDC access token은 짧게 유지하고, 서버가 암호화 보관한 온라인 refresh token으로 만료 전에 갱신한다. 브라우저는 실제 사용자 활동에만 heartbeat를 보내며, 서버가 그 시각을 저장한다. refresh token은 회전 시 교체 저장하고 브라우저에 노출하지 않는다.
+- **폐기**: 로그아웃 시 로컬 세션을 즉시 무효화하고 제공자 revocation endpoint가 있으면 access token과 refresh token 폐기도 요청한다. refresh token이 발급되지 않은 관리자 SSO 응답은 정책을 충족하지 못하므로 로그인에 사용하지 않는다.
+- **한계**: OIDC 제공자 설정이 online refresh token을 발급하고 8시간 세션을 허용해야 한다. 제공자 세션이 먼저 만료되거나 갱신에 실패하면 세션은 fail-closed로 끝난다.

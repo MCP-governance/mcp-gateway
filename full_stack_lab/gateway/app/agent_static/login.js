@@ -18,7 +18,8 @@ async function configureLogin() {
       document.querySelector("#sso-button").hidden = !config.configured;
       if (config.label) document.querySelector("#sso-button").textContent = `${config.label} 로그인`;
       document.querySelector("#sso-error").textContent = {unbound: "연결되지 않은 SSO 계정입니다. 관리자에게 문의하세요.",
-        invalid: "SSO 인증에 실패했습니다. 다시 로그인하세요."}[params.get("sso_error")] || (!config.configured ? "SSO 설정이 완료되지 않았습니다." : "");
+        invalid: "SSO 인증에 실패했습니다. 다시 로그인하세요.",
+        refresh_unavailable: "인증 제공자가 세션 갱신을 지원하지 않아 로그인할 수 없습니다."}[params.get("sso_error")] || (!config.configured ? "SSO 설정이 완료되지 않았습니다." : "");
     } else document.querySelector("#gate-form").hidden = false;
     if (params.get("sso") === "complete") {
       const response = await fetch("/auth/oidc/session", {method: "POST"});

@@ -404,6 +404,7 @@ async def bootstrap() -> None:
     await db.execute((Path(__file__).parent / "agent_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "lifecycle_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "v2_tables.sql").read_text())
+    await db.execute((Path(__file__).parent / "oidc_tables.sql").read_text())
     await registry.sync()
     await policy_ledger(refresh=True)
     if POLICY_PATH.exists():
