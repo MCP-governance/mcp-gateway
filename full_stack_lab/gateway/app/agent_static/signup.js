@@ -7,7 +7,7 @@ if (invitationToken) {
   form.elements.username.value = invitation.get("username") || "";
   form.elements.username.readOnly = true;
   document.querySelector("#signup-title").textContent = "초대 수락";
-  document.title = "초대 수락 · MCP Governance";
+  document.title = "초대 수락 · MINT";
   form.querySelector("button").textContent = "등록";
   history.replaceState(null, "", "/signup");
 }

@@ -1,6 +1,6 @@
 # AGENTS.md — 이 저장소에서 일하는 AI 에이전트를 위한 규칙
 
-이 저장소는 **MCP 거버넌스 게이트웨이 테스트베드**다. 사내망 직원 PC의 AI 에이전트가 실제 MCP 서버
+이 저장소는 **MINT(MCP 거버넌스 게이트웨이)**다. 사내망 직원 PC의 AI 에이전트가 실제 MCP 서버
 10종을 쓰고, Gateway가 모든 도구 호출을 실행 전에 판정하며, 종료·폐기는 논문(CISC-W'26)의 C1~C4 /
 T1~T3 모델로 판정한다.
 
@@ -51,12 +51,14 @@ T1~T3 모델로 판정한다.
 Rego는 `docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy`.
 ```bash
 cd full_stack_lab
-./console.sh field up|ca|status|pc-command|set-password|register-pc|down   # 솔루션 기기에서만 (README "실제 기기로 배치하기")
+./console.sh field up|ca|status|pc-command|set-password|register-pc|down   # 솔루션 기기에서만 (docs/ai/FIELD.md)
 ./console.sh test          # 실습 스택 전체 회귀 — 이 노트북에서는 돌리지 않는다
 ./console.sh watch         # 판정 흐름
 ```
 
 ## 깨면 안 되는 불변식
+이 목록과 README의 원칙만 고정이다. 도구·제품·정책 체계·화면 구성 같은 나머지는 현재의 선택이며, 근거가 있으면 바꾸고 `docs/ai/DECISIONS.md`에 이유를 남긴다.
+
 - **신원은 transport의 토큰에서만** 정한다. 인자·헤더에 적힌 신원은 기록만 하고 판정에 쓰지 않는다.
 - **직원 토큰을 upstream MCP 서버로 넘기지 않는다**(MCP 인가 명세, 토큰 전달 금지).
 - **Gateway의 새 라우트에는 `Depends(caller)` 또는 `Depends(admin_caller)`**. 무인증은 `/api/health`·

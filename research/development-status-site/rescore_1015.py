@@ -219,7 +219,73 @@ CONFIGS = {
 }
 
 
-def build_after_wbs_1015(extra=None):
+FINDINGS = [
+    ('DEV-35', 'P0', '관리 계정 루프백 허용 범위', '결정 대기',
+     '관리 계정의 루프백 차단이 비인가 로컬 MCP를 막지만 하네스 로그인 콜백·내부 통신도 함께 막는다.',
+     '기기 OS 이벤트에서 루프백 거부 포트·횟수를 집계.', '하네스 내부 통신만 허용하고 비인가 로컬 MCP 차단은 유지되는지 PJ1에서 확인.',
+     APPLIANCE, ['G05.02', 'G08.01']),
+    ('DEV-29', 'P1', 'MCP 업스트림 세션 재사용', '설계 비교',
+     '호출마다 업스트림 연결·도구 목록을 다시 받아 원격 MCP 지연의 대부분을 차지한다.',
+     '실제 SDK 호출의 구간별 처리 시간(연결·목록·호출).', '주체·서버 결속, TTL, 종료·철회 시 닫기를 지키는 재사용과 계약 재확인 방식 결정.',
+     APPLIANCE, ['G07.02', 'G09.02']),
+    ('DEV-31', 'P0', '헬퍼 토큰의 셸 자식 접근', 'PJ1 확인 필요',
+     'bash 자식은 헬퍼·소켓이 없는 별도 프로필로 분리했다. 키트 재설치 뒤 실기기에서 확인한다.',
+     '자체 점검·AppArmor 구문·교차 리뷰.', 'PJ1 키트 재설치 후 하네스 셸에서 헬퍼 실행이 거부되는지 확인.',
+     R_MAIN, ['G05.01']),
+    ('DEV-37', 'P2', 'Tailscale 직접 경로', '사용자 결정',
+     '솔루션 기기의 Tailscale이 WSL2 NAT 안에 있어 DERP 중계로 통신한다.',
+     'PJ1 망 품질 표본(RTT·지터).', 'WSL 미러 네트워킹 또는 호스트 Tailscale로 직접 경로 확인.',
+     APPLIANCE, ['G09.02']),
+    ('DEV-36', 'P2', '팀원 작업 반영 경로', '안내 필요',
+     '기기 작업본을 직접 복사하면 통합 브랜치 변경이 지워진다.',
+     '3-way 병합으로 기기 복사 5회를 반영.', '팀원 브랜치를 통합 브랜치 위로 옮기고 기기에는 브랜치만 배포.',
+     R_MAIN, ['G10.03']),
+]
+STAGE_DETAIL = {
+    'implementation': '코드·설정이 저장소에 있는가',
+    'regression': '병합 소스에서 격리 시험이 통과했는가',
+    'deployment': '솔루션 기기에 배포된 판본에 포함됐는가',
+    'real_device': 'PJ1 실제 하네스·실제 MCP로 확인했는가',
+    'acceptance_complete': '완료조건 전체를 검수했는가',
+}
+
+
+def page_sections(data, appliance, sample=None):
+    """Sections of the status page that describe the current state rather than the 10-14 log diagnosis."""
+    counts = data['summary']['stage_equivalent_counts']
+    data['pipeline'] = [{'title': data['rubric']['stage_labels'][s], 'state': f'{counts[s]} / 40',
+                         'detail': STAGE_DETAIL[s]} for s in STAGES]
+    data['findings'] = [{'id': i, 'priority': p, 'title': t, 'state': st, 'detail': d, 'verification': v,
+                         'next': n, 'evidence': e, 'tasks': tasks}
+                        for i, p, t, st, d, v, n, e, tasks in FINDINGS]
+    data['next_actions'] = [
+        {'order': 1, 'title': '관리 하네스 자연어 E2E', 'tasks': 'G08.02 · G06.01',
+         'done_when': 'PJ1 관리 계정의 실제 하네스가 등록된 실제 MCP를 자연어로 호출하고 원장·엔드포인트 기록이 같은 호출로 이어진다.'},
+        {'order': 2, 'title': '루프백 허용 범위 결정', 'tasks': 'G05.02',
+         'done_when': '하네스 내부 통신은 동작하고 비인가 로컬 MCP는 독립 효과 0으로 남는다.'},
+        {'order': 3, 'title': '업스트림 세션 재사용', 'tasks': 'G07.02 · G09.02',
+         'done_when': '재사용 세션이 주체·서버에 결속되고 종료·철회 시 닫히며 지연이 줄어든 것을 같은 호출로 측정한다.'},
+        {'order': 4, 'title': '종료 후 잔존 접근 시험', 'tasks': 'G07.03 · G07.04',
+         'done_when': '실제 원격 MCP의 자격 폐기 뒤 재접근 실패와 설정·백업 복구 시 재활성화 불가를 확인한다.'},
+    ]
+    if sample is None:
+        call = appliance['sdk_calls'][-1]
+        net = appliance['network_samples'][-1]
+        t = call['timings']
+        sample = {
+            'title': f"{call['server_id']} · {call['tool_name']}",
+            'scope': 'PJ1 관리형 단말에서 공식 MCP SDK로 호출한 실제 원격 MCP. 하네스 자연어 호출이 아니다.',
+            'values': [['판정', call['decision']], ['정책', call['policy_id']],
+                       ['업스트림 실행', '예' if call['upstream_executed'] else '아니오'],
+                       ['전체', f"{t['total']} ms"], ['연결', f"{t['connect']} ms"], ['도구 목록', f"{t['list']} ms"],
+                       ['도구 호출', f"{t['call']} ms"], ['PJ1 왕복 p50', f"{net['rtt_p50_ms']} ms"]],
+            'hashes': [['원장 번호', str(call['id'])], ['기록 시각', call['created_at']],
+                       ['근거 파일 SHA-256', digest(APPLIANCE)]],
+        }
+    data['live_sample'] = sample
+
+
+def build_after_wbs_1015(extra=None, sample=None):
     """extra: further item configs (the inspection workstream adds its own after its merge)."""
     configs = {**CONFIGS, **(extra or {})}
     target = WIKI / 'analysis/development-wbs/snapshot.json'
@@ -284,6 +350,7 @@ def build_after_wbs_1015(extra=None):
         'PJ1 공식 MCP SDK 호출은 프로토콜 증거이며 관리 하네스의 자연어 모델 호출이 아니다.',
         '관리 계정이 로그인되지 않아 하네스 E2E·키트 재설치 후 DEV-31 실기기 확인은 하지 않았다.',
         '10-15 범위 기록은 사용자가 허락한 root 권한으로 기존 신청 목적을 옮긴 것이며 새 도입 승인이 아니다.']))
+    page_sections(data, appliance, sample)
     return write_outputs(data)
 
 

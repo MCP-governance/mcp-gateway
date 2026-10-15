@@ -1,11 +1,13 @@
 # docs/ai — 다음 AI 작업자를 위한 문서
 
 처음이면 이 순서로 읽는다: **ARCHITECTURE → RUNBOOK → TESTING**, 그리고 손댈 영역의 문서.
-저장소 규칙과 작업 방식은 루트의 [AGENTS.md](../../AGENTS.md).
+저장소 규칙과 작업 방식은 루트의 [AGENTS.md](../../AGENTS.md), 바뀌지 않는 원칙은 [README](../../README.md#원칙).
+날짜가 붙은 문서는 그 시점의 기록이며 현재 상태는 [개발 현황](../../research/llm-wiki/status/current.md)이 기준이다.
 
 | 문서 | 무엇 | 언제 |
 | --- | --- | --- |
 | [OSS_ADOPTION_2026-10-03.md](OSS_ADOPTION_2026-10-03.md) | Keycloak/Authlib·Gitleaks·Audit API 및 UI 전환·검증 경계 | 오픈소스 인증·검사·감사 조회 |
+| [FIELD.md](FIELD.md) | 솔루션 기기 배치, 내부 Git, 게이트웨이 등록, 직원 PC 연결, 통제 주체, 도입 검증 | 기기에 올리고 직원을 붙일 때 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | v3 정본 설계: 직원 PC의 하네스·관리형 설정·서버별 엔드포인트·LLM 경로·망·신원·디렉터리 | 항상 먼저 |
 | [SECURITY_BOUNDARIES.md](SECURITY_BOUNDARIES.md) | 실제 통제 범위, Kong·LiteLLM·Microsoft 비교, 우회 위협 모델, 재설계와 실제 MCP 검증 | 통제·시험·제품 주장을 정할 때 |
 | [CONTROL_PLANES_2026-10-01.md](CONTROL_PLANES_2026-10-01.md) | D-62/D-63 통제 상태·증거·응답 통제, 실제 원장 대조와 UI 배포 | 이번 인계를 이어서 볼 때 |

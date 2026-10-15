@@ -1,4 +1,4 @@
-/* MCP Governance console.
+/* MINT console.
  *
  * The console never calls an MCP tool. Harnesses call tools through the gateway; this
  * screen reads what happened and runs the procedures around it. Every request carries
@@ -428,7 +428,7 @@ async function route() {
     charts.mountVisible(view);
     const h1 = $("h1", view);
     if (h1) {
-      document.title = `${h1.textContent.trim()} · MCP Governance`;
+      document.title = `${h1.textContent.trim()} · MINT`;
       if (moved) { h1.tabIndex = -1; h1.focus(); }
     }
     out.after?.();

@@ -53,8 +53,7 @@ scope가 없는 예전 토큰도 관리권한으로 승격하지 않으므로 �
 [`endpoint-agent/README.md`](../../endpoint-agent/README.md) 절차(장치 키 발급 → 설치기 → 1회 보고 확인 → 제거)를 따른다.
 
 ### 랩 전체를 실제 기기 세 종류에 나눠 올리기
-솔루션 기기(Docker 호스트) · 관리자 PC · 직원 PC로 나누는 절차는 루트
-[README.md "실제 기기로 배치하기"](../../README.md#실제-기기로-배치하기--tailscale-내부망)에
+솔루션 기기(Docker 호스트) · 관리자 PC · 직원 PC로 나누는 절차는 [FIELD.md](FIELD.md)에
 있다. `./console.sh field up|status|pc-command|set-password|register-pc|down` — Tailscale IP를 자동으로 찾아
 `http://<IP>:443`에 게시하며 root.crt·hosts 설정은 필요 없다. 기본 `up`은 바뀌지 않고, CI는
 `verify` 끝에서 loopback 변형으로 실제 Claude Code·Codex CLI와 내부 Git 로그인을 확인한다(D-42·D-46·D-48).

@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "title": "MCP 목표 기능 · WBS 현황",
-  "as_of": "2026-10-15T07:49:18.065077+00:00",
+  "as_of": "2026-10-15T08:17:12.531322+00:00",
   "audit_as_of": "2026-10-15T07:37:13+00:00",
-  "basis_head": "8723ccea4d5be8a766c028db560089183494433e",
+  "basis_head": "b301e42899d3f896813a122c4cf0776dba2f9a98",
   "branch": "10/15-wbs-implementation",
   "snapshot": true,
   "rubric": {
@@ -2919,144 +2919,151 @@
   ],
   "findings": [
     {
-      "id": "LOG-01",
-      "priority": "P1",
-      "title": "자동 프로세스 관측 범위",
-      "state": "Linux 표본 검증",
-      "detail": "PJ1 Linux 관리 UID에서 합성 marker 프로세스 자동 발견·전달이 확인됐다. 네트워크 탐색은 비활성으로 유지했고, 이를 실제 사용자 MCP 프로세스 관측으로 확대하지 않는다.",
-      "verification": "PJ1 자동 검증 run result와 delivered listener, source/deploy hash 기록을 대조. 실제 AppArmor 차단 이벤트 전달도 별도 확인.",
-      "next": "지원 OS·UID·프로세스 식별 조건과 수집 범위를 정하고, 실제 허가된 MCP 프로그램을 포함한 양성·음성·다른 UID 시험을 수행.",
+      "id": "DEV-35",
+      "priority": "P0",
+      "title": "관리 계정 루프백 허용 범위",
+      "state": "결정 대기",
+      "detail": "관리 계정의 루프백 차단이 비인가 로컬 MCP를 막지만 하네스 로그인 콜백·내부 통신도 함께 막는다.",
+      "verification": "기기 OS 이벤트에서 루프백 거부 포트·횟수를 집계.",
+      "next": "하네스 내부 통신만 허용하고 비인가 로컬 MCP 차단은 유지되는지 PJ1에서 확인.",
+      "evidence": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
       "tasks": [
-        "G05.03",
-        "G06.03"
-      ],
-      "evidence": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/result.json"
+        "G05.02",
+        "G08.01"
+      ]
     },
     {
-      "id": "LOG-02",
+      "id": "DEV-29",
       "priority": "P1",
-      "title": "수집 상태와 탐지 0건 구분",
-      "state": "Linux 검증·전체 범위 미완료",
-      "detail": "채널별 상태 및 last-success 보존, collector fault·recovery 경로를 검증했다. 네트워크 탐색 disabled는 0건 성공과 구별하고, Windows 실제기기는 확인하지 않았다.",
-      "verification": "PJ1 result/delivered, 9개 관리형 회귀, 관측/auth 회귀와 PostgreSQL 전용 8조건 기록.",
-      "next": "실제 운영 단말에서 stale/offline/unauthorized/partial/failure 상태와 UI의 번역·복구 표현을 OS별 검증.",
+      "title": "MCP 업스트림 세션 재사용",
+      "state": "설계 비교",
+      "detail": "호출마다 업스트림 연결·도구 목록을 다시 받아 원격 MCP 지연의 대부분을 차지한다.",
+      "verification": "실제 SDK 호출의 구간별 처리 시간(연결·목록·호출).",
+      "next": "주체·서버 결속, TTL, 종료·철회 시 닫기를 지키는 재사용과 계약 재확인 방식 결정.",
+      "evidence": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
       "tasks": [
-        "G06.03"
-      ],
-      "evidence": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/automatic-check.jsonl"
+        "G07.02",
+        "G09.02"
+      ]
     },
     {
-      "id": "LOG-03",
-      "priority": "P1",
-      "title": "전용 상세의 listener 누락",
-      "state": "수정 배포·범위 검수 필요",
-      "detail": "listener 전용 상세와 수집상태 표시가 제공 Console에 추가됐다. 전체 행 수는 최근 200건 조회 범위로 제한되며 전체 누적/페이지 이동은 제공하지 않는다.",
-      "verification": "Console/상태 단위검사와 PJ1 배포 hash 및 전용 화면 수신 확인.",
-      "next": "최근 200건 상한·잘림 안내를 넘는 페이지 이동과 집계가 필요하면 별도 완료조건으로 검증.",
+      "id": "DEV-31",
+      "priority": "P0",
+      "title": "헬퍼 토큰의 셸 자식 접근",
+      "state": "PJ1 확인 필요",
+      "detail": "bash 자식은 헬퍼·소켓이 없는 별도 프로필로 분리했다. 키트 재설치 뒤 실기기에서 확인한다.",
+      "verification": "자체 점검·AppArmor 구문·교차 리뷰.",
+      "next": "PJ1 키트 재설치 후 하네스 셸에서 헬퍼 실행이 거부되는지 확인.",
+      "evidence": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
       "tasks": [
-        "G06.01",
-        "G06.03"
-      ],
-      "evidence": "research/llm-wiki/analysis/endpoint-log-fix/deployment.json"
+        "G05.01"
+      ]
     },
     {
-      "id": "LOG-04",
-      "priority": "P1",
-      "title": "부분 snapshot에서 기존 행 보존",
-      "state": "격리 DB 회귀 PASS",
-      "detail": "불완전·legacy unmarked-empty·source mismatch에서 삭제하지 않고, 명시적 complete에서만 해당 범위 삭제하며 delete failure는 transaction rollback한다.",
-      "verification": "전용 PostgreSQL schema에서 8가지 독립 사전/사후 조건 모두 PASS; schema dropped 확인.",
-      "next": "운영 사용량에서 cap·다중 source와 offline 재시도 조건을 확장 검증하고 지원 계약을 유지.",
+      "id": "DEV-37",
+      "priority": "P2",
+      "title": "Tailscale 직접 경로",
+      "state": "사용자 결정",
+      "detail": "솔루션 기기의 Tailscale이 WSL2 NAT 안에 있어 DERP 중계로 통신한다.",
+      "verification": "PJ1 망 품질 표본(RTT·지터).",
+      "next": "WSL 미러 네트워킹 또는 호스트 Tailscale로 직접 경로 확인.",
+      "evidence": "research/llm-wiki/analysis/wbs-1015/appliance-evidence.json",
       "tasks": [
-        "G05.03",
-        "G06.03"
-      ],
-      "evidence": "research/llm-wiki/analysis/endpoint-log-fix/pg-snapshot-deployed.jsonl"
+        "G09.02"
+      ]
     },
     {
-      "id": "LOG-05",
-      "priority": "P1",
-      "title": "오래된 관측 상태 처리",
-      "state": "회귀 및 PJ1 복구 확인",
-      "detail": "stale 관측을 현재 탐지 0건으로 바꾸지 않으며 보수적 listener count를 유지하는 조건과 collector failure 후 last-success/cursor 보존·복구를 확인했다.",
-      "verification": "격리 PG stale/rollback 조건 PASS; PJ1 fault-visible·last-success-preserved·cursor-no-advance·recovery true.",
-      "next": "장기 운용 중 stale 경계와 UI 표시·경보 운영기준을 제품 규모에서 검증.",
+      "id": "DEV-36",
+      "priority": "P2",
+      "title": "팀원 작업 반영 경로",
+      "state": "안내 필요",
+      "detail": "기기 작업본을 직접 복사하면 통합 브랜치 변경이 지워진다.",
+      "verification": "3-way 병합으로 기기 복사 5회를 반영.",
+      "next": "팀원 브랜치를 통합 브랜치 위로 옮기고 기기에는 브랜치만 배포.",
+      "evidence": "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
       "tasks": [
-        "G06.03",
-        "G09.03"
-      ],
-      "evidence": "research/llm-wiki/analysis/endpoint-log-fix/pj1-live/result.json"
-    },
-    {
-      "id": "LOG-06",
-      "priority": "P1",
-      "title": "Windows 차단 이벤트 수집 경로",
-      "state": "코드·합성 단위검사만 완료",
-      "detail": "Windows collector 코드와 합성 단위 검사는 확인됐지만 실제 Windows 기기 수집·권한·전달은 미검증이다. 사용자는 우선 Linux 범위를 선택했다.",
-      "verification": "정적 source hash 및 PowerShell parser/unit checks; 실제 Windows managed endpoint 시험 없음.",
-      "next": "Linux 완료 범위와 분리해 Windows를 지원할 때 실제 이벤트 source·권한·offline recovery를 실기기로 확인.",
-      "tasks": [
-        "G05.04",
-        "G06.01",
-        "G06.03"
-      ],
-      "evidence": "research/llm-wiki/analysis/endpoint-log-fix/source-reviewed.json"
+        "G10.03"
+      ]
     }
   ],
   "pipeline": [
     {
-      "title": "기기에서 관측",
-      "state": "부분",
-      "detail": "관리 Linux UID에서 합성 marker 프로세스와 실제 AppArmor 거부 이벤트를 각각 확인했다. 다른 UID·Windows·실제 MCP 앱 프로세스는 미검증."
+      "title": "구현",
+      "state": "37.0 / 40",
+      "detail": "코드·설정이 저장소에 있는가"
     },
     {
-      "title": "수집·전송",
-      "state": "부분",
-      "detail": "PJ1 Linux managed 경로에서 process/stdio 및 OS event 자동 전달, collector failure 표시와 복구를 확인했다. 네트워크 탐색은 비활성이다."
+      "title": "회귀 검사",
+      "state": "31.5 / 40",
+      "detail": "병합 소스에서 격리 시험이 통과했는가"
     },
     {
-      "title": "솔루션 수신·저장",
-      "state": "부분",
-      "detail": "OS 이벤트 1388 표본의 안전한 projection 일치와 격리 DB 8조건을 확인했다. 원본 전체·raw HTTP 전체 무손실은 미확인."
+      "title": "배포",
+      "state": "32.5 / 40",
+      "detail": "솔루션 기기에 배포된 판본에 포함됐는가"
     },
     {
-      "title": "화면 표시",
-      "state": "부분",
-      "detail": "listener 전용 상세와 channel 상태 표시를 배포했다. 200건은 최근 조회 범위이며 전체 누적/페이지 이동은 없다."
+      "title": "실제 환경",
+      "state": "9.5 / 40",
+      "detail": "PJ1 실제 하네스·실제 MCP로 확인했는가"
     },
     {
-      "title": "정책·감사 해석",
-      "state": "부분",
-      "detail": "비활성·실패·stale과 0건을 구분하는 경로를 보강했다. 수집기는 자기 보고를 포함하며 OS 전체 관측을 보장하지 않는다."
+      "title": "완료 검수",
+      "state": "0 / 40",
+      "detail": "완료조건 전체를 검수했는가"
     }
   ],
   "live_sample": {
-    "service_active": "active",
-    "netscan": "disabled",
-    "automatic_process": true,
-    "other_uid_excluded": true,
-    "os_event_id": 1388,
-    "normalized_projection_equal": true,
-    "projection_sha256": "a16641b772e20cd56cf5794939f768d7adfd0c0128741a0d5e42b1dfa9f1d53b",
-    "source_artifact_sha256": "5de2bf406a8bdcdec8f1ac6c7921f8acfa5c5c22f4a4273a9faab407643d22ef",
-    "poll_delivery_seconds": 9.46,
-    "ingest_latency_seconds": 9.43,
-    "collector_fault_visible": true,
-    "last_success_preserved": true,
-    "cursor_no_advance_on_failure": true,
-    "recovery": true,
-    "duplicate_event_rows": 1,
-    "periodic_replay_dedup": true,
-    "listener_count_now": 0,
-    "listener_count_sample": 1,
-    "last_seen_at": "2026-10-14T12:12:03.579396+00:00",
-    "last_scan_at": "2026-10-14T12:08:53.983227+00:00",
-    "served_console_sha256": "5c46a6632126e48dfb94aa698839e6e97a1ff87e10cf887ebd24fc44015d1601",
-    "observed_at": "2026-10-14T12:08:45.615202Z",
-    "received_at": "2026-10-14T12:08:55.047985Z",
-    "kind": "실행 차단",
-    "target": "python3.12",
-    "scope": "PJ1 관리 Linux 범위; 합성 marker 프로세스 자동 전송과 실제 OS 차단 이벤트 표본. 실제 MCP/모델 호출 없음."
+    "title": "context7 · resolve-library-id",
+    "scope": "PJ1 관리형 단말에서 공식 MCP SDK로 호출한 실제 원격 MCP. 하네스 자연어 호출이 아니다.",
+    "values": [
+      [
+        "판정",
+        "Allow"
+      ],
+      [
+        "정책",
+        "P-AUTHZ-ALLOW-001"
+      ],
+      [
+        "업스트림 실행",
+        "예"
+      ],
+      [
+        "전체",
+        "797.34 ms"
+      ],
+      [
+        "연결",
+        "228.02 ms"
+      ],
+      [
+        "도구 목록",
+        "216.68 ms"
+      ],
+      [
+        "도구 호출",
+        "251.3 ms"
+      ],
+      [
+        "PJ1 왕복 p50",
+        "183.2 ms"
+      ]
+    ],
+    "hashes": [
+      [
+        "원장 번호",
+        "827"
+      ],
+      [
+        "기록 시각",
+        "2026-10-15 07:05:17.124357+00:00"
+      ],
+      [
+        "근거 파일 SHA-256",
+        "175046f2c361b1d984f06f91c7d335a8051703efdbfe0522a075a9d7a6c80f5f"
+      ]
+    ]
   },
   "exclusions": [
     "D-79 자가 승인 9-tool 원장 744–800은 긍정 검증에서 제외.",
@@ -3075,27 +3082,27 @@
   "next_actions": [
     {
       "order": 1,
-      "title": "200건 범위와 상세 탐색 완성",
-      "tasks": "G06.03",
-      "done_when": "200건 상한에서 잘림과 조회 범위가 드러나고, 전체 누적집계 또는 페이지 이동 정책이 확인된다."
+      "title": "관리 하네스 자연어 E2E",
+      "tasks": "G08.02 · G06.01",
+      "done_when": "PJ1 관리 계정의 실제 하네스가 등록된 실제 MCP를 자연어로 호출하고 원장·엔드포인트 기록이 같은 호출로 이어진다."
     },
     {
       "order": 2,
-      "title": "실제 허가 MCP 프로세스 범위 검증",
-      "tasks": "G05.03",
-      "done_when": "격리된 실제 지원 MCP 앱 실행을 합성 marker와 구분하고, 자동·수동·OS event·network scope 및 다른 UID 경계를 확인한다."
+      "title": "루프백 허용 범위 결정",
+      "tasks": "G05.02",
+      "done_when": "하네스 내부 통신은 동작하고 비인가 로컬 MCP는 독립 효과 0으로 남는다."
     },
     {
       "order": 3,
-      "title": "전체 이벤트 원본·projection provenance",
-      "tasks": "G06.04",
-      "done_when": "원본/수신 artifact와 안전한 projection digest·변환·누락 범위를 이벤트별로 연결하고 end-to-end mismatch를 검증한다."
+      "title": "업스트림 세션 재사용",
+      "tasks": "G07.02 · G09.02",
+      "done_when": "재사용 세션이 주체·서버에 결속되고 종료·철회 시 닫히며 지연이 줄어든 것을 같은 호출로 측정한다."
     },
     {
       "order": 4,
-      "title": "Windows 실기기 경계 검증",
-      "tasks": "G05.04 · G06.01 · G06.03",
-      "done_when": "사용자가 Windows 지원 범위를 선택하면 실제 Windows 이벤트 생산원·권한·전송·offline recovery를 검증한다."
+      "title": "종료 후 잔존 접근 시험",
+      "tasks": "G07.03 · G07.04",
+      "done_when": "실제 원격 MCP의 자격 폐기 뒤 재접근 실패와 설정·백업 복구 시 재활성화 불가를 확인한다."
     }
   ],
   "source_snapshot": {

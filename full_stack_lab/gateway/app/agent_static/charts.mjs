@@ -14,22 +14,22 @@ const calm = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 function base() {
   return {
     animation: !calm(),
-    textStyle: { fontFamily: css("--sans"), fontSize: 12, color: css("--ink-2") },
+    textStyle: { fontFamily: css("--sans"), fontSize: 15, color: css("--ink-2") },
     // richText: the tooltip is drawn on the canvas, not built as HTML. Series names come
     // from the audit log (a harness names itself), so nothing here may reach innerHTML;
     // HTML tooltips would also need inline style attributes, which the CSP refuses.
     tooltip: {
       renderMode: "richText", backgroundColor: css("--panel"), borderColor: css("--line-2"), borderWidth: 1,
-      textStyle: { color: css("--ink"), fontSize: 12 }, confine: true,
+      textStyle: { color: css("--ink"), fontSize: 15 }, confine: true,
     },
     legend: { type: "scroll", pageIconColor: css("--ink-2"), pageTextStyle: { color: css("--ink-2") }, top: 0, left: 0, icon: "circle", itemWidth: 10, itemHeight: 10, itemGap: 18,
-      textStyle: { color: css("--ink-2"), fontSize: 12 } },
+      textStyle: { color: css("--ink-2"), fontSize: 15 } },
     grid: { left: 4, right: 20, top: 44, bottom: 4, containLabel: true },
   };
 }
 const axis = (extra = {}) => ({
   axisLine: { lineStyle: { color: css("--line-2") } }, axisTick: { show: false },
-  axisLabel: { color: css("--ink-3"), fontSize: 12 }, splitLine: { lineStyle: { color: css("--line") } }, ...extra,
+  axisLabel: { color: css("--ink-3"), fontSize: 15 }, splitLine: { lineStyle: { color: css("--line") } }, ...extra,
 });
 
 // ── mounting ─────────────────────────────────────────────────────────────
@@ -136,7 +136,7 @@ export function redrawAll() {
 /** Stacked columns (or bars) per category: [{name, color, data}]. */
 export function stacked(categories, series, { horizontal = false, onClick, grouped = false, unit = "" } = {}) {
   const cat = axis({ type: "category", data: categories,
-    axisLabel: { color: css("--ink-2"), fontSize: 12, ...(horizontal ? { width: 160, overflow: "truncate" } : {}) } });
+    axisLabel: { color: css("--ink-2"), fontSize: 15, ...(horizontal ? { width: 160, overflow: "truncate" } : {}) } });
   const val = axis({ type: "value", minInterval: 1 });
   const valueFormatter = unit ? (v) => (v == null ? "—" : `${Math.round(v * 10) / 10} ${unit}`) : undefined;
   return {
@@ -166,7 +166,7 @@ export function donut(items, { total = true } = {}) {
     legend: { ...base().legend, type: "scroll", top: undefined, bottom: 0, left: "center", orient: "horizontal",
       textStyle: { ...base().legend.textStyle, width: 120, overflow: "truncate" } },
     title: total ? { text: String(sum), subtext: "건", left: "center", top: "33%",
-      textStyle: { fontSize: 30, fontWeight: 700, color: css("--ink") }, subtextStyle: { color: css("--ink-3"), fontSize: 12 } } : undefined,
+      textStyle: { fontSize: 38, fontWeight: 700, color: css("--ink") }, subtextStyle: { color: css("--ink-3"), fontSize: 15 } } : undefined,
     series: [{
       type: "pie", radius: ["48%", "72%"], center: ["50%", "44%"], avoidLabelOverlap: true,
       label: { show: false }, itemStyle: { borderColor: css("--panel"), borderWidth: 2 },
@@ -183,7 +183,7 @@ export function bars(items, { unit = "건", tone = "--brand", onClick } = {}) {
     grid: { ...base().grid, top: 8 },
     xAxis: axis({ type: "value", minInterval: 1 }),
     yAxis: axis({ type: "category", data: items.map((i) => i.name), inverse: true,
-      axisLabel: { color: css("--ink-2"), fontSize: 12, width: 180, overflow: "truncate" } }),
+      axisLabel: { color: css("--ink-2"), fontSize: 15, width: 180, overflow: "truncate" } }),
     series: [{ type: "bar", barMaxWidth: 20, data: items.map((i) => ({ value: i.value, itemStyle: { color: i.color || css(tone) } })),
       label: { show: true, position: "right", color: css("--ink-2"), formatter: `{c}${unit}` } }],
     onClick,
@@ -200,7 +200,7 @@ export function sankey({ nodes, links }) {
     series: [{
       type: "sankey", left: 8, right: 110, top: 8, bottom: 8, nodeWidth: 14, nodeGap: 12, draggable: false, nodeAlign: "left",
       emphasis: { focus: "adjacency" },
-      label: { color: css("--ink"), fontSize: 12 },
+      label: { color: css("--ink"), fontSize: 15 },
       lineStyle: { color: "gradient", opacity: 0.35, curveness: 0.5 },
       data: nodes.map((n) => ({ name: n.name, itemStyle: { color: decisionColor[n.name] || layerColor[n.layer] || css("--ink-3") } })),
       links,
@@ -214,7 +214,7 @@ export function columns(items, { tone = "--brand" } = {}) {
     legend: { show: false },
     tooltip: { ...base().tooltip, trigger: "axis", axisPointer: { type: "shadow" } },
     grid: { ...base().grid, top: 16 },
-    xAxis: axis({ type: "category", data: items.map((i) => i.name), axisLabel: { color: css("--ink-2"), fontSize: 12, interval: 0 } }),
+    xAxis: axis({ type: "category", data: items.map((i) => i.name), axisLabel: { color: css("--ink-2"), fontSize: 15, interval: 0 } }),
     yAxis: axis({ type: "value", minInterval: 1 }),
     series: [{ type: "bar", barMaxWidth: 36, data: items.map((i) => ({ value: i.value, itemStyle: { color: i.color || css(tone) } })),
       label: { show: true, position: "top", color: css("--ink-2") } }],

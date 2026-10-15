@@ -1,4 +1,4 @@
-# full_stack_lab — BoB Corp MCP 거버넌스 랩 (v3.1)
+# full_stack_lab — MINT 게이트웨이와 실습 스택
 
 사내망 직원 PC의 AI 하네스(Claude Code·Codex CLI·Gemini CLI·OpenCode) → Gateway(`/mcp/<server>/`) → 실제 MCP 서버 10종 → 회사 시스템.
 같은 스택을 실제 기기에 올리는 field 모드는 [8절](#8-실제-기기로-배치하기).
