@@ -1,6 +1,12 @@
 FROM zricethezav/gitleaks:v8.30.1 AS secrets
+# Native engines are compiled here; the runtime image gets only the shared objects.
+FROM golang:1.24.13-bookworm AS native-go
+WORKDIR /src/gitleaks
+COPY native/gitleaks/ ./
+RUN CGO_ENABLED=1 go build -trimpath -buildmode=c-shared -o /out/libmcpgw_gitleaks.so .
 FROM python:3.12-slim
 COPY --from=secrets /usr/bin/gitleaks /usr/local/bin/gitleaks
+COPY --from=native-go /out/libmcpgw_gitleaks.so /usr/local/lib/
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY requirements.txt .
