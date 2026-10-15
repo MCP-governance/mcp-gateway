@@ -16,16 +16,17 @@ const TOKEN_KEY = "mcp-console-token";
 const THEME_KEY = "mcp-console-theme";
 const NAV_KEY = "mcp-console-nav-v4";
 const ADMIN_IDLE_MS = 30 * 60 * 1000;
+const ADMIN_MAX_MS = 8 * 60 * 60 * 1000;
 const SESSION_WARNING_MS = 2 * 60 * 1000;
 const token = localStorage.getItem(TOKEN_KEY);
 if (!token) location.replace("/login");
 
-function tokenExpiresAt(value) {
+function tokenTimes(value) {
   try {
     const encoded = value.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
     const payload = JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=")));
-    return Number(payload.exp) * 1000;
-  } catch { return 0; }
+    return { issuedAt: Number(payload.iat) * 1000, expiresAt: Number(payload.exp) * 1000 };
+  } catch { return { issuedAt: 0, expiresAt: 0 }; }
 }
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -217,6 +218,12 @@ function when(value, { seconds = false } = {}) {
   if (Number.isNaN(d.getTime())) return String(value);
   const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}${seconds ? `:${pad(d.getSeconds())}` : ""}`;
   return d.toDateString() === new Date().toDateString() ? hm : `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hm}`;
+}
+function dateTimeInput(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 }
 function ago(value) {
   if (!value) return "—";
@@ -537,11 +544,14 @@ ROUTES.overview = async (_, tab) => {
   const stages = lat?.stages || [];
   const hoursLat = lat?.series || [];
   feed.rows = mergeRows([], blocked.rows);
-  const t = o.today, x = o.execution, term = o.termination || {};
+  const x = o.execution, term = o.termination || {};
+  const todayFilter = `since=${encodeURIComponent(o.today_since)}&event_kind=tools%2Fcall`;
   const buckets = hourBuckets(o.series);
+  const trafficDecisions = Object.fromEntries(DECISIONS.map((decision) => [decision,
+    buckets.reduce((sum, bucket) => sum + Number(bucket[decision] || 0), 0)]));
   const byServer = splitBy(o.flows, "server", (r) => Number(r.n));
   const flowTotal = o.flows.reduce((s, f) => s + Number(f.n || 0), 0);
-  const stations = o.workstations;
+  const stations = (o.workstations || []).filter((station) => Number(station.calls) > 0);
   const abnormalServers = (o.servers || []).filter((s) => !["READY", "DISABLED"].includes(s.status)).length;
   const items = dedupeItems(pl?.items || []);
   const count = (s) => items.filter((i) => i.state === s).length;
@@ -577,10 +587,10 @@ ROUTES.overview = async (_, tab) => {
       head: head("대시보드", { status: modeChip(o.enforcement) }),
       kpis: html`<div class="dashboard-kpi-groups">
         <section><h2>금일 운영 현황</h2>${kpiStrip([
-          ["전체 요청", x.tool_calls, "", "#/activity"],
-          ["실행된 요청", x.executed, "allow", "#/activity?execution=executed"],
-          ["차단된 요청", x.blocked, "block", "#/activity?decision=Block"],
-          ["실행 미확인", x.unknown, "alert", "#/activity?execution=unknown"]])}</section>
+          ["전체 요청", x.tool_calls, "", `#/activity?${todayFilter}`],
+          ["실행된 요청", x.executed, "allow", `#/activity?${todayFilter}&execution=executed`],
+          ["차단된 요청", x.blocked, "block", `#/activity?${todayFilter}&decision=Block`],
+          ["실행 미확인", x.unknown, "alert", `#/activity?${todayFilter}&execution=unknown`]])}</section>
         <section><h2>현재 상태</h2>${kpiStrip([
         ["통제 적용 기기", devices.filter((d) => d.account_state === "endpoint_enforced").length, "", "#/coverage?t=devices"],
         ["우회 가능 경로", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"],
@@ -596,6 +606,7 @@ ROUTES.overview = async (_, tab) => {
             <a class="action-link" href="#/intake"><span>도입 조치 필요</span><b class="n">${o.intake_actions || 0}</b></a>
             <a class="action-link" href="#/termination"><span>종료 기한 초과</span><b class="n">${term.overdue || 0}</b></a>
           </div>`)}
+          ${panel("종료 및 폐기 현황", chartBox("c-term", "종료 및 폐기 현황"), { end: html`<a class="btn sm" href="#/termination">열기</a>` })}
           ${panel("최근 차단 10건", feed.rows.length ? decisionTable(feed.rows) : empty("차단된 호출 없음"), { flush: true, end: html`<a class="btn sm" href="#/activity?decision=Block">차단 로그 <span aria-hidden="true">↗</span></a>` })}
         </div>` },
         { key: "planes", label: "통제 적용 현황", body: html`<div class="stack">
@@ -608,17 +619,18 @@ ROUTES.overview = async (_, tab) => {
         { key: "exec", label: "도구 실행 및 응답", body: html`<div class="stack">
           ${panel("도구 호출 흐름", (o.pipeline || []).length ? chartBox("c-ov-pipeline", "오늘 도구 호출의 판정에서 응답 전달까지의 흐름", "xl") : empty("오늘 도구 호출 없음"), { sub: "오늘" })}</div>` },
         { key: "traffic", label: "트래픽", body: html`<div class="stack">
-          ${panel("시간대별 판정", chartBox("c-traffic", "최근 24시간 시간대별 판정 건수", "lg"), { sub: "최근 24시간" })}
-          <div class="grid c12">
-            ${panel("판정 비율", chartBox("c-share", "오늘 판정 비율", "sm"), { sub: "오늘" })}
-            ${panel("서버별 호출", chartBox("c-servers", "최근 24시간 서버별 호출과 판정", "sm"), { sub: `${byServer.length}개 서버 · 24시간` })}
+          <div class="grid c31">
+            ${panel("시간대별 판정", chartBox("c-traffic", "최근 24시간 시간대별 판정 건수", "lg"), { sub: "최근 24시간" })}
+            ${panel("판정 비율", chartBox("c-share", "최근 24시간 판정 비율", "sm"), { sub: "최근 24시간" })}
           </div>
-          ${panel("하네스 → MCP 서버 → 판정", flowTotal ? chartBox("c-flow", "하네스에서 서버를 거쳐 판정까지의 호출 흐름", "xl") : empty("최근 24시간 호출 없음"), { sub: `${flowTotal}건 · 24시간` })}
-          ${panel("엔드포인트", html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>하네스</th><th class="num">24시간 호출</th><th>통제 상태</th><th>마지막 호출</th></tr></thead><tbody>
-            ${stations.map((w) => html`<tr><td>${entityRef(w.endpoint_id)}</td><td><b>${w.display_name || "—"}</b><span class="sub">${w.department || ""}</span></td>
+          ${panel("MCP 서버별 호출", chartBox("c-servers", "최근 24시간 MCP 서버별 호출과 판정", "sm"), { sub: "최근 24시간" })}
+          ${panel("차단 및 경보 정책", o.top_policies.length ? chartBox("c-policies", "최근 24시간 차단 및 경보가 많은 정책") : empty("최근 24시간 차단 및 경보 없음"), { sub: "최근 24시간" })}
+          ${panel("클라이언트별 호출 흐름", flowTotal ? chartBox("c-flow", "클라이언트에서 MCP 서버를 거쳐 판정까지의 호출 흐름", "xl") : empty("최근 24시간 호출 없음"), { sub: `${flowTotal}건 | 최근 24시간` })}
+          ${panel("엔드포인트별 호출", html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>최근 클라이언트</th><th class="num">24시간 호출</th><th>통제 상태</th><th>마지막 호출</th></tr></thead><tbody>
+            ${stations.map((w) => html`<tr><td>${entityRef(w.endpoint_id)}</td><td><b>${w.display_name || w.owner_token}</b><span class="sub">${w.department || ""}</span></td>
               <td>${w.harness ? chip("plain", harnessLabel(w.harness)) : NONE}</td><td class="num">${w.calls}</td>
-              <td>${deviceOf[w.endpoint_id] ? statusPair(deviceOf[w.endpoint_id]) : chip("outline", "관찰만")}</td><td class="small">${ago(w.last_call)}</td></tr>`)}
-            </tbody></table>${stations.length ? "" : empty("엔드포인트 없음")}`, { flush: true })}</div>` },
+              <td>${deviceOf[w.endpoint_id] ? statusPair(deviceOf[w.endpoint_id]) : chip("outline", "확인 불가")}</td><td class="small">${ago(w.last_call)}</td></tr>`)}
+            </tbody></table>${stations.length ? "" : empty("최근 24시간 호출 없음")}`, { flush: true })}</div>` },
         { key: "latency", label: "지연", body: html`<div class="stack">
           ${latencyCards(lat, net)}
           ${panel("구간별 처리 시간", stages.length ? chartBox("c-lat-stages", "최근 24시간 도구 호출의 구간별 처리 시간", "lg") : empty("측정된 호출 없음"),
@@ -635,10 +647,6 @@ ROUTES.overview = async (_, tab) => {
               <td class="num">${d.state === "fresh" ? msText(d.jitter_ms) : "—"}</td><td class="num">${d.state === "fresh" ? pctText(d.failure_pct) : "—"}</td>
               <td class="small">${d.state === "fresh" ? ago(d.measured_at) : d.state === "stale" ? chip("alert", "오래됨") : chip("outline", "확인 불가")}</td></tr>`)}</tbody></table>`
             : empty("측정된 엔드포인트 없음"), { flush: true })}</div></div>` },
-        { key: "risk", label: "위험종료", n: t.Block, hot: t.Block > 0, body: html`<div class="grid c2">
-            ${panel("자주 걸린 정책", o.top_policies.length ? chartBox("c-policies", "최근 24시간 차단·경보가 많은 정책") : empty("최근 24시간 차단·경보 없음"), { sub: "최근 24시간" })}
-            ${panel("종료·폐기", chartBox("c-term", "종료·폐기 현황"), { end: html`<a class="btn sm" href="#/termination">열기</a>` })}
-          </div>` },
       ],
     }),
     charts: {
@@ -655,24 +663,23 @@ ROUTES.overview = async (_, tab) => {
       "c-lat-hours": () => charts.stacked(hoursLat.map((r) => `${new Date(r.hour).getHours()}시`), [
         { name: "중앙값", color: charts.color("Allow"), data: hoursLat.map((r) => r.p50) },
         { name: "95%", color: charts.color("Alert"), data: hoursLat.map((r) => r.p95) }], { grouped: true, unit: "ms" }),
-      "c-share": () => charts.donut(DECISIONS.map((d) => ({ name: DECISION_LABEL[d], value: t[d], color: charts.color(d) }))),
+      "c-share": () => charts.donut(DECISIONS.map((d) => ({ name: DECISION_LABEL[d], value: trafficDecisions[d], color: charts.color(d) }))),
       "c-servers": () => charts.decisionColumns(byServer.map((g) => g.key), byServer, {
         horizontal: true, grouped: true, onClick: (e) => { location.hash = `#/activity?server=${encodeURIComponent(e.name)}`; } }),
       "c-flow": () => charts.sankey(sankeyData(o.flows, (d) => DECISION_LABEL[d] || d)),
       "c-policies": () => charts.bars(o.top_policies.map((p) => ({ name: p.policy_id, value: Number(p.n), color: charts.color(p.decision) }))),
       "c-term": () => charts.columns([
         { name: "진행", value: term.open_cases }, { name: "종결 대기", value: term.awaiting_close },
-        { name: "T2·T3", value: term.unresolved_grades, color: charts.color("Alert") }, { name: "기한 초과", value: term.overdue, color: charts.color("Block") },
+        { name: "T2 및 T3", value: term.unresolved_grades, color: charts.color("Alert") }, { name: "기한 초과", value: term.overdue, color: charts.color("Block") },
         { name: "폐기 잔존", value: term.retired_residue, color: charts.color("Alert") }, { name: "미등록 MCP", value: term.shadow_endpoints, color: charts.color("Block") }]),
     },
-    after: startSystemMetrics,
   };
 };
 
 // Activity keeps its rows between renders so live updates and the detail drawer
 // read from the same list. Paused, it keeps polling but holds new rows back and
 // counts them, so the list stops moving without going stale.
-const FEED_FILTERS = ["decision", "server", "since", "until", "execution", "person", "endpoint", "policy"];
+const FEED_FILTERS = ["decision", "server", "since", "until", "execution", "person", "endpoint", "policy", "event_kind"];
 const FEED_PAGE_SIZE = 50;
 const feed = { rows: [], pending: [], cursor: 0, filters: Object.fromEntries(FEED_FILTERS.map((key) => [key, ""])), query: "",
   live: true, servers: [], lastOk: 0, failing: false, gen: 0, page: 1, pageSize: FEED_PAGE_SIZE,
@@ -841,8 +848,8 @@ ROUTES.activity = async (_, tab, query) => {
         </div><section class="panel feed-panels">
           <div class="filters">
             <label class="grow">검색<input data-feed-search type="search" maxlength="120" value="${feed.query}" placeholder="사용자, 엔드포인트, 도구, 정책" aria-label="호출 검색" /></label>
-            <label>시작<input data-filter="since" type="datetime-local" value="${f.since}" aria-label="조회 시작 시각" /></label>
-            <label>종료<input data-filter="until" type="datetime-local" value="${f.until}" aria-label="조회 종료 시각" /></label>
+            <label>시작<input data-filter="since" type="datetime-local" value="${dateTimeInput(f.since)}" aria-label="조회 시작 시각" /></label>
+            <label>종료<input data-filter="until" type="datetime-local" value="${dateTimeInput(f.until)}" aria-label="조회 종료 시각" /></label>
             <label>판정<select data-filter="decision" aria-label="판정">${option("", "모든 판정", f.decision)}
               ${Object.entries(DECISION).map(([k, [, label]]) => option(k, label, f.decision))}</select></label>
             <label>MCP 서버<select data-filter="server" aria-label="서버">${option("", "모든 서버", f.server)}${servers.map((s) => option(s, s, f.server))}</select></label>
@@ -2670,14 +2677,19 @@ function startAdminSessionGuard() {
   const warning = $("#session-warning");
   const message = $("#session-warning-text");
   const keepUsing = $("#session-continue");
+  const dismiss = $("#session-dismiss");
   const activityKey = `mcp-console-admin-activity-${viewer.user_id}`;
-  const absoluteAt = tokenExpiresAt(token);
+  const { issuedAt, expiresAt: tokenExpiresAt } = tokenTimes(token);
+  const maximumAt = (issuedAt || Date.now()) + ADMIN_MAX_MS;
   let lastActivity = Date.now();
   let ending = false;
+  let warningDismissed = false;
+  let currentWarningReason = "";
 
   const recordActivity = (event) => {
     if (!event.isTrusted) return;
     lastActivity = Date.now();
+    if (currentWarningReason === "idle") warningDismissed = false;
     localStorage.setItem(activityKey, String(lastActivity));
   };
   for (const name of ["pointerdown", "keydown", "wheel"]) {
@@ -2690,7 +2702,12 @@ function startAdminSessionGuard() {
 
   keepUsing.addEventListener("click", () => {
     lastActivity = Date.now();
+    warningDismissed = false;
     localStorage.setItem(activityKey, String(lastActivity));
+  });
+  dismiss.addEventListener("click", () => {
+    warningDismissed = true;
+    warning.close();
   });
 
   const endSession = async (reason) => {
@@ -2706,19 +2723,25 @@ function startAdminSessionGuard() {
     if (ending) return;
     const now = Date.now();
     const idleAt = lastActivity + ADMIN_IDLE_MS;
-    const absoluteFirst = absoluteAt <= idleAt;
-    const deadline = Math.min(idleAt, absoluteAt);
+    const deadline = Math.min(idleAt, maximumAt, tokenExpiresAt);
+    const reason = idleAt <= maximumAt && idleAt <= tokenExpiresAt ? "idle"
+      : maximumAt <= tokenExpiresAt ? "maximum" : "authentication";
     const remaining = deadline - now;
-    if (remaining <= 0) { endSession(absoluteFirst ? "maximum" : "idle"); return; }
+    if (remaining <= 0) { endSession(reason); return; }
     if (remaining > SESSION_WARNING_MS) {
       if (warning.open) warning.close();
+      warningDismissed = false;
       return;
     }
+    if (warningDismissed) return;
     const seconds = Math.ceil(remaining / 1000);
     const minutes = Math.floor(seconds / 60);
     const rest = seconds % 60;
-    message.textContent = `${absoluteFirst ? "최대 로그인 시간이" : "유휴 시간이"} ${minutes}분 ${rest}초 후 만료됩니다.`;
-    keepUsing.hidden = absoluteFirst;
+    const reasonText = reason === "idle" ? "유휴 시간이"
+      : reason === "maximum" ? "최대 로그인 시간이" : "인증 세션이";
+    message.textContent = `${reasonText} ${minutes}분 ${rest}초 후 만료됩니다.`;
+    keepUsing.hidden = reason !== "idle";
+    currentWarningReason = reason;
     if (!warning.open) warning.showModal();
   }, 1000);
 }
