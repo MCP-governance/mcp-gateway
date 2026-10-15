@@ -1,12 +1,16 @@
 # 개발 현황 — 2026-10-15
 
-## 목표 기능 WBS 구현·통합·저지연화 (최신)
+## 관리 계정 루프백 차단 원인·설계 (DEV-35)
+
+[작업 보고](reports/2026-10-15-dev35-loopback.md) · [근거](../analysis/dev35-loopback/README.md): 10-15 루프백 거부 399건은 전부 Codex 브라우저 로그인이었다(브라우저→관리 Codex 1455/1457 SYN-ACK 392, 자기 `/cancel` 7). Claude·하네스 내부 IPC 거부는 0건이며, "임시 포트 쌍"은 관측기가 `SPT`·플래그를 버려 생긴 오독이라 정정했다. PJ1 커널 일회용 netns 시험으로 추천안(장치 코드 기본 + 소유자가 시작한 연결의 응답만 허용, ct mark 0x100)이 E13 반례 7종을 그대로 막는 것을 확인했고, 포트 허용은 1455 선점 반례로 기각했다(D-107 제안). 키트 변경·PJ1 재설치·회귀 R1–R9는 사용자 승인 대기.
+
+## 목표 기능 WBS 구현·통합·저지연화
 
 [작업 보고](reports/2026-10-15-wbs-implementation.md) · [WBS 재산정](../analysis/development-wbs/README.md) · [근거](../analysis/wbs-1015/README.md) · 작업별 보고 [A 엔드포인트 증거](reports/2026-10-15-endpoint-evidence.md) · [B 도입·신원](reports/2026-10-15-intake-identity.md) · [C 종료·전송 경계](reports/2026-10-15-termination-dispatch.md) · [D 검사 코퍼스](reports/2026-10-15-inspection-corpus.md)
 
 Codex 10-13~14 작업·팀원 디자인(기기 직접 수정 5회 포함)·서브에이전트 A–D를 통합 브랜치 `10/15-wbs-implementation`으로 모아 솔루션 기기에 3번 배포했다(최종 `8723cce`, 16:37). 도구 호출 구간별 처리 시간·지연 탭·엔드포인트 망 품질을 화면에 넣었고, 검사 엔진을 프로세스 안 네이티브 코드로 옮겼다(Gitleaks 65.5→1.85 ms, 텍스트 규칙 31개 PCRE2 JIT로 200 KB 74→6.6 ms, re·바이너리와 판정 차이 0). Codex 교차 리뷰 9건과 D가 찾은 U+0000 감사 누락을 고쳤다. 병합본에서 격리 PostgreSQL·실제 Gitea MCP·실제 Presidio 포함 회귀 31건과 로컬 7건이 통과했고, PJ1 실데이터(망 품질 22표본·해시 일치 251건·실제 SDK 호출)로 WBS를 **24.8%→55.2%**(구현 완료 16→34개, 최종 완료 0/40)로 다시 산정했다.
 
-남은 것: 관리 계정 미로그인으로 하네스 자연어 E2E·PJ1 키트 재설치(D-104·D-105) 미실행, 지연의 대부분은 업스트림 SaaS와 Tailscale DERP 중계(솔루션 Tailscale이 WSL2 NAT 안, DEV-37), 관리 계정 루프백 차단이 하네스 로그인 콜백과 충돌(DEV-35), MCP 세션 재사용 결정(DEV-29), 팀원 작업 반영 경로(DEV-36).
+남은 것: 관리 계정 미로그인으로 하네스 자연어 E2E·PJ1 키트 재설치(D-104·D-105) 미실행, 지연의 대부분은 업스트림 SaaS와 Tailscale DERP 중계(솔루션 Tailscale이 WSL2 NAT 안, DEV-37), 관리 계정 루프백 차단이 Codex 브라우저 로그인 콜백과 충돌(DEV-35, 원인 확정·D-107 제안), MCP 세션 재사용 결정(DEV-29), 팀원 작업 반영 경로(DEV-36).
 
 ## 엔드포인트 로그 수정·PJ1 Linux 검증
 

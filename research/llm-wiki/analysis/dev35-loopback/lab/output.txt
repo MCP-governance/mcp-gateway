@@ -1,0 +1,51 @@
+## lab.py — 2026-10-15 17:31 KST 최종 실행(ct mark는 Tailscale 0xff0000과 겹치지 않는 0x100 비트를 OR로 설정), PJ1 커널 7.0.0-38-generic,
+## 일회용 컨테이너(ubuntu:24.04, --cap-add NET_ADMIN, 독립 netns), 키트 규칙은 저장소 endpoint-agent/enforce-linux.py의 nft_rules()를 그대로 렌더링. PJ1 호스트 규칙은 바꾸지 않음.
+## 17:16 첫 실행은 0x4d475731 전체 값을 덮어쓰는 규칙이었고 결과 행은 동일했다.
+7.0.0-38-generic
+nftables v1.0.9 (Old Doc Yak #3)
+== current kit rules (enforce-linux.py nft_rules)
+  BLOCK  owner(1000) -> managed listener (login callback)     127.0.0.1  tcp  [ERR TimeoutError timed out]
+  BLOCK  owner(1000) -> managed listener                      ::1        tcp  [ERR TimeoutError timed out]
+  BLOCK  managed -> managed listener (Codex /cancel)          127.0.0.1  tcp  [ERR OSError [Errno 113] No route to host]
+  BLOCK  managed -> owner listener (E13 local MCP)            127.0.0.1  tcp  [ERR OSError [Errno 113] No route to host]
+  BLOCK  managed -> owner listener (E13 local MCP)            ::1        tcp  [ERR PermissionError [Errno 13] Permission denied]
+  BLOCK  managed -> foreign(1002) listener (E13)              127.0.0.1  tcp  [ERR OSError [Errno 113] No route to host]
+  BLOCK  managed -> owner UDP listener (E13)                  127.0.0.1  udp  [ERR PermissionError [Errno 1] Operation not permitted]
+  BLOCK  foreign(1002) -> managed listener                    127.0.0.1  tcp  [ERR TimeoutError timed out]
+  REACH  owner -> owner listener (unmanaged control)          127.0.0.1  tcp  [pong:ping]
+== proposed: owner-initiated reply on lo
+  REACH  owner(1000) -> managed listener (login callback)     127.0.0.1  tcp  [pong:ping]
+  REACH  owner(1000) -> managed listener                      ::1        tcp  [pong:ping]
+  BLOCK  managed -> managed listener (Codex /cancel)          127.0.0.1  tcp  [ERR OSError [Errno 113] No route to host]
+  BLOCK  managed -> owner listener (E13 local MCP)            127.0.0.1  tcp  [ERR OSError [Errno 113] No route to host]
+  BLOCK  managed -> owner listener (E13 local MCP)            ::1        tcp  [ERR PermissionError [Errno 13] Permission denied]
+  BLOCK  managed -> foreign(1002) listener (E13)              127.0.0.1  tcp  [ERR OSError [Errno 113] No route to host]
+  BLOCK  managed -> owner UDP listener (E13)                  127.0.0.1  udp  [ERR PermissionError [Errno 1] Operation not permitted]
+  BLOCK  foreign(1002) -> managed listener                    127.0.0.1  tcp  [ERR TimeoutError timed out]
+  REACH  owner -> owner listener (unmanaged control)          127.0.0.1  tcp  [pong:ping]
+destroy table inet mcpgw_uid_1001
+table inet mcpgw_uid_1001 {
+ chain output {
+type filter hook output priority -10; policy accept;
+oifname "lo" ct direction original ct state new meta skuid 1000 ct mark set ct mark or 0x00000100
+meta skuid 1001 oifname "lo" ct direction reply ct mark and 0x00000100 == 0x00000100 accept
+meta skuid 1001 ip daddr 192.0.2.10 tcp dport { 443, 3128 } accept
+meta skuid 1001 limit rate 10/second burst 20 packets log prefix "MCPGW_DENY uid=1001 "
+meta skuid 1001 counter reject with icmpx type admin-prohibited
+ }
+}
+
+LAB OK
+rc=0
+
+## lab2.py — 같은 날 17:19 KST, 같은 조건. 기각 선택지의 반례.
+## 첫 줄은 포트 번호가 20001로 잡혀 1455 조건을 시험하지 못했다(무효, 해석하지 않음).
+== option C: allow managed loopback to/from 1455,1457
+  BLOCK  managed -> managed listener on 1455 (Codex /cancel)  127.0.0.1  tcp  [ERR OSError [Errno 113] No route to host]
+  REACH  managed -> OWNER listener squatting 1455 (E13 hole)  127.0.0.1  tcp  [pong:ping]
+== option B': same-UID approximation via ct mark + reply owner check
+  REACH  managed -> managed listener                          127.0.0.1  tcp  [pong:ping]
+  BLOCK  managed -> owner listener                            127.0.0.1  tcp  [ERR TimeoutError timed out]
+   SYN_RECV from managed source ports: []
+LAB2 OK
+rc=0

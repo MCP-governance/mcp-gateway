@@ -1,0 +1,7 @@
+10-15 15:07:58 WARN codex_tui::onboarding::auth tui/src/onboarding/auth.rs:1115 57338 | failed to open browser for login URL: No valid browsers detected. You can specify one in BROWSER environment variable
+10-15 15:16:13 INFO codex_tui::onboarding::auth tui/src/onboarding/auth.rs:230 57338 | Cancel onboarding auth step
+10-15 15:16:17 WARN codex_login::server login/src/server.rs:669 57338 |  default login callback port is unavailable; falling back to the registered fallback port preferred_bind_address=127.0.0.1:1455 fallback_bind_address=127.0.0.1:1457
+10-15 15:16:17 WARN codex_tui::onboarding::auth tui/src/onboarding/auth.rs:1115 57338 | failed to open browser for login URL: No valid browsers detected. You can specify one in BROWSER environment variable
+10-15 15:17:53 WARN codex_tui::onboarding::auth tui/src/onboarding/auth.rs:1115 61658 | failed to open browser for login URL: No valid browsers detected. You can specify one in BROWSER environment variable
+10-15 16:07:19 WARN codex_tui::onboarding::auth tui/src/onboarding/auth.rs:1115 66419 | failed to open browser for login URL: No valid browsers detected. You can specify one in BROWSER environment variable
+10-15 16:17:25 WARN codex_tui::onboarding::auth tui/src/onboarding/auth.rs:1115 5370 | failed to open browser for login URL: No valid browsers detected. You can specify one in BROWSER environment variable
