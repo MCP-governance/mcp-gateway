@@ -5,7 +5,7 @@
  * the signed-in user's token and the server decides what that user may see, so hiding
  * a menu here is convenience only.
  */
-import { mergeRows, searchRows, liveLabel, hourBuckets, splitBy, sankeyData, harnessLabel, DECISIONS,
+import { mergeRows, searchRows, hourBuckets, splitBy, sankeyData, harnessLabel, DECISIONS,
   statusView, dedupeItems, pipelineOf, EVIDENCE, resourceValues, observationRows, listenerCoverage,
   msText, pctText, LATENCY_STAGE, timingRows, privacyText,
   originLabel, denialClass, provenanceView, countView, pager, networkCells, denialCount } from "./console-state.mjs";
@@ -351,16 +351,16 @@ const chartBox = (id, label, size = "") => html`<div class="chart ${size}" id="$
 
 // ── routing ──────────────────────────────────────────────────────────────────
 const PAGES = [
-  { id: "overview", label: "대시보드", group: "모니터링" },
-  { id: "activity", label: "도구 호출 로그", group: "모니터링" },
-  { id: "audit", label: "감사 기록", group: "모니터링" },
-  { id: "approvals", label: "승인 대기", group: "모니터링", badge: "approvals" },
-  { id: "coverage", label: "통제 범위", group: "접근·통제", badge: "coverage" },
-  { id: "servers", label: "MCP 서버", group: "접근·통제" },
-  { id: "people", label: "사용자·엔드포인트", group: "접근·통제" },
-  { id: "intake", label: "도입 신청", group: "수명주기" },
-  { id: "termination", label: "종료·폐기", group: "수명주기", badge: "termination" },
-  { id: "policy", label: "정책", group: "수명주기" },
+  { id: "overview", label: "대시보드", group: "운영" },
+  { id: "activity", label: "도구 호출 로그", group: "운영" },
+  { id: "audit", label: "감사 기록", group: "운영" },
+  { id: "approvals", label: "승인 대기", group: "운영", badge: "approvals" },
+  { id: "coverage", label: "통제 범위", group: "접근 통제", badge: "coverage" },
+  { id: "servers", label: "MCP 서버", group: "접근 통제" },
+  { id: "people", label: "사용자·엔드포인트", group: "접근 통제" },
+  { id: "policy", label: "정책", group: "접근 통제" },
+  { id: "intake", label: "도입 신청", group: "도입 및 종료" },
+  { id: "termination", label: "종료·폐기", group: "도입 및 종료", badge: "termination" },
 ];
 let viewer = null;
 let routeSeq = 0;
@@ -375,7 +375,7 @@ function renderNav(active) {
   }
   const shortcuts = [
     viewer.git_url && html`<a href="${viewer.git_url}" target="_blank" rel="noopener" aria-label="내부 저장소 (새 탭)" title="내부 저장소">${icon("git")}<span>내부 저장소</span><span class="ext" aria-hidden="true">↗</span></a>`,
-    viewer.kit && html`<a href="#" data-act="pc-kit" aria-label="내 PC 연결" title="내 PC 연결">${icon("plug")}<span>내 PC 연결</span></a>`,
+    viewer.kit && html`<a href="#" data-act="pc-kit" aria-label="PC 연결 설정" title="PC 연결 설정">${icon("plug")}<span>PC 연결 설정</span></a>`,
   ].filter(Boolean);
   $("#nav").innerHTML = String(html`${[...groups].map(([group, pages]) => html`<div class="group">${group}</div>${pages.map((p) => html`
     <a href="#/${p.id}" title="${p.label}" aria-label="${p.label}" ${active === p.id ? raw('aria-current="page"') : ""}>${icon(p.id)}<span>${p.label}</span>
@@ -726,10 +726,7 @@ function renderFeedStatus() {
   const range = feed.query ? `${start}–${end} / 검색 ${feed.filteredTotal}건 · 전체 ${feed.total}건`
     : Object.values(feed.filters).some(Boolean) ? `${start}–${end} / 필터 ${feed.filteredTotal}건 · 전체 ${feed.total}건`
       : `${start}–${end} / 전체 ${feed.total}건`;
-  status.innerHTML = String(html`${range} · ${liveLabel({ ...feed, pending: feed.pending.length })}
-    ${feed.pending.length ? html`<button class="btn sm" type="button" data-act="feed-new">새 로그 ${feed.pending.length}건</button>` : ""}`);
-  const statusParts = status.textContent.split(" \u00b7 ");
-  status.textContent = statusParts.shift() || "";
+  status.textContent = range;
   $("#feed-live-state").textContent = feed.failing ? "갱신 실패" : feed.live ? "실시간" : "일시정지";
   $("#feed-live-time").textContent = feed.lastOk
     ? new Date(feed.lastOk).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
@@ -807,8 +804,19 @@ function startLive() {
       feed.cursor = Math.max(feed.cursor, data.cursor || 0);
       feed.lastOk = Date.now();
       feed.failing = false;
-      feed.pending = mergeRows(feed.pending, data.rows);
-      renderFeedStatus();
+      if (feed.live && feed.page === 1 && data.rows.length) {
+        const existing = new Set(feed.rows.map((row) => String(row.id)));
+        const fresh = data.rows.filter((row) => !existing.has(String(row.id)));
+        if (fresh.length) {
+          feed.rows = mergeRows(feed.rows, data.rows, feed.pageSize);
+          feed.filteredTotal += fresh.length;
+          if (!feed.query && !Object.values(feed.filters).some(Boolean)) feed.total += fresh.length;
+          renderFeed(fresh.map((row) => row.id));
+        } else renderFeedStatus();
+      } else {
+        feed.pending = mergeRows(feed.pending, data.rows);
+        renderFeedStatus();
+      }
     } catch {
       // A failed poll must not end the live view, and must not look like a quiet one.
       if (gen === feed.gen) { feed.failing = true; renderFeedStatus(); }
@@ -2029,7 +2037,13 @@ const ACTIONS = {
     el.setAttribute("aria-label", feed.live ? "일시정지" : "실시간 재개");
     el.title = feed.live ? "일시정지" : "실시간 재개";
     el.setAttribute("aria-pressed", String(!feed.live));
-    renderFeedStatus();
+    if (feed.live && feed.pending.length) {
+      feed.highlight = feed.pending.map((row) => row.id);
+      feed.pending = [];
+      feed.page = 1;
+      feed.analysisAt = 0;
+      reload();
+    } else renderFeedStatus();
   },
   async "analysis-refresh"() {
     const extra = feed.query ? { q: feed.query } : {};
@@ -2045,14 +2059,12 @@ const ACTIONS = {
       if ($(`#${id}`)) charts.redraw(id, build);
     }
   },
-  "feed-new"() {
-    feed.highlight = feed.pending.map((row) => row.id);
-    feed.page = 1;
-    feed.analysisAt = 0;
-    reload();
-  },
   "feed-page"(el) {
     feed.page = Math.max(1, Number(el.dataset.page) || 1);
+    if (feed.page === 1 && feed.pending.length) {
+      feed.highlight = feed.pending.map((row) => row.id);
+      feed.pending = [];
+    }
     reload();
   },
   "feed-reset"() {
