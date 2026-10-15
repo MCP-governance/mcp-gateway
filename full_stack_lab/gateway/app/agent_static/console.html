@@ -37,6 +37,14 @@
   </dialog>
 
   <dialog id="dialog" aria-labelledby="dialog-title"><form method="dialog" id="dialog-form"></form></dialog>
+  <dialog id="session-warning" aria-labelledby="session-warning-title"><form method="dialog">
+    <h3 id="session-warning-title">로그인 만료 예정</h3>
+    <p id="session-warning-text"></p>
+    <div class="row">
+      <button class="btn" type="button" data-act="logout">로그아웃</button>
+      <button class="btn primary" id="session-continue" value="continue">계속 사용</button>
+    </div>
+  </form></dialog>
   <div id="toast" class="toast" role="status" hidden></div>
 </body>
 </html>
