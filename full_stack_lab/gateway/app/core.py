@@ -24,6 +24,7 @@ from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
 from . import classify, connections, db, dispatch, endpoint_plane, pac, poisoning, privacy, registry, secret_scan, upstream
+from .destination import DestinationBlocked
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMN_SETS, AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint,
@@ -308,6 +309,7 @@ async def refresh_catalog(server_id: str) -> dict:
     # 이 시각을 남기지 않아서, 워커가 "마지막 감사 이후 드리프트가 있었는가"를
     # 물어볼 수 없었다. 큐잉은 워커가 하고, 여기서는 사실만 기록한다.
     if not exact_match:
+        await upstream.release_pool(server["endpoint"], None, "contract-drift")
         await db.execute(
             "UPDATE mcp_servers SET drift_observed_at=now() WHERE id=%s", (server_id,)
         )
@@ -397,6 +399,7 @@ async def approve_contract(server_id: str, actor: str, note: str) -> dict:
     # 재대조해서 상태를 READY로 되돌린다. 승인만 하고 status가 DRIFT로 남으면
     # 화면은 여전히 변조를 말하고 정책은 통과시킨다 - 둘 중 하나가 거짓말이다.
     refreshed = await refresh_catalog(server_id)
+    await upstream.release_pool(server["endpoint"], None, "contract-reapproved")
     return {"server_id": server_id, "changed": changes, "status": refreshed["status"],
             "actor": actor, "note": note}
 
@@ -433,7 +436,7 @@ async def refresh_all_catalogs() -> dict:
         except Exception as exc:
             await db.execute(
                 "UPDATE mcp_servers SET status='ERROR', status_reason=%s WHERE id=%s AND status NOT IN ('DISABLED','BLOCKED_SUPPLY_CHAIN')",
-                (f"연결 실패: {type(exc).__name__}: {str(exc)[:200]}", server_id))
+                (f"연결 실패: {_root_cause(exc)}", server_id))
             results[server_id] = "ERROR"
     return results
 
@@ -659,6 +662,7 @@ async def register_server(request: dict, actor: str) -> dict:
         scope={"intake": str(intake_id), "tools": spec["tools"], "valid_until": valid_until, "data_class": request["data_class"],
                "artifact_sha256": ((spec["provenance"].get("artifact") or {}).get("sha256")), "version": spec["provenance"].get("version")})
     refreshed = await refresh_catalog(server_id)
+    await upstream.release_pool(endpoint, None, "registration")
     return {"server_id": server_id, "status": refreshed["status"], "valid_until": valid_until,
             "tools": spec["tools"], "relationship_id": relationship["id"], "gateway_path": f"/mcp/{server_id}/"}
 
@@ -669,6 +673,7 @@ async def deregister_server(server_id: str, actor: str, reason: str | None = Non
         doc = registry.runtime()
         if server_id not in doc["servers"]:
             raise LookupError(server_id)
+        endpoint = doc["servers"][server_id]["endpoint"]
         del doc["servers"][server_id]
         doc["contracts"].pop(server_id, None)
         doc["usage_relationships"] = [r for r in doc["usage_relationships"] if r["server"] != server_id]
@@ -676,6 +681,7 @@ async def deregister_server(server_id: str, actor: str, reason: str | None = Non
                                "at": datetime.now(UTC).isoformat(timespec="seconds")})
         registry.save_runtime(doc)
         await registry.sync()
+    await upstream.release_pool(endpoint, None, "deregister")
     await review.record_event("server-deregister", "recorded", "server", server_id, actor, reason=reason)
     return {"server_id": server_id, "status": "DISABLED"}
 
@@ -1210,13 +1216,13 @@ async def _policy(input_document: dict) -> dict:
 
 async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id: str | None = None,
                          principal: str | None = None, *, dispatch_state: dict, pac_payload: dict,
-                         laps: _Laps | None = None) -> dict:
+                         laps: _Laps | None = None, _retry_list: bool = True) -> dict:
     """Recheck the contract and call, on one connection.
 
     Nothing is raised inside the MCP client context on purpose: an exception there is
     wrapped into an ExceptionGroup together with whatever the transport's teardown
     raises, and a "blocked by the contract check" would read as "the call's outcome
-    is unknown". The decision is taken after the connection has closed.
+    is unknown". The decision is taken after the lease has been released.
     """
     spec = registry.server(server_id)
     if not spec:
@@ -1233,7 +1239,8 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
     stage = "connect"
     try:
         async with upstream.session(spec["endpoint"], principal=principal,
-                                    protocol=registry.pinned_protocol(server_id)) as client:
+                                    protocol=registry.pinned_protocol(server_id), server_id=server_id) as client:
+            dispatch_state.setdefault("client", {})["upstream_session_reused"] = bool(getattr(client, "reused", False))
             laps.lap("connect")
             stage = "list"
             listed = await upstream.list_all_tools(client)
@@ -1322,9 +1329,15 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                 payload = {"content": upstream.content_items(result), "is_error": bool(result.is_error)}
                 if result.structured_content is not None:
                     payload["structured"] = result.structured_content
+            if problem is not None:
+                await upstream.release_pool(spec["endpoint"], principal, "dispatch-recheck")
             stage = "close"
-    except BaseException:
+    except BaseException as exc:
         laps.lap(stage)
+        if stage == "list" and _retry_list and upstream.session_terminated(exc):
+            return await _call_upstream(server_id, tool, arguments, approval_id, principal,
+                                        dispatch_state=dispatch_state, pac_payload=pac_payload, laps=laps,
+                                        _retry_list=False)
         raise
     laps.lap("close")
     if problem:
@@ -1371,6 +1384,21 @@ def _decoded_strings(payload: Any) -> list[str]:
 def _upstream_failure(exc: Exception, event: dict) -> dict:
     executed = bool(event.get("upstream_executed"))
     attempted = bool(event.get("upstream_attempted"))
+    pending = [exc]
+    seen = set()
+    while pending:
+        error = pending.pop()
+        if id(error) in seen:
+            continue
+        seen.add(id(error))
+        if isinstance(error, DestinationBlocked):
+            return local_verdict(error.policy_id, "Block", "연결 목적지 주소 검사에 실패하여 연결을 차단했습니다.",
+                                 upstream_executed=executed, upstream_attempted=attempted, result=None,
+                                 result_evidence={"disposition": "withheld" if executed else "unknown" if attempted else "not_executed"},
+                                 error=_root_cause(error))
+        pending.extend(getattr(error, "exceptions", ()))
+        if error.__cause__ is not None:
+            pending.append(error.__cause__)
     return local_verdict("MCP-UPSTREAM-001", "Block",
                          "허용 후 MCP 처리를 완료하지 못했습니다. 실제 실행 여부는 하위 시스템 증거와 함께 확인해야 합니다.",
                          restrictions=event.get("restrictions") or {}, exception=event.get("exception"),
@@ -1453,6 +1481,7 @@ def _audit_payload(payload: dict) -> dict:
 # That is the right trade for a single gateway; a multi-replica deployment wants one
 # chain per instance, anchored together.
 async def _record_decision(event: dict) -> int:
+    event["error"] = await secret_scan.redact_error(event.get("error"))
     record = {
         "request_id": event["request_id"], "trace_id": event["trace_id"],
         "user_token": event["user_token"], "role": event["role"],
@@ -1739,7 +1768,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         except privacy.InspectionUnavailable as exc:
             base_event.update(local_verdict(
                 "P-DATA-INSPECTION-001", "Block", "민감정보 검사를 완료하지 못해 실행을 차단했습니다.",
-                error=str(exc)[:500]))
+                error=str(exc)))
             return await _decision_payload(base_event, laps)
         laps.lap("inspect_in")
         privacy_types = sorted({item["entity_type"] for item in findings})
@@ -1859,7 +1888,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 if base_event["result"].get("is_error"):
                     # The server ran the call and answered with a tool error (missing
                     # file, bad SQL). That is a definite outcome, not an unknown one.
-                    base_event["error"] = upstream.text_of(base_event["result"]["content"])[:500]
+                    base_event["error"] = upstream.text_of(base_event["result"]["content"])
             except (DispatchRejected, upstream.CredentialUnavailable) as exc:
                 base_event.update(exc.verdict if isinstance(exc, DispatchRejected) and exc.verdict else local_verdict(
                     "P-CONTROL-FAIL-CLOSED", "Block",
@@ -1879,7 +1908,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     "upstream 결과가 출력 통제에 걸려 반환하지 않았습니다. 호출 자체는 실행됐습니다.",
                     restrictions=base_event.get("restrictions") or {},
                     exception=base_event.get("exception"),
-                    upstream_executed=True, result=None, error=str(exc)[:500],
+                    upstream_executed=True, result=None, error=str(exc),
                     result_evidence=exc.evidence or {"disposition": "withheld"},
                 ))
                 span.record_exception(RuntimeError(_root_cause(exc)))
@@ -2012,6 +2041,9 @@ async def reject_request(approval_id: str, reviewer_token: str, note: str) -> di
                                                                   "tool": claimed["request_payload"].get("tool")}, connection=connection)
     if not claimed:
         raise ValueError("대기 중인 승인 요청이 아닙니다.")
+    spec = registry.server(claimed["request_payload"].get("server_id"))
+    if spec:
+        await upstream.release_pool(spec["endpoint"], claimed["requested_by"], "approval-rejected")
     return {"approval_id": approval_id, "status": "REJECTED", "reviewed_by": reviewer_token,
             "review_note": claimed["review_note"], "upstream_executed": False}
 

@@ -5,6 +5,11 @@
 
 ## 1. 층별 구성
 
+D-115의 네트워크·DB 없는 단위 시험은 저장소 루트에서
+`python -B -X utf8 -m unittest discover -s full_stack_lab/tests -p upstream_session_reuse_test.py -v`로 실행한다.
+실제 풀과 선택한 제품 함수 본문을 대역 SDK/DB 객체로 검사한다. 실제 SDK·MCP 서버 실행 증거는 아니며,
+[T1–T12 대응과 기기 시험](../../research/llm-wiki/analysis/upstream-session-reuse/stage2.md)을 따로 확인한다.
+
 | 순서 | 무엇 | 파일 | 보장 | 소요 |
 | --- | --- | --- | --- | --- |
 | 0 | 망 대역·콘솔 상태 | `scripts/network_prefix.py --self-check`, `tests/console-state.test.mjs` (node, 7건) | 대역 선택이 점유 대역을 피하고 소진 시 실패 / 활동 로그 병합(중복·잘못된 id)·검색·상태 문장(실패를 최신처럼 보이지 않음)·**시간대별 판정 버킷(`hourBuckets`), 그룹별 집계(`splitBy`), 하네스×서버 상키 데이터(`sankeyData`)** | 수 초 |

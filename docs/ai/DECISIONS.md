@@ -1004,11 +1004,12 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 운영 DB·이전 interoperability lab은 초기화하지 않는다. 정확한 전용DB명·컨테이너task label·제품mount/공개port부재를 guard하고 reset marker 소멸을 확인한다.
 - [실험·수정·배포·한계](../../research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md), LOCAL-RISK-11, DEV-27로 추적한다.
 
-## D-79 시험 대상 MCP를 에이전트가 승인하지 않는다 — 자가 승인 시험은 무효이며, 호출별 세션은 유지한다 (2026-10-14)
+## D-79 시험 대상 MCP를 에이전트가 승인하지 않는다 — 자가 승인 시험은 무효이며, 호출별 세션은 유지한다 (2026-10-14, 세션 부분은 D-115로 개정)
 
 - 위험 매핑이 묻는 것은 비인가 로컬 MCP가 엔드포인트에서 막히는가다. 시험 대상 MCP를 에이전트가 신청·검토·승인해 Gateway에 등록하고 인자를 `const`로 고정해 통과시킨 시험은 거버넌스 증거가 아니다. 그런 1차 시험(원장 744~800)은 무효이며 서버 3건은 `deregister_server`로 철회했다(행은 `DISABLED`로 남음). 계약 승인은 사람이 한다는 불변식은 시험에도 적용한다.
 - 콘솔에 로그가 없던 원인은 Gateway가 아니라 Codex 하네스의 모델 턴이 사용량 한도로 시작 즉시 실패해 `tools/call`이 0건이었던 것이다. `initialize`·`tools/list`는 판정 대상이 아니라 원장에 남지 않는다. 한 하네스가 막히면 다른 실제 하네스(Claude Code)를 쓰되, 시험 대상과 승인 상태는 바꾸지 않는다.
 - Gateway는 `tools/call`마다 업스트림 MCP 세션을 열고 닫는다(`upstream.session`). Playwright MCP는 마지막 세션이 닫히면 탭을 닫아 호출 사이 상태가 사라진다. 호출자 사이 세션 공유는 상태 유출 위험이라 채택하지 않는다(IBM ContextForge는 풀을 폐기하고 세션별 레지스트리로 대체). 세션 바인딩은 별도 결정 사항이다(DEV-29).
+- 2026-10-17 개정: 위 호출별 세션 수명만 D-115의 주체·대화별 구형 MCP 세션 재사용으로 대체한다. 시험 대상 자가 승인 금지와 호출자 사이 공유 금지는 유지한다.
 - 근거·한계: [정정된 보고](../../research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md), DEV-28·DEV-29.
 
 ## D-80 비인가 로컬 MCP는 겹친 계층이 막지만, 통제 밖 계정은 비가시이고 정상 사용 거부가 잡음이며 헬퍼 토큰이 Bash에 닿는다 (2026-10-14)
@@ -1212,9 +1213,9 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 정정(10-15 검토 RV-05): "규격은 객체"는 2025-11-25 판의 설명이다. 2026-07-28 판은 outputSchema에 맞는 모든 JSON 값을 허용한다. 하네스가 게이트웨이와 협상하는 판이 섞여 있어 text로 통일하는 결정은 유지하되, 판본별 처리와 outputSchema 계약은 DEV-44에서 정한다.
 - 되돌릴 조건: 하네스 쪽이 모두 2026-07-28 이상이 되어 배열 구조화 결과를 그대로 받을 수 있을 때.
 
-## 제안 (결정 대기) — 업스트림 MCP 세션 재사용과 계약 목록 캐시 (DEV-29, 2026-10-15)
+## DEV-29 설계 제안 이력 — 1단계 D-110·2단계 D-115 채택, 3단계 미채택 (2026-10-15, 10-17 갱신)
 
-D-번호는 사용자가 채택할 때 붙인다. 채택 전에는 D-79의 호출별 세션과 호출별 `tools/list` 재확인이 그대로다.
+제안 당시 내용은 아래에 보존한다. 2026-10-17 사용자는 2단계까지 채택했다. 현재 수명은 D-115, 호출별 `tools/list` 재확인은 그대로다. 1단계의 자동 재협상 제안은 D-110 코드에서 채택하지 않았으며 판 변경 시 실패 후 재검토한다.
 
 - **1단계(보안 경계 변경 없음) — D-110으로 채택**: 카탈로그에 기록한 프로토콜 판으로 SDK 연결 모드를 고정한다. 구형(`2025-11-25`) 서버는 `server/discover` 탐색 왕복을 없애고, 신형(`2026-07-28`) 서버는 핸드셰이크·세션 종료 요청이 없어진다. 판이 바뀌어 연결이 실패하면 그 호출 안에서 한 번 `auto`로 다시 연결한다.
 - **2단계(D-79 개정)**: 업스트림 세션을 `(주체, 다운스트림 Mcp-Session-Id, 서버, 자격 해시)`에 묶어 유휴 60초·최대 10분 재사용한다. 다운스트림 세션 ID가 없으면 재사용하지 않는다. 주체 중지·서버 종료(`release_pool`)·자격 교체·전송 오류에서 닫고, 재사용 `Client`는 SDK 응답 캐시를 끈다. 승인·주체·관리형 장치·OPA·`dispatch.record`·`tools/list` 재확인은 호출마다 그대로 한다.
@@ -1233,7 +1234,7 @@ D-번호는 사용자가 채택할 때 붙인다. 채택 전에는 D-79의 호�
 
 - 결정: DEV-29 제안의 1단계를 채택한다. 호출마다 SDK가 `server/discover`를 먼저 보내던 것을, 승인 계약에 기록된 판으로 고정한다. 구형(`2025-11-25` 이하)은 `initialize`로 바로, 신형(`2026-07-28`)은 그 판을 탐색 왕복 없이 채택한다(`upstream.connect_mode`). 판이 없으면 지금처럼 탐색한다.
 - 근거: MCP Python SDK 2.2.0 `client.py:456-462`(판 고정 시 `adopt`, 왕복 없음). 게이트웨이 컨테이너에서 등록 서버 대상 연결+목록: GitHub 약 2.6초→1.4초, Context7 약 1.25초→0.87초, 목록 동일. PJ1 관리 Claude 호출에서 연결 구간 660~800 ms→약 4 ms(원장 8·9).
-- 경계: 세션 수명·호출별 계약 재확인·실행 직전 재판정은 그대로다(D-79 유지). 서버가 판을 바꾸면 호출이 실패(차단)하고 카탈로그 점검에서 변경으로 드러난다. 2·3단계(세션 재사용·목록 캐시)는 여전히 결정 대기.
+- 당시 경계: 세션 수명·호출별 계약 재확인·실행 직전 재판정은 그대로였다(D-79). 서버가 판을 바꾸면 호출이 실패(차단)하고 카탈로그 점검에서 변경으로 드러난다. 2026-10-17 2단계는 D-115로 채택했고 3단계(목록 캐시)는 미채택이다.
 
 ## D-111 심사한 목적지가 없으면 주소 인자를 받지 않는다 (2026-10-15)
 
@@ -1260,3 +1261,33 @@ D-번호는 사용자가 채택할 때 붙인다. 채택 전에는 D-79의 호�
 - 정지: 관리자 중지, 등록 해제, 종료 절차, 승인 무효, 승인 이미지와 다른 컨테이너. 컨테이너·망을 지우고 남은 것을 센다. 이미지는 근거로 남긴다. 계약 확인은 지금처럼 게이트웨이가 등록 때와 호출마다 한다.
 - 채택하지 않음: ToolHive 런타임(기본 허용 gate·경고 후 진행 검증·하네스 직접 등록, [분석](../../research/llm-wiki/analysis/oss-deep/toolhive-runtime.md)). 레시피가 늘어 재조정 코드가 커지면 다시 본다.
 - 한계: 엔진 소켓을 가진 worker는 호스트 root에 준한다. 그래서 게시 포트 없이 DB·내부 Git 망에만 두고, 레시피는 이미지에 구워 job이 다른 빌드를 지정할 수 없게 했다. 빌드 단계의 패키지 설치는 인터넷에 닿고 의존성 잠금 파일이 없으면 `pip freeze` 결과의 해시로 남긴다.
+
+## D-115 구형 업스트림 MCP 세션은 주체·다운스트림 대화에 결속해 재사용한다 (2026-10-17)
+
+- 결정: 사용자 채택 범위는 DEV-29의 2단계까지다. **D-79의 호출마다 MCP 세션을 닫는 부분을 개정**한다. 3단계 읽기 도구 목록 캐시는 채택하지 않는다. D-110의 프로토콜 판 고정과 판 변경 시 실패는 유지한다.
+- 키: `(principal, (downstream Mcp-Session-Id, verified token jti), server_id, sha256(operator credential headers), endpoint, pinned protocol, timeout, internal)`. 주체는 전송 토큰으로 검증한 내부 주체이며 헤더·도구 인자에서 가져오지 않는다. 대화 ID는 SDK가 입장을 허용한 HTTP 요청에서만 얻어 ContextVar로 전달하고, 요청 본문·감사 client·승인 재실행 payload는 이 바인딩을 만들지 못한다. `jti`는 같은 직원의 다른 로그인을 구분한다. 엔드포인트·판·시간 제한은 서버 등록/연결 설정 변경 뒤 옛 연결을 재사용하지 않기 위한 추가 요소다. 개별 호출 승인은 키에 저장한 권한으로 보지 않고 매번 다시 검사한다.
+- 수명/경합: `upstream_sessions.py`가 프로세스 안에서 유휴 60초·최대 수명 600초·전체 `UPSTREAM_POOL_SIZE`개를 관리한다. 같은 키는 **1개 세션에서 호출 전체를 직렬화**한다. 설계 비교의 키당 최대 4개 제안 대신 1개로 좁혀, 동시 Playwright 호출이 서로 다른 탭 세션으로 갈라지는 것을 막는다. 서로 다른 키는 병렬이며 상한에 닿으면 유휴 항목부터 닫고 사용 중인 항목뿐이면 기다린다. SDK transport의 AnyIO cancel scope는 전용 소유 태스크에서 열고 같은 태스크에서 닫는다.
+- 규격 분기: 승인 판이 `HANDSHAKE_PROTOCOL_VERSIONS`이고 다운스트림 세션 ID와 검증한 `jti`가 모두 있을 때만 MCP 세션을 보관한다. 2026-07-28 규격은 세션이 없으므로 호출별 `Client`와 기존 HTTP 연결 풀을 쓴다. 미확인 판·stdio·세션 ID 없음·`jti` 없음·승인 payload 재실행도 MCP 세션 재사용을 하지 않는다.
+- 재확인: `Client(cache=None)`과 모든 목록 페이지의 `cache_mode="bypass"`를 함께 고정한다. 계약 해시·입력 스키마·개별 승인·주체/관리형 장치·OPA·`dispatch.record`를 호출마다 원래 순서로 확인한다. 재사용은 인가가 아니다. 직원 토큰을 업스트림으로 전달하지 않는다.
+- 폐기: 기존 주체 중지·서버 종료의 `release_pool`이 세션과 HTTP 풀을 함께 폐기한다. 등록 해제·등록 교체·계약 드리프트/재승인·승인 요청 거부·실행 직전 재확인 실패에도 연결했다. 다운스트림 `DELETE` 성공은 해당 주체/세션/`jti`의 세션만 닫고 해시 신호를 DB에 남긴다. 자격은 대여 때와 SDK 요청 직전 다시 읽으며, 자격이 바뀌거나 사라지면 이전 키는 전송하지 않는다. 같은 주체·서버의 옛 자격/연결 설정 세션은 새 키를 열기 전에 폐기한다.
+- 유휴 시에도 돌아가는 2초 주기 감시는 다른 프로세스의 `upstream_pool_events`, 주체·서버/등록 상태·도입 승인/기한·자격 변경·최대 수명을 확인한다. 메인 리뷰 후 정정: 첫 커서는 잠금 안에서 현재 최대 이벤트 ID로 설정한다. 모든 dispatch는 세션을 열기 전에 같은 잠금을 기다리므로 초기 커서 이전에 열린 세션은 없다. 초기화 실패 시 세션을 열지 않고, 초기화 이후 이벤트만 순서대로 적용하며 폐기 실패 시 커서를 전진시키지 않는다. 로컬 폐기 표시는 즉시 적용하고 닫기 신호 전파·실제 서버 DELETE 완료 시간은 별도다. 정리는 5초 기다린 뒤 소유 태스크를 취소하며 서버 측 완전 회수를 보증하지 않는다. DB/신호 장애에서 감시의 2초는 보장하지 않지만 실행 직전 정책·전송 의도 경계는 유지한다.
+- 폐기 중 대기 호출은 세대 번호로 거부해 옛 자격이나 중지 직전 상태로 다시 세션을 열지 못한다. 안전을 위해 풀 폐기와 겹친 다른 키의 대기 호출도 거부될 수 있다. 오류·취소·도구 오류 응답 뒤 세션을 버린다. 목록 단계에서만 SDK의 세션 404(`-32600`, `Session terminated`)를 한 번 새 세션으로 재시도한다. `tools/call` 뒤에는 재시도하지 않아 실행 여부 불명을 보존한다.
+- 메인 리뷰 반영: `session()`의 관계 사전 거부를 제거했다. `_dispatch_allowed()`는 백그라운드 폐기에만 쓰고, 호출의 종료/주체/승인/공급망 판정과 정책 ID는 기존 core 정책 및 `dispatch.record()`가 결정한다. 종료 중 호출은 `DispatchRejected`의 `MCP-DECOMM-001`로 기존 감사 경로를 따른다. 대기 시간은 호출자의 `dispatch_budget`으로 제한한다. A의 internal 판별값도 MCP/HTTP 풀 키와 최초 transport에 결속한다.
+- 관측: `decisions.timings`의 기존 구간 이름/숫자 형식을 유지한다. `close`는 풀 반환 또는 실제 종료에 든 시간이다. 재사용 여부는 시간값이 아닌 감사 `client.upstream_session_reused` 불리언으로 기록한다. 콘솔·`/api/latency`의 시간 집계를 바꿀 필요가 없다.
+- 근거/검증 범위: [기존 고정 OSS·규격 비교](../../research/llm-wiki/analysis/upstream-session-reuse/README.md), [구현 요구·시험 대응](../../research/llm-wiki/analysis/upstream-session-reuse/stage2.md), [작업 보고](../../research/llm-wiki/status/reports/2026-10-17-upstream-session-reuse-stage2.md). 순수 단위 시험이며 SDK/DB/실제 MCP·배포·독립 효과 검증은 메인이 수행한다.
+
+## D-116 연결 직전 DNS 전체 응답 검사와 숫자 IP 접속 (2026-10-17)
+
+- 결정: `destination.PinnedBackend`를 HTTPX 0.28.1·HTTPX2 2.12.0 transport의 기존 pool network backend 앞에 둔다. 새 TCP 연결마다 제한 시간 안에서 `getaddrinfo`를 한 번 호출하고 모든 응답을 `ipaddress`로 검사한 뒤 첫 검증 숫자 IP만 기존 backend에 넘긴다. 외부 서버의 비공인·루프백·링크로컬·멀티캐스트·예약·미지정·IPv4-mapped 내부 주소, 빈 응답·해석 실패는 `MCP-EGRESS-001` 차단이다.
+- 이유: URL을 IP로 바꾸면 Host·SNI·인증서 이름 검증과 풀 origin을 별도로 복원해야 한다. network backend만 바꾸면 HTTP origin·Host·TLS 검증 이름은 원래 호스트로 유지된다. proxy/redirect 비활성, 직원별 풀·자격 회전/철회는 유지한다. internal 여부도 풀 키에 넣어 분류 변경 뒤 옛 내부 예외가 재사용되지 않게 한다.
+- 내부 근거(메인 검토 후 정정): `deployment`는 종료 모델의 계약 귀속이며 네트워크 위치가 아니다. 초기 초안의 `deployment=internal` 판정은 폐기한다. `registry.servers()`에 완전 일치하는 endpoint의 호스트가 숫자 IP 표기가 아닌 단일 DNS 라벨이면 내부 서비스로 본다. `email`·`gitea`는 provider 계약이지만 등록값 `mcp-email:8000`·`mcp-gitea:8000`이므로 내부다. 등록 전 실행기 역시 단일 라벨과 같은 endpoint·`ACTIVE` 레코드가 필요하다. 미등록 이름 자체는 승인이 아니며 외부 SaaS FQDN은 deployment 값과 무관하게 외부다. 내부에서도 링크로컬·멀티캐스트·예약·미지정 주소는 거부한다.
+- 적용: MCP 탐색·건강 확인·호출, 종료 증거 HEAD와 E2 세션 조사. MCP upstream OAuth 자동 탐색은 구성하지 않는다. 조직 OIDC의 Authlib discovery·JWKS·토큰, 직접 refresh·introspection·revocation에도 같은 backend를 적용한다. OIDC 내부 예외는 운영자가 설정한 issuer/discovery URL 중 loopback 또는 단일 라벨 호스트의 정확한 호스트·포트다. `compose.keycloak.yaml`의 loopback issuer와 `keycloak:8080` discovery를 함께 허용하므로 같은 authority를 쓰는 동적 백채널 metadata endpoint도 정상 접속한다. metadata에 적힌 임의의 다른 사설 호스트/포트는 자동 승인하지 않는다.
+- 정책 원장: `enforced_by`는 기존 값 체계의 `gateway`로 기록한다. 이 항목의 연결 직전 DNS 집행 주체를 뜻하며 같은 ID를 쓰는 기존 OPA egress 규칙을 제거하거나 바꾸지 않는다.
+- 한계: [분석](../../research/llm-wiki/analysis/dest-pin-credential-redaction/README.md)·[보고](../../research/llm-wiki/status/reports/2026-10-17-dest-pin-credential-redaction.md). `_pool._network_backend`는 비공개 접점이므로 판본 변경 시 `dest_pin_transport_check.py`가 필수다. 로컬에는 HTTPX 계열이 없어 실제 풀·TLS 시험은 미실행이다. 첫 검증 IP 실패 시 다른 IP로 재시도하지 않는다. MCP 서버 자체의 outbound는 DEV-41에 남긴다.
+
+## D-117 오류의 Secret 검사와 진단문 전체 가림 (2026-10-17)
+
+- 결정: `secret_scan.redact_error()`에서 기존 `classify.SECRET_PATTERNS`·Gitleaks `labels()`를 재사용한다. URL decode 후 Authorization·자격 쿼리/할당 문맥은 토큰 길이와 무관하게 가린다. 탐지·검사 장애·500자 초과는 전체 `[REDACTED]`로 대체한다. Gitleaks가 span을 반환하지 않아 부분 가림을 추정하지 않으며, 자르기 전에 검사해 토큰 조각이 남는 것을 막는다.
+- 경계: `_record_decision()`에서 event와 저장값을 함께 가린 뒤 해시를 계산한다. 과거 원장은 수정하지 않고 `_decision_payload()` 반환값과 원장 error를 일치시킨다. HTTPException·입력 검증·MCP 인증 거절에도 적용한다. MCP 처리의 예기치 않은 예외는 고정 문구만 반환한다. 일반 upstream 예외는 기존 형식명만 남기는 `_root_cause()`를 유지하고 카탈로그 실패 진단에도 사용한다.
+- 키트: field 설정 생성·전체 CLI 인자, 서버의 Linux/Windows 관리 설정 생성과 엔드포인트의 파일 쓰기를 가짜 토큰으로 회귀 검사한다. OS 집행 코드는 변경하지 않는다. 기존 `field_kit_check.py`는 Claude add 인자의 마지막 항목만 보므로 새 회귀는 인자 전체를 본다.
+- 한계: 알 수 없는 모든 비밀 형식의 탐지를 보장하지 않는다. 네이티브 Gitleaks·SDK·실제 DB 검증은 미실행이며 대역을 사용하는 함수 단위 증거로 한정한다. [보고](../../research/llm-wiki/status/reports/2026-10-17-dest-pin-credential-redaction.md).

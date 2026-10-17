@@ -12,10 +12,13 @@ from zoneinfo import ZoneInfo
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Path, Query
 from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.encoders import jsonable_encoder
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
 
-from . import core, db, decommission, dispatch, endpoint_plane, privacy
+from . import core, db, decommission, dispatch, endpoint_plane, privacy, secret_scan, upstream
 from .core import (
     OPA_URL,
     approve_request,
@@ -58,6 +61,12 @@ RESOURCE_METADATA_URL = os.getenv("GATEWAY_PUBLIC_URL", "http://gateway:8080").r
     "/.well-known/oauth-protected-resource"
 
 
+async def _error_detail(detail):
+    text = detail if isinstance(detail, str) else json.dumps(detail, ensure_ascii=False, default=str)
+    safe = await secret_scan.redact_error(text)
+    return detail if safe == text else secret_scan.ERROR_REDACTED
+
+
 class RequireBearer:
     def __init__(self, app) -> None:
         self.app = app
@@ -68,24 +77,42 @@ class RequireBearer:
             try:
                 scope = dict(scope, authenticated_mcp_user=await authenticated_user(authorization or None, require_mcp=True))
             except HTTPException as exc:
+                detail = await _error_detail(exc.detail)
                 if (exc.headers or {}).get("X-Endpoint-Policy") == "ENDPOINT-MANAGED-001":
                     _, claims = authenticate(authorization)
                     await db.execute(
                         """INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail)
                            SELECT %s,p.token,'mcp-auth-denied',%s FROM principals p WHERE p.user_id=%s""",
-                        (claims.get("device_id"), Jsonb({"reason": exc.detail, "path": scope.get("path", "")[:160]}), claims["sub"]))
+                        (claims.get("device_id"), Jsonb({"reason": detail, "path": scope.get("path", "")[:160]}), claims["sub"]))
                 challenge = f'Bearer resource_metadata="{RESOURCE_METADATA_URL}"'
                 if authorization:
                     challenge += ', error="invalid_token"'
                 headers = dict(exc.headers or {})
                 if exc.status_code == 401:
                     headers["WWW-Authenticate"] = challenge
-                body = {"detail": exc.detail}
+                body = {"detail": detail}
                 if headers.get("X-Endpoint-Policy"):
                     body["policy_id"] = headers["X-Endpoint-Policy"]
                 await JSONResponse(body, status_code=exc.status_code, headers=headers)(scope, receive, send)
                 return
-        await self.app(scope, receive, send)
+        status = None
+
+        async def response(message):
+            nonlocal status
+            if message["type"] == "http.response.start":
+                status = message["status"]
+            await send(message)
+
+        try:
+            await self.app(scope, receive, response)
+        finally:
+            if scope["type"] == "http" and scope.get("method") == "DELETE" and status in {200, 202, 204}:
+                headers = dict(scope.get("headers") or [])
+                session_id = headers.get(b"mcp-session-id", b"").decode("latin-1")
+                user = scope["authenticated_mcp_user"]
+                jti = (user.get("claims") or {}).get("jti")
+                if session_id and jti:
+                    await upstream.close_downstream(user["principal"], (session_id, jti))
 
 
 class ServerPath:
@@ -139,7 +166,7 @@ class ServerPath:
                         "workstation": claims.get("client_id"), "oauth_client": claims.get("client_id"),
                         "token_jti": claims.get("jti"), "endpoint": name[:120],
                     })
-                    await JSONResponse({"detail": f"등록되지 않은 MCP 서버: {name[:40]}",
+                    await JSONResponse({"detail": await _error_detail(f"등록되지 않은 MCP 서버: {name[:40]}"),
                                         "decision": "Block", "policy_id": "MCP-REGISTRY-001",
                                         "decision_id": decision_id}, status_code=404)(scope, receive, send)
                     return
@@ -196,15 +223,30 @@ async def admin_caller(authorization: str | None = Header(default=None)) -> dict
 async def lifespan(_: FastAPI):
     await bootstrap()
     watcher = asyncio.create_task(catalog_watch())
+    pool_watcher = asyncio.create_task(upstream.maintain_pool())
     try:
         async with gateway_mcp.session_manager.run():
             yield
     finally:
         watcher.cancel()
+        pool_watcher.cancel()
+        await asyncio.gather(watcher, pool_watcher, return_exceptions=True)
+        await upstream.close_pool()
         await db.close()
 
 
 app = FastAPI(title="MCP Governance Security Gateway", version="1.1.0", lifespan=lifespan)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def public_http_error(request, exc):
+    return JSONResponse({"detail": await _error_detail(exc.detail)}, status_code=exc.status_code, headers=exc.headers)
+
+
+@app.exception_handler(RequestValidationError)
+async def public_validation_error(request, exc):
+    # Validation errors echo rejected inputs, which may themselves be credentials.
+    return JSONResponse({"detail": await _error_detail(jsonable_encoder(exc.errors()))}, status_code=422)
 
 
 async def _absent() -> None:
@@ -852,7 +894,7 @@ async def lab_restore(server_id: str, user: dict = Depends(admin_caller)) -> dic
     try:
         result["catalog"] = await core.refresh_catalog(server_id)
     except Exception as exc:
-        result["catalog"] = {"status": "ERROR", "reason": str(exc)[:200]}
+        result["catalog"] = {"status": "ERROR", "reason": core._root_cause(exc)}
     return result
 
 

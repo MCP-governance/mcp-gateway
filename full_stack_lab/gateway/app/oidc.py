@@ -10,7 +10,9 @@ from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 import httpx
+from authlib.integrations.httpx_client import AsyncOAuth2Client
 from authlib.integrations.starlette_client import OAuth
+from authlib.integrations.starlette_client.apps import StarletteOAuth2App
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -18,6 +20,7 @@ from pydantic import Field
 
 from . import db
 from .agent_contract import CONSOLE_SCOPE, StrictModel, authenticated_user, issue_token
+from .destination import pin_transport
 
 router = APIRouter()
 oauth = OAuth()
@@ -67,12 +70,39 @@ def unseal(value: bytes) -> str:
     return cipher().decrypt(value[:12], value[12:], b"mcpgw-oidc-session").decode()
 
 
+def http_transport():
+    internal = []
+    issuer = settings()["issuer"]
+    # Keycloak advertises its configured discovery origin for dynamic backchannel endpoints.
+    # Trust those configured origins only, never an arbitrary private host from metadata.
+    for value in (issuer, os.getenv("OIDC_DISCOVERY_URL", issuer + "/.well-known/openid-configuration")):
+        url = urlsplit(value)
+        host = url.hostname or ""
+        if (url.scheme in {"http", "https"} and not url.username and not url.password
+                and (host in {"localhost", "127.0.0.1", "::1"}
+                     or host.isascii() and host[:1].isalpha() and all(c.isalnum() or c == "-" for c in host))):
+            internal.append((host, url.port or (443 if url.scheme == "https" else 80)))
+    return pin_transport(httpx.AsyncHTTPTransport(trust_env=False), internal=internal)
+
+
+class PinnedOAuthClient(AsyncOAuth2Client):
+    def __init__(self, *args, **kwargs):
+        # Authlib creates and closes a client per metadata/token/JWKS request; never share its pool.
+        kwargs.update(transport=http_transport(), trust_env=False, follow_redirects=False)
+        super().__init__(*args, **kwargs)
+
+
+class PinnedOAuthApp(StarletteOAuth2App):
+    client_cls = PinnedOAuthClient
+
+
 def client():
     if not configured():
         raise HTTPException(503, "OIDC 설정이 완료되지 않았습니다.")
     if oauth.create_client("organization") is None:
         config = settings()
-        oauth.register("organization", client_id=config["client_id"], client_secret=os.environ["OIDC_CLIENT_SECRET"],
+        oauth.register("organization", client_cls=PinnedOAuthApp,
+                       client_id=config["client_id"], client_secret=os.environ["OIDC_CLIENT_SECRET"],
                        server_metadata_url=os.getenv("OIDC_DISCOVERY_URL", config["issuer"]+"/.well-known/openid-configuration"),
                        client_kwargs={"scope": "openid profile", "code_challenge_method": "S256", "timeout": 10,
                                       "trust_env": False})
@@ -93,7 +123,7 @@ def install(app) -> None:
                 raise RuntimeError(f"OIDC {name} must use HTTPS (HTTP is loopback-only)")
         if len(os.environ["OIDC_SESSION_SECRET"]) < 32:
             raise RuntimeError("OIDC_SESSION_SECRET must have at least 32 characters")
-        oauth.register("organization", client_id=config["client_id"],
+        oauth.register("organization", client_cls=PinnedOAuthApp, client_id=config["client_id"],
                        client_secret=os.environ["OIDC_CLIENT_SECRET"],
                        server_metadata_url=os.getenv("OIDC_DISCOVERY_URL", config["issuer"] + "/.well-known/openid-configuration"),
                        client_kwargs={"scope": "openid profile", "code_challenge_method": "S256", "timeout": 10,
@@ -225,7 +255,8 @@ async def _refresh_upstream(claims: dict) -> dict | None:
                 await connection.execute("UPDATE console_sessions SET expires_at=now() WHERE jti=%s", (claims["jti"],))
                 return None
             refresh_token = unseal(bytes(row["upstream_refresh_token"]))
-            async with httpx.AsyncClient(timeout=10, trust_env=False) as http:
+            async with httpx.AsyncClient(timeout=10, trust_env=False, follow_redirects=False,
+                                         transport=http_transport()) as http:
                 response = await http.post(metadata["token_endpoint"],
                     auth=(settings()["client_id"], os.environ["OIDC_CLIENT_SECRET"]),
                     data={"grant_type": "refresh_token", "refresh_token": refresh_token})
@@ -292,7 +323,8 @@ async def validate_session(claims: dict) -> None:
         row = refreshed
     try:
         metadata = await client().load_server_metadata()
-        async with httpx.AsyncClient(timeout=10, trust_env=False) as http:
+        async with httpx.AsyncClient(timeout=10, trust_env=False, follow_redirects=False,
+                                     transport=http_transport()) as http:
             response = await http.post(metadata["introspection_endpoint"],
                 auth=(settings()["client_id"], os.environ["OIDC_CLIENT_SECRET"]),
                 data={"token": unseal(bytes(row["upstream_token"]))})
@@ -334,7 +366,8 @@ async def end_session(claims: dict) -> None:
         endpoint = metadata.get("revocation_endpoint")
         if not endpoint:
             return
-        async with httpx.AsyncClient(timeout=10, trust_env=False) as http:
+        async with httpx.AsyncClient(timeout=10, trust_env=False, follow_redirects=False,
+                                     transport=http_transport()) as http:
             for encrypted, token_type in ((row["upstream_refresh_token"], "refresh_token"),
                                           (row["upstream_token"], "access_token")):
                 if not encrypted:
