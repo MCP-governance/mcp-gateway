@@ -1,0 +1,263 @@
+{
+ "id": "LIB-M20",
+ "title": "Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and Mitigations (NIST AI 100-2 E2025)",
+ "title_native": "",
+ "issuer": "미국 NIST(ITL 컴퓨터보안부, 미국 AI안전연구소) 및 영국 AI보안연구소, Northeastern University, Cisco 소속 공저자",
+ "jurisdiction": "US-federal",
+ "instrument_type": "framework",
+ "binding": false,
+ "status": "voluntary",
+ "edition": "NIST AI 100-2 E2025, 2025년 3월. 127쪽",
+ "key_dates": "표지는 2025년 3월. PDF 3쪽: NIST 편집심사위원회 승인 2025-03-20. 공식 페이지 문서 이력: 2025-03-24 최종본(E2025). 공식 페이지 공지(2026-10-17 확인): 2025-04-01 정정 PDF 업로드(저자 소속 반영, 그림 대체 텍스트 개선), 2025-06-03 색인(p.x)의 오류를 확인해 잠정 정정 목록(potential updates)을 공개했으며 이는 공식 개정이 아니다. 같은 페이지에 철회·대체 표시는 없고 E2026 판 페이지는 없다(404).",
+ "language": "en",
+ "official_page_url": "https://csrc.nist.gov/pubs/ai/100/2/e2025/final",
+ "summary_ko": "예측형 AI와 생성형 AI에 대한 적대적 머신러닝(AML) 공격과 완화 방법의 분류 체계와 용어집이다. 생성형 AI 분류에는 공급망 공격(데이터·모델 오염), 직접 프롬프트 공격, 간접 프롬프트 주입, 에이전트 보안, AML 벤치마크가 포함되고 4장은 핵심 과제(정확도와 견고성의 상충, 이론적 한계, 평가)와 논의(확장성, 공급망, 위험관리 등)를 다룬다. 색인에 주요 공격 유형별 NISTAML 식별자가 붙어 있다.",
+ "scope_ko": "AI 시스템을 설계·개발·배포·평가·관리하는 개인과 조직이 대상이며 자율 지침이다. 이 문서는 법적 기준이나 요구사항을 만들지 않고 기존 규정이나 의무 지침을 대체하지 않는다고 스스로 밝힌다.",
+ "provisions": [
+  {
+   "ref": "Background (p.viii)",
+   "topic_ko": "법적 기준·요구사항을 만들지 않는 자율 문서",
+   "obligation_ko": "이 문서는 권고 관행을 담은 자율 문서이며 어떤 법에 따른 법적 기준, 법적 요구사항, 법적 항변 사유도 만들지 않고 법적 효력도 없다. 기존 규정·법령·의무 지침을 대체하지 않는다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "does not establish any legal standard or any other legal requirement",
+   "gateway_control_ko": "해당 없음(문서 성격). 인용할 때 '자율 지침'으로 표기하고 법적 의무의 근거로 쓰지 않는다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "3.2 공급망 공격",
+   "topic_ko": "AI 공급망은 기존 소프트웨어 공급망 위험에 AI 고유 의존성(데이터·모델·플러그인)이 더해진다",
+   "obligation_ko": "AI는 소프트웨어이므로 제3자 의존성 등 전통적 공급망 취약점을 물려받고, 데이터 수집·평가, 제3자 개발 모델 통합, 제3자 플러그인 통합이라는 새로운 의존성이 생긴다. 완화에는 기존 소프트웨어 공급망 위험관리 관행에 추가 산출물의 출처 정보 활용 같은 AI 고유 위험 관리를 결합하는 복합적 접근이 필요하다고 설명한다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "the use of provenance information for the additional artifacts involved",
+   "gateway_control_ko": "MCP 서버와 의존성을 도입 전에 배포처·배포자·버전·해시·서명 기준으로 점검하고 결과를 도입 대장에 보관하는 요구사항으로 둔다.",
+   "pol_ids": [
+    "POL-01"
+   ]
+  },
+  {
+   "ref": "3.2.3",
+   "topic_ko": "공급자가 해시를 공개하고 내려받는 쪽이 다운로드를 검증",
+   "obligation_ko": "웹 규모 데이터 의존성에서 데이터 오염을 막는 완화책으로, 도메인 탈취로 새 데이터 소스가 끼어들지 않았는지 웹 다운로드를 기본 무결성 검사로 검증하는 방법을 든다. 제공자가 암호 해시를 공개하고 내려받는 쪽이 학습 데이터를 검증하는 방식이다.",
+   "actor": "any",
+   "strength": "recommended",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "the provider publishes cryptographic hashes, and the downloader verifies the training data",
+   "gateway_control_ko": "학습 데이터 다운로드 검증을 MCP 서버 배포물에 유추한 요구사항 후보다. 서버 배포물과 설정을 도입 때 기록한 해시와 대조하고, 불일치하면 연결을 차단한 뒤 변경을 재승인하도록 한다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-37",
+    "POL-40"
+   ]
+  },
+  {
+   "ref": "3.2.3",
+   "topic_ko": "모델을 신뢰할 수 없는 시스템 구성요소로 보고 설계",
+   "obligation_ko": "모델 산출물 취약점 스캔 같은 기존 관행은 일부 위험만 다루므로 모델 오염 취약점 탐지에는 새 접근이 필요하다고 본다. 이에 더해 모델을 신뢰할 수 없는 시스템 구성요소로 이해하고 공격자가 제어하는 모델 출력의 위험을 줄이도록 응용을 설계하면 위험을 줄일 수 있다고 한다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "understanding models as untrusted system components",
+   "gateway_control_ko": "모델·에이전트의 출력을 곧바로 신뢰하지 않고 도구 호출마다 정책 엔진이 권한, 데이터 등급, 목적지를 재판정해 허용·승인 필요·차단을 정한다.",
+   "pol_ids": [
+    "POL-22",
+    "POL-24",
+    "POL-25"
+   ]
+  },
+  {
+   "ref": "3.3.3 모니터링과 대응",
+   "topic_ko": "사용자 활동 모니터링·로깅으로 직접 프롬프트 주입 시도 식별과 대응",
+   "obligation_ko": "배포 후 사용자 활동을 모니터링하고 로깅하면 직접 프롬프트 주입 시도와 성공 사례를 식별·대응할 수 있다. 대응에는 악의적 사용자 차단이나 취약점 수정이 포함되며 사용자·조직 단위의 신원 검증과 위반 시 접근 제한 정책이 효과를 높일 수 있다고 한다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "monitoring and logging of user activity may allow model deployers to identify and respond to instances of attempted and successful direct prompt injection attacks",
+   "gateway_control_ko": "호출·판정·승인을 원장에 기록하고 이상 호출(정책 거부 반복, 새 도구 사용)을 경보하며 위반 주체의 승인을 철회하는 절차로 연결한다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-42",
+    "POL-43",
+    "POL-44"
+   ]
+  },
+  {
+   "ref": "3.3.3 사용 제한",
+   "topic_ko": "모델 질의 총량 제한",
+   "obligation_ko": "일부 공격의 효과는 사용자가 접근하는 추론 매개변수와 반환 정보의 풍부함을 줄이고, 공개 정보와 산출물 공개를 제한하며, 사용자가 쓸 수 있는 모델 질의 총량을 제한하면 줄일 수 있다. 다만 긍정적 사용 사례를 제한하는 단점이 있다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "restricting the total number of model queries available to users",
+   "gateway_control_ko": "주체·서버·기능별 호출 횟수와 실행 시간 한도를 두고 한도 초과 호출은 거부·경보한다.",
+   "pol_ids": [
+    "POL-28",
+    "POL-35",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "3.3.3 간접 완화",
+   "topic_ko": "모델이 악의적 출력을 낼 수 있다고 가정한 시스템 설계",
+   "obligation_ko": "현재 모델은 직접 프롬프트 주입에 취약한 상태이므로, 모델이 악의적 행위자에게 노출되면 악의적 출력을 낼 것이라는 가정 하에 시스템을 설계하는 방안을 든다. 배포자는 민감 데이터에 접근하거나 바람직하지 않은 행위를 할 수 있는 모델이 이를 유출·수행할 수 있다고 보고 설계할 수 있다고 한다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "designing systems under the assumption that the AI model can and will produce malicious output",
+   "gateway_control_ko": "모델 판단과 무관하게 게이트웨이에서 권한·데이터 등급·목적지를 강제하는 심층 방어를 적용하고 고위험 작업은 개별 승인한다.",
+   "pol_ids": [
+    "POL-22",
+    "POL-26",
+    "POL-27"
+   ]
+  },
+  {
+   "ref": "3.4",
+   "topic_ko": "생성형 AI는 데이터와 명령 채널을 섞어 간접 프롬프트 주입이 가능",
+   "obligation_ko": "생성형 AI 모델은 데이터와 지시 채널을 결합하므로 공격자가 모델이 상호작용하는 자원을 조작해 시스템 동작에 영향을 줄 수 있다. 간접 프롬프트 주입은 가용성 침해, 무결성 침해, 프라이버시 침해로 이어질 수 있다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Because GenAI models combine the data and instruction channels",
+   "gateway_control_ko": "도구 설명과 도구 응답을 사용자 요청·승인 범위를 바꾸는 근거로 인정하지 않는 규칙을 요구사항으로 둔다. 서버 설명의 추가 지시를 따르지 않는 것은 에이전트 측 사항이어서 게이트웨이가 직접 보장하지 않는다.",
+   "pol_ids": [
+    "POL-04",
+    "POL-29",
+    "POL-32"
+   ]
+  },
+  {
+   "ref": "3.4.2",
+   "topic_ko": "간접 프롬프트 주입으로 에이전트를 탈취해 공격자 지정 작업 수행",
+   "obligation_ko": "공격자는 간접 프롬프트 주입으로 생성형 AI 에이전트를 탈취해 사용자가 준 작업 대신 또는 그에 더해 악의적인 공격자 지정 작업을 수행하게 할 수 있다. 숨김, 다단계 주입, 자기 전파형 주입 같은 기법이 소개된다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "agentic_ai",
+   "timing_ko": "",
+   "anchor": "hijack a GenAI AGENT, causing it to perform a malicious, attacker-specified task",
+   "gateway_control_ko": "에이전트가 외부 문서를 읽은 뒤 요청하는 호출도 같은 정책으로 판정하고, 수정·삭제·전송 같은 변경 작업은 개별 승인을 거치게 한다.",
+   "pol_ids": [
+    "POL-29",
+    "POL-27",
+    "POL-23"
+   ]
+  },
+  {
+   "ref": "3.4.3",
+   "topic_ko": "프롬프트 주입으로 제한 자원의 정보를 공격자 URL로 유출",
+   "obligation_ko": "프롬프트 주입 공격으로 모델이 사용자가 올린 데이터를 공격자가 통제하는 URL에 질의하는 방식으로 유출하거나, 이메일 클라이언트에 통합된 모델이 특정 메일을 공격자 수신함으로 전달하게 할 수 있음을 사례로 든다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "force a model to exfiltrate user-uploaded data by querying an attacker-controlled URL",
+   "gateway_control_ko": "외부 전송은 수신처·목적·데이터 등급이 승인 범위와 일치할 때만 허용하고 비승인 목적지는 차단하며 응답의 민감정보를 제거한다.",
+   "pol_ids": [
+    "POL-26",
+    "POL-30"
+   ]
+  },
+  {
+   "ref": "3.4.4",
+   "topic_ko": "신뢰할 수 없는 소스와의 상호작용을 정의된 인터페이스로 한정하고 권한이 다른 여러 LLM 사용",
+   "obligation_ko": "현재 완화책은 모든 공격을 막지 못하므로 신뢰할 수 없는 입력 소스에 노출되는 모델이 있다면 프롬프트 주입이 가능하다고 가정하고, 권한이 다른 여러 LLM을 쓰거나 신뢰하기 어려운 데이터 소스와는 잘 정의된 인터페이스로만 상호작용하게 할 수 있다고 한다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "multiple LLMs with different permissions",
+   "gateway_control_ko": "업무별 에이전트 컨텍스트를 분리하고 서버 간 데이터 전달은 승인된 경계 안에서만 허용한다.",
+   "pol_ids": [
+    "POL-34",
+    "POL-33",
+    "POL-11"
+   ]
+  },
+  {
+   "ref": "3.5",
+   "topic_ko": "도구를 쓰는 에이전트는 프롬프트 주입 공격의 위험이 커짐",
+   "obligation_ko": "에이전트는 도구를 이용해 행동할 수 있으므로 직접·간접 프롬프트 주입 공격이 임의 코드 실행이나 환경 데이터 유출로 이어지는 추가 위험을 만든다. 에이전트 보안 연구는 아직 초기 단계라고 밝힌다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "agentic_ai",
+   "timing_ko": "",
+   "anchor": "because agents can take actions using tools, these attacks can create additional risks",
+   "gateway_control_ko": "도구 실행 경로를 게이트웨이에 집중시켜 에이전트의 모든 호출을 신원·권한·데이터 등급·승인 상태로 판정하고 기록한다.",
+   "pol_ids": [
+    "POL-22",
+    "POL-19",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "3.6",
+   "topic_ko": "도구 반환 데이터로 에이전트를 탈취하는 공격 평가 프레임워크 언급",
+   "obligation_ko": "AgentDojo 같은 평가 프레임워크는 외부 도구가 반환한 데이터에 의해 에이전트가 악의적 작업을 수행하는 정도를 측정한다. Garak, PyRIT 같은 오픈소스 도구는 모델의 취약점을 찾는 데 쓰인다고 소개한다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "testing_red_teaming_robustness",
+   "timing_ko": "",
+   "anchor": "AgentDojo [101] is an evaluation framework",
+   "gateway_control_ko": "해당 없음(평가 도구 소개). 게이트웨이 시험 계획에서 도구 응답 주입 시나리오를 공격 시험군으로 구성할 때 참고한다.",
+   "pol_ids": [
+    "POL-05",
+    "POL-29"
+   ]
+  },
+  {
+   "ref": "4.2.2",
+   "topic_ko": "모델 가중치에 심긴 취약점은 감사하기 어려움",
+   "obligation_ko": "오픈소스 의존성 공격은 AI에서 특히 심각할 수 있는데, 조직과 연구자가 모델 가중치에 심긴 취약점을 오픈소스 소프트웨어처럼 감사하고 식별하기 어렵기 때문이다. 정보이론적으로 탐지할 수 없는 트로이가 실용화되면 공급망 전반에서 내부자 위협 방지가 더 중요해진다고 한다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "may not be able to audit and identify vulnerabilities encoded into a model",
+   "gateway_control_ko": "해당 없음(과제 서술). 도입 전 점검의 한계를 전제로 운영 중 이상 탐지와 변경 재승인을 병행한다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-42",
+    "POL-37"
+   ]
+  },
+  {
+   "ref": "4.2.5",
+   "topic_ko": "적대적 시험만으로는 부족하며 추가 관행과 조치 필요",
+   "obligation_ko": "많은 AML 완화책은 경험적이어서 이론적 보장이 없으므로, 위험이 큰 맥락에서 모델에 신뢰를 위임하는 조직은 적대적 시험을 넘어서는 관행과 조치를 고려해야 할 수 있다. 사전 배포 적대적 시험은 여전히 많은 공격 경로를 막는 데 유용하다고 한다.",
+   "actor": "any",
+   "strength": "recommended",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "",
+   "anchor": "need to consider practices and measures beyond",
+   "gateway_control_ko": "사전 시험과 별개로 운영 중 호출 통제(권한, 승인, 한도)와 이상 탐지를 두는 다층 구조로 구현하고 시험 결과는 증거로 보존한다.",
+   "pol_ids": [
+    "POL-05",
+    "POL-27",
+    "POL-42"
+   ]
+  }
+ ],
+ "pitfalls_ko": [
+  "법적 구속력이 없는 NIST 분류·용어 문서다. 'should'가 나와도 권고이며 규제 의무가 아니다.",
+  "문서 대부분(2장 예측형 AI 분류, 용어집, 참고문헌)은 이 노트에서 읽지 않았다. 생성형 AI 장(3장)과 4장 일부만 반영했다.",
+  "완화책 설명은 연구 단계 기법이 많고, 문서 스스로 '현재 완화책은 모든 공격 기법에 대해 완전한 보호를 제공하지 않는다'는 취지로 한계를 밝힌다. 게이트웨이 통제도 이 한계를 전제로 심층 방어로 구성해야 한다.",
+  "공식 페이지의 잠정 정정 목록(2025-06-03)은 p.x 색인에서 생성형 AI 가용성 위반 항목을 NISTAML.016·.017로 고쳐야 한다고 하나 공식 개정은 아니다. 색인의 식별자를 인용할 때 주의한다.",
+  "추출 본문에 소프트 하이픈이 섞여 있어 단어가 줄바꿈에서 쪼개져 보일 수 있다."
+ ],
+ "reading_scope_ko": "표지·배경·읽는 법, 목차, 3.2(공급망)·3.3.3(직접 프롬프트 완화)·3.4(간접 프롬프트 주입)·3.5(에이전트)·3.6(벤치마크)과 4.2.2·4.2.5를 읽었다. 2장 예측형 AI 분류, 3.1 분류 체계, 4.1, 용어집, 참고문헌은 읽지 않았다.",
+ "limitations_ko": "법적 해석이나 적합성 판단이 아니다. 2025년 3월판 기준이며 2026-10-17에 공식 페이지에서 후속 판 페이지(E2026)가 없고 잠정 정정 목록이 색인(p.x) 오류만 다룬다는 점을 확인했다. 정정 목록은 공식 개정이 아니므로 인용 전에 다시 확인한다. 영어 원문이 정본이다.",
+ "license_notice": "NIST 저작권·이용 안내(nist.gov)는 NIST 직원 저작물이 미국 저작권법 제105조에 따라 일반적으로 미국에서 저작권 보호를 받지 않으며 외국 저작권이 있을 수 있고 NIST가 비직원 저작물의 저작권을 보유할 수 있다고 한다. 이 PDF 자체에는 '무료로 이용 가능하다'는 표시와 NIST 저작권·이용 안내 링크(3쪽)만 있고 자유 이용 문구는 없다. 공저자 중 Northeastern University, Cisco, 영국 AI보안연구소 소속이 있다.",
+ "distribution": "local-only",
+ "distribution_reason": "NIST 직원 저작물 안내는 확인했으나 이 PDF에는 외부 기관(Northeastern University, Cisco, 영국 AI보안연구소) 공저자가 있고 문서 자체에 자유 이용 문구가 없어 비직원 저작물의 저작권 처리를 확인하지 못했으므로 로컬 전용에 둔다. 원본은 nvlpubs.nist.gov에서 다시 받을 수 있다."
+}

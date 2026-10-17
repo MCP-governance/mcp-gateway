@@ -1,0 +1,444 @@
+{
+ "id": "LIB-L09",
+ "title": "ISO/IEC 42001:2023 Information technology — Artificial intelligence — Management system",
+ "title_native": "BS ISO/IEC 42001:2023 (사용자가 제공한 사본의 머리글 표기. 'BS' 접두는 영국 채택본 지정번호로 보이나 사본에 BSI 명칭·고지는 없어 확인하지 못했다)",
+ "issuer": "ISO/IEC JTC 1/SC 42 (ISO 카탈로그 기재. 사본 머리글은 'BS ISO/IEC 42001:2023')",
+ "jurisdiction": "INTL",
+ "instrument_type": "standard",
+ "binding": false,
+ "status": "voluntary",
+ "edition": "ISO/IEC 42001:2023, Edition 1, 2023-12 (ISO 카탈로그: Published, International Standard published [60.60], 51쪽). 사본은 BS ISO/IEC 42001:2023 이미지 전용 PDF 61쪽이며 본문은 OCR로 추출했다.",
+ "key_dates": "ISO 발행 2023-12(Edition 1). 2026-10-17 ISO 카탈로그 쪽(Status: Published, Stage 60.60, Edition 1, 51쪽, ISO/IEC JTC 1/SC 42)에 개정판·철회 표시는 없고, 같은 쪽의 묶음 상품 목록에 ISO/IEC 42005:2025가 표시된다(그 문서의 제목·내용은 이 노트에서 확인하지 않았다).",
+ "language": "en",
+ "official_page_url": "https://www.iso.org/standard/42001",
+ "summary_ko": "조직이 AI 경영시스템(AIMS)을 수립·운영·개선하기 위한 요구사항과 구현 지침을 담은 국제 표준이다. 조항 4~10(맥락, 리더십, 계획, 지원, 운영, 성과 평가, 개선)과 AI 정책·역할·자원·영향 평가·수명주기·데이터·이해관계자 정보·사용·제3자 관계를 다루는 Annex A 통제 목표·통제(표 A.1), 이를 풀이한 Annex B 구현 지침으로 구성된다. 위험 처리 때 Annex A와 대조해 누락을 확인하고 적용성 보고서(SoA)에 포함·제외 사유를 남기게 한다.",
+ "scope_ko": "AI 시스템을 개발·제공·사용하는 모든 규모·유형의 조직이 대상이다. 서문이 표준의 자발적 성격을 언급하므로 법적 의무가 아니다(제3자 인증 제도 여부는 읽은 범위에서 확인하지 못했다). 표 A.1 통제는 모두 쓸 필요가 없고 조직이 자체 통제를 설계할 수 있다(A.1). MINT 도입 조직에게는 AI 시스템 사용·도구 자원·공급자·로그에 대한 통제의 증빙 틀이다.",
+ "provisions": [
+  {
+   "ref": "5.3 역할·책임·권한",
+   "topic_ko": "AIMS 적합성과 성과 보고에 대한 책임 부여",
+   "obligation_ko": "최고경영진은 AI 경영시스템이 이 표준을 충족하도록 보장하는 책임·권한과 AIMS 성과를 최고경영진에게 보고하는 책임·권한을 부여해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "Top management shall assign the responsibility and authority for",
+   "gateway_control_ko": "해당 없음(조직 절차). 게이트웨이는 책임자별 승인·권한 변경·폐기 이력을 원장에 남겨 책임 소재의 증빙을 제공한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "6.1.2 AI 위험 평가",
+   "topic_ko": "AI 위험 평가 프로세스의 정의",
+   "obligation_ko": "조직은 AI 정책·목표와 정렬되고, 반복 평가가 일관되고 비교 가능한 결과를 내도록 설계되며, 조직·개인·사회에 미칠 결과를 분석하고 위험 수준을 판단해 위험 기준과 비교·우선순위화하는 AI 위험 평가 프로세스를 정의·수립하고 문서화된 정보를 보관해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "",
+   "anchor": "The organization shall define and establish an Al risk assessment process that",
+   "gateway_control_ko": "MCP 서버·도구 도입 심사를 위험 평가 입력으로 쓰고(기능, 데이터, 권한, 외부 전송, 취약점 상태), 결과를 승인 기록에 보존해 반복 평가 때 같은 항목으로 비교한다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-01",
+    "POL-03"
+   ]
+  },
+  {
+   "ref": "6.1.3 AI 위험 처리",
+   "topic_ko": "Annex A 대조와 적용성 보고서(SoA)",
+   "obligation_ko": "위험 처리 프로세스에서 필요한 통제를 정하고 Annex A 통제와 비교해 필요한 통제가 빠지지 않았는지 확인하며, 필요한 통제와 포함·제외 사유를 담은 적용성 보고서를 작성하고 위험 처리 계획과 잔여 위험 수용에 대해 지정된 경영진의 승인을 받아야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "",
+   "anchor": "compare the controls with those in Annex A to verify that no necessary controls have been omitted",
+   "gateway_control_ko": "정책 50개와 이 표준 Annex A 통제의 대응표를 만들고, 미구현 통제는 제외 사유와 함께 적용성 보고서 작성 입력으로 내보내는 기능을 후보로 둔다(대응표는 아직 확정본이 아니며 요구사항 매트릭스와의 연계는 미정).",
+   "pol_ids": [
+    "POL-02",
+    "POL-37"
+   ]
+  },
+  {
+   "ref": "6.1.3 f) 적용성 보고서",
+   "topic_ko": "필요 통제와 포함·제외 정당화",
+   "obligation_ko": "필요한 통제를 담고 통제의 포함·제외를 정당화하는 적용성 보고서를 작성해야 하며, 제외 사유에는 위험 평가상 불필요하거나 외부 요건의 적용을 받지 않는 경우가 포함될 수 있다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "produce a statement of applicability that contains the necessary controls",
+   "gateway_control_ko": "해당 없음(조직 문서). 통제별 구현 상태와 근거 코드·시험 링크를 요구사항 매트릭스에서 내보내 SoA 작성 자료로 쓰는 방안을 후보로 둔다(현재 매트릭스의 항목 구성은 이 노트에서 확인하지 않았다).",
+   "pol_ids": []
+  },
+  {
+   "ref": "6.1.4 AI 시스템 영향 평가",
+   "topic_ko": "영향 평가 결과의 문서화",
+   "obligation_ko": "조직은 AI 시스템의 개발·제공·사용이 개인·집단·사회에 미칠 잠재적 결과를 평가하는 프로세스를 정하고, 배치·의도된 사용·예측 가능한 오용이 미칠 영향과 해당 관할권·기술 맥락을 고려하며 결과를 문서화하고 위험 평가에 반영해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "",
+   "anchor": "impact assessment shall be documented. Where appropriate, the result of",
+   "gateway_control_ko": "도입 신청서에 업무 목적, 영향받는 개인정보·고객 데이터 범위, 고영향 후보 표시를 두고 결과를 승인 기록과 함께 보관한다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "7.5.3 문서화된 정보의 통제",
+   "topic_ko": "문서화된 정보의 보호",
+   "obligation_ko": "AIMS와 이 표준이 요구하는 문서화된 정보는 필요한 곳과 시점에 이용할 수 있고 기밀성 상실·부적절한 사용·무결성 상실로부터 적절히 보호되도록 통제해야 하며 배포·접근, 보관, 변경 통제, 보존·폐기를 다뤄야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "adequately protected (e.g. from loss of confidentiality, improper use or loss of integrity)",
+   "gateway_control_ko": "감사 원장·승인 기록·정책 판본에 접근통제와 변조 방지를 적용하고 보존 기한과 폐기 절차를 설정한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "8.1 운영 계획 및 통제",
+   "topic_ko": "외부에서 제공되는 프로세스·제품·서비스의 통제",
+   "obligation_ko": "조직은 AI 경영시스템과 관련된 외부 제공 프로세스, 제품 또는 서비스가 통제되도록 해야 하고, 계획된 변경을 통제하며 의도하지 않은 변경의 결과를 검토해 필요하면 악영향을 완화해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "externally provided processes, products or services that are relevant",
+   "gateway_control_ko": "외부 MCP 서버·모델 제공자를 승인된 목록·판본으로만 연결하고 서버 구성 변경을 승인 완료 도구와 대조해 보안 영향이 있으면 차단·재승인한다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-40",
+    "POL-08"
+   ]
+  },
+  {
+   "ref": "8.2 AI 위험 평가의 수행",
+   "topic_ko": "계획된 주기 또는 중대한 변경 시 재평가",
+   "obligation_ko": "조직은 계획된 주기로 또는 중대한 변경이 제안되거나 발생할 때 6.1.2에 따라 AI 위험 평가를 수행하고 모든 평가 결과의 문서화된 정보를 보관해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "계획된 주기, 중대한 변경 시",
+   "anchor": "The organization shall perform Al risk assessments in accordance with 6.1.2 at planned intervals",
+   "gateway_control_ko": "도구 목적지 변경, 권한 범위 변경, 서버 판본 변경을 재승인 트리거로 두고 승인 만료일에 도입 심사를 다시 수행한다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-40"
+   ]
+  },
+  {
+   "ref": "8.3 AI 위험 처리의 이행",
+   "topic_ko": "위험 처리 계획 이행과 효과 검증",
+   "obligation_ko": "조직은 6.1.3에 따른 AI 위험 처리 계획을 이행하고 효과를 검증해야 하며, 처리 옵션이 효과가 없으면 검토·재검증해 계획을 갱신하고 모든 위험 처리 결과의 문서화된 정보를 보관해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "",
+   "anchor": "The organization shall implement the Al risk treatment plan according to 6.1.3 and verify its effectiveness",
+   "gateway_control_ko": "통제의 효과는 정상군·공격군 시험으로 차단률·오탐·미탐을 측정해 검증하고 결과를 개선 과제와 함께 보존한다.",
+   "pol_ids": [
+    "POL-42",
+    "POL-05"
+   ]
+  },
+  {
+   "ref": "9.1 모니터링·측정·분석·평가",
+   "topic_ko": "모니터링 대상과 방법·시점의 결정",
+   "obligation_ko": "조직은 모니터링·측정 대상, 유효한 결과를 보장하는 방법, 수행 시점, 결과의 분석·평가 시점을 정하고 결과의 증거로 문서화된 정보를 두어야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "what needs to be monitored and measured",
+   "gateway_control_ko": "호출·차단·승인·오탐·경보 지표를 집계하고 권한·이상 징후를 정기 점검해 보고한다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "9.2.1 내부 감사",
+   "topic_ko": "계획된 주기의 내부 감사",
+   "obligation_ko": "조직은 AIMS가 조직 자체 요구사항과 이 표준을 충족하고 효과적으로 이행·유지되는지에 대한 정보를 제공하기 위해 계획된 주기로 내부 감사를 수행해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "governance_accountability",
+   "timing_ko": "계획된 주기",
+   "anchor": "audits at planned intervals to provide information on whether",
+   "gateway_control_ko": "해당 없음(조직 절차). 감사 담당자가 원장·승인 이력·정책 판본을 읽기 전용으로 조회하고 내보낼 수 있게 한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "10.2 부적합 및 시정조치",
+   "topic_ko": "부적합 발생 시 통제·시정과 재발 방지",
+   "obligation_ko": "부적합이 발생하면 통제·시정하고 결과를 처리하며, 원인을 검토해 재발·타소 발생을 막는 조치를 시행하고 시정조치의 효과를 검토하며 부적합과 시정조치 결과의 문서화된 정보를 보관해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "incident_reporting",
+   "timing_ko": "",
+   "anchor": "When a nonconformity occurs, the organization shall:",
+   "gateway_control_ko": "탐지된 미승인 변경·비정상 호출은 연결 중지, 영향 범위 조사, 원인 분석, 재발 방지 규칙 추가의 흐름으로 기록하고 시정 후 재시험 결과를 보존한다.",
+   "pol_ids": [
+    "POL-43",
+    "POL-39"
+   ]
+  },
+  {
+   "ref": "A.2.2 / B.2.2 AI 정책",
+   "topic_ko": "AI 시스템 개발·사용에 대한 정책 문서화",
+   "obligation_ko": "조직은 AI 시스템의 개발 또는 사용에 대한 정책을 문서화해야 하고(통제), 정책은 사업 전략, 위험 수준, 법적 요구사항(계약 포함), 이해관계자 영향을 반영하며 예외·일탈 처리 절차를 포함해야 한다(지침).",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "The organization should document a policy for the development or use of Al systems",
+   "gateway_control_ko": "해당 없음(조직 문서). 정책 엔진에 적용된 허용·차단 규칙과 예외 승인 이력을 AI 정책 이행의 증빙으로 제시한다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "A.3.3 우려 사항 보고",
+   "topic_ko": "AI 시스템 수명주기 전반의 우려 보고 프로세스",
+   "obligation_ko": "조직은 AI 시스템에 대한 조직의 역할에 관한 우려를 수명주기 전반에 걸쳐 보고하는 프로세스를 정의하고 운영해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "report concerns about the organization's role with respect",
+   "gateway_control_ko": "해당 없음(조직 절차). 보고된 우려의 근거 호출을 원장에서 찾아 재구성할 수 있게 한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "A.4.4 도구 자원",
+   "topic_ko": "AI 시스템에 쓰이는 도구 자원의 문서화",
+   "obligation_ko": "자원 식별의 일부로 AI 시스템에 쓰이는 도구 자원(tooling resources)에 대한 정보를 문서화해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "document information about the tooling resources utilized for the Al system",
+   "gateway_control_ko": "승인된 MCP 서버·도구·판본·계약 잠금 목록을 도구 자원 대장으로 유지한다(서버 식별자, 기능, 배포처, 무결성 검증 결과).",
+   "pol_ids": [
+    "POL-01",
+    "POL-11",
+    "POL-37"
+   ]
+  },
+  {
+   "ref": "A.4.3 데이터 자원",
+   "topic_ko": "AI 시스템에 쓰이는 데이터 자원의 문서화",
+   "obligation_ko": "자원 식별의 일부로 AI 시스템에 쓰이는 데이터 자원에 대한 정보를 문서화해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "the organization shall document information about the data resources utilized for the Al system",
+   "gateway_control_ko": "에이전트가 접근하는 자산과 보안 등급, 외부로 나가는 데이터 범위를 서버별로 기록한다.",
+   "pol_ids": [
+    "POL-25",
+    "POL-26"
+   ]
+  },
+  {
+   "ref": "A.5.2 AI 시스템 영향 평가 프로세스",
+   "topic_ko": "수명주기 전반의 영향 평가 프로세스 수립",
+   "obligation_ko": "조직은 AI 시스템이 수명주기 전반에 걸쳐 개인·집단·사회에 미칠 수 있는 잠재적 결과를 평가하는 프로세스를 수립해야 하고 결과를 정해진 기간 보존해야 한다(A.5.3).",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "정해진 기간 보존",
+   "anchor": "establish a process to assess the potential consequences for individuals or groups of",
+   "gateway_control_ko": "영향 평가 결과 문서 링크와 평가일을 도입 심사 기록에 두고 서버 변경·권한 확대 시 재평가 필요 표시를 남긴다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-37"
+   ]
+  },
+  {
+   "ref": "A.6.2.5 AI 시스템 배포",
+   "topic_ko": "배포 계획 문서화와 사전 요건 충족",
+   "obligation_ko": "조직은 배포 계획을 문서화하고 배포 전에 적절한 요건이 충족되도록 해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "testing_red_teaming_robustness",
+   "timing_ko": "배포 전",
+   "anchor": "document a deployment plan and ensure that appropriate requirements are met prior to deployment",
+   "gateway_control_ko": "운영 연결 전 Tool 설명과 실제 동작의 일치 시험, 보안 담당자 승인, 승인 범위 등록을 거치게 하고 실제 동작이 신청과 다르면 연결을 승인하지 않는다.",
+   "pol_ids": [
+    "POL-05",
+    "POL-08"
+   ]
+  },
+  {
+   "ref": "A.6.2.6 운영 및 모니터링",
+   "topic_ko": "지속 운영에 필요한 요소(모니터링, 수리, 업데이트, 지원)",
+   "obligation_ko": "조직은 AI 시스템의 지속적 운영에 필요한 요소를 정의·문서화해야 하며 최소한 시스템·성능 모니터링, 수리, 업데이트, 지원을 포함해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "At the minimum, this should include system and performance monitoring, repairs, updates and support",
+   "gateway_control_ko": "MCP 서버 제공자의 유지보수·보안 공지·취약점 수정 지원을 확인하고, 지원이 종료됐거나 수정 경로가 불명확한 서버는 신규 도입을 보류하며 알려진 취약점은 기한 내 조치한다.",
+   "pol_ids": [
+    "POL-03",
+    "POL-39",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "A.6.2.8 이벤트 로그 기록 / B.6.2.8",
+   "topic_ko": "사용 중 최소한 이벤트 로그 기록, 법적 보존 요건 고려",
+   "obligation_ko": "조직은 수명주기 중 이벤트 로그 기록을 켜야 할 단계를 정하되 AI 시스템이 사용 중일 때는 최소한 기록해야 하고(통제), 로그는 의도된 사용에 필요한 기간과 조직의 데이터 보존 정책 안에서 보관하며 법적 보존 요건이 적용될 수 있다(지침).",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "사용 중 최소한 기록, 보존 기간은 의도된 사용·보존 정책·법적 요건에 따름",
+   "anchor": "record keeping of event logs should be enabled, but at the minimum when the Al system",
+   "gateway_control_ko": "도구 호출·정책 결정·승인·권한 변경·폐기·인증정보 회수 이력을 원장에 기록하고 비밀정보 제외·개인정보 최소화·마스킹과 법정 보존 기간, 접근통제, 변조 방지를 적용한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "B.6.2.8 로그 보존 지침",
+   "topic_ko": "보존 기한과 법적 요건",
+   "obligation_ko": "이벤트 로그는 AI 시스템의 의도된 사용에 필요한 기간 동안, 조직의 데이터 보존 정책 안에서 보관해야 하며 데이터 보존에 관한 법적 요건이 적용될 수 있다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "의도된 사용에 필요한 기간",
+   "anchor": "Event logs should be kept for as long as required for the intended use of the Al system and within the data retention policies of the organization",
+   "gateway_control_ko": "원장 보존 기한을 조직의 데이터 보존 정책과 적용되는 법정 보존 요건(조직이 확인한 것)에 맞춰 설정하고 만료 시 삭제·가명화하는 방안을 둔다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "A.7.5 데이터 출처 이력",
+   "topic_ko": "AI 시스템에 쓰인 데이터의 출처 기록 프로세스",
+   "obligation_ko": "조직은 데이터와 AI 시스템의 수명주기 전반에서 AI 시스템에 쓰인 데이터의 출처(provenance)를 기록하는 프로세스를 정의·문서화해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "recording the provenance of data used in its Al systems",
+   "gateway_control_ko": "도구 응답의 출처(서버, 판본, 호출 ID)를 원장에 연결하고 중요 문서 작성에 쓰이는 응답은 출처 확인이 가능할 때만 사용하게 한다.",
+   "pol_ids": [
+    "POL-32",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "A.8.3 외부 보고",
+   "topic_ko": "이해관계자가 부정적 영향을 보고할 수 있는 역량",
+   "obligation_ko": "조직은 이해관계자가 AI 시스템의 부정적 영향을 보고할 수 있는 역량을 제공해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "parties to report adverse impacts of the Al system",
+   "gateway_control_ko": "해당 없음(조직 절차). 접수 신고의 근거 호출을 원장에서 조회할 수 있게 한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "A.8.4 / B.8.4 사고 소통",
+   "topic_ko": "사용자에게 사고를 알리는 계획과 통지 시한·당국 통지 의무 파악",
+   "obligation_ko": "조직은 AI 시스템 사고를 사용자에게 알리는 계획을 정하고 문서화해야 하며(통제), 법적 요구사항과 규제 활동이 통지해야 할 사고 유형, 통지 시한, 당국 통지 여부, 통지 세부 내용을 정할 수 있음을 이해해야 하고 개인정보 유출은 별도 보고 요건이 있을 수 있다(지침).",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "incident_reporting",
+   "timing_ko": "법령·계약이 정한 통지 시한",
+   "anchor": "document a plan for communicating incidents to users of the",
+   "gateway_control_ko": "사건 발생 시 영향받은 호출·데이터 등급·주체 범위를 원장에서 재구성하는 사고 요약 내보내기를 후보 기능으로 두고, 조직이 파악한 통지 시한·당국 통지 요건(개인정보 유출 통지 등)을 사건 처리 기록에 연결하는 방안을 검토한다. 통지 자체는 조직 절차다.",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "A.9.2 책임 있는 사용 프로세스",
+   "topic_ko": "AI 시스템 책임 있는 사용 프로세스의 정의",
+   "obligation_ko": "조직은 AI 시스템의 책임 있는 사용을 위한 프로세스를 정의하고 문서화해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "The organization should define and document the processes for the responsible use of Al systems",
+   "gateway_control_ko": "고위험 요청은 대상과 내용을 제시한 개별 승인 후 실행하고 승인 거부·보류 이력을 남기는 흐름을 책임 있는 사용 프로세스의 집행·증빙 수단으로 제시할 수 있다(프로세스 정의 자체는 조직 문서).",
+   "pol_ids": [
+    "POL-27"
+   ]
+  },
+  {
+   "ref": "A.9.4 AI 시스템의 의도된 사용",
+   "topic_ko": "의도된 용도와 설명서에 맞게 사용",
+   "obligation_ko": "조직은 AI 시스템이 의도된 용도와 부속 문서에 따라 사용되도록 해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "according to the intended uses of the Al system and its accompanying documentation",
+   "gateway_control_ko": "승인된 업무 범위(기능, 목적, 데이터)를 벗어난 호출을 차단하고 변경 시 재승인한다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-22",
+    "POL-26"
+   ]
+  },
+  {
+   "ref": "A.10.2 책임 배분",
+   "topic_ko": "조직·파트너·공급자·고객·제3자 간 책임 배분",
+   "obligation_ko": "조직은 AI 시스템 수명주기 내 책임이 조직, 파트너, 공급자, 고객, 제3자 사이에 배분되도록 해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "responsibilities within their Al system life cycle are allocated between the organization, its partners, suppliers, customers and third parties",
+   "gateway_control_ko": "외부 MCP 제공자와의 데이터 처리 책임(저장, 재사용, 재위탁, 삭제)을 도입 심사 기록과 계약 증빙 링크로 남긴다.",
+   "pol_ids": [
+    "POL-07",
+    "POL-33",
+    "POL-49"
+   ]
+  },
+  {
+   "ref": "A.10.3 공급자",
+   "topic_ko": "공급자 제공 서비스·제품·자료가 책임 있는 개발·사용 방침과 일치하도록 프로세스 수립",
+   "obligation_ko": "조직은 공급자가 제공하는 서비스, 제품 또는 자료의 사용이 책임 있는 AI 개발·사용 접근과 일치하도록 보장하는 프로세스를 수립해야 하며, 공급자 유형과 위험에 따라 요구사항과 지속적 모니터링·평가 수준을 정하고 문제 시 시정조치를 요구한다(B.10.3).",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "usage of services, products or materials provided by suppliers aligns with the organization's approach",
+   "gateway_control_ko": "공급자(MCP 서버·모델 제공자) 위험 등급별 심사 항목과 재심사 주기를 두고, 승인 만료·취약점 공지·변경 감지 시 사용을 보류·차단한다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-03",
+    "POL-07",
+    "POL-37"
+   ]
+  }
+ ],
+ "pitfalls_ko": [
+  "사본은 BS ISO/IEC 42001:2023 이미지 전용 PDF이고 텍스트는 OCR(Tesseract)로 추출했다. 인용 문구(anchor)에 'AI'가 'Al'로 읽히는 등 OCR 오류가 섞여 있어 정식 문안 인용 때는 원본 쪽을 눈으로 확인해야 한다.",
+  "Annex A는 '통제 목표와 통제', Annex B는 구현 지침이다. Annex A 표 번호(A.x.y)와 Annex B 번호(B.x.y)는 같은 번호로 짝을 이루지만, 지침(should)은 SoA에 포함·제외를 정당화할 필요가 없다(B.1).",
+  "표 A.1의 모든 통제를 쓸 필요는 없고 조직이 자체 통제를 설계할 수 있다(A.1, 6.1.3 NOTE 2). 적용하지 않는 통제는 SoA에 제외 사유를 남겨야 한다.",
+  "이 표준의 요구사항은 조직의 경영시스템에 대한 것이지 MINT 제품의 통제 성능을 보증하지 않는다. 이 노트의 MINT 통제 매핑은 증빙 후보일 뿐이다(제3자 인증 제도 여부는 확인하지 않았다).",
+  "표준 자체는 자발적이어서(서문) provisions의 strength를 모두 recommended로 표기했다. 조항 4~10의 'shall'은 표준을 충족했다고 주장하려는 조직에 대한 요구사항이고, Annex A 통제는 'shall'이어도 모든 통제를 쓸 필요는 없으며(A.1) Annex B 지침은 'should'다. 법적 의무로 읽으면 안 된다.",
+  "이 노트의 쪽 번호가 아닌 조항·통제 번호로 인용한다(사본 쪽수는 61쪽, ISO 카탈로그는 51쪽)."
+ ],
+ "reading_scope_ko": "OCR 추출본에서 조항 5~10 전체와 Annex A 표 A.1 전체를 읽었고 Annex B는 B.1, B.2.2~B.2.3, B.6.2.6, B.6.2.8, B.8.4, B.9.4 부근, B.10.2~B.10.3만 읽었다. 조항 1~4, Annex C~D, 참고문헌, 각 통제의 나머지 구현 지침은 읽지 않았다.",
+ "limitations_ko": "법적 해석이나 인증 적합성 판단이 아니다. OCR 텍스트의 오류 가능성이 있고 표 구조(Annex A의 항목명)는 일부 깨져 있다. ISO 카탈로그의 상태 확인은 2026-10-17 시점이며 이후 개정이나 정오표(corrigendum)·Amd를 확인하지 않았다. 조항 번호는 읽은 사본 기준이다.",
+ "license_notice": "사본 2쪽에 'COPYRIGHT PROTECTED DOCUMENT'와 '© ISO/IEC 2023 All rights reserved' 고지가 있어 서면 허락 없이 복제하거나 인터넷·인트라넷에 게시하는 것을 금지한다고 밝히고, 사본 각 쪽에는 'Copyrighted Document For Training Purpose Only' 워터마크가 있다. 사본 머리글은 'BS ISO/IEC 42001:2023'이지만 BSI 명칭·고지는 확인하지 못했다. ISO 카탈로그 페이지는 © ISO 2026과 유료 판매(PDF+ePub, CHF 225 표시)를 표기한다. 재사용 허가 근거를 찾지 못해 원문 PDF와 OCR 추출본은 로컬 전용으로 보관하고 위키에는 조항 번호와 요지만 둔다.",
+ "distribution": "local-only",
+ "distribution_reason": "ISO/IEC 저작권이 유보된 유료 표준이며 사본 자체의 고지가 서면 허락 없는 복제·게시를 금지한다. 사용자가 제공한 사본(입수 경로 불명, 학습용 워터마크 있음)을 재배포할 권리를 확인하지 못했고 중앙 확인된 재사용 근거도 ISO에는 없으므로 git에서 제외한 로컬 경로에만 보관한다."
+}

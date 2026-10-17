@@ -284,6 +284,77 @@
 | LIB-K36 | [개인정보 보호법 (시행 2026.9.11.)](LIB-K36.md) | 법령 2026 | POL-02, POL-31, POL-26, POL-48, POL-49, POL-09, POL-38, POL-43, POL-07, POL-30 | 법령·표준 근거 확인 · 경보 검증·자동 대응 |
 
 
+<!-- compliance:begin -->
+## 2026-10-17 해외·국내 AI 컴플라이언스 근거 문서 (L·M, 61건)
+
+AI 컴플라이언스 문서 모음(L, 12건)과 미국·EU·중국·캐나다·싱가포르·영국·일본·호주·인도·국제기구의 법·규제·정책·표준(M)을 공식 원문에서 확보해 조항 단위로 정리했다. 조항별 요구사항·정책50 연결·관할×주제 집계·개발 계획은 [analysis/compliance](../analysis/compliance/README.md)에 있다. 원문 재배포가 허용된 32건만 `sources/compliance/`에 두고, 나머지 29건은 git에서 제외한 `local-sources/compliance/`에만 보관하므로 다른 PC에서는 출처 URL과 해시로 다시 받아야 한다. 이 자료는 법률 자문이 아니며 조항 정리는 읽은 범위 안에서만 유효하다.
+
+| ID | 자료 | 관할 | 유형 | 상태 | 배포 | 조항 |
+| --- | --- | --- | --- | --- | --- | ---: |
+| LIB-L01 | [개인정보 보호법 [시행 2026. 9. 11.] [법률 제21445호, 2026. 3. 10., 일부개정]](LIB-L01.md) | 한국 | statute | 시행 중 | 공개 | 23 |
+| LIB-L02 | [신용정보의 이용 및 보호에 관한 법률 [시행 2026. 9. 11.] [법률 제21445호, 2026. 3. 10., 타법개정]](LIB-L02.md) | 한국 | statute | 시행 중 | 공개 | 11 |
+| LIB-L03 | [정보통신망 이용촉진 및 정보보호 등에 관한 법률 [시행 2026. 9. 11.] [법률 제21445호, 2026. 3. 10., 타법개정]](LIB-L03.md) | 한국 | statute | 시행 중 | 공개 | 13 |
+| LIB-L04 | [인공지능 발전과 신뢰 기반 조성 등에 관한 기본법 [시행 2026. 7. 21.] [법률 제21311호, 2026. 1. 20., 일부개정]](LIB-L04.md) | 한국 | statute | 시행 중 | 공개 | 15 |
+| LIB-L05 | [생성형 인공지능(AI) 개발·활용을 위한 개인정보 처리 안내서](LIB-L05.md) | 한국 | regulator_guidance | 자율 | 로컬 | 35 |
+| LIB-L06 | [AI 보안 레드티밍 가이드](LIB-L06.md) | 한국 | regulator_guidance | 자율 | 로컬 | 29 |
+| LIB-L07 | [NIST Special Publication 800-207: Zero Trust Architecture](LIB-L07.md) | 미국 연방 | regulator_guidance | 자율 | 공개 | 31 |
+| LIB-L08 | [Architectural Requirements for Supporting AI Agents on the Internet (draft-daniel-ai-agent-internet-architecture-03)](LIB-L08.md) | 국제 | draft | 초안 | 공개 | 32 |
+| LIB-L09 | [ISO/IEC 42001:2023 Information technology — Artificial intelligence — Management system](LIB-L09.md) | 국제 | standard | 자율 | 로컬 | 28 |
+| LIB-L10 | [ISO/IEC 27001:2022 Information security, cybersecurity and privacy protection — Information security management systems — Requirements](LIB-L10.md) | 국제 | standard | 자율 | 로컬 | 48 |
+| LIB-L11 | [AZS ISO/IEC TR 24028:2024 (ISO/IEC TR 24028:2020 Overview of trustworthiness in artificial intelligence의 아제르바이잔 국가표준 채택본)](LIB-L11.md) | AZ | national_standard | 자율 | 로컬 | 15 |
+| LIB-L12 | [ISO/IEC 5230:2020 Information technology — OpenChain Specification](LIB-L12.md) | 국제 | standard | 자율 | 로컬 | 11 |
+| LIB-M01 | [Regulation (EU) 2024/1689 of the European Parliament and of the Council of 13 June 2024 laying down harmonised rules on artificial intelligence and amending Regulations (EC) No 300/2008, (EU) No 167/2013, (EU) No 168/2013, (EU) 2018/858, (EU) 2018/1139 and (EU) 2019/2144 and Directives 2014/90/EU, (EU) 2016/797 and (EU) 2020/1828 (Artificial Intelligence Act)](LIB-M01.md) | EU | regulation | in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용) | 공개 | 30 |
+| LIB-M02 | [Accelerating the Adoption of Software and AI Agent Identity and Authorization (concept paper)](LIB-M02.md) | 미국 연방 | draft | 초안 | 공개 | 24 |
+| LIB-M03 | [Careful adoption of agentic AI services](LIB-M03.md) | 국제 | regulator_guidance | 자율 | 공개 | 25 |
+| LIB-M04 | [Model AI Governance Framework for Agentic AI (Version 1.5)](LIB-M04.md) | 싱가포르 | framework | 자율 | 로컬 | 29 |
+| LIB-M05 | [智能体规范应用与创新发展实施意见 (비공식 영문 번역: Implementation Opinions on the Standardized Application and Innovative Development of Intelligent Agents)](LIB-M05.md) | 중국 | regulator_guidance | in_force (비구속 정책 의견: 2026-05-08 공동 인쇄·게시, 본문에 시행일 조항 없음, 2026-10-17 공식 페이지 게재 유지 확인) | 공개 | 14 |
+| LIB-M06 | [Regulation (EU) 2016/679 of the European Parliament and of the Council of 27 April 2016 on the protection of natural persons with regard to the processing of personal data and on the free movement of such data, and repealing Directive 95/46/EC (General Data Protection Regulation)](LIB-M06.md) | EU | regulation | 시행 중 | 공개 | 30 |
+| LIB-M07 | [Artificial Intelligence Risk Management Framework (AI RMF 1.0)](LIB-M07.md) | 미국 연방 | framework | 자율 | 공개 | 29 |
+| LIB-M08 | [Securing Agentic AI – An Addendum to the Guidelines and Companion Guide on Securing AI Systems](LIB-M08.md) | 싱가포르 | regulator_guidance | 자율 | 로컬 | 30 |
+| LIB-M09 | [生成式人工智能服务管理暂行办法](LIB-M09.md) | 중국 | regulation | 시행 중 | 공개 | 15 |
+| LIB-M10 | [Cybersecurity Law of the People's Republic of China (as amended 2025) / 中华人民共和国网络安全法（2025年修正）](LIB-M10.md) | 중국 | statute | 시행 중 | 공개 | 27 |
+| LIB-M11 | [Directive (EU) 2022/2555 of the European Parliament and of the Council of 14 December 2022 on measures for a high common level of cybersecurity across the Union, amending Regulation (EU) No 910/2014 and Directive (EU) 2018/1972, and repealing Directive (EU) 2016/1148 (NIS 2 Directive)](LIB-M11.md) | EU | directive | 시행 중 | 공개 | 30 |
+| LIB-M12 | [Security and Privacy Controls for Information Systems and Organizations (NIST SP 800-53, Revision 5)](LIB-M12.md) | 미국 연방 | standard | 시행 중 | 공개 | 30 |
+| LIB-M13 | [Directive on Automated Decision-Making](LIB-M13.md) | 캐나다 | directive | 시행 중 | 로컬 | 28 |
+| LIB-M14 | [CCPA Updates, Cybersecurity Audits, Risk Assessments, Automated Decisionmaking Technology (ADMT), and Insurance Regulations - Approved Regulations Text (Cal. Code Regs., tit. 11, div. 6, ch. 1)](LIB-M14.md) | 미국 주(CA) | regulation | 시행 중 | 로컬 | 30 |
+| LIB-M15 | [Colorado Senate Bill 26-189 (Session Laws of Colorado 2026, ch. 131): Concerning the Use of Automated Decision-Making Technology in Consequential Decisions (repeals and reenacts Part 17 of Article 1 of Title 6, C.R.S.)](LIB-M15.md) | 미국 주(CO) | statute | 채택·미시행 | 로컬 | 27 |
+| LIB-M16 | [Regulation (EU) 2026/1744 of the European Parliament and of the Council of 8 July 2026 amending Regulations (EU) 2024/1689, (EU) 2018/1139 and (EU) 2023/1230 as regards the simplification of the implementation of harmonised rules on artificial intelligence (Digital Omnibus on AI)](LIB-M16.md) | EU | regulation | 시행 중 | 공개 | 25 |
+| LIB-M17 | [Artificial Intelligence Risk Management Framework: Generative Artificial Intelligence Profile (NIST AI 600-1)](LIB-M17.md) | 미국 연방 | framework | 자율 | 로컬 | 20 |
+| LIB-M18 | [M-26-14: Ensuring Effective and Efficient Agency Logging and Network Visibility to Defend Against Evolving Cyber Threats](LIB-M18.md) | 미국 연방 | regulator_guidance | 시행 중 | 공개 | 13 |
+| LIB-M19 | [M-25-21: Accelerating Federal Use of AI through Innovation, Governance, and Public Trust](LIB-M19.md) | 미국 연방 | regulator_guidance | 시행 중 | 공개 | 15 |
+| LIB-M20 | [Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and Mitigations (NIST AI 100-2 E2025)](LIB-M20.md) | 미국 연방 | framework | 자율 | 로컬 | 15 |
+| LIB-M21 | [Cybersecurity Framework Profile for Artificial Intelligence (Cyber AI Profile) — NIST IR 8596 iprd (Initial Preliminary Draft)](LIB-M21.md) | 미국 연방 | framework | 초안 | 로컬 | 18 |
+| LIB-M22 | [Deploying AI Systems Securely: Best Practices for Deploying Secure and Resilient AI Systems (Joint Cybersecurity Information)](LIB-M22.md) | 국제 | regulator_guidance | 자율 | 로컬 | 16 |
+| LIB-M24 | [EDPB Opinion 28/2024 on certain data protection aspects related to the processing of personal data in the context of AI models](LIB-M24.md) | EU | regulator_guidance | 자율 | 공개 | 12 |
+| LIB-M25 | [Regulation (EU) 2022/2554 of the European Parliament and of the Council of 14 December 2022 on digital operational resilience for the financial sector and amending Regulations (EC) No 1060/2009, (EU) No 648/2012, (EU) No 600/2014, (EU) No 909/2014 and (EU) 2016/1011 (Digital Operational Resilience Act, DORA)](LIB-M25.md) | EU | regulation | 시행 중 | 공개 | 21 |
+| LIB-M26 | [Regulation (EU) 2024/2847 of the European Parliament and of the Council of 23 October 2024 on horizontal cybersecurity requirements for products with digital elements and amending Regulations (EU) No 168/2013 and (EU) No 2019/1020 and Directive (EU) 2020/1828 (Cyber Resilience Act)](LIB-M26.md) | EU | regulation | 시행 중 | 공개 | 18 |
+| LIB-M27 | [国家网络安全事件报告管理办法](LIB-M27.md) | 중국 | regulation | 시행 중 | 공개 | 13 |
+| LIB-M28 | [网络数据安全管理条例 (Regulations on Network Data Security Management)](LIB-M28.md) | 중국 | regulation | 시행 중 | 로컬 | 19 |
+| LIB-M29 | [Personal Information Protection Law of the People's Republic of China](LIB-M29.md) | 중국 | statute | 시행 중 | 공개 | 21 |
+| LIB-M30 | [促进和规范数据跨境流动规定 (비공식 영문 번역: Provisions on Promoting and Regulating Cross-Border Data Flows)](LIB-M30.md) | 중국 | regulation | 시행 중 | 공개 | 10 |
+| LIB-M31 | [AI Safety Governance Framework 2.0 (人工智能安全治理框架 2.0版)](LIB-M31.md) | 중국 | framework | 대체됨 | 로컬 | 18 |
+| LIB-M32 | [Cybersecurity technology — Basic security requirements for generative artificial intelligence service (GB/T 45654—2025)](LIB-M32.md) | 중국 | national_standard | 자율 | 로컬 | 17 |
+| LIB-M33 | [人工智能生成合成内容标识办法 (Measures for Labeling AI-Generated Synthetic Content)](LIB-M33.md) | 중국 | regulation | 시행 중 | 공개 | 10 |
+| LIB-M34 | [Personal Data Protection Act 2012 (2020 Revised Edition)](LIB-M34.md) | 싱가포르 | statute | 시행 중 | 로컬 | 11 |
+| LIB-M35 | [Personal Information Protection and Electronic Documents Act (PIPEDA), S.C. 2000, c. 5](LIB-M35.md) | 캐나다 | statute | 시행 중 | 공개 | 14 |
+| LIB-M36 | [An Act to modernize legislative provisions as regards the protection of personal information (Bill 64), 2021, chapter 25](LIB-M36.md) | 캐나다 | statute | 시행 중 | 로컬 | 14 |
+| LIB-M37 | [Guidelines on Artificial Intelligence Risk Management for Financial Institutions](LIB-M37.md) | 싱가포르 | regulator_guidance | 채택·미시행 | 로컬 | 28 |
+| LIB-M38 | [Advisory Guidelines on use of Personal Data in AI Recommendation and Decision Systems](LIB-M38.md) | 싱가포르 | regulator_guidance | 자율 | 로컬 | 16 |
+| LIB-M39 | [Guidelines on Securing AI Systems](LIB-M39.md) | 싱가포르 | regulator_guidance | 자율 | 로컬 | 16 |
+| LIB-M40 | [ETSI EN 304 223 V2.1.1 (2025-12) Securing Artificial Intelligence (SAI); Baseline Cyber Security Requirements for AI Models and Systems](LIB-M40.md) | 국제 | standard | 자율 | 로컬 | 30 |
+| LIB-M41 | [Implementation Guide for the AI Cyber Security Code of Practice](LIB-M41.md) | 영국 | code_of_practice | 자율 | 공개 | 18 |
+| LIB-M42 | [AI Guidelines for Business Ver 1.2 (English provisional translation of the main text)](LIB-M42.md) | 일본 | regulator_guidance | 자율 | 공개 | 14 |
+| LIB-M43 | [Guidance for AI adoption: implementation guidance](LIB-M43.md) | 호주 | framework | 자율 | 로컬 | 19 |
+| LIB-M44 | [Digital Personal Data Protection Rules, 2025 (G.S.R. 846(E))](LIB-M44.md) | 인도 | regulation | 채택·미시행 | 로컬 | 13 |
+| LIB-M45 | [The Digital Personal Data Protection Act, 2023 (No. 22 of 2023)](LIB-M45.md) | 인도 | statute | partially_in_force | 로컬 | 16 |
+| LIB-M46 | [Data (Use and Access) Act 2025 (c. 18)](LIB-M46.md) | 영국 | statute | 시행 중 | 공개 | 9 |
+| LIB-M47 | [Act on Promotion of Research and Development, and Utilization of Artificial Intelligence-related Technology (Act No. 53 of June 4, 2025) — English translation](LIB-M47.md) | 일본 | statute | 시행 중 | 공개 | 8 |
+| LIB-M48 | [Privacy and Other Legislation Amendment Act 2024 (Act No. 128 of 2024)](LIB-M48.md) | 호주 | statute | 시행 중 | 로컬 | 7 |
+| LIB-M49 | [India AI Governance Guidelines: Enabling Safe and Trusted AI Innovation](LIB-M49.md) | 인도 | framework | 자율 | 로컬 | 11 |
+| LIB-M50 | [Recommendation of the Council on Artificial Intelligence (OECD/LEGAL/0449)](LIB-M50.md) | 국제 | framework | 자율 | 공개 | 9 |
+
+<!-- compliance:end -->
+
 ## 업데이트
 
 선별·개발 요약은 `sources/selection.json`, 공식 추가 입수 이력은 `sources/live/`에 보존한다.

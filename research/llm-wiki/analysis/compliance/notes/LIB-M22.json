@@ -1,0 +1,278 @@
+{
+ "id": "LIB-M22",
+ "title": "Deploying AI Systems Securely: Best Practices for Deploying Secure and Resilient AI Systems (Joint Cybersecurity Information)",
+ "title_native": "",
+ "issuer": "미국 NSA AI 보안센터(AISC)·CISA·FBI와 호주 ASD ACSC·캐나다 사이버보안센터·뉴질랜드 NCSC-NZ·영국 NCSC",
+ "jurisdiction": "INTL",
+ "instrument_type": "regulator_guidance",
+ "binding": false,
+ "status": "voluntary",
+ "edition": "Cybersecurity Information Sheet, 2024년 4월 Ver. 1.0(문서 번호 U/OO/143395-24, PP-24-1538), 11쪽. 이 사본은 NCSC-NZ 사이트(ncsc.govt.nz)에 게시된 PDF이며 NSA가 게시한 원본 PDF(media.defense.gov)와 바이트 단위 동일성은 확인하지 못했다.",
+ "key_dates": "2024-04 Ver. 1.0(문서 표지). 발행일 2024-04-15(CISA 알림 페이지의 Release Date 'April 15, 2024', 2026-10-17 확인). 같은 날 확인한 이 알림 페이지에는 개정·대체 안내가 없고 다른 판은 찾지 못했다. media.defense.gov는 curl 요청에 HTTP 403(Access Denied)을 돌려줘 NSA 원본 PDF는 직접 받지 못했다.",
+ "language": "en",
+ "official_page_url": "https://www.cisa.gov/news-events/alerts/2024/04/15/joint-guidance-deploying-ai-systems-securely",
+ "summary_ko": "외부에서 개발한 AI 시스템을 온프레미스·사설 클라우드에 배포·운영하는 조직을 위한 5개국(미국·호주·캐나다·뉴질랜드·영국) 7개 기관 공동 모범 사례다. 배포 환경 거버넌스·경계 보호·구성 강화·네트워크 보호, 모델·공급망 검증(서명·체크섬·격리 검사), API 보안(인증·인가·입력 검증), 로그와 행동 모니터링, 모델 가중치 보호, 접근 통제(RBAC/ABAC, MFA), 감사·침투 시험, 업데이트·패치, 불변 백업과 안전한 삭제를 제시한다.",
+ "scope_ko": "AI 시스템(여기서는 머신러닝 기반)을 외부에서 개발받아 온프레미스·사설 클라우드에 배포·운영하는 조직, 특히 고위협·고가치 환경이 주 대상이다. 다른 곳이 배포한 AI 시스템을 이용만 하는 조직에는 적용되지 않는다고 밝힌다(범위·대상 절). 법적 의무가 아니다.",
+ "provisions": [
+  {
+   "ref": "범위·대상 (쪽 2)",
+   "topic_ko": "적용 대상: 외부 개발 AI를 직접 배포·운영하는 조직",
+   "obligation_ko": "모범 사례는 외부에서 개발된 AI 시스템을 온프레미스나 사설 클라우드에서 배포·운영하는 조직에 가장 적합하며, 고위협·고가치 환경에 특히 그렇고, 다른 곳이 배포한 AI를 이용만 하는 조직에는 적용되지 않는다.",
+   "actor": "deployer",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "They are not applicable for organizations who are not deploying AI systems themselves and instead are leveraging AI systems deployed by others",
+   "gateway_control_ko": "해당 없음(적용 범위). MINT는 배포 조직의 에이전트·도구 호출 경계를 통제하는 제품이므로 이 문서의 '배포 환경 경계 보호·API 보안·모니터링' 항목에 대응할 수 있다(다만 이 문서의 'AI 시스템'은 머신러닝 모델 배포를 뜻하며 MCP 도구 호출은 직접 다루지 않는다).",
+   "pol_ids": []
+  },
+  {
+   "ref": "배포 환경 거버넌스 (쪽 3-4)",
+   "topic_ko": "위험 허용 수준, 역할·책임, 보안 경계, 공급자의 위협 모델 요구",
+   "obligation_ko": "조직 위험 수준과 AI 시스템 사용이 위험 허용 범위 안인지 확인하고 위협·영향·위험 수용을 평가·문서화하며, 이해관계자별 역할·책임과 보안 경계를 식별하고, AI 시스템 주 개발자에게 위협 모델 제공을 요구하고(권고), AI 제품·서비스 계약을 마련할 때 배포 환경 보안 요건을 고려한다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "",
+   "anchor": "Require the primary developer of the AI system to provide a threat model for their system",
+   "gateway_control_ko": "대부분 조직 절차(위험 평가·계약 검토). 도입 심사 기록에 위험 평가 결과와 공급자의 보안 문서(위협 모델 등)를 첨부해 증빙하는 방식을 구현 후보로 검토할 수 있다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-07",
+    "POL-01"
+   ]
+  },
+  {
+   "ref": "견고한 배포 환경 아키텍처 (쪽 4)",
+   "topic_ko": "경계 보호, 신뢰 데이터 출처 목록, 제로 트러스트 적용",
+   "obligation_ko": "IT 환경과 AI 시스템 사이 경계에 보안 보호를 두고 모델 가중치 접근은 2인 통제 같은 소수 특권 사용자로 제한하며, AI 학습·미세조정에 쓰는 독점 데이터 출처를 식별·보호하고 신뢰할 수 있는 데이터 출처 목록을 유지해 오염·백도어 공격을 막고, 보안 설계와 제로 트러스트 프레임워크를 아키텍처에 적용한다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Establish security protections for the boundaries between the IT environment and the AI system",
+   "gateway_control_ko": "관리 대상 MCP 접근을 게이트웨이 경유로 제한하고(우회·직접 연결 차단), 호출마다 신원·위임·기능을 재판정하는 기본 거부 구조로 경계 보호를 구현하는 데 쓸 수 있다(모델 가중치 저장소 접근 통제 자체는 배포 인프라 영역).",
+   "pol_ids": [
+    "POL-12",
+    "POL-22",
+    "POL-25"
+   ]
+  },
+  {
+   "ref": "배포 환경 구성 강화 (쪽 4-5)",
+   "topic_ko": "샌드박스, 방화벽 허용 목록, 저장 시 암호화(HSM), 전송 TLS, MFA",
+   "obligation_ko": "ML 모델을 강화된 컨테이너·VM에 샌드박스로 가두고 네트워크를 모니터링하며 방화벽을 허용 목록으로 구성하고, 모델 가중치·출력·로그는 저장 시 암호화하고 키는 HSM에 보관하며, 강한 인증·접근 통제와 최신 TLS로 전송을 암호화하고 피싱 방지 MFA를 쓰고 부정 인증 시도를 모니터링·대응한다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Implement strong authentication mechanisms, access controls, and secure communication protocols, such as by using the latest version of Transport Layer Security (TLS) to encrypt data in transit",
+   "gateway_control_ko": "원격 MCP 연결에 승인된 암호화 전송과 연결 상대 검증을 적용하고, 승인된 비밀 저장소로 인증정보를 관리하며 설정 파일·로그에 원문이 노출되지 않게 한다.",
+   "pol_ids": [
+    "POL-16",
+    "POL-14",
+    "POL-19"
+   ]
+  },
+  {
+   "ref": "배포 네트워크 보호 (쪽 5)",
+   "topic_ko": "침해 가정(ZT) 사고방식, 사고 탐지, 즉시 접근 차단 수단",
+   "obligation_ko": "침해가 불가피하거나 이미 발생했다고 가정하고 탐지·대응 능력으로 신속히 식별·봉쇄하며, 사고 탐지 시스템을 통합하고 악의 의심 사용자의 접근을 즉시 차단하거나 큰 사고 시 AI 모델·시스템으로의 모든 인바운드 연결을 끊는 수단을 마련한다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "신속(즉시 차단)",
+   "anchor": "a means to immediately block access by users suspected of being malicious or to disconnect all inbound connections to the AI models and systems in case of a major incident",
+   "gateway_control_ko": "주체·서버·기능 단위의 중지·철회가 후속 호출 거부에 즉시 반영되고 미승인 변경·비정상 호출 탐지 시 도구와 연결을 중지한다.",
+   "pol_ids": [
+    "POL-44",
+    "POL-43",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "AI 시스템 검증 (쪽 5-6)",
+   "topic_ko": "암호 서명·체크섬으로 산출물 출처·무결성 확인, 형상관리, 롤백",
+   "obligation_ko": "암호 방법, 디지털 서명, 체크섬으로 각 산출물의 출처와 무결성을 확인하고(예: safetensors), 각 릴리스의 해시와 암호화 사본을 변조 방지 위치에 보관하며, 코드와 산출물을 접근 통제된 형상 관리에 두고, 수정 후 견고성·정확성·취약점을 시험(적대적 시험 포함)하며, 자동 롤백과 인간 개입(human-in-the-loop) 안전장치를 준비한다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "Use cryptographic methods, digital signatures, and checksums to confirm each artifact’s origin and integrity",
+   "gateway_control_ko": "MCP 서버·의존성의 배포처, 배포자, 버전, 서명·해시 검증 결과를 도입 때 기록하고 검증 실패 시 도입을 보류하며, 승인 완료 도구를 보관해 변경을 대조한다(모델 산출물의 서명·체크섬 검증 자체는 배포 조직의 모델 저장소 영역).",
+   "pol_ids": [
+    "POL-01",
+    "POL-37",
+    "POL-05"
+   ]
+  },
+  {
+   "ref": "공급망 평가와 격리 검사 (쪽 6)",
+   "topic_ko": "외부 모델·데이터 공급망 평가, 가져온 모델은 보안 개발 구역에서 먼저 검사",
+   "obligation_ko": "외부 AI 모델과 데이터의 공급망을 조직 표준과 위험 관리 정책에 맞는지 평가하고 보안 설계 원칙에 따라 개발된 것을 선호하며, 가져온 사전 학습 모델은 기업 환경에서 바로 실행하지 말고 보안 개발 구역에서 검사하고 AI 전용 스캐너가 있으면 악성 코드 탐지에 쓴다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "Do not run models right away in the enterprise environment",
+   "gateway_control_ko": "신규 MCP 서버·도구는 제한된 시험 환경에서 설명과 실제 동작의 일치를 시험한 뒤에만 운영 연결을 승인하고, 출처 미확인·검증 실패면 도입을 보류한다.",
+   "pol_ids": [
+    "POL-05",
+    "POL-01",
+    "POL-09"
+   ]
+  },
+  {
+   "ref": "노출 API 보안 (쪽 7)",
+   "topic_ko": "API 인증·인가, HTTPS, 입력 검증·정제(프롬프트 인젝션 포함)",
+   "obligation_ko": "AI 시스템이 API를 노출하면 접근에 인증·인가 메커니즘을 구현하고 암호화·인증이 있는 HTTPS 같은 안전한 프로토콜을 쓰며, 원치 않거나 호환되지 않거나 악의적인 입력(예: 프롬프트 인젝션)이 AI 시스템에 전달될 위험을 줄이도록 모든 입력 데이터의 검증·정제 프로토콜을 둔다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Implement validation and sanitization protocols for all input data to reduce the risk of undesired, suspicious, incompatible, or malicious input being passed to the AI system",
+   "gateway_control_ko": "정규화한 실제 입력과 실행 대상을 규격·승인 범위와 대조해 범위를 벗어나면 거부한다(OAuth 토큰 검증은 정책 POL-21 요건으로 별도 적용).",
+   "pol_ids": [
+    "POL-24",
+    "POL-21",
+    "POL-22"
+   ]
+  },
+  {
+   "ref": "모델 행동 모니터링 (쪽 7)",
+   "topic_ko": "입력·출력·중간 상태·오류 로그, 구성 변경과 데이터 추출 시도 모니터링",
+   "obligation_ko": "입력, 출력, 중간 상태, 오류를 포괄하는 로그를 수집하고 경보와 트리거를 자동화하며, 모델 아키텍처·구성의 무단 변경이나 예상 밖 수정, 모델에서 데이터를 끌어내거나 추론 응답을 집계하려는 시도를 모니터링한다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Collect logs to cover inputs, outputs, intermediate states, and errors; automate alerts and triggers",
+   "gateway_control_ko": "호출·결정·응답 처리 결과를 감사 원장에 기록하고(비밀정보 제외) 새 도구 사용·미승인 연결 시도·비정상 호출 증가에 경보를 건다(모델 내부의 중간 상태 로그는 게이트웨이 범위 밖).",
+   "pol_ids": [
+    "POL-38",
+    "POL-42",
+    "POL-28"
+   ]
+  },
+  {
+   "ref": "모델 가중치 보호 (쪽 7)",
+   "topic_ko": "API는 작업에 필요한 최소 데이터만 반환해 모델 역전 억제",
+   "obligation_ko": "모델 가중치에 접근하는 인터페이스를 강화해 공격자가 가중치를 유출하는 노력을 늘리고(예: API가 작업에 필요한 최소 데이터만 반환해 모델 역전을 억제), 가능한 범위에서 가중치 저장소를 하드웨어로 보호하고 보호된 저장소·고제한 구역·HSM에 격리한다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "ensure APIs return only the minimal data required for the task to inhibit model inversion",
+   "gateway_control_ko": "응답을 업무에 필요한 범위로 제한하고 불필요한 민감정보를 제거·마스킹해 전달하며, 단일 조회의 반환 문서 범위를 제한한다.",
+   "pol_ids": [
+    "POL-25",
+    "POL-30",
+    "POL-35"
+   ]
+  },
+  {
+   "ref": "엄격한 접근 통제 (쪽 8)",
+   "topic_ko": "RBAC 또는 가능하면 ABAC, 사용자·관리자 구분, 관리자 MFA와 PAW",
+   "obligation_ko": "AI 모델에 대한 무단 접근·변조를 막기 위해 역할 기반 접근 통제(RBAC) 또는 가능하면 속성 기반(ABAC)을 적용해 권한 있는 인원으로 제한하고, 사용자와 관리자를 구분하며 관리자 접근에는 MFA와 특권 접근 워크스테이션(PAW)을 요구한다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Apply role-based access controls (RBAC), or preferably attribute-based access controls (ABAC) where feasible, to limit access to authorized personnel only",
+   "gateway_control_ko": "사용자 권한과 위임 범위의 교집합으로 승인된 서버·기능만 허용하고(속성: 자산 등급, 작업 종류, 목적지). 관리자 MFA·특권 접근 워크스테이션은 조직의 IdP·단말 통제 영역이다.",
+   "pol_ids": [
+    "POL-20",
+    "POL-23",
+    "POL-25"
+   ]
+  },
+  {
+   "ref": "감사·침투 시험 (쪽 8)",
+   "topic_ko": "배포 준비된 AI 시스템에 대한 외부 전문가의 감사·침투 시험",
+   "obligation_ko": "배포 준비가 된 AI 시스템에 외부 보안 전문가의 감사와 침투 시험을 받아 내부에서 놓쳤을 수 있는 취약점과 약점을 찾는다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "testing_red_teaming_robustness",
+   "timing_ko": "배포 전",
+   "anchor": "Engage external security experts to conduct audits and penetration testing on ready",
+   "gateway_control_ko": "해당 없음(조직 절차). 외부 전문가 감사·침투 시험은 조직이 계약하는 활동이며, 그 결과를 도입 심사 기록에 첨부하는 방식은 구현 후보다.",
+   "pol_ids": [
+    "POL-05",
+    "POL-39"
+   ]
+  },
+  {
+   "ref": "견고한 로깅·모니터링 (쪽 8)",
+   "topic_ko": "행동·입력·출력 모니터링, 데이터 드리프트·고빈도 반복 입력 감시, 오라클식 공격 경보",
+   "obligation_ko": "시스템 행동, 입력, 출력을 견고한 모니터링·로깅으로 감시해 이상 행동이나 보안 사고를 탐지하고, 데이터 드리프트나 고빈도·반복 입력(모델 침해나 자동화 침해 시도의 징후일 수 있음)을 주시하며, 오라클식 적대적 침해 시도, 침해, 이상을 관리자에게 알리는 경보 체계를 둔다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Watch for data drift or high frequency or repetitive inputs",
+   "gateway_control_ko": "서버·클라이언트별 호출량과 반복 패턴에 한도와 경보를 두고 이상 징후 경보가 설정 변경 후에도 동작하는지 정기 확인한다.",
+   "pol_ids": [
+    "POL-28",
+    "POL-42",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "정기 업데이트·패치 (쪽 8)",
+   "topic_ko": "모델 버전 변경 시 정확도·성능·보안 시험 후 재배포",
+   "obligation_ko": "모델을 새 버전으로 바꿀 때 정확도, 성능, 보안 시험이 허용 한도 안인지 전체 평가를 실행한 뒤 재배포한다(권고).",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "새 버전 재배포 전",
+   "anchor": "When updating the model to a new/different version, run a full evaluation to ensure that accuracy, performance, and security tests are within acceptable limits before",
+   "gateway_control_ko": "승인된 도구·서버의 판본이나 설명·스키마가 바뀌면 사용을 차단하고 재심사·재승인을 거치며 알려진 취약점은 기한 내 조치한다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-39"
+   ]
+  },
+  {
+   "ref": "HA·DR과 불변 백업 (쪽 9)",
+   "topic_ko": "로그 데이터를 포함한 불변 백업 저장소",
+   "obligation_ko": "시스템 요건에 따라 불변 백업 저장소를 써서 모든 객체, 특히 로그 데이터가 변경될 수 없게 해야 한다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Use an immutable backup storage system, depending on the requirements of the system, to ensure that every object, especially log data, is immutable and cannot be changed",
+   "gateway_control_ko": "append-only 감사 원장이 호출·결정·승인·철회 기록의 변경 방지를 뒷받침한다. 원장의 외부 불변 백업과 모델 산출물 백업은 고객 인프라 설정으로 병행한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "안전한 삭제 (쪽 9)",
+   "topic_ko": "데이터·모델이 노출된 과정이 끝나면 복구 불가능한 삭제",
+   "obligation_ko": "학습·검증 모델이나 암호화 키 같은 구성요소는 데이터·모델이 노출되거나 접근 가능했던 과정이 끝나면 보유·잔존물 없이 자율적이고 복구할 수 없게 삭제할 수 있어야 한다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "과정 종료 시",
+   "anchor": "Perform autonomous and irretrievable deletion of components, such as training and validation models or cryptographic keys",
+   "gateway_control_ko": "연결 해제 시 보존 의무가 없는 문서 사본·임시 파일·캐시를 삭제하고, 폐기된 연결의 토큰·API 키를 회수해 이전 값의 재접근 차단을 시험한다.",
+   "pol_ids": [
+    "POL-48",
+    "POL-45",
+    "POL-46"
+   ]
+  }
+ ],
+ "pitfalls_ko": [
+  "법적 구속력이 없는 모범 사례다. 'should/ensure'는 권고 문체다.",
+  "문서 표지에 'TLP:CLEAR(제한 없이 공유 가능)'이지만 '표준 저작권 규칙의 적용을 받는다'고 적혀 있다. 이것은 공개 이용허락이 아니다. 미국 정부 저작물이라 해도 외국 기관(ASD, CCCS, NCSC-NZ, NCSC-UK)이 공동 저자여서 재배포 가능 여부를 단정하지 않았다.",
+  "NSA의 media.defense.gov는 모든 자동 요청에 HTTP 403을 돌려줘 원본 PDF를 직접 받지 못했다. 이 사본은 NCSC-NZ 사이트의 PDF(505,877바이트)이며 NSA 판본과 동일한지 확인하지 못했다.",
+  "2026-10-17에 확인한 CISA 주제 페이지(cisa.gov/ai가 연결되는 /topics/cybersecurity-best-practices/super-intelligence)는 이 문서를 'Deploying SI Systems Securely'로 표기하지만, 같은 날 확인한 CISA 알림 페이지와 PDF 표지는 'AI'다. 표기가 다른 이유는 확인하지 못했고 이 노트는 표지의 제목을 따랐다.",
+  "이 문서는 'AI 시스템'을 머신러닝 기반 AI로 정의하며 LLM 에이전트의 도구 호출·MCP를 직접 다루지 않는다."
+ ],
+ "reading_scope_ko": "PDF 텍스트 추출본 전문(11쪽: 요약, 범위, 모범 사례 3부, 결론, 참고문헌, 면책 문구)을 처음부터 끝까지 읽었다. 그림·서식은 보지 않았고 인용된 참고문헌의 문서도 읽지 않았다.",
+ "limitations_ko": "법적 해석이나 적합성 판단이 아니다. NSA 원본 PDF와 이 사본의 동일성을 확인하지 못했다. CPG(CISA·NIST 사이버보안 성과 목표) 번호의 대응은 읽지 않았다.",
+ "license_notice": "문서 첫머리는 TLP:CLEAR 표시로 제한 없는 공유를 허용하면서 '표준 저작권 규칙'이 적용된다고 밝힌다. CISA 알림 페이지는 이 문서가 CISA의 Notification 및 Privacy & Use 정책에 따라 제공된다고 하고, CISA Notification 페이지는 TLP:CLEAR 정보를 저작권 통제를 조건으로 제한 없이 공유할 수 있다고 한다. 두 곳 모두 명시적 재이용 허락문은 아니다. 이 사본을 게시한 NCSC-NZ 사이트의 저작권 안내(ncsc.govt.nz/legal-privacy-and-copyright/)는 사이트의 뉴질랜드 정부 저작물을 따로 표시가 없는 한 CC BY 4.0으로 재이용 허락한다고 하나, 이 문서는 미국·호주·캐나다·영국 기관도 공동 저자이고 문서 자체에 '표준 저작권 규칙' 문구가 있어 그 허락이 문서 전체에 미치는지 확인할 수 없다(모두 2026-10-17 확인).",
+ "distribution": "local-only",
+ "distribution_reason": "중앙에서 확인된 재이용 근거에 NSA·CISA·NCSC-NZ 공동 문서는 포함되지 않는다. 문서는 TLP:CLEAR 공유 허용과 '표준 저작권 규칙' 적용을 함께 표시하고, 확인한 공식 페이지(CISA Notification·Privacy & Use, NCSC-NZ 저작권 안내)에서도 이 PDF 전체에 대한 명시적 재이용 허락을 찾지 못했다. 취득본은 공동 저자 기관인 NCSC-NZ 사이트의 PDF이며 NSA 원본과의 동일성도 확인하지 못했다. 따라서 원문 PDF와 추출본은 로컬 전용 경로에 두고 위키에는 조항 요지만 둔다."
+}

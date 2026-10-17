@@ -1,0 +1,14 @@
+{
+ "as_of": "2026-10-17",
+ "items": [
+  {
+   "reserved_id": "LIB-M23",
+   "title": "AI Data Security: Best Practices for Securing Data Used to Train & Operate AI Systems (NSA AISC·CISA·FBI 등 공동 정보 시트, 2025-05)",
+   "jurisdiction": "US-federal",
+   "official_page_url": "https://www.cisa.gov/resources-tools/resources/ai-data-security-best-practices-securing-data-used-train-operate-ai-systems",
+   "pdf_url": "https://media.defense.gov/2025/May/22/2003720601/-1/-1/0/CSI_AI_DATA_SECURITY.PDF",
+   "reason_ko": "PDF 서버(media.defense.gov)가 스크립트 요청에 403을 돌려주고, 브라우저에서 이 PC로의 전송과 Internet Archive 사본(429)도 실패했다. 2026-10-17 마지막 재시도도 403.",
+   "next_step_ko": "사용자가 브라우저로 저장한 PDF를 local-sources/compliance/LIB-M23/originals/에 넣으면 build_compliance.py로 반입할 수 있다. 문서 안의 데이터 보안 권고는 LIB-M18·M19(NIST 문서)가 일부 대신한다."
+  }
+ ]
+}

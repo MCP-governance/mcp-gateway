@@ -1,0 +1,308 @@
+{
+ "id": "LIB-M21",
+ "title": "Cybersecurity Framework Profile for Artificial Intelligence (Cyber AI Profile) — NIST IR 8596 iprd (Initial Preliminary Draft)",
+ "title_native": "",
+ "issuer": "미국 국립표준기술연구소(NIST) 응용사이버보안부(ITL)와 국가사이버보안우수센터(NCCoE)·MITRE",
+ "jurisdiction": "US-federal",
+ "instrument_type": "framework",
+ "binding": false,
+ "status": "draft",
+ "edition": "NIST IR 8596 iprd, 2025년 12월 '초기 예비 초안'(Initial Preliminary Draft), CSF 2.0 기반 공동체 프로파일. 107쪽",
+ "key_dates": "문서 표지는 2025년 12월판이며 의견 접수 기간은 2025-12-16~2026-01-30으로 표기돼 있다. 공식 페이지(2026-10-17 열람)는 게시일 2025-12-16, 의견 마감 2026-01-30('마감됨' 표시)과 2026-04-21자 안내(2026-04-28·05-05·05-12 가상 실무 세션)를 싣고 있으며, 초기 공개 초안·최종본 주소(/ipd, /final)는 404였다. 따라서 이 문서보다 새로운 판은 확인되지 않았다.",
+ "language": "en",
+ "official_page_url": "https://csrc.nist.gov/pubs/ir/8596/iprd",
+ "summary_ko": "NIST 사이버보안 프레임워크(CSF 2.0)의 Function·Category·Subcategory를 AI 관점에서 우선순위화한 공동체 프로파일의 예비 초안이다. 세 가지 초점 영역인 AI 시스템 구성요소 보호(Secure), AI를 활용한 사이버 방어(Defend), AI 기반 공격 저지(Thwart)별로 Subcategory마다 제안 우선순위(1 높음·2 중간·3 기초)와 AI 고유 고려사항, 참조 자료를 제시한다. 이 문서는 구현 요구사항이 아니라 의견을 구하는 예비 초안이다.",
+ "scope_ko": "AI 시스템을 도입·운영하거나 방어에 쓰거나 AI 공격에 대비하는 모든 조직을 대상으로 한 자율 지침이다. 규제 의무가 아니며 기존 프레임워크를 대체하려는 것이 아니라 CSF 2.0의 결과(Function·Category·Subcategory)에 AI 관련 우선순위와 고려사항을 덧붙이는 방식이다. 초안이어서 우선순위와 문구가 바뀔 수 있다.",
+ "provisions": [
+  {
+   "ref": "Executive Summary",
+   "topic_ko": "예비 초안의 성격과 의견 구함",
+   "obligation_ko": "이 문서는 기술 내용의 방향을 전달하고 추가할 참조 자료를 확인하며 초기 공개 초안에 반영할 의견을 구하는 예비 초안이다(이 노트의 주의: 확정 요구사항으로 인용하지 말 것).",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "governance_accountability",
+   "timing_ko": "의견 접수 2025-12-16~2026-01-30",
+   "anchor": "This document is a Preliminary Draft of the Cyber AI Profile.",
+   "gateway_control_ko": "해당 없음(문서 성격). 개발 근거로 인용할 때 '초안'임을 표기한다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "Executive Summary, 2.1",
+   "topic_ko": "세 초점 영역(Secure·Defend·Thwart) 구분",
+   "obligation_ko": "프로파일은 AI 시스템 구성요소 보호(Secure), AI 기반 사이버 방어(Defend), AI 기반 공격 저지(Thwart)의 세 초점 영역을 두며, Secure는 AI를 조직 생태계와 인프라에 통합할 때의 보안 과제를 식별한다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Securing AI System Components (Secure): Focuses on identifying cybersecurity",
+   "gateway_control_ko": "게이트웨이는 에이전트의 MCP 도구 호출 경로를 통제하는 지점이므로 Secure 영역의 접근통제·로그·공급망 항목에 대한 증빙을 만들 수 있다(이 노트의 해석이며 문서의 서술이 아니다).",
+   "pol_ids": [
+    "POL-22",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "2.2 우선순위 정의",
+   "topic_ko": "제안 우선순위 1(높음)·2(중간)·3(기초)의 의미",
+   "obligation_ko": "우선순위 1(높음) Subcategory는 가용 자원을 고려해 대체로 가장 먼저 다루고, 2(중간)는 그 다음이며, 3(기초)은 같은 수준의 긴급성이 필요하지 않을 수 있으나 낮은 우선순위와 같지 않다. 우선순위는 구현 난이도가 아니라 해당 초점 영역 과제에 대한 영향도를 뜻한다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "",
+   "anchor": "High priority Subcategories should typically be",
+   "gateway_control_ko": "해당 없음(우선순위 해석 기준). 개발 백로그에서 우선순위 1 항목(PR.AA-01, PR.AA-05, PR.PS-04)을 먼저 시험 항목으로 삼는다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "PR.AA-01",
+   "topic_ko": "AI 시스템에 고유하고 추적 가능한 신원·인증정보 부여",
+   "obligation_ko": "AI 시스템은 다른 시스템과 상호작용할 때 자체 신원과 인증정보(AI 서비스 수준 계정)가 필요할 수 있으며, 조직은 AI 시스템과 그 행위 사이의 추적성을 확보해야 한다. 일반 고려사항은 고유하고 추적 가능한 신원·인증정보를 부여해 활동을 추적하라는 것이며 Secure 우선순위는 1이다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "systems unique and traceable",
+   "gateway_control_ko": "에이전트 주체마다 전송 토큰으로 식별되는 고유 신원을 부여하고 모든 호출을 그 신원에 묶어 원장에 기록한다.",
+   "pol_ids": [
+    "POL-19",
+    "POL-38",
+    "POL-15"
+   ]
+  },
+  {
+   "ref": "PR.AA-02",
+   "topic_ko": "에이전트·서비스 신원을 인증정보에 암호학적으로 결속",
+   "obligation_ko": "LLM이나 AI 에이전트는 사용자가 보통 접근하지 못하는 데이터 소스나 도구에 접근할 수 있으므로 에이전트·서비스 신원을 암호학적 서명과 상호 인증으로 인증정보에 결속하라고 권고한다. Secure 우선순위는 3, Defend는 2다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "cryptographic signing and mutual",
+   "gateway_control_ko": "게이트웨이 접속은 서명 검증이 되는 전송 토큰으로만 신원을 정하고 클라이언트가 보내는 이름·헤더는 신원 근거로 쓰지 않는다. 문서가 말하는 상호 인증(양방향 인증)은 현재 게이트웨이 능력으로 확인되지 않았으므로 연결 상대 검증(TLS 등)과 함께 요구사항 후보로 둔다.",
+   "pol_ids": [
+    "POL-19",
+    "POL-21",
+    "POL-20"
+   ]
+  },
+  {
+   "ref": "PR.AA-03",
+   "topic_ko": "AI 에이전트마다 고유 신원과 특권 사용자 수준의 보호",
+   "obligation_ko": "방어 영역의 고려사항으로 각 AI 에이전트에 고유한 신원과 인증정보를 부여하고 특권 사용자에 준하는 보안 조치를 적용하라고 한다. Defend 우선순위는 2다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "agent with a unique identity and",
+   "gateway_control_ko": "에이전트별 신원을 구분하고 특권 작업은 개별 승인을 요구하며 인증정보는 서버별로 분리해 보관한다.",
+   "pol_ids": [
+    "POL-19",
+    "POL-15",
+    "POL-27"
+   ]
+  },
+  {
+   "ref": "PR.AA-04",
+   "topic_ko": "에이전트 단언·토큰의 서명과 검증으로 출처 확인",
+   "obligation_ko": "신원 단언은 AI 구성요소가 유효하다는 보증 수단이며, 에이전트 단언과 토큰에 서명하고 검증하면 출처를 파악해 예상된 에이전트만 작동하는지 확인할 수 있다. Defend 우선순위는 2다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Signing and verifying agent",
+   "gateway_control_ko": "호출 인증에 쓰는 전송 토큰의 서명·유효기간 검증 기록을 증빙으로 삼는다. 발급자·대상·위임 범위 검증과 범위 이탈 요청 거부는 정책 요구사항(POL-20·21) 이행 항목으로 확인한다.",
+   "pol_ids": [
+    "POL-21",
+    "POL-20",
+    "POL-13"
+   ]
+  },
+  {
+   "ref": "PR.AA-05",
+   "topic_ko": "AI 에이전트에 최소 권한 적용과 시간 경과에 따른 권한 관리",
+   "obligation_ko": "AI 시스템은 네트워크의 다른 주체와 구분해 별도의 권한·인가 정책을 두고, 에이전트에는 역할 수행에 필요한 권한만 부여하는 최소 권한 원칙을 적용하라고 한다(일반 고려사항, Secure 우선순위 1). 시간이 지나며 변하는 에이전트 권한을 주기적 검토·갱신 등으로 관리하는 절차는 Defend 칸의 고려사항(우선순위 2)이다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "주기적 검토",
+   "anchor": "least privilege to AI agents by",
+   "gateway_control_ko": "서버·기능·작업(조회·수정·삭제·실행) 단위로 허용 목록을 관리하고 호출마다 실행 권한을 재판정한다. 도입 후 사용 현황을 보고 쓰지 않는 권한을 정기 검토·회수하는 기능은 요구사항 후보다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-22",
+    "POL-23",
+    "POL-11"
+   ]
+  },
+  {
+   "ref": "PR.PS-04",
+   "topic_ko": "AI 특유의 지표·요청·응답을 포함하는 로그와 무결성 보호",
+   "obligation_ko": "AI는 완전한 시스템 이해를 위해 새로운 지표와 매개변수(탐지 임계값, 추론 시 매개변수 등)를 로그에 남겨야 한다는 것이 Secure 칸의 고려사항이다. 로그에 요청 데이터, 응답 데이터, 응답이 정책에 맞았는지 여부가 보여야 한다는 문구는 Defend 칸의 '표본 기회'에 있다. 세 초점 영역 모두 우선순위는 1이다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "show request data, response data,",
+   "gateway_control_ko": "호출과 정책 판정 결과, 승인 기록을 추가 전용 원장에 남기고 비밀정보는 제외하며 개인정보는 최소화·마스킹한다. 탐지 임계값 등 추론 시 매개변수의 기록은 호출 원장의 범위를 벗어날 수 있으므로 모델 운영 쪽 로그와 나누어 확인해야 하고, 요청·응답 내용을 원장에 어디까지 수록할지는 요구사항으로 확정해야 한다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-30",
+    "POL-31"
+   ]
+  },
+  {
+   "ref": "PR.PS-04 (변조 방지)",
+   "topic_ko": "로그 변조 방지 고려",
+   "obligation_ko": "방어 영역의 고려사항에서 로그가 변조되지 않도록 보호하는 것을 고려하라고 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "protecting logs from tampering.",
+   "gateway_control_ko": "원장은 추가 전용이므로 사후 변경을 막는 데 쓸 수 있다. 해시 체인 구성과 정기 무결성 검증은 요구사항 후보다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "PR.PS-05",
+   "topic_ko": "에이전트의 임의 코드 실행 제한(격리·승인·감시 또는 금지)",
+   "obligation_ko": "일반 고려사항은 어떤 시스템에서든 코드를 자동으로 내려받아 실행하지 못하게 하고 출처를 검증하라는 것이며, AI 에이전트 시스템이 임의의 코드를 실행하도록 허용되는 경우가 있으므로 대부분의 응용에서 이 능력은 제한·격리하거나 승인과 감시를 거치게 하거나 아예 금지해야 한다고 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "curtailed, sandboxed, subject to",
+   "gateway_control_ko": "로컬 서버 실행 명령·인자를 승인 설정과 대조해 허용된 것만 시작하고 코드 실행 계열 기능은 개별 승인을 요구하거나 도입 단계에서 제외한다.",
+   "pol_ids": [
+    "POL-17",
+    "POL-27",
+    "POL-01"
+   ]
+  },
+  {
+   "ref": "DE.CM-06",
+   "topic_ko": "외부 서비스 제공자 호출을 요청·응답·메타데이터로 로깅",
+   "obligation_ko": "AI 응용 중에는 제3자 서비스에 의존하는 것이 있으므로 요청, 응답, 메타데이터, 관련 지표를 로그로 남기라고 하며, 외부 AI 서비스에 대한 모니터링의 중요도는 높다(우선순위 1). 방어 도구가 제3자 AI API를 호출하는 경우 해당 API도 모니터링해 불리한 사건을 식별해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "party services. Use logging to",
+   "gateway_control_ko": "외부 MCP 서버·제공자로 나가는 모든 호출과 응답 요약, 소요 시간, 판정 결과를 원장에 남기고 비정상 호출 급증을 경보한다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-42",
+    "POL-26"
+   ]
+  },
+  {
+   "ref": "GV.SC-01",
+   "topic_ko": "AI 공급망에서 데이터 출처를 소프트웨어·하드웨어 출처만큼 비중 있게 취급",
+   "obligation_ko": "AI 구성요소(마이크로서비스, 컨테이너, 라이브러리, 데이터, 하드웨어)의 출처와 그것이 들여오는 새 취약점을 이해해야 하며, AI에서는 데이터 출처를 소프트웨어·하드웨어 출처만큼 중요하게 보고 학습·추론 입력 데이터 모두를 공급망으로 본다. Secure 우선순위는 2다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "provenance should be weighted",
+   "gateway_control_ko": "MCP 서버·의존성의 배포처·배포자·서명을 도입 신청 필수 항목으로 하고 도구가 내려주는 외부 데이터의 출처를 응답 메타데이터와 함께 기록하는 방안은 요구사항 후보다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-32",
+    "POL-33"
+   ]
+  },
+  {
+   "ref": "GV.SC-05",
+   "topic_ko": "공급자에게 모델과 데이터 범위, 사고 지원 공개를 요구",
+   "obligation_ko": "방어 영역 고려사항으로 AI 도구 공급자에게 모델과 데이터 범위, 사고 발생 시 지원 조건을 공개하도록 요구하라고 한다. 공급망 보안 요구사항을 계약에 통합하라는 Subcategory에 대한 것이며 AI 시스템은 일반 소프트웨어보다 공급망(데이터, 연산 인프라)이 넓다는 점을 근거로 든다.",
+   "actor": "deployer",
+   "strength": "recommended",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "to disclose both model and data",
+   "gateway_control_ko": "도입 신청서에 제공자의 문서 처리 방식(보관, 학습 사용 여부)과 보안 업데이트 지원 여부를 필수 항목으로 두고 미응답 시 도입을 보류한다.",
+   "pol_ids": [
+    "POL-07",
+    "POL-03",
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "ID.AM-02",
+   "topic_ko": "기존 시스템에 AI 기능이 내장되며 인벤토리 유지가 어려워짐",
+   "obligation_ko": "AI 기능이 기존 시스템에 점점 내장되므로 소프트웨어·서비스·시스템의 최신 인벤토리를 유지하기가 어려워질 수 있고, 외부에서 구입한 시스템의 내장 AI를 식별하기 쉽지 않다는 점을 근거로 우선순위 2를 제안한다.",
+   "actor": "operator",
+   "strength": "informative",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "embedded into existing systems,",
+   "gateway_control_ko": "게이트웨이 경유 연결에 한해, 승인한 서버·기능 목록을 도입 대장으로 관리하고 대장에 없는 연결은 차단·경보해 미승인 AI 연결을 식별한다. 구입한 시스템에 내장된 AI는 게이트웨이 밖이라 식별하지 못한다.",
+   "pol_ids": [
+    "POL-11",
+    "POL-12",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "PR.DS-10",
+   "topic_ko": "AI 모델의 민감도는 학습·추론 시 접근하는 데이터의 민감도와 같음",
+   "obligation_ko": "AI는 접근 가능한 민감 데이터를 유출할 가능성이 항상 있고, 일반적으로 AI 모델의 민감도는 학습한 데이터와 추론 시 접근하는 데이터의 민감도와 같다고 본다. 사용 중 데이터의 기밀성·무결성·가용성 보호(Subcategory PR.DS-10) 고려사항이다.",
+   "actor": "operator",
+   "strength": "informative",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "In general, an AI model has the same",
+   "gateway_control_ko": "도구 호출이 접근하는 자산의 보안 등급을 판정에 반영하고 응답의 민감정보를 제거·마스킹하며, 등급이 더 높은 모델·서버로의 전달은 승인 범위 안으로 제한한다.",
+   "pol_ids": [
+    "POL-25",
+    "POL-30",
+    "POL-31",
+    "POL-26"
+   ]
+  },
+  {
+   "ref": "RS.MI-01",
+   "topic_ko": "침해된 AI 에이전트의 자율성·권한을 신뢰 상태로 신속히 비활성화",
+   "obligation_ko": "봉쇄 절차에 AI 특유의 단계, 즉 침해된 AI 에이전트의 자율성과 권한을 검증된 신뢰 상태로 신속히 비활성화하는 것이 포함된다고 한다(Defend 칸, 우선순위 3). AI가 일으킨 사고는 사람보다 빠른 속도로 진행될 수 있어 봉쇄의 중요성이 높아진다고 설명한다(Secure 칸, 우선순위 2).",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "incident_reporting",
+   "timing_ko": "신속",
+   "anchor": "autonomy/privileges of a",
+   "gateway_control_ko": "이상 탐지 시 해당 주체·서버·기능의 승인을 중지·철회하고 후속 호출을 거부하며, 철회 사실과 영향 호출을 원장에 남긴다.",
+   "pol_ids": [
+    "POL-43",
+    "POL-44",
+    "POL-45"
+   ]
+  },
+  {
+   "ref": "GV.OC-03",
+   "topic_ko": "AI 법규·표준 환경 변화에 따른 인적 감독과 준수 유지",
+   "obligation_ko": "AI 법·규제·표준 환경이 빠르게 변하므로 조직은 자신의 책임을 계속 파악할 수단이 필요하고 규제·법적 준수를 위해 인적 감독이 필요하다고 설명한다. 방어 영역에서는 방어용 AI 도구가 로그와 민감 데이터를 개인정보 의무에 맞게 다뤄야 한다고 한다.",
+   "actor": "any",
+   "strength": "recommended",
+   "theme": "human_oversight",
+   "timing_ko": "",
+   "anchor": "oversight will be required to",
+   "gateway_control_ko": "해당 없음(조직 절차). 고위험 작업의 개별 승인과 승인 기록으로 인적 감독의 증거를 남긴다.",
+   "pol_ids": [
+    "POL-27",
+    "POL-38"
+   ]
+  }
+ ],
+ "pitfalls_ko": [
+  "이 문서는 구속력이 없는 NIST 초기 예비 초안이다. 우선순위(1~3)와 문구는 초기 공개 초안·최종본에서 바뀔 수 있으므로 확정 요구사항으로 인용하면 안 된다.",
+  "프로파일 표는 단 구분이 있는 PDF 표를 텍스트로 뽑은 것이라 일반 고려사항과 Secure/Defend/Thwart 칸의 문구가 섞여 나온다. 인용 전에 PDF 원본 쪽에서 해당 칸을 확인해야 한다.",
+  "AI 에이전트 항목 중 PR.AA-03의 고유 신원·특권 사용자 수준 보호, PR.AA-05의 권한 주기 검토, PR.AA-04의 단언 서명·검증, PR.PS-04의 로그 변조 방지, RS.MI-01의 에이전트 권한 비활성화는 Defend(방어용 AI) 칸의 문구다. Secure(보호 대상 AI 시스템) 칸의 우선순위와 구분해서 읽어야 한다.",
+  "많은 Subcategory에 'Standard cybersecurity practices apply'가 표기돼 있다. 이는 AI 고유 요구가 없다는 뜻이지 해당 통제가 불필요하다는 뜻이 아니다.",
+  "참조 자료(DASF, ATLAS, OWASP 등)는 예시이며 이 노트에서는 열어 보지 않았다."
+ ],
+ "reading_scope_ko": "서문, 1장, 2.1~2.2 초점 영역·우선순위 설명, 그리고 GOVERN(GV.OC, GV.SC), IDENTIFY(ID.AM), PROTECT(PR.AA, PR.DS, PR.PS) 일부와 DETECT(DE.CM-06), RESPOND 봉쇄 항목의 표를 읽었다. RECOVER, 대부분의 DE·RS·ID.RA·ID.IM 행, 부록은 읽지 않았다.",
+ "limitations_ko": "법적 해석이나 적합성 판단이 아니다. 초안이므로 향후 개정을 확인해야 한다. 표 칸 구분이 텍스트 추출에서 일부 섞여 있어 Secure/Defend/Thwart 귀속은 원본 쪽 확인이 필요하다. 2026-10-17에 CSRC 공식 페이지(csrc.nist.gov/pubs/ir/8596/iprd)를 열어 게시일·의견 마감일·4월 안내를 확인했고 /ipd, /final 주소가 404임을 보았지만, NCCoE 프로젝트 페이지(403으로 열리지 않음)는 확인하지 못해 후속 초안이 없다고 단정할 수는 없다.",
+ "license_notice": "NIST 공식 페이지(nist.gov 저작권·공정이용·라이선스 안내)는 NIST 직원이 만든 작업물이 미국 저작권법 제105조에 따라 일반적으로 미국에서 저작권 보호를 받지 않으며 외국 저작권이 있을 수 있고, NIST가 비직원(계약자 등)의 저작물 저작권을 양도받아 보유할 수도 있다고 안내한다. 이 문서의 공저자 9명 중 7명이 공식 페이지에 MITRE 소속으로 표기돼 있다. 문서 본문에는 별도의 자유 이용 문구가 없고 '저작권·이용·라이선스 안내'는 링크 문구로만 나온다.",
+ "distribution": "local-only",
+ "distribution_reason": "NIST 직원 저작물에는 미국 내 저작권이 없다는 안내를 확인했으나, 이 초안은 MITRE 소속 공저자가 다수이고 문서 자체에도 자유 이용 문구가 없어 NIST 직원 저작물 규정이 이 PDF 전체에 적용되는지 확인하지 못했으므로 로컬 전용에 둔다. 원본은 nvlpubs.nist.gov에서 다시 받을 수 있다."
+}

@@ -1,0 +1,474 @@
+{
+ "id": "LIB-M11",
+ "title": "Directive (EU) 2022/2555 of the European Parliament and of the Council of 14 December 2022 on measures for a high common level of cybersecurity across the Union, amending Regulation (EU) No 910/2014 and Directive (EU) 2018/1972, and repealing Directive (EU) 2016/1148 (NIS 2 Directive)",
+ "title_native": "",
+ "issuer": "European Parliament and Council of the European Union",
+ "jurisdiction": "EU",
+ "instrument_type": "directive",
+ "binding": true,
+ "status": "in_force",
+ "edition": "OJ L 333, 27.12.2022, pp. 80-152 (영어본, 관보 원문 PDF 73쪽). 2023-12-22 정오표(OJ L, 2023/90206)는 제19조제1항만 정정하며 이 PDF에는 반영돼 있지 않다.",
+ "key_dates": "서명 2022-12-14, 관보 공포 2022-12-27. 발효 2023-01-16(제45조: 공포 후 20일째 날, EUR-Lex 문서 정보 'Date of effect'로 확인). 회원국 국내법 채택·공표 기한 2024-10-17, 적용 2024-10-18(제41조제1항), 같은 날 지침 (EU) 2016/1148 폐지(제44조). 제3조제3항: 필수·중요 개체 목록 작성 기한 2025-04-17. 제27조제2항: 클라우드·관리형 서비스 제공자 등 정보 제출 기한 2025-01-17. 제36조: 처벌 규정 통보 기한 2025-01-17. 제40조: 위원회 검토 2027-10-17 및 이후 36개월마다. 제38조제2항: 제24조제2항 위임 권한은 2023-01-16부터 5년. EUR-Lex 문서 정보(2026-10-17 열람)는 종료일 없음, 현행 통합본 27/12/2022, 개정 '제안' 2건(COM(2025) 837 final 2025-11-19 디지털 옴니버스, COM(2026) 13 final 2026-01-20 NIS2 간소화·사이버보안법 2 정합)을 표시한다. 두 제안의 채택 여부와 각국 국내법 시행일은 이 노트에서 확인하지 않았다.",
+ "language": "en",
+ "official_page_url": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+ "summary_ko": "EU 전역의 높은 공통 수준의 사이버보안을 위한 지침(NIS2)이다. 부속서 I·II 분야의 필수·중요 개체에 사이버보안 위험관리 조치(제21조)와 중대한 사고의 단계별 보고(제23조)를 요구하도록 회원국에 의무를 지우고, 경영진 책임(제20조), 감독·집행 권한과 과징금 상한(제32~34조)을 정한다. 지침이므로 개체에 대한 직접 의무는 회원국 국내법 이행을 통해 생긴다.",
+ "scope_ko": "부속서 I(고위험 분야)·II(기타 중요 분야)에 속하고 중간 규모 기업 이상인 공공·민간 개체가 EU 안에서 서비스를 제공하거나 활동하면 적용한다(제2조제1항). 규모와 무관하게 적용되는 경우는 제2조제2항~제4항에 열거돼 있다. 클라우드 컴퓨팅 서비스 제공자·데이터센터·관리형 서비스 제공자·관리형 보안 서비스 제공자는 부속서 I 제8·9항의 유형이다. 국가안보·국방·법집행 분야 공공기관 등은 제외한다(제2조제7항).",
+ "provisions": [
+  {
+   "ref": "Art. 2(1)",
+   "topic_ko": "적용 대상과 규모 기준",
+   "obligation_ko": "부속서 I 또는 II 유형의 공공·민간 개체 중 권고 2003/361/EC 부속서 제2조의 중간 규모 기업에 해당하거나 그 상한을 넘고, EU 안에서 서비스를 제공하거나 활동하는 개체에 이 지침을 적용한다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "qualify as medium-sized enterprises under Article 2 of the Annex to Recommendation 2003/361/EC",
+   "gateway_control_ko": "해당 없음(적용 범위 판단). 고객 조직이 NIS2 대상인지는 고객의 업종·규모와 소재 회원국 국내법으로 정해지므로 MINT는 고객별 대상 여부 확인 항목을 도입 기록에 남길 수 있을 뿐이다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "Art. 2(2)",
+   "topic_ko": "규모와 무관한 적용 사유",
+   "obligation_ko": "부속서 I·II 유형 개체라도 전자통신망·신뢰 서비스·TLD/DNS 제공자이거나, 회원국 내 유일한 필수 서비스 제공자이거나, 중단 시 공공 안전·체계적 위험에 큰 영향이 있는 등의 경우 규모와 무관하게 적용한다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "Regardless of their size, this Directive also applies to entities of a type referred to in Annex I or II",
+   "gateway_control_ko": "해당 없음(적용 범위 판단). 소규모 고객이라도 이 사유에 걸릴 수 있으므로 규모 기준만으로 적용 제외를 판단하지 않는다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "Annex I, points 8-9",
+   "topic_ko": "디지털 인프라·ICT 서비스 관리(B2B) 유형",
+   "obligation_ko": "부속서 I 제8항(디지털 인프라)에 클라우드 컴퓨팅 서비스 제공자·데이터센터 서비스 제공자·콘텐츠 전송망 제공자 등이, 제9항(ICT 서비스 관리, B2B)에 관리형 서비스 제공자와 관리형 보안 서비스 제공자가 열거돼 있다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "Cloud computing service providers",
+   "gateway_control_ko": "해당 없음(적용 범위 판단). MINT를 원격으로 운영·관리하는 형태로 제공하면 관리형 서비스 제공자 또는 클라우드 서비스 제공자에 해당할 수 있는지 법무 검토가 필요하다(이 노트는 결론을 내리지 않는다).",
+   "pol_ids": []
+  },
+  {
+   "ref": "Art. 4(1)",
+   "topic_ko": "분야별 EU 법령과의 관계",
+   "obligation_ko": "분야별 EU 법령이 위험관리 조치 채택 또는 중대한 사고 통지를 요구하고 그 요건이 이 지침의 의무와 효과상 최소한 동등하면 이 지침의 해당 조항(감독·집행 포함)은 그 개체에 적용하지 않는다(동등성 기준은 제4조제2항). 그 법령이 분야의 일부 개체만 포괄하면 나머지에는 계속 적용한다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "the relevant provisions of this Directive, including the provisions on supervision and enforcement laid down in Chapter VII, shall not apply to such entities",
+   "gateway_control_ko": "해당 없음(적용 범위 판단). 금융 분야 고객처럼 다른 EU 법령이 우선하는 경우 사고 보고 경로가 달라지므로 사고 보고서 내보내기에는 고객이 선택하는 수신처 필드를 둔다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "Art. 6(39)-(40)",
+   "topic_ko": "관리형 서비스 제공자의 정의",
+   "obligation_ko": "관리형 서비스 제공자는 ICT 제품·망·인프라·응용·네트워크 및 정보시스템의 설치·관리·운영·유지 서비스를 고객 구내 또는 원격으로 수행하는 개체이고, 관리형 보안 서비스 제공자는 그중 사이버보안 위험관리 활동을 수행·지원하는 개체다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "services related to the installation, management, operation or maintenance of ICT products, networks, infrastructure, applications",
+   "gateway_control_ko": "해당 없음(정의). 제공 형태(고객 자체 운영형 대 MINT 운영형)에 따라 해당 여부가 달라질 수 있어 제품 제공 방식 문서에 운영 책임 구분을 명시한다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "Art. 6(6)",
+   "topic_ko": "사고의 정의",
+   "obligation_ko": "사고는 네트워크·정보시스템에 저장·전송·처리되는 데이터 또는 이를 통해 제공되는 서비스의 가용성·진정성·무결성·기밀성을 해치는 사건이다. 근접 사고(제6조제5호)는 실제로는 발생하지 않았거나 막은 경우다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "incident_reporting",
+   "timing_ko": "",
+   "anchor": "an event compromising the availability, authenticity, integrity or confidentiality of stored, transmitted",
+   "gateway_control_ko": "차단된 비인가 연결 시도·정책 위반 호출은 근접 사고 후보로, 인증정보 유출·무단 도구 호출 성공은 사고 후보로 분류하는 이벤트 유형을 감사 원장과 경보에 정의한다.",
+   "pol_ids": [
+    "POL-42",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "Art. 2(14)",
+   "topic_ko": "개인정보 처리의 근거와 GDPR 준수",
+   "obligation_ko": "개체·주무기관·단일 연락창구·CSIRT는 이 지침의 목적에 필요한 범위에서만 개인정보를 처리하며 GDPR에 따라야 하고, 그 처리는 특히 GDPR 제6조에 근거해야 한다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "process personal data to the extent necessary for the purposes of this Directive",
+   "gateway_control_ko": "감사 원장과 사고 보고 내보내기에서 개인정보를 마스킹·최소화하고 비밀정보는 제외한다. 보고서에 포함할 필드를 정책으로 제한한다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-31"
+   ]
+  },
+  {
+   "ref": "Art. 20(1)",
+   "topic_ko": "경영진의 승인·감독과 책임",
+   "obligation_ko": "회원국은 필수·중요 개체의 경영진이 제21조의 사이버보안 위험관리 조치를 승인하고 이행을 감독하며 위반에 책임을 질 수 있도록 해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "management bodies of essential and important entities approve the cybersecurity risk-management measures",
+   "gateway_control_ko": "경영진 승인 자체는 조직 절차다. 게이트웨이는 위험 현황(차단·경보·승인 통계)을 경영진 보고용으로 정기 내보내는 기능을 제공할 수 있다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Art. 21(1)",
+   "topic_ko": "적절하고 비례적인 위험관리 조치",
+   "obligation_ko": "필수·중요 개체는 운영·서비스에 쓰는 네트워크·정보시스템의 위험을 관리하고 사고의 영향을 막거나 줄이기 위해 위험에 비례하는 기술적·운영적·조직적 조치를 취해야 한다. 최신 기술 수준과 표준, 비용을 고려한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "appropriate and proportionate technical, operational and organisational measures to manage the risks",
+   "gateway_control_ko": "정책 엔진의 호출별 인가(OPA), 게이트웨이 경유 강제, 외부 목적지 제한, 이상 경보·자동 중지를 기술적 조치의 증빙으로 문서화한다. 비례성 판단은 조직 몫이다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-12",
+    "POL-22"
+   ]
+  },
+  {
+   "ref": "Art. 21(2)(a)-(b)",
+   "topic_ko": "위험 분석 정책과 사고 처리",
+   "obligation_ko": "위험관리 조치에는 최소한 위험 분석과 정보시스템 보안에 관한 정책, 그리고 사고 처리(예방·탐지·분석·봉쇄·대응·복구)가 포함돼야 한다. 모든 위험 요인을 포괄하는 접근을 취한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "policies on risk analysis and information system security",
+   "gateway_control_ko": "이상 징후 경보, 연결·도구 자동 중지, 폐기 절차와 인증정보 회수를 사고 처리 단계(탐지·봉쇄·복구)에 대응시키고 처리 이력을 원장에 남긴다. 사고 대응 계획 문서는 조직 몫이다.",
+   "pol_ids": [
+    "POL-42",
+    "POL-43",
+    "POL-44"
+   ]
+  },
+  {
+   "ref": "Art. 21(2)(d)",
+   "topic_ko": "공급망 보안",
+   "obligation_ko": "위험관리 조치에는 각 개체와 직접 공급자·서비스 제공자 사이의 관계에 관한 보안을 포함한 공급망 보안이 최소한 포함돼야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "supply chain security, including security-related aspects concerning the relationships between each entity and its direct suppliers or service providers",
+   "gateway_control_ko": "MCP 서버 도입 심사에서 배포처·서명·해시·버전, 지원 상태, 알려진 취약점을 기록하고 변경을 감시한다. 공급자 계약상 보안 조건은 조직 절차다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-03",
+    "POL-07",
+    "POL-39"
+   ]
+  },
+  {
+   "ref": "Art. 21(3)",
+   "topic_ko": "공급자별 취약점·개발 절차 고려",
+   "obligation_ko": "공급망 보안 조치를 정할 때 직접 공급자·서비스 제공자별 취약점, 제품 품질과 공급자의 보안 실무(보안 개발 절차 포함), 제22조에 따른 핵심 공급망 위험평가 결과를 고려해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "take into account the vulnerabilities specific to each direct supplier and service provider",
+   "gateway_control_ko": "MCP 서버별 공급자 정보와 취약점·지원 종료 이력을 자산 대장에 보관하고, 심사 시 점검한 항목을 근거로 남긴다. 제22조 평가 결과의 반영은 조직 절차다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-03",
+    "POL-39"
+   ]
+  },
+  {
+   "ref": "Art. 21(2)(e)",
+   "topic_ko": "취득·개발·유지 보안과 취약점 처리",
+   "obligation_ko": "위험관리 조치에는 네트워크·정보시스템의 취득, 개발, 유지 단계의 보안과 취약점 처리·공개가 포함돼야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "security in network and information systems acquisition, development and maintenance, including vulnerability handling and disclosure",
+   "gateway_control_ko": "도구 구성 변경 시 재심사·재승인, 알려진 취약점이 있는 서버의 격리·중지, 변경 감시 기록을 제공한다. 게이트웨이 자체의 개발 보안은 제품 개발 절차에 속한다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-39",
+    "POL-03"
+   ]
+  },
+  {
+   "ref": "Art. 21(2)(h)",
+   "topic_ko": "암호화 정책",
+   "obligation_ko": "위험관리 조치에는 암호기술과 필요한 경우 암호화의 사용에 관한 정책과 절차가 포함돼야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "policies and procedures regarding the use of cryptography and, where appropriate, encryption",
+   "gateway_control_ko": "원격 MCP 연결의 승인된 암호화 전송 강제와 상대 검증(TLS), 인증정보의 비밀정보 보관소 관리를 정책으로 집행한다. 알고리즘 선정 정책은 조직 문서다.",
+   "pol_ids": [
+    "POL-16",
+    "POL-14",
+    "POL-10"
+   ]
+  },
+  {
+   "ref": "Art. 21(2)(i)",
+   "topic_ko": "인사 보안·접근통제·자산 관리",
+   "obligation_ko": "위험관리 조치에는 인사 보안, 접근통제 정책, 자산 관리가 포함돼야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "human resources security, access control policies and asset management",
+   "gateway_control_ko": "전송 토큰으로만 호출자를 인증하고 호출마다 자산·등급·작업(조회/수정/실행)·위임 범위를 정책 엔진으로 검사한다. 서버·도구 목록을 자산 대장으로 관리한다. 인사 보안은 해당 없음(조직 절차).",
+   "pol_ids": [
+    "POL-19",
+    "POL-20",
+    "POL-22",
+    "POL-23",
+    "POL-25",
+    "POL-11"
+   ]
+  },
+  {
+   "ref": "Art. 21(2)(j)",
+   "topic_ko": "다요소·지속 인증",
+   "obligation_ko": "위험관리 조치에는 적절한 경우 다요소 인증 또는 지속적 인증 솔루션, 보안 음성·영상·문자 통신, 보안 비상통신체계의 사용이 포함돼야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "the use of multi-factor authentication or continuous authentication solutions",
+   "gateway_control_ko": "게이트웨이는 신뢰할 수 있는 인증 시스템(IdP)이 검증한 신원과 토큰 검증 결과만 받아들이고, 고위험 호출에 건별 승인으로 추가 확인을 요구한다. 다요소 인증 자체는 IdP의 기능이다.",
+   "pol_ids": [
+    "POL-19",
+    "POL-21",
+    "POL-27"
+   ]
+  },
+  {
+   "ref": "Art. 21(4)",
+   "topic_ko": "미준수 발견 시 시정 조치",
+   "obligation_ko": "개체가 제2항의 조치를 이행하지 못하고 있음을 발견하면 지체 없이 필요한 적절하고 비례적인 시정 조치를 취해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "지체 없이",
+   "anchor": "takes, without undue delay, all necessary, appropriate and proportionate corrective measures",
+   "gateway_control_ko": "정책 위반·구성 불일치 탐지 시 경보와 자동 중지로 시정을 지원하고, 시정 조치의 시각과 담당자를 원장에 기록한다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-43",
+    "POL-39"
+   ]
+  },
+  {
+   "ref": "Art. 23(1)",
+   "topic_ko": "중대한 사고의 통지 의무",
+   "obligation_ko": "필수·중요 개체는 서비스 제공에 중대한 영향을 주는 사고(중대한 사고)를 지체 없이 CSIRT 또는 주무기관에 통지해야 한다. 서비스 수신자에게 악영향을 줄 사고는 적절한 경우 수신자에게도 지체 없이 알리고, 국경 간 영향 판단에 필요한 정보를 보고한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "지체 없이(세부 기한은 제23조제4항)",
+   "anchor": "notify, without undue delay, its CSIRT or, where applicable, its competent authority",
+   "gateway_control_ko": "사고 유형별 원장 기록을 기간·서버·사용자 기준으로 추출해 통지서 초안의 근거 자료로 내보낸다. 통지 자체(수신처 제출)는 해당 없음(조직 절차).",
+   "pol_ids": [
+    "POL-38",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "Art. 23(2)",
+   "topic_ko": "중대한 사이버 위협의 수신자 통보",
+   "obligation_ko": "해당하는 경우 필수·중요 개체는 중대한 사이버 위협의 영향을 받을 수 있는 서비스 수신자에게 그들이 취할 수 있는 조치나 구제 수단을 지체 없이 알리고, 적절하면 위협 자체도 알려야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "지체 없이",
+   "anchor": "communicate, without undue delay, to the recipients of their services that are potentially affected by a significant cyber threat",
+   "gateway_control_ko": "영향받는 서버·도구·사용자 목록을 원장과 자산 대장에서 추출해 통보 대상 명단을 만든다. 통보문 작성·발송은 해당 없음(조직 절차).",
+   "pol_ids": [
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "Art. 23(3)",
+   "topic_ko": "중대한 사고의 기준",
+   "obligation_ko": "사고가 개체에 심각한 운영 중단이나 재정 손실을 일으켰거나 일으킬 수 있는 경우, 또는 다른 자연인·법인에 상당한 물질적·비물질적 피해를 일으켰거나 일으킬 수 있는 경우 중대한 사고로 본다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "",
+   "anchor": "it has caused or is capable of causing severe operational disruption of the services or financial loss",
+   "gateway_control_ko": "경보 규칙에 영향 범위(차단 서비스 수, 노출 가능한 데이터 등급, 영향 사용자 수) 지표를 포함해 중대성 판단 자료를 제공한다. 판단 자체는 조직 몫이다.",
+   "pol_ids": [
+    "POL-42",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "Art. 23(4)(a)",
+   "topic_ko": "24시간 이내 조기 경보",
+   "obligation_ko": "중대한 사고를 인지한 때부터 지체 없이 그리고 어떤 경우에도 24시간 이내에 조기 경보를 제출해야 하며, 불법·악의적 행위가 의심되는지와 국경 간 영향 가능성을 해당하면 표시한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "인지 후 24시간 이내 조기 경보",
+   "anchor": "within 24 hours of becoming aware of the significant incident, an early warning",
+   "gateway_control_ko": "이상 징후 경보가 발생한 시각을 원장에 남겨 인지 시점 판단의 자료로 쓸 수 있게 하고, 24시간 기한 계산과 담당자 알림은 기능 후보로 검토한다. 인지 시점의 판단은 조직이 정한다.",
+   "pol_ids": [
+    "POL-42",
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Art. 23(4)(b)",
+   "topic_ko": "72시간 이내 사고 통지",
+   "obligation_ko": "인지 후 지체 없이 그리고 어떤 경우에도 72시간 이내에 사고 통지를 제출하고, 조기 경보 정보를 갱신하며 심각도·영향을 포함한 초기 평가와 가능하면 침해 지표를 제시해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "인지 후 72시간 이내 사고 통지",
+   "anchor": "within 72 hours of becoming aware of the significant incident, an incident notification",
+   "gateway_control_ko": "원장에서 침해 지표(비인가 목적지, 도구·서버 식별자, 호출 시각, 영향 데이터 등급)를 추출해 초기 평가 자료를 내보낸다. 심각도 판단과 제출은 해당 없음(조직 절차).",
+   "pol_ids": [
+    "POL-38",
+    "POL-42",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "Art. 23(4)(c)-(e)",
+   "topic_ko": "중간 보고·최종 보고",
+   "obligation_ko": "CSIRT·주무기관이 요청하면 중간 보고를 하고, 사고 통지 제출 후 늦어도 1개월 안에 사고 설명·위협 유형 또는 근본 원인·적용 중인 완화 조치·국경 간 영향을 담은 최종 보고서를 제출해야 한다. 사고가 계속 중이면 그 시점에 진행 보고서를 내고 처리 후 1개월 안에 최종 보고한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "최종 보고는 사고 통지 제출 후 1개월 이내; 진행 중이면 진행 보고서 후 처리 후 1개월 이내",
+   "anchor": "a final report not later than one month after the submission of the incident notification",
+   "gateway_control_ko": "근본 원인 분석에 쓰는 호출·판정·승인·철회 이력과 적용한 완화 조치(연결 중지, 인증정보 회수)의 타임라인을 원장에서 내보낸다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-43",
+    "POL-45"
+   ]
+  },
+  {
+   "ref": "Art. 24(1)",
+   "topic_ko": "인증 제품·서비스 사용 요구 가능",
+   "obligation_ko": "회원국은 제21조의 특정 요건 준수를 보여주기 위해 필수·중요 개체가 유럽 사이버보안 인증제도(사이버보안법 제49조)에 따라 인증된 ICT 제품·서비스·프로세스를 쓰도록 요구할 수 있다.",
+   "actor": "authority",
+   "strength": "informative",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "Member States may require essential and important entities to use particular ICT products, ICT services and ICT processes",
+   "gateway_control_ko": "MCP 서버·구성요소 도입 심사 기록에 보유 인증(해당하는 경우)과 인증 범위를 기재 항목으로 둔다. 인증 취득은 제품 조직의 절차다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-03"
+   ]
+  },
+  {
+   "ref": "Art. 26(3)",
+   "topic_ko": "EU 밖 클라우드·관리형 서비스 제공자의 대표자 지정",
+   "obligation_ko": "EU에 설립되지 않았지만 EU 안에서 서비스를 제공하는 클라우드·데이터센터·CDN·관리형 서비스·관리형 보안 서비스 제공자 등은 EU 안의 대표자를 지정해야 한다. 지정하지 않으면 서비스를 제공받는 어느 회원국이든 법적 조치를 취할 수 있다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "it shall designate a representative in the Union",
+   "gateway_control_ko": "해당 없음(조직 절차). 외부 MCP·모델 제공자 도입 심사에서 제공자 소재지와 EU 대표자 지정 여부를 확인 항목으로 둘 수 있다.",
+   "pol_ids": [
+    "POL-07"
+   ]
+  },
+  {
+   "ref": "Art. 32(2)-(3)",
+   "topic_ko": "필수 개체에 대한 감독 권한",
+   "obligation_ko": "회원국은 주무기관이 필수 개체에 대해 현장·비대면 감독, 정기·표적 보안 감사와 수시 감사, 보안 스캔, 정책 문서와 이행 증거(감사 결과 등)의 제출 요구, 자료 접근 요구를 할 수 있게 해야 한다. 요청 시 목적과 요청 정보를 명시한다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "penalties_enforcement",
+   "timing_ko": "",
+   "anchor": "requests for evidence of implementation of cybersecurity policies",
+   "gateway_control_ko": "감사 요청에 대비해 정책 버전, 판정·승인 기록, 원장 무결성 검증 결과를 기간·대상 기준으로 내보내는 기능과 권한 변경 이력을 준비한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Art. 32(7)(a)",
+   "topic_ko": "중대한 위반으로 보는 사유",
+   "obligation_ko": "집행 조치를 정할 때 반복 위반, 중대한 사고의 미통지·미시정, 구속적 지시 후 결함 미시정, 위반 확인 뒤 주무기관이 명한 감사·모니터링 활동의 방해, 위험관리·보고 의무에 관한 허위 또는 현저히 부정확한 정보 제공은 어떤 경우에도 중대한 위반으로 본다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "penalties_enforcement",
+   "timing_ko": "",
+   "anchor": "a failure to notify or remedy significant incidents",
+   "gateway_control_ko": "보고서에 담기는 수치가 원장 원본과 일치하도록 내보내기 결과를 원장에서 직접 생성하고 생성 시각과 해시를 남기는 방식을 요구사항 후보로 둔다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Art. 34(4)-(5)",
+   "topic_ko": "과징금 상한",
+   "obligation_ko": "제21조·제23조 위반 시 필수 개체에는 최소 1천만 유로 또는 직전 회계연도 소속 기업의 전 세계 연간 총매출액의 2% 중 큰 금액, 중요 개체에는 최소 700만 유로 또는 1.4% 중 큰 금액을 상한으로 하는 과징금을 부과할 수 있도록 회원국이 보장해야 한다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "penalties_enforcement",
+   "timing_ko": "",
+   "anchor": "administrative fines of a maximum of at least EUR 10 000 000 or of a maximum of at least 2 %",
+   "gateway_control_ko": "해당 없음(제재 정보). 상한은 회원국 국내법이 최소치로 정한 값이므로 국내법에서 실제 금액을 확인해야 한다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "Art. 35(1)",
+   "topic_ko": "개인정보 침해를 수반하는 위반의 통보",
+   "obligation_ko": "주무기관이 제21조·제23조 위반이 GDPR 제33조에 따라 통지해야 하는 개인정보 침해를 수반할 수 있음을 알게 되면 지체 없이 GDPR 감독기관에 알려야 한다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "지체 없이",
+   "anchor": "can entail a personal data breach, as defined in Article 4, point (12), of Regulation (EU) 2016/679",
+   "gateway_control_ko": "사고 원장에 개인정보 포함 여부(데이터 분류 결과)를 함께 기록해 GDPR 침해 통지 판단 자료로 쓸 수 있게 한다. 통지는 해당 없음(조직 절차).",
+   "pol_ids": [
+    "POL-38",
+    "POL-30"
+   ]
+  },
+  {
+   "ref": "Art. 41(1)",
+   "topic_ko": "국내법 이행 기한과 적용 개시",
+   "obligation_ko": "회원국은 2024-10-17까지 이 지침을 이행하는 조치를 채택·공표하고 위원회에 알려야 하며, 그 조치를 2024-10-18부터 적용해야 한다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "scope_applicability",
+   "timing_ko": "2024-10-17까지 채택·공표, 2024-10-18부터 적용",
+   "anchor": "They shall apply those measures from 18 October 2024",
+   "gateway_control_ko": "해당 없음(적용 시기). 국가별 이행 법률의 시행일과 내용은 달라 고객 소재 회원국의 국내법을 별도로 확인해야 한다.",
+   "pol_ids": []
+  }
+ ],
+ "pitfalls_ko": [
+  "NIS2는 지침이다. 필수·중요 개체에 대한 직접 의무는 회원국 국내 이행법에서 생기며, 조문 문구(Member States shall ensure ...)는 회원국에 대한 의무다. 국가별 세부(적용 대상 확대, 과징금 실액, 보고 창구)는 달라질 수 있고 제5조는 더 높은 수준의 조치를 허용한다.",
+  "적용은 업종(부속서 I·II)과 규모(중간 규모 이상)로 정해지고, 제2조제2항~제4항의 예외는 규모와 무관하다. 필수 개체와 중요 개체의 구분(제3조)이 감독 방식(제32조는 정기 감사·무작위 점검 등을 포함한 감독 권한, 제33조는 사후(ex post) 감독 조치)과 과징금 상한(제34조)을 가른다.",
+  "중대한 사고의 24시간·72시간 기한은 개체가 사고를 '인지한 때'부터, 최종 보고의 1개월 기한은 사고 통지(72시간) 제출 후부터 계산되며(제23조제4항), 중대성은 제23조제3항의 두 기준으로 판단된다. 클라우드·관리형 서비스 제공자 등 일부 유형의 '중대한 사고' 세부 사례와 필요 조치의 기술·방법론 요건은 제21조제5항·제23조제11항의 위원회 시행 법령에 위임돼 있고 이 노트는 그 시행 법령을 읽지 않았다.",
+  "제2조제12항·제14항과 제35조에 따라 NIS2는 GDPR을 대체하지 않는다. 개인정보 침해가 포함된 사고는 GDPR 제33조의 별도 통지 기한과 병행해 판단해야 한다.",
+  "EUR-Lex 문서 정보는 개정 제안 2건(COM(2025) 837 final, COM(2026) 13 final)을 표시한다. 둘 다 제안 단계 문서로 확인했으며, 채택 여부는 확인하지 않았다. 채택되면 보고 창구·위험관리 요건이 바뀔 수 있다.",
+  "이 노트의 영어 원문(OJ L 333)은 원문 발행본이며 제19조제1항을 정정하는 2023-12-22 정오표가 반영돼 있지 않다. 정정은 'on 17 January 2025'를 'by 17 January 2025'로 바꾸는 것으로, 이 노트에서 인용한 조문과는 무관하다.",
+  "MINT 같은 게이트웨이 제품이 NIS2의 클라우드 컴퓨팅 서비스 제공자·관리형 서비스 제공자에 해당하는지는 제공 형태에 따라 달라진다. 이 노트는 해당 여부를 판단하지 않는다."
+ ],
+ "reading_scope_ko": "관보 PDF 73쪽 중 제1~6조(정의 포함), 제12조, 제20~30조, 제32~36조, 제38~46조, 부속서 I 제8·9항을 직접 읽었다. 전문(recitals), 제7~11조·제13~19조(국가 전략·CSIRT·협력그룹; 제19조제1항 한 문장만 확인), 제31조(첫 2개 항만), 제37조, 부속서 I의 다른 분야, 부속서 II, 부속서 III(대응표)은 읽지 않았다. 원문은 EU 관보 PDF이며 publications.europa.eu CELLAR 저장소(https://publications.europa.eu/resource/celex/32022L2555.ENG.pdfa2a)에서 받았다. EUR-Lex 쪽은 curl에 HTTP 202(봇 방지)로 응답해 PDF를 받지 못했고, 정찰 자료가 EUR-Lex PDF 크기로 기록한 값(1,326,245바이트)과 같은 크기의 CELLAR 사본(관보 원문)을 썼다. 상태·날짜·법적 고지는 브라우저로 EUR-Lex 페이지를 열어 확인했다.",
+ "limitations_ko": "법적 해석이나 적합성 판단이 아니다. 국가별 이행법, 위원회 시행 법령, 전문을 읽지 않았다. 정오표는 영어본에 해당하는 1건(R(04), 제19조제1항)만 확인했고 다른 언어 정오표는 읽지 않았다. 부속서 II(기타 중요 분야)와 제7~11조의 국가 단위 의무는 다루지 않았다. 개정 제안의 내용은 제목과 일자만 확인했다. EUR-Lex 페이지의 열람은 2026-10-17이며 그 이후의 변경은 반영되지 않았다.",
+ "license_notice": "EUR-Lex 법적 고지(https://eur-lex.europa.eu/content/legal-notice/legal-notice.html, 2026-10-17 열람)의 저작권 안내에 따르면 위원회의 문서 재사용 정책은 결정 2011/833/EU에 기반하며, 달리 명시하지 않는 한 EUR-Lex에 게시된 법적 문서를 상업·비상업 목적으로 재사용할 수 있다. 같은 고지는 관보에 게재된 문서만 공식(authentic)으로 보고, 이 사이트의 정보에는 무보증 면책 조항이 있다고 밝힌다. 이 지침 PDF에는 별도의 재사용 제한 문구가 없었다(본문 검색 확인).",
+ "distribution": "public-under-license",
+ "distribution_reason": "EUR-Lex 법적 고지가 EUR-Lex에 게시된 법적 문서의 재사용을 달리 명시하지 않는 한 허용한다고 밝히고, 이 관보 PDF에는 예외 조건이 없다. 출처 표시와 함께 원문을 그대로 보존한다."
+}

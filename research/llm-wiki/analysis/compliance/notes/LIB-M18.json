@@ -1,0 +1,221 @@
+{
+ "id": "LIB-M18",
+ "title": "M-26-14: Ensuring Effective and Efficient Agency Logging and Network Visibility to Defend Against Evolving Cyber Threats",
+ "title_native": "",
+ "issuer": "미국 행정관리예산처(OMB), 국장 Russell T. Vought",
+ "jurisdiction": "US-federal",
+ "instrument_type": "regulator_guidance",
+ "binding": true,
+ "status": "in_force",
+ "edition": "OMB 메모 M-26-14, 2026-05-22, 8쪽(본문 4쪽, 부록 A·B·C). 연방 부처·기관장 대상 메모이며 민간에 직접 적용되지 않는다.",
+ "key_dates": "2026-05-22 발행, M-21-31 즉시 폐지. CISA는 90일 내 로깅 참조 아키텍처(LRA) 공개, 각 기관은 LRA 공개 후 90일 내 로깅 계획 제출, 120일 내 기본(1단계), 180일 내 중간(2단계), 320일 내 고급(3단계) 성숙도 달성(본문 '모든 기관' 표). CISA의 LRA 안내 페이지(https://www.cisa.gov/Logging)에는 게시일이 2026-08-20으로 표시돼 있다(2026-10-17 확인). 이 날을 기산일로 단순 계산하면 로깅 계획 2026-11-18, 1단계 2026-12-18, 2단계 2027-02-16, 3단계 2027-07-06이나, 기관별 공식 기한은 확인하지 않았다.",
+ "language": "en",
+ "official_page_url": "https://www.whitehouse.gov/omb/information-resources/guidance/memoranda/",
+ "summary_ko": "연방 기관의 로깅과 네트워크 가시성을 위험 기반·우선순위 방식으로 바꾼 OMB 메모다. 지속적 이벤트 모니터링(CEM)과 위협 헌팅·조사·대응·포렌식(THIRF)을 두 목표로 두고, 부록 B에 최소 로깅 기준(6개월 검색 가능·1년 조회 가능 보존, 정확한 타임스탬프와 시간 동기화, 신원·네트워크 주소·객체 접근·권한 변경·자산 변경·이상 탐지 로그 수집, 자동 경보)을, 부록 C에 로깅 성숙도 모델(보존, 로그 관리: 암호화·무결성 해시·접근)을 둔다.",
+ "scope_ko": "연방 행정부 기관(44 U.S.C. §3502)이 소유·운영하거나 제3자가 대신 운영하는 정보시스템(IoT·OT 포함)에 적용한다. 국가안보 시스템, 국방부·정보기관의 일부 시스템에는 적용하지 않는다(각주 2). 수신자는 기관장이라 민간 기업에 직접 적용되는 문서는 아니나, 기관을 대신해 제3자가 운영하는 시스템도 대상이므로 연방 고객에게 판매하는 제품의 로깅 기준 참고로 쓴다(계약으로 요구가 어떻게 전달되는지는 이 노트에서 확인하지 않았다).",
+ "provisions": [
+  {
+   "ref": "본문 1쪽 (적용 범위, 각주 2)",
+   "topic_ko": "적용 대상 기관과 제외",
+   "obligation_ko": "연방 행정 부처·기관에 적용하며 국가안보 시스템과 국방부·정보기관의 일부 시스템에는 적용하지 않는다.",
+   "actor": "authority",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "The requirements established by this memorandum do not apply to national security systems",
+   "gateway_control_ko": "해당 없음(적용 범위 판단). 연방 고객이 MINT 도입을 검토할 때 이 메모의 최소 기준을 요구사항으로 가정하고 대응표를 준비한다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "본문 2쪽 (우선순위)",
+   "topic_ko": "CEM과 THIRF 두 목표의 우선화",
+   "obligation_ko": "기관은 로깅 활동을 조직·자원 배분할 때 실시간 이상 징후 탐지·대응(CEM)과 침해 후 조사·포렌식(THIRF) 두 목표를 우선해야 하고, THIRF를 위해 충분한 핫·콜드 스토리지와 여러 출처 로그를 모아 공격 패턴을 매핑하는 능력을 유지해야 한다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "enable agencies to monitor network activity in real time, promptly flag anomalous activity, and respond to that activity in a timely manner",
+   "gateway_control_ko": "후보 기능: 원장 기록을 실시간 경보(CEM)와 사건 단위 재구성·내보내기(THIRF)의 두 용도로 설계하고 보존 구분(검색 가능/조회 가능)을 설정으로 나눈다. 현재 구현 여부는 이 노트에서 확인하지 않았다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "본문 3쪽 (로그 접근 요구)",
+   "topic_ko": "침해 의심 시 CISA·FBI의 로그 제공 요구에 응답",
+   "obligation_ko": "연방 네트워크 침해가 알려졌거나 의심되면 기관은 법이 허용하는 범위에서 CISA와 FBI의 요청에 따라 로그와 관련 데이터를 합의한 형식·수단으로, 가능한 한 요청 시한 안에 제공해야 한다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "요청된 시한 내(가능한 최대한)",
+   "anchor": "agencies shall provide logs and other relevant data to CISA and the Federal Bureau of Investigation (FBI) upon request",
+   "gateway_control_ko": "후보 기능: 원장을 기간·주체·서버 단위로 필터링해 변조 검출 정보(해시)와 함께 내보내는 사건 내보내기. 현재 제공 여부는 이 노트에서 확인하지 않았다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "본문 4쪽 (기관 조치)",
+   "topic_ko": "로깅 계획 제출과 성숙도 달성 일정",
+   "obligation_ko": "모든 기관은 LRA 공개 후 90일 내 첫 로깅 계획을, 120일 내 성숙도 모델 전 요소에서 최소 1단계(기본), 180일 내 2단계(중간), 320일 내 3단계(고급)를 달성해야 하며, LRA 개정 통지 후 30일 내 계획 갱신, 60일 내 중간, 120일 내 고급 달성이 이어진다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "LRA 공개 후 90·120·180·320일, 개정 통지 후 30·60·120일",
+   "anchor": "Achieve a minimum of Basic (Level 1) across all elements of the maturity model",
+   "gateway_control_ko": "해당 없음(기관 일정). 성숙도 단계별 증빙(보존, 암호화, 무결성 해시, 알림 범위)을 MINT 원장 설정으로 대응시킨 표를 연방 고객용으로 준비한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "부록 B 1",
+   "topic_ko": "최소 보존: 6개월 검색 가능, 1년 조회 가능",
+   "obligation_ko": "보존된 로그는 CEM을 위해 생성 후 최소 6개월 동안 즉시 사용 가능한 검색 상태여야 하고, THIRF를 위해 생성 후 1년 동안 조회(retrievable) 가능해야 한다. 사이버 목적의 최소 보존이 기록물 일정 등 다른 요건 준수를 면제하지 않는다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "검색 가능 6개월, 조회 가능 1년(생성 후)",
+   "anchor": "Retained logs must be actively searchable6 for a minimum of 6 months after creation",
+   "gateway_control_ko": "후보 기능: 원장 보존 구분을 즉시 검색 가능 구간과 보관(조회) 구간으로 나눠 설정하고 연방 고객용 기본값을 6개월/12개월로 두며, 다른 법령의 보존 요건과 충돌하지 않게 고객이 기간을 상향할 수 있게 한다. 현재 구현 여부는 이 노트에서 확인하지 않았다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "부록 B 2",
+   "topic_ko": "로그 저장은 분산 가능하되 최상위 SOC에서 즉시 사용 가능",
+   "obligation_ko": "로그 저장은 분산될 수 있으나 CEM과 THIRF 목표를 위해 기관 최상위 보안운영센터(SOC)에서 즉시 사용할 수 있어야 하며, SIEM에 수집, 중앙 전달, 분산 로그에 대한 적절한 접근 권한 설정, 혼합 방식 중에서 선택할 수 있다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "logs must be readily available to the top",
+   "gateway_control_ko": "후보 기능: 원장을 SIEM(예: syslog·CEF·OCSF 전달)으로 내보내는 연동. 현재 제공 여부는 이 노트에서 확인하지 않았다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "부록 B 3",
+   "topic_ko": "정확한 타임스탬프와 시간 동기화",
+   "obligation_ko": "로그에는 일관되게 정확한 타임스탬프를 넣어야 하며 정확성을 위해 네트워크 시간을 NTP 등으로 기관이 지정한 추적 가능한 시간원에 동기화해야 한다. 가능하면 미 해군 천문대나 NIST로 추적 가능한 권위 있는 시간원을 쓰도록 권장한다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Logs must include a consistently accurate timestamp",
+   "gateway_control_ko": "후보 기능: 원장 레코드의 시각을 UTC로 정규화하고 변조를 검출하는 작업(백로그 DEV-13)과 게이트웨이·엔드포인트·원장 서버의 시각 동기화 점검. NTP 등 추적 가능한 시간원 지정은 운영 절차이며 현재 구현 여부는 이 노트에서 확인하지 않았다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "부록 B 5 a-d",
+   "topic_ko": "신원, 네트워크 주소, 객체·자원 접근, 권한 변경 로그",
+   "obligation_ko": "기관은 최소한 응용·시스템에서 작업을 수행한 신원 확인, 출발지·목적지 네트워크 주소(프로토콜·포트·세션 속성 포함) 확인, 접근·수정·삭제된 객체·자원·데이터 이벤트 확인, 권한 수준 변경 행위 확인을 지원하는 로그를 수집해야 한다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Determining the identity used for performing operations in applications and on systems",
+   "gateway_control_ko": "후보 기능: 원장 이벤트에 전송 토큰에서 정한 신원, 호출 대상 서버·도구, 실제 연결 주소, 작업 종류(조회·수정·삭제), 권한·위임 변경 이력을 포함한다. 현재 기록 항목은 이 노트에서 확인하지 않았다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-19",
+    "POL-23"
+   ]
+  },
+  {
+   "ref": "부록 B 5 e-h",
+   "topic_ko": "인프라 변경, 보안 도구 경보, IOC·이상 활동 모니터링 로그",
+   "obligation_ko": "인프라 변경(엔드포인트 추가·삭제·수정) 식별, 침입 탐지·엔드포인트 보호·보안 게이트웨이 같은 보안 도구가 식별한 의심 활동 모니터링, 알려진 침해 지표(IOC) 모니터링·탐지·헌팅, 비정상 시스템·사용자 활동 모니터링·탐지·헌팅을 지원하는 로그를 수집해야 한다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Monitoring, detecting, and hunting for anomalous system or user activity",
+   "gateway_control_ko": "후보 기능: MCP 서버·도구 등록·변경·폐기 이력과 미승인 연결 시도, 비정상 호출 증가를 이벤트로 기록하고 경보 규칙을 둔다. 현재 구현 여부는 이 노트에서 확인하지 않았다.",
+   "pol_ids": [
+    "POL-42",
+    "POL-38",
+    "POL-37"
+   ]
+  },
+  {
+   "ref": "부록 B 5 i-k",
+   "topic_ko": "영향 데이터의 양·유형, 공격 경로, 자동 경보",
+   "obligation_ko": "침해 때 영향받은 데이터의 양과 유형 확인, 초기 접근과 측면 이동을 포함한 공격 경로 확인을 지원하는 로그를 수집하고 위 모든 활동에 대해 적절한 자동 경보를 생성해야 한다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Generating appropriate automated alerts for all of the above",
+   "gateway_control_ko": "후보 기능: 호출 원장에 데이터 등급과 반환 크기·건수 요약을 기록해 영향 데이터 규모를 추정하고, 서버 간 전달 경로를 연결해 측면 이동 경로를 재구성하며 위 항목에 자동 경보를 건다. 현재 구현 여부는 이 노트에서 확인하지 않았다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-42",
+    "POL-33"
+   ]
+  },
+  {
+   "ref": "부록 A (민감 데이터 노출 위험)",
+   "topic_ko": "로그가 법에 반해 데이터를 수집·노출하지 않도록 하고 민감 로그를 보호",
+   "obligation_ko": "LRA는 로그가 법령에 어긋나게 데이터를 수집하거나 노출하지 않도록 하는 지침과 민감 로그 데이터의 기밀성·무결성을 보호하는 방법을 포함한다.",
+   "actor": "authority",
+   "strength": "recommended",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "",
+   "anchor": "The LRA will include guidance to ensure that logs will not capture or expose data in contravention of law",
+   "gateway_control_ko": "후보 기능: 원장에서 비밀정보를 제외하고 개인정보를 최소화·마스킹해 로그가 민감 데이터를 노출하지 않게 한다. 현재 구현 방식은 이 노트에서 확인하지 않았다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-30"
+   ]
+  },
+  {
+   "ref": "부록 C (데이터 보존·로그 관리)",
+   "topic_ko": "성숙도 단계별 암호화·무결성 해시·접근 통제",
+   "obligation_ko": "성숙도 모델의 로그 관리 요소는 1단계 로그 저장, 2단계 저장 시 암호화, 3단계 전송·저장 암호화와 정기적 해시 검증, 4단계 암호화·JIT 접근·권한과 워크로드의 정기 모니터링·검토와 폐기 로그의 2단계 승인으로 정의한다. 데이터 보존 요소는 1단계 6개월 보존·조회, 2단계 12개월, 3단계 3개월 검색+12개월 조회, 4단계 6개월 검색+12개월 조회다. 본문 일정이 기관에 요구하는 최종 수준은 3단계이고 4단계 달성 기한은 정해져 있지 않다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "단계별 6~12개월(부록 C 표)",
+   "anchor": "Logs are encrypted in transit and at rest, and regularly hashed for veracity",
+   "gateway_control_ko": "후보 기능: 원장의 저장 시 암호화, 전송 암호화, 해시 체인 정기 검증, 원장 접근 권한 검토를 성숙도 3단계 대응 증빙으로 정리한다. 현재 구현 여부는 이 노트에서 확인하지 않았다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-16"
+   ]
+  },
+  {
+   "ref": "본문 3쪽 (성숙도 측정)",
+   "topic_ko": "시스템 비율 기준의 성숙도 보고",
+   "obligation_ko": "기관은 인벤토리 가시성, 로그 관리 계획, 로그 수집, 데이터 보존 기능별 성숙도 모델의 각 수준에서 운영 중인 시스템의 비율로 진행을 측정·보고하며 전체 성숙도는 요소별 최저 수준으로 계산한다(부록 C 각주 8).",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "Agencies will measure and report on progress in terms of the percentage of systems that are determined to be operating at each maturity level",
+   "gateway_control_ko": "해당 없음(기관 보고). 후보 기능: 연방 고객이 로그 커버리지(등록 서버 대비 원장 기록 비율)를 산출할 수 있도록 서버 인벤토리와 원장 이벤트를 대조하는 지표. 메모의 자산 단위는 IT/OT/IoT 자산이라 MCP 서버 단위 지표가 그대로 대응하는 것은 아니다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-11"
+   ]
+  }
+ ],
+ "pitfalls_ko": [
+  "연방 기관장 대상 메모이며 민간에 직접 적용되는 문서는 아니다. 다만 기관을 대신해 제3자가 운영하는 정보시스템도 대상 범위에 들어간다(본문 2쪽). 연방 고객 대응 기준으로 쓴다.",
+  "일정(90·120·180·320일)은 CISA의 로깅 참조 아키텍처(LRA) 공개일 기준이다. CISA 안내 페이지의 게시일은 2026-08-20이나 메모의 '공개(publication/release)' 기산일이 같은 날인지는 확인하지 않았으며, 이 노트의 절대 날짜는 단순 계산값이다.",
+  "보존 기준이 두 군데에 있고 서로 맞지 않는다: 부록 B 1은 '반드시' 6개월 검색 가능·1년 조회 가능을 요구하는데, 부록 C 보존 요소에서 이 수치는 4단계(최적)이고 본문 일정이 요구하는 3단계는 3개월 검색+12개월 조회다. 메모가 이 차이를 어떻게 정리하는지는 본문에 없으므로 부록 B 문장을 최소 기준으로 인용하되 부록 C와 함께 확인한다.",
+  "메모는 AI를 위협 행위자의 도구(본문 1쪽), LRA의 AI 활용 논의 대상(부록 A), 4단계 탐지 튜닝 수단(부록 C)으로만 언급할 뿐 AI 에이전트의 로그를 직접 요구하지 않는다.",
+  "PDF에 쪽 번호가 일부 표기돼 있지 않아 '본문 N쪽'은 PDF 쪽 번호다."
+ ],
+ "reading_scope_ko": "PDF 전문(8쪽: 본문 4쪽, 부록 A·B·C)을 처음부터 끝까지 읽었다. 부록 C 표는 텍스트 계층이 셀 단위로 이어져 일부 서식이 흐트러졌으나 내용은 읽을 수 있었다.",
+ "limitations_ko": "법적 해석이나 적합성 판단이 아니다. 이 메모가 지시하는 CISA 로깅 참조 아키텍처(LRA) 문서는 읽지 않았고 CISA 안내 페이지의 게시일만 확인했다. 게이트웨이 대응(gateway_control_ko)은 모두 구현 후보이며 현재 제품 기능 여부를 확인한 것이 아니다. 연방 고객 요구에 대한 일반화는 노트 작성자의 해석이다.",
+ "license_notice": "Whitehouse.gov 저작권 정책(https://www.whitehouse.gov/copyright/, 2026-10-17 직접 확인)은 연방법에 따라 이 사이트에 게시된 정부 생산 자료는 저작권 보호를 받지 않는다고 밝히고, 미국 정부가 양도·유증 등으로 저작권을 받아 보유할 수 있다고 덧붙이며, 별도 표시가 없는 제3자 콘텐츠는 CC BY 3.0 라이선스라고 한다(의역). 이 PDF 자체에는 저작권·이용 조건 문구가 없다(추출 텍스트에서 검색해 확인). 이 메모는 백악관 행정관리예산처가 발행한 문서이며 읽은 범위에서 제3자 저작물 표시는 없었다.",
+ "distribution": "public-under-license",
+ "distribution_reason": "근거는 whitehouse.gov 저작권 정책의 '정부 생산 자료는 저작권 보호를 받지 않는다'는 고지와 PDF에 별도 제한 문구가 없다는 점이다. 별도 이용허락 문구가 아니라 저작권 비보호 고지에 근거한다. 배포 대상은 whitehouse.gov에서 받은 원본 PDF를 변경 없이 보존한 것이며 출처를 병기한다."
+}

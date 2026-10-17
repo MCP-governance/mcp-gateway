@@ -1,0 +1,483 @@
+{
+ "id": "LIB-M12",
+ "title": "Security and Privacy Controls for Information Systems and Organizations (NIST SP 800-53, Revision 5)",
+ "title_native": "",
+ "issuer": "NIST (미국 국립표준기술연구소) Joint Task Force, 미국 상무부",
+ "jurisdiction": "US-federal",
+ "instrument_type": "standard",
+ "binding": false,
+ "status": "in_force",
+ "edition": "Rev. 5, September 2020 (includes updates as of 12-10-2020), DOI 10.6028/NIST.SP.800-53r5. 읽은 PDF는 Release 5.2.0(2025-08-27) 변경이 반영되지 않은 2020년판이다.",
+ "key_dates": "확인한 사실. (1) 표지 쪽: 'September 2020', 'INCLUDES UPDATES AS OF 12-10-2020; SEE PAGE XVII'. 쪽 xvii의 정오표 표는 모든 항목이 12-10-2020 날짜이고 이후 날짜 항목은 없다. (2) CSRC 공식 페이지(csrc.nist.gov/pubs/sp/800/53/r5/upd1/final): 'Date Published: September 2020 (includes updates as of Dec. 10, 2020)', 'Supersedes: SP 800-53 Rev. 5 (09/23/2020)'. 즉 최초 공개일은 2020-09-23이다. (3) 같은 페이지 Planning Note(2025-08-27): Release 5.2.0(minor release)이 2025-08-27에 발행되었고 신규 SA-15(13), SA-24, SI-02(07), 개정 SI-07(12), 해설 갱신 SA-04·SA-05·SA-08·SA-08(14)·SI-02·SI-02(05), 관련 통제 갱신 모든 -01 통제·AU-02·AU-03·CA-07·IR-04·IR-06·IR-08·SA-15·SI-02·SI-07을 포함한다. 변경 목록은 별도 보충자료('SP 800-53 Release 5.2.0 Summary of Changes' PDF)로 제공되고 PDF 본문에는 반영되지 않았다(추출문에 SA-24·SI-02(07)·2025가 없음). (4) 본문 §1.1: 연방 정보시스템에는 OMB A-130과 FISMA에 따라 사용이 의무. 미확인: CSRC 페이지에서 후속 개정(Superseded by) 표기는 찾지 못했으나, 페이지 전체를 정독한 것은 아니다. 정찰 메모에 있던 'Release 5.1.1'은 페이지에서 확인하지 못했다.",
+ "language": "en",
+ "official_page_url": "https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final",
+ "summary_ko": "NIST가 정보시스템과 조직을 위해 보안·프라이버시 통제를 하나의 카탈로그로 정리한 특별간행물(SP)이다. 접근통제(AC), 감사·책임추적(AU), 식별·인증(IA), 시스템·통신 보호(SC), 시스템·정보 무결성(SI), 구성관리(CM), 공급망 위험관리(SR) 등 통제군과 통제 강화 항목을 담는다. 통제 문구의 많은 값은 조직이 정하도록 비워 두어 시한·보관 기간 같은 수치는 정하지 않는다.",
+ "scope_ko": "정보를 처리·저장·전송하는 모든 조직과 시스템에서 쓸 수 있고, 연방 정보시스템에는 OMB A-130과 FISMA에 따라 사용이 의무다(§1.1). 주·지방 정부와 민간은 참고하도록 권장될 뿐이다(각주 12). 통제 기준선(저·중·고)은 이 문서에서 SP 800-53B로 옮겨져 어떤 통제를 반드시 골라야 하는지는 이 문서만으로 정해지지 않는다.",
+ "provisions": [
+  {
+   "ref": "§1.1",
+   "topic_ko": "목적과 적용 범위(연방 의무, 민간 자발)",
+   "obligation_ko": "통제는 정보를 처리·저장·전송하는 모든 조직·시스템에서 구현할 수 있다. 연방 정보시스템에는 OMB A-130과 FISMA에 따라 사용이 의무이며, 주·지방·부족 정부와 민간 조직은 참고하도록 권장될 뿐이다(각주 12).",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "The use of these controls is mandatory for federal information systems",
+   "gateway_control_ko": "해당 없음(적용 범위 판단). 민간 고객에게는 자발적 참조 틀이므로 게이트웨이 요구사항과 통제 ID를 대응시키는 근거로 쓴다. 연방 시스템이나 연방 계약 환경의 고객이면 의무 적용 여부를 별도로 확인한다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "§2.2",
+   "topic_ko": "조직 정의 값(Assignment/Selection)",
+   "obligation_ko": "통제 문구의 대괄호 항목은 조직이 값을 정해 채우는 자리(assignment)이거나 목록에서 고르는 자리(selection)다. 값은 법령·정책·표준·위험 평가에서 도출하므로 보관 기간·통지 시한 같은 수치는 카탈로그가 정하지 않는다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "The assignment and selection operations give organizations the capability",
+   "gateway_control_ko": "해당 없음(조직 절차). 게이트웨이의 보관 기간·알림 시한·승인 대상 같은 값은 설정 항목으로 두고, 선택한 값을 정책 버전과 함께 기록하면 조직이 정한 값의 증빙이 된다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "AC-3",
+   "topic_ko": "접근 강제(Access Enforcement)",
+   "obligation_ko": "접근 통제 정책에 따라 승인된 권한을 시스템·자원에 대한 논리적 접근에 강제한다. 해설은 시스템 수준 외에 애플리케이션·서비스 수준에서도 강제 장치를 둘 수 있다고 본다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Enforce approved authorizations for logical access to information and system resources",
+   "gateway_control_ko": "정책 엔진(OPA)이 호출마다 사용자·위임·기능·작업(조회/쓰기/실행)·데이터 등급·목적지·승인 상태를 판정하고, 판정과 사유를 감사 원장에 남긴다. 호출자는 전송 토큰으로만 식별한다.",
+   "pol_ids": [
+    "POL-22",
+    "POL-23",
+    "POL-25"
+   ]
+  },
+  {
+   "ref": "AC-3(2)",
+   "topic_ko": "이중 승인(두 사람 통제)",
+   "obligation_ko": "조직이 정한 특권 명령·행위에는 두 명의 승인자를 요구하는 이중 승인을 강제한다. 해설은 내부자 위협을 줄이고, 담합을 막으려고 승인 임무를 순환하며, 공공·환경 안전을 위한 즉각 대응이 필요할 때의 위험을 따져 보라고 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "human_oversight",
+   "timing_ko": "",
+   "anchor": "Enforce dual authorization for [Assignment: organization-defined privileged commands",
+   "gateway_control_ko": "고위험 도구 호출에 요청 내용에 결합된 건별 사람 승인을 요구하고(자기 승인 금지) 승인·거부를 원장에 남긴다. 승인자 2인 요구는 승인 규칙의 요구사항 후보로 두며, 현재 제품이 이를 지원하는지는 이 노트에서 확인하지 않았다.",
+   "pol_ids": [
+    "POL-27",
+    "POL-22"
+   ]
+  },
+  {
+   "ref": "AC-3(8)",
+   "topic_ko": "접근 권한 철회의 강제",
+   "obligation_ko": "주체·객체의 보안 속성 변경으로 생긴 접근 권한 철회를, 조직이 정한 철회 시점 규칙에 따라 강제한다. 해설은 철회가 다음 접근 시점에 반영될 수도 있으나, 즉시 철회가 필요하면 그 방법을 마련하라고 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "철회 시점 규칙은 조직 정의(고정 시한 없음)",
+   "anchor": "Enforce the revocation of access authorizations resulting from changes to the security",
+   "gateway_control_ko": "주체·서버·기능·승인의 철회를 다음 호출부터 즉시 거부로 반영하고 철회 이력을 원장에 남긴다. 철회 시각과 이후 호출 거부 시각을 대조해 증빙한다.",
+   "pol_ids": [
+    "POL-44",
+    "POL-45"
+   ]
+  },
+  {
+   "ref": "AC-4",
+   "topic_ko": "정보 흐름 통제",
+   "obligation_ko": "조직이 정한 정보 흐름 통제 정책에 따라 시스템 내부와 연결된 시스템 사이의 정보 흐름을 승인된 범위에서만 허용한다. 해설은 누가 접근하는가가 아니라 정보가 어디로 갈 수 있는가를 규율하는 통제로 설명한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Enforce approved authorizations for controlling the flow of information within the",
+   "gateway_control_ko": "외부 전송의 수신처·목적·데이터 등급을 정책으로 검사해 승인되지 않은 목적지로의 호출을 차단하고, 서버 간 데이터 전달도 승인된 업무 목적·수신 서버·데이터 범위로 제한한다. 허용·차단 결과를 원장에 남긴다.",
+   "pol_ids": [
+    "POL-26",
+    "POL-33",
+    "POL-10"
+   ]
+  },
+  {
+   "ref": "AC-4(9)",
+   "topic_ko": "정보 흐름의 사람 검토",
+   "obligation_ko": "조직이 정한 정보 흐름에 대해, 조직이 정한 조건에서 사람의 검토를 강제한다. 해설은 완전 자동 흐름 통제 판단이 불가능할 때 사람 검토를 자동 필터 대신 또는 보완으로 쓸 수 있다고 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "human_oversight",
+   "timing_ko": "",
+   "anchor": "Enforce the use of human reviews for [Assignment: organization-defined information",
+   "gateway_control_ko": "고위험 호출은 건별 사람 승인으로 보류하고 검토자와 결과를 원장에 남긴다. 자산·등급이 불명확한 호출은 정책(POL-25)상 차단이 기본이므로, 자동 판정으로 확정하지 못하는 호출을 사람 검토로 넘기는 규칙은 요구사항 후보이며 현재 제품이 지원하는지는 이 노트에서 확인하지 않았다.",
+   "pol_ids": [
+    "POL-27",
+    "POL-25"
+   ]
+  },
+  {
+   "ref": "AC-6",
+   "topic_ko": "최소 권한",
+   "obligation_ko": "사용자와 사용자를 대신하는 프로세스에 조직 업무 수행에 필요한 승인된 접근만 허용하는 최소 권한 원칙을 적용한다. 해설은 시스템 프로세스에도 업무에 필요한 수준 이상의 권한을 주지 말라고 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Employ the principle of least privilege, allowing only authorized accesses for users",
+   "gateway_control_ko": "서버·기능·작업 단위 허용목록과 위임 범위를 최소로 부여하고, 위임 정보가 없거나 검증에 실패하면 거부한다. MCP 서버별 자격증명을 분리해 서버마다 필요한 범위만 갖게 한다. AI 에이전트를 '사용자를 대신하는 프로세스'로 읽는 것은 MINT의 해석이다.",
+   "pol_ids": [
+    "POL-20",
+    "POL-23",
+    "POL-15",
+    "POL-11"
+   ]
+  },
+  {
+   "ref": "AC-23",
+   "topic_ko": "데이터 마이닝(대량 추출) 방지",
+   "obligation_ko": "조직이 정한 데이터 저장 객체에 대해 허가되지 않은 데이터 마이닝을 탐지·방지하는 기법을 적용한다. 해설은 질의 횟수·빈도 제한, 응답 유형 제한, 비정상 질의 시 담당자 통지를 예로 든다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Employ [Assignment: organization-defined data mining prevention and detection",
+   "gateway_control_ko": "단일 조회의 반환 범위와 대량·전체 폴더 조회를 한도로 제한하고, 호출 빈도 한도와 비정상 호출 증가 경보를 둔다. 한도 초과와 경보를 원장에 남긴다.",
+   "pol_ids": [
+    "POL-35",
+    "POL-28",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "AU-2",
+   "topic_ko": "기록할 이벤트 유형 선정",
+   "obligation_ko": "시스템이 기록할 수 있는 이벤트 유형을 식별하고, 실제로 기록할 유형을 정하며, 그 선택이 사후 사고 조사에 충분한 이유를 제시하고 조직이 정한 주기로 검토·갱신한다. 해설은 감사 기록에 개인정보가 드러날 위험도 함께 고려하라고 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "검토 주기는 조직 정의",
+   "anchor": "Identify the types of events that the system is capable of logging in support of the audit",
+   "gateway_control_ko": "게이트웨이가 기록하는 이벤트(호출, 정책 판정, 승인·거부, 권한 철회, 자격증명 회수)를 목록으로 문서화하고, 선택 사유와 검토 이력을 정책 버전과 함께 보관한다. 2025-08 Release 5.2.0이 AU-02의 관련 통제 목록을 갱신했으므로(CSRC 페이지 기준) 최신 문구는 원본에서 다시 확인한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "AU-3",
+   "topic_ko": "감사 기록의 내용",
+   "obligation_ko": "감사 기록은 이벤트 유형, 발생 시각, 발생 위치, 이벤트 출처, 결과, 이벤트와 관련된 개인·주체·객체의 식별을 확인할 수 있는 정보를 담아야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Ensure that audit records contain information that establishes the following",
+   "gateway_control_ko": "원장 항목에 호출 유형, 시각, 대상 서버·기능, 주체(전송 토큰으로 확인한 신원), 판정 결과, 정책 ID를 필드로 보관한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "AU-3(3)",
+   "topic_ko": "감사 기록의 개인식별정보 제한",
+   "obligation_ko": "감사 기록에 담는 개인식별정보를 프라이버시 위험평가에서 식별한 요소로 제한한다. 해설은 운영상 필요하지 않은 개인정보를 기록에서 줄이면 위험이 낮아진다고 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "",
+   "anchor": "Limit personally identifiable information contained in audit records to the following",
+   "gateway_control_ko": "원장에 비밀정보를 제외하고, 입력·출력의 개인정보는 최소화·마스킹해 저장하며 기록하는 필드를 문서화한다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-31",
+    "POL-30"
+   ]
+  },
+  {
+   "ref": "AU-9",
+   "topic_ko": "감사 정보 보호",
+   "obligation_ko": "감사 정보와 감사 도구를 무단 접근·수정·삭제로부터 보호하고, 감사 정보의 무단 접근·수정·삭제를 탐지하면 조직이 정한 담당자에게 알린다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Protect audit information and audit logging tools from unauthorized access, modification,",
+   "gateway_control_ko": "원장을 추가 전용으로 두고 원장 접근통제와 무결성 검증 결과를 증빙으로 제공한다. 감사 설정 변경도 원장에 남기고 변조 탐지 시 경보를 낸다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "AU-11",
+   "topic_ko": "감사 기록 보존",
+   "obligation_ko": "감사 기록을 기록 보존 정책에 맞는 조직 정의 기간 동안 보관해 사후 사고 조사와 법령·조직의 보존 요건을 뒷받침한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "보존 기간은 조직 정의(카탈로그는 수치를 정하지 않음)",
+   "anchor": "Retain audit records for [Assignment: organization-defined time period consistent with",
+   "gateway_control_ko": "원장 보관 기간을 설정값으로 두고 기간 내 삭제를 막으며, 기간이 지난 항목의 폐기 이력을 남긴다. 실제 기간은 적용 법령이 정한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "AU-12",
+   "topic_ko": "감사 기록 생성",
+   "obligation_ko": "AU-2에서 정한 이벤트 유형에 대해 감사 기록 생성 기능을 제공하고, 지정 인원이 구성요소별 기록 대상을 고를 수 있게 하며, AU-3의 내용을 포함한 기록을 생성한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Generate audit records for the event types defined in AU-2c that include the audit record",
+   "gateway_control_ko": "모든 도구 호출이 게이트웨이를 거치므로 판정·승인 이벤트를 한 지점에서 생성한다. 게이트웨이를 우회한 연결은 탐지해 기록하는 대상으로 둔다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-12"
+   ]
+  },
+  {
+   "ref": "IA-2",
+   "topic_ko": "조직 사용자의 식별·인증",
+   "obligation_ko": "조직 사용자를 고유하게 식별·인증하고, 그 식별 정보를 사용자를 대신해 동작하는 프로세스와 연결한다. 해설은 그룹·역할 계정에서도 개인별 책임추적이 필요할 수 있다고 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Uniquely identify and authenticate organizational users and associate that unique",
+   "gateway_control_ko": "호출 주체를 전송 토큰에서만 확인하고, 에이전트 호출을 이를 승인한 사용자의 위임과 묶어 원장에 남긴다. 클라이언트가 보내는 이름·헤더는 신원으로 인정하지 않는다. 에이전트를 '프로세스'로 읽는 것은 MINT의 해석이다.",
+   "pol_ids": [
+    "POL-19",
+    "POL-20"
+   ]
+  },
+  {
+   "ref": "IA-5(7)",
+   "topic_ko": "암호화되지 않은 정적 인증자 내장 금지",
+   "obligation_ko": "암호화되지 않은 정적 인증자(비밀번호·키 등)를 애플리케이션이나 그 밖의 정적 저장소에 내장하지 않도록 한다. 해설은 접근 스크립트와 기능 키도 정적 저장소의 예로 든다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Ensure that unencrypted static authenticators are not embedded in applications or other",
+   "gateway_control_ko": "서버별 자격증명을 비밀정보 보관 수단에서 중개해 설정 파일·실행 인자·오류 메시지에 원문이 노출되지 않게 하고, 노출이 확인되면 교체·회수하고 이전 값을 무효화한다.",
+   "pol_ids": [
+    "POL-14",
+    "POL-15",
+    "POL-41"
+   ]
+  },
+  {
+   "ref": "SC-7",
+   "topic_ko": "경계 보호(관리 인터페이스)",
+   "obligation_ko": "외부 관리 인터페이스와 주요 내부 관리 인터페이스에서 통신을 감시·통제하고, 외부 네트워크·시스템에는 보안·프라이버시 아키텍처에 따라 배치한 경계 보호 장치로 이루어진 관리 인터페이스를 통해서만 연결한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Connect to external networks or systems only through managed interfaces consisting of",
+   "gateway_control_ko": "에이전트와 MCP 서버 사이의 호출을 게이트웨이 경유로만 허용하고 직접 연결과 로컬 서버 실행을 제한·탐지한다. 네트워크 계층의 경계 장치는 게이트웨이 밖의 조직 인프라가 맡는다.",
+   "pol_ids": [
+    "POL-12",
+    "POL-10"
+   ]
+  },
+  {
+   "ref": "SC-7(5)",
+   "topic_ko": "기본 거부, 예외 허용",
+   "obligation_ko": "네트워크 통신을 기본적으로 거부하고 예외로만 허용한다. 해설은 인바운드·아웃바운드 모두와 외부 시스템 연결에 적용되며, 필수이고 승인된 연결만 허용되게 하는 정책이라고 한다. 옛 CA-3(5)는 철회되어 이 통제로 옮겨졌다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Deny network communications traffic by default and allow network communications",
+   "gateway_control_ko": "아웃바운드 목적지를 허용목록 기준으로 제한하고 등록되지 않은 목적지는 차단한다. DNS·리디렉션·TLS로 실제 연결 대상을 확인해 승인된 주소와 대조하고, 주소가 바뀌면 재승인을 요구한다.",
+   "pol_ids": [
+    "POL-10",
+    "POL-26",
+    "POL-40",
+    "POL-16"
+   ]
+  },
+  {
+   "ref": "SC-7(10)",
+   "topic_ko": "정보 유출 방지",
+   "obligation_ko": "정보 유출(exfiltration)을 방지하고 조직이 정한 주기로 유출 시험을 수행한다. 해설은 의도적·비의도적 유출을 모두 다루며 프로토콜 형식 준수, 트래픽 프로파일 분석, 데이터 유출 방지 도구 등을 예로 든다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "시험 주기는 조직 정의",
+   "anchor": "Prevent the exfiltration of information",
+   "gateway_control_ko": "외부 전송의 수신처·데이터 범위·등급이 승인과 일치할 때만 허용하고 응답의 민감정보를 제거·마스킹한다. 유출 시험은 모의 호출 결과를 시험 증빙으로 남기는 방식으로 뒷받침할 수 있다.",
+   "pol_ids": [
+    "POL-26",
+    "POL-30"
+   ]
+  },
+  {
+   "ref": "SC-8(1)",
+   "topic_ko": "전송 구간 암호 보호",
+   "obligation_ko": "전송 중인 정보의 무단 공개를 막거나 변경을 탐지하도록 암호 기법을 적용한다. 해설은 TLS와 IPsec을 예로 든다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "detect changes to information] during transmission",
+   "gateway_control_ko": "원격 MCP 연결에 승인된 암호화 전송을 요구하고, TLS 인증서·연결 상대 검증에 실패하면 연결을 거부한다. 평문 구성은 운영에서 제외한다.",
+   "pol_ids": [
+    "POL-16",
+    "POL-10"
+   ]
+  },
+  {
+   "ref": "SI-4",
+   "topic_ko": "시스템 감시",
+   "obligation_ko": "시스템을 감시해 공격·공격 징후와 무단 로컬·네트워크·원격 연결을 탐지하고, 무단 사용을 식별하며, 탐지된 이벤트·이상을 분석하고, 위험 변화에 맞춰 감시 수준을 조정한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Unauthorized local, network, and remote connections",
+   "gateway_control_ko": "새 도구 사용, 미승인 연결 시도, 비정상적인 호출 증가를 이상 징후 경보로 올리고, 설정 변경 뒤에도 경보 규칙이 동작하는지 시험한 결과를 남긴다.",
+   "pol_ids": [
+    "POL-42",
+    "POL-43",
+    "POL-12"
+   ]
+  },
+  {
+   "ref": "SI-4(7)",
+   "topic_ko": "의심 이벤트에 대한 자동 대응",
+   "obligation_ko": "의심 이벤트를 탐지하면 지정된 사고대응 인력에게 알리고, 조직이 정한 최소 방해 조치로 이벤트를 종료시킨다. 해설은 최소 방해 조치에 사람의 대응을 요청하는 것이 포함된다고 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Least-disruptive actions include initiating requests for human responses",
+   "gateway_control_ko": "탐지 시 관련 도구·연결을 자동 중지하거나 승인 보류로 전환하고 담당자에게 알린다. 자동 중지 조건과 해제 승인 이력을 원장에 남긴다.",
+   "pol_ids": [
+    "POL-43",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "SI-10",
+   "topic_ko": "입력값 유효성 검사",
+   "obligation_ko": "조직이 정한 시스템 입력에 대해 구문과 의미(문자 집합, 길이, 범위, 허용 값)의 유효성을 검사한다. 해설은 구조화된 메시지에 공격자 입력이 명령으로 해석되지 않도록 사전 검사를 하라고 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Check the validity of the following information inputs",
+   "gateway_control_ko": "정규화한 실제 입력과 실행 대상을 도구 스키마와 승인 범위에 대조해, 불명확하거나 범위를 벗어나면 거부한다. 도구 설명이나 모델 출력의 프롬프트 주입 방어는 이 통제의 문구에 없으므로 별도 근거가 필요하다.",
+   "pol_ids": [
+    "POL-24"
+   ]
+  },
+  {
+   "ref": "SI-12(1)",
+   "topic_ko": "처리하는 개인식별정보 요소 제한",
+   "obligation_ko": "정보 수명주기 전체에서 처리하는 개인식별정보를 조직이 정한 요소로 제한한다. 해설은 운영상 필요 없는 개인정보 사용을 줄이면 시스템이 만드는 프라이버시 위험이 낮아진다고 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "",
+   "anchor": "Limit personally identifiable information being processed in the information life cycle",
+   "gateway_control_ko": "데이터 분류에 따른 개인정보 탐지·마스킹으로 도구 입력·출력의 불필요한 개인정보를 제거하고, 승인된 업무에 필요한 최소 정보만 전달한다.",
+   "pol_ids": [
+    "POL-31",
+    "POL-30",
+    "POL-25"
+   ]
+  },
+  {
+   "ref": "SI-12(3)",
+   "topic_ko": "보존 기간 경과 정보의 폐기",
+   "obligation_ko": "보존 기간이 끝난 정보를 조직이 정한 기법으로 폐기·파기·삭제한다. 해설은 원본뿐 아니라 사본·보관 기록과 개인정보가 담긴 시스템 로그에도 적용된다고 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "보존 기간 경과 후(기간은 조직 정의)",
+   "anchor": "Use the following techniques to dispose of, destroy, or erase information following the",
+   "gateway_control_ko": "연결 해제 시 문서 사본·임시 파일·캐시를 정리하고, 보존 기간이 지난 원장 항목의 폐기 이력을 남긴다. 외부 제공자가 보유한 사본의 삭제 확인은 조직 절차다.",
+   "pol_ids": [
+    "POL-48",
+    "POL-49",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "CM-7(5)",
+   "topic_ko": "승인된 소프트웨어만 허용(allow-by-exception)",
+   "obligation_ko": "실행을 허용할 승인 소프트웨어 목록을 정하고, 기본 거부·예외 허용 정책으로 그 목록의 프로그램만 실행하게 하며, 목록을 조직이 정한 주기로 검토·갱신한다. 해설은 특정 버전·출처로 한정하고 서명·해시로 무결성을 검증할 수 있다고 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "목록 검토 주기는 조직 정의",
+   "anchor": "Employ a deny-all, permit-by-exception policy to allow the execution of authorized",
+   "gateway_control_ko": "서버 식별자·기능 식별자 허용목록에 등록된 도구만 호출하게 하고, 새 기능이나 변경된 서버는 검토 후 등록한다. 목록 변경과 재승인 이력을 남긴다. MCP 도구·서버를 '실행을 허용할 소프트웨어'에 대응시키는 것은 MINT의 해석이다.",
+   "pol_ids": [
+    "POL-11",
+    "POL-37",
+    "POL-01"
+   ]
+  },
+  {
+   "ref": "SR-4",
+   "topic_ko": "출처(provenance) 관리",
+   "obligation_ko": "조직이 정한 시스템·구성요소·관련 데이터의 출처를 문서화하고 감시하며 유효하게 유지한다. 해설은 출처를 기원, 개발, 소유, 위치, 변경의 연대기로 설명하고 무단 변경 감시를 언급한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "Document, monitor, and maintain valid provenance of the following systems, system",
+   "gateway_control_ko": "MCP 서버 입수 시 배포처·배포자·버전과 서명·해시 검증 결과를 기록하고, 이후 변경을 감시해 승인 당시 기록과 대조한다. 검증 실패나 출처 불명이면 도입을 보류한다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-37"
+   ]
+  },
+  {
+   "ref": "SA-9",
+   "topic_ko": "외부 시스템 서비스 제공자 관리",
+   "obligation_ko": "외부 서비스 제공자가 조직의 보안·프라이버시 요구와 조직이 정한 통제를 준수하도록 요구하고, 감독과 이용자 역할·책임을 문서화하며, 제공자의 통제 준수를 지속적으로 감시한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "Require that providers of external system services comply with organizational security and",
+   "gateway_control_ko": "외부 MCP 제공자의 처리 위치·보관·삭제 조건과 지원 상태를 도입 심사 항목으로 기록하고, 호출 이력으로 사용 현황을 감시한다. 계약 조건 자체는 조직 절차다.",
+   "pol_ids": [
+    "POL-07",
+    "POL-03"
+   ]
+  },
+  {
+   "ref": "IR-6",
+   "topic_ko": "사고 보고",
+   "obligation_ko": "의심 사고를 조직이 정한 시간 안에 사고대응 조직에 보고하게 하고, 사고 정보를 조직이 정한 당국에 보고한다. 시한과 수신 당국은 적용 법령·정책이 정하며 이 카탈로그는 수치를 정하지 않는다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "incident_reporting",
+   "timing_ko": "조직 정의 시간 안(고정 시한 없음)",
+   "anchor": "Report incident information to [Assignment: organization-defined authorities]",
+   "gateway_control_ko": "사고 조사용 호출·판정·승인 기록을 기간·주체·정책 기준으로 내보내고, 이상 징후 경보를 담당자에게 전달한다. 외부 당국 보고는 조직 절차다. 2025-08 Release 5.2.0이 IR-06의 관련 통제 목록을 갱신했으므로(CSRC 페이지 기준) 최신 문구는 원본에서 다시 확인한다.",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  }
+ ],
+ "pitfalls_ko": [
+  "읽은 PDF는 2020년 9월판(2020-12-10 정오표 반영)이다. 2025-08-27 Release 5.2.0이 신규 SA-15(13)·SA-24·SI-02(07), 개정 SI-07(12), 해설 갱신(SA-04·SA-05·SA-08·SA-08(14)·SI-02·SI-02(05)), 관련 통제 목록 갱신(AU-02·AU-03·CA-07·IR-04·IR-06·IR-08·SA-15·SI-02·SI-07과 모든 -01 통제)을 냈지만 이 PDF에는 반영되지 않았다. CSRC 페이지 목록상 AU-02·AU-03·IR-06은 관련 통제 목록만 바뀐 것으로 적혀 있으나, 변경 요약 PDF는 대조하지 않았다. 이 노트의 AU-2·AU-3·IR-6 인용은 2020년판 기준이다.",
+  "통제 문구의 대부분은 '[Assignment: organization-defined ...]'로 값을 비워 둔다. IR-6, AU-11, AC-3(8) 어디에도 '몇 시간 이내'나 '몇 개월 보관' 같은 수치가 없다. 시한과 기간은 적용 법령이나 조직 정책에서 따로 가져와야 한다.",
+  "SP 800-53 자체는 법이 아니라 NIST 간행물이다. 연방 정보시스템에는 OMB A-130과 FISMA를 통해 의무이고(§1.1), 그 밖의 조직에는 자발적 참고다. 통제 기준선(저·중·고)은 SP 800-53B로 옮겨졌으므로 이 문서만으로 '어떤 통제가 필수인가'를 단정하지 않는다.",
+  "AI 에이전트·MCP·생성형 AI를 직접 다루는 통제는 이 판에 없다. 추출문에서 'artificial intelligence'는 위험평가 강화 항목(RA-3(4))과 악성코드 방지(SI-3) 해설에서 탐지 기법 예시로만 나온다. 에이전트를 '사용자를 대신하는 프로세스'에 대응시키는 것은 MINT의 해석이다.",
+  "철회된 통제를 인용하지 않는다. 예를 들어 CA-3(5)는 SC-7(5)로, AC-3(1)은 AC-6으로, AU-2(4)는 AC-6(9)로 통합되었다고 본문에 표기되어 있다.",
+  "추출문의 '<!-- page n -->'는 PDF 파일의 쪽 번호이고 본문 인쇄 쪽(PAGE n)과는 27쪽가량 차이가 난다. 이 노트는 쪽 번호 대신 통제 ID를 ref로 쓴다."
+ ],
+ "reading_scope_ko": "공식 PDF(nvlpubs.nist.gov, 492쪽, 텍스트 층 있음, OCR 불필요)를 받아 추출문 약 3만 줄을 grep으로 탐색했다. 표지·권한 고지(쪽 i)·정오표(쪽 xvii~)·§1.1·§2.2는 직접 읽었고, AC-2~6·AC-23·AU-2~12·IA-2·IA-5·IA-9·SC-5·SC-7·SC-8·SC-10·SC-12·SI-2·SI-4·SI-10·SI-12·CM-2·CM-3·CM-7·CM-14·SR-3~6·SA-9·SA-22·IR-4·IR-6·RA-3·PT-2·PT-3·CA-3 등 선택한 통제는 해당 대목만 읽었다. 그중 이 노트가 인용한 것은 30개 조항이다. 나머지 통제군과 부록(통제 요약표, 용어집)은 훑지 않았다. 통제 강화 항목은 인용한 것만 읽었다.",
+ "limitations_ko": "법률 자문이나 적합성 판단이 아니다. 읽은 PDF는 2020년판이며 Release 5.2.0 보충자료(변경 요약 PDF, OSCAL 카탈로그, 엑셀)는 내려받아 대조하지 않았다. 통제 기준선(SP 800-53B)과 평가 절차(SP 800-53A)는 읽지 않았다. 인용하지 않은 통제(AC-2, AC-5, AC-24, AU-5, AU-6, AU-9(3), AU-10, IA-9, SC-12, SI-2, CM-3, SR-3, SA-22, RA-3, PT-2, PT-3 등)도 게이트웨이와 관련될 수 있으나 이 노트에는 넣지 않았다. gateway_control_ko의 제품 기능 서술은 MINT의 기능 목록을 기준으로 한 설계 대응안이며 NIST 문서가 요구한 내용이 아니다. 후속 개정 여부는 CSRC 페이지에서 'Superseded by' 표기를 찾지 못했다는 수준까지만 확인했다.",
+ "license_notice": "문서 자체(쪽 i, 권한 고지)에 'may be used by nongovernmental organizations on a voluntary basis and is not subject to copyright in the United States. Attribution would, however, be appreciated by NIST'라고 쓰여 있고, 표지에 'available free of charge'라고 표시되어 있다. 직접 가져온 NIST 저작권·면책 페이지(https://www.nist.gov/copyrights-disclaimers)는 표시된 저작권 자료를 제외한 NIST 웹페이지 정보를 공공 정보로 보아 배포·복사할 수 있다고 하고 적절한 출처 표기를 요청한다. 추출문에서 제3자 저작권 표시가 붙은 자료는 찾지 못했다(소프트웨어 라이선스 통제 CM-10 해설의 일반 언급만 있음).",
+ "distribution": "public-under-license",
+ "distribution_reason": "공식 PDF 안의 권한 고지가 미국에서 저작권 대상이 아니라고 밝히고 비정부 조직의 사용을 허용하며 출처 표기를 요청한다. 직접 가져온 NIST 저작권·면책 페이지도 복사·배포를 허용한다. 다만 문서 고지는 '미국 내' 저작권 부재를 말하므로 미국 밖의 이용 조건은 이 노트에서 확인하지 않았고, 이 판단은 중앙 검토자의 확인에 따른다. 배포 시 NIST를 출처로 표기한다."
+}

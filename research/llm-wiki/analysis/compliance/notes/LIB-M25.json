@@ -1,0 +1,355 @@
+{
+ "id": "LIB-M25",
+ "title": "Regulation (EU) 2022/2554 of the European Parliament and of the Council of 14 December 2022 on digital operational resilience for the financial sector and amending Regulations (EC) No 1060/2009, (EU) No 648/2012, (EU) No 600/2014, (EU) No 909/2014 and (EU) 2016/1011 (Digital Operational Resilience Act, DORA)",
+ "title_native": "",
+ "issuer": "유럽의회와 이사회. 유럽연합 관보 OJ L 333, 2022-12-27",
+ "jurisdiction": "EU",
+ "instrument_type": "regulation",
+ "binding": true,
+ "status": "in_force",
+ "edition": "OJ L 333, 27.12.2022, 영어 PDF 79쪽(Publications Office Cellar 게재본)",
+ "key_dates": "2022-12-14 서명, 2022-12-27 관보 게재(OJ L 333). 제64조: 관보 게재 후 20일째에 발효하고 2025년 1월 17일부터 적용한다. Publications Office 메타데이터(2026-10-17 조회)는 발효일 2023-01-16, 적용일 2025-01-17, 유효(in force) 표시, 효력 종료일 9999-12-31(종료 미정)로 기록하고 이 규정을 개정하는 법령은 기록하지 않는다. 따라서 2026-10-17 기준 적용 중이다. 규정이 위임한 규제기술표준(사고 분류 기준·보고 기한·보고 서식 등)의 구체 값은 이 문서가 아닌 위임 규정에 있다.",
+ "language": "en",
+ "official_page_url": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+ "summary_ko": "EU 금융 부문의 디지털 운영 회복탄력성 규정이다. 금융기관의 ICT 위험관리 프레임워크(거버넌스, 식별·보호·탐지·대응·복구·학습), ICT 관련 사고의 관리·분류·보고, 디지털 운영 회복탄력성 시험(TLPT 포함), ICT 제3자 위험 관리(정보 등록부, 계약 필수 조항, 종료·퇴출 전략, 집중 위험), 핵심 ICT 제3자 서비스 제공자의 감독 체계, 정보 공유를 규정한다.",
+ "scope_ko": "제2조 제1항은 신용기관, 결제기관, 투자회사, 거래소, 보험회사 등 (a)~(t)의 금융기관과 (u) ICT 제3자 서비스 제공자를 적용 대상으로 열거하고, 제2조 제3항은 일부 주체(예: 보험·재보험회사로서 지침 2009/138/EC 제4조에 해당하는 자)를 제외한다. 제3자 위험 관리와 계약 조항은 금융기관의 의무로 규정되며, 핵심 ICT 제3자 서비스 제공자는 별도의 EU 감독 체계(제31조 이하)에 놓인다. 이 노트는 제5~6조, 제8~12조, 제17~19조, 제28~30조를 중심으로 읽었다.",
+ "provisions": [
+  {
+   "ref": "제64조",
+   "topic_ko": "2025-01-17부터 적용",
+   "obligation_ko": "이 규정은 관보 게재 후 20일째에 발효하고 2025년 1월 17일부터 적용한다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "scope_applicability",
+   "timing_ko": "2025-01-17 적용",
+   "anchor": "It shall apply from 17 January 2025.",
+   "gateway_control_ko": "해당 없음(적용일).",
+   "pol_ids": []
+  },
+  {
+   "ref": "제5조 제2항",
+   "topic_ko": "경영진이 ICT 위험관리 프레임워크를 정의·승인·감독하고 최종 책임",
+   "obligation_ko": "금융기관의 경영기구는 ICT 위험관리 프레임워크와 관련한 모든 조치를 정의, 승인, 감독하고 이행 책임을 지며, ICT 위험 관리에 대한 최종 책임, 데이터의 가용성·진정성·무결성·기밀성 정책, ICT 직무의 역할과 책임 설정, 예산 배정, ICT 제3자 서비스 이용 정책의 승인과 정기 검토를 해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "정기 검토",
+   "anchor": "The management body of the financial entity shall define, approve, oversee and be responsible for the implementation of all arrangements related to the ICT risk management framework",
+   "gateway_control_ko": "해당 없음(조직 거버넌스). 도입 신청의 승인자와 승인 이력을 원장에 남겨 경영진 보고 자료로 제공한다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "제6조 제1항, 제5항",
+   "topic_ko": "건전하고 포괄적이며 문서화된 ICT 위험관리 프레임워크를 연 1회 이상 검토",
+   "obligation_ko": "금융기관은 전체 위험관리의 일부로 건전하고 포괄적이며 잘 문서화된 ICT 위험관리 프레임워크를 갖춰야 하며, 프레임워크는 문서화하고 최소 연 1회(초소기업은 정기적으로), 그리고 주요 ICT 사고 후, 감독 지시나 시험·감사 결과가 나온 후 검토하며 실행·모니터링에서 얻은 교훈에 따라 계속 개선해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "최소 연 1회(초소기업은 정기적으로)와 주요 사고 후",
+   "anchor": "Financial entities shall have a sound, comprehensive and well-documented ICT risk management framework",
+   "gateway_control_ko": "해당 없음(조직 프레임워크). 정책 규칙 변경 이력과 점검 보고를 연간 검토 입력 자료로 활용할 수 있다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "제8조 제1항, 제4항~제6항",
+   "topic_ko": "ICT 자산과 기능을 식별·분류·문서화하고 상호 의존성 매핑, 인벤토리를 갱신",
+   "obligation_ko": "금융기관은 ICT가 지원하는 모든 업무 기능, 역할, 정보 자산과 ICT 자산을 식별·분류·문서화하고 최소 연 1회 분류의 적정성을 검토해야 하며, 원격지 자산을 포함한 모든 자산을 식별해 핵심 자산을 매핑하고 자산의 구성과 상호 연결·의존성도 매핑하며, ICT 제3자에 의존하는 프로세스를 식별하고 인벤토리를 주기적으로 그리고 중대한 변경 때마다 갱신해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "최소 연 1회, 중대한 변경 시",
+   "anchor": "identify, classify and adequately document all ICT supported business functions, roles and responsibilities, the information assets and ICT assets",
+   "gateway_control_ko": "승인된 서버·기능·판본·연결 주소를 도입 대장으로 관리하고 변경 시 갱신한다.",
+   "pol_ids": [
+    "POL-11",
+    "POL-37",
+    "POL-40"
+   ]
+  },
+  {
+   "ref": "제8조 제3항, 제7항",
+   "topic_ko": "네트워크·정보시스템 인프라나 프로세스의 중대한 변경 때마다 위험 평가, 기술·애플리케이션 연결 전후 평가",
+   "obligation_ko": "초소기업이 아닌 금융기관은 네트워크·정보시스템 인프라 또는 ICT 자산에 영향을 주는 프로세스의 중대한 변경마다 위험 평가를 수행해야 하며, 레거시 ICT 시스템에 대해 최소 연 1회, 그리고 기술·애플리케이션·시스템을 연결하기 전과 후에 ICT 위험 평가를 해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "중대한 변경마다, 연결 전후",
+   "anchor": "shall perform a risk assessment upon each major change in the network and information system infrastructure",
+   "gateway_control_ko": "신규 MCP 서버 연결 전 위험 평가를 필수로 하고 판본·구성·목적지 변경은 재평가와 재승인을 거친다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-37",
+    "POL-40"
+   ]
+  },
+  {
+   "ref": "제9조 제4항 (b)",
+   "topic_ko": "네트워크 연결 인프라를 즉시 단절·분할할 수 있게 설계(영향 자산 자동 격리 메커니즘은 예시로 허용)",
+   "obligation_ko": "위험 기반으로 네트워크·인프라 관리 구조를 세우되 사이버 공격 시 영향받은 정보 자산을 격리하는 자동화 메커니즘을 구현할 수 있고, 상호 연결된 금융 프로세스에서 확산을 막도록 네트워크 연결 인프라를 즉시 단절하거나 분할할 수 있게 설계해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "즉시",
+   "anchor": "allows it to be instantaneously severed or segmented in order to minimise and prevent contagion",
+   "gateway_control_ko": "이상 탐지 시 주체·서버·기능 단위로 승인을 즉시 철회하고 후속 호출을 거부하며 연결을 해제한다.",
+   "pol_ids": [
+    "POL-44",
+    "POL-43",
+    "POL-12"
+   ]
+  },
+  {
+   "ref": "제9조 제4항 (c)-(d)",
+   "topic_ko": "정당하고 승인된 기능에만 필요한 접근 권한 정책, 강력한 인증 정책과 암호키 보호",
+   "obligation_ko": "정보·ICT 자산에 대한 물리적·논리적 접근을 정당하고 승인된 기능과 활동에 필요한 범위로 제한하는 정책을 시행하고 접근 권한 관리에 관한 정책·절차·통제를 마련해야 하며, 관련 표준과 전용 통제 시스템에 기반한 강력한 인증 정책과 암호키 보호를 시행해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "implement policies that limit the physical or logical access to information assets and ICT assets to what is required for legitimate and approved functions and activities only",
+   "gateway_control_ko": "서버·기능·작업별 허용 목록과 최소 권한, 호출마다 권한 재판정, 인증정보 서버별 분리·회수·교체로 구현한다.",
+   "pol_ids": [
+    "POL-22",
+    "POL-23",
+    "POL-15",
+    "POL-19"
+   ]
+  },
+  {
+   "ref": "제9조 제4항 (e), (f)",
+   "topic_ko": "소프트웨어·보안 파라미터 변경을 기록·시험·평가·승인·이행·검증하는 변경 관리",
+   "obligation_ko": "소프트웨어, 하드웨어, 펌웨어, 시스템 또는 보안 파라미터의 변경을 위험 평가에 기반해 관리하고, 모든 ICT 시스템 변경이 기록, 시험, 평가, 승인, 이행, 검증되도록 문서화된 정책·절차·통제를 시행해야 한다. 패치와 업데이트 정책도 문서화한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "all changes to ICT systems are recorded, tested, assessed, approved, implemented and verified in a controlled manner",
+   "gateway_control_ko": "도구 목록·판본·구성의 변경을 감지해 재승인 전까지 이전 승인 상태를 유지하고 변경 이력을 원장에 기록한다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-40",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "제10조",
+   "topic_ko": "비정상 활동을 신속히 탐지하고 경보 임계값·기준을 정의, 사용자 활동 모니터링에 충분한 자원 투입",
+   "obligation_ko": "금융기관은 ICT 네트워크 성능 문제와 사고를 포함한 비정상 활동을 신속히 탐지하는 메커니즘을 갖추고 정기적으로 시험해야 하며, 다중 통제층과 경보 임계값·기준, 대응 담당자에 대한 자동 경보를 정의하고, 사용자 활동과 ICT 이상 및 사이버 공격을 모니터링할 충분한 자원과 능력을 투입해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "정기 시험",
+   "anchor": "Financial entities shall have in place mechanisms to promptly detect anomalous activities",
+   "gateway_control_ko": "새 도구 사용, 미승인 연결 시도, 비정상 호출 증가에 경보를 설정하고 경보 동작을 정기 점검한다.",
+   "pol_ids": [
+    "POL-42",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "제11조 제6항 (a)",
+   "topic_ko": "ICT 업무 연속성·대응·복구 계획을 최소 연 1회와 중대한 변경 시 시험",
+   "obligation_ko": "금융기관은 모든 기능을 지원하는 ICT 시스템에 대한 ICT 업무 연속성 계획과 ICT 대응·복구 계획을 최소 연 1회 및 핵심·중요 기능을 지원하는 ICT 시스템에 실질적 변경이 있을 때 시험해야 하며, 초소기업이 아니면 사이버 공격 시나리오와 기본 인프라와 중복 용량 간 전환을 시험 계획에 포함해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "testing_red_teaming_robustness",
+   "timing_ko": "최소 연 1회",
+   "anchor": "test the ICT business continuity plans and the ICT response and recovery plans in relation to ICT systems supporting all functions at least yearly",
+   "gateway_control_ko": "해당 없음(고객의 연속성 계획). 게이트웨이 장애 시 동작과 복구 절차를 제품 문서에 명시해 고객 시험 계획에 반영하도록 하는 방안이 있다(후보).",
+   "pol_ids": [
+    "POL-50"
+   ]
+  },
+  {
+   "ref": "제12조 제1항~제3항",
+   "topic_ko": "백업 정책·절차·복원 방법, 원본과 물리·논리적으로 분리된 시스템에서 복원",
+   "obligation_ko": "금융기관은 데이터 범위와 최소 백업 빈도를 정한 백업 정책과 절차, 복원·복구 절차와 방법을 개발·문서화하고 백업 시스템을 구성해 정기적으로 시험해야 한다. 자체 시스템으로 복원할 때는 원본과 물리적·논리적으로 분리되고 무단 접근과 손상으로부터 안전하게 보호된 시스템을 써야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "정기 시험",
+   "anchor": "backup policies and procedures specifying the scope of the data that is subject to the backup and the minimum frequency of the backup",
+   "gateway_control_ko": "복원 후에도 폐기된 연결이 재활성화되지 않도록 폐기 목록을 백업 대상과 별도로 관리한다.",
+   "pol_ids": [
+    "POL-50"
+   ]
+  },
+  {
+   "ref": "제17조 제2항~제3항",
+   "topic_ko": "모든 ICT 사고와 중대한 사이버 위협을 기록하고 근본 원인을 식별, 우선순위·심각도별 분류",
+   "obligation_ko": "금융기관은 모든 ICT 관련 사고와 중대한 사이버 위협을 기록하고 일관된 모니터링·처리·후속 조치 절차로 근본 원인을 식별·문서화·해결해야 한다. 사고 관리 절차에는 조기 경보 지표, 우선순위·심각도·영향 서비스의 중요도에 따른 식별·추적·로깅·분류, 역할 지정, 의사소통·에스컬레이션 계획, 주요 사고의 경영진 보고, 대응 절차가 포함돼야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "",
+   "anchor": "establish procedures to identify, track, log, categorise and classify ICT-related incidents",
+   "gateway_control_ko": "정책 위반, 미승인 연결, 연결 중지·철회 사건을 원장에 기록해 사고 식별·분류의 입력 자료로 활용할 수 있다. 사고 심각도 분류와 고객 조직의 대응 절차는 조직 몫이다.",
+   "pol_ids": [
+    "POL-43",
+    "POL-38",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "제18조 제1항",
+   "topic_ko": "영향받은 고객 수·지속 시간·지리적 확산·데이터 손실·서비스 중요도·경제적 영향으로 사고 분류",
+   "obligation_ko": "금융기관은 영향받은 고객·거래 상대방의 수와 거래량, 평판 영향, 사고 지속 시간과 서비스 중단, 영향받은 지리적 범위, 데이터 가용성·진정성·무결성·기밀성 손실, 영향받은 서비스의 중요도, 직접·간접 경제적 영향을 기준으로 ICT 관련 사고를 분류하고 영향을 판단해야 한다. 중대 사고의 실질 임계값은 규제기술표준에 위임된다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "",
+   "anchor": "Financial entities shall classify ICT-related incidents and shall determine their impact based on the following criteria",
+   "gateway_control_ko": "사고 영향 산정을 위해 영향받은 주체·서버 수, 호출 건수, 데이터 등급, 지속 시간을 원장에서 집계해 제공한다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "제19조 제1항, 제4항",
+   "topic_ko": "중대한 ICT 사고를 초기 통지, 중간 보고, 최종 보고로 관할 당국에 보고",
+   "obligation_ko": "금융기관은 중대한 ICT 사고를 관할 당국에 보고해야 한다. 보고는 기한(제20조의 위임 규정으로 정함) 안의 초기 통지, 상태나 처리 방식이 크게 바뀔 때의 중간 보고와 갱신 통지, 근본 원인 분석을 마치고 실제 영향 수치가 확정된 후 최종 보고 순서로 이뤄진다. 실제 기한(예: 초기 통지 몇 시간)은 이 규정이 아닌 위임 규정에 있다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "기한은 위임 규정(제20조)에서 확인",
+   "anchor": "a final report, when the root cause analysis has been completed",
+   "gateway_control_ko": "원장의 호출 이력(시각·주체·서버·결과)과 승인 철회 이력을 보고서 작성의 근거 자료로 활용할 수 있다(내보내기 형식은 후보). 보고 자체와 서식은 금융기관 몫이다.",
+   "pol_ids": [
+    "POL-43",
+    "POL-38",
+    "POL-44"
+   ]
+  },
+  {
+   "ref": "제19조 제3항",
+   "topic_ko": "고객의 금전적 이익에 영향을 주는 중대한 사고는 지체 없이 고객에게 알림",
+   "obligation_ko": "중대한 ICT 사고가 고객의 금전적 이익에 영향을 주면 금융기관은 사고를 알게 된 즉시 지체 없이 고객에게 사고와 부정적 영향을 완화하기 위해 취한 조치를 알려야 하며, 중대한 사이버 위협의 경우 해당하는 때에는 영향받을 수 있는 고객에게 고려할 만한 적절한 보호 조치를 알려야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "지체 없이",
+   "anchor": "inform their clients about the major ICT-related incident and about the measures that have been taken to mitigate the adverse effects",
+   "gateway_control_ko": "해당 없음(고객 통지). 영향 정보 추출을 지원한다.",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "제28조 제1항~제3항",
+   "topic_ko": "ICT 제3자 위험은 ICT 위험의 일부로 관리하며 금융기관이 최종 책임, 모든 계약에 대한 정보 등록부 유지·갱신",
+   "obligation_ko": "금융기관은 ICT 제3자 위험을 ICT 위험관리 프레임워크의 일부로 관리하며 ICT 서비스 이용 계약이 있더라도 이 규정과 금융법 의무 준수에 최종 책임이 있다. ICT 제3자 서비스 제공자가 제공하는 ICT 서비스에 대한 모든 계약상 합의의 정보 등록부를 개체 및 하위연결·연결 수준에서 유지·갱신하고 핵심·중요 기능을 지원하는 계약과 그렇지 않은 계약을 구분해 문서화해야 한다. 또 최소 연 1회 신규 계약 수, 제공자 범주, 계약 유형, 제공 서비스·기능을 감독 당국에 보고하고, 요청 시 등록부 전체나 요청한 부분을 제출해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "등록부 상시 갱신, 최소 연 1회 감독 당국 보고",
+   "anchor": "a register of information in relation to all contractual arrangements on the use of ICT services provided by ICT third-party service providers",
+   "gateway_control_ko": "승인된 MCP 서버(외부 ICT 서비스)·제공자·기능·판본을 도입 대장으로 관리하므로 등록부 작성의 입력 자료로 활용할 수 있다(감독 당국 제출용 내보내기는 후보). 등록부 서식은 위임 규정에 따른다.",
+   "pol_ids": [
+    "POL-11",
+    "POL-07",
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "제28조 제4항~제5항",
+   "topic_ko": "계약 체결 전 핵심·중요 기능 여부 평가, 집중 위험을 포함한 위험 식별, 실사, 정보 보안 표준 준수",
+   "obligation_ko": "ICT 서비스 이용 계약 전에 금융기관은 계약이 핵심·중요 기능을 지원하는지 평가하고, 집중 위험 강화 가능성을 포함한 위험을 식별·평가하며, 후보 ICT 제3자 제공자에 대한 모든 실사와 이해충돌 평가를 수행해야 한다. 적절한 정보 보안 표준을 따르는 제공자와만 계약할 수 있고 핵심·중요 기능 계약에서는 최신·최고 품질의 정보 보안 표준 사용을 고려해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "계약 체결 전",
+   "anchor": "undertake all due diligence on prospective ICT third-party service providers",
+   "gateway_control_ko": "신규 서버 도입 신청에 제공자 실사 항목(출처·무결성·취약점·업데이트 지원·문서 처리 조건)을 필수로 두고 미충족 시 보류한다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-03",
+    "POL-07",
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "제28조 제7항~제8항",
+   "topic_ko": "중대한 위반·성능 변화·위험 관리 약점 시 계약 종료 가능, 핵심 기능은 중단 없는 퇴출 전략·전환 계획",
+   "obligation_ko": "금융기관은 제공자의 법령·계약 중대 위반, 성능에 영향을 주는 중대한 변경, ICT 위험 관리와 데이터 보호의 입증된 약점, 감독 불가능 등의 경우 계약을 종료할 수 있도록 해야 한다. 핵심·중요 기능을 지원하는 ICT 서비스는 사업 중단, 규제 준수 제한, 서비스 품질 저하 없이 계약에서 퇴출할 수 있는 문서화되고 시험된 퇴출 전략과, 서비스와 데이터를 대체 제공자로 안전하게 옮기거나 내부로 되돌리는 전환 계획을 갖춰야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "퇴출 계획은 정기 시험·검토",
+   "anchor": "Financial entities shall ensure that contractual arrangements on the use of ICT services may be terminated in any of the following circumstances",
+   "gateway_control_ko": "서버 연결 해제·폐기 절차(권한 철회, 토큰·키 회수, 잔존 프로세스 종료, 저장소 권한 회수, 임시 파일 정리)를 시험 가능한 절차로 제공한다.",
+   "pol_ids": [
+    "POL-44",
+    "POL-45",
+    "POL-46",
+    "POL-47",
+    "POL-48"
+   ]
+  },
+  {
+   "ref": "제29조 제2항",
+   "topic_ko": "재위탁 사슬이 모니터링과 감독 능력에 미칠 영향 평가, 제3국 제공자는 EU 개인정보 규칙 준수와 집행 가능성 고려",
+   "obligation_ko": "핵심·중요 기능을 지원하는 서비스에 재위탁 가능성이 포함되면 금융기관은 재위탁의 이점과 위험(특히 제3국 재수탁자)을 따지고, 재위탁 사슬이 길거나 복잡할 때 계약 기능을 충분히 모니터링할 능력과 감독 당국의 감독 능력에 미칠 영향을 평가해야 한다. 제3국 제공자와의 계약이면 EU 개인정보 보호 규칙 준수와 해당 국가의 집행 가능성도 고려한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "assess whether and how potentially long or complex chains of subcontracting may impact their ability to fully monitor the contracted functions",
+   "gateway_control_ko": "외부 서버가 다른 서버·제공자로 데이터를 넘기는 경로를 서버 간 전달 경계와 외부 전송 승인으로 제한하고 재위탁 여부를 도입 신청에서 확인한다.",
+   "pol_ids": [
+    "POL-33",
+    "POL-26",
+    "POL-07"
+   ]
+  },
+  {
+   "ref": "제30조 제2항 (b), (d)",
+   "topic_ko": "계약에 처리·저장 위치와 변경 사전 통지, 해지·지급불능 시 데이터 접근·복구·반환 보장",
+   "obligation_ko": "ICT 서비스 계약에는 위탁 또는 재위탁 기능과 서비스가 제공되고 데이터가 처리·저장되는 지역이나 국가와 위치 변경 계획 시 금융기관에 사전 통지할 의무, 제공자의 지급불능·정리·사업 중단 또는 계약 종료 때 처리한 개인·비개인 데이터에 대한 접근·복구·쉽게 접근 가능한 형식의 반환 보장 조항이 포함돼야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "the locations, namely the regions or countries, where the contracted or subcontracted functions and ICT services are to be provided and where data is to be processed",
+   "gateway_control_ko": "승인된 연결 주소의 변경은 재승인 대상으로 처리할 수 있다. 외부 서버의 실제 처리·저장 위치와 데이터 반환·삭제는 게이트웨이가 직접 확인하지 못하므로 도입 신청과 제공자 계약 검토, 폐기 시 확인 절차로 다룬다.",
+   "pol_ids": [
+    "POL-40",
+    "POL-49",
+    "POL-26"
+   ]
+  },
+  {
+   "ref": "제30조 제3항 (e)",
+   "topic_ko": "핵심·중요 기능 계약은 금융기관·감독 당국의 제한 없는 접근·점검·감사 권리와 사본 취득 권리",
+   "obligation_ko": "핵심·중요 기능을 지원하는 ICT 서비스 계약에는 제공자 성과를 지속 모니터링할 권리가 포함돼야 하며, 금융기관(또는 지명한 제3자)과 관할 당국의 제한 없는 접근·점검·감사 권리, 제공자 운영에 핵심적인 문서의 사본을 현장에서 취할 권리, 현장 점검·감사 때 제공자의 전면 협조 의무, 점검 범위·절차·빈도 정보 제공 의무가 포함된다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "unrestricted rights of access, inspection and audit by the financial entity, or an appointed third party, and by the competent authority",
+   "gateway_control_ko": "해당 없음(계약 조항). 외부 서버 제공자 계약 검토 항목에 감사 권리 유무를 포함하고 원장으로 호출 이력 감사를 지원한다.",
+   "pol_ids": [
+    "POL-07",
+    "POL-38"
+   ]
+  }
+ ],
+ "pitfalls_ko": [
+  "사고 보고의 구체 기한(초기 통지 시간 등)과 중대 사고의 분류 임계값은 이 규정이 아닌 제18조·제20조가 위임한 규제기술표준(위임 규정)에 있다. 이 노트는 그 위임 규정을 읽지 않았으므로 기한을 이 노트만으로 인용하면 안 된다.",
+  "DORA의 의무 주체는 주로 금융기관이다. MINT가 금융기관에 ICT 서비스(제3조 제21호: ICT 시스템을 통해 계속적으로 제공되는 디지털·데이터 서비스)를 제공하면 ICT 제3자 서비스 제공자에 해당할 수 있고, 그 경우 금융기관과의 계약에 제30조의 조항이 요구된다. MINT가 이에 해당하는지, 핵심 ICT 제3자 지정(제31조) 대상인지는 이 노트가 판단하지 않았고 지정 기준과 감독 체계(제31~44조)도 읽지 않았다.",
+  "'초소기업(microenterprise)'은 제3조 제60호에서 직원 10명 미만이고 연 매출 또는 연 자산 총액이 200만 유로 이하인 금융기관(거래소, 중앙청산소, 거래정보저장소, 중앙예탁기관은 제외)으로 정의된다. 초소기업이 아닌 금융기관에만 적용되는 의무와 초소기업에 완화된 의무가 조항마다 다르고, 제4조 비례 원칙에 따라 적용 정도도 달라진다.",
+  "제28조 제9항은 정보 등록부 표준 서식, 제28조 제10항은 핵심·중요 기능을 지원하는 ICT 서비스 이용 정책의 세부 내용, 제30조 제5항은 재위탁 시 금융기관이 판단할 요소를 각각 별도 위임 규정(기술표준)에 맡긴다. 그 구체 내용은 이 문서에 없다.",
+  "제3자 위험 관리의 최종 책임은 금융기관에 남는다(제28조 제1항 (a)). 공급자의 준수 선언으로 책임이 이전되지 않는다."
+ ],
+ "reading_scope_ko": "표지, 제5~6조, 제8~12조, 제17~19조, 제28~30조, 제31조 앞부분, 제64조를 읽고 조항을 작성했다. 검증 단계에서 제1~4조(범위·정의·비례 원칙)를 추가로 확인했다. 제7조, 제13~16조, 제20~27조(시험, TLPT), 제31조 이후(핵심 ICT 제3자 감독), 제45조 이후는 읽지 않았거나 훑어보기에 그쳤다.",
+ "limitations_ko": "법적 해석이나 적합성 판단이 아니다. 위임 규정과 감독기관 지침은 읽지 않았다. 관보 원문(OJ L 333, 2022-12-27) 기준이다. EUR-Lex 공식 페이지(ELI)는 curl로 열리지 않아(HTTP 202, 본문 없음) Publications Office Cellar 메타데이터(ELI reg/2022/2554/oj 매핑과 유효 상태)로 대신 확인했다. 이후 정정이나 디지털 옴니버스 제안의 반영 여부는 확인하지 않았다.",
+ "license_notice": "EUR-Lex 법적 고지(https://eur-lex.europa.eu/content/legal-notice/legal-notice.html)는 집행위원회의 문서 재사용 정책이 결정 2011/833/EU에 기반하고, 달리 명시하지 않는 한 EUR-Lex에 게재된 법률 문서를 상업·비상업 목적으로 재사용할 수 있다고 밝힌다(2026-10-17 리드 검토자 확인분을 인용했고 검증 단계에서는 해당 페이지가 열리지 않아 직접 재확인하지 못함). 특별 조건은 해당 관보·문서에 표시되며, 제3자 저작물과 산업재산권 대상은 제외된다. 같은 고지는 관보만 공식(authentic)이라고 밝힌다. 보존한 PDF는 Publications Office Cellar에서 받은 관보 OJ L 333 판이며, 본문과 메타데이터에서 저작권·재사용 조건 표시를 찾지 못했다.",
+ "distribution": "public-under-license",
+ "distribution_reason": "EU 관보에 게재된 법률 문서이며 EUR-Lex 법적 고지가 별도 조건이 없는 한 상업·비상업 재사용을 허용한다. 보존 PDF(Publications Office Cellar 관보 OJ L 333 판)에 별도 재사용 조건 표시가 없어 이 증거를 적용한다. 본문을 바꾸지 않고 출처 URL과 SHA-256을 병기해 보존하며 공식 정본은 관보임을 표시한다."
+}

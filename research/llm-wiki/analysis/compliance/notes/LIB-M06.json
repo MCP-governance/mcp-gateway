@@ -1,0 +1,488 @@
+{
+ "id": "LIB-M06",
+ "title": "Regulation (EU) 2016/679 of the European Parliament and of the Council of 27 April 2016 on the protection of natural persons with regard to the processing of personal data and on the free movement of such data, and repealing Directive 95/46/EC (General Data Protection Regulation)",
+ "title_native": "",
+ "issuer": "European Parliament and Council of the European Union (관보 OJ L 119, 4.5.2016 게재; 발행처 Publications Office of the EU)",
+ "jurisdiction": "EU",
+ "instrument_type": "regulation",
+ "binding": true,
+ "status": "in_force",
+ "edition": "OJ L 119, 4.5.2016, pp. 1-88 최초 게재본 (정오표 미반영, EUR-Lex PDF 판)",
+ "key_dates": "채택 2016-04-27. 관보 게재 2016-05-04(PDF 각 쪽 머리글의 4.5.2016). 제99조제1항: 게재일 이후 20일째 날 발효 — Publications Office의 CELLAR 레코드는 발효일 2016-05-24, 유효 종료일 9999-12-31(종료 없음), in-force=true로 기록. 제99조제2항(원문 확인): 2018-05-25부터 적용. CELLAR는 이 규정에 연결된 정오표 3건(OJ L 314 [2016], OJ L 127 [2018], OJ L 74 [2021])을 기록하며 이 PDF에는 반영되지 않았다(정오표 내용은 읽지 않음). CELLAR에서 이 규정을 개정하는 법령은 확인되지 않았다(2026-10-17). 디지털 옴니버스 개정 제안은 COM(2025) 837, 2025-11-19 제출(절차 2025/0360(COD)); 유럽의회 입법관측소 페이지(2026-10-17 열람)는 '위원회 결정 대기(Awaiting committee decision)'로 표시하며 채택·관보 게재 사실은 없다. EUR-Lex의 ELI·HTML 페이지는 봇 차단(HTTP 202, 빈 응답)으로 직접 열람하지 못했다.",
+ "language": "en",
+ "official_page_url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+ "summary_ko": "EU 일반 개인정보보호 규정(GDPR)이다. 개인정보 처리 원칙(제5조), 적법 근거(제6조), 민감정보(제9조), 정보주체 권리와 자동화된 결정(제12~22조), 컨트롤러·처리자의 책임(제24~31조), 처리 보안과 침해 통지(제32~34조), 영향평가(제35~36조), 제3국 이전(제44~49조), 과징금(제83조)을 정한다. AI나 MCP를 직접 규율하는 법은 아니지만 에이전트 도구 호출의 인자·응답·감사 기록에 개인정보가 포함되면 그대로 적용된다.",
+ "scope_ko": "EU 역내 사업장의 활동 맥락에서 이뤄지는 개인정보 처리는 처리 장소와 무관하게 적용되고(제3조제1항), EU 밖 사업자도 EU 역내 정보주체에게 재화·서비스를 제공하거나 그 행동을 모니터링하면 적용된다(제3조제2항). 전부 또는 일부 자동화된 처리가 대상이며(제2조제1항) 순수한 개인·가사 활동이나 형사 목적의 권한기관 처리 등은 제외된다(제2조제2항). 적용 여부를 가르는 규모 기준은 없고, 조항별 완화(예: 제30조제5항)만 있다.",
+ "provisions": [
+  {
+   "ref": "Art. 2(1)",
+   "topic_ko": "물적 적용 범위",
+   "obligation_ko": "이 규정은 개인정보를 전부 또는 일부 자동화된 수단으로 처리하는 경우와, 파일링 시스템에 속하거나 속하게 될 개인정보를 비자동화 수단으로 처리하는 경우에 적용된다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "wholly or partly by automated means",
+   "gateway_control_ko": "해당 없음(적용 범위 판단). 게이트웨이를 지나는 도구 호출의 인자·응답·감사 기록에 개인정보가 있는지를 데이터 분류로 식별해, 이 규정이 적용되는 처리인지 도입 심사에서 판단하게 한다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "Art. 3(2)",
+   "topic_ko": "역외 적용(EU 밖 사업자)",
+   "obligation_ko": "EU에 설립되지 않은 컨트롤러·처리자라도 EU 역내 정보주체에게 재화·서비스를 제공하거나 그들의 EU 내 행동을 모니터링하는 처리에는 이 규정이 적용된다. 설립 기준은 제3조제1항, 대리인 지정은 제27조제1항(예외는 같은 조 제2항).",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "processor not established in the Union, where the processing activities are related to",
+   "gateway_control_ko": "해당 없음(적용 범위 판단). 도입 심사 기록에 이용자·데이터 주체의 소재지(EU 역내 포함 여부)와 MCP 서버·모델 제공자의 소재지를 남겨 역외 적용과 제27조 대리인 필요 여부를 검토할 근거로 쓴다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-07"
+   ]
+  },
+  {
+   "ref": "Art. 4(1)",
+   "topic_ko": "개인정보의 정의",
+   "obligation_ko": "식별되었거나 식별 가능한 자연인에 관한 모든 정보를 개인정보로 정의하며, 이름·식별번호·위치정보·온라인 식별자 등을 통해 직접 또는 간접적으로 식별 가능한 경우를 포함한다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "any information relating to an identified or identifiable natural person",
+   "gateway_control_ko": "데이터 분류가 도구 인자·응답에서 이름·식별번호·위치·온라인 식별자 등 식별 가능 정보를 개인정보 분류로 표시하고, 분류별 허용·마스킹·차단 정책(OPA)과 감사 기록의 마스킹 범위를 이 정의에 맞춘다.",
+   "pol_ids": [
+    "POL-25",
+    "POL-30",
+    "POL-31"
+   ]
+  },
+  {
+   "ref": "Art. 5(1)(b)",
+   "topic_ko": "목적 제한",
+   "obligation_ko": "개인정보는 특정되고 명시적이며 정당한 목적으로 수집해야 하며, 그 목적과 양립할 수 없는 방식으로 추가 처리해서는 안 된다(공익 보존·연구·통계 목적의 추가 처리는 제89조제1항에 따라 양립 불가로 보지 않는다).",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "collected for specified, explicit and legitimate purposes and not further processed in a manner that is incompatible",
+   "gateway_control_ko": "도입 신청의 사용 목적 필드와 도구별 허용 목적을 정책에 묶고, 승인된 목적과 다른 도구·목적지로 개인정보가 가는 호출을 막는다(목적별 정책). 목적의 정당성과 양립성 판단은 조직의 몫이다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-26"
+   ]
+  },
+  {
+   "ref": "Art. 5(1)(c)",
+   "topic_ko": "데이터 최소화",
+   "obligation_ko": "개인정보는 처리 목적에 비추어 충분하고 관련이 있으며 필요한 범위로 제한되어야 한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "",
+   "anchor": "limited to what is necessary in relation to the purposes for which they are processed",
+   "gateway_control_ko": "도구 인자·응답에서 업무에 필요한 필드만 통과시키는 필드 단위 허용·마스킹과 대량 조회 한도, 반환 건수 제한으로 최소화를 집행한다.",
+   "pol_ids": [
+    "POL-31",
+    "POL-35",
+    "POL-30"
+   ]
+  },
+  {
+   "ref": "Art. 5(1)(e)",
+   "topic_ko": "보관 제한",
+   "obligation_ko": "정보주체를 식별할 수 있는 형태의 개인정보는 처리 목적에 필요한 기간을 넘겨 보관해서는 안 된다(공익 보존·연구·통계 목적은 제89조제1항 조건으로 더 길게 보관 가능).",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "필요한 기간까지만(구체적 기간은 이 조항에 없음)",
+   "anchor": "kept in a form which permits identification of data subjects for no longer than is necessary",
+   "gateway_control_ko": "감사 원장·임시 파일·캐시의 보관 기간을 유형별로 설정하고 만료 시 삭제 또는 비식별 처리하며 삭제 증빙을 남기는 기능을 요구사항으로 둔다. 원장은 추가 전용이므로 개인정보는 처음부터 마스킹·가명 처리 값으로 기록하고 보관 기간을 정책으로 둔다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-48"
+   ]
+  },
+  {
+   "ref": "Art. 5(2)",
+   "topic_ko": "책임성(준수 입증)",
+   "obligation_ko": "컨트롤러는 제5조제1항의 원칙(적법·공정·투명, 목적 제한, 최소화, 정확성, 보관 제한, 무결성·기밀성)을 지킬 책임이 있고 이를 입증할 수 있어야 한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "The controller shall be responsible for, and be able to demonstrate compliance with, paragraph 1",
+   "gateway_control_ko": "정책 버전, 판정 사유, 승인 기록을 감사 원장에서 내보내 입증 증빙으로 제공한다. 준수 책임 자체는 컨트롤러(조직)에 있고 게이트웨이는 증빙을 만든다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Art. 6(1)",
+   "topic_ko": "처리의 적법 근거",
+   "obligation_ko": "처리는 여섯 가지 근거(동의, 계약 이행, 법적 의무, 생명 이익 보호, 공익 업무, 정당한 이익) 중 하나 이상에 해당하는 범위에서만 적법하다. 정당한 이익 근거는 공공기관의 업무 수행 처리에는 적용되지 않는다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "Processing shall be lawful only if and to the extent that at least one of the following applies",
+   "gateway_control_ko": "도입 신청서에 개인정보 처리의 적법 근거를 필수 입력으로 두고 비어 있으면 승인을 보류한다. 동의가 근거인 경우 데이터·기능 단위 사용자 동의 기록을 승인 기록과 함께 남긴다. 근거의 적정성 판단은 조직의 몫이다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-08"
+   ]
+  },
+  {
+   "ref": "Art. 9(1)",
+   "topic_ko": "특수 범주(민감) 개인정보 처리 금지",
+   "obligation_ko": "인종·민족, 정치적 견해, 종교·신념, 노동조합 가입, 유전정보, 고유 식별 목적의 생체정보, 건강정보, 성생활·성적 지향에 관한 개인정보의 처리는 원칙적으로 금지되며, 제9조제2항의 예외(명시적 동의 등)에 해당할 때만 가능하다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "Processing of personal data revealing racial or ethnic origin, political opinions, religious or philosophical beliefs",
+   "gateway_control_ko": "민감정보(건강·생체·유전·정치적 견해 등) 분류를 두고 해당 분류가 오가는 도구 호출을 기본 차단하거나 건별 승인·마스킹을 요구한다. 제9조제2항 예외의 충족 판단은 조직의 몫이다.",
+   "pol_ids": [
+    "POL-25",
+    "POL-30",
+    "POL-31"
+   ]
+  },
+  {
+   "ref": "Art. 13(2)(f)",
+   "topic_ko": "자동화된 결정에 대한 사전 정보 제공",
+   "obligation_ko": "정보주체로부터 개인정보를 수집하는 시점에 컨트롤러는 제22조제1항·제4항의 자동화된 결정(프로파일링 포함)이 있다는 사실과, 적어도 그 경우에 관여 로직·중요성·예상 결과에 관한 의미 있는 정보를 제공해야 한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "automated_decision_rights",
+   "timing_ko": "개인정보를 수집하는 시점",
+   "anchor": "(f) the existence of automated decision-making, including profiling, referred to in Article 22(1) and (4)",
+   "gateway_control_ko": "게이트웨이는 정보주체에게 직접 고지하지 않는다. 자동화된 결정에 쓰이는 도구 호출을 식별하고, 고지 문구와 판단 기준 설명에 쓸 정책 ID·판정 사유 기록을 보관하도록 요구사항으로 둔다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Art. 17(1)",
+   "topic_ko": "삭제권(잊힐 권리)",
+   "obligation_ko": "목적 달성으로 불필요해졌거나 동의를 철회했거나 위법하게 처리된 경우 등 열거 사유가 있으면 컨트롤러는 정보주체의 개인정보를 지체 없이 삭제해야 한다. 표현의 자유, 법적 의무 이행, 법적 청구 등은 제17조제3항의 예외다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "지체 없이(제12조제3항: 요청 접수 후 1개월 이내 조치 결과 통지, 복잡하면 2개월 연장 가능)",
+   "anchor": "the obligation to erase personal data without undue delay where",
+   "gateway_control_ko": "삭제 요구 때 감사 원장·캐시·임시 파일에서 해당 정보주체의 값을 찾아 삭제 또는 비식별 처리할 수 있도록 주체 식별 키와 삭제 증빙 기능이 필요하다. 추가 전용 원장과 충돌하지 않게 원장에는 마스킹·가명 처리 값만 기록한다. 예외 해당 여부는 조직이 판단한다.",
+   "pol_ids": [
+    "POL-48",
+    "POL-49"
+   ]
+  },
+  {
+   "ref": "Art. 22(1)",
+   "topic_ko": "자동화된 개별 결정을 받지 않을 권리",
+   "obligation_ko": "정보주체는 프로파일링을 포함해 오로지 자동화된 처리에만 근거한 결정으로서 자신에게 법적 효력을 미치거나 이에 준하는 중대한 영향을 주는 결정의 대상이 되지 않을 권리가 있다. 계약 이행 필요, 법률 허용, 명시적 동의의 경우는 제22조제2항의 예외다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "automated_decision_rights",
+   "timing_ko": "",
+   "anchor": "the right not to be subject to a decision based solely on automated processing",
+   "gateway_control_ko": "법적 효과나 이에 준하는 영향을 주는 결정(채용·신용 판단 등)에 쓰이는 도구를 고위험으로 분류해 사람 승인 없이는 실행하지 않도록 한다. 어떤 결정이 이 조항의 대상인지는 조직이 판단한다.",
+   "pol_ids": [
+    "POL-27"
+   ]
+  },
+  {
+   "ref": "Art. 22(3)",
+   "topic_ko": "사람의 개입·의견 표명·이의 제기 보장",
+   "obligation_ko": "제22조제2항 (a)호(계약 이행)·(c)호(명시적 동의)에 따라 자동화된 결정을 허용하는 경우 컨트롤러는 최소한 사람의 개입을 얻을 권리, 의견을 표명할 권리, 결정에 이의를 제기할 권리를 포함한 적절한 보호 조치를 마련해야 한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "human_oversight",
+   "timing_ko": "",
+   "anchor": "the right to obtain human intervention on the part of the controller",
+   "gateway_control_ko": "건별 사람 승인 단계로 사람의 개입을 구현하고 승인·거부·재검토 요청을 원장에 남긴다. 정보주체의 의견 표명·이의 제기 창구는 게이트웨이 밖의 조직 절차다.",
+   "pol_ids": [
+    "POL-27",
+    "POL-22"
+   ]
+  },
+  {
+   "ref": "Art. 25(1)",
+   "topic_ko": "설계 단계의 개인정보보호",
+   "obligation_ko": "컨트롤러는 기술 수준, 비용, 처리의 성격·범위·맥락·목적, 정보주체 권리에 대한 위험을 고려해 처리 수단을 정할 때와 처리 중에, 가명처리 같은 기술적·조직적 조치로 데이터 최소화 등 원칙을 효과적으로 구현해야 한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "처리 수단을 정하는 때와 처리하는 때",
+   "anchor": "designed to implement data-protection principles, such as data minimisation, in an effective manner",
+   "gateway_control_ko": "분류 기반 정책, 가명화·마스킹, 거부 우선 기본값을 게이트웨이 설계 요구사항으로 반영하고 설계 문서와 정책 버전을 증빙으로 보관한다.",
+   "pol_ids": [
+    "POL-31",
+    "POL-30"
+   ]
+  },
+  {
+   "ref": "Art. 25(2)",
+   "topic_ko": "기본값의 개인정보보호",
+   "obligation_ko": "컨트롤러는 기본적으로 각 목적에 필요한 개인정보만 처리되도록 조치해야 한다. 이는 수집량, 처리 범위, 보관 기간, 접근 가능성에 적용되며, 개인의 개입 없이 불특정 다수에게 기본적으로 접근 가능하게 해서는 안 된다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "",
+   "anchor": "only personal data which are necessary for each specific purpose of the processing are processed",
+   "gateway_control_ko": "기본 정책을 거부 우선(default-deny)으로 두고 조회 범위·반환 건수·보관 기간·공유 범위의 기본값을 좁게 설정한다. 새 도구·서버는 기본적으로 개인정보 분류 접근이 닫힌 상태로 등록한다.",
+   "pol_ids": [
+    "POL-35",
+    "POL-31",
+    "POL-25"
+   ]
+  },
+  {
+   "ref": "Art. 28(1)",
+   "topic_ko": "충분한 보증을 제공하는 처리자만 사용",
+   "obligation_ko": "컨트롤러는 처리가 이 규정의 요건을 충족하고 정보주체 권리를 보호하도록 적절한 기술적·조직적 조치를 이행할 충분한 보증을 제공하는 처리자만 사용해야 한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "use only processors providing sufficient guarantees to implement appropriate technical and organisational measures",
+   "gateway_control_ko": "도입 심사 단계에서 MCP 서버·모델 제공자의 출처·서명·취약점·유지보수 상태·처리 위치를 확인해 기록하고, 보증 근거(계약·인증)의 확인 결과를 승인 기록에 남긴다. 보증이 충분한지의 판단은 조직의 몫이다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-03",
+    "POL-07"
+   ]
+  },
+  {
+   "ref": "Art. 28(2)",
+   "topic_ko": "재위탁(하위 처리자) 사전 서면 승인",
+   "obligation_ko": "처리자는 컨트롤러의 사전 개별 또는 일반 서면 승인 없이 다른 처리자를 쓸 수 없다. 일반 승인인 경우 하위 처리자의 추가·교체 계획을 컨트롤러에 알려 이의를 제기할 기회를 주어야 한다.",
+   "actor": "processor",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "하위 처리자 추가·교체 전(사전 통지)",
+   "anchor": "shall not engage another processor without prior specific or general written authorisation of the controller",
+   "gateway_control_ko": "승인된 서버의 연결 목적지·구성이 바뀌면 변경 감시로 탐지하고 재승인 전까지 호출을 막는다. 서면 승인과 하위 처리자 통지는 계약 절차이며, 게이트웨이는 목적지 변경 탐지와 재승인 기록을 제공한다.",
+   "pol_ids": [
+    "POL-07",
+    "POL-37",
+    "POL-33"
+   ]
+  },
+  {
+   "ref": "Art. 28(3)(a)",
+   "topic_ko": "문서화된 지시에 따른 처리",
+   "obligation_ko": "처리자와의 계약에는 처리자가 제3국·국제기구로의 이전을 포함해 컨트롤러의 문서화된 지시에 따라서만 개인정보를 처리한다는 내용이 들어가야 한다(연합·회원국법상 의무가 있으면 처리 전에 컨트롤러에 알림).",
+   "actor": "processor",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "processes the personal data only on documented instructions from the controller",
+   "gateway_control_ko": "서버별 허용 도구·목적지·데이터 분류를 정책으로 고정해 승인 범위를 벗어난 처리와 제3국 전송을 막는다. 지시 문서와 계약 체결은 게이트웨이 밖이며, 정책이 그 지시의 기술적 집행본이 된다.",
+   "pol_ids": [
+    "POL-07",
+    "POL-26",
+    "POL-33"
+   ]
+  },
+  {
+   "ref": "Art. 28(3)(g)",
+   "topic_ko": "처리 종료 후 삭제 또는 반환",
+   "obligation_ko": "계약에는 처리자가 서비스 종료 후 컨트롤러의 선택에 따라 개인정보를 모두 삭제하거나 반환하고 기존 사본을 삭제한다는 내용이 들어가야 한다(연합·회원국법이 보관을 요구하는 경우 제외).",
+   "actor": "processor",
+   "strength": "mandatory",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "서비스 제공 종료 후",
+   "anchor": "deletes or returns all the personal data to the controller after the end of the provision of services",
+   "gateway_control_ko": "연결 폐기 때 제공자에게 남은 전달 문서·결과의 반환·삭제를 요구하고 완료 확인을 폐기 체크리스트와 원장에 기록한다. 제공자 내부의 실제 삭제는 게이트웨이가 확인할 수 없고 제공자 확인서나 감사에 의존한다.",
+   "pol_ids": [
+    "POL-49",
+    "POL-48"
+   ]
+  },
+  {
+   "ref": "Art. 28(3)(h)",
+   "topic_ko": "준수 입증 정보 제공과 감사 수용",
+   "obligation_ko": "계약에는 처리자가 이 조의 의무 준수를 입증하는 데 필요한 모든 정보를 컨트롤러에게 제공하고 컨트롤러 또는 위임받은 감사인의 점검을 포함한 감사를 허용·지원한다는 내용이 들어가야 한다.",
+   "actor": "processor",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "allow for and contribute to audits, including inspections, conducted by the controller or another auditor mandated by the controller",
+   "gateway_control_ko": "MINT가 처리자로 호스팅되는 경우 원장·정책·승인 기록을 감사 자료로 내보낸다. 제3자 MCP 서버 제공자에 대해서는 감사 수용 여부를 도입 심사 확인 항목으로 둔다.",
+   "pol_ids": [
+    "POL-07",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Art. 30(1)",
+   "topic_ko": "처리 활동 기록",
+   "obligation_ko": "컨트롤러(해당 시 대리인)는 책임 하의 처리 활동 기록을 유지해야 하며, 컨트롤러·DPO 연락처, 처리 목적, 정보주체·개인정보 범주, 수령자 범주(제3국 포함), 제3국 이전의 내용(제49조제1항 둘째 문단의 이전은 적절한 보호조치 문서화 포함), 가능한 경우 삭제 기한, 가능한 경우 보안 조치의 일반 설명을 담는다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "삭제 기한은 가능한 경우에 한함",
+   "anchor": "shall maintain a record of processing activities under its responsibility",
+   "gateway_control_ko": "서버·도구 등록부와 도입 승인 기록에서 목적, 데이터 분류, 수령자(서버), 제3국 목적지, 보관 기간, 적용 보안 조치를 채워 내보낼 수 있게 한다. 처리 활동 기록 대장의 작성·유지는 조직 책임이다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "Art. 32(1)",
+   "topic_ko": "처리의 보안",
+   "obligation_ko": "컨트롤러와 처리자는 위험에 비례하는 보안 수준을 보장하도록 적절한 기술적·조직적 조치를 이행해야 하며, 필요에 따라 가명처리·암호화, 기밀성·무결성·가용성·복원력 확보, 사고 후 신속한 복구 능력, 조치의 정기적 시험·평가 절차를 포함한다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "조치의 정기적 시험·평가(주기는 정해져 있지 않음)",
+   "anchor": "implement appropriate technical and organisational measures to ensure a level of security appropriate to the risk",
+   "gateway_control_ko": "전송 구간 암호화, 서버별 자격 증명 분리·회수, 요청별 권한 검사, 이상 징후 경보와 자동 중지, 취약점 조치 이력을 보안 조치 증빙으로 제공한다. 위험에 비례하는 조치의 선택은 조직의 판단이다.",
+   "pol_ids": [
+    "POL-16",
+    "POL-38",
+    "POL-39",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "Art. 33(1)",
+   "topic_ko": "감독기관에 대한 침해 통지(72시간)",
+   "obligation_ko": "개인정보 침해가 발생하면 컨트롤러는 침해를 인지한 때부터 지체 없이, 가능하면 72시간 이내에 관할 감독기관에 통지해야 한다. 정보주체의 권리·자유에 위험이 될 가능성이 낮으면 통지하지 않아도 되며, 72시간을 넘기면 지연 사유를 함께 제출한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "인지 후 지체 없이, 가능하면 72시간 이내(초과 시 지연 사유 첨부)",
+   "anchor": "the controller shall without undue delay and, where feasible, not later than 72 hours",
+   "gateway_control_ko": "경보가 침해 의심을 탐지한 시각을 원장에 남겨 컨트롤러가 '인지한 때'를 판단할 때 참고할 자료로 제공하고(기산점의 법적 판단은 조직의 몫), 호출·주체·데이터 분류별 영향 범위 조회로 통지 항목 작성을 돕는다. 감독기관 통지 자체는 조직 절차다.",
+   "pol_ids": [
+    "POL-42",
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Art. 33(2)",
+   "topic_ko": "처리자의 컨트롤러 통지",
+   "obligation_ko": "처리자는 개인정보 침해를 인지한 후 지체 없이 컨트롤러에게 알려야 한다. 이 조항에는 시간 수치가 정해져 있지 않다.",
+   "actor": "processor",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "인지 후 지체 없이(시간 수치 없음)",
+   "anchor": "The processor shall notify the controller without undue delay after becoming aware of a personal data breach",
+   "gateway_control_ko": "MINT가 처리자로 호스팅되는 경우 침해 인지 즉시 컨트롤러에게 가는 경보·통지 경로를 둔다. 제3자 MCP 서버 제공자의 통지 의무와 통지 기한은 도입 심사의 계약 확인 항목으로 둔다.",
+   "pol_ids": [
+    "POL-43",
+    "POL-07"
+   ]
+  },
+  {
+   "ref": "Art. 33(5)",
+   "topic_ko": "침해 문서화",
+   "obligation_ko": "컨트롤러는 모든 개인정보 침해에 대해 사실관계, 영향, 취한 시정 조치를 문서화해야 하며, 이 문서는 감독기관이 이 조의 준수를 확인할 수 있게 해야 한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "The controller shall document any personal data breaches, comprising the facts relating to the personal data breach",
+   "gateway_control_ko": "침해 사실·영향·조치를 사건 기록과 원장에 남기고 감독기관 검증용으로 내보낼 수 있게 한다. 위험이 낮아 통지하지 않은 침해도 문서화 대상이므로 통지 여부와 별개로 기록한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Art. 35(1)",
+   "topic_ko": "개인정보 영향평가(DPIA)",
+   "obligation_ko": "신기술을 쓰는 등 처리가 정보주체의 권리·자유에 높은 위험을 초래할 가능성이 있으면 컨트롤러는 처리 전에 영향평가를 해야 한다. 제35조제3항은 자동화된 처리에 기반한 체계적·광범위한 평가로 법적 효과가 있는 결정을 하는 경우, 특수 범주 또는 범죄 경력 정보의 대규모 처리, 공개 장소의 대규모 체계적 감시를 필수 사례로 든다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "처리 개시 전(사전)",
+   "anchor": "carry out an assessment of the impact of the envisaged processing operations on the protection of personal data",
+   "gateway_control_ko": "도입 신청에 영향평가 대상 여부(신기술, 자동화된 평가, 대규모 민감정보)를 선별하는 필수 항목을 두고 평가 문서 링크를 승인 기록에 첨부한다. 평가 수행은 게이트웨이가 하지 않는다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "Art. 44",
+   "topic_ko": "제3국 이전의 일반 원칙",
+   "obligation_ko": "처리 중이거나 이전 후 처리될 개인정보를 제3국·국제기구로 이전하는 것은 제5장의 조건을 컨트롤러와 처리자가 지킬 때만 할 수 있고, 제3국에서 다른 제3국으로의 재이전에도 적용된다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "cross_border_transfer",
+   "timing_ko": "",
+   "anchor": "Any transfer of personal data which are undergoing processing or are intended for processing after transfer to a third country",
+   "gateway_control_ko": "서버·모델 제공자의 처리 위치와 목적지 국가를 도입 기록에 남기고, 승인되지 않은 국가·도메인으로 개인정보가 가는 호출을 목적지 제한과 실제 연결 대상 검증(DNS·리디렉션·TLS)으로 차단한다.",
+   "pol_ids": [
+    "POL-26",
+    "POL-30",
+    "POL-07"
+   ]
+  },
+  {
+   "ref": "Art. 45(1)",
+   "topic_ko": "적정성 결정에 근거한 이전",
+   "obligation_ko": "집행위원회가 제3국·지역·특정 부문 또는 국제기구가 적정한 보호 수준을 보장한다고 결정한 경우 그곳으로의 이전에는 별도의 승인이 필요 없다. 적정성 결정은 최소 4년마다 정기 검토 절차를 두며(제45조제3항), 목록은 집행위원회가 게재한다(제45조제8항).",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "cross_border_transfer",
+   "timing_ko": "적정성 결정의 정기 검토는 최소 4년마다(제45조제3항)",
+   "anchor": "may take place where the Commission has decided that the third country",
+   "gateway_control_ko": "승인 목적지의 국가별 이전 근거(적정성 결정 또는 제46조 보호조치)를 목적지 등록부의 필드로 보관하고, 근거가 없는 목적지로의 개인정보 전송은 막는다. 적정성 목록은 이 규정 본문에 없으므로 집행위원회 게재본을 별도로 확인한다.",
+   "pol_ids": [
+    "POL-07",
+    "POL-26"
+   ]
+  },
+  {
+   "ref": "Art. 46(1)",
+   "topic_ko": "적절한 보호조치에 근거한 이전",
+   "obligation_ko": "적정성 결정이 없으면 컨트롤러·처리자는 적절한 보호조치를 제공하고 집행 가능한 정보주체 권리와 실효적 구제수단이 있을 때만 제3국으로 이전할 수 있다. 제46조제2항은 집행위 표준 계약조항, 구속력 있는 기업 규칙(BCR) 등을 감독기관의 별도 승인 없이 쓸 수 있는 수단으로 든다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "cross_border_transfer",
+   "timing_ko": "",
+   "anchor": "may transfer personal data to a third country or an international organisation only if the controller or processor has provided appropriate safeguards",
+   "gateway_control_ko": "표준 계약조항·BCR 등 보호조치 문서의 링크와 유효 기간을 목적지 등록부에 보관하고, 만료되었거나 미등록이면 재승인을 요구한다. 제49조의 예외는 적정성 결정과 보호조치가 모두 없을 때만 쓰는 예외이므로(그중 정당한 이익 근거는 반복적이지 않아야 함, 제49조제1항 둘째 문단) 상시 연결의 근거로 쓰지 않도록 정책 검토 항목으로 둔다.",
+   "pol_ids": [
+    "POL-07",
+    "POL-26"
+   ]
+  },
+  {
+   "ref": "Art. 99(2)",
+   "topic_ko": "적용 개시일",
+   "obligation_ko": "이 규정은 2018년 5월 25일부터 적용된다(발효는 관보 게재 후 20일째 날, 제99조제1항).",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "2018-05-25부터 적용",
+   "anchor": "It shall apply from 25 May 2018",
+   "gateway_control_ko": "해당 없음(적용일 정보).",
+   "pol_ids": []
+  }
+ ],
+ "pitfalls_ko": [
+  "이 규정은 AI나 MCP를 직접 규율하지 않는 일반 개인정보보호법이다. 도구 호출의 인자·응답·감사 기록에 제4조제1호 의미의 개인정보가 들어갈 때 적용되므로, 분류 결과가 적용 여부의 출발점이다.",
+  "게이트웨이 운영자가 컨트롤러인지 처리자인지는 배치 방식(자체 구축인지 MINT 사업자가 호스팅하는지)에 따라 달라지며, 이 문서만으로 확정할 수 없다. 역할에 따라 제28조 계약과 제33조제2항 통지 의무가 걸린다.",
+  "제33조의 72시간은 컨트롤러가 '침해를 인지한 때'부터 감독기관에 통지하는 기한이다. 처리자의 컨트롤러 통지는 '지체 없이'일 뿐 시간 수치가 없다. 위험 가능성이 낮으면 통지는 면제되지만 모든 침해의 문서화(제33조제5항)는 면제되지 않는다.",
+  "제17조 삭제권(예외는 제17조제3항)과 추가 전용 감사 원장은 충돌할 수 있다. 원장에는 개인정보를 최소화·마스킹·가명 처리해 기록하는 설계가 필요하다.",
+  "제22조는 '오로지 자동화된 처리에만 근거한' 결정에 걸린다. 사람의 승인 단계가 이 요건을 벗어나게 하는지, 승인이 형식적이어도 되는지는 이 조문만으로 판단할 수 없고 판례·EDPB 지침(읽지 않음)을 확인해야 한다.",
+  "제30조제5항의 250명 미만 기록 의무 면제는 위험 가능성이 있거나 처리가 일시적이지 않거나 특수 범주·범죄 경력 정보를 포함하면 적용되지 않는다. 면제 여부는 세 단서를 모두 따져야 한다.",
+  "과징금 상한(제83조): 제25~39조 등 컨트롤러·처리자 의무 위반은 1천만 유로 또는 직전 연도 전 세계 매출의 2% 중 큰 금액(제83조제4항), 제5·6·7·9조 원칙, 제12~22조 정보주체 권리, 제44~49조 제3국 이전 위반은 2천만 유로 또는 4% 중 큰 금액(제83조제5항)이다.",
+  "적정성 결정 국가 목록과 표준 계약조항은 집행위원회의 별도 결정으로 정해지며 이 규정 본문에 없다. 최신 목록은 집행위원회 게재본에서 확인해야 한다.",
+  "디지털 옴니버스(COM(2025) 837)는 이 규정의 개정을 포함하는 제안이며 유럽의회 입법관측소(2026-10-17 열람)상 위원회 단계에서 채택되지 않았다. 이 노트의 조문은 현행 원문 기준이고, 제안 내용이 확정되면 달라질 수 있다.",
+  "이 PDF는 관보 최초 게재본이다. CELLAR가 연결한 정오표 3건(OJ L 314/2016, L 127/2018, L 74/2021)은 반영되어 있지 않으므로, 조문 인용 전에 EUR-Lex의 정정본과 대조해야 한다.",
+  "회원국법이 추가 조건을 둘 수 있는 항목(예: 제9조제4항의 생체·유전·건강정보)은 이 문서에 회원국 규정이 없다. EU 역내 배치 시 국가별 법을 따로 확인해야 한다."
+ ],
+ "reading_scope_ko": "EUR-Lex PDF(OJ L 119 pp.1-88, 88쪽, 텍스트 층 추출, OCR 없음) 중 제1~6조, 제9조, 제12~13조, 제17조, 제22조, 제24~36조, 제44~46조, 제49조, 제83조, 제98~99조를 직접 읽고 인용했다. 제7·8·10·11·14~16·18~21·23·37~43·47·48·50~82·84~97조와 전문(recital)은 읽지 않았다(제목·조문 번호 목록만 확인). 조문 번호는 추출문에서 확인했고 각 anchor의 위치를 조문 줄 번호로 대조했다.",
+ "limitations_ko": "법률 자문이나 적합성 판단이 아니다. 영어 원문만 읽었고 한국어 요약은 직접 옮긴 것이다. 정오표 3건의 내용, 전문, EDPB 지침, 유럽사법재판소 판례, 회원국 시행법, 적정성 결정·표준 계약조항을 읽지 않았다. 상태 확인은 Publications Office CELLAR 레코드(in-force true, 개정 법령 연결 없음)와 유럽의회 입법관측소 절차 페이지(2026-10-17 열람)에 의존했다. EUR-Lex ELI·HTML 페이지는 봇 차단(HTTP 202)으로 열람하지 못했고, 인증 효력은 관보 게재본에만 있다.",
+ "license_notice": "EUR-Lex 법적 고지(https://eur-lex.europa.eu/content/legal-notice/legal-notice.html, 2026-10-17 직접 열람)의 저작권 항목은 '© European Union, 1998-2026'이며 집행위원회의 문서 재사용 정책이 결정 2011/833/EU에 근거한다고 밝히고, 다른 지정이 없는 한 EUR-Lex에 게재된 법률 문서(legal documents)를 상업·비상업 목적으로 재사용할 수 있다고 정한다. 국제회계기준 등 일부 문서는 해당 관보·문서에 표시된 별도 조건이 있다. 이 PDF에는 별도 사용 조건 표시가 없다(추출문에서 저작권·라이선스 문구 검색). 편집 콘텐츠·법령 요약·통합본은 CC BY 4.0이다.",
+ "distribution": "public-under-license",
+ "distribution_reason": "EUR-Lex 법적 고지가 다른 지정이 없는 한 EUR-Lex에 게재된 법률 문서의 상업·비상업 재사용을 명시적으로 허용하고, 이 PDF 자체에 별도 조건이 없다. 본문을 바꾸지 않고 출처 URL과 SHA-256을 병기해 보존한다. 고지 주체는 관보 발행처인 Publications Office이며, 발행기관(유럽의회·이사회)의 별도 고지는 확인하지 않았으므로 중앙 검수에서 재확인할 수 있다."
+}

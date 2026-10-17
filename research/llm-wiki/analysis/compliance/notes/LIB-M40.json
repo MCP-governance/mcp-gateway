@@ -1,0 +1,487 @@
+{
+ "id": "LIB-M40",
+ "title": "ETSI EN 304 223 V2.1.1 (2025-12) Securing Artificial Intelligence (SAI); Baseline Cyber Security Requirements for AI Models and Systems",
+ "title_native": "",
+ "issuer": "ETSI(유럽전기통신표준협회) 기술위원회 SAI. ETSI 소개 글(2026-05)은 영국 NCSC·DSIT가 자신들의 'Cyber Security of AI Code of Practice' 등을 바탕으로 기여했다고 밝힌다. PDF 본문은 'the voluntary Code'라고만 언급한다.",
+ "jurisdiction": "INTL",
+ "instrument_type": "standard",
+ "binding": false,
+ "status": "voluntary",
+ "edition": "V2.1.1 (2025-12), 유럽 표준(EN), 16쪽",
+ "key_dates": "서문 표기: EN 채택일 2025-12-08, 최근 공고(doa) 2026-03-31, 국가 표준 발행 또는 승인(dop/e) 2026-09-30, 충돌하는 국가 표준 철회(dow) 2026-09-30. 이력: V1.1.1 2025년 4월 ETSI TS 104 223로 발행, V2.0.0 2025년 9월 승인 절차(2025-09-08~12-08), V2.1.1 2025년 12월 발행. ETSI deliver 폴더 목록(2026-10-17 조회): 02.00.00_20(2025-09-05), 02.01.01_60(2025-12-12)만 있고 이후 판은 없다.",
+ "language": "en",
+ "official_page_url": "https://www.etsi.org/deliver/etsi_en/304200_304299/304223/",
+ "summary_ko": "AI 모델과 시스템에 대한 기준선 사이버보안 요구사항을 13개 원칙(보안 설계, 개발, 배포, 유지보수, 수명 종료의 5단계)과 조항(Provision)으로 정한 유럽 표준이다. 개발자, 시스템 운영자, 데이터 관리자, 최종 사용자, 영향을 받는 주체의 이해관계자를 정의하고 각 원칙의 1차 책임 주체를 명시한다. 'shall' 조항이 많은 규범적 표준이다.",
+ "scope_ko": "딥 뉴럴 네트워크를 포함하는 AI 시스템(생성형 AI 포함)의 모델과 시스템이 범위이며 배포하지 않는 순수 연구용 AI 시스템은 대상이 아니다. 문서 본문은 EU 인공지능법을 비규범(informative) 참조와 이해관계자 표에서만 언급하며 조화표준이라는 표시는 없다. ETSI 소개 글은 이 표준이 AI법의 사이버보안 조항 이행을 돕도록 설계됐다고 하지만 조화표준 지위는 말하지 않는다. 2026-10-17 기준 EU 조화표준 지위는 이 노트에서 확인하지 못했다.",
+ "provisions": [
+  {
+   "ref": "Foreword",
+   "topic_ko": "국가 표준 전환 일정(채택·발행·충돌 표준 철회일)",
+   "obligation_ko": "EN 채택일은 2025-12-08이며 최근 공고일 2026-03-31, 국가 표준 발행 또는 승인과 충돌하는 국가 표준 철회는 2026-09-30로 표기돼 있다. 기한이 지났는지는 회원국 표준 기관별로 확인해야 한다.",
+   "actor": "authority",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "채택 2025-12-08, 국가 표준 발행·충돌 철회 2026-09-30",
+   "anchor": "Date of adoption of this EN",
+   "gateway_control_ko": "해당 없음(표준 전환 일정). 제품 요구사항 문서에서 표준 판본(V2.1.1)을 명시한다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "1 Scope",
+   "topic_ko": "AI 모델·시스템의 기준선 보안 요구사항, 연구용 제외",
+   "obligation_ko": "이 표준은 AI 모델과 시스템의 기준선 보안 요구사항을 정하고 생성형 AI 같은 딥 뉴럴 네트워크 시스템을 범위에 넣는다. 배포 목적이 없는 연구용 AI 시스템은 설계 대상이 아니다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "The present document defines baseline security requirements for AI models and systems.",
+   "gateway_control_ko": "해당 없음(적용 범위). 도입 대상 MCP 서버·에이전트가 AI 시스템에 해당하는지 도입 신청서에서 구분한다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "4 Stakeholders",
+   "topic_ko": "개발자·시스템 운영자·데이터 관리자·최종 사용자 구분과 EU AI법 역할 대응",
+   "obligation_ko": "이해관계자를 개발자, 시스템 운영자, 데이터 관리자, 최종 사용자, 영향을 받는 주체로 나누고 각 원칙의 1차 책임 주체를 표시한다. 한 조직이 여러 역할을 겸할 수 있으며 개발자는 EU AI법의 제공자, 시스템 운영자는 배포자에 해당할 수 있다고 한다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "A single entity can hold multiple",
+   "gateway_control_ko": "해당 없음(역할 정의). 게이트웨이를 운영하는 기업은 시스템 운영자 조항, MCP 서버 제공자는 개발자 조항에 대응시켜 요구사항을 나눌 수 있다(표준이 정한 대응이 아니라 이 노트의 해석).",
+   "pol_ids": []
+  },
+  {
+   "ref": "5.1.1-1 / 5.1.1-1.1",
+   "topic_ko": "사이버보안 교육에 AI 보안 내용을 포함하고 정기 갱신",
+   "obligation_ko": "조직의 사이버보안 교육 프로그램에 AI 보안 내용을 포함하고 정기적으로 검토·갱신해야 하며(예: 중대한 새 AI 보안 위협이 나타날 때), 교육은 직원의 역할과 책임에 맞춰야 한다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "정기 검토·갱신",
+   "anchor": "cyber security training programme shall include AI security content",
+   "gateway_control_ko": "해당 없음(조직 절차).",
+   "pol_ids": []
+  },
+  {
+   "ref": "5.1.2-1",
+   "topic_ko": "AI 시스템 도입 결정 시 사업 요구와 AI 보안 위험·완화 방안 평가",
+   "obligation_ko": "AI 시스템을 만들지 결정할 때 해결하려는 사업 요구와 관련 AI 보안 위험, 완화 전략을 판단하고 문서화하는 철저한 평가를 해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "",
+   "anchor": "conduct a thorough assessment that includes determining and documenting the business requirements",
+   "gateway_control_ko": "MCP 서버 도입 신청서에 기능, 목적, 데이터, 필요 권한과 위험 평가를 필수로 받아 도입 대장에 보관한다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "5.1.2-2",
+   "topic_ko": "적대적 공격·예상 밖 입력·시스템 장애를 견디는 설계",
+   "obligation_ko": "개발자와 시스템 운영자는 적대적 AI 공격, 예상치 못한 입력, AI 시스템 장애를 견디도록 AI 시스템을 설계·구현해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "withstand adversarial AI attacks, unexpected inputs and AI system failure",
+   "gateway_control_ko": "입력값과 실행 대상 정규화·검사, 비정상 호출 한도, 정책 엔진 불능 시 차단(fail-closed)을 기본 동작으로 둔다.",
+   "pol_ids": [
+    "POL-24",
+    "POL-28",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "5.1.2-3",
+   "topic_ko": "모델·데이터셋·프롬프트의 운영과 수명주기 감사 추적 문서화",
+   "obligation_ko": "개발자는 보안 감사와 사고 대응을 위해 AI 시스템에 포함된 모델, 데이터셋, 프롬프트의 운영과 수명주기 관리에 대한 감사 추적을 문서화하고 만들어야 한다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Developers shall document and create an audit trail in relation to the AI system.",
+   "gateway_control_ko": "게이트웨이가 호출·권한 변경·폐기 이력을 추가 전용 원장에 남겨 운영 단계의 감사 추적을 증빙한다(개발 단계의 문서화는 제공자 책임).",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "5.1.2-4",
+   "topic_ko": "외부 구성요소 사용 시 AI 보안 위험 평가와 실사",
+   "obligation_ko": "개발자나 시스템 운영자가 외부 구성요소를 쓰면 기존 소프트웨어 개발 절차에 맞춰 AI 특유의 위험을 평가하는 AI 보안 위험 평가와 실사를 해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "conduct an AI security risk assessment and due diligence process",
+   "gateway_control_ko": "외부 MCP 서버와 의존성의 출처·무결성·취약점·업데이트 지원 여부를 도입 전 점검 항목으로 필수화한다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-03",
+    "POL-07"
+   ]
+  },
+  {
+   "ref": "5.1.2-6",
+   "topic_ko": "AI 시스템이 다른 시스템에서 갖는 권한을 기능에 필요한 만큼으로 한정하고 위험 평가",
+   "obligation_ko": "AI 시스템이 내외부 다른 시스템이나 데이터 소스와 상호작용할 때 개발자와 시스템 운영자는 그 시스템에 부여한 권한이 기능에 필요한 범위로만 주어지고 위험 평가를 받았음을 보장해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "the permissions granted to the AI system on other systems are only provided as required for functionality and are risk assessed",
+   "gateway_control_ko": "서버·기능·작업 단위 허용 목록과 최소 권한을 강제하고 필요 권한을 도입 신청서에 근거와 함께 기록·검토한다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-11",
+    "POL-22",
+    "POL-23"
+   ]
+  },
+  {
+   "ref": "5.1.2-7",
+   "topic_ko": "외부 제공자에 대한 실사와 표준 준수 확인",
+   "obligation_ko": "외부 제공자와 협력하기로 하면 실사를 해야 하며 제공자가 이 표준을 따르는지 확인하는 것이 바람직하다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "they shall undertake a due diligence assessment",
+   "gateway_control_ko": "제공자의 보안 업데이트 지원, 문서 처리 조건, 인증정보 취급을 도입 신청서 필수 항목으로 받는다.",
+   "pol_ids": [
+    "POL-03",
+    "POL-07",
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "5.1.3-1 / 5.1.3-1.1",
+   "topic_ko": "위협 모델링과 설정 변경 시 재분석",
+   "obligation_ko": "개발자와 시스템 운영자는 위협을 분석하고 보안 위험을 관리해야 한다. 위협 모델링은 정기 검토·갱신을 포함하고 데이터 오염, 모델 역전, 멤버십 추론 같은 AI 특유 공격을 다루는 것이 바람직하다(should). 생애주기 어느 단계든 새 설정이나 옵션이 구현·갱신될 때 생기는 보안 위험을 다루도록 위협 모델링과 위험관리를 수행해야 한다(shall).",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "설정 변경 시, 정기 검토",
+   "anchor": "shall analyse threats and manage security risks to their systems",
+   "gateway_control_ko": "승인된 서버의 도구 목록, 판본, 연결 주소 변경을 감지해 재검토·재승인 절차로 연결한다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-40",
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "5.1.3-1.2",
+   "topic_ko": "불필요한 기능을 가진 모델의 위험 관리",
+   "obligation_ko": "개발자는 불필요한 기능을 제공하는 AI 모델과 관련한 보안 위험을 관리해야 하며, 예로 다중 모달 모델을 쓰면서 단일 모달만 쓰는 경우를 든다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "manage the security risks associated with AI models that provide superfluous",
+   "gateway_control_ko": "사용 중인 기능만 서버별로 등록하고 등록되지 않은 도구·기능은 호출을 거부한다.",
+   "pol_ids": [
+    "POL-11",
+    "POL-22"
+   ]
+  },
+  {
+   "ref": "5.1.3-2",
+   "topic_ko": "해결하지 못한 AI 보안 위협을 시스템 운영자와 최종 사용자에게 전달",
+   "obligation_ko": "개발자가 해결할 수 없는 AI 보안 위협은 시스템 운영자에게 알려 운영자가 위협 모델링을 하게 하고, 운영자는 이를 최종 사용자에게 알려야 하며, 알림에는 위험과 영향, 권장 조치를 상세히 설명하는 것이 바람직하다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "transparency_labelling",
+   "timing_ko": "",
+   "anchor": "System Operators shall communicate this information to End-users",
+   "gateway_control_ko": "도입 승인 화면과 승인 요청에 서버의 알려진 위험·제한 사항을 표시한다.",
+   "pol_ids": [
+    "POL-08",
+    "POL-27"
+   ]
+  },
+  {
+   "ref": "5.1.4-1 / 5.1.4-3",
+   "topic_ko": "인적 감독 능력 설계와 인적 감독을 위험 통제로 쓸 때의 기술적 조치",
+   "obligation_ko": "AI 시스템 설계 때 인적 감독을 가능하게 하는 기능을 포함하고 유지하는 것이 바람직하며, 인적 감독이 위험 통제로 쓰이는 경우 개발자와 운영자는 그 감독을 통해 위험을 줄이는 기술적 조치를 설계·개발·검증·유지해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "human_oversight",
+   "timing_ko": "",
+   "anchor": "Where human oversight is a risk control, Developers and/or System Operators shall design, develop,",
+   "gateway_control_ko": "고위험 요청의 대상과 내용을 승인자에게 제시하고 개별 승인을 받은 뒤에만 실행하며 승인 기록을 원장에 남긴다.",
+   "pol_ids": [
+    "POL-27",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "5.2.1-1 / 5.2.1-2",
+   "topic_ko": "AI 자산 인벤토리와 추적·인증·버전 관리",
+   "obligation_ko": "개발자, 데이터 관리자, 시스템 운영자는 자산(상호 의존성과 연결성 포함)의 포괄적 인벤토리를 유지하고, AI 특유의 복잡성 때문에 자산을 추적·인증·버전 관리·보호하는 프로세스와 도구를 갖춰야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "shall maintain a comprehensive inventory of",
+   "gateway_control_ko": "승인된 서버·기능·판본·계약 잠금을 도입 대장에 보관하고 변경 이력을 남긴다.",
+   "pol_ids": [
+    "POL-11",
+    "POL-37",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "5.2.1-3 / 5.2.1-3.1",
+   "topic_ko": "AI 공격을 반영한 재해 복구 계획과 알려진 정상 상태 복원 가능성",
+   "obligation_ko": "시스템 운영자는 AI 시스템을 겨냥한 공격을 반영해 재해 복구 계획을 마련·조정해야 하며(shall), 알려진 정상 상태를 복원할 수 있도록 하는 것이 바람직하다(should).",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "System Operators should ensure that a known good state can be restored.",
+   "gateway_control_ko": "백업·스냅샷 복원 후 폐기된 연결이 재활성화되지 않도록 폐기 목록을 별도로 관리한다.",
+   "pol_ids": [
+    "POL-50",
+    "POL-37"
+   ]
+  },
+  {
+   "ref": "5.2.1-4.1",
+   "topic_ko": "데이터와 입력의 점검·정화를 모델 개정 때마다 반복",
+   "obligation_ko": "개발자, 데이터 관리자, 시스템 운영자는 모델을 설계할 때 데이터와 입력에 대한 접근 및 저장 위치에 따라 점검과 정화를 적용해야 하며, 사용자 피드백이나 지속 학습으로 모델을 개정할 때마다 이를 반복해야 한다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "모델 개정 시 반복",
+   "anchor": "shall apply checks and sanitisation to data and",
+   "gateway_control_ko": "도구 입력은 정규화한 실제 값과 실행 대상을 검사하고 응답의 민감정보를 제거·마스킹한 뒤 전달한다.",
+   "pol_ids": [
+    "POL-24",
+    "POL-30",
+    "POL-31"
+   ]
+  },
+  {
+   "ref": "5.2.2-1",
+   "topic_ko": "API·모델·데이터·파이프라인을 지키는 접근통제 체계 평가",
+   "obligation_ko": "개발자와 시스템 운영자는 조직의 접근통제 체계를 평가하고 API, 모델, 데이터, 학습·처리 파이프라인을 보호할 적절한 조치를 파악해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "identify appropriate measures to secure APIs, models, data, and training and processing pipelines",
+   "gateway_control_ko": "신원은 전송 토큰으로만 확인하고 위임 범위와 서버·기능·작업별 권한을 호출마다 검증한다.",
+   "pol_ids": [
+    "POL-19",
+    "POL-20",
+    "POL-22",
+    "POL-23"
+   ]
+  },
+  {
+   "ref": "5.2.2-2",
+   "topic_ko": "외부에 API를 제공하는 개발자의 모델 접근 속도 제한",
+   "obligation_ko": "외부 고객이나 협력자에게 API를 제공하는 개발자는 API를 통한 AI 시스템 공격을 완화하는 통제를 적용해야 하며, 예로 모델 접근 속도를 제한해 공격자의 역공학이나 모델 신속 오염 시도를 어렵게 한다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "placing limits on model access rate",
+   "gateway_control_ko": "주체·서버·기능별 호출량과 동시 실행, 실행 시간 한도를 두고 초과 시 거부·경보한다.",
+   "pol_ids": [
+    "POL-28",
+    "POL-35"
+   ]
+  },
+  {
+   "ref": "5.2.2-3",
+   "topic_ko": "개발·튜닝 전용 환경과 최소 권한·분리",
+   "obligation_ko": "개발자는 개발과 모델 튜닝을 위한 전용 환경을 만들고 기술적 통제로 분리와 최소 권한 원칙을 보장해야 한다. 공개 데이터가 아닌 학습 데이터는 학습·개발 환경에만 있어야 한다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "The dedicated environments shall be backed by technical controls to ensure separation and principle of least privilege",
+   "gateway_control_ko": "개발·시험·운영 환경의 접근을 분리하고 시험 데이터에 운영 개인정보를 쓰지 않도록 도입 단계에서 확인한다.",
+   "pol_ids": [
+    "POL-09"
+   ]
+  },
+  {
+   "ref": "5.2.2-4 / 5.2.2-5",
+   "topic_ko": "취약점 공개 정책 게시와 AI 사고관리·복구 계획의 작성·시험·유지",
+   "obligation_ko": "개발자와 시스템 운영자는 명확하고 접근 가능한 취약점 공개 정책을 시행·게시해야 하고, AI 시스템 사고관리 계획과 복구 계획을 만들고 시험하고 유지해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "",
+   "anchor": "shall create, test and maintain an AI system incident management plan",
+   "gateway_control_ko": "해당 없음(조직 절차). 사고 계획의 시험 항목으로 서버별 승인 철회, 토큰 회수, 후속 호출 거부를 포함한다.",
+   "pol_ids": [
+    "POL-43",
+    "POL-44",
+    "POL-45"
+   ]
+  },
+  {
+   "ref": "5.2.3-1 / 5.2.3-2",
+   "topic_ko": "안전한 소프트웨어 공급망 절차, 문서화·보호가 부족한 구성요소는 정당화와 완화 통제",
+   "obligation_ko": "개발자와 시스템 운영자는 AI 모델·시스템 개발에 안전한 소프트웨어 공급망 절차를 따라야 한다. 문서화나 보안이 충분하지 않은 모델·구성요소를 쓰거나 개조하는 시스템 운영자는 그 결정을 문서로 정당화할 수 있어야 하고, 개발자와 운영자는 완화 통제와 위험 평가를 하며, 운영자는 그 문서를 최종 사용자에게 접근 가능한 방식으로 공유해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "shall follow secure software supply chain processes",
+   "gateway_control_ko": "배포처·배포자·서명·해시 검증이 안 되는 서버는 도입을 보류하거나 예외 승인과 완화 통제를 기록한다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-17",
+    "POL-39"
+   ]
+  },
+  {
+   "ref": "5.2.3-4",
+   "topic_ko": "모델 갱신 의사를 최종 사용자에게 사전 통지",
+   "obligation_ko": "시스템 운영자는 모델을 갱신하기 전에 갱신 의사를 최종 사용자에게 접근 가능한 방식으로 알려야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "transparency_labelling",
+   "timing_ko": "갱신 전",
+   "anchor": "shall communicate their intention to update models to End-users",
+   "gateway_control_ko": "서버의 도구 목록·판본이 바뀌면 재승인 요청과 함께 변경 내용을 사용자에게 보여 준다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-08"
+   ]
+  },
+  {
+   "ref": "5.2.4-1.2",
+   "topic_ko": "모델 구성요소의 암호 해시 공개로 진위 검증",
+   "obligation_ko": "개발자는 다른 이해관계자에게 제공하는 모델 구성요소의 암호 해시를 공개해 진위를 검증할 수 있게 해야 한다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "shall release cryptographic hashes for model components",
+   "gateway_control_ko": "도입 때 공급자가 공개한 해시·서명과 내려받은 배포물을 대조하고 결과를 보관한다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-17"
+   ]
+  },
+  {
+   "ref": "5.2.4-3",
+   "topic_ko": "시스템 프롬프트·모델 설정 변경의 감사 로그",
+   "obligation_ko": "개발자는 시스템 프롬프트와 모델 동작에 영향을 주는 설정의 변경 감사 로그를 유지하는 것이 바람직하며 접근 권한이 있는 운영자와 최종 사용자에게 제공할 수 있다.",
+   "actor": "provider",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "audit log of changes to system prompts or other model configuration",
+   "gateway_control_ko": "도구 설명·서버 구성의 변경을 감지해 변경 이력을 원장에 기록하고 재승인 전까지 변경된 구성을 승인된 것으로 취급하지 않는다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-04",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "5.2.5-1 / 5.2.5-2 / 5.2.5-2.1",
+   "topic_ko": "출시 전 보안 평가와 배포 전 운영자의 시험",
+   "obligation_ko": "개발자는 운영자·최종 사용자에게 출시하는 모든 모델, 응용, 시스템이 보안 평가 절차에서 시험을 거쳤음을 보장해야 하고, 시스템 운영자는 배포 전에 개발자의 지원을 받아 시험해야 한다. 독립적인 보안 시험자를 쓰는 것이 바람직하다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "testing_red_teaming_robustness",
+   "timing_ko": "배포 전",
+   "anchor": "shall conduct testing prior to the system being deployed",
+   "gateway_control_ko": "제한된 시험 환경에서 도구 설명과 실제 동작의 일치, 악성 지시 여부를 시험하고 결과를 도입 근거로 보관한다.",
+   "pol_ids": [
+    "POL-05",
+    "POL-04",
+    "POL-09"
+   ]
+  },
+  {
+   "ref": "5.3.1-1",
+   "topic_ko": "데이터가 어디서 어떻게 쓰이고 저장되는지 최종 사용자에게 고지",
+   "obligation_ko": "시스템 운영자는 최종 사용자의 데이터가 어디서 어떻게 쓰이고 접근되고 저장되는지(재학습 사용, 직원·협력사 검토 등)를 접근 가능한 방식으로 알려야 하며, 개발자가 외부 주체면 이 정보를 운영자에게 제공해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "transparency_labelling",
+   "timing_ko": "",
+   "anchor": "where and how their data will be used, accessed and stored",
+   "gateway_control_ko": "외부 제공자가 문서를 처리·보관하는 조건과 학습 사용 여부를 도입 신청 때 확인해 승인 화면에 표시한다.",
+   "pol_ids": [
+    "POL-07",
+    "POL-08",
+    "POL-26"
+   ]
+  },
+  {
+   "ref": "5.4.1-1 / 5.4.1-2 / 5.4.1-3",
+   "topic_ko": "보안 업데이트·패치 제공과 주요 업데이트의 재평가, 버전 관리 API",
+   "obligation_ko": "개발자는 가능한 보안 업데이트와 패치를 제공하고 운영자에게 알려야 하며 운영자는 이를 최종 사용자에게 전달한다. 개발자는 주요 업데이트를 새 모델 버전처럼 보고 새 보안 시험·평가를 하는 것이 바람직하며(should), 베타 접근이나 버전 관리 API로 운영자의 변경 평가를 지원하는 것도 바람직하다(should).",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "should treat major AI system updates as though a new version",
+   "gateway_control_ko": "판본 변경은 재승인 대상으로 두고, 알려진 취약점이 있는 서버는 수정되거나 격리될 때까지 영향 기능을 중지한다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-39",
+    "POL-03"
+   ]
+  },
+  {
+   "ref": "5.4.2-1 / 5.4.2-2",
+   "topic_ko": "시스템·사용자 행위 로깅과 이상 탐지를 위한 로그 분석",
+   "obligation_ko": "시스템 운영자는 보안 준수, 사고 조사, 취약점 수정을 위해 시스템과 사용자의 행위를 로그로 남겨야 하며, 로그를 분석해 AI 모델이 원하는 출력을 계속 내는지 확인하고 이상, 보안 침해, 예상치 못한 동작(데이터 드리프트, 데이터 오염 등)을 탐지하는 것이 바람직하다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "shall log system and user actions to support security compliance, incident",
+   "gateway_control_ko": "호출·판정·승인·철회를 원장에 남기고 새 도구 사용, 미승인 연결 시도, 비정상 호출 증가를 경보한다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-42",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "5.5.1-1 / 5.5.1-2",
+   "topic_ko": "소유권 이전·폐기 때 데이터 관리자 참여와 안전한 삭제",
+   "obligation_ko": "학습 데이터나 모델의 소유권을 이전·공유하거나 모델·시스템을 폐기하기로 하면 데이터 관리자를 참여시키고 해당 자산과 데이터, 설정 정보를 안전하게 삭제해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "폐기 시",
+   "anchor": "securely delete applicable data and configuration details",
+   "gateway_control_ko": "연결 폐기 절차에서 토큰·API 키 회수, 잔존 서버 프로세스 종료, 문서 저장소 권한 회수, 임시 파일·캐시 삭제를 확인하고 증빙한다.",
+   "pol_ids": [
+    "POL-45",
+    "POL-46",
+    "POL-47",
+    "POL-48",
+    "POL-49"
+   ]
+  }
+ ],
+ "pitfalls_ko": [
+  "ETSI EN은 'shall' 조항이 많지만 표준 자체로는 준수가 의무가 아니다(ETSI 사이트는 표준을 준수가 의무가 아닌 기술 규격으로 설명하고, 조화표준은 EC 표준화 요청에 따른 특별한 EN이라고 구분한다). 이 문서에는 조화표준 표시가 없고, 이 노트는 2026-10-17 기준 조화표준 지위나 법령 인용 여부를 확인하지 못했다.",
+  "조항 번호는 'Provision 5.1.1-1'처럼 표준 고유 형식이며 하위 조항(-1.1)은 상위 조항에 종속된다.",
+  "이 문서는 무상으로 내려받을 수 있지만 저작권 고지에 따라 ETSI 서면 허락 없이 재배포·수정할 수 없다. 노트는 요약과 짧은 인용만 담고 PDF는 로컬 전용이다.",
+  "이전 판 TS 104 223 V1.1.1(2025-04)과 승인 절차(ENAP) 중이던 V2.0.0(2025-09, ETSI deliver 폴더 02.00.00_20)이 따로 있어 인용 시 판본을 확인해야 한다. 이력 표는 V1.1.1이 TS로 발행됐다고 표기한다.",
+  "적합성 평가는 별도 문서(ETSI TS 104 216)가 다루며 이 노트는 읽지 않았다."
+ ],
+ "reading_scope_ko": "16쪽 전체(표지, 서문, 범위, 용어, 이해관계자, 5장 13개 원칙과 조항, 이력)를 읽었다.",
+ "limitations_ko": "법적 해석이나 적합성 판단이 아니다. 참조 문서(ETSI TR 104 128, TS 104 216 등)는 읽지 않았다. 2026-10-17 기준 후속 판이나 조화표준 인용 여부는 확인하지 못했다.",
+ "license_notice": "표지 뒤 저작권 고지: 'ETSI 서면 허락 없이는 어떤 형태로도 복제·이용할 수 없고 PDF 내용을 수정해서는 안 된다'는 취지이며 © ETSI 2025, All rights reserved. ETSI deliver 저장소에 공개된 PDF가 우선하는 판이라고 밝힌다. etsi.org/standards 페이지는 표준이 무료로 이용 가능하다고 안내하지만 재배포나 재사용을 허락한다는 문구는 찾지 못했다.",
+ "distribution": "local-only",
+ "distribution_reason": "저작권 고지가 서면 허락 없는 복제를 금지하므로 재배포 허락 증거가 없다. 원본 PDF(약 110KB)와 추출본은 로컬 전용 경로에 둔다."
+}

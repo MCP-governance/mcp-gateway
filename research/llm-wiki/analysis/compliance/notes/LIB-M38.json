@@ -1,0 +1,265 @@
+{
+ "id": "LIB-M38",
+ "title": "Advisory Guidelines on use of Personal Data in AI Recommendation and Decision Systems",
+ "title_native": "",
+ "issuer": "싱가포르 개인정보보호위원회(PDPC)",
+ "jurisdiction": "SG",
+ "instrument_type": "regulator_guidance",
+ "binding": false,
+ "status": "voluntary",
+ "edition": "2024-03-01 발행(표지 'Issued 1 Mar 2024'), 21쪽, 5부 11장",
+ "key_dates": "2024-03-01 발행(표지, PDPC 안내 페이지 게시일 및 최종 갱신 표시도 2024-03-01). 초안 공개협의는 PDPC 협의 페이지에 게시일 2023-07-18, 의견 접수 마감 2023-08-31(정오)로 나온다(이 PDF에는 없음). 법적 구속력은 없는 지침이다(2.2). 2026-10-17에 PDPC 안내 페이지를 확인했을 때 개정·철회·대체 표시는 없었다.",
+ "language": "en",
+ "official_page_url": "https://www.pdpc.gov.sg/organisations/regulations-decisions/regulatory-guidance/advisory-guidelines-on-use-of-personal-data-in-ai-recommendation-and-decision-systems",
+ "summary_ko": "개인정보보호법(PDPA) 아래에서 추천·예측·의사결정을 하는 AI 시스템의 개발·시험·모니터링, 배포, 조달 단계에 개인정보를 쓸 때의 기준을 제시한 PDPC 자문 지침이다. 동의와 동의 예외(사업 개선 예외, 연구 예외, 정당한 이익 예외)의 적용 조건, 데이터 최소화·가명화·익명화, 개발 환경의 보호 의무, 통지·동의 때 알릴 정보, 책임성 의무(정책 문서화), 서비스 제공자의 출처 기록 유지와 침해 보고를 다룬다.",
+ "scope_ko": "PDPA가 적용되는 상황에서 머신러닝 모델을 내장한 AI 시스템을 설계·개발·배포하는 조직과 맞춤형 AI 시스템 개발 서비스 제공자(데이터 중개자)가 대상이다(3.1, 11.1). 자문 지침이며 PDPC나 다른 누구도 구속하지 않고 법률 자문도 아니다. PDPA와 하위 법령이 지침에 우선한다(2.2).",
+ "provisions": [
+  {
+   "ref": "2.2",
+   "topic_ko": "지침의 법적 효력",
+   "obligation_ko": "이 지침은 자문 성격이어서 PDPC나 다른 당사자를 법적으로 구속하지 않고 법률 자문도 아니며, 인용한 법의 효력과 해석을 바꾸지 않고, PDPA와 하위 법령과 불일치하면 법령이 우선한다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "are advisory in nature, are not legally binding on the Commission or on any other party",
+   "gateway_control_ko": "해당 없음(효력 설명). 요구사항 매트릭스에서 이 문서의 항목을 법적 의무가 아닌 권고로 구분한다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "5.1-5.2",
+   "topic_ko": "사업 개선 예외(Business Improvement Exception)의 조건",
+   "obligation_ko": "PDPA에 따라 수집한 개인정보를 동의 없이 제품·서비스 개선, 업무 방법 개선, 개인의 행태·선호 이해, 적합한 상품 식별·개인화 목적으로 쓸 수 있으며, 그 목적이 개인 식별 형태의 개인정보 없이는 합리적으로 달성될 수 없고 합리적인 사람이 적절하다고 볼 용도여야 한다.",
+   "actor": "controller",
+   "strength": "informative",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "The business improvement purposes cannot reasonably be achieved without using the personal data in an individually identifiable form",
+   "gateway_control_ko": "에이전트 업무에서 개인정보 사용 목적과 식별 정보가 필요한 이유를 도입 신청서에 기록하게 하고 불필요한 개인정보는 제거·마스킹해 전달한다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-31"
+   ]
+  },
+  {
+   "ref": "6.2",
+   "topic_ko": "연구 예외(Research Exception)의 4개 조건",
+   "obligation_ko": "연구 목적 사용은 연구가 식별 형태의 개인정보 없이는 달성될 수 없고, 명확한 공익이 있고, 결과를 개인에게 영향을 주는 결정에 쓰지 않으며, 결과를 공개할 때 개인을 식별하지 못하게 해야 한다.",
+   "actor": "controller",
+   "strength": "informative",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "The results of the research will not be used to make any decision that affects the individual",
+   "gateway_control_ko": "해당 없음(연구 목적 예외 적용 판단은 조직 절차). 게이트웨이는 연구 목적 여부를 판단하지 않는다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "7.1",
+   "topic_ko": "AI 개발 시 개인정보 최소화(필요 속성·기간·세그먼트 한정)",
+   "obligation_ko": "AI 시스템 개발에서는 모범 관행으로 개인정보 최소화를 실천하고 학습에 필요한 속성만 쓰며 관련 기간이나 세그먼트 같은 필터로 개인정보 양을 제한해야 하며, 이는 불필요한 보호·사이버 위험을 줄인다.",
+   "actor": "controller",
+   "strength": "recommended",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "",
+   "anchor": "organisations should practise data minimisation as good practice",
+   "gateway_control_ko": "도구 입력은 승인 업무에 필요한 최소 정보만 전달하고 한 번의 조회가 반환하는 문서 범위를 업무에 필요한 만큼으로 제한한다.",
+   "pol_ids": [
+    "POL-31",
+    "POL-35"
+   ]
+  },
+  {
+   "ref": "7.2-7.3",
+   "topic_ko": "가명화·비식별 기본 통제와 개발 환경 보호 수준",
+   "obligation_ko": "개인정보를 쓸 때 적절한 기술·프로세스·법적 통제를 두고 가능하면 가명화·비식별화를 기본 통제로 하며, 가명화가 어려워 원본 개인정보를 쓰면 보호 의무(PDPA 제24조)에 따라 개발 환경의 보안을 특히 신경 쓰고 DPIA를 권고한다. 개발 환경의 보호 수준은 개인정보를 처리하는 시스템과 비슷해야 한다.",
+   "actor": "controller",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Standards for data protection in the development environment should be similar to the standards needed for systems handling personal data",
+   "gateway_control_ko": "개발·시험·운영 접근을 분리하고 시험에는 생성·가공 데이터를 쓰며, 운영 데이터가 불가피하면 책임자 승인과 보호·감시 하에서만 쓴다.",
+   "pol_ids": [
+    "POL-09",
+    "POL-31"
+   ]
+  },
+  {
+   "ref": "7.6",
+   "topic_ko": "모델 역전 같은 프라이버시 공격 위험 평가",
+   "obligation_ko": "AI 시스템은 자체 개발이든 외부 개발이든 학습 데이터 정보를 얻으려는 프라이버시 공격(모델 역전 등)에 약점이 있을 수 있으므로 프라이버시 설계 방식으로 이런 공격 위험을 평가하고 가능한 범위에서 완화해야 한다.",
+   "actor": "controller",
+   "strength": "recommended",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "",
+   "anchor": "assess the risk of such privacy attacks as well as seek to mitigate such risks where possible within the AI System",
+   "gateway_control_ko": "모델 자체의 프라이버시 공격(모델 역전 등) 완화는 게이트웨이 범위 밖이다. 간접 통제로 응답의 개인정보·민감정보 마스킹, 단일 조회의 반환 범위와 호출량 한도, 이상 징후 경보를 제공할 수 있다.",
+   "pol_ids": [
+    "POL-30",
+    "POL-28",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "7.7",
+   "topic_ko": "익명·가명 데이터와 식별 가능 개인정보 사용 기준의 정책화",
+   "obligation_ko": "책임성 의무(PDPA 제12조 (a)(c))에 따라 AI 개발에서 개인정보 사용 정책을 최신으로 유지하고 관행을 세워야 하며, 예를 들어 모델 학습을 익명·가명 데이터로 할 때와 식별 가능한 개인정보 사용이 허용되는 경우(성능 저하, 편향 시험)를 정하는 정책을 둔다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "organisations must ensure that their policies regarding the use of personal data in their organisations to develop AI Systems are updated and practices are established",
+   "gateway_control_ko": "해당 없음(조직 정책). 개인정보 포함 호출과 결정 이력은 원장에 남으므로 정책 이행 증빙의 입력으로 쓸 수 있다(목적·근거를 별도 항목으로 기록하는 것은 후보 기능).",
+   "pol_ids": [
+    "POL-38",
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "7.9",
+   "topic_ko": "개인정보 사용 선택 사유의 내부 문서화와 경영진 결정",
+   "obligation_ko": "익명 데이터가 정확도·재현성에서 불리할 수 있어 개인정보를 쓰는 것이 낫더라도 두 방식의 장단점을 비교해 개인정보를 선택한 이유를 내부에 명확히 문서화하고, 이해관계자 협의와 적절히 높은 경영진 수준의 결정 같은 거버넌스 방법을 써야 한다.",
+   "actor": "controller",
+   "strength": "recommended",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "clearly document internally the reasons for choosing to use personal data over anonymised data",
+   "gateway_control_ko": "해당 없음(모델 학습 단계의 판단은 조직 절차). 개인정보를 쓰는 MCP 도입 건의 사유와 승인자를 도입 심사 기록에 남기는 것은 후보 기능이다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "9.1-9.2",
+   "topic_ko": "동의 의무와 통지 의무(PDPA 제20조)",
+   "obligation_ko": "동의 간주나 예외(정당한 이익 등)가 없으면 추천·예측·결정을 위한 개인정보 수집·이용에 동의가 필요하고, 동의를 구할 때 수집·이용 목적을 이용자에게 알려야 하며, PDPA 제20조제1항은 수집·이용·공개 목적을 수집 시 또는 그 전에, 그때 알리지 않은 목적은 이용·공개 전에 알리도록 요구한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "수집 시 또는 그 전, 새 목적 이용·공개 전",
+   "anchor": "The Consent Obligation is complemented by the Notification Obligation",
+   "gateway_control_ko": "개인정보 주체에 대한 동의 수집·고지 자체는 조직 절차이며 게이트웨이가 하지 않는다. 게이트웨이는 호출 단위로 사용자 동의와 관리자 승인을 각각 확인한 경우에만 데이터 접근·기능 사용을 허용하고 그 결과를 원장에 남겨 증빙할 수 있다.",
+   "pol_ids": [
+    "POL-08",
+    "POL-02",
+    "POL-26"
+   ]
+  },
+  {
+   "ref": "9.5-9.8",
+   "topic_ko": "통지에 담을 정보와 영업비밀 보호 시 문서화",
+   "obligation_ko": "통지에는 개인정보가 필요한 제품 기능, 수집·처리되는 개인정보 유형, 처리와 기능의 관련성, 결과에 더 영향을 주는 개인정보 특징을 담도록 권장하며, 팝업이나 접근 가능한 정책 문서로 제공할 수 있다. 영업비밀이나 AI 시스템 보안 때문에 상세를 줄이면 그 판단을 정당화해 내부에 문서화하는 것이 좋다.",
+   "actor": "controller",
+   "strength": "recommended",
+   "theme": "transparency_labelling",
+   "timing_ko": "",
+   "anchor": "it is good practice for these decisions to be justified and documented clearly internally",
+   "gateway_control_ko": "해당 없음(고지 문서 작성은 조직 절차). 에이전트가 처리하는 개인정보 유형과 목적지를 원장에서 집계해 고지 내용 검토의 입력으로 제공한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "9.9-9.11",
+   "topic_ko": "정당한 이익 예외 사용 시 이익 형량과 고지",
+   "obligation_ko": "동의 예외인 정당한 이익(예: 불법 활동 탐지·예방을 위한 AI 입력)을 쓰려면 정당한 이익이 악영향보다 크다는 평가를 하고, 이 예외에 의존한다는 사실을 개인에게 알려야 한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "Organisations who rely on this exception must make it known to individuals that they are relying on this exception",
+   "gateway_control_ko": "해당 없음(적법 근거 판단과 개인에 대한 고지는 조직 절차). 호출 목적·근거를 원장에 남기는 것은 후보 기능이다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "10.2-10.4",
+   "topic_ko": "책임성 의무: AI 사용 시 서면 정책과 정보 접근성",
+   "obligation_ko": "지침은 PDPA 제12조가 의무 이행을 위한 정책·관행 수립과 요청 시 정보 제공(12(d))을 요구한다고 적는다. 그 위에서 AI 시스템을 쓰는 조직은 공정성·합리성을 위한 관행과 안전장치를 서면 정책에 투명하게 포함하는 것이 바람직하고(should, 상세 수준은 잠재 피해와 AI 자율성 수준에 비례), 웹사이트 선제 공개도 검토하도록 권한다.",
+   "actor": "controller",
+   "strength": "recommended",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "Organisations that make use of AI Systems should be transparent and include in their written policies relevant practices and safeguards to achieve fairness and reasonableness",
+   "gateway_control_ko": "해당 없음(조직 정책 문서). 정책 엔진의 허용·차단 규칙과 승인 이력으로 안전장치 이행의 증빙을 제공한다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-22"
+   ]
+  },
+  {
+   "ref": "10.6c",
+   "topic_ko": "영향이 큰 결과의 책임 메커니즘·인간 감독·견고성 정보",
+   "obligation_ko": "개인에게 미치는 영향이 큰 결과에 대해서는 책임 메커니즘과 인간의 주체성·감독을 어떻게 구현했는지, AI 시스템이 적대적·예상 밖 입력에서 어떻게 작동하는지(안전·견고성) 정보를 제공하는 것이 유용한지 고려하라고 권고한다.",
+   "actor": "controller",
+   "strength": "recommended",
+   "theme": "human_oversight",
+   "timing_ko": "",
+   "anchor": "how proper accountability mechanisms and human agency and oversight have been implemented",
+   "gateway_control_ko": "고위험 요청에 대한 사람의 개별 승인 절차와 승인 이력을 인간 감독 구현의 증빙으로 제공한다.",
+   "pol_ids": [
+    "POL-27",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "10.12",
+   "topic_ko": "데이터 보호 영향평가(DPIA) 수행 권고",
+   "obligation_ko": "조직은 유용하다고 판단되는 경우 영향평가, 특히 데이터 보호 영향평가를 수행해 AI 시스템의 데이터 보호 위험을 식별·완화하는 것이 권장된다.",
+   "actor": "controller",
+   "strength": "recommended",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "",
+   "anchor": "Organisations are also encouraged to perform impact assessments, particularly data protection impact assessments",
+   "gateway_control_ko": "해당 없음(영향평가 수행은 조직 절차). 도입 심사 기록에 영향평가 수행 여부와 결과 문서 링크를 남기는 것은 후보 기능이다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "11.2",
+   "topic_ko": "서비스 제공자의 데이터 매핑·라벨링과 출처(provenance) 기록",
+   "obligation_ko": "맞춤형 AI 시스템을 개발하면서 고객 개인정보를 처리하는 서비스 제공자는 데이터 중개자로 PDPA 의무(보호·보유 제한 의무)를 지며, 전처리에서 데이터 매핑·라벨링으로 학습 데이터셋에 쓰인 데이터를 추적하고 학습 데이터의 출처와 변환 이력을 문서화하는 출처 기록을 유지하는 것이 모범 관행이다.",
+   "actor": "processor",
+   "strength": "recommended",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "Maintain a provenance record to document the lineage of the training data",
+   "gateway_control_ko": "학습 데이터 출처 기록은 서비스 제공자의 관행이며 게이트웨이가 만들지 않는다. 도입 담당자가 외부 제공자의 문서 저장·재사용·제3자 제공·삭제 조건을 도입 심사에서 확인하는 절차로 연결한다.",
+   "pol_ids": [
+    "POL-07"
+   ]
+  },
+  {
+   "ref": "11.3 각주 22",
+   "topic_ko": "데이터 중개자의 침해 보고 의무(PDPA 제26C조)",
+   "obligation_ko": "데이터 중개자는 처리 중인 데이터의 침해를 처리를 위탁한 조직에 보고할 의무가 있으며(PDPA 제26C조), 출처 기록 등은 위탁 조직이 무단 접근·변경이 신고 대상 침해인지, 학습 데이터 변경이 AI 시스템에 미치는 영향이 어디까지인지 평가하는 데 쓰인다.",
+   "actor": "processor",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "",
+   "anchor": "Data intermediaries have a duty under S. 26C of the PDPA to report data breaches of data they are processing",
+   "gateway_control_ko": "외부 서버 도입 계약에 보안 사건 통지 조항을 확인 항목으로 두고, 사건 시 영향 호출과 데이터 범위를 원장에서 재구성해 위탁 조직에 제공할 수 있게 한다.",
+   "pol_ids": [
+    "POL-07",
+    "POL-43",
+    "POL-38"
+   ]
+  }
+ ],
+ "pitfalls_ko": [
+  "법적 구속력이 없는 자문 지침이다. 'must'나 'requires'로 표현된 일부 문장은 PDPA 조항(제12조, 제20조, 제26C조 등)의 의무를 풀어 쓴 것이고, 같은 장 안에서도 'should'로 쓴 문장(예: 10.3)은 권고다. 이 노트의 강도 열은 이 구분을 따랐다.",
+  "추천·의사결정을 하는 AI 시스템(머신러닝 모델을 내장한 시스템)을 다루는 지침이다. 생성형 AI·에이전트 도구 호출을 직접 다루지 않는다.",
+  "동의 예외(사업 개선, 연구, 정당한 이익)는 PDPA 부속서에 근거하며 이 문서는 적용 조건과 고려 사항만 요약한다. 정확한 조건은 PDPA 부속서를 확인해야 한다.",
+  "문서의 날짜는 표지의 발행일(2024-03-01)이다. 초안 협의 기간은 문서에서 확인하지 못했다.",
+  "지침이 인용하는 PDPC의 다른 문서(Key Concepts 자문 지침, 가이드 등)는 읽지 않았다."
+ ],
+ "reading_scope_ko": "PDF 텍스트 추출본 전문(21쪽, 1~11장과 각주, 11.7의 표 포함)을 처음부터 끝까지 읽었다. 쪽 서식과 그림은 원본 PDF에서 따로 확인하지 않았다.",
+ "limitations_ko": "법적 해석이나 적합성 판단이 아니다. 조항 번호는 문서의 문단 번호(예: 7.1)다. PDPA 본문과 부속서는 읽지 않았다. 2026-10-17에 PDPC의 이 지침 전용 안내 페이지(게시·최종 갱신 표시 2024-03-01)와 공개협의 페이지를 확인했고 개정·철회 표시는 없었으나, PDPC가 이후 다른 문서로 내용을 바꾸었는지는 이 노트가 보증하지 않는다.",
+ "license_notice": "PDF 본문에는 저작권·재이용 고지가 없다(추출 텍스트에서 확인). PDPC 웹사이트 이용약관(https://www.pdpc.gov.sg/terms-and-conditions, 2026-10-17 확인, 페이지 표시 게시일 2026-09-01)은 사이트 콘텐츠의 권리를 PDPC가 보유한다고 밝히고(제4항), 개인·내부·비영리·정보·교육·준법·훈련 목적에 한해 사용·복사·배포를 허용하며 금전적 대가를 받는 용도는 사전 서면 허락이 필요하다고 한다(제6항). 공유할 때는 창작자 표시·저작권 고지·약관 참조 고지를 유지하고 약관 문구나 링크로 허락된 사용임을 밝혀야 하며(6A), 복사본의 최신성은 이용자 책임이고(6B), PDPC 후원·제휴를 암시해서는 안 된다(6C). 이와 별도의 공개 라이선스 표기는 확인하지 못했다.",
+ "distribution": "local-only",
+ "distribution_reason": "PDPC 이용약관의 허락은 비영리 등 한정된 목적에 대한 것이고 약관 고지 조건이 붙으며, 상업 제품(MINT)의 요구사항 근거로 쓰는 위키에 PDF를 공개 재배포해도 되는지 약관만으로 확인되지 않는다. 중앙 검증된 재이용 근거(EUR-Lex, 영국, 캐나다, 중국, 미국 연방, OECD 등)에 싱가포르 PDPC 문서는 없고, 싱가포르 SSO 이용약관은 법령 사이트에만 해당한다. 따라서 스테이징한 PDF와 추출본은 로컬 전용으로 두고 위키에는 조항 요지만 둔다."
+}

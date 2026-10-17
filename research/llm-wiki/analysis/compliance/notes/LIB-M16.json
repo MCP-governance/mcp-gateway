@@ -1,0 +1,403 @@
+{
+ "id": "LIB-M16",
+ "title": "Regulation (EU) 2026/1744 of the European Parliament and of the Council of 8 July 2026 amending Regulations (EU) 2024/1689, (EU) 2018/1139 and (EU) 2023/1230 as regards the simplification of the implementation of harmonised rules on artificial intelligence (Digital Omnibus on AI)",
+ "title_native": "",
+ "issuer": "European Parliament and Council of the European Union (OJ L series, Publications Office of the EU)",
+ "jurisdiction": "EU",
+ "instrument_type": "regulation",
+ "binding": true,
+ "status": "in_force",
+ "edition": "OJ L, 2026/1744, 24.7.2026 (영어 CELLAR XHTML 판본). 정오표 OJ L 2026/90810(2026-09-29)이 별도로 있음(독일어판 문구 정정)",
+ "key_dates": "본문과 간행물청(CELLAR) 메타데이터로 확인한 사실: 서명 2026-07-08(Strasbourg). 유럽의회 입장 2026-06-16, 이사회 결정 2026-06-29(본문 각주 4). 관보 게재 2026-07-24. 시행: 제4조에 따라 게재 후 3일째 되는 날, 메타데이터상 시행일 2026-07-27, in-force=true, 종료일 없음. 적용일 변경: 제113조 제3항 (a)에서 제5조(1) 첫 단락 (ba)·(bb), 제5조(1a)·(1b)는 2026-12-02부터 적용, (c)에서 제3장 제1~3절(제6조(5) 제외)은 부속서 III 고위험(제6조(2))에 2027-12-02, 부속서 I 고위험(제6조(1))에 2028-08-02부터 적용, (d)에서 제102~110조는 2026-07-27부터 적용. 제111조(4): 2026-08-02 이전 출시된 합성 콘텐츠 생성 AI 시스템은 제50조(2)를 2026-12-02까지 준수. 제111조(2): 공공기관용 고영향 AI는 2030-08-02까지. 기타 기한: 제2조(13) 위임법령 2027-08-02까지, 제57조(1) 국가 샌드박스 2027-08-02까지 운영, 제72조(3) 시판 후 모니터링 지침 2027-09-02까지, 제96조(1)(g) 지침 2027-08-01까지, 제43조(3) 기존 통지기관 지정 신청 2028-01-28까지, 규칙 2023/1230 위임법령 2028-08-02까지 적용. 미확인: 제50조 자체의 기본 적용일(2026-08-02)은 이 문서에서 전문 (38)·(40)과 제111조(4) 문언으로만 확인되고 AI Act 본문은 읽지 않았다.",
+ "language": "en",
+ "official_page_url": "https://data.europa.eu/eli/reg/2026/1744/oj",
+ "summary_ko": "AI Act(규칙 (EU) 2024/1689)와 규칙 2018/1139(민간항공), 2023/1230(기계류)을 고쳐 AI 규칙의 이행을 간소화하는 개정 규칙(디지털 옴니버스 AI)이다. 고영향 AI 요건(제3장 제1~3절)의 적용일을 부속서 III는 2027-12-02, 부속서 I는 2028-08-02로 늦추고, 제50조(2) 표시 의무에 2026-12-02까지의 유예를 두며, AI 리터러시 의무를 완화한다. 편향 탐지용 특수 범주 개인정보 처리 근거(제4a조), 비동의 성적 이미지·아동 성착취물 생성 AI 금지(제5조), AI Office의 감독·집행 권한(제75~75d조)을 새로 둔다. 로깅·사람의 감독 같은 실체 의무는 이 규칙이 아니라 AI Act 본문에 있다.",
+ "scope_ko": "회원국에 직접 적용되는 규칙이며(제4조) 개정 대상은 AI Act 조문이다. 적용 여부는 개정된 AI Act의 적용 범위(제2조, 이 문서에는 일부만 있음), 고영향 분류(제6조), 시스템의 출시일(제50조(2) 유예는 2026-08-02 이전 출시 여부, 고영향 AI 경과 규정은 제3장 적용일 이전 출시 여부), AI Office 전속 관할(제75조(1)) 해당 여부로 갈린다.",
+ "provisions": [
+  {
+   "ref": "Art. 4",
+   "topic_ko": "이 개정 규칙의 시행",
+   "obligation_ko": "이 규칙은 관보 게재일 다음 3일째 되는 날 시행하며, 전체가 구속력을 갖고 모든 회원국에 직접 적용된다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "scope_applicability",
+   "timing_ko": "게재(2026-07-24) 후 3일째 = 2026-07-27 시행(간행물청 메타데이터의 시행일과 일치)",
+   "anchor": "shall enter into force on the third day following that of its publication in the Official Journal of the European Union",
+   "gateway_control_ko": "해당 없음(적용일 판단). 요구사항 문서에서 이 개정의 기준일을 2026-07-27로 적는 근거로 쓴다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "Art. 1 pt 40(a) (AI Act Art. 113 제3문단 (a))",
+   "topic_ko": "신규 금지 행위의 적용일",
+   "obligation_ko": "제1장·제2장은 2025-02-02부터 적용하되, 제5조(1) 첫 단락 (ba)·(bb)와 제5조(1a)·(1b)는 2026-12-02부터 적용한다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "scope_applicability",
+   "timing_ko": "신규 금지(제5조 (ba)·(bb), (1a), (1b)): 2026-12-02부터",
+   "anchor": "with the exception of Article 5(1), first subparagraph, points (ba) and (bb), and Article 5(1a) and (1b) which shall apply from 2 December 2026",
+   "gateway_control_ko": "해당 없음(적용일). 이미지·영상·음성 생성·편집 도구를 도입 심사에서 거르는 기준의 시작일로 쓴다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-11"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 40(b)(i) (AI Act Art. 113 제3문단 (c)(i))",
+   "topic_ko": "부속서 III 고위험 AI 적용일",
+   "obligation_ko": "제3장 제1·2·3절(제6조(5) 제외)은 제6조(2)·부속서 III에 따른 고위험 AI 시스템에는 2027-12-02부터 적용한다. 전문 (40)은 종전 최초 적용일을 2026-08-02로 기술한다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "scope_applicability",
+   "timing_ko": "부속서 III 고위험: 2027-12-02부터",
+   "anchor": "2 December 2027 as regards AI systems classified as high-risk pursuant to Article 6(2) and Annex III",
+   "gateway_control_ko": "해당 없음(적용일). 채용·신용 등 부속서 III 업무에 쓰이는 도구를 도입 신청의 업무 목적에서 고영향 후보로 표시하고 이 일정에 맞춰 요구사항 우선순위를 정한다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-27"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 40(b)(ii) (AI Act Art. 113 제3문단 (c)(ii))",
+   "topic_ko": "부속서 I 고위험 AI 적용일",
+   "obligation_ko": "제3장 제1·2·3절(제6조(5) 제외)은 제6조(1)·부속서 I에 따른 고위험 AI 시스템(제품 안전 법규에 연결된 AI)에는 2028-08-02부터 적용한다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "scope_applicability",
+   "timing_ko": "부속서 I 고위험: 2028-08-02부터",
+   "anchor": "2 August 2028 as regards AI systems classified as high-risk pursuant to Article 6(1) and Annex I",
+   "gateway_control_ko": "해당 없음(적용일). 기계·의료기기 등 제품에 내장된 AI가 에이전트 도구 호출 대상이면 도입 기록에 제품 분류를 남긴다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 39(a) (AI Act Art. 111(2))",
+   "topic_ko": "기출시 고영향 AI의 경과 규정",
+   "obligation_ko": "제3장 적용일 이전에 출시·서비스 개시된 고영향 AI는 그 날 이후 설계에 중대한 변경이 있을 때만 이 규칙이 적용된다. 다만 공공기관이 쓸 고영향 AI의 제공자·배포자는 2030-08-02까지 요건·의무 준수에 필요한 조치를 해야 한다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "scope_applicability",
+   "timing_ko": "공공기관용 고영향 AI: 2030-08-02까지",
+   "anchor": "shall take the necessary steps to comply with the requirements and obligations laid down in this Regulation by 2 August 2030",
+   "gateway_control_ko": "해당 없음(적용 범위 판단). 도입 기록에 해당 AI의 최초 출시일과 설계 변경 이력을 남기는 항목을 요구사항 후보로 둔다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 39(b) (AI Act Art. 111(4))",
+   "topic_ko": "생성형 AI 표시 의무(제50조(2)) 유예",
+   "obligation_ko": "합성 오디오·이미지·비디오·텍스트를 생성하는 AI 시스템(범용 AI 시스템 포함)의 제공자 중 2026-08-02 이전에 출시한 자는 제50조(2) 준수에 필요한 조치를 2026-12-02까지 해야 한다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "transparency_labelling",
+   "timing_ko": "2026-08-02 이전 출시 시스템: 2026-12-02까지(전문 (38)은 4개월 유예로 설명)",
+   "anchor": "shall take the necessary steps in order to comply with Article 50(2) by 2 December 2026",
+   "gateway_control_ko": "게이트웨이는 생성물에 표시를 삽입하지 않는다. MCP로 외부 생성형 도구를 쓰는 경우 도입 심사의 제공자 확인 항목에 출시일과 제50조(2) 이행 상태를 둔다. 제50조(2) 본문은 이 문서에 없다.",
+   "pol_ids": [
+    "POL-32"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 5 (AI Act Art. 4(1))",
+   "topic_ko": "AI 리터러시",
+   "obligation_ko": "AI 시스템의 제공자와 배포자는 직원과 자신을 대신해 AI 시스템을 운용·사용하는 사람의 AI 리터러시 개발을 지원하는 조치를 해야 한다(기술 지식, 경험, 교육, 사용 맥락 고려). 개인별로 특정 수준의 리터러시를 보장할 의무는 아니다.",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "shall take measures to support the development of AI literacy of their staff and other persons dealing with the operation and use of AI systems on their behalf",
+   "gateway_control_ko": "해당 없음(조직 절차). 승인자·관리자 교육은 게이트웨이 밖의 인사 절차이며, 승인 권한 부여 전에 교육 이수를 확인하는 운영 절차를 둘 수 있다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "Art. 1 pt 6 (AI Act Art. 4a(1)(a))",
+   "topic_ko": "편향 탐지용 특수 범주 개인정보 — 엄격한 필요성",
+   "obligation_ko": "고영향 AI 제공자는 편향 탐지·교정에 엄격히 필요한 범위에서만 특수 범주 개인정보를 예외적으로 처리할 수 있고, 그 목적을 합성·익명 데이터 등 다른 데이터로 효과적으로 달성할 수 없어야 한다. 제4a조(1)의 조건은 모두 충족해야 한다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "cannot be effectively fulfilled by processing other data, including synthetic or anonymised data",
+   "gateway_control_ko": "편향 점검 파이프라인이 MCP 도구로 개인정보를 읽을 때 데이터 분류(특수 범주 표시)와 도구별 접근 승인으로 범위를 제한하고 호출·승인 기록을 증빙으로 남긴다. 엄격한 필요성 판단은 해당 없음(조직 절차).",
+   "pol_ids": [
+    "POL-02",
+    "POL-25",
+    "POL-31"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 6 (AI Act Art. 4a(1)(c))",
+   "topic_ko": "특수 범주 개인정보의 접근 통제와 기록",
+   "obligation_ko": "특수 범주 개인정보는 오용 방지를 위해 접근에 대한 엄격한 통제와 접근 문서화 등 보호 조치를 두고, 비밀유지 의무가 있는 승인된 사람만 접근하게 해야 한다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "strict controls and documentation of the access",
+   "gateway_control_ko": "데이터 등급·호출자·도구 단위의 호출별 접근 판정(OPA)과 호출·판정 이력을 감사 원장에 남기고 개인정보는 최소화·마스킹한다. 비밀유지 의무 부과는 해당 없음(조직 절차).",
+   "pol_ids": [
+    "POL-25",
+    "POL-38",
+    "POL-19"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 6 (AI Act Art. 4a(1)(d))",
+   "topic_ko": "특수 범주 개인정보의 제3자 전송·접근 금지",
+   "obligation_ko": "편향 탐지·교정을 위해 처리하는 특수 범주 개인정보는 다른 당사자에게 전송·이전되거나 다른 당사자가 접근해서는 안 된다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "are not transmitted, transferred or otherwise accessed by other parties",
+   "gateway_control_ko": "외부 목적지 허용목록, 실제 연결 대상 검증(DNS·리디렉션·TLS), 서버 간 데이터 전달 경계로 외부 전송과 타 서버 전달을 차단하고 시도를 기록한다.",
+   "pol_ids": [
+    "POL-26",
+    "POL-33",
+    "POL-10"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 6 (AI Act Art. 4a(1)(e))",
+   "topic_ko": "특수 범주 개인정보의 삭제",
+   "obligation_ko": "특수 범주 개인정보는 편향이 교정되거나 보관 기간이 끝난 때 중 먼저 오는 시점에 삭제해야 한다. 처리 활동 기록에는 엄격한 필요성과 다른 데이터로 달성할 수 없는 이유를 적어야 한다((f)).",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "편향 교정 시 또는 보관 기간 종료 시 중 먼저 오는 때",
+   "anchor": "deleted once the bias has been corrected or the personal data has reached the end of its retention period, whichever comes first",
+   "gateway_control_ko": "연결 해제·작업 종료 시 임시 파일·캐시·결과 사본 정리 여부를 확인하고 보관 기간을 설정하는 기능은 가능하나, 대상 시스템 안의 원본 삭제는 해당 시스템 소관이다. 처리 활동 기록 작성은 해당 없음(조직 절차).",
+   "pol_ids": [
+    "POL-48",
+    "POL-09",
+    "POL-49"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 6 (AI Act Art. 4a(2))",
+   "topic_ko": "다른 AI 시스템·배포자로의 확대",
+   "obligation_ko": "다른 AI 시스템·모델의 제공자·배포자와 고영향 AI의 배포자도 편향 탐지·교정에 엄격히 필요하고 제1항의 모든 조건·안전장치를 적용하는 범위에서 특수 범주 개인정보를 예외적으로 처리할 수 있다. 편향 탐지·교정 수행 자체를 의무화하지는 않는다.",
+   "actor": "deployer",
+   "strength": "informative",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "This paragraph does not create any obligation to conduct such bias detection and correction.",
+   "gateway_control_ko": "게이트웨이를 쓰는 배포 조직이 자체 편향 점검에 특수 범주 데이터를 에이전트 도구로 다룰 때에도 접근 승인·분류·기록(제4a조(1)(c)·(d)·(e) 항목의 통제)으로 조건 이행을 증빙한다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-25"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 2(b) (AI Act Art. 2(7))",
+   "topic_ko": "개인정보 보호법과의 관계",
+   "obligation_ko": "이 규칙에 따른 권리·의무와 관련해 처리되는 개인정보에는 EU 개인정보·프라이버시·통신 비밀 법이 적용되며, 제4a조와 제59조를 제외하면 이 규칙은 GDPR(2016/679), 2018/1725, 지침 2002/58/EC, 2016/680에 영향을 주지 않는다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "this Regulation shall not affect Regulation (EU) 2016/679 or (EU) 2018/1725",
+   "gateway_control_ko": "해당 없음(법 적용 관계). 개인정보 마스킹·최소화·보관 통제는 GDPR 등 별도 법령 노트의 요구사항과 함께 읽어야 한다는 연결 정보로 쓴다.",
+   "pol_ids": [
+    "POL-30",
+    "POL-31",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 13(a) (AI Act Art. 27(4))",
+   "topic_ko": "기본권 영향평가와 DPIA 교차 참조",
+   "obligation_ko": "제27조 의무 일부를 GDPR 제35조 등에 따른 개인정보 영향평가로 이미 충족했다면, 배포자는 기본권 영향평가에서 그 DPIA의 해당 부분을 교차 참조하거나 포함할 수 있다.",
+   "actor": "deployer",
+   "strength": "informative",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "",
+   "anchor": "include cross-references to the relevant sections of that data protection impact assessment",
+   "gateway_control_ko": "도입 심사 기록에 DPIA·기본권 영향평가 문서 링크와 상호 참조를 첨부한다(게이트웨이는 평가를 수행하지 않는다). 제27조 본문의 적용 대상은 이 문서에 없다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 12(b) (AI Act Art. 25(4))",
+   "topic_ko": "고영향 AI 공급 제3자와의 서면 합의",
+   "obligation_ko": "고영향 AI 제공자와, 그 시스템에 쓰이거나 통합되는 AI 시스템·모델·도구·서비스·구성요소·프로세스를 공급하는 제3자는 서면 합의로 제공자가 의무를 완전히 이행하는 데 필요한 정보·역량·기술 접근·지원을 정해야 한다. 공중에 무료 오픈소스 라이선스로 제공되는 도구 등(범용 AI 모델 제외)을 공급하는 제3자에는 적용하지 않는다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "shall, by written agreement, specify the necessary information, capabilities, technical access and other assistance",
+   "gateway_control_ko": "MCP 서버·도구를 고영향 AI의 구성요소로 쓰는 경우 도입 심사(출처·서명·취약점·지원 상태)와 공급자별 승인 기록을 합의 이행의 증빙으로 내보낼 수 있다. 계약 체결은 해당 없음(조직 절차).",
+   "pol_ids": [
+    "POL-01",
+    "POL-03",
+    "POL-07"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 12(a) (AI Act Art. 25(2))",
+   "topic_ko": "최초 제공자의 협력 의무",
+   "obligation_ko": "제25조(1)의 상황으로 제공자가 바뀌면 최초 제공자는 신규 제공자와 긴밀히 협력해 필요한 정보와 합리적으로 기대되는 기술 접근을 제공해야 하며, 해당하는 경우 기술 문서, 알려진 한계와 실패 모드 통지, 시험·검증용 기술 접근을 포함한다. 고영향 전환 금지를 명시한 경우는 제외한다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "informing the new providers about known limitations and failure modes",
+   "gateway_control_ko": "공급자가 제공한 한계·실패 모드·취약점 정보를 서버 도입 기록에 보관하고 서버 변경 감시(구성 변경 재승인)와 연결한다. 제25조(1)의 상황 정의는 이 문서에 없다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-03",
+    "POL-37"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 18 (AI Act Art. 42(3))",
+   "topic_ko": "사이버복원력법 적합 시 사이버보안 요건 충족 간주",
+   "obligation_ko": "규칙 (EU) 2024/2847(사이버복원력법) 범위의 고영향 AI 시스템이 같은 법 제12조(1)의 조건을 충족하면 이 규칙 제15조의 사이버보안 요건을 준수한 것으로 간주한다.",
+   "actor": "provider",
+   "strength": "informative",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "such systems shall be deemed to comply with the cybersecurity requirements set out in Article 15 of this Regulation",
+   "gateway_control_ko": "해당 없음(적합성 추정 규정). 제공자가 사이버복원력법 적합성으로 제15조를 주장하면 그 근거 문서를 도입 심사의 제공자 확인 항목에 기록한다.",
+   "pol_ids": [
+    "POL-03",
+    "POL-39"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 30 (AI Act Art. 72(3))",
+   "topic_ko": "시판 후 모니터링 계획",
+   "obligation_ko": "시판 후 모니터링 시스템은 시판 후 모니터링 계획에 근거해야 하며, 그 계획은 부속서 IV 기술 문서의 일부다. 위원회는 이사회 의견을 고려해 서식을 포함한 지침을 2027-09-02까지 채택한다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "위원회 지침(서식 포함): 2027-09-02까지",
+   "anchor": "The post-market monitoring plan shall be part of the technical documentation referred to in Annex IV.",
+   "gateway_control_ko": "운영 중 도구 호출·정책 판정·이상 징후 경보 기록을 시판 후 모니터링의 데이터 원천으로 내보낸다. 모니터링 계획 수립은 해당 없음(조직 절차).",
+   "pol_ids": [
+    "POL-38",
+    "POL-42",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 31(c) (AI Act Art. 75(1a))",
+   "topic_ko": "AI Office 관할 시스템의 심각한 사고 보고",
+   "obligation_ko": "AI Office 전속 관할인 고영향 AI 시스템의 제공자는 제73조 대신 심각한 사고를 AI Office에 보고해야 하며 제73조(2)~(9)를 준용한다. AI Office는 관련 정보를 제공자 소재 회원국 시장감시당국에 지체 없이 전달한다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "보고 기한은 제73조(2)~(9) 준용 — 구체 시한은 이 문서에 없음",
+   "anchor": "shall report any serious incidents to the AI Office",
+   "gateway_control_ko": "사고 판단·신고는 해당 없음(조직 절차). 사고 조사에 필요한 호출·승인·판정 기록과 경보·자동 중지 이력을 시간순으로 내보내는 증빙 기능을 제공할 수 있다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 31(b) (AI Act Art. 75(1))",
+   "topic_ko": "AI Office 전속 관할의 범위",
+   "obligation_ko": "AI Office는 (a) 같은 제공자(또는 같은 기업)가 모델과 시스템을 함께 개발한 범용 AI 모델 기반 시스템(부속서 I 제품, 부속서 III 제2호, 제74조(6) 금융·법집행, 사법 행정 등은 제외)과 (b) 초대형 온라인 플랫폼·검색엔진에 포함된 AI 시스템의 감독·집행에 전속 관할을 가진다. 배포자에는 제공자와 같은 기업일 때만 미친다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "The AI Office shall be exclusively competent for the supervision and enforcement of the obligations under this Regulation",
+   "gateway_control_ko": "해당 없음(관할 정보). 도입 심사의 제공자 확인 항목에 모델·시스템 개발자 동일 여부를 두어 AI Office 직접 감독 대상일 가능성을 표시할 수 있다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "Art. 1 pt 32 (AI Act Art. 75a(6)(b))",
+   "topic_ko": "AI Office의 자료 보존 명령",
+   "obligation_ko": "AI Office는 자신의 관할 시스템에 대해 운영자에게 AI 시스템 접근과 설명 제공을 명령하고, 규칙 의무 이행을 평가하는 데 필요한 모든 데이터·문서의 보존 의무를 부과할 수 있다.",
+   "actor": "authority",
+   "strength": "informative",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "impose an obligation on an operator to retain all data and documents deemed to be necessary",
+   "gateway_control_ko": "감사 원장·정책 버전·승인 기록을 기간·사용자·정책 기준으로 내보내고, 보존 명령 시 해당 범위의 삭제·로테이션을 멈추는 보존 보류 설정을 요구사항 후보로 둔다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 34(c) (AI Act Art. 77(1a))",
+   "topic_ko": "기본권 감독기관의 정보·문서 접근",
+   "obligation_ko": "시장감시당국은 기본권 보호 법령을 감독하는 공공기관·기구에 필요한 정보·문서 접근을 지체 없이 허용해야 하며, 필요하면 제공자 또는 배포자에게 해당 자료를 요청하는 방식도 포함한다. 제77조(1)은 접근 형식을 접근 가능한 언어와 기계 판독 형식으로 규정한다.",
+   "actor": "authority",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "필요한 경우 지체 없이",
+   "anchor": "including by requesting such information or documentation from the provider or the deployer",
+   "gateway_control_ko": "제공자·배포자로서 자료 제출을 요구받을 때를 대비해 호출·승인·판정 기록을 기계가 읽을 수 있는 형식으로 내보내는 기능을 둔다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 7(a) (AI Act Art. 5(1) 첫 단락 (ba)·(bb))",
+   "topic_ko": "비동의 성적 이미지·아동 성착취물 생성 AI 금지",
+   "obligation_ko": "식별 가능한 사람의 은밀 부위나 성적 행위를 담은 사실적 이미지·영상·음성 등을 당사자의 명시적 동의 없이 생성·조작하는 AI 시스템과, 지침 2011/93/EU 제2조 (c)·(e)의 자료·공연(아동 성착취물; 국내법상 'without right' 항변이 적용되면 제외)을 생성·조작하는 AI 시스템의 출시·서비스 개시·사용을 금지한다. 제공자는 의도된 목적이거나, 적절한 기술적 안전조치 없이 예측 가능·재현 가능한 결과인 경우에 해당한다(제5조(1a)(a)).",
+   "actor": "any",
+   "strength": "mandatory",
+   "theme": "other",
+   "timing_ko": "2026-12-02부터 적용(제113조 제3문단 (a))",
+   "anchor": "generates or manipulates realistic images, videos, audio or similar material of an identifiable natural person",
+   "gateway_control_ko": "도입 심사에서 이미지·영상·음성 생성·편집 도구의 용도와 안전조치를 확인해 해당 용도의 도구 등록을 거부할 수 있다. 호출 내용을 보고 생성물을 판별하는 일은 게이트웨이 범위 밖이다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-11",
+    "POL-05"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 7(b) (AI Act Art. 5(1a)(b))",
+   "topic_ko": "배포자 사용 금지의 한계",
+   "obligation_ko": "배포자 측 사용 금지는 배포자가 그러한 자료를 생성·조작할 목적으로 시스템을 사용하는 경우에만 해당한다. 전문 (12)는 합법적 용도의 사용이나 우발적 생성은 금지 대상이 아니라고 설명한다.",
+   "actor": "deployer",
+   "strength": "mandatory",
+   "theme": "other",
+   "timing_ko": "2026-12-02부터 적용",
+   "anchor": "is only prohibited where the deployer uses the system for the purpose of generating or manipulating such material or performance",
+   "gateway_control_ko": "호출마다 승인된 업무 목적·도구 범위를 검사하고 범위를 벗어난 사용을 차단·기록해 목적 외 사용의 사후 소명 자료를 남긴다.",
+   "pol_ids": [
+    "POL-22",
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "Art. 1 pt 43 (Annex XIV, 3.d, AIH 0401)",
+   "topic_ko": "에이전틱 AI 분류 코드",
+   "obligation_ko": "신설 부속서 XIV는 적합성평가기관의 지정 범위를 정하는 AI 시스템 코드 목록이며, AIH 0401은 다른 코드에 속하지 않는 신기술 AI 시스템을 '에이전틱 AI 포함'으로 분류한다. 에이전틱 AI 사업자에게 직접 의무를 부과하는 조항은 아니다.",
+   "actor": "authority",
+   "strength": "informative",
+   "theme": "agentic_ai",
+   "timing_ko": "",
+   "anchor": "AI systems based on other emerging AI technologies not covered by other codes, including Agentic AI",
+   "gateway_control_ko": "해당 없음(조직 절차). 에이전트 기반 시스템이 인증 절차에서 별도 코드로 분류될 수 있다는 정보이며, 도입 신청서에 에이전틱 여부를 표시하는 항목을 요구사항 후보로 둘 수 있다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  }
+ ],
+ "pitfalls_ko": [
+  "이 문서는 개정 규칙이라 로깅(제12조), 사람의 감독(제14조), 배포자 의무(제26조), 중대 사고 신고 시한(제73조) 같은 실체 의무를 담고 있지 않다. 제1조 각 호가 개정하는 조문 목록에 이 조문들은 없으므로(제1~6조 및 신설 제4a조, 제10·11·17·25·27·28·29·30·40·42·43·50·56·57·58·60조, 신설 제60a조, 제63·64·69·70·72조, 제75조 및 신설 제75a~75d조, 제76·77·95·96·97·99·111·113조, 부속서 I·VIII와 신설 부속서 XIV) 원 AI Act 본문과 함께 읽어야 한다.",
+  "시행일(2026-07-27)과 적용일은 다르다. 고영향 AI 요건은 부속서 III 2027-12-02, 부속서 I 2028-08-02로 늦춰졌지만 제5조의 신규 금지는 2026-12-02, 제50조(2) 표시 의무 유예는 2026-12-02까지다. 제50조 자체의 적용일(2026-08-02)은 이 문서의 전문 (38)·(40)과 제111조(4) 문언에서만 확인했다.",
+  "제111조(4)의 유예는 2026-08-02 이전에 출시된 시스템에 한정된 문언이다. 그 이후 출시 시스템에 대한 유예는 이 문서에 없다.",
+  "제111조(2)는 기출시 고영향 AI에 대해 설계에 중대한 변경이 있을 때만 적용한다고 하되, 공공기관용은 2030-08-02까지 조치를 요구한다. 전문 (39)는 같은 유형·모델의 한 대라도 합법적으로 출시되었으면 같은 유형·모델의 다른 개체도 유예 대상이라고 설명한다.",
+  "제25조(4)의 서면 합의 의무는 공중에 무료 오픈소스 라이선스로 제공되는 도구·서비스·프로세스·구성요소를 공급하는 제3자에는 적용되지 않는다(범용 AI 모델은 예외 없이 대상). 오픈소스 MCP 서버를 쓰는 배포에서 이 조항의 합의 의무를 곧바로 가정하면 안 된다.",
+  "제4a조는 특수 범주 개인정보 처리를 예외적으로 허용하는 근거이며 편향 탐지·교정을 의무화하지 않는다(제4a조(2) 마지막 문장). 기존 제10조(5)는 삭제되었다(제1조 제9호 (b)). 제4a조의 적용 시점은 본문에 별도 규정이 없고 전문 (9)가 AI Act 적용 개시일부터라고 설명하므로 확인이 필요하다.",
+  "AI 리터러시(제4조)는 '보장' 의무에서 '지원 조치' 의무로 완화되었으며 개인별 특정 수준을 보장할 의무가 아니다.",
+  "정오표 OJ L 2026/90810(2026-09-29)이 있다. 확인한 독일어판은 제1조 제8호(제6조 (1b)항)의 독일어 문구만 고친다. 영어 정오표 본문은 CELLAR에서 확인하지 못했다.",
+  "부속서 XIV의 'Agentic AI' 문구는 적합성평가기관 지정 범위용 코드일 뿐 에이전트 AI에 대한 별도 규제가 아니다.",
+  "AI Office의 집행 권한(제75a~75d조)과 이행강제금 상한(제75c조(5))은 제75조(1)에 해당하는 시스템에만 적용되며, 그 밖의 경우(예: 제공자와 다른 기업의 배포자)에는 회원국 당국의 감독이 유지된다(전문 (31)). 과징금 한도 숫자 자체는 제99조 본문에 있고 이 문서에는 없다."
+ ],
+ "reading_scope_ko": "공식 PDF(EUR-Lex)는 AWS WAF 챌린지(HTTP 202, 빈 본문)로 받을 수 없어 간행물청 CELLAR의 영어 XHTML 판본(관보 L 시리즈 2026/1744)을 사용했다. 전문 (1)~(47), 제1조 제1호~제43호 본문, 제2~4조와 서명부·각주를 모두 읽었다. 부속서 XIV의 코드 표는 구조와 AIH 0401 행 중심으로 훑었고, 표는 추출 과정에서 손실될 수 있다. 시행일·서명일·게재일·정오표 존재는 간행물청 RDF 메타데이터(celex 32026R1744)로 대조했다.",
+ "limitations_ko": "법적 자문이 아니며 한국어 요약은 영어 원문의 의역이다. 읽은 본문은 CELLAR XHTML 판본이며 관보 전자판(진정본)인 EUR-Lex 페이지와는 대조하지 못했다(EUR-Lex 접근 불가). 개정 대상인 AI Act 기존 조문(제9·12·14·26·50·73·99조 본문, 과징금 한도 등)과 2026-07-27자 통합본은 읽지 않았으므로 이 노트의 조 번호는 모두 개정 조항 번호이며 AI Act 본문과 합쳐 확인해야 한다. 정오표는 독일어판만 읽었다. 위임·집행법령, 지침, 행동강령은 조사하지 않았다. 스카우트 요약(유럽의회 입법 관측소 등 2차 자료)은 사용하지 않고 본문과 간행물청 메타데이터로 다시 확인했다.",
+ "license_notice": "EUR-Lex 법적 고지(https://eur-lex.europa.eu/content/legal-notice/legal-notice.html, 2026-10-17 열람)의 저작권 항목: 집행위원회의 문서 재사용 정책은 결정 2011/833/EU에 근거하며, 달리 명시하지 않는 한 EUR-Lex에 게재된 법적 문서(legal documents)를 상업·비상업 목적으로 재사용할 수 있다. 특별 조건은 해당 관보·문서에 표시되며 제3자 저작물은 제외되고 공식 효력이 있는 것은 관보뿐이다. 이 PDF는 관보 법령 원문이다. 본문에서 재사용 제한 표시는 확인하지 못했다. 출처 URL과 SHA-256을 병기하고 내용을 바꾸지 않는다.",
+ "distribution": "public-under-license",
+ "distribution_reason": "관보에 게재된 EU 법령 원문이며 EUR-Lex 법적 고지가 달리 명시하지 않는 한 재사용을 허용한다. PDF에 별도 조건이 없다. 이 판정은 법령 원문 PDF에만 적용되고 EDPB 의견 등 다른 EU 기관 문서에는 적용하지 않는다."
+}

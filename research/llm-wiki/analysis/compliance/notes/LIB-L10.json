@@ -1,0 +1,739 @@
+{
+ "id": "LIB-L10",
+ "title": "ISO/IEC 27001:2022 Information security, cybersecurity and privacy protection — Information security management systems — Requirements",
+ "title_native": "",
+ "issuer": "ISO/IEC JTC 1/SC 27",
+ "jurisdiction": "INTL",
+ "instrument_type": "standard",
+ "binding": false,
+ "status": "voluntary",
+ "edition": "ISO/IEC 27001:2022, Edition 3, 2022-10 (사본 26쪽 PDF, 본문 19쪽). ISO 카탈로그에는 Amd 1:2024(기후 변화 대응 변경)가 발행돼 있으나 이 사본에는 포함되지 않았다.",
+ "key_dates": "2022-10 제3판 발행(2013판 대체). 2026-10-17 ISO 카탈로그: Published [60.60], 'This standard has 1 amendment' = ISO/IEC 27001:2022/Amd 1:2024(Climate action changes, 발행). 제3판이 제2판(ISO/IEC 27001:2013)을 취소·대체한다(사본 머리말). 카탈로그 상태·개정 정보는 작성자 확인이며 검수 시 ISO 사이트 접속이 403으로 막혀 재확인하지 못했다.",
+ "language": "en",
+ "official_page_url": "https://www.iso.org/standard/27001",
+ "summary_ko": "정보보호 경영시스템(ISMS)을 수립·운영·개선하는 요구사항(조항 4~10)과 조직·인적·물리·기술 통제 93개를 나열한 부속서 A(표 A.1)로 이루어진 국제 표준이다. 위험 처리 때 부속서 A와 대조해 누락을 확인하고 적용성 보고서(SoA)에 포함·제외 사유와 구현 여부를 남기게 한다. MINT의 접근 통제, 공급자, 로그, 마스킹, 취약점, 변경 관리 정책을 증빙 후보를 연결할 수 있는 상위 통제 틀이다.",
+ "scope_ko": "조직 규모·유형과 무관하게 적용되는 일반 요구사항이다. 조항 4~10의 요구사항은 적합성을 주장할 때 제외할 수 없다(§1). 부속서 A 통제는 필요에 따라 선택하며 제외 사유를 SoA에 남긴다. 법적 의무는 아니다(머리말이 표준의 자발적 성격을 안내).",
+ "provisions": [
+  {
+   "ref": "4.2 NOTE",
+   "topic_ko": "이해관계자 요구사항에 법·규제·계약 의무 포함",
+   "obligation_ko": "ISMS가 다룰 이해관계자의 요구사항에는 법적·규제 요구사항과 계약상 의무가 포함될 수 있다.",
+   "actor": "operator",
+   "strength": "informative",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "The requirements of interested parties can include legal and regulatory requirements and contractual",
+   "gateway_control_ko": "해당 없음(조직 판단). 관할별 요구(국가·산업)를 요구사항 매트릭스의 통제 연결로 추적해 SoA 근거로 제공한다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "6.1.2 b)",
+   "topic_ko": "반복 평가가 일관되고 비교 가능한 결과를 내도록 설계",
+   "obligation_ko": "정보보호 위험 평가 프로세스는 위험 기준을 두고 반복된 평가가 일관되고 타당하며 비교 가능한 결과를 내도록 해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "",
+   "anchor": "ensures that repeated information security risk assessments produce consistent, valid and comparable results",
+   "gateway_control_ko": "MCP 서버·도구 도입 심사 항목을 고정 서식(기능, 데이터, 권한, 외부 전송, 취약점 상태)으로 기록해 재평가 결과를 비교할 수 있게 한다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "6.1.3 c)",
+   "topic_ko": "Annex A와 대조해 필요한 통제의 누락 확인",
+   "obligation_ko": "위험 처리를 위해 정한 통제를 Annex A의 통제와 비교해 필요한 통제가 빠지지 않았는지 확인해야 하며, Annex A는 모두 열거한 것이 아니라 추가 통제를 둘 수 있다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "",
+   "anchor": "compare the controls determined in 6.1.3 b) above with those in Annex A and verify that no necessary controls have been omitted",
+   "gateway_control_ko": "정책 50개와 Annex A 통제의 대응표를 요구사항 매트릭스로 유지하고 누락 통제를 개발 후보로 표시한다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "6.1.3 d), f) 적용성 보고서",
+   "topic_ko": "SoA에 필요 통제, 포함 사유, 구현 여부, 제외 사유",
+   "obligation_ko": "적용성 보고서(SoA)는 필요한 통제, 그 포함 사유, 구현 여부, Annex A 통제 제외 사유를 담아야 하며, 위험 처리 계획과 잔여 위험 수용은 위험 소유자가 승인해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "the justification for excluding any of the Annex A controls",
+   "gateway_control_ko": "통제별 구현 상태(구현·부분·미구현), 근거 코드·시험 링크, 제외 사유를 요구사항 매트릭스에서 내보내 SoA 작성 자료로 쓴다(SoA 작성과 위험 소유자 승인은 조직 절차).",
+   "pol_ids": []
+  },
+  {
+   "ref": "7.5.3 b) 문서화된 정보의 보호",
+   "topic_ko": "기밀성·무결성 상실로부터 보호",
+   "obligation_ko": "ISMS가 요구하는 문서화된 정보는 필요할 때 이용 가능해야 하고 기밀성 상실, 부적절한 사용, 무결성 상실로부터 적절히 보호되어야 하며 접근, 보관, 변경 통제, 보존·폐기는 해당되는 범위에서 다뤄야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "it is adequately protected (e.g. from loss of confidentiality, improper use, or loss of integrity)",
+   "gateway_control_ko": "감사 원장·승인 기록·정책 판본에 접근통제, 변조 방지, 보존 기한을 적용한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "8.1 외부 제공 프로세스·제품·서비스",
+   "topic_ko": "외부에서 제공되는 것의 통제 보장",
+   "obligation_ko": "조직은 ISMS와 관련된 외부 제공 프로세스, 제품 또는 서비스가 통제되도록 해야 하고 계획된 변경을 통제하며 의도하지 않은 변경의 결과를 검토해 악영향을 완화해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "The organization shall ensure that externally provided processes, products or services that are relevant",
+   "gateway_control_ko": "외부 MCP 서버·모델 제공자를 도입 승인된 판본·주소로만 연결하고 서버 구성 변경은 승인 완료 도구와 대조해 보안 영향이 있으면 차단한다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-40",
+    "POL-08"
+   ]
+  },
+  {
+   "ref": "8.2 정보보호 위험 평가의 수행",
+   "topic_ko": "계획된 주기 또는 중대한 변경 시 재평가",
+   "obligation_ko": "조직은 계획된 주기로 또는 중대한 변경이 제안되거나 발생할 때 위험 평가를 수행하고 결과를 문서화된 정보로 보관해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "계획된 주기, 중대한 변경 시",
+   "anchor": "The organization shall perform information security risk assessments at planned intervals or when significant changes are proposed or occur",
+   "gateway_control_ko": "연결 목적지 변경, 권한 범위 변경, 서버 판본 변경을 재승인 트리거로 두고 승인 만료일에 재심사한다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-40"
+   ]
+  },
+  {
+   "ref": "9.1 a) 모니터링 대상",
+   "topic_ko": "정보보호 프로세스와 통제의 모니터링·측정",
+   "obligation_ko": "조직은 정보보호 프로세스와 통제를 포함해 무엇을 모니터링·측정할지, 타당하고 재현 가능한 결과를 내는 방법, 수행 시점, 수행자, 분석·평가 시점과 담당자를 정하고 결과의 증거를 문서화해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "what needs to be monitored and measured, including information security processes and controls",
+   "gateway_control_ko": "호출, 차단, 승인, 경보 지표를 정기 집계하고 권한·이상 징후 점검 결과를 보고한다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "9.2.1 내부 감사",
+   "topic_ko": "계획된 주기의 내부 감사",
+   "obligation_ko": "조직은 ISMS가 요구사항에 적합하고 효과적으로 이행·유지되는지에 대한 정보를 제공하기 위해 계획된 주기로 내부 감사를 수행해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "계획된 주기",
+   "anchor": "The organization shall conduct internal audits at planned intervals to provide information on whether",
+   "gateway_control_ko": "해당 없음(조직 절차). 감사 담당자가 원장·승인 이력·정책 판본을 읽기 전용으로 조회·내보낼 수 있게 한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "10.2 부적합 및 시정조치",
+   "topic_ko": "부적합 대응, 원인 분석, 시정조치 효과 검토",
+   "obligation_ko": "부적합이 발생하면 통제·시정하고 결과를 처리하며 재발을 막기 위해 원인을 검토하고 시정조치의 효과를 검토하며 부적합과 시정조치 결과를 문서화된 정보로 보관해야 한다.",
+   "actor": "operator",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "When a nonconformity occurs, the organization shall:",
+   "gateway_control_ko": "미승인 변경·비정상 호출 탐지 시 연결 중지, 영향 범위 조사, 재발 방지 규칙 추가와 재시험 결과를 사건 기록으로 보존한다.",
+   "pol_ids": [
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "Annex A 5.7 위협 인텔리전스",
+   "topic_ko": "위협 정보의 수집·분석",
+   "obligation_ko": "정보보호 위협에 관한 정보를 수집·분석해 위협 인텔리전스를 만들어야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Information relating to information security threats shall be collected and analysed to produce threat intelligence",
+   "gateway_control_ko": "MCP 서버·의존성의 취약점 공지(CVE, 공급자 보안 공지)를 도입 대장과 연결하고 영향 서버를 식별해 조치 기한을 관리한다.",
+   "pol_ids": [
+    "POL-39",
+    "POL-03"
+   ]
+  },
+  {
+   "ref": "Annex A 5.9 자산 목록",
+   "topic_ko": "정보 및 관련 자산 목록과 소유자",
+   "obligation_ko": "소유자를 포함한 정보 및 관련 자산의 목록을 작성·유지해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "An inventory of information and other associated assets, including owners, shall be developed and maintained",
+   "gateway_control_ko": "등록된 MCP 서버·도구·기능과 보호 자산(보안 등급, 소유 부서)을 대장으로 유지하고 미등록 서버는 연결하지 못하게 한다.",
+   "pol_ids": [
+    "POL-11",
+    "POL-25"
+   ]
+  },
+  {
+   "ref": "Annex A 5.10 허용 가능한 사용",
+   "topic_ko": "자산의 허용 사용 규칙과 취급 절차",
+   "obligation_ko": "정보 및 관련 자산의 허용 가능한 사용 규칙과 취급 절차를 식별·문서화하고 이행해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "governance_accountability",
+   "timing_ko": "",
+   "anchor": "Rules for the acceptable use and procedures for handling information and other associated assets shall be identified, documented and implemented",
+   "gateway_control_ko": "승인된 업무 범위의 기능·목적·데이터를 벗어난 호출을 차단하고 위반 주체·서버·기능의 승인을 중지·철회한다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-22",
+    "POL-44"
+   ]
+  },
+  {
+   "ref": "Annex A 5.12 정보 분류",
+   "topic_ko": "기밀성·무결성·가용성과 이해관계자 요구에 따른 정보 분류",
+   "obligation_ko": "정보는 기밀성, 무결성, 가용성과 관련 이해관계자 요구사항에 따른 조직의 정보보호 필요에 맞춰 분류해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "Information shall be classified according to the information security needs of the organization",
+   "gateway_control_ko": "자산·보안 등급을 확인하고 등급이 불명확하면 중요 등급으로 간주해 차단하는 분류 기반 접근 판정을 적용한다.",
+   "pol_ids": [
+    "POL-25",
+    "POL-30"
+   ]
+  },
+  {
+   "ref": "Annex A 5.14 정보 전송",
+   "topic_ko": "전송 시설 유형별 규칙·절차·합의",
+   "obligation_ko": "조직 내부와 다른 당사자 사이의 모든 전송 시설 유형에 대해 정보 전송 규칙, 절차 또는 합의가 있어야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "Information transfer rules, procedures, or agreements shall be in place for all types of transfer facilities",
+   "gateway_control_ko": "내부 자료의 외부 전송은 수신처, 목적, 데이터 범위와 등급이 승인 및 필요한 동의와 일치할 때만 허용하고 변경 시 재검증한다.",
+   "pol_ids": [
+    "POL-26",
+    "POL-33"
+   ]
+  },
+  {
+   "ref": "Annex A 5.15 접근 통제",
+   "topic_ko": "물리적·논리적 접근 통제 규칙",
+   "obligation_ko": "업무 및 정보보호 요구사항에 따라 정보와 관련 자산에 대한 물리적·논리적 접근을 통제하는 규칙을 수립·시행해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Rules to control physical and logical access to information and other associated assets shall be established and implemented",
+   "gateway_control_ko": "정책 엔진이 호출마다 사용자·위임·기능·자산 등급을 검사하는 기본 거부 접근 규칙을 구현하고 판단 정보가 없으면 차단한다.",
+   "pol_ids": [
+    "POL-22",
+    "POL-25"
+   ]
+  },
+  {
+   "ref": "Annex A 5.16 신원 관리",
+   "topic_ko": "신원의 전체 수명주기 관리",
+   "obligation_ko": "신원의 전체 수명주기를 관리해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "The full life cycle of identities shall be managed",
+   "gateway_control_ko": "사용자·에이전트 신원을 신뢰할 수 있는 경로로 검증하고 계정 폐기·권한 철회가 후속 호출 거부에 즉시 반영되게 한다.",
+   "pol_ids": [
+    "POL-19",
+    "POL-44"
+   ]
+  },
+  {
+   "ref": "Annex A 5.17 인증정보",
+   "topic_ko": "인증정보 할당·관리 프로세스",
+   "obligation_ko": "인증정보의 할당과 관리는 인증정보의 적절한 취급을 담당자에게 안내하는 것을 포함한 관리 프로세스로 통제해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Allocation and management of authentication information shall be controlled by a management process",
+   "gateway_control_ko": "토큰·API 키를 승인된 비밀 저장소로 관리하고 설정 파일·실행 인자·오류 메시지에 원문이 노출되지 않게 하며 서버별로 분리해 교체 후 이전 값을 무효화한다.",
+   "pol_ids": [
+    "POL-14",
+    "POL-15",
+    "POL-41"
+   ]
+  },
+  {
+   "ref": "Annex A 5.18 접근 권한",
+   "topic_ko": "접근 권한의 부여·검토·변경·회수",
+   "obligation_ko": "접근 권한은 접근 통제 정책에 따라 부여, 검토, 변경, 회수해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Access rights to information and other associated assets shall be provisioned, reviewed, modified and removed",
+   "gateway_control_ko": "위임 범위와 유효기간을 두고 승인 만료 시 재확인하며 연결 폐기 시 문서 저장소의 서비스 계정 권한과 공유 설정을 회수한다.",
+   "pol_ids": [
+    "POL-20",
+    "POL-47",
+    "POL-44"
+   ]
+  },
+  {
+   "ref": "Annex A 5.19 공급자 관계",
+   "topic_ko": "공급자 제품·서비스 사용에 따른 위험 관리",
+   "obligation_ko": "공급자의 제품이나 서비스 사용과 관련된 정보보호 위험을 관리하는 프로세스와 절차를 정의하고 이행해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "Processes and procedures shall be defined and implemented to manage the information security risks associated with the use of",
+   "gateway_control_ko": "외부 MCP 제공자의 문서·결과 저장·재사용·제3자 제공, 유지보수와 보안 공지를 도입 심사에서 확인하고 불명확하면 도입을 보류한다.",
+   "pol_ids": [
+    "POL-07",
+    "POL-03"
+   ]
+  },
+  {
+   "ref": "Annex A 5.20 공급자 계약",
+   "topic_ko": "공급자 유형별 정보보호 요구사항 합의",
+   "obligation_ko": "공급자 관계 유형에 따라 관련 정보보호 요구사항을 수립하고 각 공급자와 합의해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "Relevant information security requirements shall be established and agreed with each supplier based on the type of supplier relationship",
+   "gateway_control_ko": "도입 심사에 계약·DPA 체결 증빙과 보관·삭제·재위탁 조건 확인란을 두고, 연결 종료 시 제공자 보유 문서의 반환·삭제 완료를 확인한다.",
+   "pol_ids": [
+    "POL-07",
+    "POL-49"
+   ]
+  },
+  {
+   "ref": "Annex A 5.21 ICT 공급망",
+   "topic_ko": "ICT 제품·서비스 공급망 위험 관리",
+   "obligation_ko": "ICT 제품과 서비스 공급망과 관련된 정보보호 위험을 관리하는 프로세스와 절차를 정의하고 이행해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "risks associated with the ICT products and services supply chain",
+   "gateway_control_ko": "MCP 서버와 의존성의 배포처, 배포자, 버전, 서명·해시 검증 결과를 기록하고 출처 미확인·검증 실패면 도입을 보류하며 계약 잠금 변경은 사람이 diff를 읽고 승인한다.",
+   "pol_ids": [
+    "POL-01",
+    "POL-37"
+   ]
+  },
+  {
+   "ref": "Annex A 5.22 공급자 서비스 모니터링",
+   "topic_ko": "공급자 정보보호 관행과 서비스 제공 변경의 정기 점검",
+   "obligation_ko": "조직은 공급자의 정보보호 관행과 서비스 제공의 변화를 정기적으로 모니터링·검토·평가·관리해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "third_party_management",
+   "timing_ko": "정기적",
+   "anchor": "The organization shall regularly monitor, review, evaluate and manage change in supplier information security practices and service delivery",
+   "gateway_control_ko": "승인된 서버의 도구 설명·스키마·연결 주소 변경을 대조해 탐지하고 변경 시 사용을 차단한 뒤 재승인을 받는다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-40",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "Annex A 5.23 클라우드 서비스",
+   "topic_ko": "클라우드 서비스의 취득·사용·관리·종료 프로세스",
+   "obligation_ko": "클라우드 서비스의 취득, 사용, 관리, 종료(exit)를 위한 프로세스를 조직의 정보보호 요구사항에 맞게 수립해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "Processes for acquisition, use, management and exit from cloud services shall be established",
+   "gateway_control_ko": "원격 MCP·모델 제공자 연결의 도입 심사부터 폐기(권한 철회, 인증정보 회수, 제공자 보유 문서 삭제 확인)까지의 수명주기를 정의하고 폐기 후 재호출 차단을 시험한다.",
+   "pol_ids": [
+    "POL-44",
+    "POL-45",
+    "POL-49",
+    "POL-50"
+   ]
+  },
+  {
+   "ref": "Annex A 5.24 사고 관리 계획",
+   "topic_ko": "사고 관리 프로세스·역할·책임의 수립과 전파",
+   "obligation_ko": "정보보호 사고 관리 프로세스, 역할, 책임을 정의·수립·소통해 사고 관리를 계획하고 준비해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "incident_reporting",
+   "timing_ko": "",
+   "anchor": "The organization shall plan and prepare for managing information security incidents",
+   "gateway_control_ko": "탐지 → 연결 중지 → 영향 범위 조사 → 통지 자료 내보내기의 대응 흐름을 구현하고 알림 수신 담당자를 지정할 수 있게 한다.",
+   "pol_ids": [
+    "POL-43",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "Annex A 5.26 사고 대응",
+   "topic_ko": "문서화된 절차에 따른 대응",
+   "obligation_ko": "정보보호 사고는 문서화된 절차에 따라 대응해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "incident_reporting",
+   "timing_ko": "",
+   "anchor": "Information security incidents shall be responded to in accordance with the documented procedures",
+   "gateway_control_ko": "미승인 변경이나 비정상 호출이 탐지되면 관련 도구와 연결을 중지하고 조사한다는 대응 절차를 정책으로 문서화하고 시험한다.",
+   "pol_ids": [
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "Annex A 5.28 증거 수집",
+   "topic_ko": "정보보호 사건 관련 증거의 식별·수집·획득·보존 절차",
+   "obligation_ko": "정보보호 사건과 관련된 증거를 식별, 수집, 획득, 보존하는 절차를 수립하고 이행해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "collection, acquisition and preservation of evidence related to information security events",
+   "gateway_control_ko": "변조 방지된 원장에서 사건 단위로 호출·결정·승인 이력을 내보내 증거로 보존하고 보존 중 삭제·수정 코드를 두지 않는다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Annex A 5.31 법·규제·계약 요구사항",
+   "topic_ko": "관련 요구사항의 식별·문서화·최신 유지",
+   "obligation_ko": "정보보호에 관련된 법적·제정법적·규제·계약 요구사항과 그에 대한 조직의 대응 방식을 식별·문서화하고 최신으로 유지해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "governance_accountability",
+   "timing_ko": "최신 유지",
+   "anchor": "Legal, statutory, regulatory and contractual requirements relevant to information security",
+   "gateway_control_ko": "해당 없음(조직 절차). 관할별 요구사항 → 정책 → 구현·시험 연결 표를 요구사항 매트릭스로 유지하고 법령 개정일을 추적한다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "Annex A 5.33 기록 보호",
+   "topic_ko": "손실·파괴·위조·무단 접근·무단 공개로부터 기록 보호",
+   "obligation_ko": "기록은 손실, 파괴, 위조, 무단 접근, 무단 공개로부터 보호되어야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Records shall be protected from loss, destruction, falsification, unauthorized access and unauthorized release",
+   "gateway_control_ko": "append-only 원장과 변조 검출(해시 체인), 접근통제, 비밀정보 제외·개인정보 마스킹을 적용한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Annex A 5.34 프라이버시·개인식별정보",
+   "topic_ko": "적용 법령·계약에 따른 프라이버시와 PII 보호 요구 식별·충족",
+   "obligation_ko": "조직은 적용 법령, 규정, 계약 요구사항에 따라 프라이버시 보존과 PII 보호 요구사항을 식별하고 충족해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "preservation of privacy and protection of PII according to applicable",
+   "gateway_control_ko": "개인정보 수집·이용의 적법 근거와 목적을 도입 심사에 기록하고 개인정보가 포함된 입출력은 마스킹하며 응답 내 개인정보의 제공·국외 이전은 승인된 범위에서만 허용한다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-30",
+    "POL-31",
+    "POL-26"
+   ]
+  },
+  {
+   "ref": "Annex A 6.8 정보보호 사건 보고",
+   "topic_ko": "의심·관찰된 사건을 제때 보고하는 메커니즘",
+   "obligation_ko": "조직은 인원이 관찰했거나 의심하는 정보보호 사건을 적절한 경로로 제때 보고할 수 있는 메커니즘을 제공해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "incident_reporting",
+   "timing_ko": "제때",
+   "anchor": "The organization shall provide a mechanism for personnel to report observed or suspected information security events",
+   "gateway_control_ko": "해당 없음(조직 절차). 사용자가 의심 호출을 신고하면 해당 호출의 원장 기록과 연결되도록 이벤트 ID를 노출한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Annex A 8.2 특권 접근 권한",
+   "topic_ko": "특권 접근 권한의 할당·사용 제한과 관리",
+   "obligation_ko": "특권 접근 권한의 할당과 사용은 제한되고 관리되어야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "The allocation and use of privileged access rights shall be restricted and managed",
+   "gateway_control_ko": "게이트웨이 관리 라우트는 관리자 인증을 요구하고 관리 행위(정책·승인 변경)는 개별 승인 또는 기록 대상으로 둔다.",
+   "pol_ids": [
+    "POL-27",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Annex A 8.3 정보 접근 제한",
+   "topic_ko": "접근 통제 정책에 따른 접근 제한",
+   "obligation_ko": "정보와 관련 자산에 대한 접근은 수립된 접근 통제 정책에 따라 제한되어야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Access to information and other associated assets shall be restricted in accordance with the established topic-specific policy on access control",
+   "gateway_control_ko": "단일 조회의 문서 반환 범위를 업무에 필요한 만큼으로 제한하고 전체 폴더·대량 조회를 승인 없이 허용하지 않는다.",
+   "pol_ids": [
+    "POL-35",
+    "POL-25"
+   ]
+  },
+  {
+   "ref": "Annex A 8.5 보안 인증",
+   "topic_ko": "접근 제한에 맞는 안전한 인증 기술·절차",
+   "obligation_ko": "정보 접근 제한과 접근 통제 정책에 기반해 안전한 인증 기술과 절차를 구현해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Secure authentication technologies and procedures shall be implemented",
+   "gateway_control_ko": "OAuth 토큰의 발급자·대상·유효기간·Scope를 검증하고 인증 응답의 반환 주소·상태를 요청과 대조해 불일치·재사용 응답을 거부한다.",
+   "pol_ids": [
+    "POL-21",
+    "POL-13",
+    "POL-19"
+   ]
+  },
+  {
+   "ref": "Annex A 8.8 기술적 취약점 관리",
+   "topic_ko": "취약점 정보 획득, 노출 평가, 적절한 조치",
+   "obligation_ko": "사용 중인 정보시스템의 기술적 취약점 정보를 입수하고 조직의 노출을 평가하며 적절한 조치를 취해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "Information about technical vulnerabilities of information systems in",
+   "gateway_control_ko": "운영 중인 MCP 서버의 알려진 취약점을 영향도 평가 후 정해진 기한 내 조치하고, 불가능하면 해당 기능을 격리하거나 사용 중지한다.",
+   "pol_ids": [
+    "POL-39",
+    "POL-03"
+   ]
+  },
+  {
+   "ref": "Annex A 8.9 구성 관리",
+   "topic_ko": "보안 구성의 수립·문서화·이행·모니터링·검토",
+   "obligation_ko": "하드웨어, 소프트웨어, 서비스, 네트워크의 보안 구성을 포함한 구성을 수립, 문서화, 이행, 모니터링, 검토해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Configurations, including security configurations, of hardware, software, services and networks shall be established, documented, implemented, monitored and reviewed",
+   "gateway_control_ko": "하네스 관리형 설정을 레지스트리에서 렌더링해 배포하고, 로컬 서버 실행 명령·경로·인자·환경변수를 승인 설정과 대조해 다르면 시작하지 않는다.",
+   "pol_ids": [
+    "POL-17",
+    "POL-37"
+   ]
+  },
+  {
+   "ref": "Annex A 8.10 정보 삭제",
+   "topic_ko": "불필요해진 정보의 삭제",
+   "obligation_ko": "정보시스템, 장치, 기타 저장 매체에 저장된 정보는 더 이상 필요하지 않으면 삭제해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "필요 없어진 때",
+   "anchor": "Information stored in information systems, devices or in any other storage media shall be deleted when no longer required",
+   "gateway_control_ko": "연결 해제 시 보존 의무가 없는 문서 사본·임시 파일·캐시를 삭제하고 연결이 해제된 로컬 MCP 서버 프로세스를 종료하며 제공자 보유 문서의 삭제를 확인한다.",
+   "pol_ids": [
+    "POL-48",
+    "POL-46",
+    "POL-49"
+   ]
+  },
+  {
+   "ref": "Annex A 8.11 데이터 마스킹",
+   "topic_ko": "접근 통제 정책과 법령을 고려한 마스킹",
+   "obligation_ko": "데이터 마스킹은 접근 통제 및 기타 주제별 정책, 업무 요구사항, 적용 법령을 고려해 사용해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "",
+   "anchor": "Data masking shall be used in accordance with the",
+   "gateway_control_ko": "도구 입력과 응답의 불필요한 민감정보를 제거하거나 마스킹하고 금지 정보의 제거가 불명확하면 전달을 차단한다.",
+   "pol_ids": [
+    "POL-30",
+    "POL-31"
+   ]
+  },
+  {
+   "ref": "Annex A 8.12 데이터 유출 방지",
+   "topic_ko": "민감정보를 처리·저장·전송하는 시스템에 유출 방지 적용",
+   "obligation_ko": "민감정보를 처리·저장·전송하는 시스템, 네트워크, 기타 장치에 데이터 유출 방지 조치를 적용해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Data leakage prevention measures shall be applied to systems, networks and any other devices that process, store or transmit sensitive information",
+   "gateway_control_ko": "외부 전송 대상·데이터 범위·등급을 호출마다 검증하고 DNS·리디렉션을 포함한 실제 연결 주소가 승인 범위 밖이면 차단한다.",
+   "pol_ids": [
+    "POL-26",
+    "POL-10",
+    "POL-33"
+   ]
+  },
+  {
+   "ref": "Annex A 8.15 로깅",
+   "topic_ko": "활동·예외·결함 기록의 생성·저장·보호·분석",
+   "obligation_ko": "활동, 예외, 결함, 기타 관련 사건을 기록하는 로그를 생성, 저장, 보호, 분석해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Logs that record activities, exceptions, faults and other relevant events shall be produced, stored, protected and analysed",
+   "gateway_control_ko": "호출, 권한 변경, 폐기, 인증정보 회수 이력을 비밀정보 제외·개인정보 최소화 상태로 기록하고 접근통제·변조 방지와 정기 점검·보고를 수행한다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Annex A 8.16 모니터링 활동",
+   "topic_ko": "비정상 행동 모니터링과 사고 평가 조치",
+   "obligation_ko": "네트워크, 시스템, 애플리케이션의 비정상 행동을 모니터링하고 잠재적 정보보호 사고를 평가하기 위한 적절한 조치를 해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "monitored for anomalous behaviour and appropriate actions taken to evaluate potential",
+   "gateway_control_ko": "새 MCP 도구 사용, 미승인 연결 시도, 비정상적 호출 증가에 대한 경보를 설정하고 설정 변경 후에도 동작하는지 정기 확인한다.",
+   "pol_ids": [
+    "POL-42",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "Annex A 8.17 시간 동기화",
+   "topic_ko": "승인된 시간원에 시계 동기화",
+   "obligation_ko": "조직이 사용하는 정보처리 시스템의 시계는 승인된 시간원에 동기화해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "The clocks of information processing systems used by the organization shall be synchronized to approved time sources",
+   "gateway_control_ko": "해당 없음(운영 환경 절차). 원장 기록 시각의 신뢰도는 운영 서버의 시각 동기화에 달려 있으므로 시각 오차 점검을 배포 점검 항목 후보로 둔다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "Annex A 8.24 암호 사용",
+   "topic_ko": "암호 사용 규칙과 키 관리",
+   "obligation_ko": "암호화 키 관리를 포함한 효과적인 암호 사용 규칙을 정의하고 이행해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Rules for the effective use of cryptography, including cryptographic key management, shall be defined and implemented",
+   "gateway_control_ko": "원격 MCP 연결에 승인된 암호화 전송과 연결 상대 검증을 적용하고 평문 전송이나 검증되지 않은 중간 경로는 운영에서 제외한다.",
+   "pol_ids": [
+    "POL-16",
+    "POL-14"
+   ]
+  },
+  {
+   "ref": "Annex A 8.26 애플리케이션 보안 요구사항",
+   "topic_ko": "개발·취득 시 보안 요구사항의 식별·명세·승인",
+   "obligation_ko": "애플리케이션을 개발하거나 취득할 때 정보보호 요구사항을 식별, 명세, 승인해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "Information security requirements shall be identified, specified and approved when developing or acquiring applications",
+   "gateway_control_ko": "MCP 서버·도구 도입 신청에 기능, 목적, 데이터, 권한, 외부 전송을 명세하게 하고 승인 범위만 등록한다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-11"
+   ]
+  },
+  {
+   "ref": "Annex A 8.29 개발·인수 시 보안 테스트",
+   "topic_ko": "개발 수명주기의 보안 테스트 프로세스",
+   "obligation_ko": "개발 수명주기에 보안 테스트 프로세스를 정의하고 이행해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "testing_red_teaming_robustness",
+   "timing_ko": "",
+   "anchor": "Security testing processes shall be defined and implemented in the development life cycle",
+   "gateway_control_ko": "제한된 환경에서 Tool 설명과 실제 조회·변경·전송 동작의 일치를 시험하고 시험이 실패하거나 결과가 없으면 운영 연결을 승인하지 않는다.",
+   "pol_ids": [
+    "POL-05",
+    "POL-04"
+   ]
+  },
+  {
+   "ref": "Annex A 8.31 개발·시험·운영 환경 분리",
+   "topic_ko": "개발·시험·운영 환경의 분리와 보호",
+   "obligation_ko": "개발, 시험, 운영 환경은 분리되고 보호되어야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Development, testing and production environments shall be separated and secured",
+   "gateway_control_ko": "개발·시험·운영 접근을 분리하고 승인된 자원만 허용하며, 시험은 생성·가공 데이터로 수행한다.",
+   "pol_ids": [
+    "POL-09"
+   ]
+  },
+  {
+   "ref": "Annex A 8.32 변경 관리",
+   "topic_ko": "정보처리 시설·시스템 변경의 변경 관리 절차 적용",
+   "obligation_ko": "정보처리 시설과 정보시스템의 변경에는 변경 관리 절차를 적용해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "Changes to information processing facilities and information systems shall be subject to change management procedures",
+   "gateway_control_ko": "승인 완료된 도구 목록과 계약 잠금을 보관하고 서버 변경이 있으면 대조해 보안 영향이 있을 때 차단하며 연결 목적지·전송 대상 변경은 재승인한다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-40"
+   ]
+  },
+  {
+   "ref": "Annex A 8.33 시험 정보",
+   "topic_ko": "시험 정보의 적절한 선택·보호·관리",
+   "obligation_ko": "시험 정보는 적절히 선택되고 보호되고 관리되어야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "",
+   "anchor": "Test information shall be appropriately selected, protected and managed",
+   "gateway_control_ko": "시험은 생성 또는 가공 데이터로 수행하고 운영 데이터와 인증정보는 불가피한 경우에만 책임자 승인 하에 쓰며 법정 보존 대상이 아닌 시험 데이터는 사용 후 즉시 삭제한다.",
+   "pol_ids": [
+    "POL-09",
+    "POL-48"
+   ]
+  }
+ ],
+ "pitfalls_ko": [
+  "사본은 2022-10 원문이며 Amd 1:2024(기후 변화 대응 변경)가 포함돼 있지 않다. 수정 사항을 반영한 문안은 별도로 확인해야 한다. 수정본의 내용(ISO 카탈로그 제목 'Climate action changes' 외)은 읽지 않아 확인하지 못했다.",
+  "조항 4~10의 요구사항은 적합성을 주장하려면 제외할 수 없다(§1). 부속서 A 통제는 선택할 수 있으나 제외 사유를 SoA에 남겨야 한다. 부속서 A는 규범(normative) 부속서이며 6.1.3과 함께 쓴다는 문구가 있다. 노트의 강도 열은 이 구분을 따랐다(부속서 A 통제는 recommended).",
+  "표 A.1은 ISO/IEC 27002:2022의 조항 5~8에서 직접 유도된 통제 목록이다. 이 노트는 27002를 읽지 않았다.",
+  "이 표준은 조직의 ISMS 수립·운영 요구사항이며(§1) MINT 제품 기능의 성능 기준이 아니다. MINT 통제 매핑은 증빙 후보다.",
+  "쪽 번호가 아니라 조항·통제 번호로 인용한다."
+ ],
+ "reading_scope_ko": "본문 전체(조항 1~10)와 부속서 A 표 A.1 전체(5.1~8.34)를 읽었다. 이 노트는 MINT와 연결되는 통제만 골랐고 물리 통제(7.x)와 인적 통제 대부분(6.1~6.7)은 선정하지 않았다. 서문, 부록 서지는 훑어보았다.",
+ "limitations_ko": "법적 해석이나 인증 적합성 판단이 아니다. Amd 1:2024를 읽지 않았고 ISO/IEC 27002:2022의 구현 지침도 확인하지 않았다. 국내 ISMS-P 인증 기준과의 대응은 이 노트에 없다. ISO 공식 페이지(www.iso.org/standard/27001)는 검수 시 403으로 열리지 않아 카탈로그 상태·개정 목록을 재확인하지 못했다.",
+ "license_notice": "사본 표지 안쪽 'COPYRIGHT PROTECTED DOCUMENT ... © ISO/IEC 2022 All rights reserved. Unless otherwise specified, or required in the context of its implementation, no part of this publication may be reproduced or utilized otherwise in any form or by any means ... including ... posting on the internet or an intranet, without prior written permission.' 사본 끝에 'Price based on 19 pages' 표기가 있는 판매용 표준이므로 원문과 추출본은 로컬 전용으로 보관한다.",
+ "distribution": "local-only",
+ "distribution_reason": "ISO/IEC 저작권 고지가 인터넷·인트라넷 게시를 사전 서면 허가 없이 금지한다. 사용자가 제공한 사본이므로 저장소에는 올리지 않고 로컬 전용 경로에 둔다."
+}

@@ -1,0 +1,158 @@
+{
+ "id": "LIB-M50",
+ "title": "Recommendation of the Council on Artificial Intelligence (OECD/LEGAL/0449)",
+ "title_native": "",
+ "issuer": "OECD(경제협력개발기구) 이사회",
+ "jurisdiction": "INTL",
+ "instrument_type": "framework",
+ "binding": false,
+ "status": "voluntary",
+ "edition": "OECD/LEGAL/0449, 2019년 채택, 2023-11-08 AI 시스템 정의 개정, 2024-05-03 개정판. 12쪽",
+ "key_dates": "문서는 2019-05-22 각료급 이사회 채택, 2023-11-08 AI 시스템 정의 개정, 2024-05-03 각료급 이사회 개정을 밝힌다. 이사회는 디지털정책위원회에 개정 후 늦어도 5년 이내, 이후 최소 10년마다 이행·보급·지속 적합성을 보고하도록 지시했다(문서는 어느 개정인지 날짜를 적지 않는다). 2쪽 저작권 표기는 © OECD 2026이다. 공식 법적 문서 페이지의 데이터(2026-10-17 조회)는 채택일 2019-05-22, 최종 개정일 2024-05-03을 표시하며 그 이후 개정 이력은 보이지 않는다.",
+ "language": "en",
+ "official_page_url": "https://legalinstruments.oecd.org/en/instruments/OECD-LEGAL-0449",
+ "summary_ko": "최초의 정부 간 AI 표준으로, 신뢰할 수 있는 AI의 책임 있는 관리를 위한 5개 가치 기반 원칙(포용적 성장, 법치·인권·민주적 가치, 투명성과 설명 가능성, 견고성·보안·안전, 책임성)과 각국 정책·국제 협력을 위한 5개 권고를 담는다. 'AI 시스템', 'AI 시스템 생애주기', 'AI 행위자'의 공통 정의도 제공한다. 법적 구속력이 없는 권고다.",
+ "scope_ko": "OECD 회원국과 비회원 가입국(Adherents)이 정책에 반영하고 모든 AI 행위자가 역할에 따라 이행하라고 권고하는 원칙이다. 권고는 법적 구속력이 없고 가입국에 이행 노력의 정치적 약속을 의미한다. 문서는 'AI 시스템', 'AI 시스템 생애주기', 'AI 행위자' 같은 핵심 용어의 공통 이해를 제시한다고 밝힌다(4쪽).",
+ "provisions": [
+  {
+   "ref": "p.12 (OECD Legal Instruments)",
+   "topic_ko": "권고(Recommendation)는 법적 구속력이 없는 정치적 약속",
+   "obligation_ko": "이사회가 채택한 권고는 법적 구속력이 없고 담긴 원칙에 대한 정치적 약속이며, 가입국이 이행에 최선을 다할 것이라는 기대를 수반한다.",
+   "actor": "authority",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "Recommendations are adopted by Council and are not legally binding.",
+   "gateway_control_ko": "해당 없음(문서 성격). 개발 근거로 인용할 때 법적 의무가 아니라 국제 원칙임을 표기한다.",
+   "pol_ids": []
+  },
+  {
+   "ref": "I. 정의",
+   "topic_ko": "AI 시스템과 AI 시스템 생애주기의 공통 정의",
+   "obligation_ko": "AI 시스템은 명시적 또는 암묵적 목표를 위해 입력으로부터 예측, 콘텐츠, 추천, 결정 같은 출력을 추론해 물리적·가상 환경에 영향을 줄 수 있는 기계 기반 시스템이며, 배포 후 자율성과 적응성 수준이 다양하다. 생애주기는 통상 기획·설계, 데이터 수집·처리, 모델 구축·조정, 시험·검증, 배포, 운영·모니터링, 폐기 단계를 포함하며 순차적이지 않을 수 있다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "",
+   "anchor": "An AI system is a machine-based system that, for explicit or implicit objectives, infers",
+   "gateway_control_ko": "해당 없음(정의). 도입 신청서에서 AI 시스템의 생애주기 단계(운영·모니터링·폐기)를 구분하는 기준으로 참고할 수 있다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "1.2 b)",
+   "topic_ko": "인간의 주체성·감독 능력과 의도 외 사용·오용에 대한 안전장치",
+   "obligation_ko": "AI 행위자는 맥락에 맞고 최신 기술 수준에 부합하는 범위에서 인간의 주체성과 감독 능력 같은 메커니즘과 안전장치를 구현해야 하며, 여기에는 의도된 목적 밖의 사용, 의도적 오용, 비의도적 오용에서 오는 위험이 포함된다.",
+   "actor": "any",
+   "strength": "recommended",
+   "theme": "human_oversight",
+   "timing_ko": "",
+   "anchor": "AI actors should implement mechanisms and safeguards, such as capacity for human agency and oversight",
+   "gateway_control_ko": "고위험 요청은 개별 승인을 요구하고 승인된 범위 밖 호출은 차단한다.",
+   "pol_ids": [
+    "POL-27",
+    "POL-22"
+   ]
+  },
+  {
+   "ref": "1.3",
+   "topic_ko": "투명성과 책임 있는 공개, 부정적 영향을 받은 사람이 결과를 이의 제기할 수 있는 정보",
+   "obligation_ko": "AI 행위자는 맥락과 기술 수준에 맞는 의미 있는 정보로 AI 시스템의 능력과 한계에 대한 이해를 돕고, 이해관계자가 직장을 포함해 AI 시스템과 상호작용 중임을 알게 하며, 가능하면 결과를 낳은 데이터 출처·요인·논리를 쉽게 설명하고, 부정적 영향을 받은 사람이 결과에 이의를 제기할 수 있는 정보를 제공해야 한다.",
+   "actor": "any",
+   "strength": "recommended",
+   "theme": "transparency_labelling",
+   "timing_ko": "",
+   "anchor": "AI Actors should commit to transparency and responsible disclosure regarding AI systems",
+   "gateway_control_ko": "해당 없음(모델 공급자의 공개). 승인 화면에 서버의 기능, 한계, 데이터 처리 조건을 표시하는 방안을 검토할 수 있다(후보 기능).",
+   "pol_ids": [
+    "POL-08",
+    "POL-07"
+   ]
+  },
+  {
+   "ref": "1.4 a)",
+   "topic_ko": "AI 시스템의 견고성·보안·안전을 생애주기 전체에서 확보",
+   "obligation_ko": "AI 시스템은 정상 사용, 예견 가능한 사용이나 오용, 그 밖의 역조건에서도 적절히 작동하고 불합리한 안전·보안 위험을 만들지 않도록 전 생애주기에 걸쳐 견고하고 안전해야 한다.",
+   "actor": "any",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "AI systems should be robust, secure and safe throughout their entire lifecycle",
+   "gateway_control_ko": "게이트웨이가 호출마다 권한과 데이터 등급을 판정하고 정책 엔진 불능 시 차단을 기본으로 한다.",
+   "pol_ids": [
+    "POL-22",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "1.4 b)",
+   "topic_ko": "해를 끼치거나 이상 행동을 보이면 재정의·수리·안전한 폐기가 가능해야 함",
+   "obligation_ko": "AI 시스템이 부당한 해악을 끼칠 위험이 있거나 바람직하지 않은 행동을 보이면 재정의(override), 수리, 안전한 폐기가 가능하도록 적절한 메커니즘을 두어야 한다.",
+   "actor": "any",
+   "strength": "recommended",
+   "theme": "human_oversight",
+   "timing_ko": "",
+   "anchor": "they can be overridden, repaired, and/or decommissioned safely as needed",
+   "gateway_control_ko": "주체·서버·기능 단위의 승인 중지·철회, 후속 호출 거부, 연결 해제와 폐기 절차를 제공한다.",
+   "pol_ids": [
+    "POL-44",
+    "POL-43",
+    "POL-45"
+   ]
+  },
+  {
+   "ref": "1.5 b)",
+   "topic_ko": "데이터셋·프로세스·결정에 대한 추적성 확보",
+   "obligation_ko": "AI 행위자는 생애주기 동안의 데이터셋, 프로세스, 결정에 대한 추적성을 확보해 시스템 출력을 분석하고 문의에 응답할 수 있도록 해야 한다. 정도는 맥락과 최신 기술 수준에 맞춘다.",
+   "actor": "any",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "AI actors should ensure traceability, including in relation to datasets, processes and",
+   "gateway_control_ko": "호출·판정·승인·철회를 원장에 시간순으로 남겨 도구 호출 수준의 추적성 증빙을 제공한다. 데이터셋과 모델 내부 결정의 추적은 게이트웨이 범위 밖이다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "1.5 c)",
+   "topic_ko": "생애주기 단계별 체계적 위험관리를 지속하고 공급자와 협력",
+   "obligation_ko": "AI 행위자는 역할과 맥락, 행동 능력에 따라 생애주기 각 단계에 체계적 위험관리 접근을 지속적으로 적용하고 책임 있는 사업 행위를 하며, 필요하면 다른 AI 행위자, AI 지식·자원 공급자, 사용자와 협력해야 한다. 위험에는 편향, 안전·보안·프라이버시를 포함한 인권, 노동·지식재산권이 포함된다.",
+   "actor": "any",
+   "strength": "recommended",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "지속",
+   "anchor": "apply a systematic risk management approach to each phase of the AI system lifecycle on an ongoing basis",
+   "gateway_control_ko": "도입 신청 위험 평가, 판본·구성 변경 시 재승인, 운영 중 이상 탐지 경보를 생애주기별 위험관리 증빙으로 연결한다.",
+   "pol_ids": [
+    "POL-02",
+    "POL-37",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "VIII d)",
+   "topic_ko": "이행·보급·적합성을 개정 후 5년 내, 이후 10년마다 이사회에 보고",
+   "obligation_ko": "이사회는 디지털정책위원회가 AI 거버넌스 작업반을 통해 AI 관련 작업을 이어가고 이행 지침을 개발하며 정보 교환의 장을 제공하고, 개정 후 늦어도 5년 이내에 이행·보급·지속 적합성을 이사회에 보고하며 이후 최소 10년마다 보고하도록 지시한다. OECD 내부 절차이며 가입국이나 AI 행위자의 의무가 아니다.",
+   "actor": "authority",
+   "strength": "informative",
+   "theme": "governance_accountability",
+   "timing_ko": "개정 후 5년 이내, 이후 최소 10년마다(문서는 날짜를 적지 않으며 2024-05-03 개정 기준으로 읽는 것은 해석)",
+   "anchor": "no later than five years following its revision and at least every ten years thereafter",
+   "gateway_control_ko": "해당 없음(OECD 내부 절차). 후속 개정 일정을 요구사항 점검 시점에 확인한다.",
+   "pol_ids": []
+  }
+ ],
+ "pitfalls_ko": [
+  "법적 구속력이 없는 권고다. 가입국에 정치적 약속과 이행 기대를 낳는 국제 원칙이며 기업에 직접 의무를 부과하지 않는다.",
+  "2023-11-08 개정은 AI 시스템 정의를, 2024-05-03 개정은 오정보·허위정보, 의도 외 사용·오용, 투명성 정보, 사람이 재정의·수리·폐기할 수 있는 메커니즘, 환경 지속가능성을 반영했다고 문서가 밝힌다. 인용할 때 개정 판본을 명시한다.",
+  "원칙은 가치 기반의 상위 수준이며 구체 통제를 규정하지 않는다. 게이트웨이 통제와의 대응은 해석에 따른 연결이다.",
+  "비공식 번역은 'unofficial translation' 표기와 면책 문구를 붙여야 한다고 문서가 요구한다."
+ ],
+ "reading_scope_ko": "12쪽 전체(배경 정보, 범위, 개정 이력, 이행, 정의, 제1부 원칙 1.1~1.5, 제2부 국가 정책 2.1~2.5, 지시 사항, OECD 법적 문서 설명)를 읽었다.",
+ "limitations_ko": "법적 해석이나 적합성 판단이 아니다. 가입국 수와 최신 이행 보고는 확인하지 않았다. 공식본은 영어와 프랑스어 본문이며 이 한국어 노트는 비공식 요약이다. 공식 페이지의 상태 코드(status id 1)의 명칭과 가입국 목록은 확인하지 못했다.",
+ "license_notice": "PDF 2쪽 저작권 면에는 © OECD 2026과 함께 '이 문서는 무료로 제공되며 변경하지 않는 한 추가 허락 없이 무료로 복제·배포할 수 있고 판매할 수 없다. 다른 언어로 번역할 수 있으나 번역본에 unofficial translation 표기와 면책 문구를 넣어야 한다'는 취지가 적혀 있다. 같은 면에 표지 사진의 제3자 크레디트(© kras99/Shutterstock.com)가 별도로 표기돼 있다. OECD 이용약관 페이지는 확인하지 못했다.",
+ "distribution": "public-under-license",
+ "distribution_reason": "취득한 PDF 자체(2쪽)가 변경하지 않는 조건으로 추가 허락 없이 무료 복제·배포를 허락하고 판매만 금지한다. 원본 PDF는 변경 없이 보관하고 판매·수정하지 않는다. 한국어 노트는 비공식 요약이며 공식 번역이 아니다."
+}

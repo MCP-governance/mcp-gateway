@@ -22,6 +22,7 @@ MINT의 요구사항, 정책, 코드 분석, 공식 레퍼런스와 실행 증�
 | 논문·명세·보안 문서 | [전체 목록](papers/README.md), [작업별 읽기 지도](papers/development-reading-guide.md) |
 | 상용·OSS 제품과 실행 후보 | [제품 분석](solutions/README.md), [ToolHive 후보](solutions/toolhive-runtime.md) |
 | 보고용 기능명세·개발 WBS | [기능명세서·개발 WBS·정책 대응(10-17)](analysis/feature-spec-2026-10-17/README.md) |
+| 법·규제 근거와 개발 착수 계획 | [국내외 AI 컴플라이언스 근거·요구사항 매트릭스](analysis/compliance/README.md) → [규제 근거 개발 착수 계획](analysis/compliance/dev-plan/README.md) |
 | 원본 정책과 식별자 | [위협·정책](threats/README.md), [정책50 의미 매핑](analysis/drive-curation/policy-50-crosswalk.json), [정책 번호 체계 대응](analysis/drive-curation/policy-id-mapping.json) |
 | 정상·음성·장애·경쟁·복구 시험 | [실험 카드](experiments/README.md), [검증 방법](methodology/evidence-methodology.md), [증거 계약](methodology/evidence-contract.md) |
 | 출처·판본·라이선스·원본 | [자료 보존](sources/README.md), [확보 규칙](methodology/source-protocol.md), [카탈로그](catalogs/papers.json) |

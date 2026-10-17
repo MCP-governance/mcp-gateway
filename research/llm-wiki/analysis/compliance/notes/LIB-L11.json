@@ -1,0 +1,256 @@
+{
+ "id": "LIB-L11",
+ "title": "AZS ISO/IEC TR 24028:2024 (ISO/IEC TR 24028:2020 Overview of trustworthiness in artificial intelligence의 아제르바이잔 국가표준 채택본)",
+ "title_native": "AZƏRBAYCAN RESPUBLİKASININ DÖVLƏT STANDARTI AZS ISO/IEC TR 24028:2024 — İnformasiya texnologiyaları — Süni intellekt — Süni intellektin etimadı doğrultmasına dair icmal",
+ "issuer": "아제르바이잔 표준화연구소(AZSTAND), 원문 ISO/IEC JTC 1/SC 42",
+ "jurisdiction": "AZ",
+ "instrument_type": "national_standard",
+ "binding": false,
+ "status": "voluntary",
+ "edition": "원본 ISO/IEC TR 24028 Edition 1, 2020-05(기술 보고서, 43쪽, ISO 카탈로그 Published [60.60]). 사본은 AZSTAND의 동일 채택(IDT) 2024년 초판(64쪽, 아제르바이잔어)이다. 승인 결정의 날짜와 번호는 사본에 빈칸('..........')으로 남아 있다.",
+ "key_dates": "ISO/IEC TR 24028:2020 — 2020-05 발행. AZS ISO/IEC TR 24028:2024 — 2024 초판(승인 결정의 일자·번호와 적용 시작일 'Tətbiq edilmə tarixi'는 사본에 빈칸, 연도 2024만 표기), 정기 점검 주기 연 1회(머리말 5항). 원본 ISO/IEC TR 24028:2020은 ISO 카탈로그(2026-10-17 조회)에서 2020-05 발행, Edition 1, 43쪽, 단계 60.60 Published로 확인했다. 아제르바이잔 채택본 자체의 현재 효력·적용 시작일은 AZSTAND 공식 목록에서 확인하지 못했다.",
+ "language": "az",
+ "official_page_url": "https://www.iso.org/standard/77608.html",
+ "summary_ko": "AI 시스템의 신뢰성(trustworthiness)에 영향을 주는 요인과 AI 고유의 취약점·위협(데이터 오염, 적대적 공격, 모델 도용, 프라이버시 위협, 편향, 비예측성, 불투명성)을 개관하고 완화 조치(투명성, 설명가능성, 통제가능성, 프라이버시, 견고성·복원력, 시험·평가)를 설명하는 기술 보고서의 아제르바이잔어 채택본이다. 신뢰성 수준의 명세는 범위 밖(1항)이라고 밝히는 개관 문서다.",
+ "scope_ko": "AI를 제공하거나 사용하는 시스템의 신뢰성에 영향을 주는 요인 분석과 기존 접근의 AI 적용 가능성 논의가 범위다(도입부 GİRİŞ와 1항 적용 범위). 표지에 기술 보고서(Texniki hesabat)로 표시되며 1항은 신뢰성 수준의 명세를 범위 밖으로 명시한다. MINT에게는 에이전트 위협 분류와 완화 조치의 개념 근거로만 쓴다.",
+ "provisions": [
+  {
+   "ref": "8.2.1 AI 고유 보안 위협",
+   "topic_ko": "데이터 오염·적대적 공격·모델 도용",
+   "obligation_ko": "일반 IT 보안 위협 외에 머신러닝 시스템은 AI 시스템 오작동을 일으키는 데이터 오염, AI 시스템을 악용하는 적대적 공격, 모델 도용 같은 고유 위협에 취약할 수 있다고 설명한다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Sİ sisteminin nasazlığına səbəb olan verilənlərin yoluxması",
+   "gateway_control_ko": "해당 없음(위협 분류). 원문의 데이터 오염은 학습 데이터 대상이라 MINT 범위 밖이다. 유사한 입력 오염 경로인 도구 응답·외부 문서의 권한 근거화 차단과 응답 출처 확인은 별도 통제 후보로만 연결한다.",
+   "pol_ids": [
+    "POL-29",
+    "POL-32"
+   ]
+  },
+  {
+   "ref": "8.2.2 데이터 오염",
+   "topic_ko": "학습 데이터 필터링으로 비정상 데이터 탐지",
+   "obligation_ko": "데이터 오염은 공격자가 예측 모델의 결과를 조작하려고 학습 데이터에 영향을 주는 공격이며, 학습 데이터를 적절히 필터링해 비정상 데이터를 탐지하면 피해를 줄일 수 있다고 한다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "Təlim verilənlərinin lazımi qaydada filtrlənməsi vasitəsilə",
+   "gateway_control_ko": "해당 없음(조직 절차). MINT는 모델을 학습시키지 않아 직접 통제 대상이 아니다. 모델 제공자 도입 심사에서 학습 데이터 관리 설명을 요청하는 것은 후보 절차다.",
+   "pol_ids": [
+    "POL-01"
+   ]
+  },
+  {
+   "ref": "8.2.3 적대적 공격",
+   "topic_ko": "약간 변형된 입력으로 모델 오분류 유도",
+   "obligation_ko": "적대적 공격은 실제 모델에 약간 변형된 입력 데이터를 넣어 모델이 오작동하게 하는 것으로, 사람 눈에는 보이지 않아 탐지가 어렵고 새로 발표된 방어책이 몇 주 안에 무력화되는 경우가 많아 신뢰성 측면에서 심각하게 검토해야 한다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "testing_red_teaming_robustness",
+   "timing_ko": "",
+   "anchor": "Rəqabətli hücum zamanı faktiki modelə bir qədər təhrif edilmiş giriş",
+   "gateway_control_ko": "ML 모델 입력의 변조 자체는 게이트웨이 범위 밖이다. 도구 호출 인자에 한해 정규화한 실제 입력과 실행 대상을 규격·승인 범위와 대조해 불명확하거나 범위를 벗어난 요청을 거부하는 통제와, 우회 변형까지 포함한 정기 공격 시험으로 방어 유효성을 재검증하는 절차를 후보로 둔다.",
+   "pol_ids": [
+    "POL-24",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "8.2.3 방어의 단기 무효화",
+   "topic_ko": "공격자·방어자의 군비 경쟁",
+   "obligation_ko": "새로 공개된 방어 수단이 기존 공격에 대해서도 몇 주 안에 쓸모없어지는 일이 흔하다고 보고한다(더 강한 공격이 만들어지기 때문). 방어의 지속적 재검증 필요성은 원문 진술이 아니라 노트 작성자의 해석이다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "testing_red_teaming_robustness",
+   "timing_ko": "",
+   "anchor": "Bir sıra mövcud hücumlara qarşı yeni dərc edilmiş müdafiə vasitələri çox vaxt",
+   "gateway_control_ko": "후보 절차: 차단 규칙 변경과 릴리스마다 정상군·공격군 회귀 시험을 다시 실행하고 오탐·미탐을 측정해 이전 시험 결과를 현재 증거로 쓰지 않는다.",
+   "pol_ids": [
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "8.2.4 모델 도용",
+   "topic_ko": "다수의 예측 질의로 모델 복제",
+   "obligation_ko": "모델 도용은 대상 모델에 많은 예측 질의를 보내 얻은 응답으로 다른 모델을 학습시켜 내부 기능을 복제하는 공격으로 보안과 프라이버시 양쪽에 영향을 준다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Bu məqsədlə hədəf modelə çoxlu sayda proqnoz sorğuları göndərilir",
+   "gateway_control_ko": "후보 통제: 호출량과 동시 실행 한도를 주체·서버별로 적용하고 승인되지 않은 대량 조회를 허용하지 않는다. 모델 자체의 질의 기반 복제 방어는 범위 밖이다.",
+   "pol_ids": [
+    "POL-28",
+    "POL-35"
+   ]
+  },
+  {
+   "ref": "8.3.2 데이터 수집",
+   "topic_ko": "데이터 최소화 원칙(ISO/IEC 29100)",
+   "obligation_ko": "데이터 수집 단계의 프라이버시 위협은 목적에 필요한 데이터량과 관련되며 ISO/IEC 29100의 데이터 최소화 원칙이 해당하지만 머신러닝은 대량의 다양한 데이터를 필요로 해 수집을 제한하기 어렵고, 저장소 침해 시 정보주체의 프라이버시가 침해될 수 있다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "",
+   "anchor": "verilənlərin minimallaşdırılması prinsipidir",
+   "gateway_control_ko": "도구 입력은 승인 업무에 필요한 최소 정보만 전달하고 단일 조회의 반환 범위를 업무 필요 범위로 제한한다.",
+   "pol_ids": [
+    "POL-31",
+    "POL-35"
+   ]
+  },
+  {
+   "ref": "8.3.3 재식별 위험",
+   "topic_ko": "비식별화 후에도 여러 출처 결합으로 재식별",
+   "obligation_ko": "개인정보가 여러 출처에서 오면 비식별화돼 있어도 AI가 다른 출처 데이터를 근거로 추론해 재식별할 수 있고, 비민감 데이터에서 민감 데이터를 추론할 수도 있다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "verilənləri təkrar identifikasiya edə bilər",
+   "gateway_control_ko": "업무별 문서·검색 결과·도구 결과를 분리하고 이전 업무의 정보가 다른 업무에 자동으로 쓰이지 않게 하며 서버 간 전달을 승인된 범위로 제한한다.",
+   "pol_ids": [
+    "POL-34",
+    "POL-33",
+    "POL-30"
+   ]
+  },
+  {
+   "ref": "8.3.4 모델 질의",
+   "topic_ko": "모델 질의로 개인의 민감 정보 유출 가능",
+   "obligation_ko": "머신러닝 모델이 제공하는 기밀 정보를 공개하려는 보안 공격은 개인의 민감 정보 노출에 쓰여 프라이버시 공격이 되며 모델 개발·배포·운영 수명주기 전반에서 질의 권한자와 접근을 뚫은 자 모두에 의해 일어날 수 있다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Bu hücum növü fərdlər haqqında həssas informasiyanın açıqlanması üçün istifadə oluna bilər",
+   "gateway_control_ko": "응답의 개인정보·민감정보를 제거하거나 마스킹하고 클라이언트 전달 전 목적과 접근권한을 별도로 검사하며 제거 여부가 불명확하면 전달을 차단한다.",
+   "pol_ids": [
+    "POL-30",
+    "POL-25"
+   ]
+  },
+  {
+   "ref": "9.1 완화 조치 총칙",
+   "topic_ko": "수명주기 중 신뢰 유지 확인용 통제 지점",
+   "obligation_ko": "시스템이 올바르게 작동하더라도 새로 들어온 부정확한 입력으로 왜곡된 출력을 낼 수 있으므로 신뢰가 유지되는지 확인하는 통제 지점을 정해야 한다고 하며(원문 'təyin olunmalıdır'), 그 시점은 AI 수명주기 중 정기적으로 또는 AI가 의사결정에 쓰이는 때로 정할 수 있다고 한다.",
+   "actor": "operator",
+   "strength": "informative",
+   "theme": "governance_accountability",
+   "timing_ko": "정기적 또는 의사결정 시점",
+   "anchor": "Bu cür nəzarət nöqtələri Sİ sisteminin həyat dövrü ərzində müntəzəm olaraq",
+   "gateway_control_ko": "정책 판정 시점(호출마다)과 고위험 요청의 개별 승인 지점을 통제 지점으로 두고, 정기 점검에서 권한·이상 징후를 확인해 보고한다.",
+   "pol_ids": [
+    "POL-22",
+    "POL-27",
+    "POL-42"
+   ]
+  },
+  {
+   "ref": "9.2 투명성",
+   "topic_ko": "개인정보가 어디서 왜 수집되는지 알림",
+   "obligation_ko": "투명한 AI 시스템은 수집 시 메타데이터를 기록했다는 조건에서 어떤 데이터(특히 개인정보)가 어디서 무엇을 위해 수집됐는지 이해관계자에게 알려 주며, 의사결정이 자동화될 때에도 이해관계자에게 알리고 결정 과정을 설명할 수 있다고 한다(권고가 아닌 서술).",
+   "actor": "operator",
+   "strength": "informative",
+   "theme": "transparency_labelling",
+   "timing_ko": "",
+   "anchor": "Şəffaf Sİ sistemi maraqlı tərəflərə hansı verilənlərin, xüsusən də fərdi məlumatların harada və nə üçün toplandığı barədə məlumat verir",
+   "gateway_control_ko": "호출 원장에 데이터 등급, 목적지, 목적, 승인 근거를 기록해 어떤 개인정보가 어디로 왜 나갔는지 사후에 재구성할 수 있게 한다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-26"
+   ]
+  },
+  {
+   "ref": "9.2 투명성 — 인적 개입 요청",
+   "topic_ko": "프라이버시 규정이 인적 개입 요청 수용을 요구할 수 있음",
+   "obligation_ko": "개인정보 처리 중 이해관계자에게 법적 효과가 있는 결정이 내려질 때 프라이버시 규정은 투명한 AI 시스템이 결정 과정에 대한 인적 개입 요청을 받아들여 관련 이해관계자의 의견을 고려하도록 요구할 수 있다.",
+   "actor": "controller",
+   "strength": "informative",
+   "theme": "automated_decision_rights",
+   "timing_ko": "",
+   "anchor": "prosesinə insan müdaxiləsinə dair sorğuların qəbul edilməsini",
+   "gateway_control_ko": "고위험 요청의 대상과 내용을 제시해 개별 승인을 받고 변경 시 재승인하며 사람의 개입·재처리 이력을 원장에 남긴다.",
+   "pol_ids": [
+    "POL-27",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "9.4.2 인간 개입(Human-in-the-loop) 통제 지점",
+   "topic_ko": "최종 결정 권한을 가진 의사결정자와 도메인 전문가",
+   "obligation_ko": "수명주기에서 사람의 두 역할을 강조한다: AI 결과를 사람의 결정 강화에 쓸 때 최종 결정 과정에서 권한과 자율성을 가진 의사결정자, 그리고 시스템 신뢰 수준 재평가와 개선을 위해 피드백을 줄 수 있는 도메인 전문가.",
+   "actor": "operator",
+   "strength": "informative",
+   "theme": "human_oversight",
+   "timing_ko": "",
+   "anchor": "yekun qərar qəbuletmə prosesində səlahiyyət və avtonomluğa malik qərar qəbul edənlər",
+   "gateway_control_ko": "승인자 역할을 분리하고 승인자가 대상·입력 내용을 확인한 뒤 승인하게 하며(요청 변경 시 재승인), 승인·거부 이력과 승인자를 원장에 기록한다.",
+   "pol_ids": [
+    "POL-27",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "9.6 프라이버시 완화",
+   "topic_ko": "비식별화 방법과 재식별 잔여 위험의 계약적 관리",
+   "obligation_ko": "개인정보 비식별화에는 구문적(k-익명성) 또는 의미적(차분 프라이버시) 방법을 쓰되 k-익명성만으로 부족할 수 있고, 재식별의 잔여 위험은 데이터를 받는 당사자 사이의 이용 합의로 관리할 수 있다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "",
+   "anchor": "Fərdi məlumatların adsızlaşdırılması (deidentifikasiyası) üçün sintaktik",
+   "gateway_control_ko": "외부 제공자와의 계약·DPA에 재이용 제한과 삭제 조건을 두고 외부 전송 전 개인정보를 마스킹하는 통제를 후보로 둔다(가명화 기능 여부는 확인하지 못했다).",
+   "pol_ids": [
+    "POL-07",
+    "POL-31",
+    "POL-49"
+   ]
+  },
+  {
+   "ref": "9.7 신뢰성(reliability)",
+   "topic_ko": "같은 입력에 일관된 결과",
+   "obligation_ko": "신뢰할 수 있는 AI 시스템은 같은 입력 데이터에 일관되게 같은 결과를 낸다고 설명하며, 오류·결함·고장 중에도 약화된 능력으로 계속 작동하는 능력을 결함 허용성(fault tolerance)으로 구분한다.",
+   "actor": "operator",
+   "strength": "informative",
+   "theme": "testing_red_teaming_robustness",
+   "timing_ko": "",
+   "anchor": "etibarlı Sİ sistemi eyni giriş verilənlərinə əsasən ardıcıl şəkildə eyni nəticələr verir",
+   "gateway_control_ko": "후보 요구사항: 게이트웨이 판정이 같은 입력에 같은 결과를 내도록 구현하고(정책 판본 고정 여부는 확인하지 못했다), 판단 정보가 없거나 판정 도구에 장애가 있으면 차단하는 실패 처리 규칙을 시험한다.",
+   "pol_ids": [
+    "POL-22"
+   ]
+  },
+  {
+   "ref": "9.10.1 시험·평가",
+   "topic_ko": "여러 접근을 결합한 시험",
+   "obligation_ko": "AI 시스템 시험·평가에는 여러 접근이 있고 적용 가능성과 효과는 사례마다 다르지만 허용 가능한 수준의 신뢰성을 위해 보통 여러 접근의 결합이 필요할 수 있다고 한다. 같은 장의 후속 9.10.2.1은 AI 시스템이 전통적 소프트웨어보다 덜 결정적이어서 개별 시험의 성공 기준 충족 여부를 판단하기 어려운 'oracle problem'을 언급한다.",
+   "actor": "operator",
+   "strength": "informative",
+   "theme": "testing_red_teaming_robustness",
+   "timing_ko": "",
+   "anchor": "məqbul səviyyədə etimadı doğrultmaya nail olmaq üçün, adətən, bir neçə yanaşmanın",
+   "gateway_control_ko": "해당 없음(조직 절차). 시험 계획 후보로 단위·통합·정상군·공격군 시험을 결합하고, LLM 하네스를 쓰는 시험은 반복 횟수와 판정 기준을 고정해 비결정성 영향을 줄인다.",
+   "pol_ids": [
+    "POL-05",
+    "POL-42"
+   ]
+  }
+ ],
+ "pitfalls_ko": [
+  "이 사본은 아제르바이잔어 국가표준 채택본이다. 영어 원문 ISO/IEC TR 24028:2020이 아니며 번역 과정의 차이가 있을 수 있다. 본문 인용은 아제르바이잔어 원문 기준이고 이 노트의 한국어 요지는 모두 노트 작성자의 해석이다.",
+  "표지에 기술 보고서(Texniki hesabat)로 표시된 문서이며 1항은 신뢰성 수준의 명세를 범위 밖으로 둔다. 본문에 '-malıdır'(해야 한다)류 서술이 일부 있어도 이 노트의 모든 항목은 '참고(informative)'로 분류했다.",
+  "9.10.1에는 'oracle problem' 서술이 없다. 해당 서술은 9.10.2.1에 있으며, 9.10.1은 여러 시험 접근의 결합이 필요할 수 있다는 한 문단뿐이다.",
+  "사본에 AZSTAND의 승인 결정 날짜와 번호가 비어 있다(빈칸 '..........'). 공식 채택 효력의 시점은 확인하지 못했다.",
+  "본문 일부에는 번역 문장의 어색함과 오타로 보이는 표기가 있다(예: 'SİI' 표기). 인용 때는 영어 원문 대조가 필요하다.",
+  "원본 TR 24028은 2020년 문서라 LLM 에이전트·MCP를 다루지 않는다."
+ ],
+ "reading_scope_ko": "머리말, 목차, 8.2~8.4(보안·프라이버시 위협과 편향), 9.1~9.2, 9.4, 9.6~9.7, 9.10.1, 10(결론)을 읽었다. 3 용어, 5~7(기존 틀, 이해관계자, 주요 문제), 8.5~8.10, 9.3(설명가능성)의 상세, 9.8~9.9, 9.10.2~9.11, 부록 A와 참고문헌은 읽지 않았다.",
+ "limitations_ko": "법적 해석이나 표준 적합성 판단이 아니다. 아제르바이잔어 본문을 직접 읽은 번역이므로 정확한 용어 대응을 확인하지 못했을 수 있다. 영어 원본 ISO/IEC TR 24028:2020의 본문은 읽지 않았다. 이후 개정(예: ISO/IEC 24028 후속 작업)은 확인하지 않았다. 원본 TR의 편집·단계 정보는 ISO 카탈로그(official_page_url, 2026-10-17 조회)로 확인했으나 아제르바이잔 채택본(AZS)의 공식 목록·현재 효력·적용 시작일은 확인하지 못했다(AZSTAND 사이트에서 이 표준의 목록을 찾지 못함). official_page_url은 원본 ISO 표준의 페이지다.",
+ "license_notice": "사본 머리글에 '©AZSTAND – Bütün hüquqlar qorunur'(모든 권리 보유)와 '이 표준은 아제르바이잔 표준화연구소의 허가 없이 전부 또는 일부를 재인쇄·복제·배포할 수 없다'는 고지가 있다. ISO 카탈로그에서 원본은 유료 판매 문서(CHF 196, 2026-10-17 조회)로 표시된다. AZSTAND 사이트(azstand.gov.az) 하단도 '모든 권리 보유' 고지만 있고 표준 본문의 재사용 허용 조건은 찾지 못했다.",
+ "distribution": "local-only",
+ "distribution_reason": "AZSTAND 저작권 고지가 허가 없는 복제·배포를 금지한다. 공통 재사용 근거(EUR-Lex, OGL, OECD 등)에 해당하지 않고 사본 자체에도 허용 고지가 없다. 원본 ISO 표준도 유료이므로 사용자가 제공한 사본을 재배포하지 않고 로컬 전용 경로에만 둔다."
+}

@@ -1,0 +1,237 @@
+{
+ "id": "LIB-M36",
+ "title": "An Act to modernize legislative provisions as regards the protection of personal information (Bill 64), 2021, chapter 25",
+ "title_native": "Loi modernisant des dispositions législatives en matière de protection des renseignements personnels",
+ "issuer": "퀘벡 국회(국민의회). Publications du Québec 연간 법령집",
+ "jurisdiction": "CA",
+ "instrument_type": "statute",
+ "binding": true,
+ "status": "in_force",
+ "edition": "2021년 법률 제25호(법안 64) 연간 법령집 PDF 영어판, 64쪽. 개정 법이며 민간 부문법(P-39.1) 개정 조문은 제100조부터 제161조 사이",
+ "key_dates": "2021-09-22 국왕 재가. 제175조에 따라 대부분은 2023-09-22 시행, 일부는 2021-09-22, 2022-09-22(예: 민간 부문법 제3.1조, 제3.5~3.8조의 사고 관리, 제18.4조 등), 2024-09-22(제30조와 제120조 일부)에 시행된다. 제175조 제4호(제160조 중 민간 부문법 제91조 제3호 신설분)는 신용평가기관법(2020, c. 21) 제108조의 시행일에 시행되며 그 시행 여부는 확인하지 못했다. 날짜가 정해진 시행일은 2026-10-17 이전에 모두 지났고 이 노트가 인용한 조항은 제4호에 해당하지 않으나, 이 PDF는 제정 당시 원문이라 이후 개정 여부는 확인하지 못했다. 공식 페이지는 시행일을 '2023-09-22, 예외 있음'으로만 표시한다.",
+ "language": "en",
+ "official_page_url": "https://www.assnat.qc.ca/en/travaux-parlementaires/projets-loi/projet-loi-64-42-1.html",
+ "summary_ko": "퀘벡의 개인정보 보호 법체계를 현대화한 법이다. 공공 기관 접근·개인정보법(A-2.1)과 민간 부문 개인정보법(P-39.1) 등을 개정해 책임자 지정과 거버넌스 정책 공개, 정보 시스템 프로젝트의 개인정보 영향평가, 기밀성 사고 관리(사고 대응, 중대한 피해 위험 시 위원회 신속 통지, 사고 대장), 프로파일링 기능 고지, 기본 최고 수준의 프라이버시 설정, 자동 처리만으로 내리는 결정의 고지와 설명·재검토 기회, 퀘벡 밖 제공 전 영향평가, 서비스 제공자 계약 요건, 최대 2,500만 캐나다달러 또는 전 세계 매출 4%의 벌금을 규정한다.",
+ "scope_ko": "퀘벡의 공공 기관(공공 기관 접근·개인정보법)과 민간 부문법의 'person carrying on an enterprise'가 대상이다. 퀘벡 밖 사업자에 대한 지리적 적용 범위는 이 PDF에서 확인하지 못했다. 이 노트는 민간 부문법 개정 조문(제100~115조 중 제3.1~18.4조 등)과 벌칙, 시행 조항을 읽었다.",
+ "provisions": [
+  {
+   "ref": "제175조",
+   "topic_ko": "원칙적 시행일 2023-09-22, 일부 조항은 2021·2022·2024 시행",
+   "obligation_ko": "이 법의 조항은 원칙적으로 2023년 9월 22일에 시행된다. 예외로 일부는 2021-09-22, 일부(민간 부문법 제3.1조, 제3.5~3.8조 신설 등 사고 관리 포함)는 2022-09-22, 제30조와 제120조의 일부는 2024-09-22에 시행된다. 제160조 중 민간 부문법 제91조 제3호 신설분은 신용평가기관법 제108조의 시행일에 시행된다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "scope_applicability",
+   "timing_ko": "원칙 2023-09-22, 사고 관리 등 2022-09-22, 일부 2024-09-22",
+   "anchor": "The provisions of this Act come into force on 22 September 2023, except",
+   "gateway_control_ko": "해당 없음(시행일).",
+   "pol_ids": []
+  },
+  {
+   "ref": "민간 부문법 제3.1조 (법 제103조)",
+   "topic_ko": "기업은 보유한 개인정보 보호에 책임지고 최고 권한자가 책임자 기능을 맡으며 직함과 연락처를 공개",
+   "obligation_ko": "기업을 운영하는 사람은 보유한 개인정보의 보호에 책임이 있다. 기업 내 최고 권한자가 이 법의 이행과 준수를 책임지는 개인정보 보호 책임자 기능을 수행하되 서면으로 위임할 수 있고, 책임자의 직함과 연락처를 웹사이트(없으면 다른 적절한 수단)에 공개해야 한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "2022-09-22 시행",
+   "anchor": "Any person carrying on an enterprise is responsible for protecting the personal information held by the person.",
+   "gateway_control_ko": "해당 없음(조직 절차). 도입 신청서에 책임 부서와 승인자를 기록하는 방식으로 증빙을 보조할 수 있다(후보).",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "민간 부문법 제3.2조",
+   "topic_ko": "보존·파기 틀, 역할·책임, 불만 처리 절차를 갖춘 거버넌스 정책과 관행의 수립·공개",
+   "obligation_ko": "기업은 개인정보 보호를 보장하는 거버넌스 정책과 관행을 수립·시행해야 하며, 정책에는 정보의 보존과 파기 틀, 정보 생애주기에 걸친 인력의 역할과 책임, 개인정보 보호에 관한 불만 처리 절차가 포함돼야 하고 사업의 성격·규모에 비례하며 책임자가 승인한다. 정책의 상세 정보는 쉽고 명확한 언어로 웹사이트에 공개해야 한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "governance_accountability",
+   "timing_ko": "2023-09-22 시행",
+   "anchor": "must establish and implement governance policies and practices regarding personal information that ensure the protection of such information",
+   "gateway_control_ko": "해당 없음(조직 절차). 원장 보존·폐기 절차를 고객의 보존·파기 틀에 맞춰 설정하도록 지원할 수 있다(후보).",
+   "pol_ids": [
+    "POL-38",
+    "POL-48"
+   ]
+  },
+  {
+   "ref": "민간 부문법 제3.3조~제3.4조",
+   "topic_ko": "정보 시스템·전자 서비스 취득·개발·개선 프로젝트마다 개인정보 영향평가(민감도에 비례), 책임자 협의",
+   "obligation_ko": "기업은 개인정보의 수집·이용·제공·보존·파기를 수반하는 정보 시스템이나 전자 서비스 전달 시스템의 취득, 개발, 개선 프로젝트마다 개인정보 영향평가를 해야 하며 프로젝트 시작부터 책임자와 협의해야 한다. 평가 수준은 정보의 민감도, 이용 목적, 정보의 양과 분포, 저장 매체에 비례한다. 책임자는 프로젝트 단계마다 보호 조치를 제안할 수 있다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "risk_impact_assessment",
+   "timing_ko": "프로젝트 시작부터, 2023-09-22 시행",
+   "anchor": "must conduct a privacy impact assessment for any project to acquire, develop or overhaul an information system or electronic service delivery system",
+   "gateway_control_ko": "새 MCP 서버 도입을 정보 시스템 취득 프로젝트로 보아 도입 신청의 위험 평가를 영향평가 입력으로 쓸 수 있다(후보). 영향평가 수행 자체는 조직 절차다.",
+   "pol_ids": [
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "민간 부문법 제3.5조~제3.7조",
+   "topic_ko": "기밀성 사고 시 위험 완화·재발 방지 조치, 중대한 피해 위험이면 위원회와 영향받은 사람에게 신속히 통지",
+   "obligation_ko": "기업은 개인정보 기밀성 사고(무단 접근·이용·제공 또는 손실)가 일어났다고 믿을 이유가 있으면 피해 위험을 줄이고 같은 유형의 사고를 막는 합리적 조치를 취해야 한다. 사고가 중대한 피해의 위험을 낳으면 정보접근위원회(CAI)에 신속히 통지하고 영향받은 사람에게도 통지해야 하며, 위험 평가 때는 정보의 민감도, 예상 결과, 해로운 목적에 이용될 가능성을 고려하고 책임자와 협의한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "incident_reporting",
+   "timing_ko": "신속(promptly), 2022-09-22 시행",
+   "anchor": "If the incident presents a risk of serious injury, the person carrying on an enterprise must promptly notify",
+   "gateway_control_ko": "사고 의심 시 해당 주체·서버의 승인을 철회하고 영향 호출과 데이터 등급을 원장에서 추출해 통지와 위험 평가 자료로 제공할 수 있다(후보). 통지 판단과 통지는 조직 절차다.",
+   "pol_ids": [
+    "POL-43",
+    "POL-44",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "민간 부문법 제3.8조",
+   "topic_ko": "기밀성 사고 대장을 유지하고 위원회 요청 시 사본 제출",
+   "obligation_ko": "기업은 기밀성 사고의 대장을 보관해야 하며 대장의 사본은 위원회가 요청하면 보내야 한다. 대장 내용은 정부 규정이 정할 수 있다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "logging_records",
+   "timing_ko": "2022-09-22 시행",
+   "anchor": "must keep a register of confidentiality incidents",
+   "gateway_control_ko": "보안 사고와 연결 중지·철회 이력을 원장에 남겨 사고 대장 기재의 근거로 제공할 수 있다(후보). 대장 유지는 조직 절차다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "민간 부문법 제8.1조",
+   "topic_ko": "신원 확인·위치·프로파일링 기능이 있는 기술 사용 시 사전 고지와 기능 활성화 수단 안내",
+   "obligation_ko": "정보 주체 본인으로부터 신원 확인, 위치 파악, 프로파일링 기능이 있는 기술로 개인정보를 수집하는 사람은 먼저 그 기술의 사용과 해당 기능을 활성화하는 수단을 알려야 한다. 프로파일링은 업무 성과, 경제 상황, 건강, 선호, 관심, 행동 등 특정 특성을 평가하기 위한 개인정보의 수집·이용이다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "transparency_labelling",
+   "timing_ko": "수집 전",
+   "anchor": "using technology that includes functions allowing the person concerned to be identified, located or profiled must first inform the person",
+   "gateway_control_ko": "해당 없음(정보주체 대면 고지). 프로파일링 도구를 쓰는 서버는 도입 신청서에 기능을 기록하고 승인 화면에 표시하는 방식을 검토할 수 있다(후보).",
+   "pol_ids": [
+    "POL-08",
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "민간 부문법 제9.1조",
+   "topic_ko": "공중에 제공하는 기술 제품·서비스는 기본값으로 최고 수준의 프라이버시 설정",
+   "obligation_ko": "기술 제품이나 서비스를 공중에 제공하며 개인정보를 수집하는 기업은 프라이버시 설정이 당사자 개입 없이도 기본값으로 최고 수준의 기밀성을 제공하도록 해야 한다. 브라우저 쿠키의 프라이버시 설정에는 적용되지 않는다.",
+   "actor": "provider",
+   "strength": "mandatory",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "2023-09-22 시행",
+   "anchor": "must ensure that those settings provide the highest level of confidentiality by default",
+   "gateway_control_ko": "해당 없음(제품 설정). 공중에 제공하는 제품에만 해당하며, 해당 시 MINT 기본 설정을 최고 수준의 보호(최소 권한, 개인정보 마스킹 기본 켜짐)로 두는 방안을 검토할 수 있다(후보).",
+   "pol_ids": [
+    "POL-22",
+    "POL-30"
+   ]
+  },
+  {
+   "ref": "민간 부문법 제12조",
+   "topic_ko": "수집 목적 외 이용은 동의 필요(민감정보는 명시적), 일부 예외",
+   "obligation_ko": "정보주체가 동의하지 않는 한 개인정보를 수집 목적 외로 기업 내에서 이용할 수 없으며, 민감 개인정보는 명시적 동의가 필요하다. 수집 목적과 일관된 목적, 본인의 명백한 이익, 사기 예방·탐지나 보호·보안 조치 평가·개선, 요청한 제품·서비스 제공, 비식별 정보의 연구·통계 목적은 동의 없이 이용할 수 있다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "",
+   "anchor": "personal information may not be used within the enterprise except for the purposes for which it was collected",
+   "gateway_control_ko": "도구 호출의 데이터 사용 목적을 도입 신청의 승인 목적 범위로 제한하고 범위 밖 사용은 차단하는 정책을 둘 수 있다(후보). 동의 확보 자체는 조직 절차다.",
+   "pol_ids": [
+    "POL-22",
+    "POL-25",
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "민간 부문법 제12.1조",
+   "topic_ko": "자동 처리만으로 내리는 결정은 결정 통지 시점까지 고지, 요청 시 사용 정보·이유·주요 요소와 정정권 안내, 직원 재검토 기회 부여",
+   "obligation_ko": "개인정보를 이용해 오직 자동 처리에 근거한 결정을 내리는 기업은 늦어도 결정을 알리는 때까지 당사자에게 이를 알려야 한다. 당사자가 요청하면 결정에 쓰인 개인정보, 결정의 이유와 주요 요소·매개변수, 쓰인 정보를 정정할 권리를 알려야 하며, 결정을 재검토할 수 있는 직원에게 의견을 제출할 기회를 줘야 한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "automated_decision_rights",
+   "timing_ko": "결정을 알리는 때까지 고지, 2023-09-22 시행",
+   "anchor": "uses personal information to render a decision based exclusively on an automated processing of such information must inform the person concerned",
+   "gateway_control_ko": "해당 없음(고객의 결정 서비스). 사람 승인 단계 유무와 결정 입력 기록을 원장에 남겨 고객이 고지와 재검토 요청에 대응할 증빙으로 제공할 수 있다(후보).",
+   "pol_ids": [
+    "POL-27",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "민간 부문법 제14조",
+   "topic_ko": "동의는 명확·자유·정보에 기반, 목적별로 요청, 서면이면 다른 정보와 분리, 필요한 기간만 유효",
+   "obligation_ko": "동의는 명확하고 자유로우며 충분히 알려진 상태에서 특정 목적에 대해 주어져야 하고 목적마다 쉬운 언어로 요청해야 한다. 서면 요청이면 다른 정보와 분리해 제시하고 요청 시 범위를 이해하도록 돕는다. 14세 미만은 부모나 후견인이 동의하고, 동의는 목적 달성에 필요한 기간에만 유효하며 이 법에 따르지 않은 동의는 효력이 없다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "data_protection_lawful_basis",
+   "timing_ko": "2023-09-22 시행",
+   "anchor": "Consent under this Act must be clear, free and informed and be given for specific purposes",
+   "gateway_control_ko": "해당 없음(정보주체 대면 동의). 동의 철회 시 해당 데이터에 대한 호출 승인을 철회하는 절차와 연결할 수 있다(후보).",
+   "pol_ids": [
+    "POL-44",
+    "POL-08"
+   ]
+  },
+  {
+   "ref": "민간 부문법 제17조",
+   "topic_ko": "퀘벡 밖으로 개인정보를 제공하기 전 영향평가(민감도·목적·보호 조치·수신 국가 법체계)와 서면 계약",
+   "obligation_ko": "퀘벡 밖으로 개인정보를 제공하기 전에 기업은 정보의 민감도, 이용 목적, 계약상 조치를 포함한 보호 조치, 수신 국가의 법체계와 개인정보 보호 원칙을 고려한 개인정보 영향평가를 해야 하고, 평가 결과 적정한 보호를 받을 수 있을 때만 제공할 수 있으며 평가 결과와 위험 완화 조건을 반영한 서면 계약을 체결해야 한다. 퀘벡 밖의 사람이나 기관에 수집·이용·보관 업무를 맡길 때도 같다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "cross_border_transfer",
+   "timing_ko": "제공 전, 2023-09-22 시행",
+   "anchor": "Before communicating personal information outside Québec, a person carrying on an enterprise must conduct a privacy impact assessment",
+   "gateway_control_ko": "외부 전송은 수신처(국가)와 목적을 승인 범위로 제한하고 퀘벡 밖 서버는 영향평가와 서면 계약 근거가 기록된 경우에만 도입을 허용하는 정책을 둘 수 있다(후보).",
+   "pol_ids": [
+    "POL-26",
+    "POL-10",
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "민간 부문법 제18.3조",
+   "topic_ko": "위탁 업무 수행자에게 동의 없이 제공 시 서면 계약, 비밀 유지 조치, 위반 시 지체 없는 통지, 검증 허용",
+   "obligation_ko": "위임·도급·용역 업무 수행에 필요하면 동의 없이 개인정보를 제공할 수 있으나, 기업은 업무를 서면으로 맡기고 비밀 유지, 업무 목적 외 사용 금지, 계약 종료 후 보관 금지를 위한 조치를 계약에 명시해야 한다. 수행자는 비밀 유지 의무의 위반이나 위반 시도를 지체 없이 책임자에게 알려야 하고 책임자가 비밀 요건을 검증하게 허용해야 한다.",
+   "actor": "controller",
+   "strength": "mandatory",
+   "theme": "third_party_management",
+   "timing_ko": "위반 시 지체 없이 통지, 2023-09-22 시행",
+   "anchor": "must notify the person in charge of the protection of personal information without delay of any violation or attempted violation",
+   "gateway_control_ko": "계약 조항(비밀 유지, 목적 제한, 종료 후 삭제, 위반 통지)은 조직 절차다. 게이트웨이는 폐기 시 인증정보 회수와 제공자 보유 문서 정리 확인 절차를 지원할 수 있다(후보).",
+   "pol_ids": [
+    "POL-07",
+    "POL-49",
+    "POL-45"
+   ]
+  },
+  {
+   "ref": "민간 부문법 제90.12조, 제91조",
+   "topic_ko": "행정 금전 제재 최대 1,000만 달러 또는 매출 2%, 형사 벌금 최대 2,500만 달러 또는 매출 4%",
+   "obligation_ko": "행정 금전 제재의 상한은 기업의 경우 1,000만 캐나다달러 또는 직전 회계연도 전 세계 매출의 2% 중 큰 금액(개인은 5만 달러)이다. 열거된 위반(예: 위원회 조사의 진행을 허위·부정확한 정보로 방해하는 행위, 위원회 명령 불이행 등)은 범죄로서 기업의 경우 1만5천~2,500만 캐나다달러 또는 직전 회계연도 전 세계 매출 4% 중 큰 금액의 벌금을 낼 수 있다.",
+   "actor": "authority",
+   "strength": "informative",
+   "theme": "penalties_enforcement",
+   "timing_ko": "행정 제재의 소멸시효 2년(제90.10조)",
+   "anchor": "the amount corresponding to 4% of worldwide turnover for the preceding fiscal year",
+   "gateway_control_ko": "해당 없음(제재). 고객용 위험 설명 자료에 인용한다.",
+   "pol_ids": []
+  }
+ ],
+ "pitfalls_ko": [
+  "이 PDF는 통합본이 아니라 개정 법률 원문(법안 64)이다. 민간 부문법의 현행 조문은 통합본(P-39.1)에서 확인해야 하며 이 노트가 옮긴 조문 번호는 개정 문구가 신설한 조번호다.",
+  "제3.5조의 '중대한 피해의 위험(risk of serious injury)'일 때 위원회 신속 통지가 필요하며 모든 사고를 통지하는 것은 아니다. 제3.8조 사고 대장은 통지 대상 사고로 한정한다는 문구가 없으나, 기재 범위는 정부 규정이 정할 수 있고 그 규정은 읽지 않았다. 영향받은 사람에 대한 통지는 범죄 수사를 방해할 우려가 있는 동안 하지 않아도 된다(제3.5조 제3항).",
+  "퀘벡 법은 연방 PIPEDA(LIB-M35)와 별개의 퀘벡 입법이다. 지리적 적용 범위와 연방법과의 관계는 이 PDF에서 확인하지 않았다.",
+  "정보주체 권리(접근·정정, 이동성: 제27조 제3항은 2024-09-22 시행), 비식별·익명화 규정, 공공 부문법 개정은 이 노트에서 읽지 않았거나 훑어보기에 그쳤다.",
+  "제91조의 벌금은 자연인(5천~10만 달러)과 그 밖의 경우(1만5천~2,500만 달러 또는 매출 4% 중 큰 금액)로 나뉘고 재범이면 2배(제92.1조), 공소시효는 5년(제92.2조)이다. 행정 금전 제재 대상 위반은 제90.1조에 열거돼 있으며 이 노트는 어떤 위반이 해당하는지 전수 대조하지 않았다.",
+  "제17조는 제18조 제1항 제7호에 따른 제공에는 적용되지 않는다. 제18.3조 제2항 제2호의 계약 조치 명시 의무는 수탁자가 공공 기관이거나 전문직 단체 회원이면 적용되지 않는다."
+ ],
+ "reading_scope_ko": "표지, 설명 노트 일부, 민간 부문법 개정(제100~115조 일부: 제3.1~3.8조, 제8.1~8.3조, 제9.1조, 제11조, 제12~12.1조, 제13~14조, 제17조, 제18.3조), 벌칙 일부(제90.12조, 제91조), 제175조(시행)를 읽었다. 공공 부문법 개정(제2~98조), 민간 부문법의 나머지 개정, 기타 법률 개정은 읽지 않았다.",
+ "limitations_ko": "법적 해석이나 적합성 판단이 아니다. 영어판 PDF만 읽었으며 프랑스어판과의 관계(정본 여부)는 확인하지 않았다. 규정(통지 내용, 대장 내용)과 위원회 지침은 읽지 않았다.",
+ "license_notice": "PDF 자체에는 이용 허락 문구가 없다. 취득처인 Publications du Québec의 저작권 안내(publicationsduquebec.gouv.qc.ca/droits-auteur/, 2026-10-17 확인)는 사이트의 법령 정보도 저작권 보호 대상이라 하며, 복제·내려받기·저장·공표에는 사전 허가와 사용료 지급이 필요하고 인공지능 도구로 처리하려는 내려받기도 사전 허가가 필요하다고 밝힌다. 국민의회 사이트의 지식재산 안내(assnat.qc.ca/en/propos-site/droits-propriete-intellectuelle.html)는 합리적·공정·비영리 이용, 변경 없음, 출처 표시 조건으로 무료 복제를 허용하고 상업·홍보 목적 이용은 사전 허가를 요구하나, 이는 국민의회 사이트의 콘텐츠에 대한 안내이며 Publications du Québec에서 내려받은 이 PDF에 대한 공개 재배포 허락의 근거로 삼지 않았다.",
+ "distribution": "local-only",
+ "distribution_reason": "취득처 Publications du Québec가 복제·저장에 사전 허가와 사용료를 요구하고, 국민의회의 무료 복제 허용은 비영리 조건이 붙어 제품 요구사항 위키에 맞지 않아 공개 재배포 근거가 되지 않는다. 원본 PDF(약 0.47MB)와 추출본은 로컬 전용 경로에 둔다."
+}

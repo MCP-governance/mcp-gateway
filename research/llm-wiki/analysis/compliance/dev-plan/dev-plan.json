@@ -1,0 +1,5979 @@
+{
+ "generated_on": "2026-10-17",
+ "generator": "tools/build_compliance_plan.py",
+ "capabilities": [
+  {
+   "id": "CAP-1",
+   "title": "사고 보고 준비",
+   "demand": "중국 핵심 정보 인프라 1시간·일반 4시간, EU 사이버복원력법(CRA)·NIS2 24시간 조기 경보→72시간 통지→최종 보고, GDPR 72시간, 인도 DPDP 규칙 72시간 상세 보고, 싱가포르 평가 후 3일, EU AI법 15일(2일·10일 예외), 한국은 정보통신망법 제48조의3이 정보통신서비스 제공자에게 침해사고를 안 때부터 24시간 이내 신고를 요구하고(2026-10-01 시행) 개인정보 보호법은 '지체 없이'만 정해 구체 시한을 시행령에 위임하며(시행령은 이번 조사 범위 밖), 캐나다·퀘벡은 '가능한 한 빨리/신속히'다. 보고 서식 작성·제출은 고객 책임이고 게이트웨이는 사고 시점의 사실을 빠르게 모아 줄 수 있어야 한다.",
+   "existing": "기능 40 감사 원장, 41 추적·내보내기, 44 이상 징후 경보, 48~49 접근 중지·자격 회수, 개발 예정: 43 SIEM 전달(DEV-61), 47 탐지 시 자동 중지(DEV-62)",
+   "gap": "사고 단위로 영향 범위(주체·서버·기능·데이터 등급·기간)를 산출해 내보내는 기능과 관할별 보고 단계 타이머가 없다.",
+   "proposal": "DEV-66",
+   "evidence": [
+    [
+     "LIB-M27",
+     "제4조제2항"
+    ],
+    [
+     "LIB-M27",
+     "제4조제3항"
+    ],
+    [
+     "LIB-M27",
+     "제4조제4항"
+    ],
+    [
+     "LIB-M27",
+     "제8조"
+    ],
+    [
+     "LIB-M26",
+     "제14조 제1항"
+    ],
+    [
+     "LIB-M26",
+     "제14조 제3항"
+    ],
+    [
+     "LIB-M11",
+     "Art. 23(4)(a)"
+    ],
+    [
+     "LIB-M11",
+     "Art. 23(4)(b)"
+    ],
+    [
+     "LIB-M11",
+     "Art. 23(4)(c)"
+    ],
+    [
+     "LIB-M06",
+     "Art. 33(1)"
+    ],
+    [
+     "LIB-M44",
+     "규칙 7(2)"
+    ],
+    [
+     "LIB-M34",
+     "제26D조 제1항"
+    ],
+    [
+     "LIB-M01",
+     "Art. 73"
+    ],
+    [
+     "LIB-M35",
+     "제10.1조 제1항"
+    ],
+    [
+     "LIB-M36",
+     "제3.5조"
+    ],
+    [
+     "LIB-L01",
+     "제34조제1항"
+    ],
+    [
+     "LIB-L03",
+     "제48조의3"
+    ],
+    [
+     "LIB-M25",
+     "제19조 제1항"
+    ],
+    [
+     "LIB-M28",
+     "제10조"
+    ],
+    [
+     "LIB-M29",
+     "제57조"
+    ],
+    [
+     "LIB-L03",
+     "제48조의3제1항"
+    ]
+   ],
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M27-03",
+     "doc_id": "LIB-M27",
+     "jurisdiction": "CN",
+     "ref": "제4조제2항",
+     "topic": "핵심 정보 인프라 관련 사건은 최대 1시간 내 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "운영자 1시간 이내, 보호 업무 부문의 상향 보고 30분 이내",
+     "pol_ids": [
+      "POL-43",
+      "POL-42"
+     ]
+    },
+    {
+     "req_id": "REQ-M27-05",
+     "doc_id": "LIB-M27",
+     "jurisdiction": "CN",
+     "ref": "제4조제3항",
+     "topic": "중앙·국가기관 부문은 2시간 내 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "2시간 이내",
+     "pol_ids": [
+      "POL-43"
+     ]
+    },
+    {
+     "req_id": "REQ-M27-04",
+     "doc_id": "LIB-M27",
+     "jurisdiction": "CN",
+     "ref": "제4조제4항",
+     "topic": "일반 네트워크 운영자는 소재지 성급 網信부문에 4시간 내 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "운영자 4시간 이내(성급 網信부문 상향 1시간 이내)",
+     "pol_ids": [
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M27-09",
+     "doc_id": "LIB-M27",
+     "jurisdiction": "CN",
+     "ref": "제8조",
+     "topic": "처리 종료 후 30일 내 총결 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "처리 종료 후 30일 이내",
+     "pol_ids": [
+      "POL-43",
+      "POL-39",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M26-08",
+     "doc_id": "LIB-M26",
+     "jurisdiction": "EU",
+     "ref": "제14조 제1항~제2항",
+     "topic": "적극적으로 악용되는 취약점: 24시간 이내 조기 경보, 72시간 이내 취약점 통지, 수정 가능 후 14일 이내 최종 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "24시간 조기 경보, 72시간 통지, 조치 가능 후 14일 최종 보고(2026-09-11부터 적용)",
+     "pol_ids": [
+      "POL-39",
+      "POL-43",
+      "POL-44"
+     ]
+    },
+    {
+     "req_id": "REQ-M26-09",
+     "doc_id": "LIB-M26",
+     "jurisdiction": "EU",
+     "ref": "제14조 제3항~제5항",
+     "topic": "제품 보안에 영향을 주는 중대한 사고: 24시간 조기 경보, 72시간 사고 통지, 1개월 이내 최종 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "24시간, 72시간, 통지 후 1개월(2026-09-11부터 적용)",
+     "pol_ids": [
+      "POL-43",
+      "POL-42",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M11-21",
+     "doc_id": "LIB-M11",
+     "jurisdiction": "EU",
+     "ref": "Art. 23(4)(a)",
+     "topic": "24시간 이내 조기 경보",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "인지 후 24시간 이내 조기 경보",
+     "pol_ids": [
+      "POL-42",
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M11-22",
+     "doc_id": "LIB-M11",
+     "jurisdiction": "EU",
+     "ref": "Art. 23(4)(b)",
+     "topic": "72시간 이내 사고 통지",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "인지 후 72시간 이내 사고 통지",
+     "pol_ids": [
+      "POL-38",
+      "POL-42",
+      "POL-43"
+     ]
+    },
+    {
+     "req_id": "REQ-M11-23",
+     "doc_id": "LIB-M11",
+     "jurisdiction": "EU",
+     "ref": "Art. 23(4)(c)-(e)",
+     "topic": "중간 보고·최종 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "최종 보고는 사고 통지 제출 후 1개월 이내; 진행 중이면 진행 보고서 후 처리 후 1개월 이내",
+     "pol_ids": [
+      "POL-38",
+      "POL-43",
+      "POL-45"
+     ]
+    },
+    {
+     "req_id": "REQ-M06-23",
+     "doc_id": "LIB-M06",
+     "jurisdiction": "EU",
+     "ref": "Art. 33(1)",
+     "topic": "감독기관에 대한 침해 통지(72시간)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "인지 후 지체 없이, 가능하면 72시간 이내(초과 시 지연 사유 첨부)",
+     "pol_ids": [
+      "POL-42",
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M44-06",
+     "doc_id": "LIB-M44",
+     "jurisdiction": "IN",
+     "ref": "규칙 7(2)",
+     "topic": "위원회에 지체 없이 개요를, 72시간 이내에 상세 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "인지 즉시 개요, 72시간 이내 상세 보고",
+     "pol_ids": [
+      "POL-43",
+      "POL-38",
+      "POL-44"
+     ]
+    },
+    {
+     "req_id": "REQ-M34-09",
+     "doc_id": "LIB-M34",
+     "jurisdiction": "SG",
+     "ref": "제26D조 제1항, 제3항~제4항",
+     "topic": "통지 대상 침해로 평가하면 가능한 한 빨리, 늦어도 평가한 날 다음 날부터 3일 이내 위원회에 통지",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "평가일 다음 날부터 달력상 3일 이내",
+     "pol_ids": [
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M01-27",
+     "doc_id": "LIB-M01",
+     "jurisdiction": "EU",
+     "ref": "Art. 73(1)-(5)",
+     "topic": "중대한 사고 보고 기한",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+     "timing": "인지 후 15일 이내(원칙), 2일 이내(핵심 기반시설 중대 교란·광범위 침해), 사망은 10일 이내, 초기 불완전 보고 허용(제73조제5항)",
+     "pol_ids": [
+      "POL-42",
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M35-04",
+     "doc_id": "LIB-M35",
+     "jurisdiction": "CA",
+     "ref": "제10.1조 제1항, 제2항",
+     "topic": "중대한 피해의 실질적 위험이 있는 보안 조치 위반은 위원에게 가능한 한 빨리 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "위반 발생 판단 후 가능한 한 빨리(as soon as feasible)",
+     "pol_ids": [
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M36-05",
+     "doc_id": "LIB-M36",
+     "jurisdiction": "CA",
+     "ref": "민간 부문법 제3.5조~제3.7조",
+     "topic": "기밀성 사고 시 위험 완화·재발 방지 조치, 중대한 피해 위험이면 위원회와 영향받은 사람에게 신속히 통지",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "신속(promptly), 2022-09-22 시행",
+     "pol_ids": [
+      "POL-43",
+      "POL-44",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-L01-16",
+     "doc_id": "LIB-L01",
+     "jurisdiction": "KR",
+     "ref": "제34조제1항",
+     "topic": "유출등 통지",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "알게 된 때 지체 없이(구체 시한은 시행령)",
+     "pol_ids": [
+      "POL-42",
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-L03-09",
+     "doc_id": "LIB-L03",
+     "jurisdiction": "KR",
+     "ref": "제48조의3제1항",
+     "topic": "침해사고 신고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "알게 된 때부터 24시간 이내(2026-10-01 시행본, 그 전 본은 '즉시'). 신고 방법·절차는 대통령령(제5항)",
+     "pol_ids": [
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M25-14",
+     "doc_id": "LIB-M25",
+     "jurisdiction": "EU",
+     "ref": "제19조 제1항, 제4항",
+     "topic": "중대한 ICT 사고를 초기 통지, 중간 보고, 최종 보고로 관할 당국에 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "기한은 위임 규정(제20조)에서 확인",
+     "pol_ids": [
+      "POL-43",
+      "POL-38",
+      "POL-44"
+     ]
+    },
+    {
+     "req_id": "REQ-M28-02",
+     "doc_id": "LIB-M28",
+     "jurisdiction": "CN",
+     "ref": "제10조",
+     "topic": "제품·서비스의 결함·취약점 즉시 보완과 보고(24시간)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "국가 안보·공공 이익 관련 시 24시간 이내",
+     "pol_ids": [
+      "POL-39",
+      "POL-43"
+     ]
+    },
+    {
+     "req_id": "REQ-M29-19",
+     "doc_id": "LIB-M29",
+     "jurisdiction": "CN",
+     "ref": "제57조",
+     "topic": "유출·변조·분실 발생 또는 우려 시 즉시 보완 조치하고 주관 부서와 개인에게 통지",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "즉시",
+     "pol_ids": [
+      "POL-43",
+      "POL-44",
+      "POL-38"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CAP-2",
+   "title": "로그 보존·최소화·폐기",
+   "demand": "보존 하한: EU AI법 배치자 6개월 이상, 중국 네트워크 로그 6개월, 미국 연방(OMB M-26-14) 검색 가능 6개월·조회 가능 1년, 인도 DPDP 규칙 1년, 한국 신용정보 처리기록 3년. 동시에 개인정보는 목적 달성 후 삭제·최소 보유(PIPL, PDPA, PIPEDA, 영국·ISO 지침).",
+   "existing": "기능 40 감사 원장(변경 불가 해시 사슬, 민감 본문 제외), 41 사슬 검증·내보내기",
+   "gap": "관할·고객별 보존 기간 설정, 보존 하한 검증, 만료 구간의 안전한 폐기와 해시 사슬 연속성 유지 방식이 정해져 있지 않다.",
+   "proposal": "DEV-67",
+   "evidence": [
+    [
+     "LIB-M01",
+     "Art. 19(1)"
+    ],
+    [
+     "LIB-M01",
+     "Art. 26(6)"
+    ],
+    [
+     "LIB-M10",
+     "제23조제3호"
+    ],
+    [
+     "LIB-M18",
+     "부록 B 1"
+    ],
+    [
+     "LIB-M44",
+     "규칙 8(3)"
+    ],
+    [
+     "LIB-M44",
+     "규칙 6(1)(d)"
+    ],
+    [
+     "LIB-L02",
+     "제20조제2항"
+    ],
+    [
+     "LIB-M33",
+     "제9조"
+    ],
+    [
+     "LIB-M31",
+     "6.3.6"
+    ],
+    [
+     "LIB-M41",
+     "Provision 12.1 (보존)"
+    ],
+    [
+     "LIB-M29",
+     "제19조"
+    ],
+    [
+     "LIB-M34",
+     "제25조"
+    ],
+    [
+     "LIB-M35",
+     "부속서 1 제4.5.3항"
+    ],
+    [
+     "LIB-M13",
+     "6.2.7"
+    ],
+    [
+     "LIB-M15",
+     "6-1-1703"
+    ],
+    [
+     "LIB-M15",
+     "6-1-1702(4)"
+    ]
+   ],
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M01-16",
+     "doc_id": "LIB-M01",
+     "jurisdiction": "EU",
+     "ref": "Art. 19(1)",
+     "topic": "제공자의 로그 보관(6개월 이상)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+     "timing": "최소 6개월 이상(다른 EU·국내법이 달리 정하면 예외)",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M01-20",
+     "doc_id": "LIB-M01",
+     "jurisdiction": "EU",
+     "ref": "Art. 26(6)",
+     "topic": "배치자의 로그 보관(6개월 이상)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+     "timing": "최소 6개월 이상(다른 EU·국내법이 달리 정하면 예외)",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M10-08",
+     "doc_id": "LIB-M10",
+     "jurisdiction": "CN",
+     "ref": "제23조제3호",
+     "topic": "운영 상태·안전사고 기록과 로그 6개월 보관",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "네트워크 로그 6개월 이상 보관('규정에 따라')",
+     "pol_ids": [
+      "POL-38",
+      "POL-42"
+     ]
+    },
+    {
+     "req_id": "REQ-M18-05",
+     "doc_id": "LIB-M18",
+     "jurisdiction": "US-federal",
+     "ref": "부록 B 1",
+     "topic": "최소 보존: 6개월 검색 가능, 1년 조회 가능",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "검색 가능 6개월, 조회 가능 1년(생성 후)",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M44-08",
+     "doc_id": "LIB-M44",
+     "jurisdiction": "IN",
+     "ref": "규칙 8(3)",
+     "topic": "처리 개인정보, 트래픽 데이터, 처리 로그를 처리일로부터 최소 1년 보존한 뒤 삭제",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "처리일부터 최소 1년",
+     "pol_ids": [
+      "POL-38",
+      "POL-48"
+     ]
+    },
+    {
+     "req_id": "REQ-M44-04",
+     "doc_id": "LIB-M44",
+     "jurisdiction": "IN",
+     "ref": "규칙 6(1)(d)-(g)",
+     "topic": "백업, 침해 탐지·조사용 로그와 개인정보 1년 보존, 수탁자 계약에 보안 조항",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "로그·개인정보 1년 보존",
+     "pol_ids": [
+      "POL-38",
+      "POL-07"
+     ]
+    },
+    {
+     "req_id": "REQ-L02-05",
+     "doc_id": "LIB-L02",
+     "jurisdiction": "KR",
+     "ref": "제20조제2항",
+     "topic": "개인신용정보 처리기록 3년 보존",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "3년간 보존",
+     "pol_ids": [
+      "POL-38",
+      "POL-26"
+     ]
+    },
+    {
+     "req_id": "REQ-M33-07",
+     "doc_id": "LIB-M33",
+     "jurisdiction": "CN",
+     "ref": "제9조",
+     "topic": "표시 없는 콘텐츠 제공 시 이용자 협의와 로그 6개월 보존",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "표시 없이 제공하는 경우 관련 로그 6개월 이상 보존",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M31-17",
+     "doc_id": "LIB-M31",
+     "jurisdiction": "CN",
+     "ref": "6.3.6",
+     "topic": "대형 모델 서비스 운영 로그(시스템·사용자 활동)를 최소 6개월 보존하고 정기 감사",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "superseded",
+     "timing": "최소 6개월 보존",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M41-16",
+     "doc_id": "LIB-M41",
+     "jurisdiction": "UK",
+     "ref": "Provision 12.1 (보존)",
+     "topic": "로그를 암호화해 보관하고 보존 정책을 준법 의무에 맞춰 정기 갱신",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "예시: 챗봇 1년, 오픈액세스 LLM 6개월(규정 기간 아님)",
+     "pol_ids": [
+      "POL-38",
+      "POL-48"
+     ]
+    },
+    {
+     "req_id": "REQ-M29-07",
+     "doc_id": "LIB-M29",
+     "jurisdiction": "CN",
+     "ref": "제19조",
+     "topic": "보존 기간은 처리 목적 실현에 필요한 최단 시간",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "목적 실현에 필요한 최단 시간",
+     "pol_ids": [
+      "POL-38",
+      "POL-48"
+     ]
+    },
+    {
+     "req_id": "REQ-M34-05",
+     "doc_id": "LIB-M34",
+     "jurisdiction": "SG",
+     "ref": "제25조",
+     "topic": "목적이 달성되고 법적·사업적 보존 필요가 없으면 문서 보유를 중단하거나 개인 식별 수단을 제거",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "목적 달성과 보존 필요 소멸 즉시",
+     "pol_ids": [
+      "POL-48",
+      "POL-49",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M35-11",
+     "doc_id": "LIB-M35",
+     "jurisdiction": "CA",
+     "ref": "부속서 1 제4.5.3항",
+     "topic": "목적에 더는 필요 없는 정보는 폐기·삭제·익명화(권고)하고 폐기 지침과 절차를 마련(의무)",
+     "strength": "recommended",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-48",
+      "POL-49"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-16",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "6.2.7",
+     "topic": "결정·평가의 기록",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "보관 기간은 이 지침에 명시 없음(문서화는 Directive on Service and Digital에 따름)",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M15-12",
+     "doc_id": "LIB-M15",
+     "jurisdiction": "US-CO",
+     "ref": "6-1-1703",
+     "topic": "배포자 기록 3년 보관",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "중대한 결정일로부터 3년 이상",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M15-11",
+     "doc_id": "LIB-M15",
+     "jurisdiction": "US-CO",
+     "ref": "6-1-1702(4)",
+     "topic": "개발자 기록 3년 보관",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "기록 생성 후 3년 이상",
+     "pol_ids": [
+      "POL-38"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CAP-3",
+   "title": "제3자 서버 관리와 공급망 보증",
+   "demand": "DORA는 ICT 제3자 계약의 정보 등록부·실사·종료 전략을 요구하고, CRA는 SBOM·취약점 공개 정책·최소 5년 지원 기간을 제조자에게 요구하며, NIS2·ETSI EN 304 223·NIST IR 8596·싱가포르 MAS 지침은 공급자 실사와 업데이트 통지를 요구한다.",
+   "existing": "기능 6~12 도입 신청·격리 검사·구성요소 분석(SBOM)·위험 검사·승인 소스 격리 실행, 14~16 사용 범위·계약 잠금·승인 만료, 개발 예정: 12 운영 이미지 재검사(DEV-50)",
+   "gap": "공급자 보증 자료(지원 종료일, 취약점 공개 창구, 처리·저장 지역, 하위 처리자, SBOM 제출)를 구조화해 보관·경보·내보내는 기능이 없다.",
+   "proposal": "DEV-68",
+   "evidence": [
+    [
+     "LIB-M25",
+     "제28조 제1항~제3항"
+    ],
+    [
+     "LIB-M25",
+     "제28조 제4항~제5항"
+    ],
+    [
+     "LIB-M25",
+     "제28조 제7항~제8항"
+    ],
+    [
+     "LIB-M25",
+     "제30조 제2항"
+    ],
+    [
+     "LIB-M26",
+     "제13조 제5항"
+    ],
+    [
+     "LIB-M26",
+     "제13조 제8항"
+    ],
+    [
+     "LIB-M26",
+     "부속서 I 제2부 (1)"
+    ],
+    [
+     "LIB-M26",
+     "부속서 I 제2부 (2)"
+    ],
+    [
+     "LIB-M11",
+     "Art. 21(3)"
+    ],
+    [
+     "LIB-M40",
+     "5.2.3-1"
+    ],
+    [
+     "LIB-M21",
+     "GV.SC-05"
+    ],
+    [
+     "LIB-M17",
+     "GV-6.1-006"
+    ],
+    [
+     "LIB-M37",
+     "5.11"
+    ],
+    [
+     "LIB-M08",
+     "Annex B"
+    ],
+    [
+     "LIB-M06",
+     "Art. 28(1)"
+    ],
+    [
+     "LIB-L01",
+     "제26조제4항"
+    ],
+    [
+     "LIB-M45",
+     "제8조 제1항~제2항"
+    ],
+    [
+     "LIB-M15",
+     "6-1-1702(1)"
+    ],
+    [
+     "LIB-M14",
+     "§ 7153(a)-(b)"
+    ]
+   ],
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M25-16",
+     "doc_id": "LIB-M25",
+     "jurisdiction": "EU",
+     "ref": "제28조 제1항~제3항",
+     "topic": "ICT 제3자 위험은 ICT 위험의 일부로 관리하며 금융기관이 최종 책임, 모든 계약에 대한 정보 등록부 유지·갱신",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "등록부 상시 갱신, 최소 연 1회 감독 당국 보고",
+     "pol_ids": [
+      "POL-11",
+      "POL-07",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M25-17",
+     "doc_id": "LIB-M25",
+     "jurisdiction": "EU",
+     "ref": "제28조 제4항~제5항",
+     "topic": "계약 체결 전 핵심·중요 기능 여부 평가, 집중 위험을 포함한 위험 식별, 실사, 정보 보안 표준 준수",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "계약 체결 전",
+     "pol_ids": [
+      "POL-01",
+      "POL-03",
+      "POL-07",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M25-18",
+     "doc_id": "LIB-M25",
+     "jurisdiction": "EU",
+     "ref": "제28조 제7항~제8항",
+     "topic": "중대한 위반·성능 변화·위험 관리 약점 시 계약 종료 가능, 핵심 기능은 중단 없는 퇴출 전략·전환 계획",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "퇴출 계획은 정기 시험·검토",
+     "pol_ids": [
+      "POL-44",
+      "POL-45",
+      "POL-46",
+      "POL-47",
+      "POL-48"
+     ]
+    },
+    {
+     "req_id": "REQ-M25-20",
+     "doc_id": "LIB-M25",
+     "jurisdiction": "EU",
+     "ref": "제30조 제2항 (b), (d)",
+     "topic": "계약에 처리·저장 위치와 변경 사전 통지, 해지·지급불능 시 데이터 접근·복구·반환 보장",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-40",
+      "POL-49",
+      "POL-26"
+     ]
+    },
+    {
+     "req_id": "REQ-M26-04",
+     "doc_id": "LIB-M26",
+     "jurisdiction": "EU",
+     "ref": "제13조 제5항",
+     "topic": "제3자 구성요소(자유·오픈소스 포함) 통합 시 실사",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-01",
+      "POL-39",
+      "POL-03"
+     ]
+    },
+    {
+     "req_id": "REQ-M26-06",
+     "doc_id": "LIB-M26",
+     "jurisdiction": "EU",
+     "ref": "제13조 제8항",
+     "topic": "지원 기간 동안 취약점을 효과적으로 처리하며 지원 기간은 최소 5년(예상 사용 기간이 짧으면 그 기간)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "지원 기간 최소 5년",
+     "pol_ids": [
+      "POL-03",
+      "POL-39"
+     ]
+    },
+    {
+     "req_id": "REQ-M26-17",
+     "doc_id": "LIB-M26",
+     "jurisdiction": "EU",
+     "ref": "부속서 I 제2부 (1)",
+     "topic": "구성요소와 취약점을 식별·문서화하고 최상위 의존성을 포함하는 기계 판독 가능한 SBOM 작성",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-01",
+      "POL-39"
+     ]
+    },
+    {
+     "req_id": "REQ-M26-18",
+     "doc_id": "LIB-M26",
+     "jurisdiction": "EU",
+     "ref": "부속서 I 제2부 (2)-(3), (5)",
+     "topic": "지체 없는 취약점 수정, 정기 시험·검토, 조율된 취약점 공개 정책 시행",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "정기",
+     "pol_ids": [
+      "POL-03",
+      "POL-39"
+     ]
+    },
+    {
+     "req_id": "REQ-M11-12",
+     "doc_id": "LIB-M11",
+     "jurisdiction": "EU",
+     "ref": "Art. 21(3)",
+     "topic": "공급자별 취약점·개발 절차 고려",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-01",
+      "POL-03",
+      "POL-39"
+     ]
+    },
+    {
+     "req_id": "REQ-M40-22",
+     "doc_id": "LIB-M40",
+     "jurisdiction": "INTL",
+     "ref": "5.2.3-1 / 5.2.3-2",
+     "topic": "안전한 소프트웨어 공급망 절차, 문서화·보호가 부족한 구성요소는 정당화와 완화 통제",
+     "strength": "mandatory",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-01",
+      "POL-17",
+      "POL-39"
+     ]
+    },
+    {
+     "req_id": "REQ-M21-14",
+     "doc_id": "LIB-M21",
+     "jurisdiction": "US-federal",
+     "ref": "GV.SC-05",
+     "topic": "공급자에게 모델과 데이터 범위, 사고 지원 공개를 요구",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "draft",
+     "timing": "",
+     "pol_ids": [
+      "POL-07",
+      "POL-03",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M17-09",
+     "doc_id": "LIB-M17",
+     "jurisdiction": "US-federal",
+     "ref": "GV-6.1-006/007",
+     "topic": "제3자 공급자 계약에 평가 조항, 접근 권한 있는 제3자 인벤토리와 승인 목록",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-07",
+      "POL-11",
+      "POL-12",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M37-17",
+     "doc_id": "LIB-M37",
+     "jurisdiction": "SG",
+     "ref": "5.11(b)",
+     "topic": "공급망 평가: 오픈소스·제3자 모델·데이터·의존성의 출처와 취약점 검증",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "",
+     "pol_ids": [
+      "POL-01",
+      "POL-03",
+      "POL-39"
+     ]
+    },
+    {
+     "req_id": "REQ-M37-18",
+     "doc_id": "LIB-M37",
+     "jurisdiction": "SG",
+     "ref": "5.11(d)-(f)",
+     "topic": "제3자 AI 업데이트 통지, 비상 계획, 감사권·통지 조항",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "",
+     "pol_ids": [
+      "POL-07",
+      "POL-03",
+      "POL-49"
+     ]
+    },
+    {
+     "req_id": "REQ-M08-29",
+     "doc_id": "LIB-M08",
+     "jurisdiction": "SG",
+     "ref": "Annex B (p.92)",
+     "topic": "MCP 서버 연결 전 보안 실사",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "연결 전",
+     "pol_ids": [
+      "POL-01",
+      "POL-03",
+      "POL-04",
+      "POL-05"
+     ]
+    },
+    {
+     "req_id": "REQ-M08-30",
+     "doc_id": "LIB-M08",
+     "jurisdiction": "SG",
+     "ref": "Annex B (p.92)",
+     "topic": "사람 신원을 AI 행위에 연결해 기록",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-38",
+      "POL-19"
+     ]
+    },
+    {
+     "req_id": "REQ-M06-16",
+     "doc_id": "LIB-M06",
+     "jurisdiction": "EU",
+     "ref": "Art. 28(1)",
+     "topic": "충분한 보증을 제공하는 처리자만 사용",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-01",
+      "POL-03",
+      "POL-07"
+     ]
+    },
+    {
+     "req_id": "REQ-L01-09",
+     "doc_id": "LIB-L01",
+     "jurisdiction": "KR",
+     "ref": "제26조제4항",
+     "topic": "수탁자 교육·감독",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-07",
+      "POL-49"
+     ]
+    },
+    {
+     "req_id": "REQ-M45-07",
+     "doc_id": "LIB-M45",
+     "jurisdiction": "IN",
+     "ref": "제8조 제1항~제2항",
+     "topic": "데이터 처리자(Data Processor)의 처리도 데이터 수탁자의 책임, 유효한 계약 아래에서만 위탁",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "partially_in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-07",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M15-09",
+     "doc_id": "LIB-M15",
+     "jurisdiction": "US-CO",
+     "ref": "6-1-1702(1)",
+     "topic": "개발자의 배포자 대상 문서 제공",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "2027-01-01 이후",
+     "pol_ids": [
+      "POL-01",
+      "POL-02",
+      "POL-07"
+     ]
+    },
+    {
+     "req_id": "REQ-M14-20",
+     "doc_id": "LIB-M14",
+     "jurisdiction": "US-CA",
+     "ref": "§ 7153(a)-(b)",
+     "topic": "ADMT 제공 사업자의 사실 제공 의무",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-07",
+      "POL-01"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CAP-4",
+   "title": "국외 이전과 데이터 위치",
+   "demand": "중국은 안전 평가·인증·표준계약 중 하나를 요구하는 허용 조건형(PIPL 38, 출경 규정), 인도는 정부가 고시한 국가만 제한하는 블랙리스트형(DPDP 16), EU는 적정성·보호조치(GDPR Ch.V), 한국은 원칙 금지와 예외(개인정보 보호법 28조의8), 싱가포르·퀘벡·호주·영국도 수신 국가의 보호 수준을 평가한다. 지정 데이터의 국내 저장은 중국 PIPL 40조, 인도 DPDP 규칙 13(4)가 요구한다.",
+   "existing": "기능 23 실행 전 정책(데이터 등급·민감정보 반출 조건), 30 서버별 인증정보 분리, 개발 예정: 31 실제 연결 주소 확인(DEV-53), 33 전송 목적 확인(DEV-57)",
+   "gap": "서버(및 업스트림 제공자)의 처리·저장 국가 속성과 데이터 등급×목적지 국가 규칙이 없다. 이전 근거(표준계약·영향평가·인증·동의) 참조 필드도 없다.",
+   "proposal": "DEV-69",
+   "evidence": [
+    [
+     "LIB-M29",
+     "제38조 제1항"
+    ],
+    [
+     "LIB-M29",
+     "제40조"
+    ],
+    [
+     "LIB-M30",
+     "제5조제4호"
+    ],
+    [
+     "LIB-M30",
+     "제8조제1항"
+    ],
+    [
+     "LIB-M45",
+     "제16조 제1항"
+    ],
+    [
+     "LIB-M44",
+     "규칙 13(1)-(4)"
+    ],
+    [
+     "LIB-M44",
+     "규칙 15"
+    ],
+    [
+     "LIB-L01",
+     "제28조의8제1항"
+    ],
+    [
+     "LIB-M06",
+     "Art. 44"
+    ],
+    [
+     "LIB-M34",
+     "제26조 제1항"
+    ],
+    [
+     "LIB-M36",
+     "민간 부문법 제17조"
+    ],
+    [
+     "LIB-M48",
+     "APP 8.3"
+    ],
+    [
+     "LIB-M46",
+     "제85조"
+    ]
+   ],
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M29-12",
+     "doc_id": "LIB-M29",
+     "jurisdiction": "CN",
+     "ref": "제38조 제1항·제3항",
+     "topic": "국외 제공 조건: CAC 안전 평가, 전문 기관 인증, 표준계약 등",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-26",
+      "POL-10"
+     ]
+    },
+    {
+     "req_id": "REQ-M29-14",
+     "doc_id": "LIB-M29",
+     "jurisdiction": "CN",
+     "ref": "제40조",
+     "topic": "핵심 정보 인프라 운영자 등은 국내 수집·생성 개인정보를 국내 저장, 국외 제공은 안전 평가",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-26",
+      "POL-10",
+      "POL-25"
+     ]
+    },
+    {
+     "req_id": "REQ-M30-02",
+     "doc_id": "LIB-M30",
+     "jurisdiction": "CN",
+     "ref": "제5조제4호",
+     "topic": "누적 10만 명 미만 개인정보(민감정보 제외) 출경 면제",
+     "strength": "informative",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "당해 연도 1월 1일부터 누적",
+     "pol_ids": [
+      "POL-26",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M30-05",
+     "doc_id": "LIB-M30",
+     "jurisdiction": "CN",
+     "ref": "제8조제1항",
+     "topic": "10만~100만 명 구간은 표준계약 또는 보호 인증",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "당해 연도 누적 기준",
+     "pol_ids": [
+      "POL-26",
+      "POL-07",
+      "POL-10"
+     ]
+    },
+    {
+     "req_id": "REQ-M45-15",
+     "doc_id": "LIB-M45",
+     "jurisdiction": "IN",
+     "ref": "제16조 제1항",
+     "topic": "정부가 고시한 국가·지역으로의 개인정보 이전만 제한(블랙리스트 방식)",
+     "strength": "informative",
+     "binding_doc": true,
+     "doc_status": "partially_in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-26",
+      "POL-10"
+     ]
+    },
+    {
+     "req_id": "REQ-M44-10",
+     "doc_id": "LIB-M44",
+     "jurisdiction": "IN",
+     "ref": "규칙 13(1)-(4)",
+     "topic": "SDF의 연 1회 DPIA·감사, 보고서 제출, 알고리즘 소프트웨어 실사, 지정 데이터의 국외 이전 제한",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "12개월마다 1회",
+     "pol_ids": [
+      "POL-26",
+      "POL-10",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M44-12",
+     "doc_id": "LIB-M44",
+     "jurisdiction": "IN",
+     "ref": "규칙 15",
+     "topic": "국외 이전은 정부가 일반·특별 명령으로 정하는 요건을 충족하는 조건으로 허용",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "규칙 15 시행일(게재일 18개월 후)",
+     "pol_ids": [
+      "POL-26",
+      "POL-10"
+     ]
+    },
+    {
+     "req_id": "REQ-L01-11",
+     "doc_id": "LIB-L01",
+     "jurisdiction": "KR",
+     "ref": "제28조의8제1항",
+     "topic": "개인정보 국외 이전 금지 원칙과 예외",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-26",
+      "POL-30",
+      "POL-07"
+     ]
+    },
+    {
+     "req_id": "REQ-M06-27",
+     "doc_id": "LIB-M06",
+     "jurisdiction": "EU",
+     "ref": "Art. 44",
+     "topic": "제3국 이전의 일반 원칙",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-26",
+      "POL-30",
+      "POL-07"
+     ]
+    },
+    {
+     "req_id": "REQ-M34-06",
+     "doc_id": "LIB-M34",
+     "jurisdiction": "SG",
+     "ref": "제26조 제1항~제3항",
+     "topic": "국외 이전은 이 법이 정한 요건(이 법과 비교 가능한 보호 수준)에 따라서만 가능",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-26",
+      "POL-10"
+     ]
+    },
+    {
+     "req_id": "REQ-M36-12",
+     "doc_id": "LIB-M36",
+     "jurisdiction": "CA",
+     "ref": "민간 부문법 제17조",
+     "topic": "퀘벡 밖으로 개인정보를 제공하기 전 영향평가(민감도·목적·보호 조치·수신 국가 법체계)와 서면 계약",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "제공 전, 2023-09-22 시행",
+     "pol_ids": [
+      "POL-26",
+      "POL-10",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M48-07",
+     "doc_id": "LIB-M48",
+     "jurisdiction": "AU",
+     "ref": "APP 8.3 및 제100조 제1A항 (부칙 1 제6부)",
+     "topic": "prescribed 국가·구속적 제도 수신자에 대한 APP 8.3 적용 조건과 지정 전 요건",
+     "strength": "informative",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "2024-12-11 시행",
+     "pol_ids": [
+      "POL-26",
+      "POL-10"
+     ]
+    },
+    {
+     "req_id": "REQ-M46-09",
+     "doc_id": "LIB-M46",
+     "jurisdiction": "UK",
+     "ref": "제85조·부칙 7: UK GDPR 제45A조·제45B조",
+     "topic": "국외 이전 승인 요건인 '데이터 보호 시험': 영국 기준보다 현저히 낮지 않은 보호 수준",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-26",
+      "POL-10"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CAP-5",
+   "title": "자동화된 결정과 인적 개입 증빙",
+   "demand": "정보주체에 중대한 영향을 주는 결정을 자동화 처리만으로 내릴 때의 고지·설명·사람 개입·이의 제기 권리가 중국 PIPL 24, 한국 개인정보 보호법 37조의2·신용정보법 36조의2, EU GDPR 22·AI법 14·26·86, 영국 DUAA 22A~22D, 퀘벡 12.1, 호주 APP 1.7(2026-12-10 시행), 미국 OMB M-25-21, 캐나다 연방 자동 의사결정 지침(시행 중), 캘리포니아 CPPA 규정의 ADMT 의무(2027-01-01 준수)와 콜로라도 SB 26-189(2027-01-01 시행)에 있다. 모델 개발자가 아니라 이 결정을 내리는 조직의 의무이므로 게이트웨이는 증빙을 만들어 준다.",
+   "existing": "기능 25 고위험 건별 승인(1회용, 자가 승인 금지), 42 판정 증적 항목",
+   "gap": "도구 기능이 '정보주체에 중대한 영향 가능'한지 구분하는 분류가 없고, 사람 개입 여부·번복 기록과 설명 요청에 쓰는 결정 증빙 번들이 없다.",
+   "proposal": "DEV-70",
+   "evidence": [
+    [
+     "LIB-M29",
+     "제24조"
+    ],
+    [
+     "LIB-L01",
+     "제37조의2제1항"
+    ],
+    [
+     "LIB-L02",
+     "제36조의2제1항"
+    ],
+    [
+     "LIB-M06",
+     "Art. 22(1)"
+    ],
+    [
+     "LIB-M06",
+     "Art. 22(3)"
+    ],
+    [
+     "LIB-M01",
+     "Art. 86(1)"
+    ],
+    [
+     "LIB-M46",
+     "제80조: UK GDPR 제22C조"
+    ],
+    [
+     "LIB-M36",
+     "민간 부문법 제12.1조"
+    ],
+    [
+     "LIB-M48",
+     "APP 1.7"
+    ],
+    [
+     "LIB-M19",
+     "부록 4.b.vi"
+    ],
+    [
+     "LIB-M01",
+     "Art. 14(1), (3)"
+    ],
+    [
+     "LIB-M01",
+     "Art. 26(2)"
+    ],
+    [
+     "LIB-M13",
+     "6.2.1"
+    ],
+    [
+     "LIB-M13",
+     "6.2.3"
+    ],
+    [
+     "LIB-M13",
+     "6.3.4"
+    ],
+    [
+     "LIB-M13",
+     "6.3.13"
+    ],
+    [
+     "LIB-M13",
+     "6.4.1"
+    ],
+    [
+     "LIB-M14",
+     "§ 7220(a)-(c)"
+    ],
+    [
+     "LIB-M14",
+     "§ 7221(a)-(b)(1)"
+    ],
+    [
+     "LIB-M14",
+     "§ 7222(b)"
+    ],
+    [
+     "LIB-M15",
+     "6-1-1704(1)"
+    ],
+    [
+     "LIB-M15",
+     "6-1-1705(1)(a)(II)"
+    ]
+   ],
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M29-10",
+     "doc_id": "LIB-M29",
+     "jurisdiction": "CN",
+     "ref": "제24조",
+     "topic": "자동화 의사결정의 투명성·공정성, 설명 요구권과 자동화 단독 결정 거부권",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-L01-19",
+     "doc_id": "LIB-L01",
+     "jurisdiction": "KR",
+     "ref": "제37조의2제1항",
+     "topic": "자동화된 결정에 대한 거부권",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-22"
+     ]
+    },
+    {
+     "req_id": "REQ-L02-08",
+     "doc_id": "LIB-L02",
+     "jurisdiction": "KR",
+     "ref": "제36조의2제1항",
+     "topic": "자동화평가의 설명 요구권",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M06-12",
+     "doc_id": "LIB-M06",
+     "jurisdiction": "EU",
+     "ref": "Art. 22(1)",
+     "topic": "자동화된 개별 결정을 받지 않을 권리",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M06-13",
+     "doc_id": "LIB-M06",
+     "jurisdiction": "EU",
+     "ref": "Art. 22(3)",
+     "topic": "사람의 개입·의견 표명·이의 제기 보장",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-22"
+     ]
+    },
+    {
+     "req_id": "REQ-M01-28",
+     "doc_id": "LIB-M01",
+     "jurisdiction": "EU",
+     "ref": "Art. 86(1)",
+     "topic": "개별 의사결정 설명 요구권",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+     "timing": "",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M46-04",
+     "doc_id": "LIB-M46",
+     "jurisdiction": "UK",
+     "ref": "제80조: UK GDPR 제22C조",
+     "topic": "자동화된 중대한 결정의 안전장치: 정보 제공, 의견 제출, 사람 개입, 이의 제기",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-38",
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M36-10",
+     "doc_id": "LIB-M36",
+     "jurisdiction": "CA",
+     "ref": "민간 부문법 제12.1조",
+     "topic": "자동 처리만으로 내리는 결정은 결정 통지 시점까지 고지, 요청 시 사용 정보·이유·주요 요소와 정정권 안내, 직원 재검토 기회 부여",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "결정을 알리는 때까지 고지, 2023-09-22 시행",
+     "pol_ids": [
+      "POL-27",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M48-02",
+     "doc_id": "LIB-M48",
+     "jurisdiction": "AU",
+     "ref": "APP 1.7 (부칙 1 제15부 항목 88)",
+     "topic": "컴퓨터 프로그램이 결정이나 그와 직접 관련된 일을 하도록 한 경우 프라이버시 정책에 관련 내용 포함",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "2026-12-10부터",
+     "pol_ids": [
+      "POL-38",
+      "POL-25"
+     ]
+    },
+    {
+     "req_id": "REQ-M19-13",
+     "doc_id": "LIB-M19",
+     "jurisdiction": "US-federal",
+     "ref": "부록 4.b.vi",
+     "topic": "AI 결정 영향받는 개인의 인적 검토·이의 제기",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "적시(구체 기한 없음)",
+     "pol_ids": [
+      "POL-38",
+      "POL-27",
+      "POL-22"
+     ]
+    },
+    {
+     "req_id": "REQ-M01-13",
+     "doc_id": "LIB-M01",
+     "jurisdiction": "EU",
+     "ref": "Art. 14(1), (3)",
+     "topic": "인간 감독 가능한 설계",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-22",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M01-18",
+     "doc_id": "LIB-M01",
+     "jurisdiction": "EU",
+     "ref": "Art. 26(2)",
+     "topic": "인간 감독 담당자 지정",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+     "timing": "",
+     "pol_ids": [
+      "POL-19",
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-11",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "6.2.1",
+     "topic": "자동 의사결정 사용 사실의 통지",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-08"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-12",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "6.2.3",
+     "topic": "의미 있는 설명의 제공",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-19",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "6.3.4",
+     "topic": "고객 피드백·사람 번복·시스템 실패의 기록",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-24",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "6.3.13",
+     "topic": "사람 관여를 허용하는 시스템 설계",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-22"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-27",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "6.4.1",
+     "topic": "결정에 대한 구제 수단 안내",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M14-24",
+     "doc_id": "LIB-M14",
+     "jurisdiction": "US-CA",
+     "ref": "§ 7220(a)-(c)",
+     "topic": "ADMT 사전 고지(Pre-use Notice)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "개인정보 수집 시점 또는 그 이전. 이미 수집한 정보를 새로 ADMT로 처리하려면 처리 전",
+     "pol_ids": [
+      "POL-08"
+     ]
+    },
+    {
+     "req_id": "REQ-M14-25",
+     "doc_id": "LIB-M14",
+     "jurisdiction": "US-CA",
+     "ref": "§ 7221(a)-(b)(1)",
+     "topic": "ADMT 옵트아웃 또는 사람 검토 항소",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "항소 요청의 처리 기한은 § 7021을 따른다",
+     "pol_ids": [
+      "POL-27",
+      "POL-22",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M14-27",
+     "doc_id": "LIB-M14",
+     "jurisdiction": "US-CA",
+     "ref": "§ 7222(b)",
+     "topic": "ADMT 접근 요청 응답 내용",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "접수 확인 10영업일, 응답 45역일(§ 7021)",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M15-13",
+     "doc_id": "LIB-M15",
+     "jurisdiction": "US-CO",
+     "ref": "6-1-1704(1)",
+     "topic": "사용 전 소비자 고지",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "ADMT를 결정에 사용하기 전(사전)",
+     "pol_ids": [
+      "POL-08",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M15-20",
+     "doc_id": "LIB-M15",
+     "jurisdiction": "US-CO",
+     "ref": "6-1-1705(1)(a)(II)",
+     "topic": "의미 있는 사람 검토와 재고 기회",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "소비자 요청 시(기한 명시 없음; '상업적으로 합리적인 범위')",
+     "pol_ids": [
+      "POL-27",
+      "POL-38"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CAP-6",
+   "title": "위험 등급과 영향평가 입력",
+   "demand": "영향평가·위험 등급을 요구하는 조항이 가장 많다: 한국 AI기본법 33~35조·개인정보 영향평가, EU GDPR 35·AI법 9·27, 중국 PIPL 55~56·TC260 프레임워크 5.5, 퀘벡 3.3, 인도 DPDP SDF, 싱가포르 MAS AI 위험관리 지침(2027-10-07 효력), ISO 42001 6.1.2·6.1.4, NIST AI RMF, 캐나다 연방 알고리즘 영향평가, 캘리포니아 CPPA 위험평가 규정(2027-12-31까지 기존 처리 평가).",
+   "existing": "기능 6 도입 신청(주소·버전·용도·사용 범위), 14 사용 범위, 13 독립 승인, 25 고위험 건별 승인",
+   "gap": "자율성·영향 범위·데이터 등급·외부 전송·변경 작업 여부로 서버·기능의 위험 등급을 정하고 등급별 승인 방식을 정하는 구조, 관할 서식으로 옮길 영향평가 입력 자료 묶음이 없다.",
+   "proposal": "DEV-71",
+   "evidence": [
+    [
+     "LIB-M29",
+     "제55조~제56조"
+    ],
+    [
+     "LIB-M36",
+     "민간 부문법 제3.3조~제3.4조"
+    ],
+    [
+     "LIB-M06",
+     "Art. 35(1)"
+    ],
+    [
+     "LIB-M01",
+     "Art. 9(1)-(2)"
+    ],
+    [
+     "LIB-L04",
+     "제34조제1항제1호"
+    ],
+    [
+     "LIB-L04",
+     "제35조제1항"
+    ],
+    [
+     "LIB-M31",
+     "5.5 및 부록 1"
+    ],
+    [
+     "LIB-M37",
+     "4.12(a)-(c)"
+    ],
+    [
+     "LIB-M37",
+     "4.11"
+    ],
+    [
+     "LIB-L09",
+     "6.1.4 AI 시스템 영향 평가"
+    ],
+    [
+     "LIB-M08",
+     "§4.1 Step 1 (p.28)"
+    ],
+    [
+     "LIB-M44",
+     "규칙 13(1)-(4)"
+    ],
+    [
+     "LIB-M40",
+     "5.1.2-1"
+    ],
+    [
+     "LIB-M41",
+     "Provision 2.1"
+    ],
+    [
+     "LIB-M13",
+     "6.1.1"
+    ],
+    [
+     "LIB-M13",
+     "부속서 B(수준 IV)"
+    ],
+    [
+     "LIB-M14",
+     "§ 7150(a)-(b)"
+    ],
+    [
+     "LIB-M14",
+     "§ 7152(a)"
+    ],
+    [
+     "LIB-M14",
+     "§ 7155(a)-(c)"
+    ]
+   ],
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M29-18",
+     "doc_id": "LIB-M29",
+     "jurisdiction": "CN",
+     "ref": "제55조~제56조",
+     "topic": "민감정보·자동화 결정·위탁·제공·공개·국외 제공 전 개인정보 보호 영향평가, 보고서와 기록 3년 이상 보존",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "처리 전, 보고서·기록 최소 3년 보존",
+     "pol_ids": [
+      "POL-02",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M36-04",
+     "doc_id": "LIB-M36",
+     "jurisdiction": "CA",
+     "ref": "민간 부문법 제3.3조~제3.4조",
+     "topic": "정보 시스템·전자 서비스 취득·개발·개선 프로젝트마다 개인정보 영향평가(민감도에 비례), 책임자 협의",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "프로젝트 시작부터, 2023-09-22 시행",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M06-26",
+     "doc_id": "LIB-M06",
+     "jurisdiction": "EU",
+     "ref": "Art. 35(1)",
+     "topic": "개인정보 영향평가(DPIA)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "처리 개시 전(사전)",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M01-10",
+     "doc_id": "LIB-M01",
+     "jurisdiction": "EU",
+     "ref": "Art. 9(1)-(2)",
+     "topic": "위험관리체계",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+     "timing": "전 수명주기에 걸쳐 지속",
+     "pol_ids": [
+      "POL-27",
+      "POL-42",
+      "POL-43"
+     ]
+    },
+    {
+     "req_id": "REQ-L04-08",
+     "doc_id": "LIB-L04",
+     "jurisdiction": "KR",
+     "ref": "제34조제1항제1호",
+     "topic": "위험관리방안의 수립·운영",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-42",
+      "POL-43"
+     ]
+    },
+    {
+     "req_id": "REQ-L04-12",
+     "doc_id": "LIB-L04",
+     "jurisdiction": "KR",
+     "ref": "제35조제1항",
+     "topic": "고영향 AI 영향평가",
+     "strength": "recommended",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "제공 전(사전), '노력해야 한다' 수준",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M31-08",
+     "doc_id": "LIB-M31",
+     "jurisdiction": "CN",
+     "ref": "5.5 및 부록 1",
+     "topic": "AI 응용 분류와 위험 등급 관리(응용 시나리오·지능 수준·응용 규모)",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "superseded",
+     "timing": "",
+     "pol_ids": [
+      "POL-02",
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M37-09",
+     "doc_id": "LIB-M37",
+     "jurisdiction": "SG",
+     "ref": "4.12(a)-(c)",
+     "topic": "위험 중대성 평가 차원: 영향·복잡성·의존도(자율성 정도 포함)",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "",
+     "pol_ids": [
+      "POL-02",
+      "POL-27",
+      "POL-25"
+     ]
+    },
+    {
+     "req_id": "REQ-M37-10",
+     "doc_id": "LIB-M37",
+     "jurisdiction": "SG",
+     "ref": "4.11",
+     "topic": "배포 전 잔여 위험 중대성이 위험 선호 이내임을 확인",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "배포 전",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-L09-05",
+     "doc_id": "LIB-L09",
+     "jurisdiction": "INTL",
+     "ref": "6.1.4 AI 시스템 영향 평가",
+     "topic": "영향 평가 결과의 문서화",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M08-03",
+     "doc_id": "LIB-M08",
+     "jurisdiction": "SG",
+     "ref": "§4.1 Step 1 (p.28)",
+     "topic": "자율성 수준 평가와 위협 모델링",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-02",
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M44-10",
+     "doc_id": "LIB-M44",
+     "jurisdiction": "IN",
+     "ref": "규칙 13(1)-(4)",
+     "topic": "SDF의 연 1회 DPIA·감사, 보고서 제출, 알고리즘 소프트웨어 실사, 지정 데이터의 국외 이전 제한",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "12개월마다 1회",
+     "pol_ids": [
+      "POL-26",
+      "POL-10",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M40-05",
+     "doc_id": "LIB-M40",
+     "jurisdiction": "INTL",
+     "ref": "5.1.2-1",
+     "topic": "AI 시스템 도입 결정 시 사업 요구와 AI 보안 위험·완화 방안 평가",
+     "strength": "mandatory",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M41-02",
+     "doc_id": "LIB-M41",
+     "jurisdiction": "UK",
+     "ref": "Provision 2.1",
+     "topic": "AI 시스템 도입 전 사업 정합성 검토와 AI 특유 위험 평가를 문서화",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-08",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "6.1.1",
+     "topic": "운영 전 알고리즘 영향평가의 완료·승인·공개",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "운영(production) 개시 전",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-10",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "부속서 B(수준 IV)",
+     "topic": "영향 수준 I~IV의 의미(최고 수준 예)",
+     "strength": "informative",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-25",
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M14-17",
+     "doc_id": "LIB-M14",
+     "jurisdiction": "US-CA",
+     "ref": "§ 7150(a)-(b)",
+     "topic": "위험평가가 필요한 처리",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "처리 시작 전",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M14-18",
+     "doc_id": "LIB-M14",
+     "jurisdiction": "US-CA",
+     "ref": "§ 7152(a)",
+     "topic": "위험평가의 판단 기준과 보고서 기재 사항",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-02",
+      "POL-25",
+      "POL-26"
+     ]
+    },
+    {
+     "req_id": "REQ-M14-21",
+     "doc_id": "LIB-M14",
+     "jurisdiction": "US-CA",
+     "ref": "§ 7155(a)-(c)",
+     "topic": "위험평가 실시·갱신·보관 시기",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "3년마다 검토, 중대한 변경 후 45일 이내 갱신, 기존 처리는 2027-12-31까지, 보관은 처리 지속 기간 또는 완료 후 5년 중 긴 기간",
+     "pol_ids": [
+      "POL-37",
+      "POL-38"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CAP-7",
+   "title": "에이전트 신원·위임 (연구 과제)",
+   "demand": "NIST NCCoE 개념 문서, NIST IR 8596 초안(PR.AA-01~05), 싱가포르 에이전트 AI 프레임워크, TC260 프레임워크 6.2.5, IETF 초안(AI 에이전트 인터넷 아키텍처)은 에이전트별 고유·추적 가능한 신원과 최소 권한 위임을 권고하거나 논의한다. 표준이 아직 초안·권고 단계다.",
+   "existing": "기능 21 신원·상태 확인(사용자·장치), 개발 범위 제외: 55 에이전트 신원 증명, 56 에이전트 위임 판정",
+   "gap": "하네스가 스스로 밝히는 정보를 검증할 수단이 없어 에이전트 단위 신원은 범위 제외다. 표준이 성숙하면 적용 가능성을 다시 판단해야 한다.",
+   "proposal": "RES-01",
+   "evidence": [
+    [
+     "LIB-M21",
+     "PR.AA-01"
+    ],
+    [
+     "LIB-M21",
+     "PR.AA-05"
+    ],
+    [
+     "LIB-M02",
+     "p.4, 질문 4"
+    ],
+    [
+     "LIB-M31",
+     "6.2.5"
+    ],
+    [
+     "LIB-M41",
+     "Provision 2.6"
+    ],
+    [
+     "LIB-M03",
+     "p.18"
+    ]
+   ],
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M21-04",
+     "doc_id": "LIB-M21",
+     "jurisdiction": "US-federal",
+     "ref": "PR.AA-01",
+     "topic": "AI 시스템에 고유하고 추적 가능한 신원·인증정보 부여",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "draft",
+     "timing": "",
+     "pol_ids": [
+      "POL-19",
+      "POL-38",
+      "POL-15"
+     ]
+    },
+    {
+     "req_id": "REQ-M21-08",
+     "doc_id": "LIB-M21",
+     "jurisdiction": "US-federal",
+     "ref": "PR.AA-05",
+     "topic": "AI 에이전트에 최소 권한 적용과 시간 경과에 따른 권한 관리",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "draft",
+     "timing": "주기적 검토",
+     "pol_ids": [
+      "POL-02",
+      "POL-22",
+      "POL-23",
+      "POL-11"
+     ]
+    },
+    {
+     "req_id": "REQ-M02-19",
+     "doc_id": "LIB-M02",
+     "jurisdiction": "US-federal",
+     "ref": "p.4, 질문 4 (Authorization)",
+     "topic": "질문: 제로트러스트, 동적 정책 갱신, 집계 데이터의 민감도",
+     "strength": "informative",
+     "binding_doc": false,
+     "doc_status": "draft",
+     "timing": "",
+     "pol_ids": [
+      "POL-22",
+      "POL-25",
+      "POL-37"
+     ]
+    },
+    {
+     "req_id": "REQ-M02-20",
+     "doc_id": "LIB-M02",
+     "jurisdiction": "US-federal",
+     "ref": "p.4, 질문 4 (Authorization)",
+     "topic": "질문: 예측하기 어려운 에이전트의 최소 권한",
+     "strength": "informative",
+     "binding_doc": false,
+     "doc_status": "draft",
+     "timing": "",
+     "pol_ids": [
+      "POL-11",
+      "POL-23",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M02-21",
+     "doc_id": "LIB-M02",
+     "jurisdiction": "US-federal",
+     "ref": "p.4, 질문 4 (Authorization)",
+     "topic": "질문: 에이전트의 권한 증명과 행동 의도 전달",
+     "strength": "informative",
+     "binding_doc": false,
+     "doc_status": "draft",
+     "timing": "",
+     "pol_ids": [
+      "POL-20",
+      "POL-22",
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M02-22",
+     "doc_id": "LIB-M02",
+     "jurisdiction": "US-federal",
+     "ref": "p.4, 질문 4 (Authorization)",
+     "topic": "질문: 대리(on behalf of) 위임과 사람 승인 연결",
+     "strength": "informative",
+     "binding_doc": false,
+     "doc_status": "draft",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-20",
+      "POL-19",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M31-13",
+     "doc_id": "LIB-M31",
+     "jurisdiction": "CN",
+     "ref": "6.2.5",
+     "topic": "사용자 신원 확인·접근 통제, 최소 권한, API 호출 빈도 제한, 악성 사용자 차단",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "superseded",
+     "timing": "",
+     "pol_ids": [
+      "POL-19",
+      "POL-28",
+      "POL-23",
+      "POL-44"
+     ]
+    },
+    {
+     "req_id": "REQ-M41-04",
+     "doc_id": "LIB-M41",
+     "jurisdiction": "UK",
+     "ref": "Provision 2.6",
+     "topic": "에이전트 시스템에 부여하는 계정·접근은 극도로 신중하게 최소 권한으로 제공",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-02",
+      "POL-22",
+      "POL-23",
+      "POL-11"
+     ]
+    },
+    {
+     "req_id": "REQ-M03-09",
+     "doc_id": "LIB-M03",
+     "jurisdiction": "INTL",
+     "ref": "p.18 개발 · 서드파티 구성요소(Manage third-party components)",
+     "topic": "서드파티 구성요소의 출처·최신성 검증과 레지스트리",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "포함 전 검증",
+     "pol_ids": [
+      "POL-01",
+      "POL-03",
+      "POL-39",
+      "POL-37"
+     ]
+    },
+    {
+     "req_id": "REQ-M03-10",
+     "doc_id": "LIB-M03",
+     "jurisdiction": "INTL",
+     "ref": "p.18 개발 · 서드파티 구성요소(Manage third-party components)",
+     "topic": "승인된 도구·버전 허용 목록",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "정기 검증(주기는 정하지 않음)",
+     "pol_ids": [
+      "POL-11",
+      "POL-37",
+      "POL-12"
+     ]
+    },
+    {
+     "req_id": "REQ-M03-11",
+     "doc_id": "LIB-M03",
+     "jurisdiction": "INTL",
+     "ref": "p.18 개발 · 서드파티 구성요소(Manage third-party components)",
+     "topic": "도구 사용 로그를 사람이 읽을 수 있게 기록",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "보관 기간은 정하지 않음",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M03-12",
+     "doc_id": "LIB-M03",
+     "jurisdiction": "INTL",
+     "ref": "p.18 개발 · 서드파티 구성요소(Manage third-party components)",
+     "topic": "이상 행동 시 권한 자동 제한(트리거-행동 프로토콜)",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-42",
+      "POL-43",
+      "POL-44"
+     ]
+    },
+    {
+     "req_id": "REQ-M03-13",
+     "doc_id": "LIB-M03",
+     "jurisdiction": "INTL",
+     "ref": "p.18 개발 · 서드파티 구성요소(Manage third-party components)",
+     "topic": "에이전트의 자기 권한 변경·무승인 위임 금지",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "위임에는 명시적 만료 타이머 필요",
+     "pol_ids": [
+      "POL-20",
+      "POL-27",
+      "POL-19"
+     ]
+    }
+   ]
+  }
+ ],
+ "proposals": [
+  {
+   "id": "DEV-66",
+   "title": "사고 증빙 패키지와 관할별 보고 기한 타이머",
+   "capability": "CAP-1",
+   "extends": "기능 40·41·44 (감사 원장·추적·경보), DEV-61 (SIEM 전달)",
+   "scope": [
+    "사고 단위를 만들고 기준 시각(인지·평가 시각)과 관할 팩을 지정한다.",
+    "영향 범위(주체·서버·기능·데이터 등급·기간)를 원장 질의로 산출한다.",
+    "증빙 패키지 내보내기: 영향 호출 목록, 승인·철회·연결 중지 이력, 정책 판정 사유, 해시 사슬 검증 결과. 비밀 문자열과 개인정보 본문은 넣지 않는다.",
+    "관할 팩의 보고 단계(조기 경보·통지·최종 보고) 타이머와 기한 임박·초과 경보, 보고 완료 기록. 보고서 작성·제출은 고객이 한다."
+   ],
+   "acceptance": [
+    "정상: 합성 사고(서버 한 대의 비정상 호출 N건)에서 산출한 영향 호출 건수가 원장 질의 건수와 일치하고 내보낸 패키지의 해시 체인 검증이 통과한다.",
+    "음성: 해시 사슬 단절 구간이 있으면 패키지에 '무결성 미확인'을 표시하고, 패키지에서 비밀·개인정보 본문 문자열이 0건이다.",
+    "경계: 기한 수치는 관할 팩 값에서만 읽고 코드 상수로 두지 않는다. 수치가 '시행령 위임'인 팩은 '수동 확인 필요' 상태로 표시한다.",
+    "실패: 타이머 구성요소가 멈추면 경보 누락이 아니라 '확인 불가'가 표시된다."
+   ],
+   "depends": [
+    "DEV-61",
+    "DEV-48"
+   ],
+   "week": "12월 1주~12월 3주",
+   "decisions": [
+    "RQ-02",
+    "RQ-05"
+   ],
+   "risks": "기한 수치는 법령 개정과 시행령으로 바뀐다. 사고 판단(중대성)은 사람이 하며 제품은 판단하지 않는다.",
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M27-03",
+     "doc_id": "LIB-M27",
+     "jurisdiction": "CN",
+     "ref": "제4조제2항",
+     "topic": "핵심 정보 인프라 관련 사건은 최대 1시간 내 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "운영자 1시간 이내, 보호 업무 부문의 상향 보고 30분 이내",
+     "pol_ids": [
+      "POL-43",
+      "POL-42"
+     ]
+    },
+    {
+     "req_id": "REQ-M27-05",
+     "doc_id": "LIB-M27",
+     "jurisdiction": "CN",
+     "ref": "제4조제3항",
+     "topic": "중앙·국가기관 부문은 2시간 내 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "2시간 이내",
+     "pol_ids": [
+      "POL-43"
+     ]
+    },
+    {
+     "req_id": "REQ-M27-04",
+     "doc_id": "LIB-M27",
+     "jurisdiction": "CN",
+     "ref": "제4조제4항",
+     "topic": "일반 네트워크 운영자는 소재지 성급 網信부문에 4시간 내 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "운영자 4시간 이내(성급 網信부문 상향 1시간 이내)",
+     "pol_ids": [
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M27-09",
+     "doc_id": "LIB-M27",
+     "jurisdiction": "CN",
+     "ref": "제8조",
+     "topic": "처리 종료 후 30일 내 총결 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "처리 종료 후 30일 이내",
+     "pol_ids": [
+      "POL-43",
+      "POL-39",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M26-08",
+     "doc_id": "LIB-M26",
+     "jurisdiction": "EU",
+     "ref": "제14조 제1항~제2항",
+     "topic": "적극적으로 악용되는 취약점: 24시간 이내 조기 경보, 72시간 이내 취약점 통지, 수정 가능 후 14일 이내 최종 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "24시간 조기 경보, 72시간 통지, 조치 가능 후 14일 최종 보고(2026-09-11부터 적용)",
+     "pol_ids": [
+      "POL-39",
+      "POL-43",
+      "POL-44"
+     ]
+    },
+    {
+     "req_id": "REQ-M26-09",
+     "doc_id": "LIB-M26",
+     "jurisdiction": "EU",
+     "ref": "제14조 제3항~제5항",
+     "topic": "제품 보안에 영향을 주는 중대한 사고: 24시간 조기 경보, 72시간 사고 통지, 1개월 이내 최종 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "24시간, 72시간, 통지 후 1개월(2026-09-11부터 적용)",
+     "pol_ids": [
+      "POL-43",
+      "POL-42",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M11-21",
+     "doc_id": "LIB-M11",
+     "jurisdiction": "EU",
+     "ref": "Art. 23(4)(a)",
+     "topic": "24시간 이내 조기 경보",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "인지 후 24시간 이내 조기 경보",
+     "pol_ids": [
+      "POL-42",
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M11-22",
+     "doc_id": "LIB-M11",
+     "jurisdiction": "EU",
+     "ref": "Art. 23(4)(b)",
+     "topic": "72시간 이내 사고 통지",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "인지 후 72시간 이내 사고 통지",
+     "pol_ids": [
+      "POL-38",
+      "POL-42",
+      "POL-43"
+     ]
+    },
+    {
+     "req_id": "REQ-M11-23",
+     "doc_id": "LIB-M11",
+     "jurisdiction": "EU",
+     "ref": "Art. 23(4)(c)-(e)",
+     "topic": "중간 보고·최종 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "최종 보고는 사고 통지 제출 후 1개월 이내; 진행 중이면 진행 보고서 후 처리 후 1개월 이내",
+     "pol_ids": [
+      "POL-38",
+      "POL-43",
+      "POL-45"
+     ]
+    },
+    {
+     "req_id": "REQ-M06-23",
+     "doc_id": "LIB-M06",
+     "jurisdiction": "EU",
+     "ref": "Art. 33(1)",
+     "topic": "감독기관에 대한 침해 통지(72시간)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "인지 후 지체 없이, 가능하면 72시간 이내(초과 시 지연 사유 첨부)",
+     "pol_ids": [
+      "POL-42",
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M44-06",
+     "doc_id": "LIB-M44",
+     "jurisdiction": "IN",
+     "ref": "규칙 7(2)",
+     "topic": "위원회에 지체 없이 개요를, 72시간 이내에 상세 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "인지 즉시 개요, 72시간 이내 상세 보고",
+     "pol_ids": [
+      "POL-43",
+      "POL-38",
+      "POL-44"
+     ]
+    },
+    {
+     "req_id": "REQ-M34-09",
+     "doc_id": "LIB-M34",
+     "jurisdiction": "SG",
+     "ref": "제26D조 제1항, 제3항~제4항",
+     "topic": "통지 대상 침해로 평가하면 가능한 한 빨리, 늦어도 평가한 날 다음 날부터 3일 이내 위원회에 통지",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "평가일 다음 날부터 달력상 3일 이내",
+     "pol_ids": [
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M01-27",
+     "doc_id": "LIB-M01",
+     "jurisdiction": "EU",
+     "ref": "Art. 73(1)-(5)",
+     "topic": "중대한 사고 보고 기한",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+     "timing": "인지 후 15일 이내(원칙), 2일 이내(핵심 기반시설 중대 교란·광범위 침해), 사망은 10일 이내, 초기 불완전 보고 허용(제73조제5항)",
+     "pol_ids": [
+      "POL-42",
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M35-04",
+     "doc_id": "LIB-M35",
+     "jurisdiction": "CA",
+     "ref": "제10.1조 제1항, 제2항",
+     "topic": "중대한 피해의 실질적 위험이 있는 보안 조치 위반은 위원에게 가능한 한 빨리 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "위반 발생 판단 후 가능한 한 빨리(as soon as feasible)",
+     "pol_ids": [
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M36-05",
+     "doc_id": "LIB-M36",
+     "jurisdiction": "CA",
+     "ref": "민간 부문법 제3.5조~제3.7조",
+     "topic": "기밀성 사고 시 위험 완화·재발 방지 조치, 중대한 피해 위험이면 위원회와 영향받은 사람에게 신속히 통지",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "신속(promptly), 2022-09-22 시행",
+     "pol_ids": [
+      "POL-43",
+      "POL-44",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-L01-16",
+     "doc_id": "LIB-L01",
+     "jurisdiction": "KR",
+     "ref": "제34조제1항",
+     "topic": "유출등 통지",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "알게 된 때 지체 없이(구체 시한은 시행령)",
+     "pol_ids": [
+      "POL-42",
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-L03-09",
+     "doc_id": "LIB-L03",
+     "jurisdiction": "KR",
+     "ref": "제48조의3제1항",
+     "topic": "침해사고 신고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "알게 된 때부터 24시간 이내(2026-10-01 시행본, 그 전 본은 '즉시'). 신고 방법·절차는 대통령령(제5항)",
+     "pol_ids": [
+      "POL-43",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M25-14",
+     "doc_id": "LIB-M25",
+     "jurisdiction": "EU",
+     "ref": "제19조 제1항, 제4항",
+     "topic": "중대한 ICT 사고를 초기 통지, 중간 보고, 최종 보고로 관할 당국에 보고",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "기한은 위임 규정(제20조)에서 확인",
+     "pol_ids": [
+      "POL-43",
+      "POL-38",
+      "POL-44"
+     ]
+    },
+    {
+     "req_id": "REQ-M28-02",
+     "doc_id": "LIB-M28",
+     "jurisdiction": "CN",
+     "ref": "제10조",
+     "topic": "제품·서비스의 결함·취약점 즉시 보완과 보고(24시간)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "국가 안보·공공 이익 관련 시 24시간 이내",
+     "pol_ids": [
+      "POL-39",
+      "POL-43"
+     ]
+    },
+    {
+     "req_id": "REQ-M29-19",
+     "doc_id": "LIB-M29",
+     "jurisdiction": "CN",
+     "ref": "제57조",
+     "topic": "유출·변조·분실 발생 또는 우려 시 즉시 보완 조치하고 주관 부서와 개인에게 통지",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "즉시",
+     "pol_ids": [
+      "POL-43",
+      "POL-44",
+      "POL-38"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "DEV-67",
+   "title": "원장 보존 정책과 만료 구간 폐기",
+   "capability": "CAP-2",
+   "extends": "기능 40·41, 관련 POL-38·48",
+   "scope": [
+    "고객별 원장 보존 기간 설정. 기본값 제안 12개월, 관할 팩이 정한 하한보다 짧게 설정하는 것을 거부한다.",
+    "보존 만료 구간의 안전 폐기. 본문을 지우고 구간 봉인 해시(체크포인트)를 남겨 사슬 검증이 계속 가능하게 하는 방식을 설계 문서로 먼저 확정한다.",
+    "원장에는 개인정보 본문을 넣지 않는다는 기존 원칙을 시험으로 고정한다(마스킹·요약만).",
+    "폐기 실행 기록을 별도 증적으로 남긴다."
+   ],
+   "acceptance": [
+    "정상: 보존 기간 경과 구간 폐기 후 사슬 검증이 '봉인 구간'을 인식해 통과한다.",
+    "음성: 하한 미만 설정, 보존 기간 내 구간 삭제 요청, 봉인 해시 변조는 모두 거부·탐지된다.",
+    "경계: 관할 팩이 둘 이상 적용될 때 가장 긴 하한이 적용된다.",
+    "복구: 백업 복원 후 폐기된 구간이 되살아나지 않고 폐기 목록과 대조된다(DEV-63과 연계)."
+   ],
+   "depends": [
+    "DEV-63"
+   ],
+   "week": "12월 3주~1월 1주",
+   "decisions": [
+    "RQ-01",
+    "RQ-03"
+   ],
+   "risks": "추가 전용(append-only) 원칙과 삭제 의무의 충돌을 설계로 해소해야 한다. 이 노트의 보존 수치는 문서별 하한이며 고객 법무가 최종 확인한다.",
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M01-16",
+     "doc_id": "LIB-M01",
+     "jurisdiction": "EU",
+     "ref": "Art. 19(1)",
+     "topic": "제공자의 로그 보관(6개월 이상)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+     "timing": "최소 6개월 이상(다른 EU·국내법이 달리 정하면 예외)",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M01-20",
+     "doc_id": "LIB-M01",
+     "jurisdiction": "EU",
+     "ref": "Art. 26(6)",
+     "topic": "배치자의 로그 보관(6개월 이상)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+     "timing": "최소 6개월 이상(다른 EU·국내법이 달리 정하면 예외)",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M10-08",
+     "doc_id": "LIB-M10",
+     "jurisdiction": "CN",
+     "ref": "제23조제3호",
+     "topic": "운영 상태·안전사고 기록과 로그 6개월 보관",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "네트워크 로그 6개월 이상 보관('규정에 따라')",
+     "pol_ids": [
+      "POL-38",
+      "POL-42"
+     ]
+    },
+    {
+     "req_id": "REQ-M18-05",
+     "doc_id": "LIB-M18",
+     "jurisdiction": "US-federal",
+     "ref": "부록 B 1",
+     "topic": "최소 보존: 6개월 검색 가능, 1년 조회 가능",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "검색 가능 6개월, 조회 가능 1년(생성 후)",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M44-08",
+     "doc_id": "LIB-M44",
+     "jurisdiction": "IN",
+     "ref": "규칙 8(3)",
+     "topic": "처리 개인정보, 트래픽 데이터, 처리 로그를 처리일로부터 최소 1년 보존한 뒤 삭제",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "처리일부터 최소 1년",
+     "pol_ids": [
+      "POL-38",
+      "POL-48"
+     ]
+    },
+    {
+     "req_id": "REQ-M44-04",
+     "doc_id": "LIB-M44",
+     "jurisdiction": "IN",
+     "ref": "규칙 6(1)(d)-(g)",
+     "topic": "백업, 침해 탐지·조사용 로그와 개인정보 1년 보존, 수탁자 계약에 보안 조항",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "로그·개인정보 1년 보존",
+     "pol_ids": [
+      "POL-38",
+      "POL-07"
+     ]
+    },
+    {
+     "req_id": "REQ-L02-05",
+     "doc_id": "LIB-L02",
+     "jurisdiction": "KR",
+     "ref": "제20조제2항",
+     "topic": "개인신용정보 처리기록 3년 보존",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "3년간 보존",
+     "pol_ids": [
+      "POL-38",
+      "POL-26"
+     ]
+    },
+    {
+     "req_id": "REQ-M33-07",
+     "doc_id": "LIB-M33",
+     "jurisdiction": "CN",
+     "ref": "제9조",
+     "topic": "표시 없는 콘텐츠 제공 시 이용자 협의와 로그 6개월 보존",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "표시 없이 제공하는 경우 관련 로그 6개월 이상 보존",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M31-17",
+     "doc_id": "LIB-M31",
+     "jurisdiction": "CN",
+     "ref": "6.3.6",
+     "topic": "대형 모델 서비스 운영 로그(시스템·사용자 활동)를 최소 6개월 보존하고 정기 감사",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "superseded",
+     "timing": "최소 6개월 보존",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M41-16",
+     "doc_id": "LIB-M41",
+     "jurisdiction": "UK",
+     "ref": "Provision 12.1 (보존)",
+     "topic": "로그를 암호화해 보관하고 보존 정책을 준법 의무에 맞춰 정기 갱신",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "예시: 챗봇 1년, 오픈액세스 LLM 6개월(규정 기간 아님)",
+     "pol_ids": [
+      "POL-38",
+      "POL-48"
+     ]
+    },
+    {
+     "req_id": "REQ-M29-07",
+     "doc_id": "LIB-M29",
+     "jurisdiction": "CN",
+     "ref": "제19조",
+     "topic": "보존 기간은 처리 목적 실현에 필요한 최단 시간",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "목적 실현에 필요한 최단 시간",
+     "pol_ids": [
+      "POL-38",
+      "POL-48"
+     ]
+    },
+    {
+     "req_id": "REQ-M34-05",
+     "doc_id": "LIB-M34",
+     "jurisdiction": "SG",
+     "ref": "제25조",
+     "topic": "목적이 달성되고 법적·사업적 보존 필요가 없으면 문서 보유를 중단하거나 개인 식별 수단을 제거",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "목적 달성과 보존 필요 소멸 즉시",
+     "pol_ids": [
+      "POL-48",
+      "POL-49",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M35-11",
+     "doc_id": "LIB-M35",
+     "jurisdiction": "CA",
+     "ref": "부속서 1 제4.5.3항",
+     "topic": "목적에 더는 필요 없는 정보는 폐기·삭제·익명화(권고)하고 폐기 지침과 절차를 마련(의무)",
+     "strength": "recommended",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-48",
+      "POL-49"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-16",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "6.2.7",
+     "topic": "결정·평가의 기록",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "보관 기간은 이 지침에 명시 없음(문서화는 Directive on Service and Digital에 따름)",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M15-12",
+     "doc_id": "LIB-M15",
+     "jurisdiction": "US-CO",
+     "ref": "6-1-1703",
+     "topic": "배포자 기록 3년 보관",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "중대한 결정일로부터 3년 이상",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M15-11",
+     "doc_id": "LIB-M15",
+     "jurisdiction": "US-CO",
+     "ref": "6-1-1702(4)",
+     "topic": "개발자 기록 3년 보관",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "기록 생성 후 3년 이상",
+     "pol_ids": [
+      "POL-38"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "DEV-68",
+   "title": "도입 대장의 공급자 보증 필드, 등록부 내보내기, 지원 종료 경보",
+   "capability": "CAP-3",
+   "extends": "기능 6·8·14~16 (도입 신청·구성요소 분석·승인 만료), DEV-50 (운영 이미지 재검사)",
+   "scope": [
+    "도입 신청·대장에 공급자 지원 종료일, 보안 연락처·취약점 공개 정책 위치, 처리·저장 지역, 하위 처리자 유무, SBOM·VEX 제출 여부, 계약 근거(DPA 등) 참조, 종료 전략 메모 필드를 추가한다.",
+    "대장을 제3자 등록부 형식(CSV·JSON)으로 내보낸다. DORA 정보 등록부 항목과의 대응표를 문서로 둔다.",
+    "지원 종료일이 임박·경과한 서버에 경보를 내고 경과 시 재승인을 요구한다(기능 16 재사용).",
+    "필수 보증 필드 누락 시 도입을 보류하는 정책 규칙을 둔다."
+   ],
+   "acceptance": [
+    "정상: 필드를 채운 서버만 승인되고 내보낸 등록부 행이 대장 값과 일치한다.",
+    "음성: 필수 필드 누락·지원 종료 경과 서버는 도입 보류 또는 재승인 대기가 된다.",
+    "경계: 필드 값이 바뀌면 변경 이력이 남고 계약 잠금(기능 15) 재대조 대상이 된다."
+   ],
+   "depends": [
+    "DEV-50"
+   ],
+   "week": "12월 2주~12월 4주",
+   "decisions": [
+    "RQ-04"
+   ],
+   "risks": "공급자가 제공하지 않는 정보는 빈 값으로 두고 '미제공'을 판정에 쓰는 정책을 고객이 정해야 한다.",
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M25-16",
+     "doc_id": "LIB-M25",
+     "jurisdiction": "EU",
+     "ref": "제28조 제1항~제3항",
+     "topic": "ICT 제3자 위험은 ICT 위험의 일부로 관리하며 금융기관이 최종 책임, 모든 계약에 대한 정보 등록부 유지·갱신",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "등록부 상시 갱신, 최소 연 1회 감독 당국 보고",
+     "pol_ids": [
+      "POL-11",
+      "POL-07",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M25-17",
+     "doc_id": "LIB-M25",
+     "jurisdiction": "EU",
+     "ref": "제28조 제4항~제5항",
+     "topic": "계약 체결 전 핵심·중요 기능 여부 평가, 집중 위험을 포함한 위험 식별, 실사, 정보 보안 표준 준수",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "계약 체결 전",
+     "pol_ids": [
+      "POL-01",
+      "POL-03",
+      "POL-07",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M25-18",
+     "doc_id": "LIB-M25",
+     "jurisdiction": "EU",
+     "ref": "제28조 제7항~제8항",
+     "topic": "중대한 위반·성능 변화·위험 관리 약점 시 계약 종료 가능, 핵심 기능은 중단 없는 퇴출 전략·전환 계획",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "퇴출 계획은 정기 시험·검토",
+     "pol_ids": [
+      "POL-44",
+      "POL-45",
+      "POL-46",
+      "POL-47",
+      "POL-48"
+     ]
+    },
+    {
+     "req_id": "REQ-M25-20",
+     "doc_id": "LIB-M25",
+     "jurisdiction": "EU",
+     "ref": "제30조 제2항 (b), (d)",
+     "topic": "계약에 처리·저장 위치와 변경 사전 통지, 해지·지급불능 시 데이터 접근·복구·반환 보장",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-40",
+      "POL-49",
+      "POL-26"
+     ]
+    },
+    {
+     "req_id": "REQ-M26-04",
+     "doc_id": "LIB-M26",
+     "jurisdiction": "EU",
+     "ref": "제13조 제5항",
+     "topic": "제3자 구성요소(자유·오픈소스 포함) 통합 시 실사",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-01",
+      "POL-39",
+      "POL-03"
+     ]
+    },
+    {
+     "req_id": "REQ-M26-06",
+     "doc_id": "LIB-M26",
+     "jurisdiction": "EU",
+     "ref": "제13조 제8항",
+     "topic": "지원 기간 동안 취약점을 효과적으로 처리하며 지원 기간은 최소 5년(예상 사용 기간이 짧으면 그 기간)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "지원 기간 최소 5년",
+     "pol_ids": [
+      "POL-03",
+      "POL-39"
+     ]
+    },
+    {
+     "req_id": "REQ-M26-17",
+     "doc_id": "LIB-M26",
+     "jurisdiction": "EU",
+     "ref": "부속서 I 제2부 (1)",
+     "topic": "구성요소와 취약점을 식별·문서화하고 최상위 의존성을 포함하는 기계 판독 가능한 SBOM 작성",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-01",
+      "POL-39"
+     ]
+    },
+    {
+     "req_id": "REQ-M26-18",
+     "doc_id": "LIB-M26",
+     "jurisdiction": "EU",
+     "ref": "부속서 I 제2부 (2)-(3), (5)",
+     "topic": "지체 없는 취약점 수정, 정기 시험·검토, 조율된 취약점 공개 정책 시행",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "정기",
+     "pol_ids": [
+      "POL-03",
+      "POL-39"
+     ]
+    },
+    {
+     "req_id": "REQ-M11-12",
+     "doc_id": "LIB-M11",
+     "jurisdiction": "EU",
+     "ref": "Art. 21(3)",
+     "topic": "공급자별 취약점·개발 절차 고려",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-01",
+      "POL-03",
+      "POL-39"
+     ]
+    },
+    {
+     "req_id": "REQ-M40-22",
+     "doc_id": "LIB-M40",
+     "jurisdiction": "INTL",
+     "ref": "5.2.3-1 / 5.2.3-2",
+     "topic": "안전한 소프트웨어 공급망 절차, 문서화·보호가 부족한 구성요소는 정당화와 완화 통제",
+     "strength": "mandatory",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-01",
+      "POL-17",
+      "POL-39"
+     ]
+    },
+    {
+     "req_id": "REQ-M21-14",
+     "doc_id": "LIB-M21",
+     "jurisdiction": "US-federal",
+     "ref": "GV.SC-05",
+     "topic": "공급자에게 모델과 데이터 범위, 사고 지원 공개를 요구",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "draft",
+     "timing": "",
+     "pol_ids": [
+      "POL-07",
+      "POL-03",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M17-09",
+     "doc_id": "LIB-M17",
+     "jurisdiction": "US-federal",
+     "ref": "GV-6.1-006/007",
+     "topic": "제3자 공급자 계약에 평가 조항, 접근 권한 있는 제3자 인벤토리와 승인 목록",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-07",
+      "POL-11",
+      "POL-12",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M37-17",
+     "doc_id": "LIB-M37",
+     "jurisdiction": "SG",
+     "ref": "5.11(b)",
+     "topic": "공급망 평가: 오픈소스·제3자 모델·데이터·의존성의 출처와 취약점 검증",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "",
+     "pol_ids": [
+      "POL-01",
+      "POL-03",
+      "POL-39"
+     ]
+    },
+    {
+     "req_id": "REQ-M37-18",
+     "doc_id": "LIB-M37",
+     "jurisdiction": "SG",
+     "ref": "5.11(d)-(f)",
+     "topic": "제3자 AI 업데이트 통지, 비상 계획, 감사권·통지 조항",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "",
+     "pol_ids": [
+      "POL-07",
+      "POL-03",
+      "POL-49"
+     ]
+    },
+    {
+     "req_id": "REQ-M08-29",
+     "doc_id": "LIB-M08",
+     "jurisdiction": "SG",
+     "ref": "Annex B (p.92)",
+     "topic": "MCP 서버 연결 전 보안 실사",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "연결 전",
+     "pol_ids": [
+      "POL-01",
+      "POL-03",
+      "POL-04",
+      "POL-05"
+     ]
+    },
+    {
+     "req_id": "REQ-M08-30",
+     "doc_id": "LIB-M08",
+     "jurisdiction": "SG",
+     "ref": "Annex B (p.92)",
+     "topic": "사람 신원을 AI 행위에 연결해 기록",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-38",
+      "POL-19"
+     ]
+    },
+    {
+     "req_id": "REQ-M06-16",
+     "doc_id": "LIB-M06",
+     "jurisdiction": "EU",
+     "ref": "Art. 28(1)",
+     "topic": "충분한 보증을 제공하는 처리자만 사용",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-01",
+      "POL-03",
+      "POL-07"
+     ]
+    },
+    {
+     "req_id": "REQ-L01-09",
+     "doc_id": "LIB-L01",
+     "jurisdiction": "KR",
+     "ref": "제26조제4항",
+     "topic": "수탁자 교육·감독",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-07",
+      "POL-49"
+     ]
+    },
+    {
+     "req_id": "REQ-M45-07",
+     "doc_id": "LIB-M45",
+     "jurisdiction": "IN",
+     "ref": "제8조 제1항~제2항",
+     "topic": "데이터 처리자(Data Processor)의 처리도 데이터 수탁자의 책임, 유효한 계약 아래에서만 위탁",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "partially_in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-07",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M15-09",
+     "doc_id": "LIB-M15",
+     "jurisdiction": "US-CO",
+     "ref": "6-1-1702(1)",
+     "topic": "개발자의 배포자 대상 문서 제공",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "2027-01-01 이후",
+     "pol_ids": [
+      "POL-01",
+      "POL-02",
+      "POL-07"
+     ]
+    },
+    {
+     "req_id": "REQ-M14-20",
+     "doc_id": "LIB-M14",
+     "jurisdiction": "US-CA",
+     "ref": "§ 7153(a)-(b)",
+     "topic": "ADMT 제공 사업자의 사실 제공 의무",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-07",
+      "POL-01"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "DEV-69",
+   "title": "서버 처리·저장 위치 속성과 국외 이전 규칙 팩",
+   "capability": "CAP-4",
+   "extends": "기능 23·31·33 (실행 전 정책·연결 주소·전송 목적), DEV-53·DEV-57, 관련 POL-26·40",
+   "scope": [
+    "서버와 업스트림 제공자에 처리·저장 국가 속성을 두고 도입 신청에서 입력받는다. 속성 변경은 재승인 대상이다(POL-40).",
+    "데이터 등급×목적지 국가 규칙(허용·승인 필요·금지)을 관할 팩 형식으로 정의한다. 모델은 법령에 따라 달라 허용 조건형(중국), 블랙리스트형(인도), 적정성형(EU)을 모두 표현할 수 있어야 한다.",
+    "이전 근거(표준계약·영향평가·인증·동의) 참조 필드를 두고 근거가 없으면 승인 필요로 둔다.",
+    "속성이 없는 서버로의 해당 등급 전송은 기본 차단한다."
+   ],
+   "acceptance": [
+    "정상: 허용 국가 서버로의 해당 등급 전송은 통과하고 판정 사유 코드가 기록된다.",
+    "음성: 금지 국가·속성 누락 서버로의 전송이 차단되고 사유 코드가 기록된다.",
+    "경계: 국가 목록 변경 후 이미 승인된 서버가 재판정 대상이 된다."
+   ],
+   "depends": [
+    "DEV-53",
+    "DEV-57"
+   ],
+   "week": "12월 3주~1월 2주",
+   "decisions": [
+    "RQ-02",
+    "RQ-06"
+   ],
+   "risks": "국가별 요건은 법령과 고시로 바뀐다. 제품은 규칙을 집행하며 적법성 판단은 고객 법무가 한다.",
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M29-12",
+     "doc_id": "LIB-M29",
+     "jurisdiction": "CN",
+     "ref": "제38조 제1항·제3항",
+     "topic": "국외 제공 조건: CAC 안전 평가, 전문 기관 인증, 표준계약 등",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-26",
+      "POL-10"
+     ]
+    },
+    {
+     "req_id": "REQ-M29-14",
+     "doc_id": "LIB-M29",
+     "jurisdiction": "CN",
+     "ref": "제40조",
+     "topic": "핵심 정보 인프라 운영자 등은 국내 수집·생성 개인정보를 국내 저장, 국외 제공은 안전 평가",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-26",
+      "POL-10",
+      "POL-25"
+     ]
+    },
+    {
+     "req_id": "REQ-M30-02",
+     "doc_id": "LIB-M30",
+     "jurisdiction": "CN",
+     "ref": "제5조제4호",
+     "topic": "누적 10만 명 미만 개인정보(민감정보 제외) 출경 면제",
+     "strength": "informative",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "당해 연도 1월 1일부터 누적",
+     "pol_ids": [
+      "POL-26",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M30-05",
+     "doc_id": "LIB-M30",
+     "jurisdiction": "CN",
+     "ref": "제8조제1항",
+     "topic": "10만~100만 명 구간은 표준계약 또는 보호 인증",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "당해 연도 누적 기준",
+     "pol_ids": [
+      "POL-26",
+      "POL-07",
+      "POL-10"
+     ]
+    },
+    {
+     "req_id": "REQ-M45-15",
+     "doc_id": "LIB-M45",
+     "jurisdiction": "IN",
+     "ref": "제16조 제1항",
+     "topic": "정부가 고시한 국가·지역으로의 개인정보 이전만 제한(블랙리스트 방식)",
+     "strength": "informative",
+     "binding_doc": true,
+     "doc_status": "partially_in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-26",
+      "POL-10"
+     ]
+    },
+    {
+     "req_id": "REQ-M44-10",
+     "doc_id": "LIB-M44",
+     "jurisdiction": "IN",
+     "ref": "규칙 13(1)-(4)",
+     "topic": "SDF의 연 1회 DPIA·감사, 보고서 제출, 알고리즘 소프트웨어 실사, 지정 데이터의 국외 이전 제한",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "12개월마다 1회",
+     "pol_ids": [
+      "POL-26",
+      "POL-10",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M44-12",
+     "doc_id": "LIB-M44",
+     "jurisdiction": "IN",
+     "ref": "규칙 15",
+     "topic": "국외 이전은 정부가 일반·특별 명령으로 정하는 요건을 충족하는 조건으로 허용",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "규칙 15 시행일(게재일 18개월 후)",
+     "pol_ids": [
+      "POL-26",
+      "POL-10"
+     ]
+    },
+    {
+     "req_id": "REQ-L01-11",
+     "doc_id": "LIB-L01",
+     "jurisdiction": "KR",
+     "ref": "제28조의8제1항",
+     "topic": "개인정보 국외 이전 금지 원칙과 예외",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-26",
+      "POL-30",
+      "POL-07"
+     ]
+    },
+    {
+     "req_id": "REQ-M06-27",
+     "doc_id": "LIB-M06",
+     "jurisdiction": "EU",
+     "ref": "Art. 44",
+     "topic": "제3국 이전의 일반 원칙",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-26",
+      "POL-30",
+      "POL-07"
+     ]
+    },
+    {
+     "req_id": "REQ-M34-06",
+     "doc_id": "LIB-M34",
+     "jurisdiction": "SG",
+     "ref": "제26조 제1항~제3항",
+     "topic": "국외 이전은 이 법이 정한 요건(이 법과 비교 가능한 보호 수준)에 따라서만 가능",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-26",
+      "POL-10"
+     ]
+    },
+    {
+     "req_id": "REQ-M36-12",
+     "doc_id": "LIB-M36",
+     "jurisdiction": "CA",
+     "ref": "민간 부문법 제17조",
+     "topic": "퀘벡 밖으로 개인정보를 제공하기 전 영향평가(민감도·목적·보호 조치·수신 국가 법체계)와 서면 계약",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "제공 전, 2023-09-22 시행",
+     "pol_ids": [
+      "POL-26",
+      "POL-10",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M48-07",
+     "doc_id": "LIB-M48",
+     "jurisdiction": "AU",
+     "ref": "APP 8.3 및 제100조 제1A항 (부칙 1 제6부)",
+     "topic": "prescribed 국가·구속적 제도 수신자에 대한 APP 8.3 적용 조건과 지정 전 요건",
+     "strength": "informative",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "2024-12-11 시행",
+     "pol_ids": [
+      "POL-26",
+      "POL-10"
+     ]
+    },
+    {
+     "req_id": "REQ-M46-09",
+     "doc_id": "LIB-M46",
+     "jurisdiction": "UK",
+     "ref": "제85조·부칙 7: UK GDPR 제45A조·제45B조",
+     "topic": "국외 이전 승인 요건인 '데이터 보호 시험': 영국 기준보다 현저히 낮지 않은 보호 수준",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-26",
+      "POL-10"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "DEV-70",
+   "title": "중대 영향 결정 호출 분류와 인적 개입·설명 증빙",
+   "capability": "CAP-5",
+   "extends": "기능 25·42 (고위험 건별 승인·판정 증적 항목), 관련 POL-27",
+   "scope": [
+    "도입 심사에서 도구 기능에 '정보주체에 중대한 영향 가능'(법적 효과·급여·계약·서비스 접근 등) 라벨을 붙인다.",
+    "라벨이 붙은 호출은 사람 승인 경로(기능 25)를 거치게 하는 정책 규칙을 둔다.",
+    "판정 증적에 사람 개입 여부, 승인자, 번복 여부를 기록한다.",
+    "설명·이의 제기 요청에 쓰는 결정 증빙 번들(입력 범주, 정책 판정, 승인 근거)을 내보낸다. 개인정보 본문은 넣지 않는다."
+   ],
+   "acceptance": [
+    "정상: 라벨이 붙은 호출이 승인 없이 실행되는 경로가 0이고 승인 건에 승인자·시각이 기록된다.",
+    "음성: 자가 승인과 승인 재사용은 거부되고, 승인자가 번복한 건이 번복으로 기록된다.",
+    "경계: 라벨이 없는 기능은 기존 판정 경로를 유지하며 처리 지연이 늘지 않는다.",
+    "증빙: 결정 증빙 번들에 개인정보 본문이 없다."
+   ],
+   "depends": [
+    "DEV-48"
+   ],
+   "week": "1월 1주~1월 3주",
+   "decisions": [
+    "RQ-07"
+   ],
+   "risks": "중대한 영향 여부의 판단은 고객과 법무가 한다. 라벨은 도입 심사자가 붙이므로 라벨 누락이 위험이다.",
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M29-10",
+     "doc_id": "LIB-M29",
+     "jurisdiction": "CN",
+     "ref": "제24조",
+     "topic": "자동화 의사결정의 투명성·공정성, 설명 요구권과 자동화 단독 결정 거부권",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-L01-19",
+     "doc_id": "LIB-L01",
+     "jurisdiction": "KR",
+     "ref": "제37조의2제1항",
+     "topic": "자동화된 결정에 대한 거부권",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-22"
+     ]
+    },
+    {
+     "req_id": "REQ-L02-08",
+     "doc_id": "LIB-L02",
+     "jurisdiction": "KR",
+     "ref": "제36조의2제1항",
+     "topic": "자동화평가의 설명 요구권",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M06-12",
+     "doc_id": "LIB-M06",
+     "jurisdiction": "EU",
+     "ref": "Art. 22(1)",
+     "topic": "자동화된 개별 결정을 받지 않을 권리",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M06-13",
+     "doc_id": "LIB-M06",
+     "jurisdiction": "EU",
+     "ref": "Art. 22(3)",
+     "topic": "사람의 개입·의견 표명·이의 제기 보장",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-22"
+     ]
+    },
+    {
+     "req_id": "REQ-M01-28",
+     "doc_id": "LIB-M01",
+     "jurisdiction": "EU",
+     "ref": "Art. 86(1)",
+     "topic": "개별 의사결정 설명 요구권",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+     "timing": "",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M46-04",
+     "doc_id": "LIB-M46",
+     "jurisdiction": "UK",
+     "ref": "제80조: UK GDPR 제22C조",
+     "topic": "자동화된 중대한 결정의 안전장치: 정보 제공, 의견 제출, 사람 개입, 이의 제기",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-38",
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M36-10",
+     "doc_id": "LIB-M36",
+     "jurisdiction": "CA",
+     "ref": "민간 부문법 제12.1조",
+     "topic": "자동 처리만으로 내리는 결정은 결정 통지 시점까지 고지, 요청 시 사용 정보·이유·주요 요소와 정정권 안내, 직원 재검토 기회 부여",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "결정을 알리는 때까지 고지, 2023-09-22 시행",
+     "pol_ids": [
+      "POL-27",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M48-02",
+     "doc_id": "LIB-M48",
+     "jurisdiction": "AU",
+     "ref": "APP 1.7 (부칙 1 제15부 항목 88)",
+     "topic": "컴퓨터 프로그램이 결정이나 그와 직접 관련된 일을 하도록 한 경우 프라이버시 정책에 관련 내용 포함",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "2026-12-10부터",
+     "pol_ids": [
+      "POL-38",
+      "POL-25"
+     ]
+    },
+    {
+     "req_id": "REQ-M19-13",
+     "doc_id": "LIB-M19",
+     "jurisdiction": "US-federal",
+     "ref": "부록 4.b.vi",
+     "topic": "AI 결정 영향받는 개인의 인적 검토·이의 제기",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "적시(구체 기한 없음)",
+     "pol_ids": [
+      "POL-38",
+      "POL-27",
+      "POL-22"
+     ]
+    },
+    {
+     "req_id": "REQ-M01-13",
+     "doc_id": "LIB-M01",
+     "jurisdiction": "EU",
+     "ref": "Art. 14(1), (3)",
+     "topic": "인간 감독 가능한 설계",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-22",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M01-18",
+     "doc_id": "LIB-M01",
+     "jurisdiction": "EU",
+     "ref": "Art. 26(2)",
+     "topic": "인간 감독 담당자 지정",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+     "timing": "",
+     "pol_ids": [
+      "POL-19",
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-11",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "6.2.1",
+     "topic": "자동 의사결정 사용 사실의 통지",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-08"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-12",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "6.2.3",
+     "topic": "의미 있는 설명의 제공",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-19",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "6.3.4",
+     "topic": "고객 피드백·사람 번복·시스템 실패의 기록",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-24",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "6.3.13",
+     "topic": "사람 관여를 허용하는 시스템 설계",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-22"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-27",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "6.4.1",
+     "topic": "결정에 대한 구제 수단 안내",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M14-24",
+     "doc_id": "LIB-M14",
+     "jurisdiction": "US-CA",
+     "ref": "§ 7220(a)-(c)",
+     "topic": "ADMT 사전 고지(Pre-use Notice)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "개인정보 수집 시점 또는 그 이전. 이미 수집한 정보를 새로 ADMT로 처리하려면 처리 전",
+     "pol_ids": [
+      "POL-08"
+     ]
+    },
+    {
+     "req_id": "REQ-M14-25",
+     "doc_id": "LIB-M14",
+     "jurisdiction": "US-CA",
+     "ref": "§ 7221(a)-(b)(1)",
+     "topic": "ADMT 옵트아웃 또는 사람 검토 항소",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "항소 요청의 처리 기한은 § 7021을 따른다",
+     "pol_ids": [
+      "POL-27",
+      "POL-22",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M14-27",
+     "doc_id": "LIB-M14",
+     "jurisdiction": "US-CA",
+     "ref": "§ 7222(b)",
+     "topic": "ADMT 접근 요청 응답 내용",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "접수 확인 10영업일, 응답 45역일(§ 7021)",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M15-13",
+     "doc_id": "LIB-M15",
+     "jurisdiction": "US-CO",
+     "ref": "6-1-1704(1)",
+     "topic": "사용 전 소비자 고지",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "ADMT를 결정에 사용하기 전(사전)",
+     "pol_ids": [
+      "POL-08",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M15-20",
+     "doc_id": "LIB-M15",
+     "jurisdiction": "US-CO",
+     "ref": "6-1-1705(1)(a)(II)",
+     "topic": "의미 있는 사람 검토와 재고 기회",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "소비자 요청 시(기한 명시 없음; '상업적으로 합리적인 범위')",
+     "pol_ids": [
+      "POL-27",
+      "POL-38"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "DEV-71",
+   "title": "도입 신청의 위험 등급과 영향평가 입력 패키지",
+   "capability": "CAP-6",
+   "extends": "기능 6·13·14·25 (도입 신청·독립 승인·사용 범위·건별 승인), 관련 POL-02·27",
+   "scope": [
+    "위험 등급 산정 입력 필드: 자율성 수준, 영향 범위, 데이터 등급, 외부 전송 여부, 변경 작업 포함 여부.",
+    "같은 입력이 같은 등급이 되도록 결정론적 산정 표를 둔다. 등급별 승인 방식(자동·개별·이중 승인)을 매핑한다.",
+    "영향평가 입력 패키지: 도입 신청 내용을 관할 서식 항목에 옮기는 초안(평가 수행과 판단은 사람).",
+    "등급 상향 시 재승인을 요구한다."
+   ],
+   "acceptance": [
+    "정상: 동일 입력의 등급이 항상 같고 등급별 승인 방식이 적용된다.",
+    "음성: 필수 입력 누락 시 등급을 산정하지 않고 도입을 보류한다.",
+    "경계: 기존 승인 서버에 필드를 채우기 전에는 가장 높은 등급 가정으로 재승인 대상이 되는지 결정(RQ-08)에 따른다."
+   ],
+   "depends": [
+    "DEV-68"
+   ],
+   "week": "1월 2주~1월 4주",
+   "decisions": [
+    "RQ-08"
+   ],
+   "risks": "등급 표는 정책 판단이며 규제가 요구하는 값이 아니다. 법적 영향평가 대체 아님.",
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M29-18",
+     "doc_id": "LIB-M29",
+     "jurisdiction": "CN",
+     "ref": "제55조~제56조",
+     "topic": "민감정보·자동화 결정·위탁·제공·공개·국외 제공 전 개인정보 보호 영향평가, 보고서와 기록 3년 이상 보존",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "처리 전, 보고서·기록 최소 3년 보존",
+     "pol_ids": [
+      "POL-02",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M36-04",
+     "doc_id": "LIB-M36",
+     "jurisdiction": "CA",
+     "ref": "민간 부문법 제3.3조~제3.4조",
+     "topic": "정보 시스템·전자 서비스 취득·개발·개선 프로젝트마다 개인정보 영향평가(민감도에 비례), 책임자 협의",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "프로젝트 시작부터, 2023-09-22 시행",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M06-26",
+     "doc_id": "LIB-M06",
+     "jurisdiction": "EU",
+     "ref": "Art. 35(1)",
+     "topic": "개인정보 영향평가(DPIA)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "처리 개시 전(사전)",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M01-10",
+     "doc_id": "LIB-M01",
+     "jurisdiction": "EU",
+     "ref": "Art. 9(1)-(2)",
+     "topic": "위험관리체계",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+     "timing": "전 수명주기에 걸쳐 지속",
+     "pol_ids": [
+      "POL-27",
+      "POL-42",
+      "POL-43"
+     ]
+    },
+    {
+     "req_id": "REQ-L04-08",
+     "doc_id": "LIB-L04",
+     "jurisdiction": "KR",
+     "ref": "제34조제1항제1호",
+     "topic": "위험관리방안의 수립·운영",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-42",
+      "POL-43"
+     ]
+    },
+    {
+     "req_id": "REQ-L04-12",
+     "doc_id": "LIB-L04",
+     "jurisdiction": "KR",
+     "ref": "제35조제1항",
+     "topic": "고영향 AI 영향평가",
+     "strength": "recommended",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "제공 전(사전), '노력해야 한다' 수준",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M31-08",
+     "doc_id": "LIB-M31",
+     "jurisdiction": "CN",
+     "ref": "5.5 및 부록 1",
+     "topic": "AI 응용 분류와 위험 등급 관리(응용 시나리오·지능 수준·응용 규모)",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "superseded",
+     "timing": "",
+     "pol_ids": [
+      "POL-02",
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M37-09",
+     "doc_id": "LIB-M37",
+     "jurisdiction": "SG",
+     "ref": "4.12(a)-(c)",
+     "topic": "위험 중대성 평가 차원: 영향·복잡성·의존도(자율성 정도 포함)",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "",
+     "pol_ids": [
+      "POL-02",
+      "POL-27",
+      "POL-25"
+     ]
+    },
+    {
+     "req_id": "REQ-M37-10",
+     "doc_id": "LIB-M37",
+     "jurisdiction": "SG",
+     "ref": "4.11",
+     "topic": "배포 전 잔여 위험 중대성이 위험 선호 이내임을 확인",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "배포 전",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-L09-05",
+     "doc_id": "LIB-L09",
+     "jurisdiction": "INTL",
+     "ref": "6.1.4 AI 시스템 영향 평가",
+     "topic": "영향 평가 결과의 문서화",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M08-03",
+     "doc_id": "LIB-M08",
+     "jurisdiction": "SG",
+     "ref": "§4.1 Step 1 (p.28)",
+     "topic": "자율성 수준 평가와 위협 모델링",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-02",
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M44-10",
+     "doc_id": "LIB-M44",
+     "jurisdiction": "IN",
+     "ref": "규칙 13(1)-(4)",
+     "topic": "SDF의 연 1회 DPIA·감사, 보고서 제출, 알고리즘 소프트웨어 실사, 지정 데이터의 국외 이전 제한",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "adopted_not_yet_applicable",
+     "timing": "12개월마다 1회",
+     "pol_ids": [
+      "POL-26",
+      "POL-10",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M40-05",
+     "doc_id": "LIB-M40",
+     "jurisdiction": "INTL",
+     "ref": "5.1.2-1",
+     "topic": "AI 시스템 도입 결정 시 사업 요구와 AI 보안 위험·완화 방안 평가",
+     "strength": "mandatory",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M41-02",
+     "doc_id": "LIB-M41",
+     "jurisdiction": "UK",
+     "ref": "Provision 2.1",
+     "topic": "AI 시스템 도입 전 사업 정합성 검토와 AI 특유 위험 평가를 문서화",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-08",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "6.1.1",
+     "topic": "운영 전 알고리즘 영향평가의 완료·승인·공개",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "운영(production) 개시 전",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M13-10",
+     "doc_id": "LIB-M13",
+     "jurisdiction": "CA",
+     "ref": "부속서 B(수준 IV)",
+     "topic": "영향 수준 I~IV의 의미(최고 수준 예)",
+     "strength": "informative",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-25",
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M14-17",
+     "doc_id": "LIB-M14",
+     "jurisdiction": "US-CA",
+     "ref": "§ 7150(a)-(b)",
+     "topic": "위험평가가 필요한 처리",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "처리 시작 전",
+     "pol_ids": [
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M14-18",
+     "doc_id": "LIB-M14",
+     "jurisdiction": "US-CA",
+     "ref": "§ 7152(a)",
+     "topic": "위험평가의 판단 기준과 보고서 기재 사항",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-02",
+      "POL-25",
+      "POL-26"
+     ]
+    },
+    {
+     "req_id": "REQ-M14-21",
+     "doc_id": "LIB-M14",
+     "jurisdiction": "US-CA",
+     "ref": "§ 7155(a)-(c)",
+     "topic": "위험평가 실시·갱신·보관 시기",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "3년마다 검토, 중대한 변경 후 45일 이내 갱신, 기존 처리는 2027-12-31까지, 보관은 처리 지속 기간 또는 완료 후 5년 중 긴 기간",
+     "pol_ids": [
+      "POL-37",
+      "POL-38"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "RES-01",
+   "title": "에이전트 하위 신원·위임 표준 동향 추적 (비제품)",
+   "capability": "CAP-7",
+   "extends": "기능 55·56 (자동화 범위 제외)",
+   "scope": [
+    "NIST NCCoE 개념 문서와 NIST IR 8596의 에이전트 신원·위임 항목, IETF 초안, 하네스 벤더의 에이전트 신원 증명 기능의 성숙도를 분기마다 확인한다.",
+    "게이트웨이가 검증할 수 있는 신호(서명된 에이전트 단언, 위임 토큰 등)가 나타나면 범위 제외 판정을 다시 평가한다."
+   ],
+   "acceptance": [
+    "분기별 점검 기록이 위키에 남고 범위 제외 판정의 유지·변경 이유가 적혀 있다."
+   ],
+   "depends": [],
+   "week": "상시",
+   "decisions": [],
+   "risks": "초안 문서 기반이라 변경 가능성이 크다.",
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M21-04",
+     "doc_id": "LIB-M21",
+     "jurisdiction": "US-federal",
+     "ref": "PR.AA-01",
+     "topic": "AI 시스템에 고유하고 추적 가능한 신원·인증정보 부여",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "draft",
+     "timing": "",
+     "pol_ids": [
+      "POL-19",
+      "POL-38",
+      "POL-15"
+     ]
+    },
+    {
+     "req_id": "REQ-M21-08",
+     "doc_id": "LIB-M21",
+     "jurisdiction": "US-federal",
+     "ref": "PR.AA-05",
+     "topic": "AI 에이전트에 최소 권한 적용과 시간 경과에 따른 권한 관리",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "draft",
+     "timing": "주기적 검토",
+     "pol_ids": [
+      "POL-02",
+      "POL-22",
+      "POL-23",
+      "POL-11"
+     ]
+    },
+    {
+     "req_id": "REQ-M02-19",
+     "doc_id": "LIB-M02",
+     "jurisdiction": "US-federal",
+     "ref": "p.4, 질문 4 (Authorization)",
+     "topic": "질문: 제로트러스트, 동적 정책 갱신, 집계 데이터의 민감도",
+     "strength": "informative",
+     "binding_doc": false,
+     "doc_status": "draft",
+     "timing": "",
+     "pol_ids": [
+      "POL-22",
+      "POL-25",
+      "POL-37"
+     ]
+    },
+    {
+     "req_id": "REQ-M02-20",
+     "doc_id": "LIB-M02",
+     "jurisdiction": "US-federal",
+     "ref": "p.4, 질문 4 (Authorization)",
+     "topic": "질문: 예측하기 어려운 에이전트의 최소 권한",
+     "strength": "informative",
+     "binding_doc": false,
+     "doc_status": "draft",
+     "timing": "",
+     "pol_ids": [
+      "POL-11",
+      "POL-23",
+      "POL-02"
+     ]
+    },
+    {
+     "req_id": "REQ-M02-21",
+     "doc_id": "LIB-M02",
+     "jurisdiction": "US-federal",
+     "ref": "p.4, 질문 4 (Authorization)",
+     "topic": "질문: 에이전트의 권한 증명과 행동 의도 전달",
+     "strength": "informative",
+     "binding_doc": false,
+     "doc_status": "draft",
+     "timing": "",
+     "pol_ids": [
+      "POL-20",
+      "POL-22",
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M02-22",
+     "doc_id": "LIB-M02",
+     "jurisdiction": "US-federal",
+     "ref": "p.4, 질문 4 (Authorization)",
+     "topic": "질문: 대리(on behalf of) 위임과 사람 승인 연결",
+     "strength": "informative",
+     "binding_doc": false,
+     "doc_status": "draft",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-20",
+      "POL-19",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M31-13",
+     "doc_id": "LIB-M31",
+     "jurisdiction": "CN",
+     "ref": "6.2.5",
+     "topic": "사용자 신원 확인·접근 통제, 최소 권한, API 호출 빈도 제한, 악성 사용자 차단",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "superseded",
+     "timing": "",
+     "pol_ids": [
+      "POL-19",
+      "POL-28",
+      "POL-23",
+      "POL-44"
+     ]
+    },
+    {
+     "req_id": "REQ-M41-04",
+     "doc_id": "LIB-M41",
+     "jurisdiction": "UK",
+     "ref": "Provision 2.6",
+     "topic": "에이전트 시스템에 부여하는 계정·접근은 극도로 신중하게 최소 권한으로 제공",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-02",
+      "POL-22",
+      "POL-23",
+      "POL-11"
+     ]
+    },
+    {
+     "req_id": "REQ-M03-09",
+     "doc_id": "LIB-M03",
+     "jurisdiction": "INTL",
+     "ref": "p.18 개발 · 서드파티 구성요소(Manage third-party components)",
+     "topic": "서드파티 구성요소의 출처·최신성 검증과 레지스트리",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "포함 전 검증",
+     "pol_ids": [
+      "POL-01",
+      "POL-03",
+      "POL-39",
+      "POL-37"
+     ]
+    },
+    {
+     "req_id": "REQ-M03-10",
+     "doc_id": "LIB-M03",
+     "jurisdiction": "INTL",
+     "ref": "p.18 개발 · 서드파티 구성요소(Manage third-party components)",
+     "topic": "승인된 도구·버전 허용 목록",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "정기 검증(주기는 정하지 않음)",
+     "pol_ids": [
+      "POL-11",
+      "POL-37",
+      "POL-12"
+     ]
+    },
+    {
+     "req_id": "REQ-M03-11",
+     "doc_id": "LIB-M03",
+     "jurisdiction": "INTL",
+     "ref": "p.18 개발 · 서드파티 구성요소(Manage third-party components)",
+     "topic": "도구 사용 로그를 사람이 읽을 수 있게 기록",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "보관 기간은 정하지 않음",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M03-12",
+     "doc_id": "LIB-M03",
+     "jurisdiction": "INTL",
+     "ref": "p.18 개발 · 서드파티 구성요소(Manage third-party components)",
+     "topic": "이상 행동 시 권한 자동 제한(트리거-행동 프로토콜)",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-42",
+      "POL-43",
+      "POL-44"
+     ]
+    },
+    {
+     "req_id": "REQ-M03-13",
+     "doc_id": "LIB-M03",
+     "jurisdiction": "INTL",
+     "ref": "p.18 개발 · 서드파티 구성요소(Manage third-party components)",
+     "topic": "에이전트의 자기 권한 변경·무승인 위임 금지",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "위임에는 명시적 만료 타이머 필요",
+     "pol_ids": [
+      "POL-20",
+      "POL-27",
+      "POL-19"
+     ]
+    }
+   ]
+  }
+ ],
+ "acceptance_additions": [
+  {
+   "dev": "DEV-62",
+   "target": "탐지 시 서버·도구 자동 중지",
+   "add": [
+    "운영자의 수동 즉시 차단과 탐지에 의한 자동 차단이 모두 가능하고, 해제는 사람 승인으로만 한다.",
+    "중지한 주체·서버·기능과 이후 거부된 호출이 원장에서 이어서 확인된다."
+   ],
+   "evidence": [
+    [
+     "LIB-M31",
+     "4.2.3(b)-(c)"
+    ],
+    [
+     "LIB-M49",
+     "2.4 위험 완화: 통제 상실"
+    ],
+    [
+     "LIB-M08",
+     "§4.3 Control 4.3"
+    ],
+    [
+     "LIB-M50",
+     "1.4 b)"
+    ],
+    [
+     "LIB-M25",
+     "제9조 제4항 (b)"
+    ]
+   ],
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M31-07",
+     "doc_id": "LIB-M31",
+     "jurisdiction": "CN",
+     "ref": "4.2.3(b)-(c)",
+     "topic": "결정 검증·오류 수정 장치와 고도 자율 운영의 서킷 브레이커·원클릭 통제",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "superseded",
+     "timing": "고도 자율 기능 도입 시",
+     "pol_ids": [
+      "POL-27",
+      "POL-44",
+      "POL-43"
+     ]
+    },
+    {
+     "req_id": "REQ-M49-03",
+     "doc_id": "LIB-M49",
+     "jurisdiction": "IN",
+     "ref": "2.4 위험 완화: 통제 상실",
+     "topic": "중요 의사결정 지점에서 사람이 AI 출력을 검토·재정의·보완할 수 있게 함",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-27",
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M49-04",
+     "doc_id": "LIB-M49",
+     "jurisdiction": "IN",
+     "ref": "2.4 위험 완화: 통제 상실",
+     "topic": "속도 때문에 직접 감독이 어려운 경우 서킷 브레이커·자동 점검·시스템 수준 제약",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-28",
+      "POL-43",
+      "POL-44"
+     ]
+    },
+    {
+     "req_id": "REQ-M49-05",
+     "doc_id": "LIB-M49",
+     "jurisdiction": "IN",
+     "ref": "2.4 위험 완화: 통제 상실",
+     "topic": "핵심 분야는 정기 모니터링·시험, 감사 추적, 보고 절차",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "정기",
+     "pol_ids": [
+      "POL-38",
+      "POL-42"
+     ]
+    },
+    {
+     "req_id": "REQ-M08-24",
+     "doc_id": "LIB-M08",
+     "jurisdiction": "SG",
+     "ref": "§4.3 Control 4.3 (p.52)",
+     "topic": "지속 모니터링·로깅 대상과 기록 항목",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "보관 기간은 문서에 없음",
+     "pol_ids": [
+      "POL-38",
+      "POL-42"
+     ]
+    },
+    {
+     "req_id": "REQ-M08-25",
+     "doc_id": "LIB-M08",
+     "jurisdiction": "SG",
+     "ref": "§4.3 Control 4.3 (p.52)",
+     "topic": "입력 로깅 시 개인정보 규제 고려",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-38",
+      "POL-31"
+     ]
+    },
+    {
+     "req_id": "REQ-M08-26",
+     "doc_id": "LIB-M08",
+     "jurisdiction": "SG",
+     "ref": "§4.3 Control 4.3 (p.53)",
+     "topic": "분산 추적 ID와 변조 방지 감사 로그",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-38"
+     ]
+    },
+    {
+     "req_id": "REQ-M08-27",
+     "doc_id": "LIB-M08",
+     "jurisdiction": "SG",
+     "ref": "§4.3 Control 4.3 (p.53)",
+     "topic": "이상 감지 시 전파 차단(서킷 브레이커)과 사람의 해제",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-43",
+      "POL-42",
+      "POL-27"
+     ]
+    },
+    {
+     "req_id": "REQ-M50-06",
+     "doc_id": "LIB-M50",
+     "jurisdiction": "INTL",
+     "ref": "1.4 b)",
+     "topic": "해를 끼치거나 이상 행동을 보이면 재정의·수리·안전한 폐기가 가능해야 함",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-44",
+      "POL-43",
+      "POL-45"
+     ]
+    },
+    {
+     "req_id": "REQ-M25-06",
+     "doc_id": "LIB-M25",
+     "jurisdiction": "EU",
+     "ref": "제9조 제4항 (b)",
+     "topic": "네트워크 연결 인프라를 즉시 단절·분할할 수 있게 설계(영향 자산 자동 격리 메커니즘은 예시로 허용)",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "즉시",
+     "pol_ids": [
+      "POL-44",
+      "POL-43",
+      "POL-12"
+     ]
+    }
+   ]
+  },
+  {
+   "dev": "DEV-50",
+   "target": "운영 서버 이미지 주기 재검사·기한 초과 격리",
+   "add": [
+    "수정 기한은 정책 값으로 두고(예시 규정에서 심각 48시간·중간 14일·낮음 30일), 기한 초과 시 영향 기능을 격리하거나 중지한 기록을 남긴다.",
+    "재검사 결과가 공급자 취약점 공지와 대조되는지 도입 대장의 서버·판본 키로 확인한다."
+   ],
+   "evidence": [
+    [
+     "LIB-M41",
+     "Provision 7.1 (취약점 관리)"
+    ],
+    [
+     "LIB-M26",
+     "부속서 I 제2부 (2)"
+    ],
+    [
+     "LIB-M40",
+     "5.4.1-1"
+    ]
+   ],
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M41-14",
+     "doc_id": "LIB-M41",
+     "jurisdiction": "UK",
+     "ref": "Provision 7.1 (취약점 관리)",
+     "topic": "제3자 구성요소 정기 취약점 스캔과 심각도별 패치 기한 예시",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "예시: 심각 48시간, 중간 14일, 낮음 30일",
+     "pol_ids": [
+      "POL-39",
+      "POL-03"
+     ]
+    },
+    {
+     "req_id": "REQ-M26-18",
+     "doc_id": "LIB-M26",
+     "jurisdiction": "EU",
+     "ref": "부속서 I 제2부 (2)-(3), (5)",
+     "topic": "지체 없는 취약점 수정, 정기 시험·검토, 조율된 취약점 공개 정책 시행",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "정기",
+     "pol_ids": [
+      "POL-03",
+      "POL-39"
+     ]
+    },
+    {
+     "req_id": "REQ-M40-28",
+     "doc_id": "LIB-M40",
+     "jurisdiction": "INTL",
+     "ref": "5.4.1-1 / 5.4.1-2 / 5.4.1-3",
+     "topic": "보안 업데이트·패치 제공과 주요 업데이트의 재평가, 버전 관리 API",
+     "strength": "mandatory",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-37",
+      "POL-39",
+      "POL-03"
+     ]
+    }
+   ]
+  },
+  {
+   "dev": "DEV-60",
+   "target": "정책 배포 후 경보 자체 시험",
+   "add": [
+    "탐지 메커니즘을 정기적으로 시험하고 경보 임계값·기준과 대응 담당자 자동 경보를 포함한다."
+   ],
+   "evidence": [
+    [
+     "LIB-M25",
+     "제10조"
+    ],
+    [
+     "LIB-M40",
+     "5.4.2-1"
+    ]
+   ],
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M25-09",
+     "doc_id": "LIB-M25",
+     "jurisdiction": "EU",
+     "ref": "제10조",
+     "topic": "비정상 활동을 신속히 탐지하고 경보 임계값·기준을 정의, 사용자 활동 모니터링에 충분한 자원 투입",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "정기 시험",
+     "pol_ids": [
+      "POL-42",
+      "POL-43"
+     ]
+    },
+    {
+     "req_id": "REQ-M40-29",
+     "doc_id": "LIB-M40",
+     "jurisdiction": "INTL",
+     "ref": "5.4.2-1 / 5.4.2-2",
+     "topic": "시스템·사용자 행위 로깅과 이상 탐지를 위한 로그 분석",
+     "strength": "mandatory",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-38",
+      "POL-42",
+      "POL-43"
+     ]
+    }
+   ]
+  },
+  {
+   "dev": "DEV-65",
+   "target": "통제 적용 전후 효과 비교 평가 도구(제품 외)",
+   "add": [
+    "시험군에 간접 프롬프트 주입, 도구 응답 주입, 응답 내 개인정보 유출 시나리오를 포함하고 구조화된 공격 목록(NIST AI 100-2의 분류, KISA 레드티밍 가이드)을 참조한다."
+   ],
+   "evidence": [
+    [
+     "LIB-M20",
+     "3.4"
+    ],
+    [
+     "LIB-M17",
+     "MS-2.7-007"
+    ],
+    [
+     "LIB-M24",
+     "¶55"
+    ]
+   ],
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M20-08",
+     "doc_id": "LIB-M20",
+     "jurisdiction": "US-federal",
+     "ref": "3.4",
+     "topic": "생성형 AI는 데이터와 명령 채널을 섞어 간접 프롬프트 주입이 가능",
+     "strength": "informative",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-04",
+      "POL-29",
+      "POL-32"
+     ]
+    },
+    {
+     "req_id": "REQ-M17-15",
+     "doc_id": "LIB-M17",
+     "jurisdiction": "US-federal",
+     "ref": "MS-2.7-007",
+     "topic": "프롬프트 주입 등 공격에 대한 AI 레드팀",
+     "strength": "recommended",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-05",
+      "POL-04",
+      "POL-29"
+     ]
+    },
+    {
+     "req_id": "REQ-M24-04",
+     "doc_id": "LIB-M24",
+     "jurisdiction": "EU",
+     "ref": "¶55",
+     "topic": "익명성 주장은 속성·멤버십 추론, 유출, 학습 데이터 재현, 모델 역전, 재구성 공격에 대한 구조화된 시험으로 뒷받침",
+     "strength": "informative",
+     "binding_doc": false,
+     "doc_status": "voluntary",
+     "timing": "",
+     "pol_ids": [
+      "POL-05",
+      "POL-30"
+     ]
+    }
+   ]
+  },
+  {
+   "dev": "DEV-61",
+   "target": "SIEM 전달·전달 실패 재전송",
+   "add": [
+    "이벤트에 사고 분류·심각도 코드를 담아 사고 분류 입력(DEV-66)으로 쓸 수 있게 한다."
+   ],
+   "evidence": [
+    [
+     "LIB-M25",
+     "제17조 제2항~제3항"
+    ],
+    [
+     "LIB-M25",
+     "제18조 제1항"
+    ]
+   ],
+   "evidence_rows": [
+    {
+     "req_id": "REQ-M25-12",
+     "doc_id": "LIB-M25",
+     "jurisdiction": "EU",
+     "ref": "제17조 제2항~제3항",
+     "topic": "모든 ICT 사고와 중대한 사이버 위협을 기록하고 근본 원인을 식별, 우선순위·심각도별 분류",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-43",
+      "POL-38",
+      "POL-42"
+     ]
+    },
+    {
+     "req_id": "REQ-M25-13",
+     "doc_id": "LIB-M25",
+     "jurisdiction": "EU",
+     "ref": "제18조 제1항",
+     "topic": "영향받은 고객 수·지속 시간·지리적 확산·데이터 손실·서비스 중요도·경제적 영향으로 사고 분류",
+     "strength": "mandatory",
+     "binding_doc": true,
+     "doc_status": "in_force",
+     "timing": "",
+     "pol_ids": [
+      "POL-38",
+      "POL-43"
+     ]
+    }
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "RQ-01",
+   "question": "원장 기본 보존 기간을 12개월로 할지, 관할별 하한(한국 신용정보 3년 등)을 기본에 반영할지",
+   "options": "12개월 기본+관할 팩 상향(권장) / 36개월 일률",
+   "recommendation": "12개월 기본+관할 팩 상향. EU AI법 6개월·중국 6개월·미국 OMB 12개월·인도 1년을 모두 충족하는 최소값이다.",
+   "needed_by": "DEV-67 착수 전"
+  },
+  {
+   "id": "RQ-02",
+   "question": "관할 팩을 어디에 두는가",
+   "options": "레지스트리 구성(registry/*.toml)으로 제품에 포함(권장) / 위키 문서로만 유지",
+   "recommendation": "구성으로 제품에 포함하되 값마다 근거 문서 ID와 조항을 필드로 둔다. 위키는 근거 정본.",
+   "needed_by": "DEV-66·69 착수 전"
+  },
+  {
+   "id": "RQ-03",
+   "question": "추가 전용 원장의 만료 폐기 방식",
+   "options": "구간 봉인 해시 후 본문 삭제(권장) / 암호화 삭제(키 폐기) / 보존만",
+   "recommendation": "구간 봉인 해시. 설계 문서와 변조 탐지 시험을 먼저 만든다.",
+   "needed_by": "DEV-67 설계 승인"
+  },
+  {
+   "id": "RQ-04",
+   "question": "공급자 보증 필드 누락 시 정책",
+   "options": "도입 보류(기본) / 고위험 등급 가정 후 승인 가능",
+   "recommendation": "도입 보류. 예외는 사유를 남기는 개별 승인.",
+   "needed_by": "DEV-68 착수 전"
+  },
+  {
+   "id": "RQ-05",
+   "question": "법무 확인 의뢰 범위",
+   "options": "시행령 위임 기한(한국 등), 시행일 변동, 초안 문서의 확정 여부 / 전수",
+   "recommendation": "관할 팩에 '수동 확인 필요'로 표시된 값만 의뢰.",
+   "needed_by": "DEV-66 착수 전"
+  },
+  {
+   "id": "RQ-06",
+   "question": "서버 처리·저장 국가 속성의 입력 방식",
+   "options": "도입 신청자 입력+공급자 문서 근거(권장) / 자동 탐지",
+   "recommendation": "신청자 입력과 근거 첨부. 자동 탐지는 오탐이 커서 보조 신호로만 사용.",
+   "needed_by": "DEV-69 착수 전"
+  },
+  {
+   "id": "RQ-07",
+   "question": "'중대 영향' 라벨 부여 주체",
+   "options": "도입 심사자(기본) / 정책 규칙 자동 판정",
+   "recommendation": "도입 심사자가 부여하고 라벨 누락을 점검하는 시험을 둔다.",
+   "needed_by": "DEV-70 착수 전"
+  },
+  {
+   "id": "RQ-08",
+   "question": "기존 승인 서버의 위험 등급 처리",
+   "options": "필드가 채워질 때까지 최고 등급 가정(권장) / 기존 승인 유지",
+   "recommendation": "최고 등급 가정 후 단계적 재승인. 운영 중단을 막으려면 기간제 유예.",
+   "needed_by": "DEV-71 착수 전"
+  }
+ ],
+ "sprint1": [
+  {
+   "n": 1,
+   "task": "결정 RQ-01·RQ-02·RQ-03을 팀 회의에서 확정하고 docs/ai/DECISIONS.md에 새 D-번호로 기록",
+   "done_when": "결정 3건이 기록되고 DEV-67 설계 문서의 열린 질문이 0건",
+   "dev": "DEV-67"
+  },
+  {
+   "n": 2,
+   "task": "관할 팩 스키마 초안(값, 근거 문서 ID·조항, 확인 상태: 확인됨/수동 확인 필요/시행 전)을 만들고 한국·EU·중국·미국 연방 4개 팩의 사고 기한·보존 하한·국외 이전 모델을 채움",
+   "done_when": "스키마 검토 통과, 값마다 위키 근거로 되돌아가는 링크",
+   "dev": "DEV-66·67·69"
+  },
+  {
+   "n": 3,
+   "task": "DEV-66 사고 증빙 패키지 질의 정의와 합성 사고 시나리오 3개(정상·사슬 단절·비밀 포함 시도) 작성",
+   "done_when": "시나리오의 기대 출력이 문서로 고정되고 원장 질의가 단위 시험으로 재현",
+   "dev": "DEV-66"
+  },
+  {
+   "n": 4,
+   "task": "DEV-68 도입 신청 보증 필드 정의(필드명, 필수 여부, 값 형식)와 화면 라벨, 도입 대장 내보내기 열 대응표 작성",
+   "done_when": "필드 정의서 검토 통과, DORA 등록부 항목과의 대응표 포함",
+   "dev": "DEV-68"
+  },
+  {
+   "n": 5,
+   "task": "법무 확인 의뢰 목록 작성: 요구사항 중 '시행령 위임'·'수동 확인 필요' 값 정리",
+   "done_when": "목록이 문서로 전달되고 RQ-05 답변을 받는 경로가 정해짐",
+   "dev": "—"
+  },
+  {
+   "n": 6,
+   "task": "기존 계획 항목(DEV-50~65) 중 10월 4주~11월 2주 일정 항목과 충돌 없는지 일정 조정",
+   "done_when": "일정 제안안이 갱신되고 충돌 항목이 0건",
+   "dev": "DEV-50~65"
+  }
+ ],
+ "deadlines": [
+  {
+   "req_id": "REQ-M35-04",
+   "doc_id": "LIB-M35",
+   "jurisdiction": "CA",
+   "ref": "제10.1조 제1항, 제2항",
+   "topic": "중대한 피해의 실질적 위험이 있는 보안 조치 위반은 위원에게 가능한 한 빨리 보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "위반 발생 판단 후 가능한 한 빨리(as soon as feasible)",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M35-05",
+   "doc_id": "LIB-M35",
+   "jurisdiction": "CA",
+   "ref": "제10.1조 제3항~제7항",
+   "topic": "영향받은 개인에게 직접 통지하며 '중대한 피해'는 신체 피해, 모욕, 평판 훼손, 재산·신용 피해 등을 포함",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "위반 발생 판단 후 가능한 한 빨리",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M36-05",
+   "doc_id": "LIB-M36",
+   "jurisdiction": "CA",
+   "ref": "민간 부문법 제3.5조~제3.7조",
+   "topic": "기밀성 사고 시 위험 완화·재발 방지 조치, 중대한 피해 위험이면 위원회와 영향받은 사람에게 신속히 통지",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "신속(promptly), 2022-09-22 시행",
+   "pol_ids": [
+    "POL-43",
+    "POL-44",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M09-08",
+   "doc_id": "LIB-M09",
+   "jurisdiction": "CN",
+   "ref": "제14조제1항",
+   "topic": "위법 내용 발견 시 중단·정정·보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "제때(及时, 구체 기한 없음)",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M10-14",
+   "doc_id": "LIB-M10",
+   "jurisdiction": "CN",
+   "ref": "제27조",
+   "topic": "안전사고 응급계획과 보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "사건 발생 시 즉시 응급계획 가동, 보고는 '규정에 따라'(숫자 기한은 이 법에 없음)",
+   "pol_ids": [
+    "POL-38",
+    "POL-42",
+    "POL-43",
+    "POL-44"
+   ]
+  },
+  {
+   "req_id": "REQ-M10-24",
+   "doc_id": "LIB-M10",
+   "jurisdiction": "CN",
+   "ref": "제44조제2항",
+   "topic": "개인정보 유출 시 보완·고지·보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "즉시 보완 조치, 고지·보고는 '규정에 따라 신속히'(숫자 기한은 이 법에 없음)",
+   "pol_ids": [
+    "POL-30",
+    "POL-38",
+    "POL-43",
+    "POL-45"
+   ]
+  },
+  {
+   "req_id": "REQ-M27-02",
+   "doc_id": "LIB-M27",
+   "jurisdiction": "CN",
+   "ref": "제4조제1항",
+   "topic": "사건 발견 시 등급 판단 후 '較大' 이상은 보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "발견·인지 시 등급 판단(판단 시한은 본문에 별도 규정 없음)",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M27-03",
+   "doc_id": "LIB-M27",
+   "jurisdiction": "CN",
+   "ref": "제4조제2항",
+   "topic": "핵심 정보 인프라 관련 사건은 최대 1시간 내 보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "운영자 1시간 이내, 보호 업무 부문의 상향 보고 30분 이내",
+   "pol_ids": [
+    "POL-43",
+    "POL-42"
+   ]
+  },
+  {
+   "req_id": "REQ-M27-04",
+   "doc_id": "LIB-M27",
+   "jurisdiction": "CN",
+   "ref": "제4조제4항",
+   "topic": "일반 네트워크 운영자는 소재지 성급 網信부문에 4시간 내 보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "운영자 4시간 이내(성급 網信부문 상향 1시간 이내)",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M27-05",
+   "doc_id": "LIB-M27",
+   "jurisdiction": "CN",
+   "ref": "제4조제3항",
+   "topic": "중앙·국가기관 부문은 2시간 내 보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "2시간 이내",
+   "pol_ids": [
+    "POL-43"
+   ]
+  },
+  {
+   "req_id": "REQ-M27-08",
+   "doc_id": "LIB-M27",
+   "jurisdiction": "CN",
+   "ref": "제7조제2항·제3항",
+   "topic": "원인 등을 즉시 판정하지 못하면 제1호·제2호만 먼저 보고하고 나머지는 추후 보완, 새로운 사정은 제때 추가 보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "먼저 최소 보고 후 제때 보완",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M27-09",
+   "doc_id": "LIB-M27",
+   "jurisdiction": "CN",
+   "ref": "제8조",
+   "topic": "처리 종료 후 30일 내 총결 보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "처리 종료 후 30일 이내",
+   "pol_ids": [
+    "POL-43",
+    "POL-39",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M28-02",
+   "doc_id": "LIB-M28",
+   "jurisdiction": "CN",
+   "ref": "제10조",
+   "topic": "제품·서비스의 결함·취약점 즉시 보완과 보고(24시간)",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "국가 안보·공공 이익 관련 시 24시간 이내",
+   "pol_ids": [
+    "POL-39",
+    "POL-43"
+   ]
+  },
+  {
+   "req_id": "REQ-M28-03",
+   "doc_id": "LIB-M28",
+   "jurisdiction": "CN",
+   "ref": "제11조",
+   "topic": "데이터 안전 사건 응급 계획과 이해관계자 통지",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "즉시 가동, 이해관계자에게 제때 통지",
+   "pol_ids": [
+    "POL-43",
+    "POL-38",
+    "POL-42"
+   ]
+  },
+  {
+   "req_id": "REQ-M29-19",
+   "doc_id": "LIB-M29",
+   "jurisdiction": "CN",
+   "ref": "제57조",
+   "topic": "유출·변조·분실 발생 또는 우려 시 즉시 보완 조치하고 주관 부서와 개인에게 통지",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "즉시",
+   "pol_ids": [
+    "POL-43",
+    "POL-44",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M30-08",
+   "doc_id": "LIB-M30",
+   "jurisdiction": "CN",
+   "ref": "제11조",
+   "topic": "출경 데이터의 안전 보호와 사건 시 보완 조치·보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "제때(구체 시한 없음)",
+   "pol_ids": [
+    "POL-43",
+    "POL-38",
+    "POL-26"
+   ]
+  },
+  {
+   "req_id": "REQ-M01-19",
+   "doc_id": "LIB-M01",
+   "jurisdiction": "EU",
+   "ref": "Art. 26(5)",
+   "topic": "배치자의 모니터링, 사용 중단, 사고 통지",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+   "timing": "위험 우려 시 지체 없이, 중대한 사고는 즉시(제공자에게 연락 불가 시 제73조 준용)",
+   "pol_ids": [
+    "POL-42",
+    "POL-43",
+    "POL-44",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M01-27",
+   "doc_id": "LIB-M01",
+   "jurisdiction": "EU",
+   "ref": "Art. 73(1)-(5)",
+   "topic": "중대한 사고 보고 기한",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+   "timing": "인지 후 15일 이내(원칙), 2일 이내(핵심 기반시설 중대 교란·광범위 침해), 사망은 10일 이내, 초기 불완전 보고 허용(제73조제5항)",
+   "pol_ids": [
+    "POL-42",
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M06-23",
+   "doc_id": "LIB-M06",
+   "jurisdiction": "EU",
+   "ref": "Art. 33(1)",
+   "topic": "감독기관에 대한 침해 통지(72시간)",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "인지 후 지체 없이, 가능하면 72시간 이내(초과 시 지연 사유 첨부)",
+   "pol_ids": [
+    "POL-42",
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M06-24",
+   "doc_id": "LIB-M06",
+   "jurisdiction": "EU",
+   "ref": "Art. 33(2)",
+   "topic": "처리자의 컨트롤러 통지",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "인지 후 지체 없이(시간 수치 없음)",
+   "pol_ids": [
+    "POL-43",
+    "POL-07"
+   ]
+  },
+  {
+   "req_id": "REQ-M11-18",
+   "doc_id": "LIB-M11",
+   "jurisdiction": "EU",
+   "ref": "Art. 23(1)",
+   "topic": "중대한 사고의 통지 의무",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "지체 없이(세부 기한은 제23조제4항)",
+   "pol_ids": [
+    "POL-38",
+    "POL-43"
+   ]
+  },
+  {
+   "req_id": "REQ-M11-19",
+   "doc_id": "LIB-M11",
+   "jurisdiction": "EU",
+   "ref": "Art. 23(2)",
+   "topic": "중대한 사이버 위협의 수신자 통보",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "지체 없이",
+   "pol_ids": [
+    "POL-43"
+   ]
+  },
+  {
+   "req_id": "REQ-M11-21",
+   "doc_id": "LIB-M11",
+   "jurisdiction": "EU",
+   "ref": "Art. 23(4)(a)",
+   "topic": "24시간 이내 조기 경보",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "인지 후 24시간 이내 조기 경보",
+   "pol_ids": [
+    "POL-42",
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M11-22",
+   "doc_id": "LIB-M11",
+   "jurisdiction": "EU",
+   "ref": "Art. 23(4)(b)",
+   "topic": "72시간 이내 사고 통지",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "인지 후 72시간 이내 사고 통지",
+   "pol_ids": [
+    "POL-38",
+    "POL-42",
+    "POL-43"
+   ]
+  },
+  {
+   "req_id": "REQ-M11-23",
+   "doc_id": "LIB-M11",
+   "jurisdiction": "EU",
+   "ref": "Art. 23(4)(c)-(e)",
+   "topic": "중간 보고·최종 보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "최종 보고는 사고 통지 제출 후 1개월 이내; 진행 중이면 진행 보고서 후 처리 후 1개월 이내",
+   "pol_ids": [
+    "POL-38",
+    "POL-43",
+    "POL-45"
+   ]
+  },
+  {
+   "req_id": "REQ-M16-19",
+   "doc_id": "LIB-M16",
+   "jurisdiction": "EU",
+   "ref": "Art. 1 pt 31(c) (AI Act Art. 75(1a))",
+   "topic": "AI Office 관할 시스템의 심각한 사고 보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "보고 기한은 제73조(2)~(9) 준용 — 구체 시한은 이 문서에 없음",
+   "pol_ids": [
+    "POL-38",
+    "POL-43"
+   ]
+  },
+  {
+   "req_id": "REQ-M25-14",
+   "doc_id": "LIB-M25",
+   "jurisdiction": "EU",
+   "ref": "제19조 제1항, 제4항",
+   "topic": "중대한 ICT 사고를 초기 통지, 중간 보고, 최종 보고로 관할 당국에 보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "기한은 위임 규정(제20조)에서 확인",
+   "pol_ids": [
+    "POL-43",
+    "POL-38",
+    "POL-44"
+   ]
+  },
+  {
+   "req_id": "REQ-M25-15",
+   "doc_id": "LIB-M25",
+   "jurisdiction": "EU",
+   "ref": "제19조 제3항",
+   "topic": "고객의 금전적 이익에 영향을 주는 중대한 사고는 지체 없이 고객에게 알림",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "지체 없이",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M26-08",
+   "doc_id": "LIB-M26",
+   "jurisdiction": "EU",
+   "ref": "제14조 제1항~제2항",
+   "topic": "적극적으로 악용되는 취약점: 24시간 이내 조기 경보, 72시간 이내 취약점 통지, 수정 가능 후 14일 이내 최종 보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "24시간 조기 경보, 72시간 통지, 조치 가능 후 14일 최종 보고(2026-09-11부터 적용)",
+   "pol_ids": [
+    "POL-39",
+    "POL-43",
+    "POL-44"
+   ]
+  },
+  {
+   "req_id": "REQ-M26-09",
+   "doc_id": "LIB-M26",
+   "jurisdiction": "EU",
+   "ref": "제14조 제3항~제5항",
+   "topic": "제품 보안에 영향을 주는 중대한 사고: 24시간 조기 경보, 72시간 사고 통지, 1개월 이내 최종 보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "24시간, 72시간, 통지 후 1개월(2026-09-11부터 적용)",
+   "pol_ids": [
+    "POL-43",
+    "POL-42",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M44-05",
+   "doc_id": "LIB-M44",
+   "jurisdiction": "IN",
+   "ref": "규칙 7(1)",
+   "topic": "침해를 알게 되면 각 정보주체에게 지체 없이 간결·명확하게 통지",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "adopted_not_yet_applicable",
+   "timing": "지체 없이",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M44-06",
+   "doc_id": "LIB-M44",
+   "jurisdiction": "IN",
+   "ref": "규칙 7(2)",
+   "topic": "위원회에 지체 없이 개요를, 72시간 이내에 상세 보고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "adopted_not_yet_applicable",
+   "timing": "인지 즉시 개요, 72시간 이내 상세 보고",
+   "pol_ids": [
+    "POL-43",
+    "POL-38",
+    "POL-44"
+   ]
+  },
+  {
+   "req_id": "REQ-M45-10",
+   "doc_id": "LIB-M45",
+   "jurisdiction": "IN",
+   "ref": "제8조 제6항",
+   "topic": "개인정보 침해 시 위원회와 영향받은 각 정보주체에게 통지",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "partially_in_force",
+   "timing": "규칙이 정한 기한(법 본문에는 기한 없음)",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-L01-16",
+   "doc_id": "LIB-L01",
+   "jurisdiction": "KR",
+   "ref": "제34조제1항",
+   "topic": "유출등 통지",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "알게 된 때 지체 없이(구체 시한은 시행령)",
+   "pol_ids": [
+    "POL-42",
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-L01-17",
+   "doc_id": "LIB-L01",
+   "jurisdiction": "KR",
+   "ref": "제34조제2항",
+   "topic": "유출등 '가능성' 통지(신설 2026-03-10)",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "가능성을 알게 된 때 지체 없이",
+   "pol_ids": [
+    "POL-42",
+    "POL-43"
+   ]
+  },
+  {
+   "req_id": "REQ-L01-18",
+   "doc_id": "LIB-L01",
+   "jurisdiction": "KR",
+   "ref": "제34조제4항",
+   "topic": "유출등 신고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "알게 된 때 지체 없이(구체 시한은 시행령)",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-L02-10",
+   "doc_id": "LIB-L02",
+   "jurisdiction": "KR",
+   "ref": "제39조의4제1항",
+   "topic": "개인신용정보 누설 통지",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "알게 된 때 지체 없이(구체 시기·방법은 시행령)",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-L02-11",
+   "doc_id": "LIB-L02",
+   "jurisdiction": "KR",
+   "ref": "제39조의4제3항",
+   "topic": "대규모 누설의 신고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "지체 없이(규모 기준은 시행령)",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-L03-09",
+   "doc_id": "LIB-L03",
+   "jurisdiction": "KR",
+   "ref": "제48조의3제1항",
+   "topic": "침해사고 신고",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "알게 된 때부터 24시간 이내(2026-10-01 시행본, 그 전 본은 '즉시'). 신고 방법·절차는 대통령령(제5항)",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-L03-12",
+   "doc_id": "LIB-L03",
+   "jurisdiction": "KR",
+   "ref": "제48조의9제3항",
+   "topic": "침해사고 관리·대응 매뉴얼 작성·제출(2026-10-01 시행)",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "2026-10-01 시행(본조 신설 2026-03-31)",
+   "pol_ids": [
+    "POL-43",
+    "POL-44",
+    "POL-45"
+   ]
+  },
+  {
+   "req_id": "REQ-M34-08",
+   "doc_id": "LIB-M34",
+   "jurisdiction": "SG",
+   "ref": "제26C조 제2항~제3항",
+   "topic": "침해 의심 시 합리적이고 신속하게 통지 대상 여부 평가, 데이터 중개자는 지체 없이 위탁 조직에 통지",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "신속(합리적이고 신속한 평가); 중개자는 지체 없이",
+   "pol_ids": [
+    "POL-43",
+    "POL-44",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M34-09",
+   "doc_id": "LIB-M34",
+   "jurisdiction": "SG",
+   "ref": "제26D조 제1항, 제3항~제4항",
+   "topic": "통지 대상 침해로 평가하면 가능한 한 빨리, 늦어도 평가한 날 다음 날부터 3일 이내 위원회에 통지",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "평가일 다음 날부터 달력상 3일 이내",
+   "pol_ids": [
+    "POL-43",
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M34-10",
+   "doc_id": "LIB-M34",
+   "jurisdiction": "SG",
+   "ref": "제26D조 제2항, 제5항~제7항",
+   "topic": "중대한 피해가 예상되는 침해는 영향받은 각 개인에게 통지, 사전에 기술 조치로 피해 가능성이 낮아졌다면 면제",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "위원회 통지 후 또는 통지와 함께",
+   "pol_ids": [
+    "POL-30",
+    "POL-16",
+    "POL-43"
+   ]
+  },
+  {
+   "req_id": "REQ-M18-03",
+   "doc_id": "LIB-M18",
+   "jurisdiction": "US-federal",
+   "ref": "본문 3쪽 (로그 접근 요구)",
+   "topic": "침해 의심 시 CISA·FBI의 로그 제공 요구에 응답",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "요청된 시한 내(가능한 최대한)",
+   "pol_ids": [
+    "POL-38",
+    "POL-43"
+   ]
+  }
+ ],
+ "retention": [
+  {
+   "req_id": "REQ-M10-08",
+   "doc_id": "LIB-M10",
+   "jurisdiction": "CN",
+   "ref": "제23조제3호",
+   "topic": "운영 상태·안전사고 기록과 로그 6개월 보관",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "네트워크 로그 6개월 이상 보관('규정에 따라')",
+   "pol_ids": [
+    "POL-38",
+    "POL-42"
+   ]
+  },
+  {
+   "req_id": "REQ-M31-17",
+   "doc_id": "LIB-M31",
+   "jurisdiction": "CN",
+   "ref": "6.3.6",
+   "topic": "대형 모델 서비스 운영 로그(시스템·사용자 활동)를 최소 6개월 보존하고 정기 감사",
+   "strength": "recommended",
+   "binding_doc": false,
+   "doc_status": "superseded",
+   "timing": "최소 6개월 보존",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M33-07",
+   "doc_id": "LIB-M33",
+   "jurisdiction": "CN",
+   "ref": "제9조",
+   "topic": "표시 없는 콘텐츠 제공 시 이용자 협의와 로그 6개월 보존",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "표시 없이 제공하는 경우 관련 로그 6개월 이상 보존",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M01-16",
+   "doc_id": "LIB-M01",
+   "jurisdiction": "EU",
+   "ref": "Art. 19(1)",
+   "topic": "제공자의 로그 보관(6개월 이상)",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+   "timing": "최소 6개월 이상(다른 EU·국내법이 달리 정하면 예외)",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M01-20",
+   "doc_id": "LIB-M01",
+   "jurisdiction": "EU",
+   "ref": "Art. 26(6)",
+   "topic": "배치자의 로그 보관(6개월 이상)",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force (Regulation (EU) 2026/1744로 개정됨; 제3장 제1~3절의 고위험 요건·의무는 아직 적용 전이며 2027-12-02 또는 2028-08-02부터 적용)",
+   "timing": "최소 6개월 이상(다른 EU·국내법이 달리 정하면 예외)",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M06-11",
+   "doc_id": "LIB-M06",
+   "jurisdiction": "EU",
+   "ref": "Art. 17(1)",
+   "topic": "삭제권(잊힐 권리)",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "지체 없이(제12조제3항: 요청 접수 후 1개월 이내 조치 결과 통지, 복잡하면 2개월 연장 가능)",
+   "pol_ids": [
+    "POL-48",
+    "POL-49"
+   ]
+  },
+  {
+   "req_id": "REQ-M44-04",
+   "doc_id": "LIB-M44",
+   "jurisdiction": "IN",
+   "ref": "규칙 6(1)(d)-(g)",
+   "topic": "백업, 침해 탐지·조사용 로그와 개인정보 1년 보존, 수탁자 계약에 보안 조항",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "adopted_not_yet_applicable",
+   "timing": "로그·개인정보 1년 보존",
+   "pol_ids": [
+    "POL-38",
+    "POL-07"
+   ]
+  },
+  {
+   "req_id": "REQ-M44-07",
+   "doc_id": "LIB-M44",
+   "jurisdiction": "IN",
+   "ref": "규칙 8(1)-(2), 제3부칙",
+   "topic": "대형 전자상거래·온라인 게임·소셜 미디어 사업자는 마지막 접촉 후 3년 경과 시 삭제, 삭제 48시간 전 통지",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "adopted_not_yet_applicable",
+   "timing": "마지막 접촉 후 3년, 삭제 48시간 전 통지",
+   "pol_ids": []
+  },
+  {
+   "req_id": "REQ-M44-08",
+   "doc_id": "LIB-M44",
+   "jurisdiction": "IN",
+   "ref": "규칙 8(3)",
+   "topic": "처리 개인정보, 트래픽 데이터, 처리 로그를 처리일로부터 최소 1년 보존한 뒤 삭제",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "adopted_not_yet_applicable",
+   "timing": "처리일부터 최소 1년",
+   "pol_ids": [
+    "POL-38",
+    "POL-48"
+   ]
+  },
+  {
+   "req_id": "REQ-L02-05",
+   "doc_id": "LIB-L02",
+   "jurisdiction": "KR",
+   "ref": "제20조제2항",
+   "topic": "개인신용정보 처리기록 3년 보존",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "3년간 보존",
+   "pol_ids": [
+    "POL-38",
+    "POL-26"
+   ]
+  },
+  {
+   "req_id": "REQ-L02-06",
+   "doc_id": "LIB-L02",
+   "jurisdiction": "KR",
+   "ref": "제20조의2제2항",
+   "topic": "상거래 관계 종료 후 삭제",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "관계 종료 후 최장 5년, 목적 달성 시 3개월",
+   "pol_ids": [
+    "POL-48",
+    "POL-49"
+   ]
+  },
+  {
+   "req_id": "REQ-M41-16",
+   "doc_id": "LIB-M41",
+   "jurisdiction": "UK",
+   "ref": "Provision 12.1 (보존)",
+   "topic": "로그를 암호화해 보관하고 보존 정책을 준법 의무에 맞춰 정기 갱신",
+   "strength": "recommended",
+   "binding_doc": false,
+   "doc_status": "voluntary",
+   "timing": "예시: 챗봇 1년, 오픈액세스 LLM 6개월(규정 기간 아님)",
+   "pol_ids": [
+    "POL-38",
+    "POL-48"
+   ]
+  },
+  {
+   "req_id": "REQ-M18-05",
+   "doc_id": "LIB-M18",
+   "jurisdiction": "US-federal",
+   "ref": "부록 B 1",
+   "topic": "최소 보존: 6개월 검색 가능, 1년 조회 가능",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "검색 가능 6개월, 조회 가능 1년(생성 후)",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M18-12",
+   "doc_id": "LIB-M18",
+   "jurisdiction": "US-federal",
+   "ref": "부록 C (데이터 보존·로그 관리)",
+   "topic": "성숙도 단계별 암호화·무결성 해시·접근 통제",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "in_force",
+   "timing": "단계별 6~12개월(부록 C 표)",
+   "pol_ids": [
+    "POL-38",
+    "POL-16"
+   ]
+  },
+  {
+   "req_id": "REQ-M15-11",
+   "doc_id": "LIB-M15",
+   "jurisdiction": "US-CO",
+   "ref": "6-1-1702(4)",
+   "topic": "개발자 기록 3년 보관",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "adopted_not_yet_applicable",
+   "timing": "기록 생성 후 3년 이상",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "req_id": "REQ-M15-12",
+   "doc_id": "LIB-M15",
+   "jurisdiction": "US-CO",
+   "ref": "6-1-1703",
+   "topic": "배포자 기록 3년 보관",
+   "strength": "mandatory",
+   "binding_doc": true,
+   "doc_status": "adopted_not_yet_applicable",
+   "timing": "중대한 결정일로부터 3년 이상",
+   "pol_ids": [
+    "POL-38"
+   ]
+  }
+ ],
+ "unresolved_evidence": []
+}

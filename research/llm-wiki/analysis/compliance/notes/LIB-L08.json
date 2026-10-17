@@ -1,0 +1,524 @@
+{
+ "id": "LIB-L08",
+ "title": "Architectural Requirements for Supporting AI Agents on the Internet (draft-daniel-ai-agent-internet-architecture-03)",
+ "title_native": "",
+ "issuer": "IETF 개인 제출 Internet-Draft (S. D. Park, Samsung Electronics / I. Siddique, Opaque)",
+ "jurisdiction": "INTL",
+ "instrument_type": "draft",
+ "binding": false,
+ "status": "draft",
+ "edition": "-03, 2026-08-28(28쪽). 만료 2027-03-01. 데이터트래커 메타데이터(2026-10-17 조회) 기준 rev 03이 최신이고 RFC 번호는 없다.",
+ "key_dates": "2026-08-28 제출(rev 03), 2027-03-01 만료 예정(문서 표지 'Expires: 1 March 2027'). 문서 표지의 Intended status는 Informational이나 데이터트래커의 Intended RFC status는 없음(None)이고 스트림도 지정되지 않은 개별(individual) 초안이다(2026-10-17 조회). Internet-Draft는 최대 6개월 유효한 작업 문서이며 'work in progress'로만 인용해야 한다고 문서가 밝힌다.",
+ "language": "en",
+ "official_page_url": "https://datatracker.ietf.org/doc/draft-daniel-ai-agent-internet-architecture/",
+ "summary_ko": "AI 에이전트를 인터넷 프로토콜 관점에서 지원하기 위한 아키텍처 요구사항(REQ-DISC, HTTP, TASK, AUTH, ID, AUD, REV, PRIV 등)을 정리한 개인 제출 초안이다. 에이전트 신원과 위임 주체의 구분, 대상·작업·리소스에 묶인 권한, 재위임 시 권한 감쇠, 짧은 수명과 폐기, 변조 증거 감사 기록과 선택적 공개를 요구(MUST)하거나 권고(SHOULD)한다. 단일한 새 에이전트 프로토콜을 정의하기보다 기존 인터넷 프로토콜의 프로파일·확장을 선호한다.",
+ "scope_ko": "독립된 관리 영역을 가로지르는 에이전트 상호운용(발견, 신원, 위임 인가, HTTP, 전송, 결제, 비동기, 출처·감사, 폐기)에 적용되는 프로토콜 계층 요구사항이다. 모델 동작, 프롬프트 형식, 추론 추적, 에이전트 계획 알고리즘, 모델 평가, 범용 에이전트 런타임은 표준화 대상이 아니다(§3). 본문은 MCP를 이름으로 언급하지 않는다.",
+ "provisions": [
+  {
+   "ref": "§2 Intent 정의",
+   "topic_ko": "의도는 인가 신호가 아니다",
+   "obligation_ko": "에이전트 행동에 연결된 의도(Intent)는 그 자체로 인가 신호가 아니라고 정의한다.",
+   "actor": "any",
+   "strength": "informative",
+   "theme": "agentic_ai",
+   "timing_ko": "",
+   "anchor": "Intent is not, by itself, an authorization signal",
+   "gateway_control_ko": "요청에 적힌 목적·설명·도구 설명을 승인이나 권한 근거로 쓰지 않고 승인 등록부와 위임 범위로만 권한을 정한다.",
+   "pol_ids": [
+    "POL-29",
+    "POL-04",
+    "POL-20"
+   ]
+  },
+  {
+   "ref": "§5 분리 원칙",
+   "topic_ko": "신원·인증·인가·위임·감사의 혼동 금지",
+   "obligation_ko": "신원, 인증, 인가, 위임, 역량, 의도, 신뢰, 결제, 감사는 서로 다른 개념이므로 암묵적으로 섞여서는 안 된다.",
+   "actor": "any",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "are distinct concepts and MUST NOT be implicitly conflated",
+   "gateway_control_ko": "신원(전송 토큰), 위임(범위·유효기간), 기능 승인, 데이터 등급, 사용자 동의를 정책 입력에서 별도 필드로 분리해 각각 검사하고 연결 승인이 기능 승인을 대신하지 않게 한다.",
+   "pol_ids": [
+    "POL-19",
+    "POL-20",
+    "POL-11",
+    "POL-08"
+   ]
+  },
+  {
+   "ref": "§5 독립된 신뢰 신호",
+   "topic_ko": "인증·인가·증명·감사는 호환 가능한 신뢰 신호가 아니다",
+   "obligation_ko": "인증은 자격증명 통제를, 인가는 허용 여부를, 원격 증명은 소프트웨어 구성·실행 상태 증거를, 감사는 판단에 쓰인 정보의 기록을 제공하는 상호 보완 기능이며 서로 대체 가능한 신뢰 신호로 취급해서는 안 된다.",
+   "actor": "any",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "These functions are complementary and MUST NOT be treated as interchangeable trust signals",
+   "gateway_control_ko": "토큰 유효성(인증)을 통과해도 호출마다 위임·정책 판정(인가)을 다시 하고, 원장 기록이 있다는 사실을 허용 근거로 쓰지 않는다.",
+   "pol_ids": [
+    "POL-22",
+    "POL-19",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "§6 역할 구분",
+   "topic_ko": "엔드포인트·서비스·인스턴스·운영자·자격증명 보유자·위임 주체 신원은 같다고 가정 금지",
+   "obligation_ko": "에이전트 프로토콜은 엔드포인트, 에이전트 서비스, 에이전트 인스턴스, 운영자, 자격증명 보유자, 위임 주체의 신원이 같다고 가정해서는 안 된다(MUST NOT). 결합이 명시적이고 검증 가능하며 배포에 적합하면 둘 이상을 묶을 수 있다(MAY).",
+   "actor": "any",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "An agent protocol MUST NOT assume that endpoint identity, Agent Service identity",
+   "gateway_control_ko": "원장과 정책 입력에 사용자(위임 주체), 에이전트, 워크스테이션 엔드포인트, 대상 MCP 서버를 별개 식별자로 기록하고 하네스가 보고한 clientInfo는 기록만 하고 판정에 쓰지 않는다.",
+   "pol_ids": [
+    "POL-19",
+    "POL-20",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "REQ-DISC-5 (§8)",
+   "topic_ko": "발견 메타데이터의 진본성·무결성 보호",
+   "obligation_ko": "발견 메타데이터에는 진본성과 무결성을 보호하는 메커니즘이 있어야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "secure_development_supply_chain",
+   "timing_ko": "",
+   "anchor": "Discovery metadata MUST have a mechanism for authenticity and integrity protection",
+   "gateway_control_ko": "MCP 서버의 도구·리소스·프롬프트 계약(이름·설명·스키마)을 첫 관찰값 자동 승인 없이 사람 승인으로 잠그고 변경 시 대조·차단한다.",
+   "pol_ids": [
+    "POL-37",
+    "POL-11",
+    "POL-05"
+   ]
+  },
+  {
+   "ref": "REQ-DISC-9 (§8)",
+   "topic_ko": "발견만으로는 신뢰·허가를 뜻하지 않음",
+   "obligation_ko": "엔드포인트가 발견되었다는 사실만으로 그 엔드포인트가 인가되었거나 신뢰할 만하거나 요청 작업에 적합하다는 뜻이 되어서는 안 된다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "third_party_management",
+   "timing_ko": "",
+   "anchor": "Discovery of an endpoint MUST NOT, by itself, imply that",
+   "gateway_control_ko": "주소 등록만으로 승인을 갈음하지 않고 관리자 승인과 사용자 동의를 각각 확인한 서버·기능만 연결하며, 서버가 광고한 새 기능은 검토 전까지 허용하지 않는다.",
+   "pol_ids": [
+    "POL-08",
+    "POL-11",
+    "POL-02"
+   ]
+  },
+  {
+   "ref": "REQ-TASK-1 (§11)",
+   "topic_ko": "작업 식별자는 베어러 자격증명이 아님",
+   "obligation_ko": "작업 식별자는 프로토콜 범위 안에서 모호하지 않아야 하고, 명시적으로 정의·보호하지 않는 한 베어러 자격증명으로 기능해서는 안 된다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "MUST NOT function as a bearer credential unless the protocol explicitly defines and protects it as one",
+   "gateway_control_ko": "승인 ID·세션 ID·요청 ID를 알고 있다는 이유로 권한을 인정하지 않고 사용 때마다 신원과 위임을 다시 검증한다(승인 ID 재사용 방지).",
+   "pol_ids": [
+    "POL-22",
+    "POL-27"
+   ]
+  },
+  {
+   "ref": "REQ-TASK-3 (§11)",
+   "topic_ko": "중요 작업 생성의 재시도와 중복 방지",
+   "obligation_ko": "프로토콜은 중요 작업 생성에서 재시도의 효과를 정의해야 하며 중복 실행이 안전하지 않은 곳에서는 멱등성이나 중복 검출을 제공해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "MUST provide idempotency or duplicate detection where duplicate execution would be unsafe",
+   "gateway_control_ko": "문서 수정·삭제 같은 변경 호출은 요청 키 기반 중복 검출로 재전송·재시도에도 한 번만 실행하고 이전 허용 결과를 범위가 바뀐 요청에 재사용하지 않는다.",
+   "pol_ids": [
+    "POL-36",
+    "POL-22"
+   ]
+  },
+  {
+   "ref": "REQ-AUTH-1 (§12)",
+   "topic_ko": "에이전트 신원과 위임한 사람·조직의 신원을 구분",
+   "obligation_ko": "아키텍처는 에이전트의 신원과 에이전트가 대신 행동하는 사람 또는 조직의 신원을 구분해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "The architecture MUST distinguish agent identity from the identity of the human or organization on whose behalf the agent acts",
+   "gateway_control_ko": "에이전트 주체와 위임한 사용자를 분리해 원장에 기록하고, 사용자 권한과 위임 범위의 교집합 안에서만 승인된 서버·기능을 허용한다.",
+   "pol_ids": [
+    "POL-19",
+    "POL-20",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "REQ-AUTH-2, REQ-AUTH-7 (§12)",
+   "topic_ko": "대상·작업·리소스에 묶인 인가 증거",
+   "obligation_ko": "인가 증거는 대상(audience)이 제한되어야 하고(MUST) 리소스·작업 범위를 좁게 한정하는 것이 바람직하다(SHOULD). 중요한 작업의 인가는 의도한 대상·작업·리소스에 묶여야 하고(MUST) 작업·거래 식별자가 있으면 그것에도 묶는 것이 바람직하다(SHOULD).",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Authorization evidence MUST be audience-restricted and SHOULD be narrowly scoped to resources and operations",
+   "gateway_control_ko": "토큰의 발급자·대상·유효기간·Scope를 검증해 대상 불일치·만료·권한 부족을 거부하고, 호출마다 기능·작업·입력·데이터·목적지를 승인 상태로 재검사한다.",
+   "pol_ids": [
+    "POL-21",
+    "POL-22",
+    "POL-23"
+   ]
+  },
+  {
+   "ref": "REQ-AUTH-5 (§12)",
+   "topic_ko": "중간 에이전트의 미인증 주장을 신뢰하지 않고 유효 권한 판단",
+   "obligation_ko": "리소스 서버는 중간 에이전트가 제시한 인증되지 않은 주장을 신뢰하지 않고도 현재 요청에 적용되는 유효 권한을 판단할 수 있어야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "A resource server MUST be able to determine the effective authority applicable to the current request without trusting unauthenticated claims from an intermediary agent",
+   "gateway_control_ko": "인자·헤더에 적힌 신원과 권한 주장은 기록만 하고 전송 토큰에서 정한 신원과 위임 발급 경로(주체·목적·범위·유효기간) 검증 결과만 판정에 쓴다. 위임 정보가 없거나 검증 실패면 거부한다.",
+   "pol_ids": [
+    "POL-19",
+    "POL-20",
+    "POL-22"
+   ]
+  },
+  {
+   "ref": "REQ-AUTH-6 (§12)",
+   "topic_ko": "위임 권한은 폐기 가능하거나 수명이 짧아야 함",
+   "obligation_ko": "위임된 권한은 폐기 가능하거나 자연히 단기여야 하고(MUST), 폐기 의미가 활성 다중 에이전트 체인도 다루는 것이 바람직하다(SHOULD).",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "단기 유효기간 또는 명시적 폐기",
+   "anchor": "Delegated authority MUST be revocable or naturally short",
+   "gateway_control_ko": "위임에 유효기간을 두고 중지·철회를 즉시 반영해 후속 호출을 거부하며, 토큰·API 키 폐기 시 재접근 차단을 시험한다.",
+   "pol_ids": [
+    "POL-20",
+    "POL-44",
+    "POL-45"
+   ]
+  },
+  {
+   "ref": "REQ-AUTH-8, REQ-AUTH-9 (§12)",
+   "topic_ko": "재위임은 권한을 늘릴 수 없고 검증 실패는 더 넓은 권한이 되지 않음",
+   "obligation_ko": "재위임은 상위 주체로부터 받은 유효 권한을 늘려서는 안 되며, 여러 자격증명·위임 단계·정책 제약이 있을 때 유효 권한 계산 방식을 정의하고 필수 단계 검증 실패가 더 넓은 권한으로 이어져서는 안 된다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Re-delegation MUST NOT increase the effective authority received from an upstream principal",
+   "gateway_control_ko": "서버 간 전달·하위 에이전트 호출은 승인된 목적·수신 서버·데이터 범위를 넘지 않게 제한하고 검증 실패나 정책 정보 부재는 항상 차단(fail-closed)으로 처리한다.",
+   "pol_ids": [
+    "POL-33",
+    "POL-22",
+    "POL-20"
+   ]
+  },
+  {
+   "ref": "REQ-AUTH-10 (§12)",
+   "topic_ko": "암호학적으로 유효해도 위임 주체의 현재 의도를 뜻하지 않음",
+   "obligation_ko": "요청이 암호학적으로 유효하다는 사실을 위임 주체의 현재 의도를 반영하거나 자격증명 보유자가 침해되지 않았다는 증거로 취급해서는 안 된다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Cryptographic validity of a request MUST NOT be treated as proof that the request reflects the current intent of the Delegating Principal",
+   "gateway_control_ko": "고위험 요청은 토큰이 유효해도 대상과 내용을 사람에게 제시해 개별 승인을 받은 경우에만 실행하고, 이상 징후가 있으면 연결을 중지한다.",
+   "pol_ids": [
+    "POL-27",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "REQ-ID-4 (§13)",
+   "topic_ko": "인증 성공만으로 신뢰 결정을 하지 않음",
+   "obligation_ko": "신뢰 결정은 인증 성공만으로 추론해서는 안 된다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Trust decisions MUST NOT be inferred solely from successful authentication",
+   "gateway_control_ko": "로그인·토큰 검증 성공 후에도 자산 등급, 작업 종류, 목적지, 승인 상태를 모두 통과한 호출만 실행한다.",
+   "pol_ids": [
+    "POL-22",
+    "POL-25"
+   ]
+  },
+  {
+   "ref": "REQ-ID-1 (§13)",
+   "topic_ko": "회전·단기 수명을 지원하는 키·워크로드 신원 결합",
+   "obligation_ko": "에이전트 신원은 회전과 짧은 수명을 지원하는 키나 워크로드 신원에 검증 가능하게 묶이는 것이 바람직하다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "단기 수명·회전",
+   "anchor": "Agent identity SHOULD be verifiably bound to a key or workload identity that supports rotation and short lifetimes",
+   "gateway_control_ko": "에이전트·엔드포인트별 자격증명을 서버별로 분리해 보관하고 교체 후 이전 값이 모든 사용처에서 거부되는지 확인한다.",
+   "pol_ids": [
+    "POL-15",
+    "POL-41"
+   ]
+  },
+  {
+   "ref": "REQ-AUD-1 (§17)",
+   "topic_ko": "감사 증거의 상관 항목",
+   "obligation_ko": "감사 증거는 에이전트 신원, 운영자·책임 주체, 인가 맥락, 요청 식별자, 시각, 중요 정책 제약, 결과 상태, 해당 시 결제 참조를 상관시킬 수 있어야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Audit evidence SHOULD support correlation of agent identity, operator or accountable principal",
+   "gateway_control_ko": "원장 이벤트에 주체(에이전트, 위임 사용자), 요청 ID, 시각, 정책 ID와 버전, 결정, 승인 ID를 포함하도록 요구사항으로 두어 한 호출의 인가 경로를 재구성할 수 있게 하는 후보 통제다(현재 구현 여부는 확인하지 않음).",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "REQ-AUD-2 (§17)",
+   "topic_ko": "변조 증거와 선택적 공개",
+   "obligation_ko": "감사 증거는 변조를 알아볼 수 있어야 하고 선택적 공개를 지원하는 것이 바람직하다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Audit evidence SHOULD be tamper-evident and SHOULD support selective disclosure",
+   "gateway_control_ko": "append-only 감사 원장에 변조 검출 수단(예: 해시 연결)을 두고 내보내기 때 필드를 선택해 개인정보를 마스킹하는 것을 후보 통제로 둔다(해시 연결 구현 여부는 확인하지 않음).",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "REQ-AUD-3 (§17)",
+   "topic_ko": "책임 추적 조건으로 추론 과정 수집을 요구하지 않음",
+   "obligation_ko": "프로토콜은 책임성의 조건으로 비공개 추론 추적(private reasoning traces) 수집을 요구해서는 안 된다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "",
+   "anchor": "Protocols MUST NOT require collection of private reasoning traces as a condition of accountability",
+   "gateway_control_ko": "원장 수집 대상을 호출 도구·인자 요약·결정·승인으로 한정하고 모델 추론 내용과 프롬프트 원문, 비밀정보는 수집하지 않도록 요구사항으로 두는 후보 통제다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-31"
+   ]
+  },
+  {
+   "ref": "REQ-AUD-6 (§17)",
+   "topic_ko": "판단에 쓰인 정책 또는 정책 버전 식별",
+   "obligation_ko": "중요한 행위에 정책 판단이 관여했다면 감사 증거는 그 판단에 쓰인 정책 또는 정책 버전을 식별하는 것이 바람직하다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "audit evidence SHOULD identify the policy or policy version used for that decision",
+   "gateway_control_ko": "판정 기록에 정책 식별자와 정책 번들 판본을 함께 남겨 사후에 같은 입력으로 판정을 재현하고 설명할 수 있게 하는 후보 통제다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-37"
+   ]
+  },
+  {
+   "ref": "REQ-AUD-7, REQ-AUD-8 (§17)",
+   "topic_ko": "관찰 사건과 주장의 구분, 변조 증거는 적법성의 증거가 아님",
+   "obligation_ko": "감사 증거는 관찰된 사건과 그 사건에 대한 주장을 구분해야 하고(MUST) 주요 주장의 발행자를 식별하는 것이 바람직하며(SHOULD), 변조 증거가 있다는 사실을 기록된 행위가 인가되었거나 해롭지 않다는 증거로 취급해서는 안 된다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "logging_records",
+   "timing_ko": "",
+   "anchor": "Tamper-evident evidence MUST NOT be treated as proof that the recorded action was authorized, benign, or produced by uncompromised software",
+   "gateway_control_ko": "원장에서 게이트웨이가 관찰한 사실(호출·결정)과 클라이언트가 보고한 값(clientInfo, 사용자 에이전트)을 필드로 구분하고, 보고값은 판정에 쓰지 않는다.",
+   "pol_ids": [
+    "POL-38",
+    "POL-19"
+   ]
+  },
+  {
+   "ref": "REQ-REV-3 (§18)",
+   "topic_ko": "침해된 에이전트·키의 신속 중지와 감사 증거 보존",
+   "obligation_ko": "서비스는 침해된 에이전트나 키를 과거 감사 증거를 삭제하지 않고도 신속히 중지할 수 있어야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "incident_reporting",
+   "timing_ko": "신속",
+   "anchor": "Services SHOULD support rapid suspension of compromised agents or keys without requiring deletion of historical audit evidence",
+   "gateway_control_ko": "주체·서버·기능·승인의 중지와 토큰·API 키 회수를 즉시 반영하고 폐기 이력은 append-only 원장에 남겨 감사 증거를 보존한다.",
+   "pol_ids": [
+    "POL-44",
+    "POL-45",
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "REQ-REV-4 (§18)",
+   "topic_ko": "비상 통제는 안전 방향이며 전역 단일 킬 스위치를 피함",
+   "obligation_ko": "비상 통제는 실패 시 안전한 방향이어야 하고 전역 권한을 가진 단일 킬 스위치는 피하는 것이 바람직하다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Emergency controls SHOULD be fail-safe and SHOULD avoid a single globally privileged kill switch",
+   "gateway_control_ko": "중지 권한을 서버·기능·주체 단위로 나눠 위임하고, 정책 엔진 불능 시 차단(fail-closed)으로 동작하며 중지 행위자를 원장에 기록하는 것을 후보 통제로 둔다.",
+   "pol_ids": [
+    "POL-44",
+    "POL-43"
+   ]
+  },
+  {
+   "ref": "REQ-REV-5, §19.7 (§18-19)",
+   "topic_ko": "폐기의 효과를 작업 상태별로 정의",
+   "obligation_ko": "프로토콜은 자격증명·위임 폐기의 효과를 제안·수락·실행 중·완료 작업별로 따로 정의해야 하며, 폐기가 새 작업만 막는지 수락된 작업도 취소하는지 결과 조회에도 영향을 주는지 프로필이 정해야 한다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "A protocol MUST define the effect of credential or delegation revocation separately for proposed, accepted, executing, and completed tasks",
+   "gateway_control_ko": "폐기·철회 시 대기 중 승인은 만료, 실행 중 호출은 후속 호출 거부와 연결 종료, 완료된 결과의 재조회는 재판정하도록 상태별 동작을 정의하고 시험하는 것을 후보 통제로 둔다.",
+   "pol_ids": [
+    "POL-44",
+    "POL-46"
+   ]
+  },
+  {
+   "ref": "§19.2 혼동된 대리인",
+   "topic_ko": "여러 주체의 권한을 가진 에이전트와 위임 증폭",
+   "obligation_ko": "여러 주체·리소스의 권한을 가진 에이전트는 혼동된 대리인이 될 수 있다. 인가 증거는 대상·리소스·작업·맥락으로 제한하는 것이 바람직하고(SHOULD), 재위임은 권한을 증폭하지 않고 감쇠해야 한다(MUST).",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "agentic_ai",
+   "timing_ko": "",
+   "anchor": "An agent that holds authority for multiple principals or resources can become a confused deputy",
+   "gateway_control_ko": "업무별 컨텍스트와 인증정보를 분리해 한 업무의 권한이 다른 업무로 새지 않게 하고 서버별 토큰을 다른 서버 연결에 재사용하지 못하게 한다.",
+   "pol_ids": [
+    "POL-34",
+    "POL-15",
+    "POL-33"
+   ]
+  },
+  {
+   "ref": "§19.3 재전송·재시도·중복 실행",
+   "topic_ko": "맹목적 재시도의 위험",
+   "obligation_ko": "연결 손실과 비동기 실행 때문에 맹목적 재시도는 안전하지 않으며, 중요한 작업 생성에는 신선도 보호, 멱등성 또는 중복 검출, 이전 작업 수락 여부 확인 수단이 필요하고 결제 증빙·인가 증거·콜백·결과·취소 요청에 재생 방지가 필요하다.",
+   "actor": "operator",
+   "strength": "informative",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Connection loss and asynchronous task execution make blind retry unsafe",
+   "gateway_control_ko": "클라이언트 대기 종료를 서버 작업 중단으로 간주하지 않고 변경 호출의 재시도는 요청 키로 중복 실행을 막으며 승인·토큰 재사용을 거부한다.",
+   "pol_ids": [
+    "POL-36",
+    "POL-28"
+   ]
+  },
+  {
+   "ref": "§19.5 콜백",
+   "topic_ko": "콜백 엔드포인트의 인증·재생 방지·SSRF 방어",
+   "obligation_ko": "콜백 엔드포인트에는 인증, 인가, 요청 상관, 재생 방지가 필요하고 서버측 요청 위조(SSRF)의 수단으로 쓰이지 않도록 방어해야 한다.",
+   "actor": "operator",
+   "strength": "informative",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Callback endpoints require authentication, authorization, request correlation, replay protection",
+   "gateway_control_ko": "DNS 해석, 리디렉션, OAuth 조회를 포함한 실제 연결 주소를 검증해 대상이 불명확하거나 승인 범위 밖이면 차단하고 외부 전송은 승인된 수신처만 허용한다.",
+   "pol_ids": [
+    "POL-10",
+    "POL-26"
+   ]
+  },
+  {
+   "ref": "§19.6 자원·경제적 고갈",
+   "topic_ko": "인증된 할당량·수명 제한·지출 한도·속도 제어",
+   "obligation_ko": "에이전트 작업은 작은 요청을 비싼 계산·도구 사용·메시지·결제로 증폭할 수 있으므로 서비스는 인증된 할당량, 제한된 작업 수명, 지출 한도, 속도 제어, 취소 메커니즘을 적용하는 것이 바람직하다(SHOULD). 재시도 정책이 위임 체인에서 실패를 증폭하지 않게 하라는 문장은 소문자 should(BCP 14 키워드 아님)다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "security_risk_management",
+   "timing_ko": "",
+   "anchor": "Services SHOULD apply authenticated quotas, bounded task lifetimes, spending limits, rate controls, and cancellation mechanisms",
+   "gateway_control_ko": "서버·클라이언트별 호출량·동시 실행·시간 한도를 두고 초과하거나 사용량이 불명확하면 제한하며 초과 시 실행 대기를 종료하되 서버 작업의 중단으로 간주하지 않는다.",
+   "pol_ids": [
+    "POL-28",
+    "POL-35"
+   ]
+  },
+  {
+   "ref": "REQ-PRIV-3 (§25)",
+   "topic_ko": "중간자는 필요한 만큼의 정보만 받는다",
+   "obligation_ko": "중간자는 기능에 필요하지 않으면 전체 위임 체인, 작업 내용, 결제 정보, 증명 증거를 받지 않는 것이 바람직하다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "",
+   "anchor": "Intermediaries SHOULD NOT receive full delegation chains, task contents, payment details, or attestation Evidence unless those values are necessary",
+   "gateway_control_ko": "도구 호출에는 승인 업무에 필요한 최소 정보만 전달하고 불필요한 민감정보는 제거·마스킹하며 인증정보는 입력과 별도 경로로 전달한다.",
+   "pol_ids": [
+    "POL-31",
+    "POL-25",
+    "POL-30"
+   ]
+  },
+  {
+   "ref": "REQ-PRIV-4 (§25)",
+   "topic_ko": "감사·출처 기록의 선택적 공개, 최소화, 목적 연계 보존",
+   "obligation_ko": "감사·출처 메커니즘은 선택적 공개와 데이터 최소화를 지원하고, 보존 기간은 명시된 운영·보안·책임 목적에 묶는 것이 바람직하다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "data_minimisation_retention_deletion",
+   "timing_ko": "목적에 연계된 보존 기간",
+   "anchor": "Retention periods SHOULD be tied to a stated operational, security, or accountability purpose",
+   "gateway_control_ko": "원장 보존 기간을 기록 유형별 목적(법정 보존, 보안 점검)에 맞춰 설정하고 만료 시 삭제·가명화하는 방안을 후보 통제로 둔다. 접근통제와 변조 방지 유지는 POL-38에 따른다.",
+   "pol_ids": [
+    "POL-38"
+   ]
+  },
+  {
+   "ref": "REQ-PRIV-5 (§25)",
+   "topic_ko": "상태·결과 엔드포인트의 무단 열거 방지",
+   "obligation_ko": "상태 및 결과 엔드포인트는 작업의 무단 열거를 막아야 하고 서비스 간 상관을 가능하게 하는 식별자를 피하는 것이 바람직하다.",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "access_control_identity",
+   "timing_ko": "",
+   "anchor": "Status and result endpoints MUST prevent unauthorized enumeration of tasks",
+   "gateway_control_ko": "승인·사건·원장 조회 API는 관리자/소유자 인증을 요구하고 본인 범위 밖 식별자 열람을 거부하는 것을 후보 통제로 둔다(현재 API의 인증 구성은 이 노트에서 확인하지 않음).",
+   "pol_ids": [
+    "POL-25",
+    "POL-19"
+   ]
+  },
+  {
+   "ref": "§26 운영 고려사항",
+   "topic_ko": "침해 시 사고 절차와 폐기 전파 목표 정의",
+   "obligation_ko": "운영자는 침해된 에이전트, 운영자, 발견 메타데이터, 검증자, 릴레이에 대한 사고 절차와 취소·폐기 전파 목표, 쿼터, 신선도 한도, 전송 실패·작업 실패·인가 실패·원격 처리 지연을 구분하는 관측성을 정의하는 것이 바람직하다(소문자 should, BCP 14 키워드 아님).",
+   "actor": "operator",
+   "strength": "recommended",
+   "theme": "incident_reporting",
+   "timing_ko": "",
+   "anchor": "Incident procedures for compromised agents, operators, discovery metadata, Verifiers, and relays",
+   "gateway_control_ko": "차단·승인 거부·시간 초과·서버 오류를 원장에서 별도 사유 코드로 기록하고 미승인 변경이나 비정상 호출 탐지 시 연결 중지와 영향 범위 조사를 수행한다.",
+   "pol_ids": [
+    "POL-43",
+    "POL-42",
+    "POL-38"
+   ]
+  }
+ ],
+ "pitfalls_ko": [
+  "개인 제출 Internet-Draft(Intended status: Informational)이며 IETF 작업 그룹 문서나 RFC가 아니다. 문서 자체가 'work in progress'로만 인용하라고 하고 만료(2027-03-01)가 있다.",
+  "'MUST/SHOULD'는 이 초안이 제안하는 요구사항(REQ-*)의 표기이며 현행 규범이 아니다. 비구속 문서이므로 strength에 mandatory를 쓰지 않았다. 초안의 MUST와 SHOULD 구분은 각 obligation_ko의 (MUST)/(SHOULD) 표기와 anchor의 키워드로 확인한다. 소문자 should는 BCP 14 키워드가 아니다(§2).",
+  "actor 열의 'operator'는 이 초안의 요구가 프로토콜·메커니즘·서비스를 대상으로 하므로 구현·운영 주체를 대표해 붙인 값이며 초안이 운영자에게 직접 의무를 지우는 것이 아니다.",
+  "본문에 MCP나 A2A 같은 특정 프로토콜 이름이 없다. MINT와의 대응은 이 노트의 해석이다.",
+  "'revocation', 'tamper-evident' 같은 요구는 표준 확정 전까지 변경될 수 있다. 판본(-03)과 날짜를 함께 인용한다.",
+  "발견(§8)은 REQ-DISC-5와 REQ-DISC-9만, 결제·비동기 메시징·전송 연속성·능력 해결(§9~10, 14~16)은 대부분 이 노트에 싣지 않았다. 싣지 않았다는 것이 해당 요구가 MINT와 무관하다는 뜻은 아니다."
+ ],
+ "reading_scope_ko": "작성 단계에서는 초록, 소개~문제 정의(§1-4), 원칙·역할·참조 모델(§5-7), 발견(§8)의 REQ-DISC, 작업 수명주기(§11), 인증·인가·위임(§12), 신원(§13), 감사(§17), 폐기(§18), 보안 고려(§19), 갭 분석 표(§21), 후보 작업(§22), 프라이버시(§25), 운영(§26), 미해결 쟁점(§28)을 읽었고 HTTP 요구(§9 일부), 전송 연속성(§10), 비동기(§14), 능력 해결(§15), 결제(§16), 참고문헌은 훑어보거나 읽지 않았다. 검증 단계에서 일반 텍스트 전문(§1-30, 28쪽)을 다시 읽어 모든 provision의 anchor와 앞뒤 본문을 대조했다.",
+ "limitations_ko": "법적 해석이나 적합성 판단이 아니다. 개인 제출 초안의 요구사항으로 표준이 아니며 이후 개정으로 바뀔 수 있다. 데이터트래커의 최신 판본 확인은 2026-10-17 조회 시점의 메타데이터(rev 03, 28쪽, RFC 번호 없음)에 의존한다. gateway_control_ko는 MINT가 해당 요구에 대응하도록 구현·증빙할 수 있는 후보 통제이며 현재 구현 상태나 준수 여부를 확인한 것이 아니다.",
+ "license_notice": "문서 표지: 'Copyright (c) 2026 IETF Trust and the persons identified as the document authors. All rights reserved.' 그리고 BCP 78과 IETF Trust Legal Provisions의 적용을 받는다고 밝히며, 코드 컴포넌트를 추출하려면 수정 BSD 라이선스 문구가 필요하다고 한다. 공식 페이지 확인(2026-10-17, trustee.ietf.org/documents/trust-legal-provisions/tlp-5/, Corrected TLP 5.0, 2015-03-25 시행): 제3조 c항 i호는 누구에게나 IETF 기여문서(Internet-Draft 포함)와 IETF 문서를 수정 없이 전부 복제·게시·전시·배포할 권리를 비독점·무상·전 세계 범위로 허락하고, 제3조 d항은 수정 허락과 필수 문구·고지를 뺀 배포 허락은 주지 않는다. 위키는 코드 컴포넌트를 추출하지 않는다.",
+ "distribution": "public-under-license",
+ "distribution_reason": "문서 자체가 TLP 적용을 밝히고, 공식 TLP 5.0 제3조 c항 i호가 수정 없는 전문 배포를 허락한다. 입수본(사용자 제공 zip 안의 .txt)의 SHA-256(741bac5b...23a6)이 ietf.org 보관소의 draft-daniel-ai-agent-internet-architecture-03.txt와 일치함을 2026-10-17에 확인했으므로 변경 없는 원문이다. 배포는 이 원본 .txt를 표지의 저작권 고지와 TLP 문구를 그대로 둔 채 수정 없이 하는 경우에 한하며 발췌·번역·수정본은 별도 조건을 따른다."
+}
