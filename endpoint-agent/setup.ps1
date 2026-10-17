@@ -153,7 +153,9 @@ function Start-EndpointJob([string]$Action) {
     try {
         $worker = Join-Path $PSScriptRoot 'windows-worker.ps1'
         $script:resultPath = Join-Path $work 'result.json'
-        $privileged = $mode -eq 'managed' -and $Action -ne 'health'
+        # An elevated wizard (run as administrator) cannot use the unprotected worker: the worker refuses it.
+        $elevated = ([Security.Principal.WindowsPrincipal]$identity).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        $privileged = $mode -eq 'managed' -and ($Action -ne 'health' -or $elevated)
         if ($privileged) {
             $null = Get-EndpointApprovedKit
             $paths = Get-EndpointInstallerPaths

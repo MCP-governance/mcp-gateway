@@ -203,7 +203,7 @@ function Read-EndpointManagedRequest([string]$RequestPath, $Approval, [string]$R
     if ($request.requester_sid -isnot [string] -or $request.mode -isnot [string] -or $request.action -isnot [string] -or
         $request.user -isnot [string] -or $request.user -notmatch '^[A-Za-z0-9_][A-Za-z0-9._-]{0,31}$' -or
         $request.requester_sid -ne $RequesterSid -or $request.mode -ne 'managed' -or
-        $request.action -notin @('install', 'remove')) { throw '설치 요청 범위 거부' }
+        $request.action -notin @('install', 'remove', 'health')) { throw '설치 요청 범위 거부' }
     $paths = Get-EndpointInstallerPaths
     $certificate = ''; $fingerprint = ''
     if ($Approval.files.'root.crt') {

@@ -10,8 +10,14 @@ function Set-EndpointAcl([string]$Path, [string]$Sid, [switch]$Managed) {
     $grants = @('*S-1-5-18:(OI)(CI)F', '*S-1-5-32-544:(OI)(CI)F')
     if ($Managed) { $grants += '*S-1-5-32-545:(OI)(CI)RX' }
     else { $grants += "*${Sid}:(OI)(CI)F" }
-    & icacls.exe $Path '/inheritance:r' '/grant:r' @grants '/T' '/Q' | Out-Null
+    # icacls /T writes (OI)(CI) grants onto existing files as empty DACLs, which then block even administrators
+    # (an elevated UAC token lacks the restore privilege). Grant the root only and let every child inherit it.
+    & icacls.exe $Path '/inheritance:r' '/grant:r' @grants '/Q' | Out-Null
     if ($LASTEXITCODE -ne 0) { throw '설치 폴더 권한 적용 실패' }
+    if (Get-ChildItem -LiteralPath $Path -Force | Select-Object -First 1) {
+        & icacls.exe (Join-Path $Path '*') '/reset' '/T' '/Q' | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw '설치 폴더 권한 적용 실패' }
+    }
     if ($Managed) {
         & icacls.exe $Path '/setowner' '*S-1-5-32-544' '/T' '/Q' | Out-Null
         if ($LASTEXITCODE -ne 0) { throw '설치 폴더 권한 적용 실패' }

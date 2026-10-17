@@ -170,8 +170,12 @@ def lock_down(directory, readers=True):
     """Administrators own it; SYSTEM and Administrators write; ordinary users only read (or nothing)."""
     directory.mkdir(parents=True, exist_ok=True)
     grants = [f"*{SYSTEM}:(OI)(CI)F", f"*{ADMINISTRATORS}:(OI)(CI)F"] + ([f"*{USERS}:(OI)(CI)RX"] if readers else [])
-    for command in (["icacls", str(directory), "/setowner", f"*{ADMINISTRATORS}", "/T", "/C", "/Q"],
-                    ["icacls", str(directory), "/inheritance:r", "/grant:r", *grants, "/T", "/C", "/Q"]):
+    # icacls /T would write the (OI)(CI) grants onto existing files as empty DACLs: grant the root, children inherit.
+    commands = [["icacls", str(directory), "/setowner", f"*{ADMINISTRATORS}", "/T", "/C", "/Q"],
+                ["icacls", str(directory), "/inheritance:r", "/grant:r", *grants, "/Q"]]
+    if any(directory.iterdir()):
+        commands.append(["icacls", str(directory / "*"), "/reset", "/T", "/C", "/Q"])
+    for command in commands:
         subprocess.run(command, check=True, capture_output=True)
 
 
@@ -480,8 +484,10 @@ def place_harnesses(source_profile):
     """
     folder = PROGRAMS / "harness"
     lock_down(folder)
+    # .local/bin and WinGet/Packages are where Claude Code's native installer and `winget install` put claude.exe.
     roots = [Path(__file__).parent / "harness", Path(source_profile) / "AppData/Roaming/npm/node_modules",
-             Path(source_profile) / "AppData/Local/Programs", Path(os.environ.get("ProgramFiles", "")) / "nodejs"]
+             Path(source_profile) / "AppData/Local/Programs", Path(source_profile) / ".local/bin",
+             Path(source_profile) / "AppData/Local/Microsoft/WinGet/Packages", Path(os.environ.get("ProgramFiles", "")) / "nodejs"]
     placed = {}
     for item in HARNESS:
         found = next((candidate for root in roots if root.exists()
