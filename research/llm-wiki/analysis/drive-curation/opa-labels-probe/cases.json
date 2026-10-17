@@ -1,0 +1,42 @@
+[
+  {
+    "name": "A_allow_labels_on_allow_only",
+    "path": "probe/allow",
+    "input": {
+      "destination": "approved.example",
+      "high_risk": false
+    }
+  },
+  {
+    "name": "B_both_deny_rules_fire",
+    "path": "probe/deny",
+    "input": {
+      "destination": "evil.example",
+      "high_risk": true,
+      "approval_bound": false
+    }
+  },
+  {
+    "name": "C_one_deny_rule_fires",
+    "path": "probe/deny",
+    "input": {
+      "destination": "evil.example",
+      "high_risk": false
+    }
+  },
+  {
+    "name": "D_no_deny_rule_fires",
+    "path": "probe/deny",
+    "input": {
+      "destination": "approved.example",
+      "high_risk": false
+    }
+  },
+  {
+    "name": "E_id_annotation",
+    "path": "probe_id/revoked",
+    "input": {
+      "revoked": true
+    }
+  }
+]

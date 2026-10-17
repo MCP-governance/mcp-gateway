@@ -1,0 +1,2713 @@
+{
+  "format": "policy-id-mapping/1",
+  "generated_on": "2026-10-17",
+  "generator": "research/llm-wiki/tools/build_policy_id_mapping.py",
+  "purpose": "POL-01~50, 독스용 PAC50, 원본 PAC24, 런타임 PAC-01~15의 대응을 번호 일치가 아니라 정책명·본문·통제 의미로 기록한다. 부분 구현 판정과 런타임 PAC가 덮지 못하는 공백을 같은 표에서 본다.",
+  "vocabulary": {
+    "origin": "관계값은 NIST OSCAL 통제 매핑 모델의 어휘(equivalent-to, equal-to, subset-of, superset-of, intersects-with, no-relationship)를 차용했다. OSCAL 도구·스키마는 쓰지 않았다(LIB-K01).",
+    "direction": "source는 항상 POL. 이 파일은 '요구 항목 집합'을 기준으로 쓴다. superset-of는 POL이 target(PAC)이 검사하는 항목보다 더 요구한다는 뜻(PAC가 일부만 덮음), subset-of는 target이 더 많이 요구한다는 뜻이다. OSCAL 개념 문서의 예는 구현 방식의 수로 세므로 방향이 달라 보일 수 있고, 이 파일은 OSCAL 문서로 변환하지 않았다.",
+    "unreviewed": "OSCAL 값이 아니다. 이름은 같지만 본문 의미 대조를 하지 않은 대응",
+    "runtime_review": "runtime-pac15 링크는 Claude의 의미 판단(검토 전)이며 구현·검수 완료나 독립 검토 결과가 아니다",
+    "method": {
+      "syntactic": "공백 제거 후 문자열 동일",
+      "semantic": "본문을 읽고 의미로 판단"
+    }
+  },
+  "systems": [
+    {
+      "id": "pol50",
+      "name": "(본)정책 최종본 POL-01~50",
+      "source": "research/llm-wiki/threats/extracted/policies.json",
+      "sheet": "(본)정책 최종본",
+      "count": 50
+    },
+    {
+      "id": "pac50-docs",
+      "name": "정책 최종본(독스용) PAC01~50",
+      "source": "research/llm-wiki/threats/extracted/policies.json",
+      "sheet": "정책 최종본(독스용)",
+      "count": 50,
+      "note": "PAC50은 영역만 '등록 및 연결'이고 정책명·본문이 빈 행이다. POL-18(HTTP 요청 출처 검증)에 대응하는 행이 docs에 없다. 빈 PAC50이 그 자리인지는 확인하지 못했다(추론)"
+    },
+    {
+      "id": "pac24-original",
+      "name": "정책 최종본 PAC01~24(원본 24개)",
+      "source": "research/llm-wiki/threats/extracted/policies.json",
+      "sheet": "정책 최종본",
+      "count": 24,
+      "note": "docs PAC01~24와 번호·정책명이 1:1로 같다. 본문은 모두 다시 쓰여 공백 제거 동일 0/24"
+    },
+    {
+      "id": "runtime-pac15",
+      "name": "게이트웨이 런타임 PAC-01~15",
+      "source": "full_stack_lab/opa/pac15.rego",
+      "count": 15,
+      "definitions": {
+        "PAC-01": {
+          "definition": "approved status and validity window.",
+          "line": 97
+        },
+        "PAC-02": {
+          "definition": "observed configuration against the approved baseline.",
+          "line": 112
+        },
+        "PAC-03": {
+          "definition": "approved execution environment and production-equivalent test data.",
+          "line": 123
+        },
+        "PAC-04": {
+          "definition": "authenticated user, agent and application/Gateway session.",
+          "line": 140
+        },
+        "PAC-05": {
+          "definition": "delegated execution uses the intersection of user and agent rights, and only when the agent",
+          "line": 153
+        },
+        "PAC-06": {
+          "definition": "HTTP token checks or verified local connector identity.",
+          "line": 170
+        },
+        "PAC-07": {
+          "definition": "the actual connection target is verified and approved.",
+          "line": 195
+        },
+        "PAC-08": {
+          "definition": "exact Server + feature type + feature ID and definition.",
+          "line": 207
+        },
+        "PAC-09": {
+          "definition": "normalized action in approved scope and subject rights.",
+          "line": 222
+        },
+        "PAC-10": {
+          "definition": "canonical argument targets, including paths, commands, recipients.",
+          "line": 230
+        },
+        "PAC-11": {
+          "definition": "classified data asset and grade are approved for this call.",
+          "line": 256
+        },
+        "PAC-12": {
+          "definition": "external transfer requires an approved final destination/grade pair.",
+          "line": 267
+        },
+        "PAC-13": {
+          "definition": "a high-risk approval is bound to this exact canonical request.",
+          "line": 319
+        },
+        "PAC-14": {
+          "definition": "all revocation signals must be current and clear.",
+          "line": 344
+        },
+        "PAC-15": {
+          "definition": "the Gateway must first reserve state atomically.",
+          "line": 356
+        }
+      },
+      "ledger_policy_ids_by_pac": {
+        "PAC-01": [
+          "ENDPOINT-MANAGED-001",
+          "MCP-DECOMM-001",
+          "MCP-REGISTRY-001",
+          "MCP-REGISTRY-002",
+          "P-APPROVAL-EXPIRY-001",
+          "PAC-01"
+        ],
+        "PAC-02": [
+          "MCP-CATALOG-001",
+          "PAC-02",
+          "POLICY_BUNDLE"
+        ],
+        "PAC-03": [
+          "ENDPOINT-MANAGED-001",
+          "PAC-03"
+        ],
+        "PAC-04": [
+          "ENDPOINT-MANAGED-001",
+          "MCP-REGISTRY-003",
+          "P-INPUT-001",
+          "PAC-04"
+        ],
+        "PAC-05": [
+          "PAC-05",
+          "PAC-05-DELEGATION-UNSUPPORTED"
+        ],
+        "PAC-06": [
+          "PAC-06"
+        ],
+        "PAC-07": [
+          "MCP-EGRESS-001",
+          "MCP-TRANSPORT-001",
+          "PAC-07"
+        ],
+        "PAC-08": [
+          "MCP-CATALOG-001",
+          "MCP-REGISTRY-001",
+          "MCP-REGISTRY-002",
+          "MCP-SUPPLY-001",
+          "PAC-08"
+        ],
+        "PAC-09": [
+          "INPUT_CONTRACT",
+          "MCP-REGISTRY-003",
+          "P-AUTHZ-ALLOW-001",
+          "PAC-09"
+        ],
+        "PAC-10": [
+          "P-INPUT-SCHEMA-001",
+          "P-SCOPE-001",
+          "PAC-10"
+        ],
+        "PAC-11": [
+          "P-CLASSIFICATION-001",
+          "PAC-11"
+        ],
+        "PAC-12": [
+          "MCP-DATA-EGRESS-001",
+          "MCP-EGRESS-002",
+          "P-DLP-001",
+          "P-X-ALERT-001",
+          "P-X-RESTRICT-001",
+          "PAC-12"
+        ],
+        "PAC-13": [
+          "P-UNTRUSTED-CONTENT-001",
+          "P-UNTRUSTED-CONTENT-002",
+          "P-X-APPROVAL-001",
+          "PAC-13"
+        ],
+        "PAC-14": [
+          "MCP-DECOMM-001",
+          "PAC-14"
+        ],
+        "PAC-15": [
+          "P-ANOMALY-001",
+          "P-CHAIN-001",
+          "P-RATE-001",
+          "P-RATE-002",
+          "P-RATE-003",
+          "P-VOLUME-001",
+          "PAC-15"
+        ]
+      }
+    },
+    {
+      "id": "pac-cand",
+      "name": "정책 원장의 pac_candidate_id(PAC-CAND-nn)",
+      "source": "full_stack_lab/opa/policy_ledger.json",
+      "count": 23,
+      "note": "policy_ledger.json에만 나오며 저장소의 어느 문서도 정의하지 않는다. 번호로 대응시킬 수 없어 이 파일의 매핑에서 제외했다"
+    }
+  ],
+  "source_hashes": {
+    "workbook_original_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
+    "workbook_extract_sha256": "ffa4cc75236e7010ffb34263db57d601f10941a1ee4e973fcc1270a2887c99a5",
+    "pac15_rego_sha256_lf": "067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850",
+    "policy_ledger_sha256_lf": "ae50a49c6e09158cf422c1ccd845d52ec42bc145348c6d587c88239a0dd71c3d"
+  },
+  "status_report_source": {
+    "file": "output/MCP_보안거버넌스_기능명세서_개발WBS_2026-10-17.xlsx",
+    "sheet": "정책 대응",
+    "captured_on": "2026-10-17",
+    "basis": "개발 브랜치 c0fbab3 정적 판정. 35개 기술통제만 포함(구현 14·일부 구현 20·미구현 1)",
+    "independent_reverification": false,
+    "planned_wbs_ref": "상위 보고서가 제안한 추가 개발 WBS 번호이며 확정되지 않았다"
+  },
+  "number_collisions": {
+    "description": "같은 번호의 POL과 docs PAC가 서로 다른 통제인 경우. 번호로 대응시키면 틀린다",
+    "count": 47,
+    "items": [
+      {
+        "pol_id": "POL-03",
+        "pol_name": "보안 업데이트 지원 여부 확인",
+        "docs_pac_id": "PAC25",
+        "same_number_docs_pac": "PAC03",
+        "same_number_docs_pac_name": "연결 승인과 사용자 동의 확인"
+      },
+      {
+        "pol_id": "POL-04",
+        "pol_name": "Tool의 악성 지시 검토",
+        "docs_pac_id": "PAC26",
+        "same_number_docs_pac": "PAC04",
+        "same_number_docs_pac_name": "실행 환경과 시험 데이터 관리"
+      },
+      {
+        "pol_id": "POL-05",
+        "pol_name": "Tool 설명과 실제 동작의 일치 시험",
+        "docs_pac_id": "PAC27",
+        "same_number_docs_pac": "PAC05",
+        "same_number_docs_pac_name": "실제 연결 주소 확인"
+      },
+      {
+        "pol_id": "POL-06",
+        "pol_name": "서버 제공 Prompt 템플릿 검토",
+        "docs_pac_id": "PAC28",
+        "same_number_docs_pac": "PAC06",
+        "same_number_docs_pac_name": "서버별 사용 기능 등록"
+      },
+      {
+        "pol_id": "POL-07",
+        "pol_name": "외부 제공자의 문서 처리 조건 확인",
+        "docs_pac_id": "PAC29",
+        "same_number_docs_pac": "PAC07",
+        "same_number_docs_pac_name": "게이트웨이 우회 연결 차단"
+      },
+      {
+        "pol_id": "POL-08",
+        "pol_name": "연결 승인과 사용자 동의 확인",
+        "docs_pac_id": "PAC03",
+        "same_number_docs_pac": "PAC08",
+        "same_number_docs_pac_name": "사용자와 에이전트 신원 확인"
+      },
+      {
+        "pol_id": "POL-09",
+        "pol_name": "실행 환경과 시험 데이터 관리",
+        "docs_pac_id": "PAC04",
+        "same_number_docs_pac": "PAC09",
+        "same_number_docs_pac_name": "위임 범위와 유효기간 확인"
+      },
+      {
+        "pol_id": "POL-10",
+        "pol_name": "실제 연결 주소 확인",
+        "docs_pac_id": "PAC05",
+        "same_number_docs_pac": "PAC10",
+        "same_number_docs_pac_name": "OAuth 토큰 검증"
+      },
+      {
+        "pol_id": "POL-11",
+        "pol_name": "서버별 사용 기능 등록",
+        "docs_pac_id": "PAC06",
+        "same_number_docs_pac": "PAC11",
+        "same_number_docs_pac_name": "요청마다 실행 권한 확인"
+      },
+      {
+        "pol_id": "POL-12",
+        "pol_name": "게이트웨이 우회 연결 차단",
+        "docs_pac_id": "PAC07",
+        "same_number_docs_pac": "PAC12",
+        "same_number_docs_pac_name": "작업별 권한 구분"
+      },
+      {
+        "pol_id": "POL-13",
+        "pol_name": "인증 응답과 요청 상태의 일치 확인",
+        "docs_pac_id": "PAC30",
+        "same_number_docs_pac": "PAC13",
+        "same_number_docs_pac_name": "입력값과 실행 대상 검사"
+      },
+      {
+        "pol_id": "POL-14",
+        "pol_name": "연결 설정의 인증정보 평문 노출 방지",
+        "docs_pac_id": "PAC31",
+        "same_number_docs_pac": "PAC14",
+        "same_number_docs_pac_name": "데이터별 접근권한 확인"
+      },
+      {
+        "pol_id": "POL-15",
+        "pol_name": "MCP Server별 인증정보 분리",
+        "docs_pac_id": "PAC32",
+        "same_number_docs_pac": "PAC15",
+        "same_number_docs_pac_name": "외부 전송 대상과 데이터 확인"
+      },
+      {
+        "pol_id": "POL-16",
+        "pol_name": "원격 MCP 전송 구간 보호",
+        "docs_pac_id": "PAC33",
+        "same_number_docs_pac": "PAC16",
+        "same_number_docs_pac_name": "민감한 작업의 개별 승인"
+      },
+      {
+        "pol_id": "POL-17",
+        "pol_name": "로컬 서버 실행 명령 검증",
+        "docs_pac_id": "PAC34",
+        "same_number_docs_pac": "PAC17",
+        "same_number_docs_pac_name": "호출량과 실행 시간 제한"
+      },
+      {
+        "pol_id": "POL-19",
+        "pol_name": "사용자와 에이전트 신원 확인",
+        "docs_pac_id": "PAC08",
+        "same_number_docs_pac": "PAC19",
+        "same_number_docs_pac_name": "도구 입력의 민감정보 제한"
+      },
+      {
+        "pol_id": "POL-20",
+        "pol_name": "위임 범위와 유효기간 확인",
+        "docs_pac_id": "PAC09",
+        "same_number_docs_pac": "PAC20",
+        "same_number_docs_pac_name": "응답의 민감정보 노출 제한"
+      },
+      {
+        "pol_id": "POL-21",
+        "pol_name": "OAuth 토큰 검증",
+        "docs_pac_id": "PAC10",
+        "same_number_docs_pac": "PAC21",
+        "same_number_docs_pac_name": "구성 변경 검토와 재승인"
+      },
+      {
+        "pol_id": "POL-22",
+        "pol_name": "요청마다 실행 권한 확인",
+        "docs_pac_id": "PAC11",
+        "same_number_docs_pac": "PAC22",
+        "same_number_docs_pac_name": "호출과 권한 변경 이력 관리"
+      },
+      {
+        "pol_id": "POL-23",
+        "pol_name": "작업별 권한 구분",
+        "docs_pac_id": "PAC12",
+        "same_number_docs_pac": "PAC23",
+        "same_number_docs_pac_name": "권한 철회와 연결 해제"
+      },
+      {
+        "pol_id": "POL-24",
+        "pol_name": "입력값과 실행 대상 검사",
+        "docs_pac_id": "PAC13",
+        "same_number_docs_pac": "PAC24",
+        "same_number_docs_pac_name": "토큰과 API 키 회수"
+      },
+      {
+        "pol_id": "POL-25",
+        "pol_name": "데이터별 접근권한 확인",
+        "docs_pac_id": "PAC14",
+        "same_number_docs_pac": "PAC25",
+        "same_number_docs_pac_name": "보안 업데이트 지원 여부 확인"
+      },
+      {
+        "pol_id": "POL-26",
+        "pol_name": "외부 전송 대상과 데이터 확인",
+        "docs_pac_id": "PAC15",
+        "same_number_docs_pac": "PAC26",
+        "same_number_docs_pac_name": "Tool 설명의 악성 지시 검토"
+      },
+      {
+        "pol_id": "POL-27",
+        "pol_name": "민감한 작업의 개별 승인",
+        "docs_pac_id": "PAC16",
+        "same_number_docs_pac": "PAC27",
+        "same_number_docs_pac_name": "Tool 설명과 실제 동작의 일치 시험"
+      },
+      {
+        "pol_id": "POL-28",
+        "pol_name": "호출량과 실행 시간 제한",
+        "docs_pac_id": "PAC17",
+        "same_number_docs_pac": "PAC28",
+        "same_number_docs_pac_name": "서버 제공 Prompt 템플릿 검토"
+      },
+      {
+        "pol_id": "POL-29",
+        "pol_name": "외부 콘텐츠를 이용한 권한 변경 차단",
+        "docs_pac_id": "PAC18",
+        "same_number_docs_pac": "PAC29",
+        "same_number_docs_pac_name": "외부 제공자의 문서 처리 조건 확인"
+      },
+      {
+        "pol_id": "POL-30",
+        "pol_name": "응답의 민감정보 노출 제한",
+        "docs_pac_id": "PAC20",
+        "same_number_docs_pac": "PAC30",
+        "same_number_docs_pac_name": "인증 응답과 요청 상태의 일치 확인"
+      },
+      {
+        "pol_id": "POL-31",
+        "pol_name": "Tool 사용 시  민감정보 제한",
+        "docs_pac_id": "PAC19",
+        "same_number_docs_pac": "PAC31",
+        "same_number_docs_pac_name": "연결 설정의 인증정보 평문 노출 방지"
+      },
+      {
+        "pol_id": "POL-32",
+        "pol_name": "중요 Tool 응답의 출처와 내용 검증",
+        "docs_pac_id": "PAC35",
+        "same_number_docs_pac": "PAC32",
+        "same_number_docs_pac_name": "MCP Server별 인증정보 분리"
+      },
+      {
+        "pol_id": "POL-33",
+        "pol_name": "서버 간 데이터 전달 경계 적용",
+        "docs_pac_id": "PAC36",
+        "same_number_docs_pac": "PAC33",
+        "same_number_docs_pac_name": "원격 MCP 전송 구간 보호"
+      },
+      {
+        "pol_id": "POL-34",
+        "pol_name": "업무별 Agent 컨텍스트 분리",
+        "docs_pac_id": "PAC37",
+        "same_number_docs_pac": "PAC34",
+        "same_number_docs_pac_name": "로컬 서버 실행 명령 검증"
+      },
+      {
+        "pol_id": "POL-35",
+        "pol_name": "단일 조회의 문서 반환 범위 제한",
+        "docs_pac_id": "PAC38",
+        "same_number_docs_pac": "PAC35",
+        "same_number_docs_pac_name": "중요 Tool 응답의 출처와 내용 검증"
+      },
+      {
+        "pol_id": "POL-36",
+        "pol_name": "변경 작업의 중복 실행 방지",
+        "docs_pac_id": "PAC39",
+        "same_number_docs_pac": "PAC36",
+        "same_number_docs_pac_name": "서버 간 데이터 전달 경계 적용"
+      },
+      {
+        "pol_id": "POL-37",
+        "pol_name": "구성 변경 검토와 재승인",
+        "docs_pac_id": "PAC21",
+        "same_number_docs_pac": "PAC37",
+        "same_number_docs_pac_name": "업무별 Agent 컨텍스트 분리"
+      },
+      {
+        "pol_id": "POL-38",
+        "pol_name": "호출과 권한 변경 이력 관리",
+        "docs_pac_id": "PAC22",
+        "same_number_docs_pac": "PAC38",
+        "same_number_docs_pac_name": "단일 조회의 문서 반환 범위 제한"
+      },
+      {
+        "pol_id": "POL-39",
+        "pol_name": "알려진 취약점의 수정 및 격리",
+        "docs_pac_id": "PAC40",
+        "same_number_docs_pac": "PAC39",
+        "same_number_docs_pac_name": "변경 작업의 중복 실행 방지"
+      },
+      {
+        "pol_id": "POL-40",
+        "pol_name": "연결 목적지 변경의 재승인",
+        "docs_pac_id": "PAC41",
+        "same_number_docs_pac": "PAC40",
+        "same_number_docs_pac_name": "알려진 취약점의 수정 및 격리"
+      },
+      {
+        "pol_id": "POL-41",
+        "pol_name": "인증정보 교체 후 이전 값 무효화",
+        "docs_pac_id": "PAC42",
+        "same_number_docs_pac": "PAC41",
+        "same_number_docs_pac_name": "연결 목적지 변경의 재승인"
+      },
+      {
+        "pol_id": "POL-42",
+        "pol_name": "이상 징후 경보의 동작 확인",
+        "docs_pac_id": "PAC43",
+        "same_number_docs_pac": "PAC42",
+        "same_number_docs_pac_name": "인증정보 교체 후 이전 값 무효화"
+      },
+      {
+        "pol_id": "POL-43",
+        "pol_name": "탐지된 위험의 대응",
+        "docs_pac_id": "PAC44",
+        "same_number_docs_pac": "PAC43",
+        "same_number_docs_pac_name": "이상 징후 경보의 동작 확인"
+      },
+      {
+        "pol_id": "POL-44",
+        "pol_name": "권한 철회와 연결 해제",
+        "docs_pac_id": "PAC23",
+        "same_number_docs_pac": "PAC44",
+        "same_number_docs_pac_name": "탐지된 위험의 대응"
+      },
+      {
+        "pol_id": "POL-45",
+        "pol_name": "토큰과 API 키 회수",
+        "docs_pac_id": "PAC24",
+        "same_number_docs_pac": "PAC45",
+        "same_number_docs_pac_name": "잔존 서버 프로세스 종료"
+      },
+      {
+        "pol_id": "POL-46",
+        "pol_name": "잔존 서버 프로세스 종료",
+        "docs_pac_id": "PAC45",
+        "same_number_docs_pac": "PAC46",
+        "same_number_docs_pac_name": "문서 저장소 권한 회수"
+      },
+      {
+        "pol_id": "POL-47",
+        "pol_name": "문서 저장소 권한 회수",
+        "docs_pac_id": "PAC46",
+        "same_number_docs_pac": "PAC47",
+        "same_number_docs_pac_name": "임시 파일과 캐시 데이터 정리"
+      },
+      {
+        "pol_id": "POL-48",
+        "pol_name": "임시 파일과 캐시 데이터 정리",
+        "docs_pac_id": "PAC47",
+        "same_number_docs_pac": "PAC48",
+        "same_number_docs_pac_name": "외부 제공자의 보유 문서 정리"
+      },
+      {
+        "pol_id": "POL-49",
+        "pol_name": "외부 제공자의 보유 문서 정리",
+        "docs_pac_id": "PAC48",
+        "same_number_docs_pac": "PAC49",
+        "same_number_docs_pac_name": "복원 시 폐기된 연결의 \n재활성화 차단"
+      },
+      {
+        "pol_id": "POL-50",
+        "pol_name": "복원 시 폐기된 연결의 \n재활성화 차단",
+        "docs_pac_id": "PAC49",
+        "same_number_docs_pac": "PAC50",
+        "same_number_docs_pac_name": null
+      }
+    ]
+  },
+  "stale_cross_references": {
+    "description": "(본) POL 본문 안의 PAC 번호 참조. docs 시트의 같은 문장은 docs 번호(PAC15·PAC24)를 쓰는데 (본) 시트는 POL 번호로 바꾸면서 'PAC' 접두를 남겼다. 접두 그대로 docs 번호로 읽으면 다른 통제를 가리킨다",
+    "rule": "(본) 시트에서 PACnn은 POL-nn으로 읽는다",
+    "items": [
+      {
+        "in_policy": "POL-10",
+        "label": "PAC26",
+        "resolves_by_docs_number_to": {
+          "docs_pac_id": "PAC26",
+          "name": "Tool 설명의 악성 지시 검토",
+          "pol_id": "POL-04"
+        },
+        "same_number_pol": {
+          "pol_id": "POL-26",
+          "name": "외부 전송 대상과 데이터 확인"
+        },
+        "docs_counterpart_cites": [
+          "PAC15"
+        ],
+        "docs_counterpart_cite_resolves_to_pol": [
+          "POL-26"
+        ]
+      },
+      {
+        "in_policy": "POL-30",
+        "label": "PAC26",
+        "resolves_by_docs_number_to": {
+          "docs_pac_id": "PAC26",
+          "name": "Tool 설명의 악성 지시 검토",
+          "pol_id": "POL-04"
+        },
+        "same_number_pol": {
+          "pol_id": "POL-26",
+          "name": "외부 전송 대상과 데이터 확인"
+        },
+        "docs_counterpart_cites": [
+          "PAC15"
+        ],
+        "docs_counterpart_cite_resolves_to_pol": [
+          "POL-26"
+        ]
+      },
+      {
+        "in_policy": "POL-44",
+        "label": "PAC45",
+        "resolves_by_docs_number_to": {
+          "docs_pac_id": "PAC45",
+          "name": "잔존 서버 프로세스 종료",
+          "pol_id": "POL-46"
+        },
+        "same_number_pol": {
+          "pol_id": "POL-45",
+          "name": "토큰과 API 키 회수"
+        },
+        "docs_counterpart_cites": [
+          "PAC24"
+        ],
+        "docs_counterpart_cite_resolves_to_pol": [
+          "POL-45"
+        ]
+      }
+    ]
+  },
+  "mappings": [
+    {
+      "policy_id": "POL-01",
+      "name": "배포물 출처와 무결성 확인",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "일부 구현",
+        "planned_wbs_ref": null,
+        "automation_limit": "서명 없는 배포물은 검증 대상 없음"
+      },
+      "runtime_coverage": "none",
+      "runtime_note": "배포물 출처·무결성은 도입 단계(supply_chain/intake_worker.py)의 일이다. PAC-02는 호출 시점 구성 비교이고 원장 MCP-SUPPLY-001이 PAC-08로 표기되지만 기능 허용목록과 같은 통제가 아니다",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC01",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC01",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.491,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "no_runtime_pac",
+          "text": "배포물 출처·무결성은 도입 단계(supply_chain/intake_worker.py)의 일이다. PAC-02는 호출 시점 구성 비교이고 원장 MCP-SUPPLY-001이 PAC-08로 표기되지만 기능 허용목록과 같은 통제가 아니다"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-02",
+      "name": "도입 범위와 필요 권한 검토",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC02",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC02",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.352,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-03",
+      "name": "보안 업데이트 지원 여부 확인",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC25",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-04",
+      "name": "Tool의 악성 지시 검토",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC26",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "renamed",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-05",
+      "name": "Tool 설명과 실제 동작의 일치 시험",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC27",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-06",
+      "name": "서버 제공 Prompt 템플릿 검토",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC28",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-07",
+      "name": "외부 제공자의 문서 처리 조건 확인",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC29",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-08",
+      "name": "연결 승인과 사용자 동의 확인",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": "G02.05",
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC03",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC03",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.548,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-01",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "승인 상태·유효기간 확인은 있고 사용자 동의 확인은 PAC15에 없다",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 97,
+          "ledger_policy_ids": [
+            "ENDPOINT-MANAGED-001",
+            "MCP-DECOMM-001",
+            "MCP-REGISTRY-001",
+            "MCP-REGISTRY-002",
+            "P-APPROVAL-EXPIRY-001",
+            "PAC-01"
+          ]
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-07",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "등록 주소 대조는 있고 신청자/승인자 분리와 동의는 없다",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 195,
+          "ledger_policy_ids": [
+            "MCP-EGRESS-001",
+            "MCP-TRANSPORT-001",
+            "PAC-07"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-01",
+          "text": "승인 상태·유효기간 확인은 있고 사용자 동의 확인은 PAC15에 없다"
+        },
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-07",
+          "text": "등록 주소 대조는 있고 신청자/승인자 분리와 동의는 없다"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-09",
+      "name": "실행 환경과 시험 데이터 관리",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC04",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC04",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.4,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-10",
+      "name": "실제 연결 주소 확인",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": "G03.05",
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC05",
+          "relationship": "equivalent-to",
+          "method": "semantic",
+          "name_match": "exact",
+          "body_similarity": 0.969,
+          "basis": "교차 참조 번호만 다름(PAC15→PAC26)"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC05",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.352,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-07",
+          "relationship": "superset-of",
+          "method": "semantic",
+          "remarks": "PAC-07은 실제 접속 대상의 승인만 본다. DNS 재바인딩·OAuth 조회·MCP 서버가 보내는 최종 목적지는 PAC15 밖(PAC_RUNTIME 해석의 한계)",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 195,
+          "ledger_policy_ids": [
+            "MCP-EGRESS-001",
+            "MCP-TRANSPORT-001",
+            "PAC-07"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-07",
+          "text": "PAC-07은 실제 접속 대상의 승인만 본다. DNS 재바인딩·OAuth 조회·MCP 서버가 보내는 최종 목적지는 PAC15 밖(PAC_RUNTIME 해석의 한계)"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-11",
+      "name": "서버별 사용 기능 등록",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": null,
+        "automation_limit": null
+      },
+      "runtime_coverage": "equivalent",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC06",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC06",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.502,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-08",
+          "relationship": "equivalent-to",
+          "method": "semantic",
+          "remarks": "서버+기능 유형+ID+정의 허용목록. 구현은 도구만이고 resources·prompts는 범위 밖(crosswalk)",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 207,
+          "ledger_policy_ids": [
+            "MCP-CATALOG-001",
+            "MCP-REGISTRY-001",
+            "MCP-REGISTRY-002",
+            "MCP-SUPPLY-001",
+            "PAC-08"
+          ]
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-12",
+      "name": "게이트웨이 우회 연결 차단",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC07",
+          "relationship": "equivalent-to",
+          "method": "semantic",
+          "name_match": "exact",
+          "body_similarity": 0.968,
+          "basis": "'중앙 게이트웨이'→'MCP 게이트웨이' 표기만 다름"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC07",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.667,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-13",
+      "name": "인증 응답과 요청 상태의 일치 확인",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "일부 구현",
+        "planned_wbs_ref": null,
+        "automation_limit": "원격 OAuth 인증 과정 미참여"
+      },
+      "runtime_coverage": "none",
+      "runtime_note": "PAC15의 PAC-06은 들어오는 토큰 검증이다. 게이트웨이는 원격 서버의 OAuth 클라이언트 흐름에 참여하지 않는다",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC30",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "no_runtime_pac",
+          "text": "PAC15의 PAC-06은 들어오는 토큰 검증이다. 게이트웨이는 원격 서버의 OAuth 클라이언트 흐름에 참여하지 않는다"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-14",
+      "name": "연결 설정의 인증정보 평문 노출 방지",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": "G03.08",
+        "automation_limit": null
+      },
+      "runtime_coverage": "none",
+      "runtime_note": "자격 평문 노출 방지는 설정·환경·오류·훅 점검 영역이며 PAC15 판정이 아니다",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC31",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "no_runtime_pac",
+          "text": "자격 평문 노출 방지는 설정·환경·오류·훅 점검 영역이며 PAC15 판정이 아니다"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-15",
+      "name": "MCP Server별 인증정보 분리",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": null,
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC32",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-06",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "토큰 대상(aud) 검증은 PAC-06. 서버별 upstream 자격 분리는 브로커 설계 영역",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 170,
+          "ledger_policy_ids": [
+            "PAC-06"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-06",
+          "text": "토큰 대상(aud) 검증은 PAC-06. 서버별 upstream 자격 분리는 브로커 설계 영역"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-16",
+      "name": "원격 MCP 전송 구간 보호",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": "G08.05",
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC33",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-07",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "평문 원격 연결 차단(MCP-TRANSPORT-001, 원장이 PAC-07로 표기). TLS 버전·상대 검증은 PAC15 밖",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 195,
+          "ledger_policy_ids": [
+            "MCP-EGRESS-001",
+            "MCP-TRANSPORT-001",
+            "PAC-07"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-07",
+          "text": "평문 원격 연결 차단(MCP-TRANSPORT-001, 원장이 PAC-07로 표기). TLS 버전·상대 검증은 PAC15 밖"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-17",
+      "name": "로컬 서버 실행 명령 검증",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC34",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-18",
+      "name": "HTTP 요청 출처 검증",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": null,
+        "automation_limit": null
+      },
+      "runtime_coverage": "none",
+      "runtime_note": "Origin·Host 검증은 ingress 코드와 tests/open_endpoints.py 영역이다",
+      "links": [],
+      "gaps": [
+        {
+          "kind": "no_runtime_pac",
+          "text": "Origin·Host 검증은 ingress 코드와 tests/open_endpoints.py 영역이다"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-19",
+      "name": "사용자와 에이전트 신원 확인",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "일부 구현",
+        "planned_wbs_ref": null,
+        "automation_limit": "에이전트 신원 증명 불가"
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC08",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC08",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.609,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-04",
+          "relationship": "superset-of",
+          "method": "semantic",
+          "remarks": "PAC-04의 agent는 상수(게이트웨이 broker)여서 에이전트 신원 증명이 없다",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 140,
+          "ledger_policy_ids": [
+            "ENDPOINT-MANAGED-001",
+            "MCP-REGISTRY-003",
+            "P-INPUT-001",
+            "PAC-04"
+          ]
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-06",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "사용자 토큰 검증은 있고 에이전트 신원 토큰은 없다",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 170,
+          "ledger_policy_ids": [
+            "PAC-06"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-04",
+          "text": "PAC-04의 agent는 상수(게이트웨이 broker)여서 에이전트 신원 증명이 없다"
+        },
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-06",
+          "text": "사용자 토큰 검증은 있고 에이전트 신원 토큰은 없다"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-20",
+      "name": "위임 범위와 유효기간 확인",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "일부 구현",
+        "planned_wbs_ref": null,
+        "automation_limit": "검증된 에이전트 주체 없음"
+      },
+      "runtime_coverage": "equivalent",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC09",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC09",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.656,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-05",
+          "relationship": "equivalent-to",
+          "method": "semantic",
+          "remarks": "정의는 같으나 구현은 위임 미지원 차단(PAC-05-DELEGATION-UNSUPPORTED)",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 153,
+          "ledger_policy_ids": [
+            "PAC-05",
+            "PAC-05-DELEGATION-UNSUPPORTED"
+          ]
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-21",
+      "name": "OAuth 토큰 검증",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": null,
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC10",
+          "relationship": "subset-of",
+          "method": "semantic",
+          "name_match": "exact",
+          "body_similarity": 0.796,
+          "basis": "docs에만 있음: 특정 토큰 형식을 요구하지 않는다, 토큰을 다른 API에 그대로 전달해서는 안 된다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC10",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.474,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-06",
+          "relationship": "equivalent-to",
+          "method": "semantic",
+          "remarks": "iss·aud·exp·scope 검증. docs PAC10의 '토큰 그대로 전달 금지'는 (본) POL-21 본문에 없다",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 170,
+          "ledger_policy_ids": [
+            "PAC-06"
+          ]
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-14",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "철회 음성군은 PAC-14",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 344,
+          "ledger_policy_ids": [
+            "MCP-DECOMM-001",
+            "PAC-14"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-14",
+          "text": "철회 음성군은 PAC-14"
+        },
+        {
+          "kind": "docs_only_clause",
+          "docs_pac": "PAC10",
+          "text": "docs에만 있음: 특정 토큰 형식을 요구하지 않는다, 토큰을 다른 API에 그대로 전달해서는 안 된다"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-22",
+      "name": "요청마다 실행 권한 확인",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": null,
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC11",
+          "relationship": "subset-of",
+          "method": "semantic",
+          "name_match": "exact",
+          "body_similarity": 0.87,
+          "basis": "docs에만 있음: 게이트웨이 검사로 서버의 접근통제를 대체해서는 안 된다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC11",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.59,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-01..PAC-15",
+          "relationship": "superset-of",
+          "method": "semantic",
+          "remarks": "실행마다 검사하는 PAC15 전체의 합. 이전 허용 결과 재사용 금지·최신 승인 상태는 PAC-13·PAC-14",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": null,
+          "ledger_policy_ids": [
+            "ENDPOINT-MANAGED-001",
+            "INPUT_CONTRACT",
+            "MCP-CATALOG-001",
+            "MCP-DATA-EGRESS-001",
+            "MCP-DECOMM-001",
+            "MCP-EGRESS-001",
+            "MCP-EGRESS-002",
+            "MCP-REGISTRY-001",
+            "MCP-REGISTRY-002",
+            "MCP-REGISTRY-003",
+            "MCP-SUPPLY-001",
+            "MCP-TRANSPORT-001",
+            "P-ANOMALY-001",
+            "P-APPROVAL-EXPIRY-001",
+            "P-AUTHZ-ALLOW-001",
+            "P-CHAIN-001",
+            "P-CLASSIFICATION-001",
+            "P-DLP-001",
+            "P-INPUT-001",
+            "P-INPUT-SCHEMA-001",
+            "P-RATE-001",
+            "P-RATE-002",
+            "P-RATE-003",
+            "P-SCOPE-001",
+            "P-UNTRUSTED-CONTENT-001",
+            "P-UNTRUSTED-CONTENT-002",
+            "P-VOLUME-001",
+            "P-X-ALERT-001",
+            "P-X-APPROVAL-001",
+            "P-X-RESTRICT-001",
+            "PAC-01",
+            "PAC-02",
+            "PAC-03",
+            "PAC-04",
+            "PAC-05",
+            "PAC-05-DELEGATION-UNSUPPORTED",
+            "PAC-06",
+            "PAC-07",
+            "PAC-08",
+            "PAC-09",
+            "PAC-10",
+            "PAC-11",
+            "PAC-12",
+            "PAC-13",
+            "PAC-14",
+            "PAC-15",
+            "POLICY_BUNDLE"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-01..PAC-15",
+          "text": "실행마다 검사하는 PAC15 전체의 합. 이전 허용 결과 재사용 금지·최신 승인 상태는 PAC-13·PAC-14"
+        },
+        {
+          "kind": "docs_only_clause",
+          "docs_pac": "PAC11",
+          "text": "docs에만 있음: 게이트웨이 검사로 서버의 접근통제를 대체해서는 안 된다"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-23",
+      "name": "작업별 권한 구분",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": null,
+        "automation_limit": null
+      },
+      "runtime_coverage": "equivalent",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC12",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC12",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.663,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-09",
+          "relationship": "equivalent-to",
+          "method": "semantic",
+          "remarks": "행위(r/w/x) 정규화와 권한",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 222,
+          "ledger_policy_ids": [
+            "INPUT_CONTRACT",
+            "MCP-REGISTRY-003",
+            "P-AUTHZ-ALLOW-001",
+            "PAC-09"
+          ]
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-24",
+      "name": "입력값과 실행 대상 검사",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": null,
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC13",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC13",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.4,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-10",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "인자 경로·명령·수신자 정규화는 PAC-10. 원본 스키마 검증(P-INPUT-SCHEMA-001)과 서버 쪽 URI 검증은 PAC 밖",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 230,
+          "ledger_policy_ids": [
+            "P-INPUT-SCHEMA-001",
+            "P-SCOPE-001",
+            "PAC-10"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-10",
+          "text": "인자 경로·명령·수신자 정규화는 PAC-10. 원본 스키마 검증(P-INPUT-SCHEMA-001)과 서버 쪽 URI 검증은 PAC 밖"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-25",
+      "name": "데이터별 접근권한 확인",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "일부 구현",
+        "planned_wbs_ref": null,
+        "automation_limit": "외부 서비스 자원 등급은 제공자 보유"
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC14",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC14",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.58,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-11",
+          "relationship": "superset-of",
+          "method": "semantic",
+          "remarks": "PAC-11은 게이트웨이 분류 자산·등급만. 외부 서비스 자원 등급은 제공자 보유",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 256,
+          "ledger_policy_ids": [
+            "P-CLASSIFICATION-001",
+            "PAC-11"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-11",
+          "text": "PAC-11은 게이트웨이 분류 자산·등급만. 외부 서비스 자원 등급은 제공자 보유"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-26",
+      "name": "외부 전송 대상과 데이터 확인",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": "G04.05",
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC15",
+          "relationship": "subset-of",
+          "method": "semantic",
+          "name_match": "exact",
+          "body_similarity": 0.367,
+          "basis": "docs에만 있음: 개인정보 제공·위탁·국외 이전의 법적 요건 충족, MCP 승인·동의로 법적 근거를 갈음 금지, 미확인 전송 차단"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC15",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.218,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-12",
+          "relationship": "superset-of",
+          "method": "semantic",
+          "remarks": "PAC-12는 목적지·등급 조합만. 동의 일치·변경 재검증·서버 outbound는 PAC 밖",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 267,
+          "ledger_policy_ids": [
+            "MCP-DATA-EGRESS-001",
+            "MCP-EGRESS-002",
+            "P-DLP-001",
+            "P-X-ALERT-001",
+            "P-X-RESTRICT-001",
+            "PAC-12"
+          ]
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-07",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "최종 목적지 승인은 PAC-07과 겹친다",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 195,
+          "ledger_policy_ids": [
+            "MCP-EGRESS-001",
+            "MCP-TRANSPORT-001",
+            "PAC-07"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-12",
+          "text": "PAC-12는 목적지·등급 조합만. 동의 일치·변경 재검증·서버 outbound는 PAC 밖"
+        },
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-07",
+          "text": "최종 목적지 승인은 PAC-07과 겹친다"
+        },
+        {
+          "kind": "docs_only_clause",
+          "docs_pac": "PAC15",
+          "text": "docs에만 있음: 개인정보 제공·위탁·국외 이전의 법적 요건 충족, MCP 승인·동의로 법적 근거를 갈음 금지, 미확인 전송 차단"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-27",
+      "name": "민감한 작업의 개별 승인",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": null,
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC16",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC16",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.24,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-13",
+          "relationship": "superset-of",
+          "method": "semantic",
+          "remarks": "PAC-13은 요청에 결합된 단회 승인. 호스트의 대상·내용 제시와 고영향 AI 감독 의무는 PAC 밖",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 319,
+          "ledger_policy_ids": [
+            "P-UNTRUSTED-CONTENT-001",
+            "P-UNTRUSTED-CONTENT-002",
+            "P-X-APPROVAL-001",
+            "PAC-13"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-13",
+          "text": "PAC-13은 요청에 결합된 단회 승인. 호스트의 대상·내용 제시와 고영향 AI 감독 의무는 PAC 밖"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-28",
+      "name": "호출량과 실행 시간 제한",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": null,
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC17",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC17",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.55,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-15",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "호출량·동시 실행은 PAC-15. 클라이언트 시간 한도와 대기 종료≠서버 중단은 PAC 밖",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 356,
+          "ledger_policy_ids": [
+            "P-ANOMALY-001",
+            "P-CHAIN-001",
+            "P-RATE-001",
+            "P-RATE-002",
+            "P-RATE-003",
+            "P-VOLUME-001",
+            "PAC-15"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-15",
+          "text": "호출량·동시 실행은 PAC-15. 클라이언트 시간 한도와 대기 종료≠서버 중단은 PAC 밖"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-29",
+      "name": "외부 콘텐츠를 이용한 권한 변경 차단",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": null,
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC18",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC18",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.667,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-13",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "비신뢰 콘텐츠 기반 고위험 실행의 승인 요구(P-UNTRUSTED-CONTENT-001, 원장이 PAC-13으로 표기). 새 호출 권한 재검사는 다른 PAC 경로",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 319,
+          "ledger_policy_ids": [
+            "P-UNTRUSTED-CONTENT-001",
+            "P-UNTRUSTED-CONTENT-002",
+            "P-X-APPROVAL-001",
+            "PAC-13"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-13",
+          "text": "비신뢰 콘텐츠 기반 고위험 실행의 승인 요구(P-UNTRUSTED-CONTENT-001, 원장이 PAC-13으로 표기). 새 호출 권한 재검사는 다른 PAC 경로"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-30",
+      "name": "응답의 민감정보 노출 제한",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": null,
+        "automation_limit": null
+      },
+      "runtime_coverage": "none",
+      "runtime_note": "출력 통제(MCP-OUTPUT-001)와 검사 장애 차단(P-DATA-INSPECTION-001)은 원장에서 PAC로 표기되지 않는다",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC20",
+          "relationship": "equivalent-to",
+          "method": "semantic",
+          "name_match": "exact",
+          "body_similarity": 0.973,
+          "basis": "교차 참조 번호만 다름(PAC15→PAC26)"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC20",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.533,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "no_runtime_pac",
+          "text": "출력 통제(MCP-OUTPUT-001)와 검사 장애 차단(P-DATA-INSPECTION-001)은 원장에서 PAC로 표기되지 않는다"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-31",
+      "name": "Tool 사용 시  민감정보 제한",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": "G04.06",
+        "automation_limit": null
+      },
+      "runtime_coverage": "none",
+      "runtime_note": "입력 민감정보 검사는 Presidio·P-DATA-INSPECTION-001 영역이며 원장에서 PAC로 표기되지 않는다",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC19",
+          "relationship": "subset-of",
+          "method": "semantic",
+          "name_match": "renamed",
+          "body_similarity": 0.656,
+          "basis": "docs에만 있음: 개인정보 최소 수집 준수, 금지 데이터 제거가 불명확하면 차단. 대상 표현이 '도구 입력'"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC19",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.316,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "no_runtime_pac",
+          "text": "입력 민감정보 검사는 Presidio·P-DATA-INSPECTION-001 영역이며 원장에서 PAC로 표기되지 않는다"
+        },
+        {
+          "kind": "docs_only_clause",
+          "docs_pac": "PAC19",
+          "text": "docs에만 있음: 개인정보 최소 수집 준수, 금지 데이터 제거가 불명확하면 차단. 대상 표현이 '도구 입력'"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-32",
+      "name": "중요 Tool 응답의 출처와 내용 검증",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC35",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-33",
+      "name": "서버 간 데이터 전달 경계 적용",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": "G04.07",
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC36",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-12",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "외부 전송 목적지·등급은 PAC-12. 서버 간 전달·범용 정보 흐름 추적은 PAC 밖(crosswalk 공백)",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 267,
+          "ledger_policy_ids": [
+            "MCP-DATA-EGRESS-001",
+            "MCP-EGRESS-002",
+            "P-DLP-001",
+            "P-X-ALERT-001",
+            "P-X-RESTRICT-001",
+            "PAC-12"
+          ]
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-15",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "열람 뒤 전송 연쇄(P-CHAIN-001, 원장이 PAC-15로 표기)",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 356,
+          "ledger_policy_ids": [
+            "P-ANOMALY-001",
+            "P-CHAIN-001",
+            "P-RATE-001",
+            "P-RATE-002",
+            "P-RATE-003",
+            "P-VOLUME-001",
+            "PAC-15"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-12",
+          "text": "외부 전송 목적지·등급은 PAC-12. 서버 간 전달·범용 정보 흐름 추적은 PAC 밖(crosswalk 공백)"
+        },
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-15",
+          "text": "열람 뒤 전송 연쇄(P-CHAIN-001, 원장이 PAC-15로 표기)"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-34",
+      "name": "업무별 Agent 컨텍스트 분리",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC37",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-35",
+      "name": "단일 조회의 문서 반환 범위 제한",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": "G03.06",
+        "automation_limit": null
+      },
+      "runtime_coverage": "none",
+      "runtime_note": "반환 건수·크기 상한은 PAC15에 없다. P-VOLUME-001(PAC-15 표기)은 중요정보 누적 접근 승격으로 다른 축이다",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC38",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "no_runtime_pac",
+          "text": "반환 건수·크기 상한은 PAC15에 없다. P-VOLUME-001(PAC-15 표기)은 중요정보 누적 접근 승격으로 다른 축이다"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-36",
+      "name": "변경 작업의 중복 실행 방지",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": "G03.07",
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC39",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-15",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "진행 중 중복(P-RATE-003)만. 응답 유실 뒤 재시도·독립 쓰기 효과는 PAC 밖",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 356,
+          "ledger_policy_ids": [
+            "P-ANOMALY-001",
+            "P-CHAIN-001",
+            "P-RATE-001",
+            "P-RATE-002",
+            "P-RATE-003",
+            "P-VOLUME-001",
+            "PAC-15"
+          ]
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-13",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "단회 승인 소비로 같은 승인의 재사용을 막는다",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 319,
+          "ledger_policy_ids": [
+            "P-UNTRUSTED-CONTENT-001",
+            "P-UNTRUSTED-CONTENT-002",
+            "P-X-APPROVAL-001",
+            "PAC-13"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-15",
+          "text": "진행 중 중복(P-RATE-003)만. 응답 유실 뒤 재시도·독립 쓰기 효과는 PAC 밖"
+        },
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-13",
+          "text": "단회 승인 소비로 같은 승인의 재사용을 막는다"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-37",
+      "name": "구성 변경 검토와 재승인",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": null,
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC21",
+          "relationship": "subset-of",
+          "method": "semantic",
+          "name_match": "exact",
+          "body_similarity": 0.424,
+          "basis": "docs에만 있음: 서버·기능·규격·권한·정책 변경 대조, 실제 동작 변경 검토, 검토·시험·재승인 후 기록 갱신"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC21",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.289,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-02",
+          "relationship": "superset-of",
+          "method": "semantic",
+          "remarks": "PAC-02는 관찰 구성과 승인 기준의 비교. 검토·시험·재승인·승인 기록 갱신은 PAC 밖",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 112,
+          "ledger_policy_ids": [
+            "MCP-CATALOG-001",
+            "PAC-02",
+            "POLICY_BUNDLE"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-02",
+          "text": "PAC-02는 관찰 구성과 승인 기준의 비교. 검토·시험·재승인·승인 기록 갱신은 PAC 밖"
+        },
+        {
+          "kind": "docs_only_clause",
+          "docs_pac": "PAC21",
+          "text": "docs에만 있음: 서버·기능·규격·권한·정책 변경 대조, 실제 동작 변경 검토, 검토·시험·재승인 후 기록 갱신"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-38",
+      "name": "호출과 권한 변경 이력 관리",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": null,
+        "automation_limit": null
+      },
+      "runtime_coverage": "none",
+      "runtime_note": "감사 원장은 PAC15 판정 밖이다",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC22",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC22",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.279,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "no_runtime_pac",
+          "text": "감사 원장은 PAC15 판정 밖이다"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-39",
+      "name": "알려진 취약점의 수정 및 격리",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": "G01.06",
+        "automation_limit": null
+      },
+      "runtime_coverage": "none",
+      "runtime_note": "알려진 취약점의 기한·격리는 PAC15 밖이다. 원장 MCP-SUPPLY-001의 PAC-08 표기는 같은 통제가 아니다",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC40",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "no_runtime_pac",
+          "text": "알려진 취약점의 기한·격리는 PAC15 밖이다. 원장 MCP-SUPPLY-001의 PAC-08 표기는 같은 통제가 아니다"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-40",
+      "name": "연결 목적지 변경의 재승인",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": "G03.05",
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC41",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-07",
+          "relationship": "superset-of",
+          "method": "semantic",
+          "remarks": "승인 endpoint와 다르면 PAC-07이 거부. 재승인 절차와 MCP 서버 자체 outbound 변경은 PAC 밖",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 195,
+          "ledger_policy_ids": [
+            "MCP-EGRESS-001",
+            "MCP-TRANSPORT-001",
+            "PAC-07"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-07",
+          "text": "승인 endpoint와 다르면 PAC-07이 거부. 재승인 절차와 MCP 서버 자체 outbound 변경은 PAC 밖"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-41",
+      "name": "인증정보 교체 후 이전 값 무효화",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "일부 구현",
+        "planned_wbs_ref": null,
+        "automation_limit": "제공자 측 무효화 관측 불가"
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC42",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-14",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "게이트웨이가 쥔 토큰·자격의 폐기는 PAC-14. 제공자 측 이전 값 무효화는 관측 불가",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 344,
+          "ledger_policy_ids": [
+            "MCP-DECOMM-001",
+            "PAC-14"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-14",
+          "text": "게이트웨이가 쥔 토큰·자격의 폐기는 PAC-14. 제공자 측 이전 값 무효화는 관측 불가"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-42",
+      "name": "이상 징후 경보의 동작 확인",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": "G06.05",
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC43",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-15",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "반복 차단 이상행위 증적(P-ANOMALY-001, 원장이 PAC-15로 표기). 신규 도구·미승인 연결 경보의 설정 변경 후 동작 확인은 PAC 밖",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 356,
+          "ledger_policy_ids": [
+            "P-ANOMALY-001",
+            "P-CHAIN-001",
+            "P-RATE-001",
+            "P-RATE-002",
+            "P-RATE-003",
+            "P-VOLUME-001",
+            "PAC-15"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-15",
+          "text": "반복 차단 이상행위 증적(P-ANOMALY-001, 원장이 PAC-15로 표기). 신규 도구·미승인 연결 경보의 설정 변경 후 동작 확인은 PAC 밖"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-43",
+      "name": "탐지된 위험의 대응",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": "G07.05",
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC44",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-14",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "중지·철회 신호는 PAC-14. 영향 범위 조사는 PAC 밖",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 344,
+          "ledger_policy_ids": [
+            "MCP-DECOMM-001",
+            "PAC-14"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-14",
+          "text": "중지·철회 신호는 PAC-14. 영향 범위 조사는 PAC 밖"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-44",
+      "name": "권한 철회와 연결 해제",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": null,
+        "automation_limit": null
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC23",
+          "relationship": "equivalent-to",
+          "method": "semantic",
+          "name_match": "exact",
+          "body_similarity": 0.989,
+          "basis": "교차 참조 번호만 다름(PAC24→PAC45)"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC23",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.477,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-14",
+          "relationship": "superset-of",
+          "method": "semantic",
+          "remarks": "PAC-14는 철회 신호의 반영. 등록·설정·연결 경로 제거와 인증정보 회수 확인은 PAC 밖",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 344,
+          "ledger_policy_ids": [
+            "MCP-DECOMM-001",
+            "PAC-14"
+          ]
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-01",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "종료·폐기 이용 관계 차단(MCP-DECOMM-001)이 PAC-01·14로 표기",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 97,
+          "ledger_policy_ids": [
+            "ENDPOINT-MANAGED-001",
+            "MCP-DECOMM-001",
+            "MCP-REGISTRY-001",
+            "MCP-REGISTRY-002",
+            "P-APPROVAL-EXPIRY-001",
+            "PAC-01"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-14",
+          "text": "PAC-14는 철회 신호의 반영. 등록·설정·연결 경로 제거와 인증정보 회수 확인은 PAC 밖"
+        },
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-01",
+          "text": "종료·폐기 이용 관계 차단(MCP-DECOMM-001)이 PAC-01·14로 표기"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-45",
+      "name": "토큰과 API 키 회수",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "일부 구현",
+        "after_planned_development": "일부 구현",
+        "planned_wbs_ref": null,
+        "automation_limit": "제공자 측 회수 관측 불가"
+      },
+      "runtime_coverage": "partial",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC24",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        },
+        {
+          "system": "pac24-original",
+          "id": "PAC24",
+          "relationship": "unreviewed",
+          "method": null,
+          "name_match": "exact",
+          "body_similarity": 0.383,
+          "basis": "정책명은 docs PAC와 같고 본문은 전부 다시 쓰여 의미 대조를 하지 않았다"
+        },
+        {
+          "system": "runtime-pac15",
+          "id": "PAC-14",
+          "relationship": "intersects-with",
+          "method": "semantic",
+          "remarks": "게이트웨이 쪽 폐기·철회는 PAC-14. 제공자 측 회수는 관측 불가",
+          "review": "claude_judgement_2026-10-17_unreviewed",
+          "definition_line": 344,
+          "ledger_policy_ids": [
+            "MCP-DECOMM-001",
+            "PAC-14"
+          ]
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "runtime_pac_covers_part",
+          "pac": "PAC-14",
+          "text": "게이트웨이 쪽 폐기·철회는 PAC-14. 제공자 측 회수는 관측 불가"
+        }
+      ]
+    },
+    {
+      "policy_id": "POL-46",
+      "name": "잔존 서버 프로세스 종료",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC45",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-47",
+      "name": "문서 저장소 권한 회수",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC46",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-48",
+      "name": "임시 파일과 캐시 데이터 정리",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC47",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-49",
+      "name": "외부 제공자의 보유 문서 정리",
+      "scope": "outside_35",
+      "runtime_coverage": "not_assessed",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC48",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "policy_id": "POL-50",
+      "name": "복원 시 폐기된 연결의 \n재활성화 차단",
+      "scope": "technical_control_35",
+      "status_report": {
+        "current": "미구현",
+        "after_planned_development": "구현",
+        "planned_wbs_ref": "G07.06",
+        "automation_limit": null
+      },
+      "runtime_coverage": "none",
+      "runtime_note": "PAC-14는 현재 DB의 철회 상태를 읽는다(PAC_RUNTIME). 복원이 DB를 되돌리면 PAC-14만으로는 폐기 연결의 재활성화를 막지 못할 수 있다(설계 추론, 미시험)",
+      "links": [
+        {
+          "system": "pac50-docs",
+          "id": "PAC49",
+          "relationship": "equal-to",
+          "method": "syntactic",
+          "name_match": "exact",
+          "body_similarity": 1.0,
+          "basis": "정책명·본문이 공백 제거 후 같다"
+        }
+      ],
+      "gaps": [
+        {
+          "kind": "no_runtime_pac",
+          "text": "PAC-14는 현재 DB의 철회 상태를 읽는다(PAC_RUNTIME). 복원이 DB를 되돌리면 PAC-14만으로는 폐기 연결의 재활성화를 막지 못할 수 있다(설계 추론, 미시험)"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "policies": 50,
+    "technical_control_35": 35,
+    "status_current_x_runtime_coverage": {
+      "일부 구현 / 런타임 PAC none": 6,
+      "일부 구현 / 런타임 PAC partial": 13,
+      "구현 / 런타임 PAC equivalent": 2,
+      "구현 / 런타임 PAC partial": 9,
+      "구현 / 런타임 PAC none": 3,
+      "일부 구현 / 런타임 PAC equivalent": 1,
+      "미구현 / 런타임 PAC none": 1
+    },
+    "docs_only_clause_policies": [
+      "POL-21",
+      "POL-22",
+      "POL-26",
+      "POL-31",
+      "POL-37"
+    ]
+  }
+}

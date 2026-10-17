@@ -1,0 +1,8 @@
+/policy/probe_test.rego:15:
+data.probe_test.test_deny_high_risk_without_binding: PASS (300.753µs)
+/policy/probe_test.rego:11:
+data.probe_test.test_deny_unapproved_destination: PASS (239.984µs)
+/policy/probe_test.rego:7:
+data.probe_test.test_allow_when_destination_approved: PASS (389.108µs)
+--------------------------------------------------------------------------------
+PASS: 3/3

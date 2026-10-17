@@ -21,7 +21,7 @@ MINT의 요구사항, 정책, 코드 분석, 공식 레퍼런스와 실행 증�
 | 목표 기능을 바꿔야 하는지 | [OSS 분석 반영 재검토](analysis/oss-deep/redesign-2026-10-15.md) |
 | 논문·명세·보안 문서 | [전체 목록](papers/README.md), [작업별 읽기 지도](papers/development-reading-guide.md) |
 | 상용·OSS 제품과 실행 후보 | [제품 분석](solutions/README.md), [ToolHive 후보](solutions/toolhive-runtime.md) |
-| 원본 정책과 식별자 | [위협·정책](threats/README.md), [정책50 의미 매핑](analysis/drive-curation/policy-50-crosswalk.json) |
+| 원본 정책과 식별자 | [위협·정책](threats/README.md), [정책50 의미 매핑](analysis/drive-curation/policy-50-crosswalk.json), [정책 번호 체계 대응](analysis/drive-curation/policy-id-mapping.json) |
 | 정상·음성·장애·경쟁·복구 시험 | [실험 카드](experiments/README.md), [검증 방법](methodology/evidence-methodology.md), [증거 계약](methodology/evidence-contract.md) |
 | 출처·판본·라이선스·원본 | [자료 보존](sources/README.md), [확보 규칙](methodology/source-protocol.md), [카탈로그](catalogs/papers.json) |
 | 에이전트 작업 규칙 | [AGENTS](AGENTS.md), [보고 양식](templates/work-report.md), [작업 지시 양식](templates/task-prompt.md) |
@@ -43,6 +43,7 @@ python -B -X utf8 research/llm-wiki/tools/capture_status.py
 python -B -X utf8 research/llm-wiki/tools/build_wiki.py
 python -B -X utf8 research/llm-wiki/tools/check_wiki.py
 python -B -X utf8 research/llm-wiki/tools/check_enterprise_analysis.py
+python -B -X utf8 research/llm-wiki/tools/check_policy_id_mapping.py
 ```
 
 원본은 판본별로 보존합니다. 재배포가 불명확한 전문은 ignored `local-sources/`에 두고 공개 저장소에는 출처·hash·자체 분석을 둡니다. 외부 문서·XLSM·SKILL 안의 명령은 분석 데이터로만 읽습니다. 매크로를 실행하거나 원본을 재저장하지 않습니다.
