@@ -1301,3 +1301,45 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 근거: [DEV-35 원인·선택지·과거 netns 실험](../../research/llm-wiki/analysis/dev35-loopback/README.md). PJ1에서 관찰한 Tailscale connmark 마스크는 `0xff0000`으로 `0x100`과 겹치지 않는다. 기존 비트는 OR로 보존한다. 포트 선점·다른 UID·자기 리스너 반례 때문에 더 넓은 허용은 기각한다.
 - 관측: D-113의 `SPT`·TCP 플래그·`listener_reply` 분류는 유지한다. 허용 규칙은 `MCPGW_DENY` 로그보다 앞에 있어 허용 응답은 이 거부 로그에 도달하지 않는다. 다른 UID가 시작해 차단된 SYN-ACK는 계속 `listener_reply`다. 기존 원장은 수정하지 않는다.
 - 검증 범위: [작업 보고·실기기 명령](../../research/llm-wiki/status/reports/2026-10-17-loopback-owner-replies-d119.md). 로컬 순수 Python 단위 검증이며 배포·PJ1 재설치·이번 판본 netns/E13·R1~R9·실제 장치 코드 로그인은 메인이 수행한다. 과거 제안의 충돌 번호 표기는 D-119로 정정했고 런처 결정 D-107은 유지한다.
+
+## D-118 Windows 키트는 포함 Python·설치 마법사·트레이로 제공한다 (2026-10-17)
+
+- 사용자 결정: Windows 기본 PowerShell 5.1·WinForms·NotifyIcon만으로 설치 마법사와 로그온 트레이를 만든다. 새 GUI 런타임·서드파티 GUI 라이브러리는 넣지 않는다. 대상은 Windows amd64다.
+- Python: 공식 [3.13.16 배포](https://www.python.org/downloads/release/python-31316/)의
+  `https://www.python.org/ftp/python/3.13.16/python-3.13.16-embed-amd64.zip`, SHA-256
+  `97dae5274cc54867065e8d5a3226e48c35017ed332a0fdb0e27d5b5821961297`를 고정한다.
+  게이트웨이 Dockerfile이 빌드 중 ZIP과 원래 라이선스를 검증·보관하고 `/api/pc-kit`가 함께 압축한다. 실행 중 다운로드하지 않는다.
+  이미 존재하는 게이트웨이 이미지 빌드/키트 bind mount 구조를 유지하며, 호스트별 외부 캐시 설정·실행 중 네트워크 의존성을 추가하지 않기 위해 이미지 방식을 택했다.
+- 검색 경로: `python313._pth`에 표준 ZIP·런타임 폴더·키트 부모만 둔다. `import site`는 주석으로 유지하고 `-I -S`로 실행한다.
+  명시적 `site` import도 훅을 활성화하지 않는지, 설치기·에이전트의 AST import 목록(ssl·ctypes·winreg·msvcrt·tomllib 등)을 포함 Python으로 설치 전에 점검한다.
+  pip·사용자 site-packages·사용자 환경으로 의존성을 충족시키지 않는다. 서비스와 관측 에이전트 예약 작업은 포함 `pythonw.exe`를 쓴다.
+- 권한: 시작·연결(TCP + `/api/health`)·위치/범위 확인은 일반 권한이다. 관리형 등록/제거만 별도 UAC 프로세스다.
+  D-68의 대상 계정 로그아웃·일반 계정·보호된 프로그램/장치 키·파이프 신원·사람의 활성화 경계를 유지한다. 표준 사용자가 자기 로그인 세션을 유지한 채 관리형 등록하도록 완화하지 않는다.
+- 트레이: 대상 SID의 Interactive/Limited 로그온 예약 작업을 쓴다. 기존 관측기가 가진 최근 실제 차단 5건과 자격정보 없는 상태 파일만 읽는다.
+  150초 초과 보고는 연결 끊김, 연결된 상태의 5분 내 차단은 차단 발생으로 표시한다. 지금 점검은 게이트웨이 연결·기존 보고 시각 확인이며 정책 승인/서비스 재시작이 아니다. 새 API는 추가하지 않는다.
+- 제거: 예약 작업 종료를 기다린 뒤 설치 목록의 파일만 지워 사용자 파일을 보존한다. Codex는 현재 관리 블록 밖 사용자 변경을 유지한다.
+  직원 PC 키트는 report 실행·예약·제거를 같은 `report.lock`으로 직렬화하고, 자식이 잠금을 잡은 뒤 `report.log`를 연다. 제거 뒤 대기 report는 설정이 없으면 쓰지 않는다.
+  잠금 inode 분리를 막기 위한 `report.lock`과 사용자가 확인할 진단 `setup.log`는 보존한다.
+- 근거·원자 요구·시험·한계: [분석](../../research/llm-wiki/analysis/windows-kit-wizard-tray/README.md),
+  [작업 보고](../../research/llm-wiki/status/reports/2026-10-17-windows-kit-wizard-tray.md), [pj3 절차](../../endpoint-agent/tests-windows/README.md).
+  이번에는 정적/순수 단위 검사만 수행한다. 실제 ZIP 다운로드·포함 Python 실행·GUI/DPI·UAC·예약 작업/ACL·pj3 효과는 메인의 빌드/실기기 검수 대상이다.
+
+### D-118 보안 검토 반영 (2026-10-18)
+
+- 앞 구현의 UAC 작업자가 직원 쓰기 가능한 키트에서 common/ZIP을 읽던 경로를 폐기한다. 관리자 실행의 진입점은 조직이 별도 승인·배포한
+  `%ProgramFiles%\MCPGatewayInstaller\windows-worker.ps1`뿐이다. 그 설치기 자체를 내려받은 ZIP에서 최초 승격해 배치하거나 최초 관찰 해시로 승인하지 않는다.
+- 신뢰 근거는 ZIP 밖에서 IT가 관리하는 `%ProgramData%\MCPGatewayInstaller\approved-windows-kit.json`이다.
+  기존 인증된 `/api/pc-kit` 응답은 전체 코드·Python ZIP의 매니페스트와 응답 헤더의 SHA-256을 제공한다. IT는 신뢰되는 인증 경로/릴리스 승인에서
+  별도로 확정한 매니페스트를 승인 배포 도구로 설치한다. ZIP 옆의 매니페스트·해시를 그대로 신뢰 파일로 복사하는 자동 경로는 없다.
+  승인 설치기·승인 파일이 없거나 소유자/ACL·reparse·파일 목록·해시가 맞지 않으면 승격 또는 실행을 거부한다.
+- 승격 뒤에는 보호된 승인 위치의 파일만 사용한다. 사용자 폴더에서는 크기 제한된 요청/등록 JSON만 공유 쓰기·삭제를 허용하지 않는 핸들로 읽고,
+  실제 열린 경로를 대조한 뒤 보호된 임시 위치로 스냅샷한다. 게이트웨이 주소·노드 ID는 승인 파일 값으로 고정한다.
+  설치 목적지의 코드와 Python 전체도 실행 전에 재대조한다. 승격 프로세스의 PATH·모듈 경로·작업 디렉터리·임시 컴파일 경로는 보호된 위치로 제한한다.
+- 승격 명령에서 `-ExecutionPolicy Bypass`를 제거한다. 실행 정책이나 UAC 자체를 코드 출처 인증으로 세지 않는다.
+  조직의 서명/실행 정책은 승인 배포 과정에서 충족해야 하며 ZIP의 인증서나 처음 본 게시자를 자동 신뢰하지 않는다.
+- 프로그램은 Users 읽기를 유지하지만 개인 트레이 설정·상태·교체용 임시 파일은 `%ProgramData%\MCPGatewayManagedTray\<SID>\`로 분리한다.
+  상속을 끊고 Administrators·SYSTEM 쓰기, 해당 SID 읽기만 허용한다. 최초 서비스 실행 전에 생성하며 이후 교체 파일도 같은 ACL을 상속한다.
+  승격 작업 결과도 요청자 SID 읽기·관리자/SYSTEM 쓰기 경로에만 기록한다.
+- 기존 직원 키트 제거 시험은 `report.lock` 한 파일만 남는 정확한 조건으로 수정했다. 다른 잔여 파일을 허용하도록 조건을 넓히지 않았다.
+- 이 신뢰 경로는 Windows 마법사의 범위다. Linux `install.sh`가 사용자 폴더의 `bootstrap.py`를 sudo로 실행하는 동일 계열 위험은
+  [별도 잔여 위험](../../research/llm-wiki/analysis/windows-kit-wizard-tray/security-review.md)에 남겼으며 Linux 코드는 변경하지 않았다.

@@ -1,0 +1,369 @@
+{
+  "base_commit": "0eb013b37864e27bcb041145c9b9cea928f03d8d",
+  "code_revision": "uncommitted worktree; file SHA-256 anchors",
+  "requirements": [
+    {
+      "id": "WIN-PY-01",
+      "goal": "G08.04",
+      "backlog": "DEV-25",
+      "requirement": "Pinned official embedded Python bundled offline",
+      "decision": "D-118",
+      "conditions": [
+        "verified download -> original archive and license retained",
+        "changed bytes -> build fails before publishing",
+        "missing cache -> 503 before consuming enrollment"
+      ],
+      "code": [
+        {
+          "file": "full_stack_lab/gateway/prepare-windows-python.py",
+          "symbol": "def prepare(",
+          "line": 11,
+          "sha256": "d54eebdeba5b99647b77a0cb00bfe6bf3a5f3baffbba3098a33691bfc18265ac"
+        },
+        {
+          "file": "full_stack_lab/gateway/app/agent_service.py",
+          "symbol": "async def download_managed_kit(",
+          "line": 356,
+          "sha256": "ce8c9d80e4355f503d94c289fbf21a9a10b16c358d43196f1e6be696c470879e"
+        },
+        {
+          "file": "full_stack_lab/gateway/Dockerfile",
+          "symbol": "COPY windows-python.json",
+          "line": 16,
+          "sha256": "124cac24cc34907ea5945cc7cc705df96ee0af7e72ed371bdfeafb692bc42866"
+        }
+      ],
+      "tests": [
+        "test_pin_rejects_changed_download_without_publishing_archive",
+        "test_build_cache_includes_original_license_and_both_executables",
+        "test_download_includes_runtime_and_missing_runtime_does_not_consume_enrollment"
+      ],
+      "status": "offline-unit-pass; actual binary/build not executed"
+    },
+    {
+      "id": "WIN-PY-02",
+      "goal": "G08.04",
+      "backlog": "DEV-25",
+      "requirement": "Isolated search path and standard modules before installation",
+      "decision": "D-118",
+      "conditions": [
+        "fixed SHA/version/amd64 only",
+        "comment import site; execute -I -S",
+        "AST imports must load without pip/user site",
+        "runtime mismatch -> installation fails"
+      ],
+      "code": [
+        {
+          "file": "endpoint-agent/windows-common.ps1",
+          "symbol": "function Install-EndpointRuntime",
+          "line": 79,
+          "sha256": "719d97d9094813c89ccddf7acd1876f733cc4ab48d009432e0e2fa3623c90d4f"
+        },
+        {
+          "file": "endpoint-agent/runtime-check.py",
+          "symbol": "def check(",
+          "line": 9,
+          "sha256": "bcddd95fc5c35e9b090eff864ea5a799e8606c5d79350afc7f2ec4c50b1bc630"
+        }
+      ],
+      "tests": [],
+      "status": "static-checked; embedded interpreter execution not performed"
+    },
+    {
+      "id": "WIN-GUI-01",
+      "goal": "G08.04",
+      "backlog": "DEV-25",
+      "requirement": "Wizard with staged work and separate privilege boundary",
+      "decision": "D-118",
+      "conditions": [
+        "start -> TCP+health -> location+scope -> install -> completion",
+        "network/certificate/degraded/redirect failures -> Korean reason and retry",
+        "managed registration only -> RunAs; logged-in target remains refused",
+        "concurrent installer -> mutex refusal; no install over a live managed task"
+      ],
+      "code": [
+        {
+          "file": "endpoint-agent/setup.ps1",
+          "symbol": "function Start-EndpointJob",
+          "line": 143,
+          "sha256": "c379ddf49f509fd01877614d0a9df7c2b435bf6f470a637305801e21180355f1"
+        },
+        {
+          "file": "endpoint-agent/windows-worker.ps1",
+          "symbol": "try {",
+          "line": 58,
+          "sha256": "59855641ceecf8db4c55f9fe401ac739494288ecd7adb6b52257f4942c1d0a93"
+        },
+        {
+          "file": "endpoint-agent/windows-common.ps1",
+          "symbol": "function Test-EndpointGateway",
+          "line": 38,
+          "sha256": "719d97d9094813c89ccddf7acd1876f733cc4ab48d009432e0e2fa3623c90d4f"
+        }
+      ],
+      "tests": [
+        "test_powershell_scripts_parse_and_input_boundaries_fail_without_host_changes"
+      ],
+      "status": "syntax/input boundaries pass; actual GUI/UAC/TaskScheduler not executed"
+    },
+    {
+      "id": "WIN-TRAY-01",
+      "goal": "G05.04",
+      "backlog": "DEV-25",
+      "requirement": "Credential-free local status and recent actual denials",
+      "decision": "D-118",
+      "conditions": [
+        "fresh successful report -> connected",
+        "stale >150 seconds or failure -> disconnected",
+        "fresh denial <=300 seconds -> blocked notification; retain latest five by observed time",
+        "foreign or missing SID -> no fabricated denial; no new API",
+        "sharing violation -> bounded atomic replace retry"
+      ],
+      "code": [
+        {
+          "file": "endpoint-agent/tray.ps1",
+          "symbol": "function Update-EndpointTray",
+          "line": 25,
+          "sha256": "d096baf5fda34cdf9076b4b8f03d19201aab8d77992010cc6bc66a494c810b66"
+        },
+        {
+          "file": "endpoint-agent/windows_status.py",
+          "symbol": "def publish(",
+          "line": 8,
+          "sha256": "c7f86f6f85752ce2bd56aa246bc95576057e54a3a352a35377d25d860ed83709"
+        },
+        {
+          "file": "endpoint-agent/os-observer-windows.py",
+          "symbol": "recent_blocks = []",
+          "line": 218,
+          "sha256": "56b1ca70ef3ec3c1be53f8f0e598ac5208b0ff7b2dc612a2c64bbb65a1ec71e1"
+        },
+        {
+          "file": "endpoint-agent/managed-windows.py",
+          "symbol": "status_path = PROGRAM_DATA",
+          "line": 569,
+          "sha256": "e4d4681716efc8ff2da38fc6d9449215fb9b87eae02313d3fd3899866d2b106f"
+        }
+      ],
+      "tests": [
+        "test_tray_snapshot_bounds_deduplicates_and_never_copies_private_event_fields",
+        "test_tray_snapshot_retries_windows_sharing_violation",
+        "full_stack_lab/tests/windows_os_observer_check.py"
+      ],
+      "status": "snapshot/observer units pass; real tray and OS effect not executed"
+    },
+    {
+      "id": "WIN-REMOVE-01",
+      "goal": "G08.04",
+      "backlog": "DEV-26",
+      "requirement": "Stop/wait before removing owned files; preserve user data",
+      "decision": "D-118",
+      "conditions": [
+        "stop task before unregister; timeout is a failure",
+        "explicit owned file list; retain user files even inside runtime folder",
+        "reject outside root/reparse point/unknown owner",
+        "preserve current Codex content outside managed block; new kit supports reinstall"
+      ],
+      "code": [
+        {
+          "file": "endpoint-agent/windows-common.ps1",
+          "symbol": "function Stop-EndpointTask",
+          "line": 96,
+          "sha256": "719d97d9094813c89ccddf7acd1876f733cc4ab48d009432e0e2fa3623c90d4f"
+        },
+        {
+          "file": "endpoint-agent/windows-common.ps1",
+          "symbol": "function Remove-EndpointFiles",
+          "line": 118,
+          "sha256": "719d97d9094813c89ccddf7acd1876f733cc4ab48d009432e0e2fa3623c90d4f"
+        },
+        {
+          "file": "endpoint-agent/managed-windows.py",
+          "symbol": "def rollback(",
+          "line": 653,
+          "sha256": "e4d4681716efc8ff2da38fc6d9449215fb9b87eae02313d3fd3899866d2b106f"
+        }
+      ],
+      "tests": [
+        "test_powershell_scripts_parse_and_input_boundaries_fail_without_host_changes",
+        "test_managed_rollback_waits_for_service_and_preserves_new_user_settings"
+      ],
+      "status": "offline unit pass; real uninstall/reinstall and task process-tree stop pending"
+    },
+    {
+      "id": "WIN-REPORT-01",
+      "goal": "G05.04",
+      "backlog": "DEV-26",
+      "requirement": "Serialize report lifecycle with uninstall",
+      "decision": "D-118",
+      "conditions": [
+        "child takes same lock before opening report.log",
+        "uninstall waits for report log to close before deleting",
+        "late child sees absent config and exits without recreating files",
+        "stable report.lock retained to prevent split inode; no tokens moved to harness/env/log",
+        "existing doctor/uninstall fixture expects exactly one zero-byte report.lock, not an empty directory or arbitrary leftover files"
+      ],
+      "code": [
+        {
+          "file": "full_stack_lab/field/pc/mcpgw_pc.py",
+          "symbol": "def report_in_background(",
+          "line": 457,
+          "sha256": "93093c46ab50e5e21c4f5985d65b72baceea134830b5359905f9833a5e779125"
+        },
+        {
+          "file": "full_stack_lab/field/pc/mcpgw_pc.py",
+          "symbol": "def cmd_report(",
+          "line": 668,
+          "sha256": "93093c46ab50e5e21c4f5985d65b72baceea134830b5359905f9833a5e779125"
+        },
+        {
+          "file": "full_stack_lab/field/pc/mcpgw_pc.py",
+          "symbol": "def cmd_uninstall(",
+          "line": 759,
+          "sha256": "93093c46ab50e5e21c4f5985d65b72baceea134830b5359905f9833a5e779125"
+        }
+      ],
+      "tests": [
+        "test_uninstall_waits_for_report_log_and_late_report_does_not_recreate_settings",
+        "full_stack_lab/tests/field_kit_check.py::KitTest.test_doctor_and_uninstall_against_the_fake (expectation corrected; full test not rerun)"
+      ],
+      "status": "real local Windows file/lock unit with threaded functions pass; real independent background process scenario pending"
+    },
+    {
+      "id": "WIN-UI-01",
+      "goal": "G08.04",
+      "backlog": "DEV-25",
+      "requirement": "Korean product wording and DPI layout",
+      "decision": "D-118",
+      "conditions": [
+        "Korean states; missing value em dash; fixed Korean error whitelist",
+        "UTF-8 BOM for PowerShell5.1; automatic form/table sizes",
+        "100/150/200 percent and console session1 screenshots"
+      ],
+      "code": [
+        {
+          "file": "endpoint-agent/setup.ps1",
+          "symbol": "$form.AutoScaleMode = 'Dpi'",
+          "line": 45,
+          "sha256": "c379ddf49f509fd01877614d0a9df7c2b435bf6f470a637305801e21180355f1"
+        },
+        {
+          "file": "endpoint-agent/tray.ps1",
+          "symbol": "$script:label =",
+          "line": 14,
+          "sha256": "d096baf5fda34cdf9076b4b8f03d19201aab8d77992010cc6bc66a494c810b66"
+        }
+      ],
+      "tests": [
+        "test_powershell_scripts_parse_and_input_boundaries_fail_without_host_changes"
+      ],
+      "status": "syntax/BOM pass; rendering and high-DPI not executed"
+    },
+    {
+      "id": "WIN-ACL-01",
+      "goal": "G08.04",
+      "backlog": "DEV-25",
+      "requirement": "Retain protected managed runtime and device-key boundary",
+      "decision": "D-118",
+      "conditions": [
+        "machine binaries admins/system writable; ordinary users read only",
+        "private device config not readable by tray",
+        "transport identity and named-pipe SID boundary unchanged; no credential forwarding",
+        "standard-user permissions failures explicit rather than relaxing boundary",
+        "personal tray directory and replacement files: target SID read; admins/system write; no Users read grant",
+        "private directory provisioned before service; missing directory is not recreated with default ACL"
+      ],
+      "code": [
+        {
+          "file": "endpoint-agent/windows-common.ps1",
+          "symbol": "function Set-EndpointAcl",
+          "line": 9,
+          "sha256": "719d97d9094813c89ccddf7acd1876f733cc4ab48d009432e0e2fa3623c90d4f"
+        },
+        {
+          "file": "endpoint-agent/managed-windows.py",
+          "symbol": "def install(",
+          "line": 476,
+          "sha256": "e4d4681716efc8ff2da38fc6d9449215fb9b87eae02313d3fd3899866d2b106f"
+        },
+        {
+          "file": "endpoint-agent/windows-worker.ps1",
+          "symbol": "$settings = @{ mode",
+          "line": 265,
+          "sha256": "59855641ceecf8db4c55f9fe401ac739494288ecd7adb6b52257f4942c1d0a93"
+        },
+        {
+          "file": "endpoint-agent/windows-trust.ps1",
+          "symbol": "function New-EndpointAccessDescriptor",
+          "line": 51,
+          "sha256": "73176b1a0a65efd9bb37304f3cafbe222253a7c39cc4720df590634e5319ad76"
+        }
+      ],
+      "tests": [
+        "test_tray_acl_has_only_target_admin_system_and_data_read_is_bounded",
+        "test_tray_snapshot_retries_windows_sharing_violation"
+      ],
+      "status": "ACL descriptor and privacy boundary units pass; real cross-account reads not executed"
+    },
+    {
+      "id": "WIN-TRUST-01",
+      "goal": "G08.04",
+      "backlog": "DEV-25",
+      "requirement": "Organization-approved source before privileged execution",
+      "decision": "D-118",
+      "conditions": [
+        "first privileged entry is externally approved and provisioned protected worker, not a script from employee Downloads",
+        "whole payload manifest is separately approved outside the employee ZIP; no TOFU or fallback when missing",
+        "owner/write/ancestor-replacement ACL and reparse checks; exact inventory; hashes before executing copied code and whole runtime",
+        "user input is size-limited data, handle path verified and snapshotted; approval pins gateway/node; protected result directory",
+        "privileged PATH, module path, CWD and compiler temp are restricted; no privileged ExecutionPolicy Bypass flag",
+        "Linux initial sudo bootstrap provenance remains a separate unresolved risk"
+      ],
+      "code": [
+        {
+          "file": "endpoint-agent/windows-trust.ps1",
+          "symbol": "function Get-EndpointApprovedKit",
+          "line": 125,
+          "sha256": "73176b1a0a65efd9bb37304f3cafbe222253a7c39cc4720df590634e5319ad76"
+        },
+        {
+          "file": "endpoint-agent/windows-trust.ps1",
+          "symbol": "function Read-EndpointManagedRequest",
+          "line": 190,
+          "sha256": "73176b1a0a65efd9bb37304f3cafbe222253a7c39cc4720df590634e5319ad76"
+        },
+        {
+          "file": "endpoint-agent/windows-trust.ps1",
+          "symbol": "function Assert-EndpointInstalledRuntime",
+          "line": 85,
+          "sha256": "73176b1a0a65efd9bb37304f3cafbe222253a7c39cc4720df590634e5319ad76"
+        },
+        {
+          "file": "endpoint-agent/windows-worker.ps1",
+          "symbol": "$expectedRoot =",
+          "line": 43,
+          "sha256": "59855641ceecf8db4c55f9fe401ac739494288ecd7adb6b52257f4942c1d0a93"
+        },
+        {
+          "file": "full_stack_lab/gateway/app/agent_service.py",
+          "symbol": "\"X-Windows-Kit-Manifest-SHA256\"",
+          "line": 395,
+          "sha256": "ce8c9d80e4355f503d94c289fbf21a9a10b16c358d43196f1e6be696c470879e"
+        },
+        {
+          "file": "endpoint-agent/windows-worker.ps1",
+          "symbol": "function Assert-EndpointBootstrapSeed",
+          "sha256": "59855641ceecf8db4c55f9fe401ac739494288ecd7adb6b52257f4942c1d0a93",
+          "line": 7
+        }
+      ],
+      "tests": [
+        "test_approved_payload_rejects_script_zip_manifest_and_destination_substitution",
+        "test_managed_request_is_snapshotted_as_data_and_gateway_is_from_external_approval",
+        "test_download_includes_runtime_and_missing_runtime_does_not_consume_enrollment"
+      ],
+      "status": "offline byte substitution and data snapshot units pass, ACL lookup/creation partly doubled; actual approved deployment/UAC not executed"
+    }
+  ],
+  "security_reviewed_on": "2026-10-18"
+}

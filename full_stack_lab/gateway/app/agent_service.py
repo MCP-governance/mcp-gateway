@@ -334,7 +334,9 @@ async def me(authorization: str | None = Header(default=None)):
 
 
 KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py"),
-             "windows": ("install.cmd", "managed-windows.py", "agent.py", "os-observer-windows.py")}
+             "windows": ("install.cmd", "setup.ps1", "windows-common.ps1", "windows-worker.ps1", "windows-trust.ps1", "tray.ps1",
+                         "runtime-check.py", "windows_status.py", "install.py", "install-windows.ps1",
+                         "managed-windows.py", "agent.py", "os-observer-windows.py")}
 # The employee runs one file and answers one elevation prompt; the installer does the rest (D-71).
 KIT_EXECUTABLE = {"install.sh"}
 
@@ -359,6 +361,9 @@ async def download_managed_kit(platform: Literal["linux", "windows"] = "linux",
     names = KIT_FILES[platform]
     if any(not (source / name).is_file() for name in names):
         raise HTTPException(503, "관리형 설치 키트가 배포되지 않았습니다.")
+    runtime = Path(os.getenv("WINDOWS_PYTHON_DIR", "/opt/windows-python"))
+    if platform == "windows" and any(not (runtime / name).is_file() for name in ("python.zip", "windows-python.json")):
+        raise HTTPException(503, "Windows 실행 파일이 배포되지 않았습니다.")
     public = os.getenv("IDP_ISSUER", "").rstrip("/")
     if not public:
         raise HTTPException(503, "Gateway 공개 주소가 없습니다.")
@@ -368,17 +373,27 @@ async def download_managed_kit(platform: Literal["linux", "windows"] = "linux",
     bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""),
               "owner": user["user_id"], **await enrollment_token(user["principal"])}
     output = io.BytesIO()
+    payload = {name: (source / name).read_bytes() for name in names}
+    if platform == "windows":
+        payload.update({name: (runtime / name).read_bytes() for name in ("python.zip", "windows-python.json")})
+        manifest = json.dumps({"schema": 1, "gateway_url": public,
+                               "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""),
+                               "files": {name: hashlib.sha256(value).hexdigest() for name, value in payload.items()}},
+                              sort_keys=True, separators=(",", ":")).encode()
+        payload["windows-kit-manifest.json"] = manifest
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("enrollment.json", json.dumps(bundle))
-        for name in names:
+        for name, value in payload.items():
             entry = zipfile.ZipInfo(name)
             # unzip applies the stored mode: the entry point has to come out runnable.
             entry.external_attr = (0o755 if name in KIT_EXECUTABLE else 0o644) << 16
             entry.compress_type = zipfile.ZIP_DEFLATED
-            archive.writestr(entry, (source / name).read_bytes())
+            archive.writestr(entry, value)
     return Response(output.getvalue(), media_type="application/zip",
                     headers={"Content-Disposition": f'attachment; filename="mcp-managed-kit-{platform}.zip"',
-                             "Cache-Control": "no-store"})
+                             "Cache-Control": "no-store",
+                             **({"X-Windows-Kit-Manifest-SHA256": hashlib.sha256(manifest).hexdigest()}
+                                if platform == "windows" else {})})
 
 
 @app.post("/auth/logout")

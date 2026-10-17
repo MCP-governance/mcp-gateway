@@ -32,6 +32,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from contextlib import redirect_stdout, redirect_stderr
 from pathlib import Path
 
 TOOL = "mcpgw_pc.py"
@@ -459,11 +460,14 @@ def report_in_background(settings: dict) -> None:
     stamp = home() / "report.stamp"
     if not settings.get("harnesses") or (stamp.exists() and time.time() - stamp.stat().st_mtime < REPORT_EVERY):
         return
-    stamp.touch()
-    detach = {"creationflags": 0x00000008 | 0x00000200} if os.name == "nt" else {"start_new_session": True}
-    with open(home() / "report.log", "w", encoding="utf-8") as log:  # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
-        subprocess.Popen([sys.executable, str(home() / TOOL), "--home", str(home()), "report"],
-                         stdin=subprocess.DEVNULL, stdout=log, stderr=log, **detach)
+    with Lock(home() / "report.lock", timeout=120):
+        if not (home() / "config.json").exists() or (stamp.exists() and time.time() - stamp.stat().st_mtime < REPORT_EVERY):
+            return
+        stamp.touch()
+        detach = {"creationflags": 0x00000008 | 0x00000200} if os.name == "nt" else {"start_new_session": True}
+        # The child opens its log only after acquiring the lifecycle lock.
+        subprocess.Popen([sys.executable, str(home() / TOOL), "--home", str(home()), "report", "--background"],
+                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **detach)
 
 
 # -- 하네스 기본 커넥터·기능(D-51): 보고하고, 관리자가 거부한 것을 하네스 스스로 끄게 한다 --------------
@@ -662,7 +666,15 @@ def report_and_apply(settings: dict) -> str:
 
 
 def cmd_report(args) -> None:
-    print(report_and_apply(load_settings()))
+    with Lock(home() / "report.lock", timeout=120):
+        if not (home() / "config.json").exists():
+            return
+        (home() / "report.stamp").touch()
+        if getattr(args, "background", False):
+            with open(home() / "report.log", "w", encoding="utf-8") as output, redirect_stdout(output), redirect_stderr(output):
+                print(report_and_apply(load_settings()))
+        else:
+            print(report_and_apply(load_settings()))
 
 
 INITIALIZE = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
@@ -745,6 +757,12 @@ def cmd_doctor(args) -> None:
 
 
 def cmd_uninstall(args) -> None:
+    # Keep this lock file: deleting it could let a waiting reporter lock a different inode.
+    with Lock(home() / "report.lock", timeout=180):
+        uninstall_locked(args)
+
+
+def uninstall_locked(args) -> None:
     root = home()
     settings = json.loads((root / "config.json").read_text(encoding="utf-8")) if (root / "config.json").exists() else {}
     claude = claude_path()
@@ -839,7 +857,9 @@ def main(argv: list[str] | None = None) -> None:
     commands.add_parser("token", help="접근 토큰(다른 클라이언트에 넣을 때)").set_defaults(run=cmd_token)
     commands.add_parser("header", help="하네스 헤더 헬퍼 출력").set_defaults(run=cmd_header)
     commands.add_parser("doctor", help="연결 점검").set_defaults(run=cmd_doctor)
-    commands.add_parser("report", help="하네스 기본 커넥터·기능 보고와 거부 적용").set_defaults(run=cmd_report)
+    report = commands.add_parser("report", help="하네스 기본 커넥터·기능 보고와 거부 적용")
+    report.add_argument("--background", action="store_true", help=argparse.SUPPRESS)
+    report.set_defaults(run=cmd_report)
     commands.add_parser("uninstall", help="이 도구가 쓴 설정 제거와 토큰 폐기").set_defaults(run=cmd_uninstall)
     managed = commands.add_parser("managed", help="관리자 강제 배포 파일 생성")
     managed.add_argument("--url", required=True)

@@ -1,0 +1,74 @@
+{
+  "verified_on": "2026-10-17",
+  "scope": "primary sources and repository code; no external scripts executed",
+  "references": [
+    {
+      "id": "PYTHON-WINDOWS-31316",
+      "url": "https://www.python.org/downloads/release/python-31316/",
+      "read_scope": "release date, amd64 embeddable download and SHA-256 table",
+      "version": "3.13.16",
+      "commit": "cbc944f4bc59639a444dd971c737788ba2283a91",
+      "commit_evidence": "https://github.com/python/cpython/releases/tag/v3.13.16",
+      "sha256": "97dae5274cc54867065e8d5a3226e48c35017ed332a0fdb0e27d5b5821961297",
+      "license": "PSF license and included third-party notices; retain original LICENSE.txt in ZIP",
+      "license_evidence": "https://raw.githubusercontent.com/python/cpython/v3.13.16/LICENSE",
+      "maintenance": "official release 2026-09-30; fixed patch requires future deliberate pin review",
+      "application": "redistribute unmodified official ZIP; configure isolated search paths after extraction",
+      "limitation": "binary download blocked locally by WinError10013; hash verification code tested with synthetic ZIP only"
+    },
+    {
+      "id": "PYTHON-EMBED-PTH",
+      "url": "https://docs.python.org/3.13/using/windows.html#the-embeddable-package",
+      "related_url": "https://docs.python.org/3.13/library/site.html",
+      "read_scope": "embeddable distribution, ._pth isolation and -S/explicit site import",
+      "application": "keep #import site and -I -S; runtime-check.py derives all installer/observer imports and checks stdlib availability",
+      "limitation": "AST list comparison is not actual embedded interpreter execution until main runs the prepared check"
+    },
+    {
+      "id": "WINDOWS-NOTIFYICON",
+      "url": "https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.notifyicon?view=windowsdesktop-9.0",
+      "related_url": "https://github.com/microsoft/Windows-classic-samples",
+      "read_scope": "NotifyIcon context menu, icon lifecycle, Shell notification sample inventory",
+      "application": "use already installed Windows PowerShell 5.1/.NET Framework WinForms, not dotnet 9 binaries or a new GUI library",
+      "commit": null,
+      "license": "OS component used under Windows license; no sample code or third-party GUI binary copied",
+      "maintenance": "Microsoft official API and sample catalog; desktop sample versions are old and not claimed current implementations",
+      "limitation": "sample commit could not be resolved through available network; source not vendored or executed; no rendered GUI validation"
+    },
+    {
+      "id": "PUBLIC-SKILL-SURVEY",
+      "url": "https://github.com/anthropics/skills/tree/main/skills",
+      "read_scope": "public skill inventory; Windows/PowerShell targeted search",
+      "commit": null,
+      "license": "not adopted; individual skill license and pinned commit must be checked before future reuse",
+      "application": "no Windows installer/tray skill adopted; use existing repository installation patterns and platform APIs",
+      "maintenance": "repository inventory accessible; immutable commit lookup unavailable",
+      "limitation": "search does not prove no relevant skill exists; no external skill scripts executed"
+    },
+    {
+      "id": "POWERSHELL-POLICY-TRUST",
+      "url": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_execution_policies?view=powershell-7.5",
+      "read_scope": "execution policies are not code provenance authentication; Group Policy and process scope are distinct",
+      "application": "remove privileged Bypass option; require independently approved managed installer; respect organization signing/execution deployment policy",
+      "limitation": "no signing certificate or deployment trust anchor was created on a real endpoint",
+      "verified_on": "2026-10-18"
+    },
+    {
+      "id": "WINDOWS-ACL-SET",
+      "url": "https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.security/set-acl?view=powershell-5.1",
+      "read_scope": "literal paths, supplied security descriptors, inheritance protection and ACL replacement",
+      "application": "exact per-SID private directory/file descriptors; remove inherited/explicit broad read grants",
+      "limitation": "descriptors tested offline; real cross-account access and privilege checks pending",
+      "verified_on": "2026-10-18"
+    },
+    {
+      "id": "WINDOWS-HANDLE-FINAL-PATH",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfinalpathnamebyhandlew",
+      "read_scope": "wide API signature, normalized DOS path, return lengths, resolved symbolic-link path and SMB caveats",
+      "application": "hold data file read handle without write/delete sharing; check final path before parsing; bounded read; no executable data source",
+      "limitation": "local DOS profile paths only; actual reparse race test pending on pj3",
+      "verified_on": "2026-10-18"
+    }
+  ],
+  "security_reviewed_on": "2026-10-18"
+}

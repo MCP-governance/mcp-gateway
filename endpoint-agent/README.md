@@ -53,13 +53,18 @@ AppArmor 프로필은 계정의 정확한 이름과 enforce 행을 대조합니�
 
 ## 가입자용 관리형 Windows 설치 (D-68)
 
-Linux와 같은 키트로 Windows 10/11의 **Administrators가 아닌 계정**을 관리형으로 연결합니다. 조직 IT가 관리자 권한
-PowerShell에서 실행합니다. Python 3.10 이상은 모든 사용자용(`C:\Program Files\Python3xx`)이어야 합니다. 대상 계정은
+Windows 10/11 amd64의 **Administrators가 아닌 계정**을 관리형으로 연결합니다. `install.cmd`는 일반 권한으로 설치 마법사를 엽니다.
+Python 3.13.16 공식 embeddable 배포판은 키트에 포함됩니다. 관리형 등록 단계만 별도 UAC 프로세스로 실행합니다. 대상 계정은
 한 번 로그인해 프로필이 있어야 하고, 설치할 때는 로그아웃 상태여야 합니다.
 
+조직 IT가 먼저 보호된 승인 설치기와 ZIP 밖의 승인 매니페스트를 배포해야 합니다.
+승격되는 작업자는 `%ProgramFiles%\MCPGatewayInstaller\windows-worker.ps1` 고정 경로이며, 다운로드 폴더의 작업자/common/ZIP을 관리자 권한으로 사용하지 않습니다.
+승인 설치기 자체의 최초 배포도 신뢰되는 조직 배포 경로에서 해야 합니다. 다운로드 ZIP이 자기 해시를 승인하는 경로는 없습니다.
+승인물이 없거나 변조/권한 문제가 있으면 설치가 중단됩니다. [승인 배포·검수 조건](tests-windows/README.md#조직-it의-최초-승인-배포)을 따르세요.
+
 ```powershell
-Expand-Archive mcp-managed-kit.zip mcp-managed-kit
-py -3 mcp-managed-kit\managed-windows.py install --user 일반사용자계정
+Expand-Archive mcp-managed-kit-windows.zip mcp-managed-kit
+.\mcp-managed-kit\install.cmd
 ```
 
 | 구성 | 위치 |
@@ -71,6 +76,9 @@ py -3 mcp-managed-kit\managed-windows.py install --user 일반사용자계정
 | 방화벽 | 계정 SID(`LocalUser`) 범위 차단 규칙 3개 `MCPGW-<계정>-*`: 게이트웨이 호스트 밖 전부, 게이트웨이 호스트의 다른 TCP 포트, UDP |
 | 프록시 환경 변수 | 그 계정의 `HKCU\Environment`(`HTTPS_PROXY`·`HTTP_PROXY`·`NO_PROXY`) |
 | 서비스 | SYSTEM 예약 작업 `MCPGatewayManaged-<계정>`(부팅 시 시작, 실패 시 1분 뒤 재시작) |
+| 포함 Python | `%ProgramFiles%\MCPGatewayManaged\python\`(고정 URL·SHA-256 검증, `pythonw.exe`로 서비스 실행) |
+| 트레이 | `MCPGatewayTray-<SID>` 예약 작업, 대상 계정 로그온 시 시작 |
+| 개인 트레이 파일 | `%ProgramData%\MCPGatewayManagedTray\<SID>\settings.json`·`status.json`·`status.tmp`: 해당 SID 읽기, 관리자·SYSTEM 쓰기 |
 | 헤더 전달 | `\\.\pipe\mcpgw-<계정>` — DACL이 그 계정 SID에 읽기만 허용 |
 
 60초마다 보고하는 점검은 `firewall_enforcing`(모든 프로필 켜짐·규칙이 설치 기준선과 같음), `protected_configs`(설정·프로그램·
@@ -81,8 +89,22 @@ Python 경로의 소유자와 쓰기 권한이 SYSTEM·Administrators·TrustedIn
 
 한계: 현재 키트의 규칙으로 native Win32 loopback(127.0.0.1·::1·IPv4-mapped IPv6) 차단을 실측하지 않았습니다. WFP 기능과 UWP 예외를 이 키트의 집행 결과로 일반화하지 않습니다. 도메인 그룹을 거친 Administrators 구성원은 점검하지 않습니다.
 Windows 키트는 실행파일·스크립트·DLL 통제 정책을 설치하지 않습니다. App Control/AppLocker/격리 계정·파일권한의 별도 설계와 실기기 검증이 필요합니다.
-같은 PC의 다른 계정은 통제 범위에 우회 경로로 표시합니다. OS 차단 이벤트(WFP 감사)는 아직 수집하지 않습니다.
-제거: Console에서 자격 폐기 → 계정 로그아웃 → `py -3 "%ProgramFiles%\MCPGatewayManaged\managed-windows.py" rollback --user <계정>`.
+같은 PC의 다른 계정은 통제 범위에 우회 경로로 표시합니다. 기존 Windows 관측기는 활성화된 감사 채널에서 정확한 대상 SID가 있는 차단만 읽습니다.
+감사 정책은 자동 활성화하지 않으며, 이벤트가 없거나 SID를 확인할 수 없으면 트레이에 차단 기록을 만들지 않습니다.
+제거: Console에서 자격 폐기 → 트레이 **제거** → 제거 마법사(UAC). CLI 복구는
+`& "$env:ProgramFiles\MCPGatewayManaged\python\python.exe" -I -S "$env:ProgramFiles\MCPGatewayManaged\managed-windows.py" rollback --user <계정>`입니다.
+
+마법사 단계는 시작 → TCP·상태 조회 → 설치 위치·관측 범위 → 설치 진행 → 완료입니다. 실패 단계·한국어 사유·다시 시도·로그 경로를 표시합니다.
+대상 계정이 로그인 중이면 관리형 등록은 거부하며, 그 계정을 로그아웃한 뒤 관리자 세션에서 다시 진행합니다.
+관리자 계정을 지정하면 기존 방식대로 별도 일반 계정을 만들 수 있으며, 최초 로그인·로그아웃이 필요하면 해당 계정 이름을 표시합니다.
+설치 완료는 조직 활성화 완료를 뜻하지 않습니다. 활성화는 기존 관리자 콘솔 절차를 따릅니다.
+
+트레이 상태는 연결됨·연결 끊김·차단 발생입니다. 150초보다 오래된 보고는 연결 끊김, 최근 5분 내 실제 관측 차단은 차단 발생으로 표시합니다.
+최근 차단은 5건까지이며, **지금 점검**은 TCP·`/api/health`와 로컬 보고 시각을 다시 확인합니다. 정책 재승인·서비스 재시작 기능은 아닙니다.
+트레이용 파일은 장치 키·직원 토큰 없이 시각·상태·차단 기록 식별자만 저장하며 인가에 사용하지 않습니다.
+이 파일들은 Users가 읽을 수 있는 공용 프로그램 폴더에 저장하지 않습니다. 다른 표준 계정에는 읽기 권한을 부여하지 않습니다.
+설치기는 설치 파일 목록만 제거해 설치 경로에 추가된 사용자 파일을 보존합니다. 실패 진단용 `setup.log`는 사용자 설치 로그 위치에 남습니다.
+실제 화면·UAC·재설치 검수는 [pj3 시험 절차](tests-windows/README.md)를 따릅니다.
 
 ### 같은 단말의 다른 계정(D-62)
 
@@ -143,7 +165,8 @@ python3 ~/.local/share/mcp-gateway-endpoint/agent.py \
 
 ## Windows
 
-PowerShell에서 현재 사용자로 실행합니다. `-ScanPath`에는 존재하는 경로를 지정합니다.
+포함 Python과 마법사 파일을 담은 키트에서 현재 사용자로 실행합니다. 관측 전용이며 관리형 설치의 대체가 아닙니다.
+`-ScanPath`에는 존재하는 경로를 지정하고, 장치 키 파일은 마법사의 파일 선택으로 지정하거나 `-KeyFile`에 경로를 전달합니다.
 
 ```powershell
 .\endpoint-agent\install-windows.ps1 `
@@ -152,18 +175,18 @@ PowerShell에서 현재 사용자로 실행합니다. `-ScanPath`에는 존재�
   -ScanPath @("$env:APPDATA\Claude\claude_desktop_config.json")
 ```
 
-설치기는 `%LOCALAPPDATA%\MCPGatewayEndpoint`의 ACL을 현재 사용자와 SYSTEM으로 제한한 뒤 장치 키와 에이전트를 저장합니다. 1회 보고가 성공해야 현재 사용자 로그온 작업 `MCPGatewayEndpoint-<endpoint_id>`를 등록합니다(창 없이 `pythonw.exe`로 실행). 장치 키는 PowerShell 명령줄 인자로 넘기지 않습니다. Tailscale HTTP 주소를 쓰면 `-TailscaleNodeId`로 관리자가 확인한 노드 ID를 지정합니다. Windows에서는 프로세스 명령줄(CIM)로 stdio MCP 서버를 추정하고, 명령줄은 SHA-256 digest로만 보냅니다.
+설치기는 `%LOCALAPPDATA%\MCPGatewayEndpoint` 아래 설치 위치와 파일의 ACL을 현재 사용자·SYSTEM·Administrators로 제한합니다. 1회 보고가 성공해야 현재 사용자 로그온 작업 `MCPGatewayEndpoint-<endpoint_id>`와 트레이를 등록합니다(포함 `pythonw.exe`, 추가 런타임 없음). 장치 키 값은 명령줄·환경·로그로 넘기지 않습니다. Tailscale HTTP에는 `-TailscaleNodeId`로 관리자가 확인한 노드 ID를 지정합니다.
 
 ```powershell
 Get-ScheduledTask -TaskName 'MCPGatewayEndpoint-endpoint-win-001'
-python "$env:LOCALAPPDATA\MCPGatewayEndpoint\agent.py" --config "$env:LOCALAPPDATA\MCPGatewayEndpoint\config.json" --once
+& "$env:LOCALAPPDATA\MCPGatewayEndpoint\python\python.exe" -I -S "$env:LOCALAPPDATA\MCPGatewayEndpoint\agent.py" --config "$env:LOCALAPPDATA\MCPGatewayEndpoint\config.json" --once
 ```
 
 ## 확인과 폐기
 
 - Console의 **직원·단말** 화면에서 등록 장치, 마지막 보고 시각, `registered` / `shadow` / `retired-residue` 분류를 확인합니다. `--once`가 0으로 끝났다는 사실만으로 수집 범위가 충분하다는 뜻은 아닙니다.
 - 장치 키를 잃거나 PC를 폐기하면 Console의 단말 표에서 **자격 폐기**를 누릅니다. 새 키가 필요하면 재발급 후 재설치합니다.
-- Linux 제거: `systemctl --user disable --now mcp-gateway-endpoint.service` (등록돼 있을 때), 사용자 서비스 파일과 `~/.local/share/mcp-gateway-endpoint`, `~/.config/mcp-gateway-endpoint`를 제거합니다. Windows 제거: `Unregister-ScheduledTask -TaskName 'MCPGatewayEndpoint-<endpoint_id>' -Confirm:$false` 후 `%LOCALAPPDATA%\MCPGatewayEndpoint`를 제거합니다. 먼저 서버의 장치 자격을 폐기하세요.
+- Linux 제거: `systemctl --user disable --now mcp-gateway-endpoint.service` (등록돼 있을 때), 사용자 서비스 파일과 `~/.local/share/mcp-gateway-endpoint`, `~/.config/mcp-gateway-endpoint`를 제거합니다. Windows는 먼저 서버의 장치 자격을 폐기한 뒤 트레이 **제거**를 사용합니다. 예약 작업 종료를 기다린 뒤 키트 소유 파일만 제거합니다.
 - 코드 자체 점검: `python endpoint-agent/agent.py --self-check`. Compose 실습에서는 직원 PC 컨테이너(`ws-*`)가 이 `agent.py`를 이미지에 복사해 실행합니다(`cd full_stack_lab && ./console.sh up`).
 
 `agent.py`와 사용자 범위 설치기는 관측 전용입니다. 위 관리형 설치 경로만 OS 집행을 구성합니다.
