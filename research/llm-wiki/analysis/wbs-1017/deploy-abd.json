@@ -1,23 +1,94 @@
 {
   "as_of": "2026-10-17T13:30:00+00:00",
-  "deployment": {"host": "solution appliance", "command": "./console.sh field up", "rc": 0,
-                 "commit": "7747d21", "includes": ["e53e229 destination pinning and credential redaction (D-116, D-117)",
-                 "753a7c1 upstream session reuse stage 2 (D-115)", "376221a loopback owner replies (D-119)"]},
+  "deployment": {
+    "host": "solution appliance",
+    "command": "./console.sh field up",
+    "rc": 0,
+    "commit": "7747d21",
+    "includes": [
+      "e53e229 destination pinning and credential redaction (D-116, D-117)",
+      "753a7c1 upstream session reuse stage 2 (D-115)",
+      "376221a loopback owner replies (D-119)"
+    ]
+  },
   "unit_in_gateway_image": {
     "command": "docker run --rm -v ~/mcp-gateway:/repo:ro -w /repo/full_stack_lab -e PYTHONPATH=/repo/full_stack_lab/gateway <gateway image> python -m unittest tests.<name>",
-    "results": {"dest_pin_transport_check": "2 OK (real httpcore2 pool, TLS name/SNI/Host)", "dest_pin_credential_redaction_check": "16 OK",
-                "upstream_session_reuse_test": "40 OK", "loopback_owner_replies_test": "9 OK",
-                "mcp_result_contract_check": "18 OK", "runtime_worker_check": "7 OK"}},
+    "results": {
+      "dest_pin_transport_check": "2 OK (real httpcore2 pool, TLS name/SNI/Host)",
+      "dest_pin_credential_redaction_check": "16 OK",
+      "upstream_session_reuse_test": "40 OK",
+      "loopback_owner_replies_test": "9 OK",
+      "mcp_result_contract_check": "18 OK",
+      "runtime_worker_check": "7 OK"
+    }
+  },
   "pj1_harness": {
     "harness": "managed Claude Code on PJ1 (pj1 account, claude -p), model claude-sonnet-5-5",
     "ledger": [
-      {"id": 17, "server": "github", "tool": "get_me", "decision": "Allow", "upstream_executed": true, "upstream_session_reused": false},
-      {"id": 18, "server": "markitdown", "tool": "convert_to_markdown", "uri": "https://example.com", "decision": "Block", "policy_id": "PAC-01",
-       "note": "outside the reviewed destinations of the markitdown approval; earlier allowed calls used github raw and learn.microsoft.com"},
-      {"id": 19, "server": "github", "tool": "get_me", "decision": "Allow", "upstream_executed": true, "upstream_session_reused": false},
-      {"run": "dep1017b", "server": "markitdown", "uri": "https://learn.microsoft.com/en-us/training/support/mcp", "result": "converted; title line returned",
-       "note": "internal runtime alias (single-label host, active runtime) passes the pinned transport"}],
-    "session_reuse_observation": "github, context7 and markitdown are pinned to protocol 2026-07-28 (sessionless), so D-115 reuse does not apply to them by design; legacy-protocol reuse is to be shown in the isolated lab"},
-  "not_run": ["DNS rebinding and private-answer negatives against a real resolver on the appliance",
-              "error-response redaction observed on PJ1", "PJ1 kit reinstall for D-119 (loopback) and its E13/R1-R9 runs"]
+      {
+        "id": 17,
+        "server": "github",
+        "tool": "get_me",
+        "decision": "Allow",
+        "upstream_executed": true,
+        "upstream_session_reused": false
+      },
+      {
+        "id": 18,
+        "server": "markitdown",
+        "tool": "convert_to_markdown",
+        "uri": "https://example.com",
+        "decision": "Block",
+        "policy_id": "PAC-01",
+        "note": "outside the reviewed destinations of the markitdown approval; earlier allowed calls used github raw and learn.microsoft.com"
+      },
+      {
+        "id": 19,
+        "server": "github",
+        "tool": "get_me",
+        "decision": "Allow",
+        "upstream_executed": true,
+        "upstream_session_reused": false
+      },
+      {
+        "run": "dep1017b",
+        "server": "markitdown",
+        "uri": "https://learn.microsoft.com/en-us/training/support/mcp",
+        "result": "converted; title line returned",
+        "note": "internal runtime alias (single-label host, active runtime) passes the pinned transport"
+      }
+    ],
+    "session_reuse_observation": "github, context7 and markitdown are pinned to protocol 2026-07-28 (sessionless), so D-115 reuse does not apply to them by design; legacy-protocol reuse is to be shown in the isolated lab"
+  },
+  "not_run": [
+    "error-response redaction observed on PJ1",
+    "PJ1 kit reinstall for D-119 (loopback) and its E13/R1-R9 runs",
+    "OAuth metadata / authorization-server lookup counter-cases on the appliance"
+  ],
+  "real_resolver_negatives": {
+    "where": "deployed gateway container, appliance resolver, upstream._client(internal=False)",
+    "as_of": "2026-10-17T13:55:00+00:00",
+    "results": [
+      {
+        "url": "http://localtest.me/",
+        "result": "blocked MCP-EGRESS-001"
+      },
+      {
+        "url": "http://10.0.0.1.nip.io/",
+        "result": "blocked MCP-EGRESS-001"
+      },
+      {
+        "url": "http://169.254.169.254.nip.io/latest/meta-data/",
+        "result": "blocked MCP-EGRESS-001"
+      },
+      {
+        "url": "http://127.0.0.1.sslip.io/",
+        "result": "blocked MCP-EGRESS-001"
+      },
+      {
+        "url": "https://api.githubcopilot.com/",
+        "result": "reached (404 at root), control"
+      }
+    ]
+  }
 }

@@ -1253,7 +1253,7 @@
       "code_symbols_files": [],
       "regression_test_candidates": [],
       "actual_evidence_paths": [],
-      "known_gap": "기기에서 DNS 재바인딩·사설 주소 응답 음성 시험과 OAuth 메타데이터 조회 대상 반례가 남았다.",
+      "known_gap": "기기에서 OAuth 메타데이터·인가 서버 조회 대상 반례가 남았다.",
       "completion_condition": "DNS 재바인딩·리디렉션·미승인 OAuth 조회 대상 반례가 모두 차단된다",
       "stage_weights": {
         "implementation": 0.2,
@@ -1271,7 +1271,7 @@
         "implementation": "연결 직전 DNS 전체 응답 검사와 확인한 IP로 접속, TLS 이름·SNI·Host 유지, 내부 판정은 등록·실행기 단일 라벨 호스트(D-116).",
         "regression": "기기 게이트웨이 이미지에서 실제 연결 풀 시험 2건·단위 16건 통과.",
         "deployment": "7747d21 field up 배포.",
-        "real_device": "PJ1 관리 Claude Code로 외부 github get_me 2회·내부 실행기 markitdown 변환 정상. 재바인딩·사설 응답 음성 시험은 기기에서 미실행.",
+        "real_device": "PJ1 관리 Claude Code로 외부 github·내부 markitdown 정상, 기기 실제 DNS로 사설·루프백·메타데이터 응답 4건 차단(MCP-EGRESS-001). OAuth 조회 대상 반례는 미실행.",
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
