@@ -1374,3 +1374,17 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 복구: CA 볼륨은 배치 수명 동안 유지한다. 새 루트는 기존 연결을 실패시키므로 별도 지문 대조·새 키트 설치로 교체한다. 키트 발행자 확인은 인증된 배포 경로와 운영자의 별도 지문 대조를 전제로 한다.
 - 후속 병합 정정: D-118 키트의 `payload`와 매니페스트에 CA·지문·직원 PC 도구를 함께 넣는다. Windows도 등록 전에 CA를 검증하고 보호된 승인 키트의 루트로 고정한다. 서비스·관측기에 CA를 전달하고 하네스 `.cmd` 실행기의 `setlocal`로 프로세스에만 적용한다. PowerShell은 요청별 검증 콜백·임시 X509Chain.ExtraStore를 사용하며 시스템 저장소는 변경하지 않는다. 내부 `gateway`는 TLS 종료점이 아니므로 레지스트리 주소 기본값은 비우고 배포 시 실제 HTTPS 주소를 지정한다. [병합 후 검증](../../research/llm-wiki/status/reports/2026-10-18-field-tls-d124-merge.md)이 이전 Windows 통합 대기를 대체한다.
 - 근거/한계: [DEV-64 분석](../../research/llm-wiki/analysis/field-tls-d124/README.md), [작업 보고·메인 검증 명령](../../research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md). Codex 0.157.0의 고정 소스와 공식 문서로 CA 변수를 확인했다. 로컬 단위 증거이며 Caddy 자체 검사·배포·PJ1은 미실행이다. Windows 전용 설치기는 다른 작업과 공통 CA 필드/환경값을 통합해야 한다.
+
+## D-125 단일 조회의 범위와 반환 건수·크기를 제한한다 (2026-10-18)
+
+- DEV-54 / G03.06 / POL-35. 기본 `MAX_RESULT_ITEMS=1000`, 기존 `MAX_RESULT_BYTES=262144`를 양수로 검증한다. 반환 건수는 structured JSON의 중첩 배열 원소 합, text 블록의 JSON 배열 원소 합 또는 비어 있지 않은 줄 수, content 블록 수 중 최댓값이다. text 블록들은 합산한다. 같은 내용을 text/structured로 보낸 경우 두 표현 중 큰 값을 사용한다. 바이트는 전체 UTF-8 JSON 크기다.
+- 승인 입력 스키마 확인 뒤 읽기 요청에 `P-VOLUME-002`를 적용한다. 명시된 페이지 크기는 상한 이내 양수여야 한다. 파일 시스템·Desktop의 루트/전체 경로, 무범위 재귀 조회·전체 검색, 다중 파일 수 초과·glob, Redis 전체 키 검색을 거부한다. PostgreSQL `execute_sql`의 읽기는 기존 pglast 구문 트리로 단일 SELECT의 고정 정수 LIMIT(0~상한)을 요구하며 LIMIT ALL/변수/식/WITH TIES, 다중 문장, COPY 전체 내보내기를 거부한다. 인자를 자동 변경하거나 결과를 잘라 정상 성공으로 표시하지 않는다.
+- 원문과 마스킹 후 반환 표현에 상한을 각각 적용한다. 응답 초과는 `MCP-OUTPUT-001` Block, `upstream_executed=true`, `withheld`다. 실행 전 범위 차단은 upstream 미전송이다. 누적 중요정보 승인 `P-VOLUME-001`과 별개다.
+- 근거: OWASP API4:2023의 반환 레코드·자원 제한, API3:2023의 필요한 속성만 노출하는 원칙. 속성별 인가·범용 레코드 스키마·서버의 쿼리 비용 제한을 이 변경으로 구현했다고 주장하지 않는다. SDK가 응답을 메모리에 읽은 다음의 통제이며 원격 서버 작업량/메모리 상한은 아니다. [분석·원자 요구](../../research/llm-wiki/analysis/response-cap-idempotency/README.md).
+
+## D-126 완료된 변경 호출의 지문으로 재전송을 차단한다 (2026-10-18)
+
+- DEV-55 / G03.07 / POL-36. 기존 `(transport 주체, server, tool, arguments canonical hash)`와 `dispatch_intents`를 사용한다. `w/x`의 definite outcome(`resolved`·`confirmed_executed`)은 `resolved_at`부터 `IDEMPOTENCY_TTL_SECONDS`(기본 86400초, 양수) 동안 같은 변경의 재전송을 `P-RATE-003`으로 차단한다. 응답 본문·직원 토큰을 새로 저장하거나 결과를 재생하지 않는다. 같은 의도의 인자 순서 차이는 canonical hash가 흡수한다.
+- 예약 단계에서 이력을 확인하고 전송 직전에도 같은 주체별 advisory lock 안에서 이력 재확인·intent 삽입·승인 소비를 수행한다. 잠금 대기 중 기한이 지난 예약/승인은 실제 시각(`clock_timestamp()`)으로 거부한다. lease 만료가 완료 이력이나 미확인 상태를 지우지 않는다. 이력 조회용 인덱스만 추가하며 기존 표·원장을 삭제하지 않는다.
+- `pending`·`uncertain` 쓰기는 시간으로 풀리지 않는다. 관리자가 downstream에서 `not_executed`를 확인해야 즉시 재시도가 가능하다. `executed` 확인은 완료 보존 기간으로 이동한다. 읽기·전송 전 거부에는 완료 변경 이력을 만들지 않는다. 기존 읽기의 동시 중복 예약 제한은 유지한다. C1~C4/T1~T3 판정 기준은 변경하지 않는다.
+- IETF Idempotency-Key -07은 참고 초안이며 RFC가 아니다. MCP 공통 멱등 키·결과 재생의 구현이 아니다. 의도적으로 같은 변경을 반복하려 해도 보존 기간에는 차단되며, 인자가 달라진 동일 업무·다른 주체·게이트웨이 우회·기간 후 재시도까지 정확히 한 번 실행을 보장하지 않는다. DB 내구성과 운영자의 확인에 의존한다. [작업 보고](../../research/llm-wiki/status/reports/2026-10-17-response-cap-idempotency.md).

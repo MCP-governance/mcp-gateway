@@ -1,0 +1,364 @@
+{
+  "task": "DEV-54/G03.06/POL-35 + DEV-55/G03.07/POL-36",
+  "decisions": [
+    "D-125",
+    "D-126"
+  ],
+  "base_commit": "fd904c24250b6029061283bb8a57fa4efe0b5b17",
+  "branch": "10/18-response-cap",
+  "requested_branch": "10/18-response-cap-idempotency",
+  "branch_creation": "denied_shared_git_metadata",
+  "scope": "local-code-and-unit-only",
+  "defaults": {
+    "MAX_RESULT_ITEMS": 1000,
+    "MAX_RESULT_BYTES": 262144,
+    "IDEMPOTENCY_TTL_SECONDS": 86400
+  },
+  "native_parser_checked": false,
+  "native_crypto_fixture_checked": false,
+  "database_effect_verified": false,
+  "mcp_effect_verified": false,
+  "deployed": false,
+  "requirements": [
+    {
+      "id": "D125-R1",
+      "requirement": "원문 응답의 UTF-8 JSON 바이트와 건수 상한",
+      "code": [
+        "core._guarded_result",
+        "classify.result_items"
+      ],
+      "conditions": {
+        "normal": "상한 이내·빈 배열",
+        "negative": "상한 초과·중첩 배열·여러 text 블록",
+        "boundary": "정확히 상한·상한+1·다중 바이트 문자",
+        "failure": "형식/주입/출력 검사 실패는 응답 보류"
+      },
+      "tests": [
+        "ResponseCaps.test_raw_count_boundary_and_no_truncation",
+        "ResponseCaps.test_byte_boundary_uses_utf8",
+        "ResponseCaps.test_structured_nested_json_text_and_plain_lines",
+        "dispatch_effect_lab.single_response_caps"
+      ],
+      "effect": "오프라인 함수 확인; 실제 Gitea 응답 보류 미실행"
+    },
+    {
+      "id": "D125-R2",
+      "requirement": "마스킹 후 표현도 같은 반환 상한 적용",
+      "code": [
+        "core._inspected_result"
+      ],
+      "conditions": {
+        "normal": "검사 후 상한 이내",
+        "negative": "마스킹 후 바이트/배열 확대",
+        "failure": "검사기 불능·미마스킹 secret은 반환 금지",
+        "recovery": "검사·상한 복구 후 정상 조회"
+      },
+      "tests": [
+        "InspectedCaps.test_masked_growth_is_withheld_and_inspection_failure_stays_closed",
+        "dispatch_effect_lab.single_response_caps"
+      ],
+      "effect": "오프라인 확인; 실제 timeout/네이티브 검사기 미실행"
+    },
+    {
+      "id": "D125-R3",
+      "requirement": "지원 선택자의 전체 읽기와 요청 건수 초과는 전송 전 차단",
+      "code": [
+        "classify.bulk_read_reason",
+        "core.execute_call"
+      ],
+      "conditions": {
+        "normal": "하위 폴더·구체적 키 패턴·양수 페이지 크기·고정 SQL LIMIT",
+        "negative": "루트/전체 glob·무범위 재귀·전체 Redis 키·SQL 무상한/ALL/변수/식/다중/COPY",
+        "boundary": "최대 페이지 크기·0/음수/boolean/문자열·LIMIT 0",
+        "failure": "SQL 파서 오류는 범위 확인 불가"
+      },
+      "tests": [
+        "ResponseCaps.test_folder_selectors_and_normal_lookup",
+        "ResponseCaps.test_pagination_types_boundaries_and_nesting",
+        "ResponseCaps.test_sql_ast_constant_limit_only",
+        "ResponseCaps.test_native_postgres_grammar",
+        "dispatch_effect_lab.single_response_caps"
+      ],
+      "effect": "구문 트리 대역·선택자 함수 확인; native pglast·실제 미전송 결과 미실행"
+    },
+    {
+      "id": "D126-R1",
+      "requirement": "완료된 w/x는 주체·서버·도구·인자 지문으로 기간 내 재전송 차단",
+      "code": [
+        "core._reserve_call",
+        "dispatch.REPLAY"
+      ],
+      "conditions": {
+        "normal": "첫 변경·다른 인자·다른 주체·읽기는 독립",
+        "negative": "완료 후 같은 변경 재전송",
+        "boundary": "lease 만료와 별개; 완료 보존 기간 경계",
+        "recovery": "확정 완료 보존 기간 이후 재시도"
+      },
+      "tests": [
+        "dispatch_intent_pg_check.completed_write_replay",
+        "dispatch_effect_lab.completed_retransmission"
+      ],
+      "effect": "코드/지문 확인; 실제 DB 보존 경계와 Gitea 쓰기 수 미실행"
+    },
+    {
+      "id": "D126-R2",
+      "requirement": "최종 경계에서 주체별 잠금 안의 재확인·intent·승인 소비",
+      "code": [
+        "dispatch.record",
+        "core._call_upstream"
+      ],
+      "conditions": {
+        "race": "오래된 두 판정이 동시에 도착해도 하나만 intent 기록",
+        "negative": "중복은 P-RATE-003 미전송",
+        "boundary": "잠금 대기 뒤 실제 시각의 lease/승인 만료 검사",
+        "failure": "DB 불능은 intent 생성/실행 금지"
+      },
+      "tests": [
+        "DispatchBoundary.test_duplicate_write_is_refused_before_intent_insert",
+        "DispatchBoundary.test_reads_remain_repeatable_and_first_write_records",
+        "DispatchBoundary.test_store_failure_does_not_admit",
+        "dispatch_intent_pg_check.stale_dispatch_replay_race",
+        "dispatch_intent_pg_check.approval_is_consumed_once"
+      ],
+      "effect": "대역 DB에서 순서·거부 확인; PostgreSQL 경쟁·기한·승인 원자성 미실행"
+    },
+    {
+      "id": "D126-R3",
+      "requirement": "미확인 변경은 시간으로 풀리지 않고 관리자 확인으로만 복구",
+      "code": [
+        "dispatch.UNSETTLED",
+        "dispatch.resolve",
+        "core._release_call"
+      ],
+      "conditions": {
+        "failure": "응답 유실·프로세스 사망 pending/uncertain",
+        "boundary": "lease/완료 기간 뒤에도 미확인 차단",
+        "recovery": "confirmed_not_executed 즉시 재시도; confirmed_executed 보존 기간 적용"
+      },
+      "tests": [
+        "dispatch_intent_pg_check.completed_write_replay",
+        "dispatch_intent_pg_check.unsettled_blocks_identical_write",
+        "dispatch_effect_lab.crash_between_intent_and_answer"
+      ],
+      "effect": "기존 의미 유지·시험 작성; 실제 장애/관리자 복구 미실행"
+    },
+    {
+      "id": "LAB-R1",
+      "requirement": "운영 차단·서명 저장소를 끄지 않고 실제 격리 랩 준비",
+      "code": [
+        "termination_lab_support.apply_schema",
+        "termination_lab_support.isolated_disposal"
+      ],
+      "conditions": {
+        "normal": "ops 스키마·일회용 독립 서명 키·부모/자식 공유 임시 저장소",
+        "failure": "예외에도 환경·저장소 위치 복원·임시 파일 정리"
+      },
+      "tests": [
+        "ResponseCaps.test_isolated_lab_uses_real_signed_store_and_restores_after_failure"
+      ],
+      "effect": "작성·구문 확인; cryptography 미설치로 실제 암호 fixture 미실행"
+    }
+  ],
+  "source": [
+    {
+      "path": "full_stack_lab/gateway/app/classify.py",
+      "sha256": "49ca61bbaba442ae35458ef8f21378383fcb398987137a4b0ea030b5897c5dfd",
+      "symbols": {
+        "_luhn": 146,
+        "dlp_scan": 157,
+        "_strings": 171,
+        "_rules": 185,
+        "_org": 189,
+        "_longest_prefix": 193,
+        "path_resource": 209,
+        "_as_ip": 233,
+        "_internal_address": 251,
+        "_embedded_addresses": 258,
+        "host_category": 274,
+        "url_destination": 307,
+        "email_destination": 320,
+        "_web_resource": 328,
+        "_function_action": 384,
+        "_sql_nodes": 401,
+        "_sql_relations": 413,
+        "_copy_action": 435,
+        "_statement_action": 446,
+        "sql_facts": 465,
+        "_scope_covers": 495,
+        "outside_scope": 507,
+        "table_resource": 521,
+        "redis_resource": 528,
+        "repo_resource": 541,
+        "result_items": 552,
+        "bulk_read_reason": 576,
+        "_paths": 626,
+        "_filesystem": 637,
+        "_desktop": 641,
+        "_git": 662,
+        "_fetch": 667,
+        "_memory": 677,
+        "_postgres": 682,
+        "_redis": 705,
+        "_email": 716,
+        "_gitea": 736,
+        "_playwright": 754,
+        "remember_navigation": 774,
+        "classify": 785,
+        "apply_restrictions": 809
+      }
+    },
+    {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "sha256": "d5454942f14bbc971f42c84e8281e0523cb4f2b2e598974e5c15b07497d1a8aa",
+      "symbols": {
+        "response_evidence": 111,
+        "response_disposition": 125,
+        "_configure_tracing": 162,
+        "_discover": 180,
+        "refresh_catalog": 187,
+        "approve_contract": 339,
+        "bootstrap": 420,
+        "refresh_all_catalogs": 445,
+        "check_server": 460,
+        "registration_endpoint": 495,
+        "suggested_action": 505,
+        "discover_for_registration": 511,
+        "register_server": 519,
+        "deregister_server": 686,
+        "review_tool_scopes": 705,
+        "renew_approvals": 742,
+        "catalog_watch": 786,
+        "_contract": 800,
+        "enforcement_mode": 865,
+        "set_enforcement_mode": 876,
+        "monitor_summary": 887,
+        "untrusted_markers": 913,
+        "_endpoint_host": 929,
+        "transport_secure": 939,
+        "egress_allowed": 950,
+        "_outbound_text": 979,
+        "_privacy_ignore": 997,
+        "_sequence_flags": 1010,
+        "_relationship_scope": 1023,
+        "_risk_score": 1040,
+        "_reserve_call": 1050,
+        "_release_call": 1138,
+        "_opa": 1163,
+        "opa_document": 1167,
+        "policy_ledger": 1177,
+        "local_verdict": 1198,
+        "_policy": 1226,
+        "_call_upstream": 1240,
+        "_root_cause": 1380,
+        "_storable": 1388,
+        "_decoded_strings": 1399,
+        "_upstream_failure": 1413,
+        "body_of": 1439,
+        "_guarded_result": 1443,
+        "_inspected_result": 1480,
+        "_audit_payload": 1497,
+        "_record_decision": 1517,
+        "record_connection_denial": 1604,
+        "verify_audit_chain": 1638,
+        "_decision_payload": 1680,
+        "execute_call": 1693,
+        "approve_request": 1960,
+        "_trivy_summary": 2007,
+        "_store_trivy": 2031,
+        "supply_chain_coverage": 2041,
+        "reject_request": 2060,
+        "import_supply_chain_reports": 2089
+      }
+    },
+    {
+      "path": "full_stack_lab/gateway/app/dispatch.py",
+      "sha256": "046b62f4f69d9e51750d147cf9d8f293a1427ef1baf37f64276dd03b6368fa70",
+      "symbols": {
+        "record": 50,
+        "uncertain": 108,
+        "uncertain_count": 118,
+        "resolve": 127
+      }
+    },
+    {
+      "path": "full_stack_lab/gateway/app/v2_tables.sql",
+      "sha256": "80ec4fc11988bb726044dc9f48e9ae7a1d1676a112f7ce5cdba084a6c2b86be3"
+    },
+    {
+      "path": "full_stack_lab/opa/policy.rego",
+      "sha256": "177045efaa2ae95f6c8b1a8f4b732d7fa39d1a50fceb2161e5d2cc1756e7c0b3"
+    },
+    {
+      "path": "full_stack_lab/opa/policy_ledger.json",
+      "sha256": "27799e94763531761f63f317ef5a6e22fa1a423b54463c74d799024f8e2ff197"
+    },
+    {
+      "path": "full_stack_lab/tests/response_cap_idempotency_test.py",
+      "sha256": "be25d6dd29b33dabdea5bcb49266ba872f297f4bf41356ecd88e835c3c9ceff0",
+      "symbols": {
+        "selected": 19,
+        "classifier": 32,
+        "guard": 37
+      }
+    },
+    {
+      "path": "full_stack_lab/tests/dispatch_intent_pg_check.py",
+      "sha256": "f71f9475644813099c7732d053569f8be8119e2398dbe0edaa7c1385afc14c33",
+      "symbols": {
+        "reserve": 20,
+        "completed_write_replay": 25,
+        "stale_dispatch_replay_race": 58,
+        "fingerprint": 71,
+        "identical_concurrent": 75,
+        "ceilings_distinct": 85,
+        "release_and_expiry": 99,
+        "release_vs_reserve_race": 125,
+        "boundary_refusals": 137,
+        "unsettled_blocks_identical_write": 157,
+        "approval_is_consumed_once": 207,
+        "cutover_race": 242,
+        "pool_closure": 277,
+        "main": 320,
+        "scenarios": 325
+      }
+    },
+    {
+      "path": "full_stack_lab/tests/dispatch_effect_lab.py",
+      "sha256": "0af20021df4e93380b07a25a8954ae8c5a8f122bc18ed9c29a09ee2a82f8adec",
+      "symbols": {
+        "no_secrets": 32,
+        "issues": 36,
+        "arguments": 43,
+        "call": 47,
+        "summary": 78,
+        "identical_concurrent": 82,
+        "completed_retransmission": 101,
+        "single_response_caps": 115,
+        "ceiling_concurrent": 139,
+        "rate_ceiling": 152,
+        "approval_reuse": 166,
+        "crash_between_intent_and_answer": 220,
+        "in_flight_answer_lost_in_process": 273,
+        "principal_revoked_in_flight": 316,
+        "nul_in_arguments_and_answer": 348,
+        "main": 368,
+        "scenarios": 373
+      }
+    },
+    {
+      "path": "full_stack_lab/tests/termination_lab_support.py",
+      "sha256": "5171747d8e0b17017d0288daa128086b8ba92788ebf9a9137891ff410d0412a5",
+      "symbols": {
+        "apply_schema": 54,
+        "isolated_disposal": 62,
+        "add_principal": 83,
+        "add_server": 91,
+        "reservation": 98,
+        "run": 106,
+        "signing_keys": 115,
+        "mint": 125,
+        "call_payload": 133
+      }
+    }
+  ]
+}

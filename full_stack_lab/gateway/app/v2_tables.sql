@@ -271,6 +271,7 @@ CREATE TABLE IF NOT EXISTS dispatch_intents (
 CREATE INDEX IF NOT EXISTS dispatch_intents_unsettled_idx
   ON dispatch_intents(user_token, fingerprint) WHERE state IN ('pending','uncertain');
 CREATE INDEX IF NOT EXISTS dispatch_intents_server_idx ON dispatch_intents(server_id, attempted_at DESC);
+CREATE INDEX IF NOT EXISTS dispatch_intents_replay_idx ON dispatch_intents(user_token, fingerprint);
 
 -- Connection-pool closures. A cutover or a revoked principal is decided in one process
 -- while every process holds warm upstream connections; the others read these rows.

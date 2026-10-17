@@ -2003,7 +2003,7 @@
     },
     "P-RATE-003": {
       "name": "중복 호출 차단",
-      "purpose": "같은 인자의 같은 호출이 아직 끝나지 않았는데 다시 들어오면 차단한다. 같은 부수효과가 두 번 나는 것을 막는다.",
+      "purpose": "실행 중·미확인 호출과 보존 기간 내 완료된 같은 변경 호출을 차단한다.",
       "enforced_by": "opa",
       "risk_ids": [
         "RSK-28"
@@ -2031,12 +2031,12 @@
       "inputs": [
         "context.duplicate_in_flight"
       ],
-      "condition": "같은 호출이 이미 실행 중이다.",
+      "condition": "실행 중·미확인 또는 완료 변경 이력 보존 기간 안의 같은 호출",
       "outcome": "차단",
       "enforcement": "실행 전 거부",
       "priority": 72,
       "automation": "자동화",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "status": "운영",
       "approval_status": "승인",
       "effective_from": "2026-09-30T00:00:00Z",
@@ -3155,6 +3155,62 @@
         "PAC-01",
         "PAC-03",
         "PAC-04"
+      ]
+    },
+    "P-VOLUME-002": {
+      "name": "단일 조회 상한",
+      "purpose": "단일 조회의 반환 건수·크기와 전체 선택자를 제한한다.",
+      "enforced_by": "gateway",
+      "risk_ids": [
+        "RSK-17",
+        "RSK-21"
+      ],
+      "requirement_ids": [
+        "REQ-18",
+        "REQ-28"
+      ],
+      "control_ids": [
+        "CTL-18",
+        "CTL-28"
+      ],
+      "principle_ids": [
+        "PRN-05",
+        "PRN-10"
+      ],
+      "owner": "보안 담당자",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "important 등급 접근",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "arguments",
+        "MAX_RESULT_ITEMS"
+      ],
+      "condition": "지원하는 전체 조회 선택자 또는 단일 요청 건수 상한 초과",
+      "outcome": "차단",
+      "enforcement": "실행 전 조회 범위 거부",
+      "priority": 73,
+      "automation": "부분 자동화",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-18T00:00:00Z",
+      "obligations": [
+        "evidence.enhanced",
+        "alert.security",
+        "approval.required"
+      ],
+      "test_ids": [
+        "T-VOLUME-003"
+      ],
+      "pac_candidate_id": "PAC-CAND-16",
+      "pac_ids": [
+        "PAC-15"
       ]
     }
   }

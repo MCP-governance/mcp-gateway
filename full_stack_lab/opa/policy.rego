@@ -293,12 +293,10 @@ candidate["P-RATE-002"] := {
 	active_calls > concurrency_limit
 }
 
-# 같은 인자의 같은 호출이 아직 끝나지 않았는데 또 들어왔다. 시간초과 뒤의 재시도는
-# 여기에 걸리지 않는다 - 그때는 앞의 예약이 이미 풀렸거나 만료됐다. 걸리는 것은
-# 같은 부수효과를 두 번 내려는 호출이다(이중 발송, 재생).
+# 실행 중·미확인 호출과 완료 이력 보존 기간 안의 같은 변경 호출을 함께 막는다.
 candidate["P-RATE-003"] := {
 	"decision": "Block",
-	"reason": "같은 호출이 실행 중이거나 결과가 확정되지 않았습니다. 결과를 확인한 뒤 다시 보내세요.",
+	"reason": "같은 호출이 실행 중이거나 미확인 상태 또는 변경 이력 보존 기간 안에 있어 다시 실행하지 않습니다.",
 	"restrictions": {},
 	"conditions": {"matched": [], "violated": ["context.duplicate_in_flight"]},
 } if {

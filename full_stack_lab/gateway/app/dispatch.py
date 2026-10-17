@@ -9,6 +9,8 @@ system closes it; until then an identical write is refused (P-RATE-003).
 """
 from __future__ import annotations
 
+import os
+
 from . import db
 from .contract import canonical_hash
 
@@ -19,6 +21,14 @@ UNSETTLED = """(i.state = 'uncertain' OR (i.state = 'pending' AND NOT EXISTS (
          WHERE r.request_id = i.request_id AND r.released_at IS NULL AND r.expires_at > now())))"""
 
 OUTCOMES = {"executed": "confirmed_executed", "not_executed": "confirmed_not_executed"}
+IDEMPOTENCY_TTL_SECONDS = int(os.getenv("IDEMPOTENCY_TTL_SECONDS", "86400"))
+if IDEMPOTENCY_TTL_SECONDS <= 0:
+    raise ValueError("IDEMPOTENCY_TTL_SECONDS must be positive")
+
+# Unanswered sends never expire; only definite outcomes have a replay window.
+REPLAY = """i.action IN ('w','x') AND (i.state IN ('pending','uncertain') OR
+    (i.state IN ('resolved','confirmed_executed') AND
+     i.resolved_at > now() - make_interval(secs => %s)))"""
 
 
 class _Refused(Exception):
@@ -30,7 +40,7 @@ _INSERT = """INSERT INTO dispatch_intents(request_id, user_token, server_id, too
              FROM call_reservations r
              JOIN principals p ON p.token = r.user_token AND p.status = 'active'
              JOIN mcp_servers s ON s.id = r.server_id AND COALESCE(s.lifecycle, 'OPERATING') = 'OPERATING'
-            WHERE r.request_id = %s AND r.released_at IS NULL AND r.expires_at > now()
+            WHERE r.request_id = %s AND r.released_at IS NULL AND r.expires_at > clock_timestamp()
               AND s.status <> 'DISABLED'
               AND NOT EXISTS (SELECT 1 FROM ops_suspensions x WHERE x.server_id=s.id AND x.resumed_at IS NULL)
               AND NOT EXISTS (SELECT 1 FROM disposal_blocks x WHERE x.server_id=s.id AND x.kind IN ('server','credential'))
@@ -47,10 +57,21 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
     transaction: the approval is single-use at the one place that sends, not only where it was claimed.
     """
     try:
-        if approval_id:
-            async with db.transaction() as connection:
-                if not (await connection.execute(_INSERT, (action, request_id))).rowcount:
-                    raise _Refused
+        async with db.transaction() as connection:
+            row = await (await connection.execute(
+                "SELECT user_token, fingerprint FROM call_reservations WHERE request_id=%s", (request_id,))).fetchone()
+            if not row:
+                raise _Refused
+            # Same lock as reservation: even a stale policy context cannot dispatch two writes.
+            await connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (row["user_token"],))
+            if action in {"w", "x"} and await (await connection.execute(
+                    f"""SELECT 1 FROM dispatch_intents i WHERE i.user_token=%s AND i.fingerprint=%s
+                         AND i.request_id<>%s AND {REPLAY} LIMIT 1""",
+                    (row["user_token"], row["fingerprint"], request_id, IDEMPOTENCY_TTL_SECONDS))).fetchone():
+                raise _Refused("duplicate")
+            if not (await connection.execute(_INSERT, (action, request_id))).rowcount:
+                raise _Refused
+            if approval_id:
                 # What is sent must be what was approved: the approval row holds the approved request,
                 # the intent the fingerprint and principal of this one. The digest the policy checks
                 # binds high-risk calls only; this binds every approved call.
@@ -62,15 +83,13 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
                         {"server": approved.get("server_id"), "tool": approved.get("tool"), "arguments": approved.get("arguments")}):
                     raise _Refused("approval")
                 if not (await connection.execute(
-                        "UPDATE approvals SET status = 'UNCONFIRMED' WHERE id = %s AND status = 'APPROVED' AND expires_at > now()",
+                        "UPDATE approvals SET status = 'UNCONFIRMED' WHERE id = %s AND status = 'APPROVED' AND expires_at > clock_timestamp()",
                         (approval_id,))).rowcount:
                     raise _Refused("approval")
-            return None
-        if await db.execute(_INSERT, (action, request_id)):
-            return None
+        return None
     except _Refused as refusal:
         if refusal.args:
-            return "approval"
+            return refusal.args[0]
     why = await db.fetch_one(
         """SELECT (SELECT p.status FROM principals p WHERE p.token = r.user_token) AS principal,
                   (SELECT COALESCE(s.lifecycle, 'OPERATING') FROM mcp_servers s WHERE s.id = r.server_id) AS lifecycle,

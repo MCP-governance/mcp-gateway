@@ -12,14 +12,60 @@ import uuid
 from psycopg.types.json import Jsonb
 
 from app import core, db, decommission, dispatch, upstream
-from termination_lab_support import Checks, add_principal, add_server, apply_schema, reservation, run
+from termination_lab_support import Checks, add_principal, add_server, apply_schema, isolated_disposal, reservation, run
 
 CHECKS = Checks("dispatch intent and reservation atomicity (PostgreSQL)")
 
 
-async def reserve(token, server, tool, arguments, rid=None):
+async def reserve(token, server, tool, arguments, rid=None, action="r"):
     rid = rid or str(uuid.uuid4())
-    return rid, await core._reserve_call(rid, token, server, tool, arguments, "nonimportant")
+    return rid, await core._reserve_call(rid, token, server, tool, arguments, "nonimportant", action)
+
+
+async def completed_write_replay():
+    token, args = "u-completed", {"x": "completed"}
+    await add_principal(token)
+    rid, _ = await reserve(token, "srv", "t", args, action="w")
+    CHECKS.ok("first write records an intent", await dispatch.record(rid, "w") is None)
+    await core._release_call(rid, 5001, "resolved")
+    await db.execute("UPDATE call_reservations SET expires_at=now()-interval '1 day' WHERE request_id=%s", (rid,))
+    retry, context = await reserve(token, "srv", "t", args, action="w")
+    CHECKS.ok("completed write stays duplicate after lease expiry", context["duplicate_in_flight"])
+    CHECKS.ok("final dispatch also refuses completed write", await dispatch.record(retry, "w") == "duplicate")
+    await core._release_call(retry)
+    read, context = await reserve(token, "srv", "t", args, action="r")
+    CHECKS.ok("completed writes do not prevent a read", not context["duplicate_in_flight"])
+    await core._release_call(read)
+    changed, context = await reserve(token, "srv", "t", {"x": "changed"}, action="w")
+    CHECKS.ok("different arguments are independent", not context["duplicate_in_flight"])
+    await core._release_call(changed)
+    await db.execute("UPDATE dispatch_intents SET resolved_at=now()-make_interval(secs => %s) WHERE request_id=%s",
+                     (dispatch.IDEMPOTENCY_TTL_SECONDS + 1, rid))
+    later, context = await reserve(token, "srv", "t", args, action="w")
+    CHECKS.ok("definite outcome expires at the documented retention boundary", not context["duplicate_in_flight"])
+    CHECKS.ok("write after retention can record", await dispatch.record(later, "w") is None)
+    await core._release_call(later, 5002, "uncertain")
+    await db.execute("UPDATE dispatch_intents SET resolved_at=now()-interval '10 years' WHERE request_id=%s", (later,))
+    retry, context = await reserve(token, "srv", "t", args, action="w")
+    CHECKS.ok("uncertain write does not expire with retention", context["duplicate_in_flight"])
+    await core._release_call(retry)
+    await dispatch.resolve(later, "not_executed", "admin", "synthetic lab: checked no effect")
+    fresh, context = await reserve(token, "srv", "t", args, action="w")
+    CHECKS.ok("confirmed not executed permits retry", not context["duplicate_in_flight"])
+    await core._release_call(fresh)
+
+
+async def stale_dispatch_replay_race():
+    token = "u-final-replay"
+    await add_principal(token)
+    ids = [str(uuid.uuid4()), str(uuid.uuid4())]
+    for rid in ids:
+        await reservation(rid, token, "srv", fingerprint="same-final-write")
+    results = await asyncio.gather(*(dispatch.record(rid, "w") for rid in ids))
+    CHECKS.ok("stale admitted contexts cannot both dispatch a write", results.count(None) == 1
+              and results.count("duplicate") == 1, results=results)
+    for rid in ids:
+        await core._release_call(rid, 5003, "resolved")
 
 
 def fingerprint(arguments, server="srv", tool="t"):
@@ -169,11 +215,16 @@ async def approval_is_consumed_once():
     for rid in rids:
         await reservation(rid, "u-h", "srv", "t", fingerprint({"a": 1}))
     outcomes = await asyncio.gather(*[dispatch.record(rid, "w", approval) for rid in rids])
-    CHECKS.ok("one approval admits exactly one dispatch", outcomes.count(None) == 1 and outcomes.count("approval") == 7, outcomes=outcomes)
+    CHECKS.ok("one approved write admits one dispatch; identical writes are duplicates",
+              outcomes.count(None) == 1 and outcomes.count("duplicate") == 7, outcomes=outcomes)
     status = await db.fetch_one("SELECT status FROM approvals WHERE id=%s", (approval,))
     CHECKS.ok("the approval is consumed at the send", status["status"] == "UNCONFIRMED")
     intents = await db.fetch_one("SELECT count(*) AS n FROM dispatch_intents WHERE request_id = ANY(%s::uuid[])", (rids,))
     CHECKS.ok("refused uses leave no intent behind", intents["n"] == 1)
+    read_retry = str(uuid.uuid4())
+    await reservation(read_retry, "u-h", "srv", "t", fingerprint({"a": 1}))
+    CHECKS.ok("consumed approval also refuses a read without duplicate-write gating",
+              await dispatch.record(read_retry, "r", approval) == "approval")
 
     other = str(uuid.uuid4())
     await db.execute(
@@ -267,12 +318,18 @@ async def pool_closure():
 
 
 async def main():
+    with isolated_disposal():
+        return await scenarios()
+
+
+async def scenarios():
     await apply_schema()
     for token in ("u-a", "u-b", "u-c", "u-d", "u-e"):
         await add_principal(token)
     await add_server("srv")
     for case in (identical_concurrent, ceilings_distinct, release_and_expiry, release_vs_reserve_race, boundary_refusals,
-                 unsettled_blocks_identical_write, approval_is_consumed_once, cutover_race, pool_closure):
+                 unsettled_blocks_identical_write, approval_is_consumed_once, cutover_race, pool_closure,
+                 completed_write_replay, stale_dispatch_replay_race):
         await CHECKS.case(case.__name__, case())
     return CHECKS.finish()
 

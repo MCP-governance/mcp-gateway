@@ -51,6 +51,9 @@ SERVER_CHECK_TIMEOUT_SECONDS = float(os.getenv("SERVER_CHECK_TIMEOUT_SECONDS", "
 # the way out, results on the way back. The gateway used to keep a shorter pattern of
 # its own here, so the weakest check ran on the least trusted content.
 MAX_RESULT_BYTES = int(os.getenv("MAX_RESULT_BYTES", "262144"))
+MAX_RESULT_ITEMS = int(os.getenv("MAX_RESULT_ITEMS", "1000"))
+if MAX_RESULT_BYTES <= 0 or MAX_RESULT_ITEMS <= 0:
+    raise ValueError("Result limits must be positive")
 OUTPUT_INSPECTION_TIMEOUT_SECONDS = float(os.getenv("OUTPUT_INSPECTION_TIMEOUT_SECONDS", "30"))
 if not math.isfinite(OUTPUT_INSPECTION_TIMEOUT_SECONDS) or OUTPUT_INSPECTION_TIMEOUT_SECONDS <= 0:
     raise ValueError("OUTPUT_INSPECTION_TIMEOUT_SECONDS must be finite and positive")
@@ -1045,7 +1048,7 @@ def _risk_score(data_class: str, action: str, external: bool,
 
 
 async def _reserve_call(request_id: str, user_token: str, server_id: str, tool: str,
-                        arguments: dict, data_class: str) -> dict:
+                        arguments: dict, data_class: str, action: str = "r") -> dict:
     """Take this call's place in the ceilings, then report where it stands.
 
     Counting alone cannot hold a ceiling. The counts come from the audit table, which a
@@ -1073,10 +1076,14 @@ async def _reserve_call(request_id: str, user_token: str, server_id: str, tool: 
                       count(*) FILTER (WHERE fingerprint = %s) AS same_call,
                       EXISTS (SELECT 1 FROM dispatch_intents i
                                WHERE i.user_token = %s AND i.fingerprint = %s AND i.action IN ('w','x')
-                                 AND {dispatch.UNSETTLED}) AS unsettled
+                                 AND {dispatch.UNSETTLED}) AS unsettled,
+                      EXISTS (SELECT 1 FROM dispatch_intents i
+                               WHERE i.user_token = %s AND i.fingerprint = %s
+                                 AND %s IN ('w','x') AND {dispatch.REPLAY}) AS replay
                  FROM call_reservations
                 WHERE user_token = %s AND released_at IS NULL AND expires_at > now()""",
-            (fingerprint, user_token, fingerprint, user_token))
+            (fingerprint, user_token, fingerprint, user_token, fingerprint, action,
+             dispatch.IDEMPOTENCY_TTL_SECONDS, user_token))
         open_calls = await cursor.fetchone()
         cursor = await connection.execute(
             """SELECT count(*) FILTER (WHERE decision = 'Block'
@@ -1122,9 +1129,8 @@ async def _reserve_call(request_id: str, user_token: str, server_id: str, tool: 
         "block_limit": BLOCK_STREAK_LIMIT,
         "active_calls": active,
         "concurrency_limit": CONCURRENCY_LIMIT,
-        # The identical call is already running. A retry after a timeout is not this:
-        # the earlier reservation is released or expired by then.
-        "duplicate_in_flight": int(open_calls["same_call"]) > 0 or bool(open_calls["unsettled"]),
+        "duplicate_in_flight": (int(open_calls["same_call"]) > 0 or bool(open_calls["unsettled"])
+                                or bool(open_calls["replay"])),
         "execution_timeout_ms": int(min(upstream.CONNECT_TIMEOUT, RESERVATION_TTL_SECONDS - 10) * 1000),
     }
 
@@ -1335,6 +1341,9 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                         "MCP-REGISTRY-002", "Block", "자동 중지된 서버입니다.")
                 elif refused == "approval":
                     problem = "Approval expired or was withdrawn before execution"
+                elif refused == "duplicate":
+                    problem, blocked_verdict = "Duplicate write at dispatch", local_verdict(
+                        "P-RATE-003", "Block", "같은 변경 호출의 전송 이력이 있어 다시 실행하지 않습니다.")
                 elif refused:
                     problem = "call reservation expired before dispatch"
                 laps.lap("intent")
@@ -1443,6 +1452,8 @@ def _guarded_result(payload: dict) -> dict:
         raise ResultRejected("도구 결과가 유효한 JSON이 아닙니다.") from exc
     if len(body.encode()) > MAX_RESULT_BYTES:
         raise ResultRejected(f"도구 결과가 {MAX_RESULT_BYTES} byte 상한을 넘었습니다.", payload)
+    if classify.result_items(payload) > MAX_RESULT_ITEMS:
+        raise ResultRejected(f"도구 결과가 {MAX_RESULT_ITEMS}건 상한을 넘었습니다.", payload)
     content = payload.get("content")
     if not isinstance(content, list) or any(not isinstance(item, dict) for item in content):
         raise ResultRejected("도구 결과의 content 구조가 MCP 형식이 아닙니다.", payload)
@@ -1475,6 +1486,9 @@ async def _inspected_result(payload: dict, ignore: privacy.Ignore | None = None)
             scan = "\n".join([json.dumps(result, ensure_ascii=False, allow_nan=False), *_decoded_strings(result)])
             if remaining := await secret_scan.labels(scan):
                 raise ResultRejected("응답에 마스킹되지 않은 Secret이 있어 보류했습니다: " + ", ".join(remaining), payload)
+            # Masking can expand text; the released representation must fit too.
+            if len(json.dumps(result, ensure_ascii=False).encode()) > MAX_RESULT_BYTES or classify.result_items(result) > MAX_RESULT_ITEMS:
+                raise ResultRejected("검사 후 도구 결과가 반환 상한을 넘었습니다.", result)
             return result, kinds
     except TimeoutError as exc:
         raise privacy.InspectionUnavailable("출력 검사의 전체 대기·처리 기한을 초과했습니다.") from exc
@@ -1740,7 +1754,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         # answer is not an empty ceiling: without a reservation there is no basis for
         # the numbers the policy is about to judge.
         try:
-            context = await _reserve_call(request_id, user_token, server_id, tool, arguments, cls.data_class)
+            context = await _reserve_call(request_id, user_token, server_id, tool, arguments, cls.data_class, cls.action)
         except Exception as exc:
             base_event.update(local_verdict(
                 "P-CONTROL-FAIL-CLOSED", "Block",
@@ -1770,6 +1784,10 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     "P-INPUT-SCHEMA-001", "Block", "도구 인자가 승인된 입력 형식과 다릅니다."))
                 return await _decision_payload(base_event, laps)
         laps.lap("schema")
+
+        if cls.action == "r" and (reason := classify.bulk_read_reason(server_id, tool, arguments, MAX_RESULT_ITEMS)):
+            base_event.update(local_verdict("P-VOLUME-002", "Block", reason))
+            return await _decision_payload(base_event, laps)
 
         # PDF 8~10쪽. What leaves the organisation is inspected before the policy sees
         # the call; if the inspection cannot run, the call does not either.
