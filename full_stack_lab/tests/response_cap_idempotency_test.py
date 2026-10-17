@@ -179,16 +179,17 @@ class DispatchBoundary(unittest.IsolatedAsyncioTestCase):
         async def transaction():
             yield SimpleNamespace(execute=execute)
         d = selected("dispatch.py", ["_Refused", "CATALOG_OK", "_INSERT", "REPLAY", "record"],
-                     db=SimpleNamespace(transaction=transaction), IDEMPOTENCY_TTL_SECONDS=86400)
+                     db=SimpleNamespace(transaction=transaction, fetch_one=AsyncMock(return_value={
+                         "principal": "active", "lifecycle": "OPERATING", "server_status": "READY", "catalog_ok": True})),
+                     IDEMPOTENCY_TTL_SECONDS=86400)
         return d, queries
 
     async def test_duplicate_write_is_refused_before_intent_insert(self):
         d, queries = self.boundary(duplicate=True)
         self.assertEqual(await d.record("new", "w"), "duplicate")
         self.assertFalse(any(q.startswith("INSERT") for q, _ in queries))
-        self.assertIn("FOR SHARE OF s", queries[0][0])
-        self.assertIn("pg_advisory_xact_lock", queries[2][0])
-        self.assertEqual(queries[3][1], ("u", "hash", "new", 86400))
+        self.assertIn("pg_advisory_xact_lock", queries[1][0])
+        self.assertEqual(queries[2][1], ("u", "hash", "new", 86400))
 
     async def test_reads_remain_repeatable_and_first_write_records(self):
         for action in ("r", "w", "x"):

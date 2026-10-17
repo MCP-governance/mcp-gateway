@@ -242,6 +242,7 @@ async def approval_is_consumed_once():
 async def cutover_race():
     await add_principal("u-i")
     await add_server("srv-cut", "http://mcp-cut:8000/mcp")
+    await approve_tool("srv-cut")
     rids = [str(uuid.uuid4()) for _ in range(240)]
     for rid in rids:
         await reservation(rid, "u-i", "srv-cut", "t", f"f-{rid}")
@@ -317,6 +318,15 @@ async def pool_closure():
     pool.clear()
 
 
+async def approve_tool(server):
+    # A dispatch intent requires a reviewed, currently usable tool contract too.
+    await db.execute("""INSERT INTO mcp_tools(server_id,name,action,enabled,approved_schema_hash,observed_schema_hash,
+                       approved_description_hash,observed_description_hash)
+                       VALUES (%s,'t','w',true,'schema','schema','description','description')""", (server,))
+    await db.execute("""INSERT INTO catalog_snapshots(server_id,catalog_hash,tool_count,exact_match,restricted_tools)
+                       VALUES (%s,'unit-contract',1,true,'{}')""", (server,))
+
+
 async def main():
     with isolated_disposal():
         return await scenarios()
@@ -327,12 +337,7 @@ async def scenarios():
     for token in ("u-a", "u-b", "u-c", "u-d", "u-e"):
         await add_principal(token)
     await add_server("srv")
-    # A dispatch intent now requires a reviewed, currently usable tool contract too.
-    await db.execute("""INSERT INTO mcp_tools(server_id,name,action,enabled,approved_schema_hash,observed_schema_hash,
-                       approved_description_hash,observed_description_hash)
-                       VALUES ('srv','t','w',true,'schema','schema','description','description')""")
-    await db.execute("""INSERT INTO catalog_snapshots(server_id,catalog_hash,tool_count,exact_match,restricted_tools)
-                       VALUES ('srv','unit-contract',1,true,'{}')""")
+    await approve_tool("srv")
     await CHECKS.case("selective_cutover", selective_cutover())
     for case in (identical_concurrent, ceilings_distinct, release_and_expiry, release_vs_reserve_race, boundary_refusals,
                  unsettled_blocks_identical_write, approval_is_consumed_once, cutover_race, pool_closure,

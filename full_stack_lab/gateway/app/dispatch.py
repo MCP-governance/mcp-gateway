@@ -68,11 +68,6 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
     """
     try:
         async with db.transaction() as connection:
-            # Acquire before the INSERT so a snapshot published while waiting is visible
-            # to the next statement under READ COMMITTED, not the pre-lock snapshot.
-            await connection.execute(
-                """SELECT s.id FROM mcp_servers s JOIN call_reservations r ON r.server_id=s.id
-                   WHERE r.request_id=%s FOR SHARE OF s""", (request_id,))
             row = await (await connection.execute(
                 "SELECT user_token, fingerprint FROM call_reservations WHERE request_id=%s", (request_id,))).fetchone()
             if not row:
@@ -84,6 +79,12 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
                          AND i.request_id<>%s AND {REPLAY} LIMIT 1""",
                     (row["user_token"], row["fingerprint"], request_id, IDEMPOTENCY_TTL_SECONDS))).fetchone():
                 raise _Refused("duplicate")
+            # Last, after the per-principal wait: a share lock held across that wait starves a termination.
+            # Acquire before the INSERT so a snapshot published while waiting is visible
+            # to the next statement under READ COMMITTED, not the pre-lock snapshot.
+            await connection.execute(
+                """SELECT s.id FROM mcp_servers s JOIN call_reservations r ON r.server_id=s.id
+                   WHERE r.request_id=%s FOR SHARE OF s""", (request_id,))
             if not (await connection.execute(_INSERT, (action, request_id))).rowcount:
                 raise _Refused
             if approval_id:
@@ -103,8 +104,10 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
                     raise _Refused("approval")
         return None
     except _Refused as refusal:
-        if refusal.args:
+        # A replayed write to a server that is also closing reports the closure: that is what an operator acts on.
+        if refusal.args and refusal.args[0] != "duplicate":
             return refusal.args[0]
+        duplicate = bool(refusal.args)
     why = await db.fetch_one(
         f"""SELECT (SELECT p.status FROM principals p WHERE p.token = r.user_token) AS principal,
                   (SELECT COALESCE(s.lifecycle, 'OPERATING') FROM mcp_servers s WHERE s.id = r.server_id) AS lifecycle,
@@ -113,14 +116,16 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
              WHERE r.request_id = %s AND r.released_at IS NULL AND r.expires_at > now()""",
         (request_id,))
     if not why:
-        return "reservation"
+        return "duplicate" if duplicate else "reservation"
     if why["principal"] != "active":
         return "principal"
     if why["lifecycle"] != "OPERATING":
         return "terminated"
     if why["server_status"] == "DISABLED":
         return "suspended"
-    return "contract" if not why["catalog_ok"] else "reservation"
+    if not why["catalog_ok"]:
+        return "contract"
+    return "duplicate" if duplicate else "reservation"
 
 
 async def uncertain(limit: int = 200) -> list[dict]:
