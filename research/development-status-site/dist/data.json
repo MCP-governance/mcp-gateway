@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "title": "MCP 목표 기능 · WBS 현황",
-  "as_of": "2026-10-17T13:26:31.997947+00:00",
+  "as_of": "2026-10-17T13:40:13.501558+00:00",
   "audit_as_of": "2026-10-15T07:37:13+00:00",
   "basis_head": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
   "branch": "10/15-wbs-implementation",
@@ -25,14 +25,14 @@
     "complete_rule": "5단계가 모두 1인 작업만 최종 완료. 신규 WBS의 현재 검수 기준이며 과거 실험 카드 완료를 변경하지 않음."
   },
   "summary": {
-    "progress": 43.9,
+    "progress": 44.4,
     "complete": 0,
     "total": 57,
     "stage_equivalent_counts": {
       "implementation": 40.5,
-      "regression": 35.0,
-      "deployment": 36.0,
-      "real_device": 13.5,
+      "regression": 35.5,
+      "deployment": 36.5,
+      "real_device": 14.0,
       "acceptance_complete": 0
     },
     "implementation_full": 38,
@@ -71,7 +71,7 @@
     {
       "id": "G05",
       "title": "엔드포인트 집행",
-      "progress": 47.5,
+      "progress": 55.0,
       "complete": 0,
       "total": 4
     },
@@ -1978,7 +1978,7 @@
       "actual_evidence_paths": [
         "research/llm-wiki/status/reports/2026-10-14-pj1-endpoint-update.json"
       ],
-      "known_gap": "E13은 아직 완료되지 않았다. 지금까지의 실제 차단 시험은 Node·인터프리터와 SSH 루프백을 대상으로 했으며 파일시스템 MCP의 실제 표준입출력 호출은 시험하지 않았다. 관리자·root와 다른 비제한 계정은 범위 밖이고 Windows의 운영체제 수준 강제 적용 증거도 없다.",
+      "known_gap": "실제 OSS 로컬 MCP(stdio)로 E13 fixture 시험, 소유자 장치 코드 로그인 중 거부 0건(R1), R2~R9가 남았다.",
       "completion_condition": "새로 준비한 관리형 하네스에서 실제 공식 파일시스템 MCP가 표준입출력으로 직접 호출을 시도하고, IPv4·IPv6 표식 수신기도 각각 확인한다. 강제 적용 프로필에서 독립 수신기와 파일의 효과가 0인지, 정확히 어느 계층에서 거부됐는지 기록하며, 승인된 게이트웨이 경로는 정상 동작하는지 대조한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -1991,30 +1991,34 @@
         {
           "path": "2026-10-14-pj1-endpoint-update.json",
           "scope": "2026-10-14 selected PJ1 account/kernel checks; scope is the tested managed UID/profile."
-        }
+        },
+        "2026-10-17"
       ],
       "implementation_assessment": "partial_candidate",
       "stage_notes": {
         "implementation": "Linux profile/nft 및 process 제한 구현은 있으나 실제 공식 filesystem MCP의 direct stdio 호출에서 효과 0을 보인 것은 아니다. E13은 not_run이다.",
-        "regression": "현재 소스와 대응하는 요구조건 전체 회귀 근거 미확인. 과거 PASS는 날짜가 있는 참고 근거다.",
-        "deployment": "과거 특정 판본·선택 경로 배포 증거만 있으면 0.5점. 소스 존재는 배포 근거가 아니다.",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
+        "regression": "D-119 생산 규칙으로 PJ1 일회용 netns 커널 시험: 관리 계정 시작 경로 7종 차단, 소유자→관리 콜백 v4/v6 허용.",
+        "deployment": "10-17 PJ1 키트 재설치로 호스트에 적용(managed-90798c6b, 서비스 active).",
+        "real_device": "호스트 규칙·Tailscale 표식 공존·관리 Claude 정상 호출 확인. 실제 OSS stdio·E13 fixture 시험은 미실행.",
         "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
       },
       "stage_scores": {
         "implementation": 0.5,
-        "regression": 0,
-        "deployment": 0.5,
-        "real_device": 0,
+        "regression": 0.5,
+        "deployment": 1,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 20.0,
+      "progress": 50.0,
       "complete": false,
       "priority": "P1",
       "evidence": [
         {
           "path": "research/llm-wiki/status/reports/2026-10-14-pj1-endpoint-update.json",
           "sha256": "82f9f1e650678aec921161c7bfe522befdec9cba265f721c89f62e8397000385"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1017/pj1-reinstall-d119.json"
         }
       ],
       "pol_ids": [
@@ -4102,7 +4106,7 @@
     "before": 40,
     "after": 57,
     "planned": 16,
-    "current_progress": 57.8,
+    "current_progress": 58.5,
     "note": "10-17 기능명세서의 추가 개발 16개와 실행기 G01.05를 더했다. 기존 40개 점수는 10-15 그대로."
   }
 }
