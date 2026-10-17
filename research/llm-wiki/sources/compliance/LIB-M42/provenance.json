@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M42",
+ "url": "https://www.soumu.go.jp/main_content/001080990.pdf",
+ "final_url": "https://www.soumu.go.jp/main_content/001080990.pdf",
+ "http": 200,
+ "content_type": "application/pdf",
+ "bytes": 1175771,
+ "sha256": "c8eba9b2fc4ff3e4872da734a316d98b1247bae36437d5b2cc35325b3a086f8b",
+ "kind": "pdf",
+ "pages": 42,
+ "text_chars": 130866,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/japan-ai-guidelines-business-v1-2.pdf",
+ "extract": "extracts/LIB-M42.md",
+ "method": "PDF text-layer extraction (PyMuPDF); no OCR. 표·그림·단 순서는 원본 쪽에서 확인한다. 쪽 표시는 PDF 파일의 쪽 번호다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

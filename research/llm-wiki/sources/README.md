@@ -16,6 +16,9 @@
 | `../catalogs/imports.json` | 기존 위키 22건의 가져오기 이력 | upstream ID·메타데이터 경로·입력 파일 경로·복사본 경로·해시 |
 | `licenses/redistribution-2026-10-13.json` | 25건의 판본별 배포 처리와 공식 근거 | 공개 다운로드와 제3자 재배포 권리를 구분 |
 | `licenses/CoSAI-CC-BY-4.0.md` | CoSAI 저장소에서 확보한 CC BY 4.0 전체 고지 | CC BY 자료의 원문 고지·저자·출처·기계 추출 여부 유지 |
+| `compliance/<ID>/` | AI 컴플라이언스 근거 문서(LIB-L·M) 중 재배포 근거를 확인한 원문·추출본·provenance.json | 법령·관보·OECD 등 문서별 근거는 `licenses/redistribution-2026-10-17.json` |
+| `../local-sources/compliance/<ID>/` | 같은 문서군 중 재배포 근거가 없는 원문·추출본 | git 제외. 다른 PC에서는 `catalogs/papers.json`의 출처 URL·해시로 다시 받아야 함 |
+| `licenses/redistribution-2026-10-17.json` | 컴플라이언스 근거 문서의 판본별 배포 처리와 근거 | `analysis/compliance/notes/*.json`에서 생성, 직접 고치지 않음 |
 
 로컬 전용 ID는 `P39, P43, P46, P47, P54, P58, P60, P63, T01, T02, T04, T08, T21, T22`다. arXiv의 non-exclusive 배포 허가는 arXiv의 배포 권리이며 제3자의 재게시 허가로 확장하지 않았다. AAAI 게재본은 별도 재게시 허가가 필요하다. NeurIPS 게재본과 MCP 웹 HTML 전체의 배포 범위는 미확인으로 처리했고 OWASP MCP Top 10의 비영리·동일조건 제한도 유지했다.
 

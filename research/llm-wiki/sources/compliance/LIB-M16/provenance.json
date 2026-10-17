@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M16",
+ "url": "http://publications.europa.eu/resource/cellar/b459c07f-86fb-11f1-bf5e-01aa75ed71a1.0006.03/DOC_1",
+ "final_url": "http://publications.europa.eu/resource/cellar/b459c07f-86fb-11f1-bf5e-01aa75ed71a1.0006.03/DOC_1",
+ "http": 200,
+ "content_type": "application/xhtml+xml;charset=UTF-8",
+ "bytes": 351287,
+ "sha256": "9d754652b867722807e4219c85912ce354233e58a1b4eb8c7752b4d1922993db",
+ "kind": "html",
+ "pages": null,
+ "text_chars": 149872,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/eu-2026-1744-ai-omnibus.html",
+ "extract": "extracts/LIB-M16.md",
+ "method": "HTML text extraction (BeautifulSoup): navigation/script removed, headings and lists kept. 표·각주·링크 대상은 원본 HTML에서 확인한다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

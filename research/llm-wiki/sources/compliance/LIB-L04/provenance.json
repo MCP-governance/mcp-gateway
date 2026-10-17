@@ -1,0 +1,16 @@
+{
+ "id": "LIB-L04",
+ "url": "(user-supplied zip: AI 컴플라이언스 관련 문서 모음.zip)",
+ "source_zip_path": "법/인공지능 발전과 신뢰 기반 조성 등에 관한 기본법(법률)(제21311호)(20260721).pdf",
+ "bytes": 166698,
+ "sha256": "721ae11655528b719abd5a168675d5d1e6d0037dc4a86618ed227680207ba32e",
+ "kind": "pdf",
+ "pages": 15,
+ "text_chars": 29099,
+ "needs_ocr": false,
+ "ocr_used": false,
+ "original": "originals/ai-basic-act-21311-20260721.pdf",
+ "extract": "extracts/LIB-L04.md",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

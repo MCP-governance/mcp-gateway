@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M05",
+ "url": "https://www.cac.gov.cn/2026-05/08/c_1779979789523320.htm",
+ "final_url": "https://www.cac.gov.cn/2026-05/08/c_1779979789523320.htm",
+ "http": 200,
+ "content_type": "text/html; charset=utf-8",
+ "bytes": 35810,
+ "sha256": "2afe774741973045749ae2b8b22f5e86bc7134774c29625b6955b55c6a15dccb",
+ "kind": "html",
+ "pages": null,
+ "text_chars": 6227,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/cn-agent-implementation-opinions-2026.html",
+ "extract": "extracts/LIB-M05.md",
+ "method": "HTML text extraction (BeautifulSoup): navigation/script removed, headings and lists kept. 표·각주·링크 대상은 원본 HTML에서 확인한다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

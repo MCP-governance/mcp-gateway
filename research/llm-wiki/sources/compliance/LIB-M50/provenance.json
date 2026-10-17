@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M50",
+ "url": "https://legalinstruments.oecd.org/public/doc/648/648.en.pdf",
+ "final_url": "https://legalinstruments.oecd.org/public/doc/648/648.en.pdf",
+ "http": 200,
+ "content_type": "application/pdf",
+ "bytes": 679046,
+ "sha256": "88227000e69be9aad5864155bd3e06ebead1e76c5b7cf662d63c1605408e5060",
+ "kind": "pdf",
+ "pages": 12,
+ "text_chars": 33311,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/oecd-ai-recommendation-0449.pdf",
+ "extract": "extracts/LIB-M50.md",
+ "method": "PDF text-layer extraction (PyMuPDF); no OCR. 표·그림·단 순서는 원본 쪽에서 확인한다. 쪽 표시는 PDF 파일의 쪽 번호다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

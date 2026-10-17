@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M33",
+ "url": "https://www.cac.gov.cn/2025-03/14/c_1743654684782215.htm",
+ "final_url": "https://www.cac.gov.cn/2025-03/14/c_1743654684782215.htm",
+ "http": 200,
+ "content_type": "text/html; charset=utf-8",
+ "bytes": 23354,
+ "sha256": "3686321b6f2fca2e245e210209dff4af75b5adc3be36d912695d28b5a681f642",
+ "kind": "html",
+ "pages": null,
+ "text_chars": 3077,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/cn-ai-content-labeling-measures-2025.html",
+ "extract": "extracts/LIB-M33.md",
+ "method": "HTML text extraction (BeautifulSoup): navigation/script removed, headings and lists kept. 표·각주·링크 대상은 원본 HTML에서 확인한다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

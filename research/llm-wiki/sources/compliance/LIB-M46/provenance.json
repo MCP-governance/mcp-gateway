@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M46",
+ "url": "https://www.legislation.gov.uk/ukpga/2025/18/pdfs/ukpga_20250018_en.pdf",
+ "final_url": "https://www.legislation.gov.uk/ukpga/2025/18/pdfs/ukpga_20250018_en.pdf",
+ "http": 200,
+ "content_type": "application/pdf",
+ "bytes": 2951193,
+ "sha256": "a67c955f68a17bef5d496e0cd47aca8dbfed29574a62d8ede3717637227c163a",
+ "kind": "pdf",
+ "pages": 276,
+ "text_chars": 588028,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/uk-data-use-access-act-2025.pdf",
+ "extract": "extracts/LIB-M46.md",
+ "method": "PDF text-layer extraction (PyMuPDF); no OCR. 표·그림·단 순서는 원본 쪽에서 확인한다. 쪽 표시는 PDF 파일의 쪽 번호다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

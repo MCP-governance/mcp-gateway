@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M01",
+ "url": "https://publications.europa.eu/resource/cellar/dc8116a1-3fe6-11ef-865a-01aa75ed71a1.0006.01/DOC_1",
+ "final_url": "https://publications.europa.eu/resource/cellar/dc8116a1-3fe6-11ef-865a-01aa75ed71a1.0006.01/DOC_1",
+ "http": 200,
+ "content_type": "application/pdf;charset=UTF-8",
+ "bytes": 2583319,
+ "sha256": "bba630444b3278e881066774002a1d7824308934f49ccfa203e65be43692f55e",
+ "kind": "pdf",
+ "pages": 144,
+ "text_chars": 599631,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/eu-ai-act-2024-1689.pdf",
+ "extract": "extracts/LIB-M01.md",
+ "method": "PDF text-layer extraction (PyMuPDF); no OCR. 표·그림·단 순서는 원본 쪽에서 확인한다. 쪽 표시는 PDF 파일의 쪽 번호다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

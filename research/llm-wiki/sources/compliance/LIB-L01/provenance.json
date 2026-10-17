@@ -1,0 +1,16 @@
+{
+ "id": "LIB-L01",
+ "url": "(user-supplied zip: AI 컴플라이언스 관련 문서 모음.zip)",
+ "source_zip_path": "법/개인정보 보호법(법률)(제21445호)(20260911).pdf",
+ "bytes": 281947,
+ "sha256": "96b9aa2333520752618e93b121a3c7fc5f905ef740c337cbfdbf4e4d26b4eb0b",
+ "kind": "pdf",
+ "pages": 47,
+ "text_chars": 95383,
+ "needs_ocr": false,
+ "ocr_used": false,
+ "original": "originals/pipa-act-21445-20260911.pdf",
+ "extract": "extracts/LIB-L01.md",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

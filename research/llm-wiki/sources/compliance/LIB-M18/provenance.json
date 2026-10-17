@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M18",
+ "url": "https://www.whitehouse.gov/wp-content/uploads/2026/05/M-26-14-Ensuring-Effective-and-Efficient-Agency-Logging-and-Network-Visibility-to-Defend-Against-Evolving-Cyber-Threats.pdf",
+ "final_url": "https://www.whitehouse.gov/wp-content/uploads/2026/05/M-26-14-Ensuring-Effective-and-Efficient-Agency-Logging-and-Network-Visibility-to-Defend-Against-Evolving-Cyber-Threats.pdf",
+ "http": 200,
+ "content_type": "application/pdf",
+ "bytes": 362175,
+ "sha256": "8495b2e66cccdb47e178ef4af71e76e5408791c1cc211d01c987b89734f1ac78",
+ "kind": "pdf",
+ "pages": 8,
+ "text_chars": 20925,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/omb-m-26-14-agency-logging.pdf",
+ "extract": "extracts/LIB-M18.md",
+ "method": "PDF text-layer extraction (PyMuPDF); no OCR. 표·그림·단 순서는 원본 쪽에서 확인한다. 쪽 표시는 PDF 파일의 쪽 번호다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

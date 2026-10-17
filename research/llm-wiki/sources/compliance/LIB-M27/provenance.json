@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M27",
+ "url": "https://www.cac.gov.cn/2025-09/15/c_1759583017717009.htm",
+ "final_url": "https://www.cac.gov.cn/2025-09/15/c_1759583017717009.htm",
+ "http": 200,
+ "content_type": "text/html; charset=utf-8",
+ "bytes": 33459,
+ "sha256": "2a56b9b53cb0693942cf76b09e1c1bc13daf5adb42979c34332cd94f0a4aa0d3",
+ "kind": "html",
+ "pages": null,
+ "text_chars": 4804,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/cn-cybersecurity-incident-reporting-measures-2025.html",
+ "extract": "extracts/LIB-M27.md",
+ "method": "HTML text extraction (BeautifulSoup): navigation/script removed, headings and lists kept. 표·각주·링크 대상은 원본 HTML에서 확인한다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

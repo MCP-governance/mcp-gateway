@@ -1,0 +1,16 @@
+{
+ "id": "LIB-L08",
+ "url": "(user-supplied zip: AI 컴플라이언스 관련 문서 모음.zip)",
+ "source_zip_path": "가이드라인/draft-daniel-ai-agent-internet-architecture-03.txt",
+ "bytes": 65667,
+ "sha256": "741bac5bc0d8bad1e9f772d090094a76d4c5ef64ab3baf2956270c86e19e23a6",
+ "kind": "txt",
+ "pages": null,
+ "text_chars": 66226,
+ "needs_ocr": false,
+ "ocr_used": false,
+ "original": "originals/draft-daniel-ai-agent-internet-architecture-03.txt",
+ "extract": "extracts/LIB-L08.md",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

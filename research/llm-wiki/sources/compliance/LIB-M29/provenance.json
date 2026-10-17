@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M29",
+ "url": "https://dsjj.taian.gov.cn/module/download/downfile.jsp?classid=0&filename=ab737f636bc34b008d62cd38a36f5d91.pdf",
+ "final_url": "https://dsjj.taian.gov.cn/module/download/downfile.jsp?classid=0&filename=ab737f636bc34b008d62cd38a36f5d91.pdf",
+ "http": 200,
+ "content_type": "application/pdf;charset=UTF-8",
+ "bytes": 229850,
+ "sha256": "a9c0e30b89f10598b489365458b0d60f34e69c109b42433d3b2dcd7024a60220",
+ "kind": "pdf",
+ "pages": 21,
+ "text_chars": 9747,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/prc-pipl-2021.pdf",
+ "extract": "extracts/LIB-M29.md",
+ "method": "PDF text-layer extraction (PyMuPDF); no OCR. 표·그림·단 순서는 원본 쪽에서 확인한다. 쪽 표시는 PDF 파일의 쪽 번호다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

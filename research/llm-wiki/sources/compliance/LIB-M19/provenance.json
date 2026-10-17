@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M19",
+ "url": "https://www.whitehouse.gov/wp-content/uploads/2025/02/M-25-21-Accelerating-Federal-Use-of-AI-through-Innovation-Governance-and-Public-Trust.pdf",
+ "final_url": "https://www.whitehouse.gov/wp-content/uploads/2025/02/M-25-21-Accelerating-Federal-Use-of-AI-through-Innovation-Governance-and-Public-Trust.pdf",
+ "http": 200,
+ "content_type": "application/pdf",
+ "bytes": 2629748,
+ "sha256": "0aab0aa4eaeac969ed93894d3940c5dc9d0b7377048171b164a439e8b9e49813",
+ "kind": "pdf",
+ "pages": 25,
+ "text_chars": 66906,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/omb-m-25-21-federal-ai-use.pdf",
+ "extract": "extracts/LIB-M19.md",
+ "method": "PDF text-layer extraction (PyMuPDF); no OCR. 표·그림·단 순서는 원본 쪽에서 확인한다. 쪽 표시는 PDF 파일의 쪽 번호다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M09",
+ "url": "https://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm",
+ "final_url": "https://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm",
+ "http": 200,
+ "content_type": "text/html; charset=utf-8",
+ "bytes": 29431,
+ "sha256": "7fae988c064dde72c95e96e5727bf9abee4b3a5a1ea817606a9ca1f97ffac54b",
+ "kind": "html",
+ "pages": null,
+ "text_chars": 4316,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/cn-genai-interim-measures-2023.html",
+ "extract": "extracts/LIB-M09.md",
+ "method": "HTML text extraction (BeautifulSoup): navigation/script removed, headings and lists kept. 표·각주·링크 대상은 원본 HTML에서 확인한다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

@@ -1,0 +1,16 @@
+{
+ "id": "LIB-L03",
+ "url": "(user-supplied zip: AI 컴플라이언스 관련 문서 모음.zip)",
+ "source_zip_path": "법/정보통신망 이용촉진 및 정보보호 등에 관한 법률(법률)(제21445호)(20260911).pdf",
+ "bytes": 303432,
+ "sha256": "66b1900a7a2391d8b987f949109e9b172b5b97d243458c6f9bfb22d2c4bc4b22",
+ "kind": "pdf",
+ "pages": 56,
+ "text_chars": 113008,
+ "needs_ocr": false,
+ "ocr_used": false,
+ "original": "originals/network-act-21445-20260911.pdf",
+ "extract": "extracts/LIB-L03.md",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M11",
+ "url": "https://publications.europa.eu/resource/celex/32022L2555.ENG.pdfa2a",
+ "final_url": "http://publications.europa.eu/resource/cellar/9b84d482-85bd-11ed-9887-01aa75ed71a1.0006.01/DOC_1",
+ "http": 200,
+ "content_type": "application/pdf;charset=UTF-8",
+ "bytes": 1326245,
+ "sha256": "20d29e9c5300ae1095530996f04731311bf82bb7d4d6a7a0102cd0f075755cf3",
+ "kind": "pdf",
+ "pages": 73,
+ "text_chars": 281746,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/eu-nis2-2022-2555.pdf",
+ "extract": "extracts/LIB-M11.md",
+ "method": "PDF text-layer extraction (PyMuPDF); no OCR. 표·그림·단 순서는 원본 쪽에서 확인한다. 쪽 표시는 PDF 파일의 쪽 번호다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

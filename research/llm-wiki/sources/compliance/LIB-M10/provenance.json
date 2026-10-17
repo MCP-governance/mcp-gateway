@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M10",
+ "url": "https://www.cac.gov.cn/2025-12/29/c_1768735112911946.htm",
+ "final_url": "https://www.cac.gov.cn/2025-12/29/c_1768735112911946.htm",
+ "http": 200,
+ "content_type": "text/html; charset=utf-8",
+ "bytes": 62480,
+ "sha256": "996925d52a92735a0f9ef4506b7254086ae9ef591a9ea36a6e091788d04fcdc9",
+ "kind": "html",
+ "pages": null,
+ "text_chars": 11847,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/cn-cybersecurity-law-2025-consolidated.html",
+ "extract": "extracts/LIB-M10.md",
+ "method": "HTML text extraction (BeautifulSoup): navigation/script removed, headings and lists kept. 표·각주·링크 대상은 원본 HTML에서 확인한다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}

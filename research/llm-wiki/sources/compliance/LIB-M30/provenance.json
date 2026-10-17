@@ -1,0 +1,19 @@
+{
+ "id": "LIB-M30",
+ "url": "https://www.cac.gov.cn/2024-03/22/c_1712776611775634.htm",
+ "final_url": "https://www.cac.gov.cn/2024-03/22/c_1712776611775634.htm",
+ "http": 200,
+ "content_type": "text/html; charset=utf-8",
+ "bytes": 20978,
+ "sha256": "d03e303a9e6c32694a0b9d64ba6bdb5fb63b55fc91469ee195ad3ecfb8f59238",
+ "kind": "html",
+ "pages": null,
+ "text_chars": 2692,
+ "needs_ocr": false,
+ "possibly_js_rendered": false,
+ "original": "originals/cn-cross-border-data-flow-provisions-2024.html",
+ "extract": "extracts/LIB-M30.md",
+ "method": "HTML text extraction (BeautifulSoup): navigation/script removed, headings and lists kept. 표·각주·링크 대상은 원본 HTML에서 확인한다.",
+ "retrieved_on": "2026-10-17",
+ "distribution": "public-under-license"
+}
