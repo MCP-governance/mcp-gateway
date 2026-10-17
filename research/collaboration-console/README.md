@@ -1,6 +1,6 @@
-# Codex × Claude 개발 협업 콘솔
+# 개발 현황 허브 — 협업 콘솔 + WBS + Codex 실행 로그
 
-이 웹 화면은 **에이전트들의 실제 소통과 작업 상태를 사용자가 보는 콘솔**입니다. 연구 자료와 최종 보고는 [LLM 연구 위키](../llm-wiki/README.md)의 Markdown으로 유지합니다. 제품 게이트웨이 콘솔과 별도이며 Python 표준 라이브러리만 사용합니다.
+이 웹 화면은 **에이전트들의 실제 소통·작업 상태와 [WBS 현황](../development-status-site/README.md)을 사용자가 함께 보는 콘솔**입니다. Discord 스타일 다크 UI에 채널 `#개요` · `#wbs` · `#작업`(task_id별 스레드) · `#codex-실행` · `#검증`으로 나뉘어 있습니다. 연구 자료와 최종 보고는 [LLM 연구 위키](../llm-wiki/README.md)의 Markdown으로 유지합니다. 제품 게이트웨이 콘솔과 별도이며 Python 표준 라이브러리만 사용합니다(새 의존성·CDN·외부 폰트 없음).
 
 저장소 루트에서 실행합니다.
 
@@ -8,7 +8,15 @@
 python -X utf8 research/collaboration-console/console.py serve
 ```
 
-브라우저에서 **http://127.0.0.1:18766**을 엽니다. 서버를 켜 두면 2초마다 새 기록이 반영됩니다. Windows에서 백그라운드 실행할 때는 `Start-Process -WindowStyle Hidden`을 사용합니다. 종료는 그 서버 프로세스만 중단합니다.
+기본은 **http://127.0.0.1:1000** 입니다(`--port` 기본값 1000). 같은 Tailscale 사설망의 다른 PC에서도 보게 하려면 이 PC의 Tailscale IP에 바인딩합니다. 쓰기 API는 전혀 열지 않는 읽기 전용 화면입니다.
+
+```powershell
+python -X utf8 research/collaboration-console/console.py serve --host 100.111.15.33 --port 1000
+```
+
+`--host 0.0.0.0`처럼 모든 인터페이스에 바인딩하면 경고를 출력합니다. 특정 Tailscale IP처럼 좁은 주소에 바인딩하세요. 매일 자동으로 띄우려면 [`install-autostart.ps1`](install-autostart.ps1)로 Windows 작업 스케줄러에 등록합니다(아래 "매일 자동 실행" 참조).
+
+서버를 켜 두면 2초마다 새 기록이 반영되고, `#wbs` 채널은 매 요청마다 [`development-wbs/snapshot.json`](../llm-wiki/analysis/development-wbs/snapshot.json)을 다시 읽으므로 재생성 빌드 단계 없이 최신 값을 보여 줍니다. Windows에서 백그라운드 실행할 때는 `Start-Process -WindowStyle Hidden`을 사용합니다. 종료는 그 서버 프로세스만 중단합니다.
 
 ## 공개 기록 남기기
 
@@ -71,10 +79,18 @@ python -X utf8 research/collaboration-console/console.py gateway-records --run-i
 ## Codex CLI 공개 출력 연결
 
 ```powershell
-python -X utf8 research/collaboration-console/console.py codex --task-id codex-audit --prompt-file research/collaboration-console/runtime/codex-request.txt --model <요청 모델> --effort <강도> --sandbox read-only
+python -X utf8 research/collaboration-console/console.py codex --task-id codex-audit --prompt-file research/collaboration-console/runtime/codex-request.txt --model gpt-6.1-sol --effort high -C C:\worktrees\10-17-dev-hub --sandbox read-only
 ```
 
-요청은 `codex exec --json --skip-git-repo-check -s <sandbox> -m <model> -c model_reasoning_effort=<effort> -`의 stdin으로 전달합니다. 공개 `agent_message` 본문과 도구 호출의 **종류**만 이벤트 기록에 남기고 명령·결과는 남기지 않습니다. WSL의 Codex를 쓰면 `--prefix-file`에 인자 배열을 저장합니다(Claude와 같음).
+요청은 `codex exec --json --skip-git-repo-check -s <sandbox> -m <model> -c model_reasoning_effort=<effort> -C <cwd> -`의 stdin으로 전달합니다. `-C`/`--cwd`는 codex 자신의 `-C`/`--cd`로도 전달하고 하위 프로세스의 작업 디렉터리로도 쓰여, 작업별 worktree에서 실행할 수 있습니다. 공개 `agent_message` 본문과 도구 호출의 **종류**만 이벤트 기록에 남기고 명령·결과는 남기지 않습니다. 완료·실패 기록에는 원본(마스킹 없는) CLI 로그의 `runtime/raw/` 내 경로를 요약 뒤에 덧붙입니다. WSL의 Codex를 쓰면 `--prefix-file`에 인자 배열을 저장합니다(Claude와 같음).
+
+실행 파일을 `--executable`·`--prefix-file`로 지정하지 않고 `PATH`에도 없으면, Windows의 `%LOCALAPPDATA%\OpenAI\Codex\bin\*\codex.exe` 아래에서 **가장 최근에 빌드된 버전**을 자동으로 찾습니다(여러 버전이 나란히 설치돼 있을 때 최신판을 쓰기 위함).
+
+같은 네이티브 Codex 스레드를 이어가려면 `--resume`에 `CODEX_NATIVE_SESSION`으로 출력된 thread id를 그대로 넘깁니다. 내부적으로 `codex exec resume <thread id> ...`를 실행합니다.
+
+```powershell
+python -X utf8 research/collaboration-console/console.py codex --task-id codex-audit --resume <실제-Codex-thread-id> --prompt-file research/collaboration-console/runtime/continuation.txt --model gpt-6.1-sol --effort high -C C:\worktrees\10-17-dev-hub
+```
 
 WSL CLI를 쓸 때 `runtime/claude-prefix.json`에 **인자 배열**을 저장합니다. `--cd` 경로는 실제 저장소 WSL 경로로 바꿉니다.
 
@@ -94,11 +110,27 @@ CLI가 반환하는 실제 세션 UUID는 로컬 `runtime/<task-id>.session.json
 python -X utf8 research/collaboration-console/console.py claude --task-id claude-audit --resume <실제-Claude-세션-UUID> --prompt-file research/collaboration-console/runtime/continuation.txt --prefix-file research/collaboration-console/runtime/claude-prefix.json --allowed-tools Read,Grep,Glob --permission-mode plan --max-turns 15
 ```
 
+## 매일 자동 실행 (Windows)
+
+```powershell
+powershell -File research/collaboration-console/install-autostart.ps1 -BindHost 100.111.15.33 -Port 1000
+```
+
+Windows 작업 스케줄러에 로그온 시 + 매일 09:00 트리거로 등록합니다. 실행 전마다 해당 host:port가 이미 열려 있는지 TCP로 확인하고, 열려 있으면 조용히 건너뛰어 중복 실행하지 않습니다(`-MultipleInstances IgnoreNew`로도 한 번 더 막습니다). `pythonw.exe`(없으면 `python.exe` + 숨긴 창)로 띄우며, 실행 로그는 `runtime/autostart.log`에 남습니다. 실행에 실패하면 1분 간격으로 최대 3번 재시도합니다.
+
+**방화벽 인바운드 허용은 이 스크립트를 평범하게 실행하는 동안 하지 않습니다.** 관리자 권한이 필요하고 호스트를 바꾸는 작업이라, `Open-ConsoleFirewallRule` 함수로 분리해 두었고 `-OpenFirewall`을 명시해야만 실행됩니다. 소유자가 팀원 접속을 열기로 결정한 뒤 별도로 실행하세요.
+
+```powershell
+powershell -File research/collaboration-console/install-autostart.ps1 -OpenFirewall -Port 1000   # 관리자 권한, 100.64.0.0/10(Tailscale)만 허용
+```
+
+제거는 `powershell -File research/collaboration-console/uninstall-autostart.ps1`입니다(작업 스케줄러 등록과 생성된 런처만 지우며, 방화벽 규칙은 만들었을 때만 수동으로 `Remove-NetFirewallRule`을 안내합니다).
+
 ## 보관·접근·검증
 
-`runtime/events.jsonl`은 추가만 하는 로컬 기록이며 `.gitignore`로 제외합니다. 요청 파일·원시 결과·로그도 `runtime/`에 두고 공개 Git에 올리지 않습니다. 자격증명 패턴은 쓰기 전과 HTTP 응답 전 마스킹합니다. 자동 마스킹은 모든 형식의 비밀 탐지를 보장하지 않으므로 공유 보고에는 필요한 내용만 넣습니다.
+`runtime/events.jsonl`은 추가만 하는 로컬 기록이며 `.gitignore`로 제외합니다. 요청 파일·원시 결과·로그도 `runtime/`에 두고 공개 Git에 올리지 않습니다. 자격증명 패턴(`Bearer`, `sk-`/`ghp_`/`github_pat_`, JWT, `Authorization:`, `*_PASSWORD`/`*_TOKEN`/`*_API_KEY` 등)은 쓰기 전과 HTTP 응답 전 마스킹합니다. 자동 마스킹은 모든 형식의 비밀 탐지를 보장하지 않으므로 공유 보고에는 필요한 내용만 넣습니다.
 
-HTTP는 `127.0.0.1`에만 바인딩하며 고정 정적 파일, `/api/events`, `/health`만 읽습니다. HTTP에서 기록 작성·파일 조회·명령 실행은 지원하지 않습니다. 다른 Host·Origin 요청과 경로 탐색을 거부합니다. 미연결·빈 기록·오류·갱신 지연을 구별하여 표시합니다. 최근 1,000개 기록을 보여 주며 전체 원본은 JSONL에 보존됩니다.
+HTTP는 `--host`로 지정한 주소(기본 `127.0.0.1`)에만 바인딩하며 고정 정적 파일, `/api/events`, `/api/runs`, `/api/wbs`, `/health`만 읽습니다. HTTP에서 기록 작성·파일 조회·명령 실행은 지원하지 않습니다(쓰기는 모두 로컬 `emit`/`claude`/`codex` CLI로만 합니다). Host 헤더는 `127.0.0.1`·`localhost`·실제 바인딩 주소만 허용하고, 그 외 Host·Origin 요청과 경로 탐색을 거부합니다(DNS 리바인딩 방지). 응답에는 CSP(`default-src 'self'` 등)·`X-Content-Type-Options`·`Referrer-Policy` 헤더를 붙입니다. 미연결·빈 기록·오류·갱신 지연을 구별하여 표시합니다. 최근 1,000개 기록을 보여 주며 전체 원본은 JSONL에 보존됩니다. `/api/wbs`는 [`development-wbs/snapshot.json`](../llm-wiki/analysis/development-wbs/snapshot.json)을 매 요청 다시 읽어 그대로 돌려줍니다 — 별도 빌드·복사본이 없으므로 그 파일을 갱신하면 다음 2초 폴링에서 바로 반영됩니다.
 
 ```powershell
 python -X utf8 research/collaboration-console/test_console.py

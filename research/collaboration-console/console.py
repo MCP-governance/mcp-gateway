@@ -16,7 +16,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
 ROOT = Path(__file__).resolve().parent
+REPO_ROOT = ROOT.parents[1]
 DEFAULT_LOG = ROOT / "runtime" / "events.jsonl"
+WBS_SNAPSHOT = REPO_ROOT / "research" / "llm-wiki" / "analysis" / "development-wbs" / "snapshot.json"
 AUTHORS = {"Codex", "Claude", "User", "System"}
 KINDS = {"message", "task", "check"}
 STATES = {"queued", "running", "waiting", "completed", "passed", "failed", "blocked", "cancelled"}
@@ -24,6 +26,7 @@ MAX_BODY = 48_000
 MAX_LINE = MAX_BODY * 4 + 4096
 MODEL = "claude-sonnet-5-5"
 EFFORT = "xhigh"
+DEFAULT_PORT = 1000
 STATIC = {"/": ("index.html", "text/html; charset=utf-8"),
           "/app.js": ("app.js", "text/javascript; charset=utf-8"),
           "/style.css": ("style.css", "text/css; charset=utf-8")}
@@ -37,6 +40,7 @@ def redact(value):
     """Suppress common credentials before either disk storage or HTTP output."""
     text = str(value)
     text = re.sub(r"(?i)(\bBearer\s+)[A-Za-z0-9._~+/-]+=*", r"\1[REDACTED]", text)
+    text = re.sub(r"(?i)(authorization\s*:\s*)\S.*", r"\1[REDACTED]", text)
     text = re.sub(r"(?i)\b(?:sk-(?:ant-)?[A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9_]{12,}|github_pat_[A-Za-z0-9_]{12,})\b", "[REDACTED]", text)
     text = re.sub(r"\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b", "[REDACTED]", text)
     text = re.sub(r"(?is)-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----.*?-----END (?:[A-Z ]+ )?PRIVATE KEY-----", "[REDACTED PRIVATE KEY]", text)
@@ -166,12 +170,11 @@ class Viewer(BaseHTTPRequestHandler):
 
     def do_GET(self):
         # Reject DNS rebinding and cross-origin requests even though no HTTP mutations exist.
-        valid_hosts = {f"127.0.0.1:{self.server.server_port}", f"localhost:{self.server.server_port}"}
-        if self.headers.get("Host", "") not in valid_hosts:
-            self.respond(403, b'{"error":"Local host required"}')
+        if self.headers.get("Host", "") not in self.server.allowed_hosts:
+            self.respond(403, b'{"error":"Allowed host required"}')
             return
         origin = self.headers.get("Origin")
-        if origin and origin not in {f"http://{host}" for host in valid_hosts}:
+        if origin and origin not in {f"http://{host}" for host in self.server.allowed_hosts}:
             self.respond(403, b'{"error":"Same origin required"}')
             return
         url = urlsplit(self.path)
@@ -194,8 +197,13 @@ class Viewer(BaseHTTPRequestHandler):
                 self.respond(200, json.dumps(self.server.run_log.snapshot(), ensure_ascii=False).encode("utf-8"))
             except OSError:
                 self.respond(503, b'{"error":"Run log unavailable"}')
+        elif url.path == "/api/wbs":
+            try:
+                self.respond(200, WBS_SNAPSHOT.read_bytes())
+            except OSError:
+                self.respond(503, b'{"error":"WBS snapshot unavailable"}')
         elif url.path == "/health":
-            self.respond(200, b'{"status":"ok","mode":"read-only","bind":"127.0.0.1"}')
+            self.respond(200, b'{"status":"ok","mode":"read-only"}')
         else:
             self.respond(404, b'{"error":"Not found"}')
 
@@ -203,10 +211,19 @@ class Viewer(BaseHTTPRequestHandler):
         self.respond(405, b'{"error":"Read-only viewer; use the local emit CLI"}')
 
 
-def make_server(port, log):
-    server = ThreadingHTTPServer(("127.0.0.1", port), Viewer)
+def allowed_hosts_for(host, port):
+    """127.0.0.1/localhost are always trusted for local testing; the bind host is added so teammates reading over Tailscale pass the Host check."""
+    hosts = {f"127.0.0.1:{port}", f"localhost:{port}"}
+    if host not in ("127.0.0.1", "localhost"):
+        hosts.add(f"{host}:{port}")
+    return hosts
+
+
+def make_server(host, port, log):
+    server = ThreadingHTTPServer((host, port), Viewer)
     server.event_log = log
     server.run_log = RunLog(log.path.parent / "runs.jsonl")
+    server.allowed_hosts = allowed_hosts_for(host, server.server_port)
     server.daemon_threads = True
     return server
 
@@ -539,6 +556,15 @@ def private_raw(log, run_id):
     return stream
 
 
+def find_codex_windows_executable():
+    """The Windows Codex CLI installs each release under its own version directory; pick the one built most recently."""
+    base = os.environ.get("LOCALAPPDATA")
+    if not base:
+        return None
+    candidates = list(Path(base).glob("OpenAI/Codex/bin/*/codex.exe"))
+    return max(candidates, key=lambda path: path.stat().st_mtime) if candidates else None
+
+
 def build_prefix(args):
     if args.prefix_file:
         prefix = json.loads(Path(args.prefix_file).read_text(encoding="utf-8-sig"))
@@ -546,6 +572,9 @@ def build_prefix(args):
             raise ValueError("Prefix file must be a nonempty JSON argument array")
         return prefix
     executable = args.executable or shutil.which(args.agent_cli) or shutil.which(args.agent_cli + ".cmd")
+    if not executable and args.agent_cli == "codex":
+        found = find_codex_windows_executable()
+        executable = str(found) if found else None
     if not executable:
         raise ValueError(f"{args.agent_cli} CLI not found; pass --executable or --prefix-file")
     return [executable]
@@ -649,12 +678,14 @@ def run_cli(args, agent, command, prompt, requested_by):
                 details += "\n" + run.error["message"]
             if stderr_lines:
                 details += "\n" + "\n".join(stderr_lines)
-            log.append(agent, "task", args.task_id, "failed", f"{agent} CLI 실패 · {details}"[:MAX_BODY], session_id)
+            raw_ref = f"runtime/raw/{Path(raw.name).name}" if raw else "없음"
+            log.append(agent, "task", args.task_id, "failed", f"{agent} CLI 실패 · {details}\n원본 로그 {raw_ref}"[:MAX_BODY], session_id)
             return returncode or 1
         if run.tool_calls == 0:
             log.append(agent, "check", args.task_id, "failed", "도구 호출 0건: CLI 출력에 도구 호출 기록이 없습니다.", session_id)
         verdict = "제공자 응답 모델 확인" if run.model_check() == "confirmed" else "응답 모델 필드는 제공되지 않아 실제 모델은 미확인"
-        log.append(agent, "task", args.task_id, "completed", f"{agent} CLI 완료 · {verdict} · 도구 호출 {run.tool_calls}건", session_id)
+        raw_ref = f"runtime/raw/{Path(raw.name).name}" if raw else "없음"
+        log.append(agent, "task", args.task_id, "completed", f"{agent} CLI 완료 · {verdict} · 도구 호출 {run.tool_calls}건 · 원본 로그 {raw_ref}", session_id)
         print(f"{agent.upper()}_RESULT=" + redact(str((run.result or {}).get("result", ""))), flush=True)
         return 0
     except (OSError, RuntimeError) as exc:
@@ -734,16 +765,21 @@ def run_codex(args):
         raise ValueError("--model and --effort are required (a model name and a reasoning effort such as high)")
     prompt = read_prompt(args)
     args.agent_cli = "codex"
-    command = build_prefix(args) + ["exec", "--json", "--skip-git-repo-check", "-s", args.sandbox, "-m", args.model,
-                                    "-c", f"model_reasoning_effort={args.effort}", "-"]
+    resume = getattr(args, "resume", None)
+    if resume and not re.fullmatch(r"[0-9a-f-]{20,64}", resume):
+        raise ValueError("--resume must be the native Codex thread id (CODEX_NATIVE_SESSION)")
+    command = build_prefix(args) + ["exec"] + (["resume", resume] if resume else [])
+    command += ["--json", "--skip-git-repo-check", "-s", args.sandbox, "-m", args.model,
+               "-c", f"model_reasoning_effort={args.effort}", "-C", args.cwd, "-"]
     return run_cli(args, "Codex", command, prompt, getattr(args, "requested_by", None) or "Claude")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    serve = sub.add_parser("serve", help="Start localhost read-only viewer")
-    serve.add_argument("--port", type=int, default=18766)
+    serve = sub.add_parser("serve", help="Start the read-only viewer (collaboration log + WBS board)")
+    serve.add_argument("--host", default="127.0.0.1", help="bind address; use the Tailscale IP to let teammates read it")
+    serve.add_argument("--port", type=int, default=DEFAULT_PORT)
     serve.add_argument("--log", default=str(DEFAULT_LOG))
     emit = sub.add_parser("emit", help="Append a visible message/task/check locally")
     emit.add_argument("--log", default=str(DEFAULT_LOG))
@@ -779,7 +815,8 @@ def main():
     codex_executable = codex.add_mutually_exclusive_group()
     codex_executable.add_argument("--executable")
     codex_executable.add_argument("--prefix-file", help="JSON argv array, for example WSL distribution + codex path")
-    codex.add_argument("--cwd", default=str(ROOT.parents[1]))
+    codex.add_argument("-C", "--cwd", default=str(ROOT.parents[1]), help="worktree passed as codex's own -C/--cd and as the subprocess cwd")
+    codex.add_argument("--resume", help="Resume the native Codex thread id printed as CODEX_NATIVE_SESSION")
     codex.add_argument("--requested-by", choices=sorted(AUTHORS), default="Claude")
     gateway = sub.add_parser("gateway-records", help="Attach what the gateway's own decision records show for a run")
     gateway.add_argument("--log", default=str(DEFAULT_LOG))
@@ -789,8 +826,10 @@ def main():
     args = parser.parse_args()
     try:
         if args.command == "serve":
-            server = make_server(args.port, EventLog(args.log))
-            print(f"COLLABORATION_CONSOLE=http://127.0.0.1:{server.server_port}", flush=True)
+            if args.host in ("0.0.0.0", "::"):
+                print(f"경고: {args.host}은 모든 네트워크 인터페이스에 공개합니다. Tailscale IP처럼 특정 주소에 바인딩하세요.", file=sys.stderr)
+            server = make_server(args.host, args.port, EventLog(args.log))
+            print(f"COLLABORATION_CONSOLE=http://{args.host}:{server.server_port}", flush=True)
             server.serve_forever(poll_interval=0.5)
         elif args.command == "emit":
             text = Path(args.body_file).read_text(encoding="utf-8-sig") if args.body_file else sys.stdin.read() if args.stdin else args.body

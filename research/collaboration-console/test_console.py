@@ -137,7 +137,7 @@ class ConsoleTests(unittest.TestCase):
     def test_http_read_only_fixed_assets_local_host_and_redacted_data(self):
         attack = '<img src=x onerror="alert(1)"><script>alert(2)</script>'
         self.log.append("Claude", "message", "audit", "running", attack)
-        server = console.make_server(0, self.log)
+        server = console.make_server("127.0.0.1", 0, self.log)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         base = f"http://127.0.0.1:{server.server_port}"
@@ -168,6 +168,38 @@ class ConsoleTests(unittest.TestCase):
             server.shutdown()
             server.server_close()
             thread.join()
+
+    def test_allowed_hosts_trusts_localhost_and_the_bind_host_only(self):
+        self.assertEqual(console.allowed_hosts_for("127.0.0.1", 1000), {"127.0.0.1:1000", "localhost:1000"})
+        self.assertEqual(console.allowed_hosts_for("100.111.15.33", 1000),
+                         {"127.0.0.1:1000", "localhost:1000", "100.111.15.33:1000"})
+
+    def test_wbs_endpoint_serves_the_snapshot_file_fresh_each_request(self):
+        snapshot = Path(self.tmp.name) / "snapshot.json"
+        snapshot.write_text('{"items": [], "as_of": "v1"}', encoding="utf-8")
+        previous = console.WBS_SNAPSHOT
+        console.WBS_SNAPSHOT = snapshot
+        try:
+            server = console.make_server("127.0.0.1", 0, self.log)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            base = f"http://127.0.0.1:{server.server_port}"
+            try:
+                with urlopen(base + "/api/wbs") as response:
+                    self.assertEqual(json.loads(response.read())["as_of"], "v1")
+                snapshot.write_text('{"items": [], "as_of": "v2"}', encoding="utf-8")
+                with urlopen(base + "/api/wbs") as response:
+                    self.assertEqual(json.loads(response.read())["as_of"], "v2")
+                snapshot.unlink()
+                with self.assertRaises(HTTPError) as error:
+                    urlopen(base + "/api/wbs")
+                self.assertEqual(error.exception.code, 503)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join()
+        finally:
+            console.WBS_SNAPSHOT = previous
 
 
 FIXTURES = Path(__file__).with_name("fixtures")
@@ -299,6 +331,56 @@ class RunRecordTests(unittest.TestCase):
         self.assertEqual(argv[argv.index("-c") + 1], "model_reasoning_effort=high")
         self.assertEqual((argv[argv.index("-s") + 1], argv[-1]), ("read-only", "-"))
 
+    def test_codex_passes_worktree_with_dash_c_and_resumes_a_native_thread(self):
+        thread = "01a13e37-caf3-7c20-a23d-28fb02f2e4b7"
+        code, run = self.run_agent(console.run_codex, self.fake_cli(fixture_lines("codex-model-rejected.jsonl"), exit_code=1, name="codex"),
+                                   resume=thread)
+        argv = json.loads((self.dir / "codex.argv").read_text())
+        self.assertEqual(argv[:2], ["exec", "resume"])
+        self.assertEqual(argv[2], thread)
+        self.assertEqual(argv[argv.index("-C") + 1], self.tmp.name)
+
+    def test_codex_resume_rejects_a_value_that_is_not_a_native_thread_id(self):
+        with self.assertRaises(ValueError):
+            console.run_codex(self.args(self.fake_cli(["{}"], name="codex"), resume="not a thread id; rm -rf /"))
+
+    def test_codex_without_resume_has_no_resume_argv(self):
+        code, run = self.run_agent(console.run_codex, self.fake_cli(fixture_lines("codex-model-rejected.jsonl"), exit_code=1, name="codex"))
+        argv = json.loads((self.dir / "codex.argv").read_text())
+        self.assertNotIn("resume", argv)
+
+    def test_find_codex_windows_executable_picks_the_most_recently_built_version(self):
+        base = self.dir / "localappdata"
+        older = base / "OpenAI/Codex/bin/0.157.0/codex.exe"
+        newer = base / "OpenAI/Codex/bin/0.158.2/codex.exe"
+        for path in (older, newer):
+            path.parent.mkdir(parents=True)
+            path.write_text("stub", encoding="utf-8")
+        os.utime(older, (1000, 1000))
+        os.utime(newer, (2000, 2000))
+        previous = os.environ.get("LOCALAPPDATA")
+        os.environ["LOCALAPPDATA"] = str(base)
+        try:
+            self.assertEqual(console.find_codex_windows_executable(), newer)
+        finally:
+            if previous is None:
+                os.environ.pop("LOCALAPPDATA", None)
+            else:
+                os.environ["LOCALAPPDATA"] = previous
+
+    def test_find_codex_windows_executable_is_none_without_localappdata_or_matches(self):
+        previous = os.environ.pop("LOCALAPPDATA", None)
+        try:
+            self.assertIsNone(console.find_codex_windows_executable())
+        finally:
+            if previous is not None:
+                os.environ["LOCALAPPDATA"] = previous
+        os.environ["LOCALAPPDATA"] = str(self.dir)
+        try:
+            self.assertIsNone(console.find_codex_windows_executable())
+        finally:
+            os.environ.pop("LOCALAPPDATA", None)
+
     def test_codex_usage_limit_and_success_streams(self):
         failure = lambda info: [{"type": "thread.started", "thread_id": "01a13e37-0000-0000-0000-000000000001"}, {"type": "turn.started"},
                                 {"type": "turn.failed", "error": {"message": "You've hit your usage limit. Try again at 9:01 PM.", **info}}]
@@ -360,7 +442,7 @@ class RunRecordTests(unittest.TestCase):
         stored = record.record("final")
         stored["error"] = {**stored["error"], "message": "failure with TOKEN=very-secret-value"}
         console.RunLog(self.dir / "runs.jsonl").append(stored)
-        server = console.make_server(0, log)
+        server = console.make_server("127.0.0.1", 0, log)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         base = f"http://127.0.0.1:{server.server_port}"
