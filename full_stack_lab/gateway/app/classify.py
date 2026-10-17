@@ -549,6 +549,86 @@ LISTING_TOOLS = {"list_directory", "list_directory_with_sizes", "directory_tree"
 PATH_ARGS = ("path", "source", "destination", "file_path", "outputPath")
 
 
+def result_items(payload: dict) -> int:
+    """Count arrays in each released representation, including JSON inside text."""
+    def count(value: Any) -> int:
+        if isinstance(value, list):
+            return len(value) + sum(count(item) for item in value)
+        if isinstance(value, dict):
+            return sum(count(item) for item in value.values())
+        if isinstance(value, str):
+            # Records serialized inside one JSON string (CSV, key dumps) are still records.
+            lines = sum(bool(line.strip()) for line in value.splitlines())
+            return lines if lines > 1 else 0
+        return 0
+
+    counts = [count(payload.get("structured")), len(payload.get("content") or [])]
+    text_count = 0
+    for item in payload.get("content") or []:
+        if not isinstance(item, dict) or not isinstance(item.get("text"), str):
+            continue
+        try:
+            value = json.loads(item["text"])
+        except (ValueError, RecursionError):
+            # Plain text has no record schema; nonempty lines are a conservative unit.
+            text_count += sum(bool(line.strip()) for line in item["text"].splitlines())
+        else:
+            text_count += count(value)
+    return max(*counts, text_count)
+
+
+def bulk_read_reason(server: str, tool: str, args: dict, limit: int) -> str | None:
+    """Reject broad selectors; never silently rewrite a caller's query or page size."""
+    pending = [args]
+    while pending:
+        value = pending.pop()
+        if isinstance(value, dict):
+            for key, item in value.items():
+                if key.replace("_", "").lower() in {"limit", "perpage", "pagesize", "maxresults", "count"}:
+                    if type(item) is not int or not 0 < item <= limit:
+                        return "조회 건수는 반환 상한 이내의 양수여야 합니다."
+                pending.append(item)
+        elif isinstance(value, list):
+            pending.extend(value)
+    if server == "redis" and tool in {"scan_keys", "scan_all_keys"}:
+        if tool == "scan_all_keys" or str(args.get("pattern") or "*").strip() in {"*", "**"}:
+            return "전체 키 조회는 허용하지 않습니다. 구체적인 접두사를 지정하세요."
+    if server in {"filesystem", "desktop"}:
+        root = "/shared" if server == "filesystem" else "/workspace"
+        if tool in LISTING_TOOLS - {"list_allowed_directories"}:
+            path = posixpath.normpath(str(args.get("path") or root))
+            # normpath keeps a leading "//" (POSIX); the server resolves it to the same folder.
+            path = "/" + path.lstrip("/") if path.startswith("/") else path
+            if path in {"/", ".", root} or any(char in path for char in "*?["):
+                return "전체 폴더 조회는 허용하지 않습니다. 하위 폴더를 지정하세요."
+            if tool in {"directory_tree", "search_files", "start_search"}:
+                pattern = str(args.get("pattern") or "").strip()
+                if tool == "directory_tree" or not pattern or pattern in {"*", "**", "**/*", ".*", "^.*$", "."}:
+                    return "전체 재귀 조회는 허용하지 않습니다. 구체적인 검색 범위를 지정하세요."
+        paths = args.get("paths") or []
+        if isinstance(paths, list) and (len(paths) > limit or any(
+                any(char in str(path) for char in "*?[") for path in paths)):
+            return "다중 파일 조회 범위가 반환 상한을 넘거나 전체 선택자를 포함합니다."
+    if server == "postgres" and tool == "execute_sql":
+        try:
+            statements = json.loads(pgparser.parse_sql_json(str(args.get("sql") or ""))).get("stmts") or []
+        except Exception:
+            return "SQL 조회 범위를 확인할 수 없습니다."
+        if len(statements) != 1:
+            return "조회 SQL은 한 문장씩 요청하세요."
+        statement = statements[0].get("stmt") or {}
+        if "CopyStmt" in statement:
+            return "전체 SQL 내보내기는 허용하지 않습니다. 범위가 제한된 SELECT를 사용하세요."
+        select = statement.get("SelectStmt")
+        if select is not None:
+            bound = select.get("limitCount", {}).get("A_Const", {})
+            size = bound["ival"].get("ival", 0) if isinstance(bound.get("ival"), dict) else None
+            if (type(size) is not int or not 0 <= size <= limit
+                    or select.get("limitOption") == "LIMIT_OPTION_WITH_TIES"):
+                return "SQL 조회에는 반환 상한 이내의 고정 LIMIT이 필요합니다."
+    return None
+
+
 def _paths(args: dict, root: str, tool: str, cls: Classification) -> None:
     listing = tool in LISTING_TOOLS
     for key in PATH_ARGS:

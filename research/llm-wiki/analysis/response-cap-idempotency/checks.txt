@@ -1,0 +1,91 @@
+CHECK response-cap-idempotency
+COMMAND python -B -X utf8 -m unittest discover -s full_stack_lab/tests -p response_cap_idempotency_test.py -v
+EXIT 0
+test_duplicate_write_is_refused_before_intent_insert (response_cap_idempotency_test.DispatchBoundary) ... ok
+test_reads_remain_repeatable_and_first_write_records (response_cap_idempotency_test.DispatchBoundary) ... ok
+test_store_failure_does_not_admit (response_cap_idempotency_test.DispatchBoundary) ... ok
+test_masked_growth_is_withheld_and_inspection_failure_stays_closed (response_cap_idempotency_test.InspectedCaps) ... ok
+test_byte_boundary_uses_utf8 (response_cap_idempotency_test.ResponseCaps) ... ok
+test_folder_selectors_and_normal_lookup (response_cap_idempotency_test.ResponseCaps) ... ok
+test_isolated_lab_uses_real_signed_store_and_restores_after_failure (response_cap_idempotency_test.ResponseCaps) ... skipped 'cryptography unavailable: signed lab fixture not checked'
+test_native_postgres_grammar (response_cap_idempotency_test.ResponseCaps) ... skipped 'pglast unavailable: native SQL parser not checked'
+test_pagination_types_boundaries_and_nesting (response_cap_idempotency_test.ResponseCaps) ... ok
+test_raw_count_boundary_and_no_truncation (response_cap_idempotency_test.ResponseCaps) ... ok
+test_sql_ast_constant_limit_only (response_cap_idempotency_test.ResponseCaps) ... ok
+test_structured_nested_json_text_and_plain_lines (response_cap_idempotency_test.ResponseCaps) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.251s
+
+OK (skipped=2)
+
+CHECK boundary-regression
+COMMAND python -B -X utf8 -m unittest discover -s full_stack_lab/tests -p dest_pin_credential_redaction_check.py -q
+EXIT 0
+----------------------------------------------------------------------
+Ran 16 tests in 0.540s
+
+OK
+
+CHECK session-regression
+COMMAND python -B -X utf8 -m unittest discover -s full_stack_lab/tests -p upstream_session_reuse_test.py -q
+EXIT 0
+----------------------------------------------------------------------
+Ran 40 tests in 1.154s
+
+OK
+
+CHECK ops-regression
+COMMAND python -B -X utf8 -m unittest discover -s full_stack_lab/tests -p ops_response_check.py -q
+EXIT 0
+----------------------------------------------------------------------
+Ran 23 tests in 5.083s
+
+OK
+
+CHECK console-syntax
+COMMAND node --check full_stack_lab/gateway/app/agent_static/console.js
+EXIT 0
+
+CHECK console-state
+COMMAND node --test full_stack_lab/tests/console-state.test.mjs
+EXIT 0
+✔ masked kinds read in Korean and an unknown kind never shows its raw name (0.8322ms)
+✔ a poll overlapping a page load shows each call once, newest first, within the limit (1.0449ms)
+✔ ids sort numerically and malformed rows cannot displace real decisions (0.2351ms)
+✔ search matches person, PC, harness, server.tool, target, policy and trace, ignoring case and spaces (0.3751ms)
+✔ the status phrase never presents a failed poll as fresh (1.1324ms)
+✔ 24 hourly buckets end at the current hour and keep empty hours at zero (0.6157ms)
+✔ splitBy counts per key with a decision split, largest first (0.3549ms)
+✔ sankey layers never merge a server with a harness of the same name (0.36ms)
+✔ endpoint observation shows disabled, stale and failed sources separately from zero accepted rows (0.4835ms)
+✔ listener-only endpoints remain in coverage counts and expose no raw command line or owner token (0.6367ms)
+✔ enforced is green only with fresh evidence of a ledger row or a kernel heartbeat (1.9865ms)
+✔ latency values read as durations and never invent a measurement (0.5465ms)
+✔ endpoint evidence labels never turn a missing value into a good one (0.3749ms)
+✔ totals are reported apart from the window and page navigation follows the cursor (15.3727ms)
+✔ latency and failure show only a fresh sample and a denial count only a collected channel (0.3505ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 119.1109
+
+CHECK open-endpoints
+COMMAND python -B -X utf8 full_stack_lab/tests/open_endpoints.py
+EXIT 0
+PASS 무인증 1개가 문서와 일치, 인증 필요 72개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)
+
+CHECK python-syntax
+COMMAND python -B -X utf8 -c "import pathlib; files=['full_stack_lab/gateway/app/classify.py','full_stack_lab/gateway/app/core.py','full_stack_lab/gateway/app/dispatch.py','full_stack_lab/tests/response_cap_idempotency_test.py','full_stack_lab/tests/dispatch_intent_pg_check.py','full_stack_lab/tests/dispatch_effect_lab.py','full_stack_lab/tests/termination_lab_support.py']; [compile(pathlib.Path(p).read_text(encoding='utf-8'),p,'exec') for p in files]; print('Python compile: 7 passed')"
+EXIT 0
+Python compile: 7 passed
+
+CHECK pyflakes
+COMMAND python -B -m pyflakes full_stack_lab/gateway/app/classify.py full_stack_lab/gateway/app/core.py full_stack_lab/gateway/app/dispatch.py full_stack_lab/tests/response_cap_idempotency_test.py full_stack_lab/tests/dispatch_intent_pg_check.py full_stack_lab/tests/dispatch_effect_lab.py full_stack_lab/tests/termination_lab_support.py
+EXIT 1
+C:\Program Files\Python310\python.exe: No module named pyflakes
+

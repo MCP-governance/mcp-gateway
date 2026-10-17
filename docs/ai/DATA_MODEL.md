@@ -48,6 +48,11 @@ NOT_EXECUTED, 전송했지만 결과를 확인하지 못하면 UNCONFIRMED(외�
 예약·주체·서버를 확인하며 쓰고(`dispatch.record`), 판정을 기록한 뒤 예약 해제와 같은 문장에서 닫는다.
 `uncertain` 또는 예약이 사라진 `pending`은 같은 쓰기 호출(`w`/`x`)을 `P-RATE-003`으로 막는다. 읽기는 막지 않는다.
 
+D-126: `resolved`·`confirmed_executed` 쓰기도 `resolved_at`부터 기본 24시간 같은 주체·서버·도구·인자 지문을 차단한다.
+`IDEMPOTENCY_TTL_SECONDS`는 완료 이력의 집행 기간이며 행 삭제 TTL이 아니다. `pending`·`uncertain`에는 적용하지 않는다.
+`confirmed_not_executed`는 재시도 가능하다. 기존 `(user_token, fingerprint)` 부분 인덱스와 별도로 전체 상태 조회 인덱스를 둔다.
+전송 직전의 재확인·intent 삽입·승인 소비도 예약과 같은 주체별 advisory lock 안에서 이루어진다. 결과 본문은 저장하지 않는다.
+
 ### `call_reservations`
 진행 중 호출의 자리. 주체별 advisory lock 안에서 세고 쓴다. TTL로 스스로 만료한다. 전송이 확인되지 않은 호출의 자리는
 풀지 않고, 막는 근거는 `dispatch_intents`가 가진다.

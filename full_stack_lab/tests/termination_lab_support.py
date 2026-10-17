@@ -6,12 +6,15 @@ from __future__ import annotations
 
 import asyncio
 import base64
+from contextlib import contextmanager
 import json
 import os
 import sys
+import tempfile
 import time
 import traceback
 from pathlib import Path
+from unittest.mock import patch
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -51,8 +54,30 @@ class Checks:
 async def apply_schema() -> None:
     await db.wait_until_ready()
     # The same files, in the same order, as core.bootstrap().
-    for name in ("agent_tables.sql", "lifecycle_tables.sql", "v2_tables.sql", "oidc_tables.sql"):
+    for name in ("agent_tables.sql", "lifecycle_tables.sql", "v2_tables.sql", "oidc_tables.sql", "ops_tables.sql"):
         await db.execute((APP / name).read_text(encoding="utf-8"))
+
+
+@contextmanager
+def isolated_disposal():
+    """The real signed-store control, with throwaway lab keys and no appliance volume."""
+    from app import disposal
+    previous = disposal.DIRECTORY
+    key = Ed25519PrivateKey.generate()
+    encode = lambda value: base64.urlsafe_b64encode(value).decode()  # noqa: E731
+    try:
+        with tempfile.TemporaryDirectory(prefix="dispatch-disposal-") as folder, patch.dict(os.environ, {
+            "DISPOSAL_DIR": folder,
+            "DISPOSAL_PRIVATE_KEY": encode(key.private_bytes(
+                serialization.Encoding.Raw, serialization.PrivateFormat.Raw, serialization.NoEncryption())),
+            "DISPOSAL_PUBLIC_KEY": encode(key.public_key().public_bytes(
+                serialization.Encoding.Raw, serialization.PublicFormat.Raw)),
+        }):
+            disposal.DIRECTORY = Path(folder)
+            disposal.initialize()
+            yield
+    finally:
+        disposal.DIRECTORY = previous
 
 
 async def add_principal(token: str, role: str = "employee", status: str = "active", department: str = "플랫폼개발팀") -> None:

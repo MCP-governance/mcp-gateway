@@ -5,6 +5,11 @@
 
 ## 1. 층별 구성
 
+D-125·126 오프라인 검사는 `python -B -X utf8 -m unittest discover -s full_stack_lab/tests -p response_cap_idempotency_test.py -v`다.
+제품 함수 본문과 DB/scanner 대역을 사용하며 MCP 실행 증거가 아니다. `pglast`·`cryptography`가 없으면 SQL 문법·서명 fixture 각 1개는 미실행이다.
+실제 DB 경쟁·완료 이력·lease 만료·미확인 복구는 `dispatch_intent_pg_check.py`, 실제 Gitea 재전송 효과·응답 보류는
+`dispatch_effect_lab.py`에 있다. [환경 제약과 메인 실행 명령](../../research/llm-wiki/status/reports/2026-10-17-response-cap-idempotency.md)을 따른다.
+
 D-115의 네트워크·DB 없는 단위 시험은 저장소 루트에서
 `python -B -X utf8 -m unittest discover -s full_stack_lab/tests -p upstream_session_reuse_test.py -v`로 실행한다.
 실제 풀과 선택한 제품 함수 본문을 대역 SDK/DB 객체로 검사한다. 실제 SDK·MCP 서버 실행 증거는 아니며,

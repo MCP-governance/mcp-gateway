@@ -20,7 +20,7 @@ import uuid
 import httpx
 
 from app import core, db, dispatch, secret_scan
-from termination_lab_support import Checks, add_principal, call_payload, mint, run, signing_keys
+from termination_lab_support import Checks, add_principal, call_payload, isolated_disposal, mint, run, signing_keys
 
 CHECKS = Checks("side effects at the dispatch boundary (real Gitea MCP server)")
 GITEA = os.environ["GITEA_ADMIN_URL"].rstrip("/") + "/api/v1"
@@ -96,6 +96,44 @@ async def identical_concurrent():
     CHECKS.ok("12 identical concurrent calls: one intent, resolved", rows["n"] == 1)
     open_places = await db.fetch_one("SELECT count(*) AS n FROM call_reservations WHERE user_token='boundary-e1' AND released_at IS NULL")
     CHECKS.ok("12 identical concurrent calls: every place is given back", open_places["n"] == 0)
+
+
+async def completed_retransmission():
+    title = f"completed-replay-{uuid.uuid4().hex[:8]}"
+    first = await call("boundary-replay", title)
+    CHECKS.ok("completed replay setup executes once", first["decision"] == "Allow" and first["upstream_executed"],
+              outcome=summary([first]))
+    await db.execute("UPDATE call_reservations SET expires_at=now()-interval '1 day' WHERE request_id=%s",
+                     (first["request_id"],))
+    retries = [await call("boundary-replay", title) for _ in range(2)]
+    CHECKS.ok("completed retries block as P-RATE-003 without sending", all(
+        r["decision"] == "Block" and r["policy_id"] == "P-RATE-003" and not r["upstream_attempted"] for r in retries),
+        outcomes=summary(retries))
+    CHECKS.ok("completed retries leave one independent Gitea effect", len(await issues(title)) == 1)
+
+
+async def single_response_caps():
+    _, claims = mint("boundary-cap", minutes=30)
+    payload = call_payload("boundary-cap", "gitea", "get_me", {}, claims)
+    broad = await core.execute_call(call_payload(
+        "boundary-cap", "filesystem", "list_directory", {"path": "/shared"}, claims))
+    CHECKS.ok("whole folder selector blocks before any send", broad["decision"] == "Block"
+              and broad["policy_id"] == "P-VOLUME-002" and not broad["upstream_attempted"], outcome=summary([broad]))
+    normal = await core.execute_call(payload)
+    CHECKS.ok("normal single lookup returns", normal["upstream_executed"] and normal["result"] is not None,
+              outcome=summary([normal]))
+    old_bytes = core.MAX_RESULT_BYTES
+    try:
+        core.MAX_RESULT_BYTES = 1
+        blocked = await core.execute_call(payload)
+    finally:
+        core.MAX_RESULT_BYTES = old_bytes
+    CHECKS.ok("oversized real Gitea response is withheld after execution", blocked["decision"] == "Block"
+              and blocked["policy_id"] == "MCP-OUTPUT-001" and blocked["upstream_executed"]
+              and blocked["result"] is None and blocked["result_evidence"]["disposition"] == "withheld",
+              outcome=summary([blocked]))
+    restored = await core.execute_call(payload)
+    CHECKS.ok("normal lookup recovers after restoring cap", restored["upstream_executed"] and restored["result"] is not None)
 
 
 async def ceiling_concurrent():
@@ -328,16 +366,23 @@ async def nul_in_arguments_and_answer():
 
 
 async def main():
+    with isolated_disposal():
+        return await scenarios()
+
+
+async def scenarios():
     signing_keys()
     secret_scan.labels = no_secrets
     await core.bootstrap()
     status = await core.refresh_catalog("gitea")
     CHECKS.ok("the Gitea MCP server answers and its contract matches the reviewed lock", status["status"] == "READY", status=status["status"])
-    for token in ("boundary-e1", "boundary-e3", "boundary-e4", "boundary-e5", "boundary-e6", "boundary-e7", "boundary-e8", "boundary-e9"):
+    for token in ("boundary-e1", "boundary-e3", "boundary-e4", "boundary-e5", "boundary-e6", "boundary-e7", "boundary-e8", "boundary-e9",
+                  "boundary-replay", "boundary-cap"):
         await add_principal(token)
     await add_principal(ADMIN, role="admin")
     for case in (identical_concurrent, ceiling_concurrent, rate_ceiling, approval_reuse, in_flight_answer_lost_in_process,
-                 principal_revoked_in_flight, crash_between_intent_and_answer, nul_in_arguments_and_answer):
+                 principal_revoked_in_flight, crash_between_intent_and_answer, nul_in_arguments_and_answer,
+                 completed_retransmission, single_response_caps):
         await CHECKS.case(case.__name__, case())
     stats = await db.fetch_one(
         """SELECT count(*) AS n,
