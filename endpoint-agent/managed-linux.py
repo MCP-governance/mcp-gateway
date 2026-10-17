@@ -176,6 +176,10 @@ def install(args):
     if not Path("/sys/module/apparmor/parameters/enabled").read_text().startswith("Y"):
         raise ValueError("이 시스템에서 AppArmor 집행을 사용할 수 없습니다")
     enforcer = load_module("enforcer", Path(__file__).with_name("enforce-linux.py"))
+    # Reject a mistaken owner before spending the one-time enrollment token.
+    enforcer.nft_rules(person.pw_uid, [], 443, owner_uid=args.owner_uid)
+    if args.owner_uid is not None:
+        pwd.getpwuid(args.owner_uid)
     binaries = {}
     for name in ("codex", "claude"):
         selected = dict(s.split("=", 1) for s in args.client).get(name)
@@ -208,6 +212,7 @@ def install(args):
                            "hostname": socket.gethostname(), "local_username": args.user, "local_uid": person.pw_uid}, credential=False)
     config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
     config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, uid=person.pw_uid,
+                  owner_uid=args.owner_uid,
                   socket=f"/run/mcpgw-{args.user}.sock", nft_baseline=str(folder / "nft-baseline.json"))
     private_write(config_path, json.dumps(config))
     policy = request(config, "/api/endpoint/managed-policy")
@@ -222,6 +227,7 @@ def install(args):
     apply_policy(policy)
     forget_stale_sign_in(person.pw_dir)
     subprocess.run([sys.executable, str(PROGRAMS / "enforce-linux.py"), "--user", args.user,
+                    *(["--owner-uid", str(args.owner_uid)] if args.owner_uid is not None else []),
                     "--gateway-port", str(policy["gateway_port"]),
                     *(["--proxy-port", str(policy["proxy_port"]), "--proxy-env", json.dumps(policy["proxy_environment"])]
                       if policy.get("proxy_port") else []),
@@ -380,6 +386,7 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     setup = commands.add_parser("install")
     setup.add_argument("--user", required=True)
+    setup.add_argument("--owner-uid", type=int, help="연결을 시작할 수 있는 직원 계정 UID")
     setup.add_argument("--enrollment", type=Path, default=Path(__file__).with_name("enrollment.json"))
     setup.add_argument("--client", action="append", default=[])
     setup.set_defaults(run=install)

@@ -50,18 +50,31 @@
 
 PJ1 사실(17:2x 읽기): Tailscale이 `ip mangle`에서 ct mark의 `0xff0000` 비트를 connmark로 저장·복원한다. 그래서 B는 ct mark **전체를 덮어쓰지 않고** `0x100` 한 비트만 OR로 켠다(첫 시험의 `0x4d475731` 덮어쓰기안은 그 필드와 겹쳐 폐기). `net.ipv4.tcp_fastopen = 1`(클라이언트만).
 
-## 정책 변경안 (미적용)
+## D-119 채택·구현 (2026-10-17, 배포 전)
 
-1. `endpoint-agent/bootstrap.py`의 첫 실행 안내와 콘솔 연결 안내: Codex는 "2. Sign in with Device Code"를 고르라고 쓰고, 장치 코드가 거부되면 ChatGPT 보안 설정 경로를 안내한다(지금은 설치 중 실패 때만 안내).
-2. `endpoint-agent/enforce-linux.py` `nft_rules(uid, …, owner_uid)`: 관리 계정을 만든 데스크톱 사용자 UID(설치기의 `SUDO_UID`)를 받아 accept 줄 앞에 넣는다.
+2026-10-17 사용자가 추천안을 채택했다. [D-119](../../../../docs/ai/DECISIONS.md)와 [구현·검증 보고](../../status/reports/2026-10-17-loopback-owner-replies-d119.md)가 현재 기준이다. 위의 승인 대기·미적용 설명과 아래 R1~R9는 10-15 조사 시점의 이력이다. `lab/`의 원본·해시는 보존했다. 이번 작업은 로컬 구현·단위 검증까지이며 과거 PJ1 실험을 새 판본 통과로 세지 않는다.
+
+1. `endpoint-agent/bootstrap.py`는 기존 설치 중 `codex login --device-auth` 실행을 유지하고 설치 완료 후에도 같은 명령을 안내한다. 영어 TUI 선택과 브라우저 실패 설명은 제거한다. 장치 코드가 거부되면 기존 ChatGPT 보안 설정 안내로 재시도한다.
+2. `endpoint-agent/enforce-linux.py` `nft_rules(uid, …, owner_uid)`: 설치기가 확인한 직원 계정 UID를 별도 관리 계정에만 명시적으로 전달한다(`bootstrap.install_managed` → `managed-linux.py --owner-uid` → 집행기). 원시 `SUDO_UID`를 집행기에서 읽지 않는다. 소유자를 지정하지 않으면 기존 전면 거부를 유지한다. 등록 토큰 소비 전에 소유자 UID·실제 계정 존재를 검사하고 관리 계정 자신을 소유자로 지정하면 실패한다. accept 줄 앞에는 다음만 추가한다.
    ```
    oifname "lo" ct direction original ct state new meta skuid <owner> ct mark set ct mark or 0x00000100
    meta skuid <managed> oifname "lo" ct direction reply ct mark and 0x00000100 == 0x00000100 accept
    ```
    관리 UID가 **시작한** 루프백 연결(원래 방향)은 이 줄과 무관하게 지금처럼 거부된다. 원격 호스트가 관리 리스너에 붙는 경우(`oifname` ≠ `lo`)도 그대로 거부된다.
-3. `endpoint-agent/os-observer.py:52-54`: `SPT`와 TCP 플래그(`SYN`/`ACK SYN`)를 이벤트에 남기고, `SPT`가 관리 리스너인 SYN-ACK는 "관리 하네스 리스너의 응답 차단"으로 따로 분류한다(DEV-30 잡음 분류와 연결). 이번 오독의 원인이다.
+3. `endpoint-agent/os-observer.py`의 D-113 구현(`SPT`·TCP 플래그·`listener_reply`)은 유지한다. 허용 응답은 앞의 accept에서 끝나 거부 접두사 로그가 생성되지 않는다. 소유자 이외의 연결에 대한 응답 거부는 계속 기록하며, 로그를 숨기거나 원장을 고치지 않는다.
 
-## E13 회귀 시험 계획 (승인 후, PJ1)
+| 원자 요구사항 | 코드 심볼 | 오프라인 검증 | 실기기 확인(미실행) |
+| --- | --- | --- | --- |
+| DEV35-01 소유자 original/new에만 표식 | `nft_rules` | `OwnerReplies.test_only_owner_original_new_marks_and_managed_reply_accepts` | IPv4·IPv6 콜백 정상, 다른 UID 응답 거부 |
+| DEV35-02 0x100만 OR/AND, 기존 비트 보존 | `nft_rules` | `test_mark_is_one_bit_and_preserves_tailscale_and_other_bits` | 실제 Tailscale connmark 전후·마스크 대조 |
+| DEV35-03 관리 출발·포트 선점 차단 유지 | `nft_rules` | 허용 규칙 전체 목록·최종 reject 검사, owner 미지정·경계값 거부 | E13 7종·새 SYN·UDP·원격, netns 규칙 적용/실패/재적용 |
+| DEV35-04 확인한 직원 UID 전달 | `bootstrap.main`·`install_managed`, `managed-linux.install` | 별도 관리 계정일 때만 전달, 환경 SUDO_UID 미사용 | 저장 owner_uid·설치 egress.nft·커널 baseline·재부팅 일치 |
+| DEV35-05 장치 코드 기본·실패 시 경계 유지 | `LOGINS`·`harness_login` | 성공·실패·Ctrl+C 모두 장치 코드만 실행 | R2 실제 로그인, 장치 코드 비활성/폴링 중단 후 재시도 |
+| DEV35-06 허용 응답의 거부 오인 방지 | `os-observer.event` | 접두사 없으면 이벤트 없음, 거부 응답·SYN 기존 분류 | R1·R6 커널 원문·관측 이벤트·리스너 수신 세 곳 대조 |
+
+단위 시험 정본은 `full_stack_lab/tests/loopback_owner_replies_test.py`다. 실험 명령·E13 7종의 정확한 구분·경쟁/복구 조건은 새 작업 보고에 있다.
+
+## E13 회귀 시험 계획 (D-119 채택, 메인 실행 대기)
 
 적용 전·후 같은 조건으로 돌리고, 각 줄의 판정 근거는 커널 `MCPGW_DENY` 원문·`endpoint_os_events`·리스너 측 수신 로그 세 곳으로 확인한다.
 

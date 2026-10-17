@@ -1,46 +1,27 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-17T21:48:46+09:00
+확인 시각: 2026-10-17T21:50:41+09:00
 
-HEAD: `9537c0b494a0c4d45c615caa4797674f273d270f` · 로컬 브랜치: `10/17-session-reuse`
+HEAD: `ae04c11adad675cdda18a20bae024f664f5d8aec` · 로컬 브랜치: `main`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M docs/ai/ARCHITECTURE.md
- M docs/ai/DECISIONS.md
- M docs/ai/PAC_MAPPING.md
- M docs/ai/TESTING.md
- M full_stack_lab/gateway/app/core.py
- M full_stack_lab/gateway/app/decommission.py
- M full_stack_lab/gateway/app/experiments.py
- M full_stack_lab/gateway/app/main.py
- M full_stack_lab/gateway/app/mcp_facade.py
- M full_stack_lab/gateway/app/oidc.py
- M full_stack_lab/gateway/app/secret_scan.py
- M full_stack_lab/gateway/app/upstream.py
- M full_stack_lab/opa/policy_ledger.json
- M full_stack_lab/tests/mcp_result_contract_check.py
- M research/llm-wiki/analysis/upstream-session-reuse/README.md
- M research/llm-wiki/catalogs/threats.json
- M research/llm-wiki/status/backlog.md
- M research/llm-wiki/status/repository-snapshot.json
- M research/llm-wiki/status/repository-snapshot.md
- M research/llm-wiki/threats/control-map.md
- M research/llm-wiki/tools/map_threats.py
-?? full_stack_lab/gateway/app/destination.py
-?? full_stack_lab/gateway/app/upstream_sessions.py
-?? full_stack_lab/tests/dest_pin_credential_redaction_check.py
-?? full_stack_lab/tests/dest_pin_transport_check.py
-?? full_stack_lab/tests/upstream_session_reuse_test.py
-?? research/llm-wiki/analysis/dest-pin-credential-redaction/
-?? research/llm-wiki/analysis/upstream-session-reuse/code-evidence.json
-?? research/llm-wiki/analysis/upstream-session-reuse/review-integration-validation.json
-?? research/llm-wiki/analysis/upstream-session-reuse/stage2.md
-?? research/llm-wiki/status/reports/2026-10-17-dest-pin-credential-redaction.md
-?? research/llm-wiki/status/reports/2026-10-17-upstream-session-reuse-stage2.md
+UU docs/ai/DECISIONS.md
+M  endpoint-agent/README.md
+M  endpoint-agent/bootstrap.py
+M  endpoint-agent/enforce-linux.py
+M  endpoint-agent/managed-linux.py
+A  full_stack_lab/tests/loopback_owner_replies_test.py
+M  research/llm-wiki/analysis/dev35-loopback/README.md
+UU research/llm-wiki/catalogs/threats.json
+M  research/llm-wiki/status/backlog.md
+M  research/llm-wiki/status/reports/2026-10-15-dev35-loopback.md
+A  research/llm-wiki/status/reports/2026-10-17-loopback-owner-replies-d119.md
+UU research/llm-wiki/status/repository-snapshot.json
+UU research/llm-wiki/status/repository-snapshot.md
 ```
 
 ## 주요 파일 바이트
@@ -55,6 +36,6 @@ M docs/ai/ARCHITECTURE.md
 | `full_stack_lab/gateway/app/secret_scan.py` | `c6d981869e476d64d8b3e646c307f29d223942333fad84eb7e147a05593750db` |
 | `full_stack_lab/opa/pac15.rego` | `067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850` |
 | `full_stack_lab/opa/decision.rego` | `b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904` |
-| `endpoint-agent/bootstrap.py` | `e813b91655123ade200eb06d373ec4b8dafa1124b6f0f6ad75bea18cfc2dd4c3` |
-| `endpoint-agent/managed-linux.py` | `58e3a7d66ee7e990bc9f2e9c45797df3e587a47259489ee7a5a8464f2771a14c` |
-| `endpoint-agent/enforce-linux.py` | `1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4` |
+| `endpoint-agent/bootstrap.py` | `8c0b13cf6770d92ce121fc14db6d57839aadf0426ffff1dc2f43f28032602f15` |
+| `endpoint-agent/managed-linux.py` | `04a12ba09454d44a7d8da78112b0625438e3d75cf875a92e8313ba6530a7cce2` |
+| `endpoint-agent/enforce-linux.py` | `ad3005c173565164afe356aa917598a5fd5e93d092c11f1a2b50b5040b15f263` |

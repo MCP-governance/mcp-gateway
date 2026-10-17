@@ -64,8 +64,17 @@ def fixed_options(key: str, binary: Path) -> list[str]:
         return ["--no-daemon"] if image.find(b"--no-daemon") != -1 else []
 
 
-def nft_rules(uid: int, addresses: list[str], port: int, proxy_port: int | None = None) -> str:
+def nft_rules(uid: int, addresses: list[str], port: int, proxy_port: int | None = None,
+              owner_uid: int | None = None) -> str:
     rules = []
+    if owner_uid is not None:
+        if type(owner_uid) is not int or not 1000 <= owner_uid < 2**32 - 1 or owner_uid == uid:
+            raise ValueError("소유자는 관리 계정과 다른 일반 사용자 UID여야 합니다")
+        # Preserve Tailscale's 0xff0000 connmark field; only the owner's original flow earns this bit.
+        rules += [f'oifname "lo" ct direction original ct state new meta skuid {owner_uid} '
+                  'ct mark set ct mark or 0x00000100',
+                  f'meta skuid {uid} oifname "lo" ct direction reply '
+                  'ct mark and 0x00000100 == 0x00000100 accept']
     ports = f"{{ {port}, {proxy_port} }}" if proxy_port else str(port)
     for address in addresses:
         ip = ipaddress.ip_address(address)
@@ -193,6 +202,7 @@ int main(int argc, char **argv) {{
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--user", required=True)
+    parser.add_argument("--owner-uid", type=int, help="연결을 시작할 수 있는 직원 계정 UID")
     parser.add_argument("--gateway-ip", action="append", default=[])
     parser.add_argument("--gateway-port", type=int, default=443)
     parser.add_argument("--proxy-port", type=int, help="게이트웨이 호스트의 승인 모델 프록시 포트")
@@ -264,6 +274,9 @@ def main() -> None:
         parser.error("명시적인 Gateway IP와 포트가 필요합니다")
     if args.proxy_port is not None and not 1 <= args.proxy_port <= 65535:
         parser.error("프록시 포트가 올바르지 않습니다")
+    if args.owner_uid is not None:
+        pwd.getpwuid(args.owner_uid)
+    rendered_rules = nft_rules(person.pw_uid, args.gateway_ip, args.gateway_port, args.proxy_port, args.owner_uid)
     proxy_env = json.loads(args.proxy_env)
     if not isinstance(proxy_env, dict) or set(proxy_env) - {"HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY"} or not all(
             isinstance(v, str) and re.fullmatch(r"[A-Za-z0-9.:/,\[\]_-]{1,300}", v) for v in proxy_env.values()):
@@ -312,7 +325,7 @@ def main() -> None:
         wrapper(folder / "header-helper", Path("/usr/bin/python3").resolve(), person.pw_dir, args.user,
                 fixed=["-I", "-S", str(source), "header", "--socket", f"/run/{name}.sock"])
     rules = folder / "egress.nft"
-    rules.write_text(nft_rules(person.pw_uid, args.gateway_ip, args.gateway_port, args.proxy_port))
+    rules.write_text(rendered_rules)
     run("nft", "-c", "-f", str(rules))
     policy.write_text(profile(name, shell, person.pw_dir, binaries, bool(args.helper_source or args.managed_agent),
                               bool(args.managed_agent), extras))
