@@ -530,6 +530,30 @@ Write-Output 'Managed request data snapshot and approved destination OK'
         self.assertEqual((self.root / 'report.lock').stat().st_size, 0)
         self.assertEqual({path.name for path in self.root.iterdir()}, {'notes.txt', 'report.lock'})
 
+    def test_acl_reaches_existing_files_through_inheritance(self):
+        # pj3: icacls /T left existing files with empty DACLs, so the elevated installer could not take ownership.
+        managed = load('windows_acl_test', 'endpoint-agent/managed-windows.py')
+        kit = self.root / 'kit'
+        kit.mkdir()
+        (kit / 'a.py').write_text('x', encoding='utf-8')
+        with mock.patch.object(managed.subprocess, 'run') as run:
+            managed.lock_down(kit)
+        commands = [call.args[0] for call in run.call_args_list]
+        self.assertNotIn('/T', commands[1])
+        self.assertEqual(commands[2][1:3], [str(kit / '*'), '/reset'])
+        if os.name != 'nt':
+            return
+        script = r'''
+$ErrorActionPreference='Stop'
+. (Join-Path $env:KIT_TEST_ROOT 'endpoint-agent/windows-common.ps1')
+Set-EndpointAcl $env:KIT_ACL_DIR ([Security.Principal.WindowsIdentity]::GetCurrent().User.Value)
+$file = Join-Path $env:KIT_ACL_DIR 'a.py'
+if (-not @((Get-Acl -LiteralPath $file).Access).Count) { throw 'empty file DACL' }
+Get-Content -LiteralPath $file | Out-Null
+'''
+        subprocess.run(['powershell', '-NoProfile', '-NonInteractive', '-Command', script], check=True, capture_output=True,
+                       env={**os.environ, 'KIT_TEST_ROOT': str(ROOT), 'KIT_ACL_DIR': str(kit)})
+
     def test_powershell_scripts_parse_and_input_boundaries_fail_without_host_changes(self):
         if os.name != 'nt':
             self.skipTest('PowerShell 5.1 parser requires Windows')

@@ -110,7 +110,7 @@ $key.Add_Click({
     if ($dialog.ShowDialog() -eq 'OK') { $script:keyPath = $dialog.FileName; $key.Text = '장치 키 파일 선택 완료' }
     $dialog.Dispose()
 })
-Add-EndpointRow '장치 자격' $key
+if ($mode -eq 'observer' -and -not $Remove) { Add-EndpointRow '장치 자격' $key }
 $progress = New-Object Windows.Forms.ProgressBar
 Add-EndpointRow '진행률' $progress
 $results = New-Object Windows.Forms.TextBox
@@ -153,7 +153,9 @@ function Start-EndpointJob([string]$Action) {
     try {
         $worker = Join-Path $PSScriptRoot 'windows-worker.ps1'
         $script:resultPath = Join-Path $work 'result.json'
-        $privileged = $mode -eq 'managed' -and $Action -ne 'health'
+        # An elevated wizard (run as administrator) cannot use the unprotected worker: the worker refuses it.
+        $elevated = ([Security.Principal.WindowsPrincipal]$identity).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        $privileged = $mode -eq 'managed' -and ($Action -ne 'health' -or $elevated)
         if ($privileged) {
             $null = Get-EndpointApprovedKit
             $paths = Get-EndpointInstallerPaths
