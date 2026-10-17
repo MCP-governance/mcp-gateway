@@ -125,6 +125,14 @@ services:
       REGISTRY_DIR: /registry
       # Servers an admin registers from the Console (approved intake → Gateway, D-49).
       REGISTRY_RUNTIME_DIR: /registry-runtime
+      DISPOSAL_DIR: /disposal
+      DISPOSAL_PRIVATE_KEY: ${DISPOSAL_PRIVATE_KEY:-}
+      DISPOSAL_PUBLIC_KEY: ${DISPOSAL_PUBLIC_KEY:-}
+      OPS_RESPONSE_INTERVAL_SECONDS: ${OPS_RESPONSE_INTERVAL_SECONDS:-5}
+      OPS_AUTO_STOP_SOURCES: ${OPS_AUTO_STOP_SOURCES-drift,anomaly,volume}
+      OPS_AUTO_STOP_SERVERS: ${OPS_AUTO_STOP_SERVERS-*}
+      OPS_AUTO_STOP_REPEAT: ${OPS_AUTO_STOP_REPEAT:-3}
+      OPS_AUTO_STOP_WINDOW_SECONDS: ${OPS_AUTO_STOP_WINDOW_SECONDS:-300}
       MCP_UPSTREAM_CREDENTIALS_FILE: ${MCP_UPSTREAM_CREDENTIALS_FILE:-}
       # IdP metadata that the Gateway republishes as RFC 9728 protected-resource
       # metadata, and uses to collect RFC 7009 / 7662 evidence in termination cases.
@@ -156,6 +164,7 @@ services:
       - ./opa:/policy:ro
       - ./registry:/registry:ro
       - registry_runtime:/registry-runtime
+      - disposal_journal:/disposal
       - upstream_credentials:/run/upstream-credentials:ro
     networks: [edge, office, policy, privacy, tools, data, telemetry, ops]
     <<: *hardened
@@ -176,6 +185,7 @@ services:
       - ./opa:/policy:ro
       - ./registry:/registry:ro
       - registry_runtime:/registry-runtime:ro
+      - disposal_journal:/disposal
       - upstream_credentials:/run/upstream-credentials:ro
     networks: [office, policy, privacy, tools, data, telemetry]
     <<: *hardened
@@ -195,6 +205,9 @@ services:
       REGISTRY_RUNTIME_DIR: /registry-runtime
       # The only service that holds the signing key, because it is the issuer.
       AGENT_JWT_PRIVATE_KEY: ${AGENT_JWT_PRIVATE_KEY:?Run ./console.sh}
+      DISPOSAL_DIR: /disposal
+      DISPOSAL_PRIVATE_KEY: ${DISPOSAL_PRIVATE_KEY:-}
+      DISPOSAL_PUBLIC_KEY: ${DISPOSAL_PUBLIC_KEY:-}
       AGENT_JWT_PUBLIC_KEY: ${AGENT_JWT_PUBLIC_KEY:?Run ./console.sh}
       MOCK_SSO_PASSWORD: ${MOCK_SSO_PASSWORD:-test-password}
       ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-10}
@@ -208,6 +221,7 @@ services:
       - "127.0.0.1:${CONSOLE_PORT:-8000}:8000"
     volumes:
       - intake_reports:/intake-reports:ro
+      - disposal_journal:/disposal
       - ./registry:/registry:ro
       - registry_runtime:/registry-runtime:ro
       - ../endpoint-agent:/endpoint-kit:ro
@@ -697,6 +711,7 @@ networks:
         - subnet: ${MCP_NET_PREFIX:-10.245}.12.0/24
 
 volumes:
+  disposal_journal: {}
   db_data: {}
   registry_runtime: {}
   upstream_credentials: {}

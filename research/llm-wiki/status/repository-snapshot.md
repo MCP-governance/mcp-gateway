@@ -1,102 +1,61 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-17T19:53:39+09:00
+확인 시각: 2026-10-18T00:06:52+09:00
 
-HEAD: `085503e94ff0d00fc0bbe777bdb14ebcdbce6d38` · 로컬 브랜치: `10/17-feature-spec-wbs`
+HEAD: `0eb013b37864e27bcb041145c9b9cea928f03d8d` · 로컬 브랜치: `10/17-ops-response`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M research/llm-wiki/README.md
- M research/llm-wiki/catalogs/papers.json
- M research/llm-wiki/papers/LIB-I16.md
- M research/llm-wiki/papers/LIB-K34.md
- M research/llm-wiki/papers/LIB-K36.md
- M research/llm-wiki/papers/README.md
- M research/llm-wiki/sources/README.md
+M .github/workflows/verify.yml
+ M docs/ai/DATA_MODEL.md
+ M docs/ai/DECISIONS.md
+ M docs/ai/POLICY.md
+ M docs/ai/README.md
+ M docs/ai/RUNBOOK.md
+ M docs/ai/TERMINATION_MODEL.md
+ M docs/ai/TESTING.md
+ M full_stack_lab/compose.field.yaml
+ M full_stack_lab/compose.yaml
+ M full_stack_lab/console.sh
+ M full_stack_lab/gateway/Dockerfile
+ M full_stack_lab/gateway/app/agent_contract.py
+ M full_stack_lab/gateway/app/agent_service.py
+ M full_stack_lab/gateway/app/core.py
+ M full_stack_lab/gateway/app/decommission.py
+ M full_stack_lab/gateway/app/dispatch.py
+ M full_stack_lab/gateway/app/idp.py
+ M full_stack_lab/gateway/app/keygen.py
+ M full_stack_lab/gateway/app/main.py
+ M full_stack_lab/runtime/Dockerfile
+ M full_stack_lab/runtime/worker.py
+ M full_stack_lab/supply_chain/intake-worker.Dockerfile
+ M full_stack_lab/supply_chain/intake_worker.py
+ M full_stack_lab/tests/termination_flow.py
  M research/llm-wiki/status/backlog.md
- M research/llm-wiki/status/current.md
-?? research/llm-wiki/analysis/compliance/
-?? research/llm-wiki/papers/LIB-L01.md
-?? research/llm-wiki/papers/LIB-L02.md
-?? research/llm-wiki/papers/LIB-L03.md
-?? research/llm-wiki/papers/LIB-L04.md
-?? research/llm-wiki/papers/LIB-L05.md
-?? research/llm-wiki/papers/LIB-L06.md
-?? research/llm-wiki/papers/LIB-L07.md
-?? research/llm-wiki/papers/LIB-L08.md
-?? research/llm-wiki/papers/LIB-L09.md
-?? research/llm-wiki/papers/LIB-L10.md
-?? research/llm-wiki/papers/LIB-L11.md
-?? research/llm-wiki/papers/LIB-L12.md
-?? research/llm-wiki/papers/LIB-M01.md
-?? research/llm-wiki/papers/LIB-M02.md
-?? research/llm-wiki/papers/LIB-M03.md
-?? research/llm-wiki/papers/LIB-M04.md
-?? research/llm-wiki/papers/LIB-M05.md
-?? research/llm-wiki/papers/LIB-M06.md
-?? research/llm-wiki/papers/LIB-M07.md
-?? research/llm-wiki/papers/LIB-M08.md
-?? research/llm-wiki/papers/LIB-M09.md
-?? research/llm-wiki/papers/LIB-M10.md
-?? research/llm-wiki/papers/LIB-M11.md
-?? research/llm-wiki/papers/LIB-M12.md
-?? research/llm-wiki/papers/LIB-M13.md
-?? research/llm-wiki/papers/LIB-M14.md
-?? research/llm-wiki/papers/LIB-M15.md
-?? research/llm-wiki/papers/LIB-M16.md
-?? research/llm-wiki/papers/LIB-M17.md
-?? research/llm-wiki/papers/LIB-M18.md
-?? research/llm-wiki/papers/LIB-M19.md
-?? research/llm-wiki/papers/LIB-M20.md
-?? research/llm-wiki/papers/LIB-M21.md
-?? research/llm-wiki/papers/LIB-M22.md
-?? research/llm-wiki/papers/LIB-M24.md
-?? research/llm-wiki/papers/LIB-M25.md
-?? research/llm-wiki/papers/LIB-M26.md
-?? research/llm-wiki/papers/LIB-M27.md
-?? research/llm-wiki/papers/LIB-M28.md
-?? research/llm-wiki/papers/LIB-M29.md
-?? research/llm-wiki/papers/LIB-M30.md
-?? research/llm-wiki/papers/LIB-M31.md
-?? research/llm-wiki/papers/LIB-M32.md
-?? research/llm-wiki/papers/LIB-M33.md
-?? research/llm-wiki/papers/LIB-M34.md
-?? research/llm-wiki/papers/LIB-M35.md
-?? research/llm-wiki/papers/LIB-M36.md
-?? research/llm-wiki/papers/LIB-M37.md
-?? research/llm-wiki/papers/LIB-M38.md
-?? research/llm-wiki/papers/LIB-M39.md
-?? research/llm-wiki/papers/LIB-M40.md
-?? research/llm-wiki/papers/LIB-M41.md
-?? research/llm-wiki/papers/LIB-M42.md
-?? research/llm-wiki/papers/LIB-M43.md
-?? research/llm-wiki/papers/LIB-M44.md
-?? research/llm-wiki/papers/LIB-M45.md
-?? research/llm-wiki/papers/LIB-M46.md
-?? research/llm-wiki/papers/LIB-M47.md
-?? research/llm-wiki/papers/LIB-M48.md
-?? research/llm-wiki/papers/LIB-M49.md
-?? research/llm-wiki/papers/LIB-M50.md
-?? research/llm-wiki/sources/compliance/
-?? research/llm-wiki/sources/licenses/redistribution-2026-10-17.json
-?? research/llm-wiki/status/reports/2026-10-17-compliance-references.md
-?? research/llm-wiki/tools/build_compliance.py
-?? research/llm-wiki/tools/build_compliance_matrix.py
-?? research/llm-wiki/tools/build_compliance_plan.py
-?? research/llm-wiki/tools/check_compliance.py
+ M research/llm-wiki/status/repository-snapshot.json
+ M research/llm-wiki/status/repository-snapshot.md
+?? docs/ai/OPS_RESPONSE.md
+?? full_stack_lab/gateway/app/disposal.py
+?? full_stack_lab/gateway/app/ops_response.py
+?? full_stack_lab/gateway/app/ops_tables.sql
+?? full_stack_lab/runtime/image_scan.py
+?? full_stack_lab/supply_chain/trivy_scan.py
+?? full_stack_lab/tests/ops_response_check.py
+?? research/llm-wiki/analysis/ops-response-d120-d123/
+?? research/llm-wiki/status/reports/2026-10-17-ops-response-d120-d123.md
 ```
 
 ## 주요 파일 바이트
 
 | 파일 | SHA-256 |
 | --- | --- |
-| `full_stack_lab/gateway/app/core.py` | `e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046` |
+| `full_stack_lab/gateway/app/core.py` | `41cf44969e0a2afe3054ad4b5de772e9ebefd240b4f4d9fea859815eeef3d7c0` |
 | `full_stack_lab/gateway/app/pac.py` | `a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f` |
 | `full_stack_lab/gateway/app/poisoning.py` | `bb63b3094567f96315bd302c996fe3fbecf0e608f080874ea1a0a19e9857dc96` |
-| `full_stack_lab/gateway/app/idp.py` | `4923af424e115db096c688c3d5dc1f0c1285cef63ab1ab4efa39d76375861b5d` |
+| `full_stack_lab/gateway/app/idp.py` | `da269bb5318b7b68e5f8a8ae94b68e2d81a2688db258aab2ce6d69adc854ce28` |
 | `full_stack_lab/gateway/app/privacy.py` | `5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1` |
 | `full_stack_lab/gateway/app/secret_scan.py` | `b6951eba02d7936ed7e369c1a8ec2bd9c4168d8fdc562801c76061634bdb07a3` |
 | `full_stack_lab/opa/pac15.rego` | `067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850` |

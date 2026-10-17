@@ -122,6 +122,9 @@ async def authenticated_user(authorization: str | None, require_scope: str | Non
     토큰으로도 통과하지 못한다.
     """
     user, claims = authenticate(authorization)
+    from . import disposal
+    if disposal.blocked(jti=claims["jti"]):
+        raise HTTPException(401, "폐기된 인증 또는 폐기 목록 확인 불가")
     if require_scope and require_scope not in token_scopes(claims):
         raise HTTPException(403, "이 작업에는 Console 로그인으로 받은 인증이 필요합니다. "
                                  "하네스에 배포된 MCP 토큰으로는 할 수 없습니다.")

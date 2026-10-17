@@ -21,8 +21,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
     && useradd --uid 10001 --create-home appuser \
-    && mkdir -p /runtime /reports /registry-runtime \
-    && chown -R appuser:appuser /app /runtime /reports /registry-runtime
+    && mkdir -p /runtime /reports /registry-runtime /disposal \
+    && chown -R appuser:appuser /app /runtime /reports /registry-runtime /disposal
 COPY --chown=appuser:appuser app ./app
 ARG MCP_BUILD_REVISION=unknown
 ENV MCP_BUILD_REVISION=$MCP_BUILD_REVISION

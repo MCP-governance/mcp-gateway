@@ -1,5 +1,7 @@
 # 정책 (OPA/Rego)
 
+D-120~D-123 운영 대응은 기존 정책 ID와 계약 비활성·종료 경계를 사용한다. 새 OPA ID나 관리대장 행을 추가하지 않았다. 경보 자체 시험은 실제 로드된 OPA의 `decision`·`policy_id`와 합성 경보 기록을 대조하며 `decisions`에 합성 요청을 쓰지 않는다. [운영 대응](OPS_RESPONSE.md).
+
 > 파일: `full_stack_lab/opa/`
 > - `policy.rego` — 규칙 (`package mcp.authz`, 결과는 `data.mcp.authz.decision`)
 > - `policy_test.rego` — 단위 시험(91건)

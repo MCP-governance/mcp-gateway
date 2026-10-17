@@ -25,6 +25,7 @@ from psycopg.types.json import Jsonb
 
 from exit_terms import conclude, investigate, readme
 from provenance import tree_digest
+from trivy_scan import database_time, trivy_counts
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://mcp:demo-only-change-me@db:5432/mcp_governance")
 WORK_DIR = Path(os.getenv("INTAKE_WORK_DIR", "/work"))
@@ -119,32 +120,6 @@ def relative(path: str, root: Path) -> str:
     return path[len(prefix):] if path.startswith(prefix) else path
 
 
-def trivy_counts(report: Path, root: Path) -> tuple[dict[str, int], list[dict]]:
-    if not report.exists():
-        return {level: 0 for level in SEVERITY_ORDER}, []
-    document = json.loads(report.read_text(encoding="utf-8") or "{}")
-    counts = {level: 0 for level in SEVERITY_ORDER}
-    findings: list[dict] = []
-    for result in document.get("Results") or []:
-        target = result.get("Target", "")
-        for group, title_key in (("Vulnerabilities", "Title"), ("Misconfigurations", "Title"), ("Secrets", "Title")):
-            for item in result.get(group) or []:
-                severity = str(item.get("Severity", "UNKNOWN")).upper()
-                if severity in counts:
-                    counts[severity] += 1
-                findings.append({
-                    "severity": severity,
-                    "id": item.get("VulnerabilityID") or item.get("ID") or item.get("RuleID") or group,
-                    "title": item.get(title_key) or item.get("Message") or group,
-                    "target": relative(target, root),
-                    "package": item.get("PkgName"),
-                    "installed_version": item.get("InstalledVersion"),
-                    "fixed_version": item.get("FixedVersion"),
-                    "reference": item.get("PrimaryURL"),
-                })
-    return counts, findings[:200]
-
-
 def semgrep_counts(report: Path, root: Path) -> tuple[dict[str, int], list[dict]]:
     if not report.exists():
         return {level: 0 for level in SEVERITY_ORDER}, []
@@ -215,8 +190,8 @@ def trivy_database() -> datetime | None:
     Gateway reads a missing timestamp as a stale scan, never as a fresh one."""
     result = run(["trivy", "version", "--format", "json"], timeout=60)
     try:
-        return datetime.fromisoformat(json.loads(result.stdout)["VulnerabilityDB"]["UpdatedAt"]).astimezone(UTC)
-    except (ValueError, KeyError, TypeError, AttributeError):
+        return database_time(json.loads(result.stdout)) if result.returncode == 0 else None
+    except ValueError:
         return None
 
 

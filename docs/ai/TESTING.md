@@ -1,6 +1,6 @@
 # 검증 — 무엇이 무엇을 보장하나
 
-> 한 번에: `cd full_stack_lab && ./console.sh test` (스택이 떠 있어야 한다. CI는 `up --no-llm` 후 실행).
+> 한 번에: 일회용 랩에서 `cd full_stack_lab && TERMINATION_DISPOSABLE_LAB=1 ./console.sh test` (스택이 떠 있어야 한다. CI는 폐기 보관 초기화와 `up --no-llm` 후 실행).
 > 결과물은 `full_stack_lab/reports/`에 남는다. 실패 하나라도 있으면 종료 코드 1.
 
 ## 1. 층별 구성

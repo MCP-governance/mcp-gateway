@@ -104,6 +104,10 @@ async def lifespan(_: FastAPI):
     await db.execute((Path(__file__).parent / "lifecycle_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "v2_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "oidc_tables.sql").read_text())
+    await db.execute((Path(__file__).parent / "ops_tables.sql").read_text())
+    from . import disposal
+    await disposal.capture_existing()
+    await disposal.reconcile()
     await bootstrap_passwords()
     await bootstrap_field_accounts()
     if os.getenv("MCP_FIELD_MODE") == "1":
@@ -384,6 +388,8 @@ async def download_managed_kit(platform: Literal["linux", "windows"] = "linux",
 @app.post("/auth/logout")
 async def logout(authorization: str | None = Header(default=None)):
     _, claims = authenticate(authorization)
+    from . import disposal
+    disposal.remember_token(claims["jti"], datetime.fromtimestamp(claims["exp"], UTC))
     await db.execute("INSERT INTO agent_revoked_tokens(jti,expires_at) VALUES (%s,%s) ON CONFLICT DO NOTHING", (claims["jti"], datetime.fromtimestamp(claims["exp"], UTC)))
     await oidc.end_session(claims)
     # Rows are only ever added here, so purging here bounds the table by the number
