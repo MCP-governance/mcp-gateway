@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "title": "MCP 목표 기능 · WBS 현황",
-  "as_of": "2026-10-17T17:34:36.481232+00:00",
+  "as_of": "2026-10-17T20:51:02.717854+00:00",
   "audit_as_of": "2026-10-15T07:37:13+00:00",
   "basis_head": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
   "branch": "10/15-wbs-implementation",
@@ -25,19 +25,19 @@
     "complete_rule": "5단계가 모두 1인 작업만 최종 완료. 신규 WBS의 현재 검수 기준이며 과거 실험 카드 완료를 변경하지 않음."
   },
   "summary": {
-    "progress": 51.1,
+    "progress": 55.3,
     "complete": 0,
     "total": 57,
     "stage_equivalent_counts": {
-      "implementation": 46.0,
-      "regression": 41.5,
-      "deployment": 42.5,
-      "real_device": 15.5,
+      "implementation": 50.0,
+      "regression": 45.5,
+      "deployment": 46.0,
+      "real_device": 16.0,
       "acceptance_complete": 0
     },
-    "implementation_full": 44,
+    "implementation_full": 48,
     "implementation_partial": 4,
-    "implementation_missing": 9
+    "implementation_missing": 5
   },
   "goals": [
     {
@@ -50,14 +50,14 @@
     {
       "id": "G02",
       "title": "승인·계약 관리",
-      "progress": 46.7,
+      "progress": 56.7,
       "complete": 0,
       "total": 6
     },
     {
       "id": "G03",
       "title": "신원·호출 권한",
-      "progress": 51.2,
+      "progress": 67.5,
       "complete": 0,
       "total": 8
     },
@@ -78,7 +78,7 @@
     {
       "id": "G06",
       "title": "감사·로그 전달",
-      "progress": 51.7,
+      "progress": 60.0,
       "complete": 0,
       "total": 6
     },
@@ -896,7 +896,7 @@
       "code_symbols_files": [],
       "regression_test_candidates": [],
       "actual_evidence_paths": [],
-      "known_gap": "신규 개발",
+      "known_gap": "실제 MCP 서버 계약 변경을 일으켜 도구별 제한을 확인하는 실기기 시험이 남았다.",
       "completion_condition": "변경된 도구와 영향 받는 사용자·권한만 제한되고 나머지 도구 호출은 계속 허용된다",
       "stage_weights": {
         "implementation": 0.2,
@@ -906,31 +906,36 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
+        "2026-10-17",
         "2026-10-17"
       ],
       "implementation_assessment": "planned",
       "stage_notes": {
-        "implementation": "미확인",
-        "regression": "미확인",
-        "deployment": "미확인",
+        "implementation": "D-127 bb33625",
+        "regression": "단위 14·실제 PostgreSQL selective_cutover 통과",
+        "deployment": "bb33625 field up",
         "real_device": "미확인",
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 0,
-        "regression": 0,
-        "deployment": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 0,
+      "progress": 60,
       "complete": false,
       "priority": "P0",
       "planned_weeks": [
         "11월 4주",
         "12월 1주"
       ],
-      "evidence": []
+      "evidence": [
+        {
+          "path": "research/llm-wiki/analysis/wbs-1017/deploy-hi-1018.md"
+        }
+      ]
     },
     {
       "id": "G03.01",
@@ -1312,7 +1317,7 @@
       "code_symbols_files": [],
       "regression_test_candidates": [],
       "actual_evidence_paths": [],
-      "known_gap": "신규 개발",
+      "known_gap": "PJ1 시험 계정에 filesystem MCP 배정이 없어 실제 하네스 차단 재현 전. 독자 선택자 도구는 사후 상한만.",
       "completion_condition": "상한 초과·전체 폴더 조회가 차단되고 정상 조회는 통과한다",
       "stage_weights": {
         "implementation": 0.2,
@@ -1322,31 +1327,36 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
+        "2026-10-17",
         "2026-10-17"
       ],
       "implementation_assessment": "planned",
       "stage_notes": {
-        "implementation": "미확인",
-        "regression": "미확인",
-        "deployment": "미확인",
+        "implementation": "D-125 bb33625",
+        "regression": "단위 12·opa 91/91, 검토 우회 2건 수정",
+        "deployment": "bb33625 field up",
         "real_device": "미확인",
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 0,
-        "regression": 0,
-        "deployment": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 0,
+      "progress": 60,
       "complete": false,
       "priority": "P1",
       "planned_weeks": [
         "11월 1주",
         "11월 2주"
       ],
-      "evidence": []
+      "evidence": [
+        {
+          "path": "research/llm-wiki/analysis/wbs-1017/deploy-hi-1018.md"
+        }
+      ]
     },
     {
       "id": "G03.07",
@@ -1361,7 +1371,7 @@
       "code_symbols_files": [],
       "regression_test_candidates": [],
       "actual_evidence_paths": [],
-      "known_gap": "신규 개발",
+      "known_gap": "PJ1 하네스의 재전송 차단 재현과 원격 서버 내부 중복(범위 밖) 표기가 남았다.",
       "completion_condition": "같은 변경의 재전송·재시도가 한 번만 실행된다",
       "stage_weights": {
         "implementation": 0.2,
@@ -1371,31 +1381,36 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
+        "2026-10-17",
         "2026-10-17"
       ],
       "implementation_assessment": "planned",
       "stage_notes": {
-        "implementation": "미확인",
-        "regression": "미확인",
-        "deployment": "미확인",
-        "real_device": "미확인",
+        "implementation": "D-126 bb33625",
+        "regression": "실제 PostgreSQL 경합 60/61(기존 결함 1)",
+        "deployment": "bb33625 field up",
+        "real_device": "격리 실험 실제 Gitea MCP 56/56",
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 0,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P1",
       "planned_weeks": [
         "11월 2주",
         "11월 2주"
       ],
-      "evidence": []
+      "evidence": [
+        {
+          "path": "research/llm-wiki/analysis/wbs-1017/deploy-hi-1018.md"
+        }
+      ]
     },
     {
       "id": "G03.08",
@@ -2584,7 +2599,7 @@
       "code_symbols_files": [],
       "regression_test_candidates": [],
       "actual_evidence_paths": [],
-      "known_gap": "신규 개발",
+      "known_gap": "수집기 연결·--with-siem 기동·장애 후 재전송 실측이 남았다.",
       "completion_condition": "판정·감사 이벤트가 SIEM 형식으로 전달되고 수신 장애 뒤 누락 없이 재전송된다",
       "stage_weights": {
         "implementation": 0.2,
@@ -2594,31 +2609,36 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
+        "2026-10-17",
         "2026-10-17"
       ],
       "implementation_assessment": "planned",
       "stage_notes": {
-        "implementation": "미확인",
-        "regression": "미확인",
-        "deployment": "미확인",
+        "implementation": "D-128 OCSF outbox bb33625",
+        "regression": "단위 6(재시도·중복·회전·리다이렉트)",
+        "deployment": "코드 배포, 전달 워커 기본 꺼짐",
         "real_device": "미확인",
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 0,
-        "regression": 0,
-        "deployment": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 0.5,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 0,
+      "progress": 50.0,
       "complete": false,
       "priority": "P1",
       "planned_weeks": [
         "11월 4주",
         "12월 1주"
       ],
-      "evidence": []
+      "evidence": [
+        {
+          "path": "research/llm-wiki/analysis/wbs-1017/deploy-hi-1018.md"
+        }
+      ]
     },
     {
       "id": "G07.01",
