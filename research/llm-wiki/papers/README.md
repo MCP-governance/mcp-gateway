@@ -1,6 +1,6 @@
 # 논문·프로토콜·보안 문서
 
-다음 구현에 필요한 자료는 [작업별 읽기 지도](development-reading-guide.md)에서 찾는다. [2026-10-15 공식 근거](../analysis/review-2026-10-15/references.json)는 명세 판본·빌드 provenance·하네스 훅·행 잠금·관측·배포 절차를 최근 검토와 연결한다. 별도 19개 링크를 기존 167개 연구 문헌 수에 합산하지 않는다.
+다음 구현에 필요한 자료는 [작업별 읽기 지도](development-reading-guide.md)에서 찾는다. 정책50 구현 공백을 메우는 자료 36건은 [정책50 공백 지도](policy50-gap-references.md)에서 공백·POL 번호별로 찾는다. [2026-10-15 공식 근거](../analysis/review-2026-10-15/references.json)는 명세 판본·빌드 provenance·하네스 훅·행 잠금·관측·배포 절차를 최근 검토와 연결한다. 별도 19개 링크를 기존 167개 연구 문헌 수에 합산하지 않는다.
 
 2026-10-13 [정식 저널3건·기존 학회/preprint 재검토](../analysis/reference-updates.json)와 [방법론](../methodology/evidence-methodology.md)을 추가했다. 저널의 서지·선별 내용 확인과 전문 정독을 구분하며 새3건의 전문은 확보하지 못했다.
 
@@ -239,6 +239,50 @@
 | LIB-J13 | [Taxonomy of Attacks on Open-Source Software Supply Chains](LIB-J13.md) | 논문 2022 | MCP 서버 공급망 위협 모델의 공격 벡터 목록을 이 트리에서 가져와, 설치 단계(출처, 의존성 고정, 서명 검증)별 방어 체크리스트를 만든다. |
 | LIB-J14 | [SoK: Agentic Skills -- Beyond Tool Use in LLM Agents](LIB-J14.md) | preprint 2026 | MCP 서버와 스킬의 설치 경로에 신뢰 등급별 실행을 두어, 출처가 검증된 도구에는 높은 권한을, 미검증 도구에는 샌드박스 권한만 주는 정책 모델을 설계한다. |
 | LIB-J15 | [Building an Open AIBOM Standard in the Wild](LIB-J15.md) | preprint 2025 | MCP 서버 매니페스트에 AIBOM 필드를 얹을 때 SPDX 확장 구조의 데이터셋과 학습 산출물 항목을 참고해 필드 이름을 맞추면 외부 감사 도구와 호환하기 쉽다. |
+
+## 2026-10-17 정책50 구현 공백 보강 (K, 36건)
+
+정책50(POL-01~50) 중 부분 구현으로 남은 공백(목적지 DNS·서버 outbound, 전송 TLS, 에이전트 신원, 데이터 등급, 대량 조회, 중복 실행, 공급자 측 자격 회수, 경보 검증·자동 대응, 복원 후 재활성화)과 정책 번호 체계 표류를 메울 근거 문헌을 공식 원문에서 확인해 추가했다. 공백별 사용처와 등록하지 못한 목록은 [정책50 공백 지도](policy50-gap-references.md), 확인 기록과 해시는 [검증 기록](../analysis/evidence/references/policy50-gap-fill-2026-10-17.json)에 있다. 자료 수는 기존 167건에 36건이 더해진 203건이며, 자료를 등록했다는 사실이 정책의 구현·검수 완료를 뜻하지 않는다.
+
+| ID | 자료 | 유형 | 정책 | 공백 |
+| --- | --- | --- | --- | --- |
+| LIB-K01 | [OSCAL v1.2.3 통제 매핑 모델](LIB-K01.md) | 명세 2026 | POL-01~POL-50 | 정책 번호 체계 표류 |
+| LIB-K02 | [OPA Policy Testing](LIB-K02.md) | 공식 문서 2026 | POL-22, POL-37, POL-44, POL-01~POL-50 | 정책 변경 시험·동치 분석 · 정책 번호 체계 표류 |
+| LIB-K03 | [OPA Decision Logs](LIB-K03.md) | 공식 문서 2026 | POL-38, POL-42, POL-01~POL-50 | 경보 검증·자동 대응 · 정책 번호 체계 표류 |
+| LIB-K04 | [OPA Agent Tool Calling](LIB-K04.md) | 공식 문서 2026 | POL-16, POL-28, POL-35, POL-22 | 전송 TLS · 대량 조회·호출량 · 정책 변경 시험·동치 분석 |
+| LIB-K05 | [Regal v0.43.0](LIB-K05.md) | 도구·OSS 2026 | POL-01~POL-50, POL-37 | 정책 번호 체계 표류 · 정책 변경 시험·동치 분석 |
+| LIB-K06 | [Cedar (OOPSLA 2024)](LIB-K06.md) | 논문 2024 | POL-37, POL-22, POL-23 | 정책 변경 시험·동치 분석 |
+| LIB-K07 | [Zelkova (FMCAD 2018)](LIB-K07.md) | 논문 2018 | POL-37, POL-25 | 정책 변경 시험·동치 분석 · 데이터 등급 |
+| LIB-K08 | [NIST SP 800-162 (ABAC)](LIB-K08.md) | 표준·RFC·권고 2014 | POL-25, POL-19, POL-20, POL-22 | 데이터 등급 · 에이전트 신원·위임 |
+| LIB-K09 | [OWASP SSRF Prevention Cheat Sheet](LIB-K09.md) | 지침 2026 | POL-10, POL-26, POL-40, POL-24 | 목적지 DNS·서버 outbound |
+| LIB-K10 | [Stripe Smokescreen v0.1.0](LIB-K10.md) | 도구·OSS 2026 | POL-10, POL-26, POL-40 | 목적지 DNS·서버 outbound |
+| LIB-K11 | [RFC 9325 / BCP 195 (TLS 권고)](LIB-K11.md) | 표준·RFC·권고 2022 | POL-16 | 전송 TLS |
+| LIB-K12 | [NIST SP 800-52 Rev. 2 (TLS)](LIB-K12.md) | 표준·RFC·권고 2019 | POL-16 | 전송 TLS |
+| LIB-K13 | [RFC 9334 (RATS 아키텍처)](LIB-K13.md) | 표준·RFC·권고 2023 | POL-19, POL-20 | 에이전트 신원·위임 |
+| LIB-K14 | [SPIFFE ID·X509-SVID·JWT-SVID](LIB-K14.md) | 명세 2026 | POL-19, POL-20, POL-21, POL-15 | 에이전트 신원·위임 |
+| LIB-K15 | [SPIRE v1.15.4](LIB-K15.md) | 도구·OSS 2026 | POL-19, POL-20 | 에이전트 신원·위임 |
+| LIB-K16 | [Sigstore (CCS 2022)](LIB-K16.md) | 논문 2022 | POL-01, POL-39 | 공급망 출처·취약점 대응 |
+| LIB-K17 | [OpenSSF Scorecard v5.6.0 점검 항목](LIB-K17.md) | 도구·OSS 2026 | POL-01, POL-03, POL-39 | 공급망 출처·취약점 대응 |
+| LIB-K18 | [OSV 스키마 1.9.2](LIB-K18.md) | 명세 2026 | POL-39, POL-03 | 공급망 출처·취약점 대응 |
+| LIB-K19 | [CISA KEV 카탈로그](LIB-K19.md) | 데이터 서비스 2026 | POL-39 | 공급망 출처·취약점 대응 |
+| LIB-K20 | [CISA BOD 26-04 (BOD 22-01 대체)](LIB-K20.md) | 정책 문서 2026 | POL-39, POL-43 | 공급망 출처·취약점 대응 · 경보 검증·자동 대응 |
+| LIB-K21 | [FIRST EPSS 모델 v5](LIB-K21.md) | 데이터 서비스 2026 | POL-39 | 공급망 출처·취약점 대응 |
+| LIB-K22 | [CSAF 2.0 (OASIS Standard)](LIB-K22.md) | 표준·RFC·권고 2022 | POL-03, POL-39 | 공급망 출처·취약점 대응 |
+| LIB-K23 | [OpenVEX v0.2.0](LIB-K23.md) | 명세 2026 | POL-39 | 공급망 출처·취약점 대응 |
+| LIB-K24 | [CISA VEX 최소 요건](LIB-K24.md) | 지침 2023 | POL-39 | 공급망 출처·취약점 대응 |
+| LIB-K25 | [OWASP Secrets Management Cheat Sheet](LIB-K25.md) | 지침 2026 | POL-41, POL-45, POL-47, POL-49, POL-14 | 공급자 측 자격 회수 |
+| LIB-K26 | [Idempotency-Key 초안 -07 (만료)](LIB-K26.md) | 명세 2025 | POL-36 | 중복 실행 |
+| LIB-K27 | [OWASP API Security Top 10 2023](LIB-K27.md) | 지침 2023 | POL-35, POL-28, POL-10, POL-25 | 대량 조회·호출량 · 목적지 DNS·서버 outbound · 데이터 등급 |
+| LIB-K28 | [OpenID Shared Signals Framework 1.0](LIB-K28.md) | 명세 2025 | POL-41, POL-45, POL-44 | 공급자 측 자격 회수 |
+| LIB-K29 | [OpenID CAEP 1.0](LIB-K29.md) | 명세 2025 | POL-44, POL-45, POL-22, POL-20 | 공급자 측 자격 회수 · 에이전트 신원·위임 |
+| LIB-K30 | [RFC 8417 (SET)](LIB-K30.md) | 표준·RFC·권고 2018 | POL-44, POL-38 | 공급자 측 자격 회수 · 경보 검증·자동 대응 |
+| LIB-K31 | [NIST SP 800-61 Rev. 3](LIB-K31.md) | 표준·RFC·권고 2025 | POL-42, POL-43, POL-50 | 경보 검증·자동 대응 · 복원 후 재활성화 |
+| LIB-K32 | [NIST SP 800-34 Rev. 1](LIB-K32.md) | 표준·RFC·권고 2010 | POL-50, POL-46 | 복원 후 재활성화 |
+| LIB-K33 | [ISO/IEC TS 27560:2023 (동의 기록)](LIB-K33.md) | 표준·RFC·권고 2023 | POL-08, POL-26 | 법령·표준 근거 확인 |
+| LIB-K34 | [ISO/IEC 42001:2023](LIB-K34.md) | 표준·RFC·권고 2023 | POL-02, POL-03, POL-05, POL-07, POL-32, POL-37, POL-38, POL-39 | 법령·표준 근거 확인 |
+| LIB-K35 | [ISMS-P 인증기준 안내서 2023.11.](LIB-K35.md) | 지침 2023 | POL-38, POL-43, POL-44, POL-45, POL-50, POL-46, POL-16, POL-10 | 법령·표준 근거 확인 · 경보 검증·자동 대응 · 공급자 측 자격 회수 · 복원 후 재활성화 |
+| LIB-K36 | [개인정보 보호법 (시행 2026.9.11.)](LIB-K36.md) | 법령 2026 | POL-02, POL-31, POL-26, POL-48, POL-49, POL-09, POL-38, POL-43, POL-07, POL-30 | 법령·표준 근거 확인 · 경보 검증·자동 대응 |
+
 
 ## 업데이트
 

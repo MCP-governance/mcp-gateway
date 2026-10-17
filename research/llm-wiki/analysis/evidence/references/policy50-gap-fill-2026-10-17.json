@@ -1,0 +1,1423 @@
+{
+  "format": "policy50-gap-fill evidence",
+  "generated_on": "2026-10-17",
+  "purpose": "정책50 구현 공백 보강용 레퍼런스 36건의 서지·판본·라이선스 확인 기록",
+  "method": "curl로 공식 출처를 직접 내려받아(일반 브라우저 User-Agent, 임시 폴더) 본문을 읽고 SHA-256·크기만 기록했다. 법령 두 건은 내장 브라우저로 국가법령정보센터 본문 텍스트를 읽었다. 원문 사본은 저장소에 두지 않는다.",
+  "hash_semantics": "sources[].sha256은 2026-10-17에 내려받은 바이트의 해시이며 이후 원본이 갱신되면 달라질 수 있다. 동적 페이지(KEV 피드 등)는 시점 스냅숏이다.",
+  "items": [
+    {
+      "id": "LIB-K01",
+      "title": "OSCAL (Open Security Controls Assessment Language) v1.2.3 — Control Mapping Model",
+      "url": "https://pages.nist.gov/OSCAL/learn/concepts/layer/control/mapping/",
+      "verification": "page_text_read",
+      "reading_scope": "매핑 모델 개념 문서 전체 본문, 홈페이지, 릴리스 v1.2.3 본문, LICENSE.md. 스키마·도구 미열람",
+      "sources": [
+        {
+          "key": "oscal_mapping.html",
+          "url": "https://pages.nist.gov/OSCAL/learn/concepts/layer/control/mapping/",
+          "final_url": "https://pages.nist.gov/OSCAL/learn/concepts/layer/control/mapping/",
+          "http": 200,
+          "bytes": 28172,
+          "sha256": "3df9b4e0d0920ff8e3dfbdd2af22c834eddec68ded75c4f248abbc648dfcdf68",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "oscal_home.html",
+          "url": "https://pages.nist.gov/OSCAL/",
+          "final_url": "https://pages.nist.gov/OSCAL/",
+          "http": 200,
+          "bytes": 9987,
+          "sha256": "ab6efe1b0a9b8a99232b96e27d0e6ecce70096b5d561d974d76ac14338bf3f9b",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "oscal_rel.json",
+          "url": "https://api.github.com/repos/usnistgov/OSCAL/releases/latest",
+          "final_url": "https://api.github.com/repos/usnistgov/OSCAL/releases/latest",
+          "http": 200,
+          "bytes": 100729,
+          "sha256": "27f39c60da4b517467e2fb2ccc326dc94514b66b1d105b711948732d3e01dbb2",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "oscal_lic.md",
+          "url": "https://raw.githubusercontent.com/usnistgov/OSCAL/main/LICENSE.md",
+          "final_url": "https://raw.githubusercontent.com/usnistgov/OSCAL/main/LICENSE.md",
+          "http": 200,
+          "bytes": 5255,
+          "sha256": "63407ac41abc46911bc9759fc0c19fd0ba7f66c59bb6746e51d85e2f2f3244b1",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K02",
+      "title": "Open Policy Agent — Policy Testing (OPA v1.21.2 문서)",
+      "url": "https://www.openpolicyagent.org/docs/policy-testing",
+      "verification": "page_text_read",
+      "reading_scope": "Policy Testing 페이지 본문 앞부분(시작·보고·형식·검색·결과·데이터 주도 테스트), OPA LICENSE 머리, 최신 릴리스 태그",
+      "sources": [
+        {
+          "key": "opa_test.html",
+          "url": "https://www.openpolicyagent.org/docs/policy-testing",
+          "final_url": "https://www.openpolicyagent.org/docs/policy-testing",
+          "http": 200,
+          "bytes": 196442,
+          "sha256": "328ecf7dd05c3e56e51e53b6013b05a35eb00f95122758b2ec166e794726d3d8",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "opa_lic.txt",
+          "url": "https://raw.githubusercontent.com/open-policy-agent/opa/main/LICENSE",
+          "final_url": "https://raw.githubusercontent.com/open-policy-agent/opa/main/LICENSE",
+          "http": 200,
+          "bytes": 11358,
+          "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "opa_rel.json",
+          "url": "https://api.github.com/repos/open-policy-agent/opa/releases/latest",
+          "final_url": "https://api.github.com/repos/open-policy-agent/opa/releases/latest",
+          "http": 200,
+          "bytes": 34557,
+          "sha256": "39ea5d89db154c250cf51b76ddb45b4874c7ea0932f826123316e35077b601d8",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K03",
+      "title": "Open Policy Agent — Decision Logs (OPA v1.21.2 문서)",
+      "url": "https://www.openpolicyagent.org/docs/management-decision-logs",
+      "verification": "page_text_read",
+      "reading_scope": "Decision Logs 페이지 본문(필드 표, 업로드, 로컬 로그, 마스킹), Policy Language 페이지의 Metadata labels 절, 저장소 compose 파일 67행",
+      "sources": [
+        {
+          "key": "opa_declog.html",
+          "url": "https://www.openpolicyagent.org/docs/management-decision-logs",
+          "final_url": "https://www.openpolicyagent.org/docs/management-decision-logs",
+          "http": 200,
+          "bytes": 78520,
+          "sha256": "67393585c9bfa255337dd78f9d29ac8b251d51a8392bc4627379c511c36d3ae6",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "opa_annot.html",
+          "url": "https://www.openpolicyagent.org/docs/policy-language",
+          "final_url": "https://www.openpolicyagent.org/docs/policy-language",
+          "http": 200,
+          "bytes": 836654,
+          "sha256": "8d03671c310ed5b08c1aec1238584bbdb98fb2f37ced1cbf9c7e5c3d41e27fc9",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K04",
+      "title": "Open Policy Agent — Agent Tool Calling (사용 사례 문서)",
+      "url": "https://www.openpolicyagent.org/docs/agent-tool-calling",
+      "verification": "page_text_read",
+      "reading_scope": "페이지의 소개·정책 집행 흐름·예제 정책·입력 예",
+      "sources": [
+        {
+          "key": "opa_agent.html",
+          "url": "https://www.openpolicyagent.org/docs/agent-tool-calling",
+          "final_url": "https://www.openpolicyagent.org/docs/agent-tool-calling",
+          "http": 200,
+          "bytes": 68753,
+          "sha256": "eec7df2b94c3978f6f25c20007bf70868a6c063f5c5cadce746708bb46da9716",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K05",
+      "title": "Regal — Rego 린터·디버거·언어 서버 (open-policy-agent/regal v0.43.0)",
+      "url": "https://github.com/open-policy-agent/regal",
+      "verification": "page_text_read",
+      "reading_scope": "저장소 메타데이터, README, 규칙 색인 페이지, 릴리스 v0.43.0, 최신 커밋 SHA",
+      "sources": [
+        {
+          "key": "regal_repo.json",
+          "url": "https://api.github.com/repos/StyraInc/regal",
+          "final_url": "https://api.github.com/repositories/592365615",
+          "http": 200,
+          "bytes": 7517,
+          "sha256": "363b317f46caa8ad5c213cf6728a95af8aba2c6473d83ab85979a16dc19d64bb",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "regal_readme.md",
+          "url": "https://raw.githubusercontent.com/StyraInc/regal/main/README.md",
+          "final_url": "https://raw.githubusercontent.com/StyraInc/regal/main/README.md",
+          "http": 200,
+          "bytes": 12558,
+          "sha256": "bca140e7c52005d32011d59f005e2883a81d081b3a8a6441e4e1c31c97279e24",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "regal_rules.html",
+          "url": "https://www.openpolicyagent.org/projects/regal/rules",
+          "final_url": "https://www.openpolicyagent.org/projects/regal/rules",
+          "http": 200,
+          "bytes": 52685,
+          "sha256": "b0fcc51e87e55c45cb7f8da71cab3e890868d0b60bcb4b21608b3cd50e2d8d6f",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "regal_rel.json",
+          "url": "https://api.github.com/repos/StyraInc/regal/releases/latest",
+          "final_url": "https://api.github.com/repos/StyraInc/regal/releases/latest",
+          "http": 200,
+          "bytes": 22352,
+          "sha256": "5a3d69f6cfca73e9c7004b784d9614e8bc43db86e262b99e1ffc54f3ba237427",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "c_regal.json",
+          "url": "https://api.github.com/repos/open-policy-agent/regal/commits?per_page=1",
+          "final_url": "https://api.github.com/repos/open-policy-agent/regal/commits?per_page=1",
+          "http": 200,
+          "bytes": 5210,
+          "sha256": "bae08e7a9655881d2ce7dff0005653be3fb884db941f66c6f16cdae106a474fc",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K06",
+      "title": "Cedar: A New Language for Expressive, Fast, Safe, and Analyzable Authorization",
+      "url": "https://doi.org/10.1145/3649835",
+      "verification": "bibliographic_and_abstract_checked",
+      "reading_scope": "Crossref 서지, arXiv abs 페이지 초록, arXiv v2 PDF 앞 3쪽, GitHub 저장소 메타데이터",
+      "sources": [
+        {
+          "key": "cedar_crossref.json",
+          "url": "https://api.crossref.org/works/10.1145/3649835",
+          "final_url": "https://api.crossref.org/works/10.1145/3649835",
+          "http": 200,
+          "bytes": 16786,
+          "sha256": "c2d31fb26393c3249135b9a59e276fee898a9139a1c4bc2f8bd6cd23c6f51cab",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "cedar_arxiv.html",
+          "url": "https://arxiv.org/abs/2403.04651",
+          "final_url": "https://arxiv.org/abs/2403.04651",
+          "http": 200,
+          "bytes": 43873,
+          "sha256": "00f4434c1d2abbc9b7be3306a8ce1bee77748a09dd285d8f7a3b9c0a7a011177",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "cedar_pdf.pdf",
+          "url": "https://arxiv.org/pdf/2403.04651v2",
+          "final_url": "https://arxiv.org/pdf/2403.04651v2",
+          "http": 200,
+          "bytes": 1191061,
+          "sha256": "cea61af2106da6139abe0c27fe87585927e7ed38358eec5150e33f1cc3b4e88e",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "cedar_repo.json",
+          "url": "https://api.github.com/repos/cedar-policy/cedar",
+          "final_url": "https://api.github.com/repos/cedar-policy/cedar",
+          "http": 200,
+          "bytes": 13807,
+          "sha256": "6a5ba28f55f0c4be2a791d41727e304b378ad22ea9f468a880b8b016c00f5385",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K07",
+      "title": "Semantic-based Automated Reasoning for AWS Access Policies using SMT",
+      "url": "https://www.amazon.science/publications/semantic-based-automated-reasoning-for-aws-access-policies-using-smt",
+      "verification": "bibliographic_and_abstract_checked",
+      "reading_scope": "Crossref 서지, Amazon Science 출판 페이지의 초록, 호스팅 PDF 1쪽",
+      "sources": [
+        {
+          "key": "zelkova_crossref.json",
+          "url": "https://api.crossref.org/works/10.23919/FMCAD.2018.8602994",
+          "final_url": "https://api.crossref.org/works/10.23919/FMCAD.2018.8602994",
+          "http": 200,
+          "bytes": 5411,
+          "sha256": "8d45eb68f2499c816060fe4a6530dd6799c3c7f3e7ffb1611e9f31d90549aca3",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "zelkova_amazon.html",
+          "url": "https://www.amazon.science/publications/semantic-based-automated-reasoning-for-aws-access-policies-using-smt",
+          "final_url": "https://www.amazon.science/publications/semantic-based-automated-reasoning-for-aws-access-policies-using-smt",
+          "http": 200,
+          "bytes": 289468,
+          "sha256": "9b48de5dac2b1b5b317788793823c06c493d6269d7d70d0f7bb51542f6157be3",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "zelkova_pdf.pdf",
+          "url": "https://cdn.amazon.science/56/3c/7d75bca84c56b9b1ed1999beec0c/semantic-based-automated-reasoning-for-aws-access-policies-using-smt.pdf",
+          "final_url": "https://cdn.amazon.science/56/3c/7d75bca84c56b9b1ed1999beec0c/semantic-based-automated-reasoning-for-aws-access-policies-using-smt.pdf",
+          "http": 200,
+          "bytes": 352482,
+          "sha256": "e473dff5487bff0d1e3eb36084047bdac1b9d066201bb4b7dc4793c8758ffac5",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K08",
+      "title": "NIST SP 800-162: Guide to Attribute Based Access Control (ABAC) Definition and Considerations",
+      "url": "https://csrc.nist.gov/pubs/sp/800/162/upd2/final",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "CSRC 페이지(초록·판본), PDF 표지·고지·목차, §2.2, §2.4.2, §3.3.1, §3.4.1 도입부",
+      "sources": [
+        {
+          "key": "sp800162.html",
+          "url": "https://csrc.nist.gov/pubs/sp/800/162/upd2/final",
+          "final_url": "https://csrc.nist.gov/pubs/sp/800/162/upd2/final",
+          "http": 200,
+          "bytes": 44834,
+          "sha256": "c243c802b60c78537d19abecbedd1a5b00c95191689c1206d880400d5aa34653",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "sp800162.pdf",
+          "url": "https://nvlpubs.nist.gov/nistpubs/specialpublications/NIST.SP.800-162.pdf",
+          "final_url": "https://nvlpubs.nist.gov/nistpubs/specialpublications/NIST.SP.800-162.pdf",
+          "http": 200,
+          "bytes": 1863313,
+          "sha256": "ea90ee967a7011c8de5cfaffe0820d157167edefdea5fc2a84af730af4295cd7",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K09",
+      "title": "OWASP Cheat Sheet Series: Server-Side Request Forgery Prevention Cheat Sheet",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "Markdown 원문의 도입·Case 1·Case 2·목차·참고, 저장소 LICENSE.md, 파일 최종 커밋",
+      "sources": [
+        {
+          "key": "ssrf.md",
+          "url": "https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md",
+          "final_url": "https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md",
+          "http": 200,
+          "bytes": 29588,
+          "sha256": "3ae2f474449eceadd74cc2c28edfdc405d935166550b2bd67965729b7d707652",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "cheatsheet_lic.txt",
+          "url": "https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/LICENSE.md",
+          "final_url": "https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/LICENSE.md",
+          "http": 200,
+          "bytes": 18637,
+          "sha256": "2b47ecdd5078e948395bc5980226933854228ff688f10d1dd059208be4956084",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "c_ssrf.json",
+          "url": "https://api.github.com/repos/OWASP/CheatSheetSeries/commits?path=cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md&per_page=1",
+          "final_url": "https://api.github.com/repos/OWASP/CheatSheetSeries/commits?path=cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md&per_page=1",
+          "http": 200,
+          "bytes": 5019,
+          "sha256": "dfc5c26f682b6afe25be344237a0a64cd7526be80f1075277f3f4a4c4a39a9ff",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K10",
+      "title": "Stripe Smokescreen — 외부 요청용 HTTP CONNECT 프록시 (stripe/smokescreen v0.1.0)",
+      "url": "https://github.com/stripe/smokescreen",
+      "verification": "page_text_read",
+      "reading_scope": "README 전체, 저장소 메타데이터, 릴리스 v0.1.0",
+      "sources": [
+        {
+          "key": "smokescreen_readme.md",
+          "url": "https://raw.githubusercontent.com/stripe/smokescreen/master/README.md",
+          "final_url": "https://raw.githubusercontent.com/stripe/smokescreen/master/README.md",
+          "http": 200,
+          "bytes": 24220,
+          "sha256": "314c6bfcfb94c888a5035e1d2fd19920cf75a92f61b90c73d006d5a0af2baa4c",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "smokescreen_repo.json",
+          "url": "https://api.github.com/repos/stripe/smokescreen",
+          "final_url": "https://api.github.com/repos/stripe/smokescreen",
+          "http": 200,
+          "bytes": 6898,
+          "sha256": "3ef375c1f697fbcc29b496ce8e49d8e96408a314bb8e2e165869cf10dcd936ba",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "smokescreen_rel.json",
+          "url": "https://api.github.com/repos/stripe/smokescreen/releases/latest",
+          "final_url": "https://api.github.com/repos/stripe/smokescreen/releases/latest",
+          "http": 200,
+          "bytes": 25492,
+          "sha256": "3e87ff7b288ad698b8607100f1b5d24c3828cc694d905340ac2621ad877aaab6",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K11",
+      "title": "RFC 9325 (BCP 195): Recommendations for Secure Use of Transport Layer Security (TLS) and Datagram Transport Layer Security (DTLS)",
+      "url": "https://www.rfc-editor.org/rfc/rfc9325",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "초록·상태, §3.1.1, §3.2, §7.1, 목차",
+      "sources": [
+        {
+          "key": "rfc9325.txt",
+          "url": "https://www.rfc-editor.org/rfc/rfc9325.txt",
+          "final_url": "https://www.rfc-editor.org/rfc/rfc9325.txt",
+          "http": 200,
+          "bytes": 96608,
+          "sha256": "e3475381d056bde1eed65252954cce68250168454387f6799b38660806f215bc",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K12",
+      "title": "NIST SP 800-52 Rev. 2: Guidelines for the Selection, Configuration, and Use of Transport Layer Security (TLS) Implementations",
+      "url": "https://csrc.nist.gov/pubs/sp/800/52/r2/final",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "CSRC 페이지(초록·계획 공지), PDF 표지·고지·목차, §4.2.2 본문",
+      "sources": [
+        {
+          "key": "sp80052r2.html",
+          "url": "https://csrc.nist.gov/pubs/sp/800/52/r2/final",
+          "final_url": "https://csrc.nist.gov/pubs/sp/800/52/r2/final",
+          "http": 200,
+          "bytes": 44194,
+          "sha256": "7f1556bc6d552eb47f44b9789a302dca96d22128210bd8d6bfdd188508e05fb3",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "sp80052r2.pdf",
+          "url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-52r2.pdf",
+          "final_url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-52r2.pdf",
+          "http": 200,
+          "bytes": 814862,
+          "sha256": "f9a4dbb9cc6ac6778bb9f4e6be9272c2f14d113f3ad241a295684ac6bd71f257",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K13",
+      "title": "RFC 9334: Remote ATtestation procedureS (RATS) Architecture",
+      "url": "https://www.rfc-editor.org/rfc/rfc9334",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "초록·상태, 목차, §4.1, §8.4, §10 도입부, RFC Editor 메타데이터(JSON)",
+      "sources": [
+        {
+          "key": "rfc9334.txt",
+          "url": "https://www.rfc-editor.org/rfc/rfc9334.txt",
+          "final_url": "https://www.rfc-editor.org/rfc/rfc9334.txt",
+          "http": 200,
+          "bytes": 121810,
+          "sha256": "b80d035fb64a00a637d4888d2855772412246230913231301727ef78d4b00540",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "rfc9334info.json",
+          "url": "https://www.rfc-editor.org/rfc/rfc9334.json",
+          "final_url": "https://www.rfc-editor.org/rfc/rfc9334.json",
+          "http": 200,
+          "bytes": 1435,
+          "sha256": "561e0c3ae43618363f85ae9273cab116a88215998e54b66aaf74d51f6c4fc7d2",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K14",
+      "title": "SPIFFE 표준: SPIFFE ID, X509-SVID, JWT-SVID (spiffe/spiffe, Stability: Stable)",
+      "url": "https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE-ID.md",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "SPIFFE-ID.md 머리·목차, X509-SVID.md §2·§3.1, JWT-SVID.md §2·§3·§7.1, 저장소 LICENSE, 파일별 최종 커밋",
+      "sources": [
+        {
+          "key": "spiffe_id.md",
+          "url": "https://raw.githubusercontent.com/spiffe/spiffe/main/standards/SPIFFE-ID.md",
+          "final_url": "https://raw.githubusercontent.com/spiffe/spiffe/main/standards/SPIFFE-ID.md",
+          "http": 200,
+          "bytes": 21044,
+          "sha256": "7b6b4f2fe6dc4866faa8846481ae3493b2482b82fe1ba31840169a1cad16938e",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "spiffe_x509svid.md",
+          "url": "https://raw.githubusercontent.com/spiffe/spiffe/main/standards/X509-SVID.md",
+          "final_url": "https://raw.githubusercontent.com/spiffe/spiffe/main/standards/X509-SVID.md",
+          "http": 200,
+          "bytes": 14412,
+          "sha256": "a7dc93995458b750ad6622b3520e91aba21ff9712fa9ec3d16cefce234c9176e",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "spiffe_jwtsvid.md",
+          "url": "https://raw.githubusercontent.com/spiffe/spiffe/main/standards/JWT-SVID.md",
+          "final_url": "https://raw.githubusercontent.com/spiffe/spiffe/main/standards/JWT-SVID.md",
+          "http": 200,
+          "bytes": 12058,
+          "sha256": "ee07b4e725221331e4e88f897067474b62703383da9587d994d0a47f53287dff",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "spiffe_lic.txt",
+          "url": "https://raw.githubusercontent.com/spiffe/spiffe/main/LICENSE",
+          "final_url": "https://raw.githubusercontent.com/spiffe/spiffe/main/LICENSE",
+          "http": 200,
+          "bytes": 11358,
+          "sha256": "39ce806fa2687a8d8d6a8a8d57bfec8b2fc29fe2a9ae2023020390aabb2de82d",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "c_spiffeid.json",
+          "url": "https://api.github.com/repos/spiffe/spiffe/commits?path=standards/SPIFFE-ID.md&per_page=1",
+          "final_url": "https://api.github.com/repos/spiffe/spiffe/commits?path=standards/SPIFFE-ID.md&per_page=1",
+          "http": 200,
+          "bytes": 26220,
+          "sha256": "5146e1d0918fb865bb6a125fc4a31d2debb6e038259e560cf4834d806a19d538",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "c_x509svid.json",
+          "url": "https://api.github.com/repos/spiffe/spiffe/commits?path=standards/X509-SVID.md&per_page=1",
+          "final_url": "https://api.github.com/repos/spiffe/spiffe/commits?path=standards/X509-SVID.md&per_page=1",
+          "http": 200,
+          "bytes": 7668,
+          "sha256": "78c268b29d0d991a4dfb3067246b0cb53cbde4efee3fd832833e78ac7df3a200",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "c_jwtsvid.json",
+          "url": "https://api.github.com/repos/spiffe/spiffe/commits?path=standards/JWT-SVID.md&per_page=1",
+          "final_url": "https://api.github.com/repos/spiffe/spiffe/commits?path=standards/JWT-SVID.md&per_page=1",
+          "http": 200,
+          "bytes": 7668,
+          "sha256": "78c268b29d0d991a4dfb3067246b0cb53cbde4efee3fd832833e78ac7df3a200",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K15",
+      "title": "SPIRE — SPIFFE Runtime Environment (spiffe/spire v1.15.4)",
+      "url": "https://github.com/spiffe/spire",
+      "verification": "page_text_read",
+      "reading_scope": "README 앞부분, 저장소 메타데이터, 최신 릴리스 메타데이터",
+      "sources": [
+        {
+          "key": "spire_readme.md",
+          "url": "https://raw.githubusercontent.com/spiffe/spire/main/README.md",
+          "final_url": "https://raw.githubusercontent.com/spiffe/spire/main/README.md",
+          "http": 200,
+          "bytes": 9182,
+          "sha256": "7d9bcc916751a44905c66ee389a1a0d5a37545b2b206d19578c973bd8d26abc9",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "spire_repo.json",
+          "url": "https://api.github.com/repos/spiffe/spire",
+          "final_url": "https://api.github.com/repos/spiffe/spire",
+          "http": 200,
+          "bytes": 6565,
+          "sha256": "52df1eef75ffe243b3980644af1355c24ba86a2ff73bb40904828b4859845a34",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "spire_rel.json",
+          "url": "https://api.github.com/repos/spiffe/spire/releases/latest",
+          "final_url": "https://api.github.com/repos/spiffe/spire/releases/latest",
+          "http": 200,
+          "bytes": 26851,
+          "sha256": "9b348c8340e65c03bbfe01e4a78cee9152b2350785047ce560f0dc326b09be39",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K16",
+      "title": "Sigstore: Software Signing for Everybody",
+      "url": "https://doi.org/10.1145/3548606.3560596",
+      "verification": "bibliographic_and_abstract_checked",
+      "reading_scope": "Crossref 서지, OpenAlex·Semantic Scholar 초록 메타데이터. ACM 원문 미열람",
+      "sources": [
+        {
+          "key": "sigstore_crossref.json",
+          "url": "https://api.crossref.org/works/10.1145/3548606.3560596",
+          "final_url": "https://api.crossref.org/works/10.1145/3548606.3560596",
+          "http": 200,
+          "bytes": 39004,
+          "sha256": "7815dc1cfaf42a6e81bd8cda2de7d855ae83828c2cc0808dfd5e4d021f3312ae",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "sigstore_oalex.json",
+          "url": "https://api.openalex.org/works/doi:10.1145/3548606.3560596",
+          "final_url": "https://api.openalex.org/works/doi:10.1145/3548606.3560596",
+          "http": 200,
+          "bytes": 12586,
+          "sha256": "af848739950cd5e0d40028b8f9d5bc7b9e4af52372dc875c56ff9ee873c50a77",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "sigstore_s2.json",
+          "url": "https://api.semanticscholar.org/graph/v1/paper/DOI:10.1145/3548606.3560596?fields=title,abstract,venue,year,openAccessPdf,externalIds",
+          "final_url": "https://api.semanticscholar.org/graph/v1/paper/DOI:10.1145/3548606.3560596?fields=title,abstract,venue,year,openAccessPdf,externalIds",
+          "http": 200,
+          "bytes": 2249,
+          "sha256": "268e5bb105dad1ef130296afd15c74ebc31ca488ce86027682ccd314af21704a",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K17",
+      "title": "OpenSSF Scorecard v5.6.0 — 점검 항목 문서 (ossf/scorecard docs/checks.md)",
+      "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "docs/checks.md의 항목 목록과 Signed-Releases·Maintained·Security-Policy·Dependency-Update-Tool·Vulnerabilities 절, 저장소·릴리스 메타데이터, 파일 최종 커밋",
+      "sources": [
+        {
+          "key": "scorecard_checks.md",
+          "url": "https://raw.githubusercontent.com/ossf/scorecard/main/docs/checks.md",
+          "final_url": "https://raw.githubusercontent.com/ossf/scorecard/main/docs/checks.md",
+          "http": 200,
+          "bytes": 45146,
+          "sha256": "1cd944d15d9c70303ce64cc214d51c07d8e1386f71513b60bc9839f11887b323",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "scorecard_repo.json",
+          "url": "https://api.github.com/repos/ossf/scorecard",
+          "final_url": "https://api.github.com/repos/ossf/scorecard",
+          "http": 200,
+          "bytes": 6680,
+          "sha256": "47b061f5dae58ffeb637ba09570a5987e65cb234abf1e40f9d11816cebf838da",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "scorecard_rel.json",
+          "url": "https://api.github.com/repos/ossf/scorecard/releases/latest",
+          "final_url": "https://api.github.com/repos/ossf/scorecard/releases/latest",
+          "http": 200,
+          "bytes": 27919,
+          "sha256": "d906d27f37ad55c988844b1625adf2f5b2333a1af9413eff005452b0bd97aae7",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "c_checks.json",
+          "url": "https://api.github.com/repos/ossf/scorecard/commits?path=docs/checks.md&per_page=1",
+          "final_url": "https://api.github.com/repos/ossf/scorecard/commits?path=docs/checks.md&per_page=1",
+          "http": 200,
+          "bytes": 6437,
+          "sha256": "50dd8bb0c3d02dde58eaed1fd2e60138c16281f17eb9acd90ca7e3b47ad9afa4",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K18",
+      "title": "Open Source Vulnerability (OSV) format / schema 1.9.2",
+      "url": "https://ossf.github.io/osv-schema/",
+      "verification": "page_text_read",
+      "reading_scope": "스키마 문서의 목적·형식 개요, 저장소 메타데이터, 태그 목록",
+      "sources": [
+        {
+          "key": "osv_spec.html",
+          "url": "https://ossf.github.io/osv-schema/",
+          "final_url": "https://ossf.github.io/osv-schema/",
+          "http": 200,
+          "bytes": 228890,
+          "sha256": "8cf1e3d3f9e10eba902d03af6c281d6bc5e71c22dc351fcb4b811c64030570e8",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "osv_repo.json",
+          "url": "https://api.github.com/repos/ossf/osv-schema",
+          "final_url": "https://api.github.com/repos/ossf/osv-schema",
+          "http": 200,
+          "bytes": 6665,
+          "sha256": "bad24c5ea9dbc44c6a0aeb289d531c4ff796c485fedc6997f79bb1b13d455c88",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "osv_tags.json",
+          "url": "https://api.github.com/repos/ossf/osv-schema/tags",
+          "final_url": "https://api.github.com/repos/ossf/osv-schema/tags",
+          "http": 200,
+          "bytes": 12107,
+          "sha256": "95f70bf2397b9f17bcccff6db472f9a62262aca74fe671cead8ba5f9ca83dede",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K19",
+      "title": "CISA Known Exploited Vulnerabilities (KEV) Catalog",
+      "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+      "verification": "page_text_read",
+      "reading_scope": "카탈로그 페이지, JSON 피드 헤더·첫 항목, KEV 라이선스 문서, GitHub 미러 메타데이터",
+      "sources": [
+        {
+          "key": "kev_page.html",
+          "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+          "final_url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+          "http": 200,
+          "bytes": 283810,
+          "sha256": "f9c800eb1685447be7397d58e5f24ee25216eb1728349e11c436af21fb91b3c4",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "kev_feed.json",
+          "url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+          "final_url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+          "http": 200,
+          "bytes": 1792713,
+          "sha256": "b6e27975f6635ecfc546fbd4fd6e444ba63a07ab2abc8876229d77fe083d357d",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "kev_cisa_lic.txt",
+          "url": "https://www.cisa.gov/sites/default/files/licenses/kev/license.txt",
+          "final_url": "https://www.cisa.gov/sites/default/files/licenses/kev/license.txt",
+          "http": 200,
+          "bytes": 7592,
+          "sha256": "b0067899536bce972ba5116151e51e10fac9b1e066a8993e2193a9eb9a1791af",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "kev_lic.txt",
+          "url": "https://raw.githubusercontent.com/cisagov/kev-data/develop/LICENSE",
+          "final_url": "https://raw.githubusercontent.com/cisagov/kev-data/develop/LICENSE",
+          "http": 200,
+          "bytes": 7469,
+          "sha256": "8dfcf2d0cba33bede386eb470daf2ac08caf6540fc2516baab10dd546f90938a",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K20",
+      "title": "CISA BOD 26-04: Prioritizing Security Updates Based on Risk (BOD 22-01 대체)",
+      "url": "https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "BOD 26-04 본문(배경·정의·범위·필수 조치·CISA 조치·부록 A 도입), 구현 지침 목차·일부, BOD 22-01 폐지 표시 페이지",
+      "sources": [
+        {
+          "key": "bod2604.html",
+          "url": "https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk",
+          "final_url": "https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk",
+          "http": 200,
+          "bytes": 84350,
+          "sha256": "9ff82faa2c7deab6ce48d0717fd7cb02b3a47a77c9d71763a5bfcebcdb7a1d1f",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "bod2604impl.html",
+          "url": "https://www.cisa.gov/news-events/directives/bod-26-04-implementation-guidance-prioritizing-security-updates-based-risk",
+          "final_url": "https://www.cisa.gov/news-events/directives/bod-26-04-implementation-guidance-prioritizing-security-updates-based-risk",
+          "http": 200,
+          "bytes": 111591,
+          "sha256": "0cca5a0388bfc70b22b8fceadbc9e8dac5e2e4efe5c8b139a10fc380e5e3e68f",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "bod2201.html",
+          "url": "https://www.cisa.gov/news-events/directives/bod-22-01-reducing-significant-risk-known-exploited-vulnerabilities",
+          "final_url": "https://www.cisa.gov/news-events/directives/bod-22-01-reducing-significant-risk-known-exploited-vulnerabilities-revoked",
+          "http": 200,
+          "bytes": 87312,
+          "sha256": "960fc9965ad9a5437141b289d5757d06d7e537deb575c8e03862758fc05e036b",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K21",
+      "title": "FIRST EPSS (Exploit Prediction Scoring System) — 모델 v5 (v2026.06.15)",
+      "url": "https://www.first.org/epss/",
+      "verification": "page_text_read",
+      "reading_scope": "FAQ, Get the Data(모델 이력·접근 방법), How It Works 일부",
+      "sources": [
+        {
+          "key": "epss_home.html",
+          "url": "https://www.first.org/epss/",
+          "final_url": "https://www.first.org/epss/",
+          "http": 200,
+          "bytes": 26804,
+          "sha256": "d90b1718832e3e0a7bda7e0c0437c3cb6f4a446b6b2b22f70db2354995a46310",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "epss_faq.html",
+          "url": "https://www.first.org/epss/faq",
+          "final_url": "https://www.first.org/epss/faq",
+          "http": 200,
+          "bytes": 48135,
+          "sha256": "36055c6f3867d7563d79266e085338ca04e12802873610b30364523d36354a77",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "epss_data.html",
+          "url": "https://www.first.org/epss/data",
+          "final_url": "https://www.first.org/epss/data",
+          "http": 200,
+          "bytes": 27713,
+          "sha256": "84fb524182586029e239af53653ed0464468f0af5ee079b9004df31470bfa6c5",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "epss_how.html",
+          "url": "https://www.first.org/epss/how-it-works",
+          "final_url": "https://www.first.org/epss/how-it-works",
+          "http": 200,
+          "bytes": 52191,
+          "sha256": "802b3e890b2eb32864f0bbf29d8842f131b9009333412c8dc0d61775ae7c4428",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K22",
+      "title": "Common Security Advisory Framework (CSAF) Version 2.0 — OASIS Standard",
+      "url": "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "머리말(단계·날짜·편집자), 목차, §4.5 시작부, 고지문, 2.1 초안 머리말·디렉터리, TC 페이지",
+      "sources": [
+        {
+          "key": "csaf20.html",
+          "url": "https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html",
+          "final_url": "https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html",
+          "http": 200,
+          "bytes": 414858,
+          "sha256": "fad0c60d5857ac078e6c7b4f5fee5dc1aebd63645fbc61182b227e25420cd66b",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "csaf21_latest.html",
+          "url": "https://docs.oasis-open.org/csaf/csaf/v2.1/csaf-v2.1.html",
+          "final_url": "https://docs.oasis-open.org/csaf/csaf/v2.1/csaf-v2.1.html",
+          "http": 200,
+          "bytes": 1121726,
+          "sha256": "4380798274170cb6823f09f040b344671450099ffe1628356b9fb9e010928874",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "csaf21_dir.html",
+          "url": "https://docs.oasis-open.org/csaf/csaf/v2.1/",
+          "final_url": "https://docs.oasis-open.org/csaf/csaf/v2.1/",
+          "http": 200,
+          "bytes": 987,
+          "sha256": "a57498caaec903f519596700af5ca3e53b7591188f01d6a2747d862db25eef95",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "csaf_tc.html",
+          "url": "https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=csaf",
+          "final_url": "https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=csaf",
+          "http": 200,
+          "bytes": 34549,
+          "sha256": "dc82232883568ca5ec49b76a4412adc734432c015b142559e07760d9a3bb6bd3",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K23",
+      "title": "OpenVEX Specification v0.2.0",
+      "url": "https://github.com/openvex/spec/blob/main/OPENVEX-SPEC.md",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "스펙 개요, VEX 문(statement) 절, Status Labels, Status Justifications 앞부분, 저장소 메타데이터, 파일 최종 커밋",
+      "sources": [
+        {
+          "key": "openvex_spec.md",
+          "url": "https://raw.githubusercontent.com/openvex/spec/main/OPENVEX-SPEC.md",
+          "final_url": "https://raw.githubusercontent.com/openvex/spec/main/OPENVEX-SPEC.md",
+          "http": 200,
+          "bytes": 30580,
+          "sha256": "9375415ccb351260a998864cbeebbaff1808d1b09a306919b79cc75e5519f884",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "openvex_repo.json",
+          "url": "https://api.github.com/repos/openvex/spec",
+          "final_url": "https://api.github.com/repos/openvex/spec",
+          "http": 200,
+          "bytes": 6506,
+          "sha256": "75871811764750160082dbbbcb5c896cda48de7df22a7b9eab9241eb44d78083",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "c_openvex.json",
+          "url": "https://api.github.com/repos/openvex/spec/commits?path=OPENVEX-SPEC.md&per_page=1",
+          "final_url": "https://api.github.com/repos/openvex/spec/commits?path=OPENVEX-SPEC.md&per_page=1",
+          "http": 200,
+          "bytes": 4146,
+          "sha256": "6d64af9a71e9103754be1aaefaaf7e4ec5e62b306126944cd548b9255048c9e1",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K24",
+      "title": "CISA: Minimum Requirements for Vulnerability Exploitability eXchange (VEX)",
+      "url": "https://www.cisa.gov/resources-tools/resources/minimum-requirements-vulnerability-exploitability-exchange-vex",
+      "verification": "page_metadata_checked",
+      "reading_scope": "랜딩 페이지의 제목·게시일·요약 문장만",
+      "sources": [
+        {
+          "key": "cisa_vex.html",
+          "url": "https://www.cisa.gov/resources-tools/resources/minimum-requirements-vulnerability-exploitability-exchange-vex",
+          "final_url": "https://www.cisa.gov/resources-tools/resources/minimum-requirements-vulnerability-exploitability-exchange-vex",
+          "http": 200,
+          "bytes": 49253,
+          "sha256": "11c147176b25f5cbab3d23044d72f66e88879d4759d2b0b052d14900acfcb21a",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K25",
+      "title": "OWASP Cheat Sheet Series: Secrets Management Cheat Sheet",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "목차, §2.4, §2.6, §2.7, §2.9, §9.2 본문, 파일 최종 커밋",
+      "sources": [
+        {
+          "key": "secrets_cs.md",
+          "url": "https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/cheatsheets/Secrets_Management_Cheat_Sheet.md",
+          "final_url": "https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/cheatsheets/Secrets_Management_Cheat_Sheet.md",
+          "http": 200,
+          "bytes": 65082,
+          "sha256": "582190289b40753e8c03d8cd71aea741aa668d68ffda36e4e63e917e883fd501",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "c_secrets.json",
+          "url": "https://api.github.com/repos/OWASP/CheatSheetSeries/commits?path=cheatsheets/Secrets_Management_Cheat_Sheet.md&per_page=1",
+          "final_url": "https://api.github.com/repos/OWASP/CheatSheetSeries/commits?path=cheatsheets/Secrets_Management_Cheat_Sheet.md&per_page=1",
+          "http": 200,
+          "bytes": 5023,
+          "sha256": "05ee942c04107f350972bc1d81c5fa69dd9b496f9ab7b7a33833af7cbd0fb74e",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K26",
+      "title": "The Idempotency-Key HTTP Header Field (draft-ietf-httpapi-idempotency-key-header-07, 만료된 Internet-Draft)",
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "초안 -07 텍스트의 머리·§2.2~2.7, 데이터트래커 메타데이터(상태·만료일)",
+      "sources": [
+        {
+          "key": "idem07.txt",
+          "url": "https://www.ietf.org/archive/id/draft-ietf-httpapi-idempotency-key-header-07.txt",
+          "final_url": "https://www.ietf.org/archive/id/draft-ietf-httpapi-idempotency-key-header-07.txt",
+          "http": 200,
+          "bytes": 25499,
+          "sha256": "956a446923d6b6cd0ab72b0dbc552937c5b0fcf443da6b47c055d17dcdfa542f",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "idem_dt.json",
+          "url": "https://datatracker.ietf.org/api/v1/doc/document/draft-ietf-httpapi-idempotency-key-header/",
+          "final_url": "https://datatracker.ietf.org/api/v1/doc/document/draft-ietf-httpapi-idempotency-key-header/",
+          "http": 200,
+          "bytes": 1199,
+          "sha256": "7a1ccb3ea2d7e4479d43fc0f6b41cb2a95178b5ab501af6bba67a0b8e12be9e6",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "idem_dt.html",
+          "url": "https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/",
+          "final_url": "https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/",
+          "http": 200,
+          "bytes": 45631,
+          "sha256": "ed79304373e0bbd339db673a862d485eae01142c7a19819633dc5e76cf966677",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K27",
+      "title": "OWASP API Security Top 10 – 2023",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "2023 위험 목록 페이지, API4:2023 본문 전체(취약 조건·예방), 저장소 LICENSE",
+      "sources": [
+        {
+          "key": "api2023_t10.html",
+          "url": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
+          "final_url": "https://api-security.owasp.org/editions/2023/en/0x11-t10/",
+          "http": 200,
+          "bytes": 34156,
+          "sha256": "ac00589e1bb28f4977b3c82dfb61713b7aac0cbd07b15bd40d8516ef86379524",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "api2023_a4.html",
+          "url": "https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/",
+          "final_url": "https://api-security.owasp.org/editions/2023/en/0xa4-unrestricted-resource-consumption/",
+          "http": 200,
+          "bytes": 41886,
+          "sha256": "9a39250b38962db78112b2fdd052b1f2002dc7cddd67bc11f4ffb42081bae012",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "api_lic.txt",
+          "url": "https://raw.githubusercontent.com/OWASP/API-Security/master/LICENSE",
+          "final_url": "https://raw.githubusercontent.com/OWASP/API-Security/master/LICENSE",
+          "http": 200,
+          "bytes": 15883,
+          "sha256": "9cff5eeb59f0a5f06d7cbe4c2435e7bbbce4edaab1d97b66324104f60a527cb7",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "api_repo.json",
+          "url": "https://api.github.com/repos/OWASP/API-Security",
+          "final_url": "https://api.github.com/repos/OWASP/API-Security",
+          "http": 200,
+          "bytes": 6860,
+          "sha256": "a398ddf04ea37509a656dc686d9003bc6f2a65ef2338401b15f9ca0def99bec1",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K28",
+      "title": "OpenID Shared Signals Framework Specification 1.0",
+      "url": "https://openid.net/specs/openid-sharedsignals-framework-1_0.html",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "초록, 목차, §4.1·§6·§8의 제목 구조, Appendix B 고지문, WG 페이지 공지",
+      "sources": [
+        {
+          "key": "ssf.html",
+          "url": "https://openid.net/specs/openid-sharedsignals-framework-1_0.html",
+          "final_url": "https://openid.net/specs/openid-sharedsignals-framework-1_0.html",
+          "http": 200,
+          "bytes": 247079,
+          "sha256": "240e1567017d628d835fa61f0c1cc75f566605f3decaa26a6742c33f7ecd4f16",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "oidf_wg.html",
+          "url": "https://openid.net/wg/sharedsignals/",
+          "final_url": "https://openid.net/wg/sharedsignals/",
+          "http": 200,
+          "bytes": 158225,
+          "sha256": "75561a4629fc72dd058c73d4aebc4fcd6f9543f5f85a168bb7784298a4b8f7f2",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K29",
+      "title": "OpenID Continuous Access Evaluation Profile (CAEP) 1.0",
+      "url": "https://openid.net/specs/openid-caep-1_0.html",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "초록, 목차(§3.1~3.8, §4), Appendix B 고지문",
+      "sources": [
+        {
+          "key": "caep.html",
+          "url": "https://openid.net/specs/openid-caep-1_0.html",
+          "final_url": "https://openid.net/specs/openid-caep-1_0.html",
+          "http": 200,
+          "bytes": 109519,
+          "sha256": "46337de47b7433b09008395896310cb0ed356e66abb4f99b33d2a31045a75931",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "oidf_wg.html",
+          "url": "https://openid.net/wg/sharedsignals/",
+          "final_url": "https://openid.net/wg/sharedsignals/",
+          "http": 200,
+          "bytes": 158225,
+          "sha256": "75561a4629fc72dd058c73d4aebc4fcd6f9543f5f85a168bb7784298a4b8f7f2",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K30",
+      "title": "RFC 8417: Security Event Token (SET)",
+      "url": "https://www.rfc-editor.org/rfc/rfc8417",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "머리·초록, 목차 구조, 저작권 고지",
+      "sources": [
+        {
+          "key": "rfc8417.txt",
+          "url": "https://www.rfc-editor.org/rfc/rfc8417.txt",
+          "final_url": "https://www.rfc-editor.org/rfc/rfc8417.txt",
+          "http": 200,
+          "bytes": 56083,
+          "sha256": "9ce7bf95b852f223a1c8c677d4c817b536f382a65ecc66bbe2b4f896a320d5c5",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K31",
+      "title": "NIST SP 800-61 Rev. 3: Incident Response Recommendations and Considerations for Cybersecurity Risk Management: A CSF 2.0 Community Profile",
+      "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "CSRC 페이지(초록·대체 관계), r2 폐기 페이지, PDF의 CSF 하위 범주 표에서 DE.AE-02·06·08, RS.MI-01·02, RC.RP-03·05",
+      "sources": [
+        {
+          "key": "sp80061r3.html",
+          "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
+          "final_url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
+          "http": 200,
+          "bytes": 44461,
+          "sha256": "5fbca0a2dca9a4238a93fe55234d00199247980c317be4d107ee5ff8d7bfef4f",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "sp80061r3.pdf",
+          "url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-61r3.pdf",
+          "final_url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-61r3.pdf",
+          "http": 200,
+          "bytes": 1040566,
+          "sha256": "e5593d6bb85daecec7e8d9549400c7b3473bcc3f06e469c82218073afa7fba2d",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "sp80061r2.html",
+          "url": "https://csrc.nist.gov/pubs/sp/800/61/r2/final",
+          "final_url": "https://csrc.nist.gov/pubs/sp/800/61/r2/final",
+          "http": 200,
+          "bytes": 45186,
+          "sha256": "c1bca2bf8049d4f5c02a61dfc050b15d2ddbf4dbec20b38593e4a7f5af9b6f9f",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K32",
+      "title": "NIST SP 800-34 Rev. 1: Contingency Planning Guide for Federal Information Systems",
+      "url": "https://csrc.nist.gov/pubs/sp/800/34/r1/upd1/final",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "CSRC 페이지, PDF 표지·고지·목차, §4.4 본문, 부록 A 목차, 용어 검색",
+      "sources": [
+        {
+          "key": "sp80034.html",
+          "url": "https://csrc.nist.gov/pubs/sp/800/34/r1/upd1/final",
+          "final_url": "https://csrc.nist.gov/pubs/sp/800/34/r1/upd1/final",
+          "http": 200,
+          "bytes": 46126,
+          "sha256": "756efbe5a61b93f1a60cf936b0d961a10d300a0b35984bc1c7b07dd7f042aaba",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "sp80034r1.pdf",
+          "url": "https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-34r1.pdf",
+          "final_url": "https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-34r1.pdf",
+          "http": 200,
+          "bytes": 952921,
+          "sha256": "476f04d4c60b0770c1ac8b2720551972074ce78e936a3e7a535048416111d0df",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K33",
+      "title": "ISO/IEC TS 27560:2023 — Privacy technologies — Consent record information structure",
+      "url": "https://www.iso.org/standard/80392.html",
+      "verification": "page_metadata_checked",
+      "reading_scope": "ISO 랜딩 페이지의 상태·판·쪽 수·초록·단계 표",
+      "sources": [
+        {
+          "key": "iso27560.html",
+          "url": "https://www.iso.org/standard/80392.html",
+          "final_url": "https://www.iso.org/standard/80392.html",
+          "http": 200,
+          "bytes": 82948,
+          "sha256": "432fd1c8b36b795717e25dd1981141c7309272c3d5d03ff97a3e4462f2f4fa11",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K34",
+      "title": "ISO/IEC 42001:2023 — Information technology — Artificial intelligence — Management system",
+      "url": "https://www.iso.org/standard/42001",
+      "verification": "page_metadata_checked",
+      "reading_scope": "ISO 랜딩 페이지의 상태·판·쪽 수·단계 표, 엑셀 정책50 근거 열",
+      "sources": [
+        {
+          "key": "iso42001.html",
+          "url": "https://www.iso.org/standard/81230.html",
+          "final_url": "https://www.iso.org/standard/42001",
+          "http": 200,
+          "bytes": 129221,
+          "sha256": "fbea37d17d6b0a1ba810e46fafe30b8bb82a3979ffb662937dc85dff2b3d3b6b",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K35",
+      "title": "정보보호 및 개인정보보호 관리체계(ISMS-P) 인증기준 안내서 (2023.11.)",
+      "url": "https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS289&mCode=D040070030&nttId=10439",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "안내 사항·재검토 기한·저작권 표시, 엑셀 인용 항목 14개의 위치(항목명·쪽 번호) 대조, 2.5.1·2.7.2·2.9.3·2.9.4·2.11.1·2.12.2 본문, 개인정보위·개인정보 포털 게시 페이지",
+      "sources": [
+        {
+          "key": "ismsp_guide.pdf",
+          "url": "https://www.privacy.go.kr/cmm/fms/FileDown.do?atchFileId=ATCH_000000000880227&fileSn=1",
+          "final_url": "https://www.privacy.go.kr/cmm/fms/FileDown.do?atchFileId=ATCH_000000000880227&fileSn=1",
+          "http": 200,
+          "bytes": 7336823,
+          "sha256": "6df06f8ddf007094952ec714341bc466266a4fc5459470b1744495725049e599",
+          "fetched_on": "2026-10-17",
+          "role": "primary"
+        },
+        {
+          "key": "ismsp_pipc.html",
+          "url": "https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS289&mCode=D040070030&nttId=10439",
+          "final_url": "https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS289&mCode=D040070030&nttId=10439",
+          "http": 200,
+          "bytes": 89174,
+          "sha256": "97a8b7b558271ed25849859eda1bcaac93c5b3b37793e6de2af7791db1081bda",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        },
+        {
+          "key": "ismsp_privacygokr.html",
+          "url": "https://www.privacy.go.kr/front/bbs/bbsView.do?bbsNo=BBSMSTR_000000000049&bbscttNo=20677",
+          "final_url": "https://www.privacy.go.kr/front/bbs/bbsView.do?bbsNo=BBSMSTR_000000000049&bbscttNo=20677",
+          "http": 200,
+          "bytes": 851859,
+          "sha256": "f7848e17477c6a97ca87d36448ea7312991471ab4e4cc7380e628126c1573ad6",
+          "fetched_on": "2026-10-17",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "LIB-K36",
+      "title": "개인정보 보호법 (법률 제21445호, 2026. 3. 10. 일부개정, 2026. 9. 11. 시행)",
+      "url": "https://www.law.go.kr/LSW//lsInfoP.do?lsiSeq=283839&chrClsCd=010202&urlMode=lsInfoP&efYd=20260911&ancYnChk=0",
+      "verification": "full_text_selected_sections_read",
+      "reading_scope": "법령 헤더(시행일·법률 번호), 제3·15·16·17·21·26·29·32조의2·34조 본문, 목차",
+      "sources": [
+        {
+          "name": "개인정보 보호법 현행 본문",
+          "method": "Claude Browser(내장 브라우저)로 국가법령정보센터 iframe의 innerText를 읽음",
+          "url": "https://www.law.go.kr/LSW//lsInfoP.do?lsiSeq=283839&chrClsCd=010202&urlMode=lsInfoP&efYd=20260911&ancYnChk=0",
+          "header": "[시행 2026. 9. 11.] [법률 제21445호, 2026. 3. 10., 일부개정]",
+          "chars": 103500,
+          "utf8_bytes": 235101,
+          "sha256_of_inner_text": "e49395219213db802d8180c406dcfb3dd1a5e3c285e8224a7d7f9de055b3250a",
+          "role": "primary"
+        }
+      ]
+    }
+  ],
+  "browser_reads": [
+    {
+      "name": "개인정보 보호법 현행 본문",
+      "method": "Claude Browser(내장 브라우저)로 국가법령정보센터 iframe의 innerText를 읽음",
+      "url": "https://www.law.go.kr/LSW//lsInfoP.do?lsiSeq=283839&chrClsCd=010202&urlMode=lsInfoP&efYd=20260911&ancYnChk=0",
+      "header": "[시행 2026. 9. 11.] [법률 제21445호, 2026. 3. 10., 일부개정]",
+      "chars": 103500,
+      "utf8_bytes": 235101,
+      "sha256_of_inner_text": "e49395219213db802d8180c406dcfb3dd1a5e3c285e8224a7d7f9de055b3250a"
+    },
+    {
+      "name": "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법 현행 본문(관찰만, 별도 등록 없음)",
+      "method": "Claude Browser(내장 브라우저)로 국가법령정보센터 iframe의 innerText를 읽음",
+      "url": "https://www.law.go.kr/LSW//lsInfoP.do?lsiSeq=282791&chrClsCd=010202&urlMode=lsInfoP&efYd=20260721&ancYnChk=0",
+      "header": "[시행 2026. 7. 21.] [법률 제21311호, 2026. 1. 20., 일부개정]",
+      "chars": 28034,
+      "utf8_bytes": null,
+      "sha256_of_inner_text": "b33d6e8546a0117802464022f045a1cfeebf0cbeab60b35075288abbf9dd433f"
+    }
+  ],
+  "not_fetched_or_blocked": [
+    {
+      "url": "https://isms.kisa.or.kr/main/ispims/notice/?boardId=bbs_0000000000000014&cntId=21&mode=view",
+      "result": "이 환경에서 호스트 이름 해석 실패(curl error 6). 개인정보위 게시물 2건과 PDF로 대체 확인"
+    },
+    {
+      "url": "https://dl.acm.org/doi/10.1145/3548606.3560596",
+      "result": "HTTP 403(봇 차단 페이지). Sigstore 논문 본문 미열람, Crossref·OpenAlex·Semantic Scholar 메타데이터로 대조"
+    },
+    {
+      "url": "https://dl.acm.org/doi/pdf/10.1145/3649835",
+      "result": "HTTP 403. Cedar ACM 판 미열람, arXiv 확장판과 Crossref로 대조"
+    },
+    {
+      "url": "https://csrc.nist.gov/pubs/sp/800/52/r3/ipd",
+      "result": "HTTP 404(추측한 주소). SP 800-52 Rev. 3 존재 여부 미확인"
+    },
+    {
+      "url": "https://www.first.org/epss/model , https://www.first.org/epss/api",
+      "result": "HTTP 404(추측한 주소). 같은 사이트의 how-it-works·data·faq로 대체"
+    },
+    {
+      "url": "https://docs.oasis-open.org/csaf/csaf/v2.1/os/csaf-v2.1-os.html",
+      "result": "HTTP 404. CSAF 2.1은 OASIS Standard가 아님(CSD03)을 확인"
+    },
+    {
+      "url": "https://www.law.go.kr/DRF/lawSearch.do (OC=test)",
+      "result": "응답은 오는데 검색 결과 0건(인증 OC 필요). 사용하지 않음. 계정 생성이 필요한 경로는 쓰지 않았다"
+    }
+  ],
+  "observations": [
+    {
+      "topic": "BOD 22-01 폐지",
+      "detail": "CISA BOD 22-01 페이지에 \"Revoked, superseded by BOD 26-04\"(2026-06-10)가 표시됨. 후보 목록의 BOD 22-01은 등록하지 않고 BOD 26-04(LIB-K20)를 등록"
+    },
+    {
+      "topic": "SP 800-52r2 검토 중",
+      "detail": "CSRC 페이지에 2026-05-07자 계획 공지 \"currently being reviewed\"가 있음(LIB-K12)"
+    },
+    {
+      "topic": "ISO 27560 표기",
+      "detail": "정확한 표기는 ISO/IEC TS 27560:2023(기술 사양서), Edition 1, 단계 90.92(LIB-K33)"
+    },
+    {
+      "topic": "Idempotency-Key 초안",
+      "detail": "draft-ietf-httpapi-idempotency-key-header-07은 2026-04-18 만료, RFC 아님(LIB-K26)"
+    },
+    {
+      "topic": "CSAF 2.1",
+      "detail": "2026-09-11 Committee Specification Draft 03 단계, OASIS Standard 아님. 2.0만 표준으로 등록(LIB-K22)"
+    },
+    {
+      "topic": "EPSS 모델 버전",
+      "detail": "v5(v2026.06.15)가 2026-06-15부터 게시됨. 점수 시계열은 버전 경계에서 이동(LIB-K21)"
+    },
+    {
+      "topic": "개인정보 보호법 근거 열",
+      "detail": "엑셀 근거 열 제목 \"개인정보 보호법 2026-09-11 시행\"이 현행 표시 [시행 2026.9.11.][법률 제21445호]와 일치. 인용 조문 3·15·16·17·21·26·29조의 번호·제목이 현행본에 있고 내용은 POL-02·07·26·31·38·48·49와 맞아 보이며 POL-09(제21조제1항)·POL-30(제3조제2항)은 연결이 느슨해 보임(법무 검토 필요)"
+    },
+    {
+      "topic": "인공지능기본법 판본",
+      "detail": "현행 [시행 2026.7.21.][법률 제21311호, 2026.1.20. 일부개정]이며 엑셀 근거 열 \"2026-07-21 시행\"과 일치. 제33조제1항(고영향 인공지능 사전 검토)·제34조제1항제4호(사람의 관리·감독) 조문도 POL-02·POL-27 서술과 맞음. 기존 카탈로그 LIB-I16은 최초 제정 정보(법률 제20676호, 2026.1.22. 시행)만 적어 현행 판본과 다름. 이번 작업에서 LIB-I16은 수정하지 않았다"
+    },
+    {
+      "topic": "ISMS-P 근거 열",
+      "detail": "엑셀이 인용한 2.x.x 항목 14개의 항목명이 안내서 PDF와 일치하고 쪽 번호의 시작 쪽이 인쇄 쪽과 일치(PDF 파일 쪽 = 인쇄 쪽 + 5)"
+    },
+    {
+      "topic": "ISO 42001 근거 열",
+      "detail": "엑셀 인용 조항 번호 8건은 유료 본문 없이 검증 불가. A.와 B. 접두가 같은 번호에 섞여 있음"
+    },
+    {
+      "topic": "NIST 토큰 보안 지침(후속 단서)",
+      "detail": "OIDF Shared Signals WG 페이지가 2026-09-16자로 \"NIST’s new guidance on token security\"를 언급함. 이 작업에서 열지 않았고 등록하지 않았다"
+    },
+    {
+      "topic": "OPA 판본 차이",
+      "detail": "문서는 OPA v1.21.2 기준, 저장소 full_stack_lab/compose.yaml은 openpolicyagent/opa:1.20.2-static을 실행함. 2026-10-17 후속 일회성 시험에서 1.20.2는 labels→rule_labels가 동작하고 id 주석→ids는 남지 않음(analysis/drive-curation/opa-labels-probe). ids 도입 판본과 1.21.x 동작은 미확인"
+    }
+  ]
+}

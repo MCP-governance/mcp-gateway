@@ -6570,5 +6570,2081 @@
       "reading_scope": "페이지 제목·고시 번호·날짜 확인; 본문 미정독",
       "sha256": "a2cb9d3ef25420a0092c2c392be13c14d6e20b07d45408aa1cde1d48d13b6228"
     }
+  },
+  {
+    "id": "LIB-K01",
+    "title": "OSCAL (Open Security Controls Assessment Language) v1.2.3 — Control Mapping Model",
+    "kind": "spec",
+    "url": "https://pages.nist.gov/OSCAL/learn/concepts/layer/control/mapping/",
+    "verified_on": "2026-10-17",
+    "verification": "page_text_read",
+    "publication_status": "official_publication",
+    "venue": "NIST OSCAL 프로젝트 (usnistgov/OSCAL 릴리스 v1.2.3, 2026-08-07)",
+    "year": 2026,
+    "authors": "NIST (OSCAL 프로젝트)",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "OSCAL은 통제 카탈로그·프로파일·평가 정보를 XML·JSON·YAML로 나타내는 NIST 주도의 개방 형식이다. 통제 매핑 모델은 서로 다른 출처의 통제 사이의 관계를 원문을 복제하지 않고 기록하며, 관계값(equivalent-to, equal-to, subset-of, superset-of, intersects-with, no-relationship)과 분석 방법(구문·의미·기능)을 따로 적게 한다.",
+    "engineering_use": [
+      "POL-01~POL-50 전체: 엑셀 POL-xx ↔ 독스용 PAC50 ↔ 원본 PAC01~24 ↔ 런타임 PAC-01~15 대응을 번호 일치가 아니라 '출처 ID·대상 ID·관계값·비교 방법·비고' 레코드로 적는다. 현재 policy-50-crosswalk.json의 `mapping_basis`(의미 대응, 번호 일치 아님)를 같은 어휘로 구조화하는 최소 경로다.",
+      "부분 구현 판정: 런타임 PAC 하나가 POL 여러 개 중 일부만 충족하는 경우를 subset-of·intersects-with로 적으면 '완전/부분/미구현' 판정의 근거와 남은 공백(no-relationship)을 같은 표에 둘 수 있다.",
+      "도입 범위: OSCAL 도구 전체 도입은 필요 없다. 관계값 어휘와 id-ref 방식만 차용하고 JSON 스키마 검증 가능 여부는 별도로 확인한다(설계 제안)."
+    ],
+    "findings": [
+      "매핑 모델의 목적은 표준·규제·프레임워크·지침의 통제들이 서로 어떻게 대응하는지를 원문을 되풀이하지 않고 기계가독으로 적는 것이라고 개념 문서가 밝힌다.",
+      "개념 문서의 예에서 \"TLS를 구현한다\"는 통제와 \"TLS 1.2 이상을 구현한다\"는 통제는 구문 방법에서는 subset-of, 기능 방법에서는 superset-of로 서로 다르게 기록된다. 같은 두 통제도 비교 방법에 따라 관계가 달라진다.",
+      "최신 릴리스 v1.2.3(2026-08-07)은 의존성 갱신 위주의 패치 릴리스이고, 저장소는 CC0 1.0으로 공개 도메인에 배포된다."
+    ],
+    "limitations": "개념 문서·릴리스 노트·LICENSE.md만 읽었다. OSCAL JSON/XML 스키마, 모델 정의, 도구(oscal-cli, Trestle 등)는 열지 않았고 매핑 모델이 어느 OSCAL 판본에서 도입됐는지도 확인하지 않았다. 우리 크로스워크에 적용해 시험하지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "CC0 1.0 (저장소 LICENSE.md: 미국 정부 저작물 + CC0 1.0 공개 도메인 선언). NIST를 출처로 명시해 달라는 요청이 있다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K01.md",
+    "metadata_evidence": {
+      "url": "https://pages.nist.gov/OSCAL/learn/concepts/layer/control/mapping/",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "매핑 모델 개념 문서 전체 본문, 홈페이지, 릴리스 v1.2.3 본문, LICENSE.md. 스키마·도구 미열람",
+      "sha256": "3df9b4e0d0920ff8e3dfbdd2af22c834eddec68ded75c4f248abbc648dfcdf68",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: oscal_mapping.html)"
+    },
+    "summary_review": "source_page_compared",
+    "edition": "OSCAL v1.2.3 (GitHub 릴리스 2026-08-07, 패치 릴리스). 홈페이지 갱신일 2026-06-02",
+    "related_urls": [
+      "https://pages.nist.gov/OSCAL/",
+      "https://github.com/usnistgov/OSCAL/releases/tag/v1.2.3",
+      "https://raw.githubusercontent.com/usnistgov/OSCAL/main/LICENSE.md"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-01~POL-50",
+        "gap": "정책 번호 체계 표류"
+      }
+    ],
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  {
+    "id": "LIB-K02",
+    "title": "Open Policy Agent — Policy Testing (OPA v1.21.2 문서)",
+    "kind": "doc",
+    "url": "https://www.openpolicyagent.org/docs/policy-testing",
+    "verified_on": "2026-10-17",
+    "verification": "page_text_read",
+    "publication_status": "official_publication",
+    "venue": "OPA 공식 문서 (OPA v1.21.2, 릴리스 2026-10-12)",
+    "year": 2026,
+    "authors": "Open Policy Agent 프로젝트",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "`opa test`가 `test_` 접두 Rego 규칙을 찾아 PASS·FAIL·ERROR·SKIPPED로 보고하는 방법을 설명한다. `with`로 입력·데이터를 바꾸는 테스트, JSON·YAML 데이터 주도 케이스, `--format=json` 출력, `--fail-on-empty`를 다룬다.",
+    "engineering_use": [
+      "POL-22·POL-37·POL-44: 정책을 바꿀 때 허용·거부·철회 사례를 데이터 주도 케이스로 고정하고(A→B→A 변경, 철회 직후 호출, 범위가 바뀐 요청), 음성군을 같은 파일에 둔다.",
+      "정책 번호 체계 표류: 케이스 이름에 POL 번호를 넣고 `--format=json` 결과를 시험 증거에 연결하면 정책 번호별 통과·실패를 기계로 집계할 수 있다(설계 제안).",
+      "CI 게이트: `opa test --fail-on-empty --format=json`을 정책 변경의 필수 검사로 둔다. 룰셋을 교체할 때 게이트웨이의 입력·결정 계약이 유지되는지도 같은 방식으로 시험한다."
+    ],
+    "findings": [
+      "테스트 규칙이 undefined이거나 true가 아니면 FAIL, 런타임 오류는 ERROR, `todo_` 접두 테스트는 SKIPPED로 집계한다.",
+      "테스트 이름을 잘못 적거나 테스트가 0건 실행돼도 `opa test`는 성공으로 끝나므로 `--fail-on-empty`로 실패시키라고 하며, CI에서 테스트가 실제로 실행되는지 확인하는 용도로도 쓴다고 적는다.",
+      "테스트 규칙 머리의 변수(`test_x[note]`)로 케이스를 선언하고 JSON·YAML 파일의 데이터를 읽을 수 있다. `--format=json`은 위치·실패·오류·소요시간을, `--var-values`는 실패한 식의 변수 값을 보여 준다."
+    ],
+    "limitations": "문서 페이지의 앞부분 본문과 옵션 설명을 읽었다. 우리 게이트웨이 정책에 `opa test`를 실행하지 않았다. 문서는 v1.21.2 기준이고 저장소의 OPA 이미지는 1.20.2라서 옵션·출력 형식 차이를 확인해야 한다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "OPA 저장소 LICENSE는 Apache License 2.0이다. 문서 페이지 자체의 별도 이용 조건은 확인하지 않았다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K02.md",
+    "metadata_evidence": {
+      "url": "https://www.openpolicyagent.org/docs/policy-testing",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "Policy Testing 페이지 본문 앞부분(시작·보고·형식·검색·결과·데이터 주도 테스트), OPA LICENSE 머리, 최신 릴리스 태그",
+      "sha256": "328ecf7dd05c3e56e51e53b6013b05a35eb00f95122758b2ec166e794726d3d8",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: opa_test.html)"
+    },
+    "summary_review": "source_page_compared",
+    "edition": "문서 시점 최신 릴리스 OPA v1.21.2. 저장소 full_stack_lab/compose.yaml은 openpolicyagent/opa:1.20.2-static을 사용한다",
+    "related_urls": [
+      "https://github.com/open-policy-agent/opa/releases/tag/v1.21.2"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-22",
+        "gap": "정책 변경 시험·동치 분석"
+      },
+      {
+        "policy_id": "POL-37",
+        "gap": "정책 변경 시험·동치 분석"
+      },
+      {
+        "policy_id": "POL-44",
+        "gap": "정책 변경 시험·동치 분석"
+      },
+      {
+        "policy_id": "POL-01~POL-50",
+        "gap": "정책 번호 체계 표류"
+      }
+    ],
+    "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+  },
+  {
+    "id": "LIB-K03",
+    "title": "Open Policy Agent — Decision Logs (OPA v1.21.2 문서)",
+    "kind": "doc",
+    "url": "https://www.openpolicyagent.org/docs/management-decision-logs",
+    "verified_on": "2026-10-17",
+    "verification": "page_text_read",
+    "publication_status": "official_publication",
+    "venue": "OPA 공식 문서 (OPA v1.21.2, 릴리스 2026-10-12)",
+    "year": 2026,
+    "authors": "Open Policy Agent 프로젝트",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "OPA가 정책 질의 결과를 결정 로그 이벤트로 원격 서비스·사용자 플러그인·콘솔에 내보내는 방식을 설명한다. 이벤트 필드, 민감 데이터 마스킹(`data.system.log.mask`), 업로드 크기 제한과 재시도, 규칙 레이블 기록을 다룬다.",
+    "engineering_use": [
+      "POL-38: 호출·권한 변경 이력에서 비밀과 개인정보를 제외하는 마스킹을 정책(mask 규칙)으로 선언하고, 지워진 경로가 `erased`로 남는지 시험한다.",
+      "POL-42: 경보 검증 시나리오에서 '설정 변경 뒤에도 신규 도구·미승인 연결 시도가 결정 이벤트로 남는가'를 decision_id·path 기준으로 관찰한다.",
+      "정책 번호 체계 표류: 규칙에 `labels`(예: 엑셀 POL 번호, 런타임 PAC 번호)를 달면 어느 번호의 규칙이 평가됐는지 결정 로그의 `rule_labels`로 볼 수 있다(설계 제안). OPA 1.20.2에서 `rule_labels`가 동작함을 일회성 시험으로 확인했다. 레이블은 규칙이 발화할 때만 남으므로 차단 사유의 정책 번호 기록에는 쓸 수 있으나 '검사했고 통과했다'는 증거는 아니다."
+    ],
+    "findings": [
+      "이벤트에는 decision_id, bundles의 revision, path, input, result, requested_by, timestamp와 W3C trace-context 형식의 trace_id·span_id가 있어 호출과 정책 판단을 상관시킬 수 있다.",
+      "`data.system.log.mask`가 JSON Pointer 집합을 반환하면 해당 필드를 이벤트에서 지우고 `erased`·`masked`에 경로를 남긴다. 포인터는 /input, /result, /nd_builtin_cache로 시작해야 한다.",
+      "필드 표에 따르면 평가된 규칙의 annotation id는 `ids`에, 병합된 레이블은 `rule_labels`에 기록되고, 메타데이터 문서는 `labels` 주석이 결정 로그에 기록된다고 설명한다. 서버가 2xx가 아닌 응답을 주면 마지막 묶음을 큐에 되돌려 지수 백오프로 다시 올린다.",
+      "저장소와 같은 OPA 1.20.2에서 일회성 서버로 확인한 결과, 규칙 `labels`는 평가된(발화한) 규칙의 레이블로 `rule_labels`에 남고 `id` 주석 키는 오류 없이 받아들여지지만 `ids`로는 남지 않았다(우리 시험이며 문서의 서술이 아니다)."
+    ],
+    "limitations": "결정 로그 문서 본문(필드 표·마스킹·업로드 규칙)을 읽었다. `ids` 필드가 도입된 OPA 판본과 annotation `id` 키의 정의는 확인하지 못했다(필드 표 설명에만 근거, 1.20.2에서는 `id`가 `ids`로 남지 않았고 1.21.x는 시험하지 않았다). 저장소는 콘솔 결정 로그를 켜지만 로그 내용·보관·마스킹 정책은 읽지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "OPA 저장소 LICENSE는 Apache License 2.0이다. 문서 페이지 자체의 별도 이용 조건은 확인하지 않았다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K03.md",
+    "metadata_evidence": {
+      "url": "https://www.openpolicyagent.org/docs/management-decision-logs",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "Decision Logs 페이지 본문(필드 표, 업로드, 로컬 로그, 마스킹), Policy Language 페이지의 Metadata labels 절, 저장소 compose 파일 67행",
+      "sha256": "67393585c9bfa255337dd78f9d29ac8b251d51a8392bc4627379c511c36d3ae6",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: opa_declog.html)"
+    },
+    "summary_review": "source_page_compared",
+    "edition": "문서 시점 OPA v1.21.2. 저장소 full_stack_lab/compose.yaml:67은 OPA 1.20.2를 `--set=decision_logs.console=true`로 실행한다. 같은 1.20.2 이미지로 일회성 시험을 했다(`analysis/drive-curation/opa-labels-probe/README.md`)",
+    "related_urls": [
+      "https://www.openpolicyagent.org/docs/policy-language"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-38",
+        "gap": "경보 검증·자동 대응"
+      },
+      {
+        "policy_id": "POL-42",
+        "gap": "경보 검증·자동 대응"
+      },
+      {
+        "policy_id": "POL-01~POL-50",
+        "gap": "정책 번호 체계 표류"
+      }
+    ],
+    "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+  },
+  {
+    "id": "LIB-K04",
+    "title": "Open Policy Agent — Agent Tool Calling (사용 사례 문서)",
+    "kind": "doc",
+    "url": "https://www.openpolicyagent.org/docs/agent-tool-calling",
+    "verified_on": "2026-10-17",
+    "verification": "page_text_read",
+    "publication_status": "official_publication",
+    "venue": "OPA 공식 문서 (OPA v1.21.2 시점)",
+    "year": 2026,
+    "authors": "Open Policy Agent 프로젝트",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "LLM의 도구 호출을 정책 결정점(OPA)에 보내 허용 여부를 정하는 흐름을 설명한다. 하네스가 집행점(PEP), OPA가 결정점(PDP)이며, 예제 정책은 금지 도구·HTTPS가 아닌 URL·결과 수 상한·도구 시간 상한을 deny 사유 집합으로 돌려준다.",
+    "engineering_use": [
+      "POL-16: 원격 호출 URL의 스킴을 규칙으로 검사해 평문(http://) 전송 구성을 결정 단계에서 거부하는 패턴의 비교 대상으로 쓴다.",
+      "POL-28·POL-35: 도구 인자의 결과 수·시간 상한을 deny 규칙으로 두고, 상한 없는 호출은 거부하는 방식을 우리 입력 스키마의 반환량 한도(DEV-41) 설계와 비교한다.",
+      "POL-22: deny 사유 집합을 기본값 '비어 있을 때만 허용'으로 쓰는 구조가 '판단 정보가 없으면 차단'과 같은 방향인지 우리 결정 계약과 대조한다."
+    ],
+    "findings": [
+      "도구 호출은 구조화된 데이터라 허용 도구와 안전한 인자를 규칙으로 쓰기 좋다고 문서가 설명한다. 하네스가 도구 호출을 OPA에 입력으로 보내고, deny 사유 집합이 비어 있으면 실행하고 사유가 있으면 실행하지 않는다.",
+      "예제 정책은 Bash·Write·Edit 도구 금지, WebFetch의 비HTTPS URL 거부, WebSearch 결과 수 10 초과 거부, 도구 timeout 10초 초과 거부를 담는다.",
+      "하네스는 거부 사유를 LLM에 돌려줘 다음 호출을 개선하게 할 수도, 보안상 숨길 수도 있으며 선택은 사용 사례에 달렸다고 적는다."
+    ],
+    "limitations": "페이지 본문 앞부분(흐름·예제 정책)만 읽었다. 예제는 문서용 장난감 정책이며 우리 게이트웨이 입력 스키마와 다르다. 대응 코드를 만들거나 실행하지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "OPA 저장소 LICENSE는 Apache License 2.0이다. 문서 페이지 자체의 별도 이용 조건은 확인하지 않았다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K04.md",
+    "metadata_evidence": {
+      "url": "https://www.openpolicyagent.org/docs/agent-tool-calling",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "페이지의 소개·정책 집행 흐름·예제 정책·입력 예",
+      "sha256": "eec7df2b94c3978f6f25c20007bf70868a6c063f5c5cadce746708bb46da9716",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: opa_agent.html)"
+    },
+    "summary_review": "source_page_compared",
+    "edition": "2026-10-17 열람본(판본 표기 없음). 후보 목록에 없던 OPA 문서로, 같은 문서 세트에서 확인해 추가",
+    "related_urls": [],
+    "policy50_links": [
+      {
+        "policy_id": "POL-16",
+        "gap": "전송 TLS"
+      },
+      {
+        "policy_id": "POL-28",
+        "gap": "대량 조회·호출량"
+      },
+      {
+        "policy_id": "POL-35",
+        "gap": "대량 조회·호출량"
+      },
+      {
+        "policy_id": "POL-22",
+        "gap": "정책 변경 시험·동치 분석"
+      }
+    ],
+    "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+  },
+  {
+    "id": "LIB-K05",
+    "title": "Regal — Rego 린터·디버거·언어 서버 (open-policy-agent/regal v0.43.0)",
+    "kind": "tool",
+    "url": "https://github.com/open-policy-agent/regal",
+    "verified_on": "2026-10-17",
+    "verification": "page_text_read",
+    "publication_status": "open_source_release",
+    "venue": "GitHub open-policy-agent/regal 릴리스 v0.43.0 (2026-09-29), Apache-2.0",
+    "year": 2026,
+    "authors": "Open Policy Agent 프로젝트(Regal 기여자)",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "Regal은 Rego 정책용 린터·디버거·언어 서버다. 규칙 색인 페이지에 111개 규칙이 Bugs·Custom·Idiomatic·Imports·Performance·Style·Testing 범주로 나열되어 있고, 조직이 직접 정한 규칙(Custom Rules)을 강제할 수 있다고 README가 밝힌다.",
+    "engineering_use": [
+      "정책 번호 체계 표류: 조직 규칙으로 '모든 규칙에 title·labels 주석(POL 번호) 필수'를 린트에서 강제하면 규칙과 정책 번호 연결이 빠진 변경을 CI에서 막을 수 있다(설계 제안, Custom Rules 구현 가능 여부는 미확인).",
+      "POL-37: 정책 파일 변경 때 Regal과 `opa test`를 함께 돌려 구성 변경 검토의 자동 검사 단계로 쓴다."
+    ],
+    "findings": [
+      "README의 목표에 흔한 실수·버그·비효율 식별, 모범 사례·스타일 안내, 조직별 맞춤 규칙 강제가 들어 있다.",
+      "규칙 색인은 111개 규칙을 7개 범주로 보이며 Testing 범주가 별도로 있다. 문서 사이트에는 Custom Rules·CI/CD·Pre-Commit Hooks·Language Server 항목이 있다.",
+      "저장소 메타데이터상 라이선스는 Apache-2.0이고 보관(archived) 상태가 아니며 2026-10-14에도 푸시가 있었다."
+    ],
+    "limitations": "README와 규칙 색인 페이지만 읽었다. 개별 규칙 문서, Custom Rules 작성법, 소스 코드는 열지 않았고 우리 Rego에 실행하지 않았다. 규칙 수 111은 문서 열람 시점 값이다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "GitHub 저장소 메타데이터의 SPDX가 Apache-2.0이다(LICENSE 파일 본문은 열지 않았다). 본문·코드를 복제하지 않는다.",
+    "page": "papers/LIB-K05.md",
+    "metadata_evidence": {
+      "url": "https://github.com/open-policy-agent/regal",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "저장소 메타데이터, README, 규칙 색인 페이지, 릴리스 v0.43.0, 최신 커밋 SHA",
+      "sha256": "363b317f46caa8ad5c213cf6728a95af8aba2c6473d83ab85979a16dc19d64bb",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: regal_repo.json)"
+    },
+    "summary_review": "source_page_compared",
+    "edition": "v0.43.0. 이전 주소 StyraInc/regal은 open-policy-agent/regal로 리디렉션된다(GitHub API 확인). README의 OPA 배지는 v1.21.0",
+    "related_urls": [
+      "https://www.openpolicyagent.org/projects/regal",
+      "https://www.openpolicyagent.org/projects/regal/rules"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-01~POL-50",
+        "gap": "정책 번호 체계 표류"
+      },
+      {
+        "policy_id": "POL-37",
+        "gap": "정책 변경 시험·동치 분석"
+      }
+    ],
+    "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+  },
+  {
+    "id": "LIB-K06",
+    "title": "Cedar: A New Language for Expressive, Fast, Safe, and Analyzable Authorization",
+    "kind": "paper",
+    "url": "https://doi.org/10.1145/3649835",
+    "verified_on": "2026-10-17",
+    "verification": "bibliographic_and_abstract_checked",
+    "publication_status": "official_publication",
+    "venue": "Proc. ACM Program. Lang. 8(OOPSLA1), 2024, pp. 670–697 (OOPSLA 2024)",
+    "year": 2024,
+    "authors": "Joseph W. Cutler, Craig Disselkoen, Aaron Eline, Shaobo He, Kyle Headley, Michael Hicks 외 9명",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "Cedar는 인가 로직을 애플리케이션 코드 밖의 정책으로 쓰게 하는 정책 언어다. 정책 검증기가 선택적 타입으로 실수를 막고, 논리 인코딩이 건전·완전해 정책을 리팩터링해도 허용 권한이 변하지 않는지 같은 정밀 분석이 가능하다고 한다. Lean으로 설계 성질을 증명하고 Rust로 구현·공개했으며, OpenFGA·Rego와 비교해 가독성은 주관적으로 대등 이상, 성능은 훨씬 낫다고 보고한다(초록).",
+    "engineering_use": [
+      "POL-37·POL-22: 정책(룰셋) 교체·변경이 허용 집합을 넓히지 않는지 보는 '변경 전후 동치·포함 분석'의 개념 근거로 쓴다. Rego에는 같은 분석기가 없으므로 대표 요청 집합을 만들어 변경 전후 결정을 비교하는 회귀 시험으로 대체하는 것이 현실적이다(설계 제안).",
+      "POL-23: principal·action·resource·context로 요청을 나누는 구조를 게이트웨이 정책 입력(주체·기능·자산·맥락)의 필드 설계와 비교한다."
+    ],
+    "findings": [
+      "초록은 역할·속성·관계 기반 접근 제어의 개념을 읽기 쉬운 문법으로 담는다고 설명한다. 정책 구조 덕에 접근 요청을 빠르게 판정할 수 있다고 한다.",
+      "정책 분석의 예로 정책 집합을 리팩터링할 때 인가된 권한이 바뀌지 않는지 확인하는 것을 든다.",
+      "ACM 판은 CC BY 4.0(Crossref VoR 라이선스 정보)이고 arXiv PDF 앞부분에도 CC BY 4.0 표기가 있다. 구현 저장소는 Apache-2.0이다."
+    ],
+    "limitations": "Crossref 서지와 arXiv 확장판의 초록·저자·라이선스 표기(PDF 앞 3쪽)만 확인했다. ACM 사이트는 봇 차단(403)이라 열지 못했다. 성능 수치, Lean 증명, Rego 비교 방법은 읽지 않았고 재현하지 않았다. Cedar 도입은 결정하지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "CC BY 4.0 (Crossref 라이선스 정보, arXiv PDF 앞부분 표기). 저자·제목·출처를 표기한다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K06.md",
+    "metadata_evidence": {
+      "url": "https://doi.org/10.1145/3649835",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "Crossref 서지, arXiv abs 페이지 초록, arXiv v2 PDF 앞 3쪽, GitHub 저장소 메타데이터",
+      "sha256": "c2d31fb26393c3249135b9a59e276fee898a9139a1c4bc2f8bd6cd23c6f51cab",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: cedar_crossref.json)"
+    },
+    "summary_review": "abstract_compared_manually",
+    "edition": "ACM 판 2024-04-29 게재(Crossref). arXiv 확장판 v2(2024-03-08)의 초록·저자·라이선스 표기를 확인했다",
+    "related_urls": [
+      "https://arxiv.org/abs/2403.04651",
+      "https://github.com/cedar-policy/cedar"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-37",
+        "gap": "정책 변경 시험·동치 분석"
+      },
+      {
+        "policy_id": "POL-22",
+        "gap": "정책 변경 시험·동치 분석"
+      },
+      {
+        "policy_id": "POL-23",
+        "gap": "정책 변경 시험·동치 분석"
+      }
+    ],
+    "license_url": "https://creativecommons.org/licenses/by/4.0/"
+  },
+  {
+    "id": "LIB-K07",
+    "title": "Semantic-based Automated Reasoning for AWS Access Policies using SMT",
+    "kind": "paper",
+    "url": "https://www.amazon.science/publications/semantic-based-automated-reasoning-for-aws-access-policies-using-smt",
+    "verified_on": "2026-10-17",
+    "verification": "bibliographic_and_abstract_checked",
+    "publication_status": "official_publication",
+    "venue": "2018 Formal Methods in Computer Aided Design (FMCAD), pp. 1–9, IEEE, 2018-10",
+    "year": 2018,
+    "authors": "John Backes, Pauline Bolignano, Byron Cook, Catherine Dodge, Andrew Gacek, Kasper Luckow, Neha Rungta, Oksana Tkachuk, Carsten Varming",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "AWS 접근 정책 언어를 형식화하고 정책 속성을 검증하는 분석 도구 Zelkova를 소개한다. 정책 의미를 SMT로 인코딩해 동작을 비교하고 속성을 검증하며, 정책 설정 실수를 건전하게 찾는다. 문제는 PSPACE-complete이지만 매일 수백만 번 호출된다고 초록이 밝힌다.",
+    "engineering_use": [
+      "POL-37·POL-25: 허용목록·정책 변경이 공개 범위를 넓히지 않는지(예: '모든 사용자에게 열린 자원이 생겼는가') 묻는 질의형 검증의 사례다. 우리 정책 변경 시험에서 '임의 주체' 요청을 합성해 허용되는지 보는 음성 시험으로 단순화할 수 있다(설계 제안)."
+    ],
+    "findings": [
+      "도구가 던지는 질문의 예는 '이 자원이 특정 사용자에게 열려 있는가', '임의 사용자가 이 자원에 쓸 수 있는가'이며, 검증할 속성을 정책 언어 자체로 표현한다고 도입부가 설명한다.",
+      "문자열 와일드카드(*, ?) 때문에 결정 문제는 PSPACE-complete이지만 실제 정책 질문의 99%는 160ms 안에 답한다고 본문이 보고한다.",
+      "기존의 휴리스틱 구문 검사는 정책 의미를 다 보지 못해 건전하지 않다는 점을 동기로 든다."
+    ],
+    "limitations": "초록과 PDF 1쪽(도입부)만 읽었다. AWS IAM 정책 언어 전용이라 OPA/Rego에 바로 쓸 수 없다. IEEE 판은 열지 않았고 서지는 Crossref로 대조했다. 성능 수치는 저자 보고다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "라이선스 미확인: IEEE 게재 논문이며 Amazon Science가 PDF를 호스팅한다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K07.md",
+    "metadata_evidence": {
+      "url": "https://www.amazon.science/publications/semantic-based-automated-reasoning-for-aws-access-policies-using-smt",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "Crossref 서지, Amazon Science 출판 페이지의 초록, 호스팅 PDF 1쪽",
+      "sha256": "8d45eb68f2499c816060fe4a6530dd6799c3c7f3e7ffb1611e9f31d90549aca3",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: zelkova_crossref.json)"
+    },
+    "summary_review": "abstract_compared_manually",
+    "edition": "IEEE 판 DOI 10.23919/FMCAD.2018.8602994(Crossref). Amazon Science가 호스팅하는 PDF의 초록을 대조했다",
+    "related_urls": [
+      "https://doi.org/10.23919/FMCAD.2018.8602994"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-37",
+        "gap": "정책 변경 시험·동치 분석"
+      },
+      {
+        "policy_id": "POL-25",
+        "gap": "데이터 등급"
+      }
+    ]
+  },
+  {
+    "id": "LIB-K08",
+    "title": "NIST SP 800-162: Guide to Attribute Based Access Control (ABAC) Definition and Considerations",
+    "kind": "standard",
+    "url": "https://csrc.nist.gov/pubs/sp/800/162/upd2/final",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "official_publication",
+    "venue": "NIST Special Publication 800-162, 2014-01 (2019-08-02 갱신 반영), 47쪽",
+    "year": 2014,
+    "authors": "Vincent C. Hu, David Ferraiolo, Rick Kuhn, Adam Schnitzer, Kenneth Sandlin, Robert Miller, Karen Scarfone",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "ABAC를 주체·객체·요청 동작·환경 조건의 속성을 정책·규칙·관계와 비교해 접근을 정하는 논리적 접근 제어 방법으로 정의하고, 조직 안팎 정보 공유에 ABAC를 쓸 때의 고려 사항을 정리한 연방기관 지침이다.",
+    "engineering_use": [
+      "POL-25: '자산과 보안등급을 확인하고 사용자·위임·기능 범위를 모두 검사'를 객체 속성(보안등급)·주체 속성·환경 조건의 결정으로 풀어 쓰는 근거다. 등급 속성의 이름·허용 값·부여 주체를 정의하는 §2.4.2가 '데이터 등급' 공백의 출발점이다.",
+      "POL-19·POL-20·POL-22: 에이전트 신원·위임 범위·유효기간을 주체 속성으로 두고 결정 시점에 평가하며, 속성 캐시 때문에 철회가 늦게 반영되는 경쟁(§3.3.1)을 시험 항목으로 둔다."
+    ],
+    "findings": [
+      "§2.2·2.3은 ABAC를 주체 속성·객체 속성·환경 조건을 접근 결정 시점의 값으로 정책과 맞춰 보는 방식으로 정의한다.",
+      "§2.4.2는 속성이 이름·허용 값·스키마를 갖고 주체·객체에 연결돼야 하며, 속성은 권한 있는 기관이 발급·저장·관리해야 한다고 설명한다. 조직 간 공유 속성은 게시·검증·갱신·폐지되어야 한다고 적는다.",
+      "§3.3.1은 속성 캐시가 성능을 높이지만 속성 최신성과 보안 사이의 절충이 있고 권한이 바뀐 뒤에도 갱신 전까지 옛 속성이 쓰일 수 있다고 경고한다. §3.4.1은 속성 서비스·정책 저장소의 가용성과 데이터 품질을 요구사항으로 다룬다."
+    ],
+    "limitations": "PDF의 목차와 §2.2·2.4.2·3.3.1·3.4.1 도입부만 읽었다(문서 전체 정독 아님). ABAC 정의 문서이며 MCP·에이전트를 다루지 않는다. 우리 게이트웨이의 속성 모델과 대조하지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "NIST 간행물: 미국에서 저작권 보호 대상이 아니며 출처 표기를 요청한다고 PDF에 적혀 있다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K08.md",
+    "metadata_evidence": {
+      "url": "https://csrc.nist.gov/pubs/sp/800/162/upd2/final",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "CSRC 페이지(초록·판본), PDF 표지·고지·목차, §2.2, §2.4.2, §3.3.1, §3.4.1 도입부",
+      "sha256": "c243c802b60c78537d19abecbedd1a5b00c95191689c1206d880400d5aa34653",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: sp800162.html)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "2014년 1월판, 2019-08-02 갱신 반영(CSRC 페이지 'upd2'). 폐기·대체 표시는 2026-10-17 페이지에서 확인되지 않았다",
+    "related_urls": [
+      "https://doi.org/10.6028/NIST.SP.800-162",
+      "https://nvlpubs.nist.gov/nistpubs/specialpublications/NIST.SP.800-162.pdf"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-25",
+        "gap": "데이터 등급"
+      },
+      {
+        "policy_id": "POL-19",
+        "gap": "에이전트 신원·위임"
+      },
+      {
+        "policy_id": "POL-20",
+        "gap": "에이전트 신원·위임"
+      },
+      {
+        "policy_id": "POL-22",
+        "gap": "에이전트 신원·위임"
+      }
+    ]
+  },
+  {
+    "id": "LIB-K09",
+    "title": "OWASP Cheat Sheet Series: Server-Side Request Forgery Prevention Cheat Sheet",
+    "kind": "guide",
+    "url": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "official_publication",
+    "venue": "OWASP Cheat Sheet Series (CheatSheetSeries 저장소, 마지막 변경 커밋 5a2c4d9dc550, 2026-10-04)",
+    "year": 2026,
+    "authors": "OWASP Cheat Sheet Series 기여자",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "SSRF 방어 지침이다. 애플리케이션이 신뢰하는 식별된 대상에만 요청하는 경우(허용목록)와 임의 외부 주소로 요청해야 하는 경우(차단목록)를 나눠, 애플리케이션 계층의 입력 검증과 네트워크 계층 방어를 함께 쓰는 심층 방어를 설명한다.",
+    "engineering_use": [
+      "POL-10: 'DNS·리디렉션·OAuth 조회를 포함한 실제 연결 주소 검증'의 근거다. 호스트 이름 문자열만 보지 않고 해석된 IP를 확인하며 리다이렉트를 따르지 않는 시험(E05 SSRF 정규화)을 설계한다.",
+      "POL-26·POL-40: 승인된 외부 수신처만 허용하는 Case 1 방식을 서버 outbound에 적용하고, 승인 대상이 바뀌면 재승인하는 흐름과 연결한다. 임의 외부 주소가 필요한 도구는 Case 2의 차단목록과 네트워크 분리를 함께 요구한다."
+    ],
+    "findings": [
+      "허용목록이 가능하면 IP·도메인·URL 입력을 형식 검증한 뒤 허용된 대상과 엄격 비교하고, 리다이렉트 추종을 끄라고 한다. 도메인 이름 검증용 DNS 조회는 DNS 핀닝(합법 도메인을 내부 IP에 묶는 공격)과 정보 노출 위험이 있다고 경고한다.",
+      "허용목록을 쓸 수 없는 경우(웹훅 등)는 사설망·루프백·링크로컬 범위를 막는 차단목록이 차선이며 애플리케이션 계층에서 걸러내기가 어렵다고 설명한다. 네트워크 계층 방어 절이 따로 있다(본문은 읽지 않았다). 문서에는 AWS IMDSv2와 'Deny-list (Last Resort)' 절도 있다.",
+      "문서 구성은 Case 1(식별된 신뢰 앱), Case 2(임의 외부 주소), 각각 Application layer·Network layer 방어다. 라이선스는 CC BY-SA 4.0이다."
+    ],
+    "limitations": "Markdown 원문의 Case 1·Case 2 본문과 목차를 읽었다. 코드 예제, Orange Tsai 자료, Semgrep 규칙 절은 읽지 않았다. 우리 게이트웨이·서버 outbound에 적용해 시험하지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "CC BY-SA 4.0 (CheatSheetSeries 저장소 LICENSE.md). 파생물에는 같은 조건이 적용된다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K09.md",
+    "metadata_evidence": {
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "Markdown 원문의 도입·Case 1·Case 2·목차·참고, 저장소 LICENSE.md, 파일 최종 커밋",
+      "sha256": "3ae2f474449eceadd74cc2c28edfdc405d935166550b2bd67965729b7d707652",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: ssrf.md)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "저장소 master의 해당 파일, 마지막 변경 커밋 5a2c4d9dc550(2026-10-04)",
+    "related_urls": [
+      "https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-10",
+        "gap": "목적지 DNS·서버 outbound"
+      },
+      {
+        "policy_id": "POL-26",
+        "gap": "목적지 DNS·서버 outbound"
+      },
+      {
+        "policy_id": "POL-40",
+        "gap": "목적지 DNS·서버 outbound"
+      },
+      {
+        "policy_id": "POL-24",
+        "gap": "목적지 DNS·서버 outbound"
+      }
+    ],
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+  },
+  {
+    "id": "LIB-K10",
+    "title": "Stripe Smokescreen — 외부 요청용 HTTP CONNECT 프록시 (stripe/smokescreen v0.1.0)",
+    "kind": "tool",
+    "url": "https://github.com/stripe/smokescreen",
+    "verified_on": "2026-10-17",
+    "verification": "page_text_read",
+    "publication_status": "open_source_release",
+    "venue": "GitHub stripe/smokescreen 릴리스 v0.1.0 (2026-09-21), MIT",
+    "year": 2026,
+    "authors": "Stripe 및 기여자",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "Stripe가 웹훅 등 외부로 나가는 트래픽을 모으는 HTTP CONNECT 프록시다. 호스트 이름 허용목록(ACL)으로 대상을 제한하고, 요청된 도메인을 해석해 공인 라우팅 가능 IP인지 확인해 내부망 스캔에 쓰이는 것을 막으며, mTLS로 클라이언트 신원을 인증해 클라이언트별 ACL을 적용한다.",
+    "engineering_use": [
+      "POL-10·POL-26: 호스트 ACL과 해석된 IP 검사를 한 곳(프록시)에서 하도록 서버 outbound를 모으는 구조의 사례다. MCP 서버 컨테이너의 외부 연결을 이런 프록시로만 허용하는 방안을 DEV-41의 선택지로 검토한다.",
+      "POL-40: 서비스별 ACL 파일을 승인 레코드로 보면, 허용 목적지 변경 = ACL 변경 = 재승인으로 연결할 수 있다(설계 제안)."
+    ],
+    "findings": [
+      "README는 사전 구성된 호스트 이름 ACL과, 도메인을 해석한 결과가 내부 IP가 아님을 확인하는 두 단계를 설명한다. IP·범위를 별도로 허용·거부할 수 있다.",
+      "옵션 목록에 --deny-range, --allow-range, --deny-address, --allow-address, --egress-acl-file이 있고 --unsafe-allow-private-ranges는 기본 꺼짐이다. 겹치는 규칙은 기본적으로 허용 우선이며 --most-specific-ip-rules로 가장 구체적인 규칙을 따르게 할 수 있다.",
+      "일반적인 사용에서 클라이언트는 mTLS로 접속하고, 인증서의 common name 등에서 추출한 역할(RoleFromRequest)로 서비스별 ACL을 적용한다. 이 함수는 교체할 수 있다. README는 일반적으로 Go 최근 두 버전만 지원한다고 적는다."
+    ],
+    "limitations": "README와 저장소·릴리스 메타데이터만 읽었다. 소스 코드(DNS 해석·IP 검사 구현)와 ACL 파일 스키마 상세는 열지 않았고 시험하지 않았다. v0.1.0은 최초 태그 릴리스로 보이며(릴리스 목록은 확인하지 않음) 운영 성숙도는 평가하지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "GitHub 저장소 메타데이터의 SPDX가 MIT이다(LICENSE 파일 본문은 열지 않았다). 코드를 복제하지 않는다.",
+    "page": "papers/LIB-K10.md",
+    "metadata_evidence": {
+      "url": "https://github.com/stripe/smokescreen",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "README 전체, 저장소 메타데이터, 릴리스 v0.1.0",
+      "sha256": "314c6bfcfb94c888a5035e1d2fd19920cf75a92f61b90c73d006d5a0af2baa4c",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: smokescreen_readme.md)"
+    },
+    "summary_review": "source_page_compared",
+    "edition": "릴리스 v0.1.0(2026-09-21). master README 열람(2026-10-17)",
+    "related_urls": [
+      "https://raw.githubusercontent.com/stripe/smokescreen/master/README.md"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-10",
+        "gap": "목적지 DNS·서버 outbound"
+      },
+      {
+        "policy_id": "POL-26",
+        "gap": "목적지 DNS·서버 outbound"
+      },
+      {
+        "policy_id": "POL-40",
+        "gap": "목적지 DNS·서버 outbound"
+      }
+    ],
+    "license_url": "https://opensource.org/licenses/MIT"
+  },
+  {
+    "id": "LIB-K11",
+    "title": "RFC 9325 (BCP 195): Recommendations for Secure Use of Transport Layer Security (TLS) and Datagram Transport Layer Security (DTLS)",
+    "kind": "standard",
+    "url": "https://www.rfc-editor.org/rfc/rfc9325",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "ietf_rfc",
+    "venue": "IETF RFC 9325 / BCP 195 (Best Current Practice), 2022-11. RFC 7525를 폐기하고 RFC 5288·6066을 갱신",
+    "year": 2022,
+    "authors": "Y. Sheffer, P. Saint-Andre, T. Fossati",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "TLS·DTLS 배포의 최신 보안 권고다. SSL 2·3과 TLS 1.0·1.1 협상을 금지하고 TLS 1.2 지원을 필수, TLS 1.3 지원을 권장하며, SSL 스트리핑을 막는 strict TLS, 호스트 이름 검증, 인증서 폐지 확인 등을 다룬다.",
+    "engineering_use": [
+      "POL-16: '승인된 암호화 전송 적용과 연결 상대 검증'의 구체 기준이다. 게이트웨이가 업스트림 MCP로 나가는 TLS 클라이언트에서 TLS 1.0/1.1 협상 거부, 1.2 이상, 호스트 이름 검증을 음성 시험으로 둔다. 현재 field의 HTTP/Tailscale 구간과 조직 운영 TLS를 구분하는 근거로 쓴다.",
+      "POL-16: 평문 업그레이드 허용 여부(§3.2)는 '평문 전송이나 검증되지 않은 중간 경로 제외'의 시험 항목이 된다."
+    ],
+    "findings": [
+      "§3.1.1: 구현은 SSL 2·3, TLS 1.0·1.1을 협상해서는 안 되고(MUST NOT) TLS 1.2를 지원해야 하며(MUST) TLS 1.3 지원을 권장한다(SHOULD).",
+      "§3.2: 프로토콜이 TLS 전용 포트와 동적 업그레이드(STARTTLS)를 모두 지원하면 TLS 전용 방식을 지원하고 우선 쓰게 설정해야 하며, 업그레이드만 지원하면 평문을 금지하는 엄격한 로컬 정책을 관리자가 설정해야 한다.",
+      "§7.1: 호스트 이름 검증은 모든 일반 TLS 사용에서 보안상 핵심이다. 검증이 없으면 TLS는 인증서가 유효하고 개인키를 소유함은 보장하지만 연결이 의도한 종단에서 끝난다는 보장은 못 한다. §7.5는 인증서 폐지를 다룬다."
+    ],
+    "limitations": "§3.1.1, §3.2, §7.1의 본문을 읽었고 암호 스위트 절(§4)은 읽지 않았다. 문서가 '미래 BCP가 TLS 1.2를 폐기할 것으로 기대한다'고 적으므로 이후 개정이 있는지 확인해야 한다. 우리 TLS 설정에는 적용하지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "IETF Trust 저작권 및 BCP 78·IETF Trust Legal Provisions 적용. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K11.md",
+    "metadata_evidence": {
+      "url": "https://www.rfc-editor.org/rfc/rfc9325",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "초록·상태, §3.1.1, §3.2, §7.1, 목차",
+      "sha256": "e3475381d056bde1eed65252954cce68250168454387f6799b38660806f215bc",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: rfc9325.txt)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "2022년 11월 발행본 텍스트(RFC Editor) 열람. 2026-10-17 시점의 폐기·갱신 표시는 확인하지 않았다",
+    "related_urls": [
+      "https://www.rfc-editor.org/rfc/rfc9325.txt"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-16",
+        "gap": "전송 TLS"
+      }
+    ],
+    "license_url": "https://trustee.ietf.org/license-info"
+  },
+  {
+    "id": "LIB-K12",
+    "title": "NIST SP 800-52 Rev. 2: Guidelines for the Selection, Configuration, and Use of Transport Layer Security (TLS) Implementations",
+    "kind": "standard",
+    "url": "https://csrc.nist.gov/pubs/sp/800/52/r2/final",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "official_publication",
+    "venue": "NIST Special Publication 800-52 Rev. 2, 2019-08, 72쪽",
+    "year": 2019,
+    "authors": "Kerry A. McKay, David A. Cooper",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "연방 시스템의 TLS 구현 선택·구성·사용 지침이다. 서버가 FIPS 기반 암호 스위트의 TLS 1.2를 지원하고 2024-01-01까지 TLS 1.3을 지원하도록 요구하며, 인증서·TLS 확장 지침을 준다. 서버 지침(§3)과 클라이언트 지침(§4)이 나뉘어 있다.",
+    "engineering_use": [
+      "POL-16: 게이트웨이가 TLS 클라이언트로 업스트림 MCP 서버 인증서의 폐지 확인(OCSP/CRL)을 하는지 확인할 기준(§4.2.2)과 서버 쪽 프로토콜 버전 요건(§3.1)을 RFC 9325와 함께 적용한다. 폐지 확인 실패 시 동작(열림/닫힘)을 정책으로 정하고 시험 항목으로 둔다."
+    ],
+    "findings": [
+      "§3(서버)은 프로토콜 버전, 서버 키·인증서, 암호 지원, 확장, 클라이언트 인증, 세션 재개·early data를 다루고 §4(클라이언트)는 같은 항목을 클라이언트 관점으로 다룬다.",
+      "§4.2.2: 클라이언트는 서버 인증서의 폐지 확인을 수행해야 하며(shall), 폐지 정보는 서버가 제공하는 OCSP 응답, 로컬 저장소의 CRL·OCSP, 설정된 OCSP 응답기, 인증서 AIA의 OCSP, CRL 배포점 등에서 얻는다.",
+      "CSRC 페이지에 2026-05-07자 검토 중 공지가 있어, 후속 개정(Rev. 3 등)이 나올 수 있다. 추측한 Rev. 3 초안 주소(/r3/ipd)는 404였고 Rev. 3의 존재 여부는 확인하지 못했다."
+    ],
+    "limitations": "PDF의 목차와 §4.2.2 본문, CSRC 페이지의 초록·계획 공지만 읽었다. 연방 정부 요구 중심이며 민간 도입의 의무가 아니다. 현재 검토 중이라 내용이 바뀔 수 있다. 우리 구성에 적용하지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "NIST 간행물: 미국에서 저작권 보호 대상이 아니며 출처 표기를 요청한다고 PDF에 적혀 있다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K12.md",
+    "metadata_evidence": {
+      "url": "https://csrc.nist.gov/pubs/sp/800/52/r2/final",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "CSRC 페이지(초록·계획 공지), PDF 표지·고지·목차, §4.2.2 본문",
+      "sha256": "7f1556bc6d552eb47f44b9789a302dca96d22128210bd8d6bfdd188508e05fb3",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: sp80052r2.html)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "2019년 8월판. CSRC 페이지에 '2026-05-07 계획 공지: 현재 검토 중(Crypto Publication Review Project)' 표시가 있다",
+    "related_urls": [
+      "https://doi.org/10.6028/NIST.SP.800-52r2",
+      "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-52r2.pdf"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-16",
+        "gap": "전송 TLS"
+      }
+    ]
+  },
+  {
+    "id": "LIB-K13",
+    "title": "RFC 9334: Remote ATtestation procedureS (RATS) Architecture",
+    "kind": "standard",
+    "url": "https://www.rfc-editor.org/rfc/rfc9334",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "ietf_rfc",
+    "venue": "IETF RFC 9334 (Informational), 2023-01, 46쪽",
+    "year": 2023,
+    "authors": "H. Birkholz, D. Thaler, M. Richardson, N. Smith, W. Pan",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "통신 상대가 의도한 동작 상태에 있는지를 증거(Evidence)를 만들고 전달하고 평가하는 참여자와 메시지로 나누어 설명하는 아키텍처 문서다. 프로세서 구조·클레임 내용·프로토콜에 중립적이다.",
+    "engineering_use": [
+      "POL-19: '요청의 이름이나 외부 설명만으로 신원을 인정하지 않는다'를 역할 분리로 표현한다. 하네스·endpoint-agent가 만든 증거를 별도 검증 주체가 평가하고 게이트웨이(Relying Party)는 그 결과만 소비하는 구조의 어휘로 쓴다(설계 제안).",
+      "POL-20: 위임 유효기간·철회 반영 지연을 신선도 모델의 만료 임계와 경쟁 조건 용어로 정리해, 철회 직후 호출 시험의 허용 지연 기준을 명시한다."
+    ],
+    "findings": [
+      "§4.1 역할: Attester는 증거를 만들고, Verifier는 증거를 평가해 Attestation Results를 만들며, Relying Party는 그 결과와 자체 평가 정책으로 동작(접근 허용 등)을 정한다. 평가 정책은 Verifier Owner·Relying Party Owner가 따로 설정한다.",
+      "§5는 Passport 모델과 Background-Check 모델을 구분한다. §8.4는 부적합 결과가 Attester를 '권한 없음, 교정 필요'로 취급하는 데 쓰일 수 있다고 설명한다.",
+      "§10 신선도: 증거·결과가 만들어진 시점(epoch)을 만료 임계와 비교하며, 증거 생성 직후 Attester 상태나 평가 정책이 바뀌는 경쟁 조건은 항상 가능하다고 명시한다. 목표는 최신성을 수용 가능한 범위로 좁히는 것이다. 방법은 동기화 시계(§10.1), nonce(§10.2), epoch ID(§10.3)다."
+    ],
+    "limitations": "초록, §4.1 역할, §8.4, §10 도입부를 읽고 나머지는 목차로만 확인했다. 장치·환경의 상태 증명 아키텍처이며 LLM 에이전트의 신원이나 사용자 위임을 직접 다루지 않는다. MCP에 대한 바인딩 표준은 확인하지 못했다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "IETF Trust 저작권 및 BCP 78·IETF Trust Legal Provisions 적용. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K13.md",
+    "metadata_evidence": {
+      "url": "https://www.rfc-editor.org/rfc/rfc9334",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "초록·상태, 목차, §4.1, §8.4, §10 도입부, RFC Editor 메타데이터(JSON)",
+      "sha256": "b80d035fb64a00a637d4888d2855772412246230913231301727ef78d4b00540",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: rfc9334.txt)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "2023년 1월 발행본(draft-ietf-rats-architecture-22). 표준 트랙이 아닌 Informational 문서",
+    "related_urls": [
+      "https://www.rfc-editor.org/rfc/rfc9334.txt"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-19",
+        "gap": "에이전트 신원·위임"
+      },
+      {
+        "policy_id": "POL-20",
+        "gap": "에이전트 신원·위임"
+      }
+    ],
+    "license_url": "https://trustee.ietf.org/license-info"
+  },
+  {
+    "id": "LIB-K14",
+    "title": "SPIFFE 표준: SPIFFE ID, X509-SVID, JWT-SVID (spiffe/spiffe, Stability: Stable)",
+    "kind": "spec",
+    "url": "https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE-ID.md",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "open_standard",
+    "venue": "SPIFFE 프로젝트 표준 문서(spiffe/spiffe 저장소), 세 문서 모두 Stability: Stable",
+    "year": 2026,
+    "authors": "SPIFFE 프로젝트",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "SPIFFE는 이질적인 환경에서 서비스에 신원을 발급하는 표준이다. SPIFFE ID(신뢰 도메인 + 경로)와 이를 담는 검증 가능한 신원 문서(SVID)를 X.509 인증서와 JWT 두 형식으로 정의한다.",
+    "engineering_use": [
+      "POL-19: 요청 주체의 이름·clientInfo가 아니라 검증 가능한 암호 신원(SVID)을 transport 신원으로 쓰는 방식의 근거다. 게이트웨이↔MCP 서버, endpoint-agent↔게이트웨이 같은 구간의 워크로드 신원을 비교한다.",
+      "POL-21·POL-15: JWT-SVID의 `aud` 필수·서비스 범위 한정은 '대상 불일치 시 거부'와 '서버별 인증정보 분리'의 사례다. 토큰 대상(aud)과 만료(exp) 음성군 시험 설계에 쓴다."
+    ],
+    "findings": [
+      "X509-SVID(§2·3.1): SPIFFE ID는 SAN의 URI에 정확히 한 개만 담아야 하며(MUST), 다수면 감사가 어려워진다고 설명한다. 잎(leaf) 인증서의 SPIFFE ID는 루트가 아닌 경로 요소를 가져야 한다.",
+      "JWT-SVID(§3.1·3.2): `sub`는 워크로드의 SPIFFE ID여야 하고 `aud`는 반드시 있어야 한다. 검증자는 `aud`가 없거나 자신의 식별자가 없으면 거부해야 하며, `production` 같은 넓은 값은 하나의 서비스가 침해되면 사칭 가능성이 열리므로 권장하지 않는다.",
+      "JWT-SVID §7.1은 JWT-SVID가 bearer 토큰이라 재전송 공격에 노출되며 `aud`·`exp` 필수화로 완화하지만 완전히 해결하지는 못한다고 적는다. JOSE 허용 범위를 제한해(JWS Compact만, 알고리즘 목록 고정) 알려진 취약점 유형을 피한다."
+    ],
+    "limitations": "세 문서의 도입·목차와 위 인용 절을 읽었다. 워크로드(프로세스) 신원 표준이며 사용자 위임·업무 목적·에이전트 권한 범위를 정의하지 않는다. SPIFFE Workload API 문서는 받았지만 읽지 않았다. 우리 배포에 SPIFFE를 적용하지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "spiffe/spiffe 저장소 LICENSE는 Apache License 2.0이다. 각 표준 문서의 상태란은 '배포 제한 없음(Distribution of this document is unlimited)'이다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K14.md",
+    "metadata_evidence": {
+      "url": "https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE-ID.md",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "SPIFFE-ID.md 머리·목차, X509-SVID.md §2·§3.1, JWT-SVID.md §2·§3·§7.1, 저장소 LICENSE, 파일별 최종 커밋",
+      "sha256": "7b6b4f2fe6dc4866faa8846481ae3493b2482b82fe1ba31840169a1cad16938e",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: spiffe_id.md)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "SPIFFE-ID.md 마지막 변경 커밋 665a28f3253e(2026-07-01), X509-SVID.md·JWT-SVID.md 21896acad5c6(2026-07-01)",
+    "related_urls": [
+      "https://github.com/spiffe/spiffe/blob/main/standards/X509-SVID.md",
+      "https://github.com/spiffe/spiffe/blob/main/standards/JWT-SVID.md"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-19",
+        "gap": "에이전트 신원·위임"
+      },
+      {
+        "policy_id": "POL-20",
+        "gap": "에이전트 신원·위임"
+      },
+      {
+        "policy_id": "POL-21",
+        "gap": "에이전트 신원·위임"
+      },
+      {
+        "policy_id": "POL-15",
+        "gap": "에이전트 신원·위임"
+      }
+    ],
+    "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+  },
+  {
+    "id": "LIB-K15",
+    "title": "SPIRE — SPIFFE Runtime Environment (spiffe/spire v1.15.4)",
+    "kind": "tool",
+    "url": "https://github.com/spiffe/spire",
+    "verified_on": "2026-10-17",
+    "verification": "page_text_read",
+    "publication_status": "open_source_release",
+    "venue": "GitHub spiffe/spire 릴리스 v1.15.4 (2026-10-15), Apache-2.0",
+    "year": 2026,
+    "authors": "SPIFFE 프로젝트(SPIRE 기여자)",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "SPIRE는 이종 호스팅 환경의 소프트웨어 사이에 신뢰를 세우는 API 툴체인이다. 실행 중인 소프트웨어를 증명(attest)하고 SVID를 발급해 워크로드 사이의 mTLS 또는 JWT 서명·검증을 가능하게 한다. SPIFFE API를 구현한 런타임이다.",
+    "engineering_use": [
+      "POL-19·POL-20: SPIFFE 표준을 실제로 발급·검증하는 구현의 후보다. 하네스·endpoint-agent·게이트웨이 사이의 신원 발급을 SPIRE로 할지, 기존 Keycloak 토큰 경로로 충분한지 비교하는 단계의 입력이다(DEV-43). 에이전트(LLM) 수준의 위임 증명은 SPIRE 범위 밖이다."
+    ],
+    "findings": [
+      "README는 SPIRE가 실행 중인 소프트웨어를 증명해 SVID를 발급하며, 워크로드가 비밀 저장소·DB·클라우드 제공자에 안전하게 인증하는 데에도 쓸 수 있다고 설명한다. 릴리스에 SPIRE Server와 SPIRE Agent 바이너리가 함께 들어 있다.",
+      "저장소 메타데이터상 라이선스는 Apache-2.0이며 보관(archived) 상태가 아니고 릴리스 v1.15.4가 2026-10-15에 게시됐다."
+    ],
+    "limitations": "README와 저장소·릴리스 메타데이터만 읽었다. 코드·구성·증명(attestor) 플러그인·운영 요구사항은 열지 않았고 설치·시험하지 않았다. 기존 위키의 OSS 심층 분석 기준(커밋·함수 고정)에는 못 미치는 서지 수준 등록이다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "GitHub 저장소 메타데이터의 SPDX가 Apache-2.0이다(LICENSE 파일 본문은 열지 않았다). 코드를 복제하지 않는다.",
+    "page": "papers/LIB-K15.md",
+    "metadata_evidence": {
+      "url": "https://github.com/spiffe/spire",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "README 앞부분, 저장소 메타데이터, 최신 릴리스 메타데이터",
+      "sha256": "7d9bcc916751a44905c66ee389a1a0d5a37545b2b206d19578c973bd8d26abc9",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: spire_readme.md)"
+    },
+    "summary_review": "source_page_compared",
+    "edition": "v1.15.4(2026-10-15). 저장소 메타데이터상 2026-10-16 푸시",
+    "related_urls": [
+      "https://github.com/spiffe/spire/releases"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-19",
+        "gap": "에이전트 신원·위임"
+      },
+      {
+        "policy_id": "POL-20",
+        "gap": "에이전트 신원·위임"
+      }
+    ],
+    "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+  },
+  {
+    "id": "LIB-K16",
+    "title": "Sigstore: Software Signing for Everybody",
+    "kind": "paper",
+    "url": "https://doi.org/10.1145/3548606.3560596",
+    "verified_on": "2026-10-17",
+    "verification": "bibliographic_and_abstract_checked",
+    "publication_status": "official_publication",
+    "venue": "Proceedings of the 2022 ACM SIGSAC Conference on Computer and Communications Security (CCS '22), pp. 2353–2367, ACM, 2022-11-07",
+    "year": 2022,
+    "authors": "Zachary Newman, John Speed Meyers, Santiago Torres-Arias",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "소프트웨어 서명을 널리 쓰이게 하려는 시스템 Sigstore를 제안한다. ACME와 비슷한 프로토콜로 OIDC를 통해 개발자를 인증해 서명을 기존 신원에 묶고, 일회용(ephemeral) 키로 키 관리 부담을 줄이며, 아티팩트·신원 로그로 투명성을 제공한다고 초록이 설명한다.",
+    "engineering_use": [
+      "POL-01: '배포자의 서명이나 해시 등 승인된 방법으로 검증'에서 서명 검증 항목을 '서명자 신원(OIDC 발급자·주체)과 투명성 로그 포함 여부'까지 확장하는 근거다. 기록할 값: 서명자 신원, 로그 항목 식별자, 검증 시각(DEV-38 승인 소스 검증과 연결).",
+      "POL-39: 서명 검증 실패·부재를 도입 보류 사유로 기록하는 시험 사례를 설계할 때 참고한다."
+    ],
+    "findings": [
+      "세 가지 메커니즘은 OIDC 기반 신원 연결, 일회용 키 서명, 아티팩트·신원 로그를 통한 사용자 검증이다.",
+      "초록은 공급망 침해(XCodeGhost, SolarWinds) 사례를 들어 서명의 낮은 채택률을 문제로 삼고, 쿠버네티스·Distroless 같은 핵심 소프트웨어에 대한 220만 건 이상의 서명을 보고한다.",
+      "ACM 판은 CC BY 4.0(Crossref VoR 라이선스, OpenAlex·Semantic Scholar의 오픈액세스 표기)이다."
+    ],
+    "limitations": "ACM 디지털 라이브러리는 봇 차단(HTTP 403)이라 열지 못했다. 서지는 Crossref, 초록은 OpenAlex·Semantic Scholar의 집계 메타데이터로만 대조했고 논문 본문은 읽지 않았다. 현재 Sigstore 서비스 구성·정책은 확인하지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "CC BY 4.0 (Crossref 라이선스 정보). 저자·제목·출처를 표기한다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K16.md",
+    "metadata_evidence": {
+      "url": "https://doi.org/10.1145/3548606.3560596",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "Crossref 서지, OpenAlex·Semantic Scholar 초록 메타데이터. ACM 원문 미열람",
+      "sha256": "7815dc1cfaf42a6e81bd8cda2de7d855ae83828c2cc0808dfd5e4d021f3312ae",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: sigstore_crossref.json)"
+    },
+    "summary_review": "abstract_compared_manually",
+    "edition": "ACM 판 2022-11-07 게재(Crossref). 초록은 OpenAlex·Semantic Scholar의 ACM 메타데이터로 대조",
+    "related_urls": [
+      "https://dl.acm.org/doi/10.1145/3548606.3560596"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-01",
+        "gap": "공급망 출처·취약점 대응"
+      },
+      {
+        "policy_id": "POL-39",
+        "gap": "공급망 출처·취약점 대응"
+      }
+    ],
+    "license_url": "https://creativecommons.org/licenses/by/4.0/"
+  },
+  {
+    "id": "LIB-K17",
+    "title": "OpenSSF Scorecard v5.6.0 — 점검 항목 문서 (ossf/scorecard docs/checks.md)",
+    "kind": "tool",
+    "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "open_source_release",
+    "venue": "GitHub ossf/scorecard 릴리스 v5.6.0 (2026-10-12), Apache-2.0",
+    "year": 2026,
+    "authors": "Open Source Security Foundation (Scorecard 기여자)",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "오픈소스 프로젝트의 보안 상태를 20개 점검 항목(Binary-Artifacts, Branch-Protection, Code-Review, Dependency-Update-Tool, Maintained, Pinned-Dependencies, SAST, Security-Policy, Signed-Releases, Token-Permissions, Vulnerabilities 등)으로 자동 평가하는 도구의 점검 설명서다. 항목마다 위험도, 점수 기준, 개선 방법을 적는다.",
+    "engineering_use": [
+      "POL-01·POL-03: 도입 검토 기록에 '배포자·유지보수·서명·보안 정책' 항목을 점검 도구의 기계 판독 결과(항목별 점수·근거)로 첨부한다. 지원 종료·수정 경로 불명확(POL-03)은 Maintained·Security-Policy 점수를 참고 신호로만 쓴다.",
+      "POL-39: Vulnerabilities 점검과 Dependency-Update-Tool 결과를 운영 의존성의 알려진 취약점 점검(재검사 주기) 입력으로 비교한다."
+    ],
+    "findings": [
+      "Signed-Releases(위험도 High)는 GitHub 저장소의 최근 릴리스 5개 자산에서 서명 파일 이름(*.minisig, *.asc, *.sig, *.sign, *.sigstore, *.sigstore.json, *.intoto.jsonl)을 찾는다. 현재 GitHub 저장소만 지원한다.",
+      "Maintained(High)는 보관(archived) 프로젝트에 최저점을, 직전 90일 동안 주 1회 이상 커밋이 있으면 최고점을 준다. 문서는 활동 없음이 항상 문제는 아니라고도 단서를 단다. Vulnerabilities(High)는 OSV 서비스로 열린 취약점을 확인한다.",
+      "Security-Policy(Medium)는 SECURITY.md 존재와 내용(취약점 처리·공개 일정)을 본다. Dependency-Update-Tool(High)은 Dependabot·Renovate 사용 여부를 본다."
+    ],
+    "limitations": "점검 설명서 전체 목차와 위 항목의 본문만 읽었다. 점수는 휴리스틱이며 안전 보증이 아니다. Scorecard를 실행하지 않았고 GitHub 외 저장소는 일부 항목이 지원되지 않는다. 우리가 도입하는 MCP 서버에 적용해 보지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "GitHub 저장소 메타데이터의 SPDX가 Apache-2.0이다(LICENSE 파일 본문은 열지 않았다). 문서를 복제하지 않는다.",
+    "page": "papers/LIB-K17.md",
+    "metadata_evidence": {
+      "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "docs/checks.md의 항목 목록과 Signed-Releases·Maintained·Security-Policy·Dependency-Update-Tool·Vulnerabilities 절, 저장소·릴리스 메타데이터, 파일 최종 커밋",
+      "sha256": "1cd944d15d9c70303ce64cc214d51c07d8e1386f71513b60bc9839f11887b323",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: scorecard_checks.md)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "v5.6.0. docs/checks.md 마지막 변경 커밋 f746d2ee21e5(2026-10-15)",
+    "related_urls": [
+      "https://github.com/ossf/scorecard"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-01",
+        "gap": "공급망 출처·취약점 대응"
+      },
+      {
+        "policy_id": "POL-03",
+        "gap": "공급망 출처·취약점 대응"
+      },
+      {
+        "policy_id": "POL-39",
+        "gap": "공급망 출처·취약점 대응"
+      }
+    ],
+    "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+  },
+  {
+    "id": "LIB-K18",
+    "title": "Open Source Vulnerability (OSV) format / schema 1.9.2",
+    "kind": "spec",
+    "url": "https://ossf.github.io/osv-schema/",
+    "verified_on": "2026-10-17",
+    "verification": "page_text_read",
+    "publication_status": "open_standard",
+    "venue": "OpenSSF osv-schema, 문서 'Version 1.9.2 (October 13, 2026)'",
+    "year": 2026,
+    "authors": "Oliver Chang, Russ Cox (원저자), OpenSSF osv-schema 기여자",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "오픈소스 패키지의 취약점을 기술하는 표준 교환 JSON 형식이다. 모든 취약점 데이터베이스가 내보내 자동화된 정확한 의존성 취약점 관리를 가능하게 하는 것이 목표이며, 형식은 안정적이고 하위 호환 변경만 가능하다고 밝힌다.",
+    "engineering_use": [
+      "POL-39: 운영 중 MCP 서버 이미지·의존성의 취약점 판정을 레코드의 affected 범위 비교로 자동화하고, 영향도 평가·조치 기한·격리 결정을 같은 레코드 id에 연결해 기록한다.",
+      "POL-03: 도입 단계에서 알려진 취약점 수와 수정 경로 존재를 기계로 확인하는 입력으로 쓴다."
+    ],
+    "findings": [
+      "개요에 나온 최상위 필드는 schema_version, id, modified, published, withdrawn, aliases, upstream, related, summary, details, severity, affected[] 등이다.",
+      "affected[]는 package(ecosystem, name, purl), 버전 범위(ranges)와 열거 버전, 심각도 등을 담아 어떤 패키지 버전이 영향을 받는지 기계가 비교할 수 있게 한다. `withdrawn` 필드가 있다(의미 정의는 읽지 않았다).",
+      "문서에는 형식 검증용 JSON Schema 링크와 이 형식을 내보내는 데이터베이스 목록 링크가 있다."
+    ],
+    "limitations": "스키마 문서의 앞부분(목적·형식 개요)을 읽었고 필드별 상세 정의와 JSON Schema는 읽지 않았다. OSV API·데이터베이스 내용은 확인하지 않았다. 저장소 라이선스(Apache-2.0)는 API 메타데이터로만 확인했다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "GitHub 저장소 메타데이터의 SPDX가 Apache-2.0이다(LICENSE 파일 본문과 문서 별도 조건은 열지 않았다). 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K18.md",
+    "metadata_evidence": {
+      "url": "https://ossf.github.io/osv-schema/",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "스키마 문서의 목적·형식 개요, 저장소 메타데이터, 태그 목록",
+      "sha256": "8cf1e3d3f9e10eba902d03af6c281d6bc5e71c22dc351fcb4b811c64030570e8",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: osv_spec.html)"
+    },
+    "summary_review": "source_page_compared",
+    "edition": "Version 1.9.2 (2026-10-13). 저장소 최신 태그 v1.9.2",
+    "related_urls": [
+      "https://github.com/ossf/osv-schema"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-39",
+        "gap": "공급망 출처·취약점 대응"
+      },
+      {
+        "policy_id": "POL-03",
+        "gap": "공급망 출처·취약점 대응"
+      }
+    ],
+    "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+  },
+  {
+    "id": "LIB-K19",
+    "title": "CISA Known Exploited Vulnerabilities (KEV) Catalog",
+    "kind": "dataset",
+    "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+    "verified_on": "2026-10-17",
+    "verification": "page_text_read",
+    "publication_status": "official_publication",
+    "venue": "CISA (미국 사이버보안·인프라보안청) 카탈로그, JSON 카탈로그 버전 2026.10.16",
+    "year": 2026,
+    "authors": "CISA",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "실제 악용이 확인된 취약점(CVE) 목록으로 CISA가 관리하며 JSON·CSV로 배포된다. 항목에는 cveID, vendorProject, product, dateAdded, requiredAction, dueDate, knownRansomwareCampaignUse, forensicTriage, notes, cwes 등이 있다.",
+    "engineering_use": [
+      "POL-39: 운영 중인 MCP 서버·의존성의 CVE가 KEV에 있으면 '악용 확인' 신호로 기한 내 조치·격리 대상으로 분류하는 입력이다. JSON의 dueDate는 연방 기관용 기한이므로 우리 기한 정책과 구분해 기록한다."
+    ],
+    "findings": [
+      "열람한 JSON 피드는 catalogVersion 2026.10.16, 1,748건이며 최신 항목의 requiredAction은 BOD 26-04의 지침 준수를 요구하고 forensicTriage 필드로 포렌식 트리아지 필요 여부를 표시한다.",
+      "카탈로그 페이지에는 KEV 포함 기준, 신규 KEV 추천, CSV·JSON 내려받기, JSON Schema(2026-09-02 갱신), 라이선스 링크가 있다.",
+      "KEV 데이터는 CC0 1.0으로 배포된다는 라이선스 문서를 CISA 사이트에서 확인했다. 제3자 링크의 정보는 각자의 정책을 따른다."
+    ],
+    "limitations": "카탈로그 페이지·JSON 헤더와 첫 항목, 라이선스 문서만 확인했다. KEV는 악용이 확인된 목록일 뿐 모든 위험을 포함하지 않으며, 제품 이름을 우리 의존성 식별자(PURL·CPE)와 맞추는 문제는 다루지 않았다. dueDate는 연방 기관 기준이다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "CC0 1.0 (CISA 사이트의 KEV 라이선스 문서, cisagov/kev-data LICENSE). CISA 로고·DHS 직인 사용이나 보증 암시는 허용하지 않는다. 데이터를 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K19.md",
+    "metadata_evidence": {
+      "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "카탈로그 페이지, JSON 피드 헤더·첫 항목, KEV 라이선스 문서, GitHub 미러 메타데이터",
+      "sha256": "f9c800eb1685447be7397d58e5f24ee25216eb1728349e11c436af21fb91b3c4",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: kev_page.html)"
+    },
+    "summary_review": "source_page_compared",
+    "edition": "catalogVersion 2026.10.16, dateReleased 2026-10-16T17:15:48Z, 등록 1,748건(열람 시점)",
+    "related_urls": [
+      "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+      "https://www.cisa.gov/sites/default/files/licenses/kev/license.txt"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-39",
+        "gap": "공급망 출처·취약점 대응"
+      }
+    ],
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  {
+    "id": "LIB-K20",
+    "title": "CISA BOD 26-04: Prioritizing Security Updates Based on Risk (BOD 22-01 대체)",
+    "kind": "policy",
+    "url": "https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "official_publication",
+    "venue": "CISA Binding Operational Directive 26-04, 2026-06-10 (구현 지침 갱신 2026-08-25)",
+    "year": 2026,
+    "authors": "CISA",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "연방 민간 행정기관의 취약점 조치 우선순위를 위험으로 정하는 의무 지침이다. 긴급도를 자산 노출(공개 노출 여부), KEV 포함 여부, 익스플로잇 자동화 가능성, 기술적 영향(부분·전체 통제)의 네 변수로 정하고, 조치 기한표(Table 1)는 SSVC에 근거한다. KEV 카탈로그를 유지하며 BOD 22-01을 폐지한다.",
+    "engineering_use": [
+      "POL-39: '정해진 기한 내 조치, 불가하면 격리'의 기한을 정할 때 노출·KEV·자동화·영향 4변수 모델을 사내 기한표 설계의 참고로 쓴다. 연방 기관용 일수를 그대로 가져오지 않는다.",
+      "POL-43: KEV 항목에서 포렌식 트리아지가 요구될 때 '중지·격리·영향 범위 조사' 절차에 구현 지침의 6단계를 점검 항목으로 대응시킨다(설계 제안)."
+    ],
+    "findings": [
+      "본문 '이 지침은 BOD 19-02(2019-04-29)와 BOD 22-01(2021-11-03)을 대체·폐지한다'. BOD 22-01 페이지에는 '폐지됨, BOD 26-04로 대체' 표시가 있다.",
+      "일정: 즉시(1단계), 60일(2단계, 취약점 관리 절차 갱신), 180일(3단계, Table 1 기한 준수, 외부 도달 자산 식별·태깅). Table 1의 일수 값은 열람한 텍스트에 표 내용이 나오지 않아 확인하지 못했다. '& forensic triage'는 3일 내 조치와 함께 포렌식 트리아지를 하라는 뜻이라고 본문이 정의한다.",
+      "구현 지침의 포렌식 트리아지는 범위 설정, 증거 보존·수집, 핵심 패치·안정화, 격리·통제, 분석, 상향 판단의 6단계로 구성된다. 범위는 연방 정보시스템이고 계약자는 계약이 정하지 않는 한 적용 대상이 아니다."
+    ],
+    "limitations": "지침 본문과 구현 지침의 목차·일부를 읽었다. Table 1의 구체 일수, 부속 데이터 스키마(XLSX), 구현 지침의 FAQ는 읽지 못했다. 연방 기관에 대한 의무 지침이며 우리 조직의 법적 의무가 아니다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "페이지에서 별도 이용 조건을 읽지 못했다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K20.md",
+    "metadata_evidence": {
+      "url": "https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "BOD 26-04 본문(배경·정의·범위·필수 조치·CISA 조치·부록 A 도입), 구현 지침 목차·일부, BOD 22-01 폐지 표시 페이지",
+      "sha256": "9ff82faa2c7deab6ce48d0717fd7cb02b3a47a77c9d71763a5bfcebcdb7a1d1f",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: bod2604.html)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "2026-06-10 발령. BOD 19-02와 BOD 22-01을 폐지·대체한다고 본문이 밝힌다. 후보 목록의 BOD 22-01은 폐지(2026-06-10)되어 등록하지 않았다",
+    "related_urls": [
+      "https://www.cisa.gov/news-events/directives/bod-26-04-implementation-guidance-prioritizing-security-updates-based-risk",
+      "https://www.cisa.gov/news-events/directives/bod-22-01-reducing-significant-risk-known-exploited-vulnerabilities-revoked"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-39",
+        "gap": "공급망 출처·취약점 대응"
+      },
+      {
+        "policy_id": "POL-43",
+        "gap": "경보 검증·자동 대응"
+      }
+    ]
+  },
+  {
+    "id": "LIB-K21",
+    "title": "FIRST EPSS (Exploit Prediction Scoring System) — 모델 v5 (v2026.06.15)",
+    "kind": "dataset",
+    "url": "https://www.first.org/epss/",
+    "verified_on": "2026-10-17",
+    "verification": "page_text_read",
+    "publication_status": "official_publication",
+    "venue": "FIRST EPSS SIG, 점수 생성·공개는 Empirical Security",
+    "year": 2026,
+    "authors": "FIRST EPSS Special Interest Group (점수 제공: Empirical Security)",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "CVE마다 향후 30일 안에 악용 활동이 관찰될 확률(0~1)을 매일 공개하는 모델이다. FAQ는 EPSS가 완전한 위험 점수가 아니며 보편 임계값은 없다고 밝히고, 확률과 백분위의 차이를 설명한다.",
+    "engineering_use": [
+      "POL-39: KEV 포함 여부와 함께 영향도 평가의 '악용 가능성' 입력으로 쓰되 임계값은 우리 조치 용량으로 정한다. 점수와 모델 버전을 함께 기록해 시계열 비교의 방법론 변화를 구분한다."
+    ],
+    "findings": [
+      "점수는 관찰된 악용 활동의 향후 30일 확률 추정이며, 환경 맥락·보완 통제·피해 크기는 반영하지 않으므로 완전한 위험 계산에는 환경 정보와 영향이 더해져야 한다고 FAQ가 적는다.",
+      "보편 임계값은 없다. 0.10 임계값은 현장에서 자주 인용되지만 EPSS가 부여한 권위는 없고, 조치 용량과 위험 허용도에 맞춰 정하라고 한다. 확률 0.10이 현재 약 95번째 백분위에 해당한다고 설명한다.",
+      "CSV·API로 무료·등록 없이 공개되며 출판물·제품에 쓸 때는 출처 표시를 요청한다. 모델 버전이 바뀔 때마다 점수 이동이 있어 시계열이 방법론 변화를 포함할 수 있다고 경고한다."
+    ],
+    "limitations": "홈페이지, FAQ, Get the Data, How It Works 페이지의 일부를 읽었다. 모델 방법론 논문과 실제 데이터 파일·API는 열지 않았다. 점수는 통계 추정이며 개별 취약점의 악용을 보증하지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "FAQ·데이터 페이지: 무료 공개, 등록 불필요, 출처 표시 요청(구체 문구는 Get the Data 페이지 참조). 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K21.md",
+    "metadata_evidence": {
+      "url": "https://www.first.org/epss/",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "FAQ, Get the Data(모델 이력·접근 방법), How It Works 일부",
+      "sha256": "d90b1718832e3e0a7bda7e0c0437c3cb6f4a446b6b2b22f70db2354995a46310",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: epss_home.html)"
+    },
+    "summary_review": "source_page_compared",
+    "edition": "Get the Data 페이지의 모델 이력: v1(2021-04-14) → v2 2022-02-04 → v3 2023-03-07 → v4(v2025.03.14) 2025-03-17 → v5(v2026.06.15) 2026-06-15",
+    "related_urls": [
+      "https://www.first.org/epss/faq",
+      "https://www.first.org/epss/data"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-39",
+        "gap": "공급망 출처·취약점 대응"
+      }
+    ]
+  },
+  {
+    "id": "LIB-K22",
+    "title": "Common Security Advisory Framework (CSAF) Version 2.0 — OASIS Standard",
+    "kind": "standard",
+    "url": "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "oasis_standard",
+    "venue": "OASIS Standard, 2022-11-18 (OASIS CSAF TC)",
+    "year": 2022,
+    "authors": "Langley Rock, Stefan Hagen, Thomas Schmidt (편집)",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "보안 권고를 기계가 읽는 JSON 구조로 교환하는 OASIS 표준이다. 프로파일(Base, 보안 사고 대응, 정보 권고, 보안 권고, VEX)과 기계 검증 시험(Tests), 제공자·집계자 스키마를 정의한다.",
+    "engineering_use": [
+      "POL-03: 서버 제공자의 보안 공지가 CSAF로 게시되는지 확인해 '유지보수·보안 공지·수정 지원 확인'을 자동 수집으로 바꾼다.",
+      "POL-39: CSAF의 제품 상태·VEX 정보를 알려진 취약점 대응 기록(영향 없음 판단 근거 포함)에 연결한다."
+    ],
+    "findings": [
+      "§4.5 Profile 5: VEX는 특정 제품이 취약점의 영향을 받는지 또는 받지 않는지와 그 이유를 밝히는 용도로 쓰도록(SHOULD) 하고 문서가 만족할 요건을 나열한다(세부 요건은 읽지 않았다).",
+      "§6은 필수 시험을 나열한다(제품 ID 정의 누락·중복·순환 등). 표준 문서는 JSON 스키마(CSAF, aggregator, provider)를 함께 제공하고 CVRF 1.2를 대체한다.",
+      "저작권 고지는 문서 전체 복제·배포를 허용하되 문서 자체의 변경은 금지한다(OASIS IPR 정책)."
+    ],
+    "limitations": "머리말·목차·Profile 5 시작부·고지문만 읽었다. 2.1은 초안 단계다. MCP 서버 제공자 중 CSAF를 게시하는 곳은 확인하지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "OASIS 저작권 고지: 구현을 위한 파생물 제작과 문서 복제·배포는 고지를 유지하면 허용되나 문서 자체는 수정할 수 없다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K22.md",
+    "metadata_evidence": {
+      "url": "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "머리말(단계·날짜·편집자), 목차, §4.5 시작부, 고지문, 2.1 초안 머리말·디렉터리, TC 페이지",
+      "sha256": "fad0c60d5857ac078e6c7b4f5fee5dc1aebd63645fbc61182b227e25420cd66b",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: csaf20.html)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "2.0 OASIS Standard(2022-11-18). 2.1은 2026-09-11 기준 Committee Specification Draft 03이라 표준으로 등록하지 않았다",
+    "related_urls": [
+      "https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html",
+      "https://docs.oasis-open.org/csaf/csaf/v2.1/csaf-v2.1.html"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-03",
+        "gap": "공급망 출처·취약점 대응"
+      },
+      {
+        "policy_id": "POL-39",
+        "gap": "공급망 출처·취약점 대응"
+      }
+    ],
+    "license_url": "https://www.oasis-open.org/policies-guidelines/ipr/"
+  },
+  {
+    "id": "LIB-K23",
+    "title": "OpenVEX Specification v0.2.0",
+    "kind": "spec",
+    "url": "https://github.com/openvex/spec/blob/main/OPENVEX-SPEC.md",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "open_standard",
+    "venue": "openvex/spec 저장소, CC0-1.0, 문서 제목 'OpenVEX Specification v0.2.0'",
+    "year": 2026,
+    "authors": "OpenVEX 프로젝트",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "VEX(Vulnerability Exploitability eXchange)를 가볍게 구현한 JSON 형식이다. 문(statement)은 제품·취약점·상태의 교차이며 시간 순서가 중요하다. 상태 라벨은 not_affected, affected, fixed, under_investigation이고, not_affected에는 표준화된 사유(justification)가 필요하다.",
+    "engineering_use": [
+      "POL-39: 스캐너가 보고한 취약점이 서버에 실제로 영향이 없을 때 '영향 없음' 판단을 사유 라벨과 함께 기록해 격리·중지 결정의 오탐을 줄인다. 영향 여부 미확정(under_investigation)은 기한 안에 해소되지 않으면 격리하는 규칙과 연결한다(설계 제안)."
+    ],
+    "findings": [
+      "상태 라벨: not_affected(조치 불필요, justification 필수), affected(조치 권고), fixed(수정 포함), under_investigation(영향 여부 미확정, 이후 VEX 문서로 갱신).",
+      "justification 라벨은 VEX 작업반이 2022년 7월에 정의한 목록이며 component_not_present, vulnerable_code_not_present 등이 있어 배포 정책에 자동으로 쓸 수 있다.",
+      "문서는 스캐너가 라벨에 따라 동작을 바꾸고 대시보드가 취약점 영향의 시간 경과를 보이는 용도를 든다. 저장소 라이선스는 CC0-1.0이다."
+    ],
+    "limitations": "스펙 본문의 개요·상태 라벨·justification 일부를 읽었다. 문서 구조·제품·취약점 데이터 구조 절은 목차 수준이다. OpenVEX 문서를 생성·소비하는 도구는 시험하지 않았다. v0.2.0은 1.0 이전 판본이다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "GitHub 저장소 메타데이터의 SPDX가 CC0-1.0이다(LICENSE 파일 본문은 열지 않았다). 본문을 복제하지 않는다.",
+    "page": "papers/LIB-K23.md",
+    "metadata_evidence": {
+      "url": "https://github.com/openvex/spec/blob/main/OPENVEX-SPEC.md",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "스펙 개요, VEX 문(statement) 절, Status Labels, Status Justifications 앞부분, 저장소 메타데이터, 파일 최종 커밋",
+      "sha256": "9375415ccb351260a998864cbeebbaff1808d1b09a306919b79cc75e5519f884",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: openvex_spec.md)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "v0.2.0 문서, 파일 마지막 변경 커밋 3a134a07ded8(2026-09-05). 미국 CISA VEX 최소 요건(2023-04) 충족을 표방한다",
+    "related_urls": [
+      "https://github.com/openvex/spec"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-39",
+        "gap": "공급망 출처·취약점 대응"
+      }
+    ],
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  {
+    "id": "LIB-K24",
+    "title": "CISA: Minimum Requirements for Vulnerability Exploitability eXchange (VEX)",
+    "kind": "guide",
+    "url": "https://www.cisa.gov/resources-tools/resources/minimum-requirements-vulnerability-exploitability-exchange-vex",
+    "verified_on": "2026-10-17",
+    "verification": "page_metadata_checked",
+    "publication_status": "official_publication",
+    "venue": "CISA 간행물, 게시일 2023-04-21",
+    "year": 2023,
+    "authors": "CISA (VEX 작업반 조율)",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "VEX 문서를 만들 때 필요한 최소 요소를 규정하는 CISA 문서의 소개 페이지다. VEX는 제품이 특정 취약점의 영향을 받는지에 대한 공급자 진술을 기계 판독 형태로 전하는 방식이다.",
+    "engineering_use": [
+      "POL-39: VEX를 도입할 때 문서에 반드시 들어가야 할 최소 필드를 정하는 기준으로 삼는다. 구체 필드 목록은 문서 본문을 읽은 뒤에 확정한다."
+    ],
+    "findings": [
+      "페이지는 이 문서가 VEX 문서를 만들기 위한 최소 요소를 명시한다고 소개하고 게시일을 2023-04-21로 표시한다.",
+      "OpenVEX 명세가 이 최소 요건 문서를 준수한다고 명시해 상호 참조가 확인된다(LIB-K23)."
+    ],
+    "limitations": "랜딩 페이지의 제목·게시일·요약만 확인했다. 최소 요건의 구체 항목은 읽지 않았으므로 설계에 인용하지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "페이지에서 별도 이용 조건을 읽지 못했다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K24.md",
+    "metadata_evidence": {
+      "url": "https://www.cisa.gov/resources-tools/resources/minimum-requirements-vulnerability-exploitability-exchange-vex",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "랜딩 페이지의 제목·게시일·요약 문장만",
+      "sha256": "11c147176b25f5cbab3d23044d72f66e88879d4759d2b0b052d14900acfcb21a",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: cisa_vex.html)"
+    },
+    "summary_review": "page_metadata_only",
+    "edition": "게시일 2023-04-21(페이지 표시). 문서 본문 PDF는 열지 않았다",
+    "related_urls": [],
+    "policy50_links": [
+      {
+        "policy_id": "POL-39",
+        "gap": "공급망 출처·취약점 대응"
+      }
+    ]
+  },
+  {
+    "id": "LIB-K25",
+    "title": "OWASP Cheat Sheet Series: Secrets Management Cheat Sheet",
+    "kind": "guide",
+    "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "official_publication",
+    "venue": "OWASP Cheat Sheet Series (마지막 변경 커밋 9550b74f43f2, 2026-10-04)",
+    "year": 2026,
+    "authors": "OWASP Cheat Sheet Series 기여자",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "비밀(토큰·API 키·인증서 등) 관리 지침이다. 중앙화·접근 통제·자동화·감사·수명 주기(생성·교체·폐기·만료), CI/CD·클라우드·컨테이너 환경, 탐지와 사고 대응을 다룬다.",
+    "engineering_use": [
+      "POL-41·POL-45: 자격 회수의 판단 기준을 '설정 삭제'가 아니라 '자격을 발급·검증하는 백엔드(제공자) 쪽의 폐기'로 둔다는 근거다. 회수 뒤 이전 값으로의 재접근이 제공자에서 거부되는지(재사용 시도가 감사에 남는지)를 시험 항목으로 둔다.",
+      "POL-47·POL-49: 문서 저장소 서비스 계정·외부 제공자 권한의 회수는 제공자 쪽 폐기 확인이 필요하다는 점을 같은 절차에 둔다. 제공자별 회수 API 유무는 별도 확인이 필요하다.",
+      "POL-14: 인증정보 평문 노출 방지: 중앙화·접근 통제·탐지(§2.2·2.3·8) 항목을 설정·환경·오류 메시지 점검 체크리스트에 대응시킨다."
+    ],
+    "findings": [
+      "§2.7.3 폐기: 더 이상 필요 없거나 유출 가능성이 있는 비밀은 안전하게 폐기해 접근을 막아야 하며, TLS 인증서는 인증서 폐지도 포함한다. §2.4는 애플리케이션 재시작이 유출된 자격을 폐기하지 않으며 백엔드 서비스가 만료·폐기할 때까지 쓸 수 있다고 적는다.",
+      "§9.2 사고 대응의 격리 절차는 폐기(노출된 키는 즉시 폐기, 폐기 상태를 식별할 체계 필요), 교체, 삭제(로그·코드의 비밀 제거), 로깅 순이다. §2.6 감사는 만료된 비밀의 재사용 시도, 비밀이 사용된 때와 주체, 인증·인가 오류를 기록하도록 요구한다.",
+      "§2.9는 백업·복원 절차를 정기적으로 시험하고 백업을 암호화·접근 제한·감시하라고 한다. 라이선스는 CC BY-SA 4.0이다."
+    ],
+    "limitations": "목차와 §2.4·2.6·2.7·2.9·9.2의 본문을 읽었다. 나머지 절(CI/CD, 클라우드, 컨테이너, 암호화, 멀티클라우드)은 읽지 않았다. 일반 지침이며 MCP·LLM 환경에 특화되지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "CC BY-SA 4.0 (CheatSheetSeries 저장소 LICENSE.md). 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K25.md",
+    "metadata_evidence": {
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "목차, §2.4, §2.6, §2.7, §2.9, §9.2 본문, 파일 최종 커밋",
+      "sha256": "582190289b40753e8c03d8cd71aea741aa668d68ffda36e4e63e917e883fd501",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: secrets_cs.md)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "저장소 master의 해당 파일, 마지막 변경 커밋 9550b74f43f2(2026-10-04)",
+    "related_urls": [
+      "https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/Secrets_Management_Cheat_Sheet.md"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-41",
+        "gap": "공급자 측 자격 회수"
+      },
+      {
+        "policy_id": "POL-45",
+        "gap": "공급자 측 자격 회수"
+      },
+      {
+        "policy_id": "POL-47",
+        "gap": "공급자 측 자격 회수"
+      },
+      {
+        "policy_id": "POL-49",
+        "gap": "공급자 측 자격 회수"
+      },
+      {
+        "policy_id": "POL-14",
+        "gap": "공급자 측 자격 회수"
+      }
+    ],
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+  },
+  {
+    "id": "LIB-K26",
+    "title": "The Idempotency-Key HTTP Header Field (draft-ietf-httpapi-idempotency-key-header-07, 만료된 Internet-Draft)",
+    "kind": "spec",
+    "url": "https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "ietf_internet_draft",
+    "venue": "IETF HTTPAPI WG Internet-Draft -07 (2025-10-15), 2026-04-18 만료(Expired & archived)",
+    "year": 2025,
+    "authors": "Jayadeba Jena, Sanjay Dalal",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "비멱등 HTTP 메서드(POST, PATCH)를 장애 허용적으로 만드는 Idempotency-Key 요청 헤더를 정의하려는 초안이다. 키 유일성, 유효·만료, 요청 지문(fingerprint), 최초·재시도·동시 요청의 서버 처리 방식과 오류 코드를 다룬다.",
+    "engineering_use": [
+      "POL-36: '문서 수정·삭제 요청이 재전송·재시도돼도 같은 작업이 중복 실행되지 않는다'의 설계 패턴이다. 게이트웨이가 변경 도구 호출에 대해 (승인 digest, 요청 식별자, 인자 지문)을 키로 삼아 최초/재시도/동시 요청을 구분하고, 응답 유실 뒤 재시도에는 이전 결과를 재생하는 방식을 비교한다(DEV-43 설계 제안).",
+      "POL-36: 독립 쓰기 효과 시험: 같은 키 동시 2회, 응답 유실 후 재시도, 다른 인자로 같은 키 재사용(422 유사 거부), 키 만료 뒤 재시도를 업스트림의 실제 쓰기 횟수로 확인한다."
+    ],
+    "findings": [
+      "§2.2: 멱등 키는 유일해야 하며 다른 페이로드의 요청에 재사용해서는 안 된다(MUST NOT). §2.4: 서버는 키와 함께 페이로드의 체크섬·선택 필드·요청 서명 등으로 만든 지문을 쓸 수 있다.",
+      "§2.6: 최초 요청은 정상 처리하고, 원래 요청이 끝난 뒤의 재시도에는 이전 결과(성공·오류)를 돌려주며, 원래 요청이 끝나기 전의 동시 재전송에는 충돌 오류를 돌려주라고(SHOULD) 한다.",
+      "§2.7: 같은 키에 다른 페이로드를 보내면 422, 처리 중 재시도는 409 Conflict로 응답하라고 한다. §2.3은 키의 유효기간·만료 정책을 서버가 정의·공개하라고 한다. 초안은 만료되었고 RFC가 아니다."
+    ],
+    "limitations": "초안 본문의 §2.2~2.7만 읽었고 구현 현황·보안 고려 절은 읽지 않았다. 표준이 아니며 만료·미완성 문서다. MCP 도구 호출에는 이 헤더가 없으므로 그대로 적용할 수 없고, 업스트림 서버가 키를 지원해야 중복 쓰기 방지가 보장된다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "IETF Trust 저작권 및 BCP 78·79 적용(초안 상태란). 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K26.md",
+    "metadata_evidence": {
+      "url": "https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "초안 -07 텍스트의 머리·§2.2~2.7, 데이터트래커 메타데이터(상태·만료일)",
+      "sha256": "956a446923d6b6cd0ab72b0dbc552937c5b0fcf443da6b47c055d17dcdfa542f",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: idem07.txt)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "-07(2025-10-15). 데이터트래커 상태 'Expired', RFC 번호 없음(초안 머리말은 Standards Track을 의도한 상태로 적지만 데이터트래커의 Intended RFC status 칸은 비어 있다). 후속 개정이 있는지는 확인하지 못했다",
+    "related_urls": [
+      "https://www.ietf.org/archive/id/draft-ietf-httpapi-idempotency-key-header-07.txt"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-36",
+        "gap": "중복 실행"
+      }
+    ],
+    "license_url": "https://trustee.ietf.org/license-info"
+  },
+  {
+    "id": "LIB-K27",
+    "title": "OWASP API Security Top 10 – 2023",
+    "kind": "guide",
+    "url": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "official_publication",
+    "venue": "OWASP API Security Project, 2023년판 (공식 사이트는 api-security.owasp.org로 이동)",
+    "year": 2023,
+    "authors": "OWASP API Security Project",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "API 위험 상위 10개(API1 객체 수준 권한, API2 인증, API3 객체 속성 수준 권한, API4 무제한 리소스 소비, API5 기능 수준 권한, API6 민감한 비즈니스 흐름의 무제한 접근, API7 SSRF, API8 설정 오류, API9 부적절한 자산 관리, API10 안전하지 않은 API 소비)를 설명한다.",
+    "engineering_use": [
+      "POL-35: '승인되지 않은 대량 조회와 전체 폴더 조회 금지'의 근거다. 도구별 최대 반환 건수·크기를 서버(게이트웨이)가 검증하고, 요청이 건수 매개변수를 키우거나 페이지 크기를 바꿔도 상한을 넘지 못하게 하는 시험을 둔다(DEV-41).",
+      "POL-28: 호출 빈도·동시 실행·실행 시간·외부 서비스 지출 한도를 API4 항목 목록과 대조해 빠진 한도를 식별한다.",
+      "POL-10·POL-25: API7 SSRF를 POL-10 시험의 위험 근거로, API1·API3의 객체·속성 수준 권한을 POL-25의 자산·필드 단위 검사 근거로 연결한다(API1·API3 본문은 읽지 않았다)."
+    ],
+    "findings": [
+      "API4:2023은 요청 처리에 대역폭·CPU·메모리·저장소가 들며, 실행 시간 제한, 최대 메모리, 파일 디스크립터·프로세스 수, 업로드 크기, 단일 클라이언트 요청의 작업 수, 한 응답의 페이지당 레코드 수, 외부 서비스 지출 한도 중 하나라도 없거나 부적절하면 취약하다고 정의한다.",
+      "예방책에는 입력 매개변수·페이로드의 최대 크기, 호출 빈도 제한, 한 작업의 반복 실행 횟수 제한, 반환 레코드 수를 정하는 매개변수의 서버 측 검증, 제공자 지출 한도·알림이 포함된다.",
+      "목록 페이지에 API7:2023 SSRF(검증 없는 URI 가져오기로 의도치 않은 대상에 요청을 보내게 됨)와 API3(객체 속성 수준 권한)이 있다. 라이선스는 CC BY-SA 4.0이다."
+    ],
+    "limitations": "목록 페이지와 API4:2023 전체 본문만 읽었다. API1·API3·API6·API7의 본문은 읽지 않았다. MCP·LLM 도구 호출에 특화되지 않은 일반 웹 API 지침이다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "CC BY-SA 4.0 (OWASP/API-Security 저장소 LICENSE 파일). 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K27.md",
+    "metadata_evidence": {
+      "url": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "2023 위험 목록 페이지, API4:2023 본문 전체(취약 조건·예방), 저장소 LICENSE",
+      "sha256": "ac00589e1bb28f4977b3c82dfb61713b7aac0cbd07b15bd40d8516ef86379524",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: api2023_t10.html)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "2023년판. 요청한 owasp.org 주소가 api-security.owasp.org/editions/2023/로 리디렉션됨(2026-10-17)",
+    "related_urls": [
+      "https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/",
+      "https://github.com/OWASP/API-Security"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-35",
+        "gap": "대량 조회·호출량"
+      },
+      {
+        "policy_id": "POL-28",
+        "gap": "대량 조회·호출량"
+      },
+      {
+        "policy_id": "POL-10",
+        "gap": "목적지 DNS·서버 outbound"
+      },
+      {
+        "policy_id": "POL-25",
+        "gap": "데이터 등급"
+      }
+    ],
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+  },
+  {
+    "id": "LIB-K28",
+    "title": "OpenID Shared Signals Framework Specification 1.0",
+    "kind": "spec",
+    "url": "https://openid.net/specs/openid-sharedsignals-framework-1_0.html",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "open_standard",
+    "venue": "OpenID Foundation Shared Signals WG, Standards Track, 2025-08-29 (Final Specification 승인: 2025-09-02 공지)",
+    "year": 2025,
+    "authors": "A. Tulshibagwale, T. Cappalli, M. Scurtescu, A. Backman, J. Bradley, S. Miel",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "협력하는 피어 사이에서 신호와 이벤트를 공유하는 프레임워크다. SET 프로파일, 주체(subject principals)와 주체 식별자, 이벤트, 송신자(Transmitter) 구성 메타데이터와 탐색, 이벤트 스트림 관리 API(구성·상태·주체·검증)를 정의하며 RISC·CAEP 같은 응용을 가능하게 한다.",
+    "engineering_use": [
+      "POL-41·POL-45·POL-44: 자격·세션 철회를 제공자가 push 이벤트로 알려주는 표준 경로의 후보다. 상류 서비스(IdP·SaaS)가 SSF 송신자를 제공하는 경우에 한해, 게이트웨이가 수신자로서 이벤트를 받아 캐시된 자격·세션을 무효화하는 구조를 검토한다(설계 제안)."
+    ],
+    "findings": [
+      "§4.1은 RFC 8417 SET의 프로파일(명시적 타이핑, 서명 키 해석, iss·exp·aud·txn 클레임)을, §6은 push(HTTP, §6.1.1)와 poll(HTTP, §6.1.2) 전달을 정의한다.",
+      "§8은 이벤트 스트림 관리 API(스트림 구성, 상태, 주체, 검증, 스트림 갱신 이벤트)를 정의하고, §7은 송신자 구성 메타데이터와 수신자의 탐색·검증을 정의한다.",
+      "§9 보안 고려사항은 주체 탐침(Subject Probing), 정보 수집(Information Harvesting), 악의적 주체 제거(Malicious Subject Removal)를 다룬다. OIDF 고지는 Final Specification의 구현·파생을 위한 저작권 사용 허가와 출처 표시를 규정한다."
+    ],
+    "limitations": "초록, 목차, 고지문과 §4.1·§6·§8의 구조만 확인했고 필드별 본문은 읽지 않았다. 우리가 연동하는 상류 MCP 서버·제공자(GitHub 등)가 SSF 송신자를 제공하는지 확인하지 못했다. 수신자 구현·시험은 없다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "OpenID Foundation 고지: 개발자·구현자에게 비독점·무상·전 세계 저작권 사용을 허가하되 OIDF를 출처로 표시해야 한다(보증 암시 불가). 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K28.md",
+    "metadata_evidence": {
+      "url": "https://openid.net/specs/openid-sharedsignals-framework-1_0.html",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "초록, 목차, §4.1·§6·§8의 제목 구조, Appendix B 고지문, WG 페이지 공지",
+      "sha256": "240e1567017d628d835fa61f0c1cc75f566605f3decaa26a6742c33f7ecd4f16",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: ssf.html)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "Version 1.0, 2025-08-29. Shared Signals WG 페이지에 'Three Shared Signals Final Specifications Approved – 2nd Sept 2025' 공지가 있다",
+    "related_urls": [
+      "https://openid.net/wg/sharedsignals/"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-41",
+        "gap": "공급자 측 자격 회수"
+      },
+      {
+        "policy_id": "POL-45",
+        "gap": "공급자 측 자격 회수"
+      },
+      {
+        "policy_id": "POL-44",
+        "gap": "공급자 측 자격 회수"
+      }
+    ],
+    "license_url": "https://openid.net/specs/openid-sharedsignals-framework-1_0.html"
+  },
+  {
+    "id": "LIB-K29",
+    "title": "OpenID Continuous Access Evaluation Profile (CAEP) 1.0",
+    "kind": "spec",
+    "url": "https://openid.net/specs/openid-caep-1_0.html",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "open_standard",
+    "venue": "OpenID Foundation Shared Signals WG, Standards Track, 2025-08-29",
+    "year": 2025,
+    "authors": "T. Cappalli, A. Tulshibagwale",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "Shared Signals Framework 위에서 송신자가 수신자에게 사람·로봇 사용자, 장치, 세션, 애플리케이션에 대한 접근을 지속적으로 조정하도록 알리는 이벤트 유형을 정의한다. 이벤트는 Session Revoked, Token Claims Change, Credential Change, Assurance Level Change, Device Compliance Change, Session Established, Session Presented, Risk Level Change다.",
+    "engineering_use": [
+      "POL-44·POL-45: 철회·자격 변경 이벤트(session-revoked, credential-change)를 받았을 때 게이트웨이가 해당 주체의 후속 호출을 거부하고 캐시를 무효화하는 동작을 '신규 효과 0' 시험에 포함한다. 이벤트가 오지 않는 제공자는 기존 폴링·introspection(T20)을 유지한다.",
+      "POL-22·POL-20: 요청마다 최신 승인·위임 상태를 쓰는 규칙에서, 외부 신호로 상태가 바뀔 때 반영 지연을 측정한다."
+    ],
+    "findings": [
+      "초록은 송신자가 연속 갱신을 보내 수신자가 접근을 조절(attenuate)할 수 있게 하는 것이 목적이라고 밝힌다. 이벤트 유형은 §3.1~3.8이며 각각 이벤트 고유 클레임과 예시가 있다.",
+      "§3.1 Session Revoked, §3.3 Credential Change, §3.2 Token Claims Change는 이름으로 보아 세션 종료·자격 변경·토큰 클레임 변경을 수신자에게 알리는 이벤트다(세부 클레임은 읽지 않았다).",
+      "§4 보안 고려사항이 있고 SSF §9와 함께 읽는다. 고지문은 SSF와 같은 OIDF 저작권 사용 허가다."
+    ],
+    "limitations": "초록과 목차, 고지문만 읽었고 이벤트 클레임 상세와 §4는 읽지 않았다. 실제 상류 서비스의 CAEP 지원은 확인하지 못했다. 사람의 접근 평가 중심 프로파일이라 에이전트·MCP 서버 호출에 대한 해석은 설계 단계의 가정이다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "OpenID Foundation 고지: 구현·파생을 위한 비독점·무상 저작권 사용 허가와 출처 표시. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K29.md",
+    "metadata_evidence": {
+      "url": "https://openid.net/specs/openid-caep-1_0.html",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "초록, 목차(§3.1~3.8, §4), Appendix B 고지문",
+      "sha256": "46337de47b7433b09008395896310cb0ed356e66abb4f99b33d2a31045a75931",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: caep.html)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "Version 1.0, 2025-08-29(Final Specification 승인 공지: 2025-09-02)",
+    "related_urls": [
+      "https://openid.net/wg/sharedsignals/"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-44",
+        "gap": "공급자 측 자격 회수"
+      },
+      {
+        "policy_id": "POL-45",
+        "gap": "공급자 측 자격 회수"
+      },
+      {
+        "policy_id": "POL-22",
+        "gap": "공급자 측 자격 회수"
+      },
+      {
+        "policy_id": "POL-20",
+        "gap": "에이전트 신원·위임"
+      }
+    ],
+    "license_url": "https://openid.net/specs/openid-caep-1_0.html"
+  },
+  {
+    "id": "LIB-K30",
+    "title": "RFC 8417: Security Event Token (SET)",
+    "kind": "standard",
+    "url": "https://www.rfc-editor.org/rfc/rfc8417",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "ietf_rfc",
+    "venue": "IETF RFC 8417 (Standards Track), 2018-07",
+    "year": 2018,
+    "authors": "P. Hunt (Ed.), M. Jones, W. Denniss, M. Ansari",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "발행자 관점에서 주체에 대한 사실 진술을 JWT 형식으로 담는 Security Event Token(SET) 자료구조를 정의한다. 핵심 클레임, 명시적 타이핑, 다른 JWT(ID 토큰·액세스 토큰)와의 혼동 방지, 보안 고려사항(기밀성·무결성, 전달, 순서, 시점 문제)을 다룬다.",
+    "engineering_use": [
+      "POL-44·POL-38: 철회·승인 변경 같은 상태 전이를 서명된 사실 진술(SET)로 원장에 남기는 형식 후보다. 'SET은 명령이 아니라 사실 진술'이라는 성격이 철회 사실의 감사 기록과 맞는다. 도입 여부는 DEV-45 원장 설계에서 결정한다."
+    ],
+    "findings": [
+      "초록: SET은 발행자 관점에서 주체에 대한 사실 진술을 기술한다. §2.2 핵심 SET 클레임, §2.3 명시적 타이핑, §2.4 구성 절차가 있다.",
+      "§4는 SET을 ID 토큰·액세스 토큰·다른 JWT와 혼동하지 않도록 구분하는 방법을 다루고, §5는 기밀성·무결성, 전달, 순서(Sequencing), 시점(Timing Issues), 혼동 방지를 다룬다.",
+      "OpenID SSF 1.0이 이 RFC를 프로파일한다(LIB-K28)."
+    ],
+    "limitations": "초록, 목차, 구조만 확인하고 본문 절의 세부는 읽지 않았다. 우리 원장 형식과 대조하지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "IETF Trust 저작권 및 BCP 78·IETF Trust Legal Provisions 적용. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K30.md",
+    "metadata_evidence": {
+      "url": "https://www.rfc-editor.org/rfc/rfc8417",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "머리·초록, 목차 구조, 저작권 고지",
+      "sha256": "9ce7bf95b852f223a1c8c677d4c817b536f382a65ecc66bbe2b4f896a320d5c5",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: rfc8417.txt)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "2018년 7월 발행본. 2026-10-17 시점의 갱신·폐기 표시는 확인하지 않았다",
+    "related_urls": [
+      "https://www.rfc-editor.org/rfc/rfc8417.txt"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-44",
+        "gap": "공급자 측 자격 회수"
+      },
+      {
+        "policy_id": "POL-38",
+        "gap": "경보 검증·자동 대응"
+      }
+    ],
+    "license_url": "https://trustee.ietf.org/license-info"
+  },
+  {
+    "id": "LIB-K31",
+    "title": "NIST SP 800-61 Rev. 3: Incident Response Recommendations and Considerations for Cybersecurity Risk Management: A CSF 2.0 Community Profile",
+    "kind": "standard",
+    "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "official_publication",
+    "venue": "NIST Special Publication 800-61 Rev. 3, 2025-04, 48쪽",
+    "year": 2025,
+    "authors": "Alexander Nelson, Sanjay Rekhi, Murugiah Souppaya, Karen Scarfone",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "사이버보안 인시던트 대응 권고를 NIST CSF 2.0의 위험 관리 활동 전반에 넣는 방법을 정리한 커뮤니티 프로파일이다. 목차상 표 2(준비·교훈)와 표 3(인시던트 대응)에 CSF 하위 범주별 권고(R)와 고려사항(C)이 있다.",
+    "engineering_use": [
+      "POL-42: 경보 정상 작동 검증 시나리오를 DE.AE-02·06·08에 대응시킨다. 신규 도구·미승인 연결·호출 폭증 경보가 설정 변경 뒤에도 발화하는지, 오탐을 제외하고 인시던트로 선언하는 기준이 있는지 확인한다.",
+      "POL-43: 탐지 뒤 '중지·격리·영향 범위 조사'를 RS.MI-01·02의 격리·근절 권고(계정 비활성화 포함)와 대응시키고, 자동 대응과 사람 승인을 구분한다.",
+      "POL-50: 복원 전 백업 무결성 검증(RC.RP-03)과 복원 후 점검(RC.RP-05)에 '폐기된 연결·자격이 되살아나지 않았는가'를 우리 점검 항목으로 추가한다. 이 문서에 그 항목은 없다."
+    ],
+    "findings": [
+      "하위 범주 DE.AE-02(이상 이벤트 분석)는 SIEM·SOAR 등으로 로그를 지속 모니터링하라고, DE.AE-06은 경보를 대응 도구·인력에 제공하고 특정 경보에 대해 티켓을 자동 생성·할당하는 것을 고려하라고, DE.AE-08은 알려진 오탐을 감안해 기준 충족 시 인시던트를 선언하라고 한다.",
+      "RS.MI-01(인시던트 격리)은 확산 방지를, RS.MI-02(근절)는 지속 수단·진입점 제거의 예로 침해된 사용자 계정 비활성화·악용된 취약점 완화를 든다.",
+      "RC.RP-03은 복원에 쓰는 백업의 무결성을 사용 전에 검증하라고, RC.RP-05는 복원된 자산을 침해 지표로 점검하고 복원 조치의 정확성·적절성을 확인한 뒤 온라인으로 올리라고 한다."
+    ],
+    "limitations": "PDF 텍스트에서 위 하위 범주만 읽었고 나머지 표와 본문은 읽지 않았다(표 번호는 확인하지 않았다). 일반 조직용 권고이며 MCP·LLM 에이전트를 다루지 않는다. 폐기 자격 재활성화 같은 항목은 문서에 없다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "NIST 간행물: 미국에서 저작권 보호 대상이 아니며 출처 표기를 요청한다고 PDF에 적혀 있다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K31.md",
+    "metadata_evidence": {
+      "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "CSRC 페이지(초록·대체 관계), r2 폐기 페이지, PDF의 CSF 하위 범주 표에서 DE.AE-02·06·08, RS.MI-01·02, RC.RP-03·05",
+      "sha256": "5fbca0a2dca9a4238a93fe55234d00199247980c317be4d107ee5ff8d7bfef4f",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: sp80061r3.html)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "2025년 4월판. Rev. 2(2012-08)는 2025-04-03 폐기되어 Rev. 3으로 대체됨(CSRC 페이지)",
+    "related_urls": [
+      "https://doi.org/10.6028/NIST.SP.800-61r3",
+      "https://csrc.nist.gov/pubs/sp/800/61/r2/final"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-42",
+        "gap": "경보 검증·자동 대응"
+      },
+      {
+        "policy_id": "POL-43",
+        "gap": "경보 검증·자동 대응"
+      },
+      {
+        "policy_id": "POL-50",
+        "gap": "복원 후 재활성화"
+      }
+    ]
+  },
+  {
+    "id": "LIB-K32",
+    "title": "NIST SP 800-34 Rev. 1: Contingency Planning Guide for Federal Information Systems",
+    "kind": "standard",
+    "url": "https://csrc.nist.gov/pubs/sp/800/34/r1/upd1/final",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "official_publication",
+    "venue": "NIST Special Publication 800-34 Rev. 1, 2010-05 (2010-11-11 갱신), 149쪽",
+    "year": 2010,
+    "authors": "Marianne Swanson, Pauline Bowen, Amy Wohl Phillips, Dean Gallup, David Lynes",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "정보시스템 비상계획(ISCP)의 목적·절차·형식을 설명하는 지침이다. 계획 수립 과정(§3: 정책·영향 분석·예방 통제·전략·시험·유지보수), 백업·복구 전략(§3.4.1), 활성화·복구·복원(reconstitution) 단계(§4)와 부록의 계획 서식을 다룬다.",
+    "engineering_use": [
+      "POL-50: 복원 후 검증 단계(§4.4)를 우리 복원 시험 절차의 뼈대로 쓰되, '폐기된 MCP 서버·도구·자격이 복원으로 되살아나지 않았는지'는 이 문서에 없으므로 별도 검증 항목으로 추가해야 한다. 이 공백은 이 문서로 메워지지 않는다.",
+      "POL-46: 복구·복원 시 잔존 프로세스 정리를 복원 단계의 cleanup 항목에 대응시킨다."
+    ],
+    "findings": [
+      "§4.4 복원 단계는 복구가 끝나고 정상 운영을 재개하기 전에 시스템 기능을 시험·검증하는 활동이며, 복구 검증(동시 처리 포함)과 계획 비활성화의 두 활동으로 구성된다. 부록 A 서식에 데이터 검증 시험, 기능 검증 시험, 복구 선언, 정리(cleanup)가 있다.",
+      "§3.4.1은 백업 방법과 복구 전략을, §3.5는 시험·교육·훈련을 다룬다.",
+      "본문 전체 텍스트에서 '자격증명(credential)'·'폐기(revoked)' 용어는 나타나지 않았다. 암호(password)는 시험 절차 예시와 무선 설명에서만 나온다."
+    ],
+    "limitations": "2010년 판이며 목차와 §4.4 본문, 부록 목차만 읽었다. 연방 정보시스템용이고 클라우드·컨테이너·MCP 환경을 다루지 않는다. 용어 부재 확인은 PDF 추출 텍스트 검색 결과다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "NIST 간행물: 저작권 보호 대상이 아니며 출처 표기를 요청한다고 PDF에 적혀 있다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K32.md",
+    "metadata_evidence": {
+      "url": "https://csrc.nist.gov/pubs/sp/800/34/r1/upd1/final",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "CSRC 페이지, PDF 표지·고지·목차, §4.4 본문, 부록 A 목차, 용어 검색",
+      "sha256": "756efbe5a61b93f1a60cf936b0d961a10d300a0b35984bc1c7b07dd7f042aaba",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: sp80034.html)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "2010년 5월판(갱신 2010-11-11). CSRC 페이지에 2023-03-17자 계획 공지(문의 안내)만 있고 폐기 표시는 없었다",
+    "related_urls": [
+      "https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-34r1.pdf"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-50",
+        "gap": "복원 후 재활성화"
+      },
+      {
+        "policy_id": "POL-46",
+        "gap": "복원 후 재활성화"
+      }
+    ]
+  },
+  {
+    "id": "LIB-K33",
+    "title": "ISO/IEC TS 27560:2023 — Privacy technologies — Consent record information structure",
+    "kind": "standard",
+    "url": "https://www.iso.org/standard/80392.html",
+    "verified_on": "2026-10-17",
+    "verification": "page_metadata_checked",
+    "publication_status": "iso_standard",
+    "venue": "ISO/IEC TS 27560:2023 (Technical Specification, Edition 1, 2023-08, 52쪽), ISO/IEC JTC 1/SC 27",
+    "year": 2023,
+    "authors": "ISO/IEC JTC 1/SC 27",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "PII 주체가 PII 처리에 동의한 사실을 기록하는 상호운용 가능하고 개방적이며 확장 가능한 정보 구조를 규정한다. 동의 영수증과 동의 기록의 사용에 대한 요구·권고를 제공하고, 기록된 동의의 수명 주기와 관련된다고 ISO 페이지가 설명한다.",
+    "engineering_use": [
+      "POL-08: '관리자 승인과 데이터 접근·기능 사용의 사용자 동의를 각각 확인'할 때 동의 기록에 담을 항목(누가·언제·무엇에·어떤 범위·유효기간·철회 여부)을 정하는 참고 구조다. 구체 필드는 본문을 구매·열람한 뒤 확정한다.",
+      "POL-26: 외부 전송의 '필요한 동의와 일치' 확인을 위해 동의 기록과 전송 요청을 대조하는 데이터 구조의 후보로 둔다(설계 제안)."
+    ],
+    "findings": [
+      "ISO 랜딩 페이지에서 상태(Published), 발행 2023-08, 판 1, 52쪽, TC JTC 1/SC 27, ICS 35.030, 단계 90.92(To be revised)를 확인했다.",
+      "초록(ISO 페이지)은 이 문서가 PII 주체의 동의를 PII 처리에 대해 기록하는 정보 구조를 규정하고, 동의 영수증·동의 기록의 사용에 대한 요구와 권고를 준다고 설명한다.",
+      "유료 표준이며 본문 조항은 열지 못했다(미리보기 링크만 있다)."
+    ],
+    "limitations": "ISO 랜딩 페이지의 메타데이터와 초록만 확인했다. 본문 조항(필드 정의·요구사항)은 읽지 못했으므로 설계에 인용하지 않는다. 개정 예정 단계라 판본이 바뀔 수 있다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "ISO 저작권 문서: 유료 표준이며 본문을 복제하지 않는다. 서지와 자체 요약만 보관한다.",
+    "page": "papers/LIB-K33.md",
+    "metadata_evidence": {
+      "url": "https://www.iso.org/standard/80392.html",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "ISO 랜딩 페이지의 상태·판·쪽 수·초록·단계 표",
+      "sha256": "432fd1c8b36b795717e25dd1981141c7309272c3d5d03ff97a3e4462f2f4fa11",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: iso27560.html)"
+    },
+    "summary_review": "page_metadata_only",
+    "edition": "Edition 1, 2023-08. ISO 단계 90.92(개정 예정). 후보 목록의 'ISO/IEC 27560:2023'은 정확히는 기술 사양서(TS)다",
+    "related_urls": [],
+    "policy50_links": [
+      {
+        "policy_id": "POL-08",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-26",
+        "gap": "법령·표준 근거 확인"
+      }
+    ]
+  },
+  {
+    "id": "LIB-K34",
+    "title": "ISO/IEC 42001:2023 — Information technology — Artificial intelligence — Management system",
+    "kind": "standard",
+    "url": "https://www.iso.org/standard/42001",
+    "verified_on": "2026-10-17",
+    "verification": "page_metadata_checked",
+    "publication_status": "iso_standard",
+    "venue": "ISO/IEC 42001:2023 (Edition 1, 2023-12, 51쪽), ISO/IEC JTC 1/SC 42",
+    "year": 2023,
+    "authors": "ISO/IEC JTC 1/SC 42",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "AI 관리 시스템(AIMS)의 요구사항을 규정하는 국제 표준이다. 엑셀 정책50의 근거 열(ISO 42001:2023)이 인용하는 문서이며 이 항목은 판본·서지를 확인하는 용도다.",
+    "engineering_use": [
+      "POL-02·03·05·07·32·37·38·39: 엑셀이 인용한 조항 번호는 '미검증 인용'으로 취급하고, 보고서에서 근거로 쓸 때는 정식 판본의 본문을 확인한 뒤 인용한다. A.(통제 목표·통제)와 B.(구현 지침)의 같은 번호 체계를 구분해 표기하도록 엑셀 근거 열의 정정 필요 여부를 점검한다."
+    ],
+    "findings": [
+      "ISO 랜딩 페이지에서 상태(Published), 발행 2023-12, 판 1, 51쪽, TC JTC 1/SC 42, ICS 35.020·03.100.70, 단계 60.60을 확인했다.",
+      "엑셀 정책50의 근거 열은 POL-02(A.6.2.2), POL-03·07(B.10.3 Suppliers), POL-05(B.6.2.4), POL-32(A.6.2.4), POL-37(B.6.2.6), POL-38(B.6.2.8), POL-39(A.6.2.6)를 인용한다. 같은 조항 번호에 A.와 B. 접두가 섞여 있다.",
+      "이 조항 번호와 제목은 유료 본문 없이는 검증할 수 없었다."
+    ],
+    "limitations": "ISO 랜딩 페이지의 메타데이터만 확인했다. 조항 번호·제목·요구사항은 열지 못했다. 엑셀의 인용 번호가 맞는지 여부는 미확인이다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "ISO 저작권 문서: 유료 표준이며 본문을 복제하지 않는다. 서지와 자체 요약만 보관한다.",
+    "page": "papers/LIB-K34.md",
+    "metadata_evidence": {
+      "url": "https://www.iso.org/standard/42001",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "ISO 랜딩 페이지의 상태·판·쪽 수·단계 표, 엑셀 정책50 근거 열",
+      "sha256": "fbea37d17d6b0a1ba810e46fafe30b8bb82a3979ffb662937dc85dff2b3d3b6b",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: iso42001.html)"
+    },
+    "summary_review": "page_metadata_only",
+    "edition": "Edition 1, 2023-12. ISO 단계 60.60(표준 발행). 열람 시점 랜딩 페이지에 개정·정오표 표시는 보이지 않았다",
+    "related_urls": [
+      "https://www.iso.org/standard/81230.html"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-02",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-03",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-05",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-07",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-32",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-37",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-38",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-39",
+        "gap": "법령·표준 근거 확인"
+      }
+    ]
+  },
+  {
+    "id": "LIB-K35",
+    "title": "정보보호 및 개인정보보호 관리체계(ISMS-P) 인증기준 안내서 (2023.11.)",
+    "kind": "guide",
+    "url": "https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS289&mCode=D040070030&nttId=10439",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "official_publication",
+    "venue": "개인정보보호위원회·과학기술정보통신부 안내서 (2023년 11월, 264쪽), 개인정보보호위원회고시 제2023-8호 기준",
+    "year": 2023,
+    "authors": "개인정보보호위원회, 과학기술정보통신부",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "ISMS-P 인증기준을 항목별로 인증기준·주요 확인사항·관련 법규·세부 설명·증거자료 예시로 풀이한 안내서다. 엑셀 정책50의 근거 열이 인용하는 '2.x.x' 항목과 쪽 번호의 출처다.",
+    "engineering_use": [
+      "POL-03·05·07·09·10·11·12·14·16·19·20·23·25·28·30·37·38·40·43·44·45: 엑셀 근거 열의 ISMS-P 인용을 검증했으므로(항목명·쪽 번호 일치), 인증 심사 증빙을 정책별 시험 증거와 연결하는 표를 만들 때 이 항목 번호를 그대로 쓸 수 있다. 판본은 2023.11이며 재검토 기한은 2026-12-31이다.",
+      "POL-50·POL-46: 2.9.3(백업·복구 테스트)·2.12.2(재해 복구 시험)를 복원 시험의 상위 요구로 두고, 폐기 연결 재활성화 거부는 우리 추가 검증 항목으로 둔다."
+    ],
+    "findings": [
+      "엑셀이 인용한 ISMS-P 항목 14개(2.3.2, 2.5.1, 2.5.3, 2.6.1, 2.6.3, 2.7.1, 2.8.1, 2.8.2, 2.8.4, 2.9.1, 2.9.2, 2.9.4, 2.10.8, 2.11.1)의 항목명이 PDF 본문과 일치하고, 엑셀이 적은 쪽 번호(2.3.2 pp.69~70, 2.5.1 p.87, 2.6.3 pp.105-106, 2.8.2 p.124, 2.9.1 p.134, 2.9.4 pp.140-142, 2.10.8 pp.166-167)의 시작 쪽이 PDF 인쇄 쪽 번호와 일치한다(PDF 파일 쪽 번호는 인쇄 쪽 + 5, 끝 쪽은 확인하지 않았다).",
+      "2.5.1 사용자 계정 관리는 계정·권한의 등록·변경·삭제 절차, 최소 권한, 인사이동 시 지체 없는 권한 변경·말소, 관련 기록 유지를 요구하고 관련 법규로 개인정보 보호법 제29조를 든다. 2.9.4 로그 및 접속기록 관리는 로그 유형·보존기간·위변조 방지·접근 최소화와 개인정보처리시스템 접속기록의 법적 항목 보관을 요구한다. 2.11.1은 침해사고·유출 대응체계와 절차를 요구한다.",
+      "엑셀이 인용하지 않았지만 POL-50·46과 관련된 2.9.3 백업 및 복구관리(복구 테스트 정기 실시)와 2.12.2 재해 복구 시험 및 개선이 있다. 이 안내서에도 '복원 후 폐기된 연결·자격이 되살아나지 않는지'를 직접 요구하는 항목은 없다. 저작권 표시는 무단전재 금지와 가공·인용 시 출처 표시를 요구한다."
+    ],
+    "limitations": "PDF 쪽 번호 대응과 항목명 일치는 확인했으나 엑셀이 인용한 14개 항목의 세부 설명 전체를 정독하지는 않았다(2.5.1, 2.9.3, 2.9.4, 2.11.1, 2.12.2, 2.7.2 본문만 읽음). KISA 자료실(isms.kisa.or.kr)은 이 환경에서 이름 해석에 실패해 열지 못했고 개인정보위 두 게시물과 PDF로 확인했다. 2026-10-17 시점에 더 새로운 개정판이 있는지는 확인하지 못했다. 인증 적합성 판단이 아니다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "안내서 저작권 표시: 무단전재를 금하며 가공·인용 시 출처(개인정보보호위원회·과학기술정보통신부, 인증기준 안내서 2023.11.)를 밝혀야 한다. 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-K35.md",
+    "metadata_evidence": {
+      "url": "https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS289&mCode=D040070030&nttId=10439",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "안내 사항·재검토 기한·저작권 표시, 엑셀 인용 항목 14개의 위치(항목명·쪽 번호) 대조, 2.5.1·2.7.2·2.9.3·2.9.4·2.11.1·2.12.2 본문, 개인정보위·개인정보 포털 게시 페이지",
+      "sha256": "6df06f8ddf007094952ec714341bc466266a4fc5459470b1744495725049e599",
+      "sha256_of": "2026-10-17에 내려받은 1차 출처 파일 바이트의 SHA-256 (키: ismsp_guide.pdf)"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "2023.11 개정(파일 생성 2023-11-23). 개인정보 포털 등록 2024-03-15, 개인정보위 자료실 작성 2024-08-19(자율보호정책과). 안내서 재검토 기한은 발간 3년째 12.31(2026-12-31)",
+    "related_urls": [
+      "https://www.privacy.go.kr/front/bbs/bbsView.do?bbsNo=BBSMSTR_000000000049&bbscttNo=20677"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-38",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-43",
+        "gap": "경보 검증·자동 대응"
+      },
+      {
+        "policy_id": "POL-44",
+        "gap": "공급자 측 자격 회수"
+      },
+      {
+        "policy_id": "POL-45",
+        "gap": "공급자 측 자격 회수"
+      },
+      {
+        "policy_id": "POL-50",
+        "gap": "복원 후 재활성화"
+      },
+      {
+        "policy_id": "POL-46",
+        "gap": "복원 후 재활성화"
+      },
+      {
+        "policy_id": "POL-16",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-10",
+        "gap": "법령·표준 근거 확인"
+      }
+    ]
+  },
+  {
+    "id": "LIB-K36",
+    "title": "개인정보 보호법 (법률 제21445호, 2026. 3. 10. 일부개정, 2026. 9. 11. 시행)",
+    "kind": "law",
+    "url": "https://www.law.go.kr/LSW//lsInfoP.do?lsiSeq=283839&chrClsCd=010202&urlMode=lsInfoP&efYd=20260911&ancYnChk=0",
+    "verified_on": "2026-10-17",
+    "verification": "full_text_selected_sections_read",
+    "publication_status": "statute",
+    "venue": "국가법령정보센터 현행 법령, 시행 2026-09-11, 법률 제21445호(2026-03-10 일부개정)",
+    "year": 2026,
+    "authors": "대한민국 국회",
+    "topic": "정책50 구현 공백 보강 (2026-10-17)",
+    "originals": [],
+    "extracts": [],
+    "summary": "개인정보 처리의 원칙·수집·이용·제공·파기·위탁·안전조치·유출 통지 등을 규정하는 본법이다. 엑셀 정책50이 인용하는 제3·15·16·17·21·26·29조의 조문을 현행본에서 확인했다.",
+    "engineering_use": [
+      "POL-02·POL-31·POL-26: 제15조(수집·이용 사유), 제16조(최소 수집), 제17조(제3자 제공)를 도입 범위 검토(POL-02), 도구 입력 최소화(POL-31), 외부 전송 수신처·목적·동의 일치(POL-26)의 법적 근거 조문으로 연결한다. 법적 적합성 판단은 아니다.",
+      "POL-48·POL-49·POL-09: 제21조의 '지체 없이 파기·복구되지 않게 조치·법령상 보존 시 분리 저장'을 업무 사본·캐시 정리, 외부 제공자 보유 문서 정리, 시험 데이터 삭제 시험의 요구 사항 문구로 쓴다. 제공자 측 삭제 확인(POL-49)은 계약·보존 기준이 별도로 필요하다.",
+      "POL-38·POL-43·POL-07: 제29조(접속기록 보관 등), 제34조(유출등 통지), 제26조(위탁 문서·감독)를 이력 관리, 위험 대응, 외부 제공자 조건 확인의 법적 근거 조문으로 연결한다."
+    ],
+    "findings": [
+      "엑셀이 인용한 조문의 번호와 제목이 현행본에 있다: 제3조 개인정보 보호 원칙(제2항 목적 외 활용 금지), 제15조 수집·이용(제1항 7개 사유), 제16조 수집 제한(최소 수집, 입증책임), 제17조 제3자 제공, 제21조 파기(제1항 지체 없는 파기·보존 시 예외, 제2항 복구·재생되지 않게 조치, 제3항 보존 시 분리 저장), 제26조 업무위탁(문서화·수탁자 감독), 제29조 안전조치의무. 조문 내용은 POL-02(제15조), POL-26(제17조), POL-31(제16조), POL-07(제26조), POL-38(제29조), POL-48·49(제21조)의 서술과 맞아 보이고, POL-09(제21조제1항)와 POL-30(제3조제2항)은 연결이 느슨해 보인다(법무 검토 필요).",
+      "제29조는 '내부 관리계획 수립, 접속기록 보관 등 대통령령으로 정하는 바에 따라' 안전성 확보 조치를 하라고 하며 2026-03-10 개정 표시가 있다. 제34조(유출등의 통지·신고)도 같은 날 개정 표시가 있고 유출등 통지 항목을 열거한다. 제32조의2는 개인정보 보호 인증(유효기간 3년, 연 1회 이상 사후관리)을 규정한다.",
+      "이 페이지에서 시행령·고시는 확인하지 않았다. 국외 이전(제28조의8~11)은 읽지 않았다."
+    ],
+    "limitations": "법률 본문의 위 조문만 읽었고 시행령·시행규칙·고시(안전성 확보조치 기준 등)와 국외 이전 조문은 읽지 않았다. 법적 해석·적합성 판단을 하지 않았다. 페이지 텍스트는 브라우저 iframe의 innerText로 읽었고 해시는 그 텍스트(UTF-8)의 SHA-256이다. 법률은 개정되므로 현행 여부는 국가법령정보센터에서 다시 확인해야 한다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "public bibliographic facts and our analysis only; no fulltext copy",
+    "license_notice": "국가법령정보센터 게시 법령이다. 본문을 복제하지 않고 조문 번호·제목·자체 요약만 보관한다(법령 저작권 성격은 법무 확인 대상).",
+    "page": "papers/LIB-K36.md",
+    "metadata_evidence": {
+      "url": "https://www.law.go.kr/LSW//lsInfoP.do?lsiSeq=283839&chrClsCd=010202&urlMode=lsInfoP&efYd=20260911&ancYnChk=0",
+      "path": "analysis/evidence/references/policy50-gap-fill-2026-10-17.json",
+      "verified_on": "2026-10-17",
+      "reading_scope": "법령 헤더(시행일·법률 번호), 제3·15·16·17·21·26·29·32조의2·34조 본문, 목차",
+      "sha256": "e49395219213db802d8180c406dcfb3dd1a5e3c285e8224a7d7f9de055b3250a",
+      "sha256_of": "브라우저로 읽은 법령 본문 텍스트(UTF-8)의 SHA-256"
+    },
+    "summary_review": "full_text_selected_sections_read",
+    "edition": "[시행 2026. 9. 11.] [법률 제21445호, 2026. 3. 10., 일부개정]. 2026-10-17 국가법령정보센터 법령 페이지의 현행 표시. 엑셀 근거 열 제목('개인정보 보호법 2026-09-11 시행')과 일치",
+    "related_urls": [
+      "https://www.law.go.kr/법령/개인정보보호법"
+    ],
+    "policy50_links": [
+      {
+        "policy_id": "POL-02",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-31",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-26",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-48",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-49",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-09",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-38",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-43",
+        "gap": "경보 검증·자동 대응"
+      },
+      {
+        "policy_id": "POL-07",
+        "gap": "법령·표준 근거 확인"
+      },
+      {
+        "policy_id": "POL-30",
+        "gap": "법령·표준 근거 확인"
+      }
+    ]
   }
 ]
