@@ -3194,7 +3194,7 @@
       "condition": "지원하는 전체 조회 선택자 또는 단일 요청 건수 상한 초과",
       "outcome": "차단",
       "enforcement": "실행 전 조회 범위 거부",
-      "priority": 73,
+      "priority": 82,
       "automation": "부분 자동화",
       "version": "1.0.0",
       "status": "운영",
