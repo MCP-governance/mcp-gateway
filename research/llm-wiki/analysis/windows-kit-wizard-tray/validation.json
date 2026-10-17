@@ -1,0 +1,287 @@
+{
+  "base_commit": "0eb013b37864e27bcb041145c9b9cea928f03d8d",
+  "environment": {
+    "os": "Windows",
+    "python": "3.10.5 (tags/v3.10.5:f377153, Jun  6 2022, 16:14:13) [MSC v.1929 64 bit (AMD64)]",
+    "scope": "offline static/unit only; GUI/install/network/remote not run"
+  },
+  "checks": [
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "-m",
+        "compileall",
+        "-q",
+        "endpoint-agent",
+        "full_stack_lab/field/pc/mcpgw_pc.py",
+        "full_stack_lab/gateway/prepare-windows-python.py",
+        "full_stack_lab/gateway/app/agent_service.py",
+        "full_stack_lab/tests/field_kit_check.py"
+      ],
+      "executed_at": "2026-10-17T15:11:55.383852+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "endpoint_collector_check.py",
+        "-v"
+      ],
+      "executed_at": "2026-10-17T15:11:59.614568+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_device_credential_redirects_are_refused (endpoint_collector_check.Collector) ... ok\ntest_failed_inventory_does_not_suppress_process_channel (endpoint_collector_check.Collector) ... ok\ntest_invalid_config_is_not_a_complete_empty_inventory (endpoint_collector_check.Collector) ... ok\ntest_listener_permission_and_policy_disabled_are_distinct (endpoint_collector_check.Collector) ... ok\ntest_other_uid_process_is_excluded_and_matching_uid_command_is_hashed (endpoint_collector_check.Collector) ... ok\ntest_overflow_report_is_partial_and_cannot_reconcile_all_rows (endpoint_collector_check.Collector) ... ok\ntest_process_only_reports_without_network_policy_or_probe (endpoint_collector_check.Collector) ... ok\ntest_unreadable_process_source_preserves_partial_not_successful_empty (endpoint_collector_check.Collector) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.006s\n\nOK\n"
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "windows_os_observer_check.py",
+        "-v"
+      ],
+      "executed_at": "2026-10-17T15:12:00.111422+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_collection_uses_read_only_event_queries_and_separate_status (windows_os_observer_check.WindowsOSEventTests) ... ok\ntest_exact_managed_sid_yields_safe_event_contract (windows_os_observer_check.WindowsOSEventTests) ... ok\ntest_failed_event_batch_does_not_advance_channel_cursor (windows_os_observer_check.WindowsOSEventTests) ... ok\ntest_foreign_sid_and_group_like_other_sid_are_excluded (windows_os_observer_check.WindowsOSEventTests) ... ok\ntest_powershell_is_syntactically_valid_without_executing_it (windows_os_observer_check.WindowsOSEventTests) ... ok\ntest_wfp_without_explicit_subject_sid_is_not_attributed_by_pid (windows_os_observer_check.WindowsOSEventTests) ... ok\ntest_wrong_provider_channel_or_malformed_xml_is_rejected (windows_os_observer_check.WindowsOSEventTests) ... ok\n\n----------------------------------------------------------------------\nRan 7 tests in 0.254s\n\nOK\n"
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "endpoint-agent/managed-windows.py",
+        "self-check"
+      ],
+      "executed_at": "2026-10-17T15:12:00.244972+00:00",
+      "exit_code": 0,
+      "stdout": "managed-windows self-check OK\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "executed_at": "2026-10-17T15:12:00.307759+00:00",
+      "exit_code": 0,
+      "stdout": "PASS 무인증 1개가 문서와 일치, 인증 필요 70개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "executed_at": "2026-10-17T15:12:00.805026+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "endpoint-agent/tests-windows",
+        "-p",
+        "test_windows_kit.py",
+        "-v"
+      ],
+      "executed_at": "2026-10-17T15:19:10.194033+00:00",
+      "exit_code": 0,
+      "stdout": "해당 계정의 방화벽 규칙·관리형 설정·예약 작업을 제거했습니다\n지움: C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-codex-c\\.windows-kit-test-ii1gkkxs 의 토큰·CA·설정. OS 인증서 저장소의 CA와 hosts 항목은 README 절차대로 따로 지운다\n",
+      "stderr": "test_approved_payload_rejects_script_zip_manifest_and_destination_substitution (test_windows_kit.WindowsKitTests) ... ok\ntest_build_cache_includes_original_license_and_both_executables (test_windows_kit.WindowsKitTests) ... ok\ntest_download_includes_runtime_and_missing_runtime_does_not_consume_enrollment (test_windows_kit.WindowsKitTests) ... ok\ntest_managed_request_is_snapshotted_as_data_and_gateway_is_from_external_approval (test_windows_kit.WindowsKitTests) ... ok\ntest_managed_rollback_waits_for_service_and_preserves_new_user_settings (test_windows_kit.WindowsKitTests) ... ok\ntest_pin_rejects_changed_download_without_publishing_archive (test_windows_kit.WindowsKitTests) ... ok\ntest_powershell_scripts_parse_and_input_boundaries_fail_without_host_changes (test_windows_kit.WindowsKitTests) ... ok\ntest_tray_acl_has_only_target_admin_system_and_data_read_is_bounded (test_windows_kit.WindowsKitTests) ... ok\ntest_tray_snapshot_bounds_deduplicates_and_never_copies_private_event_fields (test_windows_kit.WindowsKitTests) ... ok\ntest_tray_snapshot_retries_windows_sharing_violation (test_windows_kit.WindowsKitTests) ... ok\ntest_uninstall_waits_for_report_log_and_late_report_does_not_recreate_settings (test_windows_kit.WindowsKitTests) ... ok\n\n----------------------------------------------------------------------\nRan 11 tests in 3.906s\n\nOK\n"
+    }
+  ],
+  "earlier_attempts": [
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "-m",
+        "pyflakes",
+        "endpoint-agent/agent.py",
+        "endpoint-agent/install.py",
+        "endpoint-agent/managed-windows.py",
+        "endpoint-agent/os-observer-windows.py",
+        "endpoint-agent/windows_status.py",
+        "endpoint-agent/runtime-check.py",
+        "full_stack_lab/field/pc/mcpgw_pc.py",
+        "full_stack_lab/gateway/prepare-windows-python.py"
+      ],
+      "exit_code": 1,
+      "result": "No module named pyflakes; not checked"
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "field_kit_check.py",
+        "-v"
+      ],
+      "exit_code": 1,
+      "result": "ImportError: no module named tomllib on host Python3.10; suite not run"
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "managed_enforcement_check.py",
+        "-v"
+      ],
+      "exit_code": 1,
+      "result": "10 test setup errors: no module named grp on Windows; no passing assertions"
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "endpoint-agent/agent.py",
+        "--self-check"
+      ],
+      "exit_code": 1,
+      "result": "ModuleNotFoundError: tomllib on host Python3.10"
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/gateway/prepare-windows-python.py",
+        "full_stack_lab/gateway/windows-python.json",
+        ".task-local-windows-kit/runtime"
+      ],
+      "exit_code": 1,
+      "result": "URLError caused by WinError10013 external socket restriction; actual ZIP not acquired"
+    },
+    {
+      "command": [
+        "git",
+        "ls-remote",
+        "--symref",
+        "origin",
+        "HEAD"
+      ],
+      "exit_code": 128,
+      "result": "Could not connect to github.com:443; remote HEAD not refreshed"
+    }
+  ],
+  "unexecuted": [
+    "actual embedded runtime-check.py",
+    "Docker image build and field deploy",
+    "pj3 GUI/UAC/ACL/scheduled tasks/DPI",
+    "real MCP/Windows block effect and screenshots",
+    "full field kit regression under Python3.11+",
+    "pyflakes"
+  ],
+  "wiki_check": {
+    "command": [
+      "python",
+      "-X",
+      "utf8",
+      "research/llm-wiki/tools/check_wiki.py"
+    ],
+    "executed_at": "2026-10-17T15:17:38.020501+00:00",
+    "exit_code": 1,
+    "result": {
+      "ok": false,
+      "counts": {
+        "endpoint-permission-references": 12,
+        "experiments": 13,
+        "imports": 22,
+        "local-tool-risks": 13,
+        "papers": 264,
+        "solutions": 9,
+        "threats": 24,
+        "sources_evidence_records": 3,
+        "solutions_evidence_records": 21,
+        "reviewed_local_tools": 92,
+        "markdown_documents": 484
+      },
+      "warnings": [],
+      "errors": [
+        "Missing local file: local-sources/compliance/LIB-L05/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-L06/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-L09/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-L10/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-L11/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-L12/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M04/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M08/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M17/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M20/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M21/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M22/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M28/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M31/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M32/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M34/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M36/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M37/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M38/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M39/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M40/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M44/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M45/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M48/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M49/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M13/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M14/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M15/provenance.json",
+        "Missing local file: local-sources/compliance/LIB-M43/provenance.json",
+        "Code changed after mapping: full_stack_lab/gateway/app/agent_service.py; review and run map_threats.py",
+        "Code changed after mapping: endpoint-agent/managed-windows.py; review and run map_threats.py",
+        "Code changed after mapping: endpoint-agent/agent.py; review and run map_threats.py"
+      ]
+    },
+    "stderr": ""
+  },
+  "scope_checks": {
+    "current_md_unchanged": true,
+    "linux_installers_unchanged": true,
+    "head_unchanged": true
+  },
+  "security_reviewed_on": "2026-10-18"
+}

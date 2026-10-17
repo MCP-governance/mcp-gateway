@@ -250,7 +250,8 @@ class KitTest(unittest.TestCase):
         self.main("uninstall")
         self.assertEqual(codex.read_text(encoding="utf-8"), 'model = "gpt-5"\n')
         self.assertIn("revoke", fake.log)
-        self.assertFalse(any((self.tmp / "home").iterdir()))
+        self.assertEqual({path.name for path in (self.tmp / "home").iterdir()}, {"report.lock"})
+        self.assertEqual((self.tmp / "home" / "report.lock").stat().st_size, 0)
 
     def test_wrong_password_is_reported_and_nothing_is_registered(self):
         fake = FakeIdpGateway()
@@ -325,12 +326,13 @@ class KitTest(unittest.TestCase):
 
     def test_header_starts_a_background_report_at_most_every_six_hours(self):
         (self.tmp / "home").mkdir(parents=True)
+        (self.tmp / "home" / "config.json").write_text('{}', encoding="utf-8")
         spawned = []
         with mock.patch.object(self.kit.subprocess, "Popen", lambda command, **kw: spawned.append(command)):
             for _ in range(3):  # 하네스는 서버마다·연결마다 헬퍼를 부른다
                 self.kit.report_in_background({"harnesses": ["claude"]})
             self.assertEqual(len(spawned), 1)
-            self.assertEqual(spawned[0][-1], "report")
+            self.assertEqual(spawned[0][-2:], ["report", "--background"])
             stamp = self.tmp / "home" / "report.stamp"
             os.utime(stamp, (time.time() - self.kit.REPORT_EVERY - 1,) * 2)
             self.kit.report_in_background({"harnesses": ["claude"]})

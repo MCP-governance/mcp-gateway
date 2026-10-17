@@ -13,6 +13,9 @@ RUN mkdir /out && gcc -O2 -fPIC -shared -Wall -Wextra -Werror -Wno-unused-parame
       $(python3-config --includes) /src/textscan.c -o /out/mcpgw_textscan$(python3-config --extension-suffix) \
       -Wl,-Bstatic -lpcre2-32 -Wl,-Bdynamic
 FROM python:3.12-slim
+COPY windows-python.json prepare-windows-python.py /tmp/windows-python/
+RUN python /tmp/windows-python/prepare-windows-python.py /tmp/windows-python/windows-python.json /opt/windows-python \
+    && rm -r /tmp/windows-python
 COPY --from=secrets /usr/bin/gitleaks /usr/local/bin/gitleaks
 COPY --from=native-go /out/libmcpgw_gitleaks.so /usr/local/lib/
 COPY --from=native-c /out/ /usr/local/lib/python3.12/site-packages/

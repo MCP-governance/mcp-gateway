@@ -488,10 +488,15 @@ def install(args):
         raise ValueError(f"{args.user} 계정을 로그아웃한 뒤 다시 실행하세요. 실행 중인 비관리 세션을 남기지 않습니다")
     python = Path(sys.executable)
     if not protected([python, python.parent]):
-        raise ValueError("Python을 모든 사용자용(Program Files)으로 설치한 뒤 그 python.exe로 실행하세요")
+        raise ValueError("보호된 설치 경로의 실행 파일이 필요합니다. 설치 마법사에서 다시 시도하세요")
     lock_down(PROGRAMS)
-    for name in ("managed-windows.py", "agent.py", "os-observer-windows.py"):
-        write_file(PROGRAMS / name, (Path(__file__).parent / name).read_text(encoding="utf-8"))
+    for name in ("managed-windows.py", "agent.py", "os-observer-windows.py", "windows_status.py"):
+        source = Path(__file__).parent / name
+        if source.resolve() != (PROGRAMS / name).resolve():
+            write_file(PROGRAMS / name, source.read_text(encoding="utf-8"))
+    powershell(". $in.trust; New-EndpointProtectedDirectory $in.base; New-EndpointProtectedDirectory $in.tray $in.sid",
+               {"trust": str(PROGRAMS / "windows-trust.ps1"), "base": str(PROGRAM_DATA / "MCPGatewayManagedTray"),
+                "tray": str(PROGRAM_DATA / "MCPGatewayManagedTray" / person["sid"]), "sid": person["sid"]})
     harness_folder, harnesses = place_harnesses(person["profile"])
     folder = STATE / args.user.lower()
     lock_down(folder, readers=False)
@@ -526,6 +531,7 @@ def install(args):
     set_user_environment(config, {**(policy.get("proxy_environment") or {}), "PATH_APPEND": str(harness_folder)})
     powershell(APPLY_RULES, {"rules": firewall_rules(args.user, person["sid"], policy["gateway_ips"], ports(policy))})
     write_file(Path(config["firewall_baseline"]), json.dumps({"rules": rule_state(config)["rules"]}))
+    pythonw = python.with_name("pythonw.exe")
     powershell("""
 $a = New-ScheduledTaskAction -Execute $in.python -Argument $in.arguments
 $t = New-ScheduledTaskTrigger -AtStartup
@@ -533,7 +539,7 @@ $p = New-ScheduledTaskPrincipal -UserId 'S-1-5-18' -LogonType ServiceAccount -Ru
 $s = New-ScheduledTaskSettingsSet -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Seconds 0) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 Register-ScheduledTask -TaskName $in.name -Action $a -Trigger $t -Principal $p -Settings $s -Force | Out-Null
 Start-ScheduledTask -TaskName $in.name
-""", {"python": str(python), "name": TASK.format(user=args.user.lower()),
+""", {"python": str(pythonw), "name": TASK.format(user=args.user.lower()),
       "arguments": f'-I -S "{PROGRAMS / "managed-windows.py"}" serve --config "{config_path}"'})
     args.enrollment.unlink()
     print(json.dumps({"endpoint_id": config["endpoint_id"], "employee": employee, "managed_account": args.user,
@@ -559,6 +565,8 @@ def serve(args):
         "ENDPOINT_PROCESS_SID": config["sid"], "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_NETSCAN": "0",
         "ENDPOINT_ORIGIN": "automatic"}))
     previous = config["policy_hash"]
+    from windows_status import publish
+    status_path = PROGRAM_DATA / "MCPGatewayManagedTray" / config["sid"] / "status.json"
 
     def record(entry):
         if log.exists() and log.stat().st_size > 1_000_000:
@@ -631,11 +639,14 @@ def serve(args):
                 os_observer["error_code"] = type(exc).__name__
             record({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health,
                     "config_inventory": inventory_status, "os_observer": os_observer})
+            management = {"active": "활성", "pending": "등록 대기", "quarantined": "격리됨", "revoked": "철회됨"}.get(report["state"], "확인 필요")
+            publish(status_path, inventory_status == "success", os_observer.get("recent_blocks", []), management)
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
             with lock:
                 cache.clear()
             record({"state": "connection-stopped", "error": type(exc).__name__, "status": getattr(exc, "code", None),
                     "reason": str(exc)[:200]})
+            publish(status_path, False, management="확인 필요")
         time.sleep(60)
 
 
@@ -645,7 +656,11 @@ def rollback(args):
         raise ValueError("관리자 권한 PowerShell에서 실행하세요")
     folder = STATE / args.user.lower()
     config = json.loads((folder / "config.json").read_text(encoding="utf-8"))
-    powershell("Unregister-ScheduledTask -TaskName $in.name -Confirm:$false -ErrorAction SilentlyContinue; "
+    powershell("$t = Get-ScheduledTask -TaskName $in.name -ErrorAction SilentlyContinue; "
+               "if ($t) { Stop-ScheduledTask -TaskName $in.name; $end = [DateTime]::UtcNow.AddSeconds(30); "
+               "while ((Get-ScheduledTask -TaskName $in.name).State -eq 'Running') { "
+               "if ([DateTime]::UtcNow -gt $end) { throw '엔드포인트 종료 시간 초과' }; Start-Sleep -Milliseconds 100 }; "
+               "Unregister-ScheduledTask -TaskName $in.name -Confirm:$false }; "
                "foreach ($n in $in.rules) { Remove-NetFirewallRule -Name $n -ErrorAction SilentlyContinue }",
                {"name": TASK.format(user=args.user.lower()), "rules": [f"MCPGW-{args.user}-{r}" for r in RULES]})
     for name, target in FILES.items():
@@ -657,9 +672,10 @@ def rollback(args):
     path = codex_config(config)
     if path.exists():
         backup = folder / "config.toml.backup"
-        write_file(path, backup.read_text(encoding="utf-8") if backup.exists() else
-                   re.sub(r"\n?" + re.escape(BEGIN) + r".*?" + re.escape(END) + r"\n?", "\n",
-                          path.read_text(encoding="utf-8"), flags=re.S).lstrip("\n"))
+        current = re.sub(r"\n?" + re.escape(BEGIN) + r".*?" + re.escape(END) + r"\n?", "\n",
+                         path.read_text(encoding="utf-8"), flags=re.S).lstrip("\n")
+        old_block = codex_block(backup.read_text(encoding="utf-8")) if backup.exists() else None
+        write_file(path, with_codex_block(current, old_block) if old_block is not None else current)
     set_user_environment(config, {})
     for item in folder.iterdir():
         item.unlink()
