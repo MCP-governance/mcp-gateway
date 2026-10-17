@@ -1,24 +1,20 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-15T21:19:18+09:00
+확인 시각: 2026-10-17T15:27:46+09:00
 
-HEAD: `b63943272081338ae454eeaff4821b931ea36df9` · 로컬 브랜치: `10/15-wbs-implementation`
+HEAD: `a85a5c9e5f41965897efa322f9591bdd108ff4e3` · 로컬 브랜치: `10/17-feature-spec-wbs`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M README.md
- M docs/ai/DECISIONS.md
- M docs/ai/FIELD.md
- M research/llm-wiki/analysis/oss-deep/redesign-2026-10-15.md
- M research/llm-wiki/analysis/review-2026-10-15/dev38-runtime-plan.md
- M research/llm-wiki/analysis/wbs-1015/README.md
+M research/llm-wiki/README.md
  M research/llm-wiki/status/backlog.md
  M research/llm-wiki/status/current.md
-?? research/llm-wiki/analysis/wbs-1015/dev38-runtime.json
-?? research/llm-wiki/status/reports/2026-10-15-dev38-runtime.md
+?? research/llm-wiki/analysis/feature-spec-2026-10-17/
+?? research/llm-wiki/status/reports/2026-10-17-feature-spec-wbs.md
+?? research/llm-wiki/tools/build_feature_spec.py
 ```
 
 ## 주요 파일 바이트

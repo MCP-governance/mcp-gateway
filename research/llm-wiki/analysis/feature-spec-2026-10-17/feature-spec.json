@@ -1,0 +1,1866 @@
+{
+ "title": "MCP 보안 거버넌스 솔루션 기능명세서·개발 WBS",
+ "as_of": "2026-10-17",
+ "code_basis": "10/15-wbs-implementation c0fbab3",
+ "inputs": {
+  "wbs_snapshot": "analysis/development-wbs/snapshot.json",
+  "policies": "threats/extracted/policies.json"
+ },
+ "feature_spec": [
+  {
+   "category": "사용자·엔드포인트",
+   "feature": "사용자 등록",
+   "description": "가입 신청, 역할 분리, 관리자 승인",
+   "policies": "POL-19",
+   "means": "FastAPI · PostgreSQL",
+   "status": "구현 완료(검수 전)",
+   "note": "관리자 권한 자동 부여 금지"
+  },
+  {
+   "category": "사용자·엔드포인트",
+   "feature": "조직 로그인",
+   "description": "조직 계정 로그인과 기존 사용자 연결, 관리 화면 세션 만료",
+   "policies": "POL-19 · POL-21",
+   "means": "Keycloak · Authlib",
+   "status": "구현 완료(검수 전)",
+   "note": "운영 TLS 적용은 '전송 구간 암호화' 항목에서 진행"
+  },
+  {
+   "category": "사용자·엔드포인트",
+   "feature": "PC 등록·활성화",
+   "description": "연결 키트 설치, 장치 키 발급, 관리 계정 활성화",
+   "policies": "POL-12 · POL-19",
+   "means": "엔드포인트 에이전트 · PostgreSQL",
+   "status": "구현 완료(검수 전)",
+   "note": "Windows 실기기 확인 남음"
+  },
+  {
+   "category": "사용자·엔드포인트",
+   "feature": "실행·통신 제한",
+   "description": "관리 계정의 미승인 실행, 게이트웨이 우회 연결, 로컬 서버 직접 실행 제한",
+   "policies": "POL-12 · POL-17",
+   "means": "AppArmor · nftables · systemd",
+   "status": "일부 구현",
+   "note": "관리형 Linux 계정에 한정, 미인가 로컬 MCP 시험 진행 중. 게이트웨이 밖 엔드포인트 통제"
+  },
+  {
+   "category": "사용자·엔드포인트",
+   "feature": "상태 관측",
+   "description": "마지막 보고, 보호 상태, 통제 밖 계정, 발견된 MCP 설정 표시",
+   "policies": "POL-12 · POL-42",
+   "means": "엔드포인트 에이전트",
+   "status": "구현 완료(검수 전)",
+   "note": "관측과 기기 전체 집행을 구분해 표시"
+  },
+  {
+   "category": "MCP 도입·검증",
+   "feature": "도입 신청",
+   "description": "주소, 버전 또는 커밋, 용도, 사용 범위 접수",
+   "policies": "POL-01 · POL-02",
+   "means": "FastAPI · PostgreSQL",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "MCP 도입·검증",
+   "feature": "격리 검사",
+   "description": "승인 전 소스 수집과 검사를 게이트웨이와 분리된 워커에서 수행",
+   "policies": "POL-01 · POL-05",
+   "means": "Docker · Git",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "MCP 도입·검증",
+   "feature": "구성요소 분석",
+   "description": "SBOM 생성, 의존성·라이선스 식별",
+   "policies": "POL-01 · POL-03",
+   "means": "Syft",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "MCP 도입·검증",
+   "feature": "위험 검사",
+   "description": "취약점, 오구성, 코드 규칙, Tool 설명의 악성 지시 검사",
+   "policies": "POL-03 · POL-04",
+   "means": "Trivy · Semgrep · 자체 규칙",
+   "status": "구현 완료(검수 전)",
+   "note": "검사 누락·실패는 통과로 처리하지 않음"
+  },
+  {
+   "category": "MCP 도입·검증",
+   "feature": "Secret 검사",
+   "description": "소스 속 인증정보 탐지, 결과에서 민감 문자열 제거",
+   "policies": "POL-14",
+   "means": "Gitleaks",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "MCP 도입·검증",
+   "feature": "승인 소스 격리 실행",
+   "description": "승인된 커밋만 고정 방식으로 빌드해 전용 망에서 실행, 심사한 목적지만 외부 연결 허용",
+   "policies": "POL-09 · POL-46",
+   "means": "Docker · 자체 실행기",
+   "status": "구현 완료(검수 전)",
+   "note": "등록 해제·승인 철회 시 정지 시험 남음"
+  },
+  {
+   "category": "MCP 도입·검증",
+   "feature": "운영 이미지 재검사",
+   "description": "실행 중인 서버 이미지를 주기적으로 다시 검사하고 기한 내 미조치 시 격리",
+   "policies": "POL-39",
+   "means": "Trivy · 자체 실행기",
+   "status": "개발 예정",
+   "note": ""
+  },
+  {
+   "category": "승인·카탈로그",
+   "feature": "독립 승인",
+   "description": "신청자와 승인자 분리, 검토 근거와 승인 기록 보존",
+   "policies": "POL-08 · POL-38",
+   "means": "PostgreSQL",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "승인·카탈로그",
+   "feature": "사용 범위",
+   "description": "사용자, 도구, 자원, 데이터 등급, 기한 지정",
+   "policies": "POL-02 · POL-11 · POL-23",
+   "means": "OPA · Rego · PostgreSQL",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "승인·카탈로그",
+   "feature": "계약 잠금",
+   "description": "도구 이름·설명·입력 스키마·버전 해시를 고정하고 호출 직전 재대조",
+   "policies": "POL-11 · POL-37",
+   "means": "MCP Python SDK · jsonschema",
+   "status": "구현 완료(검수 전)",
+   "note": "변경 시 현재는 서버 전체를 차단, 영향 범위만 제한하는 기능은 '변경 영향 판정·선택적 제한'에서 개발"
+  },
+  {
+   "category": "승인·카탈로그",
+   "feature": "승인 만료·재승인",
+   "description": "승인 기한 만료, 중지, 구성 변경 시 재승인 요구",
+   "policies": "POL-08 · POL-37 · POL-40",
+   "means": "PostgreSQL · OPA",
+   "status": "구현 완료(검수 전)",
+   "note": "버전만 바뀐 경우와 사용 승인되지 않은 도구의 변경은 기록만 함"
+  },
+  {
+   "category": "승인·카탈로그",
+   "feature": "변경 영향 판정·선택적 제한",
+   "description": "변경된 도구와 그 도구를 쓰는 사용자·권한 범위를 판정해 해당 범위만 제한하고 나머지 도구는 계속 허용",
+   "policies": "POL-37 · POL-43",
+   "means": "PostgreSQL · OPA",
+   "status": "개발 예정",
+   "note": "현재는 승인 도구의 설명·스키마 변경 시 서버 전체 차단"
+  },
+  {
+   "category": "승인·카탈로그",
+   "feature": "내부 소스 반입",
+   "description": "승인 저장소 보관, 검증 커밋 대조",
+   "policies": "POL-01",
+   "means": "Gitea",
+   "status": "구현 완료(검수 전)",
+   "note": "저장소 반입만으로 승인 완료 아님"
+  },
+  {
+   "category": "승인·카탈로그",
+   "feature": "하네스별 최소 설정 배포",
+   "description": "승인된 서버만 하네스 설정에 배포, 미승인 커넥터 비활성화",
+   "policies": "POL-11 · POL-12",
+   "means": "엔드포인트 에이전트",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "승인·카탈로그",
+   "feature": "데이터·기능 단위 사용자 동의",
+   "description": "사용자 동의를 데이터·기능 단위로 기록하고 호출마다 대조, 동의가 없으면 확인 요청",
+   "policies": "POL-08",
+   "means": "PostgreSQL · OPA · MCP 확인 요청",
+   "status": "개발 예정",
+   "note": ""
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "신원·상태 확인",
+   "description": "인증된 주체, 토큰 발급자·대상·기한·폐기 여부, 등록·중지 상태 확인",
+   "policies": "POL-19 · POL-21",
+   "means": "FastAPI · PostgreSQL · Ed25519",
+   "status": "구현 완료(검수 전)",
+   "note": "사용자 신원만 확인, 에이전트 신원은 자동화 범위 제외"
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "인자·자원 분석",
+   "description": "스키마, 경로, URL, SQL, 수신자 분석과 실제 행위(조회·변경·실행) 판정",
+   "policies": "POL-23 · POL-24",
+   "means": "jsonschema · pglast",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "실행 전 정책",
+   "description": "권한, 계약, 데이터 등급, 민감정보 반출 조건 판정",
+   "policies": "POL-22 · POL-25 · POL-26",
+   "means": "OPA · Rego · Presidio · Gitleaks",
+   "status": "구현 완료(검수 전)",
+   "note": "정책·분류·계약 오류는 차단"
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "호출·응답 통제",
+   "description": "허용 호출만 전달, 응답 개인정보 마스킹, Secret·비신뢰 지시 포함 결과 보류",
+   "policies": "POL-29 · POL-30",
+   "means": "MCP Python SDK · Presidio · Gitleaks",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "고위험 건별 승인",
+   "description": "요청 내용에 묶인 1회용 승인, 자가 승인 금지, 10분 만료",
+   "policies": "POL-27",
+   "means": "PostgreSQL · OPA",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "MCP 요청·응답 중계",
+   "description": "initialize · ping · tools/list · tools/call 중계. tools/list는 승인된 스키마로 응답하고, 원격 서버 오류는 기록 후 오류로 반환. resources · prompts 등 중계하지 않는 요청은 거부",
+   "policies": "POL-06 · POL-11",
+   "means": "MCP Python SDK",
+   "status": "구현 완료(검수 전)",
+   "note": "응답은 출력 검사를 거친 뒤 전달"
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "정책 판정 결과 집행",
+   "description": "허용, 허용·경보 기록, 제한 실행, 승인 대기, 차단의 5가지 결과 집행. 성립한 정책을 모두 모은 뒤 정책 관리대장의 우선순위로 최종 결과 선택. 관찰 모드는 실행하고 '막았을 결과'를 기록",
+   "policies": "POL-22 · POL-27",
+   "means": "OPA · Rego",
+   "status": "구현 완료(검수 전)",
+   "note": "정책 엔진 오류·응답 누락은 차단. 허용·경보 기록은 실행을 허용하고 경고만 남김"
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "호출량·동시 실행 제한",
+   "description": "호출량, 동시 실행, 실행 중 중복 호출을 원자적으로 예약·제한",
+   "policies": "POL-28 · POL-36",
+   "means": "PostgreSQL",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "MCP 접속 출처 검증",
+   "description": "게이트웨이 MCP 접속의 Host·Origin 허용 목록 검사",
+   "policies": "POL-18",
+   "means": "MCP Python SDK",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "서버별 인증정보 분리",
+   "description": "원격 서버 인증정보를 서버·주소·주체별로 결속하고 교차 사용 거부",
+   "policies": "POL-15",
+   "means": "자체 구현",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "실제 연결 주소 확인",
+   "description": "연결 직전 DNS 조회 결과로만 접속, OAuth 메타데이터 조회 대상 검사",
+   "policies": "POL-10 · POL-40",
+   "means": "Python 표준 라이브러리 · httpx",
+   "status": "개발 예정",
+   "note": ""
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "전송 구간 암호화",
+   "description": "하네스와 게이트웨이 사이 TLS 적용, 원격 MCP 평문 연결 차단",
+   "policies": "POL-16",
+   "means": "Caddy · 내부 CA",
+   "status": "개발 예정",
+   "note": "원격 평문 연결 차단은 개발 완료"
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "전송 목적 확인",
+   "description": "수신처, 데이터 등급, 목적이 승인된 조합과 일치할 때만 외부 전송 허용",
+   "policies": "POL-26",
+   "means": "OPA · Rego",
+   "status": "개발 예정",
+   "note": ""
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "입력 최소화",
+   "description": "도구별 허용 입력 항목만 전달, 입력 민감정보 마스킹",
+   "policies": "POL-31",
+   "means": "Presidio · OPA",
+   "status": "개발 예정",
+   "note": ""
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "서버 간 전달 경계",
+   "description": "세션 내 중요정보 표시 전파, 승인되지 않은 서버 간 전달 차단",
+   "policies": "POL-33",
+   "means": "자체 구현 · OPA",
+   "status": "개발 예정",
+   "note": ""
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "조회 범위 제한",
+   "description": "단일 조회의 반환 건수·크기 상한, 전체 폴더 조회 차단",
+   "policies": "POL-35",
+   "means": "자체 구현",
+   "status": "개발 예정",
+   "note": ""
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "중복 실행 방지",
+   "description": "변경 요청에 멱등 키를 부여해 재전송·재시도 중복 차단",
+   "policies": "POL-36",
+   "means": "PostgreSQL",
+   "status": "개발 예정",
+   "note": "원격 서버 내부의 중복 실행은 제외"
+  },
+  {
+   "category": "호출·데이터 통제",
+   "feature": "인증정보 노출 차단",
+   "description": "설정, 실행 인자, 오류 응답의 인증정보 원문 탐지·제거",
+   "policies": "POL-14",
+   "means": "Gitleaks",
+   "status": "개발 예정",
+   "note": ""
+  },
+  {
+   "category": "운영·감사",
+   "feature": "운영 현황",
+   "description": "승인 대기, 최근 차단, 서버·단말 상태, 처리 지연 조회",
+   "policies": "POL-38 · POL-42",
+   "means": "Apache ECharts",
+   "status": "구현 완료(검수 전)",
+   "note": "관리 화면은 MCP를 직접 호출하지 않음"
+  },
+  {
+   "category": "운영·감사",
+   "feature": "감사 원장",
+   "description": "판정·시도·실행·응답 상태를 변경 불가 해시 사슬로 저장, 민감 본문 제외",
+   "policies": "POL-38",
+   "means": "PostgreSQL",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "운영·감사",
+   "feature": "추적·내보내기",
+   "description": "호출 추적, 필터, 상세, 사슬 검증, 내보내기",
+   "policies": "POL-38",
+   "means": "OpenTelemetry · Jaeger",
+   "status": "구현 완료(검수 전)",
+   "note": "SIEM 전달은 'SIEM 전달' 항목에서 개발"
+  },
+  {
+   "category": "운영·감사",
+   "feature": "판정 증적 항목",
+   "description": "호출마다 추적 ID, 요청 ID, 정책 입력, 정책 ID와 버전, 판단 사유, 판정 결과, 제한 내용, 서버 전달 시도·실행 여부, 실행 환경, 이전 기록 해시 저장",
+   "policies": "POL-38",
+   "means": "PostgreSQL",
+   "status": "구현 완료(검수 전)",
+   "note": "응답 본문은 저장하지 않고 해시·크기·처리 결과만 보관. 300자를 넘는 인자 값은 앞 120자와 해시만 보관"
+  },
+  {
+   "category": "운영·감사",
+   "feature": "SIEM 전달",
+   "description": "판정·감사 이벤트를 SIEM 수집 형식(syslog·CEF 또는 OCSF)으로 전달하고, 전달 실패 시 재전송 대기열과 실패 기록 유지",
+   "policies": "POL-38 · POL-42",
+   "means": "OpenTelemetry Collector",
+   "status": "개발 예정",
+   "note": "확장 범위. 현재는 호출 추적 전송과 해시가 붙은 감사 기록 내보내기만 지원"
+  },
+  {
+   "category": "운영·감사",
+   "feature": "이상 징후 경보",
+   "description": "새 도구, 미승인 연결, 반복 차단, 중요정보 접근 집중 경보",
+   "policies": "POL-42 · POL-43",
+   "means": "OPA · PostgreSQL",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "운영·감사",
+   "feature": "단말 이벤트 상관",
+   "description": "MCP 요청, 게이트웨이 판정, 단말 이벤트 연결",
+   "policies": "POL-38",
+   "means": "엔드포인트 에이전트",
+   "status": "일부 구현",
+   "note": "하네스 이벤트 시각 연결 남음"
+  },
+  {
+   "category": "운영·감사",
+   "feature": "경보 자체 시험",
+   "description": "정책 배포 직후 합성 이벤트로 경보 동작 확인",
+   "policies": "POL-42",
+   "means": "자체 구현",
+   "status": "개발 예정",
+   "note": ""
+  },
+  {
+   "category": "운영·감사",
+   "feature": "탐지 시 자동 중지",
+   "description": "미승인 변경·이상 호출 탐지 시 해당 서버와 도구 자동 중지",
+   "policies": "POL-43",
+   "means": "PostgreSQL · OPA",
+   "status": "개발 예정",
+   "note": ""
+  },
+  {
+   "category": "종료·권한 회수",
+   "feature": "접근 중지",
+   "description": "만료·중지·철회된 관계의 후속 호출 즉시 거부",
+   "policies": "POL-44",
+   "means": "OPA · PostgreSQL",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "종료·권한 회수",
+   "feature": "장치·자격 회수",
+   "description": "사용자·장치 토큰과 갱신 토큰 일괄 폐기, 연결 풀 종료",
+   "policies": "POL-44 · POL-45",
+   "means": "PostgreSQL · Keycloak",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "종료·권한 회수",
+   "feature": "세션 종료",
+   "description": "활성 세션과 MCP 서버 세션 종료, 재접근 차단",
+   "policies": "POL-44 · POL-46",
+   "means": "자체 구현",
+   "status": "일부 구현",
+   "note": "상태를 유지하는 서버의 세션 재접근 시험 남음"
+  },
+  {
+   "category": "종료·권한 회수",
+   "feature": "종료 판정",
+   "description": "회수 대상, 권한, 연속성, 증거를 종합해 종료 완료 판정",
+   "policies": "POL-44 · POL-45",
+   "means": "PostgreSQL",
+   "status": "구현 완료(검수 전)",
+   "note": ""
+  },
+  {
+   "category": "종료·권한 회수",
+   "feature": "잔존 자료 확인",
+   "description": "설정·인증정보 제거 후 잔존 여부와 백업 복구 시험",
+   "policies": "POL-48 · POL-50",
+   "means": "자체 구현",
+   "status": "일부 구현",
+   "note": "직원 PC 백업·캐시 복구 시험 남음"
+  },
+  {
+   "category": "종료·권한 회수",
+   "feature": "복원 후 폐기 상태 대조",
+   "description": "폐기 목록을 서명해 DB 밖에 보관하고 복원 후 대조, 필요 시 서명키 교체",
+   "policies": "POL-50",
+   "means": "cryptography · PostgreSQL",
+   "status": "개발 예정",
+   "note": ""
+  },
+  {
+   "category": "효과 평가(제품 외)",
+   "feature": "통제 적용 전후 효과 비교",
+   "description": "같은 시나리오를 통제 적용 전후로 실행해 결과를 비교하고 평가지표 6개를 산출하는 별도 평가 도구",
+   "policies": "—",
+   "means": "자체 구현",
+   "status": "개발 예정",
+   "note": "제품 기능이 아닌 평가 도구. 평가지표 정의는 팀 평가계획을 따름(정의 확정 필요)"
+  },
+  {
+   "category": "자동화 범위 제외",
+   "feature": "에이전트 신원 증명",
+   "description": "하네스가 스스로 밝힌 정보를 검증할 수단이 없음",
+   "policies": "POL-19",
+   "means": "—",
+   "status": "자동화 범위 제외",
+   "note": "사용자 신원만 토큰으로 확인"
+  },
+  {
+   "category": "자동화 범위 제외",
+   "feature": "에이전트 위임 판정",
+   "description": "검증된 에이전트 주체가 없어 위임 범위를 판정할 수 없음",
+   "policies": "POL-20",
+   "means": "—",
+   "status": "자동화 범위 제외",
+   "note": "위임을 주장하는 요청은 거부"
+  },
+  {
+   "category": "자동화 범위 제외",
+   "feature": "외부 서비스 자원 등급 판정",
+   "description": "등급 정보가 제공자에게만 있음",
+   "policies": "POL-25",
+   "means": "—",
+   "status": "자동화 범위 제외",
+   "note": "내부 자원만 등급 판정"
+  },
+  {
+   "category": "자동화 범위 제외",
+   "feature": "제공자 측 인증정보 무효화 확인",
+   "description": "제공자 시스템 내부의 처리로 솔루션이 관측할 수 없음",
+   "policies": "POL-41 · POL-45",
+   "means": "—",
+   "status": "자동화 범위 제외",
+   "note": "게이트웨이에서의 재사용 차단까지 수행"
+  },
+  {
+   "category": "자동화 범위 제외",
+   "feature": "배포자 서명 검증",
+   "description": "서명이 없는 배포물은 검증 대상이 없음",
+   "policies": "POL-01",
+   "means": "—",
+   "status": "자동화 범위 제외",
+   "note": "해시 고정과 도입 보류로 대체"
+  },
+  {
+   "category": "자동화 범위 제외",
+   "feature": "원격 OAuth 인증 응답 대조",
+   "description": "솔루션이 원격 서버의 OAuth 인증 과정에 참여하지 않음",
+   "policies": "POL-13",
+   "means": "—",
+   "status": "자동화 범위 제외",
+   "note": ""
+  },
+  {
+   "category": "자동화 범위 제외",
+   "feature": "원격 서버 내부 동작 확인",
+   "description": "원격 서버 내부의 중복 실행과 연결 대상은 관측할 수 없음",
+   "policies": "POL-36 · POL-40",
+   "means": "—",
+   "status": "자동화 범위 제외",
+   "note": "게이트웨이 경계까지 통제"
+  },
+  {
+   "category": "자동화 범위 제외",
+   "feature": "도입 적절성·법적 요건·계약 검토",
+   "description": "도입 목적의 적절성, 법적 요건, 외부 제공자 계약 조건 판단",
+   "policies": "POL-02 · POL-03 · POL-06 · POL-07",
+   "means": "—",
+   "status": "자동화 범위 제외",
+   "note": "검토 결과와 승인 근거는 솔루션에 기록"
+  },
+  {
+   "category": "자동화 범위 제외",
+   "feature": "최종 승인 판단·실동작 시험",
+   "description": "운영 연결의 최종 승인 판단과 Tool 실제 동작 일치 시험",
+   "policies": "POL-05 · POL-27",
+   "means": "—",
+   "status": "자동화 범위 제외",
+   "note": "승인 절차와 기록은 솔루션이 제공"
+  },
+  {
+   "category": "자동화 범위 제외",
+   "feature": "에이전트 내부·외부 시스템 조치",
+   "description": "에이전트 컨텍스트 분리, 원본 문서 진위, 외부 저장소·제공자 측 정리",
+   "policies": "POL-32 · POL-34 · POL-47 · POL-48 · POL-49",
+   "means": "—",
+   "status": "자동화 범위 제외",
+   "note": ""
+  }
+ ],
+ "wbs": [
+  {
+   "id": "G01.01",
+   "task": "도입물 출처·버전·원본 해시 등록",
+   "completion": "새 도구를 승인할 때마다 공급 URL, 변경 불가능한 버전 또는 커밋, 라이선스, 배포 파일의 SHA-256을 저장하고 실제 배포 파일과 대조한다. 값이 누락되거나 일치하지 않으면 등록을 보류한다.",
+   "policies": "POL-01",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "실제 도입 요청으로 보관본 해시 대조·보류를 기기에서 확인해야 한다. 패키지 레지스트리 도입물은 경로가 없다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G01.02",
+   "task": "SBOM·취약점·라이선스 검사와 재평가 연결",
+   "completion": "각 SBOM 구성요소의 라이선스·취약점 현황과 출처 확인 시각을 승인된 릴리스에 연결한다. 검사기 장애나 치명적 취약점 발견 시 배포를 차단하고, 취약점 데이터베이스가 오래된 경우도 검증한다.",
+   "policies": "POL-01 · 03 · 39",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "실제 도입 검사에서 신선도·치명 발견 보류를 확인해야 한다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G01.03",
+   "task": "도입 범위·기능별 최소권한 사전 심사",
+   "completion": "각 도구의 목적·자산·읽기·변경·실행 권한·외부 목적지를 사람이 승인한 범위로 제한한다. 검토하지 않은 도구는 검색과 호출을 모두 막고, 독립적인 효과 확인으로 범위가 지켜졌는지 검증한다. 시험 환경은 운영 경로와 분리하고 합성 데이터·지정된 격리 자원으로 검증한다.",
+   "policies": "POL-02 · 23",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 1,
+    "acceptance_complete": 0
+   },
+   "remaining": "이름이 주소가 아닌 인자에 담긴 주소는 PAC 전송 검사에 맡긴다. 쓰기 도구의 독립 효과 시험은 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G01.04",
+   "task": "설치·로그 수신물의 원본/정규화 hash 사슬",
+   "completion": "공급자 원본 해시, 기기 설치 파일 해시, 수신 원본 자료 해시, 비밀을 제거한 투영 자료 해시를 각각의 역할에 맞춰 보존한다. 원본 전달물과 기기 이벤트의 일치 여부 및 정규화 규칙을 독립 검증한다.",
+   "policies": "POL-38",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "서버는 원본 바이트를 검증할 수 없다(침해된 root에는 증명이 아님). 설치 파일 해시 사슬의 실기기 대조가 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G01.05",
+   "task": "승인 소스 MCP 격리 실행기",
+   "completion": "승인된 커밋만 고정 방식으로 빌드·실행하고 심사 목적지만 허용하며, 철회·종료 시 정지한다",
+   "policies": "POL-09 · 46",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "등록 해제·종료·빌드 중 승인 철회의 실기기 정지 시험이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G01.06",
+   "task": "운영 서버 이미지 주기 재검사·기한 초과 격리",
+   "completion": "실행 중 이미지 재검사 결과가 기한을 넘기면 자동 격리되고 기록된다",
+   "policies": "POL-39",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "11월 3주",
+    "11월 4주"
+   ]
+  },
+  {
+   "id": "G02.01",
+   "task": "신청자와 승인자 독립성·승인 기록 보호",
+   "completion": "신청자와 검토자가 같을 수 없도록 강제하고 위험 수준별 사람 승인을 적용한다. 승인 주체·근거·검토 범위를 기록하며, 무효 처리된 자기 승인 사례는 감사용 비활성 기록으로만 보존한다.",
+   "policies": "POL-08 · 38",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 1,
+    "acceptance_complete": 0
+   },
+   "remaining": "같은 사람이 승인하려 할 때의 화면 거부는 이번에 확인하지 않았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G02.02",
+   "task": "도구 이름·설명·schema·버전 계약 해시 잠금",
+   "completion": "등록·승인된 설명, 입력 스키마, 서버 버전 해시가 재시작·재탐색·동일 이름 도구 상황에서도 일치해야 한다. B 버전의 변경은 전달 전에 차단하고, A 버전으로 되돌렸을 때 A가 다시 관찰되는지 확인한다.",
+   "policies": "POL-11 · 37",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "실서버 계약 변경 사례와 재시작 경계 확인이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G02.03",
+   "task": "승인 만료·중지·변경 후 재승인",
+   "completion": "만료·철회·계약 변경 후에는 기존 설정이나 새 도구 호출이 전달되지 않아야 한다. 실제 하네스에서 사용자 동의와 운영자 승인이 각각 별도로 기록되는지 확인한다.",
+   "policies": "POL-37 · 40 · 44",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "실제 하네스 E2E가 남았다. 철회 뒤 같은 승인으로 다시 등록할 수 있는 기존 경로는 결정 대기.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G02.04",
+   "task": "승인 서버 설정을 하네스별 최소 집합으로 배포",
+   "completion": "새로 승인된 하네스에는 허용된 서버만 표시되고, 등록이 철회된 서버는 목록과 호출에서 모두 제외되어야 한다. 모델에서 MCP 서버, 판정 기록까지 이어지는 연결을 확인한다.",
+   "policies": "POL-11 · 12",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 1,
+    "acceptance_complete": 0
+   },
+   "remaining": "Codex 설정 쪽은 이번에 하네스로 확인하지 않았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G02.05",
+   "task": "데이터·기능 단위 사용자 동의 확인",
+   "completion": "동의가 없는 데이터·기능 호출이 차단되고 확인 요청이 나간다",
+   "policies": "POL-08",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "11월 1주",
+    "11월 2주"
+   ]
+  },
+  {
+   "id": "G02.06",
+   "task": "변경 영향 판정·선택적 제한",
+   "completion": "변경된 도구와 영향 받는 사용자·권한만 제한되고 나머지 도구 호출은 계속 허용된다",
+   "policies": "POL-37 · 43",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "11월 4주",
+    "12월 1주"
+   ]
+  },
+  {
+   "id": "G03.01",
+   "task": "transport 인증 주체·audience·scope·만료 검증",
+   "completion": "발급자가 다르거나 대상·권한 범위가 잘못된 자격, 만료·철회된 자격은 업스트림 호출을 시도하기 전에 차단한다. 호출자 주체는 전송 계층의 인증 정보만으로 정하고, 프롬프트나 헤더의 자기 주장으로 권한을 바꾸지 않는다.",
+   "policies": "POL-19 · 21",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "하네스 경로의 audience·scope 반례 실기기 시험이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G03.02",
+   "task": "PAC-05 agent delegation 교집합 상태를 명시",
+   "completion": "PAC-05 위임을 활성화하려면 검증 가능한 전송 계층 신원으로 사용자와 에이전트 주체를 각각 확인하고, 승인된 권한·만료·철회 상태의 교집합만 허용한다. `clientInfo`나 `User-Agent`처럼 호출자가 주장하는 에이전트 식별자는 권한 근거로 거부한다. 신뢰할 에이전트 신원을 확인할 수 없으면 위임 호출을 거부하고 미지원 상태를 표시한다.",
+   "policies": "POL-20",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "위임 활성화는 하지 않았다. 검증 가능한 에이전트 신원이 생기면 교집합 구현이 필요하다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G03.03",
+   "task": "요청별 행위·인자·자산·목적지 권한 재판정",
+   "completion": "같은 도구라도 SQL·경로·수신자·자산이 바뀌면 매 호출마다 다시 분류한다. 정규화된 차단은 요청 전 적용되어야 하며, 독립된 대상에서 실제 효과가 0건인지 확인한다.",
+   "policies": "POL-22 · 23 · 24 · 25 · 26",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 1,
+    "acceptance_complete": 0
+   },
+   "remaining": "쓰기 도구의 독립 효과 0건 확인이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G03.04",
+   "task": "동일 호출·동시 실행·승인 재사용 예약의 원자성",
+   "completion": "경계 조건에서 허용되는 부수효과는 정확히 1회여야 하고, 중복 요청이나 승인을 재사용한 요청은 0회여야 한다. 프로세스가 중단된 경우 실행 여부가 불확실한 상태로 남기고 자동 재시도하지 않는다.",
+   "policies": "POL-27 · 28 · 36",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "실기기 동시성·중단 시험과 상태 의존 서버(DEV-29)가 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G03.05",
+   "task": "연결 직전 DNS 확인·IP 고정 접속",
+   "completion": "DNS 재바인딩·리디렉션·미승인 OAuth 조회 대상 반례가 모두 차단된다",
+   "policies": "POL-10 · 40",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "10월 4주",
+    "10월 5주"
+   ]
+  },
+  {
+   "id": "G03.06",
+   "task": "단일 조회 반환 건수·크기 상한",
+   "completion": "상한 초과·전체 폴더 조회가 차단되고 정상 조회는 통과한다",
+   "policies": "POL-35",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "11월 1주",
+    "11월 2주"
+   ]
+  },
+  {
+   "id": "G03.07",
+   "task": "변경 요청 멱등 키",
+   "completion": "같은 변경의 재전송·재시도가 한 번만 실행된다",
+   "policies": "POL-36",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "11월 2주",
+    "11월 2주"
+   ]
+  },
+  {
+   "id": "G03.08",
+   "task": "설정·실행 인자·오류 응답 인증정보 노출 차단",
+   "completion": "인증정보 원문이 설정·인자·오류 응답에 남지 않는다",
+   "policies": "POL-14",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "10월 5주",
+    "10월 5주"
+   ]
+  },
+  {
+   "id": "G04.01",
+   "task": "입력 schema·크기·경로 검사 및 injection 분류",
+   "completion": "스키마·경로·인코딩·크기와 프롬프트 삽입 시험 자료를 정상 대조군과 함께 실행한다. 정확한 정책 식별자, 도구 전달 여부, 오탐·미탐 건수를 기록한다.",
+   "policies": "POL-24 · 29",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "경로·인코딩 게이트의 실기기 반례 시험이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G04.02",
+   "task": "응답 PII/secret 마스킹·hold/release 경계",
+   "completion": "합성 비밀이 모델에 전달되는 원문이나 구조화된 결과에 남지 않아야 한다. 업스트림 요청 시도·실행 여부와 결과를 가리거나 보류·공개한 상태를 각각 구분해 표시한다.",
+   "policies": "POL-30",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "마스킹된 유형별 정탐·오탐 대조는 하지 않았다. 라벨 없는 사업자·계좌 번호는 가리지 않는다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G04.03",
+   "task": "도구 결과의 비신뢰 지시 보류와 정상 언어 대조",
+   "completion": "영어·한국어·인코딩 정상 자료와 공격 자료를 현재 소스와 일치하는 환경에서 다시 시험한다. 오탐과 미탐을 공개하고, 응답을 보류한 것을 업스트림 실행 방지로 표현하지 않는다.",
+   "policies": "POL-04 · 29",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "명령형 도구 응답·설득문·다국어 의역·rot13류는 다루지 않는다. 한국어 표본은 같은 작성자다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G04.04",
+   "task": "검사기·PDP·목적지 자료 누락은 fail-closed",
+   "completion": "검사기·정책 판정기·도구 목록의 누락 또는 잘못된 형식은 업스트림 호출 전에 차단한다. 명시적으로 비어 있는 허용 목록과 오류를 구분하고, 독립 수신 측에서 요청이 없었는지 확인한다.",
+   "policies": "POL-22",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "독립 수신 측에서 요청 0건을 보는 실기기 장애 시험이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G04.05",
+   "task": "외부 전송 목적 결속",
+   "completion": "목적·수신처·등급 조합이 승인과 다르면 전송이 차단된다",
+   "policies": "POL-26",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "11월 1주",
+    "11월 2주"
+   ]
+  },
+  {
+   "id": "G04.06",
+   "task": "도구별 허용 입력 항목·입력 마스킹",
+   "completion": "허용 밖 입력 항목과 민감정보가 전달되지 않는다",
+   "policies": "POL-31",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "11월 1주",
+    "11월 2주"
+   ]
+  },
+  {
+   "id": "G04.07",
+   "task": "세션 내 중요정보 표시 전파·서버 간 전달 경계",
+   "completion": "승인 없는 서버 간 중요정보 전달이 차단된다",
+   "policies": "POL-33",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "11월 2주",
+    "11월 3주"
+   ]
+  },
+  {
+   "id": "G05.01",
+   "task": "관리형 UID/profile/kernel 건강상태를 exact-bound 검증",
+   "completion": "정확한 UID·보안 프로필·규칙 이름·SID·설정 해시와 현재 강제 적용 상태가 모두 맞을 때만 준수로 판정한다. 비활성·누락·다른 계정·감사 전용 모드는 차단한다.",
+   "policies": "POL-12",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "보고된 Linux·Windows 합성 회귀 9건은 통과했지만 Windows 운영체제 수준의 기기 강제 적용은 아직 검증되지 않았다. PJ1 Linux의 정확한 검사 결과도 관리형 신원 한 건에 한정된다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G05.02",
+   "task": "비인가 stdio·IPv4/IPv6 loopback을 독립 효과 0으로 확인",
+   "completion": "새로 준비한 관리형 하네스에서 실제 공식 파일시스템 MCP가 표준입출력으로 직접 호출을 시도하고, IPv4·IPv6 표식 수신기도 각각 확인한다. 강제 적용 프로필에서 독립 수신기와 파일의 효과가 0인지, 정확히 어느 계층에서 거부됐는지 기록하며, 승인된 게이트웨이 경로는 정상 동작하는지 대조한다.",
+   "policies": "POL-12 · 17",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 0.5,
+    "regression": 0,
+    "deployment": 0.5,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "E13은 아직 완료되지 않았다. 지금까지의 실제 차단 시험은 Node·인터프리터와 SSH 루프백을 대상으로 했으며 파일시스템 MCP의 실제 표준입출력 호출은 시험하지 않았다. 관리자·root와 다른 비제한 계정은 범위 밖이고 Windows의 운영체제 수준 강제 적용 증거도 없다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G05.03",
+   "task": "프로세스·MCP 발견자료를 자동·수동 전송 종류별로 구분",
+   "completion": "프로세스 관측 자료는 출처가 자동임을 나타내고 원본 해시와 이벤트 시각을 포함해 자동으로 솔루션에 도달해야 한다. 수동 보조 업로드와 운영체제 이벤트 자동 전달은 구분하며, 수집기 신선도·오프라인 상황과 중복 방지도 시험한다.",
+   "policies": "POL-12 · 42",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "실제 MCP 앱 프로세스 식별·다른 OS와 실기기 오프라인/중복 시험이 남았다. 출처 라벨은 장치 키 소유자의 자기 신고다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G05.04",
+   "task": "통제 밖 UID·사용자 PC·Windows scope 명시",
+   "completion": "비관리 계정은 적용 범위 밖으로 분류할 수 있어야 한다. UID·프로필별 관측 범위를 표시하고 모든 로컬 앱과 계정이 차단됐다고 주장하지 않는다. Windows 지원을 주장하기 전에 격리된 Windows 승인 시험을 완료한다.",
+   "policies": "POL-12",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "비제한 UID 1000은 실제로 GhidraMCP 읽기 도구를 호출했고 관리형 UID 1001은 승인되지 않은 Python 실행이 차단됐다. 이는 계정별 결과이며 Windows 운영체제 직접 강제 적용은 확인되지 않았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G06.01",
+   "task": "MCP request·Gateway decision·endpoint event ID 상관관계",
+   "completion": "한 번의 실행에서 하네스 이벤트, 엔드포인트 프로세스·이벤트 식별자, 요청 추적 식별자, 정책 판정, 업스트림 시도·결과, 독립 수신기 시각을 연결한다. 서로 다른 로그를 같은 기록처럼 합치지 않는다.",
+   "policies": "POL-38",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 0.5,
+    "regression": 0.5,
+    "deployment": 1,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "하네스 이벤트와 독립 수신기 시각 연결이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G06.02",
+   "task": "시도·판정·실행·응답 효과를 별도 표현",
+   "completion": "화면은 요청 전 차단, 허용 후 실행, 업스트림 오류, 출력 보류·가림, 독립 수신기에서 확인된 성공 효과를 구분한다. 업스트림 시도·실행 표시가 수신기 결과와 일치하는지 확인한다.",
+   "policies": "POL-38",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "독립 수신기 성공 효과를 화면에서 대조하는 실기기 시험이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G06.03",
+   "task": "수집 성공·실패·last success·전체집계 표시",
+   "completion": "화면에서 최근 수신 목록과 전체 항목 수를 구분하고, 이미 제공되는 24시간 전체 거부 집계를 유지·확인한다. 마지막 성공 수집 시각과 수집기 신선도·오프라인·오류 상태를 표시해 텔레메트리 누락을 거부 0건으로 오인하지 않게 한다. listener 전용 상세·집계에서 누락된 항목을 확인하고, 200건 조회 상한에 닿으면 페이지 이동 또는 잘림 표시로 결과 범위를 드러낸다.",
+   "policies": "POL-42",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "200건 초과 실기기 데이터의 페이지 이동 확인이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G06.04",
+   "task": "원본 event와 솔루션 보관본의 hash/projection 일치",
+   "completion": "전달 자료마다 원본 해시, 출처 파일·바이트 해시, 비밀 제거 후 투영 자료 해시, 변환 내역, 수신 시각을 남긴다. 비밀 원문을 보존하지 않으면서 바이트가 달라진 경우를 탐지하는지 시험한다.",
+   "policies": "POL-38",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "원본 바이트 자체는 서버가 검증할 수 없다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G06.05",
+   "task": "정책 배포 후 경보 자체 시험",
+   "completion": "배포 직후 합성 이벤트에 대한 경보 결과가 기록된다",
+   "policies": "POL-42",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "11월 3주",
+    "11월 4주"
+   ]
+  },
+  {
+   "id": "G06.06",
+   "task": "SIEM 전달·전달 실패 재전송",
+   "completion": "판정·감사 이벤트가 SIEM 형식으로 전달되고 수신 장애 뒤 누락 없이 재전송된다",
+   "policies": "POL-38 · 42",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "11월 4주",
+    "12월 1주"
+   ]
+  },
+  {
+   "id": "G07.01",
+   "task": "사용자·device token·refresh family 즉시 폐기",
+   "completion": "새 보호 API 요청과 MCP 호출에서 철회된 토큰 및 그 파생 토큰이 모두 거부되어야 한다. 발급과 철회를 경쟁시켜 데이터베이스 트랜잭션이 원자적으로 롤백되는지 확인하고, 제공자 측 자원 자격의 철회는 별도로 증명한다.",
+   "policies": "POL-44 · 45",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "실기기 폐기·제공자 측 자원 자격은 G07.03에서 따로 본다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G07.02",
+   "task": "활성 세션·MCP server session 종료와 재접근 차단",
+   "completion": "새 세션과 기존 세션에서 C1~C4의 종료 조건을 각각 확인한다. 오래된 세션이 다시 데이터를 가져오지 못해야 하며 T1~T3 증거도 기록한다.",
+   "policies": "POL-44 · 46",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 0.5,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "상태 의존 서버(email·Playwright)의 오래된 세션 재접근 시험이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G07.03",
+   "task": "외부 provider·resource server 잔존 접근 확인",
+   "completion": "로컬 설정을 삭제한 뒤 제공자의 보호 자원에서 이전 토큰·세션이 실제로 거부되는지 확인한다. 확인할 수 없다면 제공자 측 폐기는 미검증으로 표시하고 만료 시간만 기록한다.",
+   "policies": "POL-41 · 45",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "조직이 제공자 토큰 사본을 보관할 위치에 대한 사용자 결정이 필요하다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G07.04",
+   "task": "설정·credential 제거 후 잔존/백업 복구 테스트",
+   "completion": "격리 시험 자격을 연결 해제하고 철회한 뒤 task 백업이나 캐시에서 다시 복구되지 않는지 확인한다. 비밀 원문은 남기지 않으면서 감사 추적을 보존하고 무관한 파일을 삭제하지 않는다.",
+   "policies": "POL-48 · 50",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 0.5,
+    "regression": 0.5,
+    "deployment": 1,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "직원 PC의 task 백업·캐시·내보낸 파일에서의 복구 시험이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G07.05",
+   "task": "탐지 시 서버·도구 자동 중지",
+   "completion": "미승인 변경·이상 호출 탐지 시 해당 서버·도구가 자동 중지된다",
+   "policies": "POL-43",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "11월 3주",
+    "11월 4주"
+   ]
+  },
+  {
+   "id": "G07.06",
+   "task": "서명된 폐기 목록과 복원 후 대조",
+   "completion": "백업 복원 후 폐기된 연결·인증정보가 다시 허용되지 않는다",
+   "policies": "POL-50",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "11월 4주",
+    "12월 1주"
+   ]
+  },
+  {
+   "id": "G08.01",
+   "task": "조직가입·장치 enrollment·활성화·재접속 경로",
+   "completion": "격리된 Linux와 Windows 설치를 같은 절차로 시험한다. 등록 대기 상태는 거부되고, 올바른 소유자는 활성화되며, 잘못되거나 오래된 heartbeat는 격리되어야 한다. 기기 데이터베이스 조회와 관리형 사용자 흐름으로 결과를 각각 확인한다.",
+   "policies": "POL-19",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 0,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "Windows 실기기와 격리 환경 enrollment 회귀가 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G08.02",
+   "task": "지원 공식 harness에서 fresh model→MCP call 검증",
+   "completion": "승인된 최신 하네스에서 승인 서버를 통해 합성 읽기·쓰기 호출을 수행한다. 모델 버전과 대화, 인자, 게이트웨이 식별자, 엔드포인트 식별자, 제공자 응답, 독립 효과, 정리 결과가 서로 일치해야 한다.",
+   "policies": "—",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 0.5,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "Codex 하네스와 E01~E13 전체 조건은 남았다. Context7은 제공자 익명 할당량 초과를 반환했다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G08.03",
+   "task": "사용자 승인/연결/등록 UI에 운영자 승인과 자가승인 분리",
+   "completion": "새 등록 요청에서 데이터와 기능 범위를 보여 주고 독립적인 사람 승인을 요구한다. 에이전트가 스스로 대상을 승인한 시험 기록은 성공 근거로 사용하지 않는다.",
+   "policies": "POL-08 · 27",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 0.5,
+    "deployment": 1,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "실제 등록 요청을 사람 계정으로 처리하는 확인이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G08.04",
+   "task": "설치·업데이트·오류 원인 및 재시도 사용성",
+   "completion": "격리된 Linux·Windows 설치와 제거가 반복해도 안전해야 한다. 보고서 잠금 경쟁을 해결하고 사용자 파일을 보존하며, 실제 업데이트 롤백과 heartbeat 복구를 확인한다. 시험 환경은 운영 경로와 분리하고 합성 데이터·지정된 격리 자원으로 검증한다.",
+   "policies": "—",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 0.5,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "과거 Windows `report.log`에는 WinError32 경쟁이 남아 있다. WSL Linux 설치 키트 17건 통과만으로 Windows의 동시성 문제를 해소했다고 볼 수 없다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G08.05",
+   "task": "하네스–게이트웨이 구간 TLS",
+   "completion": "현장 배치의 하네스 연결이 TLS로만 동작하고 평문 접속은 거부된다",
+   "policies": "POL-16",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "10월 4주",
+    "10월 5주"
+   ]
+  },
+  {
+   "id": "G09.01",
+   "task": "CPU·메모리 값의 측정 범위·출처를 정확히 표기",
+   "completion": "관리자에게 CPU 사용량 차이와 `MemTotal-MemAvailable` 값을 단위·자료 범위(Linux 호스트 또는 가상 머신)·측정 시각·누락 상태와 함께 제공한다. 셸 실행이나 Docker 소켓은 요구하지 않는다.",
+   "policies": "—",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "Chrome 실표시 재확인이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G09.02",
+   "task": "Console→고정 Gateway DNS/TCP 지연(ms) 표시 범위",
+   "completion": "고정된 대상의 DNS 조회와 TCP 연결 시간을 밀리초로 표시하고, 시험 실패·시간 초과·측정 대상의 의미를 설명한다. 이를 사용자 기기의 왕복 지연 시간으로 표시하지 않는다.",
+   "policies": "—",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "Console 실표시 재확인이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G09.03",
+   "task": "미측정·실패·오래된 데이터의 신선도 표현",
+   "completion": "첫 측정 전, 30초를 넘긴 오래된 측정, 시간 초과, 알 수 없는 상태, 실제 0을 화면에서 구분한다. 오래된 캐시 측정치를 현재 값처럼 표시하지 않는다.",
+   "policies": "—",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 1,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "Chrome 실표시 재확인이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G09.04",
+   "task": "관리자 scope·화면 갱신·Chrome 실제 표시 확인",
+   "completion": "인증되지 않은 사용자, 직원용 MCP 권한만 가진 사용자, 잘못된 역할은 거부한다. 지원 대상 Chrome에서 관리자 Console 자격으로 최신 값, 갱신 주기, 오래된 상태 표시를 확인한다.",
+   "policies": "—",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 0,
+    "deployment": 0.5,
+    "real_device": 0.5,
+    "acceptance_complete": 0
+   },
+   "remaining": "Chrome에서 제품 화면을 확인했지만 이미지 캡처는 시간 초과됐다. 권한 없음·세션 만료 동작도 특정 브라우저에서만 확인됐다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G10.01",
+   "task": "개발 협업 현황 웹에서 공개 요청·응답·작업·검사 열람",
+   "completion": "실제 요청·응답·작업·검사 이벤트를 링크와 함께 표시한다. 원본 대화와 비밀은 Git 추적에서 제외된 런타임 경로에 보관하고, 제품 운영 화면과 개발 협업 화면을 구분한다.",
+   "policies": "—",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "이 Console은 로컬 개발 협업 화면이지 제품 운영 Console이 아니다. 실제 표시 범위는 공개 이벤트로 기록해 보낸 자료에 한정된다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G10.02",
+   "task": "모델 요청값·실응답 모델·turn error/NO_TOOL_CALL 구분",
+   "completion": "화면에서 요청한 모델·추론 강도, 실제 응답 모델, 사용량 한도 오류, 작업 실패, 도구 호출 0건, 게이트웨이 기록 없음 상태를 구분한다. 원본 대화 내용은 비공개로 유지한다.",
+   "policies": "—",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "실제 한도 거부 스트림 확인이 남았다.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G10.03",
+   "task": "WBS 40 원자항목의 목표·PAC·근거·단계 상태 추적",
+   "completion": "G01~G10에 서로 다른 원자 작업이 정확히 네 개씩 있어야 한다. 각 작업은 PAC 원본, 코드·시험, 정확한 증거, 남은 공백, 20%씩 가중한 다섯 단계 상태와 연결하고, 회귀 단계는 현재 소스 검토를 통과해야 한다.",
+   "policies": "—",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "웹은 갱신 시각이 있는 검수 스냅샷이다. 제품 API 실시간 연동과 운영 수집기 자동화는 별도 후속.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G10.04",
+   "task": "보고·증거 원본 hash·상태변경·완료율 공개 기준",
+   "completion": "웹 화면은 변경할 수 없는 증거와 원본·소스 해시를 연결하고 보고 날짜와 증거 수준을 표시한다. 무효·대체된 기록을 유지하고 수동 텔레메트리를 자동 수집으로 계산하지 않는다.",
+   "policies": "—",
+   "kind": "현재 개발",
+   "scores": {
+    "implementation": 1,
+    "regression": 1,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "웹은 갱신 시각이 있는 검수 스냅샷이다. 제품 API 실시간 연동과 운영 수집기 자동화는 별도 후속.",
+   "planned_weeks": null
+  },
+  {
+   "id": "G10.05",
+   "task": "통제 적용 전후 효과 비교 평가 도구(제품 외)",
+   "completion": "같은 시나리오의 적용 전후 결과와 평가지표 6개가 재현 가능하게 산출된다",
+   "policies": "—",
+   "kind": "추가 개발",
+   "scores": {
+    "implementation": 0,
+    "regression": 0,
+    "deployment": 0,
+    "real_device": 0,
+    "acceptance_complete": 0
+   },
+   "remaining": "신규 개발",
+   "planned_weeks": [
+    "12월 1주",
+    "12월 2주"
+   ]
+  }
+ ],
+ "policy_coverage": [
+  {
+   "policy": "POL-01",
+   "name": "배포물 출처와 무결성 확인",
+   "class": "일부 자동화",
+   "now": "일부 구현",
+   "after": "일부 구현",
+   "planned": "",
+   "limit": "서명 없는 배포물은 검증 대상 없음"
+  },
+  {
+   "policy": "POL-08",
+   "name": "연결 승인과 사용자 동의 확인",
+   "class": "핵심 자동화",
+   "now": "일부 구현",
+   "after": "구현",
+   "planned": "G02.05",
+   "limit": ""
+  },
+  {
+   "policy": "POL-10",
+   "name": "실제 연결 주소 확인",
+   "class": "핵심 자동화",
+   "now": "일부 구현",
+   "after": "구현",
+   "planned": "G03.05",
+   "limit": ""
+  },
+  {
+   "policy": "POL-11",
+   "name": "서버별 사용 기능 등록",
+   "class": "핵심 자동화",
+   "now": "구현",
+   "after": "구현",
+   "planned": "",
+   "limit": ""
+  },
+  {
+   "policy": "POL-13",
+   "name": "인증 응답과 요청 상태의 일치 확인",
+   "class": "일부 자동화",
+   "now": "일부 구현",
+   "after": "일부 구현",
+   "planned": "",
+   "limit": "원격 OAuth 인증 과정 미참여"
+  },
+  {
+   "policy": "POL-14",
+   "name": "연결 설정의 인증정보 평문 노출 방지",
+   "class": "일부 자동화",
+   "now": "일부 구현",
+   "after": "구현",
+   "planned": "G03.08",
+   "limit": ""
+  },
+  {
+   "policy": "POL-15",
+   "name": "MCP Server별 인증정보 분리",
+   "class": "일부 자동화",
+   "now": "구현",
+   "after": "구현",
+   "planned": "",
+   "limit": ""
+  },
+  {
+   "policy": "POL-16",
+   "name": "원격 MCP 전송 구간 보호",
+   "class": "핵심 자동화",
+   "now": "일부 구현",
+   "after": "구현",
+   "planned": "G08.05",
+   "limit": ""
+  },
+  {
+   "policy": "POL-18",
+   "name": "HTTP 요청 출처 검증",
+   "class": "일부 자동화",
+   "now": "구현",
+   "after": "구현",
+   "planned": "",
+   "limit": ""
+  },
+  {
+   "policy": "POL-19",
+   "name": "사용자와 에이전트 신원 확인",
+   "class": "핵심 자동화",
+   "now": "일부 구현",
+   "after": "일부 구현",
+   "planned": "",
+   "limit": "에이전트 신원 증명 불가"
+  },
+  {
+   "policy": "POL-20",
+   "name": "위임 범위와 유효기간 확인",
+   "class": "핵심 자동화",
+   "now": "일부 구현",
+   "after": "일부 구현",
+   "planned": "",
+   "limit": "검증된 에이전트 주체 없음"
+  },
+  {
+   "policy": "POL-21",
+   "name": "OAuth 토큰 검증",
+   "class": "핵심 자동화",
+   "now": "구현",
+   "after": "구현",
+   "planned": "",
+   "limit": ""
+  },
+  {
+   "policy": "POL-22",
+   "name": "요청마다 실행 권한 확인",
+   "class": "핵심 자동화",
+   "now": "구현",
+   "after": "구현",
+   "planned": "",
+   "limit": ""
+  },
+  {
+   "policy": "POL-23",
+   "name": "작업별 권한 구분",
+   "class": "핵심 자동화",
+   "now": "구현",
+   "after": "구현",
+   "planned": "",
+   "limit": ""
+  },
+  {
+   "policy": "POL-24",
+   "name": "입력값과 실행 대상 검사",
+   "class": "일부 자동화",
+   "now": "구현",
+   "after": "구현",
+   "planned": "",
+   "limit": ""
+  },
+  {
+   "policy": "POL-25",
+   "name": "데이터별 접근권한 확인",
+   "class": "핵심 자동화",
+   "now": "일부 구현",
+   "after": "일부 구현",
+   "planned": "",
+   "limit": "외부 서비스 자원 등급은 제공자 보유"
+  },
+  {
+   "policy": "POL-26",
+   "name": "외부 전송 대상과 데이터 확인",
+   "class": "핵심 자동화",
+   "now": "일부 구현",
+   "after": "구현",
+   "planned": "G04.05",
+   "limit": ""
+  },
+  {
+   "policy": "POL-27",
+   "name": "민감한 작업의 개별 승인",
+   "class": "일부 자동화",
+   "now": "구현",
+   "after": "구현",
+   "planned": "",
+   "limit": ""
+  },
+  {
+   "policy": "POL-28",
+   "name": "호출량과 실행 시간 제한",
+   "class": "일부 자동화",
+   "now": "구현",
+   "after": "구현",
+   "planned": "",
+   "limit": ""
+  },
+  {
+   "policy": "POL-29",
+   "name": "외부 콘텐츠를 이용한 권한 변경 차단",
+   "class": "핵심 자동화",
+   "now": "구현",
+   "after": "구현",
+   "planned": "",
+   "limit": ""
+  },
+  {
+   "policy": "POL-30",
+   "name": "응답의 민감정보 노출 제한",
+   "class": "일부 자동화",
+   "now": "구현",
+   "after": "구현",
+   "planned": "",
+   "limit": ""
+  },
+  {
+   "policy": "POL-31",
+   "name": "Tool 사용 시 민감정보 제한",
+   "class": "핵심 자동화",
+   "now": "일부 구현",
+   "after": "구현",
+   "planned": "G04.06",
+   "limit": ""
+  },
+  {
+   "policy": "POL-33",
+   "name": "서버 간 데이터 전달 경계 적용",
+   "class": "일부 자동화",
+   "now": "일부 구현",
+   "after": "구현",
+   "planned": "G04.07",
+   "limit": ""
+  },
+  {
+   "policy": "POL-35",
+   "name": "단일 조회의 문서 반환 범위 제한",
+   "class": "핵심 자동화",
+   "now": "일부 구현",
+   "after": "구현",
+   "planned": "G03.06",
+   "limit": ""
+  },
+  {
+   "policy": "POL-36",
+   "name": "변경 작업의 중복 실행 방지",
+   "class": "일부 자동화",
+   "now": "일부 구현",
+   "after": "구현",
+   "planned": "G03.07",
+   "limit": ""
+  },
+  {
+   "policy": "POL-37",
+   "name": "구성 변경 검토와 재승인",
+   "class": "일부 자동화",
+   "now": "구현",
+   "after": "구현",
+   "planned": "G02.06",
+   "limit": ""
+  },
+  {
+   "policy": "POL-38",
+   "name": "호출과 권한 변경 이력 관리",
+   "class": "일부 자동화",
+   "now": "구현",
+   "after": "구현",
+   "planned": "G06.06",
+   "limit": ""
+  },
+  {
+   "policy": "POL-39",
+   "name": "알려진 취약점의 수정 및 격리",
+   "class": "일부 자동화",
+   "now": "일부 구현",
+   "after": "구현",
+   "planned": "G01.06",
+   "limit": ""
+  },
+  {
+   "policy": "POL-40",
+   "name": "연결 목적지 변경의 재승인",
+   "class": "핵심 자동화",
+   "now": "일부 구현",
+   "after": "구현",
+   "planned": "G03.05",
+   "limit": ""
+  },
+  {
+   "policy": "POL-41",
+   "name": "인증정보 교체 후 이전 값 무효화",
+   "class": "일부 자동화",
+   "now": "일부 구현",
+   "after": "일부 구현",
+   "planned": "",
+   "limit": "제공자 측 무효화 관측 불가"
+  },
+  {
+   "policy": "POL-42",
+   "name": "이상 징후 경보의 동작 확인",
+   "class": "일부 자동화",
+   "now": "일부 구현",
+   "after": "구현",
+   "planned": "G06.05 · G06.06",
+   "limit": ""
+  },
+  {
+   "policy": "POL-43",
+   "name": "탐지된 위험의 대응",
+   "class": "일부 자동화",
+   "now": "일부 구현",
+   "after": "구현",
+   "planned": "G07.05 · G02.06",
+   "limit": ""
+  },
+  {
+   "policy": "POL-44",
+   "name": "권한 철회와 연결 해제",
+   "class": "일부 자동화",
+   "now": "구현",
+   "after": "구현",
+   "planned": "",
+   "limit": ""
+  },
+  {
+   "policy": "POL-45",
+   "name": "토큰과 API 키 회수",
+   "class": "일부 자동화",
+   "now": "일부 구현",
+   "after": "일부 구현",
+   "planned": "",
+   "limit": "제공자 측 회수 관측 불가"
+  },
+  {
+   "policy": "POL-50",
+   "name": "복원 시 폐기된 연결의 재활성화 차단",
+   "class": "일부 자동화",
+   "now": "미구현",
+   "after": "구현",
+   "planned": "G07.06",
+   "limit": ""
+  }
+ ]
+}
