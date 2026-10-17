@@ -190,6 +190,23 @@ services:
     networks: [office, policy, privacy, tools, data, telemetry]
     <<: *hardened
 
+  siem-worker:
+    profiles: [siem]
+    restart: unless-stopped
+    build: *gateway-build
+    command: ["python", "-m", "app.siem"]
+    environment:
+      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
+      SIEM_URL: ${SIEM_URL:-}
+      SIEM_TOKEN_FILE: ${SIEM_TOKEN_FILE:-}
+      SIEM_CA_FILE: ${SIEM_CA_FILE:-}
+    volumes:
+      - ./siem-secrets:/run/siem:ro
+    depends_on:
+      gateway: {condition: service_started}
+    networks: [data, edge]
+    <<: *hardened
+
   # Console (admin UI) + the synthetic IdP. It never calls an MCP tool.
   agent-service:
     restart: unless-stopped

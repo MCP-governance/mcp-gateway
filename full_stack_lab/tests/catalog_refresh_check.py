@@ -1,13 +1,13 @@
 """In-process catalog rollback checks with a stateful database/discovery substitute."""
 from __future__ import annotations
 
-from contextlib import ExitStack
+from contextlib import ExitStack, asynccontextmanager
 from copy import deepcopy
 import os
 from pathlib import Path
 import sys
 import unittest
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 os.environ.setdefault("OTEL_SDK_DISABLED", "true")
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "gateway"))
@@ -27,7 +27,7 @@ class CatalogDB:
         self.observation_writes = []
 
     def register(self, server_id):
-        self.servers[server_id] = {"id": server_id, "status": "READY", "status_reason": "approved",
+        self.servers[server_id] = {"id": server_id, "status": "READY", "status_reason": "approved", "endpoint": "http://unit.invalid",
                                    "lifecycle": "OPERATING"}
         self.tools[server_id] = {"name": TOOL_A["name"], "enabled": True,
                                  "description": TOOL_A["description"], "input_schema": deepcopy(TOOL_A["input_schema"]),
@@ -42,12 +42,13 @@ class CatalogDB:
         if exact_match is None:
             exact_match = params[4]
         record = {"id": len(self.snapshots) + 1, "server_id": server_id, "server_version": version,
-                  "catalog_hash": catalog_hash, "tool_count": count, "exact_match": exact_match}
+                  "catalog_hash": catalog_hash, "tool_count": count, "exact_match": exact_match,
+                  "restricted_tools": params[6] if len(params) > 6 else None}
         self.snapshots.append(record)
         return {"id": record["id"]}
 
     async def fetch_one(self, query, params):
-        if "SELECT * FROM mcp_servers" in query:
+        if "FROM mcp_servers" in query:
             return deepcopy(self.servers.get(params[0]))
         if "FROM catalog_snapshots" in query:
             history = [row for row in self.snapshots if row["server_id"] == params[0]]
@@ -62,6 +63,23 @@ class CatalogDB:
         if "FROM mcp_tools" in query:
             return [deepcopy(self.tools[params[0]])]
         raise AssertionError(f"Unexpected fetch_all: {query}")
+
+    @asynccontextmanager
+    async def transaction(self):
+        class Connection:
+            async def execute(inner, query, params):
+                if query.startswith("SELECT id FROM mcp_servers"):
+                    row = {"id": params[0]}
+                elif query.startswith("INSERT INTO catalog_snapshots"):
+                    row = self.snapshot(params)
+                else:
+                    await self.execute(query, params)
+                    row = None
+                class Cursor:
+                    async def fetchone(inner):
+                        return row
+                return Cursor()
+        yield Connection()
 
     async def execute(self, query, params):
         compact = " ".join(query.split())
@@ -99,12 +117,15 @@ class CatalogRefreshTest(unittest.IsolatedAsyncioTestCase):
         self.db.register("beta")
         self.current = {"alpha": TOOL_A, "beta": TOOL_A}
         self.patches = ExitStack()
-        for name in ("fetch_one", "fetch_all", "execute"):
+        for name in ("fetch_one", "fetch_all", "execute", "transaction"):
             self.patches.enter_context(patch.object(core.db, name, getattr(self.db, name)))
         self.patches.enter_context(patch.object(core, "_discover", self.discover))
         self.patches.enter_context(patch.object(core.registry, "server", return_value={"poisoning_review": {}}))
         self.patches.enter_context(patch.object(core.registry, "is_console_registration", return_value=False))
         self.patches.enter_context(patch.object(core.poisoning, "findings", return_value=[]))
+        self.patches.enter_context(patch.object(core.ops_response, "catalog_alerts", new=AsyncMock()))
+        self.patches.enter_context(patch.object(core.ops_response, "contain_drift", new=AsyncMock()))
+        self.patches.enter_context(patch.object(core.upstream, "release_pool", new=AsyncMock()))
         self.addCleanup(self.patches.close)
 
     async def discover(self, server_id):

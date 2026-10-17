@@ -12,6 +12,7 @@ from psycopg.types.json import Jsonb
 
 from . import db, release, review
 from .contract import POLICY_RESULT, canonical_hash
+from .selective import restricted_tools
 
 INTERVAL = int(os.getenv("OPS_RESPONSE_INTERVAL_SECONDS", "5"))
 REPEAT = int(os.getenv("OPS_AUTO_STOP_REPEAT", "3"))
@@ -84,7 +85,7 @@ async def suspend(server_id, source, reason, evidence):
 
 
 async def contain_drift(server_id, findings):
-    if selected(server_id, "drift"):
+    if restricted_tools(findings) is None and selected(server_id, "drift"):
         await suspend(server_id, "drift", "미승인 계약 변경으로 자동 중지", {"findings": findings})
 
 

@@ -50,6 +50,8 @@ Drive 링크: https://docs.google.com/spreadsheets/d/1wAMcbyTRWe6imdzRKBVoS3shoM
 
 ## 한계
 
+2026-10-18 후속: G02.06(DEV-52)·G06.06(DEV-61)은 D-127·128로 구현하고 [로컬 단위·HTTP 시험](../selective-restriction-siem/README.md)을 수행했다. 위의 10-17 상태·진척률은 당시 기록으로 보존한다. 제품 배포·실제 OSS MCP·하네스·SIEM 검수는 남았으며 이 문서의 Excel/정본 점수는 재산정하지 않았다.
+
 - 기존 작업과 POL 번호의 연결, 추가 개발 일정은 작성자 판단이다. WBS 원본 스냅샷에는 POL 연결이 없다.
 - 단계 점수는 10-15 스냅샷 값이며 이번에 다시 시험하지 않았다. G01.05 점수는 10-15 밤 DEV-38 보고 기준이다.
 - 수식(COUNTIF·AVERAGE·AVERAGEIF·IF)은 파이썬으로 같은 값을 계산해 범위를 대조했다. 이 PC의 LibreOffice가 동작하지 않아 계산값을 저장하지 못했고, Excel이 열 때 다시 계산하도록 설정했다.

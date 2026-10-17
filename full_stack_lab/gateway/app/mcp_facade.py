@@ -119,6 +119,11 @@ async def _approved_tools(role: str, server: str | None = None, principal: str =
         """SELECT t.server_id, t.name, t.action, t.description, t.input_schema, s.display_name
              FROM mcp_tools t JOIN mcp_servers s ON s.id = t.server_id
             WHERE t.enabled AND t.input_schema IS NOT NULL
+              AND t.approved_schema_hash=t.observed_schema_hash
+              AND t.approved_description_hash=t.observed_description_hash
+              AND EXISTS (SELECT 1 FROM (SELECT exact_match,restricted_tools FROM catalog_snapshots
+                          WHERE server_id=s.id ORDER BY id DESC LIMIT 1) c
+                          WHERE c.exact_match OR (c.restricted_tools IS NOT NULL AND NOT t.name=ANY(c.restricted_tools)))
               AND COALESCE(s.lifecycle, 'OPERATING') = 'OPERATING'
               AND s.status NOT IN ('DISABLED', 'BLOCKED_SUPPLY_CHAIN')
               AND (%s::text IS NULL OR t.server_id = %s)

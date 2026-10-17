@@ -271,10 +271,41 @@ async def main():
     for token in ("u-a", "u-b", "u-c", "u-d", "u-e"):
         await add_principal(token)
     await add_server("srv")
+    # A dispatch intent now requires a reviewed, currently usable tool contract too.
+    await db.execute("""INSERT INTO mcp_tools(server_id,name,action,enabled,approved_schema_hash,observed_schema_hash,
+                       approved_description_hash,observed_description_hash)
+                       VALUES ('srv','t','w',true,'schema','schema','description','description')""")
+    await db.execute("""INSERT INTO catalog_snapshots(server_id,catalog_hash,tool_count,exact_match,restricted_tools)
+                       VALUES ('srv','unit-contract',1,true,'{}')""")
+    await CHECKS.case("selective_cutover", selective_cutover())
     for case in (identical_concurrent, ceilings_distinct, release_and_expiry, release_vs_reserve_race, boundary_refusals,
                  unsettled_blocks_identical_write, approval_is_consumed_once, cutover_race, pool_closure):
         await CHECKS.case(case.__name__, case())
     return CHECKS.finish()
+
+
+async def selective_cutover():
+    rid = str(uuid.uuid4())
+    await reservation(rid, "u-a", "srv")
+    pending = None
+    try:
+        async with db.transaction() as connection:
+            await connection.execute("SELECT id FROM mcp_servers WHERE id='srv' FOR UPDATE")
+            await connection.execute("""INSERT INTO catalog_snapshots(server_id,catalog_hash,tool_count,exact_match,restricted_tools)
+                                     VALUES ('srv','restricted-unit-contract',1,false,ARRAY['t'])""")
+            pending = asyncio.create_task(dispatch.record(rid, "w"))
+            await asyncio.sleep(0.05)
+            CHECKS.ok("selective: dispatch waits for catalog publication", not pending.done())
+        CHECKS.ok("selective: post-lock statement sees the committed restriction", await pending == "contract")
+        row = await db.fetch_one("SELECT count(*) AS n FROM dispatch_intents WHERE request_id=%s", (rid,))
+        CHECKS.ok("selective: no intent was recorded for the restricted tool", row["n"] == 0)
+    finally:
+        if pending and not pending.done():
+            pending.cancel()
+            await asyncio.gather(pending, return_exceptions=True)
+        await db.execute("""INSERT INTO catalog_snapshots(server_id,catalog_hash,tool_count,exact_match,restricted_tools)
+                           VALUES ('srv','restored-unit-contract',1,true,'{}')""")
+        await core._release_call(rid)
 
 
 if __name__ == "__main__":

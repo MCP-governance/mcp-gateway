@@ -25,7 +25,16 @@ class _Refused(Exception):
     pass
 
 
-_INSERT = """INSERT INTO dispatch_intents(request_id, user_token, server_id, tool_name, action, fingerprint)
+CATALOG_OK = """EXISTS (
+                SELECT 1 FROM mcp_tools t
+                JOIN LATERAL (SELECT exact_match,restricted_tools FROM catalog_snapshots
+                              WHERE server_id=s.id ORDER BY id DESC LIMIT 1) c ON true
+                WHERE t.server_id=s.id AND t.name=r.tool_name AND t.enabled
+                  AND t.approved_schema_hash=t.observed_schema_hash
+                  AND t.approved_description_hash=t.observed_description_hash
+                  AND (c.exact_match OR (c.restricted_tools IS NOT NULL AND NOT t.name=ANY(c.restricted_tools))))"""
+
+_INSERT = f"""INSERT INTO dispatch_intents(request_id, user_token, server_id, tool_name, action, fingerprint)
            SELECT r.request_id, r.user_token, r.server_id, r.tool_name, %s, r.fingerprint
              FROM call_reservations r
              JOIN principals p ON p.token = r.user_token AND p.status = 'active'
@@ -34,6 +43,7 @@ _INSERT = """INSERT INTO dispatch_intents(request_id, user_token, server_id, too
               AND s.status <> 'DISABLED'
               AND NOT EXISTS (SELECT 1 FROM ops_suspensions x WHERE x.server_id=s.id AND x.resumed_at IS NULL)
               AND NOT EXISTS (SELECT 1 FROM disposal_blocks x WHERE x.server_id=s.id AND x.kind IN ('server','credential'))
+              AND {CATALOG_OK}
               FOR SHARE OF s"""
 
 
@@ -47,10 +57,15 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
     transaction: the approval is single-use at the one place that sends, not only where it was claimed.
     """
     try:
-        if approval_id:
-            async with db.transaction() as connection:
-                if not (await connection.execute(_INSERT, (action, request_id))).rowcount:
-                    raise _Refused
+        async with db.transaction() as connection:
+            # Acquire before the INSERT so a snapshot published while waiting is visible
+            # to the next statement under READ COMMITTED, not the pre-lock snapshot.
+            await connection.execute(
+                """SELECT s.id FROM mcp_servers s JOIN call_reservations r ON r.server_id=s.id
+                   WHERE r.request_id=%s FOR SHARE OF s""", (request_id,))
+            if not (await connection.execute(_INSERT, (action, request_id))).rowcount:
+                raise _Refused
+            if approval_id:
                 # What is sent must be what was approved: the approval row holds the approved request,
                 # the intent the fingerprint and principal of this one. The digest the policy checks
                 # binds high-risk calls only; this binds every approved call.
@@ -65,17 +80,16 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
                         "UPDATE approvals SET status = 'UNCONFIRMED' WHERE id = %s AND status = 'APPROVED' AND expires_at > now()",
                         (approval_id,))).rowcount:
                     raise _Refused("approval")
-            return None
-        if await db.execute(_INSERT, (action, request_id)):
-            return None
+        return None
     except _Refused as refusal:
         if refusal.args:
             return "approval"
     why = await db.fetch_one(
-        """SELECT (SELECT p.status FROM principals p WHERE p.token = r.user_token) AS principal,
+        f"""SELECT (SELECT p.status FROM principals p WHERE p.token = r.user_token) AS principal,
                   (SELECT COALESCE(s.lifecycle, 'OPERATING') FROM mcp_servers s WHERE s.id = r.server_id) AS lifecycle,
-                  (SELECT s.status FROM mcp_servers s WHERE s.id = r.server_id) AS server_status
-             FROM call_reservations r WHERE r.request_id = %s AND r.released_at IS NULL AND r.expires_at > now()""",
+                  s.status AS server_status, {CATALOG_OK} AS catalog_ok
+             FROM call_reservations r JOIN mcp_servers s ON s.id=r.server_id
+             WHERE r.request_id = %s AND r.released_at IS NULL AND r.expires_at > now()""",
         (request_id,))
     if not why:
         return "reservation"
@@ -83,7 +97,9 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
         return "principal"
     if why["lifecycle"] != "OPERATING":
         return "terminated"
-    return "suspended" if why["server_status"] == "DISABLED" else "reservation"
+    if why["server_status"] == "DISABLED":
+        return "suspended"
+    return "contract" if not why["catalog_ok"] else "reservation"
 
 
 async def uncertain(limit: int = 200) -> list[dict]:

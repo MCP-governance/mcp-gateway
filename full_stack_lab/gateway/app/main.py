@@ -36,7 +36,7 @@ from .core import (
 from .mcp_facade import build_mcp, transport_security
 from .agent_contract import CONSOLE_SCOPE, ToolReview, authenticate, authenticated_user
 from .release import build_info, policy_info
-from . import activity, audit, registry, review
+from . import activity, audit, registry, review, siem
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 # "오늘" is the operator's day. The DB session runs in UTC, so date_trunc('day', now())
@@ -259,7 +259,8 @@ class OpsResume(StrictModel):
 
 @app.get("/api/ops/status")
 async def ops_status(_: dict = Depends(admin_caller)) -> dict:
-    return {"suspensions": await db.fetch_all("SELECT * FROM ops_suspensions ORDER BY id DESC LIMIT 100"),
+    return {"siem": await siem.status(),
+            "suspensions": await db.fetch_all("SELECT * FROM ops_suspensions ORDER BY id DESC LIMIT 100"),
             "image_scans": await db.fetch_all("SELECT * FROM runtime_image_scans ORDER BY id DESC LIMIT 100"),
             "alert_self_tests": await db.fetch_all("SELECT * FROM alert_self_tests ORDER BY id DESC LIMIT 20"),
             "alerts": await db.fetch_all("SELECT * FROM ops_alerts WHERE NOT synthetic ORDER BY id DESC LIMIT 100"),
@@ -342,8 +343,10 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
         db.fetch_all("""SELECT server_id, name, action, enabled, description,
                                approved_schema_hash IS NOT NULL AS pinned,
                                (approved_schema_hash = observed_schema_hash
-                                AND approved_description_hash = observed_description_hash) AS contract_ok
-                          FROM mcp_tools ORDER BY server_id, name"""),
+                                AND approved_description_hash = observed_description_hash
+                                AND COALESCE((SELECT c.exact_match OR (c.restricted_tools IS NOT NULL AND NOT t.name=ANY(c.restricted_tools))
+                                     FROM catalog_snapshots c WHERE c.server_id=t.server_id ORDER BY c.id DESC LIMIT 1),false)) AS contract_ok
+                          FROM mcp_tools t ORDER BY server_id, name"""),
         db.fetch_all("SELECT * FROM usage_relationships ORDER BY id"),
     )
     catalog_servers = registry.servers()
@@ -819,6 +822,11 @@ async def audit_events(limit: int = Query(100, ge=1, le=500), filters: dict = De
 async def audit_export(limit: int = Query(500, ge=1, le=5000), filters: dict = Depends(audit_filters),
                        user: dict = Depends(admin_caller)) -> dict:
     return await audit.export(limit=limit, **filters)
+
+
+@app.get("/api/audit/siem")
+async def audit_siem(user: dict = Depends(admin_caller)) -> dict:
+    return await siem.status()
 
 
 @app.get("/api/audit/events/{event_id}")

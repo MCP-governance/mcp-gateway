@@ -254,7 +254,7 @@ watch_decisions() {
 FIELD_COMPOSE=(-f compose.yaml -f compose.field.yaml)
 
 field_up() {
-  local with_ws=0 with_lab_mcp=0
+  local with_ws=0 with_lab_mcp=0 with_siem=0
   # The analyzer image is built from ./privacy here; left out, a change to its recognizers or pipeline never shipped.
   local services=(corp-git presidio-analyzer gateway gateway-sse agent-service intake-worker runtime-worker)
   local lab_services=(corp-redis corp-db corp-mail intranet external-web corp-seed
@@ -263,6 +263,7 @@ field_up() {
     case "$a" in
       --with-lab-mcp) with_lab_mcp=1 ;;
       --with-lab-workstations) with_ws=1; with_lab_mcp=1 ;;
+      --with-siem) with_siem=1 ;;
       *) echo "알 수 없는 field 옵션: $a" >&2; exit 2 ;;
     esac
   done
@@ -271,6 +272,7 @@ field_up() {
     printf 'MOCK_SSO_PASSWORD=%s\nPOSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
   fi
   ensure_env
+  if [[ $with_siem == 1 ]]; then services+=(siem-worker); fi
   grep -qE '^GITEA_ADMIN_PASSWORD=.+' .env || echo "GITEA_ADMIN_PASSWORD=$(openssl rand -hex 24)" >> .env
   if [[ $with_ws == 0 ]]; then
     docker compose "${FIELD_COMPOSE[@]}" stop "${WORKSTATIONS[@]}" >/dev/null 2>&1 || true

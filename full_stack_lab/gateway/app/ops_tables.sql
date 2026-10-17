@@ -1,5 +1,8 @@
 SELECT pg_advisory_xact_lock(721017120);
 
+-- NULL in historical snapshots means the impact was not bounded.
+ALTER TABLE catalog_snapshots ADD COLUMN IF NOT EXISTS restricted_tools text[];
+
 CREATE TABLE IF NOT EXISTS runtime_image_scans (
   id bigserial PRIMARY KEY,
   runtime_id uuid NOT NULL REFERENCES mcp_runtimes(id),
