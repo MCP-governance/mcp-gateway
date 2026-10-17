@@ -530,6 +530,14 @@ Write-Output 'Managed request data snapshot and approved destination OK'
         self.assertEqual((self.root / 'report.lock').stat().st_size, 0)
         self.assertEqual({path.name for path in self.root.iterdir()}, {'notes.txt', 'report.lock'})
 
+    def test_rendered_config_bytes_match_gateway_hash(self):
+        # pj3: CRLF translation made three of four managed configs mismatch, so activation was refused.
+        managed = load('windows_write_test', 'endpoint-agent/managed-windows.py')
+        content = '{\n  "a": 1\n}\n'
+        managed.write_file(self.root / 'managed-settings.json', content)
+        self.assertEqual(hashlib.sha256((self.root / 'managed-settings.json').read_bytes()).hexdigest(),
+                         hashlib.sha256(content.encode()).hexdigest())
+
     def test_acl_reaches_existing_files_through_inheritance(self):
         # pj3: icacls /T left existing files with empty DACLs, so the elevated installer could not take ownership.
         managed = load('windows_acl_test', 'endpoint-agent/managed-windows.py')

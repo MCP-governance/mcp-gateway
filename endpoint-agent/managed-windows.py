@@ -191,7 +191,8 @@ def protected(paths):
 
 def write_file(path, content):
     temporary = path.with_name("." + path.name + "." + secrets.token_hex(4))
-    temporary.write_text(content, encoding="utf-8")
+    # newline="": text mode would write CRLF on Windows and the reported hashes would never match the Gateway's.
+    temporary.write_text(content, encoding="utf-8", newline="")
     os.replace(temporary, path)
 
 
