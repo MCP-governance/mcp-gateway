@@ -358,11 +358,12 @@ def close_sessions(account: str) -> None:
     run("pkill", "-u", account, check=False, quiet=True, stderr=subprocess.DEVNULL)
 
 
-def install_managed(account: str, placed: dict[str, dict], enrollment: Path) -> dict:
+def install_managed(account: str, placed: dict[str, dict], enrollment: Path, owner_uid: int | None = None) -> dict:
     step(f"관리형 연결 설치: {account}")
     close_sessions(account)
     clients = [part for name, item in placed.items() for part in ("--client", f"{name}={item['path']}")]
     done = subprocess.run([sys.executable, "-B", str(HERE / "managed-linux.py"), "install", "--user", account,
+                           *(["--owner-uid", str(owner_uid)] if owner_uid is not None else []),
                            "--enrollment", str(enrollment), *clients], capture_output=True, text=True)
     if done.returncode:
         raise Failed((done.stderr or done.stdout).strip().splitlines()[-1][:300] if (done.stderr or done.stdout)
@@ -390,7 +391,7 @@ def harness_login(account: str, harnesses: list[str]) -> dict[str, bool]:
         if (home / credential).is_file():
             signed[name] = True
             continue
-        step(f"{name} 모델 로그인 (화면의 안내를 따르세요. 건너뛰려면 Ctrl+C)")
+        step("Codex 장치 코드 로그인" if name == "codex" else f"{name} 모델 로그인")
         try:
             code = subprocess.run(["runuser", "-u", account, "--", str(shell), "-c", command], check=False).returncode
         except KeyboardInterrupt:
@@ -401,8 +402,6 @@ def harness_login(account: str, harnesses: list[str]) -> dict[str, bool]:
             # with a connected endpoint and no model. Both ways out, in one line each.
             print(f"모델 로그인은 나중에 해도 됩니다. ChatGPT 보안 설정에서 장치 코드 로그인을 켠 뒤 다시: "
                   f"sudo -u {account} {shell} -c 'codex login --device-auth'")
-            # Not the browser sign-in: its callback listener answers from the managed account, and the
-            # loopback rule refuses that reply (DEV-35), so it can never complete on this endpoint.
         elif code:
             print(f"{name} 로그인은 나중에 해도 됩니다. 처음 실행하면 로그인 화면이 나옵니다.")
     return signed
@@ -516,7 +515,8 @@ def main() -> int:
         if installed(account):
             rollback(account)
         try:
-            result = install_managed(account, placed, args.enrollment)
+            result = install_managed(account, placed, args.enrollment,
+                                     pwd.getpwnam(employee).pw_uid if companion else None)
             if companion:
                 step("직원 계정에서 바로 실행되게 연결")
                 result["launchers"] = write_shims(employee, account)
@@ -535,7 +535,7 @@ def main() -> int:
         print(f"새 터미널을 열어 평소 계정({employee})에서 codex 또는 claude를 실행하세요." if companion
               else "이 계정에서 codex 또는 claude를 실행하세요.")
         if "codex" in placed and not (result.get("model_signed_in") or {}).get("codex"):
-            print("Codex 로그인 화면에서는 'Sign in with Device Code'를 고르세요. 브라우저 로그인은 이 PC에서 완료되지 않습니다.")
+            print("Codex 로그인: codex login --device-auth")
         return 0
     except Failed as exc:
         print(f"\n설치하지 못했습니다: {exc}", file=sys.stderr)

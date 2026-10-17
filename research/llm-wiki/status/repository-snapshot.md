@@ -1,92 +1,28 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-17T19:53:39+09:00
+확인 시각: 2026-10-17T21:44:26+09:00
 
-HEAD: `085503e94ff0d00fc0bbe777bdb14ebcdbce6d38` · 로컬 브랜치: `10/17-feature-spec-wbs`
+HEAD: `0eb013b37864e27bcb041145c9b9cea928f03d8d` · 로컬 브랜치: `10/17-loopback-d107`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M research/llm-wiki/README.md
- M research/llm-wiki/catalogs/papers.json
- M research/llm-wiki/papers/LIB-I16.md
- M research/llm-wiki/papers/LIB-K34.md
- M research/llm-wiki/papers/LIB-K36.md
- M research/llm-wiki/papers/README.md
- M research/llm-wiki/sources/README.md
+M docs/ai/DECISIONS.md
+ M endpoint-agent/README.md
+ M endpoint-agent/bootstrap.py
+ M endpoint-agent/enforce-linux.py
+ M endpoint-agent/managed-linux.py
+ M research/llm-wiki/analysis/dev35-loopback/README.md
+ M research/llm-wiki/catalogs/threats.json
  M research/llm-wiki/status/backlog.md
- M research/llm-wiki/status/current.md
-?? research/llm-wiki/analysis/compliance/
-?? research/llm-wiki/papers/LIB-L01.md
-?? research/llm-wiki/papers/LIB-L02.md
-?? research/llm-wiki/papers/LIB-L03.md
-?? research/llm-wiki/papers/LIB-L04.md
-?? research/llm-wiki/papers/LIB-L05.md
-?? research/llm-wiki/papers/LIB-L06.md
-?? research/llm-wiki/papers/LIB-L07.md
-?? research/llm-wiki/papers/LIB-L08.md
-?? research/llm-wiki/papers/LIB-L09.md
-?? research/llm-wiki/papers/LIB-L10.md
-?? research/llm-wiki/papers/LIB-L11.md
-?? research/llm-wiki/papers/LIB-L12.md
-?? research/llm-wiki/papers/LIB-M01.md
-?? research/llm-wiki/papers/LIB-M02.md
-?? research/llm-wiki/papers/LIB-M03.md
-?? research/llm-wiki/papers/LIB-M04.md
-?? research/llm-wiki/papers/LIB-M05.md
-?? research/llm-wiki/papers/LIB-M06.md
-?? research/llm-wiki/papers/LIB-M07.md
-?? research/llm-wiki/papers/LIB-M08.md
-?? research/llm-wiki/papers/LIB-M09.md
-?? research/llm-wiki/papers/LIB-M10.md
-?? research/llm-wiki/papers/LIB-M11.md
-?? research/llm-wiki/papers/LIB-M12.md
-?? research/llm-wiki/papers/LIB-M13.md
-?? research/llm-wiki/papers/LIB-M14.md
-?? research/llm-wiki/papers/LIB-M15.md
-?? research/llm-wiki/papers/LIB-M16.md
-?? research/llm-wiki/papers/LIB-M17.md
-?? research/llm-wiki/papers/LIB-M18.md
-?? research/llm-wiki/papers/LIB-M19.md
-?? research/llm-wiki/papers/LIB-M20.md
-?? research/llm-wiki/papers/LIB-M21.md
-?? research/llm-wiki/papers/LIB-M22.md
-?? research/llm-wiki/papers/LIB-M24.md
-?? research/llm-wiki/papers/LIB-M25.md
-?? research/llm-wiki/papers/LIB-M26.md
-?? research/llm-wiki/papers/LIB-M27.md
-?? research/llm-wiki/papers/LIB-M28.md
-?? research/llm-wiki/papers/LIB-M29.md
-?? research/llm-wiki/papers/LIB-M30.md
-?? research/llm-wiki/papers/LIB-M31.md
-?? research/llm-wiki/papers/LIB-M32.md
-?? research/llm-wiki/papers/LIB-M33.md
-?? research/llm-wiki/papers/LIB-M34.md
-?? research/llm-wiki/papers/LIB-M35.md
-?? research/llm-wiki/papers/LIB-M36.md
-?? research/llm-wiki/papers/LIB-M37.md
-?? research/llm-wiki/papers/LIB-M38.md
-?? research/llm-wiki/papers/LIB-M39.md
-?? research/llm-wiki/papers/LIB-M40.md
-?? research/llm-wiki/papers/LIB-M41.md
-?? research/llm-wiki/papers/LIB-M42.md
-?? research/llm-wiki/papers/LIB-M43.md
-?? research/llm-wiki/papers/LIB-M44.md
-?? research/llm-wiki/papers/LIB-M45.md
-?? research/llm-wiki/papers/LIB-M46.md
-?? research/llm-wiki/papers/LIB-M47.md
-?? research/llm-wiki/papers/LIB-M48.md
-?? research/llm-wiki/papers/LIB-M49.md
-?? research/llm-wiki/papers/LIB-M50.md
-?? research/llm-wiki/sources/compliance/
-?? research/llm-wiki/sources/licenses/redistribution-2026-10-17.json
-?? research/llm-wiki/status/reports/2026-10-17-compliance-references.md
-?? research/llm-wiki/tools/build_compliance.py
-?? research/llm-wiki/tools/build_compliance_matrix.py
-?? research/llm-wiki/tools/build_compliance_plan.py
-?? research/llm-wiki/tools/check_compliance.py
+ M research/llm-wiki/status/reports/2026-10-15-dev35-loopback.md
+ M research/llm-wiki/status/repository-snapshot.json
+ M research/llm-wiki/status/repository-snapshot.md
+ M research/llm-wiki/threats/control-map.md
+?? full_stack_lab/tests/loopback_owner_replies_test.py
+?? research/llm-wiki/status/reports/2026-10-17-loopback-owner-replies-d119.md
 ```
 
 ## 주요 파일 바이트
@@ -101,6 +37,6 @@ M research/llm-wiki/README.md
 | `full_stack_lab/gateway/app/secret_scan.py` | `b6951eba02d7936ed7e369c1a8ec2bd9c4168d8fdc562801c76061634bdb07a3` |
 | `full_stack_lab/opa/pac15.rego` | `067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850` |
 | `full_stack_lab/opa/decision.rego` | `b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904` |
-| `endpoint-agent/bootstrap.py` | `e813b91655123ade200eb06d373ec4b8dafa1124b6f0f6ad75bea18cfc2dd4c3` |
-| `endpoint-agent/managed-linux.py` | `58e3a7d66ee7e990bc9f2e9c45797df3e587a47259489ee7a5a8464f2771a14c` |
-| `endpoint-agent/enforce-linux.py` | `1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4` |
+| `endpoint-agent/bootstrap.py` | `8c0b13cf6770d92ce121fc14db6d57839aadf0426ffff1dc2f43f28032602f15` |
+| `endpoint-agent/managed-linux.py` | `04a12ba09454d44a7d8da78112b0625438e3d75cf875a92e8313ba6530a7cce2` |
+| `endpoint-agent/enforce-linux.py` | `ad3005c173565164afe356aa917598a5fd5e93d092c11f1a2b50b5040b15f263` |

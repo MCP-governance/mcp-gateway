@@ -24,6 +24,11 @@ unzip mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.
 실행 연결은 `/usr/local/bin`의 shim과, PATH 앞쪽 `~/.local/bin`의 하네스를 이기도록 직원 계정에만 정의되는 셸 함수
 (`/etc/profile.d/mcpgw-managed.sh`, `/etc/bash.bashrc`·`/etc/zsh/zshrc`의 표식 블록)입니다(D-72). 설치 뒤 **새 터미널**에서 실행합니다.
 이미 설치된 장치면 먼저 `rollback`을 돌리고 다시 설치합니다. `--remove`는 이 PC의 연결만 제거합니다(함수·블록 포함).
+
+Linux Codex 모델 로그인은 설치기가 `codex login --device-auth`로 실행합니다. 건너뛴 경우 같은 명령으로 로그인합니다.
+별도 관리 계정의 루프백 출발은 계속 차단하며, 설치를 실행한 직원 계정이 먼저 연 루프백 연결에 대한 응답만 허용합니다(D-119).
+수동 `managed-linux.py install`은 관리자가 확인한 직원 UID를 `--owner-uid <UID>`로 지정합니다. 미지정이면 응답 예외도 없습니다.
+직원 계정 자체가 관리 계정인 설치에는 소유자 예외를 넣지 않습니다. 현재 코드의 실기기 재검증은 남아 있습니다.
 아래 수동 경로는 그 단계들을 따로 돌릴 때만 씁니다.
 
 4. 설치기는 단말 키를 생성하여 한 번 등록하고, `/var/lib/mcpgw-managed/<계정>/config.json`(root 600)에만 저장합니다.
@@ -39,7 +44,7 @@ AppArmor 프로필은 계정의 정확한 이름과 enforce 행을 대조합니�
 단말 키 대신 짧은 JWT만 UID가 일치하는 로컬 인증 헬퍼에 전달하며, 시스템 설정·argv·환경에 토큰을 넣지 않습니다.
 
 이 프로필은 **Linux SSH 일반 계정**의 실행과 UID 전체 IP egress를 제한합니다. 다른 로그인 경로·root·관리자·커널 침해를
-통제했다고 주장하지 않습니다. UID 규칙은 솔루션 기기의 게이트웨이 포트와 **모델 프록시 포트**만 엽니다(D-67).
+통제했다고 주장하지 않습니다. UID 규칙은 솔루션 기기의 게이트웨이 포트와 **모델 프록시 포트**(D-67), 위의 소유자 시작 루프백 응답(D-119)을 허용합니다.
 하네스 실행기는 `HTTPS_PROXY`·`HTTP_PROXY`를 프록시로, `NO_PROXY`를 게이트웨이 주소로 고정합니다. 프록시는
 `full_stack_lab/model-proxy/model-domains.txt`의 모델 도메인만 허용하고(TLS 터널은 443만), 임의 외부 주소를 열지 않습니다.
 프록시 이전에 설치한 장치는 그대로 동작하지만 모델에 닿지 않습니다. 자격 폐기 → 롤백 → 새 키트로 재설치합니다.

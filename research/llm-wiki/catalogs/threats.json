@@ -21,7 +21,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "라이선스·배포처·SBOM·취약점과 실제 도입 승인 증거 필요",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -58,7 +58,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "도구 계약과 실제 자원·인자의 승인 범위 독립 검토",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -93,7 +93,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "사용자 동의와 서버 사용 승인은 별도 증거",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -123,7 +123,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "환경 사실 입력과 실기기 관찰값 결합 검증",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -161,7 +161,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "OAuth discovery·DNS 재결합 등 최종 접속 대상의 별도 경계",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -200,7 +200,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "동명 도구·설명·스키마 변경과 승인 이후 변형 시험",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -223,17 +223,17 @@
     "code_candidates": [
       {
         "path": "endpoint-agent/enforce-linux.py",
-        "sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
+        "sha256": "ad3005c173565164afe356aa917598a5fd5e93d092c11f1a2b50b5040b15f263",
         "committed_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
-        "normalized_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
-        "worktree_modified": false
+        "normalized_sha256": "ad3005c173565164afe356aa917598a5fd5e93d092c11f1a2b50b5040b15f263",
+        "worktree_modified": true
       },
       {
         "path": "endpoint-agent/managed-linux.py",
-        "sha256": "58e3a7d66ee7e990bc9f2e9c45797df3e587a47259489ee7a5a8464f2771a14c",
+        "sha256": "04a12ba09454d44a7d8da78112b0625438e3d75cf875a92e8313ba6530a7cce2",
         "committed_sha256": "58e3a7d66ee7e990bc9f2e9c45797df3e587a47259489ee7a5a8464f2771a14c",
-        "normalized_sha256": "58e3a7d66ee7e990bc9f2e9c45797df3e587a47259489ee7a5a8464f2771a14c",
-        "worktree_modified": false
+        "normalized_sha256": "04a12ba09454d44a7d8da78112b0625438e3d75cf875a92e8313ba6530a7cce2",
+        "worktree_modified": true
       },
       {
         "path": "endpoint-agent/managed-windows.py",
@@ -258,7 +258,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "로컬 MCP 실험·코드 회귀와 현재 관리 기기의 OS 집행을 구분; Windows loopback·실행 통제 공백 유지",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -304,7 +304,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "transport 신원과 사용자 자기 선언 필드 분리",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -341,7 +341,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "위임 근거·교집합·철회·만료 시험; 하네스 이름은 인증 근거 아님",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": []
@@ -375,7 +375,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "audience·scope·issuer·만료·직원 토큰 미전달의 독립 검증",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -412,7 +412,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "이전 허용·캐시 결과를 범위가 다른 요청에 재사용하는지 시험",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -444,7 +444,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "도구 이름이 아닌 실제 SQL·명령·수신자 효과로 분류",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -485,7 +485,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "정책 전과 실행 직전 입력 검사 및 정규화 우회 시험",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -524,7 +524,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "미분류를 낮은 등급으로 허용하지 않는지 확인",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -564,7 +564,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "실제 최종 목적지·데이터 조합과 프롬프트/모델 경로는 따로 검증",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -601,7 +601,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "nonce·canonical fingerprint·자가 승인·동시 승인 재사용 시험",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -640,7 +640,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "호출량 상한과 모든 upstream의 실행 시간 제한을 동일시하지 않음",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": []
@@ -668,7 +668,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "패턴 검사와 의미적 주입 탐지 구분; 정상 대조군·다국어 표본 필요",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -704,7 +704,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "불필요 수집 제한과 탐지 성공은 다른 통제; scanner 장애 시험",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -742,7 +742,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "응답 보류·마스킹은 upstream 미실행을 뜻하지 않음",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -779,7 +779,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "자동 최초 신뢰 금지; 사람이 승인한 계약과 호출 시 관찰 해시 대조",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": []
@@ -820,7 +820,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "체인 검증과 장치 상태/감사 이벤트의 transaction 원자성·DB 소유자 변조·보존 정책은 별도",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -862,7 +862,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "C1~C4와 자원 서버 재접근의 현재 증거 필요",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
@@ -904,7 +904,7 @@
       }
     ],
     "verification": "static-candidate-mapping",
-    "verified_on": "2026-10-15",
+    "verified_on": "2026-10-17",
     "limitations": "설정 삭제는 외부 토큰·키 회수 증거 아님",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
