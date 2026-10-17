@@ -65,6 +65,7 @@ def main() -> int:
     parser.add_argument("--ca-sha256", default="", help="관리자가 확인한 루트 SHA-256 지문")
     parser.add_argument("--no-verify", action="store_true", help="설치 뒤 1회 보고를 생략")
     parser.add_argument("--windows-wrapper", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--install-dir", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
     certificate = ""
     if args.ca or args.ca_sha256:
@@ -99,15 +100,16 @@ def main() -> int:
         key = getpass.getpass("장치 키 (화면에 표시되지 않음): ").strip()
     if len(key) < 20:
         parser.error("장치 키가 비어 있거나 너무 짧습니다.")
-    target = install_dir()
+    target = args.install_dir or install_dir()
     target.mkdir(mode=0o700, parents=True, exist_ok=True)
     if os.name != "nt":
         target.chmod(0o700)
     agent = target / "agent.py"
-    shutil.copy2(Path(__file__).with_name("agent.py"), agent)
+    if Path(__file__).with_name("agent.py").resolve() != agent.resolve():
+        shutil.copy2(Path(__file__).with_name("agent.py"), agent)
     if os.name != "nt":
         agent.chmod(0o700)
-    config = config_dir() / "config.json"
+    config = (target if os.name == "nt" else config_dir()) / "config.json"
     write_private_json(config, {
         "ENDPOINT_GATEWAY_URL": args.gateway_url,
         "ENDPOINT_CA_CERTIFICATE": certificate,

@@ -2,8 +2,10 @@
 
 > DB: Gateway의 PostgreSQL(`db`, 데이터베이스 `mcp_governance`; LiteLLM은 같은 서버의 `litellm` DB).
 > 스키마 파일: `full_stack_lab/db/init.sql`(기본) → `gateway/app/agent_tables.sql` →
-> `lifecycle_tables.sql` → `v2_tables.sql`(v2 추가·제약 재정의). Gateway와 agent-service가 기동할 때
+> `lifecycle_tables.sql` → `v2_tables.sql`(v2 추가·제약 재정의) → `oidc_tables.sql` → `ops_tables.sql`. Gateway와 agent-service가 기동할 때
 > 이 순서로 멱등 실행한다. 마이그레이션 도구는 없다 — `CREATE … IF NOT EXISTS`/`ALTER … ADD COLUMN IF NOT EXISTS`.
+
+D-120~D-123 추가: `runtime_image_scans`(이미지 검사 이력), `alert_self_tests`(합성 자체 시험), `ops_alerts`(경보·합성 표식), `ops_suspensions`(중지와 사람 복귀), `disposal_blocks`(외부 서명 목록에서 재구성한 차단 상태). 검사·경보·자체 시험 이력과 `approval_events`는 추가만 한다. `ops_suspensions`는 관리자가 복귀할 때 복귀 필드를 채우는 상태 기록이며 감사 판정을 수정하는 테이블이 아니다. 서명 목록 정본은 `/disposal` 볼륨이다. [운영 대응](OPS_RESPONSE.md).
 > 회사 데이터(`corp-db`)는 별도 서버다 → `full_stack_lab/corp/corpdb.sql`.
 
 ## 1. 판정과 감사

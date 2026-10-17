@@ -31,6 +31,9 @@ _INSERT = """INSERT INTO dispatch_intents(request_id, user_token, server_id, too
              JOIN principals p ON p.token = r.user_token AND p.status = 'active'
              JOIN mcp_servers s ON s.id = r.server_id AND COALESCE(s.lifecycle, 'OPERATING') = 'OPERATING'
             WHERE r.request_id = %s AND r.released_at IS NULL AND r.expires_at > now()
+              AND s.status <> 'DISABLED'
+              AND NOT EXISTS (SELECT 1 FROM ops_suspensions x WHERE x.server_id=s.id AND x.resumed_at IS NULL)
+              AND NOT EXISTS (SELECT 1 FROM disposal_blocks x WHERE x.server_id=s.id AND x.kind IN ('server','credential'))
               FOR SHARE OF s"""
 
 
@@ -70,14 +73,17 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
             return "approval"
     why = await db.fetch_one(
         """SELECT (SELECT p.status FROM principals p WHERE p.token = r.user_token) AS principal,
-                  (SELECT COALESCE(s.lifecycle, 'OPERATING') FROM mcp_servers s WHERE s.id = r.server_id) AS lifecycle
+                  (SELECT COALESCE(s.lifecycle, 'OPERATING') FROM mcp_servers s WHERE s.id = r.server_id) AS lifecycle,
+                  (SELECT s.status FROM mcp_servers s WHERE s.id = r.server_id) AS server_status
              FROM call_reservations r WHERE r.request_id = %s AND r.released_at IS NULL AND r.expires_at > now()""",
         (request_id,))
     if not why:
         return "reservation"
     if why["principal"] != "active":
         return "principal"
-    return "terminated" if why["lifecycle"] != "OPERATING" else "reservation"
+    if why["lifecycle"] != "OPERATING":
+        return "terminated"
+    return "suspended" if why["server_status"] == "DISABLED" else "reservation"
 
 
 async def uncertain(limit: int = 200) -> list[dict]:

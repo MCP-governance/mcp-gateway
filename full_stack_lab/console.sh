@@ -45,6 +45,8 @@ usage: ./console.sh <command>
                          Tailscale IP에만 HTTPS 게시(배치 전용 사설 CA)
   field ca               루트 인증서 내보내기·SHA-256 지문 확인
   field status           Caddy·Gateway·Console 상태와 Tailscale 주소 확인
+  field init-disposal [--with-lab-mcp]
+                         빈 폐기 보관 볼륨을 한 번 초기화
   field pc-command       개인별 설치 키트 다운로드와 관리형 설치 절차
   field set-password <아이디>
                          계정 한 개의 비밀번호를 바꿈
@@ -80,6 +82,13 @@ ensure_env() {
     grep -q "^LLM_KEY_WS_${up}=" .env || echo "LLM_KEY_WS_${up}=sk-${ws}-$(openssl rand -hex 12)" >> .env
     grep -q "^ENDPOINT_KEY_WS_${up}=" .env || echo "ENDPOINT_KEY_WS_${up}=ek-${ws}-$(openssl rand -hex 20)" >> .env
   done
+  if ! grep -qE '^DISPOSAL_PRIVATE_KEY=.+' .env; then
+    if grep -qE '^DISPOSAL_PUBLIC_KEY=.+' .env; then
+      echo '폐기 서명 개인 키가 없습니다. 기존 키를 복구하세요.' >&2; return 1
+    fi
+    docker compose build -q gateway
+    docker compose run --rm --no-deps -T --entrypoint python gateway -m app.keygen disposal | tr -d '\r' >> .env
+  fi
 }
 
 
@@ -269,10 +278,12 @@ field_up() {
   if [[ $with_lab_mcp == 1 ]]; then
     export FIELD_REGISTRY_DIR=/registry
     export FIELD_DB_VOLUME=field_lab_db_data FIELD_GIT_VOLUME=field_lab_corp_git_data FIELD_ACCOUNTS_MODE=0
+    export FIELD_DISPOSAL_VOLUME=field_lab_disposal_journal
     services+=("${lab_services[@]}")
   else
     export FIELD_REGISTRY_DIR=/registry-field
     export FIELD_DB_VOLUME=field_db_data FIELD_GIT_VOLUME=field_corp_git_data FIELD_ACCOUNTS_MODE=1
+    export FIELD_DISPOSAL_VOLUME=field_disposal_journal
     docker compose "${FIELD_COMPOSE[@]}" stop "${lab_services[@]}" >/dev/null 2>&1 || true
   fi
   export MCP_FIELD_MODE="$FIELD_ACCOUNTS_MODE"
@@ -307,7 +318,14 @@ field_up() {
 
 field_status() {
   docker compose "${FIELD_COMPOSE[@]}" ps caddy gateway agent-service
+  field_browser_trust
   curl --cacert field/ca/root.crt -fsS "https://${APPLIANCE_BIND}:443/api/health" | python3 -m json.tool
+}
+
+field_browser_trust() {
+  echo "루트 인증서: $LAB_DIR/field/ca/root.crt (내보내기: ./console.sh field ca)"
+  if [[ -f field/ca/root.crt ]]; then openssl x509 -in field/ca/root.crt -noout -fingerprint -sha256; fi
+  echo "운영자와 지문 대조 → 별도 Firefox 프로필의 인증서 → 인증 기관 → 가져오기(웹사이트 식별 신뢰). 시스템 저장소에는 추가하지 않습니다."
 }
 
 field_ca() {
@@ -371,6 +389,7 @@ sys.exit(0 if n else 1)' "$email"
 
 # 설치 권한은 OS 관리자에게 있고, 가입자용 grant는 Console 인증 뒤 생성한다.
 field_pc_command() {
+  field_browser_trust
   echo "https://${APPLIANCE_BIND}:443/workspace 로그인 → 내 PC 연결 → 설치 키트 다운로드"
   echo "unzip mcp-managed-kit.zip -d mcp-managed-kit"
   echo "cd mcp-managed-kit"
@@ -398,6 +417,13 @@ field_dispatch() {
   export MCP_FIELD_MODE=1
   case "${1:-}" in
     up) shift; field_up "$@" ;;
+    init-disposal)
+      ensure_env
+      export FIELD_DISPOSAL_VOLUME=field_disposal_journal
+      if [[ "${2:-}" == "--with-lab-mcp" ]]; then export FIELD_DISPOSAL_VOLUME=field_lab_disposal_journal; fi
+      docker compose "${FIELD_COMPOSE[@]}" build -q gateway
+      docker compose "${FIELD_COMPOSE[@]}" run --rm --no-deps -T --entrypoint python gateway -m app.disposal init
+      ;;
     status) field_status ;;
     ca) field_ca ;;
     down) field_down ;;
@@ -410,6 +436,10 @@ field_dispatch() {
 
 case "${1:-up}" in
   up) shift || true; up "$@" ;;
+  init-disposal)
+    ensure_env
+    docker compose run --rm --no-deps -T --entrypoint python gateway -m app.disposal init
+    ;;
   workday) shift; workday "$@" ;;
   ask)
     ws="${2:?워크스테이션을 지정하세요 (예: ws-ysg)}"; goal="${3:?지시를 입력하세요}"; shift 3
@@ -453,6 +483,9 @@ case "${1:-up}" in
     python3 tests/replay_check.py reports/policy-replay.json
     ;;
   test)
+    [[ "${TERMINATION_DISPOSABLE_LAB:-}" == "1" ]] || {
+      echo '영구 폐기 시험을 포함합니다. 일회용 랩에서만 TERMINATION_DISPOSABLE_LAB=1로 실행하세요.' >&2; exit 2;
+    }
     ensure_env
     docker run --rm --network none -e PYTHONPATH=/app:/validation/supply_chain -v "$LAB_DIR:/validation:ro" "$(docker compose images -q gateway)" \
       python /validation/tests/oss_audit_test.py
@@ -481,7 +514,6 @@ case "${1:-up}" in
     python3 tests/reservation_effect_check.py | tee reports/reservation-effects.json
     harness_check | tee reports/harnesses.txt
     AGENT_MODE=scripted workday all --mode scripted --check | tee reports/workday.txt
-    python3 tests/termination_flow.py | tee reports/termination-flow.txt
     tests/security_regression.sh | tee reports/security-regression.txt
     # Evasions of the controls, with an equally sized benign control group. Runs in the
     # gateway image for its MCP client, on the office network the harnesses use.
@@ -493,6 +525,7 @@ case "${1:-up}" in
     python3 tests/replay_check.py reports/policy-replay.json
     for e in e1 e2 e3; do docker compose exec -T gateway python -m app.experiments "$e" > "reports/experiment-$e.json"; done
     python3 tests/experiments_check.py reports/experiment-e1.json reports/experiment-e2.json reports/experiment-e3.json
+    python3 tests/termination_flow.py | tee reports/termination-flow.txt
     echo "모든 필수 검증이 통과했습니다."
     ;;
   scan)

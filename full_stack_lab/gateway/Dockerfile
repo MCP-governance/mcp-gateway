@@ -13,6 +13,9 @@ RUN mkdir /out && gcc -O2 -fPIC -shared -Wall -Wextra -Werror -Wno-unused-parame
       $(python3-config --includes) /src/textscan.c -o /out/mcpgw_textscan$(python3-config --extension-suffix) \
       -Wl,-Bstatic -lpcre2-32 -Wl,-Bdynamic
 FROM python:3.12-slim
+COPY windows-python.json prepare-windows-python.py /tmp/windows-python/
+RUN python /tmp/windows-python/prepare-windows-python.py /tmp/windows-python/windows-python.json /opt/windows-python \
+    && rm -r /tmp/windows-python
 COPY --from=secrets /usr/bin/gitleaks /usr/local/bin/gitleaks
 COPY --from=native-go /out/libmcpgw_gitleaks.so /usr/local/lib/
 COPY --from=native-c /out/ /usr/local/lib/python3.12/site-packages/
@@ -21,8 +24,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
     && useradd --uid 10001 --create-home appuser \
-    && mkdir -p /runtime /reports /registry-runtime \
-    && chown -R appuser:appuser /app /runtime /reports /registry-runtime
+    && mkdir -p /runtime /reports /registry-runtime /disposal \
+    && chown -R appuser:appuser /app /runtime /reports /registry-runtime /disposal
 COPY --chown=appuser:appuser app ./app
 ARG MCP_BUILD_REVISION=unknown
 ENV MCP_BUILD_REVISION=$MCP_BUILD_REVISION

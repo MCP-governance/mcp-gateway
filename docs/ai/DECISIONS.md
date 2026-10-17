@@ -1294,6 +1294,48 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 키트: field 설정 생성·전체 CLI 인자, 서버의 Linux/Windows 관리 설정 생성과 엔드포인트의 파일 쓰기를 가짜 토큰으로 회귀 검사한다. OS 집행 코드는 변경하지 않는다. 기존 `field_kit_check.py`는 Claude add 인자의 마지막 항목만 보므로 새 회귀는 인자 전체를 본다.
 - 한계: 알 수 없는 모든 비밀 형식의 탐지를 보장하지 않는다. 네이티브 Gitleaks·SDK·실제 DB 검증은 미실행이며 대역을 사용하는 함수 단위 증거로 한정한다. [보고](../../research/llm-wiki/status/reports/2026-10-17-dest-pin-credential-redaction.md).
 
+## D-118 Windows 키트는 포함 Python·설치 마법사·트레이로 제공한다 (2026-10-17)
+
+- 사용자 결정: Windows 기본 PowerShell 5.1·WinForms·NotifyIcon만으로 설치 마법사와 로그온 트레이를 만든다. 새 GUI 런타임·서드파티 GUI 라이브러리는 넣지 않는다. 대상은 Windows amd64다.
+- Python: 공식 [3.13.16 배포](https://www.python.org/downloads/release/python-31316/)의
+  `https://www.python.org/ftp/python/3.13.16/python-3.13.16-embed-amd64.zip`, SHA-256
+  `97dae5274cc54867065e8d5a3226e48c35017ed332a0fdb0e27d5b5821961297`를 고정한다.
+  게이트웨이 Dockerfile이 빌드 중 ZIP과 원래 라이선스를 검증·보관하고 `/api/pc-kit`가 함께 압축한다. 실행 중 다운로드하지 않는다.
+  이미 존재하는 게이트웨이 이미지 빌드/키트 bind mount 구조를 유지하며, 호스트별 외부 캐시 설정·실행 중 네트워크 의존성을 추가하지 않기 위해 이미지 방식을 택했다.
+- 검색 경로: `python313._pth`에 표준 ZIP·런타임 폴더·키트 부모만 둔다. `import site`는 주석으로 유지하고 `-I -S`로 실행한다.
+  명시적 `site` import도 훅을 활성화하지 않는지, 설치기·에이전트의 AST import 목록(ssl·ctypes·winreg·msvcrt·tomllib 등)을 포함 Python으로 설치 전에 점검한다.
+  pip·사용자 site-packages·사용자 환경으로 의존성을 충족시키지 않는다. 서비스와 관측 에이전트 예약 작업은 포함 `pythonw.exe`를 쓴다.
+- 권한: 시작·연결(TCP + `/api/health`)·위치/범위 확인은 일반 권한이다. 관리형 등록/제거만 별도 UAC 프로세스다.
+  D-68의 대상 계정 로그아웃·일반 계정·보호된 프로그램/장치 키·파이프 신원·사람의 활성화 경계를 유지한다. 표준 사용자가 자기 로그인 세션을 유지한 채 관리형 등록하도록 완화하지 않는다.
+- 트레이: 대상 SID의 Interactive/Limited 로그온 예약 작업을 쓴다. 기존 관측기가 가진 최근 실제 차단 5건과 자격정보 없는 상태 파일만 읽는다.
+  150초 초과 보고는 연결 끊김, 연결된 상태의 5분 내 차단은 차단 발생으로 표시한다. 지금 점검은 게이트웨이 연결·기존 보고 시각 확인이며 정책 승인/서비스 재시작이 아니다. 새 API는 추가하지 않는다.
+- 제거: 예약 작업 종료를 기다린 뒤 설치 목록의 파일만 지워 사용자 파일을 보존한다. Codex는 현재 관리 블록 밖 사용자 변경을 유지한다.
+  직원 PC 키트는 report 실행·예약·제거를 같은 `report.lock`으로 직렬화하고, 자식이 잠금을 잡은 뒤 `report.log`를 연다. 제거 뒤 대기 report는 설정이 없으면 쓰지 않는다.
+  잠금 inode 분리를 막기 위한 `report.lock`과 사용자가 확인할 진단 `setup.log`는 보존한다.
+- 근거·원자 요구·시험·한계: [분석](../../research/llm-wiki/analysis/windows-kit-wizard-tray/README.md),
+  [작업 보고](../../research/llm-wiki/status/reports/2026-10-17-windows-kit-wizard-tray.md), [pj3 절차](../../endpoint-agent/tests-windows/README.md).
+  이번에는 정적/순수 단위 검사만 수행한다. 실제 ZIP 다운로드·포함 Python 실행·GUI/DPI·UAC·예약 작업/ACL·pj3 효과는 메인의 빌드/실기기 검수 대상이다.
+
+### D-118 보안 검토 반영 (2026-10-18)
+
+- 앞 구현의 UAC 작업자가 직원 쓰기 가능한 키트에서 common/ZIP을 읽던 경로를 폐기한다. 관리자 실행의 진입점은 조직이 별도 승인·배포한
+  `%ProgramFiles%\MCPGatewayInstaller\windows-worker.ps1`뿐이다. 그 설치기 자체를 내려받은 ZIP에서 최초 승격해 배치하거나 최초 관찰 해시로 승인하지 않는다.
+- 신뢰 근거는 ZIP 밖에서 IT가 관리하는 `%ProgramData%\MCPGatewayInstaller\approved-windows-kit.json`이다.
+  기존 인증된 `/api/pc-kit` 응답은 전체 코드·Python ZIP의 매니페스트와 응답 헤더의 SHA-256을 제공한다. IT는 신뢰되는 인증 경로/릴리스 승인에서
+  별도로 확정한 매니페스트를 승인 배포 도구로 설치한다. ZIP 옆의 매니페스트·해시를 그대로 신뢰 파일로 복사하는 자동 경로는 없다.
+  승인 설치기·승인 파일이 없거나 소유자/ACL·reparse·파일 목록·해시가 맞지 않으면 승격 또는 실행을 거부한다.
+- 승격 뒤에는 보호된 승인 위치의 파일만 사용한다. 사용자 폴더에서는 크기 제한된 요청/등록 JSON만 공유 쓰기·삭제를 허용하지 않는 핸들로 읽고,
+  실제 열린 경로를 대조한 뒤 보호된 임시 위치로 스냅샷한다. 게이트웨이 주소·노드 ID는 승인 파일 값으로 고정한다.
+  설치 목적지의 코드와 Python 전체도 실행 전에 재대조한다. 승격 프로세스의 PATH·모듈 경로·작업 디렉터리·임시 컴파일 경로는 보호된 위치로 제한한다.
+- 승격 명령에서 `-ExecutionPolicy Bypass`를 제거한다. 실행 정책이나 UAC 자체를 코드 출처 인증으로 세지 않는다.
+  조직의 서명/실행 정책은 승인 배포 과정에서 충족해야 하며 ZIP의 인증서나 처음 본 게시자를 자동 신뢰하지 않는다.
+- 프로그램은 Users 읽기를 유지하지만 개인 트레이 설정·상태·교체용 임시 파일은 `%ProgramData%\MCPGatewayManagedTray\<SID>\`로 분리한다.
+  상속을 끊고 Administrators·SYSTEM 쓰기, 해당 SID 읽기만 허용한다. 최초 서비스 실행 전에 생성하며 이후 교체 파일도 같은 ACL을 상속한다.
+  승격 작업 결과도 요청자 SID 읽기·관리자/SYSTEM 쓰기 경로에만 기록한다.
+- 기존 직원 키트 제거 시험은 `report.lock` 한 파일만 남는 정확한 조건으로 수정했다. 다른 잔여 파일을 허용하도록 조건을 넓히지 않았다.
+- 이 신뢰 경로는 Windows 마법사의 범위다. Linux `install.sh`가 사용자 폴더의 `bootstrap.py`를 sudo로 실행하는 동일 계열 위험은
+  [별도 잔여 위험](../../research/llm-wiki/analysis/windows-kit-wizard-tray/security-review.md)에 남겼으며 Linux 코드는 변경하지 않았다.
+
 ## D-119 관리 계정 루프백은 소유자 시작 연결의 응답만 허용하고 Codex는 장치 코드로 로그인한다 (2026-10-17)
 
 - 결정(사용자 채택): Codex 로그인은 `codex login --device-auth`를 기본으로 실행한다. 관리 UID가 시작하는 루프백 연결은 계속 거부한다. 소유자 UID가 `lo`에서 시작한 `ct direction original ct state new` 연결에만 `ct mark set ct mark or 0x00000100`을 적용하고, 관리 UID의 `lo` 응답 방향 중 `ct mark and 0x00000100 == 0x00000100`만 허용한다. 포트·기간·전체 established 허용은 추가하지 않는다.
@@ -1302,9 +1344,33 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 관측: D-113의 `SPT`·TCP 플래그·`listener_reply` 분류는 유지한다. 허용 규칙은 `MCPGW_DENY` 로그보다 앞에 있어 허용 응답은 이 거부 로그에 도달하지 않는다. 다른 UID가 시작해 차단된 SYN-ACK는 계속 `listener_reply`다. 기존 원장은 수정하지 않는다.
 - 검증 범위: [작업 보고·실기기 명령](../../research/llm-wiki/status/reports/2026-10-17-loopback-owner-replies-d119.md). 로컬 순수 Python 단위 검증이며 배포·PJ1 재설치·이번 판본 netns/E13·R1~R9·실제 장치 코드 로그인은 메인이 수행한다. 과거 제안의 충돌 번호 표기는 D-119로 정정했고 런처 결정 D-107은 유지한다.
 
+## D-120 운영 이미지 재검사와 기한 초과 격리 (2026-10-17)
+
+- DEV-50 / POL-39 / WBS G01.06. 실행기의 기존 조정 루프에서 불변 이미지 ID를 Trivy 0.74.0으로 재검사한다. 도입 검사와 JSON·취약점 DB 시각 파서를 공유하고 7일 신선도 기준을 유지한다. 기본 검사 간격 1일, CRITICAL 조치 기한은 최초 발견부터 7일이며 환경 설정으로 바꾼다.
+- 발견 항목별 최초 시각과 검사 실패를 DB·승인 이벤트에 추가한다. 기한 초과 또는 검사 실패는 비활성·실행 중지로 보낸다. 자원 잔존 시 정리 완료로 세지 않는다. 자동 재활성화하지 않는다.
+- 범위: 실행기가 관리하는 이미지. KEV의 악용 확인·EPSS의 확률은 같은 지표가 아니고 이 작업의 격리 입력으로 자동 도입하지 않았다. 직렬 실행기 지연·실제 DB 다운로드·엔진 격리는 기기에서 검증해야 한다. [운영 문서](OPS_RESPONSE.md).
+
+## D-121 정책 해시별 합성 경보 자체 시험 (2026-10-17)
+
+- DEV-60 / POL-42 / WBS G06.05. 실제 OPA 로드 규칙·데이터·capability 해시를 기준으로 정상 1건과 주요 경보 합성 5건을 평가하고 정책 ID와 경보 저장 결과를 확인한다. 실행 전후 해시가 다르거나 검사기·저장 경로가 실패하면 실패로 남긴다.
+- `alert_self_tests`는 별도 테이블, `ops_alerts`는 `synthetic`으로 구분한다. 실제 `decisions`와 호출 통계에 합성 요청을 쓰지 않는다. 새 도구는 실제 카탈로그 탐지와 같은 경보 함수를 거친다. MCP 호출과 외부 SIEM 전송은 자체 시험 범위가 아니다. 기존 정책 ID만 사용하며 OPA 관리대장은 바꾸지 않는다.
+
+## D-122 탐지 후 서버 전체 자동 중지와 사람 승인 복귀 (2026-10-17)
+
+- DEV-62 / POL-43 / WBS G07.05. 유효한 도구 계약의 DRIFT, 설정된 시간 창·반복 수에 도달한 P-ANOMALY/P-VOLUME 판정은 서버 전체를 비활성화한다. 원인·서버 목록·임계값을 설정할 수 있다. 합성 이벤트와 마지막 복귀 전 판정은 세지 않는다.
+- 서버 중지 기록과 실행기 STOPPING을 함께 저장하고 최종 dispatch도 중지 상태를 확인한다. 계약 새로고침·승인 갱신은 비활성을 되돌리지 않는다. 관리자 API의 명시적 승인만 PENDING으로 복귀시키며 원인이 남으면 다시 중지한다. 도구별 격리는 기존 계약 경계와 겹치는 별도 작업에 남긴다.
+- 원격 제공자의 프로세스와 이미 dispatch된 호출을 취소한 증거는 아니다. 실기기에서 반복 탐지·동시 dispatch·수동 복귀·물리 정지를 확인해야 한다.
+
+## D-123 서명 폐기 목록으로 DB 복원 후 재차단 (2026-10-17)
+
+- DEV-63 / POL-50 / WBS G07.06. DB 밖 전용 볼륨에 Ed25519 서명·연쇄 해시·서명된 head를 가진 폐기 목록을 추가 보관한다. 기존 raw 32-byte/base64url·cryptography 체계를 재사용하되 JWT 발급 키와 폐기 서명 키를 분리한다. 게이트웨이에 JWT 발급 권한을 주지 않는다.
+- 토큰 철회·갱신 토큰 회전·자격 회수·종결 전에 파일을 먼저 확정한다. 시작 시와 60초마다 DB와 대조하고 누락 상태를 복원·차단하며 경보한다. 인증·계약 확인은 파일도 직접 확인한다. 서명 불일치·누락·절단·중간 쓰기 실패는 차단한다. C1~C4/T1~T3 기준은 변경하지 않는다.
+- 최초 볼륨 초기화는 운영자의 명시적 `field init-disposal`이다. 이미 폐기한 식별자의 실습 복원도 거부하고 새 도입 승인을 요구한다. DB와 폐기 볼륨·키를 함께 롤백한 호스트 관리자, 외부 제공자 자격의 복구·재사용 자체는 통제하지 못한다. 내구성·이관·부하와 실제 복원 증거는 기기 검증 전이다.
+
 ## D-124 현장 하네스 연결은 배치 사설 CA의 HTTPS만 사용한다 (2026-10-18)
 
 - 결정: Tailscale IP 바인딩은 유지하고 Caddy 	ls internal로 TLS 1.2/1.3과 ECDHE/ECDSA AEAD를 제공한다. HTTP 자동 리디렉션과 시스템 CA 등록을 끈다. IP 및 선택 공개 이름을 발급 대상으로 삼고 빈 SNI에는 IP 인증서를 선택한다. 공개 OAuth·MCP·Console·Git URL과 관리형 정책은 HTTPS다. 원격 HTTP 입력과 자격 요청 리디렉션은 거부한다. 격리 기본 랩의 명시적 HTTP 빌드 인자는 별개다.
 - 신뢰: 배치 볼륨의 CA 개인 키는 내보내지 않는다. field ca는 공개 루트·DER SHA-256을 출력하며 Console ZIP에 루트·지문을 넣는다. 설치기는 단일 PEM과 지문을 설치/등록 전에 검증한다. Linux 실행기 및 직원 PC 도구의 harness 명령이 Claude의 NODE_EXTRA_CA_CERTS, Codex의 CODEX_CA_CERTIFICATE를 프로세스에 지정한다. 시스템 저장소는 변경하지 않는다. 에이전트와 Linux OS 관측기는 동일 CA로 체인·이름을 검증한다.
 - 복구: CA 볼륨은 배치 수명 동안 유지한다. 새 루트는 기존 연결을 실패시키므로 별도 지문 대조·새 키트 설치로 교체한다. 키트 발행자 확인은 인증된 배포 경로와 운영자의 별도 지문 대조를 전제로 한다.
+- 후속 병합 정정: D-118 키트의 `payload`와 매니페스트에 CA·지문·직원 PC 도구를 함께 넣는다. Windows도 등록 전에 CA를 검증하고 보호된 승인 키트의 루트로 고정한다. 서비스·관측기에 CA를 전달하고 하네스 `.cmd` 실행기의 `setlocal`로 프로세스에만 적용한다. PowerShell은 요청별 검증 콜백·임시 X509Chain.ExtraStore를 사용하며 시스템 저장소는 변경하지 않는다. 내부 `gateway`는 TLS 종료점이 아니므로 레지스트리 주소 기본값은 비우고 배포 시 실제 HTTPS 주소를 지정한다. [병합 후 검증](../../research/llm-wiki/status/reports/2026-10-18-field-tls-d124-merge.md)이 이전 Windows 통합 대기를 대체한다.
 - 근거/한계: [DEV-64 분석](../../research/llm-wiki/analysis/field-tls-d124/README.md), [작업 보고·메인 검증 명령](../../research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md). Codex 0.157.0의 고정 소스와 공식 문서로 CA 변수를 확인했다. 로컬 단위 증거이며 Caddy 자체 검사·배포·PJ1은 미실행이다. Windows 전용 설치기는 다른 작업과 공통 CA 필드/환경값을 통합해야 한다.

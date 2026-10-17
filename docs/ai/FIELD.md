@@ -162,7 +162,10 @@ curl --cacert field/ca/root.crt https://100.83.175.111/api/health
 키트 발행자의 진위를 입증하지 않습니다. Console이 발급하는 ZIP에는 `root.crt`, `root.sha256`,
 동일한 `ca_certificate`·`ca_sha256`을 담은 `enrollment.json`, 직원 PC 도구가 들어갑니다.
 Linux 설치기는 지문 불일치·다중 인증서를 등록 요청과 설치 변경 전에 거부합니다.
-브라우저 접속이 필요하면 조직이 관리하는 별도 브라우저 프로필에 루트를 배포합니다. 시스템 전체 저장소는 변경하지 않습니다.
+처음 브라우저에 표시되는 사설 루트 경고는 키트 설치 전에 별도로 처리합니다.
+`field status`·`field pc-command`에 표시된 지문을 운영자와 대조한 뒤, 별도 Firefox 프로필의
+**설정 → 개인 정보 및 보안 → 인증서 보기 → 인증 기관 → 가져오기**에서 `root.crt`를 선택하고 웹사이트 식별 신뢰를 지정합니다.
+이 프로필에만 적용하며 Windows 인증서 관리자나 시스템 전체 저장소에는 추가하지 않습니다.
 
 관리형 Linux 실행기는 root 소유 공개 CA 파일을 Claude Code의 `NODE_EXTRA_CA_CERTS`, Codex의
 `CODEX_CA_CERTIFICATE`로 전달합니다. 직원 PC 도구를 별도로 쓰는 경우 다음처럼 실행합니다.
@@ -177,7 +180,11 @@ python3 ~/.mcpgw/mcpgw_pc.py harness codex
 `agent.py`와 이를 공유하는 `os-observer.py`도 동일한 CA·지문으로 HTTPS를 검증합니다.
 `/api/endpoint/*`는 게이트웨이로 연결되므로 이전 HTTP 배치의 원격 보고 제한은 제거됩니다.
 이는 구현 범위이며 현재 기기의 HTTPS 보고 성공은 [실기기 시험](../../research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md) 후 판정합니다.
-Windows 전용 설치기는 별도 작업에서 CA 필드 소비와 실행 환경 연결을 통합해야 합니다.
+Windows 관리형 설치도 등록 전에 같은 CA·지문을 대조하고 서비스·관측기에 보존합니다.
+관리자 단계는 보호된 승인 매니페스트의 파일 해시를 확인한 루트로 사용자 요청의 CA를 대체합니다.
+Claude·Codex는 `%ProgramFiles%\MCPGatewayManaged\launchers\<SID>\`의 `.cmd` 실행기를 사용합니다.
+실행기의 `setlocal`이 CA 환경값을 해당 하네스 프로세스에만 전달하며 계정 레지스트리에 CA 환경값을 저장하지 않습니다.
+설치 위치에 같은 이름의 다른 하네스가 있으면 위 실행기 경로를 직접 사용합니다. PowerShell 연결 확인은 TLS 1.2와 요청별 CA 검증을 사용합니다.
 
 공개 이름을 추가하려면 `.env`의 `FIELD_PUBLIC_NAME=mint.example.internal`을 지정하고 `field up`을 실행합니다.
 IP와 해당 이름을 각각 인증서 발급 대상으로 관리하고, IP 연결의 빈 SNI에는 IP 인증서를 선택합니다.

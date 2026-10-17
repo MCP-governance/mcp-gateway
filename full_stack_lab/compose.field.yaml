@@ -82,6 +82,7 @@ services:
       IDP_INTERNAL_URL: http://agent-service:8000
     volumes:
       - ./registry/field:/registry-field:ro
+      - ${FIELD_DISPOSAL_VOLUME:-field_disposal_journal}:/disposal
 
   gateway-sse:
     environment:
@@ -95,12 +96,14 @@ services:
       REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
     volumes:
       - ./registry/field:/registry-field:ro
+      - ${FIELD_DISPOSAL_VOLUME:-field_disposal_journal}:/disposal
 
   agent-service:
     depends_on:
       corp-git: {condition: service_healthy}
     # 직원이 Console에서 PC 키트를 직접 받는다(/static/kit/mcpgw_pc.py). 관리자가 파일을 따로 전달하지 않는다.
     volumes:
+      - ${FIELD_DISPOSAL_VOLUME:-field_disposal_journal}:/disposal
       - ./field/pc/mcpgw_pc.py:/app/app/agent_static/kit/mcpgw_pc.py:ro
       - ../endpoint-agent:/endpoint-kit:ro
       - ./registry/field:/registry-field:ro
@@ -132,14 +135,19 @@ services:
       GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-corpadmin}
       GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD:-corp-admin-lab-only}
       RUNTIME_WORKER_ID: ${RUNTIME_WORKER_ID:-runtime-worker-1}
+      RUNTIME_SCAN_INTERVAL_SECONDS: ${RUNTIME_SCAN_INTERVAL_SECONDS:-86400}
+      RUNTIME_CRITICAL_DEADLINE_DAYS: ${RUNTIME_CRITICAL_DEADLINE_DAYS:-7}
+      RUNTIME_SCAN_TIMEOUT_SECONDS: ${RUNTIME_SCAN_TIMEOUT_SECONDS:-600}
+      TRIVY_CACHE_DIR: /trivy-cache
     depends_on:
       db: {condition: service_healthy}
       corp-git: {condition: service_healthy}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - registry_runtime:/registry-runtime:ro
+      - runtime_trivy_cache:/trivy-cache
     tmpfs: [/work]
-    networks: [data, ops]
+    networks: [data, ops, scanner]
     security_opt: ["no-new-privileges:true"]
 
   # 랩의 컨테이너 직원 PC 4대와 협력사 섀도 PC는 실기기 모드에서 기본으로 뜨지
@@ -164,6 +172,9 @@ services:
 
 volumes:
   field_caddy_data: {}
+  field_disposal_journal: {}
+  field_lab_disposal_journal: {}
+  runtime_trivy_cache: {}
   field_db_data: {}
   field_corp_git_data: {}
   field_lab_db_data: {}

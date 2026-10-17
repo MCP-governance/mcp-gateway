@@ -35,6 +35,7 @@ RUN useradd --uid 10002 --create-home worker \
     && chown -R worker:worker /work /reports /trivy-cache
 
 COPY --chown=worker:worker intake_worker.py /app/intake_worker.py
+COPY --chown=worker:worker trivy_scan.py /app/trivy_scan.py
 COPY --chown=worker:worker exit_terms.py /app/exit_terms.py
 COPY --chown=worker:worker provenance.py /app/provenance.py
 COPY gitleaks.toml /rules/gitleaks.toml

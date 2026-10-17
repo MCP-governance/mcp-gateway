@@ -1,0 +1,639 @@
+{
+  "schema_version": 1,
+  "task": "ops-response-d120-d123",
+  "base_commit": "0eb013b37864e27bcb041145c9b9cea928f03d8d",
+  "generated_at": "2026-10-17T15:06:52.097998+00:00",
+  "scope": "local implementation and isolated unit checks",
+  "requirements": [
+    {
+      "id": "E120-01",
+      "dev": "DEV-50",
+      "decision": "D-120",
+      "policy": "POL-39",
+      "wbs": "G01.06",
+      "requirement": "Scan immutable active runtime images periodically using the shared Trivy parser",
+      "code": [
+        {
+          "path": "full_stack_lab/runtime/image_scan.py",
+          "symbol": "scan",
+          "line": 31,
+          "end_line": 56,
+          "sha256": "a4070b0d902beb533bf78e1eb6adf65a0f617027f72027c654c72f8bcd841ac0"
+        },
+        {
+          "path": "full_stack_lab/runtime/worker.py",
+          "symbol": "reconcile",
+          "line": 450,
+          "end_line": 483,
+          "sha256": "47022a34c88f2307e573af0db7a37d97ea99675b1fe9e0c8502f4c7c19c1ad47"
+        },
+        {
+          "path": "full_stack_lab/supply_chain/trivy_scan.py",
+          "symbol": "trivy_counts",
+          "line": 16,
+          "end_line": 48,
+          "sha256": "348282349e8d16da174e1b9b13767e6835c7752c96827eedecaa17a9112815de"
+        }
+      ],
+      "unit_tests": [
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_report_cannot_truncate_away_critical_findings",
+          "line": 64,
+          "end_line": 75,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        }
+      ],
+      "verification": {
+        "local_unit_exit": 0,
+        "evidence": "evidence/unit-tests.txt",
+        "db_http": "test-doubles-only",
+        "actual_mcp": "not-run",
+        "device": "not-run",
+        "deployment": "not-run"
+      },
+      "remaining": "Actual scanner/OPA/PostgreSQL and Linux/PJ1 effect checks are listed in the work report; unit evidence is not deployment proof."
+    },
+    {
+      "id": "E120-02",
+      "dev": "DEV-50",
+      "decision": "D-120",
+      "policy": "POL-39",
+      "wbs": "G01.06",
+      "requirement": "Reject scanner failure, malformed output, wrong image and unknown/future/older-than-seven-day DB timestamps",
+      "code": [
+        {
+          "path": "full_stack_lab/runtime/image_scan.py",
+          "symbol": "scan",
+          "line": 31,
+          "end_line": 56,
+          "sha256": "a4070b0d902beb533bf78e1eb6adf65a0f617027f72027c654c72f8bcd841ac0"
+        },
+        {
+          "path": "full_stack_lab/supply_chain/trivy_scan.py",
+          "symbol": "database_time",
+          "line": 8,
+          "end_line": 13,
+          "sha256": "348282349e8d16da174e1b9b13767e6835c7752c96827eedecaa17a9112815de"
+        }
+      ],
+      "unit_tests": [
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_fresh_db_seven_days_is_accepted",
+          "line": 93,
+          "end_line": 94,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        },
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_stale_future_missing_bad_scanner_and_wrong_image_are_not_passes",
+          "line": 96,
+          "end_line": 101,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        }
+      ],
+      "verification": {
+        "local_unit_exit": 0,
+        "evidence": "evidence/unit-tests.txt",
+        "db_http": "test-doubles-only",
+        "actual_mcp": "not-run",
+        "device": "not-run",
+        "deployment": "not-run"
+      },
+      "remaining": "Actual scanner/OPA/PostgreSQL and Linux/PJ1 effect checks are listed in the work report; unit evidence is not deployment proof."
+    },
+    {
+      "id": "E120-03",
+      "dev": "DEV-50",
+      "decision": "D-120",
+      "policy": "POL-39",
+      "wbs": "G01.06",
+      "requirement": "Preserve critical first-seen deadlines and quarantine on expiry or failed inspection",
+      "code": [
+        {
+          "path": "full_stack_lab/runtime/image_scan.py",
+          "symbol": "assess",
+          "line": 19,
+          "end_line": 28,
+          "sha256": "a4070b0d902beb533bf78e1eb6adf65a0f617027f72027c654c72f8bcd841ac0"
+        },
+        {
+          "path": "full_stack_lab/runtime/image_scan.py",
+          "symbol": "rescan",
+          "line": 59,
+          "end_line": 101,
+          "sha256": "a4070b0d902beb533bf78e1eb6adf65a0f617027f72027c654c72f8bcd841ac0"
+        },
+        {
+          "path": "full_stack_lab/runtime/worker.py",
+          "symbol": "reconcile",
+          "line": 450,
+          "end_line": 483,
+          "sha256": "47022a34c88f2307e573af0db7a37d97ea99675b1fe9e0c8502f4c7c19c1ad47"
+        }
+      ],
+      "unit_tests": [
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_deadline_boundary_survives_a_new_scan",
+          "line": 56,
+          "end_line": 62,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        },
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_scanner_failure_records_hold_and_preserves_deadline",
+          "line": 103,
+          "end_line": 117,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        }
+      ],
+      "verification": {
+        "local_unit_exit": 0,
+        "evidence": "evidence/unit-tests.txt",
+        "db_http": "test-doubles-only",
+        "actual_mcp": "not-run",
+        "device": "not-run",
+        "deployment": "not-run"
+      },
+      "remaining": "Actual scanner/OPA/PostgreSQL and Linux/PJ1 effect checks are listed in the work report; unit evidence is not deployment proof."
+    },
+    {
+      "id": "E121-01",
+      "dev": "DEV-60",
+      "decision": "D-121",
+      "policy": "POL-42",
+      "wbs": "G06.05",
+      "requirement": "Run loaded-policy hash checks with exact decision and policy ID assertions",
+      "code": [
+        {
+          "path": "full_stack_lab/gateway/app/ops_response.py",
+          "symbol": "self_test",
+          "line": 157,
+          "end_line": 196,
+          "sha256": "a5564684acc9bbff95635685f7e710a9e449586381601fbd3937e40d34bd8df0"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/ops_response.py",
+          "symbol": "self_test_cases",
+          "line": 138,
+          "end_line": 154,
+          "sha256": "a5564684acc9bbff95635685f7e710a9e449586381601fbd3937e40d34bd8df0"
+        }
+      ],
+      "unit_tests": [
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_cases_keep_trusted_pac_and_do_not_mutate_frozen_base",
+          "line": 131,
+          "end_line": 138,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        },
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_policy_changed_mid_test_is_failed",
+          "line": 165,
+          "end_line": 167,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        },
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_wrong_policy_or_engine_failure_is_a_failed_test",
+          "line": 161,
+          "end_line": 163,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        }
+      ],
+      "verification": {
+        "local_unit_exit": 0,
+        "evidence": "evidence/unit-tests.txt",
+        "db_http": "test-doubles-only",
+        "actual_mcp": "not-run",
+        "device": "not-run",
+        "deployment": "not-run"
+      },
+      "remaining": "Actual scanner/OPA/PostgreSQL and Linux/PJ1 effect checks are listed in the work report; unit evidence is not deployment proof."
+    },
+    {
+      "id": "E121-02",
+      "dev": "DEV-60",
+      "decision": "D-121",
+      "policy": "POL-42",
+      "wbs": "G06.05",
+      "requirement": "Use common alert persistence and segregate synthetic events from actual decisions and statistics",
+      "code": [
+        {
+          "path": "full_stack_lab/gateway/app/ops_response.py",
+          "symbol": "emit_alert",
+          "line": 36,
+          "end_line": 39,
+          "sha256": "a5564684acc9bbff95635685f7e710a9e449586381601fbd3937e40d34bd8df0"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/ops_response.py",
+          "symbol": "catalog_alerts",
+          "line": 42,
+          "end_line": 45,
+          "sha256": "a5564684acc9bbff95635685f7e710a9e449586381601fbd3937e40d34bd8df0"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/ops_response.py",
+          "symbol": "observed_alerts",
+          "line": 48,
+          "end_line": 59,
+          "sha256": "a5564684acc9bbff95635685f7e710a9e449586381601fbd3937e40d34bd8df0"
+        }
+      ],
+      "unit_tests": [
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_deployment_check_records_success_separately",
+          "line": 153,
+          "end_line": 159,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        },
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_missing_alert_storage_is_not_a_success",
+          "line": 191,
+          "end_line": 193,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        }
+      ],
+      "verification": {
+        "local_unit_exit": 0,
+        "evidence": "evidence/unit-tests.txt",
+        "db_http": "test-doubles-only",
+        "actual_mcp": "not-run",
+        "device": "not-run",
+        "deployment": "not-run"
+      },
+      "remaining": "Actual scanner/OPA/PostgreSQL and Linux/PJ1 effect checks are listed in the work report; unit evidence is not deployment proof."
+    },
+    {
+      "id": "E122-01",
+      "dev": "DEV-62",
+      "decision": "D-122",
+      "policy": "POL-43",
+      "wbs": "G07.05",
+      "requirement": "Stop eligible drifted servers and their managed runtime without automatic reactivation",
+      "code": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "refresh_catalog",
+          "line": 183,
+          "end_line": 331,
+          "sha256": "41cf44969e0a2afe3054ad4b5de772e9ebefd240b4f4d9fea859815eeef3d7c0"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/ops_response.py",
+          "symbol": "contain_drift",
+          "line": 86,
+          "end_line": 88,
+          "sha256": "a5564684acc9bbff95635685f7e710a9e449586381601fbd3937e40d34bd8df0"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/ops_response.py",
+          "symbol": "suspend",
+          "line": 66,
+          "end_line": 83,
+          "sha256": "a5564684acc9bbff95635685f7e710a9e449586381601fbd3937e40d34bd8df0"
+        }
+      ],
+      "unit_tests": [
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_auto_stop_scope_is_configurable",
+          "line": 169,
+          "end_line": 173,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        },
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_suspend_stops_runtime_and_never_reactivates",
+          "line": 175,
+          "end_line": 189,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        }
+      ],
+      "verification": {
+        "local_unit_exit": 0,
+        "evidence": "evidence/unit-tests.txt",
+        "db_http": "test-doubles-only",
+        "actual_mcp": "not-run",
+        "device": "not-run",
+        "deployment": "not-run"
+      },
+      "remaining": "Actual scanner/OPA/PostgreSQL and Linux/PJ1 effect checks are listed in the work report; unit evidence is not deployment proof."
+    },
+    {
+      "id": "E122-02",
+      "dev": "DEV-62",
+      "decision": "D-122",
+      "policy": "POL-43",
+      "wbs": "G07.05",
+      "requirement": "Count repeated real anomaly/volume signals with configurable targets, threshold and window",
+      "code": [
+        {
+          "path": "full_stack_lab/gateway/app/ops_response.py",
+          "symbol": "contain_repeated",
+          "line": 91,
+          "end_line": 112,
+          "sha256": "a5564684acc9bbff95635685f7e710a9e449586381601fbd3937e40d34bd8df0"
+        }
+      ],
+      "unit_tests": [
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_repeated_alerts_stop_only_selected_servers",
+          "line": 195,
+          "end_line": 206,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        }
+      ],
+      "verification": {
+        "local_unit_exit": 0,
+        "evidence": "evidence/unit-tests.txt",
+        "db_http": "test-doubles-only",
+        "actual_mcp": "not-run",
+        "device": "not-run",
+        "deployment": "not-run"
+      },
+      "remaining": "Actual scanner/OPA/PostgreSQL and Linux/PJ1 effect checks are listed in the work report; unit evidence is not deployment proof."
+    },
+    {
+      "id": "E122-03",
+      "dev": "DEV-62",
+      "decision": "D-122",
+      "policy": "POL-43",
+      "wbs": "G07.05",
+      "requirement": "Require admin approval for pending-state resume and check suspension before final dispatch",
+      "code": [
+        {
+          "path": "full_stack_lab/gateway/app/ops_response.py",
+          "symbol": "resume",
+          "line": 115,
+          "end_line": 135,
+          "sha256": "a5564684acc9bbff95635685f7e710a9e449586381601fbd3937e40d34bd8df0"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/main.py",
+          "symbol": "ops_resume",
+          "line": 229,
+          "end_line": 233,
+          "sha256": "dc8295aec751a217ce91b6adec90c5bf14fd64bae3f54d6101f897daf559edc9"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/dispatch.py",
+          "symbol": "record",
+          "line": 40,
+          "end_line": 86,
+          "sha256": "d56ff9444971dfbc290ffef12124de9a1b52c1226ef431651d87170984b65780"
+        }
+      ],
+      "unit_tests": [
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_suspend_stops_runtime_and_never_reactivates",
+          "line": 175,
+          "end_line": 189,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        },
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_persistent_suspension_overrides_a_refreshed_server_status",
+          "line": 231,
+          "end_line": 241,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        },
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_human_resume_and_approval_record_share_one_transaction",
+          "line": 208,
+          "end_line": 227,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        }
+      ],
+      "verification": {
+        "local_unit_exit": 0,
+        "evidence": "evidence/unit-tests.txt",
+        "db_http": "test-doubles-only",
+        "actual_mcp": "not-run",
+        "device": "not-run",
+        "deployment": "not-run"
+      },
+      "remaining": "Actual scanner/OPA/PostgreSQL and Linux/PJ1 effect checks are listed in the work report; unit evidence is not deployment proof."
+    },
+    {
+      "id": "E123-01",
+      "dev": "DEV-63",
+      "decision": "D-123",
+      "policy": "POL-50",
+      "wbs": "G07.06",
+      "requirement": "Write signed identity-only tombstones before database revocation using a separate Ed25519 key",
+      "code": [
+        {
+          "path": "full_stack_lab/gateway/app/disposal.py",
+          "symbol": "remember",
+          "line": 131,
+          "end_line": 139,
+          "sha256": "a00c2d2973fe8383292a2a00367fcf536deea5366156d46d72e3ba671afe1cb9"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/idp.py",
+          "symbol": "_revoke_family",
+          "line": 213,
+          "end_line": 230,
+          "sha256": "da269bb5318b7b68e5f8a8ae94b68e2d81a2688db258aab2ce6d69adc854ce28"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/decommission.py",
+          "symbol": "close_case",
+          "line": 761,
+          "end_line": 785,
+          "sha256": "5ac74bf2f0da42f299dd8b8660e0478c5021ed10de45cd17009e101e7ee8e1be"
+        }
+      ],
+      "unit_tests": [
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_signed_record_is_idempotent_and_blocks_after_database_rollback",
+          "line": 333,
+          "end_line": 341,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        },
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_competing_writers_keep_a_complete_signed_chain",
+          "line": 376,
+          "end_line": 379,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        }
+      ],
+      "verification": {
+        "local_unit_exit": 0,
+        "evidence": "evidence/unit-tests.txt",
+        "db_http": "test-doubles-only",
+        "actual_mcp": "not-run",
+        "device": "not-run",
+        "deployment": "not-run"
+      },
+      "remaining": "Actual scanner/OPA/PostgreSQL and Linux/PJ1 effect checks are listed in the work report; unit evidence is not deployment proof."
+    },
+    {
+      "id": "E123-02",
+      "dev": "DEV-63",
+      "decision": "D-123",
+      "policy": "POL-50",
+      "wbs": "G07.06",
+      "requirement": "Fail closed on missing, corrupt, truncated or interrupted journal and refuse implicit reinitialization",
+      "code": [
+        {
+          "path": "full_stack_lab/gateway/app/disposal.py",
+          "symbol": "read",
+          "line": 69,
+          "end_line": 95,
+          "sha256": "a00c2d2973fe8383292a2a00367fcf536deea5366156d46d72e3ba671afe1cb9"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/disposal.py",
+          "symbol": "initialize",
+          "line": 122,
+          "end_line": 128,
+          "sha256": "a00c2d2973fe8383292a2a00367fcf536deea5366156d46d72e3ba671afe1cb9"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/disposal.py",
+          "symbol": "blocked",
+          "line": 142,
+          "end_line": 151,
+          "sha256": "a00c2d2973fe8383292a2a00367fcf536deea5366156d46d72e3ba671afe1cb9"
+        }
+      ],
+      "unit_tests": [
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_missing_truncated_corrupt_head_and_corrupt_signature_fail_closed",
+          "line": 343,
+          "end_line": 357,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        },
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_signed_head_does_not_let_wrong_signature_through",
+          "line": 359,
+          "end_line": 370,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        },
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_interrupted_head_replace_leaves_access_blocked",
+          "line": 381,
+          "end_line": 384,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        },
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_existing_list_cannot_be_initialized_again",
+          "line": 372,
+          "end_line": 374,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        }
+      ],
+      "verification": {
+        "local_unit_exit": 0,
+        "evidence": "evidence/unit-tests.txt",
+        "db_http": "test-doubles-only",
+        "actual_mcp": "not-run",
+        "device": "not-run",
+        "deployment": "not-run"
+      },
+      "remaining": "Actual scanner/OPA/PostgreSQL and Linux/PJ1 effect checks are listed in the work report; unit evidence is not deployment proof."
+    },
+    {
+      "id": "E123-03",
+      "dev": "DEV-63",
+      "decision": "D-123",
+      "policy": "POL-50",
+      "wbs": "G07.06",
+      "requirement": "Reapply missing disposal state at startup/periodically and append a reconciliation alert",
+      "code": [
+        {
+          "path": "full_stack_lab/gateway/app/disposal.py",
+          "symbol": "reconcile",
+          "line": 181,
+          "end_line": 225,
+          "sha256": "a00c2d2973fe8383292a2a00367fcf536deea5366156d46d72e3ba671afe1cb9"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/disposal.py",
+          "symbol": "watch",
+          "line": 228,
+          "end_line": 250,
+          "sha256": "a00c2d2973fe8383292a2a00367fcf536deea5366156d46d72e3ba671afe1cb9"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "bootstrap",
+          "line": 414,
+          "end_line": 436,
+          "sha256": "41cf44969e0a2afe3054ad4b5de772e9ebefd240b4f4d9fea859815eeef3d7c0"
+        }
+      ],
+      "unit_tests": [
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_reconcile_reapplies_records_and_appends_an_alert",
+          "line": 386,
+          "end_line": 407,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        }
+      ],
+      "verification": {
+        "local_unit_exit": 0,
+        "evidence": "evidence/unit-tests.txt",
+        "db_http": "test-doubles-only",
+        "actual_mcp": "not-run",
+        "device": "not-run",
+        "deployment": "not-run"
+      },
+      "remaining": "Actual scanner/OPA/PostgreSQL and Linux/PJ1 effect checks are listed in the work report; unit evidence is not deployment proof."
+    },
+    {
+      "id": "E123-04",
+      "dev": "DEV-63",
+      "decision": "D-123",
+      "policy": "POL-50",
+      "wbs": "G07.06",
+      "requirement": "Keep refresh-token reuse family revocation under the family lock even when a signed tombstone denies the token",
+      "code": [
+        {
+          "path": "full_stack_lab/gateway/app/idp.py",
+          "symbol": "token",
+          "line": 87,
+          "end_line": 147,
+          "sha256": "da269bb5318b7b68e5f8a8ae94b68e2d81a2688db258aab2ce6d69adc854ce28"
+        }
+      ],
+      "unit_tests": [
+        {
+          "path": "full_stack_lab/tests/ops_response_check.py",
+          "symbol": "test_signed_tombstone_still_revokes_family_under_its_lock",
+          "line": 243,
+          "end_line": 280,
+          "sha256": "0c1844ea540ccabc091fea902db7bb13f83a9cba04747fb10105e7be28244332"
+        }
+      ],
+      "verification": {
+        "local_unit_exit": 0,
+        "evidence": "evidence/unit-tests.txt",
+        "db_http": "test-doubles-only",
+        "actual_mcp": "not-run",
+        "device": "not-run",
+        "deployment": "not-run"
+      },
+      "remaining": "Actual scanner/OPA/PostgreSQL and Linux/PJ1 effect checks are listed in the work report; unit evidence is not deployment proof."
+    }
+  ]
+}

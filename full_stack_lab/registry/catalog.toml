@@ -9,7 +9,8 @@
 # from tools/list and a call to it is blocked as MCP-REGISTRY-001.
 
 [harness]
-gateway_url = "https://gateway/mcp"
+# A deployment must supply its TLS ingress with render.py --gateway-url.
+gateway_url = ""
 
 [organization]
 name = "BoB Corp"

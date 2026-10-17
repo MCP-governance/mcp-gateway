@@ -63,7 +63,7 @@ v2와의 차이: v2는 PC에 손으로 짠 에이전트(`office_agent.py`)가 �
 현장 하네스–게이트웨이 구간은 Tailscale IP에 바인딩한 Caddy의 사설 CA HTTPS를 쓴다(D-124).
 공개 URL과 관리형 정책은 HTTPS이며 원격 HTTP 입력을 거부한다. 루트·지문은 개인별 키트에 담고,
 Linux 실행기와 직원 PC 도구의 `harness` 명령이 프로세스별 CA 환경값을 전달한다. 시스템 저장소는 변경하지 않는다.
-레지스트리의 `[harness].gateway_url`과 `render.py --gateway-url`이 이미지 설정을 생성한다.
+레지스트리의 `[harness].gateway_url`과 `render.py --gateway-url`이 이미지 설정을 생성한다. 배치 주소 기본값은 비워 두며 실제 TLS 종료 주소가 없으면 렌더링이 실패한다.
 격리된 기본 컨테이너 랩만 Dockerfile의 명시적 HTTP 빌드 인자를 사용하고, field 오버레이는 HTTPS로 덮어쓴다.
 설치·교체·남은 Windows 통합과 실기기 검증은 [FIELD.md](FIELD.md#현장-tls와-루트-배포d-124)를 따른다.
 

@@ -8,6 +8,7 @@ Only Agent Service receives the private key. Every verifier receives the public 
 and therefore cannot mint a token - that is the whole point of the split.
 """
 import base64
+import sys
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -19,8 +20,9 @@ def main() -> None:
         serialization.Encoding.Raw, serialization.PrivateFormat.Raw, serialization.NoEncryption())
     raw_public = private.public_key().public_bytes(
         serialization.Encoding.Raw, serialization.PublicFormat.Raw)
-    print("AGENT_JWT_PRIVATE_KEY=" + base64.urlsafe_b64encode(raw_private).decode())
-    print("AGENT_JWT_PUBLIC_KEY=" + base64.urlsafe_b64encode(raw_public).decode())
+    prefix = "DISPOSAL" if sys.argv[1:] == ["disposal"] else "AGENT_JWT"
+    print(prefix + "_PRIVATE_KEY=" + base64.urlsafe_b64encode(raw_private).decode())
+    print(prefix + "_PUBLIC_KEY=" + base64.urlsafe_b64encode(raw_public).decode())
 
 
 if __name__ == "__main__":

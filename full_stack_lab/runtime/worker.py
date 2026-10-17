@@ -32,6 +32,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 import provenance
+import image_scan
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 WORKER_ID = os.getenv("RUNTIME_WORKER_ID", "runtime-worker-1")
@@ -456,6 +457,8 @@ def reconcile(connection, recipes: dict, context: dict) -> None:
             if not reason and (not current or current["Image"] != runtime["image_id"]):
                 reason = "실행 중인 컨테이너가 승인한 이미지와 다르거나 없습니다."
             if not reason:
+                reason = image_scan.rescan(connection, runtime, event)
+            if not reason:
                 for container in context["gateways"]:
                     attach(n["network"], container)
                 sync_egress(runtime, context)
@@ -465,6 +468,11 @@ def reconcile(connection, recipes: dict, context: dict) -> None:
             connection.commit()
             runtime = {**runtime, "status": "STOPPING", "error": reason}
         left = remove_runtime_resources(runtime, context)
+        if left:
+            connection.execute("UPDATE mcp_runtimes SET error='실행 격리 재시도',updated_at=now() WHERE id=%s AND status='STOPPING'",
+                               (runtime["id"],))
+            connection.commit()
+            continue
         done = connection.execute(
             """UPDATE mcp_runtimes SET status='STOPPED', updated_at=now(), lease_owner=NULL, lease_expires_at=NULL,
                       evidence = evidence || %s WHERE id=%s AND status='STOPPING' RETURNING id""",

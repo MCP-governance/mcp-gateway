@@ -571,10 +571,13 @@ def build_prefix(args):
         if not isinstance(prefix, list) or not prefix or not all(isinstance(item, str) and item for item in prefix):
             raise ValueError("Prefix file must be a nonempty JSON argument array")
         return prefix
-    executable = args.executable or shutil.which(args.agent_cli) or shutil.which(args.agent_cli + ".cmd")
+    executable = args.executable
     if not executable and args.agent_cli == "codex":
+        # The PATH copy can be an older standalone install that rejects current models; the app's
+        # per-version bundle is the one kept up to date.
         found = find_codex_windows_executable()
         executable = str(found) if found else None
+    executable = executable or shutil.which(args.agent_cli) or shutil.which(args.agent_cli + ".cmd")
     if not executable:
         raise ValueError(f"{args.agent_cli} CLI not found; pass --executable or --prefix-file")
     return [executable]

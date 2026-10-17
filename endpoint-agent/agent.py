@@ -911,6 +911,10 @@ def main() -> int:
         except Exception as exc:
             log("보고 실패: %s" % exc)
             failed = True
+        status_path = CONFIG.get("ENDPOINT_TRAY_STATUS")
+        if os.name == "nt" and status_path:
+            from windows_status import publish
+            publish(status_path, not failed)
         if ONE_SHOT:
             return 1 if failed else 0
         time.sleep(INTERVAL)

@@ -35,7 +35,7 @@ from typing import Any
 import httpx
 from psycopg.types.json import Jsonb
 
-from . import db, dispatch, registry, secret_scan, upstream
+from . import db, dispatch, disposal, registry, secret_scan, upstream
 
 SLA_DAYS = int(os.getenv("TERMINATION_SLA_DAYS", "14"))
 GITEA_ADMIN_URL = os.getenv("GITEA_ADMIN_URL", "http://corp-git:3000").rstrip("/")
@@ -349,6 +349,10 @@ async def revoke_target(target_id: str, actor: str, status: str, note: str | Non
     if not target:
         raise ValueError("존재하지 않는 회수 대상입니다.")
     revoked_at = (target["revoked_at"] or at or _now()) if status in {"REVOKED", "EXPIRED"} else None
+    if revoked_at and target["kind"] in {"server-held-credential", "client-token", "refresh-token", "api-key"}:
+        case = await _case(str(target["case_id"]))
+        disposal.remember("credential", str(target["id"]), case["server_id"],
+                          {"target_kind": target["kind"], "revoked_at": revoked_at.isoformat()})
     await db.execute(
         """UPDATE revocation_targets SET status=%s, revoked_at=%s, revoked_by=%s, note=COALESCE(%s, note)
            WHERE id=%s""",
@@ -765,6 +769,7 @@ async def close_case(case_id: str, actor: str, note: str, risk_acceptance: str |
         raise ValueError("종결 사유를 적어야 합니다.")
     if case["grade"] == "T3" and not (risk_acceptance or "").strip():
         raise ValueError("T3(판단 불가)는 잔존 범위를 산정할 수 없으므로 위험 수용 근거 없이 종결할 수 없습니다.")
+    disposal.remember("server", case["server_id"], case["server_id"], {"case_id": str(case_id), "actor": actor})
     async with db.transaction() as connection:
         await connection.execute(
             """UPDATE termination_cases SET status='CLOSED', closed_by=%s, closed_at=now(), close_note=%s,
@@ -799,6 +804,8 @@ async def reopen_case(case_id: str, actor: str, reason: str) -> dict:
 async def restore_server(server_id: str, actor: str) -> dict:
     """Lab only: put a retired server back into service so the demo can be repeated.
     In an organisation, bringing a terminated relationship back is a new intake."""
+    if disposal.blocked(server_id=server_id):
+        raise ValueError("폐기된 서버는 새 도입 승인이 필요합니다.")
     server = await _server(server_id)
     await db.execute(
         """UPDATE termination_cases SET status='CLOSED', closed_by=COALESCE(closed_by, %s), closed_at=COALESCE(closed_at, now()),

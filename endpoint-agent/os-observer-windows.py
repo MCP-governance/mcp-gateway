@@ -215,6 +215,7 @@ def collect(config_path: Path, self_check: bool = False) -> dict:
     counts: dict[str, int] = {"success": 0, "partial": 0, "failed": 0, "disabled": 0, "unauthorized": 0, "unsupported": 0}
     error_codes: list[str] = []
     accepted = 0
+    recent_blocks = []
     for channel, ids, family in CHANNELS:
         current = cursors.get(channel)
         try:
@@ -279,6 +280,8 @@ def collect(config_path: Path, self_check: bool = False) -> dict:
             elif row:
                 row["event_id"] += f":{epoch}"
                 events.append(agent.seal_os_event(row, xml_text, "windows-event-log", ["event_xml_allowlist", "path_to_basename"]))
+        recent_blocks.extend(event for event in events if event.get("kind") in
+                             {"execution-denied", "network-denied", "file-denied"})
         try:
             for start in range(0, len(events), MAX_BATCH):
                 agent.call("POST", "/api/endpoint/os-events", {
@@ -332,7 +335,9 @@ def collect(config_path: Path, self_check: bool = False) -> dict:
         _report_status(agent, final_state, accepted, error_code)
     except (OSError, ValueError, urllib.error.URLError, urllib.error.HTTPError):
         final_state, error_code = "failed", "transport_unavailable"
-    return {"channel": "os", "state": final_state, "accepted_count": accepted, "error_code": error_code}
+    return {"channel": "os", "state": final_state, "accepted_count": accepted, "error_code": error_code,
+            "recent_blocks": [{k: event[k] for k in ("event_id", "observed_at", "kind") if k in event}
+                              for event in recent_blocks[-5:]]}
 
 
 def self_check() -> None:

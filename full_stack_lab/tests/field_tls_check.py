@@ -151,14 +151,17 @@ class FieldTLS(unittest.TestCase):
         tree = ast.parse((LAB / "gateway/app/agent_service.py").read_text(encoding="utf-8"))
         download = next(node for node in tree.body if isinstance(node, ast.AsyncFunctionDef) and node.name == "download_managed_kit")
         archive_block = next(node for node in download.body if isinstance(node, ast.With))
+        payload_line = next(node.lineno for node in download.body if isinstance(node, ast.Assign)
+                            and any(isinstance(t, ast.Name) and t.id == "payload" for t in node.targets))
+        payload_nodes = [node for node in download.body if payload_line <= node.lineno <= archive_block.lineno]
         output = io.BytesIO()
         with tempfile.TemporaryDirectory() as folder:
             static = Path(folder)
             (static / "kit").mkdir()
             (static / "kit/mcpgw_pc.py").write_text("# unit fixture")
-            exec(compile(ast.Module(body=[archive_block], type_ignores=[]), "archive", "exec"), {
+            exec(compile(ast.Module(body=payload_nodes, type_ignores=[]), "archive", "exec"), {
                 "zipfile": zipfile, "output": output, "bundle": {**ca, "enrollment_token": "synthetic"}, "json": json,
-                "ca": ca, "STATIC_DIR": static, "names": [],
+                "ca": ca, "STATIC_DIR": static, "source": static, "names": [], "platform": "linux", "KIT_EXECUTABLE": set(),
             })
         with zipfile.ZipFile(output) as archive:
             self.assertEqual(archive.read("root.crt").decode(), self.pem)

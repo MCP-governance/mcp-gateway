@@ -1,6 +1,6 @@
 # Field default: no demo MCP server is approved or started.
 [harness]
-gateway_url = "https://gateway/mcp"
+gateway_url = ""
 
 [organization]
 name = "MCP Gateway"

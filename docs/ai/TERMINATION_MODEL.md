@@ -1,5 +1,7 @@
 # 종료·폐기 판정 모델 — 논문을 코드로
 
+2026-10-17 D-123: C1~C4와 T1~T3 판정 기준은 유지한다. 폐기한 서버·자격·토큰 식별자는 DB 외부 서명 목록에 보관하고 시작 시와 주기적으로 대조한다. 같은 식별자의 실습 복원도 거부한다. `tests/termination_flow.py`는 일회용 랩에서만 실행하며 복원 거부를 확인한다. 제공자 자격이 실제로 사라졌다는 C4 증거를 이 목록으로 대체하지 않는다. [운영·복원 절차](OPS_RESPONSE.md).
+
 > 근거 논문: CISC-W'26 「원격 MCP 서비스 종료 시 권한 회수의 구조적 한계 및 종료 판정 기준 제안」.
 > 코드 정본: `full_stack_lab/gateway/app/decommission.py`(판정), `experiments.py`(E1~E3),
 > `main.py`의 `/api/termination/*`, Console `#/termination`. 끝에서 끝까지의 검증은
