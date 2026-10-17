@@ -576,7 +576,7 @@ $s = New-ScheduledTaskSettingsSet -RestartCount 999 -RestartInterval (New-TimeSp
 Register-ScheduledTask -TaskName $in.name -Action $a -Trigger $t -Principal $p -Settings $s -Force | Out-Null
 Start-ScheduledTask -TaskName $in.name
 """, {"python": str(pythonw), "name": TASK.format(user=args.user.lower()),
-      "arguments": f'-I -S "{PROGRAMS / "managed-windows.py"}" serve --config "{config_path}"'})
+      "arguments": f'-B -I -S "{PROGRAMS / "managed-windows.py"}" serve --config "{config_path}"'})
     args.enrollment.unlink()
     print(json.dumps({"endpoint_id": config["endpoint_id"], "employee": employee, "managed_account": args.user,
                       "state": "pending-organization-activation", "harnesses": harnesses, "launcher_files": launcher_files,
@@ -654,14 +654,14 @@ def serve(args):
                     cache.clear()
             inventory_status = "success"
             try:  # configuration inventory is independent from OS event observation
-                subprocess.run([sys.executable, "-I", "-S", str(PROGRAMS / "agent.py"), "--config", str(observer_config), "--once"],
+                subprocess.run([sys.executable, "-B", "-I", "-S", str(PROGRAMS / "agent.py"), "--config", str(observer_config), "--once"],
                                check=True, timeout=40, capture_output=True)
             except (OSError, subprocess.SubprocessError) as exc:
                 inventory_status = type(exc).__name__
             os_observer = {"state": "failed", "error_code": "collector_failed", "accepted_count": 0}
             try:  # OS events are separately gated, scoped and reported; disabled is never mapped to success.
                 done = subprocess.run(
-                    [sys.executable, "-I", "-S", str(PROGRAMS / "os-observer-windows.py"),
+                    [sys.executable, "-B", "-I", "-S", str(PROGRAMS / "os-observer-windows.py"),
                      "--config", str(observer_config)], check=True, timeout=45, capture_output=True, text=True,
                     encoding="utf-8", errors="replace")
                 lines = [line for line in done.stdout.splitlines() if line.startswith("{")]

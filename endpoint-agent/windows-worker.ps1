@@ -95,7 +95,7 @@ function Set-EndpointResult([int]$Percent, [string]$Label, [string]$State = 'run
 function Invoke-EndpointPython([string]$Python, [string[]]$Arguments) {
     $info = New-Object Diagnostics.ProcessStartInfo
     $info.FileName = $Python
-    $info.Arguments = '-X utf8 -I -S ' + (($Arguments | ForEach-Object { Quote-EndpointArgument $_ }) -join ' ')
+    $info.Arguments = '-X utf8 -B -I -S ' + (($Arguments | ForEach-Object { Quote-EndpointArgument $_ }) -join ' ')
     $info.UseShellExecute = $false
     $info.CreateNoWindow = $true
     $info.RedirectStandardOutput = $true
@@ -257,7 +257,7 @@ try {
         $config | Add-Member -NotePropertyName ENDPOINT_TRAY_STATUS -NotePropertyValue $statusPath -Force
         [IO.File]::WriteAllText($configPath, ($config | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
         Invoke-EndpointPython $python @((Join-Path $root 'agent.py'), '--config', $configPath, '--once') | Out-Null
-        $action = New-ScheduledTaskAction -Execute (Join-Path $root 'python\pythonw.exe') -Argument ('-I -S ' +
+        $action = New-ScheduledTaskAction -Execute (Join-Path $root 'python\pythonw.exe') -Argument ('-B -I -S ' +
             (Quote-EndpointArgument (Join-Path $root 'agent.py')) + ' --config ' + (Quote-EndpointArgument $configPath))
         $trigger = New-ScheduledTaskTrigger -AtLogOn -User $sid
         $principal = New-ScheduledTaskPrincipal -UserId $sid -LogonType Interactive -RunLevel Limited

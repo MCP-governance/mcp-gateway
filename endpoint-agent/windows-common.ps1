@@ -192,7 +192,15 @@ function Remove-EndpointFiles([string]$Root) {
         if (-not $target.StartsWith($resolved + '\', [StringComparison]::OrdinalIgnoreCase)) { throw '제거 경로 확인 실패' }
         if (Test-Path -LiteralPath $target -PathType Leaf) { Remove-Item -LiteralPath $target -Force }
     }
-    foreach ($name in @('python', 'harness')) {
+    # Installs before -B left bytecode of the owned modules; anything else in the cache is not ours to delete.
+    $cache = Join-Path $resolved '__pycache__'
+    if (Test-Path -LiteralPath $cache) {
+        $stems = @($manifest.files | Where-Object { $_ -like '*.py' } | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) })
+        foreach ($item in Get-ChildItem -LiteralPath $cache -Force -File) {
+            if ($item.Extension -eq '.pyc' -and $item.Name.Split('.')[0] -in $stems) { Remove-Item -LiteralPath $item.FullName -Force }
+        }
+    }
+    foreach ($name in @('python', 'harness', '__pycache__')) {
         $target = Join-Path $resolved $name
         if ((Test-Path -LiteralPath $target) -and -not (Get-ChildItem -LiteralPath $target -Force)) {
             Remove-Item -LiteralPath $target
