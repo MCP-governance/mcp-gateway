@@ -110,7 +110,7 @@ $key.Add_Click({
     if ($dialog.ShowDialog() -eq 'OK') { $script:keyPath = $dialog.FileName; $key.Text = '장치 키 파일 선택 완료' }
     $dialog.Dispose()
 })
-Add-EndpointRow '장치 자격' $key
+if ($mode -eq 'observer' -and -not $Remove) { Add-EndpointRow '장치 자격' $key }
 $progress = New-Object Windows.Forms.ProgressBar
 Add-EndpointRow '진행률' $progress
 $results = New-Object Windows.Forms.TextBox
