@@ -1,7 +1,7 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "title": "MCP 목표 기능 · WBS 현황",
-  "as_of": "2026-10-15T08:51:20.911509+00:00",
+  "as_of": "2026-10-17T12:02:51.750733+00:00",
   "audit_as_of": "2026-10-15T07:37:13+00:00",
   "basis_head": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
   "branch": "10/15-wbs-implementation",
@@ -21,52 +21,52 @@
       "0.5": "부분 구현·선택 표본·과거 판본 근거",
       "1": "해당 단계의 정해진 범위 충족"
     },
-    "formula": "40개 작업 각각의 5단계 점수(0/0.5/1) × 20%, 작업 동일 가중 평균. 기능 수·공수·일정·외부 인증 완료율이 아님.",
+    "formula": "작업 각각의 5단계 점수(0/0.5/1) × 20%, 작업 동일 가중 평균. 기능 수·공수·일정·외부 인증 완료율이 아님.",
     "complete_rule": "5단계가 모두 1인 작업만 최종 완료. 신규 WBS의 현재 검수 기준이며 과거 실험 카드 완료를 변경하지 않음."
   },
   "summary": {
-    "progress": 57.5,
+    "progress": 41.6,
     "complete": 0,
-    "total": 40,
+    "total": 57,
     "stage_equivalent_counts": {
-      "implementation": 37.5,
-      "regression": 32.0,
-      "deployment": 33.0,
-      "real_device": 12.5,
+      "implementation": 38.5,
+      "regression": 33.0,
+      "deployment": 34.0,
+      "real_device": 13.0,
       "acceptance_complete": 0
     },
-    "implementation_full": 35,
+    "implementation_full": 36,
     "implementation_partial": 5,
-    "implementation_missing": 0
+    "implementation_missing": 16
   },
   "goals": [
     {
       "id": "G01",
       "title": "도입·공급망 검증",
-      "progress": 70.0,
+      "progress": 58.3,
       "complete": 0,
-      "total": 4
+      "total": 6
     },
     {
       "id": "G02",
       "title": "승인·계약 관리",
-      "progress": 70.0,
+      "progress": 46.7,
       "complete": 0,
-      "total": 4
+      "total": 6
     },
     {
       "id": "G03",
       "title": "신원·호출 권한",
-      "progress": 70.0,
+      "progress": 35.0,
       "complete": 0,
-      "total": 4
+      "total": 8
     },
     {
       "id": "G04",
       "title": "데이터·비신뢰 결과 보호",
-      "progress": 62.5,
+      "progress": 35.7,
       "complete": 0,
-      "total": 4
+      "total": 7
     },
     {
       "id": "G05",
@@ -78,23 +78,23 @@
     {
       "id": "G06",
       "title": "감사·로그 전달",
-      "progress": 62.5,
+      "progress": 41.7,
       "complete": 0,
-      "total": 4
+      "total": 6
     },
     {
       "id": "G07",
       "title": "종료·폐기",
-      "progress": 52.5,
+      "progress": 35.0,
       "complete": 0,
-      "total": 4
+      "total": 6
     },
     {
       "id": "G08",
       "title": "가입·설치·하네스 운영",
-      "progress": 42.5,
+      "progress": 34.0,
       "complete": 0,
-      "total": 4
+      "total": 5
     },
     {
       "id": "G09",
@@ -106,9 +106,9 @@
     {
       "id": "G10",
       "title": "개발 협업·근거 관리",
-      "progress": 35.0,
+      "progress": 28.0,
       "complete": 0,
-      "total": 4
+      "total": 5
     }
   ],
   "items": [
@@ -179,7 +179,11 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-01"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G01.02",
@@ -254,7 +258,13 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-01",
+        "POL-03",
+        "POL-39"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G01.03",
@@ -329,7 +339,12 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-02",
+        "POL-23"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G01.04",
@@ -402,7 +417,114 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
+      ],
+      "pol_ids": [
+        "POL-38"
+      ],
+      "kind": "현재 개발"
+    },
+    {
+      "id": "G01.05",
+      "goal_id": "G01",
+      "title": "승인 소스 MCP 격리 실행기",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-09",
+        "POL-46"
+      ],
+      "kind": "현재 개발",
+      "backlog_id": null,
+      "code_symbols_files": [
+        "full_stack_lab/runtime/",
+        "full_stack_lab/gateway/app/agent_service.py::runtime*"
+      ],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "등록 해제·종료·빌드 중 승인 철회의 실기기 정지 시험이 남았다.",
+      "completion_condition": "승인된 커밋만 고정 방식으로 빌드·실행하고 심사 목적지만 허용하며, 철회·종료 시 정지한다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-15"
+      ],
+      "implementation_assessment": "complete",
+      "stage_notes": {
+        "implementation": "10-15 밤 DEV-38 보고 기준(D-114)",
+        "regression": "10-15 밤 DEV-38 보고 기준(D-114)",
+        "deployment": "10-15 밤 DEV-38 보고 기준(D-114)",
+        "real_device": "10-15 밤 DEV-38 보고 기준(D-114)",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
+        "real_device": 0.5,
+        "acceptance_complete": 0
+      },
+      "progress": 70.0,
+      "complete": false,
+      "priority": "P2",
+      "planned_weeks": null,
+      "evidence": [
+        {
+          "path": "research/llm-wiki/status/reports/2026-10-15-dev38-runtime.md"
+        }
       ]
+    },
+    {
+      "id": "G01.06",
+      "goal_id": "G01",
+      "title": "운영 서버 이미지 주기 재검사·기한 초과 격리",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-39"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-50",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "실행 중 이미지 재검사 결과가 기한을 넘기면 자동 격리되고 기록된다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P0",
+      "planned_weeks": [
+        "11월 3주",
+        "11월 4주"
+      ],
+      "evidence": []
     },
     {
       "id": "G02.01",
@@ -470,7 +592,12 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-08",
+        "POL-38"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G02.02",
@@ -544,7 +671,12 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-11",
+        "POL-37"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G02.03",
@@ -613,7 +745,13 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-37",
+        "POL-40",
+        "POL-44"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G02.04",
@@ -683,7 +821,111 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-11",
+        "POL-12"
+      ],
+      "kind": "현재 개발"
+    },
+    {
+      "id": "G02.05",
+      "goal_id": "G02",
+      "title": "데이터·기능 단위 사용자 동의 확인",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-08"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-51",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "동의가 없는 데이터·기능 호출이 차단되고 확인 요청이 나간다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P1",
+      "planned_weeks": [
+        "11월 1주",
+        "11월 2주"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "G02.06",
+      "goal_id": "G02",
+      "title": "변경 영향 판정·선택적 제한",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-37",
+        "POL-43"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-52",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "변경된 도구와 영향 받는 사용자·권한만 제한되고 나머지 도구 호출은 계속 허용된다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P0",
+      "planned_weeks": [
+        "11월 4주",
+        "12월 1주"
+      ],
+      "evidence": []
     },
     {
       "id": "G03.01",
@@ -758,7 +1000,12 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-19",
+        "POL-21"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G03.02",
@@ -826,7 +1073,11 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-20"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G03.03",
@@ -898,7 +1149,15 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-22",
+        "POL-23",
+        "POL-24",
+        "POL-25",
+        "POL-26"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G03.04",
@@ -972,7 +1231,210 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-27",
+        "POL-28",
+        "POL-36"
+      ],
+      "kind": "현재 개발"
+    },
+    {
+      "id": "G03.05",
+      "goal_id": "G03",
+      "title": "연결 직전 DNS 확인·IP 고정 접속",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-10",
+        "POL-40"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-53",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "DNS 재바인딩·리디렉션·미승인 OAuth 조회 대상 반례가 모두 차단된다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P0",
+      "planned_weeks": [
+        "10월 4주",
+        "10월 5주"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "G03.06",
+      "goal_id": "G03",
+      "title": "단일 조회 반환 건수·크기 상한",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-35"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-54",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "상한 초과·전체 폴더 조회가 차단되고 정상 조회는 통과한다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P1",
+      "planned_weeks": [
+        "11월 1주",
+        "11월 2주"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "G03.07",
+      "goal_id": "G03",
+      "title": "변경 요청 멱등 키",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-36"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-55",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "같은 변경의 재전송·재시도가 한 번만 실행된다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P1",
+      "planned_weeks": [
+        "11월 2주",
+        "11월 2주"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "G03.08",
+      "goal_id": "G03",
+      "title": "설정·실행 인자·오류 응답 인증정보 노출 차단",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-14"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-56",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "인증정보 원문이 설정·인자·오류 응답에 남지 않는다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P0",
+      "planned_weeks": [
+        "10월 5주",
+        "10월 5주"
+      ],
+      "evidence": []
     },
     {
       "id": "G04.01",
@@ -1046,7 +1508,12 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-24",
+        "POL-29"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G04.02",
@@ -1114,7 +1581,11 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-30"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G04.03",
@@ -1182,7 +1653,12 @@
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
           "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-04",
+        "POL-29"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G04.04",
@@ -1252,7 +1728,158 @@
           "path": "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl",
           "sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-22"
+      ],
+      "kind": "현재 개발"
+    },
+    {
+      "id": "G04.05",
+      "goal_id": "G04",
+      "title": "외부 전송 목적 결속",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-26"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-57",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "목적·수신처·등급 조합이 승인과 다르면 전송이 차단된다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P1",
+      "planned_weeks": [
+        "11월 1주",
+        "11월 2주"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "G04.06",
+      "goal_id": "G04",
+      "title": "도구별 허용 입력 항목·입력 마스킹",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-31"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-58",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "허용 밖 입력 항목과 민감정보가 전달되지 않는다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P1",
+      "planned_weeks": [
+        "11월 1주",
+        "11월 2주"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "G04.07",
+      "goal_id": "G04",
+      "title": "세션 내 중요정보 표시 전파·서버 간 전달 경계",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-33"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-59",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "승인 없는 서버 간 중요정보 전달이 차단된다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P1",
+      "planned_weeks": [
+        "11월 2주",
+        "11월 3주"
+      ],
+      "evidence": []
     },
     {
       "id": "G05.01",
@@ -1316,7 +1943,11 @@
           "path": "research/llm-wiki/analysis/wbs-review/current-checks.json",
           "sha256": "40048082f49d396c6f74061ca5efe6d0d3b984b7b2f90cedcba89637584352ec"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-12"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G05.02",
@@ -1375,7 +2006,12 @@
           "path": "research/llm-wiki/status/reports/2026-10-14-pj1-endpoint-update.json",
           "sha256": "82f9f1e650678aec921161c7bfe522befdec9cba265f721c89f62e8397000385"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-12",
+        "POL-17"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G05.03",
@@ -1459,7 +2095,12 @@
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ],
-      "implementation_review_note": "Linux managed 범위의 프로세스·stdio 자동 관측과 전달이 추가됐지만, 네트워크 탐색은 비활성이고 실제 MCP 앱 프로세스/다른 OS는 확인하지 않았다."
+      "implementation_review_note": "Linux managed 범위의 프로세스·stdio 자동 관측과 전달이 추가됐지만, 네트워크 탐색은 비활성이고 실제 MCP 앱 프로세스/다른 OS는 확인하지 않았다.",
+      "pol_ids": [
+        "POL-12",
+        "POL-42"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G05.04",
@@ -1526,7 +2167,11 @@
           "path": "research/llm-wiki/status/reports/2026-10-14-e13-local-mcp-natural-language.md",
           "sha256": "3b9a1ab66b47be4b1f9ea14ca47fc366aa35a8d0c5cf0175655b24475fc7745b"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-12"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G06.01",
@@ -1594,7 +2239,11 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-38"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G06.02",
@@ -1669,7 +2318,11 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-38"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G06.03",
@@ -1752,7 +2405,11 @@
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ],
-      "implementation_review_note": "24시간 전체 거부 집계는 이미 제공된다. 채널별 수집 상태·신선도·listener 상세와 최근 200행 범위 구분을 보강했지만 페이지네이션과 전 구간 집계는 미완료."
+      "implementation_review_note": "24시간 전체 거부 집계는 이미 제공된다. 채널별 수집 상태·신선도·listener 상세와 최근 200행 범위 구분을 보강했지만 페이지네이션과 전 구간 집계는 미완료.",
+      "pol_ids": [
+        "POL-42"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G06.04",
@@ -1834,7 +2491,110 @@
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
       ],
-      "implementation_review_note": "기존 표본과 새 OS 이벤트의 안전한 projection/hash 증거가 있으며 deploy/source hash를 대조한다. 모든 전달 원본의 raw byte·무손실 보존 pipeline은 없다."
+      "implementation_review_note": "기존 표본과 새 OS 이벤트의 안전한 projection/hash 증거가 있으며 deploy/source hash를 대조한다. 모든 전달 원본의 raw byte·무손실 보존 pipeline은 없다.",
+      "pol_ids": [
+        "POL-38"
+      ],
+      "kind": "현재 개발"
+    },
+    {
+      "id": "G06.05",
+      "goal_id": "G06",
+      "title": "정책 배포 후 경보 자체 시험",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-42"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-60",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "배포 직후 합성 이벤트에 대한 경보 결과가 기록된다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P0",
+      "planned_weeks": [
+        "11월 3주",
+        "11월 4주"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "G06.06",
+      "goal_id": "G06",
+      "title": "SIEM 전달·전달 실패 재전송",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-38",
+        "POL-42"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-61",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "판정·감사 이벤트가 SIEM 형식으로 전달되고 수신 장애 뒤 누락 없이 재전송된다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P1",
+      "planned_weeks": [
+        "11월 4주",
+        "12월 1주"
+      ],
+      "evidence": []
     },
     {
       "id": "G07.01",
@@ -1903,7 +2663,12 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-44",
+        "POL-45"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G07.02",
@@ -1971,7 +2736,12 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-44",
+        "POL-46"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G07.03",
@@ -2039,7 +2809,12 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-41",
+        "POL-45"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G07.04",
@@ -2107,7 +2882,110 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-48",
+        "POL-50"
+      ],
+      "kind": "현재 개발"
+    },
+    {
+      "id": "G07.05",
+      "goal_id": "G07",
+      "title": "탐지 시 서버·도구 자동 중지",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-43"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-62",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "미승인 변경·이상 호출 탐지 시 해당 서버·도구가 자동 중지된다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P0",
+      "planned_weeks": [
+        "11월 3주",
+        "11월 4주"
+      ],
+      "evidence": []
+    },
+    {
+      "id": "G07.06",
+      "goal_id": "G07",
+      "title": "서명된 폐기 목록과 복원 후 대조",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-50"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-63",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "백업 복원 후 폐기된 연결·인증정보가 다시 허용되지 않는다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P0",
+      "planned_weeks": [
+        "11월 4주",
+        "12월 1주"
+      ],
+      "evidence": []
     },
     {
       "id": "G08.01",
@@ -2179,7 +3057,11 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-19"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G08.02",
@@ -2247,7 +3129,9 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [],
+      "kind": "현재 개발"
     },
     {
       "id": "G08.03",
@@ -2320,7 +3204,12 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [
+        "POL-08",
+        "POL-27"
+      ],
+      "kind": "현재 개발"
     },
     {
       "id": "G08.04",
@@ -2382,7 +3271,58 @@
           "path": "research/llm-wiki/status/reports/2026-10-14-endpoint-regressions.json",
           "sha256": "8c83d243f31f3df1888bc26cc8d83a87132dd234e7961dc21c23d9ab7e4ac452"
         }
-      ]
+      ],
+      "pol_ids": [],
+      "kind": "현재 개발"
+    },
+    {
+      "id": "G08.05",
+      "goal_id": "G08",
+      "title": "하네스–게이트웨이 구간 TLS",
+      "source_pac_ids": [],
+      "pol_ids": [
+        "POL-16"
+      ],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-64",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "현장 배치의 하네스 연결이 TLS로만 동작하고 평문 접속은 거부된다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P0",
+      "planned_weeks": [
+        "10월 4주",
+        "10월 5주"
+      ],
+      "evidence": []
     },
     {
       "id": "G09.01",
@@ -2448,7 +3388,9 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [],
+      "kind": "현재 개발"
     },
     {
       "id": "G09.02",
@@ -2520,7 +3462,9 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [],
+      "kind": "현재 개발"
     },
     {
       "id": "G09.03",
@@ -2587,7 +3531,9 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [],
+      "kind": "현재 개발"
     },
     {
       "id": "G09.04",
@@ -2646,7 +3592,9 @@
           "path": "research/llm-wiki/status/reports/2026-10-13-development-results.md",
           "sha256": "bd3499e464d942f1c4d2824001d7eb296e1942cbeffd0afb49bec22010e509a7"
         }
-      ]
+      ],
+      "pol_ids": [],
+      "kind": "현재 개발"
     },
     {
       "id": "G10.01",
@@ -2703,7 +3651,9 @@
           "path": "research/llm-wiki/status/reports/2026-10-13-development-results.md",
           "sha256": "bd3499e464d942f1c4d2824001d7eb296e1942cbeffd0afb49bec22010e509a7"
         }
-      ]
+      ],
+      "pol_ids": [],
+      "kind": "현재 개발"
     },
     {
       "id": "G10.02",
@@ -2769,7 +3719,9 @@
           "path": "research/llm-wiki/analysis/wbs-1015/deploy.json",
           "sha256": "728c82a9c0a1fba3ed4500fd3c0241633937d0592eb161a0042a23421fc8fbe8"
         }
-      ]
+      ],
+      "pol_ids": [],
+      "kind": "현재 개발"
     },
     {
       "id": "G10.03",
@@ -2833,7 +3785,9 @@
           "path": "research/development-status-site/build_snapshot.py",
           "sha256": "e529341abd9b551169501cc8f68ae99eb7cfc956e9a716a2c9882bb7114a63a5"
         }
-      ]
+      ],
+      "pol_ids": [],
+      "kind": "현재 개발"
     },
     {
       "id": "G10.04",
@@ -2896,7 +3850,56 @@
           "path": "research/development-status-site/build_snapshot.py",
           "sha256": "e529341abd9b551169501cc8f68ae99eb7cfc956e9a716a2c9882bb7114a63a5"
         }
-      ]
+      ],
+      "pol_ids": [],
+      "kind": "현재 개발"
+    },
+    {
+      "id": "G10.05",
+      "goal_id": "G10",
+      "title": "통제 적용 전후 효과 비교 평가 도구(제품 외)",
+      "source_pac_ids": [],
+      "pol_ids": [],
+      "kind": "추가 개발",
+      "backlog_id": "DEV-65",
+      "code_symbols_files": [],
+      "regression_test_candidates": [],
+      "actual_evidence_paths": [],
+      "known_gap": "신규 개발",
+      "completion_condition": "같은 시나리오의 적용 전후 결과와 평가지표 6개가 재현 가능하게 산출된다",
+      "stage_weights": {
+        "implementation": 0.2,
+        "regression": 0.2,
+        "deployment": 0.2,
+        "real_device": 0.2,
+        "acceptance_complete": 0.2
+      },
+      "evidence_as_of": [
+        "2026-10-17"
+      ],
+      "implementation_assessment": "planned",
+      "stage_notes": {
+        "implementation": "미확인",
+        "regression": "미확인",
+        "deployment": "미확인",
+        "real_device": "미확인",
+        "acceptance_complete": "미확인"
+      },
+      "stage_scores": {
+        "implementation": 0,
+        "regression": 0,
+        "deployment": 0,
+        "real_device": 0,
+        "acceptance_complete": 0
+      },
+      "progress": 0,
+      "complete": false,
+      "priority": "P1",
+      "planned_weeks": [
+        "12월 1주",
+        "12월 2주"
+      ],
+      "evidence": []
     }
   ],
   "findings": [
@@ -3080,9 +4083,16 @@
     }
   ],
   "source_snapshot": {
-    "path": "research/llm-wiki/analysis/development-wbs/snapshot-before-wbs-1015.json",
-    "as_of": "2026-10-14T12:33:21.918770+00:00",
-    "historical_progress": 24.8,
-    "note": "10-14 로그 수정 뒤 스냅샷을 이력으로 보존하고, 새 근거가 있는 작업만 다시 산정했다."
+    "path": "research/llm-wiki/analysis/development-wbs/snapshot-before-wbs-1017.json",
+    "as_of": "2026-10-15T08:51:20.911509+00:00",
+    "historical_progress": null,
+    "note": "10-17 기능명세서의 추가 개발 16개와 실행기 G01.05를 더했다. 기존 40개 점수는 10-15 그대로."
+  },
+  "scope_change": {
+    "before": 40,
+    "after": 57,
+    "planned": 16,
+    "current_progress": 57.8,
+    "note": "10-17 기능명세서의 추가 개발 16개와 실행기 G01.05를 더했다. 기존 40개 점수는 10-15 그대로."
   }
 }

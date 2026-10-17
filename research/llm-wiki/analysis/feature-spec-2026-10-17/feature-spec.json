@@ -3,7 +3,7 @@
  "as_of": "2026-10-17",
  "code_basis": "10/15-wbs-implementation c0fbab3",
  "inputs": {
-  "wbs_snapshot": "analysis/development-wbs/snapshot.json",
+  "wbs_snapshot": "analysis/development-wbs/snapshot-before-wbs-1017.json",
   "policies": "threats/extracted/policies.json"
  },
  "feature_spec": [

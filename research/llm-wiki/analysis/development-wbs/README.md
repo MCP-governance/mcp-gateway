@@ -2,6 +2,8 @@
 
 Team AGI 드라이브의 [MVP WBS 원본](originals/MCP_보안거버넌스_MVP_WBS_2026-10-03.xlsx)은 관리형 Linux 파일럿을 위한 24개 기능 계획이다. 이 페이지의 G01~G10 40개 작업과 진척률은 별도 검수 기준이다. 두 수치를 합산하거나 원본 계획을 구현 완료 증거로 사용하지 않는다. [선별 및 판본 기록](../../team-agi-deliverables-2026-10-15.md).
 
+**2026-10-17 확장**: [기능명세서](../feature-spec-2026-10-17/README.md)의 실행기 G01.05와 추가 개발 16개를 더해 작업 57개가 됐다. [snapshot.json](snapshot.json)은 57개 판(`schema_version` 2, 각 작업에 정책50 `pol_ids`·백로그 DEV 번호), 10-15의 40개 판은 [snapshot-before-wbs-1017.json](snapshot-before-wbs-1017.json)에 보존했다. 전체 41.6%(현재 개발 41개 57.8%), 기존 40개 점수는 바꾸지 않았다. 아래 표는 10-15 40개 산정 기록이다. 생성: `python -X utf8 research/development-status-site/extend_1017.py`.
+
 기준 시각: 2026-10-15T08:51:20.911509+00:00 / 현장 읽기: 2026-10-15T07:37:13+00:00
 
 단계 가중 진척 **57.5%**. 최종 완료 **0/40**. 구현 완료 35개, 부분 5개, 미구현 0개.

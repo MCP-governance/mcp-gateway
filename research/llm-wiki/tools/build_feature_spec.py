@@ -15,7 +15,8 @@ from openpyxl.utils import get_column_letter as L
 
 WIKI = Path(__file__).resolve().parents[1]
 OUTDIR = WIKI / "analysis" / "feature-spec-2026-10-17"
-SNAP = WIKI / "analysis" / "development-wbs" / "snapshot.json"
+# The 40-task snapshot this record was built from; snapshot.json now holds the extended 57-task board.
+SNAP = WIKI / "analysis" / "development-wbs" / "snapshot-before-wbs-1017.json"
 POLICIES = WIKI / "threats" / "extracted" / "policies.json"
 OUT = OUTDIR / "feature-spec.xlsx"
 snap = {t["id"]: t for t in json.load(open(SNAP, encoding="utf-8"))["items"]}
