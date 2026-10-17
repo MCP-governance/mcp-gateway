@@ -90,5 +90,15 @@
         "result": "reached (404 at root), control"
       }
     ]
+  },
+  "isolated_lab": {
+    "runner": "full_stack_lab/tests/termination_dispatch_lab.sh (real PostgreSQL 18, OPA, Presidio, Gitea 1.27.3, gitea-mcp-server 1.7.0)",
+    "as_of": "2026-10-17T14:20:00+00:00",
+    "results": {
+      "termination_lab.py": "38/38 pass, retired relationship refused as MCP-DECOMM-001 with no upstream attempt (the D-115 review fix)",
+      "dispatch_effect_lab.py": "49/49 pass after `reset`"
+    },
+    "note": "termination_lab revokes the provider token on purpose; running dispatch_effect_lab without `reset` gives Gitea 401 on every write (seen on both c0fbab3 and the new code), not a regression",
+    "observation": "a tool result carrying the provider's 401 is still recorded as upstream_executed=true; separating executed from effective is DEV-48"
   }
 }
