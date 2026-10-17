@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "title": "MCP 목표 기능 · WBS 현황",
-  "as_of": "2026-10-17T12:02:51.750733+00:00",
+  "as_of": "2026-10-17T13:26:31.997947+00:00",
   "audit_as_of": "2026-10-15T07:37:13+00:00",
   "basis_head": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
   "branch": "10/15-wbs-implementation",
@@ -25,19 +25,19 @@
     "complete_rule": "5단계가 모두 1인 작업만 최종 완료. 신규 WBS의 현재 검수 기준이며 과거 실험 카드 완료를 변경하지 않음."
   },
   "summary": {
-    "progress": 41.6,
+    "progress": 43.9,
     "complete": 0,
     "total": 57,
     "stage_equivalent_counts": {
-      "implementation": 38.5,
-      "regression": 33.0,
-      "deployment": 34.0,
-      "real_device": 13.0,
+      "implementation": 40.5,
+      "regression": 35.0,
+      "deployment": 36.0,
+      "real_device": 13.5,
       "acceptance_complete": 0
     },
-    "implementation_full": 36,
+    "implementation_full": 38,
     "implementation_partial": 5,
-    "implementation_missing": 16
+    "implementation_missing": 14
   },
   "goals": [
     {
@@ -57,7 +57,7 @@
     {
       "id": "G03",
       "title": "신원·호출 권한",
-      "progress": 35.0,
+      "progress": 51.2,
       "complete": 0,
       "total": 8
     },
@@ -1253,7 +1253,7 @@
       "code_symbols_files": [],
       "regression_test_candidates": [],
       "actual_evidence_paths": [],
-      "known_gap": "신규 개발",
+      "known_gap": "기기에서 DNS 재바인딩·사설 주소 응답 음성 시험과 OAuth 메타데이터 조회 대상 반례가 남았다.",
       "completion_condition": "DNS 재바인딩·리디렉션·미승인 OAuth 조회 대상 반례가 모두 차단된다",
       "stage_weights": {
         "implementation": 0.2,
@@ -1263,31 +1263,36 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
+        "2026-10-17",
         "2026-10-17"
       ],
       "implementation_assessment": "planned",
       "stage_notes": {
-        "implementation": "미확인",
-        "regression": "미확인",
-        "deployment": "미확인",
-        "real_device": "미확인",
+        "implementation": "연결 직전 DNS 전체 응답 검사와 확인한 IP로 접속, TLS 이름·SNI·Host 유지, 내부 판정은 등록·실행기 단일 라벨 호스트(D-116).",
+        "regression": "기기 게이트웨이 이미지에서 실제 연결 풀 시험 2건·단위 16건 통과.",
+        "deployment": "7747d21 field up 배포.",
+        "real_device": "PJ1 관리 Claude Code로 외부 github get_me 2회·내부 실행기 markitdown 변환 정상. 재바인딩·사설 응답 음성 시험은 기기에서 미실행.",
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 0,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P0",
       "planned_weeks": [
         "10월 4주",
         "10월 5주"
       ],
-      "evidence": []
+      "evidence": [
+        {
+          "path": "research/llm-wiki/analysis/wbs-1017/deploy-abd.json"
+        }
+      ]
     },
     {
       "id": "G03.06",
@@ -1400,7 +1405,7 @@
       "code_symbols_files": [],
       "regression_test_candidates": [],
       "actual_evidence_paths": [],
-      "known_gap": "신규 개발",
+      "known_gap": "PJ1에서 실제 오류 응답의 가림과 원장 기록 대조가 남았다.",
       "completion_condition": "인증정보 원문이 설정·인자·오류 응답에 남지 않는다",
       "stage_weights": {
         "implementation": 0.2,
@@ -1410,31 +1415,36 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
+        "2026-10-17",
         "2026-10-17"
       ],
       "implementation_assessment": "planned",
       "stage_notes": {
-        "implementation": "미확인",
-        "regression": "미확인",
-        "deployment": "미확인",
+        "implementation": "하네스로 가는 오류 응답·decisions.error·업스트림 예외 문자열을 Gitleaks 엔진과 자격 쿼리·Authorization 패턴으로 가림(D-117).",
+        "regression": "기기 게이트웨이 이미지에서 단위 16건 통과.",
+        "deployment": "7747d21 field up 배포.",
         "real_device": "미확인",
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 0,
-        "regression": 0,
-        "deployment": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
         "real_device": 0,
         "acceptance_complete": 0
       },
-      "progress": 0,
+      "progress": 60,
       "complete": false,
       "priority": "P0",
       "planned_weeks": [
         "10월 5주",
         "10월 5주"
       ],
-      "evidence": []
+      "evidence": [
+        {
+          "path": "research/llm-wiki/analysis/wbs-1017/deploy-abd.json"
+        }
+      ]
     },
     {
       "id": "G04.01",
