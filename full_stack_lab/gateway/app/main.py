@@ -18,7 +18,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
 
-from . import core, db, decommission, dispatch, endpoint_plane, privacy, secret_scan, upstream
+from . import core, db, decommission, dispatch, disposal, endpoint_plane, ops_response, privacy, secret_scan, upstream
 from .core import (
     OPA_URL,
     approve_request,
@@ -224,13 +224,17 @@ async def lifespan(_: FastAPI):
     await bootstrap()
     watcher = asyncio.create_task(catalog_watch())
     pool_watcher = asyncio.create_task(upstream.maintain_pool())
+    operations = asyncio.create_task(ops_response.watch(OPA_URL))
+    tombstones = asyncio.create_task(disposal.watch())
     try:
         async with gateway_mcp.session_manager.run():
             yield
     finally:
         watcher.cancel()
         pool_watcher.cancel()
-        await asyncio.gather(watcher, pool_watcher, return_exceptions=True)
+        operations.cancel()
+        tombstones.cancel()
+        await asyncio.gather(watcher, pool_watcher, operations, tombstones, return_exceptions=True)
         await upstream.close_pool()
         await db.close()
 
@@ -247,6 +251,27 @@ async def public_http_error(request, exc):
 async def public_validation_error(request, exc):
     # Validation errors echo rejected inputs, which may themselves be credentials.
     return JSONResponse({"detail": await _error_detail(jsonable_encoder(exc.errors()))}, status_code=422)
+
+
+class OpsResume(StrictModel):
+    note: str = Field(min_length=4, max_length=500)
+
+
+@app.get("/api/ops/status")
+async def ops_status(_: dict = Depends(admin_caller)) -> dict:
+    return {"suspensions": await db.fetch_all("SELECT * FROM ops_suspensions ORDER BY id DESC LIMIT 100"),
+            "image_scans": await db.fetch_all("SELECT * FROM runtime_image_scans ORDER BY id DESC LIMIT 100"),
+            "alert_self_tests": await db.fetch_all("SELECT * FROM alert_self_tests ORDER BY id DESC LIMIT 20"),
+            "alerts": await db.fetch_all("SELECT * FROM ops_alerts WHERE NOT synthetic ORDER BY id DESC LIMIT 100"),
+            "disposal": await db.fetch_one("SELECT * FROM worker_heartbeats WHERE worker='disposal'")}
+
+
+@app.post("/api/ops/servers/{server_id}/resume")
+async def ops_resume(server_id: str, request: OpsResume, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await ops_response.resume(server_id, user["principal"], request.note)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
 
 
 async def _absent() -> None:
@@ -890,7 +915,7 @@ async def lab_restore(server_id: str, user: dict = Depends(admin_caller)) -> dic
     try:
         result = await decommission.restore_server(server_id, user["principal"])
     except ValueError as exc:
-        raise HTTPException(404, str(exc))
+        raise HTTPException(409, str(exc))
     try:
         result["catalog"] = await core.refresh_catalog(server_id)
     except Exception as exc:

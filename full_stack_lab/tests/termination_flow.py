@@ -7,7 +7,7 @@ UR-GITEA-DEV  provider-operated, credential disclosed, the organisation administ
 UR-EMAIL-ASSIST provider-operated, credential NOT disclosed -> C1 unmet -> T3,
               and closing a T3 case without a named risk acceptance is refused
 
-Both servers are restored afterwards (lab only) so the demo can run again.
+Run only on a disposable lab volume: D-123 tombstones deliberately prevent restoring the same server.
 """
 import atexit
 import os
@@ -26,6 +26,9 @@ def token() -> str:
                                  headers={"Content-Type": "application/json"})
     return json.load(urllib.request.urlopen(req))["access_token"]
 
+
+if os.getenv("TERMINATION_DISPOSABLE_LAB") != "1":
+    raise SystemExit("폐기 목록이 영구 기록됩니다. 격리한 일회용 랩에서만 TERMINATION_DISPOSABLE_LAB=1로 실행하세요.")
 
 TOKEN = token()
 
@@ -67,10 +70,8 @@ def check(condition: bool, name: str, detail: str = "") -> None:
 
 def open_case(rel: str) -> dict:
     status, body = api("POST", "/api/termination/cases", {"relationship_id": rel, "reason": "계약 종료에 따른 이용 중단 (자동 검증)"})
-    if status == 409:  # a previous run left it open: restore and retry once
-        server = {"UR-GITEA-DEV": "gitea", "UR-EMAIL-ASSIST": "email"}[rel]
-        api("POST", f"/api/lab/restore/{server}")
-        status, body = api("POST", "/api/termination/cases", {"relationship_id": rel, "reason": "계약 종료에 따른 이용 중단 (자동 검증)"})
+    if status == 409:
+        raise SystemExit("기존 종료 케이스를 변경하지 않습니다. 빈 일회용 랩을 사용하세요.")
     check(status == 201, f"{rel}: case opened", str(status))
     return body
 
@@ -141,11 +142,10 @@ status, closed = api("POST", f"/api/termination/cases/{case_id}/close",
                      {"note": "제공자 미회신", "risk_acceptance": "CISO 승인 — 잔존 위험 수용 (자동 검증)"})
 check(status == 200 and closed["case"]["risk_accepted_by"], "email: T3 closes with a named risk acceptance")
 
-# ── restore the lab (servers back, Gitea token re-issued) ────────────────────
+# D-123: restoring a database must not restore a disposed identity.
 for server in ("gitea", "email"):
     status, _ = api("POST", f"/api/lab/restore/{server}")
-    check(status == 200, f"restore {server}")
-subprocess.run(["./console.sh", "restore-token", "gitea"], check=False)
+    check(status == 409, f"disposed {server} cannot be restored")
 status, health = api("GET", "/api/health")
 print("mcp servers ready:", health.get("mcp_servers", {}).get("ready"), "/", health.get("mcp_servers", {}).get("total"))
 

@@ -23,7 +23,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import classify, connections, db, dispatch, endpoint_plane, pac, poisoning, privacy, registry, secret_scan, upstream
+from . import classify, connections, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, secret_scan, upstream
 from .destination import DestinationBlocked
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMN_SETS, AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
@@ -182,9 +182,15 @@ async def _discover(server_id: str) -> dict:
 
 
 async def refresh_catalog(server_id: str) -> dict:
-    server = await db.fetch_one("SELECT * FROM mcp_servers WHERE id=%s", (server_id,))
+    server = await db.fetch_one(
+        """SELECT s.*, (SELECT reason FROM ops_suspensions x WHERE x.server_id=s.id AND x.resumed_at IS NULL)
+                         AS automatic_stop_reason FROM mcp_servers s WHERE s.id=%s""", (server_id,))
     if not server:
         raise RuntimeError(f"unregistered server: {server_id}")
+    if server.get("automatic_stop_reason") and server["status"] != "DISABLED":
+        await db.execute("UPDATE mcp_servers SET status='DISABLED',status_reason=%s WHERE id=%s",
+                         (server["automatic_stop_reason"], server_id))
+        server = {**server, "status": "DISABLED", "status_reason": server["automatic_stop_reason"]}
     if server["status"] in {"DISABLED", "BLOCKED_SUPPLY_CHAIN"}:
         # Catalog discovery proves only that a service answers; it must never undo
         # an operator's supply-chain containment or reconnect to the blocked target.
@@ -289,14 +295,16 @@ async def refresh_catalog(server_id: str) -> dict:
     # re-read before every call, so writing a row per call grows it without adding
     # anything a reviewer can read.
     if not previous or previous["catalog_hash"] != catalog_hash or previous["exact_match"] != exact_match:
-        await db.fetch_one(
+        snapshot = await db.fetch_one(
             """INSERT INTO catalog_snapshots(server_id, server_version, catalog_hash, tool_count, exact_match, findings)
                VALUES (%s,%s,%s,%s,%s,%s) RETURNING id""",
             (server_id, discovered["version"], catalog_hash, len(observed), exact_match, Jsonb(findings)),
         )
+        await ops_response.catalog_alerts(server_id, findings, snapshot["id"])
     await db.execute(
         """UPDATE mcp_servers SET status=%s, status_reason=%s, last_seen_at=now(),
-               advertised_name=%s WHERE id=%s""",
+               advertised_name=%s WHERE id=%s AND status NOT IN ('DISABLED','BLOCKED_SUPPLY_CHAIN')
+               AND lifecycle NOT IN ('TERMINATING','RETIRED')""",
         (
             "READY" if exact_match else "DRIFT",
             "승인 계약과 일치" if exact_match else "도구 계약 변화가 탐지됨",
@@ -313,9 +321,11 @@ async def refresh_catalog(server_id: str) -> dict:
         await db.execute(
             "UPDATE mcp_servers SET drift_observed_at=now() WHERE id=%s", (server_id,)
         )
+        await ops_response.contain_drift(server_id, findings)
+    current_status = await db.fetch_one("SELECT status FROM mcp_servers WHERE id=%s", (server_id,))
     return {
         "server_id": server_id,
-        "status": "READY" if exact_match else "DRIFT",
+        "status": current_status["status"],
         "protocol_version": discovered["protocol_version"],
         "version": discovered["version"],
         "tool_count": len(observed),
@@ -410,7 +420,10 @@ async def bootstrap() -> None:
     await db.execute((Path(__file__).parent / "lifecycle_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "v2_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "oidc_tables.sql").read_text())
+    await db.execute((Path(__file__).parent / "ops_tables.sql").read_text())
     await registry.sync()
+    await disposal.capture_existing()
+    await disposal.reconcile()
     await policy_ledger(refresh=True)
     if POLICY_PATH.exists():
         files = [path for path in (POLICY_PATH.parent / name for name in POLICY_BUNDLE) if path.exists()]
@@ -782,7 +795,9 @@ async def catalog_watch() -> None:
 
 
 async def _contract(server_id: str, tool_name: str) -> dict:
-    server = await db.fetch_one("SELECT * FROM mcp_servers WHERE id=%s", (server_id,))
+    server = await db.fetch_one(
+        """SELECT s.*, (SELECT reason FROM ops_suspensions x WHERE x.server_id=s.id AND x.resumed_at IS NULL)
+                         AS automatic_stop_reason FROM mcp_servers s WHERE s.id=%s""", (server_id,))
     tool = await db.fetch_one(
         "SELECT * FROM mcp_tools WHERE server_id=%s AND name=%s", (server_id, tool_name)
     )
@@ -819,7 +834,9 @@ async def _contract(server_id: str, tool_name: str) -> dict:
     raw_critical = int(critical["critical_count"]) if critical else 0
     return {
         "registered": True,
-        "enabled": bool(tool["enabled"] and server["status"] != "DISABLED"),
+        "enabled": bool(tool["enabled"] and server["status"] != "DISABLED"
+                        and not server.get("automatic_stop_reason")
+                        and not disposal.blocked(server_id=server_id)),
         "schema_hash_match": bool(tool["approved_schema_hash"] and tool["approved_schema_hash"] == tool["observed_schema_hash"]),
         "description_hash_match": bool(tool["approved_description_hash"] and tool["approved_description_hash"] == tool["observed_description_hash"]),
         "version_match": bool(tool["approved_server_version"] and tool["approved_server_version"] == tool["observed_server_version"]),
@@ -1313,6 +1330,9 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                         "MCP-DECOMM-001", "Block", "종료·폐기 절차에 들어간 이용 관계입니다. 실행하지 않습니다.")
                 elif refused == "principal":
                     problem = "Principal was revoked before dispatch"
+                elif refused == "suspended":
+                    problem, blocked_verdict = "Server suspended before dispatch", local_verdict(
+                        "MCP-REGISTRY-002", "Block", "자동 중지된 서버입니다.")
                 elif refused == "approval":
                     problem = "Approval expired or was withdrawn before execution"
                 elif refused:

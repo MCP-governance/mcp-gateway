@@ -1,0 +1,156 @@
+{
+  "executed_at": "2026-10-17T15:06:51.871613+00:00",
+  "scope": "local-only",
+  "deployment_verified": false,
+  "actual_mcp_executed": false,
+  "crypto_backend": "OpenSSL Ed25519 adapter; cryptography not installed on this host",
+  "results": [
+    {
+      "name": "pure-unit",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "ops_response_check.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_auto_stop_scope_is_configurable (ops_response_check.AlertSelfTest) ... ok\ntest_cases_keep_trusted_pac_and_do_not_mutate_frozen_base (ops_response_check.AlertSelfTest) ... ok\ntest_deployment_check_records_success_separately (ops_response_check.AlertSelfTest) ... ok\ntest_human_resume_and_approval_record_share_one_transaction (ops_response_check.AlertSelfTest) ... ok\ntest_missing_alert_storage_is_not_a_success (ops_response_check.AlertSelfTest) ... ok\ntest_policy_changed_mid_test_is_failed (ops_response_check.AlertSelfTest) ... ok\ntest_repeated_alerts_stop_only_selected_servers (ops_response_check.AlertSelfTest) ... ok\ntest_suspend_stops_runtime_and_never_reactivates (ops_response_check.AlertSelfTest) ... ok\ntest_wrong_policy_or_engine_failure_is_a_failed_test (ops_response_check.AlertSelfTest) ... ok\ntest_competing_writers_keep_a_complete_signed_chain (ops_response_check.Disposal) ... ok\ntest_existing_list_cannot_be_initialized_again (ops_response_check.Disposal) ... ok\ntest_interrupted_head_replace_leaves_access_blocked (ops_response_check.Disposal) ... ok\ntest_missing_truncated_corrupt_head_and_corrupt_signature_fail_closed (ops_response_check.Disposal) ... ok\ntest_reconcile_reapplies_records_and_appends_an_alert (ops_response_check.Disposal) ... ok\ntest_signed_head_does_not_let_wrong_signature_through (ops_response_check.Disposal) ... ok\ntest_signed_record_is_idempotent_and_blocks_after_database_rollback (ops_response_check.Disposal) ... ok\ntest_deadline_boundary_survives_a_new_scan (ops_response_check.ImageScan) ... ok\ntest_fresh_db_seven_days_is_accepted (ops_response_check.ImageScan) ... ok\ntest_report_cannot_truncate_away_critical_findings (ops_response_check.ImageScan) ... ok\ntest_scanner_failure_records_hold_and_preserves_deadline (ops_response_check.ImageScan) ... ok\ntest_stale_future_missing_bad_scanner_and_wrong_image_are_not_passes (ops_response_check.ImageScan) ... ok\ntest_persistent_suspension_overrides_a_refreshed_server_status (ops_response_check.TokenReuse) ... ok\ntest_signed_tombstone_still_revokes_family_under_its_lock (ops_response_check.TokenReuse) ... ok\n\n----------------------------------------------------------------------\nRan 23 tests in 5.157s\n\nOK\n"
+    },
+    {
+      "name": "open-endpoints",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS 무인증 1개가 문서와 일치, 인증 필요 72개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\n",
+      "stderr": ""
+    },
+    {
+      "name": "schema-check",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/schema_check.py"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS 기동마다 다시 만드는 CHECK 제약 12개가 파일 사이에서 같다\n",
+      "stderr": ""
+    },
+    {
+      "name": "python-ast",
+      "exit_code": 0,
+      "files": [
+        "full_stack_lab/gateway/app/agent_contract.py",
+        "full_stack_lab/gateway/app/agent_service.py",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/decommission.py",
+        "full_stack_lab/gateway/app/dispatch.py",
+        "full_stack_lab/gateway/app/disposal.py",
+        "full_stack_lab/gateway/app/idp.py",
+        "full_stack_lab/gateway/app/keygen.py",
+        "full_stack_lab/gateway/app/main.py",
+        "full_stack_lab/gateway/app/ops_response.py",
+        "full_stack_lab/runtime/image_scan.py",
+        "full_stack_lab/runtime/worker.py",
+        "full_stack_lab/supply_chain/intake_worker.py",
+        "full_stack_lab/supply_chain/trivy_scan.py",
+        "full_stack_lab/tests/ops_response_check.py",
+        "full_stack_lab/tests/termination_flow.py"
+      ],
+      "limitation": "Syntax only; imports and pyflakes not validated"
+    },
+    {
+      "name": "shell-syntax",
+      "command": [
+        "C:/Program Files/Git/bin/bash.exe",
+        "-n",
+        "full_stack_lab/console.sh"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "pyflakes-unavailable",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-m",
+        "pyflakes",
+        "full_stack_lab/gateway/app/agent_contract.py",
+        "full_stack_lab/gateway/app/agent_service.py",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/decommission.py",
+        "full_stack_lab/gateway/app/dispatch.py",
+        "full_stack_lab/gateway/app/disposal.py",
+        "full_stack_lab/gateway/app/idp.py",
+        "full_stack_lab/gateway/app/keygen.py",
+        "full_stack_lab/gateway/app/main.py",
+        "full_stack_lab/gateway/app/ops_response.py",
+        "full_stack_lab/runtime/image_scan.py",
+        "full_stack_lab/runtime/worker.py",
+        "full_stack_lab/supply_chain/intake_worker.py",
+        "full_stack_lab/supply_chain/trivy_scan.py",
+        "full_stack_lab/tests/ops_response_check.py",
+        "full_stack_lab/tests/termination_flow.py"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "C:\\Program Files\\Python310\\python.exe: No module named pyflakes\n"
+    },
+    {
+      "name": "rego",
+      "status": "not-run",
+      "opa_binary": null,
+      "reason": "OPA is not installed; Docker was not run"
+    },
+    {
+      "name": "wiki-inventory",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/build_wiki.py"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"format\": \"markdown\", \"pages\": 483, \"catalogs\": {\"endpoint-permission-references\": 12, \"experiments\": 13, \"imports\": 22, \"local-tool-risks\": 13, \"papers\": 264, \"solutions\": 9, \"threats\": 24}, \"collaboration_console\": \"research/collaboration-console/README.md\"}\n",
+      "stderr": ""
+    },
+    {
+      "name": "wiki-check",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_wiki.py"
+      ],
+      "exit_code": 1,
+      "stdout": "{\n  \"ok\": false,\n  \"counts\": {\n    \"endpoint-permission-references\": 12,\n    \"experiments\": 13,\n    \"imports\": 22,\n    \"local-tool-risks\": 13,\n    \"papers\": 264,\n    \"solutions\": 9,\n    \"threats\": 24,\n    \"sources_evidence_records\": 3,\n    \"solutions_evidence_records\": 21,\n    \"reviewed_local_tools\": 92,\n    \"markdown_documents\": 483\n  },\n  \"warnings\": [],\n  \"errors\": [\n    \"Missing local file: local-sources/compliance/LIB-L05/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L06/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L09/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L10/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L11/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L12/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M04/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M08/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M17/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M20/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M21/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M22/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M28/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M31/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M32/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M34/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M36/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M37/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M38/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M39/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M40/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M44/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M45/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M48/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M49/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M13/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M14/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M15/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M43/provenance.json\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/agent_service.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/idp.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/idp.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/decommission.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/tests/termination_flow.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/idp.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/decommission.py; review and run map_threats.py\"\n  ]\n}\n",
+      "stderr": ""
+    }
+  ]
+}

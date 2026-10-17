@@ -168,12 +168,14 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: ./console.sh up --no-llm
-        run: ./console.sh up --no-llm
+        run: |
+          ./console.sh init-disposal
+          ./console.sh up --no-llm
 
       # Rego, classification self-check, gateway acceptance, the scripted workday of
       # four workstations, the termination judgment, security regression, E1-E3.
       - name: ./console.sh test
-        run: ./console.sh test
+        run: TERMINATION_DISPOSABLE_LAB=1 ./console.sh test
 
       # The image's native engines (gitleaks C-ABI library, PCRE2 text rules) must decide
       # exactly like the gitleaks binary and Python's re they replaced.
@@ -194,6 +196,7 @@ jobs:
           echo "APPLIANCE_BIND=127.0.0.1" >> .env
           # A.I.G 로컬 모델(D-47)은 실기기에서 받는다. CI는 검사 품질을 볼 수 없으므로 내려받지 않는다.
           echo "AIG_LOCAL_MODEL=none" >> .env
+          APPLIANCE_BIND=127.0.0.1 ./console.sh field init-disposal --with-lab-mcp
           APPLIANCE_BIND=127.0.0.1 ./console.sh field up --with-lab-mcp
           APPLIANCE_BIND=127.0.0.1 ./console.sh field status
 

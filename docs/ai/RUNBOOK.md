@@ -2,6 +2,8 @@
 
 > 단일 진입점은 `full_stack_lab/console.sh`. 모든 명령은 `full_stack_lab/`에서 실행한다.
 
+D-123 최초 배포 전 솔루션 기기에서 `./console.sh field init-disposal`을 한 번 실행한 뒤 `./console.sh field up`으로 배포한다. 기존 목록이 있으면 초기화하지 않는다. 폐기 볼륨과 키를 DB 복원과 함께 되돌리지 않는다. 동일 폐기 식별자의 `restore`는 거부한다. 설정·복귀 API·일회용 랩 시험 조건은 [운영 대응](OPS_RESPONSE.md)을 따른다.
+
 ## 2026-09-30 이후 배포 확인과 원격 MCP 자격
 
 Console **정책 → 배포 확인**은 Gateway/Console code revision·content hash와 OPA 로드 정책을 대조한다.
