@@ -8,15 +8,31 @@
     "memo": "10-17 배포 7747d21, PJ1 오류 응답 가림 확인 남음"
   },
   "G05.04": {
-    "owner": "Claude · Sonnet",
-    "memo": "10-17 pj3 Windows VM 준비 중(표준 계정·화면 캡처)"
+    "owner": "Claude",
+    "memo": "10-18 pj3 승인 배포·UI 자동 조작 경로 확보. VM 응답 없음으로 대기"
   },
   "G08.04": {
-    "owner": "Claude · Codex",
-    "memo": "10-17 Windows 설치 마법사·트레이 착수 예정"
+    "owner": "Claude",
+    "memo": "10-18 pj3 마법사 실기기 결함 3건 수정·배포 b5e4c65. 설치 완료·트레이는 pj3 복구 후"
   },
   "G07.02": {
     "owner": "Claude",
     "memo": "10-17 세션 재사용 배포. 최신 규격 서버는 재사용 안 함(설계). 이전 규격 서버는 격리 실험 중"
+  },
+  "G03.06": {
+    "owner": "Codex",
+    "memo": "10-18 Codex 사용량 한도로 04:50 재실행 예약"
+  },
+  "G03.07": {
+    "owner": "Codex",
+    "memo": "10-18 Codex 사용량 한도로 04:50 재실행 예약"
+  },
+  "G02.06": {
+    "owner": "Codex",
+    "memo": "10-18 Codex 사용량 한도로 04:50 재실행 예약"
+  },
+  "G06.06": {
+    "owner": "Codex",
+    "memo": "10-18 Codex 사용량 한도로 04:50 재실행 예약"
   }
 }

@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "title": "MCP 목표 기능 · WBS 현황",
-  "as_of": "2026-10-17T16:20:13.473243+00:00",
+  "as_of": "2026-10-17T17:05:50.311143+00:00",
   "audit_as_of": "2026-10-15T07:37:13+00:00",
   "basis_head": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
   "branch": "10/15-wbs-implementation",
@@ -25,14 +25,14 @@
     "complete_rule": "5단계가 모두 1인 작업만 최종 완료. 신규 WBS의 현재 검수 기준이며 과거 실험 카드 완료를 변경하지 않음."
   },
   "summary": {
-    "progress": 50.7,
+    "progress": 50.9,
     "complete": 0,
     "total": 57,
     "stage_equivalent_counts": {
       "implementation": 46.0,
       "regression": 41.5,
       "deployment": 42.5,
-      "real_device": 14.5,
+      "real_device": 15.0,
       "acceptance_complete": 0
     },
     "implementation_full": 44,
@@ -92,7 +92,7 @@
     {
       "id": "G08",
       "title": "가입·설치·하네스 운영",
-      "progress": 58.0,
+      "progress": 60.0,
       "complete": 0,
       "total": 5
     },
@@ -3271,7 +3271,7 @@
       "actual_evidence_paths": [
         "research/llm-wiki/status/reports/2026-10-14-endpoint-regressions.json"
       ],
-      "known_gap": "pj3에서 관리자·표준 계정 설치→트레이→제거→재설치, UAC·DPI 확인이 남았다.",
+      "known_gap": "pj3 관리형 설치 완료·서비스·트레이(pj3user)·활성화, UAC '아니요' 문구, 표준 계정·관측 전용 분기, 제거·재설치가 남았다. pj3 VM이 02:05부터 응답 없음.",
       "completion_condition": "격리된 Linux·Windows 설치와 제거가 반복해도 안전해야 한다. 보고서 잠금 경쟁을 해결하고 사용자 파일을 보존하며, 실제 업데이트 롤백과 heartbeat 복구를 확인한다. 시험 환경은 운영 경로와 분리하고 합성 데이터·지정된 격리 자원으로 검증한다.",
       "stage_weights": {
         "implementation": 0.2,
@@ -3285,6 +3285,7 @@
           "path": "2026-10-14-endpoint-regressions.json",
           "scope": "2026-10-14 14:01 KST offline regression report; does not imply current source hash or Windows real-device enforcement."
         },
+        "2026-10-17",
         "2026-10-17"
       ],
       "implementation_assessment": "partial_candidate",
@@ -3292,17 +3293,17 @@
         "implementation": "D-118 Windows 설치 마법사·트레이·Python 포함, 관리자 단계는 관리자 전용 사본+게이트웨이 매니페스트",
         "regression": "field_kit_check 17건, Windows 키트 단위 26건",
         "deployment": "ecb2587 배포",
-        "real_device": "과거 특정 계정·하네스·효과 표본이면 0.5점. Windows·모든 계정·모든 도구로 확대하지 않는다.",
+        "real_device": "pj3 관리자 마법사: 시작·연결 확인 UAC 없음, 설치 시에만 UAC, 실기기 결함 3건 수정(b5e4c65 배포)",
         "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
       },
       "stage_scores": {
         "implementation": 1,
         "regression": 1,
         "deployment": 1,
-        "real_device": 0,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 60,
+      "progress": 70.0,
       "complete": false,
       "priority": "P1",
       "evidence": [
@@ -3312,6 +3313,9 @@
         },
         {
           "path": "research/llm-wiki/analysis/wbs-1017/deploy-ce.json"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1017/pj3-windows-kit-1018.md"
         }
       ],
       "pol_ids": [],
@@ -3330,7 +3334,7 @@
       "code_symbols_files": [],
       "regression_test_candidates": [],
       "actual_evidence_paths": [],
-      "known_gap": "pj3 Windows 관리형 설치의 HTTPS 연결 확인이 남았다.",
+      "known_gap": "pj3 Windows 관리형 서비스의 HTTPS 보고·하네스 호출이 남았다.",
       "completion_condition": "현장 배치의 하네스 연결이 TLS로만 동작하고 평문 접속은 거부된다",
       "stage_weights": {
         "implementation": 0.2,
@@ -3341,6 +3345,7 @@
       },
       "evidence_as_of": [
         "2026-10-17",
+        "2026-10-17",
         "2026-10-17"
       ],
       "implementation_assessment": "planned",
@@ -3348,7 +3353,7 @@
         "implementation": "D-124 배치별 사설 CA HTTPS, 키트에 루트·지문 고정, 하네스 프로세스 범위 신뢰",
         "regression": "field_tls_check 9, Windows 키트 14, field_kit 16",
         "deployment": "759347c 배포, 평문 400·미신뢰 검증 실패",
-        "real_device": "PJ1 관리 Claude·Codex HTTPS 호출 성공. Windows 관리형(pj3)은 미실행",
+        "real_device": "PJ1 HTTPS 관리형 호출 통과. pj3 마법사 연결 확인이 키트 고정 루트로 HTTPS 통과",
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
@@ -3368,6 +3373,9 @@
       "evidence": [
         {
           "path": "research/llm-wiki/analysis/wbs-1017/deploy-tls.json"
+        },
+        {
+          "path": "research/llm-wiki/analysis/wbs-1017/pj3-windows-kit-1018.md"
         }
       ]
     },
@@ -4139,7 +4147,7 @@
     "before": 40,
     "after": 57,
     "planned": 16,
-    "current_progress": 59.8,
+    "current_progress": 60.0,
     "note": "10-17 기능명세서의 추가 개발 16개와 실행기 G01.05를 더했다. 기존 40개 점수는 10-15 그대로."
   }
 }
