@@ -771,9 +771,13 @@ def run_codex(args):
     resume = getattr(args, "resume", None)
     if resume and not re.fullmatch(r"[0-9a-f-]{20,64}", resume):
         raise ValueError("--resume must be the native Codex thread id (CODEX_NATIVE_SESSION)")
-    command = build_prefix(args) + ["exec"] + (["resume", resume] if resume else [])
-    command += ["--json", "--skip-git-repo-check", "-s", args.sandbox, "-m", args.model,
-               "-c", f"model_reasoning_effort={args.effort}", "-C", args.cwd, "-"]
+    if resume:
+        # `exec resume` rejects -s/-C: the thread keeps its sandbox, and the subprocess cwd is the worktree.
+        command = build_prefix(args) + ["exec", "resume", resume, "--json", "--skip-git-repo-check", "-m", args.model,
+                                        "-c", f"model_reasoning_effort={args.effort}", "-"]
+    else:
+        command = build_prefix(args) + ["exec", "--json", "--skip-git-repo-check", "-s", args.sandbox, "-m", args.model,
+                                        "-c", f"model_reasoning_effort={args.effort}", "-C", args.cwd, "-"]
     return run_cli(args, "Codex", command, prompt, getattr(args, "requested_by", None) or "Claude")
 
 
