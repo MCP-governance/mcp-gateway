@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Registers the MINT development hub (collaboration console + WBS board) as a Windows scheduled task:
   starts at logon and again daily at 09:00, skips starting a second server when the port is already
@@ -74,7 +74,9 @@ Set-Content -Path $Launcher -Value $launcherContent -Encoding UTF8
 
 $action = New-ScheduledTaskAction -Execute "powershell.exe" `
     -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$Launcher`" -BindHost $BindHost -Port $Port"
-$triggerLogon = New-ScheduledTaskTrigger -AtLogOn
+$currentUser = "$env:USERDOMAIN\$env:USERNAME"
+# A logon trigger without -User means "any user" and needs elevation; this hub runs for the current user only.
+$triggerLogon = New-ScheduledTaskTrigger -AtLogOn -User $currentUser
 $triggerDaily = New-ScheduledTaskTrigger -Daily -At "09:00"
 # IgnoreNew keeps Task Scheduler itself from double-starting; RestartCount covers a launch that fails outright.
 $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
@@ -83,7 +85,7 @@ $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCo
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
 }
-Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger @($triggerLogon, $triggerDaily) -Settings $settings `
+Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger @($triggerLogon, $triggerDaily) -Settings $settings -User $currentUser -ErrorAction Stop `
     -Description "MINT 개발 협업 콘솔 + WBS 현황판. 로그온 시·매일 09:00 시작, 포트가 이미 열려 있으면 건너뜀." | Out-Null
 
 Write-Host "등록 완료: $TaskName (호스트 $BindHost, 포트 $Port)"

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Removes the scheduled task and generated launcher created by install-autostart.ps1.
   Does not touch any firewall rule -- remove that separately if you created one with -OpenFirewall.
