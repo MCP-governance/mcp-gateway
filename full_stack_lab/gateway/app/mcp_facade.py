@@ -182,21 +182,27 @@ def _render(outcome: dict) -> types.CallToolResult:
 
 def build_mcp() -> Server:
     async def list_tools(ctx: Any, params: Any) -> types.ListToolsResult:
-        user = await _caller(ctx)
-        return types.ListToolsResult(tools=await _approved_tools(user["roles"][0], _scope(ctx), user["principal"]))
+        try:
+            user = await _caller(ctx)
+            return types.ListToolsResult(tools=await _approved_tools(user["roles"][0], _scope(ctx), user["principal"]))
+        except Exception:
+            raise ValueError("도구 목록 요청을 완료하지 못했습니다.") from None
 
     async def call_tool(ctx: Any, params: types.CallToolRequestParams) -> types.CallToolResult:
-        user = await _caller(ctx)
-        name = params.name or ""
-        server_id = _scope(ctx)
-        if server_id:
-            tool = name
-        else:
-            server_id, _, tool = name.partition(SEPARATOR)
-        outcome = await execute_call({
-            "server_id": server_id, "tool": tool, "arguments": dict(params.arguments or {}),
-            "user_token": user["principal"], "client": _client_context(ctx, user), "transport_claims": user.get("claims") or {},
-        })
+        try:
+            user = await _caller(ctx)
+            name = params.name or ""
+            server_id = _scope(ctx)
+            if server_id:
+                tool = name
+            else:
+                server_id, _, tool = name.partition(SEPARATOR)
+            outcome = await execute_call({
+                "server_id": server_id, "tool": tool, "arguments": dict(params.arguments or {}),
+                "user_token": user["principal"], "client": _client_context(ctx, user), "transport_claims": user.get("claims") or {},
+            })
+        except Exception:
+            raise ValueError("도구 호출 요청을 완료하지 못했습니다.") from None
         return _render(outcome)
 
     return Server(

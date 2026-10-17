@@ -1,0 +1,400 @@
+{
+  "at": "2026-10-17T12:33:16.171464+00:00",
+  "scope": "local-offline-only",
+  "review": "network-location-keycloak-skip-ledger",
+  "deployed": false,
+  "live_mcp_executed": false,
+  "previous_validation": "validation.json",
+  "results": [
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "dest_pin*_check.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_audit_and_returned_payload_share_redacted_error_before_hash (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_http_and_validation_error_details_keep_shape_only_when_safe (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_issuer_tokens_and_credential_contexts_are_withheld (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_same_native_scanner_failure_and_unknown_secret (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_unexpected_mcp_handler_errors_do_not_echo_exception_text (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_actual_provider_email_gitea_connect_privately_but_github_cannot (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_egress_failure_has_correct_decision_even_in_cause (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_every_address_must_be_safe_before_connect (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_internal_approval_is_exact_and_dns_still_pinned (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_keycloak_discovery_and_dynamic_backchannel_origins_are_pinned (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_oidc_metadata_clients_get_a_fresh_pinned_transport (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_public_then_loopback_rebind_never_reaches_connector (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_registered_network_location_not_contract_deployment_defines_internal (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_resolution_failure_empty_and_timeout_are_closed (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_field_settings_files_and_entire_cli_argument_lists_contain_no_token (dest_pin_credential_redaction_check.KitCredentials) ... ok\ntest_endpoint_managed_policy_and_os_file_writers_use_only_helpers (dest_pin_credential_redaction_check.ManagedKitCredentials) ... ok\ntest_internal_dns_answer_never_reaches_real_pool_connector (dest_pin_transport_check.TransportPin) ... skipped 'requires Gateway httpx and httpx2 dependencies'\ntest_original_sni_verified_context_host_and_redirect_disabled (dest_pin_transport_check.TransportPin) ... skipped 'requires Gateway httpx and httpx2 dependencies'\n\n----------------------------------------------------------------------\nRan 18 tests in 0.439s\n\nOK (skipped=2)\n"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS 무인증 1개가 문서와 일치, 인증 필요 70개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/map_threats.py"
+      ],
+      "exit_code": 0,
+      "stdout": "Mapped 24 source policies; all code paths exist; runtime verification pending\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/capture_status.py"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"head\": \"9537c0b494a0c4d45c615caa4797674f273d270f\", \"dirty_paths\": 22, \"scope\": \"local-code-only\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/build_wiki.py"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"format\": \"markdown\", \"pages\": 483, \"catalogs\": {\"endpoint-permission-references\": 12, \"experiments\": 13, \"imports\": 22, \"local-tool-risks\": 13, \"papers\": 264, \"solutions\": 9, \"threats\": 24}, \"collaboration_console\": \"research/collaboration-console/README.md\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_wiki.py"
+      ],
+      "exit_code": 1,
+      "stdout": "{\n  \"ok\": false,\n  \"counts\": {\n    \"endpoint-permission-references\": 12,\n    \"experiments\": 13,\n    \"imports\": 22,\n    \"local-tool-risks\": 13,\n    \"papers\": 264,\n    \"solutions\": 9,\n    \"threats\": 24,\n    \"sources_evidence_records\": 3,\n    \"solutions_evidence_records\": 21,\n    \"reviewed_local_tools\": 92,\n    \"markdown_documents\": 483\n  },\n  \"warnings\": [],\n  \"errors\": [\n    \"Missing local file: local-sources/compliance/LIB-L05/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L06/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L09/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L10/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L11/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L12/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M04/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M08/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M17/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M20/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M21/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M22/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M28/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M31/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M32/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M34/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M36/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M37/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M38/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M39/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M40/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M44/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M45/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M48/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M49/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M13/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M14/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M15/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M43/provenance.json\"\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "stdlib ast.parse all Gateway Python + two tests; json.loads and ledger enforced_by assertion"
+      ],
+      "exit_code": 0,
+      "stdout": "39 Python files; MCP-EGRESS-001 enforced_by=gateway",
+      "stderr": ""
+    }
+  ],
+  "sources": [
+    {
+      "path": "full_stack_lab/gateway/app/upstream.py",
+      "sha256": "c86227eebcf8381ece7bded2a4e6e628e18467299d7f51abec8c4e3691862301",
+      "symbols": [
+        {
+          "name": "CredentialUnavailable",
+          "line": 35,
+          "end_line": 36
+        },
+        {
+          "name": "credential_headers",
+          "line": 39,
+          "end_line": 76
+        },
+        {
+          "name": "_Lease",
+          "line": 79,
+          "end_line": 83
+        },
+        {
+          "name": "_client",
+          "line": 95,
+          "end_line": 105
+        },
+        {
+          "name": "_internal_endpoint",
+          "line": 108,
+          "end_line": 117
+        },
+        {
+          "name": "close_pool",
+          "line": 120,
+          "end_line": 134
+        },
+        {
+          "name": "release_pool",
+          "line": 137,
+          "end_line": 148
+        },
+        {
+          "name": "_sweep",
+          "line": 155,
+          "end_line": 172
+        },
+        {
+          "name": "_dispatch_client",
+          "line": 176,
+          "end_line": 203
+        },
+        {
+          "name": "session",
+          "line": 207,
+          "end_line": 225
+        },
+        {
+          "name": "connect_mode",
+          "line": 228,
+          "end_line": 231
+        },
+        {
+          "name": "list_all_tools",
+          "line": 237,
+          "end_line": 247
+        },
+        {
+          "name": "tool_view",
+          "line": 250,
+          "end_line": 257
+        },
+        {
+          "name": "discover",
+          "line": 260,
+          "end_line": 269
+        },
+        {
+          "name": "handshake",
+          "line": 272,
+          "end_line": 283
+        },
+        {
+          "name": "content_items",
+          "line": 286,
+          "end_line": 294
+        },
+        {
+          "name": "text_of",
+          "line": 297,
+          "end_line": 298
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/oidc.py",
+      "sha256": "ca315aa762cd4966647474e4ea1bdc33369e44cb892540f175c19eb4ebad1690",
+      "symbols": [
+        {
+          "name": "RedactCallbackQuery",
+          "line": 34,
+          "end_line": 39
+        },
+        {
+          "name": "settings",
+          "line": 42,
+          "end_line": 47
+        },
+        {
+          "name": "configured",
+          "line": 50,
+          "end_line": 52
+        },
+        {
+          "name": "local_login_allowed",
+          "line": 55,
+          "end_line": 57
+        },
+        {
+          "name": "cipher",
+          "line": 60,
+          "end_line": 61
+        },
+        {
+          "name": "seal",
+          "line": 64,
+          "end_line": 66
+        },
+        {
+          "name": "unseal",
+          "line": 69,
+          "end_line": 70
+        },
+        {
+          "name": "http_transport",
+          "line": 73,
+          "end_line": 85
+        },
+        {
+          "name": "PinnedOAuthClient",
+          "line": 88,
+          "end_line": 92
+        },
+        {
+          "name": "PinnedOAuthApp",
+          "line": 95,
+          "end_line": 96
+        },
+        {
+          "name": "client",
+          "line": 99,
+          "end_line": 109
+        },
+        {
+          "name": "install",
+          "line": 112,
+          "end_line": 134
+        },
+        {
+          "name": "provider",
+          "line": 138,
+          "end_line": 141
+        },
+        {
+          "name": "login",
+          "line": 145,
+          "end_line": 153
+        },
+        {
+          "name": "callback",
+          "line": 157,
+          "end_line": 209
+        },
+        {
+          "name": "session",
+          "line": 213,
+          "end_line": 231
+        },
+        {
+          "name": "_refresh_upstream",
+          "line": 234,
+          "end_line": 282
+        },
+        {
+          "name": "validate_session",
+          "line": 285,
+          "end_line": 337
+        },
+        {
+          "name": "touch_session",
+          "line": 340,
+          "end_line": 349
+        },
+        {
+          "name": "end_session",
+          "line": 352,
+          "end_line": 378
+        },
+        {
+          "name": "end_binding_sessions",
+          "line": 381,
+          "end_line": 384
+        },
+        {
+          "name": "Binding",
+          "line": 387,
+          "end_line": 389
+        },
+        {
+          "name": "administrator",
+          "line": 392,
+          "end_line": 396
+        },
+        {
+          "name": "identity",
+          "line": 400,
+          "end_line": 404
+        },
+        {
+          "name": "bind",
+          "line": 408,
+          "end_line": 420
+        },
+        {
+          "name": "unbind",
+          "line": 424,
+          "end_line": 428
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/dest_pin_credential_redaction_check.py",
+      "sha256": "a18860d16321198bda1137286fcd526af9422f2bbe3e8b8d7d92eb5369c156d3",
+      "symbols": [
+        {
+          "name": "selected",
+          "line": 32,
+          "end_line": 44
+        },
+        {
+          "name": "redactor",
+          "line": 53,
+          "end_line": 56
+        },
+        {
+          "name": "dns",
+          "line": 59,
+          "end_line": 61
+        },
+        {
+          "name": "DestinationPin",
+          "line": 64,
+          "end_line": 224
+        },
+        {
+          "name": "CredentialRedaction",
+          "line": 227,
+          "end_line": 302
+        },
+        {
+          "name": "KitCredentials",
+          "line": 305,
+          "end_line": 330
+        },
+        {
+          "name": "ManagedKitCredentials",
+          "line": 333,
+          "end_line": 375
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/dest_pin_transport_check.py",
+      "sha256": "cd5527ee0a829de551c3dd2e5a37080225b398e7ec88c4486880e7856ee10b9b",
+      "symbols": [
+        {
+          "name": "MemoryStream",
+          "line": 31,
+          "end_line": 52
+        },
+        {
+          "name": "TransportPin",
+          "line": 56,
+          "end_line": 88
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/opa/policy_ledger.json",
+      "sha256": "3f85adbcb9719b7371f63277d53c66ed743ba8be783da9af688a65f9dbf8c2e9"
+    },
+    {
+      "path": "full_stack_lab/registry/catalog.toml",
+      "sha256": "090e3d3fbdb19b2caffa7c2a9ae9ab6bf240bfcace796e68c9146237ec398e3a"
+    },
+    {
+      "path": "full_stack_lab/compose.keycloak.yaml",
+      "sha256": "4b84d377cba455a6c443dbe8f884df640c3a5fa746e74ef0a102b82bb968151f"
+    }
+  ],
+  "finished_at": "2026-10-17T12:33:22.219055+00:00"
+}

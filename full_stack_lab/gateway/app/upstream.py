@@ -13,6 +13,7 @@ import json
 import logging
 import time
 import math
+import re
 from collections import OrderedDict
 from contextlib import AsyncExitStack, asynccontextmanager
 from http.cookiejar import CookieJar, DefaultCookiePolicy
@@ -25,7 +26,8 @@ from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
 from mcp_types.version import HANDSHAKE_PROTOCOL_VERSIONS, MODERN_PROTOCOL_VERSIONS
 
-from . import db
+from . import db, registry
+from .destination import pin_transport
 
 CONNECT_TIMEOUT = float(os.getenv("UPSTREAM_TIMEOUT_SECONDS", "90"))
 
@@ -90,12 +92,29 @@ POOL_SIZE = int(os.getenv("UPSTREAM_POOL_SIZE", "32"))
 _pool: OrderedDict[tuple, _Lease] = OrderedDict()
 
 
-def _client(timeout: float, headers: dict) -> httpx2.AsyncClient:
+def _client(timeout: float, headers: dict, endpoint: str, internal: bool) -> httpx2.AsyncClient:
     # trust_env=False: a proxy variable in the Gateway's environment must not reroute
     # policy-approved calls to somewhere the registry never approved.
+    url = httpx2.URL(endpoint)
+    target = (url.raw_host.decode("ascii"), url.port or (443 if url.scheme == "https" else 80))
+    transport = pin_transport(httpx2.AsyncHTTPTransport(trust_env=False,
+                              limits=httpx2.Limits(max_keepalive_connections=4, keepalive_expiry=60)),
+                              target=target, internal=[target] if internal else [])
     return httpx2.AsyncClient(timeout=timeout, trust_env=False, follow_redirects=False, headers=headers,
-                              cookies=CookieJar(policy=DefaultCookiePolicy(allowed_domains=[])),
-                              limits=httpx2.Limits(max_keepalive_connections=4, keepalive_expiry=60))
+                              transport=transport,
+                              cookies=CookieJar(policy=DefaultCookiePolicy(allowed_domains=[])))
+
+
+async def _internal_endpoint(endpoint: str) -> bool:
+    host = urlsplit(endpoint).hostname or ""
+    # deployment describes the termination contract, not the server's network location.
+    if re.fullmatch(r"[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?", host):
+        if any(spec.get("endpoint") == endpoint for spec in registry.servers().values()):
+            return True
+        # Approved executors are discovered before registration; the name alone is not approval.
+        return bool(await db.fetch_one("SELECT id FROM mcp_runtimes WHERE endpoint=%s AND status='ACTIVE'",
+                                       (endpoint,)))
+    return False
 
 
 async def close_pool(endpoint: str | None = None, principal: str | None = None) -> int:
@@ -154,10 +173,10 @@ async def _sweep() -> None:
 
 
 @asynccontextmanager
-async def _dispatch_client(endpoint: str, principal: str, headers: dict, timeout: float):
+async def _dispatch_client(endpoint: str, principal: str, headers: dict, timeout: float, internal: bool = False):
     loop = asyncio.get_running_loop()
     await _sweep()
-    key = (endpoint, principal, timeout, hashlib.sha256(json.dumps(headers, sort_keys=True).encode()).hexdigest())
+    key = (endpoint, principal, timeout, hashlib.sha256(json.dumps(headers, sort_keys=True).encode()).hexdigest(), internal)
     lease = _pool.get(key)
     if lease is None or lease.loop is not loop or lease.client.is_closed:
         # A rotated or removed credential changes the key, another event loop or a closed client
@@ -168,7 +187,7 @@ async def _dispatch_client(endpoint: str, principal: str, headers: dict, timeout
             old.evicted = True
             if not old.users and old.loop is loop:
                 await old.client.aclose()
-        lease = _pool[key] = _Lease(_client(timeout, headers), loop)
+        lease = _pool[key] = _Lease(_client(timeout, headers, endpoint, internal), loop)
     _pool.move_to_end(key)
     lease.users += 1
     try:
@@ -195,11 +214,12 @@ async def session(endpoint: str, timeout: float = CONNECT_TIMEOUT, principal: st
     another version fails the call (closed) and shows up as drift in the catalog check. Unrecorded
     versions keep the SDK's probe."""
     headers = credential_headers(endpoint, principal)
+    internal = await _internal_endpoint(endpoint)
     async with AsyncExitStack() as stack:
         if principal is None:
-            http_client = await stack.enter_async_context(_client(timeout, headers))
+            http_client = await stack.enter_async_context(_client(timeout, headers, endpoint, internal))
         else:
-            http_client = await stack.enter_async_context(_dispatch_client(endpoint, principal, headers, timeout))
+            http_client = await stack.enter_async_context(_dispatch_client(endpoint, principal, headers, timeout, internal))
         yield await stack.enter_async_context(
             Client(streamable_http_client(endpoint, http_client=http_client), read_timeout_seconds=timeout,
                    mode=connect_mode(protocol)))

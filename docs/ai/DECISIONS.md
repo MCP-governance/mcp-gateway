@@ -1260,3 +1260,19 @@ D-번호는 사용자가 채택할 때 붙인다. 채택 전에는 D-79의 호�
 - 정지: 관리자 중지, 등록 해제, 종료 절차, 승인 무효, 승인 이미지와 다른 컨테이너. 컨테이너·망을 지우고 남은 것을 센다. 이미지는 근거로 남긴다. 계약 확인은 지금처럼 게이트웨이가 등록 때와 호출마다 한다.
 - 채택하지 않음: ToolHive 런타임(기본 허용 gate·경고 후 진행 검증·하네스 직접 등록, [분석](../../research/llm-wiki/analysis/oss-deep/toolhive-runtime.md)). 레시피가 늘어 재조정 코드가 커지면 다시 본다.
 - 한계: 엔진 소켓을 가진 worker는 호스트 root에 준한다. 그래서 게시 포트 없이 DB·내부 Git 망에만 두고, 레시피는 이미지에 구워 job이 다른 빌드를 지정할 수 없게 했다. 빌드 단계의 패키지 설치는 인터넷에 닿고 의존성 잠금 파일이 없으면 `pip freeze` 결과의 해시로 남긴다.
+
+## D-116 연결 직전 DNS 전체 응답 검사와 숫자 IP 접속 (2026-10-17)
+
+- 결정: `destination.PinnedBackend`를 HTTPX 0.28.1·HTTPX2 2.12.0 transport의 기존 pool network backend 앞에 둔다. 새 TCP 연결마다 제한 시간 안에서 `getaddrinfo`를 한 번 호출하고 모든 응답을 `ipaddress`로 검사한 뒤 첫 검증 숫자 IP만 기존 backend에 넘긴다. 외부 서버의 비공인·루프백·링크로컬·멀티캐스트·예약·미지정·IPv4-mapped 내부 주소, 빈 응답·해석 실패는 `MCP-EGRESS-001` 차단이다.
+- 이유: URL을 IP로 바꾸면 Host·SNI·인증서 이름 검증과 풀 origin을 별도로 복원해야 한다. network backend만 바꾸면 HTTP origin·Host·TLS 검증 이름은 원래 호스트로 유지된다. proxy/redirect 비활성, 직원별 풀·자격 회전/철회는 유지한다. internal 여부도 풀 키에 넣어 분류 변경 뒤 옛 내부 예외가 재사용되지 않게 한다.
+- 내부 근거(메인 검토 후 정정): `deployment`는 종료 모델의 계약 귀속이며 네트워크 위치가 아니다. 초기 초안의 `deployment=internal` 판정은 폐기한다. `registry.servers()`에 완전 일치하는 endpoint의 호스트가 숫자 IP 표기가 아닌 단일 DNS 라벨이면 내부 서비스로 본다. `email`·`gitea`는 provider 계약이지만 등록값 `mcp-email:8000`·`mcp-gitea:8000`이므로 내부다. 등록 전 실행기 역시 단일 라벨과 같은 endpoint·`ACTIVE` 레코드가 필요하다. 미등록 이름 자체는 승인이 아니며 외부 SaaS FQDN은 deployment 값과 무관하게 외부다. 내부에서도 링크로컬·멀티캐스트·예약·미지정 주소는 거부한다.
+- 적용: MCP 탐색·건강 확인·호출, 종료 증거 HEAD와 E2 세션 조사. MCP upstream OAuth 자동 탐색은 구성하지 않는다. 조직 OIDC의 Authlib discovery·JWKS·토큰, 직접 refresh·introspection·revocation에도 같은 backend를 적용한다. OIDC 내부 예외는 운영자가 설정한 issuer/discovery URL 중 loopback 또는 단일 라벨 호스트의 정확한 호스트·포트다. `compose.keycloak.yaml`의 loopback issuer와 `keycloak:8080` discovery를 함께 허용하므로 같은 authority를 쓰는 동적 백채널 metadata endpoint도 정상 접속한다. metadata에 적힌 임의의 다른 사설 호스트/포트는 자동 승인하지 않는다.
+- 정책 원장: `enforced_by`는 기존 값 체계의 `gateway`로 기록한다. 이 항목의 연결 직전 DNS 집행 주체를 뜻하며 같은 ID를 쓰는 기존 OPA egress 규칙을 제거하거나 바꾸지 않는다.
+- 한계: [분석](../../research/llm-wiki/analysis/dest-pin-credential-redaction/README.md)·[보고](../../research/llm-wiki/status/reports/2026-10-17-dest-pin-credential-redaction.md). `_pool._network_backend`는 비공개 접점이므로 판본 변경 시 `dest_pin_transport_check.py`가 필수다. 로컬에는 HTTPX 계열이 없어 실제 풀·TLS 시험은 미실행이다. 첫 검증 IP 실패 시 다른 IP로 재시도하지 않는다. MCP 서버 자체의 outbound는 DEV-41에 남긴다.
+
+## D-117 오류의 Secret 검사와 진단문 전체 가림 (2026-10-17)
+
+- 결정: `secret_scan.redact_error()`에서 기존 `classify.SECRET_PATTERNS`·Gitleaks `labels()`를 재사용한다. URL decode 후 Authorization·자격 쿼리/할당 문맥은 토큰 길이와 무관하게 가린다. 탐지·검사 장애·500자 초과는 전체 `[REDACTED]`로 대체한다. Gitleaks가 span을 반환하지 않아 부분 가림을 추정하지 않으며, 자르기 전에 검사해 토큰 조각이 남는 것을 막는다.
+- 경계: `_record_decision()`에서 event와 저장값을 함께 가린 뒤 해시를 계산한다. 과거 원장은 수정하지 않고 `_decision_payload()` 반환값과 원장 error를 일치시킨다. HTTPException·입력 검증·MCP 인증 거절에도 적용한다. MCP 처리의 예기치 않은 예외는 고정 문구만 반환한다. 일반 upstream 예외는 기존 형식명만 남기는 `_root_cause()`를 유지하고 카탈로그 실패 진단에도 사용한다.
+- 키트: field 설정 생성·전체 CLI 인자, 서버의 Linux/Windows 관리 설정 생성과 엔드포인트의 파일 쓰기를 가짜 토큰으로 회귀 검사한다. OS 집행 코드는 변경하지 않는다. 기존 `field_kit_check.py`는 Claude add 인자의 마지막 항목만 보므로 새 회귀는 인자 전체를 본다.
+- 한계: 알 수 없는 모든 비밀 형식의 탐지를 보장하지 않는다. 네이티브 Gitleaks·SDK·실제 DB 검증은 미실행이며 대역을 사용하는 함수 단위 증거로 한정한다. [보고](../../research/llm-wiki/status/reports/2026-10-17-dest-pin-credential-redaction.md).

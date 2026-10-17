@@ -35,7 +35,7 @@ from typing import Any
 import httpx
 from psycopg.types.json import Jsonb
 
-from . import db, dispatch, registry, upstream
+from . import db, dispatch, registry, secret_scan, upstream
 
 SLA_DAYS = int(os.getenv("TERMINATION_SLA_DAYS", "14"))
 GITEA_ADMIN_URL = os.getenv("GITEA_ADMIN_URL", "http://corp-git:3000").rstrip("/")
@@ -492,11 +492,11 @@ async def collect(case_id: str, kinds: list[str], actor: str) -> dict:
     if "liveness" in kinds and server.get("endpoint"):
         detail: dict[str, Any] = {"endpoint": server["endpoint"], "method": "HEAD"}
         try:
-            async with httpx.AsyncClient(timeout=5, follow_redirects=False) as client:
+            async with upstream._client(5, {}, server["endpoint"], await upstream._internal_endpoint(server["endpoint"])) as client:
                 response = await client.head(server["endpoint"])
             detail.update({"reachable": True, "status_code": response.status_code})
         except Exception as exc:
-            detail.update({"reachable": False, "error": str(exc)[:200]})
+            detail.update({"reachable": False, "error": await secret_scan.redact_error(str(exc))})
         collected.append(await add_evidence(case_id, "liveness-probe", f"{server['display_name']} endpoint",
                                             "gateway", detail, actor))
     if "session" in kinds and server.get("endpoint"):

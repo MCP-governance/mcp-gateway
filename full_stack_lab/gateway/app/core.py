@@ -24,6 +24,7 @@ from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
 from . import classify, connections, db, dispatch, endpoint_plane, pac, poisoning, privacy, registry, secret_scan, upstream
+from .destination import DestinationBlocked
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMN_SETS, AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint,
@@ -433,7 +434,7 @@ async def refresh_all_catalogs() -> dict:
         except Exception as exc:
             await db.execute(
                 "UPDATE mcp_servers SET status='ERROR', status_reason=%s WHERE id=%s AND status NOT IN ('DISABLED','BLOCKED_SUPPLY_CHAIN')",
-                (f"연결 실패: {type(exc).__name__}: {str(exc)[:200]}", server_id))
+                (f"연결 실패: {_root_cause(exc)}", server_id))
             results[server_id] = "ERROR"
     return results
 
@@ -1371,6 +1372,21 @@ def _decoded_strings(payload: Any) -> list[str]:
 def _upstream_failure(exc: Exception, event: dict) -> dict:
     executed = bool(event.get("upstream_executed"))
     attempted = bool(event.get("upstream_attempted"))
+    pending = [exc]
+    seen = set()
+    while pending:
+        error = pending.pop()
+        if id(error) in seen:
+            continue
+        seen.add(id(error))
+        if isinstance(error, DestinationBlocked):
+            return local_verdict(error.policy_id, "Block", "연결 목적지 주소 검사에 실패하여 연결을 차단했습니다.",
+                                 upstream_executed=executed, upstream_attempted=attempted, result=None,
+                                 result_evidence={"disposition": "withheld" if executed else "unknown" if attempted else "not_executed"},
+                                 error=_root_cause(error))
+        pending.extend(getattr(error, "exceptions", ()))
+        if error.__cause__ is not None:
+            pending.append(error.__cause__)
     return local_verdict("MCP-UPSTREAM-001", "Block",
                          "허용 후 MCP 처리를 완료하지 못했습니다. 실제 실행 여부는 하위 시스템 증거와 함께 확인해야 합니다.",
                          restrictions=event.get("restrictions") or {}, exception=event.get("exception"),
@@ -1453,6 +1469,7 @@ def _audit_payload(payload: dict) -> dict:
 # That is the right trade for a single gateway; a multi-replica deployment wants one
 # chain per instance, anchored together.
 async def _record_decision(event: dict) -> int:
+    event["error"] = await secret_scan.redact_error(event.get("error"))
     record = {
         "request_id": event["request_id"], "trace_id": event["trace_id"],
         "user_token": event["user_token"], "role": event["role"],
@@ -1739,7 +1756,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         except privacy.InspectionUnavailable as exc:
             base_event.update(local_verdict(
                 "P-DATA-INSPECTION-001", "Block", "민감정보 검사를 완료하지 못해 실행을 차단했습니다.",
-                error=str(exc)[:500]))
+                error=str(exc)))
             return await _decision_payload(base_event, laps)
         laps.lap("inspect_in")
         privacy_types = sorted({item["entity_type"] for item in findings})
@@ -1859,7 +1876,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 if base_event["result"].get("is_error"):
                     # The server ran the call and answered with a tool error (missing
                     # file, bad SQL). That is a definite outcome, not an unknown one.
-                    base_event["error"] = upstream.text_of(base_event["result"]["content"])[:500]
+                    base_event["error"] = upstream.text_of(base_event["result"]["content"])
             except (DispatchRejected, upstream.CredentialUnavailable) as exc:
                 base_event.update(exc.verdict if isinstance(exc, DispatchRejected) and exc.verdict else local_verdict(
                     "P-CONTROL-FAIL-CLOSED", "Block",
@@ -1879,7 +1896,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     "upstream 결과가 출력 통제에 걸려 반환하지 않았습니다. 호출 자체는 실행됐습니다.",
                     restrictions=base_event.get("restrictions") or {},
                     exception=base_event.get("exception"),
-                    upstream_executed=True, result=None, error=str(exc)[:500],
+                    upstream_executed=True, result=None, error=str(exc),
                     result_evidence=exc.evidence or {"disposition": "withheld"},
                 ))
                 span.record_exception(RuntimeError(_root_cause(exc)))
