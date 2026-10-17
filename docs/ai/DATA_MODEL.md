@@ -145,6 +145,12 @@ v2 코드는 읽지도 쓰지도 않는다 → [ROADMAP.md](ROADMAP.md) 정리 �
 `public.products`(공개), `sales.orders`(내부), `sales.customers`(PII, 중요), `hr.employees`(내부),
 `hr.salaries`(중요). 파일·저장소·메일·Redis·인트라넷 시드는 `corp/seed.py`(멱등, `--force`로 재시드).
 
+## 선택적 제한·관제 전달 (D-127·128)
+
+`catalog_snapshots.restricted_tools`는 제한 도구 이름 배열이다. `exact_match=true`는 전체 승인본 일치, `false`와 배열은 도구별 영향, `false`와 `NULL`은 전체 영향 미확정이다. 이전 스냅샷을 수정하지 않고 새 관측을 추가한다. 도구 자체의 승인 해시 비교·공급망·폐기·사용 권한은 별도로 적용한다.
+
+`siem_outbox`는 원장이 아닌 전송 상태다. 소스 테이블·소스 ID 유일 키, 시도 수·다음 시각·수신 확인 시각·오류 종류만 보관한다. `decisions`, `approval_events`, 합성이 아닌 `ops_alerts`의 INSERT와 같은 트랜잭션으로 참조를 추가한다. 워커는 원장 내용을 수정하지 않고 큐 상태만 갱신한다. 별도 네트워크 워커가 중단되어도 참조는 DB에 남는다. 마이그레이션 이전 행은 자동 소급하지 않으며 보존·삭제 작업도 추가하지 않았다.
+
 ## 도입 검증 보고서와 lease
 `mcp_intake_requests.evidence`는 `scanners`(검사기별 DONE/FAILED·오류), `reports`(해당 시도의 성공한 산출물 이름), `exit_terms_discovery`(commit 고정 문서 후보 근거), SBOM 구성요소 수·위험 등급별 수를 담는다. `exit_terms`의 관리자 검증 기록과 자동 조사 결과는 별도 필드다.
 

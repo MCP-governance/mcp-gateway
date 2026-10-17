@@ -25,6 +25,7 @@ from jsonschema import Draft202012Validator
 
 from . import classify, connections, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, secret_scan, upstream
 from .destination import DestinationBlocked
+from . import selective
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMN_SETS, AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint,
@@ -275,46 +276,51 @@ async def refresh_catalog(server_id: str) -> dict:
                 version_only.append(name)
     if enabled_missing:
         findings.append({"type": "enabled-tool-missing", "tools": enabled_missing})
-    if hashes_match:
-        # Same reviewed description and schema under whatever build id answered: the approval carries
-        # over. Both columns, every refresh: the observed ones are otherwise rewritten only when the
-        # tool list changes, and the per-call contract compares the two (version_match).
-        await db.execute(
-            """UPDATE mcp_tools SET approved_server_version=%s, observed_server_version=%s WHERE server_id=%s
-                 AND (approved_server_version IS DISTINCT FROM %s OR observed_server_version IS DISTINCT FROM %s)
-                 AND approved_description_hash=observed_description_hash AND approved_schema_hash=observed_schema_hash""",
-            (discovered["version"], discovered["version"], server_id, discovered["version"], discovered["version"]))
-        if version_only:
-            findings.append({"type": "version-carried", "to": discovered["version"], "tools": sorted(version_only)})
+    # Same reviewed description and schema under whatever build id answered: the approval carries
+    # over. Both columns, every refresh: the observed ones are otherwise rewritten only when the
+    # tool list changes, and the per-call contract compares the two (version_match).
+    await db.execute(
+        """UPDATE mcp_tools SET approved_server_version=%s, observed_server_version=%s WHERE server_id=%s
+             AND (approved_server_version IS DISTINCT FROM %s OR observed_server_version IS DISTINCT FROM %s)
+             AND approved_description_hash=observed_description_hash AND approved_schema_hash=observed_schema_hash""",
+        (discovered["version"], discovered["version"], server_id, discovered["version"], discovered["version"]))
+    if version_only:
+        findings.append({"type": "version-carried", "to": discovered["version"], "tools": sorted(version_only)})
 
-    # Stored as catalog_snapshots.exact_match and read as contract.known_tools_only: no tool a client can
-    # reach differs from its review. Unregistered tools are never listed and are refused as unregistered.
+    # Exactness describes the whole catalog; only a proven affected tool is restricted.
     exact_match = metadata_safe and hashes_match
+    restricted = selective.restricted_tools(findings)
     previous = await db.fetch_one(
-        "SELECT catalog_hash, exact_match FROM catalog_snapshots WHERE server_id=%s ORDER BY id DESC LIMIT 1",
+        "SELECT catalog_hash, exact_match, restricted_tools, server_version FROM catalog_snapshots WHERE server_id=%s ORDER BY id DESC LIMIT 1",
         (server_id,),
     )
     # The snapshot table is change evidence, not a call counter: the catalog is
     # re-read before every call, so writing a row per call grows it without adding
     # anything a reviewer can read.
-    if not previous or previous["catalog_hash"] != catalog_hash or previous["exact_match"] != exact_match:
-        snapshot = await db.fetch_one(
-            """INSERT INTO catalog_snapshots(server_id, server_version, catalog_hash, tool_count, exact_match, findings)
-               VALUES (%s,%s,%s,%s,%s,%s) RETURNING id""",
-            (server_id, discovered["version"], catalog_hash, len(observed), exact_match, Jsonb(findings)),
-        )
-        await ops_response.catalog_alerts(server_id, findings, snapshot["id"])
-    await db.execute(
-        """UPDATE mcp_servers SET status=%s, status_reason=%s, last_seen_at=now(),
+    async with db.transaction() as connection:
+        await connection.execute("SELECT id FROM mcp_servers WHERE id=%s FOR UPDATE", (server_id,))
+        if (not previous or previous["catalog_hash"] != catalog_hash or previous["exact_match"] != exact_match
+                or previous.get("restricted_tools") != restricted or previous.get("server_version") != discovered["version"]):
+            snapshot = await (await connection.execute(
+                """INSERT INTO catalog_snapshots(server_id, server_version, catalog_hash, tool_count, exact_match, findings, restricted_tools)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
+                (server_id, discovered["version"], catalog_hash, len(observed), exact_match, Jsonb(findings), restricted),
+            )).fetchone()
+        else:
+            snapshot = None
+        await connection.execute(
+            """UPDATE mcp_servers SET status=%s, status_reason=%s, last_seen_at=now(),
                advertised_name=%s WHERE id=%s AND status NOT IN ('DISABLED','BLOCKED_SUPPLY_CHAIN')
                AND lifecycle NOT IN ('TERMINATING','RETIRED')""",
-        (
-            "READY" if exact_match else "DRIFT",
-            "승인 계약과 일치" if exact_match else "도구 계약 변화가 탐지됨",
-            discovered.get("advertised_name") or None,
-            server_id,
-        ),
-    )
+            (
+                "READY" if exact_match else "DRIFT",
+                "승인 계약과 일치" if exact_match else "도구 계약 변화가 탐지됨",
+                discovered.get("advertised_name") or None,
+                server_id,
+            ),
+        )
+    if snapshot:
+        await ops_response.catalog_alerts(server_id, findings, snapshot["id"])
     # T4. 계약이 바뀌면 심사한 코드와 지금 도는 코드가 갈라졌다는 뜻이므로 AI 코드
     # 감사도 다시 돌아야 한다. v1.5는 scan_jobs.trigger에 'drift' 값만 예약해 두고
     # 이 시각을 남기지 않아서, 워커가 "마지막 감사 이후 드리프트가 있었는가"를
@@ -424,6 +430,7 @@ async def bootstrap() -> None:
     await db.execute((Path(__file__).parent / "v2_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "oidc_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "ops_tables.sql").read_text())
+    await db.execute((Path(__file__).parent / "siem_tables.sql").read_text())
     await registry.sync()
     await disposal.capture_existing()
     await disposal.reconcile()
@@ -843,8 +850,8 @@ async def _contract(server_id: str, tool_name: str) -> dict:
         "schema_hash_match": bool(tool["approved_schema_hash"] and tool["approved_schema_hash"] == tool["observed_schema_hash"]),
         "description_hash_match": bool(tool["approved_description_hash"] and tool["approved_description_hash"] == tool["observed_description_hash"]),
         "version_match": bool(tool["approved_server_version"] and tool["approved_server_version"] == tool["observed_server_version"]),
-        "known_tools_only": bool(latest and latest["exact_match"]),
-        "metadata_safe": not bool(latest and any(item.get("type") == "unsafe-description" for item in latest["findings"])),
+        "known_tools_only": selective.available(latest, tool_name),
+        "metadata_safe": selective.available(latest, tool_name),
         "supplier_approved": server["status"] != "BLOCKED_SUPPLY_CHAIN",
         "critical_vulnerabilities": 0 if raw_critical <= int(critical["accepted"] or 0) else raw_critical,
         "critical_accepted": raw_critical if 0 < raw_critical <= int(critical["accepted"] or 0) else 0,
@@ -1272,8 +1279,8 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
             # Same rule as refresh_catalog (D-69): the reviewed contract is what a client can reach — the
             # enabled tools' descriptions and schemas. Hosted servers answer from pods with different build
             # ids, so the version string is not part of it; unexposed helpers may change without blocking.
-            enabled_rows = [row for row in registered if row["enabled"]]
-            if tool not in observed or any(row["name"] not in observed for row in enabled_rows):
+            enabled_rows = [row for row in registered if row["enabled"] and row["name"] == tool]
+            if tool not in observed or not enabled_rows:
                 problem = "MCP catalog changed before execution"
             else:
                 for row in enabled_rows:
@@ -1282,6 +1289,12 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                             or canonical_hash(item["input_schema"]) != row["approved_schema_hash"]):
                         problem = "MCP contract changed before execution"
                         break
+                reviewed = spec.get("poisoning_review") or {}
+                if (problem is None and reviewed.get(tool) != registry.tool_hashes(observed[tool])
+                        and poisoning.findings(observed[tool])):
+                    problem = "MCP tool metadata is unsafe"
+            if problem:
+                blocked_verdict = local_verdict("MCP-CATALOG-001", "Block", "요청한 도구의 승인 계약을 확인할 수 없습니다.")
             if problem is None and not Draft202012Validator(observed[tool]["input_schema"]).is_valid(arguments):
                 problem = "Arguments do not match the approved input schema"
             laps.lap("list")
@@ -1311,9 +1324,10 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                             "observed_description_hash": canonical_hash(observed[tool]["description"]),
                             "observed_schema_hash": canonical_hash(observed[tool]["input_schema"])}
                     original = pac_payload["arguments"]
+                    final_input["contract"] = await _contract(server_id, tool)
                     final_input["pac"] = await pac.build(
                         pac_payload, person, classify.classify(server_id, tool, original, principal), live,
-                        await _contract(server_id, tool), final_input["context"], dispatch_state["request_id"],
+                        final_input["contract"], final_input["context"], dispatch_state["request_id"],
                         GATEWAY_ENVIRONMENT, approval_id)
                     dispatch_state["policy_input"] = final_input
                     try:
@@ -1339,6 +1353,9 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                 elif refused == "suspended":
                     problem, blocked_verdict = "Server suspended before dispatch", local_verdict(
                         "MCP-REGISTRY-002", "Block", "자동 중지된 서버입니다.")
+                elif refused == "contract":
+                    problem, blocked_verdict = "Tool restricted before dispatch", local_verdict(
+                        "MCP-CATALOG-001", "Block", "요청한 도구의 승인 계약을 확인할 수 없습니다.")
                 elif refused == "approval":
                     problem = "Approval expired or was withdrawn before execution"
                 elif refused == "duplicate":

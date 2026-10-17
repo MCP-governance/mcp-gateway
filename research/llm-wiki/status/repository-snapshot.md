@@ -1,43 +1,55 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-18T05:04:10+09:00
+확인 시각: 2026-10-18T05:32:08+09:00
 
-HEAD: `fd904c24250b6029061283bb8a57fa4efe0b5b17` · 로컬 브랜치: `10/18-response-cap`
+HEAD: `33af7da4db1b576dd364b986927ae7ecaba7e5cc` · 로컬 브랜치: `main`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M docs/ai/ARCHITECTURE.md
- M docs/ai/DATA_MODEL.md
- M docs/ai/DECISIONS.md
- M docs/ai/POLICY.md
- M docs/ai/TESTING.md
- M full_stack_lab/.env.example
- M full_stack_lab/gateway/app/classify.py
- M full_stack_lab/gateway/app/core.py
- M full_stack_lab/gateway/app/dispatch.py
- M full_stack_lab/gateway/app/v2_tables.sql
- M full_stack_lab/opa/policy.rego
- M full_stack_lab/opa/policy_ledger.json
- M full_stack_lab/tests/dispatch_effect_lab.py
- M full_stack_lab/tests/dispatch_intent_pg_check.py
- M full_stack_lab/tests/termination_lab_support.py
- M research/llm-wiki/catalogs/threats.json
- M research/llm-wiki/status/backlog.md
- M research/llm-wiki/status/repository-snapshot.json
- M research/llm-wiki/status/repository-snapshot.md
-?? full_stack_lab/tests/response_cap_idempotency_test.py
-?? research/llm-wiki/analysis/response-cap-idempotency/
-?? research/llm-wiki/status/reports/2026-10-17-response-cap-idempotency.md
+M  docs/ai/CONSOLE_UI.md
+M  docs/ai/DATA_MODEL.md
+M  docs/ai/DECISIONS.md
+M  docs/ai/OPS_RESPONSE.md
+M  docs/ai/POLICY.md
+M  full_stack_lab/compose.yaml
+M  full_stack_lab/console.sh
+M  full_stack_lab/gateway/app/agent_service.py
+M  full_stack_lab/gateway/app/agent_static/console.js
+M  full_stack_lab/gateway/app/core.py
+M  full_stack_lab/gateway/app/dispatch.py
+M  full_stack_lab/gateway/app/endpoint_plane.py
+M  full_stack_lab/gateway/app/main.py
+M  full_stack_lab/gateway/app/mcp_facade.py
+M  full_stack_lab/gateway/app/ops_response.py
+M  full_stack_lab/gateway/app/ops_tables.sql
+A  full_stack_lab/gateway/app/selective.py
+A  full_stack_lab/gateway/app/siem.py
+A  full_stack_lab/gateway/app/siem_tables.sql
+A  full_stack_lab/siem-secrets/.gitignore
+M  full_stack_lab/tests/catalog_refresh_check.py
+M  full_stack_lab/tests/dispatch_intent_pg_check.py
+A  full_stack_lab/tests/selective_restriction_siem_check.py
+M  full_stack_lab/tests/termination_lab_support.py
+M  research/llm-wiki/analysis/feature-spec-2026-10-17/README.md
+A  research/llm-wiki/analysis/selective-restriction-siem/README.md
+A  research/llm-wiki/analysis/selective-restriction-siem/checks.json
+A  research/llm-wiki/analysis/selective-restriction-siem/requirements.json
+M  research/llm-wiki/catalogs/threats.json
+M  research/llm-wiki/status/backlog.md
+M  research/llm-wiki/status/current.md
+A  research/llm-wiki/status/reports/2026-10-17-selective-restriction-siem.md
+M  research/llm-wiki/status/repository-snapshot.json
+M  research/llm-wiki/status/repository-snapshot.md
 ```
 
 ## 주요 파일 바이트
 
 | 파일 | SHA-256 |
 | --- | --- |
-| `full_stack_lab/gateway/app/core.py` | `d5454942f14bbc971f42c84e8281e0523cb4f2b2e598974e5c15b07497d1a8aa` |
+| `full_stack_lab/gateway/app/core.py` | `bb60e35cbd52ea0ded49dd41509734280ba2fa64fe8fcf5b8ac716d282161696` |
 | `full_stack_lab/gateway/app/pac.py` | `a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f` |
 | `full_stack_lab/gateway/app/poisoning.py` | `bb63b3094567f96315bd302c996fe3fbecf0e608f080874ea1a0a19e9857dc96` |
 | `full_stack_lab/gateway/app/idp.py` | `da269bb5318b7b68e5f8a8ae94b68e2d81a2688db258aab2ce6d69adc854ce28` |

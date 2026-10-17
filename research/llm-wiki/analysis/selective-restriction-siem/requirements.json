@@ -1,0 +1,483 @@
+{
+  "base_commit": "fd904c24250b6029061283bb8a57fa4efe0b5b17",
+  "branch": "10/18-selective-siem",
+  "revision": "uncommitted-working-tree-with-sha256-anchors",
+  "scope": "local implementation and explicit unit/HTTP checks; not deployment/MCP/SIEM product acceptance",
+  "requirements": [
+    {
+      "id": "SR-01",
+      "dev": "DEV-52",
+      "decision": "D-127",
+      "policies": [
+        "POL-37",
+        "POL-43"
+      ],
+      "requirement": "Bound known description/schema/missing/unsafe impact to reviewed tools",
+      "code_anchors": [
+        "full_stack_lab/gateway/app/selective.py",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/dispatch.py",
+        "full_stack_lab/gateway/app/ops_response.py",
+        "full_stack_lab/gateway/app/mcp_facade.py"
+      ],
+      "tests": [
+        {
+          "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+          "symbol": "test_normal_and_other_tool_changed_with_version_rollover",
+          "level": "offline-unit-or-loopback-http",
+          "status": "passed"
+        },
+        {
+          "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+          "symbol": "test_missing_and_unsafe_are_scoped_and_not_exposed",
+          "level": "offline-unit-or-loopback-http",
+          "status": "passed"
+        }
+      ],
+      "conditions": {
+        "normal": "Referenced test cases only; no live product pass inferred",
+        "negative": "Referenced cases assert denial/preservation or redaction",
+        "boundary": "Version/scope/backoff/ack boundaries as applicable",
+        "failure": "Unknown evidence or receiver failure fail closed/retain queue",
+        "concurrency": "PostgreSQL locks/triggers/multi-worker not executed",
+        "recovery": "Pinned rollback or retransmission checked with in-memory DB double"
+      },
+      "live_validation": "not_run"
+    },
+    {
+      "id": "SR-02",
+      "dev": "DEV-52",
+      "decision": "D-127",
+      "policies": [
+        "POL-37"
+      ],
+      "requirement": "Preserve approved identities, tool sets and version-only carryover",
+      "code_anchors": [
+        "full_stack_lab/gateway/app/selective.py",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/dispatch.py",
+        "full_stack_lab/gateway/app/ops_response.py",
+        "full_stack_lab/gateway/app/mcp_facade.py"
+      ],
+      "tests": [
+        {
+          "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+          "symbol": "test_unapproved_tool_and_version_change_do_not_expand_approval",
+          "level": "offline-unit-or-loopback-http",
+          "status": "passed"
+        }
+      ],
+      "conditions": {
+        "normal": "Referenced test cases only; no live product pass inferred",
+        "negative": "Referenced cases assert denial/preservation or redaction",
+        "boundary": "Version/scope/backoff/ack boundaries as applicable",
+        "failure": "Unknown evidence or receiver failure fail closed/retain queue",
+        "concurrency": "PostgreSQL locks/triggers/multi-worker not executed",
+        "recovery": "Pinned rollback or retransmission checked with in-memory DB double"
+      },
+      "live_validation": "not_run"
+    },
+    {
+      "id": "SR-03",
+      "dev": "DEV-52",
+      "decision": "D-127",
+      "policies": [
+        "POL-43"
+      ],
+      "requirement": "Fail closed on unknown historical scope and preserve D-122 suspension",
+      "code_anchors": [
+        "full_stack_lab/gateway/app/selective.py",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/dispatch.py",
+        "full_stack_lab/gateway/app/ops_response.py",
+        "full_stack_lab/gateway/app/mcp_facade.py"
+      ],
+      "tests": [
+        {
+          "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+          "symbol": "test_disabled_and_unknown_scope_fail_closed",
+          "level": "offline-unit-or-loopback-http",
+          "status": "passed"
+        },
+        {
+          "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+          "symbol": "test_malformed_evidence_cannot_make_a_small_scope",
+          "level": "offline-unit-or-loopback-http",
+          "status": "passed"
+        }
+      ],
+      "conditions": {
+        "normal": "Referenced test cases only; no live product pass inferred",
+        "negative": "Referenced cases assert denial/preservation or redaction",
+        "boundary": "Version/scope/backoff/ack boundaries as applicable",
+        "failure": "Unknown evidence or receiver failure fail closed/retain queue",
+        "concurrency": "PostgreSQL locks/triggers/multi-worker not executed",
+        "recovery": "Pinned rollback or retransmission checked with in-memory DB double"
+      },
+      "live_validation": "not_run"
+    },
+    {
+      "id": "SR-04",
+      "dev": "DEV-52",
+      "decision": "D-127",
+      "policies": [
+        "POL-37"
+      ],
+      "requirement": "Recheck only requested tool on the dispatch connection and retain exact denial policy ID",
+      "code_anchors": [
+        "full_stack_lab/gateway/app/selective.py",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/dispatch.py",
+        "full_stack_lab/gateway/app/ops_response.py",
+        "full_stack_lab/gateway/app/mcp_facade.py"
+      ],
+      "tests": [
+        {
+          "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+          "symbol": "test_same_connection_allows_healthy_tool_despite_other_changed_or_missing_tool",
+          "level": "offline-unit-or-loopback-http",
+          "status": "passed"
+        },
+        {
+          "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+          "symbol": "test_same_connection_change_and_final_dispatch_restriction_use_catalog_policy",
+          "level": "offline-unit-or-loopback-http",
+          "status": "passed"
+        }
+      ],
+      "conditions": {
+        "normal": "Referenced test cases only; no live product pass inferred",
+        "negative": "Referenced cases assert denial/preservation or redaction",
+        "boundary": "Version/scope/backoff/ack boundaries as applicable",
+        "failure": "Unknown evidence or receiver failure fail closed/retain queue",
+        "concurrency": "PostgreSQL locks/triggers/multi-worker not executed",
+        "recovery": "Pinned rollback or retransmission checked with in-memory DB double"
+      },
+      "live_validation": "not_run"
+    },
+    {
+      "id": "SR-05",
+      "dev": "DEV-52",
+      "decision": "D-127",
+      "policies": [
+        "POL-37",
+        "POL-43"
+      ],
+      "requirement": "Recover at pinned contract while retaining snapshot history",
+      "code_anchors": [
+        "full_stack_lab/gateway/app/selective.py",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/dispatch.py",
+        "full_stack_lab/gateway/app/ops_response.py",
+        "full_stack_lab/gateway/app/mcp_facade.py"
+      ],
+      "tests": [
+        {
+          "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+          "symbol": "test_return_to_pinned_contract_and_repeat_leave_history",
+          "level": "offline-unit-or-loopback-http",
+          "status": "passed"
+        }
+      ],
+      "conditions": {
+        "normal": "Referenced test cases only; no live product pass inferred",
+        "negative": "Referenced cases assert denial/preservation or redaction",
+        "boundary": "Version/scope/backoff/ack boundaries as applicable",
+        "failure": "Unknown evidence or receiver failure fail closed/retain queue",
+        "concurrency": "PostgreSQL locks/triggers/multi-worker not executed",
+        "recovery": "Pinned rollback or retransmission checked with in-memory DB double"
+      },
+      "live_validation": "not_run"
+    },
+    {
+      "id": "SIEM-01",
+      "dev": "DEV-61",
+      "decision": "D-128",
+      "policies": [
+        "POL-38"
+      ],
+      "requirement": "Emit allowlisted OCSF Base Events without bodies, credentials or synthetic alerts",
+      "code_anchors": [
+        "full_stack_lab/gateway/app/siem.py"
+      ],
+      "tests": [
+        {
+          "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+          "symbol": "test_configuration_and_minimum_ocsf_fields",
+          "level": "offline-unit-or-loopback-http",
+          "status": "passed"
+        }
+      ],
+      "conditions": {
+        "normal": "Referenced test cases only; no live product pass inferred",
+        "negative": "Referenced cases assert denial/preservation or redaction",
+        "boundary": "Version/scope/backoff/ack boundaries as applicable",
+        "failure": "Unknown evidence or receiver failure fail closed/retain queue",
+        "concurrency": "PostgreSQL locks/triggers/multi-worker not executed",
+        "recovery": "Pinned rollback or retransmission checked with in-memory DB double"
+      },
+      "live_validation": "not_run"
+    },
+    {
+      "id": "SIEM-02",
+      "dev": "DEV-61",
+      "decision": "D-128",
+      "policies": [
+        "POL-38",
+        "POL-42"
+      ],
+      "requirement": "Keep delivery state on receiver failure and retain a stable event UID",
+      "code_anchors": [
+        "full_stack_lab/gateway/app/siem.py"
+      ],
+      "tests": [
+        {
+          "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+          "symbol": "test_http_failure_then_restart_retry_delivers_same_uid",
+          "level": "offline-unit-or-loopback-http",
+          "status": "passed"
+        }
+      ],
+      "conditions": {
+        "normal": "Referenced test cases only; no live product pass inferred",
+        "negative": "Referenced cases assert denial/preservation or redaction",
+        "boundary": "Version/scope/backoff/ack boundaries as applicable",
+        "failure": "Unknown evidence or receiver failure fail closed/retain queue",
+        "concurrency": "PostgreSQL locks/triggers/multi-worker not executed",
+        "recovery": "Pinned rollback or retransmission checked with in-memory DB double"
+      },
+      "live_validation": "not_run"
+    },
+    {
+      "id": "SIEM-03",
+      "dev": "DEV-61",
+      "decision": "D-128",
+      "policies": [
+        "POL-42"
+      ],
+      "requirement": "Retain permanent errors, redirects, timeouts and poison events with bounded backoff",
+      "code_anchors": [
+        "full_stack_lab/gateway/app/siem.py"
+      ],
+      "tests": [
+        {
+          "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+          "symbol": "test_redirect_and_permanent_error_are_retained",
+          "level": "offline-unit-or-loopback-http",
+          "status": "passed"
+        },
+        {
+          "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+          "symbol": "test_timeout_and_poison_row_do_not_disappear_or_log_text",
+          "level": "offline-unit-or-loopback-http",
+          "status": "passed"
+        }
+      ],
+      "conditions": {
+        "normal": "Referenced test cases only; no live product pass inferred",
+        "negative": "Referenced cases assert denial/preservation or redaction",
+        "boundary": "Version/scope/backoff/ack boundaries as applicable",
+        "failure": "Unknown evidence or receiver failure fail closed/retain queue",
+        "concurrency": "PostgreSQL locks/triggers/multi-worker not executed",
+        "recovery": "Pinned rollback or retransmission checked with in-memory DB double"
+      },
+      "live_validation": "not_run"
+    },
+    {
+      "id": "SIEM-04",
+      "dev": "DEV-61",
+      "decision": "D-128",
+      "policies": [
+        "POL-38"
+      ],
+      "requirement": "Reload receiver secrets from files without writing secrets to event/log state",
+      "code_anchors": [
+        "full_stack_lab/gateway/app/siem.py"
+      ],
+      "tests": [
+        {
+          "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+          "symbol": "test_secret_rotation_is_read_from_file_each_attempt",
+          "level": "offline-unit-or-loopback-http",
+          "status": "passed"
+        }
+      ],
+      "conditions": {
+        "normal": "Referenced test cases only; no live product pass inferred",
+        "negative": "Referenced cases assert denial/preservation or redaction",
+        "boundary": "Version/scope/backoff/ack boundaries as applicable",
+        "failure": "Unknown evidence or receiver failure fail closed/retain queue",
+        "concurrency": "PostgreSQL locks/triggers/multi-worker not executed",
+        "recovery": "Pinned rollback or retransmission checked with in-memory DB double"
+      },
+      "live_validation": "not_run"
+    },
+    {
+      "id": "SIEM-05",
+      "dev": "DEV-61",
+      "decision": "D-128",
+      "policies": [
+        "POL-42"
+      ],
+      "requirement": "Retry after acknowledgement/local commit failure with receiver deduplication identity",
+      "code_anchors": [
+        "full_stack_lab/gateway/app/siem.py"
+      ],
+      "tests": [
+        {
+          "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+          "symbol": "test_receiver_ack_before_commit_failure_can_duplicate_with_stable_uid",
+          "level": "offline-unit-or-loopback-http",
+          "status": "passed"
+        }
+      ],
+      "conditions": {
+        "normal": "Referenced test cases only; no live product pass inferred",
+        "negative": "Referenced cases assert denial/preservation or redaction",
+        "boundary": "Version/scope/backoff/ack boundaries as applicable",
+        "failure": "Unknown evidence or receiver failure fail closed/retain queue",
+        "concurrency": "PostgreSQL locks/triggers/multi-worker not executed",
+        "recovery": "Pinned rollback or retransmission checked with in-memory DB double"
+      },
+      "live_validation": "not_run"
+    }
+  ],
+  "code_evidence": [
+    {
+      "path": "full_stack_lab/gateway/app/selective.py",
+      "sha256": "624c99e969c330552d85548e237ad95e410c8df198aa789ad6345f688de4c874",
+      "symbols": {
+        "restricted_tools": 4,
+        "available": 30
+      }
+    },
+    {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "sha256": "eff5944fbd29a06e5ba174d671f8f954cfbe33e6d95b35fbc5ef10595375c439",
+      "symbols": {
+        "refresh_catalog": 185,
+        "_contract": 804,
+        "_call_upstream": 1241,
+        "bootstrap": 423
+      }
+    },
+    {
+      "path": "full_stack_lab/gateway/app/dispatch.py",
+      "sha256": "63b1486b0c14f0dc5c0c9257b79190466d3b164f827dce6eb65fea3e5e7587c9",
+      "symbols": {
+        "record": 50
+      }
+    },
+    {
+      "path": "full_stack_lab/gateway/app/ops_response.py",
+      "sha256": "4e1361b4873916bdcc51a328084a33928cc5684055b4d40f00799adcea2dab61",
+      "symbols": {
+        "contain_drift": 87
+      }
+    },
+    {
+      "path": "full_stack_lab/gateway/app/mcp_facade.py",
+      "sha256": "80befd6c92d1fd1738e626c0d0d40815788ada4caaef7da60cd14f9855836d97",
+      "symbols": {
+        "_approved_tools": 117
+      }
+    },
+    {
+      "path": "full_stack_lab/gateway/app/main.py",
+      "sha256": "068f00fd793dee382471b31c8ca0d86504f1adc00d5753393c0de3af7c0738bf",
+      "symbols": {
+        "registry_view": 339,
+        "audit_siem": 828
+      }
+    },
+    {
+      "path": "full_stack_lab/gateway/app/siem.py",
+      "sha256": "bf558facadf48bf88a488e14040575dcf12044cf1df46414dc07894cf0cf599a",
+      "symbols": {
+        "event": 28,
+        "settings": 68,
+        "send": 85,
+        "deliver_one": 109,
+        "status": 139,
+        "watch": 148
+      }
+    },
+    {
+      "path": "full_stack_lab/tests/selective_restriction_siem_check.py",
+      "sha256": "003d42d301b9cf29ef6eed9f0b1ea5241bb0cf0da4150a91730877f07a38bc05",
+      "symbols": {}
+    },
+    {
+      "path": "full_stack_lab/tests/dispatch_intent_pg_check.py",
+      "sha256": "d4b3bc2fa506a582900e8a3906ad2653bc7215f60925a35f3c0e0eb7ce08ae71",
+      "symbols": {
+        "selective_cutover": 287
+      }
+    },
+    {
+      "path": "full_stack_lab/compose.yaml",
+      "symbols": {},
+      "sha256": "2923fe1e52ac7bddee980a4ec1de2582af4c9a1b448136ddaaf711c59f38d497"
+    },
+    {
+      "path": "full_stack_lab/console.sh",
+      "symbols": {},
+      "sha256": "4e10b187172f519e59b5232c349309de7c75ea228ceb532b57cac430e4e5f60a"
+    },
+    {
+      "path": "full_stack_lab/gateway/app/siem_tables.sql",
+      "symbols": {},
+      "sha256": "780319da43109965a8788004e995615d0e8ed824a2666fec4e452d67aa7dd158"
+    },
+    {
+      "path": "full_stack_lab/gateway/app/ops_tables.sql",
+      "symbols": {},
+      "sha256": "a29526cca49aafdbb94f7f181c492bf5bfb789a37784b4290b13bcf7f6432d02"
+    },
+    {
+      "path": "full_stack_lab/gateway/app/agent_static/console.js",
+      "symbols": {},
+      "sha256": "5648d5a112150819d7c3f5a737b7f9aa54620a03bf5518da6bbc5613501c7a16"
+    },
+    {
+      "path": "full_stack_lab/gateway/app/agent_service.py",
+      "symbols": {},
+      "sha256": "a0f94c979b7a518e1a2cac6d9efa7f69fc4b32cdce915a79771e5ca018bf71af"
+    },
+    {
+      "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+      "symbols": {},
+      "sha256": "483e9b1e0a2e85751d1a735e5de85b52d5ff821384ad3f37878309c9090d9a6b"
+    },
+    {
+      "path": "full_stack_lab/tests/catalog_refresh_check.py",
+      "symbols": {},
+      "sha256": "00af86aebbefe069434e63ca8c945947ef1cac7c029e96df7e4167d6880111f9"
+    },
+    {
+      "path": "full_stack_lab/tests/termination_lab_support.py",
+      "symbols": {},
+      "sha256": "d26a9771ac575d550ed4a1e25bb05d9470c14adb1617597d287586c1c0b5bb6c"
+    }
+  ],
+  "pending": [
+    {
+      "path": "full_stack_lab/tests/dispatch_intent_pg_check.py",
+      "symbol": "selective_cutover",
+      "status": "not_run",
+      "reason": "No authorized local database/containers; remote hosts explicitly excluded"
+    },
+    {
+      "requirement": "Transactional source INSERT/outbox persistence, SKIP LOCKED replicas and process restart",
+      "status": "not_run"
+    },
+    {
+      "requirement": "Full pinned OCSF schema validation, HTTPS trust/rotation, receiver persistence/indexing/dedup",
+      "status": "not_run"
+    },
+    {
+      "requirement": "Actual OSS MCP/harness calls and deployment",
+      "status": "not_run"
+    }
+  ]
+}

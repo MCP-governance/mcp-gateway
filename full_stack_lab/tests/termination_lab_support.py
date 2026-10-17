@@ -54,7 +54,7 @@ class Checks:
 async def apply_schema() -> None:
     await db.wait_until_ready()
     # The same files, in the same order, as core.bootstrap().
-    for name in ("agent_tables.sql", "lifecycle_tables.sql", "v2_tables.sql", "oidc_tables.sql", "ops_tables.sql"):
+    for name in ("agent_tables.sql", "lifecycle_tables.sql", "v2_tables.sql", "oidc_tables.sql", "ops_tables.sql", "siem_tables.sql"):
         await db.execute((APP / name).read_text(encoding="utf-8"))
 
 

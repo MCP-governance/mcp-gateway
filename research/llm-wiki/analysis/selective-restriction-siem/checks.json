@@ -1,0 +1,279 @@
+{
+  "environment": "Windows Python 3.10.5 / local-only",
+  "records": [
+    {
+      "name": "unit-and-loopback-http",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "selective_restriction_siem_check.py",
+        "-v"
+      ],
+      "started_at": "2026-10-17T20:03:00.354738+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_disabled_and_unknown_scope_fail_closed (selective_restriction_siem_check.SelectiveChecks) ... ok\ntest_malformed_evidence_cannot_make_a_small_scope (selective_restriction_siem_check.SelectiveChecks) ... ok\ntest_missing_and_unsafe_are_scoped_and_not_exposed (selective_restriction_siem_check.SelectiveChecks) ... ok\ntest_normal_and_other_tool_changed_with_version_rollover (selective_restriction_siem_check.SelectiveChecks) ... ok\ntest_return_to_pinned_contract_and_repeat_leave_history (selective_restriction_siem_check.SelectiveChecks) ... ok\ntest_same_connection_allows_healthy_tool_despite_other_changed_or_missing_tool (selective_restriction_siem_check.SelectiveChecks) ... ok\ntest_same_connection_change_and_final_dispatch_restriction_use_catalog_policy (selective_restriction_siem_check.SelectiveChecks) ... ok\ntest_unapproved_tool_and_version_change_do_not_expand_approval (selective_restriction_siem_check.SelectiveChecks) ... ok\ntest_configuration_and_minimum_ocsf_fields (selective_restriction_siem_check.SiemChecks) ... ok\ntest_http_failure_then_restart_retry_delivers_same_uid (selective_restriction_siem_check.SiemChecks) ... ok\ntest_receiver_ack_before_commit_failure_can_duplicate_with_stable_uid (selective_restriction_siem_check.SiemChecks) ... ok\ntest_redirect_and_permanent_error_are_retained (selective_restriction_siem_check.SiemChecks) ... ok\ntest_secret_rotation_is_read_from_file_each_attempt (selective_restriction_siem_check.SiemChecks) ... ok\ntest_timeout_and_poison_row_do_not_disappear_or_log_text (selective_restriction_siem_check.SiemChecks) ... ok\n\n----------------------------------------------------------------------\nRan 14 tests in 3.507s\n\nOK\n",
+      "status": "passed"
+    },
+    {
+      "name": "console-syntax",
+      "command": [
+        "node",
+        "--check",
+        "full_stack_lab/gateway/app/agent_static/console.js"
+      ],
+      "started_at": "2026-10-17T20:03:04.050671+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "status": "passed"
+    },
+    {
+      "name": "console-state",
+      "command": [
+        "node",
+        "--test",
+        "full_stack_lab/tests/console-state.test.mjs"
+      ],
+      "started_at": "2026-10-17T20:03:04.106378+00:00",
+      "exit_code": 0,
+      "stdout": "✔ masked kinds read in Korean and an unknown kind never shows its raw name (0.7584ms)\n✔ a poll overlapping a page load shows each call once, newest first, within the limit (0.7571ms)\n✔ ids sort numerically and malformed rows cannot displace real decisions (0.1856ms)\n✔ search matches person, PC, harness, server.tool, target, policy and trace, ignoring case and spaces (0.2761ms)\n✔ the status phrase never presents a failed poll as fresh (0.796ms)\n✔ 24 hourly buckets end at the current hour and keep empty hours at zero (0.4571ms)\n✔ splitBy counts per key with a decision split, largest first (0.2445ms)\n✔ sankey layers never merge a server with a harness of the same name (0.6988ms)\n✔ endpoint observation shows disabled, stale and failed sources separately from zero accepted rows (0.3742ms)\n✔ listener-only endpoints remain in coverage counts and expose no raw command line or owner token (2.2004ms)\n✔ enforced is green only with fresh evidence of a ledger row or a kernel heartbeat (0.6839ms)\n✔ latency values read as durations and never invent a measurement (0.3017ms)\n✔ endpoint evidence labels never turn a missing value into a good one (0.2376ms)\n✔ totals are reported apart from the window and page navigation follows the cursor (9.9998ms)\n✔ latency and failure show only a fresh sample and a denial count only a collected channel (0.2052ms)\nℹ tests 15\nℹ suites 0\nℹ pass 15\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 92.6191\n",
+      "stderr": "",
+      "status": "passed"
+    },
+    {
+      "name": "api-auth",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "started_at": "2026-10-17T20:03:04.254619+00:00",
+      "exit_code": 0,
+      "stdout": "PASS 무인증 1개가 문서와 일치, 인증 필요 73개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\n",
+      "stderr": "",
+      "status": "passed"
+    },
+    {
+      "name": "console-copy",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/console_copy_check.py"
+      ],
+      "started_at": "2026-10-17T20:03:04.327950+00:00",
+      "exit_code": 0,
+      "stdout": "console copy check: 0 problem(s)\n",
+      "stderr": "",
+      "status": "passed"
+    },
+    {
+      "name": "python-syntax",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-c",
+        "from pathlib import Path; import ast; paths=[*Path('full_stack_lab/gateway/app').glob('*.py'),Path('full_stack_lab/tests/selective_restriction_siem_check.py'),Path('full_stack_lab/tests/catalog_refresh_check.py'),Path('full_stack_lab/tests/dispatch_intent_pg_check.py'),Path('full_stack_lab/tests/termination_lab_support.py')]; [ast.parse(p.read_text(encoding='utf-8'),filename=str(p)) for p in paths]; print('AST syntax OK',len(paths),'files')"
+      ],
+      "started_at": "2026-10-17T20:03:04.412599+00:00",
+      "exit_code": 0,
+      "stdout": "AST syntax OK 46 files\n",
+      "stderr": "",
+      "status": "passed"
+    },
+    {
+      "name": "shell-syntax",
+      "command": [
+        "C:/Program Files/Git/usr/bin/bash.exe",
+        "-n",
+        "full_stack_lab/console.sh"
+      ],
+      "started_at": "2026-10-17T20:03:04.598655+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "status": "passed"
+    },
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "started_at": "2026-10-17T20:03:04.622207+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'full_stack_lab/gateway/app/core.py', CRLF will be replaced by LF the next time Git touches it\n",
+      "status": "passed"
+    },
+    {
+      "name": "pyflakes",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-m",
+        "pyflakes",
+        "full_stack_lab/gateway/app/selective.py",
+        "full_stack_lab/gateway/app/siem.py",
+        "full_stack_lab/tests/selective_restriction_siem_check.py"
+      ],
+      "started_at": "2026-10-17T20:03:04.691240+00:00",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "C:\\Program Files\\Python310\\python.exe: No module named pyflakes\n",
+      "status": "failed"
+    },
+    {
+      "name": "existing-catalog-regression",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "catalog_refresh_check.py",
+        "-v"
+      ],
+      "started_at": "2026-10-17T20:03:04.742667+00:00",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "catalog_refresh_check (unittest.loader._FailedTest) ... ERROR\n\n======================================================================\nERROR: catalog_refresh_check (unittest.loader._FailedTest)\n----------------------------------------------------------------------\nImportError: Failed to import test module: catalog_refresh_check\nTraceback (most recent call last):\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\loader.py\", line 436, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\loader.py\", line 377, in _get_module_from_name\n    __import__(name)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-codex-i\\full_stack_lab\\tests\\catalog_refresh_check.py\", line 14, in <module>\n    from app import core\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-codex-i\\full_stack_lab\\gateway\\app\\core.py\", line 11, in <module>\n    from datetime import UTC, datetime, timedelta\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "status": "failed"
+    },
+    {
+      "name": "capture-status",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/capture_status.py"
+      ],
+      "started_at": "2026-10-17T20:03:04.970792+00:00",
+      "exit_code": 0,
+      "stdout": "{\"head\": \"fd904c24250b6029061283bb8a57fa4efe0b5b17\", \"dirty_paths\": 29, \"scope\": \"local-code-only\"}\n",
+      "stderr": "",
+      "status": "passed"
+    },
+    {
+      "name": "build-wiki",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/build_wiki.py"
+      ],
+      "started_at": "2026-10-17T20:03:05.236690+00:00",
+      "exit_code": 0,
+      "stdout": "{\"format\": \"markdown\", \"pages\": 497, \"catalogs\": {\"endpoint-permission-references\": 12, \"experiments\": 13, \"imports\": 22, \"local-tool-risks\": 13, \"papers\": 264, \"solutions\": 9, \"threats\": 24}, \"collaboration_console\": \"research/collaboration-console/README.md\"}\n",
+      "stderr": "",
+      "status": "passed"
+    },
+    {
+      "name": "check-wiki",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_wiki.py"
+      ],
+      "started_at": "2026-10-17T20:03:05.390759+00:00",
+      "exit_code": 1,
+      "stdout": "{\n  \"ok\": false,\n  \"counts\": {\n    \"endpoint-permission-references\": 12,\n    \"experiments\": 13,\n    \"imports\": 22,\n    \"local-tool-risks\": 13,\n    \"papers\": 264,\n    \"solutions\": 9,\n    \"threats\": 24,\n    \"sources_evidence_records\": 3,\n    \"solutions_evidence_records\": 21,\n    \"reviewed_local_tools\": 92,\n    \"markdown_documents\": 497\n  },\n  \"warnings\": [],\n  \"errors\": [\n    \"Missing local file: local-sources/compliance/LIB-L05/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L06/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L09/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L10/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L11/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L12/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M04/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M08/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M17/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M20/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M21/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M22/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M28/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M31/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M32/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M34/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M36/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M37/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M38/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M39/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M40/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M44/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M45/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M48/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M49/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M13/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M14/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M15/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M43/provenance.json\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/agent_service.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/endpoint_plane.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/mcp_facade.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/endpoint_plane.py; review and run map_threats.py\",\n    \"Missing local file: checks.json\",\n    \"Missing local file: ../../analysis/selective-restriction-siem/checks.json\",\n    \"Missing local file: ../../analysis/selective-restriction-siem/checks.json\",\n    \"Missing local file: ../../analysis/selective-restriction-siem/checks.json\"\n  ]\n}\n",
+      "stderr": "",
+      "status": "failed"
+    },
+    {
+      "name": "map-threats",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/map_threats.py"
+      ],
+      "started_at": "2026-10-17T20:04:12.335604+00:00",
+      "exit_code": 0,
+      "stdout": "Mapped 24 source policies; all code paths exist; runtime verification pending\n",
+      "stderr": "",
+      "status": "passed"
+    },
+    {
+      "name": "check-wiki-final",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_wiki.py"
+      ],
+      "started_at": "2026-10-17T20:04:13.919981+00:00",
+      "exit_code": 1,
+      "stdout": "{\n  \"ok\": false,\n  \"counts\": {\n    \"endpoint-permission-references\": 12,\n    \"experiments\": 13,\n    \"imports\": 22,\n    \"local-tool-risks\": 13,\n    \"papers\": 264,\n    \"solutions\": 9,\n    \"threats\": 24,\n    \"sources_evidence_records\": 3,\n    \"solutions_evidence_records\": 21,\n    \"reviewed_local_tools\": 92,\n    \"markdown_documents\": 497\n  },\n  \"warnings\": [],\n  \"errors\": [\n    \"Missing local file: local-sources/compliance/LIB-L05/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L06/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L09/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L10/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L11/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L12/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M04/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M08/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M17/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M20/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M21/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M22/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M28/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M31/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M32/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M34/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M36/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M37/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M38/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M39/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M40/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M44/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M45/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M48/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M49/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M13/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M14/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M15/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M43/provenance.json\"\n  ]\n}\n",
+      "stderr": "",
+      "status": "failed"
+    },
+    {
+      "name": "capture-status-final",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/capture_status.py"
+      ],
+      "started_at": "2026-10-17T20:05:34.519021+00:00",
+      "exit_code": 0,
+      "stdout": "{\"head\": \"fd904c24250b6029061283bb8a57fa4efe0b5b17\", \"dirty_paths\": 32, \"scope\": \"local-code-only\"}\n",
+      "stderr": "",
+      "status": "passed"
+    },
+    {
+      "name": "check-wiki-final-after-docs",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_wiki.py"
+      ],
+      "started_at": "2026-10-17T20:05:35.870428+00:00",
+      "exit_code": 1,
+      "stdout": "{\n  \"ok\": false,\n  \"counts\": {\n    \"endpoint-permission-references\": 12,\n    \"experiments\": 13,\n    \"imports\": 22,\n    \"local-tool-risks\": 13,\n    \"papers\": 264,\n    \"solutions\": 9,\n    \"threats\": 24,\n    \"sources_evidence_records\": 3,\n    \"solutions_evidence_records\": 21,\n    \"reviewed_local_tools\": 92,\n    \"markdown_documents\": 497\n  },\n  \"warnings\": [],\n  \"errors\": [\n    \"Missing local file: local-sources/compliance/LIB-L05/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L06/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L09/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L10/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L11/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L12/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M04/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M08/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M17/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M20/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M21/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M22/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M28/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M31/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M32/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M34/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M36/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M37/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M38/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M39/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M40/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M44/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M45/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M48/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M49/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M13/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M14/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M15/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M43/provenance.json\"\n  ]\n}\n",
+      "stderr": "",
+      "status": "failed"
+    },
+    {
+      "name": "diff-check-final",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "started_at": "2026-10-17T20:05:35.931239+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'full_stack_lab/gateway/app/core.py', CRLF will be replaced by LF the next time Git touches it\n",
+      "status": "passed"
+    }
+  ],
+  "not_run": [
+    "actual PostgreSQL",
+    "OPA/Rego",
+    "TLS/HTTPS success",
+    "actual SIEM",
+    "actual OSS MCP/harness",
+    "remote deployment"
+  ]
+}

@@ -1897,12 +1897,13 @@ ROUTES.audit = async (_, tab, query) => {
   const q = new URLSearchParams(query);
   const filters = ["decision", "server", "principal", "policy", "event_kind", "execution", "trace_id", "since", "until"];
   const params = new URLSearchParams([...q].filter(([k, v]) => [...filters, "before"].includes(k) && v));
-  const data = await gw(`audit/events?${params}&limit=100`);
+  const [data, delivery] = await Promise.all([gw(`audit/events?${params}&limit=100`), gw("audit/siem")]);
   const options = (values, selected) => values.map(([value, label]) => html`<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`);
   const local = (iso) => { const d = new Date(iso || NaN); return Number.isNaN(d.getTime()) ? "" : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
   const executed = (e) => e.upstream_executed ? (e.response_disposition === "withheld" || e.policy_id === "MCP-OUTPUT-001" ? "응답 보류" : "실행됨") : e.upstream_attempted ? "실행 미확인" : "실행 안 함";
   return {html: page({head: head("감사 기록", {actions: html`<button class="btn" data-act="audit-verify">무결성 검증</button><button class="btn primary" data-act="audit-export">내보내기</button>`}),
     active: "events", tabs: [{key: "events", label: "감사 이벤트", n: data.events.length, body: html`<div class="stack">
+      ${panel("보안 관제 전달", kv([["대기", delivery.pending], ["재시도", delivery.retrying], ["최초 대기", delivery.oldest_pending ? when(delivery.oldest_pending) : "—"], ["최근 수신 확인", delivery.last_delivered ? when(delivery.last_delivered) : "—"]]))}
       ${panel("조회 조건", html`<form class="form stack" data-form="audit"><div class="grid c3">
         <label>판정<select name="decision">${options([["", "전체"], ...Object.entries(DECISION).map(([k,v]) => [k,v[1]])], q.get("decision") || "")}</select></label>
         <label>실행 결과<select name="execution">${options([["", "전체"], ["executed", "실행됨"], ["not-sent", "실행 안 함"], ["unknown", "실행 미확인"], ["withheld", "응답 보류"]], q.get("execution") || "")}</select></label>

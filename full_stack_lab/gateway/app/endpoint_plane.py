@@ -748,7 +748,7 @@ async def managed_policy(device: dict) -> dict:
         raise ValueError("현장 관리형 연결에는 HTTPS가 필요합니다.")
     addresses = os.getenv("ENDPOINT_GATEWAY_IPS", parsed.hostname).split(",")
     addresses = [str(ipaddress.ip_address(a.strip())) for a in addresses]
-    rows = await db.fetch_all("SELECT id FROM mcp_servers WHERE status='READY' AND lifecycle='OPERATING' ORDER BY id")
+    rows = await db.fetch_all("SELECT id FROM mcp_servers WHERE status IN ('READY','DRIFT') AND lifecycle='OPERATING' ORDER BY id")
     # The minimal set (D-93): a harness is told about the servers whose tools this person may see
     # in tools/list, not about every operating server.
     owner = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (device["owner_token"],))

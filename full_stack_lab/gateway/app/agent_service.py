@@ -370,7 +370,7 @@ async def pc_kit() -> dict | None:
     if not (Path(os.getenv("ENDPOINT_KIT_DIR", "/endpoint-kit")) / "bootstrap.py").is_file() or not public:
         return None
     rows = await db.fetch_all(
-        "SELECT id FROM mcp_servers WHERE status='READY' AND COALESCE(lifecycle,'OPERATING')='OPERATING' ORDER BY id")
+        "SELECT id FROM mcp_servers WHERE status IN ('READY','DRIFT') AND COALESCE(lifecycle,'OPERATING')='OPERATING' ORDER BY id")
     servers = ",".join(row["id"] for row in rows)
     return {"url": "/api/pc-kit", "servers": servers, "platforms": sorted(KIT_FILES)}
 
