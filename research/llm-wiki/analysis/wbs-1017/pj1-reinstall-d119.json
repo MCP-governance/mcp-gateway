@@ -1,16 +1,48 @@
 {
   "as_of": "2026-10-17T14:45:00+00:00",
   "requested_by": "owner (2026-10-17: reinstall PJ1 kit; owner logs in Codex with device code afterwards)",
-  "kit": {"issued_by": "field employee test account via /api/pc-kit?platform=linux", "server_commit": "7747d21"},
-  "install": {"command": "sudo ./install.sh --user pj1 --skip-login", "managed_processes_before": 0,
-              "result": "previous managed-pj1 removed and reinstalled; endpoint managed-90798c6b-d3ac-4ac9-abfd-af9b151d7a2a pending -> active (admin activation with note)",
-              "harness_hashes": {"codex": "12eb3e81114588aca3b7998f4f19e8997b056aca08e57a7ca7c8a3ec8c652aad", "claude": "0298068b686e7fdbaf9402a7a587bb7f49c0b0e084de09f69145a0719207640c"}},
-  "host_rules": {"managed_uid": 1001, "owner_uid": 1000, "nft_check": "ok",
-                 "rules": ["oifname lo ct direction original ct state new meta skuid 1000 ct mark set ct mark | 0x00000100",
-                           "meta skuid 1001 oifname lo ct direction reply ct mark & 0x00000100 == 0x00000100 accept",
-                           "meta skuid 1001 counter reject with icmpx admin-prohibited"],
-                 "tailscale_mark_rules_present": 2, "services": {"egress": "active", "managed": "active"}},
-  "after_reinstall_call": {"harness": "managed Claude Code (claude-sonnet-5-5)", "tool": "github get_me", "result": "pokochy"},
+  "kit": {
+    "issued_by": "field employee test account via /api/pc-kit?platform=linux",
+    "server_commit": "7747d21"
+  },
+  "install": {
+    "command": "sudo ./install.sh --user pj1 --skip-login",
+    "managed_processes_before": 0,
+    "result": "previous managed-pj1 removed and reinstalled; endpoint managed-90798c6b-d3ac-4ac9-abfd-af9b151d7a2a pending -> active (admin activation with note)",
+    "harness_hashes": {
+      "codex": "12eb3e81114588aca3b7998f4f19e8997b056aca08e57a7ca7c8a3ec8c652aad",
+      "claude": "0298068b686e7fdbaf9402a7a587bb7f49c0b0e084de09f69145a0719207640c"
+    }
+  },
+  "host_rules": {
+    "managed_uid": 1001,
+    "owner_uid": 1000,
+    "nft_check": "ok",
+    "rules": [
+      "oifname lo ct direction original ct state new meta skuid 1000 ct mark set ct mark | 0x00000100",
+      "meta skuid 1001 oifname lo ct direction reply ct mark & 0x00000100 == 0x00000100 accept",
+      "meta skuid 1001 counter reject with icmpx admin-prohibited"
+    ],
+    "tailscale_mark_rules_present": 2,
+    "services": {
+      "egress": "active",
+      "managed": "active"
+    }
+  },
+  "after_reinstall_call": {
+    "harness": "managed Claude Code (claude-sonnet-5-5)",
+    "tool": "github get_me",
+    "result": "pokochy"
+  },
   "kernel_netns": "research/llm-wiki/analysis/dev35-loopback/d119-netns-2026-10-17.md",
-  "pending": ["owner's codex login --device-auth and loopback-denial count during login (R1)", "R2-R9, real OSS E13 fixtures"]
+  "pending": [
+    "R2-R9, real OSS E13 fixtures"
+  ],
+  "codex_after_device_login": {
+    "as_of": "2026-10-17T14:48:00+00:00",
+    "login": "owner ran codex login --device-auth (device code enabled in ChatGPT security settings)",
+    "loopback_denials_uid1001_last_60min": 0,
+    "call": "pj1 terminal `codex exec -m gpt-6-luna --disable shell_tool`, shim to managed-pj1",
+    "result": "mcp github/get_me completed, answer pokochy"
+  }
 }
