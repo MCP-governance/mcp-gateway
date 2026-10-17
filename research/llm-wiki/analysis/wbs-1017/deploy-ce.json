@@ -1,0 +1,12 @@
+{
+  "as_of": "2026-10-17T15:50:00+00:00",
+  "deployment": {"commit": "ecb2587", "includes": ["3d5d862 Windows kit wizard/tray/bundled Python (D-118)", "8d542ac operations response (D-120..D-123)"],
+                 "steps": ["field init-disposal (first attempt created the signed list; the appliance WSL restarted mid-command; the retry refused re-initialisation as designed)", "field up rc 0"],
+                 "health": {"revision": "ecb2587", "components": "all true", "policy_rules_match": true, "policy_data_match": true, "mcp_servers": "3/3 READY"}},
+  "unit_in_gateway_image": {"ops_response_check": "23 OK (run on a writable copy; the read-only mount made tempdir creation fail)",
+                            "field_kit_check": "17 OK, 1 skipped", "dest_pin_transport_check": "2 OK", "upstream_session_reuse_test": "40 OK", "loopback_owner_replies_test": "9 OK"},
+  "pj1_harness_after_deploy": {"github get_me": "pokochy", "markitdown convert (reviewed URI)": "title returned", "note": "auto-stop did not disable the healthy servers"},
+  "not_run": ["pj3 wizard/tray/UAC/standard-account runs (needs the organisation-approved installer placement described in endpoint-agent/tests-windows/README.md)",
+              "image rescan isolation, alert self-test and auto-stop on the appliance with real triggers", "restore-from-backup drill for the signed disposal list"],
+  "incident": "appliance WSL restarted at about 00:37 KST during init-disposal; cause unknown (no command of this deploy restarts WSL)"
+}
