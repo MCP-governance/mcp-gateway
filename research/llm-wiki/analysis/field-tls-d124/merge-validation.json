@@ -1,0 +1,287 @@
+{
+  "task": "field-tls-d124-merge",
+  "captured_at": "2026-10-18T01:07:29.638588+09:00",
+  "base_commit": "b7b348849376a9edc5c5d66b8f0c9250ee28a1fc",
+  "merge_head": "c7a700a709ab3bbd7c5a884a3b3c7071c5d0d329",
+  "scope": "working-tree merge and local unit/static checks only",
+  "checks": [
+    {
+      "name": "tls-unit",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/field_tls_check.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "log": "merge-tls-unit.log",
+      "summary": "Ran 9 tests in 0.306s\n\nOK"
+    },
+    {
+      "name": "field-kit",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-c",
+        "import sys,runpy,pip._vendor.tomli;sys.modules['tomllib']=pip._vendor.tomli;sys.argv=['field_kit_check.py'];runpy.run_path('full_stack_lab/tests/field_kit_check.py',run_name='__main__')"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "log": "merge-field-kit.log",
+      "summary": "Ran 17 tests in 5.151s\n\nOK (skipped=1)"
+    },
+    {
+      "name": "windows-kit",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "endpoint-agent/tests-windows/test_windows_kit.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "log": "merge-windows-kit.log",
+      "summary": "Ran 14 tests in 6.259s\n\nOK"
+    },
+    {
+      "name": "pyflakes",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-c",
+        "import sys,runpy;sys.path.insert(0,'C:\\\\Users\\\\bobysg\\\\bob\\\\프로젝트\\\\.venv-mcpgw\\\\Lib\\\\site-packages');sys.argv=['pyflakes', 'endpoint-agent/managed-windows.py', 'endpoint-agent/tests-windows/test_windows_kit.py', 'full_stack_lab/gateway/app/agent_service.py', 'full_stack_lab/tests/field_tls_check.py'];runpy.run_module('pyflakes',run_name='__main__')"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "log": "merge-pyflakes.log",
+      "summary": ""
+    },
+    {
+      "name": "open-endpoints",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "log": "merge-open-endpoints.log",
+      "summary": "PASS 무인증 1개가 문서와 일치, 인증 필요 72개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\n"
+    },
+    {
+      "name": "shell-syntax",
+      "command": [
+        "C:/Program Files/Git/bin/bash.exe",
+        "-n",
+        "full_stack_lab/console.sh"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "log": "merge-shell-syntax.log",
+      "summary": ""
+    },
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "log": "merge-diff-check.log",
+      "summary": ""
+    },
+    {
+      "name": "cached-diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--cached",
+        "--check"
+      ],
+      "exit_code": 2,
+      "status": "failed",
+      "log": "merge-cached-diff-check.log",
+      "summary": "ops-response-d120-d123/evidence/unit-tests.txt:26: trailing whitespace.\n+Ran 23 tests in 5.157s\nresearch/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:27: trailing whitespace.\n+\nresearch/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:28: trailing whitespace.\n+OK\n"
+    }
+  ],
+  "conflict_markers": [],
+  "unmerged_index_paths": [
+    "docs/ai/DECISIONS.md",
+    "full_stack_lab/compose.field.yaml",
+    "full_stack_lab/gateway/app/agent_service.py",
+    "research/llm-wiki/catalogs/threats.json",
+    "research/llm-wiki/status/backlog.md",
+    "research/llm-wiki/status/repository-snapshot.json",
+    "research/llm-wiki/status/repository-snapshot.md"
+  ],
+  "index_resolution": "blocked by linked index.lock write permission outside workspace",
+  "generated_files": "ours selected; main must regenerate map_threats.py and capture_status.py",
+  "deployment_verified": false,
+  "requirements": [
+    {
+      "id": "TLS-M01",
+      "condition": "both merge sides preserved; generated files left for main",
+      "checks": [
+        "decision-order",
+        "main-backlog-rows",
+        "volumes-preserved",
+        "marker-scan"
+      ]
+    },
+    {
+      "id": "TLS-M02",
+      "condition": "CA/pin/PC tool included in server payload and Windows approval hash list",
+      "test": "test_download_includes_runtime_and_missing_runtime_does_not_consume_enrollment"
+    },
+    {
+      "id": "TLS-M03",
+      "condition": "bad CA rejected before account/file/enrollment side effects; service and observers preserve pin",
+      "tests": [
+        "test_managed_ca_is_verified_before_enrollment_and_kept_out_of_global_environment",
+        "test_managed_install_carries_ca_to_private_service_and_observers"
+      ]
+    },
+    {
+      "id": "TLS-M04",
+      "condition": "privileged root comes from protected external approval, not caller enrollment",
+      "test": "test_managed_request_is_snapshotted_as_data_and_gateway_is_from_external_approval"
+    },
+    {
+      "id": "TLS-M05",
+      "condition": "PowerShell per-request chain/name/pin/expiry validation; no global CA callback/store mutation",
+      "test": "test_powershell_private_ca_validates_chain_pin_name_expiry_and_never_sets_global_callback"
+    },
+    {
+      "id": "TLS-M06",
+      "condition": "invalid default internal TLS address removed; empty deployment fails before writes",
+      "check": "manual in-process renderer assertions: both catalogs reject empty; explicit field HTTPS renders four harnesses"
+    }
+  ],
+  "files": [
+    {
+      "path": "docs/ai/DECISIONS.md",
+      "sha256": "ba78f0a6fba5f93273fe69261e01828f190c754913456b4c20166da6f88927f2"
+    },
+    {
+      "path": "full_stack_lab/compose.field.yaml",
+      "sha256": "5b140a5c3eb88a4de993a1d37794d2144bd4a9c5c0f972b6534e162b16671801"
+    },
+    {
+      "path": "full_stack_lab/gateway/app/agent_service.py",
+      "sha256": "5b214c9b8b0248c05ffdd1283207351d647a252de77cda33f57bb1bc41da0d1d",
+      "symbols": [
+        {
+          "name": "field_ca",
+          "line": 349
+        },
+        {
+          "name": "download_managed_kit",
+          "line": 379
+        }
+      ]
+    },
+    {
+      "path": "research/llm-wiki/status/backlog.md",
+      "sha256": "3695c44bd431c803145070790cc7006051e6d4de87d0625573bc096622d06827"
+    },
+    {
+      "path": "endpoint-agent/managed-windows.py",
+      "sha256": "cca8f89fd4aec8d0986730bf6e101f893f8fd708626ae4514969c8a2e22b9838",
+      "symbols": [
+        {
+          "name": "request",
+          "line": 265
+        },
+        {
+          "name": "verify_transport",
+          "line": 281
+        },
+        {
+          "name": "harness_launchers",
+          "line": 295
+        },
+        {
+          "name": "install",
+          "line": 503
+        },
+        {
+          "name": "serve",
+          "line": 583
+        }
+      ]
+    },
+    {
+      "path": "endpoint-agent/windows-common.ps1",
+      "sha256": "93299e443224e2cba5f52f18f7c2839ce0b1f27eab7c1798d796c2458cbd2d0a"
+    },
+    {
+      "path": "endpoint-agent/windows-trust.ps1",
+      "sha256": "5fbf7ea48cdc74de58445e919f787cf4d0d1480e3e89671e332fb819dba3eb47"
+    },
+    {
+      "path": "endpoint-agent/windows-worker.ps1",
+      "sha256": "5fa3085ccdc8a77269cdbc670a7a47f477203858b6a0783c02a1cc83e6b7a791"
+    },
+    {
+      "path": "endpoint-agent/setup.ps1",
+      "sha256": "1a6f9fe0c2053983cd90d9ef265d6cbd50174d2b007c1e6eb02cffe34102b599"
+    },
+    {
+      "path": "endpoint-agent/tray.ps1",
+      "sha256": "ef9a46146a99af08949da1024acc83583cee15b2d2c67625eab63810e134800e"
+    },
+    {
+      "path": "full_stack_lab/console.sh",
+      "sha256": "0655bda00a86f446caae305584acbf86d08d007791dfbd5de7c75a1dd991b2d0"
+    },
+    {
+      "path": "full_stack_lab/registry/catalog.toml",
+      "sha256": "7b0006e6cf539b080919e641b2af0cd76ded59dff99555b127f27ae026a69ab0"
+    },
+    {
+      "path": "full_stack_lab/registry/field/catalog.toml",
+      "sha256": "1c7c0933f0b4ff646b09e238786b41eeacaf94b38116418c5f49ddc6a3d276dc"
+    },
+    {
+      "path": "full_stack_lab/tests/field_tls_check.py",
+      "sha256": "f1c457f6bde646ce2b93402aec7263907cdc80b85223907fb80908c21eb3d149",
+      "symbols": []
+    },
+    {
+      "path": "endpoint-agent/tests-windows/test_windows_kit.py",
+      "sha256": "a67d276afe4b75673fb08b0afed055f8303e83a1352d39cab3b3b916e6dea887",
+      "symbols": []
+    }
+  ],
+  "merge_controls": {
+    "volumes_preserved": [
+      "field_caddy_data",
+      "field_corp_git_data",
+      "field_db_data",
+      "field_disposal_journal",
+      "field_lab_corp_git_data",
+      "field_lab_db_data",
+      "field_lab_disposal_journal",
+      "runtime_trivy_cache"
+    ],
+    "main_DEV_62_63_preserved": true,
+    "decision_tail_order": [
+      118,
+      119,
+      120,
+      121,
+      122,
+      123,
+      124
+    ],
+    "generated_files_identical_to_stage_2": true,
+    "working_tree_markers": 0,
+    "index_stage_write": "permission denied; 7 paths remain U"
+  }
+}

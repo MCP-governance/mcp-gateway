@@ -1,0 +1,56 @@
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:1: trailing whitespace.
++test_auto_stop_scope_is_configurable (ops_response_check.AlertSelfTest) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:2: trailing whitespace.
++test_cases_keep_trusted_pac_and_do_not_mutate_frozen_base (ops_response_check.AlertSelfTest) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:3: trailing whitespace.
++test_deployment_check_records_success_separately (ops_response_check.AlertSelfTest) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:4: trailing whitespace.
++test_human_resume_and_approval_record_share_one_transaction (ops_response_check.AlertSelfTest) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:5: trailing whitespace.
++test_missing_alert_storage_is_not_a_success (ops_response_check.AlertSelfTest) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:6: trailing whitespace.
++test_policy_changed_mid_test_is_failed (ops_response_check.AlertSelfTest) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:7: trailing whitespace.
++test_repeated_alerts_stop_only_selected_servers (ops_response_check.AlertSelfTest) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:8: trailing whitespace.
++test_suspend_stops_runtime_and_never_reactivates (ops_response_check.AlertSelfTest) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:9: trailing whitespace.
++test_wrong_policy_or_engine_failure_is_a_failed_test (ops_response_check.AlertSelfTest) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:10: trailing whitespace.
++test_competing_writers_keep_a_complete_signed_chain (ops_response_check.Disposal) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:11: trailing whitespace.
++test_existing_list_cannot_be_initialized_again (ops_response_check.Disposal) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:12: trailing whitespace.
++test_interrupted_head_replace_leaves_access_blocked (ops_response_check.Disposal) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:13: trailing whitespace.
++test_missing_truncated_corrupt_head_and_corrupt_signature_fail_closed (ops_response_check.Disposal) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:14: trailing whitespace.
++test_reconcile_reapplies_records_and_appends_an_alert (ops_response_check.Disposal) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:15: trailing whitespace.
++test_signed_head_does_not_let_wrong_signature_through (ops_response_check.Disposal) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:16: trailing whitespace.
++test_signed_record_is_idempotent_and_blocks_after_database_rollback (ops_response_check.Disposal) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:17: trailing whitespace.
++test_deadline_boundary_survives_a_new_scan (ops_response_check.ImageScan) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:18: trailing whitespace.
++test_fresh_db_seven_days_is_accepted (ops_response_check.ImageScan) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:19: trailing whitespace.
++test_report_cannot_truncate_away_critical_findings (ops_response_check.ImageScan) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:20: trailing whitespace.
++test_scanner_failure_records_hold_and_preserves_deadline (ops_response_check.ImageScan) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:21: trailing whitespace.
++test_stale_future_missing_bad_scanner_and_wrong_image_are_not_passes (ops_response_check.ImageScan) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:22: trailing whitespace.
++test_persistent_suspension_overrides_a_refreshed_server_status (ops_response_check.TokenReuse) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:23: trailing whitespace.
++test_signed_tombstone_still_revokes_family_under_its_lock (ops_response_check.TokenReuse) ... ok
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:24: trailing whitespace.
++
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:25: trailing whitespace.
++----------------------------------------------------------------------
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:26: trailing whitespace.
++Ran 23 tests in 5.157s
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:27: trailing whitespace.
++
+research/llm-wiki/analysis/ops-response-d120-d123/evidence/unit-tests.txt:28: trailing whitespace.
++OK

@@ -6,6 +6,7 @@ import importlib.util
 import io
 import json
 import os
+import ssl
 import sys
 import subprocess
 import tempfile
@@ -32,6 +33,15 @@ class WindowsKitTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(dir=ROOT, prefix='.windows-kit-test-')
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
+
+    def ca_fixture(self):
+        ca = self.root / 'root.crt'
+        openssl = 'C:/Program Files/Git/mingw64/bin/openssl.exe' if os.name == 'nt' else 'openssl'
+        subprocess.run([openssl, 'req', '-x509', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:P-256',
+                        '-nodes', '-days', '1', '-subj', '/CN=Offline Windows TLS CA', '-addext', 'basicConstraints=critical,CA:TRUE',
+                        '-keyout', str(self.root / 'root.key'), '-out', str(ca)], check=True, capture_output=True)
+        pem = ca.read_text()
+        return {'ca_certificate': pem, 'ca_sha256': hashlib.sha256(ssl.PEM_cert_to_DER_cert(pem)).hexdigest()}
 
     def test_pin_rejects_changed_download_without_publishing_archive(self):
         builder = load('runtime_builder', 'full_stack_lab/gateway/prepare-windows-python.py')
@@ -73,6 +83,10 @@ class WindowsKitTests(unittest.TestCase):
         identity = mock.AsyncMock(return_value={'user_id': 'fixture', 'principal': 'fixture'})
         enrollment = mock.AsyncMock(return_value={'enrollment_token': 'synthetic-one-use-token'})
         response_headers = {}
+        ca = self.ca_fixture()
+        static = self.root / 'static'
+        (static / 'kit').mkdir(parents=True)
+        (static / 'kit/mcpgw_pc.py').write_text('fixture', encoding='utf-8')
 
         def response(content, **kwargs):
             response_headers.update(kwargs['headers'])
@@ -80,7 +94,7 @@ class WindowsKitTests(unittest.TestCase):
         namespace = {'Path': Path, 'os': os, 'io': io, 'json': json, 'hashlib': hashlib, 'zipfile': zipfile, 'Literal': Literal,
                      'Header': lambda **kwargs: None, 'HTTPException': Failure, 'current_identity': identity,
                      'urlsplit': __import__('urllib.parse', fromlist=['urlsplit']).urlsplit,
-                     'Response': response, '__package__': 'windows_kit_fixture'}
+                     'Response': response, 'field_ca': lambda: ca, 'STATIC_DIR': static, '__package__': 'windows_kit_fixture'}
         exec(compile(ast.Module(body=nodes, type_ignores=[]), '<existing-kit-route>', 'exec'), namespace)
         source, runtime = self.root / 'source', self.root / 'runtime'
         source.mkdir()
@@ -99,13 +113,15 @@ class WindowsKitTests(unittest.TestCase):
             (runtime / 'windows-python.json').write_text('{}', encoding='utf-8')
             content = asyncio.run(namespace['download_managed_kit']('windows', None))
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
-            self.assertEqual(set(archive.namelist()), set(namespace['KIT_FILES']['windows']) | {'enrollment.json', 'python.zip', 'windows-python.json', 'windows-kit-manifest.json'})
+            self.assertEqual(set(archive.namelist()), set(namespace['KIT_FILES']['windows']) | {'enrollment.json', 'python.zip', 'windows-python.json', 'windows-kit-manifest.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py'})
             self.assertEqual(archive.read('python.zip'), b'synthetic archive content')
             manifest = json.loads(archive.read('windows-kit-manifest.json'))
             self.assertEqual(response_headers['X-Windows-Kit-Manifest-SHA256'],
                              hashlib.sha256(archive.read('windows-kit-manifest.json')).hexdigest())
             self.assertEqual(manifest['gateway_url'], 'https://gateway.example')
             self.assertNotIn('enrollment.json', manifest['files'])
+            self.assertTrue({'root.crt', 'root.sha256', 'mcpgw_pc.py'} <= set(manifest['files']))
+            self.assertEqual(json.loads(archive.read('enrollment.json'))['ca_sha256'], ca['ca_sha256'])
             for name, expected in manifest['files'].items():
                 self.assertEqual(hashlib.sha256(archive.read(name)).hexdigest(), expected)
 
@@ -124,6 +140,142 @@ class WindowsKitTests(unittest.TestCase):
         path.write_text('[]', encoding='utf-8')
         status.publish(path, True, [blocks[-1], {**blocks[0], 'observed_at': '2026-10-17T13:00:00Z'}])
         self.assertEqual([row['id'] for row in json.loads(path.read_text(encoding='utf-8'))['blocks']], ['7', '0'])
+
+    def test_managed_ca_is_verified_before_enrollment_and_kept_out_of_global_environment(self):
+        managed = load('windows_tls_test', 'endpoint-agent/managed-windows.py')
+        ca = self.ca_fixture()
+        config = {'gateway_url': 'https://gateway.example', 'tailscale_node_id': '',
+                  'sid': 'S-1-5-21-1-2-3-1001', **ca}
+        context = managed.verify_transport(config)
+        self.assertTrue(context.check_hostname)
+        self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
+        bad = {**config, 'ca_sha256': '0' * 64}
+        enrollment = self.root / 'enrollment.json'
+        enrollment.write_text(json.dumps(bad), encoding='utf-8')
+        admin = SimpleNamespace(shell32=SimpleNamespace(IsUserAnAdmin=lambda: True))
+        with mock.patch.object(managed.ctypes, 'windll', admin, create=True), \
+                mock.patch.object(managed, 'managed_user') as account, \
+                mock.patch.object(managed.urllib.request, 'build_opener') as opener:
+            with self.assertRaises(ValueError):
+                managed.install(SimpleNamespace(user='fixture', enrollment=enrollment))
+            with self.assertRaises(ValueError):
+                managed.request(bad, '/oauth/device-enroll', {}, credential=False)
+            account.assert_not_called()
+            opener.assert_not_called()
+        before = dict(os.environ)
+        programs = self.root / 'programs'
+        native = programs / 'harness'
+        native.mkdir(parents=True)
+        with mock.patch.object(managed, 'PROGRAMS', programs), \
+                mock.patch.object(managed, 'lock_down', side_effect=lambda p: p.mkdir(parents=True, exist_ok=True)):
+            launchers, owned = managed.harness_launchers(config, native, {'codex.exe': 'fixture', 'claude.exe': 'fixture'})
+            for name, variable in (('codex', 'CODEX_CA_CERTIFICATE'), ('claude', 'NODE_EXTRA_CA_CERTS')):
+                script = (launchers / (name + '.cmd')).read_text(encoding='utf-8')
+                self.assertIn('setlocal\n', script)
+                self.assertIn('set "' + variable + '=%~dp0root.crt"', script)
+                self.assertNotIn('setx', script.lower())
+            for path, digest in owned.items():
+                self.assertEqual(hashlib.sha256((programs / path).read_bytes()).hexdigest(), digest)
+        self.assertEqual(os.environ, before)
+
+    @unittest.skipUnless(os.name == 'nt', 'PowerShell .NET validation requires Windows')
+    def test_powershell_private_ca_validates_chain_pin_name_expiry_and_never_sets_global_callback(self):
+        ca = self.ca_fixture()
+        (self.root / 'root.sha256').write_text(ca['ca_sha256'])
+        openssl = 'C:/Program Files/Git/mingw64/bin/openssl.exe'
+        subprocess.run([openssl, 'req', '-new', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:P-256', '-nodes',
+                        '-subj', '/CN=gateway.example', '-keyout', str(self.root / 'leaf.key'), '-out', str(self.root / 'leaf.csr')],
+                       check=True, capture_output=True)
+        (self.root / 'extensions').write_text('basicConstraints=critical,CA:FALSE\nextendedKeyUsage=serverAuth\nsubjectAltName=DNS:gateway.example\n')
+        for label, days in [('leaf', '1')]:
+            subprocess.run([openssl, 'x509', '-req', '-in', str(self.root / 'leaf.csr'), '-CA', str(self.root / 'root.crt'),
+                            '-CAkey', str(self.root / 'root.key'), '-set_serial', '2', '-days', days,
+                            '-extfile', str(self.root / 'extensions'), '-outform', 'DER', '-out', str(self.root / (label + '.der'))],
+                           check=True, capture_output=True)
+        (self.root / 'index.txt').write_text('')
+        (self.root / 'serial').write_text('10\n')
+        (self.root / 'ca.cnf').write_text('[ca]\ndefault_ca=local\n[local]\ndatabase=index.txt\nserial=serial\n'
+                                        'new_certs_dir=.\nprivate_key=root.key\ncertificate=root.crt\ndefault_md=sha256\n'
+                                        'policy=names\n[names]\ncommonName=supplied\n')
+        subprocess.run([openssl, 'ca', '-batch', '-config', 'ca.cnf', '-in', 'leaf.csr', '-startdate', '20200101000000Z',
+                        '-enddate', '20200102000000Z', '-out', 'expired.pem'], cwd=self.root, check=True, capture_output=True)
+        subprocess.run([openssl, 'x509', '-in', 'expired.pem', '-outform', 'DER', '-out', 'expired.der'],
+                       cwd=self.root, check=True, capture_output=True)
+        script = r'''
+$ErrorActionPreference='Stop'
+. (Join-Path $env:KIT_TEST_ROOT 'endpoint-agent/windows-common.ps1')
+$pem=[IO.File]::ReadAllText((Join-Path $env:KIT_TEST_TEMP 'root.crt'))
+$pin=[IO.File]::ReadAllText((Join-Path $env:KIT_TEST_TEMP 'root.sha256'))
+$before=[Net.ServicePointManager]::ServerCertificateValidationCallback
+$request=New-EndpointGatewayRequest 'https://gateway.example/api/health' $pem $pin
+$root=[EndpointKit.GatewayTls]::Root($pem,$pin)
+$leaf=New-Object Security.Cryptography.X509Certificates.X509Certificate2((Join-Path $env:KIT_TEST_TEMP 'leaf.der'))
+$expired=New-Object Security.Cryptography.X509Certificates.X509Certificate2((Join-Path $env:KIT_TEST_TEMP 'expired.der'))
+$chainError=[Net.Security.SslPolicyErrors]::RemoteCertificateChainErrors
+if (-not $request.ServerCertificateValidationCallback.Invoke($request,$leaf,$null,$chainError)) { throw 'valid private chain rejected' }
+if ($request.ServerCertificateValidationCallback.Invoke($request,$leaf,$null,[Net.Security.SslPolicyErrors]::RemoteCertificateNameMismatch)) { throw 'name mismatch accepted' }
+if ([EndpointKit.GatewayTls]::Validate($expired,$null,$chainError,$root)) { throw 'expired certificate accepted' }
+if ([EndpointKit.GatewayTls]::Validate($leaf,$null,$chainError,$leaf)) { throw 'wrong root accepted' }
+foreach ($case in @(@($pem,('0'*64)),@(($pem+$pem),$pin),@($pem,''))) {
+    $failed=$false; try { $null=New-EndpointGatewayRequest 'https://gateway.example/' $case[0] $case[1] } catch { $failed=$true }
+    if (-not $failed) { throw 'invalid pin or root accepted' }
+}
+$failed=$false; try { $null=New-EndpointGatewayRequest 'http://100.83.175.111/api/health' $pem $pin } catch { $failed=$true }
+if (-not $failed) { throw 'remote plaintext accepted' }
+if ($request.AllowAutoRedirect -or $request.Proxy -or [Net.ServicePointManager]::SecurityProtocol -ne [Net.SecurityProtocolType]::Tls12) { throw 'request protections changed' }
+if ([Net.ServicePointManager]::ServerCertificateValidationCallback -ne $before) { throw 'global trust changed' }
+$request.Abort()
+Write-Output 'Per-request CA verification OK'
+'''
+        process = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', script], capture_output=True,
+                                 env=dict(os.environ, KIT_TEST_ROOT=str(ROOT), KIT_TEST_TEMP=str(self.root)), timeout=30)
+        self.assertEqual(process.returncode, 0, process.stderr.decode(errors='replace'))
+
+    def test_managed_install_carries_ca_to_private_service_and_observers(self):
+        managed = load('windows_tls_install_test', 'endpoint-agent/managed-windows.py')
+        ca = self.ca_fixture()
+        enrollment = self.root / 'enrollment.json'
+        enrollment.write_text(json.dumps({'gateway_url': 'https://gateway.example', 'tailscale_node_id': 'approved',
+                                          'enrollment_token': 'synthetic', **ca}), encoding='utf-8')
+        profile = self.root / 'profile'
+        profile.mkdir()
+        (profile / 'NTUSER.DAT').touch()
+        programs, state = self.root / 'programs', self.root / 'state'
+        native = programs / 'harness'
+        native.mkdir(parents=True)
+        policy = {'tailscale_node_id': 'approved', 'gateway_ips': ['100.83.175.111'], 'gateway_port': 443,
+                  'policy_hash': 'fixture-policy', 'proxy_environment': {}}
+        def request(config, path, *args, **kwargs):
+            self.assertEqual(config['ca_certificate'], ca['ca_certificate'])
+            self.assertEqual(config['ca_sha256'], ca['ca_sha256'])
+            return {'endpoint_id': 'fixture'} if path == '/oauth/device-enroll' else policy
+        admin = SimpleNamespace(shell32=SimpleNamespace(IsUserAnAdmin=lambda: True))
+        with mock.patch.object(managed.ctypes, 'windll', admin, create=True), \
+                mock.patch.multiple(managed, PROGRAMS=programs, STATE=state, PROGRAM_DATA=self.root / 'data', FILES={}), \
+                mock.patch.object(managed, 'managed_user', return_value=('fixture', {'sid': 'S-1-5-21-1-2-3-1001', 'profile': str(profile)}, False)), \
+                mock.patch.object(managed, 'protected', return_value=True), \
+                mock.patch.object(managed, 'lock_down', side_effect=lambda p, **kw: p.mkdir(parents=True, exist_ok=True)), \
+                mock.patch.object(managed, 'powershell', return_value='0'), \
+                mock.patch.object(managed, 'place_harnesses', return_value=(native, {'codex.exe': 'fixture'})), \
+                mock.patch.object(managed, 'request', side_effect=request), mock.patch.object(managed, 'apply_policy'), \
+                mock.patch.object(managed, 'rule_state', return_value={'rules': []}), \
+                mock.patch.object(managed, 'set_user_environment') as environment, mock.patch('sys.stdout', io.StringIO()):
+            managed.install(SimpleNamespace(user='fixture', enrollment=enrollment))
+            config_path = state / 'fixture/config.json'
+            saved = json.loads(config_path.read_text(encoding='utf-8'))
+            self.assertEqual(saved['ca_certificate'], ca['ca_certificate'])
+            self.assertEqual(saved['ca_sha256'], ca['ca_sha256'])
+            values = environment.call_args.args[1]
+            self.assertNotIn('NODE_EXTRA_CA_CERTS', values)
+            self.assertNotIn('CODEX_CA_CERTIFICATE', values)
+            with mock.patch.object(managed, 'FILES', {'managed-mcp.json': programs / 'claude/settings.json', 'requirements.toml': programs / 'codex/requirements.toml'}), \
+                    mock.patch.object(managed.threading, 'Thread'), \
+                    mock.patch.dict(sys.modules, {'windows_status': SimpleNamespace(publish=lambda *a: None)}), \
+                    mock.patch.object(managed, 'request', side_effect=KeyboardInterrupt), self.assertRaises(KeyboardInterrupt):
+                managed.serve(SimpleNamespace(config=config_path))
+            observer = json.loads(config_path.with_name('observer.json').read_text(encoding='utf-8'))
+            self.assertEqual(observer['ENDPOINT_CA_CERTIFICATE'], ca['ca_certificate'])
+            self.assertEqual(observer['ENDPOINT_CA_SHA256'], ca['ca_sha256'])
 
     def test_tray_snapshot_retries_windows_sharing_violation(self):
         status = load('windows_status_test', 'endpoint-agent/windows_status.py')
@@ -149,7 +301,7 @@ class WindowsKitTests(unittest.TestCase):
         policy.mkdir()
         names = ('install.cmd', 'setup.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1', 'tray.ps1',
                  'runtime-check.py', 'windows_status.py', 'install.py', 'install-windows.ps1', 'managed-windows.py',
-                 'agent.py', 'os-observer-windows.py', 'python.zip', 'windows-python.json')
+                  'agent.py', 'os-observer-windows.py', 'python.zip', 'windows-python.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py')
         for name in names:
             (code / name).write_bytes(('synthetic, never executed: ' + name).encode())
         manifest = {'schema': 1, 'gateway_url': 'https://approved.example', 'tailscale_node_id': '',
@@ -249,12 +401,15 @@ Write-Output 'Per-user ACL and bounded data snapshot OK'
 
     @unittest.skipUnless(os.name == 'nt', 'Windows file handles require Windows')
     def test_managed_request_is_snapshotted_as_data_and_gateway_is_from_external_approval(self):
+        ca = self.ca_fixture()
+        (self.root / 'root.sha256').write_text(ca['ca_sha256'])
         profile = self.root / 'profile'
         work = profile / 'AppData/Local/MCPGatewaySetup' / ('a' * 32)
         work.mkdir(parents=True)
         enrollment = profile / 'Downloads/enrollment.json'
         enrollment.parent.mkdir()
         enrollment.write_text(json.dumps({'gateway_url': 'https://changed.example', 'tailscale_node_id': 'changed',
+                                          'ca_certificate': 'caller changed root', 'ca_sha256': '0' * 64,
                                           'enrollment_token': 'synthetic-enrollment'}), encoding='utf-8')
         (work / 'request.json').write_text(json.dumps({'mode': 'managed', 'action': 'install', 'user': 'fixture',
             'requester_sid': 'S-1-5-21-1-2-3-1001', 'gateway_url': 'https://changed.example',
@@ -262,10 +417,11 @@ Write-Output 'Per-user ACL and bounded data snapshot OK'
         script = r'''
 $ErrorActionPreference='Stop'
 . (Join-Path $env:KIT_TEST_ROOT 'endpoint-agent/windows-trust.ps1')
+. (Join-Path $env:KIT_TEST_ROOT 'endpoint-agent/windows-common.ps1')
 $script:testProfile=Join-Path $env:KIT_TEST_TEMP 'profile'
 $script:state=Join-Path $env:KIT_TEST_TEMP 'policy'
 New-Item -ItemType Directory -Path $script:state | Out-Null
-function Get-EndpointInstallerPaths { return @{ state=$script:state } }
+function Get-EndpointInstallerPaths { return @{ state=$script:state; code=$env:KIT_TEST_TEMP } }
 function Get-ItemProperty { param([string]$LiteralPath) return [pscustomobject]@{ProfileImagePath=$script:testProfile} }
 # Creation/ACL application is doubled; file reads, kernel paths and snapshot bytes are real.
 $script:readers=@{}
@@ -276,11 +432,13 @@ function New-EndpointProtectedDirectory { param([string]$Path,[string]$ReaderSid
 $env:TEMP=$env:KIT_TEST_TEMP
 $env:TMP=$env:KIT_TEST_TEMP
 $input=Join-Path $script:testProfile ('AppData\Local\MCPGatewaySetup\' + ('a'*32) + '\request.json')
-$approved=[pscustomobject]@{gateway_url='https://approved.example';tailscale_node_id='approved-node'}
+$approved=[pscustomobject]@{gateway_url='https://approved.example';tailscale_node_id='approved-node';files=[pscustomobject]@{'root.crt'='unit-already-verified'}}
 $request=Read-EndpointManagedRequest $input $approved 'S-1-5-21-1-2-3-1001'
 $bundle=Get-Content -LiteralPath $request.enrollment -Raw | ConvertFrom-Json
 if ($request.gateway_url -ne $approved.gateway_url -or $bundle.gateway_url -ne $approved.gateway_url) { throw 'caller chose privileged destination' }
 if ($bundle.tailscale_node_id -ne 'approved-node') { throw 'caller changed transport pin' }
+if ($bundle.ca_sha256 -ne [IO.File]::ReadAllText((Join-Path $env:KIT_TEST_TEMP 'root.sha256'))) { throw 'caller chose privileged root' }
+if ($request.ca_certificate -ne $bundle.ca_certificate -or $request.ca_sha256 -ne $bundle.ca_sha256) { throw 'CA not carried to privileged request' }
 [IO.File]::WriteAllText((Join-Path $script:testProfile 'Downloads/enrollment.json'),'{"enrollment_token":"later replacement"}')
 $copy=Get-Content -LiteralPath $request.enrollment -Raw | ConvertFrom-Json
 if ($copy.enrollment_token -ne 'synthetic-enrollment') { throw 'mutable source was reread' }
@@ -307,7 +465,7 @@ Write-Output 'Managed request data snapshot and approved destination OK'
         folder.mkdir(parents=True)
         profile = self.root / 'profile'
         (profile / '.codex').mkdir(parents=True)
-        (folder / 'config.json').write_text(json.dumps({'profile': str(profile)}), encoding='utf-8')
+        (folder / 'config.json').write_text(json.dumps({'profile': str(profile), 'sid': 'S-1-5-21-1-2-3-1001'}), encoding='utf-8')
         (folder / 'config.toml.backup').write_text('model = "before"\n', encoding='utf-8')
         current = managed.with_codex_block('model = "user-changed"\nkeep = true\n', '[mcp_servers.fixture]\nurl="synthetic"\n')
         path = profile / '.codex/config.toml'

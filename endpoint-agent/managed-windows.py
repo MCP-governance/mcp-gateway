@@ -263,6 +263,7 @@ def set_user_environment(config, values):
 # -- Gateway ---------------------------------------------------------------------
 
 def request(config, path, body=None, *, credential=True):
+    context = verify_transport(config)
     headers = {"Content-Type": "application/json"}
     if credential:
         headers["X-Endpoint-Key"] = config["device_key"]
@@ -271,7 +272,8 @@ def request(config, path, body=None, *, credential=True):
     class NoRedirect(urllib.request.HTTPRedirectHandler):
         def redirect_request(self, req, fp, code, msg, headers, newurl):
             raise ValueError("장치 자격을 다른 주소로 전달하지 않습니다")
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
+                                        urllib.request.HTTPSHandler(context=context))
     with opener.open(urllib.request.Request(config["gateway_url"] + path, data=data, headers=headers), timeout=15) as response:
         return json.loads(response.read(131072))
 
@@ -287,6 +289,31 @@ def verify_transport(config):
     parsed = urlsplit(config["gateway_url"])
     if parsed.path not in ("", "/") or parsed.username or parsed.password or parsed.query or parsed.fragment:
         raise ValueError("Gateway 기본 주소만 허용합니다")
+    return observer.tls_context(config.get("ca_certificate", ""), config.get("ca_sha256", ""))
+
+
+def harness_launchers(config, native, harnesses):
+    """Keep CA trust in the harness process tree, outside the account's registry environment."""
+    if not config.get("ca_certificate"):
+        return native, {}
+    verify_transport(config)
+    folder = PROGRAMS / "launchers" / config["sid"]
+    lock_down(folder)
+    ca = folder / "root.crt"
+    if any(c in str(path) for path in (folder, native) for c in ('"', '%', '\r', '\n')):
+        raise ValueError("하네스 실행 경로 형식 오류")
+    write_file(ca, config["ca_certificate"])
+    owned = {str(ca.relative_to(PROGRAMS)): hashlib.sha256(ca.read_bytes()).hexdigest()}
+    for name, variable in (("claude", "NODE_EXTRA_CA_CERTS"), ("codex", "CODEX_CA_CERTIFICATE")):
+        if name + ".exe" not in harnesses:
+            continue
+        executable = Path(os.path.relpath(native, folder)) / (name + ".exe")
+        script = (f'@echo off\nsetlocal\nset "{variable}=%~dp0root.crt"\n'
+                  f'"%~dp0{executable}" %*\nexit /b %errorlevel%\n')
+        path = folder / (name + ".cmd")
+        write_file(path, script)
+        owned[str(path.relative_to(PROGRAMS))] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return folder, owned
 
 
 def ports(policy):
@@ -476,6 +503,8 @@ def place_harnesses(source_profile):
 def install(args):
     if not ctypes.windll.shell32.IsUserAnAdmin():
         raise ValueError("관리자 권한으로 실행해야 합니다")
+    bundle = json.loads(args.enrollment.read_text(encoding="utf-8"))
+    verify_transport(bundle)
     if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,31}", args.user):
         raise ValueError("일반 사용자 계정 이름을 지정하세요")
     employee = args.user
@@ -505,14 +534,13 @@ def install(args):
         # The same file is the repair and the reinstall path.
         rollback(argparse.Namespace(user=args.user))
         lock_down(folder, readers=False)
-    bundle = json.loads(args.enrollment.read_text(encoding="utf-8"))
-    verify_transport(bundle)
     helper = f'"{python}" -I -S "{PROGRAMS / "managed-windows.py"}" header'
     bundle["device_key"] = secrets.token_urlsafe(32)
     enrolled = request(bundle, "/oauth/device-enroll", {
         "enrollment_token": bundle["enrollment_token"], "device_key": bundle["device_key"], "hostname": socket.gethostname(),
         "platform": "windows", "local_username": args.user, "local_sid": person["sid"], "helper_command": helper}, credential=False)
     config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
+    config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256") if k in bundle})
     config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, sid=person["sid"], profile=person["profile"],
                   firewall_baseline=str(folder / "firewall-baseline.json"))
     write_file(config_path, json.dumps(config))
@@ -528,7 +556,8 @@ def install(args):
     if codex_config(config).exists():
         write_file(folder / "config.toml.backup", codex_config(config).read_text(encoding="utf-8"))
     apply_policy(config, policy)
-    set_user_environment(config, {**(policy.get("proxy_environment") or {}), "PATH_APPEND": str(harness_folder)})
+    launcher_folder, launcher_files = harness_launchers(config, harness_folder, harnesses)
+    set_user_environment(config, {**(policy.get("proxy_environment") or {}), "PATH_APPEND": str(launcher_folder)})
     powershell(APPLY_RULES, {"rules": firewall_rules(args.user, person["sid"], policy["gateway_ips"], ports(policy))})
     write_file(Path(config["firewall_baseline"]), json.dumps({"rules": rule_state(config)["rules"]}))
     pythonw = python.with_name("pythonw.exe")
@@ -543,7 +572,7 @@ Start-ScheduledTask -TaskName $in.name
       "arguments": f'-I -S "{PROGRAMS / "managed-windows.py"}" serve --config "{config_path}"'})
     args.enrollment.unlink()
     print(json.dumps({"endpoint_id": config["endpoint_id"], "employee": employee, "managed_account": args.user,
-                      "state": "pending-organization-activation", "harnesses": harnesses,
+                      "state": "pending-organization-activation", "harnesses": harnesses, "launcher_files": launcher_files,
                       "task": TASK.format(user=args.user.lower())}, ensure_ascii=False))
     print("\n연결을 신청했습니다. 조직 관리자가 콘솔에서 활성화하면 사용할 수 있습니다.")
     if companion:
@@ -553,12 +582,14 @@ Start-ScheduledTask -TaskName $in.name
 
 def serve(args):
     config = json.loads(args.config.read_text(encoding="utf-8"))
+    verify_transport(config)
     log = args.config.with_name("service.log")
     cache, lock = {}, threading.Lock()
     threading.Thread(target=serve_pipe, args=(config, cache, lock), daemon=True).start()
     observer_config = args.config.with_name("observer.json")
     write_file(observer_config, json.dumps({
         "ENDPOINT_GATEWAY_URL": config["gateway_url"], "ENDPOINT_DEVICE_KEY": config["device_key"], "ENDPOINT_ID": config["endpoint_id"],
+        "ENDPOINT_CA_CERTIFICATE": config.get("ca_certificate", ""), "ENDPOINT_CA_SHA256": config.get("ca_sha256", ""),
         "ENDPOINT_CONFIG_PATHS": os.pathsep.join([str(Path(config["profile"]) / ".claude.json"), str(Path(config["profile"]) / ".codex"),
                                                   str(FILES["managed-mcp.json"].parent), str(FILES["requirements.toml"].parent)]),
         "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_MANAGED_SID": config["sid"],
@@ -597,7 +628,7 @@ def serve(args):
                 spec = importlib.util.spec_from_file_location("probe", Path(__file__).with_name("agent.py"))
                 probe = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(probe)
-                beat["network_quality"] = probe.measure_gateway(config["gateway_url"])
+                beat["network_quality"] = probe.measure_gateway(config["gateway_url"], context=verify_transport(config))
             except (OSError, KeyError, ValueError):
                 pass  # a failed measurement is simply absent
             try:
@@ -677,6 +708,13 @@ def rollback(args):
         old_block = codex_block(backup.read_text(encoding="utf-8")) if backup.exists() else None
         write_file(path, with_codex_block(current, old_block) if old_block is not None else current)
     set_user_environment(config, {})
+    launcher_folder = PROGRAMS / "launchers" / config["sid"]
+    for name in ("root.crt", "claude.cmd", "codex.cmd"):
+        (launcher_folder / name).unlink(missing_ok=True)
+    if launcher_folder.exists() and not any(launcher_folder.iterdir()):
+        launcher_folder.rmdir()
+    if launcher_folder.parent.exists() and not any(launcher_folder.parent.iterdir()):
+        launcher_folder.parent.rmdir()
     for item in folder.iterdir():
         item.unlink()
     folder.rmdir()

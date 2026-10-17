@@ -237,6 +237,9 @@ def transport_security() -> TransportSecuritySettings:
     public = urlsplit(os.getenv("GATEWAY_PUBLIC_MCP_URL", "")).hostname
     if public and f"{public}:*" not in hosts:
         hosts += [public, f"{public}:*"]
+    name = os.getenv("FIELD_PUBLIC_NAME", "")
+    if name:
+        hosts += [name, f"{name}:*"]
     return TransportSecuritySettings(
         allowed_hosts=hosts,
         allowed_origins=["http://localhost:*", "http://127.0.0.1:*"],

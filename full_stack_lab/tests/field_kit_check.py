@@ -4,7 +4,7 @@
     python3 tests/field_kit_check.py
 
 확인하는 것:
-  * field/pc/mcpgw_pc.py(직원 PC 키트): HTTPS 또는 Tailscale/loopback HTTP만 허용, 쓰기 전 충돌 확인,
+  * field/pc/mcpgw_pc.py(직원 PC 키트): 원격 HTTPS·loopback HTTP만 허용, 쓰기 전 충돌 확인,
     Claude Code·Codex 설정에 토큰 원문이 없고 헬퍼 명령만 있음, Codex 블록이 사용자 설정을 보존하고
     멱등, uninstall이 자기 것만 지우고 IdP에 폐기를 요청, 관리형 파일에 비밀이 없음.
   * 실제 IdP처럼 리프레시 토큰을 회전하고 재사용을 계열 폐기로 처리하는 가짜 IdP·Gateway에 대해:
@@ -181,7 +181,8 @@ class KitTest(unittest.TestCase):
                 self.kit.gateway_url(bad)
         self.assertEqual(self.kit.gateway_url("https://mcp-gw.internal/"), "https://mcp-gw.internal")
         self.assertEqual(self.kit.gateway_url("http://127.0.0.1:8443"), "http://127.0.0.1:8443")
-        self.assertEqual(self.kit.gateway_url("http://100.83.175.111:443"), "http://100.83.175.111:443")
+        with self.assertRaises(SystemExit):
+            self.kit.gateway_url("http://100.83.175.111:443")
 
     def test_setup_writes_helpers_keeps_user_config_and_is_idempotent(self):
         fake = FakeIdpGateway()
@@ -395,8 +396,10 @@ class OverlayTest(unittest.TestCase):
     def test_caddyfile_routes(self):
         lines = (LAB / "field" / "Caddyfile").read_text(encoding="utf-8").splitlines()
         text = "\n".join(line for line in lines if not line.lstrip().startswith("#"))
-        self.assertIn("http://:8080", text)
-        self.assertNotIn("tls internal", text)
+        self.assertNotIn("http://:8080", text)
+        self.assertIn("tls internal", text)
+        self.assertIn("auto_https disable_redirects", text)
+        self.assertIn("protocols tls1.2 tls1.3", text)
         self.assertIn("admin off", text)
         self.assertNotIn("handle_path", text)  # Gateway가 /mcp/<server>/ 경로 그대로에서 서버를 고른다
         self.assertRegex(text, r"handle /mcp/\* \{\s*reverse_proxy gateway:8080")
@@ -425,7 +428,7 @@ class OverlayTest(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which("docker"), "docker CLI 없음")
     def test_overlay_publishes_only_caddy_and_model_proxy_on_the_tailnet_address(self):
-        env = {**os.environ, "APPLIANCE_BIND": "100.83.175.111",
+        env = {**os.environ, "APPLIANCE_BIND": "100.83.175.111", "FIELD_TLS_ADDRESSES": "https://100.83.175.111:8080",
                "AGENT_JWT_PRIVATE_KEY": "x", "AGENT_JWT_PUBLIC_KEY": "x", "LITELLM_MASTER_KEY": "x",
                "MODEL_PROXY_PORT": "3128"}
         command = ["docker", "compose", "--project-directory", str(LAB), "-f", str(LAB / "compose.yaml"),

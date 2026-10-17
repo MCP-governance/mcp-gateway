@@ -1,4 +1,7 @@
 # Field default: no demo MCP server is approved or started.
+[harness]
+gateway_url = ""
+
 [organization]
 name = "MCP Gateway"
 internal_email_domains = []

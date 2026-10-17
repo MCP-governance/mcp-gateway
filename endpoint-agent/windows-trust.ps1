@@ -133,6 +133,8 @@ function Get-EndpointApprovedKit {
         'runtime-check.py', 'windows_status.py', 'install.py', 'install-windows.ps1', 'managed-windows.py',
         'agent.py', 'os-observer-windows.py', 'python.zip', 'windows-python.json')
     $names = @($approval.files.PSObject.Properties.Name)
+    $caFiles = @('root.crt', 'root.sha256', 'mcpgw_pc.py')
+    if (@($names | Where-Object { $_ -in $caFiles }).Count) { $required += $caFiles }
     if ($approval.schema -ne 1 -or (Compare-Object ($required | Sort-Object) ($names | Sort-Object)) -or -not $approval.gateway_url) {
         throw '조직 승인 설치 목록 확인 실패'
     }
@@ -203,6 +205,14 @@ function Read-EndpointManagedRequest([string]$RequestPath, $Approval, [string]$R
         $request.requester_sid -ne $RequesterSid -or $request.mode -ne 'managed' -or
         $request.action -notin @('install', 'remove')) { throw '설치 요청 범위 거부' }
     $paths = Get-EndpointInstallerPaths
+    $certificate = ''; $fingerprint = ''
+    if ($Approval.files.'root.crt') {
+        $certificate = [IO.File]::ReadAllText((Join-Path $paths.code 'root.crt'))
+        $fingerprint = [IO.File]::ReadAllText((Join-Path $paths.code 'root.sha256')).Trim()
+        $null = New-EndpointGatewayRequest ($Approval.gateway_url.TrimEnd('/') + '/api/health') $certificate $fingerprint
+    }
+    $request | Add-Member -NotePropertyName ca_certificate -NotePropertyValue $certificate -Force
+    $request | Add-Member -NotePropertyName ca_sha256 -NotePropertyValue $fingerprint -Force
     $requests = Join-Path $paths.state 'requests'
     New-EndpointProtectedDirectory $requests
     $private = Join-Path $requests $id
@@ -219,6 +229,8 @@ function Read-EndpointManagedRequest([string]$RequestPath, $Approval, [string]$R
         $bundle = Read-EndpointDataFile $source 16384
         $bundle.gateway_url = $Approval.gateway_url
         $bundle.tailscale_node_id = $Approval.tailscale_node_id
+        $bundle | Add-Member -NotePropertyName ca_certificate -NotePropertyValue $certificate -Force
+        $bundle | Add-Member -NotePropertyName ca_sha256 -NotePropertyValue $fingerprint -Force
         $request.enrollment = Join-Path $private 'enrollment.json'
         [IO.File]::WriteAllText($request.enrollment, ($bundle | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
     }

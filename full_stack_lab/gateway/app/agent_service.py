@@ -9,6 +9,7 @@ import io
 import os
 import re
 import secrets
+import ssl
 import tarfile
 import tempfile
 import time
@@ -345,6 +346,24 @@ KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforc
 KIT_EXECUTABLE = {"install.sh"}
 
 
+def field_ca() -> dict:
+    path = os.getenv("FIELD_CA_FILE", "")
+    if not path:
+        if os.getenv("MCP_FIELD_MODE") == "1":
+            raise HTTPException(503, "게이트웨이 루트 인증서가 없습니다.")
+        return {}
+    try:
+        certificate = Path(path).read_text(encoding="utf-8")
+        blocks = re.findall(r"-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----", certificate, re.S)
+        if len(blocks) != 1 or certificate.strip() != blocks[0]:
+            raise ValueError("single root required")
+        ssl.create_default_context().load_verify_locations(cadata=certificate)
+        fingerprint = hashlib.sha256(ssl.PEM_cert_to_DER_cert(certificate.strip())).hexdigest()
+    except (OSError, ValueError):
+        raise HTTPException(503, "게이트웨이 루트 인증서를 확인할 수 없습니다.") from None
+    return {"ca_certificate": certificate, "ca_sha256": fingerprint}
+
+
 async def pc_kit() -> dict | None:
     """개인별 1회용 enrollment 키트. MCP 서버가 없어도 단말 등록은 가능하다."""
     public = os.getenv("IDP_ISSUER", "").rstrip("/")
@@ -371,13 +390,19 @@ async def download_managed_kit(platform: Literal["linux", "windows"] = "linux",
     public = os.getenv("IDP_ISSUER", "").rstrip("/")
     if not public:
         raise HTTPException(503, "Gateway 공개 주소가 없습니다.")
+    if os.getenv("MCP_FIELD_MODE") == "1" and urlsplit(public).scheme != "https":
+        raise HTTPException(503, "게이트웨이 HTTPS 공개 주소가 필요합니다.")
     if public.startswith("http://") and urlsplit(public).hostname not in {"127.0.0.1", "localhost", "::1"} and not os.getenv("ENDPOINT_TAILSCALE_NODE_ID"):
         raise HTTPException(503, "Gateway Tailscale 노드 ID를 운영자가 먼저 고정해야 합니다.")
     import json
-    bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""),
+    ca = field_ca()
+    bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), **ca,
               "owner": user["user_id"], **await enrollment_token(user["principal"])}
     output = io.BytesIO()
     payload = {name: (source / name).read_bytes() for name in names}
+    if ca:
+        payload.update({"root.crt": ca["ca_certificate"].encode(), "root.sha256": (ca["ca_sha256"] + "\n").encode(),
+                        "mcpgw_pc.py": (STATIC_DIR / "kit" / "mcpgw_pc.py").read_bytes()})
     if platform == "windows":
         payload.update({name: (runtime / name).read_bytes() for name in ("python.zip", "windows-python.json")})
         manifest = json.dumps({"schema": 1, "gateway_url": public,

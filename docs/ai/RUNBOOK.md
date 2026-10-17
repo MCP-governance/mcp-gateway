@@ -56,8 +56,8 @@ scope가 없는 예전 토큰도 관리권한으로 승격하지 않으므로 �
 
 ### 랩 전체를 실제 기기 세 종류에 나눠 올리기
 솔루션 기기(Docker 호스트) · 관리자 PC · 직원 PC로 나누는 절차는 [FIELD.md](FIELD.md)에
-있다. `./console.sh field up|status|pc-command|set-password|register-pc|down` — Tailscale IP를 자동으로 찾아
-`http://<IP>:443`에 게시하며 root.crt·hosts 설정은 필요 없다. 기본 `up`은 바뀌지 않고, CI는
+있다. `./console.sh field up|ca|status|pc-command|set-password|register-pc|down` — Tailscale IP를 자동으로 찾아
+`https://<IP>`에 게시한다. `field ca`로 배치 루트·SHA-256 지문을 확인하고 키트로 하네스 범위에 배포한다(D-124). 기본 `up`은 바뀌지 않고, CI는
 `verify` 끝에서 loopback 변형으로 실제 Claude Code·Codex CLI와 내부 Git 로그인을 확인한다(D-42·D-46·D-48).
 - 승인한 신청은 Console **도입 신청 → Gateway 등록**으로 올린다(D-49). 등록은 `registry_runtime` 볼륨의 `servers.json`에 남고,
   `./console.sh reset`이면 지워진다. 파일로 검토·보관하려면 `docker compose exec gateway cat /registry-runtime/servers.json`.

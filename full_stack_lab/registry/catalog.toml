@@ -8,6 +8,10 @@
 # A tool that is not listed under [servers.<id>.tools] is not approved: it is hidden
 # from tools/list and a call to it is blocked as MCP-REGISTRY-001.
 
+[harness]
+# A deployment must supply its TLS ingress with render.py --gateway-url.
+gateway_url = ""
+
 [organization]
 name = "BoB Corp"
 internal_email_domains = ["bob.local"]

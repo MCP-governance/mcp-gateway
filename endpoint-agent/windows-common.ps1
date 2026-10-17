@@ -35,7 +35,68 @@ function Assert-EndpointTree([string]$Path) {
     }
 }
 
-function Test-EndpointGateway([string]$Url) {
+function New-EndpointGatewayRequest([string]$Url, [string]$Certificate = '', [string]$Fingerprint = '') {
+    if (-not ('EndpointKit.GatewayTls' -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
+namespace EndpointKit {
+    public static class GatewayTls {
+        static string Digest(byte[] data) {
+            using (var sha = SHA256.Create()) { return BitConverter.ToString(sha.ComputeHash(data)).Replace("-", "").ToLowerInvariant(); }
+        }
+        public static X509Certificate2 Root(string pem, string fingerprint) {
+            var match = Regex.Match(pem, @"\A\s*-----BEGIN CERTIFICATE-----([A-Za-z0-9+/=\s]+)-----END CERTIFICATE-----\s*\z");
+            if (!match.Success || !Regex.IsMatch(fingerprint.Replace(":", ""), @"\A[0-9a-fA-F]{64}\z"))
+                throw new ArgumentException("Invalid CA or SHA-256");
+            var root = new X509Certificate2(Convert.FromBase64String(match.Groups[1].Value));
+            if (Digest(root.RawData) != fingerprint.Replace(":", "").ToLowerInvariant())
+                throw new ArgumentException("CA SHA-256 mismatch");
+            return root;
+        }
+        public static bool Validate(X509Certificate certificate, X509Chain remote, SslPolicyErrors errors, X509Certificate2 root) {
+            if (certificate == null || (errors & ~SslPolicyErrors.RemoteCertificateChainErrors) != 0) return false;
+            using (var chain = new X509Chain()) {
+                chain.ChainPolicy.ExtraStore.Add(root);
+                if (remote != null) foreach (var element in remote.ChainElements) chain.ChainPolicy.ExtraStore.Add(element.Certificate);
+                // Caddy's private CA publishes no revocation service. Expiry, usage and signatures remain checked.
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                chain.ChainPolicy.ApplicationPolicy.Add(new Oid("1.3.6.1.5.5.7.3.1"));
+                if (!chain.Build(new X509Certificate2(certificate))) return false;
+                foreach (var status in chain.ChainStatus)
+                    if ((status.Status & ~X509ChainStatusFlags.UntrustedRoot) != 0) return false;
+                return chain.ChainElements.Count > 0 && Digest(chain.ChainElements[chain.ChainElements.Count - 1].Certificate.RawData) == Digest(root.RawData);
+            }
+        }
+        public static HttpWebRequest Create(string url, string pem, string fingerprint) {
+            var uri = new Uri(url);
+            if (uri.UserInfo.Length != 0 || (uri.Scheme != "https" && !(uri.Scheme == "http" && uri.IsLoopback)))
+                throw new ArgumentException("HTTPS required");
+            X509Certificate2 root = null;
+            if (pem.Length != 0 || fingerprint.Length != 0) root = Root(pem, fingerprint);
+            var request = (HttpWebRequest)WebRequest.Create(uri);
+            request.AllowAutoRedirect = false;
+            request.Proxy = null;
+            request.Timeout = 6000;
+            request.ReadWriteTimeout = 6000;
+            // Windows PowerShell's .NET Framework selects protocols per process, not per request.
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            if (root != null) request.ServerCertificateValidationCallback = (sender, cert, chain, errors) => Validate(cert, chain, errors, root);
+            return request;
+        }
+    }
+}
+'@
+    }
+    return [EndpointKit.GatewayTls]::Create($Url, $Certificate, $Fingerprint)
+}
+
+function Test-EndpointGateway([string]$Url, [string]$Certificate = '', [string]$Fingerprint = '') {
     $uri = [Uri]$Url
     if (-not $uri.IsAbsoluteUri -or $uri.UserInfo -or $uri.Query -or $uri.Fragment -or $uri.AbsolutePath -ne '/') {
         throw '게이트웨이 주소 형식 오류'
@@ -44,22 +105,17 @@ function Test-EndpointGateway([string]$Url) {
         $address = $null
         $httpAllowed = $uri.Host -eq 'localhost'
         if ([Net.IPAddress]::TryParse($uri.Host, [ref]$address)) {
-            $bytes = $address.GetAddressBytes()
-            $httpAllowed = [Net.IPAddress]::IsLoopback($address) -or ($bytes.Length -eq 4 -and $bytes[0] -eq 100 -and $bytes[1] -ge 64 -and $bytes[1] -le 127)
+            $httpAllowed = [Net.IPAddress]::IsLoopback($address)
         }
         if ($uri.Scheme -ne 'http' -or -not $httpAllowed) { throw '암호화 연결 또는 승인된 사내망 주소 필요' }
     }
+    $request = New-EndpointGatewayRequest ($Url.TrimEnd('/') + '/api/health') $Certificate $Fingerprint
     $tcp = New-Object Net.Sockets.TcpClient
     try {
         $pending = $tcp.BeginConnect($uri.DnsSafeHost, $uri.Port, $null, $null)
         if (-not $pending.AsyncWaitHandle.WaitOne(4000)) { throw '게이트웨이 연결 시간 초과' }
         try { $tcp.EndConnect($pending) } catch { throw '게이트웨이 이름 또는 포트 연결 실패' }
     } finally { $tcp.Dispose() }
-    $request = [Net.HttpWebRequest]::Create($Url.TrimEnd('/') + '/api/health')
-    $request.AllowAutoRedirect = $false
-    $request.Proxy = $null
-    $request.Timeout = 6000
-    $request.ReadWriteTimeout = 6000
     try {
         $response = $request.GetResponse()
         try {

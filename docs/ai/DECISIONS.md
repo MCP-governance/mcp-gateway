@@ -1294,14 +1294,6 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 키트: field 설정 생성·전체 CLI 인자, 서버의 Linux/Windows 관리 설정 생성과 엔드포인트의 파일 쓰기를 가짜 토큰으로 회귀 검사한다. OS 집행 코드는 변경하지 않는다. 기존 `field_kit_check.py`는 Claude add 인자의 마지막 항목만 보므로 새 회귀는 인자 전체를 본다.
 - 한계: 알 수 없는 모든 비밀 형식의 탐지를 보장하지 않는다. 네이티브 Gitleaks·SDK·실제 DB 검증은 미실행이며 대역을 사용하는 함수 단위 증거로 한정한다. [보고](../../research/llm-wiki/status/reports/2026-10-17-dest-pin-credential-redaction.md).
 
-## D-119 관리 계정 루프백은 소유자 시작 연결의 응답만 허용하고 Codex는 장치 코드로 로그인한다 (2026-10-17)
-
-- 결정(사용자 채택): Codex 로그인은 `codex login --device-auth`를 기본으로 실행한다. 관리 UID가 시작하는 루프백 연결은 계속 거부한다. 소유자 UID가 `lo`에서 시작한 `ct direction original ct state new` 연결에만 `ct mark set ct mark or 0x00000100`을 적용하고, 관리 UID의 `lo` 응답 방향 중 `ct mark and 0x00000100 == 0x00000100`만 허용한다. 포트·기간·전체 established 허용은 추가하지 않는다.
-- 소유자 결속: `bootstrap.py`가 확인한 직원 계정 UID를 별도 관리 계정에만 `--owner-uid`로 전달한다. `managed-linux.py`는 등록 토큰 소비 전에 실제 계정 존재·UID 유효성을 검사하고 저장·전달한다. 소유자 미지정은 기존 전면 거부를 유지하며, 관리 계정 자신·시스템 UID·잘못된 값은 거부한다. 원시 `SUDO_UID`를 집행기에서 추측하지 않는다. 이 로컬 UID는 방화벽 범위이며 게이트웨이의 transport 신원을 대신하지 않는다.
-- 근거: [DEV-35 원인·선택지·과거 netns 실험](../../research/llm-wiki/analysis/dev35-loopback/README.md). PJ1에서 관찰한 Tailscale connmark 마스크는 `0xff0000`으로 `0x100`과 겹치지 않는다. 기존 비트는 OR로 보존한다. 포트 선점·다른 UID·자기 리스너 반례 때문에 더 넓은 허용은 기각한다.
-- 관측: D-113의 `SPT`·TCP 플래그·`listener_reply` 분류는 유지한다. 허용 규칙은 `MCPGW_DENY` 로그보다 앞에 있어 허용 응답은 이 거부 로그에 도달하지 않는다. 다른 UID가 시작해 차단된 SYN-ACK는 계속 `listener_reply`다. 기존 원장은 수정하지 않는다.
-- 검증 범위: [작업 보고·실기기 명령](../../research/llm-wiki/status/reports/2026-10-17-loopback-owner-replies-d119.md). 로컬 순수 Python 단위 검증이며 배포·PJ1 재설치·이번 판본 netns/E13·R1~R9·실제 장치 코드 로그인은 메인이 수행한다. 과거 제안의 충돌 번호 표기는 D-119로 정정했고 런처 결정 D-107은 유지한다.
-
 ## D-118 Windows 키트는 포함 Python·설치 마법사·트레이로 제공한다 (2026-10-17)
 
 - 사용자 결정: Windows 기본 PowerShell 5.1·WinForms·NotifyIcon만으로 설치 마법사와 로그온 트레이를 만든다. 새 GUI 런타임·서드파티 GUI 라이브러리는 넣지 않는다. 대상은 Windows amd64다.
@@ -1344,6 +1336,14 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 이 신뢰 경로는 Windows 마법사의 범위다. Linux `install.sh`가 사용자 폴더의 `bootstrap.py`를 sudo로 실행하는 동일 계열 위험은
   [별도 잔여 위험](../../research/llm-wiki/analysis/windows-kit-wizard-tray/security-review.md)에 남겼으며 Linux 코드는 변경하지 않았다.
 
+## D-119 관리 계정 루프백은 소유자 시작 연결의 응답만 허용하고 Codex는 장치 코드로 로그인한다 (2026-10-17)
+
+- 결정(사용자 채택): Codex 로그인은 `codex login --device-auth`를 기본으로 실행한다. 관리 UID가 시작하는 루프백 연결은 계속 거부한다. 소유자 UID가 `lo`에서 시작한 `ct direction original ct state new` 연결에만 `ct mark set ct mark or 0x00000100`을 적용하고, 관리 UID의 `lo` 응답 방향 중 `ct mark and 0x00000100 == 0x00000100`만 허용한다. 포트·기간·전체 established 허용은 추가하지 않는다.
+- 소유자 결속: `bootstrap.py`가 확인한 직원 계정 UID를 별도 관리 계정에만 `--owner-uid`로 전달한다. `managed-linux.py`는 등록 토큰 소비 전에 실제 계정 존재·UID 유효성을 검사하고 저장·전달한다. 소유자 미지정은 기존 전면 거부를 유지하며, 관리 계정 자신·시스템 UID·잘못된 값은 거부한다. 원시 `SUDO_UID`를 집행기에서 추측하지 않는다. 이 로컬 UID는 방화벽 범위이며 게이트웨이의 transport 신원을 대신하지 않는다.
+- 근거: [DEV-35 원인·선택지·과거 netns 실험](../../research/llm-wiki/analysis/dev35-loopback/README.md). PJ1에서 관찰한 Tailscale connmark 마스크는 `0xff0000`으로 `0x100`과 겹치지 않는다. 기존 비트는 OR로 보존한다. 포트 선점·다른 UID·자기 리스너 반례 때문에 더 넓은 허용은 기각한다.
+- 관측: D-113의 `SPT`·TCP 플래그·`listener_reply` 분류는 유지한다. 허용 규칙은 `MCPGW_DENY` 로그보다 앞에 있어 허용 응답은 이 거부 로그에 도달하지 않는다. 다른 UID가 시작해 차단된 SYN-ACK는 계속 `listener_reply`다. 기존 원장은 수정하지 않는다.
+- 검증 범위: [작업 보고·실기기 명령](../../research/llm-wiki/status/reports/2026-10-17-loopback-owner-replies-d119.md). 로컬 순수 Python 단위 검증이며 배포·PJ1 재설치·이번 판본 netns/E13·R1~R9·실제 장치 코드 로그인은 메인이 수행한다. 과거 제안의 충돌 번호 표기는 D-119로 정정했고 런처 결정 D-107은 유지한다.
+
 ## D-120 운영 이미지 재검사와 기한 초과 격리 (2026-10-17)
 
 - DEV-50 / POL-39 / WBS G01.06. 실행기의 기존 조정 루프에서 불변 이미지 ID를 Trivy 0.74.0으로 재검사한다. 도입 검사와 JSON·취약점 DB 시각 파서를 공유하고 7일 신선도 기준을 유지한다. 기본 검사 간격 1일, CRITICAL 조치 기한은 최초 발견부터 7일이며 환경 설정으로 바꾼다.
@@ -1366,3 +1366,11 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - DEV-63 / POL-50 / WBS G07.06. DB 밖 전용 볼륨에 Ed25519 서명·연쇄 해시·서명된 head를 가진 폐기 목록을 추가 보관한다. 기존 raw 32-byte/base64url·cryptography 체계를 재사용하되 JWT 발급 키와 폐기 서명 키를 분리한다. 게이트웨이에 JWT 발급 권한을 주지 않는다.
 - 토큰 철회·갱신 토큰 회전·자격 회수·종결 전에 파일을 먼저 확정한다. 시작 시와 60초마다 DB와 대조하고 누락 상태를 복원·차단하며 경보한다. 인증·계약 확인은 파일도 직접 확인한다. 서명 불일치·누락·절단·중간 쓰기 실패는 차단한다. C1~C4/T1~T3 기준은 변경하지 않는다.
 - 최초 볼륨 초기화는 운영자의 명시적 `field init-disposal`이다. 이미 폐기한 식별자의 실습 복원도 거부하고 새 도입 승인을 요구한다. DB와 폐기 볼륨·키를 함께 롤백한 호스트 관리자, 외부 제공자 자격의 복구·재사용 자체는 통제하지 못한다. 내구성·이관·부하와 실제 복원 증거는 기기 검증 전이다.
+
+## D-124 현장 하네스 연결은 배치 사설 CA의 HTTPS만 사용한다 (2026-10-18)
+
+- 결정: Tailscale IP 바인딩은 유지하고 Caddy 	ls internal로 TLS 1.2/1.3과 ECDHE/ECDSA AEAD를 제공한다. HTTP 자동 리디렉션과 시스템 CA 등록을 끈다. IP 및 선택 공개 이름을 발급 대상으로 삼고 빈 SNI에는 IP 인증서를 선택한다. 공개 OAuth·MCP·Console·Git URL과 관리형 정책은 HTTPS다. 원격 HTTP 입력과 자격 요청 리디렉션은 거부한다. 격리 기본 랩의 명시적 HTTP 빌드 인자는 별개다.
+- 신뢰: 배치 볼륨의 CA 개인 키는 내보내지 않는다. field ca는 공개 루트·DER SHA-256을 출력하며 Console ZIP에 루트·지문을 넣는다. 설치기는 단일 PEM과 지문을 설치/등록 전에 검증한다. Linux 실행기 및 직원 PC 도구의 harness 명령이 Claude의 NODE_EXTRA_CA_CERTS, Codex의 CODEX_CA_CERTIFICATE를 프로세스에 지정한다. 시스템 저장소는 변경하지 않는다. 에이전트와 Linux OS 관측기는 동일 CA로 체인·이름을 검증한다.
+- 복구: CA 볼륨은 배치 수명 동안 유지한다. 새 루트는 기존 연결을 실패시키므로 별도 지문 대조·새 키트 설치로 교체한다. 키트 발행자 확인은 인증된 배포 경로와 운영자의 별도 지문 대조를 전제로 한다.
+- 후속 병합 정정: D-118 키트의 `payload`와 매니페스트에 CA·지문·직원 PC 도구를 함께 넣는다. Windows도 등록 전에 CA를 검증하고 보호된 승인 키트의 루트로 고정한다. 서비스·관측기에 CA를 전달하고 하네스 `.cmd` 실행기의 `setlocal`로 프로세스에만 적용한다. PowerShell은 요청별 검증 콜백·임시 X509Chain.ExtraStore를 사용하며 시스템 저장소는 변경하지 않는다. 내부 `gateway`는 TLS 종료점이 아니므로 레지스트리 주소 기본값은 비우고 배포 시 실제 HTTPS 주소를 지정한다. [병합 후 검증](../../research/llm-wiki/status/reports/2026-10-18-field-tls-d124-merge.md)이 이전 Windows 통합 대기를 대체한다.
+- 근거/한계: [DEV-64 분석](../../research/llm-wiki/analysis/field-tls-d124/README.md), [작업 보고·메인 검증 명령](../../research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md). Codex 0.157.0의 고정 소스와 공식 문서로 CA 변수를 확인했다. 로컬 단위 증거이며 Caddy 자체 검사·배포·PJ1은 미실행이다. Windows 전용 설치기는 다른 작업과 공통 CA 필드/환경값을 통합해야 한다.

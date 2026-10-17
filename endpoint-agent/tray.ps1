@@ -72,7 +72,8 @@ $check.Add_Click({
     if ($script:healthJob) { return }
     $requestPath = Join-Path $work 'request.json'
     Remove-Item -LiteralPath (Join-Path $work 'result.json') -Force -ErrorAction SilentlyContinue
-    [IO.File]::WriteAllText($requestPath, (@{ action = 'health'; gateway_url = $settings.gateway_url } | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText($requestPath, (@{ action = 'health'; gateway_url = $settings.gateway_url;
+        ca_certificate = $settings.ca_certificate; ca_sha256 = $settings.ca_sha256 } | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
     $arguments = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ' + (Quote-EndpointArgument (Join-Path $PSScriptRoot 'windows-worker.ps1')) +
         ' -RequestPath ' + (Quote-EndpointArgument $requestPath)
     try {

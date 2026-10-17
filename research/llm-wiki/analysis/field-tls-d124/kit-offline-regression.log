@@ -1,0 +1,12 @@
+test_address_rules (__main__.KitTest) ... ok
+test_managed_files_carry_no_secret (__main__.KitTest) ... ok
+test_kit_parses_as_python_3_9 (__main__.KitTest) ... ok
+test_caddyfile_routes (__main__.OverlayTest) ... ok
+test_field_publications_reject_wildcard_other_service_wrong_port_and_protocol (__main__.OverlayTest) ... ok
+test_experiments_use_the_internal_idp_address (__main__.OverlayTest) ... ok
+test_mcp_facade_accepts_only_the_configured_public_host (__main__.OverlayTest) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.048s
+
+OK

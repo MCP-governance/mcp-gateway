@@ -1,0 +1,35 @@
+  Codex CLI: C:\Users\bobysg\AppData\Local\Temp\field kit zftb8gk9\codex\config.toml (git)
+test_address_rules (__main__.KitTest) ... ok
+test_codex_app_denies_live_in_the_block_and_leave_with_uninstall (__main__.KitTest) ... ok
+test_concurrent_helpers_refresh_once_without_reuse (__main__.KitTest) ... ok
+test_conflicts_are_found_before_anything_is_written (__main__.KitTest) ... ok
+test_doctor_and_uninstall_against_the_fake (__main__.KitTest) ... ok
+test_header_starts_a_background_report_at_most_every_six_hours (__main__.KitTest) ... ok
+test_kit_parses_as_python_3_9 (__main__.KitTest) ... C:\Program Files\Python310\lib\ast.py:50: ResourceWarning: unclosed <socket.socket fd=648, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 53067)>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Program Files\Python310\lib\ast.py:50: ResourceWarning: unclosed <socket.socket fd=884, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 53105)>
+  return compile(source, filename, mode, flags,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_managed_files_carry_no_secret (__main__.KitTest) ... ok
+test_managed_files_take_the_console_connector_policy (__main__.KitTest) ... ok
+test_report_lists_vendor_connectors_and_applies_only_its_own_denies (__main__.KitTest) ... ok
+test_setup_writes_helpers_keeps_user_config_and_is_idempotent (__main__.KitTest) ... ok
+test_wrong_password_is_reported_and_nothing_is_registered (__main__.KitTest) ... C:\Program Files\Python310\lib\gettext.py:548: ResourceWarning: unclosed <socket.socket fd=920, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 53119)>
+  for envar in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Program Files\Python310\lib\gettext.py:548: ResourceWarning: unclosed <socket.socket fd=776, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 53125)>
+  for envar in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_caddyfile_routes (__main__.OverlayTest) ... ok
+test_experiments_use_the_internal_idp_address (__main__.OverlayTest) ... ok
+test_field_publications_reject_wildcard_other_service_wrong_port_and_protocol (__main__.OverlayTest) ... ok
+test_mcp_facade_accepts_only_the_configured_public_host (__main__.OverlayTest) ... ok
+test_overlay_publishes_only_caddy_and_model_proxy_on_the_tailnet_address (__main__.OverlayTest) ... skipped 'docker CLI 없음'
+
+----------------------------------------------------------------------
+Ran 17 tests in 5.151s
+
+OK (skipped=1)

@@ -145,6 +145,7 @@ function Start-EndpointJob([string]$Action) {
     $requestPath = Join-Path $work 'request.json'
     Remove-Item -LiteralPath (Join-Path $work 'result.json') -Force -ErrorAction SilentlyContinue
     $request = @{ action = $Action; mode = $mode; gateway_url = $url.Text; directory = $location.Text; user = $user.Text;
+        ca_certificate = $bundle.ca_certificate; ca_sha256 = $bundle.ca_sha256;
         endpoint_id = $EndpointId; scan_paths = @($scope.Lines | Where-Object { $_.Trim() }); key_file = $script:keyPath;
         tailscale_node_id = $TailscaleNodeId; enrollment = (Join-Path $PSScriptRoot 'enrollment.json'); settings = $SettingsPath;
         requester_sid = $identity.User.Value }

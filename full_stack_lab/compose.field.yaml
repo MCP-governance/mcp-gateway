@@ -16,7 +16,7 @@ services:
   # Gitea는 그 헤더를 Caddy의 고정 IP에서 온 것만 믿고, agent-service가 미리 만든 사용자만 받는다(자동 가입 없음).
   corp-git:
     environment:
-      GITEA__server__ROOT_URL: http://${APPLIANCE_BIND}:443/git/
+      GITEA__server__ROOT_URL: https://${APPLIANCE_BIND}:443/git/
       GITEA__server__DISABLE_SSH: "true"
       GITEA__service__REQUIRE_SIGNIN_VIEW: "true"
       GITEA__service__ENABLE_REVERSE_PROXY_AUTHENTICATION: "true"
@@ -38,8 +38,12 @@ services:
       agent-service: {condition: service_started}
     ports:
       - "${APPLIANCE_BIND:?./console.sh field up을 사용하세요}:443:8080"
+    environment:
+      FIELD_TLS_ADDRESSES: ${FIELD_TLS_ADDRESSES:?./console.sh field up을 사용하세요}
+      APPLIANCE_BIND: ${APPLIANCE_BIND}
     volumes:
       - ./field/Caddyfile:/etc/caddy/Caddyfile:ro
+      - field_caddy_data:/data
     networks:
       edge:
         # corp-git의 REVERSE_PROXY_TRUSTED_PROXIES와 같은 값. 다른 컨테이너는 Gitea에 신원 헤더를 실을 수 없다.
@@ -68,10 +72,11 @@ services:
       ENDPOINT_GATEWAY_IPS: ${ENDPOINT_GATEWAY_IPS:-${APPLIANCE_BIND}}
       MODEL_PROXY_PORT: ${MODEL_PROXY_PORT:-3128}
       REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
-      GATEWAY_PUBLIC_MCP_URL: http://${APPLIANCE_BIND}:443/mcp/
-      GATEWAY_PUBLIC_URL: http://${APPLIANCE_BIND}:443
-      CONSOLE_PUBLIC_URL: http://${APPLIANCE_BIND}:443/
-      IDP_ISSUER: http://${APPLIANCE_BIND}:443
+      GATEWAY_PUBLIC_MCP_URL: https://${APPLIANCE_BIND}:443/mcp/
+      FIELD_PUBLIC_NAME: ${FIELD_PUBLIC_NAME:-}
+      GATEWAY_PUBLIC_URL: https://${APPLIANCE_BIND}:443
+      CONSOLE_PUBLIC_URL: https://${APPLIANCE_BIND}:443/
+      IDP_ISSUER: https://${APPLIANCE_BIND}:443
       # IDP_ISSUER는 PC에 알리는 공개 주소다. 컨테이너 안에서는 그 이름이 풀리지 않으므로 Gateway가 직접
       # IdP를 부를 때(논문 실험 E1~E3)는 내부 주소를 쓴다. 토큰의 iss는 URL이 아니라 상수라 판정은 그대로다.
       IDP_INTERNAL_URL: http://agent-service:8000
@@ -81,9 +86,10 @@ services:
 
   gateway-sse:
     environment:
+      FIELD_PUBLIC_NAME: ${FIELD_PUBLIC_NAME:-}
       MCP_FIELD_MODE: ${FIELD_ACCOUNTS_MODE:-1}
-      IDP_ISSUER: http://${APPLIANCE_BIND}:443
-      GATEWAY_PUBLIC_URL: http://${APPLIANCE_BIND}:443
+      IDP_ISSUER: https://${APPLIANCE_BIND}:443
+      GATEWAY_PUBLIC_URL: https://${APPLIANCE_BIND}:443
       ENDPOINT_TAILSCALE_NODE_ID: ${ENDPOINT_TAILSCALE_NODE_ID:-}
       ENDPOINT_GATEWAY_IPS: ${ENDPOINT_GATEWAY_IPS:-${APPLIANCE_BIND}}
       MODEL_PROXY_PORT: ${MODEL_PROXY_PORT:-3128}
@@ -102,17 +108,19 @@ services:
       - ../endpoint-agent:/endpoint-kit:ro
       - ./registry/field:/registry-field:ro
       - ./runtime/recipes:/runtime-recipes:ro
+      - ./field/ca:/field-ca:ro
     environment:
       REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
+      FIELD_CA_FILE: /field-ca/root.crt
       ENDPOINT_TAILSCALE_NODE_ID: ${ENDPOINT_TAILSCALE_NODE_ID:-}
       ENDPOINT_GATEWAY_IPS: ${ENDPOINT_GATEWAY_IPS:-${APPLIANCE_BIND}}
       MODEL_PROXY_PORT: ${MODEL_PROXY_PORT:-3128}
-      IDP_ISSUER: http://${APPLIANCE_BIND}:443
+      IDP_ISSUER: https://${APPLIANCE_BIND}:443
       MCP_FIELD_MODE: ${FIELD_ACCOUNTS_MODE:-1}
       GITEA_ADMIN_URL: http://corp-git:3000
       GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-corpadmin}
       GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD:-corp-admin-lab-only}
-      GITEA_PUBLIC_URL: http://${APPLIANCE_BIND}:443/git
+      GITEA_PUBLIC_URL: https://${APPLIANCE_BIND}:443/git
 
   # 승인한 소스 MCP를 고정 레시피로 빌드·실행하는 유일한 프로세스(DEV-38, D-114). 엔진 소켓은 이 컨테이너만
   # 받는다. 게시 포트 없이 DB(data)와 내부 Git(ops)만 닿고, 실행한 MCP의 망에는 스스로 붙어 응답만 확인한다.
@@ -146,12 +154,24 @@ services:
   # 않는다(실제 PC가 대신한다). 같이 보고 싶으면 `--profile lab-workstations`
   # (`./console.sh field up --with-lab-workstations`). 기본 compose.yaml에는 이
   # profile이 없으므로 일반 `./console.sh up`은 그대로 네 대를 띄운다.
-  ws-ysg: {profiles: [lab-workstations]}
-  ws-jwj: {profiles: [lab-workstations]}
-  ws-pse: {profiles: [lab-workstations]}
-  ws-nkk: {profiles: [lab-workstations]}
+  ws-ysg: &field-workstation
+    profiles: [lab-workstations]
+    build:
+      args:
+        MANAGED_GATEWAY_URL: https://${APPLIANCE_BIND}/mcp
+    environment:
+      NODE_EXTRA_CA_CERTS: /field-ca/root.crt
+      CODEX_CA_CERTIFICATE: /field-ca/root.crt
+      GATEWAY_URL: https://${APPLIANCE_BIND}
+      ENDPOINT_CA_FILE: /field-ca/root.crt
+    volumes:
+      - ./field/ca:/field-ca:ro
+  ws-jwj: *field-workstation
+  ws-pse: *field-workstation
+  ws-nkk: *field-workstation
 
 volumes:
+  field_caddy_data: {}
   field_disposal_journal: {}
   field_lab_disposal_journal: {}
   runtime_trivy_cache: {}

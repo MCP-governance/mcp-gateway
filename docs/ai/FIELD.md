@@ -27,7 +27,7 @@ Tailscale IP가 있어야 하고, 직원·관리자 PC도 같은 tailnet에서 �
 ./console.sh field set-password user
 ```
 
-관리자 PC에서 `http://<Tailscale IP>:443/login`에 로그인합니다. 직원도 같은 URL에
+관리자 PC에서 `https://<Tailscale IP>/login`에 로그인합니다. 직원도 같은 URL에
 자기 계정으로 로그인해 **도입 신청 → 새 신청**에서 MCP 이름이나 GitHub 주소를 먼저 검색합니다. 기존 신청의 신청자·상태를 보고, 승인된 항목은 내부 저장소를 바로 열어 클론할 수 있습니다. 새 신청은 저장소·연결 방식·목적을 제출합니다.
 접수 즉시 검증 대기열에 저장되고 관리자 목록은 열어 둔 상태에서도 5초마다 데이터만 갱신됩니다(차트는 다시 만들지 않습니다).
 활동 로그의 MCP 도구 사용 기록은 도입 신청을 대신하지 않습니다.
@@ -36,11 +36,11 @@ Tailscale IP가 있어야 하고, 직원·관리자 PC도 같은 tailnet에서 �
 
 ## 내부 Git(Gitea)
 
-검증을 통과한 공개 GitHub 저장소는 관리자가 승인할 때 같은 솔루션의 Gitea `mcp` 조직으로 가져옵니다. 가져온 기본 브랜치 HEAD가 검증 커밋과 같을 때만 승인이 완료되며 내부 저장소 주소가 신청 목록과 검색 결과에 표시됩니다. Console 왼쪽 메뉴 **바로가기 → 내부 저장소**는 개인 홈이 아니라 조직의 저장소 목록(`http://<Tailscale IP>:443/git/mcp`)을 엽니다.
+검증을 통과한 공개 GitHub 저장소는 관리자가 승인할 때 같은 솔루션의 Gitea `mcp` 조직으로 가져옵니다. 가져온 기본 브랜치 HEAD가 검증 커밋과 같을 때만 승인이 완료되며 내부 저장소 주소가 신청 목록과 검색 결과에 표시됩니다. Console 왼쪽 메뉴 **바로가기 → 내부 저장소**는 개인 홈이 아니라 조직의 저장소 목록(`https://<Tailscale IP>/git/mcp`)을 엽니다.
 
 - 로그인은 솔루션 계정 하나입니다. Console에 로그인한 브라우저는 그대로 Gitea에 들어가고, 아니면 로그인 화면을 거쳐 돌아옵니다. 계정을 중지하면 Gitea도 다음 요청부터 막힙니다.
 - `root`를 포함한 솔루션 계정은 `mcp` 조직의 전체 저장소 읽기 팀에 동기화됩니다. 새 계정은 가입 승인 즉시 가입하며, 기존 계정은 서비스 기동 때 보정합니다. 관리자 역할은 Gitea 관리자입니다. 풀 리퀘스트는 끕니다. 고친 코드는 도입 신청을 다시 거칩니다.
-- 클론은 같은 ID/PW로 합니다: `git clone http://<Tailscale IP>:443/git/mcp/<저장소>.git`. Gitea 관리 자격은 솔루션 내부에만 둡니다.
+- 클론은 같은 ID/PW로 합니다: `git -c http.sslCAInfo=/path/to/root.crt clone https://<Tailscale IP>/git/mcp/<저장소>.git`. Gitea 관리 자격은 솔루션 내부에만 둡니다.
 
 ## 승인한 소스 MCP 실행
 
@@ -141,13 +141,55 @@ Claude Code는 claude.ai 계정에 연결한 커넥터(`claude.ai Notion` 등)�
 - 이 범위는 **지원 버전의 관리형 CLI**입니다. Desktop·웹·다른 클라이언트·셸의 직접 API 호출에는 별도 조직 설정·단말 실행 통제·
   egress·상위 자격 통제가 필요합니다. 비교 조사·위협 모델·실측과 남은 일은 [SECURITY_BOUNDARIES.md](SECURITY_BOUNDARIES.md).
 
-브라우저에는 HTTP 주소로 표시되므로 이 절차는 **Tailscale 내부망 전용**입니다.
-일반 LAN이나 인터넷에 게시할 때는 조직이 신뢰하는 HTTPS 종료 지점을 둬야 합니다.
-Tailscale의 `*.ts.net` HTTPS 인증서는 현재 tailnet 계정에서 발급이 거절되어 이
-설치 절차에는 사용하지 않습니다. 별도 인증서가 없어도 Gateway의 사용자 토큰,
-역할별 승인, 정책 판정과 감사 기록은 그대로 적용됩니다. 단, 단말 관측 에이전트
-([endpoint-agent/](../../endpoint-agent/README.md))는 원격 Gateway에 HTTPS만 허용하고 Caddy도 `/api/endpoint/*`를
-게시하지 않으므로 이 HTTP 배치에서는 다른 PC의 에이전트가 보고하지 못합니다(`field register-pc`는 장치 키 발급까지).
+### 현장 TLS와 루트 배포(D-124)
+
+Caddy는 **Tailscale IP의 443에 HTTPS만** 게시합니다. `tls internal`의 루트·개인 키는 배치의
+`field_caddy_data` 볼륨에 유지됩니다. TLS 1.2·1.3과 ECDHE/ECDSA AEAD 암호군을 사용하며,
+HTTP 리디렉션과 시스템 신뢰 저장소 자동 등록은 끕니다. 평문 요청은 프록시하지 않습니다.
+클라이언트도 원격 HTTP URL을 거부하므로 인증 토큰을 보내기 전에 멈춥니다.
+기본 loopback 실습의 내부 HTTP는 현장 게시와 별개입니다.
+
+```bash
+cd full_stack_lab
+./console.sh field up
+./console.sh field ca
+openssl x509 -in field/ca/root.crt -noout -fingerprint -sha256
+curl --cacert field/ca/root.crt https://100.83.175.111/api/health
+```
+
+`field ca`는 공개 루트와 DER 기준 SHA-256 지문만 내보냅니다. 개인 키는 꺼내지 않습니다.
+루트를 인증된 조직 배포 경로로 전달하고, 지문은 운영자와 별도로 대조합니다. ZIP 안의 지문만으로
+키트 발행자의 진위를 입증하지 않습니다. Console이 발급하는 ZIP에는 `root.crt`, `root.sha256`,
+동일한 `ca_certificate`·`ca_sha256`을 담은 `enrollment.json`, 직원 PC 도구가 들어갑니다.
+Linux 설치기는 지문 불일치·다중 인증서를 등록 요청과 설치 변경 전에 거부합니다.
+처음 브라우저에 표시되는 사설 루트 경고는 키트 설치 전에 별도로 처리합니다.
+`field status`·`field pc-command`에 표시된 지문을 운영자와 대조한 뒤, 별도 Firefox 프로필의
+**설정 → 개인 정보 및 보안 → 인증서 보기 → 인증 기관 → 가져오기**에서 `root.crt`를 선택하고 웹사이트 식별 신뢰를 지정합니다.
+이 프로필에만 적용하며 Windows 인증서 관리자나 시스템 전체 저장소에는 추가하지 않습니다.
+
+관리형 Linux 실행기는 root 소유 공개 CA 파일을 Claude Code의 `NODE_EXTRA_CA_CERTS`, Codex의
+`CODEX_CA_CERTIFICATE`로 전달합니다. 직원 PC 도구를 별도로 쓰는 경우 다음처럼 실행합니다.
+
+```bash
+python3 mcpgw_pc.py setup --url https://100.83.175.111 --servers 승인서버 --ca root.crt --ca-sha256 운영자가확인한지문
+python3 ~/.mcpgw/mcpgw_pc.py harness claude
+python3 ~/.mcpgw/mcpgw_pc.py harness codex
+```
+
+환경값은 해당 실행 프로세스에만 들어갑니다. 이미 열린 하네스는 종료 후 다시 실행해야 합니다.
+`agent.py`와 이를 공유하는 `os-observer.py`도 동일한 CA·지문으로 HTTPS를 검증합니다.
+`/api/endpoint/*`는 게이트웨이로 연결되므로 이전 HTTP 배치의 원격 보고 제한은 제거됩니다.
+이는 구현 범위이며 현재 기기의 HTTPS 보고 성공은 [실기기 시험](../../research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md) 후 판정합니다.
+Windows 관리형 설치도 등록 전에 같은 CA·지문을 대조하고 서비스·관측기에 보존합니다.
+관리자 단계는 보호된 승인 매니페스트의 파일 해시를 확인한 루트로 사용자 요청의 CA를 대체합니다.
+Claude·Codex는 `%ProgramFiles%\MCPGatewayManaged\launchers\<SID>\`의 `.cmd` 실행기를 사용합니다.
+실행기의 `setlocal`이 CA 환경값을 해당 하네스 프로세스에만 전달하며 계정 레지스트리에 CA 환경값을 저장하지 않습니다.
+설치 위치에 같은 이름의 다른 하네스가 있으면 위 실행기 경로를 직접 사용합니다. PowerShell 연결 확인은 TLS 1.2와 요청별 CA 검증을 사용합니다.
+
+공개 이름을 추가하려면 `.env`의 `FIELD_PUBLIC_NAME=mint.example.internal`을 지정하고 `field up`을 실행합니다.
+IP와 해당 이름을 각각 인증서 발급 대상으로 관리하고, IP 연결의 빈 SNI에는 IP 인증서를 선택합니다.
+공개 URL·키트는 계속 Tailscale IP를 사용합니다. `*.ts.net` 공개 인증서 발급에는 의존하지 않습니다.
+루트 볼륨을 지우거나 새 배치로 옮기면 새 CA가 발급되므로, 기존 연결은 실패하고 지문 확인·키트 재설치가 필요합니다.
 
 ## MCP 도입 신청 자동 검증
 

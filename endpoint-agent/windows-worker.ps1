@@ -61,6 +61,7 @@ if ($administrator) {
         $env:TMP = $compilerTemp
         $tailscale = Join-Path $env:ProgramFiles 'Tailscale'
         if (Test-Path -LiteralPath $tailscale) { Assert-EndpointProtectedPath $tailscale; $env:PATH += ';' + $tailscale }
+        . (Join-Path $expectedRoot 'windows-common.ps1')
         $request = Read-EndpointManagedRequest $RequestPath $approval $RequesterSid
         $resultDirectory = $request.result_directory
     } catch {
@@ -125,7 +126,7 @@ function Invoke-EndpointPython([string]$Python, [string[]]$Arguments) {
 try {
     Set-EndpointResult 5 '준비'
     if ($request.action -eq 'health') {
-        Test-EndpointGateway $request.gateway_url
+        Test-EndpointGateway $request.gateway_url $request.ca_certificate $request.ca_sha256
         Set-EndpointResult 100 '게이트웨이 연결 확인' 'completed'
         exit 0
     }
@@ -194,7 +195,7 @@ try {
         Set-EndpointResult 100 '제거 완료' 'completed'
         exit 0
     }
-    Test-EndpointGateway $request.gateway_url
+    Test-EndpointGateway $request.gateway_url $request.ca_certificate $request.ca_sha256
     Set-EndpointResult 15 '설치 위치 확인'
     if ((Test-Path -LiteralPath $root) -and (Get-ChildItem -LiteralPath $root -Force) -and
         -not (Test-Path -LiteralPath (Join-Path $root '.endpoint-kit'))) { throw '다른 파일이 없는 설치 위치 필요' }
@@ -237,12 +238,18 @@ try {
         $script:settingsPath = Join-Path $trayDirectory 'settings.json'
         $statusPath = Join-Path $trayDirectory 'status.json'
         $owned.files += @($summary.harnesses.PSObject.Properties.Name | ForEach-Object { 'harness\' + $_ })
+        $owned.files += @($summary.launcher_files.PSObject.Properties.Name)
     } else {
         Set-EndpointResult 60 '엔드포인트 등록'
         $arguments = @((Join-Path $root 'install.py'), '--gateway-url', $request.gateway_url, '--endpoint-id', $request.endpoint_id,
             '--no-verify', '--windows-wrapper', '--install-dir', $root, '--key-file', $request.key_file)
         foreach ($path in $request.scan_paths) { $arguments += @('--scan-path', $path) }
         if ($request.tailscale_node_id) { $arguments += @('--tailscale-node-id', $request.tailscale_node_id) }
+        if ($request.ca_certificate) {
+            [IO.File]::WriteAllText((Join-Path $root 'root.crt'), $request.ca_certificate, [Text.UTF8Encoding]::new($false))
+            $owned.files += 'root.crt'
+            $arguments += @('--ca', (Join-Path $root 'root.crt'), '--ca-sha256', $request.ca_sha256)
+        }
         Invoke-EndpointPython $python $arguments | Out-Null
         $statusPath = Join-Path $root 'status.json'
         $configPath = Join-Path $root 'config.json'
@@ -263,6 +270,7 @@ try {
     }
     Set-EndpointResult 85 '로그온 시작 등록'
     $settings = @{ mode = $request.mode; directory = $root; gateway_url = $request.gateway_url; user = $user;
+        ca_certificate = $request.ca_certificate; ca_sha256 = $request.ca_sha256;
         sid = $person; status_path = $statusPath; endpoint_id = $request.endpoint_id }
     [IO.File]::WriteAllText($script:settingsPath, ($settings | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
     [IO.File]::WriteAllText($manifestPath, ($owned | ConvertTo-Json -Depth 4), [Text.UTF8Encoding]::new($false))

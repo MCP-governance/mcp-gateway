@@ -1,0 +1,21 @@
+해당 계정의 방화벽 규칙·관리형 설정·예약 작업을 제거했습니다
+지움: C:\Users\bobysg\bob\프로젝트\mcp-gateway-codex-g\.windows-kit-test-8lz9pj3c 의 토큰·CA·설정
+test_approved_payload_rejects_script_zip_manifest_and_destination_substitution (__main__.WindowsKitTests) ... ok
+test_build_cache_includes_original_license_and_both_executables (__main__.WindowsKitTests) ... ok
+test_download_includes_runtime_and_missing_runtime_does_not_consume_enrollment (__main__.WindowsKitTests) ... ok
+test_managed_ca_is_verified_before_enrollment_and_kept_out_of_global_environment (__main__.WindowsKitTests) ... ok
+test_managed_install_carries_ca_to_private_service_and_observers (__main__.WindowsKitTests) ... ok
+test_managed_request_is_snapshotted_as_data_and_gateway_is_from_external_approval (__main__.WindowsKitTests) ... ok
+test_managed_rollback_waits_for_service_and_preserves_new_user_settings (__main__.WindowsKitTests) ... ok
+test_pin_rejects_changed_download_without_publishing_archive (__main__.WindowsKitTests) ... ok
+test_powershell_private_ca_validates_chain_pin_name_expiry_and_never_sets_global_callback (__main__.WindowsKitTests) ... ok
+test_powershell_scripts_parse_and_input_boundaries_fail_without_host_changes (__main__.WindowsKitTests) ... ok
+test_tray_acl_has_only_target_admin_system_and_data_read_is_bounded (__main__.WindowsKitTests) ... ok
+test_tray_snapshot_bounds_deduplicates_and_never_copies_private_event_fields (__main__.WindowsKitTests) ... ok
+test_tray_snapshot_retries_windows_sharing_violation (__main__.WindowsKitTests) ... ok
+test_uninstall_waits_for_report_log_and_late_report_does_not_recreate_settings (__main__.WindowsKitTests) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 6.259s
+
+OK

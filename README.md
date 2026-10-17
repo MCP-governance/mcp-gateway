@@ -92,7 +92,7 @@ cd mcp-gateway/full_stack_lab
 ./console.sh field status
 ```
 
-접속은 `http://<Tailscale IP>:443/login`입니다. 첫 설치 계정은 관리자 `root`/`root`, 직원 `user`/`user`이고
+접속은 `https://<Tailscale IP>/login`입니다. `field ca`로 배치 루트·SHA-256 지문을 확인하고 [CA 배포 절차](docs/ai/FIELD.md#현장-tls와-루트-배포d-124)를 따릅니다. 첫 설치 계정은 관리자 `root`/`root`, 직원 `user`/`user`이고
 시험이 끝나면 바꿉니다.
 
 ```bash
@@ -125,7 +125,7 @@ cd mcp-gateway/full_stack_lab
 
 ## 한계
 
-- Tailscale 내부망 HTTP 배치입니다. 일반 LAN·인터넷에 게시하려면 조직이 신뢰하는 HTTPS 종료 지점이 필요합니다.
+- Tailscale IP 전용 사설 CA HTTPS 배치입니다. 하네스는 키트의 검증된 루트를 신뢰해야 하며 Windows 전용 설치기 통합과 실기기 TLS 검수는 별도입니다.
 - 게이트웨이는 강제 경로 **안의** 호출을 통제합니다. 경로 밖(비관리 계정·관리형 설치가 없는 PC·벤더 기본 커넥터)은
   엔드포인트·네트워크·벤더 관리 설정이 맡으며 화면에 우회 가능으로 표시합니다([보안 경계](docs/ai/SECURITY_BOUNDARIES.md)).
 - 종료 판정의 결론은 제공자의 실제 회수를 검증한 것이 아니라 공개된 증거로 내린 판단입니다.
