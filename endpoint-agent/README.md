@@ -7,7 +7,7 @@ Gateway와 OPA는 `full_stack_lab/`에서 실행합니다. 아래 사용자 범�
 ## 가입자용 관리형 Linux 설치
 
 1. 가입 승인·초대 수락 → Console 로그인 → **내 PC 연결**에서 개인별 키트 다운로드. 등록 토큰은 30분·1회용입니다.
-2. 조직 IT가 Gateway의 고정 Tailscale 노드 또는 신뢰되는 HTTPS, 승인된 설치기, 공식 native ELF 배포판을 확인합니다.
+2. 조직 IT가 게이트웨이 HTTPS와 배치 루트·SHA-256 지문, 승인된 설치기, 공식 native ELF 배포판을 확인합니다.
    사용자가 수정한 스크립트를 root로 실행하지 않습니다. 관리형 배포 시스템에서 승인 출처를 검증한 설치기를 사용하세요.
 3. 일반 계정 UID 1000 이상, sudo·wheel·docker·lxd·libvirt 권한 없음, 기존 세션 없음이 필요합니다.
    root가 systemd·AppArmor·nftables·gcc를 준비하고 Codex·Claude를 `/opt/mcpgw-approved/{codex,claude}`에 설치합니다.
@@ -117,7 +117,7 @@ IT 관리형), `.mcp.json`·`mcp.json`·`mcp_settings.json`·`cline_mcp_settings
 ## 준비
 
 1. Console(관리자)의 **직원·단말 → 단말 → 장치 자격 발급**에서 고유한 `endpoint_id`와 `inventory` 권한의 장치 키를 발급합니다. 망 탐색이 필요하고 정책 범위가 승인됐다면 `netscan`도 추가합니다. 키는 한 번만 표시됩니다.
-2. 대상 PC에서 Gateway 주소를 준비합니다. 유효한 HTTPS 또는 명시적으로 고정한 Tailscale Gateway 노드를 사용합니다.
+2. 대상 PC에서 Gateway 주소를 준비합니다. 유효한 HTTPS와 배치 루트·SHA-256 지문을 사용합니다.
    field의 Caddy는 `/api/endpoint/*`를 게시하고 각 API에서 장치 범위 또는 관리자 권한을 검증합니다.
    `./console.sh field register-pc <이름>`은 관측 자격 발급이며, 관리형 MCP 실행 권한을 활성화하지 않습니다.
 3. 해당 PC에서 **실제로 존재하는** MCP 설정 파일 또는 디렉터리 경로를 선택합니다. `env`·`headers`·파일 본문은 전송하지 않으며, stdio 명령 인자는 SHA-256 digest로 바꿔 보냅니다. URL에 직접 포함된 자격 정보는 설정에서 제거하세요.
@@ -187,3 +187,12 @@ Windows의 `os-observer-windows.py`는 보호된 collector다. AppLocker event T
 - **OS 거부 분류.** `os-observer.py`는 AppArmor 거부에서 실행 시도 프로세스(`comm`)·프로파일·대상 파일명을 보내고 `harness_startup`(Claude Code·Codex가 자기 기동 중 부르는 `git`·`claude`·`codex`를 시스템 경로에서 실행하려다 거부됨) / `blocked_attempt`(그 밖의 거부된 exec) / `unknown`(프로세스 또는 작업을 알 수 없음, 네트워크 거부)으로 나눈다. 프로파일과 nft 규칙은 바꾸지 않는다.
 - **게이트웨이 지연.** 관리형 서비스는 하트비트마다 설정된 Gateway 주소(다른 대상 없음)에 TCP 연결 5회와 `GET /api/health` 1회를 하고 p50·p95·지터(연속 표본 차이의 평균)·실패율을 `network_quality`로 보낸다. 지연은 TCP 연결 시간이며 실패율은 프로브 실패 비율이지 패킷 손실이 아니다.
 - `python endpoint-agent/agent.py --self-check`, `tests/endpoint_evidence_check.py`(단위), `tests/endpoint_evidence_pg_check.py`(격리 PostgreSQL)로 확인한다.
+
+## 현장 사설 CA(D-124)
+
+Linux 관리형 ZIP의 `enrollment.json`에는 `ca_certificate`(단일 PEM 루트), `ca_sha256`(DER SHA-256)이 있습니다.
+설치 전 지문을 검증하고 시스템 신뢰 저장소 대신 root 소유 CA 파일을 하네스 실행 프로세스에만 전달합니다.
+Claude Code는 `NODE_EXTRA_CA_CERTS`, Codex는 `CODEX_CA_CERTIFICATE`를 사용합니다.
+관측 전용 `install.py`에는 `--ca root.crt --ca-sha256 지문`을 지정합니다. 에이전트와 Linux OS 관측기는 같은 HTTPS 검증 경로를 씁니다.
+Windows 키트는 공통 CA 필드만 배포하며 전용 설치기의 적용·검증은 별도 작업입니다.
+[배포 절차](../docs/ai/FIELD.md#현장-tls와-루트-배포d-124) · [검증과 인계](../research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md).

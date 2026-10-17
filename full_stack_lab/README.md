@@ -118,7 +118,7 @@ Gateway API 중 토큰 없이 열려 있는 것은 다음뿐입니다: `/api/hea
 
 ## 8. 실제 기기로 배치하기
 
-솔루션 기기 한 대에 스택을 올리고 Tailscale IP에만 Caddy(`http://<Tailscale IP>:443`)를 게시합니다. 관리자 PC는
+솔루션 기기 한 대에 스택을 올리고 Tailscale IP에만 Caddy(`https://<Tailscale IP>`)를 게시합니다. 관리자 PC는
 브라우저로, 직원 PC는 브라우저와 키트(`field/pc/mcpgw_pc.py`)로 접속합니다.
 
 ```bash
@@ -140,5 +140,5 @@ Gateway API 중 토큰 없이 열려 있는 것은 다음뿐입니다: `/api/hea
 - 섀도 MCP는 발견·증적까지. 차단은 네트워크 평면 몫.
 - 제공자가 보유 자격을 고지하지 않으면 종료 판정은 T3에 머문다 — 논문이 특정한 구조적 한계.
 - field의 A.I.G 기본 모델(`qwen3.5:0.8b`)은 CPU에서 끝까지 돌지만 탐지력이 낮다. "발견 0 · 로컬 소형 모델"은 안전의 증거가 아니다(D-47).
-- field 모드는 Tailscale 내부망의 HTTP 전용이다. 단말 관측 에이전트는 원격 HTTP를 거부하고 Caddy도 `/api/endpoint/*`를
-  게시하지 않으므로, 이 모드에서 다른 PC의 에이전트는 보고하지 못한다.
+- field 모드는 사설 CA HTTPS를 사용한다(D-124). `field ca`로 루트·지문을 확인하고 키트로 하네스 범위에 배포한다.
+  `/api/endpoint/*`는 게이트웨이로 연결하며 원격 보고는 동일 CA로 검증한다. Windows 통합·기기 배포·PJ1 검수는 [보고](../research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md)를 따른다.

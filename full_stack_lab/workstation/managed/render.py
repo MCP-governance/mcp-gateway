@@ -13,8 +13,8 @@ import os
 import shutil
 import tomllib
 from pathlib import Path
+from urllib.parse import urlsplit
 
-GATEWAY = "http://gateway:8080/mcp"
 MODEL = "bob-assistant"
 
 parser = argparse.ArgumentParser(description="Render reviewed MCP registry into managed harness settings")
@@ -22,9 +22,16 @@ parser.add_argument("catalog", type=Path)
 parser.add_argument("root", type=Path)
 parser.add_argument("--exclude-server", action="append", default=[])
 parser.add_argument("--install", action="store_true", help="Root-only installation into Linux /etc managed locations")
+parser.add_argument("--gateway-url", help="Deployment HTTPS MCP base URL (isolated lab may use http://gateway:8080/mcp)")
 args = parser.parse_args()
 catalog, root = args.catalog, args.root
-all_servers = set(tomllib.loads(catalog.read_text(encoding="utf-8"))["servers"])
+registry = tomllib.loads(catalog.read_text(encoding="utf-8"))
+GATEWAY = (args.gateway_url or registry["harness"]["gateway_url"]).rstrip("/")
+parsed = urlsplit(GATEWAY)
+if (not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment
+        or (parsed.scheme != "https" and GATEWAY != "http://gateway:8080/mcp")):
+    parser.error("managed MCP URL requires HTTPS")
+all_servers = set(registry["servers"])
 if not set(args.exclude_server) <= all_servers:
     parser.error("excluded server must exist in the reviewed catalog")
 if args.install and (not hasattr(os, "geteuid") or os.geteuid() != 0):

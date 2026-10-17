@@ -1,4 +1,4 @@
-# Tailscale IP 전용 HTTP 앞단 — 실기기 배치 전용(루트 README "실제 기기로 배치하기", D-46). 게시하는 것은
+# Tailscale IP 전용 HTTPS 앞단 — 실기기 배치 전용(루트 README "실제 기기로 배치하기", D-46). 게시하는 것은
 # 이 Caddy와 모델 프록시(D-67)뿐이다. 나머지 서비스는 여전히 loopback에만 있거나(Console·Gateway, 기존 compose.yaml 그대로)
 # 아예 게시되지 않는다(MCP 서버 10종, LLM 게이트웨이). 경로로만 나눈다:
 #
@@ -9,14 +9,20 @@
 #   /git/*                                내부 Gitea — 솔루션 로그인을 거쳐야만(forward_auth, D-48)
 #   그 밖 전부                             Console(웹) — agent-service가 정적 파일도 같이 서빙
 #
-# Docker가 Caddy 포트를 Tailscale IP에만 바인딩한다. 연결 암호화는 Tailscale이 맡는다.
+# Docker가 HTTPS 포트를 Tailscale IP에만 바인딩한다. 루트는 배치의 /data에만 보존한다.
 {
 	# 관리 API(:2019)는 쓰지 않는다. 이 파일이 정본이고, 바꾸면 컨테이너를 다시 띄운다.
 	admin off
-	auto_https off
+	auto_https disable_redirects
+	skip_install_trust
+	default_sni {$APPLIANCE_BIND}
 }
 
-http://:8080 {
+{$FIELD_TLS_ADDRESSES} {
+	tls internal {
+		protocols tls1.2 tls1.3
+		ciphers TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+	}
 
 	# handle_path가 아니라 handle이다 — Gateway의 ServerPath가 "/mcp/<server>/" 경로 그대로를 보고
 	# 서버 이름을 떼어내므로 접두어를 벗기면 안 된다. SSE는 모으지 않고 바로 보낸다.

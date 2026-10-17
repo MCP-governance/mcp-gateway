@@ -42,7 +42,8 @@ usage: ./console.sh <command>
   replay [N]             기록된 정책 입력 N건(기본 100)과 합성 라벨 사례를 후보 정책(REPLAY_POLICY_DIR)에 재생 — MCP 호출 없음
   status | logs [svc] | down | reset | scan | openapi
   field up [--with-lab-mcp] [--with-lab-workstations]
-                         Tailscale IP에만 HTTP 게시(터널 암호화, 별도 인증서·hosts 설정 없음)
+                         Tailscale IP에만 HTTPS 게시(배치 전용 사설 CA)
+  field ca               루트 인증서 내보내기·SHA-256 지문 확인
   field status           Caddy·Gateway·Console 상태와 Tailscale 주소 확인
   field pc-command       개인별 설치 키트 다운로드와 관리형 설치 절차
   field set-password <아이디>
@@ -285,27 +286,51 @@ field_up() {
   docker compose "${FIELD_COMPOSE[@]}" up -d "${services[@]}"
   wait_ready
   if [[ $with_lab_mcp == 1 ]]; then ensure_contracts; fi
+  echo "[field 3/4] Caddy·모델 프록시(Tailscale IP 전용 앞단)"
+  docker compose "${FIELD_COMPOSE[@]}" build -q model-proxy
+  docker compose "${FIELD_COMPOSE[@]}" up -d caddy model-proxy
+  field_ca
   if [[ $with_ws == 1 ]]; then
-    echo "[field 3/4] 컨테이너 직원 PC 4대도 함께 기동(--with-lab-workstations)"
+    echo "[field 4/4] 컨테이너 직원 PC 4대도 함께 기동(--with-lab-workstations)"
     docker compose "${FIELD_COMPOSE[@]}" --profile lab-workstations build -q "${WORKSTATIONS[@]}"
     provision_devices
     docker compose "${FIELD_COMPOSE[@]}" --profile lab-workstations up -d "${WORKSTATIONS[@]}"
   else
-    echo "[field 3/4] 컨테이너 직원 PC 4대는 끔(실제 PC가 대신함) — 같이 보려면 --with-lab-workstations"
+    echo "[field 4/4] 컨테이너 직원 PC 4대는 끔(실제 PC가 대신함) — 같이 보려면 --with-lab-workstations"
   fi
-  echo "[field 4/4] Caddy·모델 프록시(Tailscale IP 전용 앞단)"
-  docker compose "${FIELD_COMPOSE[@]}" build -q model-proxy
-  docker compose "${FIELD_COMPOSE[@]}" up -d caddy model-proxy
   echo
-  echo "접속 주소       : http://${APPLIANCE_BIND}:443"
+  echo "접속 주소       : https://${APPLIANCE_BIND}:443"
   if [[ $with_lab_mcp == 0 ]]; then echo "시험 계정       : root/root(관리자), user/user(직원) · 회원가입은 관리자 승인"; fi
-  echo "내부 저장소     : http://${APPLIANCE_BIND}:443/git/"
+  echo "내부 저장소     : https://${APPLIANCE_BIND}:443/git/"
   echo "직원 PC 키트    : Console 로그인 → 내 PC 연결 → 개인별 1회용 키트"
 }
 
 field_status() {
   docker compose "${FIELD_COMPOSE[@]}" ps caddy gateway agent-service
-  curl -fsS "http://${APPLIANCE_BIND}:443/api/health" | python3 -m json.tool
+  curl --cacert field/ca/root.crt -fsS "https://${APPLIANCE_BIND}:443/api/health" | python3 -m json.tool
+}
+
+field_ca() {
+  local temporary; temporary="$(mktemp)"
+  local ready=0
+  for _ in {1..30}; do
+    if docker compose "${FIELD_COMPOSE[@]}" exec -T caddy cat /data/caddy/pki/authorities/local/root.crt > "$temporary" 2>/dev/null; then
+      ready=1; break
+    fi
+    sleep 1
+  done
+  if [[ $ready != 1 ]]; then
+    rm -f "$temporary"; echo "Caddy 루트 인증서를 읽지 못했습니다" >&2; return 1
+  fi
+  if ! openssl x509 -in "$temporary" -noout -fingerprint -sha256; then
+    rm -f "$temporary"; return 1
+  fi
+  mkdir -p field/ca
+  mv "$temporary" field/ca/root.crt
+  chmod 644 field/ca/root.crt
+  openssl x509 -in field/ca/root.crt -noout -fingerprint -sha256 | cut -d= -f2 > field/ca/root.sha256
+  chmod 644 field/ca/root.sha256
+  echo "루트 인증서: $LAB_DIR/field/ca/root.crt"
 }
 
 field_down() {
@@ -346,7 +371,7 @@ sys.exit(0 if n else 1)' "$email"
 
 # 설치 권한은 OS 관리자에게 있고, 가입자용 grant는 Console 인증 뒤 생성한다.
 field_pc_command() {
-  echo "http://${APPLIANCE_BIND}:443/workspace 로그인 → 내 PC 연결 → 설치 키트 다운로드"
+  echo "https://${APPLIANCE_BIND}:443/workspace 로그인 → 내 PC 연결 → 설치 키트 다운로드"
   echo "unzip mcp-managed-kit.zip -d mcp-managed-kit"
   echo "cd mcp-managed-kit"
   echo "조직 IT가 승인된 설치기를 확인한 뒤: sudo python3 managed-linux.py install --user 일반사용자계정"
@@ -361,10 +386,20 @@ field_dispatch() {
     }
   fi
   export APPLIANCE_BIND
+  FIELD_TLS_ADDRESSES="https://${APPLIANCE_BIND}:8080"
+  local public_name="${FIELD_PUBLIC_NAME:-$(env_value FIELD_PUBLIC_NAME)}"
+  if [[ -n "$public_name" ]]; then
+    [[ "$public_name" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] || {
+      echo "FIELD_PUBLIC_NAME은 호스트 이름이어야 합니다" >&2; exit 1;
+    }
+    FIELD_TLS_ADDRESSES+=", https://${public_name}:8080"
+  fi
+  export FIELD_TLS_ADDRESSES
   export MCP_FIELD_MODE=1
   case "${1:-}" in
     up) shift; field_up "$@" ;;
     status) field_status ;;
+    ca) field_ca ;;
     down) field_down ;;
     register-pc) shift; field_register_pc "$@" ;;
     pc-command) field_pc_command ;;

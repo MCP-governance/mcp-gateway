@@ -61,6 +61,7 @@ def private_write(path, content):
 
 
 def request(config, path, body=None, *, credential=True):
+    context = verify_transport(config)
     headers = {"Content-Type": "application/json"}
     if credential:
         headers["X-Endpoint-Key"] = config["device_key"]
@@ -69,7 +70,8 @@ def request(config, path, body=None, *, credential=True):
     class NoRedirect(urllib.request.HTTPRedirectHandler):
         def redirect_request(self, req, fp, code, msg, headers, newurl):
             raise ValueError("장치 자격을 다른 주소로 전달하지 않습니다")
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
+                                        urllib.request.HTTPSHandler(context=context))
     with opener.open(req, timeout=15) as response:
         return json.loads(response.read(131072))
 
@@ -82,6 +84,7 @@ def verify_transport(config):
     parsed = urlsplit(config["gateway_url"])
     if parsed.path not in ("", "/") or parsed.username or parsed.password or parsed.query or parsed.fragment:
         raise ValueError("Gateway 기본 주소만 허용합니다")
+    return observer.tls_context(config.get("ca_certificate", ""), config.get("ca_sha256", ""))
 
 
 def apply_policy(policy):
@@ -162,6 +165,8 @@ def forget_stale_sign_in(home: str) -> None:
 def install(args):
     if os.geteuid() != 0:
         raise ValueError("조직 관리자가 root로 설치해야 합니다")
+    bundle = json.loads(args.enrollment.read_text())
+    verify_transport(bundle)
     person = pwd.getpwnam(args.user)
     if person.pw_uid < 1000 or not person.pw_dir.startswith("/home/"):
         raise ValueError("/home의 실제 일반 사용자만 지원합니다")
@@ -205,12 +210,15 @@ def install(args):
     config_path = folder / "config.json"
     if config_path.exists():
         raise ValueError("이미 설치된 장치입니다. 기존 자격을 폐기하고 조직 관리자가 제거한 뒤 재설치하세요")
-    bundle = json.loads(args.enrollment.read_text())
-    verify_transport(bundle)
     bundle["device_key"] = secrets.token_urlsafe(32)
     enrolled = request(bundle, "/oauth/device-enroll", {"enrollment_token": bundle["enrollment_token"], "device_key": bundle["device_key"],
                            "hostname": socket.gethostname(), "local_username": args.user, "local_uid": person.pw_uid}, credential=False)
     config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
+    config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256") if k in bundle})
+    ca_path = PROGRAMS / f"ca-{person.pw_uid}.crt"
+    if config.get("ca_certificate"):
+        private_write(ca_path, config["ca_certificate"])
+        ca_path.chmod(0o644)
     config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, uid=person.pw_uid,
                   owner_uid=args.owner_uid,
                   socket=f"/run/mcpgw-{args.user}.sock", nft_baseline=str(folder / "nft-baseline.json"))
@@ -229,6 +237,7 @@ def install(args):
     subprocess.run([sys.executable, str(PROGRAMS / "enforce-linux.py"), "--user", args.user,
                     *(["--owner-uid", str(args.owner_uid)] if args.owner_uid is not None else []),
                     "--gateway-port", str(policy["gateway_port"]),
+                    *(["--ca", str(ca_path)] if config.get("ca_certificate") else []),
                     *(["--proxy-port", str(policy["proxy_port"]), "--proxy-env", json.dumps(policy["proxy_environment"])]
                       if policy.get("proxy_port") else []),
                     *[part for ip in policy["gateway_ips"] for part in ("--gateway-ip", ip)],
@@ -272,6 +281,7 @@ def serve(args):
     threading.Thread(target=server.serve_forever, daemon=True).start()
     observer_config = args.config.with_name("observer.json")
     private_write(observer_config, json.dumps({"ENDPOINT_GATEWAY_URL": config["gateway_url"], "ENDPOINT_DEVICE_KEY": config["device_key"],
+                 "ENDPOINT_CA_CERTIFICATE": config.get("ca_certificate", ""), "ENDPOINT_CA_SHA256": config.get("ca_sha256", ""),
                  "ENDPOINT_ID": config["endpoint_id"], "ENDPOINT_CONFIG_PATHS": os.pathsep.join([pwd.getpwnam(config["username"]).pw_dir,
                  "/etc/codex", "/etc/claude-code"]), "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_NETSCAN": "0",
                  "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"]), "ENDPOINT_ORIGIN": "automatic"}))
@@ -301,7 +311,8 @@ def serve(args):
             except (OSError, KeyError, ValueError):
                 pass  # the account report is informational; it never holds back the heartbeat
             try:
-                beat["network_quality"] = load_module("probe", Path(__file__).with_name("agent.py")).measure_gateway(config["gateway_url"])
+                beat["network_quality"] = load_module("probe", Path(__file__).with_name("agent.py")).measure_gateway(
+                    config["gateway_url"], context=verify_transport(config))
             except (OSError, KeyError, ValueError):
                 pass  # a failed measurement is simply absent
             try:
@@ -351,7 +362,7 @@ def rollback(args):
     and a reinstall then refused the device as already installed."""
     if os.geteuid() != 0:
         raise ValueError("root로 실행하세요")
-    pwd.getpwnam(args.user)
+    person = pwd.getpwnam(args.user)
     folder = STATE / args.user
     unit = f"mcpgw-managed-{args.user}.service"
     subprocess.run(["systemctl", "disable", "--now", unit], check=False)
@@ -368,6 +379,7 @@ def rollback(args):
             target.unlink(missing_ok=True)
     Path(f"/run/mcpgw-{args.user}.sock").unlink(missing_ok=True)
     shutil.rmtree(folder, ignore_errors=True)
+    (PROGRAMS / f"ca-{person.pw_uid}.crt").unlink(missing_ok=True)
     print("해당 계정의 관리형 서비스·설정·방화벽·프로필을 제거했습니다")
 
 

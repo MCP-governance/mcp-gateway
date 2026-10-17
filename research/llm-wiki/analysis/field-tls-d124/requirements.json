@@ -1,0 +1,522 @@
+{
+  "task": "field-tls-d124",
+  "base_commit": "6ce607035271b00949ee075313635a9e6f3a8d82",
+  "branch": "10/18-field-tls",
+  "version_boundary": "uncommitted bytes identified by SHA-256; no deployment claim",
+  "requirements": [
+    {
+      "id": "TLS-01",
+      "description": "HTTPS only, TLS 1.2+, ECDHE AEAD, no redirect",
+      "decision": "D-124",
+      "wbs": "G08.05",
+      "policy": "POL-16",
+      "implementation": "implemented-uncommitted",
+      "local_tests": [
+        "test_caddy_and_overlay_security_invariants"
+      ],
+      "live_status": "not_run",
+      "files": [
+        {
+          "path": "full_stack_lab/field/Caddyfile",
+          "sha256": "767d43c4573799f1c2232ff223e05c1ef776fa61b754fb6366e62a024cc7fca7"
+        },
+        {
+          "path": "full_stack_lab/compose.field.yaml",
+          "sha256": "29ceab9fef3207f2d5d322ad1c11254860255c908e42831d847e4fcbe54908a4"
+        }
+      ]
+    },
+    {
+      "id": "TLS-02",
+      "description": "Tailscale bind, IP and public name, empty SNI",
+      "decision": "D-124",
+      "wbs": "G08.05",
+      "policy": "POL-16",
+      "implementation": "implemented-uncommitted",
+      "local_tests": [
+        "test_caddy_and_overlay_security_invariants"
+      ],
+      "live_status": "not_run",
+      "files": [
+        {
+          "path": "full_stack_lab/console.sh",
+          "sha256": "e1cf6d58d3bd27a541e6709344cd8de638450e7e458b29286d0fea75098a4da5"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/mcp_facade.py",
+          "sha256": "43b1ad3fe686a900613a123d3a60d4aa6abf45780293994f2f48a9774055f7cb",
+          "symbols": [
+            {
+              "name": "transport_security",
+              "line": 233
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TLS-03",
+      "description": "Persistent per-deployment CA, public export and SHA-256",
+      "decision": "D-124",
+      "wbs": "G08.05",
+      "policy": "POL-16",
+      "implementation": "implemented-uncommitted",
+      "local_tests": [
+        "test_caddy_and_overlay_security_invariants"
+      ],
+      "live_status": "not_run",
+      "files": [
+        {
+          "path": "full_stack_lab/console.sh",
+          "sha256": "e1cf6d58d3bd27a541e6709344cd8de638450e7e458b29286d0fea75098a4da5"
+        },
+        {
+          "path": "full_stack_lab/compose.field.yaml",
+          "sha256": "29ceab9fef3207f2d5d322ad1c11254860255c908e42831d847e4fcbe54908a4"
+        }
+      ]
+    },
+    {
+      "id": "TLS-04",
+      "description": "Kit root and pin, reject mismatch before side effects",
+      "decision": "D-124",
+      "wbs": "G08.05",
+      "policy": "POL-16",
+      "implementation": "implemented-uncommitted",
+      "local_tests": [
+        "test_ca_pin_and_tls_verification",
+        "test_bad_pin_stops_setup_before_writes_or_login",
+        "test_managed_bad_pin_stops_before_enrollment_transport",
+        "test_observer_installer_bad_pin_stops_before_key_or_files",
+        "test_console_archive_contains_matching_root_and_pin"
+      ],
+      "live_status": "not_run",
+      "files": [
+        {
+          "path": "full_stack_lab/gateway/app/agent_service.py",
+          "sha256": "2be55ea0b5431c6797ae7a4782314e0783e1831b296446274bf4e6c0de1b0c8a",
+          "symbols": [
+            {
+              "name": "field_ca",
+              "line": 343
+            },
+            {
+              "name": "download_managed_kit",
+              "line": 373
+            }
+          ]
+        },
+        {
+          "path": "full_stack_lab/field/pc/mcpgw_pc.py",
+          "sha256": "6186d7111a6a3f8f68ab66d9ef1dd5171bc696b09c6871135bf179434d0f2453",
+          "symbols": [
+            {
+              "name": "gateway_url",
+              "line": 60
+            },
+            {
+              "name": "pem_fingerprint",
+              "line": 102
+            },
+            {
+              "name": "verify_ca",
+              "line": 113
+            },
+            {
+              "name": "cmd_harness",
+              "line": 120
+            },
+            {
+              "name": "tls_context",
+              "line": 193
+            },
+            {
+              "name": "request",
+              "line": 204
+            },
+            {
+              "name": "cmd_setup",
+              "line": 404
+            },
+            {
+              "name": "main",
+              "line": 854
+            }
+          ]
+        },
+        {
+          "path": "endpoint-agent/bootstrap.py",
+          "sha256": "b6803fd12966c33655d49b13ec337eecef5626bef1feb7f9c58ce6c1e6159ab0",
+          "symbols": [
+            {
+              "name": "rollback",
+              "line": 346
+            },
+            {
+              "name": "main",
+              "line": 487
+            }
+          ]
+        },
+        {
+          "path": "endpoint-agent/managed-linux.py",
+          "sha256": "017fe09ab14e1e4ba5366d28d8c6a15aa46da458b4bbd30542142d9d7a6efd8f",
+          "symbols": [
+            {
+              "name": "request",
+              "line": 63
+            },
+            {
+              "name": "verify_transport",
+              "line": 79
+            },
+            {
+              "name": "install",
+              "line": 165
+            },
+            {
+              "name": "serve",
+              "line": 260
+            },
+            {
+              "name": "rollback",
+              "line": 359
+            },
+            {
+              "name": "main",
+              "line": 396
+            }
+          ]
+        },
+        {
+          "path": "endpoint-agent/install.py",
+          "sha256": "4d926d8f5ba623d463fe81ec1de2de40f0d5b409bb4d563314224b4e05ef078b",
+          "symbols": [
+            {
+              "name": "gateway_url",
+              "line": 16
+            },
+            {
+              "name": "main",
+              "line": 56
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TLS-05",
+      "description": "Harness process-scoped trust, no system CA mutation",
+      "decision": "D-124",
+      "wbs": "G08.05",
+      "policy": "POL-16",
+      "implementation": "implemented-uncommitted",
+      "local_tests": [
+        "test_harness_ca_is_process_scoped_and_checked"
+      ],
+      "live_status": "not_run",
+      "files": [
+        {
+          "path": "endpoint-agent/enforce-linux.py",
+          "sha256": "f4da4ea3cff03e29877314911d2bb1d37df12b5fa0bf4458191160bebea82af4",
+          "symbols": [
+            {
+              "name": "wrapper",
+              "line": 164
+            },
+            {
+              "name": "main",
+              "line": 202
+            }
+          ]
+        },
+        {
+          "path": "endpoint-agent/managed-linux.py",
+          "sha256": "017fe09ab14e1e4ba5366d28d8c6a15aa46da458b4bbd30542142d9d7a6efd8f",
+          "symbols": [
+            {
+              "name": "request",
+              "line": 63
+            },
+            {
+              "name": "verify_transport",
+              "line": 79
+            },
+            {
+              "name": "install",
+              "line": 165
+            },
+            {
+              "name": "serve",
+              "line": 260
+            },
+            {
+              "name": "rollback",
+              "line": 359
+            },
+            {
+              "name": "main",
+              "line": 396
+            }
+          ]
+        },
+        {
+          "path": "full_stack_lab/field/pc/mcpgw_pc.py",
+          "sha256": "6186d7111a6a3f8f68ab66d9ef1dd5171bc696b09c6871135bf179434d0f2453",
+          "symbols": [
+            {
+              "name": "gateway_url",
+              "line": 60
+            },
+            {
+              "name": "pem_fingerprint",
+              "line": 102
+            },
+            {
+              "name": "verify_ca",
+              "line": 113
+            },
+            {
+              "name": "cmd_harness",
+              "line": 120
+            },
+            {
+              "name": "tls_context",
+              "line": 193
+            },
+            {
+              "name": "request",
+              "line": 204
+            },
+            {
+              "name": "cmd_setup",
+              "line": 404
+            },
+            {
+              "name": "main",
+              "line": 854
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TLS-06",
+      "description": "Endpoint and OS observer use verified HTTPS, no redirects",
+      "decision": "D-124",
+      "wbs": "G08.05",
+      "policy": "POL-16",
+      "implementation": "implemented-uncommitted",
+      "local_tests": [
+        "test_remote_plaintext_rejected_before_transport",
+        "test_file_ca_requires_matching_sidecar",
+        "test_ca_pin_and_tls_verification"
+      ],
+      "live_status": "not_run",
+      "files": [
+        {
+          "path": "endpoint-agent/agent.py",
+          "sha256": "2f8fd6f02113891fa8734fb12957f43831879654eb0f0ed76e6cd73b0401e27c",
+          "symbols": [
+            {
+              "name": "tls_context",
+              "line": 721
+            },
+            {
+              "name": "call",
+              "line": 745
+            },
+            {
+              "name": "measure_gateway",
+              "line": 837
+            },
+            {
+              "name": "validate_gateway",
+              "line": 876
+            },
+            {
+              "name": "main",
+              "line": 885
+            }
+          ]
+        },
+        {
+          "path": "endpoint-agent/managed-linux.py",
+          "sha256": "017fe09ab14e1e4ba5366d28d8c6a15aa46da458b4bbd30542142d9d7a6efd8f",
+          "symbols": [
+            {
+              "name": "request",
+              "line": 63
+            },
+            {
+              "name": "verify_transport",
+              "line": 79
+            },
+            {
+              "name": "install",
+              "line": 165
+            },
+            {
+              "name": "serve",
+              "line": 260
+            },
+            {
+              "name": "rollback",
+              "line": 359
+            },
+            {
+              "name": "main",
+              "line": 396
+            }
+          ]
+        },
+        {
+          "path": "endpoint-agent/os-observer.py",
+          "sha256": "47f001e966f289601144c5803bff8d4e5f4fc56068392231c3aee10f9d3793a8",
+          "symbols": [
+            {
+              "name": "main",
+              "line": 83
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TLS-07",
+      "description": "Registry-rendered HTTPS and field dynamic policy",
+      "decision": "D-124",
+      "wbs": "G08.05",
+      "policy": "POL-16",
+      "implementation": "implemented-uncommitted",
+      "local_tests": [
+        "registry-renderer"
+      ],
+      "live_status": "not_run",
+      "files": [
+        {
+          "path": "full_stack_lab/registry/catalog.toml",
+          "sha256": "84c40383fa0c98b3c3e4b99eafb74cf51e9ab2809ed1b047fadb3590943d1859"
+        },
+        {
+          "path": "full_stack_lab/registry/field/catalog.toml",
+          "sha256": "cf9c1b1504fb1268c514bde53334e064260ed3cab3d9e96da2598a25d3283284"
+        },
+        {
+          "path": "full_stack_lab/workstation/managed/render.py",
+          "sha256": "53e99ed15e87139c54651946693235cb1b6fe6d47000635e033480b37b6e35d6",
+          "symbols": [
+            {
+              "name": "url",
+              "line": 42
+            }
+          ]
+        },
+        {
+          "path": "full_stack_lab/workstation/Dockerfile",
+          "sha256": "a6f65d3eba4220b4a151a42b5a0391974022f0412bfbba0753a073fb5230c4e6"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+          "sha256": "ede830ba7adb16ff446cec398f883f765bad8c4985c82e93caf39617803f1d4d",
+          "symbols": [
+            {
+              "name": "managed_policy",
+              "line": 739
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TLS-08",
+      "description": "Windows common CA interface only; integration pending",
+      "decision": "D-124",
+      "wbs": "G08.05",
+      "policy": "POL-16",
+      "implementation": "common-interface-only",
+      "local_tests": [
+        "test_console_archive_contains_matching_root_and_pin"
+      ],
+      "live_status": "not_run",
+      "files": [
+        {
+          "path": "full_stack_lab/gateway/app/agent_service.py",
+          "sha256": "2be55ea0b5431c6797ae7a4782314e0783e1831b296446274bf4e6c0de1b0c8a",
+          "symbols": [
+            {
+              "name": "field_ca",
+              "line": 343
+            },
+            {
+              "name": "download_managed_kit",
+              "line": 373
+            }
+          ]
+        },
+        {
+          "path": "endpoint-agent/agent.py",
+          "sha256": "2f8fd6f02113891fa8734fb12957f43831879654eb0f0ed76e6cd73b0401e27c",
+          "symbols": [
+            {
+              "name": "tls_context",
+              "line": 721
+            },
+            {
+              "name": "call",
+              "line": 745
+            },
+            {
+              "name": "measure_gateway",
+              "line": 837
+            },
+            {
+              "name": "validate_gateway",
+              "line": 876
+            },
+            {
+              "name": "main",
+              "line": 885
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "test_dimensions": {
+    "normal": [
+      "valid CA and both harness environment variables",
+      "four-harness HTTPS rendering"
+    ],
+    "negative": [
+      "pin mismatch before writes/enrollment",
+      "remote HTTP before transport",
+      "extra certificate root rejected"
+    ],
+    "boundary": [
+      "missing pin",
+      "missing certificate",
+      "TLS minimum and hostname checks"
+    ],
+    "failure": [
+      "Caddy validation unavailable locally",
+      "wrong CA live failure pending"
+    ],
+    "concurrency": [
+      "simultaneous kit fingerprints and clients: main pending"
+    ],
+    "recovery": [
+      "same-volume restart and isolated root rotation: main pending"
+    ]
+  },
+  "test_artifacts": [
+    {
+      "path": "full_stack_lab/tests/field_tls_check.py",
+      "sha256": "c63fee194bab00a42b71b8c451913585c39229c8eba497532e1213760b936afc"
+    },
+    {
+      "path": "full_stack_lab/tests/field_kit_check.py",
+      "sha256": "1a45631245e4816c541301f75cb53c6250b46dc9dfd8f843ed3525648c802f46"
+    }
+  ]
+}

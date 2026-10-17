@@ -1,0 +1,126 @@
+{
+  "task": "field-tls-d124",
+  "captured_at": "2026-10-18T00:37:05.944815+09:00",
+  "scope": "local-static-and-unit-only",
+  "python": "3.10.5 (tags/v3.10.5:f377153, Jun  6 2022, 16:14:13) [MSC v.1929 64 bit (AMD64)]",
+  "checks": [
+    {
+      "name": "tls-unit",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/field_tls_check.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "log": "tls-unit.log"
+    },
+    {
+      "name": "kit-offline-regression",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-c",
+        "import sys,runpy,pip._vendor.tomli; sys.modules['tomllib']=pip._vendor.tomli; sys.argv=['field_kit_check.py', 'KitTest.test_address_rules', 'KitTest.test_managed_files_carry_no_secret', 'KitTest.test_kit_parses_as_python_3_9', 'OverlayTest.test_caddyfile_routes', 'OverlayTest.test_field_publications_reject_wildcard_other_service_wrong_port_and_protocol', 'OverlayTest.test_experiments_use_the_internal_idp_address', 'OverlayTest.test_mcp_facade_accepts_only_the_configured_public_host']; runpy.run_path('full_stack_lab/tests/field_kit_check.py',run_name='__main__')"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "log": "kit-offline-regression.log"
+    },
+    {
+      "name": "pyflakes",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-c",
+        "import sys,runpy; sys.path.insert(0,'C:\\\\Users\\\\bobysg\\\\bob\\\\프로젝트\\\\.venv-mcpgw\\\\Lib\\\\site-packages'); sys.argv=['pyflakes', 'endpoint-agent/agent.py', 'endpoint-agent/bootstrap.py', 'endpoint-agent/enforce-linux.py', 'endpoint-agent/install.py', 'endpoint-agent/managed-linux.py', 'full_stack_lab/field/pc/mcpgw_pc.py', 'full_stack_lab/gateway/app/agent_service.py', 'full_stack_lab/gateway/app/endpoint_plane.py', 'full_stack_lab/gateway/app/mcp_facade.py', 'full_stack_lab/tests/field_kit_check.py', 'full_stack_lab/workstation/managed/render.py', 'full_stack_lab/tests/field_tls_check.py']; runpy.run_module('pyflakes',run_name='__main__')"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "log": "pyflakes.log"
+    },
+    {
+      "name": "shell-syntax",
+      "command": [
+        "C:/Program Files/Git/bin/bash.exe",
+        "-n",
+        "full_stack_lab/console.sh"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "log": "shell-syntax.log"
+    },
+    {
+      "name": "open-endpoints",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "log": "open-endpoints.log"
+    },
+    {
+      "name": "diff-whitespace",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "log": "diff-whitespace.log"
+    },
+    {
+      "name": "registry-renderer",
+      "status": "passed",
+      "cases": [
+        "registry HTTPS default",
+        "field HTTPS for four harnesses and Codex requirements",
+        "remote HTTP rejected"
+      ],
+      "parser": "pip vendored tomli injected only into local Python 3.10 check"
+    },
+    {
+      "name": "caddy-adapt-validate",
+      "status": "not_run",
+      "reason": "Caddy and Docker unavailable; WSL E_ACCESSDENIED"
+    },
+    {
+      "name": "solution-deployment",
+      "status": "not_run",
+      "reason": "main performs; user prohibits remote access"
+    },
+    {
+      "name": "pj1-harness-and-report",
+      "status": "not_run",
+      "reason": "main performs; user prohibits remote access"
+    },
+    {
+      "name": "windows-private-ca-integration",
+      "status": "not_run",
+      "reason": "Windows-specific files owned by another task"
+    },
+    {
+      "name": "map-threats",
+      "status": "passed",
+      "log": "map-threats.log",
+      "scope": "24 static candidate mappings; no runtime claim"
+    },
+    {
+      "name": "wiki-check",
+      "status": "failed",
+      "log": "check-wiki.log",
+      "remaining_errors": 29,
+      "reason": "existing local-sources/compliance provenance.json files absent; no new task link or code hash errors"
+    }
+  ],
+  "remote_access": false,
+  "deployment_verified": false,
+  "pj1_verified": false
+}

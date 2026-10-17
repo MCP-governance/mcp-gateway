@@ -207,6 +207,7 @@ def main() -> None:
     parser.add_argument("--gateway-port", type=int, default=443)
     parser.add_argument("--proxy-port", type=int, help="게이트웨이 호스트의 승인 모델 프록시 포트")
     parser.add_argument("--proxy-env", default="{}", help="하네스에 넣을 프록시 환경 변수(JSON)")
+    parser.add_argument("--ca", help="검증한 루트 인증서의 root 관리 경로")
     parser.add_argument("--client", action="append", default=[], help="codex=/root-owned/native/binary")
     parser.add_argument("--helper-source", help="root 소유 직원 PC 키트 mcpgw_pc.py")
     parser.add_argument("--managed-agent", help="root 관리형 엔드포인트 서비스의 header 명령")
@@ -281,6 +282,9 @@ def main() -> None:
     if not isinstance(proxy_env, dict) or set(proxy_env) - {"HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY"} or not all(
             isinstance(v, str) and re.fullmatch(r"[A-Za-z0-9.:/,\[\]_-]{1,300}", v) for v in proxy_env.values()):
         parser.error("프록시 환경 변수가 올바르지 않습니다")
+    ca = Path(args.ca).resolve(strict=True) if args.ca else None
+    if ca and (not ca.is_file() or any(p.stat().st_uid != 0 or p.stat().st_mode & 0o022 for p in (ca, *ca.parents))):
+        parser.error("CA 경로는 root 소유이고 사용자 쓰기가 금지돼야 합니다")
     if not Path("/sys/module/apparmor/parameters/enabled").read_text().strip().startswith("Y"):
         parser.error("이 시스템에서 AppArmor 집행을 사용할 수 없어 설치를 중단합니다")
     # The profiles tell the harness's `sh -c` (the header helper) from the model's bash by binary.
@@ -312,7 +316,10 @@ def main() -> None:
     shell = folder / "login-shell"
     wrapper(shell, Path("/bin/bash"), person.pw_dir, args.user, login=True)
     for key, binary in binaries.items():
-        wrapper(folder / key, binary, person.pw_dir, args.user, environment=proxy_env, options=fixed_options(key, binary))
+        environment = dict(proxy_env)
+        if ca:
+            environment["CODEX_CA_CERTIFICATE" if key == "codex" else "NODE_EXTRA_CA_CERTS"] = str(ca)
+        wrapper(folder / key, binary, person.pw_dir, args.user, environment=environment, options=fixed_options(key, binary))
     if args.helper_source:
         source = trusted_binary(args.helper_source)
         helper = folder / "mcpgw_pc.py"

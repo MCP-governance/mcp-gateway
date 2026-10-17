@@ -57,6 +57,7 @@ import os
 import platform
 import re
 import socket
+import ssl
 import subprocess
 import sys
 import time
@@ -717,17 +718,38 @@ def listener_findings(policy: dict) -> list[dict]:
 
 # ── 게이트웨이 통신 ──────────────────────────────────────────────────────────
 
+def tls_context(certificate: str | None = None, fingerprint: str | None = None) -> ssl.SSLContext:
+    ca_file = setting("ENDPOINT_CA_FILE", "")
+    if certificate is None and ca_file:
+        certificate = Path(ca_file).read_text(encoding="utf-8")
+        fingerprint = Path(ca_file).with_suffix(".sha256").read_text(encoding="utf-8").strip()
+    certificate = setting("ENDPOINT_CA_CERTIFICATE", "") if certificate is None else certificate
+    fingerprint = setting("ENDPOINT_CA_SHA256", "") if fingerprint is None else fingerprint
+    context = ssl.create_default_context()
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
+    if certificate or fingerprint:
+        blocks = re.findall(r"-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----", certificate, re.S)
+        if len(blocks) != 1 or certificate.strip() != blocks[0]:
+            raise ValueError("설치 키트에는 루트 인증서 하나만 허용합니다")
+        expected = fingerprint.replace(":", "").lower()
+        if not re.fullmatch(r"[0-9a-f]{64}", expected) or hashlib.sha256(ssl.PEM_cert_to_DER_cert(blocks[0])).hexdigest() != expected:
+            raise ValueError("CA SHA-256 지문이 일치하지 않습니다")
+        context.load_verify_locations(cadata=certificate)
+    return context
+
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, request, *args):
         return None
 
 
 def call(method: str, path: str, body: dict | None = None) -> dict:
+    validate_gateway()
     payload = json.dumps(body).encode() if body is not None else None
     request = urllib.request.Request(GATEWAY_URL + path, data=payload, method=method)
     request.add_header("content-type", "application/json")
     request.add_header("x-endpoint-key", DEVICE_KEY)
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
+                                        urllib.request.HTTPSHandler(context=tls_context()))
     with opener.open(request, timeout=30) as response:
         return json.loads(response.read() or b"{}")
 
@@ -812,7 +834,7 @@ def once() -> dict:
     return results
 
 
-def measure_gateway(url: str, probes: int = 5, timeout: float = 2.0) -> dict:
+def measure_gateway(url: str, probes: int = 5, timeout: float = 2.0, *, context=None) -> dict:
     """Five TCP connects and one HTTP(S) round trip to the Gateway this device already reports to.
 
     The target is the caller's own configured Gateway address and nothing else. The latency
@@ -829,7 +851,8 @@ def measure_gateway(url: str, probes: int = 5, timeout: float = 2.0) -> dict:
         except OSError:
             failed += 1
     try:
-        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
+                                            urllib.request.HTTPSHandler(context=context or tls_context()))
         with opener.open(urllib.request.Request(url.rstrip("/") + "/api/health"), timeout=5) as response:
             response.read(1024)
     except urllib.error.HTTPError as exc:
@@ -852,19 +875,11 @@ def summarise_samples(samples: list, failed: int, probes: int) -> dict:
 
 def validate_gateway() -> None:
     parsed = urlsplit(GATEWAY_URL)
+    if not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
+        raise ValueError("게이트웨이 기본 주소가 올바르지 않습니다")
     if parsed.scheme == "https" or (parsed.scheme == "http" and parsed.hostname in {"gateway", "localhost", "127.0.0.1", "::1"}):
         return
-    pinned = setting("ENDPOINT_TAILSCALE_NODE_ID", "")
-    if parsed.scheme == "http" and pinned:
-        address = ipaddress.ip_address(parsed.hostname)
-        if address not in ipaddress.ip_network("100.64.0.0/10"):
-            raise ValueError("Tailscale HTTP 주소는 승인한 overlay 대역이어야 합니다")
-        status = json.loads(subprocess.check_output(["tailscale", "status", "--json"], text=True, timeout=10))
-        if status.get("BackendState") == "Running" and any(
-                peer.get("ID") == pinned and str(address) in peer.get("TailscaleIPs", [])
-                for peer in status.get("Peer", {}).values()):
-            return
-    raise ValueError("원격 Gateway는 HTTPS 또는 관리자 지정 Tailscale 노드의 overlay HTTP만 허용합니다")
+    raise ValueError("원격 게이트웨이는 HTTPS만 허용합니다")
 
 
 def main() -> int:

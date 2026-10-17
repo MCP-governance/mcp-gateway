@@ -744,6 +744,8 @@ async def managed_policy(device: dict) -> dict:
     parsed = urlsplit(public)
     if parsed.scheme not in {"https", "http"} or not parsed.hostname or parsed.path or parsed.username or parsed.password or parsed.query or parsed.fragment:
         raise ValueError("관리형 설치의 Gateway 공개 주소가 구성되지 않았습니다.")
+    if os.getenv("MCP_FIELD_MODE") == "1" and parsed.scheme != "https":
+        raise ValueError("현장 관리형 연결에는 HTTPS가 필요합니다.")
     addresses = os.getenv("ENDPOINT_GATEWAY_IPS", parsed.hostname).split(",")
     addresses = [str(ipaddress.ip_address(a.strip())) for a in addresses]
     rows = await db.fetch_all("SELECT id FROM mcp_servers WHERE status='READY' AND lifecycle='OPERATING' ORDER BY id")

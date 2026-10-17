@@ -1,27 +1,47 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-17T21:50:41+09:00
+확인 시각: 2026-10-18T00:40:58+09:00
 
-HEAD: `ae04c11adad675cdda18a20bae024f664f5d8aec` · 로컬 브랜치: `main`
+HEAD: `6ce607035271b00949ee075313635a9e6f3a8d82` · 로컬 브랜치: `10/18-field-tls`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-UU docs/ai/DECISIONS.md
-M  endpoint-agent/README.md
-M  endpoint-agent/bootstrap.py
-M  endpoint-agent/enforce-linux.py
-M  endpoint-agent/managed-linux.py
-A  full_stack_lab/tests/loopback_owner_replies_test.py
-M  research/llm-wiki/analysis/dev35-loopback/README.md
-UU research/llm-wiki/catalogs/threats.json
-M  research/llm-wiki/status/backlog.md
-M  research/llm-wiki/status/reports/2026-10-15-dev35-loopback.md
-A  research/llm-wiki/status/reports/2026-10-17-loopback-owner-replies-d119.md
-UU research/llm-wiki/status/repository-snapshot.json
-UU research/llm-wiki/status/repository-snapshot.md
+M README.md
+ M docs/ai/ARCHITECTURE.md
+ M docs/ai/DECISIONS.md
+ M docs/ai/FIELD.md
+ M docs/ai/RUNBOOK.md
+ M endpoint-agent/README.md
+ M endpoint-agent/agent.py
+ M endpoint-agent/bootstrap.py
+ M endpoint-agent/enforce-linux.py
+ M endpoint-agent/install.py
+ M endpoint-agent/managed-linux.py
+ M full_stack_lab/README.md
+ M full_stack_lab/compose.field.yaml
+ M full_stack_lab/console.sh
+ M full_stack_lab/field/Caddyfile
+ M full_stack_lab/field/pc/mcpgw_pc.py
+ M full_stack_lab/gateway/app/agent_service.py
+ M full_stack_lab/gateway/app/endpoint_plane.py
+ M full_stack_lab/gateway/app/mcp_facade.py
+ M full_stack_lab/registry/catalog.toml
+ M full_stack_lab/registry/field/catalog.toml
+ M full_stack_lab/tests/field_kit_check.py
+ M full_stack_lab/workstation/Dockerfile
+ M full_stack_lab/workstation/managed/render.py
+ M research/llm-wiki/catalogs/threats.json
+ M research/llm-wiki/status/backlog.md
+ M research/llm-wiki/status/current.md
+ M research/llm-wiki/status/repository-snapshot.json
+ M research/llm-wiki/status/repository-snapshot.md
+ M research/llm-wiki/threats/control-map.md
+?? full_stack_lab/tests/field_tls_check.py
+?? research/llm-wiki/analysis/field-tls-d124/
+?? research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md
 ```
 
 ## 주요 파일 바이트
@@ -36,6 +56,6 @@ UU research/llm-wiki/status/repository-snapshot.md
 | `full_stack_lab/gateway/app/secret_scan.py` | `c6d981869e476d64d8b3e646c307f29d223942333fad84eb7e147a05593750db` |
 | `full_stack_lab/opa/pac15.rego` | `067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850` |
 | `full_stack_lab/opa/decision.rego` | `b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904` |
-| `endpoint-agent/bootstrap.py` | `8c0b13cf6770d92ce121fc14db6d57839aadf0426ffff1dc2f43f28032602f15` |
-| `endpoint-agent/managed-linux.py` | `04a12ba09454d44a7d8da78112b0625438e3d75cf875a92e8313ba6530a7cce2` |
-| `endpoint-agent/enforce-linux.py` | `ad3005c173565164afe356aa917598a5fd5e93d092c11f1a2b50b5040b15f263` |
+| `endpoint-agent/bootstrap.py` | `b6803fd12966c33655d49b13ec337eecef5626bef1feb7f9c58ce6c1e6159ab0` |
+| `endpoint-agent/managed-linux.py` | `017fe09ab14e1e4ba5366d28d8c6a15aa46da458b4bbd30542142d9d7a6efd8f` |
+| `endpoint-agent/enforce-linux.py` | `f4da4ea3cff03e29877314911d2bb1d37df12b5fa0bf4458191160bebea82af4` |

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """mcpgw_pc: 직원 PC의 Claude Code·Codex CLI를 솔루션 기기의 거버넌스 Gateway에 연결한다.
 
-    python mcpgw_pc.py setup --url http://100.83.175.111:443 --servers filesystem,git
+    python mcpgw_pc.py setup --url https://100.83.175.111 --ca root.crt --ca-sha256 SHA256 --servers filesystem,git
     python mcpgw_pc.py login         # 다시 로그인(리프레시 토큰이 만료·폐기됐을 때)
     python mcpgw_pc.py doctor        # 이름 해석·TLS·로그인·서버별 연결·하네스 설정을 한 줄씩 확인
     python mcpgw_pc.py report        # 하네스 기본 커넥터·기능을 보고하고 관리자가 거부한 것을 끈다(D-51)
@@ -58,21 +58,19 @@ def fail(message: str) -> None:
 # -- 입력 검증 -----------------------------------------------------------------
 
 def gateway_url(value: str) -> str:
-    """HTTPS 또는 Tailscale/loopback의 HTTP만 받는다."""
+    """원격은 HTTPS, HTTP는 loopback 시험만 허용한다."""
     parts = urllib.parse.urlsplit(value.strip())
     if parts.username or parts.password or parts.query or parts.fragment or not parts.hostname:
-        fail("주소에는 호스트만 적는다(자격·쿼리·조각 금지): http://100.x.y.z:443")
+        fail("주소에는 호스트만 적는다(자격·쿼리·조각 금지): https://100.x.y.z")
     if parts.scheme != "https":
         loopback = parts.hostname == "localhost"
-        tailnet = False
         try:
             address = ipaddress.ip_address(parts.hostname)
             loopback = loopback or address.is_loopback
-            tailnet = address in ipaddress.ip_network("100.64.0.0/10")
         except ValueError:
             pass
-        if parts.scheme != "http" or not (loopback or tailnet):
-            fail("HTTP는 Tailscale IP(100.64.0.0/10) 또는 이 PC의 loopback 주소에서만 허용한다")
+        if parts.scheme != "http" or not loopback:
+            fail("원격 게이트웨이는 HTTPS만 허용한다")
     return urllib.parse.urlunsplit((parts.scheme, parts.netloc, parts.path.rstrip("/"), "", ""))
 
 
@@ -105,10 +103,30 @@ def pem_fingerprint(path: Path) -> str:
     """관리자가 README 절차대로 알려준 지문과 대조하라고 보여 준다(SHA-256, DER 기준)."""
     text = path.read_text(encoding="utf-8-sig", errors="replace")
     blocks = re.findall(r"-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----", text, re.S)
-    if not blocks:
-        fail(f"{path}: PEM 인증서가 아니다(-----BEGIN CERTIFICATE----- 없음)")
+    if len(blocks) != 1 or text.strip() != blocks[0]:
+        fail(f"{path}: 루트 PEM 인증서 하나만 허용한다")
+    ssl.create_default_context().load_verify_locations(cadata=blocks[0])
     digest = hashlib.sha256(ssl.PEM_cert_to_DER_cert(blocks[0])).hexdigest().upper()
     return ":".join(digest[i:i + 2] for i in range(0, len(digest), 2))
+
+
+def verify_ca(path: Path, expected: str) -> str:
+    fingerprint = pem_fingerprint(path)
+    if not expected or fingerprint.replace(":", "").lower() != expected.strip().replace(":", "").lower():
+        fail("CA SHA-256 지문이 일치하지 않는다")
+    return fingerprint
+
+
+def cmd_harness(args) -> None:
+    settings = load_settings()
+    environment = dict(os.environ)
+    if settings.get("ca"):
+        verify_ca(Path(settings["ca"]), settings.get("ca_sha256", ""))
+        environment["NODE_EXTRA_CA_CERTS" if args.name == "claude" else "CODEX_CA_CERTIFICATE"] = settings["ca"]
+    executable = claude_path() if args.name == "claude" else shutil.which("codex")
+    if not executable:
+        fail(f"{args.name} 실행 파일이 없다")
+    raise SystemExit(subprocess.run([executable, *args.arguments], env=environment).returncode)
 
 
 # -- 상태 파일(~/.mcpgw) --------------------------------------------------------
@@ -176,16 +194,22 @@ def tls_context(settings: dict) -> ssl.SSLContext | None:
     if not settings["url"].startswith("https://"):
         return None
     context = ssl.create_default_context()
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
     if settings.get("ca"):
+        verify_ca(Path(settings["ca"]), settings.get("ca_sha256", ""))
         context.load_verify_locations(cafile=settings["ca"])
     return context
 
 
 def request(settings: dict, url: str, *, data: bytes | None = None, headers: dict | None = None,
             method: str | None = None, timeout: float = 8) -> tuple[int, bytes, dict]:
+    gateway_url(url)
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *args):
+            return None
     req = urllib.request.Request(url, data=data, headers=headers or {}, method=method)
     # 시스템 프록시를 거치지 않는다 - 사내망 기기에 곧바로 붙어야 한다.
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}),
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
                                          urllib.request.HTTPSHandler(context=tls_context(settings)))
     try:
         with opener.open(req, timeout=timeout) as response:
@@ -388,12 +412,20 @@ def cmd_setup(args) -> None:
     previous = {}
     if (root / "config.json").exists():
         previous = json.loads((root / "config.json").read_text(encoding="utf-8"))
+    bundled_ca = Path(__file__).with_name("root.crt")
+    if not args.ca and bundled_ca.is_file():
+        args.ca = str(bundled_ca)
+        args.ca_sha256 = args.ca_sha256 or bundled_ca.with_suffix(".sha256").read_text().strip()
     if args.ca:
-        print(f"CA 지문(SHA-256): {pem_fingerprint(Path(args.ca))}")
-        print("  관리자가 알려 준 지문과 같은지 확인한다. 다르면 멈추고 관리자에게 묻는다")
+        fingerprint = verify_ca(Path(args.ca), args.ca_sha256)
+        print(f"CA 지문(SHA-256): {fingerprint}")
         settings["ca"] = str(root / "ca.crt")
-    elif previous.get("ca"):
+        settings["ca_sha256"] = fingerprint
+    elif previous.get("ca") and previous.get("url") == settings["url"]:
         settings["ca"] = previous["ca"]
+        settings["ca_sha256"] = verify_ca(Path(previous["ca"]), args.ca_sha256 or previous.get("ca_sha256", ""))
+    elif args.ca_sha256:
+        fail("--ca-sha256에는 --ca가 필요하다")
     # report가 넣은 거부 항목을 이어받는다. setup을 다시 해도 이전에 끈 커넥터가 되살아나지 않게.
     for key in ("claude_denied", "codex_apps_disabled", "codex_features_disabled"):
         settings[key] = previous.get(key, [])
@@ -431,6 +463,8 @@ def cmd_setup(args) -> None:
         except SystemExit as error:  # 연결은 끝났다. 보고는 doctor·report가 다시 한다
             print(f"하네스 커넥터 보고 못 함: {error.code}")
         print(f"완료. 확인: python \"{root / TOOL}\" doctor")
+        if settings.get("ca"):
+            print(f'CA를 신뢰하는 하네스 실행: python "{root / TOOL}" harness claude 또는 harness codex')
 
 
 def cmd_login(args) -> None:
@@ -698,7 +732,7 @@ def cmd_doctor(args) -> None:
     except (urllib.error.URLError, OSError) as error:
         reason = getattr(error, "reason", error)
         if isinstance(reason, ssl.SSLError):
-            report(False, "TLS", f"{getattr(reason, 'reason', None) or reason}. 기기의 루트 인증서를 setup --ca로 지정한다")
+            report(False, "TLS", f"{getattr(reason, 'reason', None) or reason}. 기기의 루트 인증서를 setup --ca·--ca-sha256으로 지정한다")
         else:
             report(False, "Gateway 도달", f"{reason}. 기기의 443 방화벽과 게시 주소(APPLIANCE_BIND)를 확인한다")
         sys.exit(1)
@@ -769,7 +803,7 @@ def cmd_uninstall(args) -> None:
     for name in ("token.json", "token.lock", "ca.crt", "config.json", "report.stamp", "report.log", TOOL):
         if (root / name).exists():
             (root / name).unlink()
-    print(f"지움: {root} 의 토큰·CA·설정. OS 인증서 저장소의 CA와 hosts 항목은 README 절차대로 따로 지운다")
+    print(f"지움: {root} 의 토큰·CA·설정")
 
 
 def cmd_managed(args) -> None:
@@ -822,16 +856,21 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--home", help=argparse.SUPPRESS)  # 헬퍼 명령이 토큰 폴더를 알려 줄 때
     commands = parser.add_subparsers(dest="command", required=True)
     setup = commands.add_parser("setup", help="로그인하고 하네스 설정을 기록")
-    setup.add_argument("--url", required=True, help="솔루션 기기 Tailscale 주소, 예: http://100.x.y.z:443")
+    setup.add_argument("--url", required=True, help="솔루션 기기 Tailscale 주소, 예: https://100.x.y.z")
     setup.add_argument("--servers", required=True, help="쓸 서버 이름, 쉼표로(관리자가 알려 줌)")
     setup.add_argument("--workstation", help="이 PC의 이름(IdP client_id). 기본: 호스트 이름")
     setup.add_argument("--ca", help="관리자가 준 루트 인증서(PEM)")
+    setup.add_argument("--ca-sha256", help="관리자가 별도 확인한 루트 인증서 SHA-256 지문")
     setup.add_argument("--harness", default="claude,codex", help="claude,codex 중 연결할 것")
     setup.add_argument("--email", help="회사 계정. 없으면 묻는다")
     setup.add_argument("--password-stdin", action="store_true", help="비밀번호를 표준 입력 첫 줄에서 읽는다")
     setup.add_argument("--replace", action="store_true", help="Claude Code의 같은 이름 서버를 덮어쓴다")
     setup.add_argument("--dry-run", action="store_true", help="쓸 내용만 보여 준다")
     setup.set_defaults(run=cmd_setup)
+    harness = commands.add_parser("harness", help="이 연결의 CA를 신뢰하는 하네스 실행")
+    harness.add_argument("name", choices=("claude", "codex"))
+    harness.add_argument("arguments", nargs=argparse.REMAINDER)
+    harness.set_defaults(run=cmd_harness)
     login_parser = commands.add_parser("login", help="다시 로그인")
     login_parser.add_argument("--email")
     login_parser.add_argument("--password-stdin", action="store_true")

@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import grp
 import hashlib
+import importlib.util
 import json
 import os
 import pwd
@@ -501,14 +502,19 @@ def main() -> int:
         print("관리자 권한이 필요합니다. install.sh로 실행하세요.", file=sys.stderr)
         return 2
     try:
+        if not args.remove:
+            if not args.enrollment.is_file():
+                raise Failed(f"설치 키트의 enrollment.json이 없습니다: {args.enrollment}")
+            spec = importlib.util.spec_from_file_location("managed_tls", HERE / "managed-linux.py")
+            managed_tls = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(managed_tls)
+            managed_tls.verify_transport(json.loads(args.enrollment.read_text()))
         employee = employee_account(args.user)
         account, companion = managed_account(employee)
         if args.remove:
             rollback(account)
             print(json.dumps({"removed": account}, ensure_ascii=False))
             return 0
-        if not args.enrollment.is_file():
-            raise Failed(f"설치 키트의 enrollment.json이 없습니다: {args.enrollment}")
         ensure_packages()
         step("승인 하네스 배치")
         placed = place_harnesses(employee)

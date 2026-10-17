@@ -1301,3 +1301,10 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 근거: [DEV-35 원인·선택지·과거 netns 실험](../../research/llm-wiki/analysis/dev35-loopback/README.md). PJ1에서 관찰한 Tailscale connmark 마스크는 `0xff0000`으로 `0x100`과 겹치지 않는다. 기존 비트는 OR로 보존한다. 포트 선점·다른 UID·자기 리스너 반례 때문에 더 넓은 허용은 기각한다.
 - 관측: D-113의 `SPT`·TCP 플래그·`listener_reply` 분류는 유지한다. 허용 규칙은 `MCPGW_DENY` 로그보다 앞에 있어 허용 응답은 이 거부 로그에 도달하지 않는다. 다른 UID가 시작해 차단된 SYN-ACK는 계속 `listener_reply`다. 기존 원장은 수정하지 않는다.
 - 검증 범위: [작업 보고·실기기 명령](../../research/llm-wiki/status/reports/2026-10-17-loopback-owner-replies-d119.md). 로컬 순수 Python 단위 검증이며 배포·PJ1 재설치·이번 판본 netns/E13·R1~R9·실제 장치 코드 로그인은 메인이 수행한다. 과거 제안의 충돌 번호 표기는 D-119로 정정했고 런처 결정 D-107은 유지한다.
+
+## D-124 현장 하네스 연결은 배치 사설 CA의 HTTPS만 사용한다 (2026-10-18)
+
+- 결정: Tailscale IP 바인딩은 유지하고 Caddy 	ls internal로 TLS 1.2/1.3과 ECDHE/ECDSA AEAD를 제공한다. HTTP 자동 리디렉션과 시스템 CA 등록을 끈다. IP 및 선택 공개 이름을 발급 대상으로 삼고 빈 SNI에는 IP 인증서를 선택한다. 공개 OAuth·MCP·Console·Git URL과 관리형 정책은 HTTPS다. 원격 HTTP 입력과 자격 요청 리디렉션은 거부한다. 격리 기본 랩의 명시적 HTTP 빌드 인자는 별개다.
+- 신뢰: 배치 볼륨의 CA 개인 키는 내보내지 않는다. field ca는 공개 루트·DER SHA-256을 출력하며 Console ZIP에 루트·지문을 넣는다. 설치기는 단일 PEM과 지문을 설치/등록 전에 검증한다. Linux 실행기 및 직원 PC 도구의 harness 명령이 Claude의 NODE_EXTRA_CA_CERTS, Codex의 CODEX_CA_CERTIFICATE를 프로세스에 지정한다. 시스템 저장소는 변경하지 않는다. 에이전트와 Linux OS 관측기는 동일 CA로 체인·이름을 검증한다.
+- 복구: CA 볼륨은 배치 수명 동안 유지한다. 새 루트는 기존 연결을 실패시키므로 별도 지문 대조·새 키트 설치로 교체한다. 키트 발행자 확인은 인증된 배포 경로와 운영자의 별도 지문 대조를 전제로 한다.
+- 근거/한계: [DEV-64 분석](../../research/llm-wiki/analysis/field-tls-d124/README.md), [작업 보고·메인 검증 명령](../../research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md). Codex 0.157.0의 고정 소스와 공식 문서로 CA 변수를 확인했다. 로컬 단위 증거이며 Caddy 자체 검사·배포·PJ1은 미실행이다. Windows 전용 설치기는 다른 작업과 공통 CA 필드/환경값을 통합해야 한다.

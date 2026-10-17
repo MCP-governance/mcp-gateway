@@ -8,6 +8,9 @@
 # A tool that is not listed under [servers.<id>.tools] is not approved: it is hidden
 # from tools/list and a call to it is blocked as MCP-REGISTRY-001.
 
+[harness]
+gateway_url = "https://gateway/mcp"
+
 [organization]
 name = "BoB Corp"
 internal_email_domains = ["bob.local"]

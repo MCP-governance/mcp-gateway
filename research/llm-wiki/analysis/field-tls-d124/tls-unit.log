@@ -1,0 +1,14 @@
+test_bad_pin_stops_setup_before_writes_or_login (__main__.FieldTLS) ... ok
+test_ca_pin_and_tls_verification (__main__.FieldTLS) ... ok
+test_caddy_and_overlay_security_invariants (__main__.FieldTLS) ... ok
+test_console_archive_contains_matching_root_and_pin (__main__.FieldTLS) ... ok
+test_file_ca_requires_matching_sidecar (__main__.FieldTLS) ... ok
+test_harness_ca_is_process_scoped_and_checked (__main__.FieldTLS) ... ok
+test_managed_bad_pin_stops_before_enrollment_transport (__main__.FieldTLS) ... ok
+test_observer_installer_bad_pin_stops_before_key_or_files (__main__.FieldTLS) ... ok
+test_remote_plaintext_rejected_before_transport (__main__.FieldTLS) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.257s
+
+OK

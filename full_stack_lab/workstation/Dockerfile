@@ -19,7 +19,8 @@ RUN npm install -g --no-fund --no-audit --omit=dev \
 # IT-managed configuration, rendered from the MCP registry (one Gateway URL per server).
 COPY workstation/managed /opt/office/managed
 COPY registry/catalog.toml /opt/office/catalog.toml
-RUN python3 /opt/office/managed/render.py /opt/office/catalog.toml /opt/office/rendered \
+ARG MANAGED_GATEWAY_URL=http://gateway:8080/mcp
+RUN python3 /opt/office/managed/render.py /opt/office/catalog.toml /opt/office/rendered --gateway-url "$MANAGED_GATEWAY_URL" \
  && install -d /etc/claude-code /etc/codex /etc/gemini-cli /etc/opencode /etc/bob \
  && cp /opt/office/rendered/claude-code/* /etc/claude-code/ \
  && cp /opt/office/rendered/codex/config.toml /etc/codex/managed_config.toml \
