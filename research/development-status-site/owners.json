@@ -1,0 +1,7 @@
+{
+  "G03.05": {"owner": "Codex sol", "memo": "10-17 구현 중(브랜치 10/17-dest-transport): 연결 직전 DNS 확인·IP 고정"},
+  "G03.08": {"owner": "Codex sol", "memo": "10-17 구현 중(브랜치 10/17-dest-transport): 오류 응답·원장·키트 설정의 인증정보 가림"},
+  "G05.04": {"owner": "Claude · Sonnet", "memo": "10-17 pj3 Windows VM 준비 중(표준 계정·화면 캡처)"},
+  "G08.04": {"owner": "Claude · Codex", "memo": "10-17 Windows 설치 마법사·트레이 착수 예정"},
+  "G07.02": {"owner": "Codex sol", "memo": "10-17 업스트림 세션 재사용 2단계(DEV-29, 브랜치 10/17-session-reuse) 구현 중"}
+}
