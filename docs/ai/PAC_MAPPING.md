@@ -63,7 +63,7 @@
 `classify.host_category()`가 이제 (1) 후행 점·대문자 정규화, (2) `socket.inet_aton`으로 10진·8진·16진·축약
 IPv4 해석, (3) IPv4-mapped IPv6, (4) 이름 안에 박힌 주소(`nip.io`·`sslip.io` 형태, 점·하이픈 표기 모두),
 (5) 인프라 호스트의 FQDN 형태, (6) `internal_domains` 아래의 이름을 모두 infrastructure로 판정한다.
-DNS는 조회하지 않는다 — 조회하면 판정과 실제 연결 사이에 시간 차가 생기고(TOCTOU), 조회 자체가 유출 신호가 된다.
+`classify`는 DNS를 조회하지 않는다. D-116(2026-10-17)에서 게이트웨이의 직접 upstream 연결에는 연결 직전 DNS 전체 응답 검사와 숫자 IP 접속을 추가했다. HTTP origin·SNI·Host는 원래 호스트이며 로컬 단위 검사만 수행했다. 실제 풀·TLS·배포 검증은 미실행이다. MCP 서버 자체가 인자 URL로 나가는 연결은 이 통제 밖이다(DEV-41).
 
 ### 3.2 SQL 판정을 PostgreSQL 파서로 (PAC-09·PAC-10)
 

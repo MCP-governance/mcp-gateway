@@ -15,9 +15,10 @@ import ctypes
 import json
 import os
 import re
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import parse_qsl, unquote, urlsplit
 
 from .privacy import InspectionUnavailable
+from .classify import SECRET_PATTERNS
 
 LIBRARY = os.getenv("GITLEAKS_LIBRARY", "/usr/local/lib/libmcpgw_gitleaks.so")
 TIMEOUT_SECONDS = 5
@@ -84,3 +85,25 @@ async def labels(text: str) -> list[str]:
     except (OSError, ValueError, TypeError, AttributeError, asyncio.TimeoutError) as exc:
         raise InspectionUnavailable("Gitleaks Secret 검사를 완료하지 못했습니다.") from exc
     return sorted({"gitleaks:" + rule for rule in rules})
+
+
+ERROR_REDACTED = "[REDACTED]"
+_CREDENTIAL_CONTEXT = re.compile(
+    r"(?i)(?:authorization|proxy-authorization|access[_-]?token|refresh[_-]?token|id[_-]?token|"
+    r"api[_-]?key|client[_-]?secret|password|passwd|secret|credential|signature|sig|token)"
+    r"[\"']?\s*[:=]\s*[\"']?[^\s\"'&,;}]+")
+
+
+async def redact_error(value: str | None) -> str | None:
+    if not value:
+        return value
+    # Gitleaks returns rule IDs, not spans. Withhold the whole diagnostic rather than guess spans.
+    try:
+        if (len(value) > 500 or _CREDENTIAL_CONTEXT.search(unquote(value))
+                or any(re.search(pattern, value) for pattern in SECRET_PATTERNS.values())
+                or await labels(value)):
+            return ERROR_REDACTED
+        return value
+    except Exception:
+        # A scanner outage must never turn an error into an uninspected output channel.
+        return ERROR_REDACTED

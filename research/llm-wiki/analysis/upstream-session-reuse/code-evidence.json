@@ -1,0 +1,759 @@
+{
+  "captured_at": "2026-10-17T12:48:43.293182+00:00",
+  "base_commit": "9537c0b494a0c4d45c615caa4797674f273d270f",
+  "scope": "local source and unit doubles only",
+  "decision": "D-115",
+  "requirements": "stage2.md#??-?????-????",
+  "files": [
+    {
+      "path": "full_stack_lab/gateway/app/upstream_sessions.py",
+      "sha256": "e6193b0ee94640dc62dc508c8c0924e24c79b0099a665a79d91fa026cdaf0123",
+      "symbols": [
+        {
+          "name": "conversation_id",
+          "line": 16,
+          "end_line": 17
+        },
+        {
+          "name": "Key",
+          "line": 21,
+          "end_line": 29
+        },
+        {
+          "name": "Closed",
+          "line": 32,
+          "end_line": 33
+        },
+        {
+          "name": "Lease",
+          "line": 36,
+          "end_line": 83
+        },
+        {
+          "name": "Lease.__init__",
+          "line": 37,
+          "end_line": 46
+        },
+        {
+          "name": "Lease._own",
+          "line": 48,
+          "end_line": 58
+        },
+        {
+          "name": "Lease.discard",
+          "line": 60,
+          "end_line": 66
+        },
+        {
+          "name": "Lease._client",
+          "line": 68,
+          "end_line": 74
+        },
+        {
+          "name": "Lease.list_tools",
+          "line": 76,
+          "end_line": 77
+        },
+        {
+          "name": "Lease.call_tool",
+          "line": 79,
+          "end_line": 83
+        },
+        {
+          "name": "Pool",
+          "line": 86,
+          "end_line": 185
+        },
+        {
+          "name": "Pool.__init__",
+          "line": 87,
+          "end_line": 91
+        },
+        {
+          "name": "Pool.close",
+          "line": 93,
+          "end_line": 105
+        },
+        {
+          "name": "Pool._finish",
+          "line": 107,
+          "end_line": 117
+        },
+        {
+          "name": "Pool.prune",
+          "line": 119,
+          "end_line": 136
+        },
+        {
+          "name": "Pool.borrow",
+          "line": 139,
+          "end_line": 185
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/upstream.py",
+      "sha256": "2b8d469cc359d66fc6730c80d67940e467572ec51dcdf6f13147708e3e3f74eb",
+      "symbols": [
+        {
+          "name": "CredentialUnavailable",
+          "line": 35,
+          "end_line": 36
+        },
+        {
+          "name": "credential_headers",
+          "line": 39,
+          "end_line": 76
+        },
+        {
+          "name": "_Lease",
+          "line": 79,
+          "end_line": 83
+        },
+        {
+          "name": "_Lease.__init__",
+          "line": 82,
+          "end_line": 83
+        },
+        {
+          "name": "credential_hash",
+          "line": 96,
+          "end_line": 97
+        },
+        {
+          "name": "_client",
+          "line": 100,
+          "end_line": 110
+        },
+        {
+          "name": "close_pool",
+          "line": 125,
+          "end_line": 140
+        },
+        {
+          "name": "release_pool",
+          "line": 143,
+          "end_line": 154
+        },
+        {
+          "name": "close_downstream",
+          "line": 157,
+          "end_line": 161
+        },
+        {
+          "name": "_sweep",
+          "line": 169,
+          "end_line": 193
+        },
+        {
+          "name": "maintain_pool",
+          "line": 196,
+          "end_line": 212
+        },
+        {
+          "name": "_dispatch_allowed",
+          "line": 215,
+          "end_line": 230
+        },
+        {
+          "name": "_dispatch_client",
+          "line": 234,
+          "end_line": 260
+        },
+        {
+          "name": "_session",
+          "line": 264,
+          "end_line": 273
+        },
+        {
+          "name": "session",
+          "line": 277,
+          "end_line": 300
+        },
+        {
+          "name": "connect_mode",
+          "line": 303,
+          "end_line": 306
+        },
+        {
+          "name": "session_terminated",
+          "line": 309,
+          "end_line": 314
+        },
+        {
+          "name": "list_all_tools",
+          "line": 320,
+          "end_line": 330
+        },
+        {
+          "name": "tool_view",
+          "line": 333,
+          "end_line": 340
+        },
+        {
+          "name": "discover",
+          "line": 343,
+          "end_line": 352
+        },
+        {
+          "name": "handshake",
+          "line": 355,
+          "end_line": 366
+        },
+        {
+          "name": "content_items",
+          "line": 369,
+          "end_line": 377
+        },
+        {
+          "name": "text_of",
+          "line": 380,
+          "end_line": 381
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "sha256": "80dd8356b0dc0e334423ab284a698a937b61cf57967044108e7154eccce74e7a",
+      "symbols": [
+        {
+          "name": "refresh_catalog",
+          "line": 184,
+          "end_line": 323
+        },
+        {
+          "name": "approve_contract",
+          "line": 326,
+          "end_line": 404
+        },
+        {
+          "name": "register_server",
+          "line": 503,
+          "end_line": 667
+        },
+        {
+          "name": "deregister_server",
+          "line": 670,
+          "end_line": 686
+        },
+        {
+          "name": "_call_upstream",
+          "line": 1217,
+          "end_line": 1348
+        },
+        {
+          "name": "_record_decision",
+          "line": 1483,
+          "end_line": 1563
+        },
+        {
+          "name": "reject_request",
+          "line": 2022,
+          "end_line": 2048
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/mcp_facade.py",
+      "sha256": "ee7a38bda026d0bce288e31e4c9c10265e33f6ff77e1602abf565a92a479668c",
+      "symbols": [
+        {
+          "name": "_headers",
+          "line": 39,
+          "end_line": 40
+        },
+        {
+          "name": "_caller",
+          "line": 43,
+          "end_line": 53
+        },
+        {
+          "name": "_conversation",
+          "line": 56,
+          "end_line": 63
+        },
+        {
+          "name": "_scope",
+          "line": 66,
+          "end_line": 70
+        },
+        {
+          "name": "_harness",
+          "line": 73,
+          "end_line": 83
+        },
+        {
+          "name": "_traceparent",
+          "line": 89,
+          "end_line": 92
+        },
+        {
+          "name": "_client_context",
+          "line": 95,
+          "end_line": 114
+        },
+        {
+          "name": "_approved_tools",
+          "line": 117,
+          "end_line": 144
+        },
+        {
+          "name": "_render",
+          "line": 147,
+          "end_line": 191
+        },
+        {
+          "name": "build_mcp",
+          "line": 194,
+          "end_line": 230
+        },
+        {
+          "name": "transport_security",
+          "line": 233,
+          "end_line": 243
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/main.py",
+      "sha256": "7a25174f8d7e28542c5c2802dcf6bbf90686415be5d64ee0ed5d2ed2d8e0c53f",
+      "symbols": [
+        {
+          "name": "RequireBearer",
+          "line": 70,
+          "end_line": 115
+        },
+        {
+          "name": "RequireBearer.__init__",
+          "line": 71,
+          "end_line": 72
+        },
+        {
+          "name": "RequireBearer.__call__",
+          "line": 74,
+          "end_line": 115
+        },
+        {
+          "name": "lifespan",
+          "line": 223,
+          "end_line": 235
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/upstream_session_reuse_test.py",
+      "sha256": "fa27c7d1bb4676b01ff560e5ade8ec7b8a57e4146c85e214aa8c22bcd5f48290",
+      "symbols": [
+        {
+          "name": "functions",
+          "line": 27,
+          "end_line": 33
+        },
+        {
+          "name": "key",
+          "line": 42,
+          "end_line": 44
+        },
+        {
+          "name": "PoolTests",
+          "line": 47,
+          "end_line": 264
+        },
+        {
+          "name": "PoolTests.asyncSetUp",
+          "line": 48,
+          "end_line": 50
+        },
+        {
+          "name": "PoolTests.asyncTearDown",
+          "line": 52,
+          "end_line": 53
+        },
+        {
+          "name": "PoolTests.factory",
+          "line": 56,
+          "end_line": 65
+        },
+        {
+          "name": "PoolTests.test_T1_reuse_without_reopening",
+          "line": 67,
+          "end_line": 74
+        },
+        {
+          "name": "PoolTests.test_T2_T3_every_key_boundary_is_separate",
+          "line": 76,
+          "end_line": 83
+        },
+        {
+          "name": "PoolTests.test_T4_T5_close_active_and_refuse_waiter",
+          "line": 85,
+          "end_line": 97
+        },
+        {
+          "name": "PoolTests.test_T5_endpoint_and_downstream_closure_are_scoped",
+          "line": 99,
+          "end_line": 105
+        },
+        {
+          "name": "PoolTests.test_T6_rotation_retires_all_old_conversations",
+          "line": 107,
+          "end_line": 114
+        },
+        {
+          "name": "PoolTests.test_configuration_change_retires_old_session",
+          "line": 116,
+          "end_line": 121
+        },
+        {
+          "name": "PoolTests.test_T6_rotation_during_borrow_prevents_send",
+          "line": 123,
+          "end_line": 130
+        },
+        {
+          "name": "PoolTests.test_T9_ten_concurrent_calls_serialize_one_session",
+          "line": 132,
+          "end_line": 144
+        },
+        {
+          "name": "PoolTests.test_expiry_idle_and_maximum_lifetime",
+          "line": 146,
+          "end_line": 157
+        },
+        {
+          "name": "PoolTests.test_capacity_evicts_idle_not_active",
+          "line": 159,
+          "end_line": 165
+        },
+        {
+          "name": "PoolTests.test_T10_error_and_cancellation_discard",
+          "line": 167,
+          "end_line": 182
+        },
+        {
+          "name": "PoolTests.test_tool_error_is_definite_response_but_session_is_discarded",
+          "line": 184,
+          "end_line": 190
+        },
+        {
+          "name": "PoolTests.test_opening_failure_is_closed_not_success",
+          "line": 192,
+          "end_line": 200
+        },
+        {
+          "name": "PoolTests.test_close_while_opening_unblocks_borrower",
+          "line": 202,
+          "end_line": 216
+        },
+        {
+          "name": "PoolTests.test_revocation_during_rotation_cleanup_prevents_reopen",
+          "line": 218,
+          "end_line": 238
+        },
+        {
+          "name": "PoolTests.test_slow_idle_eviction_does_not_hold_revocation_lock",
+          "line": 240,
+          "end_line": 264
+        },
+        {
+          "name": "WiringTests",
+          "line": 267,
+          "end_line": 534
+        },
+        {
+          "name": "WiringTests.upstream_functions",
+          "line": 268,
+          "end_line": 277
+        },
+        {
+          "name": "WiringTests.test_T7_every_page_bypasses_positive_ttl_cache",
+          "line": 279,
+          "end_line": 289
+        },
+        {
+          "name": "WiringTests.test_T1_T7_sdk_cache_none_and_operator_headers_only",
+          "line": 291,
+          "end_line": 308
+        },
+        {
+          "name": "WiringTests.test_legacy_only_reuse_and_no_downstream_fallback",
+          "line": 310,
+          "end_line": 335
+        },
+        {
+          "name": "WiringTests.test_A_internal_classification_reaches_raw_and_pooled_transports",
+          "line": 337,
+          "end_line": 356
+        },
+        {
+          "name": "WiringTests.test_A_internal_classification_change_cannot_reuse_old_MCP_session",
+          "line": 358,
+          "end_line": 379
+        },
+        {
+          "name": "WiringTests.test_T11_initial_cursor_skips_prestart_events_before_any_session",
+          "line": 381,
+          "end_line": 389
+        },
+        {
+          "name": "WiringTests.test_T11_initialization_failure_refuses_to_open",
+          "line": 391,
+          "end_line": 397
+        },
+        {
+          "name": "WiringTests.test_T11_first_dispatches_wait_for_initial_cursor_then_apply_new_event",
+          "line": 399,
+          "end_line": 424
+        },
+        {
+          "name": "WiringTests.test_T11_failed_close_does_not_advance_cursor",
+          "line": 426,
+          "end_line": 432
+        },
+        {
+          "name": "WiringTests.test_conversation_uses_transport_session_and_verified_jti",
+          "line": 434,
+          "end_line": 440
+        },
+        {
+          "name": "WiringTests.test_T12_pinned_generation_and_unknown_version",
+          "line": 442,
+          "end_line": 447
+        },
+        {
+          "name": "WiringTests.test_session_does_not_replace_authoritative_policy_checks",
+          "line": 449,
+          "end_line": 458
+        },
+        {
+          "name": "WiringTests.test_maintenance_closes_rotation_revocation_and_expiry_without_new_call",
+          "line": 460,
+          "end_line": 472
+        },
+        {
+          "name": "WiringTests.test_T11_downstream_event_only_closes_matching_conversation",
+          "line": 474,
+          "end_line": 481
+        },
+        {
+          "name": "WiringTests.test_successful_delete_closes_and_failed_delete_preserves_session",
+          "line": 483,
+          "end_line": 496
+        },
+        {
+          "name": "WiringTests.test_A_error_envelope_preserves_B_context_and_always_resets_it",
+          "line": 498,
+          "end_line": 521
+        },
+        {
+          "name": "WiringTests.test_T10_only_exact_sdk_session_404_is_retryable",
+          "line": 523,
+          "end_line": 534
+        },
+        {
+          "name": "DispatchRejected",
+          "line": 537,
+          "end_line": 540
+        },
+        {
+          "name": "DispatchRejected.__init__",
+          "line": 538,
+          "end_line": 540
+        },
+        {
+          "name": "DispatchTests",
+          "line": 543,
+          "end_line": 656
+        },
+        {
+          "name": "DispatchTests.asyncSetUp",
+          "line": 544,
+          "end_line": 582
+        },
+        {
+          "name": "DispatchTests.call",
+          "line": 584,
+          "end_line": 586
+        },
+        {
+          "name": "DispatchTests.test_T4_policy_rechecked_every_call_on_same_connection",
+          "line": 588,
+          "end_line": 594
+        },
+        {
+          "name": "DispatchTests.test_T4_T5_final_cutover_and_approval_revoke_prevent_send",
+          "line": 596,
+          "end_line": 605
+        },
+        {
+          "name": "DispatchTests.test_terminating_server_through_real_session_wrapper_keeps_decommission_policy",
+          "line": 607,
+          "end_line": 621
+        },
+        {
+          "name": "DispatchTests.test_T7_changed_contract_closes_and_never_sends",
+          "line": 623,
+          "end_line": 628
+        },
+        {
+          "name": "DispatchTests.test_T4_policy_failure_remains_fail_closed",
+          "line": 630,
+          "end_line": 635
+        },
+        {
+          "name": "DispatchTests.test_T10_list_expiry_retries_once_before_intent",
+          "line": 637,
+          "end_line": 642
+        },
+        {
+          "name": "DispatchTests.test_T10_second_list_failure_stops_and_call_failure_never_retries",
+          "line": 644,
+          "end_line": 656
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+      "sha256": "d12acf0e0231127e4876b12f864aef43404ef4c99cabd7e82f576ab0ab14fda2",
+      "symbols": [
+        {
+          "name": "outcome",
+          "line": 18,
+          "end_line": 21
+        },
+        {
+          "name": "ResultContract",
+          "line": 24,
+          "end_line": 209
+        },
+        {
+          "name": "ResultContract.test_tool_listing_reads_every_page",
+          "line": 25,
+          "end_line": 44
+        },
+        {
+          "name": "ResultContract.test_structured_result_survives_official_sdk_wire_roundtrip",
+          "line": 46,
+          "end_line": 54
+        },
+        {
+          "name": "ResultContract.test_structured_only_result_has_text_for_older_clients",
+          "line": 56,
+          "end_line": 59
+        },
+        {
+          "name": "ResultContract.test_masked_structured_result_uses_only_inspected_values",
+          "line": 61,
+          "end_line": 65
+        },
+        {
+          "name": "ResultContract.test_withheld_block_and_approval_do_not_release_stale_payload",
+          "line": 67,
+          "end_line": 76
+        },
+        {
+          "name": "ResultContract.test_structured_shape_is_object",
+          "line": 78,
+          "end_line": 93
+        },
+        {
+          "name": "ResultContract.test_nonfinite_numbers_are_not_valid_json_results",
+          "line": 95,
+          "end_line": 98
+        },
+        {
+          "name": "ResultContract.test_decoded_structured_keys_are_checked_for_injected_dialogue",
+          "line": 100,
+          "end_line": 105
+        },
+        {
+          "name": "ResultContract.test_numeric_identifier_is_withheld_without_changing_type",
+          "line": 107,
+          "end_line": 113
+        },
+        {
+          "name": "ResultContract.test_final_secret_scan_includes_structured_key_value_context",
+          "line": 115,
+          "end_line": 122
+        },
+        {
+          "name": "ResultContract.test_final_secret_scan_uses_masked_payload_and_decoded_text",
+          "line": 124,
+          "end_line": 133
+        },
+        {
+          "name": "ResultContract.test_secret_scan_receives_decoded_structured_strings_and_keys",
+          "line": 135,
+          "end_line": 141
+        },
+        {
+          "name": "ResultContract.test_total_inspection_deadline_fails_closed",
+          "line": 143,
+          "end_line": 149
+        },
+        {
+          "name": "ResultContract.test_untrusted_sdk_errors_do_not_release_values_or_stale_results",
+          "line": 151,
+          "end_line": 164
+        },
+        {
+          "name": "ResultContract.test_gateway_span_does_not_automatically_export_exception_values",
+          "line": 166,
+          "end_line": 181
+        },
+        {
+          "name": "ResultContract.test_sensitive_structured_keys_are_withheld_without_renaming_schema",
+          "line": 183,
+          "end_line": 190
+        },
+        {
+          "name": "ResultContract.test_key_inspection_is_batched_and_shape_keeps_numeric_and_empty_values",
+          "line": 192,
+          "end_line": 200
+        },
+        {
+          "name": "ResultContract.test_low_entropy_secret_is_inspected_with_assignment_context",
+          "line": 202,
+          "end_line": 209
+        }
+      ]
+    }
+  ],
+  "superseded_observation": {
+    "captured_at": "2026-10-17T12:19:01.508561+00:00",
+    "files": [
+      {
+        "path": "full_stack_lab/gateway/app/upstream_sessions.py",
+        "sha256": "0444a283e92b40c0ef3967be3ca9000f5b3fe1bc912d48d99cb7b29cc178734b"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "sha256": "304d3590bee8081e7f245c3f623b89df4c9909cc5fa275969c905cd290bf2c6d"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "91e05f250fbc2f11b09a2d5a782e6b4052668986ab0111e66f57462a3c250020"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/mcp_facade.py",
+        "sha256": "189da8d2be69a322a208a7989ccf3c239c694ba9035f0f7399cb27c30668f812"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/main.py",
+        "sha256": "69dcb478118dcc0c2cfe84b8e1bec12f6401318e636ad69366d357e67717ef6e"
+      },
+      {
+        "path": "full_stack_lab/tests/upstream_session_reuse_test.py",
+        "sha256": "f3044e764cb26738225bebd9750ca73e8958145a2e9d5b857a9e87ccefcbeefc"
+      },
+      {
+        "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+        "sha256": "d12acf0e0231127e4876b12f864aef43404ef4c99cabd7e82f576ab0ab14fda2"
+      }
+    ]
+  },
+  "integration": {
+    "A": "e53e229",
+    "git_merge_committed": false,
+    "reason": "shared git metadata write denied; file content merged"
+  }
+}

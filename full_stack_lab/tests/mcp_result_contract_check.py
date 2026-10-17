@@ -27,7 +27,8 @@ class ResultContract(unittest.IsolatedAsyncioTestCase):
         pages = {None: (["a", "b"], "p2"), "p2": (["c"], "p3"), "p3": (["d"], None)}
 
         class Paged:
-            async def list_tools(self, cursor=None):
+            async def list_tools(self, cursor=None, cache_mode="use"):
+                assert cache_mode == "bypass"
                 names, nxt = pages[cursor]
                 return types.ListToolsResult(tools=[types.Tool(name=n, input_schema={"type": "object"}) for n in names],
                                              next_cursor=nxt)
@@ -35,7 +36,8 @@ class ResultContract(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([t.name for t in await upstream.list_all_tools(Paged())], ["a", "b", "c", "d"])
 
         class Endless:
-            async def list_tools(self, cursor=None):
+            async def list_tools(self, cursor=None, cache_mode="use"):
+                assert cache_mode == "bypass"
                 return types.ListToolsResult(tools=[], next_cursor="again")
 
         with self.assertRaises(ValueError):

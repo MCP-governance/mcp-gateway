@@ -13,6 +13,7 @@ import json
 import logging
 import time
 import math
+import re
 from collections import OrderedDict
 from contextlib import AsyncExitStack, asynccontextmanager
 from http.cookiejar import CookieJar, DefaultCookiePolicy
@@ -25,7 +26,8 @@ from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
 from mcp_types.version import HANDSHAKE_PROTOCOL_VERSIONS, MODERN_PROTOCOL_VERSIONS
 
-from . import db
+from . import db, registry, upstream_sessions
+from .destination import pin_transport
 
 CONNECT_TIMEOUT = float(os.getenv("UPSTREAM_TIMEOUT_SECONDS", "90"))
 
@@ -82,20 +84,42 @@ class _Lease:
 
 
 # Dispatch connections are reused per (endpoint, principal, credential): a tools/call
-# no longer pays a TCP and TLS handshake every time. The MCP session itself is still
-# opened and closed per call (D-79), and a pool entry is never shared between
+# no longer pays a TCP and TLS handshake every time. Conversation-bound MCP sessions
+# have their own lifetime (D-115), and a pool entry is never shared between
 # principals, so nothing an upstream ties to a connection crosses callers. Cookies are
 # not kept at all, as with the fresh client each call used to get.
 POOL_SIZE = int(os.getenv("UPSTREAM_POOL_SIZE", "32"))
 _pool: OrderedDict[tuple, _Lease] = OrderedDict()
+_sessions = upstream_sessions.Pool(POOL_SIZE)
 
 
-def _client(timeout: float, headers: dict) -> httpx2.AsyncClient:
+def credential_hash(headers: dict) -> str:
+    return hashlib.sha256(json.dumps(headers, sort_keys=True).encode()).hexdigest()
+
+
+def _client(timeout: float, headers: dict, endpoint: str, internal: bool) -> httpx2.AsyncClient:
     # trust_env=False: a proxy variable in the Gateway's environment must not reroute
     # policy-approved calls to somewhere the registry never approved.
+    url = httpx2.URL(endpoint)
+    target = (url.raw_host.decode("ascii"), url.port or (443 if url.scheme == "https" else 80))
+    transport = pin_transport(httpx2.AsyncHTTPTransport(trust_env=False,
+                              limits=httpx2.Limits(max_keepalive_connections=4, keepalive_expiry=60)),
+                              target=target, internal=[target] if internal else [])
     return httpx2.AsyncClient(timeout=timeout, trust_env=False, follow_redirects=False, headers=headers,
-                              cookies=CookieJar(policy=DefaultCookiePolicy(allowed_domains=[])),
-                              limits=httpx2.Limits(max_keepalive_connections=4, keepalive_expiry=60))
+                              transport=transport,
+                              cookies=CookieJar(policy=DefaultCookiePolicy(allowed_domains=[])))
+
+
+async def _internal_endpoint(endpoint: str) -> bool:
+    host = urlsplit(endpoint).hostname or ""
+    # deployment describes the termination contract, not the server's network location.
+    if re.fullmatch(r"[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?", host):
+        if any(spec.get("endpoint") == endpoint for spec in registry.servers().values()):
+            return True
+        # Approved executors are discovered before registration; the name alone is not approval.
+        return bool(await db.fetch_one("SELECT id FROM mcp_runtimes WHERE endpoint=%s AND status='ACTIVE'",
+                                       (endpoint,)))
+    return False
 
 
 async def close_pool(endpoint: str | None = None, principal: str | None = None) -> int:
@@ -105,6 +129,7 @@ async def close_pool(endpoint: str | None = None, principal: str | None = None) 
     and nothing new can be borrowed from either. The client holds the credential header
     it was built with, so this is also how a removed credential leaves memory.
     """
+    sessions = await _sessions.close(endpoint, principal)
     doomed = [key for key in _pool if (endpoint is None or key[0] == endpoint) and (principal is None or key[1] == principal)]
     loop = asyncio.get_running_loop()
     for key in doomed:
@@ -112,7 +137,7 @@ async def close_pool(endpoint: str | None = None, principal: str | None = None) 
         lease.evicted = True
         if not lease.users and lease.loop is loop:
             await lease.client.aclose()
-    return len(doomed)
+    return len(doomed) + sessions
 
 
 async def release_pool(endpoint: str | None, principal: str | None, reason: str) -> int:
@@ -129,35 +154,86 @@ async def release_pool(endpoint: str | None, principal: str | None, reason: str)
     return closed
 
 
+async def close_downstream(principal: str, conversation: tuple[str, str]) -> None:
+    digest = upstream_sessions.conversation_id(conversation)
+    await _sessions.close(principal=principal, conversation=digest)
+    await db.execute("INSERT INTO upstream_pool_events(endpoint, principal, reason) VALUES (NULL,%s,%s)",
+                     (principal, "downstream:" + digest))
+
+
 SWEEP_SECONDS = 2.0
 _swept: dict = {"at": 0.0, "id": None}
+_sweep_lock = asyncio.Lock()
 
 
 async def _sweep() -> None:
     """Apply closures another process announced. Read at most every SWEEP_SECONDS, so a call
     pays one query per interval, and never fails a call: the dispatch boundary refuses a
     cut-off principal or server on its own, a stale connection only costs a warm socket."""
-    now = time.monotonic()
-    if now - _swept["at"] < SWEEP_SECONDS:
-        return
-    _swept["at"] = now
-    try:
-        if _swept["id"] is None:
-            _swept["id"] = (await db.fetch_one("SELECT COALESCE(max(id), 0) AS last FROM upstream_pool_events"))["last"]
+    async with _sweep_lock:
+        now = time.monotonic()
+        if _swept["id"] is not None and now - _swept["at"] < SWEEP_SECONDS:
             return
-        for row in await db.fetch_all("SELECT id, endpoint, principal FROM upstream_pool_events WHERE id > %s ORDER BY id",
-                                      (_swept["id"],)):
-            _swept["id"] = row["id"]
-            await close_pool(row["endpoint"], row["principal"])
-    except Exception:
-        pass
+        try:
+            if _swept["id"] is None:
+                # Every dispatch awaits this lock before opening; no session predates this cursor.
+                _swept["id"] = (await db.fetch_one(
+                    "SELECT COALESCE(max(id), 0) AS last FROM upstream_pool_events"))["last"]
+            else:
+                for row in await db.fetch_all("SELECT id, endpoint, principal, reason FROM upstream_pool_events WHERE id > %s ORDER BY id",
+                                              (_swept["id"],)):
+                    if row["reason"].startswith("downstream:"):
+                        await _sessions.close(principal=row["principal"], conversation=row["reason"].split(":", 1)[1])
+                    else:
+                        await close_pool(row["endpoint"], row["principal"])
+                    _swept["id"] = row["id"]
+            _swept["at"] = now
+        except Exception:
+            if _swept["id"] is None:
+                raise  # Opening before the initial cursor is known could lose a concurrent revocation.
+
+
+async def maintain_pool() -> None:
+    """Expire sessions and apply cross-process closure signals even without traffic."""
+    while True:
+        try:
+            await _sweep()
+            for key in list(_sessions.entries):
+                try:
+                    changed = credential_hash(credential_headers(key.endpoint, key.principal)) != key.credential
+                    valid = await _dispatch_allowed(key.principal, key.server, key.endpoint)
+                    if changed or not valid:
+                        await close_pool(key.endpoint, key.principal)
+                except Exception:
+                    await close_pool(key.endpoint, key.principal)
+            await _sessions.prune()
+        except Exception:
+            logging.getLogger(__name__).exception("upstream session maintenance failed")
+        await asyncio.sleep(SWEEP_SECONDS)
+
+
+async def _dispatch_allowed(principal: str, server_id: str, endpoint: str) -> bool:
+    from . import registry
+    spec = registry.server(server_id)
+    if not spec or spec["endpoint"] != endpoint:
+        return False
+    intake = spec.get("intake_id") or None
+    return bool(await db.fetch_one(
+        """SELECT 1 FROM principals p, mcp_servers s
+           WHERE p.token=%s AND p.status='active' AND s.id=%s AND s.endpoint=%s
+             AND COALESCE(s.lifecycle,'OPERATING')='OPERATING'
+             AND s.status NOT IN ('DISABLED','BLOCKED_SUPPLY_CHAIN','DRIFT')
+             AND EXISTS (SELECT 1 FROM mcp_tools t WHERE t.server_id=s.id AND t.enabled)
+             AND NOT EXISTS (SELECT 1 FROM mcp_tools t WHERE t.server_id=s.id AND t.enabled
+                 AND t.approval_valid_until<=now())
+             AND (%s::uuid IS NULL OR EXISTS (SELECT 1 FROM mcp_intake_requests i
+                 WHERE i.id=%s::uuid AND i.status='APPROVED'))""", (principal, server_id, endpoint, intake, intake)))
 
 
 @asynccontextmanager
-async def _dispatch_client(endpoint: str, principal: str, headers: dict, timeout: float):
+async def _dispatch_client(endpoint: str, principal: str, headers: dict, timeout: float, internal: bool = False):
     loop = asyncio.get_running_loop()
-    await _sweep()
-    key = (endpoint, principal, timeout, hashlib.sha256(json.dumps(headers, sort_keys=True).encode()).hexdigest())
+    key = (endpoint, principal, timeout, credential_hash(headers), internal)
     lease = _pool.get(key)
     if lease is None or lease.loop is not loop or lease.client.is_closed:
         # A rotated or removed credential changes the key, another event loop or a closed client
@@ -168,7 +244,7 @@ async def _dispatch_client(endpoint: str, principal: str, headers: dict, timeout
             old.evicted = True
             if not old.users and old.loop is loop:
                 await old.client.aclose()
-        lease = _pool[key] = _Lease(_client(timeout, headers), loop)
+        lease = _pool[key] = _Lease(_client(timeout, headers, endpoint, internal), loop)
     _pool.move_to_end(key)
     lease.users += 1
     try:
@@ -185,30 +261,57 @@ async def _dispatch_client(endpoint: str, principal: str, headers: dict, timeout
 
 
 @asynccontextmanager
-async def session(endpoint: str, timeout: float = CONNECT_TIMEOUT, principal: str | None = None,
-                  protocol: str | None = None):
-    """One MCP session. With a principal (dispatch) the HTTP connection comes from the pool.
-
-    `protocol` is the version recorded when the contract was approved (DEV-29 stage 1). A handshake-era
-    server is opened with `initialize` directly instead of first probing `server/discover`; a 2026-era
-    server is spoken to in that version with no discovery round trip at all. A server that moved to
-    another version fails the call (closed) and shows up as drift in the catalog check. Unrecorded
-    versions keep the SDK's probe."""
-    headers = credential_headers(endpoint, principal)
+async def _session(endpoint: str, timeout: float, principal: str | None, protocol: str | None,
+                   headers: dict, internal: bool):
     async with AsyncExitStack() as stack:
         if principal is None:
-            http_client = await stack.enter_async_context(_client(timeout, headers))
+            http_client = await stack.enter_async_context(_client(timeout, headers, endpoint, internal))
         else:
-            http_client = await stack.enter_async_context(_dispatch_client(endpoint, principal, headers, timeout))
+            http_client = await stack.enter_async_context(_dispatch_client(endpoint, principal, headers, timeout, internal))
         yield await stack.enter_async_context(
             Client(streamable_http_client(endpoint, http_client=http_client), read_timeout_seconds=timeout,
-                   mode=connect_mode(protocol)))
+                   mode=connect_mode(protocol), cache=None))
+
+
+@asynccontextmanager
+async def session(endpoint: str, timeout: float = CONNECT_TIMEOUT, principal: str | None = None,
+                  protocol: str | None = None, server_id: str | None = None):
+    if principal:
+        await _sweep()
+    generation = _sessions.generation
+    try:
+        headers = credential_headers(endpoint, principal)
+        internal = await _internal_endpoint(endpoint)
+    except Exception:
+        if principal:
+            await close_pool(endpoint, principal)
+        raise
+    conversation = upstream_sessions.downstream.get()
+    factory = lambda: _session(endpoint, timeout, principal, protocol, headers, internal)
+    # Modern MCP has no session. Unknown versions must first be reviewed before reuse.
+    if principal and server_id and conversation and protocol in HANDSHAKE_PROTOCOL_VERSIONS:
+        key = upstream_sessions.Key(principal, conversation, server_id, credential_hash(headers),
+                                    endpoint, protocol, timeout, internal)
+        async with _sessions.borrow(key, factory, lambda: credential_hash(credential_headers(endpoint, principal))
+                                    == key.credential, generation=generation) as client:
+            yield client
+    else:
+        async with factory() as client:
+            yield client
 
 
 def connect_mode(protocol: str | None) -> str:
     if protocol in HANDSHAKE_PROTOCOL_VERSIONS:
         return "legacy"
     return protocol if protocol in MODERN_PROTOCOL_VERSIONS else "auto"
+
+
+def session_terminated(exc: BaseException) -> bool:
+    from mcp.shared.exceptions import MCPError
+    if isinstance(exc, BaseExceptionGroup):
+        return bool(exc.exceptions) and all(session_terminated(error) for error in exc.exceptions)
+    # SDK translates a session's HTTP 404 to this exact protocol error, not a tool error.
+    return isinstance(exc, MCPError) and exc.code == -32600 and exc.message == "Session terminated"
 
 
 MAX_TOOL_PAGES = 50
@@ -219,7 +322,7 @@ async def list_all_tools(client: Client) -> list:
     put on later pages, and an enabled tool there blocked every call to the server (DEV-44)."""
     tools, cursor = [], None
     for _ in range(MAX_TOOL_PAGES):
-        page = await client.list_tools(cursor=cursor)
+        page = await client.list_tools(cursor=cursor, cache_mode="bypass")
         tools.extend(page.tools)
         cursor = page.next_cursor
         if not cursor:

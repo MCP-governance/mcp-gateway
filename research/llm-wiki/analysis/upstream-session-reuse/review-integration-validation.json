@@ -1,0 +1,52 @@
+{
+  "scope": "offline unit doubles; A e53e229 file content integrated; actual git merge and commit denied",
+  "base_commit": "9537c0b494a0c4d45c615caa4797674f273d270f",
+  "a_commit": "e53e229",
+  "checks": [
+    {
+      "command": "python -B -X utf8 -m unittest discover -s full_stack_lab/tests -p upstream_session_reuse_test.py -v",
+      "exit_code": 0,
+      "output": "test_T10_list_expiry_retries_once_before_intent (upstream_session_reuse_test.DispatchTests) ... ok\ntest_T10_second_list_failure_stops_and_call_failure_never_retries (upstream_session_reuse_test.DispatchTests) ... ok\ntest_T4_T5_final_cutover_and_approval_revoke_prevent_send (upstream_session_reuse_test.DispatchTests) ... ok\ntest_T4_policy_failure_remains_fail_closed (upstream_session_reuse_test.DispatchTests) ... ok\ntest_T4_policy_rechecked_every_call_on_same_connection (upstream_session_reuse_test.DispatchTests) ... ok\ntest_T7_changed_contract_closes_and_never_sends (upstream_session_reuse_test.DispatchTests) ... ok\ntest_terminating_server_through_real_session_wrapper_keeps_decommission_policy (upstream_session_reuse_test.DispatchTests) ... ok\ntest_T10_error_and_cancellation_discard (upstream_session_reuse_test.PoolTests) ... ok\ntest_T1_reuse_without_reopening (upstream_session_reuse_test.PoolTests) ... ok\ntest_T2_T3_every_key_boundary_is_separate (upstream_session_reuse_test.PoolTests) ... ok\ntest_T4_T5_close_active_and_refuse_waiter (upstream_session_reuse_test.PoolTests) ... ok\ntest_T5_endpoint_and_downstream_closure_are_scoped (upstream_session_reuse_test.PoolTests) ... ok\ntest_T6_rotation_during_borrow_prevents_send (upstream_session_reuse_test.PoolTests) ... ok\ntest_T6_rotation_retires_all_old_conversations (upstream_session_reuse_test.PoolTests) ... ok\ntest_T9_ten_concurrent_calls_serialize_one_session (upstream_session_reuse_test.PoolTests) ... ok\ntest_capacity_evicts_idle_not_active (upstream_session_reuse_test.PoolTests) ... ok\ntest_close_while_opening_unblocks_borrower (upstream_session_reuse_test.PoolTests) ... ok\ntest_configuration_change_retires_old_session (upstream_session_reuse_test.PoolTests) ... ok\ntest_expiry_idle_and_maximum_lifetime (upstream_session_reuse_test.PoolTests) ... ok\ntest_opening_failure_is_closed_not_success (upstream_session_reuse_test.PoolTests) ... ok\ntest_revocation_during_rotation_cleanup_prevents_reopen (upstream_session_reuse_test.PoolTests) ... ok\ntest_slow_idle_eviction_does_not_hold_revocation_lock (upstream_session_reuse_test.PoolTests) ... ok\ntest_tool_error_is_definite_response_but_session_is_discarded (upstream_session_reuse_test.PoolTests) ... ok\ntest_A_error_envelope_preserves_B_context_and_always_resets_it (upstream_session_reuse_test.WiringTests) ... ok\ntest_A_internal_classification_change_cannot_reuse_old_MCP_session (upstream_session_reuse_test.WiringTests) ... ok\ntest_A_internal_classification_reaches_raw_and_pooled_transports (upstream_session_reuse_test.WiringTests) ... ok\ntest_T10_only_exact_sdk_session_404_is_retryable (upstream_session_reuse_test.WiringTests) ... ok\ntest_T11_downstream_event_only_closes_matching_conversation (upstream_session_reuse_test.WiringTests) ... ok\ntest_T11_failed_close_does_not_advance_cursor (upstream_session_reuse_test.WiringTests) ... ok\ntest_T11_first_dispatches_wait_for_initial_cursor_then_apply_new_event (upstream_session_reuse_test.WiringTests) ... ok\ntest_T11_initial_cursor_skips_prestart_events_before_any_session (upstream_session_reuse_test.WiringTests) ... ok\ntest_T11_initialization_failure_refuses_to_open (upstream_session_reuse_test.WiringTests) ... ok\ntest_T12_pinned_generation_and_unknown_version (upstream_session_reuse_test.WiringTests) ... ok\ntest_T1_T7_sdk_cache_none_and_operator_headers_only (upstream_session_reuse_test.WiringTests) ... ok\ntest_T7_every_page_bypasses_positive_ttl_cache (upstream_session_reuse_test.WiringTests) ... ok\ntest_conversation_uses_transport_session_and_verified_jti (upstream_session_reuse_test.WiringTests) ... ok\ntest_legacy_only_reuse_and_no_downstream_fallback (upstream_session_reuse_test.WiringTests) ... ok\ntest_maintenance_closes_rotation_revocation_and_expiry_without_new_call (upstream_session_reuse_test.WiringTests) ... ok\ntest_session_does_not_replace_authoritative_policy_checks (upstream_session_reuse_test.WiringTests) ... ok\ntest_successful_delete_closes_and_failed_delete_preserves_session (upstream_session_reuse_test.WiringTests) ... ok\n\n----------------------------------------------------------------------\nRan 40 tests in 0.885s\n\nOK\n"
+    },
+    {
+      "command": "python -B -X utf8 -m unittest discover -s full_stack_lab/tests -p dest_pin_credential_redaction_check.py -v",
+      "chunk_id": "0b3c98",
+      "wall_time_seconds": 8.5e-06,
+      "exit_code": 0,
+      "original_token_count": 521,
+      "output": "test_audit_and_returned_payload_share_redacted_error_before_hash (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\r\ntest_http_and_validation_error_details_keep_shape_only_when_safe (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\r\ntest_issuer_tokens_and_credential_contexts_are_withheld (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\r\ntest_same_native_scanner_failure_and_unknown_secret (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\r\ntest_unexpected_mcp_handler_errors_do_not_echo_exception_text (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\r\ntest_actual_provider_email_gitea_connect_privately_but_github_cannot (dest_pin_credential_redaction_check.DestinationPin) ... ok\r\ntest_egress_failure_has_correct_decision_even_in_cause (dest_pin_credential_redaction_check.DestinationPin) ... ok\r\ntest_every_address_must_be_safe_before_connect (dest_pin_credential_redaction_check.DestinationPin) ... ok\r\ntest_internal_approval_is_exact_and_dns_still_pinned (dest_pin_credential_redaction_check.DestinationPin) ... ok\r\ntest_keycloak_discovery_and_dynamic_backchannel_origins_are_pinned (dest_pin_credential_redaction_check.DestinationPin) ... ok\r\ntest_oidc_metadata_clients_get_a_fresh_pinned_transport (dest_pin_credential_redaction_check.DestinationPin) ... ok\r\ntest_public_then_loopback_rebind_never_reaches_connector (dest_pin_credential_redaction_check.DestinationPin) ... ok\r\ntest_registered_network_location_not_contract_deployment_defines_internal (dest_pin_credential_redaction_check.DestinationPin) ... ok\r\ntest_resolution_failure_empty_and_timeout_are_closed (dest_pin_credential_redaction_check.DestinationPin) ... ok\r\ntest_field_settings_files_and_entire_cli_argument_lists_contain_no_token (dest_pin_credential_redaction_check.KitCredentials) ... ok\r\ntest_endpoint_managed_policy_and_os_file_writers_use_only_helpers (dest_pin_credential_redaction_check.ManagedKitCredentials) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 16 tests in 0.641s\r\n\r\nOK\r\n"
+    },
+    {
+      "command": "python -B -X utf8 -m unittest discover -s full_stack_lab/tests -p dest_pin_transport_check.py -v",
+      "chunk_id": "8747b7",
+      "wall_time_seconds": 5.8e-06,
+      "exit_code": 0,
+      "original_token_count": 110,
+      "output": "test_internal_dns_answer_never_reaches_real_pool_connector (dest_pin_transport_check.TransportPin) ... skipped 'requires Gateway httpx and httpx2 dependencies'\r\ntest_original_sni_verified_context_host_and_redirect_disabled (dest_pin_transport_check.TransportPin) ... skipped 'requires Gateway httpx and httpx2 dependencies'\r\n\r\n----------------------------------------------------------------------\r\nRan 2 tests in 0.021s\r\n\r\nOK (skipped=2)\r\n"
+    },
+    {
+      "command": "python -B -X utf8 -m unittest discover -s full_stack_lab/tests -p mcp_result_contract_check.py -v",
+      "chunk_id": "cd3e0d",
+      "wall_time_seconds": 2.3e-06,
+      "exit_code": 1,
+      "original_token_count": 241,
+      "output": "mcp_result_contract_check (unittest.loader._FailedTest) ... ERROR\r\n\r\n======================================================================\r\nERROR: mcp_result_contract_check (unittest.loader._FailedTest)\r\n----------------------------------------------------------------------\r\nImportError: Failed to import test module: mcp_result_contract_check\r\nTraceback (most recent call last):\r\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\loader.py\", line 436, in _find_test_path\r\n    module = self._get_module_from_name(name)\r\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\loader.py\", line 377, in _get_module_from_name\r\n    __import__(name)\r\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-codex-b\\full_stack_lab\\tests\\mcp_result_contract_check.py\", line 9, in <module>\r\n    from mcp import types\r\nModuleNotFoundError: No module named 'mcp'\r\n\r\n\r\n----------------------------------------------------------------------\r\nRan 1 test in 0.000s\r\n\r\nFAILED (errors=1)\r\n"
+    },
+    {
+      "command": "python -B -X utf8 full_stack_lab/tests/open_endpoints.py",
+      "chunk_id": "9c9af1",
+      "wall_time_seconds": 0.1356422,
+      "exit_code": 0,
+      "original_token_count": 86,
+      "output": "PASS 무인증 1개가 문서와 일치, 인증 필요 70개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\r\n"
+    },
+    {
+      "command": "git diff --check",
+      "chunk_id": "673618",
+      "wall_time_seconds": 1.1645105,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    }
+  ]
+}

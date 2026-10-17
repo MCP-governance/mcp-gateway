@@ -1,0 +1,1725 @@
+{
+  "at": "2026-10-17T12:15:19.593845+00:00",
+  "base_commit": "9537c0b494a0c4d45c615caa4797674f273d270f",
+  "scope": "local-offline-only",
+  "live_mcp_executed": false,
+  "deployed": false,
+  "native_gitleaks_executed": false,
+  "results": [
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "dest_pin_credential_redaction_check.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_audit_and_returned_payload_share_redacted_error_before_hash (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_http_and_validation_error_details_keep_shape_only_when_safe (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_issuer_tokens_and_credential_contexts_are_withheld (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_same_native_scanner_failure_and_unknown_secret (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_unexpected_mcp_handler_errors_do_not_echo_exception_text (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_egress_failure_has_correct_decision_even_in_cause (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_every_address_must_be_safe_before_connect (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_internal_approval_is_exact_and_dns_still_pinned (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_oidc_metadata_clients_get_a_fresh_pinned_transport (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_public_then_loopback_rebind_never_reaches_connector (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_registration_and_executor_define_internal_not_host_spelling (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_resolution_failure_empty_and_timeout_are_closed (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_field_settings_files_and_entire_cli_argument_lists_contain_no_token (dest_pin_credential_redaction_check.KitCredentials) ... ok\ntest_endpoint_managed_policy_and_os_file_writers_use_only_helpers (dest_pin_credential_redaction_check.ManagedKitCredentials) ... ok\n\n----------------------------------------------------------------------\nRan 14 tests in 0.333s\n\nOK\n"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS 무인증 1개가 문서와 일치, 인증 필요 70개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "full_stack_lab/gateway/app/agent_static/console.js"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "dest_pin_transport_check.py",
+        "-v"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "dest_pin_transport_check (unittest.loader._FailedTest) ... ERROR\n\n======================================================================\nERROR: dest_pin_transport_check (unittest.loader._FailedTest)\n----------------------------------------------------------------------\nImportError: Failed to import test module: dest_pin_transport_check\nTraceback (most recent call last):\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\loader.py\", line 436, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\loader.py\", line 377, in _get_module_from_name\n    __import__(name)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gateway-codex-a\\full_stack_lab\\tests\\dest_pin_transport_check.py\", line 14, in <module>\n    import httpx\nModuleNotFoundError: No module named 'httpx'\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-m",
+        "pyflakes",
+        "full_stack_lab/gateway/app/destination.py",
+        "full_stack_lab/gateway/app/upstream.py",
+        "full_stack_lab/gateway/app/secret_scan.py",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/main.py",
+        "full_stack_lab/gateway/app/mcp_facade.py",
+        "full_stack_lab/gateway/app/oidc.py",
+        "full_stack_lab/gateway/app/decommission.py",
+        "full_stack_lab/gateway/app/experiments.py",
+        "full_stack_lab/tests/dest_pin_credential_redaction_check.py",
+        "full_stack_lab/tests/dest_pin_transport_check.py"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "C:\\Program Files\\Python310\\python.exe: No module named pyflakes\n"
+    },
+    {
+      "command": [
+        "stdlib ast.parse all gateway Python + two tests; json.loads policy_ledger"
+      ],
+      "exit_code": 0,
+      "stdout": "39 Python files and policy_ledger JSON parsed",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/map_threats.py"
+      ],
+      "exit_code": 0,
+      "stdout": "Mapped 24 source policies; all code paths exist; runtime verification pending\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/capture_status.py"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"head\": \"9537c0b494a0c4d45c615caa4797674f273d270f\", \"dirty_paths\": 22, \"scope\": \"local-code-only\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/build_wiki.py"
+      ],
+      "exit_code": 0,
+      "stdout": "{\"format\": \"markdown\", \"pages\": 483, \"catalogs\": {\"endpoint-permission-references\": 12, \"experiments\": 13, \"imports\": 22, \"local-tool-risks\": 13, \"papers\": 264, \"solutions\": 9, \"threats\": 24}, \"collaboration_console\": \"research/collaboration-console/README.md\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_wiki.py"
+      ],
+      "exit_code": 1,
+      "stdout": "{\n  \"ok\": false,\n  \"counts\": {\n    \"endpoint-permission-references\": 12,\n    \"experiments\": 13,\n    \"imports\": 22,\n    \"local-tool-risks\": 13,\n    \"papers\": 264,\n    \"solutions\": 9,\n    \"threats\": 24,\n    \"sources_evidence_records\": 3,\n    \"solutions_evidence_records\": 21,\n    \"reviewed_local_tools\": 92,\n    \"markdown_documents\": 483\n  },\n  \"warnings\": [],\n  \"errors\": [\n    \"Missing local file: local-sources/compliance/LIB-L05/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L06/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L09/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L10/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L11/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L12/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M04/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M08/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M17/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M20/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M21/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M22/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M28/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M31/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M32/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M34/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M36/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M37/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M38/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M39/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M40/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M44/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M45/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M48/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M49/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M13/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M14/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M15/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M43/provenance.json\"\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "dest_pin_credential_redaction_check.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_audit_and_returned_payload_share_redacted_error_before_hash (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_http_and_validation_error_details_keep_shape_only_when_safe (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_issuer_tokens_and_credential_contexts_are_withheld (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_same_native_scanner_failure_and_unknown_secret (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_unexpected_mcp_handler_errors_do_not_echo_exception_text (dest_pin_credential_redaction_check.CredentialRedaction) ... ok\ntest_egress_failure_has_correct_decision_even_in_cause (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_every_address_must_be_safe_before_connect (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_internal_approval_is_exact_and_dns_still_pinned (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_oidc_metadata_clients_get_a_fresh_pinned_transport (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_public_then_loopback_rebind_never_reaches_connector (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_registration_and_executor_define_internal_not_host_spelling (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_resolution_failure_empty_and_timeout_are_closed (dest_pin_credential_redaction_check.DestinationPin) ... ok\ntest_field_settings_files_and_entire_cli_argument_lists_contain_no_token (dest_pin_credential_redaction_check.KitCredentials) ... ok\ntest_endpoint_managed_policy_and_os_file_writers_use_only_helpers (dest_pin_credential_redaction_check.ManagedKitCredentials) ... ok\n\n----------------------------------------------------------------------\nRan 14 tests in 0.366s\n\nOK\n"
+    }
+  ],
+  "sources": [
+    {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "sha256": "b709c20c9fd19732fb552bc9183de0a9c439a0f66003f71950f8866ccabb83a9",
+      "symbols": [
+        {
+          "name": "ResultRejected",
+          "line": 91,
+          "end_line": 99
+        },
+        {
+          "name": "response_evidence",
+          "line": 108,
+          "end_line": 119
+        },
+        {
+          "name": "response_disposition",
+          "line": 122,
+          "end_line": 128
+        },
+        {
+          "name": "_Laps",
+          "line": 131,
+          "end_line": 148
+        },
+        {
+          "name": "DispatchRejected",
+          "line": 151,
+          "end_line": 156
+        },
+        {
+          "name": "_configure_tracing",
+          "line": 159,
+          "end_line": 171
+        },
+        {
+          "name": "_discover",
+          "line": 177,
+          "end_line": 181
+        },
+        {
+          "name": "refresh_catalog",
+          "line": 184,
+          "end_line": 322
+        },
+        {
+          "name": "approve_contract",
+          "line": 325,
+          "end_line": 402
+        },
+        {
+          "name": "bootstrap",
+          "line": 405,
+          "end_line": 424
+        },
+        {
+          "name": "refresh_all_catalogs",
+          "line": 427,
+          "end_line": 439
+        },
+        {
+          "name": "check_server",
+          "line": 442,
+          "end_line": 465
+        },
+        {
+          "name": "registration_endpoint",
+          "line": 477,
+          "end_line": 484
+        },
+        {
+          "name": "suggested_action",
+          "line": 487,
+          "end_line": 490
+        },
+        {
+          "name": "discover_for_registration",
+          "line": 493,
+          "end_line": 498
+        },
+        {
+          "name": "register_server",
+          "line": 501,
+          "end_line": 664
+        },
+        {
+          "name": "deregister_server",
+          "line": 667,
+          "end_line": 681
+        },
+        {
+          "name": "review_tool_scopes",
+          "line": 684,
+          "end_line": 713
+        },
+        {
+          "name": "renew_approvals",
+          "line": 721,
+          "end_line": 762
+        },
+        {
+          "name": "catalog_watch",
+          "line": 765,
+          "end_line": 776
+        },
+        {
+          "name": "_contract",
+          "line": 779,
+          "end_line": 837
+        },
+        {
+          "name": "enforcement_mode",
+          "line": 840,
+          "end_line": 848
+        },
+        {
+          "name": "set_enforcement_mode",
+          "line": 851,
+          "end_line": 859
+        },
+        {
+          "name": "monitor_summary",
+          "line": 862,
+          "end_line": 882
+        },
+        {
+          "name": "untrusted_markers",
+          "line": 888,
+          "end_line": 895
+        },
+        {
+          "name": "_endpoint_host",
+          "line": 904,
+          "end_line": 911
+        },
+        {
+          "name": "transport_secure",
+          "line": 914,
+          "end_line": 922
+        },
+        {
+          "name": "egress_allowed",
+          "line": 925,
+          "end_line": 951
+        },
+        {
+          "name": "_outbound_text",
+          "line": 954,
+          "end_line": 969
+        },
+        {
+          "name": "_privacy_ignore",
+          "line": 972,
+          "end_line": 982
+        },
+        {
+          "name": "_sequence_flags",
+          "line": 985,
+          "end_line": 995
+        },
+        {
+          "name": "_relationship_scope",
+          "line": 998,
+          "end_line": 1012
+        },
+        {
+          "name": "_risk_score",
+          "line": 1015,
+          "end_line": 1022
+        },
+        {
+          "name": "_reserve_call",
+          "line": 1025,
+          "end_line": 1107
+        },
+        {
+          "name": "_release_call",
+          "line": 1110,
+          "end_line": 1128
+        },
+        {
+          "name": "_opa",
+          "line": 1135,
+          "end_line": 1136
+        },
+        {
+          "name": "opa_document",
+          "line": 1139,
+          "end_line": 1146
+        },
+        {
+          "name": "policy_ledger",
+          "line": 1149,
+          "end_line": 1167
+        },
+        {
+          "name": "local_verdict",
+          "line": 1170,
+          "end_line": 1195
+        },
+        {
+          "name": "_policy",
+          "line": 1198,
+          "end_line": 1209
+        },
+        {
+          "name": "_call_upstream",
+          "line": 1212,
+          "end_line": 1336
+        },
+        {
+          "name": "_root_cause",
+          "line": 1339,
+          "end_line": 1344
+        },
+        {
+          "name": "_storable",
+          "line": 1347,
+          "end_line": 1355
+        },
+        {
+          "name": "_decoded_strings",
+          "line": 1358,
+          "end_line": 1369
+        },
+        {
+          "name": "_upstream_failure",
+          "line": 1372,
+          "end_line": 1395
+        },
+        {
+          "name": "body_of",
+          "line": 1398,
+          "end_line": 1399
+        },
+        {
+          "name": "_guarded_result",
+          "line": 1402,
+          "end_line": 1434
+        },
+        {
+          "name": "_inspected_result",
+          "line": 1437,
+          "end_line": 1448
+        },
+        {
+          "name": "_audit_payload",
+          "line": 1451,
+          "end_line": 1465
+        },
+        {
+          "name": "_record_decision",
+          "line": 1471,
+          "end_line": 1551
+        },
+        {
+          "name": "record_connection_denial",
+          "line": 1558,
+          "end_line": 1589
+        },
+        {
+          "name": "verify_audit_chain",
+          "line": 1592,
+          "end_line": 1631
+        },
+        {
+          "name": "_decision_payload",
+          "line": 1634,
+          "end_line": 1644
+        },
+        {
+          "name": "execute_call",
+          "line": 1647,
+          "end_line": 1907
+        },
+        {
+          "name": "approve_request",
+          "line": 1910,
+          "end_line": 1954
+        },
+        {
+          "name": "_trivy_summary",
+          "line": 1957,
+          "end_line": 1978
+        },
+        {
+          "name": "_store_trivy",
+          "line": 1981,
+          "end_line": 1988
+        },
+        {
+          "name": "supply_chain_coverage",
+          "line": 1991,
+          "end_line": 2007
+        },
+        {
+          "name": "reject_request",
+          "line": 2010,
+          "end_line": 2033
+        },
+        {
+          "name": "import_supply_chain_reports",
+          "line": 2036,
+          "end_line": 2099
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/decommission.py",
+      "sha256": "cc00f455a927710996a29edb7f5490696c92567cbe5f16398ab7097085d03f1d",
+      "symbols": [
+        {
+          "name": "_digest",
+          "line": 108,
+          "end_line": 110
+        },
+        {
+          "name": "_now",
+          "line": 113,
+          "end_line": 114
+        },
+        {
+          "name": "_row",
+          "line": 117,
+          "end_line": 126
+        },
+        {
+          "name": "_server",
+          "line": 129,
+          "end_line": 133
+        },
+        {
+          "name": "_case",
+          "line": 136,
+          "end_line": 140
+        },
+        {
+          "name": "_is_provider",
+          "line": 149,
+          "end_line": 150
+        },
+        {
+          "name": "relationships",
+          "line": 154,
+          "end_line": 174
+        },
+        {
+          "name": "drill",
+          "line": 177,
+          "end_line": 217
+        },
+        {
+          "name": "open_case",
+          "line": 221,
+          "end_line": 271
+        },
+        {
+          "name": "seed_targets",
+          "line": 274,
+          "end_line": 320
+        },
+        {
+          "name": "add_target",
+          "line": 323,
+          "end_line": 338
+        },
+        {
+          "name": "revoke_target",
+          "line": 341,
+          "end_line": 357
+        },
+        {
+          "name": "add_evidence",
+          "line": 360,
+          "end_line": 376
+        },
+        {
+          "name": "_invalidate",
+          "line": 379,
+          "end_line": 387
+        },
+        {
+          "name": "_probe_call",
+          "line": 395,
+          "end_line": 410
+        },
+        {
+          "name": "collect",
+          "line": 413,
+          "end_line": 507
+        },
+        {
+          "name": "probe",
+          "line": 510,
+          "end_line": 514
+        },
+        {
+          "name": "_gitea_headers",
+          "line": 517,
+          "end_line": 522
+        },
+        {
+          "name": "_gitea_token_present",
+          "line": 525,
+          "end_line": 534
+        },
+        {
+          "name": "_resource_verdict",
+          "line": 537,
+          "end_line": 564
+        },
+        {
+          "name": "revoke_credential",
+          "line": 567,
+          "end_line": 590
+        },
+        {
+          "name": "_post_cutover",
+          "line": 594,
+          "end_line": 617
+        },
+        {
+          "name": "_judge_target",
+          "line": 620,
+          "end_line": 690
+        },
+        {
+          "name": "_evidence_shows_revoked",
+          "line": 693,
+          "end_line": 706
+        },
+        {
+          "name": "assess",
+          "line": 709,
+          "end_line": 754
+        },
+        {
+          "name": "close_case",
+          "line": 757,
+          "end_line": 780
+        },
+        {
+          "name": "reopen_case",
+          "line": 783,
+          "end_line": 796
+        },
+        {
+          "name": "restore_server",
+          "line": 799,
+          "end_line": 821
+        },
+        {
+          "name": "case_detail",
+          "line": 825,
+          "end_line": 842
+        },
+        {
+          "name": "list_cases",
+          "line": 845,
+          "end_line": 857
+        },
+        {
+          "name": "disclosure_request",
+          "line": 860,
+          "end_line": 890
+        },
+        {
+          "name": "summary",
+          "line": 893,
+          "end_line": 904
+        },
+        {
+          "name": "report",
+          "line": 907,
+          "end_line": 928
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/destination.py",
+      "sha256": "d22a3e6b71d8a19bf63041248ab1bac1c2bc67d5824d448088f6ee8f8bba4210",
+      "symbols": [
+        {
+          "name": "DestinationBlocked",
+          "line": 10,
+          "end_line": 11
+        },
+        {
+          "name": "PinnedBackend",
+          "line": 14,
+          "end_line": 50
+        },
+        {
+          "name": "pin_transport",
+          "line": 53,
+          "end_line": 57
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/experiments.py",
+      "sha256": "2feb18305f1b8b5c0951c24c846fbfa728addb6931c867d19bf718780bf57d5d",
+      "symbols": [
+        {
+          "name": "_now",
+          "line": 47,
+          "end_line": 48
+        },
+        {
+          "name": "_token",
+          "line": 51,
+          "end_line": 55
+        },
+        {
+          "name": "_stateless_accepts",
+          "line": 58,
+          "end_line": 65
+        },
+        {
+          "name": "_stateful_accepts",
+          "line": 68,
+          "end_line": 77
+        },
+        {
+          "name": "e1",
+          "line": 80,
+          "end_line": 120
+        },
+        {
+          "name": "session_termination",
+          "line": 123,
+          "end_line": 146
+        },
+        {
+          "name": "e2",
+          "line": 149,
+          "end_line": 168
+        },
+        {
+          "name": "_gitea",
+          "line": 171,
+          "end_line": 178
+        },
+        {
+          "name": "e3",
+          "line": 181,
+          "end_line": 219
+        },
+        {
+          "name": "main",
+          "line": 222,
+          "end_line": 229
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/main.py",
+      "sha256": "ac90b2803f478ff8ea07b9c241c14a9d8c5bd177601eea40e16629e3f35bff1c",
+      "symbols": [
+        {
+          "name": "_error_detail",
+          "line": 64,
+          "end_line": 67
+        },
+        {
+          "name": "RequireBearer",
+          "line": 70,
+          "end_line": 98
+        },
+        {
+          "name": "ServerPath",
+          "line": 101,
+          "end_line": 157
+        },
+        {
+          "name": "StrictModel",
+          "line": 160,
+          "end_line": 161
+        },
+        {
+          "name": "RejectRequest",
+          "line": 164,
+          "end_line": 165
+        },
+        {
+          "name": "IntentResolve",
+          "line": 168,
+          "end_line": 170
+        },
+        {
+          "name": "EnforcementRequest",
+          "line": 173,
+          "end_line": 174
+        },
+        {
+          "name": "SessionRequest",
+          "line": 177,
+          "end_line": 179
+        },
+        {
+          "name": "caller",
+          "line": 182,
+          "end_line": 189
+        },
+        {
+          "name": "admin_caller",
+          "line": 192,
+          "end_line": 202
+        },
+        {
+          "name": "lifespan",
+          "line": 206,
+          "end_line": 214
+        },
+        {
+          "name": "public_http_error",
+          "line": 221,
+          "end_line": 222
+        },
+        {
+          "name": "public_validation_error",
+          "line": 226,
+          "end_line": 228
+        },
+        {
+          "name": "_absent",
+          "line": 231,
+          "end_line": 233
+        },
+        {
+          "name": "_probe",
+          "line": 236,
+          "end_line": 242
+        },
+        {
+          "name": "health",
+          "line": 246,
+          "end_line": 270
+        },
+        {
+          "name": "state",
+          "line": 274,
+          "end_line": 288
+        },
+        {
+          "name": "registry_view",
+          "line": 292,
+          "end_line": 314
+        },
+        {
+          "name": "overview",
+          "line": 318,
+          "end_line": 395
+        },
+        {
+          "name": "latency",
+          "line": 406,
+          "end_line": 458
+        },
+        {
+          "name": "activity_feed",
+          "line": 462,
+          "end_line": 473
+        },
+        {
+          "name": "activity_analysis",
+          "line": 477,
+          "end_line": 486
+        },
+        {
+          "name": "protected_resource_metadata",
+          "line": 490,
+          "end_line": 496
+        },
+        {
+          "name": "policy_matrix",
+          "line": 500,
+          "end_line": 506
+        },
+        {
+          "name": "policy_ledger_view",
+          "line": 510,
+          "end_line": 525
+        },
+        {
+          "name": "session",
+          "line": 529,
+          "end_line": 553
+        },
+        {
+          "name": "approve",
+          "line": 557,
+          "end_line": 561
+        },
+        {
+          "name": "reject",
+          "line": 565,
+          "end_line": 569
+        },
+        {
+          "name": "dispatch_intents",
+          "line": 573,
+          "end_line": 575
+        },
+        {
+          "name": "dispatch_intent_resolve",
+          "line": 579,
+          "end_line": 583
+        },
+        {
+          "name": "catalog_refresh",
+          "line": 587,
+          "end_line": 588
+        },
+        {
+          "name": "ContractApproval",
+          "line": 593,
+          "end_line": 594
+        },
+        {
+          "name": "registry_approve_contract",
+          "line": 598,
+          "end_line": 610
+        },
+        {
+          "name": "registry_check",
+          "line": 614,
+          "end_line": 619
+        },
+        {
+          "name": "RegistryDiscover",
+          "line": 623,
+          "end_line": 624
+        },
+        {
+          "name": "RegistryRegister",
+          "line": 629,
+          "end_line": 645
+        },
+        {
+          "name": "registry_discover",
+          "line": 649,
+          "end_line": 656
+        },
+        {
+          "name": "registry_register",
+          "line": 660,
+          "end_line": 668
+        },
+        {
+          "name": "ToolReviews",
+          "line": 671,
+          "end_line": 672
+        },
+        {
+          "name": "registry_tool_reviews",
+          "line": 676,
+          "end_line": 684
+        },
+        {
+          "name": "registry_deregister",
+          "line": 688,
+          "end_line": 692
+        },
+        {
+          "name": "supply_chain_import",
+          "line": 696,
+          "end_line": 700
+        },
+        {
+          "name": "supply_chain_cover",
+          "line": 704,
+          "end_line": 708
+        },
+        {
+          "name": "enforcement",
+          "line": 712,
+          "end_line": 713
+        },
+        {
+          "name": "enforcement_update",
+          "line": 717,
+          "end_line": 722
+        },
+        {
+          "name": "monitor",
+          "line": 726,
+          "end_line": 728
+        },
+        {
+          "name": "audit_verify",
+          "line": 732,
+          "end_line": 734
+        },
+        {
+          "name": "AuditAnnotation",
+          "line": 737,
+          "end_line": 740
+        },
+        {
+          "name": "audit_annotate",
+          "line": 744,
+          "end_line": 749
+        },
+        {
+          "name": "audit_annotation_list",
+          "line": 753,
+          "end_line": 754
+        },
+        {
+          "name": "audit_filters",
+          "line": 757,
+          "end_line": 763
+        },
+        {
+          "name": "audit_events",
+          "line": 767,
+          "end_line": 769
+        },
+        {
+          "name": "audit_export",
+          "line": 773,
+          "end_line": 775
+        },
+        {
+          "name": "audit_event",
+          "line": 779,
+          "end_line": 780
+        },
+        {
+          "name": "TerminationOpen",
+          "line": 790,
+          "end_line": 795
+        },
+        {
+          "name": "TargetCreate",
+          "line": 798,
+          "end_line": 807
+        },
+        {
+          "name": "TargetUpdate",
+          "line": 810,
+          "end_line": 812
+        },
+        {
+          "name": "EvidenceCreate",
+          "line": 815,
+          "end_line": 823
+        },
+        {
+          "name": "CaseClose",
+          "line": 826,
+          "end_line": 828
+        },
+        {
+          "name": "CaseReopen",
+          "line": 831,
+          "end_line": 832
+        },
+        {
+          "name": "EvidenceCollect",
+          "line": 835,
+          "end_line": 837
+        },
+        {
+          "name": "termination_relationships",
+          "line": 841,
+          "end_line": 844
+        },
+        {
+          "name": "termination_collect",
+          "line": 848,
+          "end_line": 853
+        },
+        {
+          "name": "termination_revoke_credential",
+          "line": 857,
+          "end_line": 863
+        },
+        {
+          "name": "lab_restore",
+          "line": 867,
+          "end_line": 877
+        },
+        {
+          "name": "termination_cases",
+          "line": 881,
+          "end_line": 882
+        },
+        {
+          "name": "termination_open",
+          "line": 886,
+          "end_line": 893
+        },
+        {
+          "name": "termination_detail",
+          "line": 897,
+          "end_line": 901
+        },
+        {
+          "name": "termination_add_target",
+          "line": 905,
+          "end_line": 912
+        },
+        {
+          "name": "termination_update_target",
+          "line": 916,
+          "end_line": 922
+        },
+        {
+          "name": "termination_add_evidence",
+          "line": 926,
+          "end_line": 939
+        },
+        {
+          "name": "termination_probe",
+          "line": 943,
+          "end_line": 948
+        },
+        {
+          "name": "termination_assess",
+          "line": 952,
+          "end_line": 956
+        },
+        {
+          "name": "termination_close",
+          "line": 960,
+          "end_line": 966
+        },
+        {
+          "name": "termination_reopen",
+          "line": 970,
+          "end_line": 975
+        },
+        {
+          "name": "termination_report",
+          "line": 979,
+          "end_line": 984
+        },
+        {
+          "name": "termination_disclosure",
+          "line": 988,
+          "end_line": 998
+        },
+        {
+          "name": "termination_drill",
+          "line": 1002,
+          "end_line": 1011
+        },
+        {
+          "name": "EndpointDeviceCreate",
+          "line": 1022,
+          "end_line": 1028
+        },
+        {
+          "name": "EndpointEnroll",
+          "line": 1031,
+          "end_line": 1037
+        },
+        {
+          "name": "Provenance",
+          "line": 1040,
+          "end_line": 1045
+        },
+        {
+          "name": "EndpointEntry",
+          "line": 1048,
+          "end_line": 1053
+        },
+        {
+          "name": "EndpointReport",
+          "line": 1056,
+          "end_line": 1060
+        },
+        {
+          "name": "ObservationReport",
+          "line": 1063,
+          "end_line": 1068
+        },
+        {
+          "name": "EndpointOSEvent",
+          "line": 1071,
+          "end_line": 1077
+        },
+        {
+          "name": "EndpointOSReport",
+          "line": 1080,
+          "end_line": 1082
+        },
+        {
+          "name": "HostAccount",
+          "line": 1085,
+          "end_line": 1088
+        },
+        {
+          "name": "HostReport",
+          "line": 1091,
+          "end_line": 1095
+        },
+        {
+          "name": "NetworkQuality",
+          "line": 1098,
+          "end_line": 1117
+        },
+        {
+          "name": "ManagedHeartbeat",
+          "line": 1120,
+          "end_line": 1125
+        },
+        {
+          "name": "ManagedActivation",
+          "line": 1128,
+          "end_line": 1130
+        },
+        {
+          "name": "ListenerFinding",
+          "line": 1133,
+          "end_line": 1143
+        },
+        {
+          "name": "ListenerReport",
+          "line": 1146,
+          "end_line": 1160
+        },
+        {
+          "name": "ScanPolicyUpdate",
+          "line": 1163,
+          "end_line": 1170
+        },
+        {
+          "name": "endpoint_device",
+          "line": 1173,
+          "end_line": 1180
+        },
+        {
+          "name": "endpoint_device_create",
+          "line": 1184,
+          "end_line": 1197
+        },
+        {
+          "name": "endpoint_device_revoke",
+          "line": 1201,
+          "end_line": 1205
+        },
+        {
+          "name": "endpoint_device_list",
+          "line": 1209,
+          "end_line": 1210
+        },
+        {
+          "name": "endpoint_managed_policy",
+          "line": 1214,
+          "end_line": 1218
+        },
+        {
+          "name": "endpoint_heartbeat",
+          "line": 1222,
+          "end_line": 1236
+        },
+        {
+          "name": "endpoint_managed_activate",
+          "line": 1240,
+          "end_line": 1245
+        },
+        {
+          "name": "endpoint_enroll",
+          "line": 1249,
+          "end_line": 1263
+        },
+        {
+          "name": "endpoint_scan_policy_read",
+          "line": 1267,
+          "end_line": 1273
+        },
+        {
+          "name": "endpoint_scan_policy_admin",
+          "line": 1277,
+          "end_line": 1278
+        },
+        {
+          "name": "endpoint_scan_policy_update",
+          "line": 1282,
+          "end_line": 1288
+        },
+        {
+          "name": "endpoint_report",
+          "line": 1292,
+          "end_line": 1307
+        },
+        {
+          "name": "endpoint_listener_report",
+          "line": 1311,
+          "end_line": 1326
+        },
+        {
+          "name": "endpoint_observation_status",
+          "line": 1330,
+          "end_line": 1338
+        },
+        {
+          "name": "endpoint_inventory",
+          "line": 1342,
+          "end_line": 1366
+        },
+        {
+          "name": "endpoint_inventory_entries",
+          "line": 1375,
+          "end_line": 1377
+        },
+        {
+          "name": "endpoint_inventory_listeners",
+          "line": 1381,
+          "end_line": 1383
+        },
+        {
+          "name": "endpoint_inventory_os_events",
+          "line": 1387,
+          "end_line": 1391
+        },
+        {
+          "name": "endpoint_observations",
+          "line": 1395,
+          "end_line": 1397
+        },
+        {
+          "name": "endpoint_record",
+          "line": 1401,
+          "end_line": 1406
+        },
+        {
+          "name": "endpoint_correlation",
+          "line": 1410,
+          "end_line": 1421
+        },
+        {
+          "name": "endpoint_network_quality",
+          "line": 1425,
+          "end_line": 1426
+        },
+        {
+          "name": "endpoint_os_report",
+          "line": 1430,
+          "end_line": 1436
+        },
+        {
+          "name": "risk_catalog",
+          "line": 1440,
+          "end_line": 1447
+        },
+        {
+          "name": "console",
+          "line": 1454,
+          "end_line": 1456
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/mcp_facade.py",
+      "sha256": "aa21bebc7b5e4efe05ab913478add88d23a3fbeaa2d91f8d40350fd18dc3c29e",
+      "symbols": [
+        {
+          "name": "_headers",
+          "line": 38,
+          "end_line": 39
+        },
+        {
+          "name": "_caller",
+          "line": 42,
+          "end_line": 52
+        },
+        {
+          "name": "_scope",
+          "line": 55,
+          "end_line": 59
+        },
+        {
+          "name": "_harness",
+          "line": 62,
+          "end_line": 72
+        },
+        {
+          "name": "_traceparent",
+          "line": 78,
+          "end_line": 81
+        },
+        {
+          "name": "_client_context",
+          "line": 84,
+          "end_line": 103
+        },
+        {
+          "name": "_approved_tools",
+          "line": 106,
+          "end_line": 133
+        },
+        {
+          "name": "_render",
+          "line": 136,
+          "end_line": 180
+        },
+        {
+          "name": "build_mcp",
+          "line": 183,
+          "end_line": 215
+        },
+        {
+          "name": "transport_security",
+          "line": 218,
+          "end_line": 228
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/oidc.py",
+      "sha256": "d6adf7448b3c1c8a4001063b0667f4d2476631e0b79ba703b145185a6d328498",
+      "symbols": [
+        {
+          "name": "RedactCallbackQuery",
+          "line": 34,
+          "end_line": 39
+        },
+        {
+          "name": "settings",
+          "line": 42,
+          "end_line": 47
+        },
+        {
+          "name": "configured",
+          "line": 50,
+          "end_line": 52
+        },
+        {
+          "name": "local_login_allowed",
+          "line": 55,
+          "end_line": 57
+        },
+        {
+          "name": "cipher",
+          "line": 60,
+          "end_line": 61
+        },
+        {
+          "name": "seal",
+          "line": 64,
+          "end_line": 66
+        },
+        {
+          "name": "unseal",
+          "line": 69,
+          "end_line": 70
+        },
+        {
+          "name": "http_transport",
+          "line": 73,
+          "end_line": 78
+        },
+        {
+          "name": "PinnedOAuthClient",
+          "line": 81,
+          "end_line": 85
+        },
+        {
+          "name": "PinnedOAuthApp",
+          "line": 88,
+          "end_line": 89
+        },
+        {
+          "name": "client",
+          "line": 92,
+          "end_line": 102
+        },
+        {
+          "name": "install",
+          "line": 105,
+          "end_line": 127
+        },
+        {
+          "name": "provider",
+          "line": 131,
+          "end_line": 134
+        },
+        {
+          "name": "login",
+          "line": 138,
+          "end_line": 146
+        },
+        {
+          "name": "callback",
+          "line": 150,
+          "end_line": 202
+        },
+        {
+          "name": "session",
+          "line": 206,
+          "end_line": 224
+        },
+        {
+          "name": "_refresh_upstream",
+          "line": 227,
+          "end_line": 275
+        },
+        {
+          "name": "validate_session",
+          "line": 278,
+          "end_line": 330
+        },
+        {
+          "name": "touch_session",
+          "line": 333,
+          "end_line": 342
+        },
+        {
+          "name": "end_session",
+          "line": 345,
+          "end_line": 371
+        },
+        {
+          "name": "end_binding_sessions",
+          "line": 374,
+          "end_line": 377
+        },
+        {
+          "name": "Binding",
+          "line": 380,
+          "end_line": 382
+        },
+        {
+          "name": "administrator",
+          "line": 385,
+          "end_line": 389
+        },
+        {
+          "name": "identity",
+          "line": 393,
+          "end_line": 397
+        },
+        {
+          "name": "bind",
+          "line": 401,
+          "end_line": 413
+        },
+        {
+          "name": "unbind",
+          "line": 417,
+          "end_line": 421
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/secret_scan.py",
+      "sha256": "c6d981869e476d64d8b3e646c307f29d223942333fad84eb7e147a05593750db",
+      "symbols": [
+        {
+          "name": "_engine",
+          "line": 30,
+          "end_line": 39
+        },
+        {
+          "name": "rule_ids",
+          "line": 42,
+          "end_line": 57
+        },
+        {
+          "name": "scan_text",
+          "line": 60,
+          "end_line": 65
+        },
+        {
+          "name": "_finished",
+          "line": 68,
+          "end_line": 71
+        },
+        {
+          "name": "labels",
+          "line": 74,
+          "end_line": 87
+        },
+        {
+          "name": "redact_error",
+          "line": 97,
+          "end_line": 109
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/upstream.py",
+      "sha256": "6826cd03b14e7839d5465f28dc76deeb8948ceac072bc5c45b0e3aab6e023d33",
+      "symbols": [
+        {
+          "name": "CredentialUnavailable",
+          "line": 34,
+          "end_line": 35
+        },
+        {
+          "name": "credential_headers",
+          "line": 38,
+          "end_line": 75
+        },
+        {
+          "name": "_Lease",
+          "line": 78,
+          "end_line": 82
+        },
+        {
+          "name": "_client",
+          "line": 94,
+          "end_line": 104
+        },
+        {
+          "name": "_internal_endpoint",
+          "line": 107,
+          "end_line": 116
+        },
+        {
+          "name": "close_pool",
+          "line": 119,
+          "end_line": 133
+        },
+        {
+          "name": "release_pool",
+          "line": 136,
+          "end_line": 147
+        },
+        {
+          "name": "_sweep",
+          "line": 154,
+          "end_line": 171
+        },
+        {
+          "name": "_dispatch_client",
+          "line": 175,
+          "end_line": 202
+        },
+        {
+          "name": "session",
+          "line": 206,
+          "end_line": 224
+        },
+        {
+          "name": "connect_mode",
+          "line": 227,
+          "end_line": 230
+        },
+        {
+          "name": "list_all_tools",
+          "line": 236,
+          "end_line": 246
+        },
+        {
+          "name": "tool_view",
+          "line": 249,
+          "end_line": 256
+        },
+        {
+          "name": "discover",
+          "line": 259,
+          "end_line": 268
+        },
+        {
+          "name": "handshake",
+          "line": 271,
+          "end_line": 282
+        },
+        {
+          "name": "content_items",
+          "line": 285,
+          "end_line": 293
+        },
+        {
+          "name": "text_of",
+          "line": 296,
+          "end_line": 297
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/dest_pin_credential_redaction_check.py",
+      "sha256": "5213ac79b6b5280e83623e3ba2645083b2464e9d062413b8b6ceb6da392304f1",
+      "symbols": [
+        {
+          "name": "selected",
+          "line": 32,
+          "end_line": 44
+        },
+        {
+          "name": "redactor",
+          "line": 53,
+          "end_line": 56
+        },
+        {
+          "name": "dns",
+          "line": 59,
+          "end_line": 61
+        },
+        {
+          "name": "DestinationPin",
+          "line": 64,
+          "end_line": 154
+        },
+        {
+          "name": "CredentialRedaction",
+          "line": 157,
+          "end_line": 232
+        },
+        {
+          "name": "KitCredentials",
+          "line": 235,
+          "end_line": 260
+        },
+        {
+          "name": "ManagedKitCredentials",
+          "line": 263,
+          "end_line": 305
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/dest_pin_transport_check.py",
+      "sha256": "0b6d3ab94cf0e9be409e4aebad33666985f5cb837af9bfed2bc8cbaeec074f53",
+      "symbols": [
+        {
+          "name": "MemoryStream",
+          "line": 21,
+          "end_line": 42
+        },
+        {
+          "name": "TransportPin",
+          "line": 45,
+          "end_line": 77
+        }
+      ]
+    },
+    {
+      "path": "research/llm-wiki/tools/map_threats.py",
+      "sha256": "ddfe42b49acfcf41e46279054ddc4cffb5d92b69e19a53c2e6ceca6956f33040",
+      "symbols": [
+        {
+          "name": "build",
+          "line": 40,
+          "end_line": 82
+        }
+      ]
+    }
+  ],
+  "finished_at": "2026-10-17T12:19:19.434039+00:00"
+}

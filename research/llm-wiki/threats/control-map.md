@@ -1,6 +1,6 @@
 # 원본 24개 정책 → 통제·코드 후보 매핑
 
-2026-10-15 정적 연구 매핑입니다. 코드 경로 존재와 로컬 바이트 해시를 확인했고 해당 통제의 전체 구현·실기기 집행을 증명하지 않습니다.
+2026-10-17 정적 연구 매핑입니다. 코드 경로 존재와 로컬 바이트 해시를 확인했고 해당 통제의 전체 구현·실기기 집행을 증명하지 않습니다.
 원본 PAC01~24와 런타임 PAC-01~15는 별도 번호 체계입니다. 50개 확장표는 별도 검토 목록으로 보존합니다.
 
 | 원본 ID·셀 | 위협·통제 | 런타임 후보 | 코드 후보 | 남은 검증 |
@@ -9,7 +9,7 @@
 | PAC02 · A6 | 계약·권한 범위: 검토되지 않은 기능 도입과 과도한 권한 부여 | PAC-01, PAC-08 | [agent_service.py](../../../full_stack_lab/gateway/app/agent_service.py)<br>[pac.py](../../../full_stack_lab/gateway/app/pac.py) | 도구 계약과 실제 자원·인자의 승인 범위 독립 검토 |
 | PAC03 · A7 | 승인·유효기간: 승인 기간이 지났거나 승인 조건 또는 사용자 동의를 확인하지 않은 연결 | P-APPROVAL-EXPIRY-001, PAC-01 | [core.py](../../../full_stack_lab/gateway/app/core.py) | 사용자 동의와 서버 사용 승인은 별도 증거 |
 | PAC04 · A8 | 시험·환경: 미승인 환경 실행과 시험 환경의 운영정보 노출 | PAC-03 | [pac15.rego](../../../full_stack_lab/opa/pac15.rego) | 환경 사실 입력과 실기기 관찰값 결합 검증 |
-| PAC05 · A9 | 목적지·SSRF: 승인 범위를 벗어난 서버나 OAuth 조회 주소에 접속 | MCP-EGRESS-001, MCP-EGRESS-002 | [classify.py](../../../full_stack_lab/gateway/app/classify.py)<br>[upstream.py](../../../full_stack_lab/gateway/app/upstream.py) | OAuth discovery·DNS 재결합 등 최종 접속 대상의 별도 경계 |
+| PAC05 · A9 | 목적지·SSRF: 승인 범위를 벗어난 서버나 OAuth 조회 주소에 접속 | MCP-EGRESS-001, MCP-EGRESS-002 | [classify.py](../../../full_stack_lab/gateway/app/classify.py)<br>[upstream.py](../../../full_stack_lab/gateway/app/upstream.py)<br>[oidc.py](../../../full_stack_lab/gateway/app/oidc.py) | D-116: 직접 연결 DNS 전체 검사·IP 고정/OIDC 연동, 로컬 함수 단위만; 실제 풀·TLS·서버 자체 outbound 미검증 |
 | PAC06 · A10 | 도구 계약: 미승인 기능 또는 다른 서버의 동명 기능 실행 | MCP-CATALOG-001, PAC-08 | [contract.py](../../../full_stack_lab/gateway/app/contract.py)<br>[core.py](../../../full_stack_lab/gateway/app/core.py) | 동명 도구·설명·스키마 변경과 승인 이후 변형 시험 |
 | PAC07 · A11 | 엔드포인트 우회: 게이트웨이를 거치지 않은 직접 연결 | MCP-SHADOW-*, ENDPOINT-MANAGED-001 | [enforce-linux.py](../../../endpoint-agent/enforce-linux.py)<br>[managed-linux.py](../../../endpoint-agent/managed-linux.py)<br>[managed-windows.py](../../../endpoint-agent/managed-windows.py)<br>[agent.py](../../../endpoint-agent/agent.py)<br>[endpoint_plane.py](../../../full_stack_lab/gateway/app/endpoint_plane.py) | 로컬 MCP 실험·코드 회귀와 현재 관리 기기의 OS 집행을 구분; Windows loopback·실행 통제 공백 유지 |
 | PAC08 · A12 | 신원: 요청 주체 사칭과 검증되지 않은 신원 수용 | PAC-04 | [idp.py](../../../full_stack_lab/gateway/app/idp.py)<br>[core.py](../../../full_stack_lab/gateway/app/core.py) | transport 신원과 사용자 자기 선언 필드 분리 |
@@ -24,7 +24,7 @@
 | PAC17 · A21 | 호출·동시성: 호출 폭주와 과도한 동시 실행으로 인한 자원 고갈 | P-RATE-001, P-RATE-002, P-RATE-003 | [core.py](../../../full_stack_lab/gateway/app/core.py)<br>[reservation_effect_check.py](../../../full_stack_lab/tests/reservation_effect_check.py) | 호출량 상한과 모든 upstream의 실행 시간 제한을 동일시하지 않음 |
 | PAC18 · A22 | 비신뢰 콘텐츠: 외부 콘텐츠의 지시를 승인이나 권한 부여로 오인 | P-UNTRUSTED-CONTENT-001, P-UNTRUSTED-CONTENT-002 | [poisoning.py](../../../full_stack_lab/gateway/app/poisoning.py) | 패턴 검사와 의미적 주입 탐지 구분; 정상 대조군·다국어 표본 필요 |
 | PAC19 · A23 | 입력 PII·Secret: 업무에 불필요한 민감정보를 Tool 인자로 전달 | P-DATA-INSPECTION-001 | [privacy.py](../../../full_stack_lab/gateway/app/privacy.py)<br>[secret_scan.py](../../../full_stack_lab/gateway/app/secret_scan.py) | 불필요 수집 제한과 탐지 성공은 다른 통제; scanner 장애 시험 |
-| PAC20 · A24 | 출력 PII·Secret: Tool 응답을 통해 불필요한 정보가 모델이나 사용자에게 노출 | MCP-OUTPUT-001 | [core.py](../../../full_stack_lab/gateway/app/core.py)<br>[privacy.py](../../../full_stack_lab/gateway/app/privacy.py) | 응답 보류·마스킹은 upstream 미실행을 뜻하지 않음 |
+| PAC20 · A24 | 출력 PII·Secret: Tool 응답을 통해 불필요한 정보가 모델이나 사용자에게 노출 | MCP-OUTPUT-001 | [core.py](../../../full_stack_lab/gateway/app/core.py)<br>[privacy.py](../../../full_stack_lab/gateway/app/privacy.py)<br>[secret_scan.py](../../../full_stack_lab/gateway/app/secret_scan.py)<br>[mcp_facade.py](../../../full_stack_lab/gateway/app/mcp_facade.py) | D-117: 오류/원장·설정/인자 비밀 가림 로컬 회귀; 실제 검사기·DB/SDK 미검증. 응답 보류·마스킹은 upstream 미실행을 뜻하지 않음 |
 | PAC21 · A25 | 변경 재승인: 검토하지 않은 기능이나 권한 변경을 계속 사용 | MCP-CATALOG-001, PAC-02 | [contract.py](../../../full_stack_lab/gateway/app/contract.py)<br>[core.py](../../../full_stack_lab/gateway/app/core.py) | 자동 최초 신뢰 금지; 사람이 승인한 계약과 호출 시 관찰 해시 대조 |
 | PAC22 · A26 | 감사: 인가, 승인과 폐기 이력의 누락 또는 변조 | append-only audit | [audit.py](../../../full_stack_lab/gateway/app/audit.py)<br>[oss_audit_test.py](../../../full_stack_lab/tests/oss_audit_test.py)<br>[endpoint_plane.py](../../../full_stack_lab/gateway/app/endpoint_plane.py) | 체인 검증과 장치 상태/감사 이벤트의 transaction 원자성·DB 소유자 변조·보존 정책은 별도 |
 | PAC23 · A27 | 철회·종료: 중지, 철회 또는 폐기 이후 기존 연결로 재접근 | MCP-DECOMM-001, PAC-14 | [decommission.py](../../../full_stack_lab/gateway/app/decommission.py)<br>[termination_flow.py](../../../full_stack_lab/tests/termination_flow.py) | C1~C4와 자원 서버 재접근의 현재 증거 필요 |

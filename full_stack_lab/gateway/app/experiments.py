@@ -32,7 +32,7 @@ from datetime import UTC, datetime
 import httpx
 import jwt
 
-from . import db, registry
+from . import db, registry, upstream
 
 # 실기기 배치(compose.field.yaml)에서는 IDP_ISSUER가 PC용 공개 주소라 컨테이너 안에서 풀리지 않는다.
 IDP = (os.getenv("IDP_INTERNAL_URL") or os.getenv("IDP_ISSUER", "http://agent-service:8000")).rstrip("/")
@@ -127,7 +127,7 @@ async def session_termination(endpoint: str) -> dict:
     init = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
         "protocolVersion": "2025-11-25", "capabilities": {}, "clientInfo": {"name": "e2-probe", "version": "1"}}}
     out: dict = {"endpoint": endpoint}
-    async with httpx.AsyncClient(timeout=15) as client:
+    async with upstream._client(15, {}, endpoint, await upstream._internal_endpoint(endpoint)) as client:
         response = await client.post(endpoint, json=init, headers=headers)
         session = response.headers.get("mcp-session-id")
         out.update({"initialize_status": response.status_code, "session_issued": bool(session)})
