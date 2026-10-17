@@ -1,0 +1,11 @@
+{
+  "as_of": "2026-10-17T16:30:00+00:00",
+  "deployment": {"commit": "759347c", "steps": ["field up rc 0", "field ca rc 0"], "owner_notice": "owner sent the team notice before the deploy"},
+  "root_ca": {"subject": "CN = Caddy Local Authority - 2026 ECC Root", "not_after": "2036-08-25T16:18:06Z",
+              "sha256_fingerprint": "B0:43:8E:17:99:67:75:E0:D8:95:4C:B4:F2:73:17:67:30:93:C5:3B:0E:B9:72:29:47:CC:BD:0A:E4:BA:A2:89"},
+  "checks": {"https_with_pinned_root": "200, all components healthy, revision 759347c",
+             "plaintext_http_on_443": "400 (not served)", "https_without_trust": "certificate verification failure (curl 60)"},
+  "pj1": {"kit": "new Linux kit carries root.crt, root.sha256 and https gateway URL", "endpoint": "managed-5a714737-2a6d-4e01-963d-7a99f6d779e5 pending -> active",
+          "managed_claude": "github get_me pokochy; markitdown title returned", "managed_codex": "github/get_me completed, pokochy"},
+  "not_run": ["Windows managed install over HTTPS on pj3", "teammate browsers"]
+}

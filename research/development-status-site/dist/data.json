@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "title": "MCP 목표 기능 · WBS 현황",
-  "as_of": "2026-10-17T15:40:38.721590+00:00",
+  "as_of": "2026-10-17T16:20:13.473243+00:00",
   "audit_as_of": "2026-10-15T07:37:13+00:00",
   "basis_head": "83269c1d070d6289911a8d4d0f8622e3c90f6d5c",
   "branch": "10/15-wbs-implementation",
@@ -25,19 +25,19 @@
     "complete_rule": "5단계가 모두 1인 작업만 최종 완료. 신규 WBS의 현재 검수 기준이며 과거 실험 카드 완료를 변경하지 않음."
   },
   "summary": {
-    "progress": 49.5,
+    "progress": 50.7,
     "complete": 0,
     "total": 57,
     "stage_equivalent_counts": {
-      "implementation": 45.0,
-      "regression": 40.5,
-      "deployment": 41.5,
-      "real_device": 14.0,
+      "implementation": 46.0,
+      "regression": 41.5,
+      "deployment": 42.5,
+      "real_device": 14.5,
       "acceptance_complete": 0
     },
-    "implementation_full": 43,
+    "implementation_full": 44,
     "implementation_partial": 4,
-    "implementation_missing": 10
+    "implementation_missing": 9
   },
   "goals": [
     {
@@ -92,7 +92,7 @@
     {
       "id": "G08",
       "title": "가입·설치·하네스 운영",
-      "progress": 44.0,
+      "progress": 58.0,
       "complete": 0,
       "total": 5
     },
@@ -3330,7 +3330,7 @@
       "code_symbols_files": [],
       "regression_test_candidates": [],
       "actual_evidence_paths": [],
-      "known_gap": "신규 개발",
+      "known_gap": "pj3 Windows 관리형 설치의 HTTPS 연결 확인이 남았다.",
       "completion_condition": "현장 배치의 하네스 연결이 TLS로만 동작하고 평문 접속은 거부된다",
       "stage_weights": {
         "implementation": 0.2,
@@ -3340,31 +3340,36 @@
         "acceptance_complete": 0.2
       },
       "evidence_as_of": [
+        "2026-10-17",
         "2026-10-17"
       ],
       "implementation_assessment": "planned",
       "stage_notes": {
-        "implementation": "미확인",
-        "regression": "미확인",
-        "deployment": "미확인",
-        "real_device": "미확인",
+        "implementation": "D-124 배치별 사설 CA HTTPS, 키트에 루트·지문 고정, 하네스 프로세스 범위 신뢰",
+        "regression": "field_tls_check 9, Windows 키트 14, field_kit 16",
+        "deployment": "759347c 배포, 평문 400·미신뢰 검증 실패",
+        "real_device": "PJ1 관리 Claude·Codex HTTPS 호출 성공. Windows 관리형(pj3)은 미실행",
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 0,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
+        "implementation": 1,
+        "regression": 1,
+        "deployment": 1,
+        "real_device": 0.5,
         "acceptance_complete": 0
       },
-      "progress": 0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P0",
       "planned_weeks": [
         "10월 4주",
         "10월 5주"
       ],
-      "evidence": []
+      "evidence": [
+        {
+          "path": "research/llm-wiki/analysis/wbs-1017/deploy-tls.json"
+        }
+      ]
     },
     {
       "id": "G09.01",
