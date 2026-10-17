@@ -338,7 +338,9 @@ class RunRecordTests(unittest.TestCase):
         argv = json.loads((self.dir / "codex.argv").read_text())
         self.assertEqual(argv[:2], ["exec", "resume"])
         self.assertEqual(argv[2], thread)
-        self.assertEqual(argv[argv.index("-C") + 1], self.tmp.name)
+        # codex exec resume rejects -s/-C; the worktree is the subprocess cwd instead.
+        self.assertNotIn("-C", argv)
+        self.assertNotIn("-s", argv)
 
     def test_codex_resume_rejects_a_value_that_is_not_a_native_thread_id(self):
         with self.assertRaises(ValueError):
