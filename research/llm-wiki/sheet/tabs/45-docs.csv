@@ -43,10 +43,10 @@ DOC-041,MCP_보안정책50.xlsm,외부,2026-10-15,https://drive.google.com/file/
 DOC-042,AGI.drawio.png,외부,2026-10-15,https://drive.google.com/file/d/1imsKu4hyqNH9_IBmwRU9VV9kMi6FgGat/view,,기록
 DOC-043,개발 연구 위키를 사용하는 에이전트 규칙,안내,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/AGENTS.md,,정본
 DOC-044,CLAUDE.md,안내,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/CLAUDE.md,,정본
-DOC-045,MINT 개발 연구 위키,안내,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/README.md,DEV-38,정본
+DOC-045,MINT 개발 연구 위키,안내,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/README.md,DEV-38,정본
 DOC-046,코드 구조와 실제 호출 경로,분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/README-code.md,,기록
 DOC-047,기업 제공 요구사항과 호환성 분석,분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/README.md,DEV-29,정본
-DOC-048,AI 컴플라이언스 근거 문서와 요구사항 매트릭스 (2026-10-17),분석,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/compliance/README.md,POL-01 · DEV-66,정본
+DOC-048,AI 컴플라이언스 근거 문서와 요구사항 매트릭스 (2026-10-17),분석,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/compliance/README.md,POL-01 · DEV-66,정본
 DOC-049,주제별 요구사항,분석,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/compliance/by-theme/README.md,,정본
 DOC-050,접근 통제·신원 (access_control_identity),분석,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/compliance/by-theme/access_control_identity.md,POL-12 · POL-19 · POL-11 · POL-20 · POL-22 · POL-23 · POL-14 · POL-15 · POL-45 · POL-09 · POL-28 · POL-44 · POL-25 · POL-21 · POL-27,기록
 DOC-051,에이전트 AI (agentic_ai),분석,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/compliance/by-theme/agentic_ai.md,POL-35 · POL-30 · POL-34 · POL-25 · POL-38 · POL-33 · POL-20 · POL-04 · POL-29 · POL-22 · POL-23 · POL-28 · POL-43 · POL-11 · POL-12,기록
@@ -484,7 +484,7 @@ DOC-482,P64.pdf,원본,2026-10-13,https://github.com/MCP-governance/mcp-gateway/
 DOC-483,T19_supplement.txt,원본,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/sources/policy/T19/originals/T19_supplement.txt,,보존
 DOC-484,T20_supplement.txt,원본,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/sources/policy/T20/originals/T20_supplement.txt,,보존
 DOC-485,개발 백로그,현황,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/backlog.md,DEV-01 · DEV-02 · DEV-03 · DEV-04 · DEV-05 · DEV-06 · DEV-07 · DEV-08 · DEV-09 · DEV-10 · DEV-11 · DEV-12 · DEV-13 · DEV-14 · DEV-15,정본
-DOC-486,개발 현황 — 2026-10-15,현황,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/current.md,DEV-52 · D-127 · D-122 · D-124 · D-118 · D-120 · DEV-64 · DEV-66 · DEV-50 · POL-01 · POL-26 · POL-45 · POL-21 · DEV-38 · D-114,정본
+DOC-486,개발 현황 — 2026-10-15,현황,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/current.md,D-129 · DEV-52 · D-127 · D-122 · D-124 · D-118 · D-120 · DEV-64 · DEV-66 · DEV-50 · POL-01 · POL-26 · POL-45 · POL-21 · DEV-38,정본
 DOC-487,현황 변경 이력 보존 — 2026-10-15,현황,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/history-2026-10-15.md,DEV-31 · D-107 · DEV-39 · DEV-38 · DEV-40 · DEV-36 · D-104 · D-105 · DEV-37 · DEV-35 · DEV-29 · DEV-34 · E13 · DEV-32 · DEV-30,기록
 DOC-488,Claude 독립 코드 검토 원문 — 2026-10-13,보고,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-13-claude-code-review.md,,기록
 DOC-489,2026-10-13 개발 목표와 검토 기준,보고,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-13-development-goals.md,,기록
@@ -530,6 +530,7 @@ DOC-528,2026-10-17 upstream-session-reuse-stage2,보고,2026-10-17,https://githu
 DOC-529,2026-10-17 windows-kit-wizard-tray,보고,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-17-windows-kit-wizard-tray.md,DEV-25 · DEV-26 · G08.04 · G05.04 · D-118 · D-68,기록
 DOC-530,2026-10-18 field-tls-d124 병합 후 보강,보고,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-18-field-tls-d124-merge.md,D-118 · D-120 · D-124 · DEV-62 · DEV-64,기록
 DOC-531,2026-10-18 field-tls-d124,보고,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md,DEV-64 · G08.05 · POL-16,기록
+DOC-547,2026-10-18 협업 콘솔 통합 시트 연동,보고,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-18-sheet-sync.md,,기록
 DOC-532,저장소 코드 스냅샷,현황,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/repository-snapshot.md,,기록
 DOC-533,"Team AGI 산출물 선별: 정책, 기술 구현, 실증 및 평가",안내,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/team-agi-deliverables-2026-10-15.md,POL-01,정본
 DOC-534,Claude/Codex 공통 작업 지시,양식,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/templates/task-prompt.md,,정본

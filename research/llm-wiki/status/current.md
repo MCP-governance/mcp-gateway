@@ -2,7 +2,10 @@
 
 ## 최신: 개발 관리 통합 시트·아키텍처 구조도 (10-18)
 
-위키·로컬에 흩어진 시트를 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit) 46탭으로 합쳤다(정본, 옛 「MINT 개발 WBS」와 같은 주소). WBS 57·백로그 73·결정 125·개발이력 331커밋·배포 18·자료 546·기능 64·구성요소 70·정책 50과 규제·기업 연동·논문 참조 탭이 ID로 연결된다(기능↔WBS 56/64, [탭·ID 안내](../sheet/README.md), 생성 `research/llm-wiki/tools/build_sheet_export.py`). [구조도](../../../docs/ai/architecture/README.md)는 전체 아키텍처·망·엔드포인트 키트 3페이지 draw.io이고 노드가 「구성요소」 탭 ID를 가진다. 협업 콘솔 #wbs의 시트 연동과 WBS·백로그 웹 게시는 진행 중이다.
+위키·로컬에 흩어진 시트를 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit) 46탭으로 합쳤다(정본, 옛 「MINT 개발 WBS」와 같은 주소). WBS 57·백로그 73·결정 125·개발이력 331커밋·배포 18·자료 546·기능 64·구성요소 70·정책 50과 규제·기업 연동·논문 참조 탭이 ID로 연결된다(기능↔WBS 56/64, [탭·ID 안내](../sheet/README.md), 생성 `research/llm-wiki/tools/build_sheet_export.py`). [구조도](../../../docs/ai/architecture/README.md)는 전체 아키텍처·망·엔드포인트 키트 3페이지 draw.io이고 노드가 「구성요소」 탭 ID를 가진다. WBS·백로그 두 탭만 웹에 CSV로 게시해 협업 콘솔 #wbs가 5분마다 시트 값을 덮어 보여 주고(D-129), `sheet_pull.py`가 시트 값을 `sheet/pulled`·snapshot.json에 반영한다.
+## 최신: 협업 콘솔과 통합 시트 CSV 연동 (10-18)
+
+[작업 보고](reports/2026-10-18-sheet-sync.md): `10/18-sheet-sync`, 시작 `558e2a0`. WBS 덮어쓰기·신규 ID·목표별 요약·5분 캐시/실패 대체, 백로그 배열 API, CSV pull CLI와 설정 예시를 추가했다. 콘솔 unittest 32개·CLI self-test·JS 구문 검사 통과. pytest·pyflakes 미설치. 제품 코드·실제 CSV 사본·snapshot·배포 변경과 커밋 없음. 게시 URL은 미제공이며 메인이 runtime 설정 후 실제 Google CSV 반영을 확인한다.
 
 ## 최신: 선택적 계약 제한·보안 관제 전달 (DEV-52·61 / D-127·128, 10-18)
 

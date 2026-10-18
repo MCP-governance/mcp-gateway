@@ -230,7 +230,18 @@ function renderWbs() {
   $("wbs-complete").textContent = `${data.summary.complete} / ${data.summary.total}`;
   $("wbs-implemented").textContent = data.summary.implementation_full + "개";
   $("wbs-partial").textContent = `부분 ${data.summary.implementation_partial}개 · 미구현 ${data.summary.implementation_missing}개`;
-  $("wbs-as-of-small").textContent = new Date(data.as_of).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" });
+  const sheet = data.sheet || {};
+  const sheetTime = new Date(sheet.fetched_at).toLocaleTimeString("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", hour12: false });
+  const basis = sheet.source === "sheet" && !sheet.error ? `시트 기준 ${sheetTime}` : "저장소 스냅샷 기준";
+  const basisNode = $("wbs-as-of-small");
+  basisNode.replaceChildren(document.createTextNode(basis));
+  if (sheet.url && /^https?:\/\//i.test(sheet.url)) {
+    const link = node("a", "", "시트");
+    link.href = sheet.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    basisNode.append(document.createTextNode(" · "), link);
+  }
   $("wbs-audit-time").textContent = "현장 조회 " + time(data.audit_as_of);
   $("wbs-badge").hidden = false;
   $("wbs-badge").textContent = data.summary.total - data.summary.complete;

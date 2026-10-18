@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 from pathlib import Path
@@ -17,6 +18,9 @@ from urllib.parse import parse_qs, urlsplit
 
 ROOT = Path(__file__).resolve().parent
 REPO_ROOT = ROOT.parents[1]
+sys.path.insert(0, str(REPO_ROOT / "research/llm-wiki/tools"))
+from sheet_pull import CONFIG as SHEET_CONFIG, FILES as SHEET_FILES, SheetSource, fetch_csv, overlay_wbs, parse_csv
+
 DEFAULT_LOG = ROOT / "runtime" / "events.jsonl"
 WBS_SNAPSHOT = REPO_ROOT / "research" / "llm-wiki" / "analysis" / "development-wbs" / "snapshot.json"
 AUTHORS = {"Codex", "Claude", "User", "System"}
@@ -199,9 +203,23 @@ class Viewer(BaseHTTPRequestHandler):
                 self.respond(503, b'{"error":"Run log unavailable"}')
         elif url.path == "/api/wbs":
             try:
-                self.respond(200, WBS_SNAPSHOT.read_bytes())
-            except OSError:
+                data = json.loads(WBS_SNAPSHOT.read_text(encoding="utf-8"))
+                rows, sheet = self.server.sheet_source.get("wbs")
+                if rows is not None:
+                    data, _ = overlay_wbs(data, rows)
+                data["sheet"] = sheet
+                self.respond(200, json.dumps(data, ensure_ascii=False).encode("utf-8"))
+            except (OSError, ValueError):
                 self.respond(503, b'{"error":"WBS snapshot unavailable"}')
+        elif url.path == "/api/backlog":
+            try:
+                rows, _ = self.server.sheet_source.get("backlog")
+                if rows is None:
+                    path = REPO_ROOT / "research/llm-wiki/sheet/tabs" / SHEET_FILES["backlog"]
+                    _, rows = parse_csv(fetch_csv(path.as_uri()), "backlog")
+                self.respond(200, json.dumps(rows, ensure_ascii=False).encode("utf-8"))
+            except (OSError, ValueError, csv.Error):
+                self.respond(503, b'{"error":"Backlog snapshot unavailable"}')
         elif url.path == "/health":
             self.respond(200, b'{"status":"ok","mode":"read-only"}')
         else:
@@ -223,6 +241,7 @@ def make_server(host, port, log):
     server = ThreadingHTTPServer((host, port), Viewer)
     server.event_log = log
     server.run_log = RunLog(log.path.parent / "runs.jsonl")
+    server.sheet_source = SheetSource(SHEET_CONFIG)
     server.allowed_hosts = allowed_hosts_for(host, server.server_port)
     server.daemon_threads = True
     return server

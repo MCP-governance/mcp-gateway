@@ -1,48 +1,26 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-18T05:32:08+09:00
+확인 시각: 2026-10-18T13:57:17+09:00
 
-HEAD: `33af7da4db1b576dd364b986927ae7ecaba7e5cc` · 로컬 브랜치: `main`
+HEAD: `558e2a0a27b612a7a254a8bb8985ee6af33f73c1` · 로컬 브랜치: `10/18-sheet-sync`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M  docs/ai/CONSOLE_UI.md
-M  docs/ai/DATA_MODEL.md
-M  docs/ai/DECISIONS.md
-M  docs/ai/OPS_RESPONSE.md
-M  docs/ai/POLICY.md
-M  full_stack_lab/compose.yaml
-M  full_stack_lab/console.sh
-M  full_stack_lab/gateway/app/agent_service.py
-M  full_stack_lab/gateway/app/agent_static/console.js
-M  full_stack_lab/gateway/app/core.py
-M  full_stack_lab/gateway/app/dispatch.py
-M  full_stack_lab/gateway/app/endpoint_plane.py
-M  full_stack_lab/gateway/app/main.py
-M  full_stack_lab/gateway/app/mcp_facade.py
-M  full_stack_lab/gateway/app/ops_response.py
-M  full_stack_lab/gateway/app/ops_tables.sql
-A  full_stack_lab/gateway/app/selective.py
-A  full_stack_lab/gateway/app/siem.py
-A  full_stack_lab/gateway/app/siem_tables.sql
-A  full_stack_lab/siem-secrets/.gitignore
-M  full_stack_lab/tests/catalog_refresh_check.py
-M  full_stack_lab/tests/dispatch_intent_pg_check.py
-A  full_stack_lab/tests/selective_restriction_siem_check.py
-M  full_stack_lab/tests/termination_lab_support.py
-M  research/llm-wiki/analysis/feature-spec-2026-10-17/README.md
-A  research/llm-wiki/analysis/selective-restriction-siem/README.md
-A  research/llm-wiki/analysis/selective-restriction-siem/checks.json
-A  research/llm-wiki/analysis/selective-restriction-siem/requirements.json
-M  research/llm-wiki/catalogs/threats.json
-M  research/llm-wiki/status/backlog.md
-M  research/llm-wiki/status/current.md
-A  research/llm-wiki/status/reports/2026-10-17-selective-restriction-siem.md
-M  research/llm-wiki/status/repository-snapshot.json
-M  research/llm-wiki/status/repository-snapshot.md
+M docs/ai/DECISIONS.md
+ M research/collaboration-console/README.md
+ M research/collaboration-console/console.py
+ M research/collaboration-console/static/app.js
+ M research/collaboration-console/test_console.py
+ M research/llm-wiki/status/backlog.md
+ M research/llm-wiki/status/current.md
+ M research/llm-wiki/status/repository-snapshot.json
+ M research/llm-wiki/status/repository-snapshot.md
+?? research/collaboration-console/sheet-source.example.json
+?? research/llm-wiki/status/reports/2026-10-18-sheet-sync.md
+?? research/llm-wiki/tools/sheet_pull.py
 ```
 
 ## 주요 파일 바이트

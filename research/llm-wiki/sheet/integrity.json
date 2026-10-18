@@ -39,7 +39,7 @@
       "sha256": "332a69282b1c518b929b864ad98ae778fb05d7685c2ac0263d63b0149dc57dc8"
     },
     "backlog": {
-      "rows": 73,
+      "rows": 74,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -54,10 +54,10 @@
           "missing": []
         }
       },
-      "sha256": "6539fcdcacd10adeb4413267d9c552711cfc964fd7a550f0147340bb99d5f296"
+      "sha256": "03822200493a9e20b358277c776aca863318d252dad69833d50bc1b9ddfaf724"
     },
     "decisions": {
-      "rows": 125,
+      "rows": 126,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -77,7 +77,7 @@
           "missing": []
         }
       },
-      "sha256": "6db9a881f63088aaa9f423fb23be4ab9727132f0e94892f028a5eea3b36ea8e0"
+      "sha256": "a9c7cbae4a3994dabd36642777b61537b6d425a2e8be8212e70a505b3b029895"
     },
     "commits": {
       "rows": 336,
@@ -87,7 +87,6 @@
         "결정": {
           "target": "decisions",
           "missing_ids": [
-            "D-129",
             "D-36",
             "D-38"
           ],
@@ -99,10 +98,6 @@
             {
               "row_id": "8889afc",
               "id": "D-38"
-            },
-            {
-              "row_id": "c9ce4a4",
-              "id": "D-129"
             }
           ]
         },
@@ -651,11 +646,11 @@
       "sha256": "4a13eede64119fe5d42a1871e5104594909a191e2847ad56c1f4a76f1b896911"
     },
     "docs": {
-      "rows": 546,
+      "rows": 547,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "bf6108326ad07d70e56c1789ee402987292d08de5a8fb8d5012ebb20844b0632"
+      "sha256": "610125e816af12e33944ae7e8785696a5944e049a3883514814c0ec8a17122b5"
     },
     "enterprise-summary": {
       "rows": 10,
@@ -667,5 +662,5 @@
   },
   "duplicate_ids": 0,
   "format_errors": 0,
-  "missing_links": 3
+  "missing_links": 2
 }

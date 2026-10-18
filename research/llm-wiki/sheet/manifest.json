@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-18T13:47:52+09:00",
-  "source_head": "558e2a0a27b612a7a254a8bb8985ee6af33f73c1",
+  "generated_at": "2026-10-18T14:12:30+09:00",
+  "source_head": "368f8ade20f7e0aeaa56d68131f5cb2bb01d4247",
   "raw_base": "https://raw.githubusercontent.com/MCP-governance/mcp-gateway/<커밋>/research/llm-wiki/sheet/tabs/",
   "tabs": [
     {
@@ -156,7 +156,7 @@
       "group": "관리",
       "kind": "관리",
       "csv": "tabs/03-backlog.csv",
-      "rows": 73,
+      "rows": 74,
       "columns": [
         {
           "name": "ID",
@@ -211,7 +211,7 @@
       "group": "관리",
       "kind": "관리",
       "csv": "tabs/04-decisions.csv",
-      "rows": 125,
+      "rows": 126,
       "columns": [
         {
           "name": "ID",
@@ -419,7 +419,8 @@
         "research/llm-wiki/status/reports/2026-10-17-upstream-session-reuse-stage2.md",
         "research/llm-wiki/status/reports/2026-10-17-windows-kit-wizard-tray.md",
         "research/llm-wiki/status/reports/2026-10-18-field-tls-d124-merge.md",
-        "research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md"
+        "research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md",
+        "research/llm-wiki/status/reports/2026-10-18-sheet-sync.md"
       ]
     },
     {
@@ -2886,7 +2887,7 @@
       "group": "관리",
       "kind": "관리",
       "csv": "tabs/45-docs.csv",
-      "rows": 546,
+      "rows": 547,
       "columns": [
         {
           "name": "ID",
@@ -3442,6 +3443,7 @@
         "research/llm-wiki/status/reports/2026-10-17-windows-kit-wizard-tray.md",
         "research/llm-wiki/status/reports/2026-10-18-field-tls-d124-merge.md",
         "research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md",
+        "research/llm-wiki/status/reports/2026-10-18-sheet-sync.md",
         "research/llm-wiki/status/repository-snapshot.md",
         "research/llm-wiki/team-agi-deliverables-2026-10-15.md",
         "research/llm-wiki/templates/task-prompt.md",
@@ -4067,7 +4069,8 @@
       "research/llm-wiki/threats/originals/MCP_보안정책50_2026-10-14.xlsm": "DOC-543",
       "research/llm-wiki/threats/policies-24.md": "DOC-544",
       "research/llm-wiki/threats/policies-50-2026-10-14.md": "DOC-545",
-      "research/llm-wiki/threats/policies-50.md": "DOC-546"
+      "research/llm-wiki/threats/policies-50.md": "DOC-546",
+      "research/llm-wiki/status/reports/2026-10-18-sheet-sync.md": "DOC-547"
     },
     "backlog_aliases": {
       "RES-01": "WIKI-02"

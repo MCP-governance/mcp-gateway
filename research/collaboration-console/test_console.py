@@ -1,4 +1,5 @@
 import concurrent.futures
+import csv
 from contextlib import redirect_stderr, redirect_stdout
 import importlib.util
 import io
@@ -9,6 +10,7 @@ import tempfile
 import threading
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 import sys
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -16,6 +18,180 @@ from urllib.request import Request, urlopen
 SPEC = importlib.util.spec_from_file_location("console", Path(__file__).with_name("console.py"))
 console = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(console)
+import sheet_pull
+
+
+class SheetSyncTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        self.config = self.root / "sheet-source.json"
+        self.csv = self.root / "wbs.csv"
+        self.snapshot = json.loads(console.WBS_SNAPSHOT.read_text(encoding="utf-8"))
+        self.headers, self.rows = sheet_pull.parse_csv(
+            (sheet_pull.WIKI / "sheet/tabs/02-wbs.csv").read_text(encoding="utf-8"), "wbs")
+        self.write_csv()
+        self.configure()
+        self.source = sheet_pull.SheetSource(self.config)
+
+    def write_csv(self, rows=None, headers=None):
+        with self.csv.open("w", encoding="utf-8-sig", newline="") as stream:
+            writer = csv.DictWriter(stream, fieldnames=headers or self.headers)
+            writer.writeheader()
+            writer.writerows(self.rows if rows is None else rows)
+
+    def configure(self, **values):
+        self.config.write_text(json.dumps({"wbs_csv": self.csv.as_uri(),
+                                          "sheet_url": "https://docs.google.com/spreadsheets/d/example/edit",
+                                          **values}), encoding="utf-8")
+
+    def test_overlay_by_header_and_id_preserves_evidence_and_adds_goals(self):
+        row = self.rows[0]
+        row.update({"구현": "0.5", "회귀": "", "배포": "1", "실기기": "0", "검수": "0",
+                    "담당": "담당자", "진행 메모": "쉼표, 줄바꿈\n메모", "계획 일정": "10/20"})
+        new = {**row, "ID": "G11.01", "목표": "G11", "목표명": "추가 목표", "작업": "추가 작업",
+               "완료 조건": "완료 확인", "남은 일": "후속 확인"}
+        self.write_csv([new, row], list(reversed(self.headers)))
+        rows, meta = self.source.get("wbs")
+        data, changed = sheet_pull.overlay_wbs(self.snapshot, rows)
+        old = data["items"][0]
+        self.assertEqual(old["id"], row["ID"])
+        self.assertEqual(old["stage_scores"]["regression"], 0)
+        self.assertEqual((old["progress"], old["status"]), (30, "일부 구현"))
+        self.assertEqual((old["owner"], old["memo"], old["planned_schedule"]),
+                         ("담당자", "쉼표, 줄바꿈\n메모", "10/20"))
+        self.assertEqual(old["evidence"], self.snapshot["items"][0]["evidence"])
+        self.assertNotIn("owner", self.snapshot["items"][0])
+        self.assertEqual(data["items"][-1]["title"], "추가 작업")
+        self.assertEqual(data["items"][-1]["completion_condition"], "완료 확인")
+        self.assertEqual(data["items"][-1]["known_gap"], "후속 확인")
+        self.assertEqual(data["goals"][-1]["title"], "추가 목표")
+        self.assertEqual(data["summary"]["total"], len(self.snapshot["items"]) + 1)
+        self.assertEqual(sum(data["summary"]["status_counts"].values()), data["summary"]["total"])
+        self.assertIn(row["ID"], changed)
+        self.assertEqual(meta["source"], "sheet")
+        self.assertIsNone(meta["error"])
+        self.assertIsNotNone(meta["fetched_at"])
+
+    def test_all_status_rules_and_summary(self):
+        rows = []
+        for index, scores in enumerate(((0, 1, 1, 1, 1), (0.5, 0, 0, 0, 0),
+                                        (1, 1, 1, 1, 1), (1, 0, 0, 0, 0))):
+            row = {**self.rows[0], "ID": f"G01.0{index + 1}"}
+            row.update(dict(zip(sheet_pull.STAGES, map(str, scores))))
+            rows.append(row)
+        data, _ = sheet_pull.overlay_wbs({"items": [], "goals": []}, rows)
+        self.assertEqual([item["status"] for item in data["items"]], list(sheet_pull.STATUSES))
+        self.assertEqual([item["progress"] for item in data["items"]], [80, 10, 100, 20])
+        self.assertEqual(data["summary"]["progress"], 52.5)
+        self.assertEqual(data["summary"]["complete"], 1)
+        self.assertEqual(data["goals"][0]["progress"], 52.5)
+
+    def test_cache_expiry_failure_stale_fallback_and_recovery(self):
+        with patch.object(sheet_pull.time, "monotonic", return_value=1000):
+            first, initial = self.source.get("wbs")
+        self.csv.unlink()
+        with patch.object(sheet_pull.time, "monotonic", return_value=1299):
+            self.assertEqual(self.source.get("wbs"), (first, initial))
+        with patch.object(sheet_pull.time, "monotonic", return_value=1300):
+            stale, failed = self.source.get("wbs")
+        self.assertEqual(stale, first)
+        self.assertEqual(failed["source"], "sheet")
+        self.assertEqual(failed["fetched_at"], initial["fetched_at"])
+        self.assertTrue(failed["error"])
+        self.rows[0]["담당"] = "변경"
+        self.write_csv()
+        with patch.object(sheet_pull.time, "monotonic", return_value=1599):
+            self.assertEqual(self.source.get("wbs"), (stale, failed))
+        with patch.object(sheet_pull.time, "monotonic", return_value=1600):
+            fresh, meta = self.source.get("wbs")
+        self.assertEqual(fresh[0]["담당"], "변경")
+        self.assertIsNone(meta["error"])
+
+    def test_disabled_bad_config_first_failure_and_changed_url(self):
+        self.config.unlink()
+        self.assertEqual(self.source.get("wbs")[1]["source"], "snapshot")
+        self.assertIsNone(self.source.get("wbs")[1]["error"])
+        self.configure(wbs_csv="")
+        self.assertIsNone(self.source.get("wbs")[0])
+        self.config.write_text("[]", encoding="utf-8")
+        self.assertTrue(self.source.get("wbs")[1]["error"])
+        self.configure()
+        self.source.get("wbs")
+        self.configure(wbs_csv=(self.root / "missing.csv").as_uri())
+        rows, meta = self.source.get("wbs")
+        self.assertIsNone(rows)
+        self.assertEqual(meta["source"], "snapshot")
+        self.assertIsNone(meta["fetched_at"])
+        self.assertTrue(meta["error"])
+
+    def test_invalid_csv_does_not_replace_cache(self):
+        first, _ = self.source.get("wbs")
+        for invalid in ("2", "NaN", "-0.5", "잘못된 값"):
+            with self.subTest(invalid=invalid):
+                self.rows[0]["구현"] = invalid
+                self.write_csv()
+                self.source.cache[("wbs", self.csv.as_uri())]["checked"] = 0
+                rows, meta = self.source.get("wbs")
+                self.assertEqual(rows, first)
+                self.assertTrue(meta["error"])
+        self.csv.write_text("<html>not CSV</html>", encoding="utf-8")
+        source = sheet_pull.SheetSource(self.config)
+        self.assertIsNone(source.get("wbs")[0])
+        with self.assertRaises(ValueError):
+            sheet_pull.parse_csv("ID,ID\nx,x", "wbs")
+        with self.assertRaises(ValueError):
+            sheet_pull.parse_csv(self.headers_text([self.rows[1], self.rows[1]]), "wbs")
+
+    def headers_text(self, rows):
+        stream = io.StringIO(newline="")
+        writer = csv.DictWriter(stream, self.headers)
+        writer.writeheader()
+        writer.writerows(rows)
+        return stream.getvalue()
+
+    def test_concurrent_requests_fetch_once_with_timeout(self):
+        with patch.object(sheet_pull, "fetch_csv", wraps=sheet_pull.fetch_csv) as fetch:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+                results = list(pool.map(lambda _: self.source.get("wbs"), range(16)))
+            self.assertEqual(fetch.call_count, 1)
+            self.assertTrue(all(result == results[0] for result in results))
+        with patch.object(sheet_pull, "urlopen", side_effect=TimeoutError("timed out")) as fetch:
+            source = sheet_pull.SheetSource(self.config)
+            rows, meta = source.get("wbs")
+            fetch.assert_called_once_with(self.csv.as_uri(), timeout=15)
+            self.assertIsNone(rows)
+            self.assertIn("timed out", meta["error"])
+
+    def test_wbs_and_backlog_endpoints_with_snapshot_fallback(self):
+        self.configure(backlog_csv=(sheet_pull.WIKI / "sheet/tabs/03-backlog.csv").as_uri())
+        log = console.EventLog(self.root / "events.jsonl")
+        server = console.make_server("127.0.0.1", 0, log)
+        server.sheet_source = self.source
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        base = f"http://127.0.0.1:{server.server_port}"
+        try:
+            with urlopen(base + "/api/wbs") as response:
+                data = json.load(response)
+            self.assertEqual(data["sheet"]["source"], "sheet")
+            self.assertEqual(data["items"][0]["stage_scores"], sheet_pull.scores_for(self.rows[0]))
+            with urlopen(base + "/api/backlog") as response:
+                backlog = json.load(response)
+            self.assertEqual(backlog[0]["ID"], "WIKI-01")
+            self.configure(wbs_csv=(self.root / "missing.csv").as_uri(), backlog_csv="")
+            with urlopen(base + "/api/wbs") as response:
+                data = json.load(response)
+            self.assertEqual(data["items"], self.snapshot["items"])
+            self.assertEqual(data["sheet"]["source"], "snapshot")
+            self.assertTrue(data["sheet"]["error"])
+            with urlopen(base + "/api/backlog") as response:
+                self.assertEqual(json.load(response), backlog)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
 
 
 class ConsoleTests(unittest.TestCase):
