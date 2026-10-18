@@ -486,7 +486,7 @@ def drawio_page(page, pid):
                 "t": "verticalLabelPosition=top;verticalAlign=bottom;labelPosition=center;align=center;spacingBottom=-1;",
                 "l": "labelPosition=left;align=right;verticalLabelPosition=middle;verticalAlign=middle;spacingRight=4;",
                 "r": "labelPosition=right;align=left;verticalLabelPosition=middle;verticalAlign=middle;spacingLeft=4;"}[nd["lp"]]
-        st = (f"ellipse;aspect=fixed;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor={color};strokeWidth=3;{dash}"
+        st = (f"ellipse;aspect=fixed;html=1;fillColor=#FFFFFF;strokeColor={color};strokeWidth=3;{dash}"
               f"{lpos}"
               f"fontSize=11;fontStyle=1;fontColor={TEXT};container=1;collapsible=0;recursiveResize=0;"
               f"{'opacity=80;' if planned else ''}{fs}")
