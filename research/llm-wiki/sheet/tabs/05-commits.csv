@@ -329,3 +329,4 @@ e74fefa,2026-10-18 05:31,pokochy,feat,v2,계약 변경 시 바뀐 도구만 제�
 bb33625,2026-10-18 05:49,pokochy,fix,v2,P-VOLUME-002 정책 대장 우선순위 중복 해소(opa test 91/91),,,,,DEP-10,https://github.com/MCP-governance/mcp-gateway/commit/bb33625ba24442d09bd52b13af641c445a7208ff
 ce60c20,2026-10-18 05:51,pokochy,docs,v2,"H·I 통합·격리 실험·배포 증거, WBS 55.3%",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/ce60c2074bf01c9f4326f8f58fb3007182f45d23
 e6b4ae9,2026-10-18 12:41,pokochy,fix,v2,트레이 연결 상태를 인증된 보고 성공으로 판정,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e6b4ae9193956c6be345466d3081e80664543dc7
+24cb2eb,2026-10-18 13:32,pokochy,docs,v2,"pj3 트레이·게이트웨이 MCP 호출 실기기 증거·중단 지점·해결안, WBS 55.8%",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/24cb2eb43037278a38076a1c984bf02139e3313f

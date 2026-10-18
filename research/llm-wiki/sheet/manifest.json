@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-18T12:41:42+09:00",
-  "source_head": "e6b4ae9193956c6be345466d3081e80664543dc7",
+  "generated_at": "2026-10-18T13:39:13+09:00",
+  "source_head": "840e9260938f213694be0ee6526f1fcf67cb87e4",
   "raw_base": "https://raw.githubusercontent.com/MCP-governance/mcp-gateway/<커밋>/research/llm-wiki/sheet/tabs/",
   "tabs": [
     {
@@ -259,7 +259,7 @@
       "group": "관리",
       "kind": "참조",
       "csv": "tabs/05-commits.csv",
-      "rows": 330,
+      "rows": 331,
       "columns": [
         {
           "name": "커밋",
