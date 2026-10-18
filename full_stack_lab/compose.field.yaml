@@ -38,6 +38,8 @@ services:
       agent-service: {condition: service_started}
     ports:
       - "${APPLIANCE_BIND:?./console.sh field up을 사용하세요}:443:8080"
+      # 브라우저 콘솔만(D-129). 하네스·키트 경로는 이 포트에서 421로 거절한다.
+      - "${APPLIANCE_BIND:?./console.sh field up을 사용하세요}:80:8081"
     environment:
       FIELD_TLS_ADDRESSES: ${FIELD_TLS_ADDRESSES:?./console.sh field up을 사용하세요}
       APPLIANCE_BIND: ${APPLIANCE_BIND}

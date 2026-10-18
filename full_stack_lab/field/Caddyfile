@@ -18,6 +18,35 @@
 	default_sni {$APPLIANCE_BIND}
 }
 
+(console) {
+	# Gitea는 X-WEBAUTH-USER를 이 Caddy(고정 IP)가 보낸 경우에만 믿는다. 그 값은 agent-service가 솔루션
+	# 로그인(Console 쿠키, git은 Basic으로 같은 ID/PW)을 확인하고 정한다. route 안은 적힌 순서대로 돈다:
+	# 클라이언트가 보낸 같은 이름의 헤더를 먼저 지우고, 인증 뒤 Authorization을 지워 Gitea가 그 값으로
+	# 따로 로그인하지 않게 한다. 정적 자원만 인증 없이 둔다(페이지는 모두 로그인 필요).
+	redir /git /git/
+	handle /git/assets/* {
+		uri strip_prefix /git
+		reverse_proxy corp-git:3000
+	}
+	handle /git/* {
+		route {
+			request_header -X-WEBAUTH-USER
+			forward_auth agent-service:8000 {
+				uri /auth/gitea
+				copy_headers X-WEBAUTH-USER
+			}
+			request_header -Authorization
+			uri strip_prefix /git
+			reverse_proxy corp-git:3000
+		}
+	}
+
+	# Console(웹) — 그 밖 전부.
+	handle {
+		reverse_proxy agent-service:8000
+	}
+}
+
 {$FIELD_TLS_ADDRESSES} {
 	tls internal {
 		protocols tls1.2 tls1.3
@@ -50,32 +79,23 @@
 		reverse_proxy agent-service:8000
 	}
 
-	# Gitea는 X-WEBAUTH-USER를 이 Caddy(고정 IP)가 보낸 경우에만 믿는다. 그 값은 agent-service가 솔루션
-	# 로그인(Console 쿠키, git은 Basic으로 같은 ID/PW)을 확인하고 정한다. route 안은 적힌 순서대로 돈다:
-	# 클라이언트가 보낸 같은 이름의 헤더를 먼저 지우고, 인증 뒤 Authorization을 지워 Gitea가 그 값으로
-	# 따로 로그인하지 않게 한다. 정적 자원만 인증 없이 둔다(페이지는 모두 로그인 필요).
-	redir /git /git/
-	handle /git/assets/* {
-		uri strip_prefix /git
-		reverse_proxy corp-git:3000
-	}
-	handle /git/* {
-		route {
-			request_header -X-WEBAUTH-USER
-			forward_auth agent-service:8000 {
-				uri /auth/gitea
-				copy_headers X-WEBAUTH-USER
-			}
-			request_header -Authorization
-			uri strip_prefix /git
-			reverse_proxy corp-git:3000
-		}
-	}
+	import console
 
-	# Console(웹) — 그 밖 전부.
-	handle {
-		reverse_proxy agent-service:8000
+	log {
+		output stdout
+		format console
 	}
+}
+
+# 브라우저 콘솔 전용 HTTP(사용자 결정 10-18, D-129). 사설 CA를 브라우저에 설치하지 않아도 경고 없이 열리고,
+# 전송은 Tailscale 터널이 암호화한다. 하네스·키트가 쓰는 경로는 HTTPS(D-124)에만 있다.
+http://:8081 {
+	@harness path /mcp/* /oauth/* /api/endpoint/* /.well-known/*
+	respond @harness "HTTPS로 접속하세요." 421
+	handle /api/health {
+		reverse_proxy gateway:8080
+	}
+	import console
 
 	log {
 		output stdout
