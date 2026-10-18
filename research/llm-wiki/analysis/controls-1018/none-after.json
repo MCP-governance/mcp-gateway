@@ -1,0 +1,403 @@
+{
+  "after": {
+    "cases": [
+      {
+        "decision": "Block",
+        "id": "attack-drifted-contract",
+        "latency_ms": [
+          3.161,
+          2.732,
+          2.405,
+          2.255,
+          2.217
+        ],
+        "policy_id": "MCP-CATALOG-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-flow-one-unreviewed-of-two",
+        "latency_ms": [
+          2.35,
+          2.138,
+          2.215,
+          2.284,
+          2.253
+        ],
+        "policy_id": "P-FLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-flow-unreviewed-source",
+        "latency_ms": [
+          2.558,
+          4.582,
+          2.338,
+          2.38,
+          2.341
+        ],
+        "policy_id": "P-FLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-important-external-send",
+        "latency_ms": [
+          2.356,
+          2.232,
+          2.345,
+          2.527,
+          2.231
+        ],
+        "policy_id": "MCP-DATA-EGRESS-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-partner-important-read",
+        "latency_ms": [
+          2.577,
+          2.629,
+          2.209,
+          2.223,
+          2.155
+        ],
+        "policy_id": "PAC-10",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-pii-external-send",
+        "latency_ms": [
+          2.294,
+          2.413,
+          2.485,
+          4.137,
+          2.533
+        ],
+        "policy_id": "MCP-DATA-EGRESS-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-sensitive-read-then-send",
+        "latency_ms": [
+          2.571,
+          2.442,
+          2.495,
+          2.291,
+          2.278
+        ],
+        "policy_id": "P-CHAIN-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-ssrf-admin-api",
+        "latency_ms": [
+          2.392,
+          2.44,
+          3.155,
+          2.826,
+          2.549
+        ],
+        "policy_id": "MCP-EGRESS-002",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-unregistered-server",
+        "latency_ms": [
+          2.194,
+          2.368,
+          2.161,
+          2.258,
+          2.178
+        ],
+        "policy_id": "MCP-REGISTRY-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-employee-team-write",
+        "latency_ms": [
+          2.143,
+          3.22,
+          2.53,
+          2.3,
+          2.363
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-flow-reviewed-source",
+        "latency_ms": [
+          2.324,
+          2.392,
+          2.43,
+          2.151,
+          2.296
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-internal-mail",
+        "latency_ms": [
+          2.022,
+          2.18,
+          2.008,
+          2.122,
+          2.033
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-public-read",
+        "latency_ms": [
+          2.112,
+          2.099,
+          2.304,
+          2.42,
+          4.069
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-write-without-recent-read",
+        "latency_ms": [
+          2.288,
+          2.196,
+          2.132,
+          2.009,
+          2.203
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      }
+    ],
+    "commit": "4857adc5762004b692c0526f86ba107264e46e45",
+    "expect_mismatches": [],
+    "metrics": {
+      "attack_block_rate": 1.0,
+      "benign_allow_rate": 1.0,
+      "block_reason_match_rate": 1.0,
+      "false_positive_rate": 0.0,
+      "latency_ms": {
+        "p50": 2.314,
+        "p95": 3.193
+      },
+      "precision": 1.0
+    },
+    "policy_bundle_sha256": "285dae7a29c15b520a7a06b72550357c0a2be641131098268a8aa4ff9feff709",
+    "ref": "worktree"
+  },
+  "before": {
+    "cases": [
+      {
+        "decision": "Allow",
+        "id": "attack-drifted-contract",
+        "latency_ms": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "policy_id": null
+      },
+      {
+        "decision": "Allow",
+        "id": "attack-flow-one-unreviewed-of-two",
+        "latency_ms": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "policy_id": null
+      },
+      {
+        "decision": "Allow",
+        "id": "attack-flow-unreviewed-source",
+        "latency_ms": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "policy_id": null
+      },
+      {
+        "decision": "Allow",
+        "id": "attack-important-external-send",
+        "latency_ms": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "policy_id": null
+      },
+      {
+        "decision": "Allow",
+        "id": "attack-partner-important-read",
+        "latency_ms": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "policy_id": null
+      },
+      {
+        "decision": "Allow",
+        "id": "attack-pii-external-send",
+        "latency_ms": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "policy_id": null
+      },
+      {
+        "decision": "Allow",
+        "id": "attack-sensitive-read-then-send",
+        "latency_ms": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "policy_id": null
+      },
+      {
+        "decision": "Allow",
+        "id": "attack-ssrf-admin-api",
+        "latency_ms": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "policy_id": null
+      },
+      {
+        "decision": "Allow",
+        "id": "attack-unregistered-server",
+        "latency_ms": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "policy_id": null
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-employee-team-write",
+        "latency_ms": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "policy_id": null
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-flow-reviewed-source",
+        "latency_ms": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "policy_id": null
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-internal-mail",
+        "latency_ms": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "policy_id": null
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-public-read",
+        "latency_ms": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "policy_id": null
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-write-without-recent-read",
+        "latency_ms": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "policy_id": null
+      }
+    ],
+    "commit": null,
+    "metrics": {
+      "attack_block_rate": 0.0,
+      "benign_allow_rate": 1.0,
+      "block_reason_match_rate": null,
+      "false_positive_rate": 0.0,
+      "latency_ms": {
+        "p50": 0.0,
+        "p95": 0.0
+      },
+      "precision": null
+    },
+    "policy_bundle_sha256": null,
+    "ref": "none"
+  },
+  "cases_sha256": [
+    {
+      "path": "full_stack_lab/eval/scenarios/baseline.json",
+      "sha256": "63b9468f77b4c6ba3438ef84bbfaefb03e5409d2916626ee2cd7fc5728263d86"
+    },
+    {
+      "path": "full_stack_lab/eval/scenarios/controls-2026-10-18.json",
+      "sha256": "0d7b2fc4118f372e1e3e6322d43b8e42588f6086c8c31d49d7e3e7449e5bbb1f"
+    }
+  ],
+  "image": "openpolicyagent/opa:1.20.2-static",
+  "image_digest": "openpolicyagent/opa@sha256:bb245e9e36be0d0ed486c240b606c56be7aba96014a4a87895fed4ba7a6dfa8d",
+  "repeat": 5,
+  "run": "2026-10-18T07:54:04Z"
+}

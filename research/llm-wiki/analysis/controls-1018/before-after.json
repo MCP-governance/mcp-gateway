@@ -1,0 +1,417 @@
+{
+  "after": {
+    "cases": [
+      {
+        "decision": "Block",
+        "id": "attack-drifted-contract",
+        "latency_ms": [
+          2.859,
+          2.4,
+          2.648,
+          3.451,
+          2.862
+        ],
+        "policy_id": "MCP-CATALOG-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-flow-one-unreviewed-of-two",
+        "latency_ms": [
+          2.773,
+          2.54,
+          2.396,
+          5.733,
+          3.116
+        ],
+        "policy_id": "P-FLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-flow-unreviewed-source",
+        "latency_ms": [
+          3.453,
+          3.98,
+          3.001,
+          2.546,
+          2.352
+        ],
+        "policy_id": "P-FLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-important-external-send",
+        "latency_ms": [
+          2.574,
+          2.666,
+          2.546,
+          3.347,
+          2.978
+        ],
+        "policy_id": "MCP-DATA-EGRESS-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-partner-important-read",
+        "latency_ms": [
+          3.049,
+          3.106,
+          3.117,
+          3.185,
+          3.262
+        ],
+        "policy_id": "PAC-10",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-pii-external-send",
+        "latency_ms": [
+          3.252,
+          2.521,
+          2.301,
+          2.413,
+          2.191
+        ],
+        "policy_id": "MCP-DATA-EGRESS-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-sensitive-read-then-send",
+        "latency_ms": [
+          2.607,
+          2.437,
+          2.399,
+          2.369,
+          2.261
+        ],
+        "policy_id": "P-CHAIN-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-ssrf-admin-api",
+        "latency_ms": [
+          2.217,
+          2.187,
+          2.447,
+          2.38,
+          2.309
+        ],
+        "policy_id": "MCP-EGRESS-002",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-unregistered-server",
+        "latency_ms": [
+          2.474,
+          4.112,
+          2.556,
+          2.394,
+          2.487
+        ],
+        "policy_id": "MCP-REGISTRY-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-employee-team-write",
+        "latency_ms": [
+          2.39,
+          2.106,
+          2.181,
+          2.143,
+          2.178
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-flow-reviewed-source",
+        "latency_ms": [
+          2.268,
+          2.296,
+          2.162,
+          2.137,
+          2.155
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-internal-mail",
+        "latency_ms": [
+          2.107,
+          2.155,
+          1.97,
+          2.382,
+          4.328
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-public-read",
+        "latency_ms": [
+          2.628,
+          2.398,
+          2.356,
+          2.814,
+          2.619
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-write-without-recent-read",
+        "latency_ms": [
+          2.422,
+          2.496,
+          2.603,
+          2.637,
+          2.662
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      }
+    ],
+    "commit": "4857adc5762004b692c0526f86ba107264e46e45",
+    "expect_mismatches": [],
+    "metrics": {
+      "attack_block_rate": 1.0,
+      "benign_allow_rate": 1.0,
+      "block_reason_match_rate": 1.0,
+      "false_positive_rate": 0.0,
+      "latency_ms": {
+        "p50": 2.492,
+        "p95": 3.743
+      },
+      "precision": 1.0
+    },
+    "policy_bundle_sha256": "285dae7a29c15b520a7a06b72550357c0a2be641131098268a8aa4ff9feff709",
+    "ref": "worktree"
+  },
+  "before": {
+    "cases": [
+      {
+        "decision": "Block",
+        "id": "attack-drifted-contract",
+        "latency_ms": [
+          3.294,
+          2.941,
+          2.702,
+          2.653,
+          2.349
+        ],
+        "policy_id": "MCP-CATALOG-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "attack-flow-one-unreviewed-of-two",
+        "latency_ms": [
+          2.286,
+          2.295,
+          2.03,
+          2.31,
+          2.315
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "attack-flow-unreviewed-source",
+        "latency_ms": [
+          2.136,
+          4.086,
+          2.452,
+          2.086,
+          2.293
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-important-external-send",
+        "latency_ms": [
+          2.228,
+          2.338,
+          2.321,
+          2.244,
+          2.177
+        ],
+        "policy_id": "MCP-DATA-EGRESS-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-partner-important-read",
+        "latency_ms": [
+          2.16,
+          2.226,
+          2.169,
+          2.178,
+          2.28
+        ],
+        "policy_id": "PAC-10",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-pii-external-send",
+        "latency_ms": [
+          2.217,
+          2.453,
+          4.509,
+          2.692,
+          2.589
+        ],
+        "policy_id": "MCP-DATA-EGRESS-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-sensitive-read-then-send",
+        "latency_ms": [
+          2.508,
+          2.278,
+          2.334,
+          3.038,
+          2.296
+        ],
+        "policy_id": "P-CHAIN-001",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-ssrf-admin-api",
+        "latency_ms": [
+          2.215,
+          2.202,
+          2.219,
+          2.112,
+          2.091
+        ],
+        "policy_id": "MCP-EGRESS-002",
+        "unstable": false
+      },
+      {
+        "decision": "Block",
+        "id": "attack-unregistered-server",
+        "latency_ms": [
+          2.15,
+          2.177,
+          2.108,
+          2.044,
+          4.048
+        ],
+        "policy_id": "MCP-REGISTRY-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-employee-team-write",
+        "latency_ms": [
+          2.24,
+          2.372,
+          2.3,
+          2.184,
+          2.145
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-flow-reviewed-source",
+        "latency_ms": [
+          2.084,
+          2.341,
+          2.189,
+          2.07,
+          2.286
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-internal-mail",
+        "latency_ms": [
+          2.144,
+          2.322,
+          2.449,
+          2.063,
+          2.055
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-public-read",
+        "latency_ms": [
+          3.606,
+          2.509,
+          2.668,
+          2.276,
+          2.219
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      },
+      {
+        "decision": "Allow",
+        "id": "normal-write-without-recent-read",
+        "latency_ms": [
+          2.41,
+          2.382,
+          2.18,
+          2.062,
+          2.317
+        ],
+        "policy_id": "P-AUTHZ-ALLOW-001",
+        "unstable": false
+      }
+    ],
+    "commit": "d6679fd5454d239778029524e1651d21808baee5",
+    "metrics": {
+      "attack_block_rate": 0.777778,
+      "benign_allow_rate": 1.0,
+      "block_reason_match_rate": null,
+      "false_positive_rate": 0.0,
+      "latency_ms": {
+        "p50": 2.283,
+        "p95": 3.466
+      },
+      "precision": 1.0
+    },
+    "policy_bundle_sha256": "6bfd4e36bfa4f8f88260c685f211cc5642a49db833023ba1d9ba2a8b6a14c151",
+    "ref": "d6679fd"
+  },
+  "cases_sha256": [
+    {
+      "path": "full_stack_lab/eval/scenarios/baseline.json",
+      "sha256": "63b9468f77b4c6ba3438ef84bbfaefb03e5409d2916626ee2cd7fc5728263d86"
+    },
+    {
+      "path": "full_stack_lab/eval/scenarios/controls-2026-10-18.json",
+      "sha256": "0d7b2fc4118f372e1e3e6322d43b8e42588f6086c8c31d49d7e3e7449e5bbb1f"
+    }
+  ],
+  "image": "openpolicyagent/opa:1.20.2-static",
+  "image_digest": "openpolicyagent/opa@sha256:bb245e9e36be0d0ed486c240b606c56be7aba96014a4a87895fed4ba7a6dfa8d",
+  "repeat": 5,
+  "run": "2026-10-18T07:54:03Z"
+}
