@@ -20,6 +20,14 @@
 
 OSS 우선: 마스킹은 이미 쓰는 Presidio Anonymizer, 입력 범위는 jsonschema, 결속·흐름은 OPA, 평가는 OPA 고정 이미지. 흐름 통제는 Portcullis·MCPGuard(세션 오염 표지+OPA/Rego)와 같은 구조를 새 프로세스 없이 붙였고, Invariant Guardrails·CaMeL·FIDES류는 별도 런타임·추적 형식이 필요해 도입하지 않았다. 동의 확인은 MCP elicitation(2025-06-18) 대신 콘솔(대역 밖)로 받았다(자동 수락 클라이언트 위험, D-134).
 
+## 아키텍처 구조도 개편
+
+- 내 선검토: 콘솔 HTTP :8000·하네스 HTTPS :443 미구분, 허브형 게이트웨이가 실제 순차 판정을 가림, 개발 예정 통제가 판정 단계와 단절, 통합 시트(개발 관리물)가 제품 구성에 섞임, OS 이벤트가 Caddy를 우회.
+- Codex sol 적대 검토: 25건(높음 15·중간 9·낮음 1)과 1쪽 개편안(P0~P11 단계·선 목록) — [codex-sol-review.md](../../analysis/arch-review-1018/codex-sol-review.md).
+- Codex luna가 `build_architecture.py` 배치를 다시 쓰고, 내가 headless Chrome으로 렌더링해 검수한 뒤 2차 수정(개발 예정 점선 제거, 모델 프록시 상단, 비인가 로컬 MCP 위치, 고객 SIEM 레인, 범례·라벨 겹침)을 지시했다. 커밋 `ddc6dae`, 구성요소 CMP-71~75(시트 「구성요소」 탭에도 추가).
+- Claude Design [MINT 아키텍처](https://claude.ai/artifact/8DmtrvxJRfgMCNdB1HVwo8) 버전 4: 기존 3장은 비교용으로 두고 「· 10-18 개편」 3장을 아래 줄에 추가(아이콘 63개 자산 재업로드).
+- 남은 것: 일부 라벨 겹침(P6 이용 동의·MarkItDown·Tailscale 라벨), 2·3쪽은 오류 수정만.
+
 ## 검증
 
 | 확인 종류 | 명령·환경·실행 시각 | 결과 | 원본 증거 |
