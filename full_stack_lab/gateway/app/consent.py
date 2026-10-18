@@ -14,9 +14,10 @@ from .contract import canonical_hash
 
 CONSENT_DAYS = int(os.getenv("CONSENT_DAYS", "90"))
 RANK = {"public": 0, "nonimportant": 1, "important": 2}
-DECISIONS = {"grant": ("GRANTED", ("PENDING", "DENIED", "REVOKED")),
-             "deny": ("DENIED", ("PENDING",)),
-             "revoke": ("REVOKED", ("GRANTED",))}
+# decision → (new status, states it may come from, approval_events outcome, reason)
+DECISIONS = {"grant": ("GRANTED", ("PENDING", "DENIED", "REVOKED"), "approved", "동의"),
+             "deny": ("DENIED", ("PENDING",), "rejected", "동의 거부"),
+             "revoke": ("REVOKED", ("GRANTED",), "rejected", "동의 철회")}
 
 
 def terms_hash(tool_review: dict) -> str:
@@ -60,18 +61,21 @@ async def mine(user_token: str) -> list[dict]:
 
 
 async def decide(consent_id: int, user_token: str, decision: str) -> dict | None:
-    """Only the person the consent belongs to decides it; every change is an approval event."""
-    status, from_states = DECISIONS[decision]
-    row = await db.fetch_one(
-        """UPDATE user_consents SET status=%s, decided_at=now(),
-                  expires_at = CASE WHEN %s='GRANTED' THEN now() + make_interval(days => %s) END
-            WHERE id=%s AND user_token=%s AND status = ANY(%s)
-        RETURNING id, server_id, tool_name, grade, terms_hash, status, expires_at""",
-        (status, status, CONSENT_DAYS, consent_id, user_token, list(from_states)))
-    if row:
-        await review.record_event("user-consent", status.lower(), "consent", row["id"], user_token,
-                                  scope={"server": row["server_id"], "tool": row["tool_name"],
-                                         "grade": row["grade"], "terms": row["terms_hash"]})
+    """Only the person the consent belongs to decides it; the change and its event commit together."""
+    status, from_states, outcome, reason = DECISIONS[decision]
+    async with db.transaction() as connection:
+        cursor = await connection.execute(
+            """UPDATE user_consents SET status=%s, decided_at=now(),
+                      expires_at = CASE WHEN %s='GRANTED' THEN now() + make_interval(days => %s) END
+                WHERE id=%s AND user_token=%s AND status = ANY(%s)
+            RETURNING id, server_id, tool_name, grade, terms_hash, status, expires_at""",
+            (status, status, CONSENT_DAYS, consent_id, user_token, list(from_states)))
+        row = await cursor.fetchone()
+        if row:
+            await review.record_event("user-consent", outcome, "consent", row["id"], user_token, reason=reason,
+                                      scope={"server": row["server_id"], "tool": row["tool_name"],
+                                             "grade": row["grade"], "terms": row["terms_hash"], "status": status},
+                                      connection=connection)
     return row
 
 
@@ -81,4 +85,6 @@ if __name__ == "__main__":
     assert terms_hash({**base, "reviewed_by": "a", "reviewed_at": "1"}) == terms_hash({**base, "reviewed_by": "b"})
     assert terms_hash(base) != terms_hash({**base, "purpose": "외부 공유"})
     assert _rank("unknown") == RANK["important"] and _rank("public") < _rank("nonimportant")
+    # approval_events.outcome has a CHECK; a value outside it rolls the decision back.
+    assert {d[2] for d in DECISIONS.values()} <= {"recorded", "approved", "rejected", "refused", "held"}
     print("consent self-check ok")
