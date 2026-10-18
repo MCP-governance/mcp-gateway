@@ -894,6 +894,7 @@ def main() -> int:
     log(f"엔드포인트 {endpoint_id()} · 관측 경로 {[str(p) for p in SCAN_PATHS]}")
     enrolled = False
     while True:
+        linked = False
         try:
             if not enrolled:
                 enroll()
@@ -901,6 +902,8 @@ def main() -> int:
                 log("등록 완료")
             results = once()
             failed = any(value["state"] in {"failed", "partial", "unauthorized"} for value in results.values())
+            # The tray shows the link, not snapshot completeness (partial is reported to the Gateway already).
+            linked = not any(value["state"] in {"failed", "unauthorized"} for value in results.values())
         except urllib.error.HTTPError as exc:
             detail = exc.read()[:200].decode("utf-8", "replace")
             if exc.code in (401, 403):
@@ -914,7 +917,7 @@ def main() -> int:
         status_path = CONFIG.get("ENDPOINT_TRAY_STATUS")
         if os.name == "nt" and status_path:
             from windows_status import publish
-            publish(status_path, not failed)
+            publish(status_path, linked)
         if ONE_SHOT:
             return 1 if failed else 0
         time.sleep(INTERVAL)

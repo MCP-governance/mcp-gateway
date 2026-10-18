@@ -678,7 +678,9 @@ def serve(args):
             record({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health,
                     "config_inventory": inventory_status, "os_observer": os_observer})
             management = {"active": "활성", "pending": "등록 대기", "quarantined": "격리됨", "revoked": "철회됨"}.get(report["state"], "확인 필요")
-            publish(status_path, inventory_status == "success", os_observer.get("recent_blocks", []), management)
+            # Connected means the authenticated heartbeat above succeeded. A partial process snapshot or a failed
+            # inventory is a completeness result the Gateway already received; it is in service.log, not a lost link.
+            publish(status_path, True, os_observer.get("recent_blocks", []), management)
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
             with lock:
                 cache.clear()
