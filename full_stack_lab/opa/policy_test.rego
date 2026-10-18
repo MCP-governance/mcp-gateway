@@ -837,6 +837,37 @@ test_read_then_internal_send_is_not_a_chain if {
 	result.policy_id != "P-CHAIN-001"
 }
 
+test_unreviewed_server_to_server_flow_blocks if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "create_issue", "action": "w"},
+		"request": {"flow_sources": ["filesystem"]},
+	})
+	result := decision with input as request
+	result.policy_id == "P-FLOW-001"
+	result.decision == "Block"
+}
+
+test_reviewed_receiving_tool_takes_the_flow if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "create_issue", "action": "w", "accepts_from": ["filesystem"]},
+		"request": {"flow_sources": ["filesystem"]},
+	})
+	result := decision with input as request
+	result.policy_id != "P-FLOW-001"
+}
+
+test_one_unreviewed_source_among_several_still_blocks if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "create_issue", "action": "w", "accepts_from": ["filesystem"]},
+		"request": {"flow_sources": ["filesystem", "postgres"]},
+	})
+	result := decision with input as request
+	result.policy_id == "P-FLOW-001"
+}
+
 # ── T-DECOMM 전주기 종료 (§11.11 미등록·비인가 구성요소 + 전주기 종료 단계) ──
 #
 # 이 시험들이 지키는 것은 "폐기했다"가 판정이 아니라 집행이 되게 하는 것이다.

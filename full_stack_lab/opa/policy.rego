@@ -69,6 +69,16 @@ pii_types := object.get(input, ["request", "pii_types"], [])
 
 sequence_flags := object.get(input, ["request", "sequence_flags"], [])
 
+# POL-33. 같은 주체가 창 안에서 중요정보를 읽은 다른 서버와, 이 도구가 넘겨받아도 된다고 심사된 서버.
+flow_sources := object.get(input, ["request", "flow_sources"], [])
+
+accepts_from := object.get(input, ["tool", "accepts_from"], [])
+
+unapproved_flow contains source if {
+	some source in flow_sources
+	not source in accepts_from
+}
+
 # The call's own recipient (external mail, external URL) - distinct from the registered
 # MCP endpoint. The Gateway classifier decides internal vs external from the catalog's
 # organisation domains; the policy does not keep a second list.
@@ -485,6 +495,17 @@ candidate["P-CHAIN-001"] := {
 } if {
 	external_transfer
 	"sensitive_read_then_send" in sequence_flags
+}
+
+# Internal or external alike: a write or execution on another server is where important data read
+# from one server crosses to the next. Only a reviewed receiving tool may take it.
+candidate["P-FLOW-001"] := {
+	"decision": "Block",
+	"reason": sprintf("승인 없는 서버 간 중요정보 전달입니다(최근 열람 서버: %s).", [concat(", ", sort([s | some s in unapproved_flow]))]),
+	"restrictions": {},
+	"conditions": {"matched": ["request.flow_sources"], "violated": ["tool.accepts_from"]},
+} if {
+	count(unapproved_flow) > 0
 }
 
 # CTL-13 / RSK-12. 인자 안의 비신뢰 지시. 고위험 행위에서는 사람이 본다.

@@ -23,7 +23,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import classify, connections, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, secret_scan, upstream
+from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, secret_scan, upstream
 from .destination import DestinationBlocked
 from . import selective
 from .contract import (  # re-exported: older callers import these from core
@@ -68,7 +68,7 @@ DEFAULT_ENFORCEMENT = os.getenv("GATEWAY_ENFORCEMENT", "enforce")
 # ceiling at all for as long as observation lasts.
 # P-CHAIN- (PDF integration): a read-then-export chain is a disclosure, not a permission
 # opinion; observing it would let the export through while "measuring".
-ALWAYS_ENFORCED = ("MCP-", "PAC-", "INPUT_CONTRACT", "POLICY_BUNDLE", "P-CONTROL-", "P-INPUT-", "P-RATE-", "P-CHAIN-")
+ALWAYS_ENFORCED = ("MCP-", "PAC-", "INPUT_CONTRACT", "POLICY_BUNDLE", "P-CONTROL-", "P-INPUT-", "P-RATE-", "P-CHAIN-", "P-FLOW-")
 CHAIN_WINDOW_MINUTES = int(os.getenv("CHAIN_WINDOW_MINUTES", "10"))
 RATE_LIMIT_CALLS = int(os.getenv("RATE_LIMIT_CALLS", "60"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
@@ -727,9 +727,13 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
         normalized = review.normalize_tool_reviews({name: spec["tools"][name] for name in reviews}, reviews, actor)
         spec["tool_reviews"] = {**(spec.get("tool_reviews") or {}), **normalized}
         if spec.get("constraints_derived"):
-            # New destinations move the address patterns with them; the argument set stays the pinned one.
+            # New destinations move the address patterns with them. The argument set is cut from the pinned
+            # contract, so a reviewer can widen the inputs a previous review narrowed (POL-31).
+            pinned = {row["name"]: row["input_schema"] for row in await db.fetch_all(
+                "SELECT name, input_schema FROM mcp_tools WHERE server_id=%s", (server_id,)) if row["input_schema"]}
             spec["parameter_constraints"].update(review.derived_constraints(
-                {name: {"input_schema": spec["parameter_constraints"][name]} for name in normalized}, normalized))
+                {name: {"input_schema": pinned.get(name) or spec["parameter_constraints"][name]} for name in normalized},
+                normalized))
         doc["history"].append({"type": "tool-scope-reviewed", "server_id": server_id, "actor": actor,
                                "at": datetime.now(UTC).isoformat(timespec="seconds"), "tools": sorted(normalized)})
         registry.save_runtime(doc)
@@ -1025,6 +1029,23 @@ async def _sequence_flags(user_token: str, cls: classify.Classification) -> list
               AND created_at > now() - make_interval(mins => %s) LIMIT 1""",
         (user_token, CHAIN_WINDOW_MINUTES))
     return ["sensitive_read_then_send"] if row else []
+
+
+async def _flow_sources(user_token: str, server_id: str, cls: classify.Classification) -> list[str]:
+    """POL-33 input: other servers whose important data this principal read in the window.
+
+    The label follows the verified principal, as P-CHAIN-001 does; a write or execution on another
+    server inside the window is where that data can cross between servers.
+    """
+    # ponytail: principal-wide label over-blocks unrelated writes; content fingerprints would narrow it.
+    if cls.action not in {"w", "x"}:
+        return []
+    rows = await db.fetch_all(
+        """SELECT DISTINCT server_id FROM decisions
+            WHERE user_token=%s AND server_id<>%s AND data_class='important' AND action='r' AND upstream_executed
+              AND created_at > now() - make_interval(mins => %s) ORDER BY server_id""",
+        (user_token, server_id, CHAIN_WINDOW_MINUTES))
+    return [row["server_id"] for row in rows]
 
 
 async def _relationship_scope(server_id: str, cls: classify.Classification) -> dict:
@@ -1800,6 +1821,12 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 base_event.update(local_verdict(
                     "P-INPUT-SCHEMA-001", "Block", "도구 인자가 승인된 입력 형식과 다릅니다."))
                 return await _decision_payload(base_event, laps)
+        # What the reviewer scoped for this tool (D-91): inputs, masking, transfer grade, flows, consent.
+        tool_review = ((registry.server(server_id) or {}).get("tool_reviews") or {}).get(tool) or {}
+        if tool_review.get("inputs") is not None and (outside := sorted(set(arguments) - set(tool_review["inputs"]))):
+            base_event.update(local_verdict(
+                "P-INPUT-FIELD-001", "Block", "승인된 입력 항목 밖의 인자는 보내지 않습니다: " + ", ".join(outside[:10])))
+            return await _decision_payload(base_event, laps)
         laps.lap("schema")
 
         if cls.action == "r" and (reason := classify.bulk_read_reason(server_id, tool, arguments, MAX_RESULT_ITEMS)):
@@ -1813,6 +1840,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         # query sent to GitHub has left the organisation whatever the tool's action is.
         provider_hosted = classify.url_destination((registry.server(server_id) or {}).get("endpoint")).external
         ignore = _privacy_ignore(cls)
+        outbound = arguments
         try:
             if cls.action in {"w", "x"} or external or provider_hosted:
                 secrets_found = await secret_scan.labels(json.dumps(arguments, ensure_ascii=False))
@@ -1820,6 +1848,11 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 base_event["classification"]["dlp"] = cls.dlp
             findings = (await privacy.analyze(_outbound_text(arguments), ignore)
                         if cls.action in {"w", "x"} or external or provider_hosted else [])
+            if tool_review.get("mask"):
+                # POL-31: what Presidio finds is replaced before it leaves; the policy judges what is sent.
+                outbound, masked = await privacy.mask_payload(arguments, ignore)
+                findings = []
+                base_event["classification"]["masked_inputs"] = masked
         except privacy.InspectionUnavailable as exc:
             base_event.update(local_verdict(
                 "P-DATA-INSPECTION-001", "Block", "민감정보 검사를 완료하지 못해 실행을 차단했습니다.",
@@ -1828,9 +1861,11 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         laps.lap("inspect_in")
         privacy_types = sorted({item["entity_type"] for item in findings})
         sequence_flags = await _sequence_flags(user_token, cls)
+        flow_sources = await _flow_sources(user_token, server_id, cls)
+        base_event["classification"]["flow_sources"] = flow_sources
         base_event.update(privacy_types=privacy_types, sequence_flags=sequence_flags,
                           risk_score=_risk_score(cls.data_class, cls.action, external,
-                                                 privacy_types, sequence_flags))
+                                                 privacy_types, sequence_flags + flow_sources))
 
         contract = await _contract(server_id, tool)
         policy_input = {
@@ -1854,9 +1889,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "relationship": await _relationship_scope(server_id, cls),
             "tool": {"server": server_id, "name": tool, "action": cls.action,
                      "base_action": cls.base_action, "restrictable": cls.restrictable,
-                     "provider_hosted": provider_hosted},
+                     "provider_hosted": provider_hosted, "accepts_from": tool_review.get("accepts_from") or []},
             "request": {"untrusted_markers": untrusted_markers(arguments), "dlp": cls.dlp,
-                        "pii_types": privacy_types, "sequence_flags": sequence_flags},
+                        "pii_types": privacy_types, "sequence_flags": sequence_flags, "flow_sources": flow_sources},
             "approval": {"granted": approval_granted, "id": approval_id},
             "contract": contract,
             "context": context,
@@ -1895,6 +1930,15 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         span.set_attribute("mcp.decision", result["decision"])
         span.set_attribute("mcp.policy_id", result["policy_id"])
 
+        # POL-08: asked only when the call would otherwise run, in either enforcement mode.
+        if (result["decision"] in {"Allow", "Alert", "Restrict"} and tool_review.get("consent")
+                and (reason := await consent.missing(user_token, server_id, tool, cls.data_class, tool_review))):
+            result = local_verdict("P-CONSENT-001", "Block", reason,
+                                   conditions={"matched": ["tool_reviews.consent"], "violated": ["user_consents"]})
+            base_event.update(result)
+            span.set_attribute("mcp.decision", result["decision"])
+            span.set_attribute("mcp.policy_id", result["policy_id"])
+
         if result["decision"] == "Approval":
             new_approval_id = str(uuid.uuid4())
             stored = {k: payload.get(k) for k in ("server_id", "tool", "arguments", "user_token", "client", "transport_claims")}
@@ -1907,7 +1951,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             )
             base_event["approval_id"] = new_approval_id
         elif result["decision"] in {"Allow", "Alert", "Restrict"}:
-            effective, applied = classify.apply_restrictions(cls, arguments, result.get("restrictions") or {})
+            effective, applied = classify.apply_restrictions(cls, outbound, result.get("restrictions") or {})
             base_event["restrictions_applied"] = applied
             try:
                 with tracer.start_as_current_span("mcp.upstream.call", record_exception=False, set_status_on_exception=False) as upstream_span:

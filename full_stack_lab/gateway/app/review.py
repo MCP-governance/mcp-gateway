@@ -22,6 +22,8 @@ SCANNERS = ("Syft", "Trivy", "Semgrep", "Gitleaks")
 RISK_ACCEPTANCE_MAX_DAYS = 30
 RISK_ACCEPTANCE_MIN_REASON = 10
 DESTINATION = re.compile(r"^(\*\.)?[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:\d{1,5})?$")
+ARGUMENT = re.compile(r"^[A-Za-z_$][A-Za-z0-9_.$-]{0,63}$")
+SERVER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
 
 
 class NotIndependent(PermissionError):
@@ -223,9 +225,27 @@ def normalize_tool_reviews(tools: dict[str, str], reviews: dict | None, reviewer
         destinations = sorted({str(value).strip().lower() for value in item.get("destinations") or [] if str(value).strip()})
         if len(destinations) > 10 or not all(DESTINATION.fullmatch(value) for value in destinations):
             raise ValueError(f"{name}: 외부 목적지는 호스트 이름 10개 이하로 적으세요.")
+        inputs = item.get("inputs")
+        if inputs is not None:
+            inputs = sorted({str(value) for value in inputs})
+            if not all(ARGUMENT.fullmatch(value) for value in inputs):
+                raise ValueError(f"{name}: 허용 입력 항목은 인자 이름으로 적으세요.")
+        accepts = sorted({str(value).strip() for value in item.get("accepts_from") or [] if str(value).strip()})
+        if not all(SERVER.fullmatch(value) for value in accepts):
+            raise ValueError(f"{name}: 중요정보를 넘겨받을 서버는 서버 ID로 적으세요.")
+        grade = item.get("grade") or "public"
+        if grade not in ("public", "nonimportant"):
+            raise ValueError(f"{name}: 외부 전송 등급은 공개 또는 일반만 승인할 수 있습니다.")
         normalized[name] = {"purpose": purpose, "asset": asset, "action": tools[name], "destinations": destinations,
+                            "inputs": inputs, "mask": bool(item.get("mask")), "grade": grade,
+                            "accepts_from": accepts, "consent": bool(item.get("consent")),
                             "reviewed_by": reviewer, "reviewed_at": stamp}
     return normalized
+
+
+def scope_terms(item: dict) -> dict:
+    """What a person agreed to for one tool, without who or when: a change re-opens consent and approvals."""
+    return {key: value for key, value in item.items() if key not in ("reviewed_by", "reviewed_at")}
 
 
 _ADDRESS_ARG = re.compile(r"(?:^|_)(?:url|uri|href|link|endpoint)s?$", re.I)
@@ -263,6 +283,15 @@ def derived_constraints(advertised: dict[str, dict], reviews: dict[str, dict]) -
                     pin(child, key)
 
         pin(schema)
+        if item.get("inputs") is not None:
+            # POL-31: a reviewer narrows the argument set; a required argument cannot be taken away.
+            allowed, advertised_names = set(item["inputs"]), set(schema.get("properties") or {})
+            if allowed - advertised_names:
+                raise ValueError(f"{name}: 계약에 없는 입력 항목입니다: " + ", ".join(sorted(allowed - advertised_names)))
+            if set(schema.get("required") or []) - allowed:
+                raise ValueError(f"{name}: 필수 입력 항목은 뺄 수 없습니다: "
+                                 + ", ".join(sorted(set(schema.get("required") or []) - allowed)))
+            schema["properties"] = {k: v for k, v in (schema.get("properties") or {}).items() if k in allowed}
         # Keep $defs so $ref inside the advertised contract still resolves (DEV-44).
         out[name] = {**{k: v for k, v in schema.items() if k in ("$defs", "definitions", "required", "properties")},
                      "type": "object", "properties": schema.get("properties") or {}, "additionalProperties": False}
