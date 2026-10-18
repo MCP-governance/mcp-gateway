@@ -149,6 +149,8 @@ HTTP 리디렉션과 시스템 신뢰 저장소 자동 등록은 끕니다. 평�
 클라이언트도 원격 HTTP URL을 거부하므로 인증 토큰을 보내기 전에 멈춥니다.
 기본 loopback 실습의 내부 HTTP는 현장 게시와 별개입니다.
 
+브라우저 콘솔은 같은 Tailscale IP의 `http://…:8000`으로도 엽니다(D-129). 이 포트는 콘솔·내부 Git만 제공하고 하네스·키트·장치 보고 경로는 421로 거절합니다.
+
 ```bash
 cd full_stack_lab
 ./console.sh field up

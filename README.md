@@ -19,7 +19,7 @@ flowchart TB
 
   subgraph APP["솔루션 기기 — Tailscale IP에만 게시"]
     direction LR
-    CADDY["Caddy :443"] --> GW["게이트웨이<br/>/mcp/&lt;서버&gt;/"]
+    CADDY["Caddy<br/>콘솔 :8000 · 하네스 :443"] --> GW["게이트웨이<br/>/mcp/&lt;서버&gt;/"]
     CADDY --> CON["콘솔 · 인증 · 도입"]
     GW --> OPA["OPA · PAC15"]
     GW --> INS["Presidio · Gitleaks<br/>텍스트 규칙"]
@@ -92,7 +92,7 @@ cd mcp-gateway/full_stack_lab
 ./console.sh field status
 ```
 
-접속은 `https://<Tailscale IP>/login`입니다. `field ca`로 배치 루트·SHA-256 지문을 확인하고 [CA 배포 절차](docs/ai/FIELD.md#현장-tls와-루트-배포d-124)를 따릅니다. 첫 설치 계정은 관리자 `root`/`root`, 직원 `user`/`user`이고
+브라우저 콘솔은 `http://<Tailscale IP>:8000/login`, 하네스·키트는 `https://<Tailscale IP>`입니다(D-129). `field ca`로 배치 루트·SHA-256 지문을 확인하고 [CA 배포 절차](docs/ai/FIELD.md#현장-tls와-루트-배포d-124)를 따릅니다. 첫 설치 계정은 관리자 `root`/`root`, 직원 `user`/`user`이고
 시험이 끝나면 바꿉니다.
 
 ```bash

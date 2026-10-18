@@ -301,7 +301,9 @@ field_up() {
   if [[ $with_lab_mcp == 1 ]]; then ensure_contracts; fi
   echo "[field 3/4] Caddy·모델 프록시(Tailscale IP 전용 앞단)"
   docker compose "${FIELD_COMPOSE[@]}" build -q model-proxy
-  docker compose "${FIELD_COMPOSE[@]}" up -d caddy model-proxy
+  # The Caddyfile is a mounted file and the admin API is off: recreate so a routing change takes effect.
+  docker compose "${FIELD_COMPOSE[@]}" up -d --force-recreate caddy
+  docker compose "${FIELD_COMPOSE[@]}" up -d model-proxy
   field_ca
   if [[ $with_ws == 1 ]]; then
     echo "[field 4/4] 컨테이너 직원 PC 4대도 함께 기동(--with-lab-workstations)"
