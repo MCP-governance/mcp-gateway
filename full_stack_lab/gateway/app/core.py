@@ -1840,7 +1840,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         # query sent to GitHub has left the organisation whatever the tool's action is.
         provider_hosted = classify.url_destination((registry.server(server_id) or {}).get("endpoint")).external
         ignore = _privacy_ignore(cls)
-        outbound = arguments
+        outbound, masked_types = arguments, []
         try:
             if cls.action in {"w", "x"} or external or provider_hosted:
                 secrets_found = await secret_scan.labels(json.dumps(arguments, ensure_ascii=False))
@@ -1850,9 +1850,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                         if cls.action in {"w", "x"} or external or provider_hosted else [])
             if tool_review.get("mask"):
                 # POL-31: what Presidio finds is replaced before it leaves; the policy judges what is sent.
-                outbound, masked = await privacy.mask_payload(arguments, ignore)
-                findings = []
-                base_event["classification"]["masked_inputs"] = masked
+                outbound, masked_types = await privacy.mask_payload(arguments, ignore)
         except privacy.InspectionUnavailable as exc:
             base_event.update(local_verdict(
                 "P-DATA-INSPECTION-001", "Block", "민감정보 검사를 완료하지 못해 실행을 차단했습니다.",
@@ -1860,9 +1858,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             return await _decision_payload(base_event, laps)
         laps.lap("inspect_in")
         privacy_types = sorted({item["entity_type"] for item in findings})
+        sent_types = [kind for kind in privacy_types if kind not in masked_types]
         sequence_flags = await _sequence_flags(user_token, cls)
         flow_sources = await _flow_sources(user_token, server_id, cls)
-        base_event["classification"]["flow_sources"] = flow_sources
         base_event.update(privacy_types=privacy_types, sequence_flags=sequence_flags,
                           risk_score=_risk_score(cls.data_class, cls.action, external,
                                                  privacy_types, sequence_flags + flow_sources))
@@ -1891,7 +1889,8 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                      "base_action": cls.base_action, "restrictable": cls.restrictable,
                      "provider_hosted": provider_hosted, "accepts_from": tool_review.get("accepts_from") or []},
             "request": {"untrusted_markers": untrusted_markers(arguments), "dlp": cls.dlp,
-                        "pii_types": privacy_types, "sequence_flags": sequence_flags, "flow_sources": flow_sources},
+                        "pii_types": sent_types, "masked_types": masked_types,
+                        "sequence_flags": sequence_flags, "flow_sources": flow_sources},
             "approval": {"granted": approval_granted, "id": approval_id},
             "contract": contract,
             "context": context,
