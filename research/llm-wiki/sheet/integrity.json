@@ -1,0 +1,666 @@
+{
+  "tabs": {
+    "wbs": {
+      "rows": 57,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "기능": {
+          "target": "features",
+          "missing_ids": [],
+          "missing": []
+        },
+        "정책": {
+          "target": "policies",
+          "missing_ids": [],
+          "missing": []
+        },
+        "백로그": {
+          "target": "backlog",
+          "missing_ids": [],
+          "missing": []
+        },
+        "결정": {
+          "target": "decisions",
+          "missing_ids": [],
+          "missing": []
+        },
+        "시험": {
+          "target": "experiments",
+          "missing_ids": [],
+          "missing": []
+        },
+        "구성요소": {
+          "target": "components",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "8e9b22dff1627970c1b11c6191eff8e50cbefe63eddae385c303f5acc1683163"
+    },
+    "backlog": {
+      "rows": 73,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "WBS": {
+          "target": "wbs",
+          "missing_ids": [],
+          "missing": []
+        },
+        "결정": {
+          "target": "decisions",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "afe49a1ac4df0d4c703e9e6f337bd67f1ece9af05d628c85a1af205dfad517e8"
+    },
+    "decisions": {
+      "rows": 125,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "백로그": {
+          "target": "backlog",
+          "missing_ids": [],
+          "missing": []
+        },
+        "WBS": {
+          "target": "wbs",
+          "missing_ids": [],
+          "missing": []
+        },
+        "커밋": {
+          "target": "commits",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "428f4cbf086cb9dde808fb018f3048793ef14ec9c8daaf4292f3f2c362941a23"
+    },
+    "commits": {
+      "rows": 330,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "결정": {
+          "target": "decisions",
+          "missing_ids": [
+            "D-36",
+            "D-38"
+          ],
+          "missing": [
+            {
+              "row_id": "8889afc",
+              "id": "D-36"
+            },
+            {
+              "row_id": "8889afc",
+              "id": "D-38"
+            }
+          ]
+        },
+        "백로그": {
+          "target": "backlog",
+          "missing_ids": [],
+          "missing": []
+        },
+        "WBS": {
+          "target": "wbs",
+          "missing_ids": [],
+          "missing": []
+        },
+        "기기 배포": {
+          "target": "deploys",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "baf22b0def3d4883e9b0934b79920d8e6390992879436b9ff6e239c4be5a54a3"
+    },
+    "deploys": {
+      "rows": 18,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "커밋": {
+          "target": "commits",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "16419996e069b80f8398b58a7346ca4c328dcbfad77a56ce16452ce11caace7a"
+    },
+    "features": {
+      "rows": 64,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "정책": {
+          "target": "policies",
+          "missing_ids": [],
+          "missing": []
+        },
+        "WBS": {
+          "target": "wbs",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "b2ae61fd8fb674489dd4be69f62ed7a56e69b45dfb97ec0de72892cda775ddef"
+    },
+    "components": {
+      "rows": 70,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "WBS": {
+          "target": "wbs",
+          "missing_ids": [],
+          "missing": []
+        },
+        "OSS 재사용": {
+          "target": "oss-reuse",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "8a45fd60697f2037f6adb90ceb8cdbb332db217cc7fc990beff2036ea14041c0"
+    },
+    "mvp": {
+      "rows": 24,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "219c7a13b8e3b35835f971f6a10814787947ab08a25ba74461d620755bf06c59"
+    },
+    "plan-v15": {
+      "rows": 137,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "8187deed44ab76a2acb32ff128ddc233b419606e81fc9d0f293c0aee3195055c"
+    },
+    "policies": {
+      "rows": 50,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "기능": {
+          "target": "features",
+          "missing_ids": [],
+          "missing": []
+        },
+        "WBS": {
+          "target": "wbs",
+          "missing_ids": [],
+          "missing": []
+        },
+        "관련 추가 개발": {
+          "target": "wbs",
+          "missing_ids": [],
+          "missing": []
+        },
+        "요구 ID": {
+          "target": "reg-requirements",
+          "missing_ids": [],
+          "missing": []
+        },
+        "번호 대응": {
+          "target": "policy-id-map",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "45c06b72eff4dbffca92f79aa53a5768f948aeec4f0123a6b306ebb33777d521"
+    },
+    "policies-detail": {
+      "rows": 24,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "b683aceebb4f429901607a178bc71b8b1d9195be11ae59a2148e4188b4f247ae"
+    },
+    "policies-docs": {
+      "rows": 50,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "76926cf7a69d5071d2d23ec298565015600d3babdf0db61609d4e69dd8ae602f"
+    },
+    "policies-extra": {
+      "rows": 50,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "0aea029ba824ae9a64a0c85cb194ff4c46afe4c76750289fbdb4fedb48d27463"
+    },
+    "policy-id-map": {
+      "rows": 50,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "정책": {
+          "target": "policies",
+          "missing_ids": [],
+          "missing": []
+        },
+        "독스용 번호": {
+          "target": "policies-docs",
+          "missing_ids": [],
+          "missing": []
+        },
+        "원본 번호": {
+          "target": "policies-detail",
+          "missing_ids": [],
+          "missing": []
+        },
+        "검수 작업": {
+          "target": "wbs",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "9e3329aace158a23c2553f31323db186c1170039dbdf07eb8dac37854d74a836"
+    },
+    "experiments": {
+      "rows": 13,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "정책": {
+          "target": "policies",
+          "missing_ids": [],
+          "missing": []
+        },
+        "WBS": {
+          "target": "wbs",
+          "missing_ids": [],
+          "missing": []
+        },
+        "백로그": {
+          "target": "backlog",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "788d2a20843d73c4a57c0e823369514c85c7b73b0ea127a5c856523d26d7135c"
+    },
+    "threats": {
+      "rows": 24,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "원본 ID": {
+          "target": "policies-detail",
+          "missing_ids": [],
+          "missing": []
+        },
+        "위험 ID": {
+          "target": "local-tool-risks",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "3cc9333211c8f3d1d0436bd74bf80732e0d6bb59a952615a5d9a90fd075d3c05"
+    },
+    "local-tool-risks": {
+      "rows": 13,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "원본 통제": {
+          "target": "policies-detail",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "b8ad2a7845d5366e0af72d349eb8cf23ddda52c811b00414dca23cfd7878f99e"
+    },
+    "endpoint-permission-refs": {
+      "rows": 12,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "30cd7f8212d6c03fa1f789e31306da4e1d3355f3d38de771e24cbc39cc5b9375"
+    },
+    "reg-docs": {
+      "rows": 61,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "5500ac963279e1a31f82f959ab4872106a23b16d09817a78c4262891829ac0f7"
+    },
+    "reg-requirements": {
+      "rows": 1223,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "규제 문서": {
+          "target": "reg-docs",
+          "missing_ids": [],
+          "missing": []
+        },
+        "정책": {
+          "target": "policies",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "a54fb58918ce704edf2b3f67da5058acfd806d55c0c1a7590b6cae0f30c183e8"
+    },
+    "reg-matrix": {
+      "rows": 19,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "64c13edd9d73770e1b9b6add3825514d5fa68213afc9ce82963aca43140e8839"
+    },
+    "reg-plan-summary": {
+      "rows": 7,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "f64ed91bd73c52be72ac440a8ed32a97aee82c9a9597097f6b30037f8adf6cc2"
+    },
+    "reg-capabilities": {
+      "rows": 7,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "제안": {
+          "target": "reg-proposals",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "74c945e157d9caa8de4326ed2b72201a3123b99eaf7ee6fdb67dd2563067efad"
+    },
+    "reg-proposals": {
+      "rows": 7,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "백로그": {
+          "target": "backlog",
+          "missing_ids": [],
+          "missing": []
+        },
+        "능력": {
+          "target": "reg-capabilities",
+          "missing_ids": [],
+          "missing": []
+        },
+        "선행": {
+          "target": "backlog",
+          "missing_ids": [],
+          "missing": []
+        },
+        "결정 대기": {
+          "target": "reg-decisions",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "fb67c421229347193aeee0c2b2a14618e1a6d08590eacab89db8d6c9199546c1"
+    },
+    "reg-reinforcements": {
+      "rows": 5,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "ID": {
+          "target": "backlog",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "888c6576562bdfe888ccc628b16809b8ad4e5ba0d90d5bc4158d25abcfe0adde"
+    },
+    "reg-decisions": {
+      "rows": 8,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "890d24ae14ff684bb5d263748280ef80d6db34485a6a0354b97ed890508bfac2"
+    },
+    "reg-sprint": {
+      "rows": 6,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "백로그": {
+          "target": "backlog",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "6bc0f61ec894ce2ec205e3b7c36454574b2c5fedff62187ecd2f982678dd8424"
+    },
+    "reg-incident-deadlines": {
+      "rows": 44,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "ID": {
+          "target": "reg-requirements",
+          "missing_ids": [],
+          "missing": []
+        },
+        "규제 문서": {
+          "target": "reg-docs",
+          "missing_ids": [],
+          "missing": []
+        },
+        "정책": {
+          "target": "policies",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "8c80be40aca5c7d5e8aebb4e1bdd27ddb630a29ba51dcccf29947fab6742253a"
+    },
+    "reg-retention": {
+      "rows": 16,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "ID": {
+          "target": "reg-requirements",
+          "missing_ids": [],
+          "missing": []
+        },
+        "규제 문서": {
+          "target": "reg-docs",
+          "missing_ids": [],
+          "missing": []
+        },
+        "정책": {
+          "target": "policies",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "89197014d71365f37159bd56ba8908ca10dacf2a427fed91a9b634e587c4bab9"
+    },
+    "reg-jurisdictions": {
+      "rows": 13,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "시행 전·초안": {
+          "target": "reg-docs",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "660ef23e7117ff7b68b5e02666c3144bb31d9d6823220f35bcdffca7377f2819"
+    },
+    "reg-clauses": {
+      "rows": 124,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "능력": {
+          "target": "reg-capabilities",
+          "missing_ids": [],
+          "missing": []
+        },
+        "요구 ID": {
+          "target": "reg-requirements",
+          "missing_ids": [],
+          "missing": []
+        },
+        "규제 문서": {
+          "target": "reg-docs",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "c2ef790c903240eff33137cb0f084e4ae020fb0db212f3674fae7d1f03814d2b"
+    },
+    "ent-requirements": {
+      "rows": 80,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "52d21853b2af294cbebc5ec52bfdafcf0f1db08849f114c3509638a601890432"
+    },
+    "code-structure": {
+      "rows": 801,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "기준 커밋": {
+          "target": "commits",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "bd389a9bccc310533f2c9e7e87bc90515175639fdcf88efa1ed23e48809d760b"
+    },
+    "competitor-map": {
+      "rows": 21,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "요구 ID": {
+          "target": "ent-requirements",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "3e4833f435c69290561974958d6846a7c3f378e2e19c8d9f5f91159538aa0c0a"
+    },
+    "integrations": {
+      "rows": 7,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "737db2fa82079dc7331e65c6a22bab12415daca7dbc5e9fe88a51fc1cdfe190c"
+    },
+    "integration-cases": {
+      "rows": 50,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "dc9980ed25288d817ad6696fa8a12e4f63e2f0258fa521bfbce909f10726cd90"
+    },
+    "mcp-candidates": {
+      "rows": 14,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "시험": {
+          "target": "experiments",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "4b9506c2edd4ac079554abb7c54fe3a683f6940fe3b0cb0b4b3d1780c38d5199"
+    },
+    "skill-candidates": {
+      "rows": 9,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "47d94ec014a47c1afb833983a3320410cbea5e1c76b856553efdfb8ac08c3508"
+    },
+    "oss-reuse": {
+      "rows": 8,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "시험": {
+          "target": "experiments",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "5cafbbc3f6b293f097570afa8c2ef8f30f7c77dd007912ff848b3218e75f7709"
+    },
+    "solutions": {
+      "rows": 9,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "79a0efebc17296b85539f7018d3dcd8c093480db36fa4cee465731864e4a9306"
+    },
+    "papers": {
+      "rows": 264,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "e6d53848880c37087e3fe1948f8d0ebba3a18f16d662651cf9d450c380cf8501"
+    },
+    "reference-updates": {
+      "rows": 5,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "시험": {
+          "target": "experiments",
+          "missing_ids": [],
+          "missing": []
+        },
+        "기존 자료": {
+          "target": "papers",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "0ed736334b8d8ddb57a12e2471ea599498997469a1af556abf69d7fe602f1908"
+    },
+    "imports": {
+      "rows": 22,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {
+        "원천 ID": {
+          "target": "papers",
+          "missing_ids": [],
+          "missing": []
+        }
+      },
+      "sha256": "4a13eede64119fe5d42a1871e5104594909a191e2847ad56c1f4a76f1b896911"
+    },
+    "docs": {
+      "rows": 546,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "bf6108326ad07d70e56c1789ee402987292d08de5a8fb8d5012ebb20844b0632"
+    },
+    "enterprise-summary": {
+      "rows": 10,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "e14897d31d08151baf5982a4b5519061dd6906695835198c9d371b7f2784673e"
+    }
+  },
+  "duplicate_ids": 0,
+  "format_errors": 0,
+  "missing_links": 2
+}

@@ -1,0 +1,4057 @@
+{
+  "generated_at": "2026-10-18T12:41:42+09:00",
+  "source_head": "e6b4ae9193956c6be345466d3081e80664543dc7",
+  "raw_base": "https://raw.githubusercontent.com/MCP-governance/mcp-gateway/<커밋>/research/llm-wiki/sheet/tabs/",
+  "tabs": [
+    {
+      "order": 1,
+      "title": "요약",
+      "slug": null,
+      "group": "관리",
+      "kind": null,
+      "csv": null,
+      "rows": 0,
+      "columns": [],
+      "id_column": "ID",
+      "links": {},
+      "sources": []
+    },
+    {
+      "order": 2,
+      "title": "WBS",
+      "slug": "wbs",
+      "group": "관리",
+      "kind": "관리",
+      "csv": "tabs/02-wbs.csv",
+      "rows": 57,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "목표",
+          "formula": false
+        },
+        {
+          "name": "목표명",
+          "formula": false
+        },
+        {
+          "name": "작업",
+          "formula": false
+        },
+        {
+          "name": "구분",
+          "formula": false
+        },
+        {
+          "name": "우선",
+          "formula": false
+        },
+        {
+          "name": "구현",
+          "formula": false
+        },
+        {
+          "name": "회귀",
+          "formula": false
+        },
+        {
+          "name": "배포",
+          "formula": false
+        },
+        {
+          "name": "실기기",
+          "formula": false
+        },
+        {
+          "name": "검수",
+          "formula": false
+        },
+        {
+          "name": "진척률(수식)",
+          "formula": true
+        },
+        {
+          "name": "상태(수식)",
+          "formula": true
+        },
+        {
+          "name": "담당",
+          "formula": false
+        },
+        {
+          "name": "진행 메모",
+          "formula": false
+        },
+        {
+          "name": "계획 일정",
+          "formula": false
+        },
+        {
+          "name": "완료 조건",
+          "formula": false
+        },
+        {
+          "name": "남은 일",
+          "formula": false
+        },
+        {
+          "name": "기능",
+          "formula": false
+        },
+        {
+          "name": "정책",
+          "formula": false
+        },
+        {
+          "name": "백로그",
+          "formula": false
+        },
+        {
+          "name": "결정",
+          "formula": false
+        },
+        {
+          "name": "시험",
+          "formula": false
+        },
+        {
+          "name": "구성요소",
+          "formula": false
+        },
+        {
+          "name": "코드",
+          "formula": false
+        },
+        {
+          "name": "회귀 시험",
+          "formula": false
+        },
+        {
+          "name": "근거 자료",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "기능": "features",
+        "정책": "policies",
+        "백로그": "backlog",
+        "결정": "decisions",
+        "시험": "experiments",
+        "구성요소": "components"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/development-wbs/snapshot.json",
+        "research/llm-wiki/analysis/feature-spec-2026-10-17/feature-spec.json",
+        "research/development-status-site/owners.json"
+      ]
+    },
+    {
+      "order": 3,
+      "title": "백로그",
+      "slug": "backlog",
+      "group": "관리",
+      "kind": "관리",
+      "csv": "tabs/03-backlog.csv",
+      "rows": 73,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "작업",
+          "formula": false
+        },
+        {
+          "name": "상태",
+          "formula": false
+        },
+        {
+          "name": "진행",
+          "formula": false
+        },
+        {
+          "name": "완료 조건",
+          "formula": false
+        },
+        {
+          "name": "WBS",
+          "formula": false
+        },
+        {
+          "name": "결정",
+          "formula": false
+        },
+        {
+          "name": "근거 자료",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "WBS": "wbs",
+        "결정": "decisions"
+      },
+      "sources": [
+        "research/llm-wiki/status/backlog.md"
+      ]
+    },
+    {
+      "order": 4,
+      "title": "결정",
+      "slug": "decisions",
+      "group": "관리",
+      "kind": "관리",
+      "csv": "tabs/04-decisions.csv",
+      "rows": 125,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "날짜",
+          "formula": false
+        },
+        {
+          "name": "제목",
+          "formula": false
+        },
+        {
+          "name": "요지",
+          "formula": false
+        },
+        {
+          "name": "백로그",
+          "formula": false
+        },
+        {
+          "name": "WBS",
+          "formula": false
+        },
+        {
+          "name": "커밋",
+          "formula": false
+        },
+        {
+          "name": "문서",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "백로그": "backlog",
+        "WBS": "wbs",
+        "커밋": "commits"
+      },
+      "sources": [
+        "docs/ai/DECISIONS.md"
+      ]
+    },
+    {
+      "order": 5,
+      "title": "개발이력",
+      "slug": "commits",
+      "group": "관리",
+      "kind": "참조",
+      "csv": "tabs/05-commits.csv",
+      "rows": 330,
+      "columns": [
+        {
+          "name": "커밋",
+          "formula": false
+        },
+        {
+          "name": "날짜",
+          "formula": false
+        },
+        {
+          "name": "작성자",
+          "formula": false
+        },
+        {
+          "name": "유형",
+          "formula": false
+        },
+        {
+          "name": "범위",
+          "formula": false
+        },
+        {
+          "name": "요약",
+          "formula": false
+        },
+        {
+          "name": "결정",
+          "formula": false
+        },
+        {
+          "name": "백로그",
+          "formula": false
+        },
+        {
+          "name": "WBS",
+          "formula": false
+        },
+        {
+          "name": "병합",
+          "formula": false
+        },
+        {
+          "name": "기기 배포",
+          "formula": false
+        },
+        {
+          "name": "링크",
+          "formula": false
+        }
+      ],
+      "id_column": "커밋",
+      "links": {
+        "결정": "decisions",
+        "백로그": "backlog",
+        "WBS": "wbs",
+        "기기 배포": "deploys"
+      },
+      "sources": [
+        "git log main"
+      ]
+    },
+    {
+      "order": 6,
+      "title": "배포",
+      "slug": "deploys",
+      "group": "관리",
+      "kind": "관리",
+      "csv": "tabs/06-deploys.csv",
+      "rows": 18,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "날짜",
+          "formula": false
+        },
+        {
+          "name": "대상",
+          "formula": false
+        },
+        {
+          "name": "커밋",
+          "formula": false
+        },
+        {
+          "name": "브랜치",
+          "formula": false
+        },
+        {
+          "name": "내용",
+          "formula": false
+        },
+        {
+          "name": "근거 자료",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "커밋": "commits"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/wbs-1015/deploy.json",
+        "research/llm-wiki/analysis/wbs-1017/deploy-abd.json",
+        "research/llm-wiki/analysis/wbs-1017/deploy-ce.json",
+        "research/llm-wiki/analysis/wbs-1017/deploy-hi-1018.md",
+        "research/llm-wiki/analysis/wbs-1017/deploy-tls.json",
+        "research/llm-wiki/analysis/wbs-1017/pj1-reinstall-d119.json",
+        "research/llm-wiki/analysis/wbs-1017/pj3-windows-kit-1018.md",
+        "research/llm-wiki/status/current.md",
+        "research/llm-wiki/status/reports/2026-10-13-claude-code-review.md",
+        "research/llm-wiki/status/reports/2026-10-13-development-goals.md",
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md",
+        "research/llm-wiki/status/reports/2026-10-13-enterprise-claude-review.md",
+        "research/llm-wiki/status/reports/2026-10-13-enterprise-results.md",
+        "research/llm-wiki/status/reports/2026-10-13-feature-design.md",
+        "research/llm-wiki/status/reports/2026-10-13-interop-review.md",
+        "research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md",
+        "research/llm-wiki/status/reports/2026-10-13-result-boundary-review.md",
+        "research/llm-wiki/status/reports/2026-10-13-wiki-bootstrap.md",
+        "research/llm-wiki/status/reports/2026-10-14-e13-local-mcp-natural-language.md",
+        "research/llm-wiki/status/reports/2026-10-14-endpoint-log-wbs.md",
+        "research/llm-wiki/status/reports/2026-10-14-endpoint-telemetry-fix.md",
+        "research/llm-wiki/status/reports/2026-10-14-local-mcp-endpoint.md",
+        "research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.md",
+        "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md",
+        "research/llm-wiki/status/reports/2026-10-14-reference-fill.md",
+        "research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md",
+        "research/llm-wiki/status/reports/2026-10-15-clean-e2e.md",
+        "research/llm-wiki/status/reports/2026-10-15-dev35-loopback.md",
+        "research/llm-wiki/status/reports/2026-10-15-dev38-runtime.md",
+        "research/llm-wiki/status/reports/2026-10-15-drive-deliverables.md",
+        "research/llm-wiki/status/reports/2026-10-15-endpoint-evidence.md",
+        "research/llm-wiki/status/reports/2026-10-15-inspection-corpus.md",
+        "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+        "research/llm-wiki/status/reports/2026-10-15-oss-analysis-audit.md",
+        "research/llm-wiki/status/reports/2026-10-15-oss-deep-analysis.md",
+        "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+        "research/llm-wiki/status/reports/2026-10-15-upstream-session-reuse-design.md",
+        "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+        "research/llm-wiki/status/reports/2026-10-15-wiki-consolidation.md",
+        "research/llm-wiki/status/reports/2026-10-17-compliance-references.md",
+        "research/llm-wiki/status/reports/2026-10-17-dest-pin-credential-redaction.md",
+        "research/llm-wiki/status/reports/2026-10-17-feature-spec-wbs.md",
+        "research/llm-wiki/status/reports/2026-10-17-loopback-owner-replies-d119.md",
+        "research/llm-wiki/status/reports/2026-10-17-ops-response-d120-d123.md",
+        "research/llm-wiki/status/reports/2026-10-17-pol-pac-mapping-opa-labels.md",
+        "research/llm-wiki/status/reports/2026-10-17-policy50-gap-references.md",
+        "research/llm-wiki/status/reports/2026-10-17-response-cap-idempotency.md",
+        "research/llm-wiki/status/reports/2026-10-17-selective-restriction-siem.md",
+        "research/llm-wiki/status/reports/2026-10-17-upstream-session-reuse-stage2.md",
+        "research/llm-wiki/status/reports/2026-10-17-windows-kit-wizard-tray.md",
+        "research/llm-wiki/status/reports/2026-10-18-field-tls-d124-merge.md",
+        "research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md"
+      ]
+    },
+    {
+      "order": 7,
+      "title": "기능",
+      "slug": "features",
+      "group": "제품",
+      "kind": "관리",
+      "csv": "tabs/07-features.csv",
+      "rows": 64,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "대분류",
+          "formula": false
+        },
+        {
+          "name": "기능",
+          "formula": false
+        },
+        {
+          "name": "설명",
+          "formula": false
+        },
+        {
+          "name": "상태",
+          "formula": false
+        },
+        {
+          "name": "정책",
+          "formula": false
+        },
+        {
+          "name": "구현 수단",
+          "formula": false
+        },
+        {
+          "name": "비고",
+          "formula": false
+        },
+        {
+          "name": "WBS",
+          "formula": false
+        },
+        {
+          "name": "연결 근거",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "정책": "policies",
+        "WBS": "wbs"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/feature-spec-2026-10-17/feature-spec.json",
+        "research/llm-wiki/analysis/feature-spec-2026-10-17/README.md",
+        "research/llm-wiki/sheet/seed/feature-wbs.csv"
+      ]
+    },
+    {
+      "order": 8,
+      "title": "구성요소",
+      "slug": "components",
+      "group": "제품",
+      "kind": "관리",
+      "csv": "tabs/08-components.csv",
+      "rows": 70,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "이름",
+          "formula": false
+        },
+        {
+          "name": "분류",
+          "formula": false
+        },
+        {
+          "name": "상태",
+          "formula": false
+        },
+        {
+          "name": "위치",
+          "formula": false
+        },
+        {
+          "name": "역할",
+          "formula": false
+        },
+        {
+          "name": "버전",
+          "formula": false
+        },
+        {
+          "name": "라이선스",
+          "formula": false
+        },
+        {
+          "name": "저장소",
+          "formula": false
+        },
+        {
+          "name": "WBS",
+          "formula": false
+        },
+        {
+          "name": "OSS 재사용",
+          "formula": false
+        },
+        {
+          "name": "구조도",
+          "formula": false
+        },
+        {
+          "name": "아이콘",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "WBS": "wbs",
+        "OSS 재사용": "oss-reuse"
+      },
+      "sources": [
+        "research/llm-wiki/sheet/seed/components.csv"
+      ]
+    },
+    {
+      "order": 9,
+      "title": "MVP 기능",
+      "slug": "mvp",
+      "group": "제품",
+      "kind": "원본",
+      "csv": "tabs/09-mvp.csv",
+      "rows": 24,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "대분류",
+          "formula": false
+        },
+        {
+          "name": "소분류",
+          "formula": false
+        },
+        {
+          "name": "핵심 기능",
+          "formula": false
+        },
+        {
+          "name": "적용 오픈소스",
+          "formula": false
+        },
+        {
+          "name": "자체 구현·확인 기준",
+          "formula": false
+        },
+        {
+          "name": "개발 목표",
+          "formula": false
+        },
+        {
+          "name": "남은 확인",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/analysis/development-wbs/originals/MCP_보안거버넌스_MVP_WBS_2026-10-03.xlsx",
+        "research/llm-wiki/analysis/drive-curation/README.md"
+      ]
+    },
+    {
+      "order": 10,
+      "title": "원 계획",
+      "slug": "plan-v15",
+      "group": "관리",
+      "kind": "원본",
+      "csv": "tabs/10-plan-v15.csv",
+      "rows": 137,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "구분",
+          "formula": false
+        },
+        {
+          "name": "대분류",
+          "formula": false
+        },
+        {
+          "name": "작업",
+          "formula": false
+        },
+        {
+          "name": "논문",
+          "formula": false
+        },
+        {
+          "name": "산출물",
+          "formula": false
+        },
+        {
+          "name": "9월 1주",
+          "formula": false
+        },
+        {
+          "name": "9월 2주",
+          "formula": false
+        },
+        {
+          "name": "9월 3주",
+          "formula": false
+        },
+        {
+          "name": "9월 4주",
+          "formula": false
+        },
+        {
+          "name": "10월 1주",
+          "formula": false
+        },
+        {
+          "name": "10월 2주",
+          "formula": false
+        },
+        {
+          "name": "10월 3주",
+          "formula": false
+        },
+        {
+          "name": "10월 4주",
+          "formula": false
+        },
+        {
+          "name": "10월 5주",
+          "formula": false
+        },
+        {
+          "name": "11월 1주",
+          "formula": false
+        },
+        {
+          "name": "11월 2주",
+          "formula": false
+        },
+        {
+          "name": "11월 3주",
+          "formula": false
+        },
+        {
+          "name": "11월 4주",
+          "formula": false
+        },
+        {
+          "name": "12월 1주",
+          "formula": false
+        },
+        {
+          "name": "12월 2주",
+          "formula": false
+        },
+        {
+          "name": "12월 3주",
+          "formula": false
+        },
+        {
+          "name": "12월 4주",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/threats/originals/MCP_보안_거버넌스_Policy_as_Code_WBS_V1.5.xlsm"
+      ]
+    },
+    {
+      "order": 11,
+      "title": "정책",
+      "slug": "policies",
+      "group": "정책",
+      "kind": "관리",
+      "csv": "tabs/11-policies.csv",
+      "rows": 50,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "영역",
+          "formula": false
+        },
+        {
+          "name": "정책명",
+          "formula": false
+        },
+        {
+          "name": "정책 내용",
+          "formula": false
+        },
+        {
+          "name": "CIA 영향",
+          "formula": false
+        },
+        {
+          "name": "자동화 분류",
+          "formula": false
+        },
+        {
+          "name": "현재",
+          "formula": false
+        },
+        {
+          "name": "개발 후",
+          "formula": false
+        },
+        {
+          "name": "관련 추가 개발",
+          "formula": false
+        },
+        {
+          "name": "자동화 한계",
+          "formula": false
+        },
+        {
+          "name": "기능",
+          "formula": false
+        },
+        {
+          "name": "WBS",
+          "formula": false
+        },
+        {
+          "name": "규제 조항 수",
+          "formula": false
+        },
+        {
+          "name": "구속력 의무",
+          "formula": false
+        },
+        {
+          "name": "요구 ID",
+          "formula": false
+        },
+        {
+          "name": "번호 대응",
+          "formula": false
+        },
+        {
+          "name": "근거",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "기능": "features",
+        "WBS": "wbs",
+        "관련 추가 개발": "wbs",
+        "요구 ID": "reg-requirements",
+        "번호 대응": "policy-id-map"
+      },
+      "sources": [
+        "research/llm-wiki/threats/originals/MCP_보안정책50_2026-10-14.xlsm",
+        "research/llm-wiki/analysis/feature-spec-2026-10-17/feature-spec.json",
+        "research/llm-wiki/analysis/compliance/pol-legal-basis.json",
+        "research/llm-wiki/analysis/drive-curation/policy-id-mapping.json",
+        "research/llm-wiki/analysis/drive-curation/policy-50-crosswalk.json"
+      ]
+    },
+    {
+      "order": 12,
+      "title": "정책 상세",
+      "slug": "policies-detail",
+      "group": "정책",
+      "kind": "원본",
+      "csv": "tabs/12-policies-detail.csv",
+      "rows": 24,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "영역",
+          "formula": false
+        },
+        {
+          "name": "정책명",
+          "formula": false
+        },
+        {
+          "name": "MCP 구성요소",
+          "formula": false
+        },
+        {
+          "name": "보안 위협",
+          "formula": false
+        },
+        {
+          "name": "정책 내용",
+          "formula": false
+        },
+        {
+          "name": "추가 설명",
+          "formula": false
+        },
+        {
+          "name": "CIA 영향",
+          "formula": false
+        },
+        {
+          "name": "MCP 명세",
+          "formula": false
+        },
+        {
+          "name": "MCP 보안 권고",
+          "formula": false
+        },
+        {
+          "name": "OWASP 상위 위협",
+          "formula": false
+        },
+        {
+          "name": "OWASP 보안 지침",
+          "formula": false
+        },
+        {
+          "name": "ISO 42001",
+          "formula": false
+        },
+        {
+          "name": "ISMS-P",
+          "formula": false
+        },
+        {
+          "name": "NIST 위험관리",
+          "formula": false
+        },
+        {
+          "name": "개인정보 보호법",
+          "formula": false
+        },
+        {
+          "name": "인공지능기본법",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/threats/originals/MCP_보안정책50_2026-10-14.xlsm"
+      ]
+    },
+    {
+      "order": 13,
+      "title": "정책 독스용",
+      "slug": "policies-docs",
+      "group": "정책",
+      "kind": "원본",
+      "csv": "tabs/13-policies-docs.csv",
+      "rows": 50,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "영역",
+          "formula": false
+        },
+        {
+          "name": "정책명",
+          "formula": false
+        },
+        {
+          "name": "정책 내용",
+          "formula": false
+        },
+        {
+          "name": "CIA 영향",
+          "formula": false
+        },
+        {
+          "name": "MCP 명세",
+          "formula": false
+        },
+        {
+          "name": "MCP 보안 권고",
+          "formula": false
+        },
+        {
+          "name": "OWASP 상위 위협",
+          "formula": false
+        },
+        {
+          "name": "OWASP 보안 지침",
+          "formula": false
+        },
+        {
+          "name": "ISO 42001",
+          "formula": false
+        },
+        {
+          "name": "ISMS-P",
+          "formula": false
+        },
+        {
+          "name": "NIST 위험관리",
+          "formula": false
+        },
+        {
+          "name": "개인정보 보호법",
+          "formula": false
+        },
+        {
+          "name": "인공지능기본법",
+          "formula": false
+        },
+        {
+          "name": "열 15",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/threats/originals/MCP_보안정책50_2026-10-14.xlsm"
+      ]
+    },
+    {
+      "order": 14,
+      "title": "추가 정책",
+      "slug": "policies-extra",
+      "group": "정책",
+      "kind": "원본",
+      "csv": "tabs/14-policies-extra.csv",
+      "rows": 50,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "영역",
+          "formula": false
+        },
+        {
+          "name": "정책명",
+          "formula": false
+        },
+        {
+          "name": "정책 내용",
+          "formula": false
+        },
+        {
+          "name": "CIA 영향",
+          "formula": false
+        },
+        {
+          "name": "MCP 명세",
+          "formula": false
+        },
+        {
+          "name": "MCP 보안 권고",
+          "formula": false
+        },
+        {
+          "name": "OWASP 상위 위협",
+          "formula": false
+        },
+        {
+          "name": "OWASP 보안 지침",
+          "formula": false
+        },
+        {
+          "name": "ISO 42001",
+          "formula": false
+        },
+        {
+          "name": "ISMS-P",
+          "formula": false
+        },
+        {
+          "name": "NIST 위험관리",
+          "formula": false
+        },
+        {
+          "name": "개인정보 보호법",
+          "formula": false
+        },
+        {
+          "name": "인공지능기본법",
+          "formula": false
+        },
+        {
+          "name": "열 15",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/threats/originals/MCP_보안정책-추가25.xlsm"
+      ]
+    },
+    {
+      "order": 15,
+      "title": "정책 번호 대응",
+      "slug": "policy-id-map",
+      "group": "정책",
+      "kind": "참조",
+      "csv": "tabs/15-policy-id-map.csv",
+      "rows": 50,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "정책명",
+          "formula": false
+        },
+        {
+          "name": "정책",
+          "formula": false
+        },
+        {
+          "name": "독스용 번호",
+          "formula": false
+        },
+        {
+          "name": "원본 번호",
+          "formula": false
+        },
+        {
+          "name": "실행 번호",
+          "formula": false
+        },
+        {
+          "name": "검수 작업",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "정책": "policies",
+        "독스용 번호": "policies-docs",
+        "원본 번호": "policies-detail",
+        "검수 작업": "wbs"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/drive-curation/policy-id-mapping.json",
+        "research/llm-wiki/analysis/feature-spec-2026-10-17/feature-spec.json",
+        "research/llm-wiki/analysis/development-wbs/snapshot-before-wbs-1017.json"
+      ]
+    },
+    {
+      "order": 16,
+      "title": "시험",
+      "slug": "experiments",
+      "group": "검증",
+      "kind": "관리",
+      "csv": "tabs/16-experiments.csv",
+      "rows": 13,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "이름",
+          "formula": false
+        },
+        {
+          "name": "목적",
+          "formula": false
+        },
+        {
+          "name": "조건",
+          "formula": false
+        },
+        {
+          "name": "판정 기준",
+          "formula": false
+        },
+        {
+          "name": "상태",
+          "formula": false
+        },
+        {
+          "name": "정책",
+          "formula": false
+        },
+        {
+          "name": "WBS",
+          "formula": false
+        },
+        {
+          "name": "백로그",
+          "formula": false
+        },
+        {
+          "name": "카드",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "정책": "policies",
+        "WBS": "wbs",
+        "백로그": "backlog"
+      },
+      "sources": [
+        "research/llm-wiki/catalogs/experiments.json",
+        "research/llm-wiki/experiments/E01-approved-read.md",
+        "research/llm-wiki/experiments/E02-pii-result-masking.md",
+        "research/llm-wiki/experiments/E03-pii-external-egress.md",
+        "research/llm-wiki/experiments/E04-untrusted-argument.md",
+        "research/llm-wiki/experiments/E05-ssrf-normalization.md",
+        "research/llm-wiki/experiments/E06-input-schema.md",
+        "research/llm-wiki/experiments/E07-contract-drift.md",
+        "research/llm-wiki/experiments/E08-pdp-failure.md",
+        "research/llm-wiki/experiments/E09-principal-binding.md",
+        "research/llm-wiki/experiments/E10-concurrent-duplicate.md",
+        "research/llm-wiki/experiments/E11-termination-evidence.md",
+        "research/llm-wiki/experiments/E12-managed-admission.md",
+        "research/llm-wiki/experiments/E13-local-bypass.md"
+      ]
+    },
+    {
+      "order": 17,
+      "title": "위협",
+      "slug": "threats",
+      "group": "검증",
+      "kind": "참조",
+      "csv": "tabs/17-threats.csv",
+      "rows": 24,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "이름",
+          "formula": false
+        },
+        {
+          "name": "원본 ID",
+          "formula": false
+        },
+        {
+          "name": "위협",
+          "formula": false
+        },
+        {
+          "name": "경계",
+          "formula": false
+        },
+        {
+          "name": "정책 후보",
+          "formula": false
+        },
+        {
+          "name": "코드 후보",
+          "formula": false
+        },
+        {
+          "name": "확인 수준",
+          "formula": false
+        },
+        {
+          "name": "한계",
+          "formula": false
+        },
+        {
+          "name": "위험 ID",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "원본 ID": "policies-detail",
+        "위험 ID": "local-tool-risks"
+      },
+      "sources": [
+        "research/llm-wiki/catalogs/threats.json"
+      ]
+    },
+    {
+      "order": 18,
+      "title": "로컬 도구 위험",
+      "slug": "local-tool-risks",
+      "group": "검증",
+      "kind": "참조",
+      "csv": "tabs/18-local-tool-risks.csv",
+      "rows": 13,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "이름",
+          "formula": false
+        },
+        {
+          "name": "원본 통제",
+          "formula": false
+        },
+        {
+          "name": "도구",
+          "formula": false
+        },
+        {
+          "name": "경계",
+          "formula": false
+        },
+        {
+          "name": "관측",
+          "formula": false
+        },
+        {
+          "name": "확인 수준",
+          "formula": false
+        },
+        {
+          "name": "필요 통제",
+          "formula": false
+        },
+        {
+          "name": "남은 일",
+          "formula": false
+        },
+        {
+          "name": "문서",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "원본 통제": "policies-detail"
+      },
+      "sources": [
+        "research/llm-wiki/catalogs/local-tool-risks.json"
+      ]
+    },
+    {
+      "order": 19,
+      "title": "권한 근거",
+      "slug": "endpoint-permission-refs",
+      "group": "검증",
+      "kind": "참조",
+      "csv": "tabs/19-endpoint-permission-refs.csv",
+      "rows": 12,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "이름",
+          "formula": false
+        },
+        {
+          "name": "링크",
+          "formula": false
+        },
+        {
+          "name": "버전",
+          "formula": false
+        },
+        {
+          "name": "커밋",
+          "formula": false
+        },
+        {
+          "name": "라이선스",
+          "formula": false
+        },
+        {
+          "name": "확보일",
+          "formula": false
+        },
+        {
+          "name": "읽은 범위",
+          "formula": false
+        },
+        {
+          "name": "공식 내용",
+          "formula": false
+        },
+        {
+          "name": "적용",
+          "formula": false
+        },
+        {
+          "name": "검증 조건",
+          "formula": false
+        },
+        {
+          "name": "한계",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/catalogs/endpoint-permission-references.json"
+      ]
+    },
+    {
+      "order": 20,
+      "title": "규제 문서",
+      "slug": "reg-docs",
+      "group": "규제",
+      "kind": "참조",
+      "csv": "tabs/20-reg-docs.csv",
+      "rows": 61,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "이름",
+          "formula": false
+        },
+        {
+          "name": "관할",
+          "formula": false
+        },
+        {
+          "name": "문서 유형",
+          "formula": false
+        },
+        {
+          "name": "구속력",
+          "formula": false
+        },
+        {
+          "name": "상태",
+          "formula": false
+        },
+        {
+          "name": "주요 일자",
+          "formula": false
+        },
+        {
+          "name": "조항 수",
+          "formula": false
+        },
+        {
+          "name": "공식 페이지",
+          "formula": false
+        },
+        {
+          "name": "문서",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/analysis/compliance/requirements.json"
+      ]
+    },
+    {
+      "order": 21,
+      "title": "규제 요구",
+      "slug": "reg-requirements",
+      "group": "규제",
+      "kind": "참조",
+      "csv": "tabs/21-reg-requirements.csv",
+      "rows": 1223,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "규제 문서",
+          "formula": false
+        },
+        {
+          "name": "관할",
+          "formula": false
+        },
+        {
+          "name": "조항",
+          "formula": false
+        },
+        {
+          "name": "주제",
+          "formula": false
+        },
+        {
+          "name": "강도",
+          "formula": false
+        },
+        {
+          "name": "구속력",
+          "formula": false
+        },
+        {
+          "name": "대상",
+          "formula": false
+        },
+        {
+          "name": "기한",
+          "formula": false
+        },
+        {
+          "name": "요구 내용",
+          "formula": false
+        },
+        {
+          "name": "통제",
+          "formula": false
+        },
+        {
+          "name": "정책",
+          "formula": false
+        },
+        {
+          "name": "구속력 의무",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "규제 문서": "reg-docs",
+        "정책": "policies"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/compliance/requirements.json"
+      ]
+    },
+    {
+      "order": 22,
+      "title": "주제×관할",
+      "slug": "reg-matrix",
+      "group": "규제",
+      "kind": "참조",
+      "csv": "tabs/22-reg-matrix.csv",
+      "rows": 19,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "주제",
+          "formula": false
+        },
+        {
+          "name": "한국",
+          "formula": false
+        },
+        {
+          "name": "호주",
+          "formula": false
+        },
+        {
+          "name": "AZ",
+          "formula": false
+        },
+        {
+          "name": "캐나다",
+          "formula": false
+        },
+        {
+          "name": "중국",
+          "formula": false
+        },
+        {
+          "name": "EU",
+          "formula": false
+        },
+        {
+          "name": "인도",
+          "formula": false
+        },
+        {
+          "name": "국제",
+          "formula": false
+        },
+        {
+          "name": "일본",
+          "formula": false
+        },
+        {
+          "name": "싱가포르",
+          "formula": false
+        },
+        {
+          "name": "영국",
+          "formula": false
+        },
+        {
+          "name": "미국 연방",
+          "formula": false
+        },
+        {
+          "name": "미국 주",
+          "formula": false
+        },
+        {
+          "name": "합계",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/analysis/compliance/compliance-requirements.xlsx"
+      ]
+    },
+    {
+      "order": 23,
+      "title": "규제 계획 요약",
+      "slug": "reg-plan-summary",
+      "group": "규제",
+      "kind": "참조",
+      "csv": "tabs/23-reg-plan-summary.csv",
+      "rows": 7,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "값",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/analysis/compliance/dev-plan/dev-plan.json",
+        "research/llm-wiki/analysis/compliance/requirements.json"
+      ]
+    },
+    {
+      "order": 24,
+      "title": "규제 능력",
+      "slug": "reg-capabilities",
+      "group": "규제",
+      "kind": "참조",
+      "csv": "tabs/24-reg-capabilities.csv",
+      "rows": 7,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "이름",
+          "formula": false
+        },
+        {
+          "name": "규제 요구",
+          "formula": false
+        },
+        {
+          "name": "현재 기능",
+          "formula": false
+        },
+        {
+          "name": "남은 일",
+          "formula": false
+        },
+        {
+          "name": "제안",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "제안": "reg-proposals"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/compliance/dev-plan/dev-plan.json"
+      ]
+    },
+    {
+      "order": 25,
+      "title": "규제 개발 제안",
+      "slug": "reg-proposals",
+      "group": "규제",
+      "kind": "참조",
+      "csv": "tabs/25-reg-proposals.csv",
+      "rows": 7,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "이름",
+          "formula": false
+        },
+        {
+          "name": "능력",
+          "formula": false
+        },
+        {
+          "name": "확장 대상",
+          "formula": false
+        },
+        {
+          "name": "범위",
+          "formula": false
+        },
+        {
+          "name": "완료 조건",
+          "formula": false
+        },
+        {
+          "name": "선행",
+          "formula": false
+        },
+        {
+          "name": "일정",
+          "formula": false
+        },
+        {
+          "name": "결정 대기",
+          "formula": false
+        },
+        {
+          "name": "위험·한계",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        },
+        {
+          "name": "백로그",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "백로그": "backlog",
+        "능력": "reg-capabilities",
+        "선행": "backlog",
+        "결정 대기": "reg-decisions"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/compliance/dev-plan/dev-plan.json"
+      ]
+    },
+    {
+      "order": 26,
+      "title": "규제 보강",
+      "slug": "reg-reinforcements",
+      "group": "규제",
+      "kind": "참조",
+      "csv": "tabs/26-reg-reinforcements.csv",
+      "rows": 5,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "대상",
+          "formula": false
+        },
+        {
+          "name": "추가 조건",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "ID": "backlog"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/compliance/dev-plan/dev-plan.json"
+      ]
+    },
+    {
+      "order": 27,
+      "title": "규제 결정 대기",
+      "slug": "reg-decisions",
+      "group": "규제",
+      "kind": "참조",
+      "csv": "tabs/27-reg-decisions.csv",
+      "rows": 8,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "질문",
+          "formula": false
+        },
+        {
+          "name": "선택지",
+          "formula": false
+        },
+        {
+          "name": "권장",
+          "formula": false
+        },
+        {
+          "name": "필요 시점",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/analysis/compliance/dev-plan/dev-plan.json"
+      ]
+    },
+    {
+      "order": 28,
+      "title": "규제 첫 스프린트",
+      "slug": "reg-sprint",
+      "group": "규제",
+      "kind": "참조",
+      "csv": "tabs/28-reg-sprint.csv",
+      "rows": 6,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "작업",
+          "formula": false
+        },
+        {
+          "name": "완료 조건",
+          "formula": false
+        },
+        {
+          "name": "백로그",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "백로그": "backlog"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/compliance/dev-plan/dev-plan.json"
+      ]
+    },
+    {
+      "order": 29,
+      "title": "사고 기한",
+      "slug": "reg-incident-deadlines",
+      "group": "규제",
+      "kind": "참조",
+      "csv": "tabs/29-reg-incident-deadlines.csv",
+      "rows": 44,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "규제 문서",
+          "formula": false
+        },
+        {
+          "name": "관할",
+          "formula": false
+        },
+        {
+          "name": "조항",
+          "formula": false
+        },
+        {
+          "name": "기한",
+          "formula": false
+        },
+        {
+          "name": "주제",
+          "formula": false
+        },
+        {
+          "name": "강도",
+          "formula": false
+        },
+        {
+          "name": "구속력",
+          "formula": false
+        },
+        {
+          "name": "문서 상태",
+          "formula": false
+        },
+        {
+          "name": "정책",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "ID": "reg-requirements",
+        "규제 문서": "reg-docs",
+        "정책": "policies"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/compliance/dev-plan/dev-plan.json"
+      ]
+    },
+    {
+      "order": 30,
+      "title": "보존 기간",
+      "slug": "reg-retention",
+      "group": "규제",
+      "kind": "참조",
+      "csv": "tabs/30-reg-retention.csv",
+      "rows": 16,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "규제 문서",
+          "formula": false
+        },
+        {
+          "name": "관할",
+          "formula": false
+        },
+        {
+          "name": "조항",
+          "formula": false
+        },
+        {
+          "name": "기한",
+          "formula": false
+        },
+        {
+          "name": "주제",
+          "formula": false
+        },
+        {
+          "name": "강도",
+          "formula": false
+        },
+        {
+          "name": "구속력",
+          "formula": false
+        },
+        {
+          "name": "문서 상태",
+          "formula": false
+        },
+        {
+          "name": "정책",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "ID": "reg-requirements",
+        "규제 문서": "reg-docs",
+        "정책": "policies"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/compliance/dev-plan/dev-plan.json"
+      ]
+    },
+    {
+      "order": 31,
+      "title": "관할 요약",
+      "slug": "reg-jurisdictions",
+      "group": "규제",
+      "kind": "참조",
+      "csv": "tabs/31-reg-jurisdictions.csv",
+      "rows": 13,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "관할",
+          "formula": false
+        },
+        {
+          "name": "문서 수",
+          "formula": false
+        },
+        {
+          "name": "구속력 문서",
+          "formula": false
+        },
+        {
+          "name": "조항 수",
+          "formula": false
+        },
+        {
+          "name": "구속력 의무",
+          "formula": false
+        },
+        {
+          "name": "시행 전·초안",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "시행 전·초안": "reg-docs"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/compliance/requirements.json"
+      ]
+    },
+    {
+      "order": 32,
+      "title": "규제 근거 조항",
+      "slug": "reg-clauses",
+      "group": "규제",
+      "kind": "참조",
+      "csv": "tabs/32-reg-clauses.csv",
+      "rows": 124,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "능력",
+          "formula": false
+        },
+        {
+          "name": "요구 ID",
+          "formula": false
+        },
+        {
+          "name": "규제 문서",
+          "formula": false
+        },
+        {
+          "name": "관할",
+          "formula": false
+        },
+        {
+          "name": "조항",
+          "formula": false
+        },
+        {
+          "name": "요지",
+          "formula": false
+        },
+        {
+          "name": "강도",
+          "formula": false
+        },
+        {
+          "name": "구속력",
+          "formula": false
+        },
+        {
+          "name": "문서 상태",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "능력": "reg-capabilities",
+        "요구 ID": "reg-requirements",
+        "규제 문서": "reg-docs"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/compliance/dev-plan/dev-plan.json"
+      ]
+    },
+    {
+      "order": 33,
+      "title": "기업 요구",
+      "slug": "ent-requirements",
+      "group": "기업",
+      "kind": "참조",
+      "csv": "tabs/33-ent-requirements.csv",
+      "rows": 80,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "영역",
+          "formula": false
+        },
+        {
+          "name": "요구",
+          "formula": false
+        },
+        {
+          "name": "완료 조건",
+          "formula": false
+        },
+        {
+          "name": "음성·경계",
+          "formula": false
+        },
+        {
+          "name": "상태",
+          "formula": false
+        },
+        {
+          "name": "우선",
+          "formula": false
+        },
+        {
+          "name": "남은 일",
+          "formula": false
+        },
+        {
+          "name": "코드",
+          "formula": false
+        },
+        {
+          "name": "시험 근거",
+          "formula": false
+        },
+        {
+          "name": "출처",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/analysis/requirements.json"
+      ]
+    },
+    {
+      "order": 34,
+      "title": "코드 구조",
+      "slug": "code-structure",
+      "group": "기술",
+      "kind": "참조",
+      "csv": "tabs/34-code-structure.csv",
+      "rows": 801,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "파일",
+          "formula": false
+        },
+        {
+          "name": "함수",
+          "formula": false
+        },
+        {
+          "name": "시작 행",
+          "formula": false
+        },
+        {
+          "name": "끝 행",
+          "formula": false
+        },
+        {
+          "name": "비동기",
+          "formula": false
+        },
+        {
+          "name": "호출",
+          "formula": false
+        },
+        {
+          "name": "소스 상태",
+          "formula": false
+        },
+        {
+          "name": "해시",
+          "formula": false
+        },
+        {
+          "name": "기준 커밋",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "기준 커밋": "commits"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/code-structure.json",
+        "git show b63943272081338ae454eeaff4821b931ea36df9:full_stack_lab/gateway/app/classify.py",
+        "git show b63943272081338ae454eeaff4821b931ea36df9:full_stack_lab/gateway/app/core.py",
+        "git show b63943272081338ae454eeaff4821b931ea36df9:full_stack_lab/gateway/app/main.py",
+        "git show b63943272081338ae454eeaff4821b931ea36df9:full_stack_lab/gateway/app/textscan.py"
+      ]
+    },
+    {
+      "order": 35,
+      "title": "제품 기능 대조",
+      "slug": "competitor-map",
+      "group": "기업",
+      "kind": "참조",
+      "csv": "tabs/35-competitor-map.csv",
+      "rows": 21,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "요구 ID",
+          "formula": false
+        },
+        {
+          "name": "제품",
+          "formula": false
+        },
+        {
+          "name": "기능",
+          "formula": false
+        },
+        {
+          "name": "판본",
+          "formula": false
+        },
+        {
+          "name": "확인 수준",
+          "formula": false
+        },
+        {
+          "name": "남은 일",
+          "formula": false
+        },
+        {
+          "name": "근거 링크",
+          "formula": false
+        },
+        {
+          "name": "근거 자료",
+          "formula": false
+        },
+        {
+          "name": "분석 문서",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "요구 ID": "ent-requirements"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/competitor-mapping.json"
+      ]
+    },
+    {
+      "order": 36,
+      "title": "연동 대상",
+      "slug": "integrations",
+      "group": "기업",
+      "kind": "참조",
+      "csv": "tabs/36-integrations.csv",
+      "rows": 7,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "제품",
+          "formula": false
+        },
+        {
+          "name": "구분",
+          "formula": false
+        },
+        {
+          "name": "판본",
+          "formula": false
+        },
+        {
+          "name": "경로",
+          "formula": false
+        },
+        {
+          "name": "인증",
+          "formula": false
+        },
+        {
+          "name": "지원 기능",
+          "formula": false
+        },
+        {
+          "name": "라이선스",
+          "formula": false
+        },
+        {
+          "name": "연동 상태",
+          "formula": false
+        },
+        {
+          "name": "남은 일",
+          "formula": false
+        },
+        {
+          "name": "출처",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/analysis/integrations.json"
+      ]
+    },
+    {
+      "order": 37,
+      "title": "연동 시험",
+      "slug": "integration-cases",
+      "group": "기업",
+      "kind": "참조",
+      "csv": "tabs/37-integration-cases.csv",
+      "rows": 50,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "제품",
+          "formula": false
+        },
+        {
+          "name": "기능",
+          "formula": false
+        },
+        {
+          "name": "조건",
+          "formula": false
+        },
+        {
+          "name": "절차",
+          "formula": false
+        },
+        {
+          "name": "판정 기준",
+          "formula": false
+        },
+        {
+          "name": "음성 입력",
+          "formula": false
+        },
+        {
+          "name": "상태",
+          "formula": false
+        },
+        {
+          "name": "근거",
+          "formula": false
+        },
+        {
+          "name": "실패 시 수정",
+          "formula": false
+        },
+        {
+          "name": "코드",
+          "formula": false
+        },
+        {
+          "name": "출처",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/analysis/integration-cases.json"
+      ]
+    },
+    {
+      "order": 38,
+      "title": "MCP 대상",
+      "slug": "mcp-candidates",
+      "group": "기업",
+      "kind": "참조",
+      "csv": "tabs/38-mcp-candidates.csv",
+      "rows": 14,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "이름",
+          "formula": false
+        },
+        {
+          "name": "패키지",
+          "formula": false
+        },
+        {
+          "name": "버전",
+          "formula": false
+        },
+        {
+          "name": "전송",
+          "formula": false
+        },
+        {
+          "name": "인증 경계",
+          "formula": false
+        },
+        {
+          "name": "라이선스",
+          "formula": false
+        },
+        {
+          "name": "시험",
+          "formula": false
+        },
+        {
+          "name": "실행 상태",
+          "formula": false
+        },
+        {
+          "name": "확인 수준",
+          "formula": false
+        },
+        {
+          "name": "출처",
+          "formula": false
+        },
+        {
+          "name": "한계",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "시험": "experiments"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/mcp-candidates.json"
+      ]
+    },
+    {
+      "order": 39,
+      "title": "스킬 후보",
+      "slug": "skill-candidates",
+      "group": "기술",
+      "kind": "참조",
+      "csv": "tabs/39-skill-candidates.csv",
+      "rows": 9,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "이름",
+          "formula": false
+        },
+        {
+          "name": "저장소",
+          "formula": false
+        },
+        {
+          "name": "커밋",
+          "formula": false
+        },
+        {
+          "name": "라이선스",
+          "formula": false
+        },
+        {
+          "name": "상태",
+          "formula": false
+        },
+        {
+          "name": "활용 방법",
+          "formula": false
+        },
+        {
+          "name": "미확인 범위",
+          "formula": false
+        },
+        {
+          "name": "출처",
+          "formula": false
+        },
+        {
+          "name": "확인 수준",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/analysis/skill-candidates.json"
+      ]
+    },
+    {
+      "order": 40,
+      "title": "OSS 재사용",
+      "slug": "oss-reuse",
+      "group": "기술",
+      "kind": "참조",
+      "csv": "tabs/40-oss-reuse.csv",
+      "rows": 8,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "이름",
+          "formula": false
+        },
+        {
+          "name": "저장소",
+          "formula": false
+        },
+        {
+          "name": "커밋",
+          "formula": false
+        },
+        {
+          "name": "라이선스",
+          "formula": false
+        },
+        {
+          "name": "기존 코드",
+          "formula": false
+        },
+        {
+          "name": "상태",
+          "formula": false
+        },
+        {
+          "name": "활용 방법",
+          "formula": false
+        },
+        {
+          "name": "선정 조건",
+          "formula": false
+        },
+        {
+          "name": "시험",
+          "formula": false
+        },
+        {
+          "name": "출처",
+          "formula": false
+        },
+        {
+          "name": "확인 수준",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        },
+        {
+          "name": "심층 분석",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "시험": "experiments"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/oss-reuse.json",
+        "research/llm-wiki/analysis/oss-deep/_brief.md",
+        "research/llm-wiki/analysis/oss-deep/contextforge-hooks.md",
+        "research/llm-wiki/analysis/oss-deep/deps-presidio-gitleaks.md",
+        "research/llm-wiki/analysis/oss-deep/deps-sdk-authlib-opa.md",
+        "research/llm-wiki/analysis/oss-deep/legacy-cards.md",
+        "research/llm-wiki/analysis/oss-deep/litellm-mcp-path.md",
+        "research/llm-wiki/analysis/oss-deep/mcpx-cisco-scanner.md",
+        "research/llm-wiki/analysis/oss-deep/ms-mcp-gateway-session.md",
+        "research/llm-wiki/analysis/oss-deep/README.md",
+        "research/llm-wiki/analysis/oss-deep/redesign-2026-10-15.md",
+        "research/llm-wiki/analysis/oss-deep/toolhive-runtime.md"
+      ]
+    },
+    {
+      "order": 41,
+      "title": "제품 분석",
+      "slug": "solutions",
+      "group": "기업",
+      "kind": "참조",
+      "csv": "tabs/41-solutions.csv",
+      "rows": 9,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "이름",
+          "formula": false
+        },
+        {
+          "name": "종류",
+          "formula": false
+        },
+        {
+          "name": "커밋",
+          "formula": false
+        },
+        {
+          "name": "버전",
+          "formula": false
+        },
+        {
+          "name": "라이선스",
+          "formula": false
+        },
+        {
+          "name": "요약",
+          "formula": false
+        },
+        {
+          "name": "확인 수준",
+          "formula": false
+        },
+        {
+          "name": "확인일",
+          "formula": false
+        },
+        {
+          "name": "링크",
+          "formula": false
+        },
+        {
+          "name": "문서",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/catalogs/solutions.json"
+      ]
+    },
+    {
+      "order": 42,
+      "title": "논문",
+      "slug": "papers",
+      "group": "기술",
+      "kind": "참조",
+      "csv": "tabs/42-papers.csv",
+      "rows": 264,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "이름",
+          "formula": false
+        },
+        {
+          "name": "저자",
+          "formula": false
+        },
+        {
+          "name": "연도",
+          "formula": false
+        },
+        {
+          "name": "게재 상태",
+          "formula": false
+        },
+        {
+          "name": "학술지·학회",
+          "formula": false
+        },
+        {
+          "name": "DOI",
+          "formula": false
+        },
+        {
+          "name": "링크",
+          "formula": false
+        },
+        {
+          "name": "관련 작업",
+          "formula": false
+        },
+        {
+          "name": "읽은 범위",
+          "formula": false
+        },
+        {
+          "name": "확인 수준",
+          "formula": false
+        },
+        {
+          "name": "확인일",
+          "formula": false
+        },
+        {
+          "name": "라이선스 링크",
+          "formula": false
+        },
+        {
+          "name": "문서",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/catalogs/papers.json"
+      ]
+    },
+    {
+      "order": 43,
+      "title": "레퍼런스 갱신",
+      "slug": "reference-updates",
+      "group": "기술",
+      "kind": "참조",
+      "csv": "tabs/43-reference-updates.csv",
+      "rows": 5,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "이름",
+          "formula": false
+        },
+        {
+          "name": "DOI",
+          "formula": false
+        },
+        {
+          "name": "게재 상태",
+          "formula": false
+        },
+        {
+          "name": "학술지·학회",
+          "formula": false
+        },
+        {
+          "name": "게재일",
+          "formula": false
+        },
+        {
+          "name": "읽은 범위",
+          "formula": false
+        },
+        {
+          "name": "적용 방법",
+          "formula": false
+        },
+        {
+          "name": "도입 상태",
+          "formula": false
+        },
+        {
+          "name": "시험",
+          "formula": false
+        },
+        {
+          "name": "기존 자료",
+          "formula": false
+        },
+        {
+          "name": "출처",
+          "formula": false
+        },
+        {
+          "name": "확인 수준",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "시험": "experiments",
+        "기존 자료": "papers"
+      },
+      "sources": [
+        "research/llm-wiki/analysis/reference-updates.json"
+      ]
+    },
+    {
+      "order": 44,
+      "title": "도입 기록",
+      "slug": "imports",
+      "group": "기술",
+      "kind": "참조",
+      "csv": "tabs/44-imports.csv",
+      "rows": 22,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "원천 프로젝트",
+          "formula": false
+        },
+        {
+          "name": "원천 ID",
+          "formula": false
+        },
+        {
+          "name": "도입일",
+          "formula": false
+        },
+        {
+          "name": "파일",
+          "formula": false
+        },
+        {
+          "name": "배포 조건",
+          "formula": false
+        },
+        {
+          "name": "출처 기록",
+          "formula": false
+        },
+        {
+          "name": "세부",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {
+        "원천 ID": "papers"
+      },
+      "sources": [
+        "research/llm-wiki/catalogs/imports.json"
+      ]
+    },
+    {
+      "order": 45,
+      "title": "자료",
+      "slug": "docs",
+      "group": "관리",
+      "kind": "관리",
+      "csv": "tabs/45-docs.csv",
+      "rows": 546,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "제목",
+          "formula": false
+        },
+        {
+          "name": "종류",
+          "formula": false
+        },
+        {
+          "name": "날짜",
+          "formula": false
+        },
+        {
+          "name": "경로",
+          "formula": false
+        },
+        {
+          "name": "관련 ID",
+          "formula": false
+        },
+        {
+          "name": "상태",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "docs/ai/ARCHITECTURE.md",
+        "docs/ai/BENCHMARK_AGT_2026-10-05.md",
+        "docs/ai/BENCHMARK_GATEWAYS.md",
+        "docs/ai/BENCHMARK_IBM_CONTEXTFORGE.md",
+        "docs/ai/BENCHMARK_LITELLM.md",
+        "docs/ai/BENCHMARK_MICROSOFT.md",
+        "docs/ai/BENCHMARK_UI_ONBOARDING_2026-10-01.md",
+        "docs/ai/CONSOLE_UI.md",
+        "docs/ai/CONTROL_PLANES_2026-10-01.md",
+        "docs/ai/DATA_MODEL.md",
+        "docs/ai/DECISIONS.md",
+        "docs/ai/ENDPOINT_ONBOARDING_2026-10-04.md",
+        "docs/ai/FIELD.md",
+        "docs/ai/FIELD_MCP_CANDIDATES.md",
+        "docs/ai/FOLLOWUP_VALIDATION_2026-10-01.md",
+        "docs/ai/MCP_SERVERS.md",
+        "docs/ai/OPS_RESPONSE.md",
+        "docs/ai/OSS_ADOPTION_2026-10-03.md",
+        "docs/ai/OVERHAUL_VALIDATION_2026-09-30.md",
+        "docs/ai/PAC_MAPPING.md",
+        "docs/ai/PAC_RUNTIME_2026-10-01.md",
+        "docs/ai/PJ1_SIGNALS_2026-10-01.md",
+        "docs/ai/POLICY.md",
+        "docs/ai/README.md",
+        "docs/ai/REFERENCES_MCP_SECURITY_2026-10-05.md",
+        "docs/ai/REMASTER_2026-10-01.md",
+        "docs/ai/REMASTER_TASK_LEDGER_2026-10-01.md",
+        "docs/ai/ROADMAP.md",
+        "docs/ai/RUNBOOK.md",
+        "docs/ai/SECURITY_BOUNDARIES.md",
+        "docs/ai/TERMINATION_MODEL.md",
+        "docs/ai/TESTING.md",
+        "docs/ai/TROUBLESHOOTING.md",
+        "research/llm-wiki/AGENTS.md",
+        "research/llm-wiki/analysis/compliance/by-theme/access_control_identity.md",
+        "research/llm-wiki/analysis/compliance/by-theme/agentic_ai.md",
+        "research/llm-wiki/analysis/compliance/by-theme/automated_decision_rights.md",
+        "research/llm-wiki/analysis/compliance/by-theme/cross_border_transfer.md",
+        "research/llm-wiki/analysis/compliance/by-theme/data_minimisation_retention_deletion.md",
+        "research/llm-wiki/analysis/compliance/by-theme/data_protection_lawful_basis.md",
+        "research/llm-wiki/analysis/compliance/by-theme/governance_accountability.md",
+        "research/llm-wiki/analysis/compliance/by-theme/human_oversight.md",
+        "research/llm-wiki/analysis/compliance/by-theme/incident_reporting.md",
+        "research/llm-wiki/analysis/compliance/by-theme/logging_records.md",
+        "research/llm-wiki/analysis/compliance/by-theme/other.md",
+        "research/llm-wiki/analysis/compliance/by-theme/penalties_enforcement.md",
+        "research/llm-wiki/analysis/compliance/by-theme/README.md",
+        "research/llm-wiki/analysis/compliance/by-theme/risk_impact_assessment.md",
+        "research/llm-wiki/analysis/compliance/by-theme/scope_applicability.md",
+        "research/llm-wiki/analysis/compliance/by-theme/secure_development_supply_chain.md",
+        "research/llm-wiki/analysis/compliance/by-theme/security_risk_management.md",
+        "research/llm-wiki/analysis/compliance/by-theme/testing_red_teaming_robustness.md",
+        "research/llm-wiki/analysis/compliance/by-theme/third_party_management.md",
+        "research/llm-wiki/analysis/compliance/by-theme/transparency_labelling.md",
+        "research/llm-wiki/analysis/compliance/compliance-requirements.xlsx",
+        "research/llm-wiki/analysis/compliance/dev-plan/dev-plan.xlsx",
+        "research/llm-wiki/analysis/compliance/dev-plan/README.md",
+        "research/llm-wiki/analysis/compliance/documents.md",
+        "research/llm-wiki/analysis/compliance/jurisdiction-theme.md",
+        "research/llm-wiki/analysis/compliance/key-dates.md",
+        "research/llm-wiki/analysis/compliance/pol-legal-basis.md",
+        "research/llm-wiki/analysis/compliance/README.md",
+        "research/llm-wiki/analysis/dest-pin-credential-redaction/README.md",
+        "research/llm-wiki/analysis/dev35-loopback/d119-netns-2026-10-17.md",
+        "research/llm-wiki/analysis/dev35-loopback/README.md",
+        "research/llm-wiki/analysis/development-wbs/originals/MCP_보안거버넌스_MVP_WBS_2026-10-03.xlsx",
+        "research/llm-wiki/analysis/development-wbs/README.md",
+        "research/llm-wiki/analysis/drive-curation/opa-labels-probe/README.md",
+        "research/llm-wiki/analysis/drive-curation/README.md",
+        "research/llm-wiki/analysis/endpoint-log-audit/static-review.md",
+        "research/llm-wiki/analysis/endpoint-log-fix/README.md",
+        "research/llm-wiki/analysis/endpoint-log-fix/review.md",
+        "research/llm-wiki/analysis/feature-spec-2026-10-17/feature-spec.xlsx",
+        "research/llm-wiki/analysis/feature-spec-2026-10-17/originals/drive-2026-10-17T062108Z.xlsx",
+        "research/llm-wiki/analysis/feature-spec-2026-10-17/README.md",
+        "research/llm-wiki/analysis/field-tls-d124/README.md",
+        "research/llm-wiki/analysis/local-tools/data.md",
+        "research/llm-wiki/analysis/local-tools/desktop.md",
+        "research/llm-wiki/analysis/local-tools/permissions-data.md",
+        "research/llm-wiki/analysis/local-tools/permissions-desktop.md",
+        "research/llm-wiki/analysis/local-tools/permissions-reverse.md",
+        "research/llm-wiki/analysis/local-tools/README.md",
+        "research/llm-wiki/analysis/local-tools/reverse.md",
+        "research/llm-wiki/analysis/local-tools/tool-capabilities.md",
+        "research/llm-wiki/analysis/ops-response-d120-d123/README.md",
+        "research/llm-wiki/analysis/oss-audit/README.md",
+        "research/llm-wiki/analysis/oss-deep/_brief.md",
+        "research/llm-wiki/analysis/oss-deep/contextforge-hooks.md",
+        "research/llm-wiki/analysis/oss-deep/deps-presidio-gitleaks.md",
+        "research/llm-wiki/analysis/oss-deep/deps-sdk-authlib-opa.md",
+        "research/llm-wiki/analysis/oss-deep/legacy-cards.md",
+        "research/llm-wiki/analysis/oss-deep/litellm-mcp-path.md",
+        "research/llm-wiki/analysis/oss-deep/mcpx-cisco-scanner.md",
+        "research/llm-wiki/analysis/oss-deep/ms-mcp-gateway-session.md",
+        "research/llm-wiki/analysis/oss-deep/README.md",
+        "research/llm-wiki/analysis/oss-deep/redesign-2026-10-15.md",
+        "research/llm-wiki/analysis/oss-deep/toolhive-runtime.md",
+        "research/llm-wiki/analysis/outputs/01a13365-enterprise/MCP_기업호환성_검증대장.xlsx",
+        "research/llm-wiki/analysis/pj1-ghidra/README.md",
+        "research/llm-wiki/analysis/pj1-ghidra/report.md",
+        "research/llm-wiki/analysis/pj1-local-mcp-e13/README.md",
+        "research/llm-wiki/analysis/pj1-nine-tools/registration-review.md",
+        "research/llm-wiki/analysis/pj1-nine-tools/runs/README.md",
+        "research/llm-wiki/analysis/pj1-nine-tools/runs/run-03-claude/index.md",
+        "research/llm-wiki/analysis/pj1-nine-tools/runs/run-04-claude/index.md",
+        "research/llm-wiki/analysis/pj1-nine-tools/runs/run-05-claude/index.md",
+        "research/llm-wiki/analysis/pj1-nine-tools/runs/run-06-claude/index.md",
+        "research/llm-wiki/analysis/pj1-nine-tools/runs/run-07-claude/index.md",
+        "research/llm-wiki/analysis/pj1-nine-tools/runs/run-08-claude/index.md",
+        "research/llm-wiki/analysis/pj1-nine-tools/runs/run-09-claude-negative/index.md",
+        "research/llm-wiki/analysis/pj1-nine-tools/selection.md",
+        "research/llm-wiki/analysis/README-code.md",
+        "research/llm-wiki/analysis/README.md",
+        "research/llm-wiki/analysis/response-cap-idempotency/README.md",
+        "research/llm-wiki/analysis/review-2026-10-15/claude-next-work.md",
+        "research/llm-wiki/analysis/review-2026-10-15/dev38-runtime-plan.md",
+        "research/llm-wiki/analysis/review-2026-10-15/README.md",
+        "research/llm-wiki/analysis/risk-scenarios/solution-references.md",
+        "research/llm-wiki/analysis/risk-scenarios/static-endpoint.md",
+        "research/llm-wiki/analysis/selective-restriction-siem/README.md",
+        "research/llm-wiki/analysis/upstream-session-reuse/README.md",
+        "research/llm-wiki/analysis/upstream-session-reuse/stage2.md",
+        "research/llm-wiki/analysis/wbs-1015/README.md",
+        "research/llm-wiki/analysis/wbs-1017/deploy-hi-1018.md",
+        "research/llm-wiki/analysis/wbs-1017/pj3-windows-kit-1018.md",
+        "research/llm-wiki/analysis/wbs-review/review.md",
+        "research/llm-wiki/analysis/windows-kit-wizard-tray/README.md",
+        "research/llm-wiki/analysis/windows-kit-wizard-tray/security-review.md",
+        "research/llm-wiki/CLAUDE.md",
+        "research/llm-wiki/experiments/E01-approved-read.md",
+        "research/llm-wiki/experiments/E02-pii-result-masking.md",
+        "research/llm-wiki/experiments/E03-pii-external-egress.md",
+        "research/llm-wiki/experiments/E04-untrusted-argument.md",
+        "research/llm-wiki/experiments/E05-ssrf-normalization.md",
+        "research/llm-wiki/experiments/E06-input-schema.md",
+        "research/llm-wiki/experiments/E07-contract-drift.md",
+        "research/llm-wiki/experiments/E08-pdp-failure.md",
+        "research/llm-wiki/experiments/E09-principal-binding.md",
+        "research/llm-wiki/experiments/E10-concurrent-duplicate.md",
+        "research/llm-wiki/experiments/E11-termination-evidence.md",
+        "research/llm-wiki/experiments/E12-managed-admission.md",
+        "research/llm-wiki/experiments/E13-local-bypass.md",
+        "research/llm-wiki/experiments/preflight.md",
+        "research/llm-wiki/experiments/README.md",
+        "research/llm-wiki/experiments/targets.md",
+        "research/llm-wiki/experiments/test-inventory.md",
+        "research/llm-wiki/integrations/lab/openbao.md",
+        "research/llm-wiki/integrations/lab/README.md",
+        "research/llm-wiki/integrations/litellm.md",
+        "research/llm-wiki/integrations/README.md",
+        "research/llm-wiki/integrations/secrets.md",
+        "research/llm-wiki/methodology/control-design.md",
+        "research/llm-wiki/methodology/engineering-workflow.md",
+        "research/llm-wiki/methodology/evidence-contract.md",
+        "research/llm-wiki/methodology/evidence-methodology.md",
+        "research/llm-wiki/methodology/oss-and-skills.md",
+        "research/llm-wiki/methodology/source-protocol.md",
+        "research/llm-wiki/papers/development-reading-guide.md",
+        "research/llm-wiki/papers/LIB-A01.md",
+        "research/llm-wiki/papers/LIB-A02.md",
+        "research/llm-wiki/papers/LIB-A03.md",
+        "research/llm-wiki/papers/LIB-A04.md",
+        "research/llm-wiki/papers/LIB-A05.md",
+        "research/llm-wiki/papers/LIB-A06.md",
+        "research/llm-wiki/papers/LIB-A07.md",
+        "research/llm-wiki/papers/LIB-A08.md",
+        "research/llm-wiki/papers/LIB-A09.md",
+        "research/llm-wiki/papers/LIB-A10.md",
+        "research/llm-wiki/papers/LIB-A11.md",
+        "research/llm-wiki/papers/LIB-A12.md",
+        "research/llm-wiki/papers/LIB-A13.md",
+        "research/llm-wiki/papers/LIB-A14.md",
+        "research/llm-wiki/papers/LIB-A15.md",
+        "research/llm-wiki/papers/LIB-A16.md",
+        "research/llm-wiki/papers/LIB-B01.md",
+        "research/llm-wiki/papers/LIB-B02.md",
+        "research/llm-wiki/papers/LIB-B03.md",
+        "research/llm-wiki/papers/LIB-B04.md",
+        "research/llm-wiki/papers/LIB-B05.md",
+        "research/llm-wiki/papers/LIB-B06.md",
+        "research/llm-wiki/papers/LIB-B07.md",
+        "research/llm-wiki/papers/LIB-B08.md",
+        "research/llm-wiki/papers/LIB-B09.md",
+        "research/llm-wiki/papers/LIB-B10.md",
+        "research/llm-wiki/papers/LIB-B11.md",
+        "research/llm-wiki/papers/LIB-B12.md",
+        "research/llm-wiki/papers/LIB-B13.md",
+        "research/llm-wiki/papers/LIB-B14.md",
+        "research/llm-wiki/papers/LIB-B15.md",
+        "research/llm-wiki/papers/LIB-B16.md",
+        "research/llm-wiki/papers/LIB-C01.md",
+        "research/llm-wiki/papers/LIB-C02.md",
+        "research/llm-wiki/papers/LIB-C03.md",
+        "research/llm-wiki/papers/LIB-C04.md",
+        "research/llm-wiki/papers/LIB-C05.md",
+        "research/llm-wiki/papers/LIB-C06.md",
+        "research/llm-wiki/papers/LIB-C07.md",
+        "research/llm-wiki/papers/LIB-C08.md",
+        "research/llm-wiki/papers/LIB-C09.md",
+        "research/llm-wiki/papers/LIB-C10.md",
+        "research/llm-wiki/papers/LIB-C11.md",
+        "research/llm-wiki/papers/LIB-C12.md",
+        "research/llm-wiki/papers/LIB-C13.md",
+        "research/llm-wiki/papers/LIB-C14.md",
+        "research/llm-wiki/papers/LIB-C15.md",
+        "research/llm-wiki/papers/LIB-C16.md",
+        "research/llm-wiki/papers/LIB-D01.md",
+        "research/llm-wiki/papers/LIB-D02.md",
+        "research/llm-wiki/papers/LIB-D03.md",
+        "research/llm-wiki/papers/LIB-D04.md",
+        "research/llm-wiki/papers/LIB-D05.md",
+        "research/llm-wiki/papers/LIB-D06.md",
+        "research/llm-wiki/papers/LIB-D07.md",
+        "research/llm-wiki/papers/LIB-D08.md",
+        "research/llm-wiki/papers/LIB-D09.md",
+        "research/llm-wiki/papers/LIB-D10.md",
+        "research/llm-wiki/papers/LIB-D11.md",
+        "research/llm-wiki/papers/LIB-D12.md",
+        "research/llm-wiki/papers/LIB-D13.md",
+        "research/llm-wiki/papers/LIB-D14.md",
+        "research/llm-wiki/papers/LIB-E01.md",
+        "research/llm-wiki/papers/LIB-E02.md",
+        "research/llm-wiki/papers/LIB-E03.md",
+        "research/llm-wiki/papers/LIB-E04.md",
+        "research/llm-wiki/papers/LIB-E05.md",
+        "research/llm-wiki/papers/LIB-E06.md",
+        "research/llm-wiki/papers/LIB-E07.md",
+        "research/llm-wiki/papers/LIB-E08.md",
+        "research/llm-wiki/papers/LIB-E09.md",
+        "research/llm-wiki/papers/LIB-E10.md",
+        "research/llm-wiki/papers/LIB-E11.md",
+        "research/llm-wiki/papers/LIB-E12.md",
+        "research/llm-wiki/papers/LIB-E13.md",
+        "research/llm-wiki/papers/LIB-E14.md",
+        "research/llm-wiki/papers/LIB-F01.md",
+        "research/llm-wiki/papers/LIB-F02.md",
+        "research/llm-wiki/papers/LIB-F03.md",
+        "research/llm-wiki/papers/LIB-F04.md",
+        "research/llm-wiki/papers/LIB-F05.md",
+        "research/llm-wiki/papers/LIB-F06.md",
+        "research/llm-wiki/papers/LIB-F07.md",
+        "research/llm-wiki/papers/LIB-F08.md",
+        "research/llm-wiki/papers/LIB-F09.md",
+        "research/llm-wiki/papers/LIB-F10.md",
+        "research/llm-wiki/papers/LIB-G01.md",
+        "research/llm-wiki/papers/LIB-G02.md",
+        "research/llm-wiki/papers/LIB-G03.md",
+        "research/llm-wiki/papers/LIB-G04.md",
+        "research/llm-wiki/papers/LIB-G05.md",
+        "research/llm-wiki/papers/LIB-G06.md",
+        "research/llm-wiki/papers/LIB-G07.md",
+        "research/llm-wiki/papers/LIB-G08.md",
+        "research/llm-wiki/papers/LIB-G09.md",
+        "research/llm-wiki/papers/LIB-G10.md",
+        "research/llm-wiki/papers/LIB-G11.md",
+        "research/llm-wiki/papers/LIB-G12.md",
+        "research/llm-wiki/papers/LIB-G13.md",
+        "research/llm-wiki/papers/LIB-G14.md",
+        "research/llm-wiki/papers/LIB-H01.md",
+        "research/llm-wiki/papers/LIB-H02.md",
+        "research/llm-wiki/papers/LIB-H03.md",
+        "research/llm-wiki/papers/LIB-H04.md",
+        "research/llm-wiki/papers/LIB-H05.md",
+        "research/llm-wiki/papers/LIB-H06.md",
+        "research/llm-wiki/papers/LIB-H07.md",
+        "research/llm-wiki/papers/LIB-H08.md",
+        "research/llm-wiki/papers/LIB-I01.md",
+        "research/llm-wiki/papers/LIB-I02.md",
+        "research/llm-wiki/papers/LIB-I03.md",
+        "research/llm-wiki/papers/LIB-I04.md",
+        "research/llm-wiki/papers/LIB-I05.md",
+        "research/llm-wiki/papers/LIB-I06.md",
+        "research/llm-wiki/papers/LIB-I07.md",
+        "research/llm-wiki/papers/LIB-I08.md",
+        "research/llm-wiki/papers/LIB-I09.md",
+        "research/llm-wiki/papers/LIB-I10.md",
+        "research/llm-wiki/papers/LIB-I11.md",
+        "research/llm-wiki/papers/LIB-I12.md",
+        "research/llm-wiki/papers/LIB-I13.md",
+        "research/llm-wiki/papers/LIB-I14.md",
+        "research/llm-wiki/papers/LIB-I15.md",
+        "research/llm-wiki/papers/LIB-I16.md",
+        "research/llm-wiki/papers/LIB-J01.md",
+        "research/llm-wiki/papers/LIB-J02.md",
+        "research/llm-wiki/papers/LIB-J03.md",
+        "research/llm-wiki/papers/LIB-J04.md",
+        "research/llm-wiki/papers/LIB-J05.md",
+        "research/llm-wiki/papers/LIB-J06.md",
+        "research/llm-wiki/papers/LIB-J07.md",
+        "research/llm-wiki/papers/LIB-J08.md",
+        "research/llm-wiki/papers/LIB-J09.md",
+        "research/llm-wiki/papers/LIB-J10.md",
+        "research/llm-wiki/papers/LIB-J11.md",
+        "research/llm-wiki/papers/LIB-J12.md",
+        "research/llm-wiki/papers/LIB-J13.md",
+        "research/llm-wiki/papers/LIB-J14.md",
+        "research/llm-wiki/papers/LIB-J15.md",
+        "research/llm-wiki/papers/LIB-K01.md",
+        "research/llm-wiki/papers/LIB-K02.md",
+        "research/llm-wiki/papers/LIB-K03.md",
+        "research/llm-wiki/papers/LIB-K04.md",
+        "research/llm-wiki/papers/LIB-K05.md",
+        "research/llm-wiki/papers/LIB-K06.md",
+        "research/llm-wiki/papers/LIB-K07.md",
+        "research/llm-wiki/papers/LIB-K08.md",
+        "research/llm-wiki/papers/LIB-K09.md",
+        "research/llm-wiki/papers/LIB-K10.md",
+        "research/llm-wiki/papers/LIB-K11.md",
+        "research/llm-wiki/papers/LIB-K12.md",
+        "research/llm-wiki/papers/LIB-K13.md",
+        "research/llm-wiki/papers/LIB-K14.md",
+        "research/llm-wiki/papers/LIB-K15.md",
+        "research/llm-wiki/papers/LIB-K16.md",
+        "research/llm-wiki/papers/LIB-K17.md",
+        "research/llm-wiki/papers/LIB-K18.md",
+        "research/llm-wiki/papers/LIB-K19.md",
+        "research/llm-wiki/papers/LIB-K20.md",
+        "research/llm-wiki/papers/LIB-K21.md",
+        "research/llm-wiki/papers/LIB-K22.md",
+        "research/llm-wiki/papers/LIB-K23.md",
+        "research/llm-wiki/papers/LIB-K24.md",
+        "research/llm-wiki/papers/LIB-K25.md",
+        "research/llm-wiki/papers/LIB-K26.md",
+        "research/llm-wiki/papers/LIB-K27.md",
+        "research/llm-wiki/papers/LIB-K28.md",
+        "research/llm-wiki/papers/LIB-K29.md",
+        "research/llm-wiki/papers/LIB-K30.md",
+        "research/llm-wiki/papers/LIB-K31.md",
+        "research/llm-wiki/papers/LIB-K32.md",
+        "research/llm-wiki/papers/LIB-K33.md",
+        "research/llm-wiki/papers/LIB-K34.md",
+        "research/llm-wiki/papers/LIB-K35.md",
+        "research/llm-wiki/papers/LIB-K36.md",
+        "research/llm-wiki/papers/LIB-L01.md",
+        "research/llm-wiki/papers/LIB-L02.md",
+        "research/llm-wiki/papers/LIB-L03.md",
+        "research/llm-wiki/papers/LIB-L04.md",
+        "research/llm-wiki/papers/LIB-L05.md",
+        "research/llm-wiki/papers/LIB-L06.md",
+        "research/llm-wiki/papers/LIB-L07.md",
+        "research/llm-wiki/papers/LIB-L08.md",
+        "research/llm-wiki/papers/LIB-L09.md",
+        "research/llm-wiki/papers/LIB-L10.md",
+        "research/llm-wiki/papers/LIB-L11.md",
+        "research/llm-wiki/papers/LIB-L12.md",
+        "research/llm-wiki/papers/LIB-M01.md",
+        "research/llm-wiki/papers/LIB-M02.md",
+        "research/llm-wiki/papers/LIB-M03.md",
+        "research/llm-wiki/papers/LIB-M04.md",
+        "research/llm-wiki/papers/LIB-M05.md",
+        "research/llm-wiki/papers/LIB-M06.md",
+        "research/llm-wiki/papers/LIB-M07.md",
+        "research/llm-wiki/papers/LIB-M08.md",
+        "research/llm-wiki/papers/LIB-M09.md",
+        "research/llm-wiki/papers/LIB-M10.md",
+        "research/llm-wiki/papers/LIB-M11.md",
+        "research/llm-wiki/papers/LIB-M12.md",
+        "research/llm-wiki/papers/LIB-M13.md",
+        "research/llm-wiki/papers/LIB-M14.md",
+        "research/llm-wiki/papers/LIB-M15.md",
+        "research/llm-wiki/papers/LIB-M16.md",
+        "research/llm-wiki/papers/LIB-M17.md",
+        "research/llm-wiki/papers/LIB-M18.md",
+        "research/llm-wiki/papers/LIB-M19.md",
+        "research/llm-wiki/papers/LIB-M20.md",
+        "research/llm-wiki/papers/LIB-M21.md",
+        "research/llm-wiki/papers/LIB-M22.md",
+        "research/llm-wiki/papers/LIB-M24.md",
+        "research/llm-wiki/papers/LIB-M25.md",
+        "research/llm-wiki/papers/LIB-M26.md",
+        "research/llm-wiki/papers/LIB-M27.md",
+        "research/llm-wiki/papers/LIB-M28.md",
+        "research/llm-wiki/papers/LIB-M29.md",
+        "research/llm-wiki/papers/LIB-M30.md",
+        "research/llm-wiki/papers/LIB-M31.md",
+        "research/llm-wiki/papers/LIB-M32.md",
+        "research/llm-wiki/papers/LIB-M33.md",
+        "research/llm-wiki/papers/LIB-M34.md",
+        "research/llm-wiki/papers/LIB-M35.md",
+        "research/llm-wiki/papers/LIB-M36.md",
+        "research/llm-wiki/papers/LIB-M37.md",
+        "research/llm-wiki/papers/LIB-M38.md",
+        "research/llm-wiki/papers/LIB-M39.md",
+        "research/llm-wiki/papers/LIB-M40.md",
+        "research/llm-wiki/papers/LIB-M41.md",
+        "research/llm-wiki/papers/LIB-M42.md",
+        "research/llm-wiki/papers/LIB-M43.md",
+        "research/llm-wiki/papers/LIB-M44.md",
+        "research/llm-wiki/papers/LIB-M45.md",
+        "research/llm-wiki/papers/LIB-M46.md",
+        "research/llm-wiki/papers/LIB-M47.md",
+        "research/llm-wiki/papers/LIB-M48.md",
+        "research/llm-wiki/papers/LIB-M49.md",
+        "research/llm-wiki/papers/LIB-M50.md",
+        "research/llm-wiki/papers/P38.md",
+        "research/llm-wiki/papers/P39.md",
+        "research/llm-wiki/papers/P43.md",
+        "research/llm-wiki/papers/P46.md",
+        "research/llm-wiki/papers/P47.md",
+        "research/llm-wiki/papers/P51.md",
+        "research/llm-wiki/papers/P54.md",
+        "research/llm-wiki/papers/P55.md",
+        "research/llm-wiki/papers/P57.md",
+        "research/llm-wiki/papers/P58.md",
+        "research/llm-wiki/papers/P60.md",
+        "research/llm-wiki/papers/P63.md",
+        "research/llm-wiki/papers/P64.md",
+        "research/llm-wiki/papers/policy50-gap-references.md",
+        "research/llm-wiki/papers/README.md",
+        "research/llm-wiki/papers/REF-J01.md",
+        "research/llm-wiki/papers/REF-J02.md",
+        "research/llm-wiki/papers/REF-J03.md",
+        "research/llm-wiki/papers/T01.md",
+        "research/llm-wiki/papers/T02.md",
+        "research/llm-wiki/papers/T04.md",
+        "research/llm-wiki/papers/T08.md",
+        "research/llm-wiki/papers/T10.md",
+        "research/llm-wiki/papers/T11.md",
+        "research/llm-wiki/papers/T12.md",
+        "research/llm-wiki/papers/T15.md",
+        "research/llm-wiki/papers/T19.md",
+        "research/llm-wiki/papers/T20.md",
+        "research/llm-wiki/papers/T21.md",
+        "research/llm-wiki/papers/T22.md",
+        "research/llm-wiki/README.md",
+        "research/llm-wiki/solutions/beyondtrust-pathfinder.md",
+        "research/llm-wiki/solutions/ibm-contextforge.md",
+        "research/llm-wiki/solutions/ibm-cpex.md",
+        "research/llm-wiki/solutions/kong-ai-gateway.md",
+        "research/llm-wiki/solutions/litellm.md",
+        "research/llm-wiki/solutions/lunar-mcpx.md",
+        "research/llm-wiki/solutions/ms-mcp-gateway.md",
+        "research/llm-wiki/solutions/ms-wassette.md",
+        "research/llm-wiki/solutions/README.md",
+        "research/llm-wiki/solutions/toolhive-runtime.md",
+        "research/llm-wiki/sources/compliance/LIB-L01/originals/pipa-act-21445-20260911.pdf",
+        "research/llm-wiki/sources/compliance/LIB-L02/originals/credit-info-act-21445-20260911.pdf",
+        "research/llm-wiki/sources/compliance/LIB-L03/originals/network-act-21445-20260911.pdf",
+        "research/llm-wiki/sources/compliance/LIB-L04/originals/ai-basic-act-21311-20260721.pdf",
+        "research/llm-wiki/sources/compliance/LIB-L07/originals/nist-sp-800-207.pdf",
+        "research/llm-wiki/sources/compliance/LIB-L08/originals/draft-daniel-ai-agent-internet-architecture-03.txt",
+        "research/llm-wiki/sources/compliance/LIB-M01/originals/eu-ai-act-2024-1689.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M02/originals/nccoe-agent-identity-authz-concept-paper.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M03/originals/careful-adoption-agentic-ai.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M05/originals/cn-agent-implementation-opinions-2026.html",
+        "research/llm-wiki/sources/compliance/LIB-M06/originals/gdpr-2016-679.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M07/originals/nist-ai-100-1-ai-rmf-1-0.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M09/originals/cn-genai-interim-measures-2023.html",
+        "research/llm-wiki/sources/compliance/LIB-M10/originals/cn-cybersecurity-law-2025-consolidated.html",
+        "research/llm-wiki/sources/compliance/LIB-M11/originals/eu-nis2-2022-2555.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M12/originals/nist-sp-800-53r5.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M16/originals/eu-2026-1744-ai-omnibus.html",
+        "research/llm-wiki/sources/compliance/LIB-M18/originals/omb-m-26-14-agency-logging.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M19/originals/omb-m-25-21-federal-ai-use.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M24/originals/edpb-opinion-28-2024.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M25/originals/eu-dora-2022-2554.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M26/originals/eu-cra-2024-2847.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M27/originals/cn-cybersecurity-incident-reporting-measures-2025.html",
+        "research/llm-wiki/sources/compliance/LIB-M29/originals/prc-pipl-2021.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M30/originals/cn-cross-border-data-flow-provisions-2024.html",
+        "research/llm-wiki/sources/compliance/LIB-M33/originals/cn-ai-content-labeling-measures-2025.html",
+        "research/llm-wiki/sources/compliance/LIB-M35/originals/pipeda-p-8-6.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M41/originals/uk-ai-cyber-code-impl-guide.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M42/originals/japan-ai-guidelines-business-v1-2.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M46/originals/uk-data-use-access-act-2025.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M47/originals/japan-ai-promotion-act-en.pdf",
+        "research/llm-wiki/sources/compliance/LIB-M50/originals/oecd-ai-recommendation-0449.pdf",
+        "research/llm-wiki/sources/policy/P38/originals/P38.pdf",
+        "research/llm-wiki/sources/policy/P51/originals/P51.pdf",
+        "research/llm-wiki/sources/policy/P55/originals/P55.pdf",
+        "research/llm-wiki/sources/policy/P57/originals/P57.pdf",
+        "research/llm-wiki/sources/policy/P64/originals/P64.pdf",
+        "research/llm-wiki/sources/policy/T19/originals/T19_supplement.txt",
+        "research/llm-wiki/sources/policy/T20/originals/T20_supplement.txt",
+        "research/llm-wiki/sources/README.md",
+        "research/llm-wiki/status/backlog.md",
+        "research/llm-wiki/status/current.md",
+        "research/llm-wiki/status/history-2026-10-15.md",
+        "research/llm-wiki/status/reports/2026-10-13-claude-code-review.md",
+        "research/llm-wiki/status/reports/2026-10-13-development-goals.md",
+        "research/llm-wiki/status/reports/2026-10-13-development-results.md",
+        "research/llm-wiki/status/reports/2026-10-13-enterprise-claude-review.md",
+        "research/llm-wiki/status/reports/2026-10-13-enterprise-results.md",
+        "research/llm-wiki/status/reports/2026-10-13-feature-design.md",
+        "research/llm-wiki/status/reports/2026-10-13-interop-review.md",
+        "research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md",
+        "research/llm-wiki/status/reports/2026-10-13-result-boundary-review.md",
+        "research/llm-wiki/status/reports/2026-10-13-wiki-bootstrap.md",
+        "research/llm-wiki/status/reports/2026-10-14-e13-local-mcp-natural-language.md",
+        "research/llm-wiki/status/reports/2026-10-14-endpoint-log-wbs.md",
+        "research/llm-wiki/status/reports/2026-10-14-endpoint-telemetry-fix.md",
+        "research/llm-wiki/status/reports/2026-10-14-local-mcp-endpoint.md",
+        "research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.md",
+        "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md",
+        "research/llm-wiki/status/reports/2026-10-14-reference-fill.md",
+        "research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md",
+        "research/llm-wiki/status/reports/2026-10-15-clean-e2e.md",
+        "research/llm-wiki/status/reports/2026-10-15-dev35-loopback.md",
+        "research/llm-wiki/status/reports/2026-10-15-dev38-runtime.md",
+        "research/llm-wiki/status/reports/2026-10-15-drive-deliverables.md",
+        "research/llm-wiki/status/reports/2026-10-15-endpoint-evidence.md",
+        "research/llm-wiki/status/reports/2026-10-15-inspection-corpus.md",
+        "research/llm-wiki/status/reports/2026-10-15-intake-identity.md",
+        "research/llm-wiki/status/reports/2026-10-15-oss-analysis-audit.md",
+        "research/llm-wiki/status/reports/2026-10-15-oss-deep-analysis.md",
+        "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md",
+        "research/llm-wiki/status/reports/2026-10-15-upstream-session-reuse-design.md",
+        "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md",
+        "research/llm-wiki/status/reports/2026-10-15-wiki-consolidation.md",
+        "research/llm-wiki/status/reports/2026-10-17-compliance-references.md",
+        "research/llm-wiki/status/reports/2026-10-17-dest-pin-credential-redaction.md",
+        "research/llm-wiki/status/reports/2026-10-17-feature-spec-wbs.md",
+        "research/llm-wiki/status/reports/2026-10-17-loopback-owner-replies-d119.md",
+        "research/llm-wiki/status/reports/2026-10-17-ops-response-d120-d123.md",
+        "research/llm-wiki/status/reports/2026-10-17-pol-pac-mapping-opa-labels.md",
+        "research/llm-wiki/status/reports/2026-10-17-policy50-gap-references.md",
+        "research/llm-wiki/status/reports/2026-10-17-response-cap-idempotency.md",
+        "research/llm-wiki/status/reports/2026-10-17-selective-restriction-siem.md",
+        "research/llm-wiki/status/reports/2026-10-17-upstream-session-reuse-stage2.md",
+        "research/llm-wiki/status/reports/2026-10-17-windows-kit-wizard-tray.md",
+        "research/llm-wiki/status/reports/2026-10-18-field-tls-d124-merge.md",
+        "research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md",
+        "research/llm-wiki/status/repository-snapshot.md",
+        "research/llm-wiki/team-agi-deliverables-2026-10-15.md",
+        "research/llm-wiki/templates/task-prompt.md",
+        "research/llm-wiki/templates/work-report.md",
+        "research/llm-wiki/threats/control-map.md",
+        "research/llm-wiki/threats/extracted/policies.md",
+        "research/llm-wiki/threats/extracted/wbs.md",
+        "research/llm-wiki/threats/local-tool-map.md",
+        "research/llm-wiki/threats/originals/MCP_보안_거버넌스_Policy_as_Code_WBS_V1.5.xlsm",
+        "research/llm-wiki/threats/originals/MCP_보안정책-추가25.xlsm",
+        "research/llm-wiki/threats/originals/MCP_보안정책50_2026-10-14.xlsm",
+        "research/llm-wiki/threats/policies-24.md",
+        "research/llm-wiki/threats/policies-50-2026-10-14.md",
+        "research/llm-wiki/threats/policies-50.md",
+        "research/llm-wiki/threats/README.md"
+      ]
+    },
+    {
+      "order": 46,
+      "title": "기업 현황",
+      "slug": "enterprise-summary",
+      "group": "기업",
+      "kind": "참조",
+      "csv": "tabs/46-enterprise-summary.csv",
+      "rows": 10,
+      "columns": [
+        {
+          "name": "ID",
+          "formula": false
+        },
+        {
+          "name": "검증 층",
+          "formula": false
+        },
+        {
+          "name": "요구사항 수",
+          "formula": false
+        },
+        {
+          "name": "자료",
+          "formula": false
+        },
+        {
+          "name": "레코드 수",
+          "formula": false
+        },
+        {
+          "name": "의미",
+          "formula": false
+        }
+      ],
+      "id_column": "ID",
+      "links": {},
+      "sources": [
+        "research/llm-wiki/analysis/outputs/01a13365-enterprise/MCP_기업호환성_검증대장.xlsx"
+      ]
+    }
+  ],
+  "id_registry": {
+    "deploys": {
+      "2026-10-15|솔루션 기기|83269c1": "DEP-01",
+      "2026-10-15|솔루션 기기|8723cce": "DEP-02",
+      "2026-10-15|솔루션 기기|8906f24": "DEP-03",
+      "2026-10-17|PJ1|759347c": "DEP-04",
+      "2026-10-17|PJ1|7747d21": "DEP-05",
+      "2026-10-17|솔루션 기기|759347c": "DEP-06",
+      "2026-10-17|솔루션 기기|7747d21": "DEP-07",
+      "2026-10-17|솔루션 기기|ecb2587": "DEP-08",
+      "2026-10-18|pj3|b9b00d5": "DEP-09",
+      "2026-10-18|솔루션 기기|bb33625": "DEP-10",
+      "2026-10-15|솔루션 기기|05e4bd9": "DEP-11",
+      "2026-10-15|솔루션 기기|afb7d74": "DEP-12",
+      "2026-10-15|솔루션 기기|b639432": "DEP-13",
+      "2026-10-18|pj3|b5e4c65": "DEP-14",
+      "2026-10-15|솔루션 기기|50fa4a5": "DEP-15",
+      "2026-10-15|솔루션 기기|5610fee": "DEP-16",
+      "2026-10-15|솔루션 기기|b6868d2": "DEP-17",
+      "2026-10-15|솔루션 기기|e6464e6": "DEP-18"
+    },
+    "docs": {
+      "docs/ai/ARCHITECTURE.md": "DOC-001",
+      "docs/ai/BENCHMARK_AGT_2026-10-05.md": "DOC-002",
+      "docs/ai/BENCHMARK_GATEWAYS.md": "DOC-003",
+      "docs/ai/BENCHMARK_IBM_CONTEXTFORGE.md": "DOC-004",
+      "docs/ai/BENCHMARK_LITELLM.md": "DOC-005",
+      "docs/ai/BENCHMARK_MICROSOFT.md": "DOC-006",
+      "docs/ai/BENCHMARK_UI_ONBOARDING_2026-10-01.md": "DOC-007",
+      "docs/ai/CONSOLE_UI.md": "DOC-008",
+      "docs/ai/CONTROL_PLANES_2026-10-01.md": "DOC-009",
+      "docs/ai/DATA_MODEL.md": "DOC-010",
+      "docs/ai/DECISIONS.md": "DOC-011",
+      "docs/ai/ENDPOINT_ONBOARDING_2026-10-04.md": "DOC-012",
+      "docs/ai/FIELD.md": "DOC-013",
+      "docs/ai/FIELD_MCP_CANDIDATES.md": "DOC-014",
+      "docs/ai/FOLLOWUP_VALIDATION_2026-10-01.md": "DOC-015",
+      "docs/ai/MCP_SERVERS.md": "DOC-016",
+      "docs/ai/OPS_RESPONSE.md": "DOC-017",
+      "docs/ai/OSS_ADOPTION_2026-10-03.md": "DOC-018",
+      "docs/ai/OVERHAUL_VALIDATION_2026-09-30.md": "DOC-019",
+      "docs/ai/PAC_MAPPING.md": "DOC-020",
+      "docs/ai/PAC_RUNTIME_2026-10-01.md": "DOC-021",
+      "docs/ai/PJ1_SIGNALS_2026-10-01.md": "DOC-022",
+      "docs/ai/POLICY.md": "DOC-023",
+      "docs/ai/README.md": "DOC-024",
+      "docs/ai/REFERENCES_MCP_SECURITY_2026-10-05.md": "DOC-025",
+      "docs/ai/REMASTER_2026-10-01.md": "DOC-026",
+      "docs/ai/REMASTER_TASK_LEDGER_2026-10-01.md": "DOC-027",
+      "docs/ai/ROADMAP.md": "DOC-028",
+      "docs/ai/RUNBOOK.md": "DOC-029",
+      "docs/ai/SECURITY_BOUNDARIES.md": "DOC-030",
+      "docs/ai/TERMINATION_MODEL.md": "DOC-031",
+      "docs/ai/TESTING.md": "DOC-032",
+      "docs/ai/TROUBLESHOOTING.md": "DOC-033",
+      "https://docs.google.com/document/d/1W4-vRSRIvy-8gdBUA7a66GcaYP5Cw6TT1D_9Kaot96c/edit": "DOC-034",
+      "https://docs.google.com/spreadsheets/d/16d9h6_1FYYiYw6xRcABK839RII7obZOW/edit": "DOC-035",
+      "https://docs.google.com/spreadsheets/d/1IrvVFRUNMCF3WGOyGyeo0hpzDWO7zmCi/edit": "DOC-036",
+      "https://docs.google.com/spreadsheets/d/1Vc51VmIDMruOIZXGeR8QMF-65hhw5opV/edit": "DOC-037",
+      "https://docs.google.com/spreadsheets/d/1Z3pSM4mTidwrfVXSumkCWSnL1dZ7AH4U/edit": "DOC-038",
+      "https://drive.google.com/drive/folders/1EB2OLq8lJ-cdUQEW6SePUSln6gef_8kq": "DOC-039",
+      "https://drive.google.com/drive/folders/1Ja-xlx6oiKJ5stKoSG57TH6Lf2-y-WC8": "DOC-040",
+      "https://drive.google.com/file/d/1NGFWTI_TNnUiDPHupOIfEOyfcB9h5ecM/view": "DOC-041",
+      "https://drive.google.com/file/d/1imsKu4hyqNH9_IBmwRU9VV9kMi6FgGat/view": "DOC-042",
+      "research/llm-wiki/AGENTS.md": "DOC-043",
+      "research/llm-wiki/CLAUDE.md": "DOC-044",
+      "research/llm-wiki/README.md": "DOC-045",
+      "research/llm-wiki/analysis/README-code.md": "DOC-046",
+      "research/llm-wiki/analysis/README.md": "DOC-047",
+      "research/llm-wiki/analysis/compliance/README.md": "DOC-048",
+      "research/llm-wiki/analysis/compliance/by-theme/README.md": "DOC-049",
+      "research/llm-wiki/analysis/compliance/by-theme/access_control_identity.md": "DOC-050",
+      "research/llm-wiki/analysis/compliance/by-theme/agentic_ai.md": "DOC-051",
+      "research/llm-wiki/analysis/compliance/by-theme/automated_decision_rights.md": "DOC-052",
+      "research/llm-wiki/analysis/compliance/by-theme/cross_border_transfer.md": "DOC-053",
+      "research/llm-wiki/analysis/compliance/by-theme/data_minimisation_retention_deletion.md": "DOC-054",
+      "research/llm-wiki/analysis/compliance/by-theme/data_protection_lawful_basis.md": "DOC-055",
+      "research/llm-wiki/analysis/compliance/by-theme/governance_accountability.md": "DOC-056",
+      "research/llm-wiki/analysis/compliance/by-theme/human_oversight.md": "DOC-057",
+      "research/llm-wiki/analysis/compliance/by-theme/incident_reporting.md": "DOC-058",
+      "research/llm-wiki/analysis/compliance/by-theme/logging_records.md": "DOC-059",
+      "research/llm-wiki/analysis/compliance/by-theme/other.md": "DOC-060",
+      "research/llm-wiki/analysis/compliance/by-theme/penalties_enforcement.md": "DOC-061",
+      "research/llm-wiki/analysis/compliance/by-theme/risk_impact_assessment.md": "DOC-062",
+      "research/llm-wiki/analysis/compliance/by-theme/scope_applicability.md": "DOC-063",
+      "research/llm-wiki/analysis/compliance/by-theme/secure_development_supply_chain.md": "DOC-064",
+      "research/llm-wiki/analysis/compliance/by-theme/security_risk_management.md": "DOC-065",
+      "research/llm-wiki/analysis/compliance/by-theme/testing_red_teaming_robustness.md": "DOC-066",
+      "research/llm-wiki/analysis/compliance/by-theme/third_party_management.md": "DOC-067",
+      "research/llm-wiki/analysis/compliance/by-theme/transparency_labelling.md": "DOC-068",
+      "research/llm-wiki/analysis/compliance/compliance-requirements.xlsx": "DOC-069",
+      "research/llm-wiki/analysis/compliance/dev-plan/README.md": "DOC-070",
+      "research/llm-wiki/analysis/compliance/dev-plan/dev-plan.xlsx": "DOC-071",
+      "research/llm-wiki/analysis/compliance/documents.md": "DOC-072",
+      "research/llm-wiki/analysis/compliance/jurisdiction-theme.md": "DOC-073",
+      "research/llm-wiki/analysis/compliance/key-dates.md": "DOC-074",
+      "research/llm-wiki/analysis/compliance/pol-legal-basis.md": "DOC-075",
+      "research/llm-wiki/analysis/dest-pin-credential-redaction/README.md": "DOC-076",
+      "research/llm-wiki/analysis/dev35-loopback/README.md": "DOC-077",
+      "research/llm-wiki/analysis/dev35-loopback/d119-netns-2026-10-17.md": "DOC-078",
+      "research/llm-wiki/analysis/development-wbs/README.md": "DOC-079",
+      "research/llm-wiki/analysis/development-wbs/originals/MCP_보안거버넌스_MVP_WBS_2026-10-03.xlsx": "DOC-080",
+      "research/llm-wiki/analysis/drive-curation/README.md": "DOC-081",
+      "research/llm-wiki/analysis/drive-curation/opa-labels-probe/README.md": "DOC-082",
+      "research/llm-wiki/analysis/endpoint-log-audit/static-review.md": "DOC-083",
+      "research/llm-wiki/analysis/endpoint-log-fix/README.md": "DOC-084",
+      "research/llm-wiki/analysis/endpoint-log-fix/review.md": "DOC-085",
+      "research/llm-wiki/analysis/feature-spec-2026-10-17/README.md": "DOC-086",
+      "research/llm-wiki/analysis/feature-spec-2026-10-17/feature-spec.xlsx": "DOC-087",
+      "research/llm-wiki/analysis/feature-spec-2026-10-17/originals/drive-2026-10-17T062108Z.xlsx": "DOC-088",
+      "research/llm-wiki/analysis/field-tls-d124/README.md": "DOC-089",
+      "research/llm-wiki/analysis/local-tools/README.md": "DOC-090",
+      "research/llm-wiki/analysis/local-tools/data.md": "DOC-091",
+      "research/llm-wiki/analysis/local-tools/desktop.md": "DOC-092",
+      "research/llm-wiki/analysis/local-tools/permissions-data.md": "DOC-093",
+      "research/llm-wiki/analysis/local-tools/permissions-desktop.md": "DOC-094",
+      "research/llm-wiki/analysis/local-tools/permissions-reverse.md": "DOC-095",
+      "research/llm-wiki/analysis/local-tools/reverse.md": "DOC-096",
+      "research/llm-wiki/analysis/local-tools/tool-capabilities.md": "DOC-097",
+      "research/llm-wiki/analysis/ops-response-d120-d123/README.md": "DOC-098",
+      "research/llm-wiki/analysis/oss-audit/README.md": "DOC-099",
+      "research/llm-wiki/analysis/oss-deep/README.md": "DOC-100",
+      "research/llm-wiki/analysis/oss-deep/_brief.md": "DOC-101",
+      "research/llm-wiki/analysis/oss-deep/contextforge-hooks.md": "DOC-102",
+      "research/llm-wiki/analysis/oss-deep/deps-presidio-gitleaks.md": "DOC-103",
+      "research/llm-wiki/analysis/oss-deep/deps-sdk-authlib-opa.md": "DOC-104",
+      "research/llm-wiki/analysis/oss-deep/legacy-cards.md": "DOC-105",
+      "research/llm-wiki/analysis/oss-deep/litellm-mcp-path.md": "DOC-106",
+      "research/llm-wiki/analysis/oss-deep/mcpx-cisco-scanner.md": "DOC-107",
+      "research/llm-wiki/analysis/oss-deep/ms-mcp-gateway-session.md": "DOC-108",
+      "research/llm-wiki/analysis/oss-deep/redesign-2026-10-15.md": "DOC-109",
+      "research/llm-wiki/analysis/oss-deep/toolhive-runtime.md": "DOC-110",
+      "research/llm-wiki/analysis/outputs/01a13365-enterprise/MCP_기업호환성_검증대장.xlsx": "DOC-111",
+      "research/llm-wiki/analysis/pj1-ghidra/README.md": "DOC-112",
+      "research/llm-wiki/analysis/pj1-ghidra/report.md": "DOC-113",
+      "research/llm-wiki/analysis/pj1-local-mcp-e13/README.md": "DOC-114",
+      "research/llm-wiki/analysis/pj1-nine-tools/registration-review.md": "DOC-115",
+      "research/llm-wiki/analysis/pj1-nine-tools/runs/README.md": "DOC-116",
+      "research/llm-wiki/analysis/pj1-nine-tools/runs/run-03-claude/index.md": "DOC-117",
+      "research/llm-wiki/analysis/pj1-nine-tools/runs/run-04-claude/index.md": "DOC-118",
+      "research/llm-wiki/analysis/pj1-nine-tools/runs/run-05-claude/index.md": "DOC-119",
+      "research/llm-wiki/analysis/pj1-nine-tools/runs/run-06-claude/index.md": "DOC-120",
+      "research/llm-wiki/analysis/pj1-nine-tools/runs/run-07-claude/index.md": "DOC-121",
+      "research/llm-wiki/analysis/pj1-nine-tools/runs/run-08-claude/index.md": "DOC-122",
+      "research/llm-wiki/analysis/pj1-nine-tools/runs/run-09-claude-negative/index.md": "DOC-123",
+      "research/llm-wiki/analysis/pj1-nine-tools/selection.md": "DOC-124",
+      "research/llm-wiki/analysis/response-cap-idempotency/README.md": "DOC-125",
+      "research/llm-wiki/analysis/review-2026-10-15/README.md": "DOC-126",
+      "research/llm-wiki/analysis/review-2026-10-15/claude-next-work.md": "DOC-127",
+      "research/llm-wiki/analysis/review-2026-10-15/dev38-runtime-plan.md": "DOC-128",
+      "research/llm-wiki/analysis/risk-scenarios/solution-references.md": "DOC-129",
+      "research/llm-wiki/analysis/risk-scenarios/static-endpoint.md": "DOC-130",
+      "research/llm-wiki/analysis/selective-restriction-siem/README.md": "DOC-131",
+      "research/llm-wiki/analysis/upstream-session-reuse/README.md": "DOC-132",
+      "research/llm-wiki/analysis/upstream-session-reuse/stage2.md": "DOC-133",
+      "research/llm-wiki/analysis/wbs-1015/README.md": "DOC-134",
+      "research/llm-wiki/analysis/wbs-1017/deploy-hi-1018.md": "DOC-135",
+      "research/llm-wiki/analysis/wbs-1017/pj3-windows-kit-1018.md": "DOC-136",
+      "research/llm-wiki/analysis/wbs-review/review.md": "DOC-137",
+      "research/llm-wiki/analysis/windows-kit-wizard-tray/README.md": "DOC-138",
+      "research/llm-wiki/analysis/windows-kit-wizard-tray/security-review.md": "DOC-139",
+      "research/llm-wiki/experiments/E01-approved-read.md": "DOC-140",
+      "research/llm-wiki/experiments/E02-pii-result-masking.md": "DOC-141",
+      "research/llm-wiki/experiments/E03-pii-external-egress.md": "DOC-142",
+      "research/llm-wiki/experiments/E04-untrusted-argument.md": "DOC-143",
+      "research/llm-wiki/experiments/E05-ssrf-normalization.md": "DOC-144",
+      "research/llm-wiki/experiments/E06-input-schema.md": "DOC-145",
+      "research/llm-wiki/experiments/E07-contract-drift.md": "DOC-146",
+      "research/llm-wiki/experiments/E08-pdp-failure.md": "DOC-147",
+      "research/llm-wiki/experiments/E09-principal-binding.md": "DOC-148",
+      "research/llm-wiki/experiments/E10-concurrent-duplicate.md": "DOC-149",
+      "research/llm-wiki/experiments/E11-termination-evidence.md": "DOC-150",
+      "research/llm-wiki/experiments/E12-managed-admission.md": "DOC-151",
+      "research/llm-wiki/experiments/E13-local-bypass.md": "DOC-152",
+      "research/llm-wiki/experiments/README.md": "DOC-153",
+      "research/llm-wiki/experiments/preflight.md": "DOC-154",
+      "research/llm-wiki/experiments/targets.md": "DOC-155",
+      "research/llm-wiki/experiments/test-inventory.md": "DOC-156",
+      "research/llm-wiki/integrations/README.md": "DOC-157",
+      "research/llm-wiki/integrations/lab/README.md": "DOC-158",
+      "research/llm-wiki/integrations/lab/openbao.md": "DOC-159",
+      "research/llm-wiki/integrations/litellm.md": "DOC-160",
+      "research/llm-wiki/integrations/secrets.md": "DOC-161",
+      "research/llm-wiki/methodology/control-design.md": "DOC-162",
+      "research/llm-wiki/methodology/engineering-workflow.md": "DOC-163",
+      "research/llm-wiki/methodology/evidence-contract.md": "DOC-164",
+      "research/llm-wiki/methodology/evidence-methodology.md": "DOC-165",
+      "research/llm-wiki/methodology/oss-and-skills.md": "DOC-166",
+      "research/llm-wiki/methodology/source-protocol.md": "DOC-167",
+      "research/llm-wiki/papers/LIB-A01.md": "DOC-168",
+      "research/llm-wiki/papers/LIB-A02.md": "DOC-169",
+      "research/llm-wiki/papers/LIB-A03.md": "DOC-170",
+      "research/llm-wiki/papers/LIB-A04.md": "DOC-171",
+      "research/llm-wiki/papers/LIB-A05.md": "DOC-172",
+      "research/llm-wiki/papers/LIB-A06.md": "DOC-173",
+      "research/llm-wiki/papers/LIB-A07.md": "DOC-174",
+      "research/llm-wiki/papers/LIB-A08.md": "DOC-175",
+      "research/llm-wiki/papers/LIB-A09.md": "DOC-176",
+      "research/llm-wiki/papers/LIB-A10.md": "DOC-177",
+      "research/llm-wiki/papers/LIB-A11.md": "DOC-178",
+      "research/llm-wiki/papers/LIB-A12.md": "DOC-179",
+      "research/llm-wiki/papers/LIB-A13.md": "DOC-180",
+      "research/llm-wiki/papers/LIB-A14.md": "DOC-181",
+      "research/llm-wiki/papers/LIB-A15.md": "DOC-182",
+      "research/llm-wiki/papers/LIB-A16.md": "DOC-183",
+      "research/llm-wiki/papers/LIB-B01.md": "DOC-184",
+      "research/llm-wiki/papers/LIB-B02.md": "DOC-185",
+      "research/llm-wiki/papers/LIB-B03.md": "DOC-186",
+      "research/llm-wiki/papers/LIB-B04.md": "DOC-187",
+      "research/llm-wiki/papers/LIB-B05.md": "DOC-188",
+      "research/llm-wiki/papers/LIB-B06.md": "DOC-189",
+      "research/llm-wiki/papers/LIB-B07.md": "DOC-190",
+      "research/llm-wiki/papers/LIB-B08.md": "DOC-191",
+      "research/llm-wiki/papers/LIB-B09.md": "DOC-192",
+      "research/llm-wiki/papers/LIB-B10.md": "DOC-193",
+      "research/llm-wiki/papers/LIB-B11.md": "DOC-194",
+      "research/llm-wiki/papers/LIB-B12.md": "DOC-195",
+      "research/llm-wiki/papers/LIB-B13.md": "DOC-196",
+      "research/llm-wiki/papers/LIB-B14.md": "DOC-197",
+      "research/llm-wiki/papers/LIB-B15.md": "DOC-198",
+      "research/llm-wiki/papers/LIB-B16.md": "DOC-199",
+      "research/llm-wiki/papers/LIB-C01.md": "DOC-200",
+      "research/llm-wiki/papers/LIB-C02.md": "DOC-201",
+      "research/llm-wiki/papers/LIB-C03.md": "DOC-202",
+      "research/llm-wiki/papers/LIB-C04.md": "DOC-203",
+      "research/llm-wiki/papers/LIB-C05.md": "DOC-204",
+      "research/llm-wiki/papers/LIB-C06.md": "DOC-205",
+      "research/llm-wiki/papers/LIB-C07.md": "DOC-206",
+      "research/llm-wiki/papers/LIB-C08.md": "DOC-207",
+      "research/llm-wiki/papers/LIB-C09.md": "DOC-208",
+      "research/llm-wiki/papers/LIB-C10.md": "DOC-209",
+      "research/llm-wiki/papers/LIB-C11.md": "DOC-210",
+      "research/llm-wiki/papers/LIB-C12.md": "DOC-211",
+      "research/llm-wiki/papers/LIB-C13.md": "DOC-212",
+      "research/llm-wiki/papers/LIB-C14.md": "DOC-213",
+      "research/llm-wiki/papers/LIB-C15.md": "DOC-214",
+      "research/llm-wiki/papers/LIB-C16.md": "DOC-215",
+      "research/llm-wiki/papers/LIB-D01.md": "DOC-216",
+      "research/llm-wiki/papers/LIB-D02.md": "DOC-217",
+      "research/llm-wiki/papers/LIB-D03.md": "DOC-218",
+      "research/llm-wiki/papers/LIB-D04.md": "DOC-219",
+      "research/llm-wiki/papers/LIB-D05.md": "DOC-220",
+      "research/llm-wiki/papers/LIB-D06.md": "DOC-221",
+      "research/llm-wiki/papers/LIB-D07.md": "DOC-222",
+      "research/llm-wiki/papers/LIB-D08.md": "DOC-223",
+      "research/llm-wiki/papers/LIB-D09.md": "DOC-224",
+      "research/llm-wiki/papers/LIB-D10.md": "DOC-225",
+      "research/llm-wiki/papers/LIB-D11.md": "DOC-226",
+      "research/llm-wiki/papers/LIB-D12.md": "DOC-227",
+      "research/llm-wiki/papers/LIB-D13.md": "DOC-228",
+      "research/llm-wiki/papers/LIB-D14.md": "DOC-229",
+      "research/llm-wiki/papers/LIB-E01.md": "DOC-230",
+      "research/llm-wiki/papers/LIB-E02.md": "DOC-231",
+      "research/llm-wiki/papers/LIB-E03.md": "DOC-232",
+      "research/llm-wiki/papers/LIB-E04.md": "DOC-233",
+      "research/llm-wiki/papers/LIB-E05.md": "DOC-234",
+      "research/llm-wiki/papers/LIB-E06.md": "DOC-235",
+      "research/llm-wiki/papers/LIB-E07.md": "DOC-236",
+      "research/llm-wiki/papers/LIB-E08.md": "DOC-237",
+      "research/llm-wiki/papers/LIB-E09.md": "DOC-238",
+      "research/llm-wiki/papers/LIB-E10.md": "DOC-239",
+      "research/llm-wiki/papers/LIB-E11.md": "DOC-240",
+      "research/llm-wiki/papers/LIB-E12.md": "DOC-241",
+      "research/llm-wiki/papers/LIB-E13.md": "DOC-242",
+      "research/llm-wiki/papers/LIB-E14.md": "DOC-243",
+      "research/llm-wiki/papers/LIB-F01.md": "DOC-244",
+      "research/llm-wiki/papers/LIB-F02.md": "DOC-245",
+      "research/llm-wiki/papers/LIB-F03.md": "DOC-246",
+      "research/llm-wiki/papers/LIB-F04.md": "DOC-247",
+      "research/llm-wiki/papers/LIB-F05.md": "DOC-248",
+      "research/llm-wiki/papers/LIB-F06.md": "DOC-249",
+      "research/llm-wiki/papers/LIB-F07.md": "DOC-250",
+      "research/llm-wiki/papers/LIB-F08.md": "DOC-251",
+      "research/llm-wiki/papers/LIB-F09.md": "DOC-252",
+      "research/llm-wiki/papers/LIB-F10.md": "DOC-253",
+      "research/llm-wiki/papers/LIB-G01.md": "DOC-254",
+      "research/llm-wiki/papers/LIB-G02.md": "DOC-255",
+      "research/llm-wiki/papers/LIB-G03.md": "DOC-256",
+      "research/llm-wiki/papers/LIB-G04.md": "DOC-257",
+      "research/llm-wiki/papers/LIB-G05.md": "DOC-258",
+      "research/llm-wiki/papers/LIB-G06.md": "DOC-259",
+      "research/llm-wiki/papers/LIB-G07.md": "DOC-260",
+      "research/llm-wiki/papers/LIB-G08.md": "DOC-261",
+      "research/llm-wiki/papers/LIB-G09.md": "DOC-262",
+      "research/llm-wiki/papers/LIB-G10.md": "DOC-263",
+      "research/llm-wiki/papers/LIB-G11.md": "DOC-264",
+      "research/llm-wiki/papers/LIB-G12.md": "DOC-265",
+      "research/llm-wiki/papers/LIB-G13.md": "DOC-266",
+      "research/llm-wiki/papers/LIB-G14.md": "DOC-267",
+      "research/llm-wiki/papers/LIB-H01.md": "DOC-268",
+      "research/llm-wiki/papers/LIB-H02.md": "DOC-269",
+      "research/llm-wiki/papers/LIB-H03.md": "DOC-270",
+      "research/llm-wiki/papers/LIB-H04.md": "DOC-271",
+      "research/llm-wiki/papers/LIB-H05.md": "DOC-272",
+      "research/llm-wiki/papers/LIB-H06.md": "DOC-273",
+      "research/llm-wiki/papers/LIB-H07.md": "DOC-274",
+      "research/llm-wiki/papers/LIB-H08.md": "DOC-275",
+      "research/llm-wiki/papers/LIB-I01.md": "DOC-276",
+      "research/llm-wiki/papers/LIB-I02.md": "DOC-277",
+      "research/llm-wiki/papers/LIB-I03.md": "DOC-278",
+      "research/llm-wiki/papers/LIB-I04.md": "DOC-279",
+      "research/llm-wiki/papers/LIB-I05.md": "DOC-280",
+      "research/llm-wiki/papers/LIB-I06.md": "DOC-281",
+      "research/llm-wiki/papers/LIB-I07.md": "DOC-282",
+      "research/llm-wiki/papers/LIB-I08.md": "DOC-283",
+      "research/llm-wiki/papers/LIB-I09.md": "DOC-284",
+      "research/llm-wiki/papers/LIB-I10.md": "DOC-285",
+      "research/llm-wiki/papers/LIB-I11.md": "DOC-286",
+      "research/llm-wiki/papers/LIB-I12.md": "DOC-287",
+      "research/llm-wiki/papers/LIB-I13.md": "DOC-288",
+      "research/llm-wiki/papers/LIB-I14.md": "DOC-289",
+      "research/llm-wiki/papers/LIB-I15.md": "DOC-290",
+      "research/llm-wiki/papers/LIB-I16.md": "DOC-291",
+      "research/llm-wiki/papers/LIB-J01.md": "DOC-292",
+      "research/llm-wiki/papers/LIB-J02.md": "DOC-293",
+      "research/llm-wiki/papers/LIB-J03.md": "DOC-294",
+      "research/llm-wiki/papers/LIB-J04.md": "DOC-295",
+      "research/llm-wiki/papers/LIB-J05.md": "DOC-296",
+      "research/llm-wiki/papers/LIB-J06.md": "DOC-297",
+      "research/llm-wiki/papers/LIB-J07.md": "DOC-298",
+      "research/llm-wiki/papers/LIB-J08.md": "DOC-299",
+      "research/llm-wiki/papers/LIB-J09.md": "DOC-300",
+      "research/llm-wiki/papers/LIB-J10.md": "DOC-301",
+      "research/llm-wiki/papers/LIB-J11.md": "DOC-302",
+      "research/llm-wiki/papers/LIB-J12.md": "DOC-303",
+      "research/llm-wiki/papers/LIB-J13.md": "DOC-304",
+      "research/llm-wiki/papers/LIB-J14.md": "DOC-305",
+      "research/llm-wiki/papers/LIB-J15.md": "DOC-306",
+      "research/llm-wiki/papers/LIB-K01.md": "DOC-307",
+      "research/llm-wiki/papers/LIB-K02.md": "DOC-308",
+      "research/llm-wiki/papers/LIB-K03.md": "DOC-309",
+      "research/llm-wiki/papers/LIB-K04.md": "DOC-310",
+      "research/llm-wiki/papers/LIB-K05.md": "DOC-311",
+      "research/llm-wiki/papers/LIB-K06.md": "DOC-312",
+      "research/llm-wiki/papers/LIB-K07.md": "DOC-313",
+      "research/llm-wiki/papers/LIB-K08.md": "DOC-314",
+      "research/llm-wiki/papers/LIB-K09.md": "DOC-315",
+      "research/llm-wiki/papers/LIB-K10.md": "DOC-316",
+      "research/llm-wiki/papers/LIB-K11.md": "DOC-317",
+      "research/llm-wiki/papers/LIB-K12.md": "DOC-318",
+      "research/llm-wiki/papers/LIB-K13.md": "DOC-319",
+      "research/llm-wiki/papers/LIB-K14.md": "DOC-320",
+      "research/llm-wiki/papers/LIB-K15.md": "DOC-321",
+      "research/llm-wiki/papers/LIB-K16.md": "DOC-322",
+      "research/llm-wiki/papers/LIB-K17.md": "DOC-323",
+      "research/llm-wiki/papers/LIB-K18.md": "DOC-324",
+      "research/llm-wiki/papers/LIB-K19.md": "DOC-325",
+      "research/llm-wiki/papers/LIB-K20.md": "DOC-326",
+      "research/llm-wiki/papers/LIB-K21.md": "DOC-327",
+      "research/llm-wiki/papers/LIB-K22.md": "DOC-328",
+      "research/llm-wiki/papers/LIB-K23.md": "DOC-329",
+      "research/llm-wiki/papers/LIB-K24.md": "DOC-330",
+      "research/llm-wiki/papers/LIB-K25.md": "DOC-331",
+      "research/llm-wiki/papers/LIB-K26.md": "DOC-332",
+      "research/llm-wiki/papers/LIB-K27.md": "DOC-333",
+      "research/llm-wiki/papers/LIB-K28.md": "DOC-334",
+      "research/llm-wiki/papers/LIB-K29.md": "DOC-335",
+      "research/llm-wiki/papers/LIB-K30.md": "DOC-336",
+      "research/llm-wiki/papers/LIB-K31.md": "DOC-337",
+      "research/llm-wiki/papers/LIB-K32.md": "DOC-338",
+      "research/llm-wiki/papers/LIB-K33.md": "DOC-339",
+      "research/llm-wiki/papers/LIB-K34.md": "DOC-340",
+      "research/llm-wiki/papers/LIB-K35.md": "DOC-341",
+      "research/llm-wiki/papers/LIB-K36.md": "DOC-342",
+      "research/llm-wiki/papers/LIB-L01.md": "DOC-343",
+      "research/llm-wiki/papers/LIB-L02.md": "DOC-344",
+      "research/llm-wiki/papers/LIB-L03.md": "DOC-345",
+      "research/llm-wiki/papers/LIB-L04.md": "DOC-346",
+      "research/llm-wiki/papers/LIB-L05.md": "DOC-347",
+      "research/llm-wiki/papers/LIB-L06.md": "DOC-348",
+      "research/llm-wiki/papers/LIB-L07.md": "DOC-349",
+      "research/llm-wiki/papers/LIB-L08.md": "DOC-350",
+      "research/llm-wiki/papers/LIB-L09.md": "DOC-351",
+      "research/llm-wiki/papers/LIB-L10.md": "DOC-352",
+      "research/llm-wiki/papers/LIB-L11.md": "DOC-353",
+      "research/llm-wiki/papers/LIB-L12.md": "DOC-354",
+      "research/llm-wiki/papers/LIB-M01.md": "DOC-355",
+      "research/llm-wiki/papers/LIB-M02.md": "DOC-356",
+      "research/llm-wiki/papers/LIB-M03.md": "DOC-357",
+      "research/llm-wiki/papers/LIB-M04.md": "DOC-358",
+      "research/llm-wiki/papers/LIB-M05.md": "DOC-359",
+      "research/llm-wiki/papers/LIB-M06.md": "DOC-360",
+      "research/llm-wiki/papers/LIB-M07.md": "DOC-361",
+      "research/llm-wiki/papers/LIB-M08.md": "DOC-362",
+      "research/llm-wiki/papers/LIB-M09.md": "DOC-363",
+      "research/llm-wiki/papers/LIB-M10.md": "DOC-364",
+      "research/llm-wiki/papers/LIB-M11.md": "DOC-365",
+      "research/llm-wiki/papers/LIB-M12.md": "DOC-366",
+      "research/llm-wiki/papers/LIB-M13.md": "DOC-367",
+      "research/llm-wiki/papers/LIB-M14.md": "DOC-368",
+      "research/llm-wiki/papers/LIB-M15.md": "DOC-369",
+      "research/llm-wiki/papers/LIB-M16.md": "DOC-370",
+      "research/llm-wiki/papers/LIB-M17.md": "DOC-371",
+      "research/llm-wiki/papers/LIB-M18.md": "DOC-372",
+      "research/llm-wiki/papers/LIB-M19.md": "DOC-373",
+      "research/llm-wiki/papers/LIB-M20.md": "DOC-374",
+      "research/llm-wiki/papers/LIB-M21.md": "DOC-375",
+      "research/llm-wiki/papers/LIB-M22.md": "DOC-376",
+      "research/llm-wiki/papers/LIB-M24.md": "DOC-377",
+      "research/llm-wiki/papers/LIB-M25.md": "DOC-378",
+      "research/llm-wiki/papers/LIB-M26.md": "DOC-379",
+      "research/llm-wiki/papers/LIB-M27.md": "DOC-380",
+      "research/llm-wiki/papers/LIB-M28.md": "DOC-381",
+      "research/llm-wiki/papers/LIB-M29.md": "DOC-382",
+      "research/llm-wiki/papers/LIB-M30.md": "DOC-383",
+      "research/llm-wiki/papers/LIB-M31.md": "DOC-384",
+      "research/llm-wiki/papers/LIB-M32.md": "DOC-385",
+      "research/llm-wiki/papers/LIB-M33.md": "DOC-386",
+      "research/llm-wiki/papers/LIB-M34.md": "DOC-387",
+      "research/llm-wiki/papers/LIB-M35.md": "DOC-388",
+      "research/llm-wiki/papers/LIB-M36.md": "DOC-389",
+      "research/llm-wiki/papers/LIB-M37.md": "DOC-390",
+      "research/llm-wiki/papers/LIB-M38.md": "DOC-391",
+      "research/llm-wiki/papers/LIB-M39.md": "DOC-392",
+      "research/llm-wiki/papers/LIB-M40.md": "DOC-393",
+      "research/llm-wiki/papers/LIB-M41.md": "DOC-394",
+      "research/llm-wiki/papers/LIB-M42.md": "DOC-395",
+      "research/llm-wiki/papers/LIB-M43.md": "DOC-396",
+      "research/llm-wiki/papers/LIB-M44.md": "DOC-397",
+      "research/llm-wiki/papers/LIB-M45.md": "DOC-398",
+      "research/llm-wiki/papers/LIB-M46.md": "DOC-399",
+      "research/llm-wiki/papers/LIB-M47.md": "DOC-400",
+      "research/llm-wiki/papers/LIB-M48.md": "DOC-401",
+      "research/llm-wiki/papers/LIB-M49.md": "DOC-402",
+      "research/llm-wiki/papers/LIB-M50.md": "DOC-403",
+      "research/llm-wiki/papers/P38.md": "DOC-404",
+      "research/llm-wiki/papers/P39.md": "DOC-405",
+      "research/llm-wiki/papers/P43.md": "DOC-406",
+      "research/llm-wiki/papers/P46.md": "DOC-407",
+      "research/llm-wiki/papers/P47.md": "DOC-408",
+      "research/llm-wiki/papers/P51.md": "DOC-409",
+      "research/llm-wiki/papers/P54.md": "DOC-410",
+      "research/llm-wiki/papers/P55.md": "DOC-411",
+      "research/llm-wiki/papers/P57.md": "DOC-412",
+      "research/llm-wiki/papers/P58.md": "DOC-413",
+      "research/llm-wiki/papers/P60.md": "DOC-414",
+      "research/llm-wiki/papers/P63.md": "DOC-415",
+      "research/llm-wiki/papers/P64.md": "DOC-416",
+      "research/llm-wiki/papers/README.md": "DOC-417",
+      "research/llm-wiki/papers/REF-J01.md": "DOC-418",
+      "research/llm-wiki/papers/REF-J02.md": "DOC-419",
+      "research/llm-wiki/papers/REF-J03.md": "DOC-420",
+      "research/llm-wiki/papers/T01.md": "DOC-421",
+      "research/llm-wiki/papers/T02.md": "DOC-422",
+      "research/llm-wiki/papers/T04.md": "DOC-423",
+      "research/llm-wiki/papers/T08.md": "DOC-424",
+      "research/llm-wiki/papers/T10.md": "DOC-425",
+      "research/llm-wiki/papers/T11.md": "DOC-426",
+      "research/llm-wiki/papers/T12.md": "DOC-427",
+      "research/llm-wiki/papers/T15.md": "DOC-428",
+      "research/llm-wiki/papers/T19.md": "DOC-429",
+      "research/llm-wiki/papers/T20.md": "DOC-430",
+      "research/llm-wiki/papers/T21.md": "DOC-431",
+      "research/llm-wiki/papers/T22.md": "DOC-432",
+      "research/llm-wiki/papers/development-reading-guide.md": "DOC-433",
+      "research/llm-wiki/papers/policy50-gap-references.md": "DOC-434",
+      "research/llm-wiki/solutions/README.md": "DOC-435",
+      "research/llm-wiki/solutions/beyondtrust-pathfinder.md": "DOC-436",
+      "research/llm-wiki/solutions/ibm-contextforge.md": "DOC-437",
+      "research/llm-wiki/solutions/ibm-cpex.md": "DOC-438",
+      "research/llm-wiki/solutions/kong-ai-gateway.md": "DOC-439",
+      "research/llm-wiki/solutions/litellm.md": "DOC-440",
+      "research/llm-wiki/solutions/lunar-mcpx.md": "DOC-441",
+      "research/llm-wiki/solutions/ms-mcp-gateway.md": "DOC-442",
+      "research/llm-wiki/solutions/ms-wassette.md": "DOC-443",
+      "research/llm-wiki/solutions/toolhive-runtime.md": "DOC-444",
+      "research/llm-wiki/sources/README.md": "DOC-445",
+      "research/llm-wiki/sources/compliance/LIB-L01/originals/pipa-act-21445-20260911.pdf": "DOC-446",
+      "research/llm-wiki/sources/compliance/LIB-L02/originals/credit-info-act-21445-20260911.pdf": "DOC-447",
+      "research/llm-wiki/sources/compliance/LIB-L03/originals/network-act-21445-20260911.pdf": "DOC-448",
+      "research/llm-wiki/sources/compliance/LIB-L04/originals/ai-basic-act-21311-20260721.pdf": "DOC-449",
+      "research/llm-wiki/sources/compliance/LIB-L07/originals/nist-sp-800-207.pdf": "DOC-450",
+      "research/llm-wiki/sources/compliance/LIB-L08/originals/draft-daniel-ai-agent-internet-architecture-03.txt": "DOC-451",
+      "research/llm-wiki/sources/compliance/LIB-M01/originals/eu-ai-act-2024-1689.pdf": "DOC-452",
+      "research/llm-wiki/sources/compliance/LIB-M02/originals/nccoe-agent-identity-authz-concept-paper.pdf": "DOC-453",
+      "research/llm-wiki/sources/compliance/LIB-M03/originals/careful-adoption-agentic-ai.pdf": "DOC-454",
+      "research/llm-wiki/sources/compliance/LIB-M05/originals/cn-agent-implementation-opinions-2026.html": "DOC-455",
+      "research/llm-wiki/sources/compliance/LIB-M06/originals/gdpr-2016-679.pdf": "DOC-456",
+      "research/llm-wiki/sources/compliance/LIB-M07/originals/nist-ai-100-1-ai-rmf-1-0.pdf": "DOC-457",
+      "research/llm-wiki/sources/compliance/LIB-M09/originals/cn-genai-interim-measures-2023.html": "DOC-458",
+      "research/llm-wiki/sources/compliance/LIB-M10/originals/cn-cybersecurity-law-2025-consolidated.html": "DOC-459",
+      "research/llm-wiki/sources/compliance/LIB-M11/originals/eu-nis2-2022-2555.pdf": "DOC-460",
+      "research/llm-wiki/sources/compliance/LIB-M12/originals/nist-sp-800-53r5.pdf": "DOC-461",
+      "research/llm-wiki/sources/compliance/LIB-M16/originals/eu-2026-1744-ai-omnibus.html": "DOC-462",
+      "research/llm-wiki/sources/compliance/LIB-M18/originals/omb-m-26-14-agency-logging.pdf": "DOC-463",
+      "research/llm-wiki/sources/compliance/LIB-M19/originals/omb-m-25-21-federal-ai-use.pdf": "DOC-464",
+      "research/llm-wiki/sources/compliance/LIB-M24/originals/edpb-opinion-28-2024.pdf": "DOC-465",
+      "research/llm-wiki/sources/compliance/LIB-M25/originals/eu-dora-2022-2554.pdf": "DOC-466",
+      "research/llm-wiki/sources/compliance/LIB-M26/originals/eu-cra-2024-2847.pdf": "DOC-467",
+      "research/llm-wiki/sources/compliance/LIB-M27/originals/cn-cybersecurity-incident-reporting-measures-2025.html": "DOC-468",
+      "research/llm-wiki/sources/compliance/LIB-M29/originals/prc-pipl-2021.pdf": "DOC-469",
+      "research/llm-wiki/sources/compliance/LIB-M30/originals/cn-cross-border-data-flow-provisions-2024.html": "DOC-470",
+      "research/llm-wiki/sources/compliance/LIB-M33/originals/cn-ai-content-labeling-measures-2025.html": "DOC-471",
+      "research/llm-wiki/sources/compliance/LIB-M35/originals/pipeda-p-8-6.pdf": "DOC-472",
+      "research/llm-wiki/sources/compliance/LIB-M41/originals/uk-ai-cyber-code-impl-guide.pdf": "DOC-473",
+      "research/llm-wiki/sources/compliance/LIB-M42/originals/japan-ai-guidelines-business-v1-2.pdf": "DOC-474",
+      "research/llm-wiki/sources/compliance/LIB-M46/originals/uk-data-use-access-act-2025.pdf": "DOC-475",
+      "research/llm-wiki/sources/compliance/LIB-M47/originals/japan-ai-promotion-act-en.pdf": "DOC-476",
+      "research/llm-wiki/sources/compliance/LIB-M50/originals/oecd-ai-recommendation-0449.pdf": "DOC-477",
+      "research/llm-wiki/sources/policy/P38/originals/P38.pdf": "DOC-478",
+      "research/llm-wiki/sources/policy/P51/originals/P51.pdf": "DOC-479",
+      "research/llm-wiki/sources/policy/P55/originals/P55.pdf": "DOC-480",
+      "research/llm-wiki/sources/policy/P57/originals/P57.pdf": "DOC-481",
+      "research/llm-wiki/sources/policy/P64/originals/P64.pdf": "DOC-482",
+      "research/llm-wiki/sources/policy/T19/originals/T19_supplement.txt": "DOC-483",
+      "research/llm-wiki/sources/policy/T20/originals/T20_supplement.txt": "DOC-484",
+      "research/llm-wiki/status/backlog.md": "DOC-485",
+      "research/llm-wiki/status/current.md": "DOC-486",
+      "research/llm-wiki/status/history-2026-10-15.md": "DOC-487",
+      "research/llm-wiki/status/reports/2026-10-13-claude-code-review.md": "DOC-488",
+      "research/llm-wiki/status/reports/2026-10-13-development-goals.md": "DOC-489",
+      "research/llm-wiki/status/reports/2026-10-13-development-results.md": "DOC-490",
+      "research/llm-wiki/status/reports/2026-10-13-enterprise-claude-review.md": "DOC-491",
+      "research/llm-wiki/status/reports/2026-10-13-enterprise-results.md": "DOC-492",
+      "research/llm-wiki/status/reports/2026-10-13-feature-design.md": "DOC-493",
+      "research/llm-wiki/status/reports/2026-10-13-interop-review.md": "DOC-494",
+      "research/llm-wiki/status/reports/2026-10-13-mcp-validation-plan.md": "DOC-495",
+      "research/llm-wiki/status/reports/2026-10-13-result-boundary-review.md": "DOC-496",
+      "research/llm-wiki/status/reports/2026-10-13-wiki-bootstrap.md": "DOC-497",
+      "research/llm-wiki/status/reports/2026-10-14-e13-local-mcp-natural-language.md": "DOC-498",
+      "research/llm-wiki/status/reports/2026-10-14-endpoint-log-wbs.md": "DOC-499",
+      "research/llm-wiki/status/reports/2026-10-14-endpoint-telemetry-fix.md": "DOC-500",
+      "research/llm-wiki/status/reports/2026-10-14-local-mcp-endpoint.md": "DOC-501",
+      "research/llm-wiki/status/reports/2026-10-14-pj1-ghidra-logs.md": "DOC-502",
+      "research/llm-wiki/status/reports/2026-10-14-pj1-nine-tools.md": "DOC-503",
+      "research/llm-wiki/status/reports/2026-10-14-reference-fill.md": "DOC-504",
+      "research/llm-wiki/status/reports/2026-10-14-risk-scenarios.md": "DOC-505",
+      "research/llm-wiki/status/reports/2026-10-15-clean-e2e.md": "DOC-506",
+      "research/llm-wiki/status/reports/2026-10-15-dev35-loopback.md": "DOC-507",
+      "research/llm-wiki/status/reports/2026-10-15-dev38-runtime.md": "DOC-508",
+      "research/llm-wiki/status/reports/2026-10-15-drive-deliverables.md": "DOC-509",
+      "research/llm-wiki/status/reports/2026-10-15-endpoint-evidence.md": "DOC-510",
+      "research/llm-wiki/status/reports/2026-10-15-inspection-corpus.md": "DOC-511",
+      "research/llm-wiki/status/reports/2026-10-15-intake-identity.md": "DOC-512",
+      "research/llm-wiki/status/reports/2026-10-15-oss-analysis-audit.md": "DOC-513",
+      "research/llm-wiki/status/reports/2026-10-15-oss-deep-analysis.md": "DOC-514",
+      "research/llm-wiki/status/reports/2026-10-15-termination-dispatch.md": "DOC-515",
+      "research/llm-wiki/status/reports/2026-10-15-upstream-session-reuse-design.md": "DOC-516",
+      "research/llm-wiki/status/reports/2026-10-15-wbs-implementation.md": "DOC-517",
+      "research/llm-wiki/status/reports/2026-10-15-wiki-consolidation.md": "DOC-518",
+      "research/llm-wiki/status/reports/2026-10-17-compliance-references.md": "DOC-519",
+      "research/llm-wiki/status/reports/2026-10-17-dest-pin-credential-redaction.md": "DOC-520",
+      "research/llm-wiki/status/reports/2026-10-17-feature-spec-wbs.md": "DOC-521",
+      "research/llm-wiki/status/reports/2026-10-17-loopback-owner-replies-d119.md": "DOC-522",
+      "research/llm-wiki/status/reports/2026-10-17-ops-response-d120-d123.md": "DOC-523",
+      "research/llm-wiki/status/reports/2026-10-17-pol-pac-mapping-opa-labels.md": "DOC-524",
+      "research/llm-wiki/status/reports/2026-10-17-policy50-gap-references.md": "DOC-525",
+      "research/llm-wiki/status/reports/2026-10-17-response-cap-idempotency.md": "DOC-526",
+      "research/llm-wiki/status/reports/2026-10-17-selective-restriction-siem.md": "DOC-527",
+      "research/llm-wiki/status/reports/2026-10-17-upstream-session-reuse-stage2.md": "DOC-528",
+      "research/llm-wiki/status/reports/2026-10-17-windows-kit-wizard-tray.md": "DOC-529",
+      "research/llm-wiki/status/reports/2026-10-18-field-tls-d124-merge.md": "DOC-530",
+      "research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md": "DOC-531",
+      "research/llm-wiki/status/repository-snapshot.md": "DOC-532",
+      "research/llm-wiki/team-agi-deliverables-2026-10-15.md": "DOC-533",
+      "research/llm-wiki/templates/task-prompt.md": "DOC-534",
+      "research/llm-wiki/templates/work-report.md": "DOC-535",
+      "research/llm-wiki/threats/README.md": "DOC-536",
+      "research/llm-wiki/threats/control-map.md": "DOC-537",
+      "research/llm-wiki/threats/extracted/policies.md": "DOC-538",
+      "research/llm-wiki/threats/extracted/wbs.md": "DOC-539",
+      "research/llm-wiki/threats/local-tool-map.md": "DOC-540",
+      "research/llm-wiki/threats/originals/MCP_보안_거버넌스_Policy_as_Code_WBS_V1.5.xlsm": "DOC-541",
+      "research/llm-wiki/threats/originals/MCP_보안정책-추가25.xlsm": "DOC-542",
+      "research/llm-wiki/threats/originals/MCP_보안정책50_2026-10-14.xlsm": "DOC-543",
+      "research/llm-wiki/threats/policies-24.md": "DOC-544",
+      "research/llm-wiki/threats/policies-50-2026-10-14.md": "DOC-545",
+      "research/llm-wiki/threats/policies-50.md": "DOC-546"
+    },
+    "backlog_aliases": {
+      "RES-01": "WIKI-02"
+    }
+  },
+  "flat": false
+}

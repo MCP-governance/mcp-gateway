@@ -1,0 +1,331 @@
+커밋,날짜,작성자,유형,범위,요약,결정,백로그,WBS,병합,기기 배포,링크
+0db46bd,2026-09-09 15:47,pokochy,feat,,add tiny MCP policy demo,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0db46bd964b716a7fe9f61ba7fe78b38691df61a
+915be46,2026-09-09 15:53,pokochy,docs,,add Korean lab guide,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/915be460c476851948bf449bbd328d67f8014c31
+216b275,2026-09-09 17:37,pokochy,feat,,add two-vm MCP gateway demo setup,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/216b275659f805a190bbba86ba68b549a1b3e8c1
+68af51d,2026-09-09 19:58,pokochy,,,Add CodeQL analysis workflow configuration,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/68af51dce96949a74d54294d1dd385d8bf6a5b70
+7f307fa,2026-09-10 13:35,pokochy,feat,,add role and data classification policy demo,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/7f307fa07e2a2cc0a0facccd01137bf1ba2912a7
+0048587,2026-09-10 13:55,pokochy,feat,,add gateway learning GUI,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/00485874319e72046df6aa78c2c27428db7117a3
+9890c11,2026-09-10 14:25,pokochy,feat,,add library-backed public MCP integration lab,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/9890c113b314ef397f1568c68a07d8bc77948289
+ec584f1,2026-09-10 14:27,pokochy,,,Merge pull request #2 from MCP-governance/feat/rbac-data-classification-demo,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/ec584f17d949b0a782eb916f003d069bee040d26
+e71d3d8,2026-09-10 14:28,pokochy,,,Merge pull request #3 from MCP-governance/feat/library-mcp-integration-lab,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/e71d3d86e7c17cbc4965e056f9302780794d50a0
+e165ba1,2026-09-10 19:38,pokochy,feat,,add LiteLLM OPA container policy lab,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e165ba15b7ba67413cdc39a9e1ce89c1338b09ee
+2e3b37c,2026-09-10 19:42,pokochy,fix,,persist lab evidence in named volumes,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2e3b37c4a9f7664098dc93d76906047e1187febb
+6dbd48a,2026-09-10 19:44,pokochy,fix,,classify nonimportant requests before important,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/6dbd48aa94d0d37f50e9c2f6082e52ae864ece02
+c240dac,2026-09-10 19:47,pokochy,docs,,record container memory guidance,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c240dac406edca60f24a328a7bda40eea02b1465
+4532963,2026-09-12 11:30,pokochy,feat,,enforce OPA catalog preflight,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/4532963d5af91b3d50f34ddbe173f61f578b5fff
+49b8c7b,2026-09-12 12:35,Dr Kyounggon Kim,,,Create README.md for research directory,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/49b8c7bdf4ac42a283de261d68629f76e554c153
+4e0d9e9,2026-09-13 11:53,pokochy,,,Merge remote-tracking branch 'origin/main' into feat/full-mcp-security-gateway,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/4e0d9e9d705c5eb49e789999a3c14fbc797f9ce9
+25e2693,2026-09-13 16:01,pokochy,,,기능: 2026-09 v1.0 MCP 보안 게이트웨이 통합 실습 추가,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/25e269330378e6a12592cd77bcc8eeddbf44d3b0
+6966b22,2026-09-13 16:28,pokochy,,,병합: 2026-09 v1.0 MCP 보안 게이트웨이 통합,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/6966b223563a3c615e5840acec99fbdb095f7c32
+f9ba5e4,2026-09-13 16:31,pokochy,,,문서: v1.0 실행법과 버전 이력 정리,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/f9ba5e4613c8dab61b7326a264f1dee7d43d22a0
+418cff8,2026-09-13 21:22,pokochy,,,기능: 2026-09 v1.1 Agent Service와 MCP 시나리오 통합,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/418cff8739066bb7f1938ab03d4a7ba093762ce4
+abf145c,2026-09-13 21:23,pokochy,,,병합: 2026-09 v1.1 Agent Service 통합판 반영,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/abf145c16992c44ab11aaa6f8d523736a81d285d
+44a672e,2026-09-14 12:39,bobysg,,,수정: 모든 ingress의 신원을 transport 인증으로 고정하고 출력·감사 경계를 보완,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/44a672efd45e2eff6f804614b3015453859232b6
+baaeae4,2026-09-14 12:48,bobysg,,,수정: PostgreSQL 커넥션 풀과 중단된 tool-call receipt 복구,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/baaeae420cd1f4190445ea22677235422dd777af
+8f159a3,2026-09-14 12:50,bobysg,,,기능: 완료 조건 전체 검증을 GitHub Actions에서 실행,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8f159a39c3a43a371084ab95af2ed14c93b5bfb3
+0fead98,2026-09-14 12:56,bobysg,,,수정: 합성 JWT를 Ed25519 비대칭 서명으로 전환,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0fead98ed3d3ab892b5780d2516e0fc2eadddebc
+6fd796d,2026-09-14 13:00,bobysg,,,기능: 감사 로그 해시 체인과 append-only 권한,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/6fd796d14c11cc1ceb98810f5fc7be12fd7e2667
+a27facc,2026-09-14 13:05,bobysg,,,"기능: 관찰(monitor) 모드와 ""집행했다면 막혔을 호출"" 리포트",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a27facc630f76bbb38a0ca0c0777632db7f601d9
+27c0053,2026-09-14 13:09,bobysg,,,기능: 호출량·중요정보 누적 통제와 로그인 시도 상한,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/27c005385daec0b78577fbda2d18fa9c23d7de6f
+6071f49,2026-09-14 13:13,bobysg,,,기능: 중개하지 않는 MCP 메서드를 기본 거부 (MCP-METHOD-001),,,,,,https://github.com/MCP-governance/mcp-gateway/commit/6071f49893f1fe4f0028aa4371ebbce3340c6592
+90dd732,2026-09-14 13:15,bobysg,,,수정: 공급망 스캔 결과를 서버에 귀속시켜 실제 차단에 연결,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/90dd7327f85c870686d01fb642080bfaec0f03f0
+6cd5a27,2026-09-14 13:18,bobysg,,,기능: 승인 거부(사유 필수)와 Restrict 값의 정책 데이터 분리,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/6cd5a272b016d3759303300fc3e96df63f3a6d2f
+6e229ef,2026-09-14 13:50,pokochy,fix,,harden agent delegation and v1.2 acceptance,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/6e229eff60bc3505a3f3a92e6cd41ef86c8819b5
+f079d16,2026-09-14 13:53,pokochy,docs,,correct Rego verification count,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/f079d16dd37f5b848f41b04451d118c68c3113ae
+7b4d49f,2026-09-14 14:21,pokochy,ui,,surface agent identity boundary,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/7b4d49f761b7119b55a0c8ac50de17b0cc4bd8f0
+0fd2fb8,2026-09-14 14:33,pokochy,,,문서: v1.2 시작점과 검증 기준 정리,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0fd2fb881e21254855c2625eb9ef89c8b35cf305
+1cb224f,2026-09-14 14:37,pokochy,,,Merge pull request #14 from MCP-governance/codex/2026-09-v1.2-identity-delegation-hardening,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/1cb224ffaa21767fc147636307352ca821f01ead
+b3b0b30,2026-09-14 18:25,bobysg,,,수정: 병합 뒤 어긋난 문서·시연·reset을 맞추고 정책 입력에 조직 축 추가,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/b3b0b3057faa981fe80f787a27abee849c0e248d
+a782200,2026-09-14 18:37,pokochy,,,병합: 정책 입력 조직 축과 문서·시연 정합성 보강,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/a7822005a9b5558001d55d39595b4d2c02c7cf71
+367546b,2026-09-14 18:49,pokochy,,,보강: 분류 관리대장과 Registry 행위 정본 적용,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/367546ba6d270a637fc83276e4fb42c723ad7332
+6dc0f73,2026-09-14 18:49,pokochy,,,병합: 분류 관리대장·Registry 정본과 회귀 안정화,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/6dc0f73e3893c82058c9f7034a8b37f0e42f5761
+3f691cd,2026-09-14 20:38,pokochy,fix,,대시보드 테마 통일과 감사 그래프 복구,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/3f691cd3b959057aa3312453f934a39095377b8e
+7b56908,2026-09-14 20:38,pokochy,merge,,v1.3.1 UI 테마와 감사 그래프 반영,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/7b569081646e791738b88075675fea41d77e2bf3
+7c3a17a,2026-09-14 23:00,pokochy,feat,,단일 운영 콘솔과 공급망 도입 검증 흐름 추가,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/7c3a17a8289d53ebd258460cea63637b646fcf5d
+41f3bdc,2026-09-14 23:00,pokochy,merge,,v1.4 단일 운영 콘솔과 공급망 검증 흐름 반영,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/41f3bdcae6c6ca539698cac52f3204d29ed9b0ba
+e956892,2026-09-16 18:17,pokochy,feat,,MCP 보안 관리 프레임워크 V1.0 §11 PaC 초안 적용,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e9568927931e6253ef1a9a40ac038cc3c4843a58
+0bdeda4,2026-09-16 18:58,pokochy,feat,,"도입 검증 실동작, 역할 분리, 콘솔 재설계",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0bdeda4daca287d34c3ccf6ed6ba84e89b15b628
+b43c27a,2026-09-16 19:40,pokochy,feat,,"AI 코드 감사 실행·결과 화면, 실시간 판정 흐름, 직원 최소권한과 카탈로그 검색",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/b43c27ae7f0e6841546b7fc1da25e3221b5ede12
+b0db135,2026-09-16 19:52,pokochy,,,Merge pull request #17 from MCP-governance/feat/pac-framework-v1,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/b0db1359876565c71083e753bc9fa4d448c7e686
+1e1fb70,2026-09-17 16:00,pokochy,,,"v1.5: 저장소 정리, AI 코드 감사 실행 구조, 신원 관리대장, 콘솔 UX",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/1e1fb70dce94167e1e566d4a1e0abb8d068e73da
+2c1d58a,2026-09-17 20:02,pokochy,fix,,"감사 실행의 잘못된 ID를 422로, 정지된 계정 로그인을 403으로 구분",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2c1d58abd457eb273c2bb1058b1f9aeade0f3d2c
+a984abb,2026-09-17 20:06,pokochy,fix,,다크 테마에서 흰 배경에 흰 글씨가 되던 버튼·배지,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a984abbe4b6016402375c88bd7d84772366e2882
+8a98e3e,2026-09-17 20:07,pokochy,chore,,.gitignore에서 없어진 Vite ui 경로를 빼고 스캐너 로그를 넣는다,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8a98e3e7bc62bd783bd547d9756697c87e994c83
+dd47b9d,2026-09-17 20:39,pokochy,fix,,호스트 노출 검사가 Compose v5에서 거짓 실패하던 것,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/dd47b9d244292f21bf57ccdbcfbd9128432a9352
+1107244,2026-09-17 20:47,pokochy,fix,,mcp-scan이 semgrep을 죽여 모든 도입 검증이 실패하던 것,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/11072444966e6baa47c144ce5ced68642612924a
+e7a7046,2026-09-17 20:49,pokochy,fix,,검증이 실패한 저장소를 영구히 재신청 불가로 만들던 것,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e7a7046e797be0c9e433a7c33ceb22bcc15e0604
+bff6b13,2026-09-19 19:04,pokochy,,,"v1.6: 전주기 종료·폐기 판정, 통제 평면 분리, AI-Infra-Guard 활용 확대",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/bff6b1300e68abb6e0d9b3d169b9b2a26219b05a
+1d41907,2026-09-19 19:08,pokochy,fix,,CI의 pyflakes 대상 목록이 줄 연속 문자 때문에 깨지던 것,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/1d41907428f33c90b99ff66fd71fc666494b7d68
+de15131,2026-09-19 19:22,pokochy,,,Merge pull request #18 from MCP-governance/feat/2026-09-v1.6-termination-planes,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/de151317d2dab6dc1fca1b1eca74adc704337bec
+55d9020,2026-09-20 17:20,pokochy,fix,,harden policy execution and preserve uncertain outcomes,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/55d9020a014b82c2285cfba3061b9120a8d66e78
+0084d6b,2026-09-20 18:05,pokochy,,,Merge pull request #19 from MCP-governance/codex/2026-09-runtime-hardening,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/0084d6b2c56b47ec996e4506fc89aa6eb2bc9229
+a21aa4d,2026-09-21 17:07,pokochy,feat,,add isolated AI Infra Guard supply-chain lab,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a21aa4ddf8e5d453d3b14f41d87a8feabd8d78f2
+f056276,2026-09-21 18:09,pokochy,feat,,inventory lab network before AIG scan,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/f0562762709d2dc7ab64b17ecdf46ccd284bbb4a
+272f938,2026-09-21 20:34,pokochy,feat,,add one-click live AI Infra Guard lab setup,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/272f93807f33afbdce96af586ee05fd7242d45af
+51f731e,2026-09-21 21:06,pokochy,feat,,run Tencent AI Infra Guard inside lab gateway,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/51f731e21d6e6a96bf76516adafc82a4318a7ceb
+31e99cd,2026-09-21 21:10,pokochy,refactor,,reuse shared model stub for AIG lab,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/31e99cdec5b218a67459877a26c5e0944d278de8
+b9c51ea,2026-09-21 21:20,pokochy,,,Merge pull request #20 from MCP-governance/codex/2026-09-internal-mcp-supply-chain-lab,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/b9c51eaecd9760f8cac597241969866bd5ae329f
+6d41656,2026-09-22 16:25,pokochy,feat,,엔드포인트 평면 분리·내부망 MCP 탐색·통합관리대장 정책 재매핑,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/6d41656618f001c441efa29e1595cfa3be268706
+7de28ad,2026-09-22 16:43,pokochy,fix,,시간대를 고정한 stdio 명령의 승인 schema 해시를 기준선에 반영,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/7de28adaf7f04e26d4f3a254eb1bd01528b664bd
+c45cdd9,2026-09-23 14:17,pokochy,,,Harden lab networking and local model workflow,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c45cdd96f3633c32f16c5b7bc69c553a966fa5a7
+c0bb88e,2026-09-23 14:35,pokochy,fix,,README 삭제분 복원과 망 분리·Time MCP 핀 검사의 거짓 통과 제거,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c0bb88e16fcbc001d52db6da0a3c535a8d0abc5a
+1cd0374,2026-09-23 16:12,pokochy,,,Merge pull request #21 from MCP-governance/codex/2026-09-clean-install-network-ui,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/1cd0374d2b2b883a6c85edb6a7d2ca7444a45030
+711b32f,2026-09-23 19:23,pokochy,wip,v2,"real MCP fleet, generic gateway path, registry, classification, OAuth IdP",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/711b32f2373e5d5b371ec3f158ddc3797d1d17cc
+cc086e5,2026-09-24 15:37,pokochy,feat,,add PDF-aligned privacy controls and policy replay,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/cc086e55d8b3ad87c0123041404e0440799f226f
+45b9f6e,2026-09-24 15:48,pokochy,,,Document Docker address pool recovery and keep down usable,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/45b9f6ed6dd9cb6b6eadfaf2b6cc6ee1ac377967
+5043699,2026-09-24 19:26,pokochy,wip,v2,"employee workstations with LiteLLM keys, console.sh v2, termination by relationship",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/50436990a2153dab1fdaa4bfe931330368081c12
+353c702,2026-09-24 19:34,pokochy,feat,v2,paper experiments E1-E3 and the termination judgment on real components,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/353c702b722bdff12db3663527e868f058dec8f3
+374dc0b,2026-09-24 19:59,정원재,docs,,propose incremental MCP gateway architecture improvements,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/374dc0b161f372a1388271fade817677bd7f9ef6
+7a8aacb,2026-09-24 20:01,정원재,docs,,preserve source line ranges in GitHub rendering,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/7a8aacb6741a4c8e38570407b9a783fc6b5117be
+5567111,2026-09-24 20:02,pokochy,feat,v2,governance console rewrite and read-API role boundary,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/5567111c89e440300c96781e90948a162cf41517
+0c1736d,2026-09-24 20:31,정원재,feat,,redesign governance console and stabilize live decision UX,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0c1736d9f1958cd3c8f0b2ef5ff4005036a2ef2f
+1ff7b0c,2026-09-25 12:48,pokochy,fix,v2,"MCP 401 challenge, approvable exceptions, acceptance v2, security regression",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/1ff7b0c6ea7f7226e1f7a8b432dad4eff67fb2e9
+9634b88,2026-09-25 12:48,pokochy,docs,v2,"handbook for the next AI worker, READMEs, architecture diagram",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/9634b881f38e2e038e3072b08ec1e2fb2f2e1410
+a14fe13,2026-09-25 12:48,pokochy,,,Fix gateway governance UX and policy setup,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a14fe13549cdcdf81d5e3fb8ed6c16de24a95b62
+e8279f7,2026-09-25 13:05,pokochy,,,"Merge origin/main: PDF-aligned privacy controls and policy replay, ported to v2",D-23 · D-20 · D-22 · D-21,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/e8279f7767dff8d1ce5962b8fb9687d334f1c818
+906d227,2026-09-25 13:06,pokochy,,,Integrate enterprise dashboard UX and architecture review,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/906d2271c58f46e619788a3cf29f64a2e5646274
+ae7ec85,2026-09-25 13:08,pokochy,,,Package endpoint observer for host installation,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/ae7ec850875f55aa36e7194d56b258bb3eca43f6
+f2a5913,2026-09-25 13:13,pokochy,,,Fix endpoint package CI paths and documentation,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/f2a5913f2295d72afab360a2939c1e454c77153b
+4535176,2026-09-25 13:14,pokochy,,,Merge enterprise dashboard UX and governance fixes (#24),,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/45351769e20c48fd0423692c1c1c24cdf0b374d1
+6721e3b,2026-09-25 13:18,pokochy,,,Merge endpoint observer host installation package (#25),,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/6721e3b2e637934e8b94023ce34aac8ea2d5c924
+8b2b1b4,2026-09-25 13:21,pokochy,,,Silence transient readiness retry errors,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8b2b1b44f44c621c757af804105bbbd5cd612bc5
+3020f8b,2026-09-25 13:26,pokochy,,,Merge quiet readiness retry output (#26),,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/3020f8b8ee4c479a02ab98dbab058ac2a1004793
+b396b92,2026-09-25 17:42,pokochy,,,"Merge origin/main (last 24h) into v2: authorization bundle, exit-term verification, explicit subnets, endpoint-agent package, console UX",D-25 · D-26 · D-24 · D-20 · D-29 · D-28 · D-27,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/b396b92ed71ecfb59d9aebd076c2c3ab4daeef82
+a5a3e6b,2026-09-26 00:20,pokochy,feat,v3,employee PCs run real harnesses; per-server MCP endpoints on the Gateway,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a5a3e6be0f116b201dead4d81706cb08a619ade6
+627a67e,2026-09-26 00:50,pokochy,feat,v3,"console v3 - in-page tabs, charts first, larger type, no prose",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/627a67e119d4151b8d8937ac2bdc35c5e6a093d4
+df8f814,2026-09-26 00:50,pokochy,docs,v3,"harness-native architecture, decisions D-30..D-35, archify diagram",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/df8f8144ebbe4019e0d2dcaaa1a4720fb254b40a
+dacc1ce,2026-09-26 00:57,pokochy,fix,v3,donut legends below the chart; .env.example with v3 defaults,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/dacc1ce1b45504056372977d8fef1131cfd180bc
+8b081f4,2026-09-26 17:37,pokochy,refactor,proxy,replace governance lab with streaming MCP reverse proxy,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8b081f4badb2d08395a36b368ce7c6b5076b88c8
+fcadaf7,2026-09-26 17:45,pokochy,,,Merge pull request #27 from MCP-governance/Proxy,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/fcadaf714379cd3b018263fe7ed357aade6a2124
+b4de4fe,2026-09-26 17:51,pokochy,revert,,실수로 병합된 Proxy 브랜치(#27)를 main에서 되돌린다,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/b4de4fee2ecfec316909edeb92526360b5dc7798
+5e9d8f1,2026-09-26 17:52,pokochy,,,Merge pull request #28 from MCP-governance/revert/pr-27-proxy-merge,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/5e9d8f1b7d94d57ac617389e31d1ea0b03e77f0d
+43bf48b,2026-09-26 18:52,pokochy,feat,v3,"이용 관계 범위를 평상시 판정에 연결하고, 연결 확인을 계약 재검증과 분리",D-39 · D-40 · D-41,,,,,https://github.com/MCP-governance/mcp-gateway/commit/43bf48b2ef716aa3f23128d0ba4f08ca3eac979d
+8889afc,2026-09-26 18:52,pokochy,docs,v3,LiteLLM MCP 게이트웨이 벤치마킹과 D-39~D-41,D-39 · D-41 · D-36 · D-38,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8889afc4b6a8f9126ea076841f2f2294c8b26842
+1652ff4,2026-09-26 19:10,pokochy,,,Merge pull request #30 from MCP-governance/feat/litellm-benchmark,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/1652ff4c327b13faa14979db227d950c817cbac4
+242bba1,2026-09-27 00:37,pokochy,feat,v3,솔루션 기기·관리자 PC·직원 PC로 나눈 실기기 배치 (D-42~D-44),D-42 · D-44,,,,,https://github.com/MCP-governance/mcp-gateway/commit/242bba111963f2b64e42325bd9eba0593c48c671
+f977ee9,2026-09-27 04:41,pokochy,fix,v3,실기기 공개 주소를 MCP 파사드의 허용 Host에 더한다,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/f977ee9c44a6f15df8ea4ea8ff272db4a3615851
+16660f8,2026-09-27 17:43,pokochy,feat,v2,automate MCP intake validation and expose evidence reports,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/16660f8d7a8b94a82796e0178b44e46b8c4c0cef
+f0a0025,2026-09-28 17:47,pokochy,fix,v3,직원 도입 신청 표시와 Tailscale 설정 단순화,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/f0a0025caf930189f793fcaf6b1553131c195624
+e184946,2026-09-28 20:13,pokochy,feat,field,add internal MCP repo and simplify deployment,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e184946bb2cd0100fe5fae8c6b1711ea338533d5
+b581759,2026-09-28 20:18,pokochy,test,field,keep demo MCP opt-in in CI,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/b58175973f0ce54ee9853b4b8e2abfa262cb97d1
+8c1e5fa,2026-09-28 20:23,pokochy,fix,field,stop demo workstations unless requested,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8c1e5fabd010a068b74ae7c79fcf7c5c3b307b87
+650d878,2026-09-28 20:36,pokochy,fix,field,preserve remote approval gate order,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/650d8783e92c519f92b6fb49b32f7d3524a74e2c
+e5099dc,2026-09-28 21:01,pokochy,docs,v3,README를 v3.1 기능에 맞추고 기본 브랜치를 main으로 표기,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e5099dc83ad3d7dda42e5b3245c21c8e72e109ec
+d1eab53,2026-09-28 23:46,pokochy,feat,field,"A.I.G 로컬 모델, 내부 Git 로그인 연동, 승인 서버의 Console 등록",D-47 · D-48 · D-49,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d1eab53da439f28e1bbee5a18733a09074113271
+5f56807,2026-09-28 23:50,pokochy,fix,v3,기동마다 도는 SQL이 scan_jobs 제약을 좁혀 재시작이 실패하던 문제,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/5f56807552636d1b1cc310badee87a5b6a066d6e
+f4e9a7f,2026-09-29 14:12,pokochy,fix,v3,wait for account status list refresh,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/f4e9a7f7a91e76e037d49e642a75c5e4bbdf4089
+c629ecf,2026-09-29 14:20,pokochy,fix,v3,use radio choices for account status,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c629ecf5b12bd6ce57e01237ca84056c26b1d094
+e3e705e,2026-09-29 14:37,pokochy,feat,field,sync org members and improve intake workflow,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e3e705e5fc3033a8cc09cb08e81b71034135e733
+127585b,2026-09-29 14:41,pokochy,fix,field,keep intake charts mounted during refresh,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/127585bea81145826ebed1f0141cea4cd2bd3e7a
+4e5d7f3,2026-09-29 14:42,pokochy,fix,field,allow retrying Git cleanup after account deletion,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/4e5d7f32352221009c7095cf5cdf97a09bd32784
+bb17413,2026-09-29 14:44,pokochy,fix,field,grant Gitea team repository code access,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/bb1741388aa58797387f0991038d6333193b4dc1
+1da59d5,2026-09-29 14:47,pokochy,fix,field,load existing requests when intake tab opens,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/1da59d5f132639019ad80314acb95f1657a1e703
+8e2cabe,2026-09-29 14:50,pokochy,fix,field,add approved signups to Git organization immediately,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8e2cabe87c8966ba6918771270455dcf64f56a9f
+652653c,2026-09-30 14:56,pokochy,feat,field,"종료 조건 결론·하네스 기본 커넥터 승인·도구 설명 검사, Console 정리",D-50 · D-51 · D-52,,,,,https://github.com/MCP-governance/mcp-gateway/commit/652653cc65b3b0520a371372770328a640723a3b
+6529991,2026-09-30 15:02,pokochy,merge,,원격의 계정 삭제·Git 조직 동기화·신청 검색과 합침,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/65299912a6dfcb70a33ab953e5a172ca05538f66
+853e0a6,2026-09-30 17:57,pokochy,fix,v2,enforce managed CLI boundaries and qualify connector evidence,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/853e0a62f484d83b1a6b218c042fdffeaeef4c49
+b82fb62,2026-09-30 23:45,pokochy,fix,gateway,"harden control scopes, call reservations, and release verification",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/b82fb627c1b3ad86bcf8e511d32f1a1d7c3bb7ef
+fbd7589,2026-09-30 23:54,pokochy,fix,deploy,verify common app and published PC kit separately,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/fbd75898bb805278ebf413d1dc855d6612a639ea
+0029a9c,2026-10-01 00:10,pokochy,docs,,"record clean testbed, real MCP, and field deployment evidence",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0029a9cb4160d924f849965ba4230aa4330bbe9f
+16df3f7,2026-10-01 00:51,pokochy,fix,v3,판정 기준을 원천에서 가져온다 — SQL 내장 함수 카탈로그·자격 증명 접두어·정책 데이터 일치 (D-56),D-56 · D-54 · D-55,,,,,https://github.com/MCP-governance/mcp-gateway/commit/16df3f780854de0545692f27738a02def1058717
+7fe97f4,2026-10-01 00:59,pokochy,docs,v3,IBM·Microsoft 분석을 정정·상세본으로 — 질문 1~10·PAC 대응표·재사용 입력 복원,D-55 · D-56,,,,,https://github.com/MCP-governance/mcp-gateway/commit/7fe97f472fe834fd074a4a77e0928fe3a422857b
+d7b2238,2026-10-01 01:02,pokochy,docs,v3,실제 LLM 하네스가 솔루션 기기 게이트웨이를 거친 업무 10회와 후속 보강 기록,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d7b2238091e4e550efc173c9caa0c4970853f6b7
+93452ec,2026-10-01 01:04,pokochy,docs,v3,시험 뒤 솔루션 기기를 현장 모드로 되돌린 상태와 CI 결과를 기록,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/93452ecfb835ee346d36881b81b19be413e4b3da
+fa70b95,2026-10-01 03:59,pokochy,fix,v2,enforce reviewed remote intake and audit rejected MCP connections,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/fa70b959a14aaceb4c75492a4de8ab9060bc0422
+c0c7a79,2026-10-01 13:28,pokochy,fix,v3,"fa70b95 검수 — 연결 거부는 호출 한도에 넣지 않고, 신청 없는 등록은 실행하지 않는다 (D-59)",D-59,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c0c7a790712de5db6134a52c1c473f7ca951eb51
+58ebca5,2026-10-01 13:38,pokochy,fix,field,PC 키트가 Codex 도구 승인을 게이트웨이에 맡기고 ~/.local/bin의 Claude Code도 찾는다 (D-59),D-59,,,,,https://github.com/MCP-governance/mcp-gateway/commit/58ebca5f29cf9c1632d84622176043717a14d936
+b3c5efb,2026-10-01 13:53,pokochy,fix,v3,"실기기 실측에서 찾은 두 경계 — 64KB 넘는 인자는 보내지 않고, 분석기 부하로 결과를 버리지 않는다 (D-59)",D-59,,,,,https://github.com/MCP-governance/mcp-gateway/commit/b3c5efb6912eb78f458742610313565dffadb673
+15db1cb,2026-10-01 15:45,pokochy,,,Integrate reviewed PAC15 execution scopes and retire role matrix,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/15db1cb2472269443a8545055eb62ecf486460cc
+573eab4,2026-10-01 15:52,pokochy,,,Record live PAC15 proof and show runtime approval scope count,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/573eab4cb46b80f069bc152425ba13dfa7b0c80c
+c625ff4,2026-10-01 17:57,pokochy,feat,v2,require managed device enrollment for field MCP,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c625ff418458c28637b50bacc71e6aea6ef91066
+39db109,2026-10-01 18:40,pokochy,feat,planes,separate enforced from observed control planes and record response disposition (D-62),D-62,,,,,https://github.com/MCP-governance/mcp-gateway/commit/39db109e2375bc01fbfafddd6f2814b6c2a58a71
+354117f,2026-10-01 18:57,pokochy,fix,planes,close the review findings on D-62,D-62,,,,,https://github.com/MCP-governance/mcp-gateway/commit/354117f8d3be7068e6e5fbac22b998a8e29e1c4c
+fc9ed66,2026-10-01 19:37,pokochy,feat,console,"status x evidence UI, 통제 범위 page and call pipeline (D-63, WIP)",D-63,,,,,https://github.com/MCP-governance/mcp-gateway/commit/fc9ed663287d7272b1535034e6f743e847ef4ce9
+ad888d5,2026-10-01 21:20,pokochy,fix,v2,finish control-plane UI and restore field validation,D-63,,,,,https://github.com/MCP-governance/mcp-gateway/commit/ad888d5dd126531796a334595963d19519201149
+8d6b0db,2026-10-01 22:55,pokochy,feat,v2,remaster governance console for organization operations,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8d6b0db3859eb27a8ebb077fe054eeacaf3190ed
+29f5a9d,2026-10-01 23:16,pokochy,fix,v2,reset scroll when opening a console detail,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/29f5a9d112c6604557168b978cb20161dbf2bc5c
+c1b1e9d,2026-10-01 23:36,pokochy,fix,v2,preserve unknown states in employee console views,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c1b1e9d04d337dd035c171eeda07c1304839f4e7
+a4463c5,2026-10-03 14:59,pokochy,feat,v2,"adopt Keycloak, Gitleaks and audit evidence APIs",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a4463c59b4f22bcf79d14d984583f17e4b916078
+96431a0,2026-10-03 18:25,pokochy,feat,v2,"product console, remove 333 remnants and A.I.G mcp-scan",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/96431a07c88156d6a1b22e308d8e400cf8b70a0a
+192decb,2026-10-03 18:27,pokochy,fix,v2,endpoint wording in the managed agent messages,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/192decb61040357a460867a73eb067bd9e500084
+26b82fd,2026-10-03 18:52,pokochy,fix,v2,coverage lists only servers the registry still holds,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/26b82fdd251a4d3611de97e6dfe2a10c4cc155d9
+eede927,2026-10-03 18:54,pokochy,fix,v2,keep the login brand on one line at any width,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/eede9279d20fa3cbcd9efa36c9bfcab8e79bd2fa
+31921ad,2026-10-03 18:57,pokochy,fix,v2,"termination lists engagements, not orphans of removed servers",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/31921ad70de3fd33ebc1a2923be7256113abf2ea
+e170fd3,2026-10-03 19:03,pokochy,fix,v2,count PAC scope denials toward the repeated-block anomaly,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e170fd328997df7eeebe3ba9a2df3418413822a3
+98340dd,2026-10-03 21:22,pokochy,fix,v2,"Windows observer installer and process inventory, Python 3.10 kernel-event parser",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/98340ddf7a6c8278d97c627f518491d75c6467a2
+c0f0a70,2026-10-03 21:22,pokochy,feat,v2,model proxy for managed accounts and a Windows managed installer,D-67 · D-68,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c0f0a70ba1c0cca8920eb4c7b366a114fd49f7bd
+bca103e,2026-10-03 21:27,pokochy,fix,v2,complete managed Linux removal so the device can be reinstalled,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/bca103ede4e4aff3900a00e8cba3abe681bcc372
+68353c8,2026-10-04 17:39,pokochy,fix,v2,"tinyproxy for the model path, Codex code-mode host in the managed profile",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/68353c875346ea74303f93624fc6edff64cd9796
+447ef70,2026-10-04 17:44,pokochy,docs,v2,PJ1 evidence for the managed Linux fixes; point the install output at the full rollback,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/447ef70d472577129956ddc57fff475d846fee65
+fac608e,2026-10-04 18:07,pokochy,fix,v2,gate catalog drift on the tools a client can reach,D-69,,,,,https://github.com/MCP-governance/mcp-gateway/commit/fac608eef5e4f0b03344283ce9f08f5158e1bcd1
+5339f3d,2026-10-04 18:13,pokochy,fix,v2,apply the reachable-contract rule at dispatch too; hosted build ids flap per request,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/5339f3d49e2aa6c6fbfeedd3fb8a525d508a14f4
+1186bb0,2026-10-04 18:17,pokochy,fix,v2,keep approved and observed server versions together on every matching refresh,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/1186bb0bbf8f8dc1d9dba1da89ee872c559e5bf9
+e790f4b,2026-10-04 18:24,pokochy,feat,v2,renew a use approval automatically while everything it rests on is unchanged,D-70,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e790f4b4ea780350d9bd90e55b3c35dc843f4155
+5a6cc6b,2026-10-04 19:17,pokochy,feat,v2,connect an endpoint with one file and one elevation prompt,D-71,,,,,https://github.com/MCP-governance/mcp-gateway/commit/5a6cc6b513b9c3f8c1c745c2dad2a08a7e402568
+2b8d4a7,2026-10-04 19:18,pokochy,fix,v2,keep the Windows entry point on one line - the kit is served from Linux,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2b8d4a7dc17be6ae7153e478d7c512b0f19cd2f7
+936d09a,2026-10-04 19:23,pokochy,fix,v2,never write the managed launcher through the symlink it replaces,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/936d09a6c2b7d509a3f339aa39495a5f6725e86b
+424ae70,2026-10-04 19:25,pokochy,fix,v2,the installer leaves no root-owned cache in the employee's folder,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/424ae70b6fcd4d78d108d180a3370b81492b9a90
+77c4da0,2026-10-04 19:31,pokochy,fix,v2,"run the managed harness from its own home, not the employee's directory",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/77c4da04523d45f17531b56ae35d7c919e1c19e9
+45d2430,2026-10-04 19:36,pokochy,docs,v2,PJ1 measurements for the one-file endpoint connection,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/45d243081736dcfa1e8055c0c71ba5af4eec0799
+6fdd9f6,2026-10-04 21:23,pokochy,fix,v2,say what to do when the model sign-in is refused at the end of the install,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/6fdd9f6de5e6d6149b2c05cf1d03b629c39f03f8
+531a4f3,2026-10-13 13:27,pokochy,docs,v2,build development research wiki with shared agent reports,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/531a4f384fca53653cdf44d27edb81c0c2b95d41
+0df1adf,2026-10-13 13:31,pokochy,docs,v2,record wiki CI and existing field validation failure,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0df1adf5596161d258536219c8dabde8b16dd532
+6178dd3,2026-10-13 14:32,pokochy,feat,v2,add live collaboration console and system metrics,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/6178dd33afd36380578eb4327786300e51b954d9
+c6ab26a,2026-10-13 14:47,pokochy,test,v2,verify refresh races on PostgreSQL and align enrollment denial,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c6ab26a4300fdcccd3c74a0905671394f250f478
+2e36095,2026-10-13 15:08,pokochy,docs,v2,record implementation and appliance harness evidence,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2e36095bf982ffab29ea81b6cdc24bdc435b184f
+9daf6f6,2026-10-13 15:12,soeun-727,feat,,신규 로그 강조 효과 & 문구 변경,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/9daf6f6cc7ffd5a279044deda2a77410d64a7930
+ead6f51,2026-10-13 15:50,soeun-727,feat,,페이지네이션 방식으로 수정,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/ead6f51d06b008a0fbfebe7b9c7f2494bd8c58ee
+51cb200,2026-10-13 16:06,soeun-727,feat,,로그 목록 가독성 개선,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/51cb200e6444e56ba151c2547054ad4b05f40a83
+8b3b5e6,2026-10-13 16:16,soeun-727,feat,,분석 탭에서 전체 로그에 대해 분석하도록,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8b3b5e6f5358fc6df8f8bbd07aaabc8f65820664
+e174d99,2026-10-13 16:20,soeun-727,feat,,분석 탭 개선,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e174d99aced4befb56ef069f0b0b143d9792b4f8
+ab6936c,2026-10-13 16:23,pokochy,docs,v2,define team branches and local MCP validation plan,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/ab6936c64f3578de8360b840f1928681714fa7bb
+03507df,2026-10-13 16:45,soeun-727,feat,,ui 개선,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/03507df6e4b9b45d5dc177d0bc5181e361321ef2
+bbf5d0e,2026-10-14 16:46,soeun-727,feat,,"필터링 요소 변경, 로그 상세 페이지 구조 수정, 헤더 디자인 수정, 요소 정렬 개선",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/bbf5d0e9effb3fb0a6f5e9442f0d6888e72fac48
+bf99836,2026-10-14 17:02,soeun-727,feat,,메인 페이지 용어 수정,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/bf99836f372fcf166a1a640c5ef0a0a86650db54
+2e294f7,2026-10-14 17:17,soeun-727,feat,,대시보드 하단 탭 중복 정리,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2e294f7d3505ec0457fbbcf6489d574fe967982f
+c357831,2026-10-15 13:58,pokochy,fix,v2,endpoint observation channels reach the console with their collection state,D-72,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c35783175279802cbbb7ee2ee2598ce60c49b8a2
+210f9a3,2026-10-15 13:59,pokochy,fix,v2,tool text rules run in linear time and structured results go through the same inspection,D-75 · D-73 · D-74,,,,,https://github.com/MCP-governance/mcp-gateway/commit/210f9a38edfbd774a99e7686ca3bcde8cf1a1338
+e4480d4,2026-10-15 13:59,pokochy,feat,v2,LiteLLM and secret-store interoperability preflight,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e4480d4f5e55315b347ec850e02d35be2717d7f3
+3158e48,2026-10-15 13:59,pokochy,docs,v2,"decisions D-72..D-83, MCP security references and the AGT comparison",D-72 · D-73 · D-74 · D-75 · D-77 · D-78 · D-79 · D-80 · D-81 · D-82 · D-83,,G02.01 · G08.03 · G03.04 · G07.02,,,https://github.com/MCP-governance/mcp-gateway/commit/3158e480b9178cc632fa912c5f62974f6b0cddc1
+50210aa,2026-10-15 13:59,pokochy,docs,v2,"research wiki — enterprise analysis, local tools, risk scenarios, endpoint logs and the WBS",D-79,,G02.01 · G08.03 · G03.04 · G07.02,,,https://github.com/MCP-governance/mcp-gateway/commit/50210aa46d6c394b030931bb2c9422a1fb52accb
+24eb956,2026-10-15 14:00,pokochy,,,Merge the console design work from feat/web-ui,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/24eb956d8c876a5a2d854bb07e9cc6d6d22441c3
+331dee8,2026-10-15 14:00,soeun-727,feat,,대시보드 관리자 조치 패널과 도입 조치 건수,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/331dee8568928d5df62d7f84b297cb525681ca3e
+e13535a,2026-10-15 14:04,pokochy,docs,v2,reference fill — 139 checked library notes for the development wiki,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e13535a7027bb504eaa0bad12ba53abf3c8c6bfb
+8cf3d08,2026-10-15 14:04,pokochy,,,Merge the 2026-10-14 reference fill into the integration branch,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/8cf3d082b494f7aa085538b6f3dee5c8e46b73a2
+21b20c3,2026-10-15 14:41,pokochy,feat,v2,"endpoint receivers keep totals, paging, provenance, origin and correlation",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/21b20c3eabe0687473326a3a598bb239d966627e
+ba3be91,2026-10-15 14:41,pokochy,feat,v2,endpoint agents seal records and measure the gateway path,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/ba3be9196f09aa61dab1513d6e60ea8e1c02414d
+26442c9,2026-10-15 14:41,pokochy,feat,v2,"console shows totals, paging, evidence, related records and gateway latency",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/26442c9316e2517464776272de620f937036fb73
+395731e,2026-10-15 14:41,pokochy,test,v2,endpoint evidence unit checks and an isolated PostgreSQL check,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/395731ed8d63c4a6bc80bdce9d4a6e23607c474e
+a3503b0,2026-10-15 14:45,pokochy,fix,v2,load the call detail's related records and device state together,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a3503b02812d35b94f8f6d7e3ad214e21f331410
+2ec1b67,2026-10-15 14:45,pokochy,fix,v2,a running collector service labels its reports automatic,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2ec1b6774bc1b8808e6c8b3218688a26c5cfb7cf
+9c91d50,2026-10-15 14:45,pokochy,docs,v2,record endpoint evidence decisions D-85 to D-89 and the new contracts,D-85 · D-89,,,,,https://github.com/MCP-governance/mcp-gateway/commit/9c91d50b6213f6e3a38da8b2b5884003aa5a9a36
+d5df65f,2026-10-15 14:47,pokochy,docs,v2,"work report for endpoint evidence, completeness and gateway latency",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d5df65f026e3d8158c4e1b443ed3ecfb6a996969
+ddf1b6a,2026-10-15 14:48,pokochy,feat,v2,run Gitleaks in the gateway process through a C-ABI library,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/ddf1b6aa2749956ae92bbe922842f06f253d3c16
+44a4818,2026-10-15 14:48,pokochy,feat,v2,tool-text rules on a PCRE2 C extension that decides exactly like re,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/44a48180b9e596804860f788486c2c7a343a4e75
+1cb6446,2026-10-15 14:49,pokochy,feat,v2,"per-stage latency for every call, shown in the console, and warm connections on the call path",D-79,,G02.01 · G08.03 · G03.04 · G07.02,,,https://github.com/MCP-governance/mcp-gateway/commit/1cb644602bbf13f54ee498ee2c6fae835cd53de7
+2467ba8,2026-10-15 14:49,pokochy,test,v2,check native engine parity in the built image and the console copy rules in CI,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2467ba87ae8ae2c875d9efd23ee0d47a63b97630
+b0bfa2d,2026-10-15 14:50,pokochy,,,"Merge the endpoint evidence workstream (G05.03, G05.04, G06.01, G06.03, G06.04, G01.04, DEV-22, DEV-30)",,DEV-22 · DEV-30,G05.03 · G05.04 · G06.01 · G06.03 · G06.04 · G01.04,병합,,https://github.com/MCP-governance/mcp-gateway/commit/b0bfa2d97a0ed5bd50fa9fa2e31afbc52be75572
+c7213fb,2026-10-15 14:53,pokochy,feat,v2,record where an intake came from and how fresh its scan was,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c7213fb6e533a6deb2125628f3bbc644b60937ec
+83cea6c,2026-10-15 14:53,pokochy,feat,v2,"serve only reviewed tools, render the minimal set, refuse delegation claims",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/83cea6c58b1a7c8572c5a4b5303a8286bd4ddb49
+afb7d74,2026-10-15 14:55,soeun-727,feat,,"관리자 세션 만료 경고, 통제 현황 용어와 우회 영향 표시",,,,,DEP-12,https://github.com/MCP-governance/mcp-gateway/commit/afb7d749dcc0a90bd5fe15ec2f284c780573a344
+47853e4,2026-10-15 14:56,pokochy,docs,v2,"D-84 native inspection engines with parity, D-95 per-stage call latency",D-84 · D-95,,,,,https://github.com/MCP-governance/mcp-gateway/commit/47853e4a11a0209869faf8b6d3dbeb622e5bcd40
+66ab8dd,2026-10-15 14:58,pokochy,feat,v2,"approvals are independent, recorded and gated on evidence",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/66ab8dd4443dec9e3c70f5723e457acec6ae12ed
+95f679e,2026-10-15 14:59,pokochy,feat,v2,"show provenance, scope and approval records in the Console",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/95f679e577b5853803664a7c75f864f87088b5ce
+78c078f,2026-10-15 14:59,pokochy,docs,v2,"decisions D-90..D-94 and the approval, provenance and test notes",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/78c078f903084ce2c51d1fe66e5a58346addc3f4
+38a12c9,2026-10-15 15:04,pokochy,feat,v2,"durable dispatch intent, cutover-safe send boundary and upstream pool closure",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/38a12c93ae859215db5fc9fb482060648cbf1716
+ec924a0,2026-10-15 15:10,pokochy,test,v2,real-scanner check of the intake worker's evidence and the work report,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/ec924a0bf2358e4d474dc438d4f62d00bd8a2dcd
+73e0582,2026-10-15 15:11,pokochy,docs,v2,list the scanner check in the test notes and the commit set in the report,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/73e0582d88563d59e8e5f744a31a7532433c3326
+8535c80,2026-10-15 15:15,pokochy,,,"Merge the intake and identity workstream (G01.01-03, G02.01, G02.03, G02.04, G03.02, G08.03)",,,G02.01 · G02.03 · G02.04 · G03.02 · G08.03,병합,,https://github.com/MCP-governance/mcp-gateway/commit/8535c80d5d81116440a66bbd5622d02e75a121ec
+47feb0b,2026-10-15 15:15,pokochy,test,v2,"isolated lab for reservation atomicity, dispatch boundary and cutover on real PostgreSQL",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/47feb0be01eb6418179e2f4945c41edb2b9b9ec2
+64dc5a4,2026-10-15 15:22,pokochy,fix,v2,"the model's bash cannot fetch the device token, and a reinstall forgets stale sign-in marks",D-104 · D-105,DEV-31,,,,https://github.com/MCP-governance/mcp-gateway/commit/64dc5a493add1e0c30f71eb8a8811074eb031a05
+76008e3,2026-10-15 15:23,pokochy,feat,v2,the protected resource's own answer decides provider-side revocation; lab checks on a real Gitea MCP server,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/76008e3c8add63869664def30ec14c333a9172f2
+afe9b5c,2026-10-15 15:28,pokochy,docs,v2,"termination model, data model, API and decisions D-96..D-99 for dispatch intent, cutover boundary, resource rejection and token revocation scope",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/afe9b5c2a0585441bdb9dc3875742cf672ce3df0
+fc49e63,2026-10-15 15:33,pokochy,test,v2,"principal revoked under an in-flight call, session evidence, and the lab described in TESTING",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/fc49e637988967258daab228983153a953c2a7f2
+000fa99,2026-10-15 15:35,pokochy,docs,v2,record the Trail of Bits review skills applied on 10-15,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/000fa9931480cf8b492be4f1efd3fbc359c58f58
+abbb291,2026-10-15 15:40,pokochy,fix,v2,an approval is spent only on the request it approved,,DEV-04,,,,https://github.com/MCP-governance/mcp-gateway/commit/abbb291f3f9010d07052783c54e21fbae1e9e2f9
+a573243,2026-10-15 15:41,pokochy,test,v2,measure the result and argument text rules on pinned public corpora,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a5732431890d327afb74456736e02aa335bddaa4
+0c0e816,2026-10-15 15:44,pokochy,fix,v2,stop withholding ordinary files and read encoded and Korean injections,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0c0e816a9015371cca9c4281f349cf760391c416
+622e10b,2026-10-15 15:48,pokochy,docs,v2,work report for the termination and dispatch workstream; announcement failures never fail a cutover,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/622e10bfd0235546a674f8a56bfa43209fb05f34
+82f1f36,2026-10-15 15:49,pokochy,fix,v2,close the gaps Codex found in the native engines and the endpoint kit,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/82f1f363fabaf5351628022251ffa99f66d2f246
+eda441f,2026-10-15 15:49,soeun-727,feat,,"대시보드 탭 정리, 오늘 기준 링크와 세션 만료 경고 닫기",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/eda441f542ca856cb6ba617568ee72f932855c77
+9ee2fb3,2026-10-15 15:52,pokochy,,,"Merge the termination and dispatch workstream (G03.04, G07.01-04, DEV-04, DEV-21)",D-104,DEV-04 · DEV-21,G03.04,병합,,https://github.com/MCP-governance/mcp-gateway/commit/9ee2fb396379a7015202478e92ae43738568c871
+b1c51a1,2026-10-15 15:52,pokochy,fix,v2,"a failed upstream stage keeps its time, and a replaced pool entry is closed",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/b1c51a191f1e896ece5f154b9849baaa6b696493
+c934c01,2026-10-15 15:56,soeun-727,feat,,관리자 Console 세션의 서버 측 유휴·최대 시간 강제와 SSO 토큰 갱신·폐기,D-72,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c934c01f656d6f9c6fc00fc699666d8e178fa181
+2d640a2,2026-10-15 15:56,pokochy,test,v2,the dispatch lab's console token gets the session row a sign-in records,D-106,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2d640a25907b649944b4bae2664cc5d726487648
+05e4bd9,2026-10-15 15:57,soeun-727,feat,,"대시보드 탭 이름 정리(통제 현황, 도구 호출 흐름, 호출 추이)",,,,,DEP-11,https://github.com/MCP-governance/mcp-gateway/commit/05e4bd9d3450ffe41f7237a27e60322ff1b35e9f
+8b7187f,2026-10-15 15:57,pokochy,test,v2,measure Korean PII and credential masking against the Presidio services,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8b7187ff3cb0c67d5c337645aa337a95a864124e
+14bbf61,2026-10-15 15:57,pokochy,fix,v2,mask Korean identifiers written the way Korean is written,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/14bbf61bcd79a0a2b7c8e66659e0fbda3c242e93
+c320662,2026-10-15 16:06,pokochy,feat,v2,"record per run what was requested, what answered and why a run ended",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c32066234873ddfad3373230ea00157d5b42e43a
+acae993,2026-10-15 16:09,pokochy,test,v2,"measure the argument size, schema and path gates beside the text rules",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/acae99312a201220806cda8dd8aae7a7f14c1ae2
+358ffb4,2026-10-15 16:23,pokochy,test,v2,one isolated lab runs every workstream's PostgreSQL checks on the merged tree,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/358ffb4305faf2054a3333fa83484a1e75252eb6
+ced70b8,2026-10-15 16:27,pokochy,perf,v2,drop the neural NER and parser from the Presidio analyzer pipeline,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/ced70b8277a9ab8251f616d80f862173c011bc21
+491b4c8,2026-10-15 16:27,pokochy,docs,v2,"decisions D-100..D-103, test notes and the measurement results",D-100 · D-101 · D-102 · D-103,,G04.01,,,https://github.com/MCP-governance/mcp-gateway/commit/491b4c873ddaefd667b62e941f9cee0454ea885d
+1d32a15,2026-10-15 16:28,pokochy,fix,v2,"a console token without jti is refused cleanly, and the fail-closed scanner test tests the library",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/1d32a157365ccd59b0bd4ac51498d5866c2ddf11
+1a6f604,2026-10-15 16:28,pokochy,docs,v2,record that the MCPTox data was obtained and measured,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/1a6f6047fbe5ceb297332de61f0453cbd58dd4c4
+087562a,2026-10-15 16:29,pokochy,fix,v2,field up builds the PII analyzer image from the repository,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/087562a389026c124975d7f7a6b6bab52045d80a
+e3e0b6f,2026-10-15 16:31,pokochy,,,"Merge the inspection corpus workstream (G04.01, G04.03, G10.02, DEV-02, DEV-09)",,DEV-02 · DEV-09,G04.01 · G04.03 · G10.02,병합,,https://github.com/MCP-governance/mcp-gateway/commit/e3e0b6f1613968a297a871336a56ad1b66384eb8
+c3a8a49,2026-10-15 16:33,pokochy,fix,v2,"a call with U+0000 is refused before the send, and an answer with it still leaves its row",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c3a8a49c9248451e5528c9ff42bcf8954a8c3a89
+387dc20,2026-10-15 16:33,pokochy,fix,v2,masked personal-data kinds read in Korean in the call detail,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/387dc20d9fe19c3f2e9c1f0730a9476ea36c1b6f
+9d631d5,2026-10-15 16:34,pokochy,docs,v2,work report for the inspection corpus workstream (D),,,,,,https://github.com/MCP-governance/mcp-gateway/commit/9d631d5f03210bcdf75d00c68397005a7b723be7
+8723cce,2026-10-15 16:35,soeun-727,fix,,클릭할 수 없는 차트에는 손가락 커서를 보이지 않음,,,,,DEP-02,https://github.com/MCP-governance/mcp-gateway/commit/8723ccea4d5be8a766c028db560089183494433e
+343317d,2026-10-15 16:49,pokochy,docs,v2,re-pin code evidence after the merges and keep the local-tool protocol evidence in the wiki,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/343317daabf32403fb0ab04eb6adac30bb2bfc87
+cc6dd68,2026-10-15 16:49,pokochy,docs,v2,10-15 work report and the WBS re-scored from merged-source evidence (24.8% -> 55.2%),,,,,,https://github.com/MCP-governance/mcp-gateway/commit/cc6dd6823f32a9e78f234c15dc6cefa37ad07ed5
+b301e42,2026-10-15 16:50,pokochy,chore,v2,JSON Lines evidence in the wiki keeps LF like JSON,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/b301e42899d3f896813a122c4cf0776dba2f9a98
+d57e15c,2026-10-15 17:17,pokochy,feat,v2,"MINT brand, 125% console type, principles-first README, WBS page shows implementation progress",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d57e15c9469e7f6a6c63f173c127306d0c0bb7e6
+5610fee,2026-10-15 17:21,soeun-727,feat,,"대시보드 구성 요소 상태 표시, 탭 이름 정리(통제 적용 현황·호출 분석)",,,,,DEP-16,https://github.com/MCP-governance/mcp-gateway/commit/5610feef59127d4bd5447b483de513569020d1b3
+7f0325f,2026-10-15 17:21,pokochy,docs,v2,"compare upstream MCP session reuse options for DEV-29 (proposal, no code change)",D-79,DEV-29,G02.01 · G08.03 · G03.04 · G07.02,,,https://github.com/MCP-governance/mcp-gateway/commit/7f0325fbfd1e060b19f65b5a8135cf3b7627b84c
+7b4f752,2026-10-15 17:28,pokochy,docs,v2,DEV-35 loopback denials traced to Codex browser login; propose owner-initiated reply rule,D-107,DEV-35,,,,https://github.com/MCP-governance/mcp-gateway/commit/7b4f752337073b163e7a90758e9af802097d2c19
+f0b035d,2026-10-15 17:28,pokochy,chore,v2,keep DEV-35 evidence bytes as hashed,,DEV-35,,,,https://github.com/MCP-governance/mcp-gateway/commit/f0b035d8f55f177898addb7bf59731aa5b8c818a
+e6464e6,2026-10-15 17:34,pokochy,fix,v2,managed launcher runs the approved harness by absolute path,,,,,DEP-18,https://github.com/MCP-governance/mcp-gateway/commit/e6464e6148b30b789706ca71d080696bffd0423c
+50fa4a5,2026-10-15 17:36,pokochy,fix,v2,launcher enters the managed harness through its entry wrapper,,,,,DEP-15,https://github.com/MCP-governance/mcp-gateway/commit/50fa4a55a9e4c438e83a3a813d5b716d66969a8a
+b6868d2,2026-10-15 17:38,soeun-727,feat,,"메뉴 그룹 정리(운영·접근 통제·도입 및 종료), 실시간 로그 자동 반영",,,,,DEP-17,https://github.com/MCP-governance/mcp-gateway/commit/b6868d20f9fd92f564a48472d5a1635f2ef7f62d
+83269c1,2026-10-15 17:47,pokochy,feat,v2,the gateway derives a registration's argument scope; non-object structured results pass as text,,,,,DEP-01,https://github.com/MCP-governance/mcp-gateway/commit/83269c1d070d6289911a8d4d0f8622e3c90f6d5c
+e61e43c,2026-10-15 17:53,pokochy,docs,v2,clean-appliance E2E with real MCPs and PJ1 Claude Code; WBS 57.5%,D-107 · D-109,,G03.04 · G07.02,,,https://github.com/MCP-governance/mcp-gateway/commit/e61e43c76967c05a6eaa3895e1b8e3cefedb5edf
+c0b6641,2026-10-15 18:39,정원재,docs,v2,curate Team AGI Drive deliverables for research wiki,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c0b6641d2b8af0c4c5db33561bbef6883fc5bccd
+1ad6395,2026-10-15 18:42,정원재,docs,v2,record baseline enterprise analysis CI failure,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/1ad6395e9c357195294aa20ed959b2bebf5b8710
+79b1fe3,2026-10-15 19:27,pokochy,docs,v2,consolidate Drive curation and evidence-based wiki guidance,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/79b1fe3cb03ff686767b35ec021ca7938d8c93e5
+836319b,2026-10-15 19:27,pokochy,docs,v2,keep all follow-up work in the single backlog table,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/836319bf044230ae53ac45291067d2b7a78eb443
+f84796d,2026-10-15 19:28,pokochy,docs,v2,remove inherited separators from the backlog table,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/f84796dbd958a5ae44c54628b35e7e4a36628a50
+8f962f5,2026-10-15 19:56,pokochy,docs,v2,assess OSS research depth and define follow-up analysis,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8f962f5dbfede539dff6d4bf42449bca617f6527
+15721fb,2026-10-15 20:12,pokochy,,,Merge branch '10/15-upstream-session-reuse-design' into 10/15-wbs-implementation,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/15721fbba4c03bd39b89d53ecaba1676651c32c1
+d39f907,2026-10-15 20:12,pokochy,,,Merge branch '10/15-dev35-loopback' into 10/15-wbs-implementation,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/d39f90728f42120996e8c79ce52753894373976c
+b04421d,2026-10-15 20:14,pokochy,feat,v2,pin the MCP handshake from the approved protocol; tell loopback replies from attempts,,DEV-29 · DEV-35,,,,https://github.com/MCP-governance/mcp-gateway/commit/b04421dcffce5847cd89a422c6b7e4154b9a7e6f
+50347ee,2026-10-15 20:17,pokochy,fix,v2,no reviewed destination admits no address; derived scope reaches nested addresses and keeps $defs,,DEV-41 · DEV-44,,,,https://github.com/MCP-governance/mcp-gateway/commit/50347ee9544d6883c54962344c5e402abecd478e
+2fc8c34,2026-10-15 20:17,pokochy,chore,v2,code and docs check out with LF everywhere,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2fc8c34c779e71ec86d9e630751f2164b12bc37e
+f7563c8,2026-10-15 20:22,pokochy,perf,v2,speak the approved protocol version to 2026-era MCP servers without a discovery round trip,,DEV-29,,,,https://github.com/MCP-governance/mcp-gateway/commit/f7563c8d5e36b170770b79957250868039d41bae
+0a68a39,2026-10-15 20:26,pokochy,feat,v2,managed Claude Code loads managed hooks only; record decisions D-110..D-113,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0a68a391b83ed53b2a66eb3d00d93fda0747c360
+8906f24,2026-10-15 20:35,pokochy,fix,v2,read every tools/list page; check the OIDC audience,,DEV-47,,,DEP-03,https://github.com/MCP-governance/mcp-gateway/commit/8906f249707418d900ba335feaafa4ccf9bd0f5d
+488a3a1,2026-10-15 20:40,pokochy,docs,v2,"OSS deep analysis (9 studies, main-verified), target-feature review, backlog DEV-48/49",D-109,DEV-48,G03.04 · G07.02,,,https://github.com/MCP-governance/mcp-gateway/commit/488a3a19aed059637c3405f0d48b7a07e78cc327
+03f3ed2,2026-10-15 20:41,pokochy,chore,v2,wiki and console tools write LF on every OS,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/03f3ed2320247cec9f6dd3e0364ecc3722758762
+9f021c4,2026-10-15 20:49,pokochy,docs,v2,"record the user's decisions on DEV-38, DEV-35 and DEV-48",,DEV-38 · DEV-35 · DEV-48,,,,https://github.com/MCP-governance/mcp-gateway/commit/9f021c489d2912d055964e3cb4e937bb739182e0
+0fa5b7c,2026-10-15 21:03,pokochy,feat,v2,the solution builds and runs approved source MCP servers itself (DEV-38),,DEV-38,,,,https://github.com/MCP-governance/mcp-gateway/commit/0fa5b7cea45bc655c3b5c50e24be255a3ca65cac
+ac88c92,2026-10-15 21:08,pokochy,fix,v2,a restarted runtime worker requeues its cut-off jobs at once; a deregistered approval is not rebuilt,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/ac88c9297b8c8fe0977edee20ec6167fb36d887f
+b639432,2026-10-15 21:12,pokochy,fix,v2,runtime cleanup removes every container carrying the runtime label,,,,,DEP-13,https://github.com/MCP-governance/mcp-gateway/commit/b63943272081338ae454eeaff4821b931ea36df9
+c0fbab3,2026-10-15 21:19,pokochy,docs,v2,"DEV-38 runtime worker decision D-114, evidence and report",D-114,DEV-38,G01.05,,,https://github.com/MCP-governance/mcp-gateway/commit/c0fbab3e4dbf379cace9c460ac3b4d729f7ee657
+3a0e614,2026-10-17 14:55,pokochy,docs,v2,add 36 verified references for the policy-50 implementation gaps,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/3a0e61451c0fa43e434cb944d2dcadbc0cf151ce
+a85a5c9,2026-10-17 14:56,pokochy,docs,v2,policy-id correspondence record and OPA rule-label probe,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a85a5c9e5f41965897efa322f9591bdd108ff4e3
+085503e,2026-10-17 15:28,pokochy,docs,v2,"feature specification, development WBS and policy coverage with review fixes",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/085503e94ff0d00fc0bbe777bdb14ebcdbce6d38
+10dab69,2026-10-17 19:54,pokochy,docs,v2,add redistributable originals and licence record for AI compliance sources,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/10dab69b83752a1443476736a777fb47a6a24622
+9537c0b,2026-10-17 19:54,pokochy,docs,v2,"61 AI compliance references, requirement matrix and regulation-based dev plan",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/9537c0b494a0c4d45c615caa4797674f273d270f
+9e8596f,2026-10-17 21:04,pokochy,docs,v2,WBS board covers the 57 tasks of the feature specification,,,G01.05,,,https://github.com/MCP-governance/mcp-gateway/commit/9e8596f87dd9154a3e8e8b2aeb10e21fc99a3119
+0eb013b,2026-10-17 21:11,pokochy,docs,v2,shared Google Sheet copy of the WBS board,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0eb013b37864e27bcb041145c9b9cea928f03d8d
+e53e229,2026-10-17 21:34,pokochy,feat,v2,pin upstream connections to checked addresses and redact credentials in errors,D-116 · D-117,DEV-53 · DEV-56,G03.05 · G03.08,,,https://github.com/MCP-governance/mcp-gateway/commit/e53e229cd0460fa1189a7dc75d7d16203bedf5e6
+376221a,2026-10-17 21:45,pokochy,feat,v2,let the managed account answer only connections its owner started on loopback,D-119 · D-107,DEV-35,G05.02,,,https://github.com/MCP-governance/mcp-gateway/commit/376221ae119541e75fb697fda9eea3d89181fb3e
+753a7c1,2026-10-17 21:50,pokochy,feat,v2,"reuse upstream MCP sessions per principal and downstream session, merged with destination pinning",D-115,DEV-29 · DEV-53,G03.04 · G07.02,병합,,https://github.com/MCP-governance/mcp-gateway/commit/753a7c137c7916a0a5fe1134c9557a3eb17592db
+ae04c11,2026-10-17 21:50,pokochy,,,Merge branch '10/17-session-reuse',,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/ae04c11adad675cdda18a20bae024f664f5d8aec
+c3561b6,2026-10-17 21:50,pokochy,,,Merge branch '10/17-loopback-d107',,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/c3561b65315756887e5e280e9fe5021fa6ae3979
+aca67ed,2026-10-17 22:12,pokochy,feat,v2,"one development hub for collaboration, WBS and Codex runs, Discord-style",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/aca67ed9a28e3882a93b6afb4f27620dc29d0107
+7747d21,2026-10-17 22:13,pokochy,fix,v2,register the hub autostart for the current user,,,,,DEP-05 · DEP-07,https://github.com/MCP-governance/mcp-gateway/commit/7747d21a196cc1999f9c0b19ec4c09bda41c8294
+f42e1db,2026-10-17 22:26,pokochy,docs,v2,appliance evidence for destination pinning and credential redaction,D-115,,G03.05 · G03.08 · G03.04 · G07.02,,,https://github.com/MCP-governance/mcp-gateway/commit/f42e1dbb688c55c7666a3020a789109454ac586a
+2cfe1e1,2026-10-17 22:27,pokochy,docs,v2,appliance resolver negatives for destination pinning,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2cfe1e1ef1793b7f1db01fdcf093c700875671f3
+5560b52,2026-10-17 22:34,pokochy,docs,v2,isolated lab results for the merged gateway changes,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/5560b52bf25e8110136376b40720456eb2bc5505
+6778c98,2026-10-17 22:37,pokochy,docs,v2,D-119 rules pass the PJ1 kernel netns regression,D-119,,G05.02,,,https://github.com/MCP-governance/mcp-gateway/commit/6778c982014c6374e96f60f378585982f7d2fe2b
+a573e74,2026-10-17 22:40,pokochy,docs,v2,"PJ1 kit reinstalled with D-119, host rules verified",D-119,,G05.02,,,https://github.com/MCP-governance/mcp-gateway/commit/a573e7438c7ff715b572b1bef47037c59aca4628
+6ce6070,2026-10-17 23:48,pokochy,docs,v2,managed Codex on PJ1 calls GitHub through the gateway,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/6ce607035271b00949ee075313635a9e6f3a8d82
+45b6f87,2026-10-18 00:21,pokochy,fix,v2,hub's codex runner prefers the app's current Codex bundle,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/45b6f87f77eb17ca62c264d01812769812f60d46
+3d5d862,2026-10-18 00:30,pokochy,feat,v2,"Windows endpoint kit with setup wizard, tray app and bundled Python",D-118,DEV-26,G08.04,,,https://github.com/MCP-governance/mcp-gateway/commit/3d5d8625626e9f317f0bec2d0bc9c67acb86eedf
+daf97bd,2026-10-18 00:30,pokochy,,,Merge branch '10/17-windows-kit',,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/daf97bdb4191c0968023de4f1f82441f5fc91f50
+8d542ac,2026-10-18 00:30,pokochy,feat,v2,"operations response - image rescans, alert self-test, auto-stop, signed disposal list",D-120 · D-121 · D-122 · D-123,,G01.06 · G06.05 · G07.05 · G07.06,,,https://github.com/MCP-governance/mcp-gateway/commit/8d542ac59a6307c2c0776ba7aca9cf49b0c0530e
+ecb2587,2026-10-18 00:31,pokochy,,,Merge branch '10/17-ops-response',,,,병합,DEP-08,https://github.com/MCP-governance/mcp-gateway/commit/ecb2587e70ff77d66dd01bdea8b08fa629ff0e1f
+c7a700a,2026-10-18 00:40,pokochy,docs,v2,appliance evidence for the Windows kit and operations response,,,G01.06 · G06.05 · G07.05 · G07.06 · G08.04,,,https://github.com/MCP-governance/mcp-gateway/commit/c7a700a709ab3bbd7c5a884a3b3c7071c5d0d329
+b7b3488,2026-10-18 00:50,pokochy,feat,v2,field HTTPS with a per-deployment private CA pinned in the kits (WIP before Windows wiring),D-124,,G08.05,,,https://github.com/MCP-governance/mcp-gateway/commit/b7b348849376a9edc5c5d66b8f0c9250ee28a1fc
+b6c06ac,2026-10-18 00:52,pokochy,fix,v2,hub's codex resume omits flags exec resume rejects,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/b6c06ac1cb1d46caef81a8cab0f316431dfe7355
+cee468d,2026-10-18 00:52,pokochy,test,v2,"resume runs without -C/-s, matching codex exec resume",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/cee468d2b0760101224ee57ab17904bb70124c96
+e9b42d0,2026-10-18 01:10,pokochy,,,Merge branch 'main' into 10/18-field-tls,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/e9b42d0d205df2a77f3724918e98427ae014e69b
+759347c,2026-10-18 01:17,pokochy,,,Merge branch '10/18-field-tls',,,,병합,DEP-04 · DEP-06,https://github.com/MCP-governance/mcp-gateway/commit/759347c9f40263ca56a5d8b95f4be8e10146dda3
+fd904c2,2026-10-18 01:20,pokochy,docs,v2,field moved to HTTPS; PJ1 harnesses call through the pinned root,,,G08.05,,,https://github.com/MCP-governance/mcp-gateway/commit/fd904c24250b6029061283bb8a57fa4efe0b5b17
+db5f646,2026-10-18 02:02,pokochy,fix,v2,Windows 키트 pj3 실기기 설치 차단 결함 3건,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/db5f646dfc7f8373b9ed7debfd07dcf1b5330514
+1228305,2026-10-18 02:03,pokochy,fix,v2,관리형 설치 마법사에서 값 없는 장치 자격 행 숨김,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/1228305e989d589572d9a7dd082b38935ef531da
+b5e4c65,2026-10-18 02:04,pokochy,,,Merge 10/18-windows-kit-elevated: Windows 키트 pj3 실기기 결함 수정,,,,병합,DEP-14,https://github.com/MCP-governance/mcp-gateway/commit/b5e4c65955ca59b02c35700fd14a73c3263825b0
+68e88c7,2026-10-18 02:06,pokochy,docs,v2,pj3 Windows 키트 실기기 시험 증거·WBS 50.9%,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/68e88c7bba41a89f56fe43504d18a765f2741511
+0b61e9c,2026-10-18 02:18,pokochy,fix,v2,Windows 관리형 설정을 LF 그대로 기록해 활성화 해시 일치,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0b61e9c028391b54735c5639cbe281bfc10679d5
+b9b00d5,2026-10-18 02:28,pokochy,fix,v2,Windows 관리형 Python 바이트코드 미기록·제거 시 소유 캐시 정리,,,,,DEP-09,https://github.com/MCP-governance/mcp-gateway/commit/b9b00d5f3f8425432fe28771e5cfdfa8e354406a
+e2a7e72,2026-10-18 02:34,pokochy,docs,v2,"pj3 Windows 관리형 설치·제거·재설치·활성화 증거, WBS 51.1%",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e2a7e72f562824d4852057bbac9dff6207728fb6
+00db46e,2026-10-18 05:22,pokochy,feat,v2,단일 조회 반환 상한(D-125)·완료 쓰기 재전송 차단(D-126),D-125 · D-126,,G03.06 · G03.07,,,https://github.com/MCP-governance/mcp-gateway/commit/00db46e1a2e45a3f15d25bd52d0900edf1794d5f
+33af7da,2026-10-18 05:23,pokochy,,,Merge 10/18-response-cap: D-125 반환 상한·D-126 재전송 차단,D-125 · D-126,,G03.06 · G03.07,병합,,https://github.com/MCP-governance/mcp-gateway/commit/33af7da4db1b576dd364b986927ae7ecaba7e5cc
+e74fefa,2026-10-18 05:31,pokochy,feat,v2,계약 변경 시 바뀐 도구만 제한(D-127)·SIEM 전달(D-128),D-127 · D-128 · D-122,,G02.06 · G06.06 · G07.05,,,https://github.com/MCP-governance/mcp-gateway/commit/e74fefaba090859f73fd2f18346fc74405191e30
+7150004,2026-10-18 05:33,pokochy,,,Merge 10/18-selective-siem: D-127 도구별 제한·D-128 SIEM 전달,D-127 · D-128,,G02.06 · G06.06,병합,,https://github.com/MCP-governance/mcp-gateway/commit/71500043cad615c82c4405fa8b567a3cf39d7c3e
+9e92add,2026-10-18 05:47,pokochy,fix,v2,H·I 병합 후 dispatch 잠금 순서·거부 사유 정정 (격리 실험 실측),D-127,,G02.06,,,https://github.com/MCP-governance/mcp-gateway/commit/9e92addc8cbeee11a3030082cbf2e765d533066c
+bb33625,2026-10-18 05:49,pokochy,fix,v2,P-VOLUME-002 정책 대장 우선순위 중복 해소(opa test 91/91),,,,,DEP-10,https://github.com/MCP-governance/mcp-gateway/commit/bb33625ba24442d09bd52b13af641c445a7208ff
+ce60c20,2026-10-18 05:51,pokochy,docs,v2,"H·I 통합·격리 실험·배포 증거, WBS 55.3%",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/ce60c2074bf01c9f4326f8f58fb3007182f45d23
+e6b4ae9,2026-10-18 12:41,pokochy,fix,v2,트레이 연결 상태를 인증된 보고 성공으로 판정,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e6b4ae9193956c6be345466d3081e80664543dc7
