@@ -1,0 +1,227 @@
+{
+  "cases": [
+    {
+      "id": "attack-flow-unreviewed-source",
+      "label": "attack",
+      "category": "POL-33 다른 서버 중요정보 열람 뒤 심사 없는 쓰기",
+      "expect": {
+        "decision": "Block",
+        "policy_id": "P-FLOW-001"
+      },
+      "input": {
+        "environment": "prod",
+        "now": "2026-09-25T00:00:00Z",
+        "principal": {
+          "role": "employee",
+          "department": "플랫폼개발팀",
+          "shadow_endpoints": 0,
+          "shadow_listeners": 0
+        },
+        "resource": {
+          "id": "github:org/repo",
+          "kind": "repository",
+          "data_class": "nonimportant"
+        },
+        "destinations": [],
+        "tool": {
+          "server": "github",
+          "name": "create_issue",
+          "action": "w",
+          "base_action": "w",
+          "restrictable": []
+        },
+        "request": {
+          "untrusted_markers": [],
+          "dlp": [],
+          "pii_types": [],
+          "sequence_flags": [],
+          "flow_sources": [
+            "filesystem"
+          ]
+        },
+        "approval": {
+          "granted": false
+        },
+        "contract": {
+          "registered": true,
+          "enabled": true,
+          "schema_hash_match": true,
+          "description_hash_match": true,
+          "version_match": true,
+          "known_tools_only": true,
+          "metadata_safe": true,
+          "supplier_approved": true,
+          "critical_vulnerabilities": 0
+        }
+      }
+    },
+    {
+      "id": "attack-flow-one-unreviewed-of-two",
+      "label": "attack",
+      "category": "POL-33 둘 중 하나만 심사된 출처",
+      "expect": {
+        "decision": "Block",
+        "policy_id": "P-FLOW-001"
+      },
+      "input": {
+        "environment": "prod",
+        "now": "2026-09-25T00:00:00Z",
+        "principal": {
+          "role": "employee",
+          "department": "플랫폼개발팀",
+          "shadow_endpoints": 0,
+          "shadow_listeners": 0
+        },
+        "resource": {
+          "id": "github:org/repo",
+          "kind": "repository",
+          "data_class": "nonimportant"
+        },
+        "destinations": [],
+        "tool": {
+          "server": "github",
+          "name": "create_issue",
+          "action": "w",
+          "base_action": "w",
+          "restrictable": [],
+          "accepts_from": [
+            "filesystem"
+          ]
+        },
+        "request": {
+          "untrusted_markers": [],
+          "dlp": [],
+          "pii_types": [],
+          "sequence_flags": [],
+          "flow_sources": [
+            "filesystem",
+            "postgres"
+          ]
+        },
+        "approval": {
+          "granted": false
+        },
+        "contract": {
+          "registered": true,
+          "enabled": true,
+          "schema_hash_match": true,
+          "description_hash_match": true,
+          "version_match": true,
+          "known_tools_only": true,
+          "metadata_safe": true,
+          "supplier_approved": true,
+          "critical_vulnerabilities": 0
+        }
+      }
+    },
+    {
+      "id": "normal-flow-reviewed-source",
+      "label": "benign",
+      "category": "POL-33 받는 도구가 출처 서버를 심사받음",
+      "expect": {
+        "decision": "Allow"
+      },
+      "input": {
+        "environment": "prod",
+        "now": "2026-09-25T00:00:00Z",
+        "principal": {
+          "role": "employee",
+          "department": "플랫폼개발팀",
+          "shadow_endpoints": 0,
+          "shadow_listeners": 0
+        },
+        "resource": {
+          "id": "github:org/repo",
+          "kind": "repository",
+          "data_class": "nonimportant"
+        },
+        "destinations": [],
+        "tool": {
+          "server": "github",
+          "name": "create_issue",
+          "action": "w",
+          "base_action": "w",
+          "restrictable": [],
+          "accepts_from": [
+            "filesystem"
+          ]
+        },
+        "request": {
+          "untrusted_markers": [],
+          "dlp": [],
+          "pii_types": [],
+          "sequence_flags": [],
+          "flow_sources": [
+            "filesystem"
+          ]
+        },
+        "approval": {
+          "granted": false
+        },
+        "contract": {
+          "registered": true,
+          "enabled": true,
+          "schema_hash_match": true,
+          "description_hash_match": true,
+          "version_match": true,
+          "known_tools_only": true,
+          "metadata_safe": true,
+          "supplier_approved": true,
+          "critical_vulnerabilities": 0
+        }
+      }
+    },
+    {
+      "id": "normal-write-without-recent-read",
+      "label": "benign",
+      "category": "POL-33 최근 중요정보 열람 없는 쓰기",
+      "expect": {
+        "decision": "Allow"
+      },
+      "input": {
+        "environment": "prod",
+        "now": "2026-09-25T00:00:00Z",
+        "principal": {
+          "role": "employee",
+          "department": "플랫폼개발팀",
+          "shadow_endpoints": 0,
+          "shadow_listeners": 0
+        },
+        "resource": {
+          "id": "github:org/repo",
+          "kind": "repository",
+          "data_class": "nonimportant"
+        },
+        "destinations": [],
+        "tool": {
+          "server": "github",
+          "name": "create_issue",
+          "action": "w",
+          "base_action": "w",
+          "restrictable": []
+        },
+        "request": {
+          "untrusted_markers": [],
+          "dlp": [],
+          "pii_types": [],
+          "sequence_flags": [],
+          "flow_sources": []
+        },
+        "approval": {
+          "granted": false
+        },
+        "contract": {
+          "registered": true,
+          "enabled": true,
+          "schema_hash_match": true,
+          "description_hash_match": true,
+          "version_match": true,
+          "known_tools_only": true,
+          "metadata_safe": true,
+          "supplier_approved": true,
+          "critical_vulnerabilities": 0
+        }
+      }
+    }
+  ]
+}

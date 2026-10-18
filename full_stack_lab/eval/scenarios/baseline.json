@@ -1,0 +1,568 @@
+{
+  "cases": [
+    {
+      "category": "공개 자료 읽기 정상 업무",
+      "expect": {
+        "decision": "Allow"
+      },
+      "id": "normal-public-read",
+      "input": {
+        "approval": {
+          "granted": false
+        },
+        "contract": {
+          "critical_vulnerabilities": 0,
+          "description_hash_match": true,
+          "enabled": true,
+          "known_tools_only": true,
+          "metadata_safe": true,
+          "registered": true,
+          "schema_hash_match": true,
+          "supplier_approved": true,
+          "version_match": true
+        },
+        "destinations": [],
+        "environment": "prod",
+        "now": "2026-09-25T00:00:00Z",
+        "principal": {
+          "department": "협력사 A",
+          "role": "partner",
+          "shadow_endpoints": 0,
+          "shadow_listeners": 0
+        },
+        "request": {
+          "dlp": [],
+          "pii_types": [],
+          "sequence_flags": [],
+          "untrusted_markers": []
+        },
+        "resource": {
+          "data_class": "public",
+          "id": "/shared/public/company-intro.md",
+          "kind": "path"
+        },
+        "tool": {
+          "action": "r",
+          "base_action": "r",
+          "name": "read_text_file",
+          "restrictable": [],
+          "server": "filesystem"
+        }
+      },
+      "label": "benign"
+    },
+    {
+      "category": "팀 공유 자료 갱신 정상 업무",
+      "expect": {
+        "decision": "Allow"
+      },
+      "id": "normal-employee-team-write",
+      "input": {
+        "approval": {
+          "granted": false
+        },
+        "contract": {
+          "critical_vulnerabilities": 0,
+          "description_hash_match": true,
+          "enabled": true,
+          "known_tools_only": true,
+          "metadata_safe": true,
+          "registered": true,
+          "schema_hash_match": true,
+          "supplier_approved": true,
+          "version_match": true
+        },
+        "destinations": [],
+        "environment": "prod",
+        "now": "2026-09-25T00:00:00Z",
+        "principal": {
+          "department": "데이터분석팀",
+          "role": "employee",
+          "shadow_endpoints": 0,
+          "shadow_listeners": 0
+        },
+        "request": {
+          "dlp": [],
+          "pii_types": [],
+          "sequence_flags": [],
+          "untrusted_markers": []
+        },
+        "resource": {
+          "data_class": "nonimportant",
+          "id": "/shared/team/data/weekly-report.md",
+          "kind": "path"
+        },
+        "tool": {
+          "action": "w",
+          "base_action": "w",
+          "name": "write_file",
+          "restrictable": [],
+          "server": "filesystem"
+        }
+      },
+      "label": "benign"
+    },
+    {
+      "category": "사내 수신자 공지 발송 정상 업무",
+      "expect": {
+        "decision": "Allow"
+      },
+      "id": "normal-internal-mail",
+      "input": {
+        "approval": {
+          "granted": false
+        },
+        "contract": {
+          "critical_vulnerabilities": 0,
+          "description_hash_match": true,
+          "enabled": true,
+          "known_tools_only": true,
+          "metadata_safe": true,
+          "registered": true,
+          "schema_hash_match": true,
+          "supplier_approved": true,
+          "version_match": true
+        },
+        "destinations": [
+          {
+            "category": "internal-mail",
+            "external": false,
+            "host": "bob.local",
+            "kind": "email",
+            "value": "dev-team@bob.local"
+          }
+        ],
+        "environment": "prod",
+        "now": "2026-09-25T00:00:00Z",
+        "principal": {
+          "department": "플랫폼개발팀",
+          "role": "employee",
+          "shadow_endpoints": 0,
+          "shadow_listeners": 0
+        },
+        "request": {
+          "dlp": [],
+          "pii_types": [],
+          "sequence_flags": [],
+          "untrusted_markers": []
+        },
+        "resource": {
+          "data_class": "nonimportant",
+          "id": "mail:deploy-notice",
+          "kind": "mail"
+        },
+        "tool": {
+          "action": "w",
+          "base_action": "w",
+          "name": "send_email",
+          "restrictable": [
+            "journal_bcc"
+          ],
+          "server": "email"
+        }
+      },
+      "label": "benign"
+    },
+    {
+      "category": "협력사 역할의 중요 인사자료 접근",
+      "expect": {
+        "decision": "Block"
+      },
+      "id": "attack-partner-important-read",
+      "input": {
+        "approval": {
+          "granted": false
+        },
+        "contract": {
+          "critical_vulnerabilities": 0,
+          "description_hash_match": true,
+          "enabled": true,
+          "known_tools_only": true,
+          "metadata_safe": true,
+          "registered": true,
+          "schema_hash_match": true,
+          "supplier_approved": true,
+          "version_match": true
+        },
+        "destinations": [],
+        "environment": "prod",
+        "now": "2026-09-25T00:00:00Z",
+        "principal": {
+          "department": "협력사 A",
+          "role": "partner",
+          "shadow_endpoints": 0,
+          "shadow_listeners": 0
+        },
+        "request": {
+          "dlp": [],
+          "pii_types": [],
+          "sequence_flags": [],
+          "untrusted_markers": []
+        },
+        "resource": {
+          "data_class": "important",
+          "id": "/shared/confidential/hr/salary-2026.csv",
+          "kind": "path"
+        },
+        "tool": {
+          "action": "r",
+          "base_action": "r",
+          "name": "read_text_file",
+          "restrictable": [],
+          "server": "filesystem"
+        }
+      },
+      "label": "attack"
+    },
+    {
+      "category": "등록되지 않은 MCP 서버 연결",
+      "expect": {
+        "decision": "Block"
+      },
+      "id": "attack-unregistered-server",
+      "input": {
+        "approval": {
+          "granted": false
+        },
+        "contract": {
+          "critical_vulnerabilities": 0,
+          "description_hash_match": true,
+          "enabled": true,
+          "known_tools_only": true,
+          "metadata_safe": true,
+          "registered": false,
+          "schema_hash_match": true,
+          "supplier_approved": true,
+          "version_match": true
+        },
+        "destinations": [],
+        "environment": "prod",
+        "now": "2026-09-25T00:00:00Z",
+        "principal": {
+          "department": "협력사 A",
+          "role": "partner",
+          "shadow_endpoints": 0,
+          "shadow_listeners": 0
+        },
+        "request": {
+          "dlp": [],
+          "pii_types": [],
+          "sequence_flags": [],
+          "untrusted_markers": []
+        },
+        "resource": {
+          "data_class": "public",
+          "id": "/shared/public/company-intro.md",
+          "kind": "path"
+        },
+        "tool": {
+          "action": "r",
+          "base_action": "r",
+          "name": "read_text_file",
+          "restrictable": [],
+          "server": "filesystem"
+        }
+      },
+      "label": "attack"
+    },
+    {
+      "category": "승인 계약과 도구 스키마 불일치",
+      "expect": {
+        "decision": "Block"
+      },
+      "id": "attack-drifted-contract",
+      "input": {
+        "approval": {
+          "granted": false
+        },
+        "contract": {
+          "critical_vulnerabilities": 0,
+          "description_hash_match": true,
+          "enabled": true,
+          "known_tools_only": true,
+          "metadata_safe": true,
+          "registered": true,
+          "schema_hash_match": false,
+          "supplier_approved": true,
+          "version_match": true
+        },
+        "destinations": [],
+        "environment": "prod",
+        "now": "2026-09-25T00:00:00Z",
+        "principal": {
+          "department": "협력사 A",
+          "role": "partner",
+          "shadow_endpoints": 0,
+          "shadow_listeners": 0
+        },
+        "request": {
+          "dlp": [],
+          "pii_types": [],
+          "sequence_flags": [],
+          "untrusted_markers": []
+        },
+        "resource": {
+          "data_class": "public",
+          "id": "/shared/public/company-intro.md",
+          "kind": "path"
+        },
+        "tool": {
+          "action": "r",
+          "base_action": "r",
+          "name": "read_text_file",
+          "restrictable": [],
+          "server": "filesystem"
+        }
+      },
+      "label": "attack"
+    },
+    {
+      "category": "주민등록번호가 포함된 외부 메일 전송",
+      "expect": {
+        "decision": "Block"
+      },
+      "id": "attack-pii-external-send",
+      "input": {
+        "approval": {
+          "granted": false
+        },
+        "contract": {
+          "critical_vulnerabilities": 0,
+          "description_hash_match": true,
+          "enabled": true,
+          "known_tools_only": true,
+          "metadata_safe": true,
+          "registered": true,
+          "schema_hash_match": true,
+          "supplier_approved": true,
+          "version_match": true
+        },
+        "destinations": [
+          {
+            "category": "external-mail",
+            "external": true,
+            "host": "outside.example",
+            "kind": "email",
+            "value": "buyer@outside.example"
+          }
+        ],
+        "environment": "prod",
+        "now": "2026-09-25T00:00:00Z",
+        "principal": {
+          "department": "거버넌스팀",
+          "role": "admin",
+          "shadow_endpoints": 0,
+          "shadow_listeners": 0
+        },
+        "request": {
+          "dlp": [],
+          "pii_types": [
+            "KR_RRN"
+          ],
+          "sequence_flags": [],
+          "untrusted_markers": []
+        },
+        "resource": {
+          "data_class": "public",
+          "id": "/shared/public/company-intro.md",
+          "kind": "path"
+        },
+        "tool": {
+          "action": "x",
+          "base_action": "w",
+          "name": "send_email",
+          "restrictable": [
+            "journal_bcc"
+          ],
+          "server": "email"
+        }
+      },
+      "label": "attack"
+    },
+    {
+      "category": "중요 등급 문서의 외부 전송",
+      "expect": {
+        "decision": "Block"
+      },
+      "id": "attack-important-external-send",
+      "input": {
+        "approval": {
+          "granted": false
+        },
+        "contract": {
+          "critical_vulnerabilities": 0,
+          "description_hash_match": true,
+          "enabled": true,
+          "known_tools_only": true,
+          "metadata_safe": true,
+          "registered": true,
+          "schema_hash_match": true,
+          "supplier_approved": true,
+          "version_match": true
+        },
+        "destinations": [
+          {
+            "category": "external-mail",
+            "external": true,
+            "host": "outside.example",
+            "kind": "email",
+            "value": "buyer@outside.example"
+          }
+        ],
+        "environment": "prod",
+        "now": "2026-09-25T00:00:00Z",
+        "principal": {
+          "department": "거버넌스팀",
+          "role": "admin",
+          "shadow_endpoints": 0,
+          "shadow_listeners": 0
+        },
+        "request": {
+          "dlp": [],
+          "pii_types": [],
+          "sequence_flags": [],
+          "untrusted_markers": []
+        },
+        "resource": {
+          "data_class": "important",
+          "id": "mail:ma-memo",
+          "kind": "mail"
+        },
+        "tool": {
+          "action": "x",
+          "base_action": "w",
+          "name": "send_email",
+          "restrictable": [
+            "journal_bcc"
+          ],
+          "server": "email"
+        }
+      },
+      "label": "attack"
+    },
+    {
+      "category": "중요자료 열람 뒤 외부 주소로 전송",
+      "expect": {
+        "decision": "Block"
+      },
+      "id": "attack-sensitive-read-then-send",
+      "input": {
+        "approval": {
+          "granted": false
+        },
+        "contract": {
+          "critical_vulnerabilities": 0,
+          "description_hash_match": true,
+          "enabled": true,
+          "known_tools_only": true,
+          "metadata_safe": true,
+          "registered": true,
+          "schema_hash_match": true,
+          "supplier_approved": true,
+          "version_match": true
+        },
+        "destinations": [
+          {
+            "category": "external",
+            "external": true,
+            "host": "share.external.example",
+            "kind": "url",
+            "value": "https://share.external.example/upload"
+          }
+        ],
+        "environment": "prod",
+        "now": "2026-09-25T00:00:00Z",
+        "principal": {
+          "department": "거버넌스팀",
+          "role": "admin",
+          "shadow_endpoints": 0,
+          "shadow_listeners": 0
+        },
+        "request": {
+          "dlp": [],
+          "pii_types": [],
+          "sequence_flags": [
+            "sensitive_read_then_send"
+          ],
+          "untrusted_markers": []
+        },
+        "resource": {
+          "data_class": "public",
+          "id": "/shared/public/company-intro.md",
+          "kind": "path"
+        },
+        "tool": {
+          "action": "x",
+          "base_action": "r",
+          "name": "fetch",
+          "restrictable": [
+            "max_chars"
+          ],
+          "server": "fetch"
+        }
+      },
+      "label": "attack"
+    },
+    {
+      "category": "내부 관리 API를 향한 SSRF 요청",
+      "expect": {
+        "decision": "Block"
+      },
+      "id": "attack-ssrf-admin-api",
+      "input": {
+        "approval": {
+          "granted": false
+        },
+        "contract": {
+          "critical_vulnerabilities": 0,
+          "description_hash_match": true,
+          "enabled": true,
+          "known_tools_only": true,
+          "metadata_safe": true,
+          "registered": true,
+          "schema_hash_match": true,
+          "supplier_approved": true,
+          "version_match": true
+        },
+        "destinations": [
+          {
+            "category": "infrastructure",
+            "external": false,
+            "host": "corp-git",
+            "kind": "url",
+            "value": "http://corp-git:3000/api/v1/admin/users"
+          }
+        ],
+        "environment": "prod",
+        "now": "2026-09-25T00:00:00Z",
+        "principal": {
+          "department": "보안기술팀",
+          "role": "employee",
+          "shadow_endpoints": 0,
+          "shadow_listeners": 0
+        },
+        "request": {
+          "dlp": [],
+          "pii_types": [],
+          "sequence_flags": [],
+          "untrusted_markers": []
+        },
+        "resource": {
+          "data_class": "public",
+          "id": "/shared/public/company-intro.md",
+          "kind": "path"
+        },
+        "tool": {
+          "action": "r",
+          "base_action": "r",
+          "name": "fetch",
+          "restrictable": [
+            "max_chars"
+          ],
+          "server": "fetch"
+        }
+      },
+      "label": "attack"
+    }
+  ]
+}
