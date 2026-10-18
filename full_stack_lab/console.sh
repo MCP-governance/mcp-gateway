@@ -312,10 +312,10 @@ field_up() {
     echo "[field 4/4] 컨테이너 직원 PC 4대는 끔(실제 PC가 대신함) — 같이 보려면 --with-lab-workstations"
   fi
   echo
-  echo "콘솔(브라우저)  : http://${APPLIANCE_BIND}"
+  echo "콘솔(브라우저)  : http://${APPLIANCE_BIND}:8000"
   echo "하네스·키트     : https://${APPLIANCE_BIND}:443"
   if [[ $with_lab_mcp == 0 ]]; then echo "시험 계정       : root/root(관리자), user/user(직원) · 회원가입은 관리자 승인"; fi
-  echo "내부 저장소     : http://${APPLIANCE_BIND}/git/"
+  echo "내부 저장소     : http://${APPLIANCE_BIND}:8000/git/"
   echo "직원 PC 키트    : Console 로그인 → 내 PC 연결 → 개인별 1회용 키트"
 }
 
