@@ -1,5 +1,9 @@
 # 개발 현황 — 2026-10-15
 
+## 최신: 협업 콘솔과 통합 시트 CSV 연동 (10-18)
+
+[작업 보고](reports/2026-10-18-sheet-sync.md): `10/18-sheet-sync`, 시작 `558e2a0`. WBS 덮어쓰기·신규 ID·목표별 요약·5분 캐시/실패 대체, 백로그 배열 API, CSV pull CLI와 설정 예시를 추가했다. 콘솔 unittest 32개·CLI self-test·JS 구문 검사 통과. pytest·pyflakes 미설치. 제품 코드·실제 CSV 사본·snapshot·배포 변경과 커밋 없음. 게시 URL은 미제공이며 메인이 runtime 설정 후 실제 Google CSV 반영을 확인한다.
+
 ## 최신: 선택적 계약 제한·보안 관제 전달 (DEV-52·61 / D-127·128, 10-18)
 
 [작업 보고](reports/2026-10-17-selective-restriction-siem.md) · [원자 요구사항·근거](../analysis/selective-restriction-siem/README.md): 변경·소멸·위험 설명이 확인된 도구만 목록·판정·최종 dispatch에서 제한하고, 영향 미확정·기존 D-122 중지·공급망·폐기는 전체 차단을 유지했다. 판정·감사·실제 경보 참조를 같은 DB 트랜잭션으로 큐에 넣고 별도 HTTPS 워커가 OCSF JSON을 재전송한다. 로컬 단위/HTTP 14개·콘솔 상태 15개와 구문·인증·화면 문구 검사가 통과했다. Python 3.10/의존성 제약으로 기존 import 기반 회귀·pyflakes는 실패/불가, 실제 DB·TLS·SIEM·배포·PJ1·pj3는 미실행이다. 브랜치 생성·원격 HEAD 확인은 권한/네트워크로 실패하여 기존 작업 브랜치 `10/18-selective-siem`에 미커밋 변경을 남긴다. 검수 점수는 변경하지 않았다.

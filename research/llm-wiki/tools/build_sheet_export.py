@@ -64,17 +64,20 @@ TABS = [
     (45, "자료", "docs", "관리", "관리"),
 ]
 HEADERS = {
-    "wbs": "ID|목표|목표명|작업|구분|우선|구현|회귀|배포|실기기|검수|진척률(수식)|상태(수식)|담당|진행 메모|계획 일정|완료 조건|남은 일|기능|정책|백로그|결정|시험|구성요소|코드|회귀 시험|근거 자료",
-    "backlog": "ID|작업|상태|진행|완료 조건|WBS|결정|근거 자료",
+    "wbs": "ID|목표|목표명|작업|구분|우선|구현|회귀|배포|실기기|검수|진척률|상태|담당|진행 메모|계획 일정|완료 조건|남은 일|기능|정책|백로그|결정|시험|구성요소|코드|회귀 시험|근거 자료",
+    "backlog": "ID|작업|상태|진행|완료 조건|WBS|결정|근거 자료|WBS 상태",
     "decisions": "ID|날짜|제목|요지|백로그|WBS|커밋|문서",
     "commits": "커밋|날짜|작성자|유형|범위|요약|결정|백로그|WBS|병합|기기 배포|링크",
     "deploys": "ID|날짜|대상|커밋|브랜치|내용|근거 자료",
-    "features": "ID|대분류|기능|설명|상태|정책|구현 수단|비고|WBS|연결 근거",
+    "features": "ID|대분류|기능|설명|상태|정책|구현 수단|비고|WBS|연결 근거|WBS 상태",
     "components": "ID|이름|분류|상태|위치|역할|버전|라이선스|저장소|WBS|OSS 재사용|구조도|아이콘",
-    "policies": "ID|영역|정책명|정책 내용|CIA 영향|자동화 분류|현재|개발 후|관련 추가 개발|자동화 한계|기능|WBS|규제 조항 수|구속력 의무|요구 ID|번호 대응|근거",
+    "policies": "ID|영역|정책명|정책 내용|CIA 영향|자동화 분류|현재|개발 후|관련 추가 개발|자동화 한계|기능|WBS|규제 조항 수|구속력 의무|요구 ID|번호 대응|근거|WBS 작업 수|WBS 평균 진척|기능 수",
     "experiments": "ID|이름|목적|조건|판정 기준|상태|정책|WBS|백로그|카드",
     "docs": "ID|제목|종류|날짜|경로|관련 ID|상태",
 }
+# 시트에서 수식으로 채우는 열(저장소 시드에서는 빈 값)
+FORMULA_COLUMNS = {"wbs": {"진척률", "상태"}, "backlog": {"WBS 상태"}, "features": {"WBS 상태"},
+                   "policies": {"WBS 작업 수", "WBS 평균 진척", "기능 수"}}
 LABELS = dict(x.split(":", 1) for x in (
     "title:이름|name:이름|category:구분|kind:종류|area:영역|requirement:要求|acceptance:완료 조건|"
     "negative_cases:음성·경계|status:상태|priority:우선|gap:남은 일|code_evidence:코드|test_evidence:시험 근거|"
@@ -476,7 +479,7 @@ class Export:
         seed = OUT / "seed/components.csv"
         oss_headers, oss = HEADERS["components"].split("|"), []
         if seed.exists():
-            raw = seed.read_bytes()
+            raw = seed.read_bytes().replace(b"\r\n", b"\n")  # Windows 체크아웃(CRLF)도 같은 바이트로
             if raw.startswith(b"\xef\xbb\xbf") or b"\r" in raw:
                 raise ValueError("OSS 원본 CSV는 BOM 없이 LF여야 함")
             reader = csv.DictReader(io.StringIO(raw.decode("utf-8"), newline=""))
@@ -1003,7 +1006,7 @@ def integrity(manifest, payloads):
             for key, value in row.items():
                 if len(value) > MAX_CELL or re.match(r"^\s*[=+@]", value):
                     errors.append(f"셀 형식: {ident}/{key}")
-                if key in {"진척률(수식)", "상태(수식)"} and value:
+                if key in FORMULA_COLUMNS.get(slug, ()) and value:
                     errors.append(f"수식 열은 빈 값: {ident}/{key}")
             if slug == "wbs":
                 for key in ["구현", "회귀", "배포", "실기기", "검수"]:
@@ -1047,15 +1050,22 @@ def output(export, flat):
         tab = {"order": order, "title": title, "slug": slug, "group": group, "kind": kind,
                "csv": f"tabs/{order:02d}-{slug}.csv" if table else None,
                "rows": len(table["rows"]) if table else 0,
-               "columns": [{"name": h, "formula": h in {"진척률(수식)", "상태(수식)"}} for h in table["headers"]] if table else [],
+               "columns": [{"name": h, "formula": h in FORMULA_COLUMNS.get(slug, ())} for h in table["headers"]] if table else [],
                "id_column": "커밋" if slug == "commits" else "ID", "links": table["links"] if table else {}, "sources": table["sources"] if table else []}
         manifest["tabs"].append(tab)
         if table:
             payloads[tab["csv"]] = csv_bytes(table["headers"], table["rows"], flat)
             if slug == "components" and (OUT / "seed/components.csv").exists() and not flat:
-                payloads[tab["csv"]] = (OUT / "seed/components.csv").read_bytes()
+                payloads[tab["csv"]] = (OUT / "seed/components.csv").read_bytes().replace(b"\r\n", b"\n")
     report = integrity(manifest, payloads)
-    lines = ["# MINT 개발 통합 시트", "", "구글 시트가 정본이고 이 폴더는 처음 채우기·스냅샷용이다.", "",
+    lines = ["# MINT 개발 통합 시트", "",
+             "정본은 구글 시트 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit)이고, "
+             "이 폴더는 처음 채우기와 저장소 쪽 스냅샷이다.", "",
+             "- 관리 탭(WBS·백로그·결정·배포·자료·기능·구성요소·정책·시험)은 시트에서 고친다. 행은 A열 ID로 찾고, 진척률·상태처럼 수식인 열은 쓰지 않는다.",
+             "- 참조·원본 탭은 저장소 원천에서 다시 만든다: 이 스크립트 → 푸시 → 시트 A1의 IMPORTDATA 주소를 새 커밋으로 → 값 고정. 시트에서 고치면 편집 경고가 뜬다.",
+             "- 시트 → 저장소: `research/llm-wiki/tools/sheet_pull.py`가 웹 게시된 WBS·백로그 CSV를 이 폴더와 snapshot.json에 반영한다.",
+             "- 협업 콘솔 #wbs는 시트의 WBS 값을 5분마다 읽어 snapshot.json 위에 덮어 보여 준다.",
+             "- 구조도: [docs/ai/architecture](../../../docs/ai/architecture/README.md)의 노드 ID가 「구성요소」 탭(CMP-)과 같다.", "",
              "| 탭 | 종류 | 행 수 | 원천 | ID |", "| --- | --- | ---: | --- | --- |"]
     for tab in manifest["tabs"]:
         sources = tab["sources"]

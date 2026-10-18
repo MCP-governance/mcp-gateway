@@ -530,6 +530,7 @@ DOC-528,2026-10-17 upstream-session-reuse-stage2,보고,2026-10-17,https://githu
 DOC-529,2026-10-17 windows-kit-wizard-tray,보고,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-17-windows-kit-wizard-tray.md,DEV-25 · DEV-26 · G08.04 · G05.04 · D-118 · D-68,기록
 DOC-530,2026-10-18 field-tls-d124 병합 후 보강,보고,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-18-field-tls-d124-merge.md,D-118 · D-120 · D-124 · DEV-62 · DEV-64,기록
 DOC-531,2026-10-18 field-tls-d124,보고,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md,DEV-64 · G08.05 · POL-16,기록
+DOC-547,2026-10-18 협업 콘솔 통합 시트 연동,보고,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-18-sheet-sync.md,,기록
 DOC-532,저장소 코드 스냅샷,현황,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/repository-snapshot.md,,기록
 DOC-533,"Team AGI 산출물 선별: 정책, 기술 구현, 실증 및 평가",안내,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/team-agi-deliverables-2026-10-15.md,POL-01,정본
 DOC-534,Claude/Codex 공통 작업 지시,양식,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/templates/task-prompt.md,,정본

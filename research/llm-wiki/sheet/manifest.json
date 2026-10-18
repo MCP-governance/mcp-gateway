@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-18T13:39:13+09:00",
-  "source_head": "840e9260938f213694be0ee6526f1fcf67cb87e4",
+  "generated_at": "2026-10-18T13:47:52+09:00",
+  "source_head": "558e2a0a27b612a7a254a8bb8985ee6af33f73c1",
   "raw_base": "https://raw.githubusercontent.com/MCP-governance/mcp-gateway/<커밋>/research/llm-wiki/sheet/tabs/",
   "tabs": [
     {
@@ -70,11 +70,11 @@
           "formula": false
         },
         {
-          "name": "진척률(수식)",
+          "name": "진척률",
           "formula": true
         },
         {
-          "name": "상태(수식)",
+          "name": "상태",
           "formula": true
         },
         {
@@ -156,7 +156,7 @@
       "group": "관리",
       "kind": "관리",
       "csv": "tabs/03-backlog.csv",
-      "rows": 73,
+      "rows": 74,
       "columns": [
         {
           "name": "ID",
@@ -189,6 +189,10 @@
         {
           "name": "근거 자료",
           "formula": false
+        },
+        {
+          "name": "WBS 상태",
+          "formula": true
         }
       ],
       "id_column": "ID",
@@ -207,7 +211,7 @@
       "group": "관리",
       "kind": "관리",
       "csv": "tabs/04-decisions.csv",
-      "rows": 125,
+      "rows": 126,
       "columns": [
         {
           "name": "ID",
@@ -259,7 +263,7 @@
       "group": "관리",
       "kind": "참조",
       "csv": "tabs/05-commits.csv",
-      "rows": 331,
+      "rows": 336,
       "columns": [
         {
           "name": "커밋",
@@ -415,7 +419,8 @@
         "research/llm-wiki/status/reports/2026-10-17-upstream-session-reuse-stage2.md",
         "research/llm-wiki/status/reports/2026-10-17-windows-kit-wizard-tray.md",
         "research/llm-wiki/status/reports/2026-10-18-field-tls-d124-merge.md",
-        "research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md"
+        "research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md",
+        "research/llm-wiki/status/reports/2026-10-18-sheet-sync.md"
       ]
     },
     {
@@ -466,6 +471,10 @@
         {
           "name": "연결 근거",
           "formula": false
+        },
+        {
+          "name": "WBS 상태",
+          "formula": true
         }
       ],
       "id_column": "ID",
@@ -783,6 +792,18 @@
         {
           "name": "근거",
           "formula": false
+        },
+        {
+          "name": "WBS 작업 수",
+          "formula": true
+        },
+        {
+          "name": "WBS 평균 진척",
+          "formula": true
+        },
+        {
+          "name": "기능 수",
+          "formula": true
         }
       ],
       "id_column": "ID",
@@ -2866,7 +2887,7 @@
       "group": "관리",
       "kind": "관리",
       "csv": "tabs/45-docs.csv",
-      "rows": 546,
+      "rows": 547,
       "columns": [
         {
           "name": "ID",
@@ -3422,6 +3443,7 @@
         "research/llm-wiki/status/reports/2026-10-17-windows-kit-wizard-tray.md",
         "research/llm-wiki/status/reports/2026-10-18-field-tls-d124-merge.md",
         "research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md",
+        "research/llm-wiki/status/reports/2026-10-18-sheet-sync.md",
         "research/llm-wiki/status/repository-snapshot.md",
         "research/llm-wiki/team-agi-deliverables-2026-10-15.md",
         "research/llm-wiki/templates/task-prompt.md",
@@ -4047,7 +4069,8 @@
       "research/llm-wiki/threats/originals/MCP_보안정책50_2026-10-14.xlsm": "DOC-543",
       "research/llm-wiki/threats/policies-24.md": "DOC-544",
       "research/llm-wiki/threats/policies-50-2026-10-14.md": "DOC-545",
-      "research/llm-wiki/threats/policies-50.md": "DOC-546"
+      "research/llm-wiki/threats/policies-50.md": "DOC-546",
+      "research/llm-wiki/status/reports/2026-10-18-sheet-sync.md": "DOC-547"
     },
     "backlog_aliases": {
       "RES-01": "WIKI-02"

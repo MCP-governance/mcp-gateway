@@ -18,6 +18,31 @@ python -X utf8 research/collaboration-console/console.py serve --host 100.111.15
 
 서버를 켜 두면 2초마다 새 기록이 반영되고, `#wbs` 채널은 매 요청마다 [`development-wbs/snapshot.json`](../llm-wiki/analysis/development-wbs/snapshot.json)을 다시 읽으므로 재생성 빌드 단계 없이 최신 값을 보여 줍니다. Windows에서 백그라운드 실행할 때는 `Start-Process -WindowStyle Hidden`을 사용합니다. 종료는 그 서버 프로세스만 중단합니다.
 
+## 통합 시트 연동
+
+[`sheet-source.example.json`](sheet-source.example.json)을 `runtime/sheet-source.json`으로 복사하고,
+`wbs_csv`·`backlog_csv`에 각 탭의 **웹에 게시(CSV)** URL, `sheet_url`에 시트 편집 주소를 넣습니다.
+설정 파일이 없거나 해당 CSV URL이 비면 기존 저장소 사본을 사용합니다. 설정은 요청마다 읽으므로 재시작이 필요 없습니다.
+CSV는 머리글 이름과 ID로 연결하며 5분 캐시·요청 타임아웃 15초를 적용합니다. 실패 시 같은 URL의 마지막 정상 캐시,
+없으면 저장소 스냅샷으로 돌아갑니다. 실패도 5분 캐시하며 URL 변경 시 이전 URL의 캐시를 재사용하지 않습니다.
+잘못된 머리글·중복 ID·0/0.5/1 이외 점수도 조회 실패로 처리합니다.
+
+`/api/wbs`는 기존 근거를 보존하면서 점수·담당(`owner`)·진행 메모(`memo`)·계획 일정(`planned_schedule`)을 덮어쓰고,
+새 ID·목표를 추가합니다. 빈 점수는 0, 진척은 5개 평균이며 상태·전체·목표별 요약을 다시 계산합니다.
+`sheet`에는 실제 값의 출처(`sheet`/`snapshot`), 마지막 정상 조회 시각(`fetched_at`, 조회 전 `null`), 오류(`error`), 편집 주소(`url`)가 들어갑니다.
+상단은 정상 시 `시트 기준 HH:MM`, 실패 시 `저장소 스냅샷 기준`과 시트 링크를 표시합니다. 마지막 정상 캐시를 쓰는 실패에서도 이 대체 문구를 사용합니다.
+`/api/backlog`는 CSV 머리글을 키로 하는 JSON 배열입니다. 캐시가 없으면 `sheet/tabs/03-backlog.csv`를 사용하며 화면은 추가하지 않습니다.
+
+로컬 사본을 갱신하려면 다음을 실행합니다. 두 CSV와 스냅샷을 모두 검증한 뒤 파일을 쓰며, manifest의 열 이름 집합이 다르면 중단합니다(열 순서 변경은 허용).
+`--apply-snapshot`은 같은 ID의 점수·담당·메모·일정과 계산 요약을 갱신하고 바뀐 ID를 출력합니다. 새 ID는 스냅샷에 추가하지 않습니다.
+
+```powershell
+python -B -X utf8 research/llm-wiki/tools/sheet_pull.py
+python -B -X utf8 research/llm-wiki/tools/sheet_pull.py --wbs-csv <CSV-URL> --backlog-csv <CSV-URL> --apply-snapshot
+python -B -X utf8 research/llm-wiki/tools/sheet_pull.py --from-dir <CSV-폴더> --apply-snapshot
+python -B -X utf8 research/llm-wiki/tools/sheet_pull.py --self-test
+```
+
 ## 공개 기록 남기기
 
 ```powershell
