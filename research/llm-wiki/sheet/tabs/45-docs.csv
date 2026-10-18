@@ -11,7 +11,7 @@ DOC-009,D-62/D-63 통제 범위·응답·실기기 검증,설계 정본,2026-10-
 DOC-010,데이터 모델,설계 정본,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/DATA_MODEL.md,D-120 · D-123 · D-95 · D-27 · D-96 · D-126 · D-86 · D-88 · D-26 · D-48 · D-49 · D-90 · D-92 · D-25 · D-127,정본
 DOC-011,설계 결정 기록 (v2·v3),결정,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/DECISIONS.md,D-07 · D-01 · D-02 · D-03 · D-04 · D-05 · D-06 · D-08 · D-09 · D-10 · D-11 · D-12 · D-13 · D-14 · D-15,정본
 DOC-012,엔드포인트 연결 단순화 조사 (2026-10-04),설계 정본,2026-10-04,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/ENDPOINT_ONBOARDING_2026-10-04.md,D-71,정본
-DOC-013,솔루션 기기 배치와 직원 PC 연결,설계 정본,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/FIELD.md,D-114 · D-52 · D-70 · D-57 · D-59 · D-71 · D-67 · D-61 · D-68 · D-62 · D-63 · D-53 · D-124,정본
+DOC-013,솔루션 기기 배치와 직원 PC 연결,설계 정본,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/FIELD.md,D-114 · D-52 · D-70 · D-57 · D-59 · D-71 · D-67 · D-61 · D-68 · D-62 · D-63 · D-53 · D-124 · D-129,정본
 DOC-014,Field MCP 후보 및 기능 확장 (2026-09-28 조사),설계 정본,2026-09-28,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/FIELD_MCP_CANDIDATES.md,D-49 · D-44,정본
 DOC-015,후속 보강과 실제 LLM 하네스 검증 — 2026-10-01,설계 정본,2026-10-01,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/FOLLOWUP_VALIDATION_2026-10-01.md,D-55 · D-56 · D-53,정본
 DOC-016,"MCP 서버 10종 — 무엇을, 어떻게 띄우고, 무엇을 조심하나",설계 정본,2026-09-30,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/MCP_SERVERS.md,D-13 · D-23 · D-54,정본
@@ -484,7 +484,7 @@ DOC-482,P64.pdf,원본,2026-10-13,https://github.com/MCP-governance/mcp-gateway/
 DOC-483,T19_supplement.txt,원본,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/sources/policy/T19/originals/T19_supplement.txt,,보존
 DOC-484,T20_supplement.txt,원본,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/sources/policy/T20/originals/T20_supplement.txt,,보존
 DOC-485,개발 백로그,현황,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/backlog.md,DEV-01 · DEV-02 · DEV-03 · DEV-04 · DEV-05 · DEV-06 · DEV-07 · DEV-08 · DEV-09 · DEV-10 · DEV-11 · DEV-12 · DEV-13 · DEV-14 · DEV-15,정본
-DOC-486,개발 현황 — 2026-10-15,현황,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/current.md,D-129 · DEV-52 · D-127 · D-122 · D-124 · D-118 · D-120 · DEV-64 · DEV-66 · DEV-50 · POL-01 · POL-26 · POL-45 · POL-21 · DEV-38,정본
+DOC-486,개발 현황 — 2026-10-15,현황,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/current.md,D-130 · DEV-52 · D-127 · D-122 · D-124 · D-118 · D-120 · DEV-64 · DEV-66 · DEV-50 · POL-01 · POL-26 · POL-45 · POL-21 · DEV-38,정본
 DOC-487,현황 변경 이력 보존 — 2026-10-15,현황,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/history-2026-10-15.md,DEV-31 · D-107 · DEV-39 · DEV-38 · DEV-40 · DEV-36 · D-104 · D-105 · DEV-37 · DEV-35 · DEV-29 · DEV-34 · E13 · DEV-32 · DEV-30,기록
 DOC-488,Claude 독립 코드 검토 원문 — 2026-10-13,보고,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-13-claude-code-review.md,,기록
 DOC-489,2026-10-13 개발 목표와 검토 기준,보고,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-13-development-goals.md,,기록

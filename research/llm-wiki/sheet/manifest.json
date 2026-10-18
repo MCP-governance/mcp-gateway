@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-18T14:12:30+09:00",
-  "source_head": "368f8ade20f7e0aeaa56d68131f5cb2bb01d4247",
+  "generated_at": "2026-10-18T14:13:09+09:00",
+  "source_head": "16e56c56476f9326b2470be3fe856d34cdc28a60",
   "raw_base": "https://raw.githubusercontent.com/MCP-governance/mcp-gateway/<커밋>/research/llm-wiki/sheet/tabs/",
   "tabs": [
     {
@@ -211,7 +211,7 @@
       "group": "관리",
       "kind": "관리",
       "csv": "tabs/04-decisions.csv",
-      "rows": 126,
+      "rows": 127,
       "columns": [
         {
           "name": "ID",

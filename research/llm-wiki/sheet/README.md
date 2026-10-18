@@ -13,7 +13,7 @@
 | 01 요약 | — | 0 | — | ID |
 | 02 WBS | 관리 | 57 | [snapshot.json](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/development-wbs/snapshot.json); [feature-spec.json](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/feature-spec-2026-10-17/feature-spec.json); [owners.json](https://github.com/MCP-governance/mcp-gateway/blob/main/research/development-status-site/owners.json) | ID |
 | 03 백로그 | 관리 | 74 | [backlog.md](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/backlog.md) | ID |
-| 04 결정 | 관리 | 126 | [DECISIONS.md](https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/DECISIONS.md) | ID |
+| 04 결정 | 관리 | 127 | [DECISIONS.md](https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/DECISIONS.md) | ID |
 | 05 개발이력 | 참조 | 336 | git log main | 커밋 |
 | 06 배포 | 관리 | 18 | [deploy.json](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/wbs-1015/deploy.json); [deploy-abd.json](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/wbs-1017/deploy-abd.json); [deploy-ce.json](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/wbs-1017/deploy-ce.json); 외 50개(manifest) | ID |
 | 07 기능 | 관리 | 64 | [feature-spec.json](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/feature-spec-2026-10-17/feature-spec.json); [README.md](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/feature-spec-2026-10-17/README.md); [feature-wbs.csv](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/sheet/seed/feature-wbs.csv) | ID |
