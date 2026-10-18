@@ -29,7 +29,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from psycopg.types.json import Jsonb
 
-from . import connections, core, db, oidc, provenance, review, upstream
+from . import connections, consent, core, db, oidc, provenance, review, upstream
 from .release import build_info
 from .system_metrics import SystemMetrics
 from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, ToolReview, authenticate,
@@ -849,9 +849,10 @@ async def gateway_proxy(path: str, authorization: str | None, method: str = "GET
 PAGES_BY_ROLE = {
     # 직원·협력사 직원에게 필요한 것은 "내 호출이 어떻게 판정됐는가"와 "쓰고 싶은
     # MCP를 신청하는 길"이다. 조직 전체의 기록·정책·종료 판정은 관리자 몫이다.
-    "partner": ("activity", "intake"),
-    "employee": ("activity", "intake"),
-    "admin": ("overview", "activity", "audit", "approvals", "coverage", "servers", "people", "intake", "termination", "policy"),
+    "partner": ("activity", "consent", "intake"),
+    "employee": ("activity", "consent", "intake"),
+    "admin": ("overview", "activity", "audit", "approvals", "coverage", "servers", "people", "consent", "intake", "termination",
+              "policy"),
 }
 ROLE_LABELS = {"partner": "협력업체 직원", "employee": "직원", "admin": "관리자"}
 
@@ -1570,6 +1571,26 @@ async def risk_catalog(authorization: str | None = Header(default=None)):
     """
     await current_identity(authorization)
     return await gateway_proxy("/api/risk-catalog", authorization)
+
+
+@app.get("/api/consents")
+async def my_consents(authorization: str | None = Header(default=None)):
+    """POL-08: only the person's own consents; nobody decides them on another's behalf."""
+    user = await current_identity(authorization)
+    return {"consents": await consent.mine(user["principal"])}
+
+
+class ConsentDecision(StrictModel):
+    decision: Literal["grant", "deny", "revoke"]
+
+
+@app.post("/api/consents/{consent_id}")
+async def decide_consent(consent_id: int, request: ConsentDecision, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    row = await consent.decide(consent_id, user["principal"], request.decision)
+    if not row:
+        raise HTTPException(409, "이미 처리됐거나 본인의 동의 요청이 아닙니다.")
+    return row
 
 
 @app.get("/approvals")

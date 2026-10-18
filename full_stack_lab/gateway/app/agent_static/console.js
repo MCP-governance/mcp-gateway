@@ -253,6 +253,7 @@ const outcomeDecision = (text) => (OUTCOME_TONE.find(([word]) => String(text || 
 
 // ── icons (Lucide, ISC licence) ──────────────────────────────────────────────
 const ICON = {
+  consent: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
   pause: '<rect width="4" height="16" x="6" y="4" rx="1" fill="currentColor" stroke="none"/><rect width="4" height="16" x="14" y="4" rx="1" fill="currentColor" stroke="none"/>',
   play: '<path d="m7 4 13 8-13 8Z" fill="currentColor" stroke="none"/>',
   refresh: '<path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/>',
@@ -368,13 +369,14 @@ const PAGES = [
   { id: "servers", label: "MCP 서버", group: "접근 통제" },
   { id: "people", label: "사용자·엔드포인트", group: "접근 통제" },
   { id: "policy", label: "정책", group: "접근 통제" },
+  { id: "consent", label: "이용 동의", group: "접근 통제", badge: "consent" },
   { id: "intake", label: "도입 신청", group: "도입 및 종료" },
   { id: "termination", label: "종료·폐기", group: "도입 및 종료", badge: "termination" },
 ];
 let viewer = null;
 let routeSeq = 0;
 let current = { page: "", arg: "", query: new URLSearchParams() };
-const badges = { approvals: 0, termination: 0, coverage: 0 };
+const badges = { approvals: 0, termination: 0, coverage: 0, consent: 0 };
 
 function renderNav(active) {
   const groups = new Map();
@@ -457,6 +459,10 @@ function rememberTab(key) {
 }
 
 async function refreshBadges() {
+  try {
+    badges.consent = (await api("/api/consents")).consents.filter((c) => c.status === "PENDING").length;
+  } catch { /* same as below */ }
+  if (!viewer.pages.includes("overview")) return renderNav($("#view").dataset.page);
   try {
     const [o, conn] = await Promise.all([gw("overview"), api("/api/connectors?summary=1")]);
     badges.approvals = o.pending_approvals;
@@ -1457,6 +1463,34 @@ function catalogResults(data) {
       <td>${r.internal_repo_url ? html`<a href="${sameSite(r.internal_repo_url)}" target="_blank" rel="noopener noreferrer">열기 ↗</a>` : NONE}</td></tr>`)}</tbody></table>` : empty(data.query ? "일치하는 신청 없음" : "신청 없음")}
     ${registry.length ? html`<p class="small muted">등록된 MCP: ${registry.map((r) => r.display_name).join(", ")}</p>` : ""}`;
 }
+const CONSENT_STATUS = { PENDING: ["alert", "확인 필요"], GRANTED: ["allow", "동의"], DENIED: ["block", "거부"],
+  REVOKED: ["outline", "철회"], EXPIRED: ["outline", "만료"] };
+ROUTES.consent = async (_, tab) => {
+  const { consents } = await api("/api/consents");
+  const pending = consents.filter((c) => c.status === "PENDING");
+  const decided = consents.filter((c) => c.status !== "PENDING");
+  badges.consent = pending.length;
+  const button = (c, decision, label, tone = "") => html`<button class="btn sm ${tone}" data-act="consent" data-id="${c.id}" data-decision="${decision}">${label}</button>`;
+  const table = (rows) => html`<table class="data"><thead><tr><th>도구</th><th>데이터 등급</th><th>목적</th><th>상태</th><th>시각</th><th></th></tr></thead><tbody>
+    ${rows.map((c) => html`<tr><td><code>${c.server_id}.${c.tool_name}</code></td><td>${DATA_CLASS[c.grade] || c.grade}</td>
+      <td>${c.purpose || NONE}</td><td>${chip(...(CONSENT_STATUS[c.status] || ["", c.status]))}</td>
+      <td class="small">${when(c.decided_at || c.requested_at)}${c.status === "GRANTED" && c.expires_at ? html`<span class="sub">${when(c.expires_at)}까지</span>` : ""}</td>
+      <td class="num nowrap">${c.status === "PENDING" ? html`${button(c, "deny", "거부", "danger")}${button(c, "grant", "동의", "primary")}`
+        : c.status === "GRANTED" ? button(c, "revoke", "철회") : ["DENIED", "REVOKED"].includes(c.status) ? button(c, "grant", "동의") : ""}</td></tr>`)}
+    </tbody></table>`;
+  return page({
+    head: head("이용 동의"),
+    kpis: kpiStrip([["확인 필요", pending.length, pending.length ? "approval" : ""],
+      ["동의", consents.filter((c) => c.status === "GRANTED").length], ["거부·철회", consents.filter((c) => ["DENIED", "REVOKED"].includes(c.status)).length]]),
+    active: tab || "pending",
+    tabs: [
+      { key: "pending", label: "확인 필요", n: pending.length, hot: pending.length > 0,
+        body: panel("동의 요청", pending.length ? table(pending) : empty("확인할 요청 없음"), { flush: true }) },
+      { key: "history", label: "기록", n: decided.length, body: panel("동의 기록", decided.length ? table(decided) : empty("기록 없음"), { flush: true }) },
+    ],
+  });
+};
+
 ROUTES.intake = async (_, tab) => {
   const [{ requests }, catalog] = await Promise.all([api("/api/mcp-requests"),
     tab === "new" ? api("/api/mcp-catalog/search") : Promise.resolve(null)]);
@@ -1604,15 +1638,21 @@ function reviewRecords(events, r) {
   </div>`;
 }
 const destinationText = (list) => ((list || []).length ? list.join(", ") : "없음");
+function scopeTerms(item) {
+  const terms = [item.inputs && `입력 ${item.inputs.join(", ") || "없음"}`, item.mask && "입력 민감정보 가림",
+    item.grade === "nonimportant" && `외부 전송 ${DATA_CLASS.nonimportant}까지`,
+    item.accepts_from?.length && `중요정보 수신 ${item.accepts_from.join(", ")}`, item.consent && "사용자 동의"].filter(Boolean);
+  return terms.length ? html`<div class="pill-list">${terms.map((t) => chip("plain", t))}</div>` : NONE;
+}
 function scopeTable(tools, reviews, dataClass) {
   const names = Object.keys(tools || {});
   if (!names.length) return empty("범위 없음");
   return html`${dataClass ? kv([["데이터 등급", DATA_CLASS[dataClass] || dataClass]]) : ""}
-    <table class="data"><thead><tr><th>도구</th><th>행위</th><th>목적</th><th>자산</th><th>외부 목적지</th></tr></thead><tbody>
+    <table class="data"><thead><tr><th>도구</th><th>행위</th><th>목적</th><th>자산</th><th>외부 목적지</th><th>조건</th></tr></thead><tbody>
     ${names.map((name) => { const item = reviews?.[name]; return html`<tr><td><code>${name}</code></td>
       <td>${chip({ r: "allow", w: "alert", x: "block" }[tools[name]] || "", ACTION[tools[name]] || tools[name])}</td>
-      ${item ? html`<td>${item.purpose}</td><td>${item.asset}</td><td>${destinationText(item.destinations)}</td>`
-        : html`<td colspan="3">${chip("block", "범위 미심사")}</td>`}</tr>`; })}</tbody></table>`;
+      ${item ? html`<td>${item.purpose}</td><td>${item.asset}</td><td>${destinationText(item.destinations)}</td><td>${scopeTerms(item)}</td>`
+        : html`<td colspan="4">${chip("block", "범위 미심사")}</td>`}</tr>`; })}</tbody></table>`;
 }
 function gateView(gate) {
   if (!gate) return NONE;
@@ -1963,10 +2003,15 @@ function scopeFields(names) {
     ${field.text("scope_purpose", "목적", 'required minlength="4" maxlength="200"')}
     ${field.text("scope_asset", "자산", 'required minlength="2" maxlength="200"')}
     ${field.text("scope_destinations", "외부 목적지 (쉼표 구분)", 'maxlength="300"')}
-    <details><summary>도구별 조정</summary>${names.map((name) => html`<div class="grid c3">
+    <div class="grid c2">${field.select("scope_grade", "외부 전송 등급", { public: DATA_CLASS.public, nonimportant: DATA_CLASS.nonimportant }, "public")}
+      ${field.text("scope_accepts", "중요정보를 받을 서버 (쉼표 구분)", 'maxlength="300"')}</div>
+    <label class="check"><input type="checkbox" name="scope_mask" /> 입력 민감정보 가림</label>
+    <label class="check"><input type="checkbox" name="scope_consent" /> 사용자 동의</label>
+    <details><summary>도구별 조정</summary>${names.map((name) => html`<div class="grid c2">
       ${field.text(`purpose:${name}`, html`<code>${name}</code> 목적`, 'maxlength="200"')}
       ${field.text(`asset:${name}`, "자산", 'maxlength="200"')}
-      ${field.text(`destinations:${name}`, "외부 목적지", 'maxlength="300"')}</div>`)}</details></fieldset>`;
+      ${field.text(`destinations:${name}`, "외부 목적지", 'maxlength="300"')}
+      ${field.text(`inputs:${name}`, "허용 입력 항목 (쉼표 구분)", 'maxlength="500"')}</div>`)}</details></fieldset>`;
 }
 const hostList = (text) => String(text || "").split(",").map((h) => h.trim().toLowerCase()).filter(Boolean);
 function collectScopes(fd, names) {
@@ -1974,10 +2019,19 @@ function collectScopes(fd, names) {
   return Object.fromEntries(names.map((name) => [name, {
     purpose: own("purpose", name) || String(fd.get("scope_purpose")).trim(),
     asset: own("asset", name) || String(fd.get("scope_asset")).trim(),
-    destinations: hostList(own("destinations", name) || fd.get("scope_destinations")) }]));
+    destinations: hostList(own("destinations", name) || fd.get("scope_destinations")),
+    inputs: own("inputs", name) ? own("inputs", name).split(",").map((v) => v.trim()).filter(Boolean) : null,
+    mask: fd.get("scope_mask") === "on", consent: fd.get("scope_consent") === "on",
+    grade: String(fd.get("scope_grade") || "public"),
+    accepts_from: String(fd.get("scope_accepts") || "").split(",").map((v) => v.trim()).filter(Boolean) }]));
 }
 
 const ACTIONS = {
+  async consent(el) {
+    await api(`/api/consents/${el.dataset.id}`, { method: "POST", body: { decision: el.dataset.decision } });
+    toast({ grant: "동의함", deny: "거부함", revoke: "철회함" }[el.dataset.decision]);
+    reload(); refreshBadges();
+  },
   async "audit-event"(el) {
     const event = await gw(`audit/events/${el.dataset.id}`);
     openDrawer(`감사 이벤트 #${event.id}`, html`<div class="row-actions">${decisionChip(event.decision)}${event.invalid ? chip("outline", "무효 처리") : ""}<code>${event.policy_id}</code></div>`,
@@ -2853,6 +2907,6 @@ async function boot() {
   if (viewer.kit && viewer.managed_required && !(viewer.managed_devices || []).some((d) => d.status === "active" && d.managed_state === "active")) {
     ACTIONS["pc-kit"]();
   }
-  if (viewer.admin) { refreshBadges(); setInterval(refreshBadges, 30000); }
+  refreshBadges(); setInterval(refreshBadges, 30000);
 }
 boot().catch((error) => { $("#view").innerHTML = String(html`<div class="note bad">${error.message}</div>`); });
