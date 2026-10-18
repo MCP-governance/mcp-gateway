@@ -1,0 +1,914 @@
+[
+ {
+  "name": "logo-claude",
+  "file": "logo-claude.svg",
+  "url": "https://api.iconify.design/logos/claude-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-anthropic",
+  "file": "logo-anthropic.svg",
+  "url": "https://api.iconify.design/logos/anthropic-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-openai",
+  "file": "logo-openai.svg",
+  "url": "https://api.iconify.design/logos/openai-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-gemini",
+  "file": "logo-gemini.svg",
+  "url": "https://api.iconify.design/logos/google-gemini.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-opencode",
+  "file": "logo-opencode.svg",
+  "url": "https://api.iconify.design/logos/opencode-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-tailscale",
+  "file": "logo-tailscale.svg",
+  "url": "https://api.iconify.design/thesvg-color/tailscale.svg",
+  "site": "iconify",
+  "license": "thesvg-color",
+  "author": "thesvg-color"
+ },
+ {
+  "name": "logo-wireguard",
+  "file": "logo-wireguard.svg",
+  "url": "https://api.iconify.design/simple-icons/wireguard.svg?color=%2388171A",
+  "site": "iconify",
+  "license": "CC0-1.0",
+  "author": "simple-icons"
+ },
+ {
+  "name": "logo-caddy",
+  "file": "logo-caddy.svg",
+  "url": "https://api.iconify.design/thesvg-color/caddy.svg",
+  "site": "iconify",
+  "license": "thesvg-color",
+  "author": "thesvg-color"
+ },
+ {
+  "name": "logo-fastapi",
+  "file": "logo-fastapi.svg",
+  "url": "https://api.iconify.design/logos/fastapi-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-python",
+  "file": "logo-python.svg",
+  "url": "https://api.iconify.design/logos/python.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-mcp",
+  "file": "logo-mcp.svg",
+  "url": "https://api.iconify.design/simple-icons/modelcontextprotocol.svg",
+  "site": "iconify",
+  "license": "CC0-1.0",
+  "author": "simple-icons"
+ },
+ {
+  "name": "logo-keycloak",
+  "file": "logo-keycloak.svg",
+  "url": "https://api.iconify.design/thesvg-color/keycloak.svg",
+  "site": "iconify",
+  "license": "thesvg-color",
+  "author": "thesvg-color"
+ },
+ {
+  "name": "logo-authlib",
+  "file": "logo-authlib.png",
+  "url": "https://github.com/authlib.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-opa",
+  "file": "logo-opa.png",
+  "url": "https://github.com/open-policy-agent.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-presidio",
+  "file": "logo-presidio.png",
+  "url": "https://github.com/microsoft.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-gitleaks",
+  "file": "logo-gitleaks.png",
+  "url": "https://github.com/gitleaks.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-postgresql",
+  "file": "logo-postgresql.svg",
+  "url": "https://api.iconify.design/logos/postgresql.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-jaeger",
+  "file": "logo-jaeger.svg",
+  "url": "https://api.iconify.design/thesvg-color/jaeger.svg",
+  "site": "iconify",
+  "license": "thesvg-color",
+  "author": "thesvg-color"
+ },
+ {
+  "name": "logo-opentelemetry",
+  "file": "logo-opentelemetry.svg",
+  "url": "https://api.iconify.design/logos/opentelemetry-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-ocsf",
+  "file": "logo-ocsf.png",
+  "url": "https://github.com/ocsf.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-syft",
+  "file": "logo-syft.png",
+  "url": "https://github.com/anchore.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-trivy",
+  "file": "logo-trivy.svg",
+  "url": "https://api.iconify.design/thesvg-color/trivy.svg",
+  "site": "iconify",
+  "license": "thesvg-color",
+  "author": "thesvg-color"
+ },
+ {
+  "name": "logo-semgrep",
+  "file": "logo-semgrep.png",
+  "url": "https://github.com/semgrep.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-ollama",
+  "file": "logo-ollama.svg",
+  "url": "https://api.iconify.design/simple-icons/ollama.svg",
+  "site": "iconify",
+  "license": "CC0-1.0",
+  "author": "simple-icons"
+ },
+ {
+  "name": "logo-gitea",
+  "file": "logo-gitea.svg",
+  "url": "https://api.iconify.design/thesvg-color/gitea.svg",
+  "site": "iconify",
+  "license": "thesvg-color",
+  "author": "thesvg-color"
+ },
+ {
+  "name": "logo-docker",
+  "file": "logo-docker.svg",
+  "url": "https://api.iconify.design/logos/docker-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-redis",
+  "file": "logo-redis.svg",
+  "url": "https://api.iconify.design/logos/redis.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-nginx",
+  "file": "logo-nginx.svg",
+  "url": "https://api.iconify.design/logos/nginx.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-playwright",
+  "file": "logo-playwright.svg",
+  "url": "https://api.iconify.design/logos/playwright.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-markitdown",
+  "file": "logo-markitdown.svg",
+  "url": "https://api.iconify.design/logos/microsoft-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-toolhive",
+  "file": "logo-toolhive.png",
+  "url": "https://github.com/stacklok.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-openbao",
+  "file": "logo-openbao.png",
+  "url": "https://github.com/openbao.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-litellm",
+  "file": "logo-litellm.png",
+  "url": "https://github.com/BerriAI.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-github",
+  "file": "logo-github.svg",
+  "url": "https://api.iconify.design/logos/github-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-context7",
+  "file": "logo-context7.png",
+  "url": "https://github.com/upstash.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-ubuntu",
+  "file": "logo-ubuntu.svg",
+  "url": "https://api.iconify.design/logos/ubuntu.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-windows11",
+  "file": "logo-windows11.svg",
+  "url": "https://api.iconify.design/logos/microsoft-windows-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-kali",
+  "file": "logo-kali.svg",
+  "url": "https://api.iconify.design/simple-icons/kalilinux.svg?color=%23557C94",
+  "site": "iconify",
+  "license": "CC0-1.0",
+  "author": "simple-icons"
+ },
+ {
+  "name": "logo-wsl",
+  "file": "logo-wsl.svg",
+  "url": "https://api.iconify.design/logos/linux-tux.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-apparmor",
+  "file": "logo-apparmor.png",
+  "url": "https://github.com/apparmor.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-nftables",
+  "file": "logo-nftables.png",
+  "url": "https://github.com/netfilter.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-greenmail",
+  "file": "logo-greenmail.png",
+  "url": "https://github.com/greenmail-mail-test.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-google-sheets",
+  "file": "logo-google-sheets.svg",
+  "url": "https://api.iconify.design/simple-icons/googlesheets.svg?color=%2334A853",
+  "site": "iconify",
+  "license": "CC0-1.0",
+  "author": "simple-icons"
+ },
+ {
+  "name": "logo-google-drive",
+  "file": "logo-google-drive.svg",
+  "url": "https://api.iconify.design/logos/google-drive.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-pyrit",
+  "file": "logo-pyrit.png",
+  "url": "https://github.com/Azure.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-cisco",
+  "file": "logo-cisco.svg",
+  "url": "https://api.iconify.design/simple-icons/cisco.svg?color=%231BA0D7",
+  "site": "iconify",
+  "license": "CC0-1.0",
+  "author": "simple-icons"
+ },
+ {
+  "name": "logo-microsoft",
+  "file": "logo-microsoft.svg",
+  "url": "https://api.iconify.design/logos/microsoft-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-hashicorp-vault-alt",
+  "file": "logo-hashicorp-vault-alt.svg",
+  "url": "https://api.iconify.design/logos/vault-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-toxiproxy",
+  "file": "logo-toxiproxy.png",
+  "url": "https://github.com/Shopify.png?size=256",
+  "site": "github",
+  "license": "see repo/org",
+  "author": ""
+ },
+ {
+  "name": "logo-linux",
+  "file": "logo-linux.svg",
+  "url": "https://api.iconify.design/logos/linux-tux.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-git",
+  "file": "logo-git.svg",
+  "url": "https://api.iconify.design/logos/git-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-powershell",
+  "file": "logo-powershell.svg",
+  "url": "https://api.iconify.design/simple-icons/powershell.svg",
+  "site": "iconify",
+  "license": "CC0-1.0",
+  "author": "simple-icons"
+ },
+ {
+  "name": "logo-bash",
+  "file": "logo-bash.svg",
+  "url": "https://api.iconify.design/logos/bash-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "logo-codex",
+  "file": "logo-codex.svg",
+  "url": "https://api.iconify.design/logos/codex.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos"
+ },
+ {
+  "name": "flat-employee",
+  "file": "flat-employee.svg",
+  "url": "https://api.iconify.design/flat-color-icons/businessman.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-admin",
+  "file": "flat-admin.svg",
+  "url": "https://api.iconify.design/flat-color-icons/customer-support.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-team",
+  "file": "flat-team.svg",
+  "url": "https://api.iconify.design/flat-color-icons/conference-call.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-laptop",
+  "file": "flat-laptop.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/laptop.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-desktop",
+  "file": "flat-desktop.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/desktop-computer.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-server",
+  "file": "flat-server.svg",
+  "url": "https://api.iconify.design/streamline-color/database-server-2-flat.svg",
+  "site": "iconify",
+  "license": "CC BY 4.0",
+  "author": "streamline-color"
+ },
+ {
+  "name": "flat-vm",
+  "file": "flat-vm.svg",
+  "url": "https://api.iconify.design/flat-color-icons/multiple-devices.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-cloud",
+  "file": "flat-cloud.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/cloud.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-internet",
+  "file": "flat-internet.svg",
+  "url": "https://api.iconify.design/flat-color-icons/globe.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-shield",
+  "file": "flat-shield.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/shield.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-lock",
+  "file": "flat-lock.svg",
+  "url": "https://api.iconify.design/flat-color-icons/lock.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-key",
+  "file": "flat-key.svg",
+  "url": "https://api.iconify.design/flat-color-icons/key.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-certificate",
+  "file": "flat-certificate.svg",
+  "url": "https://api.iconify.design/flat-color-icons/diploma-1.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-database",
+  "file": "flat-database.svg",
+  "url": "https://api.iconify.design/flat-color-icons/database.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-ledger",
+  "file": "flat-ledger.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/ledger.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-chain",
+  "file": "flat-chain.svg",
+  "url": "https://api.iconify.design/flat-color-icons/link.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-policy",
+  "file": "flat-policy.svg",
+  "url": "https://api.iconify.design/streamline-color/justice-hammer-flat.svg",
+  "site": "iconify",
+  "license": "CC BY 4.0",
+  "author": "streamline-color"
+ },
+ {
+  "name": "flat-scan",
+  "file": "flat-scan.svg",
+  "url": "https://api.iconify.design/streamline-color/bug-antivirus-debugging-flat.svg",
+  "site": "iconify",
+  "license": "CC BY 4.0",
+  "author": "streamline-color"
+ },
+ {
+  "name": "flat-gear",
+  "file": "flat-gear.svg",
+  "url": "https://api.iconify.design/flat-color-icons/settings.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-queue",
+  "file": "flat-queue.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/inbox-tray.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-alert",
+  "file": "flat-alert.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/police-car-light.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-dashboard",
+  "file": "flat-dashboard.svg",
+  "url": "https://api.iconify.design/flat-color-icons/combo-chart.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-firewall",
+  "file": "flat-firewall.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/brick.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-terminal",
+  "file": "flat-terminal.svg",
+  "url": "https://api.iconify.design/flat-color-icons/command-line.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-tray",
+  "file": "flat-tray.svg",
+  "url": "https://api.iconify.design/flat-color-icons/multiple-inputs.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-installer",
+  "file": "flat-installer.svg",
+  "url": "https://api.iconify.design/flat-color-icons/package.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-robot",
+  "file": "flat-robot.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/robot.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-plug",
+  "file": "flat-plug.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/electric-plug.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-eye",
+  "file": "flat-eye.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/eye.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-id-card",
+  "file": "flat-id-card.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/identification-card.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-trash",
+  "file": "flat-trash.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/wastebasket.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-stop",
+  "file": "flat-stop.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/stop-sign.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-check",
+  "file": "flat-check.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/check-mark-button.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-timer",
+  "file": "flat-timer.svg",
+  "url": "https://api.iconify.design/flat-color-icons/alarm-clock.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-archive",
+  "file": "flat-archive.svg",
+  "url": "https://api.iconify.design/flat-color-icons/filing-cabinet.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-passport",
+  "file": "flat-passport.svg",
+  "url": "https://api.iconify.design/streamline-color/passport-flat.svg",
+  "site": "iconify",
+  "license": "CC BY 4.0",
+  "author": "streamline-color"
+ },
+ {
+  "name": "flat-scale",
+  "file": "flat-scale.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/balance-scale.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-gauge",
+  "file": "flat-gauge.svg",
+  "url": "https://api.iconify.design/streamline-color/dashboard-circle-flat.svg",
+  "site": "iconify",
+  "license": "CC BY 4.0",
+  "author": "streamline-color"
+ },
+ {
+  "name": "flat-handshake",
+  "file": "flat-handshake.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/handshake.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-mask",
+  "file": "flat-mask.svg",
+  "url": "https://api.iconify.design/flat-color-icons/privacy.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-tag",
+  "file": "flat-tag.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/label.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-compare",
+  "file": "flat-compare.svg",
+  "url": "https://api.iconify.design/flat-color-icons/bar-chart.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-chat",
+  "file": "flat-chat.svg",
+  "url": "https://api.iconify.design/flat-color-icons/comments.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-folder",
+  "file": "flat-folder.svg",
+  "url": "https://api.iconify.design/flat-color-icons/folder.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-spreadsheet",
+  "file": "flat-spreadsheet.svg",
+  "url": "https://api.iconify.design/flat-color-icons/data-sheet.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-network",
+  "file": "flat-network.svg",
+  "url": "https://api.iconify.design/streamline-color/network-flat.svg",
+  "site": "iconify",
+  "license": "CC BY 4.0",
+  "author": "streamline-color"
+ },
+ {
+  "name": "flat-router",
+  "file": "flat-router.svg",
+  "url": "https://api.iconify.design/streamline-color/wifi-router-flat.svg",
+  "site": "iconify",
+  "license": "CC BY 4.0",
+  "author": "streamline-color"
+ },
+ {
+  "name": "flat-proxy",
+  "file": "flat-proxy.svg",
+  "url": "https://api.iconify.design/flat-color-icons/call-transfer.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-sbom",
+  "file": "flat-sbom.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/clipboard.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-container",
+  "file": "flat-container.svg",
+  "url": "https://api.iconify.design/streamline-color/container-flat.svg",
+  "site": "iconify",
+  "license": "CC BY 4.0",
+  "author": "streamline-color"
+ },
+ {
+  "name": "flat-cpu",
+  "file": "flat-cpu.svg",
+  "url": "https://api.iconify.design/flat-color-icons/electronics.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-relay",
+  "file": "flat-relay.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/satellite-antenna.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-mail",
+  "file": "flat-mail.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/e-mail.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-web",
+  "file": "flat-web.svg",
+  "url": "https://api.iconify.design/streamline-color/web-flat.svg",
+  "site": "iconify",
+  "license": "CC BY 4.0",
+  "author": "streamline-color"
+ },
+ {
+  "name": "flat-sync",
+  "file": "flat-sync.svg",
+  "url": "https://api.iconify.design/flat-color-icons/synchronize.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-upload",
+  "file": "flat-upload.svg",
+  "url": "https://api.iconify.design/flat-color-icons/upload.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "flat-color-icons"
+ },
+ {
+  "name": "flat-fingerprint",
+  "file": "flat-fingerprint.svg",
+  "url": "https://api.iconify.design/streamline-color/fingerprint-1-flat.svg",
+  "site": "iconify",
+  "license": "CC BY 4.0",
+  "author": "streamline-color"
+ },
+ {
+  "name": "flat-bug",
+  "file": "flat-bug.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/bug.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-wizard",
+  "file": "flat-wizard.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/magic-wand.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat"
+ },
+ {
+  "name": "flat-shield-check",
+  "file": "flat-shield-check.svg",
+  "url": "https://api.iconify.design/streamline-color/shield-check-flat.svg",
+  "site": "iconify",
+  "license": "CC BY 4.0",
+  "author": "streamline-color"
+ }
+]
