@@ -600,6 +600,9 @@ async def register_server(request: dict, actor: str) -> dict:
                          + ". 내용을 읽고 확인했다고 표시해야 등록할 수 있습니다.")
     # What a person scoped, tool by tool; a tool without it is registered but not enabled (D-91).
     tool_reviews = review.normalize_tool_reviews(request["tools"], request.get("tool_reviews"), actor)
+    for name, item in tool_reviews.items():
+        if item["inputs"] is not None:
+            review.check_inputs(name, advertised[name].get("input_schema") or {}, item["inputs"])
     host = urlsplit(endpoint).hostname or ""
     source_url = request.get("source_url") or ""
     commit = request.get("commit_sha") or ""
@@ -725,12 +728,16 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
         applicant = intake["submitted_by"] if intake else None
         await review.require_independent("tool-scope-review", "server", server_id, actor, applicant)
         normalized = review.normalize_tool_reviews({name: spec["tools"][name] for name in reviews}, reviews, actor)
+        # The argument set is cut from the pinned contract, so a reviewer can widen the inputs a previous
+        # review narrowed, and a remote registration's own schema gets the same check (POL-31).
+        pinned = {row["name"]: row["input_schema"] for row in await db.fetch_all(
+            "SELECT name, input_schema FROM mcp_tools WHERE server_id=%s", (server_id,)) if row["input_schema"]}
+        for name, item in normalized.items():
+            if item["inputs"] is not None:
+                review.check_inputs(name, pinned.get(name) or spec["parameter_constraints"].get(name) or {}, item["inputs"])
         spec["tool_reviews"] = {**(spec.get("tool_reviews") or {}), **normalized}
         if spec.get("constraints_derived"):
-            # New destinations move the address patterns with them. The argument set is cut from the pinned
-            # contract, so a reviewer can widen the inputs a previous review narrowed (POL-31).
-            pinned = {row["name"]: row["input_schema"] for row in await db.fetch_all(
-                "SELECT name, input_schema FROM mcp_tools WHERE server_id=%s", (server_id,)) if row["input_schema"]}
+            # New destinations move the address patterns with them.
             spec["parameter_constraints"].update(review.derived_constraints(
                 {name: {"input_schema": pinned.get(name) or spec["parameter_constraints"][name]} for name in normalized},
                 normalized))

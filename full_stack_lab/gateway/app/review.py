@@ -252,6 +252,15 @@ def scope_terms(item: dict) -> dict:
 _ADDRESS_ARG = ADDRESS_ARG
 
 
+def check_inputs(name: str, schema: dict, inputs: list[str]) -> None:
+    """POL-31: a reviewer narrows the argument set of the pinned contract; a required argument stays."""
+    allowed, advertised = set(inputs), set((schema or {}).get("properties") or {})
+    if allowed - advertised:
+        raise ValueError(f"{name}: 계약에 없는 입력 항목입니다: " + ", ".join(sorted(allowed - advertised)))
+    if missing := set((schema or {}).get("required") or []) - allowed:
+        raise ValueError(f"{name}: 필수 입력 항목은 뺄 수 없습니다: " + ", ".join(sorted(missing)))
+
+
 def derived_constraints(advertised: dict[str, dict], reviews: dict[str, dict]) -> dict[str, dict]:
     """The argument scope a registration gets without anyone writing JSON Schema.
 
@@ -285,14 +294,8 @@ def derived_constraints(advertised: dict[str, dict], reviews: dict[str, dict]) -
 
         pin(schema)
         if item.get("inputs") is not None:
-            # POL-31: a reviewer narrows the argument set; a required argument cannot be taken away.
-            allowed, advertised_names = set(item["inputs"]), set(schema.get("properties") or {})
-            if allowed - advertised_names:
-                raise ValueError(f"{name}: 계약에 없는 입력 항목입니다: " + ", ".join(sorted(allowed - advertised_names)))
-            if set(schema.get("required") or []) - allowed:
-                raise ValueError(f"{name}: 필수 입력 항목은 뺄 수 없습니다: "
-                                 + ", ".join(sorted(set(schema.get("required") or []) - allowed)))
-            schema["properties"] = {k: v for k, v in (schema.get("properties") or {}).items() if k in allowed}
+            check_inputs(name, schema, item["inputs"])
+            schema["properties"] = {k: v for k, v in (schema.get("properties") or {}).items() if k in item["inputs"]}
         # Keep $defs so $ref inside the advertised contract still resolves (DEV-44).
         out[name] = {**{k: v for k, v in schema.items() if k in ("$defs", "definitions", "required", "properties")},
                      "type": "object", "properties": schema.get("properties") or {}, "additionalProperties": False}
