@@ -146,120 +146,155 @@ def route(page, e):
 
 # ── 페이지 1: 전체 아키텍처 ─────────────────────────────────────────────
 def page1():
-    p = Page("1 전체 아키텍처", 1820, 1140)
-    cols = [("사용자", 10, 150), ("직원 PC", 160, 340), ("사설망", 500, 100), ("솔루션 기기", 600, 780),
-            ("MCP 서버", 1380, 210), ("기업·외부", 1590, 220)]
-    for i, (t, x, w) in enumerate(cols):
-        p.box(f"col{i}", t, x, 10, w, 895, kind="col")
-    p.box("acct", "관리 계정", 185, 75, 305, 355)
-    p.box("kit", "엔드포인트 키트", 185, 450, 305, 230)
-    p.box("ingress", "진입", 615, 75, 150, 485)
-    p.box("gw", "게이트웨이 판정", 780, 240, 360, 315)
-    p.box("obs", "관측", 1155, 440, 210, 115)
-    p.box("mgmt", "관리·데이터", 615, 610, 265, 280)
-    p.box("supply", "공급망·실행", 900, 610, 465, 280)
-    p.box("scan", "검사 도구", 905, 765, 190, 115, kind="sub")
-    p.box("iso", "격리 실행망", 1180, 740, 175, 140, kind="sub", la="r")
-    p.box("mcp", "등록 MCP", 1395, 300, 180, 260)
-    p.box("llm", "LLM 제공자", 1605, 75, 190, 130)
-    p.box("sso", "조직 SSO", 1605, 245, 190, 145)
-    p.box("lab", "연동 시험", 1605, 650, 190, 240, kind="lab")
-    p.box("gov", "보안·거버넌스", 20, 920, 580, 205)
-    p.box("plan", "개발 예정", 615, 920, 750, 205, kind="lab")
-    p.box("legend", "", 1380, 920, 430, 205, kind="legend")
+    p = Page("1 전체 아키텍처", 2200, 1400)
+    for i, (t, x, w) in enumerate([("사용자·직원 PC", 10, 390), ("사설망", 400, 180), ("솔루션 기기", 590, 1150), ("MCP 제공자", 1750, 220), ("기업·외부", 1980, 210)]):
+        p.box(f"col{i}", t, x, 10, w, 1160, kind="col")
+    for ident, label, x, y, w, h, kind in [
+        ("endpoint", "직원 PC · 관리 계정", 25, 75, 350, 285, "grp"),
+        ("protection", "보호 서비스 · OS 통제", 25, 385, 350, 260, "grp"),
+        ("browser", "브라우저 · 관리자", 25, 650, 350, 150, "grp"),
+        ("gateway", "게이트웨이 요청·응답 처리", 610, 150, 1125, 490, "grp"),
+        ("services", "인증 · 관리 · 기록", 610, 675, 510, 275, "grp"),
+        ("supply", "도입·승인·등록 흐름", 610, 980, 1125, 175, "grp"),
+        ("isolation", "격리 실행망", 1450, 675, 285, 275, "sub"),
+        ("providers", "원격 MCP · 외부 제공자", 1765, 160, 185, 440, "grp"),
+        ("enterprise", "조직·외부 서비스", 1995, 160, 180, 640, "grp"),
+        ("dev", "개발·검토 자료", 25, 840, 540, 125, "lab"),
+        ("interop", "시험·연동", 25, 980, 540, 175, "lab"),
+        ("planned", "개발 예정", 610, 1185, 1125, 105, "lab"),
+        ("legend", "", 1765, 1185, 410, 205, "legend")]:
+        p.box(ident, label, x, y, w, h, kind=kind)
 
     n = p.node
-    n("user", "직원", "flat-employee", 85, 150, "사용자", 56, cmp="CMP-01")
-    n("admin", "보안 관리자", "flat-admin", 85, 715, "사용자", 56, cmp="CMP-02")
-    for x, (id, lab, ic, st, c) in zip((225, 300, 375, 450), [
-        ("claude", "Claude Code", "logo-claude", "", "CMP-03"), ("codex", "Codex CLI", "logo-openai", "", "CMP-04"),
-        ("gemini", "Gemini CLI", "logo-gemini", "시험용", "CMP-05"), ("opencode", "OpenCode", "logo-opencode", "시험용", "CMP-06")]):
-        n(id, lab, ic, x, 150, "하네스", 48, st, c)
-    n("shim", "진입 래퍼", "flat-terminal", 240, 300, "엔드포인트", 46, cmp="CMP-08")
-    n("cfg", "관리형 설정", "flat-gear", 340, 300, "엔드포인트", 46, cmp="CMP-09")
-    n("helper", "헤더 헬퍼", "flat-key", 440, 300, "엔드포인트", 46, cmp="CMP-10")
-    n("apparmor", "AppArmor", "logo-apparmor", 225, 520, "엔드포인트", 44, cmp="CMP-12")
-    n("nft", "nftables", "logo-nftables", 300, 520, "엔드포인트", 44, cmp="CMP-13")
-    n("winfw", "Windows 방화벽", "flat-firewall", 375, 520, "엔드포인트", 44, "시험 중", "CMP-16")
-    n("observer", "OS 관측기", "flat-eye", 450, 520, "엔드포인트", 44, cmp="CMP-11")
-    n("installer", "키트 설치기", "flat-installer", 265, 625, "엔드포인트", 44, cmp="CMP-07")
-    n("wizard", "마법사·트레이", "flat-wizard", 395, 625, "엔드포인트", 44, "시험 중", "CMP-14")
-    n("localmcp", "비인가 로컬 MCP", "logo-mcp", 340, 820, "차단", 46, "차단")
-    n("tailscale", "Tailscale", "logo-tailscale", 550, 380, "망·진입", 60, cmp="CMP-17")
-    n("mproxy", "모델 프록시", "flat-proxy", 690, 140, "망·진입", 50, cmp="CMP-19")
-    n("caddy", "Caddy", "logo-caddy", 690, 380, "망·진입", 52, cmp="CMP-18", lp="t")
-    n("gateway", "MCP 게이트웨이", "flat-shield", 960, 380, "게이트웨이", 78, cmp="CMP-20")
-    n("authlib", "Authlib", "logo-authlib", 850, 300, "정책·검사", 46, cmp="CMP-24")
-    n("opa", "OPA", "logo-opa", 1070, 300, "정책·검사", 46, cmp="CMP-26")
-    n("presidio", "Presidio", "logo-presidio", 850, 470, "정책·검사", 46, cmp="CMP-28")
-    n("gitleaks", "Gitleaks", "logo-gitleaks", 1070, 470, "정책·검사", 46, cmp="CMP-29")
-    n("jaeger", "Jaeger", "logo-jaeger", 1215, 500, "관측·연동", 44, cmp="CMP-31")
-    n("siemw", "SIEM 전달", "logo-ocsf", 1310, 500, "관측·연동", 44, cmp="CMP-33", lp="t")
-    n("console", "관리 콘솔", "flat-dashboard", 690, 700, "게이트웨이", 52, cmp="CMP-21")
-    n("pg", "PostgreSQL", "logo-postgresql", 830, 700, "데이터·감사", 52, cmp="CMP-30")
-    n("intake", "도입 검증", "flat-scan", 960, 690, "공급망·실행", 48, cmp="CMP-35")
-    n("gitea", "내부 Git", "logo-gitea", 1060, 690, "공급망·실행", 48, cmp="CMP-39")
-    n("runtime", "MCP 실행기", "flat-container", 1160, 690, "공급망·실행", 48, cmp="CMP-40", lp="t")
-    n("syft", "Syft", "logo-syft", 945, 815, "공급망·실행", 36, cmp="CMP-36")
-    n("trivy", "Trivy", "logo-trivy", 1000, 815, "공급망·실행", 36, cmp="CMP-37")
-    n("semgrep", "Semgrep", "logo-semgrep", 1055, 815, "공급망·실행", 36, cmp="CMP-38")
-    n("toolhive", "ToolHive", "logo-toolhive", 1135, 815, "공급망·실행", 38, "재검토", "CMP-43")
-    n("markitdown", "MarkItDown", "logo-markitdown", 1225, 810, "MCP 서버", 42, cmp="CMP-44")
-    n("egress", "출구 프록시", "flat-proxy", 1310, 810, "망·진입", 40, cmp="CMP-42")
-    n("githubmcp", "GitHub", "logo-github", 1440, 370, "MCP 서버", 46, cmp="CMP-45")
-    n("context7", "Context7", "logo-context7", 1530, 370, "MCP 서버", 46, cmp="CMP-46")
-    n("labmcp", "랩 MCP 10종", "logo-mcp", 1440, 490, "MCP 서버", 46, "시험용", "CMP-47")
-    n("playwright", "Playwright", "logo-playwright", 1530, 490, "MCP 서버", 46, "시험용", "CMP-48")
-    n("anthropic", "Anthropic", "logo-anthropic", 1655, 140, "모델", 48, cmp="CMP-51")
-    n("openai", "OpenAI", "logo-openai", 1745, 140, "모델", 48, cmp="CMP-51")
-    n("idp", "고객 IdP", "flat-id-card", 1655, 315, "외부·기업", 46, "연동 대상", "CMP-55")
-    n("keycloak", "Keycloak", "logo-keycloak", 1745, 315, "외부·기업", 46, "시험용", "CMP-25")
-    n("siem", "고객 SIEM", "flat-alert", 1700, 585, "관측·연동", 46, "도입 예정", "CMP-56")
-    n("openbao", "OpenBao", "logo-openbao", 1655, 715, "외부·기업", 44, "연동 시험", "CMP-52")
-    n("litellm", "LiteLLM", "logo-litellm", 1745, 715, "모델", 44, "연동 시험", "CMP-49", lp="t")
-    n("corp", "회사 시스템", "flat-web", 1655, 830, "외부·기업", 44, "시험용", "CMP-57")
-    n("ollama", "Ollama", "logo-ollama", 1745, 830, "모델", 44, "연동 시험", "CMP-50")
-    for x, (id, lab, ic) in zip((95, 215, 335, 455, 545), [
-        ("pol", "보안 정책 50", "flat-policy"), ("reg", "규제 근거", "flat-scale"), ("ledger", "감사 원장", "flat-ledger"),
-        ("revoke", "종료·폐기", "flat-trash"), ("sheet", "통합 시트", "logo-google-sheets")]):
-        n(id, lab, ic, x, 1010, "거버넌스", 50)
-    for x, (id, lab, ic, tip) in zip((690, 800, 910, 1020, 1130, 1240), [
-        ("consent", "사용자 동의", "flat-handshake", "G02.05"), ("purpose", "전송 목적 결속", "flat-tag", "G04.05"),
-        ("inmask", "입력 마스킹", "flat-mask", "G04.06"), ("taint", "중요정보 전파", "flat-chain", "G04.07"),
-        ("compare", "효과 비교 평가", "logo-pyrit", "G10.05"), ("incident", "사고 증빙·기한", "flat-timer", "DEV-66")]):
-        n(id, lab, ic, x, 985, "거버넌스", 42, "도입 예정", tip=tip)
-    for x, (id, lab, ic, tip) in zip((745, 855, 965, 1075, 1185), [
+    for args in [
+        ("user", "직원", "flat-employee", 85, 135, "사용자", 48, "", "CMP-01"),
+        ("admin", "보안 관리자", "flat-admin", 85, 705, "사용자", 48, "", "CMP-02"),
+        ("claude", "Claude Code", "logo-claude", 210, 130, "하네스", 44, "", "CMP-03"),
+        ("codex", "Codex CLI", "logo-openai", 305, 130, "하네스", 44, "", "CMP-04"),
+        ("shim", "진입 래퍼", "flat-terminal", 115, 260, "엔드포인트", 42, "", "CMP-08"),
+        ("helper", "헤더 헬퍼", "flat-key", 245, 260, "엔드포인트", 42, "", "CMP-10"),
+        ("protection_svc", "보호 서비스", "flat-shield-check", 100, 455, "엔드포인트", 46, "시험 중", "CMP-74"),
+        ("observer", "OS 관측기", "flat-eye", 255, 455, "엔드포인트", 46, "", "CMP-11"),
+        ("apparmor", "AppArmor", "logo-apparmor", 80, 585, "엔드포인트", 38, "", "CMP-12"),
+        ("nft", "nftables", "logo-nftables", 170, 585, "엔드포인트", 38, "", "CMP-13"),
+        ("winfw", "Windows 방화벽", "flat-firewall", 300, 530, "엔드포인트", 38, "시험 중", "CMP-16"),
+        ("tailscale", "Tailscale", "logo-tailscale", 460, 420, "망·진입", 56, "", "CMP-17"),
+        ("caddy", "Caddy", "logo-caddy", 545, 420, "망·진입", 48, "", "CMP-18")]:
+        n(*args[:7], args[7], args[8])
+
+    for i, (label, icon_key) in enumerate([
+        ("P0 토큰 검증", "flat-lock"), ("P1 주체·자원 분류", "flat-fingerprint"),
+        ("P2 호출 예약", "flat-queue"), ("P3 입력 계약·허용 항목", "flat-policy"),
+        ("P4 입력 검사", "flat-scan"), ("P5 정책 판정", "flat-shield"),
+        ("P6 이용 동의", "flat-handshake"), ("P7 직전 재검증", "flat-shield-check")]):
+        n(f"p{i}", label, icon_key, 680 + i * 142, 305, "게이트웨이", 52, cmp="CMP-20")
+    for i, (ident, label, icon_key, category, cmpid) in enumerate([
+        ("p8", "P8 실행 의도 기록", "flat-ledger", "게이트웨이", "CMP-20"),
+        ("p9", "P9 MCP 실행", "flat-container", "게이트웨이", "CMP-20"),
+        ("p10", "P10 출력 검사·마스킹", "flat-mask", "게이트웨이", "CMP-20"),
+        ("p11", "P11 원장·반환", "logo-postgresql", "데이터·감사", "CMP-30")]):
+        n(ident, label, icon_key, 1580 - i * 205, 505, category, 52, cmp=cmpid)
+    n("presidio", "Presidio · 마스킹", "logo-presidio", 1040, 420, "정책·검사", 38, cmp="CMP-28")
+    n("gitleaks", "Gitleaks", "logo-gitleaks", 1160, 420, "정책·검사", 38, cmp="CMP-29")
+    n("opa", "OPA · PAC · 목적·전달", "logo-opa", 1450, 420, "정책·검사", 38, cmp="CMP-26")
+
+    nodes = [
+        ("authsvc", "인증·장치 서비스", "flat-id-card", 735, 765, "게이트웨이", 48, "", "CMP-71"),
+        ("authlib", "Authlib", "logo-authlib", 850, 765, "정책·검사", 40, "", "CMP-24"),
+        ("mproxy", "모델 프록시", "flat-proxy", 735, 90, "망·진입", 42, "", "CMP-19"),
+        ("revoke", "종료·폐기", "flat-trash", 850, 875, "거버넌스", 42, "", "CMP-21"),
+        ("console", "관리 콘솔", "flat-dashboard", 985, 765, "게이트웨이", 48, "", "CMP-21"),
+        ("pg", "관리대장·원장", "logo-postgresql", 1055, 875, "데이터·감사", 46, "", "CMP-30"),
+        ("endpoint_api", "엔드포인트 API", "flat-server", 1185, 740, "게이트웨이", 46, "", "CMP-72"),
+        ("otel", "OpenTelemetry", "logo-opentelemetry", 1160, 875, "관측·연동", 40, "", "CMP-32"),
+        ("jaeger", "Jaeger", "logo-jaeger", 1320, 875, "관측·연동", 40, "", "CMP-31"),
+        ("siemw", "SIEM 워커 · 기본 꺼짐", "flat-queue", 1320, 740, "관측·연동", 40, "", "CMP-33"),
+        ("intake", "도입 신청", "flat-upload", 680, 1085, "공급망·실행", 40, "", "CMP-35"),
+        ("scan", "Syft · Trivy · Semgrep · Gitleaks", "flat-scan", 860, 1085, "공급망·실행", 38, "", "CMP-35"),
+        ("approval", "독립 승인", "flat-check", 1060, 1085, "사용자", 40, "", "CMP-02"),
+        ("gitea", "내부 Git 미러", "logo-gitea", 1220, 1085, "공급망·실행", 40, "", "CMP-39"),
+        ("runtime", "실행기", "flat-container", 1470, 900, "공급망·실행", 40, "", "CMP-40"),
+        ("register", "실행 확인·등록", "flat-ledger", 1550, 1085, "공급망·실행", 40, "", "CMP-21"),
+        ("markitdown", "MarkItDown", "logo-markitdown", 1470, 750, "MCP 서버", 40, "", "CMP-44"),
+        ("egress", "출구 프록시", "flat-proxy", 1640, 750, "망·진입", 40, "", "CMP-42"),
+        ("docker", "Docker Engine", "logo-docker", 1610, 840, "공급망·실행", 38, "", "CMP-41"),
+        ("githubmcp", "GitHub MCP", "logo-github", 1810, 280, "MCP 서버", 46, "", "CMP-45"),
+        ("context7", "Context7", "logo-context7", 1810, 430, "MCP 서버", 46, "", "CMP-46"),
+        ("anthropic", "Anthropic", "logo-anthropic", 2040, 280, "모델", 46, "", "CMP-51"),
+        ("openai", "OpenAI", "logo-openai", 2130, 280, "모델", 46, "", "CMP-51"),
+        ("idp", "조직 IdP · OIDC 선택", "flat-id-card", 2100, 470, "외부·기업", 46, "", "CMP-55"),
+        ("siem", "고객 SIEM", "flat-alert", 2100, 700, "외부·기업", 42, "도입 예정", "CMP-56"),
+        ("destination", "심사 목적지", "flat-web", 2100, 580, "외부·기업", 40, "", "CMP-42"),
+        ("sheet", "통합 시트 · 규제 근거", "flat-spreadsheet", 150, 900, "거버넌스", 40, "", "CMP-63"),
+        ("eval", "효과 비교 평가", "flat-compare", 400, 900, "거버넌스", 40, "", "CMP-73"),
+        ("labmcp", "랩 MCP 10종 · Playwright 포함", "logo-mcp", 135, 1040, "MCP 서버", 38, "시험용", "CMP-47"),
+        ("litellm", "LiteLLM", "logo-litellm", 320, 1040, "모델", 38, "연동 시험", "CMP-49"),
+        ("ollama", "Ollama", "logo-ollama", 460, 1040, "모델", 38, "연동 시험", "CMP-50"),
+        ("openbao", "OpenBao", "logo-openbao", 200, 1110, "외부·기업", 38, "연동 시험", "CMP-52"),
+        ("toolhive", "ToolHive", "logo-toolhive", 390, 1110, "공급망·실행", 38, "재검토", "CMP-43")]
+    for ident, label, icon_key, x, y, category, size, status, cmpid in nodes:
+        n(ident, label, icon_key, x, y, category, size, status, cmpid)
+    for i, (ident, label, icon_key, tip) in enumerate([
         ("retain", "원장 보존", "flat-archive", "DEV-67"), ("supplier", "공급자 보증", "flat-certificate", "DEV-68"),
         ("border", "국외 이전 규칙", "flat-passport", "DEV-69"), ("human", "인적 개입", "flat-scale", "DEV-70"),
-        ("risk", "위험 등급", "flat-gauge", "DEV-71")]):
-        n(id, lab, ic, x, 1075, "거버넌스", 42, "도입 예정", tip=tip)
+        ("risk", "위험 등급", "flat-gauge", "DEV-71"), ("incident", "사고 통보·기한", "flat-timer", "DEV-66")]):
+        n(ident, label, icon_key, 710 + i * 165, 1240, "거버넌스", 38, "도입 예정", tip=tip)
+    n("localmcp", "비인가 로컬 MCP", "logo-mcp", 270, 585, "차단", 42, "차단")
 
     e = p.edge
-    e("user", "acct", "mcp")
-    e("acct", "tailscale", "mcp")
-    e("tailscale", "caddy", "mcp", "HTTPS")
-    e("tailscale", "mproxy", "llm", "LLM", pts=[(550, 140)])
-    e("caddy", "gateway", "mcp")
-    for s in ("authlib", "opa", "presidio", "gitleaks"):
-        e("gateway", s, "ctl")
-    e("gateway", "mcp", "mcp", "MCP")
-    e("mproxy", "llm", "llm")
-    e("authlib", "sso", "ctl", "OIDC", pts=[(850, 225), (1700, 225)], lab_at=1)
-    e("gw", "jaeger", "ctl")
-    e("siemw", "siem", "plan", "OCSF", pts=[(1310, 585)])
-    e("gw", "markitdown", "mcp", pts=[(1010, 590), (1225, 590)])
-    e("gw", "pg", "ctl", "원장", pts=[(830, 600)])
-    e("caddy", "console", "ctl")
-    e("console", "pg", "ctl")
-    e("admin", "console", "mcp", "HTTPS", pts=[(640, 715)])
-    e("mgmt", "intake", "ctl", pts=[(890, 690)])
-    e("intake", "gitea", "ctl")
-    e("gitea", "runtime", "ctl")
-    e("runtime", "markitdown", "ctl", pts=[(1160, 810)])
+    for a, b in [("user", "shim"), ("shim", "claude"), ("shim", "codex")]: e(a, b, "ctl")
+    e("protection_svc", "helper", "ctl", "짧은 토큰")
+    e("observer", "tailscale", "net", "OS 이벤트")
+    e("protection_svc", "tailscale", "net", "장치 키 · HTTPS :443", pts=[(100, 395), (460, 395)], lab_at=1)
+    e("claude", "tailscale", "net", "HTTPS :443", pts=[(390, 185), (430, 185), (430, 385)])
+    e("codex", "tailscale", "net", "HTTPS :443", pts=[(395, 235), (445, 235), (445, 400)])
+    e("admin", "tailscale", "net", "HTTP :8000 · Tailscale 내부", pts=[(85, 760), (460, 760), (460, 455)], lab_at=1)
+    e("tailscale", "caddy", "net")
+    e("caddy", "p0", "mcp", "/mcp · 직원 토큰", pts=[(620, 420), (620, 305)], lab_at=1)
+    for i in range(7): e(f"p{i}", f"p{i + 1}", "mcp")
+    e("p7", "p8", "mcp", pts=[(1710, 305), (1710, 505)])
+    e("p8", "p9", "mcp")
+    e("p9", "githubmcp", "mcp", "직원 토큰 미전달 · 별도 자격")
+    e("p9", "context7", "mcp", "HTTPS · 직원 토큰 미전달", pts=[(1745, 510), (1745, 430)])
+    e("githubmcp", "p10", "mcp", pts=[(1760, 320), (1735, 320), (1735, 495)])
+    e("context7", "p10", "mcp", pts=[(1760, 450), (1740, 450), (1740, 495)])
+    e("p9", "markitdown", "mcp", "격리 주소", pts=[(1650, 550), (1650, 700)])
     e("markitdown", "egress", "ctl")
-    e("acct", "localmcp", "blk", pts=[(172, 400), (172, 820)])
-    e("observer", "console", "ctl", "이벤트", pts=[(575, 520), (575, 688)], lab_at=1)
-    e("litellm", "ollama", "llm")
+    e("egress", "destination", "ctl", "심사 목적지", pts=[(1690, 750), (1725, 750), (1725, 580), (2050, 580)], lab_at=2)
+    e("p10", "p11", "mcp")
+    e("p11", "caddy", "mcp", "응답 반환", pts=[(1120, 545), (570, 545)])
+    e("p1", "authsvc", "ctl", pts=[(820, 350), (820, 715)])
+    e("authlib", "authsvc", "ctl")
+    e("p4", "presidio", "ctl")
+    e("p4", "gitleaks", "ctl")
+    e("p10", "presidio", "ctl")
+    e("p10", "gitleaks", "ctl")
+    e("p5", "opa", "ctl")
+    e("authsvc", "idp", "ctl", "OIDC · 선택", pts=[(740, 720), (740, 665), (1940, 665), (1940, 480)])
+    e("console", "p6", "ctl", "이용 동의", pts=[(1010, 765), (1010, 645), (1532, 645), (1532, 345)], lab_at=2)
+    e("console", "pg", "ctl")
+    e("console", "p5", "ctl", "/gw/* 관리 API", pts=[(985, 615), (1390, 615), (1390, 305)], lab_at=1)
+    e("endpoint_api", "pg", "ctl", pts=[(1185, 850), (1055, 850)])
+    e("caddy", "console", "ctl", "HTTP :8000", pts=[(570, 420), (570, 700), (985, 700)], lab_at=2)
+    e("caddy", "endpoint_api", "ctl", "HTTPS :443 · /api/endpoint/*", pts=[(575, 450), (575, 815), (1185, 815)], lab_at=2)
+    e("p11", "otel", "ctl", "계측", pts=[(965, 590), (1130, 590), (1130, 875)], lab_at=1)
+    e("otel", "jaeger", "ctl", "OTLP/HTTP :4318", pts=[(1160, 825), (1320, 825)], lab_at=1)
+    e("pg", "siemw", "plan", "선택 전송", pts=[(1090, 935), (1390, 935), (1390, 740)], lab_at=1)
+    e("siemw", "siem", "plan", "HTTPS · OCSF JSON", pts=[(1320, 665), (2100, 665)], lab_at=1)
+    for a, b in [("intake", "scan"), ("scan", "approval"), ("approval", "gitea")]: e(a, b, "ctl")
+    e("gitea", "runtime", "ctl", "고정 사본", pts=[(1220, 1000), (1470, 1000)], lab_at=1)
+    e("runtime", "register", "ctl", pts=[(1550, 900)])
+    e("runtime", "docker", "ctl", pts=[(1470, 840)])
+    e("runtime", "markitdown", "ctl", "등록·기동")
+    e("register", "pg", "ctl", "승인 카탈로그", pts=[(1695, 1085), (1695, 960), (1055, 960)], lab_at=2)
+    e("console", "intake", "ctl", "신청·검사 결과")
+    e("nft", "localmcp", "blk")
+    e("revoke", "p0", "blk", "관계 차단", pts=[(835, 835), (625, 835), (625, 305)])
+    e("revoke", "runtime", "ctl", "실행기 정지", pts=[(850, 945), (1470, 945)], lab_at=1)
+    e("claude", "mproxy", "llm", "모델 요청", pts=[(210, 60), (735, 60)], lab_at=1)
+    e("codex", "mproxy", "llm", pts=[(305, 105), (690, 105)])
+    e("mproxy", "anthropic", "llm", "HTTP :3128 · HTTPS CONNECT :443", pts=[(2040, 90)], lab_at=0)
+    e("mproxy", "openai", "llm", pts=[(780, 115), (2130, 115)])
     return p
 
 
@@ -327,8 +362,8 @@ def page2():
     e("pj3", "tailnet", "net", pts=[(760, 600)])
     e("pj2", "tailnet", "plan", pts=[(805, 600)])
     e("team", "tailnet", "net", pts=[(1000, 600), (835, 600)])
-    e("laptop", "gsheet", "mcp", pts=[(150, 200)])
-    e("laptop", "github", "mcp", "push", pts=[(540, 280)], lab_at=0)
+    e("laptop", "gsheet", "ctl", pts=[(150, 200)])
+    e("laptop", "github", "ctl", "push", pts=[(540, 280)], lab_at=0)
     e("appl", "github", "ctl", "fetch", pts=[(580, 300)], lab_at=0)
     e("appl", "remote", "mcp", pts=[(1250, 200)])
     e("appl", "llmp", "llm", pts=[(1360, 200)])
@@ -340,7 +375,7 @@ def page2():
 
 # ── 페이지 3: 엔드포인트 키트 ─────────────────────────────────────────────
 def page3():
-    p = Page("3 엔드포인트 키트", 1640, 1180)
+    p = Page("3 엔드포인트 키트", 1840, 1180)
     p.box("flow", "연결 절차", 30, 20, 1580, 170)
     p.box("linux", "Linux · PJ1", 30, 220, 610, 780, icon_key="logo-ubuntu")
     p.box("emp", "직원 계정", 50, 270, 150, 450, kind="sub")
@@ -349,19 +384,20 @@ def page3():
     p.box("los", "OS 통제", 50, 750, 580, 235, kind="sub")
     p.box("appl", "솔루션 기기", 680, 220, 280, 780)
     p.box("win", "Windows · pj3", 1000, 220, 610, 780, icon_key="logo-windows11")
+    p.box("external", "기업·외부", 1630, 220, 180, 780, kind="lab")
     p.box("wsys", "시스템", 1010, 500, 140, 120, kind="sub")
     p.box("wmanaged", "관리형 하네스", 1170, 270, 250, 450, kind="sub")
     p.box("wkit", "키트", 1440, 270, 150, 450, kind="sub")
     p.box("wos", "OS 통제", 1010, 750, 580, 235, kind="sub")
-    p.box("legend", "", 30, 1030, 1580, 130, kind="legend")
+    p.box("legend", "", 30, 1030, 1780, 130, kind="legend")
 
     n = p.node
     for i, (id, lab, ic, cat) in enumerate([
-        ("s1", "관리자", "flat-admin", "사용자"), ("s2", "키트 발급", "flat-dashboard", "게이트웨이"),
-        ("s3", "키트 받기", "flat-installer", "엔드포인트"), ("s4", "설치 · sudo 1회", "logo-bash", "엔드포인트"),
-        ("s5", "점검", "flat-check", "엔드포인트"), ("s6", "장치 활성화", "flat-shield-check", "게이트웨이"),
+        ("s1", "직원 로그인", "flat-employee", "사용자"), ("s2", "개인 키트 발급", "flat-dashboard", "게이트웨이"),
+        ("s3", "직원 키트 받기", "flat-installer", "엔드포인트"), ("s4", "관리자 설치", "logo-bash", "엔드포인트"),
+        ("s5", "점검·등록", "flat-check", "엔드포인트"), ("s6", "다른 관리자 활성화", "flat-shield-check", "게이트웨이"),
         ("s7", "하네스 사용", "flat-robot", "하네스")]):
-        n(id, lab, ic, 130 + i * 230, 100, cat, 56)
+        n(id, lab, ic, 130 + i * 230, 100, cat, 52)
     n("emp_user", "직원", "flat-employee", 125, 400, "사용자", 52, lp="t")
     n("launcher", "진입 래퍼", "flat-terminal", 125, 560, "엔드포인트", 48, cmp="CMP-08")
     n("m_claude", "Claude Code", "logo-claude", 290, 430, "하네스", 50, cmp="CMP-03")
@@ -379,7 +415,7 @@ def page3():
     n("a_caddy", "Caddy", "logo-caddy", 790, 430, "망·진입", 52)
     n("a_api", "엔드포인트 API", "flat-dashboard", 790, 560, "게이트웨이", 52)
     n("a_proxy", "모델 프록시", "flat-proxy", 790, 700, "망·진입", 52, lp="t")
-    n("a_llm", "LLM 제공자", "logo-anthropic", 790, 860, "모델", 52)
+    n("a_llm", "LLM 제공자", "logo-anthropic", 1715, 410, "모델", 48, cmp="CMP-51")
     n("w_obs", "OS 관측기", "flat-eye", 1080, 560, "엔드포인트", 48, cmp="CMP-11")
     n("w_claude", "Claude Code", "logo-claude", 1240, 430, "하네스", 50)
     n("w_codex", "Codex CLI", "logo-openai", 1350, 430, "하네스", 50)
@@ -388,7 +424,9 @@ def page3():
     n("w_wizard", "설치 마법사", "flat-wizard", 1515, 380, "엔드포인트", 48, "시험 중", "CMP-14")
     n("w_py", "Python", "logo-python", 1515, 500, "엔드포인트", 44, "시험 중", "CMP-15")
     n("w_tray", "트레이", "flat-tray", 1515, 620, "엔드포인트", 48, "시험 중", "CMP-14")
-    n("w_fw", "방화벽 규칙", "flat-firewall", 1150, 830, "엔드포인트", 50, "시험 중", "CMP-16")
+    n("w_fw", "방화벽 규칙", "flat-firewall", 1150, 830, "엔드포인트", 44, "시험 중", "CMP-16")
+    n("w_service", "보호 서비스", "flat-shield-check", 1260, 830, "엔드포인트", 44, "시험 중", "CMP-74")
+    n("w_helper", "헤더 헬퍼", "flat-key", 1370, 830, "엔드포인트", 44, "시험 중", "CMP-75")
     n("w_local", "비인가 로컬 MCP", "logo-mcp", 1450, 930, "차단", 44, "차단")
 
     e = p.edge
@@ -398,15 +436,18 @@ def page3():
     e("launcher", "managed", "mcp")
     e("managed", "a_caddy", "mcp", "MCP · HTTPS")
     e("managed", "a_proxy", "llm", "LLM")
-    e("obs", "a_api", "ctl", "이벤트")
+    e("obs", "a_caddy", "ctl", "HTTPS :443", pts=[(620, 540), (650, 540), (650, 460)])
+    e("a_caddy", "a_api", "ctl", "이벤트 · 정책 · 하트비트")
     e("managed", "localmcp", "blk", pts=[(440, 930)])
     e("a_caddy", "a_gw", "mcp")
     e("a_gw", "a_pg", "ctl")
-    e("a_proxy", "a_llm", "llm")
+    e("a_proxy", "a_llm", "llm", "프록시 출구", pts=[(830, 740), (1640, 740), (1640, 410)])
     e("wmanaged", "a_caddy", "mcp", "MCP · HTTPS")
     e("wmanaged", "a_proxy", "llm", "LLM")
-    e("w_obs", "a_api", "ctl", "이벤트")
+    e("w_obs", "a_caddy", "ctl", "HTTPS :443", pts=[(1080, 485), (950, 485), (950, 455)], lab_at=1)
     e("wmanaged", "w_local", "blk", pts=[(1390, 930)])
+    e("w_service", "w_helper", "ctl", "named pipe")
+    e("w_service", "a_caddy", "ctl", "장치 키 · HTTPS :443", pts=[(1240, 795), (980, 795), (980, 455)])
     return p
 
 
@@ -646,8 +687,9 @@ def svg_page(page):
         if b["icon"] and icon(b["icon"]):
             mime, data = icon(b["icon"])
             o.append(f'<image x="{b["x"] + 8}" y="{b["y"] + 4}" width="18" height="18" href="data:{mime};base64,{data}"/>')
+        anchor = ' text-anchor="end"' if b["la"] == "r" else ""
         o.append(f'<text x="{tx}" y="{b["y"] + 18}" font-size="12" font-weight="700" fill="{TEXT}"'
-                 f'{" text-anchor=\"end\"" if b["la"] == "r" else ""}>{esc(b["label"])}</text>')
+                 f'{anchor}>{esc(b["label"])}</text>')
     for ed in page.edges:
         color, dash, w = EDGE[ed["kind"]]
         pts = route(page, ed)
@@ -720,8 +762,9 @@ def svg_page(page):
             o.append(f'<text x="{lb["x"] + lb["w"] - 8}" y="{lb["y"] + lb["h"] - 4}" text-anchor="end" font-size="6" '
                      f'fill="#C5CBD3">{esc(cr)}</text>')
     for t in page.texts:
+        weight = 'font-weight="700" ' if t["bold"] else ""
         o.append(f'<text x="{t["x"]}" y="{t["y"]}" font-size="{t["size"]}" fill="{t["color"]}" '
-                 f'{"font-weight=\"700\" " if t["bold"] else ""}text-anchor="{t["anchor"]}">{esc(t["s"])}</text>')
+                 f'{weight}text-anchor="{t["anchor"]}">{esc(t["s"])}</text>')
     o.append("</svg>")
     return "\n".join(o)
 
