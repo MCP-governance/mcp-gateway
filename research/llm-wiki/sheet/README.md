@@ -1,6 +1,12 @@
 # MINT 개발 통합 시트
 
-구글 시트가 정본이고 이 폴더는 처음 채우기·스냅샷용이다.
+정본은 구글 시트 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit)이고, 이 폴더는 처음 채우기와 저장소 쪽 스냅샷이다.
+
+- 관리 탭(WBS·백로그·결정·배포·자료·기능·구성요소·정책·시험)은 시트에서 고친다. 행은 A열 ID로 찾고, 진척률·상태처럼 수식인 열은 쓰지 않는다.
+- 참조·원본 탭은 저장소 원천에서 다시 만든다: 이 스크립트 → 푸시 → 시트 A1의 IMPORTDATA 주소를 새 커밋으로 → 값 고정. 시트에서 고치면 편집 경고가 뜬다.
+- 시트 → 저장소: `research/llm-wiki/tools/sheet_pull.py`가 웹 게시된 WBS·백로그 CSV를 이 폴더와 snapshot.json에 반영한다.
+- 협업 콘솔 #wbs는 시트의 WBS 값을 5분마다 읽어 snapshot.json 위에 덮어 보여 준다.
+- 구조도: [docs/ai/architecture](../../../docs/ai/architecture/README.md)의 노드 ID가 「구성요소」 탭(CMP-)과 같다.
 
 | 탭 | 종류 | 행 수 | 원천 | ID |
 | --- | --- | ---: | --- | --- |
@@ -8,7 +14,7 @@
 | 02 WBS | 관리 | 57 | [snapshot.json](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/development-wbs/snapshot.json); [feature-spec.json](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/feature-spec-2026-10-17/feature-spec.json); [owners.json](https://github.com/MCP-governance/mcp-gateway/blob/main/research/development-status-site/owners.json) | ID |
 | 03 백로그 | 관리 | 73 | [backlog.md](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/backlog.md) | ID |
 | 04 결정 | 관리 | 125 | [DECISIONS.md](https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/DECISIONS.md) | ID |
-| 05 개발이력 | 참조 | 331 | git log main | 커밋 |
+| 05 개발이력 | 참조 | 336 | git log main | 커밋 |
 | 06 배포 | 관리 | 18 | [deploy.json](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/wbs-1015/deploy.json); [deploy-abd.json](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/wbs-1017/deploy-abd.json); [deploy-ce.json](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/wbs-1017/deploy-ce.json); 외 49개(manifest) | ID |
 | 07 기능 | 관리 | 64 | [feature-spec.json](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/feature-spec-2026-10-17/feature-spec.json); [README.md](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/feature-spec-2026-10-17/README.md); [feature-wbs.csv](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/sheet/seed/feature-wbs.csv) | ID |
 | 08 구성요소 | 관리 | 70 | [components.csv](https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/sheet/seed/components.csv) | ID |

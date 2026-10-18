@@ -10,7 +10,7 @@
 - [게시된 웹 현황판](https://mcpgw-status-20261014.sleek-stoat-4347.chatgpt.site) — 10-14 당시 독립 사이트 게시 이력. 소유자만 접근. [배포 확인](../llm-wiki/analysis/development-wbs/site-publication.json)
 - Sites 프로젝트: `appgprj_6acf597681388191b21cd74641403939`; source `3e1529ac89e0218c114b487852ab164c14faf8cd`, native deployment `succeeded` 확인.
 
-- 공유 Google 시트(다른 장치에서 이어서 보기): [MINT 개발 WBS](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit). `python -X utf8 research/development-status-site/sheet_rows.py --owners research/development-status-site/owners.json`이 `WBS!A1`부터 쓸 2차원 배열을 만들고, 작업이 끝날 때마다 바뀐 행만 Sheets 커넥터로 갱신한다. 점수 정본은 snapshot.json이고 시트의 진척률·상태·요약은 수식이다. 진행 중 담당·메모는 `owners.json`.
+- 정본은 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit)(10-18부터, 옛 「MINT 개발 WBS」와 같은 주소)다. WBS 탭은 1행 머리글·2행부터 작업 1행이고, 행은 A열 ID로 찾아 그 셀만 고친다(진척률·상태는 수식). 옛 `sheet_rows.py`(7행 머리글 배치)는 쓰지 않는다. 협업 콘솔 #wbs는 웹 게시된 시트 CSV를 snapshot.json 위에 덮어 보여 주고, `research/llm-wiki/tools/sheet_pull.py`가 시트 값을 저장소에 반영한다. 탭 구성: [시트 안내](../llm-wiki/sheet/README.md).
 
 JSON/Markdown은 저장소 정본이며 사이트는 그 조회용 복사본이다. secret·사용자 key/token·개인 연락처·내부 주소·제품 인증 자료는 사이트에 넣지 않는다. 근거 경로·hash·판본·검증 한계와 안전한 표본 요약만 싣는다. 제품 API, MCP 호출, 외부 JS/폰트·분석 도구 의존성은 없다.
 

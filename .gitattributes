@@ -33,3 +33,5 @@ Caddyfile text eol=lf
 go.mod text eol=lf
 go.sum text eol=lf
 .env.example text eol=lf
+# 통합 시트 시드·스냅샷 CSV는 내보내기 스크립트가 바이트 그대로 대조한다.
+research/llm-wiki/sheet/**/*.csv text eol=lf

@@ -1,5 +1,7 @@
 # 기능명세서·개발 WBS (2026-10-17)
 
+> 10-18부터 이 문서의 세 시트는 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit)의 「기능」(F-01~64)·「WBS」·「정책」 탭으로 옮겼다. 아래는 10-17 판 기록이다.
+
 보고용 기능명세서, 현재 개발과 추가 개발을 나눈 개발 WBS, 기술통제 정책 35개의 대응 현황을 한 통합 문서로 만든 기록이다. 구조화 정본은 [feature-spec.json](feature-spec.json), 검토용 통합 문서는 [feature-spec.xlsx](feature-spec.xlsx)이며 둘 다 [build_feature_spec.py](../../tools/build_feature_spec.py)가 다시 만든다.
 
 - 코드 기준: `10/15-wbs-implementation` `c0fbab3`(기기 배포 `b639432` 포함). 이 작업은 제품 코드·정책·배포를 바꾸지 않았다.

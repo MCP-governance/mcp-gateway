@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-18T13:39:13+09:00",
-  "source_head": "840e9260938f213694be0ee6526f1fcf67cb87e4",
+  "generated_at": "2026-10-18T13:47:52+09:00",
+  "source_head": "558e2a0a27b612a7a254a8bb8985ee6af33f73c1",
   "raw_base": "https://raw.githubusercontent.com/MCP-governance/mcp-gateway/<커밋>/research/llm-wiki/sheet/tabs/",
   "tabs": [
     {
@@ -70,11 +70,11 @@
           "formula": false
         },
         {
-          "name": "진척률(수식)",
+          "name": "진척률",
           "formula": true
         },
         {
-          "name": "상태(수식)",
+          "name": "상태",
           "formula": true
         },
         {
@@ -189,6 +189,10 @@
         {
           "name": "근거 자료",
           "formula": false
+        },
+        {
+          "name": "WBS 상태",
+          "formula": true
         }
       ],
       "id_column": "ID",
@@ -259,7 +263,7 @@
       "group": "관리",
       "kind": "참조",
       "csv": "tabs/05-commits.csv",
-      "rows": 331,
+      "rows": 336,
       "columns": [
         {
           "name": "커밋",
@@ -466,6 +470,10 @@
         {
           "name": "연결 근거",
           "formula": false
+        },
+        {
+          "name": "WBS 상태",
+          "formula": true
         }
       ],
       "id_column": "ID",
@@ -783,6 +791,18 @@
         {
           "name": "근거",
           "formula": false
+        },
+        {
+          "name": "WBS 작업 수",
+          "formula": true
+        },
+        {
+          "name": "WBS 평균 진척",
+          "formula": true
+        },
+        {
+          "name": "기능 수",
+          "formula": true
         }
       ],
       "id_column": "ID",

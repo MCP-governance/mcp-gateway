@@ -36,7 +36,7 @@
           "missing": []
         }
       },
-      "sha256": "3104b12ae04b05916db99f3deceeebc546b71c693cae97775086be1723d389a0"
+      "sha256": "332a69282b1c518b929b864ad98ae778fb05d7685c2ac0263d63b0149dc57dc8"
     },
     "backlog": {
       "rows": 73,
@@ -54,7 +54,7 @@
           "missing": []
         }
       },
-      "sha256": "afe49a1ac4df0d4c703e9e6f337bd67f1ece9af05d628c85a1af205dfad517e8"
+      "sha256": "6539fcdcacd10adeb4413267d9c552711cfc964fd7a550f0147340bb99d5f296"
     },
     "decisions": {
       "rows": 125,
@@ -77,16 +77,17 @@
           "missing": []
         }
       },
-      "sha256": "428f4cbf086cb9dde808fb018f3048793ef14ec9c8daaf4292f3f2c362941a23"
+      "sha256": "6db9a881f63088aaa9f423fb23be4ab9727132f0e94892f028a5eea3b36ea8e0"
     },
     "commits": {
-      "rows": 331,
+      "rows": 336,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
         "결정": {
           "target": "decisions",
           "missing_ids": [
+            "D-129",
             "D-36",
             "D-38"
           ],
@@ -98,6 +99,10 @@
             {
               "row_id": "8889afc",
               "id": "D-38"
+            },
+            {
+              "row_id": "c9ce4a4",
+              "id": "D-129"
             }
           ]
         },
@@ -117,7 +122,7 @@
           "missing": []
         }
       },
-      "sha256": "aef00bcf8392ff5c2b4ee02633602ad2c28ea0eccf37b0cf1e39166518cf35f3"
+      "sha256": "f416c0a890266a0be7b1f998c14619aa85aef78763abe078f2e01ac575942709"
     },
     "deploys": {
       "rows": 18,
@@ -148,7 +153,7 @@
           "missing": []
         }
       },
-      "sha256": "b2ae61fd8fb674489dd4be69f62ed7a56e69b45dfb97ec0de72892cda775ddef"
+      "sha256": "1b604c48a2597a70fd4379ffe7795088fe278b3a659dc3493df1658461d16516"
     },
     "components": {
       "rows": 70,
@@ -213,7 +218,7 @@
           "missing": []
         }
       },
-      "sha256": "45c06b72eff4dbffca92f79aa53a5768f948aeec4f0123a6b306ebb33777d521"
+      "sha256": "189628cfffa3505c34da18898792d964ab2d674335a812cc14babc5f8dd8cd9c"
     },
     "policies-detail": {
       "rows": 24,
@@ -662,5 +667,5 @@
   },
   "duplicate_ids": 0,
   "format_errors": 0,
-  "missing_links": 2
+  "missing_links": 3
 }

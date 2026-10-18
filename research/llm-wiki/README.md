@@ -4,15 +4,18 @@ MINT의 요구사항, 정책, 코드 분석, 공식 레퍼런스와 실행 증�
 
 ## 지금 이어서 작업하려면
 
-1. [현재 상태](status/current.md)에서 코드·배포·검수 기준을 확인합니다.
-2. [단일 백로그](status/backlog.md)에서 작업 ID와 완료 조건을 고릅니다.
-3. [Claude 다음 작업 안내](analysis/review-2026-10-15/claude-next-work.md)와 [통합본 검토](analysis/review-2026-10-15/README.md)에서 근거·반례·시험 조건을 읽습니다.
-4. [작업별 레퍼런스 지도](papers/development-reading-guide.md)에서 필요한 명세·논문·OSS 판본을 찾습니다.
+1. 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit)(정본)의 「요약」·「WBS」·「백로그」 탭에서 진척과 담당을 확인합니다. 탭 구성과 ID 연결은 [시트 안내](sheet/README.md).
+2. [현재 상태](status/current.md)에서 코드·배포·검수 기준을 확인합니다.
+3. [단일 백로그](status/backlog.md)에서 작업 ID와 완료 조건을 고릅니다(상태·담당은 시트 「백로그」 탭이 정본).
+4. [Claude 다음 작업 안내](analysis/review-2026-10-15/claude-next-work.md)와 [통합본 검토](analysis/review-2026-10-15/README.md)에서 근거·반례·시험 조건을 읽습니다.
+5. [작업별 레퍼런스 지도](papers/development-reading-guide.md)에서 필요한 명세·논문·OSS 판본을 찾습니다.
 
 ## 자료 지도
 
 | 찾는 내용 | 정본 |
 | --- | --- |
+| 개발 관리 전체(WBS·백로그·결정·개발이력·배포·자료·기능·구성요소·정책·규제·기업 연동 46탭) | 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit), [탭·ID 안내](sheet/README.md) |
+| 아키텍처 구조도(전체·망·엔드포인트 키트) | [draw.io 원본과 미리보기](../../docs/ai/architecture/README.md) |
 | 현재 결과·미완료·다음 작업 | [현황](status/current.md), [백로그](status/backlog.md), [통합 보고](status/reports/2026-10-15-wiki-consolidation.md) |
 | 코드 검토·목표 기능 보강 | [검토 결과와 구조화 레코드](analysis/review-2026-10-15/README.md), [DEV-38 실행 경로](analysis/review-2026-10-15/dev38-runtime-plan.md) |
 | 팀 Drive 자료와 변경 대조 | [선별 기록](team-agi-deliverables-2026-10-15.md), [50개 정책·24개 MVP 기능의 개발 연결](analysis/drive-curation/README.md) |

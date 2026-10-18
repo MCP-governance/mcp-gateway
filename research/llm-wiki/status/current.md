@@ -1,5 +1,9 @@
 # 개발 현황 — 2026-10-15
 
+## 최신: 개발 관리 통합 시트·아키텍처 구조도 (10-18)
+
+위키·로컬에 흩어진 시트를 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit) 46탭으로 합쳤다(정본, 옛 「MINT 개발 WBS」와 같은 주소). WBS 57·백로그 73·결정 125·개발이력 331커밋·배포 18·자료 546·기능 64·구성요소 70·정책 50과 규제·기업 연동·논문 참조 탭이 ID로 연결된다(기능↔WBS 56/64, [탭·ID 안내](../sheet/README.md), 생성 `research/llm-wiki/tools/build_sheet_export.py`). [구조도](../../../docs/ai/architecture/README.md)는 전체 아키텍처·망·엔드포인트 키트 3페이지 draw.io이고 노드가 「구성요소」 탭 ID를 가진다. 협업 콘솔 #wbs의 시트 연동과 WBS·백로그 웹 게시는 진행 중이다.
+
 ## 최신: 선택적 계약 제한·보안 관제 전달 (DEV-52·61 / D-127·128, 10-18)
 
 [작업 보고](reports/2026-10-17-selective-restriction-siem.md) · [원자 요구사항·근거](../analysis/selective-restriction-siem/README.md): 변경·소멸·위험 설명이 확인된 도구만 목록·판정·최종 dispatch에서 제한하고, 영향 미확정·기존 D-122 중지·공급망·폐기는 전체 차단을 유지했다. 판정·감사·실제 경보 참조를 같은 DB 트랜잭션으로 큐에 넣고 별도 HTTPS 워커가 OCSF JSON을 재전송한다. 로컬 단위/HTTP 14개·콘솔 상태 15개와 구문·인증·화면 문구 검사가 통과했다. Python 3.10/의존성 제약으로 기존 import 기반 회귀·pyflakes는 실패/불가, 실제 DB·TLS·SIEM·배포·PJ1·pj3는 미실행이다. 브랜치 생성·원격 HEAD 확인은 권한/네트워크로 실패하여 기존 작업 브랜치 `10/18-selective-siem`에 미커밋 변경을 남긴다. 검수 점수는 변경하지 않았다.
