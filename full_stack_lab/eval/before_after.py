@@ -144,6 +144,7 @@ def load_cases(paths: list[Path]) -> tuple[list[dict[str, Any]], str]:
         raw = path.read_bytes()
         hashes.append({"path": str(path), "sha256": hashlib.sha256(raw).hexdigest()})
         document = json.loads(raw.decode("utf-8"))
+        document = document.get("pac15_replay", document)  # opa/replay_cases_pac15.json 그대로
         if "base" in document and "cases" in document:
             document = convert_replay_cases(document)
         all_cases.extend(document["cases"])

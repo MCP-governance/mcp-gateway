@@ -10,22 +10,22 @@
       },
       "input": {
         "environment": "prod",
-        "now": "2026-09-25T00:00:00Z",
+        "now": "2026-10-01T00:00:00Z",
         "principal": {
           "role": "employee",
-          "department": "플랫폼개발팀",
+          "department": "데이터분석팀",
           "shadow_endpoints": 0,
           "shadow_listeners": 0
         },
         "resource": {
-          "id": "github:org/repo",
-          "kind": "repository",
+          "id": "/shared/team/data/weekly-report.md",
+          "kind": "path",
           "data_class": "nonimportant"
         },
         "destinations": [],
         "tool": {
-          "server": "github",
-          "name": "create_issue",
+          "server": "filesystem",
+          "name": "write_file",
           "action": "w",
           "base_action": "w",
           "restrictable": []
@@ -36,7 +36,7 @@
           "pii_types": [],
           "sequence_flags": [],
           "flow_sources": [
-            "filesystem"
+            "filesystem-hr"
           ]
         },
         "approval": {
@@ -52,6 +52,246 @@
           "metadata_safe": true,
           "supplier_approved": true,
           "critical_vulnerabilities": 0
+        },
+        "pac": {
+          "request": {
+            "id": "normal-employee-team-write",
+            "user_id": "fixture-employee",
+            "agent_id": "agent-1",
+            "session_id": "session-1",
+            "server_id": "filesystem",
+            "feature_type": "tool",
+            "feature_id": "write_file",
+            "action": "WRITE",
+            "arguments": {
+              "path": "/shared/team/data/weekly-report.md"
+            },
+            "on_behalf_of": false,
+            "environment": "prod",
+            "targets": {
+              "files": [
+                "/shared/team/data/weekly-report.md"
+              ],
+              "commands": [],
+              "recipients": []
+            },
+            "data": {
+              "asset_id": "/shared/team/data/weekly-report.md",
+              "grade": "nonimportant"
+            },
+            "transfer": {
+              "enabled": false,
+              "destination_id": ""
+            },
+            "high_risk": false,
+            "automated": false
+          },
+          "facts": {
+            "trusted": true,
+            "now_ns": 1800000000000000000,
+            "classification": {
+              "verified": true,
+              "high_risk": false,
+              "transfer_required": false,
+              "on_behalf_of": false,
+              "automated": false
+            },
+            "approval_workflow_available": true,
+            "approval": {
+              "status": "APPROVED",
+              "server_id": "filesystem",
+              "conditions_met": true,
+              "valid_from_ns": 1700000000000000000,
+              "valid_until_ns": 1900000000000000000,
+              "baseline": {
+                "server_version": "1.0.0",
+                "feature_definition_hash": "sha256:feature-v1",
+                "schema_hash": "sha256:schema-v1",
+                "policy_version": "pac15-v1"
+              },
+              "environments": [
+                "prod"
+              ],
+              "production_controls": true,
+              "subject": {
+                "user_id": "fixture-employee",
+                "agent_id": "agent-1",
+                "session_id": "session-1"
+              },
+              "auth_issuer": "https://auth.example.test",
+              "connections": [
+                {
+                  "server_id": "filesystem",
+                  "endpoint_id": "endpoint-1",
+                  "final_target_id": "target-1"
+                }
+              ],
+              "features": [
+                {
+                  "server_id": "filesystem",
+                  "type": "tool",
+                  "id": "write_file",
+                  "definition_hash": "sha256:feature-v1"
+                }
+              ],
+              "actions": [
+                "WRITE"
+              ],
+              "allowed_argument_keys": [
+                "path"
+              ],
+              "parameter_bindings": [
+                {
+                  "argument_path": [
+                    "path"
+                  ],
+                  "target_type": "file"
+                }
+              ],
+              "targets": {
+                "files": [
+                  "/shared/team/data/weekly-report.md"
+                ],
+                "commands": [],
+                "recipients": []
+              },
+              "data_scopes": [
+                {
+                  "asset_id": "/shared/team/data/weekly-report.md",
+                  "grade": "nonimportant"
+                }
+              ],
+              "transfer_pairs": [
+                {
+                  "destination_id": "dest-1",
+                  "grade": "internal"
+                }
+              ],
+              "limits": {
+                "allow_automated": false,
+                "max_retries": 2,
+                "max_concurrency": 2,
+                "max_calls": 10,
+                "max_chain_depth": 3,
+                "max_execution_ms": 30000
+              }
+            },
+            "baseline": {
+              "verified": true,
+              "server_version": "1.0.0",
+              "feature_definition_hash": "sha256:feature-v1",
+              "schema_hash": "sha256:schema-v1",
+              "policy_version": "pac15-v1"
+            },
+            "environment": {
+              "verified": true,
+              "id": "prod",
+              "production_equivalent": false
+            },
+            "identity": {
+              "verified": true,
+              "user_id": "fixture-employee",
+              "agent_id": "agent-1",
+              "session_id": "session-1",
+              "allowed_actions": [
+                "WRITE"
+              ]
+            },
+            "delegation": {
+              "verified": true,
+              "user_id": "user-1",
+              "agent_id": "agent-1",
+              "valid_from_ns": 1700000000000000000,
+              "valid_until_ns": 1900000000000000000,
+              "user_actions": [
+                "READ"
+              ],
+              "agent_actions": [
+                "READ"
+              ],
+              "delegated_actions": [
+                "READ"
+              ]
+            },
+            "auth": {
+              "mode": "http",
+              "verified": true,
+              "not_revoked": true,
+              "issuer": "https://auth.example.test",
+              "audience": "filesystem",
+              "valid_from_ns": 1700000000000000000,
+              "valid_until_ns": 1900000000000000000,
+              "scopes": [
+                "WRITE"
+              ]
+            },
+            "connection": {
+              "verified": true,
+              "final_target_verified": true,
+              "server_id": "filesystem",
+              "endpoint_id": "endpoint-1",
+              "final_target_id": "target-1"
+            },
+            "catalog_feature": {
+              "verified": true,
+              "server_id": "filesystem",
+              "type": "tool",
+              "id": "write_file",
+              "definition_hash": "sha256:feature-v1"
+            },
+            "action": {
+              "verified": true,
+              "normalized": "WRITE"
+            },
+            "parameters": {
+              "verified": true,
+              "normalized": true,
+              "schema_valid": true,
+              "coverage_complete": true,
+              "canonical_arguments": {
+                "path": "/shared/team/data/weekly-report.md"
+              },
+              "derived_targets": {
+                "files": [
+                  "/shared/team/data/weekly-report.md"
+                ],
+                "commands": [],
+                "recipients": []
+              }
+            },
+            "data": {
+              "verified": true,
+              "asset_id": "/shared/team/data/weekly-report.md",
+              "grade": "nonimportant"
+            },
+            "transfer": {
+              "verified": true,
+              "final_destination_verified": true,
+              "final_destination_id": "dest-1",
+              "data_grade": "internal"
+            },
+            "revocation": {
+              "verified": true,
+              "fresh": true,
+              "user": false,
+              "agent": false,
+              "server": false,
+              "feature": false,
+              "approval": false
+            },
+            "execution": {
+              "atomic_reservation_verified": true,
+              "reservation_request_id": "normal-employee-team-write",
+              "reservation_expires_ns": 1800000001000000000,
+              "duplicate_status": "clear",
+              "previous_mutation_status": "clear",
+              "retry_count": 0,
+              "active_concurrency": 1,
+              "total_calls": 1,
+              "chain_depth": 1,
+              "requested_timeout_ms": 5000
+            }
+          }
         }
       }
     },
@@ -65,27 +305,27 @@
       },
       "input": {
         "environment": "prod",
-        "now": "2026-09-25T00:00:00Z",
+        "now": "2026-10-01T00:00:00Z",
         "principal": {
           "role": "employee",
-          "department": "플랫폼개발팀",
+          "department": "데이터분석팀",
           "shadow_endpoints": 0,
           "shadow_listeners": 0
         },
         "resource": {
-          "id": "github:org/repo",
-          "kind": "repository",
+          "id": "/shared/team/data/weekly-report.md",
+          "kind": "path",
           "data_class": "nonimportant"
         },
         "destinations": [],
         "tool": {
-          "server": "github",
-          "name": "create_issue",
+          "server": "filesystem",
+          "name": "write_file",
           "action": "w",
           "base_action": "w",
           "restrictable": [],
           "accepts_from": [
-            "filesystem"
+            "filesystem-hr"
           ]
         },
         "request": {
@@ -94,7 +334,7 @@
           "pii_types": [],
           "sequence_flags": [],
           "flow_sources": [
-            "filesystem",
+            "filesystem-hr",
             "postgres"
           ]
         },
@@ -111,6 +351,246 @@
           "metadata_safe": true,
           "supplier_approved": true,
           "critical_vulnerabilities": 0
+        },
+        "pac": {
+          "request": {
+            "id": "normal-employee-team-write",
+            "user_id": "fixture-employee",
+            "agent_id": "agent-1",
+            "session_id": "session-1",
+            "server_id": "filesystem",
+            "feature_type": "tool",
+            "feature_id": "write_file",
+            "action": "WRITE",
+            "arguments": {
+              "path": "/shared/team/data/weekly-report.md"
+            },
+            "on_behalf_of": false,
+            "environment": "prod",
+            "targets": {
+              "files": [
+                "/shared/team/data/weekly-report.md"
+              ],
+              "commands": [],
+              "recipients": []
+            },
+            "data": {
+              "asset_id": "/shared/team/data/weekly-report.md",
+              "grade": "nonimportant"
+            },
+            "transfer": {
+              "enabled": false,
+              "destination_id": ""
+            },
+            "high_risk": false,
+            "automated": false
+          },
+          "facts": {
+            "trusted": true,
+            "now_ns": 1800000000000000000,
+            "classification": {
+              "verified": true,
+              "high_risk": false,
+              "transfer_required": false,
+              "on_behalf_of": false,
+              "automated": false
+            },
+            "approval_workflow_available": true,
+            "approval": {
+              "status": "APPROVED",
+              "server_id": "filesystem",
+              "conditions_met": true,
+              "valid_from_ns": 1700000000000000000,
+              "valid_until_ns": 1900000000000000000,
+              "baseline": {
+                "server_version": "1.0.0",
+                "feature_definition_hash": "sha256:feature-v1",
+                "schema_hash": "sha256:schema-v1",
+                "policy_version": "pac15-v1"
+              },
+              "environments": [
+                "prod"
+              ],
+              "production_controls": true,
+              "subject": {
+                "user_id": "fixture-employee",
+                "agent_id": "agent-1",
+                "session_id": "session-1"
+              },
+              "auth_issuer": "https://auth.example.test",
+              "connections": [
+                {
+                  "server_id": "filesystem",
+                  "endpoint_id": "endpoint-1",
+                  "final_target_id": "target-1"
+                }
+              ],
+              "features": [
+                {
+                  "server_id": "filesystem",
+                  "type": "tool",
+                  "id": "write_file",
+                  "definition_hash": "sha256:feature-v1"
+                }
+              ],
+              "actions": [
+                "WRITE"
+              ],
+              "allowed_argument_keys": [
+                "path"
+              ],
+              "parameter_bindings": [
+                {
+                  "argument_path": [
+                    "path"
+                  ],
+                  "target_type": "file"
+                }
+              ],
+              "targets": {
+                "files": [
+                  "/shared/team/data/weekly-report.md"
+                ],
+                "commands": [],
+                "recipients": []
+              },
+              "data_scopes": [
+                {
+                  "asset_id": "/shared/team/data/weekly-report.md",
+                  "grade": "nonimportant"
+                }
+              ],
+              "transfer_pairs": [
+                {
+                  "destination_id": "dest-1",
+                  "grade": "internal"
+                }
+              ],
+              "limits": {
+                "allow_automated": false,
+                "max_retries": 2,
+                "max_concurrency": 2,
+                "max_calls": 10,
+                "max_chain_depth": 3,
+                "max_execution_ms": 30000
+              }
+            },
+            "baseline": {
+              "verified": true,
+              "server_version": "1.0.0",
+              "feature_definition_hash": "sha256:feature-v1",
+              "schema_hash": "sha256:schema-v1",
+              "policy_version": "pac15-v1"
+            },
+            "environment": {
+              "verified": true,
+              "id": "prod",
+              "production_equivalent": false
+            },
+            "identity": {
+              "verified": true,
+              "user_id": "fixture-employee",
+              "agent_id": "agent-1",
+              "session_id": "session-1",
+              "allowed_actions": [
+                "WRITE"
+              ]
+            },
+            "delegation": {
+              "verified": true,
+              "user_id": "user-1",
+              "agent_id": "agent-1",
+              "valid_from_ns": 1700000000000000000,
+              "valid_until_ns": 1900000000000000000,
+              "user_actions": [
+                "READ"
+              ],
+              "agent_actions": [
+                "READ"
+              ],
+              "delegated_actions": [
+                "READ"
+              ]
+            },
+            "auth": {
+              "mode": "http",
+              "verified": true,
+              "not_revoked": true,
+              "issuer": "https://auth.example.test",
+              "audience": "filesystem",
+              "valid_from_ns": 1700000000000000000,
+              "valid_until_ns": 1900000000000000000,
+              "scopes": [
+                "WRITE"
+              ]
+            },
+            "connection": {
+              "verified": true,
+              "final_target_verified": true,
+              "server_id": "filesystem",
+              "endpoint_id": "endpoint-1",
+              "final_target_id": "target-1"
+            },
+            "catalog_feature": {
+              "verified": true,
+              "server_id": "filesystem",
+              "type": "tool",
+              "id": "write_file",
+              "definition_hash": "sha256:feature-v1"
+            },
+            "action": {
+              "verified": true,
+              "normalized": "WRITE"
+            },
+            "parameters": {
+              "verified": true,
+              "normalized": true,
+              "schema_valid": true,
+              "coverage_complete": true,
+              "canonical_arguments": {
+                "path": "/shared/team/data/weekly-report.md"
+              },
+              "derived_targets": {
+                "files": [
+                  "/shared/team/data/weekly-report.md"
+                ],
+                "commands": [],
+                "recipients": []
+              }
+            },
+            "data": {
+              "verified": true,
+              "asset_id": "/shared/team/data/weekly-report.md",
+              "grade": "nonimportant"
+            },
+            "transfer": {
+              "verified": true,
+              "final_destination_verified": true,
+              "final_destination_id": "dest-1",
+              "data_grade": "internal"
+            },
+            "revocation": {
+              "verified": true,
+              "fresh": true,
+              "user": false,
+              "agent": false,
+              "server": false,
+              "feature": false,
+              "approval": false
+            },
+            "execution": {
+              "atomic_reservation_verified": true,
+              "reservation_request_id": "normal-employee-team-write",
+              "reservation_expires_ns": 1800000001000000000,
+              "duplicate_status": "clear",
+              "previous_mutation_status": "clear",
+              "retry_count": 0,
+              "active_concurrency": 1,
+              "total_calls": 1,
+              "chain_depth": 1,
+              "requested_timeout_ms": 5000
+            }
+          }
         }
       }
     },
@@ -123,27 +603,27 @@
       },
       "input": {
         "environment": "prod",
-        "now": "2026-09-25T00:00:00Z",
+        "now": "2026-10-01T00:00:00Z",
         "principal": {
           "role": "employee",
-          "department": "플랫폼개발팀",
+          "department": "데이터분석팀",
           "shadow_endpoints": 0,
           "shadow_listeners": 0
         },
         "resource": {
-          "id": "github:org/repo",
-          "kind": "repository",
+          "id": "/shared/team/data/weekly-report.md",
+          "kind": "path",
           "data_class": "nonimportant"
         },
         "destinations": [],
         "tool": {
-          "server": "github",
-          "name": "create_issue",
+          "server": "filesystem",
+          "name": "write_file",
           "action": "w",
           "base_action": "w",
           "restrictable": [],
           "accepts_from": [
-            "filesystem"
+            "filesystem-hr"
           ]
         },
         "request": {
@@ -152,7 +632,7 @@
           "pii_types": [],
           "sequence_flags": [],
           "flow_sources": [
-            "filesystem"
+            "filesystem-hr"
           ]
         },
         "approval": {
@@ -168,6 +648,246 @@
           "metadata_safe": true,
           "supplier_approved": true,
           "critical_vulnerabilities": 0
+        },
+        "pac": {
+          "request": {
+            "id": "normal-employee-team-write",
+            "user_id": "fixture-employee",
+            "agent_id": "agent-1",
+            "session_id": "session-1",
+            "server_id": "filesystem",
+            "feature_type": "tool",
+            "feature_id": "write_file",
+            "action": "WRITE",
+            "arguments": {
+              "path": "/shared/team/data/weekly-report.md"
+            },
+            "on_behalf_of": false,
+            "environment": "prod",
+            "targets": {
+              "files": [
+                "/shared/team/data/weekly-report.md"
+              ],
+              "commands": [],
+              "recipients": []
+            },
+            "data": {
+              "asset_id": "/shared/team/data/weekly-report.md",
+              "grade": "nonimportant"
+            },
+            "transfer": {
+              "enabled": false,
+              "destination_id": ""
+            },
+            "high_risk": false,
+            "automated": false
+          },
+          "facts": {
+            "trusted": true,
+            "now_ns": 1800000000000000000,
+            "classification": {
+              "verified": true,
+              "high_risk": false,
+              "transfer_required": false,
+              "on_behalf_of": false,
+              "automated": false
+            },
+            "approval_workflow_available": true,
+            "approval": {
+              "status": "APPROVED",
+              "server_id": "filesystem",
+              "conditions_met": true,
+              "valid_from_ns": 1700000000000000000,
+              "valid_until_ns": 1900000000000000000,
+              "baseline": {
+                "server_version": "1.0.0",
+                "feature_definition_hash": "sha256:feature-v1",
+                "schema_hash": "sha256:schema-v1",
+                "policy_version": "pac15-v1"
+              },
+              "environments": [
+                "prod"
+              ],
+              "production_controls": true,
+              "subject": {
+                "user_id": "fixture-employee",
+                "agent_id": "agent-1",
+                "session_id": "session-1"
+              },
+              "auth_issuer": "https://auth.example.test",
+              "connections": [
+                {
+                  "server_id": "filesystem",
+                  "endpoint_id": "endpoint-1",
+                  "final_target_id": "target-1"
+                }
+              ],
+              "features": [
+                {
+                  "server_id": "filesystem",
+                  "type": "tool",
+                  "id": "write_file",
+                  "definition_hash": "sha256:feature-v1"
+                }
+              ],
+              "actions": [
+                "WRITE"
+              ],
+              "allowed_argument_keys": [
+                "path"
+              ],
+              "parameter_bindings": [
+                {
+                  "argument_path": [
+                    "path"
+                  ],
+                  "target_type": "file"
+                }
+              ],
+              "targets": {
+                "files": [
+                  "/shared/team/data/weekly-report.md"
+                ],
+                "commands": [],
+                "recipients": []
+              },
+              "data_scopes": [
+                {
+                  "asset_id": "/shared/team/data/weekly-report.md",
+                  "grade": "nonimportant"
+                }
+              ],
+              "transfer_pairs": [
+                {
+                  "destination_id": "dest-1",
+                  "grade": "internal"
+                }
+              ],
+              "limits": {
+                "allow_automated": false,
+                "max_retries": 2,
+                "max_concurrency": 2,
+                "max_calls": 10,
+                "max_chain_depth": 3,
+                "max_execution_ms": 30000
+              }
+            },
+            "baseline": {
+              "verified": true,
+              "server_version": "1.0.0",
+              "feature_definition_hash": "sha256:feature-v1",
+              "schema_hash": "sha256:schema-v1",
+              "policy_version": "pac15-v1"
+            },
+            "environment": {
+              "verified": true,
+              "id": "prod",
+              "production_equivalent": false
+            },
+            "identity": {
+              "verified": true,
+              "user_id": "fixture-employee",
+              "agent_id": "agent-1",
+              "session_id": "session-1",
+              "allowed_actions": [
+                "WRITE"
+              ]
+            },
+            "delegation": {
+              "verified": true,
+              "user_id": "user-1",
+              "agent_id": "agent-1",
+              "valid_from_ns": 1700000000000000000,
+              "valid_until_ns": 1900000000000000000,
+              "user_actions": [
+                "READ"
+              ],
+              "agent_actions": [
+                "READ"
+              ],
+              "delegated_actions": [
+                "READ"
+              ]
+            },
+            "auth": {
+              "mode": "http",
+              "verified": true,
+              "not_revoked": true,
+              "issuer": "https://auth.example.test",
+              "audience": "filesystem",
+              "valid_from_ns": 1700000000000000000,
+              "valid_until_ns": 1900000000000000000,
+              "scopes": [
+                "WRITE"
+              ]
+            },
+            "connection": {
+              "verified": true,
+              "final_target_verified": true,
+              "server_id": "filesystem",
+              "endpoint_id": "endpoint-1",
+              "final_target_id": "target-1"
+            },
+            "catalog_feature": {
+              "verified": true,
+              "server_id": "filesystem",
+              "type": "tool",
+              "id": "write_file",
+              "definition_hash": "sha256:feature-v1"
+            },
+            "action": {
+              "verified": true,
+              "normalized": "WRITE"
+            },
+            "parameters": {
+              "verified": true,
+              "normalized": true,
+              "schema_valid": true,
+              "coverage_complete": true,
+              "canonical_arguments": {
+                "path": "/shared/team/data/weekly-report.md"
+              },
+              "derived_targets": {
+                "files": [
+                  "/shared/team/data/weekly-report.md"
+                ],
+                "commands": [],
+                "recipients": []
+              }
+            },
+            "data": {
+              "verified": true,
+              "asset_id": "/shared/team/data/weekly-report.md",
+              "grade": "nonimportant"
+            },
+            "transfer": {
+              "verified": true,
+              "final_destination_verified": true,
+              "final_destination_id": "dest-1",
+              "data_grade": "internal"
+            },
+            "revocation": {
+              "verified": true,
+              "fresh": true,
+              "user": false,
+              "agent": false,
+              "server": false,
+              "feature": false,
+              "approval": false
+            },
+            "execution": {
+              "atomic_reservation_verified": true,
+              "reservation_request_id": "normal-employee-team-write",
+              "reservation_expires_ns": 1800000001000000000,
+              "duplicate_status": "clear",
+              "previous_mutation_status": "clear",
+              "retry_count": 0,
+              "active_concurrency": 1,
+              "total_calls": 1,
+              "chain_depth": 1,
+              "requested_timeout_ms": 5000
+            }
+          }
         }
       }
     },
@@ -180,22 +900,22 @@
       },
       "input": {
         "environment": "prod",
-        "now": "2026-09-25T00:00:00Z",
+        "now": "2026-10-01T00:00:00Z",
         "principal": {
           "role": "employee",
-          "department": "플랫폼개발팀",
+          "department": "데이터분석팀",
           "shadow_endpoints": 0,
           "shadow_listeners": 0
         },
         "resource": {
-          "id": "github:org/repo",
-          "kind": "repository",
+          "id": "/shared/team/data/weekly-report.md",
+          "kind": "path",
           "data_class": "nonimportant"
         },
         "destinations": [],
         "tool": {
-          "server": "github",
-          "name": "create_issue",
+          "server": "filesystem",
+          "name": "write_file",
           "action": "w",
           "base_action": "w",
           "restrictable": []
@@ -220,6 +940,246 @@
           "metadata_safe": true,
           "supplier_approved": true,
           "critical_vulnerabilities": 0
+        },
+        "pac": {
+          "request": {
+            "id": "normal-employee-team-write",
+            "user_id": "fixture-employee",
+            "agent_id": "agent-1",
+            "session_id": "session-1",
+            "server_id": "filesystem",
+            "feature_type": "tool",
+            "feature_id": "write_file",
+            "action": "WRITE",
+            "arguments": {
+              "path": "/shared/team/data/weekly-report.md"
+            },
+            "on_behalf_of": false,
+            "environment": "prod",
+            "targets": {
+              "files": [
+                "/shared/team/data/weekly-report.md"
+              ],
+              "commands": [],
+              "recipients": []
+            },
+            "data": {
+              "asset_id": "/shared/team/data/weekly-report.md",
+              "grade": "nonimportant"
+            },
+            "transfer": {
+              "enabled": false,
+              "destination_id": ""
+            },
+            "high_risk": false,
+            "automated": false
+          },
+          "facts": {
+            "trusted": true,
+            "now_ns": 1800000000000000000,
+            "classification": {
+              "verified": true,
+              "high_risk": false,
+              "transfer_required": false,
+              "on_behalf_of": false,
+              "automated": false
+            },
+            "approval_workflow_available": true,
+            "approval": {
+              "status": "APPROVED",
+              "server_id": "filesystem",
+              "conditions_met": true,
+              "valid_from_ns": 1700000000000000000,
+              "valid_until_ns": 1900000000000000000,
+              "baseline": {
+                "server_version": "1.0.0",
+                "feature_definition_hash": "sha256:feature-v1",
+                "schema_hash": "sha256:schema-v1",
+                "policy_version": "pac15-v1"
+              },
+              "environments": [
+                "prod"
+              ],
+              "production_controls": true,
+              "subject": {
+                "user_id": "fixture-employee",
+                "agent_id": "agent-1",
+                "session_id": "session-1"
+              },
+              "auth_issuer": "https://auth.example.test",
+              "connections": [
+                {
+                  "server_id": "filesystem",
+                  "endpoint_id": "endpoint-1",
+                  "final_target_id": "target-1"
+                }
+              ],
+              "features": [
+                {
+                  "server_id": "filesystem",
+                  "type": "tool",
+                  "id": "write_file",
+                  "definition_hash": "sha256:feature-v1"
+                }
+              ],
+              "actions": [
+                "WRITE"
+              ],
+              "allowed_argument_keys": [
+                "path"
+              ],
+              "parameter_bindings": [
+                {
+                  "argument_path": [
+                    "path"
+                  ],
+                  "target_type": "file"
+                }
+              ],
+              "targets": {
+                "files": [
+                  "/shared/team/data/weekly-report.md"
+                ],
+                "commands": [],
+                "recipients": []
+              },
+              "data_scopes": [
+                {
+                  "asset_id": "/shared/team/data/weekly-report.md",
+                  "grade": "nonimportant"
+                }
+              ],
+              "transfer_pairs": [
+                {
+                  "destination_id": "dest-1",
+                  "grade": "internal"
+                }
+              ],
+              "limits": {
+                "allow_automated": false,
+                "max_retries": 2,
+                "max_concurrency": 2,
+                "max_calls": 10,
+                "max_chain_depth": 3,
+                "max_execution_ms": 30000
+              }
+            },
+            "baseline": {
+              "verified": true,
+              "server_version": "1.0.0",
+              "feature_definition_hash": "sha256:feature-v1",
+              "schema_hash": "sha256:schema-v1",
+              "policy_version": "pac15-v1"
+            },
+            "environment": {
+              "verified": true,
+              "id": "prod",
+              "production_equivalent": false
+            },
+            "identity": {
+              "verified": true,
+              "user_id": "fixture-employee",
+              "agent_id": "agent-1",
+              "session_id": "session-1",
+              "allowed_actions": [
+                "WRITE"
+              ]
+            },
+            "delegation": {
+              "verified": true,
+              "user_id": "user-1",
+              "agent_id": "agent-1",
+              "valid_from_ns": 1700000000000000000,
+              "valid_until_ns": 1900000000000000000,
+              "user_actions": [
+                "READ"
+              ],
+              "agent_actions": [
+                "READ"
+              ],
+              "delegated_actions": [
+                "READ"
+              ]
+            },
+            "auth": {
+              "mode": "http",
+              "verified": true,
+              "not_revoked": true,
+              "issuer": "https://auth.example.test",
+              "audience": "filesystem",
+              "valid_from_ns": 1700000000000000000,
+              "valid_until_ns": 1900000000000000000,
+              "scopes": [
+                "WRITE"
+              ]
+            },
+            "connection": {
+              "verified": true,
+              "final_target_verified": true,
+              "server_id": "filesystem",
+              "endpoint_id": "endpoint-1",
+              "final_target_id": "target-1"
+            },
+            "catalog_feature": {
+              "verified": true,
+              "server_id": "filesystem",
+              "type": "tool",
+              "id": "write_file",
+              "definition_hash": "sha256:feature-v1"
+            },
+            "action": {
+              "verified": true,
+              "normalized": "WRITE"
+            },
+            "parameters": {
+              "verified": true,
+              "normalized": true,
+              "schema_valid": true,
+              "coverage_complete": true,
+              "canonical_arguments": {
+                "path": "/shared/team/data/weekly-report.md"
+              },
+              "derived_targets": {
+                "files": [
+                  "/shared/team/data/weekly-report.md"
+                ],
+                "commands": [],
+                "recipients": []
+              }
+            },
+            "data": {
+              "verified": true,
+              "asset_id": "/shared/team/data/weekly-report.md",
+              "grade": "nonimportant"
+            },
+            "transfer": {
+              "verified": true,
+              "final_destination_verified": true,
+              "final_destination_id": "dest-1",
+              "data_grade": "internal"
+            },
+            "revocation": {
+              "verified": true,
+              "fresh": true,
+              "user": false,
+              "agent": false,
+              "server": false,
+              "feature": false,
+              "approval": false
+            },
+            "execution": {
+              "atomic_reservation_verified": true,
+              "reservation_request_id": "normal-employee-team-write",
+              "reservation_expires_ns": 1800000001000000000,
+              "duplicate_status": "clear",
+              "previous_mutation_status": "clear",
+              "retry_count": 0,
+              "active_concurrency": 1,
+              "total_calls": 1,
+              "chain_depth": 1,
+              "requested_timeout_ms": 5000
+            }
+          }
         }
       }
     }
