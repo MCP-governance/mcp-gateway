@@ -329,9 +329,18 @@ e74fefa,2026-10-18 05:31,pokochy,feat,v2,계약 변경 시 바뀐 도구만 제�
 bb33625,2026-10-18 05:49,pokochy,fix,v2,P-VOLUME-002 정책 대장 우선순위 중복 해소(opa test 91/91),,,,,DEP-10,https://github.com/MCP-governance/mcp-gateway/commit/bb33625ba24442d09bd52b13af641c445a7208ff
 ce60c20,2026-10-18 05:51,pokochy,docs,v2,"H·I 통합·격리 실험·배포 증거, WBS 55.3%",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/ce60c2074bf01c9f4326f8f58fb3007182f45d23
 e6b4ae9,2026-10-18 12:41,pokochy,fix,v2,트레이 연결 상태를 인증된 보고 성공으로 판정,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e6b4ae9193956c6be345466d3081e80664543dc7
+d6d0aa5,2026-10-18 13:20,pokochy,docs,sheet,통합 시트 탭별 CSV 내보내기·구성요소 목록,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d6d0aa5f59394a4eb4d5211a4aae65053a486564
 24cb2eb,2026-10-18 13:32,pokochy,docs,v2,"pj3 트레이·게이트웨이 MCP 호출 실기기 증거·중단 지점·해결안, WBS 55.8%",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/24cb2eb43037278a38076a1c984bf02139e3313f
+840e926,2026-10-18 13:39,pokochy,,,Merge remote-tracking branch 'origin/main' into 10/18-unified-sheet,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/840e9260938f213694be0ee6526f1fcf67cb87e4
+2038493,2026-10-18 13:39,pokochy,docs,sheet,main(24cb2eb) 반영해 시트 CSV 다시 생성,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2038493c9534811d35d384c34c05c5c55270ee77
 2660206,2026-10-18 13:44,pokochy,feat,v2,browser console over HTTP on the Tailscale IP; harnesses and kits stay on HTTPS,D-124,,G08.05,,,https://github.com/MCP-governance/mcp-gateway/commit/2660206c0f0ca351034df39376d5d48705287728
 15766fa,2026-10-18 13:45,pokochy,fix,v2,console HTTP on port 8000 of the Tailscale IP (port 80 is a host Apache),,,,,,https://github.com/MCP-governance/mcp-gateway/commit/15766fa30f4be95244b0f0907fa5dea62e490317
 8c12249,2026-10-18 13:46,pokochy,fix,v2,harness paths on the console HTTP port are refused before the console handler,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8c1224928be2ea98cb9d0dc9e52e0d4f02c832d2
+7a214dd,2026-10-18 13:47,pokochy,docs,arch,MINT 아키텍처 구조도 draw.io 3페이지·생성기·아이콘,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/7a214dd11c2699418cb0a4e0c5190be99f5b1edb
+558e2a0,2026-10-18 13:47,pokochy,fix,arch,draw.io 노드 이름 줄바꿈 끔,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/558e2a0a27b612a7a254a8bb8985ee6af33f73c1
 c9ce4a4,2026-10-18 13:48,pokochy,docs,v2,"D-129 console over HTTP 8000, harnesses over HTTPS; field up recreates Caddy",D-129,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c9ce4a4809418823ee662fc992326c778f7c3f20
 4a9665c,2026-10-18 13:51,pokochy,,,Merge branch '10/18-console-http',,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/4a9665c4c1efa220a4bb924c08eb1d2c5911f8ec
+368f8ad,2026-10-18 14:12,pokochy,docs,sheet,"통합 시트를 정본으로 위키·현황판 안내 정리, 수식 열 시드 반영",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/368f8ade20f7e0aeaa56d68131f5cb2bb01d4247
+d8cb9db,2026-10-18 14:12,pokochy,feat,console,협업 콘솔 #wbs가 웹 게시 통합 시트 값을 덮어 보여 준다(D-129),D-129,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d8cb9db4857034538ec63c20fe53059c5ecc51b0
+16e56c5,2026-10-18 14:13,pokochy,,,Merge branch '10/18-sheet-sync' into 10/18-unified-sheet,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/16e56c56476f9326b2470be3fe856d34cdc28a60
+29fe6a0,2026-10-18 14:15,pokochy,,,Merge remote-tracking branch 'origin/main' into 10/18-unified-sheet,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/29fe6a00d621f04a2039c7ac949fbbddfdcbf92b
