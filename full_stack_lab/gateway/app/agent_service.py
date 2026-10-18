@@ -127,11 +127,22 @@ app.include_router(integrations_router)
 oidc.install(app)
 
 
+def origin_key(value: str) -> tuple:
+    """Scheme, host and port with the scheme's default port filled in: a browser sends
+    https://host for the configured https://host:443 (10-18 field HTTPS)."""
+    parts = urlsplit(value.strip().rstrip("/"))
+    try:
+        port = parts.port
+    except ValueError:
+        return ("", "", 0)
+    return (parts.scheme, (parts.hostname or "").lower(), port or {"http": 80, "https": 443}.get(parts.scheme, 0))
+
+
 @app.middleware("http")
 async def browser_boundary(request: Request, call_next):
     origin = request.headers.get("origin")
-    allowed_origins = {str(request.base_url).rstrip("/"), os.getenv("IDP_ISSUER", "").rstrip("/")}
-    if request.method not in {"GET", "HEAD", "OPTIONS"} and origin and origin not in allowed_origins:
+    allowed_origins = {origin_key(str(request.base_url)), origin_key(os.getenv("IDP_ISSUER", ""))} - {("", "", 0)}
+    if request.method not in {"GET", "HEAD", "OPTIONS"} and origin and origin_key(origin) not in allowed_origins:
         return JSONResponse({"detail": "다른 출처의 요청은 허용하지 않습니다."}, status_code=403)
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"

@@ -216,6 +216,8 @@ const INTAKE_STATUS = {
 };
 
 const chip = (tone, label) => html`<span class="chip ${tone}">${label}</span>`;
+// Links into this solution follow the page's own scheme: the console is served over HTTP and HTTPS.
+const sameSite = (u) => { try { const x = new URL(u, location.href); return x.hostname === location.hostname ? x.pathname + x.search + x.hash : u; } catch { return u; } };
 const decisionChip = (d) => chip(...(DECISION[d] || ["", d]));
 const gradeChip = (g, prefix = "") => (g ? chip(g, `${prefix}${g} ${GRADE[g]}`) : chip("outline", "미판정"));
 const REL_STATUS = { ACTIVE: ["outline", "이용 중"], TERMINATED: ["block", "종료"], TERMINATING: ["alert", "종료 중"], SUSPENDED: ["alert", "중지"] };
@@ -381,7 +383,7 @@ function renderNav(active) {
     groups.get(p.group).push(p);
   }
   const shortcuts = [
-    viewer.git_url && html`<a href="${viewer.git_url}" target="_blank" rel="noopener" aria-label="내부 저장소 (새 탭)" title="내부 저장소">${icon("git")}<span>내부 저장소</span><span class="ext" aria-hidden="true">↗</span></a>`,
+    viewer.git_url && html`<a href="${sameSite(viewer.git_url)}" target="_blank" rel="noopener" aria-label="내부 저장소 (새 탭)" title="내부 저장소">${icon("git")}<span>내부 저장소</span><span class="ext" aria-hidden="true">↗</span></a>`,
     viewer.kit && html`<a href="#" data-act="pc-kit" aria-label="PC 연결 설정" title="PC 연결 설정">${icon("plug")}<span>PC 연결 설정</span></a>`,
   ].filter(Boolean);
   $("#nav").innerHTML = String(html`${[...groups].map(([group, pages]) => html`<div class="group">${group}</div>${pages.map((p) => html`
@@ -1452,7 +1454,7 @@ function catalogResults(data) {
   return html`${requests.length ? html`<table class="data"><thead><tr><th>MCP</th><th>신청자</th><th>상태</th><th>사내 저장소</th></tr></thead><tbody>
     ${requests.map((r) => html`<tr><td><b>${r.display_name}</b><span class="sub mono">${r.repository_url || r.endpoint_url || ""}</span></td>
       <td>${r.submitted_by_name}</td><td>${chip(...(INTAKE_STATUS[r.status] || ["", r.status]))}</td>
-      <td>${r.internal_repo_url ? html`<a href="${r.internal_repo_url}" target="_blank" rel="noopener noreferrer">열기 ↗</a>` : NONE}</td></tr>`)}</tbody></table>` : empty(data.query ? "일치하는 신청 없음" : "신청 없음")}
+      <td>${r.internal_repo_url ? html`<a href="${sameSite(r.internal_repo_url)}" target="_blank" rel="noopener noreferrer">열기 ↗</a>` : NONE}</td></tr>`)}</tbody></table>` : empty(data.query ? "일치하는 신청 없음" : "신청 없음")}
     ${registry.length ? html`<p class="small muted">등록된 MCP: ${registry.map((r) => r.display_name).join(", ")}</p>` : ""}`;
 }
 ROUTES.intake = async (_, tab) => {
@@ -1474,7 +1476,7 @@ ROUTES.intake = async (_, tab) => {
             const clear = !remote || termsVerified(r.exit_terms) || grade === "T1";
             return html`<tr><td><b>${r.display_name}</b><span class="sub">${entityRef(r.endpoint_url || r.repository_url, 52)}</span>
               <span class="sub">${r.intake_kind === "remote-endpoint" ? "원격 MCP" : "소스 코드"} · ${TRANSPORT[r.requested_transport] || r.requested_transport}${r.commit_sha ? ` · ${r.commit_sha.slice(0, 12)}` : ""}</span>
-              ${r.internal_repo_url ? html`<a class="sub" href="${r.internal_repo_url}" target="_blank" rel="noopener noreferrer">사내 저장소 ↗</a>` : ""}
+              ${r.internal_repo_url ? html`<a class="sub" href="${sameSite(r.internal_repo_url)}" target="_blank" rel="noopener noreferrer">사내 저장소 ↗</a>` : ""}
               ${r.registered_server_id ? html`<span class="sub">${chip("allow", "게이트웨이 등록")} <code>/mcp/${r.registered_server_id}/</code></span>` : ""}
               ${r.runtime ? html`<span class="sub">${chip(...(RUNTIME_STATUS[r.runtime.status] || ["", r.runtime.status]))}
                 ${r.runtime.status === "ACTIVE" ? html`<code>${r.runtime.endpoint}</code>` : r.runtime.status === "FAILED" && r.runtime.error ? short(r.runtime.error, 80) : ""}</span>` : ""}</td>
