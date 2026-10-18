@@ -17,6 +17,7 @@ from psycopg.errors import UniqueViolation
 from psycopg.types.json import Jsonb
 
 from . import db, provenance
+from .classify import ADDRESS_ARG
 
 SCANNERS = ("Syft", "Trivy", "Semgrep", "Gitleaks")
 RISK_ACCEPTANCE_MAX_DAYS = 30
@@ -248,7 +249,7 @@ def scope_terms(item: dict) -> dict:
     return {key: value for key, value in item.items() if key not in ("reviewed_by", "reviewed_at")}
 
 
-_ADDRESS_ARG = re.compile(r"(?:^|_)(?:url|uri|href|link|endpoint)s?$", re.I)
+_ADDRESS_ARG = ADDRESS_ARG
 
 
 def derived_constraints(advertised: dict[str, dict], reviews: dict[str, dict]) -> dict[str, dict]:

@@ -79,6 +79,13 @@ unapproved_flow contains source if {
 	not source in accepts_from
 }
 
+# A provider-hosted server is outside the organisation: a reviewed receiving tool there would turn
+# accepts_from into an export permit that MCP-DATA-EGRESS-001 refuses for every role.
+unapproved_flow contains source if {
+	some source in flow_sources
+	object.get(input, ["tool", "provider_hosted"], false) == true
+}
+
 # The call's own recipient (external mail, external URL) - distinct from the registered
 # MCP endpoint. The Gateway classifier decides internal vs external from the catalog's
 # organisation domains; the policy does not keep a second list.

@@ -1031,14 +1031,16 @@ async def _sequence_flags(user_token: str, cls: classify.Classification) -> list
     return ["sensitive_read_then_send"] if row else []
 
 
-async def _flow_sources(user_token: str, server_id: str, cls: classify.Classification) -> list[str]:
+async def _flow_sources(user_token: str, server_id: str, cls: classify.Classification,
+                        provider_hosted: bool = False) -> list[str]:
     """POL-33 input: other servers whose important data this principal read in the window.
 
-    The label follows the verified principal, as P-CHAIN-001 does; a write or execution on another
-    server inside the window is where that data can cross between servers.
+    The label follows the verified principal, as P-CHAIN-001 does. A write or execution on another
+    server inside the window is where that data can cross between servers, and so is any call to a
+    provider-hosted server: it receives every argument, a search query included.
     """
-    # ponytail: principal-wide label over-blocks unrelated writes; content fingerprints would narrow it.
-    if cls.action not in {"w", "x"}:
+    # ponytail: principal-wide label over-blocks unrelated calls; content fingerprints would narrow it.
+    if cls.action not in {"w", "x"} and not provider_hosted:
         return []
     rows = await db.fetch_all(
         """SELECT DISTINCT server_id FROM decisions
@@ -1850,7 +1852,10 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                         if cls.action in {"w", "x"} or external or provider_hosted else [])
             if tool_review.get("mask"):
                 # POL-31: what Presidio finds is replaced before it leaves; the policy judges what is sent.
+                # Masking runs string by string, so the masked whole is analysed again: a value found only
+                # in the context of other fields would otherwise leave as "masked".
                 outbound, masked_types = await privacy.mask_payload(arguments, ignore)
+                residual = await privacy.analyze(_outbound_text(outbound), ignore)
         except privacy.InspectionUnavailable as exc:
             base_event.update(local_verdict(
                 "P-DATA-INSPECTION-001", "Block", "민감정보 검사를 완료하지 못해 실행을 차단했습니다.",
@@ -1858,9 +1863,10 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             return await _decision_payload(base_event, laps)
         laps.lap("inspect_in")
         privacy_types = sorted({item["entity_type"] for item in findings})
-        sent_types = [kind for kind in privacy_types if kind not in masked_types]
+        sent_types = (sorted({item["entity_type"] for item in residual}) if tool_review.get("mask")
+                      else privacy_types)
         sequence_flags = await _sequence_flags(user_token, cls)
-        flow_sources = await _flow_sources(user_token, server_id, cls)
+        flow_sources = await _flow_sources(user_token, server_id, cls, provider_hosted)
         base_event.update(privacy_types=privacy_types, sequence_flags=sequence_flags,
                           risk_score=_risk_score(cls.data_class, cls.action, external,
                                                  privacy_types, sequence_flags + flow_sources))
@@ -1890,6 +1896,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                      "provider_hosted": provider_hosted, "accepts_from": tool_review.get("accepts_from") or []},
             "request": {"untrusted_markers": untrusted_markers(arguments), "dlp": cls.dlp,
                         "pii_types": sent_types, "masked_types": masked_types,
+                        "outbound_sha256": canonical_hash(outbound) if masked_types else None,
                         "sequence_flags": sequence_flags, "flow_sources": flow_sources},
             "approval": {"granted": approval_granted, "id": approval_id},
             "contract": contract,

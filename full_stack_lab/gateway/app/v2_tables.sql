@@ -326,3 +326,5 @@ CREATE TABLE IF NOT EXISTS user_consents (
   expires_at timestamptz,
   UNIQUE (user_token, server_id, tool_name, grade, terms_hash)
 );
+-- What the employee is shown and agrees to: the reviewed terms the hash stands for.
+ALTER TABLE user_consents ADD COLUMN IF NOT EXISTS terms jsonb NOT NULL DEFAULT '{}'::jsonb;

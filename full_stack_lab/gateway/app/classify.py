@@ -304,6 +304,23 @@ def host_category(raw_host: str) -> str:
     return "external"
 
 
+# An argument named like an address is where a console-registered server will reach (D-132).
+ADDRESS_ARG = re.compile(r"(?:^|_)(?:url|uri|href|link|endpoint)s?$", re.I)
+
+
+def address_arguments(args: dict, depth: int = 0) -> list[str]:
+    """String values under address-named keys, nested objects and lists included; body text is not read."""
+    found: list[str] = []
+    for key, value in args.items():
+        values = value if isinstance(value, list) else [value]
+        for item in values[:50]:
+            if isinstance(item, str) and ADDRESS_ARG.search(str(key)):
+                found.append(item)
+            elif isinstance(item, dict) and depth < 4:
+                found.extend(address_arguments(item, depth + 1))
+    return found
+
+
 def url_destination(raw: Any) -> Destination:
     value = str(raw or "").strip()
     try:
@@ -801,6 +818,7 @@ def classify(server: str, tool: str, arguments: dict | None, principal: str = ""
             # A server registered from the Console has no argument extractor; its whole data is
             # the grade the admin gave it at registration (D-49). Unknown stays important.
             cls.resources.append(Resource("service", f"{server}:{tool}", spec["data_class"]))
+            cls.destinations.extend(url_destination(value) for value in address_arguments(args))
             cls.dlp = dlp_scan(args)
     except Exception as exc:  # classification must never make a call look safer
         cls.resources = [Resource("unclassified", f"{server}:{tool}", "important")]

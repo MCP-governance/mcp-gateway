@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import os
 
+from psycopg.types.json import Jsonb
+
 from . import db, review
 from .contract import canonical_hash
 
@@ -42,19 +44,20 @@ async def missing(user_token: str, server_id: str, tool: str, data_class: str, t
     if any(r["status"] == "DENIED" and r["grade"] == grade for r in rows):
         return "사용자가 이 도구의 데이터 이용에 동의하지 않았습니다. 콘솔의 동의 목록에서 바꿀 수 있습니다."
     await db.execute(
-        """INSERT INTO user_consents(user_token, server_id, tool_name, grade, terms_hash, purpose)
-           VALUES (%s,%s,%s,%s,%s,%s)
+        """INSERT INTO user_consents(user_token, server_id, tool_name, grade, terms_hash, purpose, terms)
+           VALUES (%s,%s,%s,%s,%s,%s,%s)
            ON CONFLICT (user_token, server_id, tool_name, grade, terms_hash) DO UPDATE
               SET status='PENDING', requested_at=now(), decided_at=NULL, expires_at=NULL
             WHERE user_consents.status='REVOKED'
                OR (user_consents.status='GRANTED' AND user_consents.expires_at <= now())""",
-        (user_token, server_id, tool, grade, terms, str(tool_review.get("purpose") or "")[:200]))
+        (user_token, server_id, tool, grade, terms, str(tool_review.get("purpose") or "")[:200],
+         Jsonb(review.scope_terms(tool_review))))
     return "이 도구의 데이터 이용에 사용자 동의가 필요합니다. 콘솔의 동의 요청을 확인하세요."
 
 
 async def mine(user_token: str) -> list[dict]:
     return await db.fetch_all(
-        """SELECT id, server_id, tool_name, grade, purpose, requested_at, decided_at, expires_at,
+        """SELECT id, server_id, tool_name, grade, purpose, terms, requested_at, decided_at, expires_at,
                   CASE WHEN status='GRANTED' AND expires_at <= now() THEN 'EXPIRED' ELSE status END AS status
              FROM user_consents WHERE user_token=%s
             ORDER BY (status='PENDING') DESC, requested_at DESC LIMIT 200""", (user_token,))

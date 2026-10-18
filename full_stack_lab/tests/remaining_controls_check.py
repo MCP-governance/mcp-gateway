@@ -104,6 +104,26 @@ class FlowSourcesTest(unittest.TestCase):
         self.assertEqual(params[:2], ("emp", "github"))
 
 
+class ProviderFlowTest(unittest.TestCase):
+    def test_a_provider_hosted_read_carries_its_arguments_out(self):
+        fetch = AsyncMock(return_value=[{"server_id": "filesystem"}])
+        read = classify.Classification("context7", "query-docs", "r", "r")
+        with patch.object(core.db, "fetch_all", fetch):
+            self.assertEqual(asyncio.run(core._flow_sources("emp", "context7", read, provider_hosted=True)), ["filesystem"])
+
+
+class AddressArgumentsTest(unittest.TestCase):
+    def test_address_named_values_only(self):
+        args = {"uri": "https://learn.microsoft.com/a", "body": "see https://evil.example.net/x",
+                "targets": [{"url": "https://docs.example.com/b"}], "source_urls": ["https://a.example.org/c"]}
+        self.assertEqual(sorted(classify.address_arguments(args)),
+                         ["https://a.example.org/c", "https://docs.example.com/b", "https://learn.microsoft.com/a"])
+
+    def test_a_non_web_address_is_infrastructure(self):
+        self.assertEqual(classify.url_destination("file:///etc/passwd").category, "infrastructure")
+        self.assertTrue(classify.url_destination("https://learn.microsoft.com/a").external)
+
+
 class ConsentTest(unittest.TestCase):
     item = {**BASE, "action": "r", "inputs": None, "mask": False, "grade": "public", "accepts_from": [], "consent": True}
 

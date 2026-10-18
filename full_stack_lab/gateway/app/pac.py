@@ -166,8 +166,9 @@ def transfer_binding(spec: dict, feature: str, destinations: list[str]) -> tuple
     """POL-26: whether the final destination is proven, and the purpose/destination/grade pairs approved together.
 
     Multiple or unverified final transfer targets fail closed. HTTP redirects at an MCP tool's
-    downstream HTTP client are not proved by Gateway TLS; the egress proxy of a server the runtime
-    runs admits the reviewed hosts only (D-114), so there the reviewed host is the final one.
+    downstream HTTP client are not proved by Gateway TLS. The egress proxy of a server the runtime
+    runs admits the reviewed hosts of all its tools (D-114); only when that set is inside this
+    tool's own reviewed hosts does every final hop, redirects included, stay within this binding.
     """
     if not destinations:
         return True, []
@@ -177,7 +178,8 @@ def transfer_binding(spec: dict, feature: str, destinations: list[str]) -> tuple
                                         for h in terms.get("destinations") or [])
     pairs = [{"destination_id": destination, "grade": grade, "purpose": terms.get("purpose", "")}
              for grade in GRADES_UP_TO.get(terms.get("grade"), [])] if covered else []
-    return covered and bool(spec.get("runtime")), pairs
+    egress = {h for review in (spec.get("tool_reviews") or {}).values() for h in review.get("destinations") or []}
+    return covered and bool(spec.get("runtime")) and egress <= set(terms.get("destinations") or []), pairs
 
 
 async def build(payload: dict, principal: dict, cls, tool: dict | None, contract: dict,
@@ -240,7 +242,7 @@ async def build(payload: dict, principal: dict, cls, tool: dict | None, contract
         "registered", "enabled", "schema_hash_match", "description_hash_match", "version_match", "known_tools_only"))
     connection_ok = catalog_ok and contract.get("transport_secure") is True and contract.get("endpoint_allowed") is True
     high_risk = cls.action == "x"
-    destinations = [d.host for d in cls.destinations if d.external]
+    destinations = sorted({d.host for d in cls.destinations if d.external})  # two links to one host are one target
     transfer = bool(destinations)
     destination = destinations[0] if len(destinations) == 1 else ""
     transfer_ok, transfer_pairs = transfer_binding(spec, feature, destinations)

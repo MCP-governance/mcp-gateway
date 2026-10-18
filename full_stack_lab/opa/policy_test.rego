@@ -866,6 +866,18 @@ test_one_unreviewed_source_among_several_still_blocks if {
 	})
 	result := decision with input as request
 	result.policy_id == "P-FLOW-001"
+	result.decision == "Block"
+}
+
+test_provider_hosted_receiver_cannot_be_reviewed_into_taking_the_flow if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "query-docs", "action": "r", "provider_hosted": true, "accepts_from": ["filesystem"]},
+		"request": {"flow_sources": ["filesystem"]},
+	})
+	result := decision with input as request
+	result.policy_id == "P-FLOW-001"
+	result.decision == "Block"
 }
 
 # ── T-DECOMM 전주기 종료 (§11.11 미등록·비인가 구성요소 + 전주기 종료 단계) ──

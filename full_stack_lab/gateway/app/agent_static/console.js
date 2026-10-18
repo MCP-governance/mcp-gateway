@@ -1473,7 +1473,8 @@ ROUTES.consent = async (_, tab) => {
   const button = (c, decision, label, tone = "") => html`<button class="btn sm ${tone}" data-act="consent" data-id="${c.id}" data-decision="${decision}">${label}</button>`;
   const table = (rows) => html`<table class="data"><thead><tr><th>도구</th><th>데이터 등급</th><th>목적</th><th>상태</th><th>시각</th><th></th></tr></thead><tbody>
     ${rows.map((c) => html`<tr><td><code>${c.server_id}.${c.tool_name}</code></td><td>${DATA_CLASS[c.grade] || c.grade}</td>
-      <td>${c.purpose || NONE}</td><td>${chip(...(CONSENT_STATUS[c.status] || ["", c.status]))}</td>
+      <td>${c.purpose || NONE}<span class="sub">외부 목적지 ${destinationText(c.terms?.destinations)}${c.terms?.inputs ? ` · 입력 ${c.terms.inputs.join(", ") || "없음"}` : ""}</span></td>
+      <td>${chip(...(CONSENT_STATUS[c.status] || ["", c.status]))}</td>
       <td class="small">${when(c.decided_at || c.requested_at)}${c.status === "GRANTED" && c.expires_at ? html`<span class="sub">${when(c.expires_at)}까지</span>` : ""}</td>
       <td class="num nowrap">${c.status === "PENDING" ? html`${button(c, "deny", "거부", "danger")}${button(c, "grant", "동의", "primary")}`
         : c.status === "GRANTED" ? button(c, "revoke", "철회") : ["DENIED", "REVOKED"].includes(c.status) ? button(c, "grant", "동의") : ""}</td></tr>`)}

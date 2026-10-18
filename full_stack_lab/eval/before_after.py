@@ -135,6 +135,11 @@ def self_test() -> None:
     converted = convert_replay_cases(legacy)["cases"][0]
     assert converted["input"] == {"nested": {"a": 1, "b": 2}, "items": [2]}
     assert converted["label"] == "benign" and converted["expect"]["decision"] == "Allow"
+    probe = [{"id": "x", "label": "attack", "expect": {"decision": "Block", "policy_id": "P1"}}]
+    assert expect_mismatches(probe, [{"id": "x", "decision": "Block", "policy_id": "P1"}]) == []
+    assert expect_mismatches(probe, [{"id": "x", "decision": "Block", "policy_id": "P2"}]) == ["x"]
+    assert expect_mismatches(probe, [{"id": "x", "decision": "Allow", "policy_id": None}]) == ["x"]
+    assert expect_mismatches(probe, [{"id": "x", "decision": "Block", "policy_id": "P1", "unstable": True}]) == ["x"]
 
 
 def load_cases(paths: list[Path]) -> tuple[list[dict[str, Any]], str]:
@@ -244,7 +249,7 @@ def evaluate_opa(bundle: Path, cases: list[dict[str, Any]], repeat: int
                 time.sleep(0.2)
         results, latencies = [], []
         for case in cases:
-            samples = []
+            samples, seen = [], []
             verdict = None
             for _ in range(repeat):
                 body = json.dumps({"input": case["input"]}, ensure_ascii=False,
@@ -259,11 +264,14 @@ def evaluate_opa(bundle: Path, cases: list[dict[str, Any]], repeat: int
                 verdict = payload["result"]
                 if verdict.get("decision") not in DECISIONS:
                     raise RuntimeError(f"{case['id']}: 알 수 없는 OPA 판정 {verdict.get('decision')!r}")
+                seen.append((verdict["decision"], verdict.get("policy_id")))
             latencies.extend(samples)
             results.append({
                 "id": case["id"], "decision": verdict["decision"],
                 "policy_id": verdict.get("policy_id"),
                 "latency_ms": samples,
+                # 반복 사이에 판정이 바뀌면 마지막 값만으로는 앞선 오허용이 가려진다.
+                "unstable": len(set(seen)) > 1,
             })
         return results, latencies
     finally:
@@ -274,6 +282,19 @@ def evaluate_opa(bundle: Path, cases: list[dict[str, Any]], repeat: int
 def evaluate_none(cases: list[dict[str, Any]], repeat: int) -> tuple[list[dict[str, Any]], list[float]]:
     return ([{"id": case["id"], "decision": "Allow", "policy_id": None,
               "latency_ms": [0.0] * repeat} for case in cases], [0.0] * len(cases) * repeat)
+
+
+def expect_mismatches(cases: list[dict[str, Any]], results: list[dict[str, Any]]) -> list[str]:
+    """기대 판정(실행 가능 여부)·기대 policy_id와 다르거나 반복 중 판정이 흔들린 사례."""
+    by_id = {result["id"]: result for result in results}
+    out = []
+    for case in cases:
+        got, expect = by_id[case["id"]], case.get("expect", {})
+        if (is_blocked(got["decision"]) != is_blocked(expect["decision"])
+                or (expect.get("policy_id") and got.get("policy_id") != expect["policy_id"])
+                or got.get("unstable")):
+            out.append(case["id"])
+    return out
 
 
 def metric_rows(metrics: dict[str, Any]) -> list[tuple[str, str]]:
@@ -311,6 +332,8 @@ def render_report(cases: list[dict[str, Any]], before: dict[str, Any],
             lines.append(f"| {case['id']} | {case['label']} | {old['decision']} ({old['policy_id'] or '—'}) | {new['decision']} ({new['policy_id'] or '—'}) |")
     else:
         lines.append("판정 변화 없음.")
+    lines.extend(["", "## 적용 후 기대와 다른 사례", ""])
+    lines.extend([f"- {case_id}" for case_id in after.get("expect_mismatches") or []] or ["없음."])
     lines.append("")
     return "\n".join(lines)
 
@@ -361,7 +384,8 @@ def main() -> int:
     after = {"ref": after_ref, "commit": after_commit,
              "policy_bundle_sha256": after_bundle[2],
              "cases": after_cases,
-             "metrics": calculate_metrics(cases, after_cases, after_latencies)}
+             "metrics": calculate_metrics(cases, after_cases, after_latencies),
+             "expect_mismatches": expect_mismatches(cases, after_cases)}
     result = {
         "run": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "image": OPA_IMAGE, "image_digest": digest,
