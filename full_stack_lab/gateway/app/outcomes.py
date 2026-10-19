@@ -31,7 +31,9 @@ def outcome_axes(event: dict) -> dict:
 
     withheld = (preview.get("disposition") == "withheld"
                 or event.get("response_disposition") == "withheld" or policy == "MCP-OUTPUT-001")
-    provider_failure = status in {401, 403, 429}
+    # 401 authentication, 403 access refused, 429 rate or quota: different provider outcomes (luna review 1).
+    provider_task = {401: "제공자 인증 실패", 403: "제공자 접근 거부", 429: "제공자 한도 초과"}.get(status)
+    provider_failure = provider_task is not None
     if isinstance(result, dict):
         # Match only the documented Context7 error prefix, never arbitrary document text.
         content = result.get("content") or []
@@ -46,7 +48,7 @@ def outcome_axes(event: dict) -> dict:
     if withheld and executed:
         task = "응답 보류"
     elif provider_failure:
-        task = "제공자 한도·인증 실패"
+        task = provider_task or "제공자 한도 초과"
     elif isinstance(result, dict) and (result.get("is_error") or result.get("isError")):
         task = "도구 오류"
     elif executed and isinstance(result, dict):

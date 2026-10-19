@@ -51,7 +51,7 @@ class OutcomeAxes(unittest.TestCase):
              ("연결 실패", "허용", "미실행", "실행 안 됨")),
             ("tool error", event(result={"is_error": True}), ("연결 성공", "허용", "도구 오류", "미확인")),
             ("quota", event(result={"content": [{"type": "text", "text": "Monthly quota exceeded. Create a free API key"}],
-                                   "is_error": False}), ("연결 성공", "허용", "제공자 한도·인증 실패", "미확인")),
+                                   "is_error": False}), ("연결 성공", "허용", "제공자 한도 초과", "미확인")),
             ("withheld", event(decision="Block", policy_id="MCP-OUTPUT-001", result=None,
                                result_evidence={"disposition": "withheld"}),
              ("연결 성공", "정책 거부", "응답 보류", "미확인")),
@@ -75,8 +75,8 @@ class OutcomeAxes(unittest.TestCase):
                 self.assertEqual(data, before)
 
     def test_http_statuses_are_separate_from_generic_errors(self):
-        for status in [401, 403, 429]:
-            self.assertEqual(outcomes.outcome_axes(event(upstream_http_status=status))["task"], "제공자 한도·인증 실패")
+        for status, task in [(401, "제공자 인증 실패"), (403, "제공자 접근 거부"), (429, "제공자 한도 초과")]:
+            self.assertEqual(outcomes.outcome_axes(event(upstream_http_status=status))["task"], task)
         self.assertEqual(outcomes.outcome_axes(event(upstream_http_status=500, result={"is_error": True}))["task"], "도구 오류")
         for text in ["Docs explain Monthly quota exceeded", "quota", "rate", "unauthorized field"]:
             self.assertEqual(outcomes.outcome_axes(event(result={"content": [{"type": "text", "text": text}]}))["task"], "업무 성공")
@@ -85,7 +85,7 @@ class OutcomeAxes(unittest.TestCase):
         legacy = event(result=None, result_preview={"disposition": "returned"})
         self.assertEqual(outcomes.recorded_outcome(legacy)["task"], "미확인")
         self.assertNotIn("outcome", legacy)
-        self.assertEqual(outcomes.recorded_outcome({**legacy, "error": "Monthly quota exceeded."})["task"], "제공자 한도·인증 실패")
+        self.assertEqual(outcomes.recorded_outcome({**legacy, "error": "Monthly quota exceeded."})["task"], "제공자 한도 초과")
         self.assertEqual(outcomes.recorded_outcome({**legacy, "error": "bad SQL"})["task"], "도구 오류")
         snapshot = outcomes.outcome_axes(event())
         self.assertEqual(outcomes.recorded_outcome({**legacy, "outcome": snapshot}), snapshot)
@@ -150,7 +150,7 @@ class OutcomePersistence(unittest.IsolatedAsyncioTestCase):
         result = audit.with_outcome(row)
         self.assertNotIn("outcome_error", result)
         self.assertNotIn("error", result)
-        self.assertEqual(result["outcome_axes"]["task"], "제공자 한도·인증 실패")
+        self.assertEqual(result["outcome_axes"]["task"], "제공자 한도 초과")
 
     async def test_nested_http_status_survives_redaction(self):
         class StatusError(Exception):
@@ -167,7 +167,7 @@ class OutcomePersistence(unittest.IsolatedAsyncioTestCase):
         data = event(upstream_attempted=False, upstream_executed=False, result=None)
         data.update(core._upstream_failure(outer, data))
         self.assertEqual(data["policy_id"], "MCP-UPSTREAM-001")
-        self.assertEqual(outcomes.outcome_axes(data)["task"], "제공자 한도·인증 실패")
+        self.assertEqual(outcomes.outcome_axes(data)["task"], "제공자 한도 초과")
 
 
 class GatewayIntegration(unittest.IsolatedAsyncioTestCase):

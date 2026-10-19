@@ -24,8 +24,13 @@ import unittest
 from unittest.mock import AsyncMock, Mock, patch
 from urllib.parse import unquote, urlsplit
 
+import httpx
+
 LAB = Path(__file__).resolve().parent.parent
 APP = LAB / "gateway" / "app"
+_outcome_spec = importlib.util.spec_from_file_location("outcomes_under_test", APP / "outcomes.py")
+_outcome_module = importlib.util.module_from_spec(_outcome_spec)
+_outcome_spec.loader.exec_module(_outcome_module)
 ROOT = LAB.parent
 
 
@@ -212,7 +217,7 @@ class DestinationPin(unittest.IsolatedAsyncioTestCase):
 
     async def test_egress_failure_has_correct_decision_even_in_cause(self):
         module = selected(APP / "core.py", ["_upstream_failure"],
-                          {"DestinationBlocked": destination.DestinationBlocked,
+                          {"DestinationBlocked": destination.DestinationBlocked, "httpx": httpx,
                            "_root_cause": lambda exc: "safe error",
                            "local_verdict": lambda policy, decision, reason, **kw:
                            {"policy_id": policy, "decision": decision, **kw}})
@@ -275,6 +280,7 @@ class CredentialRedaction(unittest.IsolatedAsyncioTestCase):
 
         fingerprint = Mock(return_value="safe fingerprint")
         env = {"secret_scan": scanned, "db": SimpleNamespace(transaction=transaction), "Jsonb": lambda v: v,
+               "outcome_axes": _outcome_module.outcome_axes,
                "datetime": datetime, "UTC": timezone.utc, "hashlib": hashlib, "GENESIS": "0" * 64,
                "CHAIN_VERSION": 1, "GATEWAY_ENVIRONMENT": "test", "_audit_fingerprint": fingerprint,
                "response_disposition": lambda e: "not_executed", "_audit_payload": lambda v: v,

@@ -497,7 +497,7 @@ function decisionRow(r) {
 const OUTCOME_LABELS = { connection: "연결", decision: "정책 판정", task: "도구 업무", effect: "독립 효과" };
 function outcomeChips(axes) {
   const tone = (value) => ["연결 성공", "허용", "업무 성공", "실행됨"].includes(value) ? "allow"
-    : ["연결 실패", "정책 거부", "통제 장애 차단", "도구 오류", "제공자 한도·인증 실패"].includes(value) ? "block" : "outline";
+    : ["연결 실패", "정책 거부", "통제 장애 차단", "도구 오류", "제공자 인증 실패", "제공자 접근 거부", "제공자 한도 초과"].includes(value) ? "block" : "outline";
   return html`<div class="outcome-axes">${Object.entries(OUTCOME_LABELS).map(([key, label]) => html`<div class="row-actions"><span>${label}</span>${chip(tone(axes?.[key]), axes?.[key] || "—")}</div>`)}</div>`;
 }
 const decisionTable = (rows, id = "") => html`<table class="data call-table"><thead><tr><th>시각</th><th>판정</th><th>사용자</th>
