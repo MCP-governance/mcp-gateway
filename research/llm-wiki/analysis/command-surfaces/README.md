@@ -32,6 +32,12 @@
 | 사용자 슬래시 명령·스킬 | 프롬프트 확장이며 실행은 도구(Bash)를 거친다 | — | `-tool` 프로필(D-104) |
 | Codex `-c`·`--config`, Claude `--settings`, Windows 설정 홈 환경 변수 | 사용자 설정 우선순위·대체 홈을 허용할 수 있음 | D-150 관리 런처가 옵션을 거부하고 Windows 환경을 등록 프로필 경로로 고정 | 로컬 대역 시험만 완료; Linux shim·Windows PATH·CLI 실제 동작은 PJ1 확인 전 |
 
+## D-150 후속 적대 검토 (2026-10-20)
+
+[검토 LP-01~07](../review-1020/d150-launcher-pin.md)·[실행 원본](../review-1020/d150-launcher-pin-evidence.json): D-150은 병합 보류다. Windows `CLAUDE_CONFIG_DIR`는 등록 경로로 설정하지 않고 제거한다는 것이 `07708a2`의 실제 동작이다. HOME/USERPROFILE 등 다른 상속 환경과 공개 `launch --profile`·원본 직접 실행은 별도 경계다. Codex 값 붙임 옵션·두 하네스의 `--` 리터럴 오탐과 기존 Windows CA 시험 회귀를 재현했다. 기존 시험 변경 필요 규칙에 따라 제품 수정은 중단했다.
+
+Codex 0.160.0의 `--profile`은 임의 파일 경로가 아니라 검증된 이름이고, `--enable/--disable`은 알려진 feature만 바꾼다. Claude `--mcp-config`의 런처 통과는 관리 MCP 우회 성공을 뜻하지 않는다. 축약 옵션은 Commander/clap 일반 구현과 실제 CLI 포함 판본을 구별한다. 공식 CLI·환경·관리 MCP·고정 OSS URL과 읽은 범위, Ctrl+C·PATH의 근거를 후속 검토의 S1~S11에 추가했다. Linux C·실제 Windows 콘솔·PJ1 재검증은 미실행이다.
+
 ## 실기기 확인
 
 - 2026-10-20 배포 전 기준선(PJ1, `managed-pj1` Codex 홈에 사용자 `hooks.json`, `codex exec --dangerously-bypass-hook-trust`): SessionStart·UserPromptSubmit 훅이 발견·실행됐고 둘 다 실패했다. dmesg: `profile="mcpgw-managed-pj1-codex-tool" name="/usr/bin/touch" ... DENIED`. 표식 파일 없음.
