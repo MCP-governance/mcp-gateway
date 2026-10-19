@@ -218,6 +218,7 @@ class DestinationPin(unittest.IsolatedAsyncioTestCase):
     async def test_egress_failure_has_correct_decision_even_in_cause(self):
         module = selected(APP / "core.py", ["_upstream_failure"],
                           {"DestinationBlocked": destination.DestinationBlocked, "httpx": httpx,
+                           "output_contract": selected(APP / "output_contract.py", ["WireRejected", "OutputSchemaTooComplex"]),
                            "_root_cause": lambda exc: "safe error",
                            "local_verdict": lambda policy, decision, reason, **kw:
                            {"policy_id": policy, "decision": decision, **kw}})

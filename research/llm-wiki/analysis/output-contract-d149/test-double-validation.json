@@ -1,0 +1,188 @@
+{
+  "head": "bb5583cdb383314fab9c91c5ebd7847fb9855a94",
+  "python": "3.10.5 (tags/v3.10.5:f377153, Jun  6 2022, 16:14:13) [MSC v.1929 64 bit (AMD64)]",
+  "assertions_unchanged": true,
+  "records": [
+    {
+      "check": "baseline-upstream_session_reuse_test.py",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-c",
+        "import sys; __file__=sys.argv[1]; sys.argv=[__file__]; exec(compile(sys.stdin.read(), __file__, \"exec\"))",
+        "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py"
+      ],
+      "mode": "direct source",
+      "source_sha256": "9fb40afd3dc5691a050015a7749be5925f80327dfd6c778f6f2ba016073dddb9",
+      "timestamp_utc": "2026-10-19T21:29:31.340472+00:00",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "EEFEE.E.................E.......E......\n======================================================================\nERROR: test_T10_list_expiry_retries_once_before_intent (__main__.DispatchTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 1503, in _call_upstream\n    listed = await upstream.list_all_tools(client)\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\mock.py\", line 2211, in _execute_mock_call\n    raise result\nValueError: expired\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 64, in _callTestMethod\n    self._callMaybeAsync(method)\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 87, in _callMaybeAsync\n    return self._asyncioTestLoop.run_until_complete(fut)\n  File \"C:\\Program Files\\Python310\\lib\\asyncio\\base_events.py\", line 646, in run_until_complete\n    return future.result()\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 101, in _asyncioLoopRunner\n    ret = await awaitable\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 643, in test_T10_list_expiry_retries_once_before_intent\n    with self.assertRaises(DispatchRejected) as caught:\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 589, in call\n    self.endpoint.managed_failure = AsyncMock(return_value=None)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 1633, in _call_upstream\n    return await _call_upstream(server_id, tool, arguments, approval_id, principal,\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 1517, in _call_upstream\n    or not output_contract.matches(row, item.get(\"output_schema\"))):\nNameError: name 'output_contract' is not defined\n\n======================================================================\nERROR: test_T10_second_list_failure_stops_and_call_failure_never_retries (__main__.DispatchTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 64, in _callTestMethod\n    self._callMaybeAsync(method)\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 87, in _callMaybeAsync\n    return self._asyncioTestLoop.run_until_complete(fut)\n  File \"C:\\Program Files\\Python310\\lib\\asyncio\\base_events.py\", line 646, in run_until_complete\n    return future.result()\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 101, in _asyncioLoopRunner\n    ret = await awaitable\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 657, in test_T10_second_list_failure_stops_and_call_failure_never_retries\n    with self.assertRaises(ValueError):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 589, in call\n    self.endpoint.managed_failure = AsyncMock(return_value=None)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 1517, in _call_upstream\n    or not output_contract.matches(row, item.get(\"output_schema\"))):\nNameError: name 'output_contract' is not defined\n\n======================================================================\nERROR: test_T4_T5_final_cutover_and_approval_revoke_prevent_send (__main__.DispatchTests) (refusal='principal')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 605, in test_T4_T5_final_cutover_and_approval_revoke_prevent_send\n    self.assertEqual(self.client.call_tool.await_count, 2)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 589, in call\n    self.endpoint.managed_failure = AsyncMock(return_value=None)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 1517, in _call_upstream\n    or not output_contract.matches(row, item.get(\"output_schema\"))):\nNameError: name 'output_contract' is not defined\n\n======================================================================\nERROR: test_T4_T5_final_cutover_and_approval_revoke_prevent_send (__main__.DispatchTests) (refusal='terminated')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 605, in test_T4_T5_final_cutover_and_approval_revoke_prevent_send\n    self.assertEqual(self.client.call_tool.await_count, 2)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 589, in call\n    self.endpoint.managed_failure = AsyncMock(return_value=None)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 1517, in _call_upstream\n    or not output_contract.matches(row, item.get(\"output_schema\"))):\nNameError: name 'output_contract' is not defined\n\n======================================================================\nERROR: test_T4_T5_final_cutover_and_approval_revoke_prevent_send (__main__.DispatchTests) (refusal='approval')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 605, in test_T4_T5_final_cutover_and_approval_revoke_prevent_send\n    self.assertEqual(self.client.call_tool.await_count, 2)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 589, in call\n    self.endpoint.managed_failure = AsyncMock(return_value=None)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 1517, in _call_upstream\n    or not output_contract.matches(row, item.get(\"output_schema\"))):\nNameError: name 'output_contract' is not defined\n\n======================================================================\nERROR: test_T4_policy_failure_remains_fail_closed (__main__.DispatchTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 64, in _callTestMethod\n    self._callMaybeAsync(method)\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 87, in _callMaybeAsync\n    return self._asyncioTestLoop.run_until_complete(fut)\n  File \"C:\\Program Files\\Python310\\lib\\asyncio\\base_events.py\", line 646, in run_until_complete\n    return future.result()\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 101, in _asyncioLoopRunner\n    ret = await awaitable\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 637, in test_T4_policy_failure_remains_fail_closed\n    await self.call()\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 589, in call\n    self.endpoint.managed_failure = AsyncMock(return_value=None)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 1517, in _call_upstream\n    or not output_contract.matches(row, item.get(\"output_schema\"))):\nNameError: name 'output_contract' is not defined\n\n======================================================================\nERROR: test_T4_policy_rechecked_every_call_on_same_connection (__main__.DispatchTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 64, in _callTestMethod\n    self._callMaybeAsync(method)\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 87, in _callMaybeAsync\n    return self._asyncioTestLoop.run_until_complete(fut)\n  File \"C:\\Program Files\\Python310\\lib\\asyncio\\base_events.py\", line 646, in run_until_complete\n    return future.result()\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 101, in _asyncioLoopRunner\n    ret = await awaitable\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 593, in test_T4_policy_rechecked_every_call_on_same_connection\n    self.addCleanup(self.modules.stop)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 589, in call\n    self.endpoint.managed_failure = AsyncMock(return_value=None)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 1517, in _call_upstream\n    or not output_contract.matches(row, item.get(\"output_schema\"))):\nNameError: name 'output_contract' is not defined\n\n======================================================================\nERROR: test_terminating_server_through_real_session_wrapper_keeps_decommission_policy (__main__.DispatchTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 64, in _callTestMethod\n    self._callMaybeAsync(method)\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 87, in _callMaybeAsync\n    return self._asyncioTestLoop.run_until_complete(fut)\n  File \"C:\\Program Files\\Python310\\lib\\asyncio\\base_events.py\", line 646, in run_until_complete\n    return future.result()\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 101, in _asyncioLoopRunner\n    ret = await awaitable\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 621, in test_terminating_server_through_real_session_wrapper_keeps_decommission_policy\n    async def factory(*args):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 589, in call\n    self.endpoint.managed_failure = AsyncMock(return_value=None)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 1517, in _call_upstream\n    or not output_contract.matches(row, item.get(\"output_schema\"))):\nNameError: name 'output_contract' is not defined\n\n======================================================================\nERROR: test_A_error_envelope_preserves_B_context_and_always_resets_it (__main__.WiringTests) (failed=False)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 520, in test_A_error_envelope_preserves_B_context_and_always_resets_it\n    self.assertEqual(await facade.on_call_tool(None, NS(name=\"tool\", arguments={})), {\"decision\": \"Allow\"})\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\mcp_facade.py\", line 250, in call_tool\n    return _render(outcome, getattr(ctx, \"protocol_version\", None))\nTypeError: WiringTests.test_A_error_envelope_preserves_B_context_and_always_resets_it.<locals>.<lambda>() takes 1 positional argument but 2 were given\n\n======================================================================\nERROR: test_A_internal_classification_reaches_raw_and_pooled_transports (__main__.WiringTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 64, in _callTestMethod\n    self._callMaybeAsync(method)\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 87, in _callMaybeAsync\n    return self._asyncioTestLoop.run_until_complete(fut)\n  File \"C:\\Program Files\\Python310\\lib\\asyncio\\base_events.py\", line 646, in run_until_complete\n    return future.result()\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 101, in _asyncioLoopRunner\n    ret = await awaitable\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 354, in test_A_internal_classification_reaches_raw_and_pooled_transports\n    async with ns[\"_session\"](\"https://a.example/mcp\", 90, principal, \"2025-11-25\", {}, True):\n  File \"C:\\Program Files\\Python310\\lib\\contextlib.py\", line 199, in __aenter__\n    return await anext(self.gen)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\upstream.py\", line 294, in _session\n    yield ContractClient(client)\nNameError: name 'ContractClient' is not defined\n\n======================================================================\nERROR: test_T1_T7_sdk_cache_none_and_operator_headers_only (__main__.WiringTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 64, in _callTestMethod\n    self._callMaybeAsync(method)\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 87, in _callMaybeAsync\n    return self._asyncioTestLoop.run_until_complete(fut)\n  File \"C:\\Program Files\\Python310\\lib\\asyncio\\base_events.py\", line 646, in run_until_complete\n    return future.result()\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 101, in _asyncioLoopRunner\n    ret = await awaitable\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 304, in test_T1_T7_sdk_cache_none_and_operator_headers_only\n    async with ns[\"_session\"](\"https://a.example/mcp\", 90, None, \"2025-11-25\", {\"Authorization\": \"Bearer operator\"}, False):\n  File \"C:\\Program Files\\Python310\\lib\\contextlib.py\", line 199, in __aenter__\n    return await anext(self.gen)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\upstream.py\", line 294, in _session\n    yield ContractClient(client)\nNameError: name 'ContractClient' is not defined\n\n======================================================================\nFAIL: test_T4_T5_final_cutover_and_approval_revoke_prevent_send (__main__.DispatchTests)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 64, in _callTestMethod\n    self._callMaybeAsync(method)\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 87, in _callMaybeAsync\n    return self._asyncioTestLoop.run_until_complete(fut)\n  File \"C:\\Program Files\\Python310\\lib\\asyncio\\base_events.py\", line 646, in run_until_complete\n    return future.result()\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 101, in _asyncioLoopRunner\n    ret = await awaitable\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py\", line 609, in test_T4_T5_final_cutover_and_approval_revoke_prevent_send\n    with self.subTest(refusal=refusal):\nAssertionError: 0 != 3\n\n----------------------------------------------------------------------\nRan 40 tests in 0.922s\n\nFAILED (failures=1, errors=11)\n"
+    },
+    {
+      "check": "corrected-upstream_session_reuse_test.py",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-c",
+        "import sys; __file__=sys.argv[1]; sys.argv=[__file__]; exec(compile(sys.stdin.read(), __file__, \"exec\"))",
+        "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\upstream_session_reuse_test.py"
+      ],
+      "mode": "direct source",
+      "source_sha256": "a94ead0ca564155b4a442312d0089ba27fee6ed93412df756c7aaa86ad517ceb",
+      "timestamp_utc": "2026-10-19T21:29:32.451190+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "........................................\n----------------------------------------------------------------------\nRan 40 tests in 0.943s\n\nOK\n"
+    },
+    {
+      "check": "baseline-outcome_axes_check.py",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-c",
+        "import sys; __file__=sys.argv[1]; sys.argv=[__file__]; exec(compile(sys.stdin.read(), __file__, \"exec\"))",
+        "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\outcome_axes_check.py"
+      ],
+      "mode": "direct source",
+      "source_sha256": "3fa05c284b4012e4b46f7b8e7a82a9f8b2dfa1369da13b267ad58edca59f65bb",
+      "timestamp_utc": "2026-10-19T21:29:32.745252+00:00",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "test_http_statuses_are_separate_from_generic_errors (__main__.OutcomeAxes) ... ok\ntest_independent_confirmation_only (__main__.OutcomeAxes) ... ok\ntest_legacy_is_not_rewritten_or_guessed_successful (__main__.OutcomeAxes) ... ok\ntest_new_chain_covers_snapshot_and_old_versions_stay_stable (__main__.OutcomeAxes) ... ok\ntest_representative_cases (__main__.OutcomeAxes) ... ok\ntest_audit_projection_discards_private_diagnostic (__main__.OutcomePersistence) ... ok\ntest_insert_snapshot_hash_and_sql_arity (__main__.OutcomePersistence) ... ok\ntest_nested_http_status_survives_redaction (__main__.OutcomePersistence) ... ERROR\n\n======================================================================\nERROR: test_nested_http_status_survives_redaction (__main__.OutcomePersistence)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 64, in _callTestMethod\n    self._callMaybeAsync(method)\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 87, in _callMaybeAsync\n    return self._asyncioTestLoop.run_until_complete(fut)\n  File \"C:\\Program Files\\Python310\\lib\\asyncio\\base_events.py\", line 646, in run_until_complete\n    return future.result()\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 101, in _asyncioLoopRunner\n    ret = await awaitable\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\outcome_axes_check.py\", line 168, in test_nested_http_status_survives_redaction\n    data = event(upstream_attempted=False, upstream_executed=False, result=None)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 1690, in _upstream_failure\n    if isinstance(error, output_contract.WireRejected):\nNameError: name 'output_contract' is not defined\n\n----------------------------------------------------------------------\nRan 8 tests in 0.079s\n\nFAILED (errors=1)\n"
+    },
+    {
+      "check": "corrected-outcome_axes_check.py",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-c",
+        "import sys; __file__=sys.argv[1]; sys.argv=[__file__]; exec(compile(sys.stdin.read(), __file__, \"exec\"))",
+        "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\outcome_axes_check.py"
+      ],
+      "mode": "direct source",
+      "source_sha256": "08d42bcd352baa8bca6d9746711e224439103cb0620f20e69647350b0c88467c",
+      "timestamp_utc": "2026-10-19T21:29:33.023871+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_http_statuses_are_separate_from_generic_errors (__main__.OutcomeAxes) ... ok\ntest_independent_confirmation_only (__main__.OutcomeAxes) ... ok\ntest_legacy_is_not_rewritten_or_guessed_successful (__main__.OutcomeAxes) ... ok\ntest_new_chain_covers_snapshot_and_old_versions_stay_stable (__main__.OutcomeAxes) ... ok\ntest_representative_cases (__main__.OutcomeAxes) ... ok\ntest_audit_projection_discards_private_diagnostic (__main__.OutcomePersistence) ... ok\ntest_insert_snapshot_hash_and_sql_arity (__main__.OutcomePersistence) ... ok\ntest_nested_http_status_survives_redaction (__main__.OutcomePersistence) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.073s\n\nOK\n"
+    },
+    {
+      "check": "baseline-dest_pin_credential_redaction_check.py",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-c",
+        "import sys; import types; h=types.ModuleType('httpx'); h.HTTPStatusError=type('HTTPStatusError',(Exception,),{}); sys.modules['httpx']=h; __file__=sys.argv[1]; sys.argv=[__file__]; exec(compile(sys.stdin.read(), __file__, \"exec\"))",
+        "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\dest_pin_credential_redaction_check.py"
+      ],
+      "mode": "HTTPStatusError type double only; no installed HTTPX",
+      "source_sha256": "34c253127f38a6301b8c4003438ab56a8a3ef46159141c4e839693254d2276dd",
+      "timestamp_utc": "2026-10-19T21:29:33.669883+00:00",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "......E.........\n======================================================================\nERROR: test_egress_failure_has_correct_decision_even_in_cause (__main__.DestinationPin)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 64, in _callTestMethod\n    self._callMaybeAsync(method)\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 87, in _callMaybeAsync\n    return self._asyncioTestLoop.run_until_complete(fut)\n  File \"C:\\Program Files\\Python310\\lib\\asyncio\\base_events.py\", line 646, in run_until_complete\n    return future.result()\n  File \"C:\\Program Files\\Python310\\lib\\unittest\\async_case.py\", line 101, in _asyncioLoopRunner\n    ret = await awaitable\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\dest_pin_credential_redaction_check.py\", line 226, in test_egress_failure_has_correct_decision_even_in_cause\n    error.__cause__ = destination.DestinationBlocked(\"blocked\")\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 1690, in _upstream_failure\n    if isinstance(error, output_contract.WireRejected):\nNameError: name 'output_contract' is not defined\n\n----------------------------------------------------------------------\nRan 16 tests in 0.399s\n\nFAILED (errors=1)\n"
+    },
+    {
+      "check": "corrected-dest_pin_credential_redaction_check.py",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-c",
+        "import sys; import types; h=types.ModuleType('httpx'); h.HTTPStatusError=type('HTTPStatusError',(Exception,),{}); sys.modules['httpx']=h; __file__=sys.argv[1]; sys.argv=[__file__]; exec(compile(sys.stdin.read(), __file__, \"exec\"))",
+        "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\dest_pin_credential_redaction_check.py"
+      ],
+      "mode": "HTTPStatusError type double only; no installed HTTPX",
+      "source_sha256": "8b67c15e1d3549074da251acf8681217fcb6045e4cc815181d0189a0646e6dfe",
+      "timestamp_utc": "2026-10-19T21:29:34.263577+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "................\n----------------------------------------------------------------------\nRan 16 tests in 0.384s\n\nOK\n"
+    },
+    {
+      "check": "-X utf8 full_stack_lab/tests/dest_pin_credential_redaction_check.py",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/dest_pin_credential_redaction_check.py"
+      ],
+      "timestamp_utc": "2026-10-19T21:29:34.419293+00:00",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\dest_pin_credential_redaction_check.py\", line 27, in <module>\n    import httpx\nModuleNotFoundError: No module named 'httpx'\n"
+    },
+    {
+      "check": "-X utf8 full_stack_lab/tests/output_contract_check.py",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/output_contract_check.py"
+      ],
+      "timestamp_utc": "2026-10-19T21:29:34.602772+00:00",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\output_contract_check.py\", line 217, in <module>\n    from app import core, mcp_facade, output_contract, upstream\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 12, in <module>\n    from datetime import UTC, datetime, timedelta\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\n"
+    },
+    {
+      "check": "-X utf8 full_stack_lab/tests/output_contract_check.py --pure",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/output_contract_check.py",
+        "--pure"
+      ],
+      "timestamp_utc": "2026-10-19T21:29:34.886667+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_fresh_output_drift_blocks_dispatch_with_catalog_policy (__main__.CatalogContract) ... ok\ntest_schema_drift_reapproval_and_legacy_transition (__main__.CatalogContract) ... ok\ntest_add_change_remove_and_explicit_approval (__main__.PureContract) ... ok\ntest_lock_diff_and_poisoning_review_migration (__main__.PureContract) ... ok\ntest_modern_preserves_all_json_values_including_explicit_null (__main__.PureContract) ... ok\ntest_object_era_and_unknown_preserve_value_as_text (__main__.PureContract) ... ok\ntest_old_approval_means_absence_not_first_observation (__main__.PureContract) ... ok\ntest_output_drift_restricts_only_affected_tool (__main__.PureContract) ... ok\ntest_schema_resource_bounds_reject_large_and_deep_documents (__main__.PureContract) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 0.123s\n\nOK\n"
+    },
+    {
+      "check": "-m py_compile full_stack_lab/tests/upstream_session_reuse_test.py full_stack_lab/tests/outcome_axes_check.py full_stack_lab/tests/dest_pin_credential_redaction_check.py",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-m",
+        "py_compile",
+        "full_stack_lab/tests/upstream_session_reuse_test.py",
+        "full_stack_lab/tests/outcome_axes_check.py",
+        "full_stack_lab/tests/dest_pin_credential_redaction_check.py"
+      ],
+      "timestamp_utc": "2026-10-19T21:29:34.967183+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "check": "--check full_stack_lab/gateway/app/agent_static/console.js",
+      "command": [
+        "node",
+        "--check",
+        "full_stack_lab/gateway/app/agent_static/console.js"
+      ],
+      "timestamp_utc": "2026-10-19T21:29:35.024501+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "check": "diff --check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "timestamp_utc": "2026-10-19T21:29:35.062415+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}

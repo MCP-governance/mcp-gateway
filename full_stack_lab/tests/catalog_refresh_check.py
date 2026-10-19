@@ -35,6 +35,9 @@ class CatalogDB:
                                  "approved_description_hash": core.canonical_hash(TOOL_A["description"]),
                                  "approved_schema_hash": core.canonical_hash(TOOL_A["input_schema"]),
                                  "approved_server_version": "1", "observed_server_version": "1",
+                                 # Approved with no output schema (pinned): an unpinned legacy row would be
+                                 # pinned by the next review, which is a recorded change (D-149 correction).
+                                 "approved_output_schema_hash": core.canonical_hash(None),
                                  "observed_description_hash": None, "observed_schema_hash": None}
 
     def snapshot(self, params, exact_match=None):
@@ -91,6 +94,9 @@ class CatalogDB:
                        observed_server_version=version, description=description,
                        input_schema=deepcopy(schema.obj), annotations=deepcopy(annotations.obj))
             self.observation_writes.append(server_id)
+        elif compact.startswith("UPDATE mcp_tools SET output_schema=%s"):
+            schema, hashed, server_id, name = params
+            self.tools[server_id].update(output_schema=deepcopy(schema.obj), observed_output_schema_hash=hashed)
         elif compact.startswith("UPDATE mcp_tools SET approved_server_version=%s"):
             row = self.tools[params[2]]
             if row["approved_description_hash"] == row["observed_description_hash"] and row["approved_schema_hash"] == row["observed_schema_hash"]:
@@ -102,6 +108,7 @@ class CatalogDB:
         elif compact.startswith("UPDATE mcp_tools SET approved_description_hash = COALESCE"):
             row = self.tools[params[0]]
             row.update(approved_description_hash=row["observed_description_hash"],
+                       approved_output_schema_hash=row.get("observed_output_schema_hash"),
                        approved_schema_hash=row["observed_schema_hash"], approved_server_version=row["observed_server_version"])
         elif compact.startswith("INSERT INTO catalog_snapshots"):
             self.snapshot(params, exact_match=True)

@@ -157,6 +157,7 @@ class OutcomePersistence(unittest.IsolatedAsyncioTestCase):
             response = SimpleNamespace(status_code=429)
 
         namespace = {"httpx": SimpleNamespace(HTTPStatusError=StatusError),
+                     "output_contract": selected("output_contract.py", ["WireRejected", "OutputSchemaTooComplex"], {}),
                      "DestinationBlocked": type("DestinationBlocked", (Exception,), {}),
                      "local_verdict": lambda policy, decision, reason, **extra: {
                          "policy_id": policy, "decision": decision, **extra},

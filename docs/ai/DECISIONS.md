@@ -1599,3 +1599,41 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 적대 검증 보완(S6, 2026-10-20): 열린 파일 `st_nlink`가 1이 아니면 실패하도록 하드 링크를 거부한다. 새 S6 회귀 시험에서 실제 hard link를 확인했다. 검토에서는 `.claude`/`.codex` 디렉터리 교체 경쟁, Windows `CODEX_HOME`·`CLAUDE_CONFIG_DIR` 및 Codex CLI `--config` 우회, 프로필 파일명에 포함된 문자열 보고, 미보고 레거시 장치의 지속적 검사 공백을 확인했다. 경로 핸들 고정과 설정 경로/인자 집행은 미수정이다. 파일명 익명화는 기존 시험의 파일명 기대값 변경이 필요해 적용하지 않았다. heartbeat 표식은 인증된 장치의 자기 보고이며 삭제 병합으로 기존 표식은 보존되지만 검사 수행의 원격 증명은 아니다. [적대 검토와 범위](../../research/llm-wiki/analysis/review-1020/s6-user-command-settings.md), [작업 보고](../../research/llm-wiki/status/reports/2026-10-20-s6-user-command-settings-review.md).
 - 메인 반영(2026-10-20): Linux 검사는 `/`부터 각 단계를 `O_DIRECTORY|O_NOFOLLOW`·`dir_fd`로 열어 경로 교체 경쟁을 없앴다(Windows는 경로 검사 한계 유지). 프로필 파일은 직원이 이름을 정하므로 고정 표기 `.codex/*.config.toml`로만 보고하고, 게이트웨이 입력 모델은 고정 7개 표기만 받는다. 런처의 `-c/--config`·`CODEX_HOME`·`CLAUDE_CONFIG_DIR` 고정은 다음 작업이다.
 - PJ1 실기기(2026-10-20, 새 에이전트 설치·백업 보존): 검사 보고(`user_command_helpers: true`, 표식 기록) → 관리 계정 `.claude/settings.json`에 `apiKeyHelper` 추가 시 다음 heartbeat에 격리·발견 기록 → 원복 뒤에도 격리 유지 → 관리자 재활성화로 active. 이때 격리 중 헤더 헬퍼가 자격 없이 실패하자 Claude Code가 OAuth 인증 대기로 서버를 `mcp-needs-auth-cache.json`에 캐시해 복구 뒤에도 연결하지 않았다. 공식 문서상 헬퍼가 `Authorization`을 내면 거부돼도 연결 실패로만 남으므로, Linux·Windows 헬퍼는 자격을 못 얻으면 게이트웨이가 거부하는 고정 값 `Bearer endpoint-not-active`를 낸다(새 시험 `managed_helper_unavailable_check.py`). 재시험(Codex 프로필 파일 `notify`로 격리): 격리 중 연결 실패 표시·캐시 없음, 복구 직후 markitdown 호출 성공.
+
+## D-149 도구 출력 스키마를 승인 잠금하고 협상 판본에 따라 결과를 보존한다 (2026-10-20)
+
+- 문제: DEV-44/RV-05. 입력 스키마만 고정하여 outputSchema 변경을 놓쳤고, D-109의 비객체 structuredContent 제거를 모든 판본에 적용했다.
+- 결정: 입력 해시를 유지하고 출력 전용 승인/관측 해시와 스키마 열을 추가한다. 출력 스키마 추가·수정·삭제는 DRIFT/재승인 대상이며 목록·정책 계약·같은 연결의 실행 직전 재확인·최종 전송 SQL에서 비교한다. 계약 확인 불가는 기존 MCP-CATALOG-001로 차단한다. 관측값 자동 승인은 없다.
+- 전환: 구 잠금 파일/DB에 출력 승인 해시가 없으면 canonical null의 해시(출력 스키마 부재)로 해석한다. 기존 스키마 부재 도구의 승인은 유지한다. 출력 스키마가 관측되면 해당 도구만 제한하고 사람이 승인해야 한다. 종전 poisoning 심사 해시도 출력 스키마 부재일 때만 호환한다. 잠금 생성/비교에 출력 해시를 추가하되 registry/contracts.lock.json과 field 잠금 파일은 고치지 않는다. 사람이 실제 서버 diff를 읽고 커밋한다.
+- 전환 정정(2026-10-20, Claude): 위 전환대로 배포(90aee8c)하자 기존 승인 서버 markitdown·github이 outputSchema를 광고해 DRIFT가 되고 도구가 목록에서 빠졌다(사전 확인 스크립트가 SDK 필드 이름을 잘못 읽어 광고 없음으로 오판, 약 10분 장애 뒤 되돌림 ecea5c8). 출력 승인 해시가 NULL인 옛 승인은 '출력 스키마 없음'이 아니라 **고정되지 않음**으로 본다: 목록·전송·실행 직전 재확인에서 출력 스키마로 제한하지 않고, 응답을 그 스키마로 검증하지 않으며, 하네스에 출력 스키마를 광고하지 않는다(D-149 이전과 같음). 관측값을 승인으로 채택하지 않는다(TOFU 아님). 사람이 다시 승인하면(`approve_contract`, 콘솔 등록 서버는 도입 재검토) 관측 해시가 기록되고 그때부터 변경은 DRIFT다. 출력 해시 없는 lock 항목·poisoning 심사도 같은 뜻이다. 한계: 재승인 전까지 옛 승인 도구의 출력 스키마 변경은 탐지하지 않는다.
+- 응답: 공식 SDK의 공개 session.send_request와 CallToolRequest/CallToolResult 타입으로 협상 wire 검증·헤더 처리를 유지하고, 수신 뒤 MINT의 승인 해시와 일치한 스키마를 검증한다. 광고 스키마 캐시를 승인 근거로 쓰거나 private SDK 함수를 고치지 않는다. 누락/불일치/스키마 오류/외부 참조 해석 실패는 MCP-OUTPUT-001로 결과만 보류하고 실행 사실을 유지한다. 마스킹 후 재검증하며 미지원 dialect는 보류한다. 오류 결과도 계약이 있으면 검사한다.
+- 판본: D-109의 일괄 제거 결정을 이 결정으로 대체한다. 2025-06-18·2025-11-25는 객체, 2026-07-28은 배열·스칼라·null까지 보존한다. 현대 서버에서 구형 하네스로 가는 비객체 값은 검사·마스킹 후 JSON text로 전환하고 호환되지 않는 출력 스키마 광고를 생략한다. 더 이전 판본도 text로 반환한다. 명시적 null은 SDK runner의 exclude_none 직렬화에 지워지지 않게 기존 Pydantic serializer로 보존한다. 수신/송신 판본은 SDK 문맥에서 얻고 감사 client 정보에 남기며 신원/권한 판정에는 쓰지 않는다.
+- 근거: [공식 명세/고정 SDK 분석·파일 해시](../../research/llm-wiki/analysis/output-contract-d149/README.md). 공식 Python SDK v2.2.0, commit 9972c21aa42054fb1450c5fc614761ed11847ec6, MIT. 기존 jsonschema 4.26.0과 그 기존 referencing 의존성을 사용한다. 새 의존성·정책 ID·라우트·자체 MCP 서버는 없다. 공개 mcp-builder 스킬은 검색·내용 대조만 하고 채택/실행하지 않았다.
+- 한계: 로컬 순수/DB·전송 대역 시험과 정적 검사만 수행했다. SDK 전체 시험은 이 PC의 Python 3.10/의존성 제약으로 실행하지 못했다. 공식 SDK wire 위반 응답은 보류되며 구형 상위 서버의 비객체 wire 위반을 느슨하게 수용하지 않는다. 솔루션 기기 이미지·실제 DB 전환/경쟁·공개 OSS MCP·PJ1 협상 판본별 호출/효과/복구는 미실행이다. [작업 보고](../../research/llm-wiki/status/reports/2026-10-20-output-contract.md).
+
+### D-149 적대 검증 보완 (10/20 Codex luna)
+
+- 기존 승인 전환: 구 잠금/DB에서 출력 해시가 없을 때 canonical null로 해석하는 경로는 기존 승인 도구를 자동 재승인 대기로 만들지 않는다. 상용 운영 서버의 outputSchema 부재 확인은 Codex sol의 별도 현장 결과를 전제로 하며 이번 로컬 검토에서 재측정하지 않았다.
+- 기존 시험 변경 판정: `catalog_refresh_check.py` A, `contracts_check.py` A, `dispatch_recheck_check.py` A, `selective_restriction_siem_check.py` B. 마지막 대역의 서버 판본 승격 조건을 운영 SQL과 맞춰 출력 해시 비교를 추가했다. 기대값 완화는 발견하지 않았다.
+- 적대 검토에서 출력 스키마의 외부 참조는 빈 `Registry`로 거부되고, 마스킹 뒤 출력 스키마를 다시 검사하며, 도구 목록 재확인과 dispatch 최종 SQL 모두 승인·관측 출력 해시를 비교함을 확인했다. 스키마 검사 전에 깊이 64, 컨테이너 10,000개, 약 256 KiB 상한을 적용한다.
+- `isError=true` 결과도 승인 스키마로 검사하는 기존 선택은 유지한다. 일부 공식 SDK가 이를 생략하는 것보다 엄격하며, 스키마 없는 도구 오류가 `MCP-OUTPUT-001`로 보류되어 모델의 오류 복구 정보가 줄 수 있다. 재시도 호환성은 공개 MCP 서버/클라이언트 실험으로 확인해야 한다.
+- 검증 근거와 잔여 위험은 [S7 적대 검토](../../research/llm-wiki/analysis/review-1020/s7-output-contract.md)에 기록한다. 크기·깊이 상한은 합법적인 복잡한 스키마를 거부할 수 있고, Python 정규식의 병적 역추적 시간은 이번 수정의 상한으로 완전히 통제하지 않는다.
+
+### D-149 기존 AST 시험 대역 보정 (2026-10-20, Codex sol)
+
+- 문제: `bb5583c`의 기존 세 시험이 새 전역 이름·호출 인자를 AST 실행 환경에 주입하지 않아 실패했다. 세션 시험의 `expired` 예외 사슬과 해제 횟수 실패도 계약 검사 중 NameError로 전송 직전 검사에 도달하지 못한 결과였다.
+- 결정: 제품 코드와 기존 기대값은 유지한다. AST 추출에 실제 `ContractClient`, 출력 계약 비교 함수·예외 타입, 등록부 검토 비교 함수를 포함하고 기존 반환 대역의 판본·스키마 인자만 보강한다. 출력 계약 비교를 무조건 참으로 대체하지 않는다. 등록부 비교의 해시 대역은 기존 입력/설명 시험의 항등 해시를 유지한다.
+- 근거: 세션 40건·결과 축 8건·출력 계약 순수 9건 통과. HTTP 상태 예외 타입만 대역으로 제공한 목적지/자격정보 16건 통과. HEAD와 작업 트리의 기존 assert AST 120·30·70개가 동일하다. [실패별 판정·변경 행별 이유](../../research/llm-wiki/status/reports/2026-10-20-output-contract.md#기존-시험-대역-보정), [원본 실행 기록](../../research/llm-wiki/analysis/output-contract-d149/test-double-validation.json).
+- 한계: 기본 Python 3.10에 HTTPX가 없고 `datetime.UTC`를 지원하지 않는다. 로컬 Python 3.12에도 게이트웨이 의존성이 없으며 설치 시도는 판본을 확보하지 못했다. 목적지 시험의 직접 실행과 출력 계약 전체 시험은 통과 미확인이다. 이미지·DB·SDK·실제 MCP·PJ1 검증으로 확대 해석하지 않는다. 추가 의존성·정책·DB 변경 없음.
+
+### D-149 S7b 기존 시험 대역 보정 적대 검토 (2026-10-20, Codex luna)
+
+- 판정: HEAD `321fa565`의 세 시험 파일 변경 7개 hunk를 모두 A(채택)로 판정한다. 기대값·입력·assert는 그대로이며 검사 범위를 줄인 변경은 없다.
+- 근거: 출력 오류 타입, 계약 해시/비교 함수, `ContractClient`는 실제 제품 모듈 AST 정의를 시험 namespace에 제공한다. `_render`·`_guarded_result` 반환 대역은 세션 문맥/dispatch 생명주기 시험에만 한정된다. 출력 검증·판본별 렌더링은 `output_contract_check.py`와 `mcp_result_contract_check.py`가 실제 함수를 직접 검사한다. 상세 hunk별 근거는 [S7b 검토](../../research/llm-wiki/analysis/review-1020/s7b-fixtures.md)에 기록한다.
+- 한계: 이번 적대 검토는 정적 대조이며 시험·이미지·DB·실제 MCP·PJ1을 실행하지 않았다. A 판정은 세 기존 시험 대역 보정만 채택하며 출력 계약 전체의 런타임 검증으로 확대하지 않는다. 기존 시험 변경 추가 수정은 필요하지 않다. [작업 보고](../../research/llm-wiki/status/reports/2026-10-20-s7b-fixtures-review.md).
+
+### D-149 전환 정정 감사 의미 보완 (2026-10-20, Codex luna)
+
+- 판정: 관측 해시 자동 승인·신규 도입 해시 누락·고정 도구 출력 검사 누락은 코드 경로에서 확인되지 않았다. `catalog_refresh_check.py` fixture 변경도 입력 계약 A→B→A 복귀 시험의 기존 기대값을 완화하지 않는다. 세부 경로 판정은 [D-149 전환 적대 검토](../../research/llm-wiki/analysis/review-1020/d149-transition.md)에 기록한다.
+- 결함·수정: NULL 출력 승인 해시는 미고정인데 `approve_contract`의 감사 변경 이벤트 `from.output_schema`는 이를 canonical null hash로 기록했다. 제품은 관측값을 자동 승인하지 않지만 감사 이벤트가 과거 상태를 출력 스키마 없음으로 오해하게 했다. 실제 DB의 nullable 승인값을 그대로 기록하게 고치고, 구분을 확인하는 새 `tests/d149_transition_check.py`를 추가했다.
+- 근거·한계: 출력 계약 순수 시험 9건, 새 재승인 감사 의미 시험, lock CLI self-check, 변경 Python 구문, 공백 검사를 로컬에서 실행했다. `catalog_refresh_check.py`는 Python 3.10의 `datetime.UTC` 부재로 미실행이다. 게이트웨이 이미지·DB 전환/경쟁·field 배포·PJ1·실제 MCP는 미실행이며 원격 HEAD도 네트워크로 확인하지 못했다. 상용 서버 outputSchema 광고 유무는 기존 현장 보고를 전제로 재측정하지 않았다. 작업 보고에 정확한 명령을 남긴다.
