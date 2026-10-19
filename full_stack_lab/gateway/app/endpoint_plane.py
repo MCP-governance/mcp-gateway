@@ -778,7 +778,8 @@ async def managed_policy(device: dict) -> dict:
                 "allowManagedMcpServersOnly": True, "allowedMcpServers": [{"serverUrl": u} for u in routes.values()],
                 "strictKnownMarketplaces": [],
                 # User, project and plugin hooks run commands the harness starts; a hook could call the
-                # header helper the harness profile may run (DEV-42). Only managed hooks load.
+                # header helper the harness profile may run (DEV-42). Only managed hooks load, and the
+                # same gate narrows statusLine and fileSuggestion to managed values (D-147).
                 "allowManagedHooksOnly": True}
     if proxy:
         settings["env"] = proxy
@@ -788,7 +789,9 @@ async def managed_policy(device: dict) -> dict:
         "managed-mcp.json": json_document({"mcpServers": {s: {"type": "http", "url": url,
                     "headersHelper": helper, "timeout": 300000} for s, url in routes.items()}}),
         "managed-settings.json": json_document(settings),
+        # Codex user and plugin hooks are the same command surface as Claude's (D-147).
         "requirements.toml": 'allowed_web_search_modes = ["disabled"]\nallow_browser_and_computer_use = false\n'
+                    'allow_managed_hooks_only = true\n'
                     + "".join(f'\n[mcp_servers.{s}]\nidentity = {{ url = {json_document(u).strip()} }}\n' for s, u in routes.items())
                     + '\n[features]\napps = false\nplugins = false\nbrowser_use = false\ncomputer_use = false\n'
                     + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n',

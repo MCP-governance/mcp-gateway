@@ -841,8 +841,11 @@ def cmd_managed(args) -> None:
     managed = {"allowAllClaudeAiMcps": False, "disableClaudeAiConnectors": True,
                "allowManagedMcpServersOnly": True,
                "allowedMcpServers": [{"serverUrl": endpoint(settings, s)} for s in settings["servers"]],
-               "strictKnownMarketplaces": [], "deniedMcpServers": []}
-    root = ['allowed_web_search_modes = ["disabled"]', "allow_browser_and_computer_use = false"]
+               "strictKnownMarketplaces": [], "deniedMcpServers": [],
+               # 훅·statusLine·fileSuggestion은 하네스가 셸로 시작하는 명령이라 헤더 헬퍼에 닿는다(D-147).
+               "allowManagedHooksOnly": True}
+    root = ['allowed_web_search_modes = ["disabled"]', "allow_browser_and_computer_use = false",
+            "allow_managed_hooks_only = true"]
     features = {"apps", "plugins", "browser_use", "computer_use"}
     apps = []
     if args.connectors:
