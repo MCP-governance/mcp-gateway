@@ -1626,7 +1626,7 @@ async def approvals(authorization: str | None = Header(default=None)):
                   (a.requested_by = %s OR p.user_id = %s) AS own,
                   a.request_payload->>'server_id' AS server_id, a.request_payload->>'tool' AS tool,
                   a.request_payload->'arguments' AS arguments, a.request_payload->'client' AS client,
-                  p.display_name, p.department, d.summary, d.policy_id, d.reason, d.data_class, d.action
+                  p.display_name, p.department, d.summary, d.policy_id, d.reason, d.data_class, d.action, a.explanation
              FROM approvals a
              LEFT JOIN principals p ON p.token = a.requested_by
              LEFT JOIN LATERAL (SELECT summary, policy_id, reason, data_class, action FROM decisions
@@ -1636,12 +1636,17 @@ async def approvals(authorization: str | None = Header(default=None)):
         # Decided (or lapsed) requests: what the queue turned into.
         db.fetch_all(
         """SELECT a.id, a.requested_by, a.created_at, a.reviewed_at, a.reviewed_by,
-                  CASE WHEN a.status='PENDING' THEN 'EXPIRED' ELSE a.status END AS status,
+                  CASE WHEN a.revoked_at IS NOT NULL THEN 'REVOKED' WHEN a.status='PENDING' THEN 'EXPIRED' ELSE a.status END AS status,
                   a.request_payload->>'server_id' AS server_id, a.request_payload->>'tool' AS tool,
-                  p.display_name, p.department
+                  p.display_name, p.department, a.explanation,
+                  (a.reviewed_by = %s) AS can_revoke
              FROM approvals a LEFT JOIN principals p ON p.token = a.requested_by
             WHERE a.status <> 'PENDING' OR a.expires_at <= now()
-            ORDER BY COALESCE(a.reviewed_at, a.expires_at) DESC LIMIT 50"""))
+            ORDER BY COALESCE(a.reviewed_at, a.expires_at) DESC LIMIT 50""", (user["principal"],)))
+    for row in pending:
+        if row.get("explanation"):
+            row["arguments"] = row["explanation"]["arguments"]
+            row["summary"] = row["explanation"]["summary"]
     return {"approvals": pending, "history": history}
 
 

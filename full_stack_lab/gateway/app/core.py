@@ -26,7 +26,7 @@ from jsonschema import Draft202012Validator
 from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, retention, secret_scan, supplier_assurance, upstream
 from .destination import DestinationBlocked
 from .outcomes import outcome_axes
-from . import selective
+from . import high_impact, selective
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint, walk_chain,
@@ -69,7 +69,7 @@ DEFAULT_ENFORCEMENT = os.getenv("GATEWAY_ENFORCEMENT", "enforce")
 # ceiling at all for as long as observation lasts.
 # P-CHAIN- (PDF integration): a read-then-export chain is a disclosure, not a permission
 # opinion; observing it would let the export through while "measuring".
-ALWAYS_ENFORCED = ("MCP-", "PAC-", "INPUT_CONTRACT", "POLICY_BUNDLE", "P-CONTROL-", "P-INPUT-", "P-RATE-", "P-CHAIN-", "P-FLOW-")
+ALWAYS_ENFORCED = ("MCP-", "PAC-", "INPUT_CONTRACT", "POLICY_BUNDLE", "P-CONTROL-", "P-INPUT-", "P-RATE-", "P-CHAIN-", "P-FLOW-", "P-HIGH-IMPACT-")
 CHAIN_WINDOW_MINUTES = int(os.getenv("CHAIN_WINDOW_MINUTES", "10"))
 RATE_LIMIT_CALLS = int(os.getenv("RATE_LIMIT_CALLS", "60"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
@@ -693,7 +693,8 @@ async def register_server(request: dict, actor: str) -> dict:
         "server-register", "approved", "server", server_id, actor, applicant=intake["submitted_by"],
         reason=request.get("purpose") or request["display_name"],
         scope={"intake": str(intake_id), "tools": spec["tools"], "valid_until": valid_until, "data_class": request["data_class"],
-               "artifact_sha256": ((spec["provenance"].get("artifact") or {}).get("sha256")), "version": spec["provenance"].get("version")})
+               "artifact_sha256": ((spec["provenance"].get("artifact") or {}).get("sha256")), "version": spec["provenance"].get("version"),
+               "impact": {name: high_impact.normalize(item) for name, item in tool_reviews.items()}})
     refreshed = await refresh_catalog(server_id)
     await upstream.release_pool(endpoint, None, "registration")
     return {"server_id": server_id, "status": refreshed["status"], "valid_until": valid_until,
@@ -754,7 +755,8 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
         await registry.sync()
     await review.record_event("tool-scope-review", "approved", "server", server_id, actor, applicant=applicant,
                               scope={"tools": {name: item["action"] for name, item in normalized.items()},
-                                     "destinations": {name: item["destinations"] for name, item in normalized.items()}})
+                                     "destinations": {name: item["destinations"] for name, item in normalized.items()},
+                                     "impact": {name: high_impact.normalize(item) for name, item in normalized.items()}})
     return {"server_id": server_id, "reviewed": sorted(normalized),
             "unreviewed": sorted(set(spec["tools"]) - set(spec["tool_reviews"]))}
 
@@ -1300,6 +1302,13 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
         raise DispatchRejected("server is not in the catalog")
     if principal is None:
         raise DispatchRejected("authenticated dispatch principal is required")
+    impact = (spec.get("tool_reviews") or {}).get(tool) or {}
+    if impact.get("high_impact") or pac_payload.get("impact_scope_sha256"):
+        approved = await db.fetch_one("SELECT * FROM approvals WHERE id=%s", (approval_id,)) if approval_id else None
+        if not (high_impact.bound(approved, pac_payload, impact, canonical_hash)
+                and approved["expires_at"] > datetime.now(UTC)):
+            raise DispatchRejected("Human approval required", local_verdict(
+                "P-HIGH-IMPACT-001", "Block", "중대 영향 호출의 개별 승인이 없습니다."))
     problem = None
     blocked_verdict = None
     payload: dict | None = None
@@ -1398,6 +1407,9 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                 elif refused == "contract":
                     problem, blocked_verdict = "Tool restricted before dispatch", local_verdict(
                         "MCP-CATALOG-001", "Block", "요청한 도구의 승인 계약을 확인할 수 없습니다.")
+                elif refused == "impact":
+                    problem, blocked_verdict = "Human approval changed before dispatch", local_verdict(
+                        "P-HIGH-IMPACT-001", "Block", "중대 영향 호출의 승인 또는 심사 범위가 유효하지 않습니다.")
                 elif refused == "approval":
                     problem = "Approval expired or was withdrawn before execution"
                 elif refused == "duplicate":
@@ -1917,6 +1929,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             base_event["error"] = _root_cause(exc)
         laps.lap("policy")
 
+        policy_basis = result
         mode = await enforcement_mode()
         base_event["enforcement"] = mode
         # A PAC denial or approval ranked below the selected policy is still in force:
@@ -1949,16 +1962,36 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             span.set_attribute("mcp.decision", result["decision"])
             span.set_attribute("mcp.policy_id", result["policy_id"])
 
+        if (tool_review.get("high_impact") or payload.get("impact_scope_sha256")) and result["decision"] != "Block":
+            approved = await db.fetch_one("SELECT * FROM approvals WHERE id=%s", (approval_id,)) if approval_granted and approval_id else None
+            if not (high_impact.bound(approved, payload, tool_review, canonical_hash)
+                    and approved["expires_at"] > datetime.now(UTC)):
+                result = local_verdict("P-HIGH-IMPACT-001", "Approval", "중대 영향 호출은 개별 사람 승인이 필요합니다.",
+                                       conflicts=[policy_basis])
+                base_event.update(result)
+                span.set_attribute("mcp.decision", result["decision"])
+                span.set_attribute("mcp.policy_id", result["policy_id"])
+
         if result["decision"] == "Approval":
             new_approval_id = str(uuid.uuid4())
             stored = {k: payload.get(k) for k in ("server_id", "tool", "arguments", "user_token", "client", "transport_claims")}
             stored.update(pac_request_id=request_id, pac_digest=pac.digest(policy_input["pac"]))
-            await db.execute(
-                """INSERT INTO approvals(id, request_fingerprint, request_payload, status, requested_by, expires_at)
-                   VALUES (%s,%s,%s,'PENDING',%s,%s)""",
-                (new_approval_id, canonical_hash(stored), Jsonb(stored), user_token,
-                 datetime.now(UTC) + timedelta(minutes=APPROVAL_TTL_MINUTES)),
-            )
+            explanation = None
+            if tool_review.get("high_impact"):
+                stored["impact_scope_sha256"] = canonical_hash(high_impact.terms(tool_review))
+                explanation = high_impact.explanation(new_approval_id, arguments, tool_review,
+                    policy_basis, cls.data_class, cls.action, server_id, tool)
+            async with db.transaction() as connection:
+                await connection.execute(
+                    """INSERT INTO approvals(id, request_fingerprint, request_payload, status, requested_by, expires_at, explanation)
+                       VALUES (%s,%s,%s,'PENDING',%s,%s,%s)""",
+                    (new_approval_id, canonical_hash(stored), Jsonb(stored), user_token,
+                     datetime.now(UTC) + timedelta(minutes=APPROVAL_TTL_MINUTES), Jsonb(explanation)),
+                )
+                if explanation:
+                    await review.record_event("call-request", "recorded", "approval", new_approval_id, user_token,
+                        applicant=user_token, scope={"explanation": explanation, "request_fingerprint": canonical_hash(stored)},
+                        connection=connection)
             base_event["approval_id"] = new_approval_id
         elif result["decision"] in {"Allow", "Alert", "Restrict"}:
             effective, applied = classify.apply_restrictions(cls, outbound, result.get("restrictions") or {})
@@ -2029,7 +2062,8 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         return await _decision_payload(base_event, laps)
 
 
-async def approve_request(approval_id: str, reviewer_token: str, reason: str | None = None) -> dict:
+async def approve_request(approval_id: str, reviewer_token: str, reason: str | None = None,
+                          evidence_sha256: str | None = None) -> dict:
     reviewer = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (reviewer_token,))
     if not reviewer or reviewer["role"] != "admin" or reviewer["status"] != "active":
         raise ValueError("합성 관리자만 승인할 수 있습니다.")
@@ -2048,6 +2082,14 @@ async def approve_request(approval_id: str, reviewer_token: str, reason: str | N
     if row["expires_at"] <= datetime.now(UTC):
         await db.execute("UPDATE approvals SET status='EXPIRED' WHERE id=%s AND status='PENDING'", (approval_id,))
         raise ValueError("승인 요청의 10분 유효시간이 지났습니다.")
+
+    if row.get("explanation"):
+        await _require_explanation(row, reviewer_token, evidence_sha256)
+        if reason != "scope_confirmed":
+            raise ValueError("중대 영향 요청의 검토 근거가 필요합니다.")
+        reason = high_impact.REASONS[reason]
+        call = {"explanation": row["explanation"], "evidence_sha256": evidence_sha256,
+                "request_fingerprint": row["request_fingerprint"]}
 
     async with db.transaction() as connection:
         claimed = await (await connection.execute(
@@ -2074,6 +2116,56 @@ async def approve_request(approval_id: str, reviewer_token: str, reason: str | N
         (final_status, result["decision_id"], approval_id),
     )
     return result
+
+
+async def approval_evidence(approval_id: str, actor: str) -> dict:
+    row = await db.fetch_one("SELECT * FROM approvals WHERE id=%s", (approval_id,))
+    if not row or not row.get("explanation"):
+        raise ValueError("중대 영향 결정 증빙이 없습니다.")
+    digest = canonical_hash(row["explanation"])
+    await review.record_event("call-explanation-view", "recorded", "approval", approval_id, actor,
+                              scope={"evidence_sha256": digest})
+    events = await review.events_for("approval", approval_id)
+    # Free-form reasons and request/response bodies are never copied into the export.
+    history = [{"id": e["id"], "kind": e["kind"], "outcome": e["outcome"], "actor": e["actor"],
+                "created_at": e["created_at"],
+                "reason": e["reason"] if e.get("reason") in high_impact.REASONS.values() else None}
+               for e in events]
+    decisions = await db.fetch_all(
+        """SELECT id, decision, policy_id, upstream_executed, upstream_attempted, outcome, created_at
+           FROM decisions WHERE approval_id=%s ORDER BY id""", (approval_id,))
+    return {"explanation": row["explanation"], "evidence_sha256": digest,
+            "status": "REVOKED" if row.get("revoked_at") else row["status"],
+            "events": history, "decisions": decisions, "effect_reversal": False}
+
+
+async def _require_explanation(row: dict, actor: str, digest: str | None) -> None:
+    if digest != canonical_hash(row["explanation"]) or not await db.fetch_one(
+        """SELECT id FROM approval_events WHERE target_kind='approval' AND target_id=%s
+           AND kind='call-explanation-view' AND actor=%s AND scope->>'evidence_sha256'=%s LIMIT 1""",
+        (str(row["id"]), actor, digest)):
+        raise ValueError("설명 증빙을 열람한 뒤 처리해야 합니다.")
+
+
+async def revoke_approval(approval_id: str, actor: str, digest: str) -> dict:
+    person = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (actor,))
+    row = await db.fetch_one("SELECT * FROM approvals WHERE id=%s", (approval_id,))
+    if not person or person["role"] != "admin" or person["status"] != "active":
+        raise ValueError("관리자만 승인을 번복할 수 있습니다.")
+    if not row or not row.get("explanation") or not await review.same_person(actor, row.get("reviewed_by")):
+        raise ValueError("중대 영향 호출의 승인자만 번복할 수 있습니다.")
+    await _require_explanation(row, actor, digest)
+    async with db.transaction() as connection:
+        changed = await (await connection.execute(
+            """UPDATE approvals SET revoked_at=now(), revoked_by=%s WHERE id=%s AND revoked_at IS NULL
+               AND status IN ('APPROVED','UNCONFIRMED','EXECUTED','NOT_EXECUTED') RETURNING id""",
+            (actor, approval_id))).fetchone()
+        if not changed:
+            raise ValueError("번복할 수 있는 승인이 아닙니다.")
+        await review.record_event("call-revoke", "recorded", "approval", approval_id, actor,
+            applicant=row["requested_by"], reason=high_impact.REASONS["approval_withdrawn"],
+            scope={"explanation": row["explanation"], "evidence_sha256": digest, "effect_reversal": False}, connection=connection)
+    return {"approval_id": approval_id, "status": "REVOKED", "effect_reversal": False}
 
 
 def _trivy_summary(data: dict) -> tuple[dict, dict]:
@@ -2129,7 +2221,8 @@ async def supply_chain_coverage() -> list[dict]:
     )
 
 
-async def reject_request(approval_id: str, reviewer_token: str, note: str) -> dict:
+async def reject_request(approval_id: str, reviewer_token: str, note: str,
+                         evidence_sha256: str | None = None) -> dict:
     """The other half of an approval.
 
     Without it a reviewer's only options are "approve" or "let it expire", and the
@@ -2140,6 +2233,15 @@ async def reject_request(approval_id: str, reviewer_token: str, note: str) -> di
         raise ValueError("합성 관리자만 승인 요청을 처리할 수 있습니다.")
     if not note.strip():
         raise ValueError("거부 사유는 비워둘 수 없습니다.")
+    row = await db.fetch_one("SELECT * FROM approvals WHERE id=%s", (approval_id,))
+    scope = {"server": (row or {}).get("request_payload", {}).get("server_id"),
+             "tool": (row or {}).get("request_payload", {}).get("tool")}
+    if row and row.get("explanation"):
+        await _require_explanation(row, reviewer_token, evidence_sha256)
+        if note != "request_inappropriate":
+            raise ValueError("거부 근거가 올바르지 않습니다.")
+        note = high_impact.REASONS[note]
+        scope = {"explanation": row["explanation"], "evidence_sha256": evidence_sha256}
     async with db.transaction() as connection:
         claimed = await (await connection.execute(
             """UPDATE approvals SET status='REJECTED', reviewed_by=%s, reviewed_at=now(), review_note=%s
@@ -2147,8 +2249,7 @@ async def reject_request(approval_id: str, reviewer_token: str, note: str) -> di
             (reviewer_token, note.strip(), approval_id))).fetchone()
         if claimed:
             await review.record_event("call-reject", "rejected", "approval", approval_id, reviewer_token, applicant=claimed["requested_by"],
-                                      reason=note.strip(), scope={"server": claimed["request_payload"].get("server_id"),
-                                                                  "tool": claimed["request_payload"].get("tool")}, connection=connection)
+                                      reason=note.strip(), scope=scope, connection=connection)
     if not claimed:
         raise ValueError("대기 중인 승인 요청이 아닙니다.")
     spec = registry.server(claimed["request_payload"].get("server_id"))

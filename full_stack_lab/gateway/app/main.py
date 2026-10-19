@@ -180,6 +180,12 @@ class StrictModel(BaseModel):
 
 class RejectRequest(StrictModel):
     note: str = Field(min_length=1, max_length=500)
+    evidence_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+
+
+class ApprovalEvidence(StrictModel):
+    evidence_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    reason: Literal["scope_confirmed"] = "scope_confirmed"
 
 
 class IntentResolve(StrictModel):
@@ -615,9 +621,10 @@ async def session(request: SessionRequest) -> dict:
 
 
 @app.post("/api/approvals/{approval_id}/approve")
-async def approve(approval_id: str, user: dict = Depends(admin_caller)) -> dict:
+async def approve(approval_id: str, request: ApprovalEvidence | None = None, user: dict = Depends(admin_caller)) -> dict:
     try:
-        return await approve_request(approval_id, user["principal"])
+        return await approve_request(approval_id, user["principal"],
+            request.reason if request else None, request.evidence_sha256 if request else None)
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 
@@ -625,7 +632,23 @@ async def approve(approval_id: str, user: dict = Depends(admin_caller)) -> dict:
 @app.post("/api/approvals/{approval_id}/reject")
 async def reject(approval_id: str, request: RejectRequest, user: dict = Depends(admin_caller)) -> dict:
     try:
-        return await reject_request(approval_id, user["principal"], request.note)
+        return await reject_request(approval_id, user["principal"], request.note, request.evidence_sha256)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@app.get("/api/approvals/{approval_id}/evidence")
+async def approval_evidence(approval_id: UUID, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await core.approval_evidence(str(approval_id), user["principal"])
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@app.post("/api/approvals/{approval_id}/revoke")
+async def approval_revoke(approval_id: UUID, request: ApprovalEvidence, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await core.revoke_approval(str(approval_id), user["principal"], request.evidence_sha256)
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 

@@ -60,10 +60,20 @@ DEV-68 공급자 지원 종료는 도입 등록의 `valid_until` 상한으로 �
 | 130 | P-IMPORTANT-ALERT-001 | 경고 | 중요정보 열람 |
 | 136 | P-SCOPE-001 | 경고 | 이용 관계가 허용한 자원 밖(`relationship.in_scope=false`, D-39). 관계가 없는 서버·값이 없는 입력은 판단하지 않는다 |
 | 140 | P-AUTHZ-ALLOW-001 | 허용 | PAC 실행 범위 충족 |
+| 2013 | P-HIGH-IMPACT-001 | 추가 승인 | 중대 영향 도구의 개별 사람 승인·설명 열람 필요. 게이트웨이 로컬 집행(D-139) |
 
 Gateway 쪽(OPA 밖)에서 나오는 판정: `P-INPUT-SCHEMA-001`(승인 스키마 위반), `P-INPUT-FIELD-001`(도구 심사의 허용 입력 항목 밖, D-131), `P-CONSENT-001`(실행될 호출에 본인의 유효한 사용자 동의 없음, 확인 요청 생성, D-134), `P-DATA-INSPECTION-001`
 (Presidio 입력 검사 불능, priority 2010), `MCP-OUTPUT-001`(실행됐지만 결과 보류 — 크기·주입 표지·출력 개인정보
 검사 불능), `MCP-UPSTREAM-001`(상위 오류), `P-CONTROL-FAIL-CLOSED`(OPA 불능), `P-MONITOR-001`(관찰 모드).
+
+`P-HIGH-IMPACT-001`은 도구 심사의 `high_impact=true`에 대해 개별 사람 승인을 강제한다(D-139, POL-27·38·22).
+영향 영역은 고용·급여, 신용, 법적 효력, 급부, 계약, 서비스 접근이다. 관리대장 priority는 **2013**, 결과는 **추가 승인**이다.
+OPA의 DB 없는 불리언 `approval.granted`만으로 인적 개입 증빙을 검증할 수 없으므로 게이트웨이에서 집행한다.
+관찰 모드 투영 뒤, 실행 전에 적용하며 집행 중인 선행 차단은 유지한다. 승인 재실행은 기존 모든 정책을 다시 거친다.
+최종 전송 트랜잭션은 현재 도구 범위와 승인 사건·요청 지문을 대조하고 승인 행을 한 번 소비한다. 기한·철회·재사용·심사 범위 변경은 전송을 막는다.
+승인자는 설명 증빙을 열람한 기록과 검토 근거가 있어야 승인할 수 있다. 번복은 별도 사건과 철회 시각으로 남기며 **이미 실행된 효과를 복구하지 않는다**.
+개인정보 본문 없는 설명·개입·판정 번들은 관리자 인증의 `/api/approvals/{id}/evidence`에서 조회·내보낸다.
+OPA만 실행하는 정책 재생은 이 로컬 통제를 검증하지 않는다. [호출 경로·원자 요구사항·한계](../../research/llm-wiki/analysis/high-impact/README.md).
 
 OPA 입력의 개인정보 관련 필드: `request.pii_types`(Presidio 엔터티 유형만 — 값은 넣지 않는다),
 `request.sequence_flags`, `request.dlp`(분류기의 정규식 DLP 라벨, `P-DLP-001`), `destinations[].external`.

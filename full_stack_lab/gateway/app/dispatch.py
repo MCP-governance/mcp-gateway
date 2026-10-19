@@ -10,8 +10,9 @@ system closes it; until then an identical write is refused (P-RATE-003).
 from __future__ import annotations
 
 import os
+from psycopg.types.json import Jsonb
 
-from . import db
+from . import db, high_impact
 from .contract import canonical_hash
 
 # Sent and not answered: recorded as such (timeout, lost response), or still marked
@@ -82,9 +83,23 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
             # Last, after the per-principal wait: a share lock held across that wait starves a termination.
             # Acquire before the INSERT so a snapshot published while waiting is visible
             # to the next statement under READ COMMITTED, not the pre-lock snapshot.
-            await connection.execute(
-                """SELECT s.id FROM mcp_servers s JOIN call_reservations r ON r.server_id=s.id
-                   WHERE r.request_id=%s FOR SHARE OF s""", (request_id,))
+            tool = await (await connection.execute(
+                """SELECT s.id, t.scope_review FROM mcp_servers s JOIN call_reservations r ON r.server_id=s.id
+                   JOIN mcp_tools t ON t.server_id=s.id AND t.name=r.tool_name
+                   WHERE r.request_id=%s FOR SHARE OF s, t""", (request_id,))).fetchone()
+            impact = (tool or {}).get("scope_review") or {}
+            approval = await (await connection.execute(
+                "SELECT * FROM approvals WHERE id=%s FOR UPDATE", (approval_id,))).fetchone() if approval_id else None
+            approved = (approval or {}).get("request_payload") or {}
+            if impact.get("high_impact") or approved.get("impact_scope_sha256"):
+                if not high_impact.bound(approval, approved, impact, canonical_hash):
+                    raise _Refused("impact")
+                if not await (await connection.execute(
+                    """SELECT id FROM approval_events WHERE target_kind='approval' AND target_id=%s
+                       AND kind='call-approve' AND outcome='approved' AND actor=%s
+                       AND scope->'explanation'=%s AND scope->>'request_fingerprint'=%s LIMIT 1""",
+                    (str(approval_id), approval["reviewed_by"], Jsonb(approval["explanation"]), approval["request_fingerprint"]))).fetchone():
+                    raise _Refused("impact")
             if not (await connection.execute(_INSERT, (action, request_id))).rowcount:
                 raise _Refused
             if approval_id:
@@ -99,7 +114,7 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
                         {"server": approved.get("server_id"), "tool": approved.get("tool"), "arguments": approved.get("arguments")}):
                     raise _Refused("approval")
                 if not (await connection.execute(
-                        "UPDATE approvals SET status = 'UNCONFIRMED' WHERE id = %s AND status = 'APPROVED' AND expires_at > clock_timestamp()",
+                        "UPDATE approvals SET status = 'UNCONFIRMED' WHERE id = %s AND status = 'APPROVED' AND revoked_at IS NULL AND expires_at > clock_timestamp()",
                         (approval_id,))).rowcount:
                     raise _Refused("approval")
         return None

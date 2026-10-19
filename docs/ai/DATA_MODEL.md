@@ -156,3 +156,10 @@ v2 코드는 읽지도 쓰지도 않는다 → [ROADMAP.md](ROADMAP.md) 정리 �
 `mcp_intake_requests.evidence`는 `scanners`(검사기별 DONE/FAILED·오류), `reports`(해당 시도의 성공한 산출물 이름), `exit_terms_discovery`(commit 고정 문서 후보 근거), SBOM 구성요소 수·위험 등급별 수를 담는다. `exit_terms`의 관리자 검증 기록과 자동 조사 결과는 별도 필드다.
 
 `validation_lease_expires_at`와 `validation_attempts`는 VALIDATING 작업의 중단 복구에 쓰인다. 신규 요청은 API의 단일 INSERT에서 VALIDATION_QUEUED가 된다. Syft·Trivy·Semgrep·Gitleaks의 정규화 요약은 `supply_chain_reports`에 남고 Console은 source_ref뿐 아니라 신청 UUID가 포함된 report_path로 귀속을 제한한다. Gitleaks 산출물은 RuleID·상대 파일·행·설명만 남기고 Secret/Match를 제거한다. 부분 검사 실패 시 수집한 증적은 남지만 요청 상태는 FAILED이며 승인되지 않는다.
+
+## 중대 영향 개별 승인 증빙 (D-139)
+
+`approvals.explanation`은 요청 생성 시 고정한 원문 없는 설명 JSONB다. `revoked_at`·`revoked_by`는 승인 후 원승인자의 번복을 기록한다. 기존 status는 실행 경과를 유지하며 조회에서 revoked_at이 있으면 「승인 번복」으로 표시한다.
+`request_payload.impact_scope_sha256`은 심사자/시각을 제외한 도구 범위 해시다. 기존 request_fingerprint는 원래 주체·서버·도구·인자를 포함한 저장 요청 전체를 결속한다. 최종 전송에서 현재 scope_review와 대조한다.
+`approval_events`의 call-request/recorded, call-explanation-view/recorded, call-approve/approved, call-reject/rejected, call-revoke/recorded를 재사용한다. 신청·승인·거부·번복은 해당 상태 변경과 같은 트랜잭션으로 기록하며 사건/판정 행의 UPDATE·DELETE는 추가하지 않는다. 열람은 별도 append다.
+설명·개입·판정 번들에는 인자 키·값·요청/응답 본문·자유 산문을 포함하지 않는다. 번복은 이미 전송된 호출이나 외부 효과를 복구하지 않는다. 실제 PostgreSQL 검증은 기기에서 수행한다.

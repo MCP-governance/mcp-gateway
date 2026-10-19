@@ -10,7 +10,7 @@ from uuid import uuid4
 import jwt
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from . import db
 
@@ -42,6 +42,14 @@ class ToolReview(StrictModel):
     accepts_from: list[str] = Field(default_factory=list, max_length=20)
     # POL-08: the employee's own consent is needed per tool and data grade.
     consent: bool = False
+    high_impact: bool = Field(default=False, strict=True)
+    impact_domains: list[Literal["employment", "credit", "legal", "benefits", "contract", "service_access"]] = Field(default_factory=list, max_length=6)
+
+    @model_validator(mode="after")
+    def impact_scope(self):
+        from .high_impact import normalize
+        normalize(self.model_dump())
+        return self
 
 
 def _key_material(name: str) -> bytes:
