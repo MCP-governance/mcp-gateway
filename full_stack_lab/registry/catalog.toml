@@ -14,6 +14,7 @@ gateway_url = ""
 
 [organization]
 name = "BoB Corp"
+machine_location = { processing_countries = ["KR"], storage_countries = ["KR"], processor = "조직", evidence_ref = "조직 기기 배치 설정" }
 internal_email_domains = ["bob.local"]
 # Web hosts employees may reach through fetch/playwright. Anything else that
 # resolves inside the lab is infrastructure (SSRF target) and is never allowed.

@@ -30,10 +30,10 @@ from pydantic import Field
 from psycopg.types.json import Jsonb
 
 from . import connections, consent, core, db, oidc, provenance, review, upstream
-from . import supplier_assurance
+from . import risk_tier, supplier_assurance
 from .release import build_info
 from .system_metrics import SystemMetrics
-from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, ToolReview, authenticate,
+from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, ResidencyFields, ToolReview, authenticate,
                              authenticated_user, issue_token, private_key)
 from .connectors import router as connectors_router
 from .integrations import router as integrations_router
@@ -237,6 +237,15 @@ async def request_signup(request: Signup, http_request: Request):
     return {"status": "pending", "message": "가입 요청을 접수했습니다. 관리자 승인 후 로그인할 수 있습니다."}
 
 
+class ImpactInput(StrictModel):
+    data_class: Literal["public", "nonimportant", "important"]
+    personal_data: Literal["none", "general", "unique_id", "sensitive"]
+    external_transfer: bool
+    permission: Literal["r", "w", "x"]
+    users: int = Field(ge=1, le=risk_tier.MAX_USERS)
+    autonomy: Literal["approve_each", "supervised", "autonomous"]
+
+
 class McpIntake(StrictModel):
     display_name: str = Field(min_length=2, max_length=80)
     repository_url: str = Field(default="", max_length=300)
@@ -244,6 +253,8 @@ class McpIntake(StrictModel):
     endpoint_url: str = Field(default="", max_length=500)
     requested_transport: Literal["streamable-http", "stdio", "sse"]
     purpose: str = Field(min_length=10, max_length=1000)
+    # Optional on the wire so older clients keep working; approval holds a request that has none (DEV-71).
+    risk_input: ImpactInput | None = None
 
 
 class ExitTermsReview(StrictModel):
@@ -883,7 +894,7 @@ async def intake_rows(user: dict) -> list[dict]:
     query = """SELECT r.id, r.submitted_by, r.display_name, r.repository_url, r.requested_transport, r.purpose,
                       r.status, r.risk_level, r.review_note, r.reviewed_by, r.reviewed_at, r.created_at, r.updated_at,
                       r.commit_sha, r.source_ref, r.evidence, r.validated_at, r.exit_terms, r.internal_repo_url,
-                      r.registered_server_id, r.intake_kind, r.endpoint_url, r.provenance,
+                      r.registered_server_id, r.intake_kind, r.endpoint_url, r.provenance, r.risk_input,
                       (r.submitted_by = %s OR p.user_id = %s) AS own, rt.runtime, s.endpoint AS registered_endpoint
                FROM mcp_intake_requests r LEFT JOIN principals p ON p.token = r.submitted_by
                LEFT JOIN mcp_servers s ON s.id = r.registered_server_id
@@ -895,8 +906,29 @@ async def intake_rows(user: dict) -> list[dict]:
         rows = await db.fetch_all(query + " ORDER BY r.created_at DESC LIMIT 100", me)
         for row in rows:
             row["runtime_recipe"] = bool(row["intake_kind"] == "repository" and runtime_recipe(row["repository_url"]))
-        return rows
-    return await db.fetch_all(query + " WHERE r.submitted_by=%s ORDER BY r.created_at DESC LIMIT 100", (*me, user["principal"]))
+        return await with_risk(rows, counted=True)
+    return await with_risk(await db.fetch_all(query + " WHERE r.submitted_by=%s ORDER BY r.created_at DESC LIMIT 100",
+                                              (*me, user["principal"])))
+
+
+async def with_risk(rows: list[dict], counted: bool = False) -> list[dict]:
+    """Each request carries its tier and, for administrators, how many different people already
+    recorded their approval of this same input."""
+    firsts: dict[str, set[tuple[str, str]]] = {}
+    if counted and rows:
+        for event in await db.fetch_all(
+                """SELECT target_id, actor, scope->>'input_sha256' AS digest FROM approval_events
+                    WHERE kind='intake-cosign' AND target_kind='intake' AND target_id = ANY(%s::text[])""",
+                ([str(row["id"]) for row in rows],)):
+            firsts.setdefault(event["target_id"], set()).add((event["actor"], event["digest"]))
+    for row in rows:
+        stated = risk_tier.assess(row.get("risk_input"))
+        rule = risk_tier.APPROVAL.get(stated["tier"])
+        row["risk"] = {"status": stated["status"], "tier": stated["tier"], "score": stated["score"],
+                       "missing": stated["missing"], "required": rule and rule["approvers"], "reason": rule and rule["reason"],
+                       "approvals": len({actor for actor, digest in firsts.get(str(row["id"]), ())
+                                         if digest == stated.get("input_sha256")})}
+    return rows
 
 
 @app.get("/api/mcp-requests")
@@ -1039,10 +1071,12 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
     # 둘을 같이 막으면, 스캐너 장애 한 번이 그 저장소를 영구히 신청 불가로 만든다.
     # 실제로 워커의 semgrep이 깨져 있던 동안 들어온 요청이 전부 그렇게 됐다.
     # 실패한 시도의 행과 사유는 그대로 남으므로 증적이 사라지지는 않는다.
+    # A source approval made before impact input existed does not block a new request: that is how it is
+    # approved again with the input it lacks (DEV-71).
     existing = await db.fetch_one(
         "SELECT id, status FROM mcp_intake_requests"
         " WHERE intake_kind=%s AND COALESCE(endpoint_url,repository_url)=%s AND status NOT IN ('REJECTED', 'FAILED')"
-        " AND (status <> 'APPROVED' OR intake_kind='repository')",
+        " AND (status <> 'APPROVED' OR (intake_kind='repository' AND jsonb_typeof(evidence->'risk_assessment')='object'))",
         (request.intake_kind, endpoint or repository_url),
     )
     if existing:
@@ -1053,13 +1087,14 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
         row = await (await connection.execute(
             """INSERT INTO mcp_intake_requests(
                      id, submitted_by, display_name, repository_url, requested_transport,
-                     purpose, exit_terms, status, intake_kind, endpoint_url
-                 ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                     purpose, exit_terms, status, intake_kind, endpoint_url, risk_input
+                 ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                  RETURNING id, display_name, repository_url, requested_transport, purpose,
                            status, risk_level, exit_terms, created_at, intake_kind, endpoint_url""",
             (uuid4(), user["principal"], request.display_name.strip(), repository_url,
              request.requested_transport, request.purpose.strip(), Jsonb({}),
-             "HOLD" if endpoint else "VALIDATION_QUEUED", request.intake_kind, endpoint))).fetchone()
+             "HOLD" if endpoint else "VALIDATION_QUEUED", request.intake_kind, endpoint,
+             Jsonb(request.risk_input.model_dump() if request.risk_input else {})))).fetchone()
         if row:
             await review.record_event("user-consent", "recorded", "intake", row["id"], user["principal"],
                                       applicant=user["principal"], reason=request.purpose.strip(),
@@ -1216,6 +1251,7 @@ async def intake_report(request_id: UUID, authorization: str | None = Header(def
             available.append({"kind": kind, "filename": name,
                               "url": f"/api/mcp-requests/{request_id}/artifacts/{kind}"})
     return {"request": row, "reports": reports, "artifacts": available,
+            "risk": {**risk_tier.assess(row.get("risk_input")), "package": risk_tier.package(row.get("risk_input"), row)},
             "exit_terms_discovery": (row.get("evidence") or {}).get("exit_terms_discovery"),
             "gate": await review.intake_gate(row), "events": await review.events_for("intake", request_id),
             "runtimes": await db.fetch_all(
@@ -1262,6 +1298,26 @@ def exit_term_flags(row: dict) -> dict[str, bool]:
     return {key: (concluded.get(key) or {}).get("verdict") == "met" for key in EXIT_TERM_KEYS}
 
 
+@app.put("/api/mcp-requests/{request_id}/risk-input")
+async def set_risk_input(request_id: UUID, stated: ImpactInput, authorization: str | None = Header(default=None)):
+    """A request filed without its impact input, or with a wrong one, is completed before approval.
+    The change is a recorded event, and earlier first approvals stop counting because they name the old input."""
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "영향평가 입력은 관리자만 고칠 수 있습니다.")
+    values = stated.model_dump()
+    assessed = risk_tier.assess(values)
+    row = await review.transition(
+        """UPDATE mcp_intake_requests SET risk_input=%s, updated_at=now()
+           WHERE id=%s AND status IN ('HOLD','VALIDATION_QUEUED','VALIDATING','VALIDATED','REMOTE_REVIEWED')
+           RETURNING id, status, risk_input""", (Jsonb(values), request_id),
+        kind="risk-input", outcome="recorded", target_kind="intake", target_id=request_id, actor=user["principal"],
+        scope={"tier": assessed["tier"], "score": assessed["score"], "input_sha256": assessed["input_sha256"]})
+    if not row:
+        raise HTTPException(409, "승인 전 도입 요청만 영향평가 입력을 바꿀 수 있습니다.")
+    return {"request": row, "risk": assessed, "message": f"위험 등급 {risk_tier.TIER_LABELS[assessed['tier']]}으로 기록했습니다."}
+
+
 class IntakeApproval(StrictModel):
     risk_acceptance: str = Field(default="", max_length=1000)
     license: str = Field(default="", max_length=60)
@@ -1289,6 +1345,41 @@ async def hold_intake(request_id: UUID, row: dict, user: dict, messages: list[st
            WHERE id=%s AND status IN ('VALIDATED', 'REMOTE_REVIEWED') RETURNING id""", (note, request_id),
         kind=kind, outcome="held", target_kind="intake", target_id=request_id, actor=user["principal"],
         applicant=row["submitted_by"], reason=note, scope={"was": row["status"]})
+
+
+async def risk_tier_gate(request_id: UUID, row: dict, user: dict, reason: str) -> dict:
+    """The approval method the request's tier calls for. A request without complete input is held; the
+    first of two required approvers is recorded and answered with `pending`; anything else is approvable."""
+    assessed = risk_tier.assess(row.get("risk_input"))
+    if assessed["status"] != "ok":
+        await hold_intake(request_id, row, user, assessed["messages"])
+        raise HTTPException(409, "승인할 수 없습니다: " + " / ".join(assessed["messages"]))
+    others: list[str] = []
+    for event in await db.fetch_all(
+            """SELECT DISTINCT actor FROM approval_events
+                WHERE kind='intake-cosign' AND target_kind='intake' AND target_id=%s AND scope->>'input_sha256'=%s""",
+            (str(request_id), assessed["input_sha256"])):
+        earlier = event["actor"]
+        if not await review.same_person(earlier, user["principal"]) and not [
+                seen for seen in others if await review.same_person(earlier, seen)]:
+            others.append(earlier)
+    verdict, message = risk_tier.decide(assessed["tier"], 1 + len(others), reason)
+    if verdict == "refuse":
+        raise HTTPException(409, "승인할 수 없습니다: " + message)
+    if verdict == "cosign":
+        done = await db.fetch_one(
+            """SELECT 1 AS found FROM approval_events WHERE kind='intake-cosign' AND target_kind='intake' AND target_id=%s
+                  AND actor=%s AND scope->>'input_sha256'=%s""", (str(request_id), user["principal"], assessed["input_sha256"]))
+        if not done:
+            await review.record_event("intake-cosign", "recorded", "intake", request_id, user["principal"],
+                                      applicant=row["submitted_by"], reason=(reason or "").strip() or None,
+                                      scope={"tier": assessed["tier"], "input_sha256": assessed["input_sha256"],
+                                             "approvers": 1 + len(others)})
+        return {"pending": True, "message": message}
+    return {"pending": False, "record": {
+        "tier": assessed["tier"], "score": assessed["score"], "floors": assessed["floors"],
+        "input_sha256": assessed["input_sha256"], "version": assessed["version"],
+        "approvers": [user["principal"], *others], "written_reason": len((reason or "").strip()) >= risk_tier.MIN_REASON}}
 
 
 @app.post("/api/mcp-requests/{request_id}/approve")
@@ -1322,6 +1413,12 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
         if remote:
             await hold_intake(request_id, remote, user, assurance_errors)
         raise HTTPException(409, "승인할 수 없습니다: " + " / ".join(assurance_errors))
+    risk_record = None
+    if remote and remote["status"] in {"VALIDATED", "REMOTE_REVIEWED"}:
+        gated = await risk_tier_gate(request_id, remote, user, approval_values.risk_acceptance)
+        if gated["pending"]:
+            return {"request": {"id": remote["id"], "status": remote["status"]}, "pending": True, "message": gated["message"]}
+        risk_record = gated["record"]
     if remote:
         remote = {**remote, "supplier_assurance": assurance}
     if remote and remote.get("intake_kind") == "remote-endpoint":
@@ -1344,7 +1441,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
                 or found["server_name"] != reviewed["advertised_name"]
                 or found["protocol_version"] != reviewed["protocol_version"]):
             raise HTTPException(409, "검토 후 공급자 계약이 바뀌었습니다. 다시 검토하세요.")
-        evidence = {**remote["evidence"], "supplier_assurance": assurance, "remote_approval": {
+        evidence = {**remote["evidence"], "supplier_assurance": assurance, "risk_assessment": risk_record, "remote_approval": {
             "actor": user["principal"], "at": datetime.now(UTC).isoformat(),
             "review_digest": core.canonical_hash(reviewed), "risk_acceptance": risk,
             "code_scan_performed": False}}
@@ -1355,7 +1452,9 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
                 (Jsonb(evidence), user["principal"], request_id, Jsonb(remote["evidence"])),
                 kind="intake-approve", outcome="approved", target_kind="intake", target_id=request_id,
                 actor=user["principal"], applicant=remote["submitted_by"], reason=risk or reviewed.get("review_note"),
-                scope={"endpoint": remote["endpoint_url"], "tools": reviewed["registration"]["tools"],
+                scope={"risk_tier": risk_record["tier"], "approvers": risk_record["approvers"],
+                       "endpoint": remote["endpoint_url"], "tools": reviewed["registration"]["tools"],
+                       "residency": reviewed["registration"].get("residency") or {},
                        "data_class": reviewed["registration"]["data_class"], "valid_until": reviewed["valid_until"],
                        "allowed_principals": reviewed["allowed_principals"], "contract_sha256": reviewed["registration"]["catalog_hash"]})
         if not row:
@@ -1395,7 +1494,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
         raise HTTPException(409, f"배포 파일이 검증한 것과 달라 보류했습니다: {exc}") from exc
     record["verification"] = {**checked, "by": user["principal"], "at": datetime.now(UTC).isoformat(timespec="seconds")}
     critical = gate["critical"] or {}
-    evidence = {**(pending.get("evidence") or {}), "supplier_assurance": assurance}
+    evidence = {**(pending.get("evidence") or {}), "supplier_assurance": assurance, "risk_assessment": risk_record}
     row = await review.transition(
         """UPDATE mcp_intake_requests
            SET status='APPROVED', internal_repo_url=%s, evidence=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now(),
@@ -1405,7 +1504,8 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
         (internal_repo_url, Jsonb(evidence), user["principal"], Jsonb(terms), Jsonb(record), request_id),
         kind="intake-approve", outcome="approved", target_kind="intake", target_id=request_id,
         actor=user["principal"], applicant=pending["submitted_by"], reason=risk or None,
-        scope={"source": pending["repository_url"], "commit": pending["commit_sha"],
+        scope={"risk_tier": risk_record["tier"], "approvers": risk_record["approvers"],
+               "source": pending["repository_url"], "commit": pending["commit_sha"],
                "license": (record.get("license") or {}).get("spdx"),
                "artifact_sha256": (record.get("artifact") or {}).get("sha256"), "verified_sha256": checked["sha256"],
                "critical_accepted": critical.get("count", 0) if critical.get("covered") else 0,
@@ -1435,7 +1535,7 @@ async def accept_intake_risk(request_id: UUID, request: RiskAcceptance, authoriz
     return {"acceptance": accepted, "message": f"{accepted['expires_at'].date()}까지 위험 수용을 기록했습니다."}
 
 
-class IntakeRegistration(StrictModel):
+class IntakeRegistration(ResidencyFields):
     server_id: str = Field(pattern=r"^[a-z][a-z0-9-]{1,30}$")
     endpoint: str = Field(min_length=8, max_length=500)
     catalog_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -1523,6 +1623,7 @@ async def review_remote_contract(request_id: UUID, proposal: RemoteContractRevie
               kind="contract-review", outcome="recorded", target_kind="intake", target_id=request_id,
               actor=user["principal"], applicant=row["submitted_by"], reason=proposal.review_note,
               scope={"endpoint": row["endpoint_url"], "tools": proposal.tools, "data_class": proposal.data_class,
+                      "residency": proposal.residency,
                      "valid_until": contract["valid_until"], "allowed_principals": contract["allowed_principals"],
                      "tool_reviews": {name: {"asset": item.asset, "destinations": item.destinations}
                                       for name, item in proposal.tool_reviews.items()}})
@@ -1626,10 +1727,12 @@ async def approvals(authorization: str | None = Header(default=None)):
                   (a.requested_by = %s OR p.user_id = %s) AS own,
                   a.request_payload->>'server_id' AS server_id, a.request_payload->>'tool' AS tool,
                   a.request_payload->'arguments' AS arguments, a.request_payload->'client' AS client,
-                  p.display_name, p.department, d.summary, d.policy_id, d.reason, d.data_class, d.action, a.explanation
+                  p.display_name, p.department, d.summary, d.policy_id, d.reason, d.data_class, d.action,
+                  a.explanation, d.residency_targets
              FROM approvals a
              LEFT JOIN principals p ON p.token = a.requested_by
-             LEFT JOIN LATERAL (SELECT summary, policy_id, reason, data_class, action FROM decisions
+             LEFT JOIN LATERAL (SELECT summary, policy_id, reason, data_class, action,
+                                      policy_input#>'{pac,facts,residency,targets}' AS residency_targets FROM decisions
                                  WHERE approval_id = a.id ORDER BY id LIMIT 1) d ON true
             WHERE a.status='PENDING' AND a.expires_at>now() ORDER BY a.created_at DESC LIMIT 30""",
         (user["principal"], user.get("user_id"))),

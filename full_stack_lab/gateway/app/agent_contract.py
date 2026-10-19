@@ -10,7 +10,7 @@ from uuid import uuid4
 import jwt
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from . import db
 
@@ -25,6 +25,16 @@ ALGORITHM = "EdDSA"
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+class ResidencyFields(StrictModel):
+    residency: dict = Field(default_factory=dict)
+
+    @field_validator("residency")
+    @classmethod
+    def validate_residency(cls, value):
+        from .residency import normalize
+        return normalize(value) if value else {}
 
 
 class ToolReview(StrictModel):

@@ -207,6 +207,19 @@ class ApprovalChecks(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.review.record_event.await_args.args[4], "reader")
         self.assertNotIn("request_payload", self.db.fetch_all.await_args.args[0])
 
+    async def test_evidence_resolves_display_names_without_replacing_audit_identity(self):
+        self.review.events_for.return_value = [
+            {"id": i, "kind": "call-approve", "outcome": "approved", "actor": actor, "created_at": NOW}
+            for i, actor in enumerate(("reviewer", "unnamed", "deleted"), 1)]
+        self.db.fetch_all.side_effect = [
+            [{"token": "reviewer", "display_name": "심사자"}, {"token": "unnamed", "display_name": None}], []]
+        bundle = await self.mod.approval_evidence("case", "reader")
+        self.assertEqual([e["actor_display_name"] for e in bundle["events"]], ["심사자", None, None])
+        self.assertEqual([e["actor"] for e in bundle["events"]], ["reviewer", "unnamed", "deleted"])
+        lookup = self.db.fetch_all.await_args_list[0]
+        self.assertIn("WHERE token = ANY(%s::text[])", lookup.args[0])
+        self.assertEqual(set(lookup.args[1][0]), {"reviewer", "unnamed", "deleted"})
+
 
 class DispatchChecks(unittest.IsolatedAsyncioTestCase):
     async def run_record(self, row, item=ITEM, event=True, consumed=True, approval_id="case"):
@@ -257,6 +270,100 @@ class DispatchChecks(unittest.IsolatedAsyncioTestCase):
 
 @unittest.skipUnless(GATEWAY, "Gateway image: rerun with --gateway")
 class GatewayChecks(unittest.IsolatedAsyncioTestCase):
+    async def monitor_overlap(self, policy, *, consent_missing=False, approved=False):
+        from app import endpoint_plane
+        item = {**ITEM, **({"consent": True} if consent_missing else {})}
+        cls = SimpleNamespace(action="r", base_action="r", data_class="public", destinations=[], resources=[],
+            dlp=[], notes=[], restrictable=["max_chars"], primary=SimpleNamespace(id="asset", kind="file", owner_department=None),
+            summary=lambda: "synthetic read")
+        row = approval() if approved else None
+        if row:
+            row["request_payload"]["impact_scope_sha256"] = digest(impact.terms(item))
+            row["request_fingerprint"] = digest(row["request_payload"])
+            self.assertTrue(impact.bound(row, PAYLOAD, item, digest))
+        async def fetch(query, params=()):
+            if "principals" in query:
+                return {"role": "employee", "status": "active", "synthetic": True}
+            return row if "FROM approvals" in query else None
+        connection = SimpleNamespace(execute=AsyncMock())
+        @asynccontextmanager
+        async def tx():
+            yield connection
+        async def record(event, laps):
+            return {**event, "decision_id": 1}
+        upstream_call = AsyncMock()
+        missing = AsyncMock(return_value="유효한 사용자 동의가 없습니다." if consent_missing else None)
+        changes = [(core.db, {"fetch_one": AsyncMock(side_effect=fetch), "transaction": tx}),
+            (core.registry, {"server": Mock(return_value={"endpoint": "http://internal", "tool_reviews": {"update": item}}),
+                             "allowed_principals": Mock(return_value=None), "catalog_version": Mock(return_value="test")}),
+            (core.classify, {"classify": Mock(return_value=cls)}),
+            (endpoint_plane, {"managed_failure": AsyncMock(return_value=None),
+                              "shadow_count_for": AsyncMock(return_value=0), "shadow_listener_count_for": AsyncMock(return_value=0)}),
+            (core.pac, {"build": AsyncMock(return_value={}), "digest": Mock(return_value="unit-digest")}),
+            (core.consent, {"missing": missing}),
+            (core.privacy, {"analyze": AsyncMock(return_value=[])}),
+            (core.secret_scan, {"labels": AsyncMock(return_value=[])}),
+            (core.review, {"record_event": AsyncMock()}),
+            (core, {"policy_ledger": AsyncMock(), "_reserve_call": AsyncMock(return_value={}), "_privacy_ignore": Mock(return_value=None),
+                    "_contract": AsyncMock(return_value={}), "_relationship_scope": AsyncMock(return_value={}),
+                    "_sequence_flags": AsyncMock(return_value=[]), "_flow_sources": AsyncMock(return_value=[]),
+                    "_policy": AsyncMock(return_value=deepcopy(policy)), "enforcement_mode": AsyncMock(return_value="monitor"),
+                    "_decision_payload": AsyncMock(side_effect=record), "_call_upstream": upstream_call})]
+        with ExitStack() as stack:
+            for target, attributes in changes:
+                for name, value in attributes.items():
+                    stack.enter_context(patch.object(target, name, value))
+            result = await core.execute_call(PAYLOAD, approval_granted=True, approval_id="case" if approved else "forged")
+        upstream_call.assert_not_awaited()
+        self.assertFalse(result["upstream_attempted"])
+        self.assertFalse(result["upstream_executed"])
+        return result, connection, missing
+
+    async def test_monitor_high_impact_keeps_residency_prohibition(self):
+        for approved in (False, True):
+            for consent_missing in (False, True):
+                with self.subTest(approved=approved, consent_missing=consent_missing):
+                    result, connection, missing = await self.monitor_overlap(
+                        {"decision": "Block", "policy_id": "P-RESIDENCY-001", "reason": "unit"},
+                        approved=approved, consent_missing=consent_missing)
+                    self.assertEqual((result["decision"], result["policy_id"]), ("Block", "P-RESIDENCY-001"))
+                    self.assertIsNone(result["would_decision"])
+                    connection.execute.assert_not_awaited()
+                    missing.assert_not_awaited()
+
+    async def test_monitor_high_impact_keeps_residency_approval_and_explanation_basis(self):
+        for approved in (False, True):
+            for consent_missing in (False, True):
+                with self.subTest(approved=approved, consent_missing=consent_missing):
+                    result, connection, missing = await self.monitor_overlap(
+                        {"decision": "Approval", "policy_id": "P-RESIDENCY-002", "reason": "unit"},
+                        approved=approved, consent_missing=consent_missing)
+                    self.assertEqual((result["decision"], result["policy_id"]),
+                        ("Approval", "P-RESIDENCY-002" if approved else "P-HIGH-IMPACT-001"))
+                    self.assertIsNone(result["would_decision"])
+                    explanation = connection.execute.await_args.args[1][-1].obj
+                    self.assertEqual(explanation["basis_policy_id"], "P-RESIDENCY-002")
+                    missing.assert_not_awaited()
+
+    async def test_monitor_high_impact_missing_consent_blocks_even_after_human_approval(self):
+        for approved in (False, True):
+            for decision in ("Allow", "Alert", "Restrict", "Block"):
+                with self.subTest(approved=approved, decision=decision):
+                    result, connection, missing = await self.monitor_overlap(
+                        {"decision": decision, "policy_id": "P-AUTHZ-ALLOW-001", "reason": "unit"},
+                        consent_missing=True, approved=approved)
+                    self.assertEqual((result["decision"], result["policy_id"]), ("Block", "P-CONSENT-001"))
+                    missing.assert_awaited_once()
+                    connection.execute.assert_not_awaited()
+
+    async def test_monitor_residency_conflict_cannot_be_relaxed_by_selected_policy(self):
+        for policy_id, decision in (("P-RESIDENCY-001", "Block"), ("P-RESIDENCY-002", "Approval")):
+            with self.subTest(policy_id=policy_id):
+                result, _, _ = await self.monitor_overlap({"decision": "Approval", "policy_id": "P-X-APPROVAL-001",
+                    "reason": "unit", "conflicts": [{"decision": decision, "policy_id": policy_id}]})
+                self.assertEqual((result["decision"], result["policy_id"]), ("Approval", "P-HIGH-IMPACT-001"))
+                self.assertIsNone(result["would_decision"])
+
     async def test_final_guard_refuses_before_connection(self):
         for row, aid in ((None, None), (None, "forged"), (approval("EXECUTED"), "case"),
                          ({**approval(), "revoked_at": NOW}, "case"),

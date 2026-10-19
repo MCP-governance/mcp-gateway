@@ -254,6 +254,7 @@ watch_decisions() {
 FIELD_COMPOSE=(-f compose.yaml -f compose.field.yaml)
 
 field_up() {
+  python3 registry/render_residency.py --check
   local with_ws=0 with_lab_mcp=0 with_siem=0
   # The analyzer image is built from ./privacy here; left out, a change to its recognizers or pipeline never shipped.
   local services=(corp-git presidio-analyzer gateway gateway-sse agent-service intake-worker runtime-worker)

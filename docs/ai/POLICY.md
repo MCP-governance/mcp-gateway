@@ -4,11 +4,14 @@ D-120~D-123 운영 대응은 기존 정책 ID와 계약 비활성·종료 경계
 
 DEV-68 공급자 지원 종료는 도입 등록의 `valid_until` 상한으로 적용한다. 지원 종료일 다음 날부터 기존 `P-APPROVAL-EXPIRY-001` 만료 경로가 호출을 차단하고 재승인을 요구한다. 공급자 필수 정보·등록부 내보내기는 [D-137](DECISIONS.md#d-137-도입-서버-공급자-보증을-승인에-묶고-eol은-승인-만료로-연결한다) 참조.
 
+DEV-71 도입 신청의 위험 등급은 신청 입력의 표 산정이고 새 OPA 정책 ID를 만들지 않는다. 등급은 승인 방식(관리자 1명·2명·사유)만 정하며, 입력이 없는 기존 승인 서버는 30일 유예 뒤 같은 `valid_until` 만료 경로로 재승인 대기가 된다. [D-143](DECISIONS.md#d-143-도입-신청의-위험-등급은-신청자가-적은-입력의-표-산정으로-승인-방식은-등급이-정하고-기존-승인-서버는-30일-유예-뒤-재승인-대기로-한다-2026-10-20-dev-71) 참조.
+
 > 파일: `full_stack_lab/opa/`
 > - `policy.rego` — 규칙 (`package mcp.authz`, 결과는 `data.mcp.authz.decision`)
 > - `policy_test.rego` — 단위 시험(91건)
 > - `policy_ledger.json` — 정책 목록(정책마다 이름·목적·우선순위·결과·상태·버전·위험/통제 id·의무)
 > - `data.json` — 운영 제한과 자주 바뀌는 값(제한 실행 값, egress 허용 호스트)
+> - `residency.json` — `registry/data_residency.json`에서 생성한 처리·저장 국가 규칙
 >
 > Gateway는 `OPA_URL`(`http://opa:8181/v1/data/mcp/authz/decision`)에 입력을 보내고, 실패하면
 > `P-CONTROL-FAIL-CLOSED`로 차단한다. OPA는 `--watch` 없이 뜨므로 Rego를 바꾸면 `docker compose restart opa`.
@@ -41,6 +44,7 @@ DEV-68 공급자 지원 종료는 도입 등록의 `valid_until` 상한으로 �
 | 45 | MCP-DATA-EGRESS-001 | 차단 | 외부 목적지로 중요 등급 자료나 Presidio가 찾은 개인정보를 보냄(역할 무관, 예외 불가) |
 | 46 | P-CHAIN-001 | 차단 | 같은 주체가 최근 10분 안에 중요정보를 읽고 외부로 보냄(`request.sequence_flags`, 관찰 모드에서도 집행) |
 | 47 | P-FLOW-001 | 차단 | 같은 주체가 최근 10분 안에 다른 서버에서 중요정보를 읽은 뒤 쓰기·실행·공급자 호스팅 호출을 하는데 받는 도구가 그 서버를 심사받지 않음(`request.flow_sources`·`tool.accepts_from`, 공급자 호스팅은 심사로도 못 풂, 관찰 모드에서도 집행, D-133) |
+| 48 | P-RESIDENCY-001 | 차단 | 처리·저장 위치나 국외 이전 규칙 확인 불가, 또는 이전 금지(D-138) |
 | 50 | MCP-CATALOG-001 | 차단 | 승인 계약(설명·스키마·버전 해시) 불일치 |
 | 55 | P-APPROVAL-EXPIRY-001 | 차단 | 승인 유효기간 만료 자산 |
 | 60 | P-CLASSIFICATION-001 | 차단 | 분류 근거 없는 데이터 |
@@ -51,6 +55,7 @@ DEV-68 공급자 지원 종료는 도입 등록의 `valid_until` 상한으로 �
 | 78 | P-DLP-001 | 차단 | 민감정보(주민번호·카드 등) 외부 전송 |
 | 79~89 | INPUT_CONTRACT, POLICY_BUNDLE, PAC-01~15 | 차단·승인 | 사실 계약·정책 버전·승인 실행 범위 검사 |
 | 80 | PAC-05-DELEGATION-UNSUPPORTED | 차단 | 대리 실행을 주장하는데 전송 계층에서 검증한 에이전트 신원이 없음(D-94). Console에는 "지원 안 함"으로 표시 |
+| 83 | P-RESIDENCY-002 | 추가 승인 | 처리·저장 국가 규칙이나 국외 이전 근거에 따라 건별 승인 필요(D-138) |
 | 90 | P-X-APPROVAL-001 | 승인 | 중요정보의 고위험 실행(x) — 내부 목적지. 외부 반출은 MCP-DATA-EGRESS-001이 먼저 막는다 |
 | 95 | P-UNTRUSTED-CONTENT-001 | 승인 | 비신뢰 콘텐츠 기반 고위험 실행 |
 | 100 | P-VOLUME-001 | 승인 | 중요정보 누적 접근 |
@@ -73,6 +78,7 @@ OPA의 DB 없는 불리언 `approval.granted`만으로 인적 개입 증빙을 �
 최종 전송 트랜잭션은 현재 도구 범위와 승인 사건·요청 지문을 대조하고 승인 행을 한 번 소비한다. 기한·철회·재사용·심사 범위 변경은 전송을 막는다.
 승인자는 설명 증빙을 열람한 기록과 검토 근거가 있어야 승인할 수 있다. 번복은 별도 사건과 철회 시각으로 남기며 **이미 실행된 효과를 복구하지 않는다**.
 개인정보 본문 없는 설명·개입·판정 번들은 관리자 인증의 `/api/approvals/{id}/evidence`에서 조회·내보낸다.
+개입 이력의 처리자는 현재 표시 이름으로 보이고 없으면 `—`다. 내보내기의 감사 주체 식별자는 유지한다.
 OPA만 실행하는 정책 재생은 이 로컬 통제를 검증하지 않는다. [호출 경로·원자 요구사항·한계](../../research/llm-wiki/analysis/high-impact/README.md).
 
 OPA 입력의 개인정보 관련 필드: `request.pii_types`(Presidio 엔터티 유형만 — 값은 넣지 않는다),
@@ -125,3 +131,33 @@ Console 정책 화면은 현재 capability와 검토된 원격 승인 범위를 
 5. `docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v`
 6. `docker compose restart opa` 후 `./console.sh test`.
 7. 새 판정이 업무 흐름에 보이면 `workstation/scenarios/*.toml`에 한 건 추가.
+
+## 처리·저장 위치 규칙 (D-138 / DEV-69)
+
+| 번호 | 정책 | 결과 |
+| --- | --- | --- |
+| P-RESIDENCY-001 | 처리·저장 위치 전송 차단 | 차단 |
+| P-RESIDENCY-002 | 국외 이전 건별 승인 | 추가 승인 |
+
+`registry/data_residency.json`의 `residency.rules`는 데이터 등급→ISO 국가 코드→`allow`/`approval`/`deny`다.
+`*`는 명시되지 않은 국가의 기본값이다. 처리·저장 국가의 합집합과 모든 외부 목적지를 각각 평가하며 하나라도 금지면 차단한다.
+내부 이상 등급은 국가·처리 주체·위치 근거가 없으면 차단한다. 공개 외 데이터가 조직 소재 국가 밖으로 나가고 이전 근거가 없으면 국가 규칙이 허용이어도 건별 승인 대상이다.
+팩 누락·재생성 누락·실제 OPA 로드값 불일치도 차단하며 관찰 모드에서 완화하지 않는다.
+
+기본값은 공개 전송 허용, 내부 데이터 KR 허용/그 밖 승인 필요, 중요 데이터 KR 허용/그 밖 금지인 **잠정 조직 설정**이다.
+국가별 법적 허용 여부나 개인정보 국외 이전의 적법성을 확정하지 않는다. 기존 개인정보 반출·PAC-12·서버 간 흐름 차단은 별도로 적용한다.
+허용 판정은 기존 `P-AUTHZ-ALLOW-001` 등으로 기록되고 위치 사실은 `policy_input.pac.facts.residency`에 보존된다.
+승인은 기존 PAC-13 독립 승인·기한·일회용 검사를 재사용하며 위치/목적지/팩 변경 시 digest가 바뀐다. 금지는 승인으로 풀리지 않는다.
+차단 우선순위는 48, 승인 필요는 83으로 기존 계약·권한 차단을 우회하지 않는다.
+
+```bash
+cd full_stack_lab
+python3 registry/render_residency.py          # 조직 정본 변경 후 생성, 두 JSON을 함께 검토
+python3 registry/render_residency.py --check
+# 솔루션 기기에서만: ./console.sh field up
+```
+
+원격 서버의 위치 속성은 계약 검토 사양과 승인 해시에 포함한다. 기존 승인 사양과 다르면 새 도입 검토가 필요하다.
+내부 서버는 카탈로그 `organization.machine_location`을 사용하고 외부 목적지는 `organization.destination_locations`의 정확한 호스트별 선언을 사용한다.
+공급자 주소의 DNS/IP나 URL의 국가 접미사로 처리 위치를 추정하지 않는다.
+[설정·한계·시험](../../research/llm-wiki/analysis/dev69-data-residency/README.md).

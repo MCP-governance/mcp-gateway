@@ -34,9 +34,9 @@ from .core import (
     verify_audit_chain,
 )
 from .mcp_facade import build_mcp, transport_security
-from .agent_contract import CONSOLE_SCOPE, ToolReview, authenticate, authenticated_user
+from .agent_contract import CONSOLE_SCOPE, ResidencyFields, ToolReview, authenticate, authenticated_user
 from .release import build_info, policy_info
-from . import activity, audit, registry, retention, review, siem, supplier_assurance
+from . import activity, audit, registry, residency, retention, review, risk_tier, siem, supplier_assurance
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 # "오늘" is the operator's day. The DB session runs in UTC, so date_trunc('day', now())
@@ -356,16 +356,19 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
         db.fetch_all("SELECT * FROM usage_relationships ORDER BY id"),
     )
     catalog_servers = registry.servers()
-    console = registry.runtime()["servers"]
+    doc = registry.runtime()
+    console = doc["servers"]
     return {"catalog_version": registry.catalog_version(),
             "classification": registry.catalog().get("classification", {}),
             "organization": registry.catalog().get("organization", {}),
-            "servers": [row for row in servers if row["id"] in catalog_servers],
+            "servers": [{**row, "residency": residency.location(catalog_servers[row["id"]], registry.catalog().get("organization", {}))}
+                        for row in servers if row["id"] in catalog_servers],
             "tools": tools, "usage_relationships": relationships,
             # D-49: which servers came from a Console registration, and until when they may be used.
             "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by", "registered_at",
                                                                     "data_class", "tools", "tool_reviews", "provenance",
-                                                                    "allowed_principals", "supplier_assurance")}
+                                                                    "allowed_principals", "supplier_assurance", "residency", "residency_review", "risk_assessment")}
+                                  | {"risk_review": risk_tier.legacy_review(spec, doc.get("risk_tier_grace_started_at"))}
                               for sid, spec in console.items() if sid not in registry.reviewed_servers()}}
 
 
@@ -710,7 +713,7 @@ class RegistryDiscover(StrictModel):
 
 
 
-class RegistryRegister(StrictModel):
+class RegistryRegister(ResidencyFields):
     server_id: str = Field(pattern=r"^[a-z][a-z0-9-]{1,30}$")
     display_name: str = Field(min_length=2, max_length=80)
     endpoint: str = Field(min_length=8, max_length=500)
@@ -757,10 +760,39 @@ class ToolReviews(StrictModel):
     reviews: dict[str, ToolReview] = Field(min_length=1, max_length=300)
 
 
+class ResidencyReview(StrictModel):
+    processing_countries: list[str] = Field(min_length=1, max_length=249)
+    storage_countries: list[str] = Field(min_length=1, max_length=249)
+    processor: str = Field(min_length=1, max_length=500)
+    evidence_ref: str = Field(min_length=1, max_length=500)
+    transfer_basis: str = Field(default="", max_length=500)
+
+    @model_validator(mode="after")
+    def validate_location(self):
+        normalized = residency.normalize(self.model_dump())
+        if not normalized["processor"] or not normalized["evidence_ref"]:
+            raise ValueError("처리 주체와 위치 근거가 필요합니다.")
+        self.__dict__.update(normalized)
+        return self
+
+
 @app.post("/api/registry/servers/{server_id}/tool-reviews")
 async def registry_tool_reviews(server_id: str, request: ToolReviews, user: dict = Depends(admin_caller)) -> dict:
     try:
         return await core.review_tool_scopes(server_id, request.model_dump()["reviews"], user["principal"])
+    except LookupError as exc:
+        raise HTTPException(404, "도입 승인으로 Console에서 등록한 서버가 아닙니다.") from exc
+    except review.NotIndependent as exc:
+        raise HTTPException(403, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@app.post("/api/registry/servers/{server_id}/residency")
+async def registry_residency_review(server_id: str, request: ResidencyReview,
+                                    user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await core.review_server_residency(server_id, request.model_dump(), user["principal"])
     except LookupError as exc:
         raise HTTPException(404, "도입 승인으로 Console에서 등록한 서버가 아닙니다.") from exc
     except review.NotIndependent as exc:

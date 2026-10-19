@@ -1,0 +1,165 @@
+{
+  "format": "mint-dev69-requirements/1",
+  "date": "2026-10-20",
+  "decision": "D-138",
+  "task": "DEV-69",
+  "branch": "10/20-data-residency",
+  "base_commit": "09220f515bea70a498b921f4e23eafd605e8444b",
+  "revision": "uncommitted-worktree",
+  "status": "implemented-local-static-only",
+  "evidence": "local-checks.txt",
+  "legal_assessment": "provisional-organization-policy",
+  "requirements": [
+    {
+      "id": "DEV69-01",
+      "requirement": "서버 처리·저장 국가와 처리 주체·근거를 등록·심사하고 승인 사양에 결속한다.",
+      "code": [
+        "full_stack_lab/gateway/app/residency.py:21",
+        "full_stack_lab/gateway/app/agent_contract.py:30",
+        "full_stack_lab/gateway/app/agent_service.py:1417",
+        "full_stack_lab/gateway/app/core.py:526"
+      ],
+      "tests": [
+        "LocationTest.test_iso_codes_and_normalization",
+        "GatewayTest.test_both_boundaries_validate_iso",
+        "GatewayTest.test_remote_location_substitution_rejected_before_network",
+        "GatewayTest.test_same_intake_cannot_replace_active_location"
+      ],
+      "conditions": [
+        "정상 ISO 목록",
+        "국가 형식 오류",
+        "승인 후 속성 바꿔치기",
+        "동일 도입 승인으로 위치 교체"
+      ],
+      "execution": "pure-passed; gateway-import-failed"
+    },
+    {
+      "id": "DEV69-02",
+      "requirement": "내부 실행 위치는 조직 설정을 사용하며 공급자·외부 목적지에 이를 추정 적용하지 않는다.",
+      "code": [
+        "full_stack_lab/gateway/app/residency.py:40",
+        "full_stack_lab/gateway/app/residency.py:60"
+      ],
+      "tests": [
+        "LocationTest.test_internal_uses_machine_location_provider_never_does",
+        "LocationTest.test_downstream_is_separate_from_server_location",
+        "LocationTest.test_unknown_machine_location_is_not_assumed_domestic"
+      ],
+      "conditions": [
+        "정상 내부 배치",
+        "공급자 속성 누락",
+        "외부 URL 목적지 누락",
+        "내부 배치 설정 누락"
+      ],
+      "execution": "pure-passed"
+    },
+    {
+      "id": "DEV69-03",
+      "requirement": "등급×국가 규칙을 모든 처리·저장 국가에 적용하고 누락·금지를 기본 차단한다.",
+      "code": [
+        "full_stack_lab/opa/policy.rego:20",
+        "full_stack_lab/registry/data_residency.json",
+        "full_stack_lab/registry/render_residency.py"
+      ],
+      "tests": [
+        "test_residency_domestic_all_grades",
+        "test_residency_foreign_approval",
+        "test_residency_missing_or_partial_location_block",
+        "test_residency_foreign_storage_cannot_hide_behind_domestic_processing",
+        "test_residency_all_targets_must_pass",
+        "test_residency_public_without_location",
+        "test_residency_provider_missing_facts_is_not_exempt"
+      ],
+      "conditions": [
+        "허용",
+        "승인 필요",
+        "금지",
+        "등급/국가 경계",
+        "복수 국가",
+        "속성 누락"
+      ],
+      "execution": "rego-not-run; renderer-check-passed"
+    },
+    {
+      "id": "DEV69-04",
+      "requirement": "기존 독립·일회용 승인에 위치와 팩을 결속하고 금지나 다른 차단을 완화하지 않는다.",
+      "code": [
+        "full_stack_lab/gateway/app/pac.py:241",
+        "full_stack_lab/gateway/app/core.py:1358",
+        "full_stack_lab/opa/policy.rego:96"
+      ],
+      "tests": [
+        "test_residency_bound_independent_approval_allows",
+        "test_residency_granted_flag_is_not_an_approval",
+        "test_residency_forbidden_cannot_be_approved",
+        "test_residency_location_change_invalidates_old_approval",
+        "test_residency_pack_change_invalidates_old_approval",
+        "test_residency_expired_revoked_or_self_approval_is_not_spendable",
+        "test_residency_approval_cannot_outrank_contract_block",
+        "GatewayTest.test_adapter_binds_location_and_pack_in_existing_pac_digest"
+      ],
+      "conditions": [
+        "정상 승인",
+        "금지",
+        "자가 승인",
+        "만료",
+        "철회",
+        "일회용 상태",
+        "사양/팩 교체",
+        "계약 차단 충돌"
+      ],
+      "execution": "rego-not-run; gateway-import-failed",
+      "limitation": "최종 재판정과 dispatch 기록 사이 파일 변경의 원자 봉쇄 및 실제 DB 동시 소비는 미검증"
+    },
+    {
+      "id": "DEV69-05",
+      "requirement": "규칙 정본·생성물·로드 팩 불일치가 차단되고 정상 재생성 시 복구 가능해야 한다.",
+      "code": [
+        "full_stack_lab/gateway/app/residency.py:48",
+        "full_stack_lab/console.sh:257",
+        "full_stack_lab/gateway/app/release.py:29"
+      ],
+      "tests": [
+        "LocationTest.test_pack_load_failure_mismatch_and_recovery",
+        "LocationTest.test_pack_rejects_incomplete_and_invalid_rules",
+        "test_residency_stale_pack_is_blocked"
+      ],
+      "conditions": [
+        "파일 누락",
+        "파싱 오류",
+        "생성물 불일치",
+        "OPA 로드값 불일치",
+        "복구"
+      ],
+      "execution": "pure-passed; rego-not-run"
+    },
+    {
+      "id": "DEV69-06",
+      "requirement": "등록·상세·승인 화면에 위치 입력/판정 당시 위치를 제공하고 정책 목록은 번호·정책·결과를 유지한다.",
+      "code": [
+        "full_stack_lab/gateway/app/agent_static/console.js:186",
+        "full_stack_lab/gateway/app/agent_service.py:1609",
+        "full_stack_lab/gateway/app/main.py:354"
+      ],
+      "tests": [
+        "node --check full_stack_lab/gateway/app/agent_static/console.js",
+        "node --test full_stack_lab/tests/console-state.test.mjs"
+      ],
+      "conditions": [
+        "입력",
+        "서버 상세",
+        "원격 검토 상세",
+        "승인 스냅샷",
+        "한글 라벨"
+      ],
+      "execution": "syntax-and-existing-state-tests-passed; visual-not-run"
+    }
+  ],
+  "device_validation": [
+    "OPA 1.20.2 전체 회귀 및 16개 새 Rego 시험",
+    "게이트웨이 이미지 --gateway 4개 추가 시험",
+    "실제 PostgreSQL CAS/일회용 승인 동시 소비",
+    "PJ1 실제 OSS MCP 정상/승인/금지/누락과 독립 수신 효과 대조",
+    "화면 렌더링 및 사양 변경/복구"
+  ]
+}

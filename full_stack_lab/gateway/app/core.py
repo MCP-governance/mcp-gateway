@@ -23,10 +23,10 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, retention, secret_scan, supplier_assurance, upstream
+from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, retention, risk_tier, secret_scan, supplier_assurance, upstream
 from .destination import DestinationBlocked
 from .outcomes import outcome_axes
-from . import high_impact, selective
+from . import high_impact, residency, selective
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint, walk_chain,
@@ -42,7 +42,7 @@ GATEWAY_ENVIRONMENT = os.getenv("GATEWAY_ENVIRONMENT", "prod")
 REPORT_DIR = Path(os.getenv("REPORT_DIR", "/reports"))
 POLICY_PATH = Path(os.getenv("POLICY_PATH", "/policy/policy.rego"))
 # What OPA serves from /policy, including the integrated PAC pack and its decision contract.
-POLICY_BUNDLE = ("policy.rego", "pac15.rego", "decision.rego", "data.json", "policy_ledger.json")
+POLICY_BUNDLE = ("policy.rego", "pac15.rego", "decision.rego", "data.json", "policy_ledger.json", "residency.json")
 APPROVAL_TTL_MINUTES = 10
 CATALOG_REFRESH_SECONDS = int(os.getenv("CATALOG_REFRESH_SECONDS", "60"))
 # A server check only negotiates a session; a slow answer is itself the finding.
@@ -69,7 +69,7 @@ DEFAULT_ENFORCEMENT = os.getenv("GATEWAY_ENFORCEMENT", "enforce")
 # ceiling at all for as long as observation lasts.
 # P-CHAIN- (PDF integration): a read-then-export chain is a disclosure, not a permission
 # opinion; observing it would let the export through while "measuring".
-ALWAYS_ENFORCED = ("MCP-", "PAC-", "INPUT_CONTRACT", "POLICY_BUNDLE", "P-CONTROL-", "P-INPUT-", "P-RATE-", "P-CHAIN-", "P-FLOW-", "P-HIGH-IMPACT-")
+ALWAYS_ENFORCED = ("MCP-", "PAC-", "INPUT_CONTRACT", "POLICY_BUNDLE", "P-CONTROL-", "P-INPUT-", "P-RATE-", "P-CHAIN-", "P-FLOW-", "P-HIGH-IMPACT-", "P-RESIDENCY-")
 CHAIN_WINDOW_MINUTES = int(os.getenv("CHAIN_WINDOW_MINUTES", "10"))
 RATE_LIMIT_CALLS = int(os.getenv("RATE_LIMIT_CALLS", "60"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
@@ -526,6 +526,7 @@ async def discover_for_registration(endpoint: str) -> dict:
 
 async def register_server(request: dict, actor: str) -> dict:
     server_id = request["server_id"]
+    server_location = residency.normalize(request.get("residency"))
     endpoint = registration_endpoint(request["endpoint"])
     try:
         intake_id = uuid.UUID(request.get("intake_id") or "")
@@ -567,6 +568,8 @@ async def register_server(request: dict, actor: str) -> dict:
     active = registry.runtime()["servers"].get(server_id)
     if active and active.get("intake_id") != str(intake_id):
         raise ValueError(f"운영 중인 서버 id입니다: {server_id}. 기존 등록을 해제한 뒤 등록하세요.")
+    if active and residency.normalize(active.get("residency")) != server_location:
+        raise ValueError("처리·저장 위치 변경은 새 도입 신청과 승인이 필요합니다.")
     row = await db.fetch_one("SELECT lifecycle FROM mcp_servers WHERE id=%s", (server_id,))
     if row and (row["lifecycle"] or "OPERATING") in {"TERMINATING", "RETIRED"}:
         raise ValueError("종료 절차를 거친 서버 id는 다시 쓸 수 없습니다. 새 id로 등록하세요.")
@@ -616,6 +619,15 @@ async def register_server(request: dict, actor: str) -> dict:
     assurance_errors = supplier_assurance.validate(assurance)
     if assurance_errors:
         raise ValueError("등록할 수 없습니다: " + " / ".join(assurance_errors))
+    # DEV-71: the tier is read again from the stated input the approval was made on, and the approval
+    # must have recorded that same input. A data grade above what the applicant stated understates the tier.
+    stated = risk_tier.assess(intake.get("risk_input"))
+    approved_risk = (intake.get("evidence") or {}).get("risk_assessment") or {}
+    if stated["status"] != "ok" or approved_risk.get("input_sha256") != stated["input_sha256"]:
+        raise ValueError("등록할 수 없습니다: 승인 때 확인한 영향평가 입력이 없거나 바뀌었습니다. 다시 신청하세요.")
+    ranks = list(risk_tier.CHOICES["data_class"])
+    if ranks.index(request["data_class"]) > ranks.index(intake["risk_input"]["data_class"]):
+        raise ValueError("등록할 수 없습니다: 신청에 적은 데이터 등급보다 높은 등급입니다. 영향평가 입력을 고쳐 다시 승인하세요.")
     approval_until = datetime.now(UTC) + timedelta(days=int(request["valid_days"]))
     if remote_review:
         approval_until = datetime.fromisoformat(remote_review["valid_until"])
@@ -624,8 +636,9 @@ async def register_server(request: dict, actor: str) -> dict:
         "display_name": request["display_name"], "package": package, "version": version,
         "source_url": source_url or endpoint, "supplier": request.get("supplier") or host,
         "license": ((intake.get("provenance") or {}).get("license") or {}).get("spdx"), "endpoint": endpoint,
-        # A dotless host is a service on this Docker host; anything else is run by its provider.
-        "deployment": "internal" if "." not in host else "provider",
+        # Only an active managed runtime proves that the solution runs this registration.
+        "deployment": "internal" if runtime else "provider",
+        "residency": server_location,
         "downstream": request.get("downstream") or None, "data_class": request["data_class"],
         "tools": dict(sorted(request["tools"].items())), "exit_terms": request.get("exit_terms") or {},
         "valid_until": valid_until, "registered_by": actor,
@@ -642,6 +655,9 @@ async def register_server(request: dict, actor: str) -> dict:
                             if request.get("poisoning_ack") else {},
         "tool_reviews": tool_reviews, "provenance": intake.get("provenance") or {},
         "supplier_assurance": assurance,
+        "risk_assessment": {"tier": stated["tier"], "score": stated["score"], "floors": stated["floors"],
+                            "input": intake["risk_input"], "input_sha256": stated["input_sha256"],
+                            "approvers": approved_risk.get("approvers") or [], "version": stated["version"]},
         "runtime": {key: str(value) for key, value in runtime.items()} if runtime else None,
     }
     contract = {"package": f"{package}@{version}", "server_name": found["advertised_name"],
@@ -657,7 +673,7 @@ async def register_server(request: dict, actor: str) -> dict:
         doc["contracts"][server_id] = contract
         doc["usage_relationships"] = [r for r in doc["usage_relationships"] if r["id"] != relationship["id"]] + [relationship]
         doc["history"].append({"type": "registered", "server_id": server_id, "actor": actor,
-                               "at": spec["registered_at"], "valid_until": valid_until})
+                               "at": spec["registered_at"], "valid_until": valid_until, "residency": server_location})
         registry.save_runtime(doc)
         await registry.sync()
     if intake["intake_kind"] == "repository":
@@ -693,6 +709,7 @@ async def register_server(request: dict, actor: str) -> dict:
         "server-register", "approved", "server", server_id, actor, applicant=intake["submitted_by"],
         reason=request.get("purpose") or request["display_name"],
         scope={"intake": str(intake_id), "tools": spec["tools"], "valid_until": valid_until, "data_class": request["data_class"],
+               "residency": server_location,
                "artifact_sha256": ((spec["provenance"].get("artifact") or {}).get("sha256")), "version": spec["provenance"].get("version"),
                "impact": {name: high_impact.normalize(item) for name, item in tool_reviews.items()}})
     refreshed = await refresh_catalog(server_id)
@@ -761,6 +778,38 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
             "unreviewed": sorted(set(spec["tools"]) - set(spec["tool_reviews"]))}
 
 
+async def review_server_residency(server_id: str, location: dict, actor: str) -> dict:
+    """Re-review the declared location without changing the approved remote contract (D-138)."""
+    normalized = residency.normalize(location)
+    async with REGISTER_LOCK:
+        doc = registry.runtime()
+        spec = doc["servers"].get(server_id)
+        if not spec or not spec.get("intake_id"):
+            raise LookupError(server_id)
+        if spec.get("deployment") != "provider":
+            raise ValueError("사내 실행 위치는 조직 기기 위치 설정에서 관리해야 합니다.")
+        intake = await db.fetch_one("SELECT submitted_by FROM mcp_intake_requests WHERE id=%s::uuid",
+                                    (spec["intake_id"],))
+        if not intake:
+            raise ValueError("도입 신청자를 확인할 수 없어 위치를 심사할 수 없습니다.")
+        applicant = intake["submitted_by"] if intake else None
+        previous = residency.normalize(spec.get("residency"))
+        reviewed_at = datetime.now(UTC).isoformat(timespec="seconds")
+        await review.require_independent("residency-review", "server", server_id, actor, applicant,
+                                         {"residency": normalized, "previous_sha256": residency.sha256(previous)})
+        spec["residency"] = normalized
+        spec["residency_review"] = {"reviewed_by": actor, "reviewed_at": reviewed_at,
+                                    "previous_sha256": residency.sha256(previous)}
+        doc["history"].append({"type": "residency-reviewed", "server_id": server_id, "actor": actor,
+                               "at": reviewed_at, "residency": normalized,
+                               "previous_sha256": residency.sha256(previous)})
+        registry.save_runtime(doc)
+        await registry.sync()
+    await review.record_event("residency-review", "approved", "server", server_id, actor, applicant=applicant,
+                              scope={"residency": normalized, "previous_sha256": residency.sha256(previous)})
+    return {"server_id": server_id, "residency": normalized, "reviewed_by": actor, "reviewed_at": reviewed_at}
+
+
 RENEW_WINDOW_DAYS = int(os.getenv("APPROVAL_RENEW_WINDOW_DAYS", "7"))
 RENEW_CONTRACT = ("registered", "enabled", "schema_hash_match", "description_hash_match", "known_tools_only",
                   "metadata_safe", "supplier_approved", "transport_secure", "endpoint_allowed")
@@ -799,7 +848,8 @@ async def renew_approvals(now: datetime | None = None) -> list[dict]:
             days = int(spec.get("approval_days")
                        or max(1, round((until - datetime.fromisoformat(spec["registered_at"])).total_seconds() / 86400)))
             support_end = (spec.get("supplier_assurance") or {}).get("support_end")
-            proposed_until = supplier_assurance.renewal_until(until, days, support_end)
+            proposed_until = risk_tier.cap_until(supplier_assurance.renewal_until(until, days, support_end), spec,
+                                                 doc.get("risk_tier_grace_started_at"))
             if proposed_until <= until:
                 continue
             spec.update(valid_until=proposed_until.isoformat(timespec="seconds"), approval_days=days)
@@ -814,6 +864,41 @@ async def renew_approvals(now: datetime | None = None) -> list[dict]:
     return renewed
 
 
+async def apply_risk_grace(now: datetime | None = None) -> list[dict]:
+    """Approvals made before risk input existed are assumed to be the highest tier. They stay valid for
+    the grace period counted from the first run of this check, then lapse into re-approval through the
+    same approval expiry as any other (RQ-08). An approval that carries its stated input is untouched."""
+    if registry.RUNTIME_PATH is None:
+        return []
+    now = now or datetime.now(UTC)
+    capped = []
+    async with REGISTER_LOCK:
+        doc = registry.runtime()
+        started = doc.get("risk_tier_grace_started_at")
+        if not started:
+            started = doc["risk_tier_grace_started_at"] = now.isoformat(timespec="seconds")
+            doc["history"].append({"type": "risk-grace-started", "actor": "system", "at": started,
+                                   "until": risk_tier.grace_end(started).isoformat(timespec="seconds")})
+            capped.append(doc["history"][-1])
+        end = risk_tier.grace_end(started)
+        for server_id, spec in doc["servers"].items():
+            if risk_tier.legacy_review(spec, started, now) is None or not spec.get("valid_until"):
+                continue
+            until = datetime.fromisoformat(spec["valid_until"])
+            if until <= end:
+                continue
+            spec["valid_until"] = end.isoformat(timespec="seconds")
+            event = {"type": "risk-grace-capped", "server_id": server_id, "actor": "system",
+                     "at": now.isoformat(timespec="seconds"), "from": until.isoformat(timespec="seconds"),
+                     "valid_until": spec["valid_until"]}
+            doc["history"].append(event)
+            capped.append(event)
+        if capped:
+            registry.save_runtime(doc)
+            await registry.sync()
+    return capped
+
+
 async def catalog_watch() -> None:
     """Background drift watch. Calls themselves re-check the contract on the same
     connection that executes, so this loop only keeps the dashboard and the policy
@@ -822,6 +907,7 @@ async def catalog_watch() -> None:
         try:
             await refresh_all_catalogs()
             await review.lapse_expired_acceptances()
+            await apply_risk_grace()
             await renew_approvals()  # after the refresh: renewal reads the contract it just checked
         except Exception:
             pass
@@ -1856,7 +1942,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         external = any(d.external for d in cls.destinations)
         # A provider-hosted server receives every argument, reads included: a search
         # query sent to GitHub has left the organisation whatever the tool's action is.
-        provider_hosted = classify.url_destination((registry.server(server_id) or {}).get("endpoint")).external
+        server_spec = registry.server(server_id) or {}
+        provider_hosted = (server_spec.get("deployment") == "provider"
+                           or classify.url_destination(server_spec.get("endpoint")).external)
         ignore = _privacy_ignore(cls)
         outbound, masked_types = arguments, []
         try:
@@ -2126,8 +2214,12 @@ async def approval_evidence(approval_id: str, actor: str) -> dict:
     await review.record_event("call-explanation-view", "recorded", "approval", approval_id, actor,
                               scope={"evidence_sha256": digest})
     events = await review.events_for("approval", approval_id)
+    people = await db.fetch_all("SELECT token, display_name FROM principals WHERE token = ANY(%s::text[])",
+                                (list({e["actor"] for e in events}),))
+    names = {p["token"]: p["display_name"] for p in people}
     # Free-form reasons and request/response bodies are never copied into the export.
     history = [{"id": e["id"], "kind": e["kind"], "outcome": e["outcome"], "actor": e["actor"],
+                "actor_display_name": names.get(e["actor"]),
                 "created_at": e["created_at"],
                 "reason": e["reason"] if e.get("reason") in high_impact.REASONS.values() else None}
                for e in events]
