@@ -348,10 +348,21 @@ def firewall_enforcing(config, rules, baseline):
             and entries == baseline.get("rules"))
 
 
-def checks(config, policy):
+def checks(config, policy, *, findings=None):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("command_settings", Path(__file__).with_name("agent.py"))
+    observer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(observer)
+    commands_ok, commands = observer.user_command_settings(config["profile"])
+    if findings is not None:
+        findings.extend(commands)
     targets = list(FILES.values())
     hashes = {name: hashlib.sha256(target.read_bytes()).hexdigest() for name, target in FILES.items()}
-    block = codex_block(codex_config(config).read_text(encoding="utf-8")) if codex_config(config).exists() else None
+    try:
+        block = codex_block(codex_config(config).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        # 사용자 파일 읽기 실패도 heartbeat의 실패 항목으로 보낸다.
+        block = None
     hashes[CODEX_BLOCK] = hashlib.sha256((block or "").encode()).hexdigest()
     rules = rule_state(config)
     baseline = json.loads(Path(config["firewall_baseline"]).read_text(encoding="utf-8"))
@@ -361,6 +372,7 @@ def checks(config, policy):
         "firewall_enforcing": firewall_enforcing(config, rules, baseline),
         "protected_configs": protected(targets + list({t.parent for t in targets}) + [PROGRAMS, Path(sys.executable).parent]),
         "ordinary_account": account(config["username"]) == {"sid": config["sid"], "profile": config["profile"], "admin": False},
+        "user_command_helpers": commands_ok,
     }
 
 
@@ -624,8 +636,10 @@ def serve(args):
                 config["policy_hash"] = policy["policy_hash"]
                 write_file(args.config, json.dumps(config))
             previous = policy["policy_hash"]
-            hashes, health = checks(config, policy)
-            beat = {"policy_hash": policy["policy_hash"], "configuration_hashes": hashes, "checks": health}
+            findings = []
+            hashes, health = checks(config, policy, findings=findings)
+            beat = {"policy_hash": policy["policy_hash"], "configuration_hashes": hashes, "checks": health,
+                    "user_command_settings": findings}
             try:
                 beat["host"] = host_report(config)
             except (OSError, KeyError, ValueError, IndexError):

@@ -1354,10 +1354,16 @@ class NetworkQuality(StrictModel):
         return self
 
 
+class UserCommandSetting(StrictModel):
+    file: str = Field(min_length=1, max_length=512, pattern=r"^(~|\.claude(?:/settings(?:\.local)?\.json)?|\.codex(?:/[^/\\\r\n]+(?i:\.toml))?)$")
+    keys: list[Literal["apiKeyHelper", "otelHeadersHelper", "awsCredentialExport", "awsAuthRefresh", "notify"]] = Field(max_length=4)
+
+
 class ManagedHeartbeat(StrictModel):
     policy_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     configuration_hashes: dict[str, str] = Field(max_length=4)
-    checks: dict[str, bool] = Field(max_length=4)
+    checks: dict[str, bool] = Field(max_length=5)
+    user_command_settings: list[UserCommandSetting] = Field(default_factory=list, max_length=128)
     host: HostReport | None = None
     network_quality: dict | None = Field(default=None, max_length=12)
 
@@ -1466,8 +1472,11 @@ async def endpoint_heartbeat(request: ManagedHeartbeat,
         except ValueError:
             verdict = "rejected"
     try:
+        command_settings = ({"user_command_settings": [item.model_dump() for item in request.user_command_settings]}
+                            if request.user_command_settings else {})
         report = await endpoint_plane.heartbeat(device, request.policy_hash, request.configuration_hashes, request.checks,
-                                                request.host.model_dump() if request.host else None, quality)
+                                                request.host.model_dump() if request.host else None, quality,
+                                                **command_settings)
     except PermissionError as exc:
         raise HTTPException(403, str(exc)) from exc
     return {**report, "network_quality": verdict}

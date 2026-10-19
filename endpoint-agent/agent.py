@@ -70,6 +70,103 @@ from pathlib import Path
 
 AGENT_VERSION = "3.1.0"
 
+
+def user_command_settings(home):
+    """관리 계정 홈만 검사하며 명령 값과 파서 오류 본문은 반환하지 않는다."""
+    import stat
+
+    home = Path(home)
+    findings = []
+    if not home.is_absolute():
+        return False, [{"file": "~", "keys": []}]
+
+    def linked(info):
+        return stat.S_ISLNK(info.st_mode) or bool(getattr(info, "st_file_attributes", 0) & 0x400)
+
+    def failed(path):
+        findings.append({"file": path, "keys": []})
+
+    def invalid_constant(value):
+        raise ValueError
+
+    # root/SYSTEM이 직원 소유 경로의 링크나 특수 파일을 읽지 않게 한다.
+    try:
+        for parent in (home, *home.parents):
+            info = parent.lstat()
+            if linked(info) or not stat.S_ISDIR(info.st_mode):
+                raise ValueError
+    except (OSError, ValueError):
+        return False, [{"file": "~", "keys": []}]
+
+    for folder, names, keys in (
+            (".claude", {"settings.json", "settings.local.json"},
+             {"apiKeyHelper", "otelHeadersHelper", "awsCredentialExport", "awsAuthRefresh"}),
+            (".codex", {"config.toml"}, {"notify"})):
+        directory = home / folder
+        try:
+            info = directory.lstat()
+        except FileNotFoundError:
+            continue
+        except OSError:
+            failed(folder)
+            continue
+        try:
+            if linked(info) or not stat.S_ISDIR(info.st_mode):
+                raise ValueError
+            paths = [directory / name for name in sorted(names)]
+            if folder == ".codex":
+                # glob은 일부 읽기 오류를 숨기므로 직접 열거한다. 과도한 입력도 실패다.
+                for count, path in enumerate(directory.iterdir()):
+                    if count >= 4096 or len(paths) >= 120:
+                        raise ValueError
+                    if path.name.lower().endswith(".config.toml"):
+                        paths.append(path)
+        except (OSError, ValueError):
+            failed(folder)
+            continue
+        for path in sorted(paths):
+            relative = path.relative_to(home).as_posix()
+            try:
+                info = path.lstat()
+            except FileNotFoundError:
+                continue
+            except OSError:
+                failed(relative)
+                continue
+            try:
+                if linked(info) or not stat.S_ISREG(info.st_mode):
+                    raise ValueError
+                fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+                with os.fdopen(fd, "rb") as source:
+                    opened = os.fstat(source.fileno())
+                    if not stat.S_ISREG(opened.st_mode) or (opened.st_dev, opened.st_ino) != (info.st_dev, info.st_ino):
+                        raise ValueError
+                    raw = source.read(1024 * 1024 + 1)
+                if len(raw) > 1024 * 1024:
+                    raise ValueError
+                text = raw.decode("utf-8-sig")
+                if folder == ".claude":
+                    document = json.loads(text, parse_constant=invalid_constant)
+                else:
+                    import tomllib
+                    document = tomllib.loads(text)
+                if not isinstance(document, dict):
+                    raise ValueError
+                found = set(document) & keys
+                # Codex profiles live inside config.toml as well as *.config.toml.
+                if folder == ".codex":
+                    profiles = document.get("profiles", {})
+                    if not isinstance(profiles, dict) or any(not isinstance(p, dict) for p in profiles.values()):
+                        raise ValueError
+                    if any("notify" in p for p in profiles.values()):
+                        found.add("notify")
+                if found:
+                    findings.append({"file": relative, "keys": sorted(found)})
+            except (OSError, ValueError, ImportError, RecursionError):
+                failed(relative)
+    return not findings, findings
+
+
 def load_config() -> dict:
     if "--config" not in sys.argv:
         return {}

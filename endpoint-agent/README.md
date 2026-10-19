@@ -4,6 +4,12 @@
 Gateway와 OPA는 `full_stack_lab/`에서 실행합니다. 아래 사용자 범위 설치기들은 관측 전용입니다.
 강제 연결에는 다음 root 설치 경로를 사용합니다.
 
+관리형 Linux·Windows는 등록 계정 홈의 Claude 설정 두 파일과 Codex `config.toml`·직계 `*.config.toml`을 읽어
+「사용자 명령 헬퍼 없음」을 보고합니다(D-148). Claude `apiKeyHelper`·`otelHeadersHelper`·`awsCredentialExport`·`awsAuthRefresh`,
+Codex 최상위/프로필 `notify`는 빈 값도 실패입니다. 명령 값은 보내지 않으며 읽기·파싱 실패도 준수 실패입니다.
+이 검사가 없는 기존 설치는 이전 항목으로 판정되고, 새 키트로 재설치해 한 번 보고한 뒤부터 항목이 필수가 됩니다.
+프로젝트 설정·대체 설정 홈·검사 사이 파일 변경은 범위 밖입니다. [범위와 전환 절차](../research/llm-wiki/analysis/user-command-settings/README.md).
+
 ## 가입자용 관리형 Linux 설치
 
 1. 가입 승인·초대 수락 → Console 로그인 → **내 PC 연결**에서 개인별 키트 다운로드. 등록 토큰은 30분·1회용입니다.
