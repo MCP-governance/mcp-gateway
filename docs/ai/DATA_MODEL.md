@@ -164,3 +164,9 @@ v2 코드는 읽지도 쓰지도 않는다 → [ROADMAP.md](ROADMAP.md) 정리 �
 `request_payload.impact_scope_sha256`은 심사자/시각을 제외한 도구 범위 해시다. 기존 request_fingerprint는 원래 주체·서버·도구·인자를 포함한 저장 요청 전체를 결속한다. 최종 전송에서 현재 scope_review와 대조한다.
 `approval_events`의 call-request/recorded, call-explanation-view/recorded, call-approve/approved, call-reject/rejected, call-revoke/recorded를 재사용한다. 신청·승인·거부·번복은 해당 상태 변경과 같은 트랜잭션으로 기록하며 사건/판정 행의 UPDATE·DELETE는 추가하지 않는다. 열람은 별도 append다.
 설명·개입·판정 번들에는 인자 키·값·요청/응답 본문·자유 산문을 포함하지 않는다. 번복은 이미 전송된 호출이나 외부 효과를 복구하지 않는다. 실제 PostgreSQL 검증은 기기에서 수행한다.
+
+## MCP 클라이언트 세션 종료 (D-146)
+
+- `mcp_client_sessions`: 다운스트림 `Mcp-Session-Id`의 SHA-256, 검증된 주체·토큰 `jti`·장치·개별 서버 경로 및 종료 상태. 세션 ID 원문은 저장하지 않는다.
+- `mcp_session_events`: 주체·장치·서버·세션 종료 사유와 종료 수를 append-only로 기록한다. 게이트웨이 내부 재접근 차단 기록이며 제공자 자원 거부(C4) 증거가 아니다.
+- `oauth_issued_tokens` / `oauth_refresh_tokens` / `agent_revoked_tokens`: 계정·장치 종료 때 기존 토큰과 관련 리프레시 계열의 재사용을 막는다.

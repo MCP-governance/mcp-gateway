@@ -734,6 +734,10 @@ async def deregister_server(server_id: str, actor: str, reason: str | None = Non
         await registry.sync()
     await upstream.release_pool(endpoint, None, "deregister")
     await review.record_event("server-deregister", "recorded", "server", server_id, actor, reason=reason)
+    # Last: ServerPath already refuses the removed path, so a failure here costs no access
+    # but must not cost the audit record above.
+    from . import mcp_sessions
+    await mcp_sessions.terminate(reason="deregister", server_id=server_id)
     return {"server_id": server_id, "status": "DISABLED"}
 
 
@@ -1763,7 +1767,10 @@ CONNECTION_DENIAL_WINDOW_SECONDS = 60
 CONNECTION_DENIALS_PER_WINDOW = 20
 
 
-async def record_connection_denial(user: dict, server_id: str, method: str, client: dict) -> int | None:
+async def record_connection_denial(user: dict, server_id: str | None, method: str, client: dict, *,
+                                  policy_id: str = "MCP-REGISTRY-001",
+                                  reason: str = "등록·승인되지 않은 MCP 경로의 연결을 차단했습니다.",
+                                  summary: str = "미등록 MCP 연결 차단") -> int | None:
     """A refused connection is evidence too; it is not a tools/call execution.
 
     One harness start sends initialize, GET and discovery to the same path, and a stale
@@ -1772,7 +1779,7 @@ async def record_connection_denial(user: dict, server_id: str, method: str, clie
     minute; the 404 is returned either way. Every row takes the audit-chain lock, so an
     unbounded path here would let one token slow down every other decision.
     """
-    server_id = server_id[:120]
+    server_id = server_id[:120] if server_id else None  # None: the aggregate endpoint
     seen = await db.fetch_one(
         """SELECT max(id) FILTER (WHERE server_id=%s) AS same, count(*) AS n FROM decisions
             WHERE user_token=%s AND action='connect' AND created_at > now() - make_interval(secs => %s)""",
@@ -1791,8 +1798,8 @@ async def record_connection_denial(user: dict, server_id: str, method: str, clie
         "data_class": "public", "action": "connect", "upstream_executed": False,
         "upstream_attempted": False, "client": {**client, "event_kind": "mcp-connection"},
         "request_payload": {"server_id": server_id, "method": method[:80]},
-        "summary": "미등록 MCP 연결 차단",
-        **local_verdict("MCP-REGISTRY-001", "Block", "등록·승인되지 않은 MCP 경로의 연결을 차단했습니다."),
+        "summary": summary,
+        **local_verdict(policy_id, "Block", reason),
     }
     return await _record_decision(event)
 

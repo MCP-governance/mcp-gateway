@@ -13,7 +13,7 @@
 | DEV-05 | OAuth 대상·scope·철회 검증 | [논문·명세](../papers/README.md) | 다른 audience·scope·만료·철회 입력의 전송 전 차단과 정상군 | 조사·설계 |
 | DEV-06 | 응답 통제와 실행 증거 분리 | [통제 설계](../methodology/control-design.md) | masked/held/released 결과와 upstream 실제 실행을 별도 보고 | 설계·새 실험 미실행 |
 | DEV-07 | 상용·OSS 비교 재현 | [제품 분석](../solutions/README.md) | 같은 도구·정상군·공격군·검사기 장애·독립 효과의 비교표 | 소스/문서 분석 완료, 실행 미실행 |
-| DEV-08 | 종료 C3/C4의 자원 서버 차이 | [종료 모델](../../../docs/ai/TERMINATION_MODEL.md) | introspection TTL·캐시·발급 토큰의 재접근과 T1~T3 증거 | 문서·설계 |
+| DEV-08 | 종료 C3/C4의 자원 서버 차이 | [종료 모델](../../../docs/ai/TERMINATION_MODEL.md) | introspection TTL·캐시·발급 토큰의 재접근과 T1~T3 증거 | 구현 일부: G07.02 세션 결속·폐기 기록 및 AsyncMock 시험 2건(D-146). PostgreSQL·실제 SDK·솔루션 배포·PJ1 검증 대기 |
 | DEV-09 | 한국어 PII/Secret 평가 | [PII/Secret 도입](../../../docs/ai/OSS_ADOPTION_2026-10-03.md), [D 보고](reports/2026-10-15-inspection-corpus.md) | 합성 한국어 표본의 탐지·마스킹·성능·scanner fail closed | 조사 붙은 한국어 식별자 18개 분류 전부 마스킹(합성), 카드 Luhn, 분석기 2KB 42.8→23.6ms. 병합본 한국어 PII 평가 통과·분석기 재빌드 배포. 같은 작성자 표본 한계 |
 | DEV-10 | field 포트 배치와 CI 기대값 대조 | [실패 CI](https://github.com/MCP-governance/mcp-gateway/actions/runs/38346569656), [이전 동일 실패](https://github.com/MCP-governance/mcp-gateway/actions/runs/37201934077) | Caddy+모델 프록시의 정확한 서비스·Tailnet 주소·포트·프로토콜 집합, 임의 게시 거부 | TLS·CA 및 무시 대상 원본 CI 경고 처리. `.git/index.lock` 권한 거부로 커밋 미생성, GitHub Actions 재실행 미완료; [작업 보고](reports/2026-10-20-ci-field-tls.md) |
 | DEV-11 | CPU·메모리·연결 지연 | [설계](reports/2026-10-13-feature-design.md), [10-15 보고](reports/2026-10-15-wbs-implementation.md) | 관리자·Console scope, 실제 /proc·고정 TCP 경로, 결측·오래된 값·CPU 긴 간격 제외 | 도구 호출 구간별 시간(decisions.timings)·/api/latency·지연 탭·시스템 상태 카드, 엔드포인트→게이트웨이 망 품질. 실측 게이트웨이 자체 약 85–110ms, 나머지는 업스트림·Tailscale 중계. 3차 배포 |

@@ -95,20 +95,33 @@ class RequireBearer:
                     body["policy_id"] = headers["X-Endpoint-Policy"]
                 await JSONResponse(body, status_code=exc.status_code, headers=headers)(scope, receive, send)
                 return
+            # The SDK routes on the first Mcp-Session-Id (Starlette Headers.get) while dict() keeps
+            # the last, so with two the session ServerPath checks is not the one the SDK serves.
+            session_ids = [value for key, value in scope.get("headers") or [] if key == b"mcp-session-id"]
+            if len(session_ids) > 1:
+                await JSONResponse({"detail": "Mcp-Session-Id 헤더는 하나만 보낼 수 있습니다."},
+                                   status_code=400)(scope, receive, send)
+                return
+            session_id = session_ids[0].decode("latin-1") if session_ids else ""
         status = None
 
         async def response(message):
             nonlocal status
             if message["type"] == "http.response.start":
                 status = message["status"]
+                issued = dict(message.get("headers") or []).get(b"mcp-session-id", b"").decode("latin-1")
+                if issued and scope["type"] == "http":
+                    user = scope["authenticated_mcp_user"]
+                    claims = user.get("claims") or {}
+                    if claims.get("jti"):
+                        await upstream.register_downstream(issued, user["principal"], claims["jti"],
+                                                           claims.get("device_id"), scope.get("mcp_server"))
             await send(message)
 
         try:
             await self.app(scope, receive, response)
         finally:
             if scope["type"] == "http" and scope.get("method") == "DELETE" and status in {200, 202, 204}:
-                headers = dict(scope.get("headers") or [])
-                session_id = headers.get(b"mcp-session-id", b"").decode("latin-1")
                 user = scope["authenticated_mcp_user"]
                 jti = (user.get("claims") or {}).get("jti")
                 if session_id and jti:
@@ -170,7 +183,34 @@ class ServerPath:
                                         "decision": "Block", "policy_id": "MCP-REGISTRY-001",
                                         "decision_id": decision_id}, status_code=404)(scope, receive, send)
                     return
+                scope["mcp_server"] = name
                 scope = dict(scope, path=root + "/", raw_path=(root + "/").encode(), mcp_server=name)
+            # After the registry check, so a removed server keeps its MCP-REGISTRY-001 record.
+            # RequireBearer already refused a second Mcp-Session-Id.
+            session_id = next((value.decode("latin-1") for key, value in scope.get("headers") or []
+                               if key == b"mcp-session-id"), "")
+            user = scope["authenticated_mcp_user"]
+            claims = user.get("claims") or {}
+            if session_id and not await upstream.active_downstream(session_id, user["principal"],
+                                                                   claims.get("device_id"), name or None):
+                # MCP transport: a session the server no longer serves is answered 404 and the
+                # client starts a new one with initialize. A session the gateway never bound
+                # (e.g. opened before this binding existed) is that case alone, not a refusal.
+                refusal = await upstream.downstream_refusal(session_id)
+                body = {"detail": "MCP 세션이 종료됐습니다. 새 세션을 시작하세요."}
+                if refusal:
+                    decision_id = None
+                    if scope.get("method") != "DELETE":  # closing an ended session is not an access attempt
+                        agent = dict(scope.get("headers") or []).get(b"user-agent", b"").decode("latin-1")[:120]
+                        decision_id = await core.record_connection_denial(
+                            user, name or None, scope.get("method", "unknown"), {
+                                "harness": {"user_agent": agent}, "agent": agent,
+                                "workstation": claims.get("client_id"), "oauth_client": claims.get("client_id"),
+                                "token_jti": claims.get("jti"), "endpoint": name[:120],
+                            }, **refusal)
+                    body.update(decision="Block", policy_id=refusal["policy_id"], decision_id=decision_id)
+                await JSONResponse(body, status_code=404)(scope, receive, send)
+                return
         await self.app(scope, receive, send)
 
 

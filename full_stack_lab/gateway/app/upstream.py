@@ -159,6 +159,25 @@ async def close_downstream(principal: str, conversation: tuple[str, str]) -> Non
     await _sessions.close(principal=principal, conversation=digest)
     await db.execute("INSERT INTO upstream_pool_events(endpoint, principal, reason) VALUES (NULL,%s,%s)",
                      (principal, "downstream:" + digest))
+    from . import mcp_sessions
+    await mcp_sessions.terminate(reason="client-delete", principal=principal, session_id=conversation[0])
+
+
+async def active_downstream(session_id: str, principal: str, device_id: str | None,
+                            server_id: str | None) -> bool:
+    from . import mcp_sessions
+    return await mcp_sessions.active(session_id, principal, device_id, server_id)
+
+
+async def downstream_refusal(session_id: str) -> dict | None:
+    from . import mcp_sessions
+    return await mcp_sessions.refusal(session_id)
+
+
+async def register_downstream(session_id: str, principal: str, jti: str, device_id: str | None,
+                              server_id: str | None) -> None:
+    from . import mcp_sessions
+    await mcp_sessions.register(session_id, principal, jti, device_id, server_id)
 
 
 SWEEP_SECONDS = 2.0

@@ -1,0 +1,62 @@
+# G07.02 MCP 세션 종료·재접근 차단 적대적 검토 (2026-10-20)
+
+대상: `git diff f5f4eed..HEAD` (브랜치 `10/20-session-termination`, 95b117c 구현 + 9422f56 수정, D-146). 읽기 전용 검토이며 제품 코드는 고치지 않았다.
+
+## 결론
+
+**수정 후 병합.** 저장소의 결속 로직(`mcp_sessions.active`)은 토큰 교체를 견디고 주체·장치·경로를 바르게 비교하지만, 이를 부르는 `RequireBearer` 배선에서 두 가지 높음 결함이 나왔다. ① `Mcp-Session-Id` 헤더를 두 번 보내면 게이트는 마지막 값을, MCP SDK는 첫 값을 써서 결속 검사를 통째로 우회한다(재현함). ② 410을 먼저 돌려주는 바람에 기존 세션의 재접근 시도가 원장에 남던 거부 기록(등록 해제 서버의 `MCP-REGISTRY-001`, 종료 케이스 이후의 `MCP-DECOMM-001`)이 사라지고, 410 자체도 기록되지 않는다. 둘 다 고친 뒤 병합하는 것이 맞다.
+
+## 결함 표
+
+| 번호 | 심각도 | 문제 | 근거 파일:행 | 수정안 |
+|---|---|---|---|---|
+| 1 | 높음 | **헤더 중복으로 세션 결속 우회.** `dict(scope["headers"])`는 같은 이름의 헤더가 여러 개면 **마지막** 값을 고르고, SDK(`request.headers.get`, Starlette `Headers`)는 **첫** 값을 쓴다. `[피해자/종료된 세션, 내 활성 세션]` 순서로 보내면 게이트는 내 세션만 검사해 통과시키고, SDK는 첫 번째 세션으로 요청을 보낸다. 종료된 세션을 다시 쓸 수 있고, 탈취한 다른 주체의 세션에 GET SSE를 열거나 `DELETE`로 끊을 수도 있다(이때 `finally`는 마지막 값, 곧 공격자 자신의 세션을 종료로 기록한다). 스크래치 재현 결과: `gate checked: ['OWN'] / SDK routed to: ['VICTIM'] / status 200` | `main.py:98-99`, `main.py:118`, `main.py:131-132`; SDK `streamable_http_manager.py:215`; `mcp_facade.py:58` | `mcp-session-id`가 2개 이상이면 400으로 거부한다. 단일 값은 SDK와 같은 `starlette.datastructures.Headers(scope=scope).get`으로 읽는다(검사·등록·DELETE 세 곳 모두). 같은 이유로 `authorization`의 중복도 거부한다. |
+| 2 | 높음 | **410 선차단이 원장 증거를 가로챈다.** 세션 검사가 `ServerPath`보다 앞에 있다. 그래서 (a) 등록 해제된 서버로 기존 세션이 다시 요청하면, 전에는 `record_connection_denial`이 `MCP-REGISTRY-001` 거부를 `decisions`에 남겼는데 이제는 410으로 끝나고 아무것도 남지 않는다. (b) 종료 케이스 cutover 뒤 기존 세션의 `tools/call`은 dispatch까지 가지 못해 `MCP-DECOMM-001` 거부 행이 생기지 않는다. 그러면 C3 직접 증거인 `_post_cutover`의 `blocked`·`last_attempt`가 실제보다 적게 잡힌다. 410 응답에는 `decision`·`policy_id`가 없고 어떤 표에도 기록되지 않아, AGENTS.md의 "판정은 decision과 policy_id까지"를 만족하지 못한다. D-146의 "종료 판정 기준을 바꾸지 않는다"는 판정 **기준**만 보면 맞지만, 판정이 쓰는 **증거 모집단**은 줄어든다. | `main.py:98-110`, `main.py:152-192`, `decommission.py:602-621`, `core.py:1756-1781` | 세션 검사를 `ServerPath`의 등록 확인 **뒤**로 옮긴다. 거부할 때는 `record_connection_denial`(분당 1건 제한이 이미 있음)에 새 정책 ID(예: `MCP-SESSION-001`)로 기록하고, 응답 본문에 `decision: Block`과 `policy_id`를 넣는다. 3번처럼 404를 돌려주는 방법도 있다. 그러면 하네스가 다시 initialize해 기존에 기록되는 거부 경로로 들어가므로 증거가 자연히 복원된다. |
+| 3 | 중간 | **410은 MCP 규격 위반이고 정상 하네스의 자동 복구를 막는다.** Streamable HTTP 규격은 서버가 세션을 끝낸 뒤 그 ID로 오는 요청에 **반드시 404**로 답하고, 클라이언트는 404를 받으면 세션 ID 없이 다시 initialize하도록 정해 둔다. 410을 받은 하네스는 일반 오류로 처리해 재연결하지 않는다. 정상 주체가 410을 받는 경우: 배포 직전에 열려 있던 세션(행이 없음), 종료 케이스 `reopen_case`나 같은 서버 재등록 뒤의 기존 세션, 계정 재활성 뒤 새 토큰으로 이어 쓰는 기존 세션. | `main.py:108-110`, `decommission.py:790-817`, `core.py:698` | 404를 돌려준다. 주체 중지·장치 철회·등록 해제는 다시 initialize해도 인증(403/401)이나 `ServerPath`(404)에서 막히므로 404로 바꿔도 보안이 약해지지 않는다. |
+| 4 | 중간 | **새 단계가 기존 철회 단계보다 앞에 있고 오류가 격리되지 않았다.** `mcp_sessions.terminate`가 DB 오류(일시 장애, 마이그레이션 미적용 등)를 내면 뒤의 단계가 모두 건너뛰어진다. 계정 중지는 상태 UPDATE가 이미 커밋된 뒤라 풀 폐기, 콘솔 세션 삭제, OIDC 종료, 토큰 철회가 빠진다. 장치 철회는 토큰 철회와 풀 폐기가 빠진다. 등록 해제는 `review.record_event("server-deregister")` **감사 기록이 사라진다.** 종료 케이스는 상류 풀(자격 헤더를 쥔 연결) 폐기가 빠진다. | `agent_service.py:749-756`, `agent_service.py:774-781`, `endpoint_plane.py:626-630`, `core.py:734-737`, `decommission.py:270-272` | 기존 차단·기록 단계를 먼저 실행하고 세션 종료는 마지막에 둔다. 아니면 `release_pool`의 공지처럼 `try/except`로 감싸 로그만 남긴다. 등록 해제의 감사 기록은 어떤 경우에도 먼저 남긴다. |
+| 5 | 중간 | **`mcp_session_events`의 append-only가 강제되지 않는다.** 문서(DATA_MODEL, 모듈 docstring)는 append-only라고 적지만 트리거가 없다. 같은 파일에 `reject_record_mutation()`과 `approval_events`·`audit_annotations`용 트리거 패턴이 이미 있다. | `v2_tables.sql:351-360`, 비교 `v2_tables.sql:235-247` | `CREATE TRIGGER mcp_session_events_append_only BEFORE UPDATE OR DELETE ON mcp_session_events FOR EACH ROW EXECUTE FUNCTION reject_record_mutation();`를 추가한다. |
+| 6 | 중간 | **집계 경로 세션은 서버 종료·해제 때 끊기지 않는다.** `/mcp/` 세션은 `server_id IS NULL`로 기록된다. 그래서 `terminate(server_id=X)`는 X의 도구를 부를 수 있는 집계 세션을 건드리지 않는다. 실제 호출은 dispatch와 레지스트리가 막지만, 보고서와 DECISIONS의 "해당 서버 결속 세션 무효화"는 집계 경로를 빠뜨린 주장이다. | `mcp_sessions.py:31-37`, `main.py:106`, DECISIONS D-146 | 서버 단위로 종료할 때 집계 세션(`server_id IS NULL`)도 함께 종료한다. 3번이 적용되면 하네스가 404 뒤 다시 initialize하므로 비용이 작다. 이 방식을 택하지 않는다면 한계에 명시한다. |
+| 7 | 중간 | **장치 하나를 철회하면 같은 주체의 다른 장치 상류 세션까지 초기화된다.** `release_pool(None, owner_token, …)`이 주체 전체의 상류 풀을 닫는다. 다른 PC나 비관리 경로에서 실행 중인 하네스의 D-115 상류 세션(상태 있는 서버)이 끊긴다. 질문 1의 "여러 하네스 동시"에 해당한다. | `endpoint_plane.py:629-630`, `upstream.py:125-139` | 그 장치에서 종료된 세션의 대화 키만 닫는다(종료 행에서 해시 대신 대화 digest를 찾을 수 있게 결속한다). 그것이 어렵다면 주체 단위 폐기라는 의도와 영향을 DECISIONS 한계에 명시한다. |
+| 8 | 낮음 | **종료와 initialize가 겹치면 종료 뒤에 활성 행이 생긴다.** 종료 직전에 인증을 통과한 initialize는 응답 시점에 `register`로 새 활성 행을 만든다. `terminate`의 UPDATE는 그 행을 보지 못한다. 주체·장치는 다음 요청에서 인증이, 서버는 dispatch나 레지스트리가 막으므로 실제로 우회되지는 않는다. 다만 "종료 뒤 활성 세션 0"이라는 불변식은 깨진다. | `main.py:113-125`, `mcp_sessions.py:13-18`, `mcp_sessions.py:39-43` | `active()`에 `NOT EXISTS (SELECT 1 FROM mcp_session_events e WHERE e.created_at >= s.created_at AND 범위 일치)`를 더한다. 아니면 `register` 때 주체 상태와 서버 lifecycle을 다시 확인한다. |
+| 9 | 낮음 | **DELETE 예외 조건이 죽은 코드다.** `scope.get("path")`는 항상 비어 있지 않아 조건이 사실상 `if session_id`가 된다. 종료된 세션의 DELETE도 410을 받으므로, 게이트웨이가 닫지 않는 SDK 메모리 내 세션 객체를 클라이언트가 정리할 길도 없다(DECISIONS 한계와 같은 문제). | `main.py:100`, `main.py:127-136` | 조건을 지우거나, 같은 주체의 DELETE는 종료 상태여도 SDK까지 통과시켜 메모리를 정리하게 한다. |
+| 10 | 낮음 | **모든 응답마다 INSERT가 나간다.** SDK는 세션 헤더를 모든 응답에 붙이므로 요청마다 `ON CONFLICT DO NOTHING` 쓰기가 한 번씩 더 생긴다. | `main.py:118-124` | 요청에 `Mcp-Session-Id`가 없을 때(initialize)만 등록한다. |
+| 11 | 낮음(기존) | **같은 종류의 결함이 D-115에 남아 있다.** 상류 대화 키가 아직 `(session_id, jti)`이다. 그래서 약 5분마다 오는 토큰 교체 때 상류 세션이 새로 열리고, DELETE 때 `close_downstream`은 현재 jti의 대화만 닫아 이전 jti의 상류 세션이 유휴 만료까지 남는다. 이번 diff가 하류에서 고친 결함과 같은 종류다. | `mcp_facade.py:56-63`, `upstream.py:157-163` | 별도 작업으로 상류 대화 키에서 jti를 빼고 주체·장치·세션으로 결속하는 방안을 검토한다. |
+| 12 | 낮음 | **시험이 배선을 다루지 않는다.** `session_termination_check.py`는 `mcp_sessions`를 AsyncMock으로 단위 시험할 뿐이다. 헤더 추출, 경로에서 server_id 도출, 응답 시 등록, 410, `ServerPath`와의 순서는 시험되지 않아 1·2번이 걸리지 않았다. | `tests/session_termination_check.py` 전체 | `upstream_session_reuse_test.py`처럼 AST로 `RequireBearer`를 불러 중복 헤더, 미등록 서버와 세션 헤더, 토큰 교체 사례를 시험한다. |
+| 13 | 낮음 | **계정 중지 때 로컬 토큰 철회가 가장 늦다.** 외부 IdP 철회(세션당 최대 10초, 순차 실행)가 끝난 뒤에야 로컬 토큰을 철회한다. 상태 확인이 이미 막고 있어 실제 위험은 작지만, 관리자 요청이 시간 초과되면 순서가 남은 단계를 위협한다. | `agent_service.py:752-756`, `oidc.py:364-378` | `revoke_principal_tokens`를 외부 호출보다 먼저 실행한다. |
+| 14 | 정보 | **콘솔 규칙(질문 5)**: 콘솔 화면은 변경되지 않았다. 410 문구는 한국어다. `reason` 값(`principal-disabled`, `deregister` 등)은 영어 enum이지만 DB에만 저장되고 화면에 나오지 않는다. 계정 상태가 `locked`여도 `principal-disabled`로 기록되는 점만 다르다. 나중에 콘솔에 표시하려면 한국어 대응표가 있어야 한다. | `agent_service.py:750`, `mcp_sessions.py:31-48` | 지금 위반은 없다. 표시 기능을 추가할 때 대응표를 둔다. |
+
+## 검토 질문별 판단
+
+1. **정상 세션이 끊기는 경로**: 토큰 교체(`jti`)는 9422f56 이후 끊기지 않는다(단위 시험 통과 확인). 장치 ID는 `/oauth/device-token`이 매번 같은 `endpoint_id`를 넣어 안정적이다(`idp.py:196`). 비관리 경로(`device_id` 없음)는 NULL 안전 비교라 정상이다. 경로 대소문자, 이중 슬래시, 퍼센트 인코딩은 게이트와 `ServerPath`가 같은 식으로 계산하고 레지스트리가 정확 일치로 비교하므로 어긋나지 않는다. SDK가 세션 ID 없이 initialize를 다시 보내는 것도 검사 대상이 아니라 정상이다. 남은 위험은 3번(410이라 자동 복구가 안 됨), 7번(다른 장치의 상류 세션 초기화), 11번(상류 jti 키)이다.
+2. **우회**: 종료된 주체가 새로 initialize하면 `authenticated_user`의 상태 확인에서 403이 난다. 철회된 장치는 `managed_failure`(장치 상태)와 `agent_revoked_tokens`에서 막힌다. 등록 해제된 서버는 `ServerPath`가 404를 낸다. 종료 케이스 서버는 initialize는 되지만 dispatch가 `MCP-DECOMM-001`로 막는다. 즉 새 세션 경로는 전송 토큰 검증과 기존 층이 이미 막는다. `session_hash` 충돌은 SDK가 만드는 uuid4(128비트)와 SHA-256 조합이라 무시해도 된다. 다른 주체의 세션 ID를 쓰는 것은 결속 비교가 정상적으로 막지만, **1번 헤더 중복으로 우회된다.** `terminated_at` 경합은 8번 참고. 이미 검사를 통과해 진행 중인 요청은 dispatch의 cutover 잠금이 막는다.
+3. **실패 시 차단**: `active()`에서 DB 오류가 나면 예외가 전파되어 500이 되므로 허용되지는 않는다(차단). 다만 정책 ID와 기록이 없다. `register()` 오류는 응답 헤더를 보내기 전에 예외가 나서 500이 되고, 그 세션은 행이 없어 이후 410이 된다(차단). `terminate()` 오류는 4번처럼 기존 철회와 감사 기록을 건너뛴다. 이것이 실패 처리의 실제 결함이다.
+4. **원장·기록**: 세션 ID 원문은 저장되지 않는다(SHA-256만 저장, `upstream_pool_events`도 대화 digest만 저장). `mcp_session_events`는 코드에서 INSERT만 하지만 DB 수준 강제는 없다(5번). 410 거부와 우회 시도는 어디에도 기록되지 않는다(2번).
+5. **콘솔 규칙**: 14번. 위반 없음.
+
+## 확인한 실행
+
+- `python -m unittest discover -s full_stack_lab/tests -p session_termination_check.py`: 4건 통과.
+- `python -m unittest discover -s full_stack_lab/tests -p upstream_session_reuse_test.py`: 40건 통과.
+- 1번 재현: `main.py`에서 `RequireBearer`만 AST로 불러 실행했다. Starlette 1.6.0 기준 `dict()`는 `OWN`, `Headers.get()`은 `VICTIM`을 돌려주고 응답은 200이었다(스크립트는 세션 스크래치에만 두었고 저장소에는 넣지 않았다).
+- 실제 PostgreSQL, 솔루션 기기, PJ1 하네스에서는 실행하지 않았다.
+
+## 처리 결과 (같은 날 후속 커밋)
+
+| 번호 | 처리 | 내용 |
+|---|---|---|
+| 1 | 수정 | `RequireBearer`에서 `mcp-session-id`가 2개 이상이면 400으로 거부한다. 값은 ASGI 헤더 목록의 첫 값으로 읽는다(SDK의 `Headers.get`과 같다). DELETE 정리도 같은 값을 쓴다(`main.py` RequireBearer). |
+| 2 | 수정 | 세션 확인을 `ServerPath`의 레지스트리 확인 뒤로 옮겼다. 등록 해제된 서버로 오는 요청은 기존대로 `MCP-REGISTRY-001` 연결 거부로 기록된다. 결속된 세션을 거부할 때는 `core.record_connection_denial`(정책 ID·사유·요약 인수 추가, 기본값은 기존과 같음)에 남긴다. 정책은 `mcp_sessions.refusal`이 고른다: 종료 케이스는 `MCP-DECOMM-001`이라 `_post_cutover`의 `server_id`·cutover 이후 집계에 들어가고, 그 밖의 종료는 `PAC-14`, 결속 불일치는 `PAC-04`다. 응답 본문에 `decision`·`policy_id`·`decision_id`가 들어간다. 종료된 세션을 닫는 DELETE는 접근 시도가 아니므로 기록하지 않는다. |
+| 3 | 수정 | 410을 404로 바꿨다(MCP 전송 규격). 게이트웨이가 결속한 적 없는 세션(배포 전에 열린 세션 등)은 기록 없이 404를 받고 새 initialize로 복구한다. |
+| 4 | 수정 | 세션 종료를 각 절차의 마지막 단계로 옮겼다(계정 중지·삭제, 장치 철회, 등록 해제, 종료 케이스, 클라이언트 DELETE). 실패하면 예외는 그대로 올라가지만, 토큰 철회·풀 폐기·`server-deregister` 감사 기록은 이미 끝난 뒤다. 계정 절차에서는 로컬 토큰 철회를 외부 IdP 철회보다 앞에 두었다(13번 함께 처리). |
+| 5 | 수정 | `v2_tables.sql`에 `mcp_session_events_append_only` 트리거를 추가했다(기존 `reject_record_mutation()` 재사용). |
+| 6 | 미처리 | 집계 경로 세션까지 서버 단위로 종료하면 조직 전체의 집계 세션이 서버 하나가 바뀔 때마다 끊긴다. 집계 URL의 실제 배포 여부(D-30)를 확인한 뒤 결정한다. 지금은 dispatch와 레지스트리가 호출을 막는다. |
+| 7 | 미처리 | 장치 단위로 상류 풀을 폐기하려면 상류 키에 장치를 넣어야 한다(D-115 변경). 11번과 함께 별도 작업으로 넘긴다. |
+| 8 | 미처리 | 다음 요청에서 인증·레지스트리·dispatch가 막는다. 불변식 강화는 PostgreSQL 시험과 함께 다룬다. |
+| 9 | 부분 | 죽은 DELETE 조건은 검사를 옮기면서 사라졌다. 종료된 세션의 SDK 메모리 정리는 미처리다. |
+| 10, 11 | 미처리 | 성능 개선(10)과 기존 D-115 키 문제(11)는 이번 범위가 아니다. |
+| 12 | 수정 | `session_termination_check.py`에 시험 7건을 추가했다. `RequireBearer`→`ServerPath` 배선을 AST로 실행해 중복 헤더 400, 등록 해제 서버 재요청 시 `MCP-REGISTRY-001` 기록 유지, 종료 세션 404와 정책 기록, 결속 없는 세션 404(기록 없음), 정상 세션 통과, 집계 경로를 확인한다. 거부 정책 분류와 등록 해제 감사 기록 순서도 시험한다. 기존 4건의 기대값은 바꾸지 않았다(대역 DB에 새 조회 분기만 추가). |
+| 13 | 수정 | 4번과 함께 처리했다. |
+
+로컬 확인: `session_termination_check.py` 11건 통과, `upstream_session_reuse_test.py` 40건 통과, pyflakes 무경고. 수정 전 `main.py`에서는 새 배선 시험 4건이 실패해, 시험이 결함을 실제로 잡는다는 것을 확인했다.
+
+기기에서 아직 돌리지 않은 시험: `field up` 기동(새 트리거 DDL 적용), `token_revocation_pg_check.py`·`managed_enrollment_check.py`(장치 철회), `intake_identity_pg_check.py`(등록 해제), `dispatch_intent_pg_check.py`·`termination_lab.py`·`termination_flow.py`(종료 케이스), `dispatch_effect_lab.py`(계정 중지), `acceptance.py`의 `MCP-REGISTRY-001` 확인. PJ1에서는 Claude Code와 Codex로 세션을 연 뒤 서버 종료 케이스를 열고, 404 다음 자동 initialize와 `decisions`의 `MCP-DECOMM-001` connect 행을 확인한다. 같은 요청에 `Mcp-Session-Id`를 두 번 넣어 400이 나오는지도 확인한다.

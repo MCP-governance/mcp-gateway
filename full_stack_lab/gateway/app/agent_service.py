@@ -29,7 +29,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from psycopg.types.json import Jsonb
 
-from . import connections, consent, core, db, oidc, provenance, review, upstream
+from . import connections, consent, core, db, idp, oidc, provenance, review, upstream
 from . import risk_tier, supplier_assurance
 from .release import build_info
 from .system_metrics import SystemMetrics
@@ -747,6 +747,15 @@ async def set_account_status(user_id: str, request: AccountStatus,
         raise HTTPException(404, "관리대장에 없는 계정입니다.")
     if request.status != "active":
         await upstream.release_pool(None, row["token"], "principal")
+        await idp.revoke_principal_tokens(row["user_id"])
+        await db.execute("DELETE FROM console_sessions WHERE user_id=%s", (row["user_id"],))
+        bindings = await db.fetch_all("SELECT id FROM oidc_bindings WHERE principal=%s", (row["token"],))
+        for binding in bindings:
+            await oidc.end_binding_sessions(binding["id"])
+        # Last: the account status already refuses every token, so a failure here must not
+        # leave the revocations above undone.
+        from . import mcp_sessions
+        await mcp_sessions.terminate(reason="principal-disabled", principal=row["token"])
     label = {"active": "사용", "disabled": "중지", "locked": "잠금"}[request.status]
     return {"account": row,
             "message": f"{row['display_name'] or row['email']} 계정을 {label} 상태로 변경했습니다."}
@@ -765,6 +774,13 @@ async def delete_account(user_id: str, authorization: str | None = Header(defaul
         (user["principal"], user_id))
     if row:
         await upstream.release_pool(None, row["token"], "principal")
+        await idp.revoke_principal_tokens(user_id)
+        await db.execute("DELETE FROM console_sessions WHERE user_id=%s", (user_id,))
+        bindings = await db.fetch_all("SELECT id FROM oidc_bindings WHERE principal=%s", (row["token"],))
+        for binding in bindings:
+            await oidc.end_binding_sessions(binding["id"])
+        from . import mcp_sessions
+        await mcp_sessions.terminate(reason="principal-deleted", principal=row["token"])
     if not row:
         row = await db.fetch_one("SELECT email FROM principals WHERE user_id=%s AND status='deleted'", (user_id,))
         if not row:
