@@ -62,7 +62,8 @@ def deadlines(detected_at: str | datetime, jurisdiction_ids: list[str], now: str
 
 def package_hash(package: dict) -> str:
     payload = {key: value for key, value in package.items() if key != "package_sha256"}
-    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str).encode()
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+                         default=lambda value: value.isoformat() if isinstance(value, datetime) else str(value)).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
 
 

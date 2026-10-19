@@ -56,7 +56,7 @@ async def list_cases() -> dict:
                FROM approval_events WHERE kind='incident-report' AND target_kind='incident-stage' AND target_id=%s
                GROUP BY scope->>'jurisdiction',scope->>'stage'""", (str(row["id"]),))
         completed = {(r["jurisdiction"], r["stage"]): r["reported_at"] for r in stage_rows}
-        deadlines = incident_pack.deadlines(row["detected_at"], row["jurisdictions"], datetime.now(timezone.utc), assessed_at=row["assessed_at"])
+        deadlines = incident_pack.deadlines(row["detected_at"], row["jurisdictions"], datetime.now(timezone.utc), assessed_at=row.get("assessed_at"))
         for stage in deadlines:
             stage["reported_at"] = completed.get((stage["jurisdiction"], stage["stage"]))
             if stage["reported_at"]:
@@ -115,7 +115,7 @@ async def detail(incident_id: UUID | str) -> dict:
                                             for row in approval_history],
         "connection_stop_history": [{key: value for key, value in row.items() if key not in {"reason", "resumed_by", "resume_note"}}
                                     for row in suspensions],
-        "jurisdiction_deadlines": incident_pack.deadlines(case["detected_at"], case["jurisdictions"], datetime.now(timezone.utc), assessed_at=case["assessed_at"]),
+        "jurisdiction_deadlines": incident_pack.deadlines(case["detected_at"], case["jurisdictions"], datetime.now(timezone.utc), assessed_at=case.get("assessed_at")),
         "reported_stages": [{"reported_at": row["created_at"], **row["scope"],
                              "actor_ref": hashlib.sha256(row["actor"].encode()).hexdigest() if row.get("actor") else None}
                             for row in reports],
@@ -151,7 +151,7 @@ async def check_deadlines() -> None:
             """SELECT scope->>'jurisdiction' AS jurisdiction,scope->>'stage' AS stage FROM approval_events
                WHERE kind='incident-report' AND target_kind='incident-stage' AND target_id=%s""", (str(case["id"]),))
         completed = {(row["jurisdiction"], row["stage"]) for row in completed_rows}
-        deadlines = incident_pack.deadlines(case["detected_at"], case["jurisdictions"], now, assessed_at=case["assessed_at"])
+        deadlines = incident_pack.deadlines(case["detected_at"], case["jurisdictions"], now, assessed_at=case.get("assessed_at"))
         for deadline in incident_pack.alertable(deadlines, completed):
             await ops_response.emit_alert("incident-deadline", "incident", f"{case['id']}:{deadline['jurisdiction']}:{deadline['stage']}:{deadline['status']}",
                 {"incident_id": str(case["id"]), "jurisdiction": deadline["jurisdiction"], "stage": deadline["stage"], "due_at": deadline["due_at"].isoformat(), "status": deadline["status"]})
