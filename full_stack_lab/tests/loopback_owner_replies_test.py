@@ -1,6 +1,7 @@
 """Offline D-119 checks. No kernel rules, credentials, network or MCP server are used."""
 import importlib.util
 import io
+import json
 import os
 import re
 import sys
@@ -89,19 +90,27 @@ class Installer(unittest.TestCase):
         b = self.bootstrap
         with tempfile.TemporaryDirectory() as folder:
             enrollment = Path(folder) / "enrollment.json"
-            enrollment.write_text("{}")
+            enrollment.write_text('{"gateway_url":"https://gateway.example"}', encoding="utf-8")
             for companion in (True, False):
                 with self.subTest(companion=companion), \
                      mock.patch.object(sys, "argv", ["bootstrap.py", "--skip-login", "--enrollment", str(enrollment)]), \
                      mock.patch.object(b, "os", SimpleNamespace(name="posix", geteuid=lambda: 0)), \
                      mock.patch.object(b, "employee_account", return_value="owner"), \
                      mock.patch.object(b, "managed_account", return_value=("managed", companion)), \
-                     mock.patch.object(b.pwd, "getpwnam", return_value=SimpleNamespace(pw_uid=1000), create=True), \
+                     mock.patch.dict(sys.modules, {"pwd": b.pwd, "grp": b.grp}), \
+                     mock.patch.object(b.pwd, "getpwnam", side_effect=lambda name:
+                                       SimpleNamespace(pw_uid={"owner": 1000, "managed": 1001}[name]),
+                                       create=True) as getpwnam, \
                      mock.patch.object(b, "ensure_packages"), mock.patch.object(b, "place_harnesses", return_value={}), \
                      mock.patch.object(b, "installed", return_value=False), mock.patch.object(b, "write_shims", return_value=[]), \
                      mock.patch.object(b, "install_managed", return_value={}) as install, redirect_stdout(io.StringIO()):
                     self.assertEqual(b.main(), 0)
+                    install.assert_called_once()
                     self.assertEqual(install.call_args.args[-1], 1000 if companion else None)
+                    if companion:
+                        getpwnam.assert_called_once_with("owner")
+                    else:
+                        getpwnam.assert_not_called()
 
     def test_device_code_command_on_success_failure_and_interrupt(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -122,22 +131,36 @@ class Installer(unittest.TestCase):
     def test_invalid_owner_fails_before_enrollment(self):
         managed = load("managed-linux")
         enforcer = load("enforce-linux")
+        modules = {"enforcer": enforcer, "transport_observer": load("agent")}
+        bundle = {"gateway_url": "https://gateway.example", "enrollment_token": "unit-enrollment"}
         person = SimpleNamespace(pw_uid=1001, pw_gid=1001, pw_dir="/home/managed", pw_name="managed")
         for owner in (0, 1001, 2**32, 1002):
             with self.subTest(owner=owner), \
                  mock.patch.object(managed.os, "geteuid", return_value=0, create=True), \
                  mock.patch.object(managed.os, "getgrouplist", return_value=[], create=True), \
                  mock.patch.object(managed.pwd, "getpwnam", return_value=person, create=True), \
-                 mock.patch.object(managed.pwd, "getpwuid", side_effect=KeyError(owner), create=True), \
+                 mock.patch.object(managed.pwd, "getpwuid", side_effect=KeyError(owner), create=True) as getpwuid, \
                  mock.patch.object(managed.subprocess, "run", return_value=SimpleNamespace(returncode=1)), \
                  mock.patch.object(managed.shutil, "which", return_value="/installed"), \
                  mock.patch.object(Path, "read_text", return_value="Y"), \
-                 mock.patch.object(managed, "load_module", return_value=enforcer), \
-                 mock.patch.object(managed, "request") as request, self.assertRaises((ValueError, KeyError)):
+                 mock.patch.object(managed, "load_module", side_effect=lambda name, path: modules[name]), \
+                 mock.patch.object(managed, "verify_transport", wraps=managed.verify_transport) as verify_transport, \
+                 mock.patch.object(enforcer, "nft_rules", wraps=enforcer.nft_rules) as nft_rules, \
+                 mock.patch.object(enforcer, "trusted_binary", side_effect=AssertionError("owner check was bypassed")), \
+                 mock.patch.object(managed, "request", side_effect=AssertionError("enrollment was reached")) as request, \
+                 self.assertRaises(KeyError if owner == 1002 else ValueError):
                 try:
-                    managed.install(SimpleNamespace(user="managed", owner_uid=owner))
+                    managed.install(SimpleNamespace(
+                        user="managed", owner_uid=owner, client=[],
+                        enrollment=SimpleNamespace(read_text=lambda: json.dumps(bundle))))
                 finally:
                     request.assert_not_called()
+                    verify_transport.assert_called_once_with(bundle)
+                    nft_rules.assert_called_once_with(1001, [], 443, owner_uid=owner)
+                    if owner == 1002:
+                        getpwuid.assert_called_once_with(owner)
+                    else:
+                        getpwuid.assert_not_called()
 
 
 class Observer(unittest.TestCase):
