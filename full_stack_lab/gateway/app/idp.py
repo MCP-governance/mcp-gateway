@@ -141,9 +141,12 @@ async def token(request: Request, grant_type: str = Form(...), client_id: str = 
             if row["managed_required"]:
                 await _revoke_family(stored["family_id"], connection)
                 return _error("invalid_grant", "관리형 엔드포인트 인증으로 전환했습니다. 기존 갱신 토큰은 폐기했습니다.", 403)
-            disposal.remember("refresh", _sha(refresh_token))
             await connection.execute("UPDATE oauth_refresh_tokens SET rotated_at=now() WHERE id=%s", (stored["id"],))
-            return await _issue(row, client_id, stored["family_id"], connection)
+            issued = await _issue(row, client_id, stored["family_id"], connection)
+        # After the commit (D-154): written first, a failed issuance left the list refusing a token the
+        # rolled-back DB still honours, and its next use revoked the whole family as a reuse.
+        disposal.remember("refresh", _sha(refresh_token))
+        return issued
     return _error("unsupported_grant_type", "password 또는 refresh_token만 지원합니다.")
 
 

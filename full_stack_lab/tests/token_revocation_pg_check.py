@@ -18,7 +18,7 @@ from starlette.requests import Request
 
 from app import db, endpoint_plane, idp
 from app.agent_contract import authenticated_user, public_key
-from termination_lab_support import Checks, add_principal, apply_schema, run, signing_keys
+from termination_lab_support import Checks, add_principal, apply_schema, isolated_disposal, run, signing_keys
 
 CHECKS = Checks("token, refresh family and device revocation (PostgreSQL)")
 REQUEST = Request({"type": "http", "client": ("127.0.0.1", 1), "headers": []})
@@ -151,7 +151,8 @@ async def device_revocation():
     current = await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint,))
     await endpoint_plane.revoke_device(endpoint, "tok-reviewer")
     CHECKS.ok("revoking the device refuses the token it already holds, at once (API and MCP)",
-              await verdict(body["access_token"]) == 403 and await verdict(body["access_token"], False) == 403)
+              # 401 since G07.04 records device tokens in the signed list (checked first); 403 from the device state.
+              await verdict(body["access_token"]) in {401, 403} and await verdict(body["access_token"], False) in {401, 403})
     refused = []
     for scope in endpoint_plane.DEVICE_SCOPES:
         try:
@@ -177,8 +178,10 @@ async def main():
     signing_keys()
     os.environ["AUTH_PROVIDER"] = "local"
     await apply_schema()
-    for case in (family_revocation, issue_against_revoke, issuance_rolls_back, device_revocation):
-        await CHECKS.case(case.__name__, case())
+    # D-123 made the signed disposal list mandatory (fail-closed); give the lab its own throwaway one.
+    with isolated_disposal():
+        for case in (family_revocation, issue_against_revoke, issuance_rolls_back, device_revocation):
+            await CHECKS.case(case.__name__, case())
     return CHECKS.finish()
 
 

@@ -1680,3 +1680,11 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 검증: Python 구문 컴파일과 diff 공백 검사를 수행한다. PostgreSQL 실험은 이 PC에서 실행하지 않는다. 솔루션 기기 명령은 `cd full_stack_lab && tests/termination_dispatch_lab.sh run oauth_negative_pg_check.py`이며, 실험실을 먼저 `up`해야 한다. 기존 토큰 폐기 시험도 기기에서 실행한다.
 - 한계: `_caller()` 인증 거부와 intent 0은 외부 MCP 연결 없이 확인하도록 설계했으며 upstream 독립 효과 시험은 아니다. 실제 시험·Gateway 이미지·배포·PJ1 하네스 검증은 미실행이다. 다른 audience/서명 알고리즘은 서명 검증 단계에서 막히고, 만료·scope·철회는 각 해당 검증 단계에서 막힌다. `idp.token()`의 password grant 경로는 격리 DB에서 호출한다.
 - 보고: [DEV-05 작업 보고](../../research/llm-wiki/status/reports/2026-10-20-oauth-negative.md).
+
+## D-154 갱신 토큰 회전의 서명 폐기 기록은 커밋 뒤에 남긴다 (2026-10-20, DEV-16·DEV-63)
+
+- 문제: D-123 이후 `idp.token`(refresh 회전)은 서명 폐기 목록에 옛 갱신 토큰을 먼저 기록하고 DB를 갱신했다. 발급이 실패해 DB가 되돌려지면 목록만 남아, DB가 여전히 유효하다고 보는 갱신 토큰이 거부되고 다음 사용이 재사용으로 판정돼 계열 전체가 폐기됐다. 기존 실험실 시험 `token_revocation_pg_check.py`는 서명 목록을 초기화하지 않아 D-123 이후 실행되지 못해 이 회귀가 가려졌다.
+- 결정: 회전은 DB 커밋 뒤 목록에 기록한다. 계정·장치 폐기(G07.04)는 철회 방향이라 커밋 전 기록(초과 차단)을 유지한다.
+- 근거: 실험실 PostgreSQL에서 `issuance_rolls_back`("실패한 발급 뒤 갱신 토큰이 계속 동작") 재현·수정 후 통과. 시험은 `isolated_disposal()`로 목록을 초기화하고, 장치 폐기 뒤 거부 상태를 401(서명 목록)·403(장치 상태) 모두 허용한다.
+- 한계: 커밋과 목록 기록 사이에 프로세스가 죽고, 그 뒤 DB를 회전 전 백업으로 되돌리면 옛 갱신 토큰이 한 번 더 쓰일 수 있다(재사용 판정으로 계열이 폐기되는 기존 방어는 남음).
+
