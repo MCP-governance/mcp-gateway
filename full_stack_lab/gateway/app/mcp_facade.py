@@ -119,12 +119,12 @@ def _client_context(ctx: Any, user: dict) -> dict:
 async def _approved_tools(role: str, server: str | None = None, principal: str = "",
                           protocol_version: str | None = None) -> list[types.Tool]:
     rows = await db.fetch_all(
-        """SELECT t.server_id, t.name, t.action, t.description, t.input_schema, t.output_schema, s.display_name
+        """SELECT t.server_id, t.name, t.action, t.description, t.input_schema,
+               CASE WHEN t.approved_output_schema_hash IS NULL THEN NULL ELSE t.output_schema END AS output_schema, s.display_name
              FROM mcp_tools t JOIN mcp_servers s ON s.id = t.server_id
             WHERE t.enabled AND t.input_schema IS NOT NULL
               AND t.approved_schema_hash=t.observed_schema_hash
-               AND COALESCE(t.approved_output_schema_hash,'74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b')
-                   =t.observed_output_schema_hash
+               AND (t.approved_output_schema_hash IS NULL OR t.approved_output_schema_hash=t.observed_output_schema_hash)
               AND t.approved_description_hash=t.observed_description_hash
               AND EXISTS (SELECT 1 FROM (SELECT exact_match,restricted_tools FROM catalog_snapshots
                           WHERE server_id=s.id ORDER BY id DESC LIMIT 1) c

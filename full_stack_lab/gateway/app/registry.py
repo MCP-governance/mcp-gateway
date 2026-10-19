@@ -30,7 +30,6 @@ from psycopg.types.json import Jsonb
 
 from . import db
 from .contract import canonical_hash
-from .output_contract import NO_OUTPUT_SCHEMA_HASH
 
 REGISTRY_DIR = Path(os.getenv("REGISTRY_DIR", "/registry"))
 CATALOG_PATH = REGISTRY_DIR / "catalog.toml"
@@ -225,7 +224,8 @@ async def sync() -> dict:
                                approved_server_version=%s, approved_output_schema_hash=%s WHERE server_id=%s AND name=%s"""
                     + (" AND approved_schema_hash IS NULL" if console else ""),
                     (entry["description_sha256"], entry["schema_sha256"], pinned_version,
-                     entry.get("output_schema_sha256", NO_OUTPUT_SCHEMA_HASH), server_id, name),
+                     # A lock entry without an output hash is a legacy approval: unpinned, not "none".
+                     entry.get("output_schema_sha256"), server_id, name),
                 )
             stats["tools"] += 1
         if spec.get("valid_until"):
@@ -274,7 +274,11 @@ def tool_hashes(tool: dict) -> dict:
 def review_matches(approved: dict | None, tool: dict) -> bool:
     if not approved:
         return False
-    return {**approved, "output_schema_sha256": approved.get("output_schema_sha256", NO_OUTPUT_SCHEMA_HASH)} == tool_hashes(tool)
+    observed = tool_hashes(tool)
+    if "output_schema_sha256" not in approved:
+        # A review from before output schemas were pinned covered the rest; see output_contract.pinned.
+        observed.pop("output_schema_sha256")
+    return approved == observed
 
 
 async def build_lock() -> dict:

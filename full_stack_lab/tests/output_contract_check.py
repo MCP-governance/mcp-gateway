@@ -60,12 +60,15 @@ class PureContract(unittest.TestCase):
         with self.assertRaises(contract.OutputSchemaTooComplex):
             contract.check_schema_bounds(large)
 
-    def test_old_approval_means_absence_not_first_observation(self):
+    def test_legacy_approval_is_unpinned_and_never_adopts_the_observation(self):
+        # Approved before output schemas were pinned: not restricted on them (as before), and the
+        # observed schema is not taken as approved - re-approval by a person pins it.
         for row in ({}, {"approved_output_schema_hash": None}):
             self.assertTrue(contract.matches(row, None))
-            self.assertFalse(contract.matches(row, schema))
-            self.assertTrue(contract.observed_matches({**row, "observed_output_schema_hash": digest(None)}))
-            self.assertFalse(contract.observed_matches({**row, "observed_output_schema_hash": digest(schema)}))
+            self.assertTrue(contract.matches(row, schema))
+            self.assertTrue(contract.observed_matches({**row, "observed_output_schema_hash": digest(schema)}))
+            self.assertEqual(contract.approved_hash({**row, "observed_output_schema_hash": digest(schema)}),
+                             digest(None))
 
     def test_add_change_remove_and_explicit_approval(self):
         row = {"approved_output_schema_hash": digest(schema)}
@@ -106,7 +109,9 @@ class PureContract(unittest.TestCase):
         tool = {"name": "read", "description": "Read count", "input_schema": {"type": "object"}}
         old = {k: v for k, v in registry.tool_hashes(tool).items() if k != "output_schema_sha256"}
         self.assertTrue(registry.review_matches(old, tool))
-        self.assertFalse(registry.review_matches(old, {**tool, "output_schema": schema}))
+        # A legacy review covered description and input; the output schema is unpinned (D-149).
+        self.assertTrue(registry.review_matches(old, {**tool, "output_schema": schema}))
+        self.assertFalse(registry.review_matches(registry.tool_hashes(tool), {**tool, "output_schema": schema}))
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         from contracts_check import diff
         before = {"servers": {"s": {"tools": {"read": old}}}}
@@ -125,6 +130,8 @@ class CatalogContract(unittest.IsolatedAsyncioTestCase):
         sender.setUp()
         current = sender.ns["upstream"].tool_view(None)
         sender.ns["upstream"].tool_view = lambda _: {**current, "output_schema": schema}
+        # Pinned as "no output schema": a schema appearing at send time is drift.
+        sender.ns["db"].fetch_all.return_value[0]["approved_output_schema_hash"] = digest(None)
         verdict = await sender.send()
         self.assertEqual((verdict["decision"], verdict["policy_id"]), ("Block", "MCP-CATALOG-001"))
         sender.client.call_tool.assert_not_awaited()
@@ -202,11 +209,14 @@ class CatalogContract(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual((await core.refresh_catalog("s"))["status"], "READY")
                     tool["output_schema"] = {"type": "object", "properties": {"value": {"type": "string"}}}
                     changed = await core.refresh_catalog("s")
-                    self.assertEqual(changed["status"], "DRIFT")
-                    self.assertIn("output_schema", next(f["fields"] for f in changed["findings"] if f["type"] == "contract-drift"))
+                    # A legacy (unpinned) approval is not restricted on output schemas and does not adopt one.
+                    self.assertEqual(changed["status"], "READY" if approved_hash is None else "DRIFT")
+                    if approved_hash is not None:
+                        self.assertIn("output_schema", next(f["fields"] for f in changed["findings"] if f["type"] == "contract-drift"))
                     self.assertEqual(row["approved_output_schema_hash"], approved_hash)
                     approved = await core.approve_contract("s", "reviewer", "검토 완료")
                     self.assertEqual(approved["status"], "READY")
+                    self.assertEqual(row["approved_output_schema_hash"], digest(tool["output_schema"]))
                     self.assertTrue(contract.matches(row, tool["output_schema"]))
                     tool["output_schema"] = None
                     self.assertEqual((await core.refresh_catalog("s"))["status"], "DRIFT")

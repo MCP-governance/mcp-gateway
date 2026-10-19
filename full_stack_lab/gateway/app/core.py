@@ -304,9 +304,8 @@ async def refresh_catalog(server_id: str) -> dict:
         """UPDATE mcp_tools SET approved_server_version=%s, observed_server_version=%s WHERE server_id=%s
              AND (approved_server_version IS DISTINCT FROM %s OR observed_server_version IS DISTINCT FROM %s)
              AND approved_description_hash=observed_description_hash AND approved_schema_hash=observed_schema_hash
-             AND COALESCE(approved_output_schema_hash,%s)=observed_output_schema_hash""",
-        (discovered["version"], discovered["version"], server_id, discovered["version"], discovered["version"],
-         output_contract.NO_OUTPUT_SCHEMA_HASH))
+             AND (approved_output_schema_hash IS NULL OR approved_output_schema_hash=observed_output_schema_hash)""",
+        (discovered["version"], discovered["version"], server_id, discovered["version"], discovered["version"]))
     if version_only:
         findings.append({"type": "version-carried", "to": discovered["version"], "tools": sorted(version_only)})
 
@@ -401,7 +400,8 @@ async def approve_contract(server_id: str, actor: str, note: str) -> dict:
             fields.append("description")
         if row["approved_schema_hash"] != row["observed_schema_hash"]:
             fields.append("schema")
-        if not output_contract.observed_matches(row):
+        # An unpinned legacy approval is pinned by this person's review (D-149).
+        if not output_contract.observed_matches(row) or row.get("approved_output_schema_hash") is None:
             fields.append("output_schema")
         if row["approved_server_version"] != row["observed_server_version"]:
             fields.append("version")
@@ -1620,7 +1620,9 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                 # withholds that response rather than erasing the known execution state.
                 dispatch_state["upstream_executed"] = True
                 payload = {"content": upstream.content_items(result), "is_error": bool(result.is_error)}
-                dispatch_state["_output_schema"] = observed[tool].get("output_schema")
+                # Only an approved output schema is enforced; an unpinned legacy approval is not (D-149).
+                dispatch_state["_output_schema"] = (observed[tool].get("output_schema")
+                                                    if all(r.get("approved_output_schema_hash") for r in enabled_rows) else None)
                 if result.structured_content is not None or "structured_content" in getattr(result, "model_fields_set", set()):
                     payload["structured"] = result.structured_content
                 dispatch_state.setdefault("client", {})["upstream_protocol_version"] = protocol_version

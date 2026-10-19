@@ -57,17 +57,23 @@ def check_schema_bounds(schema) -> None:
                     raise OutputSchemaTooComplex("output schema resource limit")
 
 
+# An approval from before output schemas were pinned (NULL) approved none. Reading it as
+# "no output schema" hid every approved tool that advertises one on deploy (markitdown,
+# github); adopting the first observation would be TOFU. So it stays unpinned - checked as
+# before - until a person approves the tool again, which records the observed hash.
+
+
 def approved_hash(row: dict) -> str:
-    # Old approvals approved no output contract; never adopt a first observation.
     return row.get("approved_output_schema_hash") or NO_OUTPUT_SCHEMA_HASH
 
 
 def matches(row: dict, schema) -> bool:
-    return approved_hash(row) == canonical_hash(schema)
+    return row.get("approved_output_schema_hash") is None or approved_hash(row) == canonical_hash(schema)
 
 
 def observed_matches(row: dict) -> bool:
-    return approved_hash(row) == (row.get("observed_output_schema_hash") or NO_OUTPUT_SCHEMA_HASH)
+    return (row.get("approved_output_schema_hash") is None
+            or approved_hash(row) == (row.get("observed_output_schema_hash") or NO_OUTPUT_SCHEMA_HASH))
 
 
 def for_protocol(payload: dict, protocol: str | None) -> dict:

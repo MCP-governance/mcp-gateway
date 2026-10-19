@@ -369,8 +369,8 @@ async def state(user: dict = Depends(admin_caller)) -> dict:
         db.fetch_all("SELECT * FROM mcp_servers ORDER BY id"),
         db.fetch_all("""SELECT server_id, name, action, enabled,
                                (approved_schema_hash = observed_schema_hash
-                                AND COALESCE(approved_output_schema_hash,'74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b')
-                                    =observed_output_schema_hash) AS schema_ok
+                                AND (approved_output_schema_hash IS NULL
+                                     OR approved_output_schema_hash=observed_output_schema_hash)) AS schema_ok
                           FROM mcp_tools ORDER BY server_id, name"""),
         db.fetch_all("SELECT * FROM decisions ORDER BY id DESC LIMIT 40"),
         db.fetch_all("SELECT * FROM approvals WHERE status='PENDING' ORDER BY created_at DESC"),
@@ -392,8 +392,8 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
                                approved_schema_hash IS NOT NULL AS pinned,
                                (approved_schema_hash = observed_schema_hash
                                 AND approved_description_hash = observed_description_hash
-                                AND COALESCE(approved_output_schema_hash,'74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b')
-                                    =observed_output_schema_hash
+                                AND (approved_output_schema_hash IS NULL
+                                     OR approved_output_schema_hash=observed_output_schema_hash)
                                 AND COALESCE((SELECT c.exact_match OR (c.restricted_tools IS NOT NULL AND NOT t.name=ANY(c.restricted_tools))
                                      FROM catalog_snapshots c WHERE c.server_id=t.server_id ORDER BY c.id DESC LIMIT 1),false)) AS contract_ok
                           FROM mcp_tools t ORDER BY server_id, name"""),

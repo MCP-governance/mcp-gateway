@@ -42,8 +42,7 @@ CATALOG_OK = """EXISTS (
                               WHERE server_id=s.id ORDER BY id DESC LIMIT 1) c ON true
                 WHERE t.server_id=s.id AND t.name=r.tool_name AND t.enabled
                   AND t.approved_schema_hash=t.observed_schema_hash
-                  AND COALESCE(t.approved_output_schema_hash, '74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b')
-                      =t.observed_output_schema_hash
+                  AND (t.approved_output_schema_hash IS NULL OR t.approved_output_schema_hash=t.observed_output_schema_hash)
                   AND t.approved_description_hash=t.observed_description_hash
                   AND (c.exact_match OR (c.restricted_tools IS NOT NULL AND NOT t.name=ANY(c.restricted_tools))))"""
 
