@@ -1,5 +1,7 @@
 # 2026-10-20 관리 하네스 런처 설정 경로 고정 (D-150)
 
+> 최초 구현 이력이며 Windows 설정 홈 고정·PATH 우선·Python launch 결정은 철회됐다. Linux 값 파싱을 수정한 현재 결과와 실행 명령은 [D-150 정정 보고](2026-10-20-d150-launcher-pin-correction.md)를 따른다. 아래 `-pcnotify=[]` 차단 기대도 정정으로 대체됐다.
+
 - 담당: Codex luna
 - 기준: 브랜치 `10/20-launcher-pin`, 시작 HEAD `97d9d10` (dirty 변경 없음)
 - 시작 근거: DEV-42, D-147·D-148, S6-03 [적대 검토](../../analysis/review-1020/s6-user-command-settings.md)

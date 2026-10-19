@@ -177,15 +177,62 @@ def wrapper(path: Path, executable: Path, home: str, username: str, login: bool 
     extra = "".join(f"setenv({json.dumps(name)}, {json.dumps(value)}, 1); "
                     for key, value in (environment or {}).items() for name in (key, key.lower()))
     if guard == "codex":
-        guard_code = 'if (!strcmp(arg, "--config") || !strncmp(arg, "--config=", 9) || (arg[0] == \'-\' && arg[1] && arg[1] != \'-\' && strchr(arg + 1, \'c\'))) return 1;'
+        guard_code = r'''
+  /* openai/codex rust-v0.160.0, codex-rs/ (Apache-2.0):
+     utils/cli/src/shared_options.rs:9-68: i/image, m/model, p/profile,
+       s/sandbox, C/cd, local-provider, add-dir all take values.
+     tui/src/cli.rs:62-64: a/ask-for-approval takes a value.
+     exec/src/cli.rs:24-26,42-51,61-68,259-276: thread-source,
+       output-schema, color, o/output-last-message, base, commit, title.
+     cli/src/main.rs:867-887: enable, disable, remote, remote-auth-token-env.
+     Do not add flags to this table: consuming their next token can hide -c.
+     Unknown options consume no value; extra variadic values are scanned. */
+  static const char *value_options[] = {
+    "--image", "--model", "--profile", "--sandbox", "--cd",
+    "--local-provider", "--add-dir", "--ask-for-approval",
+    "--thread-source", "--output-schema", "--color", "--output-last-message",
+    "--base", "--commit", "--title", "--enable", "--disable", "--remote",
+    "--remote-auth-token-env", NULL
+  };
+  for (int i = 1; i < argc; i++) {
+    const char *arg = argv[i];
+    if (!strcmp(arg, "--")) break;
+    if (!strcmp(arg, "--config") || !strncmp(arg, "--config=", 9)) return 1;
+    if (arg[0] != '-' || !arg[1]) continue;
+    if (arg[1] == '-') {
+      for (int j = 0; value_options[j]; j++) {
+        if (!strcmp(arg, value_options[j])) {
+          /* clap takes no hyphen-led value by default: "--model -c" is -c. */
+          if (i + 1 < argc && argv[i + 1][0] != '-') i++;
+          break;
+        }
+      }
+    } else {
+      for (const char *option = arg + 1; *option; option++) {
+        if (*option == 'c') return 1;
+        if (strchr("impsCao", *option)) {
+          if (!option[1] && i + 1 < argc && argv[i + 1][0] != '-') i++;
+          break;
+        }
+      }
+    }
+  }
+'''
         error = "Codex 설정 재정의 인자(-c/--config)는 관리 실행에서 사용할 수 없습니다."
     elif guard == "claude":
-        guard_code = 'if (!strcmp(arg, "--settings") || !strncmp(arg, "--settings=", 11)) return 1;'
+        # Commander v14.0.2: option.js:231-233 exact match; command.js:1655-1659 terminator.
+        guard_code = r'''
+  for (int i = 1; i < argc; i++) {
+    const char *arg = argv[i];
+    if (!strcmp(arg, "--")) break;
+    if (!strcmp(arg, "--settings") || !strncmp(arg, "--settings=", 11)) return 1;
+  }
+'''
         error = "Claude 설정 지정 인자(--settings)는 관리 실행에서 사용할 수 없습니다."
     else:
         guard_code, error = "", ""
-    guard_function = f"static int blocked(const char *arg) {{ {guard_code} return 0; }}" if guard else ""
-    guard_check = (f'for (int i=1; i<argc; i++) if (blocked(argv[i])) {{ '
+    guard_function = f"static int blocked(int argc, char **argv) {{ {guard_code} return 0; }}" if guard else ""
+    guard_check = (f'if (blocked(argc, argv)) {{ '
                    f'fputs({json.dumps(error + chr(10))}, stderr); return 2; }}' if guard else "")
     source = f"""
 #include <stdlib.h>
@@ -208,7 +255,7 @@ int main(int argc, char **argv) {{
 """
     with tempfile.TemporaryDirectory(prefix="mcpgw-wrapper-") as folder:
         src = Path(folder) / "wrapper.c"
-        src.write_text(source)
+        src.write_text(source, encoding="utf-8", newline="\n")
         run("gcc", "-O2", "-Wall", "-Werror", str(src), "-o", str(path))
     path.chmod(0o755)
 

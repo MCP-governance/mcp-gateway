@@ -1,0 +1,95 @@
+{
+  "recorded_at": "2026-10-19T21:57:00.722768+00:00",
+  "date_kst": "2026-10-20",
+  "author": "Codex sol",
+  "start_commit": "5859004cc4a69d4eb8f1c2bd64b4005d5bacd2d9",
+  "branch": "10/20-launcher-pin-review",
+  "evidence_scope": "Local static/unit checks. Output excerpts transcribed from this turn; no Linux C, live CLI, deployment or MCP success claim.",
+  "checks": {
+    "py_compile": {
+      "command": "python -X utf8 -m py_compile endpoint-agent/enforce-linux.py endpoint-agent/managed-windows.py full_stack_lab/tests/launcher_pin_check.py full_stack_lab/tests/launcher_pin_adversarial_check.py",
+      "exit_code": 0,
+      "output_excerpt": ""
+    },
+    "node_check": {
+      "command": "node --check full_stack_lab/gateway/app/agent_static/console.js",
+      "exit_code": 0,
+      "output_excerpt": ""
+    },
+    "launcher_tests": {
+      "command": "python -B -X utf8 -m unittest full_stack_lab.tests.launcher_pin_check full_stack_lab.tests.launcher_pin_adversarial_check.LinuxLauncherAdversarialCheck -v",
+      "exit_code": 0,
+      "passed": 4,
+      "skipped": 6,
+      "output_excerpt": "Ran 10 tests in 0.080s\nOK (skipped=6)"
+    },
+    "windows_ca": {
+      "command": "python -B -X utf8 -m unittest discover -s endpoint-agent/tests-windows -p test_windows_kit.py -k managed_ca -v",
+      "exit_code": 0,
+      "passed": 1,
+      "output_excerpt": "Ran 1 test in 0.180s\nOK"
+    },
+    "windows_suite": {
+      "command": "python -B -X utf8 -m unittest discover -s endpoint-agent/tests-windows -p test_windows_kit.py -v",
+      "exit_code": 1,
+      "passed": 10,
+      "failures": 5,
+      "errors": 1,
+      "output_excerpt": "Ran 16 tests in 4.286s\nFAILED (failures=5, errors=1)",
+      "failure_reason": "PowerShell script execution policy rejects .ps1 dot-source; no execution policy changes made",
+      "stderr_excerpt": "cannot be loaded because running scripts is disabled on this system.",
+      "blocked_tests": [
+        "test_acl_reaches_existing_files_through_inheritance",
+        "test_approved_payload_rejects_script_zip_manifest_and_destination_substitution",
+        "test_managed_request_is_snapshotted_as_data_and_gateway_is_from_external_approval",
+        "test_powershell_private_ca_validates_chain_pin_name_expiry_and_never_sets_global_callback",
+        "test_powershell_scripts_parse_and_input_boundaries_fail_without_host_changes",
+        "test_tray_acl_has_only_target_admin_system_and_data_read_is_bounded"
+      ],
+      "acl_error_stderr": ". : File C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\endpoint-agent\\windows-common.ps1 cannot be loaded because running s\r\ncripts is disabled on this system. For more information, see about_Execution_Policies at https:/go.microsoft.com/fwlink\r\n/?LinkID=135170.\r\nAt line:3 char:3\r\n+ . (Join-Path $env:KIT_TEST_ROOT 'endpoint-agent/windows-common.ps1')\r\n+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : SecurityError: (:) [], ParentContainsErrorRecordException\r\n    + FullyQualifiedErrorId : UnauthorizedAccess\r\n",
+      "acl_diagnostic": "Underlying ACL test error confirmed as script loading denial; first diagnostic exact-string assertion failed on line-wrapped scripts, whitespace-normalized assertion passed. Test source unchanged."
+    },
+    "wsl_probe": {
+      "command": "wsl.exe -d kali-linux -- uname -s",
+      "result": "unavailable",
+      "output_excerpt": "Wsl/Service/E_ACCESSDENIED"
+    },
+    "remote_head": {
+      "command": "git ls-remote --symref origin HEAD",
+      "result": "unavailable",
+      "output_excerpt": "Failed to connect to github.com:443"
+    },
+    "integrity": {
+      "result": "passed",
+      "windows_matches": "97d9d10:endpoint-agent/managed-windows.py (byte-for-byte)",
+      "unchanged_from_start": [
+        "endpoint-agent/tests-windows/test_windows_kit.py",
+        "full_stack_lab/tests/launcher_pin_adversarial_check.py",
+        "research/llm-wiki/status/current.md"
+      ],
+      "backlog_change": [
+        "DEV-42 last status cell only"
+      ],
+      "all_changed_files_utf8_no_bom_lf": true
+    },
+    "diff_check": {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "output_excerpt": ""
+    }
+  },
+  "source_sha256": {
+    "endpoint-agent/enforce-linux.py": "79fff95947268c419ea3ff7dee1a57dfb161cf28aca4a567fbdde1530953edb6",
+    "endpoint-agent/managed-windows.py": "d785d9046332db899c0787298bd84e3f0beef6959fb7a24f24ad366fbf051005",
+    "full_stack_lab/tests/launcher_pin_check.py": "5980ee0b051d641b532f525a34e208c754065a49e421ecf5ad34491686301eb7",
+    "docs/ai/DECISIONS.md": "ad39519efe3ecc596e225143393207fd72902ecfccea73b87ddf4ed088665bbb",
+    "research/llm-wiki/analysis/command-surfaces/README.md": "7dc9350e4d26bbe1d83d64654d3b5514a364a830df273a7325e7b45b1ba1351d",
+    "research/llm-wiki/analysis/review-1020/d150-launcher-pin.md": "22ea1f9578f18e33d41b4cf4d607b98a44b1c7c41704a4ba6fec7a85cf57313b",
+    "research/llm-wiki/status/backlog.md": "0adbfa97bfc8174b8a9afe75fbc589604871b751f3b2d2612809d625de105453",
+    "research/llm-wiki/status/reports/2026-10-20-launcher-pin.md": "cfb2122cec78d1091a7f95997d7d98aa3e6e14271469db2b88d671a41a2c57e0",
+    "research/llm-wiki/status/reports/2026-10-20-d150-launcher-pin-correction.md": "8a7561dd95f9f7e9dce98d8ca50f8f023d17d5a1a9759a556ddc2c757e0581a8",
+    "endpoint-agent/tests-windows/test_windows_kit.py": "7d0da4879e6c13806d471c668c773674366868af5740ad2df636626e75aee0b3",
+    "full_stack_lab/tests/launcher_pin_adversarial_check.py": "deeee9a644cbbd00631d8829de806643d2e53077558805ff63800e42897789b9",
+    "research/llm-wiki/status/current.md": "8734f64434817acb27fcb82221aafe6977dc481e12542ed7a921caf8efdafa02"
+  }
+}
