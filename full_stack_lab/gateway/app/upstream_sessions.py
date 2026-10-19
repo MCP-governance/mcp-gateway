@@ -76,10 +76,6 @@ class Lease:
     async def list_tools(self, **kwargs):
         return await self._client().list_tools(**kwargs)
 
-    @property
-    def protocol_version(self):
-        return self._client().protocol_version
-
     async def call_tool(self, *args, **kwargs):
         result = await self._client().call_tool(*args, **kwargs)
         if result.is_error:

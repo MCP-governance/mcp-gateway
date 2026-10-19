@@ -30,7 +30,6 @@ from psycopg.types.json import Jsonb
 
 from . import db
 from .contract import canonical_hash
-from .output_contract import NO_OUTPUT_SCHEMA_HASH
 
 REGISTRY_DIR = Path(os.getenv("REGISTRY_DIR", "/registry"))
 CATALOG_PATH = REGISTRY_DIR / "catalog.toml"
@@ -222,10 +221,9 @@ async def sync() -> dict:
                 # and must survive restarts, so only an empty row takes the registration's hashes.
                 await db.execute(
                     """UPDATE mcp_tools SET approved_description_hash=%s, approved_schema_hash=%s,
-                               approved_server_version=%s, approved_output_schema_hash=%s WHERE server_id=%s AND name=%s"""
+                              approved_server_version=%s WHERE server_id=%s AND name=%s"""
                     + (" AND approved_schema_hash IS NULL" if console else ""),
-                    (entry["description_sha256"], entry["schema_sha256"], pinned_version,
-                     entry.get("output_schema_sha256", NO_OUTPUT_SCHEMA_HASH), server_id, name),
+                    (entry["description_sha256"], entry["schema_sha256"], pinned_version, server_id, name),
                 )
             stats["tools"] += 1
         if spec.get("valid_until"):
@@ -267,14 +265,7 @@ async def sync() -> dict:
 
 def tool_hashes(tool: dict) -> dict:
     return {"description_sha256": canonical_hash(tool["description"]),
-            "schema_sha256": canonical_hash(tool["input_schema"]),
-            "output_schema_sha256": canonical_hash(tool.get("output_schema"))}
-
-
-def review_matches(approved: dict | None, tool: dict) -> bool:
-    if not approved:
-        return False
-    return {**approved, "output_schema_sha256": approved.get("output_schema_sha256", NO_OUTPUT_SCHEMA_HASH)} == tool_hashes(tool)
+            "schema_sha256": canonical_hash(tool["input_schema"])}
 
 
 async def build_lock() -> dict:

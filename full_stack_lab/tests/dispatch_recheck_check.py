@@ -192,16 +192,14 @@ class Checks(unittest.IsolatedAsyncioTestCase):
         def classification(server, tool, base_action, action):
             return SimpleNamespace(action=action)
         self.ns = {"__package__": "dispatch_recheck_unit", "asyncio": asyncio, "db": db, "dispatch": self.dispatch,
-            "output_contract": production("output_contract.py", {"approved_hash", "matches"},
-                                          {"canonical_hash": digest, "NO_OUTPUT_SCHEMA_HASH": digest(None)}),
             "classify": SimpleNamespace(Classification=classification, classify=lambda *args: SimpleNamespace()), "flow_fingerprint": ff,
             "FLOW_MATCH_MODE": "coarse", "CHAIN_WINDOW_MINUTES": 10,
             "datetime": datetime, "UTC": UTC, "canonical_hash": digest, "upstream": upstream,
             "registry": SimpleNamespace(server=lambda s: {"endpoint": "http://unit.invalid"},
-                                         pinned_protocol=lambda s: "pinned", tool_hashes=lambda t: {}, review_matches=lambda *args: False),
+                                         pinned_protocol=lambda s: "pinned", tool_hashes=lambda t: {}),
             "Draft202012Validator": lambda schema: SimpleNamespace(is_valid=lambda arguments: True),
             "poisoning": SimpleNamespace(findings=lambda t: []), "_ledger_cache": {}, "GATEWAY_ENVIRONMENT": "prod",
-            "_Laps": lambda: SimpleNamespace(lap=lambda name: None), "_guarded_result": lambda payload, *args: payload,
+            "_Laps": lambda: SimpleNamespace(lap=lambda name: None), "_guarded_result": lambda payload: payload,
             "_contract": AsyncMock(return_value={}), "pac": SimpleNamespace(build=AsyncMock(return_value={})),
             "_policy": AsyncMock(return_value={"decision": "Allow", "policy_id": "P-AUTHZ-ALLOW-001"})}
         self.core = production("core.py", {"_flow_sources", "_dispatch_flow_recheck", "_call_upstream", "DispatchRejected", "local_verdict"}, self.ns)

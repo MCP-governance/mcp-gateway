@@ -26,9 +26,8 @@ from mcp import types
 from mcp.server.lowlevel.server import Server
 from mcp.server.transport_security import TransportSecuritySettings
 from mcp_types.version import HANDSHAKE_PROTOCOL_VERSIONS
-from pydantic import model_serializer
 
-from . import db, output_contract, pac, registry, upstream_sessions
+from . import db, pac, registry, upstream_sessions
 from .agent_contract import authenticated_user
 from .core import execute_call, response_disposition
 
@@ -105,7 +104,6 @@ def _client_context(ctx: Any, user: dict) -> dict:
         "workstation": (headers.get("x-workstation-id") or claims.get("client_id") or "")[:64] or None,
         "agent": (headers.get("x-agent-name") or harness["name"] or harness["user_agent"] or "")[:80] or None,
         "harness": harness,
-        "protocol_version": getattr(ctx, "protocol_version", None),
         "endpoint": _scope(ctx) or "aggregate",
         "task_id": (headers.get("x-agent-task-id") or "")[:64] or None,
         "token_jti": claims.get("jti"),
@@ -116,15 +114,12 @@ def _client_context(ctx: Any, user: dict) -> dict:
     }
 
 
-async def _approved_tools(role: str, server: str | None = None, principal: str = "",
-                          protocol_version: str | None = None) -> list[types.Tool]:
+async def _approved_tools(role: str, server: str | None = None, principal: str = "") -> list[types.Tool]:
     rows = await db.fetch_all(
-        """SELECT t.server_id, t.name, t.action, t.description, t.input_schema, t.output_schema, s.display_name
+        """SELECT t.server_id, t.name, t.action, t.description, t.input_schema, s.display_name
              FROM mcp_tools t JOIN mcp_servers s ON s.id = t.server_id
             WHERE t.enabled AND t.input_schema IS NOT NULL
               AND t.approved_schema_hash=t.observed_schema_hash
-               AND COALESCE(t.approved_output_schema_hash,'74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b')
-                   =t.observed_output_schema_hash
               AND t.approved_description_hash=t.observed_description_hash
               AND EXISTS (SELECT 1 FROM (SELECT exact_match,restricted_tools FROM catalog_snapshots
                           WHERE server_id=s.id ORDER BY id DESC LIMIT 1) c
@@ -150,26 +145,11 @@ async def _approved_tools(role: str, server: str | None = None, principal: str =
         else:
             name = f"{row['server_id']}{SEPARATOR}{row['name']}"
             description = f"[{row['display_name']} · {row['action']}] {row['description'] or ''}"
-        schema = row.get("output_schema")
-        if protocol_version not in output_contract.JSON_PROTOCOLS:
-            # An array/scalar output contract cannot be advertised to object-era clients.
-            if protocol_version not in output_contract.OBJECT_PROTOCOLS or (schema is not None and schema.get("type") != "object"):
-                schema = None
-        tools.append(types.Tool(name=name, description=description[:1500], inputSchema=row["input_schema"],
-                                outputSchema=schema))
+        tools.append(types.Tool(name=name, description=description[:1500], inputSchema=row["input_schema"]))
     return tools
 
 
-class _NullStructuredResult(types.CallToolResult):
-    @model_serializer(mode="wrap")
-    def _with_explicit_null(self, handler, info):
-        # SDK runner uses exclude_none=True, which otherwise loses a valid JSON null.
-        data = handler(self)
-        data["structuredContent" if info.by_alias else "structured_content"] = None
-        return data
-
-
-def _render(outcome: dict, protocol_version: str | None = None) -> types.CallToolResult:
+def _render(outcome: dict) -> types.CallToolResult:
     decision = outcome.get("decision", "Block")
     gateway = {
         "decision": decision, "policy_id": outcome.get("policy_id"), "decision_id": outcome.get("decision_id"),
@@ -187,7 +167,6 @@ def _render(outcome: dict, protocol_version: str | None = None) -> types.CallToo
     result = outcome.get("result")
     if (outcome.get("upstream_executed") and result and decision in {"Allow", "Alert", "Restrict"}
             and gateway["response_disposition"] in {"returned", "masked"}):
-        result = output_contract.for_protocol(result, protocol_version)
         # The tool's own output comes first. A notice at the top of an allowed result
         # ("허용·경보 ...") reads like a refusal to small models; they then tell the
         # user the call was blocked when it ran. The note goes last, phrased as done.
@@ -195,15 +174,14 @@ def _render(outcome: dict, protocol_version: str | None = None) -> types.CallToo
         content = [types.TextContent(type="text", text=item["text"]) for item in result.get("content") or []]
         structured = result.get("structured")
         # Both representations use core's inspected payload, including privacy masking.
-        if not content and "structured" in result:
+        if not content and structured is not None:
             content = [types.TextContent(type="text", text=json.dumps(structured, ensure_ascii=False, allow_nan=False))]
         if decision != "Allow":
             applied = outcome.get("restrictions_applied") or []
             note = {"Alert": "실행되었으며 보안 경보로 기록되었습니다",
                     "Restrict": "제한을 적용해 실행되었습니다" + (f"({', '.join(applied)})" if applied else "")}.get(decision, "실행되었습니다")
             content.append(types.TextContent(type="text", text=f"\n(MCP Gateway: {note} · {outcome.get('policy_id')})"))
-        result_type = _NullStructuredResult if "structured" in result and structured is None else types.CallToolResult
-        return result_type(content=content or [types.TextContent(type="text", text="(빈 결과)")],
+        return types.CallToolResult(content=content or [types.TextContent(type="text", text="(빈 결과)")],
                                     structuredContent=structured, isError=bool(result.get("is_error")),
                                     _meta={"gateway": gateway})
     if decision == "Approval":
@@ -222,8 +200,7 @@ def build_mcp() -> Server:
     async def list_tools(ctx: Any, params: Any) -> types.ListToolsResult:
         try:
             user = await _caller(ctx)
-            return types.ListToolsResult(tools=await _approved_tools(
-                user["roles"][0], _scope(ctx), user["principal"], getattr(ctx, "protocol_version", None)))
+            return types.ListToolsResult(tools=await _approved_tools(user["roles"][0], _scope(ctx), user["principal"]))
         except Exception:
             raise ValueError("도구 목록 요청을 완료하지 못했습니다.") from None
 
@@ -240,14 +217,13 @@ def build_mcp() -> Server:
             try:
                 outcome = await execute_call({
                     "server_id": server_id, "tool": tool, "arguments": dict(params.arguments or {}),
-                    "_response_protocol": getattr(ctx, "protocol_version", None),
                     "user_token": user["principal"], "client": _client_context(ctx, user), "transport_claims": user.get("claims") or {},
                 })
             finally:
                 upstream_sessions.downstream.reset(token)
         except Exception:
             raise ValueError("도구 호출을 완료하지 못했습니다.") from None
-        return _render(outcome, getattr(ctx, "protocol_version", None))
+        return _render(outcome)
 
     return Server(
         "mcp-governance-security-gateway",
