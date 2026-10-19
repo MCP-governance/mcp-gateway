@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Path, Query
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -36,7 +36,7 @@ from .core import (
 from .mcp_facade import build_mcp, transport_security
 from .agent_contract import CONSOLE_SCOPE, ToolReview, authenticate, authenticated_user
 from .release import build_info, policy_info
-from . import activity, audit, registry, review, siem
+from . import activity, audit, registry, review, siem, supplier_assurance
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 # "오늘" is the operator's day. The DB session runs in UTC, so date_trunc('day', now())
@@ -359,8 +359,20 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
             # D-49: which servers came from a Console registration, and until when they may be used.
             "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by", "registered_at",
                                                                     "data_class", "tools", "tool_reviews", "provenance",
-                                                                    "allowed_principals")}
+                                                                    "allowed_principals", "supplier_assurance")}
                               for sid, spec in console.items() if sid not in registry.reviewed_servers()}}
+
+
+@app.get("/api/registry/export")
+async def registry_export(format: Literal["json", "csv"] = Query("json"), user: dict = Depends(admin_caller)) -> Response:
+    """Download the approved intake registry from the same runtime ledger shown in Console."""
+    runtime_doc = registry.runtime()
+    content, digest = (supplier_assurance.export_csv(runtime_doc) if format == "csv"
+                       else supplier_assurance.export_json(runtime_doc))
+    media_type = "text/csv; charset=utf-8" if format == "csv" else "application/json"
+    return Response(content, media_type=media_type,
+                    headers={"X-Registry-SHA256": digest,
+                             "Content-Disposition": f'attachment; filename="mint-registry.{format}"'})
 
 
 @app.get("/api/overview")
@@ -686,6 +698,7 @@ class RegistryRegister(StrictModel):
     source_url: str = Field(default="", max_length=300)
     commit_sha: str = Field(default="", pattern=r"^([0-9a-f]{40})?$")
     supplier: str = Field(default="", max_length=120)
+    supplier_assurance: dict[str, str | bool] = Field(default_factory=dict)
     purpose: str = Field(default="", max_length=1000)
     owner_department: str = Field(default="", max_length=120)
     intake_id: str = Field(default="", max_length=64)

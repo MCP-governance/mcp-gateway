@@ -502,7 +502,7 @@ const VALIDITY = { 1: "1일", 30: "30일", 90: "90일", 180: "180일", 365: "1�
 function validityChip(registration) {
   if (!registration?.valid_until) return "";
   const days = Math.ceil((new Date(registration.valid_until).getTime() - Date.now()) / 86400000);
-  return days <= 0 ? chip("block", "사용 기한 만료") : chip(days <= 14 ? "alert" : "outline", `D-${days}`);
+  return days <= 0 ? chip("block", registration.supplier_assurance ? "재승인 대기" : "사용 기한 만료") : chip(days <= 14 ? "alert" : "outline", `D-${days}`);
 }
 
 // ── pages ────────────────────────────────────────────────────────────────────
@@ -1061,7 +1061,9 @@ ROUTES.servers = async (id, tab, query) => {
   const option = (value, label) => html`<option value="${value}" ${value === toolFilter ? raw("selected") : ""}>${label}</option>`;
   return {
     html: page({
-      head: head("MCP 서버", { actions: html`<button class="btn" data-act="catalog-refresh">계약 다시 확인</button>` }),
+      head: head("MCP 서버", { actions: html`<button class="btn" data-act="registry-export" data-format="csv">등록부 CSV</button>
+        <button class="btn" data-act="registry-export" data-format="json">등록부 JSON</button>
+        <button class="btn" data-act="catalog-refresh">계약 다시 확인</button>` }),
       active: tab || "servers",
       tabs: [
         { key: "servers", label: "서버 목록", n: servers.length, body: html`<div class="stack">
@@ -1070,6 +1072,8 @@ ROUTES.servers = async (id, tab, query) => {
               <td><b>${s.display_name}</b><span class="sub mono">${s.id}</span></td>
               <td>${chip(s.status === "READY" ? "allow" : s.status === "DISABLED" ? "outline" : "alert", SERVER_STATUS[s.status] || s.status)}
                 ${s.lifecycle && s.lifecycle !== "OPERATING" ? chip(s.lifecycle === "RETIRED" ? "block" : "alert", LIFECYCLE[s.lifecycle] || s.lifecycle) : ""}
+                ${s.registration?.supplier_assurance?.support_end ? chip(supportStatus(s.registration.supplier_assurance.support_end) === "지원 종료 경과" ? "block" :
+                  supportStatus(s.registration.supplier_assurance.support_end) === "지원 종료 임박" ? "alert" : "outline", supportStatus(s.registration.supplier_assurance.support_end)) : ""}
                 <span class="sub">${s.deployment === "provider" ? "제공자 운영" : "사내 운영"}</span></td>
               <td>${s.plane ? statusPair(s.plane) : NONE}</td>
               <td>${validityChip(s.registration) || NONE}</td>
@@ -1129,6 +1133,15 @@ function showServer(id) {
     { key: "info", label: "개요", body: kv([["ID", html`<code>${s.id}</code>`], ["게이트웨이 경로", html`<code>/mcp/${s.id}/</code>`],
       ["패키지", html`<code>${s.source_ref || `${s.package}@${s.version}`}</code>`], ["원격 주소", html`<code>${s.endpoint}</code>`],
       ["공급자", s.supplier], ["라이선스", s.license], ["하위 시스템", downstreamText(s.downstream)],
+      ...(registration?.supplier_assurance ? [["공급자 법인명", registration.supplier_assurance.legal_entity],
+        ["공급자 연락처", registration.supplier_assurance.supplier_contact], ["보안 연락처", registration.supplier_assurance.security_contact],
+        ["지원 종료일", html`${registration.supplier_assurance.support_end} ${chip(supportStatus(registration.supplier_assurance.support_end) === "지원 종료 경과" ? "block" :
+          supportStatus(registration.supplier_assurance.support_end) === "지원 종료 임박" ? "alert" : "allow", supportStatus(registration.supplier_assurance.support_end))}`],
+        ["취약점 공개 정책", html`<a href="${registration.supplier_assurance.vulnerability_policy_url}" target="_blank" rel="noopener noreferrer">${registration.supplier_assurance.vulnerability_policy_url}</a>`],
+        ["하위 처리자", registration.supplier_assurance.subprocessors || "미확인"],
+        ["SBOM 제출", registration.supplier_assurance.sbom_submitted ? "제출" : "미제출"],
+        ["VEX 제출", registration.supplier_assurance.vex_submitted ? "제출" : "미제출"],
+        ["계약 근거", registration.supplier_assurance.contract_basis_ref], ["종료 전략", registration.supplier_assurance.exit_strategy]] : []),
       ["출처 해시", registration?.provenance?.artifact?.sha256 ? html`<code>${registration.provenance.artifact.sha256}</code>` : ""],
       ["사용 기한", registration ? `${when(registration.valid_until)} · ${DATA_CLASS[registration.data_class] || ""}` : ""],
       ["등록", registration ? `${registration.registered_by} · ${when(registration.registered_at)}` : ""],
@@ -1570,6 +1583,26 @@ const TRANSPORT = { "streamable-http": "Streamable HTTP", sse: "SSE", stdio: "st
 
 // The same rule agent_service.approve_mcp_request enforces; the button only mirrors it.
 const termsVerified = (t) => Boolean(t?.verified_by && t?.evidence_url && Object.keys(EXIT_TERMS).every((k) => t[k] === true));
+const assuranceFields = () => html`<fieldset><legend>공급자 보증</legend><div class="grid c2">
+  ${field.text("legal_entity", "공급자 법인명", 'required maxlength="200"')}
+  ${field.text("supplier_contact", "공급자 연락처", 'required maxlength="300"')}
+  ${field.text("security_contact", "보안 연락처", 'required maxlength="300"')}
+  <label>지원 종료일<input name="support_end" type="date" required /></label>
+  ${field.text("vulnerability_policy_url", "취약점 공개 정책 주소", 'type="url" required pattern="https://.+" maxlength="500"')}
+  ${field.select("subprocessors", "하위 처리자", { "미확인": "미확인", "있음": "있음", "없음": "없음" }, "미확인")}
+  <label class="check"><input type="checkbox" name="sbom_submitted" /> SBOM 제출</label>
+  <label class="check"><input type="checkbox" name="vex_submitted" /> VEX 제출</label>
+  ${field.text("contract_basis_ref", "계약 근거 참조", 'maxlength="500"')}
+  ${field.area("exit_strategy", "종료 전략", 'maxlength="1000"')}
+  </div></fieldset>`;
+const assuranceBody = (fd) => Object.fromEntries(["legal_entity", "supplier_contact", "security_contact", "support_end", "vulnerability_policy_url"]
+  .map((key) => [key, fd.get(key).trim()]).concat([
+    ["subprocessors", fd.get("subprocessors")], ["sbom_submitted", fd.get("sbom_submitted") === "on"],
+    ["vex_submitted", fd.get("vex_submitted") === "on"], ["contract_basis_ref", fd.get("contract_basis_ref").trim()],
+    ["exit_strategy", fd.get("exit_strategy").trim()],
+  ]));
+const supportStatus = (date) => !date ? "" : date < new Date().toISOString().slice(0, 10) ? "지원 종료 경과" :
+  date <= new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10) ? "지원 종료 임박" : "지원 중";
 
 // Evidence lines are raw README text; markdown and HTML markup only get in the way of reading them.
 const plainLine = (s) => String(s || "").replace(/<[^>]*>/g, " ").replace(/[*_`#|>]+/g, " ").replace(/\s+/g, " ").trim();
@@ -2389,6 +2422,18 @@ const ACTIONS = {
     Object.assign(document.createElement("a"), { href: url, download: el.dataset.name }).click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
+  async "registry-export"(el) {
+    const format = el.dataset.format;
+    const response = await fetch(`/api/registry/export?format=${encodeURIComponent(format)}`, { headers: { authorization: `Bearer ${token}` } });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(detailText(body.detail) || `등록부 내보내기 실패 (${response.status})`);
+    }
+    const blob = await response.blob(), url = URL.createObjectURL(blob);
+    Object.assign(document.createElement("a"), { href: url, download: `mint-registry.${format}` }).click();
+    toast(`등록부 SHA-256 · ${response.headers.get("X-Registry-SHA256") || "—"}`);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
   async "intake-terms"(el) {
     const fd = await ask({ title: `종료 조건 확인 · ${el.dataset.name}`,
       fields: html`<fieldset><legend>제공자가 약속한 항목</legend>
@@ -2403,16 +2448,19 @@ const ACTIONS = {
     toast(r.message); reload();
   },
   async "intake-approve"(el) {
-    const r = await api(`/api/mcp-requests/${el.dataset.id}/approve`, { method: "POST" });
+    const fd = await ask({ title: "도입 승인", fields: assuranceFields(), confirm: "승인" });
+    if (!fd) return;
+    const r = await api(`/api/mcp-requests/${el.dataset.id}/approve`, { method: "POST", body: assuranceBody(fd) });
     toast(r.message); reload();
   },
   async "intake-approve-risk"(el) {
     // Below T1 the conclusion is stated and the admin accepts the risk in writing,
     // the same rule that closes a T3 termination case.
     const fd = await ask({ title: `위험 수용 후 승인 · ${el.dataset.name}`, body: el.dataset.summary,
-      fields: field.area("risk_acceptance", "수용 사유", 'required minlength="10" maxlength="1000"'), confirm: "승인" });
+      fields: html`${field.area("risk_acceptance", "수용 사유", 'required minlength="10" maxlength="1000"')}${assuranceFields()}`, confirm: "승인" });
     if (!fd) return;
-    const r = await api(`/api/mcp-requests/${el.dataset.id}/approve`, { method: "POST", body: { risk_acceptance: fd.get("risk_acceptance").trim() } });
+    const r = await api(`/api/mcp-requests/${el.dataset.id}/approve`, { method: "POST", body: {
+      risk_acceptance: fd.get("risk_acceptance").trim(), ...assuranceBody(fd) } });
     toast(r.message); reload();
   },
   async "intake-register"(el) {

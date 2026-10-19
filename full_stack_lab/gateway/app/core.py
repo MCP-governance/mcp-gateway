@@ -23,7 +23,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, secret_scan, upstream
+from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, secret_scan, supplier_assurance, upstream
 from .destination import DestinationBlocked
 from . import selective
 from .contract import (  # re-exported: older callers import these from core
@@ -611,9 +611,14 @@ async def register_server(request: dict, actor: str) -> dict:
     # For a GitHub source the version is the validated commit, which is also what the
     # A.I.G worker checks out for a static audit of this server (source_ref = package@commit).
     version = commit if github and commit else found["version"]
-    valid_until = (datetime.now(UTC) + timedelta(days=int(request["valid_days"]))).isoformat(timespec="seconds")
+    assurance = request.get("supplier_assurance") or {}
+    assurance_errors = supplier_assurance.validate(assurance)
+    if assurance_errors:
+        raise ValueError("등록할 수 없습니다: " + " / ".join(assurance_errors))
+    approval_until = datetime.now(UTC) + timedelta(days=int(request["valid_days"]))
     if remote_review:
-        valid_until = remote_review["valid_until"]
+        approval_until = datetime.fromisoformat(remote_review["valid_until"])
+    valid_until = min(approval_until, supplier_assurance.support_expiry(assurance["support_end"])).isoformat(timespec="seconds")
     spec = {
         "display_name": request["display_name"], "package": package, "version": version,
         "source_url": source_url or endpoint, "supplier": request.get("supplier") or host,
@@ -635,6 +640,7 @@ async def register_server(request: dict, actor: str) -> dict:
         "poisoning_review": {name: registry.tool_hashes(advertised[name]) for name in flagged}
                             if request.get("poisoning_ack") else {},
         "tool_reviews": tool_reviews, "provenance": intake.get("provenance") or {},
+        "supplier_assurance": assurance,
         "runtime": {key: str(value) for key, value in runtime.items()} if runtime else None,
     }
     contract = {"package": f"{package}@{version}", "server_name": found["advertised_name"],
@@ -789,7 +795,11 @@ async def renew_approvals(now: datetime | None = None) -> list[dict]:
                 continue
             days = int(spec.get("approval_days")
                        or max(1, round((until - datetime.fromisoformat(spec["registered_at"])).total_seconds() / 86400)))
-            spec.update(valid_until=(until + timedelta(days=days)).isoformat(timespec="seconds"), approval_days=days)
+            support_end = (spec.get("supplier_assurance") or {}).get("support_end")
+            proposed_until = supplier_assurance.renewal_until(until, days, support_end)
+            if proposed_until <= until:
+                continue
+            spec.update(valid_until=proposed_until.isoformat(timespec="seconds"), approval_days=days)
             event = {"type": "approval-renewed", "server_id": server_id, "actor": "system",
                      "at": now.isoformat(timespec="seconds"), "from": until.isoformat(timespec="seconds"),
                      "valid_until": spec["valid_until"], "tools": sorted(row["name"] for row in tools)}

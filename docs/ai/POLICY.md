@@ -2,6 +2,8 @@
 
 D-120~D-123 운영 대응은 기존 정책 ID와 계약 비활성·종료 경계를 사용한다. 새 OPA ID나 관리대장 행을 추가하지 않았다. 경보 자체 시험은 실제 로드된 OPA의 `decision`·`policy_id`와 합성 경보 기록을 대조하며 `decisions`에 합성 요청을 쓰지 않는다. [운영 대응](OPS_RESPONSE.md).
 
+DEV-68 공급자 지원 종료는 도입 등록의 `valid_until` 상한으로 적용한다. 지원 종료일 다음 날부터 기존 `P-APPROVAL-EXPIRY-001` 만료 경로가 호출을 차단하고 재승인을 요구한다. 공급자 필수 정보·등록부 내보내기는 [D-137](DECISIONS.md#d-137-도입-서버-공급자-보증을-승인에-묶고-eol은-승인-만료로-연결한다) 참조.
+
 > 파일: `full_stack_lab/opa/`
 > - `policy.rego` — 규칙 (`package mcp.authz`, 결과는 `data.mcp.authz.decision`)
 > - `policy_test.rego` — 단위 시험(91건)
