@@ -1631,3 +1631,9 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 판정: HEAD `321fa565`의 세 시험 파일 변경 7개 hunk를 모두 A(채택)로 판정한다. 기대값·입력·assert는 그대로이며 검사 범위를 줄인 변경은 없다.
 - 근거: 출력 오류 타입, 계약 해시/비교 함수, `ContractClient`는 실제 제품 모듈 AST 정의를 시험 namespace에 제공한다. `_render`·`_guarded_result` 반환 대역은 세션 문맥/dispatch 생명주기 시험에만 한정된다. 출력 검증·판본별 렌더링은 `output_contract_check.py`와 `mcp_result_contract_check.py`가 실제 함수를 직접 검사한다. 상세 hunk별 근거는 [S7b 검토](../../research/llm-wiki/analysis/review-1020/s7b-fixtures.md)에 기록한다.
 - 한계: 이번 적대 검토는 정적 대조이며 시험·이미지·DB·실제 MCP·PJ1을 실행하지 않았다. A 판정은 세 기존 시험 대역 보정만 채택하며 출력 계약 전체의 런타임 검증으로 확대하지 않는다. 기존 시험 변경 추가 수정은 필요하지 않다. [작업 보고](../../research/llm-wiki/status/reports/2026-10-20-s7b-fixtures-review.md).
+
+### D-149 전환 정정 감사 의미 보완 (2026-10-20, Codex luna)
+
+- 판정: 관측 해시 자동 승인·신규 도입 해시 누락·고정 도구 출력 검사 누락은 코드 경로에서 확인되지 않았다. `catalog_refresh_check.py` fixture 변경도 입력 계약 A→B→A 복귀 시험의 기존 기대값을 완화하지 않는다. 세부 경로 판정은 [D-149 전환 적대 검토](../../research/llm-wiki/analysis/review-1020/d149-transition.md)에 기록한다.
+- 결함·수정: NULL 출력 승인 해시는 미고정인데 `approve_contract`의 감사 변경 이벤트 `from.output_schema`는 이를 canonical null hash로 기록했다. 제품은 관측값을 자동 승인하지 않지만 감사 이벤트가 과거 상태를 출력 스키마 없음으로 오해하게 했다. 실제 DB의 nullable 승인값을 그대로 기록하게 고치고, 구분을 확인하는 새 `tests/d149_transition_check.py`를 추가했다.
+- 근거·한계: 출력 계약 순수 시험 9건, 새 재승인 감사 의미 시험, lock CLI self-check, 변경 Python 구문, 공백 검사를 로컬에서 실행했다. `catalog_refresh_check.py`는 Python 3.10의 `datetime.UTC` 부재로 미실행이다. 게이트웨이 이미지·DB 전환/경쟁·field 배포·PJ1·실제 MCP는 미실행이며 원격 HEAD도 네트워크로 확인하지 못했다. 상용 서버 outputSchema 광고 유무는 기존 현장 보고를 전제로 재측정하지 않았다. 작업 보고에 정확한 명령을 남긴다.

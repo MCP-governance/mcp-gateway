@@ -410,7 +410,7 @@ async def approve_contract(server_id: str, actor: str, note: str) -> dict:
         changes.append({
             "tool": row["name"], "fields": fields,
             "from": {"description": row["approved_description_hash"],
-                     "schema": row["approved_schema_hash"], "output_schema": output_contract.approved_hash(row),
+                     "schema": row["approved_schema_hash"], "output_schema": row.get("approved_output_schema_hash"),
                      "version": row["approved_server_version"]},
             "to": {"description": row["observed_description_hash"],
                    "schema": row["observed_schema_hash"], "output_schema": row.get("observed_output_schema_hash"),
