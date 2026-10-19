@@ -1314,8 +1314,9 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
                                              applicant_user=remote.get("submitter_user_id"))
         except review.NotIndependent as exc:
             raise HTTPException(403, str(exc)) from exc
-    assurance = {key: (getattr(approval, key, "") or "").strip() for key in supplier_assurance.REQUIRED_FIELDS}
-    assurance.update({key: getattr(approval, key) for key in supplier_assurance.OPTIONAL_FIELDS})
+    approval_values = approval if approval is not None else IntakeApproval()
+    assurance = {key: (getattr(approval_values, key, "") or "").strip() for key in supplier_assurance.REQUIRED_FIELDS}
+    assurance.update({key: getattr(approval_values, key) for key in supplier_assurance.OPTIONAL_FIELDS})
     assurance_errors = supplier_assurance.validate(assurance)
     if assurance_errors:
         if remote:

@@ -70,6 +70,19 @@ class SupplierAssuranceCheck(unittest.TestCase):
                 self.assertIn("취약점 공개 정책 주소", raised.exception.detail)
         asyncio.run(run())
 
+    @unittest.skipIf(agent_service is None, "게이트웨이 이미지 의존성이 없어 승인 경로는 건너뜀")
+    def test_approval_without_body_returns_korean_missing_field_reason(self):
+        async def run():
+            with patch.object(agent_service, "current_identity", new=AsyncMock(return_value={"roles": ["admin"], "principal": "admin"})), \
+                    patch.object(agent_service.review, "lapse_expired_acceptances", new=AsyncMock()), \
+                    patch.object(agent_service.db, "fetch_one", new=AsyncMock(return_value=None)):
+                with self.assertRaises(HTTPException) as raised:
+                    await agent_service.approve_mcp_request("00000000-0000-0000-0000-000000000001", None, None)
+                self.assertEqual(raised.exception.status_code, 409)
+                self.assertIn("승인할 수 없습니다", raised.exception.detail)
+                self.assertIn("공급자 법인명", raised.exception.detail)
+        asyncio.run(run())
+
     def test_json_and_csv_exports_match_runtime_ledger_and_hash(self):
         runtime = {"servers": {
             "zeta": {"intake_id": "intake-z", "display_name": "Zeta", "supplier": "Zeta Ltd.",
