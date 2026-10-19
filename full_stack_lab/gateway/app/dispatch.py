@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 from psycopg.types.json import Jsonb
 
-from . import db, high_impact
+from . import consent, db, high_impact
 from .contract import canonical_hash
 
 # Sent and not answered: recorded as such (timeout, lost response), or still marked
@@ -55,17 +55,19 @@ _INSERT = f"""INSERT INTO dispatch_intents(request_id, user_token, server_id, to
               AND NOT EXISTS (SELECT 1 FROM ops_suspensions x WHERE x.server_id=s.id AND x.resumed_at IS NULL)
               AND NOT EXISTS (SELECT 1 FROM disposal_blocks x WHERE x.server_id=s.id AND x.kind IN ('server','credential'))
               AND {CATALOG_OK}
+              AND (%s::bigint IS NULL OR EXISTS (SELECT 1 FROM user_consents c
+                   WHERE c.id=%s AND c.status='GRANTED' AND c.expires_at > clock_timestamp()))
               FOR SHARE OF s"""
 
 
-async def record(request_id: str, action: str, approval_id: str | None = None) -> str | None:
+async def record(request_id: str, action: str, approval_id: str | None = None, *,
+                 recheck=None) -> str | None:
     """Write the intent, or say why the call may no longer be sent.
 
-    One statement checks the reservation, the principal and the server and writes the row.
-    The server row is locked in share mode: a termination takes the same row before it
-    stamps its cutover, so every dispatch is either recorded before the cutover or refused
-    after it, never in between. An approved call also consumes its approval here, in the same
-    transaction: the approval is single-use at the one place that sends, not only where it was claimed.
+    Lock order: principal advisory, server/tool, principal row, consent, approval.
+    A separate INSERT snapshot after those waits sees committed revocations. The flow
+    recheck supplied by the production sender uses this connection and advisory lock;
+    important-read ledger appends take that lock too. No upstream I/O holds these locks.
     """
     try:
         async with db.transaction() as connection:
@@ -84,10 +86,19 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
             # Acquire before the INSERT so a snapshot published while waiting is visible
             # to the next statement under READ COMMITTED, not the pre-lock snapshot.
             tool = await (await connection.execute(
-                """SELECT s.id, t.scope_review FROM mcp_servers s JOIN call_reservations r ON r.server_id=s.id
+                """SELECT s.id, t.scope_review, r.tool_name, r.data_class FROM mcp_servers s JOIN call_reservations r ON r.server_id=s.id
                    JOIN mcp_tools t ON t.server_id=s.id AND t.name=r.tool_name
                    WHERE r.request_id=%s FOR SHARE OF s, t""", (request_id,))).fetchone()
+            # Account UPDATEs do not take the advisory lock. FOR SHARE conflicts with
+            # their row lock, including a status-only UPDATE (FOR KEY SHARE would not).
+            await connection.execute("SELECT token FROM principals WHERE token=%s FOR SHARE", (row["user_token"],))
             impact = (tool or {}).get("scope_review") or {}
+            grant = None
+            if impact.get("consent"):
+                grant = await consent.for_dispatch(connection, row["user_token"], tool["id"],
+                                                   tool["tool_name"], tool["data_class"], impact)
+                if not grant:
+                    raise _Refused("consent")
             approval = await (await connection.execute(
                 "SELECT * FROM approvals WHERE id=%s FOR UPDATE", (approval_id,))).fetchone() if approval_id else None
             approved = (approval or {}).get("request_payload") or {}
@@ -100,7 +111,14 @@ async def record(request_id: str, action: str, approval_id: str | None = None) -
                        AND scope->'explanation'=%s AND scope->>'request_fingerprint'=%s LIMIT 1""",
                     (str(approval_id), approval["reviewed_by"], Jsonb(approval["explanation"]), approval["request_fingerprint"]))).fetchone():
                     raise _Refused("impact")
-            if not (await connection.execute(_INSERT, (action, request_id))).rowcount:
+            if recheck and (reason := await recheck(connection)):
+                raise _Refused(reason)
+            consent_id = grant["id"] if grant else None
+            if not (await connection.execute(_INSERT, (action, request_id, consent_id, consent_id))).rowcount:
+                if consent_id is not None and not await (await connection.execute(
+                        "SELECT id FROM user_consents WHERE id=%s AND status='GRANTED' AND expires_at > clock_timestamp()",
+                        (consent_id,))).fetchone():
+                    raise _Refused("consent")
                 raise _Refused
             if approval_id:
                 # What is sent must be what was approved: the approval row holds the approved request,

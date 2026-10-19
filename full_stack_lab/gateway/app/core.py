@@ -1153,7 +1153,7 @@ async def _sequence_flags(user_token: str, cls: classify.Classification) -> list
 
 async def _flow_sources(user_token: str, server_id: str, cls: classify.Classification,
                         provider_hosted: bool = False, outbound_text: str | None = None,
-                        observed: dict | None = None) -> list[str]:
+                        observed: dict | None = None, *, connection=None) -> list[str]:
     """POL-33 input: other servers whose important data this principal read in the window.
 
     The label follows the verified principal, as P-CHAIN-001 does. A write or execution on another
@@ -1168,18 +1168,31 @@ async def _flow_sources(user_token: str, server_id: str, cls: classify.Classific
     """
     if cls.action not in {"w", "x"} and not provider_hosted:
         return []
-    rows = await db.fetch_all(
-        """SELECT d.server_id, f.salt, f.key_id, f.shingles, f.identifiers
+    query = """SELECT d.server_id, f.salt, f.key_id, f.shingles, f.identifiers
              FROM decisions d LEFT JOIN flow_fingerprints f ON f.decision_id=d.id AND f.expires_at > now()
             WHERE d.user_token=%s AND d.server_id<>%s AND d.data_class='important' AND d.action='r' AND d.upstream_executed
-              AND d.created_at > now() - make_interval(mins => %s) ORDER BY d.server_id""",
-        (user_token, server_id, CHAIN_WINDOW_MINUTES))
+              AND d.created_at > now() - make_interval(mins => %s) ORDER BY d.server_id"""
+    params = (user_token, server_id, CHAIN_WINDOW_MINUTES)
+    rows = (await (await connection.execute(query, params)).fetchall() if connection is not None
+            else await db.fetch_all(query, params))
     if outbound_text is None:
         return sorted({row["server_id"] for row in rows})
     sources, seen = await asyncio.to_thread(flow_fingerprint.narrow, rows, outbound_text)
     if observed is not None:
         observed.update(seen)
     return sources if FLOW_MATCH_MODE == "content" else sorted(seen)
+
+
+async def _dispatch_flow_recheck(connection, user_token: str, server_id: str, policy_input: dict,
+                                 arguments: dict) -> str | None:
+    """A larger source set invalidates the decision; never silently widen its permission."""
+    tool = policy_input["tool"]
+    cls = classify.Classification(server_id, tool["name"], base_action=tool["base_action"], action=tool["action"])
+    sources = await _flow_sources(user_token, server_id, cls, tool["provider_hosted"],
+                                  flow_fingerprint.leaf_text(arguments, keys=True), connection=connection)
+    if set(sources) - set(policy_input["request"]["flow_sources"]):
+        return "flow"
+    return None
 
 
 async def _remember_flow(user_token: str, server_id: str, decision_id: int, result: dict) -> None:
@@ -1527,15 +1540,25 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
             laps.lap("recheck")
             if problem is None:
                 stage = "intent"
-                # The last thing before the send, in one statement with the final look at the
-                # reservation, the principal and the server: past this line a cutover or a
+                # The last transaction before the send: past this line a cutover or a
                 # revocation no longer stops this call, so it is on record that it may have gone out.
-                refused = await dispatch.record(dispatch_state["request_id"], dispatch_state["action"], approval_id)
-                if refused == "terminated":
+                async def recheck(connection):
+                    return await _dispatch_flow_recheck(connection, principal, server_id,
+                                                        dispatch_state["policy_input"], pac_payload["arguments"])
+                try:
+                    refused = await dispatch.record(dispatch_state["request_id"], dispatch_state["action"], approval_id,
+                                                     recheck=recheck)
+                except Exception:
+                    refused = "control"
+                if refused == "control":
+                    problem, blocked_verdict = "Final dispatch checks unavailable", local_verdict(
+                        "P-CONTROL-FAIL-CLOSED", "Block", "전송 직전 확인을 완료하지 못해 실행을 차단했습니다.")
+                elif refused == "terminated":
                     problem, blocked_verdict = "Server entered termination before dispatch", local_verdict(
                         "MCP-DECOMM-001", "Block", "종료·폐기 절차에 들어간 이용 관계입니다. 실행하지 않습니다.")
                 elif refused == "principal":
-                    problem = "Principal was revoked before dispatch"
+                    problem, blocked_verdict = "Principal was revoked before dispatch", local_verdict(
+                        "P-INPUT-001", "Block", "활성 상태의 등록 계정이 아닙니다.")
                 elif refused == "suspended":
                     problem, blocked_verdict = "Server suspended before dispatch", local_verdict(
                         "MCP-REGISTRY-002", "Block", "자동 중지된 서버입니다.")
@@ -1545,6 +1568,12 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                 elif refused == "impact":
                     problem, blocked_verdict = "Human approval changed before dispatch", local_verdict(
                         "P-HIGH-IMPACT-001", "Block", "중대 영향 호출의 승인 또는 심사 범위가 유효하지 않습니다.")
+                elif refused == "consent":
+                    problem, blocked_verdict = "Consent changed before dispatch", local_verdict(
+                        "P-CONSENT-001", "Block", "이 도구의 데이터 이용에 유효한 사용자 동의가 없습니다.")
+                elif refused == "flow":
+                    problem, blocked_verdict = "Flow sources changed before dispatch", local_verdict(
+                        "P-FLOW-001", "Block", "중요정보 열람 이력이 변경되어 다시 판정해야 합니다.")
                 elif refused == "approval":
                     problem = "Approval expired or was withdrawn before execution"
                 elif refused == "duplicate":
@@ -1762,6 +1791,10 @@ async def _record_decision(event: dict) -> int:
     # lost after the call ran. It is replaced before the fingerprint, so the chain covers what is stored.
     record = _storable(record)
     async with db.transaction() as connection:
+        # Same order as dispatch: the principal lock precedes the global chain lock.
+        # Publishing an important read cannot slip between the final flow query and intent.
+        if record["data_class"] == "important" and record["action"] == "r" and record["upstream_executed"]:
+            await connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (record["user_token"],))
         cursor = await connection.execute("SELECT head_sha256 FROM audit_chain WHERE id=1 FOR UPDATE")
         head = await cursor.fetchone()
         previous = head["head_sha256"] if head else GENESIS
