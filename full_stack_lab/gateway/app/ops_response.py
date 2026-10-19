@@ -204,7 +204,10 @@ async def tick(opa_url):
         if not row["acquired"]:
             return
         from . import incidents
-        await incidents.check_deadlines()
+        try:
+            await incidents.check_deadlines()
+        except Exception:
+            LOG.exception("Incident deadline check failed")
         await observed_alerts()
         await contain_repeated()
         await self_test(opa_url)

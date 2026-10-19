@@ -1,0 +1,130 @@
+{
+  "task": "DEV-70 / D-139 main merge",
+  "branch": "10/20-high-impact",
+  "head": "11e09cbe6ebc2eee70ad04aba8e280902625c17e",
+  "merge_head": "60afcb1ec8519e3eca4c4e5abae26592efc197df",
+  "checks": [
+    {
+      "name": "python-units",
+      "cmd": "python -X utf8 full_stack_lab/tests/high_impact_check.py",
+      "chunk_id": "c89c84",
+      "wall_time_seconds": 9e-06,
+      "exit_code": 0,
+      "original_token_count": 635,
+      "output": "test_approve_requires_view_of_same_snapshot_and_reason (__main__.ApprovalChecks) ... ok\r\ntest_concurrent_claim_loser_does_not_execute (__main__.ApprovalChecks) ... ok\r\ntest_event_store_failure_prevents_execution (__main__.ApprovalChecks) ... ok\r\ntest_evidence_resolves_display_names_without_replacing_audit_identity (__main__.ApprovalChecks) ... ok\r\ntest_export_omits_free_text_and_call_bodies_but_logs_reader (__main__.ApprovalChecks) ... ok\r\ntest_missing_view_fails_closed (__main__.ApprovalChecks) ... ok\r\ntest_reject_records_explanation_and_never_executes (__main__.ApprovalChecks) ... ok\r\ntest_reversal_is_append_only_and_does_not_undo_effects (__main__.ApprovalChecks) ... ok\r\ntest_self_approval_and_expiry_do_not_execute (__main__.ApprovalChecks) ... ok\r\ntest_no_approval_or_event_or_changed_scope_never_creates_intent (__main__.DispatchChecks) ... ok\r\ntest_single_use_and_revocation_share_approval_lock (__main__.DispatchChecks) ... ok\r\ntest_unlabelled_call_retains_execution_without_approval (__main__.DispatchChecks) ... ok\r\ntest_allow_alert_restrict_and_monitor_all_wait_before_upstream (__main__.GatewayChecks) ... skipped 'Gateway image: rerun with --gateway'\r\ntest_final_guard_refuses_before_connection (__main__.GatewayChecks) ... skipped 'Gateway image: rerun with --gateway'\r\ntest_monitor_high_impact_keeps_residency_approval_and_explanation_basis (__main__.GatewayChecks) ... skipped 'Gateway image: rerun with --gateway'\r\ntest_monitor_high_impact_keeps_residency_prohibition (__main__.GatewayChecks) ... skipped 'Gateway image: rerun with --gateway'\r\ntest_monitor_high_impact_missing_consent_blocks_even_after_human_approval (__main__.GatewayChecks) ... skipped 'Gateway image: rerun with --gateway'\r\ntest_monitor_residency_conflict_cannot_be_relaxed_by_selected_policy (__main__.GatewayChecks) ... skipped 'Gateway image: rerun with --gateway'\r\ntest_request_model_validates_label (__main__.GatewayChecks) ... skipped 'Gateway image: rerun with --gateway'\r\ntest_approval_binds_every_request_field_scope_and_integrity (__main__.PureChecks) ... ok\r\ntest_explanation_contains_no_values_keys_summaries_or_scope_prose (__main__.PureChecks) ... ok\r\ntest_label_requires_known_domains_and_real_boolean (__main__.PureChecks) ... ok\r\ntest_local_policy_ledger_has_unique_priority_and_reference_outcome (__main__.PureChecks) ... ok\r\ntest_unreviewed_replayed_and_revoked_approvals_fail (__main__.PureChecks) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 24 tests in 0.536s\r\n\r\nOK (skipped=7)\r\n"
+    },
+    {
+      "name": "residency-units",
+      "cmd": "python -X utf8 full_stack_lab/tests/data_residency_check.py",
+      "chunk_id": "976ad3",
+      "wall_time_seconds": 1.2e-06,
+      "exit_code": 0,
+      "original_token_count": 180,
+      "output": "test_downstream_is_separate_from_server_location (__main__.LocationTest) ... ok\r\ntest_internal_uses_machine_location_provider_never_does (__main__.LocationTest) ... ok\r\ntest_iso_codes_and_normalization (__main__.LocationTest) ... ok\r\ntest_pack_load_failure_mismatch_and_recovery (__main__.LocationTest) ... ok\r\ntest_pack_rejects_incomplete_and_invalid_rules (__main__.LocationTest) ... ok\r\ntest_rendered_pack_and_ledger (__main__.LocationTest) ... ok\r\ntest_unknown_fields_and_wrong_shapes_refused (__main__.LocationTest) ... ok\r\ntest_unknown_machine_location_is_not_assumed_domestic (__main__.LocationTest) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 8 tests in 0.012s\r\n\r\nOK\r\n"
+    },
+    {
+      "name": "risk-units",
+      "cmd": "python -X utf8 full_stack_lab/tests/intake_risk_tier_check.py",
+      "chunk_id": "c92e39",
+      "wall_time_seconds": 9e-07,
+      "exit_code": 0,
+      "original_token_count": 36,
+      "output": "sssssssssssss............\r\n----------------------------------------------------------------------\r\nRan 25 tests in 0.213s\r\n\r\nOK (skipped=13)\r\n"
+    },
+    {
+      "name": "session-units",
+      "cmd": "python -X utf8 full_stack_lab/tests/upstream_session_reuse_test.py",
+      "chunk_id": "e23318",
+      "wall_time_seconds": 1.1e-06,
+      "exit_code": 0,
+      "original_token_count": 36,
+      "output": "........................................\r\n----------------------------------------------------------------------\r\nRan 40 tests in 1.254s\r\n\r\nOK\r\n"
+    },
+    {
+      "name": "node-syntax",
+      "cmd": "node --check full_stack_lab/gateway/app/agent_static/console.js",
+      "chunk_id": "1f0179",
+      "wall_time_seconds": 6e-07,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "name": "node-units",
+      "cmd": "node --test full_stack_lab/tests/console-state.test.mjs full_stack_lab/tests/high-impact-console.test.mjs full_stack_lab/tests/high-impact-evidence-console.test.mjs full_stack_lab/tests/outcome-console.test.mjs full_stack_lab/tests/resource-values.test.mjs",
+      "chunk_id": "8681aa",
+      "wall_time_seconds": 8e-07,
+      "exit_code": 0,
+      "original_token_count": 599,
+      "output": "✔ masked kinds read in Korean and an unknown kind never shows its raw name (1.2171ms)\n✔ a poll overlapping a page load shows each call once, newest first, within the limit (1.2267ms)\n✔ ids sort numerically and malformed rows cannot displace real decisions (0.2709ms)\n✔ search matches person, PC, harness, server.tool, target, policy and trace, ignoring case and spaces (0.4423ms)\n✔ the status phrase never presents a failed poll as fresh (1.5339ms)\n✔ 24 hourly buckets end at the current hour and keep empty hours at zero (0.8086ms)\n✔ splitBy counts per key with a decision split, largest first (0.7062ms)\n✔ sankey layers never merge a server with a harness of the same name (0.4723ms)\n✔ endpoint observation shows disabled, stale and failed sources separately from zero accepted rows (0.5852ms)\n✔ listener-only endpoints remain in coverage counts and expose no raw command line or owner token (0.7584ms)\n✔ enforced is green only with fresh evidence of a ledger row or a kernel heartbeat (2.6034ms)\n✔ latency values read as durations and never invent a measurement (0.757ms)\n✔ endpoint evidence labels never turn a missing value into a good one (0.4724ms)\n✔ totals are reported apart from the window and page navigation follows the cursor (20.6544ms)\n✔ latency and failure show only a fresh sample and a denial count only a collected channel (0.5038ms)\n✔ new reviews default to no impact and per-tool domains override the common choice (1.5584ms)\n✔ review form shows Korean domains and escapes tool names (1.147ms)\n✔ explanations show argument categories and policy grounds without raw enum values (0.476ms)\n✔ evidence history shows escaped display names and a dash when a name is unavailable (2.5404ms)\n✔ outcome labels and Korean values remain separate and missing data is a dash (1.4179ms)\n✔ outcome text always uses the production HTML escaping (1.5668ms)\n✔ resource values retain a real zero CPU and show measured memory and TCP latency (2.3589ms)\n✔ missing, stale and invalid timestamps never become healthy zero values (0.6879ms)\n✔ failed network and unavailable CPU preserve independently valid memory (0.4122ms)\n✔ unknown scopes, wrong types, negative or out-of-range values are not presented as measurements (0.2517ms)\nℹ tests 25\nℹ suites 0\nℹ pass 25\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 153.5205\n"
+    },
+    {
+      "name": "auth-routes",
+      "cmd": "python -X utf8 full_stack_lab/tests/open_endpoints.py",
+      "chunk_id": "189c20",
+      "wall_time_seconds": 9e-07,
+      "exit_code": 0,
+      "original_token_count": 86,
+      "output": "PASS 무인증 1개가 문서와 일치, 인증 필요 79개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\r\n"
+    },
+    {
+      "name": "residency-render",
+      "cmd": "python -X utf8 full_stack_lab/registry/render_residency.py --check",
+      "chunk_id": "21dcf3",
+      "wall_time_seconds": 1e-06,
+      "exit_code": 0,
+      "original_token_count": 8,
+      "output": "위치 규칙 확인 완료\r\n"
+    },
+    {
+      "name": "diff-whitespace",
+      "cmd": "git diff --check",
+      "chunk_id": "13f215",
+      "wall_time_seconds": 0.105637,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "name": "compile-and-structure",
+      "cmd": "@'\nfrom pathlib import Path\nimport subprocess, py_compile, re, json\nfiles=subprocess.check_output(['git','diff','HEAD','--name-only'],text=True).splitlines()\nfiles+=subprocess.check_output(['git','ls-files','--others','--exclude-standard'],text=True).splitlines()\npy=sorted(set(f for f in files if f.endswith('.py')))\nfor f in py: py_compile.compile(f,doraise=True)\nprint('py_compile:',len(py),'passed')\nassert not [f for f in files if Path(f).is_file() and re.search(rb'^(<<<<<<< |=======$|>>>>>>> )',Path(f).read_bytes(),re.M)]\nledger=json.loads(Path('full_stack_lab/opa/policy_ledger.json').read_text(encoding='utf-8'))['policy_ledger']\nassert len(ledger)==len({p['priority'] for p in ledger.values()})\nprint('markers: 0; priority duplicates: 0; ledger entries:',len(ledger))\ns=Path('docs/ai/DECISIONS.md').read_text(encoding='utf-8')\ntail=[int(n) for n in re.findall(r'^## D-(\\d+) ',s,re.M) if int(n)>=136]\nassert tail==sorted(tail),tail\nprint('decision tail:',tail)\nfor ref in ['HEAD','MERGE_HEAD']:\n original=subprocess.check_output(['git','show',ref+':full_stack_lab/tests/high_impact_check.py'],text=True,encoding='utf-8') if ref=='HEAD' else ''\n if original:\n  import ast\n  def tests(text):\n   return {n.name:ast.dump(n) for n in ast.walk(ast.parse(text)) if isinstance(n,(ast.AsyncFunctionDef,ast.FunctionDef)) and n.name.startswith('test_')}\n  previous=tests(original); current=tests(Path('full_stack_lab/tests/high_impact_check.py').read_text(encoding='utf-8'))\n  assert all(current.get(k)==v for k,v in previous.items())\n  print('existing high-impact test bodies preserved:',len(previous))\n'@ | python -X utf8 -",
+      "chunk_id": "833a0c",
+      "wall_time_seconds": 0.6024524,
+      "exit_code": 0,
+      "original_token_count": 44,
+      "output": "py_compile: 20 passed\r\nmarkers: 0; priority duplicates: 0; ledger entries: 66\r\ndecision tail: [136, 137, 138, 139, 141, 143]\r\nexisting high-impact test bodies preserved: 19\r\n"
+    },
+    {
+      "name": "gateway",
+      "cmd": "python -X utf8 full_stack_lab/tests/high_impact_check.py --gateway",
+      "chunk_id": "8185c4",
+      "wall_time_seconds": 1.05e-05,
+      "exit_code": 1,
+      "original_token_count": 118,
+      "output": "Traceback (most recent call last):\r\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\high_impact_check.py\", line 30, in <module>\r\n    from app import core, agent_contract\r\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 11, in <module>\r\n    from datetime import UTC, datetime, timedelta\r\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\r\n"
+    }
+  ],
+  "recorded_at": "2026-10-20T01:29:08.132093+09:00",
+  "working_tree_sha256": {
+    "docs/ai/DECISIONS.md": "4a1cd6bbf938521da09d203877dd352bbf087b491ca307b6d21e67e94cde9dd5",
+    "docs/ai/POLICY.md": "eb779b48730f90a81fd24c8b5e480d03c3e44a2089270b44d6aa841f8f374c90",
+    "full_stack_lab/gateway/app/agent_contract.py": "bac888a4e013ef74e7cc4e0a62404d07571974c10abdead3c5314a0ab1a6f243",
+    "full_stack_lab/gateway/app/agent_service.py": "77c6e5c08927869d1c1975b9b6ad959530f912d79b253a6fe7d53b79af09ce6f",
+    "full_stack_lab/gateway/app/agent_static/console.js": "43fc51c358adbdba80e0c673d1f7a91c8b5b8361ec1c53b8dba79d3b2837520a",
+    "full_stack_lab/gateway/app/core.py": "3bab00a84702669c4075b6d4d1c3bd658871d5f76a3b3c1168ced4a00d38ca9e",
+    "full_stack_lab/gateway/app/v2_tables.sql": "108a9ced2869083ea5204c4ff75ec07c20812a5c831b0c82482b106e4a788fbf",
+    "full_stack_lab/tests/high_impact_check.py": "3e622f4b5458d7d048da5eab2820cc9cd58d41958dfc928e83de29e3e1699ccf",
+    "full_stack_lab/tests/high-impact-evidence-console.test.mjs": "59548a07d403f3d0c030fff67b306aa57408493ccbf7f93341885a05ba78aab3",
+    "research/llm-wiki/status/backlog.md": "a9f9e2f2a94b9b9c2ef05771babac9e78cd6b31a2a0704289686c6f5b2f617c6",
+    "research/llm-wiki/status/reports/2026-10-20-high-impact-main-merge.md": "4cc4b91983af95589402f8cf73cea245e275eafc2386a0c143d5015772e38118"
+  },
+  "unmerged_index_paths": [
+    "docs/ai/DECISIONS.md",
+    "full_stack_lab/gateway/app/agent_contract.py",
+    "full_stack_lab/gateway/app/agent_service.py",
+    "full_stack_lab/gateway/app/agent_static/console.js",
+    "full_stack_lab/gateway/app/core.py",
+    "full_stack_lab/gateway/app/v2_tables.sql",
+    "research/llm-wiki/status/backlog.md"
+  ]
+}

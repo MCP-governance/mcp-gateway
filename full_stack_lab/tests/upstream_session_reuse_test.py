@@ -560,7 +560,11 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.record = AsyncMock(return_value=None)
         self.release = AsyncMock()
         ns = {
-            "DispatchRejected": DispatchRejected, "registry": NS(server=lambda _: {"endpoint": "https://a.example/mcp"}, pinned_protocol=lambda _: "2025-11-25"),
+            "DispatchRejected": DispatchRejected, "registry": NS(
+                server=lambda _: {"endpoint": "https://a.example/mcp", "poisoning_review": {
+                    "tool": {"description_sha256": "description", "schema_sha256": {}}}},
+                pinned_protocol=lambda _: "2025-11-25",
+                tool_hashes=lambda _: {"description_sha256": "description", "schema_sha256": {}}),
             "upstream": NS(session=session, list_all_tools=self.listed, release_pool=self.release,
                            tool_view=lambda _: {"description": "description", "input_schema": {}},
                            content_items=lambda _: [], session_terminated=lambda exc: str(exc) == "expired"),

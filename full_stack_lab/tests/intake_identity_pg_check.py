@@ -36,6 +36,7 @@ for candidate in (Path(__file__).resolve().parent.parent / "gateway", Path("/app
         break
 from app import activity, agent_service, audit, core, db, endpoint_plane, main, mcp_facade, privacy, registry, review, upstream
 from app.agent_contract import AUDIENCE, ISSUER
+from intake_fixture import approval_body, impact_input
 
 PASSED: list[str] = []
 ENDPOINT = "http://notes-srv:9000/mcp"
@@ -184,7 +185,8 @@ async def remote_service_flow(console: httpx.AsyncClient) -> str:
     tools = {"search": "r", "read": "r"}
     as_("wbsb-emp")
     made = await console.post("/api/mcp-requests", json={"display_name": "Notes", "intake_kind": "remote-endpoint", "endpoint_url": ENDPOINT,
-                                                       "requested_transport": "streamable-http", "purpose": "공개 노트를 검색하고 읽는 데 씁니다."})
+                                                       "requested_transport": "streamable-http", "purpose": "공개 노트를 검색하고 읽는 데 씁니다.",
+                                                       "risk_input": impact_input()})
     check(made.status_code == 200, f"신청: {made.text}")
     intake = made.json()["request"]["id"]
     consent = await events("user-consent", intake)
@@ -206,7 +208,7 @@ async def remote_service_flow(console: httpx.AsyncClient) -> str:
     gate = await review.intake_gate(await db.fetch_one("SELECT * FROM mcp_intake_requests WHERE id=%s", (intake,)))
     check(gate["ok"], f"원격 gate: {gate['blockers']}")
     await db.execute("UPDATE mcp_intake_requests SET provenance='{}' WHERE id=%s", (intake,))
-    held = await console.post(f"/api/mcp-requests/{intake}/approve", json={"risk_acceptance": "시험용 위험 수용 사유입니다."})
+    held = await console.post(f"/api/mcp-requests/{intake}/approve", json=approval_body(risk_acceptance="시험용 위험 수용 사유입니다."))
     check(held.status_code == 409, f"출처 없는 원격 승인: {held.status_code}")
     check((await db.fetch_one("SELECT status FROM mcp_intake_requests WHERE id=%s", (intake,)))["status"] == "HOLD", "출처 누락은 보류여야 함")
     ok("출처 기록이 없으면 승인되지 않고 보류된다 (원격)")
@@ -221,7 +223,7 @@ async def remote_service_flow(console: httpx.AsyncClient) -> str:
     own_body = {**body, "endpoint": "http://other-srv:9000/mcp"}
     refused_review = await console.post(f"/api/mcp-requests/{own_id}/review-contract", json=own_body)
     check(refused_review.status_code == 403, f"신청자의 계약 검토: {refused_review.status_code}")
-    refused_approve = await console.post(f"/api/mcp-requests/{own_id}/approve", json={"risk_acceptance": "자기 승인 시험입니다. 거부되어야 합니다."})
+    refused_approve = await console.post(f"/api/mcp-requests/{own_id}/approve", json=approval_body(risk_acceptance="자기 승인 시험입니다. 거부되어야 합니다."))
     check(refused_approve.status_code == 403, f"신청자의 승인: {refused_approve.status_code}")
     refusals = [e for e in await events(target=own_id) if e["outcome"] == "refused"]
     check({e["kind"] for e in refusals} == {"contract-review", "intake-approve"} and all(e["actor"] == e["applicant"] == "wbsb-admin-b" for e in refusals),
@@ -232,7 +234,7 @@ async def remote_service_flow(console: httpx.AsyncClient) -> str:
 
     # an independent administrator approves; approval and consent stay two records
     as_("wbsb-admin-a")
-    approved = await console.post(f"/api/mcp-requests/{intake}/approve", json={"risk_acceptance": "시험용 위험 수용 사유입니다."})
+    approved = await console.post(f"/api/mcp-requests/{intake}/approve", json=approval_body(risk_acceptance="시험용 위험 수용 사유입니다."))
     check(approved.status_code == 200, f"승인: {approved.text}")
     approval = (await events("intake-approve", intake))[-1]
     check(approval["outcome"] == "approved" and approval["actor"] == "wbsb-admin-a" and approval["applicant"] == "wbsb-emp"
@@ -341,11 +343,12 @@ async def minimal_set(console: httpx.AsyncClient) -> None:
     found = await core.discover_for_registration(ENDPOINT)
     as_("wbsb-emp")
     made = (await console.post("/api/mcp-requests", json={"display_name": "Notes 2", "intake_kind": "remote-endpoint", "endpoint_url": ENDPOINT,
-                                                        "requested_transport": "streamable-http", "purpose": "하네스별 최소 집합을 확인합니다."})).json()["request"]["id"]
+                                                        "requested_transport": "streamable-http", "purpose": "하네스별 최소 집합을 확인합니다.",
+                                                        "risk_input": impact_input()})).json()["request"]["id"]
     as_("wbsb-admin-a")
     body = review_body("notes2", found["catalog_hash"], {"search": "r"}, {"search": REVIEWS["search"]}, ["wbsb-emp"])
     check((await console.post(f"/api/mcp-requests/{made}/review-contract", json=body)).status_code == 200, "계약 검토")
-    check((await console.post(f"/api/mcp-requests/{made}/approve", json={"risk_acceptance": "시험용 위험 수용 사유입니다."})).status_code == 200, "승인")
+    check((await console.post(f"/api/mcp-requests/{made}/approve", json=approval_body(risk_acceptance="시험용 위험 수용 사유입니다."))).status_code == 200, "승인")
     check((await console.post(f"/api/mcp-requests/{made}/register", json=scope_of(body))).status_code == 200, "등록")
     await db.execute("UPDATE mcp_servers SET status='READY', lifecycle='OPERATING' WHERE id IN ('filesystem','git')")
 
@@ -380,11 +383,12 @@ async def delegation(console: httpx.AsyncClient) -> None:
     found = await core.discover_for_registration(ENDPOINT)
     as_("wbsb-emp")
     made = (await console.post("/api/mcp-requests", json={"display_name": "Notes 3", "intake_kind": "remote-endpoint", "endpoint_url": ENDPOINT,
-                                                        "requested_transport": "streamable-http", "purpose": "위임 호출 거부를 확인합니다."})).json()["request"]["id"]
+                                                        "requested_transport": "streamable-http", "purpose": "위임 호출 거부를 확인합니다.",
+                                                        "risk_input": impact_input()})).json()["request"]["id"]
     as_("wbsb-admin-a")
     body = review_body("notes3", found["catalog_hash"], {"search": "r"}, {"search": REVIEWS["search"]}, ["wbsb-emp"])
     await console.post(f"/api/mcp-requests/{made}/review-contract", json=body)
-    await console.post(f"/api/mcp-requests/{made}/approve", json={"risk_acceptance": "시험용 위험 수용 사유입니다."})
+    await console.post(f"/api/mcp-requests/{made}/approve", json=approval_body(risk_acceptance="시험용 위험 수용 사유입니다."))
     check((await console.post(f"/api/mcp-requests/{made}/register", json=scope_of(body))).status_code == 200, "등록")
     control = await call("wbsb-emp", "notes3", "search", {"q": "x"})
     check(control["decision"] == "Allow", f"대조군: {control['decision']} {control['policy_id']}")
@@ -428,10 +432,10 @@ async def seed_repo(applicant: str, name: str, *, db_age_days: float | None = 1,
               if provenance is ... else provenance)
     await db.execute(
         """INSERT INTO mcp_intake_requests(id, submitted_by, display_name, repository_url, requested_transport, purpose, status, risk_level,
-               commit_sha, source_ref, evidence, validated_at, intake_kind, provenance)
-           VALUES (%s,%s,%s,%s,'stdio','시험용 소스 도입입니다.',%s,%s,%s,%s,%s,now(),'repository',%s)""",
+               commit_sha, source_ref, evidence, validated_at, intake_kind, provenance, risk_input)
+           VALUES (%s,%s,%s,%s,'stdio','시험용 소스 도입입니다.',%s,%s,%s,%s,%s,now(),'repository',%s,%s)""",
         (intake, applicant, name, f"https://github.com/example/{name}", status or ("HOLD" if critical else "VALIDATED"),
-         "CRITICAL" if critical else "LOW", commit, source_ref, Jsonb({"scanners": scanners, "reports": []}), Jsonb(record or {})))
+         "CRITICAL" if critical else "LOW", commit, source_ref, Jsonb({"scanners": scanners, "reports": []}), Jsonb(record or {}), Jsonb(impact_input())))
     findings = [{"severity": "CRITICAL", "id": f"CVE-2026-{1000 + i}", "title": "x", "target": "requirements.txt"} for i in range(critical)]
     stamp = None if db_age_days is None else datetime.now(UTC) - timedelta(days=db_age_days)
     for scanner, version in (("Syft", "v1.51.1"), ("Trivy", "0.74.0"), ("Semgrep", "1.172.0"), ("Gitleaks", "8.30.1")):
@@ -464,7 +468,7 @@ async def repository_gate(console: httpx.AsyncClient) -> None:
         ):
             intake = await seed_repo("wbsb-emp", "gate-" + uuid.uuid4().hex[:6], **kwargs)
             before = published.await_count
-            response = await console.post(f"/api/mcp-requests/{intake}/approve")
+            response = await console.post(f"/api/mcp-requests/{intake}/approve", json=approval_body())
             check(response.status_code == 409 and needle in response.json()["detail"], f"{label}: {response.status_code} {response.text}")
             check(await status_of(intake) == "HOLD" and published.await_count == before, f"{label}: 보류가 아니거나 사본을 게시함")
             held = [e for e in await events("intake-hold", intake)]
@@ -472,11 +476,11 @@ async def repository_gate(console: httpx.AsyncClient) -> None:
         ok("검사 실패·보고서 없음·취약점 DB 7일 초과/시각 없음·출처 누락은 승인되지 않고 보류된다")
 
         edge = await seed_repo("wbsb-emp", "edge-" + uuid.uuid4().hex[:6], db_age_days=6.9)
-        check((await console.post(f"/api/mcp-requests/{edge}/approve")).status_code == 200, "6.9일 된 DB는 통과해야 함")
+        check((await console.post(f"/api/mcp-requests/{edge}/approve", json=approval_body())).status_code == 200, "6.9일 된 DB는 통과해야 함")
         ok("취약점 DB가 기준(7일) 안이면 통과한다")
 
         attested = await seed_repo("wbsb-emp", "lic-" + uuid.uuid4().hex[:6], license_spdx=None)
-        done = await console.post(f"/api/mcp-requests/{attested}/approve", json={"license": "Apache-2.0"})
+        done = await console.post(f"/api/mcp-requests/{attested}/approve", json=approval_body(license="Apache-2.0"))
         check(done.status_code == 200, f"승인자 기재 라이선스: {done.text}")
         record = (await db.fetch_one("SELECT provenance FROM mcp_intake_requests WHERE id=%s", (attested,)))["provenance"]
         check(record["license"] == {"spdx": "Apache-2.0", "source": "operator", "by": "wbsb-admin-a"} and record["verification"]["match"] is True, f"{record}")
@@ -484,7 +488,7 @@ async def repository_gate(console: httpx.AsyncClient) -> None:
 
         mismatch = await seed_repo("wbsb-emp", "mismatch-" + uuid.uuid4().hex[:6])
         published.side_effect = agent_service.ProvenanceMismatch("기록한 해시 aaaa · 사본 해시 bbbb")
-        refused = await console.post(f"/api/mcp-requests/{mismatch}/approve")
+        refused = await console.post(f"/api/mcp-requests/{mismatch}/approve", json=approval_body())
         check(refused.status_code == 409 and await status_of(mismatch) == "HOLD", f"해시 불일치: {refused.status_code}")
         check((await events("provenance-mismatch", mismatch))[-1]["outcome"] == "held", "불일치 기록")
         ok("사본의 해시가 기록과 다르면 보류되고 등록되지 않는다")
@@ -492,7 +496,7 @@ async def repository_gate(console: httpx.AsyncClient) -> None:
 
         # critical finding: blocked until a different administrator accepts it for a limited time
         critical = await seed_repo("wbsb-admin-b", "crit-" + uuid.uuid4().hex[:6], critical=1)
-        stuck = await console.post(f"/api/mcp-requests/{critical}/approve")
+        stuck = await console.post(f"/api/mcp-requests/{critical}/approve", json=approval_body())
         check(stuck.status_code == 409 and await status_of(critical) == "HOLD", "치명적 발견이 승인됨")
         as_("wbsb-admin-b")
         self_accept = await console.post(f"/api/mcp-requests/{critical}/accept-risk", json={"reason": "신청자 본인이 수용하려는 시도입니다.", "days": 7})
@@ -504,7 +508,7 @@ async def repository_gate(console: httpx.AsyncClient) -> None:
         check(long_term.status_code == 422, "기한 상한이 없음")
         accepted = await console.post(f"/api/mcp-requests/{critical}/accept-risk", json={"reason": "격리된 시험 환경에서만 쓰고 7일 안에 다시 검토합니다.", "days": 7})
         check(accepted.status_code == 200 and await status_of(critical) == "VALIDATED", f"위험 수용: {accepted.text}")
-        check((await console.post(f"/api/mcp-requests/{critical}/approve")).status_code == 200, "수용 뒤 승인")
+        check((await console.post(f"/api/mcp-requests/{critical}/approve", json=approval_body())).status_code == 200, "수용 뒤 승인")
         ok("치명적 발견은 다른 관리자가 사유와 기한(최대 30일)으로 수용해야 승인할 수 있다")
         return critical
 
@@ -534,7 +538,7 @@ async def accepted_risk_lifecycle(console: httpx.AsyncClient, intake: str) -> No
     lapsed = await review.lapse_expired_acceptances()
     check([r["id"] for r in lapsed] == [row["id"]] and await status_of(intake) == "HOLD", f"보류 복귀: {lapsed}")
     check((await events("risk-lapse", intake))[-1]["outcome"] == "held" and await core.renew_approvals() == [], "기록 또는 갱신")
-    again = await console.post(f"/api/mcp-requests/{intake}/approve")
+    again = await console.post(f"/api/mcp-requests/{intake}/approve", json=approval_body())
     check(again.status_code == 409, "만료된 수용으로 다시 승인됨")
     ok("위험 수용이 만료되면 요청은 보류로 돌아가고 호출은 MCP-SUPPLY-001로 거부되며 갱신되지 않는다")
     await core.deregister_server("codesrv", "wbsb-admin-a")

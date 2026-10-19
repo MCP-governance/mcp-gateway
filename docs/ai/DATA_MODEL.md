@@ -119,7 +119,7 @@ D-126: `resolved`·`confirmed_executed` 쓰기도 `resolved_at`부터 기본 24�
 `endpoint_os_events`는 `raw_sha256`(7일 재전송 중복 판정)·`denial_class`(`harness_startup`/`blocked_attempt`/`listener_reply`/`unknown`)를 더한다.
 `endpoint_network_samples(endpoint_id, measured_at, rtt_p50_ms, rtt_p95_ms, jitter_ms, failure_pct, probes, received_at)`는 PK `(endpoint_id, measured_at)`이고
 적재하는 하트비트가 7일 지난 행을 지운다. `endpoint_agents.detail.install_receipt`는 Gateway가 렌더링한 파일 해시(`provider_artifact_sha256`)와
-장치가 보고한 설치 파일 해시(`installed_sha256`)를 따로 둔다. 감사 원장(`decisions`)은 그대로 append-only이며 연관 조회는 읽기만 한다.
+장치가 보고한 설치 파일 해시(`installed_sha256`)를 따로 둔다. 감사 원장(`decisions`)은 그대로 append-only이며 연관 조회는 읽기만 한다. D-145 상관 조회는 `decisions.request_id`로 `dispatch_intents`를 정확히 잇고, `trace_id`를 함께 반환한다. 엔드포인트 관측은 같은 `endpoint_id`·소유 주체·시간 창을 모두 확인한 보조 근거로 표시한다. trace ID가 없는 과거 행은 그대로 조회하되 ID를 추정하지 않는다.
 
 ## 6. 공급망·도입
 `mcp_intake_requests`(도입 신청. `exit_terms`는 관리자 검증 기록: 세 조항·`evidence_url`·`note`·`verified_by`·`verified_at`, D-26;
@@ -130,6 +130,7 @@ D-90~D-92에서 더한 것(`v2_tables.sql`, 모두 멱등): `mcp_intake_requests
 `supply_chain_reports.vuln_db_updated_at`(그 검사가 쓴 취약점 DB의 갱신 시각), `accepted_risks`(치명적 발견의 기한부 수용: 신청·커밋·발견 id·사유·수용자·만료),
 `mcp_tools.scope_review`(도구별 목적·자산·행위·외부 목적지), `approval_events`(승인·거부·보류·수용·등록 기록, append-only),
 `audit_annotations`(`decisions.id` 범위의 무효 처리 표시, append-only). Console 등록 서버의 `servers.json` 항목에는 `tool_reviews`와 `provenance`가 들어간다.
+D-143에서 더한 것: `mcp_intake_requests.risk_input`(신청자가 적은 영향평가 입력 여섯 항목, 등급은 저장하지 않고 `risk_tier.assess`로 매번 계산), `servers.json` 항목의 `risk_assessment`(등급·점수·입력·`input_sha256`·승인자)와 문서 최상위의 `risk_tier_grace_started_at`(입력 없는 기존 승인의 30일 유예 시작), `approval_events`의 `intake-cosign`(두 명 승인의 첫 번째)·`risk-input`(입력 기록).
 
 Console 등록 서버(D-49)는 DB가 아니라 `REGISTRY_RUNTIME_DIR/servers.json`에 있다 — `servers`(catalog.toml과 같은 모양 +
 `valid_until`·`intake_id`·`registered_by`), `contracts`(등록 때 고정한 도구 해시), `usage_relationships`(`UR-<ID>`), `history`(등록·연장·해제).
@@ -156,3 +157,10 @@ v2 코드는 읽지도 쓰지도 않는다 → [ROADMAP.md](ROADMAP.md) 정리 �
 `mcp_intake_requests.evidence`는 `scanners`(검사기별 DONE/FAILED·오류), `reports`(해당 시도의 성공한 산출물 이름), `exit_terms_discovery`(commit 고정 문서 후보 근거), SBOM 구성요소 수·위험 등급별 수를 담는다. `exit_terms`의 관리자 검증 기록과 자동 조사 결과는 별도 필드다.
 
 `validation_lease_expires_at`와 `validation_attempts`는 VALIDATING 작업의 중단 복구에 쓰인다. 신규 요청은 API의 단일 INSERT에서 VALIDATION_QUEUED가 된다. Syft·Trivy·Semgrep·Gitleaks의 정규화 요약은 `supply_chain_reports`에 남고 Console은 source_ref뿐 아니라 신청 UUID가 포함된 report_path로 귀속을 제한한다. Gitleaks 산출물은 RuleID·상대 파일·행·설명만 남기고 Secret/Match를 제거한다. 부분 검사 실패 시 수집한 증적은 남지만 요청 상태는 FAILED이며 승인되지 않는다.
+
+## 중대 영향 개별 승인 증빙 (D-139)
+
+`approvals.explanation`은 요청 생성 시 고정한 원문 없는 설명 JSONB다. `revoked_at`·`revoked_by`는 승인 후 원승인자의 번복을 기록한다. 기존 status는 실행 경과를 유지하며 조회에서 revoked_at이 있으면 「승인 번복」으로 표시한다.
+`request_payload.impact_scope_sha256`은 심사자/시각을 제외한 도구 범위 해시다. 기존 request_fingerprint는 원래 주체·서버·도구·인자를 포함한 저장 요청 전체를 결속한다. 최종 전송에서 현재 scope_review와 대조한다.
+`approval_events`의 call-request/recorded, call-explanation-view/recorded, call-approve/approved, call-reject/rejected, call-revoke/recorded를 재사용한다. 신청·승인·거부·번복은 해당 상태 변경과 같은 트랜잭션으로 기록하며 사건/판정 행의 UPDATE·DELETE는 추가하지 않는다. 열람은 별도 append다.
+설명·개입·판정 번들에는 인자 키·값·요청/응답 본문·자유 산문을 포함하지 않는다. 번복은 이미 전송된 호출이나 외부 효과를 복구하지 않는다. 실제 PostgreSQL 검증은 기기에서 수행한다.

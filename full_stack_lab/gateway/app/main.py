@@ -36,7 +36,7 @@ from .core import (
 from .mcp_facade import build_mcp, transport_security
 from .agent_contract import CONSOLE_SCOPE, ResidencyFields, ToolReview, authenticate, authenticated_user
 from .release import build_info, policy_info
-from . import activity, audit, incidents, registry, residency, retention, review, siem, supplier_assurance
+from . import activity, audit, incidents, registry, residency, retention, review, risk_tier, siem, supplier_assurance
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 # "오늘" is the operator's day. The DB session runs in UTC, so date_trunc('day', now())
@@ -180,6 +180,12 @@ class StrictModel(BaseModel):
 
 class RejectRequest(StrictModel):
     note: str = Field(min_length=1, max_length=500)
+    evidence_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+
+
+class ApprovalEvidence(StrictModel):
+    evidence_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    reason: Literal["scope_confirmed"] = "scope_confirmed"
 
 
 class IntentResolve(StrictModel):
@@ -350,7 +356,8 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
         db.fetch_all("SELECT * FROM usage_relationships ORDER BY id"),
     )
     catalog_servers = registry.servers()
-    console = registry.runtime()["servers"]
+    doc = registry.runtime()
+    console = doc["servers"]
     return {"catalog_version": registry.catalog_version(),
             "classification": registry.catalog().get("classification", {}),
             "organization": registry.catalog().get("organization", {}),
@@ -360,7 +367,8 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
             # D-49: which servers came from a Console registration, and until when they may be used.
             "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by", "registered_at",
                                                                     "data_class", "tools", "tool_reviews", "provenance",
-                                                                    "allowed_principals", "supplier_assurance", "residency", "residency_review")}
+                                                                    "allowed_principals", "supplier_assurance", "residency", "residency_review", "risk_assessment")}
+                                  | {"risk_review": risk_tier.legacy_review(spec, doc.get("risk_tier_grace_started_at"))}
                               for sid, spec in console.items() if sid not in registry.reviewed_servers()}}
 
 
@@ -616,9 +624,10 @@ async def session(request: SessionRequest) -> dict:
 
 
 @app.post("/api/approvals/{approval_id}/approve")
-async def approve(approval_id: str, user: dict = Depends(admin_caller)) -> dict:
+async def approve(approval_id: str, request: ApprovalEvidence | None = None, user: dict = Depends(admin_caller)) -> dict:
     try:
-        return await approve_request(approval_id, user["principal"])
+        return await approve_request(approval_id, user["principal"],
+            request.reason if request else None, request.evidence_sha256 if request else None)
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 
@@ -626,7 +635,23 @@ async def approve(approval_id: str, user: dict = Depends(admin_caller)) -> dict:
 @app.post("/api/approvals/{approval_id}/reject")
 async def reject(approval_id: str, request: RejectRequest, user: dict = Depends(admin_caller)) -> dict:
     try:
-        return await reject_request(approval_id, user["principal"], request.note)
+        return await reject_request(approval_id, user["principal"], request.note, request.evidence_sha256)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@app.get("/api/approvals/{approval_id}/evidence")
+async def approval_evidence(approval_id: UUID, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await core.approval_evidence(str(approval_id), user["principal"])
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@app.post("/api/approvals/{approval_id}/revoke")
+async def approval_revoke(approval_id: UUID, request: ApprovalEvidence, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await core.revoke_approval(str(approval_id), user["principal"], request.evidence_sha256)
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 
@@ -907,12 +932,23 @@ class IncidentCreate(StrictModel):
     tool_name: str | None = Field(default=None, max_length=150)
     principal: str | None = Field(default=None, max_length=150)
     jurisdictions: list[str] = Field(min_length=1, max_length=20)
+    incident_type: Literal["vulnerability", "severe-incident"] | None = None
+    fix_available_at: datetime | None = None
+    handled_at: datetime | None = None
 
 
 class IncidentReport(StrictModel):
     jurisdiction: str = Field(min_length=1, max_length=50)
     stage: str = Field(min_length=1, max_length=50)
     note: str = Field(default="", max_length=1000)
+    submitted_at: datetime | None = None
+
+
+class IncidentSupplement(StrictModel):
+    scope_since: datetime
+    scope_until: datetime
+    handled_at: datetime | None = None
+    fix_available_at: datetime | None = None
 
 
 @app.get("/api/audit/incidents")
@@ -932,7 +968,13 @@ async def audit_incident_detail(incident_id: UUID, user: dict = Depends(admin_ca
 
 @app.post("/api/audit/incidents/{incident_id}/reports")
 async def audit_incident_report(incident_id: UUID, request: IncidentReport, user: dict = Depends(admin_caller)) -> dict:
-    return await incidents.report(incident_id, request.jurisdiction, request.stage, user["principal"], request.note)
+    return await incidents.report(incident_id, request.jurisdiction, request.stage, user["principal"], request.note, request.submitted_at)
+
+
+@app.post("/api/audit/incidents/{incident_id}/supplements")
+async def audit_incident_supplement(incident_id: UUID, request: IncidentSupplement,
+                                    user: dict = Depends(admin_caller)) -> dict:
+    return await incidents.supplement(incident_id, request.model_dump(), user["principal"])
 
 
 # ── 전주기 종료·폐기 ────────────────────────────────────────────────────────

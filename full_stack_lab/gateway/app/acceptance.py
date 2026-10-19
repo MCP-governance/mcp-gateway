@@ -41,6 +41,14 @@ USERS = {"employee": "ysg@bob.local", "partner": "nkk@bob.local", "admin": "kkg@
 PRINCIPAL = {"employee": "emp-ysg", "partner": "partner-demo", "admin": "admin-demo"}
 TOKENS: dict[str, str] = {}
 RESULTS: list[dict] = []
+# What an intake approval requires, with synthetic values: supplier assurance and an impact input that scores "low"
+# (one administrator approves). The same values as tests/intake_fixture.py, which this image does not carry.
+SUPPLIER_ASSURANCE = {
+    "legal_entity": "Example Provider Ltd.", "supplier_contact": "support@example.com",
+    "security_contact": "security@example.com", "support_end": "2099-12-31",
+    "vulnerability_policy_url": "https://example.com/security/policy"}
+IMPACT_INPUT = {"data_class": "nonimportant", "personal_data": "none", "external_transfer": False,
+                "permission": "r", "users": 5, "autonomy": "approve_each"}
 
 
 class Skip(Exception):
@@ -466,11 +474,12 @@ async def console_registration_expires() -> str:
         console = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
         requested = await client.post(console + "/api/mcp-requests", headers={"Authorization": f"Bearer {TOKENS['employee']}"},
             json={"display_name": "Acceptance fetch", "intake_kind": "remote-endpoint", "endpoint_url": endpoint,
-                  "requested_transport": "streamable-http", "purpose": "실제 공급자 fetch 서버의 계약과 신청 승인 경계를 확인합니다."})
+                  "requested_transport": "streamable-http", "purpose": "실제 공급자 fetch 서버의 계약과 신청 승인 경계를 확인합니다.",
+                  "risk_input": IMPACT_INPUT})
         requested.raise_for_status();intake_id = requested.json()["request"]["id"]
         scope = {k: v for k, v in body.items() if k != "display_name"}
         scope["poisoning_ack"] = False
-        premature = await client.post(console + f"/api/mcp-requests/{intake_id}/approve", json={"risk_acceptance": "테스트보드 내 공개 intranet만 읽는 계약입니다."})
+        premature = await client.post(console + f"/api/mcp-requests/{intake_id}/approve", json={**SUPPLIER_ASSURANCE, "risk_acceptance": "테스트보드 내 공개 intranet만 읽는 계약입니다."})
         expect(premature.status_code == 409, "계약 검토 없는 원격 신청이 승인됨")
         checked = await client.post(console + f"/api/mcp-requests/{intake_id}/review-contract", json={**scope,
             "allowed_principals": [PRINCIPAL['employee']],
@@ -478,7 +487,7 @@ async def console_registration_expires() -> str:
                 "required": ["url", "max_length"], "properties": {"url": {"const": "http://intranet.bob.local/"}, "max_length": {"const": 200}}}},
             "review_note": "실제 fetch 입력 계약과 intranet 공개 자료 읽기 범위를 검토했습니다."})
         checked.raise_for_status()
-        approved = await client.post(console + f"/api/mcp-requests/{intake_id}/approve", json={"risk_acceptance": "격리 테스트보드에서 intranet 공개 자료의 읽기만 수행합니다."})
+        approved = await client.post(console + f"/api/mcp-requests/{intake_id}/approve", json={**SUPPLIER_ASSURANCE, "risk_acceptance": "격리 테스트보드에서 intranet 공개 자료의 읽기만 수행합니다."})
         approved.raise_for_status()
         altered = await client.post(console + f"/api/mcp-requests/{intake_id}/register", json={**scope, "tools": {"fetch": "x"}})
         expect(altered.status_code == 409, "승인 후 도구 권한이 변경됨")
@@ -495,7 +504,7 @@ async def console_registration_expires() -> str:
             "review_note": "자기 승인 금지를 확인하기 위한 검토 기록입니다."})
         expect(self_reviewed.status_code == 403, f"신청자 본인이 계약을 검토함: {self_reviewed.status_code}")
         self_approved = await client.post(console + f"/api/mcp-requests/{own_id}/approve",
-                                          json={"risk_acceptance": "자기 승인 금지를 확인하는 시험입니다."})
+                                          json={**SUPPLIER_ASSURANCE, "risk_acceptance": "자기 승인 금지를 확인하는 시험입니다."})
         expect(self_approved.status_code == 403, f"신청자 본인이 승인함: {self_approved.status_code}")
         await client.post(console + f"/api/mcp-requests/{own_id}/reject", json={"note": "자기 승인 금지 시험 정리"})
         created = await client.post(console + f"/api/mcp-requests/{intake_id}/register", json=scope)

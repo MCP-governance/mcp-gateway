@@ -1,0 +1,319 @@
+{
+  "python": "3.10.5 (tags/v3.10.5:f377153, Jun  6 2022, 16:14:13) [MSC v.1929 64 bit (AMD64)]",
+  "records": [
+    {
+      "name": "high-impact-unit",
+      "started_at": "2026-10-19T16:01:50.037959+00:00",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/high_impact_check.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_approve_requires_view_of_same_snapshot_and_reason (__main__.ApprovalChecks) ... ok\ntest_concurrent_claim_loser_does_not_execute (__main__.ApprovalChecks) ... ok\ntest_event_store_failure_prevents_execution (__main__.ApprovalChecks) ... ok\ntest_export_omits_free_text_and_call_bodies_but_logs_reader (__main__.ApprovalChecks) ... ok\ntest_missing_view_fails_closed (__main__.ApprovalChecks) ... ok\ntest_reject_records_explanation_and_never_executes (__main__.ApprovalChecks) ... ok\ntest_reversal_is_append_only_and_does_not_undo_effects (__main__.ApprovalChecks) ... ok\ntest_self_approval_and_expiry_do_not_execute (__main__.ApprovalChecks) ... ok\ntest_no_approval_or_event_or_changed_scope_never_creates_intent (__main__.DispatchChecks) ... ok\ntest_single_use_and_revocation_share_approval_lock (__main__.DispatchChecks) ... ok\ntest_unlabelled_call_retains_execution_without_approval (__main__.DispatchChecks) ... ok\ntest_allow_alert_restrict_and_monitor_all_wait_before_upstream (__main__.GatewayChecks) ... skipped 'Gateway image: rerun with --gateway'\ntest_final_guard_refuses_before_connection (__main__.GatewayChecks) ... skipped 'Gateway image: rerun with --gateway'\ntest_request_model_validates_label (__main__.GatewayChecks) ... skipped 'Gateway image: rerun with --gateway'\ntest_approval_binds_every_request_field_scope_and_integrity (__main__.PureChecks) ... ok\ntest_explanation_contains_no_values_keys_summaries_or_scope_prose (__main__.PureChecks) ... ok\ntest_label_requires_known_domains_and_real_boolean (__main__.PureChecks) ... ok\ntest_local_policy_ledger_has_unique_priority_and_reference_outcome (__main__.PureChecks) ... ok\ntest_unreviewed_replayed_and_revoked_approvals_fail (__main__.PureChecks) ... ok\n\n----------------------------------------------------------------------\nRan 19 tests in 0.280s\n\nOK (skipped=3)\n"
+    },
+    {
+      "name": "high-impact-ui",
+      "started_at": "2026-10-19T16:01:50.528037+00:00",
+      "command": [
+        "node",
+        "--test",
+        "full_stack_lab/tests/high-impact-console.test.mjs"
+      ],
+      "exit_code": 0,
+      "stdout": "✔ new reviews default to no impact and per-tool domains override the common choice (0.664ms)\n✔ review form shows Korean domains and escapes tool names (1.0327ms)\n✔ explanations show argument categories and policy grounds without raw enum values (0.2814ms)\nℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 76.2205\n",
+      "stderr": ""
+    },
+    {
+      "name": "outcomes-existing",
+      "started_at": "2026-10-19T16:01:50.657231+00:00",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/outcome_axes_check.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_http_statuses_are_separate_from_generic_errors (__main__.OutcomeAxes) ... ok\ntest_independent_confirmation_only (__main__.OutcomeAxes) ... ok\ntest_legacy_is_not_rewritten_or_guessed_successful (__main__.OutcomeAxes) ... ok\ntest_new_chain_covers_snapshot_and_old_versions_stay_stable (__main__.OutcomeAxes) ... ok\ntest_representative_cases (__main__.OutcomeAxes) ... ok\ntest_audit_projection_discards_private_diagnostic (__main__.OutcomePersistence) ... ok\ntest_insert_snapshot_hash_and_sql_arity (__main__.OutcomePersistence) ... ok\ntest_nested_http_status_survives_redaction (__main__.OutcomePersistence) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.068s\n\nOK\n"
+    },
+    {
+      "name": "console-existing",
+      "started_at": "2026-10-19T16:01:50.911209+00:00",
+      "command": [
+        "node",
+        "--test",
+        "full_stack_lab/tests/console-state.test.mjs",
+        "full_stack_lab/tests/outcome-console.test.mjs"
+      ],
+      "exit_code": 0,
+      "stdout": "✔ masked kinds read in Korean and an unknown kind never shows its raw name (0.7354ms)\n✔ a poll overlapping a page load shows each call once, newest first, within the limit (2.1237ms)\n✔ ids sort numerically and malformed rows cannot displace real decisions (0.2138ms)\n✔ search matches person, PC, harness, server.tool, target, policy and trace, ignoring case and spaces (0.449ms)\n✔ the status phrase never presents a failed poll as fresh (1.3366ms)\n✔ 24 hourly buckets end at the current hour and keep empty hours at zero (1.1379ms)\n✔ splitBy counts per key with a decision split, largest first (0.331ms)\n✔ sankey layers never merge a server with a harness of the same name (0.3133ms)\n✔ endpoint observation shows disabled, stale and failed sources separately from zero accepted rows (0.3917ms)\n✔ listener-only endpoints remain in coverage counts and expose no raw command line or owner token (0.5136ms)\n✔ enforced is green only with fresh evidence of a ledger row or a kernel heartbeat (1.6144ms)\n✔ latency values read as durations and never invent a measurement (0.3774ms)\n✔ endpoint evidence labels never turn a missing value into a good one (0.3099ms)\n✔ totals are reported apart from the window and page navigation follows the cursor (45.2324ms)\n✔ latency and failure show only a fresh sample and a denial count only a collected channel (0.3471ms)\n✔ outcome labels and Korean values remain separate and missing data is a dash (1.47ms)\n✔ outcome text always uses the production HTML escaping (0.892ms)\nℹ tests 17\nℹ suites 0\nℹ pass 17\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 138.0015\n",
+      "stderr": ""
+    },
+    {
+      "name": "python-syntax",
+      "started_at": "2026-10-19T16:01:51.099837+00:00",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-m",
+        "py_compile",
+        "full_stack_lab/gateway/app/high_impact.py",
+        "full_stack_lab/gateway/app/agent_contract.py",
+        "full_stack_lab/gateway/app/review.py",
+        "full_stack_lab/gateway/app/registry.py",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/dispatch.py",
+        "full_stack_lab/gateway/app/main.py",
+        "full_stack_lab/gateway/app/agent_service.py",
+        "full_stack_lab/tests/high_impact_check.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "console-syntax",
+      "started_at": "2026-10-19T16:01:51.227254+00:00",
+      "command": [
+        "node",
+        "--check",
+        "full_stack_lab/gateway/app/agent_static/console.js"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "route-auth",
+      "started_at": "2026-10-19T16:01:51.281007+00:00",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS 무인증 1개가 문서와 일치, 인증 필요 78개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\n",
+      "stderr": ""
+    },
+    {
+      "name": "console-copy",
+      "started_at": "2026-10-19T16:01:51.350640+00:00",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/console_copy_check.py"
+      ],
+      "exit_code": 0,
+      "stdout": "console copy check: 0 problem(s)\n",
+      "stderr": ""
+    },
+    {
+      "name": "gateway-import-attempt",
+      "started_at": "2026-10-19T16:01:51.438239+00:00",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/high_impact_check.py",
+        "--gateway"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\high_impact_check.py\", line 30, in <module>\n    from app import core, agent_contract\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 11, in <module>\n    from datetime import UTC, datetime, timedelta\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\n"
+    },
+    {
+      "name": "existing-controls-import-attempt",
+      "started_at": "2026-10-19T16:01:51.633088+00:00",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/remaining_controls_check.py"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\remaining_controls_check.py\", line 15, in <module>\n    from app import classify, consent, core, pac, review  # noqa: E402\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\classify.py\", line 30, in <module>\n    from pglast import parser as pgparser\nModuleNotFoundError: No module named 'pglast'\n"
+    },
+    {
+      "name": "pyflakes-attempt",
+      "started_at": "2026-10-19T16:01:51.818039+00:00",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-m",
+        "pyflakes",
+        "full_stack_lab/gateway/app/high_impact.py",
+        "full_stack_lab/gateway/app/agent_contract.py",
+        "full_stack_lab/gateway/app/review.py",
+        "full_stack_lab/gateway/app/registry.py",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/dispatch.py",
+        "full_stack_lab/gateway/app/main.py",
+        "full_stack_lab/gateway/app/agent_service.py",
+        "full_stack_lab/tests/high_impact_check.py"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "C:\\Program Files\\Python310\\python.exe: No module named pyflakes\n"
+    },
+    {
+      "name": "diff-check",
+      "started_at": "2026-10-19T16:01:51.862527+00:00",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'docs/ai/DATA_MODEL.md', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'docs/ai/DECISIONS.md', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'full_stack_lab/gateway/app/agent_static/console.js', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'full_stack_lab/gateway/app/v2_tables.sql', CRLF will be replaced by LF the next time Git touches it\n"
+    },
+    {
+      "name": "wiki-check",
+      "started_at": "2026-10-19T16:01:51.914685+00:00",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_wiki.py",
+        "--ci-ignored-local-sources"
+      ],
+      "exit_code": 1,
+      "stdout": "{\n  \"ok\": false,\n  \"counts\": {\n    \"endpoint-permission-references\": 12,\n    \"experiments\": 13,\n    \"imports\": 22,\n    \"local-tool-risks\": 13,\n    \"papers\": 264,\n    \"solutions\": 9,\n    \"threats\": 24,\n    \"sources_evidence_records\": 3,\n    \"solutions_evidence_records\": 21,\n    \"reviewed_local_tools\": 92,\n    \"markdown_documents\": 516\n  },\n  \"warnings\": [\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\extracts\\\\LIB-L05.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\originals\\\\pipc-genai-privacy-guide-2025-08.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\extracts\\\\LIB-L06.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\originals\\\\kisa-ai-red-teaming-guide-2026-07.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\extracts\\\\LIB-L09.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\originals\\\\bs-iso-iec-42001-2023.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\extracts\\\\LIB-L10.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\originals\\\\iso-iec-27001-2022.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\extracts\\\\LIB-L11.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\originals\\\\azs-iso-iec-tr-24028-2024-az.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\extracts\\\\LIB-L12.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\originals\\\\iso-iec-5230-2020.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\extracts\\\\LIB-M04.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\originals\\\\imda-mgf-agentic-ai-v1-5.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\extracts\\\\LIB-M08.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\originals\\\\csa-securing-agentic-ai-addendum.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\extracts\\\\LIB-M13.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\originals\\\\ca-tbs-directive-automated-decision-making.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\extracts\\\\LIB-M14.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\originals\\\\ccpa-admt-risk-cyber-approved-text.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\extracts\\\\LIB-M15.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\originals\\\\co-sb26-189-session-law.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\extracts\\\\LIB-M17.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\originals\\\\nist-ai-600-1.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\extracts\\\\LIB-M20.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\originals\\\\nist-ai-100-2e2025.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\extracts\\\\LIB-M21.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\originals\\\\nist-ir-8596-iprd.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\extracts\\\\LIB-M22.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\originals\\\\csi-deploying-ai-systems-securely-2024-ncsc-nz-copy.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\extracts\\\\LIB-M28.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\originals\\\\cn-network-data-security-regulations-790.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\extracts\\\\LIB-M31.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\originals\\\\tc260-ai-safety-governance-framework-2-0.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\extracts\\\\LIB-M32.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\originals\\\\gbt-45654-2025.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\extracts\\\\LIB-M34.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\originals\\\\sg-pdpa-2012.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\extracts\\\\LIB-M36.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\originals\\\\quebec-law-25-2021.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\extracts\\\\LIB-M37.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\originals\\\\sg-mas-ai-risk-management-guidelines-2026.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\extracts\\\\LIB-M38.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\originals\\\\sg-pdpc-ai-recommendation-decision-advisory-guidelines.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\extracts\\\\LIB-M39.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\originals\\\\csa-guidelines-on-securing-ai-systems-2024.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\extracts\\\\LIB-M40.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\originals\\\\etsi-en-304-223.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\extracts\\\\LIB-M43.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\originals\\\\au-guidance-ai-adoption-implementation.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\extracts\\\\LIB-M44.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\originals\\\\india-dpdp-rules-2025.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\extracts\\\\LIB-M45.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\originals\\\\india-dpdp-act-2023.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\extracts\\\\LIB-M48.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\originals\\\\au-poa-act-2024.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\extracts\\\\LIB-M49.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\originals\\\\india-ai-governance-guidelines.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P39\\\\extracts\\\\P39.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P39\\\\originals\\\\P39.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P43\\\\extracts\\\\P43.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P43\\\\originals\\\\P43.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P46\\\\extracts\\\\P46.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P46\\\\originals\\\\P46.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P47\\\\extracts\\\\P47.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P47\\\\originals\\\\P47.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P54\\\\extracts\\\\P54.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P54\\\\originals\\\\P54.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P58\\\\extracts\\\\P58.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P58\\\\originals\\\\P58.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P60\\\\extracts\\\\P60.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P60\\\\originals\\\\P60.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P63\\\\extracts\\\\P63.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P63\\\\originals\\\\P63.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\extracts\\\\T01_mcp_auth.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\extracts\\\\T01_mcp_auth_security.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\originals\\\\T01_mcp_auth.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\originals\\\\T01_mcp_auth_security.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T02\\\\extracts\\\\T02_mcp_tools.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T02\\\\originals\\\\T02_mcp_tools.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T04\\\\extracts\\\\T04_web.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T04\\\\originals\\\\T04.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\extracts\\\\T08_owasp_cheat.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\extracts\\\\T08_owasp_mcp.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\originals\\\\T08_owasp_cheat.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\originals\\\\T08_owasp_mcp.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T21\\\\extracts\\\\T21_mcp_best.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T21\\\\originals\\\\T21_mcp_best.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T22\\\\extracts\\\\T22_supplement.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T22\\\\originals\\\\T22_supplement.html\"\n  ],\n  \"errors\": [\n    \"Code changed after mapping: full_stack_lab/gateway/app/agent_service.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/contract.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/contract.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/audit.py; review and run map_threats.py\",\n    \"Missing local file: ../../analysis/high-impact/local-checks.json\"\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "name": "policy-mapping-check",
+      "started_at": "2026-10-19T16:01:53.816178+00:00",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_policy_id_mapping.py"
+      ],
+      "exit_code": 1,
+      "stdout": "{\n  \"ok\": false,\n  \"counts\": {\n    \"policies\": 50,\n    \"number_collisions\": 47,\n    \"stale_cross_references\": 3,\n    \"status_current\": {\n      \"일부 구현\": 20,\n      \"구현\": 14,\n      \"미구현\": 1\n    }\n  },\n  \"warnings\": [\n    \"policy_ledger.json changed after mapping; ledger_policy_ids may be stale\"\n  ],\n  \"errors\": [\n    \"ledger_policy_ids: POL-19 PAC-04\",\n    \"ledger_policy_ids: POL-22 PAC-01..PAC-15\",\n    \"ledger_policy_ids: POL-23 PAC-09\",\n    \"ledger_policy_ids: POL-24 PAC-10\",\n    \"ledger_policy_ids: POL-28 PAC-15\",\n    \"ledger_policy_ids: POL-33 PAC-15\",\n    \"ledger_policy_ids: POL-36 PAC-15\",\n    \"ledger_policy_ids: POL-42 PAC-15\"\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "name": "scope-invariants",
+      "result": "current unchanged; only DEV-70 status cell changed; existing test files unchanged"
+    },
+    {
+      "name": "wiki-baseline-comparison",
+      "baseline": "a020458ca723b735c6e286a0e70b15a4b485f749",
+      "stale_threat_candidates": [
+        {
+          "record": "TH-02",
+          "path": "full_stack_lab/gateway/app/agent_service.py"
+        },
+        {
+          "record": "TH-03",
+          "path": "full_stack_lab/gateway/app/core.py"
+        },
+        {
+          "record": "TH-06",
+          "path": "full_stack_lab/gateway/app/contract.py"
+        },
+        {
+          "record": "TH-06",
+          "path": "full_stack_lab/gateway/app/core.py"
+        },
+        {
+          "record": "TH-08",
+          "path": "full_stack_lab/gateway/app/core.py"
+        },
+        {
+          "record": "TH-11",
+          "path": "full_stack_lab/gateway/app/core.py"
+        },
+        {
+          "record": "TH-13",
+          "path": "full_stack_lab/gateway/app/core.py"
+        },
+        {
+          "record": "TH-16",
+          "path": "full_stack_lab/gateway/app/core.py"
+        },
+        {
+          "record": "TH-17",
+          "path": "full_stack_lab/gateway/app/core.py"
+        },
+        {
+          "record": "TH-20",
+          "path": "full_stack_lab/gateway/app/core.py"
+        },
+        {
+          "record": "TH-21",
+          "path": "full_stack_lab/gateway/app/contract.py"
+        },
+        {
+          "record": "TH-21",
+          "path": "full_stack_lab/gateway/app/core.py"
+        },
+        {
+          "record": "TH-22",
+          "path": "full_stack_lab/gateway/app/audit.py"
+        }
+      ],
+      "existing_ledger_entries_unchanged": true,
+      "new_policy_runtime_pac_ids": []
+    },
+    {
+      "name": "high-impact-unit-final",
+      "started_at": "2026-10-19T16:04:26.416930+00:00",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/high_impact_check.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_approve_requires_view_of_same_snapshot_and_reason (__main__.ApprovalChecks) ... ok\ntest_concurrent_claim_loser_does_not_execute (__main__.ApprovalChecks) ... ok\ntest_event_store_failure_prevents_execution (__main__.ApprovalChecks) ... ok\ntest_export_omits_free_text_and_call_bodies_but_logs_reader (__main__.ApprovalChecks) ... ok\ntest_missing_view_fails_closed (__main__.ApprovalChecks) ... ok\ntest_reject_records_explanation_and_never_executes (__main__.ApprovalChecks) ... ok\ntest_reversal_is_append_only_and_does_not_undo_effects (__main__.ApprovalChecks) ... ok\ntest_self_approval_and_expiry_do_not_execute (__main__.ApprovalChecks) ... ok\ntest_no_approval_or_event_or_changed_scope_never_creates_intent (__main__.DispatchChecks) ... ok\ntest_single_use_and_revocation_share_approval_lock (__main__.DispatchChecks) ... ok\ntest_unlabelled_call_retains_execution_without_approval (__main__.DispatchChecks) ... ok\ntest_allow_alert_restrict_and_monitor_all_wait_before_upstream (__main__.GatewayChecks) ... skipped 'Gateway image: rerun with --gateway'\ntest_final_guard_refuses_before_connection (__main__.GatewayChecks) ... skipped 'Gateway image: rerun with --gateway'\ntest_request_model_validates_label (__main__.GatewayChecks) ... skipped 'Gateway image: rerun with --gateway'\ntest_approval_binds_every_request_field_scope_and_integrity (__main__.PureChecks) ... ok\ntest_explanation_contains_no_values_keys_summaries_or_scope_prose (__main__.PureChecks) ... ok\ntest_label_requires_known_domains_and_real_boolean (__main__.PureChecks) ... ok\ntest_local_policy_ledger_has_unique_priority_and_reference_outcome (__main__.PureChecks) ... ok\ntest_unreviewed_replayed_and_revoked_approvals_fail (__main__.PureChecks) ... ok\n\n----------------------------------------------------------------------\nRan 19 tests in 0.314s\n\nOK (skipped=3)\n"
+    },
+    {
+      "name": "dispatch-test-syntax-final",
+      "started_at": "2026-10-19T16:04:26.497673+00:00",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-m",
+        "py_compile",
+        "full_stack_lab/gateway/app/dispatch.py",
+        "full_stack_lab/tests/high_impact_check.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "wiki-check-final",
+      "started_at": "2026-10-19T16:04:28.118792+00:00",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_wiki.py",
+        "--ci-ignored-local-sources"
+      ],
+      "exit_code": 1,
+      "stdout": "{\n  \"ok\": false,\n  \"counts\": {\n    \"endpoint-permission-references\": 12,\n    \"experiments\": 13,\n    \"imports\": 22,\n    \"local-tool-risks\": 13,\n    \"papers\": 264,\n    \"solutions\": 9,\n    \"threats\": 24,\n    \"sources_evidence_records\": 3,\n    \"solutions_evidence_records\": 21,\n    \"reviewed_local_tools\": 92,\n    \"markdown_documents\": 516\n  },\n  \"warnings\": [\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\extracts\\\\LIB-L05.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\originals\\\\pipc-genai-privacy-guide-2025-08.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\extracts\\\\LIB-L06.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\originals\\\\kisa-ai-red-teaming-guide-2026-07.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\extracts\\\\LIB-L09.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\originals\\\\bs-iso-iec-42001-2023.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\extracts\\\\LIB-L10.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\originals\\\\iso-iec-27001-2022.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\extracts\\\\LIB-L11.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\originals\\\\azs-iso-iec-tr-24028-2024-az.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\extracts\\\\LIB-L12.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\originals\\\\iso-iec-5230-2020.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\extracts\\\\LIB-M04.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\originals\\\\imda-mgf-agentic-ai-v1-5.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\extracts\\\\LIB-M08.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\originals\\\\csa-securing-agentic-ai-addendum.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\extracts\\\\LIB-M13.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\originals\\\\ca-tbs-directive-automated-decision-making.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\extracts\\\\LIB-M14.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\originals\\\\ccpa-admt-risk-cyber-approved-text.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\extracts\\\\LIB-M15.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\originals\\\\co-sb26-189-session-law.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\extracts\\\\LIB-M17.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\originals\\\\nist-ai-600-1.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\extracts\\\\LIB-M20.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\originals\\\\nist-ai-100-2e2025.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\extracts\\\\LIB-M21.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\originals\\\\nist-ir-8596-iprd.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\extracts\\\\LIB-M22.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\originals\\\\csi-deploying-ai-systems-securely-2024-ncsc-nz-copy.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\extracts\\\\LIB-M28.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\originals\\\\cn-network-data-security-regulations-790.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\extracts\\\\LIB-M31.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\originals\\\\tc260-ai-safety-governance-framework-2-0.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\extracts\\\\LIB-M32.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\originals\\\\gbt-45654-2025.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\extracts\\\\LIB-M34.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\originals\\\\sg-pdpa-2012.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\extracts\\\\LIB-M36.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\originals\\\\quebec-law-25-2021.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\extracts\\\\LIB-M37.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\originals\\\\sg-mas-ai-risk-management-guidelines-2026.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\extracts\\\\LIB-M38.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\originals\\\\sg-pdpc-ai-recommendation-decision-advisory-guidelines.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\extracts\\\\LIB-M39.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\originals\\\\csa-guidelines-on-securing-ai-systems-2024.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\extracts\\\\LIB-M40.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\originals\\\\etsi-en-304-223.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\extracts\\\\LIB-M43.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\originals\\\\au-guidance-ai-adoption-implementation.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\extracts\\\\LIB-M44.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\originals\\\\india-dpdp-rules-2025.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\extracts\\\\LIB-M45.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\originals\\\\india-dpdp-act-2023.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\extracts\\\\LIB-M48.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\originals\\\\au-poa-act-2024.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\extracts\\\\LIB-M49.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\originals\\\\india-ai-governance-guidelines.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\provenance.json\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P39\\\\extracts\\\\P39.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P39\\\\originals\\\\P39.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P43\\\\extracts\\\\P43.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P43\\\\originals\\\\P43.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P46\\\\extracts\\\\P46.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P46\\\\originals\\\\P46.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P47\\\\extracts\\\\P47.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P47\\\\originals\\\\P47.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P54\\\\extracts\\\\P54.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P54\\\\originals\\\\P54.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P58\\\\extracts\\\\P58.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P58\\\\originals\\\\P58.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P60\\\\extracts\\\\P60.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P60\\\\originals\\\\P60.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P63\\\\extracts\\\\P63.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P63\\\\originals\\\\P63.pdf\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\extracts\\\\T01_mcp_auth.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\extracts\\\\T01_mcp_auth_security.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\originals\\\\T01_mcp_auth.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\originals\\\\T01_mcp_auth_security.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T02\\\\extracts\\\\T02_mcp_tools.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T02\\\\originals\\\\T02_mcp_tools.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T04\\\\extracts\\\\T04_web.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T04\\\\originals\\\\T04.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\extracts\\\\T08_owasp_cheat.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\extracts\\\\T08_owasp_mcp.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\originals\\\\T08_owasp_cheat.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\originals\\\\T08_owasp_mcp.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T21\\\\extracts\\\\T21_mcp_best.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T21\\\\originals\\\\T21_mcp_best.html\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T22\\\\extracts\\\\T22_supplement.md\",\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T22\\\\originals\\\\T22_supplement.html\"\n  ],\n  \"errors\": [\n    \"Code changed after mapping: full_stack_lab/gateway/app/agent_service.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/contract.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/contract.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/audit.py; review and run map_threats.py\"\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "name": "diff-check-final",
+      "started_at": "2026-10-19T16:04:28.170708+00:00",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'docs/ai/DATA_MODEL.md', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'full_stack_lab/gateway/app/agent_static/console.js', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'full_stack_lab/gateway/app/v2_tables.sql', CRLF will be replaced by LF the next time Git touches it\n"
+    }
+  ]
+}

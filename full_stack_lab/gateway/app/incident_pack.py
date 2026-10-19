@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import calendar
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -34,30 +35,64 @@ def parse_time(value: str | datetime) -> datetime:
 
 def deadlines(detected_at: str | datetime, jurisdiction_ids: list[str], now: str | datetime,
               document: dict | None = None, assessed_at: str | datetime | None = None,
-              fix_available_at: str | datetime | None = None) -> list[dict]:
+              fix_available_at: str | datetime | None = None, *, reports: list[dict] = (),
+              handled_at: str | datetime | None = None, incident_type: str | None = None) -> list[dict]:
     available = packs(document)
     detected, current = parse_time(detected_at), parse_time(now)
     assessed = parse_time(assessed_at) if assessed_at else None
     fix_available = parse_time(fix_available_at) if fix_available_at else None
+    handled = parse_time(handled_at) if handled_at else None
     rows = []
     for jurisdiction in jurisdiction_ids:
         pack = available.get(jurisdiction)
         if not pack:
             raise ValueError(f"알 수 없는 관할 팩: {jurisdiction}")
+        notifications = [parse_time(row["submitted_at"])
+                         for row in reports if row.get("jurisdiction") == jurisdiction
+                         and row.get("stage") == "notification" and row.get("submitted_at")]
+        notified = min(notifications) if notifications else None
+        supported_from = pack.get("effective_from") or pack.get("supported_from")
+        effective = bool(supported_from and detected >= parse_time(supported_from))
+        if pack.get("effective_until") and detected >= parse_time(pack["effective_until"]):
+            effective = False
         for stage in pack["stages"]:
-            anchor = {"assessment": assessed, "fix_available": fix_available}.get(stage.get("start"), detected)
-            needs_anchor = stage.get("start") in {"assessment", "fix_available"}
-            due = None if stage.get("status") == "수동 확인 필요" or stage.get("hours") is None or (needs_anchor and anchor is None) else anchor + timedelta(hours=stage["hours"])
+            stage_type = stage.get("incident_type")
+            if stage_type and incident_type and stage_type != incident_type:
+                continue
+            anchor = {"assessment": assessed, "fix_available": fix_available,
+                      "notification": notified, "handled": handled}.get(stage.get("start"), detected)
+            manual = (not effective or (stage_type is not None and incident_type is None)
+                      or stage.get("status") == "수동 확인 필요" or anchor is None
+                      or (stage.get("hours") is None and not stage.get("months")))
+            # A known end after the first final deadline requires progress followed by a later final report.
+            first_final = add_month(notified) if notified else None
+            ongoing = first_final is not None and (handled is None or handled > first_final)
+            if stage.get("condition") == "ongoing" and first_final and not ongoing:
+                continue
+            if stage.get("condition") == "finished" and first_final and ongoing:
+                continue
+            if stage.get("condition") == "ongoing" and first_final is None:
+                manual = True
+            due = None if manual else add_month(anchor) if stage.get("months") else anchor + timedelta(hours=stage["hours"])
             remaining = None if due is None else int((due-current).total_seconds())
             rows.append({"jurisdiction": jurisdiction, "jurisdiction_name": pack["name"],
                          "stage": stage["id"], "stage_name": stage["name"], "due_at": due,
                          "remaining_seconds": remaining,
                          "alert_before_hours": pack.get("alert_before_hours", 0),
-                         "status": "수동 확인 필요" if stage.get("status") == "수동 확인 필요" or (needs_anchor and anchor is None) else
+                         "status": "수동 확인 필요" if manual else
                                    "초과" if remaining is not None and remaining < 0 else
                                    "임박" if remaining is not None and remaining <= pack.get("alert_before_hours", 0) * 3600 else "기한 내",
-                         "reference": stage["reference"], "note": stage.get("note")})
+                         "reference": stage["reference"], "note": stage.get("note"),
+                         "anchor_at": anchor, "pack_version": pack.get("version"),
+                         "effective_from": pack.get("effective_from"),
+                         "supported_from": pack.get("supported_from"),
+                         "applicability": "확인됨" if effective else "수동 확인 필요"})
     return rows
+
+
+def add_month(value: datetime) -> datetime:
+    year, month = (value.year + 1, 1) if value.month == 12 else (value.year, value.month + 1)
+    return value.replace(year=year, month=month, day=min(value.day, calendar.monthrange(year, month)[1]))
 
 
 def package_hash(package: dict) -> str:

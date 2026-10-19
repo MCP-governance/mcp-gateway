@@ -1,0 +1,133 @@
+{
+  "created_at": "2026-10-19T20:15:26.248617+00:00",
+  "baseline": "a29320c560028281ce741c9d29e3a2517ce3e803",
+  "checks": [
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "tests/incident_pack_check.py",
+        "-v"
+      ],
+      "cwd": "full_stack_lab",
+      "started_at": "2026-10-19T20:15:08.636752+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_deadline_comes_from_pack_and_manual_values_have_no_timer (__main__.IncidentPackCheck) ... ok\ntest_imminent_stage_is_selected_for_alert (__main__.IncidentPackCheck) ... ok\ntest_overdue_excludes_reported_stage (__main__.IncidentPackCheck) ... ok\ntest_package_hash_and_count_agreement (__main__.IncidentPackCheck) ... ok\ntest_package_count_chain_and_hash (__main__.IncidentPackageAssemblyCheck) ... skipped '게이트웨이 시험 환경의 psycopg 필요'\ntest_server_optional_scope_queries_bind_in_postgres (__main__.IncidentPostgresPlanCheck) ... skipped '솔루션 게이트웨이에서 MINT_INCIDENT_PG_CHECK=1로 PostgreSQL 조회 계획 확인'\ntest_detected_time_does_not_cap_scope_and_create_is_atomic (__main__.IncidentRevisionAdapterCheck) ... ok\ntest_legacy_case_has_no_automatic_current_deadline (__main__.IncidentRevisionAdapterCheck) ... ok\ntest_old_report_cannot_hide_unknown_pack_applicability (__main__.IncidentRevisionAdapterCheck) ... ok\ntest_package_links_approval_scope_history_invalidity_and_policy (__main__.IncidentRevisionAdapterCheck) ... ok\ntest_repeated_timer_failures_keep_failure_status (__main__.IncidentRevisionAdapterCheck) ... ok\ntest_report_submission_is_separate_from_recording_and_rejects_future (__main__.IncidentRevisionAdapterCheck) ... ok\ntest_scheduler_continues_existing_responses_after_incident_failure (__main__.IncidentRevisionAdapterCheck) ... ok\ntest_supplement_only_appends_and_rejects_shrink (__main__.IncidentRevisionAdapterCheck) ... ok\ntest_timer_failure_continues_other_cases_and_never_refreshes_success (__main__.IncidentRevisionAdapterCheck) ... ok\ntest_timer_success_is_after_alert_and_failure_state_recovers (__main__.IncidentRevisionAdapterCheck) ... ok\ntest_valid_projection_has_no_reason_or_actor_prose (__main__.IncidentRevisionAdapterCheck) ... ok\ntest_cra_type_and_final_anchors_are_distinct (__main__.IncidentRevisionPureCheck) ... ok\ntest_effective_dates_and_snapshot_are_frozen (__main__.IncidentRevisionPureCheck) ... ok\ntest_nis2_missing_submission_keeps_final_and_progress_manual (__main__.IncidentRevisionPureCheck) ... ok\ntest_nis2_month_end_progress_and_handled_final (__main__.IncidentRevisionPureCheck) ... ok\ntest_old_recording_timestamp_is_not_submission_evidence (__main__.IncidentRevisionPureCheck) ... ok\ntest_submission_uses_actual_time_and_earliest_notification (__main__.IncidentRevisionPureCheck) ... ok\ntest_overdue_stage_emits_existing_alert (__main__.IncidentTimerCheck) ... skipped '게이트웨이 시험 환경의 psycopg 필요'\n\n----------------------------------------------------------------------\nRan 24 tests in 0.495s\n\nOK (skipped=3)\n"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-m",
+        "py_compile",
+        "gateway/app/incidents.py",
+        "gateway/app/incident_pack.py",
+        "gateway/app/main.py",
+        "gateway/app/ops_response.py",
+        "tests/incident_pack_check.py"
+      ],
+      "cwd": "full_stack_lab",
+      "started_at": "2026-10-19T20:15:09.579230+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "gateway/app/agent_static/console.js"
+      ],
+      "cwd": "full_stack_lab",
+      "started_at": "2026-10-19T20:15:09.698629+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "--test",
+        "tests/console-state.test.mjs"
+      ],
+      "cwd": "full_stack_lab",
+      "started_at": "2026-10-19T20:15:09.850130+00:00",
+      "exit_code": 0,
+      "stdout": "✔ masked kinds read in Korean and an unknown kind never shows its raw name (0.6146ms)\n✔ a poll overlapping a page load shows each call once, newest first, within the limit (0.6052ms)\n✔ ids sort numerically and malformed rows cannot displace real decisions (0.1651ms)\n✔ search matches person, PC, harness, server.tool, target, policy and trace, ignoring case and spaces (0.2553ms)\n✔ the status phrase never presents a failed poll as fresh (0.7218ms)\n✔ 24 hourly buckets end at the current hour and keep empty hours at zero (0.442ms)\n✔ splitBy counts per key with a decision split, largest first (0.2147ms)\n✔ sankey layers never merge a server with a harness of the same name (0.2652ms)\n✔ endpoint observation shows disabled, stale and failed sources separately from zero accepted rows (0.3048ms)\n✔ listener-only endpoints remain in coverage counts and expose no raw command line or owner token (1.0206ms)\n✔ enforced is green only with fresh evidence of a ledger row or a kernel heartbeat (0.5328ms)\n✔ latency values read as durations and never invent a measurement (0.2684ms)\n✔ endpoint evidence labels never turn a missing value into a good one (0.23ms)\n✔ totals are reported apart from the window and page navigation follows the cursor (9.5023ms)\n✔ latency and failure show only a fresh sample and a denial count only a collected channel (0.236ms)\nℹ tests 15\nℹ suites 0\nℹ pass 15\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 85.3067\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "tests/open_endpoints.py"
+      ],
+      "cwd": "full_stack_lab",
+      "started_at": "2026-10-19T20:15:09.986606+00:00",
+      "exit_code": 0,
+      "stdout": "PASS 무인증 1개가 문서와 일치, 인증 필요 84개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": ".",
+      "started_at": "2026-10-19T20:15:10.086590+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'docs/ai/DECISIONS.md', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'full_stack_lab/gateway/app/incident_pack.py', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'full_stack_lab/gateway/app/incidents.py', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'full_stack_lab/gateway/app/main.py', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'full_stack_lab/gateway/app/v2_tables.sql', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'full_stack_lab/registry/field/incident_jurisdictions.json', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'full_stack_lab/tests/incident_pack_check.py', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'research/llm-wiki/status/backlog.md', CRLF will be replaced by LF the next time Git touches it\n"
+    },
+    {
+      "check": "existing_test_classes_unchanged",
+      "result": "passed",
+      "classes": [
+        "IncidentPackCheck",
+        "IncidentTimerCheck",
+        "IncidentPackageAssemblyCheck"
+      ],
+      "baseline": "a29320c560028281ce741c9d29e3a2517ce3e803"
+    },
+    {
+      "check": "conflict_markers",
+      "result": "passed",
+      "scanned_files": 1383,
+      "markers": [],
+      "unmerged_index_paths": [
+        "docs/ai/DECISIONS.md",
+        "full_stack_lab/gateway/app/main.py",
+        "full_stack_lab/gateway/app/v2_tables.sql"
+      ]
+    },
+    {
+      "check": "merge_features_and_decision_order",
+      "result": "passed",
+      "decision_numbers": [
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        141,
+        143,
+        144,
+        145
+      ]
+    },
+    {
+      "check": "backlog_only_dev66_status_and_current_unchanged",
+      "result": "passed"
+    },
+    {
+      "check": "new_document_local_links",
+      "result": "passed"
+    }
+  ]
+}

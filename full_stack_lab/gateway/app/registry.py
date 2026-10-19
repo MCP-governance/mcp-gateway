@@ -206,7 +206,7 @@ async def sync() -> dict:
         for name in sorted(set(approved) | set(pinned_tools)):
             action = approved.get(name, "x")
             enabled = name in approved and (console_reviews is None or name in console_reviews)
-            review = (console_reviews or {}).get(name)
+            review = (spec.get("tool_reviews") or {}).get(name)
             await db.execute(
                 """INSERT INTO mcp_tools(server_id, name, action, enabled, scope_review)
                    VALUES (%s,%s,%s,%s,%s)

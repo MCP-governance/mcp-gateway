@@ -353,3 +353,17 @@ CREATE TABLE IF NOT EXISTS incident_timer_heartbeat (
   id integer PRIMARY KEY CHECK (id=1),
   checked_at timestamptz NOT NULL
 );
+-- Per-call explanation and later human reversal; the original execution status remains evidence.
+ALTER TABLE approvals ADD COLUMN IF NOT EXISTS explanation jsonb;
+ALTER TABLE approvals ADD COLUMN IF NOT EXISTS revoked_at timestamptz;
+ALTER TABLE approvals ADD COLUMN IF NOT EXISTS revoked_by text;
+
+-- DEV-71: what the applicant stated about data, transfer, permission and users. The risk tier is
+-- computed from it each time (risk_tier.assess), never stored as a value that could drift from it.
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS risk_input jsonb NOT NULL DEFAULT '{}';
+
+ALTER TABLE incident_cases ADD COLUMN IF NOT EXISTS pack_snapshot jsonb;
+ALTER TABLE incident_cases ADD COLUMN IF NOT EXISTS incident_type text;
+ALTER TABLE incident_cases ADD COLUMN IF NOT EXISTS fix_available_at timestamptz;
+ALTER TABLE incident_cases ADD COLUMN IF NOT EXISTS handled_at timestamptz;
+ALTER TABLE incident_timer_heartbeat ADD COLUMN IF NOT EXISTS last_failed_at timestamptz;
