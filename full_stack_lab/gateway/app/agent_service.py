@@ -30,6 +30,7 @@ from pydantic import Field
 from psycopg.types.json import Jsonb
 
 from . import connections, consent, core, db, oidc, provenance, review, upstream
+from . import supplier_assurance
 from .release import build_info
 from .system_metrics import SystemMetrics
 from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, ToolReview, authenticate,
@@ -1264,6 +1265,16 @@ def exit_term_flags(row: dict) -> dict[str, bool]:
 class IntakeApproval(StrictModel):
     risk_acceptance: str = Field(default="", max_length=1000)
     license: str = Field(default="", max_length=60)
+    legal_entity: str = Field(default="", max_length=200)
+    supplier_contact: str = Field(default="", max_length=300)
+    security_contact: str = Field(default="", max_length=300)
+    support_end: str = Field(default="", max_length=10)
+    vulnerability_policy_url: str = Field(default="", max_length=500)
+    subprocessors: Literal["미확인", "있음", "없음"] = "미확인"
+    sbom_submitted: bool = False
+    vex_submitted: bool = False
+    contract_basis_ref: str = Field(default="", max_length=500)
+    exit_strategy: str = Field(default="", max_length=1000)
 
 
 class ProvenanceMismatch(Exception):
@@ -1303,6 +1314,16 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
                                              applicant_user=remote.get("submitter_user_id"))
         except review.NotIndependent as exc:
             raise HTTPException(403, str(exc)) from exc
+    approval_values = approval if approval is not None else IntakeApproval()
+    assurance = {key: (getattr(approval_values, key, "") or "").strip() for key in supplier_assurance.REQUIRED_FIELDS}
+    assurance.update({key: getattr(approval_values, key) for key in supplier_assurance.OPTIONAL_FIELDS})
+    assurance_errors = supplier_assurance.validate(assurance)
+    if assurance_errors:
+        if remote:
+            await hold_intake(request_id, remote, user, assurance_errors)
+        raise HTTPException(409, "승인할 수 없습니다: " + " / ".join(assurance_errors))
+    if remote:
+        remote = {**remote, "supplier_assurance": assurance}
     if remote and remote.get("intake_kind") == "remote-endpoint":
         reviewed = (remote.get("evidence") or {}).get("remote_contract") or {}
         if remote["status"] != "REMOTE_REVIEWED" or not reviewed.get("reviewed_by"):
@@ -1323,7 +1344,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
                 or found["server_name"] != reviewed["advertised_name"]
                 or found["protocol_version"] != reviewed["protocol_version"]):
             raise HTTPException(409, "검토 후 공급자 계약이 바뀌었습니다. 다시 검토하세요.")
-        evidence = {**remote["evidence"], "remote_approval": {
+        evidence = {**remote["evidence"], "supplier_assurance": assurance, "remote_approval": {
             "actor": user["principal"], "at": datetime.now(UTC).isoformat(),
             "review_digest": core.canonical_hash(reviewed), "risk_acceptance": risk,
             "code_scan_performed": False}}
@@ -1362,7 +1383,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
     declared = approval.license.strip() if approval else ""
     if declared and record and not (record.get("license") or {}).get("spdx"):
         record["license"] = {"spdx": declared, "source": "operator", "by": user["principal"]}
-    pending = {**pending, "provenance": record}
+    pending = {**pending, "provenance": record, "supplier_assurance": assurance}
     gate = await review.intake_gate(pending)
     if gate["blockers"]:
         await hold_intake(request_id, pending, user, [item["message"] for item in gate["blockers"]])
@@ -1374,13 +1395,14 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
         raise HTTPException(409, f"배포 파일이 검증한 것과 달라 보류했습니다: {exc}") from exc
     record["verification"] = {**checked, "by": user["principal"], "at": datetime.now(UTC).isoformat(timespec="seconds")}
     critical = gate["critical"] or {}
+    evidence = {**(pending.get("evidence") or {}), "supplier_assurance": assurance}
     row = await review.transition(
         """UPDATE mcp_intake_requests
-           SET status='APPROVED', internal_repo_url=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now(),
+           SET status='APPROVED', internal_repo_url=%s, evidence=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now(),
                exit_terms=%s, provenance=%s
            WHERE id=%s AND status='VALIDATED'
            RETURNING id, status, internal_repo_url, reviewed_by, reviewed_at, source_ref, exit_terms""",
-        (internal_repo_url, user["principal"], Jsonb(terms), Jsonb(record), request_id),
+        (internal_repo_url, Jsonb(evidence), user["principal"], Jsonb(terms), Jsonb(record), request_id),
         kind="intake-approve", outcome="approved", target_kind="intake", target_id=request_id,
         actor=user["principal"], applicant=pending["submitted_by"], reason=risk or None,
         scope={"source": pending["repository_url"], "commit": pending["commit_sha"],
@@ -1535,7 +1557,8 @@ async def register_mcp_request(request_id: UUID, request: IntakeRegistration,
             "commit_sha": row["commit_sha"] or "",
             "supplier": urlsplit(row["endpoint_url"] or row["repository_url"]).hostname or "",
             "purpose": row["purpose"], "owner_department": row.get("department") or "",
-            "intake_id": str(row["id"]), "exit_terms": exit_term_flags(row)}
+            "intake_id": str(row["id"]), "exit_terms": exit_term_flags(row),
+            "supplier_assurance": (row.get("evidence") or {}).get("supplier_assurance") or {}}
     result = await gateway_proxy("/api/registry/servers", authorization, "POST", body, timeout=120)
     await db.execute("UPDATE mcp_intake_requests SET registered_server_id=%s, updated_at=now() WHERE id=%s",
                      (request.server_id, request_id))
