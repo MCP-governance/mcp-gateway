@@ -35,6 +35,9 @@ class CatalogDB:
                                  "approved_description_hash": core.canonical_hash(TOOL_A["description"]),
                                  "approved_schema_hash": core.canonical_hash(TOOL_A["input_schema"]),
                                  "approved_server_version": "1", "observed_server_version": "1",
+                                 # Approved with no output schema (pinned): an unpinned legacy row would be
+                                 # pinned by the next review, which is a recorded change (D-149 correction).
+                                 "approved_output_schema_hash": core.canonical_hash(None),
                                  "observed_description_hash": None, "observed_schema_hash": None}
 
     def snapshot(self, params, exact_match=None):
