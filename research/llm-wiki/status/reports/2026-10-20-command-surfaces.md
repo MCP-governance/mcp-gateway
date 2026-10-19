@@ -21,7 +21,10 @@
 | 변이 확인: 엔드포인트 정책에서 키 줄 삭제 | 시험 실패(KeyError) 확인 후 원복 |
 | `python tests/field_kit_check.py`(로컬) | 통과(1건 건너뜀, 기존) |
 | PJ1 배포 전 기준선 | Codex 사용자 훅 발견·실행, bash가 `-codex-tool` 프로필에서 `touch` 거부 |
-| 기기 cc_test·배포 후 PJ1 재시험 | 병합 뒤 기록 |
+| 기기 cc_test(command_surfaces·field_kit·dest_pin) | 3/3·17(1 건너뜀)·16 통과 |
+| 배포 a61c7fa → PJ1 관리 정책 반영 | 05:34 `/etc/codex/requirements.toml`에 `allow_managed_hooks_only = true` |
+| PJ1 배포 후 같은 훅 시험 | `hook:` 줄 없음(발견 단계에서 제외), 표식 없음, 정상 응답 |
+| PJ1 Codex 실제 MCP 호출(context7) | 게이트웨이 경유 실행, 제공자 응답 "월간 할당량 초과"(외부 상태) |
 
 ## 남은 것
 

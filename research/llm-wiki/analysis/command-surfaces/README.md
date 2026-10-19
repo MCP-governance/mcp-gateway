@@ -34,4 +34,4 @@
 ## 실기기 확인
 
 - 2026-10-20 배포 전 기준선(PJ1, `managed-pj1` Codex 홈에 사용자 `hooks.json`, `codex exec --dangerously-bypass-hook-trust`): SessionStart·UserPromptSubmit 훅이 발견·실행됐고 둘 다 실패했다. dmesg: `profile="mcpgw-managed-pj1-codex-tool" name="/usr/bin/touch" ... DENIED`. 표식 파일 없음.
-- 배포 후 같은 시험의 기대: 훅이 발견 단계에서 빠져 `hook:` 줄이 없다. 결과는 작업 보고에 적는다.
+- 2026-10-20 배포 후(a61c7fa, PJ1 요구 사항 파일 05:34 갱신): 같은 시험에서 `hook:` 줄이 없고 표식도 없다. 훅이 발견 단계에서 제외됐다. 같은 세션의 정상 응답과 context7 MCP 호출(게이트웨이 경유)은 유지됐다.
