@@ -17,6 +17,7 @@ import httpx2
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
 from app import registry
+from intake_fixture import SUPPLIER_ASSURANCE, impact_input
 from intake_register import _call, login, register
 
 
@@ -53,7 +54,8 @@ async def run(args):
                                 parameter_constraints=row['parameter_constraints'],
                                 purpose='Authorized metadata review check; provider helper is not executed on success',
                                 review_note='Read the flagged description; selected for the review-binding check only.',
-                                risk_acceptance='One-day verification of the review binding; the helper is not run on success.')
+                                risk_acceptance='One-day verification of the review binding; the helper is not run on success.',
+                                supplier_assurance=SUPPLIER_ASSURANCE, impact_input=impact_input('important'))
             registered = True
             assert accepted['status'] == 'READY', accepted
             doc = registry.runtime()
