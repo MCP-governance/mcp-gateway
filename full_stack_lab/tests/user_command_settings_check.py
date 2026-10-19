@@ -93,7 +93,9 @@ class UserSettings(unittest.TestCase):
                          'profiles.work.notify = []\n', '"notify" = []\n'):
                 with self.subTest(file=file, text=text):
                     path = self.write(".codex/" + file, text)
-                    self.assertEqual(self.scan(self.home), (False, [{"file": ".codex/" + file, "keys": ["notify"]}]))
+                    # Profile file names are the employee's choice: only a fixed label is reported.
+                    label = ".codex/config.toml" if file == "config.toml" else ".codex/*.config.toml"
+                    self.assertEqual(self.scan(self.home), (False, [{"file": label, "keys": ["notify"]}]))
                     path.unlink()
 
     def test_invalid_json_toml_encoding_and_shape_fail_without_values(self):
@@ -104,9 +106,10 @@ class UserSettings(unittest.TestCase):
                            (".codex/work.config.toml", 'invalid = [')):
             with self.subTest(file=file):
                 path = self.write(file, text)
-                self.assertEqual(self.scan(self.home), (False, [{"file": file, "keys": []}]))
+                label = ".codex/*.config.toml" if file.endswith(".config.toml") else file
+                self.assertEqual(self.scan(self.home), (False, [{"file": label, "keys": []}]))
                 path.write_bytes(b"\xff")
-                self.assertEqual(self.scan(self.home), (False, [{"file": file, "keys": []}]))
+                self.assertEqual(self.scan(self.home), (False, [{"file": label, "keys": []}]))
                 path.unlink()
 
     def test_unreadable_file_and_directory_fail_closed(self):
@@ -114,7 +117,9 @@ class UserSettings(unittest.TestCase):
         with patch.object(os, "open", side_effect=PermissionError("PRIVATE_COMMAND_VALUE")):
             self.assertEqual(self.scan(self.home), (False, [{"file": ".claude/settings.json", "keys": []}]))
         self.write(".codex/config.toml", '')
-        with patch.object(Path, "iterdir", side_effect=PermissionError("PRIVATE_COMMAND_VALUE")):
+        # POSIX lists the opened directory handle; Windows lists the path.
+        with patch.object(Path, "iterdir", side_effect=PermissionError("PRIVATE_COMMAND_VALUE")), \
+             patch("os.listdir", side_effect=PermissionError("PRIVATE_COMMAND_VALUE")):
             ok, findings = self.scan(self.home)
             self.assertFalse(ok)
             self.assertIn({"file": ".codex", "keys": []}, findings)
@@ -207,10 +212,11 @@ class HeartbeatInput(unittest.TestCase):
                            {"__name__": __name__, "BaseModel": BaseModel, "ConfigDict": ConfigDict,
                             "Field": Field, "Literal": Literal, "HostReport": BaseModel})
         body = {"policy_hash": "a" * 64, "configuration_hashes": {}, "checks": dict.fromkeys("abcde", True),
-                "user_command_settings": [{"file": ".codex/work.config.toml", "keys": ["notify"]}]}
+                "user_command_settings": [{"file": ".codex/*.config.toml", "keys": ["notify"]}]}
         request = schemas.ManagedHeartbeat.model_validate(body)
         self.assertEqual(len(request.checks), 5)
-        schemas.UserCommandSetting.model_validate({"file": ".codex/UPPER.CONFIG.TOML", "keys": ["notify"]})
+        with self.assertRaises(ValidationError):
+            schemas.UserCommandSetting.model_validate({"file": ".codex/secret-value.config.toml", "keys": ["notify"]})
         endpoint = SimpleNamespace(heartbeat=AsyncMock(return_value={"compliant": False}))
         route = selected(LAB / "gateway/app/main.py", {"endpoint_heartbeat"}, {
             "app": SimpleNamespace(post=lambda *args: lambda fn: fn), "Depends": lambda fn: None,

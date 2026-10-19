@@ -1355,7 +1355,9 @@ class NetworkQuality(StrictModel):
 
 
 class UserCommandSetting(StrictModel):
-    file: str = Field(min_length=1, max_length=512, pattern=r"^(~|\.claude(?:/settings(?:\.local)?\.json)?|\.codex(?:/[^/\\\r\n]+(?i:\.toml))?)$")
+    # Fixed labels only: a profile file's name is the employee's choice and may carry a secret.
+    file: Literal["~", ".claude", ".claude/settings.json", ".claude/settings.local.json",
+                  ".codex", ".codex/config.toml", ".codex/*.config.toml"]
     keys: list[Literal["apiKeyHelper", "otelHeadersHelper", "awsCredentialExport", "awsAuthRefresh", "notify"]] = Field(max_length=4)
 
 
