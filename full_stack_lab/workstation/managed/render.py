@@ -64,7 +64,9 @@ template = json.loads((Path(__file__).parent / "claude-code/managed-settings.jso
 template["permissions"]["allow"] = [f"mcp__{s}" for s in servers]
 template.update({"disableClaudeAiConnectors": True, "allowAllClaudeAiMcps": False,
                  "strictKnownMarketplaces": [], "allowManagedMcpServersOnly": True,
-                 "allowedMcpServers": [{"serverUrl": url(s)} for s in servers]})
+                 "allowedMcpServers": [{"serverUrl": url(s)} for s in servers],
+                 # Also narrows statusLine and fileSuggestion to managed values (D-147).
+                 "allowManagedHooksOnly": True})
 write("claude-code/managed-settings.json", json.dumps(template, ensure_ascii=False, indent=2) + "\n")
 
 # Codex CLI: TOML, token from the environment variable bob-ask fills per run. Company
@@ -76,7 +78,7 @@ codex += "".join(f'\n[mcp_servers.{s}]\nurl = "{url(s)}"\nbearer_token_env_var =
                  f"startup_timeout_sec = 30\ntool_timeout_sec = 300\n" for s in servers)
 write("codex/config.toml", codex)
 write("codex/requirements.toml", 'allowed_web_search_modes = ["disabled"]\n'
-      'allow_browser_and_computer_use = false\n\n[features]\napps = false\nplugins = false\n'
+      'allow_browser_and_computer_use = false\nallow_managed_hooks_only = true\n\n[features]\napps = false\nplugins = false\n'
       'browser_use = false\ncomputer_use = false\n\n[marketplaces]\nrestrict_to_allowed_sources = true\n'
       + "".join(f'\n[mcp_servers.{s}]\nidentity = {{ url = "{url(s)}" }}\n' for s in servers))
 
