@@ -30,6 +30,15 @@
 | Codex 관리 밖 MCP 서버 | `requirements.toml` `[mcp_servers.*].identity` | 기존 | — |
 | Codex `shell_environment_policy` | 환경 변수 상속 범위일 뿐 새 명령 표면이 아니다 | — | — |
 | 사용자 슬래시 명령·스킬 | 프롬프트 확장이며 실행은 도구(Bash)를 거친다 | — | `-tool` 프로필(D-104) |
+| Codex `-c`·`--config`, Claude `--settings`, Windows 설정 홈 환경 변수 | 사용자 설정 우선순위·대체 홈을 허용할 수 있음 | D-150 정정: Linux 가드에 값 옵션 파싱·종료자 반영, Windows 변경 철회 | Linux C/PJ1 미실행. Windows 대체 홈은 후속 준수 검사 탐지 대상, 직접 실행 제한은 조직 응용 프로그램 제어 필요 |
+
+## D-150 후속 적대 검토 (2026-10-20)
+
+정정 결정: 아래는 `07708a2`의 과거 검토다. 소유자 지시로 Linux 값 파싱을 수정하고 Windows 파일을 D-150 직전 `97d9d10`으로 복원했다. 기존 Windows CA 시험은 다시 통과한다. LP-06은 미수정 백로그 후보이며, Linux C/PJ1 실행 검증은 남았다. [정정 보고](../../status/reports/2026-10-20-d150-launcher-pin-correction.md)와 [D-150](../../../../docs/ai/DECISIONS.md)을 따른다.
+
+[검토 LP-01~07](../review-1020/d150-launcher-pin.md)·[실행 원본](../review-1020/d150-launcher-pin-evidence.json): D-150은 병합 보류다. Windows `CLAUDE_CONFIG_DIR`는 등록 경로로 설정하지 않고 제거한다는 것이 `07708a2`의 실제 동작이다. HOME/USERPROFILE 등 다른 상속 환경과 공개 `launch --profile`·원본 직접 실행은 별도 경계다. Codex 값 붙임 옵션·두 하네스의 `--` 리터럴 오탐과 기존 Windows CA 시험 회귀를 재현했다. 기존 시험 변경 필요 규칙에 따라 제품 수정은 중단했다.
+
+Codex 0.160.0의 `--profile`은 임의 파일 경로가 아니라 검증된 이름이고, `--enable/--disable`은 알려진 feature만 바꾼다. Claude `--mcp-config`의 런처 통과는 관리 MCP 우회 성공을 뜻하지 않는다. 축약 옵션은 Commander/clap 일반 구현과 실제 CLI 포함 판본을 구별한다. 공식 CLI·환경·관리 MCP·고정 OSS URL과 읽은 범위, Ctrl+C·PATH의 근거를 후속 검토의 S1~S11에 추가했다. Linux C·실제 Windows 콘솔·PJ1 재검증은 미실행이다.
 
 ## 실기기 확인
 
