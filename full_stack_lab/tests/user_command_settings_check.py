@@ -187,7 +187,12 @@ class UserSettings(unittest.TestCase):
             "codex_config": lambda config: self.home / "nonexistent.toml", "codex_block": lambda text: None,
             "account": lambda name: {"sid": "SID", "profile": str(self.home), "admin": False},
             "rule_state": lambda config: {}, "firewall_enforcing": lambda *args: True})
-        with patch.object(Path, "read_text", read_text), \
+        def no_variable(*args):
+            raise FileNotFoundError()
+
+        # D-151: Windows `checks` reads the account's registry environment; Linux has no winreg.
+        registry = SimpleNamespace(HKEY_USERS=0, OpenKey=no_variable)
+        with patch.object(Path, "read_text", read_text), patch.dict(sys.modules, {"winreg": registry}), \
              patch.dict(os.environ, {"HOME": str(self.home / "service")}), patch.object(sys, "argv", ["check"]):
             for module in (linux, windows):
                 findings = []
