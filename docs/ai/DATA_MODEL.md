@@ -173,4 +173,4 @@ v2 코드는 읽지도 쓰지도 않는다 → [ROADMAP.md](ROADMAP.md) 정리 �
 
 ## 서버 간 전달 내용 지문 (D-142)
 
-- `flow_fingerprints`: 중요 등급 읽기가 클라이언트에 돌려준 본문을 정규화한 문자열의 16자 조각 해시(`shingles`)와 이메일·9자리 이상 숫자의 해시(`identifiers`), 해시에 쓴 주체별 솔트. 판정 기록 id(`decision_id`)당 한 행이고 원문은 저장하지 않는다. 10분(`CHAIN_WINDOW_MINUTES`) 뒤 만료되며 만료 행은 다음 중요 등급 읽기 때 지운다. 원장도 증거도 아니어서 수정은 막고(`UPDATE` 트리거) 만료 삭제만 한다. 행이 없는 읽기는 D-133의 거친 표지로 남는다.
+- `flow_fingerprints`: 중요 등급 읽기가 클라이언트에 돌려준 본문을 정규화한 문자열의 16자 조각 해시(`shingles`)와 이메일·9자리 이상 숫자의 해시(`identifiers`), 해시에 쓴 주체별 솔트와 `FLOW_FINGERPRINT_PEPPER`의 식별 값(`key_id`). 판정 기록 id(`decision_id`)당 한 행이고 원문은 저장하지 않는다. 10분(`CHAIN_WINDOW_MINUTES`) 뒤 만료되며 만료 행은 다음 중요 등급 읽기 때 지운다. 원장도 증거도 아니어서 수정은 막고(`UPDATE` 트리거) 만료 삭제만 한다. 행이 없는 읽기는 D-133의 거친 표지로 남는다.

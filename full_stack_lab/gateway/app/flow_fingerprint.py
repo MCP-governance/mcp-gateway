@@ -22,6 +22,9 @@ MISMATCH = "열람 후 다른 서버 호출(내용 불일치)"
 UNCHECKED = "열람 후 다른 서버 호출(내용 확인 불가)"
 
 _PEPPER = os.getenv("FLOW_FINGERPRINT_PEPPER", "").encode()
+# Stored with every row: hashes made under another pepper cannot be compared, and a mismatch they
+# would show is no evidence, so such a row counts as unchecked.
+KEY_ID = hashlib.blake2b(_PEPPER, digest_size=4).hexdigest()
 # Values shorter than a shingle that still identify a person or an account: an address, or nine to 32
 # digits with single spaces or hyphens between them (not before ':', so not a time). Every repeat is
 # bounded: the arguments are up to 64 KB and an open-ended pattern backtracks quadratically on them.
@@ -81,8 +84,8 @@ def same_content(read: dict, outbound: tuple[list[int], list[int]]) -> bool:
 def narrow(rows: list[dict], outbound_text: str) -> tuple[list[str], dict[str, str]]:
     """(servers still a flow source, what was observed per server).
 
-    A row is {"server_id", "salt", "shingles", "identifiers"}; the last three are None for a read
-    without a stored fingerprint. A server is dropped only when every one of its reads in the window
+    A row is {"server_id", "key_id", "salt", "shingles", "identifiers"}; the last four are None for a
+    read without a stored fingerprint. A server is dropped only when every one of its reads in the window
     was compared and none matched. Any error answers with every server (the coarse mark).
     """
     servers = sorted({row["server_id"] for row in rows})
@@ -90,7 +93,8 @@ def narrow(rows: list[dict], outbound_text: str) -> tuple[list[str], dict[str, s
         outbound: dict[bytes, tuple[list[int], list[int]]] = {}
         seen: dict[str, str] = {}
         for row in rows:
-            if row.get("salt") is None or row.get("shingles") is None or row.get("identifiers") is None:
+            if (row.get("salt") is None or row.get("shingles") is None or row.get("identifiers") is None
+                    or row.get("key_id") != KEY_ID):
                 state = UNCHECKED
             else:
                 salt = bytes(row["salt"])

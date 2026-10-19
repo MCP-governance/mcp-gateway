@@ -378,11 +378,13 @@ CREATE TABLE IF NOT EXISTS flow_fingerprints (
   server_id text NOT NULL,
   decision_id bigint NOT NULL UNIQUE,
   salt bytea NOT NULL,
+  key_id text NOT NULL DEFAULT '',
   shingles bigint[] NOT NULL,
   identifiers bigint[] NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   expires_at timestamptz NOT NULL
 );
+ALTER TABLE flow_fingerprints ADD COLUMN IF NOT EXISTS key_id text NOT NULL DEFAULT '';
 CREATE INDEX IF NOT EXISTS flow_fingerprints_owner_idx ON flow_fingerprints(user_token, expires_at);
 DROP TRIGGER IF EXISTS flow_fingerprints_no_update ON flow_fingerprints;
 CREATE TRIGGER flow_fingerprints_no_update

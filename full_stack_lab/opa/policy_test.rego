@@ -893,6 +893,32 @@ test_content_mismatch_is_recorded_and_not_blocked if {
 	result.policy_id != "P-FLOW-001"
 }
 
+# 기본 모드(coarse)는 대조에서 다르다고 본 서버도 출처로 넘긴다. 정책은 모드를 읽지 않고 flow_sources만 본다.
+test_coarse_mode_blocks_an_unrelated_write_and_records_the_mismatch if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "create_issue", "action": "w"},
+		"request": {
+			"flow_match_mode": "coarse",
+			"flow_sources": ["filesystem"],
+			"flow_observed": {"filesystem": "열람 후 다른 서버 호출(내용 불일치)"},
+		},
+	})
+	result := decision with input as request
+	result.policy_id == "P-FLOW-001"
+	result.decision == "Block"
+}
+
+test_content_mode_alone_does_not_block_without_a_source if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "create_issue", "action": "w"},
+		"request": {"flow_match_mode": "content", "flow_sources": []},
+	})
+	result := decision with input as request
+	result.policy_id != "P-FLOW-001"
+}
+
 test_content_match_still_blocks_with_the_observation_recorded if {
 	request := with_input({
 		"principal": {"role": "admin"},

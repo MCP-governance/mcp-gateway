@@ -30,11 +30,11 @@ UNRELATED = "Fix the flaky login test, then bump the CI timeout to twenty minute
 
 def read_row(server, text, salt=SALT):
     shingles, identifiers = ff.fingerprint(text, salt)
-    return {"server_id": server, "salt": salt, "shingles": shingles, "identifiers": identifiers}
+    return {"server_id": server, "salt": salt, "key_id": ff.KEY_ID, "shingles": shingles, "identifiers": identifiers}
 
 
 def unchecked_row(server):
-    return {"server_id": server, "salt": None, "shingles": None, "identifiers": None}
+    return {"server_id": server, "salt": None, "key_id": None, "shingles": None, "identifiers": None}
 
 
 class NormaliseTest(unittest.TestCase):
@@ -129,8 +129,12 @@ class NarrowTest(unittest.TestCase):
         rows = [read_row("a", READ, b"1" * 16), read_row("b", READ, b"2" * 16)]
         self.assertEqual(self.narrow(rows, SENTENCE)[0], ["a", "b"])
 
+    def test_a_fingerprint_made_under_another_key_cannot_be_compared(self):
+        row = {**read_row("a", READ), "key_id": "00000000"}
+        self.assertEqual(self.narrow([row], UNRELATED), (["a"], {"a": ff.UNCHECKED}))
+
     def test_any_error_answers_with_every_server(self):
-        rows = [read_row("a", UNRELATED), {"server_id": "b", "salt": SALT, "shingles": 5, "identifiers": []}]
+        rows = [read_row("a", UNRELATED), {"server_id": "b", "salt": SALT, "key_id": ff.KEY_ID, "shingles": 5, "identifiers": []}]
         sources, seen = self.narrow(rows, SENTENCE)
         self.assertEqual((sources, seen), (["a", "b"], {"a": ff.UNCHECKED, "b": ff.UNCHECKED}))
 
@@ -154,16 +158,17 @@ class Ledger:
         if query.startswith("INSERT"):
             if self.fail_insert:
                 raise RuntimeError("database down")
-            token, server, decision, salt, shingles, identifiers, _ = params
+            token, server, decision, salt, key_id, shingles, identifiers, _ = params
             self.fingerprints.append({"user_token": token, "server_id": server, "decision_id": decision,
-                                      "salt": salt, "shingles": shingles, "identifiers": identifiers})
+                                      "salt": salt, "key_id": key_id, "shingles": shingles,
+                                      "identifiers": identifiers})
         return 1
 
     def reads(self, *reads):
         """The decisions rows of important reads, joined to whichever fingerprints exist."""
         by_decision = {row["decision_id"]: row for row in self.fingerprints}
         return [{"server_id": server, **{k: (by_decision[decision][k] if decision in by_decision else None)
-                                         for k in ("salt", "shingles", "identifiers")}}
+                                         for k in ("salt", "key_id", "shingles", "identifiers")}}
                 for server, decision in reads]
 
 
@@ -174,8 +179,9 @@ class LedgerTest(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.write = classify.Classification("github", "create_issue", "w", "w")
 
-    async def sources(self, ledger, reads, outbound="x", **kwargs):
-        with patch.object(core.db, "fetch_all", AsyncMock(return_value=ledger.reads(*reads))):
+    async def sources(self, ledger, reads, outbound="x", mode="content", **kwargs):
+        with patch.object(core.db, "fetch_all", AsyncMock(return_value=ledger.reads(*reads))), \
+                patch.object(core, "FLOW_MATCH_MODE", mode):
             observed = {}
             found = await core._flow_sources("emp", "github", self.write, outbound_text=outbound, observed=observed, **kwargs)
         return found, observed
@@ -194,6 +200,29 @@ class LedgerTest(unittest.IsolatedAsyncioTestCase):
                          ([], {"filesystem": ff.MISMATCH}))
         self.assertEqual((await self.sources(ledger, [("filesystem", 11)], SENTENCE.upper().replace(" ", "")))[0],
                          ["filesystem"])
+
+    async def test_the_default_mode_blocks_an_unrelated_write_as_before_and_only_records_the_comparison(self):
+        ledger = Ledger()
+        await self.remember(ledger, 11, "filesystem", READ)
+        self.assertEqual(await self.sources(ledger, [("filesystem", 11)], UNRELATED, mode="coarse"),
+                         (["filesystem"], {"filesystem": ff.MISMATCH}))
+        self.assertEqual(await self.sources(ledger, [("filesystem", 11)], SENTENCE, mode="coarse"),
+                         (["filesystem"], {"filesystem": ff.MATCHED}))
+        self.assertEqual(await self.sources(ledger, [("filesystem", 11), ("postgres", 12)], UNRELATED, mode="coarse"),
+                         (["filesystem", "postgres"], {"filesystem": ff.MISMATCH, "postgres": ff.UNCHECKED}))
+
+    def test_only_the_word_content_turns_the_narrowing_on(self):
+        for value in (None, "", "coarse", "narrow", "true", "1", "contents"):
+            self.assertEqual(core._flow_match_mode(value), "coarse", value)
+        for value in ("content", " Content ", "CONTENT"):
+            self.assertEqual(core._flow_match_mode(value), "content", value)
+
+    async def test_a_read_stored_under_another_pepper_stays_a_source_in_content_mode(self):
+        ledger = Ledger()
+        await self.remember(ledger, 11, "filesystem", READ)
+        ledger.fingerprints[0]["key_id"] = "00000000"
+        self.assertEqual(await self.sources(ledger, [("filesystem", 11)], UNRELATED),
+                         (["filesystem"], {"filesystem": ff.UNCHECKED}))
 
     async def test_without_the_call_text_every_server_in_the_window_is_a_source(self):
         ledger = Ledger()
@@ -228,8 +257,9 @@ class LedgerTest(unittest.IsolatedAsyncioTestCase):
         stored = [(q, p) for q, p in ledger.executed if q.startswith("INSERT")]
         self.assertEqual(len(stored), 2)
         for _, params in stored:
-            token, server, decision, salt, shingles, identifiers, minutes = params
+            token, server, decision, salt, key_id, shingles, identifiers, minutes = params
             self.assertIsInstance(salt, bytes)
+            self.assertEqual(key_id, ff.KEY_ID)
             self.assertTrue(all(isinstance(v, int) for v in shingles + identifiers))
             self.assertEqual(minutes, core.CHAIN_WINDOW_MINUTES)
             for value in params:
@@ -256,7 +286,7 @@ class WiringTest(unittest.IsolatedAsyncioTestCase):
     PAYLOAD = {"server_id": "github", "tool": "create_issue", "user_token": "emp",
                "arguments": {"title": "회의록", "body": "이슈 본문: " + SENTENCE}}
 
-    async def run_call(self, *, action="w", data_class="important", reads=(), policy=None, result=None):
+    async def run_call(self, *, action="w", data_class="important", reads=(), policy=None, result=None, mode="content"):
         cls = SimpleNamespace(action=action, base_action=action, data_class=data_class, destinations=[], resources=[],
                               dlp=[], notes=[], restrictable=[], primary=SimpleNamespace(id="asset", kind="file", owner_department=None),
                               summary=lambda: "unit")
@@ -288,7 +318,8 @@ class WiringTest(unittest.IsolatedAsyncioTestCase):
                            "_relationship_scope": AsyncMock(return_value={}), "_sequence_flags": AsyncMock(return_value=[]),
                            "_policy": judge, "enforcement_mode": AsyncMock(return_value="enforce"),
                            "_decision_payload": record, "_call_upstream": AsyncMock(return_value=released),
-                           "_inspected_result": AsyncMock(return_value=(released, [])), "_remember_flow": remember})]
+                           "_inspected_result": AsyncMock(return_value=(released, [])), "_remember_flow": remember,
+                           "FLOW_MATCH_MODE": mode})]
         with ExitStack() as stack:
             for target, attributes in changes:
                 for name, value in attributes.items():
@@ -296,21 +327,31 @@ class WiringTest(unittest.IsolatedAsyncioTestCase):
             response = await core.execute_call(payload)
         return response, captured.get("input"), remember
 
-    async def test_the_call_text_narrows_the_sources_and_the_record_says_what_was_seen(self):
-        match = [{"server_id": "filesystem", **dict(zip(("salt", "shingles", "identifiers"), (SALT, *ff.fingerprint(READ, SALT))))}]
-        _, seen, _ = await self.run_call(reads=match, policy={"decision": "Block", "policy_id": "P-FLOW-001", "reason": "unit"})
+    BLOCK = {"decision": "Block", "policy_id": "P-FLOW-001", "reason": "unit"}
+
+    async def test_content_mode_narrows_the_sources_and_the_record_says_what_was_seen(self):
+        _, seen, _ = await self.run_call(reads=[read_row("filesystem", READ)], policy=self.BLOCK)
         self.assertEqual(seen["request"]["flow_sources"], ["filesystem"])
         self.assertEqual(seen["request"]["flow_observed"], {"filesystem": ff.MATCHED})
-        other = [{"server_id": "filesystem", **dict(zip(("salt", "shingles", "identifiers"), (SALT, *ff.fingerprint(UNRELATED, SALT))))}]
-        _, seen, _ = await self.run_call(reads=other, policy={"decision": "Block", "policy_id": "P-FLOW-001", "reason": "unit"})
+        self.assertEqual(seen["request"]["flow_match_mode"], "content")
+        _, seen, _ = await self.run_call(reads=[read_row("filesystem", UNRELATED)], policy=self.BLOCK)
         self.assertEqual(seen["request"]["flow_sources"], [])
         self.assertEqual(seen["request"]["flow_observed"], {"filesystem": ff.MISMATCH})
 
-    async def test_a_read_without_a_stored_fingerprint_still_marks_the_call(self):
-        _, seen, _ = await self.run_call(reads=[unchecked_row("filesystem")],
-                                         policy={"decision": "Block", "policy_id": "P-FLOW-001", "reason": "unit"})
+    async def test_the_default_mode_keeps_an_unrelated_write_a_flow_source_and_records_the_mismatch(self):
+        _, seen, _ = await self.run_call(reads=[read_row("filesystem", UNRELATED)], policy=self.BLOCK, mode="coarse")
         self.assertEqual(seen["request"]["flow_sources"], ["filesystem"])
-        self.assertEqual(seen["request"]["flow_observed"], {"filesystem": ff.UNCHECKED})
+        self.assertEqual(seen["request"]["flow_observed"], {"filesystem": ff.MISMATCH})
+        self.assertEqual(seen["request"]["flow_match_mode"], "coarse")
+        _, seen, _ = await self.run_call(reads=[read_row("filesystem", READ)], policy=self.BLOCK, mode="coarse")
+        self.assertEqual((seen["request"]["flow_sources"], seen["request"]["flow_observed"]),
+                         (["filesystem"], {"filesystem": ff.MATCHED}))
+
+    async def test_a_read_without_a_stored_fingerprint_still_marks_the_call(self):
+        for mode in ("content", "coarse"):
+            _, seen, _ = await self.run_call(reads=[unchecked_row("filesystem")], policy=self.BLOCK, mode=mode)
+            self.assertEqual(seen["request"]["flow_sources"], ["filesystem"])
+            self.assertEqual(seen["request"]["flow_observed"], {"filesystem": ff.UNCHECKED})
 
     async def test_an_important_read_keeps_what_it_released_after_its_decision_is_recorded(self):
         response, _, remember = await self.run_call(action="r")

@@ -72,6 +72,15 @@ DEFAULT_ENFORCEMENT = os.getenv("GATEWAY_ENFORCEMENT", "enforce")
 # opinion; observing it would let the export through while "measuring".
 ALWAYS_ENFORCED = ("MCP-", "PAC-", "INPUT_CONTRACT", "POLICY_BUNDLE", "P-CONTROL-", "P-INPUT-", "P-RATE-", "P-CHAIN-", "P-FLOW-", "P-HIGH-IMPACT-", "P-RESIDENCY-")
 CHAIN_WINDOW_MINUTES = int(os.getenv("CHAIN_WINDOW_MINUTES", "10"))
+
+
+def _flow_match_mode(value: str | None) -> str:
+    """D-142: "content" narrows P-FLOW-001 to calls whose text matches what was read; anything else,
+    a misspelling included, is "coarse": every call after a read from another server."""
+    return "content" if (value or "").strip().lower() == "content" else "coarse"
+
+
+FLOW_MATCH_MODE = _flow_match_mode(os.getenv("FLOW_MATCH_MODE"))
 RATE_LIMIT_CALLS = int(os.getenv("RATE_LIMIT_CALLS", "60"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
 IMPORTANT_BURST_LIMIT = int(os.getenv("IMPORTANT_BURST_LIMIT", "10"))
@@ -1151,15 +1160,16 @@ async def _flow_sources(user_token: str, server_id: str, cls: classify.Classific
     server inside the window is where that data can cross between servers, and so is any call to a
     provider-hosted server: it receives every argument, a search query included.
 
-    With `outbound_text`, a server stays a source only when this call's text repeats what was read
-    from it, or when that read could not be compared (D-142). Without it every server in the window
-    is a source, which is also what any failure of the comparison answers. `observed` receives what
-    was seen per server, for the decision record.
+    With `outbound_text` the call's text is compared with what was read, and `observed` receives the
+    result per server for the decision record (D-142). In "content" mode a server then stays a source
+    only when the text matches or the read could not be compared; in "coarse" mode, the default, every
+    server in the window stays one and the comparison is a record only. Without `outbound_text`, and
+    on any failure of the comparison, every server in the window is a source.
     """
     if cls.action not in {"w", "x"} and not provider_hosted:
         return []
     rows = await db.fetch_all(
-        """SELECT d.server_id, f.salt, f.shingles, f.identifiers
+        """SELECT d.server_id, f.salt, f.key_id, f.shingles, f.identifiers
              FROM decisions d LEFT JOIN flow_fingerprints f ON f.decision_id=d.id AND f.expires_at > now()
             WHERE d.user_token=%s AND d.server_id<>%s AND d.data_class='important' AND d.action='r' AND d.upstream_executed
               AND d.created_at > now() - make_interval(mins => %s) ORDER BY d.server_id""",
@@ -1169,7 +1179,7 @@ async def _flow_sources(user_token: str, server_id: str, cls: classify.Classific
     sources, seen = await asyncio.to_thread(flow_fingerprint.narrow, rows, outbound_text)
     if observed is not None:
         observed.update(seen)
-    return sources
+    return sources if FLOW_MATCH_MODE == "content" else sorted(seen)
 
 
 async def _remember_flow(user_token: str, server_id: str, decision_id: int, result: dict) -> None:
@@ -1187,10 +1197,10 @@ async def _remember_flow(user_token: str, server_id: str, decision_id: int, resu
             flow_fingerprint.fingerprint, flow_fingerprint.leaf_text(result), salt, flow_fingerprint.MAX_HASHES)
         await db.execute("DELETE FROM flow_fingerprints WHERE expires_at < now()")
         await db.execute(
-            """INSERT INTO flow_fingerprints(user_token, server_id, decision_id, salt, shingles, identifiers, expires_at)
-               VALUES (%s,%s,%s,%s,%s::bigint[],%s::bigint[], now() + make_interval(mins => %s))
+            """INSERT INTO flow_fingerprints(user_token, server_id, decision_id, salt, key_id, shingles, identifiers, expires_at)
+               VALUES (%s,%s,%s,%s,%s,%s::bigint[],%s::bigint[], now() + make_interval(mins => %s))
                ON CONFLICT (decision_id) DO NOTHING""",
-            (user_token, server_id, decision_id, salt, shingles, identifiers, CHAIN_WINDOW_MINUTES))
+            (user_token, server_id, decision_id, salt, flow_fingerprint.KEY_ID, shingles, identifiers, CHAIN_WINDOW_MINUTES))
     except Exception as exc:
         logging.getLogger(__name__).warning("flow fingerprint not stored for decision %s: %s", decision_id, type(exc).__name__)
 
@@ -2046,7 +2056,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                         "pii_types": sent_types, "masked_types": masked_types,
                         "outbound_sha256": canonical_hash(outbound) if masked_types else None,
                         "sequence_flags": sequence_flags, "flow_sources": flow_sources,
-                        "flow_observed": flow_observed},
+                        "flow_observed": flow_observed, "flow_match_mode": FLOW_MATCH_MODE},
             "approval": {"granted": approval_granted, "id": approval_id},
             "contract": contract,
             "context": context,

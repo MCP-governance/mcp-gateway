@@ -2360,7 +2360,7 @@
     {
       "id": "attack-flow-content-match",
       "label": "attack",
-      "category": "POL-33 열람한 내용이 그대로 다른 서버 쓰기로 전달",
+      "category": "POL-33 열람한 내용이 그대로 다른 서버 쓰기로 전달 (content 모드)",
       "expect": {
         "decision": "Block",
         "policy_id": "P-FLOW-001"
@@ -2399,7 +2399,8 @@
           ],
           "flow_observed": {
             "filesystem-hr": "열람 후 다른 서버 호출(내용 일치)"
-          }
+          },
+          "flow_match_mode": "content"
         },
         "approval": {
           "granted": false
@@ -2660,7 +2661,7 @@
     {
       "id": "normal-flow-content-mismatch",
       "label": "benign",
-      "category": "POL-33 열람 뒤 다른 서버 쓰기, 내용 불일치로 기록만",
+      "category": "POL-33 열람 뒤 다른 서버 쓰기, 내용 불일치로 기록만 (content 모드)",
       "expect": {
         "decision": "Allow"
       },
@@ -2696,7 +2697,8 @@
           "flow_sources": [],
           "flow_observed": {
             "filesystem-hr": "열람 후 다른 서버 호출(내용 불일치)"
-          }
+          },
+          "flow_match_mode": "content"
         },
         "approval": {
           "granted": false
