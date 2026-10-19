@@ -204,6 +204,9 @@ jobs:
           APPLIANCE_BIND=127.0.0.1 ./console.sh field init-disposal --with-lab-mcp
           APPLIANCE_BIND=127.0.0.1 ./console.sh field up --with-lab-mcp
           APPLIANCE_BIND=127.0.0.1 ./console.sh field status
+          FIELD_TLS_ADDRESSES='https://127.0.0.1:8080' ./console.sh field ca
+          echo "FIELD_CA=$PWD/field/ca/root.crt" >> "$GITHUB_ENV"
+          echo "FIELD_CA_SHA256=$(cat field/ca/root.sha256)" >> "$GITHUB_ENV"
 
       - name: 실기기 — 직원 PC 키트와 실제 하네스
         run: |
@@ -211,16 +214,18 @@ jobs:
           # README ②: 사내망에 열기 전에 계정마다 비밀번호를 바꾼다 — 바꾼 값으로 로그인되는지까지 본다.
           printf 'ci-field-password-01\n' | APPLIANCE_BIND=127.0.0.1 ./console.sh field set-password ysg@bob.local
           servers="$(python3 -c 'import tomllib; print(",".join(sorted(tomllib.load(open("registry/catalog.toml", "rb"))["servers"])))')"
-          echo "ci-field-password-01" | python3 field/pc/mcpgw_pc.py setup --url http://127.0.0.1:443 \
+          echo "ci-field-password-01" | python3 field/pc/mcpgw_pc.py setup --url https://127.0.0.1 \
+            --ca "$FIELD_CA" --ca-sha256 "$FIELD_CA_SHA256" \
             --servers "$servers" --workstation ci-runner --email ysg@bob.local --password-stdin
           python3 ~/.mcpgw/mcpgw_pc.py doctor
           # D-51: 키트가 실제 하네스의 기본 커넥터·기능을 읽어 Gateway에 보고하는지(Codex 웹 검색은 기본으로 켜져 있다).
+          export NODE_EXTRA_CA_CERTS="$FIELD_CA" CODEX_CA_CERTIFICATE="$FIELD_CA"
           python3 ~/.mcpgw/mcpgw_pc.py report | tee reports/field-report.txt
           grep -q "건 보고" reports/field-report.txt
           claude mcp list | tee reports/field-claude.txt
           test "$(grep -c '(HTTP) - ✔ Connected' reports/field-claude.txt)" -eq 10
           codex mcp get filesystem | tee reports/field-codex.txt
-          grep -F "url: http://127.0.0.1:443/mcp/filesystem/" reports/field-codex.txt
+          grep -F "url: https://127.0.0.1/mcp/filesystem/" reports/field-codex.txt
           python3 ~/.mcpgw/mcpgw_pc.py uninstall
           if claude mcp get filesystem; then exit 1; fi
 
@@ -230,18 +235,18 @@ jobs:
         env:
           GIT_TERMINAL_PROMPT: "0"
         run: |
-          base=http://127.0.0.1:443
-          code() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
+          base=https://127.0.0.1
+          code() { curl --cacert "$FIELD_CA" -s -o /dev/null -w '%{http_code}' "$@"; }
           test "$(code -H 'Accept: text/html' $base/git/)" = 302
           test "$(code -H 'X-WEBAUTH-USER: corpadmin' $base/git/api/v1/user)" = 401
-          curl -fsS -c /tmp/jar -o /dev/null -X POST $base/auth/mock-login -H 'content-type: application/json' \
+          curl --cacert "$FIELD_CA" -fsS -c /tmp/jar -o /dev/null -X POST $base/auth/mock-login -H 'content-type: application/json' \
             -d '{"email":"ysg@bob.local","password":"ci-field-password-01"}'
-          test "$(curl -s -b /tmp/jar -o /tmp/git.html -w '%{http_code}' $base/git/)" = 200
+          test "$(curl --cacert "$FIELD_CA" -s -b /tmp/jar -o /tmp/git.html -w '%{http_code}' $base/git/)" = 200
           grep -q '"/git/ysg"' /tmp/git.html
           # 인가: 관리자 역할은 Gitea 관리자라 랩의 비공개 저장소를 읽고, 직원은 같은 저장소를 읽지 못한다.
-          git ls-remote "http://kkg%40bob.local:test-password@127.0.0.1:443/git/bob/handbook.git" | grep -q HEAD
-          if git ls-remote "http://ysg%40bob.local:ci-field-password-01@127.0.0.1:443/git/bob/handbook.git"; then exit 1; fi
-          if git ls-remote "http://kkg%40bob.local:wrong-password@127.0.0.1:443/git/bob/handbook.git"; then exit 1; fi
+          git -c http.sslCAInfo="$FIELD_CA" ls-remote "https://kkg%40bob.local:test-password@127.0.0.1/git/bob/handbook.git" | grep -q HEAD
+          if git -c http.sslCAInfo="$FIELD_CA" ls-remote "https://ysg%40bob.local:ci-field-password-01@127.0.0.1/git/bob/handbook.git"; then exit 1; fi
+          if git -c http.sslCAInfo="$FIELD_CA" ls-remote "https://kkg%40bob.local:wrong-password@127.0.0.1/git/bob/handbook.git"; then exit 1; fi
 
       - name: 실패 시 컨테이너 로그
         if: failure()
@@ -258,4 +263,4 @@ jobs:
 
       - name: 정리
         if: always()
-        run: APPLIANCE_BIND=127.0.0.1 docker compose -f compose.yaml -f compose.field.yaml --profile llm down -v
+        run: APPLIANCE_BIND=127.0.0.1 FIELD_TLS_ADDRESSES='https://127.0.0.1:8080' docker compose -f compose.yaml -f compose.field.yaml --profile llm down -v
