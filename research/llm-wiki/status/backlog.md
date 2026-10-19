@@ -10,7 +10,7 @@
 | DEV-02 | 계약 변경·오염 탐지 코퍼스 | [분석](../solutions/README.md), [실험](../experiments/README.md), [D 보고](reports/2026-10-15-inspection-corpus.md) | 다국어 정상/공격/인코딩 표본, 오탐·미탐 및 계약 diff, 검사기 장애 차단 | 공개 코퍼스 9,463건(dev/held-out): 결과 오탐 91→0, 계약(MCPTox) 재현율 0.27→0.52, 인코딩 변형 1/182→112/182. 독립 한국어 코퍼스·의미 분류기는 후속 |
 | DEV-03 | 원본 위협표와 구현 추적 검토 | [위협 매핑](../threats/README.md) | 24개 정책의 통제 위치·코드·실험·한계별 리뷰와 근거 | 매핑 초안, 독립 리뷰 필요 |
 | DEV-04 | 승인 재사용·경쟁 조건 | [PAC 설계](../../../docs/ai/PAC_RUNTIME_2026-10-01.md), [C 보고](reports/2026-10-15-termination-dispatch.md) | 변형 요청·중복 동시 호출·철회 경쟁의 정확한 효과 수와 판정 | 승인은 승인한 요청에 1회(인자 바꾼 재사용 실행 결함 재현·수정), 동시 동일 12건→효과 1, 변형 0건. 병합본 실제 Gitea MCP 격리 실험 49건 통과. 실기기 경쟁 미실행 |
-| DEV-05 | OAuth 대상·scope·철회 검증 | [논문·명세](../papers/README.md) | 다른 audience·scope·만료·철회 입력의 전송 전 차단과 정상군 | 조사·설계 |
+| DEV-05 | OAuth 대상·scope·철회 검증 | [논문·명세](../papers/README.md) | 다른 audience·scope·만료·철회 입력의 전송 전 차단과 정상군 | 구현 완료, 솔루션 기기 PostgreSQL 실험 대기 |
 | DEV-06 | 응답 통제와 실행 증거 분리 | [통제 설계](../methodology/control-design.md) | masked/held/released 결과와 upstream 실제 실행을 별도 보고 | 설계·새 실험 미실행 |
 | DEV-07 | 상용·OSS 비교 재현 | [제품 분석](../solutions/README.md) | 같은 도구·정상군·공격군·검사기 장애·독립 효과의 비교표 | 소스/문서 분석 완료, 실행 미실행 |
 | DEV-08 | 종료 C3/C4의 자원 서버 차이 | [종료 모델](../../../docs/ai/TERMINATION_MODEL.md) | introspection TTL·캐시·발급 토큰의 재접근과 T1~T3 증거 | 구현 일부: G07.02 세션 결속·폐기 기록 및 AsyncMock 시험 2건(D-146). PostgreSQL·실제 SDK·솔루션 배포·PJ1 검증 대기 |
