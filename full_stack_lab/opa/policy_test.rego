@@ -880,6 +880,71 @@ test_provider_hosted_receiver_cannot_be_reviewed_into_taking_the_flow if {
 	result.decision == "Block"
 }
 
+# D-142. The Gateway lists as flow_sources only the servers whose read this call's text repeats (or whose
+# read it could not compare); a read it compared and found different is recorded in flow_observed and
+# is not a source.
+test_content_mismatch_is_recorded_and_not_blocked if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "create_issue", "action": "w"},
+		"request": {"flow_sources": [], "flow_observed": {"filesystem": "열람 후 다른 서버 호출(내용 불일치)"}},
+	})
+	result := decision with input as request
+	result.policy_id != "P-FLOW-001"
+}
+
+test_content_match_still_blocks_with_the_observation_recorded if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "create_issue", "action": "w"},
+		"request": {"flow_sources": ["filesystem"], "flow_observed": {"filesystem": "열람 후 다른 서버 호출(내용 일치)"}},
+	})
+	result := decision with input as request
+	result.policy_id == "P-FLOW-001"
+	result.decision == "Block"
+}
+
+test_a_read_that_could_not_be_compared_still_blocks if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "create_issue", "action": "w"},
+		"request": {"flow_sources": ["filesystem"], "flow_observed": {"filesystem": "열람 후 다른 서버 호출(내용 확인 불가)"}},
+	})
+	result := decision with input as request
+	result.policy_id == "P-FLOW-001"
+}
+
+test_the_observation_alone_never_makes_a_source if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "create_issue", "action": "w", "accepts_from": []},
+		"request": {"flow_observed": {"filesystem": "열람 후 다른 서버 호출(내용 일치)"}},
+	})
+	result := decision with input as request
+	result.policy_id != "P-FLOW-001"
+}
+
+test_provider_hosted_receiver_with_a_content_mismatch_is_not_a_flow if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "query-docs", "action": "r", "provider_hosted": true},
+		"request": {"flow_sources": [], "flow_observed": {"filesystem": "열람 후 다른 서버 호출(내용 불일치)"}},
+	})
+	result := decision with input as request
+	result.policy_id != "P-FLOW-001"
+}
+
+test_provider_hosted_receiver_with_a_content_match_cannot_be_reviewed_into_taking_it if {
+	request := with_input({
+		"principal": {"role": "admin"},
+		"tool": {"name": "query-docs", "action": "r", "provider_hosted": true, "accepts_from": ["filesystem"]},
+		"request": {"flow_sources": ["filesystem"], "flow_observed": {"filesystem": "열람 후 다른 서버 호출(내용 일치)"}},
+	})
+	result := decision with input as request
+	result.policy_id == "P-FLOW-001"
+	result.decision == "Block"
+}
+
 # ── T-DECOMM 전주기 종료 (§11.11 미등록·비인가 구성요소 + 전주기 종료 단계) ──
 #
 # 이 시험들이 지키는 것은 "폐기했다"가 판정이 아니라 집행이 되게 하는 것이다.

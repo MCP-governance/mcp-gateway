@@ -165,6 +165,8 @@ pii_types := object.get(input, ["request", "pii_types"], [])
 sequence_flags := object.get(input, ["request", "sequence_flags"], [])
 
 # POL-33. 같은 주체가 창 안에서 중요정보를 읽은 다른 서버와, 이 도구가 넘겨받아도 된다고 심사된 서버.
+# 앞의 목록은 Gateway가 이 호출의 내용을 읽기 결과와 대조해 같거나 대조하지 못한 서버만 담는다(D-142).
+# 대조해서 다르다고 본 서버는 request.flow_observed에 기록만 되고 이 정책은 그 값을 읽지 않는다.
 flow_sources := object.get(input, ["request", "flow_sources"], [])
 
 accepts_from := object.get(input, ["tool", "accepts_from"], [])
