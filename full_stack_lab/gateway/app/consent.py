@@ -63,6 +63,18 @@ async def mine(user_token: str) -> list[dict]:
             ORDER BY (status='PENDING') DESC, requested_at DESC LIMIT 200""", (user_token,))
 
 
+async def for_dispatch(connection, user_token: str, server_id: str, tool: str,
+                       data_class: str, tool_review: dict) -> dict | None:
+    """Lock a covering grant until the intent commits; decide()'s UPDATE must wait."""
+    return await (await connection.execute(
+        """SELECT id FROM user_consents
+            WHERE user_token=%s AND server_id=%s AND tool_name=%s AND terms_hash=%s
+              AND grade=ANY(%s) AND status='GRANTED' AND expires_at > clock_timestamp()
+            ORDER BY id LIMIT 1 FOR SHARE""",
+        (user_token, server_id, tool, terms_hash(tool_review),
+         [grade for grade in RANK if _rank(grade) >= _rank(data_class)]))).fetchone()
+
+
 async def decide(consent_id: int, user_token: str, decision: str) -> dict | None:
     """Only the person the consent belongs to decides it; the change and its event commit together."""
     status, from_states, outcome, reason = DECISIONS[decision]
