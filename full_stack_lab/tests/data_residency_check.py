@@ -92,7 +92,7 @@ if GATEWAY:
     # Dependency/import failure must exit nonzero in the appliance, never silently skip.
     from app import classify, core, pac, registry, review
     from app.agent_service import IntakeRegistration, RemoteContractReview
-    from app.main import RegistryRegister
+    from app.main import RegistryRegister, ResidencyReview
 
     class GatewayTest(unittest.IsolatedAsyncioTestCase):
         async def test_both_boundaries_validate_iso(self):
@@ -108,6 +108,59 @@ if GATEWAY:
                 self.assertEqual(model(**value).residency, LOCATION)
                 with self.assertRaises(ValueError):
                     model(**{**value, "residency": {**LOCATION, "processing_countries": ["ZZ"]}})
+
+        async def test_residency_review_model_requires_complete_valid_location(self):
+            value = ResidencyReview(**LOCATION)
+            self.assertEqual(value.model_dump(), LOCATION)
+            for change in ({"processing_countries": ["ZZ"]}, {"storage_countries": []},
+                           {"evidence_ref": ""}, {"processor": " "}):
+                with self.subTest(change=change), self.assertRaises(ValueError):
+                    ResidencyReview(**{**LOCATION, **change})
+
+        async def test_residency_review_requires_independent_admin(self):
+            doc = {"servers": {"residency": {"intake_id": "00000000-0000-0000-0000-000000000069",
+                                               "deployment": "provider", "residency": LOCATION}},
+                   "contracts": {}, "usage_relationships": [], "history": []}
+            with patch.object(registry, "runtime", return_value=doc), \
+                 patch.object(core.db, "fetch_one", AsyncMock(return_value={"submitted_by": "applicant"})), \
+                 patch.object(review, "require_independent", AsyncMock(side_effect=review.NotIndependent)), \
+                 patch.object(registry, "save_runtime") as save, patch.object(registry, "sync", AsyncMock()):
+                with self.assertRaises(review.NotIndependent):
+                    await core.review_server_residency("residency", LOCATION, "applicant")
+                save.assert_not_called()
+                self.assertEqual(review.require_independent.await_args.args[:5],
+                                 ("residency-review", "server", "residency", "applicant", "applicant"))
+
+        async def test_residency_review_updates_facts_and_preserves_remote_registration(self):
+            old = {**LOCATION, "storage_countries": ["US"]}
+            remote_registration = {"residency": old, "tools": {"search": "r"}}
+            intake = {"submitted_by": "applicant", "evidence": {"remote_contract": {"registration": remote_registration}}}
+            doc = {"servers": {"residency": {"intake_id": "00000000-0000-0000-0000-000000000069",
+                                               "deployment": "provider", "residency": old}},
+                   "contracts": {"residency": {"tools": {"search": "a" * 64}}},
+                   "usage_relationships": [], "history": []}
+            contract = copy.deepcopy(doc["contracts"]["residency"])
+            with patch.object(registry, "runtime", return_value=doc), \
+                 patch.object(core.db, "fetch_one", AsyncMock(return_value=intake)), \
+                 patch.object(review, "require_independent", AsyncMock()) as independent, \
+                 patch.object(review, "record_event", AsyncMock()) as event, \
+                 patch.object(registry, "save_runtime") as save, patch.object(registry, "sync", AsyncMock()) as sync:
+                result = await core.review_server_residency("residency", LOCATION, "reviewer")
+            spec = doc["servers"]["residency"]
+            cls = SimpleNamespace(server="residency", data_class="nonimportant", destinations=[])
+            facts = residency.facts(spec, {}, cls, PACK)
+            self.assertEqual(facts["targets"][0]["storage_countries"], ["KR"])
+            self.assertEqual(spec["residency"], LOCATION)
+            self.assertEqual(spec["residency_review"]["reviewed_by"], "reviewer")
+            self.assertEqual(spec["residency_review"]["previous_sha256"], residency.sha256(old))
+            self.assertEqual(doc["contracts"]["residency"], contract)
+            self.assertEqual(intake["evidence"]["remote_contract"]["registration"], remote_registration)
+            self.assertEqual(result["residency"], LOCATION)
+            self.assertEqual(doc["history"][-1]["type"], "residency-reviewed")
+            independent.assert_awaited_once()
+            event.assert_awaited_once()
+            save.assert_called_once_with(doc)
+            sync.assert_awaited_once()
 
         async def test_remote_location_substitution_rejected_before_network(self):
             request = {"server_id": "residency", "endpoint": "https://service.example/mcp",

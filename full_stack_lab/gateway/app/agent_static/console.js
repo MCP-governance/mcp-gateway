@@ -204,7 +204,7 @@ const APPROVAL_STATUS = {
 const REVIEW_KIND = {
   "user-consent": "사용자 동의", "intake-approve": "운영자 승인", "contract-review": "계약 검토", "risk-accept": "위험 수용",
   "risk-lapse": "위험 수용 만료", "intake-reject": "거부", "intake-hold": "보류", "provenance-mismatch": "보류",
-  "server-register": "게이트웨이 등록", "tool-scope-review": "범위 심사",
+  "server-register": "게이트웨이 등록", "tool-scope-review": "범위 심사", "residency-review": "위치 심사",
   "runtime-start": "실행 요청", "runtime-stop": "실행 중지 요청", "runtime-built": "이미지 빌드", "runtime-active": "실행 시작",
   "runtime-failed": "실행 실패", "runtime-stopped": "실행 중지",
 };
@@ -1131,12 +1131,14 @@ function showServer(id) {
       ${s.lifecycle !== "RETIRED" ? html`<button class="btn sm" type="button" data-act="server-check" data-id="${s.id}">연결 확인</button>` : ""}
       ${registration && !registration.intake_id ? chip("block", "도입 신청 없음 · 차단") : ""}
       ${registration && tools.some((t) => registration.tools?.[t.name] && !registration.tool_reviews?.[t.name]) ? html`<button class="btn sm primary" type="button" data-act="tool-scope" data-id="${s.id}">범위 심사</button>` : ""}
+      ${registration?.intake_id && s.deployment === "provider" ? html`<button class="btn sm primary" type="button" data-act="residency-review" data-id="${s.id}">위치 심사</button>` : ""}
       ${registration ? html`<button class="btn sm danger" type="button" data-act="server-deregister" data-id="${s.id}">등록 해제</button>` : ""}</div>
     ${s.status_reason && s.status !== "READY" ? html`<p class="note warn">${s.status_reason}</p>` : ""}`, [
     { key: "info", label: "개요", body: kv([["ID", html`<code>${s.id}</code>`], ["게이트웨이 경로", html`<code>/mcp/${s.id}/</code>`],
       ["패키지", html`<code>${s.source_ref || `${s.package}@${s.version}`}</code>`], ["원격 주소", html`<code>${s.endpoint}</code>`],
       ["공급자", s.supplier], ["라이선스", s.license], ["하위 시스템", downstreamText(s.downstream)],
       ...locationRows(s.residency),
+       ...(registration?.residency_review ? [["위치 심사", `${registration.residency_review.reviewed_by} · ${when(registration.residency_review.reviewed_at)}`]] : []),
       ["출처 해시", registration?.provenance?.artifact?.sha256 ? html`<code>${registration.provenance.artifact.sha256}</code>` : ""],
       ["사용 기한", registration ? `${when(registration.valid_until)} · ${DATA_CLASS[registration.data_class] || ""}` : ""],
       ["등록", registration ? `${registration.registered_by} · ${when(registration.registered_at)}` : ""],
@@ -2502,6 +2504,24 @@ const ACTIONS = {
     if (!fd) return;
     const r = await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}/tool-reviews`, { method: "POST", body: { reviews: collectScopes(fd, pending) } });
     closeDrawer(); toast(`도구 ${r.reviewed.length}개의 범위를 기록했습니다.`); reload();
+  },
+  async "residency-review"(el) {
+    const s = registry?.servers.find((row) => row.id === el.dataset.id);
+    if (!s) return;
+    const current = s.residency || {};
+    const fd = await ask({ title: `위치 심사 · ${s.display_name}`, fields: html`<div class="stack">
+      ${field.text("processing_countries", "처리 국가", 'required maxlength="749"', (current.processing_countries || []).join(", "))}
+      ${field.text("storage_countries", "저장 국가", 'required maxlength="749"', (current.storage_countries || []).join(", "))}
+      ${field.text("processor", "처리 주체", 'required maxlength="500"', current.processor || "")}
+      ${field.text("evidence_ref", "위치 근거", 'required maxlength="500"', current.evidence_ref || "")}
+      ${field.text("transfer_basis", "이전 근거", 'maxlength="500"', current.transfer_basis || "")}</div>`, confirm: "기록" });
+    if (!fd) return;
+    const countries = (key) => String(fd.get(key)).split(",").map((code) => code.trim().toUpperCase()).filter(Boolean);
+    await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}/residency`, { method: "POST", body: {
+      processing_countries: countries("processing_countries"), storage_countries: countries("storage_countries"),
+      processor: String(fd.get("processor")).trim(), evidence_ref: String(fd.get("evidence_ref")).trim(),
+      transfer_basis: String(fd.get("transfer_basis")).trim() } });
+    closeDrawer(); toast("위치 심사를 기록했습니다."); reload();
   },
   async "intake-reject"(el) {
     const fd = await ask({ title: "도입 신청 거부", fields: field.area("note", "사유", 'required minlength="2" maxlength="500"'), confirm: "거부", danger: true });

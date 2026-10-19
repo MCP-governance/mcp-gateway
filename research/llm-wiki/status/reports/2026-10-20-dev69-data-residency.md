@@ -50,3 +50,21 @@ docker run --rm --entrypoint python -v "$PWD/tests:/checks/tests:ro" -v "$PWD/re
 ## 사용자에게 필요한 입력
 
 코드 구현에 필요한 입력은 없음. 현장 검수에는 운영자의 기기 배치 위치 확인과 각 공급자의 처리/저장 위치·처리 주체·근거 문서, 기존 승인된 시험 MCP/격리 자원과 PJ1 하네스가 필요하다. 비밀 값은 수집·저장하지 않았다. `status/current.md`는 요청에 따라 변경하지 않았다.
+
+## 보강: 등록 서버 위치 재심사 경로 (Codex luna)
+
+- 기준: 브랜치 `10/20-data-residency`, 시작 commit `30fae72`; 사용자 제공 적대 검토 `analysis/review-1020/s3-data-residency.md` 1번. 제공자 운영 등록 서버는 신규 신청이나 ID 변경 없이 관리자가 처리 위치를 다시 심사할 수 없었다. 사내 실행 위치는 조직 기기 위치 설정을 계속 사용한다.
+- 변경: `POST /api/registry/servers/{server_id}/residency`는 관리자 인증을 요구하고 ISO alpha-2 국가 목록과 처리 주체·근거를 검증한다. 신청자와 다른 관리자만 변경하며, 신청자 조회가 실패하면 갱신하지 않는다. `spec.residency`를 갱신하고 `residency_review`와 등록 이력·`approval_events`에 심사자·시각·이전 위치 해시를 기록한다. 기존 원격 계약의 `registration` 사양 및 비교는 수정하지 않는다. `residency.facts()`가 읽는 런타임 서버 위치가 바뀌어 이후 PAC 사실에 반영된다. 서버 상세에 위치 값·심사자·시각과 `위치 심사` 동작을 추가했다.
+- 새 시험: `full_stack_lab/tests/data_residency_check.py`에 신청자 본인 거부, 요청 형식 검증, 갱신된 facts 반영, 원격 등록·계약 보존을 확인하는 사례를 추가했다. 기존 시험 기대값은 바꾸지 않았다.
+
+### 보강 검증
+
+| 확인 종류 | 명령·환경·실행 시각 | 결과 | 원본 증거 |
+| --- | --- | --- | --- |
+| 경로 인증 | `python -X utf8 full_stack_lab/tests/open_endpoints.py` | 통과: 무인증 1개·인증 필요 74개, 무인증 문서 대조 | 로컬 실행 |
+| Python 구문 | `python -X utf8 -m py_compile full_stack_lab/gateway/app/core.py full_stack_lab/gateway/app/main.py full_stack_lab/gateway/app/residency.py full_stack_lab/tests/data_residency_check.py` | 통과 | 로컬 실행 |
+| 콘솔 JavaScript 구문 | `node --check full_stack_lab/gateway/app/agent_static/console.js` | 통과 | 로컬 실행 |
+| 순수 위치 시험 | `python -X utf8 full_stack_lab/tests/data_residency_check.py` | 기존 순수 시험 8건 통과 | 로컬 실행 |
+| 신규 게이트웨이 시험 | `python -X utf8 full_stack_lab/tests/data_residency_check.py --gateway` (게이트웨이 이미지) | 이미지 실행 대기 | 실제 PostgreSQL·MCP·PJ1 검증 미실행 |
+
+기존 기대값 변경 필요: 없음. 남은 한계: 위치·근거는 관리자의 선언이며 공급자 실제 배치나 법적 적법성을 자동 검증하지 않는다. OPA·게이트웨이 이미지·실기기·PJ1·화면 렌더링 확인은 별도다.

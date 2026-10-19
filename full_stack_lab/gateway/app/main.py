@@ -360,7 +360,7 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
             # D-49: which servers came from a Console registration, and until when they may be used.
             "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by", "registered_at",
                                                                     "data_class", "tools", "tool_reviews", "provenance",
-                                                                    "allowed_principals", "residency")}
+                                                                     "allowed_principals", "residency", "residency_review")}
                               for sid, spec in console.items() if sid not in registry.reviewed_servers()}}
 
 
@@ -722,10 +722,39 @@ class ToolReviews(StrictModel):
     reviews: dict[str, ToolReview] = Field(min_length=1, max_length=300)
 
 
+class ResidencyReview(StrictModel):
+    processing_countries: list[str] = Field(min_length=1, max_length=249)
+    storage_countries: list[str] = Field(min_length=1, max_length=249)
+    processor: str = Field(min_length=1, max_length=500)
+    evidence_ref: str = Field(min_length=1, max_length=500)
+    transfer_basis: str = Field(default="", max_length=500)
+
+    @model_validator(mode="after")
+    def validate_location(self):
+        normalized = residency.normalize(self.model_dump())
+        if not normalized["processor"] or not normalized["evidence_ref"]:
+            raise ValueError("처리 주체와 위치 근거가 필요합니다.")
+        self.__dict__.update(normalized)
+        return self
+
+
 @app.post("/api/registry/servers/{server_id}/tool-reviews")
 async def registry_tool_reviews(server_id: str, request: ToolReviews, user: dict = Depends(admin_caller)) -> dict:
     try:
         return await core.review_tool_scopes(server_id, request.model_dump()["reviews"], user["principal"])
+    except LookupError as exc:
+        raise HTTPException(404, "도입 승인으로 Console에서 등록한 서버가 아닙니다.") from exc
+    except review.NotIndependent as exc:
+        raise HTTPException(403, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@app.post("/api/registry/servers/{server_id}/residency")
+async def registry_residency_review(server_id: str, request: ResidencyReview,
+                                    user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await core.review_server_residency(server_id, request.model_dump(), user["principal"])
     except LookupError as exc:
         raise HTTPException(404, "도입 승인으로 Console에서 등록한 서버가 아닙니다.") from exc
     except review.NotIndependent as exc:

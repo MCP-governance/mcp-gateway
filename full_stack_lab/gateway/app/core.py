@@ -757,6 +757,38 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
             "unreviewed": sorted(set(spec["tools"]) - set(spec["tool_reviews"]))}
 
 
+async def review_server_residency(server_id: str, location: dict, actor: str) -> dict:
+    """Re-review the declared location without changing the approved remote contract (D-138)."""
+    normalized = residency.normalize(location)
+    async with REGISTER_LOCK:
+        doc = registry.runtime()
+        spec = doc["servers"].get(server_id)
+        if not spec or not spec.get("intake_id"):
+            raise LookupError(server_id)
+        if spec.get("deployment") != "provider":
+            raise ValueError("사내 실행 위치는 조직 기기 위치 설정에서 관리해야 합니다.")
+        intake = await db.fetch_one("SELECT submitted_by FROM mcp_intake_requests WHERE id=%s::uuid",
+                                    (spec["intake_id"],))
+        if not intake:
+            raise ValueError("도입 신청자를 확인할 수 없어 위치를 심사할 수 없습니다.")
+        applicant = intake["submitted_by"] if intake else None
+        previous = residency.normalize(spec.get("residency"))
+        reviewed_at = datetime.now(UTC).isoformat(timespec="seconds")
+        await review.require_independent("residency-review", "server", server_id, actor, applicant,
+                                         {"residency": normalized, "previous_sha256": residency.sha256(previous)})
+        spec["residency"] = normalized
+        spec["residency_review"] = {"reviewed_by": actor, "reviewed_at": reviewed_at,
+                                    "previous_sha256": residency.sha256(previous)}
+        doc["history"].append({"type": "residency-reviewed", "server_id": server_id, "actor": actor,
+                               "at": reviewed_at, "residency": normalized,
+                               "previous_sha256": residency.sha256(previous)})
+        registry.save_runtime(doc)
+        await registry.sync()
+    await review.record_event("residency-review", "approved", "server", server_id, actor, applicant=applicant,
+                              scope={"residency": normalized, "previous_sha256": residency.sha256(previous)})
+    return {"server_id": server_id, "residency": normalized, "reviewed_by": actor, "reviewed_at": reviewed_at}
+
+
 RENEW_WINDOW_DAYS = int(os.getenv("APPROVAL_RENEW_WINDOW_DAYS", "7"))
 RENEW_CONTRACT = ("registered", "enabled", "schema_hash_match", "description_hash_match", "known_tools_only",
                   "metadata_safe", "supplier_approved", "transport_secure", "endpoint_allowed")
