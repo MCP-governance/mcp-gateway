@@ -73,6 +73,9 @@ class CatalogDB:
             dh, sh, version, desc, schema, annotations, sid, name = params
             self.tools[name].update(observed_description_hash=dh, observed_schema_hash=sh, observed_server_version=version,
                                     description=desc, input_schema=schema, annotations=annotations)
+        elif compact.startswith("UPDATE mcp_tools SET output_schema=%s"):
+            schema, hashed, sid, name = params
+            self.tools[name].update(output_schema=schema, observed_output_schema_hash=hashed)
         elif compact.startswith("UPDATE mcp_tools SET approved_server_version"):
             for row in self.tools.values():
                 if (row["approved_description_hash"] == row["observed_description_hash"]
@@ -125,6 +128,10 @@ class SelectiveChecks(unittest.IsolatedAsyncioTestCase):
             "egress_allowed": AsyncMock(return_value=True),
         })
         self.ns["registry"].tool_hashes = digest
+        self.ns["registry"].review_matches = lambda *args: False
+        self.ns["output_contract"] = types.SimpleNamespace(**production_functions(
+            "output_contract.py", {"approved_hash", "matches", "observed_matches"},
+            {"canonical_hash": digest, "NO_OUTPUT_SCHEMA_HASH": digest(None)}))
 
     async def refresh(self):
         return await self.ns["refresh_catalog"]("alpha")
@@ -206,7 +213,7 @@ class SelectiveChecks(unittest.IsolatedAsyncioTestCase):
             "datetime": datetime, "UTC": timezone.utc, "GATEWAY_ENVIRONMENT": "prod", "asyncio": asyncio,
             "Draft202012Validator": lambda _: types.SimpleNamespace(is_valid=lambda _: True),
             "classify": types.SimpleNamespace(classify=lambda *_: None),
-            "pac": types.SimpleNamespace(build=AsyncMock(return_value={})), "_guarded_result": lambda value: value,
+            "pac": types.SimpleNamespace(build=AsyncMock(return_value={})), "_guarded_result": lambda value, *args: value,
             "local_verdict": lambda policy, decision, reason: {"policy_id": policy, "decision": decision, "reason": reason},
             "dispatch": types.SimpleNamespace(record=AsyncMock(return_value=refused)),
             "upstream": types.SimpleNamespace(session=session, list_all_tools=AsyncMock(return_value=[types.SimpleNamespace(name=n) for n in self.db.observed]),

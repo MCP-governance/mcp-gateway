@@ -12,7 +12,7 @@ def restricted_tools(findings):
         if kind == "contract-drift":
             fields = item.get("fields")
             if (not isinstance(item.get("tool"), str) or not isinstance(fields, list)
-                    or not fields or any(f not in {"description", "schema", "version"} for f in fields)
+                    or not fields or any(f not in {"description", "schema", "output_schema", "version"} for f in fields)
                     or not isinstance(item.get("enabled"), bool)):
                 return None
             if item["enabled"] and any(f != "version" for f in fields):

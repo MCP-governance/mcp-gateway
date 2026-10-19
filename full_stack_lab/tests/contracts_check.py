@@ -32,6 +32,9 @@ def diff(committed: dict, current: dict) -> list[str]:
             for field in ("description_sha256", "schema_sha256"):
                 if ta[t].get(field) != tb[t].get(field):
                     out.append(f"{sid}.{t}: {field.split('_')[0]} 변경")
+            absent = "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+            if ta[t].get("output_schema_sha256", absent) != tb[t].get("output_schema_sha256", absent):
+                out.append(f"{sid}.{t}: output_schema 변경")
     return out
 
 

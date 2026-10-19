@@ -1,0 +1,159 @@
+{
+  "environment": "Windows sandbox, Python 3.10; no deployment/MCP server/DB/harness execution",
+  "checks": [
+    {
+      "name": "pure-output-contract",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/output_contract_check.py",
+        "--pure"
+      ],
+      "started_at": "2026-10-19T21:11:16.582821+00:00",
+      "exit_code": 0,
+      "output": "test_fresh_output_drift_blocks_dispatch_with_catalog_policy (__main__.CatalogContract) ... Executing <Task pending name='Task-1' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at C:\\Program Files\\Python310\\lib\\unittest\\async_case.py:101> wait_for=<Future pending cb=[_chain_future.<locals>._call_check_cancel() at C:\\Program Files\\Python310\\lib\\asyncio\\futures.py:384, Task.task_wakeup()] created at C:\\Program Files\\Python310\\lib\\asyncio\\base_events.py:429> created at C:\\Program Files\\Python310\\lib\\unittest\\async_case.py:117> took 0.109 seconds\nok\ntest_schema_drift_reapproval_and_legacy_transition (__main__.CatalogContract) ... ok\ntest_add_change_remove_and_explicit_approval (__main__.PureContract) ... ok\ntest_lock_diff_and_poisoning_review_migration (__main__.PureContract) ... ok\ntest_modern_preserves_all_json_values_including_explicit_null (__main__.PureContract) ... ok\ntest_object_era_and_unknown_preserve_value_as_text (__main__.PureContract) ... ok\ntest_old_approval_means_absence_not_first_observation (__main__.PureContract) ... ok\ntest_output_drift_restricts_only_affected_tool (__main__.PureContract) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.221s\n\nOK\n"
+    },
+    {
+      "name": "dispatch-recheck",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/dispatch_recheck_check.py"
+      ],
+      "started_at": "2026-10-19T21:11:17.026707+00:00",
+      "exit_code": 0,
+      "output": "test_cancellation_rolls_back_and_releases_all_locks (__main__.Checks) ... ok\ntest_consent_scope_and_grade_query_bindings (__main__.Checks) ... ok\ntest_db_lock_flow_and_commit_failures_never_send (__main__.Checks) ... Executing <Task pending name='Task-9' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at C:\\Program Files\\Python310\\lib\\unittest\\async_case.py:101> wait_for=<Future pending cb=[_chain_future.<locals>._call_check_cancel() at C:\\Program Files\\Python310\\lib\\asyncio\\futures.py:384, Task.task_wakeup()] created at C:\\Program Files\\Python310\\lib\\asyncio\\base_events.py:429> created at C:\\Program Files\\Python310\\lib\\unittest\\async_case.py:117> took 0.156 seconds\nok\ntest_existing_sources_remain_permitted_and_content_mode_does_not_overblock (__main__.Checks) ... ok\ntest_expiry_at_final_insert_uses_wall_clock_and_rolls_back (__main__.Checks) ... ok\ntest_important_read_publisher_takes_advisory_before_chain (__main__.Checks) ... ok\ntest_intent_first_blocks_later_suspend_and_revoke_until_commit (__main__.Checks) ... ok\ntest_new_read_commits_during_advisory_wait (__main__.Checks) ... ok\ntest_provider_read_rechecks_sources_but_internal_read_does_not_cross (__main__.Checks) ... ok\ntest_revoke_commits_before_consent_lock (__main__.Checks) ... ok\ntest_revoke_commits_during_server_wait (__main__.Checks) ... ok\ntest_same_server_new_uncomparable_read_invalidates_content_decision (__main__.Checks) ... ok\ntest_suspend_commits_before_dispatch_enters (__main__.Checks) ... ok\ntest_suspend_commits_later_than_dispatch_start_during_server_wait (__main__.Checks) ... ok\ntest_uncommitted_suspend_holds_principal_then_dispatch_sees_commit (__main__.Checks) ... ok\n\n----------------------------------------------------------------------\nRan 15 tests in 0.894s\n\nOK\n"
+    },
+    {
+      "name": "selective-siem",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/selective_restriction_siem_check.py"
+      ],
+      "started_at": "2026-10-19T21:11:18.116915+00:00",
+      "exit_code": 0,
+      "output": "..............\n----------------------------------------------------------------------\nRan 14 tests in 3.583s\n\nOK\n"
+    },
+    {
+      "name": "contract-lock-diff",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/contracts_check.py"
+      ],
+      "started_at": "2026-10-19T21:11:21.920216+00:00",
+      "exit_code": 0,
+      "output": "self-check ok\n"
+    },
+    {
+      "name": "python-compile",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "-m",
+        "py_compile",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/dispatch.py",
+        "full_stack_lab/gateway/app/main.py",
+        "full_stack_lab/gateway/app/mcp_facade.py",
+        "full_stack_lab/gateway/app/registry.py",
+        "full_stack_lab/gateway/app/selective.py",
+        "full_stack_lab/gateway/app/upstream.py",
+        "full_stack_lab/gateway/app/upstream_sessions.py",
+        "full_stack_lab/tests/catalog_refresh_check.py",
+        "full_stack_lab/tests/contracts_check.py",
+        "full_stack_lab/tests/dispatch_recheck_check.py",
+        "full_stack_lab/tests/selective_restriction_siem_check.py",
+        "full_stack_lab/gateway/app/output_contract.py",
+        "full_stack_lab/tests/output_contract_check.py"
+      ],
+      "started_at": "2026-10-19T21:11:21.972814+00:00",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "name": "javascript-syntax",
+      "command": [
+        "node",
+        "--check",
+        "full_stack_lab/gateway/app/agent_static/console.js"
+      ],
+      "started_at": "2026-10-19T21:11:22.183862+00:00",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "name": "route-auth",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "started_at": "2026-10-19T21:11:22.236932+00:00",
+      "exit_code": 0,
+      "output": "PASS 무인증 1개가 문서와 일치, 인증 필요 84개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\n"
+    },
+    {
+      "name": "pyflakes",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-m",
+        "pyflakes",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/dispatch.py",
+        "full_stack_lab/gateway/app/main.py",
+        "full_stack_lab/gateway/app/mcp_facade.py",
+        "full_stack_lab/gateway/app/registry.py",
+        "full_stack_lab/gateway/app/selective.py",
+        "full_stack_lab/gateway/app/upstream.py",
+        "full_stack_lab/gateway/app/upstream_sessions.py",
+        "full_stack_lab/tests/catalog_refresh_check.py",
+        "full_stack_lab/tests/contracts_check.py",
+        "full_stack_lab/tests/dispatch_recheck_check.py",
+        "full_stack_lab/tests/selective_restriction_siem_check.py",
+        "full_stack_lab/gateway/app/output_contract.py",
+        "full_stack_lab/tests/output_contract_check.py"
+      ],
+      "started_at": "2026-10-19T21:11:22.305694+00:00",
+      "exit_code": 1,
+      "output": "C:\\Program Files\\Python310\\python.exe: No module named pyflakes\n"
+    },
+    {
+      "name": "gateway-full-output-contract",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/output_contract_check.py"
+      ],
+      "started_at": "2026-10-19T21:11:22.349174+00:00",
+      "exit_code": 1,
+      "output": "Traceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\output_contract_check.py\", line 202, in <module>\n    from app import core, mcp_facade, output_contract, upstream\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\core.py\", line 12, in <module>\n    from datetime import UTC, datetime, timedelta\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\n"
+    },
+    {
+      "name": "diff-whitespace",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "started_at": "2026-10-19T21:11:22.526729+00:00",
+      "exit_code": 0,
+      "output": ""
+    }
+  ],
+  "artifact_checks": {
+    "executed": "inline Python after final edits",
+    "utf8_no_bom_lf_json": "passed, 23 changed/new files",
+    "existing_assertion_ast_comparison": "passed, all assertions unchanged in four existing test files",
+    "new_local_links": "passed",
+    "current_and_contract_lock_diff": "empty"
+  }
+}

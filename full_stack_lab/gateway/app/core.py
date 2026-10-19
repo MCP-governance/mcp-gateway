@@ -23,11 +23,13 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
+from jsonschema.validators import validator_for
+from referencing import Registry
 
 from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, retention, risk_tier, secret_scan, supplier_assurance, upstream
 from .destination import DestinationBlocked
 from .outcomes import outcome_axes
-from . import flow_fingerprint, high_impact, residency, selective
+from . import flow_fingerprint, high_impact, output_contract, residency, selective
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint, walk_chain,
@@ -128,7 +130,7 @@ def response_evidence(payload: Any, disposition: str, masked_types: list[str] | 
             "content_types": sorted({item.get("type") if item.get("type") in
                                      {"text", "image", "audio", "resource", "resource_link"} else "unsupported"
                                      for item in content or [] if isinstance(item, dict) and isinstance(item.get("type"), str)}),
-            "structured": bool(isinstance(payload, dict) and payload.get("structured") is not None),
+            "structured": bool(isinstance(payload, dict) and "structured" in payload),
             **({"structured_dropped": payload["structured_dropped"]}
                if isinstance(payload, dict) and payload.get("structured_dropped") else {}),
             "masked_types": masked_types or []}
@@ -227,7 +229,9 @@ async def refresh_catalog(server_id: str) -> dict:
     latest = await db.fetch_one(
         "SELECT catalog_hash FROM catalog_snapshots WHERE server_id=%s ORDER BY id DESC LIMIT 1",
         (server_id,))
-    if not latest or latest["catalog_hash"] != catalog_hash or any(row["observed_schema_hash"] is None for row in registered_rows):
+    if (not latest or latest["catalog_hash"] != catalog_hash
+            or any(row["observed_schema_hash"] is None or row.get("observed_output_schema_hash") is None
+                   for row in registered_rows)):
         for name, tool in observed.items():
             if name not in registered:
                 continue
@@ -239,6 +243,10 @@ async def refresh_catalog(server_id: str) -> dict:
                  discovered["version"], tool["description"], Jsonb(tool["input_schema"]),
                  Jsonb(tool.get("annotations")), server_id, name),
             )
+            await db.execute(
+                """UPDATE mcp_tools SET output_schema=%s, observed_output_schema_hash=%s
+                   WHERE server_id=%s AND name=%s""",
+                (Jsonb(tool.get("output_schema")), canonical_hash(tool.get("output_schema")), server_id, name))
     registered_rows = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s ORDER BY name", (server_id,))
     registered = {row["name"]: row for row in registered_rows}
     names_match = set(observed) == set(registered)
@@ -247,7 +255,7 @@ async def refresh_catalog(server_id: str) -> dict:
     reviewed = (registry.server(server_id) or {}).get("poisoning_review") or {}
     metadata_findings = {name: reasons for name, tool in observed.items()
                          if name in registered and registered[name]["enabled"]
-                         and reviewed.get(name) != registry.tool_hashes(tool)
+                         and not registry.review_matches(reviewed.get(name), tool)
                          and (reasons := poisoning.findings(tool))}
     metadata_safe = not metadata_findings
     findings: list[dict] = []
@@ -277,6 +285,8 @@ async def refresh_catalog(server_id: str) -> dict:
             mismatches.append("description")
         if row["approved_schema_hash"] != canonical_hash(tool["input_schema"]):
             mismatches.append("schema")
+        if not output_contract.matches(row, tool.get("output_schema")):
+            mismatches.append("output_schema")
         if row["approved_server_version"] != discovered["version"]:
             mismatches.append("version")
         if mismatches:
@@ -293,8 +303,10 @@ async def refresh_catalog(server_id: str) -> dict:
     await db.execute(
         """UPDATE mcp_tools SET approved_server_version=%s, observed_server_version=%s WHERE server_id=%s
              AND (approved_server_version IS DISTINCT FROM %s OR observed_server_version IS DISTINCT FROM %s)
-             AND approved_description_hash=observed_description_hash AND approved_schema_hash=observed_schema_hash""",
-        (discovered["version"], discovered["version"], server_id, discovered["version"], discovered["version"]))
+             AND approved_description_hash=observed_description_hash AND approved_schema_hash=observed_schema_hash
+             AND COALESCE(approved_output_schema_hash,%s)=observed_output_schema_hash""",
+        (discovered["version"], discovered["version"], server_id, discovered["version"], discovered["version"],
+         output_contract.NO_OUTPUT_SCHEMA_HASH))
     if version_only:
         findings.append({"type": "version-carried", "to": discovered["version"], "tools": sorted(version_only)})
 
@@ -389,6 +401,8 @@ async def approve_contract(server_id: str, actor: str, note: str) -> dict:
             fields.append("description")
         if row["approved_schema_hash"] != row["observed_schema_hash"]:
             fields.append("schema")
+        if not output_contract.observed_matches(row):
+            fields.append("output_schema")
         if row["approved_server_version"] != row["observed_server_version"]:
             fields.append("version")
         if not fields:
@@ -396,10 +410,10 @@ async def approve_contract(server_id: str, actor: str, note: str) -> dict:
         changes.append({
             "tool": row["name"], "fields": fields,
             "from": {"description": row["approved_description_hash"],
-                     "schema": row["approved_schema_hash"],
+                     "schema": row["approved_schema_hash"], "output_schema": output_contract.approved_hash(row),
                      "version": row["approved_server_version"]},
             "to": {"description": row["observed_description_hash"],
-                   "schema": row["observed_schema_hash"],
+                   "schema": row["observed_schema_hash"], "output_schema": row.get("observed_output_schema_hash"),
                    "version": row["observed_server_version"]},
         })
     if not changes:
@@ -411,6 +425,7 @@ async def approve_contract(server_id: str, actor: str, note: str) -> dict:
             """UPDATE mcp_tools SET
                  approved_description_hash = COALESCE(observed_description_hash, approved_description_hash),
                  approved_schema_hash = COALESCE(observed_schema_hash, approved_schema_hash),
+                 approved_output_schema_hash = COALESCE(observed_output_schema_hash, approved_output_schema_hash),
                  approved_server_version = COALESCE(observed_server_version, approved_server_version)
                WHERE server_id=%s""", (server_id,))
         # 재승인 자체가 기록이다. 무엇을 무엇으로 바꿨는지가 없으면 나중에 "그때
@@ -701,9 +716,11 @@ async def register_server(request: dict, actor: str) -> dict:
     # Re-registering an id (after a deregistration) starts from what was approved now.
     for name, hashes in contract["tools"].items():
         await db.execute(
-            """UPDATE mcp_tools SET approved_description_hash=%s, approved_schema_hash=%s, approved_server_version=%s
+            """UPDATE mcp_tools SET approved_description_hash=%s, approved_schema_hash=%s, approved_server_version=%s,
+                      approved_output_schema_hash=%s
                WHERE server_id=%s AND name=%s""",
-            (hashes["description_sha256"], hashes["schema_sha256"], found["version"], server_id, name))
+            (hashes["description_sha256"], hashes["schema_sha256"], found["version"],
+             hashes["output_schema_sha256"], server_id, name))
     await db.execute(
         "UPDATE mcp_servers SET status='PENDING', status_reason='Console 등록, 계약 확인 전', lifecycle='OPERATING' WHERE id=%s",
         (server_id,))
@@ -980,7 +997,8 @@ async def _contract(server_id: str, tool_name: str) -> dict:
         "enabled": bool(tool["enabled"] and server["status"] != "DISABLED"
                         and not server.get("automatic_stop_reason")
                         and not disposal.blocked(server_id=server_id)),
-        "schema_hash_match": bool(tool["approved_schema_hash"] and tool["approved_schema_hash"] == tool["observed_schema_hash"]),
+        "schema_hash_match": bool(tool["approved_schema_hash"] and tool["approved_schema_hash"] == tool["observed_schema_hash"]
+                                  and output_contract.observed_matches(tool)),
         "description_hash_match": bool(tool["approved_description_hash"] and tool["approved_description_hash"] == tool["observed_description_hash"]),
         "version_match": bool(tool["approved_server_version"] and tool["approved_server_version"] == tool["observed_server_version"]),
         "known_tools_only": selective.available(latest, tool_name),
@@ -1477,6 +1495,7 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
     try:
         async with upstream.session(spec["endpoint"], principal=principal,
                                     protocol=registry.pinned_protocol(server_id), server_id=server_id) as client:
+            protocol_version = str(getattr(client, "protocol_version", "")) or None
             dispatch_state["upstream_connected"] = True
             dispatch_state.setdefault("client", {})["upstream_session_reused"] = bool(getattr(client, "reused", False))
             laps.lap("connect")
@@ -1494,11 +1513,12 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                 for row in enabled_rows:
                     item = observed[row["name"]]
                     if (canonical_hash(item["description"]) != row["approved_description_hash"]
-                            or canonical_hash(item["input_schema"]) != row["approved_schema_hash"]):
+                            or canonical_hash(item["input_schema"]) != row["approved_schema_hash"]
+                            or not output_contract.matches(row, item.get("output_schema"))):
                         problem = "MCP contract changed before execution"
                         break
                 reviewed = spec.get("poisoning_review") or {}
-                if (problem is None and reviewed.get(tool) != registry.tool_hashes(observed[tool])
+                if (problem is None and not registry.review_matches(reviewed.get(tool), observed[tool])
                         and poisoning.findings(observed[tool])):
                     problem = "MCP tool metadata is unsafe"
             if problem:
@@ -1600,8 +1620,10 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                 # withholds that response rather than erasing the known execution state.
                 dispatch_state["upstream_executed"] = True
                 payload = {"content": upstream.content_items(result), "is_error": bool(result.is_error)}
-                if result.structured_content is not None:
+                dispatch_state["_output_schema"] = observed[tool].get("output_schema")
+                if result.structured_content is not None or "structured_content" in getattr(result, "model_fields_set", set()):
                     payload["structured"] = result.structured_content
+                dispatch_state.setdefault("client", {})["upstream_protocol_version"] = protocol_version
             if problem is not None:
                 await upstream.release_pool(spec["endpoint"], principal, "dispatch-recheck")
             stage = "close"
@@ -1616,7 +1638,8 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
     if problem:
         raise DispatchRejected(problem, blocked_verdict)
     # Off the event loop: the native rule engine releases the GIL while it matches.
-    guarded = await asyncio.to_thread(_guarded_result, payload or {"content": [], "is_error": True})
+    guarded = await asyncio.to_thread(_guarded_result, payload or {"content": [], "is_error": True},
+                                      protocol_version, dispatch_state.get("_output_schema"))
     laps.lap("inspect_out")
     return guarded
 
@@ -1664,6 +1687,10 @@ def _upstream_failure(exc: Exception, event: dict) -> dict:
         if id(error) in seen:
             continue
         seen.add(id(error))
+        if isinstance(error, output_contract.WireRejected):
+            return local_verdict("MCP-OUTPUT-001", "Block", "협상된 출력 형식과 일치하지 않아 결과를 보류했습니다.",
+                                 upstream_executed=True, upstream_attempted=True, result=None,
+                                 result_evidence={"disposition": "withheld"})
         if isinstance(error, httpx.HTTPStatusError):
             event["upstream_http_status"] = error.response.status_code
         if isinstance(error, DestinationBlocked):
@@ -1686,7 +1713,24 @@ def body_of(value) -> str:
     return json.dumps(value, ensure_ascii=False, allow_nan=False)
 
 
-def _guarded_result(payload: dict) -> dict:
+def _validate_output(payload: dict, schema) -> None:
+    if schema is None:
+        return
+    try:
+        validator_class = validator_for(schema, default=None) if "$schema" in schema else Draft202012Validator
+        if validator_class is None:
+            raise ValueError("unsupported output schema dialect")
+        validator_class.check_schema(schema)
+        # No implicit network/filesystem resolution of provider-controlled $ref.
+        validator = validator_class(schema, registry=Registry())
+        if "structured" not in payload or not validator.is_valid(payload["structured"]):
+            raise ValueError("output contract mismatch")
+    except Exception as exc:
+        # Validator errors contain response values; only a fixed reason may leave here.
+        raise ResultRejected("승인된 출력 스키마와 도구 결과가 일치하지 않아 보류했습니다.", payload) from exc
+
+
+def _guarded_result(payload: dict, protocol_version: str | None = None, output_schema=None) -> dict:
     """Upstream output is untrusted input too.
 
     A pinned description and schema say nothing about what a server returns at
@@ -1703,15 +1747,9 @@ def _guarded_result(payload: dict) -> dict:
     content = payload.get("content")
     if not isinstance(content, list) or any(not isinstance(item, dict) for item in content):
         raise ResultRejected("도구 결과의 content 구조가 MCP 형식이 아닙니다.", payload)
-    if payload.get("structured") is not None and not isinstance(payload["structured"], dict):
-        # structuredContent must be an object; GitHub's MCP sends lists (list_commits, 10-15). The
-        # client gets a conforming result: the text it sent already, or the same JSON as text. The
-        # audit records that the structured part was not passed on.
-        structured = payload["structured"]
-        payload = {key: value for key, value in payload.items() if key != "structured"}
-        if not content:
-            payload["content"] = content = [{"type": "text", "text": body_of(structured)}]
-        payload["structured_dropped"] = type(structured).__name__
+    _validate_output(payload, output_schema)
+    payload = output_contract.for_protocol(payload, protocol_version)
+    content = payload["content"]
     if any(item.get("type") != "text" for item in content):
         raise ResultRejected("반환하지 않는 결과 형식입니다.", payload)
     if any(not isinstance(item.get("text"), str) for item in content):
@@ -2202,6 +2240,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 base_event["upstream_executed"] = True
                 try:
                     base_event["result"], output_types = await _inspected_result(raw_result, ignore)
+                    await asyncio.to_thread(_validate_output, base_event["result"], base_event.pop("_output_schema", None))
+                    released = output_contract.for_protocol(base_event["result"], payload.get("_response_protocol"))
+                    base_event["result"] = await asyncio.to_thread(_guarded_result, released, payload.get("_response_protocol"))
                 except privacy.InspectionUnavailable as exc:
                     # Executed, answer withheld: MCP-OUTPUT-001 below records exactly that.
                     base_event["control_failure"] = True
@@ -2244,6 +2285,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 base_event.update(_upstream_failure(exc, base_event))
                 span.record_exception(RuntimeError(_root_cause(exc)))
 
+        base_event.pop("_output_schema", None)
         response = await _decision_payload(base_event, laps)
         if (base_event["data_class"] == "important" and base_event["action"] == "r"
                 and base_event["upstream_executed"] and base_event.get("result")):

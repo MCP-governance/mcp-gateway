@@ -1,0 +1,66 @@
+{
+  "checked_on": "2026-10-20",
+  "sdk": {
+    "repository": "https://github.com/modelcontextprotocol/python-sdk",
+    "tag": "v2.2.0",
+    "commit": "9972c21aa42054fb1450c5fc614761ed11847ec6",
+    "license": "MIT",
+    "local_root": "C:\\Users\\bobysg\\bob\\프로젝트\\ref-src\\mcp-python-sdk",
+    "files": [
+      {
+        "path": "src/mcp/client/session.py",
+        "sha256": "fb1365c908c0dfc65ad9b59f63d1f5d433153c5da050725f5f98450871fc9a39",
+        "lines": 1506
+      },
+      {
+        "path": "src/mcp-types/mcp_types/_types.py",
+        "sha256": "0d07007bf5052c5fe123d6f12addae8fdcd4eabfd2b3a2fd639c3a47675b7d98",
+        "lines": 2198
+      },
+      {
+        "path": "src/mcp-types/mcp_types/version.py",
+        "sha256": "e244c0bb0dda774b50af4a2f1a2145be6511794fdfd63e6a6c7afe60ee62e51e",
+        "lines": 74
+      },
+      {
+        "path": "src/mcp/server/runner.py",
+        "sha256": "be55cb42cbca261c2997bb4f54e2ac892fbb5c35935409ef951ac9f73b527b29",
+        "lines": 872
+      },
+      {
+        "path": "src/mcp/client/client.py",
+        "sha256": "4c8f6ac1152da2bad65a6f51e252c077f8a75595bb472fae29370c2288f60381",
+        "lines": 949
+      },
+      {
+        "path": "LICENSE",
+        "sha256": "5e13dbbc1d120fc2a03cecde7c91424ae2d7de11b63d58ded2f4431e261ee50d",
+        "lines": 21
+      }
+    ]
+  },
+  "specifications": [
+    {
+      "version": "2025-06-18",
+      "url": "https://modelcontextprotocol.io/specification/2025-06-18/server/tools",
+      "read_scope": "Structured Content / Output Schema"
+    },
+    {
+      "version": "2025-11-25",
+      "url": "https://modelcontextprotocol.io/specification/2025-11-25/server/tools",
+      "read_scope": "Structured Content / Output Schema"
+    },
+    {
+      "version": "2026-07-28",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+      "read_scope": "Structured Content / Output Schema"
+    }
+  ],
+  "external_skill_candidate": {
+    "url": "https://github.com/anthropics/skills/blob/main/skills/mcp-builder/SKILL.md",
+    "revision": "main, commit not verified",
+    "license": "LICENSE.txt referenced, exact terms not verified",
+    "maintenance": "search index and current source reachable on 2026-10-20; no maintenance guarantee inferred",
+    "use": "reference search only; no external script or skill code adopted"
+  }
+}
