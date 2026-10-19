@@ -45,7 +45,7 @@ DEV-71 도입 신청의 위험 등급은 신청 입력의 표 산정이고 새 O
 | 46 | P-CHAIN-001 | 차단 | 같은 주체가 최근 10분 안에 중요정보를 읽고 외부로 보냄(`request.sequence_flags`, 관찰 모드에서도 집행) |
 | 47 | P-FLOW-001 | 차단 | 같은 주체가 최근 10분 안에 다른 서버에서 중요정보를 읽은 뒤 쓰기·실행·공급자 호스팅 호출을 하는데 받는 도구가 그 서버를 심사받지 않음(`request.flow_sources`·`tool.accepts_from`, 공급자 호스팅은 심사로도 못 풂, 관찰 모드에서도 집행, D-133). 설정 `FLOW_MATCH_MODE`가 기본 `coarse`면 읽은 모든 서버가 출처이고, `content`면 호출 내용이 읽은 내용과 같거나 비교할 수 없는 서버만 출처다. 대조 결과는 `request.flow_observed`, 모드는 `request.flow_match_mode`에 기록(D-142) |
 | 48 | P-RESIDENCY-001 | 차단 | 처리·저장 위치나 국외 이전 규칙 확인 불가, 또는 이전 금지(D-138) |
-| 50 | MCP-CATALOG-001 | 차단 | 승인 계약(설명·스키마·버전 해시) 불일치 |
+| 50 | MCP-CATALOG-001 | 차단 | 승인 계약(설명·입력/출력 스키마·버전 해시) 불일치 |
 | 55 | P-APPROVAL-EXPIRY-001 | 차단 | 승인 유효기간 만료 자산 |
 | 60 | P-CLASSIFICATION-001 | 차단 | 분류 근거 없는 데이터 |
 | 70 | P-RATE-001 | 차단 | 호출량 상한 |
@@ -69,7 +69,7 @@ DEV-71 도입 신청의 위험 등급은 신청 입력의 표 산정이고 새 O
 
 Gateway 쪽(OPA 밖)에서 나오는 판정: `P-INPUT-SCHEMA-001`(승인 스키마 위반), `P-INPUT-FIELD-001`(도구 심사의 허용 입력 항목 밖, D-131), `P-CONSENT-001`(실행될 호출에 본인의 유효한 사용자 동의 없음, 확인 요청 생성, D-134), `P-DATA-INSPECTION-001`
 (Presidio 입력 검사 불능, priority 2010), `MCP-OUTPUT-001`(실행됐지만 결과 보류 — 크기·주입 표지·출력 개인정보
-검사 불능), `MCP-UPSTREAM-001`(상위 오류), `P-CONTROL-FAIL-CLOSED`(OPA 불능), `P-MONITOR-001`(관찰 모드).
+검사 불능·승인 출력 스키마 불일치·협상 판본 형식 위반), `MCP-UPSTREAM-001`(상위 오류), `P-CONTROL-FAIL-CLOSED`(OPA 불능), `P-MONITOR-001`(관찰 모드).
 
 `P-HIGH-IMPACT-001`은 도구 심사의 `high_impact=true`에 대해 개별 사람 승인을 강제한다(D-139, POL-27·38·22).
 영향 영역은 고용·급여, 신용, 법적 효력, 급부, 계약, 서비스 접근이다. 관리대장 priority는 **2013**, 결과는 **추가 승인**이다.
@@ -162,3 +162,9 @@ python3 registry/render_residency.py --check
 내부 서버는 카탈로그 `organization.machine_location`을 사용하고 외부 목적지는 `organization.destination_locations`의 정확한 호스트별 선언을 사용한다.
 공급자 주소의 DNS/IP나 URL의 국가 접미사로 처리 위치를 추정하지 않는다.
 [설정·한계·시험](../../research/llm-wiki/analysis/dev69-data-residency/README.md).
+
+### 출력 계약과 협상 판본 (D-149)
+
+출력 스키마는 입력 스키마와 별도 승인 해시로 고정한다. 추가·수정·삭제 시 카탈로그 DRIFT와 해당 도구 재승인을 요구한다. 계약을 확인하지 못하면 `MCP-CATALOG-001`로 전송 전에 차단한다. 기존 승인에 출력 해시가 없으면 출력 스키마 부재 계약으로 해석하며 첫 관측값을 자동 승인하지 않는다. 출력 스키마 없는 기존 도구의 승인은 유지한다.
+
+승인 해시와 일치한 출력 스키마로 structuredContent를 원본/마스킹 후 검증한다. 누락·불일치·검증 불능·협상 wire 위반은 기존 `MCP-OUTPUT-001`로 결과를 보류하고 실행 사실을 유지한다. 외부 `$ref`는 가져오지 않는다. 2025-06-18·2025-11-25 하네스에는 객체, 2026-07-28에는 배열·스칼라·null까지 보존한다. 구형 판본에 맞지 않는 구조화 값은 검사된 JSON text로 보존한다. [전환·SDK 근거·시험 범위](../../research/llm-wiki/analysis/output-contract-d149/README.md).
