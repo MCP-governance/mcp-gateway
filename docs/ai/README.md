@@ -29,6 +29,7 @@
 | [POLICY.md](POLICY.md) | Rego 구조, 우선순위, PAC15·검토된 capability, 예외, 정책 추가 절차 | 판정을 바꿀 때 |
 | [TERMINATION_MODEL.md](TERMINATION_MODEL.md) | 논문 모델 ↔ 코드, C1~C4 규칙, E1~E3 | 종료·폐기 |
 | [OPS_RESPONSE.md](OPS_RESPONSE.md) | 운영 이미지 재검사·경보 자체 시험·자동 중지·서명 폐기 대조 | D-120~D-123 운영·복원 |
+| [LEDGER_RETENTION.md](LEDGER_RETENTION.md) | 원장 보존 기간·관할 하한, 만료 구간 봉인과 사슬 검증, 보류한 삭제 설계 | D-141 원장 보존·폐기 |
 | [DATA_MODEL.md](DATA_MODEL.md) | 테이블과 열의 의미, 감사 체인 | DB를 볼 때 |
 | [CONSOLE_UI.md](CONSOLE_UI.md) | v3 화면 구조(탭·차트), 디자인 시스템·레퍼런스, 원칙(CSP·이스케이프), 새 화면 추가 | UI |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | 실제로 겪은 증상 → 원인 → 해결 | 막혔을 때 |

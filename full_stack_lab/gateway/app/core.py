@@ -23,12 +23,12 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, secret_scan, upstream
+from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, retention, secret_scan, upstream
 from .destination import DestinationBlocked
 from . import selective
 from .contract import (  # re-exported: older callers import these from core
-    AUDIT_COLUMN_SETS, AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
-    audit_fingerprint as _audit_fingerprint,
+    AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
+    audit_fingerprint as _audit_fingerprint, walk_chain,
 )
 
 from . import review  # noqa: E402  (approval records, intake gate; see review.py)
@@ -1682,46 +1682,26 @@ async def record_connection_denial(user: dict, server_id: str, method: str, clie
     return await _record_decision(event)
 
 
-async def verify_audit_chain(connection=None) -> dict:
+async def verify_audit_chain(connection=None, seal: dict | None = None) -> dict:
     """Walk the chain and name the first row that does not follow from the previous.
 
     An edited or deleted row cannot be made to fit again without rewriting every row
     after it, so this answers "was the audit log tampered with" with a row id rather
-    than with an assurance.
+    than with an assurance. A retention seal (D-141, signed outside the database) is the
+    only thing that lets the walk start after GENESIS; a row it covers is resurrected.
     """
+    if seal is None:
+        seal = retention.current_seal()
     if connection is None:
         async with db.transaction() as snapshot:
             await snapshot.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
-            return await verify_audit_chain(snapshot)
+            return await verify_audit_chain(snapshot, seal)
     rows = await (await connection.execute(
         "SELECT id, " + ", ".join(AUDIT_COLUMNS) + ", prev_sha256, entry_sha256, chain_version"
         " FROM decisions ORDER BY id"
     )).fetchall()
-    previous = GENESIS
-    chained = 0
-    for row in rows:
-        if row["entry_sha256"] is None:
-            # Written before the chain existed. It anchors nothing and claims nothing.
-            continue
-        version = int(row["chain_version"] or 1)
-        if version not in AUDIT_COLUMN_SETS:
-            return {"intact": False, "checked": chained, "broken_at": row["id"],
-                    "reason": f"알 수 없는 체인 버전 {version}입니다."}
-        expected = hashlib.sha256((previous + _audit_fingerprint(row, version)).encode()).hexdigest()
-        if row["prev_sha256"] != previous:
-            return {"intact": False, "checked": chained, "broken_at": row["id"],
-                    "reason": "이전 항목과 연결되지 않습니다. 앞의 행이 지워졌을 수 있습니다."}
-        if row["entry_sha256"] != expected:
-            return {"intact": False, "checked": chained, "broken_at": row["id"],
-                    "reason": "항목 내용이 기록된 해시와 다릅니다."}
-        previous = row["entry_sha256"]
-        chained += 1
     head = await (await connection.execute("SELECT head_sha256, entries FROM audit_chain WHERE id=1")).fetchone()
-    if head and head["head_sha256"] != previous:
-        return {"intact": False, "checked": chained, "broken_at": None,
-                "reason": "마지막 항목이 체인 head와 다릅니다. 끝부분이 잘렸을 수 있습니다."}
-    return {"intact": True, "checked": chained, "head": previous,
-            "entries_recorded": int(head["entries"]) if head else None}
+    return walk_chain(rows, head, seal)
 
 
 async def _decision_payload(event: dict, laps: _Laps) -> dict:

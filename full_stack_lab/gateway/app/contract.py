@@ -104,3 +104,39 @@ def audit_fingerprint(record: dict, version: int = CHAIN_VERSION) -> str:
         else:
             normalised[column] = str(value)
     return canonical_hash(normalised)
+
+
+def walk_chain(rows, head: dict | None, seal: dict | None = None) -> dict:
+    """Name the first row that does not follow from the previous one.
+
+    A retention seal (D-141, signed outside the database) is the only thing that lets the
+    walk start after GENESIS, and a row at or below it is a resurrected disposal.
+    """
+    previous = seal["last_sha256"] if seal else GENESIS
+    chained = 0
+    for row in rows:
+        if seal and row["id"] <= seal["last_id"]:
+            return {"intact": False, "checked": 0, "broken_at": row["id"],
+                    "reason": "폐기한 구간의 행이 다시 있습니다. 백업 복원으로 되살아났을 수 있습니다."}
+        if row["entry_sha256"] is None:
+            # Written before the chain existed. It anchors nothing and claims nothing.
+            continue
+        version = int(row["chain_version"] or 1)
+        if version not in AUDIT_COLUMN_SETS:
+            return {"intact": False, "checked": chained, "broken_at": row["id"],
+                    "reason": f"알 수 없는 체인 버전 {version}입니다."}
+        expected = hashlib.sha256((previous + audit_fingerprint(row, version)).encode()).hexdigest()
+        if row["prev_sha256"] != previous:
+            return {"intact": False, "checked": chained, "broken_at": row["id"],
+                    "reason": "이전 항목과 연결되지 않습니다. 앞의 행이 지워졌을 수 있습니다."}
+        if row["entry_sha256"] != expected:
+            return {"intact": False, "checked": chained, "broken_at": row["id"],
+                    "reason": "항목 내용이 기록된 해시와 다릅니다."}
+        previous = row["entry_sha256"]
+        chained += 1
+    if head and head["head_sha256"] != previous:
+        return {"intact": False, "checked": chained, "broken_at": None,
+                "reason": "마지막 항목이 체인 head와 다릅니다. 끝부분이 잘렸을 수 있습니다."}
+    return {"intact": True, "checked": chained, "head": previous,
+            "entries_recorded": int(head["entries"]) if head else None,
+            "sealed_through": seal["last_id"] if seal else None}

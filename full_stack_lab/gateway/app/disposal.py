@@ -10,7 +10,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 DIRECTORY = Path(os.getenv("DISPOSAL_DIR", "/disposal"))
-KINDS = {"token", "refresh", "server", "credential"}
+# "ledger" is a retention seal over the audit chain (D-141); retention.py reads it.
+KINDS = {"token", "refresh", "server", "credential", "ledger"}
 LOG = logging.getLogger(__name__)
 
 
@@ -187,6 +188,9 @@ async def reconcile():
     async with db.transaction() as connection:
         for record in records[1:]:
             kind, subject, server = (record[k] for k in ("kind", "subject", "server_id"))
+            if kind == "ledger":
+                # Re-purging resurrected rows waits on the purge step (LEDGER_RETENTION.md); verify_audit_chain flags them.
+                continue
             cursor = await connection.execute(
                 """INSERT INTO disposal_blocks(kind,subject,server_id,detail) VALUES (%s,%s,%s,%s)
                    ON CONFLICT DO NOTHING RETURNING subject""", (kind, subject, server, Jsonb(record)))
