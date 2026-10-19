@@ -18,7 +18,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
 
-from . import core, db, decommission, dispatch, disposal, endpoint_plane, mcp_sessions, ops_response, privacy, secret_scan, upstream
+from . import core, db, decommission, dispatch, disposal, endpoint_plane, ops_response, privacy, secret_scan, upstream
 from .core import (
     OPA_URL,
     approve_request,
@@ -97,10 +97,15 @@ class RequireBearer:
                 return
             request_headers = dict(scope.get("headers") or [])
             session_id = request_headers.get(b"mcp-session-id", b"").decode("latin-1")
-            if session_id:
+            if session_id and (scope.get("method") != "DELETE" or scope.get("path")):
                 user = scope["authenticated_mcp_user"]
-                jti = (user.get("claims") or {}).get("jti")
-                if not jti or not await mcp_sessions.active(session_id, user["principal"], jti):
+                claims = user.get("claims") or {}
+                root = scope.get("root_path", "")
+                path = scope.get("path", "")
+                path = path[len(root):] if path.startswith(root) else path
+                server_id = path.strip("/").split("/", 1)[0] or None
+                if not await upstream.active_downstream(session_id, user["principal"],
+                                                        claims.get("device_id"), server_id):
                     await JSONResponse({"detail": "MCP 세션이 종료됐습니다. 새 세션을 시작하세요."},
                                        status_code=410)(scope, receive, send)
                     return
@@ -115,8 +120,8 @@ class RequireBearer:
                     user = scope["authenticated_mcp_user"]
                     claims = user.get("claims") or {}
                     if claims.get("jti"):
-                        await mcp_sessions.register(session_id, user["principal"], claims["jti"],
-                                                    claims.get("device_id"), scope.get("mcp_server"))
+                        await upstream.register_downstream(session_id, user["principal"], claims["jti"],
+                                                           claims.get("device_id"), scope.get("mcp_server"))
             await send(message)
 
         try:
@@ -128,8 +133,6 @@ class RequireBearer:
                 user = scope["authenticated_mcp_user"]
                 jti = (user.get("claims") or {}).get("jti")
                 if session_id and jti:
-                    await mcp_sessions.terminate(reason="client-delete", principal=user["principal"],
-                                                 session_id=session_id)
                     await upstream.close_downstream(user["principal"], (session_id, jti))
 
 

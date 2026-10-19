@@ -18,11 +18,14 @@ async def register(session_id: str, principal: str, jti: str, device_id: str | N
         (_digest(session_id), principal, jti, device_id, server_id))
 
 
-async def active(session_id: str, principal: str, jti: str) -> bool:
+async def active(session_id: str, principal: str, device_id: str | None, server_id: str | None) -> bool:
     return bool(await db.fetch_one(
         """SELECT 1 FROM mcp_client_sessions
-            WHERE session_hash=%s AND principal=%s AND token_jti=%s AND terminated_at IS NULL""",
-        (_digest(session_id), principal, jti)))
+            WHERE session_hash=%s AND principal=%s
+              AND device_id IS NOT DISTINCT FROM %s
+              AND server_id IS NOT DISTINCT FROM %s
+              AND terminated_at IS NULL""",
+        (_digest(session_id), principal, device_id, server_id)))
 
 
 async def terminate(*, reason: str, principal: str | None = None, device_id: str | None = None,

@@ -67,9 +67,10 @@ class SessionDB:
         raise AssertionError(query)
 
     async def _fetch_one(self, query, params):
-        digest, principal, jti = params
+        digest, principal, device, server = params
         row = self.sessions.get(digest)
-        return {"ok": 1} if row and row["principal"] == principal and row["jti"] == jti and not row["terminated"] else None
+        return {"ok": 1} if row and row["principal"] == principal and row["device"] == device \
+            and row["server"] == server and not row["terminated"] else None
 
 
 fake_db_instance = SessionDB()
@@ -93,11 +94,11 @@ class SessionTerminationTests(unittest.IsolatedAsyncioTestCase):
         await mcp_sessions.register("session-alice", "alice-token", "jti-a", "device-a", "server-a")
         await mcp_sessions.register("session-bob", "bob-token", "jti-b", "device-b", "server-a")
 
-        self.assertTrue(await mcp_sessions.active("session-alice", "alice-token", "jti-a"))
+        self.assertTrue(await mcp_sessions.active("session-alice", "alice-token", "device-a", "server-a"))
         self.assertEqual(await mcp_sessions.terminate(reason="principal-disabled", principal="alice-token"), 1)
 
-        self.assertFalse(await mcp_sessions.active("session-alice", "alice-token", "jti-a"))
-        self.assertTrue(await mcp_sessions.active("session-bob", "bob-token", "jti-b"))
+        self.assertFalse(await mcp_sessions.active("session-alice", "alice-token", "device-a", "server-a"))
+        self.assertTrue(await mcp_sessions.active("session-bob", "bob-token", "device-b", "server-a"))
         event_insert = next(call for call in fake_db_instance.execute.await_args_list
                             if call.args[0].startswith("INSERT INTO mcp_session_events"))
         self.assertEqual(event_insert.args[1][0], "principal-disabled")
@@ -108,12 +109,25 @@ class SessionTerminationTests(unittest.IsolatedAsyncioTestCase):
         await mcp_sessions.register("alice-b", "alice-token", "jti-a", None, "server-b")
 
         self.assertEqual(await mcp_sessions.terminate(reason="termination", server_id="server-a"), 1)
-        self.assertFalse(await mcp_sessions.active("alice-a", "alice-token", "jti-a"))
-        self.assertTrue(await mcp_sessions.active("alice-b", "alice-token", "jti-a"))
+        self.assertFalse(await mcp_sessions.active("alice-a", "alice-token", None, "server-a"))
+        self.assertTrue(await mcp_sessions.active("alice-b", "alice-token", None, "server-b"))
         update = next(call for call in fake_db_instance.execute.await_args_list
                       if call.args[0].startswith("UPDATE mcp_client_sessions"))
         self.assertIn("server_id=%s", update.args[0])
         self.assertNotIn("principal=%s", update.args[0])
+
+    async def test_token_rotation_keeps_session_for_same_principal_device_and_server(self):
+        await mcp_sessions.register("rotating-session", "alice-token", "old-jti", "device-a", "server-a")
+        await mcp_sessions.register("rotating-session", "alice-token", "new-jti", "device-a", "server-a")
+
+        self.assertTrue(await mcp_sessions.active("rotating-session", "alice-token", "device-a", "server-a"))
+
+    async def test_session_id_is_rejected_for_another_principal_or_device(self):
+        await mcp_sessions.register("bound-session", "alice-token", "jti-a", "device-a", "server-a")
+
+        self.assertFalse(await mcp_sessions.active("bound-session", "bob-token", "device-a", "server-a"))
+        self.assertFalse(await mcp_sessions.active("bound-session", "alice-token", "device-b", "server-a"))
+        self.assertFalse(await mcp_sessions.active("bound-session", "alice-token", "device-a", "server-b"))
 
 
 if __name__ == "__main__":
