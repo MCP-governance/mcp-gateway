@@ -34,9 +34,9 @@ from .core import (
     verify_audit_chain,
 )
 from .mcp_facade import build_mcp, transport_security
-from .agent_contract import CONSOLE_SCOPE, ToolReview, authenticate, authenticated_user
+from .agent_contract import CONSOLE_SCOPE, ResidencyFields, ToolReview, authenticate, authenticated_user
 from .release import build_info, policy_info
-from . import activity, audit, registry, review, siem
+from . import activity, audit, registry, residency, review, siem
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 # "오늘" is the operator's day. The DB session runs in UTC, so date_trunc('day', now())
@@ -354,12 +354,13 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
     return {"catalog_version": registry.catalog_version(),
             "classification": registry.catalog().get("classification", {}),
             "organization": registry.catalog().get("organization", {}),
-            "servers": [row for row in servers if row["id"] in catalog_servers],
+            "servers": [{**row, "residency": residency.location(catalog_servers[row["id"]], registry.catalog().get("organization", {}))}
+                        for row in servers if row["id"] in catalog_servers],
             "tools": tools, "usage_relationships": relationships,
             # D-49: which servers came from a Console registration, and until when they may be used.
             "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by", "registered_at",
                                                                     "data_class", "tools", "tool_reviews", "provenance",
-                                                                    "allowed_principals")}
+                                                                    "allowed_principals", "residency")}
                               for sid, spec in console.items() if sid not in registry.reviewed_servers()}}
 
 
@@ -675,7 +676,7 @@ class RegistryDiscover(StrictModel):
 
 
 
-class RegistryRegister(StrictModel):
+class RegistryRegister(ResidencyFields):
     server_id: str = Field(pattern=r"^[a-z][a-z0-9-]{1,30}$")
     display_name: str = Field(min_length=2, max_length=80)
     endpoint: str = Field(min_length=8, max_length=500)

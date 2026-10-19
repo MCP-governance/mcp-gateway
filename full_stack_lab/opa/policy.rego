@@ -15,6 +15,101 @@ package mcp.authz
 
 import rego.v1
 
+# DEV-69: facts are made from the reviewed registry, never tool arguments or IP geography.
+residency_fact := object.get(input, ["pac", "facts", "residency"], null)
+
+residency_required if residency_fact != null
+residency_required if {
+    object.get(input, ["tool", "provider_hosted"], false)
+    object.get(input, ["resource", "data_class"], "important") != "public"
+}
+
+residency_pack := data.residency
+residency_grade := object.get(residency_fact, "grade", "important") if is_object(residency_fact)
+
+residency_pack_valid if {
+    is_object(residency_fact)
+    residency_fact.pack_sha256 == crypto.sha256(json.marshal(residency_pack))
+    is_array(residency_fact.targets)
+    count(residency_fact.targets) > 0
+    residency_grade in {"public", "nonimportant", "important"}
+    every grade in ["public", "nonimportant", "important"] {
+        residency_pack.rules[grade]["*"] in {"allow", "approval", "deny"}
+    }
+}
+
+residency_known(target) if {
+    is_string(target.processor)
+    trim_space(target.processor) != ""
+    is_string(target.evidence_ref)
+    trim_space(target.evidence_ref) != ""
+    is_array(target.processing_countries)
+    count(target.processing_countries) > 0
+    is_array(target.storage_countries)
+    count(target.storage_countries) > 0
+}
+
+residency_country(target) := {country |
+    some country in array.concat(target.processing_countries, target.storage_countries)
+}
+
+residency_rule(country) := object.get(residency_pack.rules[residency_grade], country, residency_pack.rules[residency_grade]["*"])
+
+residency_denials contains "위치 규칙 확인 불가" if {
+    residency_required
+    not residency_pack_valid
+}
+residency_denials contains "처리·저장 위치 또는 처리 주체 미확인" if {
+    residency_required
+    residency_grade != "public"
+    some target in residency_fact.targets
+    not residency_known(target)
+}
+residency_denials contains "금지된 목적지 국가" if {
+    residency_required
+    some target in residency_fact.targets
+    some country in residency_country(target)
+    not residency_rule(country) in {"allow", "approval"}
+}
+
+residency_approvals contains "목적지 국가 승인 필요" if {
+    residency_required
+    some target in residency_fact.targets
+    some country in residency_country(target)
+    residency_rule(country) == "approval"
+}
+residency_approvals contains "국외 이전 근거 확인 필요" if {
+    residency_required
+    residency_grade != "public"
+    some target in residency_fact.targets
+    some country in residency_country(target)
+    not country in residency_pack.home_countries
+    trim_space(object.get(target, "transfer_basis", "")) == ""
+}
+
+residency_approved if {
+    document := input.pac
+    data.mcp.pac15.pac13_approved with input as document
+}
+
+candidate["P-RESIDENCY-001"] := {
+    "decision": "Block",
+    "reason": concat(" · ", sort(residency_denials)),
+    "restrictions": {},
+    "conditions": {"matched": ["pac.facts.residency"], "violated": sort(residency_denials)},
+} if count(residency_denials) > 0
+
+candidate["P-RESIDENCY-002"] := {
+    "decision": "Approval",
+    "reason": concat(" · ", sort(residency_approvals)),
+    "restrictions": {},
+    "conditions": {"matched": ["pac.facts.residency"], "violated": sort(residency_approvals)},
+} if {
+    count(residency_denials) == 0
+    count(residency_approvals) > 0
+    not residency_approved
+}
+
 # ── 정책 입력 (§11.6) ────────────────────────────────────────────────────────
 
 # 적용환경. 관리대장의 environments와 대조해 정책의 적용 여부를 정한다.

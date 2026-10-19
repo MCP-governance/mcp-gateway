@@ -25,7 +25,7 @@ from jsonschema import Draft202012Validator
 
 from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, secret_scan, upstream
 from .destination import DestinationBlocked
-from . import selective
+from . import residency, selective
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMN_SETS, AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint,
@@ -41,7 +41,7 @@ GATEWAY_ENVIRONMENT = os.getenv("GATEWAY_ENVIRONMENT", "prod")
 REPORT_DIR = Path(os.getenv("REPORT_DIR", "/reports"))
 POLICY_PATH = Path(os.getenv("POLICY_PATH", "/policy/policy.rego"))
 # What OPA serves from /policy, including the integrated PAC pack and its decision contract.
-POLICY_BUNDLE = ("policy.rego", "pac15.rego", "decision.rego", "data.json", "policy_ledger.json")
+POLICY_BUNDLE = ("policy.rego", "pac15.rego", "decision.rego", "data.json", "policy_ledger.json", "residency.json")
 APPROVAL_TTL_MINUTES = 10
 CATALOG_REFRESH_SECONDS = int(os.getenv("CATALOG_REFRESH_SECONDS", "60"))
 # A server check only negotiates a session; a slow answer is itself the finding.
@@ -68,7 +68,7 @@ DEFAULT_ENFORCEMENT = os.getenv("GATEWAY_ENFORCEMENT", "enforce")
 # ceiling at all for as long as observation lasts.
 # P-CHAIN- (PDF integration): a read-then-export chain is a disclosure, not a permission
 # opinion; observing it would let the export through while "measuring".
-ALWAYS_ENFORCED = ("MCP-", "PAC-", "INPUT_CONTRACT", "POLICY_BUNDLE", "P-CONTROL-", "P-INPUT-", "P-RATE-", "P-CHAIN-", "P-FLOW-")
+ALWAYS_ENFORCED = ("MCP-", "PAC-", "INPUT_CONTRACT", "POLICY_BUNDLE", "P-CONTROL-", "P-INPUT-", "P-RATE-", "P-CHAIN-", "P-FLOW-", "P-RESIDENCY-")
 CHAIN_WINDOW_MINUTES = int(os.getenv("CHAIN_WINDOW_MINUTES", "10"))
 RATE_LIMIT_CALLS = int(os.getenv("RATE_LIMIT_CALLS", "60"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
@@ -525,6 +525,7 @@ async def discover_for_registration(endpoint: str) -> dict:
 
 async def register_server(request: dict, actor: str) -> dict:
     server_id = request["server_id"]
+    server_location = residency.normalize(request.get("residency"))
     endpoint = registration_endpoint(request["endpoint"])
     try:
         intake_id = uuid.UUID(request.get("intake_id") or "")
@@ -566,6 +567,8 @@ async def register_server(request: dict, actor: str) -> dict:
     active = registry.runtime()["servers"].get(server_id)
     if active and active.get("intake_id") != str(intake_id):
         raise ValueError(f"운영 중인 서버 id입니다: {server_id}. 기존 등록을 해제한 뒤 등록하세요.")
+    if active and residency.normalize(active.get("residency")) != server_location:
+        raise ValueError("처리·저장 위치 변경은 새 도입 신청과 승인이 필요합니다.")
     row = await db.fetch_one("SELECT lifecycle FROM mcp_servers WHERE id=%s", (server_id,))
     if row and (row["lifecycle"] or "OPERATING") in {"TERMINATING", "RETIRED"}:
         raise ValueError("종료 절차를 거친 서버 id는 다시 쓸 수 없습니다. 새 id로 등록하세요.")
@@ -618,8 +621,9 @@ async def register_server(request: dict, actor: str) -> dict:
         "display_name": request["display_name"], "package": package, "version": version,
         "source_url": source_url or endpoint, "supplier": request.get("supplier") or host,
         "license": ((intake.get("provenance") or {}).get("license") or {}).get("spdx"), "endpoint": endpoint,
-        # A dotless host is a service on this Docker host; anything else is run by its provider.
-        "deployment": "internal" if "." not in host else "provider",
+        # Only an active managed runtime proves that the solution runs this registration.
+        "deployment": "internal" if runtime else "provider",
+        "residency": server_location,
         "downstream": request.get("downstream") or None, "data_class": request["data_class"],
         "tools": dict(sorted(request["tools"].items())), "exit_terms": request.get("exit_terms") or {},
         "valid_until": valid_until, "registered_by": actor,
@@ -650,7 +654,7 @@ async def register_server(request: dict, actor: str) -> dict:
         doc["contracts"][server_id] = contract
         doc["usage_relationships"] = [r for r in doc["usage_relationships"] if r["id"] != relationship["id"]] + [relationship]
         doc["history"].append({"type": "registered", "server_id": server_id, "actor": actor,
-                               "at": spec["registered_at"], "valid_until": valid_until})
+                               "at": spec["registered_at"], "valid_until": valid_until, "residency": server_location})
         registry.save_runtime(doc)
         await registry.sync()
     if intake["intake_kind"] == "repository":
@@ -686,6 +690,7 @@ async def register_server(request: dict, actor: str) -> dict:
         "server-register", "approved", "server", server_id, actor, applicant=intake["submitted_by"],
         reason=request.get("purpose") or request["display_name"],
         scope={"intake": str(intake_id), "tools": spec["tools"], "valid_until": valid_until, "data_class": request["data_class"],
+               "residency": server_location,
                "artifact_sha256": ((spec["provenance"].get("artifact") or {}).get("sha256")), "version": spec["provenance"].get("version")})
     refreshed = await refresh_catalog(server_id)
     await upstream.release_pool(endpoint, None, "registration")
@@ -1847,7 +1852,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         external = any(d.external for d in cls.destinations)
         # A provider-hosted server receives every argument, reads included: a search
         # query sent to GitHub has left the organisation whatever the tool's action is.
-        provider_hosted = classify.url_destination((registry.server(server_id) or {}).get("endpoint")).external
+        server_spec = registry.server(server_id) or {}
+        provider_hosted = (server_spec.get("deployment") == "provider"
+                           or classify.url_destination(server_spec.get("endpoint")).external)
         ignore = _privacy_ignore(cls)
         outbound, masked_types = arguments, []
         try:

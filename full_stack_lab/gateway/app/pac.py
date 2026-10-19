@@ -14,7 +14,7 @@ from datetime import datetime
 from jsonschema import Draft202012Validator
 from psycopg.types.json import Jsonb
 
-from . import db, registry
+from . import db, registry, residency
 from .agent_contract import AUDIENCE, ISSUER
 from .contract import canonical_hash
 
@@ -238,6 +238,8 @@ async def build(payload: dict, principal: dict, cls, tool: dict | None, contract
                 "schema_hash": (tool or {}).get("approved_schema_hash", ""), "policy_version": VERSION,
                 # An individual approval must not survive a changed reviewed scope.
                 "scope_sha256": canonical_hash(approved)}
+    location_facts = residency.facts(spec, registry.catalog().get("organization", {}), cls, residency.load_pack())
+    baseline["residency_sha256"] = canonical_hash(location_facts)
     catalog_ok = all(contract.get(k) is True for k in (
         "registered", "enabled", "schema_hash_match", "description_hash_match", "version_match", "known_tools_only"))
     connection_ok = catalog_ok and contract.get("transport_secure") is True and contract.get("endpoint_allowed") is True
@@ -274,6 +276,7 @@ async def build(payload: dict, principal: dict, cls, tool: dict | None, contract
                             AND i.state IN ('confirmed_executed','confirmed_not_executed')) LIMIT 1""",
         (principal["token"], server, feature, Jsonb(arguments)))
     facts = {"trusted": True, "now_ns": now, "approval": a, "approval_workflow_available": True,
+             "residency": location_facts,
              "classification": {"verified": tool is not None, "high_risk": high_risk, "transfer_required": transfer,
                                 "automated": True, "on_behalf_of": delegated["asserted"]},
              "delegation": delegated,

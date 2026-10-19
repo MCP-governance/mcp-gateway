@@ -32,7 +32,7 @@ from psycopg.types.json import Jsonb
 from . import connections, consent, core, db, oidc, provenance, review, upstream
 from .release import build_info
 from .system_metrics import SystemMetrics
-from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, ToolReview, authenticate,
+from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, ResidencyFields, ToolReview, authenticate,
                              authenticated_user, issue_token, private_key)
 from .connectors import router as connectors_router
 from .integrations import router as integrations_router
@@ -1335,6 +1335,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
                 kind="intake-approve", outcome="approved", target_kind="intake", target_id=request_id,
                 actor=user["principal"], applicant=remote["submitted_by"], reason=risk or reviewed.get("review_note"),
                 scope={"endpoint": remote["endpoint_url"], "tools": reviewed["registration"]["tools"],
+                       "residency": reviewed["registration"].get("residency") or {},
                        "data_class": reviewed["registration"]["data_class"], "valid_until": reviewed["valid_until"],
                        "allowed_principals": reviewed["allowed_principals"], "contract_sha256": reviewed["registration"]["catalog_hash"]})
         if not row:
@@ -1413,7 +1414,7 @@ async def accept_intake_risk(request_id: UUID, request: RiskAcceptance, authoriz
     return {"acceptance": accepted, "message": f"{accepted['expires_at'].date()}까지 위험 수용을 기록했습니다."}
 
 
-class IntakeRegistration(StrictModel):
+class IntakeRegistration(ResidencyFields):
     server_id: str = Field(pattern=r"^[a-z][a-z0-9-]{1,30}$")
     endpoint: str = Field(min_length=8, max_length=500)
     catalog_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -1501,6 +1502,7 @@ async def review_remote_contract(request_id: UUID, proposal: RemoteContractRevie
               kind="contract-review", outcome="recorded", target_kind="intake", target_id=request_id,
               actor=user["principal"], applicant=row["submitted_by"], reason=proposal.review_note,
               scope={"endpoint": row["endpoint_url"], "tools": proposal.tools, "data_class": proposal.data_class,
+                      "residency": proposal.residency,
                      "valid_until": contract["valid_until"], "allowed_principals": contract["allowed_principals"],
                      "tool_reviews": {name: {"asset": item.asset, "destinations": item.destinations}
                                       for name, item in proposal.tool_reviews.items()}})
@@ -1603,10 +1605,12 @@ async def approvals(authorization: str | None = Header(default=None)):
                   (a.requested_by = %s OR p.user_id = %s) AS own,
                   a.request_payload->>'server_id' AS server_id, a.request_payload->>'tool' AS tool,
                   a.request_payload->'arguments' AS arguments, a.request_payload->'client' AS client,
-                  p.display_name, p.department, d.summary, d.policy_id, d.reason, d.data_class, d.action
+                  p.display_name, p.department, d.summary, d.policy_id, d.reason, d.data_class, d.action,
+                  d.residency_targets
              FROM approvals a
              LEFT JOIN principals p ON p.token = a.requested_by
-             LEFT JOIN LATERAL (SELECT summary, policy_id, reason, data_class, action FROM decisions
+             LEFT JOIN LATERAL (SELECT summary, policy_id, reason, data_class, action,
+                                      policy_input#>'{pac,facts,residency,targets}' AS residency_targets FROM decisions
                                  WHERE approval_id = a.id ORDER BY id LIMIT 1) d ON true
             WHERE a.status='PENDING' AND a.expires_at>now() ORDER BY a.created_at DESC LIMIT 30""",
         (user["principal"], user.get("user_id"))),
