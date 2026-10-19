@@ -234,6 +234,14 @@ async def _revoke_family(family_id, connection=None) -> None:
 async def revoke_principal_tokens(user_id: str) -> None:
     """Permanently invalidate issued MCP access and refresh tokens when an account ends."""
     async with db.transaction() as connection:
+        tokens = await (await connection.execute(
+            "SELECT jti,expires_at FROM oauth_issued_tokens WHERE user_id=%s AND expires_at>now()", (user_id,))).fetchall()
+        refreshes = await (await connection.execute(
+            "SELECT token_sha256 FROM oauth_refresh_tokens WHERE user_id=%s AND revoked_at IS NULL", (user_id,))).fetchall()
+        for token in tokens:
+            disposal.remember_token(token["jti"], token["expires_at"])
+        for token in refreshes:
+            disposal.remember("refresh", token["token_sha256"])
         await connection.execute(
             """INSERT INTO agent_revoked_tokens(jti,expires_at)
                SELECT jti::uuid,expires_at FROM oauth_issued_tokens WHERE user_id=%s AND expires_at>now()
@@ -246,6 +254,16 @@ async def revoke_principal_tokens(user_id: str) -> None:
 async def revoke_device_tokens(device_id: str) -> None:
     """Revoke every issued access and refresh family bound to a device epoch."""
     async with db.transaction() as connection:
+        tokens = await (await connection.execute(
+            "SELECT jti,expires_at FROM oauth_issued_tokens WHERE device_id=%s AND expires_at>now()", (device_id,))).fetchall()
+        refreshes = await (await connection.execute(
+            """SELECT DISTINCT r.token_sha256 FROM oauth_refresh_tokens r
+                 JOIN oauth_issued_tokens i USING (family_id)
+                WHERE i.device_id=%s AND r.revoked_at IS NULL""", (device_id,))).fetchall()
+        for token in tokens:
+            disposal.remember_token(token["jti"], token["expires_at"])
+        for token in refreshes:
+            disposal.remember("refresh", token["token_sha256"])
         await connection.execute(
             """INSERT INTO agent_revoked_tokens(jti,expires_at)
                SELECT jti::uuid,expires_at FROM oauth_issued_tokens WHERE device_id=%s AND expires_at>now()
