@@ -389,13 +389,22 @@ def rollback(args):
     print("해당 계정의 관리형 서비스·설정·방화벽·프로필을 제거했습니다")
 
 
+UNAVAILABLE = {"Authorization": "Bearer endpoint-not-active"}
+
+
 def header(args):
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
-        connection.settimeout(8)
-        connection.connect(args.socket)
-        response = json.loads(connection.recv(8192))
-    if set(response) != {"Authorization"}:
-        raise ValueError("엔드포인트 활성화·정책 연결이 필요합니다")
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+            connection.settimeout(8)
+            connection.connect(args.socket)
+            response = json.loads(connection.recv(8192))
+        if set(response) != {"Authorization"}:
+            raise ValueError("엔드포인트 활성화·정책 연결이 필요합니다")
+    except (OSError, ValueError) as exc:
+        # 헤더가 없으면 하네스가 OAuth 인증 대기로 표시·캐시해 복구 뒤에도 연결하지 않는다(D-148 PJ1).
+        # 게이트웨이가 거부하는 고정 값이면 연결 실패로만 남아 다음 연결에서 다시 시도된다.
+        print("관리형 연결 불가: " + str(exc), file=sys.stderr)
+        response = UNAVAILABLE
     print(json.dumps(response))
 
 

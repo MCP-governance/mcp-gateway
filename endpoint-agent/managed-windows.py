@@ -454,9 +454,12 @@ def header(args):
         except ValueError:
             continue
     else:
-        raise ValueError("관리형 엔드포인트 서비스가 응답하지 않습니다")
-    if set(response) != {"Authorization"}:
-        raise ValueError("엔드포인트 활성화·정책 연결이 필요합니다")
+        response = None
+    if not isinstance(response, dict) or set(response) != {"Authorization"}:
+        # 헤더가 없으면 하네스가 OAuth 인증 대기로 표시·캐시해 복구 뒤에도 연결하지 않는다(D-148 PJ1).
+        # 게이트웨이가 거부하는 고정 값이면 연결 실패로만 남아 다음 연결에서 다시 시도된다.
+        print("관리형 연결 불가: 엔드포인트 활성화·정책 연결이 필요합니다", file=sys.stderr)
+        response = {"Authorization": "Bearer endpoint-not-active"}
     print(json.dumps(response))
 
 
