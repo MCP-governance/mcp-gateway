@@ -731,6 +731,8 @@ async def deregister_server(server_id: str, actor: str, reason: str | None = Non
                                "at": datetime.now(UTC).isoformat(timespec="seconds")})
         registry.save_runtime(doc)
         await registry.sync()
+    from . import mcp_sessions
+    await mcp_sessions.terminate(reason="deregister", server_id=server_id)
     await upstream.release_pool(endpoint, None, "deregister")
     await review.record_event("server-deregister", "recorded", "server", server_id, actor, reason=reason)
     return {"server_id": server_id, "status": "DISABLED"}

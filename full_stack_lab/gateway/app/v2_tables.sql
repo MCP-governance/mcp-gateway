@@ -334,3 +334,27 @@ ALTER TABLE decisions ADD COLUMN IF NOT EXISTS outcome jsonb;
 -- DEV-71: what the applicant stated about data, transfer, permission and users. The risk tier is
 -- computed from it each time (risk_tier.assess), never stored as a value that could drift from it.
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS risk_input jsonb NOT NULL DEFAULT '{}';
+
+-- Inbound MCP session bindings let lifecycle cutovers reject old protocol sessions.
+CREATE TABLE IF NOT EXISTS mcp_client_sessions (
+  session_hash text PRIMARY KEY,
+  principal text NOT NULL,
+  token_jti text NOT NULL,
+  device_id text,
+  server_id text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  terminated_at timestamptz,
+  termination_reason text
+);
+CREATE INDEX IF NOT EXISTS mcp_client_sessions_owner_idx ON mcp_client_sessions(principal, token_jti);
+CREATE INDEX IF NOT EXISTS mcp_client_sessions_server_idx ON mcp_client_sessions(server_id) WHERE terminated_at IS NULL;
+CREATE TABLE IF NOT EXISTS mcp_session_events (
+  id bigserial PRIMARY KEY,
+  reason text NOT NULL,
+  principal text,
+  device_id text,
+  server_id text,
+  session_hash text,
+  sessions_closed integer NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);

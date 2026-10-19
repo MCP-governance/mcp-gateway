@@ -215,6 +215,7 @@ async def _revoke_family(family_id, connection=None) -> None:
         async with db.transaction() as connection:
             await connection.execute(FAMILY_LOCK_SQL, ("oauth-refresh:" + str(family_id),))
             return await _revoke_family(family_id, connection)
+
     tokens = await (await connection.execute(
         "SELECT jti,expires_at FROM oauth_issued_tokens WHERE family_id=%s", (family_id,))).fetchall()
     refreshes = await (await connection.execute(
@@ -228,6 +229,31 @@ async def _revoke_family(family_id, connection=None) -> None:
         """INSERT INTO agent_revoked_tokens(jti, expires_at)
            SELECT jti::uuid, expires_at FROM oauth_issued_tokens WHERE family_id=%s AND expires_at > now()
            ON CONFLICT DO NOTHING""", (family_id,))
+
+
+async def revoke_principal_tokens(user_id: str) -> None:
+    """Permanently invalidate issued MCP access and refresh tokens when an account ends."""
+    async with db.transaction() as connection:
+        await connection.execute(
+            """INSERT INTO agent_revoked_tokens(jti,expires_at)
+               SELECT jti::uuid,expires_at FROM oauth_issued_tokens WHERE user_id=%s AND expires_at>now()
+               ON CONFLICT (jti) DO NOTHING""", (user_id,))
+        await connection.execute(
+            """UPDATE oauth_refresh_tokens SET revoked_at=COALESCE(revoked_at,now())
+               WHERE user_id=%s AND revoked_at IS NULL""", (user_id,))
+
+
+async def revoke_device_tokens(device_id: str) -> None:
+    """Revoke every issued access and refresh family bound to a device epoch."""
+    async with db.transaction() as connection:
+        await connection.execute(
+            """INSERT INTO agent_revoked_tokens(jti,expires_at)
+               SELECT jti::uuid,expires_at FROM oauth_issued_tokens WHERE device_id=%s AND expires_at>now()
+               ON CONFLICT (jti) DO NOTHING""", (device_id,))
+        await connection.execute(
+            """UPDATE oauth_refresh_tokens SET revoked_at=COALESCE(revoked_at,now())
+               WHERE family_id IN (SELECT family_id FROM oauth_issued_tokens WHERE device_id=%s)
+                 AND revoked_at IS NULL""", (device_id,))
 
 
 @router.post("/oauth/revoke")

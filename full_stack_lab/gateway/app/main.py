@@ -18,7 +18,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
 
-from . import core, db, decommission, dispatch, disposal, endpoint_plane, ops_response, privacy, secret_scan, upstream
+from . import core, db, decommission, dispatch, disposal, endpoint_plane, mcp_sessions, ops_response, privacy, secret_scan, upstream
 from .core import (
     OPA_URL,
     approve_request,
@@ -95,12 +95,28 @@ class RequireBearer:
                     body["policy_id"] = headers["X-Endpoint-Policy"]
                 await JSONResponse(body, status_code=exc.status_code, headers=headers)(scope, receive, send)
                 return
+            request_headers = dict(scope.get("headers") or [])
+            session_id = request_headers.get(b"mcp-session-id", b"").decode("latin-1")
+            if session_id:
+                user = scope["authenticated_mcp_user"]
+                jti = (user.get("claims") or {}).get("jti")
+                if not jti or not await mcp_sessions.active(session_id, user["principal"], jti):
+                    await JSONResponse({"detail": "MCP 세션이 종료됐습니다. 새 세션을 시작하세요."},
+                                       status_code=410)(scope, receive, send)
+                    return
         status = None
 
         async def response(message):
             nonlocal status
             if message["type"] == "http.response.start":
                 status = message["status"]
+                session_id = dict(message.get("headers") or []).get(b"mcp-session-id", b"").decode("latin-1")
+                if session_id and scope["type"] == "http":
+                    user = scope["authenticated_mcp_user"]
+                    claims = user.get("claims") or {}
+                    if claims.get("jti"):
+                        await mcp_sessions.register(session_id, user["principal"], claims["jti"],
+                                                    claims.get("device_id"), scope.get("mcp_server"))
             await send(message)
 
         try:
@@ -112,6 +128,8 @@ class RequireBearer:
                 user = scope["authenticated_mcp_user"]
                 jti = (user.get("claims") or {}).get("jti")
                 if session_id and jti:
+                    await mcp_sessions.terminate(reason="client-delete", principal=user["principal"],
+                                                 session_id=session_id)
                     await upstream.close_downstream(user["principal"], (session_id, jti))
 
 
@@ -170,6 +188,7 @@ class ServerPath:
                                         "decision": "Block", "policy_id": "MCP-REGISTRY-001",
                                         "decision_id": decision_id}, status_code=404)(scope, receive, send)
                     return
+                scope["mcp_server"] = name
                 scope = dict(scope, path=root + "/", raw_path=(root + "/").encode(), mcp_server=name)
         await self.app(scope, receive, send)
 

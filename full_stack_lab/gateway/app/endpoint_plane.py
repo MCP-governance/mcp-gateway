@@ -623,6 +623,11 @@ async def revoke_device(endpoint_id: str, actor: str) -> dict:
             await connection.execute(
                 "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'revoked',%s)",
                 (endpoint_id, row["owner_token"], Jsonb({"actor": actor})))
+    from . import idp, mcp_sessions, upstream
+    await mcp_sessions.terminate(reason="device-revoked", device_id=endpoint_id)
+    await idp.revoke_device_tokens(endpoint_id)
+    if row["owner_token"]:
+        await upstream.release_pool(None, row["owner_token"], "device-revoked")
     return {"endpoint_id": endpoint_id, "status": "revoked"}
 
 
