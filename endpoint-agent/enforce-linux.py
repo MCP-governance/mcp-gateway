@@ -163,7 +163,7 @@ profile {name}-{key}-tool {{
 
 def wrapper(path: Path, executable: Path, home: str, username: str, login: bool = False,
             fixed: list[str] | None = None, environment: dict[str, str] | None = None,
-            options: list[str] | None = None) -> None:
+            options: list[str] | None = None, guard: str | None = None) -> None:
     # Native wrapper avoids a shebang/interpreter attachment ambiguity and removes
     # runtime variables such as BUN_BE_BUN, LD_PRELOAD and alternate config roots.
     # `options` go in front of the caller's own arguments.
@@ -176,12 +176,26 @@ def wrapper(path: Path, executable: Path, home: str, username: str, login: bool 
     # Tools read either case of the proxy variables; set both.
     extra = "".join(f"setenv({json.dumps(name)}, {json.dumps(value)}, 1); "
                     for key, value in (environment or {}).items() for name in (key, key.lower()))
+    if guard == "codex":
+        guard_code = 'if (!strcmp(arg, "--config") || !strncmp(arg, "--config=", 9) || (arg[0] == \'-\' && arg[1] && arg[1] != \'-\' && strchr(arg + 1, \'c\'))) return 1;'
+        error = "Codex 설정 재정의 인자(-c/--config)는 관리 실행에서 사용할 수 없습니다."
+    elif guard == "claude":
+        guard_code = 'if (!strcmp(arg, "--settings") || !strncmp(arg, "--settings=", 11)) return 1;'
+        error = "Claude 설정 지정 인자(--settings)는 관리 실행에서 사용할 수 없습니다."
+    else:
+        guard_code, error = "", ""
+    guard_function = f"static int blocked(const char *arg) {{ {guard_code} return 0; }}" if guard else ""
+    guard_check = (f'for (int i=1; i<argc; i++) if (blocked(argv[i])) {{ '
+                   f'fputs({json.dumps(error + chr(10))}, stderr); return 2; }}' if guard else "")
     source = f"""
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <unistd.h>
+{guard_function}
 int main(int argc, char **argv) {{
   {arguments}
+  {guard_check}
   if (clearenv()) return 125;
   setenv("PATH", "{path.parent}:/usr/bin:/bin", 1);
   setenv("HOME", "{home}", 1); setenv("USER", "{username}", 1);
@@ -319,7 +333,8 @@ def main() -> None:
         environment = dict(proxy_env)
         if ca:
             environment["CODEX_CA_CERTIFICATE" if key == "codex" else "NODE_EXTRA_CA_CERTS"] = str(ca)
-        wrapper(folder / key, binary, person.pw_dir, args.user, environment=environment, options=fixed_options(key, binary))
+        wrapper(folder / key, binary, person.pw_dir, args.user, environment=environment,
+                options=fixed_options(key, binary), guard=key if key in {"codex", "claude"} else None)
     if args.helper_source:
         source = trusted_binary(args.helper_source)
         helper = folder / "mcpgw_pc.py"

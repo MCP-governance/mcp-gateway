@@ -30,6 +30,7 @@
 | Codex 관리 밖 MCP 서버 | `requirements.toml` `[mcp_servers.*].identity` | 기존 | — |
 | Codex `shell_environment_policy` | 환경 변수 상속 범위일 뿐 새 명령 표면이 아니다 | — | — |
 | 사용자 슬래시 명령·스킬 | 프롬프트 확장이며 실행은 도구(Bash)를 거친다 | — | `-tool` 프로필(D-104) |
+| Codex `-c`·`--config`, Claude `--settings`, Windows 설정 홈 환경 변수 | 사용자 설정 우선순위·대체 홈을 허용할 수 있음 | D-150 관리 런처가 옵션을 거부하고 Windows 환경을 등록 프로필 경로로 고정 | 로컬 대역 시험만 완료; Linux shim·Windows PATH·CLI 실제 동작은 PJ1 확인 전 |
 
 ## 실기기 확인
 

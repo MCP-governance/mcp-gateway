@@ -240,6 +240,11 @@ def set_user_environment(config, values):
     try:
         with winreg.CreateKeyEx(winreg.HKEY_USERS, root + r"\Environment", 0,
                                 winreg.KEY_SET_VALUE | winreg.KEY_QUERY_VALUE) as key:
+            for name in ("CODEX_HOME", "CLAUDE_CONFIG_DIR"):
+                try:
+                    winreg.DeleteValue(key, name)
+                except FileNotFoundError:
+                    pass
             for name in ("HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY"):
                 if values.get(name):
                     winreg.SetValueEx(key, name, 0, winreg.REG_SZ, values[name])
@@ -248,14 +253,13 @@ def set_user_environment(config, values):
                         winreg.DeleteValue(key, name)
                     except FileNotFoundError:
                         pass
-            # The account's own PATH, appended to the machine one: how a created companion account
-            # finds the approved harness at all. Entries that are not ours are kept.
+            # The account-local shims precede user PATH entries so installed native commands cannot bypass them.
             try:
                 current = [part for part in str(winreg.QueryValueEx(key, "PATH")[0]).split(os.pathsep) if part]
             except FileNotFoundError:
                 current = []
             kept = [part for part in current if not part.lower().startswith(str(PROGRAMS).lower())]
-            wanted = kept + ([values["PATH_APPEND"]] if values.get("PATH_APPEND") else [])
+            wanted = ([values["PATH_APPEND"]] if values.get("PATH_APPEND") else []) + kept
             if wanted:
                 winreg.SetValueEx(key, "PATH", 0, winreg.REG_EXPAND_SZ, os.pathsep.join(wanted))
             elif current:
@@ -297,28 +301,59 @@ def verify_transport(config):
     return observer.tls_context(config.get("ca_certificate", ""), config.get("ca_sha256", ""))
 
 
-def harness_launchers(config, native, harnesses):
-    """Keep CA trust in the harness process tree, outside the account's registry environment."""
-    if not config.get("ca_certificate"):
-        return native, {}
-    verify_transport(config)
+def harness_launchers(config, native, harnesses, python):
+    """Pin settings paths and reject command-line overrides before starting managed harnesses."""
+    if config.get("ca_certificate"):
+        verify_transport(config)
     folder = PROGRAMS / "launchers" / config["sid"]
     lock_down(folder)
     ca = folder / "root.crt"
-    if any(c in str(path) for path in (folder, native) for c in ('"', '%', '\r', '\n')):
+    if any(c in str(path) for path in (folder, native, python, Path(config["profile"]), PROGRAMS / "managed-windows.py")
+           for c in ('"', '%', '\r', '\n')):
         raise ValueError("하네스 실행 경로 형식 오류")
-    write_file(ca, config["ca_certificate"])
-    owned = {str(ca.relative_to(PROGRAMS)): hashlib.sha256(ca.read_bytes()).hexdigest()}
-    for name, variable in (("claude", "NODE_EXTRA_CA_CERTS"), ("codex", "CODEX_CA_CERTIFICATE")):
+    owned = {}
+    if config.get("ca_certificate"):
+        write_file(ca, config["ca_certificate"])
+        owned[str(ca.relative_to(PROGRAMS))] = hashlib.sha256(ca.read_bytes()).hexdigest()
+    for name in ("claude", "codex"):
         if name + ".exe" not in harnesses:
             continue
         executable = Path(os.path.relpath(native, folder)) / (name + ".exe")
-        script = (f'@echo off\nsetlocal\nset "{variable}=%~dp0root.crt"\n'
-                  f'"%~dp0{executable}" %*\nexit /b %errorlevel%\n')
+        script = (f'@echo off\n"{python}" -I -S "{PROGRAMS / "managed-windows.py"}" launch '
+                  f'--profile "{config["profile"]}" --native "{native / (name + ".exe")}" '
+                  f'--ca "{ca if config.get("ca_certificate") else ""}" {name} -- %*\n'
+                  'exit /b %errorlevel%\n')
         path = folder / (name + ".cmd")
         write_file(path, script)
         owned[str(path.relative_to(PROGRAMS))] = hashlib.sha256(path.read_bytes()).hexdigest()
     return folder, owned
+
+
+def launch_harness(name, arguments, profile, native, ca_path=""):
+    if arguments and arguments[0] == "--":
+        arguments = arguments[1:]
+    if name == "codex":
+        blocked = any(arg == "--config" or arg.startswith("--config=") or
+                      (arg.startswith("-") and not arg.startswith("--") and "c" in arg[1:])
+                      for arg in arguments)
+        message = "Codex 설정 재정의 인자(-c/--config)는 관리 실행에서 사용할 수 없습니다."
+        os.environ["CODEX_HOME"] = str(Path(profile) / ".codex")
+    elif name == "claude":
+        blocked = any(arg == "--settings" or arg.startswith("--settings=") for arg in arguments)
+        message = "Claude 설정 지정 인자(--settings)는 관리 실행에서 사용할 수 없습니다."
+        # Setting it, even to the default folder, moves .claude.json (sign-in, state) there; only drop it.
+        os.environ.pop("CLAUDE_CONFIG_DIR", None)
+    else:
+        raise ValueError("관리 하네스 이름이 올바르지 않습니다")
+    if blocked:
+        print(message, file=sys.stderr)
+        return 2
+    if ca_path:
+        os.environ["NODE_EXTRA_CA_CERTS" if name == "claude" else "CODEX_CA_CERTIFICATE"] = str(
+            ca_path)
+    # Windows has no exec: os.execv starts a child and exits, so the console shim would return
+    # while the harness still runs. Wait for it and hand back its exit code.
+    return subprocess.call([str(native), *arguments])
 
 
 def ports(policy):
@@ -578,7 +613,7 @@ def install(args):
     if codex_config(config).exists():
         write_file(folder / "config.toml.backup", codex_config(config).read_text(encoding="utf-8"))
     apply_policy(config, policy)
-    launcher_folder, launcher_files = harness_launchers(config, harness_folder, harnesses)
+    launcher_folder, launcher_files = harness_launchers(config, harness_folder, harnesses, python)
     set_user_environment(config, {**(policy.get("proxy_environment") or {}), "PATH_APPEND": str(launcher_folder)})
     powershell(APPLY_RULES, {"rules": firewall_rules(args.user, person["sid"], policy["gateway_ips"], ports(policy))})
     write_file(Path(config["firewall_baseline"]), json.dumps({"rules": rule_state(config)["rules"]}))
@@ -777,6 +812,13 @@ def main():
     remove = commands.add_parser("rollback")
     remove.add_argument("--user", required=True)
     remove.set_defaults(run=rollback)
+    launch = commands.add_parser("launch")
+    launch.add_argument("name", choices=("claude", "codex"))
+    launch.add_argument("--profile", required=True, type=Path)
+    launch.add_argument("--native", required=True, type=Path)
+    launch.add_argument("--ca", default="")
+    launch.add_argument("arguments", nargs=argparse.REMAINDER)
+    launch.set_defaults(run=lambda args: sys.exit(launch_harness(args.name, args.arguments, args.profile, args.native, args.ca)))
     commands.add_parser("self-check").set_defaults(run=lambda _: self_check())
     for stream in (sys.stdout, sys.stderr):
         if stream is not None and hasattr(stream, "reconfigure"):
