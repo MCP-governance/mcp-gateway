@@ -36,7 +36,7 @@ from .core import (
 from .mcp_facade import build_mcp, transport_security
 from .agent_contract import CONSOLE_SCOPE, ResidencyFields, ToolReview, authenticate, authenticated_user
 from .release import build_info, policy_info
-from . import activity, audit, registry, residency, retention, review, siem, supplier_assurance
+from . import activity, audit, incidents, registry, residency, retention, review, siem, supplier_assurance
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 # "오늘" is the operator's day. The DB session runs in UTC, so date_trunc('day', now())
@@ -894,6 +894,45 @@ async def audit_siem(user: dict = Depends(admin_caller)) -> dict:
 @app.get("/api/audit/events/{event_id}")
 async def audit_event(event_id: int, user: dict = Depends(admin_caller)) -> dict:
     return await audit.detail(event_id)
+
+
+class IncidentCreate(StrictModel):
+    title: str = Field(min_length=1, max_length=200)
+    started_at: datetime
+    detected_at: datetime
+    assessed_at: datetime | None = None
+    scope_since: datetime
+    scope_until: datetime
+    server_id: str | None = Field(default=None, max_length=150)
+    tool_name: str | None = Field(default=None, max_length=150)
+    principal: str | None = Field(default=None, max_length=150)
+    jurisdictions: list[str] = Field(min_length=1, max_length=20)
+
+
+class IncidentReport(StrictModel):
+    jurisdiction: str = Field(min_length=1, max_length=50)
+    stage: str = Field(min_length=1, max_length=50)
+    note: str = Field(default="", max_length=1000)
+
+
+@app.get("/api/audit/incidents")
+async def audit_incidents(user: dict = Depends(admin_caller)) -> dict:
+    return await incidents.list_cases()
+
+
+@app.post("/api/audit/incidents", status_code=201)
+async def audit_incident_create(request: IncidentCreate, user: dict = Depends(admin_caller)) -> dict:
+    return await incidents.create(request.model_dump(), user["principal"])
+
+
+@app.get("/api/audit/incidents/{incident_id}")
+async def audit_incident_detail(incident_id: UUID, user: dict = Depends(admin_caller)) -> dict:
+    return await incidents.detail(incident_id)
+
+
+@app.post("/api/audit/incidents/{incident_id}/reports")
+async def audit_incident_report(incident_id: UUID, request: IncidentReport, user: dict = Depends(admin_caller)) -> dict:
+    return await incidents.report(incident_id, request.jurisdiction, request.stage, user["principal"], request.note)
 
 
 # ── 전주기 종료·폐기 ────────────────────────────────────────────────────────

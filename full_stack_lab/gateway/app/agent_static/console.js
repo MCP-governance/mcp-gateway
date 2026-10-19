@@ -1989,11 +1989,13 @@ ROUTES.audit = async (_, tab, query) => {
   const q = new URLSearchParams(query);
   const filters = ["decision", "server", "principal", "policy", "event_kind", "execution", "trace_id", "since", "until"];
   const params = new URLSearchParams([...q].filter(([k, v]) => [...filters, "before"].includes(k) && v));
-  const [data, delivery] = await Promise.all([gw(`audit/events?${params}&limit=100`), gw("audit/siem")]);
+  const [data, delivery, incidentData] = await Promise.all([gw(`audit/events?${params}&limit=100`), gw("audit/siem"), gw("audit/incidents")]);
   const options = (values, selected) => values.map(([value, label]) => html`<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`);
   const local = (iso) => { const d = new Date(iso || NaN); return Number.isNaN(d.getTime()) ? "" : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
   return {html: page({head: head("감사 기록", {actions: html`<button class="btn" data-act="audit-verify">무결성 검증</button><button class="btn primary" data-act="audit-export">내보내기</button>`}),
     active: "events", tabs: [{key: "events", label: "감사 이벤트", n: data.events.length, body: html`<div class="stack">
+      ${panel("사고 보고 기한", html`<div class="sub">타이머 · ${incidentData.timer_status}</div>${incidentData.incidents.length ? html`<table class="data"><thead><tr><th>사고</th><th>관할·단계</th><th>기한</th><th>남은 시간</th><th>상태</th></tr></thead><tbody>${incidentData.incidents.flatMap((incident) => incident.deadlines.map((deadline) => html`<tr class="clickable" tabindex="0" data-act="incident-evidence" data-id="${incident.id}">
+        <td>${incident.title}<span class="sub">${when(incident.detected_at)}</span></td><td>${deadline.jurisdiction_name}<span class="sub">${deadline.stage_name}</span></td><td>${deadline.due_at ? when(deadline.due_at) : "—"}</td><td>${deadline.remaining_seconds == null ? "—" : `${deadline.remaining_seconds < 0 ? "초과 " : ""}${Math.floor(Math.abs(deadline.remaining_seconds) / 86400)}일 ${Math.floor(Math.abs(deadline.remaining_seconds) % 86400 / 3600)}시간`}</td><td>${deadline.status}</td></tr>`))}</tbody></table>` : empty("사고 기록 없음")}`, {flush:true})}
       ${panel("보안 관제 전달", kv([["대기", delivery.pending], ["재시도", delivery.retrying], ["최초 대기", delivery.oldest_pending ? when(delivery.oldest_pending) : "—"], ["최근 수신 확인", delivery.last_delivered ? when(delivery.last_delivered) : "—"]]))}
       ${panel("조회 조건", html`<form class="form stack" data-form="audit"><div class="grid c3">
         <label>판정<select name="decision">${options([["", "전체"], ...Object.entries(DECISION).map(([k,v]) => [k,v[1]])], q.get("decision") || "")}</select></label>
@@ -2089,6 +2091,14 @@ const ACTIONS = {
         ["행위", ACTION[event.action] || "—"], ["데이터 등급", DATA_CLASS[event.data_class] || "—"],
         ["승인 요청", event.approval_id], ["응답 해시", event.response_sha256], ["감사 해시", event.entry_sha256],
         ["무효 처리", event.invalid ? `${event.invalid.reason} · ${event.invalid.by} · ${when(event.invalid.at)}` : "—"]])}`}]);
+  },
+  async "incident-evidence"(el) {
+    const result = await gw(`audit/incidents/${el.dataset.id}`);
+    const pack = result.evidence_package;
+    openDrawer("사고 증빙", html`<code>${result.incident.id}</code>`, [{key:"evidence", label:"증빙", body:kv([
+      ["영향 호출", `${pack.included_count} / ${pack.query_count}`], ["건수 일치", pack.count_matches ? "정상" : "불일치"],
+      ["해시 사슬", pack.chain_verification?.intact ? "정상" : "무결성 미확인"], ["패키지 해시", pack.package_sha256],
+      ["패키지 검증", result.package_hash_valid ? "정상" : "실패"]])}]);
   },
   async "audit-export"() {
     const q = new URLSearchParams(current.query);

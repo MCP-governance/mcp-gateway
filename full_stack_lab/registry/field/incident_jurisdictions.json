@@ -1,0 +1,59 @@
+{
+  "schema": "mint-incident-jurisdictions/v1",
+  "packs": [
+    {
+      "id": "CN-CII",
+      "name": "중국 핵심 정보 인프라",
+      "alert_before_hours": 0.5,
+      "stages": [{"id": "initial", "name": "최초 보고", "hours": 1, "reference": "LIB-M27 제4조제2항", "status": "확인됨"}, {"id": "final", "name": "종결 보고", "hours": null, "reference": "LIB-M27 제8조", "status": "수동 확인 필요", "note": "처리 종료 후 30일 이내; 종결 시각 미기록"}]
+    },
+    {
+      "id": "CN-GENERAL",
+      "name": "중국 일반 네트워크 운영자",
+      "alert_before_hours": 1,
+      "stages": [{"id": "initial", "name": "최초 보고", "hours": 4, "reference": "LIB-M27 제4조제4항", "status": "확인됨"}, {"id": "final", "name": "종결 보고", "hours": null, "reference": "LIB-M27 제8조", "status": "수동 확인 필요", "note": "처리 종료 후 30일 이내; 종결 시각 미기록"}]
+    },
+    {
+      "id": "EU-NIS2",
+      "name": "EU NIS2",
+      "alert_before_hours": 6,
+      "stages": [{"id": "early-warning", "name": "조기 경보", "hours": 24, "reference": "LIB-M11 Art. 23(4)(a)", "status": "확인됨"}, {"id": "notification", "name": "통지", "hours": 72, "reference": "LIB-M11 Art. 23(4)(b)", "status": "확인됨"}]
+    },
+    {
+      "id": "EU-GDPR",
+      "name": "EU GDPR",
+      "alert_before_hours": 12,
+      "stages": [{"id": "notification", "name": "감독기관 통지", "hours": 72, "reference": "LIB-M06 Art. 33(1)", "status": "확인됨"}]
+    },
+    {
+      "id": "EU-CRA",
+      "name": "EU 사이버복원력법",
+      "alert_before_hours": 6,
+      "stages": [{"id": "early-warning", "name": "조기 경보", "hours": 24, "reference": "LIB-M26 제14조제1항~제2항", "status": "확인됨"}, {"id": "notification", "name": "취약점 통지", "hours": 72, "reference": "LIB-M26 제14조제1항~제2항", "status": "확인됨"}, {"id": "final", "name": "최종 보고", "hours": 336, "start": "fix_available", "reference": "LIB-M26 제14조제1항~제2항", "status": "수동 확인 필요", "note": "수정 가능 시점 기준"}]
+    },
+    {
+      "id": "KR-NETWORK",
+      "name": "한국 정보통신망법",
+      "alert_before_hours": 6,
+      "stages": [{"id": "notification", "name": "침해사고 신고", "hours": 24, "reference": "LIB-L03 제48조의3제1항", "status": "확인됨"}]
+    },
+    {
+      "id": "KR-PRIVACY",
+      "name": "한국 개인정보 보호법",
+      "alert_before_hours": 4,
+      "stages": [{"id": "notification", "name": "유출 통지", "hours": null, "reference": "LIB-L01 제34조제1항", "status": "수동 확인 필요", "note": "구체 기한은 시행령 확인 필요"}]
+    },
+    {
+      "id": "IN-DPDP",
+      "name": "인도 DPDP 규칙",
+      "alert_before_hours": 6,
+      "stages": [{"id": "initial", "name": "개요 보고", "hours": null, "reference": "LIB-M44 규칙 7(2)", "status": "수동 확인 필요", "note": "채택됐으나 미시행"}, {"id": "detailed", "name": "상세 보고", "hours": 72, "reference": "LIB-M44 규칙 7(2)", "status": "수동 확인 필요", "note": "채택됐으나 미시행"}]
+    },
+    {
+      "id": "SG-PDPA",
+      "name": "싱가포르 PDPA",
+      "alert_before_hours": 6,
+      "stages": [{"id": "notification", "name": "위원회 통지", "hours": null, "reference": "LIB-M34 제26D조제1항·제3항~제4항", "status": "수동 확인 필요", "start": "assessment", "note": "평가 다음 날부터 3일 이내; 현지 날짜 기준"}]
+    }
+  ]
+}
