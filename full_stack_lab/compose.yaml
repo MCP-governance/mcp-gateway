@@ -151,6 +151,10 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       PRESIDIO_ANALYZER_URL: http://presidio-analyzer:3000
       PRESIDIO_ANONYMIZER_URL: http://presidio-anonymizer:3000
+      # coarse blocks every write after a read from another server; content only one whose text
+      # matches what was read (D-142). console.sh generates the pepper once into .env.
+      FLOW_MATCH_MODE: ${FLOW_MATCH_MODE:-coarse}
+      FLOW_FINGERPRINT_PEPPER: ${FLOW_FINGERPRINT_PEPPER:-}
     depends_on:
       db: {condition: service_healthy}
       opa: {condition: service_healthy}

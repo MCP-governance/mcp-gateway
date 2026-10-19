@@ -6,6 +6,7 @@ import json
 import logging
 import math
 import os
+import secrets
 import time
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -26,7 +27,7 @@ from jsonschema import Draft202012Validator
 from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, retention, risk_tier, secret_scan, supplier_assurance, upstream
 from .destination import DestinationBlocked
 from .outcomes import outcome_axes
-from . import high_impact, residency, selective
+from . import flow_fingerprint, high_impact, residency, selective
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint, walk_chain,
@@ -71,6 +72,15 @@ DEFAULT_ENFORCEMENT = os.getenv("GATEWAY_ENFORCEMENT", "enforce")
 # opinion; observing it would let the export through while "measuring".
 ALWAYS_ENFORCED = ("MCP-", "PAC-", "INPUT_CONTRACT", "POLICY_BUNDLE", "P-CONTROL-", "P-INPUT-", "P-RATE-", "P-CHAIN-", "P-FLOW-", "P-HIGH-IMPACT-", "P-RESIDENCY-")
 CHAIN_WINDOW_MINUTES = int(os.getenv("CHAIN_WINDOW_MINUTES", "10"))
+
+
+def _flow_match_mode(value: str | None) -> str:
+    """D-142: "content" narrows P-FLOW-001 to calls whose text matches what was read; anything else,
+    a misspelling included, is "coarse": every call after a read from another server."""
+    return "content" if (value or "").strip().lower() == "content" else "coarse"
+
+
+FLOW_MATCH_MODE = _flow_match_mode(os.getenv("FLOW_MATCH_MODE"))
 RATE_LIMIT_CALLS = int(os.getenv("RATE_LIMIT_CALLS", "60"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
 IMPORTANT_BURST_LIMIT = int(os.getenv("IMPORTANT_BURST_LIMIT", "10"))
@@ -1142,22 +1152,57 @@ async def _sequence_flags(user_token: str, cls: classify.Classification) -> list
 
 
 async def _flow_sources(user_token: str, server_id: str, cls: classify.Classification,
-                        provider_hosted: bool = False) -> list[str]:
+                        provider_hosted: bool = False, outbound_text: str | None = None,
+                        observed: dict | None = None) -> list[str]:
     """POL-33 input: other servers whose important data this principal read in the window.
 
     The label follows the verified principal, as P-CHAIN-001 does. A write or execution on another
     server inside the window is where that data can cross between servers, and so is any call to a
     provider-hosted server: it receives every argument, a search query included.
+
+    With `outbound_text` the call's text is compared with what was read, and `observed` receives the
+    result per server for the decision record (D-142). In "content" mode a server then stays a source
+    only when the text matches or the read could not be compared; in "coarse" mode, the default, every
+    server in the window stays one and the comparison is a record only. Without `outbound_text`, and
+    on any failure of the comparison, every server in the window is a source.
     """
-    # ponytail: principal-wide label over-blocks unrelated calls; content fingerprints would narrow it.
     if cls.action not in {"w", "x"} and not provider_hosted:
         return []
     rows = await db.fetch_all(
-        """SELECT DISTINCT server_id FROM decisions
-            WHERE user_token=%s AND server_id<>%s AND data_class='important' AND action='r' AND upstream_executed
-              AND created_at > now() - make_interval(mins => %s) ORDER BY server_id""",
+        """SELECT d.server_id, f.salt, f.key_id, f.shingles, f.identifiers
+             FROM decisions d LEFT JOIN flow_fingerprints f ON f.decision_id=d.id AND f.expires_at > now()
+            WHERE d.user_token=%s AND d.server_id<>%s AND d.data_class='important' AND d.action='r' AND d.upstream_executed
+              AND d.created_at > now() - make_interval(mins => %s) ORDER BY d.server_id""",
         (user_token, server_id, CHAIN_WINDOW_MINUTES))
-    return [row["server_id"] for row in rows]
+    if outbound_text is None:
+        return sorted({row["server_id"] for row in rows})
+    sources, seen = await asyncio.to_thread(flow_fingerprint.narrow, rows, outbound_text)
+    if observed is not None:
+        observed.update(seen)
+    return sources if FLOW_MATCH_MODE == "content" else sorted(seen)
+
+
+async def _remember_flow(user_token: str, server_id: str, decision_id: int, result: dict) -> None:
+    """D-142: keep salted hashes of what an important read released, once its decision is recorded.
+
+    Never raises. A read without a row stays a flow source for the whole window (the coarse mark),
+    so a failure here over-blocks and never lets a flow through.
+    """
+    try:
+        row = await db.fetch_one(
+            "SELECT salt FROM flow_fingerprints WHERE user_token=%s AND expires_at > now() ORDER BY id DESC LIMIT 1",
+            (user_token,))
+        salt = bytes(row["salt"]) if row else secrets.token_bytes(16)
+        shingles, identifiers = await asyncio.to_thread(
+            flow_fingerprint.fingerprint, flow_fingerprint.leaf_text(result), salt, flow_fingerprint.MAX_HASHES)
+        await db.execute("DELETE FROM flow_fingerprints WHERE expires_at < now()")
+        await db.execute(
+            """INSERT INTO flow_fingerprints(user_token, server_id, decision_id, salt, key_id, shingles, identifiers, expires_at)
+               VALUES (%s,%s,%s,%s,%s,%s::bigint[],%s::bigint[], now() + make_interval(mins => %s))
+               ON CONFLICT (decision_id) DO NOTHING""",
+            (user_token, server_id, decision_id, salt, flow_fingerprint.KEY_ID, shingles, identifiers, CHAIN_WINDOW_MINUTES))
+    except Exception as exc:
+        logging.getLogger(__name__).warning("flow fingerprint not stored for decision %s: %s", decision_id, type(exc).__name__)
 
 
 async def _relationship_scope(server_id: str, cls: classify.Classification) -> dict:
@@ -1977,7 +2022,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         sent_types = (sorted({item["entity_type"] for item in residual}) if tool_review.get("mask")
                       else privacy_types)
         sequence_flags = await _sequence_flags(user_token, cls)
-        flow_sources = await _flow_sources(user_token, server_id, cls, provider_hosted)
+        flow_observed: dict[str, str] = {}
+        flow_sources = await _flow_sources(user_token, server_id, cls, provider_hosted,
+                                           flow_fingerprint.leaf_text(arguments, keys=True), flow_observed)
         base_event.update(privacy_types=privacy_types, sequence_flags=sequence_flags,
                           risk_score=_risk_score(cls.data_class, cls.action, external,
                                                  privacy_types, sequence_flags + flow_sources))
@@ -2008,7 +2055,8 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "request": {"untrusted_markers": untrusted_markers(arguments), "dlp": cls.dlp,
                         "pii_types": sent_types, "masked_types": masked_types,
                         "outbound_sha256": canonical_hash(outbound) if masked_types else None,
-                        "sequence_flags": sequence_flags, "flow_sources": flow_sources},
+                        "sequence_flags": sequence_flags, "flow_sources": flow_sources,
+                        "flow_observed": flow_observed, "flow_match_mode": FLOW_MATCH_MODE},
             "approval": {"granted": approval_granted, "id": approval_id},
             "contract": contract,
             "context": context,
@@ -2154,7 +2202,11 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 base_event.update(_upstream_failure(exc, base_event))
                 span.record_exception(RuntimeError(_root_cause(exc)))
 
-        return await _decision_payload(base_event, laps)
+        response = await _decision_payload(base_event, laps)
+        if (base_event["data_class"] == "important" and base_event["action"] == "r"
+                and base_event["upstream_executed"] and base_event.get("result")):
+            await _remember_flow(user_token, server_id, response["decision_id"], base_event["result"])
+        return response
 
 
 async def approve_request(approval_id: str, reviewer_token: str, reason: str | None = None,

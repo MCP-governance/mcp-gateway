@@ -77,6 +77,9 @@ ensure_env() {
     unset AGENT_JWT_PRIVATE_KEY AGENT_JWT_PUBLIC_KEY LITELLM_MASTER_KEY
   fi
   grep -q '^LITELLM_MASTER_KEY=' .env || echo "LITELLM_MASTER_KEY=sk-master-$(openssl rand -hex 16)" >> .env
+  # Keys the salted hashes of what an important read released (D-142). Changing it makes the stored
+  # hashes of the last ten minutes unreadable, which the Gateway treats as "not compared".
+  grep -qE '^FLOW_FINGERPRINT_PEPPER=.+' .env || echo "FLOW_FINGERPRINT_PEPPER=fp-$(openssl rand -hex 24)" >> .env
   for ws in "${WORKSTATIONS[@]}"; do
     local up; up="$(echo "${ws#ws-}" | tr a-z A-Z)"
     grep -q "^LLM_KEY_WS_${up}=" .env || echo "LLM_KEY_WS_${up}=sk-${ws}-$(openssl rand -hex 12)" >> .env

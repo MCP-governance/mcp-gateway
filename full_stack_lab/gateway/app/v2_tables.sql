@@ -368,3 +368,25 @@ DROP TRIGGER IF EXISTS mcp_session_events_append_only ON mcp_session_events;
 CREATE TRIGGER mcp_session_events_append_only
   BEFORE UPDATE OR DELETE ON mcp_session_events
   FOR EACH ROW EXECUTE FUNCTION reject_record_mutation();
+
+-- D-142 (P-FLOW-001): what an important read released, as salted hashes of its normalised text and
+-- never the text, for the flow window. Not the ledger and not evidence: a row can only be added, and
+-- is deleted once expired. A read without a row stays a flow source for the whole window.
+CREATE TABLE IF NOT EXISTS flow_fingerprints (
+  id bigserial PRIMARY KEY,
+  user_token text NOT NULL,
+  server_id text NOT NULL,
+  decision_id bigint NOT NULL UNIQUE,
+  salt bytea NOT NULL,
+  key_id text NOT NULL DEFAULT '',
+  shingles bigint[] NOT NULL,
+  identifiers bigint[] NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL
+);
+ALTER TABLE flow_fingerprints ADD COLUMN IF NOT EXISTS key_id text NOT NULL DEFAULT '';
+CREATE INDEX IF NOT EXISTS flow_fingerprints_owner_idx ON flow_fingerprints(user_token, expires_at);
+DROP TRIGGER IF EXISTS flow_fingerprints_no_update ON flow_fingerprints;
+CREATE TRIGGER flow_fingerprints_no_update
+  BEFORE UPDATE ON flow_fingerprints
+  FOR EACH ROW EXECUTE FUNCTION reject_record_mutation();
