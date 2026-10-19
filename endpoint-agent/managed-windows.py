@@ -354,8 +354,26 @@ def checks(config, policy, *, findings=None):
     observer = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(observer)
     commands_ok, commands = observer.user_command_settings(config["profile"])
+    # 계정 사용자 환경의 CODEX_HOME·CLAUDE_CONFIG_DIR는 하네스를 위 검사가 읽지 않는 설정 폴더로 보낸다.
+    # 값은 읽지 않고(보고 금지) 존재만 보며, 고정 표기로만 보고한다. 읽기 실패는 모두 실패(fail closed).
+    # 계정이 로그아웃이면 하이브가 안 올라와 있어 FileNotFoundError(변수 없음)다: 그때는 하네스도 못 뜬다.
+    environment = []
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_USERS, config["sid"] + r"\Environment") as key:
+            for name in ("CODEX_HOME", "CLAUDE_CONFIG_DIR"):
+                try:
+                    winreg.QueryValueEx(key, name)
+                except FileNotFoundError:
+                    continue
+                environment.append({"file": "env:" + name, "keys": []})
+    except FileNotFoundError:
+        pass
+    except (ImportError, OSError):
+        environment = [{"file": "env", "keys": []}]
+    commands_ok = commands_ok and not environment
     if findings is not None:
-        findings.extend(commands)
+        findings.extend(commands + environment)
     targets = list(FILES.values())
     hashes = {name: hashlib.sha256(target.read_bytes()).hexdigest() for name, target in FILES.items()}
     try:

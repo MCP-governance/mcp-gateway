@@ -1361,7 +1361,8 @@ class NetworkQuality(StrictModel):
 class UserCommandSetting(StrictModel):
     # Fixed labels only: a profile file's name is the employee's choice and may carry a secret.
     file: Literal["~", ".claude", ".claude/settings.json", ".claude/settings.local.json",
-                  ".codex", ".codex/config.toml", ".codex/*.config.toml"]
+                  ".codex", ".codex/config.toml", ".codex/*.config.toml",
+                  "env:CODEX_HOME", "env:CLAUDE_CONFIG_DIR", "env"]
     keys: list[Literal["apiKeyHelper", "otelHeadersHelper", "awsCredentialExport", "awsAuthRefresh", "notify"]] = Field(max_length=4)
 
 

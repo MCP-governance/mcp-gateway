@@ -8,7 +8,8 @@ Gateway와 OPA는 `full_stack_lab/`에서 실행합니다. 아래 사용자 범�
 「사용자 명령 헬퍼 없음」을 보고합니다(D-148). Claude `apiKeyHelper`·`otelHeadersHelper`·`awsCredentialExport`·`awsAuthRefresh`,
 Codex 최상위/프로필 `notify`는 빈 값도 실패입니다. 명령 값은 보내지 않으며 읽기·파싱 실패도 준수 실패입니다.
 이 검사가 없는 기존 설치는 이전 항목으로 판정되고, 새 키트로 재설치해 한 번 보고한 뒤부터 항목이 필수가 됩니다.
-프로젝트 설정·대체 설정 홈·검사 사이 파일 변경은 범위 밖입니다. [범위와 전환 절차](../research/llm-wiki/analysis/user-command-settings/README.md).
+Windows는 계정 사용자 환경에 `CODEX_HOME`·`CLAUDE_CONFIG_DIR`가 있으면 값과 무관하게 실패로 보고합니다(D-151).
+프로젝트 설정·그 밖의 대체 설정 위치·검사 사이 파일 변경은 범위 밖입니다. [범위와 전환 절차](../research/llm-wiki/analysis/user-command-settings/README.md).
 
 ## 가입자용 관리형 Linux 설치
 
