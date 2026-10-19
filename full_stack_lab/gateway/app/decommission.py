@@ -267,9 +267,9 @@ async def open_case(target: str, reason: str, opened_by: str, engagement_label: 
         if rel:
             await db.execute("UPDATE usage_relationships SET status='ACTIVE' WHERE id=%s", (rel["id"],))
         raise
+    await upstream.release_pool(server.get("endpoint"), None, "termination")
     from . import mcp_sessions
     await mcp_sessions.terminate(reason="termination", server_id=server_id)
-    await upstream.release_pool(server.get("endpoint"), None, "termination")
     return await case_detail(case_id)
 
 

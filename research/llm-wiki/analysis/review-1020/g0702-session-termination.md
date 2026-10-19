@@ -39,3 +39,24 @@
 - `python -m unittest discover -s full_stack_lab/tests -p upstream_session_reuse_test.py`: 40건 통과.
 - 1번 재현: `main.py`에서 `RequireBearer`만 AST로 불러 실행했다. Starlette 1.6.0 기준 `dict()`는 `OWN`, `Headers.get()`은 `VICTIM`을 돌려주고 응답은 200이었다(스크립트는 세션 스크래치에만 두었고 저장소에는 넣지 않았다).
 - 실제 PostgreSQL, 솔루션 기기, PJ1 하네스에서는 실행하지 않았다.
+
+## 처리 결과 (같은 날 후속 커밋)
+
+| 번호 | 처리 | 내용 |
+|---|---|---|
+| 1 | 수정 | `RequireBearer`에서 `mcp-session-id`가 2개 이상이면 400으로 거부한다. 값은 ASGI 헤더 목록의 첫 값으로 읽는다(SDK의 `Headers.get`과 같다). DELETE 정리도 같은 값을 쓴다(`main.py` RequireBearer). |
+| 2 | 수정 | 세션 확인을 `ServerPath`의 레지스트리 확인 뒤로 옮겼다. 등록 해제된 서버로 오는 요청은 기존대로 `MCP-REGISTRY-001` 연결 거부로 기록된다. 결속된 세션을 거부할 때는 `core.record_connection_denial`(정책 ID·사유·요약 인수 추가, 기본값은 기존과 같음)에 남긴다. 정책은 `mcp_sessions.refusal`이 고른다: 종료 케이스는 `MCP-DECOMM-001`이라 `_post_cutover`의 `server_id`·cutover 이후 집계에 들어가고, 그 밖의 종료는 `PAC-14`, 결속 불일치는 `PAC-04`다. 응답 본문에 `decision`·`policy_id`·`decision_id`가 들어간다. 종료된 세션을 닫는 DELETE는 접근 시도가 아니므로 기록하지 않는다. |
+| 3 | 수정 | 410을 404로 바꿨다(MCP 전송 규격). 게이트웨이가 결속한 적 없는 세션(배포 전에 열린 세션 등)은 기록 없이 404를 받고 새 initialize로 복구한다. |
+| 4 | 수정 | 세션 종료를 각 절차의 마지막 단계로 옮겼다(계정 중지·삭제, 장치 철회, 등록 해제, 종료 케이스, 클라이언트 DELETE). 실패하면 예외는 그대로 올라가지만, 토큰 철회·풀 폐기·`server-deregister` 감사 기록은 이미 끝난 뒤다. 계정 절차에서는 로컬 토큰 철회를 외부 IdP 철회보다 앞에 두었다(13번 함께 처리). |
+| 5 | 수정 | `v2_tables.sql`에 `mcp_session_events_append_only` 트리거를 추가했다(기존 `reject_record_mutation()` 재사용). |
+| 6 | 미처리 | 집계 경로 세션까지 서버 단위로 종료하면 조직 전체의 집계 세션이 서버 하나가 바뀔 때마다 끊긴다. 집계 URL의 실제 배포 여부(D-30)를 확인한 뒤 결정한다. 지금은 dispatch와 레지스트리가 호출을 막는다. |
+| 7 | 미처리 | 장치 단위로 상류 풀을 폐기하려면 상류 키에 장치를 넣어야 한다(D-115 변경). 11번과 함께 별도 작업으로 넘긴다. |
+| 8 | 미처리 | 다음 요청에서 인증·레지스트리·dispatch가 막는다. 불변식 강화는 PostgreSQL 시험과 함께 다룬다. |
+| 9 | 부분 | 죽은 DELETE 조건은 검사를 옮기면서 사라졌다. 종료된 세션의 SDK 메모리 정리는 미처리다. |
+| 10, 11 | 미처리 | 성능 개선(10)과 기존 D-115 키 문제(11)는 이번 범위가 아니다. |
+| 12 | 수정 | `session_termination_check.py`에 시험 7건을 추가했다. `RequireBearer`→`ServerPath` 배선을 AST로 실행해 중복 헤더 400, 등록 해제 서버 재요청 시 `MCP-REGISTRY-001` 기록 유지, 종료 세션 404와 정책 기록, 결속 없는 세션 404(기록 없음), 정상 세션 통과, 집계 경로를 확인한다. 거부 정책 분류와 등록 해제 감사 기록 순서도 시험한다. 기존 4건의 기대값은 바꾸지 않았다(대역 DB에 새 조회 분기만 추가). |
+| 13 | 수정 | 4번과 함께 처리했다. |
+
+로컬 확인: `session_termination_check.py` 11건 통과, `upstream_session_reuse_test.py` 40건 통과, pyflakes 무경고. 수정 전 `main.py`에서는 새 배선 시험 4건이 실패해, 시험이 결함을 실제로 잡는다는 것을 확인했다.
+
+기기에서 아직 돌리지 않은 시험: `field up` 기동(새 트리거 DDL 적용), `token_revocation_pg_check.py`·`managed_enrollment_check.py`(장치 철회), `intake_identity_pg_check.py`(등록 해제), `dispatch_intent_pg_check.py`·`termination_lab.py`·`termination_flow.py`(종료 케이스), `dispatch_effect_lab.py`(계정 중지), `acceptance.py`의 `MCP-REGISTRY-001` 확인. PJ1에서는 Claude Code와 Codex로 세션을 연 뒤 서버 종료 케이스를 열고, 404 다음 자동 initialize와 `decisions`의 `MCP-DECOMM-001` connect 행을 확인한다. 같은 요청에 `Mcp-Session-Id`를 두 번 넣어 400이 나오는지도 확인한다.

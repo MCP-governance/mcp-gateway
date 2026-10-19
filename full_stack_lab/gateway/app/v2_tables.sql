@@ -358,3 +358,7 @@ CREATE TABLE IF NOT EXISTS mcp_session_events (
   sessions_closed integer NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+DROP TRIGGER IF EXISTS mcp_session_events_append_only ON mcp_session_events;
+CREATE TRIGGER mcp_session_events_append_only
+  BEFORE UPDATE OR DELETE ON mcp_session_events
+  FOR EACH ROW EXECUTE FUNCTION reject_record_mutation();
