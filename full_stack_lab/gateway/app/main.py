@@ -36,7 +36,7 @@ from .core import (
 from .mcp_facade import build_mcp, transport_security
 from .agent_contract import CONSOLE_SCOPE, ToolReview, authenticate, authenticated_user
 from .release import build_info, policy_info
-from . import activity, audit, registry, review, siem, supplier_assurance
+from . import activity, audit, registry, retention, review, siem, supplier_assurance
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 # "오늘" is the operator's day. The DB session runs in UTC, so date_trunc('day', now())
@@ -794,6 +794,25 @@ async def monitor(hours: int = 168, user: dict = Depends(admin_caller)) -> dict:
 async def audit_verify(user: dict = Depends(admin_caller)) -> dict:
     """Answers "감사 로그가 위변조됐나요?" with a row id instead of an assurance."""
     return await verify_audit_chain()
+
+
+class RetentionRequest(StrictModel):
+    days: int = Field(ge=1)
+    jurisdictions: list[str] = Field(default_factory=list, max_length=len(retention.FLOORS))
+
+
+@app.get("/api/audit/retention")
+async def audit_retention(user: dict = Depends(admin_caller)) -> dict:
+    return await retention.setting()
+
+
+@app.put("/api/audit/retention")
+async def audit_retention_update(request: RetentionRequest, user: dict = Depends(admin_caller)) -> dict:
+    """A period shorter than the strictest selected jurisdiction is refused (D-141)."""
+    try:
+        return await retention.set_setting(request.days, request.jurisdictions, user["principal"])
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
 
 
 class AuditAnnotation(StrictModel):
