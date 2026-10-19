@@ -332,6 +332,27 @@ ALTER TABLE user_consents ADD COLUMN IF NOT EXISTS terms jsonb NOT NULL DEFAULT 
 -- New ledger snapshots only; older rows remain untouched and are projected at read time.
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS outcome jsonb;
 
+CREATE TABLE IF NOT EXISTS incident_cases (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  started_at timestamptz NOT NULL,
+  detected_at timestamptz NOT NULL,
+  assessed_at timestamptz,
+  scope_since timestamptz NOT NULL,
+  scope_until timestamptz NOT NULL,
+  scope jsonb NOT NULL,
+  jurisdictions text[] NOT NULL,
+  created_by text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CHECK (started_at <= detected_at),
+  CHECK (assessed_at IS NULL OR assessed_at >= detected_at),
+  CHECK (scope_since <= scope_until)
+);
+ALTER TABLE incident_cases ADD COLUMN IF NOT EXISTS assessed_at timestamptz;
+CREATE TABLE IF NOT EXISTS incident_timer_heartbeat (
+  id integer PRIMARY KEY CHECK (id=1),
+  checked_at timestamptz NOT NULL
+);
 -- Per-call explanation and later human reversal; the original execution status remains evidence.
 ALTER TABLE approvals ADD COLUMN IF NOT EXISTS explanation jsonb;
 ALTER TABLE approvals ADD COLUMN IF NOT EXISTS revoked_at timestamptz;
@@ -390,3 +411,9 @@ DROP TRIGGER IF EXISTS flow_fingerprints_no_update ON flow_fingerprints;
 CREATE TRIGGER flow_fingerprints_no_update
   BEFORE UPDATE ON flow_fingerprints
   FOR EACH ROW EXECUTE FUNCTION reject_record_mutation();
+
+ALTER TABLE incident_cases ADD COLUMN IF NOT EXISTS pack_snapshot jsonb;
+ALTER TABLE incident_cases ADD COLUMN IF NOT EXISTS incident_type text;
+ALTER TABLE incident_cases ADD COLUMN IF NOT EXISTS fix_available_at timestamptz;
+ALTER TABLE incident_cases ADD COLUMN IF NOT EXISTS handled_at timestamptz;
+ALTER TABLE incident_timer_heartbeat ADD COLUMN IF NOT EXISTS last_failed_at timestamptz;

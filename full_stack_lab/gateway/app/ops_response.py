@@ -203,6 +203,11 @@ async def tick(opa_url):
         row = await (await connection.execute("SELECT pg_try_advisory_xact_lock(721017121) AS acquired")).fetchone()
         if not row["acquired"]:
             return
+        from . import incidents
+        try:
+            await incidents.check_deadlines()
+        except Exception:
+            LOG.exception("Incident deadline check failed")
         await observed_alerts()
         await contain_repeated()
         await self_test(opa_url)
