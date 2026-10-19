@@ -7,13 +7,16 @@ from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
 
 from . import db, review
+from .outcomes import recorded_outcome
 
 DECISIONS = {"Allow", "Alert", "Restrict", "Approval", "Block"}
 EXECUTIONS = {"executed", "not-sent", "unknown", "withheld"}
 KINDS = {"tools/call", "mcp-connection"}
 # Deliberately exclude request_payload, result, policy_input and client-reported data.
 PROJECTION = """id,created_at,request_id,trace_id,user_token,role,server_id,tool_name,action,
-    data_class,decision,policy_id,approval_id,upstream_attempted,upstream_executed,
+    data_class,decision,policy_id,approval_id,upstream_attempted,upstream_executed,outcome,
+    error AS outcome_error,
+    (SELECT i.state FROM dispatch_intents i WHERE i.request_id=decisions.request_id) AS intent_state,
     result_preview->>'disposition' AS response_disposition,
     result_preview->>'sha256' AS response_sha256,
     COALESCE(client->>'event_kind','tools/call') AS event_kind,prev_sha256,entry_sha256,chain_version"""
@@ -58,6 +61,7 @@ async def events(limit: int = 100, connection=None, **filters) -> dict:
         rows = await db.fetch_all(query, params)
     more = len(rows) > limit
     rows = await review.mark_invalid(rows[:limit], connection=connection)
+    rows = [with_outcome(row) for row in rows]
     return {"events": rows, "has_more": more, "next_before": rows[-1]["id"] if more else None,
             "source": "postgresql/decisions", "projection": "redacted", "filters": filters}
 
@@ -66,7 +70,15 @@ async def detail(event_id: int) -> dict:
     row = await db.fetch_one(f"SELECT {PROJECTION} FROM decisions WHERE id=%s", (event_id,))
     if not row:
         raise HTTPException(404, "감사 이벤트가 없습니다.")
-    return (await review.mark_invalid([row]))[0]
+    return with_outcome((await review.mark_invalid([row]))[0])
+
+
+def with_outcome(row: dict) -> dict:
+    row = dict(row)
+    error = row.pop("outcome_error", None)
+    row["outcome_axes"] = recorded_outcome({**row, "error": error})
+    row.pop("intent_state", None)
+    return row
 
 
 async def export(limit: int, **filters) -> dict:

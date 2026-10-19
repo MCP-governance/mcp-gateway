@@ -492,10 +492,16 @@ function decisionRow(r) {
     <td>${decisionChip(r.decision)}${r.invalid ? chip("outline", "무효 처리") : ""}</td>
     <td class="who-cell"><b>${r.who}</b></td>
     <td><code>${r.server}.${r.tool}</code></td>
-    <td>${flow3(r)}</td></tr>`;
+    <td>${outcomeChips(r.outcome_axes)}</td></tr>`;
+}
+const OUTCOME_LABELS = { connection: "연결", decision: "정책 판정", task: "도구 업무", effect: "독립 효과" };
+function outcomeChips(axes) {
+  const tone = (value) => ["연결 성공", "허용", "업무 성공", "실행됨"].includes(value) ? "allow"
+    : ["연결 실패", "정책 거부", "통제 장애 차단", "도구 오류", "제공자 인증 실패", "제공자 접근 거부", "제공자 한도 초과"].includes(value) ? "block" : "outline";
+  return html`<div class="outcome-axes">${Object.entries(OUTCOME_LABELS).map(([key, label]) => html`<div class="row-actions"><span>${label}</span>${chip(tone(axes?.[key]), axes?.[key] || "—")}</div>`)}</div>`;
 }
 const decisionTable = (rows, id = "") => html`<table class="data call-table"><thead><tr><th>시각</th><th>판정</th><th>사용자</th>
-  <th>도구</th><th>실행 결과</th></tr></thead><tbody ${id ? raw(`id="${id}"`) : ""}>${rows.map(decisionRow)}</tbody></table>`;
+  <th>도구</th><th>호출 결과</th></tr></thead><tbody ${id ? raw(`id="${id}"`) : ""}>${rows.map(decisionRow)}</tbody></table>`;
 
 // A registration is approved until a date; past it the calls are blocked.
 const VALIDITY = { 1: "1일", 30: "30일", 90: "90일", 180: "180일", 365: "1년" };
@@ -956,7 +962,7 @@ async function showDecision(id) {
         ["무효 처리", r.invalid ? `${r.invalid.reason} · ${r.invalid.by} · ${when(r.invalid.at)}` : ""],
         ["승인 요청", r.approval_id], ["집행 모드", r.enforcement === "monitor" ? "관찰" : r.enforcement === "enforce" ? "집행" : r.enforcement],
         ["관찰 판정", r.would_decision ? (DECISION[r.would_decision]?.[1] || r.would_decision) : ""]])}` },
-    { key: "execution", label: "실행 결과", body: html`<div class="drawer-summary">${flow3(r)}</div>${kv([
+    { key: "execution", label: "실행 결과", body: html`${outcomeChips(r.outcome_axes)}${kv([
       ["MCP 서버 전송", r.attempted ? "시도" : "전송 안 함"],
       ["도구 실행", r.executed ? "실행됨" : r.attempted ? "실행 미확인" : "실행 안 함"],
       ["응답 처리", RESPONSE[r.response]?.[1] || r.response || "—"],
@@ -1976,7 +1982,6 @@ ROUTES.audit = async (_, tab, query) => {
   const [data, delivery] = await Promise.all([gw(`audit/events?${params}&limit=100`), gw("audit/siem")]);
   const options = (values, selected) => values.map(([value, label]) => html`<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`);
   const local = (iso) => { const d = new Date(iso || NaN); return Number.isNaN(d.getTime()) ? "" : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
-  const executed = (e) => e.upstream_executed ? (e.response_disposition === "withheld" || e.policy_id === "MCP-OUTPUT-001" ? "응답 보류" : "실행됨") : e.upstream_attempted ? "실행 미확인" : "실행 안 함";
   return {html: page({head: head("감사 기록", {actions: html`<button class="btn" data-act="audit-verify">무결성 검증</button><button class="btn primary" data-act="audit-export">내보내기</button>`}),
     active: "events", tabs: [{key: "events", label: "감사 이벤트", n: data.events.length, body: html`<div class="stack">
       ${panel("보안 관제 전달", kv([["대기", delivery.pending], ["재시도", delivery.retrying], ["최초 대기", delivery.oldest_pending ? when(delivery.oldest_pending) : "—"], ["최근 수신 확인", delivery.last_delivered ? when(delivery.last_delivered) : "—"]]))}
@@ -1989,7 +1994,7 @@ ROUTES.audit = async (_, tab, query) => {
       </div><div class="row-actions"><button class="btn primary" type="submit">조회</button><a class="btn" href="#/audit">초기화</a></div></form>`)}
       ${panel("감사 원장", html`${data.events.length ? html`<table class="data"><thead><tr><th>번호·시각</th><th>사용자·도구</th><th>판정·정책</th><th>실행 결과</th></tr></thead><tbody>${data.events.map((e) => html`<tr class="clickable" tabindex="0" data-act="audit-event" data-id="${e.id}">
           <td>#${e.id}<span class="sub">${when(e.created_at)} · ${EVENT_KIND[e.event_kind] || e.event_kind}</span></td><td>${e.user_token}<span class="sub mono">${e.server_id}.${e.tool_name}</span></td><td>${decisionChip(e.decision)}${e.invalid ? chip("outline", "무효 처리") : ""}<span class="sub mono">${e.policy_id}</span></td>
-          <td>${executed(e)}<span class="sub mono">${e.entry_sha256 ? e.entry_sha256.slice(0,16) : "—"}</span></td></tr>`)}</tbody></table>` : empty("감사 이벤트 없음")}
+          <td>${outcomeChips(e.outcome_axes)}<span class="sub mono">${e.entry_sha256 ? e.entry_sha256.slice(0,16) : "—"}</span></td></tr>`)}</tbody></table>` : empty("감사 이벤트 없음")}
           ${data.has_more ? html`<div class="row-actions center"><a class="btn" href="#/audit?${new URLSearchParams({...Object.fromEntries(params), before: data.next_before})}">더 보기</a></div>` : ""}`, {flush:true})}</div>`}]})};
 };
 const EVENT_KIND = { "tools/call": "도구 호출", "mcp-connection": "연결 거부" };
@@ -2069,7 +2074,11 @@ const ACTIONS = {
   async "audit-event"(el) {
     const event = await gw(`audit/events/${el.dataset.id}`);
     openDrawer(`감사 이벤트 #${event.id}`, html`<div class="row-actions">${decisionChip(event.decision)}${event.invalid ? chip("outline", "무효 처리") : ""}<code>${event.policy_id}</code></div>`,
-      [{key:"record", label:"기록", body:html`${event.invalid ? kv([["무효 처리", `${event.invalid.reason} · ${event.invalid.by} · ${when(event.invalid.at)}`]]) : ""}${json(event)}`}]);
+      [{key:"record", label:"기록", body:html`${outcomeChips(event.outcome_axes)}${kv([
+        ["시각", when(event.created_at)], ["사용자", event.user_token], ["서버", event.server_id], ["도구", event.tool_name],
+        ["행위", ACTION[event.action] || "—"], ["데이터 등급", DATA_CLASS[event.data_class] || "—"],
+        ["승인 요청", event.approval_id], ["응답 해시", event.response_sha256], ["감사 해시", event.entry_sha256],
+        ["무효 처리", event.invalid ? `${event.invalid.reason} · ${event.invalid.by} · ${when(event.invalid.at)}` : "—"]])}`}]);
   },
   async "audit-export"() {
     const q = new URLSearchParams(current.query);

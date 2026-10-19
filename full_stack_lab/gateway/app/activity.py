@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Any
 
 from . import db, review
+from .outcomes import recorded_outcome
 
 DECISION_KO = {"Allow": "허용", "Alert": "허용·경보", "Restrict": "제한 실행", "Approval": "승인 대기", "Block": "차단"}
 ACTION_KO = {"r": "읽기", "w": "쓰기", "x": "외부전송·실행", "connect": "연결"}
@@ -78,7 +79,7 @@ def describe(row: dict) -> dict:
         "response_types": evidence.get("content_types") or [], "masked_types": evidence.get("masked_types") or [],
         "conflicts": conflicts, "pac_failures": pac_failures,
         "planes": planes, "device_id": client.get("device_id"), "evidence_sha256": row.get("entry_sha256"),
-        "timings": row.get("timings") or {},
+        "timings": row.get("timings") or {}, "outcome_axes": recorded_outcome(row),
         "line": line,
     }
 
@@ -141,7 +142,9 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
                    d.destinations, d.client, d.summary, d.data_class, d.action, d.decision, d.policy_id,
                    d.reason, d.upstream_executed, d.upstream_attempted, d.approval_id, d.trace_id, d.error,
                    d.exception_id, d.enforcement, d.would_decision, d.risk_score, d.privacy_types,
-                   d.sequence_flags, d.result_preview, d.conflicts, d.entry_sha256, d.timings, p.display_name, p.department
+                   d.sequence_flags, d.result_preview, d.conflicts, d.entry_sha256, d.timings, d.outcome,
+                   (SELECT i.state FROM dispatch_intents i WHERE i.request_id=d.request_id) AS intent_state,
+                   p.display_name, p.department
               FROM decisions d LEFT JOIN principals p ON p.token = d.user_token
              WHERE {' AND '.join(clauses) or 'true'} ORDER BY d.id {order} LIMIT %s OFFSET %s""",
         (*params, page_size, offset))

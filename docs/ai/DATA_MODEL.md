@@ -20,6 +20,7 @@ D-120~D-123 추가: `runtime_image_scans`(이미지 검사 이력), `alert_self_
 | `decision`, `policy_id`, `reason`, `policy_version`, `obligations`, `exception_id`, `conflicts`, `environment` | OPA 판정 |
 | `restrictions` | 제한 실행 시 적용된 제한(`max_chars`, `journal_bcc`) |
 | `upstream_attempted`, `upstream_executed` | 전달 시도 / 실행 확인. 시도했는데 미확인이면 종료 판정에서 "실행 여부 미확인" |
+| `outcome` | D-136: 새 기록의 연결·정책 판정·도구 업무·독립 효과 네 축 JSON 스냅샷. 체인 판본 8에 포함. 과거 행은 NULL 유지 |
 | `approval_id` | 승인 대기 요청 |
 | `enforcement`, `would_decision`, `would_policy_id` | 관찰 모드 기록 |
 | `client` | `{workstation, agent, harness, endpoint, task_id, token_jti, oauth_client}` — 클라이언트가 보고한 값, 그대로 기록. `harness`는 `{name, version, user_agent}`(MCP `initialize`의 clientInfo — `claude-code`, `codex-mcp-client`, `gemini-cli-mcp-client`, `opencode`, `inspector-cli`). `endpoint`는 호출이 들어온 서버 id 또는 `aggregate`(집계 엔드포인트). `workstation`은 `X-Workstation-Id` 헤더가 없으면 토큰의 `client_id`(=워크스테이션)로 대신한다. 판정에는 쓰지 않고 기록만 |
