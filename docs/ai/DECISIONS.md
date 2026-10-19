@@ -1458,3 +1458,13 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 결정: 제품 밖 `full_stack_lab/eval/before_after.py`(표준 라이브러리)가 같은 사례를 적용 전(`none` 또는 Git ref)·후 OPA 번들에 게이트웨이와 같은 경로로 보내 공격 차단율·정상 허용률·오탐률·정밀도·차단 사유 일치율·판정 지연 p50/p95를 낸다. 반복 간 흔들림·기대 불일치를 따로 적는다. 사례는 PAC 문서가 있는 `opa/replay_cases_pac15.json`에서 만든다(PAC 없는 옛 사례는 정상까지 INPUT_CONTRACT로 막혀 지표가 무의미했다).
 - 근거: OPA(OSS) 고정 이미지 `openpolicyagent/opa:1.20.2-static`과 기존 재생 사례를 그대로 쓴다. 지표 6개는 위키에 정의가 없어 잠정안이며 팀 평가계획에서 확정한다.
 - 한계: OPA 판정만 비교한다. 게이트웨이 앞단 판정(입력 항목·동의·마스킹)과 실제 MCP 실행 효과는 기기·PJ1 시험이 맡는다.
+
+## D-136 호출 결과는 연결·정책 판정·도구 업무·독립 효과로 분리한다 (2026-10-20, DEV-48)
+
+- 문제: 기존 `decision=Block`에 정책 거부·검사기 장애·허용 후 연결 실패가 섞였고, `upstream_executed`는 MCP 응답 확인일 뿐 업무 성공이나 독립 효과의 증명이 아니었다. Context7 월 할당량 오류도 `is_error=false`면 성공과 구분되지 않았다.
+- 결정: 표준 라이브러리만 쓰는 `outcomes.outcome_axes`를 두고 `core`에서 재노출한다. 새 기록은 nullable `decisions.outcome` JSONB에 네 축의 한국어 스냅샷을 저장한다. 이전 열·행은 수정하지 않는다. 신규 원장 지문은 체인 8판에 outcome을 포함하고 1~7판 정의는 유지한다. 이 값은 버린 응답의 업무 오류 정보도 포함하므로 단순 재계산 가능한 운영 통계로 보고 지문에서 제외할 수 없다.
+- 판정: Allow·Alert·Restrict는 실효 허용, would 판정은 관찰값으로만 유지한다. `P-CONTROL-*`, `P-DATA-INSPECTION-001`, `MCP-CATALOG-001`, `INPUT_CONTRACT`, `POLICY_BUNDLE`의 차단은 통제 장애 차단으로 분리한다. 출력 Presidio 장애도 기존 `MCP-OUTPUT-001` 집행을 유지하며 통제 장애 차단+응답 보류로 기록한다. 허용 뒤 `MCP-UPSTREAM-001`은 정책 축 허용과 연결·업무 실패를 분리한다. 통제 동작이나 정책 ID를 추가·완화하지 않는다.
+- 근거: [고정 OSS·명세·공개 스킬 대조와 요구사항 시험 연결](../../research/llm-wiki/analysis/outcome-axes-d136.md). ContextForge의 정책 오류·엔진 오류 구분만 참고하며 분석 상단 정정에 따라 전체 fail-open이라는 주장은 채택하지 않는다. 신규 의존성·코드 복사 없음. GitHub 공개 스킬의 현재 commit 고정과 원격 HEAD 재확인은 네트워크 실패로 미완료다.
+- 범위: 공급자 실패는 문서로 확인한 월 할당량 응답 접두어와 실제 HTTP 예외의 401·403·429에 한정한다. 원문을 추가로 저장하지 않는다. `is_error`는 도구 오류, 출력 보류는 응답 보류다. 확정 답변이 없는 전송과 필요한 필드가 없는 과거 행은 업무 미확인으로 남긴다. 정상 응답의 업무 성공은 응답 수준의 판정이며 업무 내용 자체를 별도 검증했다는 뜻이 아니다.
+- 효과·조회: 전송 전이면 실행 안 됨, 전송했거나 intent가 pending·uncertain·resolved이면 독립 효과 미확인이다. 기존 관리자의 confirmed_executed·confirmed_not_executed만 조회 시 효과에 반영한다. `outcome`은 기록 스냅샷, `outcome_axes`는 조회 투영이며 최신 효과 투영을 과거 지문이라고 부르지 않는다. 감사 조회에서 계산에 쓴 오류 원문은 응답에 포함하지 않는다. 콘솔은 네 축을 라벨·값 칩으로 표시한다.
+- 한계·중단: Python 순수/대역 시험 8건(대표 사례 17개), 새 화면 함수 시험 2건, 기존 console-state 15건 통과. 기존 자격정보 경계 AST 시험의 새 `outcome_axes`·`httpx` 주입 누락으로 16건 중 2건 NameError가 발생했다. **기존 시험 변경 필요**로 시험 파일은 수정하지 않고 구현을 중단했다. 로컬 `--gateway` 시험은 psycopg 부재로 실패했고 pyflakes도 미설치다. 실제 PostgreSQL·혼합 체인·SDK·브라우저·솔루션 기기/PJ1 검증은 미실행이다. [작업 보고](../../research/llm-wiki/status/reports/2026-10-20-result-outcomes.md).

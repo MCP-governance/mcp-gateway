@@ -78,7 +78,8 @@ AUDIT_COLUMN_SETS[5] = (*AUDIT_COLUMN_SETS[4], "server_id", "resource_id", "dest
 # accepting either definition would let a row tampered in a column only one covers pass.
 AUDIT_COLUMN_SETS[6] = (*AUDIT_COLUMN_SETS[5], "policy_input", "risk_score", "privacy_types", "sequence_flags")
 AUDIT_COLUMN_SETS[7] = (*AUDIT_COLUMN_SETS[6], "created_at")
-CHAIN_VERSION = 7
+AUDIT_COLUMN_SETS[8] = (*AUDIT_COLUMN_SETS[7], "outcome")
+CHAIN_VERSION = 8
 AUDIT_COLUMNS = AUDIT_COLUMN_SETS[CHAIN_VERSION]
 GENESIS = "0" * 64
 

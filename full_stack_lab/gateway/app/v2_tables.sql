@@ -328,3 +328,6 @@ CREATE TABLE IF NOT EXISTS user_consents (
 );
 -- What the employee is shown and agrees to: the reviewed terms the hash stands for.
 ALTER TABLE user_consents ADD COLUMN IF NOT EXISTS terms jsonb NOT NULL DEFAULT '{}'::jsonb;
+
+-- New ledger snapshots only; older rows remain untouched and are projected at read time.
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS outcome jsonb;

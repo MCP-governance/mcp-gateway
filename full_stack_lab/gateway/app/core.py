@@ -25,6 +25,7 @@ from jsonschema import Draft202012Validator
 
 from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, secret_scan, upstream
 from .destination import DestinationBlocked
+from .outcomes import outcome_axes
 from . import selective
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMN_SETS, AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
@@ -1300,6 +1301,7 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
     try:
         async with upstream.session(spec["endpoint"], principal=principal,
                                     protocol=registry.pinned_protocol(server_id), server_id=server_id) as client:
+            dispatch_state["upstream_connected"] = True
             dispatch_state.setdefault("client", {})["upstream_session_reused"] = bool(getattr(client, "reused", False))
             laps.lap("connect")
             stage = "list"
@@ -1467,6 +1469,8 @@ def _upstream_failure(exc: Exception, event: dict) -> dict:
         if id(error) in seen:
             continue
         seen.add(id(error))
+        if isinstance(error, httpx.HTTPStatusError):
+            event["upstream_http_status"] = error.response.status_code
         if isinstance(error, DestinationBlocked):
             return local_verdict(error.policy_id, "Block", "연결 목적지 주소 검사에 실패하여 연결을 차단했습니다.",
                                  upstream_executed=executed, upstream_attempted=attempted, result=None,
@@ -1562,6 +1566,7 @@ def _audit_payload(payload: dict) -> dict:
 # That is the right trade for a single gateway; a multi-replica deployment wants one
 # chain per instance, anchored together.
 async def _record_decision(event: dict) -> int:
+    event["outcome"] = outcome_axes(event)
     event["error"] = await secret_scan.redact_error(event.get("error"))
     record = {
         "request_id": event["request_id"], "trace_id": event["trace_id"],
@@ -1594,6 +1599,7 @@ async def _record_decision(event: dict) -> int:
         "risk_score": int(event.get("risk_score") or 0),
         "privacy_types": event.get("privacy_types") or [],
         "sequence_flags": event.get("sequence_flags") or [],
+        "outcome": event["outcome"],
     }
     # An upstream answer or error text can carry U+0000, which PostgreSQL refuses: the row would be
     # lost after the call ran. It is replaced before the fingerprint, so the chain covers what is stored.
@@ -1613,8 +1619,8 @@ async def _record_decision(event: dict) -> int:
                  policy_version, obligations, exception_id, conflicts, environment,
                  prev_sha256, entry_sha256, chain_version, upstream_attempted,
                  server_id, resource_id, destinations, client, summary,
-                 policy_input, risk_score, privacy_types, sequence_flags, created_at, timings)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                 policy_input, risk_score, privacy_types, sequence_flags, created_at, timings, outcome)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                RETURNING id""",
             (
                 record["request_id"], record["trace_id"], record["user_token"], record["role"],
@@ -1634,6 +1640,7 @@ async def _record_decision(event: dict) -> int:
                 record["risk_score"], Jsonb(record["privacy_types"]), Jsonb(record["sequence_flags"]),
                 # Operational, outside the fingerprint: how long each stage took, not what was decided.
                 record["created_at"], Jsonb(event["timings"]) if event.get("timings") else None,
+                Jsonb(record["outcome"]),
             ),
         )
         row = await cursor.fetchone()
@@ -1989,6 +1996,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                     base_event["result"], output_types = await _inspected_result(raw_result, ignore)
                 except privacy.InspectionUnavailable as exc:
                     # Executed, answer withheld: MCP-OUTPUT-001 below records exactly that.
+                    base_event["control_failure"] = True
                     raise ResultRejected(f"출력 검사 실패: {exc}", raw_result) from exc
                 laps.lap("inspect_out")
                 # The digest is of what the client receives (masked), not of the raw answer.
