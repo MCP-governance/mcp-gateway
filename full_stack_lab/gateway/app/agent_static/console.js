@@ -198,6 +198,7 @@ const EXIT_TERMS = {
 };
 const CRITERIA = { C1: "모집단", C2: "수행 권한", C3: "연속성", C4: "증거 접근" };
 const APPROVAL_STATUS = {
+  REVOKED: ["block", "승인 번복"],
   APPROVED: ["allow", "승인"], EXECUTED: ["allow", "실행됨"], REJECTED: ["block", "거부"], EXPIRED: ["outline", "만료"],
   NOT_EXECUTED: ["alert", "실행 안 됨"], UNCONFIRMED: ["alert", "실행 미확인"],
 };
@@ -994,7 +995,7 @@ async function showDecision(id) {
 let approvalRows = [];
 ROUTES.approvals = async (_, tab) => {
   const [{ approvals, history }, { rows: unsent }] = await Promise.all([api("/approvals"), gw("dispatch-intents")]);
-  approvalRows = approvals;
+  approvalRows = [...approvals, ...history];
   const counted = splitBy(history, (h) => (APPROVAL_STATUS[h.status] || ["", h.status])[1]);
   const byServer = splitBy([...approvals, ...history], "server_id");
   const oldest = approvals.reduce((m, a) => Math.min(m, new Date(a.created_at).getTime()), Date.now());
@@ -1010,7 +1011,7 @@ ROUTES.approvals = async (_, tab) => {
           <thead><tr><th>요청자</th><th>도구</th><th>행위 · 등급</th><th>하네스</th><th>요청</th><th>만료</th><th></th></tr></thead><tbody>
           ${approvals.map((a) => html`<tr class="clickable" tabindex="0" data-act="approval" data-id="${a.id}">
             <td class="who-cell"><b>${a.display_name || a.requested_by}</b><span class="sub">${a.department || ""}</span></td>
-            <td><code>${a.server_id}.${a.tool}</code></td>
+            <td><code>${a.server_id}.${a.tool}</code>${a.explanation ? chip("approval", "중대 영향") : ""}</td>
             <td>${ACTION[a.action] || a.action || "—"} · ${DATA_CLASS[a.data_class] || a.data_class || "—"}</td>
             <td>${a.client?.harness?.name ? chip("plain", harnessLabel(a.client.harness.name)) : "—"}</td>
             <td class="small">${ago(a.created_at)}</td><td class="small">${when(a.expires_at)}</td>
@@ -1027,9 +1028,10 @@ ROUTES.approvals = async (_, tab) => {
           </tbody></table>` : empty("확인할 호출 없음"), { flush: true }) },
         { key: "history", label: "처리 이력", n: history.length, body: html`<div class="stack">
           ${panel("이력", history.length ? html`<table class="data"><thead><tr><th>요청자</th><th>도구</th><th>결과</th><th>처리</th><th>검토자</th></tr></thead><tbody>
-            ${history.map((h) => html`<tr><td class="who-cell"><b>${h.display_name || h.requested_by}</b><span class="sub">${h.department || ""}</span></td>
+            ${history.map((h) => html`<tr class="clickable" tabindex="0" data-act="${h.explanation ? "approval" : ""}" data-id="${h.id}"><td class="who-cell"><b>${h.display_name || h.requested_by}</b><span class="sub">${h.department || ""}</span></td>
               <td><code>${h.server_id}.${h.tool}</code></td><td>${chip(...(APPROVAL_STATUS[h.status] || ["", h.status]))}</td>
-              <td class="small">${when(h.reviewed_at || h.created_at)}</td><td class="small">${h.reviewed_by || "—"}</td></tr>`)}</tbody></table>` : "", { flush: true })}<details class="analysis"><summary>승인 처리 분석</summary><div class="grid c12">
+              <td class="small">${when(h.reviewed_at || h.created_at)}</td><td class="small">${h.reviewed_by || "—"}
+                ${h.explanation && h.can_revoke && ["APPROVED", "UNCONFIRMED", "EXECUTED", "NOT_EXECUTED"].includes(h.status) ? html`<button class="btn sm danger" data-act="approval-revoke" data-id="${h.id}">승인 번복</button>` : ""}</td></tr>`)}</tbody></table>` : "", { flush: true })}<details class="analysis"><summary>승인 처리 분석</summary><div class="grid c12">
           ${panel("결과", history.length ? chartBox("c-appr-status", "처리된 승인 요청의 결과 비율", "sm") : empty("이력 없음"))}
           ${panel("서버별 요청", byServer.length ? chartBox("c-appr-server", "서버별 승인 요청 수", "sm") : empty("요청 없음"))}</div></details></div>` },
       ],
@@ -1042,9 +1044,29 @@ ROUTES.approvals = async (_, tab) => {
   };
 };
 
-function showApproval(id) {
+const IMPACT_DOMAIN = { employment: "고용·급여", credit: "신용", legal: "법적 효력", benefits: "급부", contract: "계약", service_access: "서비스 접근" };
+function impactExplanation(e) {
+  const types = { object: "객체", array: "목록", string: "문자", number: "숫자", boolean: "참거짓", null: "빈 값" };
+  return kv([["요청 요약", e.summary], ["중대 영향", "해당"], ["영향 영역", e.impact_domains.map((d) => IMPACT_DOMAIN[d] || "—").join(" · ")],
+    ["서버", e.server_id], ["도구", e.tool],
+    ["인자 유형·건수", Object.entries(e.arguments).map(([k, v]) => `${types[k] || "—"} ${v}`).join(" · ")],
+    ["데이터 등급", DATA_CLASS[e.data_class] || "—"], ["행위", ACTION[e.action] || "—"],
+    ["정책", e.policy_id], ["선행 정책", e.basis_policy_id], ["선행 판정", DECISION[e.basis_decision]?.[1] || "—"],
+    ["기존 실행 효과 복구", "미지원"]]);
+}
+async function showApproval(id) {
   const a = approvalRows.find((row) => row.id === id);
   if (!a) return;
+  if (a.explanation) {
+    const bundle = await gw(`approvals/${id}/evidence`);
+    const kinds = { "call-request": "요청", "call-explanation-view": "설명 열람", "call-approve": "승인", "call-reject": "거부", "call-revoke": "번복" };
+    openDrawer("중대 영향 결정 증빙", html`<button class="btn" data-act="approval-export" data-id="${id}">결정 증빙 내보내기</button>`, [
+      { key: "explanation", label: "설명 증빙", body: impactExplanation(bundle.explanation) },
+      { key: "history", label: "개입 이력", body: html`<table class="data"><thead><tr><th>결정</th><th>처리자</th><th>시각</th><th>근거</th></tr></thead><tbody>
+        ${bundle.events.map((e) => html`<tr><td>${kinds[e.kind] || "검토"}</td><td>${e.actor_display_name || "—"}</td><td>${when(e.created_at)}</td><td>${e.reason || "—"}</td></tr>`)}</tbody></table>` },
+    ]);
+    return;
+  }
   openDrawer(`${a.server_id}.${a.tool}`, html`<div class="row-actions">
     <button class="btn danger" data-act="reject" data-id="${a.id}">거부</button>
     ${a.own ? chip("outline", "본인 요청") : html`<button class="btn primary" data-act="approve" data-id="${a.id}">승인·실행</button>`}</div>`, [
@@ -1181,7 +1203,7 @@ function showServer(id) {
     { key: "tools", label: "도구", n: tools.length, body: html`<table class="data"><thead><tr><th>도구</th><th>행위</th><th>상태</th></tr></thead><tbody>
       ${tools.map((t) => html`<tr><td><code>${t.name}</code></td><td>${chip({ r: "allow", w: "alert", x: "block" }[t.action] || "", ACTION[t.action] || t.action)}</td>
         <td>${!t.enabled ? (registration?.tools?.[t.name] ? chip("block", "범위 미심사") : chip("outline", "미승인")) : t.contract_ok ? chip("allow", "일치") : chip("alert", "불일치")}</td></tr>`)}</tbody></table>` },
-    ...(registration ? [{ key: "scope", label: "범위", body: scopeTable(registration.tools, registration.tool_reviews, registration.data_class) }] : []),
+    ...(registration ? [{ key: "scope", label: "범위", body: scopeTable(registration.tools, registration.tool_reviews, registration.data_class, registration.intake_id ? s.id : null) }] : []),
     { key: "exit", label: "종료 조건", body: html`<div class="pill-list">${Object.entries(EXIT_TERMS).map(([k, label]) => bool(terms[k], label))}</div>
       ${creds.length ? kv([["보유 자격", html`${creds.map((c) => html`<code>${c.id}</code> `)}`]]) : ""}
       ${rels.length ? html`<h3>이용 관계</h3>${kv(rels.map((u) => [u.purpose, html`${u.organization} · ${(REL_STATUS[u.status] || [, u.status])[1]}
@@ -1749,17 +1771,19 @@ const destinationText = (list) => ((list || []).length ? list.join(", ") : "없�
 function scopeTerms(item) {
   const terms = [item.inputs && `입력 ${item.inputs.join(", ") || "없음"}`, item.mask && "입력 민감정보 가림",
     item.grade === "nonimportant" && `외부 전송 ${DATA_CLASS.nonimportant}까지`,
-    item.accepts_from?.length && `중요정보 수신 ${item.accepts_from.join(", ")}`, item.consent && "사용자 동의"].filter(Boolean);
+    item.accepts_from?.length && `중요정보 수신 ${item.accepts_from.join(", ")}`, item.consent && "사용자 동의",
+    item.high_impact && `중대 영향 · ${(item.impact_domains || []).map((d) => IMPACT_DOMAIN[d] || "—").join(" · ")}`].filter(Boolean);
   return terms.length ? html`<div class="pill-list">${terms.map((t) => chip("plain", t))}</div>` : NONE;
 }
-function scopeTable(tools, reviews, dataClass) {
+function scopeTable(tools, reviews, dataClass, serverId = null) {
   const names = Object.keys(tools || {});
   if (!names.length) return empty("범위 없음");
   return html`${dataClass ? kv([["데이터 등급", DATA_CLASS[dataClass] || dataClass]]) : ""}
     <table class="data"><thead><tr><th>도구</th><th>행위</th><th>목적</th><th>자산</th><th>외부 목적지</th><th>조건</th></tr></thead><tbody>
     ${names.map((name) => { const item = reviews?.[name]; return html`<tr><td><code>${name}</code></td>
       <td>${chip({ r: "allow", w: "alert", x: "block" }[tools[name]] || "", ACTION[tools[name]] || tools[name])}</td>
-      ${item ? html`<td>${item.purpose}</td><td>${item.asset}</td><td>${destinationText(item.destinations)}</td><td>${scopeTerms(item)}</td>`
+      ${item ? html`<td>${item.purpose}</td><td>${item.asset}</td><td>${destinationText(item.destinations)}</td><td>${scopeTerms(item)}
+        ${serverId ? html`<button class="btn sm" data-act="impact-scope" data-id="${serverId}" data-tool="${name}">중대 영향 심사</button>` : ""}</td>`
         : html`<td colspan="4">${chip("block", "범위 미심사")}</td>`}</tr>`; })}</tbody></table>`;
 }
 function gateView(gate) {
@@ -2116,15 +2140,18 @@ function scopeFields(names) {
       ${field.text("scope_accepts", "중요정보를 받을 서버 (쉼표 구분)", 'maxlength="300"')}</div>
     <label class="check"><input type="checkbox" name="scope_mask" /> 입력 민감정보 가림</label>
     <label class="check"><input type="checkbox" name="scope_consent" /> 사용자 동의</label>
+    ${field.select("scope_impact", "중대 영향", { none: "해당 없음", ...IMPACT_DOMAIN }, "none")}
     <details><summary>도구별 조정</summary>${names.map((name) => html`<div class="grid c2">
       ${field.text(`purpose:${name}`, html`<code>${name}</code> 목적`, 'maxlength="200"')}
       ${field.text(`asset:${name}`, "자산", 'maxlength="200"')}
       ${field.text(`destinations:${name}`, "외부 목적지", 'maxlength="300"')}
-      ${field.text(`inputs:${name}`, "허용 입력 항목 (쉼표 구분)", 'maxlength="500"')}</div>`)}</details></fieldset>`;
+      ${field.text(`inputs:${name}`, "허용 입력 항목 (쉼표 구분)", 'maxlength="500"')}
+      ${field.select(`impact:${name}`, "중대 영향", { "": "공통 설정", none: "해당 없음", ...IMPACT_DOMAIN })}</div>`)}</details></fieldset>`;
 }
 const hostList = (text) => String(text || "").split(",").map((h) => h.trim().toLowerCase()).filter(Boolean);
 function collectScopes(fd, names) {
   const own = (key, name) => String(fd.get(`${key}:${name}`) || "").trim();
+  const impact = (name) => own("impact", name) || String(fd.get("scope_impact") || "none");
   return Object.fromEntries(names.map((name) => [name, {
     purpose: own("purpose", name) || String(fd.get("scope_purpose")).trim(),
     asset: own("asset", name) || String(fd.get("scope_asset")).trim(),
@@ -2132,6 +2159,7 @@ function collectScopes(fd, names) {
     inputs: own("inputs", name) ? own("inputs", name).split(",").map((v) => v.trim()).filter(Boolean) : null,
     mask: fd.get("scope_mask") === "on", consent: fd.get("scope_consent") === "on",
     grade: String(fd.get("scope_grade") || "public"),
+    high_impact: impact(name) !== "none", impact_domains: impact(name) === "none" ? [] : [impact(name)],
     accepts_from: String(fd.get("scope_accepts") || "").split(",").map((v) => v.trim()).filter(Boolean) }]));
 }
 
@@ -2355,7 +2383,15 @@ const ACTIONS = {
     else toast(`무결성 손상 · #${r.broken_at ?? "마지막"}: ${r.reason}`, true);
   },
   async approve(el) {
-    const r = await api(`/approvals/${el.dataset.id}/approve`, { method: "POST" });
+    const a = approvalRows.find((row) => row.id === el.dataset.id);
+    let r;
+    if (a?.explanation) {
+      const b = await gw(`approvals/${a.id}/evidence`);
+      const fd = await ask({ title: "중대 영향 호출 승인", fields: html`${impactExplanation(b.explanation)}
+        <label class="check"><input type="checkbox" name="confirmed" required /> 요청 범위·정책 근거 확인</label>`, confirm: "승인·실행" });
+      if (!fd) return;
+      r = await gw(`approvals/${a.id}/approve`, { method: "POST", body: { evidence_sha256: b.evidence_sha256, reason: "scope_confirmed" } });
+    } else r = await api(`/approvals/${el.dataset.id}/approve`, { method: "POST" });
     toast(`승인했습니다 · ${DECISION[r.decision]?.[1] || r.decision || "처리됨"}`);
     reload(); refreshBadges();
   },
@@ -2367,10 +2403,29 @@ const ACTIONS = {
     toast("기록했습니다."); reload();
   },
   async reject(el) {
+    const a = approvalRows.find((row) => row.id === el.dataset.id);
+    if (a?.explanation) {
+      const b = await gw(`approvals/${a.id}/evidence`);
+      if (!await ask({ title: "중대 영향 호출 거부", fields: impactExplanation(b.explanation), confirm: "요청 부적합 · 거부", danger: true })) return;
+      await gw(`approvals/${a.id}/reject`, { method: "POST", body: { note: "request_inappropriate", evidence_sha256: b.evidence_sha256 } });
+      toast("거부했습니다."); reload(); refreshBadges(); return;
+    }
     const fd = await ask({ title: "승인 요청 거부", fields: field.area("note", "사유", 'required maxlength="500"'), confirm: "거부", danger: true });
     if (!fd) return;
     await api(`/approvals/${el.dataset.id}/reject`, { method: "POST", body: { note: fd.get("note") } });
     toast("거부했습니다."); reload(); refreshBadges();
+  },
+  async "approval-revoke"(el) {
+    const b = await gw(`approvals/${el.dataset.id}/evidence`);
+    if (!await ask({ title: "승인 번복", fields: impactExplanation(b.explanation), confirm: "승인 판단 변경 · 번복", danger: true })) return;
+    await gw(`approvals/${el.dataset.id}/revoke`, { method: "POST", body: { evidence_sha256: b.evidence_sha256 } });
+    toast("번복을 기록했습니다."); reload();
+  },
+  async "approval-export"(el) {
+    const b = await gw(`approvals/${el.dataset.id}/evidence`);
+    const url = URL.createObjectURL(new Blob([JSON.stringify(b, null, 2)], { type: "application/json" }));
+    Object.assign(document.createElement("a"), { href: url, download: `mint-decision-${el.dataset.id}.json` }).click();
+    URL.revokeObjectURL(url);
   },
   async "catalog-refresh"() {
     const { results } = await gw("catalog/refresh", { method: "POST" });
@@ -2632,6 +2687,19 @@ const ACTIONS = {
     if (!fd) return;
     const r = await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}/tool-reviews`, { method: "POST", body: { reviews: collectScopes(fd, pending) } });
     closeDrawer(); toast(`도구 ${r.reviewed.length}개의 범위를 기록했습니다.`); reload();
+  },
+  async "impact-scope"(el) {
+    const item = registry?.registrations?.[el.dataset.id]?.tool_reviews?.[el.dataset.tool];
+    if (!item) return;
+    const fd = await ask({ title: "중대 영향 심사", fields: html`<fieldset><legend>영향 영역</legend>
+      ${Object.entries(IMPACT_DOMAIN).map(([key, label]) => html`<label class="check"><input type="checkbox" name="impact" value="${key}" ${(item.impact_domains || []).includes(key) ? raw("checked") : ""} /> ${label}</label>`)}</fieldset>`, confirm: "기록" });
+    if (!fd) return;
+    const { purpose, asset, destinations, inputs, mask, grade, accepts_from, consent } = item;
+    const domains = fd.getAll("impact");
+    await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}/tool-reviews`, { method: "POST", body: {
+      reviews: { [el.dataset.tool]: { purpose, asset, destinations, inputs, mask, grade, accepts_from, consent,
+        high_impact: domains.length > 0, impact_domains: domains } } } });
+    toast("기록했습니다."); closeDrawer(); reload();
   },
   async "residency-review"(el) {
     const s = registry?.servers.find((row) => row.id === el.dataset.id);

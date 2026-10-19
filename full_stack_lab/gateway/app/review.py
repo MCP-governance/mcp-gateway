@@ -16,7 +16,7 @@ from uuid import UUID
 from psycopg.errors import UniqueViolation
 from psycopg.types.json import Jsonb
 
-from . import db, provenance
+from . import db, high_impact, provenance
 from .classify import ADDRESS_ARG
 
 SCANNERS = ("Syft", "Trivy", "Semgrep", "Gitleaks")
@@ -241,6 +241,7 @@ def normalize_tool_reviews(tools: dict[str, str], reviews: dict | None, reviewer
                             "inputs": inputs, "mask": bool(item.get("mask")), "grade": grade,
                             "accepts_from": accepts, "consent": bool(item.get("consent")),
                             "reviewed_by": reviewer, "reviewed_at": stamp}
+        normalized[name].update(high_impact.normalize(item))
     return normalized
 
 
