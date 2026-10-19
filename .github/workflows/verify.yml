@@ -71,7 +71,12 @@ jobs:
           python3 gateway/app/poisoning.py
           python3 supply_chain/exit_terms.py
           # The four harness configs are rendered from the registry; every server must land in each.
-          python3 workstation/managed/render.py registry/catalog.toml /tmp/managed
+          # D-124: a managed URL must be HTTPS; the isolated lab address is the one allowed exception.
+          python3 workstation/managed/render.py registry/catalog.toml /tmp/managed --gateway-url http://gateway:8080/mcp
+          for u in http://evil:8080/mcp ''; do
+            rc=0; python3 workstation/managed/render.py registry/catalog.toml /tmp/reject --gateway-url "$u" >/tmp/reject.log 2>&1 || rc=$?
+            test "$rc" -eq 2 && grep -Fxq 'render.py: error: managed MCP URL requires HTTPS' /tmp/reject.log
+          done
           python3 - <<'PY'
           import json, tomllib
           servers = sorted(tomllib.load(open("registry/catalog.toml", "rb"))["servers"])

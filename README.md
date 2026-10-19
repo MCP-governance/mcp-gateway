@@ -43,7 +43,7 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-  A["신원<br/>전송 토큰"] --> B["자원 분류<br/>경로·URL·SQL"] --> C["입력 계약<br/>승인 스키마"] --> D["입력 검사"] --> E["정책 판정<br/>OPA · PAC"] --> F["예약 · 실행 의도 기록"] --> G["계약 재확인<br/>tools/list"] --> H["업스트림 실행"] --> I["출력 검사 · 마스킹"] --> J["해시 체인 감사"]
+  A["신원<br/>전송 토큰"] --> B["자원 분류<br/>경로·URL·SQL"] --> R["호출 예약"] --> C["입력 계약<br/>승인 스키마·허용 항목"] --> D["입력 검사·마스킹<br/>Presidio · Gitleaks"] --> E["정책 판정<br/>OPA · PAC·목적 결속·서버 간 전달"] --> K["사용자 동의"] --> G["계약 재확인<br/>tools/list"] --> F["실행 의도 기록"] --> H["업스트림 실행"] --> I["출력 검사 · 마스킹"] --> J["해시 체인 감사"]
 ```
 
 예전 실습 스택(BoB Corp·MCP 10종·직원 PC 4대)의 구성도는 [docs/ai/architecture.html](docs/ai/architecture.html)에 이력으로 남아 있습니다.

@@ -310,3 +310,21 @@ CREATE TABLE IF NOT EXISTS mcp_runtimes (
 -- One live runtime per approval: a second click or a second worker cannot start another.
 CREATE UNIQUE INDEX IF NOT EXISTS mcp_runtimes_one_live ON mcp_runtimes(intake_id)
   WHERE status NOT IN ('STOPPED', 'FAILED');
+
+-- POL-08: an employee's consent to one tool at one data grade, bound to the reviewed terms of that tool.
+CREATE TABLE IF NOT EXISTS user_consents (
+  id bigserial PRIMARY KEY,
+  user_token text NOT NULL,
+  server_id text NOT NULL,
+  tool_name text NOT NULL,
+  grade text NOT NULL CHECK (grade IN ('public', 'nonimportant', 'important')),
+  terms_hash text NOT NULL,
+  purpose text NOT NULL DEFAULT '',
+  status text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'GRANTED', 'DENIED', 'REVOKED')),
+  requested_at timestamptz NOT NULL DEFAULT now(),
+  decided_at timestamptz,
+  expires_at timestamptz,
+  UNIQUE (user_token, server_id, tool_name, grade, terms_hash)
+);
+-- What the employee is shown and agrees to: the reviewed terms the hash stands for.
+ALTER TABLE user_consents ADD COLUMN IF NOT EXISTS terms jsonb NOT NULL DEFAULT '{}'::jsonb;

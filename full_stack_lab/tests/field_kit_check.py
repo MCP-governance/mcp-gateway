@@ -370,18 +370,22 @@ class OverlayTest(unittest.TestCase):
         public = {(name, p.get("host_ip"), int(p["published"]), int(p["target"]), p.get("protocol", "tcp"))
                   for name, svc in services.items() for p in svc.get("ports", [])
                   if p.get("host_ip") != "127.0.0.1"}
-        self.assertEqual(public, {("caddy", tailnet_ip, 443, 8080, "tcp"),
+        # D-129: Caddy also serves the browser console over HTTP on the tailnet address, port 8000.
+        self.assertEqual(public, {("caddy", tailnet_ip, 443, 8080, "tcp"), ("caddy", tailnet_ip, 8000, 8081, "tcp"),
                                   ("model-proxy", tailnet_ip, proxy_port, 3128, "tcp")})
 
     def test_field_publications_reject_wildcard_other_service_wrong_port_and_protocol(self):
-        baseline = {"caddy": {"ports": [{"host_ip": "100.83.175.111", "published": 443, "target": 8080}]},
+        baseline = {"caddy": {"ports": [{"host_ip": "100.83.175.111", "published": 443, "target": 8080},
+                                        {"host_ip": "100.83.175.111", "published": 8000, "target": 8081}]},
                     "model-proxy": {"ports": [{"host_ip": "100.83.175.111", "published": 3128, "target": 3128}]}}
         self.assert_field_publications(baseline, "100.83.175.111")
-        for case in ("wildcard", "other-service", "wrong-port", "wrong-protocol", "missing-proxy"):
+        for case in ("wildcard", "console-wildcard", "other-service", "wrong-port", "wrong-protocol", "missing-proxy"):
             with self.subTest(case=case):
                 services = json.loads(json.dumps(baseline))
                 if case == "wildcard":
                     services["model-proxy"]["ports"][0]["host_ip"] = "0.0.0.0"
+                elif case == "console-wildcard":
+                    services["caddy"]["ports"][1]["host_ip"] = "0.0.0.0"
                 elif case == "other-service":
                     services["db"] = {"ports": [{"host_ip": "100.83.175.111", "published": 5432, "target": 5432}]}
                 elif case == "wrong-port":

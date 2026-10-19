@@ -25,90 +25,256 @@
     "complete_rule": "5단계가 모두 1인 작업만 최종 완료. 신규 WBS의 현재 검수 기준이며 과거 실험 카드 완료를 변경하지 않음."
   },
   "summary": {
-    "progress": 55.8,
-    "complete": 0,
     "total": 57,
+    "complete": 0,
+    "progress": 62.3,
     "stage_equivalent_counts": {
-      "implementation": 50.0,
-      "regression": 45.5,
-      "deployment": 46.0,
-      "real_device": 17.5,
-      "acceptance_complete": 0
+      "implementation": 55.0,
+      "regression": 50.5,
+      "deployment": 51.0,
+      "real_device": 21.0,
+      "acceptance_complete": 0.0
     },
-    "implementation_full": 48,
+    "implementation_full": 53,
     "implementation_partial": 4,
-    "implementation_missing": 5
+    "implementation_missing": 0,
+    "status_counts": {
+      "개발 예정": 0,
+      "일부 구현": 4,
+      "검수 완료": 0,
+      "구현 완료(검수 전)": 53
+    }
   },
   "goals": [
     {
       "id": "G01",
       "title": "도입·공급망 검증",
-      "progress": 68.3,
+      "total": 6,
       "complete": 0,
-      "total": 6
+      "progress": 68.3,
+      "stage_equivalent_counts": {
+        "implementation": 6.0,
+        "regression": 6.0,
+        "deployment": 6.0,
+        "real_device": 2.5,
+        "acceptance_complete": 0.0
+      },
+      "implementation_full": 6,
+      "implementation_partial": 0,
+      "implementation_missing": 0,
+      "status_counts": {
+        "개발 예정": 0,
+        "일부 구현": 0,
+        "검수 완료": 0,
+        "구현 완료(검수 전)": 6
+      }
     },
     {
       "id": "G02",
       "title": "승인·계약 관리",
-      "progress": 56.7,
+      "total": 6,
       "complete": 0,
-      "total": 6
+      "progress": 70.0,
+      "stage_equivalent_counts": {
+        "implementation": 6.0,
+        "regression": 6.0,
+        "deployment": 6.0,
+        "real_device": 3.0,
+        "acceptance_complete": 0.0
+      },
+      "implementation_full": 6,
+      "implementation_partial": 0,
+      "implementation_missing": 0,
+      "status_counts": {
+        "개발 예정": 0,
+        "일부 구현": 0,
+        "검수 완료": 0,
+        "구현 완료(검수 전)": 6
+      }
     },
     {
       "id": "G03",
       "title": "신원·호출 권한",
-      "progress": 67.5,
+      "total": 8,
       "complete": 0,
-      "total": 8
+      "progress": 67.5,
+      "stage_equivalent_counts": {
+        "implementation": 8.0,
+        "regression": 8.0,
+        "deployment": 8.0,
+        "real_device": 3.0,
+        "acceptance_complete": 0.0
+      },
+      "implementation_full": 8,
+      "implementation_partial": 0,
+      "implementation_missing": 0,
+      "status_counts": {
+        "개발 예정": 0,
+        "일부 구현": 0,
+        "검수 완료": 0,
+        "구현 완료(검수 전)": 8
+      }
     },
     {
       "id": "G04",
       "title": "데이터·비신뢰 결과 보호",
-      "progress": 35.7,
+      "total": 7,
       "complete": 0,
-      "total": 7
+      "progress": 67.1,
+      "stage_equivalent_counts": {
+        "implementation": 7.0,
+        "regression": 7.0,
+        "deployment": 7.0,
+        "real_device": 2.5,
+        "acceptance_complete": 0.0
+      },
+      "implementation_full": 7,
+      "implementation_partial": 0,
+      "implementation_missing": 0,
+      "status_counts": {
+        "개발 예정": 0,
+        "일부 구현": 0,
+        "검수 완료": 0,
+        "구현 완료(검수 전)": 7
+      }
     },
     {
       "id": "G05",
       "title": "엔드포인트 집행",
-      "progress": 60.0,
+      "total": 4,
       "complete": 0,
-      "total": 4
+      "progress": 60.0,
+      "stage_equivalent_counts": {
+        "implementation": 3.5,
+        "regression": 2.5,
+        "deployment": 3.0,
+        "real_device": 3.0,
+        "acceptance_complete": 0.0
+      },
+      "implementation_full": 3,
+      "implementation_partial": 1,
+      "implementation_missing": 0,
+      "status_counts": {
+        "개발 예정": 0,
+        "일부 구현": 1,
+        "검수 완료": 0,
+        "구현 완료(검수 전)": 3
+      }
     },
     {
       "id": "G06",
       "title": "감사·로그 전달",
-      "progress": 60.0,
+      "total": 6,
       "complete": 0,
-      "total": 6
+      "progress": 60.0,
+      "stage_equivalent_counts": {
+        "implementation": 5.5,
+        "regression": 5.5,
+        "deployment": 5.5,
+        "real_device": 1.5,
+        "acceptance_complete": 0.0
+      },
+      "implementation_full": 5,
+      "implementation_partial": 1,
+      "implementation_missing": 0,
+      "status_counts": {
+        "개발 예정": 0,
+        "일부 구현": 1,
+        "검수 완료": 0,
+        "구현 완료(검수 전)": 5
+      }
     },
     {
       "id": "G07",
       "title": "종료·폐기",
-      "progress": 55.0,
+      "total": 6,
       "complete": 0,
-      "total": 6
+      "progress": 55.0,
+      "stage_equivalent_counts": {
+        "implementation": 5.0,
+        "regression": 5.5,
+        "deployment": 6.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
+      },
+      "implementation_full": 4,
+      "implementation_partial": 2,
+      "implementation_missing": 0,
+      "status_counts": {
+        "개발 예정": 0,
+        "일부 구현": 2,
+        "검수 완료": 0,
+        "구현 완료(검수 전)": 4
+      }
     },
     {
       "id": "G08",
       "title": "가입·설치·하네스 운영",
-      "progress": 64.0,
+      "total": 5,
       "complete": 0,
-      "total": 5
+      "progress": 64.0,
+      "stage_equivalent_counts": {
+        "implementation": 5.0,
+        "regression": 3.0,
+        "deployment": 5.0,
+        "real_device": 3.0,
+        "acceptance_complete": 0.0
+      },
+      "implementation_full": 5,
+      "implementation_partial": 0,
+      "implementation_missing": 0,
+      "status_counts": {
+        "개발 예정": 0,
+        "일부 구현": 0,
+        "검수 완료": 0,
+        "구현 완료(검수 전)": 5
+      }
     },
     {
       "id": "G09",
       "title": "자원·연결 지표",
-      "progress": 62.5,
+      "total": 4,
       "complete": 0,
-      "total": 4
+      "progress": 62.5,
+      "stage_equivalent_counts": {
+        "implementation": 4.0,
+        "regression": 3.0,
+        "deployment": 3.5,
+        "real_device": 2.0,
+        "acceptance_complete": 0.0
+      },
+      "implementation_full": 4,
+      "implementation_partial": 0,
+      "implementation_missing": 0,
+      "status_counts": {
+        "개발 예정": 0,
+        "일부 구현": 0,
+        "검수 완료": 0,
+        "구현 완료(검수 전)": 4
+      }
     },
     {
       "id": "G10",
       "title": "개발 협업·근거 관리",
-      "progress": 28.0,
+      "total": 5,
       "complete": 0,
-      "total": 5
+      "progress": 42.0,
+      "stage_equivalent_counts": {
+        "implementation": 5.0,
+        "regression": 4.0,
+        "deployment": 1.0,
+        "real_device": 0.5,
+        "acceptance_complete": 0.0
+      },
+      "implementation_full": 5,
+      "implementation_partial": 0,
+      "implementation_missing": 0,
+      "status_counts": {
+        "개발 예정": 0,
+        "일부 구현": 0,
+        "검수 완료": 0,
+        "구현 완료(검수 전)": 5
+      }
     }
   ],
   "items": [
@@ -157,13 +323,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
@@ -183,7 +349,11 @@
       "pol_ids": [
         "POL-01"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G01.02",
@@ -232,11 +402,11 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -264,7 +434,11 @@
         "POL-03",
         "POL-39"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G01.03",
@@ -313,13 +487,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 1,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 1.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 80,
+      "progress": 80.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
@@ -344,7 +518,11 @@
         "POL-02",
         "POL-23"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G01.04",
@@ -391,11 +569,11 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -421,7 +599,11 @@
       "pol_ids": [
         "POL-38"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G01.05",
@@ -461,11 +643,11 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -475,7 +657,11 @@
         {
           "path": "research/llm-wiki/status/reports/2026-10-15-dev38-runtime.md"
         }
-      ]
+      ],
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G01.06",
@@ -512,13 +698,13 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P0",
       "planned_weeks": [
@@ -529,7 +715,11 @@
         {
           "path": "research/llm-wiki/analysis/wbs-1017/deploy-ce.json"
         }
-      ]
+      ],
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "11월 3주 · 11월 4주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G02.01",
@@ -575,13 +765,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 1,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 1.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 80,
+      "progress": 80.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
@@ -602,7 +792,11 @@
         "POL-08",
         "POL-38"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G02.02",
@@ -650,13 +844,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
@@ -681,7 +875,11 @@
         "POL-11",
         "POL-37"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G02.03",
@@ -728,13 +926,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
@@ -756,7 +954,11 @@
         "POL-40",
         "POL-44"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G02.04",
@@ -804,13 +1006,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 1,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 1.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 80,
+      "progress": 80.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
@@ -831,7 +1033,11 @@
         "POL-11",
         "POL-12"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G02.05",
@@ -867,20 +1073,24 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 0,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 1.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 0,
+      "progress": 80.0,
       "complete": false,
       "priority": "P1",
       "planned_weeks": [
         "11월 1주",
         "11월 2주"
       ],
-      "evidence": []
+      "evidence": [],
+      "owner": "Claude",
+      "memo": "10-18 4857adc 배포. PJ1 Codex로 동의 없음 차단·확인 요청→동의→실행→철회 후 재차단 확인(원장 #32~#36). 콘솔 화면 렌더링 미확인",
+      "planned_schedule": "11월 1주 · 11월 2주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G02.06",
@@ -918,13 +1128,13 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P0",
       "planned_weeks": [
@@ -935,7 +1145,11 @@
         {
           "path": "research/llm-wiki/analysis/wbs-1017/deploy-hi-1018.md"
         }
-      ]
+      ],
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "11월 4주 · 12월 1주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G03.01",
@@ -984,11 +1198,11 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -1015,7 +1229,11 @@
         "POL-19",
         "POL-21"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G03.02",
@@ -1061,13 +1279,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P0",
       "evidence": [
@@ -1087,7 +1305,11 @@
       "pol_ids": [
         "POL-20"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G03.03",
@@ -1137,13 +1359,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 1,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 1.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 80,
+      "progress": 80.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
@@ -1167,7 +1389,11 @@
         "POL-25",
         "POL-26"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G03.04",
@@ -1215,11 +1441,11 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -1247,7 +1473,11 @@
         "POL-28",
         "POL-36"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G03.05",
@@ -1285,11 +1515,11 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -1302,7 +1532,11 @@
         {
           "path": "research/llm-wiki/analysis/wbs-1017/deploy-abd.json"
         }
-      ]
+      ],
+      "owner": "Claude",
+      "memo": "10-17 배포 7747d21, PJ1 정상 경로 확인. 재바인딩 음성 시험 남음",
+      "planned_schedule": "10월 4주 · 10월 5주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G03.06",
@@ -1339,13 +1573,13 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P1",
       "planned_weeks": [
@@ -1356,7 +1590,11 @@
         {
           "path": "research/llm-wiki/analysis/wbs-1017/deploy-hi-1018.md"
         }
-      ]
+      ],
+      "owner": "Claude",
+      "memo": "10-18 bb33625 배포. PJ1 filesystem 배정 필요",
+      "planned_schedule": "11월 1주 · 11월 2주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G03.07",
@@ -1393,11 +1631,11 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -1410,7 +1648,11 @@
         {
           "path": "research/llm-wiki/analysis/wbs-1017/deploy-hi-1018.md"
         }
-      ]
+      ],
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "11월 2주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G03.08",
@@ -1447,13 +1689,13 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P0",
       "planned_weeks": [
@@ -1464,7 +1706,11 @@
         {
           "path": "research/llm-wiki/analysis/wbs-1017/deploy-abd.json"
         }
-      ]
+      ],
+      "owner": "Claude",
+      "memo": "10-17 배포 7747d21, PJ1 오류 응답 가림 확인 남음",
+      "planned_schedule": "10월 5주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G04.01",
@@ -1512,13 +1758,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
@@ -1543,7 +1789,11 @@
         "POL-24",
         "POL-29"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G04.02",
@@ -1589,11 +1839,11 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -1615,7 +1865,11 @@
       "pol_ids": [
         "POL-30"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G04.03",
@@ -1661,13 +1915,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
@@ -1688,7 +1942,11 @@
         "POL-04",
         "POL-29"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G04.04",
@@ -1736,13 +1994,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
@@ -1762,7 +2020,11 @@
       "pol_ids": [
         "POL-22"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G04.05",
@@ -1798,20 +2060,24 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 0,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 1.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 0,
+      "progress": 80.0,
       "complete": false,
       "priority": "P1",
       "planned_weeks": [
         "11월 1주",
         "11월 2주"
       ],
-      "evidence": []
+      "evidence": [],
+      "owner": "Claude",
+      "memo": "10-18 4857adc 배포. PJ1 MarkItDown 심사 목적지 목적·등급 쌍 결속 허용(#34), 미심사 목적지 실행 전 차단(#35)",
+      "planned_schedule": "11월 1주 · 11월 2주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G04.06",
@@ -1847,20 +2113,24 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 0,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 1.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 0,
+      "progress": 80.0,
       "complete": false,
       "priority": "P1",
       "planned_weeks": [
         "11월 1주",
         "11월 2주"
       ],
-      "evidence": []
+      "evidence": [],
+      "owner": "Claude",
+      "memo": "10-18 4857adc 배포. PJ1 Context7 마스킹 전 차단(#30)→가린 뒤 실행·잔여 0(#37). 입력 항목 심사 거부(필수 제외·계약 밖) 확인",
+      "planned_schedule": "11월 1주 · 11월 2주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G04.07",
@@ -1896,20 +2166,24 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 0,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 0,
+      "progress": 60.0,
       "complete": false,
       "priority": "P1",
       "planned_weeks": [
         "11월 2주",
         "11월 3주"
       ],
-      "evidence": []
+      "evidence": [],
+      "owner": "Claude",
+      "memo": "10-18 4857adc 배포, OPA 4건·평가 사례 통과. 실기기 미실행: 현장에 중요 등급 서버 없음",
+      "planned_schedule": "11월 2주 · 11월 3주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G05.01",
@@ -1956,13 +2230,13 @@
         "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 1,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 1.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 80,
+      "progress": 80.0,
       "complete": false,
       "priority": "P1",
       "evidence": [
@@ -1981,7 +2255,11 @@
       "pol_ids": [
         "POL-12"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G05.02",
@@ -2029,9 +2307,9 @@
       "stage_scores": {
         "implementation": 0.5,
         "regression": 0.5,
-        "deployment": 1,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 50.0,
       "complete": false,
@@ -2049,7 +2327,11 @@
         "POL-12",
         "POL-17"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "일부 구현"
     },
     {
       "id": "G05.03",
@@ -2106,11 +2388,11 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -2138,7 +2420,11 @@
         "POL-12",
         "POL-42"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G05.04",
@@ -2188,13 +2474,13 @@
         "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 1,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 0.0,
+        "deployment": 0.0,
+        "real_device": 1.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 40,
+      "progress": 40.0,
       "complete": false,
       "priority": "P1",
       "evidence": [
@@ -2213,7 +2499,11 @@
       "pol_ids": [
         "POL-12"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "Claude",
+      "memo": "10-18 pj3user 직접 인터넷 차단 확인",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G06.01",
@@ -2261,9 +2551,9 @@
       "stage_scores": {
         "implementation": 0.5,
         "regression": 0.5,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
       "progress": 40.0,
       "complete": false,
@@ -2285,7 +2575,11 @@
       "pol_ids": [
         "POL-38"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "일부 구현"
     },
     {
       "id": "G06.02",
@@ -2334,11 +2628,11 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -2364,7 +2658,11 @@
       "pol_ids": [
         "POL-38"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G06.03",
@@ -2420,11 +2718,11 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -2451,7 +2749,11 @@
       "pol_ids": [
         "POL-42"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G06.04",
@@ -2506,11 +2808,11 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -2537,7 +2839,11 @@
       "pol_ids": [
         "POL-38"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G06.05",
@@ -2574,13 +2880,13 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P0",
       "planned_weeks": [
@@ -2591,7 +2897,11 @@
         {
           "path": "research/llm-wiki/analysis/wbs-1017/deploy-ce.json"
         }
-      ]
+      ],
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "11월 3주 · 11월 4주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G06.06",
@@ -2629,11 +2939,11 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
         "deployment": 0.5,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
       "progress": 50.0,
       "complete": false,
@@ -2646,7 +2956,11 @@
         {
           "path": "research/llm-wiki/analysis/wbs-1017/deploy-hi-1018.md"
         }
-      ]
+      ],
+      "owner": "Claude",
+      "memo": "10-18 배포(기본 꺼짐). 수집기 연결 대기",
+      "planned_schedule": "11월 4주 · 12월 1주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G07.01",
@@ -2693,13 +3007,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P1",
       "evidence": [
@@ -2720,7 +3034,11 @@
         "POL-44",
         "POL-45"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G07.02",
@@ -2767,10 +3085,10 @@
       },
       "stage_scores": {
         "implementation": 0.5,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
       "progress": 50.0,
       "complete": false,
@@ -2793,7 +3111,11 @@
         "POL-44",
         "POL-46"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "Claude",
+      "memo": "10-17 세션 재사용 배포. 최신 규격 서버는 재사용 안 함(설계). 이전 규격 서버는 격리 실험 중",
+      "planned_schedule": "",
+      "status": "일부 구현"
     },
     {
       "id": "G07.03",
@@ -2839,13 +3161,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P1",
       "evidence": [
@@ -2866,7 +3188,11 @@
         "POL-41",
         "POL-45"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G07.04",
@@ -2914,9 +3240,9 @@
       "stage_scores": {
         "implementation": 0.5,
         "regression": 0.5,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
       "progress": 40.0,
       "complete": false,
@@ -2939,7 +3265,11 @@
         "POL-48",
         "POL-50"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "일부 구현"
     },
     {
       "id": "G07.05",
@@ -2976,13 +3306,13 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P0",
       "planned_weeks": [
@@ -2993,7 +3323,11 @@
         {
           "path": "research/llm-wiki/analysis/wbs-1017/deploy-ce.json"
         }
-      ]
+      ],
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "11월 3주 · 11월 4주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G07.06",
@@ -3030,13 +3364,13 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P0",
       "planned_weeks": [
@@ -3047,7 +3381,11 @@
         {
           "path": "research/llm-wiki/analysis/wbs-1017/deploy-ce.json"
         }
-      ]
+      ],
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "11월 4주 · 12월 1주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G08.01",
@@ -3094,13 +3432,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 0,
-        "deployment": 1,
-        "real_device": 1,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 0.0,
+        "deployment": 1.0,
+        "real_device": 1.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 60,
+      "progress": 60.0,
       "complete": false,
       "priority": "P1",
       "evidence": [
@@ -3127,7 +3465,11 @@
       "pol_ids": [
         "POL-19"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G08.02",
@@ -3174,11 +3516,11 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
+        "implementation": 1.0,
         "regression": 0.5,
-        "deployment": 1,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 60.0,
       "complete": false,
@@ -3201,7 +3543,11 @@
         }
       ],
       "pol_ids": [],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G08.03",
@@ -3248,11 +3594,11 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
+        "implementation": 1.0,
         "regression": 0.5,
-        "deployment": 1,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "deployment": 1.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
       "progress": 50.0,
       "complete": false,
@@ -3279,7 +3625,11 @@
         "POL-08",
         "POL-27"
       ],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G08.04",
@@ -3331,11 +3681,11 @@
         "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -3359,7 +3709,11 @@
         }
       ],
       "pol_ids": [],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "Claude",
+      "memo": "10-18 pj3 설치~트레이 확인(e6b4ae9). 실제 데스크톱 로그온·하네스 로그인 대기",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G08.05",
@@ -3399,13 +3753,13 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
-        "real_device": 1,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 1.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 80,
+      "progress": 80.0,
       "complete": false,
       "priority": "P0",
       "planned_weeks": [
@@ -3425,7 +3779,11 @@
         {
           "path": "research/llm-wiki/analysis/wbs-1017/pj3-windows-kit-1018.md"
         }
-      ]
+      ],
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "10월 4주 · 10월 5주",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G09.01",
@@ -3469,11 +3827,11 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -3493,7 +3851,11 @@
         }
       ],
       "pol_ids": [],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G09.02",
@@ -3539,11 +3901,11 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -3567,7 +3929,11 @@
         }
       ],
       "pol_ids": [],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G09.03",
@@ -3612,11 +3978,11 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 1,
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 70.0,
       "complete": false,
@@ -3636,7 +4002,11 @@
         }
       ],
       "pol_ids": [],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G09.04",
@@ -3681,11 +4051,11 @@
         "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 0,
+        "implementation": 1.0,
+        "regression": 0.0,
         "deployment": 0.5,
         "real_device": 0.5,
-        "acceptance_complete": 0
+        "acceptance_complete": 0.0
       },
       "progress": 40.0,
       "complete": false,
@@ -3697,7 +4067,11 @@
         }
       ],
       "pol_ids": [],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G10.01",
@@ -3740,13 +4114,13 @@
         "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 0.0,
+        "deployment": 0.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 20,
+      "progress": 20.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
@@ -3756,7 +4130,11 @@
         }
       ],
       "pol_ids": [],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G10.02",
@@ -3800,13 +4178,13 @@
         "acceptance_complete": "완료 조건 전체의 검수 전이며 실기기 공백이 남아 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 0,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 0.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 40,
+      "progress": 40.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
@@ -3824,7 +4202,11 @@
         }
       ],
       "pol_ids": [],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G10.03",
@@ -3870,13 +4252,13 @@
         "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 0,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 0.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 40,
+      "progress": 40.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
@@ -3890,7 +4272,11 @@
         }
       ],
       "pol_ids": [],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G10.04",
@@ -3935,13 +4321,13 @@
         "acceptance_complete": "완료조건 전체와 미해결 결함을 검수하기 전에는 0점."
       },
       "stage_scores": {
-        "implementation": 1,
-        "regression": 1,
-        "deployment": 0,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 0.0,
+        "real_device": 0.0,
+        "acceptance_complete": 0.0
       },
-      "progress": 40,
+      "progress": 40.0,
       "complete": false,
       "priority": "P2",
       "evidence": [
@@ -3955,7 +4341,11 @@
         }
       ],
       "pol_ids": [],
-      "kind": "현재 개발"
+      "kind": "현재 개발",
+      "owner": "",
+      "memo": "",
+      "planned_schedule": "",
+      "status": "구현 완료(검수 전)"
     },
     {
       "id": "G10.05",
@@ -3989,20 +4379,24 @@
         "acceptance_complete": "미확인"
       },
       "stage_scores": {
-        "implementation": 0,
-        "regression": 0,
-        "deployment": 0,
-        "real_device": 0,
-        "acceptance_complete": 0
+        "implementation": 1.0,
+        "regression": 1.0,
+        "deployment": 1.0,
+        "real_device": 0.5,
+        "acceptance_complete": 0.0
       },
-      "progress": 0,
+      "progress": 70.0,
       "complete": false,
       "priority": "P1",
       "planned_weeks": [
         "12월 1주",
         "12월 2주"
       ],
-      "evidence": []
+      "evidence": [],
+      "owner": "Claude",
+      "memo": "10-18 기기 OPA로 실행: d6679fd 대비 공격 차단율 0.778→1.000, 정상 허용률 1.000 유지. 지표 6개 정의는 잠정(D-135)",
+      "planned_schedule": "12월 1주 · 12월 2주",
+      "status": "구현 완료(검수 전)"
     }
   ],
   "findings": [
@@ -4077,27 +4471,27 @@
   "pipeline": [
     {
       "title": "구현",
-      "state": "37.5 / 40",
+      "state": "55 / 57",
       "detail": "코드·설정이 저장소에 있는가"
     },
     {
       "title": "회귀 검사",
-      "state": "32.0 / 40",
+      "state": "50.5 / 57",
       "detail": "병합 소스에서 격리 시험이 통과했는가"
     },
     {
       "title": "배포",
-      "state": "33.0 / 40",
+      "state": "51 / 57",
       "detail": "솔루션 기기에 배포된 판본에 포함됐는가"
     },
     {
       "title": "실제 환경",
-      "state": "12.5 / 40",
+      "state": "21 / 57",
       "detail": "PJ1 실제 하네스·실제 MCP로 확인했는가"
     },
     {
       "title": "완료 검수",
-      "state": "0 / 40",
+      "state": "0 / 57",
       "detail": "완료조건 전체를 검수했는가"
     }
   ],

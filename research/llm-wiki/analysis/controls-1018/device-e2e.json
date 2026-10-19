@@ -1,0 +1,413 @@
+{
+ "decisions": [
+  {
+   "id": 30,
+   "created_at": "2026-10-18 07:38:13.893613+00:00",
+   "server_id": "context7",
+   "tool_name": "resolve-library-id",
+   "action": "r",
+   "data_class": "public",
+   "decision": "Block",
+   "policy_id": "MCP-DATA-EGRESS-001",
+   "reason": "탐지된 개인정보를 공급자 호스팅 서버로 전송할 수 없습니다.",
+   "upstream_attempted": false,
+   "upstream_executed": false,
+   "destinations": [],
+   "privacy_types": [
+    "EMAIL_ADDRESS"
+   ],
+   "harness": "codex-mcp-client",
+   "arguments": {
+    "query": "react hooks guide for hong.gildong@example.com",
+    "libraryName": "react"
+   },
+   "policy_request": {
+    "dlp": [],
+    "pii_types": [
+     "EMAIL_ADDRESS"
+    ],
+    "flow_sources": [],
+    "sequence_flags": [],
+    "untrusted_markers": []
+   },
+   "pac_request_transfer": {
+    "enabled": false,
+    "destination_id": ""
+   },
+   "pac_fact_transfer": {
+    "verified": true,
+    "data_grade": "public",
+    "final_destination_id": "",
+    "final_destination_verified": true
+   },
+   "pac_transfer_pairs": [],
+   "entry_sha256": "d54ef179c32675dda8e0b7d208daf7906a7145beb33ae2b018a82616fa37fe0f"
+  },
+  {
+   "id": 31,
+   "created_at": "2026-10-18 07:41:08.435598+00:00",
+   "server_id": "context7",
+   "tool_name": "resolve-library-id",
+   "action": "r",
+   "data_class": "public",
+   "decision": "Allow",
+   "policy_id": "P-AUTHZ-ALLOW-001",
+   "reason": "승인된 사용자·서버·기능·자원 범위와 PAC 실행 조건을 충족했습니다.",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "destinations": [],
+   "privacy_types": [
+    "EMAIL_ADDRESS"
+   ],
+   "harness": "codex-mcp-client",
+   "arguments": {
+    "query": "react hooks guide for hong.gildong@example.com",
+    "libraryName": "react"
+   },
+   "policy_request": {
+    "dlp": [],
+    "pii_types": [],
+    "flow_sources": [],
+    "masked_types": [
+     "EMAIL_ADDRESS"
+    ],
+    "sequence_flags": [],
+    "untrusted_markers": []
+   },
+   "pac_request_transfer": {
+    "enabled": false,
+    "destination_id": ""
+   },
+   "pac_fact_transfer": {
+    "verified": true,
+    "data_grade": "public",
+    "final_destination_id": "",
+    "final_destination_verified": true
+   },
+   "pac_transfer_pairs": [],
+   "entry_sha256": "b9a36c450405fc70d07354f239f8e5eca0422d92ebd9123ce08335897b5ebadd"
+  },
+  {
+   "id": 32,
+   "created_at": "2026-10-18 07:41:52.161467+00:00",
+   "server_id": "markitdown",
+   "tool_name": "convert_to_markdown",
+   "action": "r",
+   "data_class": "public",
+   "decision": "Block",
+   "policy_id": "P-CONSENT-001",
+   "reason": "이 도구의 데이터 이용에 사용자 동의가 필요합니다. 콘솔의 동의 요청을 확인하세요.",
+   "upstream_attempted": false,
+   "upstream_executed": false,
+   "destinations": [],
+   "privacy_types": [],
+   "harness": "codex-mcp-client",
+   "arguments": {
+    "uri": "https://learn.microsoft.com/en-us/training/support/mcp"
+   },
+   "policy_request": {
+    "dlp": [],
+    "pii_types": [],
+    "flow_sources": [],
+    "masked_types": [],
+    "sequence_flags": [],
+    "untrusted_markers": []
+   },
+   "pac_request_transfer": {
+    "enabled": false,
+    "destination_id": ""
+   },
+   "pac_fact_transfer": {
+    "verified": true,
+    "data_grade": "public",
+    "final_destination_id": "",
+    "final_destination_verified": true
+   },
+   "pac_transfer_pairs": [],
+   "entry_sha256": "b4432a137435fe566d88ce6a5255916e07ad2adbfac3d8946464bdf1698481b9"
+  },
+  {
+   "id": 33,
+   "created_at": "2026-10-18 07:42:23.936160+00:00",
+   "server_id": "markitdown",
+   "tool_name": "convert_to_markdown",
+   "action": "r",
+   "data_class": "public",
+   "decision": "Allow",
+   "policy_id": "P-AUTHZ-ALLOW-001",
+   "reason": "승인된 사용자·서버·기능·자원 범위와 PAC 실행 조건을 충족했습니다.",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "destinations": [],
+   "privacy_types": [],
+   "harness": "codex-mcp-client",
+   "arguments": {
+    "uri": "https://learn.microsoft.com/en-us/training/support/mcp"
+   },
+   "policy_request": {
+    "dlp": [],
+    "pii_types": [],
+    "flow_sources": [],
+    "masked_types": [],
+    "sequence_flags": [],
+    "untrusted_markers": []
+   },
+   "pac_request_transfer": {
+    "enabled": false,
+    "destination_id": ""
+   },
+   "pac_fact_transfer": {
+    "verified": true,
+    "data_grade": "public",
+    "final_destination_id": "",
+    "final_destination_verified": true
+   },
+   "pac_transfer_pairs": [],
+   "entry_sha256": "ea53dbd810167d3a76ac8cefc81cdfe55d2843155d8f2085060a1d8a21152e0c"
+  },
+  {
+   "id": 34,
+   "created_at": "2026-10-18 07:50:20.032252+00:00",
+   "server_id": "markitdown",
+   "tool_name": "convert_to_markdown",
+   "action": "r",
+   "data_class": "public",
+   "decision": "Allow",
+   "policy_id": "P-AUTHZ-ALLOW-001",
+   "reason": "승인된 사용자·서버·기능·자원 범위와 PAC 실행 조건을 충족했습니다.",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "destinations": [
+    {
+     "host": "learn.microsoft.com",
+     "kind": "url",
+     "value": "https://learn.microsoft.com/en-us/training/support/mcp",
+     "category": "external",
+     "external": true
+    }
+   ],
+   "privacy_types": [],
+   "harness": "codex-mcp-client",
+   "arguments": {
+    "uri": "https://learn.microsoft.com/en-us/training/support/mcp"
+   },
+   "policy_request": {
+    "dlp": [],
+    "pii_types": [],
+    "flow_sources": [],
+    "masked_types": [],
+    "sequence_flags": [],
+    "outbound_sha256": null,
+    "untrusted_markers": []
+   },
+   "pac_request_transfer": {
+    "enabled": true,
+    "destination_id": "learn.microsoft.com"
+   },
+   "pac_fact_transfer": {
+    "verified": true,
+    "data_grade": "public",
+    "final_destination_id": "learn.microsoft.com",
+    "final_destination_verified": true
+   },
+   "pac_transfer_pairs": [
+    {
+     "grade": "public",
+     "purpose": "공개 문서를 Markdown으로 변환",
+     "destination_id": "learn.microsoft.com"
+    }
+   ],
+   "entry_sha256": "9ea56a6998770f8a845a2c25cbeebad030c42a2ecb17ba42cb0a5465ed6e0031"
+  },
+  {
+   "id": 35,
+   "created_at": "2026-10-18 07:50:22.759708+00:00",
+   "server_id": "markitdown",
+   "tool_name": "convert_to_markdown",
+   "action": "r",
+   "data_class": "public",
+   "decision": "Block",
+   "policy_id": "PAC-01",
+   "reason": "승인된 PAC 실행 범위를 충족하지 못했습니다: PAC-01",
+   "upstream_attempted": false,
+   "upstream_executed": false,
+   "destinations": [
+    {
+     "host": "example.com",
+     "kind": "url",
+     "value": "https://example.com/",
+     "category": "external",
+     "external": true
+    }
+   ],
+   "privacy_types": [],
+   "harness": "codex-mcp-client",
+   "arguments": {
+    "uri": "https://example.com/"
+   },
+   "policy_request": {
+    "dlp": [],
+    "pii_types": [],
+    "flow_sources": [],
+    "masked_types": [],
+    "sequence_flags": [],
+    "outbound_sha256": null,
+    "untrusted_markers": []
+   },
+   "pac_request_transfer": {
+    "enabled": true,
+    "destination_id": "example.com"
+   },
+   "pac_fact_transfer": {
+    "verified": false,
+    "data_grade": "public",
+    "final_destination_id": "example.com",
+    "final_destination_verified": false
+   },
+   "pac_transfer_pairs": [],
+   "entry_sha256": "c70eb858545323859c5d595bc80d574eaaab3c66d87eaf0397ed618d7d78c585"
+  },
+  {
+   "id": 36,
+   "created_at": "2026-10-18 07:50:54.603086+00:00",
+   "server_id": "markitdown",
+   "tool_name": "convert_to_markdown",
+   "action": "r",
+   "data_class": "public",
+   "decision": "Block",
+   "policy_id": "P-CONSENT-001",
+   "reason": "이 도구의 데이터 이용에 사용자 동의가 필요합니다. 콘솔의 동의 요청을 확인하세요.",
+   "upstream_attempted": false,
+   "upstream_executed": false,
+   "destinations": [
+    {
+     "host": "learn.microsoft.com",
+     "kind": "url",
+     "value": "https://learn.microsoft.com/en-us/training/support/mcp",
+     "category": "external",
+     "external": true
+    }
+   ],
+   "privacy_types": [],
+   "harness": "codex-mcp-client",
+   "arguments": {
+    "uri": "https://learn.microsoft.com/en-us/training/support/mcp"
+   },
+   "policy_request": {
+    "dlp": [],
+    "pii_types": [],
+    "flow_sources": [],
+    "masked_types": [],
+    "sequence_flags": [],
+    "outbound_sha256": null,
+    "untrusted_markers": []
+   },
+   "pac_request_transfer": {
+    "enabled": true,
+    "destination_id": "learn.microsoft.com"
+   },
+   "pac_fact_transfer": {
+    "verified": true,
+    "data_grade": "public",
+    "final_destination_id": "learn.microsoft.com",
+    "final_destination_verified": true
+   },
+   "pac_transfer_pairs": [
+    {
+     "grade": "public",
+     "purpose": "공개 문서를 Markdown으로 변환",
+     "destination_id": "learn.microsoft.com"
+    }
+   ],
+   "entry_sha256": "d8dcfd9427e6f7fad4aec64e425ce4677b4df6043c97fc7ec151779949e9abe6"
+  },
+  {
+   "id": 37,
+   "created_at": "2026-10-18 07:50:59.241997+00:00",
+   "server_id": "context7",
+   "tool_name": "resolve-library-id",
+   "action": "r",
+   "data_class": "public",
+   "decision": "Allow",
+   "policy_id": "P-AUTHZ-ALLOW-001",
+   "reason": "승인된 사용자·서버·기능·자원 범위와 PAC 실행 조건을 충족했습니다.",
+   "upstream_attempted": true,
+   "upstream_executed": true,
+   "destinations": [],
+   "privacy_types": [
+    "EMAIL_ADDRESS",
+    "KR_PHONE"
+   ],
+   "harness": "codex-mcp-client",
+   "arguments": {
+    "query": "react hooks guide for hong.gildong@example.com, phone 010-1234-5678",
+    "libraryName": "react"
+   },
+   "policy_request": {
+    "dlp": [
+     "kr-mobile"
+    ],
+    "pii_types": [],
+    "flow_sources": [],
+    "masked_types": [
+     "EMAIL_ADDRESS",
+     "KR_PHONE"
+    ],
+    "sequence_flags": [],
+    "outbound_sha256": "8f3c951200c756e86982810ae290084434e43989543dc2deef5c3ae76f25358c",
+    "untrusted_markers": []
+   },
+   "pac_request_transfer": {
+    "enabled": false,
+    "destination_id": ""
+   },
+   "pac_fact_transfer": {
+    "verified": true,
+    "data_grade": "public",
+    "final_destination_id": "",
+    "final_destination_verified": true
+   },
+   "pac_transfer_pairs": [],
+   "entry_sha256": "be4e88a046044a63abb9b653c982af9603d775055b4d42f00306b7d3764b8132"
+  }
+ ],
+ "consent_events": [
+  {
+   "id": 75,
+   "kind": "user-consent",
+   "outcome": "rejected",
+   "target_kind": "consent",
+   "target_id": "1",
+   "actor": "user",
+   "reason": "동의 철회",
+   "scope": {
+    "tool": "convert_to_markdown",
+    "grade": "public",
+    "terms": "ac8f2c04cbe9d403ae506fa3323bac40d1cf748d1098c70a938659b9d0bc4b68",
+    "server": "markitdown",
+    "status": "REVOKED"
+   },
+   "created_at": "2026-10-18 07:50:42.630004+00:00"
+  }
+ ],
+ "consents": [
+  {
+   "id": 1,
+   "user_token": "user",
+   "server_id": "markitdown",
+   "tool_name": "convert_to_markdown",
+   "grade": "public",
+   "status": "PENDING",
+   "terms_hash": "ac8f2c04cbe9d403ae506fa3323bac40d1cf748d1098c70a938659b9d0bc4b68",
+   "requested_at": "2026-10-18 07:50:54.596172+00:00",
+   "decided_at": null,
+   "expires_at": null
+  }
+ ],
+ "audit_chain": {
+  "intact": true,
+  "checked": 37,
+  "head": "be4e88a046044a63abb9b653c982af9603d775055b4d42f00306b7d3764b8132",
+  "entries_recorded": 37
+ }
+}

@@ -70,6 +70,7 @@ def scope(principal: dict, server: str, tool: str, action: str, resources: list,
     spec = registry.server(server) or {}
     envelope = spec.get("allowed_principals")
     if envelope is not None:
+        terms = (spec.get("tool_reviews") or {}).get(tool) or {}
         allowed = principal["token"] in envelope and tool in spec.get("tools", {})
         # A remote review approves the explicitly selected feature and declared
         # data class. An argument-induced escalation is outside that approval.
@@ -79,7 +80,9 @@ def scope(principal: dict, server: str, tool: str, action: str, resources: list,
         return {"allowed": allowed, "id": spec.get("intake_id", ""),
                 "valid_from": spec.get("registered_at"), "valid_until": spec.get("valid_until"),
                 "actions": [spec.get("tools", {}).get(tool)], "resources_allowed": allowed,
-                "commands": [], "transfer_destinations": spec.get("transfer_destinations", [])}
+                "commands": [], "transfer_destinations": spec.get("transfer_destinations", []),
+                # An individual approval given under one purpose does not survive a changed purpose (POL-26).
+                "transfer_terms": {key: terms.get(key) for key in ("purpose", "destinations", "grade")}}
     document = capabilities()
     for grant in document["capabilities"]:
         subject = principal["token"] in grant["principals"]
@@ -156,6 +159,29 @@ def digest(document: dict) -> str:
     return canonical_hash(binding)
 
 
+GRADES_UP_TO = {"public": ["public"], "nonimportant": ["public", "nonimportant"]}
+
+
+def transfer_binding(spec: dict, feature: str, destinations: list[str]) -> tuple[bool, list[dict]]:
+    """POL-26: whether the final destination is proven, and the purpose/destination/grade pairs approved together.
+
+    Multiple or unverified final transfer targets fail closed. HTTP redirects at an MCP tool's
+    downstream HTTP client are not proved by Gateway TLS. The egress proxy of a server the runtime
+    runs admits the reviewed hosts of all its tools (D-114); only when that set is inside this
+    tool's own reviewed hosts does every final hop, redirects included, stay within this binding.
+    """
+    if not destinations:
+        return True, []
+    destination = destinations[0] if len(destinations) == 1 else ""
+    terms = (spec.get("tool_reviews") or {}).get(feature) or {}
+    covered = bool(destination) and any(destination == h or (h.startswith("*.") and destination.endswith(h[1:]))
+                                        for h in terms.get("destinations") or [])
+    pairs = [{"destination_id": destination, "grade": grade, "purpose": terms.get("purpose", "")}
+             for grade in GRADES_UP_TO.get(terms.get("grade"), [])] if covered else []
+    egress = {h for review in (spec.get("tool_reviews") or {}).values() for h in review.get("destinations") or []}
+    return covered and bool(spec.get("runtime")) and egress <= set(terms.get("destinations") or []), pairs
+
+
 async def build(payload: dict, principal: dict, cls, tool: dict | None, contract: dict,
                 context: dict, request_id: str, environment: str, approval_id: str | None) -> dict:
     now = time.time_ns()
@@ -216,12 +242,10 @@ async def build(payload: dict, principal: dict, cls, tool: dict | None, contract
         "registered", "enabled", "schema_hash_match", "description_hash_match", "version_match", "known_tools_only"))
     connection_ok = catalog_ok and contract.get("transport_secure") is True and contract.get("endpoint_allowed") is True
     high_risk = cls.action == "x"
-    destinations = [d.value for d in cls.destinations if d.external]
-    # Multiple or unverified final transfer targets fail closed. HTTP redirects at
-    # an MCP tool's downstream HTTP client are not proved by Gateway TLS.
+    destinations = sorted({d.host for d in cls.destinations if d.external})  # two links to one host are one target
     transfer = bool(destinations)
     destination = destinations[0] if len(destinations) == 1 else ""
-    transfer_ok = not transfer
+    transfer_ok, transfer_pairs = transfer_binding(spec, feature, destinations)
     reservation = await db.fetch_one("SELECT * FROM call_reservations WHERE request_id=%s", (request_id,))
     active = bool(reservation and reservation["released_at"] is None and ns(reservation["expires_at"]) > now)
     limits = execution_profile.get("limits", {})
@@ -235,7 +259,7 @@ async def build(payload: dict, principal: dict, cls, tool: dict | None, contract
          "actions": approved["actions"], "allowed_argument_keys": list((tool or {}).get("input_schema", {}).get("properties", {})),
          "parameter_bindings": bindings, "targets": targets if parameter_ok else {"files": [], "commands": [], "recipients": []},
          "data_scopes": [{"asset_id": cls.primary.id, "grade": cls.data_class}] if approved["resources_allowed"] else [],
-         "transfer_pairs": [], "limits": limits}
+         "transfer_pairs": transfer_pairs, "limits": limits}
     request = {"id": request_id, "approval_nonce": payload.get("pac_request_id", request_id),
                **identity, "server_id": server, "feature_type": "tool", "feature_id": feature,
                "action": cls.action, "arguments": arguments, "environment": environment, "targets": targets,

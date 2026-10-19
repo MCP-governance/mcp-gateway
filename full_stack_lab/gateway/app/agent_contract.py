@@ -4,6 +4,7 @@ from __future__ import annotations
 import base64
 import os
 from datetime import UTC, datetime, timedelta
+from typing import Literal
 from uuid import uuid4
 
 import jwt
@@ -31,6 +32,16 @@ class ToolReview(StrictModel):
     purpose: str = Field(min_length=4, max_length=200)
     asset: str = Field(min_length=2, max_length=200)
     destinations: list[str] = Field(default_factory=list, max_length=10)
+    # POL-31: the argument names this tool may carry (None = every advertised one) and whether
+    # detected personal data in them is masked before it leaves.
+    inputs: list[str] | None = Field(default=None, max_length=100)
+    mask: bool = False
+    # POL-26: the highest grade that may reach the reviewed destinations for this purpose.
+    grade: Literal["public", "nonimportant"] = "public"
+    # POL-33: servers whose important data this tool may receive within one principal's window.
+    accepts_from: list[str] = Field(default_factory=list, max_length=20)
+    # POL-08: the employee's own consent is needed per tool and data grade.
+    consent: bool = False
 
 
 def _key_material(name: str) -> bytes:
