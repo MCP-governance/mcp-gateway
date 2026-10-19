@@ -331,3 +331,6 @@ ALTER TABLE user_consents ADD COLUMN IF NOT EXISTS terms jsonb NOT NULL DEFAULT 
 
 -- New ledger snapshots only; older rows remain untouched and are projected at read time.
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS outcome jsonb;
+-- DEV-71: what the applicant stated about data, transfer, permission and users. The risk tier is
+-- computed from it each time (risk_tier.assess), never stored as a value that could drift from it.
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS risk_input jsonb NOT NULL DEFAULT '{}';

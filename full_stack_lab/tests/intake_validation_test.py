@@ -19,6 +19,7 @@ from exit_terms import conclude, investigate
 from app import agent_service, core, review
 from fastapi.testclient import TestClient
 import intake_worker as worker
+from intake_fixture import IMPACT_INPUT, approval_body
 
 
 class InvestigationTest(unittest.TestCase):
@@ -232,11 +233,12 @@ class ApiTest(unittest.TestCase):
     def test_discovery_does_not_bypass_remote_approval(self):
         row = {"status": "VALIDATED", "commit_sha": "d" * 40, "submitted_by": "requester", "submitter_user_id": "user-req",
                "display_name": "Example", "intake_kind": "repository",
-               "requested_transport": "streamable-http", "exit_terms": {},
+               "requested_transport": "streamable-http", "exit_terms": {}, "risk_input": IMPACT_INPUT,
                "evidence": {"exit_terms_discovery": {"status": "REVIEW_REQUIRED"}}}
         with self.identity("admin"), patch.object(agent_service.db, "fetch_one", AsyncMock(return_value=row)), \
+             patch.object(agent_service.db, "fetch_all", AsyncMock(return_value=[])), \
              patch.object(review, "lapse_expired_acceptances", AsyncMock(return_value=[])):
-            response = self.client.post(f"/api/mcp-requests/{self.id}/approve")
+            response = self.client.post(f"/api/mcp-requests/{self.id}/approve", json=approval_body())
         self.assertEqual(response.status_code, 409)
         self.assertIn("증거 문서", response.json()["detail"])
 
@@ -251,16 +253,17 @@ class ApiTest(unittest.TestCase):
         pending = {"id": self.id, "status": "VALIDATED", "commit_sha": "d" * 40, "submitted_by": "requester", "submitter_user_id": "user-req",
                    "display_name": "Example", "intake_kind": "repository",
                    "requested_transport": "stdio", "exit_terms": {}, "provenance": {"kind": "source"},
-                   "repository_url": "https://github.com/example/server"}
+                   "repository_url": "https://github.com/example/server", "risk_input": IMPACT_INPUT}
         approved = {"id": self.id, "status": "APPROVED", "internal_repo_url": "http://internal/git/corpadmin/mcp-test"}
         db = AsyncMock(side_effect=[pending])
         publisher = AsyncMock(return_value=(approved["internal_repo_url"], {"match": True, "sha256": "e" * 64}))
         gate = AsyncMock(return_value={"blockers": [], "critical": None, "vuln_db": None})
         transaction, statements = self.transaction({"UPDATE mcp_intake_requests": approved, "INSERT INTO approval_events": {"id": 1}})
         with self.identity("admin"), patch.object(agent_service.db, "fetch_one", db), transaction, \
+             patch.object(agent_service.db, "fetch_all", AsyncMock(return_value=[])), \
              patch.object(agent_service, "publish_internal_repo", publisher), patch.object(review, "intake_gate", gate), \
              patch.object(review, "lapse_expired_acceptances", AsyncMock(return_value=[])):
-            response = self.client.post(f"/api/mcp-requests/{self.id}/approve")
+            response = self.client.post(f"/api/mcp-requests/{self.id}/approve", json=approval_body())
         self.assertEqual(response.status_code, 200)
         publisher.assert_awaited_once()
         self.assertIn("internal_repo_url", statements[0][0])

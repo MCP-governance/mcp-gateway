@@ -19,6 +19,7 @@ import httpx
 import httpx2
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
+from intake_fixture import SUPPLIER_ASSURANCE, impact_input
 from intake_register import login, register
 from real_mcp_check import SERVERS, SMOKE
 
@@ -63,7 +64,8 @@ async def run(args):
                          allowed=[who['user_id']], ack_warnings=bool(row['catalog_warnings'] and row.get('warning_review')),
                          purpose='Authorized live vendor read verification; no writes, messages, or production enrollment',
                          review_note='Pinned review file: selected read tool only, one-day verification window.',
-                         risk_acceptance='Provider-hosted service; only the selected read tool runs for one day.')
+                         risk_acceptance='Provider-hosted service; only the selected read tool runs for one day.',
+                         supplier_assurance=SUPPLIER_ASSURANCE, impact_input=impact_input('important'))
                 registered = True
                 async with httpx2.AsyncClient(timeout=90, headers={'Authorization': 'Bearer ' + requester}) as http:
                     async with Client(streamable_http_client(args.url + '/mcp/' + server_id + '/', http_client=http)) as client:

@@ -133,6 +133,8 @@ docker compose stop intake-worker >/dev/null 2>&1
 trap 'docker compose start intake-worker opa mcp-git >/dev/null 2>&1' EXIT
 # A run that died halfway leaves its request open; close it so this one can submit.
 psql_q "UPDATE mcp_intake_requests SET status='REJECTED', review_note='security regression rerun' WHERE repository_url='https://github.com/bob-lab/exit-terms-regression' AND status NOT IN ('REJECTED','FAILED')" >/dev/null
+# An approval now carries the supplier assurance it is refused without; the values are synthetic (tests/intake_fixture.py).
+approval_body() { python3 -B tests/intake_fixture.py "$@"; }
 REQUESTER="$(token miso@bob.local)"
 expect "신청자가 종료 조건을 스스로 체크 → 거부" "$(code -X POST "$CONSOLE/api/mcp-requests" -H "authorization: Bearer $REQUESTER" \
   -H 'content-type: application/json' -d "${REQ_BODY%\}},\"revocation_evidence\":true}")" 422
@@ -142,17 +144,19 @@ ADMIN_I="$(token kkg@bob.local)"
 TERMS='{"provider_credential_disclosure":true,"revocation_evidence":true,"audit_access_retained":true,"note":"security regression: provider terms section 7"'
 expect "직원이 종료 조건 검증 기록 → 거부" "$(code -X PUT "$CONSOLE/api/mcp-requests/$REQ_ID/exit-terms" -H "authorization: Bearer $REQUESTER" \
   -H 'content-type: application/json' -d "$TERMS,\"evidence_url\":\"https://provider.example/terms\"}")" 403
-detail="$(curl -s -X POST "$CONSOLE/api/mcp-requests/$REQ_ID/approve" -H "authorization: Bearer $ADMIN_I" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("detail",""))')"
+detail="$(curl -s -X POST "$CONSOLE/api/mcp-requests/$REQ_ID/approve" -H "authorization: Bearer $ADMIN_I" -H 'content-type: application/json' \
+  -d "$(approval_body)" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("detail",""))')"
 if [[ "$detail" == *"증거 문서로 확인"* ]]; then ok "검증 기록 없는 원격 MCP 승인 → 종료 조건 게이트"; else bad "검증 기록 없는 원격 MCP 승인 → 종료 조건 게이트" "$detail"; fi
 # D-50: a written risk acceptance passes the exit-terms gate, never the isolated validation before it.
 detail="$(curl -s -X POST "$CONSOLE/api/mcp-requests/$REQ_ID/approve" -H "authorization: Bearer $ADMIN_I" -H 'content-type: application/json' \
-  -d '{"risk_acceptance":"security regression: accepting the exit-terms risk in writing"}' | python3 -c 'import json,sys; print(json.load(sys.stdin).get("detail",""))')"
+  -d "$(approval_body risk_acceptance='security regression: accepting the exit-terms risk in writing')" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("detail",""))')"
 if [[ "$detail" == *"격리 검증을 통과한"* ]]; then ok "위험 수용 사유로도 격리 검증 전에는 승인 불가"; else bad "위험 수용 사유로도 격리 검증 전에는 승인 불가" "$detail"; fi
 expect "HTTPS가 아닌 증거 주소 → 거부" "$(code -X PUT "$CONSOLE/api/mcp-requests/$REQ_ID/exit-terms" -H "authorization: Bearer $ADMIN_I" \
   -H 'content-type: application/json' -d "$TERMS,\"evidence_url\":\"http://provider.example/terms\"}")" 422
 expect "관리자 검증 기록" "$(code -X PUT "$CONSOLE/api/mcp-requests/$REQ_ID/exit-terms" -H "authorization: Bearer $ADMIN_I" \
   -H 'content-type: application/json' -d "$TERMS,\"evidence_url\":\"https://provider.example/terms\"}")" 200
-detail="$(curl -s -X POST "$CONSOLE/api/mcp-requests/$REQ_ID/approve" -H "authorization: Bearer $ADMIN_I" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("detail",""))')"
+detail="$(curl -s -X POST "$CONSOLE/api/mcp-requests/$REQ_ID/approve" -H "authorization: Bearer $ADMIN_I" -H 'content-type: application/json' \
+  -d "$(approval_body)" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("detail",""))')"
 if [[ "$detail" == *"격리 검증을 통과한"* ]]; then ok "검증 기록 뒤에도 격리 검증 전에는 승인 불가"; else bad "검증 기록 뒤에도 격리 검증 전에는 승인 불가" "$detail"; fi
 curl -fsS -o /dev/null -X POST "$CONSOLE/api/mcp-requests/$REQ_ID/reject" -H "authorization: Bearer $ADMIN_I" \
   -H 'content-type: application/json' -d '{"note":"security regression cleanup"}' || bad "회귀용 신청 정리" "거부 실패"

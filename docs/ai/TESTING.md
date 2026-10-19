@@ -60,7 +60,9 @@ Gateway 응답과 **별도 회사 DB의 값 변화**를 대조한다. 시험 값
 해제하며, 출력은 결정 ID·전달/실행 상태·내용 digest만 남긴다. mount 출력 경로는 Compose 기본 read-only
 `/reports`와 겹치지 않는 `/output`을 쓴다. 두 단계는 `{"requester": {email,password}, "approver": {email,password}}`를
 stdin에서 받는다(D-57·D-59). 임시 등록도 `tests/intake_register.py`로 신청 → 계약 검토 → 다른 사람의 승인 → 활성화를
-거친다. 관리자 직접 등록은 409다. 같은 도우미를 실기기에서 Console 주소로 직접 실행해 공급자 MCP를 등록한다.
+거친다. 관리자 직접 등록은 409다. 같은 도우미를 실기기에서 Console 주소로 직접 실행해 공급자 MCP를 등록한다. 승인은 공급자 보증
+(`--supplier-assurance`)과 영향평가 입력(`--impact-input`) JSON을 요구하며 기본값을 쓰지 않는다. 승인 경로를 밟는 시험은 합성 값을
+`tests/intake_fixture.py`에서 받는다(D-137·D-143).
 
 SSH VM의 새 native Docker 이미지에는 공식 Claude Code 2.1.282·Codex 0.158.0을 설치한다. 임시 profile의
 일곱 실제 MCP 연결과 managed 정책 적용을 비교하되 host SYN 관측을 따로 기록한다. SYN은 전체 interface
