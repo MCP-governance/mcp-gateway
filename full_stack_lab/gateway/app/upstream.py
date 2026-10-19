@@ -22,11 +22,12 @@ from typing import Any
 from urllib.parse import urlsplit
 
 import httpx2
-from mcp import Client
+from mcp import Client, types
 from mcp.client.streamable_http import streamable_http_client
 from mcp_types.version import HANDSHAKE_PROTOCOL_VERSIONS, MODERN_PROTOCOL_VERSIONS
+from pydantic import ValidationError
 
-from . import db, registry, upstream_sessions
+from . import db, output_contract, registry, upstream_sessions
 from .destination import pin_transport
 
 CONNECT_TIMEOUT = float(os.getenv("UPSTREAM_TIMEOUT_SECONDS", "90"))
@@ -68,7 +69,7 @@ def credential_headers(endpoint: str, principal: str | None = None) -> dict:
         if type(expiry) not in (int, float) or not math.isfinite(expiry) or expiry < 0 or (expiry and expiry <= time.time()):
             raise ValueError('credential expiration')
         token = row['access_token']
-        if not isinstance(token, str) or not token or any(c in token for c in '\r\n'):
+        if not isinstance(token, str) or not token or any(c in token for c in '\n'):
             raise ValueError('credential format')
         return {'Authorization': 'Bearer ' + token}
     except (OSError, ValueError, TypeError, KeyError) as exc:
@@ -287,9 +288,39 @@ async def _session(endpoint: str, timeout: float, principal: str | None, protoco
             http_client = await stack.enter_async_context(_client(timeout, headers, endpoint, internal))
         else:
             http_client = await stack.enter_async_context(_dispatch_client(endpoint, principal, headers, timeout, internal))
-        yield await stack.enter_async_context(
+        client = await stack.enter_async_context(
             Client(streamable_http_client(endpoint, http_client=http_client), read_timeout_seconds=timeout,
                    mode=connect_mode(protocol), cache=None))
+        yield ContractClient(client)
+
+
+class ContractClient:
+    """Keep SDK wire validation; MINT validates the approved output after receipt.
+
+    Client.call_tool validates the mutable advertised schema before returning and
+    treats explicit null as missing. send_request preserves receipt and field presence.
+    No input-required retries or extension resolvers may execute extra calls here.
+    """
+    def __init__(self, client):
+        self.client = client
+
+    @property
+    def protocol_version(self):
+        return self.client.protocol_version
+
+    @property
+    def server_info(self):
+        return self.client.server_info
+
+    async def list_tools(self, **kwargs):
+        return await self.client.list_tools(**kwargs)
+
+    async def call_tool(self, name, arguments):
+        request = types.CallToolRequest(params=types.CallToolRequestParams(name=name, arguments=arguments))
+        try:
+            return await self.client.session.send_request(request, types.CallToolResult)
+        except ValidationError as exc:
+            raise output_contract.WireRejected("도구 응답이 협상된 출력 형식과 일치하지 않습니다.") from exc
 
 
 @asynccontextmanager
@@ -351,10 +382,14 @@ async def list_all_tools(client: Client) -> list:
 
 def tool_view(tool: Any) -> dict:
     annotations = getattr(tool, "annotations", None)
+    output_schema = getattr(tool, "output_schema", None)
+    if output_schema is not None:
+        output_contract.check_schema_bounds(output_schema)
     return {
         "name": tool.name,
         "description": tool.description or "",
         "input_schema": tool.input_schema,
+        "output_schema": output_schema,
         "annotations": annotations.model_dump(exclude_none=True) if annotations else None,
     }
 

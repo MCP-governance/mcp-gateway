@@ -1129,7 +1129,7 @@
     },
     "MCP-OUTPUT-001": {
       "name": "결과 출력 통제",
-      "purpose": "upstream 결과의 크기와 정책 우회 지시 패턴을 검사하고 걸리면 결과를 반환하지 않는다. 호출 자체는 이미 실행됐으므로 upstream_executed는 참으로 남긴다.",
+      "purpose": "upstream 결과의 크기·정책 우회 지시·승인 출력 계약·협상 판본 형식을 검사하고 걸리면 결과를 반환하지 않는다. 호출 자체는 이미 실행됐으므로 upstream_executed는 참으로 남긴다.",
       "enforced_by": "gateway",
       "risk_ids": [
         "RSK-18",
@@ -1151,9 +1151,11 @@
       "scope": "모든 upstream 결과",
       "inputs": [
         "결과 크기",
-        "결과 본문 패턴"
+        "결과 본문 패턴",
+        "승인 outputSchema",
+        "협상 판본과 structuredContent"
       ],
-      "condition": "결과가 크기 한도를 넘거나 위험한 내용이 탐지됐다.",
+      "condition": "결과가 크기 한도를 넘거나 위험한 내용이 탐지됐거나 승인 출력 계약·협상 판본 형식과 불일치한다.",
       "outcome": "차단",
       "enforcement": "결과 미반환, 실행 기록 유지",
       "priority": 2009,

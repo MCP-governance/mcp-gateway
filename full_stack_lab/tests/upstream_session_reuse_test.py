@@ -266,7 +266,7 @@ class PoolTests(unittest.IsolatedAsyncioTestCase):
 
 class WiringTests(unittest.IsolatedAsyncioTestCase):
     def upstream_functions(self):
-        return functions("upstream.py", {"session", "_session", "connect_mode", "list_all_tools", "credential_hash", "_sweep", "close_pool", "close_downstream", "release_pool", "maintain_pool"}, {
+        return functions("upstream.py", {"session", "_session", "ContractClient", "connect_mode", "list_all_tools", "credential_hash", "_sweep", "close_pool", "close_downstream", "release_pool", "maintain_pool"}, {
             "asynccontextmanager": asynccontextmanager, "AsyncExitStack": __import__("contextlib").AsyncExitStack,
             "CONNECT_TIMEOUT": 90, "HANDSHAKE_PROTOCOL_VERSIONS": {"2025-11-25"},
             "MODERN_PROTOCOL_VERSIONS": {"2026-07-28"}, "Client": object, "MAX_TOOL_PAGES": 50,
@@ -508,7 +508,7 @@ class WiringTests(unittest.IsolatedAsyncioTestCase):
             "_caller": AsyncMock(return_value={"principal": "alice", "claims": {"jti": "jwt"}}),
             "_scope": lambda ctx: "a", "_client_context": lambda *args: {},
             "_conversation": lambda *args: ("chat", "jwt"), "upstream_sessions": sessions,
-            "execute_call": execute, "_render": lambda outcome: outcome,
+            "execute_call": execute, "_render": lambda outcome, protocol=None: outcome,
         })
         facade = ns["build_mcp"]()
         for failed in (False, True):
@@ -559,12 +559,18 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.policy = AsyncMock(return_value={"decision": "Allow", "restrictions": {}})
         self.record = AsyncMock(return_value=None)
         self.release = AsyncMock()
+        digest = functions("contract.py", {"canonical_hash"}, {"hashlib": hashlib, "json": json})["canonical_hash"]
+        output_contract = NS(**functions("output_contract.py", {"approved_hash", "matches"}, {
+            "canonical_hash": digest, "NO_OUTPUT_SCHEMA_HASH": digest(None)}))
+        review_matches = functions("registry.py", {"tool_hashes", "review_matches"}, {
+            "canonical_hash": lambda value: value, "NO_OUTPUT_SCHEMA_HASH": None})["review_matches"]
         ns = {
             "DispatchRejected": DispatchRejected, "registry": NS(
                 server=lambda _: {"endpoint": "https://a.example/mcp", "poisoning_review": {
                     "tool": {"description_sha256": "description", "schema_sha256": {}}}},
                 pinned_protocol=lambda _: "2025-11-25",
-                tool_hashes=lambda _: {"description_sha256": "description", "schema_sha256": {}}),
+                tool_hashes=lambda _: {"description_sha256": "description", "schema_sha256": {}},
+                review_matches=review_matches),
             "upstream": NS(session=session, list_all_tools=self.listed, release_pool=self.release,
                            tool_view=lambda _: {"description": "description", "input_schema": {}},
                            content_items=lambda _: [], session_terminated=lambda exc: str(exc) == "expired"),
@@ -573,7 +579,8 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
             "datetime": datetime, "UTC": timezone.utc, "local_verdict": lambda pid, decision, msg: {"policy_id": pid, "decision": decision},
             "pac": NS(build=AsyncMock(return_value={})), "classify": NS(classify=lambda *args: None),
             "_contract": AsyncMock(return_value={}), "GATEWAY_ENVIRONMENT": "unit", "_policy": self.policy,
-            "dispatch": NS(record=self.record), "asyncio": asyncio, "_guarded_result": lambda value: value,
+            "dispatch": NS(record=self.record), "asyncio": asyncio,
+            "output_contract": output_contract, "_guarded_result": lambda value, protocol=None, schema=None: value,
         }
         self.ns = functions("core.py", {"_call_upstream"}, ns)
         self.laps = NS(lap=lambda name: self.trace.append(name))
