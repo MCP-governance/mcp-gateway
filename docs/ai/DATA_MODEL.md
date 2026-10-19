@@ -129,6 +129,7 @@ D-90~D-92에서 더한 것(`v2_tables.sql`, 모두 멱등): `mcp_intake_requests
 `supply_chain_reports.vuln_db_updated_at`(그 검사가 쓴 취약점 DB의 갱신 시각), `accepted_risks`(치명적 발견의 기한부 수용: 신청·커밋·발견 id·사유·수용자·만료),
 `mcp_tools.scope_review`(도구별 목적·자산·행위·외부 목적지), `approval_events`(승인·거부·보류·수용·등록 기록, append-only),
 `audit_annotations`(`decisions.id` 범위의 무효 처리 표시, append-only). Console 등록 서버의 `servers.json` 항목에는 `tool_reviews`와 `provenance`가 들어간다.
+D-143에서 더한 것: `mcp_intake_requests.risk_input`(신청자가 적은 영향평가 입력 여섯 항목, 등급은 저장하지 않고 `risk_tier.assess`로 매번 계산), `servers.json` 항목의 `risk_assessment`(등급·점수·입력·`input_sha256`·승인자)와 문서 최상위의 `risk_tier_grace_started_at`(입력 없는 기존 승인의 30일 유예 시작), `approval_events`의 `intake-cosign`(두 명 승인의 첫 번째)·`risk-input`(입력 기록).
 
 Console 등록 서버(D-49)는 DB가 아니라 `REGISTRY_RUNTIME_DIR/servers.json`에 있다 — `servers`(catalog.toml과 같은 모양 +
 `valid_until`·`intake_id`·`registered_by`), `contracts`(등록 때 고정한 도구 해시), `usage_relationships`(`UR-<ID>`), `history`(등록·연장·해제).

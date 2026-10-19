@@ -36,7 +36,7 @@ from .core import (
 from .mcp_facade import build_mcp, transport_security
 from .agent_contract import CONSOLE_SCOPE, ToolReview, authenticate, authenticated_user
 from .release import build_info, policy_info
-from . import activity, audit, registry, retention, review, siem, supplier_assurance
+from . import activity, audit, registry, retention, review, risk_tier, siem, supplier_assurance
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 # "오늘" is the operator's day. The DB session runs in UTC, so date_trunc('day', now())
@@ -350,7 +350,8 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
         db.fetch_all("SELECT * FROM usage_relationships ORDER BY id"),
     )
     catalog_servers = registry.servers()
-    console = registry.runtime()["servers"]
+    doc = registry.runtime()
+    console = doc["servers"]
     return {"catalog_version": registry.catalog_version(),
             "classification": registry.catalog().get("classification", {}),
             "organization": registry.catalog().get("organization", {}),
@@ -359,7 +360,8 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
             # D-49: which servers came from a Console registration, and until when they may be used.
             "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by", "registered_at",
                                                                     "data_class", "tools", "tool_reviews", "provenance",
-                                                                    "allowed_principals", "supplier_assurance")}
+                                                                    "allowed_principals", "supplier_assurance", "risk_assessment")}
+                                  | {"risk_review": risk_tier.legacy_review(spec, doc.get("risk_tier_grace_started_at"))}
                               for sid, spec in console.items() if sid not in registry.reviewed_servers()}}
 
 

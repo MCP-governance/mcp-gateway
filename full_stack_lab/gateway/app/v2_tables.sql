@@ -328,3 +328,7 @@ CREATE TABLE IF NOT EXISTS user_consents (
 );
 -- What the employee is shown and agrees to: the reviewed terms the hash stands for.
 ALTER TABLE user_consents ADD COLUMN IF NOT EXISTS terms jsonb NOT NULL DEFAULT '{}'::jsonb;
+
+-- DEV-71: what the applicant stated about data, transfer, permission and users. The risk tier is
+-- computed from it each time (risk_tier.assess), never stored as a value that could drift from it.
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS risk_input jsonb NOT NULL DEFAULT '{}';

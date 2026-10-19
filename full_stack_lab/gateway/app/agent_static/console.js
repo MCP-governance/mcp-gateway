@@ -198,7 +198,7 @@ const APPROVAL_STATUS = {
 const REVIEW_KIND = {
   "user-consent": "사용자 동의", "intake-approve": "운영자 승인", "contract-review": "계약 검토", "risk-accept": "위험 수용",
   "risk-lapse": "위험 수용 만료", "intake-reject": "거부", "intake-hold": "보류", "provenance-mismatch": "보류",
-  "server-register": "게이트웨이 등록", "tool-scope-review": "범위 심사",
+  "server-register": "게이트웨이 등록", "tool-scope-review": "범위 심사", "intake-cosign": "1차 승인", "risk-input": "영향평가 입력",
   "runtime-start": "실행 요청", "runtime-stop": "실행 중지 요청", "runtime-built": "이미지 빌드", "runtime-active": "실행 시작",
   "runtime-failed": "실행 실패", "runtime-stopped": "실행 중지",
 };
@@ -502,7 +502,7 @@ const VALIDITY = { 1: "1일", 30: "30일", 90: "90일", 180: "180일", 365: "1�
 function validityChip(registration) {
   if (!registration?.valid_until) return "";
   const days = Math.ceil((new Date(registration.valid_until).getTime() - Date.now()) / 86400000);
-  return days <= 0 ? chip("block", registration.supplier_assurance ? "재승인 대기" : "사용 기한 만료") : chip(days <= 14 ? "alert" : "outline", `D-${days}`);
+  return days <= 0 ? chip("block", registration.supplier_assurance || registration.risk_review ? "재승인 대기" : "사용 기한 만료") : chip(days <= 14 ? "alert" : "outline", `D-${days}`);
 }
 
 // ── pages ────────────────────────────────────────────────────────────────────
@@ -1072,6 +1072,7 @@ ROUTES.servers = async (id, tab, query) => {
               <td><b>${s.display_name}</b><span class="sub mono">${s.id}</span></td>
               <td>${chip(s.status === "READY" ? "allow" : s.status === "DISABLED" ? "outline" : "alert", SERVER_STATUS[s.status] || s.status)}
                 ${s.lifecycle && s.lifecycle !== "OPERATING" ? chip(s.lifecycle === "RETIRED" ? "block" : "alert", LIFECYCLE[s.lifecycle] || s.lifecycle) : ""}
+                ${s.registration?.risk_review?.state === "grace" ? chip("alert", "재평가 필요") : ""}
                 ${s.registration?.supplier_assurance?.support_end ? chip(supportStatus(s.registration.supplier_assurance.support_end) === "지원 종료 경과" ? "block" :
                   supportStatus(s.registration.supplier_assurance.support_end) === "지원 종료 임박" ? "alert" : "outline", supportStatus(s.registration.supplier_assurance.support_end)) : ""}
                 <span class="sub">${s.deployment === "provider" ? "제공자 운영" : "사내 운영"}</span></td>
@@ -1142,6 +1143,15 @@ function showServer(id) {
         ["SBOM 제출", registration.supplier_assurance.sbom_submitted ? "제출" : "미제출"],
         ["VEX 제출", registration.supplier_assurance.vex_submitted ? "제출" : "미제출"],
         ["계약 근거", registration.supplier_assurance.contract_basis_ref], ["종료 전략", registration.supplier_assurance.exit_strategy]] : []),
+      ...(registration?.risk_assessment ? [["위험 등급", chip(...RISK_TIER[registration.risk_assessment.tier])],
+        ["처리 개인정보", RISK_CHOICES.personal_data[registration.risk_assessment.input.personal_data]],
+        ["외부 전송", registration.risk_assessment.input.external_transfer ? "있음" : "없음"],
+        ["실행 권한", RISK_CHOICES.permission[registration.risk_assessment.input.permission]],
+        ["예상 사용자 수", `${registration.risk_assessment.input.users}명`],
+        ["자율성", RISK_CHOICES.autonomy[registration.risk_assessment.input.autonomy]],
+        ["승인자", (registration.risk_assessment.approvers || []).join(", ")]]
+        : registration?.risk_review ? [["위험 등급", html`${chip(...RISK_TIER[registration.risk_review.tier])}<span class="sub">영향평가 입력 없음</span>`],
+          ["재평가 기한", registration.risk_review.until.slice(0, 10)]] : []),
       ["출처 해시", registration?.provenance?.artifact?.sha256 ? html`<code>${registration.provenance.artifact.sha256}</code>` : ""],
       ["사용 기한", registration ? `${when(registration.valid_until)} · ${DATA_CLASS[registration.data_class] || ""}` : ""],
       ["등록", registration ? `${registration.registered_by} · ${when(registration.registered_at)}` : ""],
@@ -1517,7 +1527,7 @@ ROUTES.intake = async (_, tab) => {
       active: tab || "list",
       tabs: [
         { key: "list", label: viewer.admin ? "전체 신청" : "내 신청", n: requests.length, body: html`<div class="stack">
-          ${panel("신청", html`<table class="data"><thead><tr><th>서버</th><th>상태</th><th>종료 조건</th><th>신청</th>${viewer.admin ? html`<th></th>` : ""}</tr></thead><tbody>
+          ${panel("신청", html`<table class="data"><thead><tr><th>서버</th><th>상태</th><th>종료 조건</th><th>위험 등급</th><th>신청</th>${viewer.admin ? html`<th></th>` : ""}</tr></thead><tbody>
           ${requests.map((r) => {
             const remote = r.requested_transport !== "stdio";
             const grade = r.evidence?.exit_terms_conclusion?.grade;
@@ -1531,6 +1541,7 @@ ROUTES.intake = async (_, tab) => {
             <td>${chip(...(INTAKE_STATUS[r.status] || ["", r.status]))}
               ${r.status === "HOLD" && r.review_note ? html`<span class="sub">${short(r.review_note, 90)}</span>` : ""}</td>
             <td class="small">${exitConclusionChip(r)}</td>
+            <td class="small">${riskCell(r)}</td>
             <td class="small">${when(r.created_at)}</td>
             ${viewer.admin ? html`<td><div class="row-actions">
               ${r.own ? chip("outline", "본인 신청") : ""}
@@ -1538,7 +1549,9 @@ ROUTES.intake = async (_, tab) => {
                 data-name="${r.display_name}" data-repo="${r.endpoint_url}" data-principal="${r.submitted_by}">계약·사용 범위 검토</button>` : ""}
               ${r.intake_kind !== "remote-endpoint" && ["HOLD", "FAILED"].includes(r.status) ? html`<button class="btn sm primary" data-act="intake-queue" data-id="${r.id}">${r.status === "FAILED" ? "재검증" : "검증 시작"}</button>` : ""}
               ${!r.own && r.intake_kind !== "remote-endpoint" && r.risk_level === "CRITICAL" && r.validated_at && ["HOLD", "VALIDATED"].includes(r.status) ? html`<button class="btn sm" data-act="intake-accept-risk" data-id="${r.id}" data-name="${r.display_name}">위험 수용</button>` : ""}
-              ${!r.own && ["VALIDATED", "REMOTE_REVIEWED"].includes(r.status) ? (clear ? html`<button class="btn sm primary" data-act="intake-approve" data-id="${r.id}">승인</button>`
+              ${["HOLD", "VALIDATION_QUEUED", "VALIDATING", "VALIDATED", "REMOTE_REVIEWED"].includes(r.status) ? html`<button class="btn sm" data-act="intake-risk" data-id="${r.id}"
+                data-name="${r.display_name}" data-input="${JSON.stringify(r.risk_input || {})}">${r.risk?.status === "ok" ? "영향평가 수정" : "영향평가 입력"}</button>` : ""}
+              ${!r.own && r.risk?.status === "ok" && ["VALIDATED", "REMOTE_REVIEWED"].includes(r.status) ? (clear ? html`<button class="btn sm primary" data-act="intake-approve" data-id="${r.id}" data-tier="${r.risk.tier}">승인</button>`
                 : html`<button class="btn sm primary" data-act="intake-approve-risk" data-id="${r.id}" data-name="${r.display_name}"
                   data-summary="${r.evidence?.exit_terms_conclusion?.summary || "종료 조건 확인 결과 없음"}">위험 수용 후 승인</button>`) : ""}
               ${r.status === "APPROVED" && r.runtime_recipe && !runtimeLive(r.runtime) ? html`<button class="btn sm" data-act="runtime-start" data-id="${r.id}">실행</button>` : ""}
@@ -1565,6 +1578,7 @@ ROUTES.intake = async (_, tab) => {
             <label data-intake-field="remote-endpoint">MCP 주소<input name="endpoint_url" type="url" maxlength="500" placeholder="https://…/mcp" /></label>
             <label data-intake-field="repository" hidden>저장소<input name="repository_url" type="url" maxlength="300" placeholder="https://github.com/org/repo" /></label>
           </div></fieldset>
+          ${riskFields()}
           <div class="row-actions"><button class="btn primary" type="submit">신청</button></div></form>`)}</div>` },
       ],
     }),
@@ -1583,6 +1597,44 @@ const TRANSPORT = { "streamable-http": "Streamable HTTP", sse: "SSE", stdio: "st
 
 // The same rule agent_service.approve_mcp_request enforces; the button only mirrors it.
 const termsVerified = (t) => Boolean(t?.verified_by && t?.evidence_url && Object.keys(EXIT_TERMS).every((k) => t[k] === true));
+const RISK_TIER = { low: ["allow", "낮음"], medium: ["outline", "보통"], high: ["alert", "높음"], very_high: ["block", "매우 높음"] };
+const RISK_CHOICES = {
+  data_class: DATA_CLASS,
+  personal_data: { none: "없음", general: "일반 개인정보", unique_id: "고유식별정보", sensitive: "민감정보" },
+  external_transfer: { no: "없음", yes: "있음" },
+  permission: { r: "읽기", w: "쓰기", x: "실행" },
+  autonomy: { approve_each: "건별 확인", supervised: "감독 하 실행", autonomous: "자율 실행" },
+};
+const riskSelect = (key, label, current) => html`<label>${label}<select name="risk_${key}" required>
+  <option value="" disabled ${current === undefined ? raw("selected") : ""}>선택</option>
+  ${Object.entries(RISK_CHOICES[key]).map(([v, l]) => html`<option value="${v}" ${v === current ? raw("selected") : ""}>${l}</option>`)}</select></label>`;
+const riskFields = (stated = {}) => html`<fieldset><legend>영향평가 입력</legend><div class="grid c2">
+  ${riskSelect("data_class", "데이터 등급", stated.data_class)}
+  ${riskSelect("personal_data", "처리 개인정보", stated.personal_data)}
+  ${riskSelect("external_transfer", "외부 전송", stated.external_transfer === undefined ? undefined : stated.external_transfer ? "yes" : "no")}
+  ${riskSelect("permission", "실행 권한", stated.permission)}
+  ${field.text("risk_users", "예상 사용자 수", 'type="number" required min="1" max="10000000" step="1"', stated.users ?? null)}
+  ${riskSelect("autonomy", "자율성", stated.autonomy)}
+  </div></fieldset>`;
+const riskBody = (fd) => ({ data_class: fd.get("risk_data_class"), personal_data: fd.get("risk_personal_data"),
+  external_transfer: fd.get("risk_external_transfer") === "yes", permission: fd.get("risk_permission"),
+  users: Number(fd.get("risk_users")), autonomy: fd.get("risk_autonomy") });
+function riskCell(r) {
+  const k = r.risk;
+  if (!k) return NONE;
+  if (k.status !== "ok") return chip("alert", "입력 필요");
+  const waiting = k.required > 1 && ["VALIDATED", "REMOTE_REVIEWED"].includes(r.status) && viewer.admin;
+  return html`${chip(...RISK_TIER[k.tier])}${waiting ? html`<span class="sub">승인 ${k.approvals}/${k.required}</span>` : ""}`;
+}
+function riskView(risk) {
+  if (!risk) return empty("기록 없음");
+  return html`<div class="stack">
+    ${kv([["위험 등급", risk.status === "ok" ? chip(...RISK_TIER[risk.tier]) : chip("alert", "입력 필요")],
+      ["산정 점수", risk.status === "ok" ? String(risk.score) : ""], ["적용 규칙", (risk.floors || []).join(", ")],
+      ["입력 상태", (risk.messages || []).join(" / ")]])}
+    ${panel("영향평가 입력 자료", html`<table class="data"><thead><tr><th>항목</th><th>값</th><th>서식 항목</th></tr></thead><tbody>
+      ${(risk.package || []).map((p) => html`<tr><td>${p.item}</td><td>${p.value}</td><td class="small">${p.form}</td></tr>`)}</tbody></table>`, { flush: true })}</div>`;
+}
 const assuranceFields = () => html`<fieldset><legend>공급자 보증</legend><div class="grid c2">
   ${field.text("legal_entity", "공급자 법인명", 'required maxlength="200"')}
   ${field.text("supplier_contact", "공급자 연락처", 'required maxlength="300"')}
@@ -1720,6 +1772,7 @@ async function showIntakeReport(id) {
           ["검토 해시", html`<code>${approval.review_digest}</code>`]]) : empty("승인 전"))}
       </div>`},
       {key: "scope", label: "범위", body: review ? scopeTable(review.registration.tools, review.registration.tool_reviews, review.registration.data_class) : empty("검토 전")},
+      {key: "risk", label: "영향평가", body: riskView(report.risk)},
       {key: "provenance", label: "출처", body: intakeProvenanceView(r.provenance)},
       {key: "records", label: "승인 기록", body: reviewRecords(report.events || [], r)},
       {key: "definitions", label: "승인 도구 계약", body: review ? html`<pre>${JSON.stringify(review.tools, null, 2)}</pre>` : empty("검토 전")},
@@ -1770,6 +1823,7 @@ async function showIntakeReport(id) {
         : empty(inventory.components === 0 ? "구성요소 없음" : r.status === "FAILED" ? "생성 실패" : "생성 대기")}` },
     { key: "exit", label: "종료 조건", body: exitTermsView(id, r, investigation, evidence.exit_terms_conclusion) },
     { key: "scope", label: "범위", body: registered ? scopeTable(registered.tools, registered.tool_reviews, registered.data_class) : empty("등록 전") },
+    { key: "risk", label: "영향평가", body: riskView(report.risk) },
     { key: "provenance", label: "출처", body: intakeProvenanceView(r.provenance) },
     { key: "records", label: "승인 기록", n: accepted.length || undefined, body: html`<div class="stack">${reviewRecords(report.events || [], r)}
       ${accepted.length ? panel("위험 수용", html`<table class="data"><thead><tr><th>수용자</th><th>기한</th><th>건수</th><th>사유</th></tr></thead><tbody>
@@ -2447,10 +2501,21 @@ const ACTIONS = {
     const r = await api(`/api/mcp-requests/${el.dataset.id}/exit-terms`, { method: "PUT", body });
     toast(r.message); reload();
   },
-  async "intake-approve"(el) {
-    const fd = await ask({ title: "도입 승인", fields: assuranceFields(), confirm: "승인" });
+  async "intake-risk"(el) {
+    const fd = await ask({ title: `영향평가 입력 · ${el.dataset.name}`, fields: riskFields(JSON.parse(el.dataset.input || "{}")), confirm: "기록" });
     if (!fd) return;
-    const r = await api(`/api/mcp-requests/${el.dataset.id}/approve`, { method: "POST", body: assuranceBody(fd) });
+    const r = await api(`/api/mcp-requests/${el.dataset.id}/risk-input`, { method: "PUT", body: riskBody(fd) });
+    toast(r.message); reload();
+  },
+  async "intake-approve"(el) {
+    // From the high tier up the written reason can stand in for a second approver; at the highest it is required.
+    const tier = el.dataset.tier;
+    const reason = tier === "very_high" ? field.area("risk_acceptance", "위험 수용 사유", 'required minlength="10" maxlength="1000"')
+      : tier === "high" ? field.area("risk_acceptance", "위험 수용 사유", 'minlength="10" maxlength="1000"') : "";
+    const fd = await ask({ title: "도입 승인", fields: html`${reason}${assuranceFields()}`, confirm: "승인" });
+    if (!fd) return;
+    const r = await api(`/api/mcp-requests/${el.dataset.id}/approve`, { method: "POST", body: {
+      ...(reason ? { risk_acceptance: String(fd.get("risk_acceptance") || "").trim() } : {}), ...assuranceBody(fd) } });
     toast(r.message); reload();
   },
   async "intake-approve-risk"(el) {
@@ -2712,7 +2777,7 @@ const FORMS = {
   async intake(form) {
     const fd = new FormData(form);
     const body = Object.fromEntries(["display_name", "repository_url", "endpoint_url", "intake_kind", "requested_transport", "purpose"].map((k) => [k, String(fd.get(k) || "").trim()]));
-    const r = await api("/api/mcp-requests", { method: "POST", body });
+    const r = await api("/api/mcp-requests", { method: "POST", body: { ...body, risk_input: riskBody(fd) } });
     toast(r.message);
     location.hash = "#/intake?t=list";
     reload();

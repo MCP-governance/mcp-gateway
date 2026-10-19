@@ -23,7 +23,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from psycopg.types.json import Jsonb
 from jsonschema import Draft202012Validator
 
-from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, retention, secret_scan, supplier_assurance, upstream
+from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, retention, risk_tier, secret_scan, supplier_assurance, upstream
 from .destination import DestinationBlocked
 from . import selective
 from .contract import (  # re-exported: older callers import these from core
@@ -615,6 +615,15 @@ async def register_server(request: dict, actor: str) -> dict:
     assurance_errors = supplier_assurance.validate(assurance)
     if assurance_errors:
         raise ValueError("등록할 수 없습니다: " + " / ".join(assurance_errors))
+    # DEV-71: the tier is read again from the stated input the approval was made on, and the approval
+    # must have recorded that same input. A data grade above what the applicant stated understates the tier.
+    stated = risk_tier.assess(intake.get("risk_input"))
+    approved_risk = (intake.get("evidence") or {}).get("risk_assessment") or {}
+    if stated["status"] != "ok" or approved_risk.get("input_sha256") != stated["input_sha256"]:
+        raise ValueError("등록할 수 없습니다: 승인 때 확인한 영향평가 입력이 없거나 바뀌었습니다. 다시 신청하세요.")
+    ranks = list(risk_tier.CHOICES["data_class"])
+    if ranks.index(request["data_class"]) > ranks.index(intake["risk_input"]["data_class"]):
+        raise ValueError("등록할 수 없습니다: 신청에 적은 데이터 등급보다 높은 등급입니다. 영향평가 입력을 고쳐 다시 승인하세요.")
     approval_until = datetime.now(UTC) + timedelta(days=int(request["valid_days"]))
     if remote_review:
         approval_until = datetime.fromisoformat(remote_review["valid_until"])
@@ -641,6 +650,9 @@ async def register_server(request: dict, actor: str) -> dict:
                             if request.get("poisoning_ack") else {},
         "tool_reviews": tool_reviews, "provenance": intake.get("provenance") or {},
         "supplier_assurance": assurance,
+        "risk_assessment": {"tier": stated["tier"], "score": stated["score"], "floors": stated["floors"],
+                            "input": intake["risk_input"], "input_sha256": stated["input_sha256"],
+                            "approvers": approved_risk.get("approvers") or [], "version": stated["version"]},
         "runtime": {key: str(value) for key, value in runtime.items()} if runtime else None,
     }
     contract = {"package": f"{package}@{version}", "server_name": found["advertised_name"],
@@ -796,7 +808,8 @@ async def renew_approvals(now: datetime | None = None) -> list[dict]:
             days = int(spec.get("approval_days")
                        or max(1, round((until - datetime.fromisoformat(spec["registered_at"])).total_seconds() / 86400)))
             support_end = (spec.get("supplier_assurance") or {}).get("support_end")
-            proposed_until = supplier_assurance.renewal_until(until, days, support_end)
+            proposed_until = risk_tier.cap_until(supplier_assurance.renewal_until(until, days, support_end), spec,
+                                                 doc.get("risk_tier_grace_started_at"))
             if proposed_until <= until:
                 continue
             spec.update(valid_until=proposed_until.isoformat(timespec="seconds"), approval_days=days)
@@ -811,6 +824,41 @@ async def renew_approvals(now: datetime | None = None) -> list[dict]:
     return renewed
 
 
+async def apply_risk_grace(now: datetime | None = None) -> list[dict]:
+    """Approvals made before risk input existed are assumed to be the highest tier. They stay valid for
+    the grace period counted from the first run of this check, then lapse into re-approval through the
+    same approval expiry as any other (RQ-08). An approval that carries its stated input is untouched."""
+    if registry.RUNTIME_PATH is None:
+        return []
+    now = now or datetime.now(UTC)
+    capped = []
+    async with REGISTER_LOCK:
+        doc = registry.runtime()
+        started = doc.get("risk_tier_grace_started_at")
+        if not started:
+            started = doc["risk_tier_grace_started_at"] = now.isoformat(timespec="seconds")
+            doc["history"].append({"type": "risk-grace-started", "actor": "system", "at": started,
+                                   "until": risk_tier.grace_end(started).isoformat(timespec="seconds")})
+            capped.append(doc["history"][-1])
+        end = risk_tier.grace_end(started)
+        for server_id, spec in doc["servers"].items():
+            if risk_tier.legacy_review(spec, started, now) is None or not spec.get("valid_until"):
+                continue
+            until = datetime.fromisoformat(spec["valid_until"])
+            if until <= end:
+                continue
+            spec["valid_until"] = end.isoformat(timespec="seconds")
+            event = {"type": "risk-grace-capped", "server_id": server_id, "actor": "system",
+                     "at": now.isoformat(timespec="seconds"), "from": until.isoformat(timespec="seconds"),
+                     "valid_until": spec["valid_until"]}
+            doc["history"].append(event)
+            capped.append(event)
+        if capped:
+            registry.save_runtime(doc)
+            await registry.sync()
+    return capped
+
+
 async def catalog_watch() -> None:
     """Background drift watch. Calls themselves re-check the contract on the same
     connection that executes, so this loop only keeps the dashboard and the policy
@@ -819,6 +867,7 @@ async def catalog_watch() -> None:
         try:
             await refresh_all_catalogs()
             await review.lapse_expired_acceptances()
+            await apply_risk_grace()
             await renew_approvals()  # after the refresh: renewal reads the contract it just checked
         except Exception:
             pass
