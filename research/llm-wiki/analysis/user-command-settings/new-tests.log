@@ -1,0 +1,20 @@
+test_five_checks_findings_and_reject_command_values (__main__.HeartbeatInput.test_five_checks_findings_and_reject_command_values) ... ok
+test_both_platforms_healthy_missing_false_wrong_hash_and_recovery (__main__.ManagedFlow.test_both_platforms_healthy_missing_false_wrong_hash_and_recovery) ... ok
+test_findings_persisted_and_inconsistent_true_does_not_pass (__main__.ManagedFlow.test_findings_persisted_and_inconsistent_true_does_not_pass) ... ok
+test_policy_revision_changes_hash_without_configuration_drift (__main__.ManagedFlow.test_policy_revision_changes_hash_without_configuration_drift) ... ok
+test_all_keys_report_only_file_and_names (__main__.UserSettings.test_all_keys_report_only_file_and_names) ... ok
+test_each_claude_key_in_both_files_and_empty_values (__main__.UserSettings.test_each_claude_key_in_both_files_and_empty_values) ... ok
+test_invalid_json_toml_encoding_and_shape_fail_without_values (__main__.UserSettings.test_invalid_json_toml_encoding_and_shape_fail_without_values) ... ok
+test_missing_files_and_normal_json (__main__.UserSettings.test_missing_files_and_normal_json) ... ok
+test_missing_parser_is_failure (__main__.UserSettings.test_missing_parser_is_failure) ... ok
+test_normal_toml_and_comments_are_not_keys (__main__.UserSettings.test_normal_toml_and_comments_are_not_keys) ... ok
+test_notify_in_config_and_profile_files (__main__.UserSettings.test_notify_in_config_and_profile_files) ... ok
+test_platform_checks_use_enrolled_home_not_service_home (__main__.UserSettings.test_platform_checks_use_enrolled_home_not_service_home) ... ok
+test_special_path_oversize_and_recovery (__main__.UserSettings.test_special_path_oversize_and_recovery) ... ok
+test_symlink_and_broken_link_fail_closed (__main__.UserSettings.test_symlink_and_broken_link_fail_closed) ... skipped '링크 생성 권한 없음'
+test_unreadable_file_and_directory_fail_closed (__main__.UserSettings.test_unreadable_file_and_directory_fail_closed) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.515s
+
+OK (skipped=1)

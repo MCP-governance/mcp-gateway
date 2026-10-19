@@ -70,6 +70,143 @@ from pathlib import Path
 
 AGENT_VERSION = "3.1.0"
 
+
+def user_command_settings(home):
+    """관리 계정 홈만 검사하며 명령 값과 파서 오류 본문은 반환하지 않는다."""
+    import stat
+
+    home = Path(home)
+    found_by_file = {}
+    if not home.is_absolute():
+        return False, [{"file": "~", "keys": []}]
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    # POSIX: 각 단계를 앞 단계 핸들 기준·링크 비추적으로 연다. 검사 뒤 디렉터리를 링크로 바꿔도
+    # root의 읽기가 홈 밖으로 나가지 않는다(S6 검토). Windows는 경로 검사라 교체 경쟁이 남는다.
+    posix = os.open in os.supports_dir_fd and hasattr(os, "O_DIRECTORY")
+    opened_fds = []
+
+    def linked(info):
+        return stat.S_ISLNK(info.st_mode) or bool(getattr(info, "st_file_attributes", 0) & 0x400)
+
+    def report(file, keys=()):
+        found_by_file.setdefault(file, set()).update(keys)
+
+    def enter(parent, name):
+        if posix:
+            try:
+                fd = os.open(name, os.O_RDONLY | os.O_DIRECTORY | nofollow, dir_fd=parent)
+            except FileNotFoundError:
+                return None
+            opened_fds.append(fd)
+            return fd
+        path = parent / name
+        try:
+            info = path.lstat()
+        except FileNotFoundError:
+            return None
+        if linked(info) or not stat.S_ISDIR(info.st_mode):
+            raise ValueError
+        return path
+
+    def read(parent, name):
+        flags = os.O_RDONLY | nofollow | getattr(os, "O_NONBLOCK", 0)
+        if posix:
+            fd = os.open(name, flags, dir_fd=parent)
+            info = None
+        else:
+            info = (parent / name).lstat()
+            if linked(info) or not stat.S_ISREG(info.st_mode):
+                raise ValueError
+            fd = os.open(parent / name, flags)
+        with os.fdopen(fd, "rb") as source:
+            opened = os.fstat(source.fileno())
+            # 하드 링크는 선택한 경로 밖의 inode다.
+            if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1
+                    or info is not None and (opened.st_dev, opened.st_ino) != (info.st_dev, info.st_ino)):
+                raise ValueError
+            raw = source.read(1024 * 1024 + 1)
+        if len(raw) > 1024 * 1024:
+            raise ValueError
+        return raw.decode("utf-8-sig")
+
+    def invalid_constant(value):
+        raise ValueError
+
+    try:
+        try:
+            if posix:
+                root = os.open("/", os.O_RDONLY | os.O_DIRECTORY)
+                opened_fds.append(root)
+                current = root
+                for part in home.parts[1:]:
+                    current = enter(current, part)
+                    if current is None:
+                        raise ValueError
+            else:
+                for parent in (home, *home.parents):
+                    info = parent.lstat()
+                    if linked(info) or not stat.S_ISDIR(info.st_mode):
+                        raise ValueError
+                current = home
+        except (OSError, ValueError):
+            return False, [{"file": "~", "keys": []}]
+
+        for folder, names, keys in (
+                (".claude", ["settings.json", "settings.local.json"],
+                 {"apiKeyHelper", "otelHeadersHelper", "awsCredentialExport", "awsAuthRefresh"}),
+                (".codex", ["config.toml"], {"notify"})):
+            try:
+                directory = enter(current, folder)
+                if directory is None:
+                    continue
+                entries = os.listdir(directory) if posix else [p.name for p in directory.iterdir()]
+                if folder == ".codex":
+                    # 프로필 파일 이름은 직원이 정하므로 보고에는 고정 표기만 쓴다(S6 검토).
+                    if len(entries) > 4096:
+                        raise ValueError
+                    profiles = sorted(n for n in entries if n.lower().endswith(".config.toml"))
+                    if len(profiles) > 120:
+                        raise ValueError
+                    names = names + profiles
+            except (OSError, ValueError):
+                report(folder)
+                continue
+            for name in names:
+                label = f"{folder}/{name}" if name in {"settings.json", "settings.local.json", "config.toml"} else ".codex/*.config.toml"
+                try:
+                    text = read(directory, name)
+                except FileNotFoundError:
+                    continue
+                except (OSError, ValueError):
+                    report(label)
+                    continue
+                try:
+                    if folder == ".claude":
+                        document = json.loads(text, parse_constant=invalid_constant)
+                    else:
+                        import tomllib
+                        document = tomllib.loads(text)
+                    if not isinstance(document, dict):
+                        raise ValueError
+                    found = set(document) & keys
+                    # Codex profiles live inside config.toml as well as *.config.toml.
+                    if folder == ".codex":
+                        profiles = document.get("profiles", {})
+                        if not isinstance(profiles, dict) or any(not isinstance(p, dict) for p in profiles.values()):
+                            raise ValueError
+                        if any("notify" in p for p in profiles.values()):
+                            found.add("notify")
+                    if found:
+                        report(label, found)
+                except (ValueError, ImportError, RecursionError):
+                    report(label)
+    finally:
+        for fd in opened_fds:
+            os.close(fd)
+    findings = [{"file": file, "keys": sorted(keys)} for file, keys in sorted(found_by_file.items())]
+    return not findings, findings
+
+
 def load_config() -> dict:
     if "--config" not in sys.argv:
         return {}

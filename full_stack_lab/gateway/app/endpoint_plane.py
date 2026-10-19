@@ -683,9 +683,9 @@ async def devices() -> list[dict]:
 HEARTBEAT_SECONDS = 180
 HEARTBEAT_INTERVAL = 60
 NETWORK_RETENTION_DAYS = 7
-MANAGED_CHECKS = {"apparmor_enforcing", "nftables_active", "protected_configs", "ordinary_account"}
+MANAGED_CHECKS = {"apparmor_enforcing", "nftables_active", "protected_configs", "ordinary_account", "user_command_helpers"}
 MANAGED_CHECKS_BY_PLATFORM = {"linux": MANAGED_CHECKS,
-                              "windows": {"firewall_enforcing", "protected_configs", "ordinary_account"}}
+                              "windows": {"firewall_enforcing", "protected_configs", "ordinary_account", "user_command_helpers"}}
 
 
 def managed_platform(device: dict) -> str:
@@ -693,8 +693,14 @@ def managed_platform(device: dict) -> str:
     return "windows" if (device.get("detail") or {}).get("local_sid") else "linux"
 
 
-def managed_checks(device: dict) -> set[str]:
-    return MANAGED_CHECKS_BY_PLATFORM[managed_platform(device)]
+def managed_checks(device: dict, reported: dict | None = None) -> set[str]:
+    required = MANAGED_CHECKS_BY_PLATFORM[managed_platform(device)]
+    # Agents installed before D-148 do not scan user settings and cannot be updated remotely;
+    # quarantining them all on deploy would cut off every enrolled PC. Once a device has reported
+    # the scan it is required for good, so reinstalling an older kit does not drop it.
+    if (device.get("detail") or {}).get("command_settings_checked") or "user_command_helpers" in (reported or {}):
+        return required
+    return required - {"user_command_helpers"}
 
 
 async def managed_event(endpoint_id: str | None, owner: str, kind: str, detail: dict) -> None:
@@ -802,7 +808,7 @@ async def managed_policy(device: dict) -> dict:
         files["codex-config.toml"] = codex_servers
     else:
         files["managed_config.toml"] = 'mcp_oauth_credentials_store = "file"\nweb_search = "disabled"\n' + codex_servers
-    policy = {"version": 1, "gateway_url": public, "gateway_ips": addresses, "gateway_port": parsed.port or (443 if parsed.scheme == "https" else 80),
+    policy = {"version": 2, "gateway_url": public, "gateway_ips": addresses, "gateway_port": parsed.port or (443 if parsed.scheme == "https" else 80),
               "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), "servers": servers,
               "local_username": device["local_username"], "local_uid": device["local_uid"],
               "heartbeat_seconds": HEARTBEAT_INTERVAL, "max_heartbeat_age": HEARTBEAT_SECONDS, "files": files}
@@ -822,15 +828,21 @@ def json_document(value) -> str:
 
 
 async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, host: dict | None = None,
-                    quality: dict | None = None) -> dict:
+                    quality: dict | None = None, user_command_settings: list | None = None) -> dict:
     policy = await managed_policy(device)
+    if user_command_settings:
+        checks = {**checks, "user_command_helpers": False}
     compliant = (policy_hash == policy["policy_hash"] and hashes == policy["configuration_hashes"]
-                 and set(checks) == managed_checks(device) and all(value is True for value in checks.values()))
+                 and set(checks) == managed_checks(device, checks) and all(value is True for value in checks.values())
+                 and not user_command_settings)
     # The host report is not a compliance input: another account on the device does not
     # quarantine the managed one; it is shown as a bypass path (integrations.device_state).
     # A heartbeat without the report drops the previous one: an old "no other account"
     # must not keep standing in for a check that is no longer made.
     detail = {"host": {**host, "reported_at": datetime.now(UTC).isoformat(timespec="seconds")}} if host else {}
+    detail["user_command_settings"] = user_command_settings or []
+    if "user_command_helpers" in checks:
+        detail["command_settings_checked"] = True
     # What the Gateway rendered (provider artifact) beside what the device says is installed.
     detail["install_receipt"] = {
         "provider_artifact_sha256": policy["configuration_hashes"], "installed_sha256": hashes,
@@ -858,6 +870,7 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
             await connection.execute(
                 "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'quarantined',%s)",
                 (device["endpoint_id"], device["owner_token"], Jsonb({"policy_hash": policy_hash, "checks": checks,
+                 "user_command_settings": user_command_settings or [],
                  "policy_match": policy_hash == policy["policy_hash"],
                  "mismatched_files": sorted(name for name, expected in policy["configuration_hashes"].items()
                                             if hashes.get(name) != expected)})))

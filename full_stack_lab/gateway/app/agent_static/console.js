@@ -1385,7 +1385,7 @@ ROUTES.coverage = async (_, tab, query) => {
 };
 
 const VENDOR_CONSOLE = { blocked: "차단", limited: "제한 허용", allowed: "허용", unknown: "확인 불가" };
-const CHECK_LABEL = { apparmor_enforcing: "실행 통제", nftables_active: "네트워크 통제", protected_configs: "설정 보호", ordinary_account: "일반 계정" };
+const CHECK_LABEL = { apparmor_enforcing: "실행 통제", nftables_active: "네트워크 통제", firewall_enforcing: "네트워크 통제", protected_configs: "설정 보호", ordinary_account: "일반 계정", user_command_helpers: "사용자 명령 헬퍼 없음" };
 function checksChip(checks) {
   const entries = Object.entries(checks || {});
   if (!entries.length) return NONE;

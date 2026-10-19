@@ -98,9 +98,12 @@ def apply_policy(policy):
         target.chmod(0o644)
 
 
-def checks(config, policy):
+def checks(config, policy, *, findings=None):
     uid, name = config["uid"], "mcpgw-" + config["username"]
     account = pwd.getpwnam(config["username"])
+    commands_ok, commands = load_module("command_settings", Path(__file__).with_name("agent.py")).user_command_settings(getattr(account, "pw_dir", ""))
+    if findings is not None:
+        findings.extend(commands)
     groups = {grp.getgrgid(g).gr_name for g in os.getgrouplist(account.pw_name, account.pw_gid)}
     profiles = set(Path("/sys/kernel/security/apparmor/profiles").read_text().splitlines())
     rule_file = Path("/usr/local/lib/mcpgw-enforcement") / name / "egress.nft"
@@ -121,6 +124,7 @@ def checks(config, policy):
     return hashes, {"apparmor_enforcing": all(f"{name}{suffix} (enforce)" in profiles for suffix in ("", "-codex", "-claude", "-credential")),
                     "nftables_active": expected.returncode == 0 and stable(json.loads(nft.stdout)) == stable(baseline),
                     "protected_configs": all(protected(p) and not p.is_symlink() and p.stat().st_mode & 0o777 == 0o644 for p in FILES.values()),
+                    "user_command_helpers": commands_ok,
                     "ordinary_account": account.pw_uid == uid and account.pw_shell == str(rule_file.parent / "login-shell")
                        and not groups & PRIVILEGED}
 
@@ -304,8 +308,10 @@ def serve(args):
                 config["policy_hash"] = policy["policy_hash"]
                 private_write(args.config, json.dumps(config))
             previous = policy["policy_hash"]
-            hashes, health = checks(config, policy)
-            beat = {"policy_hash": policy["policy_hash"], "configuration_hashes": hashes, "checks": health}
+            findings = []
+            hashes, health = checks(config, policy, findings=findings)
+            beat = {"policy_hash": policy["policy_hash"], "configuration_hashes": hashes, "checks": health,
+                    "user_command_settings": findings}
             try:
                 beat["host"] = host_report(config)
             except (OSError, KeyError, ValueError):
