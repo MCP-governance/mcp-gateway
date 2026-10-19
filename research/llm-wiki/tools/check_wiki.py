@@ -1,4 +1,5 @@
 """Check Markdown evidence, provenance, licenses, links and experiment claims."""
+import argparse
 import hashlib
 import json
 import re
@@ -10,7 +11,7 @@ from build_wiki import ROOT, markdown_files
 REPO = ROOT.parents[1]
 
 
-def check():
+def check(ci_ignored_local_sources=False):
     errors, warnings, totals = [], [], {}
 
     def require(condition, message):
@@ -20,8 +21,11 @@ def check():
     def local_path(value, base=ROOT, optional=False):
         path = (base / unquote(value)).resolve()
         require(path.is_relative_to(REPO), f"Path outside repository: {value}")
-        if not optional:
-            require(path.is_file(), f"Missing local file: {value}")
+        if not path.is_file():
+            if ci_ignored_local_sources and path.is_relative_to(ROOT / "local-sources"):
+                warnings.append(f"Missing ignored local source: {path.relative_to(REPO)}")
+            elif not optional:
+                require(False, f"Missing local file: {value}")
         return path
 
     for name in ("README.md", "AGENTS.md", "CLAUDE.md", "papers/README.md", "solutions/README.md",
@@ -168,4 +172,7 @@ def check():
 
 
 if __name__ == "__main__":
-    sys.exit(check())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--ci-ignored-local-sources", action="store_true",
+                        help="Warn for absent files under ignored local-sources; still check available hashes")
+    sys.exit(check(ci_ignored_local_sources=parser.parse_args().ci_ignored_local_sources))
