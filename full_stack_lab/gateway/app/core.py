@@ -925,7 +925,16 @@ async def catalog_watch() -> None:
             await renew_approvals()  # after the refresh: renewal reads the contract it just checked
         except Exception:
             pass
+        try:
+            await _cleanup_expired_flow_fingerprints()
+        except Exception:
+            logging.getLogger(__name__).warning("expired flow fingerprint cleanup failed", exc_info=True)
         await asyncio.sleep(CATALOG_REFRESH_SECONDS)
+
+
+async def _cleanup_expired_flow_fingerprints() -> None:
+    """Remove expired comparison data without changing the append-only decision ledger."""
+    await db.execute("DELETE FROM flow_fingerprints WHERE expires_at <= now()")
 
 
 async def _contract(server_id: str, tool_name: str) -> dict:
