@@ -1613,3 +1613,9 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 결정: 제품 코드와 기존 기대값은 유지한다. AST 추출에 실제 `ContractClient`, 출력 계약 비교 함수·예외 타입, 등록부 검토 비교 함수를 포함하고 기존 반환 대역의 판본·스키마 인자만 보강한다. 출력 계약 비교를 무조건 참으로 대체하지 않는다. 등록부 비교의 해시 대역은 기존 입력/설명 시험의 항등 해시를 유지한다.
 - 근거: 세션 40건·결과 축 8건·출력 계약 순수 9건 통과. HTTP 상태 예외 타입만 대역으로 제공한 목적지/자격정보 16건 통과. HEAD와 작업 트리의 기존 assert AST 120·30·70개가 동일하다. [실패별 판정·변경 행별 이유](../../research/llm-wiki/status/reports/2026-10-20-output-contract.md#기존-시험-대역-보정), [원본 실행 기록](../../research/llm-wiki/analysis/output-contract-d149/test-double-validation.json).
 - 한계: 기본 Python 3.10에 HTTPX가 없고 `datetime.UTC`를 지원하지 않는다. 로컬 Python 3.12에도 게이트웨이 의존성이 없으며 설치 시도는 판본을 확보하지 못했다. 목적지 시험의 직접 실행과 출력 계약 전체 시험은 통과 미확인이다. 이미지·DB·SDK·실제 MCP·PJ1 검증으로 확대 해석하지 않는다. 추가 의존성·정책·DB 변경 없음.
+
+### D-149 S7b 기존 시험 대역 보정 적대 검토 (2026-10-20, Codex luna)
+
+- 판정: HEAD `321fa565`의 세 시험 파일 변경 7개 hunk를 모두 A(채택)로 판정한다. 기대값·입력·assert는 그대로이며 검사 범위를 줄인 변경은 없다.
+- 근거: 출력 오류 타입, 계약 해시/비교 함수, `ContractClient`는 실제 제품 모듈 AST 정의를 시험 namespace에 제공한다. `_render`·`_guarded_result` 반환 대역은 세션 문맥/dispatch 생명주기 시험에만 한정된다. 출력 검증·판본별 렌더링은 `output_contract_check.py`와 `mcp_result_contract_check.py`가 실제 함수를 직접 검사한다. 상세 hunk별 근거는 [S7b 검토](../../research/llm-wiki/analysis/review-1020/s7b-fixtures.md)에 기록한다.
+- 한계: 이번 적대 검토는 정적 대조이며 시험·이미지·DB·실제 MCP·PJ1을 실행하지 않았다. A 판정은 세 기존 시험 대역 보정만 채택하며 출력 계약 전체의 런타임 검증으로 확대하지 않는다. 기존 시험 변경 추가 수정은 필요하지 않다. [작업 보고](../../research/llm-wiki/status/reports/2026-10-20-s7b-fixtures-review.md).
