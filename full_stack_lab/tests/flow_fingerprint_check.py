@@ -269,6 +269,26 @@ class LedgerTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn("ON CONFLICT (decision_id) DO NOTHING", stored[0][0])
         self.assertTrue(any(q.startswith("DELETE FROM flow_fingerprints WHERE expires_at") for q, _ in ledger.executed))
 
+    async def test_a_read_fingerprint_is_saved_as_one_bulk_insert(self):
+        ledger = Ledger()
+        await self.remember(ledger, 11, "filesystem", READ)
+        inserts = [(query, params) for query, params in ledger.executed if query.startswith("INSERT")]
+        self.assertEqual(len(inserts), 1)
+        self.assertIn("shingles, identifiers", inserts[0][0])
+        self.assertGreater(len(inserts[0][1][5]), 1)
+
+    async def test_catalog_watch_periodically_deletes_expired_fingerprints(self):
+        delete = AsyncMock(return_value=1)
+        with patch.object(core, "refresh_all_catalogs", new=AsyncMock()), \
+                patch.object(core.review, "lapse_expired_acceptances", new=AsyncMock()), \
+                patch.object(core, "apply_risk_grace", new=AsyncMock()), \
+                patch.object(core, "renew_approvals", new=AsyncMock()), \
+                patch.object(core.db, "execute", delete), \
+                patch.object(core.asyncio, "sleep", new=AsyncMock(side_effect=StopAsyncIteration)):
+            with self.assertRaises(StopAsyncIteration):
+                await core.catalog_watch()
+        delete.assert_awaited_once_with("DELETE FROM flow_fingerprints WHERE expires_at <= now()")
+
     async def test_the_join_asks_for_unexpired_fingerprints_of_other_servers_only(self):
         fetch = AsyncMock(return_value=[])
         with patch.object(core.db, "fetch_all", fetch):
