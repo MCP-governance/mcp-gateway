@@ -9,6 +9,7 @@ DEV-68 공급자 지원 종료는 도입 등록의 `valid_until` 상한으로 �
 > - `policy_test.rego` — 단위 시험(91건)
 > - `policy_ledger.json` — 정책 목록(정책마다 이름·목적·우선순위·결과·상태·버전·위험/통제 id·의무)
 > - `data.json` — 운영 제한과 자주 바뀌는 값(제한 실행 값, egress 허용 호스트)
+> - `residency.json` — `registry/data_residency.json`에서 생성한 처리·저장 국가 규칙
 >
 > Gateway는 `OPA_URL`(`http://opa:8181/v1/data/mcp/authz/decision`)에 입력을 보내고, 실패하면
 > `P-CONTROL-FAIL-CLOSED`로 차단한다. OPA는 `--watch` 없이 뜨므로 Rego를 바꾸면 `docker compose restart opa`.
@@ -115,3 +116,33 @@ Console 정책 화면은 현재 capability와 검토된 원격 승인 범위를 
 5. `docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v`
 6. `docker compose restart opa` 후 `./console.sh test`.
 7. 새 판정이 업무 흐름에 보이면 `workstation/scenarios/*.toml`에 한 건 추가.
+
+## 처리·저장 위치 규칙 (D-138 / DEV-69)
+
+| 번호 | 정책 | 결과 |
+| --- | --- | --- |
+| P-RESIDENCY-001 | 처리·저장 위치 전송 차단 | 차단 |
+| P-RESIDENCY-002 | 국외 이전 건별 승인 | 추가 승인 |
+
+`registry/data_residency.json`의 `residency.rules`는 데이터 등급→ISO 국가 코드→`allow`/`approval`/`deny`다.
+`*`는 명시되지 않은 국가의 기본값이다. 처리·저장 국가의 합집합과 모든 외부 목적지를 각각 평가하며 하나라도 금지면 차단한다.
+내부 이상 등급은 국가·처리 주체·위치 근거가 없으면 차단한다. 공개 외 데이터가 조직 소재 국가 밖으로 나가고 이전 근거가 없으면 국가 규칙이 허용이어도 건별 승인 대상이다.
+팩 누락·재생성 누락·실제 OPA 로드값 불일치도 차단하며 관찰 모드에서 완화하지 않는다.
+
+기본값은 공개 전송 허용, 내부 데이터 KR 허용/그 밖 승인 필요, 중요 데이터 KR 허용/그 밖 금지인 **잠정 조직 설정**이다.
+국가별 법적 허용 여부나 개인정보 국외 이전의 적법성을 확정하지 않는다. 기존 개인정보 반출·PAC-12·서버 간 흐름 차단은 별도로 적용한다.
+허용 판정은 기존 `P-AUTHZ-ALLOW-001` 등으로 기록되고 위치 사실은 `policy_input.pac.facts.residency`에 보존된다.
+승인은 기존 PAC-13 독립 승인·기한·일회용 검사를 재사용하며 위치/목적지/팩 변경 시 digest가 바뀐다. 금지는 승인으로 풀리지 않는다.
+차단 우선순위는 48, 승인 필요는 83으로 기존 계약·권한 차단을 우회하지 않는다.
+
+```bash
+cd full_stack_lab
+python3 registry/render_residency.py          # 조직 정본 변경 후 생성, 두 JSON을 함께 검토
+python3 registry/render_residency.py --check
+# 솔루션 기기에서만: ./console.sh field up
+```
+
+원격 서버의 위치 속성은 계약 검토 사양과 승인 해시에 포함한다. 기존 승인 사양과 다르면 새 도입 검토가 필요하다.
+내부 서버는 카탈로그 `organization.machine_location`을 사용하고 외부 목적지는 `organization.destination_locations`의 정확한 호스트별 선언을 사용한다.
+공급자 주소의 DNS/IP나 URL의 국가 접미사로 처리 위치를 추정하지 않는다.
+[설정·한계·시험](../../research/llm-wiki/analysis/dev69-data-residency/README.md).

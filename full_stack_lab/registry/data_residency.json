@@ -1,0 +1,13 @@
+{
+  "residency": {
+    "version": "organization-provisional-1",
+    "legal_status": "manual-review-required",
+    "source_requirements": ["REQ-L01-11", "REQ-M06-27", "REQ-M29-12", "REQ-M29-14", "REQ-M45-15"],
+    "home_countries": ["KR"],
+    "rules": {
+      "public": {"*": "allow"},
+      "nonimportant": {"KR": "allow", "*": "approval"},
+      "important": {"KR": "allow", "*": "deny"}
+    }
+  }
+}

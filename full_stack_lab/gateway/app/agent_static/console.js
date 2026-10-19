@@ -183,6 +183,12 @@ async function planes() {
 }
 const ACTION = { r: "읽기", w: "쓰기", x: "외부 전송·실행" };
 const DATA_CLASS = { public: "공개", nonimportant: "내부", important: "중요" };
+const countryNames = new Intl.DisplayNames(["ko"], { type: "region" });
+const locationRows = (value = {}) => [
+  ["처리 국가", (value.processing_countries || []).map((c) => countryNames.of(c)).join(", ") || "—"],
+  ["저장 국가", (value.storage_countries || []).map((c) => countryNames.of(c)).join(", ") || "—"],
+  ["처리 주체", value.processor || "—"], ["위치 근거", value.evidence_ref || "—"], ["이전 근거", value.transfer_basis || "—"],
+];
 const ROLE = { admin: "관리자", employee: "직원", partner: "협력사" };
 const PLATFORM_KIT = { linux: "Linux 설치 파일", windows: "Windows 설치 파일" };
 const EXIT_TERMS = {
@@ -198,7 +204,7 @@ const APPROVAL_STATUS = {
 const REVIEW_KIND = {
   "user-consent": "사용자 동의", "intake-approve": "운영자 승인", "contract-review": "계약 검토", "risk-accept": "위험 수용",
   "risk-lapse": "위험 수용 만료", "intake-reject": "거부", "intake-hold": "보류", "provenance-mismatch": "보류",
-  "server-register": "게이트웨이 등록", "tool-scope-review": "범위 심사",
+  "server-register": "게이트웨이 등록", "tool-scope-review": "범위 심사", "residency-review": "위치 심사",
   "runtime-start": "실행 요청", "runtime-stop": "실행 중지 요청", "runtime-built": "이미지 빌드", "runtime-active": "실행 시작",
   "runtime-failed": "실행 실패", "runtime-stopped": "실행 중지",
 };
@@ -1040,6 +1046,7 @@ function showApproval(id) {
       ["엔드포인트", a.client?.workstation], ["하네스", a.client?.harness?.name ? harnessLabel(a.client.harness.name) : a.client?.agent],
       ["요청", when(a.created_at, { seconds: true })], ["만료", when(a.expires_at)]]) },
     { key: "args", label: "인자", body: json(a.arguments) },
+    ...((a.residency_targets || []).length ? [{ key: "locations", label: "처리·저장 위치", body: html`${a.residency_targets.map((target) => html`<h3>${target.id}</h3>${kv(locationRows(target))}`)}` }] : []),
     { key: "policy", label: "정책", body: html`${a.reason ? html`<p class="note">${a.reason}</p>` : ""}${kv([
       ["정책", html`<code>${a.policy_id || "—"}</code>`], ["행위", ACTION[a.action] || a.action], ["데이터 등급", DATA_CLASS[a.data_class] || a.data_class],
       ["분류 근거", a.summary]])}` },
@@ -1134,6 +1141,7 @@ function showServer(id) {
       ${s.lifecycle !== "RETIRED" ? html`<button class="btn sm" type="button" data-act="server-check" data-id="${s.id}">연결 확인</button>` : ""}
       ${registration && !registration.intake_id ? chip("block", "도입 신청 없음 · 차단") : ""}
       ${registration && tools.some((t) => registration.tools?.[t.name] && !registration.tool_reviews?.[t.name]) ? html`<button class="btn sm primary" type="button" data-act="tool-scope" data-id="${s.id}">범위 심사</button>` : ""}
+      ${registration?.intake_id && s.deployment === "provider" ? html`<button class="btn sm primary" type="button" data-act="residency-review" data-id="${s.id}">위치 심사</button>` : ""}
       ${registration ? html`<button class="btn sm danger" type="button" data-act="server-deregister" data-id="${s.id}">등록 해제</button>` : ""}</div>
     ${s.status_reason && s.status !== "READY" ? html`<p class="note warn">${s.status_reason}</p>` : ""}`, [
     { key: "info", label: "개요", body: kv([["ID", html`<code>${s.id}</code>`], ["게이트웨이 경로", html`<code>/mcp/${s.id}/</code>`],
@@ -1148,6 +1156,8 @@ function showServer(id) {
         ["SBOM 제출", registration.supplier_assurance.sbom_submitted ? "제출" : "미제출"],
         ["VEX 제출", registration.supplier_assurance.vex_submitted ? "제출" : "미제출"],
         ["계약 근거", registration.supplier_assurance.contract_basis_ref], ["종료 전략", registration.supplier_assurance.exit_strategy]] : []),
+      ...locationRows(s.residency),
+       ...(registration?.residency_review ? [["위치 심사", `${registration.residency_review.reviewed_by} · ${when(registration.residency_review.reviewed_at)}`]] : []),
       ["출처 해시", registration?.provenance?.artifact?.sha256 ? html`<code>${registration.provenance.artifact.sha256}</code>` : ""],
       ["사용 기한", registration ? `${when(registration.valid_until)} · ${DATA_CLASS[registration.data_class] || ""}` : ""],
       ["등록", registration ? `${registration.registered_by} · ${when(registration.registered_at)}` : ""],
@@ -1720,7 +1730,7 @@ async function showIntakeReport(id) {
         ${panel("계약 검토", review ? kv([["검토 내용", review.review_note], ["검토자", `${review.reviewed_by} · ${when(review.reviewed_at)}`],
           ["허용 사용자", review.allowed_principals.join(", ")], ["사용 기한", when(review.valid_until)],
           ["서버", `${review.advertised_name} ${review.version}`], ["계약 해시", html`<code>${review.registration.catalog_hash}</code>`],
-          ["승인 도구", Object.keys(review.registration.tools || {}).join(", ")]]) : empty("검토 전"))}
+          ["승인 도구", Object.keys(review.registration.tools || {}).join(", ")], ...locationRows(review.registration.residency)]) : empty("검토 전"))}
         ${panel("허용 인자 범위", review ? html`<pre>${JSON.stringify(review.parameter_constraints || {}, null, 2)}</pre>` : empty("검토 전"))}
         ${panel("도입 승인", approval ? kv([["승인", `${approval.actor} · ${when(approval.at)}`], ["위험 수용", approval.risk_acceptance],
           ["검토 해시", html`<code>${approval.review_digest}</code>`]]) : empty("승인 전"))}
@@ -2494,6 +2504,10 @@ const ACTIONS = {
       fields: html`${field.text("server_id", "서버 ID", `required pattern="[a-z][a-z0-9\\-]{1,30}" maxlength="31" value="${suggested}"`)}
         <p class="mono small">${found.endpoint}<br />계약 해시 ${found.catalog_hash}</p>
         <div class="grid c2">${field.select("data_class", "데이터 등급", DATA_CLASS, "nonimportant")}${field.select("valid_days", "사용 기한", VALIDITY, "90")}</div>
+        <div class="grid c2">${field.text("processing_countries", "처리 국가 코드", 'maxlength="1000" placeholder="KR, US"')}${field.text("storage_countries", "저장 국가 코드", 'maxlength="1000" placeholder="KR, US"')}</div>
+        ${field.text("processor", "처리 주체", 'maxlength="500"')}
+        ${field.text("evidence_ref", "위치 근거", 'maxlength="500"')}
+        ${field.text("transfer_basis", "이전 근거", 'maxlength="500"')}
         ${el.dataset.review ? html`${field.text("allowed_principals", "허용 사용자 ID (쉼표 구분)", "required", el.dataset.principal)}${field.area("review_note", "검토 내용", 'required minlength="10" maxlength="1000"')}
           ${field.area("parameter_constraints", "도구별 인자 제한 (JSON Schema, 비우면 자동)", 'maxlength="30000"', "")}` : ""}
         ${found.tools.some((t) => t.warnings?.length) ? html`<p class="note warn">도구 설명에 지시문으로 의심되는 문구가 있습니다.</p>` : ""}
@@ -2518,6 +2532,9 @@ const ACTIONS = {
       server_id: fd.get("server_id").trim(), endpoint: found.endpoint, catalog_hash: found.catalog_hash, tools,
       data_class: fd.get("data_class"), valid_days: Number(fd.get("valid_days")), poisoning_ack: fd.get("poisoning_ack") === "on",
       tool_reviews: toolReviews,
+      residency: { processing_countries: fd.get("processing_countries").split(",").map((c) => c.trim().toUpperCase()).filter(Boolean),
+        storage_countries: fd.get("storage_countries").split(",").map((c) => c.trim().toUpperCase()).filter(Boolean),
+        processor: fd.get("processor").trim(), evidence_ref: fd.get("evidence_ref").trim(), transfer_basis: fd.get("transfer_basis").trim() },
       ...(el.dataset.review ? {allowed_principals: fd.get("allowed_principals").split(",").map((p) => p.trim()).filter(Boolean), review_note: fd.get("review_note").trim(), parameter_constraints: parameterConstraints} : {}) } });
     toast(r.message); reload();
   },
@@ -2544,6 +2561,24 @@ const ACTIONS = {
     if (!fd) return;
     const r = await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}/tool-reviews`, { method: "POST", body: { reviews: collectScopes(fd, pending) } });
     closeDrawer(); toast(`도구 ${r.reviewed.length}개의 범위를 기록했습니다.`); reload();
+  },
+  async "residency-review"(el) {
+    const s = registry?.servers.find((row) => row.id === el.dataset.id);
+    if (!s) return;
+    const current = s.residency || {};
+    const fd = await ask({ title: `위치 심사 · ${s.display_name}`, fields: html`<div class="stack">
+      ${field.text("processing_countries", "처리 국가", 'required maxlength="749"', (current.processing_countries || []).join(", "))}
+      ${field.text("storage_countries", "저장 국가", 'required maxlength="749"', (current.storage_countries || []).join(", "))}
+      ${field.text("processor", "처리 주체", 'required maxlength="500"', current.processor || "")}
+      ${field.text("evidence_ref", "위치 근거", 'required maxlength="500"', current.evidence_ref || "")}
+      ${field.text("transfer_basis", "이전 근거", 'maxlength="500"', current.transfer_basis || "")}</div>`, confirm: "기록" });
+    if (!fd) return;
+    const countries = (key) => String(fd.get(key)).split(",").map((code) => code.trim().toUpperCase()).filter(Boolean);
+    await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}/residency`, { method: "POST", body: {
+      processing_countries: countries("processing_countries"), storage_countries: countries("storage_countries"),
+      processor: String(fd.get("processor")).trim(), evidence_ref: String(fd.get("evidence_ref")).trim(),
+      transfer_basis: String(fd.get("transfer_basis")).trim() } });
+    closeDrawer(); toast("위치 심사를 기록했습니다."); reload();
   },
   async "intake-reject"(el) {
     const fd = await ask({ title: "도입 신청 거부", fields: field.area("note", "사유", 'required minlength="2" maxlength="500"'), confirm: "거부", danger: true });

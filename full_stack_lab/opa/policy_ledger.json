@@ -3363,6 +3363,118 @@
         "PAC-04",
         "PAC-09"
       ]
+    },
+    "P-RESIDENCY-001": {
+      "name": "처리·저장 위치 전송 차단",
+      "purpose": "미확인 위치 또는 금지 국가로의 전송을 차단한다(DEV-69, POL-26·10·40).",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-20",
+        "RSK-21",
+        "RSK-25"
+      ],
+      "requirement_ids": [
+        "REQ-21",
+        "REQ-25"
+      ],
+      "control_ids": [
+        "CTL-20",
+        "CTL-22",
+        "CTL-25"
+      ],
+      "principle_ids": [],
+      "owner": "거버넌스팀",
+      "scope": "모든 MCP 도구 호출",
+      "inputs": [
+        "pac.facts.residency",
+        "residency.rules",
+        "pac.facts.individual_approval"
+      ],
+      "condition": "위치 규칙 확인 실패, 내부 이상 등급의 처리·저장 국가·주체·근거 누락 또는 금지 국가 포함.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 48,
+      "obligations": [
+        "evidence.enhanced",
+        "alert.security"
+      ],
+      "test_ids": [
+        "T-RESIDENCY-001"
+      ],
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "automation": "자동화",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-20T00:00:00Z",
+      "pac_candidate_id": "PAC-CAND-20",
+      "pac_ids": [
+        "PAC-12",
+        "PAC-13"
+      ]
+    },
+    "P-RESIDENCY-002": {
+      "name": "국외 이전 건별 승인",
+      "purpose": "국가 규칙이 승인을 요구하거나 국외 이전 근거가 없으면 요청·위치·규칙 팩에 결속된 독립 승인을 요구한다.",
+      "enforced_by": "opa",
+      "risk_ids": [
+        "RSK-20",
+        "RSK-21",
+        "RSK-25"
+      ],
+      "requirement_ids": [
+        "REQ-21",
+        "REQ-25"
+      ],
+      "control_ids": [
+        "CTL-20",
+        "CTL-22",
+        "CTL-25"
+      ],
+      "principle_ids": [],
+      "owner": "거버넌스팀",
+      "scope": "모든 MCP 도구 호출",
+      "inputs": [
+        "pac.facts.residency",
+        "residency.rules",
+        "pac.facts.individual_approval"
+      ],
+      "condition": "차단 조건이 없고 국가 규칙 또는 이전 근거가 승인을 요구하며 현재 요청에 결속된 유효 승인이 없음.",
+      "outcome": "추가 승인",
+      "enforcement": "건별 승인 전 실행 보류",
+      "priority": 83,
+      "obligations": [
+        "evidence.enhanced",
+        "alert.security"
+      ],
+      "test_ids": [
+        "T-RESIDENCY-002"
+      ],
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "automation": "자동화",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-20T00:00:00Z",
+      "pac_candidate_id": "PAC-CAND-20",
+      "pac_ids": [
+        "PAC-12",
+        "PAC-13"
+      ]
     }
   }
 }

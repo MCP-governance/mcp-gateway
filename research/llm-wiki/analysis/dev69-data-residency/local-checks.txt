@@ -1,0 +1,123 @@
+COMMAND: C:\Program Files\Python310\python.exe -X utf8 full_stack_lab/tests/data_residency_check.py
+EXIT: 0
+test_downstream_is_separate_from_server_location (__main__.LocationTest) ... ok
+test_internal_uses_machine_location_provider_never_does (__main__.LocationTest) ... ok
+test_iso_codes_and_normalization (__main__.LocationTest) ... ok
+test_pack_load_failure_mismatch_and_recovery (__main__.LocationTest) ... ok
+test_pack_rejects_incomplete_and_invalid_rules (__main__.LocationTest) ... ok
+test_rendered_pack_and_ledger (__main__.LocationTest) ... ok
+test_unknown_fields_and_wrong_shapes_refused (__main__.LocationTest) ... ok
+test_unknown_machine_location_is_not_assumed_domestic (__main__.LocationTest) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.021s
+
+OK
+
+COMMAND: C:\Program Files\Python310\python.exe -X utf8 full_stack_lab/registry/render_residency.py --check
+EXIT: 0
+위치 규칙 확인 완료
+
+COMMAND: C:\Program Files\Python310\python.exe -m py_compile full_stack_lab/gateway/app/residency.py full_stack_lab/gateway/app/agent_contract.py full_stack_lab/gateway/app/agent_service.py full_stack_lab/gateway/app/core.py full_stack_lab/gateway/app/main.py full_stack_lab/gateway/app/pac.py full_stack_lab/gateway/app/release.py full_stack_lab/tests/data_residency_check.py full_stack_lab/registry/render_residency.py
+EXIT: 0
+
+COMMAND: node --check full_stack_lab/gateway/app/agent_static/console.js
+EXIT: 0
+
+COMMAND: node --test full_stack_lab/tests/console-state.test.mjs
+EXIT: 0
+✔ masked kinds read in Korean and an unknown kind never shows its raw name (0.7039ms)
+✔ a poll overlapping a page load shows each call once, newest first, within the limit (0.6588ms)
+✔ ids sort numerically and malformed rows cannot displace real decisions (0.1918ms)
+✔ search matches person, PC, harness, server.tool, target, policy and trace, ignoring case and spaces (0.2906ms)
+✔ the status phrase never presents a failed poll as fresh (0.7738ms)
+✔ 24 hourly buckets end at the current hour and keep empty hours at zero (0.4247ms)
+✔ splitBy counts per key with a decision split, largest first (0.2309ms)
+✔ sankey layers never merge a server with a harness of the same name (0.2693ms)
+✔ endpoint observation shows disabled, stale and failed sources separately from zero accepted rows (0.3299ms)
+✔ listener-only endpoints remain in coverage counts and expose no raw command line or owner token (1.0891ms)
+✔ enforced is green only with fresh evidence of a ledger row or a kernel heartbeat (0.714ms)
+✔ latency values read as durations and never invent a measurement (0.3308ms)
+✔ endpoint evidence labels never turn a missing value into a good one (0.2442ms)
+✔ totals are reported apart from the window and page navigation follows the cursor (9.6659ms)
+✔ latency and failure show only a fresh sample and a denial count only a collected channel (0.2122ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 87.7669
+
+COMMAND: C:\Program Files\Python310\python.exe -X utf8 full_stack_lab/tests/open_endpoints.py
+EXIT: 0
+PASS 무인증 1개가 문서와 일치, 인증 필요 73개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)
+
+COMMAND: C:/Program Files/Git/usr/bin/bash.exe -n full_stack_lab/console.sh
+EXIT: 0
+
+COMMAND: git diff --check
+EXIT: 2
+docs/ai/DECISIONS.md:1472: new blank line at EOF.
+warning: in the working copy of 'full_stack_lab/gateway/app/release.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'full_stack_lab/opa/policy_ledger.json', CRLF will be replaced by LF the next time Git touches it
+
+COMMAND: C:\Program Files\Python310\python.exe -X utf8 full_stack_lab/tests/data_residency_check.py --gateway
+EXIT: 1
+Traceback (most recent call last):
+  File "C:\Users\bobysg\bob\프로젝트\mcp-gw-codex-sol\full_stack_lab\tests\data_residency_check.py", line 93, in <module>
+    from app import classify, core, pac, registry, review
+  File "C:\Users\bobysg\bob\프로젝트\mcp-gw-codex-sol\full_stack_lab\gateway\app\classify.py", line 30, in <module>
+    from pglast import parser as pgparser
+ModuleNotFoundError: No module named 'pglast'
+
+PASS existing Rego prefix unchanged; current.md unchanged; only DEV-69 status cell changed
+
+FINAL COMMAND: python -X utf8 full_stack_lab/tests/data_residency_check.py
+EXIT: 0
+test_downstream_is_separate_from_server_location (__main__.LocationTest) ... ok
+test_internal_uses_machine_location_provider_never_does (__main__.LocationTest) ... ok
+test_iso_codes_and_normalization (__main__.LocationTest) ... ok
+test_pack_load_failure_mismatch_and_recovery (__main__.LocationTest) ... ok
+test_pack_rejects_incomplete_and_invalid_rules (__main__.LocationTest) ... ok
+test_rendered_pack_and_ledger (__main__.LocationTest) ... ok
+test_unknown_fields_and_wrong_shapes_refused (__main__.LocationTest) ... ok
+test_unknown_machine_location_is_not_assumed_domestic (__main__.LocationTest) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.019s
+
+OK
+
+FINAL COMMAND: git diff --check
+EXIT: 0
+warning: in the working copy of 'full_stack_lab/gateway/app/release.py', CRLF will be replaced by LF the next time Git touches it
+
+PASS new Markdown local links: 30
+PASS requirements JSON parses
+
+FINAL COMMAND: python -X utf8 full_stack_lab/tests/data_residency_check.py
+EXIT: 0
+test_downstream_is_separate_from_server_location (__main__.LocationTest) ... ok
+test_internal_uses_machine_location_provider_never_does (__main__.LocationTest) ... ok
+test_iso_codes_and_normalization (__main__.LocationTest) ... ok
+test_pack_load_failure_mismatch_and_recovery (__main__.LocationTest) ... ok
+test_pack_rejects_incomplete_and_invalid_rules (__main__.LocationTest) ... ok
+test_rendered_pack_and_ledger (__main__.LocationTest) ... ok
+test_unknown_fields_and_wrong_shapes_refused (__main__.LocationTest) ... ok
+test_unknown_machine_location_is_not_assumed_domestic (__main__.LocationTest) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.028s
+
+OK
+
+FINAL COMMAND: python -m py_compile full_stack_lab/tests/data_residency_check.py
+EXIT: 0
+
+FINAL COMMAND: git diff --check
+EXIT: 0
+warning: in the working copy of 'full_stack_lab/gateway/app/release.py', CRLF will be replaced by LF the next time Git touches it
+
+PASS all ledger outcomes retain the existing reference vocabulary
