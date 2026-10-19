@@ -117,7 +117,7 @@ const TRANSFORM = {
   event_xml_allowlist: "허용 필드만 추출",
 };
 const transformLabel = (step) => (step.startsWith("server:") ? "서버 · " : "") + (TRANSFORM[step.replace(/^server:/, "")] || step);
-const RECORD_KIND = { config: "MCP 설정", listener: "수신기", "os-event": "엔드포인트 차단", decision: "도구 호출" };
+const RECORD_KIND = { config: "MCP 설정", listener: "수신기", "os-event": "엔드포인트 차단", decision: "게이트웨이 판정", "dispatch-intent": "전송 의도" };
 const ENDPOINT_CLASS = { registered: ["allow", "등록 서버"], shadow: ["block", "미등록 MCP"], "retired-residue": ["alert", "폐기 잔존"] };
 // Observed is never shown as blocked.
 const CONTROL_STATE = {
@@ -933,12 +933,18 @@ function timingView(timings) {
 const MCP_EVIDENCE_LABEL = { confirmed: "MCP 응답 확인", suspected: "MCP로 추정", unknown: "MCP 여부 미확인" };
 function relatedBody(related) {
   if (!related) return empty("확인 불가");
-  if (!related.bound) return empty("연결된 엔드포인트 없음");
   if (!related.records.length) return empty("연관 기록 없음");
-  return html`<table class="data"><thead><tr><th>시각</th><th>종류</th><th>내용</th><th>출처</th></tr></thead><tbody>
+  const evidence = (x) => (x.link_basis || []).map((key) => ({ request_id: "요청 ID", trace_id: "추적 ID",
+    decision_id: "판정 ID", same_endpoint: "같은 엔드포인트", same_principal: "같은 주체", time_window: "시간 창" })[key] || key).join(" · ");
+  const state = { pending: "대기", resolved: "확정", uncertain: "미확인", confirmed_executed: "실행 확인", confirmed_not_executed: "미실행 확인" };
+  const identifier = (x) => x.kind === "decision" ? `판정 ${x.id} · 추적 ID ${x.trace_id || "—"}`
+    : x.kind === "dispatch-intent" ? `요청 ID ${x.request_id}` : `${x.kind === "os-event" ? "이벤트" : "기록"} ${x.id}`;
+  return html`<table class="data"><thead><tr><th>시각</th><th>종류</th><th>ID</th><th>내용</th><th>상태</th><th>연관 근거</th></tr></thead><tbody>
     ${related.records.map((x) => html`<tr><td class="small">${when(x.at, { seconds: true })}</td><td>${chip("outline", RECORD_KIND[x.kind] || x.kind)}</td>
+      <td class="small"><code>${identifier(x)}</code></td>
       <td class="small">${x.kind === "decision" ? html`${decisionChip(x.decision)} <code>${x.title}</code>` : html`${x.denial_class ? chip(...denialClass(x.denial_class)) : ""} ${x.title || "—"}`}</td>
-      <td class="small">${COLLECTOR[x.source] || x.source || "—"}<span class="sub">${x.origin ? originLabel(x.origin) : ""}</span></td></tr>`)}
+      <td class="small">${x.kind === "dispatch-intent" ? state[x.state] || "—" : x.policy_id || "—"}</td>
+      <td class="small">${evidence(x)} · ${x.link_strength === "exact" ? "정확 연결" : "보조 근거"}</td></tr>`)}
     </tbody></table><span class="small muted">±${Math.round(related.window_seconds / 60)}분</span>`;
 }
 
@@ -946,9 +952,9 @@ async function showDecision(id) {
   const r = feed.rows.find((row) => String(row.id) === String(id));
   if (!r) return;
   // The device's current state, beside (never instead of) what the call itself carried.
-  const [related, device] = viewer.admin && r.device_id ? await Promise.all([
+  const [related, device] = viewer.admin ? await Promise.all([
     gw(`endpoint/correlation?decision_id=${encodeURIComponent(r.id)}`).catch(() => null),
-    planes().then((p) => p?.devices.find((d) => d.endpoint_id === r.device_id)).catch(() => null)]) : [null, null];
+    r.device_id ? planes().then((p) => p?.devices.find((d) => d.endpoint_id === r.device_id)).catch(() => null) : null]) : [null, null];
   const conflictChip = (c) => chip((DECISION[c.decision] || [""])[0], `${(DECISION[c.decision] || [, c.decision])[1]} ${c.policy_id}`);
   openDrawer(`호출 #${r.id}`, html`<div class="drawer-summary"><span class="tool">${r.server}.${r.tool}</span>
     ${decisionChip(r.decision)}${r.invalid ? chip("outline", "무효 처리") : ""}<span class="muted small">${new Date(r.at).toLocaleString("ko-KR")}</span></div>`, [
@@ -981,7 +987,7 @@ async function showDecision(id) {
       ["Trace ID", r.trace_id ? html`<code>${r.trace_id}</code>` : ""], ["추적 문맥", r.traceparent ? html`<code>${r.traceparent}</code>` : ""],
       ["작업 ID", r.task_id]])}` },
     { key: "timing", label: "처리 시간", body: timingView(r.timings) },
-    ...(viewer.admin && r.device_id ? [{ key: "related", label: "연관 기록", n: related ? related.records.length : undefined, body: relatedBody(related) }] : []),
+    ...(viewer.admin ? [{ key: "related", label: "연관 이벤트", n: related ? related.records.length : undefined, body: relatedBody(related) }] : []),
   ]);
 }
 

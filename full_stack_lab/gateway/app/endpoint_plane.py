@@ -35,6 +35,7 @@ from urllib.parse import urlsplit
 from psycopg.types.json import Jsonb
 
 from . import db
+from .event_correlation import correlation_result
 
 AGENT_PROTOCOL = "1"
 
@@ -1218,33 +1219,38 @@ async def correlate(*, decision_id: int | None = None, kind: str | None = None, 
                     window_seconds: int = 300) -> dict | None:
     """같은 엔드포인트 장치와 같은 사용자의 기록을 시간 창 안에서 따로 늘어놓는다.
 
-    하나의 사건으로 합치지 않는다. 시각이 겹친다는 것은 같은 행위라는 증거가 아니다.
-    traceparent는 기록만 하고 연결의 근거로 쓰지 않는다.
+    호출·전송 의도는 request_id로 정확히 잇고, OS 관측은 장치·주체·시간 창의
+    일치만 보조 근거로 표시한다. 시간만 겹치는 행은 결과에 넣지 않는다.
     """
     window = max(10, min(int(window_seconds), 3600))
     span = timedelta(seconds=window)
     if decision_id is not None:
         call = await db.fetch_one(
-            """SELECT id, created_at, user_token, decision, policy_id, server_id, tool_name,
-                      client->>'device_id' AS device_id, client->>'traceparent' AS traceparent
+            """SELECT id, created_at, request_id, trace_id, user_token, decision, policy_id, server_id, tool_name,
+                      client->>'device_id' AS device_id
                  FROM decisions WHERE id=%s""", (decision_id,))
         if not call:
             return None
-        anchor = {"kind": "decision", "id": call["id"], "at": call["created_at"].isoformat(),
-                  "endpoint_id": call["device_id"], "traceparent": call["traceparent"]}
         device = await db.fetch_one(
             "SELECT endpoint_id FROM endpoint_agents WHERE endpoint_id=%s AND owner_token=%s",
             (call["device_id"], call["user_token"])) if call["device_id"] else None
+        intent = await db.fetch_one(
+            "SELECT request_id, decision_id, attempted_at, state FROM dispatch_intents WHERE request_id=%s",
+            (call["request_id"],)) if call.get("request_id") else None
         records: list[dict] = []
         if device:
             low, high = call["created_at"] - span, call["created_at"] + span
             for record_kind, (table, alias, when) in RECORD_KINDS.items():
                 for row in await db.fetch_all(
-                        f"SELECT * FROM {table} WHERE endpoint_id=%s AND {when} BETWEEN %s AND %s ORDER BY {when} DESC LIMIT 25",
+                        f"SELECT {alias}.*, a.owner_token AS event_user_token FROM {table} {alias} "
+                        f"JOIN endpoint_agents a USING (endpoint_id) WHERE {alias}.endpoint_id=%s "
+                        f"AND {alias}.{when} BETWEEN %s AND %s ORDER BY {alias}.{when} DESC LIMIT 25",
                         (device["endpoint_id"], low, high)):
-                    records.append(_record(record_kind, row, when))
-        records.sort(key=lambda item: item["at"], reverse=True)
-        return {"anchor": anchor, "bound": bool(device), "window_seconds": window, "records": records}
+                    item = _record(record_kind, row, when)
+                    item["at"] = row[when]
+                    item["event_user_token"] = row["event_user_token"]
+                    records.append(item)
+        return correlation_result(call, intent, records, bound=bool(device), window_seconds=window)
     if kind not in RECORD_KINDS or record_id is None:
         raise ValueError("알 수 없는 기록 종류입니다.")
     table, alias, when = RECORD_KINDS[kind]

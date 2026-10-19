@@ -119,7 +119,7 @@ D-126: `resolved`·`confirmed_executed` 쓰기도 `resolved_at`부터 기본 24�
 `endpoint_os_events`는 `raw_sha256`(7일 재전송 중복 판정)·`denial_class`(`harness_startup`/`blocked_attempt`/`listener_reply`/`unknown`)를 더한다.
 `endpoint_network_samples(endpoint_id, measured_at, rtt_p50_ms, rtt_p95_ms, jitter_ms, failure_pct, probes, received_at)`는 PK `(endpoint_id, measured_at)`이고
 적재하는 하트비트가 7일 지난 행을 지운다. `endpoint_agents.detail.install_receipt`는 Gateway가 렌더링한 파일 해시(`provider_artifact_sha256`)와
-장치가 보고한 설치 파일 해시(`installed_sha256`)를 따로 둔다. 감사 원장(`decisions`)은 그대로 append-only이며 연관 조회는 읽기만 한다.
+장치가 보고한 설치 파일 해시(`installed_sha256`)를 따로 둔다. 감사 원장(`decisions`)은 그대로 append-only이며 연관 조회는 읽기만 한다. D-145 상관 조회는 `decisions.request_id`로 `dispatch_intents`를 정확히 잇고, `trace_id`를 함께 반환한다. 엔드포인트 관측은 같은 `endpoint_id`·소유 주체·시간 창을 모두 확인한 보조 근거로 표시한다. trace ID가 없는 과거 행은 그대로 조회하되 ID를 추정하지 않는다.
 
 ## 6. 공급망·도입
 `mcp_intake_requests`(도입 신청. `exit_terms`는 관리자 검증 기록: 세 조항·`evidence_url`·`note`·`verified_by`·`verified_at`, D-26;
