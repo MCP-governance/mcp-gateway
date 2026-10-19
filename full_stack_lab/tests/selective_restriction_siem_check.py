@@ -51,6 +51,7 @@ class CatalogDB:
         self.observed = {name: {"name": name, "description": name, "input_schema": {"type": "object"}} for name in ("a", "b")}
         self.tools = {name: {**tool, "enabled": True, "approved_description_hash": digest(tool["description"]),
                             "approved_schema_hash": digest(tool["input_schema"]), "approved_server_version": "1",
+                            "approved_output_schema_hash": digest(None), "observed_output_schema_hash": digest(None),
                             "observed_description_hash": None, "observed_schema_hash": None} for name, tool in self.observed.items()}
         self.snapshots = []
         self.version = "1"
@@ -79,7 +80,8 @@ class CatalogDB:
         elif compact.startswith("UPDATE mcp_tools SET approved_server_version"):
             for row in self.tools.values():
                 if (row["approved_description_hash"] == row["observed_description_hash"]
-                        and row["approved_schema_hash"] == row["observed_schema_hash"]):
+                        and row["approved_schema_hash"] == row["observed_schema_hash"]
+                        and row["approved_output_schema_hash"] == row["observed_output_schema_hash"]):
                     row.update(approved_server_version=params[0], observed_server_version=params[0])
         elif compact.startswith("UPDATE mcp_servers SET status=%s"):
             if self.server["status"] != "DISABLED":

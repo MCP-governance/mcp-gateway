@@ -69,7 +69,7 @@ def credential_headers(endpoint: str, principal: str | None = None) -> dict:
         if type(expiry) not in (int, float) or not math.isfinite(expiry) or expiry < 0 or (expiry and expiry <= time.time()):
             raise ValueError('credential expiration')
         token = row['access_token']
-        if not isinstance(token, str) or not token or any(c in token for c in '\r\n'):
+        if not isinstance(token, str) or not token or any(c in token for c in '\n'):
             raise ValueError('credential format')
         return {'Authorization': 'Bearer ' + token}
     except (OSError, ValueError, TypeError, KeyError) as exc:
@@ -382,11 +382,14 @@ async def list_all_tools(client: Client) -> list:
 
 def tool_view(tool: Any) -> dict:
     annotations = getattr(tool, "annotations", None)
+    output_schema = getattr(tool, "output_schema", None)
+    if output_schema is not None:
+        output_contract.check_schema_bounds(output_schema)
     return {
         "name": tool.name,
         "description": tool.description or "",
         "input_schema": tool.input_schema,
-        "output_schema": getattr(tool, "output_schema", None),
+        "output_schema": output_schema,
         "annotations": annotations.model_dump(exclude_none=True) if annotations else None,
     }
 

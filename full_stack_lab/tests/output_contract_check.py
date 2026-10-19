@@ -39,12 +39,27 @@ def definitions(filename, names, namespace):
 digest = definitions("contract.py", {"canonical_hash"}, {"hashlib": hashlib, "json": json}).canonical_hash
 contract = definitions("output_contract.py", {
     "NO_OUTPUT_SCHEMA_HASH", "OBJECT_PROTOCOLS", "JSON_PROTOCOLS", "approved_hash", "matches",
-    "observed_matches", "for_protocol", "WireRejected"}, {"canonical_hash": digest})
+    "observed_matches", "for_protocol", "check_schema_bounds", "MAX_SCHEMA_DEPTH", "MAX_SCHEMA_NODES",
+    "MAX_SCHEMA_BYTES", "OutputSchemaTooComplex", "WireRejected"}, {"canonical_hash": digest, "math": __import__("math")})
 selective = definitions("selective.py", {"restricted_tools", "available"}, {})
 schema = {"type": "object", "properties": {"count": {"type": "integer"}}, "required": ["count"]}
 
 
 class PureContract(unittest.TestCase):
+    def test_schema_resource_bounds_reject_large_and_deep_documents(self):
+        contract.check_schema_bounds(schema)
+        deep = {"type": "object"}
+        for _ in range(contract.MAX_SCHEMA_DEPTH):
+            deep = {"properties": {"nested": deep}}
+        with self.assertRaises(contract.OutputSchemaTooComplex):
+            contract.check_schema_bounds(deep)
+        wide = {"anyOf": [{"type": "string"} for _ in range(contract.MAX_SCHEMA_NODES)]}
+        with self.assertRaises(contract.OutputSchemaTooComplex):
+            contract.check_schema_bounds(wide)
+        large = {"description": "x" * contract.MAX_SCHEMA_BYTES}
+        with self.assertRaises(contract.OutputSchemaTooComplex):
+            contract.check_schema_bounds(large)
+
     def test_old_approval_means_absence_not_first_observation(self):
         for row in ({}, {"approved_output_schema_hash": None}):
             self.assertTrue(contract.matches(row, None))
@@ -205,6 +220,13 @@ if not PURE:
     from pydantic import ValidationError
 
     class GatewayContract(unittest.IsolatedAsyncioTestCase):
+        def test_unbounded_schema_is_rejected_during_tool_catalog_conversion(self):
+            tool = SimpleNamespace(name="read", description="", input_schema={}, output_schema={"type": "object"})
+            for _ in range(output_contract.MAX_SCHEMA_DEPTH):
+                tool.output_schema = {"properties": {"nested": tool.output_schema}}
+            with self.assertRaises(output_contract.OutputSchemaTooComplex):
+                upstream.tool_view(tool)
+
         def test_approved_schema_rejects_missing_mismatched_and_remote_refs(self):
             for payload, approved in [
                 ({"content": [], "structured": {"count": "private"}}, schema),
@@ -221,6 +243,12 @@ if not PURE:
                 self.assertNotIn("private", str(error.exception))
             self.assertEqual(core._guarded_result({"content": [], "structured": {"count": 1}},
                                                  "2026-07-28", schema)["structured"], {"count": 1})
+
+        def test_tool_error_message_passes_but_structured_error_is_checked(self):
+            error = {"content": [{"type": "text", "text": "rate limited, retry later"}], "is_error": True}
+            self.assertEqual(core._guarded_result(error, "2026-07-28", schema)["content"], error["content"])
+            with self.assertRaises(core.ResultRejected):
+                core._guarded_result({**error, "structured": {"count": "private"}}, "2026-07-28", schema)
 
         def test_sdk_render_versions_and_explicit_null_wire(self):
             for value in ({"count": 1}, [1], "public", 0, False, None):

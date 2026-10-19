@@ -1691,6 +1691,10 @@ def _upstream_failure(exc: Exception, event: dict) -> dict:
             return local_verdict("MCP-OUTPUT-001", "Block", "협상된 출력 형식과 일치하지 않아 결과를 보류했습니다.",
                                  upstream_executed=True, upstream_attempted=True, result=None,
                                  result_evidence={"disposition": "withheld"})
+        if isinstance(error, output_contract.OutputSchemaTooComplex):
+            return local_verdict("MCP-CATALOG-001", "Block", "도구 출력 스키마의 검사 한도를 초과했습니다.",
+                                 upstream_executed=executed, upstream_attempted=attempted, result=None,
+                                 result_evidence={"disposition": "withheld" if executed else "not_executed"})
         if isinstance(error, httpx.HTTPStatusError):
             event["upstream_http_status"] = error.response.status_code
         if isinstance(error, DestinationBlocked):
@@ -1714,9 +1718,13 @@ def body_of(value) -> str:
 
 
 def _validate_output(payload: dict, schema) -> None:
-    if schema is None:
+    # A tool error carries only its message; the official SDKs skip the output schema there,
+    # and withholding it would hide the reason the model needs to retry. Structured data on an
+    # error is still checked.
+    if schema is None or payload.get("is_error") and "structured" not in payload:
         return
     try:
+        output_contract.check_schema_bounds(schema)
         validator_class = validator_for(schema, default=None) if "$schema" in schema else Draft202012Validator
         if validator_class is None:
             raise ValueError("unsupported output schema dialect")

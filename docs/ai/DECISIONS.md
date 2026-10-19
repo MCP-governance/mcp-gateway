@@ -1598,3 +1598,11 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 판본: D-109의 일괄 제거 결정을 이 결정으로 대체한다. 2025-06-18·2025-11-25는 객체, 2026-07-28은 배열·스칼라·null까지 보존한다. 현대 서버에서 구형 하네스로 가는 비객체 값은 검사·마스킹 후 JSON text로 전환하고 호환되지 않는 출력 스키마 광고를 생략한다. 더 이전 판본도 text로 반환한다. 명시적 null은 SDK runner의 exclude_none 직렬화에 지워지지 않게 기존 Pydantic serializer로 보존한다. 수신/송신 판본은 SDK 문맥에서 얻고 감사 client 정보에 남기며 신원/권한 판정에는 쓰지 않는다.
 - 근거: [공식 명세/고정 SDK 분석·파일 해시](../../research/llm-wiki/analysis/output-contract-d149/README.md). 공식 Python SDK v2.2.0, commit 9972c21aa42054fb1450c5fc614761ed11847ec6, MIT. 기존 jsonschema 4.26.0과 그 기존 referencing 의존성을 사용한다. 새 의존성·정책 ID·라우트·자체 MCP 서버는 없다. 공개 mcp-builder 스킬은 검색·내용 대조만 하고 채택/실행하지 않았다.
 - 한계: 로컬 순수/DB·전송 대역 시험과 정적 검사만 수행했다. SDK 전체 시험은 이 PC의 Python 3.10/의존성 제약으로 실행하지 못했다. 공식 SDK wire 위반 응답은 보류되며 구형 상위 서버의 비객체 wire 위반을 느슨하게 수용하지 않는다. 솔루션 기기 이미지·실제 DB 전환/경쟁·공개 OSS MCP·PJ1 협상 판본별 호출/효과/복구는 미실행이다. [작업 보고](../../research/llm-wiki/status/reports/2026-10-20-output-contract.md).
+
+### D-149 적대 검증 보완 (10/20 Codex luna)
+
+- 기존 승인 전환: 구 잠금/DB에서 출력 해시가 없을 때 canonical null로 해석하는 경로는 기존 승인 도구를 자동 재승인 대기로 만들지 않는다. 상용 운영 서버의 outputSchema 부재 확인은 Codex sol의 별도 현장 결과를 전제로 하며 이번 로컬 검토에서 재측정하지 않았다.
+- 기존 시험 변경 판정: `catalog_refresh_check.py` A, `contracts_check.py` A, `dispatch_recheck_check.py` A, `selective_restriction_siem_check.py` B. 마지막 대역의 서버 판본 승격 조건을 운영 SQL과 맞춰 출력 해시 비교를 추가했다. 기대값 완화는 발견하지 않았다.
+- 적대 검토에서 출력 스키마의 외부 참조는 빈 `Registry`로 거부되고, 마스킹 뒤 출력 스키마를 다시 검사하며, 도구 목록 재확인과 dispatch 최종 SQL 모두 승인·관측 출력 해시를 비교함을 확인했다. 스키마 검사 전에 깊이 64, 컨테이너 10,000개, 약 256 KiB 상한을 적용한다.
+- `isError=true` 결과도 승인 스키마로 검사하는 기존 선택은 유지한다. 일부 공식 SDK가 이를 생략하는 것보다 엄격하며, 스키마 없는 도구 오류가 `MCP-OUTPUT-001`로 보류되어 모델의 오류 복구 정보가 줄 수 있다. 재시도 호환성은 공개 MCP 서버/클라이언트 실험으로 확인해야 한다.
+- 검증 근거와 잔여 위험은 [S7 적대 검토](../../research/llm-wiki/analysis/review-1020/s7-output-contract.md)에 기록한다. 크기·깊이 상한은 합법적인 복잡한 스키마를 거부할 수 있고, Python 정규식의 병적 역추적 시간은 이번 수정의 상한으로 완전히 통제하지 않는다.
