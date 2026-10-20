@@ -27,7 +27,7 @@ from mcp.client.streamable_http import streamable_http_client
 from mcp_types.version import HANDSHAKE_PROTOCOL_VERSIONS, MODERN_PROTOCOL_VERSIONS
 from pydantic import ValidationError
 
-from . import db, local_jobs, output_contract, registry, upstream_sessions
+from . import db, output_contract, registry, upstream_sessions
 from .destination import pin_transport
 
 CONNECT_TIMEOUT = float(os.getenv("UPSTREAM_TIMEOUT_SECONDS", "90"))
@@ -326,8 +326,9 @@ class ContractClient:
 @asynccontextmanager
 async def session(endpoint: str, timeout: float = CONNECT_TIMEOUT, principal: str | None = None,
                   protocol: str | None = None, server_id: str | None = None, device_id: str | None = None):
-    if local_jobs.server_of(endpoint):
+    if endpoint.startswith("local:"):
         # An approved local server runs on the caller's own device; there is no HTTP session to pool.
+        from . import local_jobs
         async with local_jobs.session(endpoint, timeout, device_id, discovery=principal is None) as client:
             yield client
         return

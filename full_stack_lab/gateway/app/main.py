@@ -1474,9 +1474,14 @@ async def endpoint_device_list(user: dict = Depends(admin_caller)) -> dict:
 @app.get("/api/endpoint/managed-policy")
 async def endpoint_managed_policy(device: dict = Depends(endpoint_device("enforcement"))) -> dict:
     try:
-        return await endpoint_plane.managed_policy(device)
+        policy = await endpoint_plane.managed_policy(device)
     except (PermissionError, ValueError) as exc:
         raise HTTPException(403, str(exc)) from exc
+    # DEV-73: outside policy_hash on purpose. The runner trusts each manifest's signature, not this
+    # list; the list only tells it which containers to pull ahead and which to stop when withdrawn.
+    local = [{"server_id": s, "manifest": spec["local"]["manifest"], "signature": spec["local"]["signature"]}
+             for s in policy["servers"] if (spec := registry.server(s) or {}).get("local")]
+    return {**policy, "local_servers": local} if local else policy
 
 
 @app.post("/api/endpoint/heartbeat")
