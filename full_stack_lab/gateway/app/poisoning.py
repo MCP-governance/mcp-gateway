@@ -30,6 +30,7 @@ file listing legitimately does.
 from __future__ import annotations
 
 import base64
+import codecs
 import html
 import itertools
 import json
@@ -206,7 +207,8 @@ _SCANNER = Scanner([rule for _, rule in _ALL])
 # letters), format characters inside a word, Cyrillic or Greek letters that look Latin, percent or numeric-entity
 # escapes, and base64 or hex text. Each one is undone and the rules read the result as well. Rot13, reversed
 # text, leetspeak and spaced-out letters are not undone: the model has to be told to decode them, and a
-# decoder step is not what tool output carries (measured, not covered).
+# decoder step is not what tool output carries (measured, not covered). Contract
+# review additionally uses _catalog_variants, without widening result withholding.
 _FORMAT = re.compile("[­​-‏‪-‮⁠-⁤⁦-⁩﻿\U000e0000-\U000e007f]")
 _LOOKALIKE = str.maketrans({
     "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "і": "i", "ѕ": "s", "у": "y",
@@ -255,10 +257,30 @@ def _variants(text: str) -> list[str]:
     return out
 
 
+_SPACED = re.compile(r"\b(?:[A-Za-z] ){3,}[A-Za-z]\b")
+_LEET_WORD = re.compile(r"\b[A-Za-z0-9]{3,}\b")
+_LEET = str.maketrans("431057", "aeiost")
+
+
+def _catalog_variants(text: str) -> list[str]:
+    """Extra readings only for contract review; result withholding keeps its narrower scope."""
+    readings = [codecs.decode(text, "rot_13"), text[::-1]]
+    if _SPACED.search(text):
+        readings.append(_SPACED.sub(lambda match: match.group().replace(" ", ""), text))
+    if any(char in text for char in "431057"):
+        readings.append(_LEET_WORD.sub(
+            lambda match: match.group().translate(_LEET) if not match.group().isdigit() else match.group(), text))
+    return [reading for reading in readings if reading != text]
+
+
 def _scan(text: str, rules: tuple) -> list[str]:
     invisible = len(_ALL) - 2 if rules is CATALOG_RULES else len(_ALL) - 1
     found = []
-    for reading in [text, *_variants(text)]:
+    readings = [text, *_variants(text)]
+    if rules is CATALOG_RULES:
+        # One layer and at most four extra scans, rather than a recursive decoder tree.
+        readings.extend(_catalog_variants(text))
+    for reading in readings:
         if rules == CATALOG_RULES[:len(rules)]:
             which = [*range(len(rules)), invisible]
             hits = _SCANNER.hits(reading, which)
