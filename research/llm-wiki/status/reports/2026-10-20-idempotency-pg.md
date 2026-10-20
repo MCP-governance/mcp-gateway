@@ -1,7 +1,7 @@
 # 2026-10-20 변경 요청 멱등 PostgreSQL 경합 시험
 
 - 작업자: Codex luna
-- 코드 기준: `b1feb8b` (`10/20-idempotency-pg`), 시작 시 clean. 제품 코드 변경 없음. 추가 파일 `full_stack_lab/tests/dispatch_idempotency_pg_check.py`, 결정 `D-155`, DEV-55 마지막 상태 칸 갱신.
+- 코드 기준: `b1feb8b` (`10/20-idempotency-pg`), 시작 시 clean. 제품 코드 변경 없음. 추가 파일 `full_stack_lab/tests/dispatch_idempotency_pg_check.py`, 결정 `시험만(D-번호 없음)`, DEV-55 마지막 상태 칸 갱신.
 - 시작 근거: DEV-55 / WBS G03.07 / POL-36 / D-126, `dispatch.py`의 `record`, `REPLAY`, `IDEMPOTENCY_TTL_SECONDS`.
 - 해결할 문제와 완료 조건: 실제 격리 PostgreSQL에서 제품 함수를 사용해 같은 주체·지문 경합, TTL 완료 이력, 미확인 상태와 확인 뒤 재시도, 주체·인자·읽기 독립성을 검사할 새 시험을 추가한다. 제품 결함이 확인되면 최소 수정하되 기존 시험 기대값은 변경하지 않는다.
 
