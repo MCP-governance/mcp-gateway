@@ -1774,3 +1774,10 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 근거: [방향 갱신 10-20](../../research/llm-wiki/analysis/direction-1020/README.md) RM-02.
 - 한계: 장기 미보고 기준 기간은 운영 설정값으로 정한다.
 
+
+## D-175 승인된 로컬 MCP는 게이트웨이를 거쳐 장치의 root 실행기가 격리 컨테이너로 실행한다 (2026-10-20, 설계 초안)
+
+- 문제: DEV-73(방향 갱신 10-20)은 승인된 로컬 MCP를 관리 계정 밖 격리 실행으로 허용해야 한다. 관리 계정은 docker 그룹이 금지되고 AppArmor가 bwrap을 막으며, 별도 판정 경로를 만들면 원격 호출과 판정·원장이 갈라진다.
+- 결정: 하네스는 원격 서버와 같은 게이트웨이 URL로 호출하고, `deployment=local` 서버의 upstream 단계만 호출 토큰의 장치로 작업을 보낸다. 장치의 엔드포인트 에이전트(root)가 바깥 방향 long-poll로 자기 장치 작업만 받아, 정책 해시가 맞는 매니페스트의 이미지 digest를 rootful podman `--user <관리 계정 UID> --network=none --read-only --cap-drop=ALL --security-opt=no-new-privileges --pull=never`와 홈 아래 허용 폴더 마운트로 실행한다. 계약은 기기 실행기가 같은 digest로 관찰하고 사람이 승인한다. 관리 계정의 rootless podman·bubblewrap, ToolHive, PC 수신 엔드포인트는 기각했다.
+- 근거: [DEV-73 설계](../../research/llm-wiki/analysis/direction-1020/dev73-local-isolated-run.md), MCP 공식 Local Server Security, [ToolHive 분석](../../research/llm-wiki/analysis/oss-deep/toolhive-runtime.md).
+- 한계: rootful 엔진이라 컨테이너 탈출은 root가 된다(userns·idmap 강화는 실측 후). 비밀이 필요한 로컬 서버와 Windows는 범위 밖. 로컬 파일이 게이트웨이를 거치는 지연이 생긴다.
