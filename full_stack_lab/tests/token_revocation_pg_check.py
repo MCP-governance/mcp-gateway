@@ -16,9 +16,9 @@ import psycopg
 from fastapi import HTTPException
 from starlette.requests import Request
 
-from app import db, endpoint_plane, idp
+from app import db, endpoint_plane, idp, disposal
 from app.agent_contract import authenticated_user, public_key
-from termination_lab_support import Checks, add_principal, apply_schema, run, signing_keys
+from termination_lab_support import Checks, add_principal, apply_schema, isolated_disposal, run, signing_keys
 
 CHECKS = Checks("token, refresh family and device revocation (PostgreSQL)")
 REQUEST = Request({"type": "http", "client": ("127.0.0.1", 1), "headers": []})
@@ -151,7 +151,11 @@ async def device_revocation():
     current = await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint,))
     await endpoint_plane.revoke_device(endpoint, "tok-reviewer")
     CHECKS.ok("revoking the device refuses the token it already holds, at once (API and MCP)",
-              await verdict(body["access_token"]) == 403 and await verdict(body["access_token"], False) == 403)
+              # G07.04 records the device's tokens in the signed list and the revocation table; that check runs
+              # first, so both ingresses answer 401 - and the record itself must be there (sol review B).
+              await verdict(body["access_token"]) == 401 and await verdict(body["access_token"], False) == 401
+              and disposal.blocked(jti=claims["jti"])
+              and bool(await db.fetch_one("SELECT 1 FROM agent_revoked_tokens WHERE jti=%s", (claims["jti"],))))
     refused = []
     for scope in endpoint_plane.DEVICE_SCOPES:
         try:
@@ -177,8 +181,10 @@ async def main():
     signing_keys()
     os.environ["AUTH_PROVIDER"] = "local"
     await apply_schema()
-    for case in (family_revocation, issue_against_revoke, issuance_rolls_back, device_revocation):
-        await CHECKS.case(case.__name__, case())
+    # D-123 made the signed disposal list mandatory (fail-closed); give the lab its own throwaway one.
+    with isolated_disposal():
+        for case in (family_revocation, issue_against_revoke, issuance_rolls_back, device_revocation):
+            await CHECKS.case(case.__name__, case())
     return CHECKS.finish()
 
 
