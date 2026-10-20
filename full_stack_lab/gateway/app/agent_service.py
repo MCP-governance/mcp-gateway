@@ -1379,7 +1379,9 @@ async def risk_tier_gate(request_id: UUID, row: dict, user: dict, reason: str) -
         if not await review.same_person(earlier, user["principal"]) and not [
                 seen for seen in others if await review.same_person(earlier, seen)]:
             others.append(earlier)
-    verdict, message = risk_tier.decide(assessed["tier"], 1 + len(others), reason)
+    approvers = 1 + len(others)
+    solo_mode, solo = review.solo_mode_enabled(), review.solo_operator(user)
+    verdict, message = risk_tier.decide(assessed["tier"], approvers, reason)
     if verdict == "refuse":
         raise HTTPException(409, "승인할 수 없습니다: " + message)
     if verdict == "cosign":
@@ -1390,12 +1392,13 @@ async def risk_tier_gate(request_id: UUID, row: dict, user: dict, reason: str) -
             await review.record_event("intake-cosign", "recorded", "intake", request_id, user["principal"],
                                       applicant=row["submitted_by"], reason=(reason or "").strip() or None,
                                       scope={"tier": assessed["tier"], "input_sha256": assessed["input_sha256"],
-                                             "approvers": 1 + len(others)})
+                                             "approvers": 1 + len(others), "solo_mode": solo_mode, "solo_operator": solo})
         return {"pending": True, "message": message}
     return {"pending": False, "record": {
         "tier": assessed["tier"], "score": assessed["score"], "floors": assessed["floors"],
         "input_sha256": assessed["input_sha256"], "version": assessed["version"],
-        "approvers": [user["principal"], *others], "written_reason": len((reason or "").strip()) >= risk_tier.MIN_REASON}}
+        "approvers": [user["principal"], *others], "written_reason": len((reason or "").strip()) >= risk_tier.MIN_REASON,
+        "solo_mode": solo_mode, "solo_operator": solo}}
 
 
 @app.post("/api/mcp-requests/{request_id}/approve")
@@ -1469,6 +1472,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
                 kind="intake-approve", outcome="approved", target_kind="intake", target_id=request_id,
                 actor=user["principal"], applicant=remote["submitted_by"], reason=risk or reviewed.get("review_note"),
                 scope={"risk_tier": risk_record["tier"], "approvers": risk_record["approvers"],
+                       "solo_mode": bool(risk_record.get("solo_mode")), "solo_operator": bool(risk_record.get("solo_operator")),
                        "endpoint": remote["endpoint_url"], "tools": reviewed["registration"]["tools"],
                        "residency": reviewed["registration"].get("residency") or {},
                        "data_class": reviewed["registration"]["data_class"], "valid_until": reviewed["valid_until"],
@@ -1521,6 +1525,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
         kind="intake-approve", outcome="approved", target_kind="intake", target_id=request_id,
         actor=user["principal"], applicant=pending["submitted_by"], reason=risk or None,
         scope={"risk_tier": risk_record["tier"], "approvers": risk_record["approvers"],
+                       "solo_mode": bool(risk_record.get("solo_mode")), "solo_operator": bool(risk_record.get("solo_operator")),
                "source": pending["repository_url"], "commit": pending["commit_sha"],
                "license": (record.get("license") or {}).get("spdx"),
                "artifact_sha256": (record.get("artifact") or {}).get("sha256"), "verified_sha256": checked["sha256"],

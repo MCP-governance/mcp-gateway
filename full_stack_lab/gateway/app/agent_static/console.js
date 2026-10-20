@@ -1195,7 +1195,8 @@ function showServer(id) {
         ["실행 권한", RISK_CHOICES.permission[registration.risk_assessment.input.permission]],
         ["예상 사용자 수", `${registration.risk_assessment.input.users}명`],
         ["자율성", RISK_CHOICES.autonomy[registration.risk_assessment.input.autonomy]],
-        ["승인자", (registration.risk_assessment.approvers || []).join(", ")]]
+        ["승인자", (registration.risk_assessment.approvers || []).join(", ")],
+        ["승인 방식", registration.risk_assessment.solo_mode === true ? "단독 운영" : registration.risk_assessment.solo_mode === false ? "일반 운영" : "—"]]
         : registration?.risk_review ? [["위험 등급", html`${chip(...RISK_TIER[registration.risk_review.tier])}<span class="sub">영향평가 입력 없음</span>`],
           ["재평가 기한", registration.risk_review.until.slice(0, 10)]] : []),
       ["출처 해시", registration?.provenance?.artifact?.sha256 ? html`<code>${registration.provenance.artifact.sha256}</code>` : ""],

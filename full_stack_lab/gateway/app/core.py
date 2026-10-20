@@ -682,7 +682,9 @@ async def register_server(request: dict, actor: str) -> dict:
         "supplier_assurance": assurance,
         "risk_assessment": {"tier": stated["tier"], "score": stated["score"], "floors": stated["floors"],
                             "input": intake["risk_input"], "input_sha256": stated["input_sha256"],
-                            "approvers": approved_risk.get("approvers") or [], "version": stated["version"]},
+                            "approvers": approved_risk.get("approvers") or [],
+                            "solo_mode": approved_risk.get("solo_mode"),
+                            "solo_operator": approved_risk.get("solo_operator"), "version": stated["version"]},
         "runtime": {key: str(value) for key, value in runtime.items()} if runtime else None,
     }
     contract = {"package": f"{package}@{version}", "server_name": found["advertised_name"],

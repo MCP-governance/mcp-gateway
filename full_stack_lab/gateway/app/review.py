@@ -8,6 +8,7 @@ registration a human has reviewed.
 from __future__ import annotations
 
 import json
+import os
 import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -76,6 +77,17 @@ async def require_independent(kind: str, target_kind: str, target_id: Any, actor
         await record_event(kind, "refused", target_kind, target_id, actor, applicant=applicant,
                            reason="신청자와 승인자가 같습니다.", scope=scope)
         raise NotIndependent("본인이 신청한 건은 본인이 승인할 수 없습니다. 다른 관리자가 처리해야 합니다.")
+
+
+def solo_mode_enabled() -> bool:
+    """Whether this deployment is configured for a single root operator."""
+    return os.getenv("ROOT_SOLO_APPROVAL") == "1"
+
+
+def solo_operator(user: dict) -> bool:
+    """Mark approvals made by root while the single-operator mode is enabled."""
+    return (solo_mode_enabled() and user.get("user_id") == "root"
+            and "admin" in (user.get("roles") or ()))
 
 
 async def transition(query: str, params: tuple, **event: Any) -> dict | None:
