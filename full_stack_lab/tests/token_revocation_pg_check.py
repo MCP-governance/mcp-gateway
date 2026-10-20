@@ -16,7 +16,7 @@ import psycopg
 from fastapi import HTTPException
 from starlette.requests import Request
 
-from app import db, endpoint_plane, idp
+from app import db, endpoint_plane, idp, disposal
 from app.agent_contract import authenticated_user, public_key
 from termination_lab_support import Checks, add_principal, apply_schema, isolated_disposal, run, signing_keys
 
@@ -151,8 +151,11 @@ async def device_revocation():
     current = await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint,))
     await endpoint_plane.revoke_device(endpoint, "tok-reviewer")
     CHECKS.ok("revoking the device refuses the token it already holds, at once (API and MCP)",
-              # 401 since G07.04 records device tokens in the signed list (checked first); 403 from the device state.
-              await verdict(body["access_token"]) in {401, 403} and await verdict(body["access_token"], False) in {401, 403})
+              # G07.04 records the device's tokens in the signed list and the revocation table; that check runs
+              # first, so both ingresses answer 401 - and the record itself must be there (sol review B).
+              await verdict(body["access_token"]) == 401 and await verdict(body["access_token"], False) == 401
+              and disposal.blocked(jti=claims["jti"])
+              and bool(await db.fetch_one("SELECT 1 FROM agent_revoked_tokens WHERE jti=%s", (claims["jti"],))))
     refused = []
     for scope in endpoint_plane.DEVICE_SCOPES:
         try:
