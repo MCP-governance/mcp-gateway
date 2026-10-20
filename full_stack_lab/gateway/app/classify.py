@@ -585,7 +585,8 @@ def result_items(payload: dict) -> int:
         if not isinstance(item, dict) or not isinstance(item.get("text"), str):
             continue
         try:
-            value = json.loads(item["text"])
+            # A UTF-8 BOM is an encoding marker, not a reason to count every JSON line as a record.
+            value = json.loads(item["text"].removeprefix("\ufeff"))
         except (ValueError, RecursionError):
             # Plain text has no record schema; nonempty lines are a conservative unit.
             text_count += sum(bool(line.strip()) for line in item["text"].splitlines())

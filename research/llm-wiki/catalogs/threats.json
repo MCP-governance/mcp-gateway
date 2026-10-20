@@ -517,10 +517,10 @@
       },
       {
         "path": "full_stack_lab/gateway/app/classify.py",
-        "sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
+        "sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f",
         "committed_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
-        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
-        "worktree_modified": false
+        "normalized_sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f",
+        "worktree_modified": true
       }
     ],
     "control_locations": [
@@ -603,8 +603,10 @@
       "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
       "reviewer": "Codex sol",
       "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": true,
-      "changed_review_files": []
+      "files_match_review": false,
+      "changed_review_files": [
+        "full_stack_lab/gateway/app/classify.py"
+      ]
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
@@ -1350,10 +1352,10 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/classify.py",
-        "sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
+        "sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f",
         "committed_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
-        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
-        "worktree_modified": false
+        "normalized_sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
@@ -1423,8 +1425,10 @@
       "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
       "reviewer": "Codex sol",
       "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": true,
-      "changed_review_files": []
+      "files_match_review": false,
+      "changed_review_files": [
+        "full_stack_lab/gateway/app/classify.py"
+      ]
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
@@ -1468,10 +1472,10 @@
       },
       {
         "path": "full_stack_lab/gateway/app/classify.py",
-        "sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
+        "sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f",
         "committed_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
-        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
-        "worktree_modified": false
+        "normalized_sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f",
+        "worktree_modified": true
       }
     ],
     "control_locations": [
@@ -1554,8 +1558,10 @@
       "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
       "reviewer": "Codex sol",
       "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": true,
-      "changed_review_files": []
+      "files_match_review": false,
+      "changed_review_files": [
+        "full_stack_lab/gateway/app/classify.py"
+      ]
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
@@ -1583,10 +1589,10 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/classify.py",
-        "sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
+        "sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f",
         "committed_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
-        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
-        "worktree_modified": false
+        "normalized_sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
@@ -1675,8 +1681,10 @@
       "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
       "reviewer": "Codex sol",
       "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": true,
-      "changed_review_files": []
+      "files_match_review": false,
+      "changed_review_files": [
+        "full_stack_lab/gateway/app/classify.py"
+      ]
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
@@ -2211,8 +2219,10 @@
       "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
       "reviewer": "Codex sol",
       "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": true,
-      "changed_review_files": []
+      "files_match_review": false,
+      "changed_review_files": [
+        "research/llm-wiki/status/reports/2026-10-20-poisoning-corpus.md"
+      ]
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
