@@ -14,11 +14,11 @@ from unittest.mock import patch
 import uuid
 
 from starlette.requests import Request
-from termination_lab_support import isolated_disposal
 
 os.environ.setdefault("OTEL_SDK_DISABLED", "true")
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "gateway"))
 from app import idp
+from termination_lab_support import isolated_disposal  # after the gateway path: it imports app.db (SR6 O1)
 
 
 class Cursor:

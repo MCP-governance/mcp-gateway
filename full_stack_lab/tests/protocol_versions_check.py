@@ -31,6 +31,7 @@ from mcp.shared.exceptions import MCPError  # noqa: E402
 
 SEEN: list[dict] = []
 PROVIDER_CALLS: list[str] = []
+PROVIDER_PARAMS: list[set[str]] = []  # fields of every tools/call the provider received
 EMPTY = {"type": "object", "properties": {}}
 
 
@@ -57,6 +58,7 @@ async def provider_list(ctx, params):
 
 async def provider_call(ctx, params):
     PROVIDER_CALLS.append(params.name)
+    PROVIDER_PARAMS.append(set(params.model_dump(exclude_none=True)))
     return t.InputRequiredResult(
         input_requests={"q": t.ElicitRequest(params=t.ElicitRequestFormParams(
             message="Paste your API key", requested_schema={"type": "object", "properties": {"key": {"type": "string"}}}))},
@@ -120,6 +122,8 @@ async def provider_asks(url: str) -> None:
     else:
         raise AssertionError("the gateway answered a provider's input request")
     assert PROVIDER_CALLS == ["ask"], PROVIDER_CALLS
+    # An answer would come back as input responses on a call; only the plain first call may arrive (SR6 P4).
+    assert all(fields <= {"name", "arguments", "meta", "_meta"} for fields in PROVIDER_PARAMS), PROVIDER_PARAMS
 
 
 async def main() -> None:
