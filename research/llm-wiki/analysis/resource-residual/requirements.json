@@ -1,0 +1,400 @@
+{
+  "task": "DEV-08",
+  "decision": "D-156",
+  "author": "Codex sol",
+  "baseline_commit": "bac155a8b78222fc878ff642ea1aa177ddb82fba",
+  "branch": "10/20-resource-server-residual",
+  "source_state": "uncommitted-worktree",
+  "remote_head_status": "lookup-failed-network",
+  "sources": [
+    {
+      "path": "full_stack_lab/gateway/app/idp.py",
+      "raw_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc",
+      "lf_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc",
+      "symbols": [
+        {
+          "symbol": "_issue",
+          "line_start": 66,
+          "line_end": 83
+        },
+        {
+          "symbol": "_revoke_family",
+          "line_start": 216,
+          "line_end": 234
+        },
+        {
+          "symbol": "revoke_principal_tokens",
+          "line_start": 237,
+          "line_end": 254
+        },
+        {
+          "symbol": "introspection",
+          "line_start": 299,
+          "line_end": 338
+        },
+        {
+          "symbol": "introspect_jti",
+          "line_start": 341,
+          "line_end": 361
+        },
+        {
+          "symbol": "introspect",
+          "line_start": 365,
+          "line_end": 370
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/agent_contract.py",
+      "raw_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+      "lf_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+      "symbols": [
+        {
+          "symbol": "authenticated_user",
+          "line_start": 142,
+          "line_end": 188
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/decommission.py",
+      "raw_sha256": "0c9389da6a2ce4791ed668f7c3f768cf487b8c98e6d14c69d08e0a25c63453ae",
+      "lf_sha256": "0c9389da6a2ce4791ed668f7c3f768cf487b8c98e6d14c69d08e0a25c63453ae",
+      "symbols": [
+        {
+          "symbol": "open_case",
+          "line_start": 221,
+          "line_end": 273
+        },
+        {
+          "symbol": "seed_targets",
+          "line_start": 276,
+          "line_end": 322
+        },
+        {
+          "symbol": "collect",
+          "line_start": 419,
+          "line_end": 513
+        },
+        {
+          "symbol": "_resource_verdict",
+          "line_start": 543,
+          "line_end": 570
+        },
+        {
+          "symbol": "revoke_credential",
+          "line_start": 573,
+          "line_end": 596
+        },
+        {
+          "symbol": "_judge_target",
+          "line_start": 626,
+          "line_end": 696
+        },
+        {
+          "symbol": "assess",
+          "line_start": 715,
+          "line_end": 760
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/upstream.py",
+      "raw_sha256": "5609242ce9ec6b9b8065f5789bdd06a43b3844ce75fc792794865c088e8fa609",
+      "lf_sha256": "5609242ce9ec6b9b8065f5789bdd06a43b3844ce75fc792794865c088e8fa609",
+      "symbols": [
+        {
+          "symbol": "release_pool",
+          "line_start": 144,
+          "line_end": 155
+        },
+        {
+          "symbol": "_sweep",
+          "line_start": 189,
+          "line_end": 213
+        },
+        {
+          "symbol": "maintain_pool",
+          "line_start": 216,
+          "line_end": 232
+        },
+        {
+          "symbol": "session",
+          "line_start": 327,
+          "line_end": 350
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/upstream_sessions.py",
+      "raw_sha256": "daf29aa91e0b36d934b7474f8c4749647c79ce0bab2e85e1c2757981fb1fc0b5",
+      "lf_sha256": "daf29aa91e0b36d934b7474f8c4749647c79ce0bab2e85e1c2757981fb1fc0b5",
+      "symbols": [
+        {
+          "symbol": "Pool.close",
+          "line_start": 97,
+          "line_end": 109
+        },
+        {
+          "symbol": "Pool.borrow",
+          "line_start": 143,
+          "line_end": 189
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/mcp_sessions.py",
+      "raw_sha256": "362036548a92a7d90e3a09be3d3661216c0b5d58029755e856ce249a2e6c095d",
+      "lf_sha256": "362036548a92a7d90e3a09be3d3661216c0b5d58029755e856ce249a2e6c095d",
+      "symbols": [
+        {
+          "symbol": "register",
+          "line_start": 13,
+          "line_end": 18
+        },
+        {
+          "symbol": "active",
+          "line_start": 21,
+          "line_end": 28
+        },
+        {
+          "symbol": "refusal",
+          "line_start": 36,
+          "line_end": 47
+        },
+        {
+          "symbol": "terminate",
+          "line_start": 50,
+          "line_end": 67
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/dispatch.py",
+      "raw_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
+      "lf_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
+      "symbols": [
+        {
+          "symbol": "record",
+          "line_start": 64,
+          "line_end": 162
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/runtime/worker.py",
+      "raw_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
+      "lf_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
+      "symbols": [
+        {
+          "symbol": "remove_runtime_resources",
+          "line_start": 175,
+          "line_end": 187
+        },
+        {
+          "symbol": "approval_problem",
+          "line_start": 264,
+          "line_end": 282
+        },
+        {
+          "symbol": "run_job",
+          "line_start": 454,
+          "line_end": 499
+        },
+        {
+          "symbol": "reconcile",
+          "line_start": 504,
+          "line_end": 542
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/resource_residual_check.py",
+      "raw_sha256": "eef6d67903a22a1021d71f73723cb481952ec739592a15a3631d712fa4f81b0f",
+      "lf_sha256": "eef6d67903a22a1021d71f73723cb481952ec739592a15a3631d712fa4f81b0f",
+      "symbols": []
+    },
+    {
+      "path": "full_stack_lab/tests/resource_residual_pg_check.py",
+      "raw_sha256": "24053becceef41cd0a5b684bde7aea208e1e1cb37fe7390768a5a190a81ca0c4",
+      "lf_sha256": "24053becceef41cd0a5b684bde7aea208e1e1cb37fe7390768a5a190a81ca0c4",
+      "symbols": []
+    }
+  ],
+  "requirements": [
+    {
+      "id": "RS-01",
+      "requirement": "Fresh issuer introspection and immediate access revocation",
+      "code": [
+        "idp.introspection",
+        "idp.introspect",
+        "agent_contract.authenticated_user"
+      ],
+      "local_test": [
+        "Introspection.test_access_requeries_after_revocation_and_response_is_not_cacheable",
+        "Introspection.test_access_account_and_managed_state_are_current",
+        "Introspection.test_access_invalid_signature_and_signed_disposal_never_reuse_active"
+      ],
+      "pg_test": [
+        "issued_tokens"
+      ],
+      "cases": [
+        "normal",
+        "negative",
+        "failure"
+      ],
+      "limit": "Local JWT/DB responses are doubles. Issuer response is not remote resource rejection.",
+      "local_status": "passed-unit-doubles",
+      "postgres_status": "unexecuted"
+    },
+    {
+      "id": "RS-02",
+      "requirement": "Refresh introspection matches current account and grant path",
+      "code": [
+        "idp.introspection"
+      ],
+      "local_test": [
+        "Introspection.test_refresh_account_stop_then_recovery_requeries",
+        "Introspection.test_refresh_missing_account_managed_transition_and_oidc_are_inactive",
+        "Introspection.test_refresh_revoked_rotated_expired_unknown_and_signed_list",
+        "Introspection.test_db_failure_does_not_fall_back_to_previous_active"
+      ],
+      "pg_test": [
+        "account_transition"
+      ],
+      "cases": [
+        "normal",
+        "negative",
+        "boundary",
+        "failure",
+        "recovery"
+      ],
+      "limit": "Does not change issuance/rotation or close the D-154 commit-to-append crash window.",
+      "local_status": "passed-unit-doubles",
+      "postgres_status": "unexecuted"
+    },
+    {
+      "id": "RS-03",
+      "requirement": "Resource acceptance overrides issuer inactive for token targets",
+      "code": [
+        "decommission.STATE_EVIDENCE_FOR",
+        "decommission._judge_target"
+      ],
+      "local_test": [
+        "Evidence.test_resource_acceptance_overrides_inactive_introspection_for_token_kinds",
+        "Evidence.test_resource_rejection_is_token_state_evidence_but_old_evidence_is_not"
+      ],
+      "pg_test": [
+        "target_grades"
+      ],
+      "cases": [
+        "normal",
+        "negative",
+        "boundary"
+      ],
+      "limit": "Acceptance/rejection unit evidence is synthetic. No external JWT resource server is introduced.",
+      "local_status": "passed-unit-doubles",
+      "postgres_status": "unexecuted"
+    },
+    {
+      "id": "RS-04",
+      "requirement": "Separate server-held downstream credential and direct reaccess",
+      "code": [
+        "decommission.seed_targets",
+        "decommission.collect",
+        "decommission._resource_verdict",
+        "decommission.revoke_credential"
+      ],
+      "local_test": [
+        "Evidence.test_provider_credential_acceptance_overrides_absence_from_issuer_list"
+      ],
+      "pg_test": [
+        "residual_sequence"
+      ],
+      "cases": [
+        "normal",
+        "negative",
+        "recovery"
+      ],
+      "limit": "Dedicated PAT in isolated Gitea; fixture disclosure, not proof of actual MCP possession.",
+      "local_status": "passed-unit-doubles",
+      "postgres_status": "unexecuted"
+    },
+    {
+      "id": "RS-05",
+      "requirement": "Termination evicts the busy pool generation and queued reusers",
+      "code": [
+        "decommission.open_case",
+        "upstream.release_pool",
+        "upstream._sweep",
+        "upstream.maintain_pool",
+        "upstream_sessions.Pool.close",
+        "upstream_sessions.Pool.borrow",
+        "dispatch.record",
+        "mcp_sessions.terminate"
+      ],
+      "local_test": [
+        "Pool.test_busy_lease_and_waiter_cannot_reaccess_after_close"
+      ],
+      "pg_test": [
+        "target_grades"
+      ],
+      "cases": [
+        "normal",
+        "negative",
+        "competition"
+      ],
+      "limit": "Local pool factory/HTTP are doubles. Cross-process sockets and real SDK teardown not exercised.",
+      "local_status": "passed-unit-doubles",
+      "postgres_status": "unexecuted"
+    },
+    {
+      "id": "RS-06",
+      "requirement": "Executor removes terminated runtimes and retries leftovers before success",
+      "code": [
+        "worker.approval_problem",
+        "worker.run_job",
+        "worker.reconcile",
+        "worker.remove_runtime_resources"
+      ],
+      "local_test": [
+        "Executor.test_termination_stops_runtime_and_retries_leftovers_before_success"
+      ],
+      "pg_test": [],
+      "cases": [
+        "normal",
+        "negative",
+        "failure",
+        "recovery"
+      ],
+      "limit": "Engine/DB doubles only; no guaranteed removal latency under long jobs, engine failure or worker outage.",
+      "local_status": "passed-unit-doubles",
+      "postgres_status": "not-covered"
+    },
+    {
+      "id": "RS-07",
+      "requirement": "Issuer-only T1, signature-only expiry T2 and absent state T3 remain distinct",
+      "code": [
+        "decommission._judge_target",
+        "decommission.assess"
+      ],
+      "local_test": [
+        "Evidence.test_issuer_inactive_stateless_gap_and_absent_evidence_are_separate"
+      ],
+      "pg_test": [
+        "target_grades"
+      ],
+      "cases": [
+        "normal",
+        "negative",
+        "boundary"
+      ],
+      "limit": "Target grade does not imply case-wide or unobserved external resource termination.",
+      "local_status": "passed-unit-doubles",
+      "postgres_status": "unexecuted"
+    }
+  ],
+  "local_evidence": "checks.json",
+  "deployment_status": "unexecuted",
+  "pj1_status": "unexecuted"
+}
