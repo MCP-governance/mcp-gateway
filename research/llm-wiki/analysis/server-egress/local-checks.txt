@@ -1,0 +1,136 @@
+Local checks 2026-10-20; Python 3.10.5 (tags/v3.10.5:f377153, Jun  6 2022, 16:14:13) [MSC v.1929 64 bit (AMD64)]
+
+$ C:\Program Files\Python310\python.exe -B -X utf8 -m unittest discover -s full_stack_lab/tests -p server_egress_check.py -v
+exit=0
+test_commit_failure_is_not_success_and_replay_can_recover (server_egress_check.CollectorCheck) ... ok
+test_engine_failure_does_not_advance_checkpoint (server_egress_check.CollectorCheck) ... ok
+test_event_writer_only_appends_and_binds_runtime_generation (server_egress_check.CollectorCheck) ... ok
+test_observation_failure_removes_superseded_filter_before_propagating (server_egress_check.CollectorCheck) ... ok
+test_overlap_replay_is_idempotent_and_new_container_is_separate (server_egress_check.CollectorCheck) ... ok
+test_stale_collector_does_not_move_cursor_backwards (server_egress_check.CollectorCheck) ... ok
+test_wrong_proxy_and_truncated_log_batch_fail (server_egress_check.CollectorCheck) ... ok
+test_boundaries_inclusive_but_not_before_dispatch (server_egress_check.CorrelationCheck) ... ok
+test_concurrent_calls_are_candidates_never_exact_or_retries (server_egress_check.CorrelationCheck) ... ok
+test_same_server_actual_dispatch_interval_and_legacy_exclusion (server_egress_check.CorrelationCheck) ... ok
+test_connected_denied_failed_are_distinct_and_not_business_effects (server_egress_check.ParserCheck) ... ok
+test_docker_timestamp_and_container_bind_event_identity (server_egress_check.ParserCheck) ... ok
+test_malformed_time_and_invalid_port_are_ignored (server_egress_check.ParserCheck) ... ok
+test_no_urls_credentials_header_or_forged_multiline_survive (server_egress_check.ParserCheck) ... ok
+test_authenticated_correlation_reads_event_time_not_ingestion_time (server_egress_check.QueryCheck) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.052s
+
+OK
+
+$ C:\Program Files\Python310\python.exe -B -X utf8 -m unittest discover -s full_stack_lab/tests -p event_correlation_check.py -v
+exit=0
+test_different_subject_is_excluded (event_correlation_check.EventCorrelationCheck) ... ok
+test_exact_request_trace_and_decision_links (event_correlation_check.EventCorrelationCheck) ... ok
+test_other_device_is_excluded (event_correlation_check.EventCorrelationCheck) ... ok
+test_trace_less_legacy_decision_still_correlates_by_device_subject_and_time (event_correlation_check.EventCorrelationCheck) ... ok
+test_window_edges_are_inclusive (event_correlation_check.EventCorrelationCheck) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.000s
+
+OK
+
+$ node --test full_stack_lab/tests/console-state.test.mjs
+exit=0
+✔ masked kinds read in Korean and an unknown kind never shows its raw name (0.6411ms)
+✔ a poll overlapping a page load shows each call once, newest first, within the limit (0.6248ms)
+✔ ids sort numerically and malformed rows cannot displace real decisions (0.1639ms)
+✔ search matches person, PC, harness, server.tool, target, policy and trace, ignoring case and spaces (0.2609ms)
+✔ the status phrase never presents a failed poll as fresh (0.7663ms)
+✔ 24 hourly buckets end at the current hour and keep empty hours at zero (0.4434ms)
+✔ splitBy counts per key with a decision split, largest first (0.2221ms)
+✔ sankey layers never merge a server with a harness of the same name (0.2456ms)
+✔ endpoint observation shows disabled, stale and failed sources separately from zero accepted rows (0.3566ms)
+✔ listener-only endpoints remain in coverage counts and expose no raw command line or owner token (0.902ms)
+✔ enforced is green only with fresh evidence of a ledger row or a kernel heartbeat (0.5725ms)
+✔ latency values read as durations and never invent a measurement (0.271ms)
+✔ endpoint evidence labels never turn a missing value into a good one (0.2241ms)
+✔ totals are reported apart from the window and page navigation follows the cursor (9.7981ms)
+✔ latency and failure show only a fresh sample and a denial count only a collected channel (0.2052ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 85.8959
+
+$ C:\Program Files\Python310\python.exe -m py_compile full_stack_lab/gateway/app/server_egress.py full_stack_lab/gateway/app/endpoint_plane.py full_stack_lab/runtime/worker.py full_stack_lab/tests/server_egress_check.py
+exit=0
+
+$ node --check full_stack_lab/gateway/app/agent_static/console.js
+exit=0
+
+$ C:\Program Files\Python310\python.exe -B -X utf8 full_stack_lab/tests/open_endpoints.py
+exit=0
+PASS 무인증 1개가 문서와 일치, 인증 필요 84개 (그중 장치 자격 8개: GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)
+
+$ git diff --check
+exit=0
+
+$ C:\Program Files\Python310\python.exe -B -X utf8 -m unittest discover -s full_stack_lab/tests -p runtime_worker_check.py -v
+exit=1
+runtime_worker_check (unittest.loader._FailedTest) ... ERROR
+
+======================================================================
+ERROR: runtime_worker_check (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: runtime_worker_check
+Traceback (most recent call last):
+  File "C:\Program Files\Python310\lib\unittest\loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "C:\Program Files\Python310\lib\unittest\loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "C:\Users\bobysg\bob\프로젝트\mcp-gw-codex-sol\full_stack_lab\tests\runtime_worker_check.py", line 11, in <module>
+    import worker  # noqa: E402
+  File "C:\Users\bobysg\bob\프로젝트\mcp-gw-codex-sol\full_stack_lab\runtime\worker.py", line 24, in <module>
+    import tomllib
+ModuleNotFoundError: No module named 'tomllib'
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)
+
+$ C:\Program Files\Python310\python.exe -m pyflakes full_stack_lab/gateway/app/server_egress.py full_stack_lab/gateway/app/endpoint_plane.py full_stack_lab/runtime/worker.py full_stack_lab/tests/server_egress_check.py
+exit=1
+C:\Program Files\Python310\python.exe: No module named pyflakes
+
+Final verification after observation-status and formatting changes
+$ C:\Program Files\Python310\python.exe -B -X utf8 -m unittest discover -s full_stack_lab/tests -p server_egress_check.py -v
+exit=0
+test_commit_failure_is_not_success_and_replay_can_recover (server_egress_check.CollectorCheck) ... ok
+test_engine_failure_does_not_advance_checkpoint (server_egress_check.CollectorCheck) ... ok
+test_event_writer_only_appends_and_binds_runtime_generation (server_egress_check.CollectorCheck) ... ok
+test_observation_failure_removes_superseded_filter_before_propagating (server_egress_check.CollectorCheck) ... ok
+test_overlap_replay_is_idempotent_and_new_container_is_separate (server_egress_check.CollectorCheck) ... ok
+test_stale_collector_does_not_move_cursor_backwards (server_egress_check.CollectorCheck) ... ok
+test_wrong_proxy_and_truncated_log_batch_fail (server_egress_check.CollectorCheck) ... ok
+test_boundaries_inclusive_but_not_before_dispatch (server_egress_check.CorrelationCheck) ... ok
+test_concurrent_calls_are_candidates_never_exact_or_retries (server_egress_check.CorrelationCheck) ... ok
+test_same_server_actual_dispatch_interval_and_legacy_exclusion (server_egress_check.CorrelationCheck) ... ok
+test_connected_denied_failed_are_distinct_and_not_business_effects (server_egress_check.ParserCheck) ... ok
+test_docker_timestamp_and_container_bind_event_identity (server_egress_check.ParserCheck) ... ok
+test_malformed_time_and_invalid_port_are_ignored (server_egress_check.ParserCheck) ... ok
+test_no_urls_credentials_header_or_forged_multiline_survive (server_egress_check.ParserCheck) ... ok
+test_authenticated_correlation_reads_event_time_not_ingestion_time (server_egress_check.QueryCheck) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.047s
+
+OK
+$ C:\Program Files\Python310\python.exe -m py_compile full_stack_lab/gateway/app/server_egress.py full_stack_lab/gateway/app/endpoint_plane.py full_stack_lab/runtime/worker.py full_stack_lab/tests/server_egress_check.py
+exit=0
+$ node --check full_stack_lab/gateway/app/agent_static/console.js
+exit=0
+$ git diff --check
+exit=0
+PASS UTF-8 without BOM, LF, DEV-20 status column only, status/current.md unchanged, new Markdown local links resolve

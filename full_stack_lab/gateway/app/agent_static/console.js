@@ -117,7 +117,7 @@ const TRANSFORM = {
   event_xml_allowlist: "허용 필드만 추출",
 };
 const transformLabel = (step) => (step.startsWith("server:") ? "서버 · " : "") + (TRANSFORM[step.replace(/^server:/, "")] || step);
-const RECORD_KIND = { config: "MCP 설정", listener: "수신기", "os-event": "엔드포인트 차단", decision: "게이트웨이 판정", "dispatch-intent": "전송 의도" };
+const RECORD_KIND = { config: "MCP 설정", listener: "수신기", "os-event": "엔드포인트 차단", decision: "게이트웨이 판정", "dispatch-intent": "전송 의도", "server-egress": "서버 외부 통신" };
 const ENDPOINT_CLASS = { registered: ["allow", "등록 서버"], shadow: ["block", "미등록 MCP"], "retired-residue": ["alert", "폐기 잔존"] };
 // Observed is never shown as blocked.
 const CONTROL_STATE = {
@@ -936,15 +936,17 @@ function relatedBody(related) {
   if (!related) return empty("확인 불가");
   if (!related.records.length) return empty("연관 기록 없음");
   const evidence = (x) => (x.link_basis || []).map((key) => ({ request_id: "요청 ID", trace_id: "추적 ID",
-    decision_id: "판정 ID", same_endpoint: "같은 엔드포인트", same_principal: "같은 주체", time_window: "시간 창" })[key] || key).join(" · ");
+    decision_id: "판정 ID", same_endpoint: "같은 엔드포인트", same_principal: "같은 주체", time_window: "시간 창",
+    same_server: "같은 서버", dispatch_interval: "호출 실행 구간" })[key] || key).join(" · ");
   const state = { pending: "대기", resolved: "확정", uncertain: "미확인", confirmed_executed: "실행 확인", confirmed_not_executed: "미실행 확인" };
+  const egressState = { connected: "연결 확인", blocked: "프록시에서 차단", connect_failed: "연결 실패" };
   const identifier = (x) => x.kind === "decision" ? `판정 ${x.id} · 추적 ID ${x.trace_id || "—"}`
     : x.kind === "dispatch-intent" ? `요청 ID ${x.request_id}` : `${x.kind === "os-event" ? "이벤트" : "기록"} ${x.id}`;
   return html`<table class="data"><thead><tr><th>시각</th><th>종류</th><th>ID</th><th>내용</th><th>상태</th><th>연관 근거</th></tr></thead><tbody>
     ${related.records.map((x) => html`<tr><td class="small">${when(x.at, { seconds: true })}</td><td>${chip("outline", RECORD_KIND[x.kind] || x.kind)}</td>
       <td class="small"><code>${identifier(x)}</code></td>
       <td class="small">${x.kind === "decision" ? html`${decisionChip(x.decision)} <code>${x.title}</code>` : html`${x.denial_class ? chip(...denialClass(x.denial_class)) : ""} ${x.title || "—"}`}</td>
-      <td class="small">${x.kind === "dispatch-intent" ? state[x.state] || "—" : x.policy_id || "—"}</td>
+      <td class="small">${x.kind === "server-egress" ? egressState[x.state] || "—" : x.kind === "dispatch-intent" ? state[x.state] || "—" : x.policy_id || "—"}</td>
       <td class="small">${evidence(x)} · ${x.link_strength === "exact" ? "정확 연결" : "보조 근거"}</td></tr>`)}
     </tbody></table><span class="small muted">±${Math.round(related.window_seconds / 60)}분</span>`;
 }
@@ -1757,7 +1759,7 @@ function intakeProvenanceView(p) {
 const outcomeChip = (o) => chip(...(REVIEW_OUTCOME[o] || ["", o]));
 function reviewRecords(events, r) {
   const consent = events.filter((e) => e.kind === "user-consent");
-  const operator = events.filter((e) => e.kind !== "user-consent");
+  const operator = events.filter((e) => !["user-consent", "runtime-egress"].includes(e.kind));
   return html`<div class="stack">
     ${panel("사용자 동의", html`<table class="data"><thead><tr><th>신청자</th><th>시각</th><th>목적</th></tr></thead><tbody>
       ${(consent.length ? consent : [{ actor: r.submitted_by, created_at: r.created_at, reason: r.purpose }]).map((e) => html`<tr><td>${e.actor}</td>

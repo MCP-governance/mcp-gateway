@@ -22,6 +22,7 @@ import sys
 import tarfile
 import time
 import tomllib
+from datetime import datetime, timedelta, timezone
 import urllib.error
 import urllib.request
 from base64 import b64encode
@@ -33,6 +34,7 @@ from psycopg.types.json import Jsonb
 
 import provenance
 import image_scan
+import server_egress
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 WORKER_ID = os.getenv("RUNTIME_WORKER_ID", "runtime-worker-1")
@@ -346,7 +348,7 @@ def build(recipe: dict, runtime: dict, context: Path, folder: Path) -> dict:
             "packages": frozen.split()[:200], "base_image": recipe["base_image"]}
 
 
-def start(recipe: dict, runtime: dict, image_id: str, context: dict) -> None:
+def start(connection, recipe: dict, runtime: dict, image_id: str, context: dict) -> None:
     n = names(runtime)
     if not inspect("network", n["network"]):
         docker("network", "create", "--internal", *labels(runtime, "network"), n["network"])
@@ -356,16 +358,68 @@ def start(recipe: dict, runtime: dict, image_id: str, context: dict) -> None:
     if current and (current["Image"] != image_id or not current["State"]["Running"]):
         docker("rm", "-f", n["container"])
         current = None
-    sync_egress(runtime, context)
+    sync_egress(connection, runtime, context)
     if not current:
         docker(*mcp_run_args(recipe, runtime, image_id))
 
 
-def sync_egress(runtime: dict, context: dict) -> None:
+def collect_egress(connection, runtime: dict, proxy: dict) -> None:
+    """Read only engine-owned proxy logs; append observations and checkpoint atomically."""
+    container_id = proxy['Id']
+    tags = proxy['Config'].get('Labels') or {}
+    if tags.get('mcpgw.runtime') != str(runtime['id']) or tags.get('mcpgw.role') != 'egress':
+        raise RuntimeError('실행기 출구 프록시의 소유 표식이 다릅니다.')
+    cursor = (runtime.get('evidence') or {}).get('egress_log_cursor') or {}
+    since = cursor.get('until') if cursor.get('container_id') == container_id else proxy['Created']
+    # Overlap a second to cover equal timestamps and replay safely after a lost commit acknowledgement.
+    since = (server_egress.timestamp(since) - timedelta(seconds=1)).isoformat()
+    until = datetime.now(timezone.utc).isoformat()
+    connection.commit()
+    result = docker('logs', '--timestamps', '--since', since, '--until', until,
+                    '--tail', '10001', container_id)
+    lines = (result.stdout + '\n' + result.stderr).splitlines()
+    if len([line for line in lines if line]) > 10000:
+        raise RuntimeError('실행기 출구 기록이 수집 상한을 넘었습니다.')
+    observations = [found for line in lines if (found := server_egress.parse_log(line, container_id))]
+    # Serialize collectors without holding a DB lock during container-engine I/O.
+    current = connection.execute('SELECT evidence FROM mcp_runtimes WHERE id=%s FOR UPDATE',
+                                 (runtime['id'],)).fetchone()
+    if not current:
+        raise RuntimeError('실행기 기록이 없습니다.')
+    old = (current['evidence'] or {}).get('egress_log_cursor') or {}
+    if old.get('container_id') == container_id and server_egress.timestamp(old['until']) > server_egress.timestamp(until):
+        connection.rollback()
+        return
+    intake = connection.execute('SELECT registered_server_id FROM mcp_intake_requests WHERE id=%s',
+                                (runtime['intake_id'],)).fetchone()
+    for observation in observations:
+        duplicate = connection.execute(
+            """SELECT 1 FROM approval_events WHERE kind='runtime-egress' AND target_kind='intake'
+                 AND target_id=%s AND scope->>'event_id'=%s LIMIT 1""",
+            (str(runtime['intake_id']), observation['event_id'])).fetchone()
+        if not duplicate:
+            event(connection, runtime, 'runtime-egress',
+                  scope={**observation, 'server_id': (intake or {}).get('registered_server_id'),
+                         'proxy_container_id': container_id, 'proxy_image_id': proxy['Image']})
+    connection.execute(
+        """UPDATE mcp_runtimes SET evidence=jsonb_set(evidence,'{egress_log_cursor}',%s) WHERE id=%s""",
+        (Jsonb({'container_id': container_id, 'until': until}), runtime['id']))
+    connection.commit()
+
+
+def sync_egress(connection, runtime: dict, context: dict) -> None:
     n = names(runtime)
     allow = egress_filter(destinations(runtime["intake_id"]))
     want = hashlib.sha256(allow.encode()).hexdigest()
     current = inspect("container", n["egress"])
+    if current:
+        try:
+            collect_egress(connection, runtime, current)
+        except (RuntimeError, ValueError, OSError, subprocess.SubprocessError, psycopg.Error):
+            # A telemetry failure must not leave a superseded allowlist reachable.
+            if ((current['Config'].get('Labels') or {}).get('mcpgw.allow') != want or not current['State']['Running']):
+                docker('rm', '-f', n['egress'])
+            raise
     if current and ((current["Config"].get("Labels") or {}).get("mcpgw.allow") != want or not current["State"]["Running"]):
         docker("rm", "-f", n["egress"])
         current = None
@@ -415,7 +469,7 @@ def run_job(connection, runtime: dict, recipes: dict, context: dict) -> None:
         connection.commit()
         if problem := approval_problem(connection, runtime, recipes):
             raise Refused(problem)
-        start(recipe, runtime, built["image_id"], context)
+        start(connection, recipe, runtime, built["image_id"], context)
         runtime = advance(connection, runtime, "STARTING", "VERIFYING")
         found = answers(endpoint(recipe, runtime), time.time() + 90)
         if problem := approval_problem(connection, runtime, recipes):
@@ -461,7 +515,12 @@ def reconcile(connection, recipes: dict, context: dict) -> None:
             if not reason:
                 for container in context["gateways"]:
                     attach(n["network"], container)
-                sync_egress(runtime, context)
+                try:
+                    sync_egress(connection, runtime, context)
+                except (RuntimeError, ValueError, OSError, subprocess.SubprocessError, psycopg.Error) as exc:
+                    # One unavailable log channel must not starve other runtimes' revocations.
+                    connection.rollback()
+                    log(f"egress observation/sync failed {runtime['id']}: {type(exc).__name__}")
                 continue
             connection.execute("UPDATE mcp_runtimes SET status='STOPPING', error=%s, updated_at=now() WHERE id=%s AND status='ACTIVE'",
                                (reason, runtime["id"]))
