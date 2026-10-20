@@ -153,6 +153,10 @@ v2 코드는 읽지도 쓰지도 않는다 → [ROADMAP.md](ROADMAP.md) 정리 �
 
 `siem_outbox`는 원장이 아닌 전송 상태다. 소스 테이블·소스 ID 유일 키, 시도 수·다음 시각·수신 확인 시각·오류 종류만 보관한다. `decisions`, `approval_events`, 합성이 아닌 `ops_alerts`의 INSERT와 같은 트랜잭션으로 참조를 추가한다. 워커는 원장 내용을 수정하지 않고 큐 상태만 갱신한다. 별도 네트워크 워커가 중단되어도 참조는 DB에 남는다. 마이그레이션 이전 행은 자동 소급하지 않으며 보존·삭제 작업도 추가하지 않았다.
 
+D-157의 전송 UID는 원장 행 ID와 사슬 해시(사슬 없는 소스는 UTC 기록 시각 해시)로 재구성하며 큐에 본문이나 별도 UID 열을 복제하지 않는다.
+`attempts`는 DB에 커밋된 결과 수다. 수신 확인 뒤 큐 커밋 전 장애는 이 값을 늘리지 않으므로 UID별 실제 시도 기록은 워커의 `SIEM attempt` 로그와 대조한다.
+로그 보존·D-128 UID 전환·수신 측 유일 키 계약은 [운영 대응](OPS_RESPONSE.md#사건-식별자와-전송-시도-기록-d-157)을 따른다.
+
 ## 도입 검증 보고서와 lease
 `mcp_intake_requests.evidence`는 `scanners`(검사기별 DONE/FAILED·오류), `reports`(해당 시도의 성공한 산출물 이름), `exit_terms_discovery`(commit 고정 문서 후보 근거), SBOM 구성요소 수·위험 등급별 수를 담는다. `exit_terms`의 관리자 검증 기록과 자동 조사 결과는 별도 필드다.
 

@@ -1,0 +1,186 @@
+{
+  "base_commit": "a7aa43a1970333a28aaf9050ebaa476d8673c098",
+  "revision": "uncommitted-working-tree-with-sha256-anchors",
+  "anchors": [
+    {
+      "path": "full_stack_lab/gateway/app/siem.py",
+      "sha256": "b1032ae34d227c2baaaa8d5c50b6517ef69554157aa70a3ae50c34670dbaa775",
+      "symbols": [
+        {
+          "symbol": "reference",
+          "line": 24,
+          "end_line": 25
+        },
+        {
+          "symbol": "event",
+          "line": 28,
+          "end_line": 70
+        },
+        {
+          "symbol": "settings",
+          "line": 73,
+          "end_line": 87
+        },
+        {
+          "symbol": "send",
+          "line": 90,
+          "end_line": 111
+        },
+        {
+          "symbol": "deliver_one",
+          "line": 114,
+          "end_line": 148
+        },
+        {
+          "symbol": "status",
+          "line": 151,
+          "end_line": 157
+        },
+        {
+          "symbol": "watch",
+          "line": 160,
+          "end_line": 172
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/siem_uid_check.py",
+      "sha256": "be03c68ba54c7d60ae286ccb7c6fd5550d170cfc37090afbddf119277085923c",
+      "symbols": [
+        {
+          "symbol": "decision",
+          "line": 20,
+          "end_line": 23
+        },
+        {
+          "symbol": "UidChecks",
+          "line": 26,
+          "end_line": 56
+        },
+        {
+          "symbol": "AttemptLogChecks",
+          "line": 59,
+          "end_line": 84
+        },
+        {
+          "symbol": "TlsChecks",
+          "line": 87,
+          "end_line": 104
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/siem_tls_receiver.py",
+      "sha256": "de610f7ec53f66405c59b9dac0f6de55e645b2f1af78a7010ede19c01c6a77c3",
+      "symbols": [
+        {
+          "symbol": "certificates",
+          "line": 12,
+          "end_line": 47
+        },
+        {
+          "symbol": "receiver",
+          "line": 51,
+          "end_line": 95
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/siem_queue_pg_check.py",
+      "sha256": "50a1075883724bbda018e52dd27d73f24137dc95811d235814b4b1c27d4a0d99",
+      "symbols": [
+        {
+          "symbol": "worker",
+          "line": 34,
+          "end_line": 47
+        },
+        {
+          "symbol": "until",
+          "line": 50,
+          "end_line": 58
+        },
+        {
+          "symbol": "source_rows",
+          "line": 61,
+          "end_line": 68
+        },
+        {
+          "symbol": "triggers_and_restart",
+          "line": 71,
+          "end_line": 183
+        },
+        {
+          "symbol": "main",
+          "line": 186,
+          "end_line": 200
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/siem_tables.sql",
+      "sha256": "780319da43109965a8788004e995615d0e8ed824a2666fec4e452d67aa7dd158",
+      "symbols": []
+    },
+    {
+      "path": "full_stack_lab/tests/termination_lab_support.py",
+      "sha256": "f17f329532fb40e09eb4aa83e3350f197bd90cc50f2e1d9feb220650103f0747",
+      "symbols": [
+        {
+          "symbol": "Checks",
+          "line": 29,
+          "end_line": 51
+        },
+        {
+          "symbol": "apply_schema",
+          "line": 54,
+          "end_line": 58
+        },
+        {
+          "symbol": "isolated_disposal",
+          "line": 62,
+          "end_line": 80
+        },
+        {
+          "symbol": "add_principal",
+          "line": 83,
+          "end_line": 88
+        },
+        {
+          "symbol": "add_server",
+          "line": 91,
+          "end_line": 95
+        },
+        {
+          "symbol": "reservation",
+          "line": 98,
+          "end_line": 103
+        },
+        {
+          "symbol": "run",
+          "line": 106,
+          "end_line": 112
+        },
+        {
+          "symbol": "signing_keys",
+          "line": 115,
+          "end_line": 122
+        },
+        {
+          "symbol": "mint",
+          "line": 125,
+          "end_line": 130
+        },
+        {
+          "symbol": "call_payload",
+          "line": 133,
+          "end_line": 135
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/termination_dispatch_remote.sh",
+      "sha256": "51aa1bf88d1a68f64490abfbeca647fdff84de62deba538e0398265b5fd76bee",
+      "symbols": []
+    }
+  ]
+}

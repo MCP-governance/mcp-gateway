@@ -46,6 +46,28 @@
 
 전송 형식은 OCSF 1.4.0 Base Event(`class_uid=0`, `activity_id=99`, `type_uid=99`)이며 MINT 전용 판정·상관 필드는 `unmapped`에 둔다. 요청/응답 본문·클라이언트 보고는 제외하고 식별자를 SHA-256 참조로 보내므로 실제 이름 확인은 내부 원장에서 한다. 2xx 수신 뒤 로컬 커밋 전 중단은 재전송될 수 있어 수신기는 `metadata.uid`로 중복을 제거해야 한다. 재시도는 5초부터 최대 1시간 간격이며 4xx도 폐기하지 않는다. 특정 SIEM 제품의 정규화·내구 수신·검색 성공은 아직 확인하지 않았다.
 
+### 사건 식별자와 전송 시도 기록 (D-157)
+
+`metadata.uid`와 HTTP `Idempotency-Key`는 같은 값이다. 사슬이 있는 판정은 `mint:decisions:<원장 행 ID>:<entry_sha256>`를 사용한다.
+사슬이 없는 과거 판정·승인 감사·운영 경보는 `mint:<소스 테이블>:<행 ID>:<UTC created_at.isoformat()의 SHA-256>`를 사용한다.
+시각은 Python `datetime.isoformat()` 기본 표현(마이크로초가 0이면 소수부 생략)이며 UTC 오프셋은 `+00:00`이다. DB 세션 시간대·시도 횟수·워커 프로세스·전송 시각은 UID에 영향을 주지 않는다.
+비어 있거나 형식이 잘못된 사슬 해시는 다른 UID로 대체하지 않고 전송 실패로 남긴다. 사슬이 없는 판정의 SQL `NULL`만 과거 기록으로 취급한다.
+수신기는 UID에 유일 제약을 두고 사건 저장과 중복 확인을 하나의 트랜잭션으로 끝낸 뒤 2xx를 반환해야 한다. HTTP 헤더만 보내서는 수신 측 중복 제거가 구현되지 않는다.
+
+`python -m app.siem` 워커는 전송 직전 `SIEM attempt uid=... queue_id=... committed_attempts=...`, 응답 직후 `SIEM response uid=... status=...`,
+큐 트랜잭션 커밋 뒤 `SIEM queue committed uid=...`를 표준 오류 INFO 로그로 남긴다. 실패 유형은 `SIEM retry`에 예외 클래스/HTTP 코드만 기록한다.
+UID별 `SIEM attempt` 행 수가 시도 수이며 재시도 수는 첫 시도를 뺀 값이다. `siem_outbox.attempts`는 커밋된 결과 수이므로 수신 뒤 롤백된 시도는 포함하지 않는다.
+시도 로그는 소켓 전송 직전에 기록되어 네트워크에 실제 도달한 건수를 뜻하지 않으며, 보존 범위는 컨테이너 로그 드라이버/회전에 따른다. 원장과 같은 내구성의 별도 DB 시도 원장은 추가하지 않았다.
+원장·요청/응답 본문·주소·인증정보는 이 로그에 쓰지 않는다. UID의 사슬 해시는 사슬 검증의 대체물이 아니다.
+
+D-128은 UTC로 정규화하지 않은 기록 시각 해시를 판정 UID에도 사용했다. 따라서 이미 수신한 판정과 비-UTC 세션에서 보낸 사건은 D-157 적용 때 UID가 달라질 수 있다.
+배포 전 구 워커를 정지하고 수신 측에서 기존 `unmapped.source`·`source_id`와 내부 원장 시각/사슬 해시로 새 UID 별칭을 연결한 뒤 신 워커를 켠다.
+별칭 전환·구/신 워커 혼재에서의 중복 제거는 자동화하지 않았으므로 버전을 넘는 동일 UID를 보장하지 않는다. 기존 큐·원장·수신 기록은 삭제하거나 수정하지 않는다.
+
+격리 시험은 [siem_queue_pg_check.py](../../full_stack_lab/tests/siem_queue_pg_check.py)이며 기존 `termination_dispatch_lab.sh`의 일회용 DB와 `isolated_disposal`을 사용한다.
+실제 워커 프로세스·DB 트리거·사설 시험 CA의 HTTPS 수신기·SQLite UID 유일 키를 연결하고, 수신 확인 뒤 PostgreSQL 잠금으로 큐 커밋을 멈춰 SIGKILL/재시작한다.
+이 시험 수신기는 MCP 서버가 아니며 실제 SIEM 제품의 저장 검수를 대신하지 않는다. [요구사항·실행 범위](../../research/llm-wiki/analysis/siem-dedup/README.md)를 참조한다.
+
 콘솔의 기존 서버 상태·사유로 중지를 확인할 수 있다. 운영 상세 조회는 `GET /api/ops/status`, 복귀는 `POST /api/ops/servers/{server_id}/resume`와 `{"note":"검토 사유"}`다. 두 API는 `Depends(admin_caller)`로 Console 관리자 인증을 요구한다. 복귀는 `PENDING`까지만 바꾸고 실행기를 자동 재시작하지 않는다. 원인이 남으면 다시 중지한다. 계약 변경은 검토한 잠금 파일 반영 또는 새로운 도입 승인으로 해결한 뒤 복귀한다. 폐기 목록에 있는 식별자는 복귀할 수 없다.
 
 ## 서명 폐기 보관과 DB 복원
