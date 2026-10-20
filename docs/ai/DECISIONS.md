@@ -1688,3 +1688,32 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 근거: 실험실 PostgreSQL에서 `issuance_rolls_back`("실패한 발급 뒤 갱신 토큰이 계속 동작") 재현·수정 후 통과. 시험은 `isolated_disposal()`로 목록을 초기화하고, 장치 폐기 뒤 거부 상태를 401(서명 목록)·403(장치 상태) 모두 허용한다.
 - 한계: 커밋과 목록 기록 사이에 프로세스가 죽고, 그 뒤 DB를 회전 전 백업으로 되돌리면 옛 갱신 토큰이 한 번 더 쓰일 수 있다(재사용 판정으로 계열이 폐기되는 기존 방어는 남음).
 
+## D-152 승인 실행 시 요청자 토큰 현재 유효성 재검증(구현) + 요청자 재시도 모델(미구현·결정 필요) (2026-10-20, DEV-17)
+
+- 문제: `main.approve`는 승인자를 인증하고 `core.approve_request`가 저장된 요청자 transport_claims로 즉시 실행한다. 현재 PAC의 철회 테이블·만료 검사와 managed_failure·D-140의 주체 활성 검사는 있지만, 이 승인 실행 경로는 authenticated_user의 서명 폐기 목록 검사를 거치지 않는다. 복원 뒤 철회 테이블이 과거 상태라면 파일에만 남은 폐기를 놓칠 수 있다.
+- 결정(구현): 소유자의 범위 축소 지시에 따라 `approve_request → execute_call` 즉시 실행 UX와 기존 시험 기대값을 유지한다. `_call_upstream`에서 도구 탐색·승인 상태 재확인 뒤, 실제 tools/call과 intent 생성 전에 저장된 원 요청자 jti로 `disposal.blocked`와 `agent_revoked_tokens`를 다시 조회한다. authenticated_user가 쓰는 기존 함수·SQL을 그대로 사용한다. 폐기/철회 또는 서명 목록의 무결성·읽기 실패로 blocked가 true면 기존 `P-INPUT-001`, 예상 밖 조회 예외는 `P-CONTROL-FAIL-CLOSED`로 차단한다. 기존 DispatchRejected → execute_call → _decision_payload 경로가 차단을 원장에 추가하고 승인 상태를 NOT_EXECUTED로 마무리한다. 원 승인 payload·감사 기록은 덮어쓰지 않는다.
+- 기존 검사 재사용: 이어지는 managed_failure가 저장 device_id의 현재 소유자·활성/관리 상태·epoch·정책·heartbeat를 검사한다. PAC 재생성의 `nbf <= now < exp`와 주체·발급자·대상·철회 검사를 유지하며 OPA가 만료를 거부한다. execute_call의 활성 주체 확인과 D-140 dispatch.record의 잠금·활성 상태 확인은 재사용만 한다. 관리형 토큰 5분이 승인 TTL 10분보다 먼저 끝나면 그대로 차단한다. 새 의존성·정책 ID·OPA·DB·라우트·콘솔 변경은 없다.
+- 근거: 이전 초안은 요청자 재시도 모델과 기존 high_impact_check·acceptance·dispatch_effect_lab의 즉시 실행 기대 충돌 때문에 중단했다. 이번 결정은 그 중단 결정을 **저장 토큰의 현재 유효성 재검증에 한해 대체**한다. 기존 공개 OSS/인증 비교와 라이브러리를 재사용하는 작은 연동 보강이며 외부 SDK나 스크립트를 도입하지 않았다. 로컬 ponytail 스킬(MIT)은 최소 변경 검토에만 적용했다. [요구사항·호출 경로·이전 중단 이력](../../research/llm-wiki/analysis/fresh-requester-d152/README.md).
+- 다음 단계·결정 필요(미구현): 승인 API를 승인 기록만 남기는 흐름으로 바꾸고 요청자가 새 transport 토큰으로 재시도하는 모델은 UX 변경이므로 이번에 구현하지 않는다. 새 jti와 원 PAC digest의 분리, 같은 주체·장치·인자·승인 TTL 결속, 재사용·동시 소비 및 기존 시험 기대값을 별도 결정해야 한다. 이번 구현은 새 로그인/재인증이나 요청자 재시도를 증명하지 않는다.
+- 검증·한계: 새 fresh_requester_check 9건(승인 후 DB 철회·파일 폐기·장치 격리·주체 중지·기존/탐색 중 만료·철회 DB/파일 예외·정상 즉시 실행) 통과. 실제 승인→실행→원장 호출 함수를 AST로 읽고 DB/HTTP를 대역 처리했다. 만료 시험은 실제 PAC builder의 auth 사실과 OPA HTTP 대역의 거부를 확인했으며 실제 OPA 판정 검증은 아니다. 기존 high_impact_check 17통과·이미지 전용 7생략, dispatch_recheck_check 15통과, 변경 Python py_compile·console.js node --check 통과. 이미지 import 시험은 로컬 Python 3.10의 datetime.UTC 부재로 실행 불가다. 실제 DB 잠금·서명 파일 복원·OPA·PJ1·독립 MCP 효과·배포는 미검증이며 검사/intent 커밋과 실제 송신 사이 경쟁 간격은 남는다. 브랜치 `10/20-fresh-requester`, 기준 `554307444dfc8dcb91c281c1a282427ee83e2efc`; 원격 HEAD 조회는 연결 실패, 커밋 없음. [작업 보고](../../research/llm-wiki/status/reports/2026-10-20-fresh-requester.md).
+
+### D-152 후속 — 기존 세션 시험의 정상 철회 대역 보정 (2026-10-20, Codex sol)
+
+- 문제: S9b `e19cabaf6570` 뒤 기존 `upstream_session_reuse_test.py`의 AST 이름공간에 `disposal`이 없고 DB 대역은 철회 조회에도 활성 주체 dict를 돌려준다. 정상 승인 호출이 fail-closed로 멈춰 세션 시험 40건 중 2실패·3오류가 난다.
+- 결정: 제품은 유지하고 기존 시험의 DB 철회 조회에 `None`, 서명 폐기 조회에 false를 제공하며 저장 transport_claims의 합성 jti를 보강한다. assert·정책 ID·재시도/예외 기대값은 변경하지 않는다. 이는 소유자가 명시적으로 허용한 대역 보정이며 앞선 “기존 시험 내용 불변” 범위를 이 대역에 한해 대체한다.
+- 근거: 보정 뒤 40통과, 기존 단언 AST 120개 동일. 요청자 재검사 9건·dispatch 15건·승인 17건 통과/이미지 전용 7생략과 Python/JS 구문 검사를 재실행했다. 새 의존성·OSS·DB·정책·제품 동작 변경은 없다. 줄별 이유는 [기존 시험 대역 보정](../../research/llm-wiki/status/reports/2026-10-20-fresh-requester.md#기존-시험-대역-보정)에 있다.
+- 한계: 대역/순수 함수 회귀이며 이미지·실제 PostgreSQL·서명 파일·배포·PJ1 검증이 아니다. Codex luna의 적대 검증은 대기다. 원격 HEAD 조회는 연결 실패, 커밋 없음.
+
+### D-152 후속 — 폐기 목록 확인 실패 정책 ID 정정 (2026-10-20, Codex luna)
+
+- 문제: S9b 호출부는 `disposal.blocked()`의 예외를 `P-CONTROL-FAIL-CLOSED`로 분류하지만, 기존 함수는 서명/파일 무결성 오류와 읽기 오류를 내부에서 `True`로 바꾼다. 그래서 실제 확인 불가가 폐기된 토큰과 같은 `P-INPUT-001`로 기록될 수 있었다.
+- 결정: `disposal.blocked(..., raise_errors=True)`를 호출하는 경우에만 기존 `IntegrityError`/`OSError`를 전달한다. 새 승인 실행 검사에 이 옵션을 주어 확인 실패를 `P-CONTROL-FAIL-CLOSED`로, 확인된 서명 폐기/DB 철회를 `P-INPUT-001`로 구분한다. 기본 호출자의 오류 시 `True` 동작은 유지한다.
+- 근거: 실제 함수 AST 정의와 `_call_upstream` 예외 매핑을 대조해 확인했고 새 단위 시험을 추가했다. S10-B 세 hunk는 모두 채택했다. jti 없는 claims는 DB NULL 조회만으로 통과하지 않으며 PAC가 jti를 인증 필수조건으로 차단한다. 만료, 관리형 장치 상태, DB/서명 목록 중 하나에 남은 철회 표식은 기존 검사로 거부된다. 상세 hunk별 판정과 한계는 [S9b·S10-B 적대 검토](../../research/llm-wiki/analysis/review-1020/s9b-s10b.md).
+- 한계: 단위/AST 대역 결과이며 실제 서명 파일 오류, PostgreSQL 복원·경쟁, 게이트웨이 이미지·배포·PJ1 검증이 아니다. 두 저장소 모두에서 과거 복원으로 철회 사실이 사라지는 경우는 이 보강으로 탐지하지 않는다. 기존 서명 목록 기본 fail-closed 호출은 계속 오류와 실제 폐기를 동일하게 `True`로 나타내며, 이번 옵션은 새 승인 실행 경로에만 쓴다.
+
+### D-154 후보 적대 검토 — 시험 A/B 판정과 회전 복원 공백 (2026-10-20, Codex sol)
+
+- 문제: 로컬 후보 `claude/c9`(`5a8bcc18af69`)는 회전 폐기 기록을 DB 커밋 뒤로 옮기고 기존 PostgreSQL 시험의 목록 격리와 403→401/403 허용을 함께 제안한다. 이 브랜치에는 후보를 병합하지 않았다.
+- 결정: 목록 격리는 A(채택), 상태 코드 확대는 B(수정 후 채택)다. 정상 폐기에서 정확한 401과 해당 jti의 서명/DB 기록을 확인하고 장치 상태 403 방어는 별도 시험으로 분리해야 한다. 제품 순서 변경은 발급 실패 롤백을 고치지만 기기 장애·복원 검수 전 조건부 보류다. 읽기 전용 검토로 후보 제품/시험을 수정하지 않았다.
+- 근거: [C9/D-154 검토](../../research/llm-wiki/analysis/review-1020/c9-d154.md)의 고정 코드·해시와 메모리 AST 6조건 대조. 커밋 뒤 append 전 실패 시 DB에는 회전/발급이 남고 서명 목록에는 부모 기록이 없다. 감시자의 보관 전 DB를 회전 전으로 복원하면 첫 재사용이 발급에 성공할 수 있으며, 같은 부모를 다시 쓰는 후속 재사용 탐지가 그 첫 발급까지 막지는 않는다. 정상 DB의 같은 계열 경쟁은 기존 advisory lock·부모 재조회로 방어된다. 계정/장치 토큰 철회는 각 트랜잭션의 선행 기록을 유지하되 장치 상태 갱신 자체는 별도 선행 트랜잭션이라는 한계를 구분한다.
+- 한계: 실제 PostgreSQL·서명/복원·프로세스 kill·다중 워커·PJ1 미실행. 후보 22/22는 재현값이 아니다. 병합 시 D-123·OPS_RESPONSE의 회전 선행 기록 보장 정정과 신규 장애 시험이 필요하다. 새 의존성·정책·DB 변경·커밋 없음.

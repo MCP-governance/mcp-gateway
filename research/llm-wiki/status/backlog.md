@@ -22,7 +22,7 @@
 | DEV-14 | 결과의 디코딩된 줄바꿈 검사 | [회귀](../../../full_stack_lab/tests/security_edges_check.py) | MCP text와 structuredContent의 위조 대화록, 정상 로그·크기/형식 대조 | 수정 전 우회 재현, 수정 후 통과 |
 | DEV-15 | 목적지 정책 데이터 실패 차단 | [회귀](../../../full_stack_lab/tests/security_edges_check.py) | None/결측/잘못된 타입은 거부, 명시적 빈 목록·허용 호스트 정상군 | 수정 전 잘못된 허용 재현, 수정 후 통과 |
 | DEV-16 | refresh 회전·계열 철회 경쟁 | [실기기 결과](reports/2026-10-13-development-results.md), [Claude 후보 B5](reports/2026-10-13-claude-code-review.md) | 동일 계열의 회전·발급·재사용/철회를 트랜잭션 안에서 직렬화, 실패 롤백 | 수정·단위7건·솔루션 실제 PostgreSQL3건·전체CI 통과 |
-| DEV-17 | 승인 후 신선한 요청자 인증 | [Claude 후보 B2](reports/2026-10-13-claude-code-review.md) | 만료 검증을 완화하지 않고 승인과 새 요청자의 실행을 연결, 현재 권한·철회 재검증 | 설계; 만료 토큰 거부는 유지 |
+| DEV-17 | 승인 후 신선한 요청자 인증 | [Claude 후보 B2](reports/2026-10-13-claude-code-review.md) | 만료 검증을 완화하지 않고 승인과 새 요청자의 실행을 연결, 현재 권한·철회 재검증 | D-152 제품 보강: 폐기 목록 확인 오류는 `P-CONTROL-FAIL-CLOSED`, 확인된 jti 철회는 `P-INPUT-001`. S10-B 3 hunk 채택, 기존 기대값 불변. 로컬 요청자 10건·세션 40건 통과, Python 구문 통과. 이미지·DB·OPA·배포·PJ1 미검증, 요청자 재시도 모델 미구현·결정 필요. [적대 검토](../analysis/review-1020/s9b-s10b.md), [보고](reports/2026-10-20-s9b-s10b.md) |
 | DEV-18 | 엔드포인트 수집 신선도·전체 집계 | [최신 수정](reports/2026-10-14-endpoint-telemetry-fix.md), [A 보고](reports/2026-10-15-endpoint-evidence.md) | 최근200건/전체 집계 구분, 채널 last-success·실패·freshness·감사 경로 | 전체 건수·커서·일부 표시 표식 구현, 병합본 격리 PG 450/260/230건 커서 순회 통과. PJ1은 200건 미만이라 페이지 이동 실기기 미확인 |
 | DEV-19 | PJ1 로컬 stdio·loopback 우회 | [E13](../experiments/E13-local-bypass.md) | 관리형 실제 시도·UID/profile 거부·독립 수신/효과0와 승인 정상군; IPv4/IPv6 구분 | 전용 카드·통과/실패 기준 설계, 미실행 |
 | DEV-20 | MCP 서버의 외부 API 통신 | [Lunar 분석](../solutions/lunar-mcpx.md), [팀 시험 계획](reports/2026-10-13-mcp-validation-plan.md) | 서버 egress의 목적지·자격·재시도·허용/차단과 독립 외부 효과 연결 | 관측·집행 범위 설계, 미실행 |

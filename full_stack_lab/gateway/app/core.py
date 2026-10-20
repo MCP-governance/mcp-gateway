@@ -1533,6 +1533,19 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                 if (not approval or approval["status"] != "APPROVED"
                         or approval["expires_at"] <= datetime.now(UTC)):
                     problem = "Approval expired or was withdrawn before execution"
+                if problem is None:
+                    # Stored claims passed ingress once; approval does not undo a later logout or disposal.
+                    try:
+                        claims = pac_payload.get("transport_claims") or {}
+                        revoked = disposal.blocked(jti=claims.get("jti"), raise_errors=True) or bool(await db.fetch_one(
+                            "SELECT jti FROM agent_revoked_tokens WHERE jti=%s", (claims.get("jti"),)))
+                    except Exception:
+                        problem, blocked_verdict = "Requester revocation check unavailable", local_verdict(
+                            "P-CONTROL-FAIL-CLOSED", "Block", "요청자 인증의 철회 상태를 확인하지 못해 실행을 차단했습니다.")
+                    else:
+                        if revoked:
+                            problem, blocked_verdict = "Requester token revoked before dispatch", local_verdict(
+                                "P-INPUT-001", "Block", "폐기되었거나 철회된 요청자 인증입니다.")
             if problem is None:
                 person = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (principal,))
                 from .endpoint_plane import managed_failure
