@@ -9,7 +9,7 @@ import logging
 import os
 import re
 import ssl
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -29,8 +29,13 @@ def event(source, row):
     if source not in SOURCE_COLUMNS:
         raise ValueError("Unsupported SIEM source")
     timestamp = row["created_at"]
-    if not isinstance(timestamp, datetime) or timestamp.tzinfo is None:
+    if not isinstance(timestamp, datetime) or timestamp.utcoffset() is None:
         raise ValueError("SIEM timestamps require a timezone")
+    chain_hash = row.get("entry_sha256") if source == "decisions" else None
+    if chain_hash is not None and not re.fullmatch(r"[0-9a-f]{64}", chain_hash):
+        raise ValueError("Invalid SIEM chain hash")
+    # Retries must identify the ledger event, independent of DB session timezone or worker lifetime.
+    uid = f"mint:{source}:{row['id']}:{chain_hash or reference(timestamp.astimezone(timezone.utc).isoformat())}"
     data = {"source": source, "source_id": row["id"]}
     if source == "decisions":
         decision = row["decision"]
@@ -61,7 +66,7 @@ def event(source, row):
     return {"category_uid": 0, "class_uid": 0, "activity_id": 99, "activity_name": "MINT Audit",
             "type_uid": 99, "severity_id": severity, "time": int(timestamp.timestamp() * 1000),
             "metadata": {"version": "1.4.0", "product": {"vendor_name": "MINT", "name": "MINT"},
-                         "uid": f"mint:{source}:{row['id']}:{reference(timestamp.isoformat())}"},
+                         "uid": uid},
             "unmapped": data}
 
 
@@ -115,17 +120,23 @@ async def deliver_one(config):
         if not row:
             return False
         error = None
+        uid = None
         try:
             columns = SOURCE_COLUMNS[row["source"]]
             source = await (await connection.execute(
                 f"SELECT {columns} FROM {row['source']} WHERE id=%s", (row["source_id"],))).fetchone()
             payload = event(row["source"], source)
+            uid = payload["metadata"]["uid"]
+            # The outbox counter rolls back on a crash after ACK; process logs retain each attempt's UID.
+            LOG.info("SIEM attempt uid=%s queue_id=%s committed_attempts=%s", uid, row["id"], row["attempts"])
             status = await asyncio.to_thread(send, config, payload)
+            LOG.info("SIEM response uid=%s status=%s", uid, status)
             if not 200 <= status < 300:
                 error = f"HTTP-{status}"
         except Exception as exc:
             error = type(exc).__name__
         if error:
+            LOG.info("SIEM retry uid=%s queue_id=%s error=%s", uid, row["id"], error)
             delay = min(3600, 5 * 2 ** min(row["attempts"], 10))
             await connection.execute(
                 """UPDATE siem_outbox SET attempts=attempts+1,last_error=%s,
@@ -133,7 +144,8 @@ async def deliver_one(config):
         else:
             await connection.execute(
                 "UPDATE siem_outbox SET attempts=attempts+1,last_error=NULL,delivered_at=now() WHERE id=%s", (row["id"],))
-        return True
+    LOG.info("SIEM queue committed uid=%s queue_id=%s result=%s", uid, row["id"], error or "received")
+    return True
 
 
 async def status():
@@ -161,4 +173,5 @@ async def watch():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     asyncio.run(watch())
