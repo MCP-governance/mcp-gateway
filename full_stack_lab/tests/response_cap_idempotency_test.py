@@ -4,6 +4,7 @@ import base64
 from contextlib import asynccontextmanager, contextmanager, nullcontext
 import importlib.util
 import json
+import math
 import os
 from pathlib import Path
 import posixpath
@@ -12,6 +13,13 @@ import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import AsyncMock, patch
+
+try:
+    from jsonschema import Draft202012Validator
+    from jsonschema.validators import validator_for
+    from referencing import Registry
+except ModuleNotFoundError:  # The gateway image provides these; response-cap-only checks do not need them.
+    Draft202012Validator = validator_for = Registry = None
 
 APP = Path(__file__).resolve().parent.parent / "gateway" / "app"
 
@@ -36,9 +44,14 @@ def classifier(parser=None):
 
 def guard(limit=3, byte_limit=1000):
     cls = classifier()
-    return selected("core.py", ["body_of", "_decoded_strings", "_guarded_result", "ResultRejected"],
+    output = selected("output_contract.py", ["OBJECT_PROTOCOLS", "JSON_PROTOCOLS", "MAX_SCHEMA_DEPTH",
+                      "MAX_SCHEMA_NODES", "MAX_SCHEMA_BYTES", "OutputSchemaTooComplex",
+                      "check_schema_bounds", "for_protocol"], math=math)
+    return selected("core.py", ["body_of", "_decoded_strings", "_validate_output", "_guarded_result", "ResultRejected"],
                     json=json, classify=cls, MAX_RESULT_BYTES=byte_limit, MAX_RESULT_ITEMS=limit,
-                    response_evidence=lambda *args: {}, poisoning=SimpleNamespace(result_findings=lambda _: []))
+                    response_evidence=lambda *args: {}, poisoning=SimpleNamespace(result_findings=lambda _: []),
+                    output_contract=output, validator_for=validator_for,
+                    Draft202012Validator=Draft202012Validator, Registry=Registry)
 
 
 class ResponseCaps(unittest.TestCase):
