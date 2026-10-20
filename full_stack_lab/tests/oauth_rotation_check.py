@@ -14,6 +14,7 @@ from unittest.mock import patch
 import uuid
 
 from starlette.requests import Request
+from termination_lab_support import isolated_disposal
 
 os.environ.setdefault("OTEL_SDK_DISABLED", "true")
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "gateway"))
@@ -21,11 +22,15 @@ from app import idp
 
 
 class Cursor:
-    def __init__(self, row=None):
+    def __init__(self, row=None, rows=None):
         self.row = row
+        self.rows = rows or []
 
     async def fetchone(self):
         return deepcopy(self.row)
+
+    async def fetchall(self):
+        return deepcopy(self.rows)
 
 
 class Connection:
@@ -100,6 +105,12 @@ class RotationDB:
                     self.read_barrier.set()
                 await self.read_barrier.wait()
             return Cursor(row)
+        if compact.startswith("SELECT jti,expires_at FROM oauth_issued_tokens WHERE family_id=%s"):
+            return Cursor(rows=[{"jti": token, "expires_at": row["expires_at"]}
+                                for token, row in state["issued"].items() if row["family_id"] == params[0]])
+        if compact.startswith("SELECT token_sha256 FROM oauth_refresh_tokens WHERE family_id=%s"):
+            return Cursor(rows=[{"token_sha256": digest} for digest, row in state["refresh"].items()
+                                if row["family_id"] == params[0]])
         if "FROM principals" in compact:
             return Cursor(deepcopy(self.principal))
         if compact.startswith("UPDATE oauth_refresh_tokens SET rotated_at"):
@@ -134,6 +145,7 @@ class OAuthRotationTest(unittest.IsolatedAsyncioTestCase):
         self.db = RotationDB()
         self.request = Request({"type": "http", "client": ("127.0.0.1", 1), "headers": []})
         self.patches = ExitStack()
+        self.patches.enter_context(isolated_disposal())
         self.patches.enter_context(patch.dict(os.environ, {"AUTH_PROVIDER": "local"}))
         for name in ("fetch_one", "execute", "transaction"):
             self.patches.enter_context(patch.object(idp.db, name, getattr(self.db, name)))

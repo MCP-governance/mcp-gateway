@@ -15,6 +15,7 @@ import asyncio
 import os
 import socket
 import sys
+from unittest.mock import patch
 
 import httpx
 import uvicorn
@@ -22,7 +23,7 @@ import uvicorn
 os.environ.pop("MCP_UPSTREAM_CREDENTIALS_FILE", None)  # a probe never reads the real credential file
 sys.path.insert(0, "/app")
 import mcp_types as t  # noqa: E402
-from app import mcp_facade, upstream  # noqa: E402
+from app import mcp_facade, output_contract, upstream  # noqa: E402
 from mcp import Client  # noqa: E402
 from mcp.client.streamable_http import streamable_http_client  # noqa: E402
 from mcp.server.lowlevel.server import Server  # noqa: E402
@@ -37,7 +38,7 @@ async def stub_caller(ctx):
     return {"principal": "probe", "roles": ["probe"], "claims": {"client_id": "probe-ws"}}
 
 
-async def stub_tools(role, server=None, principal=""):
+async def stub_tools(role, server=None, principal="", protocol_version=None):
     return [t.Tool(name="echo", description="Echo text.", input_schema=EMPTY)]
 
 
@@ -113,7 +114,9 @@ async def provider_asks(url: str) -> None:
     except BaseException as exc:  # noqa: BLE001 - any failure is the right outcome; an answer is not
         while isinstance(exc, BaseExceptionGroup) and exc.exceptions:
             exc = exc.exceptions[0]
-        assert isinstance(exc, MCPError), repr(exc)
+        # D-149: the official SDK now rejects the provider's off-contract wire reply first; either way the
+        # gateway answered nothing, which is what this case is about.
+        assert isinstance(exc, (MCPError, output_contract.WireRejected)), repr(exc)
     else:
         raise AssertionError("the gateway answered a provider's input request")
     assert PROVIDER_CALLS == ["ask"], PROVIDER_CALLS
@@ -133,7 +136,14 @@ async def main() -> None:
         servers = [await serve(facade, facade_port), await serve(provider_app, provider_port)]
         await legacy(f"http://127.0.0.1:{facade_port}/")
         await modern(f"http://127.0.0.1:{facade_port}/")
-        await provider_asks(f"http://127.0.0.1:{provider_port}/")
+        provider_url = f"http://127.0.0.1:{provider_port}/"
+
+        async def allow_test_provider(endpoint: str) -> bool:
+            return endpoint == provider_url
+
+        # D-116 still pins DNS; only this ephemeral provider URL is approved as internal.
+        with patch.object(upstream, "_internal_endpoint", allow_test_provider):
+            await provider_asks(provider_url)
     finally:
         for server, _ in servers:
             server.should_exit = True
