@@ -8,6 +8,9 @@ UR-EMAIL-ASSIST provider-operated, credential NOT disclosed -> C1 unmet -> T3,
               and closing a T3 case without a named risk acceptance is refused
 
 Run only on a disposable lab volume: D-123 tombstones deliberately prevent restoring the same server.
+
+D-156 token/resource-server C3/C4 cases supplement this live flow in
+resource_residual_check.py and resource_residual_pg_check.py; its assertions stay unchanged.
 """
 import atexit
 import os

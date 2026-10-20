@@ -306,6 +306,11 @@ async def introspection(token: str) -> dict:
         stored = await db.fetch_one("SELECT * FROM oauth_refresh_tokens WHERE token_sha256=%s", (_sha(token),))
         if not stored or stored["revoked_at"] or stored["rotated_at"] or stored["expires_at"] <= now:
             return {"active": False}
+        # A live row is not a usable grant after the account or its login path ends.
+        person = await db.fetch_one("SELECT status,managed_required FROM principals WHERE user_id=%s", (stored["user_id"],))
+        if (not person or person["status"] != "active" or person["managed_required"]
+                or os.getenv("AUTH_PROVIDER", "local") == "oidc"):
+            return {"active": False}
         return {"active": True, "token_type": "refresh_token", "client_id": stored["client_id"],
                 "sub": stored["user_id"], "exp": int(stored["expires_at"].timestamp())}
     try:

@@ -175,3 +175,35 @@ server-held-credential → credential-check·provider-attestation·resource-reje
 - v1 CHECK 제약이 새 kind를 거부해 케이스가 반쯤 열린 적이 있다 → `v2_tables.sql`이 제약을 다시
   만들고, `open_case`는 대상 시드 실패 시 케이스·cutover를 되돌린다(원자적).
 - 실습 복원은 폐기된 Gitea PAT를 되살리지 않는다 → `./console.sh restore-token gitea` (D-18).
+
+## 9. 발급 토큰·자원 서버·캐시의 증거 범위 (D-156, DEV-08)
+
+`idp.introspection`·`introspect_jti`에는 응답 캐시가 없다(TTL 0). `/oauth/introspect`는 관리자 인증 후
+현재 서명 폐기 목록·DB를 조회하고 `Cache-Control: no-store`를 반환한다. 접근 토큰은 현재 계정·관리형
+엔드포인트·SSO 세션도 확인한다. 갱신 토큰은 폐기·회전·만료뿐 아니라 현재 계정의 활성 상태·관리형
+인증 전환·로컬 발급 경로 중단(OIDC 전환)을 확인한다. 조회 장애는 이전의 활성 응답으로 대체하지 않는다.
+
+인가 서버의 `active=false`는 자원 서버가 실제 거부했다는 증거가 아니다.
+[RFC 7662 §4](https://www.rfc-editor.org/rfc/rfc7662.html#section-4)는 자원 서버의 응답 캐시가 철회를 늦게
+반영할 수 있음을 명시한다. `no-store`는 외부 자원 서버의 자체 인가 캐시를 강제로 지우지 못한다.
+외부 캐시 TTL은 미확인이고 게이트웨이의 업스트림 풀 TTL과도 다르다.
+
+| 재접근 경로 | 종료 뒤 확인 | C3/C4와 등급의 범위 |
+| --- | --- | --- |
+| 매 요청 최신 introspection을 따르는 경로 | 발급 접근 토큰 폐기 뒤 inactive, 게이트웨이 인증 401 | 해당 발급자 대상의 C4. 원격 자원 서버 전체의 T1 증거가 아님 |
+| 서명·만료만 자체 검증하는 경로 | 기존 E1 검증기는 폐기 뒤에도 만료 전 수락 | `verification=stateless`의 회수~만료 공백으로 C3 미충족, 상태 증거가 있으면 T2 |
+| 외부 introspection 캐시를 쓰는 경로 | 토큰 재제시로 실제 수락/거부와 관측 시각을 수집 | 최신 수락 증거가 있으면 C3 미충족(T2). 상태를 묻지 못하면 미확인으로 남김 |
+| 서버가 보유한 별도 하위 자격 | Gitea 보호 자원에 같은 PAT를 폐기 전·후 직접 제시 | 처리 응답과 분리한 `resource-rejection`; 제공자 고지/회수 권한/조직 확인과 함께 T1~T3 판정 |
+| 업스트림 풀·MCP 세션 | 종료 개시 시 풀 폐기·세션 종료, 최종 dispatch가 종료 상태 거부 | 풀 사건·세션 종료 요청만으로 하위 자격 소멸을 증명하지 않음 |
+| 실행기 컨테이너 | `runtime/worker.py`가 종료 상태를 다시 읽어 STOPPING, 자원 제거 재시도 후 STOPPED | 기본 poll 5초에 작업 시간·오류 재시도가 추가됨. 컨테이너 제거는 외부 제공자 자격 폐기를 대체하지 않음 |
+
+토큰 대상(`client-token`·`refresh-token`)에도 `resource-rejection`을 상태 증거로 인정한다.
+이는 기존 문서의 토큰류 설명과 누락된 `STATE_EVIDENCE_FOR`를 맞춘 것이다. 폐기 뒤 자원 서버가
+수락한 증거는 introspection 비활성보다 우선해 T1을 막는다. 폐기 시각 이전 증거는 계속 제외하며,
+T3→T2→T1의 C1~C4 조합과 케이스의 최저 등급 집계는 유지한다. 등록된 모든 자원 서버를 조사한 것으로
+간주하지 않는다. 자동 열거는 기존 모집단을 유지하므로 외부 캐시·복제 토큰·추가 자원은 별도 대상과 증거가 필요하다.
+
+새 시험은 `tests/resource_residual_check.py`(순수/대역)와 `tests/resource_residual_pg_check.py`
+(격리 PostgreSQL·서명 목록·Gitea 보호 자원)다. 후자의 E1 서명 검증 비교는 기존 함수의 로컬 실행이며
+실제 외부 자원 서버나 MCP 실행 증거로 세지 않는다. 기존 `tests/termination_flow.py`는 보완 시험 안내만
+추가하고 기대값을 유지한다. [원자 요구사항·한계](../../research/llm-wiki/analysis/resource-residual/README.md).

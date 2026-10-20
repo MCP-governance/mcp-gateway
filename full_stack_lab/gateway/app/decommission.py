@@ -99,8 +99,8 @@ STATE_EVIDENCE_FOR = {
     "gateway-access": {"gateway-denial"},
     "server-held-credential": {"credential-check", "provider-attestation", "resource-rejection"},
     "endpoint-config": {"endpoint-inventory"},
-    "client-token": {"introspection", "credential-check", "provider-attestation"},
-    "refresh-token": {"introspection", "credential-check", "provider-attestation"},
+    "client-token": {"introspection", "credential-check", "provider-attestation", "resource-rejection"},
+    "refresh-token": {"introspection", "credential-check", "provider-attestation", "resource-rejection"},
 }
 DEFAULT_STATE_EVIDENCE = {"introspection", "credential-check", "provider-attestation", "resource-rejection"}
 
