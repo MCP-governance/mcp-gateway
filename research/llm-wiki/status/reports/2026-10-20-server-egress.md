@@ -125,3 +125,9 @@ DEV-20 완료 여부는 그 결과와 API 자격/재시도/효과 관측 범위�
 ## 사용자에게 필요한 입력
 
 없음. 현재 승인·격리 자원으로 진행할 수 있는 절차를 남겼으며, 독립 수신 로그 접근이 없는 항목은 미실행으로 유지한다.
+
+## 기기 실행 (Claude, 2026-10-20)
+
+- 브랜치 355888a를 솔루션 기기에 배포하고 PJ1 관리 Claude Code로 markitdown 변환을 호출했다(성공).
+- `approval_events`에 `runtime-egress` 사건이 기록됐고(markitdown, 01:52:57Z), D-145 상관 조회에서 판정 85에 `server-egress` 1건(learn.microsoft.com, 상태 connected, 자격 사용 unobserved, 재시도 null, 외부 효과 unverified, 후보 요청 ID)이 붙었다.
+
