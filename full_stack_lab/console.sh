@@ -52,6 +52,9 @@ usage: ./console.sh <command>
                          계정 한 개의 비밀번호를 바꿈
   field register-pc <이름> [owner] [platform]
                          실제 PC를 단말 장치로 등록(기존 /api/endpoint/devices), 장치 키를 한 번 출력
+  field siem up|status|down
+                         SIEM 전달 워커만 켜고(.env의 SIEM_URL·SIEM_TOKEN_FILE·SIEM_CA_FILE 필요) 상태·대기열 확인, 멈춤.
+                         다른 컨테이너는 다시 만들지 않음
   field down             Caddy만 멈춤(나머지 스택·데이터는 그대로 — 전체는 위 down/reset)
 EOF
 }
@@ -256,6 +259,32 @@ watch_decisions() {
 # compose.field.yaml은 ./console.sh up 이나 CI가 아니라 이 명령들에서만 얹힌다.
 FIELD_COMPOSE=(-f compose.yaml -f compose.field.yaml)
 
+# SIEM 워커는 .env의 세 값과 siem-secrets/ 파일이 없으면 시작 즉시 죽고 재시작만 반복한다. 시작 전에 막는다.
+siem_require_config() {
+  local key path
+  for key in SIEM_URL SIEM_TOKEN_FILE SIEM_CA_FILE; do
+    [[ -n "$(env_value "$key")" ]] || { echo ".env에 $key 가 없습니다 (docs/ai/FIELD.md의 SIEM 연동)" >&2; return 1; }
+  done
+  for key in SIEM_TOKEN_FILE SIEM_CA_FILE; do
+    path="$(env_value "$key")"
+    [[ "$path" == /run/siem/* && -s "siem-secrets/${path#/run/siem/}" ]] || {
+      echo "$key 는 siem-secrets/ 안의 비어 있지 않은 파일(/run/siem/…)이어야 합니다" >&2; return 1; }
+  done
+}
+
+field_siem() {
+  case "${1:-}" in
+    up) siem_require_config; docker compose "${FIELD_COMPOSE[@]}" up -d --no-deps --build siem-worker ;;
+    status)
+      docker compose "${FIELD_COMPOSE[@]}" ps siem-worker
+      docker compose "${FIELD_COMPOSE[@]}" exec -T db psql -U mcp -d mcp_governance -At -F ' ' \
+        -c "SELECT source, count(*) AS total, count(delivered_at) AS delivered, count(*)-count(delivered_at) AS pending,
+            max(attempts) AS max_attempts FROM siem_outbox GROUP BY source ORDER BY source" </dev/null ;;
+    down) docker compose "${FIELD_COMPOSE[@]}" stop siem-worker ;;
+    *) usage; exit 2 ;;
+  esac
+}
+
 field_up() {
   python3 registry/render_residency.py --check
   local with_ws=0 with_lab_mcp=0 with_siem=0
@@ -276,7 +305,7 @@ field_up() {
     printf 'MOCK_SSO_PASSWORD=%s\nPOSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
   fi
   ensure_env
-  if [[ $with_siem == 1 ]]; then services+=(siem-worker); fi
+  if [[ $with_siem == 1 ]]; then siem_require_config; services+=(siem-worker); fi
   grep -qE '^GITEA_ADMIN_PASSWORD=.+' .env || echo "GITEA_ADMIN_PASSWORD=$(openssl rand -hex 24)" >> .env
   if [[ $with_ws == 0 ]]; then
     docker compose "${FIELD_COMPOSE[@]}" stop "${WORKSTATIONS[@]}" >/dev/null 2>&1 || true
@@ -434,6 +463,7 @@ field_dispatch() {
       docker compose "${FIELD_COMPOSE[@]}" run --rm --no-deps -T --entrypoint python gateway -m app.disposal init
       ;;
     status) field_status ;;
+    siem) shift; field_siem "$@" ;;
     ca) field_ca ;;
     down) field_down ;;
     register-pc) shift; field_register_pc "$@" ;;

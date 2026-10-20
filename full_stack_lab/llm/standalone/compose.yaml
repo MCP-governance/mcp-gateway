@@ -1,0 +1,85 @@
+# 제품 스택과 따로 세우는 LiteLLM 프록시(LLM 경로 + MCP 집계 경로 점검용).
+# compose 프로젝트·망·볼륨을 공유하지 않는다. LiteLLM은 loopback에만 게시하고, 하네스 시험 컨테이너는 같은 edge 망에서 붙는다.
+name: mint-llm
+
+services:
+  postgres:
+    image: postgres:18-alpine@${POSTGRES_DIGEST:?}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password]
+    volumes: [pg_data:/var/lib/postgresql]
+    networks: [data]
+    mem_limit: 256m
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm -d litellm"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  ollama:
+    image: ollama/ollama:0.40.3@${OLLAMA_DIGEST:?}
+    restart: unless-stopped
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_CONTEXT_LENGTH: "8192"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_KEEP_ALIVE: 10m
+      OLLAMA_NO_CLOUD: "1"
+    volumes: [ollama_models:/root/.ollama]
+    networks: [model]
+    mem_limit: 3g
+    cpus: 4
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  litellm:
+    image: ghcr.io/berriai/litellm-database:v1.105.0@${LITELLM_DIGEST:?}
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/lab/entrypoint.sh"]
+    environment:
+      LITELLM_TELEMETRY: "False"
+      LITELLM_LOCAL_MODEL_COST_MAP: "True"
+      DISABLE_ADMIN_UI: "True"
+      STORE_MODEL_IN_DB: "False"
+    secrets: [postgres_password, litellm_master_key, litellm_salt_key]
+    volumes:
+      - ./litellm.yaml:/lab/litellm.yaml:ro
+      - ./entrypoint.sh:/lab/entrypoint.sh:ro
+    ports:
+      - "127.0.0.1:${LITELLM_PORT:-4010}:4000"
+    networks: [model, data, edge]
+    depends_on:
+      postgres: {condition: service_healthy}
+      ollama: {condition: service_healthy}
+    mem_limit: 1536m
+    cpus: 2
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness', timeout=3)"]
+      interval: 5s
+      timeout: 4s
+      retries: 60
+
+secrets:
+  postgres_password: {file: ./secrets/postgres_password}
+  litellm_master_key: {file: ./secrets/litellm_master_key}
+  litellm_salt_key: {file: ./secrets/litellm_salt_key}
+
+networks:
+  model: {internal: true}
+  data: {internal: true}
+  edge: {}
+
+volumes:
+  pg_data: {}
+  ollama_models: {}

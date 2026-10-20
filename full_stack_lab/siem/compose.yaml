@@ -1,0 +1,67 @@
+# 운영자가 따로 세우는 SIEM: OpenSearch(저장·검색) + Dashboards(화면) + Vector(수신 앞단).
+# 제품 스택과 compose 프로젝트·네트워크·볼륨을 공유하지 않는다. 게시는 Tailscale IP 한 곳(SIEM_BIND)뿐이다.
+# Vector는 siem.py의 송신 계약(HTTPS POST 1건 = OCSF JSON 1개, Bearer 토큰, Idempotency-Key)을 받아
+# 토큰을 확인하고, 색인이 끝난 뒤에만 2xx로 응답하며, metadata.uid를 문서 _id로 써서 재전송을 한 문서로 합친다.
+name: mint-siem
+
+services:
+  opensearch:
+    image: opensearchproject/opensearch:3.8.0@${OPENSEARCH_DIGEST:?}
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      bootstrap.memory_lock: "false"
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+    env_file: [./secrets/opensearch.env]
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    networks: [siem]
+    mem_limit: 1536m
+    cpus: 2
+    security_opt: ["no-new-privileges:true"]
+    ulimits:
+      nofile: {soft: 65536, hard: 65536}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sk -u admin:$$OPENSEARCH_INITIAL_ADMIN_PASSWORD https://localhost:9200/_cluster/health | grep -qE 'green|yellow'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  dashboards:
+    image: opensearchproject/opensearch-dashboards:3.8.0@${DASHBOARDS_DIGEST:?}
+    restart: unless-stopped
+    depends_on:
+      opensearch: {condition: service_healthy}
+    volumes:
+      - ./secrets/opensearch_dashboards.yml:/usr/share/opensearch-dashboards/config/opensearch_dashboards.yml:ro
+    ports:
+      - "${SIEM_BIND:?Tailscale IPv4}:5601:5601"
+    networks: [siem]
+    mem_limit: 768m
+    cpus: 1
+    security_opt: ["no-new-privileges:true"]
+
+  ingest:
+    image: timberio/vector:0.59.0-alpine@${VECTOR_DIGEST:?}
+    restart: unless-stopped
+    command: ["--config", "/etc/vector/vector.yaml"]
+    depends_on:
+      opensearch: {condition: service_healthy}
+    volumes:
+      - ./vector.yaml:/etc/vector/vector.yaml:ro
+      - ./secrets/pki:/etc/vector/pki:ro
+      - ./secrets/vector:/etc/vector/secrets:ro
+    ports:
+      - "${SIEM_BIND:?Tailscale IPv4}:8688:8688"
+    networks: [siem]
+    mem_limit: 256m
+    cpus: 1
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+
+networks:
+  siem: {}
+
+volumes:
+  opensearch_data: {}
