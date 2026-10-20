@@ -123,7 +123,7 @@ const ENDPOINT_CLASS = { registered: ["allow", "등록 서버"], shadow: ["block
 const CONTROL_STATE = {
   gateway_enforced: ["allow", "게이트웨이 통제"], endpoint_enforced: ["allow", "엔드포인트 통제"],
   vendor_enforced: ["brand", "벤더 통제"], observed_only: ["alert", "관찰만"],
-  unknown_not_enrolled: ["outline", "엔드포인트 미등록"], bypass_possible: ["block", "우회 가능"],
+  unknown_not_enrolled: ["outline", "엔드포인트 미등록"], bypass_possible: ["block", "조직 통제 의존"],
 };
 const INTEGRATION_CLASS = {
   gateway_mcp: "게이트웨이 MCP", gateway_backend_connector: "게이트웨이 연동 SaaS", vendor_native_connector: "벤더 커넥터",
@@ -635,7 +635,7 @@ ROUTES.overview = async (_, tab) => {
           ["실행 미확인", x.unknown, "alert", `#/activity?${todayFilter}&execution=unknown`]])}</section>
         <section><h2>현재 상태</h2>${kpiStrip([
         ["통제 적용 기기", devices.filter((d) => d.account_state === "endpoint_enforced").length, "", "#/coverage?t=devices"],
-        ["우회 가능 경로", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"],
+        ["조직 통제 의존", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"],
           ["종료 조치 필요", term.unresolved_grades, "alert", "#/termination"],
           ["운영 이상 MCP", abnormalServers, "alert", "#/servers"]])}</section>
       </div>`,
@@ -651,10 +651,10 @@ ROUTES.overview = async (_, tab) => {
           ${panel("최근 차단 10건", feed.rows.length ? decisionTable(feed.rows) : empty("차단된 호출 없음"), { flush: true, end: html`<a class="btn sm" href="#/activity?decision=Block">차단 로그 <span aria-hidden="true">↗</span></a>` })}
         </div>` },
         { key: "planes", label: "통제 적용 현황", body: html`<div class="stack">
-          ${panel("우회 가능 경로 (최대 8건)", bypass.length ? html`<table class="data"><thead><tr><th>항목</th><th>연동 유형</th><th>영향 범위</th><th>우회 경로</th></tr></thead><tbody>
+          ${panel("조직 통제 의존 경로 (최대 8건)", bypass.length ? html`<table class="data"><thead><tr><th>항목</th><th>연동 유형</th><th>영향 범위</th><th>우회 경로</th></tr></thead><tbody>
             ${bypass.map((i) => html`<tr class="clickable" tabindex="0" data-act="goto" data-href="#/coverage?t=items&state=bypass_possible&q=${encodeURIComponent(i.name)}">
               <td><b>${i.name}</b><span class="sub mono">${short(i.target || "", 50)}</span></td><td class="small">${INTEGRATION_CLASS[i.class] || i.class}</td>
-              <td class="small">${bypassImpact(i)}</td><td>${bypassPaths(i)}</td></tr>`)}</tbody></table>` : empty("우회 가능 경로 없음"),
+              <td class="small">${bypassImpact(i)}</td><td>${bypassPaths(i)}</td></tr>`)}</tbody></table>` : empty("조직 통제 의존 경로 없음"),
             { flush: true, end: html`<a class="btn sm" href="#/coverage?t=items&state=bypass_possible">전체</a>` })}
           ${panel("연동 유형별 통제 상태", items.length ? chartBox("c-ov-matrix", "연동 유형별 통제 항목 수", "lg") : empty("항목 없음"), { sub: "항목 수" })}</div>` },
         { key: "traffic", label: "호출 분석", body: html`<div class="stack">
@@ -1293,7 +1293,7 @@ ROUTES.coverage = async (_, tab, query) => {
         ["엔드포인트 통제", count("endpoint_enforced"), "allow", "#/coverage?t=items&state=endpoint_enforced"],
         ["벤더 통제", count("vendor_enforced"), "restrict", "#/coverage?t=items&state=vendor_enforced"],
         ["관찰 및 미등록", count("observed_only") + count("unknown_not_enrolled"), "alert", "#/coverage?t=items&state=observed_only"],
-        ["우회 가능", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"]]),
+        ["조직 통제 의존", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"]]),
       active: tab || "items",
       tabs: [
         { key: "items", label: "MCP·커넥터", n: items.length, body: html`<div class="stack">
