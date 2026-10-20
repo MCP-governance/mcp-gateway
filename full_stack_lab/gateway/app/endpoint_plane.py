@@ -969,7 +969,7 @@ async def managed_failure(principal: dict, claims: dict, *, mint: bool = False) 
         return "활성 상태가 아니거나 이 사용자에게 등록되지 않은 엔드포인트입니다."
     if not device["heartbeat_at"] or (datetime.now(UTC) - device["heartbeat_at"]).total_seconds() >= HEARTBEAT_SECONDS:
         # Refused while stale; not a sticky quarantine: a PC that slept would otherwise need an
-        # administrator every morning. Making it sticky is an operating-policy decision (D-160).
+        # administrator every morning. Not sticky by owner decision (D-172).
         return "엔드포인트 점검 보고가 만료되어 연결을 중단했습니다."
     policy = await managed_policy(device)
     if device["policy_hash"] != policy["policy_hash"] or (not mint and claims.get("device_policy") != policy["policy_hash"]):
