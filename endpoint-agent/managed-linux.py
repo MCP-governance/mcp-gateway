@@ -34,6 +34,7 @@ FILES = {"managed-mcp.json": Path("/etc/claude-code/managed-mcp.json"),
 PROGRAMS = Path("/usr/local/lib/mcpgw-managed")
 STATE = Path("/var/lib/mcpgw-managed")
 PRIVILEGED = {"sudo", "wheel", "docker", "lxd", "libvirt", "root"}
+TOKEN_CACHE_SECONDS = 180
 
 
 def load_module(name, path):
@@ -334,7 +335,7 @@ def serve(args):
             if report["state"] == "active" and report["compliant"]:
                 token = request(config, "/oauth/device-token", {})
                 with lock:
-                    cache.update(token=token["access_token"], until=time.monotonic() + 120)
+                    cache.update(token=token["access_token"], until=time.monotonic() + TOKEN_CACHE_SECONDS)
                 pause = 60
             else:
                 with lock:

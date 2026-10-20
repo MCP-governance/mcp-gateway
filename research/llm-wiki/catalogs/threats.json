@@ -237,10 +237,10 @@
       },
       {
         "path": "endpoint-agent/managed-linux.py",
-        "sha256": "deccf313a1334b6d733bf0dc9dce8d8139afb6943117b2f214a5edf4e612ab9a",
+        "sha256": "acb054a9ce9ad1877587b700046696b190a52937ffbf5be164129c931aa8ed34",
         "committed_sha256": "deccf313a1334b6d733bf0dc9dce8d8139afb6943117b2f214a5edf4e612ab9a",
-        "normalized_sha256": "deccf313a1334b6d733bf0dc9dce8d8139afb6943117b2f214a5edf4e612ab9a",
-        "worktree_modified": false
+        "normalized_sha256": "acb054a9ce9ad1877587b700046696b190a52937ffbf5be164129c931aa8ed34",
+        "worktree_modified": true
       },
       {
         "path": "endpoint-agent/managed-windows.py",
