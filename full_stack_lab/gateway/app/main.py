@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import uuid
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
@@ -18,7 +19,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
 
-from . import core, db, decommission, dispatch, disposal, endpoint_plane, ops_response, privacy, secret_scan, upstream
+from . import core, db, decommission, dispatch, disposal, endpoint_plane, local_jobs, ops_response, privacy, secret_scan, upstream
 from .core import (
     OPA_URL,
     approve_request,
@@ -751,8 +752,16 @@ async def registry_check(server_id: str, user: dict = Depends(admin_caller)) -> 
 
 
 # ── 승인한 서버를 Console에서 Gateway에 등록 (D-49) ──────────────────────────────
+class LocalRun(StrictModel):
+    """DEV-73: the signed manifest an approver produced offline, and the device that observes the contract."""
+    manifest: dict
+    signature: str = Field(min_length=40, max_length=200)
+    observer_device: str = Field(min_length=1, max_length=120)
+
+
 class RegistryDiscover(StrictModel):
     endpoint: str = Field(min_length=8, max_length=500)
+    local: LocalRun | None = None
 
 
 
@@ -775,13 +784,14 @@ class RegistryRegister(ResidencyFields):
     exit_terms: dict[str, bool] = Field(default_factory=dict)
     poisoning_ack: bool = False  # D-52: the admin read the flagged tool text and approves it anyway
     tool_reviews: dict[str, ToolReview] = Field(min_length=1, max_length=300)  # D-91: a person scoped every approved tool
+    local: LocalRun | None = None
 
 
 @app.post("/api/registry/discover")
 async def registry_discover(request: RegistryDiscover, user: dict = Depends(admin_caller)) -> dict:
     """등록 전 검토용: 엔드포인트가 지금 광고하는 도구와 그 계약 해시. 아무것도 기록하지 않는다."""
     try:
-        return await core.discover_for_registration(request.endpoint)
+        return await core.discover_for_registration(request.endpoint, request.local and request.local.model_dump())
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     except Exception as exc:
@@ -1487,6 +1497,29 @@ async def endpoint_heartbeat(request: ManagedHeartbeat,
     except PermissionError as exc:
         raise HTTPException(403, str(exc)) from exc
     return {**report, "network_quality": verdict}
+
+
+class LocalJobResult(BaseModel):
+    result: dict | None = None
+    error: str | None = Field(default=None, max_length=500)
+
+
+@app.get("/api/endpoint/local-jobs")
+async def endpoint_local_job(wait: float = 25, device: dict = Depends(endpoint_device("enforcement"))) -> dict:
+    """승인된 로컬 MCP 실행 요청을 그 장치에만 내준다. 장치는 바깥으로만 연결한다."""
+    return {"job": await local_jobs.claim(device, max(0.0, min(wait, 25.0)))}
+
+
+@app.post("/api/endpoint/local-jobs/{job_id}")
+async def endpoint_local_job_result(job_id: uuid.UUID, request: LocalJobResult,
+                                    device: dict = Depends(endpoint_device("enforcement"))) -> dict:
+    try:
+        accepted = await local_jobs.complete(device, str(job_id), request.result, request.error)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    if not accepted:
+        raise HTTPException(409, "이 장치가 받은 진행 중 요청이 아닙니다.")
+    return {"accepted": True}
 
 
 @app.post("/api/endpoint/devices/{endpoint_id}/activate")

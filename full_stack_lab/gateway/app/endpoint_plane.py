@@ -749,7 +749,7 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
 
 
 async def managed_policy(device: dict) -> dict:
-    from . import pac
+    from . import pac, registry
     if not device.get("device_epoch"):
         raise PermissionError("관리형 설치로 등록한 장치가 아닙니다.")
     public = os.getenv("IDP_ISSUER", "").rstrip("/")
@@ -812,6 +812,11 @@ async def managed_policy(device: dict) -> dict:
               "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), "servers": servers,
               "local_username": device["local_username"], "local_uid": device["local_uid"],
               "heartbeat_seconds": HEARTBEAT_INTERVAL, "max_heartbeat_age": HEARTBEAT_SECONDS, "files": files}
+    # DEV-73: the runner executes only manifests signed with a key the gateway does not hold.
+    local = [{"server_id": s, "manifest": spec["local"]["manifest"], "signature": spec["local"]["signature"]}
+             for s in servers if (spec := registry.server(s) or {}).get("local")]
+    if local:
+        policy["local_servers"] = local
     if proxy_port:
         policy["proxy_port"] = proxy_port
         policy["proxy_environment"] = proxy

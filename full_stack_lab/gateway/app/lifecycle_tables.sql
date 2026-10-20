@@ -389,3 +389,22 @@ CREATE TABLE IF NOT EXISTS endpoint_managed_events (
   detail jsonb NOT NULL DEFAULT '{}',
   observed_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- DEV-73 (D-175): one MCP message for an approved local server, run on the caller's own device.
+-- The device's root runner takes only its own rows; the gateway waits for the result row.
+CREATE TABLE IF NOT EXISTS local_jobs (
+  id uuid PRIMARY KEY,
+  device_id text NOT NULL,
+  server_id text NOT NULL,
+  manifest_sha256 text NOT NULL,
+  method text NOT NULL CHECK (method IN ('initialize', 'tools/list', 'tools/call')),
+  params jsonb NOT NULL DEFAULT '{}',
+  state text NOT NULL DEFAULT 'queued' CHECK (state IN ('queued', 'claimed', 'done', 'expired')),
+  result jsonb,
+  error text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  deadline timestamptz NOT NULL,
+  claimed_at timestamptz,
+  finished_at timestamptz
+);
+CREATE INDEX IF NOT EXISTS local_jobs_queued ON local_jobs (device_id, created_at) WHERE state = 'queued';
