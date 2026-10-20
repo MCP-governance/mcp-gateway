@@ -238,9 +238,9 @@
       {
         "path": "endpoint-agent/managed-linux.py",
         "sha256": "acb054a9ce9ad1877587b700046696b190a52937ffbf5be164129c931aa8ed34",
-        "committed_sha256": "deccf313a1334b6d733bf0dc9dce8d8139afb6943117b2f214a5edf4e612ab9a",
+        "committed_sha256": "acb054a9ce9ad1877587b700046696b190a52937ffbf5be164129c931aa8ed34",
         "normalized_sha256": "acb054a9ce9ad1877587b700046696b190a52937ffbf5be164129c931aa8ed34",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "endpoint-agent/managed-windows.py",
@@ -258,10 +258,10 @@
       },
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",
-        "sha256": "c583ce1df783d35c31cfa32ac714bc1da0194d43ede44128d273ef468b79d5f8",
+        "sha256": "72569bbef355ea4c552a478f2ff6e9b15798151a3a84a631d70d1ccb8c165a78",
         "committed_sha256": "c583ce1df783d35c31cfa32ac714bc1da0194d43ede44128d273ef468b79d5f8",
-        "normalized_sha256": "c583ce1df783d35c31cfa32ac714bc1da0194d43ede44128d273ef468b79d5f8",
-        "worktree_modified": false
+        "normalized_sha256": "72569bbef355ea4c552a478f2ff6e9b15798151a3a84a631d70d1ccb8c165a78",
+        "worktree_modified": true
       }
     ],
     "verification": "static-candidate-mapping",
@@ -669,9 +669,9 @@
       {
         "path": "full_stack_lab/gateway/app/poisoning.py",
         "sha256": "c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06",
-        "committed_sha256": "bb63b3094567f96315bd302c996fe3fbecf0e608f080874ea1a0a19e9857dc96",
+        "committed_sha256": "c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06",
         "normalized_sha256": "c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06",
-        "worktree_modified": true
+        "worktree_modified": false
       }
     ],
     "verification": "static-candidate-mapping",
@@ -834,10 +834,10 @@
       },
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",
-        "sha256": "c583ce1df783d35c31cfa32ac714bc1da0194d43ede44128d273ef468b79d5f8",
+        "sha256": "72569bbef355ea4c552a478f2ff6e9b15798151a3a84a631d70d1ccb8c165a78",
         "committed_sha256": "c583ce1df783d35c31cfa32ac714bc1da0194d43ede44128d273ef468b79d5f8",
-        "normalized_sha256": "c583ce1df783d35c31cfa32ac714bc1da0194d43ede44128d273ef468b79d5f8",
-        "worktree_modified": false
+        "normalized_sha256": "72569bbef355ea4c552a478f2ff6e9b15798151a3a84a631d70d1ccb8c165a78",
+        "worktree_modified": true
       }
     ],
     "verification": "static-candidate-mapping",

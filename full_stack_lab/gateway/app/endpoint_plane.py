@@ -710,6 +710,9 @@ async def managed_event(endpoint_id: str | None, owner: str, kind: str, detail: 
 
 
 async def enrollment_token(owner: str) -> dict:
+    principal = await db.fetch_one("SELECT 1 FROM principals WHERE token=%s AND status='active'", (owner,))
+    if not principal:
+        raise PermissionError("활성 계정만 장치 등록 키트를 발급할 수 있습니다.")
     raw = secrets.token_urlsafe(32)
     expires = datetime.now(UTC) + timedelta(minutes=30)
     await db.execute(
@@ -723,6 +726,7 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
                              platform: str = "linux", local_sid: str | None = None,
                              helper_command: str | None = None) -> dict:
     endpoint_id = "managed-" + str(uuid.uuid4())
+    replaced = []
     async with db.transaction() as connection:
         grant = await (await connection.execute(
             """UPDATE endpoint_enrollment_tokens SET consumed_at=now()
@@ -731,6 +735,17 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
                  RETURNING owner_token""", (_hash_key(raw),))).fetchone()
         if not grant:
             raise PermissionError("설치 키트가 만료·소비됐거나 계정이 비활성 상태입니다. 새 키트를 받으세요.")
+        replaced = await (await connection.execute(
+            """UPDATE endpoint_agents SET status='revoked',issued_by=%s
+                 WHERE owner_token=%s AND hostname=%s AND platform=%s AND local_username=%s
+                   AND local_uid IS NOT DISTINCT FROM %s AND COALESCE(detail->>'local_sid','')=%s
+                   AND status='active' AND device_epoch IS NOT NULL
+                 RETURNING endpoint_id""",
+            (grant["owner_token"], grant["owner_token"], hostname, platform, username, uid, local_sid or ""))).fetchall()
+        for old in replaced:
+            await connection.execute(
+                "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'revoked',%s)",
+                (old["endpoint_id"], grant["owner_token"], Jsonb({"reason": "re-enrolled", "replacement": endpoint_id})))
         await connection.execute(
             """INSERT INTO endpoint_agents(endpoint_id,hostname,platform,agent_version,owner_token,
                  key_hash,key_prefix,scopes,status,issued_by,issued_at,managed_state,device_epoch,local_username,local_uid,detail)
@@ -745,6 +760,13 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
             "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'enrolled',%s)",
             (endpoint_id, grant["owner_token"], Jsonb({"platform": platform, "local_username": username,
                                                        "local_uid": uid, "local_sid": local_sid})))
+    if replaced:
+        from . import idp, mcp_sessions, upstream
+        for old in replaced:
+            old_id = old["endpoint_id"]
+            await idp.revoke_device_tokens(old_id)
+            await mcp_sessions.terminate(reason="device-re-enrolled", device_id=old_id)
+        await upstream.release_pool(None, grant["owner_token"], "device-re-enrolled")
     return await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
 
 
@@ -946,6 +968,8 @@ async def managed_failure(principal: dict, claims: dict, *, mint: bool = False) 
             or device["managed_state"] != "active" or device["device_epoch"] != claims.get("device_epoch")):
         return "활성 상태가 아니거나 이 사용자에게 등록되지 않은 엔드포인트입니다."
     if not device["heartbeat_at"] or (datetime.now(UTC) - device["heartbeat_at"]).total_seconds() >= HEARTBEAT_SECONDS:
+        # Refused while stale; not a sticky quarantine: a PC that slept would otherwise need an
+        # administrator every morning. Making it sticky is an operating-policy decision (D-160).
         return "엔드포인트 점검 보고가 만료되어 연결을 중단했습니다."
     policy = await managed_policy(device)
     if device["policy_hash"] != policy["policy_hash"] or (not mint and claims.get("device_policy") != policy["policy_hash"]):
