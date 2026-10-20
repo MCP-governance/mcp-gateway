@@ -1780,3 +1780,10 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 결정: 평가 결과에서 바이트 상한·항목 상한 보류는 의도된 cap 보류로 별도 보고하고 오탐률에서는 제외한다. 제품은 `result_items` 검사 시 텍스트 맨 앞 BOM을 제거한 복사본을 JSON 파서에 전달한다. 응답 원문, 256 KiB 바이트 상한, 1,000건 항목 상한, 일반 텍스트 줄 수 fallback 및 규칙 기반 주입 차단은 유지한다. D-149 출력 계약과 `INVISIBLE_TEXT` 규칙은 변경하지 않는다.
 - 근거: `00db46e`(D-125)의 결과 항목 집계와 공개 코퍼스 dev AST 재현에서 수정 전 정상 37/1,194 보류 중 34건은 항목 상한, 3건은 OWASP 보안 문서의 `OVERRIDE_RULES` 적중이었다. BOM 접두 JSON 사례 중 항목 집계가 실제 제한보다 과대인 표본이 수정 뒤 통과했고, D-125 상한에 여전히 걸린 표본은 유지됐다. 새 `result_fp_check.py`는 BOM JSON, BOM을 이용한 공격 문자열, 실제 다중 줄 항목 상한을 고정한다. 분석 정본·dev 집계·held-out 1회 결과·작업 보고는 [분석](../../research/llm-wiki/analysis/result-fp-1020/README.md), [보고](../../research/llm-wiki/status/reports/2026-10-20-result-fp.md)에 둔다.
 - 한계: OWASP 예시의 3건은 표본에서 정상 레이블이지만 실제 지시 문구와 구분할 안전한 문맥 규칙을 입증하지 못해 그대로 보류한다. 코퍼스는 같은 출처 분할이며 독립 평가가 아니다. AST 격리는 Python 3.10 표준 정규식 경로로, 게이트웨이 이미지의 네이티브 스캐너 동등성을 뜻하지 않는다. 실기기·상용/OSS MCP·Claude/Codex·업스트림 효과는 기기 시험 전까지 미확인이다.
+
+## D-175 승인된 로컬 MCP는 게이트웨이를 거쳐 장치의 root 실행기가 격리 컨테이너로 실행한다 (2026-10-20, 설계 초안)
+
+- 문제: DEV-73(방향 갱신 10-20)은 승인된 로컬 MCP를 관리 계정 밖 격리 실행으로 허용해야 한다. 관리 계정은 docker 그룹이 금지되고 AppArmor가 bwrap을 막으며, 별도 판정 경로를 만들면 원격 호출과 판정·원장이 갈라진다.
+- 결정: 하네스는 원격 서버와 같은 게이트웨이 URL로 호출하고, `deployment=local` 서버의 upstream 단계만 호출 토큰의 장치로 작업을 보낸다. 장치의 엔드포인트 에이전트(root)가 바깥 방향 long-poll로 자기 장치 작업만 받아, 정책 해시가 맞는 매니페스트의 이미지 digest를 rootful podman `--user <관리 계정 UID> --network=none --read-only --cap-drop=ALL --security-opt=no-new-privileges --pull=never`와 홈 아래 허용 폴더 마운트로 실행한다. 계약은 기기 실행기가 같은 digest로 관찰하고 사람이 승인한다. 관리 계정의 rootless podman·bubblewrap, ToolHive, PC 수신 엔드포인트는 기각했다.
+- 근거: [DEV-73 설계](../../research/llm-wiki/analysis/direction-1020/dev73-local-isolated-run.md), MCP 공식 Local Server Security, [ToolHive 분석](../../research/llm-wiki/analysis/oss-deep/toolhive-runtime.md).
+- 한계: rootful 엔진이라 컨테이너 탈출은 root가 된다(userns·idmap 강화는 실측 후). 비밀이 필요한 로컬 서버와 Windows는 범위 밖. 로컬 파일이 게이트웨이를 거치는 지연이 생긴다.
