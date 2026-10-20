@@ -34,7 +34,7 @@ from urllib.parse import urlsplit
 
 from psycopg.types.json import Jsonb
 
-from . import db
+from . import db, server_egress
 from .event_correlation import correlation_result
 
 AGENT_PROTOCOL = "1"
@@ -1271,7 +1271,12 @@ async def correlate(*, decision_id: int | None = None, kind: str | None = None, 
                     item["at"] = row[when]
                     item["event_user_token"] = row["event_user_token"]
                     records.append(item)
-        return correlation_result(call, intent, records, bound=bool(device), window_seconds=window)
+        result = correlation_result(call, intent, records, bound=bool(device), window_seconds=window)
+        egress = await server_egress.for_decision(call, intent)
+        result['records'].extend(egress.pop('records'))
+        result['records'].sort(key=lambda row: datetime.fromisoformat(row['at']), reverse=True)
+        result['server_egress'] = egress
+        return result
     if kind not in RECORD_KINDS or record_id is None:
         raise ValueError("알 수 없는 기록 종류입니다.")
     table, alias, when = RECORD_KINDS[kind]
