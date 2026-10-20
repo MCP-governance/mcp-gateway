@@ -87,7 +87,7 @@ class Session:
         subprocess.run([engine, "rm", "-f", self.name], capture_output=True)
         self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                         stderr=subprocess.DEVNULL, text=True, bufsize=1)
-        self.lines, self.next_id = queue.Queue(), 0
+        self.lines, self.next_id, self.used = queue.Queue(), 0, time.monotonic()
         threading.Thread(target=self._read, daemon=True).start()
         self.hello = self.request("initialize", {"protocolVersion": PROTOCOL, "capabilities": {},
                                                   "clientInfo": {"name": "mint-local-runner", "version": "1"}}, 60)
@@ -149,8 +149,10 @@ def run(config, current_policy, request, log):
                     image = item["manifest"]["image"]
                     if IMAGE.fullmatch(image) and subprocess.run([engine, "image", "inspect", image], capture_output=True).returncode:
                         subprocess.run([engine, "pull", image], capture_output=True, timeout=600)
-            for key in [k for k in sessions if k[0] not in approved
-                        or hashlib.sha256(canonical(approved[k[0]]["manifest"])).hexdigest() != k[1]]:
+            # Withdrawn or changed; an observation of a server not yet registered lives one idle minute.
+            for key in [k for k, v in sessions.items()
+                        if (k[0] in approved and hashlib.sha256(canonical(approved[k[0]]["manifest"])).hexdigest() != k[1])
+                        or (k[0] not in approved and time.monotonic() - v.used > 60)]:
                 sessions.pop(key).stop()  # withdrawn or changed: the container goes with it
                 log({"local_runner": "stopped", "server_id": key[0]})
             job = request(config, "/api/endpoint/local-jobs?wait=10").get("job")
@@ -158,19 +160,23 @@ def run(config, current_policy, request, log):
                 continue
             answer = {"error": "실행하지 않았습니다"}
             try:
-                item = approved.get(job["server_id"])
-                manifest = item and item["manifest"]
-                digest = manifest and hashlib.sha256(canonical(manifest)).hexdigest()
+                manifest, digest = job["manifest"], hashlib.sha256(canonical(job["manifest"])).hexdigest()
                 if not engine:
                     raise ValueError("컨테이너 엔진이 없습니다")
-                if (not item or digest != job["manifest_sha256"] or manifest.get("server_id") != job["server_id"]
-                        or (job["server_id"], digest) not in verified):
+                # The signature is the approval; the gateway only carries it. A first observation runs
+                # before the server is in the policy, so the policy list is not the gate here.
+                if digest != job["manifest_sha256"] or manifest.get("server_id") != job["server_id"]:
                     raise ValueError("서명된 승인 매니페스트가 아닙니다")
+                if (job["server_id"], digest) not in verified:
+                    if not signed(manifest, job["signature"], config.get("manifest_pubkey", "")):
+                        raise ValueError("서명된 승인 매니페스트가 아닙니다")
+                    verified.add((job["server_id"], digest))
                 limit = max(1.0, datetime.fromisoformat(job["deadline"]).timestamp() - time.time())
                 key = (job["server_id"], digest)
                 if key not in sessions or not sessions[key].alive():
                     sessions[key] = Session(engine, manifest, account)
                 session, params = sessions[key], job["params"] or {}
+                session.used = time.monotonic()
                 if job["method"] == "initialize":
                     answer = {"result": session.hello}
                 elif job["method"] == "tools/list" and set(params) <= {"cursor"}:

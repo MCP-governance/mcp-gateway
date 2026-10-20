@@ -753,15 +753,15 @@ async def registry_check(server_id: str, user: dict = Depends(admin_caller)) -> 
 
 # ── 승인한 서버를 Console에서 Gateway에 등록 (D-49) ──────────────────────────────
 class LocalRun(StrictModel):
-    """DEV-73: the signed manifest an approver produced offline, and the device that observes the contract."""
+    """DEV-73: the manifest and the signature an approver produced offline."""
     manifest: dict
     signature: str = Field(min_length=40, max_length=200)
-    observer_device: str = Field(min_length=1, max_length=120)
 
 
 class RegistryDiscover(StrictModel):
     endpoint: str = Field(min_length=8, max_length=500)
     local: LocalRun | None = None
+    intake_id: str = Field(default="", max_length=64)  # a local run is observed on this applicant's managed PC
 
 
 
@@ -791,7 +791,8 @@ class RegistryRegister(ResidencyFields):
 async def registry_discover(request: RegistryDiscover, user: dict = Depends(admin_caller)) -> dict:
     """등록 전 검토용: 엔드포인트가 지금 광고하는 도구와 그 계약 해시. 아무것도 기록하지 않는다."""
     try:
-        return await core.discover_for_registration(request.endpoint, request.local and request.local.model_dump())
+        return await core.discover_for_registration(request.endpoint, request.local and request.local.model_dump(),
+                                                    request.intake_id)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     except Exception as exc:

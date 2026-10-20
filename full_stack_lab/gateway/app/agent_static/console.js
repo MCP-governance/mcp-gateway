@@ -2632,15 +2632,24 @@ const ACTIONS = {
       toast(result.message); reload(); return;
     }
     // Approval says the service may be used; registration fixes which tools, at what grade, until when.
+    const pcRun = !el.dataset.review && el.dataset.kind === "repository";
     const first = await ask({ title: `${el.dataset.review ? "계약 검토" : "게이트웨이 등록"} · ${el.dataset.name}`,
-      fields: field.text("endpoint", "MCP 주소", `type="url" required pattern="https?://.+" maxlength="500" placeholder="https://…/mcp" ${el.dataset.review ? "readonly" : ""}`, el.dataset.review ? el.dataset.repo : (el.dataset.endpoint || null)),
+      fields: html`${field.text("endpoint", "MCP 주소", `type="url" ${pcRun ? "" : "required"} pattern="https?://.+" maxlength="500" placeholder="https://…/mcp" ${el.dataset.review ? "readonly" : ""}`, el.dataset.review ? el.dataset.repo : (el.dataset.endpoint || null))}
+        ${pcRun ? field.area("local_manifest", "PC 격리 실행 매니페스트", 'maxlength="20000"') : ""}`,
       confirm: "도구 불러오기" });
     if (!first) return;
-    const found = await gw("registry/discover", { method: "POST", body: { endpoint: first.get("endpoint").trim() } });
-    const suggested = el.dataset.repo.split("/").slice(-2).join("-").toLowerCase()
+    let local = null;
+    if (pcRun && String(first.get("local_manifest") || "").trim()) {
+      try { local = JSON.parse(first.get("local_manifest")); } catch { toast("매니페스트는 올바른 JSON이어야 합니다.", true); return; }
+      if (!local?.manifest?.server_id || !local.signature) { toast("서명된 매니페스트가 필요합니다.", true); return; }
+    } else if (!first.get("endpoint").trim()) { toast("MCP 주소나 PC 격리 실행 매니페스트가 필요합니다.", true); return; }
+    const found = await gw("registry/discover", { method: "POST", body: local
+      ? { endpoint: `local:${local.manifest.server_id}`, local: { manifest: local.manifest, signature: local.signature }, intake_id: el.dataset.id }
+      : { endpoint: first.get("endpoint").trim() } });
+    const suggested = local ? local.manifest.server_id : el.dataset.repo.split("/").slice(-2).join("-").toLowerCase()
       .replace(/[^a-z0-9]+/g, "-").replace(/^[^a-z]+|-+$/g, "").slice(0, 31) || "mcp";
     const fd = await ask({ title: `도구 승인 · ${found.server_name || el.dataset.name} ${found.version}`,
-      fields: html`${field.text("server_id", "서버 ID", `required pattern="[a-z][a-z0-9\\-]{1,30}" maxlength="31" value="${suggested}"`)}
+      fields: html`${field.text("server_id", "서버 ID", `required pattern="[a-z][a-z0-9\\-]{1,30}" maxlength="31" value="${suggested}" ${local ? "readonly" : ""}`)}
         <p class="mono small">${found.endpoint}<br />계약 해시 ${found.catalog_hash}</p>
         <div class="grid c2">${field.select("data_class", "데이터 등급", DATA_CLASS, "nonimportant")}${field.select("valid_days", "사용 기한", VALIDITY, "90")}</div>
         <div class="grid c2">${field.text("processing_countries", "처리 국가 코드", 'maxlength="1000" placeholder="KR, US"')}${field.text("storage_countries", "저장 국가 코드", 'maxlength="1000" placeholder="KR, US"')}</div>
@@ -2671,6 +2680,7 @@ const ACTIONS = {
       server_id: fd.get("server_id").trim(), endpoint: found.endpoint, catalog_hash: found.catalog_hash, tools,
       data_class: fd.get("data_class"), valid_days: Number(fd.get("valid_days")), poisoning_ack: fd.get("poisoning_ack") === "on",
       tool_reviews: toolReviews,
+      ...(local ? { local: { manifest: local.manifest, signature: local.signature } } : {}),
       residency: { processing_countries: fd.get("processing_countries").split(",").map((c) => c.trim().toUpperCase()).filter(Boolean),
         storage_countries: fd.get("storage_countries").split(",").map((c) => c.trim().toUpperCase()).filter(Boolean),
         processor: fd.get("processor").trim(), evidence_ref: fd.get("evidence_ref").trim(), transfer_basis: fd.get("transfer_basis").trim() },

@@ -1560,6 +1560,9 @@ class IntakeRegistration(ResidencyFields):
     valid_days: int = Field(ge=1, le=365)
     poisoning_ack: bool = False
     tool_reviews: dict[str, ToolReview] = Field(min_length=1, max_length=300)
+    # DEV-73: signed manifest for a run on employees' PCs. Excluded from model_dump so a reviewed
+    # remote registration still compares equal to what was approved.
+    local: dict | None = Field(default=None, exclude=True)
 
 
 class RemoteContractReview(IntakeRegistration):
@@ -1676,6 +1679,8 @@ async def register_mcp_request(request_id: UUID, request: IntakeRegistration,
             "purpose": row["purpose"], "owner_department": row.get("department") or "",
             "intake_id": str(row["id"]), "exit_terms": exit_term_flags(row),
             "supplier_assurance": (row.get("evidence") or {}).get("supplier_assurance") or {}}
+    if request.local is not None:
+        body["local"] = request.local
     result = await gateway_proxy("/api/registry/servers", authorization, "POST", body, timeout=120)
     await db.execute("UPDATE mcp_intake_requests SET registered_server_id=%s, updated_at=now() WHERE id=%s",
                      (request.server_id, request_id))

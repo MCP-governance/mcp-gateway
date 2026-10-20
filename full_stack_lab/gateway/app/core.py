@@ -541,11 +541,17 @@ def suggested_action(annotations: dict | None) -> str:
     return "r" if hints.get("readonlyhint") else "x" if hints.get("destructivehint") or hints.get("openworldhint") else "w"
 
 
-async def discover_for_registration(endpoint: str, local: dict | None = None) -> dict:
+async def discover_for_registration(endpoint: str, local: dict | None = None, intake_id: str = "") -> dict:
     if local:
         server_id = local_jobs.server_of(endpoint) or ""
+        try:
+            intake = await db.fetch_one("SELECT submitted_by FROM mcp_intake_requests WHERE id=%s", (uuid.UUID(intake_id),))
+        except ValueError:
+            intake = None
+        if not intake:
+            raise ValueError("로컬 실행 계약은 도입 신청자의 PC에서 확인합니다. 신청을 지정하세요.")
         token = local_jobs.registering.set(local_jobs.local_block(
-            local["manifest"], local["signature"], local["observer_device"], server_id))
+            local["manifest"], local["signature"], await local_jobs.applicant_device(intake["submitted_by"]), server_id))
         try:
             found = await upstream.discover(endpoint)
         finally:
@@ -566,7 +572,6 @@ async def register_server(request: dict, actor: str) -> dict:
         # DEV-73: the server runs on each caller's own device under a signed manifest.
         if request["endpoint"] != local_jobs.PREFIX + server_id:
             raise ValueError(f"로컬 실행 서버는 {local_jobs.PREFIX}{server_id} 주소로 등록합니다.")
-        local = local_jobs.local_block(local["manifest"], local["signature"], local["observer_device"], server_id)
         endpoint = request["endpoint"]
     else:
         endpoint = registration_endpoint(request["endpoint"])
@@ -618,6 +623,9 @@ async def register_server(request: dict, actor: str) -> dict:
     runtime = None
     if local and intake["intake_kind"] != "repository":
         raise ValueError("로컬 실행은 검증한 구현 저장소 신청으로만 등록합니다.")
+    if local:
+        local = local_jobs.local_block(local["manifest"], local["signature"],
+                                       await local_jobs.applicant_device(intake["submitted_by"]), server_id)
     if intake["intake_kind"] == "repository" and not local:
         # A source the solution runs itself is registered at the address of that run, so the
         # registration names the image built from the approved commit (DEV-38).

@@ -397,6 +397,9 @@ CREATE TABLE IF NOT EXISTS local_jobs (
   device_id text NOT NULL,
   server_id text NOT NULL,
   manifest_sha256 text NOT NULL,
+  -- The signed manifest travels with the job: the device trusts the signature, not this row.
+  manifest jsonb NOT NULL,
+  signature text NOT NULL,
   method text NOT NULL CHECK (method IN ('initialize', 'tools/list', 'tools/call')),
   params jsonb NOT NULL DEFAULT '{}',
   state text NOT NULL DEFAULT 'queued' CHECK (state IN ('queued', 'claimed', 'done', 'expired')),

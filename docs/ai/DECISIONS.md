@@ -1781,4 +1781,5 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 결정: 하네스는 원격 서버와 같은 게이트웨이 URL로 호출하고, `deployment=local` 서버의 upstream 단계만 호출 토큰의 장치로 작업을 보낸다. 장치의 엔드포인트 에이전트(root)가 바깥 방향 long-poll로 자기 장치 작업만 받아, 정책 해시가 맞는 매니페스트의 이미지 digest를 rootful podman `--user <관리 계정 UID> --network=none --read-only --cap-drop=ALL --security-opt=no-new-privileges --pull=never`와 홈 아래 허용 폴더 마운트로 실행한다. 계약은 기기 실행기가 같은 digest로 관찰하고 사람이 승인한다. 관리 계정의 rootless podman·bubblewrap, ToolHive, PC 수신 엔드포인트는 기각했다.
 - 근거: [DEV-73 설계](../../research/llm-wiki/analysis/direction-1020/dev73-local-isolated-run.md), MCP 공식 Local Server Security, [ToolHive 분석](../../research/llm-wiki/analysis/oss-deep/toolhive-runtime.md).
 - C10 반영: 로컬 실행 사유 필수·원격 API 래퍼 거부, 홈 루트·점 디렉터리·심볼릭 링크 마운트 금지, 게이트웨이 밖 키로 매니페스트 서명·장치 검증, 이미지 서명 필수, 컨테이너 정지를 종료 증거에 포함.
+- 1차 구현(10-20): 작업 행이 서명된 매니페스트를 실어 가고 장치는 고정 공개키로만 확인한다(등록 전 관찰도 같은 경로, 관찰 장치는 신청자의 활성 관리형 PC). 이미지 서명·기기 빌드는 2차. 세부와 한계는 설계 문서 9장.
 - 한계: rootful 엔진이라 컨테이너 탈출은 root가 된다(userns·idmap 강화는 실측 후). 비밀이 필요한 로컬 서버와 Windows는 범위 밖. 로컬 파일이 게이트웨이를 거치는 지연이 생긴다.

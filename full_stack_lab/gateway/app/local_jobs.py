@@ -99,6 +99,16 @@ def verify(manifest: dict, signature: str) -> bool:
     return True
 
 
+async def applicant_device(token: str) -> str:
+    """The contract is observed where the applicant will run it: their active managed PC."""
+    row = await db.fetch_one(
+        """SELECT endpoint_id FROM endpoint_agents WHERE owner_token=%s AND status='active' AND managed_state='active'
+           AND local_uid IS NOT NULL ORDER BY heartbeat_at DESC NULLS LAST LIMIT 1""", (token,))
+    if not row:
+        raise ValueError("신청자의 활성 관리형 PC가 없어 로컬 실행 계약을 확인할 수 없습니다.")
+    return row["endpoint_id"]
+
+
 def local_block(manifest: dict, signature: str, observer_device: str, server_id: str) -> dict:
     errors = manifest_errors(manifest, server_id)
     if errors:
@@ -121,15 +131,14 @@ async def _device(device_id: str | None) -> dict:
     return device
 
 
-async def exchange(device_id: str, server_id: str, manifest_sha256: str, method: str, params: dict,
-                   timeout: float) -> dict:
+async def exchange(device_id: str, local: dict, method: str, params: dict, timeout: float) -> dict:
     await _device(device_id)
     job = str(uuid.uuid4())
     await db.execute(
-        """INSERT INTO local_jobs(id, device_id, server_id, manifest_sha256, method, params, deadline)
-           VALUES (%s,%s,%s,%s,%s,%s,%s)""",
-        (job, device_id, server_id, manifest_sha256, method, Jsonb(params),
-         datetime.now(UTC) + timedelta(seconds=timeout)))
+        """INSERT INTO local_jobs(id, device_id, server_id, manifest_sha256, manifest, signature, method, params, deadline)
+           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+        (job, device_id, local["manifest"]["server_id"], local["manifest_sha256"], Jsonb(local["manifest"]),
+         local["signature"], method, Jsonb(params), datetime.now(UTC) + timedelta(seconds=timeout)))
     loop = asyncio.get_running_loop()
     end = loop.time() + timeout
     while loop.time() < end:
@@ -150,14 +159,14 @@ async def exchange(device_id: str, server_id: str, manifest_sha256: str, method:
 class LocalClient:
     """The subset of the SDK client _call_upstream and discovery use."""
 
-    def __init__(self, device_id: str, server_id: str, manifest_sha256: str, timeout: float):
-        self.device_id, self.server_id, self.manifest_sha256, self.timeout = device_id, server_id, manifest_sha256, timeout
+    def __init__(self, device_id: str, local: dict, timeout: float):
+        self.device_id, self.local, self.timeout = device_id, local, timeout
         self.protocol_version = None
         self.server_info = None
         self.reused = False
 
     async def _send(self, method: str, params: dict) -> dict:
-        return await exchange(self.device_id, self.server_id, self.manifest_sha256, method, params, self.timeout)
+        return await exchange(self.device_id, self.local, method, params, self.timeout)
 
     async def start(self) -> None:
         hello = await self._send("initialize", {})
@@ -190,7 +199,8 @@ async def session(endpoint: str, timeout: float, device_id: str | None, *, disco
     target = local.get("observer_device") if discovery else device_id
     if not target:
         raise NotStarted("로컬 실행은 관리형 엔드포인트에서 호출해야 합니다.")
-    client = LocalClient(target, server_id, local["manifest_sha256"], timeout)
+    # The first observation may include pulling the image on the device.
+    client = LocalClient(target, local, max(timeout, 100) if discovery else timeout)
     await client.start()
     yield client
 
@@ -205,7 +215,7 @@ async def claim(device: dict, wait: float) -> dict | None:
             """UPDATE local_jobs SET state='claimed', claimed_at=now()
                WHERE id = (SELECT id FROM local_jobs WHERE device_id=%s AND state='queued' AND deadline > now()
                            ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
-               RETURNING id, server_id, manifest_sha256, method, params, deadline""",
+               RETURNING id, server_id, manifest_sha256, manifest, signature, method, params, deadline""",
             (device["endpoint_id"],))
         if row or loop.time() >= end:
             return row and {**row, "id": str(row["id"]), "deadline": row["deadline"].isoformat()}
