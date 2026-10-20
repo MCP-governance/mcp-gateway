@@ -1537,7 +1537,7 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                     # Stored claims passed ingress once; approval does not undo a later logout or disposal.
                     try:
                         claims = pac_payload.get("transport_claims") or {}
-                        revoked = disposal.blocked(jti=claims.get("jti")) or bool(await db.fetch_one(
+                        revoked = disposal.blocked(jti=claims.get("jti"), raise_errors=True) or bool(await db.fetch_one(
                             "SELECT jti FROM agent_revoked_tokens WHERE jti=%s", (claims.get("jti"),)))
                     except Exception:
                         problem, blocked_verdict = "Requester revocation check unavailable", local_verdict(

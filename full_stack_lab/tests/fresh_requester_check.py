@@ -224,7 +224,7 @@ class FreshRequesterChecks(unittest.IsolatedAsyncioTestCase):
     async def test_jti_revoked_after_approval_before_dispatch(self):
         self.after_discovery = lambda: setattr(self, "revoked", True)
         await self.blocked("P-INPUT-001")
-        self.disposal.blocked.assert_called_once_with(jti=self.claims["jti"])
+        self.disposal.blocked.assert_called_once_with(jti=self.claims["jti"], raise_errors=True)
 
     async def test_signed_disposal_blocks_without_database_revocation(self):
         self.after_discovery = lambda: setattr(self, "signed_block", True)
@@ -272,6 +272,7 @@ class FreshRequesterChecks(unittest.IsolatedAsyncioTestCase):
     async def test_disposal_read_exception_is_fail_closed(self):
         self.disposal.blocked.side_effect = OSError("signed list unavailable")
         await self.blocked("P-CONTROL-FAIL-CLOSED")
+        self.disposal.blocked.assert_called_once_with(jti=self.claims["jti"], raise_errors=True)
 
     async def test_healthy_requester_executes_once_on_approval(self):
         result = await self.run_approval()
@@ -280,7 +281,17 @@ class FreshRequesterChecks(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result["upstream_attempted"])
         self.client.call_tool.assert_awaited_once_with("update", self.payload["arguments"])
         self.dispatch.record.assert_awaited_once()
-        self.disposal.blocked.assert_called_once_with(jti=self.claims["jti"])
+        self.disposal.blocked.assert_called_once_with(jti=self.claims["jti"], raise_errors=True)
+
+
+class DisposalFailureChecks(unittest.TestCase):
+    def test_blocked_preserves_default_fail_closed_and_can_surface_failure(self):
+        blocked = production("disposal.py", {"blocked"}, {
+            "DIRECTORY": Path("unused"), "IntegrityError": type("IntegrityError", (RuntimeError,), {}),
+            "locked": lambda _: nullcontext(), "read": Mock(side_effect=OSError("unavailable"))}).blocked
+        self.assertTrue(blocked(jti="requester"))
+        with self.assertRaisesRegex(OSError, "unavailable"):
+            blocked(jti="requester", raise_errors=True)
 
 
 if __name__ == "__main__":

@@ -140,7 +140,7 @@ def remember(kind, subject, server_id="", detail=None, directory=None):
         _append(directory, records, {"kind": kind, "subject": subject, "server_id": server_id, "detail": detail or {}})
 
 
-def blocked(jti=None, server_id=None, refresh=None):
+def blocked(jti=None, server_id=None, refresh=None, *, raise_errors=False):
     try:
         with locked(DIRECTORY):
             records = read()
@@ -149,6 +149,8 @@ def blocked(jti=None, server_id=None, refresh=None):
                    or (server_id is not None and r["kind"] in {"server", "credential"}
                        and (r["server_id"] or r["subject"]) == server_id) for r in records)
     except (IntegrityError, OSError):
+        if raise_errors:
+            raise
         return True
 
 
