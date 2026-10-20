@@ -1,0 +1,106 @@
+{
+  "scope": "authored-regression-and-repository-OSS-snapshot",
+  "split": "local",
+  "candidate_sha256": "c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06",
+  "baseline_sha256": "bb63b3094567f96315bd302c996fe3fbecf0e608f080874ea1a0a19e9857dc96",
+  "catalog_snapshot_sha256": "e86eb416fe87acae3d12e261d15fb3d6815003ecd9405599f9655aed467842b8",
+  "servers": {
+    "ghidra": 28,
+    "git": 28,
+    "sqlite": 2,
+    "blender": 9,
+    "playwright": 25
+  },
+  "groups": {
+    "rot13": {
+      "before": {
+        "tp": 0,
+        "fn": 1,
+        "fp": 0,
+        "tn": 7,
+        "recall": 0.0,
+        "precision": null,
+        "fp_rate": 0.0
+      },
+      "after": {
+        "tp": 1,
+        "fn": 0,
+        "fp": 0,
+        "tn": 7,
+        "recall": 1.0,
+        "precision": 1.0,
+        "fp_rate": 0.0
+      }
+    },
+    "reversed": {
+      "before": {
+        "tp": 0,
+        "fn": 1,
+        "fp": 0,
+        "tn": 7,
+        "recall": 0.0,
+        "precision": null,
+        "fp_rate": 0.0
+      },
+      "after": {
+        "tp": 1,
+        "fn": 0,
+        "fp": 0,
+        "tn": 7,
+        "recall": 1.0,
+        "precision": 1.0,
+        "fp_rate": 0.0
+      }
+    },
+    "letter-spacing": {
+      "before": {
+        "tp": 0,
+        "fn": 1,
+        "fp": 0,
+        "tn": 7,
+        "recall": 0.0,
+        "precision": null,
+        "fp_rate": 0.0
+      },
+      "after": {
+        "tp": 1,
+        "fn": 0,
+        "fp": 0,
+        "tn": 7,
+        "recall": 1.0,
+        "precision": 1.0,
+        "fp_rate": 0.0
+      }
+    },
+    "leetspeak": {
+      "before": {
+        "tp": 0,
+        "fn": 1,
+        "fp": 0,
+        "tn": 7,
+        "recall": 0.0,
+        "precision": null,
+        "fp_rate": 0.0
+      },
+      "after": {
+        "tp": 1,
+        "fn": 0,
+        "fp": 0,
+        "tn": 7,
+        "recall": 1.0,
+        "precision": 1.0,
+        "fp_rate": 0.0
+      }
+    }
+  },
+  "catalog_snapshot": {
+    "before": {
+      "n": 92,
+      "fp": 0
+    },
+    "after": {
+      "n": 92,
+      "fp": 0
+    }
+  }
+}

@@ -668,10 +668,10 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/poisoning.py",
-        "sha256": "bb63b3094567f96315bd302c996fe3fbecf0e608f080874ea1a0a19e9857dc96",
+        "sha256": "c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06",
         "committed_sha256": "bb63b3094567f96315bd302c996fe3fbecf0e608f080874ea1a0a19e9857dc96",
-        "normalized_sha256": "bb63b3094567f96315bd302c996fe3fbecf0e608f080874ea1a0a19e9857dc96",
-        "worktree_modified": false
+        "normalized_sha256": "c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06",
+        "worktree_modified": true
       }
     ],
     "verification": "static-candidate-mapping",
