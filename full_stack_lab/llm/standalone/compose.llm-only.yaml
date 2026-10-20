@@ -1,0 +1,5 @@
+# MCP 집계를 끈 프로필: docker compose -f compose.yaml -f compose.llm-only.yaml up -d litellm
+services:
+  litellm:
+    volumes:
+      - ./litellm-llm-only.yaml:/lab/litellm.yaml:ro

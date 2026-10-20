@@ -10,16 +10,20 @@ mkdir -p secrets
 chmod 644 secrets/*   # 컨테이너 비root가 읽는 Docker secret: 디렉터리 0700이 외부 접근을 막는다
 chmod 700 secrets
 digest() { docker image inspect "$1" --format '{{index .RepoDigests 0}}' 2>/dev/null | sed 's/.*@//' || true; }
-for pair in POSTGRES:postgres:18-alpine OLLAMA:ollama/ollama:0.40.3 LITELLM:ghcr.io/berriai/litellm-database:v1.105.0; do
+for pair in POSTGRES:postgres:18-alpine OLLAMA:ollama/ollama:0.40.3 LITELLM:ghcr.io/berriai/litellm-database:v1.105.0 CADDY:caddy:2.11.4-alpine; do
   var="${pair%%:*}_DIGEST"; ref="${pair#*:}"
   d="$(digest "$ref")"; [[ -n "$d" ]] || { docker pull -q "$ref" >/dev/null; d="$(digest "$ref")"; }
   export "$var=$d"
 done
+# 제품 게이트웨이의 공개 CA 인증서(비밀 아님)와 주소. LiteLLM의 유일한 출구(edge-proxy)가 이것으로 게이트웨이 TLS를 검증한다.
+: "${GATEWAY_ADDR:?GATEWAY_ADDR=<게이트웨이 IP:443> 를 지정하세요}"; export GATEWAY_ADDR
+[[ -s secrets/gateway-ca.pem ]] || docker cp "${GATEWAY_CADDY_CONTAINER:-mcpgw-55e075465e-caddy-1}:/data/caddy/pki/authorities/local/root.crt" secrets/gateway-ca.pem
+chmod 644 secrets/gateway-ca.pem
 docker compose up -d postgres ollama
 # 모델은 인터넷이 열린 일회용 컨테이너로 한 번만 받는다. 런타임 Ollama는 internal 망뿐이라 밖으로 못 나간다.
 if ! docker compose exec -T ollama ollama list 2>/dev/null | grep -q '^qwen3:0.6b'; then
   docker run --rm -v mint-llm_ollama_models:/root/.ollama --entrypoint /bin/sh "ollama/ollama:0.40.3@${OLLAMA_DIGEST}" \
     -c 'ollama serve >/tmp/o.log 2>&1 & for i in $(seq 1 30); do ollama list >/dev/null 2>&1 && break; sleep 1; done; ollama pull qwen3:0.6b'
 fi
-docker compose up -d litellm
-echo "LiteLLM: http://127.0.0.1:${LITELLM_PORT:-4010} (기기 loopback)"
+docker compose up -d litellm edge-proxy
+echo "LiteLLM: http://127.0.0.1:${LITELLM_PORT:-4010} (기기 loopback, edge-proxy 경유)"

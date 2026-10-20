@@ -1,5 +1,10 @@
-# 제품 스택과 따로 세우는 LiteLLM 프록시(LLM 경로 + MCP 집계 경로 점검용).
-# compose 프로젝트·망·볼륨을 공유하지 않는다. LiteLLM은 loopback에만 게시하고, 하네스 시험 컨테이너는 같은 edge 망에서 붙는다.
+# 제품 스택과 따로 세우는 LiteLLM 프록시(LLM 게이트웨이 모드 + 게이트웨이 전용 MCP 집계).
+# compose 프로젝트·망·볼륨을 공유하지 않는다.
+#
+# 망 구조(D-190): LiteLLM은 internal 망(model·data·inner)에만 붙어 밖으로 나가는 길이 없다.
+#   직원 쪽 입구  edge-proxy:4000  -> litellm:4000       (loopback 게시, 하네스 컨테이너는 edge 망)
+#   LiteLLM 출구  edge-proxy:8081  -> 제품 게이트웨이 /mcp/*  (TLS 검증, 그 밖의 경로·호스트는 403)
+# 그래서 LiteLLM의 MCP 집계는 설정 실수나 관리자 API 등록이 있어도 제품 게이트웨이 말고는 닿을 곳이 없다.
 name: mint-llm
 
 services:
@@ -26,7 +31,7 @@ services:
     restart: unless-stopped
     environment:
       OLLAMA_HOST: 0.0.0.0:11434
-      OLLAMA_CONTEXT_LENGTH: "8192"
+      OLLAMA_CONTEXT_LENGTH: "16384"
       OLLAMA_NUM_PARALLEL: "1"
       OLLAMA_MAX_LOADED_MODELS: "1"
       OLLAMA_KEEP_ALIVE: 10m
@@ -55,9 +60,7 @@ services:
     volumes:
       - ./litellm.yaml:/lab/litellm.yaml:ro
       - ./entrypoint.sh:/lab/entrypoint.sh:ro
-    ports:
-      - "127.0.0.1:${LITELLM_PORT:-4010}:4000"
-    networks: [model, data, edge]
+    networks: [model, data, inner]
     depends_on:
       postgres: {condition: service_healthy}
       ollama: {condition: service_healthy}
@@ -70,6 +73,27 @@ services:
       timeout: 4s
       retries: 60
 
+  edge-proxy:
+    image: caddy:2.11.4-alpine@${CADDY_DIGEST:?}
+    restart: unless-stopped
+    environment:
+      GATEWAY_ADDR: ${GATEWAY_ADDR:?제품 게이트웨이 주소(예 100.83.175.111:443)}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./secrets/gateway-ca.pem:/etc/caddy/gateway-ca.pem:ro
+    ports:
+      - "127.0.0.1:${LITELLM_PORT:-4010}:4000"
+    networks: [inner, edge]
+    depends_on:
+      litellm: {condition: service_healthy}
+    mem_limit: 128m
+    read_only: true
+    tmpfs: [/data, /config]
+    # caddy 실행 파일에 파일 capability(net_bind_service)가 있어 경계 집합에서 빼면 exec가 거부된다. 쓰는 포트는 모두 1024 이상.
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
+
 secrets:
   postgres_password: {file: ./secrets/postgres_password}
   litellm_master_key: {file: ./secrets/litellm_master_key}
@@ -78,6 +102,7 @@ secrets:
 networks:
   model: {internal: true}
   data: {internal: true}
+  inner: {internal: true}
   edge: {}
 
 volumes:
