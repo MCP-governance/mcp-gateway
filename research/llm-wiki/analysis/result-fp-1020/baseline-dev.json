@@ -1,0 +1,49 @@
+{
+  "benign_strata": {
+    "cpython|code-file|hold:item_cap": 8,
+    "cpython|docs-page|hold:item_cap": 1,
+    "k8s|docs-page-korean|hold:item_cap": 2,
+    "k8s|docs-page|hold:item_cap": 1,
+    "owasp|security-writing-page|rule:지시 무시, 정책 우회 지시": 1,
+    "owasp|security-writing-snippet|rule:정책 우회 지시": 1,
+    "owasp|security-writing-snippet|rule:지시 무시": 1,
+    "pokeapi|bom-prefixed-file|hold:item_cap": 12,
+    "pokeapi|json-api-response|hold:item_cap": 10
+  },
+  "core_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+  "pass": {
+    "attack": 2758,
+    "benign": 1157
+  },
+  "poisoning_sha256": "c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06",
+  "reasons": {
+    "attack:rule:대화 경계 위조": 69,
+    "attack:rule:대화 경계 위조, 보이지 않는 문자": 1,
+    "attack:rule:보이지 않는 문자": 83,
+    "attack:rule:보이지 않는 문자, 대화 경계 위조": 6,
+    "attack:rule:보이지 않는 문자, 지시 무시": 12,
+    "attack:rule:보이지 않는 문자, 지시 무시, 대화 경계 위조": 2,
+    "attack:rule:사용자에게 숨김": 7,
+    "attack:rule:사용자에게 숨김, 역할 탈취": 1,
+    "attack:rule:숨긴 지시 태그": 2,
+    "attack:rule:숨긴 지시 태그, 사용자에게 숨김": 1,
+    "attack:rule:시스템 프롬프트 요구": 6,
+    "attack:rule:역할 탈취": 26,
+    "attack:rule:정책 우회 지시": 5,
+    "attack:rule:지시 무시": 978,
+    "attack:rule:지시 무시, 대화 경계 위조": 21,
+    "attack:rule:지시 무시, 사용자에게 숨김": 3,
+    "attack:rule:지시 무시, 숨긴 지시 태그": 1,
+    "attack:rule:지시 무시, 역할 탈취": 18,
+    "benign:hold:item_cap": 34,
+    "benign:rule:정책 우회 지시": 1,
+    "benign:rule:지시 무시": 1,
+    "benign:rule:지시 무시, 정책 우회 지시": 1
+  },
+  "sample_sha256": "df631b209e97640d2fa46f98d8105950c9f4e022ce1d026c7994cae254676896",
+  "split": "dev",
+  "totals": {
+    "attack": 4000,
+    "benign": 1194
+  }
+}

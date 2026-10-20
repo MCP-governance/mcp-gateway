@@ -1,0 +1,33 @@
+{
+  "benign_reasons": {
+    "hold:item_cap": 31,
+    "rule:정책 우회 지시": 1,
+    "rule:지시 무시": 1,
+    "rule:지시 무시, 정책 우회 지시": 1
+  },
+  "benign_strata": {
+    "cpython|code-file|hold:item_cap": 8,
+    "cpython|docs-page|hold:item_cap": 1,
+    "k8s|docs-page-korean|hold:item_cap": 2,
+    "k8s|docs-page|hold:item_cap": 1,
+    "owasp|security-writing-page|rule:지시 무시, 정책 우회 지시": 1,
+    "owasp|security-writing-snippet|rule:정책 우회 지시": 1,
+    "owasp|security-writing-snippet|rule:지시 무시": 1,
+    "pokeapi|bom-prefixed-file|hold:item_cap": 9,
+    "pokeapi|json-api-response|hold:item_cap": 10
+  },
+  "core_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+  "counts": {
+    "attack": 4000,
+    "attack_hits": 1242,
+    "benign": 1194,
+    "benign_blocked": 34,
+    "false_positive_rules": 3,
+    "fp_rate_excluding_caps": 0.002513,
+    "intentional_cap_holds": 31,
+    "recall": 0.3105
+  },
+  "poisoning_sha256": "c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06",
+  "sample_sha256": "df631b209e97640d2fa46f98d8105950c9f4e022ce1d026c7994cae254676896",
+  "split": "dev"
+}
