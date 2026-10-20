@@ -156,14 +156,19 @@ def self_test_cases(base):
 
 
 async def self_test(opa_url):
-    info = await release.policy_info(opa_url)
-    digest = canonical_hash({k: info.get(k) for k in ("loaded_sha256", "loaded_data_sha256", "capabilities_sha256")})
-    previous = await db.fetch_one("SELECT passed FROM alert_self_tests WHERE policy_hash=%s ORDER BY id DESC LIMIT 1", (digest,))
-    if previous and previous["passed"] and info["matches"]:
-        return
+    info = None
     results = []
     try:
-        if not info["matches"]:
+        info = await release.policy_info(opa_url)
+        digest = canonical_hash({k: info.get(k) for k in ("loaded_sha256", "loaded_data_sha256", "capabilities_sha256")})
+    except Exception as exc:
+        digest = canonical_hash({"policy_info_error": type(exc).__name__})
+        results.append({"synthetic": True, "passed": False, "error": type(exc).__name__})
+    previous = await db.fetch_one("SELECT passed FROM alert_self_tests WHERE policy_hash=%s ORDER BY id DESC LIMIT 1", (digest,))
+    if previous and previous["passed"] and info and info["matches"]:
+        return
+    try:
+        if not info or not info["matches"]:
             raise RuntimeError("배포 정책 일치 확인 실패")
         corpus = json.loads((Path(os.getenv("POLICY_PATH", "/policy/policy.rego")).parent / "replay_cases_pac15.json").read_text(encoding="utf-8"))
         corpus = corpus["pac15_replay"]
@@ -195,6 +200,9 @@ async def self_test(opa_url):
     passed = bool(results) and all(r["passed"] for r in results)
     await db.execute("INSERT INTO alert_self_tests(policy_hash,passed,results) VALUES (%s,%s,%s)",
                      (digest, passed, Jsonb(results)))
+    if not passed:
+        await emit_alert("policy-self-test-failed", "self-test", digest,
+                         {"policy_hash": digest, "results": results}, True)
 
 
 async def tick(opa_url):
