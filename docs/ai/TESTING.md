@@ -102,6 +102,26 @@ docker compose run --rm --no-deps --entrypoint python -e LAB_GATEWAY_URL=http://
 `LAB_CONSOLE_URL`·`LAB_GATEWAY_URL`로 포트를 받는다. `console.sh`가 `.env`의 포트로 export한다.
 직접 돌릴 때는 `export LAB_CONSOLE_URL=http://127.0.0.1:18000 LAB_GATEWAY_URL=http://127.0.0.1:18080`.
 
+## 게이트웨이 이미지 단독 실행 대상 아님
+
+아래 파일들은 `python full_stack_lab/tests/<파일>`만으로 끝나는 독립 검사가 아니다. 실패 로그를 제품 회귀로 읽기 전에 표의 실행 조건과 해당 스크립트 상단의 실행 설명을 확인한다. `console.sh test`에서 실행되는 파일도 있으나, 그 명령은 이미 기동된 일회용 랩과 Docker Compose 서비스가 필요하다.
+
+| 파일 | 이미지 밖/주변 실행 조건 | 근거 |
+| --- | --- | --- |
+| `adversarial_check.py` | 실행 중인 Gateway, 사내 테스트망, 직원 토큰과 `LAB_GATEWAY_URL` | 실제 `/mcp/<server>/` ingress에 정상·공격 호출을 보냄. `console.sh test` 527–532행은 `docker compose run`과 Gateway 주소를 설정한다. |
+| `field_release_check.py` | 배포된 field Gateway, SSH 검증 VM, 서버·리비전 인자와 requester 자격 | 파일 상단이 SSH VM·실제 Microsoft Learn 읽기를 명시하고 `--url`, `--server`, `--expected-revision`을 요구한다. |
+| `intake_worker_scanners_check.py` | 격리된 intake-worker 이미지, Syft·Trivy·Semgrep·Gitleaks, Trivy 캐시 | 파일 상단이 worker 이미지 전용 실행과 `TRIVY_CACHE_DIR`를 명시한다. |
+| `managed_enrollment_check.py` | 실행 중인 Gateway·agent-service와 공유 DB | 파일 상단 실행 예가 `docker compose exec gateway`이며 실제 IdP/DB 경계를 검사한다. |
+| `mcp_result_services_check.py` | Presidio analyzer/anonymizer와 Gitleaks 실행 파일 | 파일 상단이 실제 검사 서비스·실행 파일을 요구하며, 검사 실패 시 차단 계약을 검증한다. Gateway 이미지 하나에는 이 서비스들이 없다. |
+| `pac_boundary_check.py` | Gateway에 마운트된 `REGISTRY_DIR/capabilities.json` | `pac.capabilities()`는 파일 누락을 빈 권한으로 간주하지 않고 실패한다. `console.sh test` 520행은 실행 중인 Compose Gateway 안에서 실행한다. |
+| `policy_replay_lab_check.py` | PostgreSQL, 실행 중인 Gateway 부트스트랩 및 OPA 연결 | 파일 상단이 일회용 랩 OPA를 명시하고 `core.bootstrap()`으로 DB 초기화를 시작한다. |
+| `provenance_gitea_check.py` | 버리는 Gitea 서비스와 `GITEA_URL`, `GITEA_USER`, `GITEA_PASSWORD` | 파일 상단에 필수 환경변수가 있고, Gitea 저장소에 파일을 올려 서버 응답 digest를 비교한다. |
+| `real_mcp_check.py` | 외부 인터넷, 일곱 공식 공급자 MCP와 해당 계정 자격 | 파일 상단의 opt-in live vendor probe 설명 및 CLI의 명령 인자가 기준이다. Gateway 집행 검사가 아니다. |
+| `real_mcp_gateway_check.py` | 실행 중인 Gateway, reviewed contract, 별도 requester·approver 자격 | 파일 상단에 두 단계 명령과 stdin 자격 형식이 있다. 실제 등록·호출 후 임시 registry 항목을 제거한다. |
+| `real_warning_review_check.py` | 실행 중인 Gateway, 앞선 계약 검토 결과, Notion endpoint 및 requester·approver 자격 | 파일 상단이 opt-in, `--url`·`--reviewed`, 별도 두 사람 자격을 요구한다. |
+| `reservation_effect_check.py` | Docker Compose 랩, corp PostgreSQL 및 실제 PostgreSQL MCP | 파일 상단은 clean-up 뒤 실행하도록 하고, `docker compose exec corp-db`로 독립 DB 효과를 센다. `console.sh test` 523행에서도 호스트 명령으로 실행한다. |
+| `testbed_network_check.py` | SSH 시험 VM, Docker, 사전 빌드 native test 이미지, 실행 중 Gateway와 `--out` | 파일 상단이 fresh Docker testbed를 명시하고 CLI가 `--out`을 필수로 받는다. |
+
 ## 3. 시험을 쓸 때의 규칙 (여기서 실제로 밟은 것들)
 
 - **거짓 통과 금지.** 검사 도구가 죽으면 실패여야 한다. 예: 포트 검사 파이썬이 문법 오류로 빈 문자열을

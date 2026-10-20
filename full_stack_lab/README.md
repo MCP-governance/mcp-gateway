@@ -77,6 +77,9 @@
 ./console.sh replay 100                               # 기록된 정책 입력 100건 + 합성 사례를 후보 정책에 재생
 REPLAY_POLICY_DIR=./candidate-opa ./console.sh replay  # 후보 정책 디렉터리 지정 (MCP 호출 없음)
 ```
+
+`tests/protocol_versions_check.py`는 D-116 목적지 보호를 유지한다. `InputRequiredResult` 확인에 쓰는 임시 제공자 URL만 시험 안에서 내부 목적지로 승인하므로 실제 loopback SDK 연결이 가능하고, URL이 다르면 승인되지 않는다. DNS 확인·IP 고정은 계속 적용된다.
+
 망 대역 self-check → 도입 검증 단위 시험(네트워크 없는 컨테이너) → 콘솔 상태(node) → Rego → 실기기 키트·오버레이 검사 →
 분류기 → Gateway 인수 시험 → 하네스 연결 점검 → 업무 시나리오 대조 → 종료 판정 흐름 → 보안 회귀 → 정책 재생 → E1~E3.
 결과는 `reports/`. 층별 설명: [../docs/ai/TESTING.md](../docs/ai/TESTING.md).

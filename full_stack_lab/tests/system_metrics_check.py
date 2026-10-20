@@ -210,8 +210,9 @@ class MetricsAuthorizationTest(unittest.TestCase):
         self.sample.assert_not_awaited()
 
     def test_mcp_token_scope_cannot_read_admin_metrics(self):
-        with patch.object(agent_contract, "authenticate", return_value=({"user_id": "root"}, {"sub": "root", "scope": "mcp"})), \
+        with patch.object(agent_contract, "authenticate", return_value=({"user_id": "root"}, {"sub": "root", "scope": "mcp", "jti": "00000000-0000-4000-8000-000000000001"})), \
              patch.object(oidc, "validate_session", AsyncMock()), \
+             patch("app.disposal.blocked", return_value=False), \
              patch.object(agent_service.system_metrics_sampler, "sample", self.sample), \
              patch.object(agent_contract.db, "fetch_one", AsyncMock()) as fetch:
             self.assertEqual(self.client.get("/api/system/metrics", headers={"Authorization": "Bearer harness-token"}).status_code, 403)
