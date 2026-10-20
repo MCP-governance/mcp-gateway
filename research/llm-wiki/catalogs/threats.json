@@ -7,22 +7,119 @@
     "sheet": "정책 최종본",
     "row": 5,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "도입·공급망",
+    "boundary": "운영 절차 · 게이트웨이 · 실행기 · OPA",
     "runtime_candidates": [
       "MCP-SUPPLY-001"
     ],
     "code_candidates": [
       {
-        "path": "full_stack_lab/tests/intake_validation_test.py",
-        "sha256": "a5936786f2d7a88dbecec50f5e52df4797f5e43c91b40ec1013f063e8995c068",
-        "committed_sha256": "a5936786f2d7a88dbecec50f5e52df4797f5e43c91b40ec1013f063e8995c068",
-        "normalized_sha256": "a5936786f2d7a88dbecec50f5e52df4797f5e43c91b40ec1013f063e8995c068",
+        "path": "full_stack_lab/gateway/app/review.py",
+        "sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8",
+        "committed_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8",
+        "normalized_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/supply_chain/intake_worker.py",
+        "sha256": "0ee5401c1c61bb9feb73882ecc7ac0dc4b7d0b436d01b88526e5a9d51e6ef04c",
+        "committed_sha256": "0ee5401c1c61bb9feb73882ecc7ac0dc4b7d0b436d01b88526e5a9d51e6ef04c",
+        "normalized_sha256": "0ee5401c1c61bb9feb73882ecc7ac0dc4b7d0b436d01b88526e5a9d51e6ef04c",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/runtime/worker.py",
+        "sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
+        "committed_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
+        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "운영 절차",
+      "게이트웨이",
+      "실행기",
+      "OPA"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/review.py",
+        "symbol": "intake_gate",
+        "anchor": "",
+        "line": 107,
+        "end_line": 159,
+        "normalized_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8"
+      },
+      {
+        "path": "full_stack_lab/supply_chain/intake_worker.py",
+        "symbol": "validate",
+        "anchor": "",
+        "line": 215,
+        "end_line": 327,
+        "normalized_sha256": "0ee5401c1c61bb9feb73882ecc7ac0dc4b7d0b436d01b88526e5a9d51e6ef04c"
+      },
+      {
+        "path": "full_stack_lab/runtime/worker.py",
+        "symbol": "fetch_source",
+        "anchor": "",
+        "line": 301,
+        "end_line": 327,
+        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779"
+      },
+      {
+        "path": "full_stack_lab/runtime/worker.py",
+        "symbol": "build",
+        "anchor": "",
+        "line": 330,
+        "end_line": 348,
+        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/intake_validation_test.py",
+        "symbol": "test_provenance_records_source_commit_and_artifact_digest",
+        "anchor": "",
+        "line": 148,
+        "end_line": 154,
+        "normalized_sha256": "a5936786f2d7a88dbecec50f5e52df4797f5e43c91b40ec1013f063e8995c068",
+        "coverage": "커밋/배포물 해시 기록 대역",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/intake_identity_test.py",
+        "symbol": "test_scanner_outage_fails_closed",
+        "anchor": "",
+        "line": 68,
+        "end_line": 74,
+        "normalized_sha256": "1d5ce888e481da1bfbf54978b5785a68182ecf30d022928f17bbd86c67a702a1",
+        "coverage": "스캐너 장애 보류",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_block_unapproved_supplier if",
+        "line": 356,
+        "end_line": 364,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "미승인 공급자 차단",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E01"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "라이선스·배포처·SBOM·취약점과 실제 도입 승인 증거 필요",
+    "limitations": "출처·미러 해시·스캔 결과와 승인 절차를 연결한다. 배포자 서명 신뢰/모든 의존성 출처 보증, 모든 도입 유형의 실기기 증거는 부족하다. 스캐너 시험 파일 자체는 공급망 집행 코드가 아니다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-07"
@@ -36,10 +133,11 @@
     "sheet": "정책 최종본",
     "row": 6,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "계약·권한 범위",
+    "boundary": "운영 절차 · 게이트웨이 · OPA",
     "runtime_candidates": [
       "PAC-01",
-      "PAC-08"
+      "PAC-08",
+      "PAC-09"
     ],
     "code_candidates": [
       {
@@ -50,6 +148,13 @@
         "worktree_modified": false
       },
       {
+        "path": "full_stack_lab/gateway/app/review.py",
+        "sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8",
+        "committed_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8",
+        "normalized_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8",
+        "worktree_modified": false
+      },
+      {
         "path": "full_stack_lab/gateway/app/pac.py",
         "sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
         "committed_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
@@ -57,9 +162,82 @@
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "운영 절차",
+      "게이트웨이",
+      "OPA"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/agent_service.py",
+        "symbol": "approve_mcp_request",
+        "anchor": "",
+        "line": 1402,
+        "end_line": 1531,
+        "normalized_sha256": "bffb996c12d43bb4d72a543ca07597a4426794816bc68e0baae74ce59d8b253a"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/review.py",
+        "symbol": "normalize_tool_reviews",
+        "anchor": "",
+        "line": 211,
+        "end_line": 245,
+        "normalized_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/review.py",
+        "symbol": "derived_constraints",
+        "anchor": "",
+        "line": 265,
+        "end_line": 303,
+        "normalized_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "symbol": "scope",
+        "anchor": "",
+        "line": 69,
+        "end_line": 115,
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/intake_identity_test.py",
+        "symbol": "test_every_approved_tool_needs_a_review_and_the_action_comes_from_the_approval",
+        "anchor": "",
+        "line": 135,
+        "end_line": 141,
+        "normalized_sha256": "1d5ce888e481da1bfbf54978b5785a68182ecf30d022928f17bbd86c67a702a1",
+        "coverage": "도구별 범위·행위 검토",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/intake_identity_test.py",
+        "symbol": "test_gaps_are_refused",
+        "anchor": "",
+        "line": 143,
+        "end_line": 153,
+        "normalized_sha256": "1d5ce888e481da1bfbf54978b5785a68182ecf30d022928f17bbd86c67a702a1",
+        "coverage": "심사 누락 거부",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E01",
+      "E19"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "도구 계약과 실제 자원·인자의 승인 범위 독립 검토",
+    "limitations": "필요 권한·목적·등급·목적지를 사람이 승인한다. 새 위험 등급은 신청자 입력의 표 산정이다. 적법 근거/고영향 해당 여부와 공급자 실제 권한은 사람의 확인이 필요하며 전체 도입 적정성을 자동 증명하지 않는다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-01",
@@ -78,10 +256,11 @@
     "sheet": "정책 최종본",
     "row": 7,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "승인·유효기간",
+    "boundary": "게이트웨이 · OPA · 운영 절차",
     "runtime_candidates": [
+      "PAC-01",
       "P-APPROVAL-EXPIRY-001",
-      "PAC-01"
+      "P-CONSENT-001"
     ],
     "code_candidates": [
       {
@@ -90,11 +269,118 @@
         "committed_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
         "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
         "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/consent.py",
+        "sha256": "edf4286c675b1fcce8746d1182efa21d490c7670f4f371e1cf598c495603f425",
+        "committed_sha256": "edf4286c675b1fcce8746d1182efa21d490c7670f4f371e1cf598c495603f425",
+        "normalized_sha256": "edf4286c675b1fcce8746d1182efa21d490c7670f4f371e1cf598c495603f425",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/dispatch.py",
+        "sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
+        "committed_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
+        "normalized_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
+        "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA",
+      "운영 절차"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "execute_call",
+        "anchor": "",
+        "line": 1990,
+        "end_line": 2316,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/consent.py",
+        "symbol": "missing",
+        "anchor": "",
+        "line": 33,
+        "end_line": 55,
+        "normalized_sha256": "edf4286c675b1fcce8746d1182efa21d490c7670f4f371e1cf598c495603f425"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/consent.py",
+        "symbol": "for_dispatch",
+        "anchor": "",
+        "line": 66,
+        "end_line": 75,
+        "normalized_sha256": "edf4286c675b1fcce8746d1182efa21d490c7670f4f371e1cf598c495603f425"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/dispatch.py",
+        "symbol": "record",
+        "anchor": "",
+        "line": 64,
+        "end_line": 162,
+        "normalized_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_block_expired_asset_approval if",
+        "line": 397,
+        "end_line": 405,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "만료 차단",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_allow_valid_asset_approval if",
+        "line": 403,
+        "end_line": 411,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "유효기간 정상",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/remaining_controls_check.py",
+        "symbol": "test_no_consent_leaves_a_request_and_blocks",
+        "anchor": "",
+        "line": 140,
+        "end_line": 144,
+        "normalized_sha256": "8b20a38d8157d588dbc4c72b41a79a95f01cb97163f35518d3f1dc5e1b491ba2",
+        "coverage": "동의 없으면 보류",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/dispatch_recheck_pg_check.py",
+        "symbol": "consent_revoke_first",
+        "anchor": "",
+        "line": 185,
+        "end_line": 208,
+        "normalized_sha256": "2a0ea80cab6a8259b14ab36ffc87dac341f3bbbc834749935d4e58c6c0eac011",
+        "coverage": "동의 철회 선커밋·intent 없음",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E02",
+      "E03"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "사용자 동의와 서버 사용 승인은 별도 증거",
+    "limitations": "관리자 연결 승인과 본인 동의를 분리한다. consent=true 심사 도구에만 사용자 동의를 요구하므로 모든 연결의 포괄 동의를 뜻하지 않는다. 최종 intent 이후 철회가 이미 전송 가능한 호출의 외부 효과를 되돌리지는 않는다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-08",
@@ -109,22 +395,84 @@
     "sheet": "정책 최종본",
     "row": 8,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "시험·환경",
+    "boundary": "OPA · 게이트웨이 · 실행기 · 운영 절차",
     "runtime_candidates": [
       "PAC-03"
     ],
     "code_candidates": [
       {
-        "path": "full_stack_lab/opa/pac15.rego",
-        "sha256": "067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850",
-        "committed_sha256": "067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850",
-        "normalized_sha256": "067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850",
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "committed_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/runtime/worker.py",
+        "sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
+        "committed_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
+        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "OPA",
+      "게이트웨이",
+      "실행기",
+      "운영 절차"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "symbol": "build",
+        "anchor": "",
+        "line": 185,
+        "end_line": 324,
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393"
+      },
+      {
+        "path": "full_stack_lab/runtime/worker.py",
+        "symbol": "mcp_run_args",
+        "anchor": "",
+        "line": 118,
+        "end_line": 129,
+        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779"
+      },
+      {
+        "path": "full_stack_lab/runtime/worker.py",
+        "symbol": "egress_run_args",
+        "anchor": "",
+        "line": 132,
+        "end_line": 138,
+        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/runtime_worker_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 102,
+        "normalized_sha256": "40076e9dc348e414fd874cf6d7fe839f24998a2a43a2d8fc0ee9ee93e6b12b56",
+        "coverage": "읽기 전용/권한/자원·egress 실행 인자 단위",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E01"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "환경 사실 입력과 실기기 관찰값 결합 검증",
+    "limitations": "환경 사실은 게이트웨이 환경 설정·capability 실행 프로필에서 생성된다. PAC-03 통과만으로 개발/시험/운영 망 분리·생성 데이터 사용·운영정보 승인/삭제를 증명하지 않는다. 실행기 격리 실증은 MarkItDown 한 레시피 범위다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-01",
@@ -139,17 +487,18 @@
     "sheet": "정책 최종본",
     "row": 9,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "목적지·SSRF",
+    "boundary": "게이트웨이 · OPA · 실행기",
     "runtime_candidates": [
+      "PAC-07",
       "MCP-EGRESS-001",
       "MCP-EGRESS-002"
     ],
     "code_candidates": [
       {
-        "path": "full_stack_lab/gateway/app/classify.py",
-        "sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
-        "committed_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
-        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
+        "path": "full_stack_lab/gateway/app/destination.py",
+        "sha256": "d22a3e6b71d8a19bf63041248ab1bac1c2bc67d5824d448088f6ee8f8bba4210",
+        "committed_sha256": "d22a3e6b71d8a19bf63041248ab1bac1c2bc67d5824d448088f6ee8f8bba4210",
+        "normalized_sha256": "d22a3e6b71d8a19bf63041248ab1bac1c2bc67d5824d448088f6ee8f8bba4210",
         "worktree_modified": false
       },
       {
@@ -165,11 +514,101 @@
         "committed_sha256": "ca315aa762cd4966647474e4ea1bdc33369e44cb892540f175c19eb4ebad1690",
         "normalized_sha256": "ca315aa762cd4966647474e4ea1bdc33369e44cb892540f175c19eb4ebad1690",
         "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
+        "committed_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
+        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
+        "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA",
+      "실행기"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/destination.py",
+        "symbol": "PinnedBackend",
+        "anchor": "",
+        "line": 14,
+        "end_line": 50,
+        "normalized_sha256": "d22a3e6b71d8a19bf63041248ab1bac1c2bc67d5824d448088f6ee8f8bba4210"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "_client",
+        "anchor": "",
+        "line": 101,
+        "end_line": 111,
+        "normalized_sha256": "5609242ce9ec6b9b8065f5789bdd06a43b3844ce75fc792794865c088e8fa609"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/oidc.py",
+        "symbol": "http_transport",
+        "anchor": "",
+        "line": 73,
+        "end_line": 85,
+        "normalized_sha256": "ca315aa762cd4966647474e4ea1bdc33369e44cb892540f175c19eb4ebad1690"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "symbol": "host_category",
+        "anchor": "",
+        "line": 274,
+        "end_line": 304,
+        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/dest_pin_transport_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 92,
+        "normalized_sha256": "cd5527ee0a829de551c3dd2e5a37080225b398e7ec88c4486880e7856ee10b9b",
+        "coverage": "DNS 전체 검사·혼합 응답·직접 IP 고정 단위",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_ssrf_destination_blocks_even_admin if",
+        "line": 550,
+        "end_line": 558,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "인자 SSRF 음성",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_intranet_destination_is_not_ssrf if",
+        "line": 559,
+        "end_line": 567,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "내부 정상",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E01",
+      "E10"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "D-116: 직접 연결 DNS 전체 검사·IP 고정/OIDC 연동, 로컬 함수 단위만; 실제 풀·TLS·서버 자체 outbound 미검증",
+    "limitations": "직접 연결은 승인 origin·DNS 전체 검사 후 IP 고정, HTTP 리디렉션은 따르지 않는다. OIDC 설정 origin 예외와 서버가 자체 수행하는 outbound는 별도 경계다. 프록시 connected 사건은 최종 업무 수신·도구별 리디렉션/DNS 재결속 검증이 아니다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-02",
@@ -185,17 +624,17 @@
     "sheet": "정책 최종본",
     "row": 10,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "도구 계약",
+    "boundary": "게이트웨이 · OPA · 운영 절차",
     "runtime_candidates": [
       "MCP-CATALOG-001",
       "PAC-08"
     ],
     "code_candidates": [
       {
-        "path": "full_stack_lab/gateway/app/contract.py",
-        "sha256": "b8645dcece90890a29a0c8b3863793f2ee6637d2ea30b2b7d6e99684ae8441c9",
-        "committed_sha256": "b8645dcece90890a29a0c8b3863793f2ee6637d2ea30b2b7d6e99684ae8441c9",
-        "normalized_sha256": "b8645dcece90890a29a0c8b3863793f2ee6637d2ea30b2b7d6e99684ae8441c9",
+        "path": "full_stack_lab/gateway/app/mcp_facade.py",
+        "sha256": "63cee152111cbf6fddaa522d4176491ea1c2fe1fe3ade4c2831719d25b09e8ef",
+        "committed_sha256": "63cee152111cbf6fddaa522d4176491ea1c2fe1fe3ade4c2831719d25b09e8ef",
+        "normalized_sha256": "63cee152111cbf6fddaa522d4176491ea1c2fe1fe3ade4c2831719d25b09e8ef",
         "worktree_modified": false
       },
       {
@@ -204,11 +643,102 @@
         "committed_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
         "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
         "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/registry.py",
+        "sha256": "49563f065e15b25fbbf5365e554beb1358f237612e6d74e7a6fc9f20021b3a25",
+        "committed_sha256": "49563f065e15b25fbbf5365e554beb1358f237612e6d74e7a6fc9f20021b3a25",
+        "normalized_sha256": "49563f065e15b25fbbf5365e554beb1358f237612e6d74e7a6fc9f20021b3a25",
+        "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA",
+      "운영 절차"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/mcp_facade.py",
+        "symbol": "_approved_tools",
+        "anchor": "",
+        "line": 119,
+        "end_line": 160,
+        "normalized_sha256": "63cee152111cbf6fddaa522d4176491ea1c2fe1fe3ade4c2831719d25b09e8ef"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/mcp_facade.py",
+        "symbol": "build_mcp",
+        "anchor": "",
+        "line": 221,
+        "end_line": 259,
+        "normalized_sha256": "63cee152111cbf6fddaa522d4176491ea1c2fe1fe3ade4c2831719d25b09e8ef"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "_contract",
+        "anchor": "",
+        "line": 957,
+        "end_line": 1020,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/registry.py",
+        "symbol": "reviewed_tools",
+        "anchor": "",
+        "line": 139,
+        "end_line": 144,
+        "normalized_sha256": "49563f065e15b25fbbf5365e554beb1358f237612e6d74e7a6fc9f20021b3a25"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/contracts_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 60,
+        "normalized_sha256": "c7bb86ca6eb12504a753b8f740ce4e69444381af3a6c1dd6fd1103b74494f859",
+        "coverage": "고정 계약 파일 비교",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/catalog_refresh_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 189,
+        "normalized_sha256": "0f70ca29014fc2284b2c32f86d849ca190ee6428b8195b02dbc9b9330b45c83c",
+        "coverage": "카탈로그 A→B→A 회귀",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/auto_suspend_pg_check.py",
+        "symbol": "drift_detection_and_isolation",
+        "anchor": "",
+        "line": 99,
+        "end_line": 137,
+        "normalized_sha256": "9e0f67d7eab67c75012f0cf877b803405a1c7d4a1ae86d1b5f16a892fec86dca",
+        "coverage": "제품 목록의 변경 도구 제한; 실제 DB 대기",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E01",
+      "E13",
+      "E15"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "동명 도구·설명·스키마 변경과 승인 이후 변형 시험",
+    "limitations": "서버+도구 키와 승인 해시로 Tool 목록/호출을 제한한다. facade는 tools/list·tools/call만 등록하므로 Resource·Prompt 허용목록 구현으로 확대할 수 없다. 동명 기능 간 승인 비재사용의 실제 두 서버 교차 음성은 추가 검증 대상이다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-05"
@@ -222,9 +752,10 @@
     "sheet": "정책 최종본",
     "row": 11,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "엔드포인트 우회",
+    "boundary": "엔드포인트 · 게이트웨이 · 운영 절차",
     "runtime_candidates": [
-      "MCP-SHADOW-*",
+      "MCP-SHADOW-001",
+      "MCP-SHADOW-002",
       "ENDPOINT-MANAGED-001"
     ],
     "code_candidates": [
@@ -236,24 +767,10 @@
         "worktree_modified": false
       },
       {
-        "path": "endpoint-agent/managed-linux.py",
-        "sha256": "acb054a9ce9ad1877587b700046696b190a52937ffbf5be164129c931aa8ed34",
-        "committed_sha256": "deccf313a1334b6d733bf0dc9dce8d8139afb6943117b2f214a5edf4e612ab9a",
-        "normalized_sha256": "acb054a9ce9ad1877587b700046696b190a52937ffbf5be164129c931aa8ed34",
-        "worktree_modified": true
-      },
-      {
         "path": "endpoint-agent/managed-windows.py",
         "sha256": "61d33705240ad15da5e3b0fc18d75607c875f552caf40f5902755eceda820ff6",
         "committed_sha256": "61d33705240ad15da5e3b0fc18d75607c875f552caf40f5902755eceda820ff6",
         "normalized_sha256": "61d33705240ad15da5e3b0fc18d75607c875f552caf40f5902755eceda820ff6",
-        "worktree_modified": false
-      },
-      {
-        "path": "endpoint-agent/agent.py",
-        "sha256": "8d6736638bc4042f9c09876900fd453546f989e5ee38dced049cefe1fc6b93ac",
-        "committed_sha256": "8d6736638bc4042f9c09876900fd453546f989e5ee38dced049cefe1fc6b93ac",
-        "normalized_sha256": "8d6736638bc4042f9c09876900fd453546f989e5ee38dced049cefe1fc6b93ac",
         "worktree_modified": false
       },
       {
@@ -264,9 +781,100 @@
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "엔드포인트",
+      "게이트웨이",
+      "운영 절차"
+    ],
+    "code_references": [
+      {
+        "path": "endpoint-agent/enforce-linux.py",
+        "symbol": "nft_rules",
+        "anchor": "",
+        "line": 67,
+        "end_line": 86,
+        "normalized_sha256": "57bfb1309921abb33b1d2f8d25837ccaec058ba53ef6d9379db09cd28748b455"
+      },
+      {
+        "path": "endpoint-agent/enforce-linux.py",
+        "symbol": "profile",
+        "anchor": "",
+        "line": 92,
+        "end_line": 161,
+        "normalized_sha256": "57bfb1309921abb33b1d2f8d25837ccaec058ba53ef6d9379db09cd28748b455"
+      },
+      {
+        "path": "endpoint-agent/enforce-linux.py",
+        "symbol": "wrapper",
+        "anchor": "",
+        "line": 164,
+        "end_line": 260,
+        "normalized_sha256": "57bfb1309921abb33b1d2f8d25837ccaec058ba53ef6d9379db09cd28748b455"
+      },
+      {
+        "path": "endpoint-agent/managed-windows.py",
+        "symbol": "checks",
+        "anchor": "",
+        "line": 351,
+        "end_line": 394,
+        "normalized_sha256": "61d33705240ad15da5e3b0fc18d75607c875f552caf40f5902755eceda820ff6"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+        "symbol": "managed_failure",
+        "anchor": "",
+        "line": 939,
+        "end_line": 953,
+        "normalized_sha256": "c583ce1df783d35c31cfa32ac714bc1da0194d43ede44128d273ef468b79d5f8"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/managed_enforcement_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 141,
+        "normalized_sha256": "763020a29f8675b0ed83a2b77e14513159d43584098d6ae330f5c6560765e36f",
+        "coverage": "관리 Linux 네트워크/실행 통제 검사",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/launcher_pin_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 163,
+        "normalized_sha256": "ba19c959e8195bf08c3c09261168ea620009082a3b338702cbd70fe95da0e22c",
+        "coverage": "하네스 설정 옵션 주입·Windows 복원 경계",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/user_command_settings_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 336,
+        "normalized_sha256": "95035892a5c7666a7a1158efbb4082b499373d7eab981bda997eb066e5babcd7",
+        "coverage": "사용자 명령 헬퍼 탐지와 준수 보고",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E08",
+      "E09"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "로컬 MCP 실험·코드 회귀와 현재 관리 기기의 OS 집행을 구분; Windows loopback·실행 통제 공백 유지",
+    "limitations": "SHADOW 정책은 경보이고 직접 차단은 관리 OS 정책과 managed_failure가 맡는다. Linux PJ1 확인을 Windows/full-OS로 확대하지 않는다. Windows 원본 바이너리 직접 실행·loopback·하이브 미탑재 허용·검사 사이 경쟁과 구형 장치 전환 유예가 남는다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-01",
@@ -290,29 +898,120 @@
     "sheet": "정책 최종본",
     "row": 12,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "신원",
+    "boundary": "게이트웨이 · OPA",
     "runtime_candidates": [
-      "PAC-04"
+      "PAC-04",
+      "ENDPOINT-MANAGED-001"
     ],
     "code_candidates": [
       {
-        "path": "full_stack_lab/gateway/app/idp.py",
-        "sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc",
-        "committed_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc",
-        "normalized_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc",
+        "path": "full_stack_lab/gateway/app/agent_contract.py",
+        "sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+        "committed_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+        "normalized_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
         "worktree_modified": false
       },
       {
-        "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
-        "committed_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "committed_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/mcp_sessions.py",
+        "sha256": "362036548a92a7d90e3a09be3d3661216c0b5d58029755e856ce249a2e6c095d",
+        "committed_sha256": "362036548a92a7d90e3a09be3d3661216c0b5d58029755e856ce249a2e6c095d",
+        "normalized_sha256": "362036548a92a7d90e3a09be3d3661216c0b5d58029755e856ce249a2e6c095d",
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/agent_contract.py",
+        "symbol": "authenticate",
+        "anchor": "",
+        "line": 106,
+        "end_line": 119,
+        "normalized_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/agent_contract.py",
+        "symbol": "authenticated_user",
+        "anchor": "",
+        "line": 142,
+        "end_line": 188,
+        "normalized_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "symbol": "build",
+        "anchor": "",
+        "line": 185,
+        "end_line": 324,
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/mcp_sessions.py",
+        "symbol": "active",
+        "anchor": "",
+        "line": 21,
+        "end_line": 28,
+        "normalized_sha256": "362036548a92a7d90e3a09be3d3661216c0b5d58029755e856ce249a2e6c095d"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/pac_delegation_check.py",
+        "symbol": "test_agent_identity_is_a_reported_source_and_never_verified",
+        "anchor": "",
+        "line": 33,
+        "end_line": 40,
+        "normalized_sha256": "52e8df09d1a18dff3f7e46ec3ca42d1433eb9231a4949d155bd1f3605a0b50e9",
+        "coverage": "하네스 자기 신고 신원은 미검증",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/oauth_negative_pg_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 111,
+        "normalized_sha256": "90c98de670cfe960ae6969e649ce14ecf74fc19ba79fcce937980e4df50cdf6f",
+        "coverage": "검증 토큰·현재 계정·scope 경계",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/session_termination_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 278,
+        "normalized_sha256": "916c29ec2d05b71641ed0ad65a24c455f918d1632ad4248b93332a1cf7764dca",
+        "coverage": "주체/장치 결속과 토큰 교체",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E04",
+      "E09",
+      "E16"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "transport 신원과 사용자 자기 선언 필드 분리",
+    "limitations": "사용자는 전송 토큰·현재 계정으로 검증한다. agent_id는 고정 게이트웨이 broker이며 clientInfo/하네스 실행파일을 증명하지 않는다. 세션 결속은 주체/장치이고 실제 하네스 바이너리 원격 증명·업무 세션 전체 결합과 다르다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-08",
@@ -327,9 +1026,10 @@
     "sheet": "정책 최종본",
     "row": 13,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "위임",
+    "boundary": "게이트웨이 · OPA",
     "runtime_candidates": [
-      "PAC-05"
+      "PAC-05",
+      "PAC-05-DELEGATION-UNSUPPORTED"
     ],
     "code_candidates": [
       {
@@ -338,18 +1038,66 @@
         "committed_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
         "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
         "worktree_modified": false
-      },
-      {
-        "path": "full_stack_lab/opa/pac15.rego",
-        "sha256": "067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850",
-        "committed_sha256": "067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850",
-        "normalized_sha256": "067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850",
-        "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "symbol": "delegation",
+        "anchor": "",
+        "line": 30,
+        "end_line": 40,
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/pac_delegation_check.py",
+        "symbol": "test_a_forged_verified_flag_in_the_request_is_ignored",
+        "anchor": "",
+        "line": 42,
+        "end_line": 45,
+        "normalized_sha256": "52e8df09d1a18dff3f7e46ec3ca42d1433eb9231a4949d155bd1f3605a0b50e9",
+        "coverage": "요청의 검증 주장 무시",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_delegation_from_client_reported_agent_is_unsupported if",
+        "line": 700,
+        "end_line": 708,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "자기 신고 위임 거부",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_delegation_with_verified_actor_still_uses_the_intersection if",
+        "line": 691,
+        "end_line": 699,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "합성 verified actor 권한 교집합",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "위임 근거·교집합·철회·만료 시험; 하네스 이름은 인증 근거 아님",
+    "limitations": "대리 실행 주장에는 검증된 agent 신원이 없어 미지원 차단한다. 위임 없는 호출은 통과 가능하다. 위임 발급·유효기간·교집합의 Rego 합성 정상 시험은 실제 위임 체계 구현/실기기 증거가 아니다. 발급자·수명주기 도입은 결정 필요.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": []
   },
@@ -361,11 +1109,18 @@
     "sheet": "정책 최종본",
     "row": 14,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "토큰",
+    "boundary": "게이트웨이 · OPA · 운영 절차",
     "runtime_candidates": [
       "PAC-06"
     ],
     "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/agent_contract.py",
+        "sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+        "committed_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+        "normalized_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+        "worktree_modified": false
+      },
       {
         "path": "full_stack_lab/gateway/app/idp.py",
         "sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc",
@@ -381,9 +1136,74 @@
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA",
+      "운영 절차"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/agent_contract.py",
+        "symbol": "authenticated_user",
+        "anchor": "",
+        "line": 142,
+        "end_line": 188,
+        "normalized_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/idp.py",
+        "symbol": "introspection",
+        "anchor": "",
+        "line": 299,
+        "end_line": 338,
+        "normalized_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/upstream.py",
+        "symbol": "credential_headers",
+        "anchor": "",
+        "line": 40,
+        "end_line": 77,
+        "normalized_sha256": "5609242ce9ec6b9b8065f5789bdd06a43b3844ce75fc792794865c088e8fa609"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/oauth_negative_pg_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 111,
+        "normalized_sha256": "90c98de670cfe960ae6969e649ce14ecf74fc19ba79fcce937980e4df50cdf6f",
+        "coverage": "실제 서명/대상/scope/철회 음성",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/credential_binding_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 41,
+        "normalized_sha256": "b765cf8e861fa4a90e6906c297e629d209d29c3e34cc01b0c2e7f960896422b2",
+        "coverage": "별도 upstream 자격의 주체·대상·만료 경계",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E04",
+      "E05"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "audience·scope·issuer·만료·직원 토큰 미전달의 독립 검증",
+    "limitations": "MCP 인입 mcp scope와 관리 API console scope를 구분하며 upstream에는 별도 자격만 구성한다. OAuth 음성 PG 시험은 실제 HTTP/MCP 전송·직원 토큰 미전달의 독립 관측이 아니다. 제공자 자격 scope/회전은 별도 공급자 정책 범위다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-07",
@@ -398,9 +1218,12 @@
     "sheet": "정책 최종본",
     "row": 15,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "호출별 권한",
+    "boundary": "게이트웨이 · OPA",
     "runtime_candidates": [
-      "PAC-09"
+      "PAC-09",
+      "PAC-14",
+      "P-CONTROL-FAIL-CLOSED",
+      "P-FLOW-001"
     ],
     "code_candidates": [
       {
@@ -411,16 +1234,99 @@
         "worktree_modified": false
       },
       {
-        "path": "full_stack_lab/opa/pac15.rego",
-        "sha256": "067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850",
-        "committed_sha256": "067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850",
-        "normalized_sha256": "067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850",
+        "path": "full_stack_lab/gateway/app/dispatch.py",
+        "sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
+        "committed_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
+        "normalized_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "execute_call",
+        "anchor": "",
+        "line": 1990,
+        "end_line": 2316,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "_call_upstream",
+        "anchor": "",
+        "line": 1465,
+        "end_line": 1659,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "_dispatch_flow_recheck",
+        "anchor": "",
+        "line": 1213,
+        "end_line": 1222,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/dispatch.py",
+        "symbol": "record",
+        "anchor": "",
+        "line": 64,
+        "end_line": 162,
+        "normalized_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/dispatch_recheck_check.py",
+        "symbol": "test_db_lock_flow_and_commit_failures_never_send",
+        "anchor": "",
+        "line": 374,
+        "end_line": 381,
+        "normalized_sha256": "4c5523927f9c0c0300d49774e912428d648827e9d6c0a95cecefe576b8020aa0",
+        "coverage": "잠금/조회/commit 실패 차단",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/dispatch_recheck_pg_check.py",
+        "symbol": "account_update_first",
+        "anchor": "",
+        "line": 138,
+        "end_line": 157,
+        "normalized_sha256": "2a0ea80cab6a8259b14ab36ffc87dac341f3bbbc834749935d4e58c6c0eac011",
+        "coverage": "중지 선커밋 차단",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/fresh_requester_check.py",
+        "symbol": "test_jti_revoked_after_approval_before_dispatch",
+        "anchor": "",
+        "line": 224,
+        "end_line": 227,
+        "normalized_sha256": "7bc3d0f954ab9070c2c25073c77f20c504d0f0724a2ae0d7c9810b3ce842eb72",
+        "coverage": "승인 후 요청자 철회",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E03",
+      "E07",
+      "E16"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "이전 허용·캐시 결과를 범위가 다른 요청에 재사용하는지 시험",
+    "limitations": "호출마다 정책 평가 후 라이브 계약/토큰/주체·동의/흐름과 intent를 재확인한다. PAC-09 하나가 전부를 수행하는 것은 아니다. intent commit과 실제 송신 사이 취소·이미 전송된 호출 회수·다중 인스턴스 장애 효과는 미검증이다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-01",
@@ -437,7 +1343,7 @@
     "sheet": "정책 최종본",
     "row": 16,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "행위 구분",
+    "boundary": "게이트웨이 · OPA",
     "runtime_candidates": [
       "PAC-09"
     ],
@@ -448,11 +1354,81 @@
         "committed_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
         "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
         "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "committed_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "symbol": "classify",
+        "anchor": "",
+        "line": 808,
+        "end_line": 830,
+        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "symbol": "sql_facts",
+        "anchor": "",
+        "line": 482,
+        "end_line": 501,
+        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "symbol": "scope",
+        "anchor": "",
+        "line": 69,
+        "end_line": 115,
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/pac_boundary_check.py",
+        "symbol": "main",
+        "anchor": "",
+        "line": 6,
+        "end_line": 30,
+        "normalized_sha256": "e09fb40995fdc56b6ce22f1d1a4c4de7ef2c8761dfe0621c10c51f9db4d2f4d9",
+        "coverage": "유한 SQL 허용·DELETE/다문장/권한 밖 거부",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_pac_scope_denies_unapproved_action if",
+        "line": 674,
+        "end_line": 682,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "승인 밖 작업 거부",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E07"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "도구 이름이 아닌 실제 SQL·명령·수신자 효과로 분류",
+    "limitations": "내부 행위는 r/w/x 3종이며 생성/수정/삭제는 w로 묶는다. SQL은 AST로 실효 행위를 올리지만 원격 Tool은 심사 행위를 신뢰한다. 원본 여섯 행위별 독립 권한이 모두 구현됐다고 볼 수 없다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-02",
@@ -470,7 +1446,7 @@
     "sheet": "정책 최종본",
     "row": 17,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "스키마·인자",
+    "boundary": "게이트웨이 · OPA · 실행기",
     "runtime_candidates": [
       "P-INPUT-SCHEMA-001",
       "PAC-10"
@@ -484,6 +1460,13 @@
         "worktree_modified": false
       },
       {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "committed_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "worktree_modified": false
+      },
+      {
         "path": "full_stack_lab/gateway/app/classify.py",
         "sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
         "committed_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
@@ -491,9 +1474,92 @@
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA",
+      "실행기"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "execute_call",
+        "anchor": "",
+        "line": 1990,
+        "end_line": 2316,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "_call_upstream",
+        "anchor": "",
+        "line": 1465,
+        "end_line": 1659,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "symbol": "build",
+        "anchor": "",
+        "line": 185,
+        "end_line": 324,
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "symbol": "path_resource",
+        "anchor": "",
+        "line": 209,
+        "end_line": 230,
+        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/schema_check.py",
+        "symbol": "main",
+        "anchor": "",
+        "line": 23,
+        "end_line": 38,
+        "normalized_sha256": "127d76b86603fd8cd904dbe871176816fb9e9734be8bdae2e877f63aa52d2d04",
+        "coverage": "스키마·인자 반례",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/pac_boundary_check.py",
+        "symbol": "main",
+        "anchor": "",
+        "line": 6,
+        "end_line": 30,
+        "normalized_sha256": "e09fb40995fdc56b6ce22f1d1a4c4de7ef2c8761dfe0621c10c51f9db4d2f4d9",
+        "coverage": "정규화 경로와 중첩 인자",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/dest_pin_transport_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 92,
+        "normalized_sha256": "cd5527ee0a829de551c3dd2e5a37080225b398e7ec88c4486880e7856ee10b9b",
+        "coverage": "IP 정규화/주소 우회 반례",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E01",
+      "E07"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "정책 전과 실행 직전 입력 검사 및 정규화 우회 시험",
+    "limitations": "승인 스키마와 라이브 스키마를 검사하고 파일/명령/수신자를 결속한다. 일반 원격 서버의 실제 객체 해석·파일 symlink·서버 내부 명령 효과를 모두 증명하지는 않는다. 알려진 추출기 밖은 심사 스키마/실행기 경계에 의존한다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-03",
@@ -509,7 +1575,7 @@
     "sheet": "정책 최종본",
     "row": 18,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "자산·등급",
+    "boundary": "게이트웨이 · OPA · 운영 절차",
     "runtime_candidates": [
       "P-CLASSIFICATION-001",
       "PAC-11"
@@ -530,9 +1596,91 @@
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA",
+      "운영 절차"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "symbol": "path_resource",
+        "anchor": "",
+        "line": 209,
+        "end_line": 230,
+        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "symbol": "table_resource",
+        "anchor": "",
+        "line": 538,
+        "end_line": 542,
+        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/classify.py",
+        "symbol": "classify",
+        "anchor": "",
+        "line": 808,
+        "end_line": 830,
+        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "symbol": "scope",
+        "anchor": "",
+        "line": 69,
+        "end_line": 115,
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_block_required_classification_without_source if",
+        "line": 381,
+        "end_line": 389,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "분류 근거 없음 차단",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_allow_required_manual_classification if",
+        "line": 386,
+        "end_line": 394,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "수동 분류 정상",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/pac_boundary_check.py",
+        "symbol": "main",
+        "anchor": "",
+        "line": 6,
+        "end_line": 30,
+        "normalized_sha256": "e09fb40995fdc56b6ce22f1d1a4c4de7ef2c8761dfe0621c10c51f9db4d2f4d9",
+        "coverage": "자원·권한 범위 거부",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E07"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "미분류를 낮은 등급으로 허용하지 않는지 확인",
+    "limitations": "미지 자산을 important로 분류하는 것과 자산 미확인 시 항상 차단은 다르다. 내장 경로/테이블 규칙과 원격 서비스 수동 등급에 의존한다. 현재 agent 독립 위임권한이 없고 모든 데이터 자산이 독립 등록돼 있다는 증거도 없다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-01",
@@ -549,30 +1697,138 @@
     "sheet": "정책 최종본",
     "row": 19,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "외부 전송",
+    "boundary": "게이트웨이 · OPA · 실행기 · 운영 절차",
     "runtime_candidates": [
       "MCP-DATA-EGRESS-001",
-      "PAC-12"
+      "PAC-12",
+      "P-CONSENT-001",
+      "P-CHAIN-001",
+      "P-FLOW-001",
+      "P-RESIDENCY-001",
+      "P-RESIDENCY-002"
     ],
     "code_candidates": [
       {
-        "path": "full_stack_lab/gateway/app/classify.py",
-        "sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
-        "committed_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
-        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "committed_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
         "worktree_modified": false
       },
       {
-        "path": "full_stack_lab/gateway/app/privacy.py",
-        "sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
-        "committed_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
-        "normalized_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "committed_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/consent.py",
+        "sha256": "edf4286c675b1fcce8746d1182efa21d490c7670f4f371e1cf598c495603f425",
+        "committed_sha256": "edf4286c675b1fcce8746d1182efa21d490c7670f4f371e1cf598c495603f425",
+        "normalized_sha256": "edf4286c675b1fcce8746d1182efa21d490c7670f4f371e1cf598c495603f425",
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA",
+      "실행기",
+      "운영 절차"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "symbol": "transfer_binding",
+        "anchor": "",
+        "line": 165,
+        "end_line": 182,
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "execute_call",
+        "anchor": "",
+        "line": 1990,
+        "end_line": 2316,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "_flow_sources",
+        "anchor": "",
+        "line": 1181,
+        "end_line": 1210,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/consent.py",
+        "symbol": "missing",
+        "anchor": "",
+        "line": 33,
+        "end_line": 55,
+        "normalized_sha256": "edf4286c675b1fcce8746d1182efa21d490c7670f4f371e1cf598c495603f425"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/remaining_controls_check.py",
+        "symbol": "test_reviewed_destination_on_a_runtime_server_is_bound_to_purpose_and_grade",
+        "anchor": "",
+        "line": 70,
+        "end_line": 75,
+        "normalized_sha256": "8b20a38d8157d588dbc4c72b41a79a95f01cb97163f35518d3f1dc5e1b491ba2",
+        "coverage": "심사 목적·목적지·등급 결속",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/remaining_controls_check.py",
+        "symbol": "test_anything_else_fails_closed",
+        "anchor": "",
+        "line": 77,
+        "end_line": 85,
+        "normalized_sha256": "8b20a38d8157d588dbc4c72b41a79a95f01cb97163f35518d3f1dc5e1b491ba2",
+        "coverage": "최종 목적지 불확실 거부",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_residency_foreign_storage_cannot_hide_behind_domestic_processing if",
+        "line": 1277,
+        "end_line": 1285,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "저장국 누락 우회 거부",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/dispatch_recheck_pg_check.py",
+        "symbol": "flow_publication_first",
+        "anchor": "",
+        "line": 253,
+        "end_line": 291,
+        "normalized_sha256": "2a0ea80cab6a8259b14ab36ffc87dac341f3bbbc834749935d4e58c6c0eac011",
+        "coverage": "새 흐름 출처 선게시 차단",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E02",
+      "E03",
+      "E10",
+      "E18"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "실제 최종 목적지·데이터 조합과 프롬프트/모델 경로는 따로 검증",
+    "limitations": "실행기 프록시의 서버 전체 허용 호스트가 도구 심사 안에 들어가야 최종 목적지로 인정한다. 제3자 SaaS outbound·재시도/자격·독립 수신은 미관측이다. 국가/법적 근거는 선언·잠정 규칙이며 개인정보 적법성 확인 자동화가 아니다. LLM 모델 프롬프트 경로는 별도다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-06",
@@ -587,9 +1843,10 @@
     "sheet": "정책 최종본",
     "row": 20,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "개별 승인",
+    "boundary": "게이트웨이 · OPA · 운영 절차",
     "runtime_candidates": [
-      "PAC-13"
+      "PAC-13",
+      "P-HIGH-IMPACT-001"
     ],
     "code_candidates": [
       {
@@ -600,16 +1857,124 @@
         "worktree_modified": false
       },
       {
-        "path": "full_stack_lab/tests/reservation_effect_check.py",
-        "sha256": "745f7c349cfdd9980ba03813eac7163209580b4ca03d660afabc4ec744768fd3",
-        "committed_sha256": "6115f0f19a2e5af4f43c92ba7fcefcbe4e0c1b01908cbfcdfc1556dd8d259e65",
-        "normalized_sha256": "6115f0f19a2e5af4f43c92ba7fcefcbe4e0c1b01908cbfcdfc1556dd8d259e65",
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "committed_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/high_impact.py",
+        "sha256": "b028192f3c923a8d49f967107dcc68cf5b9ebe84f15b5f48de75b255d975b602",
+        "committed_sha256": "b028192f3c923a8d49f967107dcc68cf5b9ebe84f15b5f48de75b255d975b602",
+        "normalized_sha256": "b028192f3c923a8d49f967107dcc68cf5b9ebe84f15b5f48de75b255d975b602",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/dispatch.py",
+        "sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
+        "committed_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
+        "normalized_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA",
+      "운영 절차"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "approve_request",
+        "anchor": "",
+        "line": 2319,
+        "end_line": 2372,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/pac.py",
+        "symbol": "digest",
+        "anchor": "",
+        "line": 151,
+        "end_line": 159,
+        "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/high_impact.py",
+        "symbol": "bound",
+        "anchor": "",
+        "line": 45,
+        "end_line": 52,
+        "normalized_sha256": "b028192f3c923a8d49f967107dcc68cf5b9ebe84f15b5f48de75b255d975b602"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/dispatch.py",
+        "symbol": "record",
+        "anchor": "",
+        "line": 64,
+        "end_line": 162,
+        "normalized_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/high_impact_check.py",
+        "symbol": "test_self_approval_and_expiry_do_not_execute",
+        "anchor": "",
+        "line": 160,
+        "end_line": 168,
+        "normalized_sha256": "3e622f4b5458d7d048da5eab2820cc9cd58d41958dfc928e83de29e3e1699ccf",
+        "coverage": "자가 승인/만료 거부",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/high_impact_check.py",
+        "symbol": "test_concurrent_claim_loser_does_not_execute",
+        "anchor": "",
+        "line": 170,
+        "end_line": 174,
+        "normalized_sha256": "3e622f4b5458d7d048da5eab2820cc9cd58d41958dfc928e83de29e3e1699ccf",
+        "coverage": "경쟁 패자 미실행",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/high_impact_check.py",
+        "symbol": "test_approval_binds_every_request_field_scope_and_integrity",
+        "anchor": "",
+        "line": 84,
+        "end_line": 93,
+        "normalized_sha256": "3e622f4b5458d7d048da5eab2820cc9cd58d41958dfc928e83de29e3e1699ccf",
+        "coverage": "요청 필드·범위 결속",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/fresh_requester_check.py",
+        "symbol": "test_jti_revoked_after_approval_before_dispatch",
+        "anchor": "",
+        "line": 224,
+        "end_line": 227,
+        "normalized_sha256": "7bc3d0f954ab9070c2c25073c77f20c504d0f0724a2ae0d7c9810b3ce842eb72",
+        "coverage": "요청자 철회 재확인",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E07",
+      "E19",
+      "E16"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "nonce·canonical fingerprint·자가 승인·동시 승인 재사용 시험",
+    "limitations": "reservation_effect_check는 호출량/중복 시험이라 이 행에서 제거했다. 설명 열람·고용/신용 등 중대 영향은 새 대역 근거다. 모든 민감 작업의 지정 완전성, PJ1 실제 중대 영향 승인·외부 효과, 긴 승인 대기 중 토큰 만료의 사용성은 미검증이다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-02",
@@ -624,11 +1989,12 @@
     "sheet": "정책 최종본",
     "row": 21,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "호출·동시성",
+    "boundary": "게이트웨이 · OPA",
     "runtime_candidates": [
       "P-RATE-001",
       "P-RATE-002",
-      "P-RATE-003"
+      "P-RATE-003",
+      "PAC-15"
     ],
     "code_candidates": [
       {
@@ -639,16 +2005,100 @@
         "worktree_modified": false
       },
       {
-        "path": "full_stack_lab/tests/reservation_effect_check.py",
-        "sha256": "745f7c349cfdd9980ba03813eac7163209580b4ca03d660afabc4ec744768fd3",
-        "committed_sha256": "6115f0f19a2e5af4f43c92ba7fcefcbe4e0c1b01908cbfcdfc1556dd8d259e65",
-        "normalized_sha256": "6115f0f19a2e5af4f43c92ba7fcefcbe4e0c1b01908cbfcdfc1556dd8d259e65",
+        "path": "full_stack_lab/gateway/app/dispatch.py",
+        "sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
+        "committed_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
+        "normalized_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "_reserve_call",
+        "anchor": "",
+        "line": 1275,
+        "end_line": 1360,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "execute_call",
+        "anchor": "",
+        "line": 1990,
+        "end_line": 2316,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/dispatch.py",
+        "symbol": "record",
+        "anchor": "",
+        "line": 64,
+        "end_line": 162,
+        "normalized_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/reservation_effect_check.py",
+        "symbol": "race",
+        "anchor": "",
+        "line": 47,
+        "end_line": 83,
+        "normalized_sha256": "6115f0f19a2e5af4f43c92ba7fcefcbe4e0c1b01908cbfcdfc1556dd8d259e65",
+        "coverage": "실제 PostgreSQL MCP 동시 상한/중복·업무 DB 효과 관측용",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_rate_limit_blocks_at_limit if",
+        "line": 431,
+        "end_line": 439,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "빈도 상한",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_concurrency_allows_at_limit if",
+        "line": 454,
+        "end_line": 462,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "동시 정확 경계",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/dispatch_idempotency_pg_check.py",
+        "symbol": "completed_ttl_and_scope",
+        "anchor": "",
+        "line": 53,
+        "end_line": 87,
+        "normalized_sha256": "5fe22bc56ae08ba2d6bca46c461c72f6132a220807bed6bd1a4fae59548812bf",
+        "coverage": "완료 TTL/주체·인자 독립성; 실제 DB 대기",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E07",
+      "E12"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "호출량 상한과 모든 upstream의 실행 시간 제한을 동일시하지 않음",
+    "limitations": "주체별 예약/동시 상한과 dispatch 시간 예산, 완료 변경 이력 TTL을 구분한다. 서버/기능/독립 agent별 상한을 모두 제공하지 않는다. 대기 종료는 원격 실행 강제 취소가 아니며 새 TTL PG 시험은 미실행이다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": []
   },
@@ -660,23 +2110,113 @@
     "sheet": "정책 최종본",
     "row": 22,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "비신뢰 콘텐츠",
+    "boundary": "게이트웨이 · OPA · 엔드포인트",
     "runtime_candidates": [
       "P-UNTRUSTED-CONTENT-001",
-      "P-UNTRUSTED-CONTENT-002"
+      "P-UNTRUSTED-CONTENT-002",
+      "MCP-CATALOG-001"
     ],
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/poisoning.py",
         "sha256": "c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06",
-        "committed_sha256": "bb63b3094567f96315bd302c996fe3fbecf0e608f080874ea1a0a19e9857dc96",
+        "committed_sha256": "c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06",
         "normalized_sha256": "c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06",
-        "worktree_modified": true
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "committed_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA",
+      "엔드포인트"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/poisoning.py",
+        "symbol": "findings",
+        "anchor": "",
+        "line": 321,
+        "end_line": 335,
+        "normalized_sha256": "c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/poisoning.py",
+        "symbol": "result_findings",
+        "anchor": "",
+        "line": 301,
+        "end_line": 303,
+        "normalized_sha256": "c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "untrusted_markers",
+        "anchor": "",
+        "line": 1071,
+        "end_line": 1078,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "execute_call",
+        "anchor": "",
+        "line": 1990,
+        "end_line": 2316,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/poisoning_corpus_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 264,
+        "normalized_sha256": "50c6f4806265c4538d80380f4873b88c3fa7c2a8cfc672778497a2e9cea7aeb6",
+        "coverage": "계약 전용 해독·오탐·평가 분리 순수 회귀",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_untrusted_marker_on_write_requires_approval if",
+        "line": 1123,
+        "end_line": 1131,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "표지 기반 고위험 승인",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/pac_delegation_check.py",
+        "symbol": "test_a_forged_verified_flag_in_the_request_is_ignored",
+        "anchor": "",
+        "line": 42,
+        "end_line": 45,
+        "normalized_sha256": "52e8df09d1a18dff3f7e46ec3ca42d1433eb9231a4949d155bd1f3605a0b50e9",
+        "coverage": "외부 검증 주장 신뢰 금지",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E11"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "패턴 검사와 의미적 주입 탐지 구분; 정상 대조군·다국어 표본 필요",
+    "limitations": "권한 원천은 토큰/등록부이고 외부 텍스트로 확장하지 않는다. 표지·정규식/해독 탐지는 의미적 주입 탐지와 다르다. 공개 재현율 미측정·독립 다국어 정상/공격군 부족·LLM 내부 판단은 범위 밖이다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-06"
@@ -690,11 +2230,28 @@
     "sheet": "정책 최종본",
     "row": 23,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "입력 PII·Secret",
+    "boundary": "게이트웨이 · 운영 절차",
     "runtime_candidates": [
-      "P-DATA-INSPECTION-001"
+      "P-INPUT-FIELD-001",
+      "P-DATA-INSPECTION-001",
+      "P-DLP-001",
+      "MCP-DATA-EGRESS-001"
     ],
     "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "committed_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/review.py",
+        "sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8",
+        "committed_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8",
+        "normalized_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8",
+        "worktree_modified": false
+      },
       {
         "path": "full_stack_lab/gateway/app/privacy.py",
         "sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
@@ -710,9 +2267,90 @@
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "운영 절차"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "execute_call",
+        "anchor": "",
+        "line": 1990,
+        "end_line": 2316,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/review.py",
+        "symbol": "check_inputs",
+        "anchor": "",
+        "line": 256,
+        "end_line": 262,
+        "normalized_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/privacy.py",
+        "symbol": "mask_payload",
+        "anchor": "",
+        "line": 173,
+        "end_line": 209,
+        "normalized_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/secret_scan.py",
+        "symbol": "labels",
+        "anchor": "",
+        "line": 74,
+        "end_line": 87,
+        "normalized_sha256": "c6d981869e476d64d8b3e646c307f29d223942333fad84eb7e147a05593750db"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/remaining_controls_check.py",
+        "symbol": "test_narrowed_inputs_close_the_schema",
+        "anchor": "",
+        "line": 50,
+        "end_line": 56,
+        "normalized_sha256": "8b20a38d8157d588dbc4c72b41a79a95f01cb97163f35518d3f1dc5e1b491ba2",
+        "coverage": "허용 항목 축소",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/remaining_controls_check.py",
+        "symbol": "test_unknown_or_required_inputs_are_refused",
+        "anchor": "",
+        "line": 58,
+        "end_line": 62,
+        "normalized_sha256": "8b20a38d8157d588dbc4c72b41a79a95f01cb97163f35518d3f1dc5e1b491ba2",
+        "coverage": "알 수 없는/필수 입력 처리",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/oss_audit_test.py",
+        "symbol": "test_missing_scanner_fails_closed",
+        "anchor": "",
+        "line": 110,
+        "end_line": 114,
+        "normalized_sha256": "3803be35d28efffae3d9369deabe8b4fa6585d31aba1b15ab98ffe3d9b225e41",
+        "coverage": "실제 검사기 부재 차단",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E02"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "불필요 수집 제한과 탐지 성공은 다른 통제; scanner 장애 시험",
+    "limitations": "스캐너 장애 정책만으로 최소수집을 증명하지 않는다. 허용 항목·선택 마스킹·잔존 재검사를 함께 연결했다. 모든 내부 읽기 입력을 전수 비밀 검사하지 않으며 미탐·업무 필요 항목의 의미 심사는 남는다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-06",
@@ -728,7 +2366,7 @@
     "sheet": "정책 최종본",
     "row": 24,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "출력 PII·Secret",
+    "boundary": "게이트웨이",
     "runtime_candidates": [
       "MCP-OUTPUT-001"
     ],
@@ -762,9 +2400,97 @@
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "_guarded_result",
+        "anchor": "",
+        "line": 1756,
+        "end_line": 1784,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "_inspected_result",
+        "anchor": "",
+        "line": 1787,
+        "end_line": 1801,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/privacy.py",
+        "symbol": "mask_payload",
+        "anchor": "",
+        "line": 173,
+        "end_line": 209,
+        "normalized_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/secret_scan.py",
+        "symbol": "redact_error",
+        "anchor": "",
+        "line": 97,
+        "end_line": 109,
+        "normalized_sha256": "c6d981869e476d64d8b3e646c307f29d223942333fad84eb7e147a05593750db"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/mcp_facade.py",
+        "symbol": "_render",
+        "anchor": "",
+        "line": 172,
+        "end_line": 218,
+        "normalized_sha256": "63cee152111cbf6fddaa522d4176491ea1c2fe1fe3ade4c2831719d25b09e8ef"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 213,
+        "normalized_sha256": "d12acf0e0231127e4876b12f864aef43404ef4c99cabd7e82f576ab0ab14fda2",
+        "coverage": "SDK content·structuredContent 보존/출력 보류",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/response_cap_boundary_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 128,
+        "normalized_sha256": "e98c3b5ff9a1e782cfaa28678538d94123558770f4792549cc39a5981bb6958e",
+        "coverage": "바이트/건수 경계·마스킹 후 증가",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/dest_pin_credential_redaction_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 386,
+        "normalized_sha256": "8b67c15e1d3549074da251acf8681217fcb6045e4cc815181d0189a0646e6dfe",
+        "coverage": "오류/인자/원장의 자격 비노출",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E15"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "D-117: 오류/원장·설정/인자 비밀 가림 로컬 회귀; 실제 검사기·DB/SDK 미검증. 응답 보류·마스킹은 upstream 미실행을 뜻하지 않음",
+    "limitations": "응답 전체를 받은 뒤 크기·출력 계약·민감정보를 검사/가린다. 결과 보류도 upstream 실행은 이미 일어났다. D-117만의 로컬 한계를 전체 최신 출력 경로로 일반화하지 않는다. 현재 HEAD 실제 검사기/SDK·큰 응답 PJ1·권한별 출력 의미 검사는 미검증이다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-06"
@@ -778,30 +2504,123 @@
     "sheet": "정책 최종본",
     "row": 25,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "변경 재승인",
+    "boundary": "운영 절차 · 게이트웨이 · OPA",
     "runtime_candidates": [
       "MCP-CATALOG-001",
       "PAC-02"
     ],
     "code_candidates": [
       {
-        "path": "full_stack_lab/gateway/app/contract.py",
-        "sha256": "b8645dcece90890a29a0c8b3863793f2ee6637d2ea30b2b7d6e99684ae8441c9",
-        "committed_sha256": "b8645dcece90890a29a0c8b3863793f2ee6637d2ea30b2b7d6e99684ae8441c9",
-        "normalized_sha256": "b8645dcece90890a29a0c8b3863793f2ee6637d2ea30b2b7d6e99684ae8441c9",
-        "worktree_modified": false
-      },
-      {
         "path": "full_stack_lab/gateway/app/core.py",
         "sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
         "committed_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
         "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
         "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/registry.py",
+        "sha256": "49563f065e15b25fbbf5365e554beb1358f237612e6d74e7a6fc9f20021b3a25",
+        "committed_sha256": "49563f065e15b25fbbf5365e554beb1358f237612e6d74e7a6fc9f20021b3a25",
+        "normalized_sha256": "49563f065e15b25fbbf5365e554beb1358f237612e6d74e7a6fc9f20021b3a25",
+        "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "운영 절차",
+      "게이트웨이",
+      "OPA"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "refresh_catalog",
+        "anchor": "",
+        "line": 201,
+        "end_line": 364,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "approve_contract",
+        "anchor": "",
+        "line": 367,
+        "end_line": 449,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/registry.py",
+        "symbol": "tool_hashes",
+        "anchor": "",
+        "line": 268,
+        "end_line": 271,
+        "normalized_sha256": "49563f065e15b25fbbf5365e554beb1358f237612e6d74e7a6fc9f20021b3a25"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/registry.py",
+        "symbol": "review_matches",
+        "anchor": "",
+        "line": 274,
+        "end_line": 281,
+        "normalized_sha256": "49563f065e15b25fbbf5365e554beb1358f237612e6d74e7a6fc9f20021b3a25"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/catalog_refresh_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 189,
+        "normalized_sha256": "0f70ca29014fc2284b2c32f86d849ca190ee6428b8195b02dbc9b9330b45c83c",
+        "coverage": "A→B→A 계약 회귀",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/output_contract_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 304,
+        "normalized_sha256": "7b0a9311fe8f0b21c497b35bb11c94da0568256818e5245ae7c9a1414074532b",
+        "coverage": "출력 스키마 승인/협상 판본",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/d149_transition_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 70,
+        "normalized_sha256": "5e0050367bc7491b8be110ad3bf9e62a22d685d4fb5de6532b77ea28021e95c6",
+        "coverage": "NULL 전환·재승인 사건",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/auto_suspend_pg_check.py",
+        "symbol": "drift_detection_and_isolation",
+        "anchor": "",
+        "line": 99,
+        "end_line": 137,
+        "normalized_sha256": "9e0f67d7eab67c75012f0cf877b803405a1c7d4a1ae86d1b5f16a892fec86dca",
+        "coverage": "도구별 제한과 무관한 도구 보존; 실제 DB 대기",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E13",
+      "E15"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "자동 최초 신뢰 금지; 사람이 승인한 계약과 호출 시 관찰 해시 대조",
+    "limitations": "설명/입력/출력 해시·버전/정책 기준을 비교한다. 옛 NULL 출력 해시는 스키마 부재 계약으로 유지하며 첫 관측 스키마를 승인하지 않는다. 새 PostgreSQL 선택 제한·출력 재승인/PJ1 복구 미실행, 라이선스/권한·공급자 내부 변경의 모든 감지는 보장하지 않는다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": []
   },
@@ -813,11 +2632,16 @@
     "sheet": "정책 최종본",
     "row": 26,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "감사",
-    "runtime_candidates": [
-      "append-only audit"
-    ],
+    "boundary": "게이트웨이 · 엔드포인트 · 운영 절차",
+    "runtime_candidates": [],
     "code_candidates": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "committed_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "worktree_modified": false
+      },
       {
         "path": "full_stack_lab/gateway/app/audit.py",
         "sha256": "3a9143ab647578010aa3db0468baf6f5002afc7c73209a314acfd907aaa065cc",
@@ -826,23 +2650,118 @@
         "worktree_modified": false
       },
       {
-        "path": "full_stack_lab/tests/oss_audit_test.py",
-        "sha256": "3803be35d28efffae3d9369deabe8b4fa6585d31aba1b15ab98ffe3d9b225e41",
-        "committed_sha256": "3803be35d28efffae3d9369deabe8b4fa6585d31aba1b15ab98ffe3d9b225e41",
-        "normalized_sha256": "3803be35d28efffae3d9369deabe8b4fa6585d31aba1b15ab98ffe3d9b225e41",
-        "worktree_modified": false
-      },
-      {
-        "path": "full_stack_lab/gateway/app/endpoint_plane.py",
-        "sha256": "c583ce1df783d35c31cfa32ac714bc1da0194d43ede44128d273ef468b79d5f8",
-        "committed_sha256": "c583ce1df783d35c31cfa32ac714bc1da0194d43ede44128d273ef468b79d5f8",
-        "normalized_sha256": "c583ce1df783d35c31cfa32ac714bc1da0194d43ede44128d273ef468b79d5f8",
+        "path": "full_stack_lab/gateway/app/retention.py",
+        "sha256": "3471e9faf85be04055c649d1d93f976405bc565313254a6bb59a982c6b827ce3",
+        "committed_sha256": "3471e9faf85be04055c649d1d93f976405bc565313254a6bb59a982c6b827ce3",
+        "normalized_sha256": "3471e9faf85be04055c649d1d93f976405bc565313254a6bb59a982c6b827ce3",
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "엔드포인트",
+      "운영 절차"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "_record_decision",
+        "anchor": "",
+        "line": 1824,
+        "end_line": 1911,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "_audit_payload",
+        "anchor": "",
+        "line": 1804,
+        "end_line": 1818,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "verify_audit_chain",
+        "anchor": "",
+        "line": 1955,
+        "end_line": 1974,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/audit.py",
+        "symbol": "export",
+        "anchor": "",
+        "line": 84,
+        "end_line": 96,
+        "normalized_sha256": "3a9143ab647578010aa3db0468baf6f5002afc7c73209a314acfd907aaa065cc"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/retention.py",
+        "symbol": "set_setting",
+        "anchor": "",
+        "line": 98,
+        "end_line": 110,
+        "normalized_sha256": "3471e9faf85be04055c649d1d93f976405bc565313254a6bb59a982c6b827ce3"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/oss_audit_test.py",
+        "symbol": "test_admin_boundary_and_limits",
+        "anchor": "",
+        "line": 27,
+        "end_line": 35,
+        "normalized_sha256": "3803be35d28efffae3d9369deabe8b4fa6585d31aba1b15ab98ffe3d9b225e41",
+        "coverage": "감사 조회 관리자 경계",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/ledger_retention_check.py",
+        "symbol": "test_below_floor_is_refused_and_the_longest_floor_wins",
+        "anchor": "",
+        "line": 57,
+        "end_line": 64,
+        "normalized_sha256": "455635b73ff7000c2371554b3fddb8f0416e507a765e763f12d312438dab37e5",
+        "coverage": "보존 하한",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/policy_selftest_pg_check.py",
+        "symbol": "main",
+        "anchor": "",
+        "line": 82,
+        "end_line": 160,
+        "normalized_sha256": "c7c3dfbd3acfe80bd4e7b3f18e6af55de055952db404184ba173d73adbd2c4f0",
+        "coverage": "실제 OPA/DB 자체 시험·합성 경보 분리",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/endpoint_evidence_pg_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 373,
+        "normalized_sha256": "f95f08fe4de5e8c0b8eb884779d6512fbe9b469d9f8fa8664846816e191a4067",
+        "coverage": "감사 UPDATE 거부·장치 사건 결속 PG",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E06",
+      "E10",
+      "E14"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "체인 검증과 장치 상태/감사 이벤트의 transaction 원자성·DB 소유자 변조·보존 정책은 별도",
+    "limitations": "append-only audit는 정책 ID가 아니므로 runtime 목록에서 제거했다. SHA 사슬·DB 트리거·접근제어는 보존·정기 권한 검토·전체 비노출과 다르다. 원장 요청 본문/개인정보 보관과 최소화 충돌, DB 소유자 재계산, 삭제/봉인 절차와 주변 표 보존은 결정 필요다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-08",
@@ -861,7 +2780,7 @@
     "sheet": "정책 최종본",
     "row": 27,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "철회·종료",
+    "boundary": "게이트웨이 · OPA · 엔드포인트 · 실행기 · 운영 절차",
     "runtime_candidates": [
       "MCP-DECOMM-001",
       "PAC-14"
@@ -875,16 +2794,135 @@
         "worktree_modified": false
       },
       {
-        "path": "full_stack_lab/tests/termination_flow.py",
-        "sha256": "c5bbd0c1de0ff0d028659e302d46ee33a26f7d693fb33a820829e9a94f4f5524",
-        "committed_sha256": "c5bbd0c1de0ff0d028659e302d46ee33a26f7d693fb33a820829e9a94f4f5524",
-        "normalized_sha256": "c5bbd0c1de0ff0d028659e302d46ee33a26f7d693fb33a820829e9a94f4f5524",
+        "path": "full_stack_lab/gateway/app/mcp_sessions.py",
+        "sha256": "362036548a92a7d90e3a09be3d3661216c0b5d58029755e856ce249a2e6c095d",
+        "committed_sha256": "362036548a92a7d90e3a09be3d3661216c0b5d58029755e856ce249a2e6c095d",
+        "normalized_sha256": "362036548a92a7d90e3a09be3d3661216c0b5d58029755e856ce249a2e6c095d",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/runtime/worker.py",
+        "sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
+        "committed_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
+        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "committed_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "OPA",
+      "엔드포인트",
+      "실행기",
+      "운영 절차"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/decommission.py",
+        "symbol": "open_case",
+        "anchor": "",
+        "line": 221,
+        "end_line": 273,
+        "normalized_sha256": "0c9389da6a2ce4791ed668f7c3f768cf487b8c98e6d14c69d08e0a25c63453ae"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/decommission.py",
+        "symbol": "assess",
+        "anchor": "",
+        "line": 715,
+        "end_line": 760,
+        "normalized_sha256": "0c9389da6a2ce4791ed668f7c3f768cf487b8c98e6d14c69d08e0a25c63453ae"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/mcp_sessions.py",
+        "symbol": "terminate",
+        "anchor": "",
+        "line": 50,
+        "end_line": 67,
+        "normalized_sha256": "362036548a92a7d90e3a09be3d3661216c0b5d58029755e856ce249a2e6c095d"
+      },
+      {
+        "path": "full_stack_lab/runtime/worker.py",
+        "symbol": "reconcile",
+        "anchor": "",
+        "line": 504,
+        "end_line": 542,
+        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "deregister_server",
+        "anchor": "",
+        "line": 748,
+        "end_line": 768,
+        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/termination_flow.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 156,
+        "normalized_sha256": "c5bbd0c1de0ff0d028659e302d46ee33a26f7d693fb33a820829e9a94f4f5524",
+        "coverage": "C1~C4·T1~T3 live 회귀용; 이번 미실행",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/session_termination_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 278,
+        "normalized_sha256": "916c29ec2d05b71641ed0ad65a24c455f918d1632ad4248b93332a1cf7764dca",
+        "coverage": "주체/장치 세션 종료·토큰 교체",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/resource_residual_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 258,
+        "normalized_sha256": "eef6d67903a22a1021d71f73723cb481952ec739592a15a3631d712fa4f81b0f",
+        "coverage": "실행기 제거 재시도·자원 수락 우선",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/opa/policy_test.rego",
+        "symbol": "",
+        "anchor": "test_terminating_engagement_is_blocked if",
+        "line": 979,
+        "end_line": 987,
+        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "coverage": "종료 중 호출 거부",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E07",
+      "E05",
+      "E13",
+      "E17"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "C1~C4와 자원 서버 재접근의 현재 증거 필요",
+    "limitations": "DB 경계 종료·설정/경로 제거·프로세스 제거·자원 거부를 분리한다. 집계 MCP 세션은 한 서버 종료로 전체 종료하지 않는다. 실제 지속 세션/실행기 잔존·Windows·현재 PJ1 종료 재접근은 미검증이다. 설정 소멸은 C4 상태 증거 일부이며 외부 효과 철회 증거가 아니다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-02",
@@ -903,10 +2941,9 @@
     "sheet": "정책 최종본",
     "row": 28,
     "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-    "boundary": "잔존 자격",
+    "boundary": "게이트웨이 · 운영 절차 · 실행기",
     "runtime_candidates": [
-      "PAC-14",
-      "C3/C4"
+      "PAC-14"
     ],
     "code_candidates": [
       {
@@ -917,6 +2954,13 @@
         "worktree_modified": false
       },
       {
+        "path": "full_stack_lab/gateway/app/disposal.py",
+        "sha256": "5728a4b6d46c76c2338d153f796e45c01520162ce07e58679b23a98c38dbcc91",
+        "committed_sha256": "5728a4b6d46c76c2338d153f796e45c01520162ce07e58679b23a98c38dbcc91",
+        "normalized_sha256": "5728a4b6d46c76c2338d153f796e45c01520162ce07e58679b23a98c38dbcc91",
+        "worktree_modified": false
+      },
+      {
         "path": "full_stack_lab/gateway/app/decommission.py",
         "sha256": "0c9389da6a2ce4791ed668f7c3f768cf487b8c98e6d14c69d08e0a25c63453ae",
         "committed_sha256": "0c9389da6a2ce4791ed668f7c3f768cf487b8c98e6d14c69d08e0a25c63453ae",
@@ -924,9 +2968,101 @@
         "worktree_modified": false
       }
     ],
+    "control_locations": [
+      "게이트웨이",
+      "운영 절차",
+      "실행기"
+    ],
+    "code_references": [
+      {
+        "path": "full_stack_lab/gateway/app/idp.py",
+        "symbol": "revoke_principal_tokens",
+        "anchor": "",
+        "line": 237,
+        "end_line": 254,
+        "normalized_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/idp.py",
+        "symbol": "revoke_device_tokens",
+        "anchor": "",
+        "line": 257,
+        "end_line": 277,
+        "normalized_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/idp.py",
+        "symbol": "introspection",
+        "anchor": "",
+        "line": 299,
+        "end_line": 338,
+        "normalized_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/disposal.py",
+        "symbol": "remember_token",
+        "anchor": "",
+        "line": 157,
+        "end_line": 158,
+        "normalized_sha256": "5728a4b6d46c76c2338d153f796e45c01520162ce07e58679b23a98c38dbcc91"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/decommission.py",
+        "symbol": "_judge_target",
+        "anchor": "",
+        "line": 626,
+        "end_line": 696,
+        "normalized_sha256": "0c9389da6a2ce4791ed668f7c3f768cf487b8c98e6d14c69d08e0a25c63453ae"
+      }
+    ],
+    "regression_tests": [
+      {
+        "path": "full_stack_lab/tests/restore_residual_pg_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 217,
+        "normalized_sha256": "c45efce5b641446ab60297637f0ccab088f6a6209626f56d11a3dcd52f2bbf29",
+        "coverage": "DB 복원 뒤 access/refresh/등록/관리 설정 잔존",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/resource_residual_check.py",
+        "symbol": "",
+        "anchor": "",
+        "line": 1,
+        "end_line": 258,
+        "normalized_sha256": "eef6d67903a22a1021d71f73723cb481952ec739592a15a3631d712fa4f81b0f",
+        "coverage": "발급자 inactive와 자원 수락 충돌",
+        "execution_in_this_review": "미실행"
+      },
+      {
+        "path": "full_stack_lab/tests/resource_residual_pg_check.py",
+        "symbol": "residual_sequence",
+        "anchor": "",
+        "line": 128,
+        "end_line": 179,
+        "normalized_sha256": "ec987d97fa15394c90ef46ddda2518d7a09d686071c24e14b022844dcff3c66b",
+        "coverage": "격리 Gitea PAT 자원 재접근; 미실행",
+        "execution_in_this_review": "미실행"
+      }
+    ],
+    "evidence_ids": [
+      "E05",
+      "E07",
+      "E17"
+    ],
+    "independent_review": {
+      "path": "analysis/threat-trace-review-1020/review.json",
+      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "reviewer": "Codex sol",
+      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+      "files_match_review": true,
+      "changed_review_files": []
+    },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-20",
-    "limitations": "설정 삭제는 외부 토큰·키 회수 증거 아님",
+    "limitations": "C3/C4는 종료 판정 기준이며 런타임 정책 ID에서 분리했다. DB 밖 서명 기록이 복원된 자격을 막지만 DB+서명 볼륨/키 동시 복원·외부 JWT 캐시·복제/미고지 공급자 자격은 보장하지 않는다. D-154 회전 순서 후보 수용과 새 자원 서버 시험은 별도다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-07",
