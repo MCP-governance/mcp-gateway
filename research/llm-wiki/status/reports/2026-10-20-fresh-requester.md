@@ -62,3 +62,58 @@ python /tests/dispatch_recheck_check.py
 ## 사용자에게 필요한 입력
 
 없음. 기존 기기 환경에서 수행할 검증만 남았다.
+
+## 기존 시험 대역 보정
+
+- 작업자·기준: Codex sol, 2026-10-20, `10/20-fresh-requester`, HEAD `e19cabaf6570378ff8faf26e382d77d7bbb0a584`(S9b). 이번 후속 작업 시작 시 미커밋 변경 없음. 커밋·푸시 없음. 원격 HEAD 재조회는 github.com:443 연결 실패다.
+- 문제·완료 조건: `upstream_session_reuse_test.py`의 AST 추출은 모듈 import를 하지 않아 S9b가 사용하는 `disposal`이 없다. 기존 `fetch_one`은 승인 이외 모든 SQL에 활성 주체 행을 반환해 철회 조회에도 truthy를 반환한다. 기존 assert를 보존하고 대역·입력 fixture만 보강해 원래 세션/재시도 경로를 시험한다.
+- 결과: 아래 네 줄만 추가/교체했다(행은 보정 후 파일 기준). 제품 코드 수정은 불필요했다. `core.py`, C9 제품/시험 파일, 다른 기존 시험, `status/current.md`는 HEAD와 바이트 단위로 같다. 위의 “기존 시험·내용을 그대로 보존” 기록은 S9b 당시 결과이며, 이번 후속에서 이 파일의 대역 보정에 한해 대체한다. **기존 시험 기대값 변경 필요: 없음.**
+
+| 변경 행 — `full_stack_lab/tests/upstream_session_reuse_test.py` | 바꾼 내용 | 줄별 이유 |
+| --- | --- | --- |
+| 557(추가) | `if "agent_revoked_tokens" in sql:` | 철회 표 조회를 기존 활성 주체 기본 응답과 구분한다. 실제 `_call_upstream`이 쓰는 SQL의 테이블명만 판별한다. |
+| 558(추가) | `return None` | 정상 세션 fixture에는 철회 행이 없다는 DB 응답을 명시한다. 활성 주체 dict 때문에 잘못된 철회로 판정되는 것을 막는다. |
+| 580(추가) | `"disposal": NS(blocked=lambda **kwargs: False),` | AST 이름공간에 기존 모듈 의존성을 제공한다. 정상 서명 목록에서 요청자가 폐기되지 않은 상태를 모델링하며 실제 폐기 저장소를 읽거나 초기화하지 않는다. |
+| 600(기존 597행 교체) | `pac_payload`에 `transport_claims.jti="unit-requester"` 추가 | 인증 ingress가 저장한 요청자 jti가 있는 정상 입력을 제공한다. 인자·사용자 헤더로 제품 신원을 정하는 변경은 아니다. 기존 `arguments`, 호출 대상·승인 ID·assert를 유지한다. |
+
+정상 응답 대역이 보안을 우회하는 제품 코드가 되지 않도록, 별도 `fresh_requester_check.py`의 파일 폐기·DB 철회·조회 장애 등 음성 경로 9건을 다시 실행했다. 기존 시험 파일의 assert/단언 호출 AST **120개가 HEAD와 모두 동일**함을 확인했다. `test_T10_*`의 최초 `ValueError("expired")`는 의도한 탐색 재시도 입력이며, 수정 전에는 재시도 뒤 누락된 철회 대역에서 멈춘 것이었다. 예외 처리·재시도 횟수·기존 정책 기대값은 바꾸지 않았다.
+
+### 후속 검증
+
+Windows Python 3.10.5, 2026-10-20, 로컬 스택 없이 실행했다. 아래 표는 이번에 실행한 결과다.
+
+| 확인 종류 | 명령·환경·실행 시각 | 결과 | 원본 증거 |
+| --- | --- | --- | --- |
+| 수정 전 회귀 재현 | `python -B -X utf8 full_stack_lab/tests/upstream_session_reuse_test.py` | 40건 중 35통과·2실패·3오류. 승인 경로가 `Requester revocation check unavailable` / `P-CONTROL-FAIL-CLOSED`로 중단 | 이번 터미널 traceback, 종료 1 |
+| 보정 후 기존 회귀 | 같은 명령 | **40통과**, `test_T10_*`, `test_T4_*`, 종료 정책 유지 포함 | 이번 터미널 출력 `Ran 40 tests` / `OK`, 종료 0 |
+| 요청자 재검사 | `python -B -X utf8 full_stack_lab/tests/fresh_requester_check.py` | **9통과**, 정상·철회·폐기·장치·주체·만료·조회 실패 경로 | 이번 터미널 출력, 종료 0 |
+| 최종 dispatch | `python -B -X utf8 full_stack_lab/tests/dispatch_recheck_check.py` | **15통과** | 이번 터미널 출력, 종료 0 |
+| 승인 회귀 | `python -B -X utf8 -m unittest discover -s full_stack_lab/tests -p high_impact_check.py -v` | **17통과·이미지 전용 7생략** | 이번 터미널 출력, 종료 0 |
+| Python 구문 | `python -m py_compile full_stack_lab/tests/upstream_session_reuse_test.py full_stack_lab/gateway/app/core.py full_stack_lab/tests/fresh_requester_check.py` | 통과 | 이번 터미널 출력 없음, 종료 0 |
+| JS 구문 | `node --check full_stack_lab/gateway/app/agent_static/console.js` | 통과 | 이번 터미널 출력 없음, 종료 0 |
+| 기대값·범위 | 표준 라이브러리 `ast`·`subprocess`로 HEAD 대조 | 단언 AST 120개 동일, 제품/C9/current.md 바이트 동일 | 이번 터미널 `PASS` |
+| 문서·인코딩 | `git diff --check`, 표준 라이브러리로 UTF-8/BOM/LF·추가 링크·기존 문서 접두/백로그 칸 대조 | 변경 5파일 UTF-8(BOM 없음)·LF, 추가 파일 링크 정상, 기존 보고/결정 내용 보존, DEV-17 마지막 칸만 수정 | 이번 터미널 `PASS`, 종료 0 |
+| 위키 전체 | `python -B -X utf8 research/llm-wiki/tools/check_wiki.py --ci-ignored-local-sources` | **실패**, 매핑 해시 불일치 24건·기존 깨진 링크 3건, 원본 미보유 경고 119건. 대상 제품 코드와 링크 출처 문서는 HEAD와 동일함을 확인했다 | 이번 터미널 JSON `ok:false`, 종료 1 |
+
+합계 로컬 단위 81통과·7생략이다. 게이트웨이 이미지 import·실제 DB/서명 파일·기기 배포·PJ1·독립 upstream 효과는 미실행이다. 정상 입력 대역은 실제 인증 검증/파일 무결성의 증거가 아니다. Codex luna의 적대 검증은 이 작업에서 수행하지 않았으며 검토 대기다. 새 정책·DB·라우트·의존성·mock MCP는 없다.
+
+위키 실패의 링크 3건은 기존 D-150 분석의 미보유 `launcher_pin_adversarial_check.py`와 기존 S7 보고의 `../analysis/...` 상대 경로 2건이다(후자는 실제 파일이 있지만 보고서 기준 경로가 틀림). 이를 이번 신규 문서의 오류로 세거나 전체 검사를 통과로 보고하지 않는다. 작업 범위 밖 문서·매핑을 수정하거나 재생성하지 않았다.
+
+### C9 읽기 전용 검토와 결정 연결
+
+[C9/D-154 정본](../../analysis/review-1020/c9-d154.md)에 시험 변경 두 건을 각각 **A(목록 격리 채택)**, **B(401/403 확대는 수정 후 채택)**로 판정했다. `git show claude/c9`의 커밋은 `5a8bcc18af6934aecea2fc836abf752da52d8e33`이다. 후보 파일은 수정하지 않았다. HEAD/후보 `token` AST와 메모리 DB/파일 대역으로 정상·발급 예외·기록 예외의 6조건을 실행해 순서를 대조했다. 실제 DB 복원이 아닌 메모리 상태 복원에서, 후보의 커밋 후 기록 누락 뒤 회전 전 상태로 돌아가면 옛 토큰의 첫 재사용이 발급에 성공했다. 상세 관측값·해시·복원/경쟁/계정·장치 비대칭 한계는 정본에 기록했다. 후보의 22/22 보고는 여기서 재현하지 않았다.
+
+결정은 `docs/ai/DECISIONS.md` 끝의 D-152 후속·D-154 후보 적대 검토에 연결했다. DEV-17 백로그의 마지막 상태 칸만 갱신했다. 상태 생성기·위키 생성기는 실행하지 않아 `current.md`나 파생 파일을 변경하지 않았다.
+
+### 기기 후속 명령·한계
+
+사람이 변경된 게이트웨이 이미지와 `/tests` 마운트를 준비한 뒤 이미지 내부에서 실행한다. 기본 compose의 시험 마운트 부재는 앞선 보고와 같다.
+
+```bash
+python /tests/upstream_session_reuse_test.py
+python /tests/fresh_requester_check.py --gateway
+python /tests/high_impact_check.py --gateway
+python /tests/dispatch_recheck_check.py
+```
+
+C9는 후보 및 B 판정 수정이 들어간 별도 검토 트리에서 격리 실험실 준비 상태를 확인한 뒤 `cd full_stack_lab` → `tests/termination_dispatch_lab.sh run token_revocation_pg_check.py`를 실행한다. 이번 트리에는 D-154를 병합하지 않았으므로 이 명령의 후보 검증 성공을 주장하지 않는다. 기록 예외·프로세스 장애·감시 전 DB 복원·다중 워커 경쟁의 추가 신규 검증은 남아 있다. 다른 작업자의 실험실을 재시작하거나 종료하지 않았다.

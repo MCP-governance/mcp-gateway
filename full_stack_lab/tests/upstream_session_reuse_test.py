@@ -554,6 +554,8 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         async def fetch_one(sql, params):
             if "approvals" in sql:
                 return {"status": "APPROVED", "expires_at": datetime.now(timezone.utc) + timedelta(minutes=1)}
+            if "agent_revoked_tokens" in sql:
+                return None
             return {"status": "active"}
         self.listed = AsyncMock(return_value=[NS(name="tool")])
         self.policy = AsyncMock(return_value={"decision": "Allow", "restrictions": {}})
@@ -575,6 +577,7 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
                            tool_view=lambda _: {"description": "description", "input_schema": {}},
                            content_items=lambda _: [], session_terminated=lambda exc: str(exc) == "expired"),
             "db": NS(fetch_all=fetch_all, fetch_one=fetch_one), "canonical_hash": lambda value: value,
+            "disposal": NS(blocked=lambda **kwargs: False),
             "Draft202012Validator": lambda _: NS(is_valid=lambda args: True),
             "datetime": datetime, "UTC": timezone.utc, "local_verdict": lambda pid, decision, msg: {"policy_id": pid, "decision": decision},
             "pac": NS(build=AsyncMock(return_value={})), "classify": NS(classify=lambda *args: None),
@@ -594,7 +597,7 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
 
     async def call(self):
         return await self.ns["_call_upstream"]("a", "tool", {}, "approval", "alice", dispatch_state=self.state,
-                                              pac_payload={"arguments": {}}, laps=self.laps)
+                                              pac_payload={"arguments": {}, "transport_claims": {"jti": "unit-requester"}}, laps=self.laps)
 
     async def test_T4_policy_rechecked_every_call_on_same_connection(self):
         await self.call()
