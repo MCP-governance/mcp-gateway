@@ -2,7 +2,7 @@
 
 - 작업자: Codex luna
 - 코드 기준: `3ea141c239080bbd83f8e49911d2c8983d98ffe1`, 브랜치 `10/20-output-contract-review`; 기존 미추적 `2026-10-20-loopback-test.md` 보존
-- 시작 근거: DEV-44 / S7 / D-149, [출력 계약 연구](../analysis/output-contract-d149/README.md)
+- 시작 근거: DEV-44 / S7 / D-149, [출력 계약 연구](../../analysis/output-contract-d149/README.md)
 - 해결할 문제와 완료 조건: 기존 시험 변경 4건의 기대값 완화 여부 판정, 출력 계약 공격 경로 확인, 확실한 결함 최소 수정, 판정·근거·한계를 분석 정본에 기록
 
 ## 결과
@@ -11,7 +11,7 @@
 
 기존 승인 해시 부재가 출력 스키마 부재의 canonical hash로 해석되어 outputSchema를 광고하지 않는 기존 도구의 승인을 유지한다. 외부 `$ref` 해석 차단, 마스킹 뒤 스키마 재검증, 2025-06-18·2025-11-25 객체 보존과 2026-07-28 JSON 값 보존, 최종 dispatch SQL·같은 연결 재확인의 출력 해시 비교를 코드에서 확인했다. 스키마 검사 전 깊이 64·컨테이너 10,000개·약 256 KiB 상한을 추가했다. `isError=true`도 검사하는 D-149 선택은 유지하고 공식 SDK와의 차이를 한계로 기록했다.
 
-세부 판정과 코드 경로는 [S7 적대 검토](../analysis/review-1020/s7-output-contract.md)에 기록했다.
+세부 판정과 코드 경로는 [S7 적대 검토](../../analysis/review-1020/s7-output-contract.md)에 기록했다.
 
 ## 검증
 

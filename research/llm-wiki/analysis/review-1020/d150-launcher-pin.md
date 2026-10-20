@@ -6,7 +6,7 @@
 - 기준: `10/20-launcher-pin-review`, `07708a2caadf6df17ba4212c88adfd716d0374e4`, 시작 작업 트리 깨끗함.
 - 판정: **병합 보류**. 정상 인자 오탐·Windows 실행 경계·기존 시험 회귀가 남았다. 기존 시험 변경 필요 규칙에 따라 제품 수정은 중단했다.
 - 범위: Linux `wrapper(..., guard=)`와 생성 C, Windows `launch_harness`·`harness_launchers`·사용자 PATH, 기존 `launcher_pin_check.py` 및 연결된 Windows CA 시험.
-- [실행 원본·소스 SHA-256](d150-launcher-pin-evidence.json), [새 재현 시험](../../../../full_stack_lab/tests/launcher_pin_adversarial_check.py), [작업 보고](../../status/reports/2026-10-20-d150-launcher-pin-review.md).
+- [실행 원본·소스 SHA-256](d150-launcher-pin-evidence.json), 새 재현 시험 `launcher_pin_adversarial_check.py`(정정 때 삭제 — Windows 런처 철회), [작업 보고](../../status/reports/2026-10-20-d150-launcher-pin-review.md).
 
 ## 증거 수준과 판본
 
