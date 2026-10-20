@@ -207,3 +207,16 @@ C1(제공자가 쥔 자격을 밝혔는가)이 없으면 T3, 폐기 방법(C2)�
 `TYPESAFE_API_KEY`가 있으면 TypeSafe Jev가 판정하고, 없으면 규칙으로 판정합니다. 원격 서버는 결론이 T1이면 바로, 아니면
 **위험 수용 사유**(10자 이상)를 적거나 제공자 문서로 확인한 기록을 남겨야 승인됩니다. 결론은 제공자의 실제 회수나 계약을
 검증한 것이 아니며 최종 도입 승인은 관리자가 합니다.
+
+## SIEM 연동
+
+판정(`decisions`)·승인 이력(`approval_events`)·실제 경보(`ops_alerts`)는 같은 트랜잭션에서 `siem_outbox`에 참조가 쌓이고, `siem-worker`가 OCSF JSON 한 건씩 HTTPS로 보냅니다. 합성 경보는 보내지 않습니다. 받는 쪽이 `Idempotency-Key`(=`metadata.uid`)로 중복을 합치고, 2xx는 저장이 끝난 뒤에만 돌려줘야 합니다. 응답이 없거나 5xx이면 outbox가 5초 간격으로 시작해 최대 1시간까지 늘려 가며 다시 보냅니다.
+
+SIEM 제품은 제품 스택과 다른 compose 프로젝트로 세웁니다(`full_stack_lab/siem/`: OpenSearch · Dashboards · Vector 수신 앞단, Tailscale IP에만 게시). 켜는 순서는 다음과 같습니다.
+
+1. SIEM 쪽: `SIEM_BIND=<Tailscale IP> full_stack_lab/siem/setup.sh <제품 siem-secrets 절대경로>` — 난수 토큰·사설 CA를 만들고 `ca.pem`·`token`을 제품 `siem-secrets/`에 둡니다.
+2. 토큰 파일 소유자를 워커 UID(10001)로 바꾸고 0600으로 둡니다(`sudo chown 10001:10001 siem-secrets/token`).
+3. `.env`에 `SIEM_URL=https://<Tailscale IP>:8688/ingest`, `SIEM_TOKEN_FILE=/run/siem/token`, `SIEM_CA_FILE=/run/siem/ca.pem`.
+4. `./console.sh field siem up` — 워커 컨테이너만 만들고 게이트웨이 등 나머지는 다시 만들지 않습니다. `field siem status`는 대기열(전달·대기·최대 시도), `field siem down`은 워커만 멈춥니다. 값이 빠져 있으면 `up`과 `field up --with-siem`이 시작 전에 거절합니다.
+
+`field up`(옵션 없음)은 워커를 건드리지 않아 켜 둔 워커가 그대로 남습니다. 토큰·CA 파일은 매 전송마다 다시 읽으므로 교체에 재시작이 필요 없습니다(수신 쪽 Vector는 토큰을 설정 시점에 읽으므로 재시작).

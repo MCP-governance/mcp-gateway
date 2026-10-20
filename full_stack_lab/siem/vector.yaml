@@ -1,0 +1,73 @@
+# siem.py가 보내는 한 건(OCSF Base Event JSON)을 받아 OpenSearch에 색인한다.
+# 토큰·OpenSearch 비밀번호는 secrets/vector/ 파일에서 읽는다(설정 파일에 값이 없다).
+secret:
+  files:
+    type: directory
+    path: /etc/vector/secrets
+
+sources:
+  mint:
+    type: http_server
+    address: 0.0.0.0:8688
+    path: /ingest
+    strict_path: true
+    method: POST
+    # 본문은 JSON 한 개다. 줄 단위로 쪼개지 않고 그대로 이벤트 필드로 푼다.
+    decoding: {codec: json}
+    framing: {method: bytes}
+    headers: [Authorization, Idempotency-Key]
+    auth:
+      strategy: custom
+      source: |
+        .headers.authorization == "Bearer " + "SECRET[files.siem_token]"
+    tls:
+      enabled: true
+      crt_file: /etc/vector/pki/ingest.crt
+      key_file: /etc/vector/pki/ingest.key
+
+transforms:
+  shape:
+    type: remap
+    inputs: [mint]
+    source: |
+      uid = string(.metadata.uid) ?? ""
+      key = string(."Idempotency-Key") ?? ""
+      at = int(.time) ?? 0
+      # UID가 없거나 헤더와 본문이 다르거나 시각이 없으면 버리지 않고 rejected 색인으로 보낸다(조용한 유실 방지).
+      suffix = "rejected"
+      if uid != "" && key == uid && at > 0 {
+        formatted, err = format_timestamp(from_unix_timestamp(at, unit: "milliseconds") ?? now(), "%Y.%m")
+        if err == null { suffix = formatted }
+      }
+      ._id = if uid != "" { uid } else { uuid_v7() }
+      ._suffix = suffix
+      .ingest_idempotency_key = key
+      del(.Authorization)
+      del(.source_type)
+      del(.path)
+      del(.timestamp)
+      del(.host)
+      del(."Idempotency-Key")
+
+sinks:
+  opensearch:
+    type: elasticsearch
+    inputs: [shape]
+    endpoints: ["https://opensearch:9200"]
+    api_version: v7
+    mode: bulk
+    bulk:
+      action: index
+      index: "mint-ocsf-{{ _suffix }}"
+    id_key: _id
+    encoding: {except_fields: ["_suffix"]}
+    auth:
+      strategy: basic
+      user: admin
+      password: "SECRET[files.opensearch_password]"
+    tls:
+      verify_certificate: false
+    # 색인을 확인한 뒤에만 수신 응답(2xx)이 나간다 — 색인 못 하면 송신 쪽 outbox가 다시 보낸다.
+    # 기본 배치 대기 1초가 이벤트 한 건(송신 쪽은 한 번에 하나)마다 붙으면 초당 1건이 한계다.
+    batch: {timeout_secs: 0.1}
+    acknowledgements: {enabled: true}
