@@ -1,5 +1,0 @@
-# MCP 집계 경로 점검용 덮어쓰기: docker compose -f compose.yaml -f compose.mcp.yaml up -d litellm
-services:
-  litellm:
-    volumes:
-      - ./litellm-mcp.yaml:/lab/litellm.yaml:ro

@@ -22,6 +22,47 @@ model_list:
       input_cost_per_token: 0.00001
       output_cost_per_token: 0.00002
 
+# MCP 집계: upstream은 제품 게이트웨이의 서버별 경로뿐이다(망도 그 하나만 열려 있다, compose.yaml).
+# oauth_delegate: LiteLLM은 호출자를 가상 키로 확인(예산·로그)하고, 호출자가 따로 보낸 게이트웨이 토큰을
+#   그대로 upstream에 전달한다. 게이트웨이용 토큰을 LiteLLM이 보관·발급하지 않는다.
+#   직원 하네스는 `Authorization: Bearer <LiteLLM 키>`와 `x-mcp-<서버>-authorization: Bearer <게이트웨이 토큰>`을 함께 보낸다.
+# extra_headers는 상관 추적용 헤더 이름 목록이며 판정에는 쓰이지 않는다(게이트웨이도 클라이언트 신고값으로만 기록).
+mcp_servers:
+  github:
+    url: http://edge-proxy:8081/mcp/github/
+    transport: http
+    auth_type: oauth_delegate
+    extra_headers: [x-agent-task-id, x-workstation-id, traceparent]
+  context7:
+    url: http://edge-proxy:8081/mcp/context7/
+    transport: http
+    auth_type: oauth_delegate
+    extra_headers: [x-agent-task-id, x-workstation-id, traceparent]
+  markitdown:
+    url: http://edge-proxy:8081/mcp/markitdown/
+    transport: http
+    auth_type: oauth_delegate
+    extra_headers: [x-agent-task-id, x-workstation-id, traceparent]
+
+# 입력 가드레일: 비밀값·주민등록번호 형태가 들어 있는 프롬프트는 모델에 보내기 전에 막는다.
+# mcp_security: 요청의 tools에 이 프록시에 등록되지 않은 MCP 서버(제공자가 직접 실행하는 원격 MCP)가 있으면 막는다.
+guardrails:
+  - guardrail_name: mint-input-filter
+    litellm_params:
+      guardrail: litellm_content_filter
+      mode: pre_call
+      default_on: true
+      patterns:
+        - {pattern_type: prebuilt, pattern_name: aws_access_key, action: BLOCK}
+        - {pattern_type: prebuilt, pattern_name: github_token, action: BLOCK}
+        - {pattern_type: regex, pattern: '\b\d{6}-[1-4]\d{6}\b', name: kr_rrn, action: BLOCK}
+  - guardrail_name: mint-mcp-registered-only
+    litellm_params:
+      guardrail: mcp_security
+      mode: pre_call
+      default_on: true
+      on_violation: block
+
 litellm_settings:
   drop_params: true
   telemetry: false
@@ -34,4 +75,7 @@ general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
   database_url: os.environ/DATABASE_URL
   allow_user_auth: false
+  # 키가 MCP 서버 접근을 명시하지 않으면 어떤 MCP 서버도 쓸 수 없다(모델 전용 키의 기본값).
   require_key_mcp_access_defined: true
+  # 프롬프트·응답 본문을 지출 로그에 남긴다(보존·접근 통제는 운영 정책, 보고서 한계 참조).
+  store_prompts_in_spend_logs: true

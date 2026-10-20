@@ -1,0 +1,48 @@
+{
+	admin off
+	auto_https off
+	persist_config off
+}
+
+# 직원 쪽 입구: LiteLLM API 전체(LLM·MCP). 스트리밍이라 버퍼링하지 않는다.
+:4000 {
+	reverse_proxy litellm:4000 {
+		flush_interval -1
+	}
+}
+
+# LiteLLM 쪽 출구: 제품 게이트웨이의 /mcp/* 하나뿐이다. LiteLLM은 다른 곳으로 나갈 망이 없다.
+# Host는 게이트웨이 공개 주소로 바꿔 보내고, 인증서는 제품 CA로 검증한다.
+:8081 {
+	# 출구 감사: LiteLLM이 게이트웨이로 보낸 요청마다 시각·경로·상태와 Authorization의 끝 8자(서명 끝부분)만 남긴다.
+	# 사용자별 토큰이 그대로 전달되는지(토큰마다 다르고 LiteLLM 키와 다른지) 값 없이 대조하기 위한 기록이다.
+	request_header X-Auth-Tail "{http.request.header.Authorization}"
+	request_header X-Auth-Tail "(?s)^.*(.{8})$" "$1"
+	log_append auth_tail {http.request.header.X-Auth-Tail}
+	log_append task_id {http.request.header.X-Agent-Task-Id}
+	log egress {
+		output stdout
+		format filter {
+			wrap json
+			fields {
+				request>headers delete
+				request>tls delete
+				resp_headers delete
+			}
+		}
+	}
+	@mcp path /mcp/*
+	handle @mcp {
+		reverse_proxy https://{$GATEWAY_ADDR} {
+			flush_interval -1
+			header_up Host {upstream_hostport}
+			header_up -X-Auth-Tail
+			transport http {
+				tls_trust_pool file /etc/caddy/gateway-ca.pem
+			}
+		}
+	}
+	handle {
+		respond "egress denied" 403
+	}
+}
