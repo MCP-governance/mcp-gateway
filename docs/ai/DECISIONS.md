@@ -1383,6 +1383,7 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 승인 입력 스키마 확인 뒤 읽기 요청에 `P-VOLUME-002`를 적용한다. 명시된 페이지 크기는 상한 이내 양수여야 한다. 파일 시스템·Desktop의 루트/전체 경로, 무범위 재귀 조회·전체 검색, 다중 파일 수 초과·glob, Redis 전체 키 검색을 거부한다. PostgreSQL `execute_sql`의 읽기는 기존 pglast 구문 트리로 단일 SELECT의 고정 정수 LIMIT(0~상한)을 요구하며 LIMIT ALL/변수/식/WITH TIES, 다중 문장, COPY 전체 내보내기를 거부한다. 인자를 자동 변경하거나 결과를 잘라 정상 성공으로 표시하지 않는다.
 - 원문과 마스킹 후 반환 표현에 상한을 각각 적용한다. 응답 초과는 `MCP-OUTPUT-001` Block, `upstream_executed=true`, `withheld`다. 실행 전 범위 차단은 upstream 미전송이다. 누적 중요정보 승인 `P-VOLUME-001`과 별개다.
 - 근거: OWASP API4:2023의 반환 레코드·자원 제한, API3:2023의 필요한 속성만 노출하는 원칙. 속성별 인가·범용 레코드 스키마·서버의 쿼리 비용 제한을 이 변경으로 구현했다고 주장하지 않는다. SDK가 응답을 메모리에 읽은 다음의 통제이며 원격 서버 작업량/메모리 상한은 아니다. [분석·원자 요구](../../research/llm-wiki/analysis/response-cap-idempotency/README.md).
+- 2026-10-20 경계 회귀 보강: `full_stack_lab/tests/response_cap_boundary_check.py`에서 바이트·건수 정확 상한과 +1, UTF-8 다중 바이트, structured/content 동시 표현, 중첩 배열 계산, 마스킹 후 크기 증가, 전체 선택자 변형을 확인했다. 제품 경로는 원문·마스킹 후 둘 다 검사하며 초과 시 `MCP-OUTPUT-001`/`withheld`와 `upstream_executed=true`를 유지한다. 로컬 오프라인 함수 시험이며 native pglast 문법, 실제 MCP, 배포는 별도 검수 대기다.
 
 ## D-126 완료된 변경 호출의 지문으로 재전송을 차단한다 (2026-10-18)
 
