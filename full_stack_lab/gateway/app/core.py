@@ -29,7 +29,7 @@ from referencing import Registry
 from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, retention, risk_tier, secret_scan, supplier_assurance, upstream, user_suspend
 from .destination import DestinationBlocked
 from .outcomes import outcome_axes
-from . import flow_fingerprint, high_impact, output_contract, residency, selective
+from . import flow_fingerprint, high_impact, output_contract, residency, selective, tool_sunset
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint, walk_chain,
@@ -810,6 +810,7 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
                               scope={"tools": {name: item["action"] for name, item in normalized.items()},
                                      "destinations": {name: item["destinations"] for name, item in normalized.items()},
                                      "impact": {name: high_impact.normalize(item) for name, item in normalized.items()}})
+    await tool_sunset.approve_review(server_id, sorted(normalized), actor)
     return {"server_id": server_id, "reviewed": sorted(normalized),
             "unreviewed": sorted(set(spec["tools"]) - set(spec["tool_reviews"]))}
 
@@ -871,6 +872,9 @@ async def renew_approvals(now: datetime | None = None) -> list[dict]:
             if not server or server["status"] != "READY" or (server["lifecycle"] or "OPERATING") != "OPERATING":
                 continue
             tools = await db.fetch_all("SELECT name FROM mcp_tools WHERE server_id=%s AND enabled", (server_id,))
+            used = await tool_sunset.recently_used(server_id, [row["name"] for row in tools], now)
+            if not used:
+                continue
             contracts = [await _contract(server_id, row["name"]) for row in tools]
             if not contracts or not all(c.get(key) is True for c in contracts for key in RENEW_CONTRACT) \
                     or any(c.get("critical_vulnerabilities") for c in contracts):
@@ -889,14 +893,23 @@ async def renew_approvals(now: datetime | None = None) -> list[dict]:
             if proposed_until <= until:
                 continue
             spec.update(valid_until=proposed_until.isoformat(timespec="seconds"), approval_days=days)
-            event = {"type": "approval-renewed", "server_id": server_id, "actor": "system",
+            event = {"type": "approval-renewed", "server_id": server_id, "actor": "automatic",
                      "at": now.isoformat(timespec="seconds"), "from": until.isoformat(timespec="seconds"),
-                     "valid_until": spec["valid_until"], "tools": sorted(row["name"] for row in tools)}
+                     "valid_until": spec["valid_until"], "tools": sorted(row["tool_name"] for row in used),
+                     "last_use": {row["tool_name"]: row["last_use"].isoformat() for row in used}}
             doc["history"].append(event)
             renewed.append(event)
         if renewed:
             registry.save_runtime(doc)
             await registry.sync()
+            for event in renewed:
+                await review.record_event(
+                    "tool-approval-extension", "approved", "server", event["server_id"], "automatic",
+                    reason="관측 기간 안에 도구 이용 이력이 있습니다.",
+                    scope={"server": event["server_id"], "tools": event["tools"], "last_use": event["last_use"],
+                           "observation_days": tool_sunset.OBSERVATION_DAYS,
+                           "window_start": (now - timedelta(days=tool_sunset.OBSERVATION_DAYS)).isoformat(),
+                           "from": event["from"], "deadline": event["valid_until"]})
     return renewed
 
 
@@ -2078,6 +2091,11 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             base_event.update(local_verdict("MCP-REGISTRY-003", "Block",
                 "이 서비스의 도입 승인 사용 주체에 포함되지 않습니다." if allowed else
                 "도입 신청·승인 기록이 없는 직접 등록입니다. 도입 신청으로 다시 등록해야 실행합니다."))
+            return await _decision_payload(base_event, laps)
+        sunset = await tool_sunset.check(server_id, tool)
+        sunset_verdict = tool_sunset.call_verdict(sunset)
+        if sunset_verdict:
+            base_event.update(local_verdict(sunset_verdict[0], "Block", sunset_verdict[1]))
             return await _decision_payload(base_event, laps)
         if principal.get("server_suspended"):
             base_event.update(local_verdict(
