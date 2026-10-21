@@ -54,6 +54,8 @@ _INSERT = f"""INSERT INTO dispatch_intents(request_id, user_token, server_id, to
             WHERE r.request_id = %s AND r.released_at IS NULL AND r.expires_at > clock_timestamp()
               AND s.status <> 'DISABLED'
               AND NOT EXISTS (SELECT 1 FROM ops_suspensions x WHERE x.server_id=s.id AND x.resumed_at IS NULL)
+              AND NOT EXISTS (SELECT 1 FROM user_server_suspensions x WHERE x.user_token=r.user_token
+                              AND x.server_id=s.id AND x.resumed_at IS NULL)
               AND NOT EXISTS (SELECT 1 FROM disposal_blocks x WHERE x.server_id=s.id AND x.kind IN ('server','credential'))
               AND {CATALOG_OK}
               AND (%s::bigint IS NULL OR EXISTS (SELECT 1 FROM user_consents c
@@ -145,7 +147,9 @@ async def record(request_id: str, action: str, approval_id: str | None = None, *
     why = await db.fetch_one(
         f"""SELECT (SELECT p.status FROM principals p WHERE p.token = r.user_token) AS principal,
                   (SELECT COALESCE(s.lifecycle, 'OPERATING') FROM mcp_servers s WHERE s.id = r.server_id) AS lifecycle,
-                  s.status AS server_status, {CATALOG_OK} AS catalog_ok
+                  s.status AS server_status, {CATALOG_OK} AS catalog_ok,
+                  EXISTS (SELECT 1 FROM user_server_suspensions x WHERE x.user_token=r.user_token
+                           AND x.server_id=s.id AND x.resumed_at IS NULL) AS user_suspended
              FROM call_reservations r JOIN mcp_servers s ON s.id=r.server_id
              WHERE r.request_id = %s AND r.released_at IS NULL AND r.expires_at > now()""",
         (request_id,))
@@ -157,6 +161,8 @@ async def record(request_id: str, action: str, approval_id: str | None = None, *
         return "terminated"
     if why["server_status"] == "DISABLED":
         return "suspended"
+    if why.get("user_suspended"):
+        return "user-suspended"
     if not why["catalog_ok"]:
         return "contract"
     return "duplicate" if duplicate else "reservation"

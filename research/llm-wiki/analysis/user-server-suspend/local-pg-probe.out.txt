@@ -1,0 +1,36 @@
+2026-10-21 12:58:29 +0900
+(local scratch server)
+applied init.sql
+applied agent_tables.sql
+applied lifecycle_tables.sql
+applied v2_tables.sql
+applied oidc_tables.sql
+applied ops_tables.sql
+applied siem_tables.sql
+applied ops_tables.sql
+PASS identity query: nobody suspended at start
+PASS identity query: unknown token -> no row
+PASS suspend counts in-flight (unsent=1, sent=1)
+PASS identity query: pair suspended
+PASS identity query: other server not suspended
+PASS identity query: other employee not suspended
+PASS duplicate suspend refused (ValueError)
+PASS unknown user refused (LookupError)
+PASS unknown server refused (LookupError)
+PASS exactly one suspend event with actor/scope/time
+PASS record(): unsent call of suspended pair -> user-suspended
+PASS record(): same employee, other server -> intent written
+PASS record(): other employee, same server -> intent written
+PASS no intent row for the refused call
+PASS listing shows active row with names
+PASS resume returns the row
+PASS second resume refused (ValueError)
+PASS identity query after resume: not suspended
+PASS record() after resume -> intent written
+PASS events: suspend then resume, nothing else
+PASS events immutable (trigger) -> RaiseException
+PASS re-suspend after resume makes a new row
+PASS suspend is blocked while the per-employee lock is held (waiting=1)
+PASS suspend completes after the holder commits
+RESULT 24 / 24
+exit=0

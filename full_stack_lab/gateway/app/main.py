@@ -18,7 +18,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
 
-from . import core, db, decommission, dispatch, disposal, endpoint_plane, ops_response, privacy, secret_scan, upstream
+from . import core, db, decommission, dispatch, disposal, endpoint_plane, ops_response, privacy, secret_scan, upstream, user_suspend
 from .core import (
     OPA_URL,
     approve_request,
@@ -317,6 +317,35 @@ async def ops_status(_: dict = Depends(admin_caller)) -> dict:
 async def ops_resume(server_id: str, request: OpsResume, user: dict = Depends(admin_caller)) -> dict:
     try:
         return await ops_response.resume(server_id, user["principal"], request.note)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+class SuspendRequest(StrictModel):
+    user_token: str = Field(min_length=1, max_length=200)
+    server_id: str = Field(min_length=1, max_length=64)
+    reason: str = Field(min_length=4, max_length=500)
+
+
+@app.get("/api/suspensions")
+async def suspensions(_: dict = Depends(admin_caller)) -> dict:
+    return {"suspensions": await user_suspend.listing()}
+
+
+@app.post("/api/suspensions")
+async def suspend_use(request: SuspendRequest, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await user_suspend.suspend(request.user_token, request.server_id, user["principal"], request.reason)
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@app.post("/api/suspensions/{suspension_id}/resume")
+async def resume_use(suspension_id: int, request: OpsResume, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await user_suspend.resume(suspension_id, user["principal"], request.note)
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 
