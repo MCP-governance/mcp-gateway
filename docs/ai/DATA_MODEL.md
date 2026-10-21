@@ -165,6 +165,8 @@ D-157의 전송 UID는 원장 행 ID와 사슬 해시(사슬 없는 소스는 UT
 
 `validation_lease_expires_at`와 `validation_attempts`는 VALIDATING 작업의 중단 복구에 쓰인다. 신규 요청은 API의 단일 INSERT에서 VALIDATION_QUEUED가 된다. Syft·Trivy·Semgrep·Gitleaks의 정규화 요약은 `supply_chain_reports`에 남고 Console은 source_ref뿐 아니라 신청 UUID가 포함된 report_path로 귀속을 제한한다. Gitleaks 산출물은 RuleID·상대 파일·행·설명만 남기고 Secret/Match를 제거한다. 부분 검사 실패 시 수집한 증적은 남지만 요청 상태는 FAILED이며 승인되지 않는다.
 
+D-178: Syft 원본 CycloneDX JSON은 `intake_reports` named volume에 보존하고 `supply_chain_reports.summary.inventory`에는 앞 200개 구성요소만 보존한다(`truncated`로 잘림 표시). SBOM 영향 조회는 `registered_server_id`·`intake_id`·`mcp_runtimes.generation`과 현재 Syft 성공·source commit이 일치하는 경우만 판정한다. `workspace` 등 intake와 연결되지 않은 요약, 검사 실패·누락, 잘린 목록에서 찾지 못한 패키지는 완전한 비영향 증거가 아니다. 전체 원본 파일을 읽지 않는 이 조회는 DB에 저장된 요약 범위까지만 정확하다. 서버·실행 세대는 사용자·엔드포인트 영향으로 확장하지 않는다.
+
 ## 중대 영향 개별 승인 증빙 (D-139)
 
 `approvals.explanation`은 요청 생성 시 고정한 원문 없는 설명 JSONB다. `revoked_at`·`revoked_by`는 승인 후 원승인자의 번복을 기록한다. 기존 status는 실행 경과를 유지하며 조회에서 revoked_at이 있으면 「승인 번복」으로 표시한다.

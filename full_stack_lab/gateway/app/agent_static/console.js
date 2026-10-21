@@ -379,6 +379,7 @@ const PAGES = [
   { id: "policy", label: "정책", group: "접근 통제" },
   { id: "consent", label: "이용 동의", group: "접근 통제", badge: "consent" },
   { id: "intake", label: "도입 신청", group: "도입 및 종료" },
+  { id: "sbom-impact", label: "공급망 영향", group: "도입 및 종료" },
   { id: "termination", label: "종료·폐기", group: "도입 및 종료", badge: "termination" },
 ];
 let viewer = null;
@@ -1655,6 +1656,23 @@ ROUTES.intake = async (_, tab) => {
 };
 const TRANSPORT = { "streamable-http": "Streamable HTTP", sse: "SSE", stdio: "stdio" };
 
+ROUTES["sbom-impact"] = async (_, _tab, query) => {
+  const packageName = query.get("package") || "", versionRange = query.get("range") || "";
+  const result = packageName && versionRange
+    ? await api("/api/supply-chain/impact", { method: "POST", body: { package: packageName, version_range: versionRange } })
+    : null;
+  return html`<div class="stack">${head("공급망 영향")}
+    ${panel("영향 조회", html`<form class="filters" data-form="sbom-impact">
+      <label>패키지<input name="package" required maxlength="200" value="${packageName}" /></label>
+      <label>판본 범위<input name="range" required maxlength="120" value="${versionRange}" placeholder=">=1.2.0 <2.0.0" /></label>
+      <button class="btn primary" type="submit">조회</button></form>`)}
+    ${result ? html`<section>${kpiStrip([["영향 있음", result.counts.affected], ["영향 없음", result.counts.unaffected],
+      ["판단 불가", result.counts.unknown], ["자료 없음", result.counts.no_data]])}
+      <div class="row-actions"><button class="btn danger" data-act="sbom-impact-stop" data-package="${packageName}"
+        data-range="${versionRange}" ${result.counts.affected ? "" : raw("disabled")}>영향 서버 중지</button></div></section>` : ""}
+  </div>`;
+};
+
 // The same rule agent_service.approve_mcp_request enforces; the button only mirrors it.
 const termsVerified = (t) => Boolean(t?.verified_by && t?.evidence_url && Object.keys(EXIT_TERMS).every((k) => t[k] === true));
 const RISK_TIER = { low: ["allow", "낮음"], medium: ["outline", "보통"], high: ["alert", "높음"], very_high: ["block", "매우 높음"] };
@@ -2186,6 +2204,16 @@ function collectScopes(fd, names) {
 }
 
 const ACTIONS = {
+  async "sbom-impact-stop"(el) {
+    const fd = await ask({ title: "영향 서버 중지", fields: field.text("reason", "사유", 'required minlength="4" maxlength="500"'),
+      confirm: "중지", danger: true });
+    if (!fd) return;
+    const result = await api("/api/supply-chain/impact/stop", { method: "POST", body: {
+      package: el.dataset.package, version_range: el.dataset.range, reason: fd.get("reason").trim(),
+    } });
+    toast(`중지 ${result.counts.succeeded}건 · 건너뜀 ${result.counts.skipped}건 · 실패 ${result.counts.failed}건`, result.counts.failed > 0);
+    reload();
+  },
   async consent(el) {
     await api(`/api/consents/${el.dataset.id}`, { method: "POST", body: { decision: el.dataset.decision } });
     toast({ grant: "동의함", deny: "거부함", revoke: "철회함" }[el.dataset.decision]);
@@ -2959,6 +2987,11 @@ const ACTIONS = {
 let lastDocument = null;
 
 const FORMS = {
+  "sbom-impact"(form) {
+    const q = new URLSearchParams(new FormData(form));
+    location.hash = `#/sbom-impact?${q}`;
+    reload();
+  },
   audit(form) {
     // datetime-local carries no zone; the server needs one, so send UTC.
     const q = new URLSearchParams([...new FormData(form)].filter(([,v]) => String(v).trim())

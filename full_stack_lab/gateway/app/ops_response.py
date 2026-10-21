@@ -64,7 +64,7 @@ def selected(server_id, source):
     return source in SOURCES and ("*" in SERVERS or server_id in SERVERS)
 
 
-async def suspend(server_id, source, reason, evidence):
+async def suspend(server_id, source, reason, evidence, batch=None):
     async with db.transaction() as connection:
         await connection.execute("SELECT id FROM mcp_servers WHERE id=%s FOR UPDATE", (server_id,))
         row = await (await connection.execute(
@@ -78,10 +78,14 @@ async def suspend(server_id, source, reason, evidence):
                WHERE intake_id IN (SELECT id FROM mcp_intake_requests WHERE registered_server_id=%s)
                  AND status NOT IN ('STOPPED','FAILED','STOPPING')""", (reason, server_id))
         if row:
+            scope = {"source": source, **evidence}
+            if batch:
+                scope["batch"] = batch
             await connection.execute(
                 """INSERT INTO approval_events(kind,outcome,target_kind,target_id,actor,reason,scope)
                    VALUES ('automatic-suspension','held','server',%s,'system',%s,%s)""",
-                (server_id, reason, Jsonb({"source": source, **evidence})))
+                (server_id, reason, Jsonb(scope)))
+    return bool(row)
 
 
 async def contain_drift(server_id, findings):
