@@ -268,7 +268,7 @@ async def observation_status(endpoint_id: str, channel: str, state: str,
     async with db.transaction() as connection:
         if dropped_count:
             if not buffer_event_uid or buffer_reason not in {"capacity", "retention", "mixed"}:
-                raise ValueError("버퍼 폐기 보고에 식별자·사유가 필요합니다.")
+                raise ValueError("버퍼 미적재·만료 건수 보고에 식별자·사유가 필요합니다.")
             await connection.execute(
                 # 같은 uid의 재보고는 더 큰 건수일 때만 반영한다. 응답 유실 뒤 장치가 누적한 값이
                 # 다시 오고, 재전송·순서 뒤바뀜으로 작은 값이 올 수도 있다.
