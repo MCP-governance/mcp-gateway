@@ -284,7 +284,11 @@ class EndpointSnapshotIngest(unittest.IsolatedAsyncioTestCase):
         with mock.patch.object(endpoint_plane, "observation_status", new=observation_status):
             result = await main.endpoint_observation_status(request, device)
         self.assertEqual(result, {"state": "recorded"})
-        observation_status.assert_awaited_once_with("unit-endpoint", "process", "unauthorized", 0, "")
+        # Offline-buffer kwargs (DEV-80, 22cf622) are sent at their defaults here, so the
+        # SQL path is unchanged. Keep the five values checked before and pin the defaults.
+        observation_status.assert_awaited_once_with(
+            "unit-endpoint", "process", "unauthorized", 0, "",
+            buffer_event_uid=None, dropped_count=0, buffer_reason=None)
 
     async def test_incomplete_process_observation_preserves_last_success(self):
         self.assertTrue(hasattr(endpoint_plane, "observation_status"))

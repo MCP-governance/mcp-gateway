@@ -330,6 +330,10 @@ class WiringTest(unittest.IsolatedAsyncioTestCase):
                    (endpoint_plane, {"managed_failure": AsyncMock(return_value=None),
                                      "shadow_count_for": AsyncMock(return_value=0), "shadow_listener_count_for": AsyncMock(return_value=0)}),
                    (core.pac, {"build": AsyncMock(return_value={}), "digest": Mock(return_value="unit")}),
+                   # execute_call first expires automatic stops (DEV-74 / D-176, e6684c0). Without this
+                   # stub that call reaches the real pool, fails closed (P-CONTROL-FAIL-CLOSED) and the
+                   # policy path under test never runs. The DB-side expiry is out of scope here.
+                   (core.user_suspend, {"expire": AsyncMock(return_value=None)}),
                    (core.consent, {"missing": AsyncMock(return_value=None)}),
                    (core.privacy, {"analyze": AsyncMock(return_value=[])}),
                    (core.secret_scan, {"labels": AsyncMock(return_value=[])}),

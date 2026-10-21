@@ -113,3 +113,56 @@ main(a88b62d)에서 실행한 결과(41초):
 ## 사용자에게 필요한 입력
 
 - (D) 2건 중 어느 쪽을 정본으로 할지 정해 주세요. 제품 쪽을 되돌릴지, 시험을 갱신할지에 따라 수정 범위가 달라집니다.
+
+## 수리 결과 (2026-10-21, 브랜치 `10/21-test-repair`)
+
+- 기준: `origin/main` f444f01에서 만든 `10/21-test-repair`. 제품 코드는 고치지 않았다. 바꾼 것은 시험 파일 3개와 실행기 표 2곳뿐이다.
+- 원칙: 시험이 확인하던 통제·동작은 그대로 두고, 호출 모양·대역만 바꿨다. 제품 동작이 바뀐 것이 확인된 곳은 시험을 맞추지 않았다.
+
+### 파일별 판정
+
+| 파일 | 판정 | 결과 |
+| --- | --- | --- |
+| `endpoint_snapshot_check.py` | 수리함 (호출 모양) | 21개 전부 통과 |
+| `field_account_git_test.py` | 수리함 (대역·실행부). 실행 후 드러난 실패는 보고만 함 | 3개 실행, 2 통과, 1 오류 (PoolTimeout). 제품 결함 후보가 아니라 미대역 DB 호출 문제 |
+| `flow_fingerprint_check.py` | 수리함 (대역 보강). 시험 결함으로 확인 | 34개 전부 통과 (0.2초) |
+
+### 단언·대역 변경 (전/후와 이유)
+
+| 파일 | 위치 | 전 | 후 | 이유 |
+| --- | --- | --- | --- | --- |
+| `endpoint_snapshot_check.py` | `test_observation_status_route_scopes...`의 `assert_awaited_once_with` | `("unit-endpoint","process","unauthorized",0,"")` | 같은 5개 값 + `buffer_event_uid=None, dropped_count=0, buffer_reason=None` | `22cf622`가 키워드 인자 3개를 기본값으로 추가했다. 이 경로는 `dropped_count=0`이라 `observation_status`의 `if dropped_count:` 분기를 타지 않고, 라우트의 422 검사도 통과한다. 즉 보내는 값과 SQL 경로는 그대로다. 기존에 확인하던 5개 값도 그대로 단언한다. |
+| `field_account_git_test.py` | `test_deletion_blocks...`의 DB 더블 | `{"email": "alice"}` | `{"email": "alice", "token": "emp-alice"}` | `38a12c9`부터 `delete_account`가 `row["token"]`을 읽는다. 값 `emp-alice`는 초대 계정의 `principals.token` 규칙(`emp-{username}`, `agent_service.py:219`)과 같다. 이 토큰은 업스트림 풀·OIDC 결속·MCP 세션 종료의 주체 키다. |
+| `field_account_git_test.py` | 파일 끝 | `__main__` 없음 (`python 파일.py`가 0개 실행 후 rc 0) | `if __name__ == "__main__": unittest.main(verbosity=2)` | `endpoint_snapshot_check.py`와 같은 관례. 이제 `python 파일.py`가 3개를 실제로 돈다. |
+| `flow_fingerprint_check.py` | `WiringTest.run_call`의 `changes` 목록 | 없음 | `(core.user_suspend, {"expire": AsyncMock(return_value=None)})` | `e6684c0`(DEV-74 / D-176, 10-21)이 `execute_call` 첫머리에 `user_suspend.expire`를 추가했다. 시험에서는 이 호출이 실제 풀에 닿아 실패하고, `P-CONTROL-FAIL-CLOSED`로 차단돼 `_policy`가 호출되지 않았다(TypeError 3개, FAIL 1개의 원인). DB쪽 만료 자체는 이 시험의 범위가 아니므로 대역으로 막았다. D-181(`user_server_suspensions`)은 `fetch_one` 대역이 고정 값을 돌려주므로 추가 대역이 필요 없었다. |
+
+### 실행기 표 (`run_local_suite.py`)
+
+- `EXTERNAL`에서 `flow_fingerprint_check` 제거 (이제 실행한다).
+- `KNOWN`에서 `endpoint_snapshot_check` 제거 (통과).
+- `KNOWN`의 `field_account_git_test` 설명을 수리 후 상태로 바꿈.
+
+### 전체 실행 수치 (`run_local_suite.py`, venv Python 3.12.10)
+
+| 기준 | 총계 | 통과 | 실패 | 외부 의존 생략 |
+| --- | --- | --- | --- | --- |
+| `origin/main` f444f01 (전체 트리 export로 다시 실행) | 104 | 82 | 3 | 19 |
+| `10/21-test-repair` 수리 후 | 104 | 84 | 2 | 18 |
+
+파일 단위 변화: `endpoint_snapshot_check` 실패→통과, `flow_fingerprint_check` 생략→통과. 나머지는 그대로다. 늘어난 실패는 없다.
+`threat_trace_mapping_check`는 (E)로 그대로 실패다.
+
+### 실행 후 드러난 실패 (고치지 않음, 보고만)
+
+- `field_account_git_test.py`의 `test_deletion_blocks_root_and_tombstones_other_accounts`는 token 수리 뒤 `idp.revoke_principal_tokens`(`agent_service.py:798` → `idp.py:239`)에서 실제 DB 풀을 기다리다 `PoolTimeout`으로 오류가 난다. 이 시험은 Windows에서 Postgres 없이 돌아가며, 그 뒤 단언(`200` 응답, `db.await_count == 1`, `status='deleted'`)은 실행되지 않았다.
+  - 이 호출은 `release_pool`과 달리 예외를 잡지 않아서 시험이 오류로 끝난다. `release_pool`의 `db.execute` 오류는 제품 코드가 로그만 남기므로 결과에 영향이 없다.
+  - 이 실패는 `38a12c9`(10-15) 이후 `KeyError`에 가려져 있었다. `mcp_sessions.terminate`(10-20 `95b117c`)도 이 경로에 있다.
+  - 다음 중 하나를 정해야 한다: (a) `revoke_principal_tokens`, `oidc.end_binding_sessions`, `mcp_sessions.terminate`, `upstream.release_pool`, `db.execute`/`db.fetch_all`을 대역으로 막는다. (b) 이 시험을 실제 필드 DB 대상 통합 시험으로 옮긴다(운영 DB 부작용이 생긴다).
+- `flow_fingerprint_check.py`는 통과하지만 종료 시 OpenTelemetry 스팬 내보내기 타임아웃 메시지가 stderr에 찍힌다. rc에는 영향이 없다.
+- 이전에는 이 대역 누락 때문에 `P-CONTROL-FAIL-CLOSED` 경로를 우연히 타고 있었다. 지금은 `user_suspend.expire` 실패 분기(`suspension_error`)를 확인하는 시험이 없다. 필요하면 별도 시험으로 추가한다.
+
+### 검증 범위
+
+- 네 파일 모두 `py_compile` 통과, `pyflakes` 경고 없음.
+- 세 시험 파일 각각을 venv Python으로 직접 실행: endpoint 21/21, field 3(2 통과·1 오류), flow 34/34.
+- 기기(Linux)·Postgres 기반 시험은 이번에 돌리지 않았다.
