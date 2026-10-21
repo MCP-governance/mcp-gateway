@@ -17,7 +17,7 @@ def render_review(path, review, stale):
         f"검토자: {review['reviewer']} · 기준: `{review['reviewed_commit']}` · {review['reviewed_on']}", "",
         "원본 PAC01~24(정책 최종본 5~28행)를 의미로 대조했다. 런타임 PAC-01~15·정책50과 번호로 대응시키지 않는다. "
         "24행 모두 부분 근거가 있으며 전체 요구 충족·현재 배포 검수를 판정하지 않는다. "
-        "12건의 매핑 결함/오독 위험을 정정했고 제품 코드와 기존 시험은 변경하지 않았다.", "",
+        "최초 검토에서 12건의 매핑 결함/오독 위험을 정정했고 제품 코드와 기존 시험은 변경하지 않았다.", "",
         "## 정본·판본·검토 방법", "",
         "[구조화 검토](review.json)는 원본 요구, 코드 심볼/행/파일 SHA-256, 회귀 범위, 증거 층과 정정 전 매핑을 보존한다. "
         "[카탈로그](../../catalogs/threats.json)와 [통제 지도](../../threats/control-map.md)는 "
@@ -31,7 +31,7 @@ def render_review(path, review, stale):
         "[아키텍처](../../../../docs/ai/ARCHITECTURE.md)·[경계](../../../../docs/ai/SECURITY_BOUNDARIES.md)·"
         "[정책](../../../../docs/ai/POLICY.md)·[결정](../../../../docs/ai/DECISIONS.md)과 "
         "기존 고정 SDK·OPA·[OSS 심층 비교](../oss-deep/README.md)를 재사용했다. "
-        "원격 GitHub HEAD 조회는 연결 실패였고 새 외부 스킬·OSS·의존성은 도입하지 않았다. "
+        "최초 검토의 원격 GitHub HEAD 조회는 연결 실패였고 새 외부 스킬·OSS·의존성은 도입하지 않았다. "
         "별도 D-번호가 지정되지 않아 새 번호를 만들지 않았다.", "",
         "검토 결정: 관리대장 ID·제품 코드·회귀 시험을 구분한다. PG/OPA 함수 시험·실제 MCP·PJ1·독립 효과·현재 배포도 구분한다. "
         "최초 실패/미실행과 후속 성공이 함께 있으면 마지막 추가 기록을 그 판본의 보고 증거로 채택하며 원시 출력 부재를 명시한다.", "",
@@ -41,6 +41,14 @@ def render_review(path, review, stale):
         "회귀 칸은 시험 소스의 범위이며 이번 실행 통과를 뜻하지 않는다. E번호는 아래의 당시 판본·수준·한계와 함께 읽는다.", "",
         "| 원본·셀·정책 | 통제 위치·런타임 후보 | 코드 심볼·근거 행 | 회귀 시험·범위 | 실험/실기기 근거 | 남은 한계 |",
         "| --- | --- | --- | --- | --- | --- |"]
+    if refresh := review.get("refresh"):
+        # Keep the previous bytes available when a later review supersedes its anchors and claims.
+        lines[4:4] = [
+            f"현 판본 재대조: [변경별 근거]({refresh['analysis']}) · "
+            f"[이전 검토 원본]({refresh['previous_snapshot']}) "
+            f"(SHA-256 `{refresh['previous_sha256']}`). "
+            f"{refresh['changed_files']}개 파일·{refresh['stale_unique_references']}개 낡은 참조를 재대조했다. "
+            "정적 추적 재대조·외부 독립 적대 검토·실행 검수는 별개이며 판정은 작업 보고를 따른다.", ""]
     for p in review["policies"]:
         code = "<br>".join(link(r) for r in p["code_references"])
         tests = "<br>".join(f"{link(r)} — {r['coverage']}" for r in p["regression_tests"])
@@ -70,7 +78,8 @@ def render_review(path, review, stale):
         "- PAC15: 잠정 처리 국가 규칙·공급자 실제 위치/이전 근거 검토는 사람의 결정 범위.",
         "- PAC22: 요청 본문 최소화/보존과 append-only, 봉인 구간 만료 삭제/암호 삭제는 DEV-67 결정 필요.",
         "- PAC23~24: D-154 회전 기록 후보·외부 캐시/복제 자격·실행기 제거·서명 저장소 동시 복원은 별도 검수.", "",
-        "DEV-03의 독립 추적 검토를 완료하며 각 기능의 검수 점수는 변경하지 않는다. "
+        ("DEV-03의 현 판본 정적 재대조를 기록하며 외부 독립 검토 판정은 작업 보고를 따른다. "
+         if review.get("refresh") else "DEV-03의 독립 추적 검토를 완료하며 ") + "각 기능의 검수 점수는 변경하지 않는다. "
         "기기 재실행: `dispatch_recheck_pg_check.py`, `oauth_negative_pg_check.py`, `restore_residual_pg_check.py`, "
         "`policy_selftest_pg_check.py`(과거 성공의 현 판본 확인), `dispatch_idempotency_pg_check.py`, "
         "`auto_suspend_pg_check.py`, `resource_residual_pg_check.py`(미실행 범위). "
