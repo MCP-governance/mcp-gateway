@@ -10,9 +10,19 @@ from __future__ import annotations
 
 import uuid
 
-from . import db, review
+from . import automatic_suspend, db, review
 
 TARGET = "user-server-suspension"
+
+
+async def expire(user_token: str | None = None, server_id: str | None = None) -> None:
+    await automatic_suspend.expire(user_token, server_id)
+
+
+async def auto_suspend(connection, user_token: str, server_id: str, policies: tuple[str, ...],
+                       threshold: int, window_seconds: int, duration_seconds: int) -> bool:
+    return await automatic_suspend.suspend(
+        connection, user_token, server_id, policies, threshold, window_seconds, duration_seconds)
 
 
 async def suspend(user_token: str, server_id: str, actor: str, reason: str, batch: str | None = None) -> dict:
@@ -109,10 +119,16 @@ async def resume_all(user_token: str, actor: str, note: str) -> dict:
 async def listing() -> list[dict]:
     return await db.fetch_all(
         """SELECT s.id, s.user_token, p.display_name, s.server_id, m.display_name AS server_name, s.reason,
-                  s.suspended_at, a.display_name AS suspended_by, s.resumed_at, r.display_name AS resumed_by, s.resume_note
+                  s.suspended_at, CASE WHEN s.suspended_by='automatic' THEN '자동' ELSE a.display_name END AS suspended_by,
+                  s.expires_at, CASE WHEN s.resumed_at IS NULL AND s.expires_at <= clock_timestamp()
+                                     THEN s.expires_at ELSE s.resumed_at END AS resumed_at,
+                  CASE WHEN s.resumed_by='automatic' OR (s.resumed_at IS NULL AND s.expires_at <= clock_timestamp())
+                       THEN '자동' ELSE r.display_name END AS resumed_by,
+                  COALESCE(s.resume_note, CASE WHEN s.expires_at <= clock_timestamp() THEN '자동 중지 기간 만료' END) AS resume_note
              FROM user_server_suspensions s
              LEFT JOIN principals p ON p.token = s.user_token
              LEFT JOIN mcp_servers m ON m.id = s.server_id
              LEFT JOIN principals a ON a.token = s.suspended_by
              LEFT JOIN principals r ON r.token = s.resumed_by
-            ORDER BY (s.resumed_at IS NULL) DESC, s.id DESC LIMIT 200""")
+            ORDER BY (s.resumed_at IS NULL AND (s.expires_at IS NULL OR s.expires_at > clock_timestamp())) DESC,
+                     s.id DESC LIMIT 200""")

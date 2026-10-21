@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS user_server_suspensions (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS user_server_suspensions_active
   ON user_server_suspensions(user_token, server_id) WHERE resumed_at IS NULL;
+ALTER TABLE user_server_suspensions ADD COLUMN IF NOT EXISTS expires_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS alert_self_tests (
   id bigserial PRIMARY KEY,
