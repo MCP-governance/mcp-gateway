@@ -18,6 +18,21 @@
 6. 관리형 경계 시험의 임시 루트만 정규화했다. macOS의 `/var` 별칭 때문에 정상 경로 시험이 먼저 실패하던 문제이며, 시험이 만든 심볼릭 링크 거부는 유지한다.
 7. 첫 수정 push `6e46483`의 원격 정적 검사는 통과했지만 연구 CI에서 캐시 만료 시험 4개 하위 조건이 실패했다. 새 runner의 monotonic 값이 300초 미만이면 `checked=0`도 만료 시각이 아니었다. `12660fb`는 고정 시계로 299초의 캐시 유지와 300초의 재조회, 오류 및 원본 데이터 보존을 확인한다. 제품 TTL은 변경하지 않았다. 수정 전 원격과 같은 실패를 고정 시계 120으로 재현했고 수정 후 전체 32건이 통과했다.
 
+## 원격 재검증에서 추가로 확인한 빌드 실패
+
+`6df34f7`의 [연구 CI](https://github.com/MCP-governance/mcp-gateway/actions/runs/39583348640)는 성공했고, [전체 검증](https://github.com/MCP-governance/mcp-gateway/actions/runs/39583348818)의 정적 검사도 성공했다. 전체 검증은 `runtime.Dockerfile`의 Python 패키지 설치 단계에서 실패해 실제 스택 시험에 도달하지 못했다.
+
+공식 PyPI의 `postgres-mcp==0.3.0` 배포 메타데이터는 `pglast==7.2.0`을 요구한다. 현재 PyPI에는 정규화된 `7.2` 배포도 없으며 Linux/Python 3.12 대상 설치 계획 검사에서 같은 의존성 오류를 재현했다. 이는 Gateway 자체의 `pglast==7.21` 고정과 별개인 upstream PostgreSQL MCP 가상환경의 문제다.
+
+CI가 조용한 빌드만 사용해 설치기의 상세 오류가 사라졌으므로 실행 전 명시적 `--progress plain` 빌드를 추가했다. 실패를 무시하거나 검사를 제거하지 않는다. 공식 소스의 같은 7.2 판본을 별도 빌드 단계에서 wheel로 만들도록 변경했다. 최종 실행 이미지에 컴파일러를 추가하지 않으며, PostgreSQL MCP 판본과 계약, 실행 옵션은 유지한다. 실제 설치는 정상 의존성 해석을 거치고 모든 가상환경에 `pip check`, PostgreSQL 환경에 parser 판본과 `SELECT 1` 파싱 검사를 적용한다. 새 원격 실행 전에는 전체 검증 성공으로 기록하지 않는다.
+
+- [공식 pglast v7.2 소스](https://github.com/lelit/pglast/tree/eed764e2160222e40499061b02870328e4a3ed33): commit `eed764e2160222e40499061b02870328e4a3ed33`, GPL-3.0-or-later.
+- libpg_query 하위모듈 commit `27b2af9474003da843fb93bba59fe4297841291b`를 checkout 후 재확인한다.
+- 빌드 도구는 setuptools 80.9.0과 wheel 0.45.1로 고정했다.
+- Gateway 자체의 parser 판본과 upstream 서버 parser 판본은 서로 다른 가상환경이다. upstream 요구사항을 무시하는 설치나 최신 parser로의 임의 대체는 사용하지 않는다.
+
+`09eb889`의 로컬 macOS/Python 3.13 소스 빌드는 최신 SDK의 `strchrnul` 선언 차이로 실패한 뒤, 로컬 빌드에만 `CPPFLAGS=-DHAVE_STRCHRNUL`을 주어 7.2 wheel 생성과 `==7.2.0` 의존성 설치, `pip check`, 정상 SQL 4종 및 잘못된 SQL 거부를 확인했다. 이 플래그는 Dockerfile에 추가하지 않았다. Dockerfile RUN 7개의 shell 구문은 통과했지만 Linux/Python 3.12 빌드 성공은 원격 CI 확인 전까지 미검증이다.
+
 ## 로컬 사전 검증
 
 - CI 전체 pyflakes 통과. 수정 import 관련 시험 48건 통과.

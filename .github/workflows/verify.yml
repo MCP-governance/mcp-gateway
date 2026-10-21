@@ -175,6 +175,9 @@ jobs:
       - name: ./console.sh up --no-llm
         run: |
           ./console.sh init-disposal
+          # Keep dependency resolver errors in Actions; console.sh's quiet build
+          # otherwise reports only the failed Dockerfile instruction.
+          docker compose --progress plain build
           ./console.sh up --no-llm
 
       # Rego, classification self-check, gateway acceptance, the scripted workday of
