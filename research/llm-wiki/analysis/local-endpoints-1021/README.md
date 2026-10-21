@@ -108,3 +108,23 @@ Codex 0.160.0 browser-login fallback은 HTTP loopback listener를 두고 `state`
   3. **직원 PC 키트(관리되지 않는 개인 계정)**: 같은 사용자 권한의 악성 프로세스를 키트가 막을 수 없다. 짧은 토큰 수명과 게이트웨이 판정으로 피해를 줄이는 것이 한계이며, `SECURITY_BOUNDARIES.md`에 **막지 못함으로 명시**한다. D-170의 「조직 통제 의존」으로 분류해 숨기지 않는다(다른 계정이 아니라 같은 계정 문제이므로 검토 판단을 따른다).
 - **F2(웹 Origin)**: 세 지점 모두 브라우저가 직접 열 수 없는 전송이라는 정적 판단은 받는다. 그러나 「웹 페이지 접근 0」은 실기기에서 루프백 HTTP 수신 지점 전체를 대상으로 확인해야 완료다. PJ1 시험 항목으로 둔다.
 - 백로그 DEV-81 상태: **열림 — 관리형 Linux AppArmor 프로세스 결속 구현·Windows 실측·키트 한계 명시·PJ1 Origin 시험 남음.**
+
+## 구현 (2026-10-21, D-183, 미커밋)
+
+**단계 전환을 포함한 부분 구현이며 F1은 아직 열림이다.** 기존 PJ1을 그대로 강제 모드로 전환하면 정상 헤더 명령도 차단된다. 배포·기기 실행은 하지 않았다. [작업 보고와 PJ1 절차](../../status/reports/2026-10-21-broker-process-binding.md)를 먼저 읽는다.
+
+| 요구사항 | 구현·검증 | 남은 조건 |
+| --- | --- | --- |
+| BIND-01 커널이 강제한 클라이언트 신원 | `endpoint-agent/broker_binding.py`의 `authorize_peer`·`peer_label`: 기존 UID 검사에 `SO_PEERSEC`의 정확한 프로필 일치를 추가. `-bound-codex`, `-bound-claude`, 두 하네스에서만 직접 전이 가능한 고정 헬퍼 `-bound-credential`을 승인한다. 임의 credential 프로필·접두 일치·complain·stacked 레이블은 거부한다. | 고정 헬퍼는 토큰을 stdout으로 하네스에 돌려주는 최소 위임 예외다. 하네스 임의 자식 전체에 자격을 주는 것이 아니다. 실제 PJ1 레이블은 미확인. |
+| BIND-02 자식 권한 분리 | `enforce-linux.py`의 `bound_profile`: 하네스의 bash/dash/sh·기존 명령·Codex companion은 모두 `px`로 `-bound-<하네스>-tool`에 전이. 도구·로그인·진입 프로필은 헬퍼 실행과 소켓 접근을 명시적으로 거부한다. 허용되지 않은 실행 파일은 기본 거부. | **현재의 `sh -c` 헤더 명령도 도구 프로필로 간다.** `dash ix`를 되살리면 F1이 재발하므로 호환성 우회로 채택하지 않는다. |
+| BIND-03 메모리·디버그 경로 | 강제 프로필 모두에 `deny ptrace (trace, read, tracedby, readby)`, `deny capability sys_ptrace`, proc mem/environ 읽기 거부. AppArmor ptrace 기능도 브로커에서 확인한다. Yama 값은 운영 절차에서 읽어 기록하며 전역 sysctl은 변경하지 않는다. | 커널 효과·하네스 진단 기능 호환성 미검증. |
+| BIND-04 실패 시 차단·PID 재사용 | 연결마다 AppArmor enabled, 정확한 필수 프로필 enforce 상태, Unix/ptrace 중재 기능을 확인. 읽기 실패·미로드·레이블 오류 시 활성 캐시가 있어도 강제 모드에서 응답하지 않는다. `/proc/<pid>/attr/current` fallback은 없고 PID는 커널 제공 감사 값으로만 쓴다. | `SO_PEERSEC` 미지원 기기는 강제 모드에서 차단된다. 커널 레이블은 연결의 보안 문맥이며 프로세스 내용이나 원격 증명이 아니다. |
+| BIND-05 무중단 전환 | root 설정 `broker_binding=warn|enforce`. 기본·기존 설정 누락은 `warn`; 기존 프로필과 응답을 유지하고 레이블·고정 사유를 서비스 journal에 기록한다. 오타는 차단. 강제 프로필과 브로커 모드는 함께 전환해야 한다. | **경고 단계에서는 F1 노출이 유지된다.** 직접 실행 가능한 헤더 인증 경로와 두 실제 하네스 정상군을 먼저 확보해야 한다. 자동 강제 승격 없음. |
+| BIND-06 설치·회귀 범위 | 설치기·Linux 다운로드 매니페스트에 모듈 포함, 프로필 로드 전에 `apparmor_parser -Q -T` 추가. 새 시험 `full_stack_lab/tests/header_broker_label_check.py` **20건 통과**. 기존 시험 파일·기대값·AST는 수정하지 않았다. | parser 없음·WSL 접근 거부로 실제 문법 검사는 **미완료**. 기존 회귀의 실패·생략은 아래 원시 기록 참조. |
+
+재현: `python -B -X utf8 research/llm-wiki/analysis/local-endpoints-1021/verify_binding.py`.
+[원시 명령·시각·출력·SHA-256](binding-checks.json), [합성 경로로 렌더링한 강제 프로필](binding-profile.apparmor). 수집기는 실패·도구 부재가 있으면 종료 코드 1을 낸다. 이 결과는 대역 단위/정적 검사이며 실제 MCP·커널 효과 증거가 아니다.
+
+공식 근거: [AppArmor 4.0 정책 문법](https://gitlab.com/apparmor/apparmor/-/blob/v4.0.0/parser/apparmor.d.pod)의 실행 전이·Unix·ptrace 절, [Yama](https://docs.kernel.org/admin-guide/LSM/Yama.html). 공개 스킬/OSS 탐색과 판본·라이선스 확인 범위는 작업 보고에 기록했다. 외부 코드·설치 스크립트는 가져와 실행하지 않았다.
+
+**범위 밖:** 관리형 Windows는 구현하지 않았다. 직원 PC 키트도 변경하지 않았다. 키트는 같은 사용자 프로세스의 헬퍼 실행·토큰 파일/메모리 읽기를 막지 못한다. [경계 문서](../../../../docs/ai/SECURITY_BOUNDARIES.md)의 D-183 절을 따른다. DEV-81의 Windows·웹 Origin·실제 하네스 검증은 계속 열림이다.

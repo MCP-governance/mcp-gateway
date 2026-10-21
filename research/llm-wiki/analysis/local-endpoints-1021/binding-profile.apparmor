@@ -1,0 +1,243 @@
+#include <tunables/global>
+profile mcpgw-unit /fixed/login-shell {
+
+  #include <abstractions/base>
+  /etc/** r,
+  /usr/** mr,
+  /lib{,32,64}/** mr,
+  /dev/tty rw,
+  /dev/pts/** rw,
+  /proc/** r,
+  deny /proc/*/{mem,environ} r,
+  deny /proc/*/task/*/{mem,environ} r,
+  deny ptrace (trace, read, tracedby, readby),
+  deny capability sys_ptrace,
+  /run/systemd/resolve/{stub-resolv.conf,resolv.conf} r,
+  /sys/kernel/mm/transparent_hugepage/enabled r,
+  /sys/fs/cgroup/**/cpu.max r,
+  /sys/fs/cgroup/**/memory.{max,high} r,
+  owner /home/unit/** rwk,
+  owner /home/unit/ r,
+  /tmp/** rwk,
+  /var/tmp/** rwk,
+  network inet stream,
+  network inet6 stream,
+  signal (receive, send) peer=mcpgw-unit*,
+  /usr/{bin,sbin}/{bash,dash,sh,cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,uname,date,timeout,sleep,true,false,tr,locale,locale-check,getconf} ix,
+
+  deny /usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper x,
+  deny /run/mcpgw-unit.sock rw,
+  deny unix (connect, send, receive) type=stream peer=(addr="/run/mcpgw-unit.sock"),
+  /usr/local/lib/mcpgw-enforcement/mcpgw-unit/codex px -> mcpgw-unit-codex-entry,
+  /usr/local/lib/mcpgw-enforcement/mcpgw-unit/claude px -> mcpgw-unit-claude-entry,
+}
+profile mcpgw-unit-codex-entry {
+
+  #include <abstractions/base>
+  /etc/** r,
+  /usr/** mr,
+  /lib{,32,64}/** mr,
+  /dev/tty rw,
+  /dev/pts/** rw,
+  /proc/** r,
+  deny /proc/*/{mem,environ} r,
+  deny /proc/*/task/*/{mem,environ} r,
+  deny ptrace (trace, read, tracedby, readby),
+  deny capability sys_ptrace,
+  /run/systemd/resolve/{stub-resolv.conf,resolv.conf} r,
+  /sys/kernel/mm/transparent_hugepage/enabled r,
+  /sys/fs/cgroup/**/cpu.max r,
+  /sys/fs/cgroup/**/memory.{max,high} r,
+  owner /home/unit/** rwk,
+  owner /home/unit/ r,
+  /tmp/** rwk,
+  /var/tmp/** rwk,
+  network inet stream,
+  network inet6 stream,
+  signal (receive, send) peer=mcpgw-unit*,
+
+  deny /usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper x,
+  deny /run/mcpgw-unit.sock rw,
+  deny unix (connect, send, receive) type=stream peer=(addr="/run/mcpgw-unit.sock"),
+
+  /opt/approved/codex px -> mcpgw-unit-bound-codex,
+}
+profile mcpgw-unit-bound-codex {
+
+  #include <abstractions/base>
+  /etc/** r,
+  /usr/** mr,
+  /lib{,32,64}/** mr,
+  /dev/tty rw,
+  /dev/pts/** rw,
+  /proc/** r,
+  deny /proc/*/{mem,environ} r,
+  deny /proc/*/task/*/{mem,environ} r,
+  deny ptrace (trace, read, tracedby, readby),
+  deny capability sys_ptrace,
+  /run/systemd/resolve/{stub-resolv.conf,resolv.conf} r,
+  /sys/kernel/mm/transparent_hugepage/enabled r,
+  /sys/fs/cgroup/**/cpu.max r,
+  /sys/fs/cgroup/**/memory.{max,high} r,
+  owner /home/unit/** rwk,
+  owner /home/unit/ r,
+  /tmp/** rwk,
+  /var/tmp/** rwk,
+  network inet stream,
+  network inet6 stream,
+  signal (receive, send) peer=mcpgw-unit*,
+
+  /run/mcpgw-unit.sock rw,
+  unix (create, getattr, getopt, setopt, shutdown) type=stream,
+  unix (connect, send, receive) type=stream peer=(addr="/run/mcpgw-unit.sock", label=unconfined),
+
+  /opt/approved/codex mr,
+  /usr/{bin,sbin}/{bash,dash,sh,cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,uname,date,timeout,sleep,true,false,tr,locale,locale-check,getconf} px -> mcpgw-unit-bound-codex-tool,
+  /opt/approved/codex-code-mode-host mrpx -> mcpgw-unit-bound-codex-tool,
+
+  /usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper px -> mcpgw-unit-bound-credential,
+}
+profile mcpgw-unit-bound-codex-tool {
+
+  #include <abstractions/base>
+  /etc/** r,
+  /usr/** mr,
+  /lib{,32,64}/** mr,
+  /dev/tty rw,
+  /dev/pts/** rw,
+  /proc/** r,
+  deny /proc/*/{mem,environ} r,
+  deny /proc/*/task/*/{mem,environ} r,
+  deny ptrace (trace, read, tracedby, readby),
+  deny capability sys_ptrace,
+  /run/systemd/resolve/{stub-resolv.conf,resolv.conf} r,
+  /sys/kernel/mm/transparent_hugepage/enabled r,
+  /sys/fs/cgroup/**/cpu.max r,
+  /sys/fs/cgroup/**/memory.{max,high} r,
+  owner /home/unit/** rwk,
+  owner /home/unit/ r,
+  /tmp/** rwk,
+  /var/tmp/** rwk,
+  network inet stream,
+  network inet6 stream,
+  signal (receive, send) peer=mcpgw-unit*,
+
+  deny /usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper x,
+  deny /run/mcpgw-unit.sock rw,
+  deny unix (connect, send, receive) type=stream peer=(addr="/run/mcpgw-unit.sock"),
+
+  /usr/{bin,sbin}/{bash,dash,sh,cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,uname,date,timeout,sleep,true,false,tr,locale,locale-check,getconf} ix,
+  /opt/approved/codex-code-mode-host mrix,
+}
+profile mcpgw-unit-claude-entry {
+
+  #include <abstractions/base>
+  /etc/** r,
+  /usr/** mr,
+  /lib{,32,64}/** mr,
+  /dev/tty rw,
+  /dev/pts/** rw,
+  /proc/** r,
+  deny /proc/*/{mem,environ} r,
+  deny /proc/*/task/*/{mem,environ} r,
+  deny ptrace (trace, read, tracedby, readby),
+  deny capability sys_ptrace,
+  /run/systemd/resolve/{stub-resolv.conf,resolv.conf} r,
+  /sys/kernel/mm/transparent_hugepage/enabled r,
+  /sys/fs/cgroup/**/cpu.max r,
+  /sys/fs/cgroup/**/memory.{max,high} r,
+  owner /home/unit/** rwk,
+  owner /home/unit/ r,
+  /tmp/** rwk,
+  /var/tmp/** rwk,
+  network inet stream,
+  network inet6 stream,
+  signal (receive, send) peer=mcpgw-unit*,
+
+  deny /usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper x,
+  deny /run/mcpgw-unit.sock rw,
+  deny unix (connect, send, receive) type=stream peer=(addr="/run/mcpgw-unit.sock"),
+
+  /opt/approved/claude px -> mcpgw-unit-bound-claude,
+}
+profile mcpgw-unit-bound-claude {
+
+  #include <abstractions/base>
+  /etc/** r,
+  /usr/** mr,
+  /lib{,32,64}/** mr,
+  /dev/tty rw,
+  /dev/pts/** rw,
+  /proc/** r,
+  deny /proc/*/{mem,environ} r,
+  deny /proc/*/task/*/{mem,environ} r,
+  deny ptrace (trace, read, tracedby, readby),
+  deny capability sys_ptrace,
+  /run/systemd/resolve/{stub-resolv.conf,resolv.conf} r,
+  /sys/kernel/mm/transparent_hugepage/enabled r,
+  /sys/fs/cgroup/**/cpu.max r,
+  /sys/fs/cgroup/**/memory.{max,high} r,
+  owner /home/unit/** rwk,
+  owner /home/unit/ r,
+  /tmp/** rwk,
+  /var/tmp/** rwk,
+  network inet stream,
+  network inet6 stream,
+  signal (receive, send) peer=mcpgw-unit*,
+
+  /run/mcpgw-unit.sock rw,
+  unix (create, getattr, getopt, setopt, shutdown) type=stream,
+  unix (connect, send, receive) type=stream peer=(addr="/run/mcpgw-unit.sock", label=unconfined),
+
+  /opt/approved/claude mr,
+  /usr/{bin,sbin}/{bash,dash,sh,cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,uname,date,timeout,sleep,true,false,tr,locale,locale-check,getconf} px -> mcpgw-unit-bound-claude-tool,
+
+  /usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper px -> mcpgw-unit-bound-credential,
+}
+profile mcpgw-unit-bound-claude-tool {
+
+  #include <abstractions/base>
+  /etc/** r,
+  /usr/** mr,
+  /lib{,32,64}/** mr,
+  /dev/tty rw,
+  /dev/pts/** rw,
+  /proc/** r,
+  deny /proc/*/{mem,environ} r,
+  deny /proc/*/task/*/{mem,environ} r,
+  deny ptrace (trace, read, tracedby, readby),
+  deny capability sys_ptrace,
+  /run/systemd/resolve/{stub-resolv.conf,resolv.conf} r,
+  /sys/kernel/mm/transparent_hugepage/enabled r,
+  /sys/fs/cgroup/**/cpu.max r,
+  /sys/fs/cgroup/**/memory.{max,high} r,
+  owner /home/unit/** rwk,
+  owner /home/unit/ r,
+  /tmp/** rwk,
+  /var/tmp/** rwk,
+  network inet stream,
+  network inet6 stream,
+  signal (receive, send) peer=mcpgw-unit*,
+
+  deny /usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper x,
+  deny /run/mcpgw-unit.sock rw,
+  deny unix (connect, send, receive) type=stream peer=(addr="/run/mcpgw-unit.sock"),
+
+  /usr/{bin,sbin}/{bash,dash,sh,cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,uname,date,timeout,sleep,true,false,tr,locale,locale-check,getconf} ix,
+}
+profile mcpgw-unit-bound-credential {
+  #include <abstractions/base>
+  /etc/** r,
+  /usr/** mr,
+  /lib{,32,64}/** mr,
+  /proc/** r,
+  deny ptrace (trace, read, tracedby, readby),
+  deny capability sys_ptrace,
+  deny /proc/*/{mem,environ} r,
+  deny /proc/*/task/*/{mem,environ} r,
+  /usr/bin/python3{,.[0-9]*} ix,
+
+  /run/mcpgw-unit.sock rw,
+  unix (create, getattr, getopt, setopt, shutdown) type=stream,
+  unix (connect, send, receive) type=stream peer=(addr="/run/mcpgw-unit.sock", label=unconfined),
+}

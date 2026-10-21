@@ -147,10 +147,10 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "fb6e092fb9b24573ceb4cf578f51f411870e45fa89e096b679eb1dea3b9d7cfb",
+        "sha256": "122fc00371e7983324ad35159f4e631639aa119d2c6dc327720152a9e174e3ba",
         "committed_sha256": "fb6e092fb9b24573ceb4cf578f51f411870e45fa89e096b679eb1dea3b9d7cfb",
-        "normalized_sha256": "fb6e092fb9b24573ceb4cf578f51f411870e45fa89e096b679eb1dea3b9d7cfb",
-        "worktree_modified": false
+        "normalized_sha256": "122fc00371e7983324ad35159f4e631639aa119d2c6dc327720152a9e174e3ba",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/review.py",
@@ -782,10 +782,10 @@
     "code_candidates": [
       {
         "path": "endpoint-agent/enforce-linux.py",
-        "sha256": "57bfb1309921abb33b1d2f8d25837ccaec058ba53ef6d9379db09cd28748b455",
+        "sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
         "committed_sha256": "57bfb1309921abb33b1d2f8d25837ccaec058ba53ef6d9379db09cd28748b455",
-        "normalized_sha256": "57bfb1309921abb33b1d2f8d25837ccaec058ba53ef6d9379db09cd28748b455",
-        "worktree_modified": false
+        "normalized_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
+        "worktree_modified": true
       },
       {
         "path": "endpoint-agent/managed-windows.py",
@@ -892,6 +892,7 @@
       "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
       "files_match_review": false,
       "changed_review_files": [
+        "endpoint-agent/enforce-linux.py",
         "endpoint-agent/managed-windows.py",
         "full_stack_lab/gateway/app/endpoint_plane.py"
       ]

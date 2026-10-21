@@ -1,21 +1,27 @@
 {
-  "captured_at": "2026-10-21T13:26:12+09:00",
-  "head": "859f4d63db9cab5714f25e5d3cc4607077959e13",
+  "captured_at": "2026-10-21T14:17:45+09:00",
+  "head": "d86bf166b56adab401902fefd9431dbdc757d063",
   "branch": "main",
   "status": [
-    "M docs/ai/DATA_MODEL.md",
-    " M docs/ai/DECISIONS.md",
+    "M docs/ai/DECISIONS.md",
+    " M docs/ai/SECURITY_BOUNDARIES.md",
+    " M endpoint-agent/enforce-linux.py",
+    " M endpoint-agent/managed-linux.py",
     " M full_stack_lab/gateway/app/agent_service.py",
-    " M full_stack_lab/gateway/app/agent_static/console.js",
-    " M full_stack_lab/gateway/app/ops_response.py",
+    " M research/llm-wiki/analysis/local-endpoints-1021/README.md",
+    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
     " M research/llm-wiki/catalogs/threats.json",
     " M research/llm-wiki/status/backlog.md",
     " M research/llm-wiki/status/repository-snapshot.json",
     " M research/llm-wiki/status/repository-snapshot.md",
-    "?? full_stack_lab/gateway/app/sbom_impact.py",
-    "?? full_stack_lab/tests/sbom_impact_check.py",
-    "?? research/llm-wiki/analysis/sbom-impact/",
-    "?? research/llm-wiki/status/reports/2026-10-21-sbom-impact.md"
+    "?? endpoint-agent/broker_binding.py",
+    "?? full_stack_lab/tests/header_broker_label_check.py",
+    "?? research/llm-wiki/analysis/local-endpoints-1021/binding-checks.json",
+    "?? research/llm-wiki/analysis/local-endpoints-1021/binding-final-checks.json",
+    "?? research/llm-wiki/analysis/local-endpoints-1021/binding-profile.apparmor",
+    "?? research/llm-wiki/analysis/local-endpoints-1021/binding-wiki-checks.json",
+    "?? research/llm-wiki/analysis/local-endpoints-1021/verify_binding.py",
+    "?? research/llm-wiki/status/reports/2026-10-21-broker-process-binding.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -23,7 +29,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "d7a90629be1fc87e5a4b7278756bd08e784f0bef08ab1725c247146b1422b069"
+      "sha256": "fd36f92bd4cb2221994e166d8fff8e0cadb49d7960b8c8ccf5a9001c6e6b8404"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -51,7 +57,7 @@
     },
     {
       "path": "full_stack_lab/opa/decision.rego",
-      "sha256": "b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904"
+      "sha256": "e52e3ea4de50e8ae9c4727079579bf86ba5967aebdb4921875d2ab1d3791c26e"
     },
     {
       "path": "endpoint-agent/bootstrap.py",
@@ -59,11 +65,11 @@
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "aa371f78519b38da151189408f814130754f1a48a7d67b93c34e5c8f1efc9cec"
+      "sha256": "c7d2562f6cb171444084b97fb91a77751b1e7d1ca5e2e3b009e35663db029535"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",
-      "sha256": "57bfb1309921abb33b1d2f8d25837ccaec058ba53ef6d9379db09cd28748b455"
+      "sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146"
     }
   ]
 }

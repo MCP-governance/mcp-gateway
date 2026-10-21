@@ -382,7 +382,7 @@ async def me(authorization: str | None = Header(default=None)):
             "git_url": git_url.rstrip("/") + f"/{GITEA_ORG}" if git_url else "", "kit": await pc_kit() if field else None}
 
 
-KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py", "offline_buffer.py"),
+KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py", "offline_buffer.py"),
              "windows": ("install.cmd", "setup.ps1", "windows-common.ps1", "windows-worker.ps1", "windows-trust.ps1", "tray.ps1",
                          "runtime-check.py", "windows_status.py", "install.py", "install-windows.ps1",
                           "managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py")}
