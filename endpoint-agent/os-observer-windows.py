@@ -19,6 +19,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+try:
+    from offline_buffer import BufferFull, EventBuffer, flush
+except ModuleNotFoundError:  # Imported by the source-check harness, which loads this file by path.
+    _buffer_spec = importlib.util.spec_from_file_location("endpoint_offline_buffer", Path(__file__).with_name("offline_buffer.py"))
+    if _buffer_spec is None or _buffer_spec.loader is None:
+        raise
+    _buffer_module = importlib.util.module_from_spec(_buffer_spec)
+    _buffer_spec.loader.exec_module(_buffer_module)
+    BufferFull, EventBuffer, flush = _buffer_module.BufferFull, _buffer_module.EventBuffer, _buffer_module.flush
+
 NS = {"e": "http://schemas.microsoft.com/win/2004/08/events/event"}
 PROVIDER_SECURITY = "Microsoft-Windows-Security-Auditing"
 PROVIDER_APPLOCKER = "Microsoft-Windows-AppLocker"
@@ -197,10 +207,10 @@ def _write_cursor(path: Path, value: dict) -> None:
     os.replace(temporary, path)
 
 
-def _report_status(agent: Any, state: str, accepted: int, error_code: str) -> None:
+def _report_status(agent: Any, state: str, accepted: int, error_code: str, buffer_report: dict | None = None) -> None:
     agent.call("POST", "/api/endpoint/observation-status", {
         "endpoint_id": agent.endpoint_id(), "channel": "os", "state": state,
-        "accepted_count": max(0, min(500, accepted)), "error_code": error_code[:48]})
+        "accepted_count": max(0, min(500, accepted)), "error_code": error_code[:48], **(buffer_report or {})})
 
 
 def collect(config_path: Path, self_check: bool = False) -> dict:
@@ -211,13 +221,24 @@ def collect(config_path: Path, self_check: bool = False) -> dict:
     agent = _load_agent()
     agent.validate_gateway()
     cursor_path = config_path.with_suffix(".os-cursor.json")
+    buffer_cursor_path = config_path.with_suffix(".os-buffer-cursor.json")
+    buffer = EventBuffer(config_path.with_suffix(".os-buffer.jsonl"))
+    sent = 0
+    delivery_ok = True
+    try:
+        sent += flush(buffer, lambda batch: agent.call("POST", "/api/endpoint/os-events",
+                                                       {"endpoint_id": agent.endpoint_id(), "events": batch}))
+    except (OSError, ValueError, urllib.error.URLError, urllib.error.HTTPError):
+        delivery_ok = False
     cursors = json.loads(cursor_path.read_text(encoding="utf-8")) if cursor_path.exists() else {}
+    buffer_cursors = (json.loads(buffer_cursor_path.read_text(encoding="utf-8")) if buffer_cursor_path.exists()
+                      else json.loads(json.dumps(cursors)))
     counts: dict[str, int] = {"success": 0, "partial": 0, "failed": 0, "disabled": 0, "unauthorized": 0, "unsupported": 0}
     error_codes: list[str] = []
     accepted = 0
     recent_blocks = []
     for channel, ids, family in CHANNELS:
-        current = cursors.get(channel)
+        current = buffer_cursors.get(channel)
         try:
             result = _powershell(config, channel, ids, current)
         except (OSError, subprocess.SubprocessError, RuntimeError, ValueError):
@@ -233,16 +254,16 @@ def collect(config_path: Path, self_check: bool = False) -> dict:
             continue
         if current is None:
             # Establish a live-only baseline; never backfill the account's old event history.
-            cursors[channel] = {"record_id": int(result.get("newest", 0)), "epoch": 0}
-            _write_cursor(cursor_path, cursors)
+            buffer_cursors[channel] = {"record_id": int(result.get("newest", 0)), "epoch": 0}
+            _write_cursor(buffer_cursor_path, buffer_cursors)
             counts["success"] += 1
             continue
         epoch = int(current.get("epoch", 0))
         if result.get("reset"):
             epoch += 1
             current = {"record_id": int(result.get("newest", 0)), "epoch": epoch}
-            cursors[channel] = current
-            _write_cursor(cursor_path, cursors)
+            buffer_cursors[channel] = current
+            _write_cursor(buffer_cursor_path, buffer_cursors)
             counts["partial"] += 1
             error_codes.append("cursor_reset")
             continue
@@ -264,6 +285,10 @@ def collect(config_path: Path, self_check: bool = False) -> dict:
             counts["failed"] += 1
             error_codes.append("query_failed")
             continue
+        after_record = int((current or {}).get("record_id", 0))
+        selected = [(xml, record_id) for xml, record_id in zip(raw_rows, record_ids) if record_id > after_record]
+        raw_rows = [xml for xml, _ in selected]
+        record_ids = [record_id for _, record_id in selected]
         limited = len(raw_rows) > MAX_EVENTS
         raw_rows = raw_rows[:MAX_EVENTS]
         record_ids = record_ids[:MAX_EVENTS]
@@ -283,14 +308,10 @@ def collect(config_path: Path, self_check: bool = False) -> dict:
         recent_blocks.extend(event for event in events if event.get("kind") in
                              {"execution-denied", "network-denied", "file-denied"})
         try:
-            for start in range(0, len(events), MAX_BATCH):
-                agent.call("POST", "/api/endpoint/os-events", {
-                    "endpoint_id": agent.endpoint_id(), "events": events[start:start + MAX_BATCH]})
-        except (OSError, ValueError, urllib.error.URLError, urllib.error.HTTPError):
-            counts["failed"] += 1
-            error_codes.append("delivery_failed")
-            # The cursor is deliberately not committed: a retry may resubmit rows; the endpoint
-            # event key (endpoint_id,event_id) is expected to make that idempotent.
+            buffer.enqueue(events)
+        except BufferFull:
+            counts["partial"] += 1
+            error_codes.append("offline_buffer_full")
             continue
 
         last_record = record_ids[-1] if record_ids else int(result.get("newest", current.get("record_id", 0)))
@@ -299,8 +320,8 @@ def collect(config_path: Path, self_check: bool = False) -> dict:
             last_record = record_ids[-1]
         elif gap and not raw_rows:
             last_record = int(result.get("newest", current.get("record_id", 0)))
-        cursors[channel] = {"record_id": max(int(current.get("record_id", 0)), last_record), "epoch": epoch}
-        _write_cursor(cursor_path, cursors)
+        buffer_cursors[channel] = {"record_id": max(int(current.get("record_id", 0)), last_record), "epoch": epoch}
+        _write_cursor(buffer_cursor_path, buffer_cursors)
         accepted += len(events)
         partial_reasons = []
         if missing_sid:
@@ -317,6 +338,21 @@ def collect(config_path: Path, self_check: bool = False) -> dict:
         else:
             counts["success"] += 1
 
+    try:
+        sent += flush(buffer, lambda batch: agent.call("POST", "/api/endpoint/os-events",
+                                                       {"endpoint_id": agent.endpoint_id(), "events": batch}),
+                      batch_size=MAX_BATCH)
+        delivery_ok = True
+    except (OSError, ValueError, urllib.error.URLError, urllib.error.HTTPError):
+        delivery_ok = False
+    if not delivery_ok:
+        error_codes.append("delivery_failed")
+    if delivery_ok and not buffer.pending():
+        cursors = buffer_cursors
+        _write_cursor(cursor_path, cursors)
+    dropped = buffer.dropped_count()
+    if dropped:
+        error_codes.append("offline_buffer_dropped")
     active = sum(counts.values())
     if counts["failed"] and counts["success"] + counts["partial"] == 0:
         final_state = "failed"
@@ -331,8 +367,15 @@ def collect(config_path: Path, self_check: bool = False) -> dict:
     else:
         final_state = "unknown"
     error_code = next((code for code in error_codes if code), "")
+    if buffer.pending() and not error_code:
+        error_code = "delivery_failed"
+        final_state = "partial"
+    elif buffer.pending():
+        final_state = "partial"
     try:
-        _report_status(agent, final_state, accepted, error_code)
+        _report_status(agent, final_state, sent, error_code, buffer.drop_report())
+        if dropped:
+            buffer.clear_dropped()
     except (OSError, ValueError, urllib.error.URLError, urllib.error.HTTPError):
         final_state, error_code = "failed", "transport_unavailable"
     return {"channel": "os", "state": final_state, "accepted_count": accepted, "error_code": error_code,
