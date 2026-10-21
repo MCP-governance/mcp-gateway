@@ -1822,3 +1822,11 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 한계: 현재 코드는 사전 저장된 Ed25519 DSSE envelope만 검증하며 Cosign OCI referrer 자동 조회, Sigstore bundle/keyless/Rekor, RSA/ECDSA, 실제 OCI manifest digest 및 공급자 서명 자동 수집은 미구현이다. 실제 배포·기기·PJ1 시험은 하지 않았다. TC260 6.2.2는 방향 원문 인용을 근거로 삼았고 이 작업에서는 표준 원문 사본을 재검증하지 않았다.
 - 근거: [DEV-77 분석과 규격·도구 범위](../../research/llm-wiki/analysis/provenance-verify/README.md), [DEV-73 F3 분담](../../research/llm-wiki/analysis/review-1020/d175-arbitration.md), [작업 보고](../../research/llm-wiki/status/reports/2026-10-21-provenance-verify.md).
 - 일괄 (2026-10-21): 한 직원의 운영 중 서버 전체를 `POST /api/user-suspensions/stop-all`·`resume-all`로 한 번에 중지·재개한다. 조합마다 기존 단일 조작을 따로 호출해 조합별 행·기록이 남고(같은 일괄 조작은 원장 `scope.batch`로 잇는다), 성공·건너뜀·실패를 나눠 돌려준다. 새 판정·정책 ID 없음.
+
+## D-180 실행기 이전 승인 판본으로 되돌릴 때 세대·계약을 함께 전환한다 (2026-10-21, DEV-78)
+
+- 문제: D-114 실행기는 승인된 커밋을 실행·재조정하지만, 새 실행에 문제가 생겼을 때 과거 승인 이미지와 D-149 계약을 같은 전환에서 복구하는 경로가 없다.
+- 결정: `runtime-active` 승인 이벤트에 당시 사람 승인 계약의 서버·도구별 설명/입력/출력 해시·서버 판본, 계약 SHA-256, 승인자·시각을 append-only로 보존한다. 관리자는 그 이력이 있는 과거 세대만 고른다. `registry/contracts.lock.json`은 설치/기준 잠금이고 서버별 변경 이력은 아니므로 되돌리기의 이력 원본으로 사용하지 않는다. 출력 해시 NULL도 미고정 상태로 재해석하지 않고 당시 값 그대로 저장한다.
+- 전환: API는 관리자 권한·한 줄 사유·현재 운영 상태·대상 이력/철회 상태를 확인하고 현재 ACTIVE 세대를 STOPPING으로 바꾸며 요청 사건을 같은 DB 트랜잭션에서 append한다. worker는 기존 컨테이너·망을 제거한 뒤, 하나의 DB 트랜잭션에서 철회·종료·공급망 중지와 계약 해시를 재검사하고 승인 해시를 과거 스냅샷으로 되돌린 다음 과거 이미지의 새 세대를 QUEUED로 만든다. 기존 부분 유일 색인이 동시 ACTIVE를 막고 기존 전송 직전 D-149 계약 재확인이 호출을 판정한다. 되돌리기 실행 이벤트는 이력 세대의 계약 스냅샷을 그대로 이어받는다.
+- 근거: [DEV-78 설계·검증 기록](../../research/llm-wiki/analysis/runtime-rollback/README.md), D-114 실행기 보고, D-144의 같은 상태/원장 트랜잭션·append-only 규칙, D-149 판본별 출력 해시, D-154의 실패 순서 구분.
+- 한계: 새 스냅샷 기록 전의 과거 세대는 증거를 추정하지 않으므로 선택할 수 없다. 이전 이미지가 로컬 엔진에 남아 있어야 하며 레시피 판본이 현재 고정 설정과 다르면 실행을 거부한다. PostgreSQL 다중 작업자 경합·실제 이미지 재기동·MCP 호출 판정·실기기/PJ1은 별도 검증 전까지 미실행이다.

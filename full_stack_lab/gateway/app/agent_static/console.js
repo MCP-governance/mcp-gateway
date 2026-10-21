@@ -207,6 +207,7 @@ const REVIEW_KIND = {
   "risk-lapse": "위험 수용 만료", "intake-reject": "거부", "intake-hold": "보류", "provenance-mismatch": "보류",
   "server-register": "게이트웨이 등록", "tool-scope-review": "범위 심사", "residency-review": "위치 심사", "intake-cosign": "1차 승인", "risk-input": "영향평가 입력",
   "runtime-start": "실행 요청", "runtime-stop": "실행 중지 요청", "runtime-built": "이미지 빌드", "runtime-active": "실행 시작",
+  "runtime-rollback": "실행 판본 되돌리기", "runtime-rollback-queued": "실행 판본 전환", "runtime-rollback-refused": "실행 판본 전환 거부",
   "runtime-failed": "실행 실패", "runtime-stopped": "실행 중지",
 };
 const RUNTIME_STATUS = {
@@ -1862,12 +1863,15 @@ async function showIntakeReport(id) {
       ${panel("원본 보고서", report.artifacts.length ? html`<div class="row-actions">${report.artifacts.map((a) => html`
         <button class="btn sm" data-act="intake-download" data-id="${id}" data-kind="${a.kind}" data-name="${a.filename}">${a.kind} JSON</button>`)}</div>` : empty("생성된 보고서 없음"))}
     </div>` },
-    { key: "runtime", label: "실행", n: (report.runtimes || []).length, body: (report.runtimes || []).length ? html`<table class="data">
+    { key: "runtime", label: "실행", n: (report.runtimes || []).length, body: html`${(report.runtimes || []).length ? html`<table class="data">
       <thead><tr><th>세대</th><th>상태</th><th>이미지</th><th>주소</th><th>시각</th></tr></thead><tbody>
       ${report.runtimes.map((rt) => html`<tr><td>${rt.generation}</td>
         <td>${chip(...(RUNTIME_STATUS[rt.status] || ["", rt.status]))}${rt.error ? html`<span class="sub">${short(rt.error, 120)}</span>` : ""}</td>
         <td class="mono small">${rt.image_id ? rt.image_id.slice(7, 19) : "—"}<span class="sub">${rt.source_commit.slice(0, 12)} · ${rt.recipe_id}</span></td>
-        <td class="mono small">${rt.endpoint || "—"}</td><td class="small">${when(rt.updated_at)}</td></tr>`)}</tbody></table>` : empty("실행 기록 없음") },
+        <td class="mono small">${rt.endpoint || "—"}</td><td class="small">${when(rt.updated_at)}</td></tr>`)}</tbody></table>` : empty("실행 기록 없음")}
+      ${(report.rollback_options || []).length ? panel("되돌릴 수 있는 판본", html`<table class="data"><thead><tr><th>세대</th><th>승인 시각</th><th>승인자</th><th>계약 해시</th><th></th></tr></thead><tbody>
+        ${report.rollback_options.map((item) => html`<tr><td>${item.generation}</td><td>${when(item.approved_at)}</td><td>${item.approved_by || "—"}</td>
+          <td class="mono small">${item.contract_sha256}</td><td><button class="btn sm" data-act="runtime-rollback" data-id="${id}" data-generation="${item.generation}">되돌리기</button></td></tr>`)}</tbody></table>`) : ""}` },
     { key: "findings", label: "취약점·코드 검사", n: findings.length, body: html`
       ${report.reports.some((s) => s.summary?.truncated && s.scanner !== "Syft") ? html`<p class="small muted">검사기별 최대 200건</p>` : ""}
       ${findings.length ? html`<table class="data"><thead><tr><th>검사기·등급</th><th>발견</th><th>대상</th><th>설치 → 수정 버전</th></tr></thead>
@@ -2603,6 +2607,15 @@ const ACTIONS = {
     const fd = await ask({ title: "실행 중지", body: "게이트웨이 호출이 이 실행에 닿지 않게 됩니다.", confirm: "중지", danger: true });
     if (!fd) return;
     const r = await api(`/api/mcp-requests/${el.dataset.id}/runtime/stop`, { method: "POST" });
+    toast(r.message); reload();
+  },
+  async "runtime-rollback"(el) {
+    const fd = await ask({ title: `실행 판본 되돌리기 · ${el.dataset.generation}`,
+      fields: field.text("note", "사유", 'required maxlength="300"'), confirm: "되돌리기", danger: true });
+    if (!fd) return;
+    const r = await api(`/api/mcp-requests/${el.dataset.id}/runtime/rollback`, {
+      method: "POST", body: { generation: Number(el.dataset.generation), note: fd.get("note") },
+    });
     toast(r.message); reload();
   },
   async "intake-download"(el) {

@@ -1,10 +1,30 @@
-# 개발 현황 — 2026-10-20
+# 개발 현황 — 2026-10-21
 
-## DEV-77 출처 증명 검증 부분 구현 — 2026-10-21 (D-179)
+## 최신: 기능 구현 루프 2일차 — 직원별 중지, 오프라인 버퍼, root 단독 운영, 되돌리기, 출처 증명 (10-21)
 
-관리자 승인 시 이미 intake provenance에 저장된 Ed25519 DSSE/in-toto SLSA Provenance v1 증명을 설정 신뢰 키·허용 builder·기록 artifact SHA-256과 대조한다. 불일치·검증 불가(`MCP-SUPPLY-001`)는 보류하고 미제공은 `확인 안 됨`으로 표시하며 진행한다. runtime-worker는 기동·재조정에서 기록된 증거/digest를 다시 확인하고 기존 image ID 일치 검사를 유지한다. OCI referrer 자동 조회와 proof 입력 경로가 빠져 전체 DEV-77은 미완료다. DEV-73 소스 파일·내부 미러 규칙은 수정하지 않았다. [분석](../analysis/provenance-verify/README.md), [작업 보고](reports/2026-10-21-provenance-verify.md).
+소유자 지시(10-21)로 Codex sol 1 · luna 2 · Claude sonnet 1 · haiku 1 레인을 돌리고 메인이 판단·검증·병합한다. 레인은 WBS 요약보다 위키 원문을 우선하고, 충돌은 메인이 정확성 > 편의성 > 작업 효율성으로 판단한다.
 
-검증 상태: Python 구문·Console JS 구문·Console 상태 15/15·무인증 라우트 정적 점검은 통과했다. 새 단위시험은 Windows Python 3.10에 현재 `cryptography` 의존성이 없어 실행이 막혔고, pyflakes도 미설치다. 배포·기기·PJ1 시험은 범위 밖이다.
+main에 병합(`8e834df` 이후):
+
+- **D-181 직원별 MCP 즉시 중지·재개**([보고](reports/2026-10-21-user-server-suspend.md)): `P-SUSPEND-001`로 신원 조회와 전송 직전 두 곳에서 차단하고 중지·재개를 원장에 남긴다. 직원 단위 「전체 중지·재개」는 조합마다 기존 조작을 반복하고 `scope.batch`로 묶으며 성공·건너뜀·실패를 나눠 돌려준다([보고](reports/2026-10-21-suspend-all.md)).
+- **D-182 엔드포인트 오프라인 관측 버퍼**([보고](reports/2026-10-21-endpoint-offline-buffer.md)): 수집 커서와 ACK 커서를 분리하고 상한 8 MiB·10,000건·7일을 넘으면 수집을 멈추고 미적재 건수를 기록한다. 기존 180초 일시 격리는 그대로다.
+- **D-188 root 단독 운영 모드**([보고](reports/2026-10-21-root-solo.md)): 승인자 수를 부풀리지 않고 `solo_mode`·`solo_operator`만 원장에 남긴다. 검토 중 2차 승인을 건너뛸 수 있는 경로를 찾아 제거했다. 모드 전환은 기동 시 직전 값과 다를 때만 원장에 기록한다.
+- **D-180 실행기 이전 승인 판본 되돌리기**([보고](reports/2026-10-21-runtime-rollback.md)): 실행 세대의 append-only 승인 이력에 계약 스냅샷을 저장하고, 철회·종료·공급망 중지·승인 이력 누락·계약 변조는 거부한다.
+- **D-179 출처 증명 검증 부분 구현**([보고](reports/2026-10-21-provenance-verify.md)): 저장된 Ed25519 DSSE/in-toto SLSA 증명을 승인·재조정 시 확인하고 불일치·검증 불가는 `MCP-SUPPLY-001`로 보류, 미제공은 `확인 안 됨`으로 표시한다. 신뢰 키는 설정에서만 읽는다. **OCI referrer 자동 수집은 미구현.**
+
+메인이 실행한 검증(2026-10-21, 로컬 Python 3.12.10 + `cryptography` 50.0.1): 새 시험 `user_server_suspend_check` 24 · `user_suspend_all_check` 13 · `endpoint_offline_buffer_check` 10 · `solo_mode_ledger_check` 8 · `root_solo_check` 6 · `provenance_verify_check` 6 전부 통과. `open_endpoints.py` PASS, `node --check`·`console_copy_check`(위반 0)·`check_wiki.py --ci-ignored-local-sources` 오류 0.
+**기기 배포·PJ1 실제 하네스 시험은 전부 미실행이다.** 실제 PostgreSQL은 D-181만 격리 시험으로 24/24 확인했다.
+
+### 메인의 판단 2건
+
+- **DEV-73 1차 구현 반려 유지, F1 범위 조정**([판단](../analysis/review-1020/d175-arbitration.md)): 위협 모델에 침해된 게이트웨이가 없어 작업 서명 키 체계를 만들지 않고 경계를 명시한다. F2·F3(최소)·F4·F6·F7·F8은 수정 필수, F5는 실측·표시, F9·F10은 시험. 수정 후 새 적대 검토 전까지 배포·PJ1 금지.
+- **D-189 도입 위험 등급 승인 방식**([판단](../analysis/review-1020/d189-approval-method.md)): D-143(1명+사유로 2인 대체)도 D-187(매우 높음 사유 폐지)도 채택하지 않고, **높음 2인 필수 · 매우 높음 2인 필수 + 서면 사유 유지**로 정했다. 사유가 사람을 대체하면 없었던 독립 2인 통제를 기록하게 되기 때문이다. 높음 이상은 두 번째 관리자 계정이 필요해지며 대체 경로는 `field add-account`다. 구현·기존 기대값 4건 변경은 luna 적대 검증 뒤에만 병합한다.
+
+### 정정
+
+10-20 병합 커밋 `07bfed8`·`1696ec2`의 제목 「실제 PG 큐 재시작 시험」은 과대 표현이다. 그 시험은 작성만 되고 실행되지 않았으며 수치는 예상값이다([D-157 복구 항목](../../../docs/ai/DECISIONS.md) 참조). 이력은 보존한다.
+
+
 
 ## 최신: 기능 구현 루프 1일차 오후~2일차 새벽 — 전송 직전 재확인·명령 표면·출력 계약·폐기 복원·OAuth 범위 (10-20)
 

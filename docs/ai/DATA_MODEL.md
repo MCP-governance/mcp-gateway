@@ -132,6 +132,7 @@ D-90~D-92에서 더한 것(`v2_tables.sql`, 모두 멱등): `mcp_intake_requests
 `supply_chain_reports.vuln_db_updated_at`(그 검사가 쓴 취약점 DB의 갱신 시각), `accepted_risks`(치명적 발견의 기한부 수용: 신청·커밋·발견 id·사유·수용자·만료),
 `mcp_tools.scope_review`(도구별 목적·자산·행위·외부 목적지), `approval_events`(승인·거부·보류·수용·등록 기록, append-only),
 `audit_annotations`(`decisions.id` 범위의 무효 처리 표시, append-only). Console 등록 서버의 `servers.json` 항목에는 `tool_reviews`와 `provenance`가 들어간다.
+DEV-78·D-180: `mcp_runtimes.rollback_target_generation`·`rollback_contract`는 중지 중인 세대가 되돌릴 승인 세대와 계약 스냅샷을 worker에 전달한다. `runtime-active` 승인 이벤트의 `scope.contract`에는 도구별 승인 설명·입력 스키마·출력 스키마 해시와 서버 판본, 계약 SHA-256, 마지막 사람 승인자·시각이 들어간다. 출력 스키마 해시(NULL 포함)는 D-149 승인 상태 그대로 보존한다. 되돌리기는 같은 `intake_id`의 과거 `runtime-active` 이벤트가 있는 세대만 선택할 수 있다. 실행기 정지·계약 복원·새 세대 예약은 worker가 한 DB 트랜잭션에서 처리하며 부분 유일 색인이 동시에 살아 있는 세대를 막는다. 과거 이벤트에 계약 스냅샷이 없는 세대는 자동 보충하거나 선택지로 노출하지 않는다.
 D-143에서 더한 것: `mcp_intake_requests.risk_input`(신청자가 적은 영향평가 입력 여섯 항목, 등급은 저장하지 않고 `risk_tier.assess`로 매번 계산), `servers.json` 항목의 `risk_assessment`(등급·점수·입력·`input_sha256`·승인자)와 문서 최상위의 `risk_tier_grace_started_at`(입력 없는 기존 승인의 30일 유예 시작), `approval_events`의 `intake-cosign`(두 명 승인의 첫 번째)·`risk-input`(입력 기록).
 
 Console 등록 서버(D-49)는 DB가 아니라 `REGISTRY_RUNTIME_DIR/servers.json`에 있다 — `servers`(catalog.toml과 같은 모양 +
