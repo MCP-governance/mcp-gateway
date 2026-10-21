@@ -204,7 +204,7 @@ def install(args):
     PROGRAMS.mkdir(mode=0o755, parents=True, exist_ok=True)
     if not protected(PROGRAMS):
         raise ValueError("프로그램 경로가 root 관리 경로가 아닙니다")
-    for name in ("managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py", "offline_buffer.py"):
+    for name in ("managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py", "offline_buffer.py", "local-runner.py"):
         private_write(PROGRAMS / name, (source / name).read_text())
         (PROGRAMS / name).chmod(0o755)
     folder = STATE / args.user
@@ -219,7 +219,8 @@ def install(args):
     enrolled = request(bundle, "/oauth/device-enroll", {"enrollment_token": bundle["enrollment_token"], "device_key": bundle["device_key"],
                            "hostname": socket.gethostname(), "local_username": args.user, "local_uid": person.pw_uid}, credential=False)
     config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
-    config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256") if k in bundle})
+    # manifest_pubkey: the approver's key for local MCP manifests, pinned here and never taken from policy.
+    config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256", "manifest_pubkey", "local_engine") if k in bundle})
     ca_path = PROGRAMS / f"ca-{person.pw_uid}.crt"
     if config.get("ca_certificate"):
         private_write(ca_path, config["ca_certificate"])
@@ -292,6 +293,11 @@ def serve(args):
                  "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"]), "ENDPOINT_ORIGIN": "automatic"}))
     previous = config["policy_hash"]
     observed = 0.0
+    runner = PROGRAMS / "local-runner.py"
+    if runner.exists():
+        log = lambda item: print(json.dumps(item, ensure_ascii=False), flush=True)
+        threading.Thread(target=load_module("local_runner", runner).run, daemon=True,
+                         args=(config, request, log)).start()
     while True:
         # Until the organization activates the device the loop runs fast, so the first token follows
         # the activation within seconds instead of a minute; an active device keeps the slow cadence.

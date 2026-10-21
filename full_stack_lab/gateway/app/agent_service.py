@@ -109,6 +109,7 @@ async def lifespan(_: FastAPI):
     await db.execute((Path(__file__).parent / "v2_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "oidc_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "ops_tables.sql").read_text())
+    await db.execute((Path(__file__).parent / "local_run_tables.sql").read_text())
     from . import disposal
     await disposal.capture_existing()
     await disposal.reconcile()
@@ -367,7 +368,7 @@ async def me(authorization: str | None = Header(default=None)):
             "git_url": git_url.rstrip("/") + f"/{GITEA_ORG}" if git_url else "", "kit": await pc_kit() if field else None}
 
 
-KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py", "offline_buffer.py"),
+KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py", "offline_buffer.py", "local-runner.py"),
              "windows": ("install.cmd", "setup.ps1", "windows-common.ps1", "windows-worker.ps1", "windows-trust.ps1", "tray.ps1",
                          "runtime-check.py", "windows_status.py", "install.py", "install-windows.ps1",
                           "managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py")}
@@ -427,6 +428,9 @@ async def download_managed_kit(platform: Literal["linux", "windows"] = "linux",
     ca = field_ca()
     bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), **ca,
               "owner": user["user_id"], **await enrollment_token(user["principal"])}
+    if platform == 'linux' and os.getenv('LOCAL_MANIFEST_PUBKEY'):
+        bundle['manifest_pubkey']=os.environ['LOCAL_MANIFEST_PUBKEY'].replace('\\n','\n')
+        bundle['local_engine']=json.loads(os.getenv('LOCAL_ENGINE_SETTINGS') or '{}')
     output = io.BytesIO()
     payload = {name: (source / name).read_bytes() for name in names}
     if ca:
@@ -744,6 +748,10 @@ async def set_account_status(user_id: str, request: AccountStatus,
     if user["user_id"] == user_id and request.status != "active":
         # 마지막 관리자가 스스로를 잠그면 되돌릴 사람이 남지 않는다.
         raise HTTPException(409, "자기 계정은 스스로 중지하거나 잠글 수 없습니다.")
+    from . import local_jobs
+    target = await db.fetch_one('SELECT token FROM principals WHERE user_id=%s',(user_id,))
+    if target and request.status!='active':
+        await local_jobs.quiesce(user_token=target['token'])
     row = await db.fetch_one(
         """UPDATE principals SET status=%s, status_changed_by=%s, status_changed_at=now()
            WHERE user_id=%s AND status <> 'deleted'
@@ -763,6 +771,8 @@ async def set_account_status(user_id: str, request: AccountStatus,
         from . import mcp_sessions
         await mcp_sessions.terminate(reason="principal-disabled", principal=row["token"])
     label = {"active": "사용", "disabled": "중지", "locked": "잠금"}[request.status]
+    if request.status=='active':
+        await local_jobs.resume(user_token=row['token'])
     return {"account": row,
             "message": f"{row['display_name'] or row['email']} 계정을 {label} 상태로 변경했습니다."}
 
@@ -774,6 +784,10 @@ async def delete_account(user_id: str, authorization: str | None = Header(defaul
         raise HTTPException(403, "계정 삭제는 관리자만 할 수 있습니다.")
     if user_id in (user["user_id"], "root"):
         raise HTTPException(409, "본인 또는 root 계정은 삭제할 수 없습니다.")
+    from . import local_jobs
+    target=await db.fetch_one('SELECT token FROM principals WHERE user_id=%s',(user_id,))
+    if target:
+        await local_jobs.quiesce(user_token=target['token'])
     row = await db.fetch_one(
         """UPDATE principals SET status='deleted', status_changed_by=%s, status_changed_at=now()
            WHERE user_id=%s AND status <> 'deleted' RETURNING email, token""",
@@ -1571,6 +1585,9 @@ class IntakeRegistration(ResidencyFields):
     valid_days: int = Field(ge=1, le=365)
     poisoning_ack: bool = False
     tool_reviews: dict[str, ToolReview] = Field(min_length=1, max_length=300)
+    # DEV-73: signed manifest for a run on employees' PCs. Excluded from model_dump so a reviewed
+    # remote registration still compares equal to what was approved.
+    local: dict | None = Field(default=None, exclude=True)
 
 
 class RemoteContractReview(IntakeRegistration):
@@ -1687,6 +1704,8 @@ async def register_mcp_request(request_id: UUID, request: IntakeRegistration,
             "purpose": row["purpose"], "owner_department": row.get("department") or "",
             "intake_id": str(row["id"]), "exit_terms": exit_term_flags(row),
             "supplier_assurance": (row.get("evidence") or {}).get("supplier_assurance") or {}}
+    if request.local is not None:
+        body["local"] = request.local
     result = await gateway_proxy("/api/registry/servers", authorization, "POST", body, timeout=120)
     await db.execute("UPDATE mcp_intake_requests SET registered_server_id=%s, updated_at=now() WHERE id=%s",
                      (request.server_id, request_id))

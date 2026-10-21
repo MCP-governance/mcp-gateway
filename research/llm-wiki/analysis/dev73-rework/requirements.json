@@ -1,0 +1,399 @@
+{
+  "base": "7151de41b228676f5ecd33dddc57cec06465cc6c",
+  "revision": "uncommitted-worktree",
+  "requirements": [
+    {
+      "requirement": "F1",
+      "disposition": "scope_documented",
+      "source": [
+        {
+          "path": "docs/ai/SECURITY_BOUNDARIES.md",
+          "symbol": "## 4.",
+          "line": 92,
+          "sha256": "7dadbdb385355d59db7e9cb2b2e6a24ad7a8143bb1439eab08b650ac0f666dcd"
+        },
+        {
+          "path": "research/llm-wiki/analysis/direction-1020/dev73-local-isolated-run.md",
+          "symbol": "## 9.",
+          "line": 92,
+          "sha256": "ad50cb7f69fadfe6bd45cb820d05f1a0e45e114cd89815e140580cf597bde196"
+        }
+      ],
+      "unit_cases": [],
+      "runtime": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "postgresql_case": null
+    },
+    {
+      "requirement": "F2",
+      "disposition": "implemented_pending_runtime",
+      "source": [
+        {
+          "path": "full_stack_lab/gateway/app/local_jobs.py",
+          "symbol": "async def validate_job",
+          "line": 475,
+          "sha256": "ef80a2fab5ef32f6182314ed8a08f5a2ba78d49e75dcfb5eaff5d14ccd06afbf"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/local_jobs.py",
+          "symbol": "async def current_job",
+          "line": 464,
+          "sha256": "ef80a2fab5ef32f6182314ed8a08f5a2ba78d49e75dcfb5eaff5d14ccd06afbf"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/local_jobs.py",
+          "symbol": "async def quiesce",
+          "line": 539,
+          "sha256": "ef80a2fab5ef32f6182314ed8a08f5a2ba78d49e75dcfb5eaff5d14ccd06afbf"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/local_jobs.py",
+          "symbol": "async def prepare_token_revocation",
+          "line": 565,
+          "sha256": "ef80a2fab5ef32f6182314ed8a08f5a2ba78d49e75dcfb5eaff5d14ccd06afbf"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/local_run_tables.sql",
+          "symbol": "CREATE OR REPLACE FUNCTION",
+          "line": 53,
+          "sha256": "539b76fbc11e32e7d9a4bcffc2bff521783db36ce8cf5c90852d427d969b2f37"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/idp.py",
+          "symbol": "async def _revoke_family",
+          "line": 216,
+          "sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d"
+        }
+      ],
+      "unit_cases": [
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 68,
+          "symbol": "test_F2_current_generation_accepts_then_each_change_blocks"
+        },
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 77,
+          "symbol": "test_F2_signed_expiry_and_generation_are_required"
+        },
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 150,
+          "symbol": "test_F2_stop_receipt_is_idempotent_and_requires_engine_confirmation"
+        }
+      ],
+      "runtime": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "postgresql_case": "full_stack_lab/tests/dev73_rework_pg_check.py"
+    },
+    {
+      "requirement": "F3",
+      "disposition": "implemented_pending_runtime",
+      "source": [
+        {
+          "path": "full_stack_lab/gateway/app/local_jobs.py",
+          "symbol": "def mirror_image",
+          "line": 107,
+          "sha256": "ef80a2fab5ef32f6182314ed8a08f5a2ba78d49e75dcfb5eaff5d14ccd06afbf"
+        },
+        {
+          "path": "endpoint-agent/local-runner.py",
+          "symbol": "def engine_configuration",
+          "line": 141,
+          "sha256": "1b745e6b68ef7eb272de0d5a74ca0e11795c9db3031090c58f30f0a22940c872"
+        }
+      ],
+      "unit_cases": [
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 85,
+          "symbol": "test_F3_both_sides_restrict_exact_mirror_and_digest"
+        },
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 107,
+          "symbol": "test_F3_container_uses_preimported_digest_and_no_log_disk"
+        }
+      ],
+      "runtime": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "postgresql_case": null
+    },
+    {
+      "requirement": "F4",
+      "disposition": "implemented_pending_runtime",
+      "source": [
+        {
+          "path": "endpoint-agent/local-runner.py",
+          "symbol": "class PinnedMounts",
+          "line": 56,
+          "sha256": "1b745e6b68ef7eb272de0d5a74ca0e11795c9db3031090c58f30f0a22940c872"
+        }
+      ],
+      "unit_cases": [
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 164,
+          "symbol": "test_F4_parent_symlink_is_refused"
+        },
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 169,
+          "symbol": "test_F4_repeated_replacement_never_redirects_pinned_source"
+        },
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 188,
+          "symbol": "test_F4_concurrent_parent_replacement_never_selects_secret_inode"
+        }
+      ],
+      "runtime": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "postgresql_case": null
+    },
+    {
+      "requirement": "F5",
+      "disposition": "implemented_pending_runtime",
+      "source": [
+        {
+          "path": "endpoint-agent/local-runner.py",
+          "symbol": "def container_command",
+          "line": 111,
+          "sha256": "1b745e6b68ef7eb272de0d5a74ca0e11795c9db3031090c58f30f0a22940c872"
+        },
+        {
+          "path": "endpoint-agent/local-runner.py",
+          "symbol": "def mapping",
+          "line": 192,
+          "sha256": "1b745e6b68ef7eb272de0d5a74ca0e11795c9db3031090c58f30f0a22940c872"
+        }
+      ],
+      "unit_cases": [
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 93,
+          "symbol": "test_F5_missing_or_wrong_engine_mapping_is_blocked"
+        },
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 100,
+          "symbol": "test_F5_actual_host_mapping_cannot_pass_as_userns"
+        }
+      ],
+      "runtime": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "postgresql_case": null
+    },
+    {
+      "requirement": "F6",
+      "disposition": "implemented_pending_runtime",
+      "source": [
+        {
+          "path": "endpoint-agent/local-runner.py",
+          "symbol": "def _read",
+          "line": 211,
+          "sha256": "1b745e6b68ef7eb272de0d5a74ca0e11795c9db3031090c58f30f0a22940c872"
+        },
+        {
+          "path": "endpoint-agent/local-runner.py",
+          "symbol": "def request",
+          "line": 242,
+          "sha256": "1b745e6b68ef7eb272de0d5a74ca0e11795c9db3031090c58f30f0a22940c872"
+        },
+        {
+          "path": "endpoint-agent/local-runner.py",
+          "symbol": "def stop",
+          "line": 267,
+          "sha256": "1b745e6b68ef7eb272de0d5a74ca0e11795c9db3031090c58f30f0a22940c872"
+        }
+      ],
+      "unit_cases": [
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 124,
+          "symbol": "test_F6_single_line_bound_stops_and_discards_session"
+        },
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 129,
+          "symbol": "test_F6_queue_bound_stops_without_unbounded_growth"
+        },
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 134,
+          "symbol": "test_F6_total_byte_bound_is_independent"
+        },
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 139,
+          "symbol": "test_F6_line_count_bound_is_independent"
+        },
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 144,
+          "symbol": "test_F6_silent_stdout_read_deadline_stops"
+        }
+      ],
+      "runtime": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "postgresql_case": null
+    },
+    {
+      "requirement": "F7",
+      "disposition": "implemented_pending_runtime",
+      "source": [
+        {
+          "path": "full_stack_lab/gateway/app/local_jobs.py",
+          "symbol": "async def exchange",
+          "line": 207,
+          "sha256": "ef80a2fab5ef32f6182314ed8a08f5a2ba78d49e75dcfb5eaff5d14ccd06afbf"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/local_jobs.py",
+          "symbol": "async def cleanup",
+          "line": 294,
+          "sha256": "ef80a2fab5ef32f6182314ed8a08f5a2ba78d49e75dcfb5eaff5d14ccd06afbf"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/local_jobs.py",
+          "symbol": "async def claim",
+          "line": 405,
+          "sha256": "ef80a2fab5ef32f6182314ed8a08f5a2ba78d49e75dcfb5eaff5d14ccd06afbf"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/local_jobs.py",
+          "symbol": "async def complete",
+          "line": 510,
+          "sha256": "ef80a2fab5ef32f6182314ed8a08f5a2ba78d49e75dcfb5eaff5d14ccd06afbf"
+        }
+      ],
+      "unit_cases": [
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 244,
+          "symbol": "test_F7_queue_and_rate_saturation_block_before_insert"
+        }
+      ],
+      "runtime": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "postgresql_case": "full_stack_lab/tests/dev73_rework_pg_check.py"
+    },
+    {
+      "requirement": "F8",
+      "disposition": "implemented_pending_runtime",
+      "source": [
+        {
+          "path": "full_stack_lab/gateway/app/local_jobs.py",
+          "symbol": "async def applicant_device",
+          "line": 130,
+          "sha256": "ef80a2fab5ef32f6182314ed8a08f5a2ba78d49e75dcfb5eaff5d14ccd06afbf"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "async def discover_for_registration",
+          "line": 545,
+          "sha256": "60405b27259ee87d35f170f96ed800d6b775e9610356a37a036d250acb0f10d8"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/agent_static/console.js",
+          "symbol": "const pcRun",
+          "line": 2662,
+          "sha256": "06ed374eca854b6d9337547f7ba9028397072cc2a0aad9b7f44c1ca52faed225"
+        },
+        {
+          "path": "endpoint-agent/local-runner.py",
+          "symbol": "def execute_job",
+          "line": 298,
+          "sha256": "1b745e6b68ef7eb272de0d5a74ca0e11795c9db3031090c58f30f0a22940c872"
+        }
+      ],
+      "unit_cases": [
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 279,
+          "symbol": "test_F8_bound_observer_survives_a_newer_device_heartbeat"
+        }
+      ],
+      "runtime": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "postgresql_case": null
+    },
+    {
+      "requirement": "F9",
+      "disposition": "implemented_pending_runtime",
+      "source": [
+        {
+          "path": "full_stack_lab/gateway/app/local_jobs.py",
+          "symbol": "def remember",
+          "line": 275,
+          "sha256": "ef80a2fab5ef32f6182314ed8a08f5a2ba78d49e75dcfb5eaff5d14ccd06afbf"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/local_jobs.py",
+          "symbol": "async def record_evidence",
+          "line": 285,
+          "sha256": "ef80a2fab5ef32f6182314ed8a08f5a2ba78d49e75dcfb5eaff5d14ccd06afbf"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/local_run_tables.sql",
+          "symbol": "CREATE TABLE IF NOT EXISTS local_job_events",
+          "line": 40,
+          "sha256": "539b76fbc11e32e7d9a4bcffc2bff521783db36ce8cf5c90852d427d969b2f37"
+        }
+      ],
+      "unit_cases": [
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 233,
+          "symbol": "test_F9_F10_dispatch_outcomes_keep_not_executed_and_unconfirmed_separate"
+        },
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 269,
+          "symbol": "test_F9_result_evidence_retains_uuid_timestamps_state_hash"
+        }
+      ],
+      "runtime": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "postgresql_case": "full_stack_lab/tests/dev73_rework_pg_check.py"
+    },
+    {
+      "requirement": "F10",
+      "disposition": "implemented_pending_runtime",
+      "source": [
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "async def _decision_payload",
+          "line": 2043,
+          "sha256": "60405b27259ee87d35f170f96ed800d6b775e9610356a37a036d250acb0f10d8"
+        },
+        {
+          "path": "endpoint-agent/local-runner.py",
+          "symbol": "def recover",
+          "line": 387,
+          "sha256": "1b745e6b68ef7eb272de0d5a74ca0e11795c9db3031090c58f30f0a22940c872"
+        }
+      ],
+      "unit_cases": [
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 216,
+          "symbol": "test_F10_claimed_unknown_result_is_not_retried"
+        },
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 224,
+          "symbol": "test_F10_restart_only_removes_orphans_and_never_executes_them"
+        },
+        {
+          "path": "full_stack_lab/tests/dev73_rework_check.py",
+          "line": 233,
+          "symbol": "test_F9_F10_dispatch_outcomes_keep_not_executed_and_unconfirmed_separate"
+        }
+      ],
+      "runtime": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "postgresql_case": "full_stack_lab/tests/dev73_rework_pg_check.py"
+    }
+  ]
+}

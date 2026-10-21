@@ -621,6 +621,8 @@ async def issue_device(endpoint_id: str, hostname: str, platform: str, owner_tok
 
 
 async def revoke_device(endpoint_id: str, actor: str) -> dict:
+    from . import local_jobs
+    await local_jobs.quiesce(device_id=endpoint_id)
     # A failed journal append must not leave an unrecorded committed transition.
     async with db.transaction() as connection:
         row = await (await connection.execute(

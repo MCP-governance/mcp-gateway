@@ -65,6 +65,8 @@ def selected(server_id, source):
 
 
 async def suspend(server_id, source, reason, evidence):
+    from . import local_jobs
+    await local_jobs.quiesce(server_id=server_id)
     async with db.transaction() as connection:
         await connection.execute("SELECT id FROM mcp_servers WHERE id=%s FOR UPDATE", (server_id,))
         row = await (await connection.execute(

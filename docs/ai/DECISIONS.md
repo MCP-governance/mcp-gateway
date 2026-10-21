@@ -1813,3 +1813,14 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 재사용: D-122의 `ops_suspensions` 구조(복귀 필드를 채우는 상태 행)·`review.record_event`·D-140 최종 dispatch 잠금 순서. 서버 단위 중지(D-122)·계정 상태·종료 절차는 독립이며 서로 되돌리지 않는다. 콘솔은 사용자·엔드포인트 화면의 사용자 행(MCP 이용 중지)과 「이용 중지」 탭(재개)이다.
 - 근거: [방향 갱신 10-20](../../research/llm-wiki/analysis/direction-1020/README.md) 3장 DEV-79, [통제 검토](../../research/llm-wiki/analysis/direction-1020/control-review.md) 105행(근거 M05 **제2항**·TC260 4.2.3(b)-(c), README의 제3항은 정정), [원자 요구사항·근거](../../research/llm-wiki/analysis/user-server-suspend/README.md).
 - 한계: 이미 전송된 호출은 취소하지 않는다(기록만). `tools/list`는 그대로 보이고 호출만 거부한다. 재개에 독립 승인은 요구하지 않는다(관리자 1명 운영). DEV-74 자동 중지가 같은 상태를 쓰는 확장은 하지 않았다. 기기 배포·PJ1 실제 하네스 시험은 미실행이다.
+
+
+## D-175 DEV-73 반려 판단 반영 재작업 (2026-10-21)
+
+- **정본**: [항목별 처리 판단](../../research/llm-wiki/analysis/review-1020/d175-arbitration.md). 1차 구현 217da74의 C 반려 이력은 유지한다. 아래는 소스 재작업이며 수용·배포·실기기 검증 완료가 아니다.
+- **경계**: 장치 실행기는 게이트웨이가 발행한 작업을 신뢰하며, 로컬 격리는 침해된 게이트웨이를 막지 않는다. 별도 작업 서명 키·1회용 증명은 만들지 않는다. 내부 미러 allowlist·digest·사전 반입만 강제하고 OCI/cosign 검증은 DEV-77에 둔다. 미제공 표시는 `확인 안 됨`이다.
+- **전환**: 새 admission을 닫고 대기 작업을 취소한 뒤 실행 정지 회신을 기다린다. 정지 미확인 작업이 있으면 DB trigger가 lifecycle/status/승인·철회 전환을 거부한다. claim/start는 현재 정책·장치 epoch·서명 세대·만료·승인 hash·철회를 잠금 안에서 대조한다. 토큰 철회는 start와 같은 토큰 잠금을 유지하며 정지를 확인한 뒤 서명 목록과 DB에 반영한다. 같은 작업의 자동 재실행은 없다.
+- **실행기**: 작업마다 컨테이너를 만들고 제거한다. 전체 경로 FD 고정·실행 직전 inode 대조, 엔진 namespace 설정·판본 확인, uid_map 관측, stdout/기한/대기열/생성률·결과 저장 상한을 적용한다. userns 미설정은 차단하며 host 모드는 `탈출 시 호스트 root` 위험의 명시 승인만 허용한다. userns/idmap·FD bind의 실제 지원은 미실측이다.
+- **관찰·원장**: 관찰 장치를 신청에 고정하고 읽기 전용으로 보여 승인한다. 실행 장치의 도구 계약을 다시 확인한다. job UUID·request UUID·시각·상태·결과 hash를 decision client와 별도 append-only 이벤트에 남긴다. 미수령은 `confirmed_not_executed`, 수령 후 미확인은 `uncertain`이다. 운영 payload 정리는 감사 보존과 분리한다.
+- **보존한 기능**: D-181 직원별 중지, D-182 오프라인 버퍼, D-188 root 단독 모드. C1~C4/T1~T3 판정 기준은 바꾸지 않는다. 새 적대 검토 전까지 배포·PJ1 시험을 하지 않는다.
+- **검증·되돌릴 조건**: [재작업 보고](../../research/llm-wiki/status/reports/2026-10-21-dev73-rework.md). 기존 시험 기대값·AST는 보존했다. 실제 DB 잠금/경합·Linux 반복 교체·엔진 매핑/정지·OSS MCP 검증이 실패하면 지원 엔진/실행 경로를 열지 않는다. 메시지별 컨테이너의 상태 있는 MCP 호환성은 검증 후 별도 결정한다.
