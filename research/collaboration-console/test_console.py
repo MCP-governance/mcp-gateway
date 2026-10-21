@@ -1,6 +1,7 @@
 import concurrent.futures
 import csv
 from contextlib import redirect_stderr, redirect_stdout
+from copy import deepcopy
 import importlib.util
 import io
 import json
@@ -54,6 +55,7 @@ class SheetSyncTests(unittest.TestCase):
                "완료 조건": "완료 확인", "남은 일": "후속 확인"}
         self.write_csv([new, row], list(reversed(self.headers)))
         rows, meta = self.source.get("wbs")
+        original = deepcopy(self.snapshot)
         data, changed = sheet_pull.overlay_wbs(self.snapshot, rows)
         old = data["items"][0]
         self.assertEqual(old["id"], row["ID"])
@@ -62,7 +64,7 @@ class SheetSyncTests(unittest.TestCase):
         self.assertEqual((old["owner"], old["memo"], old["planned_schedule"]),
                          ("담당자", "쉼표, 줄바꿈\n메모", "10/20"))
         self.assertEqual(old["evidence"], self.snapshot["items"][0]["evidence"])
-        self.assertNotIn("owner", self.snapshot["items"][0])
+        self.assertEqual(self.snapshot, original)
         self.assertEqual(data["items"][-1]["title"], "추가 작업")
         self.assertEqual(data["items"][-1]["completion_condition"], "완료 확인")
         self.assertEqual(data["items"][-1]["known_gap"], "후속 확인")
