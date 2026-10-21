@@ -33,6 +33,16 @@ CI가 조용한 빌드만 사용해 설치기의 상세 오류가 사라졌으�
 
 `09eb889`의 로컬 macOS/Python 3.13 소스 빌드는 최신 SDK의 `strchrnul` 선언 차이로 실패한 뒤, 로컬 빌드에만 `CPPFLAGS=-DHAVE_STRCHRNUL`을 주어 7.2 wheel 생성과 `==7.2.0` 의존성 설치, `pip check`, 정상 SQL 4종 및 잘못된 SQL 거부를 확인했다. 이 플래그는 Dockerfile에 추가하지 않았다. Dockerfile RUN 7개의 shell 구문은 통과했지만 Linux/Python 3.12 빌드 성공은 원격 CI 확인 전까지 미검증이다.
 
+## 실제 스택 시험 도달 뒤의 보완
+
+`05365c0`의 [원격 실행](https://github.com/MCP-governance/mcp-gateway/actions/runs/39584673772)에서 연구 CI, 정적 검사, Linux 이미지 빌드와 `console.sh up --no-llm`은 성공했다. 따라서 위 pglast 소스 빌드는 실제 CI에서도 확인됐다. 이어진 전체 시험은 `app.integrations` 자체 검사에서 멈췄다.
+
+시험 입력이 새 command helper 확인 항목을 포함하면서 그 항목을 활성화하는 `command_settings_checked` 표식은 빠뜨려 현재 장치 판정과 일치하지 않았다. `a319286`은 실제 heartbeat가 저장하는 입력 형식에 맞춰 자체 검사만 보완했다. 제품의 만료 또는 권한 조건을 완화하지 않는다. 구형 장치와 점검 항목 누락, 179초 정상과 180초 만료 조건을 확인했고 자체 검사를 CI 정적 단계에서도 실행하도록 했다.
+
+같은 실행의 컨테이너 로그에는 도입 검증 작업자의 `supplier_metadata` import 실패가 있었다. `0c229eb`는 이미지의 COPY 누락을 복구하고 최종 사용자/작업 경로에서 `import intake_worker`를 빌드 중 실행한다. COPY 대상만 모은 임시 디렉터리에서 정상 import와 해당 파일 제거 시 동일 실패를 재현했다. 소스 디렉터리를 통째로 시험에 연결했을 때 가려지는 패키징 누락을 잡는 검사다.
+
+같은 원격 로그에서 등록 동기화와 스키마 적용 사이의 DB 교착이 한 번 발생했다. Gateway 재시작 후 기동 완료와 health 200을 확인했다. 이 기동 경합은 이번 자체 검사 실패의 직접 원인이 아니며, 아직 수정하거나 해소를 입증하지 않았다.
+
 ## 로컬 사전 검증
 
 - CI 전체 pyflakes 통과. 수정 import 관련 시험 48건 통과.
