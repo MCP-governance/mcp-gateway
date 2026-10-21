@@ -8,11 +8,19 @@ append-only approval_events entry written in the same transaction.
 """
 from __future__ import annotations
 
+import asyncio
 import uuid
 
-from . import automatic_suspend, db, review
+from . import automatic_suspend, db, local_jobs, review
 
 TARGET = "user-server-suspension"
+# An operation holds one pool connection while local quiesce uses another. Bound
+# concurrent manual operations so ordinary pool capacity remains available.
+MANUAL_OPERATION_SLOTS = asyncio.Semaphore(max(1, db.POOL_MAX // 2))
+
+
+def operation_key(user_token: str, server_id: str) -> str:
+    return f"user-server-operation:{user_token}:{server_id}"
 
 
 async def expire(user_token: str | None = None, server_id: str | None = None) -> None:
@@ -26,7 +34,20 @@ async def auto_suspend(connection, user_token: str, server_id: str, policies: tu
 
 
 async def suspend(user_token: str, server_id: str, actor: str, reason: str, batch: str | None = None) -> dict:
-    async with db.transaction() as connection:
+    async with MANUAL_OPERATION_SLOTS, db.transaction() as connection:
+        # A resume must not remove this pair's durable stop while we wait for a
+        # device receipt. This lock is separate from the employee dispatch lock.
+        await connection.execute("SELECT pg_advisory_xact_lock(1431523923, hashtext(%s))",
+                                 (operation_key(user_token, server_id),))
+        if not await (await connection.execute(
+                "SELECT 1 FROM principals WHERE token=%s AND status <> 'deleted'", (user_token,))).fetchone():
+            raise LookupError("관리대장에 없는 사용자입니다.")
+        if not await (await connection.execute("SELECT 1 FROM mcp_servers WHERE id=%s", (server_id,))).fetchone():
+            raise LookupError("등록되지 않은 서버입니다.")
+        # Quiesce writes the stop in its own transaction. Keep the dispatch lock
+        # free while a running local job reports stopped_at through the gateway.
+        if local_jobs.is_local(server_id):
+            await local_jobs.quiesce(server_id=server_id, user_token=user_token)
         # The lock dispatch.record() takes before its final intent INSERT: a call already past it is on its
         # way and is recorded below, every later one sees this row.
         await connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (user_token,))
@@ -59,7 +80,15 @@ async def suspend(user_token: str, server_id: str, actor: str, reason: str, batc
 
 
 async def resume(suspension_id: int, actor: str, note: str, batch: str | None = None) -> dict:
-    async with db.transaction() as connection:
+    async with MANUAL_OPERATION_SLOTS, db.transaction() as connection:
+        pending = await (await connection.execute(
+            "SELECT user_token, server_id FROM user_server_suspensions WHERE id=%s AND resumed_at IS NULL",
+            (suspension_id,))).fetchone()
+        if not pending:
+            raise ValueError("중지 상태가 아닙니다.")
+        await connection.execute("SELECT pg_advisory_xact_lock(1431523923, hashtext(%s))",
+                                 (operation_key(pending["user_token"], pending["server_id"]),))
+        await connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (pending["user_token"],))
         row = await (await connection.execute(
             """UPDATE user_server_suspensions SET resumed_at=now(), resumed_by=%s, resume_note=%s
                 WHERE id=%s AND resumed_at IS NULL RETURNING id, user_token, server_id""",
@@ -71,6 +100,7 @@ async def resume(suspension_id: int, actor: str, note: str, batch: str | None = 
             scope["batch"] = batch
         await review.record_event(
             "user-server-resume", "approved", TARGET, row["id"], actor, reason=note, scope=scope, connection=connection)
+        await local_jobs.resume_user_stop(connection, row["server_id"], row["user_token"])
     return row
 
 

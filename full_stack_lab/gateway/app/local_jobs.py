@@ -597,6 +597,17 @@ async def resume(*, server_id='', user_token='', device_id=''):
                      (server_id,user_token,device_id))
 
 
+async def resume_user_stop(connection, server_id: str, user_token: str) -> None:
+    """Reopen exactly one pair in the same transaction that resumes its suspension row."""
+    if not server_id or not user_token:
+        raise ValueError('로컬 재개 범위가 올바르지 않습니다.')
+    # The catalog may have changed since suspension. An exact-pair delete is
+    # idempotent and never clears a server-wide, user-wide or device stop.
+    await connection.execute(
+        "DELETE FROM local_run_stops WHERE server_id=%s AND user_token=%s AND device_id=''",
+        (server_id,user_token))
+
+
 async def prepare_token_revocation(connection, tokens):
     """Hold the same token locks as start until the signed revocation and its DB row commit."""
     identities=sorted({str(t['jti']) for t in tokens})

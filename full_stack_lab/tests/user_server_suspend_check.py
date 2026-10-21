@@ -82,6 +82,9 @@ class Store:
             return cursor({"x": 1} if params[0] in self.users else None)
         if "FROM mcp_servers WHERE id" in query:
             return cursor({"x": 1} if params[0] in self.servers else None)
+        if query.startswith("SELECT user_token, server_id FROM user_server_suspensions"):
+            found = next((row for row in self.rows if row["id"] == params[0] and row["resumed_at"] is None), None)
+            return cursor({"user_token": found["user_token"], "server_id": found["server_id"]} if found else None)
         if query.startswith("INSERT INTO user_server_suspensions"):
             user, server, reason, actor = params
             if self.active(tx, user, server):
@@ -113,8 +116,12 @@ class Store:
 def load_user_suspend(store):
     record_event = production("review.py", {"record_event"}, {
         "db": NS(fetch_one=AsyncMock()), "Jsonb": lambda value, **kw: value, "json": json, "Any": object}).record_event
-    return production("user_suspend.py", {"TARGET", "suspend", "resume", "listing"},
-                      {"db": store, "review": NS(record_event=record_event)})
+    return production("user_suspend.py", {"TARGET", "MANUAL_OPERATION_SLOTS", "operation_key", "suspend", "resume", "listing"},
+                      {"db": NS(POOL_MAX=10, transaction=store.transaction), "asyncio": asyncio,
+                       "review": NS(record_event=record_event),
+                       "local_jobs": NS(is_local=lambda _: False,
+                                        quiesce=AsyncMock(),
+                                        resume_user_stop=AsyncMock())})
 
 
 class LedgerChecks(unittest.IsolatedAsyncioTestCase):
@@ -134,9 +141,12 @@ class LedgerChecks(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((event["scope"]["user"], event["scope"]["server"]), ("emp-a", "gitea"))
         self.assertIsNotNone(event["created_at"])
 
-    async def test_the_pair_is_locked_first_with_the_lock_dispatch_takes(self):
+    async def test_pair_operation_lock_precedes_the_dispatch_employee_lock(self):
         await self.mod.suspend("emp-a", "gitea", "admin", "사유 기록")
-        self.assertIn("pg_advisory_xact_lock(hashtext(%s))", self.store.first_statements[0])
+        statements = self.store.first_statements
+        self.assertIn("pg_advisory_xact_lock(1431523923, hashtext(%s))", statements[0])
+        self.assertLess(next(i for i, q in enumerate(statements) if "1431523923" in q),
+                        next(i for i, q in enumerate(statements) if q == "SELECT pg_advisory_xact_lock(hashtext(%s))"))
 
     async def test_calls_in_flight_are_counted_in_the_record(self):
         self.store.flight[("emp-a", "gitea")] = (2, 1)

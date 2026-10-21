@@ -336,7 +336,6 @@ async def suspensions(_: dict = Depends(admin_caller)) -> dict:
 @app.post("/api/suspensions")
 async def suspend_use(request: SuspendRequest, user: dict = Depends(admin_caller)) -> dict:
     try:
-        await local_jobs.quiesce(server_id=request.server_id, user_token=request.user_token)
         return await user_suspend.suspend(request.user_token, request.server_id, user["principal"], request.reason)
     except LookupError as exc:
         raise HTTPException(404, str(exc)) from exc
@@ -347,9 +346,7 @@ async def suspend_use(request: SuspendRequest, user: dict = Depends(admin_caller
 @app.post("/api/suspensions/{suspension_id}/resume")
 async def resume_use(suspension_id: int, request: OpsResume, user: dict = Depends(admin_caller)) -> dict:
     try:
-        result = await user_suspend.resume(suspension_id, user["principal"], request.note)
-        await local_jobs.resume(server_id=result['server_id'],user_token=result['user_token'])
-        return result
+        return await user_suspend.resume(suspension_id, user["principal"], request.note)
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 
