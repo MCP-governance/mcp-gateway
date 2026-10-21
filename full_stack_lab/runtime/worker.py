@@ -33,6 +33,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 import provenance
+import artifact_provenance
 import image_scan
 import server_egress
 
@@ -312,7 +313,8 @@ def fetch_source(connection, runtime: dict, folder: Path) -> dict:
         shutil.copyfileobj(response, out)
     with archive.open("rb") as handle:
         digest = provenance.archive_digest(handle)
-    recorded = ((row["provenance"] or {}).get("artifact") or {}).get("sha256")
+    provenance_record = row["provenance"] or {}
+    recorded = (provenance_record.get("artifact") or {}).get("sha256")
     if digest["sha256"] != recorded:
         raise Refused(f"내부 사본이 검증한 소스와 다릅니다 ({str(recorded)[:12]} / {digest['sha256'][:12]}).")
     context = folder / "context"
@@ -324,7 +326,32 @@ def fetch_source(connection, runtime: dict, folder: Path) -> dict:
                 continue
             member.name = "/".join(parts)
             tar.extract(member, context, filter="data")
-    return {"source_archive_sha256": digest["sha256"], "files": digest["files"], "top": top}
+    proof = (provenance_record.get("verification") or {}).get("attestation")
+    return {"source_archive_sha256": digest["sha256"], "files": digest["files"], "top": top,
+            "source_attestation": proof,
+            "source_verification_error": (provenance_record.get("verification") or {}).get("error")}
+
+
+def verify_source_provenance(evidence: dict, *, trust_file: str | None = None) -> dict:
+    if evidence.get("source_verification_error"):
+        raise Refused(f"{artifact_provenance.POLICY_ID}: 출처 증명 검증 불가 — 검증 경로가 실패했습니다.")
+    if not evidence.get("source_attestation"):
+        result = artifact_provenance.verify_source_attestation(
+            {}, evidence["source_archive_sha256"], {})
+        return {"status": result["status"], "reason": result["reason"],
+                "sha256": evidence["source_archive_sha256"]}
+    try:
+        keys = artifact_provenance.trust_keys(trust_file if trust_file is not None else
+                                              os.getenv("MCP_PROVENANCE_TRUST_KEYS_FILE", ""))
+    except (OSError, ValueError, TypeError) as exc:
+        raise Refused(f"출처 증명 검증 불가: 신뢰 키 설정 오류 ({type(exc).__name__}).") from exc
+    record = {"verification": {"attestation": evidence.get("source_attestation")}}
+    result = artifact_provenance.verify_source_attestation(
+        record, evidence["source_archive_sha256"], keys)
+    if reason := artifact_provenance.blocking_reason(result):
+        raise Refused(reason)
+    return {"status": result["status"], "reason": result["reason"],
+            "keyid": result.get("keyid"), "sha256": evidence["source_archive_sha256"]}
 
 
 def build(recipe: dict, runtime: dict, context: Path, folder: Path) -> dict:
@@ -460,6 +487,7 @@ def run_job(connection, runtime: dict, recipes: dict, context: dict) -> None:
         if problem := approval_problem(connection, runtime, recipes):
             raise Refused(problem)
         source = fetch_source(connection, runtime, folder)
+        source["provenance_verification"] = verify_source_provenance(source)
         built = build(recipe, runtime, folder / "context", folder)
         evidence = {**source, **built}
         runtime = advance(connection, runtime, "BUILDING", "STARTING", source_archive_sha256=source["source_archive_sha256"],
@@ -506,6 +534,11 @@ def reconcile(connection, recipes: dict, context: dict) -> None:
     for runtime in rows:
         if runtime["status"] == "ACTIVE":
             reason = approval_problem(connection, runtime, recipes, recipe_fixed=False)
+            if not reason:
+                try:
+                    verify_source_provenance(runtime.get("evidence") or {})
+                except (Refused, OSError, ValueError, KeyError) as exc:
+                    reason = str(exc)[:500]
             n = names(runtime)
             current = inspect("container", n["container"])
             if not reason and (not current or current["Image"] != runtime["image_id"]):

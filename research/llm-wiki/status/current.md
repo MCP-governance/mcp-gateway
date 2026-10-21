@@ -1,5 +1,11 @@
 # 개발 현황 — 2026-10-20
 
+## DEV-77 출처 증명 검증 부분 구현 — 2026-10-21 (D-179)
+
+관리자 승인 시 이미 intake provenance에 저장된 Ed25519 DSSE/in-toto SLSA Provenance v1 증명을 설정 신뢰 키·허용 builder·기록 artifact SHA-256과 대조한다. 불일치·검증 불가(`MCP-SUPPLY-001`)는 보류하고 미제공은 `확인 안 됨`으로 표시하며 진행한다. runtime-worker는 기동·재조정에서 기록된 증거/digest를 다시 확인하고 기존 image ID 일치 검사를 유지한다. OCI referrer 자동 조회와 proof 입력 경로가 빠져 전체 DEV-77은 미완료다. DEV-73 소스 파일·내부 미러 규칙은 수정하지 않았다. [분석](../analysis/provenance-verify/README.md), [작업 보고](reports/2026-10-21-provenance-verify.md).
+
+검증 상태: Python 구문·Console JS 구문·Console 상태 15/15·무인증 라우트 정적 점검은 통과했다. 새 단위시험은 Windows Python 3.10에 현재 `cryptography` 의존성이 없어 실행이 막혔고, pyflakes도 미설치다. 배포·기기·PJ1 시험은 범위 밖이다.
+
 ## 최신: 기능 구현 루프 1일차 오후~2일차 새벽 — 전송 직전 재확인·명령 표면·출력 계약·폐기 복원·OAuth 범위 (10-20)
 
 main 병합·배포(기기 `751aee9`): DEV-43 전송 직전 계정·동의·흐름 재확인(D-140, 실제 PostgreSQL 경합 280/280), D-142 흐름 지문 보강,

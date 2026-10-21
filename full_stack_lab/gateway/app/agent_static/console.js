@@ -1755,6 +1755,7 @@ function intakeProvenanceView(p) {
     ["배포 파일 해시", hosted ? "해당 없음" : a.sha256 ? html`<code>${a.sha256}</code>` : NONE],
     ["파일", !hosted && a.files != null ? `${a.files}개 · ${a.bytes}바이트` : ""],
     ["사본 대조", hosted ? "해당 없음" : v ? html`${verdictChip(v.match === true, "일치", "불일치")}<span class="sub">${when(v.at)} · ${v.by}</span>` : verdictChip(false)],
+    ["서명·빌드 증명", hosted ? "해당 없음" : v?.provenance_status || "확인 안 됨"],
   ]);
 }
 const outcomeChip = (o) => chip(...(REVIEW_OUTCOME[o] || ["", o]));
