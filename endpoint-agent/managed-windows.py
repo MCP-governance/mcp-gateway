@@ -559,7 +559,7 @@ def install(args):
     if not protected([python, python.parent]):
         raise ValueError("보호된 설치 경로의 실행 파일이 필요합니다. 설치 마법사에서 다시 시도하세요")
     lock_down(PROGRAMS)
-    for name in ("managed-windows.py", "agent.py", "os-observer-windows.py", "windows_status.py"):
+    for name in ("managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py", "windows_status.py"):
         source = Path(__file__).parent / name
         if source.resolve() != (PROGRAMS / name).resolve():
             write_file(PROGRAMS / name, source.read_text(encoding="utf-8"))

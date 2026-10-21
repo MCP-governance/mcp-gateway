@@ -12,6 +12,17 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+try:
+    from offline_buffer import BufferFull, EventBuffer, flush
+except ModuleNotFoundError:  # Imported by the source-check harness, which loads this file by path.
+    import importlib.util
+    _buffer_spec = importlib.util.spec_from_file_location("endpoint_offline_buffer", Path(__file__).with_name("offline_buffer.py"))
+    if _buffer_spec is None or _buffer_spec.loader is None:
+        raise
+    _buffer_module = importlib.util.module_from_spec(_buffer_spec)
+    _buffer_spec.loader.exec_module(_buffer_module)
+    BufferFull, EventBuffer, flush = _buffer_module.BufferFull, _buffer_module.EventBuffer, _buffer_module.flush
+
 
 # Claude Code and Codex start `git` and re-run themselves on every launch, and the profile refuses
 # both. That is the harness starting, not someone reaching around the Gateway. A denial counts as
@@ -117,8 +128,17 @@ def main() -> None:
     agent = load_agent()
     agent.validate_gateway()
     cursor = args.config.with_suffix(".journal-cursor")
+    buffer_cursor = args.config.with_suffix(".journal-buffer-cursor")
+    buffer = EventBuffer(args.config.with_suffix(".os-buffer.jsonl"))
+    sent = 0
+    delivery_ok = True
+    try:
+        sent += flush(buffer, lambda batch: agent.call("POST", "/api/endpoint/os-events",
+                                                       {"endpoint_id": agent.endpoint_id(), "events": batch}))
+    except (OSError, ValueError, subprocess.SubprocessError):
+        delivery_ok = False
     command = ["journalctl", "-k", "-o", "json", "--no-pager"]
-    command += ["--after-cursor", cursor.read_text().strip()] if cursor.exists() else ["--since", "-1 hour"]
+    command += ["--after-cursor", buffer_cursor.read_text().strip()] if buffer_cursor.exists() else ["--since", "-1 hour"]
     state, count, error = "success", 0, ""
     try:
         result = subprocess.run(command, check=True, capture_output=True, text=True, timeout=20)
@@ -131,21 +151,39 @@ def main() -> None:
             if found:
                 batch.append(found)
             if len(batch) == 100:
-                agent.call("POST", "/api/endpoint/os-events", {"endpoint_id": agent.endpoint_id(), "events": batch})
-                count += len(batch)
+                buffer.enqueue(batch)
                 batch.clear()
         if batch:
-            agent.call("POST", "/api/endpoint/os-events", {"endpoint_id": agent.endpoint_id(), "events": batch})
-            count += len(batch)
+            buffer.enqueue(batch)
+        try:
+            sent += flush(buffer, lambda events: agent.call("POST", "/api/endpoint/os-events",
+                                                            {"endpoint_id": agent.endpoint_id(), "events": events}))
+            delivery_ok = True
+        except (OSError, ValueError, subprocess.SubprocessError):
+            delivery_ok = False  # Durable rows remain queued until the Gateway answers.
         if last:
-            temporary = cursor.with_suffix(".tmp")
+            temporary = buffer_cursor.with_suffix(".tmp")
             temporary.write_text(last)
             temporary.chmod(0o600)
-            temporary.replace(cursor)
+            temporary.replace(buffer_cursor)
+    except BufferFull:
+        state, error = "partial", "offline_buffer_full"
     except (OSError, ValueError, KeyError, subprocess.SubprocessError):
         state, error = "failed", "journal_or_delivery_failed"
+    pending = buffer.pending()
+    if delivery_ok and not pending and buffer_cursor.exists():
+        temporary = cursor.with_suffix(".tmp")
+        temporary.write_text(buffer_cursor.read_text())
+        temporary.chmod(0o600)
+        temporary.replace(cursor)
+    dropped = buffer.dropped_count()
+    if state == "success" and (pending or dropped):
+        state, error = "partial", "offline_delivery_pending" if pending else "offline_buffer_dropped"
+    count = sent
     try:
-        agent.report_status("os", state, min(count, 500), error)
+        agent.report_status("os", state, min(count, 500), error, **(buffer.drop_report() or {}))
+        if dropped:
+            buffer.clear_dropped()
     except (OSError, ValueError, subprocess.SubprocessError):
         state, error = "failed", "delivery_failed"
     print(json.dumps({"observation": {"os": {"state": state, "accepted_count": min(count, 500), "error_code": error}}}), flush=True)

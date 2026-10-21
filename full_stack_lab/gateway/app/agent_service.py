@@ -6,6 +6,7 @@ import base64
 import binascii
 import hashlib
 import io
+import logging
 import os
 import re
 import secrets
@@ -39,6 +40,7 @@ from .connectors import router as connectors_router
 from .integrations import router as integrations_router
 from .idp import router as idp_router
 
+LOG = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).parent / "agent_static"
 INTAKE_REPORT_DIR = Path(os.getenv("INTAKE_REPORT_DIR", "/intake-reports"))
 GATEWAY_URL = os.getenv("GATEWAY_URL", "http://gateway:8080")
@@ -113,6 +115,10 @@ async def lifespan(_: FastAPI):
     await disposal.reconcile()
     await bootstrap_passwords()
     await bootstrap_field_accounts()
+    try:
+        await review.record_solo_mode_observation()
+    except Exception:  # D-188: a ledger write that fails is logged, not allowed to stop the console from starting
+        LOG.exception("root solo mode setting was not recorded in approval_events")
     if os.getenv("MCP_FIELD_MODE") == "1":
         await reconcile_gitea_accounts()
     try:
@@ -364,10 +370,10 @@ async def me(authorization: str | None = Header(default=None)):
             "git_url": git_url.rstrip("/") + f"/{GITEA_ORG}" if git_url else "", "kit": await pc_kit() if field else None}
 
 
-KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py"),
+KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py", "offline_buffer.py"),
              "windows": ("install.cmd", "setup.ps1", "windows-common.ps1", "windows-worker.ps1", "windows-trust.ps1", "tray.ps1",
                          "runtime-check.py", "windows_status.py", "install.py", "install-windows.ps1",
-                         "managed-windows.py", "agent.py", "os-observer-windows.py")}
+                          "managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py")}
 # The employee runs one file and answers one elevation prompt; the installer does the rest (D-71).
 KIT_EXECUTABLE = {"install.sh"}
 
@@ -1391,7 +1397,9 @@ async def risk_tier_gate(request_id: UUID, row: dict, user: dict, reason: str) -
         if not await review.same_person(earlier, user["principal"]) and not [
                 seen for seen in others if await review.same_person(earlier, seen)]:
             others.append(earlier)
-    verdict, message = risk_tier.decide(assessed["tier"], 1 + len(others), reason)
+    approvers = 1 + len(others)
+    solo_mode, solo = review.solo_mode_enabled(), review.solo_operator(user)
+    verdict, message = risk_tier.decide(assessed["tier"], approvers, reason)
     if verdict == "refuse":
         raise HTTPException(409, "승인할 수 없습니다: " + message)
     if verdict == "cosign":
@@ -1402,12 +1410,13 @@ async def risk_tier_gate(request_id: UUID, row: dict, user: dict, reason: str) -
             await review.record_event("intake-cosign", "recorded", "intake", request_id, user["principal"],
                                       applicant=row["submitted_by"], reason=(reason or "").strip() or None,
                                       scope={"tier": assessed["tier"], "input_sha256": assessed["input_sha256"],
-                                             "approvers": 1 + len(others)})
+                                             "approvers": 1 + len(others), "solo_mode": solo_mode, "solo_operator": solo})
         return {"pending": True, "message": message}
     return {"pending": False, "record": {
         "tier": assessed["tier"], "score": assessed["score"], "floors": assessed["floors"],
         "input_sha256": assessed["input_sha256"], "version": assessed["version"],
-        "approvers": [user["principal"], *others], "written_reason": len((reason or "").strip()) >= risk_tier.MIN_REASON}}
+        "approvers": [user["principal"], *others], "written_reason": len((reason or "").strip()) >= risk_tier.MIN_REASON,
+        "solo_mode": solo_mode, "solo_operator": solo}}
 
 
 @app.post("/api/mcp-requests/{request_id}/approve")
@@ -1481,6 +1490,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
                 kind="intake-approve", outcome="approved", target_kind="intake", target_id=request_id,
                 actor=user["principal"], applicant=remote["submitted_by"], reason=risk or reviewed.get("review_note"),
                 scope={"risk_tier": risk_record["tier"], "approvers": risk_record["approvers"],
+                       "solo_mode": bool(risk_record.get("solo_mode")), "solo_operator": bool(risk_record.get("solo_operator")),
                        "endpoint": remote["endpoint_url"], "tools": reviewed["registration"]["tools"],
                        "residency": reviewed["registration"].get("residency") or {},
                        "data_class": reviewed["registration"]["data_class"], "valid_until": reviewed["valid_until"],
@@ -1533,6 +1543,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
         kind="intake-approve", outcome="approved", target_kind="intake", target_id=request_id,
         actor=user["principal"], applicant=pending["submitted_by"], reason=risk or None,
         scope={"risk_tier": risk_record["tier"], "approvers": risk_record["approvers"],
+                       "solo_mode": bool(risk_record.get("solo_mode")), "solo_operator": bool(risk_record.get("solo_operator")),
                "source": pending["repository_url"], "commit": pending["commit_sha"],
                "license": (record.get("license") or {}).get("spdx"),
                "artifact_sha256": (record.get("artifact") or {}).get("sha256"), "verified_sha256": checked["sha256"],
@@ -2047,7 +2058,7 @@ async def approve(approval_id: UUID, authorization: str | None = Header(default=
 # every authorisation decision stays with the Gateway. Only these prefixes pass.
 GATEWAY_PROXY_PREFIXES = ("overview", "latency", "activity", "registry", "health", "termination/", "approvals/",
                           "catalog/", "enforcement", "monitor/", "audit/", "policy/", "endpoint/",
-                          "supply-chain/", "risk-catalog", "lab/", "dispatch-intents")
+                          "supply-chain/", "risk-catalog", "lab/", "dispatch-intents", "suspensions")
 # Several Gateway read APIs are open to any authenticated caller; the Console adds
 # the role boundary here so an employee's session cannot read the organisation's
 # registry, policy ledger or endpoint inventory through it.

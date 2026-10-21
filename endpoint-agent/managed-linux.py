@@ -204,7 +204,7 @@ def install(args):
     PROGRAMS.mkdir(mode=0o755, parents=True, exist_ok=True)
     if not protected(PROGRAMS):
         raise ValueError("프로그램 경로가 root 관리 경로가 아닙니다")
-    for name in ("managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py"):
+    for name in ("managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py", "offline_buffer.py"):
         private_write(PROGRAMS / name, (source / name).read_text())
         (PROGRAMS / name).chmod(0o755)
     folder = STATE / args.user

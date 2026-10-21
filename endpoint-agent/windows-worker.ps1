@@ -208,7 +208,7 @@ try {
     } else { Stop-EndpointTask ("MCPGatewayEndpoint-" + $request.endpoint_id) }
     Set-EndpointResult 30 '실행 파일 준비'
     $python = Install-EndpointRuntime $PSScriptRoot $root
-    $codeFiles = @('agent.py', 'managed-windows.py', 'os-observer-windows.py', 'windows_status.py', 'install.py',
+    $codeFiles = @('agent.py', 'managed-windows.py', 'os-observer-windows.py', 'offline_buffer.py', 'windows_status.py', 'install.py',
         'runtime-check.py', 'setup.ps1', 'tray.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1')
     foreach ($name in $codeFiles) {
         if ((Join-Path $PSScriptRoot $name) -ne (Join-Path $root $name)) {

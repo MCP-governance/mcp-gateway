@@ -1743,12 +1743,12 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 근거: [RFC 7662 §4](https://www.rfc-editor.org/rfc/rfc7662.html#section-4)의 캐시/철회 공백, [원자 요구사항·출처·코드 지문](../../research/llm-wiki/analysis/resource-residual/README.md), [로컬 13건 시험](../../full_stack_lab/tests/resource_residual_check.py)·[격리 PostgreSQL 시험](../../full_stack_lab/tests/resource_residual_pg_check.py). 현재 발급자 introspection 캐시는 없고 TTL 0, HTTP 응답은 기존 `no-store`다. 업스트림 풀·세션 폐기와 실행기의 종료 상태 재검사는 이미 있어 재구현하지 않았다. 공개 GitHub 스킬·기존 PyJWT/SDK를 조사했고 기존 의존성과 표준 라이브러리만 재사용했다. 새 의존성·정책 ID·DB 구조·권한·콘솔 변경은 없다.
 - 한계: 로컬 판정·DB/인증·엔진 대역 시험이며 실제 PostgreSQL·Gitea 보호 자원 재접근·SDK·컨테이너 제거·배포·PJ1은 미실행이다. 새 PG 시험의 전용 Gitea PAT는 합성 고지 fixture이고 MCP 컨테이너에 넣지 않으므로 실제 서버 보유 증거로 세지 않는다. 발급자 대상의 T1은 조사하지 않은 자원 서버의 T1이 아니다. 외부 인가 캐시의 TTL·복제 토큰·미고지 자격은 별도 대상/증거가 필요하다. 기본 풀 전파 2초·실행기 poll 5초는 제거 완료 상한이 아니며, 진행 중 I/O·엔진/DB 장애·실행기 작업 지연은 남는다. D-154의 회전 커밋과 서명 append 사이 장애/과거 DB 복원 공백은 변경하지 않는다. [작업 보고](../../research/llm-wiki/status/reports/2026-10-20-resource-server-residual.md).
 
-## D-157 SIEM ?? UID? ??? ???? ?? ? ??? ?? ??? ???? (2026-10-20, DEV-61)
+## D-157 SIEM 전송 UID를 원장 행과 사슬 해시에 묶고 전송 시도는 로그로 남긴다 (2026-10-20, DEV-61)
 
-- ??: D-128? ? ID??? ?? ?? UID? ?? ????? ???? ?? ??? ??? ???? ?? ??? ?? ???? ???. ?? ?? ? ? ?? ? ??? ??? ? `attempts`? ???? ?? ?? ?? ????. ?? DB ??/HTTP ??? ?? ????TLS????? ??? ???? ???.
-- ??: ?? UID? `mint:decisions:<id>:<entry_sha256>`, ?? ?? ?? ????????? ???? ID?UTC ?? ?? SHA-256?? ???. ??? ?? ??? ???? ???. ?? UID? `metadata.uid`?`Idempotency-Key`??? ??/??/?? ??? ???. ???DB ???????????? ???? ???. ?? ? ??? ??? ?? ?? UID? ?? ??? ??. ???? UID ?? ?? ?? ????? ??? ? ?? ????.
-- ??: [OCSF 1.4.0 Metadata](https://raw.githubusercontent.com/ocsf/ocsf-schema/1.4.0/objects/metadata.json)? ?? ??? ??, [Psycopg ???? ??](https://www.psycopg.org/psycopg3/docs/basic/transactions.html)? ??/?? ?? ??, ?? D-128??? append-only ??? ????. [?? ???OSS ??? ?? ????](../../research/llm-wiki/analysis/siem-dedup/README.md)? ?? ?????????? ??? ????. ? ??? ?? ?? ?????? ?? `cryptography==50.0.1`?`psycopg[binary]==3.3.5`?`psycopg-pool==3.3.1`? ?????. [? PG ??](../../full_stack_lab/tests/siem_queue_pg_check.py)? ?? ?? ???? ?? DB/?????? ?? ??????? CA?HTTPS ????SQLite UID ?? ?? ????, 503/??? ??/?? ? ?? ??/SIGKILL/?? ??/???? ????? ????. ?? MCP ??? ??.
-- ??: ?? UID????TLS 7?? ?? 14?? ????? PG ???? ??????PJ1??? SIEM ??? ?????. ?? ??? ???? ?? ??? ??? ???? ?? ??/???? ???? ???. D-128?? ?? ??? ????-UTC ??? UID? ????? ? ?? ????? ? ?? ??? ? UID ?? ???? ?? ??? ????. ? ??? ????? ??? ?? ???DB ??? ? ?? ?? ?????? ? ? ??? ???? ???. ? ??? ?? ?? ??? ?? SQLite?? ?? SIEM? ?? ?? ??? ????. ?? ??/???? ???? ???. [?? ??](../../research/llm-wiki/status/reports/2026-10-20-siem-dedup.md).
+- 문제: 수신 확인 뒤 큐 커밋이 실패하거나 워커가 종료되면 같은 사건이 다시 전송된다. 재전송 시 UID가 안정적으로 유지되도록 묶여 있지 않았고, 전송 시도 기록은 DB 큐의 `attempts`에만 있어 커밋이 롤백되면 함께 사라졌다. D-128은 `metadata.uid`와 `Idempotency-Key`를 고정했지만 판정 UID는 원장 행 ID·사슬 해시에 결속되지 않은 상태였다.
+- 결정: 판정 사건의 UID는 `mint:decisions:<원장 행 ID>:<entry_sha256>`로 재구성한다. 사슬이 없는 과거 판정·승인 감사·경보는 소스, 행 ID, UTC로 정규화한 기록 시각의 SHA-256 해시를 쓴다. 사슬 해시가 유효하지 않으면 시각 기반 UID로 조용히 대체하지 않고 전송 실패로 남긴다. `metadata.uid`와 `Idempotency-Key`는 같은 값을 쓴다. 워커는 전송 직전·응답·큐 커밋마다 UID를 표준 오류 INFO 로그에 남기며, 본문·사유·토큰·주소·원격 응답 본문은 로그에 넣지 않는다. 원장은 수정하거나 삭제하지 않는다.
+- 근거: 로컬 시험(Windows Python 3.12.14, 2026-10-20)에서 새 UID·로그·TLS 시험 7건이 통과했다. 실제 로컬 CA 검증과 호스트명 불일치 거부, SQLite `PRIMARY KEY(uid)` 중복 제거를 포함하지만 PostgreSQL 시험은 아니다. 기존 SIEM 회귀 14건도 통과했다. 요구사항은 [분석 README](../../research/llm-wiki/analysis/siem-dedup/README.md)의 SIEM-UID-01~03, SIEM-LOG-01, SIEM-TLS-01 표를 따르며, UID 의미는 [OCSF 1.4.0 Metadata](https://raw.githubusercontent.com/ocsf/ocsf-schema/1.4.0/objects/metadata.json)를, 커밋 경계는 [Psycopg 트랜잭션 문서](https://www.psycopg.org/psycopg3/docs/basic/transactions.html)를 참고했다. 실제 PostgreSQL 격리 시험 [siem_queue_pg_check.py](../../full_stack_lab/tests/siem_queue_pg_check.py)는 트리거 기록, 503 재시도, 수신 200 뒤 큐 커밋 직전 SIGKILL, 재시작, `SKIP LOCKED` 병행을 검사하도록 작성했다. 새 의존성과 DB 스키마 변경은 없다. 고정 판본은 cryptography 50.0.1, psycopg 3.3.5, psycopg-pool 3.3.1이다. [작업 보고](../../research/llm-wiki/status/reports/2026-10-20-siem-dedup.md).
+- 한계: 실제 PostgreSQL 시험은 **미실행**이다. 트리거·잠금·SIGKILL 후 재시작·누락 0은 확인되지 않았고, "3개 사건·5회 시도·4회 커밋"은 예상값이며 관측 결과가 아니다. 로컬 TLS·UID 시험은 DB 통합 증거가 아니다. 고정 게이트웨이 이미지의 의존성 검증과 CI pyflakes는 미검증이다. 전달은 최소 한 번 방식이며 중복 제거는 수신 측 UID 유일 키와 내구 저장에 의존한다. 정확히 한 번 전달, 순서 보장, 전체 HTTP 시간 제한은 없다. D-128로 보낸 판정과 비-UTC 세션 사건은 UID가 달라질 수 있어 구 워커 정지 후 수신 측 별칭 연결이 필요하며, 자동 전환은 구현하지 않았다. 로그의 시도 수는 전송 직전 행 수이고 로그 유실·회전은 범위 밖이다. 실제 SIEM 저장·검색, 솔루션 배포, PJ1 시험은 하지 않았다.
 
 ## D-158 계약 오염 정규화 후보와 held-out 평가 규율 (2026-10-20)
 
@@ -1815,3 +1815,36 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 결정: 새 신청자는 용도·필요 도구·데이터 등급을 고른다. 원격은 신청 전에 실제 도구 목록에서 선택하고 저장소의 빈 선택은 전체 도구다. 신청 등급은 그대로 보존한다. 통합 화면은 계약의 이름·설명·인자와 annotations로 개인정보/외부 전송/행위를 제안한다. 사용자 수는 실제 허용 범위인 신청자 1명, 자율성은 보수적으로 자율 실행이다. 모르는 목적지·추가 사용자·서버 간 수신 범위는 허용하지 않는다. D-143의 점수·최소 등급·기존 서버 유예를 유지한다. 낮음/보통은 독립 관리자 1명, 높음/매우 높음은 별개의 관리자 2명이 필요하며 사유로 대체하지 못한다. 등록 단계도 승인자 수를 재확인한다. 사유는 치명적 발견 수용에만 새 화면에서 한 줄로 받는다. 기존 위험 입력·개별 승인 API는 보존하지만 위험 등급의 사유 대체 규칙은 폐기한다.
 - 근거: 소유자 지시와 D-143. 명세의 annotations는 신뢰 증거가 아니므로 자동 제안은 사람 승인과 계약 고정을 대신하지 않는다. 기존 `risk_tier.assess`, 독립 승인·기한부 치명 수용을 재사용한다.
 - 한계: 키워드 추정은 법적 영향평가나 실제 개인정보 처리의 탐지가 아니다. 공급자의 오표기·모호한 설명은 놓칠 수 있다. 기존 `risk_input`이 없는 개별 API 호출의 보류는 호환 경로로 남고 통합 화면이 자동 제안으로 완성한다. 기존 위험 시험의 두 순수 함수 기대값이 새 소유자 지시와 충돌해 실패했다. 기존 파일은 변경하지 않았고 제품 코드 변경을 중단했으며, 메인의 적대 검증과 시험 변경 결정 전에는 전체 회귀 통과로 보고하지 않는다.
+
+## D-175 승인된 로컬 MCP는 게이트웨이를 거쳐 장치의 root 실행기가 격리 컨테이너로 실행한다 (2026-10-20, 설계 초안)
+
+- 문제: DEV-73(방향 갱신 10-20)은 승인된 로컬 MCP를 관리 계정 밖 격리 실행으로 허용해야 한다. 관리 계정은 docker 그룹이 금지되고 AppArmor가 bwrap을 막으며, 별도 판정 경로를 만들면 원격 호출과 판정·원장이 갈라진다.
+- 결정: 하네스는 원격 서버와 같은 게이트웨이 URL로 호출하고, `deployment=local` 서버의 upstream 단계만 호출 토큰의 장치로 작업을 보낸다. 장치의 엔드포인트 에이전트(root)가 바깥 방향 long-poll로 자기 장치 작업만 받아, 정책 해시가 맞는 매니페스트의 이미지 digest를 rootful podman `--user <관리 계정 UID> --network=none --read-only --cap-drop=ALL --security-opt=no-new-privileges --pull=never`와 홈 아래 허용 폴더 마운트로 실행한다. 계약은 기기 실행기가 같은 digest로 관찰하고 사람이 승인한다. 관리 계정의 rootless podman·bubblewrap, ToolHive, PC 수신 엔드포인트는 기각했다.
+- 근거: [DEV-73 설계](../../research/llm-wiki/analysis/direction-1020/dev73-local-isolated-run.md), MCP 공식 Local Server Security, [ToolHive 분석](../../research/llm-wiki/analysis/oss-deep/toolhive-runtime.md).
+- C10 반영: 로컬 실행 사유 필수·원격 API 래퍼 거부, 홈 루트·점 디렉터리·심볼릭 링크 마운트 금지, 게이트웨이 밖 키로 매니페스트 서명·장치 검증, 이미지 서명 필수, 컨테이너 정지를 종료 증거에 포함.
+- 한계: rootful 엔진이라 컨테이너 탈출은 root가 된다(userns·idmap 강화는 실측 후). 비밀이 필요한 로컬 서버와 Windows는 범위 밖. 로컬 파일이 게이트웨이를 거치는 지연이 생긴다.
+
+## D-188 한 사람이 운영하는 현장에서도 독립 승인 규칙을 유지한다 (2026-10-21, 재검토)
+
+- 문제: root 한 명만 있는 현장에서 위험 등급 높음 이상 도입의 2인 승인 요건을 채우기 어렵다. root 한 명을 두 명으로 계산하면 실제 독립 승인이라는 보안 통제가 사라진다.
+- 결정: `ROOT_SOLO_APPROVAL=1`은 root 관리자 승인 사건에 운영 모드 표식만 남긴다. 서로 다른 승인자 수를 인위적으로 늘리지 않는다. 신청자와 승인자는 계속 달라야 한다. 높음 등급은 D-143의 서면 위험 수용 대안만 적용하고, 매우 높음 등급은 별도 관리자 승인과 서면 사유가 모두 필요하다. root 한 명만 있는 경우 조건을 충족할 때까지 승인을 보류한다. 현장 기본값은 켬, 실습 기본값은 끔이다.
+- 기록·표시: 위험 평가와 승인 사건에는 설정 모드(`solo_mode`)와 root가 그 모드로 승인했는지(`solo_operator`)를 각각 참/거짓으로 기록하고, 콘솔은 해당 판단의 승인 방식을 표시한다. 환경 설정 전환 자체의 원장 기록은 아래 보강을 본다. 설정 변경 이력은 배포·변경 관리 기록으로 남겨야 하며, 이를 제품 원장 증거라고 주장하지 않는다.
+- 계정 추가: `field add-account`는 비밀번호를 숨긴 표준입력으로 받아 해시만 저장한다. 비밀번호는 명령 인자·환경 변수·설정 파일·stdout에 넣지 않는다. 계정 식별자는 principal로 DB에 저장된다.
+- 근거: 소유자 지시(10-20)는 운영 편의를 우선하되 보안 통제를 약화하지 않는 범위로 한정한다. [D-175 반려 판단](../../research/llm-wiki/analysis/review-1020/d175-arbitration.md)은 이 결정과 무관하며 변경하지 않는다.
+- 한계: 단독 운영 설정만으로 2인 통제를 대체하지 않는다. 독립 변경 관리 연동은 구현하지 않았다(기동 시 전환 기록은 아래 보강).
+- 보강(2026-10-21): 콘솔 기동 때 `ROOT_SOLO_APPROVAL`의 참/거짓을 `approval_events`의 `solo-mode` 행으로 관측 기록한다. 직전 기록과 값이 같으면 쓰지 않고, 다르면 전환 행 하나를 추가한다(`review.record_solo_mode_observation`, 시험 `tests/solo_mode_ledger_check.py`). 환경 변수 원문은 쓰지 않는다. 기록이 실패하면 기동 로그에 오류를 남기고 기동은 계속한다. 값을 바꿔도 재기동 전에는 관측되지 않으며, 바꾸고 되돌리는 사이에 기동이 없었다면 그 전환은 원장에 보이지 않는다.
+## D-182 관리형 엔드포인트 OS 관측은 제한된 디스크 버퍼로 재전송한다 (2026-10-21)
+
+- 문제: 관리형 Linux/Windows OS 관측기는 게이트웨이 전송이 실패하면 원천 커서를 유지해 재시도하지만, 오프라인 동안 재연결 전에 프로세스가 재시작되거나 관측 주기가 지나면 안전한 내구 큐가 없다. 하트비트 공백은 별도 일시 격리(180초 후 거부)로 처리해야 한다.
+- 결정: OS 거부 이벤트만 기존 보호 설정 경로에 표준 라이브러리 JSONL 버퍼로 내구 저장한다. 원천 커서와 버퍼 커서를 분리하고 버퍼 fsync 뒤 수집 커서만 전진시킨다. 게이트웨이 ACK 뒤 전달 커서를 맞춘다. 재전송은 기존 `raw_sha256` 7일 중복 규칙과 `(endpoint_id,event_id)` 유일 키를 따른다. 정제 이벤트와 해시만 저장하며 원문 로그/XML·토큰·자격은 저장하지 않는다.
+- 상한: 8 MiB, 10,000건, 7일. 한도에 닿으면 해당 원천 커서를 전진시키지 않아 추가 수집을 멈춘다. 한도 초과로 버퍼에 들어가지 못한 이벤트 수와 보존 만료 폐기는 재연결 시 고정 UID·건수·사유를 `endpoint_buffer_events`에 append-only 적재한다. 용량 초과 기록은 수집 중단을 뜻하며 OS 원천의 영구 유실을 뜻하지 않는다. 해당 표가 필요한 이유는 기존 `endpoint_agents.detail.observation` 상태가 마지막 값으로 덮어써져 폐기 이력을 보존하지 않기 때문이다.
+- 정책 경계: 버퍼는 관측 전달 보장만 보강한다. 오프라인 중 게이트웨이 heartbeat가 끊기면 기존 일시 격리(180초 만료 후 거부)는 그대로 적용한다. D-159의 180초 Linux 토큰 캐시는 heartbeat/정책 통신 공백을 처리하며 관측 버퍼나 격리 완화가 아니다.
+- 근거·시험·한계: [원자 요구사항과 근거](../../research/llm-wiki/analysis/endpoint-offline-buffer/README.md), [작업 보고](../../research/llm-wiki/status/reports/2026-10-21-endpoint-offline-buffer.md). 로컬 단위·구문 시험만 수행했다. 실제 PostgreSQL/게이트웨이 중복 판정, 장치 파일 ACL, OS journal/event log 재시작·경합, 배포와 PJ1은 미실행이다.
+## D-181 직원별 MCP 서버 이용 중지·재개는 계정을 두고 그 조합만 막는다 (2026-10-21, DEV-79)
+
+- 문제: 사고 대응에서 사람이 한 직원의 한 서버 이용만 즉시 멈출 수단이 없었다. 계정 중지(`set_account_status`)는 콘솔과 모든 서버를 끊고, D-122 서버 중지는 모든 직원을 끊는다.
+- 결정: 직원×서버 조합 하나가 중지 단위다. 상태는 `user_server_suspensions`(조합당 활성 행 1개, 부분 유일 인덱스)이고 관리자 API `GET·POST /api/suspensions`, `POST /api/suspensions/{id}/resume`(`admin_caller`)로만 바꾼다. 중지·재개는 같은 트랜잭션에서 `approval_events`(`user-server-suspend` held, `user-server-resume` approved)에 조작자·직원·서버·사유를 남기고 시각은 `created_at`이다. 중지 시점에 예약됐으나 전송 전인 호출 수와 이미 전송된 호출 수를 기록에 넣는다(진행 중 호출 처리 기록). 직원별 advisory lock(최종 dispatch와 같은 키)으로 직렬화해 이미 전송 트랜잭션을 지난 호출은 진행 중으로 남고 그 뒤 호출은 모두 거부된다.
+- 집행: `execute_call`이 신원 행을 읽을 때 같은 조합의 활성 중지를 함께 읽어(MCP-REGISTRY-003 뒤, 호출 예약 전) 새 정책 `P-SUSPEND-001`(priority 2014, 게이트웨이 로컬, 차단, 관찰 모드에서도 집행)로 거부하고, 최종 dispatch 트랜잭션의 `INSERT … NOT EXISTS`와 사유 분류에서 다시 막는다. 새 ID가 필요한 이유는 계정 비활성(`P-INPUT-001`), 서버 자동 중지(`MCP-REGISTRY-002`), 엔드포인트 격리(`ENDPOINT-MANAGED-001`)와 판정만 보고 구분해야 하기 때문이다. 상태를 읽지 못하면 신원 조회가 실패해 호출이 실행되지 않고, 전송 직전이면 `P-CONTROL-FAIL-CLOSED`로 기록된다.
+- 재사용: D-122의 `ops_suspensions` 구조(복귀 필드를 채우는 상태 행)·`review.record_event`·D-140 최종 dispatch 잠금 순서. 서버 단위 중지(D-122)·계정 상태·종료 절차는 독립이며 서로 되돌리지 않는다. 콘솔은 사용자·엔드포인트 화면의 사용자 행(MCP 이용 중지)과 「이용 중지」 탭(재개)이다.
+- 근거: [방향 갱신 10-20](../../research/llm-wiki/analysis/direction-1020/README.md) 3장 DEV-79, [통제 검토](../../research/llm-wiki/analysis/direction-1020/control-review.md) 105행(근거 M05 **제2항**·TC260 4.2.3(b)-(c), README의 제3항은 정정), [원자 요구사항·근거](../../research/llm-wiki/analysis/user-server-suspend/README.md).
+- 한계: 이미 전송된 호출은 취소하지 않는다(기록만). `tools/list`는 그대로 보이고 호출만 거부한다. 재개에 독립 승인은 요구하지 않는다(관리자 1명 운영). DEV-74 자동 중지가 같은 상태를 쓰는 확장은 하지 않았다. 기기 배포·PJ1 실제 하네스 시험은 미실행이다.

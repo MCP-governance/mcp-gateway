@@ -142,6 +142,18 @@ ALTER TABLE endpoint_os_events ADD COLUMN IF NOT EXISTS denial_class text CHECK 
 CREATE INDEX IF NOT EXISTS endpoint_os_events_raw_idx ON endpoint_os_events(endpoint_id, raw_sha256) WHERE raw_sha256 IS NOT NULL;
 CREATE INDEX IF NOT EXISTS endpoint_os_events_observed_idx ON endpoint_os_events(endpoint_id, observed_at DESC);
 
+-- A bounded local observer buffer reports any intentional discard after reconnection.
+-- Unique event IDs make retries append-only without retaining source log content.
+CREATE TABLE IF NOT EXISTS endpoint_buffer_events (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  endpoint_id text NOT NULL REFERENCES endpoint_agents(endpoint_id),
+  event_uid text NOT NULL,
+  dropped_count integer NOT NULL CHECK (dropped_count > 0),
+  reason text NOT NULL CHECK (reason IN ('capacity','retention','mixed')),
+  reported_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(endpoint_id,event_uid)
+);
+
 -- One row per heartbeat cycle of the managed endpoint service, measured against the
 -- Gateway address that device already uses. Rows older than seven days are removed by
 -- the ingest that adds new ones.

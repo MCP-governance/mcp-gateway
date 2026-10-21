@@ -945,10 +945,10 @@ def report_listeners() -> dict:
     return {**result, "state": "success" if complete else "partial"}
 
 
-def report_status(channel: str, state: str, accepted_count: int = 0, error_code: str = "") -> dict:
+def report_status(channel: str, state: str, accepted_count: int = 0, error_code: str = "", **buffer_report) -> dict:
     return call("POST", "/api/endpoint/observation-status", {
         "endpoint_id": endpoint_id(), "channel": channel, "state": state,
-        "accepted_count": min(500, accepted_count), "error_code": error_code})
+        "accepted_count": min(500, accepted_count), "error_code": error_code, **buffer_report})
 
 
 def once() -> dict:

@@ -18,7 +18,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
 
-from . import core, db, decommission, dispatch, disposal, endpoint_plane, ops_response, privacy, secret_scan, upstream
+from . import core, db, decommission, dispatch, disposal, endpoint_plane, ops_response, privacy, secret_scan, upstream, user_suspend
 from .core import (
     OPA_URL,
     approve_request,
@@ -317,6 +317,35 @@ async def ops_status(_: dict = Depends(admin_caller)) -> dict:
 async def ops_resume(server_id: str, request: OpsResume, user: dict = Depends(admin_caller)) -> dict:
     try:
         return await ops_response.resume(server_id, user["principal"], request.note)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+class SuspendRequest(StrictModel):
+    user_token: str = Field(min_length=1, max_length=200)
+    server_id: str = Field(min_length=1, max_length=64)
+    reason: str = Field(min_length=4, max_length=500)
+
+
+@app.get("/api/suspensions")
+async def suspensions(_: dict = Depends(admin_caller)) -> dict:
+    return {"suspensions": await user_suspend.listing()}
+
+
+@app.post("/api/suspensions")
+async def suspend_use(request: SuspendRequest, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await user_suspend.suspend(request.user_token, request.server_id, user["principal"], request.reason)
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@app.post("/api/suspensions/{suspension_id}/resume")
+async def resume_use(suspension_id: int, request: OpsResume, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await user_suspend.resume(suspension_id, user["principal"], request.note)
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 
@@ -1320,6 +1349,9 @@ class ObservationReport(StrictModel):
     state: Literal["success", "partial", "failed", "disabled", "unauthorized", "unsupported", "unknown"]
     accepted_count: int = Field(default=0, ge=0, le=500)
     error_code: str = Field(default="", pattern=r"^[a-z_]{0,48}$")
+    buffer_event_uid: str | None = Field(default=None, pattern=r"^[0-9a-f]{32}$")
+    dropped_count: int = Field(default=0, ge=0, le=2_000_000_000)
+    buffer_reason: Literal["capacity", "retention", "mixed"] | None = None
 
 
 class EndpointOSEvent(StrictModel):
@@ -1600,8 +1632,12 @@ async def endpoint_observation_status(request: ObservationReport,
     required = {"process": "netscan", "network": "netscan", "os": "enforcement"}.get(request.channel)
     if request.state in {"success", "partial"} and required and required not in device["scopes"]:
         raise HTTPException(403, "이 관측 채널의 보고 권한이 없습니다.")
+    if bool(request.dropped_count) != bool(request.buffer_event_uid and request.buffer_reason):
+        raise HTTPException(422, "버퍼 폐기 보고의 식별자·사유·건수가 필요합니다.")
     return await endpoint_plane.observation_status(
-        request.endpoint_id, request.channel, request.state, request.accepted_count, request.error_code)
+        request.endpoint_id, request.channel, request.state, request.accepted_count, request.error_code,
+        buffer_event_uid=request.buffer_event_uid, dropped_count=request.dropped_count,
+        buffer_reason=request.buffer_reason)
 
 
 @app.get("/api/endpoint/inventory")

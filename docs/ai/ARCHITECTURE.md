@@ -114,7 +114,7 @@ Codex `model_provider=bob`(`wire_api="responses"`, `env_key="BOB_LLM_KEY"`, `req
 | `bin/harness-check` | 하네스 4종이 관리형 서버 전부에 Gateway로 붙는지 **모델 없이** 확인(`mcp list`, Codex는 app-server `mcpServerStatus/list`) |
 | `managed/harness-prompt.md` | 소형 CPU 모델용 짧은 시스템 프롬프트(컴팩트 모드) |
 | `shadow/opencode.json` | 협력사 PC(ws-nkk)에 사람이 직접 추가한 설정: Gateway 우회 직결(`mcp-filesystem:8000`)과 개인 stdio 서버 |
-| `endpoint_agent.py` | 저장소 루트 `endpoint-agent/`(D-29). 하네스 설정 파일 인벤토리와 리스너 관측 |
+| `endpoint_agent.py` | 저장소 루트 `endpoint-agent/`(D-29). 하네스 설정·리스너·OS 차단 관측. 관리형 Linux/Windows OS 이벤트는 보호 경로에 제한 버퍼링하고 재연결 후 전송 |
 
 **컴팩트 모드**(`BOB_HARNESS_COMPACT=1`, 기본): CPU의 소형 모델은 코딩 에이전트의 수만 토큰 프롬프트를 쓸 만한 시간에
 읽지 못한다. 그래서 하네스의 시스템 프롬프트를 짧게 바꾸고 내장 도구(셸·편집·웹·이미지·서브에이전트)를 끈다 —
@@ -144,6 +144,7 @@ OpenCode `--agent bob`. **MCP 경로는 그대로**다: 도구 목록 조회와 
 8. OPA가 판정한다: Allow / Alert / Restrict / Approval / Block(→ [POLICY.md](POLICY.md)). 단말 에이전트가 섀도 설정을
    보고한 PC의 호출은 `MCP-SHADOW-001` 경보가 붙는다. 외부 전송은 도구 심사의 목적·목적지·등급 쌍에 결속되고(PAC-12, D-132),
    다른 서버에서 중요정보를 읽은 주체의 쓰기·실행·공급자 호스팅 호출은 받는 도구가 그 서버를 심사받지 않았으면 `P-FLOW-001`이다(D-133). 호출 내용과 읽은 내용의 지문 대조 결과는 기록하고, `FLOW_MATCH_MODE=content`일 때만 일치·비교 불가 서버로 좁힌다(기본 `coarse`, D-142).
+   관리자가 이 직원의 이 서버 이용을 중지했으면(`user_server_suspensions`) 신원 확인 직후 호출 예약 전에 `P-SUSPEND-001`로 막고, 전송 직전 트랜잭션에서 한 번 더 확인한다(D-181).
    실행될 판정이어도 사용자 동의가 필요한 도구는 본인의 유효한 동의가 없으면 `P-CONSENT-001`로 막고 콘솔에 확인 요청을 남긴다(D-134).
 9. 실행이면 같은 연결에서 upstream `tools/list`를 다시 받아 계약 해시를 대조한 뒤 호출(`core._call_upstream`), 달라졌으면
    `MCP-CATALOG-001`. 보내기 직전 한 문장으로 전송 의도(`dispatch_intents`)를 적으며 예약·주체·서버 상태를 마지막으로 확인한다.
@@ -217,7 +218,7 @@ LiteLLM DB에 직원 단위로 남는다.
 | 직원의 하네스(MCP) | OAuth 접근 토큰(Ed25519 JWT, 10분) + refresh(8시간) | IdP `/oauth/token`(`bob-sso`), Gateway가 서명·폐기목록·관리대장으로 검증 |
 | 직원의 하네스(LLM) | LiteLLM 가상 키 `sk-…`(`BOB_LLM_KEY`) | LiteLLM이 검증, 사용량은 LiteLLM DB |
 | Console 사용자 | 관리자 30분 유휴·최대 8시간, 그 외 계정 30분 | 서버 `console_sessions`가 만료를 강제하고, 관리자 SSO는 암호화된 refresh token으로 접근 토큰을 갱신한다. 로그아웃은 즉시 무효화한다 |
-| PC의 단말 에이전트 | 장치 키 | 엔드포인트 평면(인벤토리·리스너 보고만) |
+| PC의 엔드포인트 에이전트 | 장치 키 | 엔드포인트 평면(인벤토리·리스너·OS 차단 관측). 오프라인 버퍼는 관측 전송을 보강하며 게이트웨이 heartbeat 공백의 기존 180초 일시 격리를 바꾸지 않는다 |
 | Gateway → upstream | 없음(망 격리) | MCP 명세대로 **직원 토큰을 upstream에 넘기지 않는다** |
 | MCP 서버 → 하위 시스템 | 서버 보유 자격 | email: 메일 계정, gitea: PAT, postgres/redis: 접속 문자열 |
 

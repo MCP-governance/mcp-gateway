@@ -8,6 +8,7 @@
 > 이 순서로 멱등 실행한다. 마이그레이션 도구는 없다 — `CREATE … IF NOT EXISTS`/`ALTER … ADD COLUMN IF NOT EXISTS`.
 
 D-120~D-123 추가: `runtime_image_scans`(이미지 검사 이력), `alert_self_tests`(합성 자체 시험), `ops_alerts`(경보·합성 표식), `ops_suspensions`(중지와 사람 복귀), `disposal_blocks`(외부 서명 목록에서 재구성한 차단 상태). 검사·경보·자체 시험 이력과 `approval_events`는 추가만 한다. `ops_suspensions`는 관리자가 복귀할 때 복귀 필드를 채우는 상태 기록이며 감사 판정을 수정하는 테이블이 아니다. 서명 목록 정본은 `/disposal` 볼륨이다. [운영 대응](OPS_RESPONSE.md).
+D-181 추가: `user_server_suspensions`(직원×서버 이용 중지 상태, 조합당 활성 행 1개). 재개는 복귀 필드를 채우는 상태 갱신이고, 누가 언제 무엇을 했는지는 같은 트랜잭션의 `approval_events`(`user-server-suspend`·`user-server-resume`)가 추가만으로 남긴다.
 > 회사 데이터(`corp-db`)는 별도 서버다 → `full_stack_lab/corp/corpdb.sql`.
 
 ## 1. 판정과 감사
@@ -119,6 +120,7 @@ D-126: `resolved`·`confirmed_executed` 쓰기도 `resolved_at`부터 기본 24�
 증거 열(D-86–D-88): `endpoint_inventory`·`endpoint_listeners`·`endpoint_os_events`에 `origin`(`automatic`/`manual`/`os_event`, 옛 행은 NULL)과 `provenance` jsonb
 (`raw_sha256`, `agent_projection_sha256`, `server_projection_sha256`, `state` match/mismatch/unreported, `transformations`, `collector`, `received_at`)가 있다.
 `endpoint_os_events`는 `raw_sha256`(7일 재전송 중복 판정)·`denial_class`(`harness_startup`/`blocked_attempt`/`listener_reply`/`unknown`)를 더한다.
+관리형 Linux·Windows 관측기는 보호 설정 경로의 JSONL 버퍼에 정제 이벤트와 원본 SHA-256만 최대 8 MiB·10,000건·7일 보관한다. 재전송은 이 표의 기존 `raw_sha256` 7일 규칙과 `(endpoint_id,event_id)` 유일 키를 따른다. 한도 초과로 버퍼에 넣지 못한 이벤트 수와 보존 만료 폐기는 재연결 시 `endpoint_buffer_events`에 UID로 중복 제거해 추가하며 원본 이벤트 본문은 남기지 않는다. 한도 초과 시 원천 커서를 유지해 후속 수집을 멈춘다.
 `endpoint_network_samples(endpoint_id, measured_at, rtt_p50_ms, rtt_p95_ms, jitter_ms, failure_pct, probes, received_at)`는 PK `(endpoint_id, measured_at)`이고
 적재하는 하트비트가 7일 지난 행을 지운다. `endpoint_agents.detail.install_receipt`는 Gateway가 렌더링한 파일 해시(`provider_artifact_sha256`)와
 장치가 보고한 설치 파일 해시(`installed_sha256`)를 따로 둔다. 감사 원장(`decisions`)은 그대로 append-only이며 연관 조회는 읽기만 한다. D-145 상관 조회는 `decisions.request_id`로 `dispatch_intents`를 정확히 잇고, `trace_id`를 함께 반환한다. 엔드포인트 관측은 같은 `endpoint_id`·소유 주체·시간 창을 모두 확인한 보조 근거로 표시한다. trace ID가 없는 과거 행은 그대로 조회하되 ID를 추정하지 않는다.

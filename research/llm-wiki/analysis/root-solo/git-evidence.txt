@@ -1,0 +1,8 @@
+Source worktree origin/main tracking ref and target repo origin/main snapshot: d3238dccd6a6fb7266a7b9201f5b133e2a025aea
+Source branch: 10/20-root-solo
+Cherry-pick source: 27fcea9f626218e89a7a271303fe1067ea8dd87c
+Source parent: 217da74ed4731eb006ce3c167b17fec835b66155
+Target branch: 10/21-root-solo-main
+Target branch base: d3238dccd6a6fb7266a7b9201f5b133e2a025aea
+DEV-73 parent changes were not in the cherry-pick patch; see `git diff --name-status 217da74 27fcea9` for the six-file source patch.
+GitHub origin fetch was attempted in writable worktree and failed because network access to github.com:443 was unavailable. The shared checkout could not write `.git/FETCH_HEAD`.
