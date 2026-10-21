@@ -286,7 +286,7 @@ class CredentialRedaction(unittest.IsolatedAsyncioTestCase):
                "CHAIN_VERSION": 1, "GATEWAY_ENVIRONMENT": "test", "_audit_fingerprint": fingerprint,
                "response_disposition": lambda e: "not_executed", "_audit_payload": lambda v: v,
                "_release_call": AsyncMock(), "time": SimpleNamespace(perf_counter=lambda: 1)}
-        module = selected(APP / "core.py", ["_record_decision", "_storable", "_decision_payload"], env)
+        module = selected(APP / "core.py", ["_record_decision", "_storable", "_decision_payload", "AUTO_SUSPEND_POLICIES"], env)
         rendered = selected(APP / "mcp_facade.py", ["_render"],
                             {"types": SimpleNamespace(TextContent=lambda **kw: SimpleNamespace(**kw),
                                                       CallToolResult=lambda **kw: SimpleNamespace(**kw)),
