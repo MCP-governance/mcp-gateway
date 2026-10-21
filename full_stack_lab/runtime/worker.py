@@ -22,6 +22,7 @@ import sys
 import tarfile
 import time
 import tomllib
+import uuid
 from datetime import datetime, timedelta, timezone
 import urllib.error
 import urllib.request
@@ -578,10 +579,15 @@ def run_job(connection, runtime: dict, recipes: dict, context: dict) -> None:
             source["provenance_verification"] = verify_source_provenance(source)
             built = build(recipe, runtime, folder / "context", folder)
         evidence = {**source, **built}
-        runtime = advance(connection, runtime, "BUILDING", "STARTING", source_archive_sha256=source["source_archive_sha256"],
+        if not evidence.get("source_archive_sha256"):
+            # A rolled-back image is only as trustworthy as the source fingerprint recorded when it was approved.
+            raise Refused("승인 판본의 소스 지문이 없어 실행할 수 없습니다.")
+        runtime = advance(connection, runtime, "BUILDING", "STARTING", source_archive_sha256=evidence["source_archive_sha256"],
                           image_id=built["image_id"], evidence=evidence)
-        event(connection, runtime, "runtime-built", scope={k: evidence[k] for k in (
-            "source_archive_sha256", "image_id", "packages_sha256", "base_image", "build_seconds")})
+        wanted = ("source_archive_sha256", "image_id", "packages_sha256", "base_image", "build_seconds")
+        missing = [k for k in wanted if k not in evidence]
+        event(connection, runtime, "runtime-built", scope={
+            **{k: evidence[k] for k in wanted if k in evidence}, **({"missing": missing} if missing else {})})
         connection.commit()
         if problem := approval_problem(connection, runtime, recipes):
             raise Refused(problem)
@@ -629,8 +635,11 @@ def reconcile(connection, recipes: dict, context: dict) -> None:
                     reason = str(exc)[:500]
             n = names(runtime)
             current = inspect("container", n["container"])
+            # A container that is simply gone is an interruption; every other reason is a refusal or block.
+            interrupted = False
             if not reason and (not current or current["Image"] != runtime["image_id"]):
                 reason = "실행 중인 컨테이너가 승인한 이미지와 다르거나 없습니다."
+                interrupted = not current
             if not reason:
                 reason = image_scan.rescan(connection, runtime, event)
             if not reason:
@@ -643,8 +652,11 @@ def reconcile(connection, recipes: dict, context: dict) -> None:
                     connection.rollback()
                     log(f"egress observation/sync failed {runtime['id']}: {type(exc).__name__}")
                 continue
-            connection.execute("UPDATE mcp_runtimes SET status='STOPPING', error=%s, updated_at=now() WHERE id=%s AND status='ACTIVE'",
-                               (reason, runtime["id"]))
+            # stop_refused is what keeps a refused rollback generation from being queued again once it is stopped.
+            connection.execute(
+                "UPDATE mcp_runtimes SET status='STOPPING', error=%s, updated_at=now()"
+                + ("" if interrupted else ", evidence = evidence || '{\"stop_refused\": true}'::jsonb")
+                + " WHERE id=%s AND status='ACTIVE'", (reason, runtime["id"]))
             connection.commit()
             runtime = {**runtime, "status": "STOPPING", "error": reason}
         left = remove_runtime_resources(runtime, context)
@@ -659,6 +671,11 @@ def reconcile(connection, recipes: dict, context: dict) -> None:
             (Jsonb({"stopped_left_behind": left}), runtime["id"])).fetchone()
         if done:
             event(connection, runtime, "runtime-stopped", reason=runtime.get("error"), scope={"left": left})
+            if done.get("rollback_target_generation") and (done.get("evidence") or {}).get("stop_refused"):
+                event(connection, runtime, "runtime-rollback-refused", "refused",
+                      reason="되돌림 세대가 거부 또는 차단으로 멈춰 다시 큐잉하지 않습니다: " + (runtime.get("error") or "")[:300])
+                connection.commit()
+                continue
             if done.get("rollback_target_generation"):
                 target = connection.execute(
                     """SELECT * FROM mcp_runtimes WHERE intake_id=%s AND generation=%s""",
@@ -705,7 +722,7 @@ def reconcile(connection, recipes: dict, context: dict) -> None:
                     (uuid.uuid4(), runtime["intake_id"], target["recipe_id"], target["recipe_sha256"],
                      target["source_commit"], runtime["requested_by"], target["image_id"],
                      target["generation"], Jsonb(snapshot), runtime["intake_id"])).fetchone()
-                event(connection, {**runtime, "generation": queued["generation"]}, "runtime-rollback-queued",
+                event(connection, {**runtime, "id": queued["id"], "generation": queued["generation"]}, "runtime-rollback-queued",
                       scope={"from_generation": runtime["generation"], "to_generation": target["generation"],
                              "contract_sha256": snapshot["sha256"]})
         connection.commit()

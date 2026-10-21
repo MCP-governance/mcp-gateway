@@ -207,7 +207,7 @@ const REVIEW_KIND = {
   "risk-lapse": "위험 수용 만료", "intake-reject": "거부", "intake-hold": "보류", "provenance-mismatch": "보류",
   "server-register": "게이트웨이 등록", "tool-scope-review": "범위 심사", "residency-review": "위치 심사", "intake-cosign": "1차 승인", "risk-input": "영향평가 입력",
   "runtime-start": "실행 요청", "runtime-stop": "실행 중지 요청", "runtime-built": "이미지 빌드", "runtime-active": "실행 시작",
-  "runtime-rollback": "실행 판본 되돌리기", "runtime-rollback-queued": "실행 판본 전환", "runtime-rollback-refused": "실행 판본 전환 거부",
+  "runtime-rollback": "실행 판본 되돌리기", "runtime-rollback-queued": "실행 판본 전환", "runtime-rollback-refused": "실행 판본 전환 거부", "runtime-rollback-request-refused": "실행 판본 되돌리기 요청 거부",
   "runtime-failed": "실행 실패", "runtime-stopped": "실행 중지",
 };
 const RUNTIME_STATUS = {
