@@ -299,3 +299,59 @@ raw 키와 event_id 키는 journal에서 거의 같은 사건을 가리킨다. j
   3. `os-observer-windows.py`도 같은 `offline_buffer.py`를 쓰므로 같은 수정을 받는다. Windows 시험은 없다.
   4. 실제 PostgreSQL 시험과 기기 시험은 하지 않았다.
 - 커밋: `fix(v2): 폐기 건수 중복 집계와 재보고 버림 수정 (D-182)`.
+
+## 6-C. D-188 행위 시험·DEV-77 게이트웨이 경로 시험
+
+2026-10-21, 브랜치 `10/21-approval-gap-tests`(기준 `origin/main` be09c97). 제품 코드는 고치지 않았다. 새 파일 둘만 추가했고 기존 시험 파일은 바꾸지 않았다.
+
+- `full_stack_lab/tests/root_solo_behavior_check.py`: 승인 함수를 실제로 호출하는 단독 모드 행위 시험.
+- `full_stack_lab/tests/provenance_gateway_check.py`: 게이트웨이 도입 승인 경로의 출처 증명 검사 시험.
+
+### 결과
+
+| 확인 | 결과 |
+| --- | --- |
+| 새 `root_solo_behavior_check.py` | 47건 통과, 생략 0건 (Python 3.12, fastapi·psycopg 설치 환경). 경로 1 개별 승인 13건, 경로 2 한 화면 승인 7건, 경로 3 등록 7건, 그리고 경로 1·2를 단독 모드 꺼짐으로 다시 돌린 13건·7건(승인 규칙은 모드와 무관하다는 확인, 표식 값은 시험 안에서 모드별로 따로 지정) |
+| 새 `provenance_gateway_check.py` | 11건 통과, 생략 0건 |
+| 기존 `root_solo_check.py` / `solo_mode_ledger_check.py` / `intake_risk_tier_check.py` / `intake_d189_check.py` / `provenance_verify_check.py` | 6건 / 8건 / 25건 / 9건 / 6건 그대로 통과 (다섯 파일 무변경). 같은 대역을 빌려 쓰는 `intake_one_click_check.py` 19건도 통과 |
+| `py_compile`, `pyflakes` (새 파일 둘) | 통과 / 경고 없음 |
+| `python tests/open_endpoints.py` | 통과 (무인증 1개, 인증 필요 90개) |
+| 민감도 확인 | 제품 동작을 항목별로 일시적으로 되돌린 변이 35개(D-188 쪽 21개, DEV-77 쪽 14개). 처음엔 33개를 잡고 2개(원격 서비스 승인 기록의 `solo_mode`, 증명이 붙인 키 이름이 설정에 없을 때)가 살아남아 시험 2건을 더한 뒤 35개 모두 새 시험이 실패했다. 매번 원복했고 최종 `git diff`는 비어 있다 |
+
+### 세 승인 경로를 각각 행위로 확인했는가
+
+| 경로 | 호출한 함수 | 확인한 행위 |
+| --- | --- | --- |
+| 1 개별 승인 | `agent_service.approve_mcp_request`(안에서 `risk_tier_gate`), 그리고 `risk_tier_gate` 직접 호출 | 단독 모드 켜짐: 낮음·보통은 root가 혼자 완료, 높음·매우 높음은 대기(`intake-cosign` 1건, 게시·승인 없음). 같은 root가 두 번, 다른 토큰으로 눌러도 승인자 1명. 신청자 본인(같은 토큰, 같은 사람의 다른 토큰, 신청자가 root인 경우 포함)은 403과 거부 사건. 두 번째 관리자가 오면 높음 완료, 매우 높음은 사유 없으면 거부·있으면 완료. 승인 사건 `scope`의 `solo_mode`·`solo_operator`가 모드(`1`·`0`·`true`·빈 값·미설정)와 승인자(root 여부)대로 남음. 원격 서비스 승인 분기의 기록도 확인 |
+| 2 한 화면 승인 | `agent_service.approve_and_register`(미리보기 포함) | 위와 같은 규칙: 낮음·보통 혼자 완료, 높음·매우 높음 대기(`one_click_pending.approvers`가 1명), 같은 사람의 다른 토큰은 1명, 신청자 403, 두 번째 관리자로 완료, 매우 높음은 두 번째 클릭에도 사유 필요. **모드 표식은 확인하지 못했다 (결함 후보 1)** |
+| 3 등록 | `core.register_server` | 정상 승인으로 만든 요청의 승인 증거를 바꿔 가며 호출: 높음에서 한 명·같은 사람 두 토큰·중복·빈 목록·신청자 포함은 거부(`solo_mode`·`solo_operator` 값과 무관), 두 다른 관리자는 등록, 매우 높음은 기록된 사유가 없으면 거부, 승인 증거의 표식(참·거짓·없음)이 등록 서버의 `risk_assessment`로 그대로 옮겨짐 |
+
+### 완료 조건 대비
+
+| 완료 조건 문구 | 새 시험 | 판정 |
+| --- | --- | --- |
+| D-188 독립 승인 규칙 유지 (신청자≠승인자, 승인자 수 불변) | 위 세 경로의 행위 시험 | 충족(대역). 앞 절의 「소스 문자열 검사뿐」은 해소 |
+| D-188 승인 건별 모드 표식 | 경로 1은 첫 승인(`intake-cosign`)·최종 승인(`intake-approve`, 저장소·원격)의 `scope`를, 경로 3은 등록 서버의 `risk_assessment`를 값 그대로 확인 | 부분. 경로 2(한 화면 승인)는 표식이 남지 않는다 (결함 후보 1) |
+| D-179 서명 불일치 차단 (게이트웨이 경로) | `provenance_gateway_check.py`: 신뢰 키가 아닌 키의 서명, 증명 대상 digest 불일치, 페이로드 변조, 허용 builder 밖, 설정에 없는 키 이름은 모두 409·`HOLD`·`MCP-SUPPLY-001`·`provenance-mismatch` 사건·게시 없음 | 충족(대역). 단 한 화면 승인 경로는 검사 자체가 없다 (결함 후보 2) |
+| D-179 미제공은 표시만 (게이트웨이 경로) | 증명이 없으면 승인·게시가 진행되고 저장된 상태가 `확인 안 됨`. 이때는 신뢰 키 파일이 깨져 있어도 읽지 않는다 | 충족(대역) |
+| D-179 검증 불가와 미제공의 구분 | 형식 오류·확인 경로 실패·신뢰 키 설정 오류(목록·값 형식·JSON 아님·빈 파일·파일 없음)는 차단, 메시지에 `검증 불가`가 있고 `확인 안 됨`은 없다 | 충족(대역) |
+| D-179 처음 본 키를 믿지 않음 | 신뢰 키 파일이 `{}`이거나 설정이 없을 때 형식·digest·서명이 모두 맞는 증명도 차단, 신뢰 키 파일 바이트 불변, 다시 시도해도 차단 | 충족(대역) |
+
+### 제품 결함 후보 (수정하지 않음, 메인 판단 필요)
+
+1. **한 화면 승인(`approve_and_register`)은 승인 건별 모드 표식을 남기지 않는다.** `agent_service.py` 2079행(첫 승인 `pending`/`intake-one-click`·`recorded`), 2095~2096행(`risk_record`), 2124~2127행(`intake-one-click`·`approved` 사건 `scope`)에 `solo_mode`·`solo_operator`가 없다. 개별 승인 경로는 1568·1580·1586·1662·1730행에서 남긴다. 재현: `ROOT_SOLO_APPROVAL=1`, 높음 등급 원격 신청을 root, 다른 관리자 순서로 한 화면 승인하면 `approval_events`의 `intake-one-click` 두 건과 `evidence.risk_assessment`에 표식 키가 없다. 결과로 `core.py` 727행이 등록 서버에 `solo_mode: None`을 옮기고, 콘솔 1200행은 이를 「—」로 보여 준다. D-188(「위험 평가와 승인 사건에는 `solo_mode`·`solo_operator`를 기록」)과 D-189(「세 경로가 같은 표를 쓴다」)가 한 화면 승인 경로에는 적용되지 않은 것으로 보인다. 승인자 수에는 영향이 없다(표식만 빠짐). 이 사실을 고정하는 시험은 파일에 넣지 않았다.
+2. **한 화면 승인 경로는 출처 증명 서명을 검사하지 않는다.** `artifact_provenance.verify_source_attestation`의 호출은 `agent_service.py` 1696행(개별 승인) 한 곳뿐이다. `approve_and_register`의 저장소 분기(2113~2117행)는 `publish_internal_repo`만 부른다. 재현: 저장소 신청의 `provenance.verification.attestation`에 신뢰 키가 아닌 키로 서명한 증명을 두고 미리보기(`blockers` 빈 목록) 뒤 `approve_and_register`를 누르면 보류 없이 `APPROVED`가 되고 게이트웨이 등록 호출까지 나간다(`MCP-SUPPLY-001`·`provenance-mismatch` 사건 없음). D-179의 「승인 때 확인」이 한 화면 승인에는 없다. 단 실행기는 시작·재조정 때 자기 증거로 다시 검증하므로(`runtime/worker.py` 579행) 실행 단계에서 막힐 수 있다. 이 연결은 확인하지 않았다. 이 사실을 고정하는 시험은 파일에 넣지 않았다.
+3. (결함은 아니며 앞 절 정정) 이 문서 3절의 「기준 자체의 충돌」은 현재 `origin/main`에서 해소돼 있다. `risk_tier.APPROVAL["high"]`는 2명·사유 대안 없음이고 `root_solo_check.py`도 「높음 + 사유, 1명 → cosign」을 기대한다. 3절은 감사 시점 `517d3b7` 기준 기록이다.
+
+### 대역과 실제의 구분
+
+- 대역: 데이터베이스(`FakeLedger`가 `approval_events`·도입 신청·`principals`를 메모리에 두고 승인 경로가 보내는 문장만 이해하며 모르는 문장이면 시험이 실패한다), 게이트웨이 HTTP(`gateway_proxy`), 저장소 게시(`publish_internal_repo`), 경로 3의 `registry` 파일 쓰기·업스트림 MCP 탐색·카탈로그 갱신, 스캐너 보고서 조회.
+- 실제 코드: `review.require_independent`·`same_person`·`record_event`·`transition`, `risk_tier`, `solo_mode_enabled`·`solo_operator`, 세 경로의 함수 본문, `core.register_server`의 승인 증거 재확인, `artifact_provenance` 전체(실제 Ed25519 서명·검증, 신뢰 키 파일 읽기), `review.intake_gate`(스캐너 보고서만 대역).
+- 증명은 시험 안에서 만든 키로 서명했다. 외부 빌더의 실제 SLSA 증명이 아니다.
+
+### 한계
+
+- 실제 PostgreSQL(원장의 append-only 보장, 어드바이저리 잠금, 동시 클릭 경합)은 확인하지 않았다. 한 화면 승인의 직렬화 잠금은 대역이다.
+- 경로 3의 서버 등록 사건(`server-register`)의 `scope`에는 모드 표식이 없고 표식은 등록 서버의 `risk_assessment`에만 있다. 의도인지 판단이 필요하며 시험은 후자만 고정했다.
+- 콘솔에서 「승인 방식」이 어떻게 보이는지는 확인하지 않았다(화면 확인 없음). 기기·PJ1 시험은 하지 않았다.
+- 한 화면 승인의 저장소 분기(게시 포함)는 낮음 등급 승인만 돌렸다. 높음 이상의 한 화면 승인은 원격 서비스 신청으로 확인했다.
