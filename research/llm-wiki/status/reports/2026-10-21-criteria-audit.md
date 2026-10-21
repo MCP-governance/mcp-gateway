@@ -180,15 +180,15 @@ raw 키와 event_id 키는 journal에서 거의 같은 사건을 가리킨다. j
 
 모든 변경에서 최소 1건이 실패했다. 원복 뒤 `git status`에는 새 시험 파일만 남았다.
 
-### 제품 결함 후보 (시험 파일에 넣지 않음, 메인 판단 필요)
+### 제품 결함 후보 → 수정됨 (아래 「수정 결과」 참조)
 
-**후보 1. 폐기 건수가 같은 미적재 건을 실행마다 다시 센다 (재현됨, 연결 정상 상태에서도 발생)**
+**후보 1 → 수정됨. 폐기 건수가 같은 미적재 건을 실행마다 다시 센다 (재현됨, 연결 정상 상태에서도 발생)**
 - 재현: 버퍼 상한 3, journal 줄 1~5 → 실행 1 보고 5. 이어서 줄 6~7 추가 → 실행 2 보고 7. 줄 1~7은 모두 미적재 상태이고 서로 다른 7건이다. 게이트웨이 합계는 12.
 - 원인: `endpoint-agent/offline_buffer.py:183-184`의 `_record_drop(meta, max(1, len(rejected)), "capacity", ...)`. `rejected`는 이번 호출의 전체 추가분이다. 이전 실행에서 이미 보고된 줄도 들어간다. `drop_fingerprint` 확인(`:129`)은 같은 집합의 재시도만 막는다. 집합이 조금이라도 달라지면 전부 다시 센다.
 - 의미: journal 줄은 커서가 전진하지 않아 계속 남아 있고, 버퍼가 비면 나중에 도착한다. "폐기"라는 보고 문구와 실제 상태가 어긋난다. 건수는 "시점별 미적재 건수의 합"이 되어 실제 고유 건수와 다르다.
 - 권고: 보고 건수를 고유 uid 기준(예: 버퍼 밖 미적재 건을 uid 집합으로 관리)으로 정하거나, 실행마다 덮어쓰기 값으로 바꾼다.
 
-**후보 2. 같은 `drop_uid`의 재보고 건수 증가를 게이트웨이가 버린다 (재현됨, 응답 유실 조건)**
+**후보 2 → 수정됨. 같은 `drop_uid`의 재보고 건수 증가를 게이트웨이가 버린다 (재현됨, 응답 유실 조건)**
 - 재현: 상한 3, 줄 1~5 → 실행 1에서 보고 5가 게이트웨이에 커밋되었으나 응답이 유실되어 장치는 실패로 기록. `drop_uid`와 건수 5가 장치에 남는다. 이어서 줄 6~8 추가 → 실행 2 보고 13(같은 uid). 게이트웨이 행은 5로 남는다.
 - 원인: `full_stack_lab/gateway/app/endpoint_plane.py:274-275`의 `ON CONFLICT(endpoint_id,event_uid) DO NOTHING`. 같은 uid의 나중 보고를 갱신하지 않는다. 장치 쪽은 `offline_buffer.py:133`에서 실패 시 uid를 유지하고 `os-observer.py:184-186`에서 보고 성공 뒤에만 비운다.
 - 권고: 후보 1을 고치면 같은 uid에 건수를 누적하는 일이 줄어든다. 그래도 `DO NOTHING`은 재보고가 같은 값이 아닐 때 조용히 버린다. 갱신 조건(`dropped_count` 증가 시 `GREATEST`)을 명시하는 것을 검토한다.
@@ -204,3 +204,30 @@ raw 키와 event_id 키는 journal에서 거의 같은 사건을 가리킨다. j
 - 실제 journalctl, 실제 HTTP·TLS, 실제 root 소유 검사는 대역이다. 실기기 시험은 하지 않았다.
 - 후보 1·2는 시험 파일이 없다. 메인이 판단해 고친 뒤 시험을 추가한다. 시험 조건은 위 재현 절차를 그대로 쓴다.
 - 브랜치를 `git checkout -B ... origin/main`으로 만들어 upstream이 `origin/main`에 걸려 있다. 올릴 때 `git push origin 10/21-dev80-arrival-tests`처럼 이름을 명시한다. 그냥 `git push`를 쓰면 `origin/main`으로 갈 수 있다.
+
+### 수정 결과 (브랜치 `10/21-dev80-dropcount`, 기준 `origin/main` 4c22360)
+
+- 결함 1 (장치, `endpoint-agent/offline_buffer.py` `enqueue`): 거부한 줄의 uid를 메타 `refused_uids`에 저장한다(재시작 뒤에도 유지). 다음 호출은 이미 기록된 uid를 건수에서 뺀다. 적재되면 그 uid를 목록에서 뺀다. 기존 `max(1, len(rejected))`는 새 건이 0이어도 1을 세던 것이어서 `len(fresh)`로 바꿨다.
+- 결함 2 (게이트웨이, `full_stack_lab/gateway/app/endpoint_plane.py` `observation_status`): 삽입 SQL을 `ON CONFLICT(endpoint_id,event_uid) DO UPDATE SET dropped_count, reason, reported_at WHERE EXCLUDED.dropped_count > endpoint_buffer_events.dropped_count`로 바꿨다. 더 큰 건수만 반영하고 작거나 같은 값은 버린다. 행은 늘지 않는다.
+- 감사 원장(`approval_events`·`decisions`) 미변경. 새 테이블·새 의존성·새 정책 ID 없음. DB 열 추가 없음(기존 `endpoint_buffer_events` 열만 씀).
+
+| 시험 상황 | 수정 전 | 수정 후 |
+| --- | --- | --- |
+| 결함 1: 줄 1~5 보고(실행 1), 줄 6~7 추가 보고(실행 2), 고유 7건의 게이트웨이 합계 | 12 (실행 2 보고 7) | 7 (실행 1 보고 5, 실행 2 보고 2) |
+| 결함 2: 줄 1~5 응답 유실 뒤 줄 6~13 추가, 같은 uid 재보고 | 게이트웨이 행 5 (장치 보고 18, 중복 집계) | 게이트웨이 행 13 (장치 보고 13) |
+| 결함 2 보조: 같은 uid에 작은 값 4 재보고 | — | 행 13 유지(후퇴 없음) |
+
+- 새 시험 2건 (`endpoint_offline_arrival_check.py`): `test_seven_unique_refused_events_are_counted_seven_times_across_two_runs`, `test_a_lost_drop_report_is_raised_to_the_larger_count_and_never_lowered`. 둘 다 통과.
+- 기존 시험: `endpoint_offline_arrival_check.py` 8건과 `endpoint_offline_buffer_check.py` 10건 모두 통과. 후자 파일은 무변경.
+- 정적 검사: `py_compile`, `pyflakes`(변경 3파일) 무출력 통과. `full_stack_lab && python tests/open_endpoints.py` PASS.
+- 민감도 (수정본을 `git show HEAD:`로 되돌려 실행한 뒤 수정본을 복원, 바이트 비교 일치, `git diff`로 확인):
+  - 장치 수정만 되돌림: 시험 1 실패 `12 != 7`, 시험 2 실패 `18 != 13`.
+  - 게이트웨이 수정만 되돌림: 시험 2 실패 `5 != 13`. 시험 1은 게이트웨이와 무관하므로 통과.
+  - 둘 다 되돌림: 두 시험 실패, 위와 같은 값.
+- 시험 대역 변경: 인메모리 `Store`가 `endpoint_buffer_events` 삽입을 SQL 절에 따라 모델링한다(`DO NOTHING`이면 갱신 없음, 새 `DO UPDATE ... WHERE` 절이면 더 큰 값만 갱신). `Gateway`에 `lose_status_answer`(상태 보고 저장 뒤 응답 유실)를 추가했다. PostgreSQL 실행은 없다. SQL 절 대조와 인메모리 모델이다.
+- 남은 공백과 판단 필요:
+  1. **의미 확인 필요.** 건수는 "커서 창 안에서 한 번이라도 버퍼에 들어가지 못한 고유 건수"다. 거부된 줄이 나중에 버퍼가 비어 적재·전달되어도 이미 보고된 건수는 줄지 않는다. "폐기"라는 문구를 "미적재 시점 건수"로 낮출지, 적재 시 정정을 설계할지는 메인이 정한다. 정정은 게이트웨이의 단조 증가 규칙과 충돌한다.
+  2. `refused_uids` 크기는 거부됐지만 아직 적재되지 않은 줄 수에 비례한다(uid 64자 hex). 저널에서 사라져 다시 읽히지 않는 줄은 목록에 남을 수 있다. 재집계는 일어나지 않는다.
+  3. `os-observer-windows.py`도 같은 `offline_buffer.py`를 쓰므로 같은 수정을 받는다. Windows 시험은 없다.
+  4. 실제 PostgreSQL 시험과 기기 시험은 하지 않았다.
+- 커밋: `fix(v2): 폐기 건수 중복 집계와 재보고 버림 수정 (D-182)`.

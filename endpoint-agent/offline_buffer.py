@@ -167,6 +167,8 @@ class EventBuffer:
         rows = self.pending(now=logical)
         meta = self._meta()
         known = {row["uid"] for row in rows}
+        # Refused earlier and still unstored: the journal re-reads them until the cursor moves, so they are counted once.
+        refused = set(meta.get("refused_uids", []))
         additions = []
         for event in events:
             if _contains_secret(event):
@@ -178,13 +180,16 @@ class EventBuffer:
         candidate = rows + additions
         encoded_size = sum(len((json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode())
                            for row in candidate)
+        added = {row["uid"] for row in additions}
         if len(candidate) > self.max_events or encoded_size > self.max_bytes:
-            rejected = [row["uid"] for row in additions]
-            self._record_drop(meta, max(1, len(rejected)), "capacity",
-                              hashlib.sha256("\n".join(sorted(rejected)).encode()).hexdigest())
+            fresh = sorted(added - refused)
+            self._record_drop(meta, len(fresh), "capacity",
+                              hashlib.sha256("\n".join(fresh).encode()).hexdigest())
+            meta["refused_uids"] = sorted(refused | added)
             self._save_meta(meta)
             raise BufferFull("offline buffer limit reached; collection stopped")
         self._write_rows(candidate)
+        meta["refused_uids"] = sorted(refused - added)
         self._save_meta(meta)
         return len(additions)
 
