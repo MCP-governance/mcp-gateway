@@ -99,6 +99,9 @@ def selected_current_runs(repo: Path, manifest: dict, source_commit: str,
     """Return every selected run with an explicit current-validity state."""
     if manifest.get("schema_version") != 2 or manifest.get("mode") != "current":
         raise ValueError("current manifest required")
+    selected_runs = manifest.get("selected")
+    if not isinstance(selected_runs, dict) or not selected_runs:
+        raise ValueError("current manifest requires a nonempty selected object")
     if not COMMIT.fullmatch(source_commit) or not image_digest or not environment:
         raise ValueError("current source, image, and environment are required")
     runs_name = manifest.get("runs_path", "")
@@ -119,7 +122,7 @@ def selected_current_runs(repo: Path, manifest: dict, source_commit: str,
             raise ValueError(f"duplicate run ID: {run_id}")
         all_runs[run_id] = row
     selected = {}
-    for test, run_id in manifest.get("selected", {}).items():
+    for test, run_id in selected_runs.items():
         if run_id not in all_runs:
             raise ValueError(f"{test}: selected run missing")
         row = all_runs[run_id]

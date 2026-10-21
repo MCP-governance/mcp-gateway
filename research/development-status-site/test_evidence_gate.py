@@ -103,6 +103,22 @@ class EvidenceGateTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate run ID"):
             self.select([run, run], run["run_id"])
 
+    def test_current_manifest_requires_selected_runs(self):
+        import rescore_1015
+        from types import SimpleNamespace
+        from unittest.mock import patch
+
+        for selected in ({}, [], None, ""):
+            with self.subTest(selected=selected):
+                manifest_path = self.repo / "manifest.json"
+                manifest_path.write_text(json.dumps({"schema_version": 2, "mode": "current",
+                                                     "selected": selected}), encoding="utf-8")
+                with patch.object(rescore_1015, "REPO", self.repo), patch.object(
+                        rescore_1015, "git", side_effect=lambda *args: SimpleNamespace(
+                            stdout=COMMIT if args[0] == "rev-parse" else "")):
+                    with self.assertRaisesRegex(ValueError, "nonempty selected object"):
+                        rescore_1015.current_evidence_summary(manifest_path, IMAGE, ENVIRONMENT)
+
     def test_legacy_row_is_pinned_and_only_historical(self):
         path = self.repo / "research/llm-wiki/analysis/wbs-1015/lab-results.jsonl"
         path.parent.mkdir(parents=True)
