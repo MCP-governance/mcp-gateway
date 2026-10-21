@@ -1,23 +1,16 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-21T19:02:52+09:00
+확인 시각: 2026-10-21T19:13:11+09:00
 
-HEAD: `f09c245f072b95f7f5ef0ad9e60b4465a5fccf82` · 로컬 브랜치: `10/21-sheet-runtime-completion`
+HEAD: `0dfd6fde5536838675067b8fed220821504a8de5` · 로컬 브랜치: `10/21-sheet-runtime-completion`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M docs/ai/DECISIONS.md
- M docs/ai/OPS_RESPONSE.md
- M research/llm-wiki/catalogs/threats.json
- M research/llm-wiki/status/backlog.md
- M research/llm-wiki/status/current.md
- M research/llm-wiki/status/reports/2026-10-21-dev45-evidence-gate.md
- M research/llm-wiki/status/reports/2026-10-21-residency-transfer-review.md
-?? research/llm-wiki/analysis/sheet-runtime-20261021/
-?? research/llm-wiki/status/reports/2026-10-21-sheet-runtime-completion.md
+M research/llm-wiki/status/current.md
+?? research/llm-wiki/status/reports/2026-10-21-ci-recovery.md
 ```
 
 ## 주요 파일 바이트

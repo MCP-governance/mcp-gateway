@@ -1,17 +1,10 @@
 {
-  "captured_at": "2026-10-21T19:02:52+09:00",
-  "head": "f09c245f072b95f7f5ef0ad9e60b4465a5fccf82",
+  "captured_at": "2026-10-21T19:13:11+09:00",
+  "head": "0dfd6fde5536838675067b8fed220821504a8de5",
   "branch": "10/21-sheet-runtime-completion",
   "status": [
-    "M docs/ai/DECISIONS.md",
-    " M docs/ai/OPS_RESPONSE.md",
-    " M research/llm-wiki/catalogs/threats.json",
-    " M research/llm-wiki/status/backlog.md",
-    " M research/llm-wiki/status/current.md",
-    " M research/llm-wiki/status/reports/2026-10-21-dev45-evidence-gate.md",
-    " M research/llm-wiki/status/reports/2026-10-21-residency-transfer-review.md",
-    "?? research/llm-wiki/analysis/sheet-runtime-20261021/",
-    "?? research/llm-wiki/status/reports/2026-10-21-sheet-runtime-completion.md"
+    "M research/llm-wiki/status/current.md",
+    "?? research/llm-wiki/status/reports/2026-10-21-ci-recovery.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
