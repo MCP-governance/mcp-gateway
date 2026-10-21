@@ -147,9 +147,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "fda422a724741323f785ad99deb42c8f2a6144a3c4f78e694dcf3aa148a99d94",
-        "committed_sha256": "fda422a724741323f785ad99deb42c8f2a6144a3c4f78e694dcf3aa148a99d94",
-        "normalized_sha256": "fda422a724741323f785ad99deb42c8f2a6144a3c4f78e694dcf3aa148a99d94",
+        "sha256": "580f6e1b6ade6953c84c76ac0ce98493b2f41d8c19d26ea5a95ee32207f32514",
+        "committed_sha256": "580f6e1b6ade6953c84c76ac0ce98493b2f41d8c19d26ea5a95ee32207f32514",
+        "normalized_sha256": "580f6e1b6ade6953c84c76ac0ce98493b2f41d8c19d26ea5a95ee32207f32514",
         "worktree_modified": false
       },
       {
