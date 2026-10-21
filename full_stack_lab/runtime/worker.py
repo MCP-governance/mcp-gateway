@@ -433,6 +433,15 @@ def verify_source_provenance(evidence: dict, *, trust_file: str | None = None) -
             "keyid": result.get("keyid"), "sha256": evidence["source_archive_sha256"]}
 
 
+def has_dsse_attestation(evidence: dict) -> bool:
+    envelope = evidence.get("source_attestation")
+    return isinstance(envelope, dict) and envelope.get("payloadType") == artifact_provenance.PAYLOAD_TYPE
+
+
+def verify_rollback_provenance(evidence: dict) -> dict:
+    return verify_source_provenance(evidence)
+
+
 def build(recipe: dict, runtime: dict, context: Path, folder: Path) -> dict:
     iid = folder / "image-id"
     started = time.time()
@@ -572,8 +581,14 @@ def run_job(connection, runtime: dict, recipes: dict, context: dict) -> None:
             image = inspect("image", runtime.get("image_id")) if runtime.get("image_id") else None
             if not target or not image:
                 raise Refused("이전에 승인한 실행 이미지를 찾을 수 없습니다.")
+            target_evidence = target.get("evidence") or {}
+            rollback_verification = (verify_rollback_provenance(target_evidence)
+                                     if has_dsse_attestation(target_evidence) or not target_evidence.get("source_attestation")
+                                     else None)
             source = {}
-            built = {"image_id": runtime["image_id"], **(target.get("evidence") or {})}
+            built = {"image_id": runtime["image_id"], **target_evidence}
+            if rollback_verification:
+                built["provenance_verification"] = rollback_verification
         else:
             source = fetch_source(connection, runtime, folder)
             source["provenance_verification"] = verify_source_provenance(source)
@@ -709,6 +724,15 @@ def reconcile(connection, recipes: dict, context: dict) -> None:
                           reason="승인 판본의 유효성 또는 계약 구성이 달라졌습니다.")
                     connection.commit()
                     continue
+                target_evidence = target.get("evidence") or {}
+                if has_dsse_attestation(target_evidence):
+                    try:
+                        verify_rollback_provenance(target_evidence)
+                    except (Refused, OSError, ValueError, KeyError) as exc:
+                        event(connection, runtime, "runtime-rollback-refused", "refused",
+                              reason=f"되돌릴 출처 증명 재검증에 실패했습니다: {str(exc)[:350]}")
+                        connection.commit()
+                        continue
                 if not restore_contract(connection, snapshot):
                     event(connection, runtime, "runtime-rollback-refused", "refused",
                           reason="승인 계약 이력의 해시 또는 도구 구성이 다릅니다.")
