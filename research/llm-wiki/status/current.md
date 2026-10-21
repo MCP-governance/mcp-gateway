@@ -71,7 +71,7 @@
 - **DEV-73**: `origin/10/21-dev73-integrate`(`c92b6f2`)는 main 밖이다. 실제 PG 시험 2개(`dev73_rework_pg_check`·`local_jobs_pg_check`)는 실제 DB에서 한 번도 통과하지 않았고 실험실에서 재시도 중이다. 2차 검토 지적 6건의 반영 기록이 없다. 적대 재검토 전까지 배포·PJ1 금지.
 - **기기 재배포**: 10-21 병합분은 `3eb802c`로 모두 반영됐다. DEV-73은 실제 PostgreSQL 시험 통과 뒤 따로 배포한다.
 - D-189 `core.register_server`의 거부 3분기(신청자 배제·2명 미만·매우 높음 사유 누락)는 `root_solo_behavior_check`의 `RegisterServerRoute`가 실제 호출로 확인한다. 각 거부 줄을 지우는 변이에서 1~13건이 실패함을 확인했다(앞선 「문자열 검사뿐」 기록은 그 시험이 병합되기 전 감사 시점 기준).
-- **시험 공백(남음)**: D-189 결론 3(치명적 발견 수용은 위험 등급 승인과 별도 절차) 전용 행위 시험이 없다. DEV-75 통합 경로(`tools/list`·`execute_call`) 시험 `tool_sunset_paths_check`는 메인이 Python 3.12에서 8/8 통과를 확인했다.
+- **시험 공백(남음)**: D-189 결론 3(치명적 발견 수용은 위험 등급 승인과 별도 절차) 전용 행위 시험이 없다. DEV-75 통합 경로(`tools/list`·`execute_call`) 시험 `tool_sunset_paths_check`는 메인이 Python 3.12에서 8/8 통과를 확인했다. DEV-76의 건너뜀·세대 불일치 분기, DEV-74의 자동 중지 행 생성 뒤 다음 호출 차단 연결과 만료 처리 실패 분기도 시험이 없다.
 - **사건 기반 가드**: `runtime-revoked`·`runtime-terminated`·`runtime-supply-chain-stop` 사건을 쓰는 코드는 판정 경로를 바꾸므로 별도 작업으로 남겼다.
 - **DEV-03**: 독립 검토(10-20, `ed2e172`)의 고정 해시가 10-21 코드 변경으로 낡아 `threat_trace_mapping_check`가 실패한다. 검토 파일 갱신은 레인 재실행 대기다.
 - **OCI 이미지 digest 연계·Cosign/Rekor**: 미구현. 소스 아카이브 digest 기준 referrer 조회도 기본 꺼짐이라 실제 자동 수집은 확인하지 않았다.
