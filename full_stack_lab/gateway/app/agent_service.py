@@ -954,7 +954,7 @@ async def with_risk(rows: list[dict], counted: bool = False) -> list[dict]:
     for row in rows:
         stated = risk_tier.assess(row.get("risk_input"))
         suggested = (row.get("evidence") or {}).get("approval_proposal") or {}
-        if stated["status"] != "ok":
+        if stated["status"] != "ok" and suggested.get("blockers") == [] and suggested.get("tools"):
             # 근거 입력도 제안도 없으면 등급을 매기지 않고 보류로 둔다. 산정하지 않은 값을 결과처럼 적지 않는다.
             stated = suggested.get("risk") or stated
         rule = risk_tier.APPROVAL.get(stated["tier"])
