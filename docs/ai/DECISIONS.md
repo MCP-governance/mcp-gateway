@@ -1864,6 +1864,7 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 집행·복구: D-181 `user_server_suspensions` 부분 유일 인덱스, `P-SUSPEND-001`, 최종 dispatch 확인, 관리자 재개 경로를 그대로 쓴다. 자동 상태는 `expires_at`으로 만료하며, 다음 호출에서 만료를 원장에 기록하고 정상 호출을 허용한다. 해제 전 다음 호출은 기존 직원·서버 상태와 정책 ID로 차단한다. 집계 상태 조회가 실패하면 `P-CONTROL-FAIL-CLOSED`로 차단하며 그 실패는 위반 집계에 넣지 않는다.
 - 경합·한계: 자동 중지 삽입은 D-181과 같은 직원 advisory lock과 기존 부분 유일 인덱스로 직렬화한다. 임계에 도달한 호출은 이미 차단 판정된 호출이다. 그 시각 전에 전송 transaction을 통과한 호출은 취소할 수 없고 기록만 남는다. 관측 창은 서버별이며 다른 서버의 위반은 합산하지 않는다.
 - 정정(2026-10-21, 브랜치 `10/21-d176-record-path`): 집계 SELECT가 실패해도 Block 판정 행과 체인 갱신은 롤백되지 않는다. 자동 중지 검사는 그 뒤 SAVEPOINT에서 실행하고, 실패는 오류 로그로 남기며 판정은 Block 그대로다. 다음 호출이 집계를 다시 하므로 실패한 행도 임계 집계에 든다. 실패 표식은 판정 행에 붙이지 않았다(원장 행 수정 금지, 기존 JSON 필드마다 소비자가 있음). 상세는 [감사 보고 8-A](../../research/llm-wiki/status/reports/2026-10-21-criteria-audit.md).
+- 보강(2026-10-21, 브랜치 `10/21-d176-followup`): 집계 실패는 로그만으로 두지 않고 `approval_events`에 사건 `auto-suspend-count-failed`(outcome `recorded`, 판정 행 id·직원·서버·정책 id만, 예외 원문 없음)로 append한다. 이 사건 기록이 실패해도 판정 행은 별도 SAVEPOINT 덕분에 유지되고 로그만 남는다. `AUTO_SUSPEND_THRESHOLD`·`WINDOW_SECONDS`·`DURATION_SECONDS`가 1 미만이거나 정책 목록이 비면 게이트웨이 기동을 거부한다(기본값 5·600·900은 통과, 현재 배포 설정 불변).
 - 근거: [방향 갱신 10-20](../../research/llm-wiki/analysis/direction-1020/README.md) §3 DEV-74, [GB/T 45654—2025 6.5 a)](../../research/llm-wiki/papers/LIB-M32.md), D-181. GB/T는 위법·불량 정보의 입력 검출과 반복 기준을 공시하라는 권고성 표준이며, 위 정책 목록은 MINT의 호출 판정 정책에 한정한 구현 기준이다.
 
 ## D-177 미사용 도구는 원장 근거와 유예를 확인해 되돌릴 수 있게 비활성한다 (2026-10-21, DEV-75)
