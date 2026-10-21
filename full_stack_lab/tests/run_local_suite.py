@@ -55,7 +55,6 @@ EXTERNAL = {
 
 # 실패 중 분류 보고서에서 (D)·(E)로 표시한 항목. 상태는 그대로 실패이며 note로만 구분한다.
 KNOWN = {
-    "field_account_git_test": "(D) 수리 후 실행 시작: 미대역 DB 호출(revoke_principal_tokens)에서 PoolTimeout, 그 뒤 단언은 미확인",
     "threat_trace_mapping_check": "(E) 독립 검토 고정 해시 낡음, 설계상 실패",
 }
 
