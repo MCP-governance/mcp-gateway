@@ -1,27 +1,12 @@
 {
-  "captured_at": "2026-10-21T14:17:45+09:00",
-  "head": "d86bf166b56adab401902fefd9431dbdc757d063",
-  "branch": "main",
+  "captured_at": "2026-10-21T15:18:58+09:00",
+  "head": "cf9f7e0d7d75c36cde00609692c3239ca078285f",
+  "branch": "10/21-status-update",
   "status": [
-    "M docs/ai/DECISIONS.md",
-    " M docs/ai/SECURITY_BOUNDARIES.md",
-    " M endpoint-agent/enforce-linux.py",
-    " M endpoint-agent/managed-linux.py",
-    " M full_stack_lab/gateway/app/agent_service.py",
-    " M research/llm-wiki/analysis/local-endpoints-1021/README.md",
-    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
-    " M research/llm-wiki/catalogs/threats.json",
-    " M research/llm-wiki/status/backlog.md",
+    "M research/llm-wiki/status/backlog.md",
+    " M research/llm-wiki/status/current.md",
     " M research/llm-wiki/status/repository-snapshot.json",
-    " M research/llm-wiki/status/repository-snapshot.md",
-    "?? endpoint-agent/broker_binding.py",
-    "?? full_stack_lab/tests/header_broker_label_check.py",
-    "?? research/llm-wiki/analysis/local-endpoints-1021/binding-checks.json",
-    "?? research/llm-wiki/analysis/local-endpoints-1021/binding-final-checks.json",
-    "?? research/llm-wiki/analysis/local-endpoints-1021/binding-profile.apparmor",
-    "?? research/llm-wiki/analysis/local-endpoints-1021/binding-wiki-checks.json",
-    "?? research/llm-wiki/analysis/local-endpoints-1021/verify_binding.py",
-    "?? research/llm-wiki/status/reports/2026-10-21-broker-process-binding.md"
+    " M research/llm-wiki/status/repository-snapshot.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -29,7 +14,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "fd36f92bd4cb2221994e166d8fff8e0cadb49d7960b8c8ccf5a9001c6e6b8404"
+      "sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -57,7 +42,7 @@
     },
     {
       "path": "full_stack_lab/opa/decision.rego",
-      "sha256": "e52e3ea4de50e8ae9c4727079579bf86ba5967aebdb4921875d2ab1d3791c26e"
+      "sha256": "b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904"
     },
     {
       "path": "endpoint-agent/bootstrap.py",
