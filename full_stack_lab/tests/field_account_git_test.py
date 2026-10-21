@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "gateway"))
 from app import agent_service as service
+from app import mcp_sessions
 
 
 class FieldAccountGitTest(unittest.TestCase):
@@ -22,13 +23,36 @@ class FieldAccountGitTest(unittest.TestCase):
     def test_deletion_blocks_root_and_tombstones_other_accounts(self):
         identity = {"roles": ["admin"], "principal": "root", "user_id": "root"}
         db = AsyncMock(return_value={"email": "alice", "token": "emp-alice"})
+        # Recording doubles for the DB-bound steps after the tombstone. Each one keeps the
+        # call and its arguments so the assertions below can check that the step ran.
+        execute = AsyncMock(return_value=1)
+        fetch_all = AsyncMock(return_value=[])
+        revoke = AsyncMock()
+        release = AsyncMock(return_value=0)
+        terminate = AsyncMock(return_value=0)
         with patch.object(service, "current_identity", AsyncMock(return_value=identity)), \
              patch.object(service.db, "fetch_one", db), \
+             patch.object(service.db, "execute", execute), \
+             patch.object(service.db, "fetch_all", fetch_all), \
+             patch.object(service.idp, "revoke_principal_tokens", revoke), \
+             patch.object(service.upstream, "release_pool", release), \
+             patch.object(mcp_sessions, "terminate", terminate), \
              patch.dict(service.os.environ, {"MCP_FIELD_MODE": "0"}):
             self.assertEqual(self.client.delete("/api/accounts/root").status_code, 409)
             self.assertEqual(self.client.delete("/api/accounts/alice").status_code, 200)
         self.assertEqual(db.await_count, 1)
         self.assertIn("status='deleted'", db.await_args.args[0])
+        # Added: the post-tombstone steps ran, with the principal key the tombstone returned.
+        self.assertEqual(db.await_args.args[1], ("root", "alice"))
+        revoke.assert_awaited_once_with("alice")
+        release.assert_awaited_once_with(None, "emp-alice", "principal")
+        execute.assert_awaited_once()
+        self.assertIn("console_sessions", execute.await_args.args[0])
+        self.assertEqual(execute.await_args.args[1], ("alice",))
+        fetch_all.assert_awaited_once()
+        self.assertIn("oidc_bindings", fetch_all.await_args.args[0])
+        self.assertEqual(fetch_all.await_args.args[1], ("emp-alice",))
+        terminate.assert_awaited_once_with(reason="principal-deleted", principal="emp-alice")
 
     def test_existing_gitea_user_still_joins_organization(self):
         service._gitea_ready.clear()
