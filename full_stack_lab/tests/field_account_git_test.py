@@ -21,7 +21,7 @@ class FieldAccountGitTest(unittest.TestCase):
 
     def test_deletion_blocks_root_and_tombstones_other_accounts(self):
         identity = {"roles": ["admin"], "principal": "root", "user_id": "root"}
-        db = AsyncMock(return_value={"email": "alice"})
+        db = AsyncMock(return_value={"email": "alice", "token": "emp-alice"})
         with patch.object(service, "current_identity", AsyncMock(return_value=identity)), \
              patch.object(service.db, "fetch_one", db), \
              patch.dict(service.os.environ, {"MCP_FIELD_MODE": "0"}):
@@ -69,3 +69,7 @@ class FieldAccountGitTest(unittest.TestCase):
                 return await service.ensure_gitea_team(client)
 
         self.assertEqual(asyncio.run(check()), 2)
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

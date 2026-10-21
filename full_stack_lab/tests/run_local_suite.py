@@ -36,7 +36,6 @@ EXTERNAL = {
     "adversarial_check": "게이트웨이 HTTP(127.0.0.1:8080)와 DATABASE_URL 필요",
     "credential_binding_check": "POSIX 파일 권한 0o600 검사, Windows에서는 항상 실패",
     "field_release_check": "--url --server --expected-revision 인자의 운영 대상 점검",
-    "flow_fingerprint_check": "PostgreSQL 연결 풀 필요, Windows 이벤트 루프(Proactor)와 비호환",
     "intake_validation_test": "Windows 심볼릭 링크 권한 없음(WinError 1314)",
     "intake_worker_scanners_check": "Trivy 캐시 환경변수 TRIVY_CACHE_DIR 필요",
     "managed_enforcement_check": "Linux 전용 모듈 grp 필요",
@@ -56,8 +55,7 @@ EXTERNAL = {
 
 # 실패 중 분류 보고서에서 (D)·(E)로 표시한 항목. 상태는 그대로 실패이며 note로만 구분한다.
 KNOWN = {
-    "endpoint_snapshot_check": "(D) 22cf622 이후 observation_status 호출 시그니처 불일치",
-    "field_account_git_test": "(D) 38a12c9 이후 delete_account가 row['token']을 읽음, 시험 DB 더블에 token 없음",
+    "field_account_git_test": "(D) 수리 후 실행 시작: 미대역 DB 호출(revoke_principal_tokens)에서 PoolTimeout, 그 뒤 단언은 미확인",
     "threat_trace_mapping_check": "(E) 독립 검토 고정 해시 낡음, 설계상 실패",
 }
 
