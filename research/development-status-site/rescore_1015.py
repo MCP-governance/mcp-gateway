@@ -349,16 +349,17 @@ def page_sections(data, appliance, sample=None):
     data['live_sample'] = sample
 
 
-def build_after_wbs_1015(extra=None, sample=None, manifest_path=None, historical=False,
-                         image_digest=None, environment=None):
-    """extra: further item configs (the inspection workstream adds its own after its merge)."""
+def build_after_wbs_1015(extra=None, sample=None, manifest_path=None, historical=False):
+    """Reproduce the 10-15 historical score; current scoring needs every stage rebound."""
+    if not historical:
+        raise ValueError('historical replay only: deployment and device evidence are 10-15 snapshots')
     configs = {**CONFIGS, **(extra or {})}
     before = REPO / 'research/llm-wiki/analysis/development-wbs/snapshot-before-wbs-1015.json'
     if not before.exists():
         raise FileNotFoundError(before)
     data = read('research/llm-wiki/analysis/development-wbs/snapshot-before-wbs-1015.json')
     assert data['summary']['progress'] == 24.8, 'baseline must be the 10-14 snapshot'
-    labs = lab_results(manifest_path, historical, image_digest, environment)
+    labs = lab_results(manifest_path, historical)
     deploy = read(DEPLOY)
     appliance = read(APPLIANCE)
     head = git('rev-parse', 'HEAD').stdout.strip()
@@ -421,6 +422,13 @@ def build_after_wbs_1015(extra=None, sample=None, manifest_path=None, historical
     return data
 
 
+def current_evidence_summary(manifest_path, image_digest, environment):
+    """Inspect selected current runs without applying 10-15 deployment/device scores."""
+    labs = lab_results(manifest_path, False, image_digest, environment)
+    return {'evidence_mode': 'current',
+            'selected': {test: row['evidence_status'] for test, row in sorted(labs.items())}}
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--manifest', type=Path, required=True)
@@ -429,11 +437,11 @@ if __name__ == '__main__':
     parser.add_argument('--image-digest', help='current test image digest (use none for no image)')
     parser.add_argument('--environment', help='current test environment identifier')
     args = parser.parse_args()
-    result = build_after_wbs_1015(extra=E2E_CONFIGS, manifest_path=args.manifest,
-                                  historical=args.historical_replay,
-                                  image_digest=args.image_digest,
-                                  environment=args.environment)
-    print(json.dumps({'progress': result['summary']['progress'],
-                      'complete': result['summary']['complete'],
-                      'evidence_mode': 'historical' if args.historical_replay else 'current'},
-                     ensure_ascii=False))
+    if args.historical_replay:
+        result = build_after_wbs_1015(extra=E2E_CONFIGS, manifest_path=args.manifest,
+                                      historical=True)
+        output = {'progress': result['summary']['progress'],
+                  'complete': result['summary']['complete'], 'evidence_mode': 'historical'}
+    else:
+        output = current_evidence_summary(args.manifest, args.image_digest, args.environment)
+    print(json.dumps(output, ensure_ascii=False))

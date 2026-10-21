@@ -76,12 +76,27 @@ class EvidenceGateTest(unittest.TestCase):
         import rescore_1015
         from unittest.mock import patch
 
-        for status in ("failed", "recheck", "historical"):
+        for status in ("failed", "recheck"):
             with self.subTest(status=status), patch.object(
                     rescore_1015, "lab_results", return_value={
                         "intake_identity_pg_check.py": {"rc": 0, "evidence_status": status}}):
-                with self.assertRaisesRegex(AssertionError, "lacks selected valid evidence"):
-                    rescore_1015.build_after_wbs_1015(manifest_path=self.repo / "unused.json")
+                with self.assertRaisesRegex(AssertionError, "lacks selected historical evidence"):
+                    rescore_1015.build_after_wbs_1015(manifest_path=self.repo / "unused.json",
+                                                       historical=True)
+
+    def test_current_evidence_never_inherits_historical_stage_scores(self):
+        import rescore_1015
+        from unittest.mock import patch
+
+        with self.assertRaisesRegex(ValueError, "historical replay only"):
+            rescore_1015.build_after_wbs_1015(manifest_path=self.repo / "unused.json")
+        selected = {"boundary.py": {"rc": 0, "evidence_status": "valid"},
+                    "older.py": {"rc": 0, "evidence_status": "recheck"}}
+        with patch.object(rescore_1015, "lab_results", return_value=selected):
+            output = rescore_1015.current_evidence_summary(self.repo / "unused.json", IMAGE, ENVIRONMENT)
+        self.assertEqual(output, {"evidence_mode": "current",
+                                  "selected": {"boundary.py": "valid", "older.py": "recheck"}})
+        self.assertNotIn("progress", output)
 
     def test_duplicate_run_id_rejected(self):
         run = self.record()
