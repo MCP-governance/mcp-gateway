@@ -14,7 +14,7 @@ XLSM 원본 SHA-256: `c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827f
 
 검토 결정: 관리대장 ID·제품 코드·회귀 시험을 구분한다. PG/OPA 함수 시험·실제 MCP·PJ1·독립 효과·현재 배포도 구분한다. 최초 실패/미실행과 후속 성공이 함께 있으면 마지막 추가 기록을 그 판본의 보고 증거로 채택하며 원시 출력 부재를 명시한다.
 
-참조 파일과 검토 스냅샷 대조: 불일치 — 재검토 필요: endpoint-agent/managed-windows.py, full_stack_lab/gateway/app/agent_service.py, full_stack_lab/gateway/app/classify.py, full_stack_lab/gateway/app/core.py, full_stack_lab/gateway/app/dispatch.py, full_stack_lab/gateway/app/endpoint_plane.py, full_stack_lab/gateway/app/mcp_facade.py, full_stack_lab/gateway/app/review.py, full_stack_lab/gateway/app/upstream.py, full_stack_lab/opa/policy_test.rego, full_stack_lab/runtime/worker.py, full_stack_lab/supply_chain/intake_worker.py, full_stack_lab/tests/fresh_requester_check.py, research/llm-wiki/status/reports/2026-10-20-poisoning-corpus.md. 파일 변경 시 생성기는 과거 심볼 행/해시를 갱신하지 않고 낡은 검토로 표시한다.
+참조 파일과 검토 스냅샷 대조: 불일치 — 재검토 필요: endpoint-agent/managed-windows.py, full_stack_lab/gateway/app/agent_service.py, full_stack_lab/gateway/app/classify.py, full_stack_lab/gateway/app/core.py, full_stack_lab/gateway/app/dispatch.py, full_stack_lab/gateway/app/endpoint_plane.py, full_stack_lab/gateway/app/mcp_facade.py, full_stack_lab/gateway/app/review.py, full_stack_lab/gateway/app/upstream.py, full_stack_lab/opa/policy_test.rego, full_stack_lab/runtime/worker.py, full_stack_lab/supply_chain/intake_worker.py, full_stack_lab/tests/dest_pin_credential_redaction_check.py, full_stack_lab/tests/fresh_requester_check.py, research/llm-wiki/status/reports/2026-10-20-poisoning-corpus.md. 파일 변경 시 생성기는 과거 심볼 행/해시를 갱신하지 않고 낡은 검토로 표시한다.
 
 ## 24개 정책별 대조
 
