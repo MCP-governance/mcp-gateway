@@ -43,7 +43,11 @@
 
 지정 Python 3.12의 최종 전체 회귀는 **89 통과·2 실패·18 외부 의존 생략(109파일)**이다. 지시 기준 89·1·18보다 실패가 1 증가했다. 실패 파일은 기존 `threat_trace_mapping_check.py`와 이번 문법 수정에 따른 `header_broker_label_check.py`뿐이다. 새 시험은 4/4, 기존 헤더 시험은 19/20, pyflakes는 종료 0이다. 기존 시험 파일·기대값·단언은 변경하지 않았다.
 
-`map_threats.py`는 24개 정책을 재생성했고 stale 검토 파일은 20개다. 이어 실행한 `check_wiki.py --ci-ignored-local-sources`는 종료 0·오류 0이었다. 위협 검토 동결 hash를 고쳐 통과시키지 않았다. Gemini 독립 검토 결과와 브랜치 push 여부는 아래 후속 기록에 남긴다.
+`map_threats.py`는 24개 정책을 재생성했고 stale 검토 파일은 20개다. 이어 실행한 `check_wiki.py --ci-ignored-local-sources`는 종료 0·오류 0·경고 119였다. 위협 검토 동결 hash를 고쳐 통과시키지 않았다.
+
+코드·시험·원시 증거는 `d6b5368`로 브랜치에 커밋·push했다. 커밋 사용자 설정이 없어 첫 시도는 실패했으며, 재시도는 명령 한 번의 자동화 신원(`Codex sol (autopilot)`, localhost 이메일)으로 수행했다. 전역 Git 설정·사용자 계정·자격은 변경하지 않았다. main은 시작 기준 그대로이며 병합·배포 없음.
+
+Gemini 독립 적대 검토는 Agent Hub 작업 `3b6a132c5605`로 요청했다(설정된 요청 모델 `gemini-3.8-flash-medium`, 응답 모델 미보고). 22:32:25 KST에 종료 1·`needs_attention`: 헤드리스 모드에서 필요한 `command` 권한을 자동 거부해 **검토 본문과 A/B/C 판정이 생성되지 않았다**. 이는 검토 통과도 코드 반려 판정도 아니다. 권한을 바꾸거나 직접 agy를 재시도하지 않았다. [검토 실행 기록](../../analysis/dev81-direct-helper/review-status.json)에 diff·프롬프트·결과 경로를 남겼다. 기존 단언 충돌·실패 증가와 독립 검토 미완료 때문에 병합 금지는 유지한다.
 
 ## 사용자에게 필요한 입력
 

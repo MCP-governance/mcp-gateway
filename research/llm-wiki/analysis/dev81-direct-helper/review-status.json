@@ -1,0 +1,21 @@
+{
+  "job": "3b6a132c5605",
+  "reviewed_commit": "d6b5368be8ddf054a46c117ec2ee637ba534a376",
+  "base_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+  "branch": "10/21-dev81-direct-helper",
+  "comparison": "git diff origin/main...10/21-dev81-direct-helper",
+  "requested_model": "gemini-3.8-flash-medium",
+  "response_model": null,
+  "completed_at": "2026-10-21T22:32:25+09:00",
+  "exit_code": 1,
+  "state": "needs_attention",
+  "verdict": null,
+  "findings": null,
+  "reason": "Headless command permission auto-denied; no review output produced",
+  "diff": "C:/Users/bobysg/bob/프로젝트/loop/agent-hub/runtime/dev81-direct-helper-review.diff",
+  "prompt": "C:/Users/bobysg/bob/프로젝트/loop/agent-hub/runtime/dev81-direct-helper-review.md",
+  "result": "C:/Users/bobysg/bob/프로젝트/loop/agent-hub/runtime/results/3b6a132c5605-44de3724.md",
+  "permission_changes": false,
+  "direct_retry": false,
+  "merged": false
+}
