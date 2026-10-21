@@ -350,6 +350,29 @@ async def resume_use(suspension_id: int, request: OpsResume, user: dict = Depend
         raise HTTPException(409, str(exc)) from exc
 
 
+class UserSuspendAllRequest(StrictModel):
+    user_token: str = Field(min_length=1, max_length=200)
+    reason: str = Field(min_length=4, max_length=500)
+
+
+class UserResumeAllRequest(StrictModel):
+    user_token: str = Field(min_length=1, max_length=200)
+    note: str = Field(min_length=4, max_length=500)
+
+
+@app.post("/api/user-suspensions/stop-all")
+async def suspend_all_use(request: UserSuspendAllRequest, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await user_suspend.suspend_all(request.user_token, user["principal"], request.reason)
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@app.post("/api/user-suspensions/resume-all")
+async def resume_all_use(request: UserResumeAllRequest, user: dict = Depends(admin_caller)) -> dict:
+    return await user_suspend.resume_all(request.user_token, user["principal"], request.note)
+
+
 async def _absent() -> None:
     """이 배치에 없는 구성요소. False(장애)가 아니라 None(대상 아님)으로 구분한다."""
     return None

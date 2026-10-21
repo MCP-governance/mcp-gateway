@@ -208,6 +208,7 @@ const REVIEW_KIND = {
   "server-register": "게이트웨이 등록", "tool-scope-review": "범위 심사", "residency-review": "위치 심사", "intake-cosign": "1차 승인", "risk-input": "영향평가 입력",
   "intake-one-click": "도입 승인",
   "runtime-start": "실행 요청", "runtime-stop": "실행 중지 요청", "runtime-built": "이미지 빌드", "runtime-active": "실행 시작",
+  "runtime-rollback": "실행 판본 되돌리기", "runtime-rollback-queued": "실행 판본 전환", "runtime-rollback-refused": "실행 판본 전환 거부",
   "runtime-failed": "실행 실패", "runtime-stopped": "실행 중지",
 };
 const RUNTIME_STATUS = {
@@ -1442,6 +1443,8 @@ ROUTES.people = async (_, tab) => {
             <td class="num">${a.user_id === viewer.user_id ? html`<span class="small muted">본인</span>`
               : html`<button class="btn sm" data-act="account-status" data-id="${a.user_id}" data-name="${a.display_name}" data-status="${a.status}">상태 변경</button>
                 <button class="btn sm" data-act="suspend-open" data-token="${a.token}" data-name="${a.display_name}">MCP 이용 중지</button>
+                <button class="btn sm" data-act="suspend-all" data-token="${a.token}" data-name="${a.display_name}">전체 중지</button>
+                <button class="btn sm" data-act="resume-all" data-token="${a.token}" data-name="${a.display_name}">전체 재개</button>
                 ${a.user_id !== "root" ? html`<button class="btn sm danger" data-act="account-delete" data-id="${a.user_id}" data-name="${a.display_name}">삭제</button>` : ""}`}</td></tr>`)}
           </tbody></table><p class="empty" data-list-empty="account-list" hidden>검색 결과 없음</p>`, { flush: true, tools: listToolbar("account-list", "이름·이메일·부서 검색") }) },
         { key: "devices", label: "엔드포인트", n: inv.agents.length, body: html`<div class="stack">
@@ -1803,6 +1806,7 @@ function intakeProvenanceView(p) {
     ["배포 파일 해시", hosted ? "해당 없음" : a.sha256 ? html`<code>${a.sha256}</code>` : NONE],
     ["파일", !hosted && a.files != null ? `${a.files}개 · ${a.bytes}바이트` : ""],
     ["사본 대조", hosted ? "해당 없음" : v ? html`${verdictChip(v.match === true, "일치", "불일치")}<span class="sub">${when(v.at)} · ${v.by}</span>` : verdictChip(false)],
+    ["서명·빌드 증명", hosted ? "해당 없음" : v?.provenance_status || "확인 안 됨"],
   ]);
 }
 const outcomeChip = (o) => chip(...(REVIEW_OUTCOME[o] || ["", o]));
@@ -1897,12 +1901,15 @@ async function showIntakeReport(id) {
       ${panel("원본 보고서", report.artifacts.length ? html`<div class="row-actions">${report.artifacts.map((a) => html`
         <button class="btn sm" data-act="intake-download" data-id="${id}" data-kind="${a.kind}" data-name="${a.filename}">${a.kind} JSON</button>`)}</div>` : empty("생성된 보고서 없음"))}
     </div>` },
-    { key: "runtime", label: "실행", n: (report.runtimes || []).length, body: (report.runtimes || []).length ? html`<table class="data">
+    { key: "runtime", label: "실행", n: (report.runtimes || []).length, body: html`${(report.runtimes || []).length ? html`<table class="data">
       <thead><tr><th>세대</th><th>상태</th><th>이미지</th><th>주소</th><th>시각</th></tr></thead><tbody>
       ${report.runtimes.map((rt) => html`<tr><td>${rt.generation}</td>
         <td>${chip(...(RUNTIME_STATUS[rt.status] || ["", rt.status]))}${rt.error ? html`<span class="sub">${short(rt.error, 120)}</span>` : ""}</td>
         <td class="mono small">${rt.image_id ? rt.image_id.slice(7, 19) : "—"}<span class="sub">${rt.source_commit.slice(0, 12)} · ${rt.recipe_id}</span></td>
-        <td class="mono small">${rt.endpoint || "—"}</td><td class="small">${when(rt.updated_at)}</td></tr>`)}</tbody></table>` : empty("실행 기록 없음") },
+        <td class="mono small">${rt.endpoint || "—"}</td><td class="small">${when(rt.updated_at)}</td></tr>`)}</tbody></table>` : empty("실행 기록 없음")}
+      ${(report.rollback_options || []).length ? panel("되돌릴 수 있는 판본", html`<table class="data"><thead><tr><th>세대</th><th>승인 시각</th><th>승인자</th><th>계약 해시</th><th></th></tr></thead><tbody>
+        ${report.rollback_options.map((item) => html`<tr><td>${item.generation}</td><td>${when(item.approved_at)}</td><td>${item.approved_by || "—"}</td>
+          <td class="mono small">${item.contract_sha256}</td><td><button class="btn sm" data-act="runtime-rollback" data-id="${id}" data-generation="${item.generation}">되돌리기</button></td></tr>`)}</tbody></table>`) : ""}` },
     { key: "findings", label: "취약점·코드 검사", n: findings.length, body: html`
       ${report.reports.some((s) => s.summary?.truncated && s.scanner !== "Syft") ? html`<p class="small muted">검사기별 최대 200건</p>` : ""}
       ${findings.length ? html`<table class="data"><thead><tr><th>검사기·등급</th><th>발견</th><th>대상</th><th>설치 → 수정 버전</th></tr></thead>
@@ -2535,6 +2542,23 @@ const ACTIONS = {
     await gw(`suspensions/${encodeURIComponent(el.dataset.id)}/resume`, { method: "POST", body: { note: fd.get("note").trim() } });
     toast("이용을 재개했습니다."); reload();
   },
+  async "suspend-all"(el) {
+    const fd = await ask({ title: `${el.dataset.name} · 전체 MCP 이용 중지`,
+      fields: field.text("reason", "사유", 'required minlength="4" maxlength="500"', "관리자 수동 중지"),
+      confirm: "전체 중지", danger: true });
+    if (!fd) return;
+    const r = await gw("user-suspensions/stop-all", { method: "POST", body: { user_token: el.dataset.token, reason: fd.get("reason").trim() } });
+    toast(`중지 ${r.suspended.length}건 · 건너뜀 ${r.skipped.length}건 · 실패 ${r.failed.length}건`, r.failed.length > 0);
+    reload();
+  },
+  async "resume-all"(el) {
+    const fd = await ask({ title: `${el.dataset.name} · 전체 MCP 이용 재개`,
+      fields: field.text("note", "메모", 'required minlength="4" maxlength="500"', "중지 해소"), confirm: "전체 재개" });
+    if (!fd) return;
+    const r = await gw("user-suspensions/resume-all", { method: "POST", body: { user_token: el.dataset.token, note: fd.get("note").trim() } });
+    toast(`재개 ${r.resumed.length}건 · 건너뜀 ${r.skipped.length}건 · 실패 ${r.failed.length}건`, r.failed.length > 0);
+    reload();
+  },
   async "account-delete"(el) {
     const fd = await ask({ title: `${el.dataset.name} 계정 삭제`,
       body: "로그인과 사내 저장소 접근이 즉시 차단됩니다.", confirm: "계정 삭제", danger: true });
@@ -2621,6 +2645,15 @@ const ACTIONS = {
     const fd = await ask({ title: "실행 중지", body: "게이트웨이 호출이 이 실행에 닿지 않게 됩니다.", confirm: "중지", danger: true });
     if (!fd) return;
     const r = await api(`/api/mcp-requests/${el.dataset.id}/runtime/stop`, { method: "POST" });
+    toast(r.message); reload();
+  },
+  async "runtime-rollback"(el) {
+    const fd = await ask({ title: `실행 판본 되돌리기 · ${el.dataset.generation}`,
+      fields: field.text("note", "사유", 'required maxlength="300"'), confirm: "되돌리기", danger: true });
+    if (!fd) return;
+    const r = await api(`/api/mcp-requests/${el.dataset.id}/runtime/rollback`, {
+      method: "POST", body: { generation: Number(el.dataset.generation), note: fd.get("note") },
+    });
     toast(r.message); reload();
   },
   async "intake-download"(el) {

@@ -33,6 +33,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 import provenance
+import artifact_provenance
 import image_scan
 import server_egress
 
@@ -191,14 +192,58 @@ def remove_runtime_resources(runtime: dict, context: dict | None) -> int:
 
 def event(connection, runtime: dict, kind: str, outcome: str = "recorded", reason: str | None = None,
           scope: dict | None = None) -> None:
+    scope = {"runtime": str(runtime["id"]), "generation": runtime["generation"], **(scope or {})}
+    if kind == "runtime-active":
+        scope["contract"] = (runtime.get("rollback_contract") if runtime.get("rollback_target_generation")
+                             else approved_contract(connection, runtime["intake_id"]))
     connection.execute(
         """INSERT INTO approval_events(kind,outcome,target_kind,target_id,actor,reason,scope)
            VALUES (%s,%s,'intake',%s,%s,%s,%s)""",
-        (kind, outcome, str(runtime["intake_id"]), WORKER_ID, reason,
-         Jsonb({"runtime": str(runtime["id"]), "generation": runtime["generation"], **(scope or {})})))
+        (kind, outcome, str(runtime["intake_id"]), WORKER_ID, reason, Jsonb(scope)))
 
 
-def advance(connection, runtime: dict, expected: str, status: str, **fields) -> dict:
+def approved_contract(connection, intake_id) -> dict:
+    server = connection.execute("SELECT registered_server_id FROM mcp_intake_requests WHERE id=%s",
+                                (intake_id,)).fetchone()
+    server_id = (server or {}).get("registered_server_id")
+    if not server_id:
+        raise Refused("계약 승인을 확인할 등록 서버가 없습니다.")
+    rows = connection.execute(
+        """SELECT name, approved_description_hash, approved_schema_hash, approved_output_schema_hash,
+                  approved_server_version FROM mcp_tools WHERE server_id=%s ORDER BY name""", (server_id,)).fetchall()
+    if not rows:
+        raise Refused("승인된 도구 계약이 없습니다.")
+    tools = {row["name"]: {key: row[key] for key in (
+        "approved_description_hash", "approved_schema_hash", "approved_output_schema_hash", "approved_server_version")}
+        for row in rows}
+    encoded = json.dumps(tools, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    approval = connection.execute(
+        """SELECT actor, created_at FROM approval_events WHERE target_kind='server' AND target_id=%s
+             AND kind IN ('contract-reapprove','server-register') ORDER BY id DESC LIMIT 1""", (server_id,)).fetchone()
+    return {"server_id": server_id, "tools": tools, "sha256": hashlib.sha256(encoded).hexdigest(),
+            "approved_by": (approval or {}).get("actor"), "approved_at": (approval or {}).get("created_at")}
+
+
+def restore_contract(connection, snapshot: dict) -> bool:
+    tools = snapshot.get("tools") or {}
+    encoded = json.dumps(tools, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    if not snapshot.get("server_id") or hashlib.sha256(encoded).hexdigest() != snapshot.get("sha256"):
+        return False
+    current = {row["name"] for row in connection.execute(
+        "SELECT name FROM mcp_tools WHERE server_id=%s", (snapshot["server_id"],)).fetchall()}
+    if current != set(tools):
+        return False
+    for name, contract in tools.items():
+        connection.execute(
+            """UPDATE mcp_tools SET approved_description_hash=%s,approved_schema_hash=%s,
+                      approved_output_schema_hash=%s,approved_server_version=%s WHERE server_id=%s AND name=%s""",
+            (contract["approved_description_hash"], contract["approved_schema_hash"],
+             contract["approved_output_schema_hash"], contract["approved_server_version"],
+             snapshot["server_id"], name))
+    return True
+
+
+def advance(connection, runtime: dict, expected: str, status: str, *, commit: bool = True, **fields) -> dict:
     """Moves a claimed job on, only while this worker still holds the same attempt in the same state."""
     columns = "".join(f", {key}=%s" for key in fields)
     values = [Jsonb(v) if isinstance(v, dict) else v for v in fields.values()]
@@ -207,7 +252,8 @@ def advance(connection, runtime: dict, expected: str, status: str, **fields) -> 
                    lease_expires_at=now() + make_interval(secs => %s){columns}
             WHERE id=%s AND lease_owner=%s AND attempts=%s AND status=%s RETURNING *""",
         (status, LEASE_SECONDS, *values, runtime["id"], WORKER_ID, runtime["attempts"], expected)).fetchone()
-    connection.commit()
+    if commit:
+        connection.commit()
     if not row:
         raise Fenced(str(runtime["id"]))
     return row
@@ -264,13 +310,34 @@ def heartbeat(connection) -> None:
 def approval_problem(connection, runtime: dict, recipes: dict, *, recipe_fixed: bool = True) -> str | None:
     """Why this approval may no longer run, re-read from the database every time it matters."""
     row = connection.execute(
-        """SELECT r.status, r.intake_kind, r.commit_sha, r.repository_url, s.lifecycle, s.status AS server_status
+        """SELECT r.status, r.intake_kind, r.commit_sha, r.repository_url, s.lifecycle, s.status AS server_status,
+                  s.id AS server_id,
+                  EXISTS (SELECT 1 FROM ops_suspensions x WHERE x.server_id=s.id AND x.resumed_at IS NULL) AS suspended,
+                  EXISTS (SELECT 1 FROM usage_relationships u WHERE u.server_id=s.id
+                          AND u.status IN ('TERMINATING','TERMINATED')) AS relationship_ended
            FROM mcp_intake_requests r LEFT JOIN mcp_servers s ON s.id = r.registered_server_id
            WHERE r.id=%s""", (runtime["intake_id"],)).fetchone()
     if not row or row["status"] != "APPROVED" or row["intake_kind"] != "repository":
         return "도입 승인이 유효하지 않습니다."
-    if row["commit_sha"] != runtime["source_commit"]:
+    if not runtime.get("rollback_target_generation") and row["commit_sha"] != runtime["source_commit"]:
         return "승인한 커밋이 바뀌었습니다."
+    if runtime.get("rollback_target_generation"):
+        target = connection.execute(
+            """SELECT r.image_id,r.source_commit,r.recipe_id,r.recipe_sha256,r.status,
+                      (SELECT e.scope->'contract' FROM approval_events e WHERE e.kind='runtime-active'
+                         AND e.target_kind='intake' AND e.target_id=%s
+                         AND (e.scope->>'generation')::integer=r.generation
+                         AND e.scope->'contract' IS NOT NULL ORDER BY e.id DESC LIMIT 1) AS contract
+                 FROM mcp_runtimes r WHERE r.intake_id=%s AND r.generation=%s""",
+            (str(runtime["intake_id"]), runtime["intake_id"], runtime["rollback_target_generation"])).fetchone()
+        if (not target or target.get("status") != "STOPPED" or not target.get("image_id")
+                or target["image_id"] != runtime.get("image_id")
+                or target["source_commit"] != runtime.get("source_commit")
+                or target["recipe_id"] != runtime.get("recipe_id")
+                or target["recipe_sha256"] != runtime.get("recipe_sha256")
+                or (target.get("contract") or {}).get("sha256")
+                != (runtime.get("rollback_contract") or {}).get("sha256")):
+            return "되돌릴 승인 판본의 이미지 증거가 없습니다."
     recipe = recipes.get(row["repository_url"])
     if recipe_fixed and (not recipe or recipe["sha256"] != runtime["recipe_sha256"] or recipe["id"] != runtime["recipe_id"]):
         # A running image was built from the recipe it recorded; only a build in progress must match.
@@ -279,6 +346,18 @@ def approval_problem(connection, runtime: dict, recipes: dict, *, recipe_fixed: 
         return "종료 절차가 시작된 이용 관계입니다."
     if row["server_status"] == "DISABLED":
         return "게이트웨이 등록이 해제된 신청입니다."
+    if row["server_status"] == "BLOCKED_SUPPLY_CHAIN":
+        return "공급망 중지 대상 서버입니다."
+    if row.get("suspended") or row.get("relationship_ended"):
+        return "중지 또는 종료된 서버입니다."
+    if runtime.get("rollback_target_generation"):
+        revoked = connection.execute(
+            """SELECT 1 FROM approval_events WHERE target_kind='intake' AND target_id=%s
+                 AND kind IN ('runtime-revoked','runtime-terminated','runtime-supply-chain-stop')
+                 AND (scope->>'generation')=%s LIMIT 1""",
+            (str(runtime["intake_id"]), str(runtime["rollback_target_generation"]))).fetchone()
+        if revoked:
+            return "철회·종료·공급망 중지된 판본입니다."
     return None
 
 
@@ -312,7 +391,8 @@ def fetch_source(connection, runtime: dict, folder: Path) -> dict:
         shutil.copyfileobj(response, out)
     with archive.open("rb") as handle:
         digest = provenance.archive_digest(handle)
-    recorded = ((row["provenance"] or {}).get("artifact") or {}).get("sha256")
+    provenance_record = row["provenance"] or {}
+    recorded = (provenance_record.get("artifact") or {}).get("sha256")
     if digest["sha256"] != recorded:
         raise Refused(f"내부 사본이 검증한 소스와 다릅니다 ({str(recorded)[:12]} / {digest['sha256'][:12]}).")
     context = folder / "context"
@@ -324,7 +404,32 @@ def fetch_source(connection, runtime: dict, folder: Path) -> dict:
                 continue
             member.name = "/".join(parts)
             tar.extract(member, context, filter="data")
-    return {"source_archive_sha256": digest["sha256"], "files": digest["files"], "top": top}
+    proof = (provenance_record.get("verification") or {}).get("attestation")
+    return {"source_archive_sha256": digest["sha256"], "files": digest["files"], "top": top,
+            "source_attestation": proof,
+            "source_verification_error": (provenance_record.get("verification") or {}).get("error")}
+
+
+def verify_source_provenance(evidence: dict, *, trust_file: str | None = None) -> dict:
+    if evidence.get("source_verification_error"):
+        raise Refused(f"{artifact_provenance.POLICY_ID}: 출처 증명 검증 불가 — 검증 경로가 실패했습니다.")
+    if not evidence.get("source_attestation"):
+        result = artifact_provenance.verify_source_attestation(
+            {}, evidence["source_archive_sha256"], {})
+        return {"status": result["status"], "reason": result["reason"],
+                "sha256": evidence["source_archive_sha256"]}
+    try:
+        keys = artifact_provenance.trust_keys(trust_file if trust_file is not None else
+                                              os.getenv("MCP_PROVENANCE_TRUST_KEYS_FILE", ""))
+    except (OSError, ValueError, TypeError) as exc:
+        raise Refused(f"출처 증명 검증 불가: 신뢰 키 설정 오류 ({type(exc).__name__}).") from exc
+    record = {"verification": {"attestation": evidence.get("source_attestation")}}
+    result = artifact_provenance.verify_source_attestation(
+        record, evidence["source_archive_sha256"], keys)
+    if reason := artifact_provenance.blocking_reason(result):
+        raise Refused(reason)
+    return {"status": result["status"], "reason": result["reason"],
+            "keyid": result.get("keyid"), "sha256": evidence["source_archive_sha256"]}
 
 
 def build(recipe: dict, runtime: dict, context: Path, folder: Path) -> dict:
@@ -459,8 +564,19 @@ def run_job(connection, runtime: dict, recipes: dict, context: dict) -> None:
     try:
         if problem := approval_problem(connection, runtime, recipes):
             raise Refused(problem)
-        source = fetch_source(connection, runtime, folder)
-        built = build(recipe, runtime, folder / "context", folder)
+        if runtime.get("rollback_target_generation"):
+            target = connection.execute(
+                "SELECT image_id,evidence FROM mcp_runtimes WHERE intake_id=%s AND generation=%s",
+                (runtime["intake_id"], runtime["rollback_target_generation"])).fetchone()
+            image = inspect("image", runtime.get("image_id")) if runtime.get("image_id") else None
+            if not target or not image:
+                raise Refused("이전에 승인한 실행 이미지를 찾을 수 없습니다.")
+            source = {}
+            built = {"image_id": runtime["image_id"], **(target.get("evidence") or {})}
+        else:
+            source = fetch_source(connection, runtime, folder)
+            source["provenance_verification"] = verify_source_provenance(source)
+            built = build(recipe, runtime, folder / "context", folder)
         evidence = {**source, **built}
         runtime = advance(connection, runtime, "BUILDING", "STARTING", source_archive_sha256=source["source_archive_sha256"],
                           image_id=built["image_id"], evidence=evidence)
@@ -474,7 +590,7 @@ def run_job(connection, runtime: dict, recipes: dict, context: dict) -> None:
         found = answers(endpoint(recipe, runtime), time.time() + 90)
         if problem := approval_problem(connection, runtime, recipes):
             raise Refused(problem)
-        runtime = advance(connection, runtime, "VERIFYING", "ACTIVE", endpoint=endpoint(recipe, runtime),
+        runtime = advance(connection, runtime, "VERIFYING", "ACTIVE", commit=False, endpoint=endpoint(recipe, runtime),
                           evidence={**evidence, "answered": found, "container": names(runtime)["container"]})
         event(connection, runtime, "runtime-active", scope={"endpoint": runtime["endpoint"], "image_id": runtime["image_id"], **found})
         connection.commit()
@@ -506,6 +622,11 @@ def reconcile(connection, recipes: dict, context: dict) -> None:
     for runtime in rows:
         if runtime["status"] == "ACTIVE":
             reason = approval_problem(connection, runtime, recipes, recipe_fixed=False)
+            if not reason:
+                try:
+                    verify_source_provenance(runtime.get("evidence") or {})
+                except (Refused, OSError, ValueError, KeyError) as exc:
+                    reason = str(exc)[:500]
             n = names(runtime)
             current = inspect("container", n["container"])
             if not reason and (not current or current["Image"] != runtime["image_id"]):
@@ -534,10 +655,59 @@ def reconcile(connection, recipes: dict, context: dict) -> None:
             continue
         done = connection.execute(
             """UPDATE mcp_runtimes SET status='STOPPED', updated_at=now(), lease_owner=NULL, lease_expires_at=NULL,
-                      evidence = evidence || %s WHERE id=%s AND status='STOPPING' RETURNING id""",
+                      evidence = evidence || %s WHERE id=%s AND status='STOPPING' RETURNING *""",
             (Jsonb({"stopped_left_behind": left}), runtime["id"])).fetchone()
         if done:
             event(connection, runtime, "runtime-stopped", reason=runtime.get("error"), scope={"left": left})
+            if done.get("rollback_target_generation"):
+                target = connection.execute(
+                    """SELECT * FROM mcp_runtimes WHERE intake_id=%s AND generation=%s""",
+                    (runtime["intake_id"], done["rollback_target_generation"])).fetchone()
+                revoked = connection.execute(
+                    """SELECT 1 FROM approval_events WHERE target_kind='intake' AND target_id=%s
+                         AND kind IN ('runtime-revoked','runtime-terminated','runtime-supply-chain-stop')
+                         AND (scope->>'generation')=%s LIMIT 1""",
+                    (str(runtime["intake_id"]), str(done["rollback_target_generation"]))).fetchone()
+                approved = connection.execute(
+                    """SELECT scope->'contract' AS contract FROM approval_events WHERE kind='runtime-active'
+                         AND target_kind='intake' AND target_id=%s AND (scope->>'generation')=%s
+                       ORDER BY id DESC LIMIT 1""",
+                    (str(runtime["intake_id"]), str(done["rollback_target_generation"]))).fetchone()
+                snapshot = done.get("rollback_contract") or {}
+                server = connection.execute(
+                    """SELECT s.id,s.status,s.lifecycle,
+                              EXISTS (SELECT 1 FROM ops_suspensions x WHERE x.server_id=s.id AND x.resumed_at IS NULL) AS suspended,
+                              EXISTS (SELECT 1 FROM usage_relationships u WHERE u.server_id=s.id
+                                      AND u.status IN ('TERMINATING','TERMINATED')) AS relationship_ended
+                         FROM mcp_intake_requests i
+                         JOIN mcp_servers s ON s.id=i.registered_server_id WHERE i.id=%s""",
+                    (runtime["intake_id"],)).fetchone()
+                if (not target or not target.get("image_id") or not snapshot.get("tools") or revoked
+                        or not approved or (approved.get("contract") or {}).get("sha256") != snapshot.get("sha256")
+                        or not server
+                        or server["status"] in ("DISABLED", "BLOCKED_SUPPLY_CHAIN")
+                        or server.get("lifecycle") in ("TERMINATING", "TERMINATED", "RETIRED")
+                        or server.get("suspended") or server.get("relationship_ended")):
+                    event(connection, runtime, "runtime-rollback-refused", "refused",
+                          reason="승인 판본의 유효성 또는 계약 구성이 달라졌습니다.")
+                    connection.commit()
+                    continue
+                if not restore_contract(connection, snapshot):
+                    event(connection, runtime, "runtime-rollback-refused", "refused",
+                          reason="승인 계약 이력의 해시 또는 도구 구성이 다릅니다.")
+                    connection.commit()
+                    continue
+                queued = connection.execute(
+                    """INSERT INTO mcp_runtimes(id,intake_id,generation,recipe_id,recipe_sha256,source_commit,
+                                  status,requested_by,image_id,rollback_target_generation,rollback_contract)
+                         SELECT %s,%s,COALESCE(MAX(generation),0)+1,%s,%s,%s,'QUEUED',%s,%s,%s,%s
+                           FROM mcp_runtimes WHERE intake_id=%s RETURNING id,generation""",
+                    (uuid.uuid4(), runtime["intake_id"], target["recipe_id"], target["recipe_sha256"],
+                     target["source_commit"], runtime["requested_by"], target["image_id"],
+                     target["generation"], Jsonb(snapshot), runtime["intake_id"])).fetchone()
+                event(connection, {**runtime, "generation": queued["generation"]}, "runtime-rollback-queued",
+                      scope={"from_generation": runtime["generation"], "to_generation": target["generation"],
+                             "contract_sha256": snapshot["sha256"]})
         connection.commit()
         log(f"stopped {runtime['id']} left={left}")
 

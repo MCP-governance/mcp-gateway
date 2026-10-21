@@ -1863,3 +1863,20 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 재사용: D-122의 `ops_suspensions` 구조(복귀 필드를 채우는 상태 행)·`review.record_event`·D-140 최종 dispatch 잠금 순서. 서버 단위 중지(D-122)·계정 상태·종료 절차는 독립이며 서로 되돌리지 않는다. 콘솔은 사용자·엔드포인트 화면의 사용자 행(MCP 이용 중지)과 「이용 중지」 탭(재개)이다.
 - 근거: [방향 갱신 10-20](../../research/llm-wiki/analysis/direction-1020/README.md) 3장 DEV-79, [통제 검토](../../research/llm-wiki/analysis/direction-1020/control-review.md) 105행(근거 M05 **제2항**·TC260 4.2.3(b)-(c), README의 제3항은 정정), [원자 요구사항·근거](../../research/llm-wiki/analysis/user-server-suspend/README.md).
 - 한계: 이미 전송된 호출은 취소하지 않는다(기록만). `tools/list`는 그대로 보이고 호출만 거부한다. 재개에 독립 승인은 요구하지 않는다(관리자 1명 운영). DEV-74 자동 중지가 같은 상태를 쓰는 확장은 하지 않았다. 기기 배포·PJ1 실제 하네스 시험은 미실행이다.
+## D-179 출처 증명은 신뢰 키로 검증하고 미제공만 통과시킨다 (2026-10-21, DEV-77)
+
+- 문제: DEV-73 F3에서 이미지 서명·출처 증명은 DEV-77로 분리했다. 기존 소스 해시·라이선스·SBOM 분석은 누가 무엇을 빌드했는지 서명으로 증명하지 않으며, D-114 실행기는 내부 미러 commit·고정 레시피를 별도로 보장한다.
+- 결정: 승인 때 저장된 in-toto Statement v1 / SLSA Provenance v1 DSSE envelope를 확인한다. 서명은 설정 파일의 Ed25519 키와 허용 builder ID로 검증하고 subject SHA-256은 intake의 기록된 artifact digest와 대조한다. 불일치 또는 검증 불가면 `MCP-SUPPLY-001`로 보류하고, 증명이 없으면 `확인 안 됨`을 저장·표시한 채 진행한다. 처음 관찰한 키는 신뢰하지 않는다. 승인된 envelope와 digest를 실행기 evidence에 보존하고 시작·재조정에서 같은 digest와 현재 신뢰 설정으로 재검증한다. 도입 후 현재 이미지 ID는 D-114 실행기가 기록한 이미지 ID와 계속 대조한다.
+- 적용: `registry/provenance-trust-keys.json`은 공개 키 ID별 PEM과 허용 builder URI를 보유한다. `agent-service`와 `runtime-worker`만 읽기 전용으로 받는다. 새 의존성은 추가하지 않고 고정 `cryptography==50.0.1`을 사용한다. Console은 상태 라벨·값만 표시한다.
+- 분담: DEV-73은 내부 미러 allowlist·digest 고정·사전 반입을 수행하고, OCI 이미지 서명·증명 검증은 DEV-77 책임이다. DEV-73 코드 파일은 이 변경에서 수정하지 않았다. D-137 공급자 보증 값은 운영자 제출 보증으로 그대로 유지하며 암호학 증명과 합치지 않는다.
+- 한계: 현재 코드는 사전 저장된 Ed25519 DSSE envelope만 검증하며 Cosign OCI referrer 자동 조회, Sigstore bundle/keyless/Rekor, RSA/ECDSA, 실제 OCI manifest digest 및 공급자 서명 자동 수집은 미구현이다. 실제 배포·기기·PJ1 시험은 하지 않았다. TC260 6.2.2는 방향 원문 인용을 근거로 삼았고 이 작업에서는 표준 원문 사본을 재검증하지 않았다.
+- 근거: [DEV-77 분석과 규격·도구 범위](../../research/llm-wiki/analysis/provenance-verify/README.md), [DEV-73 F3 분담](../../research/llm-wiki/analysis/review-1020/d175-arbitration.md), [작업 보고](../../research/llm-wiki/status/reports/2026-10-21-provenance-verify.md).
+- 일괄 (2026-10-21): 한 직원의 운영 중 서버 전체를 `POST /api/user-suspensions/stop-all`·`resume-all`로 한 번에 중지·재개한다. 조합마다 기존 단일 조작을 따로 호출해 조합별 행·기록이 남고(같은 일괄 조작은 원장 `scope.batch`로 잇는다), 성공·건너뜀·실패를 나눠 돌려준다. 새 판정·정책 ID 없음.
+
+## D-180 실행기 이전 승인 판본으로 되돌릴 때 세대·계약을 함께 전환한다 (2026-10-21, DEV-78)
+
+- 문제: D-114 실행기는 승인된 커밋을 실행·재조정하지만, 새 실행에 문제가 생겼을 때 과거 승인 이미지와 D-149 계약을 같은 전환에서 복구하는 경로가 없다.
+- 결정: `runtime-active` 승인 이벤트에 당시 사람 승인 계약의 서버·도구별 설명/입력/출력 해시·서버 판본, 계약 SHA-256, 승인자·시각을 append-only로 보존한다. 관리자는 그 이력이 있는 과거 세대만 고른다. `registry/contracts.lock.json`은 설치/기준 잠금이고 서버별 변경 이력은 아니므로 되돌리기의 이력 원본으로 사용하지 않는다. 출력 해시 NULL도 미고정 상태로 재해석하지 않고 당시 값 그대로 저장한다.
+- 전환: API는 관리자 권한·한 줄 사유·현재 운영 상태·대상 이력/철회 상태를 확인하고 현재 ACTIVE 세대를 STOPPING으로 바꾸며 요청 사건을 같은 DB 트랜잭션에서 append한다. worker는 기존 컨테이너·망을 제거한 뒤, 하나의 DB 트랜잭션에서 철회·종료·공급망 중지와 계약 해시를 재검사하고 승인 해시를 과거 스냅샷으로 되돌린 다음 과거 이미지의 새 세대를 QUEUED로 만든다. 기존 부분 유일 색인이 동시 ACTIVE를 막고 기존 전송 직전 D-149 계약 재확인이 호출을 판정한다. 되돌리기 실행 이벤트는 이력 세대의 계약 스냅샷을 그대로 이어받는다.
+- 근거: [DEV-78 설계·검증 기록](../../research/llm-wiki/analysis/runtime-rollback/README.md), D-114 실행기 보고, D-144의 같은 상태/원장 트랜잭션·append-only 규칙, D-149 판본별 출력 해시, D-154의 실패 순서 구분.
+- 한계: 새 스냅샷 기록 전의 과거 세대는 증거를 추정하지 않으므로 선택할 수 없다. 이전 이미지가 로컬 엔진에 남아 있어야 하며 레시피 판본이 현재 고정 설정과 다르면 실행을 거부한다. PostgreSQL 다중 작업자 경합·실제 이미지 재기동·MCP 호출 판정·실기기/PJ1은 별도 검증 전까지 미실행이다.

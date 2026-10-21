@@ -36,3 +36,15 @@
 - **기존 시험 기대값 변경 대상**: `test_approval_method_per_tier`, `test_impact_package_maps_the_stated_input_to_assessment_items`, `test_high_tier_one_administrator_with_a_written_reason_completes_it`, `test_very_high_tier_needs_the_reason_and_a_second_administrator`. 이 변경은 **Codex luna 적대 검증을 통과한 뒤에만** 병합한다.
 - `risk_tier_gate`·`approve_and_register`·`core.register_server`의 규칙이 서로 같은지, `intake-cosign`·`risk_assessment.approvers` 증거가 이어지는지 확인한다.
 - `PAC-13`·`P-X-APPROVAL-001`·`MCP-CATALOG-001`·`P-APPROVAL-EXPIRY-001`은 바꾸지 않는다. 새 정책 ID는 없다.
+
+## 추가 판단 (2026-10-21, 구현 과정에서 올라온 3건)
+
+구현 레인이 D-189 범위 밖이라며 바꾸지 않고 올린 3건을 메인이 결정한다.
+
+1. **`root_solo_check.py`의 `test_risk_tier_still_requires_second_approver_where_required`** — 「높음 + 사유 → approve」 기대는 D-189와 정면으로 어긋난다. **`cosign`으로 바꾼다.** D-188 본문의 「높음은 서면 위험 수용 대안이 적용된다」 문장도 함께 폐지하고 D-189로 대체 관계를 적는다. root 단독 모드에서 높음 등급은 두 번째 관리자 계정이 필요하다.
+2. **입력도 제안도 없는 신청의 추정 등급** — 한 화면 승인의 `with_risk`가 `high`를 돌려주고 기존 시험은 `hold`를 기대한다. **기존 시험이 맞다. 구현을 고친다.** 근거 입력이 없는데 등급을 매기면 산정하지 않은 값을 산정 결과처럼 기록한다. 제안값이 없으면 `hold`를 유지하고, 목록 칩·「승인 n/m」 표시도 보류로 보이게 맞춘다.
+3. **공급자 보증의 선택 입력(`required=False`)** — 기존 `supplier_assurance_check.py` 2건과 어긋난다. **선택 입력을 채택하고 그 2건의 기대값을 바꾼다**(10-20 소유자 지시: 규제·행정 정보는 선택 입력, 솔루션이 채우고 사람은 승인만). 단 조건이 있다: 미제공 항목은 화면과 기록에서 **`확인 안 됨`으로 분명히 표시**되어야 한다. 표시가 없으면 선택 입력을 채택하지 않고 구현을 고친다.
+   - 이것은 보증 정보를 "있다"고 적는 기준을 낮추는 변경이 아니다. 없는 것을 없다고 적으면서 승인을 막지 않는 것이다.
+
+`intake_validation_test.py` 2건의 Windows 심볼릭 링크 권한 오류는 이번 변경과 무관한 환경 문제로 둔다.
+**이 3건을 포함한 기존 시험 기대값 변경 전체는 Codex luna 적대 검증을 통과한 뒤에만 main에 병합한다.**
