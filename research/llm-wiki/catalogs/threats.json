@@ -149,9 +149,9 @@
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
         "sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4",
-        "committed_sha256": "dae4cd3c4623117e7deecde14017ec376adb15fb40566b3ec552c8bf2571f67b",
+        "committed_sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4",
         "normalized_sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/review.py",
@@ -276,9 +276,9 @@
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "committed_sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805",
+        "committed_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
         "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/consent.py",
@@ -520,9 +520,9 @@
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
         "sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
-        "committed_sha256": "3b473d265b94f630a1d93be36996df5d4d703f173f3e970a10624334aa227a6c",
+        "committed_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "normalized_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/oidc.py",
@@ -653,16 +653,16 @@
       {
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
         "sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
-        "committed_sha256": "d29870a729c580f58e11d1654be32959944a2da74844f68f11feff753c675a20",
+        "committed_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "normalized_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "committed_sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805",
+        "committed_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
         "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/registry.py",
@@ -799,9 +799,9 @@
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",
         "sha256": "00a19c1c555270025df461bb130d46600838bb02f9383817ce7fcdd854ddb9d2",
-        "committed_sha256": "e72cb71e5a7126d15d7bf106bc63c3f2872efd74e73bb9a69352f1b8a07dad52",
+        "committed_sha256": "00a19c1c555270025df461bb130d46600838bb02f9383817ce7fcdd854ddb9d2",
         "normalized_sha256": "00a19c1c555270025df461bb130d46600838bb02f9383817ce7fcdd854ddb9d2",
-        "worktree_modified": true
+        "worktree_modified": false
       }
     ],
     "control_locations": [
@@ -1155,16 +1155,16 @@
       {
         "path": "full_stack_lab/gateway/app/idp.py",
         "sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d",
-        "committed_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc",
+        "committed_sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d",
         "normalized_sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
         "sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
-        "committed_sha256": "3b473d265b94f630a1d93be36996df5d4d703f173f3e970a10624334aa227a6c",
+        "committed_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "normalized_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
-        "worktree_modified": true
+        "worktree_modified": false
       }
     ],
     "control_locations": [
@@ -1263,9 +1263,9 @@
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "committed_sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805",
+        "committed_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
         "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/dispatch.py",
@@ -1496,9 +1496,9 @@
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "committed_sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805",
+        "committed_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
         "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
@@ -1765,9 +1765,9 @@
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "committed_sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805",
+        "committed_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
         "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/consent.py",
@@ -1902,9 +1902,9 @@
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "committed_sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805",
+        "committed_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
         "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
@@ -2054,9 +2054,9 @@
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "committed_sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805",
+        "committed_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
         "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/dispatch.py",
@@ -2185,9 +2185,9 @@
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "committed_sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805",
+        "committed_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
         "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "worktree_modified": true
+        "worktree_modified": false
       }
     ],
     "control_locations": [
@@ -2303,9 +2303,9 @@
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "committed_sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805",
+        "committed_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
         "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/review.py",
@@ -2439,9 +2439,9 @@
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "committed_sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805",
+        "committed_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
         "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/privacy.py",
@@ -2460,9 +2460,9 @@
       {
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
         "sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
-        "committed_sha256": "d29870a729c580f58e11d1654be32959944a2da74844f68f11feff753c675a20",
+        "committed_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "normalized_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
-        "worktree_modified": true
+        "worktree_modified": false
       }
     ],
     "control_locations": [
@@ -2582,9 +2582,9 @@
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "committed_sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805",
+        "committed_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
         "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/registry.py",
@@ -2709,9 +2709,9 @@
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "committed_sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805",
+        "committed_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
         "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/audit.py",
@@ -2862,9 +2862,9 @@
       {
         "path": "full_stack_lab/gateway/app/decommission.py",
         "sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
-        "committed_sha256": "0c9389da6a2ce4791ed668f7c3f768cf487b8c98e6d14c69d08e0a25c63453ae",
+        "committed_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
         "normalized_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/mcp_sessions.py",
@@ -2883,9 +2883,9 @@
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "committed_sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805",
+        "committed_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
         "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
-        "worktree_modified": true
+        "worktree_modified": false
       }
     ],
     "control_locations": [
@@ -3028,9 +3028,9 @@
       {
         "path": "full_stack_lab/gateway/app/idp.py",
         "sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d",
-        "committed_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc",
+        "committed_sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d",
         "normalized_sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/disposal.py",
@@ -3042,9 +3042,9 @@
       {
         "path": "full_stack_lab/gateway/app/decommission.py",
         "sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
-        "committed_sha256": "0c9389da6a2ce4791ed668f7c3f768cf487b8c98e6d14c69d08e0a25c63453ae",
+        "committed_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
         "normalized_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
-        "worktree_modified": true
+        "worktree_modified": false
       }
     ],
     "control_locations": [
