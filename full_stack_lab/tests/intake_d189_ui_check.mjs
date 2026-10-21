@@ -36,3 +36,35 @@ test("only the very high tier asks for the written reason, and the second admini
 test("the approval request carries the reason", () => {
   assert.ok(source.includes('risk_reason: String(fd.get("risk_reason") || "").trim()'));
 });
+
+// D-189 추가 판단 2·3: 근거 없는 신청은 보류로 보이고, 받지 못한 공급자 항목은 「확인 안 됨」으로 보인다.
+const risky = source.slice(source.indexOf("function riskCell("), source.indexOf("const supportStatus"));
+const shown = source.slice(source.indexOf("const supportStatus"), source.indexOf("const ASSURANCE_LABELS"))
+  + source.slice(source.indexOf("const UNCONFIRMED"), source.indexOf("function intakeApprovalFields("));
+const list = vm.createContext({ URL, viewer: { admin: true } });
+vm.runInContext(`${safeHTML}
+  const NONE = html\`<span>—</span>\`; const RISK_TIER = {low:["allow","낮음"],high:["alert","높음"]};
+  const chip = (tone,label) => html\`<span>\${label}</span>\`;
+  const kv = (pairs) => html\`<dl>\${pairs.filter(([, v]) => v !== undefined && v !== null && v !== "").map(([k,v])=>html\`<dt>\${k}</dt><dd>\${v}</dd>\`)}</dl>\`;
+  const empty = (t) => html\`<p>\${t}</p>\`; const panel = (t, b) => b;
+  ${risky}\n${shown}
+  globalThis.cell = (r) => String(riskCell(r)); globalThis.view = (r) => String(riskView(r));
+  globalThis.rows = (a) => String(kv(assuranceRows(a)));`, list);
+
+test("a request without a stated input or proposal shows a hold, never a tier or a count", () => {
+  const hold = { status: "HOLD", risk: { status: "hold", tier: null, score: null, missing: [], required: null, approvals: 0 } };
+  assert.equal(list.cell(hold), "<span>보류</span><span class=\"sub\">승인 —</span>");
+  assert.ok(!list.cell({ ...hold, status: "APPROVED" }).includes("승인"));
+  assert.ok(!list.cell(hold).includes("입력 필요"));
+  assert.ok(list.view(hold.risk).includes("보류"));
+  assert.ok(list.view(hold.risk).includes("산정 점수</dt><dd>—"));
+});
+
+test("supplier items that were not received read 확인 안 됨, never blank, undefined or a claim", () => {
+  const empty = list.rows({});
+  assert.equal(empty.split("확인 안 됨").length - 1, 10);
+  assert.ok(!empty.includes("undefined") && !empty.includes("<a "));
+  const partial = list.rows({ legal_entity: "예시 주식회사", vex_submitted: false, subprocessors: "미확인" });
+  assert.ok(partial.includes("예시 주식회사") && partial.includes("미제출"));
+  assert.equal(partial.split("확인 안 됨").length - 1, 8);
+});

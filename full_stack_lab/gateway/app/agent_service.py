@@ -955,7 +955,8 @@ async def with_risk(rows: list[dict], counted: bool = False) -> list[dict]:
         stated = risk_tier.assess(row.get("risk_input"))
         suggested = (row.get("evidence") or {}).get("approval_proposal") or {}
         if stated["status"] != "ok":
-            stated = suggested.get("risk") or risk_tier.assess(intake_proposal.risk_input(row, []))
+            # 근거 입력도 제안도 없으면 등급을 매기지 않고 보류로 둔다. 산정하지 않은 값을 결과처럼 적지 않는다.
+            stated = suggested.get("risk") or stated
         rule = risk_tier.APPROVAL.get(stated["tier"])
         pending = (row.get("evidence") or {}).get("one_click_pending")
         row["risk"] = {"status": stated["status"], "tier": stated["tier"], "score": stated["score"],
@@ -1480,8 +1481,8 @@ class IntakeApproval(StrictModel):
     support_end: str = Field(default="", max_length=10)
     vulnerability_policy_url: str = Field(default="", max_length=500)
     subprocessors: Literal["미확인", "있음", "없음"] = "미확인"
-    sbom_submitted: bool = False
-    vex_submitted: bool = False
+    sbom_submitted: bool | None = None  # 묻지 않았으면 비워 둔다. False는 "제출하지 않았다"는 확인이다.
+    vex_submitted: bool | None = None
     contract_basis_ref: str = Field(default="", max_length=500)
     exit_strategy: str = Field(default="", max_length=1000)
 
@@ -1563,7 +1564,8 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
             raise HTTPException(403, str(exc)) from exc
     approval_values = approval if approval is not None else IntakeApproval()
     assurance = {key: (getattr(approval_values, key, "") or "").strip() for key in supplier_assurance.REQUIRED_FIELDS}
-    assurance.update({key: getattr(approval_values, key) for key in supplier_assurance.OPTIONAL_FIELDS})
+    assurance.update({key: value for key in supplier_assurance.OPTIONAL_FIELDS
+                      if (value := getattr(approval_values, key)) is not None})
     assurance_errors = supplier_assurance.validate(assurance, required=False)
     if assurance_errors:
         if remote:
@@ -1597,7 +1599,8 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
                 or found["server_name"] != reviewed["advertised_name"]
                 or found["protocol_version"] != reviewed["protocol_version"]):
             raise HTTPException(409, "검토 후 공급자 계약이 바뀌었습니다. 다시 검토하세요.")
-        evidence = {**remote["evidence"], "supplier_assurance": assurance, "risk_assessment": risk_record, "remote_approval": {
+        evidence = {**remote["evidence"], "supplier_assurance": assurance, "risk_assessment": risk_record,
+                    "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance), "remote_approval": {
             "actor": user["principal"], "at": datetime.now(UTC).isoformat(),
             "review_digest": core.canonical_hash(reviewed), "risk_acceptance": risk,
             "code_scan_performed": False}}
@@ -1610,6 +1613,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
                 actor=user["principal"], applicant=remote["submitted_by"], reason=risk or reviewed.get("review_note"),
                 scope={"risk_tier": risk_record["tier"], "approvers": risk_record["approvers"],
                        "solo_mode": bool(risk_record.get("solo_mode")), "solo_operator": bool(risk_record.get("solo_operator")),
+                       "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance),
                        "endpoint": remote["endpoint_url"], "tools": reviewed["registration"]["tools"],
                        "residency": reviewed["registration"].get("residency") or {},
                        "data_class": reviewed["registration"]["data_class"], "valid_until": reviewed["valid_until"],
@@ -1664,7 +1668,8 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
     record["verification"] = {**(record.get("verification") or {}), **checked,
                               "by": user["principal"], "at": datetime.now(UTC).isoformat(timespec="seconds")}
     critical = gate["critical"] or {}
-    evidence = {**(pending.get("evidence") or {}), "supplier_assurance": assurance, "risk_assessment": risk_record}
+    evidence = {**(pending.get("evidence") or {}), "supplier_assurance": assurance, "risk_assessment": risk_record,
+                "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance)}
     row = await review.transition(
         """UPDATE mcp_intake_requests
            SET status='APPROVED', internal_repo_url=%s, evidence=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now(),
@@ -1676,6 +1681,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
         actor=user["principal"], applicant=pending["submitted_by"], reason=risk or None,
         scope={"risk_tier": risk_record["tier"], "approvers": risk_record["approvers"],
                        "solo_mode": bool(risk_record.get("solo_mode")), "solo_operator": bool(risk_record.get("solo_operator")),
+               "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance),
                "source": pending["repository_url"], "commit": pending["commit_sha"],
                "license": (record.get("license") or {}).get("spdx"),
                "artifact_sha256": (record.get("artifact") or {}).get("sha256"), "verified_sha256": checked["sha256"],
@@ -2042,6 +2048,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         risk_record = {**assessed, "approvers": approvers, "written_reason": len(risk_reason) >= risk_tier.MIN_REASON,
                        "reasons": risk_reasons}
         updated = {**evidence, "supplier_assurance": assurance, "risk_assessment": risk_record, "one_click_scope": scope,
+                   "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance),
                    "one_click_pending": {"scope": scope, "approvers": approvers, "critical_reason": reason,
                                          "risk_reasons": risk_reasons}}
         record = dict(proposal["provenance"])
@@ -2069,7 +2076,8 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
             (Jsonb(updated), Jsonb(record), Jsonb(proposal["risk_input"]), internal_url, user["principal"], request_id, Jsonb(evidence)),
             kind="intake-one-click", outcome="approved", target_kind="intake", target_id=request_id,
             actor=user["principal"], applicant=row["submitted_by"], reason=reason or None,
-            scope={**scope, "catalog_hash": found["catalog_hash"], "approvers": approvers, "tool_reviews": reviews})
+            scope={**scope, "catalog_hash": found["catalog_hash"], "approvers": approvers, "tool_reviews": reviews,
+                   "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance)})
         if not changed:
             raise HTTPException(409, "신청이 변경되었습니다. 다시 열어 확인하세요.")
         if row["intake_kind"] == "remote-endpoint":

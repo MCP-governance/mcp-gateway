@@ -1184,15 +1184,7 @@ function showServer(id) {
     { key: "info", label: "개요", body: kv([["ID", html`<code>${s.id}</code>`], ["게이트웨이 경로", html`<code>/mcp/${s.id}/</code>`],
       ["패키지", html`<code>${s.source_ref || `${s.package}@${s.version}`}</code>`], ["원격 주소", html`<code>${s.endpoint}</code>`],
       ["공급자", s.supplier], ["라이선스", s.license], ["하위 시스템", downstreamText(s.downstream)],
-      ...(registration?.supplier_assurance ? [["공급자 법인명", registration.supplier_assurance.legal_entity],
-        ["공급자 연락처", registration.supplier_assurance.supplier_contact], ["보안 연락처", registration.supplier_assurance.security_contact],
-        ["지원 종료일", html`${registration.supplier_assurance.support_end} ${chip(supportStatus(registration.supplier_assurance.support_end) === "지원 종료 경과" ? "block" :
-          supportStatus(registration.supplier_assurance.support_end) === "지원 종료 임박" ? "alert" : "allow", supportStatus(registration.supplier_assurance.support_end))}`],
-        ["취약점 공개 정책", html`<a href="${registration.supplier_assurance.vulnerability_policy_url}" target="_blank" rel="noopener noreferrer">${registration.supplier_assurance.vulnerability_policy_url}</a>`],
-        ["하위 처리자", registration.supplier_assurance.subprocessors || "미확인"],
-        ["SBOM 제출", registration.supplier_assurance.sbom_submitted ? "제출" : "미제출"],
-        ["VEX 제출", registration.supplier_assurance.vex_submitted ? "제출" : "미제출"],
-        ["계약 근거", registration.supplier_assurance.contract_basis_ref], ["종료 전략", registration.supplier_assurance.exit_strategy]] : []),
+      ...(registration?.supplier_assurance ? assuranceRows(registration.supplier_assurance) : []),
       ...locationRows(s.residency),
        ...(registration?.residency_review ? [["위치 심사", `${registration.residency_review.reviewed_by} · ${when(registration.residency_review.reviewed_at)}`]] : []),
       ...(registration?.risk_assessment ? [["위험 등급", chip(...RISK_TIER[registration.risk_assessment.tier])],
@@ -1662,15 +1654,16 @@ const RISK_CHOICES = {
 function riskCell(r) {
   const k = r.risk;
   if (!k) return NONE;
-  if (k.status !== "ok") return chip("alert", "입력 필요");
-  const waiting = k.required > 1 && ["HOLD", "VALIDATED", "REMOTE_REVIEWED"].includes(r.status) && viewer.admin;
+  const waiting = ["HOLD", "VALIDATED", "REMOTE_REVIEWED"].includes(r.status) && viewer.admin;
+  if (k.status !== "ok") return html`${chip("alert", "보류")}${waiting ? html`<span class="sub">승인 —</span>` : ""}`;
+  waiting &&= k.required > 1;
   return html`${chip(...RISK_TIER[k.tier])}${waiting ? html`<span class="sub">승인 ${k.approvals}/${k.required}</span>` : ""}`;
 }
 function riskView(risk) {
   if (!risk) return empty("기록 없음");
   return html`<div class="stack">
-    ${kv([["위험 등급", risk.status === "ok" ? chip(...RISK_TIER[risk.tier]) : chip("alert", "입력 필요")],
-      ["산정 점수", risk.status === "ok" ? String(risk.score) : ""], ["적용 규칙", (risk.floors || []).join(", ")],
+    ${kv([["위험 등급", risk.status === "ok" ? chip(...RISK_TIER[risk.tier]) : chip("alert", "보류")],
+      ["산정 점수", risk.status === "ok" ? String(risk.score) : "—"], ["적용 규칙", (risk.floors || []).join(", ") || "—"],
       ["입력 상태", (risk.messages || []).join(" / ")]])}
     ${panel("영향평가 입력 자료", html`<table class="data"><thead><tr><th>항목</th><th>값</th><th>서식 항목</th></tr></thead><tbody>
       ${(risk.package || []).map((p) => html`<tr><td>${p.item}</td><td>${p.value}</td><td class="small">${p.form}</td></tr>`)}</tbody></table>`, { flush: true })}</div>`;
@@ -1683,6 +1676,18 @@ const ASSURANCE_LABELS = { legal_entity: "법인명", supplier_contact: "연락�
   exit_strategy: "종료 전략", support_end: "지원 종료" };
 const LOCATION_LABELS = { processing_countries: "처리 국가 코드", storage_countries: "저장 국가 코드",
   processor: "처리 주체", evidence_ref: "위치 근거", transfer_basis: "이전 근거" };
+
+const UNCONFIRMED = "확인 안 됨";
+const given = (a, key) => { const v = a?.[key]; return typeof v === "boolean" || (typeof v === "string" && v.trim() && v !== "미확인") ? v : null; };
+function assuranceRows(a) {
+  const text = (key) => given(a, key) ?? UNCONFIRMED, yes = (key) => given(a, key) === null ? UNCONFIRMED : a[key] ? "제출" : "미제출";
+  const end = given(a, "support_end"), tone = supportStatus(end) === "지원 종료 경과" ? "block" : supportStatus(end) === "지원 종료 임박" ? "alert" : "allow";
+  return [["공급자 법인명", text("legal_entity")], ["공급자 연락처", text("supplier_contact")], ["보안 연락처", text("security_contact")],
+    ["지원 종료일", end ? html`${end} ${chip(tone, supportStatus(end))}` : UNCONFIRMED],
+    ["취약점 공개 정책", given(a, "vulnerability_policy_url") ? html`<a href="${a.vulnerability_policy_url}" target="_blank" rel="noopener noreferrer">${a.vulnerability_policy_url}</a>` : UNCONFIRMED],
+    ["하위 처리자", text("subprocessors")], ["SBOM 제출", yes("sbom_submitted")], ["VEX 제출", yes("vex_submitted")],
+    ["계약 근거", text("contract_basis_ref")], ["종료 전략", text("exit_strategy")]];
+}
 
 function intakeApprovalFields(out) {
   const p = out.proposal, r = out.request, pending = out.pending;
@@ -1704,7 +1709,9 @@ function intakeApprovalFields(out) {
     ${scans.length ? html`<table class="data"><thead><tr><th>검사기</th><th>상태</th><th>치명</th><th>높음</th></tr></thead><tbody>
       ${scans.map((s) => html`<tr><td>${s.scanner}</td><td>${s.status === "DONE" ? "완료" : s.status === "FAILED" ? "실패" : "미완료"}</td>
         <td>${s.critical_count ?? "—"}</td><td>${s.high_count ?? "—"}</td></tr>`)}</tbody></table>` : kv([["소스 검사", "검사 대상 아님"]])}
-    ${kv(Object.entries(ASSURANCE_LABELS).map(([key, label]) => [label, assurance[key] || unknown]))}
+    ${kv([...Object.entries(ASSURANCE_LABELS).map(([key, label]) => [label, given(assurance, key) ?? unknown]),
+      ["SBOM 제출", given(assurance, "sbom_submitted") === null ? unknown : assurance.sbom_submitted ? "제출" : "미제출"],
+      ["VEX 제출", given(assurance, "vex_submitted") === null ? unknown : assurance.vex_submitted ? "제출" : "미제출"]])}
   </fieldset>
   ${p.blockers.map((b) => html`<div class="note warn">${b.message}</div>`)}
   <fieldset class="tool-pick"><legend>승인 도구</legend>${(p.catalog?.tools || []).filter((t) => t.name in p.tools).map((t) => html`<label>

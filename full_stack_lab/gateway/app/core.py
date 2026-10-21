@@ -717,7 +717,7 @@ async def register_server(request: dict, actor: str) -> dict:
         "poisoning_review": {name: registry.tool_hashes(advertised[name]) for name in flagged}
                             if request.get("poisoning_ack") else {},
         "tool_reviews": tool_reviews, "provenance": intake.get("provenance") or {},
-        "supplier_assurance": assurance,
+        "supplier_assurance": assurance, "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance),
         "risk_assessment": {"tier": stated["tier"], "score": stated["score"], "floors": stated["floors"],
                             "input": intake["risk_input"], "input_sha256": stated["input_sha256"],
                             "approvers": approved_risk.get("approvers") or [],
