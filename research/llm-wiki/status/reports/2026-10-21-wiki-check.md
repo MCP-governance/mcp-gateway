@@ -27,7 +27,7 @@
 **(A) 로컬 원본.** 오류 29건은 전부 `local-sources/compliance/LIB-*/provenance.json`이다(LIB-L05 등 29개 항목). CI 옵션 경고 119건은 `provenance.json` 29, `extracts/` 45, `originals/` 45이며 전부 `research/llm-wiki/local-sources/` 아래다. 작업 트리에 `local-sources/` 디렉터리가 없다(`ls` 확인). 재배포 조건상 의도적으로 제외된 원본이다.
 
 **(B) 끊어진 내부 링크 (전체 목록).**
-- `research/llm-wiki/analysis/direction-1020/shadow-and-declaration-limits.md:23`의 `[설계 9장](dev73-local-isolated-run.md)`.
+- `research/llm-wiki/analysis/direction-1020/shadow-and-declaration-limits.md:23`의 「설계 9장」 링크가 가리키는 `dev73-local-isolated-run.md`. 2026-10-21 main에 설계 문서를 반영해 해결됐다.
 - 대상 파일은 main에 없다. `origin/10/20-dev73-design` 브랜치에만 있다(`git cat-file -e` 확인).
 - 고치지 않았다.
 
@@ -89,6 +89,6 @@
 **CI 옵션 확인 (코드 변경 없음).** `.github/workflows/research-wiki.yml`의 `check` 잡 17행이 `python research/llm-wiki/tools/check_wiki.py --ci-ignored-local-sources`를 실행한다. 옵션을 쓰고 있으므로 Git 밖 로컬 원본 29건은 CI에서 오류가 아니라 경고로 처리된다. 앞선 추정("CI가 항상 29건으로 실패한다")은 틀렸다. 최근 main 실행(run 39540718296)의 실패 원인은 `Missing local file` 3건, 즉 dev73 링크 1건과 디렉터리 오탐 2건이었다. 이번 수정 후에는 dev73 링크 1건만 남으므로 CI는 여전히 실패한다. 워크플로 파일은 고치지 않았다. 자체 검사도 CI에 연결되어 있지 않다.
 
 **남긴 것.**
-- (B) dev73 링크(`analysis/direction-1020/shadow-and-declaration-limits.md:23`): 고치지 않았다. 대상이 미머지 브랜치에만 있어 CI 실패의 남은 원인이다. 링크를 고칠지 설계를 main에 올릴지는 소유자 결정이다.
+- `research/llm-wiki/analysis/direction-1020/shadow-and-declaration-limits.md:23`의 「설계 9장」 링크가 가리키는 `dev73-local-isolated-run.md`. 2026-10-21 main에 설계 문서를 반영해 해결됐다.
 - 자체 검사의 CI 연결: 워크플로 수정이 필요해 보류했다.
 - 옵션 사용 시 로컬 원본 경고 119건: 의도된 경고로 유지했다.
