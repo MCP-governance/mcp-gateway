@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import uuid
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
@@ -18,7 +19,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
 
-from . import core, db, decommission, dispatch, disposal, endpoint_plane, ops_response, privacy, secret_scan, upstream, user_suspend
+from . import core, db, decommission, dispatch, disposal, endpoint_plane, local_jobs, ops_response, privacy, secret_scan, upstream, user_suspend
 from .core import (
     OPA_URL,
     approve_request,
@@ -335,6 +336,7 @@ async def suspensions(_: dict = Depends(admin_caller)) -> dict:
 @app.post("/api/suspensions")
 async def suspend_use(request: SuspendRequest, user: dict = Depends(admin_caller)) -> dict:
     try:
+        await local_jobs.quiesce(server_id=request.server_id, user_token=request.user_token)
         return await user_suspend.suspend(request.user_token, request.server_id, user["principal"], request.reason)
     except LookupError as exc:
         raise HTTPException(404, str(exc)) from exc
@@ -345,7 +347,9 @@ async def suspend_use(request: SuspendRequest, user: dict = Depends(admin_caller
 @app.post("/api/suspensions/{suspension_id}/resume")
 async def resume_use(suspension_id: int, request: OpsResume, user: dict = Depends(admin_caller)) -> dict:
     try:
-        return await user_suspend.resume(suspension_id, user["principal"], request.note)
+        result = await user_suspend.resume(suspension_id, user["principal"], request.note)
+        await local_jobs.resume(server_id=result['server_id'],user_token=result['user_token'])
+        return result
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 
@@ -804,8 +808,16 @@ async def registry_check(server_id: str, user: dict = Depends(admin_caller)) -> 
 
 
 # ── 승인한 서버를 Console에서 Gateway에 등록 (D-49) ──────────────────────────────
+class LocalRun(StrictModel):
+    """DEV-73: the manifest and the signature an approver produced offline."""
+    manifest: dict
+    signature: str = Field(min_length=40, max_length=200)
+
+
 class RegistryDiscover(StrictModel):
     endpoint: str = Field(min_length=8, max_length=500)
+    local: LocalRun | None = None
+    intake_id: str = Field(default="", max_length=64)  # a local run is observed on this applicant's managed PC
 
 
 
@@ -828,13 +840,15 @@ class RegistryRegister(ResidencyFields):
     exit_terms: dict[str, bool] = Field(default_factory=dict)
     poisoning_ack: bool = False  # D-52: the admin read the flagged tool text and approves it anyway
     tool_reviews: dict[str, ToolReview] = Field(min_length=1, max_length=300)  # D-91: a person scoped every approved tool
+    local: LocalRun | None = None
 
 
 @app.post("/api/registry/discover")
 async def registry_discover(request: RegistryDiscover, user: dict = Depends(admin_caller)) -> dict:
     """등록 전 검토용: 엔드포인트가 지금 광고하는 도구와 그 계약 해시. 아무것도 기록하지 않는다."""
     try:
-        return await core.discover_for_registration(request.endpoint)
+        return await core.discover_for_registration(request.endpoint, request.local and request.local.model_dump(),
+                                                    request.intake_id)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     except Exception as exc:
@@ -1532,9 +1546,10 @@ async def endpoint_device_list(user: dict = Depends(admin_caller)) -> dict:
 @app.get("/api/endpoint/managed-policy")
 async def endpoint_managed_policy(device: dict = Depends(endpoint_device("enforcement"))) -> dict:
     try:
-        return await endpoint_plane.managed_policy(device)
+        policy = await endpoint_plane.managed_policy(device)
     except (PermissionError, ValueError) as exc:
         raise HTTPException(403, str(exc)) from exc
+    return policy
 
 
 @app.post("/api/endpoint/heartbeat")
@@ -1556,6 +1571,53 @@ async def endpoint_heartbeat(request: ManagedHeartbeat,
     except PermissionError as exc:
         raise HTTPException(403, str(exc)) from exc
     return {**report, "network_quality": verdict}
+
+
+class LocalJobResult(BaseModel):
+    result: dict | None = None
+    error: str | None = Field(default=None, max_length=500)
+    stopped: bool = False
+    isolation: dict | None = None
+
+
+@app.get("/api/endpoint/local-jobs")
+async def endpoint_local_job(wait: float = 25, device: dict = Depends(endpoint_device("enforcement"))) -> dict:
+    """승인된 로컬 MCP 실행 요청을 그 장치에만 내준다. 장치는 바깥으로만 연결한다."""
+    return {"job": await local_jobs.claim(device, max(0.0, min(wait, 25.0)))}
+
+
+@app.post("/api/endpoint/local-jobs/{job_id}")
+async def endpoint_local_job_result(job_id: uuid.UUID, request: LocalJobResult,
+                                    device: dict = Depends(endpoint_device("enforcement"))) -> dict:
+    try:
+        accepted = await local_jobs.complete(device, str(job_id), request.result, request.error,
+                                             stopped=request.stopped, isolation=request.isolation)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    if not accepted:
+        raise HTTPException(409, "이 장치가 받은 진행 중 요청이 아닙니다.")
+    return {"accepted": True}
+
+
+@app.get("/api/endpoint/local-jobs/recovery")
+async def endpoint_local_recovery(device: dict = Depends(endpoint_device("enforcement"))) -> dict:
+    return {'jobs':await local_jobs.recoverable(device)}
+
+
+@app.get("/api/endpoint/local-jobs/{job_id}/control")
+async def endpoint_local_control(job_id: UUID, device: dict = Depends(endpoint_device("enforcement"))) -> dict:
+    try:
+        return await local_jobs.validate_job(device, str(job_id))
+    except (PermissionError, ConnectionError, ValueError) as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@app.post("/api/endpoint/local-jobs/{job_id}/start")
+async def endpoint_local_start(job_id: UUID, device: dict = Depends(endpoint_device("enforcement"))) -> dict:
+    try:
+        return await local_jobs.validate_job(device, str(job_id), start=True)
+    except (PermissionError, ConnectionError, ValueError) as exc:
+        raise HTTPException(409, str(exc)) from exc
 
 
 @app.post("/api/endpoint/devices/{endpoint_id}/activate")

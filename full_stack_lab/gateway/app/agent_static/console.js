@@ -1721,6 +1721,7 @@ function intakeApprovalFields(out) {
   const unknown = "확인 안 됨";
   const assurance = scope?.supplier_assurance || p.supplier_assurance;
   const location = scope?.residency || {};
+  const localRun = out.local_execution || p.local_execution || r.local_execution || r.evidence?.local_execution;
   return html`<fieldset><legend>제안값</legend>
     ${kv([["주소", p.endpoint || r.repository_url], ["판본", r.commit_sha || p.catalog?.version || unknown],
       ["용도", p.purpose], ["신청자", r.submitter_name || r.submitted_by], ["서버 ID", p.server_id],
@@ -1729,6 +1730,11 @@ function intakeApprovalFields(out) {
       ["계약 지문", p.catalog?.catalog_hash || unknown], ["허용 사용자", r.submitter_name || r.submitted_by],
       ["공급자 홈페이지", p.supplier_metadata?.homepage || unknown], ["라이선스", p.provenance?.license?.spdx || unknown],
       ["관할 규칙", p.jurisdiction_pack_enabled ? "사용" : "사용 안 함"]])}
+    ${localRun ? html`<fieldset><legend>PC 격리 실행</legend>${kv([
+      ["관찰 엔드포인트", localRun.observer_device || unknown],
+      ["실행 계정 번호", localRun.observer_uid == null ? unknown : String(localRun.observer_uid)],
+      ["격리 구성", localRun.isolation_scope || unknown], ["사용자 매핑", localRun.user_mapping || unknown],
+    ])}</fieldset>` : ""}
     ${scans.length ? html`<table class="data"><thead><tr><th>검사기</th><th>상태</th><th>치명</th><th>높음</th></tr></thead><tbody>
       ${scans.map((s) => html`<tr><td>${s.scanner}</td><td>${s.status === "DONE" ? "완료" : s.status === "FAILED" ? "실패" : "미완료"}</td>
         <td>${s.critical_count ?? "—"}</td><td>${s.high_count ?? "—"}</td></tr>`)}</tbody></table>` : kv([["소스 검사", "검사 대상 아님"]])}

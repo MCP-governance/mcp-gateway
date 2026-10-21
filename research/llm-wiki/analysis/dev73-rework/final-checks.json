@@ -1,0 +1,134 @@
+{
+  "at": "2026-10-21T04:55:49.795130+00:00",
+  "files": [
+    "docs/ai/DECISIONS.md",
+    "docs/ai/SECURITY_BOUNDARIES.md",
+    "endpoint-agent/local-runner.py",
+    "endpoint-agent/managed-linux.py",
+    "full_stack_lab/compose.field.yaml",
+    "full_stack_lab/compose.yaml",
+    "full_stack_lab/field/sign-local-manifest.py",
+    "full_stack_lab/gateway/app/agent_service.py",
+    "full_stack_lab/gateway/app/agent_static/console.js",
+    "full_stack_lab/gateway/app/core.py",
+    "full_stack_lab/gateway/app/decommission.py",
+    "full_stack_lab/gateway/app/endpoint_plane.py",
+    "full_stack_lab/gateway/app/idp.py",
+    "full_stack_lab/gateway/app/lifecycle_tables.sql",
+    "full_stack_lab/gateway/app/local_jobs.py",
+    "full_stack_lab/gateway/app/local_run_tables.sql",
+    "full_stack_lab/gateway/app/main.py",
+    "full_stack_lab/gateway/app/ops_response.py",
+    "full_stack_lab/gateway/app/upstream.py",
+    "full_stack_lab/tests/dev73_rework_check.py",
+    "full_stack_lab/tests/dev73_rework_pg_check.py",
+    "full_stack_lab/tests/local_jobs_pg_check.py",
+    "full_stack_lab/tests/local_run_manifest_check.py",
+    "research/llm-wiki/analysis/dev73-rework/README.md",
+    "research/llm-wiki/analysis/dev73-rework/capture_evidence.py",
+    "research/llm-wiki/analysis/dev73-rework/checks.json",
+    "research/llm-wiki/analysis/dev73-rework/environment.json",
+    "research/llm-wiki/analysis/dev73-rework/final-checks.json",
+    "research/llm-wiki/analysis/dev73-rework/final_checks.py",
+    "research/llm-wiki/analysis/dev73-rework/requirements.json",
+    "research/llm-wiki/analysis/dev73-rework/run_checks.py",
+    "research/llm-wiki/analysis/direction-1020/dev73-local-isolated-run.md",
+    "research/llm-wiki/status/backlog.md",
+    "research/llm-wiki/status/reports/2026-10-21-dev73-rework.md"
+  ],
+  "text_errors": [],
+  "missing_own_links": [],
+  "source_hash_mismatches": [],
+  "inherited_tests": [
+    {
+      "path": "full_stack_lab/tests/local_run_manifest_check.py",
+      "unchanged_from_217da74": true
+    },
+    {
+      "path": "full_stack_lab/tests/local_jobs_pg_check.py",
+      "unchanged_from_217da74": true
+    }
+  ],
+  "existing_tests_diff": {
+    "command": [
+      "git",
+      "diff",
+      "--name-only",
+      "--",
+      "full_stack_lab/tests"
+    ],
+    "at": "2026-10-21T04:55:49.813567+00:00",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "current_status_diff": {
+    "command": [
+      "git",
+      "diff",
+      "--name-only",
+      "--",
+      "research/llm-wiki/status/current.md"
+    ],
+    "at": "2026-10-21T04:55:49.829702+00:00",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "whitespace": {
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "at": "2026-10-21T04:55:49.885826+00:00",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "git_add": {
+    "command": [
+      "git",
+      "add",
+      "--",
+      "docs/ai/DECISIONS.md",
+      "docs/ai/SECURITY_BOUNDARIES.md",
+      "endpoint-agent/local-runner.py",
+      "endpoint-agent/managed-linux.py",
+      "full_stack_lab/compose.field.yaml",
+      "full_stack_lab/compose.yaml",
+      "full_stack_lab/field/sign-local-manifest.py",
+      "full_stack_lab/gateway/app/agent_service.py",
+      "full_stack_lab/gateway/app/agent_static/console.js",
+      "full_stack_lab/gateway/app/core.py",
+      "full_stack_lab/gateway/app/decommission.py",
+      "full_stack_lab/gateway/app/endpoint_plane.py",
+      "full_stack_lab/gateway/app/idp.py",
+      "full_stack_lab/gateway/app/lifecycle_tables.sql",
+      "full_stack_lab/gateway/app/local_jobs.py",
+      "full_stack_lab/gateway/app/local_run_tables.sql",
+      "full_stack_lab/gateway/app/main.py",
+      "full_stack_lab/gateway/app/ops_response.py",
+      "full_stack_lab/gateway/app/upstream.py",
+      "full_stack_lab/tests/dev73_rework_check.py",
+      "full_stack_lab/tests/dev73_rework_pg_check.py",
+      "full_stack_lab/tests/local_jobs_pg_check.py",
+      "full_stack_lab/tests/local_run_manifest_check.py",
+      "research/llm-wiki/analysis/dev73-rework/README.md",
+      "research/llm-wiki/analysis/dev73-rework/capture_evidence.py",
+      "research/llm-wiki/analysis/dev73-rework/checks.json",
+      "research/llm-wiki/analysis/dev73-rework/environment.json",
+      "research/llm-wiki/analysis/dev73-rework/final-checks.json",
+      "research/llm-wiki/analysis/dev73-rework/final_checks.py",
+      "research/llm-wiki/analysis/dev73-rework/requirements.json",
+      "research/llm-wiki/analysis/dev73-rework/run_checks.py",
+      "research/llm-wiki/analysis/direction-1020/dev73-local-isolated-run.md",
+      "research/llm-wiki/status/backlog.md",
+      "research/llm-wiki/status/reports/2026-10-21-dev73-rework.md"
+    ],
+    "at": "2026-10-21T04:55:49.902107+00:00",
+    "returncode": 128,
+    "stdout": "",
+    "stderr": "fatal: Unable to create 'C:/Users/bobysg/bob/프로젝트/mcp-gw-codex-sol/.git/index.lock': Permission denied\n"
+  }
+}

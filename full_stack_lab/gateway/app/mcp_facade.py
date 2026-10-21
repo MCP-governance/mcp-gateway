@@ -29,7 +29,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from mcp_types.version import HANDSHAKE_PROTOCOL_VERSIONS
 from pydantic import model_serializer
 
-from . import db, output_contract, pac, registry, tool_sunset, upstream_sessions
+from . import db, local_jobs, output_contract, pac, registry, tool_sunset, upstream_sessions
 from .agent_contract import authenticated_user
 from .core import execute_call, response_disposition
 
@@ -247,6 +247,8 @@ def build_mcp() -> Server:
                 tool = name
             else:
                 server_id, _, tool = name.partition(SEPARATOR)
+            if (registry.server(server_id) or {}).get("local"):
+                local_jobs.validate_params({"name": name, "arguments": params.arguments or {}})
             token = upstream_sessions.downstream.set(_conversation(ctx, user))
             try:
                 outcome = await execute_call({

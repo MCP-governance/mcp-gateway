@@ -26,7 +26,7 @@ from jsonschema import Draft202012Validator
 from jsonschema.validators import validator_for
 from referencing import Registry
 
-from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, retention, risk_tier, secret_scan, supplier_assurance, upstream, user_suspend
+from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, local_jobs, ops_response, pac, poisoning, privacy, registry, retention, risk_tier, secret_scan, supplier_assurance, upstream, user_suspend
 from .destination import DestinationBlocked
 from .outcomes import outcome_axes
 from . import flow_fingerprint, high_impact, output_contract, residency, selective, tool_sunset
@@ -474,6 +474,7 @@ async def bootstrap() -> None:
     await db.execute((Path(__file__).parent / "v2_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "oidc_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "ops_tables.sql").read_text())
+    await db.execute((Path(__file__).parent / "local_run_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "siem_tables.sql").read_text())
     await registry.sync()
     await disposal.capture_existing()
@@ -559,10 +560,53 @@ def suggested_action(annotations: dict | None) -> str:
     return "r" if hints.get("readonlyhint") else "x" if hints.get("destructivehint") or hints.get("openworldhint") else "w"
 
 
-async def discover_for_registration(endpoint: str, principal: str | None = None) -> dict:
-    found = (await upstream.discover(registration_endpoint(endpoint), principal=principal) if principal
-             else await upstream.discover(registration_endpoint(endpoint)))
-    return {"endpoint": endpoint.strip(), "server_name": found["advertised_name"], "version": found["version"],
+async def discover_for_registration(endpoint: str, local: dict | None = None, intake_id: str = "",
+                                    principal: str | None = None) -> dict:
+    if local:
+        server_id = local_jobs.server_of(endpoint) or ""
+        try:
+            intake = await db.fetch_one("SELECT submitted_by FROM mcp_intake_requests WHERE id=%s AND status='APPROVED' AND reviewed_by IS NOT NULL", (uuid.UUID(intake_id),))
+        except ValueError:
+            intake = None
+        if not intake:
+            raise ValueError("로컬 실행 계약은 도입 신청자의 PC에서 확인합니다. 신청을 지정하세요.")
+        local = local_jobs.local_block(local["manifest"], local["signature"],
+                                       await local_jobs.applicant_device(intake["submitted_by"], intake_id), server_id)
+        observer = await local_jobs._device(local['observer_device'])
+        token = local_jobs.registering.set(local)
+        try:
+            await local_jobs.approve_manifest(local_jobs.registering.get(), intake_id)
+            found = await upstream.discover(endpoint)
+        finally:
+            local_jobs.registering.reset(token)
+    else:
+        found = (await upstream.discover(registration_endpoint(endpoint), principal=principal) if principal
+                 else await upstream.discover(registration_endpoint(endpoint)))
+    local_view = {}
+    if local:
+        settings = json.loads(os.getenv("LOCAL_ENGINE_SETTINGS") or "{}")
+        engine = settings.get("engine") if isinstance(settings, dict) else None
+        namespace = settings.get("namespace") if isinstance(settings, dict) else None
+        version = settings.get("version") if isinstance(settings, dict) else None
+        engine_name = {"podman": "Podman", "docker": "Docker"}.get(engine)
+        namespace_name = {"podman-auto": "자동 사용자 공간", "docker-remap": "사용자 재매핑"}.get(namespace)
+        if namespace == "host":
+            isolation_scope = "탈출 시 호스트 root"
+        elif engine_name and namespace_name:
+            isolation_scope = f"{engine_name} {version or '—'} · {namespace_name} · 확인 안 됨"
+        else:
+            isolation_scope = "확인 안 됨"
+        measurement = await db.fetch_one(
+            """SELECT evidence->'isolation' AS isolation FROM local_job_events
+               WHERE server_id=%s AND device_id=%s AND evidence ? 'isolation'
+               ORDER BY created_at DESC,id DESC LIMIT 1""",
+            (local["manifest"]["server_id"], local["observer_device"]))
+        isolation = (measurement or {}).get("isolation") or {}
+        local_view = {"observer_device": local["observer_device"], "observer_uid": observer["local_uid"],
+                      "image_signature": "확인 안 됨", "isolation_scope": isolation_scope,
+                      "user_mapping": isolation.get("uid_map") or "확인 안 됨"}
+    return {**local_view,
+            "endpoint": endpoint.strip(), "server_name": found["advertised_name"], "version": found["version"],
             "protocol_version": found["protocol_version"], "catalog_hash": canonical_hash(found["tools"]),
             "tools": [{**tool, "suggested": suggested_action(tool.get("annotations")), "warnings": poisoning.findings(tool)}
                       for tool in found["tools"]]}
@@ -571,8 +615,17 @@ async def discover_for_registration(endpoint: str, principal: str | None = None)
 async def register_server(request: dict, actor: str) -> dict:
     server_id = request["server_id"]
     server_location = residency.normalize(request.get("residency"))
+    local = request.get("local")
+    if local:
+        # DEV-73: the server runs on each caller's own device under a signed manifest.
+        if request["endpoint"] != local_jobs.PREFIX + server_id:
+            raise ValueError(f"로컬 실행 서버는 {local_jobs.PREFIX}{server_id} 주소로 등록합니다.")
+        endpoint = request["endpoint"]
+    else:
+        endpoint = registration_endpoint(request["endpoint"])
     residency.require_location(server_location, request["data_class"], registry.catalog().get("organization", {}))
-    endpoint = registration_endpoint(request["endpoint"])
+    if not local:
+        endpoint = registration_endpoint(request["endpoint"])
     try:
         intake_id = uuid.UUID(request.get("intake_id") or "")
     except ValueError as exc:
@@ -638,7 +691,12 @@ async def register_server(request: dict, actor: str) -> dict:
     if row and (row["lifecycle"] or "OPERATING") in {"TERMINATING", "RETIRED"}:
         raise ValueError("종료 절차를 거친 서버 id는 다시 쓸 수 없습니다. 새 id로 등록하세요.")
     runtime = None
-    if intake["intake_kind"] == "repository":
+    if local and intake["intake_kind"] != "repository":
+        raise ValueError("로컬 실행은 검증한 구현 저장소 신청으로만 등록합니다.")
+    if local:
+        local = local_jobs.local_block(local["manifest"], local["signature"],
+                                       await local_jobs.applicant_device(intake["submitted_by"], intake_id), server_id)
+    if intake["intake_kind"] == "repository" and not local:
         # A source the solution runs itself is registered at the address of that run, so the
         # registration names the image built from the approved commit (DEV-38).
         runtime = await db.fetch_one(
@@ -646,7 +704,15 @@ async def register_server(request: dict, actor: str) -> dict:
                FROM mcp_runtimes WHERE intake_id=%s AND status='ACTIVE'""", (intake_id,))
         if runtime and endpoint != runtime["endpoint"]:
             raise ValueError(f"이 신청은 솔루션이 실행하고 있습니다. 실행 주소로 등록하세요: {runtime['endpoint']}")
-    found = await upstream.discover(endpoint)
+    if local:
+        await local_jobs.approve_manifest(local, str(intake_id))
+        token = local_jobs.registering.set(local)
+        try:
+            found = await upstream.discover(endpoint)
+        finally:
+            local_jobs.registering.reset(token)
+    else:
+        found = await upstream.discover(endpoint)
     if remote_review and (found["version"] != remote_review["version"]
             or found["advertised_name"] != remote_review["advertised_name"]
             or found["protocol_version"] != remote_review["protocol_version"]):
@@ -743,6 +809,8 @@ async def register_server(request: dict, actor: str) -> dict:
                             "solo_operator": approved_risk.get("solo_operator"), "version": stated["version"]},
         "runtime": {key: str(value) for key, value in runtime.items()} if runtime else None,
     }
+    if local:
+        spec.update(local=local, deployment="local")
     contract = {"package": f"{package}@{version}", "server_name": found["advertised_name"],
                 "server_version": found["version"], "protocol_version": found["protocol_version"],
                 "tools": {name: registry.tool_hashes(tool) for name, tool in sorted(advertised.items())}}
@@ -796,15 +864,22 @@ async def register_server(request: dict, actor: str) -> dict:
         scope={"intake": str(intake_id), "tools": spec["tools"], "valid_until": valid_until, "data_class": request["data_class"],
                "residency": server_location,
                "artifact_sha256": ((spec["provenance"].get("artifact") or {}).get("sha256")), "version": spec["provenance"].get("version"),
-               "impact": {name: high_impact.normalize(item) for name, item in tool_reviews.items()}})
+               "impact": {name: high_impact.normalize(item) for name, item in tool_reviews.items()},
+               **({'local':{'observer_device':local['observer_device'],
+                            'observer_uid':(await local_jobs._device(local['observer_device']))['local_uid'],
+                            'manifest_sha256':local['manifest_sha256'],
+                            'signature_generation':local['manifest']['approval']['generation']}} if local else {})})
     refreshed = await refresh_catalog(server_id)
     await upstream.release_pool(endpoint, None, "registration")
+    if local:
+        await local_jobs.approve_manifest(local, str(intake_id), observed=True)
     return {"server_id": server_id, "status": refreshed["status"], "valid_until": valid_until,
             "tools": spec["tools"], "relationship_id": relationship["id"], "gateway_path": f"/mcp/{server_id}/"}
 
 
 async def deregister_server(server_id: str, actor: str, reason: str | None = None) -> dict:
     """Takes a Console registration back out. The rows stay (DISABLED) for the audit trail."""
+    await local_jobs.quiesce(server_id=server_id)
     async with REGISTER_LOCK:
         doc = registry.runtime()
         if server_id not in doc["servers"]:
@@ -849,6 +924,8 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
         for name, item in normalized.items():
             if item["inputs"] is not None:
                 review.check_inputs(name, pinned.get(name) or spec["parameter_constraints"].get(name) or {}, item["inputs"])
+        if spec.get('local'):
+            await local_jobs.quiesce(server_id=server_id)
         spec["tool_reviews"] = {**(spec.get("tool_reviews") or {}), **normalized}
         if spec.get("constraints_derived"):
             # New destinations move the address patterns with them.
@@ -864,6 +941,8 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
                                      "destinations": {name: item["destinations"] for name, item in normalized.items()},
                                      "impact": {name: high_impact.normalize(item) for name, item in normalized.items()}})
     await tool_sunset.approve_review(server_id, sorted(normalized), actor)
+    if spec.get('local'):
+        await local_jobs.resume(server_id=server_id)
     return {"server_id": server_id, "reviewed": sorted(normalized),
             "unreviewed": sorted(set(spec["tools"]) - set(spec["tool_reviews"]))}
 
@@ -1565,7 +1644,10 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
     stage = "connect"
     try:
         async with upstream.session(spec["endpoint"], principal=principal,
-                                    protocol=registry.pinned_protocol(server_id), server_id=server_id) as client:
+                                    protocol=registry.pinned_protocol(server_id), server_id=server_id,
+                                    device_id=(pac_payload.get("transport_claims") or {}).get("device_id")) as client:
+            if hasattr(client, "bind_evidence"):
+                client.bind_evidence(dispatch_state, pac_payload.get('transport_claims') or {})
             protocol_version = str(getattr(client, "protocol_version", "")) or None
             dispatch_state["upstream_connected"] = True
             dispatch_state.setdefault("client", {})["upstream_session_reused"] = bool(getattr(client, "reused", False))
@@ -1776,6 +1858,10 @@ def _upstream_failure(exc: Exception, event: dict) -> dict:
         if id(error) in seen:
             continue
         seen.add(id(error))
+        if getattr(error, 'local_policy', None):
+            return local_verdict(error.local_policy, 'Block', str(error), upstream_executed=executed,
+                                 upstream_attempted=attempted, result=None,
+                                 result_evidence={'disposition':'unknown' if attempted else 'not_executed'})
         if isinstance(error, output_contract.WireRejected):
             return local_verdict("MCP-OUTPUT-001", "Block", "협상된 출력 형식과 일치하지 않아 결과를 보류했습니다.",
                                  upstream_executed=True, upstream_attempted=True, result=None,
@@ -2086,8 +2172,10 @@ async def _decision_payload(event: dict, laps: _Laps) -> dict:
     # (and the pending intent turns uncertain once the reservation is gone).
     if event.get("request_id"):
         attempted = bool(event.get("upstream_attempted"))
+        intent = ('confirmed_not_executed' if not attempted and (event.get('client') or {}).get('local_execution')
+                  else None if not attempted else 'resolved' if event.get('upstream_executed') else 'uncertain')
         await _release_call(event["request_id"], decision_id,
-                            None if not attempted else "resolved" if event.get("upstream_executed") else "uncertain")
+                            intent)
     return {**event, "decision_id": decision_id, "latency_ms": int((time.perf_counter() - laps.started) * 1000)}
 
 

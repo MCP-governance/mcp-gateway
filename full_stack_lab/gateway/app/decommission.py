@@ -238,6 +238,8 @@ async def open_case(target: str, reason: str, opened_by: str, engagement_label: 
     allowed = rel["allowed_resources"] if rel else [
         dict(r) for r in await db.fetch_all("SELECT name, action FROM mcp_tools WHERE server_id=%s AND enabled ORDER BY name", (server_id,))]
     label = engagement_label or (f"{rel['purpose']} · {rel['provider']}" if rel else f"{server['display_name']} · {server['supplier']}")
+    from . import local_jobs
+    await local_jobs.quiesce(server_id=server_id)
     async with db.transaction() as connection:
         # The row every dispatch share-locks (dispatch.record): the lock waits for dispatches already
         # recorded to commit, and the cutover is read from the database clock after it is held. A call
