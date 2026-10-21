@@ -135,3 +135,72 @@
 - 백로그 DEV-79, DEV-80 행은 아직 「미착수」다. 두 기능은 main에 병합돼 있다.
 - 백로그 DEV-78 행은 「미커밋」으로 남아 있다. 병합돼 있다.
 - D-188은 백로그 행이 없다.
+
+## 6-A. DEV-80 도착·중복 시험 추가
+
+- 작업 브랜치: `10/21-dev80-arrival-tests`, 기준 `origin/main` ce1000d. 제품 코드는 고치지 않았다. push하지 않았다.
+- 새 시험: `full_stack_lab/tests/endpoint_offline_arrival_check.py` 8건, 전부 통과. 기존 `endpoint_offline_buffer_check.py` 10건은 파일을 고치지 않았고 그대로 통과했다.
+- 대상 공백: 위 2절의 DEV-80 「재연결 후 도착」(게이트웨이 도착과 ACK 커서), 「ACK 전 중단 시 재전송 중복」, 「폐기 건수 보고 경로」.
+
+### 시험 구성과 대역 범위
+
+장치 쪽은 실제 `os-observer.main()`을 그대로 실행한다. 실제 버퍼 파일과 커서 파일을 쓰고, 실제 `offline_buffer`를 쓴다. 게이트웨이 쪽은 실제 `main.endpoint_os_report`, `main.endpoint_observation_status`, `endpoint_plane.ingest_os_events`를 호출한다. 다음은 대역이다.
+
+| 대역 | 대체 대상 | 이유 |
+| --- | --- | --- |
+| 인메모리 저장소 `Store` | PostgreSQL | DB 없이 두 중복 키를 확인. INSERT 문장에 `NOT EXISTS (... raw_sha256=%s)`와 `ON CONFLICT(endpoint_id,event_id)`가 남아 있는지 문장 대조. 실제 PostgreSQL 증거가 아니다 |
+| `subprocess.run` | `journalctl` | 실제 journal 줄 형식의 JSON을 주고 `--after-cursor`를 흉내 |
+| `AGENT.call` | HTTP·TLS·장치 키 | 라우트 함수를 직접 호출. 인증·HTTP 계층 없음 |
+| `Path.stat`·`os.geteuid` | root 소유 검사 | 이 실행 환경은 Windows 사용자. 검사가 보는 소유자·권한 비트만 흉내 |
+
+### 시험 목록과 판정 키
+
+| 시험 | 확인하는 것 | 판정 키 |
+| --- | --- | --- |
+| `test_offline_events_all_arrive_after_reconnect_and_the_ack_cursor_moves_last` | 230건 적재 → 503 실패 → 재연결 뒤 전부 도착(배치 100), 커서는 마지막에만 | 도착 확인 후 커서 |
+| `test_a_gateway_error_never_moves_the_ack_cursor_and_each_retry_delivers_once` | 500·503에서 커서 전진 없음, 재시도 뒤 한 번씩 도착 | 2xx 응답만 확인으로 인정 |
+| `test_a_device_stop_after_the_gateway_stored_resends_and_the_gateway_keeps_one_copy` | 저장 후 ACK 전 장치 중단 → 재시작 → 중복 0 | `raw_sha256`(7일) |
+| `test_a_lost_answer_after_the_gateway_stored_is_resent_and_stored_once` | 저장 후 응답 유실 → 재전송 → 중복 0 | `raw_sha256`(7일) |
+| `test_the_gateway_keys_are_the_raw_hash_inside_seven_days_and_the_event_id` | 같은 raw·다른 event_id, 같은 event_id·다른 raw, 8일 뒤 같은 raw | `raw_sha256`(7일) 그리고 `(endpoint_id, event_id)` 각각 |
+| `test_a_buffer_overflow_is_reported_once_with_its_count_and_reason` | 상한 초과 → 같은 실행에서 건수 5, 사유 `capacity`, 커서 전진 없음 | 보고 행 `endpoint_buffer_events` |
+| `test_a_drop_count_survives_a_gateway_outage_and_is_reported_after_reconnect` | 보고 실패 시 건수 유지 → 재연결 뒤 한 번 보고 | 같은 `drop_uid`로 한 행 |
+| `test_entries_expired_from_the_buffer_are_reported_as_retention` | 7일 만료 2건 → `retention` 보고, 나머지 3건 도착 | 보고 행 사유 `retention` |
+
+raw 키와 event_id 키는 journal에서 거의 같은 사건을 가리킨다. journal 원문에 `__CURSOR`가 들어 있어 raw 해시가 cursor마다 달라지기 때문이다. raw 키는 event_id 규칙이 바뀌거나 cursor가 다시 쓰일 때만 추가로 막는다.
+
+### 민감도 확인 (제품 코드 일시 변경 후 원복, 5건)
+
+| 변경 | 실패한 시험 | 결과 |
+| --- | --- | --- |
+| M1 `os-observer.py`: 커서 조건에서 `delivery_ok and not pending` 제거 | 3건 | 원복, git diff 없음 |
+| M2 `offline_buffer.py` `flush`: `acknowledge`를 `send` 앞으로 | 4건 | 원복 |
+| M3 `endpoint_plane.py`: `RAW_DEDUPE_DAYS = 0` | 2건 | 원복 |
+| M4 `os-observer.py`: 보고에서 `drop_report()` 제외 | 3건 | 원복 |
+| M5 `offline_buffer.py`: `drop_fingerprint` 확인 제거 | 1건 | 원복 |
+
+모든 변경에서 최소 1건이 실패했다. 원복 뒤 `git status`에는 새 시험 파일만 남았다.
+
+### 제품 결함 후보 (시험 파일에 넣지 않음, 메인 판단 필요)
+
+**후보 1. 폐기 건수가 같은 미적재 건을 실행마다 다시 센다 (재현됨, 연결 정상 상태에서도 발생)**
+- 재현: 버퍼 상한 3, journal 줄 1~5 → 실행 1 보고 5. 이어서 줄 6~7 추가 → 실행 2 보고 7. 줄 1~7은 모두 미적재 상태이고 서로 다른 7건이다. 게이트웨이 합계는 12.
+- 원인: `endpoint-agent/offline_buffer.py:183-184`의 `_record_drop(meta, max(1, len(rejected)), "capacity", ...)`. `rejected`는 이번 호출의 전체 추가분이다. 이전 실행에서 이미 보고된 줄도 들어간다. `drop_fingerprint` 확인(`:129`)은 같은 집합의 재시도만 막는다. 집합이 조금이라도 달라지면 전부 다시 센다.
+- 의미: journal 줄은 커서가 전진하지 않아 계속 남아 있고, 버퍼가 비면 나중에 도착한다. "폐기"라는 보고 문구와 실제 상태가 어긋난다. 건수는 "시점별 미적재 건수의 합"이 되어 실제 고유 건수와 다르다.
+- 권고: 보고 건수를 고유 uid 기준(예: 버퍼 밖 미적재 건을 uid 집합으로 관리)으로 정하거나, 실행마다 덮어쓰기 값으로 바꾼다.
+
+**후보 2. 같은 `drop_uid`의 재보고 건수 증가를 게이트웨이가 버린다 (재현됨, 응답 유실 조건)**
+- 재현: 상한 3, 줄 1~5 → 실행 1에서 보고 5가 게이트웨이에 커밋되었으나 응답이 유실되어 장치는 실패로 기록. `drop_uid`와 건수 5가 장치에 남는다. 이어서 줄 6~8 추가 → 실행 2 보고 13(같은 uid). 게이트웨이 행은 5로 남는다.
+- 원인: `full_stack_lab/gateway/app/endpoint_plane.py:274-275`의 `ON CONFLICT(endpoint_id,event_uid) DO NOTHING`. 같은 uid의 나중 보고를 갱신하지 않는다. 장치 쪽은 `offline_buffer.py:133`에서 실패 시 uid를 유지하고 `os-observer.py:184-186`에서 보고 성공 뒤에만 비운다.
+- 권고: 후보 1을 고치면 같은 uid에 건수를 누적하는 일이 줄어든다. 그래도 `DO NOTHING`은 재보고가 같은 값이 아닐 때 조용히 버린다. 갱신 조건(`dropped_count` 증가 시 `GREATEST`)을 명시하는 것을 검토한다.
+
+**관찰 (결함으로 적지 않음)**
+- 장치가 `flush` 뒤·`enqueue` 전에 죽으면, 재시작 때 커서 없이 journal을 다시 읽어 같은 줄을 같은 실행에서 두 번 보낸다. 게이트웨이 raw 키가 전부 막았다(시험 `test_a_device_stop...`이 확인). 중복 방지가 게이트웨이에만 의존한다는 뜻이다.
+- 4xx 응답(예: 300자 초과 필드)이 배치 하나에 고정되면 큐가 그 배치에서 멈춘다. 현재 수집기 값으로는 300자·12키 제한에 닿지 않아 도달성이 낮다. 규정 밖이라 시험을 쓰지 않았다.
+- `os-observer-windows.py`는 채널별 커서(`*.os-cursor.json`)를 쓰는 다른 흐름이다. 이번 시험은 Linux `os-observer.py`만 덮는다. Windows 쪽 도착·커서 시험은 없다.
+
+### 남은 공백
+
+- 실제 PostgreSQL 중복 판정(`endpoint_evidence_pg_check.check_dedupe`)은 실행하지 않았다. PG 없음. 이번 시험의 중복 키는 SQL 문장 대조와 인메모리 대역이다.
+- 실제 journalctl, 실제 HTTP·TLS, 실제 root 소유 검사는 대역이다. 실기기 시험은 하지 않았다.
+- 후보 1·2는 시험 파일이 없다. 메인이 판단해 고친 뒤 시험을 추가한다. 시험 조건은 위 재현 절차를 그대로 쓴다.
+- 브랜치를 `git checkout -B ... origin/main`으로 만들어 upstream이 `origin/main`에 걸려 있다. 올릴 때 `git push origin 10/21-dev80-arrival-tests`처럼 이름을 명시한다. 그냥 `git push`를 쓰면 `origin/main`으로 갈 수 있다.
