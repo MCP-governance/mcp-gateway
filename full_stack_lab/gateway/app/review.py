@@ -79,6 +79,9 @@ async def require_independent(kind: str, target_kind: str, target_id: Any, actor
         raise NotIndependent("본인이 신청한 건은 본인이 승인할 수 없습니다. 다른 관리자가 처리해야 합니다.")
 
 
+SOLO_MODE_SETTING = "ROOT_SOLO_APPROVAL"  # the variable's name only; its value is never written to the ledger
+
+
 def solo_mode_enabled() -> bool:
     """Whether this deployment is configured for a single root operator."""
     return os.getenv("ROOT_SOLO_APPROVAL") == "1"
@@ -88,6 +91,28 @@ def solo_operator(user: dict) -> bool:
     """Mark approvals made by root while the single-operator mode is enabled."""
     return (solo_mode_enabled() and user.get("user_id") == "root"
             and "admin" in (user.get("roles") or ()))
+
+
+async def record_solo_mode_observation() -> bool:
+    """Start-up record of the single-operator setting (D-188). Writes a row only when the observed value
+    differs from the last recorded one, so a restart with the same setting adds nothing and a change is
+    recorded once. Stores the boolean, never the raw environment value. Returns whether a row was written."""
+    observed = solo_mode_enabled()
+    async with db.transaction() as connection:
+        # Two starts at once must not both see "no row yet" and both write.
+        await connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", ("solo-mode-observation",))
+        last = await (await connection.execute(
+            """SELECT scope FROM approval_events WHERE kind='solo-mode' AND target_kind='config' AND target_id=%s
+               ORDER BY id DESC LIMIT 1""", (SOLO_MODE_SETTING,))).fetchone()
+        previous = last["scope"].get("solo_mode") if last else None
+        if last is not None and previous == observed:
+            return False
+        await record_event("solo-mode", "recorded", "config", SOLO_MODE_SETTING, "system",
+                           reason="단독 운영 모드 켜짐 관측" if observed else "단독 운영 모드 꺼짐 관측",
+                           scope={"solo_mode": observed, "previous_solo_mode": previous,
+                                  "observed_at": datetime.now(UTC).isoformat()},
+                           connection=connection)
+        return True
 
 
 async def transition(query: str, params: tuple, **event: Any) -> dict | None:

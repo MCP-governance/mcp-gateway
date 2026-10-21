@@ -6,6 +6,7 @@ import base64
 import binascii
 import hashlib
 import io
+import logging
 import os
 import re
 import secrets
@@ -39,6 +40,7 @@ from .connectors import router as connectors_router
 from .integrations import router as integrations_router
 from .idp import router as idp_router
 
+LOG = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).parent / "agent_static"
 INTAKE_REPORT_DIR = Path(os.getenv("INTAKE_REPORT_DIR", "/intake-reports"))
 GATEWAY_URL = os.getenv("GATEWAY_URL", "http://gateway:8080")
@@ -112,6 +114,10 @@ async def lifespan(_: FastAPI):
     await disposal.reconcile()
     await bootstrap_passwords()
     await bootstrap_field_accounts()
+    try:
+        await review.record_solo_mode_observation()
+    except Exception:  # D-188: a ledger write that fails is logged, not allowed to stop the console from starting
+        LOG.exception("root solo mode setting was not recorded in approval_events")
     if os.getenv("MCP_FIELD_MODE") == "1":
         await reconcile_gitea_accounts()
     try:
