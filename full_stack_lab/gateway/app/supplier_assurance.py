@@ -21,7 +21,7 @@ EXPORT_FIELDS = (
 )
 
 
-def validate(value: dict[str, Any] | None, *, today: date | None = None) -> list[str]:
+def validate(value: dict[str, Any] | None, *, today: date | None = None, required: bool = True) -> list[str]:
     assurance = value or {}
     labels = {
         "legal_entity": "공급자 법인명", "supplier_contact": "공급자 연락처",
@@ -36,7 +36,7 @@ def validate(value: dict[str, Any] | None, *, today: date | None = None) -> list
     else:
         errors = []
     missing = [labels[key] for key in REQUIRED_FIELDS if not str(assurance.get(key) or "").strip()]
-    if missing:
+    if missing and required:
         errors.append(f"필수 공급자 보증 항목 누락: {', '.join(missing)}")
     raw_date = str(assurance.get("support_end") or "").strip()
     if raw_date:

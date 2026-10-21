@@ -423,3 +423,5 @@ ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS output_schema jsonb;
 ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS observed_output_schema_hash text
   DEFAULT '74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b';
 ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS approved_output_schema_hash text;
+
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS requested_tools jsonb NOT NULL DEFAULT '[]';

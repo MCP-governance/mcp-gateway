@@ -35,7 +35,7 @@ from .contract import (  # re-exported: older callers import these from core
     audit_fingerprint as _audit_fingerprint, walk_chain,
 )
 
-from . import review  # noqa: E402  (approval records, intake gate; see review.py)
+from . import intake_proposal, review  # noqa: E402  (approval records, intake gate; see review.py)
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/mcp/authz/decision")
 # 정책 관리대장(§11.8 / §12.5)은 정책 코드와 함께 배포되고 OPA가 그 정본이다.
@@ -541,8 +541,9 @@ def suggested_action(annotations: dict | None) -> str:
     return "r" if hints.get("readonlyhint") else "x" if hints.get("destructivehint") or hints.get("openworldhint") else "w"
 
 
-async def discover_for_registration(endpoint: str) -> dict:
-    found = await upstream.discover(registration_endpoint(endpoint))
+async def discover_for_registration(endpoint: str, principal: str | None = None) -> dict:
+    found = (await upstream.discover(registration_endpoint(endpoint), principal=principal) if principal
+             else await upstream.discover(registration_endpoint(endpoint)))
     return {"endpoint": endpoint.strip(), "server_name": found["advertised_name"], "version": found["version"],
             "protocol_version": found["protocol_version"], "catalog_hash": canonical_hash(found["tools"]),
             "tools": [{**tool, "suggested": suggested_action(tool.get("annotations")), "warnings": poisoning.findings(tool)}
@@ -552,6 +553,7 @@ async def discover_for_registration(endpoint: str) -> dict:
 async def register_server(request: dict, actor: str) -> dict:
     server_id = request["server_id"]
     server_location = residency.normalize(request.get("residency"))
+    residency.require_location(server_location, request["data_class"], registry.catalog().get("organization", {}))
     endpoint = registration_endpoint(request["endpoint"])
     try:
         intake_id = uuid.UUID(request.get("intake_id") or "")
@@ -562,6 +564,25 @@ async def register_server(request: dict, actor: str) -> dict:
         raise ValueError("승인된 도입 신청만 등록할 수 있습니다.")
     if await review.same_person(intake["submitted_by"], intake["reviewed_by"]):
         raise ValueError("신청자와 승인자가 같아 등록할 수 없습니다.")
+    evidence = intake.get("evidence") or {}
+    proposal = evidence.get("approval_proposal")
+    if proposal:
+        scope = evidence.get("one_click_scope") or {}
+        selected = scope.get("tools") or []
+        expected = {"server_id": proposal["server_id"], "endpoint": proposal["endpoint"],
+                    "catalog_hash": (proposal.get("catalog") or {}).get("catalog_hash"),
+                    "tools": {n: proposal["tools"][n] for n in selected}, "data_class": proposal["data_class"],
+                    "valid_days": scope.get("valid_days"), "supplier_assurance": scope.get("supplier_assurance"),
+                    "residency": scope.get("residency")}
+        if (scope.get("proposal_sha256") != intake_proposal.digest(proposal) or not selected
+                or intake_proposal.basis(intake) != proposal["basis"]
+                or intake.get("risk_input") != proposal["risk_input"]
+                or any(request.get(k) != v for k, v in expected.items())
+                or {n: review.scope_terms(item) for n, item in review.normalize_tool_reviews(
+                    request["tools"], request.get("tool_reviews"), actor).items()} != {
+                    n: review.scope_terms(item) for n, item in review.normalize_tool_reviews(
+                        expected["tools"], {n: proposal["tool_reviews"][n] for n in selected}, actor).items()}):
+            raise ValueError("화면에서 승인한 범위와 다릅니다. 도입 검토를 다시 열어 확인하세요.")
     # Registration repeats the checks approval made: provenance recorded and compared with the copy in
     # use, every scan finished and fresh, no critical finding without a live acceptance (D-90).
     gate = await review.intake_gate(intake, verified=True)
@@ -641,7 +662,7 @@ async def register_server(request: dict, actor: str) -> dict:
     # A.I.G worker checks out for a static audit of this server (source_ref = package@commit).
     version = commit if github and commit else found["version"]
     assurance = request.get("supplier_assurance") or {}
-    assurance_errors = supplier_assurance.validate(assurance)
+    assurance_errors = supplier_assurance.validate(assurance, required=False)
     if assurance_errors:
         raise ValueError("등록할 수 없습니다: " + " / ".join(assurance_errors))
     # DEV-71: the tier is read again from the stated input the approval was made on, and the approval
@@ -650,13 +671,27 @@ async def register_server(request: dict, actor: str) -> dict:
     approved_risk = (intake.get("evidence") or {}).get("risk_assessment") or {}
     if stated["status"] != "ok" or approved_risk.get("input_sha256") != stated["input_sha256"]:
         raise ValueError("등록할 수 없습니다: 승인 때 확인한 영향평가 입력이 없거나 바뀌었습니다. 다시 신청하세요.")
+    if stated["tier"] in {"high", "very_high"}:
+        approvers = []
+        for person in approved_risk.get("approvers") or []:
+            if await review.same_person(person, intake["submitted_by"]):
+                raise ValueError("신청자는 승인자로 셀 수 없습니다.")
+            if not any([await review.same_person(person, other) for other in approvers]):
+                approvers.append(person)
+        if len(approvers) < 2:
+            raise ValueError("높은 위험 등급은 서로 다른 관리자 두 명이 승인해야 등록할 수 있습니다.")
     ranks = list(risk_tier.CHOICES["data_class"])
     if ranks.index(request["data_class"]) > ranks.index(intake["risk_input"]["data_class"]):
         raise ValueError("등록할 수 없습니다: 신청에 적은 데이터 등급보다 높은 등급입니다. 영향평가 입력을 고쳐 다시 승인하세요.")
     approval_until = datetime.now(UTC) + timedelta(days=int(request["valid_days"]))
+    if proposal:
+        approval_until = datetime.fromisoformat(evidence["one_click_scope"]["valid_until"])
+        if approval_until <= datetime.now(UTC):
+            raise ValueError("승인 기한이 지났습니다. 새 도입 신청이 필요합니다.")
     if remote_review:
         approval_until = datetime.fromisoformat(remote_review["valid_until"])
-    valid_until = min(approval_until, supplier_assurance.support_expiry(assurance["support_end"])).isoformat(timespec="seconds")
+    valid_until = (min(approval_until, supplier_assurance.support_expiry(assurance["support_end"]))
+                   if assurance.get("support_end") else approval_until).isoformat(timespec="seconds")
     spec = {
         "display_name": request["display_name"], "package": package, "version": version,
         "source_url": source_url or endpoint, "supplier": request.get("supplier") or host,

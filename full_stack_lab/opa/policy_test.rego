@@ -1382,3 +1382,34 @@ test_residency_pack_change_invalidates_old_approval if {
     result.decision == "Approval"
     result.policy_id == "P-RESIDENCY-002"
 }
+
+test_intake_disabled_jurisdiction_pack_allows_missing_location if {
+    original := residency_input("nonimportant", [residency_target([], [])], data.residency)
+    location := object.union(original.pac.facts.residency, {"enabled": false})
+    facts := object.union(original.pac.facts, {"residency": location})
+    document := object.union(original, {"pac": object.union(original.pac, {"facts": facts})})
+    result := decision with input as document
+    result.decision == "Allow"
+    result.policy_id != "P-RESIDENCY-001"
+}
+
+test_intake_enabled_jurisdiction_pack_still_blocks_missing_location if {
+    original := residency_input("nonimportant", [residency_target([], [])], data.residency)
+    location := object.union(original.pac.facts.residency, {"enabled": true})
+    facts := object.union(original.pac.facts, {"residency": location})
+    document := object.union(original, {"pac": object.union(original.pac, {"facts": facts})})
+    result := decision with input as document
+    result.decision == "Block"
+    result.policy_id == "P-RESIDENCY-001"
+}
+
+test_intake_disabled_location_pack_does_not_bypass_contract_gate if {
+    original := residency_input("nonimportant", [residency_target([], [])], data.residency)
+    location := object.union(original.pac.facts.residency, {"enabled": false})
+    facts := object.union(original.pac.facts, {"residency": location})
+    document := object.union(original, {"pac": object.union(original.pac, {"facts": facts}),
+                                       "contract": object.union(original.contract, {"schema_hash_match": false})})
+    result := decision with input as document
+    result.decision == "Block"
+    result.policy_id == "MCP-CATALOG-001"
+}
