@@ -8,12 +8,14 @@ append-only approval_events entry written in the same transaction.
 """
 from __future__ import annotations
 
+import uuid
+
 from . import db, review
 
 TARGET = "user-server-suspension"
 
 
-async def suspend(user_token: str, server_id: str, actor: str, reason: str) -> dict:
+async def suspend(user_token: str, server_id: str, actor: str, reason: str, batch: str | None = None) -> dict:
     async with db.transaction() as connection:
         # The lock dispatch.record() takes before its final intent INSERT: a call already past it is on its
         # way and is recorded below, every later one sees this row.
@@ -37,15 +39,16 @@ async def suspend(user_token: str, server_id: str, actor: str, reason: str) -> d
                  FROM call_reservations r LEFT JOIN dispatch_intents i USING (request_id)
                 WHERE r.user_token=%s AND r.server_id=%s AND r.released_at IS NULL AND r.expires_at > now()""",
             (user_token, server_id))).fetchone()
+        scope = {"user": user_token, "server": server_id, "unsent": int(flight["unsent"]), "sent": int(flight["sent"])}
+        if batch:
+            scope["batch"] = batch
         await review.record_event(
-            "user-server-suspend", "held", TARGET, row["id"], actor, reason=reason,
-            scope={"user": user_token, "server": server_id, "unsent": int(flight["unsent"]), "sent": int(flight["sent"])},
-            connection=connection)
+            "user-server-suspend", "held", TARGET, row["id"], actor, reason=reason, scope=scope, connection=connection)
     return {"id": row["id"], "user_token": user_token, "server_id": server_id, "suspended_at": row["suspended_at"],
             "unsent": int(flight["unsent"]), "sent": int(flight["sent"])}
 
 
-async def resume(suspension_id: int, actor: str, note: str) -> dict:
+async def resume(suspension_id: int, actor: str, note: str, batch: str | None = None) -> dict:
     async with db.transaction() as connection:
         row = await (await connection.execute(
             """UPDATE user_server_suspensions SET resumed_at=now(), resumed_by=%s, resume_note=%s
@@ -53,10 +56,54 @@ async def resume(suspension_id: int, actor: str, note: str) -> dict:
             (actor, note, suspension_id))).fetchone()
         if not row:
             raise ValueError("중지 상태가 아닙니다.")
+        scope = {"user": row["user_token"], "server": row["server_id"]}
+        if batch:
+            scope["batch"] = batch
         await review.record_event(
-            "user-server-resume", "approved", TARGET, row["id"], actor, reason=note,
-            scope={"user": row["user_token"], "server": row["server_id"]}, connection=connection)
+            "user-server-resume", "approved", TARGET, row["id"], actor, reason=note, scope=scope, connection=connection)
     return row
+
+
+async def operating_servers() -> list[str]:
+    # The same set endpoint_plane and pc_kit treat as in service.
+    rows = await db.fetch_all("SELECT id FROM mcp_servers WHERE status IN ('READY','DRIFT') AND lifecycle='OPERATING' ORDER BY id")
+    return [row["id"] for row in rows]
+
+
+async def suspend_all(user_token: str, actor: str, reason: str) -> dict:
+    """Stop one employee's use of every operating server: suspend() once per server, each in its own transaction.
+
+    A failure on one server does not undo the others. The result lists what was stopped (with its own row and
+    record), what was already stopped, and what failed, so nothing is reported as a total.
+    """
+    if not await db.fetch_one("SELECT 1 FROM principals WHERE token=%s AND status <> 'deleted'", (user_token,)):
+        raise LookupError("관리대장에 없는 사용자입니다.")
+    batch = uuid.uuid4().hex
+    result = {"batch": batch, "user_token": user_token, "suspended": [], "skipped": [], "failed": []}
+    for server_id in await operating_servers():
+        try:
+            result["suspended"].append(await suspend(user_token, server_id, actor, reason, batch=batch))
+        except ValueError as exc:
+            result["skipped"].append({"server_id": server_id, "reason": str(exc)})
+        except Exception as exc:  # per server, and reported; never counted as stopped
+            result["failed"].append({"server_id": server_id, "error": type(exc).__name__})
+    return result
+
+
+async def resume_all(user_token: str, actor: str, note: str) -> dict:
+    """Resume every active stop of one employee, one resume() per row, reported the same way as suspend_all."""
+    batch = uuid.uuid4().hex
+    result = {"batch": batch, "user_token": user_token, "resumed": [], "skipped": [], "failed": []}
+    for row in await db.fetch_all(
+            "SELECT id, server_id FROM user_server_suspensions WHERE user_token=%s AND resumed_at IS NULL ORDER BY id",
+            (user_token,)):
+        try:
+            result["resumed"].append(await resume(row["id"], actor, note, batch=batch))
+        except ValueError as exc:
+            result["skipped"].append({"id": row["id"], "server_id": row["server_id"], "reason": str(exc)})
+        except Exception as exc:
+            result["failed"].append({"id": row["id"], "server_id": row["server_id"], "error": type(exc).__name__})
+    return result
 
 
 async def listing() -> list[dict]:

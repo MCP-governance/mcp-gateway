@@ -1437,6 +1437,8 @@ ROUTES.people = async (_, tab) => {
             <td class="num">${a.user_id === viewer.user_id ? html`<span class="small muted">본인</span>`
               : html`<button class="btn sm" data-act="account-status" data-id="${a.user_id}" data-name="${a.display_name}" data-status="${a.status}">상태 변경</button>
                 <button class="btn sm" data-act="suspend-open" data-token="${a.token}" data-name="${a.display_name}">MCP 이용 중지</button>
+                <button class="btn sm" data-act="suspend-all" data-token="${a.token}" data-name="${a.display_name}">전체 중지</button>
+                <button class="btn sm" data-act="resume-all" data-token="${a.token}" data-name="${a.display_name}">전체 재개</button>
                 ${a.user_id !== "root" ? html`<button class="btn sm danger" data-act="account-delete" data-id="${a.user_id}" data-name="${a.display_name}">삭제</button>` : ""}`}</td></tr>`)}
           </tbody></table><p class="empty" data-list-empty="account-list" hidden>검색 결과 없음</p>`, { flush: true, tools: listToolbar("account-list", "이름·이메일·부서 검색") }) },
         { key: "devices", label: "엔드포인트", n: inv.agents.length, body: html`<div class="stack">
@@ -2497,6 +2499,23 @@ const ACTIONS = {
     if (!fd) return;
     await gw(`suspensions/${encodeURIComponent(el.dataset.id)}/resume`, { method: "POST", body: { note: fd.get("note").trim() } });
     toast("이용을 재개했습니다."); reload();
+  },
+  async "suspend-all"(el) {
+    const fd = await ask({ title: `${el.dataset.name} · 전체 MCP 이용 중지`,
+      fields: field.text("reason", "사유", 'required minlength="4" maxlength="500"', "관리자 수동 중지"),
+      confirm: "전체 중지", danger: true });
+    if (!fd) return;
+    const r = await gw("user-suspensions/stop-all", { method: "POST", body: { user_token: el.dataset.token, reason: fd.get("reason").trim() } });
+    toast(`중지 ${r.suspended.length}건 · 건너뜀 ${r.skipped.length}건 · 실패 ${r.failed.length}건`, r.failed.length > 0);
+    reload();
+  },
+  async "resume-all"(el) {
+    const fd = await ask({ title: `${el.dataset.name} · 전체 MCP 이용 재개`,
+      fields: field.text("note", "메모", 'required minlength="4" maxlength="500"', "중지 해소"), confirm: "전체 재개" });
+    if (!fd) return;
+    const r = await gw("user-suspensions/resume-all", { method: "POST", body: { user_token: el.dataset.token, note: fd.get("note").trim() } });
+    toast(`재개 ${r.resumed.length}건 · 건너뜀 ${r.skipped.length}건 · 실패 ${r.failed.length}건`, r.failed.length > 0);
+    reload();
   },
   async "account-delete"(el) {
     const fd = await ask({ title: `${el.dataset.name} 계정 삭제`,
