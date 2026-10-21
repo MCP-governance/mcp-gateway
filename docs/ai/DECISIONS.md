@@ -1885,6 +1885,8 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 재사용: D-122의 `ops_suspensions` 구조(복귀 필드를 채우는 상태 행)·`review.record_event`·D-140 최종 dispatch 잠금 순서. 서버 단위 중지(D-122)·계정 상태·종료 절차는 독립이며 서로 되돌리지 않는다. 콘솔은 사용자·엔드포인트 화면의 사용자 행(MCP 이용 중지)과 「이용 중지」 탭(재개)이다.
 - 근거: [방향 갱신 10-20](../../research/llm-wiki/analysis/direction-1020/README.md) 3장 DEV-79, [통제 검토](../../research/llm-wiki/analysis/direction-1020/control-review.md) 105행(근거 M05 **제2항**·TC260 4.2.3(b)-(c), README의 제3항은 정정), [원자 요구사항·근거](../../research/llm-wiki/analysis/user-server-suspend/README.md).
 - 한계: 이미 전송된 호출은 취소하지 않는다(기록만). `tools/list`는 그대로 보이고 호출만 거부한다. 재개에 독립 승인은 요구하지 않는다(관리자 1명 운영). DEV-74 자동 중지는 아래 D-176에서 같은 상태를 재사용한다. 기기 배포·PJ1 실제 하네스 시험은 미실행이다.
+- 10-21 후속 구현: DEV-73 로컬 서버의 수동 중지는 단일 및 일괄 API가 공유하는 서비스에서 정지 ACK 뒤 상태와 원장을 기록한다. 별도 pair advisory lock을 ACK 대기부터 커밋까지 유지하고 기존 직원 dispatch 잠금은 ACK 뒤 취득한다. 재개는 같은 pair 잠금 안에서 상태 갱신과 정확한 `(server,user,빈 device)` stop 삭제를 한 트랜잭션으로 처리한다. ACK 실패나 취소 뒤 표식만 남으면 중지를 재시도해 완료한 다음 재개한다. Python 대역 시험을 통과했지만 실제 PG 경합과 장치 효과는 미검증이다. [보고](../../research/llm-wiki/status/reports/2026-10-21-user-local-suspend.md).
+
 ## D-179 출처 증명은 신뢰 키로 검증하고 미제공만 통과시킨다 (2026-10-21, DEV-77)
 
 - 문제: DEV-73 F3에서 이미지 서명·출처 증명은 DEV-77로 분리했다. 기존 소스 해시·라이선스·SBOM 분석은 누가 무엇을 빌드했는지 서명으로 증명하지 않으며, D-114 실행기는 내부 미러 commit·고정 레시피를 별도로 보장한다.

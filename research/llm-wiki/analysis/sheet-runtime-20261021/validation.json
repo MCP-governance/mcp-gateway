@@ -1,0 +1,31 @@
+{
+  "source_commit": "f09c245f072b95f7f5ef0ad9e60b4465a5fccf82",
+  "scope": "local-only",
+  "deployment_verified": false,
+  "actual_postgresql_concurrency_verified": false,
+  "environment": {
+    "platform": "macOS arm64",
+    "python": "3.13.7",
+    "opa": "1.20.2",
+    "pglast": "7.21 (product pin 7.11 unavailable; requirements unchanged)"
+  },
+  "suite": {
+    "files": 110,
+    "passed_files": 90,
+    "failed_files": 2,
+    "external_skipped_files": 18,
+    "dev73_rework": {
+      "passed": 20,
+      "skipped": 1,
+      "skip_reason": "Linux procfs FD test unavailable on macOS"
+    }
+  },
+  "separate_tests": {
+    "opa_passed": 130,
+    "evidence_gate_passed": 8,
+    "data_residency_gateway_passed": 15
+  },
+  "baseline_progress_percent": 63.3333333333333,
+  "after_progress_percent": 63.3333333333333,
+  "progress_delta_pp": 0
+}

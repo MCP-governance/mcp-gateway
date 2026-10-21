@@ -1,12 +1,17 @@
 {
-  "captured_at": "2026-10-21T15:18:58+09:00",
-  "head": "cf9f7e0d7d75c36cde00609692c3239ca078285f",
-  "branch": "10/21-status-update",
+  "captured_at": "2026-10-21T19:02:52+09:00",
+  "head": "f09c245f072b95f7f5ef0ad9e60b4465a5fccf82",
+  "branch": "10/21-sheet-runtime-completion",
   "status": [
-    "M research/llm-wiki/status/backlog.md",
+    "M docs/ai/DECISIONS.md",
+    " M docs/ai/OPS_RESPONSE.md",
+    " M research/llm-wiki/catalogs/threats.json",
+    " M research/llm-wiki/status/backlog.md",
     " M research/llm-wiki/status/current.md",
-    " M research/llm-wiki/status/repository-snapshot.json",
-    " M research/llm-wiki/status/repository-snapshot.md"
+    " M research/llm-wiki/status/reports/2026-10-21-dev45-evidence-gate.md",
+    " M research/llm-wiki/status/reports/2026-10-21-residency-transfer-review.md",
+    "?? research/llm-wiki/analysis/sheet-runtime-20261021/",
+    "?? research/llm-wiki/status/reports/2026-10-21-sheet-runtime-completion.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -14,7 +19,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805"
+      "sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -26,7 +31,7 @@
     },
     {
       "path": "full_stack_lab/gateway/app/idp.py",
-      "sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc"
+      "sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d"
     },
     {
       "path": "full_stack_lab/gateway/app/privacy.py",
@@ -50,7 +55,7 @@
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "c7d2562f6cb171444084b97fb91a77751b1e7d1ca5e2e3b009e35663db029535"
+      "sha256": "1259ae7a57ab0f579ef4d553382c152a5db83eb6e4ffd839ea55556ecab8b22d"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",
