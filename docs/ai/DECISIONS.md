@@ -1839,3 +1839,11 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 전환: API는 관리자 권한·한 줄 사유·현재 운영 상태·대상 이력/철회 상태를 확인하고 현재 ACTIVE 세대를 STOPPING으로 바꾸며 요청 사건을 같은 DB 트랜잭션에서 append한다. worker는 기존 컨테이너·망을 제거한 뒤, 하나의 DB 트랜잭션에서 철회·종료·공급망 중지와 계약 해시를 재검사하고 승인 해시를 과거 스냅샷으로 되돌린 다음 과거 이미지의 새 세대를 QUEUED로 만든다. 기존 부분 유일 색인이 동시 ACTIVE를 막고 기존 전송 직전 D-149 계약 재확인이 호출을 판정한다. 되돌리기 실행 이벤트는 이력 세대의 계약 스냅샷을 그대로 이어받는다.
 - 근거: [DEV-78 설계·검증 기록](../../research/llm-wiki/analysis/runtime-rollback/README.md), D-114 실행기 보고, D-144의 같은 상태/원장 트랜잭션·append-only 규칙, D-149 판본별 출력 해시, D-154의 실패 순서 구분.
 - 한계: 새 스냅샷 기록 전의 과거 세대는 증거를 추정하지 않으므로 선택할 수 없다. 이전 이미지가 로컬 엔진에 남아 있어야 하며 레시피 판본이 현재 고정 설정과 다르면 실행을 거부한다. PostgreSQL 다중 작업자 경합·실제 이미지 재기동·MCP 호출 판정·실기기/PJ1은 별도 검증 전까지 미실행이다.
+
+## D-178 저장된 SBOM 요약으로 영향 세대를 찾고 서버 중지는 기존 운영 경로를 쓴다 (2026-10-21, DEV-76)
+
+- 문제: 취약 구성요소 판본이 공개되면 등록 서버와 실행 세대를 찾아 즉시 격리할 필요가 있다. 현재 Syft 검사는 소스 트리 CycloneDX를 만들지만 서버/실행 세대별 영향 조회는 없다.
+- 결정: 입력 패키지 이름과 의미 판본 범위를 받아 `supply_chain_reports`의 성공한 Syft 요약만 대조한다. 도입 신청의 현재 Syft 시도 성공, 등록 서버, intake ID, 실행 세대의 source commit이 맞아야 그 세대에 연결한다. 판정 결과는 영향 있음·영향 없음·판단 불가·자료 없음으로 나누며, 잘린 목록에서 취약 버전이 발견되지 않은 경우(같은 이름의 확인된 판본이 범위 밖인 경우 포함)와 의미 판본이 아닌 값은 판단 불가다. 판본 비교는 세 자리 SemVer와 AND 조건의 `<`, `<=`, `=`, `>=`, `>`만 지원한다. API는 구성요소 이름·판본·purl·SBOM 보고서 행 ID를 근거로 반환한다.
+- 대응: 관리자 일괄 중지는 서버마다 기존 `ops_response.suspend`를 호출한다. 기존 `ops_suspensions`, 비활성 서버 상태, 실행 세대 중지와 `automatic-suspension` `approval_events`를 사용하고, 같은 일괄 조작의 `scope.batch`에 UUID와 요청 관리자(`scope.requested_by`)를 기록한다. 이미 중지된 서버는 건너뛰고 호출 오류는 실패로 별도 반환한다. 새 정책 ID·DB 테이블·중지 경로는 추가하지 않는다.
+- 저장 범위: Intake Syft 원본 CycloneDX는 `intake_reports` named volume에 있으며, DB의 `supply_chain_reports.summary.inventory`는 최대 200개 구성요소 요약이다. 200개를 넘으면 `truncated=true`이고 부재 판정을 확정하지 않는다. `workspace` SBOM은 단순 구성요소 수만 DB에 저장되며 intake 서버와 세대에 연결되지 않으므로 조회하지 않는다.
+- 근거·시험·한계: [SBOM 영향 조회 분석](../../research/llm-wiki/analysis/sbom-impact/README.md), [작업 보고](../../research/llm-wiki/status/reports/2026-10-21-sbom-impact.md). 비교 불가 판본과 사용자/엔드포인트 연결은 미지원이다. Syft 대상은 빌드 이미지가 아닌 intake source tree이므로 실제 실행 이미지 구성요소와 다를 수 있다. 로컬 합성 단위 시험과 정적 검사만 수행하며 실제 PostgreSQL·운영 서버 중지·게이트웨이 판정·기기/PJ1 확인은 하지 않았다.

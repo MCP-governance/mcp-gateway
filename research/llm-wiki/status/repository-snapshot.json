@@ -1,23 +1,21 @@
 {
-  "captured_at": "2026-10-21T13:08:15+09:00",
-  "head": "512c30b38a587a1751c57c7e93f5689ddf487827",
+  "captured_at": "2026-10-21T13:26:12+09:00",
+  "head": "859f4d63db9cab5714f25e5d3cc4607077959e13",
   "branch": "main",
   "status": [
     "M docs/ai/DATA_MODEL.md",
     " M docs/ai/DECISIONS.md",
     " M full_stack_lab/gateway/app/agent_service.py",
     " M full_stack_lab/gateway/app/agent_static/console.js",
-    " M full_stack_lab/gateway/app/v2_tables.sql",
-    " M full_stack_lab/runtime/worker.py",
-    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
+    " M full_stack_lab/gateway/app/ops_response.py",
     " M research/llm-wiki/catalogs/threats.json",
     " M research/llm-wiki/status/backlog.md",
-    " M research/llm-wiki/status/current.md",
     " M research/llm-wiki/status/repository-snapshot.json",
     " M research/llm-wiki/status/repository-snapshot.md",
-    "?? full_stack_lab/tests/runtime_rollback_check.py",
-    "?? research/llm-wiki/analysis/runtime-rollback/",
-    "?? research/llm-wiki/status/reports/2026-10-21-runtime-rollback.md"
+    "?? full_stack_lab/gateway/app/sbom_impact.py",
+    "?? full_stack_lab/tests/sbom_impact_check.py",
+    "?? research/llm-wiki/analysis/sbom-impact/",
+    "?? research/llm-wiki/status/reports/2026-10-21-sbom-impact.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -25,7 +23,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "f2f6ad5e6bc5f63b040c887f092814a6891143d1a636c7d33f02ec073512eaf6"
+      "sha256": "d7a90629be1fc87e5a4b7278756bd08e784f0bef08ab1725c247146b1422b069"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -53,7 +51,7 @@
     },
     {
       "path": "full_stack_lab/opa/decision.rego",
-      "sha256": "e52e3ea4de50e8ae9c4727079579bf86ba5967aebdb4921875d2ab1d3791c26e"
+      "sha256": "b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904"
     },
     {
       "path": "endpoint-agent/bootstrap.py",

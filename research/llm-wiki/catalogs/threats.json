@@ -145,10 +145,10 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "9cf7b9a7e8332e6086a1acaf4fe883d747b55ea0f2edddc4b64304610a2faec4",
+        "sha256": "2454471cad959d4e2047be81d84469ec07c0604d0ce611c2927c97057f2d01c9",
         "committed_sha256": "9cf7b9a7e8332e6086a1acaf4fe883d747b55ea0f2edddc4b64304610a2faec4",
-        "normalized_sha256": "9cf7b9a7e8332e6086a1acaf4fe883d747b55ea0f2edddc4b64304610a2faec4",
-        "worktree_modified": false
+        "normalized_sha256": "2454471cad959d4e2047be81d84469ec07c0604d0ce611c2927c97057f2d01c9",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/review.py",

@@ -24,14 +24,14 @@ from urllib.parse import quote, urlsplit
 from uuid import UUID, uuid4
 
 import httpx
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from psycopg.types.json import Jsonb
 
 from . import artifact_provenance, connections, consent, core, db, idp, oidc, provenance, review, upstream
-from . import risk_tier, supplier_assurance
+from . import risk_tier, sbom_impact, supplier_assurance
 from .release import build_info
 from .system_metrics import SystemMetrics
 from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, ResidencyFields, ToolReview, authenticate,
@@ -304,6 +304,13 @@ def github_repository_url(value: str) -> str:
 
 async def current_identity(authorization: str | None) -> dict:
     return await authenticated_user(authorization, require_scope=CONSOLE_SCOPE)
+
+
+async def admin_caller(authorization: str | None = Header(default=None)) -> dict:
+    user = await current_identity(authorization)
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "관리자 계정이 필요합니다.")
+    return user
 
 
 @app.post("/auth/mock-login")
@@ -890,8 +897,8 @@ PAGES_BY_ROLE = {
     # MCP를 신청하는 길"이다. 조직 전체의 기록·정책·종료 판정은 관리자 몫이다.
     "partner": ("activity", "consent", "intake"),
     "employee": ("activity", "consent", "intake"),
-    "admin": ("overview", "activity", "audit", "approvals", "coverage", "servers", "people", "consent", "intake", "termination",
-              "policy"),
+    "admin": ("overview", "activity", "audit", "approvals", "coverage", "servers", "people", "consent", "intake", "sbom-impact",
+              "termination", "policy"),
 }
 ROLE_LABELS = {"partner": "협력업체 직원", "employee": "직원", "admin": "관리자"}
 
@@ -1421,6 +1428,32 @@ async def intake_artifact(request_id: UUID, kind: str,
     if path.is_symlink() or path.resolve().parent != root or not path.is_file():
         raise HTTPException(404, "보고서 파일을 찾지 못했습니다.")
     return FileResponse(path, media_type="application/json", filename=name)
+
+
+class SbomImpactRequest(StrictModel):
+    package: str = Field(min_length=1, max_length=200)
+    version_range: str = Field(min_length=1, max_length=120)
+
+
+class SbomImpactStop(SbomImpactRequest):
+    reason: str = Field(min_length=4, max_length=500)
+
+
+@app.post("/api/supply-chain/impact")
+async def supply_chain_impact(request: SbomImpactRequest, user: dict = Depends(admin_caller)):
+    try:
+        return await sbom_impact.impact(request.package, request.version_range)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@app.post("/api/supply-chain/impact/stop")
+async def supply_chain_impact_stop(request: SbomImpactStop, user: dict = Depends(admin_caller)):
+    try:
+        return await sbom_impact.stop_affected(
+            request.package, request.version_range, user["principal"], request.reason)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
 
 
 EXIT_TERM_KEYS = ("provider_credential_disclosure", "revocation_evidence", "audit_access_retained")
