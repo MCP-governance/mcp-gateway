@@ -2100,6 +2100,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         if critical and len(reason) < review.RISK_ACCEPTANCE_MIN_REASON:
             raise HTTPException(422, "치명적 발견이 있습니다. 수용 사유를 10자 이상 입력하세요.")
         assessed = proposal["risk"]
+        solo_mode, solo = review.solo_mode_enabled(), review.solo_operator(user)  # D-188: recorded per approval, never counted
         approvers = []
         if pending:
             for actor in pending["approvers"]:
@@ -2123,7 +2124,8 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
                 "UPDATE mcp_intake_requests SET evidence=%s WHERE id=%s AND evidence=%s AND status=%s RETURNING id,status",
                 (Jsonb({**evidence, "one_click_pending": pending}), request_id, Jsonb(evidence), row["status"]),
                 kind="intake-one-click", outcome="recorded", target_kind="intake", target_id=request_id,
-                actor=user["principal"], applicant=row["submitted_by"], scope=pending)
+                actor=user["principal"], applicant=row["submitted_by"],
+                scope={**pending, "solo_mode": solo_mode, "solo_operator": solo})
             if not changed:
                 raise HTTPException(409, "신청이 변경되었습니다. 다시 열어 확인하세요.")
             return {"pending": True, "message": "다른 관리자의 승인을 기다리고 있습니다."}
@@ -2135,7 +2137,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
             catalog_hash=found["catalog_hash"], tools=tools, data_class=proposal["data_class"], valid_days=request.valid_days,
             poisoning_ack=True, tool_reviews=reviews, residency=location)
         risk_record = {**assessed, "approvers": approvers, "written_reason": len(risk_reason) >= risk_tier.MIN_REASON,
-                       "reasons": risk_reasons}
+                       "reasons": risk_reasons, "solo_mode": solo_mode, "solo_operator": solo}
         updated = {**evidence, "supplier_assurance": assurance, "risk_assessment": risk_record, "one_click_scope": scope,
                    "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance),
                    "one_click_pending": {"scope": scope, "approvers": approvers, "critical_reason": reason,
@@ -2166,6 +2168,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
             kind="intake-one-click", outcome="approved", target_kind="intake", target_id=request_id,
             actor=user["principal"], applicant=row["submitted_by"], reason=reason or None,
             scope={**scope, "catalog_hash": found["catalog_hash"], "approvers": approvers, "tool_reviews": reviews,
+                   "solo_mode": solo_mode, "solo_operator": solo,
                    "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance)})
         if not changed:
             raise HTTPException(409, "신청이 변경되었습니다. 다시 열어 확인하세요.")

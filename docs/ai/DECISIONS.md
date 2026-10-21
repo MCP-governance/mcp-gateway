@@ -1837,6 +1837,7 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 근거: 소유자 지시(10-20)는 운영 편의를 우선하되 보안 통제를 약화하지 않는 범위로 한정한다. [D-175 반려 판단](../../research/llm-wiki/analysis/review-1020/d175-arbitration.md)은 이 결정과 무관하며 변경하지 않는다.
 - 한계: 단독 운영 설정만으로 2인 통제를 대체하지 않는다. 독립 변경 관리 연동은 구현하지 않았다(기동 시 전환 기록은 아래 보강).
 - 보강(2026-10-21): 콘솔 기동 때 `ROOT_SOLO_APPROVAL`의 참/거짓을 `approval_events`의 `solo-mode` 행으로 관측 기록한다. 직전 기록과 값이 같으면 쓰지 않고, 다르면 전환 행 하나를 추가한다(`review.record_solo_mode_observation`, 시험 `tests/solo_mode_ledger_check.py`). 환경 변수 원문은 쓰지 않는다. 기록이 실패하면 기동 로그에 오류를 남기고 기동은 계속한다. 값을 바꿔도 재기동 전에는 관측되지 않으며, 바꾸고 되돌리는 사이에 기동이 없었다면 그 전환은 원장에 보이지 않는다.
+- 보강(2026-10-21): 한 화면 승인(`approve_and_register`)도 개별 승인과 같은 방식으로 `solo_mode`·`solo_operator`를 `intake-one-click` 사건 `scope`와 `risk_assessment`에 실제 값으로 남긴다. 표식은 기록값일 뿐 승인자 수 계산에는 쓰지 않는다(시험 `tests/oneclick_markers_provenance_check.py`).
 ## D-189 위험 등급의 승인 방식: 높음은 관리자 2명, 매우 높음은 관리자 2명과 위험 수용 사유 (2026-10-21)
 
 대체: D-143 ③과 D-187의 승인 방식 부분. 두 결정의 점수표·최소 등급·기존 서버 30일 유예·치명적 발견 수용 분리는 유지한다.
