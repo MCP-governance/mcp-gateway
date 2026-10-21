@@ -204,13 +204,12 @@ def bound_profile(name: str, shell: Path, home: str, binaries: dict[str, Path],
         return f"""
   deny {BASE}/{name}/header-helper x,
   deny /run/{name}.sock rw,
-  deny unix (connect, send, receive) type=stream peer=(addr="/run/{name}.sock"),
 """
 
+    # Pathname sockets use file rules; Unix addr= accepts abstract/anonymous addresses only.
     socket_rules = f"""
   /run/{name}.sock rw,
-  unix (create, getattr, getopt, setopt, shutdown) type=stream,
-  unix (connect, send, receive) type=stream peer=(addr="/run/{name}.sock", label=unconfined),
+  unix (create, getattr, getopt, setopt, shutdown) type=stream addr=none,
 """
     clients = "".join(f"  {BASE}/{name}/{key} px -> {name}-{key}-entry,\n" for key in binaries)
     text = (f"#include <tunables/global>\nprofile {name} {shell} {{\n{common()}"

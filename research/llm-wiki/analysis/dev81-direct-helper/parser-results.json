@@ -1,0 +1,47 @@
+{
+  "generated_utc": "2026-10-21T13:27:19.713142+00:00",
+  "parser_version": "AppArmor parser version 4.1.7\nCopyright (C) 1999-2008 Novell Inc.\nCopyright 2009-2018 Canonical Ltd.\n",
+  "scope": "offline compiler only; no kernel load, account change, credential or MCP call",
+  "checks": [
+    {
+      "stage": "warn",
+      "command": [
+        "apparmor_parser",
+        "-Q",
+        "-T",
+        "/tmp/dev81-parser-ldho2i1q/warn.apparmor"
+      ],
+      "started_utc": "2026-10-21T13:27:19.572249+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "Cache read/write disabled: interface file missing. (Kernel needs AppArmor 2.4 compatibility patch.)\n"
+    },
+    {
+      "stage": "enforce",
+      "command": [
+        "apparmor_parser",
+        "-Q",
+        "-T",
+        "/tmp/dev81-parser-ldho2i1q/enforce.apparmor"
+      ],
+      "started_utc": "2026-10-21T13:27:19.640334+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "Cache read/write disabled: interface file missing. (Kernel needs AppArmor 2.4 compatibility patch.)\n"
+    },
+    {
+      "stage": "historical-invalid-control",
+      "command": [
+        "apparmor_parser",
+        "-Q",
+        "-T",
+        "/mnt/c/Users/bobysg/bob/프로젝트/mcp-gw-codex-sol/research/llm-wiki/analysis/local-endpoints-1021/binding-profile.apparmor"
+      ],
+      "started_utc": "2026-10-21T13:27:19.698516+00:00",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Cache read/write disabled: interface file missing. (Kernel needs AppArmor 2.4 compatibility patch.)\nAppArmor parser error for /mnt/c/Users/bobysg/bob/프로젝트/mcp-gw-codex-sol/research/llm-wiki/analysis/local-endpoints-1021/binding-profile.apparmor in profile /mnt/c/Users/bobysg/bob/프로젝트/mcp-gw-codex-sol/research/llm-wiki/analysis/local-endpoints-1021/binding-profile.apparmor at line 30: unix rule: invalid value for addr='/run/mcpgw-unit.sock'\n\n"
+    }
+  ],
+  "passed": true
+}

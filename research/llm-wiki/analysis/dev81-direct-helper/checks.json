@@ -1,0 +1,173 @@
+{
+  "generated_utc": "2026-10-21T13:28:35.526978+00:00",
+  "python": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+  "checks": [
+    {
+      "command": [
+        "C:\\Users\\bobysg\\bob\\프로젝트\\.venv-mcpgw\\Scripts\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/run_local_suite.py",
+        "--out",
+        "research/llm-wiki/analysis/dev81-direct-helper/local-suite.json"
+      ],
+      "started_utc": "2026-10-21T13:27:47.963792+00:00",
+      "finished_utc": "2026-10-21T13:28:34.293340+00:00",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "total 109 실패=2 외부 의존 생략=18 통과=89\n"
+    },
+    {
+      "command": [
+        "C:\\Users\\bobysg\\bob\\프로젝트\\.venv-mcpgw\\Scripts\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "header_broker_pathname_check.py",
+        "-v"
+      ],
+      "started_utc": "2026-10-21T13:28:34.293340+00:00",
+      "finished_utc": "2026-10-21T13:28:34.398301+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_no_abstract_socket_connect_or_coarse_unix_allow (header_broker_pathname_check.PathnamePolicy.test_no_abstract_socket_connect_or_coarse_unix_allow) ... ok\ntest_pathname_is_mediated_by_file_rules (header_broker_pathname_check.PathnamePolicy.test_pathname_is_mediated_by_file_rules) ... ok\ntest_shell_children_cannot_regain_credential (header_broker_pathname_check.PathnamePolicy.test_shell_children_cannot_regain_credential) ... ok\ntest_warning_stage_is_preserved (header_broker_pathname_check.PathnamePolicy.test_warning_stage_is_preserved) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.025s\n\nOK\n"
+    },
+    {
+      "command": [
+        "C:\\Users\\bobysg\\bob\\프로젝트\\.venv-mcpgw\\Scripts\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "header_broker_label_check.py",
+        "-v"
+      ],
+      "started_utc": "2026-10-21T13:28:34.398301+00:00",
+      "finished_utc": "2026-10-21T13:28:34.624260+00:00",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "test_default_warning_keeps_legacy_helper_path_and_shell_policy (header_broker_label_check.BoundProfiles.test_default_warning_keeps_legacy_helper_path_and_shell_policy) ... ok\ntest_every_shell_and_companion_leaves_harness (header_broker_label_check.BoundProfiles.test_every_shell_and_companion_leaves_harness) ... ok\ntest_memory_access_denied_in_every_profile (header_broker_label_check.BoundProfiles.test_memory_access_denied_in_every_profile) ... ok\ntest_nonmanaged_kit_cannot_claim_enforcement (header_broker_label_check.BoundProfiles.test_nonmanaged_kit_cannot_claim_enforcement) ... ok\ntest_only_harness_can_delegate_to_fixed_helper (header_broker_label_check.BoundProfiles.test_only_harness_can_delegate_to_fixed_helper) ... FAIL\ntest_credentials_failure_cannot_be_warning_allow (header_broker_label_check.HeaderBrokerLabel.test_credentials_failure_cannot_be_warning_allow) ... ok\ntest_exact_approved_labels_receive_active_token (header_broker_label_check.HeaderBrokerLabel.test_exact_approved_labels_receive_active_token) ... ok\ntest_expired_and_empty_cache_never_return_token (header_broker_label_check.HeaderBrokerLabel.test_expired_and_empty_cache_never_return_token) ... ok\ntest_kernel_failures_deny_cached_token (header_broker_label_check.HeaderBrokerLabel.test_kernel_failures_deny_cached_token) ... ok\ntest_label_read_failure_unsupported_and_malformed_denied (header_broker_label_check.HeaderBrokerLabel.test_label_read_failure_unsupported_and_malformed_denied) ... ok\ntest_mismatch_complain_stack_prefix_and_other_user_denied (header_broker_label_check.HeaderBrokerLabel.test_mismatch_complain_stack_prefix_and_other_user_denied) ... ok\ntest_missing_mode_is_legacy_warning_invalid_mode_denies (header_broker_label_check.HeaderBrokerLabel.test_missing_mode_is_legacy_warning_invalid_mode_denies) ... ok\ntest_so_peersec_is_used_without_proc_pid_lookup (header_broker_label_check.HeaderBrokerLabel.test_so_peersec_is_used_without_proc_pid_lookup) ... ok\ntest_uid_mismatch_is_denied_even_in_warning_mode (header_broker_label_check.HeaderBrokerLabel.test_uid_mismatch_is_denied_even_in_warning_mode) ... ok\ntest_warning_allows_and_records_failures_without_token_in_log (header_broker_label_check.HeaderBrokerLabel.test_warning_allows_and_records_failures_without_token_in_log) ... ok\ntest_extracted_checks_need_no_new_namespace_and_follow_stage (header_broker_label_check.Integration.test_extracted_checks_need_no_new_namespace_and_follow_stage) ... ok\ntest_linux_download_contains_broker_module_and_installer_copies_it (header_broker_label_check.Integration.test_linux_download_contains_broker_module_and_installer_copies_it) ... ok\ntest_complain_instead_of_enforce_fails (header_broker_label_check.KernelReadiness.test_complain_instead_of_enforce_fails) ... ok\ntest_disabled_unreadable_and_removed_profile (header_broker_label_check.KernelReadiness.test_disabled_unreadable_and_removed_profile) ... ok\ntest_loaded_enforcing_complete_policy (header_broker_label_check.KernelReadiness.test_loaded_enforcing_complete_policy) ... ok\n\n======================================================================\nFAIL: test_only_harness_can_delegate_to_fixed_helper (header_broker_label_check.BoundProfiles.test_only_harness_can_delegate_to_fixed_helper)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\header_broker_label_check.py\", line 199, in test_only_harness_can_delegate_to_fixed_helper\n    self.assertIn('peer=(addr=\"/run/mcpgw-unit.sock\", label=unconfined)', self.text)\nAssertionError: 'peer=(addr=\"/run/mcpgw-unit.sock\", label=unconfined)' not found in '#include <tunables/global>\\nprofile mcpgw-unit /fixed/login-shell {\\n\\n  #include <abstractions/base>\\n  /etc/** r,\\n  /usr/** mr,\\n  /lib{,32,64}/** mr,\\n  /dev/tty rw,\\n  /dev/pts/** rw,\\n  /proc/** r,\\n  deny /proc/*/{mem,environ} r,\\n  deny /proc/*/task/*/{mem,environ} r,\\n  deny ptrace (trace, read, tracedby, readby),\\n  deny capability sys_ptrace,\\n  /run/systemd/resolve/{stub-resolv.conf,resolv.conf} r,\\n  /sys/kernel/mm/transparent_hugepage/enabled r,\\n  /sys/fs/cgroup/**/cpu.max r,\\n  /sys/fs/cgroup/**/memory.{max,high} r,\\n  owner /home/unit/** rwk,\\n  owner /home/unit/ r,\\n  /tmp/** rwk,\\n  /var/tmp/** rwk,\\n  network inet stream,\\n  network inet6 stream,\\n  signal (receive, send) peer=mcpgw-unit*,\\n  /usr/{bin,sbin}/{bash,dash,sh,cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,uname,date,timeout,sleep,true,false,tr,locale,locale-check,getconf} ix,\\n\\n  deny /usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper x,\\n  deny /run/mcpgw-unit.sock rw,\\n  /usr/local/lib/mcpgw-enforcement/mcpgw-unit/codex px -> mcpgw-unit-codex-entry,\\n  /usr/local/lib/mcpgw-enforcement/mcpgw-unit/claude px -> mcpgw-unit-claude-entry,\\n}\\nprofile mcpgw-unit-codex-entry {\\n\\n  #include <abstractions/base>\\n  /etc/** r,\\n  /usr/** mr,\\n  /lib{,32,64}/** mr,\\n  /dev/tty rw,\\n  /dev/pts/** rw,\\n  /proc/** r,\\n  deny /proc/*/{mem,environ} r,\\n  deny /proc/*/task/*/{mem,environ} r,\\n  deny ptrace (trace, read, tracedby, readby),\\n  deny capability sys_ptrace,\\n  /run/systemd/resolve/{stub-resolv.conf,resolv.conf} r,\\n  /sys/kernel/mm/transparent_hugepage/enabled r,\\n  /sys/fs/cgroup/**/cpu.max r,\\n  /sys/fs/cgroup/**/memory.{max,high} r,\\n  owner /home/unit/** rwk,\\n  owner /home/unit/ r,\\n  /tmp/** rwk,\\n  /var/tmp/** rwk,\\n  network inet stream,\\n  network inet6 stream,\\n  signal (receive, send) peer=mcpgw-unit*,\\n\\n  deny /usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper x,\\n  deny /run/mcpgw-unit.sock rw,\\n\\n  /opt/approved/codex px -> mcpgw-unit-bound-codex,\\n}\\nprofile mcpgw-unit-bound-codex {\\n\\n  #include <abstractions/base>\\n  /etc/** r,\\n  /usr/** mr,\\n  /lib{,32,64}/** mr,\\n  /dev/tty rw,\\n  /dev/pts/** rw,\\n  /proc/** r,\\n  deny /proc/*/{mem,environ} r,\\n  deny /proc/*/task/*/{mem,environ} r,\\n  deny ptrace (trace, read, tracedby, readby),\\n  deny capability sys_ptrace,\\n  /run/systemd/resolve/{stub-resolv.conf,resolv.conf} r,\\n  /sys/kernel/mm/transparent_hugepage/enabled r,\\n  /sys/fs/cgroup/**/cpu.max r,\\n  /sys/fs/cgroup/**/memory.{max,high} r,\\n  owner /home/unit/** rwk,\\n  owner /home/unit/ r,\\n  /tmp/** rwk,\\n  /var/tmp/** rwk,\\n  network inet stream,\\n  network inet6 stream,\\n  signal (receive, send) peer=mcpgw-unit*,\\n\\n  /run/mcpgw-unit.sock rw,\\n  unix (create, getattr, getopt, setopt, shutdown) type=stream addr=none,\\n\\n  /opt/approved/codex mr,\\n  /usr/{bin,sbin}/{bash,dash,sh,cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,uname,date,timeout,sleep,true,false,tr,locale,locale-check,getconf} px -> mcpgw-unit-bound-codex-tool,\\n  /opt/approved/codex-code-mode-host mrpx -> mcpgw-unit-bound-codex-tool,\\n\\n  /usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper px -> mcpgw-unit-bound-credential,\\n}\\nprofile mcpgw-unit-bound-codex-tool {\\n\\n  #include <abstractions/base>\\n  /etc/** r,\\n  /usr/** mr,\\n  /lib{,32,64}/** mr,\\n  /dev/tty rw,\\n  /dev/pts/** rw,\\n  /proc/** r,\\n  deny /proc/*/{mem,environ} r,\\n  deny /proc/*/task/*/{mem,environ} r,\\n  deny ptrace (trace, read, tracedby, readby),\\n  deny capability sys_ptrace,\\n  /run/systemd/resolve/{stub-resolv.conf,resolv.conf} r,\\n  /sys/kernel/mm/transparent_hugepage/enabled r,\\n  /sys/fs/cgroup/**/cpu.max r,\\n  /sys/fs/cgroup/**/memory.{max,high} r,\\n  owner /home/unit/** rwk,\\n  owner /home/unit/ r,\\n  /tmp/** rwk,\\n  /var/tmp/** rwk,\\n  network inet stream,\\n  network inet6 stream,\\n  signal (receive, send) peer=mcpgw-unit*,\\n\\n  deny /usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper x,\\n  deny /run/mcpgw-unit.sock rw,\\n\\n  /usr/{bin,sbin}/{bash,dash,sh,cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,uname,date,timeout,sleep,true,false,tr,locale,locale-check,getconf} ix,\\n  /opt/approved/codex-code-mode-host mrix,\\n}\\nprofile mcpgw-unit-claude-entry {\\n\\n  #include <abstractions/base>\\n  /etc/** r,\\n  /usr/** mr,\\n  /lib{,32,64}/** mr,\\n  /dev/tty rw,\\n  /dev/pts/** rw,\\n  /proc/** r,\\n  deny /proc/*/{mem,environ} r,\\n  deny /proc/*/task/*/{mem,environ} r,\\n  deny ptrace (trace, read, tracedby, readby),\\n  deny capability sys_ptrace,\\n  /run/systemd/resolve/{stub-resolv.conf,resolv.conf} r,\\n  /sys/kernel/mm/transparent_hugepage/enabled r,\\n  /sys/fs/cgroup/**/cpu.max r,\\n  /sys/fs/cgroup/**/memory.{max,high} r,\\n  owner /home/unit/** rwk,\\n  owner /home/unit/ r,\\n  /tmp/** rwk,\\n  /var/tmp/** rwk,\\n  network inet stream,\\n  network inet6 stream,\\n  signal (receive, send) peer=mcpgw-unit*,\\n\\n  deny /usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper x,\\n  deny /run/mcpgw-unit.sock rw,\\n\\n  /opt/approved/claude px -> mcpgw-unit-bound-claude,\\n}\\nprofile mcpgw-unit-bound-claude {\\n\\n  #include <abstractions/base>\\n  /etc/** r,\\n  /usr/** mr,\\n  /lib{,32,64}/** mr,\\n  /dev/tty rw,\\n  /dev/pts/** rw,\\n  /proc/** r,\\n  deny /proc/*/{mem,environ} r,\\n  deny /proc/*/task/*/{mem,environ} r,\\n  deny ptrace (trace, read, tracedby, readby),\\n  deny capability sys_ptrace,\\n  /run/systemd/resolve/{stub-resolv.conf,resolv.conf} r,\\n  /sys/kernel/mm/transparent_hugepage/enabled r,\\n  /sys/fs/cgroup/**/cpu.max r,\\n  /sys/fs/cgroup/**/memory.{max,high} r,\\n  owner /home/unit/** rwk,\\n  owner /home/unit/ r,\\n  /tmp/** rwk,\\n  /var/tmp/** rwk,\\n  network inet stream,\\n  network inet6 stream,\\n  signal (receive, send) peer=mcpgw-unit*,\\n\\n  /run/mcpgw-unit.sock rw,\\n  unix (create, getattr, getopt, setopt, shutdown) type=stream addr=none,\\n\\n  /opt/approved/claude mr,\\n  /usr/{bin,sbin}/{bash,dash,sh,cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,uname,date,timeout,sleep,true,false,tr,locale,locale-check,getconf} px -> mcpgw-unit-bound-claude-tool,\\n\\n  /usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper px -> mcpgw-unit-bound-credential,\\n}\\nprofile mcpgw-unit-bound-claude-tool {\\n\\n  #include <abstractions/base>\\n  /etc/** r,\\n  /usr/** mr,\\n  /lib{,32,64}/** mr,\\n  /dev/tty rw,\\n  /dev/pts/** rw,\\n  /proc/** r,\\n  deny /proc/*/{mem,environ} r,\\n  deny /proc/*/task/*/{mem,environ} r,\\n  deny ptrace (trace, read, tracedby, readby),\\n  deny capability sys_ptrace,\\n  /run/systemd/resolve/{stub-resolv.conf,resolv.conf} r,\\n  /sys/kernel/mm/transparent_hugepage/enabled r,\\n  /sys/fs/cgroup/**/cpu.max r,\\n  /sys/fs/cgroup/**/memory.{max,high} r,\\n  owner /home/unit/** rwk,\\n  owner /home/unit/ r,\\n  /tmp/** rwk,\\n  /var/tmp/** rwk,\\n  network inet stream,\\n  network inet6 stream,\\n  signal (receive, send) peer=mcpgw-unit*,\\n\\n  deny /usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper x,\\n  deny /run/mcpgw-unit.sock rw,\\n\\n  /usr/{bin,sbin}/{bash,dash,sh,cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,uname,date,timeout,sleep,true,false,tr,locale,locale-check,getconf} ix,\\n}\\nprofile mcpgw-unit-bound-credential {\\n  #include <abstractions/base>\\n  /etc/** r,\\n  /usr/** mr,\\n  /lib{,32,64}/** mr,\\n  /proc/** r,\\n  deny ptrace (trace, read, tracedby, readby),\\n  deny capability sys_ptrace,\\n  deny /proc/*/{mem,environ} r,\\n  deny /proc/*/task/*/{mem,environ} r,\\n  /usr/bin/python3{,.[0-9]*} ix,\\n\\n  /run/mcpgw-unit.sock rw,\\n  unix (create, getattr, getopt, setopt, shutdown) type=stream addr=none,\\n}\\n'\n\n----------------------------------------------------------------------\nRan 20 tests in 0.073s\n\nFAILED (failures=1)\n"
+    },
+    {
+      "command": [
+        "C:\\Users\\bobysg\\bob\\프로젝트\\.venv-mcpgw\\Scripts\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-m",
+        "pyflakes",
+        "endpoint-agent/enforce-linux.py",
+        "full_stack_lab/tests/header_broker_pathname_check.py",
+        "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\research\\llm-wiki\\analysis\\dev81-direct-helper\\check_parser.py",
+        "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\research\\llm-wiki\\analysis\\dev81-direct-helper\\collect_sources.py",
+        "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\research\\llm-wiki\\analysis\\dev81-direct-helper\\run_checks.py"
+      ],
+      "started_utc": "2026-10-21T13:28:34.624260+00:00",
+      "finished_utc": "2026-10-21T13:28:34.756844+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "literal_inventory": [
+    {
+      "file": "full_stack_lab/tests/endpoint_evidence_check.py",
+      "line": 205,
+      "symbol": "profile"
+    },
+    {
+      "file": "full_stack_lab/tests/endpoint_evidence_pg_check.py",
+      "line": 128,
+      "symbol": "profile"
+    },
+    {
+      "file": "full_stack_lab/tests/endpoint_evidence_pg_check.py",
+      "line": 205,
+      "symbol": "profile"
+    },
+    {
+      "file": "full_stack_lab/tests/header_broker_label_check.py",
+      "line": 32,
+      "symbol": "profile"
+    },
+    {
+      "file": "full_stack_lab/tests/header_broker_label_check.py",
+      "line": 32,
+      "symbol": "bound_profile"
+    },
+    {
+      "file": "full_stack_lab/tests/header_broker_pathname_check.py",
+      "line": 17,
+      "symbol": "profile"
+    },
+    {
+      "file": "full_stack_lab/tests/header_broker_pathname_check.py",
+      "line": 13,
+      "symbol": "profile"
+    },
+    {
+      "file": "full_stack_lab/tests/header_broker_pathname_check.py",
+      "line": 13,
+      "symbol": "bound_profile"
+    },
+    {
+      "file": "full_stack_lab/tests/launcher_pin_check.py",
+      "line": 135,
+      "symbol": "profile"
+    },
+    {
+      "file": "full_stack_lab/tests/managed_enforcement_check.py",
+      "line": 30,
+      "symbol": "profile"
+    },
+    {
+      "file": "full_stack_lab/tests/managed_enforcement_check.py",
+      "line": 39,
+      "symbol": "profile"
+    },
+    {
+      "file": "full_stack_lab/tests/managed_enforcement_check.py",
+      "line": 39,
+      "symbol": "profile"
+    },
+    {
+      "file": "full_stack_lab/tests/user_command_settings_check.py",
+      "line": 166,
+      "symbol": "profile"
+    },
+    {
+      "file": "full_stack_lab/tests/user_command_settings_check.py",
+      "line": 188,
+      "symbol": "profile"
+    },
+    {
+      "file": "full_stack_lab/tests/windows_config_env_check.py",
+      "line": 65,
+      "symbol": "profile"
+    },
+    {
+      "file": "full_stack_lab/tests/windows_config_env_check.py",
+      "line": 75,
+      "symbol": "profile"
+    }
+  ],
+  "sha256": {
+    "endpoint-agent/enforce-linux.py": "5752b89fb4340dc7cf0ae3d02c43ce486d1c49480f9119e3699ef593f28fb8e3",
+    "full_stack_lab/tests/header_broker_pathname_check.py": "30c73c166324c807ab1bdb9ebe98e8b725c8e4856d81a2540fd93a587ade0d8c",
+    "full_stack_lab/tests/header_broker_label_check.py": "49bb6f1942dfe51832ff1035386d444c1ce7160124c1d576de72e38cb54828d3"
+  },
+  "merge_allowed": false,
+  "reason": "Existing assertion requires main decision; direct-exec harness path remains unavailable in pinned Codex source"
+}
