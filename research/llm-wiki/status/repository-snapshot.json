@@ -1,15 +1,31 @@
 {
-  "captured_at": "2026-10-21T12:46:12+09:00",
-  "head": "a52d661720ef72045660f5ce651cf45b80bc24b4",
-  "branch": "10/21-wiki-check",
-  "status": [],
+  "captured_at": "2026-10-21T13:08:15+09:00",
+  "head": "512c30b38a587a1751c57c7e93f5689ddf487827",
+  "branch": "main",
+  "status": [
+    "M docs/ai/DATA_MODEL.md",
+    " M docs/ai/DECISIONS.md",
+    " M full_stack_lab/gateway/app/agent_service.py",
+    " M full_stack_lab/gateway/app/agent_static/console.js",
+    " M full_stack_lab/gateway/app/v2_tables.sql",
+    " M full_stack_lab/runtime/worker.py",
+    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
+    " M research/llm-wiki/catalogs/threats.json",
+    " M research/llm-wiki/status/backlog.md",
+    " M research/llm-wiki/status/current.md",
+    " M research/llm-wiki/status/repository-snapshot.json",
+    " M research/llm-wiki/status/repository-snapshot.md",
+    "?? full_stack_lab/tests/runtime_rollback_check.py",
+    "?? research/llm-wiki/analysis/runtime-rollback/",
+    "?? research/llm-wiki/status/reports/2026-10-21-runtime-rollback.md"
+  ],
   "scope": "local-code-only",
   "deployment_verified": false,
   "experiments_run": false,
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+      "sha256": "f2f6ad5e6bc5f63b040c887f092814a6891143d1a636c7d33f02ec073512eaf6"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -37,7 +53,7 @@
     },
     {
       "path": "full_stack_lab/opa/decision.rego",
-      "sha256": "b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904"
+      "sha256": "e52e3ea4de50e8ae9c4727079579bf86ba5967aebdb4921875d2ab1d3791c26e"
     },
     {
       "path": "endpoint-agent/bootstrap.py",
@@ -45,7 +61,7 @@
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "acb054a9ce9ad1877587b700046696b190a52937ffbf5be164129c931aa8ed34"
+      "sha256": "aa371f78519b38da151189408f814130754f1a48a7d67b93c34e5c8f1efc9cec"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",

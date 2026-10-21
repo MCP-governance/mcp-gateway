@@ -28,10 +28,10 @@
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
+        "sha256": "82e3b2c19a7345aad8c778d4cab3a3f16d7154e1bc994cb92638a5369d4cd99f",
         "committed_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
-        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
-        "worktree_modified": false
+        "normalized_sha256": "82e3b2c19a7345aad8c778d4cab3a3f16d7154e1bc994cb92638a5369d4cd99f",
+        "worktree_modified": true
       }
     ],
     "control_locations": [
@@ -116,7 +116,8 @@
       "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
       "files_match_review": false,
       "changed_review_files": [
-        "full_stack_lab/gateway/app/review.py"
+        "full_stack_lab/gateway/app/review.py",
+        "full_stack_lab/runtime/worker.py"
       ]
     },
     "verification": "static-candidate-mapping",
@@ -144,10 +145,10 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "6d355ae1b3c5f2de37c3a90d94821950cffa4af352b50be42c1fb703e3f17390",
+        "sha256": "3507ab740e70003f734cf31754a092610b81758ee7cf586f0ce7f8a887fc4347",
         "committed_sha256": "6d355ae1b3c5f2de37c3a90d94821950cffa4af352b50be42c1fb703e3f17390",
-        "normalized_sha256": "6d355ae1b3c5f2de37c3a90d94821950cffa4af352b50be42c1fb703e3f17390",
-        "worktree_modified": false
+        "normalized_sha256": "3507ab740e70003f734cf31754a092610b81758ee7cf586f0ce7f8a887fc4347",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/review.py",
@@ -416,10 +417,10 @@
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
+        "sha256": "82e3b2c19a7345aad8c778d4cab3a3f16d7154e1bc994cb92638a5369d4cd99f",
         "committed_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
-        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
-        "worktree_modified": false
+        "normalized_sha256": "82e3b2c19a7345aad8c778d4cab3a3f16d7154e1bc994cb92638a5369d4cd99f",
+        "worktree_modified": true
       }
     ],
     "control_locations": [
@@ -474,8 +475,10 @@
       "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
       "reviewer": "Codex sol",
       "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": true,
-      "changed_review_files": []
+      "files_match_review": false,
+      "changed_review_files": [
+        "full_stack_lab/runtime/worker.py"
+      ]
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -2843,10 +2846,10 @@
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
+        "sha256": "82e3b2c19a7345aad8c778d4cab3a3f16d7154e1bc994cb92638a5369d4cd99f",
         "committed_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
-        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
-        "worktree_modified": false
+        "normalized_sha256": "82e3b2c19a7345aad8c778d4cab3a3f16d7154e1bc994cb92638a5369d4cd99f",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
@@ -2960,7 +2963,8 @@
       "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
       "files_match_review": false,
       "changed_review_files": [
-        "full_stack_lab/gateway/app/core.py"
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/runtime/worker.py"
       ]
     },
     "verification": "static-candidate-mapping",
