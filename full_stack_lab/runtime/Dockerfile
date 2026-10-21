@@ -6,10 +6,11 @@ FROM python:3.12-slim
 COPY --from=cli /usr/local/bin/docker /usr/local/bin/docker
 COPY --from=scanner /usr/local/bin/trivy /usr/local/bin/trivy
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
-RUN pip install --no-cache-dir "psycopg[binary]==3.3.5"
+RUN pip install --no-cache-dir "psycopg[binary]==3.3.5" "cryptography==50.0.1"
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY gateway/app/provenance.py /app/provenance.py
+COPY gateway/app/artifact_provenance.py /app/artifact_provenance.py
 COPY gateway/app/server_egress.py /app/server_egress.py
 COPY runtime/worker.py /app/worker.py
 COPY runtime/image_scan.py /app/image_scan.py

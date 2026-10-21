@@ -18,8 +18,12 @@ import rego.v1
 # DEV-69: facts are made from the reviewed registry, never tool arguments or IP geography.
 residency_fact := object.get(input, ["pac", "facts", "residency"], null)
 
-residency_required if residency_fact != null
 residency_required if {
+    residency_fact != null
+    object.get(residency_fact, "enabled", true) != false
+}
+residency_required if {
+    residency_fact == null
     object.get(input, ["tool", "provider_hosted"], false)
     object.get(input, ["resource", "data_class"], "important") != "public"
 }

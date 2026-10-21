@@ -149,7 +149,8 @@ async def record(request_id: str, action: str, approval_id: str | None = None, *
                   (SELECT COALESCE(s.lifecycle, 'OPERATING') FROM mcp_servers s WHERE s.id = r.server_id) AS lifecycle,
                   s.status AS server_status, {CATALOG_OK} AS catalog_ok,
                   EXISTS (SELECT 1 FROM user_server_suspensions x WHERE x.user_token=r.user_token
-                           AND x.server_id=s.id AND x.resumed_at IS NULL) AS user_suspended
+                           AND x.server_id=s.id AND x.resumed_at IS NULL
+                           AND (x.expires_at IS NULL OR x.expires_at > clock_timestamp())) AS user_suspended
              FROM call_reservations r JOIN mcp_servers s ON s.id=r.server_id
              WHERE r.request_id = %s AND r.released_at IS NULL AND r.expires_at > now()""",
         (request_id,))

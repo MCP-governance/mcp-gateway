@@ -319,6 +319,8 @@ CREATE TABLE IF NOT EXISTS mcp_runtimes (
   updated_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (intake_id, generation)
 );
+ALTER TABLE mcp_runtimes ADD COLUMN IF NOT EXISTS rollback_target_generation integer;
+ALTER TABLE mcp_runtimes ADD COLUMN IF NOT EXISTS rollback_contract jsonb;
 -- One live runtime per approval: a second click or a second worker cannot start another.
 CREATE UNIQUE INDEX IF NOT EXISTS mcp_runtimes_one_live ON mcp_runtimes(intake_id)
   WHERE status NOT IN ('STOPPED', 'FAILED');
@@ -435,3 +437,5 @@ ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS output_schema jsonb;
 ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS observed_output_schema_hash text
   DEFAULT '74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b';
 ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS approved_output_schema_hash text;
+
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS requested_tools jsonb NOT NULL DEFAULT '[]';

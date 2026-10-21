@@ -111,7 +111,7 @@ class RiskTierPureCheck(unittest.TestCase):
         self.assertEqual(decide("high", 1, "")[0], "cosign")
         self.assertEqual(decide("high", 1, "짧은 사유")[0], "cosign")
         self.assertEqual(decide("high", 1, " " * 6 + "짧은 사유")[0], "cosign")
-        self.assertEqual(decide("high", 1, REASON)[0], "approve")
+        self.assertEqual(decide("high", 1, REASON)[0], "cosign")
         self.assertEqual(decide("high", 2, "")[0], "approve")
         self.assertEqual(decide("very_high", 2, "")[0], "refuse")
         self.assertEqual(decide("very_high", 1, REASON)[0], "cosign")
@@ -232,11 +232,12 @@ class RiskTierApprovalCheck(unittest.TestCase):
         scope = mocks.transition.await_args.kwargs["scope"]
         self.assertEqual((scope["risk_tier"], scope["approvers"]), ("high", ["admin-b", "admin-a"]))
 
-    def test_high_tier_one_administrator_with_a_written_reason_completes_it(self):
+    def test_high_tier_one_administrator_with_a_written_reason_does_not_complete_it(self):
         high = {**BASE, "external_transfer": True, "permission": "w", "users": 11, "autonomy": "supervised"}
         result, mocks = self.approve(high, reason=REASON)
-        self.assertEqual(result["message"], "승인하고 사내 저장소에 게시했습니다.")
-        mocks.event.assert_not_awaited()
+        self.assertTrue(result["pending"])
+        mocks.transition.assert_not_awaited()
+        mocks.event.assert_awaited_once()
 
     def test_very_high_tier_needs_the_reason_and_a_second_administrator(self):
         very = {**BASE, "personal_data": "sensitive", "external_transfer": True}

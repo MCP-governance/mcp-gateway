@@ -28,7 +28,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from mcp_types.version import HANDSHAKE_PROTOCOL_VERSIONS
 from pydantic import model_serializer
 
-from . import db, output_contract, pac, registry, upstream_sessions
+from . import db, local_jobs, output_contract, pac, registry, tool_sunset, upstream_sessions
 from .agent_contract import authenticated_user
 from .core import execute_call, response_disposition
 
@@ -141,6 +141,9 @@ async def _approved_tools(role: str, server: str | None = None, principal: str =
             continue
         if row["name"] not in registry.reviewed_tools(row["server_id"]):
             continue  # a tool nobody scoped is neither listed here nor callable (D-91)
+        sunset = await tool_sunset.check(row["server_id"], row["name"])
+        if not tool_sunset.listable(sunset):
+            continue
         if not person or not pac.visible(person, row["server_id"], row["name"], row["action"]):
             continue
         if server:
@@ -236,6 +239,8 @@ def build_mcp() -> Server:
                 tool = name
             else:
                 server_id, _, tool = name.partition(SEPARATOR)
+            if (registry.server(server_id) or {}).get("local"):
+                local_jobs.validate_params({"name": name, "arguments": params.arguments or {}})
             token = upstream_sessions.downstream.set(_conversation(ctx, user))
             try:
                 outcome = await execute_call({

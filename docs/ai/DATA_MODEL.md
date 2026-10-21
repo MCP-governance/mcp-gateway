@@ -1,5 +1,7 @@
 # 데이터 모델
 
+도입 신청의 `requested_tools`(JSON 도구 이름 배열, 빈 저장소 선택은 전체)은 `v2_tables.sql` 끝의 추가 열이다(D-184·187). 검사 워커의 `evidence` 재작성에도 신청자의 선택을 보존한다. `evidence.approval_proposal`은 읽기 화면의 계약·검사·신청 지문과 자동 제안이고, `one_click_pending`은 같은 범위의 승인자 목록, `one_click_scope`는 등록 시 재확인할 최종 선택 범위다. 감사의 정본은 append-only `approval_events`이며 신청 상태의 JSON 갱신은 감사 행 수정이 아니다.
+
 > DB: Gateway의 PostgreSQL(`db`, 데이터베이스 `mcp_governance`; LiteLLM은 같은 서버의 `litellm` DB).
 > 스키마 파일: `full_stack_lab/db/init.sql`(기본) → `gateway/app/agent_tables.sql` →
 > `lifecycle_tables.sql` → `v2_tables.sql`(v2 추가·제약 재정의) → `oidc_tables.sql` → `ops_tables.sql`. Gateway와 agent-service가 기동할 때
@@ -132,6 +134,7 @@ D-90~D-92에서 더한 것(`v2_tables.sql`, 모두 멱등): `mcp_intake_requests
 `supply_chain_reports.vuln_db_updated_at`(그 검사가 쓴 취약점 DB의 갱신 시각), `accepted_risks`(치명적 발견의 기한부 수용: 신청·커밋·발견 id·사유·수용자·만료),
 `mcp_tools.scope_review`(도구별 목적·자산·행위·외부 목적지), `approval_events`(승인·거부·보류·수용·등록 기록, append-only),
 `audit_annotations`(`decisions.id` 범위의 무효 처리 표시, append-only). Console 등록 서버의 `servers.json` 항목에는 `tool_reviews`와 `provenance`가 들어간다.
+DEV-78·D-180: `mcp_runtimes.rollback_target_generation`·`rollback_contract`는 중지 중인 세대가 되돌릴 승인 세대와 계약 스냅샷을 worker에 전달한다. `runtime-active` 승인 이벤트의 `scope.contract`에는 도구별 승인 설명·입력 스키마·출력 스키마 해시와 서버 판본, 계약 SHA-256, 마지막 사람 승인자·시각이 들어간다. 출력 스키마 해시(NULL 포함)는 D-149 승인 상태 그대로 보존한다. 되돌리기는 같은 `intake_id`의 과거 `runtime-active` 이벤트가 있는 세대만 선택할 수 있다. 실행기 정지·계약 복원·새 세대 예약은 worker가 한 DB 트랜잭션에서 처리하며 부분 유일 색인이 동시에 살아 있는 세대를 막는다. 과거 이벤트에 계약 스냅샷이 없는 세대는 자동 보충하거나 선택지로 노출하지 않는다.
 D-143에서 더한 것: `mcp_intake_requests.risk_input`(신청자가 적은 영향평가 입력 여섯 항목, 등급은 저장하지 않고 `risk_tier.assess`로 매번 계산), `servers.json` 항목의 `risk_assessment`(등급·점수·입력·`input_sha256`·승인자)와 문서 최상위의 `risk_tier_grace_started_at`(입력 없는 기존 승인의 30일 유예 시작), `approval_events`의 `intake-cosign`(두 명 승인의 첫 번째)·`risk-input`(입력 기록).
 
 Console 등록 서버(D-49)는 DB가 아니라 `REGISTRY_RUNTIME_DIR/servers.json`에 있다 — `servers`(catalog.toml과 같은 모양 +
@@ -163,6 +166,8 @@ D-157의 전송 UID는 원장 행 ID와 사슬 해시(사슬 없는 소스는 UT
 `mcp_intake_requests.evidence`는 `scanners`(검사기별 DONE/FAILED·오류), `reports`(해당 시도의 성공한 산출물 이름), `exit_terms_discovery`(commit 고정 문서 후보 근거), SBOM 구성요소 수·위험 등급별 수를 담는다. `exit_terms`의 관리자 검증 기록과 자동 조사 결과는 별도 필드다.
 
 `validation_lease_expires_at`와 `validation_attempts`는 VALIDATING 작업의 중단 복구에 쓰인다. 신규 요청은 API의 단일 INSERT에서 VALIDATION_QUEUED가 된다. Syft·Trivy·Semgrep·Gitleaks의 정규화 요약은 `supply_chain_reports`에 남고 Console은 source_ref뿐 아니라 신청 UUID가 포함된 report_path로 귀속을 제한한다. Gitleaks 산출물은 RuleID·상대 파일·행·설명만 남기고 Secret/Match를 제거한다. 부분 검사 실패 시 수집한 증적은 남지만 요청 상태는 FAILED이며 승인되지 않는다.
+
+D-178: Syft 원본 CycloneDX JSON은 `intake_reports` named volume에 보존하고 `supply_chain_reports.summary.inventory`에는 앞 200개 구성요소만 보존한다(`truncated`로 잘림 표시). SBOM 영향 조회는 `registered_server_id`·`intake_id`·`mcp_runtimes.generation`과 현재 Syft 성공·source commit이 일치하는 경우만 판정한다. `workspace` 등 intake와 연결되지 않은 요약, 검사 실패·누락, 잘린 목록에서 찾지 못한 패키지는 완전한 비영향 증거가 아니다. 전체 원본 파일을 읽지 않는 이 조회는 DB에 저장된 요약 범위까지만 정확하다. 서버·실행 세대는 사용자·엔드포인트 영향으로 확장하지 않는다.
 
 ## 중대 영향 개별 승인 증빙 (D-139)
 

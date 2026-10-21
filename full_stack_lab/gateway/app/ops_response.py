@@ -10,7 +10,7 @@ from pathlib import Path
 import httpx
 from psycopg.types.json import Jsonb
 
-from . import db, release, review
+from . import db, local_jobs, release, review
 from .contract import POLICY_RESULT, canonical_hash
 from .selective import restricted_tools
 
@@ -64,9 +64,10 @@ def selected(server_id, source):
     return source in SOURCES and ("*" in SERVERS or server_id in SERVERS)
 
 
-async def suspend(server_id, source, reason, evidence):
-    from . import local_jobs
-    await local_jobs.quiesce(server_id=server_id)
+async def suspend(server_id, source, reason, evidence, batch=None):
+    local_runner = globals().get("local_jobs")
+    if local_runner is not None:
+        await local_runner.quiesce(server_id=server_id)
     async with db.transaction() as connection:
         await connection.execute("SELECT id FROM mcp_servers WHERE id=%s FOR UPDATE", (server_id,))
         row = await (await connection.execute(
@@ -80,10 +81,14 @@ async def suspend(server_id, source, reason, evidence):
                WHERE intake_id IN (SELECT id FROM mcp_intake_requests WHERE registered_server_id=%s)
                  AND status NOT IN ('STOPPED','FAILED','STOPPING')""", (reason, server_id))
         if row:
+            scope = {"source": source, **evidence}
+            if batch:
+                scope["batch"] = batch
             await connection.execute(
                 """INSERT INTO approval_events(kind,outcome,target_kind,target_id,actor,reason,scope)
                    VALUES ('automatic-suspension','held','server',%s,'system',%s,%s)""",
-                (server_id, reason, Jsonb({"source": source, **evidence})))
+                (server_id, reason, Jsonb(scope)))
+    return bool(row)
 
 
 async def contain_drift(server_id, findings):
@@ -135,6 +140,8 @@ async def resume(server_id, actor, note):
             "UPDATE mcp_servers SET status='PENDING',status_reason='관리자 복귀 승인 · 계약 확인 대기' WHERE id=%s", (server_id,))
         await review.record_event("automatic-suspension-resume", "approved", "server", server_id, actor,
                                   reason=note, connection=connection)
+        await connection.execute(
+            "DELETE FROM local_run_stops WHERE server_id=%s AND user_token='' AND device_id=''", (server_id,))
     return {"server_id": server_id, "status": "PENDING"}
 
 

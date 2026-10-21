@@ -2,13 +2,17 @@
 import base64
 import importlib.util
 import os
-import pwd
 import shutil
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+
+try:
+    import pwd
+except ImportError:  # Windows still runs the platform-independent manifest checks.
+    pwd = None
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -67,21 +71,24 @@ class ManifestRules(unittest.TestCase):
         self.assertFalse(runner.signed(body, signature, ""))
 
 
-@unittest.skipUnless(sys.platform.startswith("linux"), "POSIX 경로 규칙")
+@unittest.skipUnless(sys.platform.startswith("linux") and pwd is not None, "POSIX 경로 규칙")
 class RunnerCommand(unittest.TestCase):
     def setUp(self):
         self.home = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.home)
         os.mkdir(os.path.join(self.home, "work"))
         self.account = pwd.struct_passwd(("u", "x", 2001, 2001, "", self.home, "/bin/sh"))
+        self.pinned = runner.PinnedMounts(manifest(), self.home)
+        self.addCleanup(self.pinned.close)
 
     def test_fixed_isolation_options(self):
-        name, command = runner.container_command("/usr/bin/docker", {**manifest(), "command": ["serve"]}, self.account)
+        name, command = runner.container_command("/usr/bin/docker", {**manifest(), "command": ["serve"]}, self.account,
+                                                 mount_options=self.pinned.options)
         for flag in ("--network=none", "--read-only", "--cap-drop=ALL", "--security-opt=no-new-privileges", "--pull=never", "--rm", "-i"):
             self.assertIn(flag, command)
         self.assertEqual(command[command.index("--user") + 1], "2001:2001")
-        target = os.path.join(self.home, "work")
-        self.assertIn(f"{target}:{target}:ro", command)
+        for option in self.pinned.options:
+            self.assertIn(option, command)
         self.assertEqual(command[-2:], [IMAGE, "serve"])
         self.assertNotIn("--privileged", command)
         self.assertEqual(name, "mcpgw-local-fs-local-2001")
@@ -90,11 +97,13 @@ class RunnerCommand(unittest.TestCase):
         os.symlink("/etc", os.path.join(self.home, "link"))
         for path in ("link", "missing"):
             with self.subTest(path=path), self.assertRaises(ValueError):
-                runner.container_command("docker", manifest(mounts=[{"path": path, "mode": "ro"}]), self.account)
+                runner.PinnedMounts(manifest(mounts=[{"path": path, "mode": "ro"}]), self.home)
         with self.assertRaises(ValueError):
-            runner.container_command("docker", manifest(image="mcp/filesystem:latest"), self.account)
+            runner.container_command("docker", manifest(image="mcp/filesystem:latest"), self.account,
+                                     mount_options=self.pinned.options)
         with self.assertRaises(ValueError):
-            runner.container_command("docker", manifest(env={"LD_PRELOAD": "x"}), self.account)
+            runner.container_command("docker", manifest(env={"LD_PRELOAD": "x"}), self.account,
+                                     mount_options=self.pinned.options)
 
 
 if __name__ == "__main__":

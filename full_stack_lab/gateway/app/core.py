@@ -26,16 +26,16 @@ from jsonschema import Draft202012Validator
 from jsonschema.validators import validator_for
 from referencing import Registry
 
-from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, local_jobs, ops_response, pac, poisoning, privacy, registry, retention, risk_tier, secret_scan, supplier_assurance, upstream
+from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, local_jobs, ops_response, pac, poisoning, privacy, registry, retention, risk_tier, secret_scan, supplier_assurance, upstream, user_suspend
 from .destination import DestinationBlocked
 from .outcomes import outcome_axes
-from . import flow_fingerprint, high_impact, output_contract, residency, selective
+from . import flow_fingerprint, high_impact, output_contract, residency, selective, tool_sunset
 from .contract import (  # re-exported: older callers import these from core
     AUDIT_COLUMNS, CHAIN_VERSION, GENESIS, POLICY_RESULT, canonical_hash,
     audit_fingerprint as _audit_fingerprint, walk_chain,
 )
 
-from . import review  # noqa: E402  (approval records, intake gate; see review.py)
+from . import intake_proposal, review  # noqa: E402  (approval records, intake gate; see review.py)
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/mcp/authz/decision")
 # 정책 관리대장(§11.8 / §12.5)은 정책 코드와 함께 배포되고 OPA가 그 정본이다.
@@ -89,20 +89,23 @@ IMPORTANT_BURST_LIMIT = int(os.getenv("IMPORTANT_BURST_LIMIT", "10"))
 IMPORTANT_BURST_MINUTES = int(os.getenv("IMPORTANT_BURST_MINUTES", "5"))
 BLOCK_STREAK_LIMIT = int(os.getenv("BLOCK_STREAK_LIMIT", "5"))
 BLOCK_STREAK_MINUTES = int(os.getenv("BLOCK_STREAK_MINUTES", "10"))
+AUTO_SUSPEND_THRESHOLD = int(os.getenv("AUTO_SUSPEND_THRESHOLD", "5"))
+AUTO_SUSPEND_WINDOW_SECONDS = int(os.getenv("AUTO_SUSPEND_WINDOW_SECONDS", "600"))
+AUTO_SUSPEND_DURATION_SECONDS = int(os.getenv("AUTO_SUSPEND_DURATION_SECONDS", "900"))
 # How many calls one principal may have in flight at once, and how long a reservation
 # survives if the gateway dies mid-call. The TTL is the upstream timeout plus a margin:
 # shorter and a slow tool frees its own place while still running.
 CONCURRENCY_LIMIT = int(os.getenv("CONCURRENCY_LIMIT", "4"))
 RESERVATION_TTL_SECONDS = int(os.getenv("RESERVATION_TTL_SECONDS", "120"))
 MAX_ARGUMENT_BYTES = int(os.getenv("MAX_ARGUMENT_BYTES", "65536"))
-# CTL-28이 보라는 "반복 실패"는 이 사람이 권한 경계를 더듬고 있다는 신호다.
-# 모든 차단을 세면 그 신호가 환경 상태에 묻힌다 - 서버 하나가 드리프트 상태면
-# MCP-CATALOG-001이 모든 사용자에게 걸리고, 그러면 아무 잘못 없는 사람들의 다음
-# 호출이 전부 경보가 된다. 주체에게 귀속되는 인가 거부만 센다. 실행 권한의 행위·인자·데이터·전송
-# 범위 거부(PAC-09~12)는 요청 내용 때문이라 센다. 승인 기한·기준 구성·토큰처럼 상태에서 오는 PAC 거부는 세지 않는다.
-DENIAL_POLICIES = ("MCP-EGRESS-001", "MCP-EGRESS-002", "P-DLP-001",
-                   "P-CLASSIFICATION-001", "P-APPROVAL-EXPIRY-001", "MCP-REGISTRY-001",
-                   "PAC-09", "PAC-10", "PAC-11", "PAC-12")
+# D-176: count only repeated, request-attributable security violations. State,
+# approval, consent, catalog, classification, rate, and fail-closed refusals are
+# deliberately absent because they can be normal workflow or service conditions.
+AUTO_SUSPEND_POLICIES = (
+    "MCP-EGRESS-002", "MCP-DATA-EGRESS-001",
+    "P-DLP-001", "P-CHAIN-001", "P-FLOW-001",
+)
+DENIAL_POLICIES = AUTO_SUSPEND_POLICIES
 
 
 class ResultRejected(RuntimeError):
@@ -542,7 +545,8 @@ def suggested_action(annotations: dict | None) -> str:
     return "r" if hints.get("readonlyhint") else "x" if hints.get("destructivehint") or hints.get("openworldhint") else "w"
 
 
-async def discover_for_registration(endpoint: str, local: dict | None = None, intake_id: str = "") -> dict:
+async def discover_for_registration(endpoint: str, local: dict | None = None, intake_id: str = "",
+                                    principal: str | None = None) -> dict:
     if local:
         server_id = local_jobs.server_of(endpoint) or ""
         try:
@@ -561,9 +565,32 @@ async def discover_for_registration(endpoint: str, local: dict | None = None, in
         finally:
             local_jobs.registering.reset(token)
     else:
-        found = await upstream.discover(registration_endpoint(endpoint))
-    return {**({'observer_device': local['observer_device'], 'observer_uid': observer['local_uid'],
-               'image_signature':'확인 안 됨','isolation_scope':'탈출 시 호스트 root','user_mapping':'확인 안 됨'} if local else {}),
+        found = (await upstream.discover(registration_endpoint(endpoint), principal=principal) if principal
+                 else await upstream.discover(registration_endpoint(endpoint)))
+    local_view = {}
+    if local:
+        settings = json.loads(os.getenv("LOCAL_ENGINE_SETTINGS") or "{}")
+        engine = settings.get("engine") if isinstance(settings, dict) else None
+        namespace = settings.get("namespace") if isinstance(settings, dict) else None
+        version = settings.get("version") if isinstance(settings, dict) else None
+        engine_name = {"podman": "Podman", "docker": "Docker"}.get(engine)
+        namespace_name = {"podman-auto": "자동 사용자 공간", "docker-remap": "사용자 재매핑"}.get(namespace)
+        if namespace == "host":
+            isolation_scope = "탈출 시 호스트 root"
+        elif engine_name and namespace_name:
+            isolation_scope = f"{engine_name} {version or '—'} · {namespace_name} · 확인 안 됨"
+        else:
+            isolation_scope = "확인 안 됨"
+        measurement = await db.fetch_one(
+            """SELECT evidence->'isolation' AS isolation FROM local_job_events
+               WHERE server_id=%s AND device_id=%s AND evidence ? 'isolation'
+               ORDER BY created_at DESC,id DESC LIMIT 1""",
+            (local["manifest"]["server_id"], local["observer_device"]))
+        isolation = (measurement or {}).get("isolation") or {}
+        local_view = {"observer_device": local["observer_device"], "observer_uid": observer["local_uid"],
+                      "image_signature": "확인 안 됨", "isolation_scope": isolation_scope,
+                      "user_mapping": isolation.get("uid_map") or "확인 안 됨"}
+    return {**local_view,
             "endpoint": endpoint.strip(), "server_name": found["advertised_name"], "version": found["version"],
             "protocol_version": found["protocol_version"], "catalog_hash": canonical_hash(found["tools"]),
             "tools": [{**tool, "suggested": suggested_action(tool.get("annotations")), "warnings": poisoning.findings(tool)}
@@ -581,6 +608,9 @@ async def register_server(request: dict, actor: str) -> dict:
         endpoint = request["endpoint"]
     else:
         endpoint = registration_endpoint(request["endpoint"])
+    residency.require_location(server_location, request["data_class"], registry.catalog().get("organization", {}))
+    if not local:
+        endpoint = registration_endpoint(request["endpoint"])
     try:
         intake_id = uuid.UUID(request.get("intake_id") or "")
     except ValueError as exc:
@@ -590,6 +620,25 @@ async def register_server(request: dict, actor: str) -> dict:
         raise ValueError("승인된 도입 신청만 등록할 수 있습니다.")
     if await review.same_person(intake["submitted_by"], intake["reviewed_by"]):
         raise ValueError("신청자와 승인자가 같아 등록할 수 없습니다.")
+    evidence = intake.get("evidence") or {}
+    proposal = evidence.get("approval_proposal")
+    if proposal:
+        scope = evidence.get("one_click_scope") or {}
+        selected = scope.get("tools") or []
+        expected = {"server_id": proposal["server_id"], "endpoint": proposal["endpoint"],
+                    "catalog_hash": (proposal.get("catalog") or {}).get("catalog_hash"),
+                    "tools": {n: proposal["tools"][n] for n in selected}, "data_class": proposal["data_class"],
+                    "valid_days": scope.get("valid_days"), "supplier_assurance": scope.get("supplier_assurance"),
+                    "residency": scope.get("residency")}
+        if (scope.get("proposal_sha256") != intake_proposal.digest(proposal) or not selected
+                or intake_proposal.basis(intake) != proposal["basis"]
+                or intake.get("risk_input") != proposal["risk_input"]
+                or any(request.get(k) != v for k, v in expected.items())
+                or {n: review.scope_terms(item) for n, item in review.normalize_tool_reviews(
+                    request["tools"], request.get("tool_reviews"), actor).items()} != {
+                    n: review.scope_terms(item) for n, item in review.normalize_tool_reviews(
+                        expected["tools"], {n: proposal["tool_reviews"][n] for n in selected}, actor).items()}):
+            raise ValueError("화면에서 승인한 범위와 다릅니다. 도입 검토를 다시 열어 확인하세요.")
     # Registration repeats the checks approval made: provenance recorded and compared with the copy in
     # use, every scan finished and fresh, no critical finding without a live acceptance (D-90).
     gate = await review.intake_gate(intake, verified=True)
@@ -682,7 +731,7 @@ async def register_server(request: dict, actor: str) -> dict:
     # A.I.G worker checks out for a static audit of this server (source_ref = package@commit).
     version = commit if github and commit else found["version"]
     assurance = request.get("supplier_assurance") or {}
-    assurance_errors = supplier_assurance.validate(assurance)
+    assurance_errors = supplier_assurance.validate(assurance, required=False)
     if assurance_errors:
         raise ValueError("등록할 수 없습니다: " + " / ".join(assurance_errors))
     # DEV-71: the tier is read again from the stated input the approval was made on, and the approval
@@ -691,13 +740,30 @@ async def register_server(request: dict, actor: str) -> dict:
     approved_risk = (intake.get("evidence") or {}).get("risk_assessment") or {}
     if stated["status"] != "ok" or approved_risk.get("input_sha256") != stated["input_sha256"]:
         raise ValueError("등록할 수 없습니다: 승인 때 확인한 영향평가 입력이 없거나 바뀌었습니다. 다시 신청하세요.")
+    rule = risk_tier.APPROVAL[stated["tier"]]
+    if rule["approvers"] > 1:
+        approvers = []
+        for person in approved_risk.get("approvers") or []:
+            if await review.same_person(person, intake["submitted_by"]):
+                raise ValueError("신청자는 승인자로 셀 수 없습니다.")
+            if not any([await review.same_person(person, other) for other in approvers]):
+                approvers.append(person)
+        if len(approvers) < rule["approvers"]:
+            raise ValueError("높은 위험 등급은 서로 다른 관리자 두 명이 승인해야 등록할 수 있습니다.")
+    if rule["reason"] == "required" and not approved_risk.get("written_reason"):
+        raise ValueError("매우 높은 위험 등급은 승인 때 기록한 위험 수용 사유가 필요합니다.")
     ranks = list(risk_tier.CHOICES["data_class"])
     if ranks.index(request["data_class"]) > ranks.index(intake["risk_input"]["data_class"]):
         raise ValueError("등록할 수 없습니다: 신청에 적은 데이터 등급보다 높은 등급입니다. 영향평가 입력을 고쳐 다시 승인하세요.")
     approval_until = datetime.now(UTC) + timedelta(days=int(request["valid_days"]))
+    if proposal:
+        approval_until = datetime.fromisoformat(evidence["one_click_scope"]["valid_until"])
+        if approval_until <= datetime.now(UTC):
+            raise ValueError("승인 기한이 지났습니다. 새 도입 신청이 필요합니다.")
     if remote_review:
         approval_until = datetime.fromisoformat(remote_review["valid_until"])
-    valid_until = min(approval_until, supplier_assurance.support_expiry(assurance["support_end"])).isoformat(timespec="seconds")
+    valid_until = (min(approval_until, supplier_assurance.support_expiry(assurance["support_end"]))
+                   if assurance.get("support_end") else approval_until).isoformat(timespec="seconds")
     spec = {
         "display_name": request["display_name"], "package": package, "version": version,
         "source_url": source_url or endpoint, "supplier": request.get("supplier") or host,
@@ -720,7 +786,7 @@ async def register_server(request: dict, actor: str) -> dict:
         "poisoning_review": {name: registry.tool_hashes(advertised[name]) for name in flagged}
                             if request.get("poisoning_ack") else {},
         "tool_reviews": tool_reviews, "provenance": intake.get("provenance") or {},
-        "supplier_assurance": assurance,
+        "supplier_assurance": assurance, "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance),
         "risk_assessment": {"tier": stated["tier"], "score": stated["score"], "floors": stated["floors"],
                             "input": intake["risk_input"], "input_sha256": stated["input_sha256"],
                             "approvers": approved_risk.get("approvers") or [],
@@ -859,6 +925,7 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
                               scope={"tools": {name: item["action"] for name, item in normalized.items()},
                                      "destinations": {name: item["destinations"] for name, item in normalized.items()},
                                      "impact": {name: high_impact.normalize(item) for name, item in normalized.items()}})
+    await tool_sunset.approve_review(server_id, sorted(normalized), actor)
     if spec.get('local'):
         await local_jobs.resume(server_id=server_id)
     return {"server_id": server_id, "reviewed": sorted(normalized),
@@ -922,6 +989,9 @@ async def renew_approvals(now: datetime | None = None) -> list[dict]:
             if not server or server["status"] != "READY" or (server["lifecycle"] or "OPERATING") != "OPERATING":
                 continue
             tools = await db.fetch_all("SELECT name FROM mcp_tools WHERE server_id=%s AND enabled", (server_id,))
+            used = await tool_sunset.recently_used(server_id, [row["name"] for row in tools], now)
+            if not used:
+                continue
             contracts = [await _contract(server_id, row["name"]) for row in tools]
             if not contracts or not all(c.get(key) is True for c in contracts for key in RENEW_CONTRACT) \
                     or any(c.get("critical_vulnerabilities") for c in contracts):
@@ -940,14 +1010,23 @@ async def renew_approvals(now: datetime | None = None) -> list[dict]:
             if proposed_until <= until:
                 continue
             spec.update(valid_until=proposed_until.isoformat(timespec="seconds"), approval_days=days)
-            event = {"type": "approval-renewed", "server_id": server_id, "actor": "system",
+            event = {"type": "approval-renewed", "server_id": server_id, "actor": "automatic",
                      "at": now.isoformat(timespec="seconds"), "from": until.isoformat(timespec="seconds"),
-                     "valid_until": spec["valid_until"], "tools": sorted(row["name"] for row in tools)}
+                     "valid_until": spec["valid_until"], "tools": sorted(row["tool_name"] for row in used),
+                     "last_use": {row["tool_name"]: row["last_use"].isoformat() for row in used}}
             doc["history"].append(event)
             renewed.append(event)
         if renewed:
             registry.save_runtime(doc)
             await registry.sync()
+            for event in renewed:
+                await review.record_event(
+                    "tool-approval-extension", "approved", "server", event["server_id"], "automatic",
+                    reason="관측 기간 안에 도구 이용 이력이 있습니다.",
+                    scope={"server": event["server_id"], "tools": event["tools"], "last_use": event["last_use"],
+                           "observation_days": tool_sunset.OBSERVATION_DAYS,
+                           "window_start": (now - timedelta(days=tool_sunset.OBSERVATION_DAYS)).isoformat(),
+                           "from": event["from"], "deadline": event["valid_until"]})
     return renewed
 
 
@@ -1927,9 +2006,14 @@ async def _record_decision(event: dict) -> int:
     # lost after the call ran. It is replaced before the fingerprint, so the chain covers what is stored.
     record = _storable(record)
     async with db.transaction() as connection:
-        # Same order as dispatch: the principal lock precedes the global chain lock.
-        # Publishing an important read cannot slip between the final flow query and intent.
-        if record["data_class"] == "important" and record["action"] == "r" and record["upstream_executed"]:
+        # Use dispatch's principal lock before appending a qualifying denial. A
+        # call reaching the threshold commits its suspension before the next
+        # call can reserve or dispatch for this employee.
+        counts_for_suspend = (record["decision"] == "Block"
+                              and record["policy_id"] in AUTO_SUSPEND_POLICIES
+                              and record["user_token"] != "unknown" and record["server_id"])
+        if counts_for_suspend or (record["data_class"] == "important" and record["action"] == "r"
+                                  and record["upstream_executed"]):
             await connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (record["user_token"],))
         cursor = await connection.execute("SELECT head_sha256 FROM audit_chain WHERE id=1 FOR UPDATE")
         head = await cursor.fetchone()
@@ -1974,6 +2058,10 @@ async def _record_decision(event: dict) -> int:
             "UPDATE audit_chain SET head_sha256=%s, entries=entries+1, updated_at=now() WHERE id=1",
             (entry,),
         )
+        if counts_for_suspend:
+            await user_suspend.auto_suspend(
+                connection, record["user_token"], record["server_id"], AUTO_SUSPEND_POLICIES,
+                AUTO_SUSPEND_THRESHOLD, AUTO_SUSPEND_WINDOW_SECONDS, AUTO_SUSPEND_DURATION_SECONDS)
     return int(row["id"])
 
 
@@ -2070,13 +2158,20 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
     user_token = str(payload.get("user_token") or "")
     with tracer.start_as_current_span("mcp.gateway.call", record_exception=False, set_status_on_exception=False) as span:
         trace_id = f"{span.get_span_context().trace_id:032x}"
-        # An administrator's stop of this person at this server (DEV-79) comes with the identity row, so
-        # a store that cannot answer fails the whole lookup and nothing runs.
-        principal = await db.fetch_one(
+        cls = classify.classify(server_id, tool, arguments, user_token)
+        suspension_error = None
+        suspend_module = globals().get("user_suspend")
+        expire_suspension = getattr(suspend_module, "expire", None)
+        if expire_suspension:
+            try:
+                await expire_suspension(user_token, server_id)
+            except Exception as exc:
+                suspension_error = exc
+        # An administrator's stop (DEV-79) and a live automatic stop share the same state row.
+        principal = (None if suspension_error else await db.fetch_one(
             """SELECT p.*, EXISTS (SELECT 1 FROM user_server_suspensions u WHERE u.user_token=p.token
                                     AND u.server_id=%s AND u.resumed_at IS NULL) AS server_suspended
-                 FROM principals p WHERE p.token=%s""", (server_id, user_token))
-        cls = classify.classify(server_id, tool, arguments, user_token)
+                 FROM principals p WHERE p.token=%s""", (server_id, user_token)))
         role = principal["role"] if principal else "unknown"
         for key, value in (("mcp.server", server_id), ("mcp.tool", tool), ("mcp.role", role),
                            ("mcp.data_class", cls.data_class), ("mcp.action", cls.action)):
@@ -2097,6 +2192,12 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "policy_input": None, "risk_score": 0, "privacy_types": [], "sequence_flags": [],
         }
 
+        if suspension_error:
+            base_event.update(local_verdict(
+                "P-CONTROL-FAIL-CLOSED", "Block", "사용자 중지 상태를 확인할 수 없어 실행하지 않았습니다.",
+                error=_root_cause(suspension_error)))
+            return await _decision_payload(base_event, laps)
+
         await policy_ledger()
         if not principal or principal["status"] != "active":
             base_event.update(local_verdict("P-INPUT-001", "Block", "활성 상태의 등록 계정이 아닙니다."))
@@ -2116,6 +2217,11 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             base_event.update(local_verdict("MCP-REGISTRY-003", "Block",
                 "이 서비스의 도입 승인 사용 주체에 포함되지 않습니다." if allowed else
                 "도입 신청·승인 기록이 없는 직접 등록입니다. 도입 신청으로 다시 등록해야 실행합니다."))
+            return await _decision_payload(base_event, laps)
+        sunset = await tool_sunset.check(server_id, tool)
+        sunset_verdict = tool_sunset.call_verdict(sunset)
+        if sunset_verdict:
+            base_event.update(local_verdict(sunset_verdict[0], "Block", sunset_verdict[1]))
             return await _decision_payload(base_event, laps)
         if principal.get("server_suspended"):
             base_event.update(local_verdict(

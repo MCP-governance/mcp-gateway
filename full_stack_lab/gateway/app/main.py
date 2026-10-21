@@ -37,7 +37,7 @@ from .core import (
 from .mcp_facade import build_mcp, transport_security
 from .agent_contract import CONSOLE_SCOPE, ResidencyFields, ToolReview, authenticate, authenticated_user
 from .release import build_info, policy_info
-from . import activity, audit, incidents, registry, residency, retention, review, risk_tier, siem, supplier_assurance
+from . import activity, audit, incidents, registry, residency, retention, review, risk_tier, siem, supplier_assurance, tool_sunset
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 # "오늘" is the operator's day. The DB session runs in UTC, so date_trunc('day', now())
@@ -354,6 +354,29 @@ async def resume_use(suspension_id: int, request: OpsResume, user: dict = Depend
         raise HTTPException(409, str(exc)) from exc
 
 
+class UserSuspendAllRequest(StrictModel):
+    user_token: str = Field(min_length=1, max_length=200)
+    reason: str = Field(min_length=4, max_length=500)
+
+
+class UserResumeAllRequest(StrictModel):
+    user_token: str = Field(min_length=1, max_length=200)
+    note: str = Field(min_length=4, max_length=500)
+
+
+@app.post("/api/user-suspensions/stop-all")
+async def suspend_all_use(request: UserSuspendAllRequest, user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await user_suspend.suspend_all(request.user_token, user["principal"], request.reason)
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@app.post("/api/user-suspensions/resume-all")
+async def resume_all_use(request: UserResumeAllRequest, user: dict = Depends(admin_caller)) -> dict:
+    return await user_suspend.resume_all(request.user_token, user["principal"], request.note)
+
+
 async def _absent() -> None:
     """이 배치에 없는 구성요소. False(장애)가 아니라 None(대상 아님)으로 구분한다."""
     return None
@@ -435,7 +458,8 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
     catalog_servers = registry.servers()
     doc = registry.runtime()
     console = doc["servers"]
-    return {"catalog_version": registry.catalog_version(),
+    sunset = await tool_sunset.snapshot()
+    return {"catalog_version": registry.catalog_version(), "tool_sunset": sunset,
             "classification": registry.catalog().get("classification", {}),
             "organization": registry.catalog().get("organization", {}),
             "servers": [{**row, "residency": residency.location(catalog_servers[row["id"]], registry.catalog().get("organization", {}))}
@@ -444,7 +468,7 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
             # D-49: which servers came from a Console registration, and until when they may be used.
             "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by", "registered_at",
                                                                     "data_class", "tools", "tool_reviews", "provenance",
-                                                                    "allowed_principals", "supplier_assurance", "residency", "residency_review", "risk_assessment")}
+                                                                    "allowed_principals", "supplier_assurance", "supplier_assurance_unconfirmed", "residency", "residency_review", "risk_assessment")}
                                   | {"risk_review": risk_tier.legacy_review(spec, doc.get("risk_tier_grace_started_at"))}
                               for sid, spec in console.items() if sid not in registry.reviewed_servers()}}
 
@@ -829,6 +853,19 @@ async def registry_discover(request: RegistryDiscover, user: dict = Depends(admi
         raise HTTPException(422, str(exc)) from exc
     except Exception as exc:
         raise HTTPException(502, f"MCP 서버에 연결하지 못했습니다: {core._root_cause(exc)}") from exc
+
+
+@app.post("/api/registry/intake-discover")
+async def registry_intake_discover(request: RegistryDiscover, user: dict = Depends(caller)) -> dict:
+    try:
+        endpoint = core.registration_endpoint(request.endpoint)
+        if not endpoint.startswith("https://"):
+            raise ValueError("신청 도구 목록은 HTTPS 원격 서비스에서만 조회할 수 있습니다.")
+        return await core.discover_for_registration(endpoint, principal=user["principal"])
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(502, "도구 목록을 불러오지 못했습니다. 주소와 제공자 연결을 확인하세요.") from exc
 
 
 @app.post("/api/registry/servers", status_code=201)
@@ -1682,7 +1719,7 @@ async def endpoint_observation_status(request: ObservationReport,
     if request.state in {"success", "partial"} and required and required not in device["scopes"]:
         raise HTTPException(403, "이 관측 채널의 보고 권한이 없습니다.")
     if bool(request.dropped_count) != bool(request.buffer_event_uid and request.buffer_reason):
-        raise HTTPException(422, "버퍼 폐기 보고의 식별자·사유·건수가 필요합니다.")
+        raise HTTPException(422, "버퍼 미적재·만료 건수 보고의 식별자·사유·건수가 필요합니다.")
     return await endpoint_plane.observation_status(
         request.endpoint_id, request.channel, request.state, request.accepted_count, request.error_code,
         buffer_event_uid=request.buffer_event_uid, dropped_count=request.dropped_count,

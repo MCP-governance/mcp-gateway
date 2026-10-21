@@ -30,6 +30,7 @@ UTC = timezone.utc
 # shortcut: bounded queues poll their rows; use LISTEN/NOTIFY if measured latency warrants it.
 POLL_SECONDS = 0.05
 MAX_RESULT_BODY = 262144
+MAX_PARAMS_BYTES = int(os.getenv("LOCAL_PARAMS_MAX_BYTES", "65536"))
 CLAIM_SECONDS = 5
 RUN_SECONDS = 20
 QUEUE_LIMIT = 8
@@ -110,6 +111,15 @@ def mirror_image(image: str, mirrors: list[str]) -> bool:
 
 def canonical(manifest: dict) -> bytes:
     return json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+
+
+def validate_params(params: dict) -> None:
+    try:
+        size = len(canonical(params))
+    except (TypeError, ValueError) as exc:
+        raise NotStarted("로컬 실행 요청 인자를 직렬화할 수 없습니다.", "P-RATE-003") from exc
+    if size > MAX_PARAMS_BYTES:
+        raise NotStarted("로컬 실행 요청 인자가 크기 상한을 넘었습니다.", "P-RATE-003")
 
 
 def verify(manifest: dict, signature: str) -> bool:
@@ -205,6 +215,7 @@ async def _device(device_id: str | None) -> dict:
 
 
 async def exchange(device_id: str, local: dict, method: str, params: dict, timeout: float) -> dict:
+    validate_params(params)
     device = await _device(device_id)
     principal=transport_context.get().get('_principal')
     if (principal is not None and principal!=device['owner_token']) or (method=='tools/call' and principal is None):
@@ -475,6 +486,10 @@ async def current_job(connection,row,device):
 async def validate_job(device: dict, job_id: str, *, start=False) -> dict:
     from . import endpoint_plane, registry
     device = await _device(device['endpoint_id'])
+    stop = await db.fetch_one('SELECT stop_requested FROM local_jobs WHERE id=%s AND device_id=%s',
+                              (job_id, device['endpoint_id']))
+    if stop and stop['stop_requested']:
+        raise NotStarted("중지 요청이 기록된 로컬 작업입니다.")
     async with db.transaction() as connection:
         row = await (await connection.execute('SELECT * FROM local_jobs WHERE id=%s AND device_id=%s',
                                               (job_id,device['endpoint_id']))).fetchone()
@@ -516,12 +531,12 @@ async def complete(device: dict, job_id: str, result: dict | None, error: str | 
         raise ValueError("컨테이너 정지 확인이 필요합니다.")
     if isolation is not None and len(canonical(isolation))>4096:
         raise ValueError('사용자 매핑 증거 상한입니다.')
-    digest = hashlib.sha256(canonical(result if result is not None else {'error':error})).hexdigest()
     async with db.transaction() as connection:
         await connection.execute("SELECT pg_advisory_xact_lock(hashtext('local:results'))")
         stored=await (await connection.execute('SELECT COALESCE(sum(pg_column_size(result)),0) AS bytes FROM local_jobs')).fetchone()
         if result is not None and stored['bytes']+len(canonical(result))>64*1024*1024:
             result,error=None,'로컬 실행 결과 저장 상한입니다.'
+        digest = hashlib.sha256(canonical(result if result is not None else {'error':error})).hexdigest()
         row = await (await connection.execute(
         """UPDATE local_jobs SET state=CASE WHEN state='claimed' AND deadline>clock_timestamp() AND NOT stop_requested
                       THEN 'done' ELSE 'expired' END,result=%s,error=%s,result_sha256=%s,

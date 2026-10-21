@@ -66,8 +66,10 @@ class SupplierAssuranceCheck(unittest.TestCase):
                 with self.assertRaises(HTTPException) as raised:
                     await agent_service.approve_mcp_request("00000000-0000-0000-0000-000000000001", None, None)
                 self.assertEqual(raised.exception.status_code, 409)
-                self.assertIn("공급자 법인명", raised.exception.detail)
-                self.assertIn("취약점 공개 정책 주소", raised.exception.detail)
+                # D-189 추가 판단 3: 공급자 정보는 선택 입력이다. 비어 있어도 보류 사유가 아니며 승인은 다음 관문으로 간다.
+                self.assertNotIn("공급자 법인명", raised.exception.detail)
+                self.assertNotIn("취약점 공개 정책 주소", raised.exception.detail)
+                self.assertIn("격리 검증을 통과한 요청만 승인할 수 있습니다", raised.exception.detail)
         asyncio.run(run())
 
     @unittest.skipIf(agent_service is None, "게이트웨이 이미지 의존성이 없어 승인 경로는 건너뜀")
@@ -79,9 +81,32 @@ class SupplierAssuranceCheck(unittest.TestCase):
                 with self.assertRaises(HTTPException) as raised:
                     await agent_service.approve_mcp_request("00000000-0000-0000-0000-000000000001", None, None)
                 self.assertEqual(raised.exception.status_code, 409)
-                self.assertIn("승인할 수 없습니다", raised.exception.detail)
-                self.assertIn("공급자 법인명", raised.exception.detail)
+                self.assertIn("승인할 수 있습니다", raised.exception.detail)
+                self.assertNotIn("공급자 법인명", raised.exception.detail)
         asyncio.run(run())
+
+    def test_items_not_received_are_named_unconfirmed_and_never_recorded_as_provided(self):
+        self.assertEqual(supplier_assurance.unconfirmed({}), list(supplier_assurance.ASSURANCE_FIELDS))
+        self.assertEqual(supplier_assurance.unconfirmed(self.valid), ["subprocessors"])
+        # false is an answer ("not submitted"); an empty string and the default "미확인" are not.
+        self.assertEqual(supplier_assurance.unconfirmed({"vex_submitted": False, "legal_entity": " ", "subprocessors": "미확인"}).count("vex_submitted"), 0)
+        runtime = {"servers": {"alpha": {"intake_id": "i-a", "display_name": "Alpha",
+                                         "supplier_assurance": {"legal_entity": "Example Provider Ltd.", "vex_submitted": False}}}}
+        row = supplier_assurance.export_rows(runtime)[0]
+        self.assertEqual((row["legal_entity"], row["vex_submitted"]), ("Example Provider Ltd.", False))
+        for key in ("supplier_contact", "security_contact", "support_end", "vulnerability_policy_url", "subprocessors",
+                    "sbom_submitted", "contract_basis_ref", "exit_strategy"):
+            self.assertEqual(row[key], supplier_assurance.UNCONFIRMED, key)
+        self.assertEqual(supplier_assurance.UNCONFIRMED, "확인 안 됨")
+        self.assertTrue(supplier_assurance.matches_registry(runtime, supplier_assurance.export_rows(runtime)))
+
+    @unittest.skipIf(agent_service is None, "게이트웨이 이미지 의존성이 없어 승인 경로는 건너뜀")
+    def test_approval_form_defaults_do_not_claim_a_submission(self):
+        blank = agent_service.IntakeApproval()
+        self.assertEqual((blank.sbom_submitted, blank.vex_submitted, blank.subprocessors), (None, None, "미확인"))
+        self.assertEqual(supplier_assurance.unconfirmed({k: v for k, v in blank.model_dump().items()
+                                                         if k in supplier_assurance.ASSURANCE_FIELDS and v is not None}),
+                         list(supplier_assurance.ASSURANCE_FIELDS))
 
     def test_json_and_csv_exports_match_runtime_ledger_and_hash(self):
         runtime = {"servers": {

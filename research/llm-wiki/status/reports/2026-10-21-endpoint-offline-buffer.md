@@ -7,11 +7,11 @@
 
 ## 결과
 
-`endpoint-agent/offline_buffer.py`에 표준 라이브러리 기반 내구 JSONL 큐를 추가했다. 크기 8 MiB, 10,000 이벤트, 7일 보존 한도를 둔다. 상한 초과 시 이벤트를 덮어쓰지 않고 수집 커서를 유지해 관측 수집을 멈춘다. 버퍼에 미적재된 건수와 보존 만료 폐기는 재연결 뒤 stable UID·건수·사유로 새 append-only `endpoint_buffer_events`에 기록한다. 용량 초과 시 원천 커서가 유지되므로 미적재 이벤트가 곧 영구 유실을 뜻하지 않는다. 큐에는 정제 이벤트, 원본 SHA-256, 수집 시각만 저장한다.
+`endpoint-agent/offline_buffer.py`에 표준 라이브러리 기반 내구 JSONL 큐를 추가했다. 크기 8 MiB, 10,000 이벤트, 7일 보존 한도를 둔다. 상한 초과 시 이벤트를 덮어쓰지 않고 수집 커서를 유지해 관측 수집을 멈춘다. 버퍼에 넣지 못한 건수와 보존 만료로 지운 건수를 합친 미적재·만료 건수는 재연결 뒤 stable UID·건수·사유로 새 append-only `endpoint_buffer_events`에 기록한다. 용량 초과 시 원천 커서가 유지되므로 미적재 이벤트가 곧 영구 유실을 뜻하지 않는다. 큐에는 정제 이벤트, 원본 SHA-256, 수집 시각만 저장한다.
 
 Linux는 journal cursor를 수집용/ACK용으로 분리했다. Windows도 event record ID cursor를 분리한다. 먼저 기존 큐를 전송하고, 수신 ACK가 확인되고 큐가 비워진 뒤에만 ACK cursor를 갱신한다. 기존 서버의 7일 `raw_sha256` replay 제거와 `(endpoint_id,event_id)` unique 키를 재사용한다. SIEM UID는 아직 Gateway 행이 없는 엔드포인트 이벤트에 적용할 수 없어 새 UID 체계를 추가하지 않았다.
 
-게이트웨이 폐기 이력 표가 추가된 이유는 기존 `endpoint_agents.detail.observation`이 마지막 상태를 덮어써서 폐기 이력을 남기지 않기 때문이다. OS 이벤트 표와 감사 원장에는 가짜 OS 차단이나 MCP 판정을 만들지 않는다. 버퍼는 heartbeat/정책 판단을 대체하지 않으며, 연결 공백의 기존 180초 일시 격리는 그대로 둔다.
+게이트웨이 미적재·만료 건수 표가 추가된 이유는 기존 `endpoint_agents.detail.observation`이 마지막 상태를 덮어써서 건수 이력을 남기지 않기 때문이다. OS 이벤트 표와 감사 원장에는 가짜 OS 차단이나 MCP 판정을 만들지 않는다. 버퍼는 heartbeat/정책 판단을 대체하지 않으며, 연결 공백의 기존 180초 일시 격리는 그대로 둔다.
 
 ## 검증
 
@@ -27,18 +27,19 @@ Linux는 journal cursor를 수집용/ACK용으로 분리했다. Windows도 event
 | pyflakes | `python -m pyflakes --version` | 미완료 | 모듈이 설치되어 있지 않음 |
 | DB/장치/하네스 | 솔루션 기기·PJ1 실행 금지 범위 | 미실행 | 요청에 따라 배포·실기기·PJ1 시험 없음 |
 
-단위 수신기는 메모리 콜백이며 실제 Gateway/PostgreSQL dedup·재부팅·전원 손실 증거가 아니다. 실제 장치 ACL, OS 수집기의 프로세스 kill, 여러 collector 경합, 버퍼 폐기 행의 DB append-only 동작도 미검증이다.
+단위 수신기는 메모리 콜백이며 실제 Gateway/PostgreSQL dedup·재부팅·전원 손실 증거가 아니다. 실제 장치 ACL, OS 수집기의 프로세스 kill, 여러 collector 경합, 미적재·만료 건수 행의 DB append-only 동작도 미검증이다.
 
 ## 실패·미완료·한계
 
 - 저장장치 전체 손실, 시계 역행 중 보존 연장, 게이트웨이 연결이 계속 끊긴 상태에서 7일/용량 한도에 닿았을 때는 보존 만료 건 또는 버퍼 미적재 건을 기록하고 후속 수집을 중지한다. 용량 초과 시 수집 커서를 고정해 원천 이벤트를 재시도한다.
+- 나중에 적재된 건이 이 수치에서 빠지지 않는다. 미적재·만료 건수는 같은 보고 uid 안에서만 단조 증가하며, 보고가 성공하면 새 uid로 다시 센다.
 - `endpoint_buffer_events`의 애플리케이션 경로는 insert-only지만 DB 관리자 직접 UPDATE/DELETE를 막는 권한·트리거 검증은 하지 않았다.
 - Linux managed installer와 Windows 허용 파일 목록에 새 모듈을 포함했다. 설치 번들 재생성·승인 해시·실기기 활성화는 미실행이다.
 - 신규 작업 브랜치 생성은 `.git` 읽기 전용으로 거부됐다. 시작 HEAD 변경 없이 파일을 수정했다. 커밋·push 하지 않았다.
 
 ## 다음 작업
 
-메인이 솔루션 기기에서 승인된 설치 키트 재생성·파일 해시 반영 후 Linux/Windows 실제 오프라인·재시작·재연결과 Gateway/PostgreSQL 중복/폐기 행 기록을 확인한다. PJ1에서 OS 관측 호출과 180초 일시 격리 유지도 별도 확인한다.
+메인이 솔루션 기기에서 승인된 설치 키트 재생성·파일 해시 반영 후 Linux/Windows 실제 오프라인·재시작·재연결과 Gateway/PostgreSQL 중복/미적재·만료 건수 행 기록을 확인한다. PJ1에서 OS 관측 호출과 180초 일시 격리 유지도 별도 확인한다.
 
 ## 사용자에게 필요한 입력
 

@@ -25,6 +25,7 @@ from psycopg.types.json import Jsonb
 
 from exit_terms import conclude, investigate, readme
 from provenance import tree_digest
+from supplier_metadata import collect as supplier_metadata
 from trivy_scan import database_time, trivy_counts
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://mcp:demo-only-change-me@db:5432/mcp_governance")
@@ -309,6 +310,7 @@ def validate(connection, request: dict) -> None:
         "UPDATE mcp_intake_requests SET provenance=%s WHERE id=%s AND status='VALIDATING'",
         (Jsonb({"kind": "source", "source_url": url, "version": commit, "version_immutable": True,
                 "license": repository_license(trivy), "artifact": artifact,
+                "supplier_metadata": supplier_metadata(checkout, url, commit),
                 "recorded_at": datetime.now(UTC).isoformat(timespec="seconds")}), request["id"]))
     note = (f"격리 검증 완료 · SBOM 구성요소 {components}개 · "
             f"Critical {critical} / High {high} / Medium {medium} · commit {commit[:12]}")

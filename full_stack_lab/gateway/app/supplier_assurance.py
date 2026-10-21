@@ -15,13 +15,14 @@ REQUIRED_FIELDS = (
 )
 OPTIONAL_FIELDS = ("subprocessors", "sbom_submitted", "vex_submitted", "contract_basis_ref", "exit_strategy")
 ASSURANCE_FIELDS = REQUIRED_FIELDS + OPTIONAL_FIELDS
+UNCONFIRMED = "확인 안 됨"  # 받지 못한 항목을 있다고 적지 않는다. 화면·내보내기·기록 모두 이 말로 적는다.
 EXPORT_FIELDS = (
     "server_id", "display_name", "supplier", "endpoint", "source_url", "license", "valid_until",
     *ASSURANCE_FIELDS,
 )
 
 
-def validate(value: dict[str, Any] | None, *, today: date | None = None) -> list[str]:
+def validate(value: dict[str, Any] | None, *, today: date | None = None, required: bool = True) -> list[str]:
     assurance = value or {}
     labels = {
         "legal_entity": "공급자 법인명", "supplier_contact": "공급자 연락처",
@@ -36,7 +37,7 @@ def validate(value: dict[str, Any] | None, *, today: date | None = None) -> list
     else:
         errors = []
     missing = [labels[key] for key in REQUIRED_FIELDS if not str(assurance.get(key) or "").strip()]
-    if missing:
+    if missing and required:
         errors.append(f"필수 공급자 보증 항목 누락: {', '.join(missing)}")
     raw_date = str(assurance.get("support_end") or "").strip()
     if raw_date:
@@ -70,6 +71,16 @@ def validate(value: dict[str, Any] | None, *, today: date | None = None) -> list
     return errors
 
 
+def provided(assurance: dict[str, Any] | None, key: str) -> bool:
+    value = (assurance or {}).get(key)
+    return isinstance(value, bool) or (isinstance(value, str) and value.strip() not in ("", "미확인"))
+
+
+def unconfirmed(assurance: dict[str, Any] | None) -> list[str]:
+    """Items the approver did not receive. They stay empty in the record and are named here."""
+    return [key for key in ASSURANCE_FIELDS if not provided(assurance, key)]
+
+
 def support_expiry(support_end: str) -> datetime:
     """Use the day after the stated EOL date as the existing approval lapse boundary."""
     return datetime.combine(date.fromisoformat(support_end) + timedelta(days=1), time.min, timezone.utc)
@@ -94,7 +105,7 @@ def export_rows(runtime_doc: dict[str, Any]) -> list[dict[str, Any]]:
             "source_url": spec.get("source_url") or "",
             "license": spec.get("license") or "",
             "valid_until": spec.get("valid_until") or "",
-            **{key: assurance.get(key) if assurance.get(key) is not None else "" for key in ASSURANCE_FIELDS},
+            **{key: assurance[key] if provided(assurance, key) else UNCONFIRMED for key in ASSURANCE_FIELDS},
         })
     return rows
 

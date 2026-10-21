@@ -400,8 +400,8 @@ def tool_view(tool: Any) -> dict:
     }
 
 
-async def discover(endpoint: str) -> dict:
-    async with session(endpoint, timeout=30) as client:
+async def discover(endpoint: str, principal: str | None = None) -> dict:
+    async with session(endpoint, timeout=30, principal=principal) as client:
         listed = await list_all_tools(client)
         info = client.server_info
         return {
