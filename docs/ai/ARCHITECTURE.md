@@ -142,6 +142,7 @@ OpenCode `--agent bob`. **MCP 경로는 그대로**다: 도구 목록 조회와 
 8. OPA가 판정한다: Allow / Alert / Restrict / Approval / Block(→ [POLICY.md](POLICY.md)). 단말 에이전트가 섀도 설정을
    보고한 PC의 호출은 `MCP-SHADOW-001` 경보가 붙는다. 외부 전송은 도구 심사의 목적·목적지·등급 쌍에 결속되고(PAC-12, D-132),
    다른 서버에서 중요정보를 읽은 주체의 쓰기·실행·공급자 호스팅 호출은 받는 도구가 그 서버를 심사받지 않았으면 `P-FLOW-001`이다(D-133). 호출 내용과 읽은 내용의 지문 대조 결과는 기록하고, `FLOW_MATCH_MODE=content`일 때만 일치·비교 불가 서버로 좁힌다(기본 `coarse`, D-142).
+   관리자가 이 직원의 이 서버 이용을 중지했으면(`user_server_suspensions`) 신원 확인 직후 호출 예약 전에 `P-SUSPEND-001`로 막고, 전송 직전 트랜잭션에서 한 번 더 확인한다(D-181).
    실행될 판정이어도 사용자 동의가 필요한 도구는 본인의 유효한 동의가 없으면 `P-CONSENT-001`로 막고 콘솔에 확인 요청을 남긴다(D-134).
 9. 실행이면 같은 연결에서 upstream `tools/list`를 다시 받아 계약 해시를 대조한 뒤 호출(`core._call_upstream`), 달라졌으면
    `MCP-CATALOG-001`. 보내기 직전 한 문장으로 전송 의도(`dispatch_intents`)를 적으며 예약·주체·서버 상태를 마지막으로 확인한다.

@@ -25,6 +25,23 @@ CREATE TABLE IF NOT EXISTS ops_suspensions (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS ops_suspensions_active ON ops_suspensions(server_id) WHERE resumed_at IS NULL;
 
+-- An administrator stops one employee's use of one MCP server; the console account stays. The row is
+-- state (resuming fills the resume columns); who did it and when is the approval_events record
+-- written in the same transaction.
+CREATE TABLE IF NOT EXISTS user_server_suspensions (
+  id bigserial PRIMARY KEY,
+  user_token text NOT NULL,
+  server_id text NOT NULL REFERENCES mcp_servers(id),
+  reason text NOT NULL,
+  suspended_by text NOT NULL,
+  suspended_at timestamptz NOT NULL DEFAULT now(),
+  resumed_at timestamptz,
+  resumed_by text,
+  resume_note text
+);
+CREATE UNIQUE INDEX IF NOT EXISTS user_server_suspensions_active
+  ON user_server_suspensions(user_token, server_id) WHERE resumed_at IS NULL;
+
 CREATE TABLE IF NOT EXISTS alert_self_tests (
   id bigserial PRIMARY KEY,
   policy_hash text NOT NULL,

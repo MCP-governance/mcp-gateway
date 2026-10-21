@@ -1809,7 +1809,7 @@ async def approve(approval_id: UUID, authorization: str | None = Header(default=
 # every authorisation decision stays with the Gateway. Only these prefixes pass.
 GATEWAY_PROXY_PREFIXES = ("overview", "latency", "activity", "registry", "health", "termination/", "approvals/",
                           "catalog/", "enforcement", "monitor/", "audit/", "policy/", "endpoint/",
-                          "supply-chain/", "risk-catalog", "lab/", "dispatch-intents")
+                          "supply-chain/", "risk-catalog", "lab/", "dispatch-intents", "suspensions")
 # Several Gateway read APIs are open to any authenticated caller; the Console adds
 # the role boundary here so an employee's session cannot read the organisation's
 # registry, policy ledger or endpoint inventory through it.

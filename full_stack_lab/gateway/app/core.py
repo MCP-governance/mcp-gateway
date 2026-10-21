@@ -1606,6 +1606,9 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                 elif refused == "suspended":
                     problem, blocked_verdict = "Server suspended before dispatch", local_verdict(
                         "MCP-REGISTRY-002", "Block", "자동 중지된 서버입니다.")
+                elif refused == "user-suspended":
+                    problem, blocked_verdict = "Use suspended before dispatch", local_verdict(
+                        "P-SUSPEND-001", "Block", "관리자가 이 사용자의 이 서버 이용을 중지했습니다. 계정은 그대로이며 재개되면 다시 사용할 수 있습니다.")
                 elif refused == "contract":
                     problem, blocked_verdict = "Tool restricted before dispatch", local_verdict(
                         "MCP-CATALOG-001", "Block", "요청한 도구의 승인 계약을 확인할 수 없습니다.")
@@ -2004,7 +2007,12 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
     user_token = str(payload.get("user_token") or "")
     with tracer.start_as_current_span("mcp.gateway.call", record_exception=False, set_status_on_exception=False) as span:
         trace_id = f"{span.get_span_context().trace_id:032x}"
-        principal = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (user_token,))
+        # An administrator's stop of this person at this server (DEV-79) comes with the identity row, so
+        # a store that cannot answer fails the whole lookup and nothing runs.
+        principal = await db.fetch_one(
+            """SELECT p.*, EXISTS (SELECT 1 FROM user_server_suspensions u WHERE u.user_token=p.token
+                                    AND u.server_id=%s AND u.resumed_at IS NULL) AS server_suspended
+                 FROM principals p WHERE p.token=%s""", (server_id, user_token))
         cls = classify.classify(server_id, tool, arguments, user_token)
         role = principal["role"] if principal else "unknown"
         for key, value in (("mcp.server", server_id), ("mcp.tool", tool), ("mcp.role", role),
@@ -2045,6 +2053,10 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             base_event.update(local_verdict("MCP-REGISTRY-003", "Block",
                 "이 서비스의 도입 승인 사용 주체에 포함되지 않습니다." if allowed else
                 "도입 신청·승인 기록이 없는 직접 등록입니다. 도입 신청으로 다시 등록해야 실행합니다."))
+            return await _decision_payload(base_event, laps)
+        if principal.get("server_suspended"):
+            base_event.update(local_verdict(
+                "P-SUSPEND-001", "Block", "관리자가 이 사용자의 이 서버 이용을 중지했습니다. 계정은 그대로이며 재개되면 다시 사용할 수 있습니다."))
             return await _decision_payload(base_event, laps)
         laps.lap("identity")
 

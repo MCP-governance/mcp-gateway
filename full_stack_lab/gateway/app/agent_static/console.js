@@ -1413,8 +1413,9 @@ const managedEventDetail = (d) => (d && (d.reason || d.note || (d.actor ? `처�
 let peopleAccounts = [];
 let integrationItems = [];
 ROUTES.people = async (_, tab) => {
-  const [{ accounts }, { requests: signups }, inv, o, p, identity] = await Promise.all([
-    api("/api/accounts"), api("/api/signup-requests"), gw("endpoint/inventory"), gw("overview"), planes(), api("/api/identity").catch(() => ({ provider: "local", bindings: [] }))]);
+  const [{ accounts }, { requests: signups }, inv, o, p, identity, { suspensions }] = await Promise.all([
+    api("/api/accounts"), api("/api/signup-requests"), gw("endpoint/inventory"), gw("overview"), planes(), api("/api/identity").catch(() => ({ provider: "local", bindings: [] })),
+    gw("suspensions")]);
   peopleAccounts = accounts;
   const deviceState = Object.fromEntries(p.devices.filter((d) => d.endpoint_id).map((d) => [d.endpoint_id, d]));
   const harnessOf = Object.fromEntries(o.workstations.map((w) => [w.endpoint_id, w]));
@@ -1435,6 +1436,7 @@ ROUTES.people = async (_, tab) => {
             <td>${chip({ active: "allow", disabled: "block", locked: "alert" }[a.status] || "", { active: "사용", disabled: "중지", locked: "잠김" }[a.status] || a.status)}</td>
             <td class="num">${a.user_id === viewer.user_id ? html`<span class="small muted">본인</span>`
               : html`<button class="btn sm" data-act="account-status" data-id="${a.user_id}" data-name="${a.display_name}" data-status="${a.status}">상태 변경</button>
+                <button class="btn sm" data-act="suspend-open" data-token="${a.token}" data-name="${a.display_name}">MCP 이용 중지</button>
                 ${a.user_id !== "root" ? html`<button class="btn sm danger" data-act="account-delete" data-id="${a.user_id}" data-name="${a.display_name}">삭제</button>` : ""}`}</td></tr>`)}
           </tbody></table><p class="empty" data-list-empty="account-list" hidden>검색 결과 없음</p>`, { flush: true, tools: listToolbar("account-list", "이름·이메일·부서 검색") }) },
         { key: "devices", label: "엔드포인트", n: inv.agents.length, body: html`<div class="stack">
@@ -1449,6 +1451,14 @@ ROUTES.people = async (_, tab) => {
             </tbody></table>${inv.agents.length ? "" : empty("엔드포인트 없음")}`, { flush: true })}<details class="analysis"><summary>엔드포인트·하네스별 호출</summary><div class="grid c21">
           ${panel("엔드포인트별 호출", o.workstations.length ? chartBox("c-ws-calls", "최근 24시간 엔드포인트별 호출 수", "sm") : empty("엔드포인트 없음"), { sub: "24시간" })}
           ${panel("하네스", byHarness.length ? chartBox("c-harness", "최근 24시간 하네스별 호출 비율", "sm") : empty("호출 없음"), { sub: "24시간" })}</div></details></div>` },
+        { key: "suspensions", label: "이용 중지", n: suspensions.filter((x) => !x.resumed_at).length,
+          body: panel("이용 중지", html`<table class="data"><thead><tr><th>사용자</th><th>서버</th><th>사유</th><th>중지</th><th>상태</th><th>재개</th><th></th></tr></thead><tbody>
+            ${suspensions.map((x) => html`<tr><td>${x.display_name || "—"}</td><td>${x.server_name || x.server_id}</td><td class="small">${x.reason}</td>
+              <td class="small">${when(x.suspended_at)}<span class="sub">${x.suspended_by || "—"}</span></td>
+              <td>${x.resumed_at ? chip("allow", "재개") : chip("block", "중지")}</td>
+              <td class="small">${x.resumed_at ? html`${when(x.resumed_at)}<span class="sub">${x.resumed_by || "—"} · ${x.resume_note || "—"}</span>` : "—"}</td>
+              <td class="num">${x.resumed_at ? "" : html`<button class="btn sm primary" data-act="suspend-resume" data-id="${x.id}" data-name="${x.display_name || ""}" data-server="${x.server_name || x.server_id}">재개</button>`}</td></tr>`)}
+            </tbody></table>${suspensions.length ? "" : empty("중지한 이용 없음")}`, { flush: true }) },
         { key: "signups", label: "가입 요청", n: signups.filter((s) => s.status === "pending").length,
           body: panel("가입 요청", html`<table class="data"><thead><tr><th>아이디</th><th>이름</th><th>요청</th><th>상태</th><th></th></tr></thead><tbody>
           ${signups.map((s) => html`<tr><td class="mono">${s.username}</td><td>${s.display_name}</td><td>${when(s.requested_at)}</td>
@@ -2469,6 +2479,23 @@ const ACTIONS = {
     const r = await api(`/api/accounts/${el.dataset.id}/status`, { method: "PUT", body: { status: fd.get("status"), note: fd.get("note") || "" } });
     await reload();
     toast(r.message);
+  },
+  async "suspend-open"(el) {
+    const { servers } = await gw("registry");
+    const fd = await ask({ title: `${el.dataset.name} · MCP 이용 중지`,
+      fields: html`${field.select("server_id", "서버", Object.fromEntries(servers.map((s) => [s.id, s.display_name || s.id])))}
+        ${field.text("reason", "사유", 'required minlength="4" maxlength="500"', "관리자 수동 중지")}`,
+      confirm: "이용 중지", danger: true });
+    if (!fd) return;
+    await gw("suspensions", { method: "POST", body: { user_token: el.dataset.token, server_id: fd.get("server_id"), reason: fd.get("reason").trim() } });
+    toast("이용을 중지했습니다."); reload();
+  },
+  async "suspend-resume"(el) {
+    const fd = await ask({ title: `${el.dataset.name} · ${el.dataset.server} 이용 재개`,
+      fields: field.text("note", "메모", 'required minlength="4" maxlength="500"', "중지 해소"), confirm: "재개" });
+    if (!fd) return;
+    await gw(`suspensions/${encodeURIComponent(el.dataset.id)}/resume`, { method: "POST", body: { note: fd.get("note").trim() } });
+    toast("이용을 재개했습니다."); reload();
   },
   async "account-delete"(el) {
     const fd = await ask({ title: `${el.dataset.name} 계정 삭제`,
