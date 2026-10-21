@@ -36,7 +36,7 @@ from .core import (
 from .mcp_facade import build_mcp, transport_security
 from .agent_contract import CONSOLE_SCOPE, ResidencyFields, ToolReview, authenticate, authenticated_user
 from .release import build_info, policy_info
-from . import activity, audit, incidents, registry, residency, retention, review, risk_tier, siem, supplier_assurance
+from . import activity, audit, incidents, registry, residency, retention, review, risk_tier, siem, supplier_assurance, tool_sunset
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 # "오늘" is the operator's day. The DB session runs in UTC, so date_trunc('day', now())
@@ -454,7 +454,8 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
     catalog_servers = registry.servers()
     doc = registry.runtime()
     console = doc["servers"]
-    return {"catalog_version": registry.catalog_version(),
+    sunset = await tool_sunset.snapshot()
+    return {"catalog_version": registry.catalog_version(), "tool_sunset": sunset,
             "classification": registry.catalog().get("classification", {}),
             "organization": registry.catalog().get("organization", {}),
             "servers": [{**row, "residency": residency.location(catalog_servers[row["id"]], registry.catalog().get("organization", {}))}
