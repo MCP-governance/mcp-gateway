@@ -135,12 +135,18 @@ class Store:
             self.decisions.append(("new", True))
             return Cursor(rowcount=1)
         if text.startswith("INSERT INTO endpoint_buffer_events"):
-            assert "ON CONFLICT(endpoint_id,event_uid) DO NOTHING" in text, text
+            assert "ON CONFLICT(endpoint_id,event_uid)" in text, text
             endpoint, uid, count, reason = params
-            if any(drop["uid"] == uid for drop in self.drops):
-                return Cursor(rowcount=0)
-            self.drops.append({"endpoint": endpoint, "uid": uid, "count": count, "reason": reason})
-            return Cursor(rowcount=1)
+            held = next((drop for drop in self.drops if drop["endpoint"] == endpoint and drop["uid"] == uid), None)
+            if held is None:
+                self.drops.append({"endpoint": endpoint, "uid": uid, "count": count, "reason": reason})
+                return Cursor(rowcount=1)
+            # Same drop_uid: only a larger report replaces the row. Anything else leaves it as it is.
+            if ("DO UPDATE SET" in text and "WHERE EXCLUDED.dropped_count > endpoint_buffer_events.dropped_count" in text
+                    and count > held["count"]):
+                held.update(count=count, reason=reason)
+                return Cursor(rowcount=1)
+            return Cursor(rowcount=0)
         if "FROM endpoint_agents" in text:
             return Cursor(row={"endpoint_id": ENDPOINT, "detail": {"observation": dict(self.observation)}})
         if text.startswith("UPDATE endpoint_agents"):
@@ -157,6 +163,7 @@ class Gateway:
         self.answer_status = None       # answer this HTTP status and store nothing
         self.lose_answer = False        # store, then the answer never reaches the device
         self.crash_device = False       # store, then the device process dies before it acknowledges
+        self.lose_status_answer = False # store the observation report, then its answer never reaches the device
         self.post_sizes, self.ack_present, self.answers = [], [], []
 
     def call(self, method, path, body=None):
@@ -165,7 +172,11 @@ class Gateway:
         if path == "/api/endpoint/observation-status":
             if self.answer_status:
                 raise self._status_error(path)
-            return asyncio.run(main.endpoint_observation_status(main.ObservationReport.model_validate(body), _device()))
+            result = asyncio.run(main.endpoint_observation_status(main.ObservationReport.model_validate(body), _device()))
+            if self.lose_status_answer:
+                self.lose_status_answer = False
+                raise ConnectionResetError("status answer lost after the Gateway committed the report")
+            return result
         raise AssertionError(f"path not modelled: {path}")
 
     def _status_error(self, path):
@@ -359,6 +370,43 @@ class ArrivalChecks(unittest.TestCase):
         self.assertEqual(len(self.store.events), 3)
         self.assertEqual(self.cursor(".journal-cursor"), "c0003")
         self.assertEqual(self.store.observation["os"]["error_code"], "offline_buffer_dropped")
+
+    def test_seven_unique_refused_events_are_counted_seven_times_across_two_runs(self):
+        # Five lines are refused in the first run and the same five are read again in the second run. Only
+        # the two new lines are counted there, so the Gateway total is the unique count, 7, not 5 + 7 = 12.
+        with mock.patch.object(observer, "EventBuffer", SmallBuffer):
+            self.add_journal(1, 5)
+            self.assertEqual(self.run_observer()[0], 0)
+            self.add_journal(6, 7)
+            self.assertEqual(self.run_observer()[0], 0)
+            self.assertEqual(sum(drop["count"] for drop in self.store.drops), 7)
+            self.assertEqual(sorted(drop["count"] for drop in self.store.drops), [2, 5])
+            self.assertEqual(self.store.events, [])
+            self.assertEqual(self.buffer().dropped_count(), 0)
+
+    def test_a_lost_drop_report_is_raised_to_the_larger_count_and_never_lowered(self):
+        # The first report is stored, its answer is lost, so the drop_uid and count 5 stay on the device. Eight
+        # more unique refused lines then raise the same drop_uid to 13. A smaller report for that uid must not
+        # lower the row.
+        with mock.patch.object(observer, "EventBuffer", SmallBuffer):
+            self.add_journal(1, 5)
+            self.gateway.lose_status_answer = True
+            self.assertEqual(self.run_observer()[0], 1)
+            self.assertEqual([drop["count"] for drop in self.store.drops], [5])
+            uid = self.store.drops[0]["uid"]
+            self.assertEqual(self.buffer().dropped_count(), 5)
+
+            self.add_journal(6, 13)
+            self.assertEqual(self.run_observer()[0], 0)
+            self.assertEqual([(drop["uid"], drop["count"]) for drop in self.store.drops], [(uid, 13)])
+            self.assertEqual(self.buffer().dropped_count(), 0)
+
+            late = {"endpoint_id": ENDPOINT, "channel": "os", "state": "partial", "accepted_count": 0,
+                    "error_code": "offline_buffer_full", "buffer_event_uid": uid, "dropped_count": 4,
+                    "buffer_reason": "capacity"}
+            self.gateway.call("POST", "/api/endpoint/observation-status", late)
+            self.assertEqual([(drop["uid"], drop["count"]) for drop in self.store.drops], [(uid, 13)])
+            self.assertEqual(len(self.store.drops), 1)
 
 
 if __name__ == "__main__":
