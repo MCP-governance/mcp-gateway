@@ -1813,3 +1813,4 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 재사용: D-122의 `ops_suspensions` 구조(복귀 필드를 채우는 상태 행)·`review.record_event`·D-140 최종 dispatch 잠금 순서. 서버 단위 중지(D-122)·계정 상태·종료 절차는 독립이며 서로 되돌리지 않는다. 콘솔은 사용자·엔드포인트 화면의 사용자 행(MCP 이용 중지)과 「이용 중지」 탭(재개)이다.
 - 근거: [방향 갱신 10-20](../../research/llm-wiki/analysis/direction-1020/README.md) 3장 DEV-79, [통제 검토](../../research/llm-wiki/analysis/direction-1020/control-review.md) 105행(근거 M05 **제2항**·TC260 4.2.3(b)-(c), README의 제3항은 정정), [원자 요구사항·근거](../../research/llm-wiki/analysis/user-server-suspend/README.md).
 - 한계: 이미 전송된 호출은 취소하지 않는다(기록만). `tools/list`는 그대로 보이고 호출만 거부한다. 재개에 독립 승인은 요구하지 않는다(관리자 1명 운영). DEV-74 자동 중지가 같은 상태를 쓰는 확장은 하지 않았다. 기기 배포·PJ1 실제 하네스 시험은 미실행이다.
+- 일괄 (2026-10-21): 한 직원의 운영 중 서버 전체를 `POST /api/user-suspensions/stop-all`·`resume-all`로 한 번에 중지·재개한다. 조합마다 기존 단일 조작을 따로 호출해 조합별 행·기록이 남고(같은 일괄 조작은 원장 `scope.batch`로 잇는다), 성공·건너뜀·실패를 나눠 돌려준다. 새 판정·정책 ID 없음.
