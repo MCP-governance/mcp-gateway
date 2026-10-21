@@ -1,0 +1,88 @@
+{
+ "filesystem": {
+  "command": "/home/pj1/mcp-real-20261020/opt/node/bin/node",
+  "args": [
+   "/home/pj1/mcp-real-20261020/opt/mcp-npm/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js",
+   "/home/pj1/mcp-real-20261020/data/fs"
+  ],
+  "call": [
+   "read_text_file",
+   {
+    "path": "/home/pj1/mcp-real-20261020/data/fs/notes.txt"
+   }
+  ]
+ },
+ "git": {
+  "command": "/home/pj1/mcp-real-20261020/opt/node/bin/node",
+  "args": [
+   "/home/pj1/mcp-real-20261020/opt/mcp-npm/node_modules/@cyanheads/git-mcp-server/dist/index.js"
+  ],
+  "env": {
+   "MCP_TRANSPORT_TYPE": "stdio",
+   "GIT_BASE_DIR": "/home/pj1/mcp-real-20261020/data",
+   "MCP_LOG_LEVEL": "error"
+  },
+  "call": [
+   "git_status",
+   {
+    "path": "/home/pj1/mcp-real-20261020/data/repo"
+   }
+  ]
+ },
+ "sqlite": {
+  "command": "/home/pj1/mcp-real-20261020/opt/node/bin/node",
+  "args": [
+   "/home/pj1/mcp-real-20261020/opt/mcp-npm/node_modules/@bytebase/dbhub/dist/index.js",
+   "--transport",
+   "stdio",
+   "--dsn",
+   "sqlite:///home/pj1/mcp-real-20261020/data/app.db"
+  ],
+  "call": [
+   "execute_sql",
+   {
+    "sql": "SELECT name FROM customers ORDER BY id"
+   }
+  ]
+ },
+ "playwright": {
+  "command": "/home/pj1/mcp-real-20261020/opt/node/bin/node",
+  "args": [
+   "/home/pj1/mcp-real-20261020/opt/mcp-npm/node_modules/@playwright/mcp/cli.js",
+   "--headless",
+   "--browser",
+   "chromium",
+   "--isolated"
+  ],
+  "call": [
+   "browser_navigate",
+   {
+    "url": "http://127.0.0.1:8765/index.html"
+   }
+  ]
+ },
+ "ghidra": {
+  "command": "/home/pj1/mcp-real-20261020/opt/ghidra-venv/bin/python",
+  "args": [
+   "-m",
+   "ghidra_mcp",
+   "--headless",
+   "--binary",
+   "/home/pj1/mcp-real-20261020/data/true.elf",
+   "--ghidra-install-dir",
+   "/home/pj1/mcp-real-20261020/opt/ghidra_12.1.4_PUBLIC",
+   "--extension-jar",
+   "/home/pj1/mcp-real-20261020/opt/GhidraMCP.jar",
+   "--discard"
+  ],
+  "env": {
+   "JAVA_HOME": "/home/pj1/mcp-real-20261020/opt/jdk",
+   "PATH": "/home/pj1/mcp-real-20261020/opt/jdk/bin:/usr/bin:/bin"
+  },
+  "init_timeout": 400,
+  "call": [
+   "get_program_info",
+   {}
+  ]
+ }
+}

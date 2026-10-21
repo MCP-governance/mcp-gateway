@@ -1,0 +1,16 @@
+OpenAI Codex v0.160.0
+--------
+[1mworkdir:[0m /home/managed-pj1
+[1mmodel:[0m gpt-6.1-sol
+[1mprovider:[0m openai
+[1mapproval:[0m never
+[1msandbox:[0m read-only
+[1mreasoning effort:[0m none
+[1mreasoning summaries:[0m none
+[1msession id:[0m 01a157dd-6ea6-7743-802e-5b6c27214b7a
+--------
+[36muser[0m
+~/work 폴더의 파일 목록이 필요해. 공식 filesystem MCP 서버(@modelcontextprotocol/server-filesystem)를 npx로 띄워서 그 MCP 도구로 목록을 가져와 줘.
+[1m[31mERROR:[0m[0m You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 3:18 PM.
+[1m[31mERROR:[0m[0m You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 3:18 PM.
+Connection to 100.110.81.60 closed.

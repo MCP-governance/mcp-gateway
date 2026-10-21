@@ -1,0 +1,436 @@
+{"mode": "cold", "path": "A", "init_ms": 1022.41, "call_ms": 1795.05, "total_ms": 2832.13, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 0, "at": "2026-10-20T06:01:28.999+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 587.13, "call_ms": 1821.19, "total_ms": 2530.1, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 0, "at": "2026-10-20T06:01:31.903+00:00", "token_ms": 72.2}
+{"mode": "cold", "path": "A", "init_ms": 1084.41, "call_ms": 1848.33, "total_ms": 2933.91, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 1, "at": "2026-10-20T06:01:35.138+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 470.89, "call_ms": 4239.36, "total_ms": 4861.51, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 1, "at": "2026-10-20T06:01:40.301+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 915.69, "call_ms": 1778.41, "total_ms": 2695.62, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 2, "at": "2026-10-20T06:01:43.298+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 499.63, "call_ms": 1193.18, "total_ms": 1828.37, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 2, "at": "2026-10-20T06:01:45.428+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 938.78, "call_ms": 1812.24, "total_ms": 2752.02, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 3, "at": "2026-10-20T06:01:48.481+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 367.48, "call_ms": 1042.18, "total_ms": 1576.04, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 3, "at": "2026-10-20T06:01:50.358+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 915.57, "call_ms": 1921.11, "total_ms": 2838.45, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 4, "at": "2026-10-20T06:01:53.498+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 630.1, "call_ms": 1248.73, "total_ms": 2093.58, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 4, "at": "2026-10-20T06:01:55.893+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 854.67, "call_ms": 1906.6, "total_ms": 2763.85, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 5, "at": "2026-10-20T06:01:58.957+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 355.26, "call_ms": 1113.76, "total_ms": 1628.5, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 5, "at": "2026-10-20T06:02:00.887+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 919.03, "call_ms": 1813.31, "total_ms": 2734.24, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 6, "at": "2026-10-20T06:02:03.922+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 458.53, "call_ms": 1282.95, "total_ms": 2083.03, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 6, "at": "2026-10-20T06:02:06.307+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 911.71, "call_ms": 1832.8, "total_ms": 2745.23, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 7, "at": "2026-10-20T06:02:09.353+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 679.01, "call_ms": 1263.69, "total_ms": 2047.76, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 7, "at": "2026-10-20T06:02:11.702+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 848.76, "call_ms": 1892.56, "total_ms": 2743.43, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 8, "at": "2026-10-20T06:02:14.746+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 716.98, "call_ms": 1130.16, "total_ms": 1971.22, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 8, "at": "2026-10-20T06:02:17.020+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 851.92, "call_ms": 1809.98, "total_ms": 2663.37, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 9, "at": "2026-10-20T06:02:19.984+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 345.56, "call_ms": 1599.62, "total_ms": 2408.48, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 9, "at": "2026-10-20T06:02:22.694+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 898.77, "call_ms": 2015.1, "total_ms": 2915.66, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 10, "at": "2026-10-20T06:02:25.910+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 276.93, "call_ms": 1277.19, "total_ms": 1658.75, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 10, "at": "2026-10-20T06:02:27.871+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 867.86, "call_ms": 1825.61, "total_ms": 2694.78, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 11, "at": "2026-10-20T06:02:30.867+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 439.84, "call_ms": 1395.12, "total_ms": 1966.35, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 11, "at": "2026-10-20T06:02:33.134+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 876.61, "call_ms": 1871.85, "total_ms": 2750.32, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 12, "at": "2026-10-20T06:02:36.185+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 435.76, "call_ms": 1383.01, "total_ms": 1976.72, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 12, "at": "2026-10-20T06:02:38.464+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 846.93, "call_ms": 1792.28, "total_ms": 2640.34, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 13, "at": "2026-10-20T06:02:41.405+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 447.1, "call_ms": 1366.64, "total_ms": 2006.32, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 13, "at": "2026-10-20T06:02:43.713+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 910.85, "call_ms": 1751.59, "total_ms": 2664.09, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 14, "at": "2026-10-20T06:02:46.679+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 498.93, "call_ms": 1364.52, "total_ms": 2017.73, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 14, "at": "2026-10-20T06:02:48.998+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 860.49, "call_ms": 1815.91, "total_ms": 2677.89, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 15, "at": "2026-10-20T06:02:51.977+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 414.45, "call_ms": 1185.03, "total_ms": 1769.88, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 15, "at": "2026-10-20T06:02:54.048+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 894.31, "call_ms": 1909.39, "total_ms": 2805.52, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 16, "at": "2026-10-20T06:02:57.155+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 456.97, "call_ms": 1172.43, "total_ms": 1791.31, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 16, "at": "2026-10-20T06:02:59.247+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 873.29, "call_ms": 1826.4, "total_ms": 2701.07, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 17, "at": "2026-10-20T06:03:02.249+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 492.68, "call_ms": 1158.35, "total_ms": 1817.4, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 17, "at": "2026-10-20T06:03:04.368+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 879.64, "call_ms": 1798.47, "total_ms": 2679.5, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 18, "at": "2026-10-20T06:03:07.348+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 811.93, "call_ms": 1210.31, "total_ms": 2140.33, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 18, "at": "2026-10-20T06:03:09.790+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 872.42, "call_ms": 1852.86, "total_ms": 2726.67, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 19, "at": "2026-10-20T06:03:12.818+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 1079.2, "call_ms": 1210.07, "total_ms": 2458.52, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 19, "at": "2026-10-20T06:03:15.578+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 867.61, "call_ms": 1901.99, "total_ms": 2771.6, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 20, "at": "2026-10-20T06:03:18.651+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 391.0, "call_ms": 1450.04, "total_ms": 2106.46, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 20, "at": "2026-10-20T06:03:21.059+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 917.26, "call_ms": 1779.89, "total_ms": 2699.06, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 21, "at": "2026-10-20T06:03:24.059+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 338.9, "call_ms": 1007.56, "total_ms": 1511.57, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 21, "at": "2026-10-20T06:03:25.872+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 877.15, "call_ms": 1853.12, "total_ms": 2731.95, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 22, "at": "2026-10-20T06:03:28.905+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 353.86, "call_ms": 963.08, "total_ms": 1416.23, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 22, "at": "2026-10-20T06:03:30.623+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 861.06, "call_ms": 1785.72, "total_ms": 2648.29, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 23, "at": "2026-10-20T06:03:33.572+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 442.49, "call_ms": 1118.38, "total_ms": 1713.56, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 23, "at": "2026-10-20T06:03:35.637+00:00", "token_ms": 49.71}
+{"mode": "cold", "path": "A", "init_ms": 927.85, "call_ms": 1770.95, "total_ms": 2699.94, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 24, "at": "2026-10-20T06:03:38.638+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 482.09, "call_ms": 1336.35, "total_ms": 1984.08, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 24, "at": "2026-10-20T06:03:40.923+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 924.56, "call_ms": 1807.04, "total_ms": 2732.57, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 25, "at": "2026-10-20T06:03:43.956+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 362.3, "call_ms": 977.83, "total_ms": 1505.95, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 25, "at": "2026-10-20T06:03:45.763+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 938.02, "call_ms": 1843.69, "total_ms": 2783.08, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 26, "at": "2026-10-20T06:03:48.847+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 394.77, "call_ms": 1266.48, "total_ms": 2016.09, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 26, "at": "2026-10-20T06:03:51.164+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 915.13, "call_ms": 1856.5, "total_ms": 2773.07, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 27, "at": "2026-10-20T06:03:54.239+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 424.36, "call_ms": 1084.66, "total_ms": 1676.14, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 27, "at": "2026-10-20T06:03:56.217+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 928.17, "call_ms": 1868.6, "total_ms": 2798.64, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 28, "at": "2026-10-20T06:03:59.316+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 403.02, "call_ms": 1116.83, "total_ms": 1661.54, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 28, "at": "2026-10-20T06:04:01.279+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 894.18, "call_ms": 1894.34, "total_ms": 2789.96, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 29, "at": "2026-10-20T06:04:04.371+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 410.73, "call_ms": 1176.93, "total_ms": 1746.49, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 29, "at": "2026-10-20T06:04:06.418+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 868.7, "call_ms": 1876.46, "total_ms": 2747.25, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 30, "at": "2026-10-20T06:04:09.467+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 553.56, "call_ms": 1223.47, "total_ms": 1943.64, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 30, "at": "2026-10-20T06:04:11.712+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 911.4, "call_ms": 1818.78, "total_ms": 2731.54, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 31, "at": "2026-10-20T06:04:14.745+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 598.3, "call_ms": 1370.51, "total_ms": 2127.04, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 31, "at": "2026-10-20T06:04:17.173+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 886.89, "call_ms": 1810.59, "total_ms": 2699.83, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 32, "at": "2026-10-20T06:04:20.175+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 482.5, "call_ms": 992.11, "total_ms": 1632.21, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 32, "at": "2026-10-20T06:04:22.108+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 883.37, "call_ms": 1832.72, "total_ms": 2717.36, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 33, "at": "2026-10-20T06:04:25.127+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 353.31, "call_ms": 971.88, "total_ms": 1478.87, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 33, "at": "2026-10-20T06:04:26.907+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 936.26, "call_ms": 1840.93, "total_ms": 2777.86, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 34, "at": "2026-10-20T06:04:29.986+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 425.49, "call_ms": 1245.8, "total_ms": 1807.53, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 34, "at": "2026-10-20T06:04:32.095+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 950.45, "call_ms": 1745.11, "total_ms": 2696.91, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 35, "at": "2026-10-20T06:04:35.092+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 342.73, "call_ms": 1031.79, "total_ms": 1546.45, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 35, "at": "2026-10-20T06:04:36.940+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 881.07, "call_ms": 1826.58, "total_ms": 2709.69, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 36, "at": "2026-10-20T06:04:39.951+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 422.29, "call_ms": 1123.13, "total_ms": 1704.45, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 36, "at": "2026-10-20T06:04:41.957+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 880.39, "call_ms": 1839.67, "total_ms": 2721.38, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 37, "at": "2026-10-20T06:04:44.980+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 356.41, "call_ms": 1267.57, "total_ms": 1790.55, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 37, "at": "2026-10-20T06:04:47.072+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 926.85, "call_ms": 1853.28, "total_ms": 2781.51, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 38, "at": "2026-10-20T06:04:50.154+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 404.02, "call_ms": 1175.03, "total_ms": 1738.04, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 38, "at": "2026-10-20T06:04:52.194+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 856.75, "call_ms": 1833.69, "total_ms": 2692.23, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 39, "at": "2026-10-20T06:04:55.187+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 347.68, "call_ms": 977.96, "total_ms": 1485.81, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 39, "at": "2026-10-20T06:04:56.975+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 868.4, "call_ms": 1819.06, "total_ms": 2688.91, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 40, "at": "2026-10-20T06:04:59.964+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 452.5, "call_ms": 1102.09, "total_ms": 1712.98, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 40, "at": "2026-10-20T06:05:01.979+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 891.62, "call_ms": 1856.83, "total_ms": 2749.66, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 41, "at": "2026-10-20T06:05:05.029+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 359.42, "call_ms": 981.57, "total_ms": 1503.34, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 41, "at": "2026-10-20T06:05:06.834+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 884.44, "call_ms": 1800.66, "total_ms": 2686.95, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 42, "at": "2026-10-20T06:05:09.822+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 538.99, "call_ms": 1115.54, "total_ms": 1774.45, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 42, "at": "2026-10-20T06:05:11.898+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 918.52, "call_ms": 1894.27, "total_ms": 2814.61, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 43, "at": "2026-10-20T06:05:15.013+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 339.74, "call_ms": 1054.23, "total_ms": 1515.23, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 43, "at": "2026-10-20T06:05:16.830+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 908.65, "call_ms": 1890.09, "total_ms": 2800.83, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 44, "at": "2026-10-20T06:05:19.932+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 445.72, "call_ms": 1208.09, "total_ms": 1775.31, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 44, "at": "2026-10-20T06:05:22.009+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 922.36, "call_ms": 1942.22, "total_ms": 2866.79, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 45, "at": "2026-10-20T06:05:25.177+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 347.05, "call_ms": 965.34, "total_ms": 1470.8, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 45, "at": "2026-10-20T06:05:26.949+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 890.29, "call_ms": 1833.82, "total_ms": 2726.53, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 46, "at": "2026-10-20T06:05:29.977+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 288.05, "call_ms": 939.91, "total_ms": 1321.8, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 46, "at": "2026-10-20T06:05:31.600+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 955.1, "call_ms": 1785.86, "total_ms": 2742.77, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 47, "at": "2026-10-20T06:05:34.644+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 506.97, "call_ms": 1087.47, "total_ms": 1750.35, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 47, "at": "2026-10-20T06:05:36.758+00:00", "token_ms": 61.91}
+{"mode": "cold", "path": "A", "init_ms": 965.6, "call_ms": 1817.09, "total_ms": 2784.83, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 48, "at": "2026-10-20T06:05:39.844+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 347.21, "call_ms": 1144.39, "total_ms": 1662.06, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 48, "at": "2026-10-20T06:05:41.808+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 900.63, "call_ms": 1779.98, "total_ms": 2682.16, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 49, "at": "2026-10-20T06:05:44.792+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 353.86, "call_ms": 995.69, "total_ms": 1440.37, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 49, "at": "2026-10-20T06:05:46.533+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 884.85, "call_ms": 1875.03, "total_ms": 2761.59, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 50, "at": "2026-10-20T06:05:49.596+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 386.53, "call_ms": 1235.08, "total_ms": 1788.93, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 50, "at": "2026-10-20T06:05:51.686+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 893.14, "call_ms": 1815.06, "total_ms": 2709.96, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 51, "at": "2026-10-20T06:05:54.698+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 341.53, "call_ms": 996.53, "total_ms": 1503.1, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 51, "at": "2026-10-20T06:05:56.503+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 905.78, "call_ms": 1832.62, "total_ms": 2740.65, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 52, "at": "2026-10-20T06:05:59.544+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 348.47, "call_ms": 1269.41, "total_ms": 1791.49, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 52, "at": "2026-10-20T06:06:01.637+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 857.88, "call_ms": 1777.49, "total_ms": 2636.52, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 53, "at": "2026-10-20T06:06:04.575+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 348.22, "call_ms": 1089.77, "total_ms": 1606.52, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 53, "at": "2026-10-20T06:06:06.483+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 918.2, "call_ms": 1798.35, "total_ms": 2718.63, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 54, "at": "2026-10-20T06:06:09.502+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 376.07, "call_ms": 1185.92, "total_ms": 1752.97, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 54, "at": "2026-10-20T06:06:11.557+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 966.57, "call_ms": 1777.49, "total_ms": 2745.35, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 55, "at": "2026-10-20T06:06:14.603+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 350.77, "call_ms": 1046.02, "total_ms": 1565.24, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 55, "at": "2026-10-20T06:06:16.470+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 871.32, "call_ms": 1900.04, "total_ms": 2772.48, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 56, "at": "2026-10-20T06:06:19.544+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 324.08, "call_ms": 1372.22, "total_ms": 1858.88, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 56, "at": "2026-10-20T06:06:21.705+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 890.52, "call_ms": 1885.7, "total_ms": 2778.1, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 57, "at": "2026-10-20T06:06:24.784+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 407.62, "call_ms": 1112.98, "total_ms": 1677.97, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 57, "at": "2026-10-20T06:06:26.764+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 846.1, "call_ms": 1854.23, "total_ms": 2702.74, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 58, "at": "2026-10-20T06:06:29.768+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 370.1, "call_ms": 1019.97, "total_ms": 1551.67, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 58, "at": "2026-10-20T06:06:31.622+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 883.64, "call_ms": 1905.77, "total_ms": 2790.95, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 59, "at": "2026-10-20T06:06:34.713+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 551.82, "call_ms": 1159.64, "total_ms": 1825.48, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 59, "at": "2026-10-20T06:06:36.841+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 915.02, "call_ms": 1766.39, "total_ms": 2683.16, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 60, "at": "2026-10-20T06:06:39.825+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 342.85, "call_ms": 947.17, "total_ms": 1446.73, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 60, "at": "2026-10-20T06:06:41.573+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 883.06, "call_ms": 1847.4, "total_ms": 2732.25, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 61, "at": "2026-10-20T06:06:44.606+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 340.55, "call_ms": 986.37, "total_ms": 1495.12, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 61, "at": "2026-10-20T06:06:46.402+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 886.94, "call_ms": 1838.22, "total_ms": 2727.15, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 62, "at": "2026-10-20T06:06:49.431+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 343.22, "call_ms": 1958.46, "total_ms": 2481.51, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 62, "at": "2026-10-20T06:06:52.214+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 898.27, "call_ms": 1839.64, "total_ms": 2739.39, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 63, "at": "2026-10-20T06:06:55.255+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 486.51, "call_ms": 1325.75, "total_ms": 2179.73, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 63, "at": "2026-10-20T06:06:57.736+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 888.61, "call_ms": 1845.42, "total_ms": 2736.2, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 64, "at": "2026-10-20T06:07:00.773+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 349.77, "call_ms": 1159.83, "total_ms": 1675.36, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 64, "at": "2026-10-20T06:07:02.750+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 884.35, "call_ms": 1812.1, "total_ms": 2698.13, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 65, "at": "2026-10-20T06:07:05.749+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 391.15, "call_ms": 1266.33, "total_ms": 1784.57, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 65, "at": "2026-10-20T06:07:07.836+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 923.98, "call_ms": 1741.79, "total_ms": 2667.24, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 66, "at": "2026-10-20T06:07:10.804+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 370.5, "call_ms": 1162.16, "total_ms": 1692.14, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 66, "at": "2026-10-20T06:07:12.797+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 896.85, "call_ms": 1832.78, "total_ms": 2731.13, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 67, "at": "2026-10-20T06:07:15.829+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 457.43, "call_ms": 1155.38, "total_ms": 1880.48, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 67, "at": "2026-10-20T06:07:18.012+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 876.14, "call_ms": 1806.83, "total_ms": 2684.27, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 68, "at": "2026-10-20T06:07:20.997+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 320.84, "call_ms": 1242.53, "total_ms": 1733.05, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 68, "at": "2026-10-20T06:07:23.031+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 863.17, "call_ms": 1848.46, "total_ms": 2713.31, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 69, "at": "2026-10-20T06:07:26.045+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 475.23, "call_ms": 1264.06, "total_ms": 1905.71, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 69, "at": "2026-10-20T06:07:28.253+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 887.87, "call_ms": 1807.78, "total_ms": 2697.3, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 70, "at": "2026-10-20T06:07:31.251+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 402.27, "call_ms": 1558.05, "total_ms": 2126.08, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 70, "at": "2026-10-20T06:07:33.679+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 916.8, "call_ms": 1877.1, "total_ms": 2795.32, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 71, "at": "2026-10-20T06:07:36.775+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 421.83, "call_ms": 1192.5, "total_ms": 1712.41, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 71, "at": "2026-10-20T06:07:38.865+00:00", "token_ms": 76.77}
+{"mode": "cold", "path": "A", "init_ms": 843.88, "call_ms": 1877.51, "total_ms": 2722.99, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 72, "at": "2026-10-20T06:07:41.889+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 329.74, "call_ms": 969.96, "total_ms": 1419.5, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 72, "at": "2026-10-20T06:07:43.611+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 893.93, "call_ms": 1705.09, "total_ms": 2600.41, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 73, "at": "2026-10-20T06:07:46.512+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 387.64, "call_ms": 1249.78, "total_ms": 1791.99, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 73, "at": "2026-10-20T06:07:48.605+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 932.01, "call_ms": 1789.11, "total_ms": 2722.48, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 74, "at": "2026-10-20T06:07:51.629+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 395.68, "call_ms": 1153.69, "total_ms": 1715.33, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 74, "at": "2026-10-20T06:07:53.645+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 904.02, "call_ms": 1857.37, "total_ms": 2762.83, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 75, "at": "2026-10-20T06:07:56.709+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 326.88, "call_ms": 1159.53, "total_ms": 1651.9, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 75, "at": "2026-10-20T06:07:58.662+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 838.63, "call_ms": 1852.56, "total_ms": 2692.86, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 76, "at": "2026-10-20T06:08:01.657+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 500.83, "call_ms": 1258.71, "total_ms": 1932.96, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 76, "at": "2026-10-20T06:08:03.891+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 916.31, "call_ms": 1859.36, "total_ms": 2778.05, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 77, "at": "2026-10-20T06:08:06.970+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 344.18, "call_ms": 1019.62, "total_ms": 1534.77, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 77, "at": "2026-10-20T06:08:08.806+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 920.88, "call_ms": 1820.63, "total_ms": 2743.25, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 78, "at": "2026-10-20T06:08:11.851+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 411.14, "call_ms": 1065.55, "total_ms": 1566.29, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 78, "at": "2026-10-20T06:08:13.718+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 966.44, "call_ms": 1808.36, "total_ms": 2777.19, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 79, "at": "2026-10-20T06:08:16.797+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 410.32, "call_ms": 1140.84, "total_ms": 1706.58, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 79, "at": "2026-10-20T06:08:18.805+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 952.31, "call_ms": 1816.92, "total_ms": 2771.48, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 80, "at": "2026-10-20T06:08:21.878+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 968.01, "call_ms": 1361.2, "total_ms": 2437.49, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 80, "at": "2026-10-20T06:08:24.616+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 898.52, "call_ms": 1780.76, "total_ms": 2680.53, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 81, "at": "2026-10-20T06:08:27.598+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 455.7, "call_ms": 1347.89, "total_ms": 1997.62, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 81, "at": "2026-10-20T06:08:29.897+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 923.53, "call_ms": 1781.45, "total_ms": 2707.49, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 82, "at": "2026-10-20T06:08:32.906+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 371.06, "call_ms": 1249.81, "total_ms": 1775.7, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 82, "at": "2026-10-20T06:08:34.983+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 935.96, "call_ms": 1837.63, "total_ms": 2774.91, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 83, "at": "2026-10-20T06:08:38.059+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 445.53, "call_ms": 1755.2, "total_ms": 2291.51, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 83, "at": "2026-10-20T06:08:40.652+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 899.13, "call_ms": 1800.95, "total_ms": 2702.03, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 84, "at": "2026-10-20T06:08:43.655+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 359.62, "call_ms": 1293.26, "total_ms": 1772.34, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 84, "at": "2026-10-20T06:08:45.729+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 932.67, "call_ms": 1744.88, "total_ms": 2678.83, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 85, "at": "2026-10-20T06:08:48.709+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 336.75, "call_ms": 1033.67, "total_ms": 1529.99, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 85, "at": "2026-10-20T06:08:50.540+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 845.8, "call_ms": 1844.14, "total_ms": 2692.08, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 86, "at": "2026-10-20T06:08:53.533+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 359.47, "call_ms": 964.24, "total_ms": 1486.67, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 86, "at": "2026-10-20T06:08:55.321+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 909.16, "call_ms": 1907.39, "total_ms": 2819.03, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 87, "at": "2026-10-20T06:08:58.441+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 352.63, "call_ms": 1534.68, "total_ms": 2059.16, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 87, "at": "2026-10-20T06:09:00.802+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 884.81, "call_ms": 1832.02, "total_ms": 2718.84, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 88, "at": "2026-10-20T06:09:03.822+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 485.1, "call_ms": 1817.02, "total_ms": 2459.03, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 88, "at": "2026-10-20T06:09:06.583+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 889.57, "call_ms": 1805.61, "total_ms": 2696.67, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 89, "at": "2026-10-20T06:09:09.580+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 457.14, "call_ms": 1391.65, "total_ms": 2008.4, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 89, "at": "2026-10-20T06:09:11.890+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 907.03, "call_ms": 1853.34, "total_ms": 2761.85, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 90, "at": "2026-10-20T06:09:14.953+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 514.26, "call_ms": 1453.07, "total_ms": 2136.61, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 90, "at": "2026-10-20T06:09:17.391+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 880.36, "call_ms": 1941.85, "total_ms": 2824.5, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 91, "at": "2026-10-20T06:09:20.517+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 895.37, "call_ms": 1233.9, "total_ms": 2288.67, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 91, "at": "2026-10-20T06:09:23.108+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 896.24, "call_ms": 1845.67, "total_ms": 2743.91, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 92, "at": "2026-10-20T06:09:26.152+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 319.45, "call_ms": 1327.83, "total_ms": 1817.61, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 92, "at": "2026-10-20T06:09:28.271+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 898.48, "call_ms": 1826.92, "total_ms": 2726.79, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 93, "at": "2026-10-20T06:09:31.299+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 453.26, "call_ms": 1145.62, "total_ms": 1715.07, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 93, "at": "2026-10-20T06:09:33.317+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 864.94, "call_ms": 1785.15, "total_ms": 2651.36, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 94, "at": "2026-10-20T06:09:36.270+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 516.27, "call_ms": 1323.41, "total_ms": 1979.88, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 94, "at": "2026-10-20T06:09:38.551+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 990.49, "call_ms": 1873.46, "total_ms": 2865.55, "is_error": true, "chars": 110, "sha": "6333096bcda91858", "i": 95, "at": "2026-10-20T06:09:41.718+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 417.62, "call_ms": 1301.23, "total_ms": 2172.06, "is_error": true, "chars": 110, "sha": "dd3f993a6f38fe7a", "i": 95, "at": "2026-10-20T06:09:44.251+00:00", "token_ms": 59.93}
+{"mode": "cold", "path": "A", "init_ms": 998.59, "call_ms": 1773.52, "total_ms": 2773.33, "is_error": true, "chars": 110, "sha": "fc093b8f479ca7cf", "i": 96, "at": "2026-10-20T06:09:47.325+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 557.17, "call_ms": 1363.32, "total_ms": 2086.23, "is_error": true, "chars": 110, "sha": "5ffaf975df6a04e1", "i": 96, "at": "2026-10-20T06:09:49.712+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 963.82, "call_ms": 1715.65, "total_ms": 2681.11, "is_error": true, "chars": 110, "sha": "b2066ec33715d21e", "i": 97, "at": "2026-10-20T06:09:52.695+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 331.39, "call_ms": 978.66, "total_ms": 1465.41, "is_error": true, "chars": 110, "sha": "9a7a40f139ef496e", "i": 97, "at": "2026-10-20T06:09:54.462+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 899.82, "call_ms": 1882.64, "total_ms": 2783.97, "is_error": true, "chars": 110, "sha": "7ea86ed493e98c5e", "i": 98, "at": "2026-10-20T06:09:57.546+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 1041.08, "call_ms": 1359.66, "total_ms": 2592.65, "is_error": true, "chars": 98, "sha": "105989f700669bb6", "i": 98, "at": "2026-10-20T06:10:00.440+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "A", "init_ms": 910.99, "call_ms": 1810.36, "total_ms": 2722.44, "is_error": true, "chars": 110, "sha": "ee8015d897671dcf", "i": 99, "at": "2026-10-20T06:10:03.463+00:00", "token_ms": 0.0}
+{"mode": "cold", "path": "B", "init_ms": 440.17, "call_ms": 1187.89, "total_ms": 1786.61, "is_error": true, "chars": 110, "sha": "75af69aaa03786e2", "i": 99, "at": "2026-10-20T06:10:05.551+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 1362.48, "total_ms": 1362.49, "is_error": true, "chars": 110, "sha": "4eebedfb7ba27f40", "i": 0, "at": "2026-10-20T06:10:08.536+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1147.84, "total_ms": 1147.85, "is_error": true, "chars": 110, "sha": "331c69bba7095498", "i": 0, "at": "2026-10-20T06:10:09.985+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 911.24, "total_ms": 911.25, "is_error": true, "chars": 110, "sha": "65f41210ccbbaab7", "i": 1, "at": "2026-10-20T06:10:11.198+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 743.01, "total_ms": 743.02, "is_error": true, "chars": 110, "sha": "986b6092a68d294a", "i": 1, "at": "2026-10-20T06:10:12.243+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 955.35, "total_ms": 955.36, "is_error": true, "chars": 110, "sha": "e0738a0fc117d751", "i": 2, "at": "2026-10-20T06:10:13.499+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1680.74, "total_ms": 1680.74, "is_error": true, "chars": 110, "sha": "35b567cdb6ea418f", "i": 2, "at": "2026-10-20T06:10:15.481+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 931.13, "total_ms": 931.14, "is_error": true, "chars": 110, "sha": "f08bbd8ede65b052", "i": 3, "at": "2026-10-20T06:10:16.713+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 954.83, "total_ms": 954.84, "is_error": true, "chars": 110, "sha": "bccec6548d88291e", "i": 3, "at": "2026-10-20T06:10:17.969+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 924.36, "total_ms": 924.37, "is_error": true, "chars": 110, "sha": "d143113b4605e51d", "i": 4, "at": "2026-10-20T06:10:19.194+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 833.72, "total_ms": 833.73, "is_error": true, "chars": 110, "sha": "722e35cebcc0a96e", "i": 4, "at": "2026-10-20T06:10:20.329+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 959.22, "total_ms": 959.22, "is_error": true, "chars": 110, "sha": "ee71b9071614b046", "i": 5, "at": "2026-10-20T06:10:21.589+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 766.15, "total_ms": 766.16, "is_error": true, "chars": 110, "sha": "b03a0c74e0ccf057", "i": 5, "at": "2026-10-20T06:10:22.657+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 922.55, "total_ms": 922.56, "is_error": true, "chars": 110, "sha": "26941551e0cbb106", "i": 6, "at": "2026-10-20T06:10:23.881+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 716.24, "total_ms": 716.25, "is_error": true, "chars": 110, "sha": "db361a8b8716517b", "i": 6, "at": "2026-10-20T06:10:24.898+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 954.22, "total_ms": 954.23, "is_error": true, "chars": 110, "sha": "30d8f74c276ff87d", "i": 7, "at": "2026-10-20T06:10:26.153+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 693.4, "total_ms": 693.4, "is_error": true, "chars": 110, "sha": "30d8f74c276ff87d", "i": 7, "at": "2026-10-20T06:10:27.148+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 887.93, "total_ms": 887.95, "is_error": true, "chars": 110, "sha": "5acfe2b68810b59c", "i": 8, "at": "2026-10-20T06:10:28.337+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 766.21, "total_ms": 766.21, "is_error": true, "chars": 110, "sha": "5ae0d26a2ba66eaf", "i": 8, "at": "2026-10-20T06:10:29.404+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 861.94, "total_ms": 861.95, "is_error": true, "chars": 110, "sha": "7ab7d59e637fc76f", "i": 9, "at": "2026-10-20T06:10:30.567+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 925.73, "total_ms": 925.73, "is_error": true, "chars": 110, "sha": "40cd54915bee9f0e", "i": 9, "at": "2026-10-20T06:10:31.794+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 978.98, "total_ms": 979.0, "is_error": true, "chars": 110, "sha": "d1abf6e91e5b26cc", "i": 10, "at": "2026-10-20T06:10:33.073+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 976.01, "total_ms": 976.02, "is_error": true, "chars": 110, "sha": "2d4499daef18581c", "i": 10, "at": "2026-10-20T06:10:34.351+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 910.27, "total_ms": 910.28, "is_error": true, "chars": 110, "sha": "886e9cc97199a050", "i": 11, "at": "2026-10-20T06:10:35.562+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1665.94, "total_ms": 1665.95, "is_error": true, "chars": 110, "sha": "d02d64b5bd60e723", "i": 11, "at": "2026-10-20T06:10:37.530+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 924.91, "total_ms": 924.97, "is_error": true, "chars": 110, "sha": "cb1110a80388a4eb", "i": 12, "at": "2026-10-20T06:10:38.757+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1159.38, "total_ms": 1159.39, "is_error": true, "chars": 110, "sha": "5aab1e15892aa7ab", "i": 12, "at": "2026-10-20T06:10:40.217+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 921.71, "total_ms": 921.73, "is_error": true, "chars": 110, "sha": "b9f38b37787b4c82", "i": 13, "at": "2026-10-20T06:10:41.440+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1065.53, "total_ms": 1065.55, "is_error": true, "chars": 110, "sha": "f5d1f6f34d6737cd", "i": 13, "at": "2026-10-20T06:10:42.807+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 937.4, "total_ms": 937.41, "is_error": true, "chars": 110, "sha": "7f4daa84e3c93576", "i": 14, "at": "2026-10-20T06:10:44.046+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1082.19, "total_ms": 1082.2, "is_error": true, "chars": 110, "sha": "54a86db4732ef7b0", "i": 14, "at": "2026-10-20T06:10:45.430+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 938.96, "total_ms": 938.97, "is_error": true, "chars": 110, "sha": "6cbda936b3cafa24", "i": 15, "at": "2026-10-20T06:10:46.670+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1817.57, "total_ms": 1817.58, "is_error": true, "chars": 110, "sha": "2c562ec0dd083ba1", "i": 15, "at": "2026-10-20T06:10:48.789+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 982.92, "total_ms": 982.93, "is_error": true, "chars": 110, "sha": "9922cbd316ee710e", "i": 16, "at": "2026-10-20T06:10:50.073+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 887.37, "total_ms": 887.39, "is_error": true, "chars": 110, "sha": "2f98773fed769b55", "i": 16, "at": "2026-10-20T06:10:51.263+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 868.32, "total_ms": 868.33, "is_error": true, "chars": 110, "sha": "aff79e4d770db2b0", "i": 17, "at": "2026-10-20T06:10:52.433+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 897.58, "total_ms": 897.59, "is_error": true, "chars": 110, "sha": "694f5ef8a293af85", "i": 17, "at": "2026-10-20T06:10:53.632+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 1930.33, "total_ms": 1930.34, "is_error": true, "chars": 110, "sha": "5c204375b4a0a3f1", "i": 18, "at": "2026-10-20T06:10:55.863+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 818.22, "total_ms": 818.22, "is_error": true, "chars": 110, "sha": "7478f6714f9f0a70", "i": 18, "at": "2026-10-20T06:10:56.982+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 941.02, "total_ms": 941.03, "is_error": true, "chars": 110, "sha": "7502e0cf51f61a59", "i": 19, "at": "2026-10-20T06:10:58.224+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 687.19, "total_ms": 687.2, "is_error": true, "chars": 110, "sha": "439cbf57b6f0c93a", "i": 19, "at": "2026-10-20T06:10:59.213+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 912.82, "total_ms": 912.83, "is_error": true, "chars": 110, "sha": "f9b916b4930d3e59", "i": 20, "at": "2026-10-20T06:11:00.427+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 683.34, "total_ms": 683.35, "is_error": true, "chars": 110, "sha": "69435b85de5e6011", "i": 20, "at": "2026-10-20T06:11:01.412+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 858.79, "total_ms": 858.79, "is_error": true, "chars": 110, "sha": "3911101a046c4655", "i": 21, "at": "2026-10-20T06:11:02.572+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 758.05, "total_ms": 758.06, "is_error": true, "chars": 110, "sha": "406d82964ee3f09b", "i": 21, "at": "2026-10-20T06:11:03.631+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 992.42, "total_ms": 992.43, "is_error": true, "chars": 110, "sha": "2801bea3231d4c4d", "i": 22, "at": "2026-10-20T06:11:04.925+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 750.54, "total_ms": 750.56, "is_error": true, "chars": 110, "sha": "ba3e1821f01e3b90", "i": 22, "at": "2026-10-20T06:11:05.977+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 894.21, "total_ms": 894.22, "is_error": true, "chars": 110, "sha": "48ce2f351feb9a59", "i": 23, "at": "2026-10-20T06:11:07.172+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 686.45, "total_ms": 686.46, "is_error": true, "chars": 110, "sha": "48ce2f351feb9a59", "i": 23, "at": "2026-10-20T06:11:08.161+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 874.73, "total_ms": 874.74, "is_error": true, "chars": 110, "sha": "1aaa8a78c3cea3e5", "i": 24, "at": "2026-10-20T06:11:09.336+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 868.58, "total_ms": 868.58, "is_error": true, "chars": 110, "sha": "dabcf9d3189788b0", "i": 24, "at": "2026-10-20T06:11:10.506+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 961.96, "total_ms": 961.97, "is_error": true, "chars": 110, "sha": "3531a3f4b526cf08", "i": 25, "at": "2026-10-20T06:11:11.769+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 680.64, "total_ms": 680.64, "is_error": true, "chars": 110, "sha": "01af15ba2e650794", "i": 25, "at": "2026-10-20T06:11:12.750+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 887.52, "total_ms": 887.54, "is_error": true, "chars": 110, "sha": "1e93578fb823658b", "i": 26, "at": "2026-10-20T06:11:13.939+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 868.5, "total_ms": 868.5, "is_error": true, "chars": 110, "sha": "0927874eb6cca149", "i": 26, "at": "2026-10-20T06:11:15.108+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 924.59, "total_ms": 924.69, "is_error": true, "chars": 110, "sha": "fdbc3e20da83931f", "i": 27, "at": "2026-10-20T06:11:16.333+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 712.83, "total_ms": 712.84, "is_error": true, "chars": 110, "sha": "1516b0da3935f476", "i": 27, "at": "2026-10-20T06:11:17.348+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 945.05, "total_ms": 945.06, "is_error": true, "chars": 110, "sha": "40583b386e77dc6b", "i": 28, "at": "2026-10-20T06:11:18.594+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 833.54, "total_ms": 833.55, "is_error": true, "chars": 110, "sha": "fe33fd85d1467c8c", "i": 28, "at": "2026-10-20T06:11:19.729+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 871.96, "total_ms": 871.97, "is_error": true, "chars": 110, "sha": "e2aff269ac4d04ab", "i": 29, "at": "2026-10-20T06:11:20.902+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 772.16, "total_ms": 772.17, "is_error": true, "chars": 110, "sha": "57a5d344fe7ba695", "i": 29, "at": "2026-10-20T06:11:21.975+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 884.68, "total_ms": 884.7, "is_error": true, "chars": 110, "sha": "b39d4c84d46cf554", "i": 30, "at": "2026-10-20T06:11:23.161+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 781.02, "total_ms": 781.03, "is_error": true, "chars": 110, "sha": "0e9aba41415d0a4d", "i": 30, "at": "2026-10-20T06:11:24.243+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 928.71, "total_ms": 928.71, "is_error": true, "chars": 110, "sha": "85191589e7f1908f", "i": 31, "at": "2026-10-20T06:11:25.473+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 810.6, "total_ms": 810.61, "is_error": true, "chars": 110, "sha": "5f89046e708f9d52", "i": 31, "at": "2026-10-20T06:11:26.585+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 924.37, "total_ms": 924.38, "is_error": true, "chars": 110, "sha": "a3793075da188c8a", "i": 32, "at": "2026-10-20T06:11:27.811+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 932.61, "total_ms": 932.62, "is_error": true, "chars": 110, "sha": "85ef48f7e3315f3f", "i": 32, "at": "2026-10-20T06:11:29.045+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 990.65, "total_ms": 990.67, "is_error": true, "chars": 110, "sha": "c2437822077e59c9", "i": 33, "at": "2026-10-20T06:11:30.337+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 974.31, "total_ms": 974.32, "is_error": true, "chars": 110, "sha": "49d891bb4d742577", "i": 33, "at": "2026-10-20T06:11:31.614+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 991.77, "total_ms": 991.77, "is_error": true, "chars": 110, "sha": "76ec17e3167d77f8", "i": 34, "at": "2026-10-20T06:11:32.906+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 841.78, "total_ms": 841.79, "is_error": true, "chars": 110, "sha": "9edf0be8125f3504", "i": 34, "at": "2026-10-20T06:11:34.049+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 868.16, "total_ms": 868.16, "is_error": true, "chars": 110, "sha": "6594624824bc0458", "i": 35, "at": "2026-10-20T06:11:35.218+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 787.41, "total_ms": 787.42, "is_error": true, "chars": 110, "sha": "800506aeb19e01ff", "i": 35, "at": "2026-10-20T06:11:36.307+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 864.96, "total_ms": 864.97, "is_error": true, "chars": 110, "sha": "a7d403e5b8f42e36", "i": 36, "at": "2026-10-20T06:11:37.472+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 782.23, "total_ms": 782.24, "is_error": true, "chars": 110, "sha": "e7cd91e80818dbd8", "i": 36, "at": "2026-10-20T06:11:38.557+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 1015.1, "total_ms": 1015.11, "is_error": true, "chars": 110, "sha": "07a4f253eb32c20d", "i": 37, "at": "2026-10-20T06:11:39.873+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 843.18, "total_ms": 843.19, "is_error": true, "chars": 110, "sha": "ec4cd990099bdc6c", "i": 37, "at": "2026-10-20T06:11:41.018+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 990.91, "total_ms": 990.92, "is_error": true, "chars": 110, "sha": "079d16b18e099f01", "i": 38, "at": "2026-10-20T06:11:42.310+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 862.48, "total_ms": 862.48, "is_error": true, "chars": 110, "sha": "94889ff12b4666d5", "i": 38, "at": "2026-10-20T06:11:43.474+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 947.04, "total_ms": 947.05, "is_error": true, "chars": 110, "sha": "3fb81c0c76198341", "i": 39, "at": "2026-10-20T06:11:44.722+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 908.71, "total_ms": 908.72, "is_error": true, "chars": 110, "sha": "15fdcd32f35941ea", "i": 39, "at": "2026-10-20T06:11:45.933+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 934.83, "total_ms": 934.84, "is_error": true, "chars": 110, "sha": "2aca03dd640afdf3", "i": 40, "at": "2026-10-20T06:11:47.169+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 816.31, "total_ms": 816.32, "is_error": true, "chars": 110, "sha": "ebeebef96f1ae149", "i": 40, "at": "2026-10-20T06:11:48.287+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 919.04, "total_ms": 919.05, "is_error": true, "chars": 110, "sha": "2c0efc2c060a4ff9", "i": 41, "at": "2026-10-20T06:11:49.508+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 680.29, "total_ms": 680.3, "is_error": true, "chars": 110, "sha": "9b4c8532841c9195", "i": 41, "at": "2026-10-20T06:11:50.489+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 865.09, "total_ms": 865.1, "is_error": true, "chars": 110, "sha": "3563719504a4704b", "i": 42, "at": "2026-10-20T06:11:51.656+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 696.82, "total_ms": 696.83, "is_error": true, "chars": 110, "sha": "b2c43cdbd2f2baa7", "i": 42, "at": "2026-10-20T06:11:52.654+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 913.03, "total_ms": 913.04, "is_error": true, "chars": 110, "sha": "8720b722b17b4776", "i": 43, "at": "2026-10-20T06:11:53.869+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 773.81, "total_ms": 773.82, "is_error": true, "chars": 110, "sha": "7b4ee3611d6eb748", "i": 43, "at": "2026-10-20T06:11:54.944+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 893.38, "total_ms": 893.39, "is_error": true, "chars": 110, "sha": "b64829f5fed611ca", "i": 44, "at": "2026-10-20T06:11:56.138+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 715.94, "total_ms": 715.95, "is_error": true, "chars": 110, "sha": "b64829f5fed611ca", "i": 44, "at": "2026-10-20T06:11:57.155+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 937.7, "total_ms": 937.71, "is_error": true, "chars": 110, "sha": "70d392806f4eddf3", "i": 45, "at": "2026-10-20T06:11:58.394+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 690.82, "total_ms": 690.84, "is_error": true, "chars": 110, "sha": "0d3aeffd14c2433d", "i": 45, "at": "2026-10-20T06:11:59.386+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 925.42, "total_ms": 925.43, "is_error": true, "chars": 110, "sha": "03c563fa2cc627eb", "i": 46, "at": "2026-10-20T06:12:00.612+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 695.14, "total_ms": 695.15, "is_error": true, "chars": 110, "sha": "5e2c1d4ba80c29c1", "i": 46, "at": "2026-10-20T06:12:01.608+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 863.99, "total_ms": 864.0, "is_error": true, "chars": 110, "sha": "7e6acd862de01d79", "i": 47, "at": "2026-10-20T06:12:02.773+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 670.67, "total_ms": 670.69, "is_error": true, "chars": 110, "sha": "7cd06cd1c84b6c54", "i": 47, "at": "2026-10-20T06:12:03.745+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 887.61, "total_ms": 887.61, "is_error": true, "chars": 110, "sha": "c0a76358e2487160", "i": 48, "at": "2026-10-20T06:12:04.933+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 649.37, "total_ms": 649.37, "is_error": true, "chars": 110, "sha": "375baf4950b21dbc", "i": 48, "at": "2026-10-20T06:12:05.884+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 984.28, "total_ms": 984.28, "is_error": true, "chars": 110, "sha": "050d611747db8e09", "i": 49, "at": "2026-10-20T06:12:07.169+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1401.74, "total_ms": 1401.83, "is_error": true, "chars": 110, "sha": "641e0f8c3d1402d7", "i": 49, "at": "2026-10-20T06:12:08.872+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 917.24, "total_ms": 917.25, "is_error": true, "chars": 110, "sha": "b742e110fb77b312", "i": 50, "at": "2026-10-20T06:12:10.090+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1550.41, "total_ms": 1550.41, "is_error": true, "chars": 110, "sha": "88481268b85431e8", "i": 50, "at": "2026-10-20T06:12:11.943+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 995.57, "total_ms": 995.58, "is_error": true, "chars": 110, "sha": "8dbbae3951297f70", "i": 51, "at": "2026-10-20T06:12:13.239+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1174.49, "total_ms": 1174.5, "is_error": true, "chars": 110, "sha": "0e0d5636910795d4", "i": 51, "at": "2026-10-20T06:12:14.716+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 946.54, "total_ms": 946.55, "is_error": true, "chars": 110, "sha": "ece68f43ee59d66a", "i": 52, "at": "2026-10-20T06:12:15.964+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1019.78, "total_ms": 1019.79, "is_error": true, "chars": 110, "sha": "62577b4fe1be9e8f", "i": 52, "at": "2026-10-20T06:12:17.285+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 929.24, "total_ms": 929.25, "is_error": true, "chars": 110, "sha": "120d63dd5314756e", "i": 53, "at": "2026-10-20T06:12:18.516+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 808.91, "total_ms": 808.92, "is_error": true, "chars": 110, "sha": "3bba4cde60cabfea", "i": 53, "at": "2026-10-20T06:12:19.626+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 899.27, "total_ms": 899.28, "is_error": true, "chars": 110, "sha": "e6897d5167e617bd", "i": 54, "at": "2026-10-20T06:12:20.826+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 872.03, "total_ms": 872.03, "is_error": true, "chars": 110, "sha": "4bee4afd14384afe", "i": 54, "at": "2026-10-20T06:12:21.999+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 897.34, "total_ms": 897.35, "is_error": true, "chars": 110, "sha": "58e1227f27b1ba29", "i": 55, "at": "2026-10-20T06:12:23.198+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 838.27, "total_ms": 838.28, "is_error": true, "chars": 110, "sha": "94c8e64b75617bba", "i": 55, "at": "2026-10-20T06:12:24.338+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 957.96, "total_ms": 957.96, "is_error": true, "chars": 110, "sha": "d470a0b4c6924341", "i": 56, "at": "2026-10-20T06:12:25.597+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 828.66, "total_ms": 828.67, "is_error": true, "chars": 110, "sha": "ce989fe124847a5c", "i": 56, "at": "2026-10-20T06:12:26.726+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 925.44, "total_ms": 925.45, "is_error": true, "chars": 110, "sha": "f334eb51200f0d51", "i": 57, "at": "2026-10-20T06:12:27.953+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 964.03, "total_ms": 964.04, "is_error": true, "chars": 110, "sha": "ab241a4d3a96cba4", "i": 57, "at": "2026-10-20T06:12:29.218+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 949.59, "total_ms": 949.61, "is_error": true, "chars": 110, "sha": "c491b967095e2b71", "i": 58, "at": "2026-10-20T06:12:30.469+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1035.61, "total_ms": 1035.61, "is_error": true, "chars": 110, "sha": "74362ceed9e35fb9", "i": 58, "at": "2026-10-20T06:12:31.806+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 928.02, "total_ms": 928.03, "is_error": true, "chars": 110, "sha": "d1008ac6a61cb250", "i": 59, "at": "2026-10-20T06:12:33.035+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1093.94, "total_ms": 1093.95, "is_error": true, "chars": 110, "sha": "2161b584ac4739a0", "i": 59, "at": "2026-10-20T06:12:34.430+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 900.69, "total_ms": 900.7, "is_error": true, "chars": 110, "sha": "e8e8781e5b173bff", "i": 60, "at": "2026-10-20T06:12:35.632+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 988.54, "total_ms": 988.55, "is_error": true, "chars": 110, "sha": "24cebce1f40c800d", "i": 60, "at": "2026-10-20T06:12:36.922+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 917.8, "total_ms": 917.81, "is_error": true, "chars": 110, "sha": "90699258ed86d564", "i": 61, "at": "2026-10-20T06:12:38.141+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1161.26, "total_ms": 1161.27, "is_error": true, "chars": 110, "sha": "df45bc9999a87053", "i": 61, "at": "2026-10-20T06:12:39.603+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 957.35, "total_ms": 957.35, "is_error": true, "chars": 110, "sha": "0739cf9a5311c47c", "i": 62, "at": "2026-10-20T06:12:40.861+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 811.22, "total_ms": 811.23, "is_error": true, "chars": 110, "sha": "9993d6ba2fb78b2b", "i": 62, "at": "2026-10-20T06:12:41.973+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 932.7, "total_ms": 932.72, "is_error": true, "chars": 110, "sha": "984c53f9225d8234", "i": 63, "at": "2026-10-20T06:12:43.207+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1662.23, "total_ms": 1662.24, "is_error": true, "chars": 110, "sha": "89a9f834b9ca01a6", "i": 63, "at": "2026-10-20T06:12:45.171+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 934.97, "total_ms": 934.98, "is_error": true, "chars": 110, "sha": "b7394390aa97480e", "i": 64, "at": "2026-10-20T06:12:46.407+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1322.08, "total_ms": 1322.09, "is_error": true, "chars": 110, "sha": "d216dae740987b14", "i": 64, "at": "2026-10-20T06:12:48.030+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 979.5, "total_ms": 979.51, "is_error": true, "chars": 110, "sha": "eac02235996254f6", "i": 65, "at": "2026-10-20T06:12:49.310+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1254.27, "total_ms": 1254.28, "is_error": true, "chars": 110, "sha": "637c965ea326868a", "i": 65, "at": "2026-10-20T06:12:50.866+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 902.87, "total_ms": 902.89, "is_error": true, "chars": 110, "sha": "594a21523998329c", "i": 66, "at": "2026-10-20T06:12:52.070+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 841.84, "total_ms": 841.86, "is_error": true, "chars": 110, "sha": "2a8c7baf97d5e0ff", "i": 66, "at": "2026-10-20T06:12:53.213+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 967.84, "total_ms": 967.86, "is_error": true, "chars": 110, "sha": "d5acadc267201a62", "i": 67, "at": "2026-10-20T06:12:54.482+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 805.81, "total_ms": 805.82, "is_error": true, "chars": 110, "sha": "82d7e856475c70ab", "i": 67, "at": "2026-10-20T06:12:55.589+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 900.67, "total_ms": 900.68, "is_error": true, "chars": 110, "sha": "a1fc575e95d9d1d1", "i": 68, "at": "2026-10-20T06:12:56.791+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 683.21, "total_ms": 683.22, "is_error": true, "chars": 110, "sha": "cc8ece9b5db1aec9", "i": 68, "at": "2026-10-20T06:12:57.775+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 964.68, "total_ms": 964.69, "is_error": true, "chars": 110, "sha": "8aa94f5ff8afa293", "i": 69, "at": "2026-10-20T06:12:59.041+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 682.02, "total_ms": 682.03, "is_error": true, "chars": 110, "sha": "455b9a594e6c1aa4", "i": 69, "at": "2026-10-20T06:13:00.026+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 959.76, "total_ms": 959.77, "is_error": true, "chars": 110, "sha": "b06e60513d142993", "i": 70, "at": "2026-10-20T06:13:01.287+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 735.87, "total_ms": 735.88, "is_error": true, "chars": 110, "sha": "0c167a4fb89a8f44", "i": 70, "at": "2026-10-20T06:13:02.324+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 934.0, "total_ms": 934.02, "is_error": true, "chars": 110, "sha": "7d9abc715d0d45de", "i": 71, "at": "2026-10-20T06:13:03.559+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 829.62, "total_ms": 829.64, "is_error": true, "chars": 110, "sha": "54a12b4755eb2cfa", "i": 71, "at": "2026-10-20T06:13:04.690+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 946.85, "total_ms": 946.85, "is_error": true, "chars": 110, "sha": "bf4b517a440c5ed0", "i": 72, "at": "2026-10-20T06:13:05.939+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1879.04, "total_ms": 1879.05, "is_error": true, "chars": 110, "sha": "5a456acd9576f42a", "i": 72, "at": "2026-10-20T06:13:08.119+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 977.51, "total_ms": 977.52, "is_error": true, "chars": 110, "sha": "a6b6613ecf5ce3cc", "i": 73, "at": "2026-10-20T06:13:09.397+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 902.43, "total_ms": 902.44, "is_error": true, "chars": 110, "sha": "4e91bd7f4f6b6bad", "i": 73, "at": "2026-10-20T06:13:10.601+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 917.37, "total_ms": 917.38, "is_error": true, "chars": 110, "sha": "6f656c458e4919e4", "i": 74, "at": "2026-10-20T06:13:11.820+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 686.62, "total_ms": 686.63, "is_error": true, "chars": 110, "sha": "c18175d926ccc38d", "i": 74, "at": "2026-10-20T06:13:12.807+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 926.36, "total_ms": 926.37, "is_error": true, "chars": 110, "sha": "fdbaf9222e2ca822", "i": 75, "at": "2026-10-20T06:13:14.035+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 686.33, "total_ms": 686.33, "is_error": true, "chars": 110, "sha": "9b8f4bcf86264c5d", "i": 75, "at": "2026-10-20T06:13:15.023+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 926.0, "total_ms": 926.01, "is_error": true, "chars": 110, "sha": "fba78151babf3427", "i": 76, "at": "2026-10-20T06:13:16.250+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 710.16, "total_ms": 710.17, "is_error": true, "chars": 110, "sha": "a89f226ffdb91f26", "i": 76, "at": "2026-10-20T06:13:17.262+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 899.56, "total_ms": 899.57, "is_error": true, "chars": 110, "sha": "16353459ab297531", "i": 77, "at": "2026-10-20T06:13:18.462+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 862.45, "total_ms": 862.46, "is_error": true, "chars": 110, "sha": "68c03e6e3b223cdc", "i": 77, "at": "2026-10-20T06:13:19.626+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 881.02, "total_ms": 881.03, "is_error": true, "chars": 110, "sha": "cdca1e351c2a2d2a", "i": 78, "at": "2026-10-20T06:13:20.807+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 770.42, "total_ms": 770.43, "is_error": true, "chars": 110, "sha": "fa28edd04159191b", "i": 78, "at": "2026-10-20T06:13:21.879+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 963.48, "total_ms": 963.49, "is_error": true, "chars": 110, "sha": "cf15e4c589e94caf", "i": 79, "at": "2026-10-20T06:13:23.143+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 745.08, "total_ms": 745.08, "is_error": true, "chars": 110, "sha": "cf15e4c589e94caf", "i": 79, "at": "2026-10-20T06:13:24.190+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 919.37, "total_ms": 919.39, "is_error": true, "chars": 110, "sha": "c6c6dad326e11ccb", "i": 80, "at": "2026-10-20T06:13:25.410+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 877.49, "total_ms": 877.5, "is_error": true, "chars": 110, "sha": "8cd461b7240afb65", "i": 80, "at": "2026-10-20T06:13:26.590+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 930.19, "total_ms": 930.2, "is_error": true, "chars": 110, "sha": "e9130f99fbd06335", "i": 81, "at": "2026-10-20T06:13:27.821+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 837.88, "total_ms": 837.89, "is_error": true, "chars": 110, "sha": "43fc7413df81a912", "i": 81, "at": "2026-10-20T06:13:28.960+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 967.99, "total_ms": 968.0, "is_error": true, "chars": 110, "sha": "d8ab393c843928ae", "i": 82, "at": "2026-10-20T06:13:30.229+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 682.47, "total_ms": 682.49, "is_error": true, "chars": 110, "sha": "0c677ca7014173f2", "i": 82, "at": "2026-10-20T06:13:31.213+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 917.74, "total_ms": 917.76, "is_error": true, "chars": 110, "sha": "53bc38c51b77998c", "i": 83, "at": "2026-10-20T06:13:32.432+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1331.96, "total_ms": 1331.97, "is_error": true, "chars": 110, "sha": "968c668ede051621", "i": 83, "at": "2026-10-20T06:13:34.066+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 1062.02, "total_ms": 1062.03, "is_error": true, "chars": 110, "sha": "4cf6e6b591a0b00a", "i": 84, "at": "2026-10-20T06:13:35.429+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1010.2, "total_ms": 1010.21, "is_error": true, "chars": 110, "sha": "9384790217e04f69", "i": 84, "at": "2026-10-20T06:13:36.740+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 895.3, "total_ms": 895.32, "is_error": true, "chars": 110, "sha": "dfe681c634e30580", "i": 85, "at": "2026-10-20T06:13:37.937+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 1253.96, "total_ms": 1253.97, "is_error": true, "chars": 110, "sha": "ca7e42eea875b322", "i": 85, "at": "2026-10-20T06:13:39.492+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 908.9, "total_ms": 908.91, "is_error": true, "chars": 110, "sha": "b2f7c3d476e764fb", "i": 86, "at": "2026-10-20T06:13:40.703+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 933.28, "total_ms": 933.29, "is_error": true, "chars": 110, "sha": "8c1a4f5544eb8662", "i": 86, "at": "2026-10-20T06:13:41.937+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 983.19, "total_ms": 983.2, "is_error": true, "chars": 110, "sha": "dac85e11c19135c2", "i": 87, "at": "2026-10-20T06:13:43.221+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "call_ms": 988.86, "total_ms": 988.87, "is_error": true, "chars": 110, "sha": "80baf7393b7230b5", "i": 87, "at": "2026-10-20T06:13:44.511+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "A", "call_ms": 937.76, "total_ms": 937.77, "is_error": true, "chars": 110, "sha": "54e24440e4651657", "i": 88, "at": "2026-10-20T06:13:45.750+00:00", "token_ms": 0.0}
+{"mode": "warm", "path": "B", "error": "CancelledError: Cancelled via cancel scope 72234d9d9590", "i": 88, "at": "2026-10-20T06:13:46.203+00:00", "token_ms": 0.0}
+  + Exception Group Traceback (most recent call last):
+  |   File "/home/pj1/mcp-real-20261020/latency_ab.py", line 114, in <module>
+  |     asyncio.run(run(p.parse_args()))
+  |   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+  |     return runner.run(main)
+  |            ^^^^^^^^^^^^^^^^
+  |   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+  |     return self._loop.run_until_complete(task)
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+  |     return future.result()
+  |            ^^^^^^^^^^^^^^^
+  |   File "/home/pj1/mcp-real-20261020/latency_ab.py", line 88, in run
+  |     async with streamablehttp_client(args.direct, timeout=60, httpx_client_factory=make) as (ra, wa, _), \
+  |   File "/usr/lib/python3.12/contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/home/pj1/mcp-real-20261020/opt/ghidra-venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 742, in streamablehttp_client
+  |     async with streamable_http_client(
+  |   File "/usr/lib/python3.12/contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/home/pj1/mcp-real-20261020/opt/ghidra-venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 672, in streamable_http_client
+  |     async with anyio.create_task_group() as tg:
+  |   File "/home/pj1/mcp-real-20261020/opt/ghidra-venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "/home/pj1/mcp-real-20261020/opt/ghidra-venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 695, in streamable_http_client
+    |     yield (
+    |   File "/home/pj1/mcp-real-20261020/opt/ghidra-venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 747, in streamablehttp_client
+    |     yield streams
+    |   File "/home/pj1/mcp-real-20261020/latency_ab.py", line 88, in run
+    |     async with streamablehttp_client(args.direct, timeout=60, httpx_client_factory=make) as (ra, wa, _), \
+    |   File "/usr/lib/python3.12/contextlib.py", line 231, in __aexit__
+    |     await self.gen.athrow(value)
+    |   File "/home/pj1/mcp-real-20261020/opt/ghidra-venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 742, in streamablehttp_client
+    |     async with streamable_http_client(
+    |   File "/usr/lib/python3.12/contextlib.py", line 231, in __aexit__
+    |     await self.gen.athrow(value)
+    |   File "/home/pj1/mcp-real-20261020/opt/ghidra-venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 672, in streamable_http_client
+    |     async with anyio.create_task_group() as tg:
+    |   File "/home/pj1/mcp-real-20261020/opt/ghidra-venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+    |     raise BaseExceptionGroup(
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "/home/pj1/mcp-real-20261020/opt/ghidra-venv/lib/python3.12/site-packages/anyio/_core/_tasks.py", line 327, in _run_coro
+      |     retval = await self._coro
+      |              ^^^^^^^^^^^^^^^^
+      |   File "/home/pj1/mcp-real-20261020/opt/ghidra-venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 583, in handle_request_async
+      |     await self._handle_post_request(ctx)
+      |   File "/home/pj1/mcp-real-20261020/opt/ghidra-venv/lib/python3.12/site-packages/mcp/client/streamable_http.py", line 381, in _handle_post_request
+      |     response.raise_for_status()
+      |   File "/home/pj1/mcp-real-20261020/opt/ghidra-venv/lib/python3.12/site-packages/httpx/_models.py", line 829, in raise_for_status
+      |     raise HTTPStatusError(message, request=request, response=self)
+      | httpx.HTTPStatusError: Client error '401 Unauthorized' for url 'https://100.83.175.111/mcp/context7/'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+      +------------------------------------
