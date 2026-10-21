@@ -24,7 +24,7 @@
 
 ## 검토와 실행의 구분
 
-새 `threat_review_refresh_check.py`는 이전 바이트 해시·대체 관계·변경 참조 수와 AST로 추출한 `render_review`의 이력/낡은 파일 표시·입력 불변성을 검사한다. 기존 `threat_trace_mapping_check.py`의 네 시험을 수정하지 않고 실행한다. 실제 실행·독립 Gemini 판정·병합 여부는 작업 보고에서 확인한다. 제품 스택·계정·PJ1·배포는 이번 범위에 없다.
+새 `threat_review_refresh_check.py`는 이전 바이트 해시·대체 관계·변경 참조 수와 AST로 추출한 `render_review`의 이력/낡은 파일 표시·입력 불변성을 검사한다. 기존 `threat_trace_mapping_check.py`의 네 시험을 수정하지 않고 실행했다. [Gemini 독립 검토](gemini-review.md)는 A(높음0·중간0)이며 Codex가 대조했다. 실제 실행·병합 여부는 작업 보고에서 확인한다. 제품 스택·계정·PJ1·배포는 이번 범위에 없다.
 
 ## WBS 불일치
 

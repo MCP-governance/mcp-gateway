@@ -22,7 +22,7 @@ Python은 `C:/Users/bobysg/bob/프로젝트/.venv-mcpgw/Scripts/python.exe` 3.12
 | 매핑 재생성 | 24행·낡은 파일0 | `python research/llm-wiki/tools/map_threats.py` |
 | 최종 전체 로컬 회귀 | 91통과·0실패·18생략(파일109개) | [현재 실행](../../analysis/threat-trace-review-1021/final-suite.json), 기준선 대비 실패1 감소·새 파일1 추가 |
 | 위키·정적 검사 | 위키 오류0, pyflakes0·diff 공백 오류0 | [명령·시각·출력](../../analysis/threat-trace-review-1021/validation.json) |
-| Gemini 독립 적대 검토 | 요청 전 | 아래 후속 기록 |
+| Gemini 독립 적대 검토 | A, 높음0·중간0·낮음2, 종료0 | [제공자 원문·Codex 대조](../../analysis/threat-trace-review-1021/gemini-review.md), 작업 `62ada2bb72af`·요청 `gemini-3.8-flash-medium`·응답 모델 미보고 |
 | 실제 MCP·기기 배포·PJ1·PG | 미실행 | 이번 범위 밖 |
 
 ## 실패·미완료·한계
@@ -33,7 +33,9 @@ DEV-81 F1은 이전 브랜치 `10/21-dev81-direct-helper`의 기존 헤더 시�
 
 ## 다음 작업
 
-독립 검토 A/B/C와 높음 발견 여부를 확인해야 병합할 수 있다. 실제 컨테이너·기기·PJ1 검증과 DEV-81 강제 승격은 메인 복귀 후 판단이다. 현재 현황 문서는 공통 레인 규칙에 따라 보존하고 백로그와 이 보고서에 결과를 연결한다.
+`50825a9`의 독립 검토 A와 낮음2건을 코드로 대조했고 병합 조건을 충족했다. 병합 직전 fetch에서도 `origin/main=2045799`로 확인했다. 사용자 지시대로 `--no-ff` 병합·push하며 실제 최종 병합 해시는 저장소 밖 queue.md의 sol 자동 운영 기록에 남긴다. 보고·검토 결과만 추가하는 후속 커밋은 검토 대상 구현을 바꾸지 않는다.
+
+실제 컨테이너·기기·PJ1 검증과 DEV-81 강제 승격은 메인 복귀 후 판단이다. 현재 현황 문서는 공통 레인 규칙에 따라 보존하고 백로그와 이 보고서에 결과를 연결한다. 로컬 Git 작성자 미설정으로 최초 커밋1회가 실패했으며 전역 설정 대신 해당 커밋의 `-c user.name/email`을 명시했다. 모든 작업 커밋에 요청한 Co-Authored-By 끝줄을 붙였다.
 
 ## 사용자에게 필요한 입력
 
