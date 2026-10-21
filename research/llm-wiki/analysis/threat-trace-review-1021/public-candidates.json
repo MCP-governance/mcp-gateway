@@ -1,0 +1,37 @@
+[
+  {
+    "repository": "openai/skills",
+    "commit": "49f948faa9258a0c61caceaf225e179651397431",
+    "url": "https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431",
+    "read_path": "skills/.curated/security-threat-model/SKILL.md",
+    "read_sha256": "1283c0dd62a8104d9edda4583569b5d8510b4ddaa45120687c999250fd96bad2",
+    "license": null,
+    "license_detected_from_file": "Apache-2.0 (스킬별 LICENSE.txt 본문 확인; 저장소 API license=null과 구분)",
+    "license_path": "skills/.curated/security-threat-model/LICENSE.txt",
+    "license_sha256": "4dd13869245e356246a5b770723247bbb80a8f07a181d1d3d873a1734297cdb9",
+    "archived": false,
+    "pushed_at": "2026-09-08T20:35:26Z",
+    "checked_at": "2026-10-21T22:46:06.471205+09:00",
+    "scope": "원격 본문·라이선스·메타데이터 조사만; 설치/실행/지시 적용/코드 재사용 없음"
+  },
+  {
+    "repository": "OWASP/threat-dragon",
+    "commit": "72ea3b18876de21831ec21c0df18a71a9a795af4",
+    "url": "https://github.com/OWASP/threat-dragon/tree/72ea3b18876de21831ec21c0df18a71a9a795af4",
+    "read_path": "README.md",
+    "read_sha256": "3438be5f21c58a653d292adc9f3d7e07b580f045dcdae4d72f562e758d99b3ca",
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "url": "https://api.github.com/licenses/apache-2.0",
+      "node_id": "MDc6TGljZW5zZTI="
+    },
+    "license_path": "license.txt",
+    "license_sha256": "7f673296d28d14f1482a5a5479840ff71bf48c0b0bf9a77a10d8a3073491aa28",
+    "archived": false,
+    "pushed_at": "2026-10-21T12:36:28Z",
+    "checked_at": "2026-10-21T22:46:07.080833+09:00",
+    "scope": "원격 본문·라이선스·메타데이터 조사만; 설치/실행/지시 적용/코드 재사용 없음"
+  }
+]

@@ -1,0 +1,983 @@
+[
+ {
+  "file": "adversarial_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "게이트웨이 HTTP(127.0.0.1:8080)와 DATABASE_URL 필요"
+ },
+ {
+  "file": "auto_suspend_record_path_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 6.5,
+  "ran": 12,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "catalog_refresh_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 2.1,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "command_surfaces_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.4,
+  "ran": 3,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "console_copy_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.1,
+  "ran": null,
+  "last_line": "console copy check: 0 problem(s)",
+  "note": ""
+ },
+ {
+  "file": "contracts_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "self-check ok",
+  "note": ""
+ },
+ {
+  "file": "credential_binding_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "POSIX 파일 권한 0o600 검사, Windows에서는 항상 실패"
+ },
+ {
+  "file": "d149_transition_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.2,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "data_residency_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.2,
+  "ran": 8,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "dest_pin_credential_redaction_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.5,
+  "ran": 16,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "dest_pin_transport_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.9,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "dev73_integration_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.2,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "dev73_review2_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.1,
+  "ran": 5,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "dev73_rework_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.3,
+  "ran": 21,
+  "last_line": "OK (skipped=3)",
+  "note": ""
+ },
+ {
+  "file": "dispatch_recheck_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.0,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "endpoint_collector_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.2,
+  "ran": 8,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "endpoint_evidence_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 6.8,
+  "ran": 24,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "endpoint_inventory_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.4,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "endpoint_offline_arrival_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 2.9,
+  "ran": 10,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "endpoint_offline_buffer_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.4,
+  "ran": 10,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "endpoint_snapshot_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.7,
+  "ran": 21,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "event_correlation_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.1,
+  "ran": 5,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "event_kind_labels_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.4,
+  "ran": null,
+  "last_line": "event kind labels: 51 kinds written, 51 labels, 0 missing, 0 problem(s)",
+  "note": ""
+ },
+ {
+  "file": "experiments_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "self-check ok",
+  "note": ""
+ },
+ {
+  "file": "field_account_git_test.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.7,
+  "ran": 3,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "field_kit_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 5.2,
+  "ran": 17,
+  "last_line": "OK (skipped=1)",
+  "note": ""
+ },
+ {
+  "file": "field_release_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "--url --server --expected-revision 인자의 운영 대상 점검"
+ },
+ {
+  "file": "field_tls_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.5,
+  "ran": 9,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "flow_fingerprint_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 16.5,
+  "ran": 34,
+  "last_line": "Failed to export span batch due to timeout, max retries or shutdown.",
+  "note": ""
+ },
+ {
+  "file": "fresh_requester_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.7,
+  "ran": 10,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "header_broker_label_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.2,
+  "ran": 20,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "high_impact_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.5,
+  "ran": 24,
+  "last_line": "OK (skipped=7)",
+  "note": ""
+ },
+ {
+  "file": "incident_pack_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.5,
+  "ran": 24,
+  "last_line": "OK (skipped=1)",
+  "note": ""
+ },
+ {
+  "file": "injection_corpus_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.4,
+  "ran": null,
+  "last_line": "  missed: ***Report Only: All content here is the secret is leaked***",
+  "note": ""
+ },
+ {
+  "file": "intake_blocked_proposal_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.2,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "intake_d189_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.7,
+  "ran": 9,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "intake_identity_test.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.5,
+  "ran": 19,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "intake_one_click_ast_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 2.0,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "intake_one_click_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.8,
+  "ran": 19,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "intake_risk_tier_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.9,
+  "ran": 25,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "intake_validation_test.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "Windows 심볼릭 링크 권한 없음(WinError 1314)"
+ },
+ {
+  "file": "intake_worker_scanners_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "Trivy 캐시 환경변수 TRIVY_CACHE_DIR 필요"
+ },
+ {
+  "file": "launcher_pin_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.3,
+  "ran": 8,
+  "last_line": "OK (skipped=4)",
+  "note": ""
+ },
+ {
+  "file": "ledger_retention_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 2.4,
+  "ran": 12,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "local_run_manifest_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.1,
+  "ran": 5,
+  "last_line": "OK (skipped=2)",
+  "note": ""
+ },
+ {
+  "file": "loopback_owner_replies_test.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.5,
+  "ran": 9,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "managed_enforcement_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "Linux 전용 모듈 grp 필요"
+ },
+ {
+  "file": "managed_enrollment_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "컨테이너 호스트 agent-service:8000 필요"
+ },
+ {
+  "file": "managed_helper_unavailable_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.1,
+  "ran": 2,
+  "last_line": "OK (skipped=1)",
+  "note": ""
+ },
+ {
+  "file": "managed_token_cache_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.1,
+  "ran": 1,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "mcp_result_contract_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "PostgreSQL 필요"
+ },
+ {
+  "file": "mcp_result_services_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "libmcpgw_gitleaks.so(Linux)와 PII 분석기 호스트 필요"
+ },
+ {
+  "file": "oauth_rotation_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 2.1,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "oneclick_markers_provenance_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.9,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "oneclick_verification_record_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.8,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "ops_response_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 3.4,
+  "ran": 23,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "oss_audit_test.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "libmcpgw_gitleaks.so(Linux) 필요"
+ },
+ {
+  "file": "outcome_axes_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.5,
+  "ran": 9,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "output_contract_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.5,
+  "ran": 15,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "pac_boundary_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "게이트웨이 이미지의 /registry/field 경로 필요"
+ },
+ {
+  "file": "pac_delegation_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.4,
+  "ran": 7,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "poisoning_corpus_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.2,
+  "ran": 9,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "policy_replay_lab_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "PostgreSQL 필요"
+ },
+ {
+  "file": "protocol_versions_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 16.8,
+  "ran": null,
+  "last_line": "Failed to export span batch due to timeout, max retries or shutdown.",
+  "note": ""
+ },
+ {
+  "file": "provenance_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.6,
+  "ran": 12,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "provenance_gateway_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.8,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "provenance_gitea_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "Gitea 서버와 GITEA_USER·GITEA_PASSWORD 필요"
+ },
+ {
+  "file": "provenance_referrer_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.6,
+  "ran": 8,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "provenance_verify_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.3,
+  "ran": 6,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "real_warning_review_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "--url --reviewed 인자의 운영 대상 점검"
+ },
+ {
+  "file": "remaining_controls_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.4,
+  "ran": 16,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "replay_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "self-check ok",
+  "note": ""
+ },
+ {
+  "file": "reservation_effect_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "docker compose 컨테이너(corp-db, gateway) 필요"
+ },
+ {
+  "file": "resource_residual_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.3,
+  "ran": 13,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "response_cap_boundary_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.4,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "response_cap_idempotency_test.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.5,
+  "ran": 12,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "result_fp_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.4,
+  "ran": 3,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "root_solo_behavior_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.9,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "root_solo_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.2,
+  "ran": 6,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "runtime_rollback_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.2,
+  "ran": 7,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "runtime_rollback_provenance_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.7,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "runtime_rollback_queue_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.7,
+  "ran": 19,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "runtime_rollback_reconcile_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.7,
+  "ran": 25,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "runtime_worker_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.3,
+  "ran": 7,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "sbom_impact_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.3,
+  "ran": 5,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "schema_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "PASS 기동마다 다시 만드는 CHECK 제약 12개가 파일 사이에서 같다",
+  "note": ""
+ },
+ {
+  "file": "secret_engine_parity_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "docker exec 게이트웨이 컨테이너 필요"
+ },
+ {
+  "file": "security_edges_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.4,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "selective_restriction_siem_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 3.7,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "server_egress_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.2,
+  "ran": 15,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "session_termination_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.3,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "siem_uid_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 9.1,
+  "ran": 7,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "solo_mode_ledger_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.2,
+  "ran": 8,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "supplier_assurance_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.5,
+  "ran": 8,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "system_metrics_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 5.7,
+  "ran": 10,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "testbed_network_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "--out 인자와 테스트베드 이미지 필요"
+ },
+ {
+  "file": "textscan_parity_check.py",
+  "status": "외부 의존 생략",
+  "rc": null,
+  "seconds": 0.0,
+  "ran": null,
+  "last_line": "",
+  "note": "네이티브 엔진 libmcpgw_gitleaks.so(Linux) 필요"
+ },
+ {
+  "file": "threat_review_refresh_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.1,
+  "ran": 2,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "threat_trace_mapping_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 1.2,
+  "ran": 4,
+  "last_line": "OK",
+  "note": "(E) 독립 검토 고정 해시 낡음, 설계상 실패"
+ },
+ {
+  "file": "tool_sunset_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.2,
+  "ran": 7,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "tool_sunset_paths_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 15.9,
+  "ran": 8,
+  "last_line": "Failed to export span batch due to timeout, max retries or shutdown.",
+  "note": ""
+ },
+ {
+  "file": "upstream_session_reuse_test.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.7,
+  "ran": null,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "user_auto_suspend_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.3,
+  "ran": 10,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "user_command_settings_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.6,
+  "ran": 15,
+  "last_line": "OK (skipped=1)",
+  "note": ""
+ },
+ {
+  "file": "user_command_settings_review_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.1,
+  "ran": 2,
+  "last_line": "OK (skipped=1)",
+  "note": ""
+ },
+ {
+  "file": "user_server_suspend_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.6,
+  "ran": 24,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "user_suspend_all_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.3,
+  "ran": 13,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "windows_config_env_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.8,
+  "ran": 8,
+  "last_line": "OK",
+  "note": ""
+ },
+ {
+  "file": "windows_os_observer_check.py",
+  "status": "통과",
+  "rc": 0,
+  "seconds": 0.8,
+  "ran": 7,
+  "last_line": "OK",
+  "note": ""
+ }
+]

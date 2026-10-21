@@ -1,0 +1,859 @@
+{
+  "from_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
+  "to_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+  "previous_review_sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+  "files": [
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-20-poisoning-corpus.md",
+      "old_sha256": "971fba94d2b231b6ecfd1cf138e7bae16065063632f1c925696767f10051d5a7",
+      "new_sha256": "484da68fb278ee638ece66b55a56e80a294183b8b535806775913d336e3b4f71",
+      "assessment": "원래 운영 도구31 표본 뒤 공개 catalog 재현율·result 오탐 보고가 추가됐다. 과거 미측정 문장을 현재 상태로 쓰지 않고 측정 판본·후속 BOM 수정·현재 재실행 부재를 구분한다.",
+      "references": [
+        {
+          "symbol": "",
+          "anchor": "운영 서버 도구 31개",
+          "old_line": 67,
+          "old_end_line": 67,
+          "new_line": 67,
+          "new_end_line": 67
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/review.py",
+      "old_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8",
+      "new_sha256": "230b3790c6dfeb325a8f82767a0de100490d6cf14244e56b94806c7828d5b79f",
+      "assessment": "intake_gate에 스캐너 critical/high 수치가 추가됐다. 도구 범위 정규화·파생 제약·입력 검사의 AST는 동일하다. 단독 운영 표식은 승인자 수 대체가 아니다.",
+      "references": [
+        {
+          "symbol": "intake_gate",
+          "anchor": "",
+          "old_line": 107,
+          "old_end_line": 159,
+          "ast_unchanged": false,
+          "new_line": 144,
+          "new_end_line": 198
+        },
+        {
+          "symbol": "normalize_tool_reviews",
+          "anchor": "",
+          "old_line": 211,
+          "old_end_line": 245,
+          "ast_unchanged": true,
+          "new_line": 250,
+          "new_end_line": 284
+        },
+        {
+          "symbol": "derived_constraints",
+          "anchor": "",
+          "old_line": 265,
+          "old_end_line": 303,
+          "ast_unchanged": true,
+          "new_line": 304,
+          "new_end_line": 342
+        },
+        {
+          "symbol": "check_inputs",
+          "anchor": "",
+          "old_line": 256,
+          "old_end_line": 262,
+          "ast_unchanged": true,
+          "new_line": 295,
+          "new_end_line": 301
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/supply_chain/intake_worker.py",
+      "old_sha256": "0ee5401c1c61bb9feb73882ecc7ac0dc4b7d0b436d01b88526e5a9d51e6ef04c",
+      "new_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
+      "assessment": "validate가 supplier_metadata를 제안 자료로 기록한다. 스캔 완료·커밋·아카이브 지문 경계는 동일하며 메타데이터를 공급자 보증 확인으로 세지 않는다.",
+      "references": [
+        {
+          "symbol": "validate",
+          "anchor": "",
+          "old_line": 215,
+          "old_end_line": 327,
+          "ast_unchanged": false,
+          "new_line": 216,
+          "new_end_line": 329
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/runtime/worker.py",
+      "old_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779",
+      "new_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea",
+      "assessment": "fetch_source가 서명 증명을 전달하고 reconcile이 현재 신뢰 키로 재검증한다. 되돌림의 과거 계약 복원·거부 후 재큐잉 차단이 추가됐다. 세 사건 종류의 작성 경로 부재는 실제 서버 상태 검사와 구분한다. build·격리 실행 인자 AST는 동일하다.",
+      "references": [
+        {
+          "symbol": "fetch_source",
+          "anchor": "",
+          "old_line": 301,
+          "old_end_line": 327,
+          "ast_unchanged": false,
+          "new_line": 381,
+          "new_end_line": 411
+        },
+        {
+          "symbol": "build",
+          "anchor": "",
+          "old_line": 330,
+          "old_end_line": 348,
+          "ast_unchanged": true,
+          "new_line": 445,
+          "new_end_line": 463
+        },
+        {
+          "symbol": "mcp_run_args",
+          "anchor": "",
+          "old_line": 118,
+          "old_end_line": 129,
+          "ast_unchanged": true,
+          "new_line": 120,
+          "new_end_line": 131
+        },
+        {
+          "symbol": "egress_run_args",
+          "anchor": "",
+          "old_line": 132,
+          "old_end_line": 138,
+          "ast_unchanged": true,
+          "new_line": 134,
+          "new_end_line": 140
+        },
+        {
+          "symbol": "reconcile",
+          "anchor": "",
+          "old_line": 504,
+          "old_end_line": 542,
+          "ast_unchanged": false,
+          "new_line": 641,
+          "new_end_line": 753
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/intake_identity_test.py",
+      "old_sha256": "1d5ce888e481da1bfbf54978b5785a68182ecf30d022928f17bbd86c67a702a1",
+      "new_sha256": "0dfdbc84f534182f2ed8fa69d85c21f3f7249a1da288bb3a7013cf99980a813a",
+      "assessment": "high_count=0 대역 필드가 추가됐다. 참조한 시험 함수 AST와 단언은 동일하다. 실제 스캐너나 MCP 증거가 아니다.",
+      "references": [
+        {
+          "symbol": "test_scanner_outage_fails_closed",
+          "anchor": "",
+          "old_line": 68,
+          "old_end_line": 74,
+          "ast_unchanged": true,
+          "new_line": 69,
+          "new_end_line": 75
+        },
+        {
+          "symbol": "test_every_approved_tool_needs_a_review_and_the_action_comes_from_the_approval",
+          "anchor": "",
+          "old_line": 135,
+          "old_end_line": 141,
+          "ast_unchanged": true,
+          "new_line": 136,
+          "new_end_line": 142
+        },
+        {
+          "symbol": "test_gaps_are_refused",
+          "anchor": "",
+          "old_line": 143,
+          "old_end_line": 153,
+          "ast_unchanged": true,
+          "new_line": 144,
+          "new_end_line": 154
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/opa/policy_test.rego",
+      "old_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+      "new_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
+      "assessment": "기존 참조 규칙은 변하지 않고 관할 팩 비활성/활성/계약 차단 3건이 끝에 추가됐다. 팩이 꺼지면 위치 통제를 주장할 수 없다.",
+      "references": [
+        {
+          "symbol": "",
+          "anchor": "test_block_unapproved_supplier if",
+          "old_line": 356,
+          "old_end_line": 364,
+          "new_line": 356,
+          "new_end_line": 364
+        },
+        {
+          "symbol": "",
+          "anchor": "test_block_expired_asset_approval if",
+          "old_line": 397,
+          "old_end_line": 405,
+          "new_line": 397,
+          "new_end_line": 405
+        },
+        {
+          "symbol": "",
+          "anchor": "test_allow_valid_asset_approval if",
+          "old_line": 403,
+          "old_end_line": 411,
+          "new_line": 403,
+          "new_end_line": 411
+        },
+        {
+          "symbol": "",
+          "anchor": "test_ssrf_destination_blocks_even_admin if",
+          "old_line": 550,
+          "old_end_line": 558,
+          "new_line": 550,
+          "new_end_line": 558
+        },
+        {
+          "symbol": "",
+          "anchor": "test_intranet_destination_is_not_ssrf if",
+          "old_line": 559,
+          "old_end_line": 567,
+          "new_line": 559,
+          "new_end_line": 567
+        },
+        {
+          "symbol": "",
+          "anchor": "test_delegation_from_client_reported_agent_is_unsupported if",
+          "old_line": 700,
+          "old_end_line": 708,
+          "new_line": 700,
+          "new_end_line": 708
+        },
+        {
+          "symbol": "",
+          "anchor": "test_delegation_with_verified_actor_still_uses_the_intersection if",
+          "old_line": 691,
+          "old_end_line": 699,
+          "new_line": 691,
+          "new_end_line": 699
+        },
+        {
+          "symbol": "",
+          "anchor": "test_pac_scope_denies_unapproved_action if",
+          "old_line": 674,
+          "old_end_line": 682,
+          "new_line": 674,
+          "new_end_line": 682
+        },
+        {
+          "symbol": "",
+          "anchor": "test_block_required_classification_without_source if",
+          "old_line": 381,
+          "old_end_line": 389,
+          "new_line": 381,
+          "new_end_line": 389
+        },
+        {
+          "symbol": "",
+          "anchor": "test_allow_required_manual_classification if",
+          "old_line": 386,
+          "old_end_line": 394,
+          "new_line": 386,
+          "new_end_line": 394
+        },
+        {
+          "symbol": "",
+          "anchor": "test_residency_foreign_storage_cannot_hide_behind_domestic_processing if",
+          "old_line": 1277,
+          "old_end_line": 1285,
+          "new_line": 1277,
+          "new_end_line": 1285
+        },
+        {
+          "symbol": "",
+          "anchor": "test_rate_limit_blocks_at_limit if",
+          "old_line": 431,
+          "old_end_line": 439,
+          "new_line": 431,
+          "new_end_line": 439
+        },
+        {
+          "symbol": "",
+          "anchor": "test_concurrency_allows_at_limit if",
+          "old_line": 454,
+          "old_end_line": 462,
+          "new_line": 454,
+          "new_end_line": 462
+        },
+        {
+          "symbol": "",
+          "anchor": "test_untrusted_marker_on_write_requires_approval if",
+          "old_line": 1123,
+          "old_end_line": 1131,
+          "new_line": 1123,
+          "new_end_line": 1131
+        },
+        {
+          "symbol": "",
+          "anchor": "test_terminating_engagement_is_blocked if",
+          "old_line": 979,
+          "old_end_line": 987,
+          "new_line": 979,
+          "new_end_line": 987
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/agent_service.py",
+      "old_sha256": "bffb996c12d43bb4d72a543ca07597a4426794816bc68e0baae74ce59d8b253a",
+      "new_sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4",
+      "assessment": "별도 승인 함수에 DSSE 재검증·선택 공급자 보증·단독 모드 표식이 추가됐다. 새 한 화면 경로도 클릭 시점 계약/검사/증명 재검증을 한다. 높음 이상 실제 2인 승인과 매우 높음 서면 사유는 등록 경계에서도 확인한다.",
+      "references": [
+        {
+          "symbol": "approve_mcp_request",
+          "anchor": "",
+          "old_line": 1402,
+          "old_end_line": 1531,
+          "ast_unchanged": false,
+          "new_line": 1604,
+          "new_end_line": 1753
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "old_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb",
+      "new_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
+      "assessment": "실행 전 사용자 중지·도구 일몰 확인, dispatch의 장치 결속, 로컬 실패 축과 intent 해제, Block 원장 뒤 SAVEPOINT 집계가 추가됐다. 계약/흐름/응답 검사/기존 예약 AST는 동일하다. 등록·종료의 local_jobs 호출은 별도 로컬 실행 경계다.",
+      "references": [
+        {
+          "symbol": "execute_call",
+          "anchor": "",
+          "old_line": 1990,
+          "old_end_line": 2316,
+          "ast_unchanged": false,
+          "new_line": 2182,
+          "new_end_line": 2535
+        },
+        {
+          "symbol": "_contract",
+          "anchor": "",
+          "old_line": 957,
+          "old_end_line": 1020,
+          "ast_unchanged": true,
+          "new_line": 1107,
+          "new_end_line": 1170
+        },
+        {
+          "symbol": "_call_upstream",
+          "anchor": "",
+          "old_line": 1465,
+          "old_end_line": 1659,
+          "ast_unchanged": false,
+          "new_line": 1615,
+          "new_end_line": 1815
+        },
+        {
+          "symbol": "_dispatch_flow_recheck",
+          "anchor": "",
+          "old_line": 1213,
+          "old_end_line": 1222,
+          "ast_unchanged": true,
+          "new_line": 1363,
+          "new_end_line": 1372
+        },
+        {
+          "symbol": "_flow_sources",
+          "anchor": "",
+          "old_line": 1181,
+          "old_end_line": 1210,
+          "ast_unchanged": true,
+          "new_line": 1331,
+          "new_end_line": 1360
+        },
+        {
+          "symbol": "approve_request",
+          "anchor": "",
+          "old_line": 2319,
+          "old_end_line": 2372,
+          "ast_unchanged": true,
+          "new_line": 2538,
+          "new_end_line": 2591
+        },
+        {
+          "symbol": "_reserve_call",
+          "anchor": "",
+          "old_line": 1275,
+          "old_end_line": 1360,
+          "ast_unchanged": true,
+          "new_line": 1425,
+          "new_end_line": 1510
+        },
+        {
+          "symbol": "untrusted_markers",
+          "anchor": "",
+          "old_line": 1071,
+          "old_end_line": 1078,
+          "ast_unchanged": true,
+          "new_line": 1221,
+          "new_end_line": 1228
+        },
+        {
+          "symbol": "_guarded_result",
+          "anchor": "",
+          "old_line": 1756,
+          "old_end_line": 1784,
+          "ast_unchanged": true,
+          "new_line": 1916,
+          "new_end_line": 1944
+        },
+        {
+          "symbol": "_inspected_result",
+          "anchor": "",
+          "old_line": 1787,
+          "old_end_line": 1801,
+          "ast_unchanged": true,
+          "new_line": 1947,
+          "new_end_line": 1961
+        },
+        {
+          "symbol": "refresh_catalog",
+          "anchor": "",
+          "old_line": 201,
+          "old_end_line": 364,
+          "ast_unchanged": true,
+          "new_line": 219,
+          "new_end_line": 382
+        },
+        {
+          "symbol": "approve_contract",
+          "anchor": "",
+          "old_line": 367,
+          "old_end_line": 449,
+          "ast_unchanged": true,
+          "new_line": 385,
+          "new_end_line": 467
+        },
+        {
+          "symbol": "_record_decision",
+          "anchor": "",
+          "old_line": 1824,
+          "old_end_line": 1911,
+          "ast_unchanged": false,
+          "new_line": 1984,
+          "new_end_line": 2101
+        },
+        {
+          "symbol": "_audit_payload",
+          "anchor": "",
+          "old_line": 1804,
+          "old_end_line": 1818,
+          "ast_unchanged": true,
+          "new_line": 1964,
+          "new_end_line": 1978
+        },
+        {
+          "symbol": "verify_audit_chain",
+          "anchor": "",
+          "old_line": 1955,
+          "old_end_line": 1974,
+          "ast_unchanged": true,
+          "new_line": 2145,
+          "new_end_line": 2164
+        },
+        {
+          "symbol": "deregister_server",
+          "anchor": "",
+          "old_line": 748,
+          "old_end_line": 768,
+          "ast_unchanged": false,
+          "new_line": 880,
+          "new_end_line": 901
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/dispatch.py",
+      "old_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a",
+      "new_sha256": "a4e45bb79513f09db1bdb6ffeff8dc1b3831693d747b932fbf4d93e08b677855",
+      "assessment": "직원×서버 중지를 intent INSERT와 거부 사유 조회에서 재확인한다. 이 검사는 이미 전송된 원격 호출 취소 증거가 아니다.",
+      "references": [
+        {
+          "symbol": "record",
+          "anchor": "",
+          "old_line": 64,
+          "old_end_line": 162,
+          "ast_unchanged": false,
+          "new_line": 66,
+          "new_end_line": 169
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/upstream.py",
+      "old_sha256": "5609242ce9ec6b9b8065f5789bdd06a43b3844ce75fc792794865c088e8fa609",
+      "new_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+      "assessment": "참조 _client·credential_headers AST는 동일하다. session은 local: 주소를 HTTP 풀 대신 local_jobs로 분기하므로 원격 자격 경계의 설명을 로컬 실행 전체에 일반화하지 않는다.",
+      "references": [
+        {
+          "symbol": "_client",
+          "anchor": "",
+          "old_line": 101,
+          "old_end_line": 111,
+          "ast_unchanged": true,
+          "new_line": 101,
+          "new_end_line": 111
+        },
+        {
+          "symbol": "credential_headers",
+          "anchor": "",
+          "old_line": 40,
+          "old_end_line": 77,
+          "ast_unchanged": true,
+          "new_line": 40,
+          "new_end_line": 77
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/classify.py",
+      "old_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c",
+      "new_sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f",
+      "assessment": "참조한 분류 함수 AST는 동일하다. 변경은 result_items의 BOM 제거이며 원격 객체/행위 해석 보증 범위를 넓히지 않는다.",
+      "references": [
+        {
+          "symbol": "host_category",
+          "anchor": "",
+          "old_line": 274,
+          "old_end_line": 304,
+          "ast_unchanged": true,
+          "new_line": 274,
+          "new_end_line": 304
+        },
+        {
+          "symbol": "classify",
+          "anchor": "",
+          "old_line": 808,
+          "old_end_line": 830,
+          "ast_unchanged": true,
+          "new_line": 809,
+          "new_end_line": 831
+        },
+        {
+          "symbol": "sql_facts",
+          "anchor": "",
+          "old_line": 482,
+          "old_end_line": 501,
+          "ast_unchanged": true,
+          "new_line": 482,
+          "new_end_line": 501
+        },
+        {
+          "symbol": "path_resource",
+          "anchor": "",
+          "old_line": 209,
+          "old_end_line": 230,
+          "ast_unchanged": true,
+          "new_line": 209,
+          "new_end_line": 230
+        },
+        {
+          "symbol": "table_resource",
+          "anchor": "",
+          "old_line": 538,
+          "old_end_line": 542,
+          "ast_unchanged": true,
+          "new_line": 538,
+          "new_end_line": 542
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/mcp_facade.py",
+      "old_sha256": "63cee152111cbf6fddaa522d4176491ea1c2fe1fe3ade4c2831719d25b09e8ef",
+      "new_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
+      "assessment": "목록에 일몰 도구 제거·조회 실패 도구 격리가 추가됐고 로컬 호출의 JSON-RPC 인자를 검사한다. Resource·Prompt 지원은 추가되지 않았다. _render AST는 동일하다.",
+      "references": [
+        {
+          "symbol": "_approved_tools",
+          "anchor": "",
+          "old_line": 119,
+          "old_end_line": 160,
+          "ast_unchanged": false,
+          "new_line": 121,
+          "new_end_line": 171
+        },
+        {
+          "symbol": "build_mcp",
+          "anchor": "",
+          "old_line": 221,
+          "old_end_line": 259,
+          "ast_unchanged": false,
+          "new_line": 232,
+          "new_end_line": 272
+        },
+        {
+          "symbol": "_render",
+          "anchor": "",
+          "old_line": 172,
+          "old_end_line": 218,
+          "ast_unchanged": true,
+          "new_line": 183,
+          "new_end_line": 229
+        }
+      ]
+    },
+    {
+      "path": "endpoint-agent/enforce-linux.py",
+      "old_sha256": "57bfb1309921abb33b1d2f8d25837ccaec058ba53ef6d9379db09cd28748b455",
+      "new_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
+      "assessment": "profile에 경고/강제 분기와 bound_profile이 추가됐다. 기본은 warn이고 기존 강제 후보의 pathname addr 문법 문제와 sh -c 정상 경로 미해결은 DEV-81 보류 근거다. nft_rules·wrapper AST는 동일하다.",
+      "references": [
+        {
+          "symbol": "nft_rules",
+          "anchor": "",
+          "old_line": 67,
+          "old_end_line": 86,
+          "ast_unchanged": true,
+          "new_line": 67,
+          "new_end_line": 86
+        },
+        {
+          "symbol": "profile",
+          "anchor": "",
+          "old_line": 92,
+          "old_end_line": 161,
+          "ast_unchanged": false,
+          "new_line": 92,
+          "new_end_line": 167
+        },
+        {
+          "symbol": "wrapper",
+          "anchor": "",
+          "old_line": 164,
+          "old_end_line": 260,
+          "ast_unchanged": true,
+          "new_line": 254,
+          "new_end_line": 350
+        }
+      ]
+    },
+    {
+      "path": "endpoint-agent/managed-windows.py",
+      "old_sha256": "61d33705240ad15da5e3b0fc18d75607c875f552caf40f5902755eceda820ff6",
+      "new_sha256": "1f4155dab5441e6f66589bc69e0e63f5b6b7472007e0e55367c2b04bd5b5bf2b",
+      "assessment": "설치 파일 목록에 offline_buffer만 추가됐다. 참조 checks AST는 동일하며 같은 SID 프로세스 인증이 해결된 것이 아니다.",
+      "references": [
+        {
+          "symbol": "checks",
+          "anchor": "",
+          "old_line": 351,
+          "old_end_line": 394,
+          "ast_unchanged": true,
+          "new_line": 351,
+          "new_end_line": 394
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+      "old_sha256": "c583ce1df783d35c31cfa32ac714bc1da0194d43ede44128d273ef468b79d5f8",
+      "new_sha256": "00a19c1c555270025df461bb130d46600838bb02f9383817ce7fcdd854ddb9d2",
+      "assessment": "관측 미적재/만료 수치는 event_uid별 단조 증가로 저장하며 장치 폐기 전 로컬 작업 정지를 요청한다. 참조 managed_failure AST는 동일하다.",
+      "references": [
+        {
+          "symbol": "managed_failure",
+          "anchor": "",
+          "old_line": 939,
+          "old_end_line": 953,
+          "ast_unchanged": true,
+          "new_line": 955,
+          "new_end_line": 969
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/session_termination_check.py",
+      "old_sha256": "916c29ec2d05b71641ed0ad65a24c455f918d1632ad4248b93332a1cf7764dca",
+      "new_sha256": "eb0831db859e194b452f74a035bd38a9e30b46f4f426aa66ac66589952d0510d",
+      "assessment": "원격 서버 deregister 시험에 local_jobs.quiesce 비동기 대역이 추가됐다. 기존 단언 무변경이며 실제 로컬 정지 증거가 아니다.",
+      "references": [
+        {
+          "symbol": "",
+          "anchor": "",
+          "old_line": 1,
+          "old_end_line": 278,
+          "new_line": 1,
+          "new_end_line": 278
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/idp.py",
+      "old_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc",
+      "new_sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d",
+      "assessment": "철회 시 local_jobs.prepare_token_revocation으로 토큰 잠금과 정지 확인을 연결한다. introspection AST는 동일하다. 외부 자원 서버 캐시 철회 보장으로 확대하지 않는다.",
+      "references": [
+        {
+          "symbol": "introspection",
+          "anchor": "",
+          "old_line": 299,
+          "old_end_line": 338,
+          "ast_unchanged": true,
+          "new_line": 308,
+          "new_end_line": 347
+        },
+        {
+          "symbol": "revoke_principal_tokens",
+          "anchor": "",
+          "old_line": 237,
+          "old_end_line": 254,
+          "ast_unchanged": false,
+          "new_line": 239,
+          "new_end_line": 258
+        },
+        {
+          "symbol": "revoke_device_tokens",
+          "anchor": "",
+          "old_line": 257,
+          "old_end_line": 277,
+          "ast_unchanged": false,
+          "new_line": 261,
+          "new_end_line": 283
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/fresh_requester_check.py",
+      "old_sha256": "7bc3d0f954ab9070c2c25073c77f20c504d0f0724a2ae0d7c9810b3ce842eb72",
+      "new_sha256": "b6eac7df89ee6417921e9bde2b0353c5577b3a64d1f28da518bef0f20f2b5799",
+      "assessment": "tool_sunset 대역만 추가됐다. 참조 철회 시험 AST는 동일하고 실제 DB/로컬 컨테이너 시험이 아니다.",
+      "references": [
+        {
+          "symbol": "test_jti_revoked_after_approval_before_dispatch",
+          "anchor": "",
+          "old_line": 224,
+          "old_end_line": 227,
+          "ast_unchanged": true,
+          "new_line": 224,
+          "new_end_line": 227
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/dest_pin_credential_redaction_check.py",
+      "old_sha256": "8b67c15e1d3549074da251acf8681217fcb6045e4cc815181d0189a0646e6dfe",
+      "new_sha256": "90563ea5d098ba97f4a0961d4627256184a3b3bb17fb20b38647427f323656ee",
+      "assessment": "AST 추출 이름공간에 AUTO_SUSPEND_POLICIES를 추가했다. 민감 자격 비노출 단언은 동일하다.",
+      "references": [
+        {
+          "symbol": "",
+          "anchor": "",
+          "old_line": 1,
+          "old_end_line": 386,
+          "new_line": 1,
+          "new_end_line": 386
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/decommission.py",
+      "old_sha256": "0c9389da6a2ce4791ed668f7c3f768cf487b8c98e6d14c69d08e0a25c63453ae",
+      "new_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
+      "assessment": "open_case가 종료 트랜잭션 전에 local_jobs.quiesce를 호출한다. assess·_judge_target AST는 동일하며 C1~C4/T1~T3 규칙 변경이 아니다.",
+      "references": [
+        {
+          "symbol": "open_case",
+          "anchor": "",
+          "old_line": 221,
+          "old_end_line": 273,
+          "ast_unchanged": false,
+          "new_line": 221,
+          "new_end_line": 275
+        },
+        {
+          "symbol": "assess",
+          "anchor": "",
+          "old_line": 715,
+          "old_end_line": 760,
+          "ast_unchanged": true,
+          "new_line": 717,
+          "new_end_line": 762
+        },
+        {
+          "symbol": "_judge_target",
+          "anchor": "",
+          "old_line": 626,
+          "old_end_line": 696,
+          "ast_unchanged": true,
+          "new_line": 628,
+          "new_end_line": 698
+        }
+      ]
+    }
+  ],
+  "changed_policy_limitations": {
+    "PAC01": "출처·미러 해시·스캔과 저장된 Ed25519 DSSE/in-toto SLSA 증명을 승인·실행·재조정에서 확인한다. 미제공은 확인 안 됨이며 차단이 아니다. 소스 아카이브 digest로 OCI referrer를 선택 조회하며 허용 목록 기본은 비어 있다. OCI 이미지 digest·Cosign/Rekor·모든 의존성 출처 보증·실제 수집 효과는 미확인이다.",
+    "PAC02": "필요 권한·목적·등급·목적지를 사람이 승인한다. 한 화면 경로는 도구/신청 입력에서 위험 입력과 범위를 제안하므로 신청자 직접 입력만으로 산정한다고 볼 수 없다. D-189 높음은 2인, 매우 높음은 2인·서면 사유이고 단독 모드가 수를 대체하지 않는다. 선택 공급자 보증의 확인 안 됨은 적법성·실제 공급자 권한 검증이 아니다.",
+    "PAC06": "서버+도구 키와 승인 해시로 Tool 목록/호출을 제한한다. facade는 tools/list·tools/call만 등록하므로 Resource·Prompt 허용목록 구현으로 확대할 수 없다. 동명 기능 간 승인 비재사용의 실제 두 서버 교차 음성은 추가 검증 대상이다. 미사용 도구는 목록·호출·최종 계약 경계에서 제한하며 조회 장애의 목록 제외는 전체 기능 검수와 다르다.",
+    "PAC07": "SHADOW 정책은 경보이고 직접 차단은 관리 OS 정책과 managed_failure가 맡는다. Linux PJ1 확인을 Windows/full-OS로 확대하지 않는다. Windows 원본 바이너리 직접 실행·loopback·하이브 미탑재 허용·검사 사이 경쟁과 구형 장치 전환 유예가 남는다. D-183 프로세스 결속 기본은 경고 단계라 같은 UID 노출이 남고 강제 후보는 parser·헤더 직접 실행·커널 검증 전이다.",
+    "PAC11": "호출마다 정책 평가 후 라이브 계약/토큰/주체·동의/흐름과 intent를 재확인한다. PAC-09 하나가 전부를 수행하는 것은 아니다. intent commit과 실제 송신 사이 취소·이미 전송된 호출 회수·다중 인스턴스 장애 효과는 미검증이다. 직원×서버 중지를 인입과 최종 intent에서 확인하며 집계 장애는 SAVEPOINT로 Block 원장을 보존한다. 로컬 실행은 별도 작업 승인·장치 결속 경로를 가진다.",
+    "PAC15": "실행기 프록시의 서버 전체 허용 호스트가 도구 심사 안에 들어가야 최종 목적지로 인정한다. 제3자 SaaS outbound·재시도/자격·독립 수신은 미관측이다. 국가/법적 근거는 선언·잠정 규칙이며 개인정보 적법성 확인 자동화가 아니다. LLM 모델 프롬프트 경로는 별도다. 관할 팩은 기본 비활성이므로 위치 미제공 자체의 기본 차단을 주장하지 않는다. 활성화한 경우의 위치·등급 규칙만 해당한다.",
+    "PAC18": "권한 원천은 토큰/등록부이고 외부 텍스트로 확장하지 않는다. 표지·정규식/해독 탐지는 의미적 주입 탐지와 다르다. 후속 보고의 catalog dev 0.5278·held-out 0.5178은 D-158 전후 동일하며 result 오탐 66건(3.3%) 보고가 있다. 후속 BOM·건수 수정 뒤 현재 재실행은 없고 독립 다국어 효과·LLM 내부 판단은 범위 밖이다.",
+    "PAC23": "DB 경계 종료·설정/경로 제거·프로세스 제거·자원 거부를 분리한다. 집계 MCP 세션은 한 서버 종료로 전체 종료하지 않는다. 실제 지속 세션/실행기 잔존·Windows·현재 PJ1 종료 재접근은 미검증이다. 설정 소멸은 C4 상태 증거 일부이며 외부 효과 철회 증거가 아니다. 로컬 작업 정지 확인이 계정·장치·서버 종료 전에 연결됐지만 실제 컨테이너/PJ1 검증과 사용자 이용 중지의 진행 중 작업 정지 연결은 별도다.",
+    "PAC24": "C3/C4는 종료 판정 기준이며 런타임 정책 ID에서 분리했다. DB 밖 서명 기록이 복원된 자격을 막지만 DB+서명 볼륨/키 동시 복원·외부 JWT 캐시·복제/미고지 공급자 자격은 보장하지 않는다. D-154 회전 순서 후보 수용과 새 자원 서버 시험은 별도다. 로컬 토큰 철회는 같은 토큰 잠금과 정지 확인을 거치며 현재 DB 경합 보고를 외부 자격 폐기 성공으로 합산하지 않는다."
+  },
+  "added_code_references": {
+    "PAC01": [
+      [
+        "full_stack_lab/gateway/app/artifact_provenance.py",
+        "verify_source_attestation"
+      ],
+      [
+        "full_stack_lab/gateway/app/agent_service.py",
+        "collect_proposal_provenance"
+      ],
+      [
+        "full_stack_lab/runtime/worker.py",
+        "verify_rollback_provenance"
+      ]
+    ],
+    "PAC02": [
+      [
+        "full_stack_lab/gateway/app/agent_service.py",
+        "approve_and_register"
+      ],
+      [
+        "full_stack_lab/gateway/app/core.py",
+        "register_server"
+      ]
+    ],
+    "PAC07": [
+      [
+        "endpoint-agent/enforce-linux.py",
+        "bound_profile"
+      ]
+    ],
+    "PAC11": [
+      [
+        "full_stack_lab/gateway/app/local_jobs.py",
+        "session"
+      ]
+    ],
+    "PAC15": [
+      [
+        "full_stack_lab/gateway/app/residency.py",
+        "enabled"
+      ],
+      [
+        "full_stack_lab/gateway/app/residency.py",
+        "require_location"
+      ]
+    ],
+    "PAC23": [
+      [
+        "full_stack_lab/gateway/app/local_jobs.py",
+        "quiesce"
+      ]
+    ],
+    "PAC24": [
+      [
+        "full_stack_lab/gateway/app/local_jobs.py",
+        "prepare_token_revocation"
+      ]
+    ]
+  }
+}
