@@ -130,6 +130,52 @@
 
 기기·PJ1·pj3 실 하네스 시험은 이 감사 범위 밖이라 실행하지 않았다.
 
+## 6-B. DEV-78 되돌림 분기·거부 이벤트 시험 추가
+
+2026-10-21, 브랜치 `10/21-dev78-tests`(기준 `origin/main` ce1000d). 제품 코드는 고치지 않았다. 새 파일 `full_stack_lab/tests/runtime_rollback_reconcile_check.py` 하나만 추가했고 기존 시험 파일은 바꾸지 않았다.
+
+### 결과
+
+| 확인 | 결과 |
+| --- | --- |
+| 새 시험 `runtime_rollback_reconcile_check.py` | 25건 통과 (Python 3.12, psycopg·fastapi 설치 환경). 설치가 없으면 요청 쪽 8건은 건너뛰고 17건만 돈다 |
+| 기존 `runtime_rollback_check.py` / `runtime_worker_check.py` / `provenance_verify_check.py` | 7건 / 7건 / 6건 그대로 통과 (세 파일 무변경) |
+| `py_compile`, `pyflakes` (새 파일) | 통과 / 경고 없음 |
+| `python tests/open_endpoints.py` | 통과 (무인증 1개, 인증 필요 89개) |
+| 민감도 확인 | 제품 코드를 일시적으로 되돌린 변이 20개 모두 새 시험이 실패했고 원복 뒤 `git diff` 비어 있음. `import uuid`를 주입한 상태에서도 20개 모두 실패 |
+
+### 완료 조건 대비
+
+| 완료 조건 문구 | 새 시험 | 대역/실제 | 판정 |
+| --- | --- | --- | --- |
+| 거부(승인 이력 누락·이력 해시 불일치·계약 변조·도구 구성 변화)가 원장에 남음 | `RollbackRefusal` 12건: 거부 사건 1건(`outcome=refused`, 실행기 행위자, 세대·실행 ID, 사유)과 커밋, 새 세대 없음, 승인값 불변을 항목별로 확인 | 인메모리 원장. 실제 PostgreSQL 아님 | 충족(대역) |
+| 철회·종료·공급망 중지 판본으로 되돌리지 않음 | 판본 표식 3종(`runtime-revoked`·`runtime-terminated`·`runtime-supply-chain-stop`)과 서버 상태 5종(DISABLED·BLOCKED_SUPPLY_CHAIN·TERMINATING·TERMINATED·RETIRED)·중지·이용 관계 종료를 각각 따로. 요청 쪽(`RollbackRequest`)에서도 같은 항목 | 대역 | 충족(대역). 단 표식을 쓰는 코드가 없다 (결함 후보 4) |
+| 계약 변조 거부 | 옛 해시를 둔 채 값만 바꾼 스냅샷은 `restore_contract`가 거부(사유에 「해시」), 해시를 다시 계산한 스냅샷은 승인 이력 대조가 거부, 도구 집합 변화는 사유에 「도구 구성」 | 대역 | 충족(대역) |
+| 되돌리기 요청이 들어가고 전이가 기록됨 | `RollbackRequest`: ACTIVE가 STOPPING으로 바뀌고 `rollback_target_generation`·계약 스냅샷이 같은 갱신에 실리며, `runtime-rollback` 사건(요청자·한 줄 사유·from/to 세대·계약 해시)이 같은 트랜잭션에 남는다. 원장 쓰기가 실패하면 중지 표시도 함께 되돌아간다. 관리자만 가능, 여러 줄 사유 거부, 요청 쪽 거부 18개 경우는 상태를 바꾸지 않음 | 대역(비동기 가짜 트랜잭션). 실제 DB 아님 | 충족(대역) |
+| 되돌림 경로에서 증명을 새로 검증하지 않고 이전 세대 증거를 씀 | `ActiveRollbackGeneration`: 되돌린 세대가 ACTIVE일 때 `verify_source_provenance`가 받는 인자가 그 세대가 이어받은 증거와 같고 이전 세대 증거(해시·증명서·검증 기록)와 일치, `fetch_source`·`build`·`start` 미호출. 이어받은 증거가 검증을 통과하지 못하면 세대를 멈춤. `JobBranchShape`: `run_job` 되돌림 분기에 `fetch_source`·`verify_source_provenance`·`build` 호출이 없고 새 빌드 분기에는 있음 (소스 구조 검사) | 대역 + 소스 구조 검사 | 부분. `run_job` 실행 자체는 결함 후보 2 때문에 시험할 수 없다 |
+| 되돌린 뒤 계약 해시가 직전 승인값과 바이트 단위로 같음 | **시험 불가** (결함 후보 1). 해당 시험 5건은 파일에 넣지 않고 아래 보류 시험으로 둔다 | - | 시험 없음 (결함 때문) |
+| 되돌림 큐잉(이전 이미지로 새 세대 QUEUED, 빌드 없음) | **시험 불가** (결함 후보 1) | - | 시험 없음 (결함 때문) |
+
+### 제품 결함 후보 (수정하지 않음, 메인 판단 필요)
+
+1. **되돌림 큐잉이 항상 `NameError`로 죽는다.** `runtime/worker.py`가 `uuid`를 가져오지 않는데 705행 `uuid.uuid4()`를 쓴다 (모듈 상단 import 목록에 `uuid` 없음). 재현: `Ledger`에 STOPPING + `rollback_target_generation` 세대를 두고 `worker.reconcile`을 부르면 큐잉 INSERT 직전에 `NameError: name 'uuid' is not defined`. `main()`의 바깥 `except`는 `psycopg.Error`·`RuntimeError`·`OSError`만 잡으므로 작업자가 종료되고, 트랜잭션이 되돌려져 세대는 STOPPING에 남아 재시작마다 같은 곳에서 죽는다. 기존 `runtime_rollback_check.py`는 이 줄을 실행하지 않아 못 잡았다. 한 줄(`import uuid`)이면 해결되고, 그러면 보류 시험 5건이 통과한다 (`--fixed` 확인).
+2. **`run_job` 되돌림 분기가 `KeyError`로 죽는다.** 574행에서 `source = {}`로 두고 581행에서 `source["source_archive_sha256"]`를 읽는다. 되돌림 세대(QUEUED→BUILDING)는 항상 이 줄에서 `KeyError: 'source_archive_sha256'`. `run_job`의 `except`는 `Refused`·`RuntimeError`·`OSError`·`SubprocessError`만 잡아 예외가 `main()`까지 올라가 작업자가 종료된다. 결함 1을 고쳐도 되돌림 세대는 ACTIVE에 도달하지 못한다. 재현: 원장 대역에 BUILDING 상태의 되돌림 세대를 두고 `inspect`·`fetch_source`·`build`를 대체한 채 `worker.run_job`을 부르면 `advance` 호출에 닿기 전에 예외가 난다 (커밋하지 않은 임시 스크립트로 확인). 이어받은 증거는 `built`에 이미 있으므로 `built["source_archive_sha256"]`를 쓰면 될 것으로 보이나 고치지 않았다.
+3. **되돌림으로 만든 세대가 어떤 이유로든 멈추면 같은 대상으로 다시 되돌림이 큐잉된다.** 큐잉된 행이 `rollback_target_generation`을 그대로 갖고 있어 (`worker.py` 662행 이하 분기가 `done.get("rollback_target_generation")`만 본다) 이어받은 증거의 출처 검증 실패(`MCP-SUPPLY-001`)로 멈춘 경우에도 같은 목표로 새 세대가 QUEUED된다. 재현(원장 대역, `uuid` 주입): ACTIVE 3세대(되돌림, 증거에 `source_verification_error`) → 3세대 STOPPED(사유 `MCP-SUPPLY-001`) → 4세대 QUEUED(`rollback_target_generation=1`), `runtime-rollback-queued` 사건 기록. 목표 세대의 증거가 신뢰 키 교체 등으로 검증에 실패하는 상황이면 멈춤과 재큐잉이 반복될 수 있다. 의도한 자가 복구인지 판단이 필요하다.
+4. **판본 철회 표식을 쓰는 코드가 없다.** `runtime-revoked`·`runtime-terminated`·`runtime-supply-chain-stop`은 `agent_service.py` 1286·1338행, `worker.py` 356·668행에서 읽기만 하고 저장소 어디에서도 기록하지 않는다 (`grep` 결과 읽는 곳 4곳뿐). 표식 검사는 시험에서 표식을 직접 넣어야만 작동한다. 현재는 서버 상태·생애주기 검사가 실제 차단을 맡는다.
+5. **`runtime-rollback-queued` 사건의 `scope.runtime`이 새 세대가 아니라 멈춘 세대의 ID다.** `worker.py` 708행이 `{**runtime, "generation": queued["generation"]}`로 세대 번호만 바꾸고 ID는 그대로 둔다. `scope.generation`(새 세대)과 `scope.runtime`(이전 세대 행)이 서로 다른 행을 가리킨다. 영향은 사건 조회 시 혼동 정도로 작아 시험에서는 이 값을 확인하지 않았다.
+6. **요청 쪽 거부(409)는 원장에 남지 않는다.** `agent_service.py` 1313~1362행의 거부는 `HTTPException`만 던지고 `record_event`를 부르지 않는다. 원장에 남는 거부는 실행기 쪽(`runtime-rollback-refused`)뿐이다. 완료 조건이 요청 쪽 거부의 기록까지 요구하는지 확인이 필요하다. 시험은 요청 쪽 거부에서 상태가 바뀌지 않는 것만 확인하고 원장 무기록은 고정하지 않았다.
+
+### 보류 시험 (파일에 넣지 않음)
+
+결함 1 때문에 통과하지 못하는 5건: 이전 이미지가 빌드 없이 새 세대로 QUEUED됨(이미지·레시피·커밋·`rollback_contract` 확인, `fetch_source`·`build`·`verify_source_provenance` 미호출), 복원 뒤 `mcp_tools` 계약 바이트와 sha256이 직전 승인값과 같고 `approved_contract` 재계산도 같음, 전이 순서(STOPPED → 계약 복원 → QUEUED → 커밋)와 `runtime-stopped`·`runtime-rollback-queued` 사건 내용, 활성 전환 때 저장된 스냅샷을 그대로 다시 기록, 다른 세대의 철회 표식은 막지 않음. 커밋하지 않은 임시 파일로 보관했고, 작업 보고에 경로를 적었다. `import uuid`를 주입하면 통과한다. 결함 1이 고쳐지면 `RollbackQueue` 클래스로 새 파일에 옮기면 된다.
+
+### 한계
+
+- 모든 확인은 인메모리 원장 대역이다. 실제 PostgreSQL의 잠금·트랜잭션 경합, 실제 컨테이너·이미지 재기동, 부분 유일 색인, 실제 MCP 호출 판정은 확인하지 않았다.
+- `run_job` 되돌림 분기는 소스 구조 검사다. 실행 검증은 결함 2 때문에 불가능하다.
+- 요청 쪽 시험은 `app.agent_service`를 가져올 수 있는 환경(fastapi 등)에서만 돈다.
+- 기기·PJ1 시험은 하지 않았다.
+
 ## 7. 백로그 상태와의 차이 (수정하지 않음)
 
 - 백로그 DEV-79, DEV-80 행은 아직 「미착수」다. 두 기능은 main에 병합돼 있다.
