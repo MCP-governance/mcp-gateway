@@ -39,6 +39,11 @@
 - 이 기능 이후 새로 저장된 `runtime-active` 계약 스냅샷만 되돌릴 수 있다. 이미 쌓인 과거 원장에 계약 정보를 채워 넣지 않았다.
 - 업데이트를 위한 추가 의존성이나 실행 스택 기동은 없었다.
 
+## 정정 (2026-10-21, 결함 처리)
+
+- **사건 기반 가드는 현재 동작하지 않고 실제 차단은 서버 상태 검사가 한다.** 위 결과의 「철회·종료·공급망 중지 거부」에서 `runtime-revoked`·`runtime-terminated`·`runtime-supply-chain-stop` 사건을 읽는 가드는 읽는 코드만 있고 쓰는 코드가 없어 실제로는 아무것도 막지 못한다. 차단은 서버 상태(`DISABLED`·`BLOCKED_SUPPLY_CHAIN`), 수명주기(`TERMINATING`·`TERMINATED`·`RETIRED`), 열린 중지, 종료된 이용 관계 검사가 맡는다. 이 사건을 기록하는 코드는 판정 경로를 바꾸므로 추가하지 않았고 별도 작업이다.
+- 되돌림 큐잉이 `uuid` 누락으로 실행기를 종료시키던 것, 되돌림 분기가 소스 지문을 읽지 못해 종료되던 것, 거부로 멈춘 되돌림 세대가 다시 큐잉되던 것, `runtime-rollback-queued`의 세대 행 ID, 요청 쪽 거부의 원장 기록은 수정했다. 근거는 [처리 판단](../../analysis/runtime-rollback/defects-1021.md), 시험은 `full_stack_lab/tests/runtime_rollback_queue_check.py`다. 위 검증 표의 시험 범위(합성 DB)는 그대로이며 기기 재배포와 되돌리기 1회 실행은 미확인이다.
+
 ## 다음 작업
 
 1. Python 3.12 실행기 의존성이 있는 환경에서 기존 실행기·프로토콜 회귀를 실행한다.
