@@ -57,7 +57,7 @@ class ReviewFixes(unittest.TestCase):
 
     def test_result_hash_is_for_value_after_storage_cap(self):
         source = function_source(APP / "local_jobs.py", "complete")
-        self.assertLess(source.index("stored['bytes']+len(canonical(result))>64*1024*1024"),
+        self.assertLess(source.index("stored['bytes']+len(canonical(result))>RESULT_STORE_BYTES"),
                         source.index("digest = hashlib.sha256"))
         self.assertLess(source.index("digest = hashlib.sha256"), source.index("UPDATE local_jobs SET state="))
         self.assertIn("result_sha256=%s", source)

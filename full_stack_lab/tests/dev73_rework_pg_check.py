@@ -258,6 +258,75 @@ async def main():
         ok('F9 작업 증거의 결과 해시가 작업 행과 같다',
            {str(e['job_id']):e['evidence'].get('result_sha256') for e in events}=={str(r['id']):r['result_sha256'] for r in (good,huge,failed)})
 
+        # F7: the stored-state ceilings are settings; the lab sets small values and checks the real boundary.
+        async def admitted():
+            """True if exchange created a job row, False with its policy id if it was refused first."""
+            before=(await db.fetch_one('SELECT count(*) AS n FROM local_jobs'))['n']
+            try:await local_jobs.exchange(DEVICE,local,'tools/list',{},.3)
+            except local_jobs.NotStarted as exc:
+                grew=(await db.fetch_one('SELECT count(*) AS n FROM local_jobs'))['n']>before
+                return grew,exc.local_policy,str(exc)
+            return True,None,''
+        await operate(intake,local)
+        await db.execute('DELETE FROM local_jobs')
+        with patch.object(local_jobs,'ACTIVE_TOTAL_LIMIT',3):
+            for _ in range(2):await queued(local)
+            below=await admitted()
+            await db.execute("UPDATE local_jobs SET state='expired',finished_at=now() WHERE state='queued'")
+            for _ in range(3):await queued(local)
+            at_limit=await admitted()
+        ok('F7 전체 대기·수령 작업 상한(설정값)의 경계: 미만은 입장, 상한이면 새 행 없이 P-RATE-003',
+           below[0] and not at_limit[0] and at_limit[1]=='P-RATE-003' and '전체 대기열' in at_limit[2],limit=3)
+        await db.execute('DELETE FROM local_jobs')
+        with patch.object(local_jobs,'ROW_LIMIT',5):
+            for _ in range(4):
+                await queued(local)
+            await db.execute("UPDATE local_jobs SET state='expired',finished_at=now()")
+            below=await admitted()
+            await db.execute("UPDATE local_jobs SET state='expired',finished_at=now() WHERE state='queued'")
+            await queued(local)
+            await db.execute("UPDATE local_jobs SET state='expired',finished_at=now()")
+            at_limit=await admitted()
+        ok('F7 보관 행 수 상한(설정값)의 경계: 미만은 입장, 상한이면 새 행 없이 P-RATE-003',
+           below[0] and not at_limit[0] and at_limit[1]=='P-RATE-003' and '저장 상한' in at_limit[2],limit=5)
+        await db.execute('DELETE FROM local_jobs')
+
+        async def store(result):
+            await operate(intake,local)
+            await queued(local)
+            taken=await local_jobs.claim(device,0)
+            await local_jobs.validate_job(device,taken['id'],start=True)
+            await local_jobs.complete(device,taken['id'],result,None,stopped=True)
+            return await db.fetch_one('SELECT * FROM local_jobs WHERE id=%s',(taken['id'],))
+        with patch.object(local_jobs,'RESULT_STORE_BYTES',400):
+            first=await store({'text':'a'*100})
+            second=await store({'text':'b'*100})
+            third=await store({'text':'c'*400})
+        ok('F7 결과 저장 총량 상한(설정값)의 경계: 안에 들면 저장, 넘기면 오류로 바꿔 저장하고 그 값의 해시를 남긴다',
+           first['result'] is not None and second['result'] is not None and third['result'] is None
+           and '저장 상한' in (third['error'] or '') and third['result_sha256']==recomputed(third) and third['state']=='done',limit=400)
+        await db.execute('DELETE FROM local_jobs')
+
+        # F2: a candidate chosen without a lock is read again under the locks; if it changed meanwhile nothing is claimed.
+        async def changed_while_claiming(change):
+            await operate(intake,local)
+            identity=await queued(local)
+            entered=asyncio.Event()
+            with claim_holding_row(entered):
+                holder=asyncio.ensure_future(attempt(local_jobs.claim(device,0)))
+                await asyncio.wait_for(entered.wait(),10)
+                await change(identity)
+                outcome=await watch([holder])
+            row=await db.fetch_one('SELECT state,claimed_at FROM local_jobs WHERE id=%s',(identity,))
+            return outcome,row
+        cancelled=await changed_while_claiming(lambda i:db.execute("UPDATE local_jobs SET state='expired',finished_at=now() WHERE id=%s",(i,)))
+        stopping=await changed_while_claiming(lambda i:db.execute("UPDATE local_jobs SET stop_requested=true WHERE id=%s",(i,)))
+        withdrawn=await changed_while_claiming(lambda i:db.execute("UPDATE mcp_servers SET lifecycle='TERMINATING' WHERE id=%s",(SERVER,)))
+        ok('F2 claim이 후보를 고른 뒤 취소·정지 요청·종료 전환이 들어오면 수령하지 않는다',
+           all(o[0]!='hang' and o[0][0]=='ok' and o[0][1] is None and r['claimed_at'] is None
+               for o,r in (cancelled,stopping,withdrawn)),
+           states=[r['state'] for _,r in (cancelled,stopping,withdrawn)])
+
         # F2: the window with claim holding the job row, forced instead of waited for.
         await operate(intake,local)
         jti=str(uuid.uuid4())
