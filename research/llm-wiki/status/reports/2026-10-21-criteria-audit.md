@@ -176,6 +176,28 @@
 - 요청 쪽 시험은 `app.agent_service`를 가져올 수 있는 환경(fastapi 등)에서만 돈다.
 - 기기·PJ1 시험은 하지 않았다.
 
+### 수정 결과 (2026-10-21, 브랜치 `10/21-dev78-fix`, 코드 커밋 `b79f92f`)
+
+메인의 [처리 판단](../../analysis/runtime-rollback/defects-1021.md)대로 결함 1~3·5·6을 고쳤고 4는 문서로 정정했다. 새 시험은 `full_stack_lab/tests/runtime_rollback_queue_check.py`다.
+
+| 결함 | 수정 전 | 수정 후 |
+| --- | --- | --- |
+| 1 `uuid` 누락 | 되돌림 큐잉 INSERT 직전 `NameError`로 실행기 종료, 재시작해도 같은 곳에서 종료 | `import uuid` 추가. 보류했던 5건이 주입 없이 통과 |
+| 2 소스 지문 `KeyError` | `source = {}` 뒤 `source["source_archive_sha256"]`에서 종료 | 두 분기 모두 `evidence`에서 읽는다. 지문이 없거나 비면 `Refused`로 세대를 FAILED 처리(조용히 비우지 않음). `runtime-built` 사건은 있는 키만 담고 빠진 키를 `scope.missing`에 남긴다 |
+| 3 무한 되돌림 | 되돌림 세대가 어떤 이유로든 멈추면 같은 대상으로 QUEUED. 출처 검증 실패(`MCP-SUPPLY-001`)도 반복 | 거부·차단(승인 문제·출처 검증·재검사 결과·이미지 불일치)으로 멈추는 세대에 `evidence.stop_refused`를 남기고, 표식이 있으면 큐잉하지 않고 STOPPED로 둔 채 `runtime-rollback-refused` 사건(사유 포함)을 기록한다. 컨테이너가 사라진 중단과 관리자 요청으로 멈춘 세대는 기존대로 큐잉한다 |
+| 4 사건 기반 가드 | 가드가 동작한다고 읽힘 | 코드 변경 없음. D-180과 [DEV-78 보고서](2026-10-21-runtime-rollback.md)에 「동작하지 않고 실제 차단은 서버 상태 검사」를 정정으로 적음 |
+| 5 사건의 세대 ID | `runtime-rollback-queued`의 `scope.runtime`이 멈춘 세대 행 ID | 새 세대 행 ID |
+| 6 요청 쪽 거부 | 409가 원장에 남지 않음 | 409마다 `runtime-rollback-request-refused`(outcome `refused`, 요청자, 사유, 대상 판본, 사유 메모)를 새 트랜잭션에 append. 실행기 쪽 `runtime-rollback-refused`와 종류가 다르고 원장을 고치는 코드는 없다. 콘솔 사건 이름표 추가 |
+
+| 확인 | 결과 |
+| --- | --- |
+| 새 `runtime_rollback_queue_check.py` | 19건 통과(보류 5건 포함: 큐잉, 계약 바이트·sha256, 전이 순서·사건, 활성 전환 스냅샷, 다른 세대 표식). 요청 쪽 4건은 fastapi·psycopg가 없으면 건너뛴다 |
+| 기존 4개 파일 | `runtime_rollback_check` 7건, `runtime_rollback_reconcile_check` 25건, `runtime_worker_check` 7건, `provenance_verify_check` 6건 그대로 통과(파일 무변경) |
+| 민감도 | 수정 6건에 대한 변이 13개(수정 일부를 일시적으로 되돌림)에서 모두 새 시험이 실패했고 원복 뒤 시험 전부 재통과 |
+| 정적 검사 | `py_compile`·`pyflakes`(worker, agent_service, 새 시험) 통과, `node --check` 통과, `open_endpoints.py` 통과 |
+
+한계: 모든 확인은 인메모리 원장·함수 대역이다. `stop_refused` 표식은 이 수정 이후 멈춘 세대에만 붙으므로 배포 전에 이미 STOPPING인 되돌림 세대는 기존처럼 큐잉된다. 기기 재배포와 되돌리기 1회 실행은 메인이 한다.
+
 ## 7. 백로그 상태와의 차이 (수정하지 않음)
 
 - 백로그 DEV-79, DEV-80 행은 아직 「미착수」다. 두 기능은 main에 병합돼 있다.

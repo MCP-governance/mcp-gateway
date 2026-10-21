@@ -1313,6 +1313,20 @@ async def rollback_runtime(request_id: UUID, request: RuntimeRollback,
     note = " ".join(request.note.split())
     if "\n" in request.note or "\r" in request.note:
         raise HTTPException(422, "사유는 한 줄로 입력하세요.")
+    try:
+        return await _request_rollback(request_id, request, user, note)
+    except HTTPException as refusal:
+        if refusal.status_code == 409:
+            # The refusal rolled its own transaction back; the ledger entry is written in a new one, append-only.
+            async with db.transaction() as connection:
+                await review.record_event(
+                    "runtime-rollback-request-refused", "refused", "intake", request_id, user["principal"],
+                    reason=str(refusal.detail), scope={"to_generation": request.generation, "note": note},
+                    connection=connection)
+        raise
+
+
+async def _request_rollback(request_id: UUID, request: RuntimeRollback, user: dict, note: str) -> dict:
     async with db.transaction() as connection:
         intake = await (await connection.execute(
             "SELECT registered_server_id FROM mcp_intake_requests WHERE id=%s FOR UPDATE", (request_id,))).fetchone()

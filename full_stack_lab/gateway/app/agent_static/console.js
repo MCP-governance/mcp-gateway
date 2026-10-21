@@ -209,7 +209,7 @@ const REVIEW_KIND = {
   "tool-sunset": "자동 비활성", "tool-sunset-extension": "이용 기간 연장", "tool-sunset-review": "도구 재심사",
   "tool-sunset-check": "이용 상태 확인", "tool-approval-extension": "승인 기간 연장",
   "runtime-start": "실행 요청", "runtime-stop": "실행 중지 요청", "runtime-built": "이미지 빌드", "runtime-active": "실행 시작",
-  "runtime-rollback": "실행 판본 되돌리기", "runtime-rollback-queued": "실행 판본 전환", "runtime-rollback-refused": "실행 판본 전환 거부",
+  "runtime-rollback": "실행 판본 되돌리기", "runtime-rollback-queued": "실행 판본 전환", "runtime-rollback-refused": "실행 판본 전환 거부", "runtime-rollback-request-refused": "실행 판본 되돌리기 요청 거부",
   "runtime-failed": "실행 실패", "runtime-stopped": "실행 중지",
 };
 const RUNTIME_STATUS = {
