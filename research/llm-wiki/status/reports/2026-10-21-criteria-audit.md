@@ -1,3 +1,5 @@
+미커밋
+
 # 10-21 병합 기능의 완료 조건 대비 증거 감사
 
 - 성격: 읽기 전용 감사. 제품 코드, 기존 보고서, 백로그, DECISIONS를 고치지 않았다.
@@ -434,3 +436,37 @@ raw 키와 event_id 키는 journal에서 거의 같은 사건을 가리킨다. j
 - `ff629e5`는 D-177 회귀 2건(`fresh_requester_check.py`, `user_server_suspend_check.py`)을 고쳤다. 같은 종류(이름공간 누락)의 D-176 회귀(`dest_pin_credential_redaction_check.py`)는 남아 있다.
 - D-189 결론 3(치명적 발견 수용 분리)과 `core.register_server`의 2명·사유 강제는 실행 시험이 없다. 이 둘을 시험으로 고정하려면 메인이 시험 추가 여부를 정해야 한다.
 - 8.2 1번과 2번은 시험 실행 실패와 집계 실패 롤백이 겹친 것이다. 롤백 결과는 코드 독해이며 재현하지 않았다.
+
+## 8-B. D-177 분기·intake_identity 원인
+
+- 상태: **미커밋**. 제품 코드, `tool_sunset_check.py`, 백로그, `current.md`는 수정하지 않았다. 새 시험은 `full_stack_lab/tests/tool_sunset_paths_check.py`에 추가했다.
+
+### D-177 분기 시험
+
+- 새 시험 실행: `python full_stack_lab/tests/tool_sunset_paths_check.py -v` → **3 통과, 통합 2 미실행(건너뜀)**. 현재 PC에는 Python 3.10만 있고, 제품 앱의 `datetime.UTC` import에서 중단되어 `mcp_facade`·`core.execute_call` 경로는 로드하지 못했다. Python 3.12에서 다시 실행해야 한다.
+- `test_held_sunset_is_still_inactive_before_a_review_event`: held 사건을 직접 주입하고 `check()`를 다시 호출하여 `tool_sunset.py:99-102` 재진입에서 계속 비활성인지 확인했다.
+- `test_seal_overlap_returns_no_evidence`, `test_seal_count_mismatch_returns_no_evidence`: 봉인 시각이 관측창과 겹치는 경우와 `entries != retained`인 경우를 각각 `check()`로 실행했다. 둘 다 활성 상태를 유지하고 「자료 없음」 및 실패 점검 사건을 기록했다.
+- 통합 시험 두 개는 `mcp_facade._approved_tools`가 비활성 도구만 숨기고 활성 도구는 목록에 남기는지, `core.execute_call`이 비활성 도구를 `P-APPROVAL-EXPIRY-001`로 차단하는지 실제 함수로 호출하도록 작성했다. 이번 PC에서는 위 import 제약으로 실행 증거가 없다.
+
+#### 제품 결함 후보: 상태 조회 실패가 tools/list 전체 실패로 전파됨
+
+- 근거: `tool_sunset.py:24-27`에서 `available=False`면 `listable()`이 `RuntimeError`를 낸다. `mcp_facade.py:143-146`의 `_approved_tools()` 목록 반복문에는 그 예외를 도구별로 처리하는 구간이 없다. 그 예외는 `mcp_facade.py:225-231`의 `list_tools()` 바깥 처리까지 올라가 목록 요청 전체가 실패한다.
+- 재현 조건: 목록에 정상 도구와 상태 조회 실패 도구가 함께 있고 후자의 `check()`가 `available=False`를 반환하면, 그 도구의 `listable()` 호출에서 `_approved_tools()`가 종료되고 정상 도구까지 포함한 `tools/list` 요청이 실패한다. 해당 재현 시험은 사용자 지시대로 새 시험 파일에 넣지 않았다.
+- 메인 판단 사항: 전체 목록 실패는 불확실한 도구를 노출하지 않는 보수적 실패 처리라는 근거가 있다. 반면 실패가 난 도구만 숨기면 해당 도구는 계속 fail-closed로 유지하면서 다른 정상 도구의 가용성을 보전한다. 현재 코드는 두 번째 범위 격리가 없어 가용성 결함 후보이며, 처리 방향은 메인이 결정해야 한다.
+
+### `intake_identity_test.py`의 `KeyError: high_count`
+
+- 도입 시점: `git log --oneline -S'high_count' -- full_stack_lab/gateway/app/review.py full_stack_lab/tests/intake_identity_test.py`에서 게이트 출력 필드 추가는 `ff3d0f0`이다. `git show ff3d0f0 -- full_stack_lab/gateway/app/review.py`는 `intake_gate()`가 `critical_count`에 더해 `high_count`를 읽기 시작한 변경을 보인다. 그 이전 `review.py`에는 해당 직접 조회가 없다. 변경은 2026-10-21 `feat(v2): 도입 한 화면 승인을 main 기준으로 분리`에 들어갔다.
+- 시험 픽스처는 `66ab8dd`에서 처음 추가된 `reports()` 헬퍼 그대로다. 각 합성 보고서에 `critical_count`는 넣지만 `high_count`는 넣지 않으며, `ff3d0f0`에서 같이 갱신되지 않았다. 따라서 `intake_gate()`가 각 스캐너 보고서를 출력할 때 픽스처 딕셔너리의 `report["high_count"]`에서 `KeyError`가 난다. 감사에서 집계한 7 ERROR는 제품 필드 누락보다 **픽스처가 새 출력 계약에 맞춰지지 않은 것**으로 판단한다.
+- 제품 필드 누락은 아니다: `full_stack_lab/db/init.sql:123`은 `high_count integer NOT NULL DEFAULT 0`을 정의하고, `review.py:132-134`의 DB 조회도 `high_count`를 선택한다. 보고서 API `agent_service.py:1407-1411`도 같은 필드를 조회해 반환한다. 따라서 DB 실자료에는 필드가 있고, 게이트·보고서 API 모두 소비에 필요한 값을 받는다. 현재 증거에서 다른 화면/API의 제품 영향은 확인되지 않는다.
+- 수정안(미적용): `intake_identity_test.py`의 각 합성 보고서에 `high_count`를 추가한다(해당 픽스처는 HIGH 발견이 없는 경우 0). 제품 게이트 필드를 제거하거나 DB/API를 수정할 근거는 없다.
+- 이번 PC에서 `python full_stack_lab/tests/intake_identity_test.py`는 `datetime.UTC` import에서 실패해 요청에 적힌 7개 `KeyError`를 재현하지 못했다. 해당 7 ERROR 수치는 제공된 2회차 감사 실행 결과를 근거로 삼았다. 새 D-177 시험도 앱 통합 2건은 같은 Python 3.10 제약으로 미실행이다.
+
+### 후속 수정·검증 (10-21)
+
+- `mcp_facade._approved_tools()`는 도구 하나의 상태를 확인할 수 없을 때 오류 로그(`도구 이용 상태 조회 실패로 목록에서 제외`)를 남기고 해당 도구만 건너뛴다. `tool_sunset.call_verdict()`와 `core.execute_call()`은 바꾸지 않아 같은 상태의 직접 호출은 기존 `P-CONTROL-FAIL-CLOSED`로 막는다. D-177에 이 목록 격리 규칙을 한 줄 보강했다.
+- `tool_sunset_paths_check.py`의 기존 목록 기대값은 `mcp_facade.py`의 `SEPARATOR = "__"` 규칙대로 `srv__ok`로 수정했다. 메인이 준 Python 3.12 결과의 `['srv__ok'] != ['ok']` 실패는 이 기대값 불일치다. 새 `ToolSunsetListIsolationCheck`는 실제 `_approved_tools` 함수 본문을 AST로 추출해 A의 이용 상태 확인 실패 로그와 A만 제외되는 목록, B의 잔존 및 두 도구의 기존 호출 판정을 확인한다. `_approved_tools` 함수 이름은 `full_stack_lab/tests/tool_sunset_paths_check.py`의 AST 추출 이름 집합에 포함된 것을 검색으로 확인했다. 별도 통합 사례에는 A 호출 차단과 활성 B 호출의 업스트림 도달 확인을 작성했다.
+- `intake_identity_test.py:39`의 `reports()` 픽스처에 `high_count: 0`을 추가했다. 합성 발견 목록은 CRITICAL만 만들고 HIGH 발견은 없어 제품 출력 의미에 맞게 0으로 채웠다. 시험 단언과 기대값은 수정하지 않았다.
+- 이 PC의 Python 3.10.5에서 `python full_stack_lab/tests/tool_sunset_paths_check.py -v`는 8건 중 **4 통과·4 건너뜀**이다. AST 추출 목록 격리 시험과 기존 순수 분기 3건은 통과했다. 앱 통합 4건은 제품의 `datetime.UTC` import 오류로 실행하지 못했다. 지원 의존성이 있는 Python 3.12에서 최종 전체 실행은 메인 재검증 대기다. `intake_identity_test.py`도 같은 `ImportError: cannot import name 'UTC' from 'datetime'`로 실행 못 함. Python 3.12 실행파일 후보 경로는 깨진 venv launcher를 가리켰고, 이 PC에서 확인된 인터프리터는 Python 3.10뿐이다.
+- 민감도 확인: 목록 격리 예외 처리를 잠시 되돌리고 AST 추출 시험 하나만 실행하자 `RuntimeError`로 **실패**했다. 예외 처리를 복구한 뒤 전체 새 시험을 다시 실행해 위 결과를 확인했다.
+- `python -m py_compile`(수정한 파사드·두 시험 파일) 및 `git diff --check` 통과. 도구 정의나 상태 저장소 전체 장애에 대한 별도 DB 실험, 솔루션 기기 배포·PJ1 시험은 실행하지 않았다.
