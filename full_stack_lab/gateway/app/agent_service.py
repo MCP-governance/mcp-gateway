@@ -2159,7 +2159,10 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
                 internal_url, checked = await publish_internal_repo(current)
             except ProvenanceMismatch as exc:
                 raise HTTPException(409, "배포 파일 대조에 실패했습니다. 다시 검사하세요.") from exc
-            record["verification"] = {**checked, "by": user["principal"], "at": datetime.now(UTC).isoformat()}
+            # The preview's evidence stays on the record; this click's re-verification outranks the preview's result.
+            record["verification"] = {**(record.get("verification") or {}), "provenance_status": proof["status"],
+                                      "provenance_reason": proof["reason"], "provenance_keyid": proof.get("keyid"),
+                                      **checked, "by": user["principal"], "at": datetime.now(UTC).isoformat()}
         changed = await review.transition(
             """UPDATE mcp_intake_requests SET status='APPROVED', evidence=%s, provenance=%s, risk_input=%s,
                       internal_repo_url=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now()

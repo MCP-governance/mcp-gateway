@@ -1891,6 +1891,7 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 분담: DEV-73은 내부 미러 allowlist·digest 고정·사전 반입을 수행하고, OCI 이미지 서명·증명 검증은 DEV-77 책임이다. DEV-73 코드 파일은 이 변경에서 수정하지 않았다. D-137 공급자 보증 값은 운영자 제출 보증으로 그대로 유지하며 암호학 증명과 합치지 않는다.
 - 한계: 기존 구현은 사전 저장된 Ed25519 DSSE envelope만 검증했다. 이번 OCI referrer 조회는 현재 intake의 source artifact digest를 OCI subject로 사용하며, 실제 OCI image manifest digest 연계, Cosign bundle/keyless/Rekor, RSA/ECDSA 및 공급자 서명 자동 수집은 미구현이다. 실제 배포·기기·PJ1 시험은 하지 않았다. TC260 6.2.2는 방향 원문 인용을 근거로 삼았고 이 작업에서는 표준 원문 사본을 재검증하지 않았다.
 - 보강 (2026-10-21, DEV-77 잔여): 허용 목록 OCI referrer는 승인 미리보기에서 제안값으로 수집하고 실패는 `확인 안 됨`으로 둔다. 되돌리기는 저장 증명을 현재 키로 다시 검증하며 실패하면 재큐잉하지 않는다.
+- 보강 (2026-10-21): 한 화면 승인의 저장소 분기는 승인 기록의 `verification`을 `{기존, 클릭 시점 재검증 결과, 사본 대조 결과}` 순서로 합친다. 미리보기가 계산한 `provenance_status`·`provenance_keyid`·`provenance_reason`과 증명 본문이 승인 기록과 등록 서버에 남고, 재검증 결과가 미리보기 값보다 우선한다(시험 `tests/oneclick_verification_record_check.py`).
 - 근거: [DEV-77 분석과 규격·도구 범위](../../research/llm-wiki/analysis/provenance-verify/README.md), [DEV-73 F3 분담](../../research/llm-wiki/analysis/review-1020/d175-arbitration.md), [작업 보고](../../research/llm-wiki/status/reports/2026-10-21-provenance-verify.md).
 - 일괄 (2026-10-21): 한 직원의 운영 중 서버 전체를 `POST /api/user-suspensions/stop-all`·`resume-all`로 한 번에 중지·재개한다. 조합마다 기존 단일 조작을 따로 호출해 조합별 행·기록이 남고(같은 일괄 조작은 원장 `scope.batch`로 잇는다), 성공·건너뜀·실패를 나눠 돌려준다. 새 판정·정책 ID 없음.
 
