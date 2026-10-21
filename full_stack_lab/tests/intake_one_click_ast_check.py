@@ -83,13 +83,18 @@ review = load("app.intake_review_ast", "review.py", ["SCANNERS", "DESTINATION", 
     {"db": db, "ADDRESS_ARG": classify.ADDRESS_ARG, "record_event": unpatched, "same_person": unpatched,
      "intake_reports": unpatched, "active_acceptance": unpatched, "accept_risk": unpatched})
 review.transition = unpatched
+_ap_spec = importlib.util.spec_from_file_location("intake_ast_artifact_provenance", LAB / "gateway/app/artifact_provenance.py")
+_artifact_provenance = importlib.util.module_from_spec(_ap_spec)
+_ap_spec.loader.exec_module(_artifact_provenance)
 service = load("app.intake_service_ast", "agent_service.py", ["ApprovalPreview", "OneClickApproval", "IntakeRegistration",
     "ProvenanceMismatch", "approval_row", "preview_intake_approval", "approve_and_register", "register_mcp_request",
-    "EXIT_TERM_KEYS", "exit_term_flags"],
+    "EXIT_TERM_KEYS", "exit_term_flags", "collect_proposal_provenance"],
     {"db": db, "review": review, "StrictModel": contract.StrictModel, "ResidencyFields": contract.ResidencyFields,
      "ToolReview": contract.ToolReview, "Depends": lambda value: None, "Header": lambda **kwargs: None,
      "admin_caller": None, "INTAKE_APPROVAL_LOCK": asyncio.Lock(), "current_identity": unpatched, "gateway_proxy": unpatched,
-     "publish_internal_repo": unpatched, "core": types.SimpleNamespace(canonical_hash=canonical_hash)})
+     "publish_internal_repo": unpatched, "core": types.SimpleNamespace(canonical_hash=canonical_hash),
+     # D-179: approve_and_register now routes provenance through this real module, so load it rather than stub it.
+     "artifact_provenance": _artifact_provenance, "os": __import__("os"), "asyncio": asyncio})
 scope_core = load("app.intake_core_ast", "core.py", ["register_server"], {"db": db, "review": review, "uuid": uuid,
     "registry": types.SimpleNamespace(catalog=lambda: {}), "registration_endpoint": lambda endpoint: endpoint,
     "canonical_hash": canonical_hash})
