@@ -129,15 +129,25 @@ class SheetSyncTests(unittest.TestCase):
         self.assertTrue(meta["error"])
 
     def test_invalid_csv_does_not_replace_cache(self):
-        first, _ = self.source.get("wbs")
-        for invalid in ("2", "NaN", "-0.5", "잘못된 값"):
-            with self.subTest(invalid=invalid):
-                self.rows[0]["구현"] = invalid
-                self.write_csv()
-                self.source.cache[("wbs", self.csv.as_uri())]["checked"] = 0
-                rows, meta = self.source.get("wbs")
-                self.assertEqual(rows, first)
-                self.assertTrue(meta["error"])
+        # A monotonic clock may start below 300 on a fresh CI runner. Setting a
+        # cached timestamp to zero does not necessarily expire its 300-second TTL.
+        with patch.object(sheet_pull.time, "monotonic", return_value=0) as clock, \
+                patch.object(sheet_pull, "fetch_csv", wraps=sheet_pull.fetch_csv) as fetch:
+            first, initial = self.source.get("wbs")
+            self.assertEqual(fetch.call_count, 1)
+            for index, invalid in enumerate(("2", "NaN", "-0.5", "잘못된 값")):
+                with self.subTest(invalid=invalid):
+                    self.rows[0]["구현"] = invalid
+                    self.write_csv()
+                    clock.return_value = (index + 1) * 300 - 1
+                    self.assertEqual(self.source.get("wbs")[0], first)
+                    self.assertEqual(fetch.call_count, index + 1)
+                    clock.return_value += 1
+                    rows, meta = self.source.get("wbs")
+                    self.assertEqual(fetch.call_count, index + 2)
+                    self.assertEqual(rows, first)
+                    self.assertEqual(meta["fetched_at"], initial["fetched_at"])
+                    self.assertTrue(meta["error"])
         self.csv.write_text("<html>not CSV</html>", encoding="utf-8")
         source = sheet_pull.SheetSource(self.config)
         self.assertIsNone(source.get("wbs")[0])
