@@ -36,6 +36,7 @@ def reports(*, age_days: float | None = 1, critical: int = 0, drop: str | None =
         if name == drop:
             continue
         result.append({"scanner": name, "scanner_version": "1.0" if versions else None, "critical_count": critical if name == "Trivy" else 0,
+                       "high_count": 0,
                        "summary": {"findings": findings if name == "Trivy" else []}, "imported_at": NOW,
                        "vuln_db_updated_at": None if age_days is None or name != "Trivy" else NOW - timedelta(days=age_days)})
     return result

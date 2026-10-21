@@ -17,6 +17,7 @@ the SDK answers "method not found" (MCP-METHOD-001 in the audit narrative).
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 from typing import Any
@@ -33,6 +34,7 @@ from .agent_contract import authenticated_user
 from .core import execute_call, response_disposition
 
 SEPARATOR = "__"
+logger = logging.getLogger(__name__)
 STDIO_PRINCIPAL = os.getenv("GATEWAY_STDIO_PRINCIPAL", "")
 DECISION_LABEL = {"Allow": "허용", "Alert": "허용·경보", "Restrict": "제한 실행", "Approval": "승인 대기", "Block": "차단"}
 
@@ -142,7 +144,13 @@ async def _approved_tools(role: str, server: str | None = None, principal: str =
         if row["name"] not in registry.reviewed_tools(row["server_id"]):
             continue  # a tool nobody scoped is neither listed here nor callable (D-91)
         sunset = await tool_sunset.check(row["server_id"], row["name"])
-        if not tool_sunset.listable(sunset):
+        try:
+            listable = tool_sunset.listable(sunset)
+        except RuntimeError as exc:
+            logger.error("도구 이용 상태 조회 실패로 목록에서 제외: %s/%s (%s)",
+                         row["server_id"], row["name"], exc)
+            continue
+        if not listable:
             continue
         if not person or not pac.visible(person, row["server_id"], row["name"], row["action"]):
             continue
