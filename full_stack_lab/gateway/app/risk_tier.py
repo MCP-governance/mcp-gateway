@@ -43,12 +43,12 @@ FLOORS = (
     ("자율 실행 권한", lambda i: i["permission"] == "x" and i["autonomy"] == "autonomous", "high"),
 )
 
-# Approval method per tier. "alternative": the second person may be replaced by a written reason.
+# Critical finding acceptance is separate; a reason never substitutes for an approver.
 APPROVAL = {
     "low": {"approvers": 1, "reason": "none"},
     "medium": {"approvers": 1, "reason": "none"},
-    "high": {"approvers": 2, "reason": "alternative"},
-    "very_high": {"approvers": 2, "reason": "required"},
+    "high": {"approvers": 2, "reason": "none"},
+    "very_high": {"approvers": 2, "reason": "none"},
 }
 MIN_REASON = 10  # the length approval already asks of a written risk acceptance
 
@@ -102,14 +102,11 @@ def decide(tier: str, approvers: int, reason: str | None) -> tuple[str, str]:
     """What the next approval click means: finish it ("approve"), record it as the first of two
     ("cosign") or refuse it for a missing written reason ("refuse"). `approvers` counts the person
     clicking plus the different people who already recorded theirs for this same input."""
-    rule, written = APPROVAL[tier], len((reason or "").strip()) >= MIN_REASON
+    rule = APPROVAL[tier]
     label = TIER_LABELS[tier]
-    if rule["reason"] == "required" and not written:
-        return "refuse", f"{label} 등급은 위험 수용 사유({MIN_REASON}자 이상)가 필요합니다."
-    if approvers >= rule["approvers"] or (rule["reason"] == "alternative" and written):
+    if approvers >= rule["approvers"]:
         return "approve", ""
-    need = "승인이나 위험 수용 사유가" if rule["reason"] == "alternative" else "승인이"
-    return "cosign", f"{label} 등급은 서로 다른 관리자 {rule['approvers']}명의 {need} 필요합니다. 현재 {approvers}명."
+    return "cosign", f"{label} 등급은 서로 다른 관리자 {rule['approvers']}명의 승인이 필요합니다. 현재 {approvers}명."
 
 
 def grace_end(started_at: str | datetime) -> datetime:
@@ -156,7 +153,7 @@ def package(stated: Any, intake: dict[str, Any]) -> list[dict[str, str]]:
     elif rule["approvers"] == 1:
         way = "관리자 1명"
     else:
-        way = f"관리자 {rule['approvers']}명" + {"alternative": " 또는 위험 수용 사유", "required": " 및 위험 수용 사유"}[rule["reason"]]
+        way = f"관리자 {rule['approvers']}명"
     return [
         {"item": "처리 대상", "value": intake.get("display_name") or "—", "form": "처리 시스템"},
         {"item": "처리 목적", "value": intake.get("purpose") or "—", "form": "처리의 목적·성격"},
