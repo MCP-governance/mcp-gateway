@@ -95,3 +95,16 @@ Codex 0.160.0 browser-login fallback은 HTTP loopback listener를 두고 `state`
 - D-119, D-124, D-147, D-148, D-170: [DECISIONS.md](../../../../docs/ai/DECISIONS.md)
 - 공식 MCP 지침: [Local Server Security](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/docs/2026-07-28/tutorials/security/local-server-security.mdx), [Streamable HTTP Origin 검증](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)
 - 관련 작업 보고: [2026-10-21 로컬 수신 지점](../../status/reports/2026-10-21-local-endpoints.md)
+
+## 메인 판단 (2026-10-21)
+
+**F1은 맞다. DEV-81은 완료가 아니다.** 다만 고칠 수 있는 범위와 없는 범위를 정확히 나눈다.
+
+- **같은 OS 보안 주체 안에서는 사용자 공간 장치만으로 토큰 탈취를 완전히 막을 수 없다.** 같은 UID/SID 프로세스는 하네스 프로세스 메모리를 읽거나(ptrace·디버그 권한) 하네스가 받은 응답을 가로챌 수 있다. 따라서 "PID·실행 파일 경로 확인을 붙이면 해결"이라고 적지 않는다(검토의 지적과 같다).
+- **지금 실제 노출 범위**: 탈취한 bearer는 5분 수명(D-159)이고 게이트웨이의 신원·도구·정책 판정은 그대로 적용된다. 새로 생기는 능력은 **하네스 쪽 통제(D-147 명령 표면 잠금·관리형 설정·훅)를 건너뛰고 게이트웨이를 직접 부르는 것**이다. 가장 현실적인 경로는 프롬프트 주입된 에이전트가 자기 셸 도구로 `header-helper`를 실행하는 것이다.
+- **처리**
+  1. **관리형 Linux(우리가 OS 통제를 가진 경로)**: AppArmor로 소켓 연결과 `header-helper` 실행을 **하네스 실행 파일 프로필에만** 허용하고, 하네스가 띄우는 자식 프로세스(셸 도구·MCP 서버)는 그 권한이 없는 프로필로 전이시킨다. ptrace는 Yama/AppArmor로 막는다. 이것이 "OS 강제 client identity"이며 구현 대상이다(sol 설계 작업으로 낸다).
+  2. **관리형 Windows**: 같은 수준의 OS 강제 수단을 실측해 되면 적용하고, 안 되면 통제 범위에 「같은 계정의 다른 프로세스가 토큰을 받을 수 있음」을 표시한다.
+  3. **직원 PC 키트(관리되지 않는 개인 계정)**: 같은 사용자 권한의 악성 프로세스를 키트가 막을 수 없다. 짧은 토큰 수명과 게이트웨이 판정으로 피해를 줄이는 것이 한계이며, `SECURITY_BOUNDARIES.md`에 **막지 못함으로 명시**한다. D-170의 「조직 통제 의존」으로 분류해 숨기지 않는다(다른 계정이 아니라 같은 계정 문제이므로 검토 판단을 따른다).
+- **F2(웹 Origin)**: 세 지점 모두 브라우저가 직접 열 수 없는 전송이라는 정적 판단은 받는다. 그러나 「웹 페이지 접근 0」은 실기기에서 루프백 HTTP 수신 지점 전체를 대상으로 확인해야 완료다. PJ1 시험 항목으로 둔다.
+- 백로그 DEV-81 상태: **열림 — 관리형 Linux AppArmor 프로세스 결속 구현·Windows 실측·키트 한계 명시·PJ1 Origin 시험 남음.**
