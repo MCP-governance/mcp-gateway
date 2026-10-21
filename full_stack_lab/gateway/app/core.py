@@ -1973,9 +1973,17 @@ async def _record_decision(event: dict) -> int:
             (entry,),
         )
         if counts_for_suspend:
-            await user_suspend.auto_suspend(
-                connection, record["user_token"], record["server_id"], AUTO_SUSPEND_POLICIES,
-                AUTO_SUSPEND_THRESHOLD, AUTO_SUSPEND_WINDOW_SECONDS, AUTO_SUSPEND_DURATION_SECONDS)
+            # D-176: the suspension check is a consequence of this Block, not a condition of recording it.
+            # A failure rolls back only this savepoint; the Block row stays in the append-only ledger, and
+            # the check runs again on the next qualifying call, which counts this row too.
+            try:
+                async with connection.transaction():
+                    await user_suspend.auto_suspend(
+                        connection, record["user_token"], record["server_id"], AUTO_SUSPEND_POLICIES,
+                        AUTO_SUSPEND_THRESHOLD, AUTO_SUSPEND_WINDOW_SECONDS, AUTO_SUSPEND_DURATION_SECONDS)
+            except Exception:
+                logging.getLogger(__name__).exception(
+                    "automatic suspension check failed; decision %s stays Block", row["id"])
     return int(row["id"])
 
 

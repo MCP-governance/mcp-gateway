@@ -433,4 +433,36 @@ raw 키와 event_id 키는 journal에서 거의 같은 사건을 가리킨다. j
 - 1회차 3절 충돌은 해소됐다. `root_solo_check.py:56-58`이 `cosign`으로 바뀌어 통과한다.
 - `ff629e5`는 D-177 회귀 2건(`fresh_requester_check.py`, `user_server_suspend_check.py`)을 고쳤다. 같은 종류(이름공간 누락)의 D-176 회귀(`dest_pin_credential_redaction_check.py`)는 남아 있다.
 - D-189 결론 3(치명적 발견 수용 분리)과 `core.register_server`의 2명·사유 강제는 실행 시험이 없다. 이 둘을 시험으로 고정하려면 메인이 시험 추가 여부를 정해야 한다.
-- 8.2 1번과 2번은 시험 실행 실패와 집계 실패 롤백이 겹친 것이다. 롤백 결과는 코드 독해이며 재현하지 않았다.
+- 8.2 1번과 2번은 시험 실행 실패와 집계 실패 롤백이 겹친 것이다. 롤백 결과는 코드 독해이며 재현하지 않았다. → 8-A에서 재현·수정했다.
+
+## 8-A. D-176 기록 경로
+
+브랜치 `10/21-d176-record-path`, 기준 `origin/main` 81263e4.
+
+### 재현 (수정 전)
+
+- 시험: `full_stack_lab/tests/auto_suspend_record_path_check.py`(PostgreSQL 없는 대역, `_record_decision`·`automatic_suspend.suspend`를 AST로 추출, 트랜잭션은 저장점 규칙 모사).
+- 입력: 임계 2, `P-DLP-001` Block을 한 번 기록해 정상 기록, 두 번째 호출에서 집계 SELECT만 실패(`OSError`).
+- 결과: 호출자가 `OSError`를 받았고 원장에는 첫 번째 행(`req-1`)만 남았다. 두 번째 Block 행(`req-2`)은 롤백됐다. 8.2 1번·2번의 코드 독해가 맞았다.
+- 원인: `_record_decision`의 `db.transaction()` 안에서 판정 INSERT·체인 갱신 뒤에 `user_suspend.auto_suspend`를 같은 연결로 호출한다. 그 예외가 바깥 트랜잭션을 롤백한다.
+
+### 수정 (수정 후)
+
+- `core.py` `_record_decision`: 자동 중지 호출을 `connection.transaction()`(SAVEPOINT)으로 감싸고, 예외를 잡아 `logging` 오류 로그(`automatic suspension check failed; decision N stays Block`)만 남긴다. 판정 행과 체인 갱신은 저장점 밖이라 남는다.
+- 판정은 바뀌지 않는다. 자동 중지 대상은 이미 `Block`인 호출뿐이고, 집계 실패는 Block을 Allow로 바꾸거나 다른 오류로 덮지 않는다.
+- 다음 호출은 같은 집계를 다시 한다. 실패한 행도 `decisions`에 있어 다음 집계에 포함되고, 임계에 도달하면 중지가 이어진다(시험 `test_failed_check_is_retried_and_the_kept_row_counts_on_the_next_call`: 1건 정상·1건 실패·1건 정상 → 세 건 집계, 중지 1건).
+- 판정 행에 「자동 중지 집계 실패」 표식은 붙이지 않았다(제한 참고). 원장 행 수정·삭제 코드 없음, 새 열·테이블·정책 ID 없음.
+
+### 시험 결과
+
+- 새 시험 7건 전부 통과: 정상 경로 행 기록, 임계 도달 시 행과 중지 기록, 비집계 Block은 집계 미호출, 집계 실패 시 행 유지·예외 없음·중지 없음, 실패 오류 로그, 재시도 후 집계 이어짐, 정책 목록 고정.
+- 기존 시험(파일 무변경): `user_auto_suspend_check` 10, `user_server_suspend_check` 24, `user_suspend_all_check` 13, `dest_pin_credential_redaction_check` 16, `fresh_requester_check` 10, `dispatch_recheck_check` 15, `outcome_axes_check` 8, `security_edges_check` 6 모두 통과.
+- 민감도: 수정을 origin/main의 core.py로 되돌리면 새 시험 3건(행 유지, 로그, 재시도)이 실패(ERROR)했다. 수정본을 복원했다.
+- `py_compile`·`pyflakes` 변경 파일 통과, `tests/open_endpoints.py` PASS.
+- 미해결 기존 실패(이번 변경과 무관): `intake_validation_test.py` 2건 ERROR, 원인은 Windows 심볼릭 링크 권한(WinError 1314)이다.
+- 미실행: PostgreSQL 시험(`auto_suspend_pg_check.py`), 기기·PJ1. 대역으로는 실제 SQL 롤백 의미를 흉내 낼 뿐이며, 실제 PostgreSQL에서 SAVEPOINT 동작은 확인하지 못했다.
+
+### 제한
+
+- 판정 행 표식 미구현: 행이 이미 INSERT된 뒤라 같은 행을 고칠 수 없다(원장 수정 금지). 표식을 행에 넣으려면 판정 행을 집계보다 먼저 쓰는 구조 변경이 필요하고, 기존 JSON 필드 중 소비자에 영향 없는 자리가 없다(`timings`는 단계 통계 SQL이, `sequence_flags`는 연쇄 탐지 표시가, `conflicts`는 정책 충돌 스키마가 쓴다). 실패 사실은 오류 로그에만 남는다. 원장에 남기려면 승인 사건 종류를 새로 정해야 한다(메인 판단).
+- 설정 오류(`AUTO_SUSPEND_THRESHOLD<1` 등)도 이제 Block 호출을 막지 않고 로그만 남긴다. 기동 시 검증이 없으므로 운영 전 확인이 필요하다.
