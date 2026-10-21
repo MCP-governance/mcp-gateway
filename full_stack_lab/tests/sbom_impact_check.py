@@ -39,10 +39,12 @@ exec(compile(ast.Module(body=[ops_suspend], type_ignores=[]), "ops_response.py",
 server_suspend = ops_namespace["suspend"]
 
 
-def row(server, generation, inventory=None, *, status="IMPORTED", truncated=False, sbom_id=1):
+def row(server, generation, inventory=None, *, status="IMPORTED", scan_status="DONE",
+        source_match=True, truncated=False, sbom_id=1):
     return {"server_id": server, "display_name": server.title(), "intake_id": f"intake-{server}",
             "source_ref": f"source:{server}", "runtime_id": f"runtime-{server}-{generation}" if generation else None,
-            "generation": generation, "source_match": True, "scan_status": "DONE" if status else None,
+            "generation": generation, "source_match": source_match,
+            "scan_status": scan_status if status else None,
             "sbom_id": sbom_id, "sbom_status": status or None,
             "inventory": inventory, "truncated": truncated}
 
@@ -86,10 +88,13 @@ class SbomImpactCheck(unittest.TestCase):
             row("truncated", 1, [], truncated=True),
             row("truncated-match", 1, [{"name": "alpha", "version": "2.0.0"}], truncated=True),
             row("missing", 1, None, status=None, sbom_id=None),
+            row("source-mismatch", 1, [{"name": "alpha", "version": "1.4.0"}], source_match=False),
+            row("scan-pending", 1, [{"name": "alpha", "version": "1.4.0"}], scan_status="PENDING"),
+            row("no-generation", None, [{"name": "alpha", "version": "1.4.0"}]),
         ]
         with patch.object(sbom_impact.db, "fetch_all", new=AsyncMock(return_value=rows)):
             result = asyncio.run(sbom_impact.impact("alpha", ">=1.0.0 <2.0.0"))
-        self.assertEqual(result["counts"], {"affected": 1, "unaffected": 1, "unknown": 3, "no_data": 1})
+        self.assertEqual(result["counts"], {"affected": 1, "unaffected": 1, "unknown": 3, "no_data": 4})
         by_server = {item["server_id"]: item for item in result["servers"]}
         self.assertEqual(by_server["affected"]["judgement"], "영향 있음")
         self.assertEqual(by_server["affected"]["generation"], 2)
@@ -97,6 +102,9 @@ class SbomImpactCheck(unittest.TestCase):
         self.assertEqual(by_server["truncated"]["judgement"], "판단 불가")
         self.assertEqual(by_server["truncated-match"]["judgement"], "판단 불가")
         self.assertEqual(by_server["missing"]["judgement"], "자료 없음")
+        for server in ("source-mismatch", "scan-pending", "no-generation"):
+            self.assertEqual(by_server[server]["judgement"], "자료 없음")
+            self.assertEqual(by_server[server]["evidence"], [])
 
     def test_stop_deduplicates_server_and_reports_partial_failure_with_batch(self):
         rows = [
@@ -104,6 +112,7 @@ class SbomImpactCheck(unittest.TestCase):
             row("server-a", 2, [{"name": "alpha", "version": "1.1.0"}]),
             row("server-b", 1, [{"name": "alpha", "version": "1.2.0"}]),
             row("server-c", 1, [{"name": "alpha", "version": "2.0.0"}]),
+            row("server-d", 1, [{"name": "alpha", "version": "1.3.0"}]),
         ]
 
         async def suspend(server_id, source, reason, evidence, batch=None):
@@ -113,15 +122,18 @@ class SbomImpactCheck(unittest.TestCase):
             self.assertEqual(len(evidence["sbom_generations"]), 2 if server_id == "server-a" else 1)
             if server_id == "server-b":
                 raise RuntimeError("unavailable")
+            if server_id == "server-d":
+                return False
             return True
 
         with patch.object(sbom_impact.db, "fetch_all", new=AsyncMock(return_value=rows)), \
              patch.object(sbom_impact.ops_response, "suspend", new=AsyncMock(side_effect=suspend)) as stop:
             result = asyncio.run(sbom_impact.stop_affected("alpha", "<2.0.0", "admin", "취약 판본"))
-        self.assertEqual(result["counts"], {"succeeded": 1, "skipped": 0, "failed": 1})
+        self.assertEqual(result["counts"], {"succeeded": 1, "skipped": 1, "failed": 1})
         self.assertEqual(result["succeeded"], ["server-a"])
+        self.assertEqual(result["skipped"], ["server-d"])
         self.assertEqual(result["failed"][0]["server_id"], "server-b")
-        self.assertEqual(stop.await_count, 2)
+        self.assertEqual(stop.await_count, 3)
 
     def test_existing_server_stop_writes_batch_on_append_only_event(self):
         class Cursor:
@@ -137,6 +149,8 @@ class SbomImpactCheck(unittest.TestCase):
 
             async def execute(self, statement, args=()):
                 self.statements.append((statement, args))
+                if "FOR UPDATE" in statement:
+                    return Cursor({"status": "READY"})
                 return Cursor({"id": 51} if "INSERT INTO ops_suspensions" in statement else None)
 
         connection = Connection()
@@ -145,7 +159,8 @@ class SbomImpactCheck(unittest.TestCase):
         async def transaction():
             yield connection
 
-        server_suspend.__globals__["db"] = types.SimpleNamespace(transaction=transaction)
+        server_suspend.__globals__["db"] = types.SimpleNamespace(
+            transaction=transaction, fetch_one=AsyncMock(return_value={"status": "READY", "suspended": False}))
         created = asyncio.run(server_suspend("server-a", "supply-chain", "취약 판본",
                                              {"package": "alpha", "requested_by": "admin"}, batch="batch-1"))
         ledger = next(args for statement, args in connection.statements if "INSERT INTO approval_events" in statement)
@@ -156,6 +171,70 @@ class SbomImpactCheck(unittest.TestCase):
         self.assertEqual(ledger[2]["batch"], "batch-1")
         self.assertTrue(any("SET status='DISABLED'" in s for s, _ in connection.statements))
         self.assertTrue(any("UPDATE mcp_runtimes SET status='STOPPING'" in s for s, _ in connection.statements))
+
+    def test_already_stopped_server_is_skipped_without_changing_its_reason_or_runtime(self):
+        for status, suspended in (("DISABLED", True), ("DISABLED", False),
+                                  ("BLOCKED_SUPPLY_CHAIN", False), ("READY", True)):
+            with self.subTest(status=status, suspended=suspended):
+                db = types.SimpleNamespace(
+                    fetch_one=AsyncMock(return_value={"status": status, "suspended": suspended}),
+                    transaction=AsyncMock(side_effect=AssertionError("already stopped")))
+                server_suspend.__globals__["db"] = db
+                self.assertFalse(asyncio.run(server_suspend(
+                    "server-a", "supply-chain", "새 사유", {"package": "alpha"})))
+                db.transaction.assert_not_called()
+
+    def test_concurrent_stop_loses_insert_without_overwriting_existing_state(self):
+        class Cursor:
+            def __init__(self, value):
+                self.value = value
+
+            async def fetchone(self):
+                return self.value
+
+        class Connection:
+            def __init__(self):
+                self.statements = []
+
+            async def execute(self, statement, args=()):
+                self.statements.append(statement)
+                if "FOR UPDATE" in statement:
+                    return Cursor({"status": "READY"})
+                if "INSERT INTO ops_suspensions" in statement:
+                    return Cursor(None)
+                raise AssertionError("a skipped stop changed state")
+
+        connection = Connection()
+
+        @asynccontextmanager
+        async def transaction():
+            yield connection
+
+        server_suspend.__globals__["db"] = types.SimpleNamespace(
+            transaction=transaction, fetch_one=AsyncMock(return_value={"status": "READY", "suspended": False}))
+        self.assertFalse(asyncio.run(server_suspend("server-a", "supply-chain", "새 사유", {})))
+        self.assertEqual(len(connection.statements), 2)
+
+    def test_server_disabled_during_stop_is_skipped_after_row_lock(self):
+        class Cursor:
+            async def fetchone(self):
+                return {"status": "DISABLED"}
+
+        statements = []
+
+        class Connection:
+            async def execute(self, statement, args=()):
+                statements.append(statement)
+                return Cursor()
+
+        @asynccontextmanager
+        async def transaction():
+            yield Connection()
+
+        server_suspend.__globals__["db"] = types.SimpleNamespace(
+            transaction=transaction, fetch_one=AsyncMock(return_value={"status": "READY", "suspended": False}))
+        self.assertFalse(asyncio.run(server_suspend("server-a", "supply-chain", "새 사유", {})))
+        self.assertEqual(len(statements), 1)
 
 
 if __name__ == "__main__":
