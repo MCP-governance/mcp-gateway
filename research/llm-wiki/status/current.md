@@ -49,10 +49,10 @@
 
 ### 기기 배포 판본
 
-- 마지막 배포: 기기 **`3eb802c`**(10-21 저녁, 구성요소 전부 정상, 실행 세대 ACTIVE 1 유지). 첫 시도는 기기의 Docker 자격 도우미 오류(`presidio-analyzer` 빌드)로 실패했고 기존 스택은 그대로 돌았으며, 재시도에서 성공했다. 배포 전 기기 단위 시험: opa 122/122, `event_kind_labels`·`header_broker_label` 20·`flow_fingerprint` 34·`endpoint_snapshot` 21·`field_account_git` 3 통과.
+- 마지막 배포: 기기 **`bcc38f9`**(10-21 저녁, **DEV-73 포함**). 구성요소 6개 정상, 실행 세대 ACTIVE 1 유지, DEV-73 표 3개(`local_jobs`·`local_run_stops`·`local_job_events`) 생성·빈 상태, 게이트웨이 오류 로그 0, 관리형 엔드포인트가 새 `/api/endpoint/local-jobs` 경로를 200으로 폴링. 배포 전 기기(Linux)에서 `local_run_manifest_check`가 **없는 경로·심볼릭 링크 마운트를 OS 오류로 올리는 것**을 잡아 거부(`ValueError`)로 고쳤다(`ae5d4e8` 계열, 실행기는 Exception을 잡아 차단은 유지됐다). 이전: `3eb802c`(첫 시도는 기기 Docker 자격 도우미 오류, 재시도 성공).
 - 메인이 Python 3.12(의존성 있는 venv)에서 직접 실행해 통과를 확인한 시험(보고서에 결과가 없던 것): `provenance_referrer_check` 8, `runtime_rollback_provenance_check` 3, `intake_identity_test` 19, `tool_sunset_paths_check` 8. 로컬 시험 전체는 `tests/run_local_suite.py` 기준 통과 85 · 실패 1(설계상 `threat_trace_mapping_check`) · 외부 의존 생략 18.
 - 이전 배포 기록: `848545f`(D-179 실행기 이미지에 `cryptography` 고정 후 구성요소 6개 정상, 실행 세대 1개 유지, 기기 단위 시험 opa 119/119 · 주요 시험 전부 통과) → `cc01e35`(D-177) → `be09c97`(D-180 결함 수정, D-189, 한 화면 승인) → `679ae03`(D-179 referrer) → `0c26ed7`(D-176 기록 경로) → `ded7f6e`(한 화면 승인 덮어쓰기 수정) → `293ada9`(D-176 후속) → `3eb802c`.
-- 병합 시점과 배포 순서 대조: D-182 건수 수정은 `cc01e35`부터, D-177 목록 격리와 한 화면 승인 표식은 `ded7f6e`부터, D-183 경고 단계와 콘솔 한글 라벨은 `3eb802c`부터 기기에 있다. **DEV-73은 main 밖**(`origin/10/21-dev73-integrate`)이라 기기에 없다.
+- 병합 시점과 배포 순서 대조: D-182 건수 수정은 `cc01e35`부터, D-177 목록 격리와 한 화면 승인 표식은 `ded7f6e`부터, D-183 경고 단계와 콘솔 한글 라벨은 `3eb802c`부터 기기에 있다. DEV-73은 `bcc38f9`부터 기기에 있다(실제 PG 경합 시험 29/29·12/12 통과 뒤 병합).
 
 ### 검증 범위
 
@@ -69,7 +69,7 @@
 - **되돌리기 기기 1회 실행 미실행**: 공용 기기의 MarkItDown을 이전 판본으로 바꾸는 작업을 보류했다.
 - **콘솔 렌더링 미확인**: 내장 브라우저가 Tailscale 사설 IP에 접근하지 못했다. 기기가 내려주는 `console.js`의 문구·개발 흔적만 정적으로 확인했다.
 - **DEV-73**: `origin/10/21-dev73-integrate`(`c92b6f2`)는 main 밖이다. 실제 PG 시험 2개(`dev73_rework_pg_check`·`local_jobs_pg_check`)는 실제 DB에서 한 번도 통과하지 않았고 실험실에서 재시도 중이다. 2차 검토 지적 6건의 반영 기록이 없다. 적대 재검토 전까지 배포·PJ1 금지.
-- **기기 재배포**: 10-21 병합분은 `3eb802c`로 모두 반영됐다. DEV-73은 실제 PostgreSQL 시험 통과 뒤 따로 배포한다.
+- **기기 재배포**: 10-21 병합분은 DEV-73을 포함해 `bcc38f9`로 모두 반영됐다.
 - D-189 `core.register_server`의 거부 3분기(신청자 배제·2명 미만·매우 높음 사유 누락)는 `root_solo_behavior_check`의 `RegisterServerRoute`가 실제 호출로 확인한다. 각 거부 줄을 지우는 변이에서 1~13건이 실패함을 확인했다(앞선 「문자열 검사뿐」 기록은 그 시험이 병합되기 전 감사 시점 기준).
 - **시험 공백(남음)**: D-189 결론 3(치명적 발견 수용은 위험 등급 승인과 별도 절차) 전용 행위 시험이 없다. DEV-75 통합 경로(`tools/list`·`execute_call`) 시험 `tool_sunset_paths_check`는 메인이 Python 3.12에서 8/8 통과를 확인했다. DEV-76의 건너뜀·세대 불일치 분기, DEV-74의 자동 중지 행 생성 뒤 다음 호출 차단 연결과 만료 처리 실패 분기도 시험이 없다.
 - **사건 기반 가드**: `runtime-revoked`·`runtime-terminated`·`runtime-supply-chain-stop` 사건을 쓰는 코드는 판정 경로를 바꾸므로 별도 작업으로 남겼다.
