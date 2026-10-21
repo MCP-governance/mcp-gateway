@@ -28,7 +28,7 @@
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "8ef4a1a31b6ed43a9ad5a8aebe13f84a0a638bfbf3383d1e87b328ad98d2e4a6",
+        "sha256": "47d4b6b5520270f1b94028cf732e7b15c2820c3d65b3c38b7880217fd3b12412",
         "committed_sha256": "47d4b6b5520270f1b94028cf732e7b15c2820c3d65b3c38b7880217fd3b12412",
         "normalized_sha256": "47d4b6b5520270f1b94028cf732e7b15c2820c3d65b3c38b7880217fd3b12412",
         "worktree_modified": false
@@ -418,7 +418,7 @@
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "8ef4a1a31b6ed43a9ad5a8aebe13f84a0a638bfbf3383d1e87b328ad98d2e4a6",
+        "sha256": "47d4b6b5520270f1b94028cf732e7b15c2820c3d65b3c38b7880217fd3b12412",
         "committed_sha256": "47d4b6b5520270f1b94028cf732e7b15c2820c3d65b3c38b7880217fd3b12412",
         "normalized_sha256": "47d4b6b5520270f1b94028cf732e7b15c2820c3d65b3c38b7880217fd3b12412",
         "worktree_modified": false
@@ -2852,7 +2852,7 @@
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "8ef4a1a31b6ed43a9ad5a8aebe13f84a0a638bfbf3383d1e87b328ad98d2e4a6",
+        "sha256": "47d4b6b5520270f1b94028cf732e7b15c2820c3d65b3c38b7880217fd3b12412",
         "committed_sha256": "47d4b6b5520270f1b94028cf732e7b15c2820c3d65b3c38b7880217fd3b12412",
         "normalized_sha256": "47d4b6b5520270f1b94028cf732e7b15c2820c3d65b3c38b7880217fd3b12412",
         "worktree_modified": false
