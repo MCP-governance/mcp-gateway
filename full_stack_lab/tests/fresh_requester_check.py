@@ -122,7 +122,7 @@ class FreshRequesterChecks(unittest.IsolatedAsyncioTestCase):
         self.ns = {"__package__": "fresh_requester_unit", "asyncio": NS(to_thread=asyncio.to_thread, timeout=lambda _: nullcontext()),
             "json": json, "uuid": uuid, "time": time, "datetime": datetime, "UTC": UTC, "Any": object,
             "canonical_hash": digest, "db": self.db, "disposal": self.disposal, "dispatch": self.dispatch,
-            "upstream": self.upstream, "endpoint_plane": self.endpoint, "registry": registry, "classify": classifier,
+            "tool_sunset": NS(check=AsyncMock(return_value={}), call_verdict=lambda state: None), "upstream": self.upstream, "endpoint_plane": self.endpoint, "registry": registry, "classify": classifier,
             "pac": self.pac, "Draft202012Validator": validator, "_ledger_cache": {}, "GATEWAY_ENVIRONMENT": "prod",
             "output_contract": NS(matches=lambda *args: True, for_protocol=lambda value, _: value),
             "poisoning": NS(findings=lambda _: []), "privacy": NS(analyze=AsyncMock(return_value=[]),

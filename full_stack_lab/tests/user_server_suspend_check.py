@@ -238,6 +238,7 @@ class GateChecks(unittest.IsolatedAsyncioTestCase):
               "GATEWAY_ENVIRONMENT": "prod", "policy_ledger": AsyncMock(), "_reserve_call": self.reserve,
               "tracer": NS(start_as_current_span=lambda *a, **k: nullcontext(span)),
               "classify": NS(classify=lambda *a: cls), "_decision_payload": decision_payload,
+              "tool_sunset": NS(check=AsyncMock(return_value={}), call_verdict=lambda state: None),
               "registry": NS(server=lambda s: {"endpoint": "http://unit.invalid"}, allowed_principals=lambda s: None),
               "enforcement_mode": self.mode, "_root_cause": lambda exc: type(exc).__name__, "MAX_ARGUMENT_BYTES": 10000}
         self.core = production("core.py", {"execute_call", "_Laps", "local_verdict"}, ns)
