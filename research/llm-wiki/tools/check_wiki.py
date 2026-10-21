@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from urllib.parse import unquote, urlsplit
 
@@ -18,10 +19,14 @@ def check(ci_ignored_local_sources=False):
         if not condition:
             errors.append(message)
 
-    def local_path(value, base=ROOT, optional=False):
+    def local_path(value, base=ROOT, optional=False, link=False):
         path = (base / unquote(value)).resolve()
         require(path.is_relative_to(REPO), f"Path outside repository: {value}")
-        if not path.is_file():
+        # 링크는 디렉터리를 가리킬 수 있다. 추적 파일이 있는 디렉터리만 인정해 빈 디렉터리와 없는 경로는 오류로 남긴다.
+        tracked_dir = link and path.is_dir() and path.is_relative_to(REPO) and subprocess.run(
+            ["git", "-C", str(REPO), "ls-files", "--", path.relative_to(REPO).as_posix()],
+            capture_output=True).stdout.strip() != b""
+        if not (path.is_file() or tracked_dir):
             if ci_ignored_local_sources and path.is_relative_to(ROOT / "local-sources"):
                 warnings.append(f"Missing ignored local source: {path.relative_to(REPO)}")
             elif not optional:
@@ -149,7 +154,7 @@ def check(ci_ignored_local_sources=False):
             path = unquote(urlsplit(href).path)
             if path:
                 resolved = (file.parent / path).resolve()
-                local_path(path, file.parent, optional=resolved.is_relative_to(ROOT / "local-sources"))
+                local_path(path, file.parent, optional=resolved.is_relative_to(ROOT / "local-sources"), link=True)
 
     totals["markdown_documents"] = len(markdown_files())
     require(not (ROOT / "web/content.js").exists(), "Retired wiki browser bundle must not be generated")

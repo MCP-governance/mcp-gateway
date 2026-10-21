@@ -69,3 +69,26 @@
 ## 6. 실행하지 못한 도구
 
 없음. 네 명령 모두 실행했다.
+
+## 7. 검사기 오탐 수정 (10-21)
+
+- 기준: `origin/main` fd2655f, 브랜치 `10/21-wiki-check-tool`. 위 5절의 (D) 오탐 2건을 고친 기록이다.
+- 변경: `tools/check_wiki.py`의 `local_path`에 `link` 인자를 더했다. 본문 링크 검사에서만 켜지며, 대상이 디렉터리이고 `git ls-files`로 추적 파일이 하나 이상 잡히면 존재로 인정한다. 빈 디렉터리와 없는 경로는 계속 오류다. 카탈로그 경로·코드 근거·실험 증거 검사는 그대로 두었다.
+- 자체 검사: `tools/check_wiki_link_check.py`. 임시 위키와 임시 Git 저장소에서 `check()`를 돌려 세 경우를 확인한다(존재하는 파일 링크 통과, 추적 파일이 있는 디렉터리 링크 통과, 없는 경로 링크 실패). 수정 전 `check_wiki.py`에 대고 돌리면 디렉터리 경우에서 실패한다. 빈 디렉터리 링크는 수정 후에도 오류로 남는 것을 따로 확인했다.
+
+| 실행 | 명령 | 수정 전 | 수정 후 |
+|------|------|---------|---------|
+| 기본 | `python research/llm-wiki/tools/check_wiki.py` | 종료 1, 오류 32, 경고 0 | 종료 1, 오류 30, 경고 0 |
+| CI 옵션 | `python research/llm-wiki/tools/check_wiki.py --ci-ignored-local-sources` | 종료 1, 오류 3, 경고 119 | 종료 1, 오류 1, 경고 119 |
+| 자체 검사 | `python research/llm-wiki/tools/check_wiki_link_check.py` | 해당 없음 | 종료 0, `check_wiki link rule: ok` |
+
+- 줄어든 오류는 정확히 두 건이다: `../../analysis/real-env-20261020/install/`, `../../analysis/real-env-20261020/e13/` (`status/reports/2026-10-20-pj1-real-mcp.md`의 40행, 84행).
+- 새로 생긴 오류는 없다. 두 실행의 `counts`와 `warnings` 목록은 수정 전후 같다.
+- 남은 오류: 기본 실행은 (A) 로컬 원본 29건과 (B) dev73 링크 1건이다. CI 옵션 실행은 (B) 1건이다.
+
+**CI 옵션 확인 (코드 변경 없음).** `.github/workflows/research-wiki.yml`의 `check` 잡 17행이 `python research/llm-wiki/tools/check_wiki.py --ci-ignored-local-sources`를 실행한다. 옵션을 쓰고 있으므로 Git 밖 로컬 원본 29건은 CI에서 오류가 아니라 경고로 처리된다. 앞선 추정("CI가 항상 29건으로 실패한다")은 틀렸다. 최근 main 실행(run 39540718296)의 실패 원인은 `Missing local file` 3건, 즉 dev73 링크 1건과 디렉터리 오탐 2건이었다. 이번 수정 후에는 dev73 링크 1건만 남으므로 CI는 여전히 실패한다. 워크플로 파일은 고치지 않았다. 자체 검사도 CI에 연결되어 있지 않다.
+
+**남긴 것.**
+- (B) dev73 링크(`analysis/direction-1020/shadow-and-declaration-limits.md:23`): 고치지 않았다. 대상이 미머지 브랜치에만 있어 CI 실패의 남은 원인이다. 링크를 고칠지 설계를 main에 올릴지는 소유자 결정이다.
+- 자체 검사의 CI 연결: 워크플로 수정이 필요해 보류했다.
+- 옵션 사용 시 로컬 원본 경고 119건: 의도된 경고로 유지했다.
