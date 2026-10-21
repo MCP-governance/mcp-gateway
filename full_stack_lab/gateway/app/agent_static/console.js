@@ -212,7 +212,15 @@ const REVIEW_KIND = {
   "intake-one-click": "도입 승인",
   "runtime-start": "실행 요청", "runtime-stop": "실행 중지 요청", "runtime-built": "이미지 빌드", "runtime-active": "실행 시작",
   "runtime-rollback": "실행 판본 되돌리기", "runtime-rollback-queued": "실행 판본 전환", "runtime-rollback-refused": "실행 판본 전환 거부", "runtime-rollback-request-refused": "실행 판본 되돌리기 요청 거부",
-  "runtime-failed": "실행 실패", "runtime-stopped": "실행 중지",
+  "runtime-failed": "실행 실패", "runtime-stopped": "실행 중지", "runtime-egress": "외부 통신", "runtime-image-scan": "이미지 검사",
+  "solo-mode": "단독 운영 모드", "ledger-retention": "보존 기간 변경", "audit-annotate": "감사 주석",
+  "server-deregister": "게이트웨이 등록 해제", "contract-reapprove": "계약 재승인",
+  "automatic-suspension": "자동 중지", "automatic-suspension-resume": "자동 중지 해제",
+  "user-server-suspend": "이용 중지", "user-server-resume": "이용 재개",
+  "call-request": "중대 영향 요청", "call-explanation-view": "중대 영향 설명 열람", "call-approve": "중대 영향 승인",
+  "call-reject": "중대 영향 거부", "call-revoke": "중대 영향 번복",
+  "incident-created": "사고 기록 생성", "incident-supplement": "사고 범위 보완", "incident-report": "사고 보고 제출",
+  "disposal-reconciled": "폐기 상태 복원", "disposal-integrity-failure": "폐기 목록 확인 실패",
 };
 const RUNTIME_STATUS = {
   QUEUED: ["approval", "실행 대기"], BUILDING: ["approval", "빌드 중"], STARTING: ["approval", "시작 중"], VERIFYING: ["approval", "응답 확인 중"],
