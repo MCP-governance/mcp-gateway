@@ -54,7 +54,7 @@ class RootSolo(unittest.TestCase):
         very_high_with_reason = risk_tier.decide("very_high", 1, "written risk acceptance reason")
         very_high_with_two = risk_tier.decide("very_high", 2, "written risk acceptance reason")
         self.assertEqual(high[0], "cosign")
-        self.assertEqual(high_with_reason[0], "approve")  # existing D-143 alternative
+        self.assertEqual(high_with_reason[0], "cosign")  # D-189: a written reason no longer replaces the second administrator
         self.assertEqual(very_high_with_reason[0], "cosign")  # still pending a distinct second approver
         self.assertEqual(very_high_with_two[0], "approve")
 
