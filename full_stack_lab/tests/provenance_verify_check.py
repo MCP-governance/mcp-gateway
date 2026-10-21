@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "gateway" / "app"))
+sys.path[:0] = [str(ROOT / "runtime"), str(ROOT / "gateway" / "app"), str(ROOT / "supply_chain")]
 import artifact_provenance as verify  # noqa: E402
 import worker  # noqa: E402
 
