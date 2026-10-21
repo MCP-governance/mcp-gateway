@@ -1,0 +1,26 @@
+2026-10-20T14:37:40+09:00 disk_free_mb=9709 need=600
+2026-10-20T14:37:40+09:00 node_version=v24.22.0
+2026-10-20T14:37:41+09:00 node_sha256=cc2f601cee82d9a5a233302fe307abc600727035fd7d2c3a3571755989e95008
+2026-10-20T14:37:44+09:00 node=v24.22.0 npm=11.19.1
+2026-10-20T14:37:44+09:00 disk_free_mb=9501 need=800
+2026-10-20T14:37:45+09:00 npm @modelcontextprotocol/server-filesystem@2.0.0 license=SEE LICENSE IN LICENSE
+2026-10-20T14:37:48+09:00 npm @cyanheads/git-mcp-server@2.15.3 license=Apache-2.0
+2026-10-20T14:37:51+09:00 npm @bytebase/dbhub@1.5.0 license=MIT
+2026-10-20T14:38:11+09:00 npm @playwright/mcp@0.0.83 license=Apache-2.0
+2026-10-20T14:38:12+09:00 npm_lock_sha256=a879e1145364074ac24650693e9a47a3ccc4f2085287b89d54708b172005ef45
+2026-10-20T14:38:12+09:00 disk_free_mb=9091 need=700
+2026-10-20T14:38:12+09:00 playwright_version=1.64.0-alpha-1790635538000
+674M	/home/pj1/.cache/ms-playwright
+2026-10-20T14:38:39+09:00 disk_free_mb=8418 need=2500
+2026-10-20T14:38:40+09:00 uv_tgz_sha256=23bf5552d220e0842b65c862097b2ebaeba0064b74eda5e565e77fd25969d8c8
+2026-10-20T14:38:51+09:00 temurin_sha256=ce79869e1307ed8ee1e2baa86a412b1eb5b75d10a01006d788a6f968bcfaee94 (10-14 manifest ce79869e...)
+2026-10-20T14:38:54+09:00 ghidra_url=https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.1.4_build/ghidra_12.1.4_PUBLIC_20260921.zip
+2026-10-20T14:39:15+09:00 ghidra_sha256=ddac49f903da9d5bac833e5cc79395098b9c33cfd3279be5f31bd00387d2d4db
+2026-10-20T14:39:15+09:00 disk_free_mb=7481 need=1500
+2026-10-20T14:39:21+09:00 ghidra_dir=opt/ghidra_12.1.4_PUBLIC
+/home/pj1/mcpgw-ghidra-20261014/artifacts/ghidra_mcp-2.0.0-py3-none-any.whl: OK
+/home/pj1/mcpgw-ghidra-20261014/artifacts/GhidraMCP.jar: OK
+2026-10-20T14:39:22+09:00 ghidra_mcp=2.0.0
+2026-10-20T14:39:22+09:00 disk_free_mb=7098 need=200
+1.7G	/home/pj1/mcp-real-20261020/opt
+2026-10-20T14:39:23+09:00 DONE

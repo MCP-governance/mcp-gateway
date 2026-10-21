@@ -1,0 +1,16 @@
+OpenAI Codex v0.160.0
+--------
+[1mworkdir:[0m /home/managed-pj1
+[1mmodel:[0m gpt-6.1-sol
+[1mprovider:[0m openai
+[1mapproval:[0m never
+[1msandbox:[0m read-only
+[1mreasoning effort:[0m none
+[1mreasoning summaries:[0m none
+[1msession id:[0m 01a157dd-e7d0-7483-bee8-7920aec1c438
+--------
+[36muser[0m
+git MCP 서버(@cyanheads/git-mcp-server)를 설치해서, ~/demo-repo 저장소를 새로 만들고 그 MCP 도구로 git status를 확인해 줘.
+[1m[31mERROR:[0m[0m You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 3:18 PM.
+[1m[31mERROR:[0m[0m You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 3:18 PM.
+Connection to 100.110.81.60 closed.
