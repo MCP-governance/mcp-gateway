@@ -1,0 +1,24 @@
+{
+  "task": "DEV-74",
+  "date": "2026-10-21",
+  "baseline_commit": "859f4d63db9cab5714f25e5d3cc4607077959e13",
+  "branch": "main",
+  "branch_create": "denied: .git ref lock permission denied",
+  "remote_fetch": "git fetch failed: .git/FETCH_HEAD permission denied; git ls-remote failed: GitHub network unavailable; origin/main local tracking snapshot used",
+  "checks": [
+    {"command": "python -B tests/user_auto_suspend_check.py", "result": "PASS", "cases": 10, "scope": "local AST/state model"},
+    {"command": "python -B tests/user_server_suspend_check.py", "result": "PASS", "cases": 24, "scope": "existing D-181 regression; file unchanged"},
+    {"command": "python -B tests/user_suspend_all_check.py", "result": "PASS", "cases": 13, "scope": "existing D-181 batch regression; file unchanged"},
+    {"command": "node --check gateway/app/agent_static/console.js", "result": "PASS"},
+    {"command": "node --test tests/console-state.test.mjs", "result": "PASS", "cases": 15},
+    {"command": "python -B tests/open_endpoints.py", "result": "PASS", "detail": "1 documented unauthenticated route; 89 authenticated"},
+    {"command": "python -B -m py_compile gateway/app/core.py gateway/app/dispatch.py gateway/app/user_suspend.py gateway/app/automatic_suspend.py tests/user_auto_suspend_check.py", "result": "PASS"},
+    {"command": "pyflakes gateway/app/*.py tests/*.py", "result": "UNAVAILABLE", "detail": "pyflakes command not installed; not counted as passed"},
+    {"command": "python -B tools/map_threats.py", "result": "PASS", "detail": "24 static candidate mappings refreshed; 9 independent-review source references remain stale and are marked"},
+    {"command": "python -B tools/check_wiki.py --ci-ignored-local-sources", "result": "PASS", "errors": 0, "warnings": 119, "warning_detail": "ignored local source files unavailable in this checkout"},
+    {"command": "git diff --check", "result": "PASS"}
+  ],
+  "not_run": ["OPA test container", "device deployment", "PJ1 harness", "real PostgreSQL race"],
+  "commit": null,
+  "integration": "not performed"
+}

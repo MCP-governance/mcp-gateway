@@ -26,7 +26,7 @@ from jsonschema import Draft202012Validator
 from jsonschema.validators import validator_for
 from referencing import Registry
 
-from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, retention, risk_tier, secret_scan, supplier_assurance, upstream
+from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, ops_response, pac, poisoning, privacy, registry, retention, risk_tier, secret_scan, supplier_assurance, upstream, user_suspend
 from .destination import DestinationBlocked
 from .outcomes import outcome_axes
 from . import flow_fingerprint, high_impact, output_contract, residency, selective
@@ -89,20 +89,23 @@ IMPORTANT_BURST_LIMIT = int(os.getenv("IMPORTANT_BURST_LIMIT", "10"))
 IMPORTANT_BURST_MINUTES = int(os.getenv("IMPORTANT_BURST_MINUTES", "5"))
 BLOCK_STREAK_LIMIT = int(os.getenv("BLOCK_STREAK_LIMIT", "5"))
 BLOCK_STREAK_MINUTES = int(os.getenv("BLOCK_STREAK_MINUTES", "10"))
+AUTO_SUSPEND_THRESHOLD = int(os.getenv("AUTO_SUSPEND_THRESHOLD", "5"))
+AUTO_SUSPEND_WINDOW_SECONDS = int(os.getenv("AUTO_SUSPEND_WINDOW_SECONDS", "600"))
+AUTO_SUSPEND_DURATION_SECONDS = int(os.getenv("AUTO_SUSPEND_DURATION_SECONDS", "900"))
 # How many calls one principal may have in flight at once, and how long a reservation
 # survives if the gateway dies mid-call. The TTL is the upstream timeout plus a margin:
 # shorter and a slow tool frees its own place while still running.
 CONCURRENCY_LIMIT = int(os.getenv("CONCURRENCY_LIMIT", "4"))
 RESERVATION_TTL_SECONDS = int(os.getenv("RESERVATION_TTL_SECONDS", "120"))
 MAX_ARGUMENT_BYTES = int(os.getenv("MAX_ARGUMENT_BYTES", "65536"))
-# CTL-28이 보라는 "반복 실패"는 이 사람이 권한 경계를 더듬고 있다는 신호다.
-# 모든 차단을 세면 그 신호가 환경 상태에 묻힌다 - 서버 하나가 드리프트 상태면
-# MCP-CATALOG-001이 모든 사용자에게 걸리고, 그러면 아무 잘못 없는 사람들의 다음
-# 호출이 전부 경보가 된다. 주체에게 귀속되는 인가 거부만 센다. 실행 권한의 행위·인자·데이터·전송
-# 범위 거부(PAC-09~12)는 요청 내용 때문이라 센다. 승인 기한·기준 구성·토큰처럼 상태에서 오는 PAC 거부는 세지 않는다.
-DENIAL_POLICIES = ("MCP-EGRESS-001", "MCP-EGRESS-002", "P-DLP-001",
-                   "P-CLASSIFICATION-001", "P-APPROVAL-EXPIRY-001", "MCP-REGISTRY-001",
-                   "PAC-09", "PAC-10", "PAC-11", "PAC-12")
+# D-176: count only repeated, request-attributable security violations. State,
+# approval, consent, catalog, classification, rate, and fail-closed refusals are
+# deliberately absent because they can be normal workflow or service conditions.
+AUTO_SUSPEND_POLICIES = (
+    "MCP-EGRESS-002", "MCP-DATA-EGRESS-001",
+    "P-DLP-001", "P-CHAIN-001", "P-FLOW-001",
+)
+DENIAL_POLICIES = AUTO_SUSPEND_POLICIES
 
 
 class ResultRejected(RuntimeError):
@@ -1866,9 +1869,14 @@ async def _record_decision(event: dict) -> int:
     # lost after the call ran. It is replaced before the fingerprint, so the chain covers what is stored.
     record = _storable(record)
     async with db.transaction() as connection:
-        # Same order as dispatch: the principal lock precedes the global chain lock.
-        # Publishing an important read cannot slip between the final flow query and intent.
-        if record["data_class"] == "important" and record["action"] == "r" and record["upstream_executed"]:
+        # Use dispatch's principal lock before appending a qualifying denial. A
+        # call reaching the threshold commits its suspension before the next
+        # call can reserve or dispatch for this employee.
+        counts_for_suspend = (record["decision"] == "Block"
+                              and record["policy_id"] in AUTO_SUSPEND_POLICIES
+                              and record["user_token"] != "unknown" and record["server_id"])
+        if counts_for_suspend or (record["data_class"] == "important" and record["action"] == "r"
+                                  and record["upstream_executed"]):
             await connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (record["user_token"],))
         cursor = await connection.execute("SELECT head_sha256 FROM audit_chain WHERE id=1 FOR UPDATE")
         head = await cursor.fetchone()
@@ -1913,6 +1921,10 @@ async def _record_decision(event: dict) -> int:
             "UPDATE audit_chain SET head_sha256=%s, entries=entries+1, updated_at=now() WHERE id=1",
             (entry,),
         )
+        if counts_for_suspend:
+            await user_suspend.auto_suspend(
+                connection, record["user_token"], record["server_id"], AUTO_SUSPEND_POLICIES,
+                AUTO_SUSPEND_THRESHOLD, AUTO_SUSPEND_WINDOW_SECONDS, AUTO_SUSPEND_DURATION_SECONDS)
     return int(row["id"])
 
 
@@ -2007,13 +2019,20 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
     user_token = str(payload.get("user_token") or "")
     with tracer.start_as_current_span("mcp.gateway.call", record_exception=False, set_status_on_exception=False) as span:
         trace_id = f"{span.get_span_context().trace_id:032x}"
-        # An administrator's stop of this person at this server (DEV-79) comes with the identity row, so
-        # a store that cannot answer fails the whole lookup and nothing runs.
-        principal = await db.fetch_one(
+        cls = classify.classify(server_id, tool, arguments, user_token)
+        suspension_error = None
+        suspend_module = globals().get("user_suspend")
+        expire_suspension = getattr(suspend_module, "expire", None)
+        if expire_suspension:
+            try:
+                await expire_suspension(user_token, server_id)
+            except Exception as exc:
+                suspension_error = exc
+        # An administrator's stop (DEV-79) and a live automatic stop share the same state row.
+        principal = (None if suspension_error else await db.fetch_one(
             """SELECT p.*, EXISTS (SELECT 1 FROM user_server_suspensions u WHERE u.user_token=p.token
                                     AND u.server_id=%s AND u.resumed_at IS NULL) AS server_suspended
-                 FROM principals p WHERE p.token=%s""", (server_id, user_token))
-        cls = classify.classify(server_id, tool, arguments, user_token)
+                 FROM principals p WHERE p.token=%s""", (server_id, user_token)))
         role = principal["role"] if principal else "unknown"
         for key, value in (("mcp.server", server_id), ("mcp.tool", tool), ("mcp.role", role),
                            ("mcp.data_class", cls.data_class), ("mcp.action", cls.action)):
@@ -2033,6 +2052,12 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             "result": None, "error": None,
             "policy_input": None, "risk_score": 0, "privacy_types": [], "sequence_flags": [],
         }
+
+        if suspension_error:
+            base_event.update(local_verdict(
+                "P-CONTROL-FAIL-CLOSED", "Block", "사용자 중지 상태를 확인할 수 없어 실행하지 않았습니다.",
+                error=_root_cause(suspension_error)))
+            return await _decision_payload(base_event, laps)
 
         await policy_ledger()
         if not principal or principal["status"] != "active":
