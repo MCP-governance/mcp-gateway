@@ -1307,6 +1307,9 @@ class ObservationReport(StrictModel):
     state: Literal["success", "partial", "failed", "disabled", "unauthorized", "unsupported", "unknown"]
     accepted_count: int = Field(default=0, ge=0, le=500)
     error_code: str = Field(default="", pattern=r"^[a-z_]{0,48}$")
+    buffer_event_uid: str | None = Field(default=None, pattern=r"^[0-9a-f]{32}$")
+    dropped_count: int = Field(default=0, ge=0, le=2_000_000_000)
+    buffer_reason: Literal["capacity", "retention", "mixed"] | None = None
 
 
 class EndpointOSEvent(StrictModel):
@@ -1587,8 +1590,12 @@ async def endpoint_observation_status(request: ObservationReport,
     required = {"process": "netscan", "network": "netscan", "os": "enforcement"}.get(request.channel)
     if request.state in {"success", "partial"} and required and required not in device["scopes"]:
         raise HTTPException(403, "이 관측 채널의 보고 권한이 없습니다.")
+    if bool(request.dropped_count) != bool(request.buffer_event_uid and request.buffer_reason):
+        raise HTTPException(422, "버퍼 폐기 보고의 식별자·사유·건수가 필요합니다.")
     return await endpoint_plane.observation_status(
-        request.endpoint_id, request.channel, request.state, request.accepted_count, request.error_code)
+        request.endpoint_id, request.channel, request.state, request.accepted_count, request.error_code,
+        buffer_event_uid=request.buffer_event_uid, dropped_count=request.dropped_count,
+        buffer_reason=request.buffer_reason)
 
 
 @app.get("/api/endpoint/inventory")

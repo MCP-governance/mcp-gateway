@@ -259,11 +259,20 @@ async def _record_observation(connection, endpoint_id: str, channel: str, state:
 
 
 async def observation_status(endpoint_id: str, channel: str, state: str,
-                             accepted_count: int = 0, error_code: str = "") -> dict:
+                             accepted_count: int = 0, error_code: str = "", *,
+                             buffer_event_uid: str | None = None, dropped_count: int = 0,
+                             buffer_reason: str | None = None) -> dict:
     if channel not in {"inventory", "process", "network", "os"} or state not in {
             "success", "partial", "failed", "disabled", "unauthorized", "unsupported", "unknown"}:
         raise ValueError("알 수 없는 수집 상태입니다.")
     async with db.transaction() as connection:
+        if dropped_count:
+            if not buffer_event_uid or buffer_reason not in {"capacity", "retention", "mixed"}:
+                raise ValueError("버퍼 폐기 보고에 식별자·사유가 필요합니다.")
+            await connection.execute(
+                """INSERT INTO endpoint_buffer_events(endpoint_id,event_uid,dropped_count,reason)
+                   VALUES (%s,%s,%s,%s) ON CONFLICT(endpoint_id,event_uid) DO NOTHING""",
+                (endpoint_id, buffer_event_uid, dropped_count, buffer_reason))
         await _record_observation(connection, endpoint_id, channel, state, accepted_count, error_code)
     return {"endpoint_id": endpoint_id, "channel": channel, "state": state}
 

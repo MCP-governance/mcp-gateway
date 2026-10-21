@@ -8,7 +8,7 @@ from pathlib import Path
 
 def check(root):
     modules = {"site", "ssl", "ctypes", "winreg", "msvcrt", "tomllib", "xml.etree.ElementTree"}
-    files = ("agent.py", "install.py", "managed-windows.py", "os-observer-windows.py", "windows_status.py")
+    files = ("agent.py", "install.py", "managed-windows.py", "os-observer-windows.py", "offline_buffer.py", "windows_status.py")
     for name in files:
         tree = ast.parse((root / name).read_text(encoding="utf-8-sig"))
         for node in ast.walk(tree):
